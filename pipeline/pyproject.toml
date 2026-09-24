@@ -1,0 +1,112 @@
+[project]
+name = "snowlight"
+version = "0.1.0"
+description = "Builds the static files the Snowlight map reads."
+readme = "README.md"
+license = "MIT"
+authors = [{ name = "viaate" }]
+requires-python = ">=3.12,<3.13"
+dependencies = [
+    "httpx>=0.28.1",
+    "numpy>=2.5.3",
+    "polars>=1.44.2",
+    "pydantic>=2",
+    "python-dateutil>=2.9.0.post0",
+    "pyyaml>=6.0.3",
+    "rapidfuzz>=3.14.6",
+    "scikit-learn>=1.9.1",
+    "selectolax>=0.4.12",
+]
+
+[project.scripts]
+snowlight = "snowlight.cli:main"
+
+[build-system]
+requires = ["uv_build>=0.8.17,<0.13"]
+build-backend = "uv_build"
+
+[tool.uv.build-backend]
+module-name = "snowlight"
+module-root = ""
+
+[dependency-groups]
+dev = [
+    "hypothesis>=6.168.1",
+    "mypy>=2.3.1",
+    "pytest>=9.1.1",
+    "pytest-cov>=7.1.0",
+    "ruff>=0.16.9",
+]
+
+[tool.ruff]
+line-length = 100
+target-version = "py312"
+
+[tool.ruff.lint]
+select = [
+    "E",    # pycodestyle errors
+    "W",    # pycodestyle warnings
+    "F",    # pyflakes
+    "I",    # isort
+    "N",    # pep8-naming
+    "UP",   # pyupgrade
+    "B",    # flake8-bugbear
+    "A",    # flake8-builtins
+    "C4",   # flake8-comprehensions
+    "S",    # flake8-bandit
+    "T20",  # flake8-print
+    "PT",   # flake8-pytest-style
+    "RET",  # flake8-return
+    "SIM",  # flake8-simplify
+    "ARG",  # flake8-unused-arguments
+    "PTH",  # flake8-use-pathlib
+    "TID",  # flake8-tidy-imports
+    "ERA",  # eradicate (commented-out code)
+    "PIE",  # flake8-pie
+    "PL",   # pylint
+    "RUF",  # ruff-specific rules
+]
+
+[tool.ruff.lint.per-file-ignores]
+"tests/**" = ["S101", "PLR2004"]
+
+[tool.ruff.lint.flake8-tidy-imports]
+ban-relative-imports = "all"
+
+[tool.mypy]
+python_version = "3.12"
+strict = true
+warn_unreachable = true
+enable_error_code = ["ignore-without-code", "redundant-expr", "truthy-bool", "possibly-undefined"]
+plugins = ["pydantic.mypy"]
+
+[tool.pydantic-mypy]
+init_forbid_extra = true
+init_typed = true
+warn_required_dynamic_aliases = true
+
+[tool.pytest.ini_options]
+minversion = "9.0"
+testpaths = ["tests"]
+addopts = [
+    "-ra",
+    "--strict-markers",
+    "--strict-config",
+    "--import-mode=importlib",
+    "--cov=snowlight",
+    "--cov-report=term-missing",
+]
+xfail_strict = true
+filterwarnings = ["error"]
+
+[tool.coverage.run]
+branch = true
+source = ["snowlight"]
+
+[tool.coverage.report]
+fail_under = 90
+show_missing = true
+exclude_also = ["if TYPE_CHECKING:"]
+
+[tool.uv]
+required-version = ">=0.8.17"

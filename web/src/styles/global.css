@@ -1,0 +1,43 @@
+/* Design tokens. Status hues are the only color; everything else is monochrome. */
+:root {
+  color-scheme: dark;
+
+  --bg: #000;
+  --surface-1: #0a0a0a;
+  --surface-2: #111;
+  --border-1: #1f1f1f;
+  --border-2: #2a2a2a;
+  --text-1: #f5f5f5;
+  --text-2: #a3a3a3;
+  --text-3: #6b6b6b;
+
+  --status-closed: #7fd4ff;
+  --status-delayed: #ffc46b;
+  --status-remote: #b79cff;
+  --status-early-dismissal: #6bffb0;
+
+  --font-sans: 'Geist Variable', system-ui, sans-serif;
+  --font-mono: 'Geist Mono Variable', ui-monospace, monospace;
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  height: 100%;
+  margin: 0;
+  background: var(--bg);
+  color: var(--text-1);
+}
+
+body {
+  font-family: var(--font-sans);
+  font-variant-numeric: tabular-nums;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  overflow: hidden;
+}
