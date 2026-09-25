@@ -2,6 +2,8 @@
 
 Snowlight is a near-black map of the continental US where every K-12 school closed, delayed, remote or dismissing early for weather today glows like city lights seen from space.
 
+Live preview of the work in progress: https://viaate.github.io/jsalcards/ (rebuilt on every push to the default branch).
+
 ```text
 .
 ├── web/                  Svelte 5 + TypeScript + Vite static site for GitHub Pages
@@ -13,5 +15,5 @@ Snowlight is a near-black map of the continental US where every K-12 school clos
 ├── pipeline/             Python 3.12 package "snowlight" (uv) that writes the site's static data
 │   ├── snowlight/        Package source
 │   └── tests/            pytest and Hypothesis tests, plus contract tests for ci.yml
-└── .github/workflows/    CI: web checks, e2e smoke test, pipeline checks
+└── .github/workflows/    CI (web checks, e2e, pipeline checks), the Pages preview, and the archive capture reader
 ```
