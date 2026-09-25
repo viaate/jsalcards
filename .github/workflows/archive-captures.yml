@@ -18,7 +18,9 @@ name: Archive captures
 #   as sent, so a gzip body stays gzip), the SHA-256 and the time it was read.
 #
 # Requests go one at a time, with a pause between them, a User-Agent naming this
-# repository, and retries with backoff on 429 and 5xx answers. Snapshots are
+# repository, and retries with backoff on 429 and 5xx answers. Snapshots not read
+# within BUDGET_MINUTES are recorded as not attempted, so what was read is uploaded
+# while the job still has time. Snapshots are
 # uploaded as the artifact snapshots-<run id> as soon as they are read, before the
 # listings start; listings are uploaded as cdx-<run id>.
 #
@@ -87,6 +89,7 @@ jobs:
           WAYBACK = os.environ.get("WAYBACK_ORIGIN", "https://web.archive.org").rstrip("/")
           FIELDS = "timestamp,original,statuscode,mimetype,length,digest"
           PAUSE = float(os.environ.get("PAUSE_SECONDS", "5"))
+          BUDGET = 60 * float(os.environ.get("BUDGET_MINUTES", "150"))
           ATTEMPTS = int(os.environ.get("ATTEMPTS", "4"))
           BACKOFF = [float(x) for x in os.environ.get("BACKOFF_SECONDS", "15,45,90").split(",")]
           MAX_BODY = 50 * 1024 * 1024
@@ -281,7 +284,16 @@ jobs:
           if snapshots:
               snap_dir.mkdir(parents=True, exist_ok=True)
               with (snap_dir / "manifest.jsonl").open("w", encoding="utf-8") as manifest:
+                  started = time.monotonic()
                   for index, item in enumerate(snapshots):
+                      if time.monotonic() - started > BUDGET:
+                          # Out of time: record the rest as not attempted, so the
+                          # artifact is uploaded and a later run can ask again.
+                          record = {"timestamp": item["timestamp"], "url": item["url"],
+                                    "requested": f"{WAYBACK}/web/{item['timestamp']}id_/{item['url']}",
+                                    "hops": [], "error": "not attempted: the run's time budget was spent"}
+                          manifest.write(json.dumps(record, sort_keys=True) + "\n")
+                          continue
                       if index:
                           time.sleep(PAUSE)
                       record = download(item)
@@ -306,6 +318,7 @@ jobs:
           IN_TO: ${{ inputs.to }}
           IN_SNAPSHOTS: ${{ inputs.snapshots }}
           PAUSE_SECONDS: "5"
+          BUDGET_MINUTES: "110"
           MODE: snapshots
           OUT_DIR: out/snapshots-run
         run: python3 -u "$RUNNER_TEMP/archive_reader.py"
