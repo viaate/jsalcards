@@ -16,6 +16,7 @@ dependencies = [
     "rapidfuzz>=3.14.6",
     "scikit-learn>=1.9.1",
     "selectolax>=0.4.12",
+    "shapely>=2.1.2",
 ]
 
 [project.scripts]
@@ -36,6 +37,7 @@ dev = [
     "pytest>=9.1.1",
     "pytest-cov>=7.1.0",
     "ruff>=0.16.9",
+    "types-shapely>=2.1.0.20260728",
 ]
 
 [tool.ruff]

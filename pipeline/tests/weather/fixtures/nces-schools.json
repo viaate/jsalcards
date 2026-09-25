@@ -1,0 +1,101 @@
+[
+ {
+  "id": "00541083",
+  "name": "LAKE CASTLE PRIVATE SCHOOL",
+  "county_fips": "22071",
+  "lat": "30.04157",
+  "lon": "-89.998821000000007",
+  "source": "EDGE_GEOCODE_PRIVATESCH_2324.xlsx row 8877",
+  "why": "Lake Castle Private School, New Orleans: missed near a simplified outline"
+ },
+ {
+  "id": "01323483",
+  "name": "ST ANTHONY CATHEDRAL BASILICA SCHOOL",
+  "county_fips": "48245",
+  "lat": "30.078338000000002",
+  "lon": "-94.101681999999997",
+  "source": "EDGE_GEOCODE_PRIVATESCH_2324.xlsx row 19797",
+  "why": "St Anthony Cathedral Basilica School, Beaumont TX: no row in round 2"
+ },
+ {
+  "id": "171818002089",
+  "name": "Calhoun High School",
+  "county_fips": "17013",
+  "lat": "39.176972",
+  "lon": "-90.613774",
+  "source": "EDGE_GEOCODE_PUBLICSCH_2425.TXT line 29825",
+  "why": "Calhoun High School, Hardin IL: likewise"
+ },
+ {
+  "id": "192415001409",
+  "name": "Riceville Elementary School",
+  "county_fips": "19089",
+  "lat": "43.355091",
+  "lon": "-92.552944",
+  "source": "EDGE_GEOCODE_PUBLICSCH_2425.TXT line 34715",
+  "why": "Riceville Elementary, Howard County IA: outside IEM's county outline"
+ },
+ {
+  "id": "192976001693",
+  "name": "Fairbank Elementary School",
+  "county_fips": "19019",
+  "lat": "42.641541",
+  "lon": "-92.044933",
+  "source": "EDGE_GEOCODE_PUBLICSCH_2425.TXT line 34893",
+  "why": "Fairbank Elementary, Buchanan County IA: inside IEM's Fayette outline"
+ },
+ {
+  "id": "220028300858",
+  "name": "Einstein Charter School at Village De L'Est",
+  "county_fips": "22071",
+  "lat": "30.039847",
+  "lon": "-89.924675",
+  "source": "EDGE_GEOCODE_PUBLICSCH_2425.TXT line 38204",
+  "why": "Einstein Charter School at Village De L'Est: on the LAZ077/LAZ078 edge"
+ },
+ {
+  "id": "480967004642",
+  "name": "FLETCHER EL",
+  "county_fips": "48245",
+  "lat": "30.069233",
+  "lon": "-94.107289",
+  "source": "EDGE_GEOCODE_PUBLICSCH_2425.TXT line 83576",
+  "why": "Fletcher El, Beaumont TX: no row in round 2 (river Flood Warning since April)"
+ },
+ {
+  "id": "481701001472",
+  "name": "DEWEYVILLE EL",
+  "county_fips": "48351",
+  "lat": "30.268060",
+  "lon": "-93.784814",
+  "source": "EDGE_GEOCODE_PUBLICSCH_2425.TXT line 85237",
+  "why": "Deweyville El, Orange County TX: under a Flood Warning 41 days old"
+ },
+ {
+  "id": "482115002117",
+  "name": "LEE H S",
+  "county_fips": "48201",
+  "lat": "29.730882",
+  "lon": "-94.986478",
+  "source": "EDGE_GEOCODE_PUBLICSCH_2425.TXT line 86410",
+  "why": "Lee H S, Baytown TX: missed near a simplified outline in round 1"
+ },
+ {
+  "id": "482115012492",
+  "name": "IMPACT EARLY COLLEGE H S",
+  "county_fips": "48201",
+  "lat": "29.732981",
+  "lon": "-94.981611",
+  "source": "EDGE_GEOCODE_PUBLICSCH_2425.TXT line 86425",
+  "why": "Impact Early College H S, Baytown TX: likewise"
+ },
+ {
+  "id": "500039700171",
+  "name": "Lamoille Union High School",
+  "county_fips": "50015",
+  "lat": "44.601384",
+  "lon": "-72.630704",
+  "source": "EDGE_GEOCODE_PUBLICSCH_2425.TXT line 92715",
+  "why": "Lamoille Union High School, Hyde Park VT: warning numbered in 2024"
+ }
+]

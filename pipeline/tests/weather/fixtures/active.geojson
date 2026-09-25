@@ -1,0 +1,1254 @@
+{
+ "@context": [
+  "https://geojson.org/geojson-ld/geojson-context.jsonld",
+  {
+   "@version": "1.1",
+   "wx": "https://api.weather.gov/ontology#",
+   "@vocab": "https://api.weather.gov/ontology#"
+  }
+ ],
+ "type": "FeatureCollection",
+ "title": "Current watches, warnings, and advisories for United States land zones",
+ "updated": "2026-09-25T00:09:38+00:00",
+ "features": [
+  {
+   "id": "https://api.weather.gov/alerts/urn:oid:2.49.0.1.840.0.107eb2d6ccaadd37298b7ec9a8ecea52cdcc597e.001.1",
+   "type": "Feature",
+   "geometry": {
+    "type": "Polygon",
+    "coordinates": [
+     [
+      [
+       -103.3,
+       34.3
+      ],
+      [
+       -103.3,
+       34.34
+      ],
+      [
+       -103.2,
+       34.34
+      ],
+      [
+       -103.2,
+       34.3
+      ],
+      [
+       -103.04,
+       34.3
+      ],
+      [
+       -103.04,
+       34.23
+      ],
+      [
+       -103.37,
+       34.24
+      ],
+      [
+       -103.3,
+       34.3
+      ]
+     ]
+    ]
+   },
+   "properties": {
+    "@id": "https://api.weather.gov/alerts/urn:oid:2.49.0.1.840.0.107eb2d6ccaadd37298b7ec9a8ecea52cdcc597e.001.1",
+    "@type": "wx:Alert",
+    "id": "urn:oid:2.49.0.1.840.0.107eb2d6ccaadd37298b7ec9a8ecea52cdcc597e.001.1",
+    "areaDesc": "Curry, NM; Roosevelt, NM",
+    "geocode": {
+     "SAME": [
+      "035009",
+      "035041"
+     ],
+     "UGC": [
+      "NMC009",
+      "NMC041"
+     ]
+    },
+    "affectedZones": [
+     "https://api.weather.gov/zones/county/NMC009",
+     "https://api.weather.gov/zones/county/NMC041"
+    ],
+    "references": [],
+    "sent": "2026-09-24T17:42:00-06:00",
+    "effective": "2026-09-24T17:42:00-06:00",
+    "onset": "2026-09-24T17:42:00-06:00",
+    "expires": "2026-09-24T20:45:00-06:00",
+    "ends": "2026-09-24T20:45:00-06:00",
+    "status": "Actual",
+    "messageType": "Alert",
+    "category": "Met",
+    "severity": "Severe",
+    "certainty": "Likely",
+    "urgency": "Immediate",
+    "event": "Flash Flood Warning",
+    "sender": "w-nws.webmaster@noaa.gov",
+    "senderName": "NWS Albuquerque NM",
+    "headline": "Flash Flood Warning issued September 24 at 5:42PM MDT until September 24 at 8:45PM MDT by NWS Albuquerque NM",
+    "description": "FFWABQ\n\nThe National Weather Service in Albuquerque has issued a\n\n* Flash Flood Warning for...\nSouth Central Curry County in east central New Mexico...\nEast Central Roosevelt County in east central New Mexico...\n\n* Until 845 PM MDT.\n\n* At 542 PM MDT, Doppler radar indicated thunderstorms producing\nheavy rain across the warned area. Between 0.75 and 1.75 inches of\nrain have fallen. Additional rainfall amounts up to 1.5 inches are\npossible in the warned area. Flash flooding is ongoing or expected\nto begin shortly.\n\nHAZARD...Flash flooding caused by thunderstorms.\n\nSOURCE...Radar indicated.\n\nIMPACT...Flash flooding of small creeks and streams, urban areas,\nhighways, streets and underpasses as well as other poor\ndrainage and low-lying areas.\n\n* Some locations that will experience flash flooding include...\nOasis State Park.",
+    "instruction": "Turn around, don't drown when encountering flooded roads. Most flood\ndeaths occur in vehicles.\n\nBe aware of your surroundings and do not drive on flooded roads.",
+    "response": "Avoid",
+    "note": null,
+    "parameters": {
+     "AWIPSidentifier": [
+      "FFWABQ"
+     ],
+     "WMOidentifier": [
+      "WGUS55 KABQ 242342"
+     ],
+     "flashFloodDetection": [
+      "RADAR INDICATED"
+     ],
+     "BLOCKCHANNEL": [
+      "EAS",
+      "NWEM",
+      "CMAS"
+     ],
+     "EAS-ORG": [
+      "WXR"
+     ],
+     "VTEC": [
+      "/O.NEW.KABQ.FF.W.0185.260924T2342Z-260925T0245Z/"
+     ],
+     "eventEndingTime": [
+      "2026-09-24T20:45:00-06:00"
+     ]
+    },
+    "scope": "Public",
+    "code": "IPAWSv1.0",
+    "language": "en-US",
+    "web": "http://www.weather.gov",
+    "eventCode": {
+     "SAME": [
+      "FFW"
+     ],
+     "NationalWeatherService": [
+      "FFW"
+     ]
+    }
+   }
+  },
+  {
+   "id": "https://api.weather.gov/alerts/urn:oid:2.49.0.1.840.0.cde4b599c92ad3912dad22ba7ef69b83f83cf451.001.1",
+   "type": "Feature",
+   "geometry": {
+    "type": "Polygon",
+    "coordinates": [
+     [
+      [
+       -82.44,
+       28.98
+      ],
+      [
+       -82.48,
+       29.02
+      ],
+      [
+       -82.44,
+       29.09
+      ],
+      [
+       -82.37,
+       29.07
+      ],
+      [
+       -82.44,
+       28.98
+      ]
+     ]
+    ]
+   },
+   "properties": {
+    "@id": "https://api.weather.gov/alerts/urn:oid:2.49.0.1.840.0.cde4b599c92ad3912dad22ba7ef69b83f83cf451.001.1",
+    "@type": "wx:Alert",
+    "id": "urn:oid:2.49.0.1.840.0.cde4b599c92ad3912dad22ba7ef69b83f83cf451.001.1",
+    "areaDesc": "Citrus, FL; Levy, FL; Marion, FL",
+    "geocode": {
+     "SAME": [
+      "012017",
+      "012075",
+      "012083"
+     ],
+     "UGC": [
+      "FLC017",
+      "FLC075",
+      "FLC083"
+     ]
+    },
+    "affectedZones": [
+     "https://api.weather.gov/zones/county/FLC017",
+     "https://api.weather.gov/zones/county/FLC075",
+     "https://api.weather.gov/zones/county/FLC083"
+    ],
+    "references": [
+     {
+      "@id": "https://api.weather.gov/alerts/urn:oid:2.49.0.1.840.0.894109f24a761889f5726a516b80d9819b4cd15d.001.1",
+      "identifier": "urn:oid:2.49.0.1.840.0.894109f24a761889f5726a516b80d9819b4cd15d.001.1",
+      "sender": "w-nws.webmaster@noaa.gov",
+      "sent": "2026-09-23T21:17:00-04:00"
+     }
+    ],
+    "sent": "2026-09-24T10:55:00-04:00",
+    "effective": "2026-09-24T10:55:00-04:00",
+    "onset": "2026-09-24T10:55:00-04:00",
+    "expires": "2026-09-24T23:00:00-04:00",
+    "ends": null,
+    "status": "Actual",
+    "messageType": "Update",
+    "category": "Met",
+    "severity": "Severe",
+    "certainty": "Observed",
+    "urgency": "Immediate",
+    "event": "Flood Warning",
+    "sender": "w-nws.webmaster@noaa.gov",
+    "senderName": "NWS Tampa Bay Ruskin FL",
+    "headline": "Flood Warning issued September 24 at 10:55AM EDT by NWS Tampa Bay Ruskin FL",
+    "description": "...The Flood Warning continues for the following rivers in Florida...\n\nWithlacoochee At US 41 Dunnellon affecting Marion, Levy and Citrus\nCounties.\n\n.The Withlacoochee River at Dunnellon has been steadily rising since\nJuly, and on September 15 reached flood stage. The cause of the high\nwater along the Withlacoochee River at Dunnellon is due to excessive\nhydrilla growth (from the river bottom to the water surface) along a\n4.5 mile stretch of river between US 41 and Lake Rousseau. The\nhydrilla is acting like a dam and holding water back, causing water\nlevels to rise.\n\n* WHAT...Minor flooding is forecast.\n\n* WHERE...Withlacoochee at US 41 Dunnellon.\n\n* WHEN...Until further notice.\n\n* IMPACTS...At 28.2 feet, Docks and boat ramps flood along the river\nin Citrus and Marion counties.\n\n* ADDITIONAL DETAILS...\n- At 9:45 AM EDT Thursday the stage was 28.2 feet.\n- Bankfull stage is 28.2 feet.\n- Forecast...The river is expected to remain steady above flood\nstage at around 28.2 feet through the next 5 days. Additional\nfluctuations are possible thereafter.\n- Flood stage is 28.2 feet.\n- Flood History...This crest compares to a previous crest of 28.2\nfeet on 10/02/1979.\n- https://www.weather.gov/safety/flood",
+    "instruction": "Motorists should not attempt to drive around barricades or drive cars\nthrough flooded areas.\n\nCaution is urged when walking near riverbanks.\n\nAdditional information is available at www.weather.gov.\n\nThe next statement will be issued this evening at 1100 PM EDT.",
+    "response": "Avoid",
+    "note": null,
+    "parameters": {
+     "AWIPSidentifier": [
+      "FLSTBW"
+     ],
+     "WMOidentifier": [
+      "WGUS82 KTBW 241455"
+     ],
+     "NWSheadline": [
+      "FLOOD WARNING REMAINS IN EFFECT UNTIL FURTHER NOTICE"
+     ],
+     "BLOCKCHANNEL": [
+      "EAS",
+      "NWEM",
+      "CMAS"
+     ],
+     "EAS-ORG": [
+      "WXR"
+     ],
+     "VTEC": [
+      "/O.CON.KTBW.FL.W.0007.000000T0000Z-000000T0000Z/"
+     ],
+     "expiredReferences": [
+      "w-nws.webmaster@noaa.gov,urn:oid:2.49.0.1.840.0.b9db5db3f3e4170489a20ea94e04e0e7804c58bc.001.1,2026-09-23T08:33:00-04:00 w-nws.webmaster@noaa.gov,urn:oid:2.49.0.1.840.0.3af3b4692c14c37b79b1106b9dedf890cae70a52.001.1,2026-09-22T21:00:00-04:00 w-nws.webmaster@noaa.gov,urn:oid:2.49.0.1.840.0.4974af3fea207cf28b201d13a409c6a1b09bd8ef.001.1,2026-09-22T09:07:00-04:00 w-nws.webmaster@noaa.gov,urn:oid:2.49.0.1.840.0.458a265d8bf7f00eff5e51d838b4287ac215cbde.002.1,2026-09-21T20:37:00-04:00 w-nws.webmaster@noaa.gov,urn:oid:2.49.0.1.840.0.bf1f647487ee2696665cb99ede43ee06a44007df.002.1,2026-09-21T13:48:00-04:00 w-nws.webmaster@noaa.gov,urn:oid:2.49.0.1.840.0.affd7dc767c3d04b8641134a1f1d725a4256bfe2.002.1,2026-09-20T20:48:00-04:00 w-nws.webmaster@noaa.gov,urn:oid:2.49.0.1.840.0.30e03b85d086e2625e73530757d82c05cef5231e.002.1,2026-09-20T08:57:00-04:00 w-nws.webmaster@noaa.gov,urn:oid:2.49.0.1.840.0.eadaddebd396f39240d8188056d1ea671d9b7390.001.1,2026-09-19T21:00:00-04:00 w-nws.webmaster@noaa.gov,urn:oid:2.49.0.1.840.0.3c315fb686896c055cbd235b7dbb8d8912f2d12c.001.1,2026-09-19T09:50:00-04:00 w-nws.webmaster@noaa.gov,urn:oid:2.49.0.1.840.0.50b53ebb063eb40849eec0645423d262682955a2.001.1,2026-09-18T20:56:00-04:00 w-nws.webmaster@noaa.gov,urn:oid:2.49.0.1.840.0.ce2a425775ca20a7fd5696c589fdead4637b7a3a.001.1,2026-09-18T09:18:00-04:00 w-nws.webmaster@noaa.gov,urn:oid:2.49.0.1.840.0.3d88e48db7f18257b7bd14005836d6ead5984b5a.001.1,2026-09-17T21:29:00-04:00 w-nws.webmaster@noaa.gov,urn:oid:2.49.0.1.840.0.8c7dc21cc5dd016c4b6ac68138bbe42388bc3ddb.001.1,2026-09-17T10:44:00-04:00 w-nws.webmaster@noaa.gov,urn:oid:2.49.0.1.840.0.6ebc5de05d23ebb1c6951a0fc9f8255c3682f562.001.1,2026-09-16T21:14:00-04:00 w-nws.webmaster@noaa.gov,urn:oid:2.49.0.1.840.0.4898fe751b4b133fa986b0e2b7db5d1c72fdde59.001.1,2026-09-16T15:10:00-04:00"
+     ]
+    },
+    "scope": "Public",
+    "code": "IPAWSv1.0",
+    "language": "en-US",
+    "web": "http://www.weather.gov",
+    "eventCode": {
+     "SAME": [
+      "FLS"
+     ],
+     "NationalWeatherService": [
+      "FLW"
+     ]
+    }
+   }
+  },
+  {
+   "id": "https://api.weather.gov/alerts/urn:oid:2.49.0.1.840.0.5dadf6e3b9ebfab154c0bb2598d2155371dcf4fb.002.1",
+   "type": "Feature",
+   "geometry": null,
+   "properties": {
+    "@id": "https://api.weather.gov/alerts/urn:oid:2.49.0.1.840.0.5dadf6e3b9ebfab154c0bb2598d2155371dcf4fb.002.1",
+    "@type": "wx:Alert",
+    "id": "urn:oid:2.49.0.1.840.0.5dadf6e3b9ebfab154c0bb2598d2155371dcf4fb.002.1",
+    "areaDesc": "Ocracoke Island",
+    "geocode": {
+     "SAME": [
+      "037095"
+     ],
+     "UGC": [
+      "NCZ204"
+     ]
+    },
+    "affectedZones": [
+     "https://api.weather.gov/zones/forecast/NCZ204"
+    ],
+    "references": [
+     {
+      "@id": "https://api.weather.gov/alerts/urn:oid:2.49.0.1.840.0.937a4af7bd7c8454b0cc055baecac1e78a3c4c7e.002.1",
+      "identifier": "urn:oid:2.49.0.1.840.0.937a4af7bd7c8454b0cc055baecac1e78a3c4c7e.002.1",
+      "sender": "w-nws.webmaster@noaa.gov",
+      "sent": "2026-09-24T05:02:00-04:00"
+     }
+    ],
+    "sent": "2026-09-24T14:39:00-04:00",
+    "effective": "2026-09-24T14:39:00-04:00",
+    "onset": "2026-09-24T14:39:00-04:00",
+    "expires": "2026-09-25T05:00:00-04:00",
+    "ends": "2026-09-25T23:00:00-04:00",
+    "status": "Actual",
+    "messageType": "Update",
+    "category": "Met",
+    "severity": "Severe",
+    "certainty": "Likely",
+    "urgency": "Expected",
+    "event": "Coastal Flood Warning",
+    "sender": "w-nws.webmaster@noaa.gov",
+    "senderName": "NWS Newport/Morehead City NC",
+    "headline": "Coastal Flood Warning issued September 24 at 2:39PM EDT until September 25 at 11:00PM EDT by NWS Newport/Morehead City NC",
+    "description": "* WHAT...For the Coastal Flood Warning, up to 2 to 4 feet of\ninundation above ground level expected in low-lying areas near\nshorelines and tidal waterways. Up to 1 foot of inundation is\npossible for sound-side flooding when winds become more\nnortherly tonight and Friday. For the Beach Hazards Statements,\ndangerous rip currents, large breaking waves expected, and\nstrong longshore currents in the surf zone.\n\n* WHERE...Ocracoke Island.\n\n* WHEN...For the Coastal Flood Warning, until 11 PM EDT Friday.\nFor the Beach Hazards Statement, until 8 PM EDT this evening.\n\n* IMPACTS...Numerous roads may be closed. Portions of Highway 12\nwill be inundated. Low lying property including homes,\nbusinesses, and some critical infrastructure will be\ninundated. Rip currents can sweep even the best swimmers away\nfrom shore into deeper water. Dangerous shore break can throw\na swimmer or surfer head first into the bottom causing neck\nand back injuries. Strong longshore currents will create\ndangerous swimming conditions.\n\n* ADDITIONAL DETAILS...The next high tide is between 630 to 7 PM\nthis evening. The most likely time for strong rip currents to\noccur is a couple hours either side of low tide.",
+    "instruction": "Take the necessary actions to protect flood-prone property. If\ntravel is required, do not drive around barricades or through\nwater of unknown depth.\n\nLife-threatening rip currents. If caught in a rip current, remain\ncalm. Swim in a direction following the shoreline. If tired,\nfloat or tread water until out of the rip current. If unable to\nescape, face the shore and call or wave for help.\n\nShore break occurs when waves break directly on the beach. It is\nextremely important to protect your head and neck whenever you\nare in breaking waves by keeping your hands in front of you at\nall times.\n\nStrong longshore currents can sweep swimmers and surfers into rip\ncurrents, piers, jetties and other hazardous areas. In many\ncases, the longshore current is strong enough to prevent swimmers\nfrom being able to keep their feet on the bottom making it\ndifficult to return to shore.",
+    "response": "Avoid",
+    "note": null,
+    "parameters": {
+     "AWIPSidentifier": [
+      "CFWMHX"
+     ],
+     "WMOidentifier": [
+      "WHUS42 KMHX 241839"
+     ],
+     "NWSheadline": [
+      "COASTAL FLOOD WARNING REMAINS IN EFFECT UNTIL 11 PM EDT FRIDAY... ...BEACH HAZARDS STATEMENT REMAINS IN EFFECT UNTIL 8 PM EDT THIS EVENING"
+     ],
+     "BLOCKCHANNEL": [
+      "EAS",
+      "NWEM",
+      "CMAS"
+     ],
+     "EAS-ORG": [
+      "WXR"
+     ],
+     "VTEC": [
+      "/O.CON.KMHX.CF.W.0002.000000T0000Z-260926T0300Z/"
+     ],
+     "eventEndingTime": [
+      "2026-09-25T23:00:00-04:00"
+     ],
+     "expiredReferences": [
+      "w-nws.webmaster@noaa.gov,urn:oid:2.49.0.1.840.0.75f50c5d0e02845375244f41525c8e654c9e4758.002.2,2026-09-23T18:18:00-04:00 w-nws.webmaster@noaa.gov,urn:oid:2.49.0.1.840.0.937ed4c337ca7463af853d2c1bd6a1f65de623c6.002.1,2026-09-23T04:48:00-04:00 w-nws.webmaster@noaa.gov,urn:oid:2.49.0.1.840.0.3d3e3c839690debe21ae4c18ac1031d1ad43d868.002.1,2026-09-23T03:11:00-04:00 w-nws.webmaster@noaa.gov,urn:oid:2.49.0.1.840.0.cb6863eecca1480d200925ab7677336abe68afe6.002.2,2026-09-22T16:42:00-04:00"
+     ]
+    },
+    "scope": "Public",
+    "code": "IPAWSv1.0",
+    "language": "en-US",
+    "web": "http://www.weather.gov",
+    "eventCode": {
+     "SAME": [
+      "CFW"
+     ],
+     "NationalWeatherService": [
+      "CFW"
+     ]
+    }
+   }
+  },
+  {
+   "id": "https://api.weather.gov/alerts/urn:oid:2.49.0.1.840.0.a606da1d3b77e41466dadb0b1d3a63f3b3b6ecb8.005.1",
+   "type": "Feature",
+   "geometry": null,
+   "properties": {
+    "@id": "https://api.weather.gov/alerts/urn:oid:2.49.0.1.840.0.a606da1d3b77e41466dadb0b1d3a63f3b3b6ecb8.005.1",
+    "@type": "wx:Alert",
+    "id": "urn:oid:2.49.0.1.840.0.a606da1d3b77e41466dadb0b1d3a63f3b3b6ecb8.005.1",
+    "areaDesc": "Richmond (Staten Is.)",
+    "geocode": {
+     "SAME": [
+      "036085"
+     ],
+     "UGC": [
+      "NYZ074"
+     ]
+    },
+    "affectedZones": [
+     "https://api.weather.gov/zones/forecast/NYZ074"
+    ],
+    "references": [],
+    "sent": "2026-09-24T18:03:00-04:00",
+    "effective": "2026-09-24T18:03:00-04:00",
+    "onset": "2026-09-25T17:00:00-04:00",
+    "expires": "2026-09-25T06:15:00-04:00",
+    "ends": "2026-09-26T12:00:00-04:00",
+    "status": "Actual",
+    "messageType": "Alert",
+    "category": "Met",
+    "severity": "Moderate",
+    "certainty": "Possible",
+    "urgency": "Future",
+    "event": "Coastal Flood Watch",
+    "sender": "w-nws.webmaster@noaa.gov",
+    "senderName": "NWS Upton NY",
+    "headline": "Coastal Flood Watch issued September 24 at 6:03PM EDT until September 26 at 12:00PM EDT by NWS Upton NY",
+    "description": "* WHAT...For the Coastal Flood Statement, up to one to two feet\nof inundation above ground level expected in vulnerable areas\nnear the waterfront and shoreline. For the Coastal Flood Watch,\none to two feet of inundation above ground level possible in\nvulnerable areas near the waterfront and shoreline.\n\n* WHERE...Richmond (Staten Island) County.\n\n* WHEN...For the Coastal Flood Statement, through Friday\nmorning. For the Coastal Flood Watch, from Friday afternoon\nthrough Saturday morning.\n\n* IMPACTS...Late Friday afternoon into early Saturday, widespread\nflooding of vulnerable areas near the waterfront and shoreline,\nincluding roads, parking lots, parks, lawns, and homes and\nbusinesses with basements near the waterfront. Numerous road\nclosures are likely, and vehicles parked in vulnerable areas\nnear the waterfront will likely become flooded. Flooding will\nalso extend inland from the waterfront along tidal rivers and\nbays.",
+    "instruction": "If travel is required, allow extra time as some roads may be\nclosed. Do not drive around barricades or through water of\nunknown depth. Take the necessary actions to protect flood-prone\nproperty.",
+    "response": "Prepare",
+    "note": null,
+    "parameters": {
+     "AWIPSidentifier": [
+      "CFWOKX"
+     ],
+     "WMOidentifier": [
+      "WHUS41 KOKX 242203"
+     ],
+     "NWSheadline": [
+      "COASTAL FLOOD STATEMENT NOW IN EFFECT THROUGH FRIDAY MORNING... ...COASTAL FLOOD WATCH IN EFFECT FROM FRIDAY AFTERNOON THROUGH SATURDAY MORNING"
+     ],
+     "BLOCKCHANNEL": [
+      "EAS",
+      "NWEM",
+      "CMAS"
+     ],
+     "EAS-ORG": [
+      "WXR"
+     ],
+     "VTEC": [
+      "/O.EXB.KOKX.CF.A.0002.260925T2100Z-260926T1600Z/"
+     ],
+     "eventEndingTime": [
+      "2026-09-26T12:00:00-04:00"
+     ]
+    },
+    "scope": "Public",
+    "code": "IPAWSv1.0",
+    "language": "en-US",
+    "web": "http://www.weather.gov",
+    "eventCode": {
+     "SAME": [
+      "CFA"
+     ],
+     "NationalWeatherService": [
+      "CFA"
+     ]
+    }
+   }
+  },
+  {
+   "id": "https://api.weather.gov/alerts/urn:oid:2.49.0.1.840.0.8e296fcd6162d5126a3a8b78482cd5c290076716.006.1",
+   "type": "Feature",
+   "geometry": null,
+   "properties": {
+    "@id": "https://api.weather.gov/alerts/urn:oid:2.49.0.1.840.0.8e296fcd6162d5126a3a8b78482cd5c290076716.006.1",
+    "@type": "wx:Alert",
+    "id": "urn:oid:2.49.0.1.840.0.8e296fcd6162d5126a3a8b78482cd5c290076716.006.1",
+    "areaDesc": "District of Columbia",
+    "geocode": {
+     "SAME": [
+      "011001"
+     ],
+     "UGC": [
+      "DCZ001"
+     ]
+    },
+    "affectedZones": [
+     "https://api.weather.gov/zones/forecast/DCZ001"
+    ],
+    "references": [
+     {
+      "@id": "https://api.weather.gov/alerts/urn:oid:2.49.0.1.840.0.ed134ff5fa7c0f0e2e944891470b506e51f3529b.006.1",
+      "identifier": "urn:oid:2.49.0.1.840.0.ed134ff5fa7c0f0e2e944891470b506e51f3529b.006.1",
+      "sender": "w-nws.webmaster@noaa.gov",
+      "sent": "2026-09-24T14:34:00-04:00"
+     }
+    ],
+    "sent": "2026-09-24T19:23:00-04:00",
+    "effective": "2026-09-24T19:23:00-04:00",
+    "onset": "2026-09-24T19:23:00-04:00",
+    "expires": "2026-09-25T05:00:00-04:00",
+    "ends": "2026-09-25T09:00:00-04:00",
+    "status": "Actual",
+    "messageType": "Update",
+    "category": "Met",
+    "severity": "Minor",
+    "certainty": "Likely",
+    "urgency": "Expected",
+    "event": "Coastal Flood Advisory",
+    "sender": "w-nws.webmaster@noaa.gov",
+    "senderName": "NWS Baltimore MD/Washington DC",
+    "headline": "Coastal Flood Advisory issued September 24 at 7:23PM EDT until September 25 at 9:00AM EDT by NWS Baltimore MD/Washington DC",
+    "description": "* WHAT...Up to one half foot of inundation above ground level in\nlow lying areas due to tidal flooding.\n\n* WHERE...Shoreline in the District of Columbia.\n\n* WHEN...Until 9 AM EDT Friday, especially around the time of\nhigh tide.\n\n* IMPACTS...The unprotected area on the Southwest Waterfront at\nthe DC Seafood Market is expected to flood. Water is expected to\napproach parts of the Hains Point Loop Road, but it will likely\nbe closed.\n\n* ADDITIONAL DETAILS...Tides two to two and a half feet above\nnormal. The next high tide at Washington Channel is at 7:27 PM\nand 7:45 AM.",
+    "instruction": "If travel is required, allow extra time as some roads may be\nclosed. Do not drive around barricades or through water of\nunknown depth. Take the necessary actions to protect flood-prone\nproperty.",
+    "response": "Monitor",
+    "note": null,
+    "parameters": {
+     "AWIPSidentifier": [
+      "CFWLWX"
+     ],
+     "WMOidentifier": [
+      "WHUS41 KLWX 242323"
+     ],
+     "NWSheadline": [
+      "COASTAL FLOOD ADVISORY REMAINS IN EFFECT UNTIL 9 AM EDT FRIDAY"
+     ],
+     "BLOCKCHANNEL": [
+      "EAS",
+      "NWEM",
+      "CMAS"
+     ],
+     "VTEC": [
+      "/O.CON.KLWX.CF.Y.0044.000000T0000Z-260925T1300Z/"
+     ],
+     "eventEndingTime": [
+      "2026-09-25T09:00:00-04:00"
+     ],
+     "expiredReferences": [
+      "w-nws.webmaster@noaa.gov,urn:oid:2.49.0.1.840.0.0ae204ad2caa5ae0881ae87483774b2061e78915.006.1,2026-09-24T10:47:00-04:00 w-nws.webmaster@noaa.gov,urn:oid:2.49.0.1.840.0.baeb7b568831b592ac62703c9c7c0b29a52f4253.006.1,2026-09-24T03:10:00-04:00 w-nws.webmaster@noaa.gov,urn:oid:2.49.0.1.840.0.6281288e4dfc267920594d3f607da741e16589a3.006.1,2026-09-23T22:41:00-04:00 w-nws.webmaster@noaa.gov,urn:oid:2.49.0.1.840.0.7ffea5f088e04ca8470438a249d1127e87f1b4bb.003.1,2026-09-23T15:08:00-04:00"
+     ]
+    },
+    "scope": "Public",
+    "code": "IPAWSv1.0",
+    "language": "en-US",
+    "web": "http://www.weather.gov",
+    "eventCode": {
+     "SAME": [
+      "NWS"
+     ],
+     "NationalWeatherService": [
+      "CFY"
+     ]
+    }
+   }
+  },
+  {
+   "id": "https://api.weather.gov/alerts/urn:oid:2.49.0.1.840.0.90114c7a090d618c8090ad0953ab6b5353ac297d.001.1",
+   "type": "Feature",
+   "geometry": null,
+   "properties": {
+    "@id": "https://api.weather.gov/alerts/urn:oid:2.49.0.1.840.0.90114c7a090d618c8090ad0953ab6b5353ac297d.001.1",
+    "@type": "wx:Alert",
+    "id": "urn:oid:2.49.0.1.840.0.90114c7a090d618c8090ad0953ab6b5353ac297d.001.1",
+    "areaDesc": "Northern High Plains; Eastern Glacier, Western Toole, and Central Pondera; Southern High Plains",
+    "geocode": {
+     "SAME": [
+      "030035",
+      "030073",
+      "030101",
+      "030049",
+      "030099"
+     ],
+     "UGC": [
+      "MTZ302",
+      "MTZ303",
+      "MTZ308"
+     ]
+    },
+    "affectedZones": [
+     "https://api.weather.gov/zones/forecast/MTZ302",
+     "https://api.weather.gov/zones/forecast/MTZ303",
+     "https://api.weather.gov/zones/forecast/MTZ308"
+    ],
+    "references": [
+     {
+      "@id": "https://api.weather.gov/alerts/urn:oid:2.49.0.1.840.0.1b062662abd94fb6b99a7a066cba6e53334595bf.001.1",
+      "identifier": "urn:oid:2.49.0.1.840.0.1b062662abd94fb6b99a7a066cba6e53334595bf.001.1",
+      "sender": "w-nws.webmaster@noaa.gov",
+      "sent": "2026-09-24T00:47:00-06:00"
+     },
+     {
+      "@id": "https://api.weather.gov/alerts/urn:oid:2.49.0.1.840.0.93f072ed78f3712a6d7ebdc695f2074743b928b7.001.1",
+      "identifier": "urn:oid:2.49.0.1.840.0.93f072ed78f3712a6d7ebdc695f2074743b928b7.001.1",
+      "sender": "w-nws.webmaster@noaa.gov",
+      "sent": "2026-09-24T11:15:00-06:00"
+     },
+     {
+      "@id": "https://api.weather.gov/alerts/urn:oid:2.49.0.1.840.0.93f072ed78f3712a6d7ebdc695f2074743b928b7.002.1",
+      "identifier": "urn:oid:2.49.0.1.840.0.93f072ed78f3712a6d7ebdc695f2074743b928b7.002.1",
+      "sender": "w-nws.webmaster@noaa.gov",
+      "sent": "2026-09-24T11:15:00-06:00"
+     }
+    ],
+    "sent": "2026-09-24T14:31:00-06:00",
+    "effective": "2026-09-24T14:31:00-06:00",
+    "onset": "2026-09-25T18:00:00-06:00",
+    "expires": "2026-09-25T06:15:00-06:00",
+    "ends": "2026-09-26T09:00:00-06:00",
+    "status": "Actual",
+    "messageType": "Update",
+    "category": "Met",
+    "severity": "Severe",
+    "certainty": "Possible",
+    "urgency": "Future",
+    "event": "High Wind Watch",
+    "sender": "w-nws.webmaster@noaa.gov",
+    "senderName": "NWS Great Falls MT",
+    "headline": "High Wind Watch issued September 24 at 2:31PM MDT until September 26 at 9:00AM MDT by NWS Great Falls MT",
+    "description": "* WHAT...Westerly winds 30 to 50 mph with gusts up to 70 mph\npossible.\n\n* WHERE...Eastern Glacier, Western Toole, and Central Pondera,\nNorthern High Plains, and Southern High Plains.\n\n* WHEN...From Friday evening through Saturday morning.\n\n* IMPACTS...Travel could be difficult, especially for high profile or\nlight weight vehicles.",
+    "instruction": "Monitor the latest forecasts and warnings for updates.",
+    "response": "Prepare",
+    "note": null,
+    "parameters": {
+     "AWIPSidentifier": [
+      "NPWTFX"
+     ],
+     "WMOidentifier": [
+      "WWUS75 KTFX 242031"
+     ],
+     "NWSheadline": [
+      "HIGH WIND WATCH REMAINS IN EFFECT FROM FRIDAY EVENING THROUGH SATURDAY MORNING"
+     ],
+     "BLOCKCHANNEL": [
+      "EAS",
+      "NWEM",
+      "CMAS"
+     ],
+     "EAS-ORG": [
+      "WXR"
+     ],
+     "VTEC": [
+      "/O.CON.KTFX.HW.A.0028.260926T0000Z-260926T1500Z/"
+     ],
+     "eventEndingTime": [
+      "2026-09-26T09:00:00-06:00"
+     ]
+    },
+    "scope": "Public",
+    "code": "IPAWSv1.0",
+    "language": "en-US",
+    "web": "http://www.weather.gov",
+    "eventCode": {
+     "SAME": [
+      "HWA"
+     ],
+     "NationalWeatherService": [
+      "HWA"
+     ]
+    }
+   }
+  },
+  {
+   "id": "https://api.weather.gov/alerts/urn:oid:2.49.0.1.840.0.38e3609bd8bd3285eccfceefdd6217d4056c22f7.001.1",
+   "type": "Feature",
+   "geometry": null,
+   "properties": {
+    "@id": "https://api.weather.gov/alerts/urn:oid:2.49.0.1.840.0.38e3609bd8bd3285eccfceefdd6217d4056c22f7.001.1",
+    "@type": "wx:Alert",
+    "id": "urn:oid:2.49.0.1.840.0.38e3609bd8bd3285eccfceefdd6217d4056c22f7.001.1",
+    "areaDesc": "Cimarron; Texas; Dallam; Sherman; Hartley",
+    "geocode": {
+     "SAME": [
+      "040025",
+      "040139",
+      "048111",
+      "048421",
+      "048205"
+     ],
+     "UGC": [
+      "OKZ001",
+      "OKZ002",
+      "TXZ001",
+      "TXZ002",
+      "TXZ006"
+     ]
+    },
+    "affectedZones": [
+     "https://api.weather.gov/zones/forecast/OKZ001",
+     "https://api.weather.gov/zones/forecast/OKZ002",
+     "https://api.weather.gov/zones/forecast/TXZ001",
+     "https://api.weather.gov/zones/forecast/TXZ002",
+     "https://api.weather.gov/zones/forecast/TXZ006"
+    ],
+    "references": [
+     {
+      "@id": "https://api.weather.gov/alerts/urn:oid:2.49.0.1.840.0.e348febcb61fc009ba178d84c01621427c0af480.001.1",
+      "identifier": "urn:oid:2.49.0.1.840.0.e348febcb61fc009ba178d84c01621427c0af480.001.1",
+      "sender": "w-nws.webmaster@noaa.gov",
+      "sent": "2026-09-23T23:07:00-05:00"
+     },
+     {
+      "@id": "https://api.weather.gov/alerts/urn:oid:2.49.0.1.840.0.d40a882855119d8da884931db5d4a3c2ee9c4e3b.001.1",
+      "identifier": "urn:oid:2.49.0.1.840.0.d40a882855119d8da884931db5d4a3c2ee9c4e3b.001.1",
+      "sender": "w-nws.webmaster@noaa.gov",
+      "sent": "2026-09-23T23:15:00-05:00"
+     }
+    ],
+    "sent": "2026-09-24T11:44:00-05:00",
+    "effective": "2026-09-24T11:44:00-05:00",
+    "onset": "2026-09-24T11:44:00-05:00",
+    "expires": "2026-09-24T23:00:00-05:00",
+    "ends": "2026-09-25T07:00:00-05:00",
+    "status": "Actual",
+    "messageType": "Update",
+    "category": "Met",
+    "severity": "Severe",
+    "certainty": "Possible",
+    "urgency": "Future",
+    "event": "Flood Watch",
+    "sender": "w-nws.webmaster@noaa.gov",
+    "senderName": "NWS Amarillo TX",
+    "headline": "Flood Watch issued September 24 at 11:44AM CDT until September 25 at 7:00AM CDT by NWS Amarillo TX",
+    "description": "* WHAT...Flooding caused by excessive rainfall continues to be\npossible.\n\n* WHERE...Portions of the Panhandle of Oklahoma, including the\nfollowing counties, Cimarron and Texas and the Panhandle of Texas,\nincluding the following counties, Dallam, Hartley and Sherman.\n\n* WHEN...Through Friday morning.\n\n* IMPACTS...Excessive runoff may result in flooding of rivers,\ncreeks, streams, and other low-lying and flood-prone locations.\n\n* ADDITIONAL DETAILS...\n- Heavy rainfall of 2-4\" over the last 24 hours has fallen over the\narea. Additional rainfall over saturated grounds could lead to\nrun-off and flooding concerns.\n- http://www.weather.gov/safety/flood",
+    "instruction": "You should monitor later forecasts and be alert for possible Flood\nWarnings. Those living in areas prone to flooding should be prepared\nto take action should flooding develop.",
+    "response": "Prepare",
+    "note": null,
+    "parameters": {
+     "AWIPSidentifier": [
+      "FFAAMA"
+     ],
+     "WMOidentifier": [
+      "WGUS64 KAMA 241644"
+     ],
+     "NWSheadline": [
+      "FLOOD WATCH REMAINS IN EFFECT THROUGH FRIDAY MORNING"
+     ],
+     "BLOCKCHANNEL": [
+      "EAS",
+      "NWEM",
+      "CMAS"
+     ],
+     "EAS-ORG": [
+      "WXR"
+     ],
+     "VTEC": [
+      "/O.CON.KAMA.FA.A.0002.000000T0000Z-260925T1200Z/"
+     ],
+     "eventEndingTime": [
+      "2026-09-25T07:00:00-05:00"
+     ],
+     "expiredReferences": [
+      "w-nws.webmaster@noaa.gov,urn:oid:2.49.0.1.840.0.24d2bd17865c52f9442732d35243b23883465114.001.1,2026-09-23T13:16:00-05:00"
+     ]
+    },
+    "scope": "Public",
+    "code": "IPAWSv1.0",
+    "language": "en-US",
+    "web": "http://www.weather.gov",
+    "eventCode": {
+     "SAME": [
+      "FFA"
+     ],
+     "NationalWeatherService": [
+      "FAA"
+     ]
+    }
+   }
+  },
+  {
+   "id": "https://api.weather.gov/alerts/urn:oid:2.49.0.1.840.0.5aa5f3ffb8739a88a6f9b1a550bb7fafdfd15f47.001.1",
+   "type": "Feature",
+   "geometry": null,
+   "properties": {
+    "@id": "https://api.weather.gov/alerts/urn:oid:2.49.0.1.840.0.5aa5f3ffb8739a88a6f9b1a550bb7fafdfd15f47.001.1",
+    "@type": "wx:Alert",
+    "id": "urn:oid:2.49.0.1.840.0.5aa5f3ffb8739a88a6f9b1a550bb7fafdfd15f47.001.1",
+    "areaDesc": "Imperial County Southwest; Chuckwalla Mountains; Imperial County Southeast; Imperial County West; Imperial Valley",
+    "geocode": {
+     "SAME": [
+      "006025",
+      "006065"
+     ],
+     "UGC": [
+      "CAZ562",
+      "CAZ564",
+      "CAZ565",
+      "CAZ566",
+      "CAZ567"
+     ]
+    },
+    "affectedZones": [
+     "https://api.weather.gov/zones/forecast/CAZ562",
+     "https://api.weather.gov/zones/forecast/CAZ564",
+     "https://api.weather.gov/zones/forecast/CAZ565",
+     "https://api.weather.gov/zones/forecast/CAZ566",
+     "https://api.weather.gov/zones/forecast/CAZ567"
+    ],
+    "references": [],
+    "sent": "2026-09-24T13:32:00-07:00",
+    "effective": "2026-09-24T13:32:00-07:00",
+    "onset": "2026-09-24T13:32:00-07:00",
+    "expires": "2026-09-25T00:00:00-07:00",
+    "ends": null,
+    "status": "Actual",
+    "messageType": "Alert",
+    "category": "Met",
+    "severity": "Unknown",
+    "certainty": "Unknown",
+    "urgency": "Unknown",
+    "event": "Air Quality Alert",
+    "sender": "w-nws.webmaster@noaa.gov",
+    "senderName": "NWS Phoenix AZ",
+    "headline": "Air Quality Alert issued September 24 at 1:32PM MST by NWS Phoenix AZ",
+    "description": "* WHAT...The Imperial County APCD has issued an air quality alert\ndue to harmful levels of particle pollution from windblown dust.\nVisit https://www.aqmd.gov/alertinfo to check current and forecasted\nair quality levels.\n\n* WHERE...in Imperial County. Levels of particle pollution can vary\nby time and location depending on emissions and local weather\nconditions.\n\n* WHEN...this afternoon, Sept 24 through this evening.\n\n* IMPACTS... Particle pollution can get deep into the lungs and\ncause serious health problems such as asthma attacks, heart and lung\ndisease symptoms, and increased risk of lung infections. Everyone\ncan be affected, but sensitive groups such as people with lung or\nheart disease, older adults, people who are pregnant, children, and\nthose who spend a lot of time outdoors are at greater risk.",
+    "instruction": "To protect your health, check air quality levels and act as needed:\n\n* When Air Quality Index (AQI) levels are \"Unhealthy for\nSensitive Groups\" (orange), sensitive groups as specified\nabove should limit extended or intense outdoor activity.\n* When AQI is \"Unhealthy\" (red), everyone may experience health\nimpacts. Sensitive groups should avoid extended time outdoors.\n* When AQI is \"Very Unhealthy\" (purple), sensitive groups should\navoid all outdoor physical activity. Everyone else should\navoid extended or intense outdoor activity.\n* When AQI is \"Hazardous\" (maroon), everyone should avoid all\noutdoor physical activity.\n\n* ADDITIONAL DETAILS...\n\nTo help keep indoor air clean when air quality is poor:\n\n* Keep windows and doors closed\n* Run your air conditioner and/or an air purifier\n* Do not use whole house fans or swamp coolers that bring in\noutside air if you have other methods to stay cool\n* Avoid other sources of pollution such as fireplaces, candles,\nincense, grilling, and gasoline-powered lawn and garden\nequipment\n\nTo help minimize outdoor particle pollution levels:\n\n* Carpool, telecommute, reduce trips, or take public\ntransportation\n* Slow down if driving on dirt roads\n* Stabilize loose soils",
+    "response": "Monitor",
+    "note": "Non-Weather Emergency Message. Not sent to IPAWS.",
+    "parameters": {
+     "AWIPSidentifier": [
+      "AQAPSR"
+     ],
+     "WMOidentifier": [
+      "AEUS75 KPSR 242032"
+     ],
+     "NWSheadline": [
+      "AIR QUALITY ALERT DUE TO HARMFUL PARTICLE POLLUTION LEVELS FROM WINDBLOWN DUST"
+     ],
+     "BLOCKCHANNEL": [
+      "EAS",
+      "NWEM",
+      "CMAS"
+     ]
+    },
+    "scope": "Public",
+    "code": "IPAWSv1.0",
+    "language": "en-US",
+    "web": "http://www.weather.gov",
+    "eventCode": {
+     "SAME": [
+      "NWS"
+     ],
+     "NationalWeatherService": [
+      "AQA"
+     ]
+    }
+   }
+  },
+  {
+   "id": "https://api.weather.gov/alerts/urn:oid:2.49.0.1.840.0.60e01b93efbbab5b544717c78c2918848c715cca.003.2",
+   "type": "Feature",
+   "geometry": null,
+   "properties": {
+    "@id": "https://api.weather.gov/alerts/urn:oid:2.49.0.1.840.0.60e01b93efbbab5b544717c78c2918848c715cca.003.2",
+    "@type": "wx:Alert",
+    "id": "urn:oid:2.49.0.1.840.0.60e01b93efbbab5b544717c78c2918848c715cca.003.2",
+    "areaDesc": "Northern Sierra Front - Carson City/Douglas/Storey/Southern Washoe/Eastern Lyon/Far Southern Lassen Counties; Southern Sierra Front - Alpine/Northern Mono/Southern Lyon/Western Mineral Counties",
+    "geocode": {
+     "SAME": [
+      "006035",
+      "006091",
+      "032005",
+      "032019",
+      "032029",
+      "032031",
+      "032510",
+      "006003",
+      "006017",
+      "006051",
+      "032021"
+     ],
+     "UGC": [
+      "NVZ420",
+      "NVZ421"
+     ]
+    },
+    "affectedZones": [
+     "https://api.weather.gov/zones/fire/NVZ420",
+     "https://api.weather.gov/zones/fire/NVZ421"
+    ],
+    "references": [],
+    "sent": "2026-09-24T10:28:00-07:00",
+    "effective": "2026-09-24T10:28:00-07:00",
+    "onset": "2026-09-25T12:00:00-07:00",
+    "expires": "2026-09-25T10:30:00-07:00",
+    "ends": "2026-09-25T22:00:00-07:00",
+    "status": "Actual",
+    "messageType": "Alert",
+    "category": "Met",
+    "severity": "Severe",
+    "certainty": "Likely",
+    "urgency": "Expected",
+    "event": "Red Flag Warning",
+    "sender": "w-nws.webmaster@noaa.gov",
+    "senderName": "NWS Reno NV",
+    "headline": "Red Flag Warning issued September 24 at 10:28AM PDT until September 25 at 10:00PM PDT by NWS Reno NV",
+    "description": "The National Weather Service in Reno has issued a Red Flag\nWarning for gusty winds and low humidity, which is in effect from\nnoon to 10 PM PDT Friday. The Fire Weather Watch is no longer in\neffect.\n\n* CHANGES...Fire Weather Watch upgraded to a Red Flag Warning.\n\n* Affected Area...Fire Weather Zone 420 Northern Sierra Front\nincluding Carson City, Douglas, Storey, Southern Washoe,\nWestern Lyon, and Far Southern Lassen Counties, Fire Weather\nZone 421 Southern Sierra Front including Alpine, Northern\nMono, Southern Lyon, and Western Mineral Counties.\n\n* Winds...Southwest to west winds 20 to 30 mph with gusts up to\n45 mph.\n\n* Humidity...As low as 17 percent in the afternoon.\n\n* Duration...4 to 7 hours.\n\n* Impacts...The combination of gusty winds and low humidity can\ncause fire to rapidly grow in size and intensity before first\nresponders can contain them.",
+    "instruction": "Avoid outdoor activities that can cause a spark near dry\nvegetation, such as yard work, target shooting, or campfires.\nFollow local fire restrictions. Check weather.gov/reno for\nupdates and livingwithfire.info for preparedness tips.",
+    "response": "Prepare",
+    "note": null,
+    "parameters": {
+     "AWIPSidentifier": [
+      "RFWREV"
+     ],
+     "WMOidentifier": [
+      "WWUS85 KREV 241728"
+     ],
+     "NWSheadline": [
+      "RED FLAG WARNING IN EFFECT FROM NOON TO 10 PM PDT FRIDAY FOR GUSTY WINDS AND LOW HUMIDITY FOR THE SIERRA FRONT"
+     ],
+     "BLOCKCHANNEL": [
+      "EAS",
+      "NWEM",
+      "CMAS"
+     ],
+     "VTEC": [
+      "/O.NEW.KREV.FW.W.0013.260925T1900Z-260926T0500Z/"
+     ],
+     "eventEndingTime": [
+      "2026-09-25T22:00:00-07:00"
+     ]
+    },
+    "scope": "Public",
+    "code": "IPAWSv1.0",
+    "language": "en-US",
+    "web": "http://www.weather.gov",
+    "eventCode": {
+     "SAME": [
+      "NWS"
+     ],
+     "NationalWeatherService": [
+      "FWW"
+     ]
+    }
+   }
+  },
+  {
+   "id": "https://api.weather.gov/alerts/urn:oid:2.49.0.1.840.0.338136d2248ed47573dd012c505c5979d26fe4b5.001.1",
+   "type": "Feature",
+   "geometry": {
+    "type": "Polygon",
+    "coordinates": [
+     [
+      [
+       -103.98,
+       31.49
+      ],
+      [
+       -104.05,
+       31.59
+      ],
+      [
+       -103.87,
+       31.79
+      ],
+      [
+       -103.71,
+       31.64
+      ],
+      [
+       -103.98,
+       31.49
+      ]
+     ]
+    ]
+   },
+   "properties": {
+    "@id": "https://api.weather.gov/alerts/urn:oid:2.49.0.1.840.0.338136d2248ed47573dd012c505c5979d26fe4b5.001.1",
+    "@type": "wx:Alert",
+    "id": "urn:oid:2.49.0.1.840.0.338136d2248ed47573dd012c505c5979d26fe4b5.001.1",
+    "areaDesc": "Reeves County Plains",
+    "geocode": {
+     "SAME": [
+      "048389"
+     ],
+     "UGC": [
+      "TXZ274"
+     ]
+    },
+    "affectedZones": [
+     "https://api.weather.gov/zones/forecast/TXZ274"
+    ],
+    "references": [],
+    "sent": "2026-09-24T19:05:00-05:00",
+    "effective": "2026-09-24T19:05:00-05:00",
+    "onset": "2026-09-24T19:05:00-05:00",
+    "expires": "2026-09-24T19:45:00-05:00",
+    "ends": null,
+    "status": "Actual",
+    "messageType": "Alert",
+    "category": "Met",
+    "severity": "Moderate",
+    "certainty": "Observed",
+    "urgency": "Expected",
+    "event": "Special Weather Statement",
+    "sender": "w-nws.webmaster@noaa.gov",
+    "senderName": "NWS Midland/Odessa TX",
+    "headline": "Special Weather Statement issued September 24 at 7:05PM CDT by NWS Midland/Odessa TX",
+    "description": "At 705 PM CDT, Doppler radar was tracking a strong thunderstorm 17\nmiles south of Orla, or 20 miles northwest of Toyah, moving northeast\nat 15 mph.\n\nHAZARD...Wind gusts up to 50 mph and nickel size hail.\n\nSOURCE...Radar indicated.\n\nIMPACT...Gusty winds could knock down tree limbs and blow around\nunsecured objects. Minor hail damage to vegetation is\npossible.\n\nThis storm will remain over mainly rural areas of northwestern Reeves\nCounty.",
+    "instruction": "If outdoors, consider seeking shelter inside a building.\n\nTorrential rainfall is also occurring with this storm and may lead to\nlocalized flooding. Do not drive your vehicle through flooded\nroadways.",
+    "response": "Execute",
+    "note": null,
+    "parameters": {
+     "AWIPSidentifier": [
+      "SPSMAF"
+     ],
+     "WMOidentifier": [
+      "WWUS84 KMAF 250005"
+     ],
+     "NWSheadline": [
+      "A STRONG THUNDERSTORM WILL IMPACT NORTHWESTERN REEVES COUNTY THROUGH 745 PM CDT"
+     ],
+     "eventMotionDescription": [
+      "2026-09-25T00:05:00-00:00...storm...228DEG...13KT...31.57,-103.96"
+     ],
+     "maxWindGust": [
+      "50 MPH"
+     ],
+     "maxHailSize": [
+      "0.88"
+     ],
+     "BLOCKCHANNEL": [
+      "EAS",
+      "NWEM",
+      "CMAS"
+     ],
+     "EAS-ORG": [
+      "WXR"
+     ]
+    },
+    "scope": "Public",
+    "code": "IPAWSv1.0",
+    "language": "en-US",
+    "web": "http://www.weather.gov",
+    "eventCode": {
+     "SAME": [
+      "SPS"
+     ],
+     "NationalWeatherService": [
+      "SPS"
+     ]
+    }
+   }
+  },
+  {
+   "id": "https://api.weather.gov/alerts/urn:oid:2.49.0.1.840.0.c3126c4ccaa67bc07dfa47e9cdbf46d65f9328cf.017.1",
+   "type": "Feature",
+   "geometry": {
+    "type": "Polygon",
+    "coordinates": [
+     [
+      [
+       -156.273,
+       20.769
+      ],
+      [
+       -156.282,
+       20.759
+      ],
+      [
+       -156.285,
+       20.749
+      ],
+      [
+       -156.329,
+       20.699
+      ],
+      [
+       -156.338,
+       20.686
+      ],
+      [
+       -156.347,
+       20.666
+      ],
+      [
+       -156.35,
+       20.659
+      ],
+      [
+       -156.426,
+       20.594
+      ],
+      [
+       -156.442,
+       20.608
+      ],
+      [
+       -156.438,
+       20.621
+      ],
+      [
+       -156.453,
+       20.636
+      ],
+      [
+       -156.441,
+       20.656
+      ],
+      [
+       -156.447,
+       20.72
+      ],
+      [
+       -156.457,
+       20.74
+      ],
+      [
+       -156.46,
+       20.77
+      ],
+      [
+       -156.43,
+       20.777
+      ],
+      [
+       -156.387,
+       20.804
+      ],
+      [
+       -156.368,
+       20.828
+      ],
+      [
+       -156.355,
+       20.855
+      ],
+      [
+       -156.331,
+       20.845
+      ],
+      [
+       -156.303,
+       20.796
+      ],
+      [
+       -156.273,
+       20.769
+      ]
+     ]
+    ]
+   },
+   "properties": {
+    "@id": "https://api.weather.gov/alerts/urn:oid:2.49.0.1.840.0.c3126c4ccaa67bc07dfa47e9cdbf46d65f9328cf.017.1",
+    "@type": "wx:Alert",
+    "id": "urn:oid:2.49.0.1.840.0.c3126c4ccaa67bc07dfa47e9cdbf46d65f9328cf.017.1",
+    "areaDesc": "South Maui/Upcountry",
+    "geocode": {
+     "SAME": [
+      "015009"
+     ],
+     "UGC": [
+      "HIZ049"
+     ]
+    },
+    "affectedZones": [
+     "https://api.weather.gov/zones/forecast/HIZ049"
+    ],
+    "references": [],
+    "sent": "2026-09-24T11:19:00-10:00",
+    "effective": "2026-09-24T11:19:00-10:00",
+    "onset": "2026-09-24T11:19:00-10:00",
+    "expires": "2026-09-24T19:30:00-10:00",
+    "ends": null,
+    "status": "Actual",
+    "messageType": "Alert",
+    "category": "Met",
+    "severity": "Severe",
+    "certainty": "Possible",
+    "urgency": "Future",
+    "event": "Tropical Storm Watch",
+    "sender": "w-nws.webmaster@noaa.gov",
+    "senderName": "NWS Honolulu HI",
+    "headline": "Tropical Storm Watch issued September 24 at 11:19AM HST by NWS Honolulu HI",
+    "description": "A Tropical Storm Watch means tropical storm-force winds are possible\nsomewhere within this area within the next 48 hours\n\n* LOCATIONS AFFECTED\n- Kihei\n- Wailea\n- Keokea\n\n* WIND\n- LATEST LOCAL FORECAST: Below tropical storm force wind\n- Peak Wind Forecast: 25-35 mph with gusts to 55 mph\n\n- THREAT TO LIFE AND PROPERTY THAT INCLUDES TYPICAL FORECAST\nUNCERTAINTY IN TRACK, SIZE AND INTENSITY: Potential for wind 39\nto 57 mph\n- The wind threat has remained nearly steady from the\nprevious assessment.\n- PLAN: Plan for hazardous wind of equivalent tropical storm\nforce.\n- PREPARE: Efforts to protect property should now be\nunderway. Prepare for limited wind damage.\n- ACT: Act now to complete preparations before the wind\nbecomes hazardous.\n\n- POTENTIAL IMPACTS: Limited\n- Damage to porches, awnings, carports, sheds, and unanchored\nmobile homes. Unsecured lightweight objects blown about.\n- Many large tree limbs broken off. A few trees snapped or\nuprooted, but with greater numbers in places where trees\nare shallow rooted. Some fences and roadway signs blown\nover.\n- A few roads impassable from debris, particularly within\nurban or heavily wooded places. Hazardous driving\nconditions on bridges and other elevated roadways.\n- Scattered power and communications outages.\n\n* STORM SURGE\n- No storm surge inundation forecast\n\n- THREAT TO LIFE AND PROPERTY THAT INCLUDES TYPICAL FORECAST\nUNCERTAINTY IN TRACK, SIZE AND INTENSITY: Little to no storm\nsurge flooding\n- The storm surge threat has remained nearly steady from the\nprevious assessment.\n- PLAN: There is little to no threat of storm surge flooding.\nRough surf, coastal erosion, and life-threatening rip\ncurrents are possible.\n- PREPARE: Little to no preparations for storm surge flooding\nare needed.\n- ACT: Follow the instructions of local officials. Monitor\nforecasts.\n\n- POTENTIAL IMPACTS: Little to None\n- Little to no potential impacts from storm surge flooding.\n\n* FLOODING RAIN\n- LATEST LOCAL FORECAST: Flood Watch is in effect\n- Peak Rainfall Amounts: Additional around 1 inch\n\n- THREAT TO LIFE AND PROPERTY THAT INCLUDES TYPICAL FORECAST\nUNCERTAINTY IN TRACK, SIZE AND INTENSITY: Potential for major\nflooding rain\n- The flooding rain threat has remained nearly steady from\nthe previous assessment.\n- PLAN: Emergency plans should include the potential for\nmajor flooding from heavy rain. Evacuations and rescues are\nlikely.\n- PREPARE: Strongly consider protective actions, especially\nif you are in an area vulnerable to flooding.\n- ACT: Heed any flood watches and warnings. Failure to take\naction will likely result in serious injury or loss of life.\n\n- POTENTIAL IMPACTS: Extensive\n- Major rainfall flooding may prompt many evacuations and\nrescues.\n- Rivers and tributaries may rapidly overflow their banks in\nmultiple places. Small streams, creeks, canals, arroyos,\nand ditches may become dangerous rivers. In mountain areas,\ndestructive runoff may run quickly down valleys while\nincreasing susceptibility to rockslides and mudslides.\nFlood control systems and barriers may become stressed.\n- Flood waters can enter many structures within multiple\ncommunities, some structures becoming uninhabitable or\nwashed away. Many places where flood waters may cover\nescape routes. Streets and parking lots become rivers of\nmoving water with underpasses submerged. Driving conditions\nbecome dangerous. Many road and bridge closures with some\nweakened or washed out.\n\n* TORNADO\n- LATEST LOCAL FORECAST:\n- Situation is unfavorable for tornadoes\n\n- THREAT TO LIFE AND PROPERTY THAT INCLUDES TYPICAL FORECAST\nUNCERTAINTY IN TRACK, SIZE AND INTENSITY: Tornadoes not expected\n- The tornado threat has remained nearly steady from the\nprevious assessment.\n- PLAN: Tornadoes are not expected. Showers and thunderstorms\nwith gusty winds may still occur.\n- PREPARE: Little to no preparations needed to protect\nagainst tornadoes at this time. Keep informed of the latest\ntornado situation.\n- ACT: Listen for changes in the forecast.\n\n- POTENTIAL IMPACTS: Little to None\n- Little to no potential impacts from tornadoes.\n\n* FOR MORE INFORMATION:\n- https://www.weather.gov/hfo",
+    "instruction": null,
+    "response": "Prepare",
+    "note": null,
+    "parameters": {
+     "AWIPSidentifier": [
+      "TCVHFO"
+     ],
+     "WMOidentifier": [
+      "WTHW80 PHFO 242119"
+     ],
+     "NWSheadline": [
+      "TROPICAL STORM WATCH IN EFFECT"
+     ],
+     "BLOCKCHANNEL": [
+      "EAS",
+      "NWEM",
+      "CMAS"
+     ],
+     "EAS-ORG": [
+      "WXR"
+     ],
+     "VTEC": [
+      "/O.NEW.PHFO.TR.A.2015.260924T2119Z-000000T0000Z/"
+     ]
+    },
+    "scope": "Public",
+    "code": "IPAWSv1.0",
+    "language": "en-US",
+    "web": "http://www.weather.gov",
+    "eventCode": {
+     "SAME": [
+      "TRA"
+     ],
+     "NationalWeatherService": [
+      "TRA"
+     ]
+    }
+   }
+  },
+  {
+   "id": "https://api.weather.gov/alerts/urn:oid:2.49.0.1.840.0.54b6b9a00f8ad26fd6a739a6ee74bc65dfc0766c.001.1",
+   "type": "Feature",
+   "geometry": null,
+   "properties": {
+    "@id": "https://api.weather.gov/alerts/urn:oid:2.49.0.1.840.0.54b6b9a00f8ad26fd6a739a6ee74bc65dfc0766c.001.1",
+    "@type": "wx:Alert",
+    "id": "urn:oid:2.49.0.1.840.0.54b6b9a00f8ad26fd6a739a6ee74bc65dfc0766c.001.1",
+    "areaDesc": "Interior Kuskokwim Delta",
+    "geocode": {
+     "SAME": [
+      "002050"
+     ],
+     "UGC": [
+      "AKZ756"
+     ]
+    },
+    "affectedZones": [
+     "https://api.weather.gov/zones/forecast/AKZ756"
+    ],
+    "references": [
+     {
+      "@id": "https://api.weather.gov/alerts/urn:oid:2.49.0.1.840.0.e992d58c7b178229d4092e6e372b6cfabee05752.001.1",
+      "identifier": "urn:oid:2.49.0.1.840.0.e992d58c7b178229d4092e6e372b6cfabee05752.001.1",
+      "sender": "w-nws.webmaster@noaa.gov",
+      "sent": "2026-09-23T13:18:00-08:00"
+     }
+    ],
+    "sent": "2026-09-24T13:57:00-08:00",
+    "effective": "2026-09-24T13:57:00-08:00",
+    "onset": "2026-09-24T13:57:00-08:00",
+    "expires": "2026-09-25T14:00:00-08:00",
+    "ends": "2026-09-26T13:00:00-08:00",
+    "status": "Actual",
+    "messageType": "Update",
+    "category": "Met",
+    "severity": "Severe",
+    "certainty": "Possible",
+    "urgency": "Future",
+    "event": "Flood Watch",
+    "sender": "w-nws.webmaster@noaa.gov",
+    "senderName": "NWS Anchorage AK",
+    "headline": "Flood Watch issued September 24 at 1:57PM AKDT until September 26 at 1:00PM AKDT by NWS Anchorage AK",
+    "description": "* WHAT...Flooding caused by excessive rainfall is possible.\n\n* WHERE...Interior Kuskokwim Delta, including Kwethluk, Kasigluk,\nBethel, Napaskiak, Napakiak, Oscarville, and other nearby villages.\n\n* WHEN...Through Saturday afternoon.\n\n* IMPACTS...Excessive rain in combination of persistent high water\nlevels and storm surge may result in flooding of rivers, creeks,\nstreams, and other low-lying and flood-prone locations. Creeks and\nstreams may rise out of their banks. Low-water crossings may be\nflooded. Area creeks and streams are running high and could flood\nwith more heavy rain.\n\n* ADDITIONAL DETAILS...\n- A strong storm moving into the eastern Bering Sea will bring\nheavy rainfall and storm surge to the area. The Kuskokwim River\nis currently running high, with statistics showing the river is\nalready above the 90th percentile in flow for this time of year.\n1 to 2 inches of rainfall across the Kilbuck Mountains, as well\nas across the lower Kuskokwim, is likely to exacerbate high water\nlevels for the Kwethluk River, Johnson River / tundra villages,\nas well as other smaller tributaries and sloughs of the\nKuskokwim.\n\nConfidence is moderate-to-high that flooding of low-lying areas\nwill occur for Kwethluk and Kasigluk, where high-water was\nreported last week. Confidence is lower for flooding elsewhere\nand will be dependent on the rainfall amount and degree of\ncompounding effects from coastal surge and tide cycle.\n\n- Http://www.weather.gov/safety/flood",
+    "instruction": "Stay tuned to further developments by listening to your local radio,\ntelevision, or NOAA Weather Radio for further information.\n\nYou should monitor later forecasts and be alert for possible Flood\nWarnings. Those living in areas prone to flooding should be prepared\nto take action should flooding develop.",
+    "response": "Prepare",
+    "note": null,
+    "parameters": {
+     "AWIPSidentifier": [
+      "FFAAFC"
+     ],
+     "WMOidentifier": [
+      "WGAK68 PAFC 242157"
+     ],
+     "NWSheadline": [
+      "FLOOD WATCH REMAINS IN EFFECT THROUGH SATURDAY AFTERNOON"
+     ],
+     "BLOCKCHANNEL": [
+      "EAS",
+      "NWEM",
+      "CMAS"
+     ],
+     "EAS-ORG": [
+      "WXR"
+     ],
+     "VTEC": [
+      "/O.CON.PAFC.FA.A.0009.000000T0000Z-260926T2100Z/"
+     ],
+     "eventEndingTime": [
+      "2026-09-26T13:00:00-08:00"
+     ],
+     "expiredReferences": [
+      "w-nws.webmaster@noaa.gov,urn:oid:2.49.0.1.840.0.e0524203c683a5cda7885505f2e98fce7eaef920.001.1,2026-09-22T12:43:00-08:00"
+     ]
+    },
+    "scope": "Public",
+    "code": "IPAWSv1.0",
+    "language": "en-US",
+    "web": "http://www.weather.gov",
+    "eventCode": {
+     "SAME": [
+      "FFA"
+     ],
+     "NationalWeatherService": [
+      "FAA"
+     ]
+    }
+   }
+  }
+ ]
+}
