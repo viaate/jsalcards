@@ -16,13 +16,14 @@
     "lint": "eslint . --max-warnings=0",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
-    "test": "vitest run",
+    "test": "npm run lint:copy && vitest run",
     "e2e": "playwright test",
     "build:geo": "node scripts/build-geo.mjs",
     "perf": "node perf/lighthouse.mjs",
     "bench:search": "tsc -p bench/search/tsconfig.json && vitest run --dir src/search && playwright test -c bench/search/playwright.config.ts",
     "build:search": "node scripts/build-search-index.mjs",
-    "gen:types": "node scripts/gen-types.mjs"
+    "gen:types": "node scripts/gen-types.mjs",
+    "lint:copy": "node scripts/check-copy.mjs && vitest run --root src --no-cache copy.test.ts"
   },
   "dependencies": {
     "@fontsource-variable/geist": "5.3.0",
