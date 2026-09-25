@@ -1,0 +1,35 @@
+{
+  "schema_version": 1,
+  "generated_on": "2026-09-24",
+  "count": 6,
+  "ids": [
+    "000000000001",
+    "000000000002",
+    "000000000003",
+    "000000000004",
+    "0000000A",
+    "0000000B"
+  ],
+  "names": [
+    "Synthetic Elementary School A",
+    "Synthetic Middle School B",
+    "Synthetic High School C",
+    "Synthetic Academy D",
+    "Synthetic Private School E",
+    "Synthetic Private School F"
+  ],
+  "districts": {
+    "ids": [
+      "0000001",
+      "0000002"
+    ],
+    "names": [
+      "Synthetic District One",
+      "Synthetic District Two"
+    ]
+  },
+  "school_years": {
+    "public": "2024-2025",
+    "private": "2023-2024"
+  }
+}

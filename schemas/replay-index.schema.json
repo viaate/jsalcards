@@ -1,0 +1,124 @@
+{
+  "$comment": "Generated from pipeline/snowlight/schemas by `uv run python -m snowlight.schemas`. Do not edit.",
+  "$defs": {
+    "Count": {
+      "description": "A whole number of things.",
+      "maximum": 4294967294,
+      "minimum": 0,
+      "type": "integer"
+    },
+    "FrameCount": {
+      "description": "How many frames a replay has.",
+      "maximum": 4032,
+      "minimum": 1,
+      "type": "integer"
+    },
+    "FrameIndex": {
+      "description": "A frame's position, from 0.",
+      "exclusiveMaximum": 4032,
+      "minimum": 0,
+      "type": "integer"
+    },
+    "ReplayId": {
+      "description": "The storm's first local day, with a suffix when two share it.",
+      "pattern": "^\\d{4}-\\d{2}-\\d{2}(?:-[a-z0-9]{1,16})?$",
+      "type": "string"
+    },
+    "ReplaySummary": {
+      "additionalProperties": false,
+      "description": "What the replay picker shows before a replay's frames load.",
+      "properties": {
+        "frames": {
+          "$ref": "#/$defs/FrameCount"
+        },
+        "id": {
+          "$ref": "#/$defs/ReplayId"
+        },
+        "peak_frame": {
+          "$ref": "#/$defs/FrameIndex",
+          "description": "The first frame with peak_schools."
+        },
+        "peak_schools": {
+          "$ref": "#/$defs/Count",
+          "description": "The most schools with a status in one frame."
+        },
+        "schools": {
+          "$ref": "#/$defs/Count",
+          "description": "Distinct schools with a status in any frame."
+        },
+        "start": {
+          "$ref": "#/$defs/UtcInstant"
+        },
+        "states": {
+          "description": "States with an affected school, sorted.",
+          "items": {
+            "$ref": "#/$defs/Usps"
+          },
+          "type": "array"
+        },
+        "step_minutes": {
+          "$ref": "#/$defs/StepMinutes"
+        }
+      },
+      "required": [
+        "id",
+        "start",
+        "step_minutes",
+        "frames",
+        "peak_schools",
+        "peak_frame",
+        "schools",
+        "states"
+      ],
+      "title": "ReplaySummary",
+      "type": "object"
+    },
+    "SchemaVersion": {
+      "const": 1,
+      "description": "The file format's version. A reader refuses a file with any other.",
+      "type": "integer"
+    },
+    "StepMinutes": {
+      "description": "Minutes between one frame and the next.",
+      "maximum": 1440,
+      "minimum": 5,
+      "type": "integer"
+    },
+    "Usps": {
+      "description": "Two-letter USPS state code (DC included).",
+      "pattern": "^[A-Z]{2}$",
+      "type": "string"
+    },
+    "UtcInstant": {
+      "description": "A moment in UTC, whole seconds: YYYY-MM-DDTHH:MM:SSZ.",
+      "format": "date-time",
+      "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}Z$",
+      "type": "string"
+    }
+  },
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "description": "replays/index.json: every replay, oldest first.",
+  "properties": {
+    "generated_at": {
+      "$ref": "#/$defs/UtcInstant"
+    },
+    "replays": {
+      "items": {
+        "$ref": "#/$defs/ReplaySummary"
+      },
+      "type": "array"
+    },
+    "schema_version": {
+      "$ref": "#/$defs/SchemaVersion"
+    }
+  },
+  "required": [
+    "schema_version",
+    "generated_at",
+    "replays"
+  ],
+  "title": "ReplayIndex",
+  "type": "object",
+  "x-snowlight-path": "replays/index.json"
+}

@@ -1,0 +1,48 @@
+{
+  "schema_version": 1,
+  "generated_at": "2027-01-12T11:00:00Z",
+  "directory": {
+    "generated_on": "2026-09-24",
+    "schools": 6,
+    "districts": 2
+  },
+  "days": [
+    "2027-01-12",
+    "2027-01-13"
+  ],
+  "districts": [
+    {
+      "district": 0,
+      "days": [
+        {
+          "state": "forecast",
+          "p_no_school": 0.62,
+          "p_delay": 0.21,
+          "reasons": [
+            0,
+            2
+          ]
+        },
+        {
+          "state": "forecast",
+          "p_no_school": 0.18,
+          "p_delay": 0.35,
+          "reasons": [
+            2
+          ]
+        }
+      ]
+    },
+    {
+      "district": 1,
+      "days": [
+        {
+          "state": "no_threat"
+        },
+        {
+          "state": "not_enough_data"
+        }
+      ]
+    }
+  ]
+}

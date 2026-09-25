@@ -1,0 +1,19 @@
+{
+  "schema_version": 1,
+  "generated_at": "2027-01-12T13:05:00Z",
+  "directory": {
+    "generated_on": "2026-09-24",
+    "schools": 6,
+    "districts": 2
+  },
+  "ranges": [
+    [
+      0,
+      3
+    ],
+    [
+      5,
+      5
+    ]
+  ]
+}

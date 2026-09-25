@@ -1,0 +1,231 @@
+{
+  "$comment": "Generated from pipeline/snowlight/schemas by `uv run python -m snowlight.schemas`. Do not edit.",
+  "$defs": {
+    "Count": {
+      "description": "A whole number of things.",
+      "maximum": 4294967294,
+      "minimum": 0,
+      "type": "integer"
+    },
+    "DayForecast": {
+      "description": "One district's outlook for one day.",
+      "discriminator": {
+        "mapping": {
+          "forecast": "#/$defs/Forecast",
+          "no_threat": "#/$defs/NoThreat",
+          "not_enough_data": "#/$defs/NotEnoughData"
+        },
+        "propertyName": "state"
+      },
+      "oneOf": [
+        {
+          "$ref": "#/$defs/Forecast"
+        },
+        {
+          "$ref": "#/$defs/NoThreat"
+        },
+        {
+          "$ref": "#/$defs/NotEnoughData"
+        }
+      ]
+    },
+    "DirectoryStamp": {
+      "additionalProperties": false,
+      "description": "The directory a file's school and district indexes point into.\n\nIt must equal generated_on, count and the number of districts of the\nschools/meta.json the reader has loaded; otherwise the file is ignored.",
+      "properties": {
+        "districts": {
+          "$ref": "#/$defs/Count"
+        },
+        "generated_on": {
+          "$ref": "#/$defs/LocalDate"
+        },
+        "schools": {
+          "$ref": "#/$defs/Count"
+        }
+      },
+      "required": [
+        "generated_on",
+        "schools",
+        "districts"
+      ],
+      "title": "DirectoryStamp",
+      "type": "object"
+    },
+    "DistrictForecast": {
+      "additionalProperties": false,
+      "description": "One district's outlook for each day in the file's days.",
+      "properties": {
+        "days": {
+          "items": {
+            "$ref": "#/$defs/DayForecast"
+          },
+          "type": "array"
+        },
+        "district": {
+          "$ref": "#/$defs/DistrictIndex"
+        }
+      },
+      "required": [
+        "district",
+        "days"
+      ],
+      "title": "DistrictForecast",
+      "type": "object"
+    },
+    "DistrictIndex": {
+      "description": "A district's position in schools/meta.json districts.ids.",
+      "maximum": 4294967294,
+      "minimum": 0,
+      "type": "integer"
+    },
+    "Forecast": {
+      "additionalProperties": false,
+      "description": "Weather that has closed or delayed these schools before is forecast that day.",
+      "properties": {
+        "p_delay": {
+          "$ref": "#/$defs/Probability"
+        },
+        "p_no_school": {
+          "$ref": "#/$defs/Probability"
+        },
+        "reasons": {
+          "description": "The forecast weather, most important first.",
+          "items": {
+            "$ref": "#/$defs/Reason"
+          },
+          "minItems": 1,
+          "type": "array"
+        },
+        "state": {
+          "const": "forecast",
+          "type": "string"
+        }
+      },
+      "required": [
+        "state",
+        "p_no_school",
+        "p_delay",
+        "reasons"
+      ],
+      "title": "Forecast",
+      "type": "object"
+    },
+    "LocalDate": {
+      "description": "A calendar day in the school's own time zone: YYYY-MM-DD.",
+      "format": "date",
+      "pattern": "^\\d{4}-\\d{2}-\\d{2}$",
+      "type": "string"
+    },
+    "NoThreat": {
+      "additionalProperties": false,
+      "description": "No weather that has closed or delayed these schools before is forecast that day.",
+      "properties": {
+        "state": {
+          "const": "no_threat",
+          "type": "string"
+        }
+      },
+      "required": [
+        "state"
+      ],
+      "title": "NoThreat",
+      "type": "object"
+    },
+    "NotEnoughData": {
+      "additionalProperties": false,
+      "description": "The district's history is too short to give a chance.",
+      "properties": {
+        "state": {
+          "const": "not_enough_data",
+          "type": "string"
+        }
+      },
+      "required": [
+        "state"
+      ],
+      "title": "NotEnoughData",
+      "type": "object"
+    },
+    "Probability": {
+      "description": "A chance from 0 to 1, in hundredths (0.07, not 0.0734).",
+      "maximum": 1.0,
+      "minimum": 0.0,
+      "type": "number"
+    },
+    "Reason": {
+      "description": "The weather named for a status or a forecast.\n\n0 winter storm, 1 ice, 2 extreme cold, 3 flooding, 4 hurricane,\n5 severe storms, 6 heat, 7 power outage.",
+      "enum": [
+        0,
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7
+      ],
+      "title": "Reason",
+      "type": "integer",
+      "x-enum-names": [
+        "winter_storm",
+        "ice",
+        "extreme_cold",
+        "flooding",
+        "hurricane",
+        "severe_storms",
+        "heat",
+        "power_outage"
+      ]
+    },
+    "SchemaVersion": {
+      "const": 1,
+      "description": "The file format's version. A reader refuses a file with any other.",
+      "type": "integer"
+    },
+    "UtcInstant": {
+      "description": "A moment in UTC, whole seconds: YYYY-MM-DDTHH:MM:SSZ.",
+      "format": "date-time",
+      "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}Z$",
+      "type": "string"
+    }
+  },
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "description": "predictions/latest.json: per district, the chance of no school or a delay, by day.",
+  "properties": {
+    "days": {
+      "description": "The local days forecast, consecutive, today first.",
+      "items": {
+        "$ref": "#/$defs/LocalDate"
+      },
+      "maxItems": 3,
+      "minItems": 1,
+      "type": "array"
+    },
+    "directory": {
+      "$ref": "#/$defs/DirectoryStamp"
+    },
+    "districts": {
+      "items": {
+        "$ref": "#/$defs/DistrictForecast"
+      },
+      "type": "array"
+    },
+    "generated_at": {
+      "$ref": "#/$defs/UtcInstant"
+    },
+    "schema_version": {
+      "$ref": "#/$defs/SchemaVersion"
+    }
+  },
+  "required": [
+    "schema_version",
+    "generated_at",
+    "directory",
+    "days",
+    "districts"
+  ],
+  "title": "PredictionsFile",
+  "type": "object",
+  "x-snowlight-path": "predictions/latest.json"
+}

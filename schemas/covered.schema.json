@@ -1,0 +1,101 @@
+{
+  "$comment": "Generated from pipeline/snowlight/schemas by `uv run python -m snowlight.schemas`. Do not edit.",
+  "$defs": {
+    "Count": {
+      "description": "A whole number of things.",
+      "maximum": 4294967294,
+      "minimum": 0,
+      "type": "integer"
+    },
+    "DirectoryStamp": {
+      "additionalProperties": false,
+      "description": "The directory a file's school and district indexes point into.\n\nIt must equal generated_on, count and the number of districts of the\nschools/meta.json the reader has loaded; otherwise the file is ignored.",
+      "properties": {
+        "districts": {
+          "$ref": "#/$defs/Count"
+        },
+        "generated_on": {
+          "$ref": "#/$defs/LocalDate"
+        },
+        "schools": {
+          "$ref": "#/$defs/Count"
+        }
+      },
+      "required": [
+        "generated_on",
+        "schools",
+        "districts"
+      ],
+      "title": "DirectoryStamp",
+      "type": "object"
+    },
+    "LocalDate": {
+      "description": "A calendar day in the school's own time zone: YYYY-MM-DD.",
+      "format": "date",
+      "pattern": "^\\d{4}-\\d{2}-\\d{2}$",
+      "type": "string"
+    },
+    "SchemaVersion": {
+      "const": 1,
+      "description": "The file format's version. A reader refuses a file with any other.",
+      "type": "integer"
+    },
+    "SchoolIndex": {
+      "description": "A school's position in schools/meta.json ids (and in points.bin).",
+      "maximum": 4294967294,
+      "minimum": 0,
+      "type": "integer"
+    },
+    "SchoolRange": {
+      "description": "An inclusive run of school indexes: [first, last].",
+      "maxItems": 2,
+      "minItems": 2,
+      "prefixItems": [
+        {
+          "$ref": "#/$defs/SchoolIndex",
+          "title": "first"
+        },
+        {
+          "$ref": "#/$defs/SchoolIndex",
+          "title": "last"
+        }
+      ],
+      "type": "array"
+    },
+    "UtcInstant": {
+      "description": "A moment in UTC, whole seconds: YYYY-MM-DDTHH:MM:SSZ.",
+      "format": "date-time",
+      "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}Z$",
+      "type": "string"
+    }
+  },
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "description": "live/covered.json: the schools whose closings were checked live at generated_at.\n\nRanges are sorted, do not overlap and do not touch, so each set of schools has\nexactly one encoding. Only these schools can be shown as open.",
+  "properties": {
+    "directory": {
+      "$ref": "#/$defs/DirectoryStamp"
+    },
+    "generated_at": {
+      "$ref": "#/$defs/UtcInstant"
+    },
+    "ranges": {
+      "items": {
+        "$ref": "#/$defs/SchoolRange"
+      },
+      "type": "array"
+    },
+    "schema_version": {
+      "$ref": "#/$defs/SchemaVersion"
+    }
+  },
+  "required": [
+    "schema_version",
+    "generated_at",
+    "directory",
+    "ranges"
+  ],
+  "title": "CoveredFile",
+  "type": "object",
+  "x-snowlight-path": "live/covered.json"
+}

@@ -1,0 +1,158 @@
+{
+  "$comment": "Generated from pipeline/snowlight/schemas by `uv run python -m snowlight.schemas`. Do not edit.",
+  "$defs": {
+    "Calibration": {
+      "additionalProperties": false,
+      "description": "How often one outcome happened, grouped by the chance given for it.",
+      "properties": {
+        "bins": {
+          "items": {
+            "$ref": "#/$defs/CalibrationBin"
+          },
+          "type": "array"
+        },
+        "forecasts": {
+          "$ref": "#/$defs/Count"
+        },
+        "outcomes": {
+          "$ref": "#/$defs/Count"
+        }
+      },
+      "required": [
+        "forecasts",
+        "outcomes",
+        "bins"
+      ],
+      "title": "Calibration",
+      "type": "object"
+    },
+    "CalibrationBin": {
+      "description": "[low, high, forecasts, outcomes]: of the district-days given a chance from low up to (not including) high percent (the last bin includes 100), how many there were and how many had the outcome.",
+      "maxItems": 4,
+      "minItems": 4,
+      "prefixItems": [
+        {
+          "$ref": "#/$defs/Percent",
+          "title": "low"
+        },
+        {
+          "$ref": "#/$defs/Percent",
+          "title": "high"
+        },
+        {
+          "$ref": "#/$defs/Count",
+          "title": "forecasts"
+        },
+        {
+          "$ref": "#/$defs/Count",
+          "title": "outcomes"
+        }
+      ],
+      "type": "array"
+    },
+    "Count": {
+      "description": "A whole number of things.",
+      "maximum": 4294967294,
+      "minimum": 0,
+      "type": "integer"
+    },
+    "LeadDays": {
+      "description": "How far ahead a chance was given: 0 that morning, 1 the day before.",
+      "maximum": 2,
+      "minimum": 0,
+      "type": "integer"
+    },
+    "LeadRecord": {
+      "additionalProperties": false,
+      "description": "How the chances given some days ahead compared with what schools did.",
+      "properties": {
+        "delay": {
+          "$ref": "#/$defs/Calibration"
+        },
+        "lead_days": {
+          "$ref": "#/$defs/LeadDays"
+        },
+        "no_school": {
+          "$ref": "#/$defs/Calibration"
+        }
+      },
+      "required": [
+        "lead_days",
+        "no_school",
+        "delay"
+      ],
+      "title": "LeadRecord",
+      "type": "object"
+    },
+    "LocalDate": {
+      "description": "A calendar day in the school's own time zone: YYYY-MM-DD.",
+      "format": "date",
+      "pattern": "^\\d{4}-\\d{2}-\\d{2}$",
+      "type": "string"
+    },
+    "Percent": {
+      "description": "Whole percentage points.",
+      "maximum": 100,
+      "minimum": 0,
+      "type": "integer"
+    },
+    "SchemaVersion": {
+      "const": 1,
+      "description": "The file format's version. A reader refuses a file with any other.",
+      "type": "integer"
+    },
+    "UtcInstant": {
+      "description": "A moment in UTC, whole seconds: YYYY-MM-DDTHH:MM:SSZ.",
+      "format": "date-time",
+      "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}Z$",
+      "type": "string"
+    }
+  },
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "description": "track-record.json: how past chances compared with what schools did.\n\nfirst_day and last_day bound the local days scored; both are null, and every\ncount is 0, until a day has been scored.",
+  "properties": {
+    "first_day": {
+      "anyOf": [
+        {
+          "$ref": "#/$defs/LocalDate"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "generated_at": {
+      "$ref": "#/$defs/UtcInstant"
+    },
+    "last_day": {
+      "anyOf": [
+        {
+          "$ref": "#/$defs/LocalDate"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "leads": {
+      "items": {
+        "$ref": "#/$defs/LeadRecord"
+      },
+      "type": "array"
+    },
+    "schema_version": {
+      "$ref": "#/$defs/SchemaVersion"
+    }
+  },
+  "required": [
+    "schema_version",
+    "generated_at",
+    "first_day",
+    "last_day",
+    "leads"
+  ],
+  "title": "TrackRecord",
+  "type": "object",
+  "x-snowlight-path": "track-record.json"
+}

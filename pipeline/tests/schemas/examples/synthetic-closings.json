@@ -1,0 +1,73 @@
+{
+  "schema_version": 1,
+  "generated_at": "2027-01-12T13:05:00Z",
+  "directory": {
+    "generated_on": "2026-09-24",
+    "schools": 6,
+    "districts": 2
+  },
+  "days": [
+    {
+      "day": "2027-01-12",
+      "gaps": [
+        0,
+        0,
+        0,
+        0,
+        1
+      ],
+      "statuses": [
+        0,
+        1,
+        1,
+        2,
+        3
+      ],
+      "announced": [
+        83,
+        122,
+        null,
+        710,
+        5
+      ],
+      "reasons": [
+        0,
+        1,
+        null,
+        2,
+        5
+      ],
+      "shifts": [
+        120,
+        null,
+        180
+      ],
+      "clocks": [
+        600,
+        null,
+        750
+      ]
+    },
+    {
+      "day": "2027-01-13",
+      "gaps": [
+        0,
+        3
+      ],
+      "statuses": [
+        0,
+        0
+      ],
+      "announced": [
+        15,
+        7
+      ],
+      "reasons": [
+        0,
+        null
+      ],
+      "shifts": [],
+      "clocks": []
+    }
+  ]
+}

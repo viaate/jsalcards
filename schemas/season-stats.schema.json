@@ -1,0 +1,145 @@
+{
+  "$comment": "Generated from pipeline/snowlight/schemas by `uv run python -m snowlight.schemas`. Do not edit.",
+  "$defs": {
+    "Count": {
+      "description": "A whole number of things.",
+      "maximum": 4294967294,
+      "minimum": 0,
+      "type": "integer"
+    },
+    "DayCounts": {
+      "description": "Schools with each status on one local day.",
+      "maxItems": 5,
+      "minItems": 5,
+      "prefixItems": [
+        {
+          "$ref": "#/$defs/LocalDate",
+          "title": "day"
+        },
+        {
+          "$ref": "#/$defs/Count",
+          "title": "closed"
+        },
+        {
+          "$ref": "#/$defs/Count",
+          "title": "delayed"
+        },
+        {
+          "$ref": "#/$defs/Count",
+          "title": "remote"
+        },
+        {
+          "$ref": "#/$defs/Count",
+          "title": "early_dismissal"
+        }
+      ],
+      "type": "array"
+    },
+    "LocalDate": {
+      "description": "A calendar day in the school's own time zone: YYYY-MM-DD.",
+      "format": "date",
+      "pattern": "^\\d{4}-\\d{2}-\\d{2}$",
+      "type": "string"
+    },
+    "SchemaVersion": {
+      "const": 1,
+      "description": "The file format's version. A reader refuses a file with any other.",
+      "type": "integer"
+    },
+    "SchoolYear": {
+      "description": "A school year, July to June, as YYYY-YYYY (2026-2027).",
+      "pattern": "^\\d{4}-\\d{4}$",
+      "type": "string"
+    },
+    "StateCounts": {
+      "description": "School-days with each status in one state, over the season so far.",
+      "maxItems": 5,
+      "minItems": 5,
+      "prefixItems": [
+        {
+          "$ref": "#/$defs/Usps",
+          "title": "state"
+        },
+        {
+          "$ref": "#/$defs/Count",
+          "title": "closed"
+        },
+        {
+          "$ref": "#/$defs/Count",
+          "title": "delayed"
+        },
+        {
+          "$ref": "#/$defs/Count",
+          "title": "remote"
+        },
+        {
+          "$ref": "#/$defs/Count",
+          "title": "early_dismissal"
+        }
+      ],
+      "type": "array"
+    },
+    "Usps": {
+      "description": "Two-letter USPS state code (DC included).",
+      "pattern": "^[A-Z]{2}$",
+      "type": "string"
+    },
+    "UtcInstant": {
+      "description": "A moment in UTC, whole seconds: YYYY-MM-DDTHH:MM:SSZ.",
+      "format": "date-time",
+      "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}Z$",
+      "type": "string"
+    }
+  },
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "description": "stats/season.json: this school year's weather closures so far.\n\ndays lists every local day with at least one affected school, in order; states\nsums the same school-days by state, so both add up to the same totals.",
+  "properties": {
+    "days": {
+      "items": {
+        "$ref": "#/$defs/DayCounts"
+      },
+      "type": "array"
+    },
+    "districts": {
+      "$ref": "#/$defs/Count",
+      "description": "Distinct districts with an affected school."
+    },
+    "generated_at": {
+      "$ref": "#/$defs/UtcInstant"
+    },
+    "schema_version": {
+      "$ref": "#/$defs/SchemaVersion"
+    },
+    "schools": {
+      "$ref": "#/$defs/Count",
+      "description": "Distinct schools with any status this season."
+    },
+    "season": {
+      "$ref": "#/$defs/SchoolYear"
+    },
+    "states": {
+      "items": {
+        "$ref": "#/$defs/StateCounts"
+      },
+      "type": "array"
+    },
+    "through": {
+      "$ref": "#/$defs/LocalDate",
+      "description": "The last local day counted."
+    }
+  },
+  "required": [
+    "schema_version",
+    "generated_at",
+    "season",
+    "through",
+    "days",
+    "states",
+    "schools",
+    "districts"
+  ],
+  "title": "SeasonStats",
+  "type": "object",
+  "x-snowlight-path": "stats/season.json"
+}

@@ -1,0 +1,129 @@
+{
+  "$comment": "Generated from pipeline/snowlight/schemas by `uv run python -m snowlight.schemas`. Do not edit.",
+  "$defs": {
+    "Count": {
+      "description": "A whole number of things.",
+      "maximum": 4294967294,
+      "minimum": 0,
+      "type": "integer"
+    },
+    "DirectoryName": {
+      "description": "A school's or district's name as the directory spells it.",
+      "maxLength": 200,
+      "minLength": 1,
+      "type": "string"
+    },
+    "DistrictId": {
+      "description": "A school district's 7-digit federal id.",
+      "pattern": "^\\d{7}$",
+      "type": "string"
+    },
+    "DistrictList": {
+      "additionalProperties": false,
+      "description": "Every district with a school on the map, sorted by id.",
+      "properties": {
+        "ids": {
+          "items": {
+            "$ref": "#/$defs/DistrictId"
+          },
+          "type": "array"
+        },
+        "names": {
+          "items": {
+            "$ref": "#/$defs/DirectoryName"
+          },
+          "type": "array"
+        }
+      },
+      "required": [
+        "ids",
+        "names"
+      ],
+      "title": "DistrictList",
+      "type": "object"
+    },
+    "LocalDate": {
+      "description": "A calendar day in the school's own time zone: YYYY-MM-DD.",
+      "format": "date",
+      "pattern": "^\\d{4}-\\d{2}-\\d{2}$",
+      "type": "string"
+    },
+    "SchemaVersion": {
+      "const": 1,
+      "description": "The file format's version. A reader refuses a file with any other.",
+      "type": "integer"
+    },
+    "SchoolId": {
+      "description": "A school's federal id: 12 digits for a public school, 8 letters or digits for a private one.",
+      "pattern": "^(?:\\d{12}|[0-9A-Z]{8})$",
+      "type": "string"
+    },
+    "SchoolYear": {
+      "description": "A school year, July to June, as YYYY-YYYY (2026-2027).",
+      "pattern": "^\\d{4}-\\d{4}$",
+      "type": "string"
+    },
+    "SchoolYears": {
+      "additionalProperties": false,
+      "description": "The school year of the directory each kind of school comes from.",
+      "properties": {
+        "private": {
+          "$ref": "#/$defs/SchoolYear"
+        },
+        "public": {
+          "$ref": "#/$defs/SchoolYear"
+        }
+      },
+      "required": [
+        "public",
+        "private"
+      ],
+      "title": "SchoolYears",
+      "type": "object"
+    }
+  },
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "description": "schools/meta.json: every school on the map, in points.bin order.\n\nPublic schools come first, sorted by id, then private schools sorted by id.",
+  "properties": {
+    "count": {
+      "$ref": "#/$defs/Count"
+    },
+    "districts": {
+      "$ref": "#/$defs/DistrictList"
+    },
+    "generated_on": {
+      "$ref": "#/$defs/LocalDate"
+    },
+    "ids": {
+      "items": {
+        "$ref": "#/$defs/SchoolId"
+      },
+      "type": "array"
+    },
+    "names": {
+      "items": {
+        "$ref": "#/$defs/DirectoryName"
+      },
+      "type": "array"
+    },
+    "schema_version": {
+      "$ref": "#/$defs/SchemaVersion"
+    },
+    "school_years": {
+      "$ref": "#/$defs/SchoolYears"
+    }
+  },
+  "required": [
+    "schema_version",
+    "generated_on",
+    "count",
+    "ids",
+    "names",
+    "districts",
+    "school_years"
+  ],
+  "title": "SchoolDirectoryMeta",
+  "type": "object",
+  "x-snowlight-path": "schools/meta.json"
+}

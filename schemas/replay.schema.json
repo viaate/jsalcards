@@ -1,0 +1,203 @@
+{
+  "$comment": "Generated from pipeline/snowlight/schemas by `uv run python -m snowlight.schemas`. Do not edit.",
+  "$defs": {
+    "Count": {
+      "description": "A whole number of things.",
+      "maximum": 4294967294,
+      "minimum": 0,
+      "type": "integer"
+    },
+    "DirectoryStamp": {
+      "additionalProperties": false,
+      "description": "The directory a file's school and district indexes point into.\n\nIt must equal generated_on, count and the number of districts of the\nschools/meta.json the reader has loaded; otherwise the file is ignored.",
+      "properties": {
+        "districts": {
+          "$ref": "#/$defs/Count"
+        },
+        "generated_on": {
+          "$ref": "#/$defs/LocalDate"
+        },
+        "schools": {
+          "$ref": "#/$defs/Count"
+        }
+      },
+      "required": [
+        "generated_on",
+        "schools",
+        "districts"
+      ],
+      "title": "DirectoryStamp",
+      "type": "object"
+    },
+    "FrameCount": {
+      "description": "How many frames a replay has.",
+      "maximum": 4032,
+      "minimum": 1,
+      "type": "integer"
+    },
+    "FrameIndex": {
+      "description": "A frame's position, from 0.",
+      "exclusiveMaximum": 4032,
+      "minimum": 0,
+      "type": "integer"
+    },
+    "LocalDate": {
+      "description": "A calendar day in the school's own time zone: YYYY-MM-DD.",
+      "format": "date",
+      "pattern": "^\\d{4}-\\d{2}-\\d{2}$",
+      "type": "string"
+    },
+    "Reason": {
+      "description": "The weather named for a status or a forecast.\n\n0 winter storm, 1 ice, 2 extreme cold, 3 flooding, 4 hurricane,\n5 severe storms, 6 heat, 7 power outage.",
+      "enum": [
+        0,
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7
+      ],
+      "title": "Reason",
+      "type": "integer",
+      "x-enum-names": [
+        "winter_storm",
+        "ice",
+        "extreme_cold",
+        "flooding",
+        "hurricane",
+        "severe_storms",
+        "heat",
+        "power_outage"
+      ]
+    },
+    "ReplayId": {
+      "description": "The storm's first local day, with a suffix when two share it.",
+      "pattern": "^\\d{4}-\\d{2}-\\d{2}(?:-[a-z0-9]{1,16})?$",
+      "type": "string"
+    },
+    "ReplayRow": {
+      "description": "[school, status, first, last, reason]: the school had this status in every frame from first to last, inclusive.",
+      "maxItems": 5,
+      "minItems": 5,
+      "prefixItems": [
+        {
+          "$ref": "#/$defs/SchoolIndex",
+          "title": "school"
+        },
+        {
+          "$ref": "#/$defs/Status",
+          "title": "status"
+        },
+        {
+          "$ref": "#/$defs/FrameIndex",
+          "title": "first"
+        },
+        {
+          "$ref": "#/$defs/FrameIndex",
+          "title": "last"
+        },
+        {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Reason"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "reason"
+        }
+      ],
+      "type": "array"
+    },
+    "SchemaVersion": {
+      "const": 1,
+      "description": "The file format's version. A reader refuses a file with any other.",
+      "type": "integer"
+    },
+    "SchoolIndex": {
+      "description": "A school's position in schools/meta.json ids (and in points.bin).",
+      "maximum": 4294967294,
+      "minimum": 0,
+      "type": "integer"
+    },
+    "Status": {
+      "description": "What a school is doing on a day because of weather.\n\n0 closed, 1 delayed start, 2 remote or e-learning, 3 early dismissal.",
+      "enum": [
+        0,
+        1,
+        2,
+        3
+      ],
+      "title": "Status",
+      "type": "integer",
+      "x-enum-names": [
+        "closed",
+        "delayed",
+        "remote",
+        "early_dismissal"
+      ]
+    },
+    "StepMinutes": {
+      "description": "Minutes between one frame and the next.",
+      "maximum": 1440,
+      "minimum": 5,
+      "type": "integer"
+    },
+    "UtcInstant": {
+      "description": "A moment in UTC, whole seconds: YYYY-MM-DDTHH:MM:SSZ.",
+      "format": "date-time",
+      "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}Z$",
+      "type": "string"
+    }
+  },
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "description": "replays/<id>.json: every school's statuses through one storm.",
+  "properties": {
+    "directory": {
+      "$ref": "#/$defs/DirectoryStamp"
+    },
+    "frames": {
+      "$ref": "#/$defs/FrameCount"
+    },
+    "generated_at": {
+      "$ref": "#/$defs/UtcInstant"
+    },
+    "id": {
+      "$ref": "#/$defs/ReplayId"
+    },
+    "rows": {
+      "description": "Sorted by school, then first frame; a school's spans never overlap.",
+      "items": {
+        "$ref": "#/$defs/ReplayRow"
+      },
+      "type": "array"
+    },
+    "schema_version": {
+      "$ref": "#/$defs/SchemaVersion"
+    },
+    "start": {
+      "$ref": "#/$defs/UtcInstant",
+      "description": "The moment frame 0 shows."
+    },
+    "step_minutes": {
+      "$ref": "#/$defs/StepMinutes"
+    }
+  },
+  "required": [
+    "schema_version",
+    "id",
+    "generated_at",
+    "directory",
+    "start",
+    "step_minutes",
+    "frames",
+    "rows"
+  ],
+  "title": "ReplayFile",
+  "type": "object",
+  "x-snowlight-path": "replays/{id}.json"
+}

@@ -1,0 +1,19 @@
+{
+  "schema_version": 1,
+  "generated_at": "2026-12-20T08:00:00Z",
+  "replays": [
+    {
+      "id": "2026-12-18",
+      "start": "2026-12-18T00:00:00Z",
+      "step_minutes": 60,
+      "frames": 48,
+      "peak_schools": 4,
+      "peak_frame": 12,
+      "schools": 4,
+      "states": [
+        "IA",
+        "IL"
+      ]
+    }
+  ]
+}

@@ -1,0 +1,223 @@
+{
+  "$comment": "Generated from pipeline/snowlight/schemas by `uv run python -m snowlight.schemas`. Do not edit.",
+  "$defs": {
+    "Alert": {
+      "additionalProperties": false,
+      "description": "One weather alert area; alerts with the same event, severity, onset and end are merged.",
+      "properties": {
+        "bbox": {
+          "$ref": "#/$defs/BBox"
+        },
+        "ends": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/UtcInstant"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "description": "When it ends; null until further notice."
+        },
+        "event": {
+          "$ref": "#/$defs/AlertEvent"
+        },
+        "hazard": {
+          "$ref": "#/$defs/Hazard"
+        },
+        "id": {
+          "$ref": "#/$defs/AlertId"
+        },
+        "level": {
+          "$ref": "#/$defs/AlertLevel"
+        },
+        "onset": {
+          "$ref": "#/$defs/UtcInstant"
+        },
+        "polygons": {
+          "items": {
+            "$ref": "#/$defs/Polygon"
+          },
+          "minItems": 1,
+          "type": "array"
+        },
+        "severity": {
+          "$ref": "#/$defs/Severity"
+        }
+      },
+      "required": [
+        "id",
+        "event",
+        "hazard",
+        "level",
+        "severity",
+        "onset",
+        "ends",
+        "bbox",
+        "polygons"
+      ],
+      "title": "Alert",
+      "type": "object"
+    },
+    "AlertEvent": {
+      "description": "The alert type, such as Winter Storm Warning.",
+      "maxLength": 60,
+      "pattern": "^[A-Z][a-z]+(?: [A-Z][a-z]+){1,5}$",
+      "type": "string"
+    },
+    "AlertId": {
+      "description": "12 hex digits, the same for the same member alerts from run to run.",
+      "pattern": "^[0-9a-f]{12}$",
+      "type": "string"
+    },
+    "AlertLevel": {
+      "description": "warning: happening or about to; watch: possible; advisory: less severe.",
+      "enum": [
+        "warning",
+        "watch",
+        "advisory"
+      ],
+      "type": "string"
+    },
+    "BBox": {
+      "description": "[west, south, east, north] of every polygon, in degrees.",
+      "maxItems": 4,
+      "minItems": 4,
+      "prefixItems": [
+        {
+          "$ref": "#/$defs/Longitude",
+          "title": "west"
+        },
+        {
+          "$ref": "#/$defs/Latitude",
+          "title": "south"
+        },
+        {
+          "$ref": "#/$defs/Longitude",
+          "title": "east"
+        },
+        {
+          "$ref": "#/$defs/Latitude",
+          "title": "north"
+        }
+      ],
+      "type": "array"
+    },
+    "Hazard": {
+      "description": "The kind of weather an alert is about.",
+      "enum": [
+        "winter",
+        "cold",
+        "flood",
+        "tropical",
+        "heat",
+        "wind",
+        "severe"
+      ],
+      "type": "string"
+    },
+    "Latitude": {
+      "description": "Degrees north of the equator (WGS 84).",
+      "maximum": 90.0,
+      "minimum": -90.0,
+      "type": "number"
+    },
+    "Longitude": {
+      "description": "Degrees east of Greenwich (WGS 84).",
+      "maximum": 180.0,
+      "minimum": -180.0,
+      "type": "number"
+    },
+    "Polygon": {
+      "description": "An exterior ring (counter-clockwise), then its holes.",
+      "items": {
+        "$ref": "#/$defs/Ring"
+      },
+      "minItems": 1,
+      "type": "array"
+    },
+    "Position": {
+      "description": "[longitude, latitude] in degrees.",
+      "maxItems": 2,
+      "minItems": 2,
+      "prefixItems": [
+        {
+          "$ref": "#/$defs/Longitude",
+          "title": "lon"
+        },
+        {
+          "$ref": "#/$defs/Latitude",
+          "title": "lat"
+        }
+      ],
+      "type": "array"
+    },
+    "Ring": {
+      "description": "A closed ring: four or more positions, last = first.",
+      "items": {
+        "$ref": "#/$defs/Position"
+      },
+      "minItems": 4,
+      "type": "array"
+    },
+    "SchemaVersion": {
+      "const": 1,
+      "description": "The file format's version. A reader refuses a file with any other.",
+      "type": "integer"
+    },
+    "Severity": {
+      "description": "The alert's own severity rating.",
+      "enum": [
+        "Extreme",
+        "Severe",
+        "Moderate",
+        "Minor",
+        "Unknown"
+      ],
+      "type": "string"
+    },
+    "UtcInstant": {
+      "description": "A moment in UTC, whole seconds: YYYY-MM-DDTHH:MM:SSZ.",
+      "format": "date-time",
+      "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}Z$",
+      "type": "string"
+    }
+  },
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "description": "live/alerts.json: today's weather alerts that bear on schools, simplified for the map.",
+  "properties": {
+    "alerts": {
+      "items": {
+        "$ref": "#/$defs/Alert"
+      },
+      "type": "array"
+    },
+    "asOf": {
+      "anyOf": [
+        {
+          "$ref": "#/$defs/UtcInstant"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "description": "When the alert feed itself was generated."
+    },
+    "generatedAt": {
+      "$ref": "#/$defs/UtcInstant"
+    },
+    "schema": {
+      "$ref": "#/$defs/SchemaVersion"
+    }
+  },
+  "required": [
+    "schema",
+    "asOf",
+    "generatedAt",
+    "alerts"
+  ],
+  "title": "AlertsFile",
+  "type": "object",
+  "x-snowlight-path": "live/alerts.json"
+}
