@@ -17,7 +17,9 @@ name: Archive captures
 #   the HTTP status, the SHA-256 and the time it was read.
 #
 # Requests go one at a time, with a pause between them, a User-Agent naming this
-# repository, and retries with backoff on 429 and 5xx answers.
+# repository, and retries with backoff on 429 and 5xx answers. Snapshots are
+# uploaded as the artifact snapshots-<run id> as soon as they are read, before the
+# listings start; listings are uploaded as cdx-<run id>.
 #
 # Run it by hand with inputs, or push a change to
 # pipeline/config/archive-requests.json:
@@ -63,18 +65,9 @@ jobs:
         if: github.event_name == 'push'
         with:
           persist-credentials: false
-      - name: Read the Wayback Machine
-        env:
-          EVENT: ${{ github.event_name }}
-          REQUEST_FILE: pipeline/config/archive-requests.json
-          IN_URLS: ${{ inputs.urls }}
-          IN_FROM: ${{ inputs.from }}
-          IN_TO: ${{ inputs.to }}
-          IN_SNAPSHOTS: ${{ inputs.snapshots }}
-          OUT_DIR: out
-          PAUSE_SECONDS: "5"
+      - name: Write the archive reader
         run: |
-          python3 - <<'PY'
+          cat > "$RUNNER_TEMP/archive_reader.py" <<'PY'
           """Wayback CDX listings and raw snapshot downloads (stdlib only)."""
           import hashlib
           import json
@@ -273,6 +266,11 @@ jobs:
 
 
           listings, snapshots = load_request()
+          mode = os.environ.get("MODE", "all")
+          if mode == "snapshots":
+              listings = []
+          elif mode == "listings":
+              snapshots = []
           out.mkdir(parents=True, exist_ok=True)
           saved = 0
           if snapshots:
@@ -294,10 +292,41 @@ jobs:
               listed += list_captures(item)
           print(f"snapshots: {saved} of {len(snapshots)}; listings: {listed} of {len(listings)}")
           PY
+      - name: Download snapshots
+        env:
+          EVENT: ${{ github.event_name }}
+          REQUEST_FILE: pipeline/config/archive-requests.json
+          IN_URLS: ${{ inputs.urls }}
+          IN_FROM: ${{ inputs.from }}
+          IN_TO: ${{ inputs.to }}
+          IN_SNAPSHOTS: ${{ inputs.snapshots }}
+          PAUSE_SECONDS: "5"
+          MODE: snapshots
+          OUT_DIR: out/snapshots-run
+        run: python3 "$RUNNER_TEMP/archive_reader.py"
       - uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: archive-${{ github.run_id }}
-          path: out
-          if-no-files-found: warn
+          name: snapshots-${{ github.run_id }}
+          path: out/snapshots-run
+          if-no-files-found: ignore
+          retention-days: 30
+      - name: List captures
+        env:
+          EVENT: ${{ github.event_name }}
+          REQUEST_FILE: pipeline/config/archive-requests.json
+          IN_URLS: ${{ inputs.urls }}
+          IN_FROM: ${{ inputs.from }}
+          IN_TO: ${{ inputs.to }}
+          IN_SNAPSHOTS: ${{ inputs.snapshots }}
+          PAUSE_SECONDS: "5"
+          MODE: listings
+          OUT_DIR: out/cdx-run
+        run: python3 "$RUNNER_TEMP/archive_reader.py"
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: cdx-${{ github.run_id }}
+          path: out/cdx-run
+          if-no-files-found: ignore
           retention-days: 30
