@@ -28,10 +28,16 @@ name: Archive captures
 # pipeline/config/archive-requests.json:
 #
 #   {"urls": ["host/path*", ...], "from": "YYYYMMDD", "to": "YYYYMMDD",
-#    "cdx": [{"url": "host/path*", "from": "YYYYMMDD", "to": "YYYYMMDD"}, ...],
+#    "cdx": [{"url": "host/path*", "from": "YYYYMMDD", "to": "YYYYMMDD",
+#             "filter": ["original:.*closings.*"], "collapse": "urlkey"}, ...],
 #    "snapshots": [{"timestamp": "YYYYMMDDhhmmss", "url": "https://host/path"}, ...]}
 #
 # Every key is optional; "urls" share one window, "cdx" entries carry their own.
+# A "cdx" entry may also pass the CDX server's own "filter" (a list of
+# [!]field:regex) and "collapse" (a field name) parameters, to list only the
+# closings files of a busy host or one row per distinct URL; such a listing's
+# file name ends with "__f" and the first 8 hex digits of the SHA-256 of its
+# filter and collapse values, so two filters on one URL do not overwrite each other.
 
 on:
   workflow_dispatch:
@@ -97,6 +103,8 @@ jobs:
           DAY = re.compile(r"^[0-9]{8}$")
           STAMP = re.compile(r"^[0-9]{14}$")
           PATTERN = re.compile(r"^[^\s]+$")
+          CDX_FILTER = re.compile(r"^!?(?:urlkey|timestamp|original|mimetype|statuscode|digest|length):[^\s]+$")
+          CDX_COLLAPSE = re.compile(r"^(?:urlkey|timestamp(?::[0-9]{1,2})?|original|digest|statuscode)$")
           WAYBACK_PATH = re.compile(r"^/web/([0-9]{1,14})id_/(.+)$")
           out = Path(os.environ.get("OUT_DIR", "out"))
           snap_dir = out / "snapshots"
@@ -137,6 +145,16 @@ jobs:
                   for key in ("from", "to"):
                       if not DAY.match(str(item.get(key, ""))):
                           fail(f"bad {key} day in listing {item!r}")
+                  filters = item.get("filter", [])
+                  if not isinstance(filters, list) or not all(
+                      isinstance(f, str) and CDX_FILTER.match(f) for f in filters
+                  ):
+                      fail(f"bad filter in listing {item!r}")
+                  collapse = item.get("collapse")
+                  if collapse is not None and not (
+                      isinstance(collapse, str) and CDX_COLLAPSE.match(collapse)
+                  ):
+                      fail(f"bad collapse in listing {item!r}")
               for item in snapshots:
                   url = str(item.get("url", "")) if isinstance(item, dict) else ""
                   if not STAMP.match(str(item.get("timestamp", ""))):
@@ -193,16 +211,22 @@ jobs:
 
 
           def list_captures(item):
-              query = urllib.parse.urlencode(
-                  {"url": item["url"], "from": item["from"], "to": item["to"],
-                   "output": "json", "fl": FIELDS}
-              )
+              params = [("url", item["url"]), ("from", item["from"]), ("to", item["to"]),
+                        ("output", "json"), ("fl", FIELDS)]
+              params += [("filter", f) for f in item.get("filter") or []]
+              if item.get("collapse"):
+                  params.append(("collapse", item["collapse"]))
+              query = urllib.parse.urlencode(params)
               answer, error = get(f"{CDX}?{query}")
               name = re.sub(r"[^A-Za-z0-9]", "_", item["url"])
               if item.get("windowed"):
-                  window_name = f"{name}__{item['from']}-{item['to']}.json"
+                  window_name = f"{name}__{item['from']}-{item['to']}"
               else:
-                  window_name = f"{name}.json"
+                  window_name = name
+              if item.get("filter") or item.get("collapse"):
+                  key = json.dumps([item.get("filter") or [], item.get("collapse")])
+                  window_name += "__f" + hashlib.sha256(key.encode("utf-8")).hexdigest()[:8]
+              window_name += ".json"
               if error is None and answer.status == 200:
                   try:
                       rows = json.loads(answer.body or b"[]")

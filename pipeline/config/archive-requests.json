@@ -1,8 +1,1152 @@
 {
   "cdx": [
-    {"url": "webpubcontent.raycommedia.com/*", "from": "20170101", "to": "20211231"},
-    {"url": "lmgcorporate.com/closings/*", "from": "20150101", "to": "20211231"},
-    {"url": "gray.ftp.clickability.com/*", "from": "20130101", "to": "20181231"},
-    {"url": "wdbj7ftp.us/sch_closings/*", "from": "20130101", "to": "20181231"}
+    {
+      "url": "webpubcontent.raycommedia.com/kfvs12/*",
+      "from": "20170101",
+      "to": "20211231",
+      "filter": [
+        "original:.*[Cc]losing.*"
+      ]
+    },
+    {
+      "url": "webpubcontent.raycommedia.com/wafb/*",
+      "from": "20170101",
+      "to": "20211231",
+      "filter": [
+        "original:.*[Cc]losing.*"
+      ]
+    },
+    {
+      "url": "webpubcontent.raycommedia.com/wave/*",
+      "from": "20170101",
+      "to": "20211231",
+      "filter": [
+        "original:.*[Cc]losing.*"
+      ]
+    },
+    {
+      "url": "webpubcontent.raycommedia.com/wbrc/*",
+      "from": "20170101",
+      "to": "20211231",
+      "filter": [
+        "original:.*[Cc]losing.*"
+      ]
+    },
+    {
+      "url": "webpubcontent.raycommedia.com/wistv/*",
+      "from": "20170101",
+      "to": "20211231",
+      "filter": [
+        "original:.*[Cc]losing.*"
+      ]
+    },
+    {
+      "url": "webpubcontent.raycommedia.com/woio/*",
+      "from": "20170101",
+      "to": "20211231",
+      "filter": [
+        "original:.*[Cc]losing.*"
+      ]
+    },
+    {
+      "url": "webpubcontent.raycommedia.com/raycom/gsync/*",
+      "from": "20180101",
+      "to": "20211231"
+    },
+    {
+      "url": "webpubcontent.gray.tv/kptv/*",
+      "from": "20190101",
+      "to": "20260930",
+      "filter": [
+        "original:.*[Cc]losing.*"
+      ]
+    },
+    {
+      "url": "webpubcontent.gray.tv/wfsb/*",
+      "from": "20190101",
+      "to": "20260930",
+      "filter": [
+        "original:.*[Cc]losing.*"
+      ]
+    },
+    {
+      "url": "webpubcontent.gray.tv/wggb/*",
+      "from": "20190101",
+      "to": "20260930",
+      "filter": [
+        "original:.*[Cc]losing.*"
+      ]
+    },
+    {
+      "url": "webpubcontent.gray.tv/wlio/*",
+      "from": "20190101",
+      "to": "20260930",
+      "filter": [
+        "original:.*[Cc]losing.*"
+      ]
+    },
+    {
+      "url": "webpubcontent.gray.tv/week/*",
+      "from": "20190101",
+      "to": "20260930",
+      "filter": [
+        "original:.*[Cc]losing.*"
+      ]
+    },
+    {
+      "url": "lmgcorporate.com/whns/*",
+      "from": "20150101",
+      "to": "20211231"
+    },
+    {
+      "url": "ftp2.wjrt.com/*",
+      "from": "20140101",
+      "to": "20260930",
+      "filter": [
+        "original:.*[Cc]losing.*"
+      ]
+    },
+    {
+      "url": "ftp2.wthitv.com/*",
+      "from": "20140101",
+      "to": "20260930",
+      "filter": [
+        "original:.*[Cc]losing.*"
+      ]
+    },
+    {
+      "url": "amb-feeds.s3.amazonaws.com/*",
+      "from": "20190101",
+      "to": "20260930"
+    },
+    {
+      "url": "www.kake.com/app/closings/*",
+      "from": "20190101",
+      "to": "20260930"
+    },
+    {
+      "url": "s3.amazonaws.com/grayfilestore-wbko/closingsData/*",
+      "from": "20180101",
+      "to": "20231031"
+    },
+    {
+      "url": "s3.amazonaws.com/grayfilestore-wdbj/closingsData/*",
+      "from": "20180101",
+      "to": "20231031"
+    },
+    {
+      "url": "s3.amazonaws.com/grayfilestore-wvlt/closingsData/*",
+      "from": "20180101",
+      "to": "20231031"
+    },
+    {
+      "url": "lmgcorporate.com/*",
+      "from": "20140101",
+      "to": "20221231",
+      "filter": [
+        "original:.*[Cc]losing.*"
+      ],
+      "collapse": "urlkey"
+    },
+    {
+      "url": "webpubcontent.gray.tv/*",
+      "from": "20190101",
+      "to": "20260930",
+      "filter": [
+        "original:.*[Cc]losing.*"
+      ],
+      "collapse": "urlkey"
+    },
+    {
+      "url": "webpubcontent.raycommedia.com/*",
+      "from": "20170101",
+      "to": "20211231",
+      "filter": [
+        "original:.*[Cc]losing.*"
+      ],
+      "collapse": "urlkey"
+    }
+  ],
+  "snapshots": [
+    {
+      "timestamp": "20251213100723",
+      "url": "https://s3.amazonaws.com/grayfilestore-wsmv/closingsData/closings_WSMV.json?rnd=213997&arc-site=wsmv"
+    },
+    {
+      "timestamp": "20260128081755",
+      "url": "https://s3.amazonaws.com/grayfilestore-wsmv/closingsData/closings_WSMV.json"
+    },
+    {
+      "timestamp": "20260127074132",
+      "url": "https://s3.amazonaws.com/grayfilestore-wbrc/closingsData/closings_WBRC.json"
+    },
+    {
+      "timestamp": "20260125043758",
+      "url": "https://s3.amazonaws.com/grayfilestore-wgcl/closingsData/closings_WGCL.json"
+    },
+    {
+      "timestamp": "20251129233545",
+      "url": "https://s3.amazonaws.com/grayfilestore-wbtv/closingsData/closings_WBTV.json?rnd=981179&arc-site=wbtv"
+    },
+    {
+      "timestamp": "20260127221950",
+      "url": "https://s3.amazonaws.com/grayfilestore-wbtv/closingsData/closings_WBTV.json"
+    },
+    {
+      "timestamp": "20260126030812",
+      "url": "https://s3.amazonaws.com/grayfilestore-wis/closingsData/closings_WIS.json"
+    },
+    {
+      "timestamp": "20251217041838",
+      "url": "https://s3.amazonaws.com/grayfilestore-wkyt/closingsData/closings_WKYT.json?rnd=996594&arc-site=wkyt"
+    },
+    {
+      "timestamp": "20260127004608",
+      "url": "https://s3.amazonaws.com/grayfilestore-wkyt/closingsData/closings_WKYT.json"
+    },
+    {
+      "timestamp": "20260203073601",
+      "url": "https://s3.amazonaws.com/grayfilestore-wave/closingsData/closings_WAVE.json"
+    },
+    {
+      "timestamp": "20260206094407",
+      "url": "https://s3.amazonaws.com/grayfilestore-wsaz/closingsData/closings_WSAZ.json"
+    },
+    {
+      "timestamp": "20260124205249",
+      "url": "https://s3.amazonaws.com/grayfilestore-wdbj/closingsData/closings_WDBJ.json"
+    },
+    {
+      "timestamp": "20240116222435",
+      "url": "https://webpubcontent.gray.tv/kptv/closings/schoolclosures.html"
+    },
+    {
+      "timestamp": "20250317212819",
+      "url": "https://www.kake.com/app/closings/closings.xml"
+    },
+    {
+      "timestamp": "20241205162514",
+      "url": "https://webpubcontent.gray.tv/wfsb/xml/WFSBclosings.html"
+    },
+    {
+      "timestamp": "20241205004949",
+      "url": "https://webpubcontent.gray.tv/wggb/xml/WMNclosings.html"
+    },
+    {
+      "timestamp": "20191216135847",
+      "url": "https://s3.amazonaws.com/grayfilestore-wbko/closingsData/closings_WBKO.json?c=n&r=16111196558"
+    },
+    {
+      "timestamp": "20141101044630",
+      "url": "http://wdbj7ftp.us/sch_closings/site_closings_noscroll.html"
+    },
+    {
+      "timestamp": "20151230121935",
+      "url": "http://wdbj7ftp.us/sch_closings/site_closings_noscroll.html"
+    },
+    {
+      "timestamp": "20160316133648",
+      "url": "http://wdbj7ftp.us/sch_closings/site_closings_noscroll.html"
+    },
+    {
+      "timestamp": "20191214125400",
+      "url": "https://s3.amazonaws.com/grayfilestore-wdbj/closingsData/closings_WDBJ.json?c=n&r=14111196453"
+    },
+    {
+      "timestamp": "20250216034535",
+      "url": "https://ftp2.wjrt.com/school_closings/wjrtclosings.html"
+    },
+    {
+      "timestamp": "20250124122656",
+      "url": "https://amb-feeds.s3.amazonaws.com/WLFI_closings.json"
+    },
+    {
+      "timestamp": "20250305200647",
+      "url": "https://ftp2.wthitv.com/NWT/closings.html"
+    },
+    {
+      "timestamp": "20241122221720",
+      "url": "https://amb-feeds.s3.amazonaws.com/WTVA_closings.json"
+    },
+    {
+      "timestamp": "20151230154606",
+      "url": "http://gray.ftp.clickability.com/kcrgwebftp/closings.html"
+    },
+    {
+      "timestamp": "20160102040535",
+      "url": "http://gray.ftp.clickability.com/kcrgwebftp/closings.html"
+    },
+    {
+      "timestamp": "20181009230234",
+      "url": "http://lmgcorporate.com/closings/kctv/closings.xml"
+    },
+    {
+      "timestamp": "20191115040256",
+      "url": "http://lmgcorporate.com/closings/kctv/closings.xml"
+    },
+    {
+      "timestamp": "20200117080205",
+      "url": "http://lmgcorporate.com/closings/kctv/closings.xml"
+    },
+    {
+      "timestamp": "20181118182320",
+      "url": "https://webpubcontent.raycommedia.com/kfvs12/closings.html"
+    },
+    {
+      "timestamp": "20191116212553",
+      "url": "https://webpubcontent.raycommedia.com/raycom/gsync/"
+    },
+    {
+      "timestamp": "20201201151154",
+      "url": "https://webpubcontent.raycommedia.com/raycom/gsync/"
+    },
+    {
+      "timestamp": "20181113174711",
+      "url": "http://lmgcorporate.com/closings/kmov/KMOV-SC45C.xml"
+    },
+    {
+      "timestamp": "20191113132028",
+      "url": "http://lmgcorporate.com/closings/kmov/KMOV-SC45C.xml"
+    },
+    {
+      "timestamp": "20200211234147",
+      "url": "http://lmgcorporate.com/closings/kmov/KMOV-SC45C.xml"
+    },
+    {
+      "timestamp": "20191208181124",
+      "url": "https://lmgcorporate.com/closings/kptv/schoolclosures.html"
+    },
+    {
+      "timestamp": "20201119155004",
+      "url": "https://lmgcorporate.com/closings/kptv/schoolclosures.html"
+    },
+    {
+      "timestamp": "20181103113603",
+      "url": "https://webpubcontent.raycommedia.com/wafb/NewsTicker/Closings/closings.html"
+    },
+    {
+      "timestamp": "20190103192036",
+      "url": "https://webpubcontent.raycommedia.com/wafb/NewsTicker/Closings/closings.html"
+    },
+    {
+      "timestamp": "20201101040051",
+      "url": "https://webpubcontent.raycommedia.com/raycom/gsync/"
+    },
+    {
+      "timestamp": "20181119110845",
+      "url": "https://webpubcontent.raycommedia.com/wave/closings/closings.html"
+    },
+    {
+      "timestamp": "20191204184506",
+      "url": "https://webpubcontent.raycommedia.com/wave/closings/closings.html"
+    },
+    {
+      "timestamp": "20210127230543",
+      "url": "https://webpubcontent.raycommedia.com/raycom/gsync/"
+    },
+    {
+      "timestamp": "20181210135543",
+      "url": "https://webpubcontent.raycommedia.com/wbrc/closings.html"
+    },
+    {
+      "timestamp": "20191210155751",
+      "url": "https://webpubcontent.raycommedia.com/wbrc/closings.html"
+    },
+    {
+      "timestamp": "20201101011915",
+      "url": "https://webpubcontent.raycommedia.com/wbrc/closings.html"
+    },
+    {
+      "timestamp": "20181212161445",
+      "url": "http://lmgcorporate.com/closings/wfsb/Closings/WFSBclosings.xml"
+    },
+    {
+      "timestamp": "20191113094903",
+      "url": "http://lmgcorporate.com/closings/wfsb/Closings/WFSBclosings.xml"
+    },
+    {
+      "timestamp": "20200313175250",
+      "url": "http://lmgcorporate.com/closings/wfsb/Closings/WFSBclosings.xml"
+    },
+    {
+      "timestamp": "20191116023105",
+      "url": "https://lmgcorporate.com/whns/closings/all.htm"
+    },
+    {
+      "timestamp": "20200217040805",
+      "url": "https://lmgcorporate.com/whns/closings/all.htm"
+    },
+    {
+      "timestamp": "20181122152156",
+      "url": "https://webpubcontent.raycommedia.com/wistv/Newsticker/closings.html"
+    },
+    {
+      "timestamp": "20190322150044",
+      "url": "https://webpubcontent.raycommedia.com/wistv/Newsticker/closings.html"
+    },
+    {
+      "timestamp": "20201109103749",
+      "url": "https://webpubcontent.raycommedia.com/raycom/gsync/"
+    },
+    {
+      "timestamp": "20181222093945",
+      "url": "https://webpubcontent.raycommedia.com/woio/closings/closings.html"
+    },
+    {
+      "timestamp": "20191115174923",
+      "url": "https://webpubcontent.raycommedia.com/woio/closings/closings.html"
+    },
+    {
+      "timestamp": "20201123140126",
+      "url": "https://webpubcontent.raycommedia.com/woio/closings/closings.html"
+    },
+    {
+      "timestamp": "20191112102511",
+      "url": "https://s3.amazonaws.com/grayfilestore-wvlt/closingsData/closings_WVLT.json?c=n&r=12101196225"
+    },
+    {
+      "timestamp": "20260905112744",
+      "url": "https://webpubcontent.gray.tv/wlio/Closings/closings.html"
+    },
+    {
+      "timestamp": "20220111164536",
+      "url": "https://webpubcontent.gray.tv/week/newsticker/closings.html"
+    },
+    {
+      "timestamp": "20181219005936",
+      "url": "https://lmgcorporate.com/closings/kctv/closings.xml"
+    },
+    {
+      "timestamp": "20200121233932",
+      "url": "https://lmgcorporate.com/closings/kctv/closings.xml"
+    },
+    {
+      "timestamp": "20200205215237",
+      "url": "https://lmgcorporate.com/closings/kctv/closings.xml"
+    },
+    {
+      "timestamp": "20200305225543",
+      "url": "https://lmgcorporate.com/closings/kctv/closings.xml"
+    },
+    {
+      "timestamp": "20200315055818",
+      "url": "https://lmgcorporate.com/closings/kctv/closings.xml"
+    },
+    {
+      "timestamp": "20200315105435",
+      "url": "https://lmgcorporate.com/closings/kctv/closings.xml"
+    },
+    {
+      "timestamp": "20200315120015",
+      "url": "https://lmgcorporate.com/closings/kctv/closings.xml"
+    },
+    {
+      "timestamp": "20200317095151",
+      "url": "https://lmgcorporate.com/closings/kctv/closings.xml"
+    },
+    {
+      "timestamp": "20201203011048",
+      "url": "https://lmgcorporate.com/closings/kctv/closings.xml"
+    },
+    {
+      "timestamp": "20201212223326",
+      "url": "https://lmgcorporate.com/closings/kctv/closings.xml"
+    },
+    {
+      "timestamp": "20201208195958",
+      "url": "http://lmgcorporate.com/closings/kmov/KMOV-SC45C.xml"
+    },
+    {
+      "timestamp": "20201202211139",
+      "url": "https://lmgcorporate.com/closings/wfsb/Closings/WFSBclosings.xml"
+    },
+    {
+      "timestamp": "20201211224834",
+      "url": "https://lmgcorporate.com/closings/wfsb/Closings/WFSBclosings.xml"
+    },
+    {
+      "timestamp": "20201210023135",
+      "url": "https://lmgcorporate.com/closings/wnem/schools.xml"
+    },
+    {
+      "timestamp": "20201208230110",
+      "url": "https://lmgcorporate.com/closings/wshm/Closings/WMNclosings.xml"
+    },
+    {
+      "timestamp": "20201217133722",
+      "url": "https://lmgcorporate.com/closings/wshm/Closings/WMNclosings.xml"
+    },
+    {
+      "timestamp": "20201218003328",
+      "url": "https://lmgcorporate.com/closings/wshm/Closings/WMNclosings.xml"
+    },
+    {
+      "timestamp": "20201222172744",
+      "url": "https://lmgcorporate.com/closings/wshm/Closings/WMNclosings.xml"
+    },
+    {
+      "timestamp": "20201230041422",
+      "url": "https://lmgcorporate.com/closings/wshm/Closings/WMNclosings.xml"
+    },
+    {
+      "timestamp": "20210103021733",
+      "url": "https://lmgcorporate.com/closings/wshm/Closings/WMNclosings.xml"
+    },
+    {
+      "timestamp": "20210204034655",
+      "url": "https://lmgcorporate.com/closings/wshm/Closings/WMNclosings.xml"
+    },
+    {
+      "timestamp": "20210211102608",
+      "url": "https://lmgcorporate.com/closings/wshm/Closings/WMNclosings.xml"
+    },
+    {
+      "timestamp": "20210218234001",
+      "url": "https://lmgcorporate.com/closings/wshm/Closings/WMNclosings.xml"
+    },
+    {
+      "timestamp": "20210225065349",
+      "url": "https://lmgcorporate.com/closings/wshm/Closings/WMNclosings.xml"
+    },
+    {
+      "timestamp": "20190203210606",
+      "url": "http://lmgcorporate.com/closings/wsmv/WSMV-SC4C.xml"
+    },
+    {
+      "timestamp": "20201209040237",
+      "url": "https://lmgcorporate.com/closings/wsmv/WSMV-SC4C.xml"
+    },
+    {
+      "timestamp": "20201210080517",
+      "url": "http://lmgcorporate.com/closings/wsmv/WSMV-SC4C.xml"
+    },
+    {
+      "timestamp": "20201230052338",
+      "url": "http://lmgcorporate.com/closings/wsmv/WSMV-SC4C.xml"
+    },
+    {
+      "timestamp": "20210114160715",
+      "url": "https://lmgcorporate.com/closings/wsmv/WSMV-SC4C.xml"
+    },
+    {
+      "timestamp": "20150315092259",
+      "url": "http://lmgcorporate.com/closings/kptv/schoolclosures.html"
+    },
+    {
+      "timestamp": "20150315010249",
+      "url": "http://lmgcorporate.com/closings/kptv/schoolclosures.html"
+    },
+    {
+      "timestamp": "20150115104452",
+      "url": "http://lmgcorporate.com/closings/kptv/schoolclosures.html"
+    },
+    {
+      "timestamp": "20160113152023",
+      "url": "http://lmgcorporate.com/closings/kptv/schoolclosures.html"
+    },
+    {
+      "timestamp": "20160115111141",
+      "url": "http://lmgcorporate.com/closings/kptv/schoolclosures.html"
+    },
+    {
+      "timestamp": "20160213112427",
+      "url": "http://lmgcorporate.com/closings/kptv/schoolclosures.html"
+    },
+    {
+      "timestamp": "20170113013200",
+      "url": "http://lmgcorporate.com/closings/kptv/schoolclosures.html"
+    },
+    {
+      "timestamp": "20170111031848",
+      "url": "http://lmgcorporate.com/closings/kptv/schoolclosures.html"
+    },
+    {
+      "timestamp": "20170119173639",
+      "url": "http://lmgcorporate.com/closings/kptv/schoolclosures.html"
+    },
+    {
+      "timestamp": "20180309213943",
+      "url": "http://lmgcorporate.com/closings/kptv/schoolclosures.html"
+    },
+    {
+      "timestamp": "20171216193736",
+      "url": "http://lmgcorporate.com/closings/kptv/schoolclosures.html"
+    },
+    {
+      "timestamp": "20180130231004",
+      "url": "http://lmgcorporate.com/closings/kptv/schoolclosures.html"
+    },
+    {
+      "timestamp": "20190321165417",
+      "url": "https://lmgcorporate.com/closings/kptv/schoolclosures.html"
+    },
+    {
+      "timestamp": "20181118121843",
+      "url": "http://lmgcorporate.com/closings/kptv/schoolclosures.html"
+    },
+    {
+      "timestamp": "20200317023000",
+      "url": "https://lmgcorporate.com/closings/kptv/schoolclosures.html"
+    },
+    {
+      "timestamp": "20200318024426",
+      "url": "https://lmgcorporate.com/closings/kptv/schoolclosures.html"
+    },
+    {
+      "timestamp": "20200330020758",
+      "url": "https://lmgcorporate.com/closings/kptv/schoolclosures.html"
+    },
+    {
+      "timestamp": "20201106204811",
+      "url": "https://lmgcorporate.com/closings/kptv/schoolclosures.html"
+    },
+    {
+      "timestamp": "20210206153258",
+      "url": "https://lmgcorporate.com/closings/kptv/schoolclosures.html"
+    },
+    {
+      "timestamp": "20201215233236",
+      "url": "https://lmgcorporate.com/closings/kptv/schoolclosures.html"
+    },
+    {
+      "timestamp": "20211110172047",
+      "url": "https://lmgcorporate.com/closings/kptv/schoolclosures.html"
+    },
+    {
+      "timestamp": "20211223032948",
+      "url": "https://lmgcorporate.com/closings/kptv/schoolclosures.html"
+    },
+    {
+      "timestamp": "20160225235855",
+      "url": "http://gray.ftp.clickability.com/kcrgwebftp/closings.html"
+    },
+    {
+      "timestamp": "20160327211543",
+      "url": "http://gray.ftp.clickability.com/kcrgwebftp/closings.html"
+    },
+    {
+      "timestamp": "20160404014525",
+      "url": "http://gray.ftp.clickability.com/kcrgwebftp/closings.html"
+    },
+    {
+      "timestamp": "20160307171830",
+      "url": "http://wdbj7ftp.us/sch_closings/mobile_closings_site.php"
+    },
+    {
+      "timestamp": "20160404094555",
+      "url": "http://wdbj7ftp.us/sch_closings/mobile_closings_site.php"
+    },
+    {
+      "timestamp": "20131013055514",
+      "url": "http://wdbj7ftp.us/sch_closings/site_closings.html"
+    },
+    {
+      "timestamp": "20131216004411",
+      "url": "http://wdbj7ftp.us/sch_closings/site_closings.html"
+    },
+    {
+      "timestamp": "20140128220533",
+      "url": "http://wdbj7ftp.us/sch_closings/site_closings_noscroll.html"
+    },
+    {
+      "timestamp": "20140529184602",
+      "url": "http://wdbj7ftp.us/sch_closings/site_closings_noscroll.html"
+    },
+    {
+      "timestamp": "20151106005700",
+      "url": "http://wdbj7ftp.us/sch_closings/site_closings_noscroll.html"
+    },
+    {
+      "timestamp": "20260123180918",
+      "url": "https://www.kake.com/weather/closings-and-delays/"
+    },
+    {
+      "timestamp": "20250219142859",
+      "url": "https://www.kake.com/weather/closings-and-delays/"
+    },
+    {
+      "timestamp": "20250109123034",
+      "url": "https://www.kake.com/weather/closings-and-delays/"
+    },
+    {
+      "timestamp": "20250123171554",
+      "url": "https://www.newschannel6now.com/weather/closings/"
+    },
+    {
+      "timestamp": "20230131131648",
+      "url": "https://www.newschannel6now.com/weather/closings/?fbclid=IwAR0EmAXL0B5pOa7Ta688Zz5SHQA6LyCa70uT3lC0pljDcR2MMegkMM8VJqk"
+    },
+    {
+      "timestamp": "20240111125227",
+      "url": "https://www.newschannel6now.com/weather/closings/"
+    },
+    {
+      "timestamp": "20260125010600",
+      "url": "https://www.newschannel6now.com/weather/closings/"
+    },
+    {
+      "timestamp": "20250119084403",
+      "url": "https://www.kcbd.com/weather/closings/"
+    },
+    {
+      "timestamp": "20240109171010",
+      "url": "https://www.kcbd.com/weather/closings/"
+    },
+    {
+      "timestamp": "20221221020252",
+      "url": "https://www.kcbd.com/weather/closings/"
+    },
+    {
+      "timestamp": "20230131150216",
+      "url": "https://www.kcbd.com/weather/closings/?utm_source=twitter&utm_medium=social&utm_campaign=snd&utm_content=kcbd"
+    },
+    {
+      "timestamp": "20221225232841",
+      "url": "https://www.kfyrtv.com/weather/closings/"
+    },
+    {
+      "timestamp": "20220202035158",
+      "url": "https://www.kfyrtv.com/weather/closings/"
+    },
+    {
+      "timestamp": "20220104193758",
+      "url": "https://www.kfyrtv.com/weather/closings/?20220104130&utm_source=twitter&utm_medium=social&utm_campaign=snd&utm_content=kumv"
+    },
+    {
+      "timestamp": "20220116083546",
+      "url": "https://www.kfyrtv.com/weather/closings/"
+    },
+    {
+      "timestamp": "20251216221420",
+      "url": "https://s3.amazonaws.com/grayfilestore-kkco/closingsData/closings_KKCO.json?rnd=971088&arc-site=kkco"
+    },
+    {
+      "timestamp": "20250119075948",
+      "url": "https://www.kmvt.com/weather/closings/"
+    },
+    {
+      "timestamp": "20250221073425",
+      "url": "https://www.kmvt.com/weather/closings/"
+    },
+    {
+      "timestamp": "20210217234246",
+      "url": "https://www.kmvt.com/weather/closings/"
+    },
+    {
+      "timestamp": "20220103004311",
+      "url": "https://www.kmvt.com/weather/closings/"
+    },
+    {
+      "timestamp": "20250212034309",
+      "url": "https://www.knopnews2.com/weather/closings/"
+    },
+    {
+      "timestamp": "20250123051034",
+      "url": "https://www.knopnews2.com/weather/closings/"
+    },
+    {
+      "timestamp": "20220103182932",
+      "url": "https://www.knopnews2.com/weather/closings/"
+    },
+    {
+      "timestamp": "20260122235922",
+      "url": "https://www.knopnews2.com/weather/closings/"
+    },
+    {
+      "timestamp": "20220107105745",
+      "url": "https://www.kolotv.com/weather/closings/"
+    },
+    {
+      "timestamp": "20251214013010",
+      "url": "https://www.kolotv.com/weather/closings/"
+    },
+    {
+      "timestamp": "20220122064356",
+      "url": "https://www.kolotv.com/weather/closings/"
+    },
+    {
+      "timestamp": "20210215050137",
+      "url": "https://www.kolotv.com/weather/closings/"
+    },
+    {
+      "timestamp": "20240117201536",
+      "url": "https://www.kotatv.com/weather/closings/"
+    },
+    {
+      "timestamp": "20220104034844",
+      "url": "https://www.kotatv.com/weather/closings/"
+    },
+    {
+      "timestamp": "20260126002319",
+      "url": "https://www.kotatv.com/weather/closings/"
+    },
+    {
+      "timestamp": "20210217231447",
+      "url": "https://www.kotatv.com/weather/closings/"
+    },
+    {
+      "timestamp": "20230131060436",
+      "url": "https://www.azfamily.com/weather/closings/"
+    },
+    {
+      "timestamp": "20220120030012",
+      "url": "https://www.kptv.com/weather/closings/"
+    },
+    {
+      "timestamp": "20220104224810",
+      "url": "https://www.kptv.com/weather/closings/"
+    },
+    {
+      "timestamp": "20210215105902",
+      "url": "https://www.kptv.com/weather/closings/"
+    },
+    {
+      "timestamp": "20240117025320",
+      "url": "https://www.kptv.com/weather/closings/"
+    },
+    {
+      "timestamp": "20240117200311",
+      "url": "https://www.ksla.com/weather/closings/"
+    },
+    {
+      "timestamp": "20220202224255",
+      "url": "https://www.ksla.com/weather/closings/"
+    },
+    {
+      "timestamp": "20210214112540",
+      "url": "https://www.ksla.com/weather/closings/?utm_source=twitter&utm_medium=social&utm_campaign=snd&utm_content=ksla"
+    },
+    {
+      "timestamp": "20240111203709",
+      "url": "https://www.ksnblocal4.com/weather/closings/"
+    },
+    {
+      "timestamp": "20250212012914",
+      "url": "https://www.ksnblocal4.com/weather/closings/"
+    },
+    {
+      "timestamp": "20250112055025",
+      "url": "https://www.ksnblocal4.com/weather/closings/"
+    },
+    {
+      "timestamp": "20210214033818",
+      "url": "https://www.ksnblocal4.com/weather/closings/"
+    },
+    {
+      "timestamp": "20240117200152",
+      "url": "https://www.ktiv.com/weather/closings/"
+    },
+    {
+      "timestamp": "20251205054144",
+      "url": "https://www.ktiv.com/weather/closings/"
+    },
+    {
+      "timestamp": "20220121235730",
+      "url": "https://www.ktiv.com/weather/closings/"
+    },
+    {
+      "timestamp": "20220103150141",
+      "url": "https://www.ktiv.com/weather/closings/"
+    },
+    {
+      "timestamp": "20220202174622",
+      "url": "http://www.ktre.com/weather/closings/"
+    },
+    {
+      "timestamp": "20210218102331",
+      "url": "https://www.ktre.com/weather/closings/"
+    },
+    {
+      "timestamp": "20240117200118",
+      "url": "https://www.kttc.com/weather/closings/"
+    },
+    {
+      "timestamp": "20250216093821",
+      "url": "https://www.kttc.com/weather/closings/"
+    },
+    {
+      "timestamp": "20260123165622",
+      "url": "https://www.kttc.com/weather/closings/"
+    },
+    {
+      "timestamp": "20251204174002",
+      "url": "https://www.kttc.com/weather/closings/"
+    },
+    {
+      "timestamp": "20230131165520",
+      "url": "https://www.kwtx.com/weather/closings/"
+    },
+    {
+      "timestamp": "20220203002357",
+      "url": "https://www.kwtx.com/weather/closings/"
+    },
+    {
+      "timestamp": "20220107113754",
+      "url": "https://www.kwtx.com/weather/closings/"
+    },
+    {
+      "timestamp": "20260126032706",
+      "url": "https://www.kwtx.com/weather/closings/"
+    },
+    {
+      "timestamp": "20251205093733",
+      "url": "https://www.kyoutv.com/weather/closings/"
+    },
+    {
+      "timestamp": "20240116013451",
+      "url": "https://www.wafb.com/weather/closings/"
+    },
+    {
+      "timestamp": "20250110045721",
+      "url": "https://www.wbrc.com/weather/closings/"
+    },
+    {
+      "timestamp": "20250213093109",
+      "url": "https://www.wbrc.com/weather/closings/"
+    },
+    {
+      "timestamp": "20240119185415",
+      "url": "https://www.wbrc.com/weather/closings/"
+    },
+    {
+      "timestamp": "20250122052315",
+      "url": "https://www.wbrc.com/weather/closings/"
+    },
+    {
+      "timestamp": "20210217185201",
+      "url": "https://www.wcjb.com/weather/closings/"
+    },
+    {
+      "timestamp": "20220116215452",
+      "url": "https://www.week.com/weather/closings/"
+    },
+    {
+      "timestamp": "20220104204621",
+      "url": "https://www.wfsb.com/weather/closings/"
+    },
+    {
+      "timestamp": "20220118144036",
+      "url": "https://www.wfsb.com/weather/closings/"
+    },
+    {
+      "timestamp": "20220204133829",
+      "url": "https://www.wfsb.com/weather/closings/"
+    },
+    {
+      "timestamp": "20210216120717",
+      "url": "https://www.wfsb.com/weather/closings/"
+    },
+    {
+      "timestamp": "20250213151352",
+      "url": "https://www.westernmassnews.com/weather/closings/"
+    },
+    {
+      "timestamp": "20260126162121",
+      "url": "https://www.westernmassnews.com/weather/closings/"
+    },
+    {
+      "timestamp": "20251202190523",
+      "url": "https://www.westernmassnews.com/weather/closings/"
+    },
+    {
+      "timestamp": "20240119055116",
+      "url": "https://www.foxcarolina.com/weather/closings/"
+    },
+    {
+      "timestamp": "20250107053432",
+      "url": "https://www.foxcarolina.com/weather/closings/"
+    },
+    {
+      "timestamp": "20250210173121",
+      "url": "https://www.foxcarolina.com/weather/closings/"
+    },
+    {
+      "timestamp": "20260123030110",
+      "url": "https://www.foxcarolina.com/weather/closings/"
+    },
+    {
+      "timestamp": "20250122060742",
+      "url": "https://www.wistv.com/weather/closings/"
+    },
+    {
+      "timestamp": "20240114012754",
+      "url": "https://www.wistv.com/weather/closings/"
+    },
+    {
+      "timestamp": "20250213113841",
+      "url": "https://www.wistv.com/weather/closings/"
+    },
+    {
+      "timestamp": "20260125152033",
+      "url": "https://www.wistv.com/weather/closings/"
+    },
+    {
+      "timestamp": "20230131235903",
+      "url": "https://www.wjhg.com/weather/closings/"
+    },
+    {
+      "timestamp": "20220116082308",
+      "url": "https://www.wjhg.com/weather/closings/"
+    },
+    {
+      "timestamp": "20220107210752",
+      "url": "https://www.wjhg.com/weather/closings/"
+    },
+    {
+      "timestamp": "20210215194705",
+      "url": "https://www.wjhg.com/weather/closings/"
+    },
+    {
+      "timestamp": "20260126024038",
+      "url": "https://www.abc12.com/weather/closings/"
+    },
+    {
+      "timestamp": "20250212004941",
+      "url": "https://www.abc12.com/weather/closings/"
+    },
+    {
+      "timestamp": "20250123155604",
+      "url": "https://www.abc12.com/weather/closings/"
+    },
+    {
+      "timestamp": "20251210020209",
+      "url": "https://www.abc12.com/weather/closings/"
+    },
+    {
+      "timestamp": "20251201182250",
+      "url": "https://www.wlfi.com/weather/closings/"
+    },
+    {
+      "timestamp": "20230130092531",
+      "url": "https://www.wlfi.com/weather/closings/"
+    },
+    {
+      "timestamp": "20220116103255",
+      "url": "https://www.wlfi.com/weather/closings/?c=0.3530747565677871"
+    },
+    {
+      "timestamp": "20210217071503",
+      "url": "https://www.wlfi.com/weather/closings/?c=0.7494708710200366"
+    },
+    {
+      "timestamp": "20240109232454",
+      "url": "https://s3.amazonaws.com/grayfilestore-wmc/closingsData/closings_WMC.json?rnd=341561&arc-site=wmctv"
+    },
+    {
+      "timestamp": "20250212124949",
+      "url": "https://www.wsfa.com/weather/closings/"
+    },
+    {
+      "timestamp": "20250108112125",
+      "url": "https://www.wsfa.com/weather/closings/"
+    },
+    {
+      "timestamp": "20230131055034",
+      "url": "https://www.wsfa.com/weather/closings/"
+    },
+    {
+      "timestamp": "20260130153843",
+      "url": "https://www.wsfa.com/weather/closings/"
+    },
+    {
+      "timestamp": "20250108153802",
+      "url": "https://www.wtap.com/weather/closings/"
+    },
+    {
+      "timestamp": "20250212162055",
+      "url": "https://www.wtap.com/weather/closings/"
+    },
+    {
+      "timestamp": "20260128105748",
+      "url": "https://www.wthitv.com/weather/closings/"
+    },
+    {
+      "timestamp": "20251216070508",
+      "url": "https://www.wthitv.com/weather/closings/"
+    },
+    {
+      "timestamp": "20250210090634",
+      "url": "https://www.wthitv.com/weather/closings/"
+    },
+    {
+      "timestamp": "20210219024657",
+      "url": "https://www.wthitv.com/weather/closings/?c=0.34452525693426195"
+    },
+    {
+      "timestamp": "20240116172301",
+      "url": "https://www.wtok.com/weather/closings/"
+    },
+    {
+      "timestamp": "20220104114632",
+      "url": "https://www.wtok.com/weather/closings/"
+    },
+    {
+      "timestamp": "20251203054729",
+      "url": "https://www.wtok.com/weather/closings/"
+    },
+    {
+      "timestamp": "20210214221110",
+      "url": "https://www.wtok.com/weather/closings/?utm_source=twitter&utm_medium=social&utm_campaign=snd&utm_content=wtok"
+    },
+    {
+      "timestamp": "20220119190223",
+      "url": "https://www.wtva.com/weather/closings/"
+    },
+    {
+      "timestamp": "20220202014054",
+      "url": "https://www.wtva.com/weather/closings/"
+    },
+    {
+      "timestamp": "20210218102759",
+      "url": "https://www.wtva.com/weather/closings/?c=0.13176577318341431"
+    },
+    {
+      "timestamp": "20240112195853",
+      "url": "https://www.wtvm.com/weather/closings/"
+    },
+    {
+      "timestamp": "20250109195409",
+      "url": "https://www.wtvm.com/weather/closings/"
+    },
+    {
+      "timestamp": "20230131040317",
+      "url": "https://www.wtvm.com/weather/closings/"
+    },
+    {
+      "timestamp": "20221223201856",
+      "url": "https://www.wtvy.com/weather/closings/"
+    },
+    {
+      "timestamp": "20250217173223",
+      "url": "https://www.wtvy.com/weather/closings/"
+    },
+    {
+      "timestamp": "20260125040025",
+      "url": "https://www.wtvy.com/weather/closings/"
+    },
+    {
+      "timestamp": "20210215211001",
+      "url": "https://www.wtvy.com/weather/closings/?utm_source=twitter&utm_medium=social&utm_campaign=snd&utm_content=wtvy"
+    },
+    {
+      "timestamp": "20250109111343",
+      "url": "https://www.wvlt.tv/weather/closings/"
+    },
+    {
+      "timestamp": "20250221093330",
+      "url": "https://www.wvlt.tv/weather/closings/"
+    },
+    {
+      "timestamp": "20240114045812",
+      "url": "https://www.wvlt.tv/weather/closings/"
+    },
+    {
+      "timestamp": "20220103112333",
+      "url": "https://www.wvlt.tv/weather/closings/"
+    },
+    {
+      "timestamp": "20240118183940",
+      "url": "https://www.fox8live.com/weather/closings/"
+    }
   ]
 }
