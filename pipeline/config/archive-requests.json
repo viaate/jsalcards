@@ -1,260 +1,36 @@
 {
   "snapshots": [
     {
-      "timestamp": "20140106024221",
-      "url": "http://www.kcci.com/weather/closings"
+      "timestamp": "20250213113403",
+      "url": "https://www.wnem.com/weather/closings/"
     },
     {
-      "timestamp": "20150107044605",
-      "url": "http://www.kcci.com/weather/closings"
+      "timestamp": "20250111030659",
+      "url": "https://www.wrdw.com/weather/closings/"
     },
     {
-      "timestamp": "20161109013617",
-      "url": "http://www.kcci.com/weather/closings"
+      "timestamp": "20240213050806",
+      "url": "https://www.wsmv.com/weather/closings/"
     },
     {
-      "timestamp": "20171119072012",
-      "url": "http://www.kcci.com/weather/closings"
+      "timestamp": "20241110233740",
+      "url": "https://www.wtap.com/weather/closings/"
     },
     {
-      "timestamp": "20180116064844",
-      "url": "http://www.kcci.com/weather/closings"
+      "timestamp": "20240119052515",
+      "url": "https://www.dakotanewsnow.com/weather/closings/"
     },
     {
-      "timestamp": "20190130214903",
-      "url": "https://www.kcci.com/weather/closings"
+      "timestamp": "20241119180006",
+      "url": "https://www.northernnewsnow.com/weather/closings/"
     },
     {
-      "timestamp": "20200119065337",
-      "url": "https://www.kcci.com/weather/closings"
+      "timestamp": "20241212210436",
+      "url": "https://www.kjct8.com/weather/closings/"
     },
     {
-      "timestamp": "20210215163711",
-      "url": "https://www.kcci.com/weather/closings"
-    },
-    {
-      "timestamp": "20220222161443",
-      "url": "https://www.kcci.com/weather/closings"
-    },
-    {
-      "timestamp": "20140213102703",
-      "url": "http://www.wyff4.com/weather/closings"
-    },
-    {
-      "timestamp": "20150220004919",
-      "url": "http://www.wyff4.com/weather/closings"
-    },
-    {
-      "timestamp": "20161110174911",
-      "url": "http://www.wyff4.com/weather/closings"
-    },
-    {
-      "timestamp": "20170130025558",
-      "url": "http://www.wyff4.com/weather/closings"
-    },
-    {
-      "timestamp": "20180117024924",
-      "url": "http://www.wyff4.com/weather/closings"
-    },
-    {
-      "timestamp": "20190123141838",
-      "url": "https://www.wyff4.com/weather/closings"
-    },
-    {
-      "timestamp": "20200221165330",
-      "url": "https://www.wyff4.com/weather/closings"
-    },
-    {
-      "timestamp": "20210324234041",
-      "url": "http://www.wyff4.com/weather/closings"
-    },
-    {
-      "timestamp": "20220118101205",
-      "url": "https://www.wyff4.com/weather/closings"
-    },
-    {
-      "timestamp": "20140326134714",
-      "url": "http://www.wbko.com/weather/closings"
-    },
-    {
-      "timestamp": "20150320091505",
-      "url": "http://www.wbko.com/weather/closings"
-    },
-    {
-      "timestamp": "20160306111503",
-      "url": "http://www.wbko.com/weather/closings"
-    },
-    {
-      "timestamp": "20170208104914",
-      "url": "http://www.wbko.com/weather/closings?r=0.5670342196303075"
-    },
-    {
-      "timestamp": "20181121212552",
-      "url": "https://www.wbko.com/weather/closings"
-    },
-    {
-      "timestamp": "20191216135847",
-      "url": "https://www.wbko.com/weather/closings?c=n&r=121011961031"
-    },
-    {
-      "timestamp": "20201220043127",
-      "url": "https://www.wbko.com/weather/closings/"
-    },
-    {
-      "timestamp": "20210303211022",
-      "url": "https://www.wbko.com/weather/closings/?c=n&r=282120647"
-    },
-    {
-      "timestamp": "20221222023437",
-      "url": "https://www.wbko.com/weather/closings/"
-    },
-    {
-      "timestamp": "20141101044630",
-      "url": "http://www.wdbj7.com/weather/closings?ver=1"
-    },
-    {
-      "timestamp": "20151230121935",
-      "url": "http://www.wdbj7.com/weather/closings"
-    },
-    {
-      "timestamp": "20160316133648",
-      "url": "http://www.wdbj7.com/weather/closings?ver=1"
-    },
-    {
-      "timestamp": "20170108235118",
-      "url": "http://www.wdbj7.com/weather/closings/"
-    },
-    {
-      "timestamp": "20181213170119",
-      "url": "https://www.wdbj7.com/weather/closings/"
-    },
-    {
-      "timestamp": "20191214125400",
-      "url": "https://www.wdbj7.com/weather/closings/?r=121011961642&c=n"
-    },
-    {
-      "timestamp": "20201216030830",
-      "url": "https://www.wdbj7.com/weather/closings/"
-    },
-    {
-      "timestamp": "20210131164850",
-      "url": "https://www.wdbj7.com/weather/closings/"
-    },
-    {
-      "timestamp": "20220116105210",
-      "url": "https://www.wdbj7.com/weather/closings/"
-    },
-    {
-      "timestamp": "20221129194333",
-      "url": "https://www.wlbt.com/pf/api/v3/content/fetch/gsync-closings?query=%7B%7D&d=302&_website=wlbt"
-    },
-    {
-      "timestamp": "20240116130956",
-      "url": "https://www.kctv5.com/pf/api/v3/content/fetch/gsync-closings?query=%7B%7D&d=381&_website=kctv"
-    },
-    {
-      "timestamp": "20260907225032",
-      "url": "https://www.wdrbwave.com/pf/api/v3/content/fetch/gsync-closings?query=%7B%7D&filter=%7BtotalResults%7D&d=590&mxId=00000000&_website=wave"
-    },
-    {
-      "timestamp": "20240109141239",
-      "url": "https://www.kcrg.com/pf/api/v3/content/fetch/gsync-closings?query=%7B%7D&d=380&_website=kcrg"
-    },
-    {
-      "timestamp": "20240119152904",
-      "url": "https://www.wsaz.com/pf/api/v3/content/fetch/gsync-closings?query=%7B%7D&d=382&_website=wsaz"
-    },
-    {
-      "timestamp": "20241126014254",
-      "url": "https://www.foxcarolina.com/weather/closings/"
-    },
-    {
-      "timestamp": "20250205192704",
-      "url": "https://www.whsv.com/weather/closings/"
-    },
-    {
-      "timestamp": "20250108131711",
-      "url": "https://www.wibw.com/weather/closings/"
-    },
-    {
-      "timestamp": "20250122070940",
-      "url": "https://www.wilx.com/weather/closings/"
-    },
-    {
-      "timestamp": "20250121195110",
-      "url": "https://www.witn.com/weather/closings/"
-    },
-    {
-      "timestamp": "20241208053914",
-      "url": "https://www.wjhg.com/weather/closings/"
-    },
-    {
-      "timestamp": "20250216034535",
-      "url": "https://www.abc12.com/weather/closings/"
-    },
-    {
-      "timestamp": "20250124122656",
-      "url": "https://www.wlfi.com/weather/closings/"
-    },
-    {
-      "timestamp": "20250121113801",
-      "url": "https://www.uppermichiganssource.com/weather/closings/"
-    },
-    {
-      "timestamp": "20241212083309",
-      "url": "https://www.21alivenews.com/weather/closings/"
-    },
-    {
-      "timestamp": "20241226191744",
-      "url": "https://www.wsaw.com/weather/closings/"
-    },
-    {
-      "timestamp": "20241204155247",
-      "url": "https://www.wsfa.com/weather/closings/"
-    },
-    {
-      "timestamp": "20250305200647",
-      "url": "https://www.wthitv.com/weather/closings/"
-    },
-    {
-      "timestamp": "20250108080153",
-      "url": "https://www.wtok.com/weather/closings/"
-    },
-    {
-      "timestamp": "20241122221720",
-      "url": "https://www.wtva.com/weather/closings/"
-    },
-    {
-      "timestamp": "20250114152231",
-      "url": "https://www.wtvm.com/weather/closings/"
-    },
-    {
-      "timestamp": "20241203192543",
-      "url": "https://www.wtvy.com/weather/closings/"
-    },
-    {
-      "timestamp": "20250211010302",
-      "url": "https://www.29news.com/weather/closings/"
-    },
-    {
-      "timestamp": "20241224191930",
-      "url": "https://www.wvva.com/weather/closings/"
-    },
-    {
-      "timestamp": "20250110190953",
-      "url": "https://www.12onyourside.com/weather/closings/"
-    },
-    {
-      "timestamp": "20241130183936",
-      "url": "https://www.wwnytv.com/weather/closings/"
-    },
-    {
-      "timestamp": "20250105173921",
-      "url": "https://www.fox19.com/weather/closings/"
-    },
-    {
-      "timestamp": "20241207070123",
-      "url": "https://www.wymt.com/weather/closings/"
+      "timestamp": "20250121013534",
+      "url": "https://www.wifr.com/weather/closings/"
     }
   ]
 }
