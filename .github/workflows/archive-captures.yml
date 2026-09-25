@@ -31,7 +31,7 @@ permissions:
 jobs:
   cdx:
     runs-on: ubuntu-latest
-    timeout-minutes: 30
+    timeout-minutes: 240
     steps:
       - uses: actions/checkout@v4
         if: github.event_name == 'push'
@@ -85,7 +85,7 @@ jobs:
             else
               echo "${url}: request failed"
             fi
-            sleep 2
+            sleep 4
           done
       - uses: actions/upload-artifact@v4
         with:
