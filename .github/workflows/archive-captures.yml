@@ -342,7 +342,7 @@ jobs:
           IN_TO: ${{ inputs.to }}
           IN_SNAPSHOTS: ${{ inputs.snapshots }}
           PAUSE_SECONDS: "5"
-          BUDGET_MINUTES: "110"
+          BUDGET_MINUTES: "200"
           MODE: snapshots
           OUT_DIR: out/snapshots-run
         run: python3 -u "$RUNNER_TEMP/archive_reader.py"
