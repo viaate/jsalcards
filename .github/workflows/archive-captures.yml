@@ -4,6 +4,10 @@ name: Archive captures
 # date range. The Wayback CDX API is not reachable from every build
 # environment, so this runs on GitHub's runners and uploads the raw CDX rows
 # as an artifact for the backfill to read.
+#
+# Run it by hand with inputs, or push a change to
+# pipeline/config/archive-requests.json ({"urls": [...], "from": "YYYYMMDD",
+# "to": "YYYYMMDD"}).
 
 on:
   workflow_dispatch:
@@ -17,6 +21,9 @@ on:
       to:
         description: Last day, YYYYMMDD
         required: true
+  push:
+    paths:
+      - pipeline/config/archive-requests.json
 
 permissions:
   contents: read
@@ -26,11 +33,40 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 30
     steps:
+      - uses: actions/checkout@v4
+        if: github.event_name == 'push'
+      - name: Resolve the request
+        id: request
+        env:
+          EVENT: ${{ github.event_name }}
+          IN_URLS: ${{ inputs.urls }}
+          IN_FROM: ${{ inputs.from }}
+          IN_TO: ${{ inputs.to }}
+        run: |
+          set -eu
+          if [ "$EVENT" = "push" ]; then
+            file=pipeline/config/archive-requests.json
+            urls=$(jq -r '.urls | join(" ")' "$file")
+            from=$(jq -r '.from' "$file")
+            to=$(jq -r '.to' "$file")
+          else
+            urls=$IN_URLS
+            from=$IN_FROM
+            to=$IN_TO
+          fi
+          for value in "$from" "$to"; do
+            printf '%s' "$value" | grep -Eq '^[0-9]{8}$' || { echo "bad date: $value"; exit 1; }
+          done
+          {
+            echo "urls=$urls"
+            echo "from=$from"
+            echo "to=$to"
+          } >> "$GITHUB_OUTPUT"
       - name: Query the Wayback CDX API
         env:
-          URLS: ${{ inputs.urls }}
-          FROM: ${{ inputs.from }}
-          TO: ${{ inputs.to }}
+          URLS: ${{ steps.request.outputs.urls }}
+          FROM: ${{ steps.request.outputs.from }}
+          TO: ${{ steps.request.outputs.to }}
         run: |
           set -u
           mkdir -p out
@@ -45,7 +81,7 @@ jobs:
                 --data-urlencode "output=json" \
                 --data-urlencode "fl=timestamp,original,statuscode,mimetype,length,digest" \
                 -o "out/${name}.json"; then
-              echo "${url}: $(jq 'length - 1' "out/${name}.json" 2>/dev/null || echo '?') captures"
+              echo "${url}: $(jq 'if length > 0 then length - 1 else 0 end' "out/${name}.json" 2>/dev/null || echo '?') captures"
             else
               echo "${url}: request failed"
             fi
@@ -53,6 +89,6 @@ jobs:
           done
       - uses: actions/upload-artifact@v4
         with:
-          name: cdx-${{ inputs.from }}-${{ inputs.to }}
+          name: cdx-${{ steps.request.outputs.from }}-${{ steps.request.outputs.to }}
           path: out
           retention-days: 30

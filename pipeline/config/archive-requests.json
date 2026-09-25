@@ -1,0 +1,12 @@
+{
+  "urls": [
+    "www.kmbc.com/weather/closings*",
+    "fox4kc.com/weather/closings*",
+    "www.kshb.com/weather/school-closings*",
+    "s3.amazonaws.com/grayfilestore-kctv/closingsData/closings_KCTV.json",
+    "www.wgal.com/weather/closings*",
+    "www.wcvb.com/weather/closings*"
+  ],
+  "from": "20231101",
+  "to": "20260331"
+}
