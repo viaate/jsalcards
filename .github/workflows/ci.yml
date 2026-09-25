@@ -2,6 +2,10 @@ name: CI
 
 on:
   push:
+    # A change to the archive request file only starts the archive-captures
+    # workflow; it touches no code.
+    paths-ignore:
+      - pipeline/config/archive-requests.json
   pull_request:
 
 permissions:

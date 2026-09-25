@@ -37,6 +37,38 @@ export default defineConfig(
     },
   },
   {
+    // Node scripts (build, perf, codegen) are plain JavaScript outside every
+    // tsconfig: lint them without type information, with Node's globals.
+    files: ['**/*.js', '**/*.mjs', '**/*.cjs'],
+    extends: [ts.configs.disableTypeChecked],
+    languageOptions: {
+      globals: Object.fromEntries(
+        [
+          'AbortController',
+          'Buffer',
+          'URL',
+          'URLSearchParams',
+          'TextDecoder',
+          'TextEncoder',
+          'clearInterval',
+          'clearTimeout',
+          'console',
+          'fetch',
+          'performance',
+          'process',
+          'queueMicrotask',
+          'setInterval',
+          'setTimeout',
+          'structuredClone',
+        ].map((name) => [name, 'readonly']),
+      ),
+    },
+    rules: {
+      // Command-line scripts report progress on stdout.
+      'no-console': 'off',
+    },
+  },
+  {
     files: ['**/*.svelte', '**/*.svelte.ts'],
     languageOptions: {
       parserOptions: {

@@ -51,6 +51,26 @@ export const copy = deepFreeze({
     trackRecord: 'Track record',
     about: 'About',
   },
+  /** MapLibre's controls and the map itself; applied through `mapLocale`. */
+  map: {
+    label: 'Map of weather school closings',
+    unavailable: 'Map unavailable',
+    zoomIn: 'Zoom in',
+    zoomOut: 'Zoom out',
+    resetNorth: 'Reset north',
+    attribution: 'Map attribution',
+    closePopup: 'Close',
+  },
 } as const);
 
 export type Copy = typeof copy;
+
+/** MapLibre's own control labels, in the same voice as the rest of the site. */
+export const mapLocale: Readonly<Record<string, string>> = /* @__PURE__ */ deepFreeze({
+  'Map.Title': copy.map.label,
+  'NavigationControl.ZoomIn': copy.map.zoomIn,
+  'NavigationControl.ZoomOut': copy.map.zoomOut,
+  'NavigationControl.ResetBearing': copy.map.resetNorth,
+  'AttributionControl.ToggleAttribution': copy.map.attribution,
+  'Popup.Close': copy.map.closePopup,
+});

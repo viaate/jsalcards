@@ -1,8 +1,13 @@
 import { expect, test } from '@playwright/test';
 
-test('loads a black, full-viewport page with no console errors', async ({ page, baseURL }) => {
+/** Chromium's own GPU driver chatter under software WebGL, not the page's. */
+const GPU_DRIVER_NOISE =
+  /GL Driver Message|GPU stall due to ReadPixels|Automatic fallback to software WebGL/;
+
+test('loads on a black, full-viewport ground with no console errors', async ({ page, baseURL }) => {
   const problems: string[] = [];
   page.on('console', (message) => {
+    if (message.type() === 'warning' && GPU_DRIVER_NOISE.test(message.text())) return;
     if (message.type() === 'error' || message.type() === 'warning') {
       problems.push(`console.${message.type()}: ${message.text()}`);
     }
@@ -39,23 +44,25 @@ test('loads a black, full-viewport page with no console errors', async ({ page, 
   const box = await page.locator('main').boundingBox();
   expect(box).toEqual({ x: 0, y: 0, width: viewport?.width, height: viewport?.height });
 
-  // Every pixel on screen is pure black.
+  // The ground is pure black: the map's hairlines and the chrome sit on it,
+  // so nearly every pixel on screen is #000.
   const shot = await page.screenshot({ type: 'png' });
-  const allBlack = await page.evaluate(async (base64) => {
+  const blackShare = await page.evaluate(async (base64) => {
     const bitmap = await createImageBitmap(
       await (await fetch(`data:image/png;base64,${base64}`)).blob(),
     );
     const canvas = new OffscreenCanvas(bitmap.width, bitmap.height);
     const context = canvas.getContext('2d');
-    if (context === null) return false;
+    if (context === null) return 0;
     context.drawImage(bitmap, 0, 0);
     const { data } = context.getImageData(0, 0, bitmap.width, bitmap.height);
+    let black = 0;
     for (let i = 0; i < data.length; i += 4) {
-      if (data[i] !== 0 || data[i + 1] !== 0 || data[i + 2] !== 0) return false;
+      if (data[i] === 0 && data[i + 1] === 0 && data[i + 2] === 0) black += 1;
     }
-    return true;
+    return black / (data.length / 4);
   }, shot.toString('base64'));
-  expect(allBlack).toBe(true);
+  expect(blackShare).toBeGreaterThan(0.8);
 
   expect(problems).toEqual([]);
   expect(foreign).toEqual([]);
