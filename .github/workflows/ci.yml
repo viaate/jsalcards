@@ -84,5 +84,5 @@ jobs:
       - run: uv sync --locked
       - run: uv run ruff check
       - run: uv run ruff format --check
-      - run: uv run mypy --strict snowlight
+      - run: uv run mypy --strict snowlight tests
       - run: uv run pytest

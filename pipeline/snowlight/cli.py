@@ -4,6 +4,7 @@ import argparse
 from collections.abc import Callable, Sequence
 
 from snowlight import __version__
+from snowlight.directory import cli as directory_cli
 from snowlight.places import cli as places_cli
 
 
@@ -16,6 +17,7 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--version", action="version", version=f"%(prog)s {__version__}")
     commands = parser.add_subparsers(title="commands", metavar="<command>")
     places_cli.register(commands)
+    directory_cli.register(commands)
     return parser
 
 

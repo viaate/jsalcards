@@ -13,7 +13,7 @@ from collections.abc import Iterator
 from pathlib import Path
 
 import pytest
-import yaml
+import yaml  # type: ignore[import-untyped, unused-ignore]
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
 WORKFLOW_PATH = REPO_ROOT / ".github" / "workflows" / "ci.yml"
@@ -49,7 +49,7 @@ def _run_directory(job: Mapping) -> str:
 
 
 def _commands(job: Mapping, job_name: str) -> list[str]:
-    return [step["run"] for step in _steps(job, job_name) if isinstance(step.get("run"), str)]
+    return [run for step in _steps(job, job_name) if isinstance(run := step.get("run"), str)]
 
 
 @pytest.fixture(scope="module")
@@ -104,7 +104,7 @@ def test_pipeline_job_runs_every_required_check(jobs: dict[str, Mapping]) -> Non
         "uv sync --locked",
         "uv run ruff check",
         "uv run ruff format --check",
-        "uv run mypy --strict snowlight",
+        "uv run mypy --strict snowlight tests",
         "uv run pytest",
     ]
     assert any(name == "pipeline" for name, _, _ in _steps_using(jobs, "astral-sh/setup-uv"))

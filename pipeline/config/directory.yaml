@@ -1,0 +1,125 @@
+# School directory build: which official NCES files to read and how to filter them.
+# Read by snowlight.directory.config. Every URL is fetched once into the cache and
+# checked against its pinned SHA-256; a pin that no longer matches stops the build
+# until the new file has been reviewed and the pin updated here.
+
+sources:
+  public_school_geocodes:
+    title: EDGE public school geocodes, school year 2024-25
+    candidates:
+      - url: https://nces.ed.gov/programs/edge/data/EDGE_GEOCODE_PUBLICSCH_2425.zip
+        school_year: 2024-2025
+        sha256: 9dc51ecd5cdf6e38bdb679f7ac95e2bf73ee3fb48718b8612cf830800cffb288
+        members:
+          table: EDGE_GEOCODE_PUBLICSCH_2425.TXT
+          header: EDGE_GEOCODE_PUBLICSCH_2425.xlsx
+
+  public_lea_geocodes:
+    title: EDGE public local education agency (district) geocodes, school year 2024-25
+    candidates:
+      - url: https://nces.ed.gov/programs/edge/data/EDGE_GEOCODE_PUBLICLEA_2425.zip
+        school_year: 2024-2025
+        sha256: d7f89ec77c4819c62e0b37212cd4bf5d15b6e7873629f14d7fd1b01266ef287f
+        members:
+          table: EDGE_GEOCODE_PUBLICLEA_2425.TXT
+          header: EDGE_GEOCODE_PUBLICLEA_2425.xlsx
+
+  # The most recent release is used: 2024-25 when NCES publishes it, else 2023-24.
+  # PSS is biennial, so the 2024-25 link answered HTTP 404 when this was written.
+  private_school_geocodes:
+    title: EDGE private school geocodes (Private School Survey universe)
+    candidates:
+      - url: https://nces.ed.gov/programs/edge/data/EDGE_GEOCODE_PRIVATESCH_2425.zip
+        school_year: 2024-2025
+        members:
+          table: EDGE_GEOCODE_PRIVATESCH_2425.xlsx
+      - url: https://nces.ed.gov/programs/edge/data/EDGE_GEOCODE_PRIVATESCH_2324.zip
+        school_year: 2023-2024
+        sha256: 94271f590036600c869e864467807b54eee75bf6fa98b1a850c289669116d073
+        members:
+          table: EDGE_GEOCODE_PRIVATESCH_2324.xlsx
+
+  ccd_directory:
+    title: CCD public school directory (file 029), school year 2024-25, version 1a
+    candidates:
+      - url: https://nces.ed.gov/ccd/Data/zip/ccd_sch_029_2425_w_1a_073025.zip
+        school_year: 2024-2025
+        sha256: 39326da788aa322353d20ceaf8ad4baed26272502cd05b066cf6c594988b21ab
+        members:
+          table: ccd_sch_029_2425_w_1a_073025.csv
+
+  ccd_membership:
+    title: CCD public school membership (file 052), school year 2024-25, version 1a
+    candidates:
+      - url: https://nces.ed.gov/ccd/Data/zip/ccd_sch_052_2425_l_1a_073025.zip
+        school_year: 2024-2025
+        sha256: 4a7f660c5fc5eaae488dd02fd43498f349fc828b227edd0970d5b6995ead4d4d
+        members:
+          table: ccd_sch_052_2425_l_1a_073025.csv
+
+  ccd_characteristics:
+    title: CCD public school characteristics (file 129), school year 2024-25, version 1a
+    candidates:
+      - url: https://nces.ed.gov/ccd/Data/zip/ccd_sch_129_2425_w_1a_073025.zip
+        school_year: 2024-2025
+        sha256: f5a980377adc2e569c90307596c9874cceccb53639f62badc963cf0dbdf7e381
+        members:
+          table: ccd_sch_129_2425_w_1a_073025.csv
+
+  # Grades and enrollment for private schools. Must be the same survey year as the
+  # private geocode file that is used; the build checks this.
+  pss:
+    title: Private School Survey public-use data, school year 2023-24
+    candidates:
+      - url: https://nces.ed.gov/surveys/pss/zip/pss2324_pu_csv.zip
+        school_year: 2023-2024
+        sha256: b9c85d08071b9e85bca5678e56fc9d78da0af97774703e4f332775f58283f01f
+        members:
+          table: pss2324_pu.csv
+        # Grade-span columns carry the survey year in their names.
+        columns:
+          low_grade: LOGR2024
+          high_grade: HIGR2024
+
+filters:
+  # Continental US: the 48 contiguous states plus DC, by state FIPS code of the
+  # school's geocoded location (EDGE STFIP). Excludes 02 Alaska, 15 Hawaii and the
+  # territories.
+  state_fips: [
+    "01", "04", "05", "06", "08", "09", "10", "11", "12", "13", "16", "17", "18",
+    "19", "20", "21", "22", "23", "24", "25", "26", "27", "28", "29", "30", "31",
+    "32", "33", "34", "35", "36", "37", "38", "39", "40", "41", "42", "44", "45",
+    "46", "47", "48", "49", "50", "51", "53", "54", "55", "56",
+  ]
+  # A geocode outside this box (degrees) is treated as unusable for a continental
+  # school; it guards against a bad geocode rather than removing real schools.
+  bounds: {west: -125.0, south: 24.3, east: -66.8, north: 49.5}
+  # CCD UPDATED_STATUS codes kept: 1 Open, 3 New, 4 Added (operating, first
+  # reported this year), 5 Changed boundary/agency (operating, moved to another
+  # LEA), 8 Reopened. Dropped: 2 Closed, 6 Inactive, 7 Future.
+  operational_status_codes: ["1", "3", "4", "5", "8"]
+  # A public school is K-12 when CCD flags at least one of these grades offered.
+  k12_grade_flags: [
+    G_KG_OFFERED, G_1_OFFERED, G_2_OFFERED, G_3_OFFERED, G_4_OFFERED, G_5_OFFERED,
+    G_6_OFFERED, G_7_OFFERED, G_8_OFFERED, G_9_OFFERED, G_10_OFFERED,
+    G_11_OFFERED, G_12_OFFERED,
+  ]
+
+enrollment:
+  # Public: the CCD membership row with this TOTAL_INDICATOR, used only when its
+  # DMS_FLAG equals ccd_accepted_flag. The row is NCES's own school total minus
+  # the adult education count; the plain "Education Unit Total" row also counts
+  # adult education students, which a K-12 enrollment should not. NCES flags the
+  # row "Derived" exactly where the school total is "Reported" (and Missing, Not
+  # reported or Suppressed where that total is), so no value is taken from an
+  # unreported total.
+  # Private: PSS P305 (total enrollment), used only when its imputation flag
+  # F_P305 is 0 ("not imputed").
+  ccd_total_indicator: Derived - Education Unit Total minus Adult Education Count
+  ccd_accepted_flag: Derived
+  pss_unimputed_flag: "0"
+
+tiles:
+  layer: schools
+  minzoom: 9
+  maxzoom: 14
