@@ -1,26 +1,52 @@
 name: Archive captures
 
-# Lists Internet Archive (Wayback Machine) captures of closings pages for a
-# date range. The Wayback CDX API is not reachable from every build
-# environment, so this runs on GitHub's runners and uploads the raw CDX rows
-# as an artifact for the backfill to read.
+# Reads the Internet Archive (Wayback Machine) for closings pages. The archive is
+# not reachable from every build environment, so this runs on GitHub's runners
+# and uploads what it read as an artifact for the pipeline to use offline.
+#
+# Two modes, either or both in one run (snapshots are read first):
+#
+# * CDX listing: the captures of a URL (a trailing * matches a prefix) between two
+#   days, one JSON file per query, named after the URL with every character
+#   outside A-Za-z0-9 replaced by "_" (the format earlier runs used).
+# * Snapshots: the raw body of each listed capture, fetched from
+#   https://web.archive.org/web/<timestamp>id_/<url> (the id_ form returns the
+#   bytes the site sent, without the archive's toolbar or rewriting). Bodies go to
+#   snapshots/, and snapshots/manifest.jsonl records, per capture, the URL asked
+#   for, the capture actually served (the archive redirects to the nearest one),
+#   the HTTP status, the SHA-256 and the time it was read.
+#
+# Requests go one at a time, with a pause between them, a User-Agent naming this
+# repository, and retries with backoff on 429 and 5xx answers.
 #
 # Run it by hand with inputs, or push a change to
-# pipeline/config/archive-requests.json ({"urls": [...], "from": "YYYYMMDD",
-# "to": "YYYYMMDD"}).
+# pipeline/config/archive-requests.json:
+#
+#   {"urls": ["host/path*", ...], "from": "YYYYMMDD", "to": "YYYYMMDD",
+#    "cdx": [{"url": "host/path*", "from": "YYYYMMDD", "to": "YYYYMMDD"}, ...],
+#    "snapshots": [{"timestamp": "YYYYMMDDhhmmss", "url": "https://host/path"}, ...]}
+#
+# Every key is optional; "urls" share one window, "cdx" entries carry their own.
 
 on:
   workflow_dispatch:
     inputs:
       urls:
-        description: Space-separated URL patterns (a trailing * matches a prefix)
-        required: true
+        description: Space-separated URL patterns to list (a trailing * matches a prefix)
+        required: false
+        default: ""
       from:
-        description: First day, YYYYMMDD
-        required: true
+        description: First day to list, YYYYMMDD
+        required: false
+        default: ""
       to:
-        description: Last day, YYYYMMDD
-        required: true
+        description: Last day to list, YYYYMMDD
+        required: false
+        default: ""
+      snapshots:
+        description: Space-separated captures to download, each TIMESTAMP,URL
+        required: false
+        default: ""
   push:
     paths:
       - pipeline/config/archive-requests.json
@@ -29,66 +55,249 @@ permissions:
   contents: read
 
 jobs:
-  cdx:
+  archive:
     runs-on: ubuntu-latest
-    timeout-minutes: 240
+    timeout-minutes: 300
     steps:
       - uses: actions/checkout@v4
         if: github.event_name == 'push'
-      - name: Resolve the request
-        id: request
+        with:
+          persist-credentials: false
+      - name: Read the Wayback Machine
         env:
           EVENT: ${{ github.event_name }}
+          REQUEST_FILE: pipeline/config/archive-requests.json
           IN_URLS: ${{ inputs.urls }}
           IN_FROM: ${{ inputs.from }}
           IN_TO: ${{ inputs.to }}
+          IN_SNAPSHOTS: ${{ inputs.snapshots }}
+          OUT_DIR: out
+          PAUSE_SECONDS: "5"
         run: |
-          set -eu
-          if [ "$EVENT" = "push" ]; then
-            file=pipeline/config/archive-requests.json
-            urls=$(jq -r '.urls | join(" ")' "$file")
-            from=$(jq -r '.from' "$file")
-            to=$(jq -r '.to' "$file")
-          else
-            urls=$IN_URLS
-            from=$IN_FROM
-            to=$IN_TO
-          fi
-          for value in "$from" "$to"; do
-            printf '%s' "$value" | grep -Eq '^[0-9]{8}$' || { echo "bad date: $value"; exit 1; }
-          done
-          {
-            echo "urls=$urls"
-            echo "from=$from"
-            echo "to=$to"
-          } >> "$GITHUB_OUTPUT"
-      - name: Query the Wayback CDX API
-        env:
-          URLS: ${{ steps.request.outputs.urls }}
-          FROM: ${{ steps.request.outputs.from }}
-          TO: ${{ steps.request.outputs.to }}
-        run: |
-          set -u
-          mkdir -p out
-          for url in $URLS; do
-            name=$(printf '%s' "$url" | tr -c 'A-Za-z0-9' '_')
-            if curl -sS --fail --retry 3 --retry-delay 5 --max-time 120 \
-                -A "snowlight-pipeline (+https://github.com/viaate/jsalcards)" \
-                -G "https://web.archive.org/cdx/search/cdx" \
-                --data-urlencode "url=${url}" \
-                --data-urlencode "from=${FROM}" \
-                --data-urlencode "to=${TO}" \
-                --data-urlencode "output=json" \
-                --data-urlencode "fl=timestamp,original,statuscode,mimetype,length,digest" \
-                -o "out/${name}.json"; then
-              echo "${url}: $(jq 'if length > 0 then length - 1 else 0 end' "out/${name}.json" 2>/dev/null || echo '?') captures"
-            else
-              echo "${url}: request failed"
-            fi
-            sleep 4
-          done
+          python3 - <<'PY'
+          """Wayback CDX listings and raw snapshot downloads (stdlib only)."""
+          import hashlib
+          import json
+          import os
+          import re
+          import sys
+          import time
+          import urllib.error
+          import urllib.parse
+          import urllib.request
+          from datetime import datetime, timezone
+          from pathlib import Path
+
+          USER_AGENT = "snowlight-pipeline (+https://github.com/viaate/jsalcards)"
+          CDX = os.environ.get("CDX_ENDPOINT", "https://web.archive.org/cdx/search/cdx")
+          WAYBACK = os.environ.get("WAYBACK_ORIGIN", "https://web.archive.org").rstrip("/")
+          FIELDS = "timestamp,original,statuscode,mimetype,length,digest"
+          PAUSE = float(os.environ.get("PAUSE_SECONDS", "5"))
+          ATTEMPTS = int(os.environ.get("ATTEMPTS", "4"))
+          BACKOFF = [float(x) for x in os.environ.get("BACKOFF_SECONDS", "15,45,90").split(",")]
+          MAX_BODY = 50 * 1024 * 1024
+          RETRYABLE = {408, 425, 429, 500, 502, 503, 504, 520, 522, 524}
+          DAY = re.compile(r"^[0-9]{8}$")
+          STAMP = re.compile(r"^[0-9]{14}$")
+          PATTERN = re.compile(r"^[^\s]+$")
+          WAYBACK_PATH = re.compile(r"^/web/([0-9]{1,14})id_/(.+)$")
+          out = Path(os.environ.get("OUT_DIR", "out"))
+          snap_dir = out / "snapshots"
+
+
+          def fail(message):
+              print(f"::error::{message}")
+              sys.exit(1)
+
+
+          def load_request():
+              if os.environ.get("EVENT") == "push":
+                  with open(os.environ["REQUEST_FILE"], encoding="utf-8") as handle:
+                      data = json.load(handle)
+                  if not isinstance(data, dict):
+                      fail("the request file must hold a JSON object")
+              else:
+                  data = {
+                      "urls": os.environ.get("IN_URLS", "").split(),
+                      "from": os.environ.get("IN_FROM", ""),
+                      "to": os.environ.get("IN_TO", ""),
+                      "snapshots": [
+                          dict(zip(("timestamp", "url"), item.split(",", 1), strict=False))
+                          for item in os.environ.get("IN_SNAPSHOTS", "").split()
+                      ],
+                  }
+              listings = []
+              urls = data.get("urls") or []
+              if urls:
+                  window = (data.get("from", ""), data.get("to", ""))
+                  listings += [{"url": u, "from": window[0], "to": window[1]} for u in urls]
+              listings += [dict(item, windowed=True) if isinstance(item, dict) else item
+                           for item in data.get("cdx") or []]
+              snapshots = list(data.get("snapshots") or [])
+              for item in listings:
+                  if not isinstance(item, dict) or not PATTERN.match(str(item.get("url", ""))):
+                      fail(f"bad listing: {item!r}")
+                  for key in ("from", "to"):
+                      if not DAY.match(str(item.get(key, ""))):
+                          fail(f"bad {key} day in listing {item!r}")
+              for item in snapshots:
+                  url = str(item.get("url", "")) if isinstance(item, dict) else ""
+                  if not STAMP.match(str(item.get("timestamp", ""))):
+                      fail(f"bad snapshot timestamp: {item!r}")
+                  if not url.startswith(("http://", "https://")) or not PATTERN.match(url):
+                      fail(f"bad snapshot URL: {item!r}")
+              if not listings and not snapshots:
+                  fail("nothing to do: no listings and no snapshots")
+              return listings, snapshots
+
+
+          class Answer:
+              def __init__(self, status, headers, body, url):
+                  self.status, self.headers, self.body, self.url = status, headers, body, url
+
+
+          class NoRedirect(urllib.request.HTTPRedirectHandler):
+              def redirect_request(self, *args, **kwargs):
+                  return None
+
+
+          OPENER = urllib.request.build_opener(NoRedirect)
+
+
+          def get(url):
+              """One GET with retries; redirects are returned, not followed."""
+              last = None
+              for attempt in range(ATTEMPTS):
+                  request = urllib.request.Request(url, headers={"User-Agent": USER_AGENT})
+                  try:
+                      with OPENER.open(request, timeout=120) as response:
+                          body = response.read(MAX_BODY + 1)
+                          if len(body) > MAX_BODY:
+                              return Answer(None, {}, b"", url), "body larger than 50 MiB"
+                          return Answer(response.status, dict(response.headers), body, url), None
+                  except urllib.error.HTTPError as error:
+                      body = error.read(MAX_BODY)
+                      if error.code not in RETRYABLE:
+                          return Answer(error.code, dict(error.headers), body, url), None
+                      last = f"HTTP {error.code}"
+                      retry_after = error.headers.get("Retry-After", "")
+                      wait = float(retry_after) if retry_after.isdigit() else None
+                  except (urllib.error.URLError, TimeoutError, ConnectionError, OSError) as error:
+                      last = f"{type(error).__name__}: {error}"
+                      wait = None
+                  if attempt + 1 < ATTEMPTS:
+                      delay = BACKOFF[min(attempt, len(BACKOFF) - 1)]
+                      time.sleep(min(wait, 120.0) if wait is not None else delay)
+              return Answer(None, {}, b"", url), last
+
+
+          def now():
+              return datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
+
+
+          def list_captures(item):
+              query = urllib.parse.urlencode(
+                  {"url": item["url"], "from": item["from"], "to": item["to"],
+                   "output": "json", "fl": FIELDS}
+              )
+              answer, error = get(f"{CDX}?{query}")
+              name = re.sub(r"[^A-Za-z0-9]", "_", item["url"])
+              if item.get("windowed"):
+                  window_name = f"{name}__{item['from']}-{item['to']}.json"
+              else:
+                  window_name = f"{name}.json"
+              if error is None and answer.status == 200:
+                  try:
+                      rows = json.loads(answer.body or b"[]")
+                  except ValueError:
+                      rows = None
+                  if isinstance(rows, list):
+                      (out / window_name).write_bytes(answer.body or b"[]")
+                      count = max(len(rows) - 1, 0)
+                      print(f"{item['url']} {item['from']}-{item['to']}: {count} captures")
+                      return True
+                  error = "CDX answer is not a JSON list"
+              print(f"{item['url']}: request failed ({error or answer.status})")
+              return False
+
+
+          def safe_name(timestamp, url):
+              digest = hashlib.sha256(url.encode("utf-8")).hexdigest()[:10]
+              stem = re.sub(r"[^A-Za-z0-9]+", "_", url.split("://", 1)[-1]).strip("_")[:80]
+              return f"{timestamp}_{stem}_{digest}.body"
+
+
+          def download(item):
+              requested = f"{WAYBACK}/web/{item['timestamp']}id_/{item['url']}"
+              record = {"timestamp": item["timestamp"], "url": item["url"],
+                        "requested": requested, "hops": []}
+              target = requested
+              for _hop in range(6):
+                  answer, error = get(target)
+                  record["retrieved_at"] = now()
+                  if error is not None:
+                      record["error"] = error
+                      return record
+                  location = answer.headers.get("Location") or answer.headers.get("location")
+                  if answer.status in (301, 302, 303, 307, 308) and location:
+                      nxt = urllib.parse.urljoin(target, location)
+                      parts = urllib.parse.urlsplit(nxt)
+                      record["hops"].append({"status": answer.status, "location": nxt})
+                      if not nxt.startswith(WAYBACK + "/web/") or not WAYBACK_PATH.match(
+                          parts.path + (f"?{parts.query}" if parts.query else "")
+                      ):
+                          record["error"] = "redirect leaves the archive"
+                          return record
+                      target = nxt
+                      time.sleep(PAUSE)
+                      continue
+                  record["final_url"] = target
+                  path = urllib.parse.urlsplit(target)
+                  match = WAYBACK_PATH.match(path.path + (f"?{path.query}" if path.query else ""))
+                  record["final_timestamp"] = match.group(1) if match else None
+                  record["final_original"] = match.group(2) if match else None
+                  record["http_status"] = answer.status
+                  record["content_type"] = answer.headers.get("Content-Type")
+                  record["memento_datetime"] = answer.headers.get("Memento-Datetime")
+                  if answer.status == 200 and answer.body:
+                      name = safe_name(item["timestamp"], item["url"])
+                      (snap_dir / name).write_bytes(answer.body)
+                      record["file"] = f"snapshots/{name}"
+                      record["bytes"] = len(answer.body)
+                      record["sha256"] = hashlib.sha256(answer.body).hexdigest()
+                  else:
+                      record["error"] = f"HTTP {answer.status}"
+                  return record
+              record["error"] = "too many redirects"
+              return record
+
+
+          listings, snapshots = load_request()
+          out.mkdir(parents=True, exist_ok=True)
+          saved = 0
+          if snapshots:
+              snap_dir.mkdir(parents=True, exist_ok=True)
+              with (snap_dir / "manifest.jsonl").open("w", encoding="utf-8") as manifest:
+                  for index, item in enumerate(snapshots):
+                      if index:
+                          time.sleep(PAUSE)
+                      record = download(item)
+                      saved += "sha256" in record
+                      manifest.write(json.dumps(record, sort_keys=True) + "\n")
+                      manifest.flush()
+                      status = record.get("error") or f"{record['bytes']} bytes"
+                      print(f"{item['timestamp']} {item['url']}: {status}")
+          listed = 0
+          for index, item in enumerate(listings):
+              if index or snapshots:
+                  time.sleep(PAUSE)
+              listed += list_captures(item)
+          print(f"snapshots: {saved} of {len(snapshots)}; listings: {listed} of {len(listings)}")
+          PY
       - uses: actions/upload-artifact@v4
+        if: always()
         with:
-          name: cdx-${{ steps.request.outputs.from }}-${{ steps.request.outputs.to }}
+          name: archive-${{ github.run_id }}
           path: out
+          if-no-files-found: warn
           retention-days: 30

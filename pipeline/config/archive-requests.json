@@ -1,259 +1,828 @@
 {
-  "urls": [
-    "www.kmbc.com/weather/closings*",
-    "fox4kc.com/weather/closings*",
-    "www.kshb.com/weather/school-closings*",
-    "s3.amazonaws.com/grayfilestore-kctv/closingsData/closings_KCTV.json",
-    "www.wgal.com/weather/closings*",
-    "www.wcvb.com/weather/closings*",
-    "s3.amazonaws.com/grayfilestore-*",
-    "s3.amazonaws.com/grayfilestore-kait/closingsData/closings_KAIT.json*",
-    "s3.amazonaws.com/grayfilestore-kake/closingsData/closings_KAKE.json*",
-    "s3.amazonaws.com/grayfilestore-kalb/closingsData/closings_KALB.json*",
-    "s3.amazonaws.com/grayfilestore-kauz/closingsData/closings_KAUZ.json*",
-    "s3.amazonaws.com/grayfilestore-kbjr/closingsData/closings_KBJR.json*",
-    "s3.amazonaws.com/grayfilestore-kbtx/closingsData/closings_KBTX.json*",
-    "s3.amazonaws.com/grayfilestore-kcbd/closingsData/closings_KCBD.json*",
-    "s3.amazonaws.com/grayfilestore-kcrg/closingsData/closings_KCRG.json*",
-    "s3.amazonaws.com/grayfilestore-kctv/closingsData/closings_KCTV.json*",
-    "s3.amazonaws.com/grayfilestore-kcwy/closingsData/closings_KCWY.json*",
-    "s3.amazonaws.com/grayfilestore-kevn/closingsData/closings_KEVN.json*",
-    "s3.amazonaws.com/grayfilestore-keyc/closingsData/closings_KEYC.json*",
-    "s3.amazonaws.com/grayfilestore-kfda/closingsData/closings_KFDA.json*",
-    "s3.amazonaws.com/grayfilestore-kfvs/closingsData/closings_KFVS.json*",
-    "s3.amazonaws.com/grayfilestore-kfyr/closingsData/closings_KFYR.json*",
-    "s3.amazonaws.com/grayfilestore-kgns/closingsData/closings_KGNS.json*",
-    "s3.amazonaws.com/grayfilestore-kgwn/closingsData/closings_KGWN.json*",
-    "s3.amazonaws.com/grayfilestore-kjct/closingsData/closings_KJCT.json*",
-    "s3.amazonaws.com/grayfilestore-kkco/closingsData/closings_KKCO.json*",
-    "s3.amazonaws.com/grayfilestore-kktv/closingsData/closings_KKTV.json*",
-    "s3.amazonaws.com/grayfilestore-kltv/closingsData/closings_KLTV.json*",
-    "s3.amazonaws.com/grayfilestore-kmot/closingsData/closings_KMOT.json*",
-    "s3.amazonaws.com/grayfilestore-kmov/closingsData/closings_KMOV.json*",
-    "s3.amazonaws.com/grayfilestore-kmvt/closingsData/closings_KMVT.json*",
-    "s3.amazonaws.com/grayfilestore-knoe/closingsData/closings_KNOE.json*",
-    "s3.amazonaws.com/grayfilestore-knop/closingsData/closings_KNOP.json*",
-    "s3.amazonaws.com/grayfilestore-kold/closingsData/closings_KOLD.json*",
-    "s3.amazonaws.com/grayfilestore-koln/closingsData/closings_KOLN.json*",
-    "s3.amazonaws.com/grayfilestore-kolo/closingsData/closings_KOLO.json*",
-    "s3.amazonaws.com/grayfilestore-kosa/closingsData/closings_KOSA.json*",
-    "s3.amazonaws.com/grayfilestore-kota/closingsData/closings_KOTA.json*",
-    "s3.amazonaws.com/grayfilestore-kpho/closingsData/closings_KPHO.json*",
-    "s3.amazonaws.com/grayfilestore-kplc/closingsData/closings_KPLC.json*",
-    "s3.amazonaws.com/grayfilestore-kptv/closingsData/closings_KPTV.json*",
-    "s3.amazonaws.com/grayfilestore-kqcd/closingsData/closings_KQCD.json*",
-    "s3.amazonaws.com/grayfilestore-ksfy/closingsData/closings_KSFY.json*",
-    "s3.amazonaws.com/grayfilestore-ksla/closingsData/closings_KSLA.json*",
-    "s3.amazonaws.com/grayfilestore-ksnb/closingsData/closings_KSNB.json*",
-    "s3.amazonaws.com/grayfilestore-kspr/closingsData/closings_KSPR.json*",
-    "s3.amazonaws.com/grayfilestore-kswo/closingsData/closings_KSWO.json*",
-    "s3.amazonaws.com/grayfilestore-ktiv/closingsData/closings_KTIV.json*",
-    "s3.amazonaws.com/grayfilestore-ktre/closingsData/closings_KTRE.json*",
-    "s3.amazonaws.com/grayfilestore-kttc/closingsData/closings_KTTC.json*",
-    "s3.amazonaws.com/grayfilestore-ktvk/closingsData/closings_KTVK.json*",
-    "s3.amazonaws.com/grayfilestore-kumv/closingsData/closings_KUMV.json*",
-    "s3.amazonaws.com/grayfilestore-kvly/closingsData/closings_KVLY.json*",
-    "s3.amazonaws.com/grayfilestore-kvvu/closingsData/closings_KVVU.json*",
-    "s3.amazonaws.com/grayfilestore-kwch/closingsData/closings_KWCH.json*",
-    "s3.amazonaws.com/grayfilestore-kwqc/closingsData/closings_KWQC.json*",
-    "s3.amazonaws.com/grayfilestore-kwtx/closingsData/closings_KWTX.json*",
-    "s3.amazonaws.com/grayfilestore-kxii/closingsData/closings_KXII.json*",
-    "s3.amazonaws.com/grayfilestore-ky3/closingsData/closings_KY3.json*",
-    "s3.amazonaws.com/grayfilestore-wabi/closingsData/closings_WABI.json*",
-    "s3.amazonaws.com/grayfilestore-wafb/closingsData/closings_WAFB.json*",
-    "s3.amazonaws.com/grayfilestore-waff/closingsData/closings_WAFF.json*",
-    "s3.amazonaws.com/grayfilestore-wagm/closingsData/closings_WAGM.json*",
-    "s3.amazonaws.com/grayfilestore-wala/closingsData/closings_WALA.json*",
-    "s3.amazonaws.com/grayfilestore-walb/closingsData/closings_WALB.json*",
-    "s3.amazonaws.com/grayfilestore-wand/closingsData/closings_WAND.json*",
-    "s3.amazonaws.com/grayfilestore-wave/closingsData/closings_WAVE.json*",
-    "s3.amazonaws.com/grayfilestore-wbay/closingsData/closings_WBAY.json*",
-    "s3.amazonaws.com/grayfilestore-wbko/closingsData/closings_WBKO.json*",
-    "s3.amazonaws.com/grayfilestore-wbng/closingsData/closings_WBNG.json*",
-    "s3.amazonaws.com/grayfilestore-wbrc/closingsData/closings_WBRC.json*",
-    "s3.amazonaws.com/grayfilestore-wbtv/closingsData/closings_WBTV.json*",
-    "s3.amazonaws.com/grayfilestore-wcax/closingsData/closings_WCAX.json*",
-    "s3.amazonaws.com/grayfilestore-wcjb/closingsData/closings_WCJB.json*",
-    "s3.amazonaws.com/grayfilestore-wcsc/closingsData/closings_WCSC.json*",
-    "s3.amazonaws.com/grayfilestore-wctv/closingsData/closings_WCTV.json*",
-    "s3.amazonaws.com/grayfilestore-wdam/closingsData/closings_WDAM.json*",
-    "s3.amazonaws.com/grayfilestore-wdbj/closingsData/closings_WDBJ.json*",
-    "s3.amazonaws.com/grayfilestore-wdtv/closingsData/closings_WDTV.json*",
-    "s3.amazonaws.com/grayfilestore-weau/closingsData/closings_WEAU.json*",
-    "s3.amazonaws.com/grayfilestore-wect/closingsData/closings_WECT.json*",
-    "s3.amazonaws.com/grayfilestore-week/closingsData/closings_WEEK.json*",
-    "s3.amazonaws.com/grayfilestore-wfie/closingsData/closings_WFIE.json*",
-    "s3.amazonaws.com/grayfilestore-wfsb/closingsData/closings_WFSB.json*",
-    "s3.amazonaws.com/grayfilestore-wgcl/closingsData/closings_WGCL.json*",
-    "s3.amazonaws.com/grayfilestore-wgem/closingsData/closings_WGEM.json*",
-    "s3.amazonaws.com/grayfilestore-wggb/closingsData/closings_WGGB.json*",
-    "s3.amazonaws.com/grayfilestore-whns/closingsData/closings_WHNS.json*",
-    "s3.amazonaws.com/grayfilestore-whsv/closingsData/closings_WHSV.json*",
-    "s3.amazonaws.com/grayfilestore-wibw/closingsData/closings_WIBW.json*",
-    "s3.amazonaws.com/grayfilestore-wifr/closingsData/closings_WIFR.json*",
-    "s3.amazonaws.com/grayfilestore-wilx/closingsData/closings_WILX.json*",
-    "s3.amazonaws.com/grayfilestore-wis/closingsData/closings_WIS.json*",
-    "s3.amazonaws.com/grayfilestore-witn/closingsData/closings_WITN.json*",
-    "s3.amazonaws.com/grayfilestore-wjhg/closingsData/closings_WJHG.json*",
-    "s3.amazonaws.com/grayfilestore-wjrt/closingsData/closings_WJRT.json*",
-    "s3.amazonaws.com/grayfilestore-wkyt/closingsData/closings_WKYT.json*",
-    "s3.amazonaws.com/grayfilestore-wlbt/closingsData/closings_WLBT.json*",
-    "s3.amazonaws.com/grayfilestore-wlfi/closingsData/closings_WLFI.json*",
-    "s3.amazonaws.com/grayfilestore-wlio/closingsData/closings_WLIO.json*",
-    "s3.amazonaws.com/grayfilestore-wlox/closingsData/closings_WLOX.json*",
-    "s3.amazonaws.com/grayfilestore-wluc/closingsData/closings_WLUC.json*",
-    "s3.amazonaws.com/grayfilestore-wmc/closingsData/closings_WMC.json*",
-    "s3.amazonaws.com/grayfilestore-wmtv/closingsData/closings_WMTV.json*",
-    "s3.amazonaws.com/grayfilestore-wndu/closingsData/closings_WNDU.json*",
-    "s3.amazonaws.com/grayfilestore-wnem/closingsData/closings_WNEM.json*",
-    "s3.amazonaws.com/grayfilestore-woio/closingsData/closings_WOIO.json*",
-    "s3.amazonaws.com/grayfilestore-wowt/closingsData/closings_WOWT.json*",
-    "s3.amazonaws.com/grayfilestore-wpta/closingsData/closings_WPTA.json*",
-    "s3.amazonaws.com/grayfilestore-wrdw/closingsData/closings_WRDW.json*",
-    "s3.amazonaws.com/grayfilestore-wsaw/closingsData/closings_WSAW.json*",
-    "s3.amazonaws.com/grayfilestore-wsaz/closingsData/closings_WSAZ.json*",
-    "s3.amazonaws.com/grayfilestore-wsfa/closingsData/closings_WSFA.json*",
-    "s3.amazonaws.com/grayfilestore-wsmv/closingsData/closings_WSMV.json*",
-    "s3.amazonaws.com/grayfilestore-wtap/closingsData/closings_WTAP.json*",
-    "s3.amazonaws.com/grayfilestore-wthi/closingsData/closings_WTHI.json*",
-    "s3.amazonaws.com/grayfilestore-wtoc/closingsData/closings_WTOC.json*",
-    "s3.amazonaws.com/grayfilestore-wtok/closingsData/closings_WTOK.json*",
-    "s3.amazonaws.com/grayfilestore-wtva/closingsData/closings_WTVA.json*",
-    "s3.amazonaws.com/grayfilestore-wtvg/closingsData/closings_WTVG.json*",
-    "s3.amazonaws.com/grayfilestore-wtvm/closingsData/closings_WTVM.json*",
-    "s3.amazonaws.com/grayfilestore-wtvy/closingsData/closings_WTVY.json*",
-    "s3.amazonaws.com/grayfilestore-wvir/closingsData/closings_WVIR.json*",
-    "s3.amazonaws.com/grayfilestore-wvlt/closingsData/closings_WVLT.json*",
-    "s3.amazonaws.com/grayfilestore-wvue/closingsData/closings_WVUE.json*",
-    "s3.amazonaws.com/grayfilestore-wvva/closingsData/closings_WVVA.json*",
-    "s3.amazonaws.com/grayfilestore-wwbt/closingsData/closings_WWBT.json*",
-    "s3.amazonaws.com/grayfilestore-wwny/closingsData/closings_WWNY.json*",
-    "s3.amazonaws.com/grayfilestore-wxix/closingsData/closings_WXIX.json*",
-    "s3.amazonaws.com/grayfilestore-wymt/closingsData/closings_WYMT.json*",
-    "grayfilestore-kait.s3.amazonaws.com/closingsData/closings_KAIT.json*",
-    "grayfilestore-kake.s3.amazonaws.com/closingsData/closings_KAKE.json*",
-    "grayfilestore-kalb.s3.amazonaws.com/closingsData/closings_KALB.json*",
-    "grayfilestore-kauz.s3.amazonaws.com/closingsData/closings_KAUZ.json*",
-    "grayfilestore-kbjr.s3.amazonaws.com/closingsData/closings_KBJR.json*",
-    "grayfilestore-kbtx.s3.amazonaws.com/closingsData/closings_KBTX.json*",
-    "grayfilestore-kcbd.s3.amazonaws.com/closingsData/closings_KCBD.json*",
-    "grayfilestore-kcrg.s3.amazonaws.com/closingsData/closings_KCRG.json*",
-    "grayfilestore-kctv.s3.amazonaws.com/closingsData/closings_KCTV.json*",
-    "grayfilestore-kcwy.s3.amazonaws.com/closingsData/closings_KCWY.json*",
-    "grayfilestore-kevn.s3.amazonaws.com/closingsData/closings_KEVN.json*",
-    "grayfilestore-keyc.s3.amazonaws.com/closingsData/closings_KEYC.json*",
-    "grayfilestore-kfda.s3.amazonaws.com/closingsData/closings_KFDA.json*",
-    "grayfilestore-kfvs.s3.amazonaws.com/closingsData/closings_KFVS.json*",
-    "grayfilestore-kfyr.s3.amazonaws.com/closingsData/closings_KFYR.json*",
-    "grayfilestore-kgns.s3.amazonaws.com/closingsData/closings_KGNS.json*",
-    "grayfilestore-kgwn.s3.amazonaws.com/closingsData/closings_KGWN.json*",
-    "grayfilestore-kjct.s3.amazonaws.com/closingsData/closings_KJCT.json*",
-    "grayfilestore-kkco.s3.amazonaws.com/closingsData/closings_KKCO.json*",
-    "grayfilestore-kktv.s3.amazonaws.com/closingsData/closings_KKTV.json*",
-    "grayfilestore-kltv.s3.amazonaws.com/closingsData/closings_KLTV.json*",
-    "grayfilestore-kmot.s3.amazonaws.com/closingsData/closings_KMOT.json*",
-    "grayfilestore-kmov.s3.amazonaws.com/closingsData/closings_KMOV.json*",
-    "grayfilestore-kmvt.s3.amazonaws.com/closingsData/closings_KMVT.json*",
-    "grayfilestore-knoe.s3.amazonaws.com/closingsData/closings_KNOE.json*",
-    "grayfilestore-knop.s3.amazonaws.com/closingsData/closings_KNOP.json*",
-    "grayfilestore-kold.s3.amazonaws.com/closingsData/closings_KOLD.json*",
-    "grayfilestore-koln.s3.amazonaws.com/closingsData/closings_KOLN.json*",
-    "grayfilestore-kolo.s3.amazonaws.com/closingsData/closings_KOLO.json*",
-    "grayfilestore-kosa.s3.amazonaws.com/closingsData/closings_KOSA.json*",
-    "grayfilestore-kota.s3.amazonaws.com/closingsData/closings_KOTA.json*",
-    "grayfilestore-kpho.s3.amazonaws.com/closingsData/closings_KPHO.json*",
-    "grayfilestore-kplc.s3.amazonaws.com/closingsData/closings_KPLC.json*",
-    "grayfilestore-kptv.s3.amazonaws.com/closingsData/closings_KPTV.json*",
-    "grayfilestore-kqcd.s3.amazonaws.com/closingsData/closings_KQCD.json*",
-    "grayfilestore-ksfy.s3.amazonaws.com/closingsData/closings_KSFY.json*",
-    "grayfilestore-ksla.s3.amazonaws.com/closingsData/closings_KSLA.json*",
-    "grayfilestore-ksnb.s3.amazonaws.com/closingsData/closings_KSNB.json*",
-    "grayfilestore-kspr.s3.amazonaws.com/closingsData/closings_KSPR.json*",
-    "grayfilestore-kswo.s3.amazonaws.com/closingsData/closings_KSWO.json*",
-    "grayfilestore-ktiv.s3.amazonaws.com/closingsData/closings_KTIV.json*",
-    "grayfilestore-ktre.s3.amazonaws.com/closingsData/closings_KTRE.json*",
-    "grayfilestore-kttc.s3.amazonaws.com/closingsData/closings_KTTC.json*",
-    "grayfilestore-ktvk.s3.amazonaws.com/closingsData/closings_KTVK.json*",
-    "grayfilestore-kumv.s3.amazonaws.com/closingsData/closings_KUMV.json*",
-    "grayfilestore-kvly.s3.amazonaws.com/closingsData/closings_KVLY.json*",
-    "grayfilestore-kvvu.s3.amazonaws.com/closingsData/closings_KVVU.json*",
-    "grayfilestore-kwch.s3.amazonaws.com/closingsData/closings_KWCH.json*",
-    "grayfilestore-kwqc.s3.amazonaws.com/closingsData/closings_KWQC.json*",
-    "grayfilestore-kwtx.s3.amazonaws.com/closingsData/closings_KWTX.json*",
-    "grayfilestore-kxii.s3.amazonaws.com/closingsData/closings_KXII.json*",
-    "grayfilestore-ky3.s3.amazonaws.com/closingsData/closings_KY3.json*",
-    "grayfilestore-wabi.s3.amazonaws.com/closingsData/closings_WABI.json*",
-    "grayfilestore-wafb.s3.amazonaws.com/closingsData/closings_WAFB.json*",
-    "grayfilestore-waff.s3.amazonaws.com/closingsData/closings_WAFF.json*",
-    "grayfilestore-wagm.s3.amazonaws.com/closingsData/closings_WAGM.json*",
-    "grayfilestore-wala.s3.amazonaws.com/closingsData/closings_WALA.json*",
-    "grayfilestore-walb.s3.amazonaws.com/closingsData/closings_WALB.json*",
-    "grayfilestore-wand.s3.amazonaws.com/closingsData/closings_WAND.json*",
-    "grayfilestore-wave.s3.amazonaws.com/closingsData/closings_WAVE.json*",
-    "grayfilestore-wbay.s3.amazonaws.com/closingsData/closings_WBAY.json*",
-    "grayfilestore-wbko.s3.amazonaws.com/closingsData/closings_WBKO.json*",
-    "grayfilestore-wbng.s3.amazonaws.com/closingsData/closings_WBNG.json*",
-    "grayfilestore-wbrc.s3.amazonaws.com/closingsData/closings_WBRC.json*",
-    "grayfilestore-wbtv.s3.amazonaws.com/closingsData/closings_WBTV.json*",
-    "grayfilestore-wcax.s3.amazonaws.com/closingsData/closings_WCAX.json*",
-    "grayfilestore-wcjb.s3.amazonaws.com/closingsData/closings_WCJB.json*",
-    "grayfilestore-wcsc.s3.amazonaws.com/closingsData/closings_WCSC.json*",
-    "grayfilestore-wctv.s3.amazonaws.com/closingsData/closings_WCTV.json*",
-    "grayfilestore-wdam.s3.amazonaws.com/closingsData/closings_WDAM.json*",
-    "grayfilestore-wdbj.s3.amazonaws.com/closingsData/closings_WDBJ.json*",
-    "grayfilestore-wdtv.s3.amazonaws.com/closingsData/closings_WDTV.json*",
-    "grayfilestore-weau.s3.amazonaws.com/closingsData/closings_WEAU.json*",
-    "grayfilestore-wect.s3.amazonaws.com/closingsData/closings_WECT.json*",
-    "grayfilestore-week.s3.amazonaws.com/closingsData/closings_WEEK.json*",
-    "grayfilestore-wfie.s3.amazonaws.com/closingsData/closings_WFIE.json*",
-    "grayfilestore-wfsb.s3.amazonaws.com/closingsData/closings_WFSB.json*",
-    "grayfilestore-wgcl.s3.amazonaws.com/closingsData/closings_WGCL.json*",
-    "grayfilestore-wgem.s3.amazonaws.com/closingsData/closings_WGEM.json*",
-    "grayfilestore-wggb.s3.amazonaws.com/closingsData/closings_WGGB.json*",
-    "grayfilestore-whns.s3.amazonaws.com/closingsData/closings_WHNS.json*",
-    "grayfilestore-whsv.s3.amazonaws.com/closingsData/closings_WHSV.json*",
-    "grayfilestore-wibw.s3.amazonaws.com/closingsData/closings_WIBW.json*",
-    "grayfilestore-wifr.s3.amazonaws.com/closingsData/closings_WIFR.json*",
-    "grayfilestore-wilx.s3.amazonaws.com/closingsData/closings_WILX.json*",
-    "grayfilestore-wis.s3.amazonaws.com/closingsData/closings_WIS.json*",
-    "grayfilestore-witn.s3.amazonaws.com/closingsData/closings_WITN.json*",
-    "grayfilestore-wjhg.s3.amazonaws.com/closingsData/closings_WJHG.json*",
-    "grayfilestore-wjrt.s3.amazonaws.com/closingsData/closings_WJRT.json*",
-    "grayfilestore-wkyt.s3.amazonaws.com/closingsData/closings_WKYT.json*",
-    "grayfilestore-wlbt.s3.amazonaws.com/closingsData/closings_WLBT.json*",
-    "grayfilestore-wlfi.s3.amazonaws.com/closingsData/closings_WLFI.json*",
-    "grayfilestore-wlio.s3.amazonaws.com/closingsData/closings_WLIO.json*",
-    "grayfilestore-wlox.s3.amazonaws.com/closingsData/closings_WLOX.json*",
-    "grayfilestore-wluc.s3.amazonaws.com/closingsData/closings_WLUC.json*",
-    "grayfilestore-wmc.s3.amazonaws.com/closingsData/closings_WMC.json*",
-    "grayfilestore-wmtv.s3.amazonaws.com/closingsData/closings_WMTV.json*",
-    "grayfilestore-wndu.s3.amazonaws.com/closingsData/closings_WNDU.json*",
-    "grayfilestore-wnem.s3.amazonaws.com/closingsData/closings_WNEM.json*",
-    "grayfilestore-woio.s3.amazonaws.com/closingsData/closings_WOIO.json*",
-    "grayfilestore-wowt.s3.amazonaws.com/closingsData/closings_WOWT.json*",
-    "grayfilestore-wpta.s3.amazonaws.com/closingsData/closings_WPTA.json*",
-    "grayfilestore-wrdw.s3.amazonaws.com/closingsData/closings_WRDW.json*",
-    "grayfilestore-wsaw.s3.amazonaws.com/closingsData/closings_WSAW.json*",
-    "grayfilestore-wsaz.s3.amazonaws.com/closingsData/closings_WSAZ.json*",
-    "grayfilestore-wsfa.s3.amazonaws.com/closingsData/closings_WSFA.json*",
-    "grayfilestore-wsmv.s3.amazonaws.com/closingsData/closings_WSMV.json*",
-    "grayfilestore-wtap.s3.amazonaws.com/closingsData/closings_WTAP.json*",
-    "grayfilestore-wthi.s3.amazonaws.com/closingsData/closings_WTHI.json*",
-    "grayfilestore-wtoc.s3.amazonaws.com/closingsData/closings_WTOC.json*",
-    "grayfilestore-wtok.s3.amazonaws.com/closingsData/closings_WTOK.json*",
-    "grayfilestore-wtva.s3.amazonaws.com/closingsData/closings_WTVA.json*",
-    "grayfilestore-wtvg.s3.amazonaws.com/closingsData/closings_WTVG.json*",
-    "grayfilestore-wtvm.s3.amazonaws.com/closingsData/closings_WTVM.json*",
-    "grayfilestore-wtvy.s3.amazonaws.com/closingsData/closings_WTVY.json*",
-    "grayfilestore-wvir.s3.amazonaws.com/closingsData/closings_WVIR.json*",
-    "grayfilestore-wvlt.s3.amazonaws.com/closingsData/closings_WVLT.json*",
-    "grayfilestore-wvue.s3.amazonaws.com/closingsData/closings_WVUE.json*",
-    "grayfilestore-wvva.s3.amazonaws.com/closingsData/closings_WVVA.json*",
-    "grayfilestore-wwbt.s3.amazonaws.com/closingsData/closings_WWBT.json*",
-    "grayfilestore-wwny.s3.amazonaws.com/closingsData/closings_WWNY.json*",
-    "grayfilestore-wxix.s3.amazonaws.com/closingsData/closings_WXIX.json*",
-    "grayfilestore-wymt.s3.amazonaws.com/closingsData/closings_WYMT.json*"
+  "cdx": [
+    {
+      "url": "wcvb.com/weather/closings*",
+      "from": "20140101",
+      "to": "20260930"
+    },
+    {
+      "url": "wmur.com/weather/closings*",
+      "from": "20140101",
+      "to": "20260930"
+    },
+    {
+      "url": "wmtw.com/weather/closings*",
+      "from": "20140101",
+      "to": "20260930"
+    },
+    {
+      "url": "mynbc5.com/weather/closings*",
+      "from": "20140101",
+      "to": "20260930"
+    },
+    {
+      "url": "wgal.com/weather/closings*",
+      "from": "20140101",
+      "to": "20260930"
+    },
+    {
+      "url": "wtae.com/weather/closings*",
+      "from": "20140101",
+      "to": "20260930"
+    },
+    {
+      "url": "wbaltv.com/weather/closings*",
+      "from": "20140101",
+      "to": "20260930"
+    },
+    {
+      "url": "wxii12.com/weather/closings*",
+      "from": "20140101",
+      "to": "20260930"
+    },
+    {
+      "url": "wyff4.com/weather/closings*",
+      "from": "20140101",
+      "to": "20260930"
+    },
+    {
+      "url": "wlwt.com/weather/closings*",
+      "from": "20140101",
+      "to": "20260930"
+    },
+    {
+      "url": "wlky.com/weather/closings*",
+      "from": "20140101",
+      "to": "20260930"
+    },
+    {
+      "url": "wdsu.com/weather/closings*",
+      "from": "20140101",
+      "to": "20260930"
+    },
+    {
+      "url": "wvtm13.com/weather/closings*",
+      "from": "20140101",
+      "to": "20260930"
+    },
+    {
+      "url": "wjcl.com/weather/closings*",
+      "from": "20140101",
+      "to": "20260930"
+    },
+    {
+      "url": "wesh.com/weather/closings*",
+      "from": "20140101",
+      "to": "20260930"
+    },
+    {
+      "url": "wpbf.com/weather/closings*",
+      "from": "20140101",
+      "to": "20260930"
+    },
+    {
+      "url": "wisn.com/weather/closings*",
+      "from": "20140101",
+      "to": "20260930"
+    },
+    {
+      "url": "kcci.com/weather/closings*",
+      "from": "20140101",
+      "to": "20260930"
+    },
+    {
+      "url": "ketv.com/weather/closings*",
+      "from": "20140101",
+      "to": "20260930"
+    },
+    {
+      "url": "kmbc.com/weather/closings*",
+      "from": "20140101",
+      "to": "20260930"
+    },
+    {
+      "url": "koco.com/weather/closings*",
+      "from": "20140101",
+      "to": "20260930"
+    },
+    {
+      "url": "koat.com/weather/closings*",
+      "from": "20140101",
+      "to": "20260930"
+    },
+    {
+      "url": "ksbw.com/weather/closings*",
+      "from": "20140101",
+      "to": "20260930"
+    },
+    {
+      "url": "kcra.com/weather/closings*",
+      "from": "20140101",
+      "to": "20260930"
+    },
+    {
+      "url": "4029tv.com/weather/closings*",
+      "from": "20140101",
+      "to": "20260930"
+    },
+    {
+      "url": "wapt.com/weather/closings*",
+      "from": "20140101",
+      "to": "20260930"
+    },
+    {
+      "url": "1011now.com/weather/closings*",
+      "from": "20140101",
+      "to": "20260930"
+    },
+    {
+      "url": "12onyourside.com/weather/closings*",
+      "from": "20140101",
+      "to": "20260930"
+    },
+    {
+      "url": "13abc.com/weather/closings*",
+      "from": "20140101",
+      "to": "20260930"
+    },
+    {
+      "url": "14news.com/weather/closings*",
+      "from": "20140101",
+      "to": "20260930"
+    },
+    {
+      "url": "21alive.com/weather/closings*",
+      "from": "20140101",
+      "to": "20260930"
+    },
+    {
+      "url": "21alivenews.com/weather/closings*",
+      "from": "20140101",
+      "to": "20260930"
+    },
+    {
+      "url": "29news.com/weather/closings*",
+      "from": "20140101",
+      "to": "20260930"
+    },
+    {
+      "url": "abc12.com/weather/closings*",
+      "from": "20140101",
+      "to": "20260930"
+    },
+    {
+      "url": "atlantanewsfirst.com/weather/closings*",
+      "from": "20140101",
+      "to": "20260930"
+    },
+    {
+      "url": "azfamily.com/weather/closings*",
+      "from": "20140101",
+      "to": "20260930"
+    },
+    {
+      "url": "blackhillsfox.com/weather/closings*",
+      "from": "20140101",
+      "to": "20260930"
+    },
+    {
+      "url": "cbs7.com/weather/closings*",
+      "from": "20140101",
+      "to": "20260930"
+    },
+    {
+      "url": "cleveland19.com/weather/closings*",
+      "from": "20140101",
+      "to": "20260930"
+    },
+    {
+      "url": "fox10tv.com/weather/closings*",
+      "from": "20140101",
+      "to": "20260930"
+    },
+    {
+      "url": "fox19.com/weather/closings*",
+      "from": "20140101",
+      "to": "20260930"
+    },
+    {
+      "url": "fox5vegas.com/weather/closings*",
+      "from": "20140101",
+      "to": "20260930"
+    },
+    {
+      "url": "fox8live.com/weather/closings*",
+      "from": "20140101",
+      "to": "20260930"
+    },
+    {
+      "url": "foxcarolina.com/weather/closings*",
+      "from": "20140101",
+      "to": "20260930"
+    },
+    {
+      "url": "hometownstations.com/weather/closings*",
+      "from": "20140101",
+      "to": "20260930"
+    },
+    {
+      "url": "kait8.com/weather/closings*",
+      "from": "20140101",
+      "to": "20260930"
+    },
+    {
+      "url": "kake.com/weather/closings*",
+      "from": "20140101",
+      "to": "20260930"
+    },
+    {
+      "url": "kalb.com/weather/closings*",
+      "from": "20140101",
+      "to": "20260930"
+    },
+    {
+      "url": "kbjr6.com/weather/closings*",
+      "from": "20140101",
+      "to": "20260930"
+    },
+    {
+      "url": "kbtx.com/weather/closings*",
+      "from": "20140101",
+      "to": "20260930"
+    },
+    {
+      "url": "kcbd.com/weather/closings*",
+      "from": "20140101",
+      "to": "20260930"
+    },
+    {
+      "url": "kcrg.com/weather/closings*",
+      "from": "20140101",
+      "to": "20260930"
+    },
+    {
+      "url": "kctv5.com/weather/closings*",
+      "from": "20140101",
+      "to": "20260930"
+    },
+    {
+      "url": "keyc.com/weather/closings*",
+      "from": "20140101",
+      "to": "20260930"
+    },
+    {
+      "url": "kfvs12.com/weather/closings*",
+      "from": "20140101",
+      "to": "20260930"
+    },
+    {
+      "url": "kfyrtv.com/weather/closings*",
+      "from": "20140101",
+      "to": "20260930"
+    },
+    {
+      "url": "kgns.tv/weather/closings*",
+      "from": "20140101",
+      "to": "20260930"
+    },
+    {
+      "url": "kktv.com/weather/closings*",
+      "from": "20140101",
+      "to": "20260930"
+    },
+    {
+      "url": "kltv.com/weather/closings*",
+      "from": "20140101",
+      "to": "20260930"
+    },
+    {
+      "url": "kmot.com/weather/closings*",
+      "from": "20140101",
+      "to": "20260930"
+    },
+    {
+      "url": "kmov.com/weather/closings*",
+      "from": "20140101",
+      "to": "20260930"
+    },
+    {
+      "url": "kmvt.com/weather/closings*",
+      "from": "20140101",
+      "to": "20260930"
+    },
+    {
+      "url": "knoe.com/weather/closings*",
+      "from": "20140101",
+      "to": "20260930"
+    },
+    {
+      "url": "knopnews2.com/weather/closings*",
+      "from": "20140101",
+      "to": "20260930"
+    },
+    {
+      "url": "kold.com/weather/closings*",
+      "from": "20140101",
+      "to": "20260930"
+    },
+    {
+      "url": "kolotv.com/weather/closings*",
+      "from": "20140101",
+      "to": "20260930"
+    },
+    {
+      "url": "kotatv.com/weather/closings*",
+      "from": "20140101",
+      "to": "20260930"
+    },
+    {
+      "url": "kplctv.com/weather/closings*",
+      "from": "20140101",
+      "to": "20260930"
+    },
+    {
+      "url": "kptv.com/weather/closings*",
+      "from": "20140101",
+      "to": "20260930"
+    },
+    {
+      "url": "kqcd.com/weather/closings*",
+      "from": "20140101",
+      "to": "20260930"
+    },
+    {
+      "url": "ksfy.com/weather/closings*",
+      "from": "20140101",
+      "to": "20260930"
+    },
+    {
+      "url": "ksla.com/weather/closings*",
+      "from": "20140101",
+      "to": "20260930"
+    },
+    {
+      "url": "ksnblocal4.com/weather/closings*",
+      "from": "20140101",
+      "to": "20260930"
+    },
+    {
+      "url": "kswo.com/weather/closings*",
+      "from": "20140101",
+      "to": "20260930"
+    },
+    {
+      "url": "ktiv.com/weather/closings*",
+      "from": "20140101",
+      "to": "20260930"
+    },
+    {
+      "url": "ktre.com/weather/closings*",
+      "from": "20140101",
+      "to": "20260930"
+    },
+    {
+      "url": "kttc.com/weather/closings*",
+      "from": "20140101",
+      "to": "20260930"
+    },
+    {
+      "url": "kumv.com/weather/closings*",
+      "from": "20140101",
+      "to": "20260930"
+    },
+    {
+      "url": "kwch.com/weather/closings*",
+      "from": "20140101",
+      "to": "20260930"
+    },
+    {
+      "url": "kwqc.com/weather/closings*",
+      "from": "20140101",
+      "to": "20260930"
+    },
+    {
+      "url": "kwtx.com/weather/closings*",
+      "from": "20140101",
+      "to": "20260930"
+    },
+    {
+      "url": "kxii.com/weather/closings*",
+      "from": "20140101",
+      "to": "20260930"
+    },
+    {
+      "url": "ky3.com/weather/closings*",
+      "from": "20140101",
+      "to": "20260930"
+    },
+    {
+      "url": "live5news.com/weather/closings*",
+      "from": "20140101",
+      "to": "20260930"
+    },
+    {
+      "url": "local8now.com/weather/closings*",
+      "from": "20140101",
+      "to": "20260930"
+    },
+    {
+      "url": "nbc11news.com/weather/closings*",
+      "from": "20140101",
+      "to": "20260930"
+    },
+    {
+      "url": "newschannel10.com/weather/closings*",
+      "from": "20140101",
+      "to": "20260930"
+    },
+    {
+      "url": "newschannel6now.com/weather/closings*",
+      "from": "20140101",
+      "to": "20260930"
+    },
+    {
+      "url": "northlandsnewscenter.com/weather/closings*",
+      "from": "20140101",
+      "to": "20260930"
+    },
+    {
+      "url": "pro8news.com/weather/closings*",
+      "from": "20140101",
+      "to": "20260930"
+    },
+    {
+      "url": "rockfordnewsfirst.com/weather/closings*",
+      "from": "20140101",
+      "to": "20260930"
+    },
+    {
+      "url": "uppermichiganssource.com/weather/closings*",
+      "from": "20140101",
+      "to": "20260930"
+    },
+    {
+      "url": "valleynewslive.com/weather/closings*",
+      "from": "20140101",
+      "to": "20260930"
+    },
+    {
+      "url": "wabi.tv/weather/closings*",
+      "from": "20140101",
+      "to": "20260930"
+    },
+    {
+      "url": "wafb.com/weather/closings*",
+      "from": "20140101",
+      "to": "20260930"
+    },
+    {
+      "url": "waff.com/weather/closings*",
+      "from": "20140101",
+      "to": "20260930"
+    },
+    {
+      "url": "wagmtv.com/weather/closings*",
+      "from": "20140101",
+      "to": "20260930"
+    },
+    {
+      "url": "walb.com/weather/closings*",
+      "from": "20140101",
+      "to": "20260930"
+    },
+    {
+      "url": "wandtv.com/weather/closings*",
+      "from": "20140101",
+      "to": "20260930"
+    },
+    {
+      "url": "wave3.com/weather/closings*",
+      "from": "20140101",
+      "to": "20260930"
+    },
+    {
+      "url": "wbay.com/weather/closings*",
+      "from": "20140101",
+      "to": "20260930"
+    },
+    {
+      "url": "wbko.com/weather/closings*",
+      "from": "20140101",
+      "to": "20260930"
+    },
+    {
+      "url": "wbng.com/weather/closings*",
+      "from": "20140101",
+      "to": "20260930"
+    },
+    {
+      "url": "wbrc.com/weather/closings*",
+      "from": "20140101",
+      "to": "20260930"
+    },
+    {
+      "url": "wbtv.com/weather/closings*",
+      "from": "20140101",
+      "to": "20260930"
+    },
+    {
+      "url": "wcax.com/weather/closings*",
+      "from": "20140101",
+      "to": "20260930"
+    },
+    {
+      "url": "wcjb.com/weather/closings*",
+      "from": "20140101",
+      "to": "20260930"
+    },
+    {
+      "url": "wctv.tv/weather/closings*",
+      "from": "20140101",
+      "to": "20260930"
+    },
+    {
+      "url": "wdam.com/weather/closings*",
+      "from": "20140101",
+      "to": "20260930"
+    },
+    {
+      "url": "wdbj7.com/weather/closings*",
+      "from": "20140101",
+      "to": "20260930"
+    },
+    {
+      "url": "wdtv.com/weather/closings*",
+      "from": "20140101",
+      "to": "20260930"
+    },
+    {
+      "url": "weau.com/weather/closings*",
+      "from": "20140101",
+      "to": "20260930"
+    },
+    {
+      "url": "wect.com/weather/closings*",
+      "from": "20140101",
+      "to": "20260930"
+    },
+    {
+      "url": "week.com/weather/closings*",
+      "from": "20140101",
+      "to": "20260930"
+    },
+    {
+      "url": "westernmassnews.com/weather/closings*",
+      "from": "20140101",
+      "to": "20260930"
+    },
+    {
+      "url": "wfsb.com/weather/closings*",
+      "from": "20140101",
+      "to": "20260930"
+    },
+    {
+      "url": "wgem.com/weather/closings*",
+      "from": "20140101",
+      "to": "20260930"
+    },
+    {
+      "url": "whsv.com/weather/closings*",
+      "from": "20140101",
+      "to": "20260930"
+    },
+    {
+      "url": "wibw.com/weather/closings*",
+      "from": "20140101",
+      "to": "20260930"
+    },
+    {
+      "url": "wilx.com/weather/closings*",
+      "from": "20140101",
+      "to": "20260930"
+    },
+    {
+      "url": "wistv.com/weather/closings*",
+      "from": "20140101",
+      "to": "20260930"
+    },
+    {
+      "url": "witn.com/weather/closings*",
+      "from": "20140101",
+      "to": "20260930"
+    },
+    {
+      "url": "wjhg.com/weather/closings*",
+      "from": "20140101",
+      "to": "20260930"
+    },
+    {
+      "url": "wkyt.com/weather/closings*",
+      "from": "20140101",
+      "to": "20260930"
+    },
+    {
+      "url": "wlbt.com/weather/closings*",
+      "from": "20140101",
+      "to": "20260930"
+    },
+    {
+      "url": "wlfi.com/weather/closings*",
+      "from": "20140101",
+      "to": "20260930"
+    },
+    {
+      "url": "wlox.com/weather/closings*",
+      "from": "20140101",
+      "to": "20260930"
+    },
+    {
+      "url": "wmcactionnews5.com/weather/closings*",
+      "from": "20140101",
+      "to": "20260930"
+    },
+    {
+      "url": "wmtv15news.com/weather/closings*",
+      "from": "20140101",
+      "to": "20260930"
+    },
+    {
+      "url": "wndu.com/weather/closings*",
+      "from": "20140101",
+      "to": "20260930"
+    },
+    {
+      "url": "wnem.com/weather/closings*",
+      "from": "20140101",
+      "to": "20260930"
+    },
+    {
+      "url": "wowt.com/weather/closings*",
+      "from": "20140101",
+      "to": "20260930"
+    },
+    {
+      "url": "wrdw.com/weather/closings*",
+      "from": "20140101",
+      "to": "20260930"
+    },
+    {
+      "url": "wsaw.com/weather/closings*",
+      "from": "20140101",
+      "to": "20260930"
+    },
+    {
+      "url": "wsaz.com/weather/closings*",
+      "from": "20140101",
+      "to": "20260930"
+    },
+    {
+      "url": "wsfa.com/weather/closings*",
+      "from": "20140101",
+      "to": "20260930"
+    },
+    {
+      "url": "wsmv.com/weather/closings*",
+      "from": "20140101",
+      "to": "20260930"
+    },
+    {
+      "url": "wtap.com/weather/closings*",
+      "from": "20140101",
+      "to": "20260930"
+    },
+    {
+      "url": "wthitv.com/weather/closings*",
+      "from": "20140101",
+      "to": "20260930"
+    },
+    {
+      "url": "wtoc.com/weather/closings*",
+      "from": "20140101",
+      "to": "20260930"
+    },
+    {
+      "url": "wtok.com/weather/closings*",
+      "from": "20140101",
+      "to": "20260930"
+    },
+    {
+      "url": "wtva.com/weather/closings*",
+      "from": "20140101",
+      "to": "20260930"
+    },
+    {
+      "url": "wtvm.com/weather/closings*",
+      "from": "20140101",
+      "to": "20260930"
+    },
+    {
+      "url": "wtvy.com/weather/closings*",
+      "from": "20140101",
+      "to": "20260930"
+    },
+    {
+      "url": "wvlt.tv/weather/closings*",
+      "from": "20140101",
+      "to": "20260930"
+    },
+    {
+      "url": "wvva.com/weather/closings*",
+      "from": "20140101",
+      "to": "20260930"
+    },
+    {
+      "url": "wwnytv.com/weather/closings*",
+      "from": "20140101",
+      "to": "20260930"
+    },
+    {
+      "url": "wymt.com/weather/closings*",
+      "from": "20140101",
+      "to": "20260930"
+    },
+    {
+      "url": "wyomingnewsnow.tv/weather/closings*",
+      "from": "20140101",
+      "to": "20260930"
+    },
+    {
+      "url": "kctv5.com/pf/api/v3/content/fetch/gsync-closings*",
+      "from": "20200101",
+      "to": "20260930"
+    },
+    {
+      "url": "wlbt.com/pf/api/v3/content/fetch/gsync-closings*",
+      "from": "20200101",
+      "to": "20260930"
+    },
+    {
+      "url": "wdrbwave.com/pf/api/v3/content/fetch/gsync-closings*",
+      "from": "20200101",
+      "to": "20260930"
+    },
+    {
+      "url": "kcrg.com/pf/api/v3/content/fetch/gsync-closings*",
+      "from": "20200101",
+      "to": "20260930"
+    },
+    {
+      "url": "wsaz.com/pf/api/v3/content/fetch/gsync-closings*",
+      "from": "20200101",
+      "to": "20260930"
+    }
   ],
-  "from": "20231101",
-  "to": "20260331"
+  "snapshots": [
+    {
+      "timestamp": "20240108050323",
+      "url": "https://www.kmbc.com/weather/closings"
+    },
+    {
+      "timestamp": "20240117203333",
+      "url": "https://www.kmbc.com/weather/closings"
+    },
+    {
+      "timestamp": "20250108112659",
+      "url": "https://www.kmbc.com/weather/closings"
+    },
+    {
+      "timestamp": "20250218141821",
+      "url": "https://www.kmbc.com/weather/closings"
+    },
+    {
+      "timestamp": "20260122213928",
+      "url": "https://www.kmbc.com/weather/closings"
+    },
+    {
+      "timestamp": "20240119040826",
+      "url": "https://www.wgal.com/weather/closings"
+    },
+    {
+      "timestamp": "20250123204600",
+      "url": "https://www.wgal.com/weather/closings"
+    },
+    {
+      "timestamp": "20260125020629",
+      "url": "https://www.wgal.com/weather/closings"
+    },
+    {
+      "timestamp": "20260126193836",
+      "url": "https://www.wgal.com/weather/closings"
+    },
+    {
+      "timestamp": "20240213170232",
+      "url": "https://www.wcvb.com/weather/closings"
+    },
+    {
+      "timestamp": "20250209151937",
+      "url": "https://www.wcvb.com/weather/closings"
+    },
+    {
+      "timestamp": "20260126142101",
+      "url": "https://www.wcvb.com/weather/closings"
+    },
+    {
+      "timestamp": "20260223150125",
+      "url": "https://www.wcvb.com/weather/closings"
+    }
+  ]
 }
