@@ -1,0 +1,176 @@
+/*
+ * The parts of maplibre-gl.css this map uses, restyled to the design tokens.
+ * The full stylesheet is 83 KB, almost all of it for controls Snowlight does
+ * not show. Class names are MapLibre's.
+ */
+
+.maplibregl-map {
+  overflow: hidden;
+  font: 11px/16px var(--font-sans);
+  -webkit-tap-highlight-color: transparent;
+  -webkit-touch-callout: none;
+}
+
+.maplibregl-canvas {
+  position: absolute;
+  top: 0;
+  left: 0;
+}
+
+/* Hidden until its first complete frame; the inline still shows the same lines meanwhile. */
+.maplibregl-map:not(.is-live) .maplibregl-canvas {
+  visibility: hidden;
+}
+
+.maplibregl-canvas:focus-visible {
+  outline: none;
+}
+
+.maplibregl-canvas-container.maplibregl-interactive {
+  cursor: grab;
+  user-select: none;
+}
+
+.maplibregl-canvas-container.maplibregl-interactive.maplibregl-track-pointer {
+  cursor: pointer;
+}
+
+.maplibregl-canvas-container.maplibregl-interactive:active {
+  cursor: grabbing;
+}
+
+.maplibregl-canvas-container.maplibregl-touch-zoom-rotate,
+.maplibregl-canvas-container.maplibregl-touch-zoom-rotate .maplibregl-canvas {
+  touch-action: pan-x pan-y;
+}
+
+.maplibregl-canvas-container.maplibregl-touch-drag-pan,
+.maplibregl-canvas-container.maplibregl-touch-drag-pan .maplibregl-canvas {
+  touch-action: pinch-zoom;
+}
+
+.maplibregl-canvas-container.maplibregl-touch-zoom-rotate.maplibregl-touch-drag-pan,
+.maplibregl-canvas-container.maplibregl-touch-zoom-rotate.maplibregl-touch-drag-pan
+  .maplibregl-canvas {
+  touch-action: none;
+}
+
+.maplibregl-ctrl-top-left,
+.maplibregl-ctrl-top-right,
+.maplibregl-ctrl-bottom-left,
+.maplibregl-ctrl-bottom-right {
+  position: absolute;
+  z-index: 2;
+  pointer-events: none;
+}
+
+.maplibregl-ctrl-top-left {
+  top: 0;
+  left: 0;
+}
+
+.maplibregl-ctrl-top-right {
+  top: 0;
+  right: 0;
+}
+
+.maplibregl-ctrl-bottom-left {
+  bottom: 0;
+  left: 0;
+}
+
+.maplibregl-ctrl-bottom-right {
+  right: 0;
+  bottom: 0;
+}
+
+.maplibregl-ctrl {
+  clear: both;
+  pointer-events: auto;
+  transform: translate(0, 0);
+}
+
+.maplibregl-ctrl-bottom-right .maplibregl-ctrl {
+  float: right;
+  margin: 0 calc(var(--inset-right) + var(--edge)) calc(var(--inset-bottom) + var(--edge)) 0;
+}
+
+.maplibregl-ctrl-bottom-left .maplibregl-ctrl {
+  float: left;
+  margin: 0 0 calc(var(--inset-bottom) + var(--edge)) calc(var(--inset-left) + var(--edge));
+}
+
+/* Attribution: a small glass button that opens to one line of credits. */
+
+.maplibregl-ctrl.maplibregl-ctrl-attrib {
+  position: relative;
+  min-width: 28px;
+  max-width: calc(100vw - 2 * var(--edge));
+  min-height: 28px;
+  padding: 0;
+  color: var(--text-2);
+  background: rgb(17 17 17 / 0.72);
+  border: 1px solid var(--border-2);
+  border-radius: 14px;
+  -webkit-backdrop-filter: blur(16px);
+  backdrop-filter: blur(16px);
+}
+
+.maplibregl-attrib-empty {
+  display: none;
+}
+
+.maplibregl-ctrl-attrib-button {
+  position: absolute;
+  top: -1px;
+  right: -1px;
+  display: block;
+  width: 28px;
+  height: 28px;
+  list-style: none;
+  cursor: pointer;
+  border-radius: 14px;
+  background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16' fill='%23a3a3a3'%3E%3Ccircle cx='8' cy='4.75' r='1.05'/%3E%3Crect x='7.3' y='6.9' width='1.4' height='4.9' rx='.7'/%3E%3C/svg%3E")
+    center / 16px 16px no-repeat;
+}
+
+.maplibregl-ctrl-bottom-left .maplibregl-ctrl-attrib-button,
+.maplibregl-ctrl-top-left .maplibregl-ctrl-attrib-button {
+  right: auto;
+  left: -1px;
+}
+
+.maplibregl-ctrl-attrib-button::-webkit-details-marker,
+.maplibregl-ctrl-attrib-button::marker {
+  display: none;
+  content: '';
+}
+
+.maplibregl-ctrl-attrib-button:focus-visible {
+  outline: 1px solid var(--text-2);
+  outline-offset: 2px;
+}
+
+.maplibregl-ctrl-attrib-inner {
+  display: none;
+}
+
+.maplibregl-ctrl-attrib.maplibregl-compact-show .maplibregl-ctrl-attrib-inner {
+  display: block;
+  padding: 5px 34px 5px 12px;
+}
+
+.maplibregl-ctrl-bottom-left .maplibregl-compact-show .maplibregl-ctrl-attrib-inner {
+  padding: 5px 12px 5px 34px;
+}
+
+.maplibregl-ctrl-attrib a {
+  color: var(--text-2);
+  text-decoration: none;
+}
+
+.maplibregl-ctrl-attrib a:hover,
+.maplibregl-ctrl-attrib a:focus-visible {
+  color: var(--text-1);
+  text-decoration: underline;
+}
