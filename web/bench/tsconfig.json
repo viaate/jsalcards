@@ -1,0 +1,12 @@
+{
+  "extends": "../tsconfig.base.json",
+  "compilerOptions": {
+    "target": "ES2023",
+    "lib": ["ES2023", "DOM", "DOM.Iterable"],
+    "types": ["vite/client", "node"],
+    "allowJs": true,
+    "checkJs": true
+  },
+  "include": ["**/*.ts", "eslint.config.js"],
+  "exclude": ["out"]
+}
