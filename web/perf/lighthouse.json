@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-09-25T07:41:40.633Z",
+  "generatedAt": "2026-09-25T23:56:43.569Z",
   "url": "http://127.0.0.1:5104/",
   "environment": {
     "lighthouse": "13.5.0",
@@ -14,79 +14,79 @@
     "webglRenderer": "ANGLE (Google, Vulkan 1.3.0 (SwiftShader Device (Subzero) (0x0000C0DE)), SwiftShader driver)",
     "cpus": 4,
     "cpuModel": "Intel(R) Xeon(R) Processor @ 2.80GHz",
-    "benchmarkIndex": 1633.5,
+    "benchmarkIndex": 1653,
     "runsPerPreset": 3
   },
   "presets": {
     "mobile": {
       "throttling": "simulated slow 4G, 4x CPU",
       "median": {
-        "scores": { "performance": 98, "accessibility": 100, "best-practices": 100, "seo": 100 },
-        "fcpMs": 964,
-        "lcpMs": 1268,
-        "speedIndexMs": 1094,
-        "tbtMs": 159,
+        "scores": { "performance": 95, "accessibility": 100, "best-practices": 100, "seo": 100 },
+        "fcpMs": 981,
+        "lcpMs": 1291,
+        "speedIndexMs": 1195,
+        "tbtMs": 250,
         "cls": 0
       },
       "runs": [
         {
-          "scores": { "performance": 98, "accessibility": 100, "best-practices": 100, "seo": 100 },
-          "fcpMs": 968,
-          "lcpMs": 1268,
-          "speedIndexMs": 1094,
-          "tbtMs": 159,
+          "scores": { "performance": 95, "accessibility": 100, "best-practices": 100, "seo": 100 },
+          "fcpMs": 982,
+          "lcpMs": 1292,
+          "speedIndexMs": 1198,
+          "tbtMs": 266,
           "cls": 0,
           "consoleErrors": [],
           "foreignRequests": [],
           "requests": 19,
           "scripts": [
-            "assets/basemap-BEh8PBMm.js",
-            "assets/index-Bi8nwA4x.js",
+            "assets/basemap-zLlTFxiQ.js",
+            "assets/index-CFfXyoEC.js",
             "assets/maplibre-CKiCiTh7.js",
             "assets/maplibre-shared-BwZ3zNeO.js",
             "assets/maplibre-worker-DPuic1Vc.js"
           ],
-          "benchmarkIndex": 1678.5,
+          "benchmarkIndex": 1663.5,
           "warnings": []
         },
         {
-          "scores": { "performance": 96, "accessibility": 100, "best-practices": 100, "seo": 100 },
-          "fcpMs": 964,
-          "lcpMs": 1276,
-          "speedIndexMs": 1051,
-          "tbtMs": 225,
+          "scores": { "performance": 99, "accessibility": 100, "best-practices": 100, "seo": 100 },
+          "fcpMs": 981,
+          "lcpMs": 1291,
+          "speedIndexMs": 1195,
+          "tbtMs": 133,
           "cls": 0,
           "consoleErrors": [],
           "foreignRequests": [],
           "requests": 19,
           "scripts": [
-            "assets/basemap-BEh8PBMm.js",
-            "assets/index-Bi8nwA4x.js",
+            "assets/basemap-zLlTFxiQ.js",
+            "assets/index-CFfXyoEC.js",
+            "assets/maplibre-CKiCiTh7.js",
+            "assets/maplibre-shared-BwZ3zNeO.js",
+            "assets/maplibre-worker-DPuic1Vc.js"
+          ],
+          "benchmarkIndex": 1653,
+          "warnings": []
+        },
+        {
+          "scores": { "performance": 95, "accessibility": 100, "best-practices": 100, "seo": 100 },
+          "fcpMs": 960,
+          "lcpMs": 1273,
+          "speedIndexMs": 1187,
+          "tbtMs": 250,
+          "cls": 0,
+          "consoleErrors": [],
+          "foreignRequests": [],
+          "requests": 19,
+          "scripts": [
+            "assets/basemap-zLlTFxiQ.js",
+            "assets/index-CFfXyoEC.js",
             "assets/maplibre-CKiCiTh7.js",
             "assets/maplibre-shared-BwZ3zNeO.js",
             "assets/maplibre-worker-DPuic1Vc.js"
           ],
           "benchmarkIndex": 1575.5,
-          "warnings": []
-        },
-        {
-          "scores": { "performance": 99, "accessibility": 100, "best-practices": 100, "seo": 100 },
-          "fcpMs": 959,
-          "lcpMs": 1259,
-          "speedIndexMs": 1275,
-          "tbtMs": 140,
-          "cls": 0,
-          "consoleErrors": [],
-          "foreignRequests": [],
-          "requests": 19,
-          "scripts": [
-            "assets/basemap-BEh8PBMm.js",
-            "assets/index-Bi8nwA4x.js",
-            "assets/maplibre-CKiCiTh7.js",
-            "assets/maplibre-shared-BwZ3zNeO.js",
-            "assets/maplibre-worker-DPuic1Vc.js"
-          ],
-          "benchmarkIndex": 1554.5,
           "warnings": []
         }
       ]
@@ -95,71 +95,71 @@
       "throttling": "simulated desktop dense 4G",
       "median": {
         "scores": { "performance": 100, "accessibility": 100, "best-practices": 100, "seo": 100 },
-        "fcpMs": 269,
-        "lcpMs": 352,
-        "speedIndexMs": 369,
-        "tbtMs": 3,
+        "fcpMs": 266,
+        "lcpMs": 349,
+        "speedIndexMs": 342,
+        "tbtMs": 0,
         "cls": 0
       },
       "runs": [
         {
           "scores": { "performance": 100, "accessibility": 100, "best-practices": 100, "seo": 100 },
-          "fcpMs": 265,
-          "lcpMs": 348,
-          "speedIndexMs": 349,
-          "tbtMs": 10,
-          "cls": 0,
-          "consoleErrors": [],
-          "foreignRequests": [],
-          "requests": 19,
-          "scripts": [
-            "assets/basemap-BEh8PBMm.js",
-            "assets/index-Bi8nwA4x.js",
-            "assets/maplibre-CKiCiTh7.js",
-            "assets/maplibre-shared-BwZ3zNeO.js",
-            "assets/maplibre-worker-DPuic1Vc.js"
-          ],
-          "benchmarkIndex": 1608,
-          "warnings": []
-        },
-        {
-          "scores": { "performance": 100, "accessibility": 100, "best-practices": 100, "seo": 100 },
-          "fcpMs": 269,
-          "lcpMs": 352,
-          "speedIndexMs": 369,
-          "tbtMs": 3,
-          "cls": 0,
-          "consoleErrors": [],
-          "foreignRequests": [],
-          "requests": 19,
-          "scripts": [
-            "assets/basemap-BEh8PBMm.js",
-            "assets/index-Bi8nwA4x.js",
-            "assets/maplibre-CKiCiTh7.js",
-            "assets/maplibre-shared-BwZ3zNeO.js",
-            "assets/maplibre-worker-DPuic1Vc.js"
-          ],
-          "benchmarkIndex": 1633.5,
-          "warnings": []
-        },
-        {
-          "scores": { "performance": 100, "accessibility": 100, "best-practices": 100, "seo": 100 },
-          "fcpMs": 280,
-          "lcpMs": 364,
-          "speedIndexMs": 381,
+          "fcpMs": 266,
+          "lcpMs": 349,
+          "speedIndexMs": 324,
           "tbtMs": 0,
           "cls": 0,
           "consoleErrors": [],
           "foreignRequests": [],
           "requests": 19,
           "scripts": [
-            "assets/basemap-BEh8PBMm.js",
-            "assets/index-Bi8nwA4x.js",
+            "assets/basemap-zLlTFxiQ.js",
+            "assets/index-CFfXyoEC.js",
             "assets/maplibre-CKiCiTh7.js",
             "assets/maplibre-shared-BwZ3zNeO.js",
             "assets/maplibre-worker-DPuic1Vc.js"
           ],
-          "benchmarkIndex": 1671,
+          "benchmarkIndex": 1738,
+          "warnings": []
+        },
+        {
+          "scores": { "performance": 100, "accessibility": 100, "best-practices": 100, "seo": 100 },
+          "fcpMs": 278,
+          "lcpMs": 358,
+          "speedIndexMs": 359,
+          "tbtMs": 0,
+          "cls": 0,
+          "consoleErrors": [],
+          "foreignRequests": [],
+          "requests": 19,
+          "scripts": [
+            "assets/basemap-zLlTFxiQ.js",
+            "assets/index-CFfXyoEC.js",
+            "assets/maplibre-CKiCiTh7.js",
+            "assets/maplibre-shared-BwZ3zNeO.js",
+            "assets/maplibre-worker-DPuic1Vc.js"
+          ],
+          "benchmarkIndex": 1678.5,
+          "warnings": []
+        },
+        {
+          "scores": { "performance": 100, "accessibility": 100, "best-practices": 100, "seo": 100 },
+          "fcpMs": 260,
+          "lcpMs": 342,
+          "speedIndexMs": 342,
+          "tbtMs": 0,
+          "cls": 0,
+          "consoleErrors": [],
+          "foreignRequests": [],
+          "requests": 19,
+          "scripts": [
+            "assets/basemap-zLlTFxiQ.js",
+            "assets/index-CFfXyoEC.js",
+            "assets/maplibre-CKiCiTh7.js",
+            "assets/maplibre-shared-BwZ3zNeO.js",
+            "assets/maplibre-worker-DPuic1Vc.js"
+          ],
+          "benchmarkIndex": 1645,
           "warnings": []
         }
       ]
@@ -168,23 +168,23 @@
       "throttling": "applied (devtools) slow 4G, 4x CPU",
       "runs": [
         {
-          "scores": { "performance": 93, "accessibility": 100, "best-practices": 100, "seo": 100 },
-          "fcpMs": 776,
-          "lcpMs": 776,
-          "speedIndexMs": 842,
-          "tbtMs": 323,
+          "scores": { "performance": 96, "accessibility": 100, "best-practices": 100, "seo": 100 },
+          "fcpMs": 767,
+          "lcpMs": 767,
+          "speedIndexMs": 834,
+          "tbtMs": 242,
           "cls": 0,
           "consoleErrors": [],
           "foreignRequests": [],
           "requests": 19,
           "scripts": [
-            "assets/basemap-BEh8PBMm.js",
-            "assets/index-Bi8nwA4x.js",
+            "assets/basemap-zLlTFxiQ.js",
+            "assets/index-CFfXyoEC.js",
             "assets/maplibre-CKiCiTh7.js",
             "assets/maplibre-shared-BwZ3zNeO.js",
             "assets/maplibre-worker-DPuic1Vc.js"
           ],
-          "benchmarkIndex": 1696,
+          "benchmarkIndex": 1613.5,
           "warnings": []
         }
       ]
@@ -195,9 +195,9 @@
   "lazyScripts": {
     "files": [
       {
-        "path": "assets/basemap-BEh8PBMm.js",
-        "bytes": 5407,
-        "gzipBytes": 2378,
+        "path": "assets/basemap-zLlTFxiQ.js",
+        "bytes": 18598,
+        "gzipBytes": 7557,
         "maplibre": false,
         "sharedModule": false
       },
@@ -228,7 +228,7 @@
     "sharedModuleCopies": 1
   },
   "gates": [
-    { "gate": "mobile performance", "value": 98, "limit": ">= 90", "pass": true },
+    { "gate": "mobile performance", "value": 95, "limit": ">= 90", "pass": true },
     { "gate": "mobile accessibility", "value": 100, "limit": ">= 90", "pass": true },
     { "gate": "mobile best-practices", "value": 100, "limit": ">= 90", "pass": true },
     { "gate": "mobile seo", "value": 100, "limit": ">= 90", "pass": true },
@@ -238,13 +238,13 @@
     { "gate": "desktop seo", "value": 100, "limit": ">= 90", "pass": true },
     {
       "gate": "mobile FCP (simulated slow 4G, median)",
-      "value": 964,
+      "value": 981,
       "limit": "< 1500 ms",
       "pass": true
     },
     {
       "gate": "mobile FCP (applied devtools 4G)",
-      "value": 776,
+      "value": 767,
       "limit": "< 1500 ms",
       "pass": true
     },

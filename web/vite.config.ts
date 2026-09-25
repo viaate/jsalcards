@@ -26,6 +26,11 @@ export default defineConfig({
   },
   test: {
     environment: 'jsdom',
-    include: ['tests/**/*.test.ts'],
+    include: [
+      'tests/**/*.test.ts',
+      // Link state and the map's limits: plain modules, tested where they live.
+      'src/state/tests/**/*.test.ts',
+      'src/map/basemap/tests/**/*.test.ts',
+    ],
   },
 });

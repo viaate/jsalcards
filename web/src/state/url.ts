@@ -12,6 +12,7 @@
  * the address bar is rewritten, so other features can add their own.
  */
 
+import { CENTER_BOUNDS, MAX_ZOOM, MIN_ZOOM, clampToBounds } from '../map/basemap/bounds';
 import type { DistrictId, SchoolId } from '../types/generated';
 import { parseDistrictId, parseSchoolId, parseZipCode } from './ids';
 
@@ -48,13 +49,18 @@ const SELECTION_ORDER: readonly SelectionKind[] = ['school', 'district', 'zip'];
 const OWNED = new Set<string>(Object.values(PARAMS));
 
 /**
- * Limits of a view. Latitude stops where Web Mercator does; zoom matches the
- * map's own minZoom and maxZoom (src/map/basemap/index.ts).
+ * Limits of a view in a link: the zoom range and the box the center stays in,
+ * the same bounds the map holds every view to (src/map/basemap/bounds.ts). A
+ * link cannot know the screen it opens on, so the map then applies that
+ * screen's own limits, which sit inside these.
  */
 export const VIEW_LIMITS = Object.freeze({
-  maxLat: 85.051129,
-  minZoom: 1,
-  maxZoom: 16,
+  minZoom: MIN_ZOOM,
+  maxZoom: MAX_ZOOM,
+  west: CENTER_BOUNDS[0],
+  south: CENTER_BOUNDS[1],
+  east: CENTER_BOUNDS[2],
+  north: CENTER_BOUNDS[3],
 });
 
 /** A plain decimal: no exponent, hex, Infinity or stray characters. */
@@ -72,24 +78,18 @@ function clamp(value: number, low: number, high: number): number {
   return Math.min(high, Math.max(low, value));
 }
 
-/** Longitude folded into [-180, 180); a longitude already in range is returned as is. */
-function wrapLongitude(lon: number): number {
-  if (lon >= -180 && lon < 180) return lon === 0 ? 0 : lon;
-  return ((((lon + 180) % 360) + 360) % 360) - 180;
-}
-
-/** A view with its latitude and zoom clamped and its longitude wrapped; null if not finite. */
+/**
+ * The nearest view inside VIEW_LIMITS: zoom and latitude clamped, longitude
+ * wrapped and moved to the nearer edge of the box. Null if not finite.
+ */
 export function normalizeView(view: View): View | null {
-  const { lat, lon, zoom } = view;
-  if (!Number.isFinite(lat) || !Number.isFinite(lon) || !Number.isFinite(zoom)) return null;
-  return {
-    lat: clamp(lat, -VIEW_LIMITS.maxLat, VIEW_LIMITS.maxLat),
-    lon: wrapLongitude(lon),
-    zoom: clamp(zoom, VIEW_LIMITS.minZoom, VIEW_LIMITS.maxZoom),
-  };
+  return clampToBounds(view);
 }
 
-/** Parses "lat,lon,zoom". Out-of-range numbers are clamped; anything malformed is null. */
+/**
+ * Parses "lat,lon,zoom". A view outside the limits opens at the nearest one
+ * inside them; anything malformed is null.
+ */
 export function parseView(raw: string | null | undefined): View | null {
   if (typeof raw !== 'string' || raw.length > 64) return null;
   const parts = raw.split(',');
@@ -115,21 +115,16 @@ function fixed(value: number, decimals: number): string {
   return trimmed === '-0' ? '0' : trimmed;
 }
 
-/** "41.8781,-87.6298,10.25": the form ?at= carries. */
+/**
+ * "41.8781,-87.6298,10.25": the form ?at= carries. The limits are whole
+ * degrees and whole zooms, so rounding never carries a view past them.
+ */
 export function formatView(view: View): string {
   const normal = normalizeView(view);
   if (normal === null) throw new RangeError('url: a view needs finite numbers');
   const zoom = fixed(normal.zoom, 2);
   const decimals = coordinateDecimals(Number(zoom));
-  // Rounding can carry 179.999 up to 180, which is -180 on the map, and a
-  // latitude past the Mercator limit; that one is cut toward the equator instead.
-  const lon = fixed(wrapLongitude(Number(fixed(normal.lon, decimals))), decimals);
-  const scale = 10 ** decimals;
-  const lat =
-    Math.abs(Number(fixed(normal.lat, decimals))) > VIEW_LIMITS.maxLat
-      ? Math.trunc(normal.lat * scale) / scale
-      : normal.lat;
-  return [fixed(lat, decimals), lon, zoom].join(',');
+  return [fixed(normal.lat, decimals), fixed(normal.lon, decimals), zoom].join(',');
 }
 
 /** A view rounded the way a link stores it, so equal links mean equal views. */

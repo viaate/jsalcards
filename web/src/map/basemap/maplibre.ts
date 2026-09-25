@@ -16,6 +16,7 @@ export { SHARED_URL } from './maplibre-shared';
 export type MapLibre = Pick<
   typeof MapLibreModule,
   | 'AttributionControl'
+  | 'LngLat'
   | 'LngLatBounds'
   | 'Map'
   | 'addProtocol'

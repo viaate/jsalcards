@@ -1,6 +1,8 @@
 // @vitest-environment node
 import { describe, expect, it } from 'vitest';
 
+import { CENTER_BOUNDS, MAX_ZOOM, MIN_ZOOM } from '../../map/basemap/bounds';
+import { US_BOUNDS } from '../../map/basemap/us-geo';
 import {
   EMPTY_STATE,
   VIEW_LIMITS,
@@ -79,13 +81,48 @@ describe('parseUrlState', () => {
 });
 
 describe('parseView', () => {
-  it('clamps latitude and zoom and wraps longitude', () => {
-    expect(parseView('89,0,5')).toEqual({ lat: VIEW_LIMITS.maxLat, lon: 0, zoom: 5 });
-    expect(parseView('-95,10,5')?.lat).toBe(-VIEW_LIMITS.maxLat);
-    expect(parseView('40,190,5')?.lon).toBeCloseTo(-170, 10);
-    expect(parseView('40,-540,5')?.lon).toBe(-180);
-    expect(parseView('40,-100,0')?.zoom).toBe(VIEW_LIMITS.minZoom);
-    expect(parseView('40,-100,99')?.zoom).toBe(VIEW_LIMITS.maxZoom);
+  it('keeps a view inside the limits exactly', () => {
+    expect(parseView('39.03606,-94.593001,15.2')).toEqual({
+      lat: 39.03606,
+      lon: -94.593001,
+      zoom: 15.2,
+    });
+  });
+
+  it('opens a view outside the limits at the nearest one inside', () => {
+    const { west, south, east, north, minZoom, maxZoom } = VIEW_LIMITS;
+    expect(parseView('89,-100,5')).toEqual({ lat: north, lon: -100, zoom: 5 });
+    expect(parseView('-95,-100,5')?.lat).toBe(south);
+    expect(parseView('40,-100,0')?.zoom).toBe(minZoom);
+    expect(parseView('40,-100,-3')?.zoom).toBe(minZoom);
+    expect(parseView('40,-100,99')?.zoom).toBe(maxZoom);
+    // Longitude moves to the nearer edge the short way around the globe.
+    expect(parseView('40,-20,5')?.lon).toBe(east);
+    expect(parseView('40,0,5')?.lon).toBe(east);
+    expect(parseView('40,-150,5')?.lon).toBe(west);
+    expect(parseView('40,170,5')?.lon).toBe(west);
+    expect(parseView('40,190,5')?.lon).toBe(west);
+    expect(parseView('40,-540,5')?.lon).toBe(west);
+    expect(parseView('0,0,0')).toEqual({ lat: south, lon: east, zoom: minZoom });
+  });
+
+  it('holds links to the same bounds as the map', () => {
+    expect(VIEW_LIMITS).toEqual({
+      minZoom: MIN_ZOOM,
+      maxZoom: MAX_ZOOM,
+      west: CENTER_BOUNDS[0],
+      south: CENTER_BOUNDS[1],
+      east: CENTER_BOUNDS[2],
+      north: CENTER_BOUNDS[3],
+    });
+    // The continental US, and some room around it, is inside.
+    const [usWest, usSouth, usEast, usNorth] = US_BOUNDS;
+    expect(VIEW_LIMITS.west).toBeLessThan(usWest);
+    expect(VIEW_LIMITS.south).toBeLessThan(usSouth);
+    expect(VIEW_LIMITS.east).toBeGreaterThan(usEast);
+    expect(VIEW_LIMITS.north).toBeGreaterThan(usNorth);
+    // Whole numbers, so rounding a view for a link never carries it outside.
+    for (const value of Object.values(VIEW_LIMITS)) expect(Number.isInteger(value)).toBe(true);
   });
 
   it.each([
@@ -111,7 +148,8 @@ describe('parseView', () => {
 
   it('accepts signs, spaces around numbers and leading dots', () => {
     expect(parseView(' 40.5 , -100.25 , 4 ')).toEqual({ lat: 40.5, lon: -100.25, zoom: 4 });
-    expect(parseView('.5,-.5,3.')).toEqual({ lat: 0.5, lon: -0.5, zoom: 3 });
+    expect(parseView('+40.,-100.,3.')).toEqual({ lat: 40, lon: -100, zoom: 3 });
+    expect(parseView('40,-100,.5')).toEqual({ lat: 40, lon: -100, zoom: VIEW_LIMITS.minZoom });
   });
 });
 
@@ -125,13 +163,18 @@ describe('formatView', () => {
     expect(formatView({ lat: 41.878113, lon: -87.629799, zoom: 12 })).toBe('41.8781,-87.6298,12');
   });
 
-  it('drops trailing zeros and negative zero', () => {
-    expect(formatView({ lat: 40, lon: -0.0001, zoom: 3 })).toBe('40,0,3');
+  it('drops trailing zeros', () => {
+    expect(formatView({ lat: 40, lon: -90.0001, zoom: 3 })).toBe('40,-90,3');
     expect(formatView({ lat: 40.5, lon: -100.5, zoom: 5.5 })).toBe('40.5,-100.5,5.5');
   });
 
-  it('wraps a longitude that rounds up to 180', () => {
-    expect(formatView({ lat: 0, lon: 179.999, zoom: 3 })).toBe('0,-180,3');
+  it('writes a view outside the limits as the nearest one inside', () => {
+    expect(formatView({ lat: 0, lon: 179.999, zoom: 0.5 })).toBe(
+      `${String(VIEW_LIMITS.south)},${String(VIEW_LIMITS.west)},${String(VIEW_LIMITS.minZoom)}`,
+    );
+    expect(formatView({ lat: 60, lon: -60.001, zoom: 20 })).toBe(
+      `${String(VIEW_LIMITS.north)},${String(VIEW_LIMITS.east)},${String(VIEW_LIMITS.maxZoom)}`,
+    );
   });
 
   it('throws on non-finite numbers', () => {
@@ -153,7 +196,13 @@ describe('formatView', () => {
       const text = formatView(view);
       const parsed = parseView(text);
       expect(parsed).not.toBeNull();
-      if (parsed !== null) expect(formatView(parsed)).toBe(text);
+      if (parsed !== null) {
+        expect(formatView(parsed)).toBe(text);
+        expect(parsed.lat).toBeGreaterThanOrEqual(VIEW_LIMITS.south);
+        expect(parsed.lat).toBeLessThanOrEqual(VIEW_LIMITS.north);
+        expect(parsed.lon).toBeGreaterThanOrEqual(VIEW_LIMITS.west);
+        expect(parsed.lon).toBeLessThanOrEqual(VIEW_LIMITS.east);
+      }
       expect(roundView(view)).toEqual(parsed);
     }
   });
