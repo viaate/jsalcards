@@ -39,3 +39,5 @@ web/perf/raw/
 Thumbs.db
 .idea/
 *.swp
+pipeline/.cache/
+pipeline/out/

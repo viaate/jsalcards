@@ -1,0 +1,80 @@
+{
+  "2025_Gaz_zcta_national.txt": {
+    "retrieved_at": "2026-09-24T23:19:54Z",
+    "selection": "header + the 11 rows whose GEOID is one of ['00601', '01002', '02139', '02861', '05847', '36542', '55111', '60601', '85351', '96813', '99501'], original order and bytes",
+    "source_member": "2025_Gaz_zcta_national.txt",
+    "source_sha256": "51516a4283bab5cd2376eec75609ddc4b363a18297e8adeeaac7b03cf7c84dbe",
+    "source_url": "https://www2.census.gov/geo/docs/maps-data/data/gazetteer/2025_Gazetteer/2025_Gaz_zcta_national.zip"
+  },
+  "2026_Gaz_place_national.txt": {
+    "retrieved_at": "2026-09-24T23:15:44Z",
+    "selection": "header + the 28 rows whose GEOID is one of ['0100100', '0100124', '0203000', '0281920', '0464210', '0811810', '0812030', '0902690', '0947515', '1150000', '1321017', '1326156', '1369784', '1571550', '1714000', '2146027', '2179590', '2511000', '2743000', '2903034', '3209700', '4454640', '4744382', '4752006', '5010675', '5466988', '7200186', '7276770'], original order and bytes",
+    "source_member": "2026_Gaz_place_national.txt",
+    "source_sha256": "af678e2d990827c89ee39b98c82de6e90b693c7361ff0e559ae3076670dd2863",
+    "source_url": "https://www2.census.gov/geo/docs/maps-data/data/gazetteer/2026_Gazetteer/2026_Gaz_place_national.zip"
+  },
+  "2026_Gaz_zcta_national.txt": {
+    "retrieved_at": "2026-09-24T23:15:44Z",
+    "selection": "header + the 11 rows whose GEOID is one of ['00601', '01002', '02139', '02861', '05847', '36542', '55111', '60601', '85351', '96813', '99501'], original order and bytes",
+    "source_member": "2026_Gaz_zcta_national.txt",
+    "source_sha256": "f1e9046b91f6e60686a99343cb2752834c02b0764939403b331c78c017e2c54c",
+    "source_url": "https://www2.census.gov/geo/docs/maps-data/data/gazetteer/2026_Gazetteer/2026_Gaz_zcta_national.zip"
+  },
+  "gazetteer-2026.table.html": {
+    "page_sha256": "92a801397c1b694a39c0838b7df2890825fb46c8f91ce3f4fc2c3e666c07a41f",
+    "retrieved_at": "2026-09-24T23:30:30Z",
+    "selection": "the directory index <table> element, verbatim",
+    "source_url": "https://www2.census.gov/geo/docs/maps-data/data/gazetteer/2026_Gazetteer/"
+  },
+  "gazetteer-index.table.html": {
+    "page_sha256": "6fd27e9810e69830d4fb9785da50824b6fd3667d9e06e572334ab24b25b7cde8",
+    "retrieved_at": "2026-09-24T23:30:29Z",
+    "selection": "the directory index <table> element, verbatim",
+    "source_url": "https://www2.census.gov/geo/docs/maps-data/data/gazetteer/"
+  },
+  "grf25_lea_zcta5ce20.tsv": {
+    "retrieved_at": "2026-09-24T23:15:42Z",
+    "selection": "header + the 25 rows of GRF25/grf25_lea_zcta5ce20.xlsx whose ZCTA5CE20 is one of ['00601', '01002', '02139', '02861', '05847', '36542', '55111', '60601', '85351', '96813', '99501'], plus the row LEAID 0100001 x ZCTA 00000; each cell is the exact text stored in the workbook, written tab-separated because a workbook cannot be sliced byte-for-byte (tests rebuild a one-sheet workbook from it)",
+    "source_member": "GRF25/grf25_lea_zcta5ce20.xlsx",
+    "source_sha256": "ada5f993d59004bfac3bb20f866bfcc39c4def4c9d9f198c79bd3e1ed3f043ac",
+    "source_url": "https://nces.ed.gov/programs/edge/data/GRF25.zip"
+  },
+  "legal-status-codes.table.html": {
+    "retrieved_at": "2026-09-24T23:20:30Z",
+    "selection": "the page's single <table> element, verbatim (characters from the first \"<table\" to the matching \"</table>\")",
+    "source_sha256": "8aabbbac3986e477ecf6f164012f404d68fa24366ff8a3599f4a39af38f4f323",
+    "source_url": "https://www.census.gov/library/reference/code-lists/legal-status-codes.html"
+  },
+  "nces-relationship-files.lines-222-414.html": {
+    "page_sha256": "d2ab0ce520751950f37d9400db565222997c998088ab2e954a89dbc27e1532cb",
+    "retrieved_at": "2026-09-24T23:30:31Z",
+    "selection": "lines 222-414 of the page, verbatim: the technical documentation link through the GRF13 link",
+    "source_url": "https://nces.ed.gov/programs/edge/Geographic/RelationshipFiles"
+  },
+  "popest-2020-2025-cities-totals.table.html": {
+    "page_sha256": "3d361535faa3d035295bf9ea114841d3b43e968da71806c76fc7dacd68ff8d4c",
+    "retrieved_at": "2026-09-24T23:30:30Z",
+    "selection": "the directory index <table> element, verbatim",
+    "source_url": "https://www2.census.gov/programs-surveys/popest/datasets/2020-2025/cities/totals/"
+  },
+  "popest-datasets.table.html": {
+    "page_sha256": "c73cebcd928517d39de10d7b807fc432d3c3f3ec25d4b96e80b2b4152a9bbf12",
+    "retrieved_at": "2026-09-24T23:30:30Z",
+    "selection": "the directory index <table> element, verbatim",
+    "source_url": "https://www2.census.gov/programs-surveys/popest/datasets/"
+  },
+  "sub-est2025.csv": {
+    "retrieved_at": "2026-09-24T23:15:45Z",
+    "rows": 30,
+    "selection": "header; the SUMLEV 040 Alabama row; SUMLEV 162 rows for the place GEOIDs above plus 2162370 (Poplar Hills city, KY, not in the 2026 Gazetteer); SUMLEV 170/172 rows for Connecticut (Milford consolidated city); the SUMLEV 157 row 01/001/62328 (Prattville city (pt.)); the SUMLEV 061 row 09/01080; original ISO-8859-1 bytes and order kept",
+    "source_sha256": "e3508f5201465913476d4ddf91740f191f7977c9f2614a2a7e30b5fd22027934",
+    "source_url": "https://www2.census.gov/programs-surveys/popest/datasets/2020-2025/cities/totals/sub-est2025.csv"
+  },
+  "tab20_zcta520_county20_natl.txt": {
+    "retrieved_at": "2026-09-24T23:20:28Z",
+    "rows": 15,
+    "selection": "header (with its UTF-8 BOM); the first data row (county land outside every ZCTA, empty ZCTA fields); every row whose GEOID_ZCTA5_20 is one of ['00601', '01002', '02139', '02861', '05847', '36542', '55111', '60601', '85351', '96813', '99501']; original order and bytes",
+    "source_sha256": "3ed41278d637dc249e0323306f68be8a6c234e3090f4de88ef328dee71aeaaaf",
+    "source_url": "https://www2.census.gov/geo/docs/maps-data/data/rel2020/zcta520/tab20_zcta520_county20_natl.txt"
+  }
+}
