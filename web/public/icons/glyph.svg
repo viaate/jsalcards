@@ -1,0 +1,32 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
+  <!--
+    The Snowlight bloom: one school's light as the map draws it, a hot core
+    that burns to white, falling off through Closed blue (#7fd4ff) into a
+    faint halo. Every app icon is drawn from it by scripts/build-icons.mjs.
+  -->
+  <defs>
+    <radialGradient id="bloom" cx="32" cy="32" r="32" gradientUnits="userSpaceOnUse">
+        <stop offset="0" stop-color="#f4fbff" stop-opacity="0.996"/>
+        <stop offset="0.02" stop-color="#f4fbff" stop-opacity="0.996"/>
+        <stop offset="0.04" stop-color="#f1faff" stop-opacity="0.995"/>
+        <stop offset="0.06" stop-color="#edf9ff" stop-opacity="0.992"/>
+        <stop offset="0.08" stop-color="#e5f6ff" stop-opacity="0.987"/>
+        <stop offset="0.1" stop-color="#daf3ff" stop-opacity="0.978"/>
+        <stop offset="0.12" stop-color="#cceeff" stop-opacity="0.963"/>
+        <stop offset="0.15" stop-color="#b3e6ff" stop-opacity="0.929"/>
+        <stop offset="0.18" stop-color="#9ddeff" stop-opacity="0.882"/>
+        <stop offset="0.22" stop-color="#8ad8ff" stop-opacity="0.812"/>
+        <stop offset="0.26" stop-color="#82d5ff" stop-opacity="0.741"/>
+        <stop offset="0.31" stop-color="#7fd4ff" stop-opacity="0.65"/>
+        <stop offset="0.37" stop-color="#7fd4ff" stop-opacity="0.535"/>
+        <stop offset="0.44" stop-color="#7fd4ff" stop-opacity="0.408"/>
+        <stop offset="0.52" stop-color="#7fd4ff" stop-opacity="0.291"/>
+        <stop offset="0.6" stop-color="#7fd4ff" stop-opacity="0.209"/>
+        <stop offset="0.7" stop-color="#7fd4ff" stop-opacity="0.141"/>
+        <stop offset="0.8" stop-color="#7fd4ff" stop-opacity="0.095"/>
+        <stop offset="0.9" stop-color="#7fd4ff" stop-opacity="0.031"/>
+        <stop offset="1" stop-color="#7fd4ff" stop-opacity="0"/>
+    </radialGradient>
+  </defs>
+  <circle cx="32" cy="32" r="32" fill="url(#bloom)"/>
+</svg>

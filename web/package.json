@@ -23,7 +23,8 @@
     "bench:search": "tsc -p bench/search/tsconfig.json && vitest run --dir src/search && playwright test -c bench/search/playwright.config.ts",
     "build:search": "node scripts/build-search-index.mjs",
     "gen:types": "node scripts/gen-types.mjs",
-    "lint:copy": "node scripts/check-copy.mjs && vitest run --root src --no-cache copy.test.ts"
+    "lint:copy": "node scripts/check-copy.mjs && vitest run --root src --no-cache copy.test.ts",
+    "build:icons": "node scripts/build-icons.mjs"
   },
   "dependencies": {
     "@fontsource-variable/geist": "5.3.0",
