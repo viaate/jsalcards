@@ -14,7 +14,8 @@ name: Archive captures
 #   bytes the site sent, without the archive's toolbar or rewriting). Bodies go to
 #   snapshots/, and snapshots/manifest.jsonl records, per capture, the URL asked
 #   for, the capture actually served (the archive redirects to the nearest one),
-#   the HTTP status, the SHA-256 and the time it was read.
+#   the HTTP status, the content encoding the archive replayed (bodies are saved
+#   as sent, so a gzip body stays gzip), the SHA-256 and the time it was read.
 #
 # Requests go one at a time, with a pause between them, a User-Agent naming this
 # repository, and retries with backoff on 429 and 5xx answers. Snapshots are
@@ -251,6 +252,7 @@ jobs:
                   record["final_original"] = match.group(2) if match else None
                   record["http_status"] = answer.status
                   record["content_type"] = answer.headers.get("Content-Type")
+                  record["content_encoding"] = answer.headers.get("Content-Encoding")
                   record["memento_datetime"] = answer.headers.get("Memento-Datetime")
                   if answer.status == 200 and answer.body:
                       name = safe_name(item["timestamp"], item["url"])
@@ -267,6 +269,9 @@ jobs:
 
           listings, snapshots = load_request()
           mode = os.environ.get("MODE", "all")
+          if mode == "check":
+              print(f"request is valid: {len(listings)} listings, {len(snapshots)} snapshots")
+              sys.exit(0)
           if mode == "snapshots":
               listings = []
           elif mode == "listings":
