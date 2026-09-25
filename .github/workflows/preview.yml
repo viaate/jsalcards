@@ -29,6 +29,8 @@ jobs:
     defaults:
       run:
         working-directory: web
+    outputs:
+      enabled: ${{ steps.pages.outcome == 'success' }}
     steps:
       - uses: actions/checkout@v4
         with:
@@ -38,18 +40,27 @@ jobs:
           node-version: 22
           cache: npm
           cache-dependency-path: web/package-lock.json
+      # Until Pages is enabled this step fails; the job then skips the build
+      # and deploy with a notice instead of failing on every push.
       - id: pages
         uses: actions/configure-pages@v5
-      - run: npm ci
-      - run: npx vite build --base="${BASE_PATH}/"
+        continue-on-error: true
+      - if: steps.pages.outcome != 'success'
+        run: echo "::notice::GitHub Pages is not enabled for this repository yet (Settings > Pages > Source > GitHub Actions); skipping the preview."
+      - if: steps.pages.outcome == 'success'
+        run: npm ci
+      - if: steps.pages.outcome == 'success'
+        run: npx vite build --base="${BASE_PATH}/"
         env:
           BASE_PATH: ${{ steps.pages.outputs.base_path }}
-      - uses: actions/upload-pages-artifact@v3
+      - if: steps.pages.outcome == 'success'
+        uses: actions/upload-pages-artifact@v3
         with:
           path: web/dist
 
   deploy:
     needs: build
+    if: needs.build.outputs.enabled == 'true'
     runs-on: ubuntu-latest
     timeout-minutes: 10
     environment:
