@@ -1,0 +1,58 @@
+name: Archive captures
+
+# Lists Internet Archive (Wayback Machine) captures of closings pages for a
+# date range. The Wayback CDX API is not reachable from every build
+# environment, so this runs on GitHub's runners and uploads the raw CDX rows
+# as an artifact for the backfill to read.
+
+on:
+  workflow_dispatch:
+    inputs:
+      urls:
+        description: Space-separated URL patterns (a trailing * matches a prefix)
+        required: true
+      from:
+        description: First day, YYYYMMDD
+        required: true
+      to:
+        description: Last day, YYYYMMDD
+        required: true
+
+permissions:
+  contents: read
+
+jobs:
+  cdx:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - name: Query the Wayback CDX API
+        env:
+          URLS: ${{ inputs.urls }}
+          FROM: ${{ inputs.from }}
+          TO: ${{ inputs.to }}
+        run: |
+          set -u
+          mkdir -p out
+          for url in $URLS; do
+            name=$(printf '%s' "$url" | tr -c 'A-Za-z0-9' '_')
+            if curl -sS --fail --retry 3 --retry-delay 5 --max-time 120 \
+                -A "snowlight-pipeline (+https://github.com/viaate/jsalcards)" \
+                -G "https://web.archive.org/cdx/search/cdx" \
+                --data-urlencode "url=${url}" \
+                --data-urlencode "from=${FROM}" \
+                --data-urlencode "to=${TO}" \
+                --data-urlencode "output=json" \
+                --data-urlencode "fl=timestamp,original,statuscode,mimetype,length,digest" \
+                -o "out/${name}.json"; then
+              echo "${url}: $(jq 'length - 1' "out/${name}.json" 2>/dev/null || echo '?') captures"
+            else
+              echo "${url}: request failed"
+            fi
+            sleep 2
+          done
+      - uses: actions/upload-artifact@v4
+        with:
+          name: cdx-${{ inputs.from }}-${{ inputs.to }}
+          path: out
+          retention-days: 30
