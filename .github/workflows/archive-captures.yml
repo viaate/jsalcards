@@ -289,7 +289,7 @@ jobs:
                       manifest.write(json.dumps(record, sort_keys=True) + "\n")
                       manifest.flush()
                       status = record.get("error") or f"{record['bytes']} bytes"
-                      print(f"{item['timestamp']} {item['url']}: {status}")
+                      print(f"{now()} {item['timestamp']} {item['url']}: {status}")
           listed = 0
           for index, item in enumerate(listings):
               if index or snapshots:
@@ -308,7 +308,7 @@ jobs:
           PAUSE_SECONDS: "5"
           MODE: snapshots
           OUT_DIR: out/snapshots-run
-        run: python3 "$RUNNER_TEMP/archive_reader.py"
+        run: python3 -u "$RUNNER_TEMP/archive_reader.py"
       - uses: actions/upload-artifact@v4
         if: always()
         with:
@@ -327,7 +327,7 @@ jobs:
           PAUSE_SECONDS: "5"
           MODE: listings
           OUT_DIR: out/cdx-run
-        run: python3 "$RUNNER_TEMP/archive_reader.py"
+        run: python3 -u "$RUNNER_TEMP/archive_reader.py"
       - uses: actions/upload-artifact@v4
         if: always()
         with:
