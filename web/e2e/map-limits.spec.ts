@@ -96,9 +96,22 @@ async function open(page: Page, path = '/'): Promise<void> {
   await settle(page);
 }
 
-/** Waits out any easing, inertia and the address bar's write, then two frames. */
+/**
+ * Waits out any easing, inertia and the address bar's write, then two frames.
+ * A slow runner (software WebGL on two cores) can take well over `ms` to end a
+ * move, so it then waits until two looks 600 ms apart agree, in both the
+ * picture and the address: longer than the address bar's 300 ms write delay.
+ */
 async function settle(page: Page, ms = 900): Promise<void> {
   await page.waitForTimeout(ms);
+  const canvas = page.locator('.maplibregl-canvas');
+  let before = { url: page.url(), shot: await canvas.screenshot() };
+  for (let look = 0; look < 30; look++) {
+    await page.waitForTimeout(600);
+    const after = { url: page.url(), shot: await canvas.screenshot() };
+    if (after.url === before.url && after.shot.equals(before.shot)) break;
+    before = after;
+  }
   await page.evaluate(
     () =>
       new Promise<void>((resolve) => {
