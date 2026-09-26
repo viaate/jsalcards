@@ -4,6 +4,7 @@ import type { Map as MapLibreMap, MapMovementEvent, TransformConstrainFunction }
 
 import { mapLocale } from '../../copy';
 import { collapsedAttribution } from './attribution';
+import { addMapFonts } from './fonts';
 import type { MapLibre } from './maplibre';
 import { OPENFREEMAP_ATTRIBUTION, registerOpenFreeMap } from './openfreemap';
 import { MAX_ZOOM } from './bounds';
@@ -80,6 +81,13 @@ const NO_PADDING: Insets = { top: 0, right: 0, bottom: 0, left: 0 };
 /** Workers parse the bundled lines and, from zoom 7, vector tiles; two is plenty. */
 const WORKERS = 2;
 
+declare global {
+  interface Window {
+    /** The map, for end-to-end tests: set only when navigator.webdriver is true. */
+    snowlightMap?: MapLibreMap;
+  }
+}
+
 let configured: MapLibre | undefined;
 
 /** MapLibre's global settings; they must be in place before the first map starts its workers. */
@@ -114,7 +122,8 @@ export function framePadding(container: Element, frame: Element): Insets {
 
 /**
  * Line colors and width come from the same CSS custom properties that draw the
- * inline still, so the two cannot drift apart.
+ * inline still, so the two cannot drift apart; label and building tones come
+ * from the design tokens the rest of the page uses.
  */
 function look(): BasemapLook {
   const style = getComputedStyle(document.documentElement);
@@ -129,6 +138,10 @@ function look(): BasemapLook {
       background: token('--bg', '#000'),
       outline: token('--line-outline', '#6b6b6b'),
       state: token('--line-state', '#2a2a2a'),
+      label: token('--text-2', '#a3a3a3'),
+      labelDim: token('--text-3', '#6b6b6b'),
+      building: token('--surface-2', '#111'),
+      buildingEdge: token('--border-1', '#1f1f1f'),
     },
   };
 }
@@ -146,6 +159,7 @@ export function createBasemap({
   usLines,
 }: BasemapOptions & BasemapResources): Basemap {
   configure(maplibre, workerUrl);
+  addMapFonts();
   const bounds = new maplibre.LngLatBounds(
     [US_BOUNDS[0], US_BOUNDS[1]],
     [US_BOUNDS[2], US_BOUNDS[3]],
@@ -208,6 +222,8 @@ export function createBasemap({
     collapsedAttribution(maplibre, { customAttribution: OPENFREEMAP_ATTRIBUTION }),
     'bottom-right',
   );
+  // End-to-end tests read what the map drew; only a browser under automation gets the handle.
+  if (navigator.webdriver) window.snowlightMap = map;
 
   let moved = false;
   let national = start === null;
@@ -302,6 +318,7 @@ export function createBasemap({
     fitContinentalUs,
     goTo,
     destroy() {
+      if (window.snowlightMap === map) delete window.snowlightMap;
       map.remove();
       container.classList.remove(LIVE_CLASS);
     },

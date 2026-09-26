@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-09-25T23:56:43.569Z",
+  "generatedAt": "2026-09-26T18:16:00.138Z",
   "url": "http://127.0.0.1:5104/",
   "environment": {
     "lighthouse": "13.5.0",
@@ -13,80 +13,80 @@
     ],
     "webglRenderer": "ANGLE (Google, Vulkan 1.3.0 (SwiftShader Device (Subzero) (0x0000C0DE)), SwiftShader driver)",
     "cpus": 4,
-    "cpuModel": "Intel(R) Xeon(R) Processor @ 2.80GHz",
-    "benchmarkIndex": 1653,
+    "cpuModel": "Intel(R) Xeon(R) Processor @ 2.10GHz",
+    "benchmarkIndex": 2386.5,
     "runsPerPreset": 3
   },
   "presets": {
     "mobile": {
       "throttling": "simulated slow 4G, 4x CPU",
       "median": {
-        "scores": { "performance": 95, "accessibility": 100, "best-practices": 100, "seo": 100 },
-        "fcpMs": 981,
-        "lcpMs": 1291,
-        "speedIndexMs": 1195,
-        "tbtMs": 250,
+        "scores": { "performance": 98, "accessibility": 100, "best-practices": 100, "seo": 100 },
+        "fcpMs": 971,
+        "lcpMs": 1271,
+        "speedIndexMs": 1082,
+        "tbtMs": 161,
         "cls": 0
       },
       "runs": [
         {
-          "scores": { "performance": 95, "accessibility": 100, "best-practices": 100, "seo": 100 },
-          "fcpMs": 982,
-          "lcpMs": 1292,
-          "speedIndexMs": 1198,
-          "tbtMs": 266,
-          "cls": 0,
-          "consoleErrors": [],
-          "foreignRequests": [],
-          "requests": 19,
-          "scripts": [
-            "assets/basemap-zLlTFxiQ.js",
-            "assets/index-CFfXyoEC.js",
-            "assets/maplibre-CKiCiTh7.js",
-            "assets/maplibre-shared-BwZ3zNeO.js",
-            "assets/maplibre-worker-DPuic1Vc.js"
-          ],
-          "benchmarkIndex": 1663.5,
-          "warnings": []
-        },
-        {
           "scores": { "performance": 99, "accessibility": 100, "best-practices": 100, "seo": 100 },
-          "fcpMs": 981,
-          "lcpMs": 1291,
-          "speedIndexMs": 1195,
-          "tbtMs": 133,
+          "fcpMs": 971,
+          "lcpMs": 1271,
+          "speedIndexMs": 1291,
+          "tbtMs": 125,
           "cls": 0,
           "consoleErrors": [],
           "foreignRequests": [],
           "requests": 19,
           "scripts": [
-            "assets/basemap-zLlTFxiQ.js",
-            "assets/index-CFfXyoEC.js",
+            "assets/basemap-BePhYeX4.js",
+            "assets/index-038-ZUd3.js",
             "assets/maplibre-CKiCiTh7.js",
             "assets/maplibre-shared-BwZ3zNeO.js",
             "assets/maplibre-worker-DPuic1Vc.js"
           ],
-          "benchmarkIndex": 1653,
+          "benchmarkIndex": 2536,
           "warnings": []
         },
         {
-          "scores": { "performance": 95, "accessibility": 100, "best-practices": 100, "seo": 100 },
-          "fcpMs": 960,
-          "lcpMs": 1273,
-          "speedIndexMs": 1187,
-          "tbtMs": 250,
+          "scores": { "performance": 98, "accessibility": 100, "best-practices": 100, "seo": 100 },
+          "fcpMs": 916,
+          "lcpMs": 1226,
+          "speedIndexMs": 1032,
+          "tbtMs": 161,
           "cls": 0,
           "consoleErrors": [],
           "foreignRequests": [],
           "requests": 19,
           "scripts": [
-            "assets/basemap-zLlTFxiQ.js",
-            "assets/index-CFfXyoEC.js",
+            "assets/basemap-BePhYeX4.js",
+            "assets/index-038-ZUd3.js",
             "assets/maplibre-CKiCiTh7.js",
             "assets/maplibre-shared-BwZ3zNeO.js",
             "assets/maplibre-worker-DPuic1Vc.js"
           ],
-          "benchmarkIndex": 1575.5,
+          "benchmarkIndex": 2385,
+          "warnings": []
+        },
+        {
+          "scores": { "performance": 94, "accessibility": 100, "best-practices": 100, "seo": 100 },
+          "fcpMs": 985,
+          "lcpMs": 1296,
+          "speedIndexMs": 1082,
+          "tbtMs": 297,
+          "cls": 0,
+          "consoleErrors": [],
+          "foreignRequests": [],
+          "requests": 19,
+          "scripts": [
+            "assets/basemap-BePhYeX4.js",
+            "assets/index-038-ZUd3.js",
+            "assets/maplibre-CKiCiTh7.js",
+            "assets/maplibre-shared-BwZ3zNeO.js",
+            "assets/maplibre-worker-DPuic1Vc.js"
+          ],
+          "benchmarkIndex": 2327.5,
           "warnings": []
         }
       ]
@@ -95,71 +95,71 @@
       "throttling": "simulated desktop dense 4G",
       "median": {
         "scores": { "performance": 100, "accessibility": 100, "best-practices": 100, "seo": 100 },
-        "fcpMs": 266,
-        "lcpMs": 349,
-        "speedIndexMs": 342,
-        "tbtMs": 0,
+        "fcpMs": 317,
+        "lcpMs": 407,
+        "speedIndexMs": 438,
+        "tbtMs": 73,
         "cls": 0
       },
       "runs": [
         {
           "scores": { "performance": 100, "accessibility": 100, "best-practices": 100, "seo": 100 },
-          "fcpMs": 266,
-          "lcpMs": 349,
-          "speedIndexMs": 324,
-          "tbtMs": 0,
+          "fcpMs": 330,
+          "lcpMs": 419,
+          "speedIndexMs": 456,
+          "tbtMs": 73,
           "cls": 0,
           "consoleErrors": [],
           "foreignRequests": [],
           "requests": 19,
           "scripts": [
-            "assets/basemap-zLlTFxiQ.js",
-            "assets/index-CFfXyoEC.js",
+            "assets/basemap-BePhYeX4.js",
+            "assets/index-038-ZUd3.js",
             "assets/maplibre-CKiCiTh7.js",
             "assets/maplibre-shared-BwZ3zNeO.js",
             "assets/maplibre-worker-DPuic1Vc.js"
           ],
-          "benchmarkIndex": 1738,
+          "benchmarkIndex": 1920,
+          "warnings": []
+        },
+        {
+          "scores": { "performance": 92, "accessibility": 100, "best-practices": 100, "seo": 100 },
+          "fcpMs": 317,
+          "lcpMs": 407,
+          "speedIndexMs": 438,
+          "tbtMs": 236,
+          "cls": 0,
+          "consoleErrors": [],
+          "foreignRequests": [],
+          "requests": 19,
+          "scripts": [
+            "assets/basemap-BePhYeX4.js",
+            "assets/index-038-ZUd3.js",
+            "assets/maplibre-CKiCiTh7.js",
+            "assets/maplibre-shared-BwZ3zNeO.js",
+            "assets/maplibre-worker-DPuic1Vc.js"
+          ],
+          "benchmarkIndex": 2386.5,
           "warnings": []
         },
         {
           "scores": { "performance": 100, "accessibility": 100, "best-practices": 100, "seo": 100 },
-          "fcpMs": 278,
-          "lcpMs": 358,
-          "speedIndexMs": 359,
+          "fcpMs": 279,
+          "lcpMs": 359,
+          "speedIndexMs": 385,
           "tbtMs": 0,
           "cls": 0,
           "consoleErrors": [],
           "foreignRequests": [],
           "requests": 19,
           "scripts": [
-            "assets/basemap-zLlTFxiQ.js",
-            "assets/index-CFfXyoEC.js",
+            "assets/basemap-BePhYeX4.js",
+            "assets/index-038-ZUd3.js",
             "assets/maplibre-CKiCiTh7.js",
             "assets/maplibre-shared-BwZ3zNeO.js",
             "assets/maplibre-worker-DPuic1Vc.js"
           ],
-          "benchmarkIndex": 1678.5,
-          "warnings": []
-        },
-        {
-          "scores": { "performance": 100, "accessibility": 100, "best-practices": 100, "seo": 100 },
-          "fcpMs": 260,
-          "lcpMs": 342,
-          "speedIndexMs": 342,
-          "tbtMs": 0,
-          "cls": 0,
-          "consoleErrors": [],
-          "foreignRequests": [],
-          "requests": 19,
-          "scripts": [
-            "assets/basemap-zLlTFxiQ.js",
-            "assets/index-CFfXyoEC.js",
-            "assets/maplibre-CKiCiTh7.js",
-            "assets/maplibre-shared-BwZ3zNeO.js",
-            "assets/maplibre-worker-DPuic1Vc.js"
-          ],
-          "benchmarkIndex": 1645,
+          "benchmarkIndex": 2435.5,
           "warnings": []
         }
       ]
@@ -168,23 +168,23 @@
       "throttling": "applied (devtools) slow 4G, 4x CPU",
       "runs": [
         {
-          "scores": { "performance": 96, "accessibility": 100, "best-practices": 100, "seo": 100 },
-          "fcpMs": 767,
-          "lcpMs": 767,
-          "speedIndexMs": 834,
-          "tbtMs": 242,
+          "scores": { "performance": 98, "accessibility": 100, "best-practices": 100, "seo": 100 },
+          "fcpMs": 780,
+          "lcpMs": 780,
+          "speedIndexMs": 842,
+          "tbtMs": 162,
           "cls": 0,
           "consoleErrors": [],
           "foreignRequests": [],
           "requests": 19,
           "scripts": [
-            "assets/basemap-zLlTFxiQ.js",
-            "assets/index-CFfXyoEC.js",
+            "assets/basemap-BePhYeX4.js",
+            "assets/index-038-ZUd3.js",
             "assets/maplibre-CKiCiTh7.js",
             "assets/maplibre-shared-BwZ3zNeO.js",
             "assets/maplibre-worker-DPuic1Vc.js"
           ],
-          "benchmarkIndex": 1613.5,
+          "benchmarkIndex": 2542,
           "warnings": []
         }
       ]
@@ -195,9 +195,9 @@
   "lazyScripts": {
     "files": [
       {
-        "path": "assets/basemap-zLlTFxiQ.js",
-        "bytes": 18598,
-        "gzipBytes": 7557,
+        "path": "assets/basemap-BePhYeX4.js",
+        "bytes": 27535,
+        "gzipBytes": 10615,
         "maplibre": false,
         "sharedModule": false
       },
@@ -228,7 +228,7 @@
     "sharedModuleCopies": 1
   },
   "gates": [
-    { "gate": "mobile performance", "value": 95, "limit": ">= 90", "pass": true },
+    { "gate": "mobile performance", "value": 98, "limit": ">= 90", "pass": true },
     { "gate": "mobile accessibility", "value": 100, "limit": ">= 90", "pass": true },
     { "gate": "mobile best-practices", "value": 100, "limit": ">= 90", "pass": true },
     { "gate": "mobile seo", "value": 100, "limit": ">= 90", "pass": true },
@@ -238,13 +238,13 @@
     { "gate": "desktop seo", "value": 100, "limit": ">= 90", "pass": true },
     {
       "gate": "mobile FCP (simulated slow 4G, median)",
-      "value": 981,
+      "value": 971,
       "limit": "< 1500 ms",
       "pass": true
     },
     {
       "gate": "mobile FCP (applied devtools 4G)",
-      "value": 767,
+      "value": 780,
       "limit": "< 1500 ms",
       "pass": true
     },
