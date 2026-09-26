@@ -1,21 +1,32 @@
 {
- "cdx": [
+ "snapshots": [
   {
-   "url": "webpubcontent.gray.tv/ktiv/*",
-   "from": "20190101",
-   "to": "20260930",
-   "filter": [
-    "original:.*[Cc]losing.*"
-   ]
+   "timestamp": "20220103150653",
+   "url": "https://webpubcontent.gray.tv/ktiv/newsticker/closings.html"
   },
   {
-   "url": "webpubcontent.gray.tv/*",
-   "from": "20190101",
-   "to": "20260930",
-   "filter": [
-    "original:.*[Cc]losing.*"
-   ],
-   "collapse": "urlkey"
+   "timestamp": "20220324212058",
+   "url": "https://webpubcontent.gray.tv/ktiv/newsticker/closings.html"
+  },
+  {
+   "timestamp": "20211215031518",
+   "url": "https://webpubcontent.gray.tv/ktiv/newsticker/closings.html"
+  },
+  {
+   "timestamp": "20260205223922",
+   "url": "https://webpubcontent.gray.tv/ktiv/newsticker/closings.html"
+  },
+  {
+   "timestamp": "20260115162054",
+   "url": "https://webpubcontent.gray.tv/ktiv/newsticker/closings.html"
+  },
+  {
+   "timestamp": "20260315023728",
+   "url": "https://webpubcontent.gray.tv/ktiv/newsticker/closings.html"
+  },
+  {
+   "timestamp": "20211208062753",
+   "url": "https://webpubcontent.gray.tv/ktiv/newsticker/closings.html"
   }
  ]
 }
