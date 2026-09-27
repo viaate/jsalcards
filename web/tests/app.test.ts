@@ -2,7 +2,7 @@ import { flushSync, mount, unmount } from 'svelte';
 import { afterEach, describe, expect, it } from 'vitest';
 
 import App from '../src/App.svelte';
-import { copy } from '../src/copy';
+import { STATUS_KEYS, copy } from '../src/copy';
 
 describe('App', () => {
   let app: ReturnType<typeof mount> | undefined;
@@ -13,7 +13,7 @@ describe('App', () => {
     document.body.innerHTML = '';
   });
 
-  it('renders an empty full-viewport stage named for the app', () => {
+  it('renders a full-viewport stage named for the app, with nothing on it but the key', () => {
     const target = document.createElement('div');
     document.body.append(target);
 
@@ -23,7 +23,17 @@ describe('App', () => {
     const main = target.querySelector('main');
     expect(main).not.toBeNull();
     expect(main?.querySelector('h1')?.textContent).toBe(copy.appName);
-    expect(main?.textContent.trim()).toBe(copy.appName);
+    // The legend names the four statuses in code order, each with its glyph, and claims none.
+    const legend = main?.querySelector('ul.legend');
+    expect(legend?.getAttribute('aria-label')).toBe(copy.legend.label);
+    const keys = [...(legend?.querySelectorAll('li') ?? [])];
+    expect(keys.map((key) => key.textContent.trim())).toEqual(
+      STATUS_KEYS.map((key) => copy.status[key]),
+    );
+    for (const key of keys) {
+      expect(key.querySelector('.glyph')?.getAttribute('aria-hidden')).toBe('true');
+    }
+    expect(main?.textContent.replace(legend?.textContent ?? '', '').trim()).toBe(copy.appName);
   });
 
   it('marks the wordmark for masking, and every string comes from the copy', () => {
@@ -93,6 +103,51 @@ describe('App', () => {
     expect(slash(document.body, { metaKey: true }).defaultPrevented).toBe(false);
     expect(slash(document.body, { isComposing: true }).defaultPrevented).toBe(false);
     expect(document.activeElement).toBe(other);
+  });
+
+  it('asks the phone where it is once per press, and says so while it waits', () => {
+    const asks: { done: (position: GeolocationPosition) => void; fail: () => void }[] = [];
+    const geolocation = {
+      getCurrentPosition: (done: (position: GeolocationPosition) => void, fail: () => void) => {
+        asks.push({ done, fail });
+      },
+    };
+    Object.defineProperty(navigator, 'geolocation', { value: geolocation, configurable: true });
+    try {
+      const target = document.createElement('div');
+      document.body.append(target);
+      app = mount(App, { target });
+      flushSync();
+
+      const button = target.querySelector<HTMLButtonElement>('button.locate');
+      if (button === null) throw new Error('no locate button');
+      expect(button.getAttribute('aria-label')).toBe(copy.map.locate);
+      expect(button.textContent.trim()).toBe('');
+      expect(button.getAttribute('aria-busy')).toBe('false');
+
+      button.click();
+      flushSync();
+      expect(asks).toHaveLength(1);
+      expect(button.getAttribute('aria-busy')).toBe('true');
+      expect(button.classList.contains('is-locating')).toBe(true);
+      // A second press while it waits asks nothing more.
+      button.click();
+      flushSync();
+      expect(asks).toHaveLength(1);
+
+      // No answer, or a place far from the US: it goes back to rest, and can be asked again.
+      asks[0]?.fail();
+      flushSync();
+      expect(button.getAttribute('aria-busy')).toBe('false');
+      button.click();
+      flushSync();
+      asks[1]?.done({ coords: { latitude: 51.5, longitude: -0.12 } } as GeolocationPosition);
+      flushSync();
+      expect(asks).toHaveLength(2);
+      expect(button.classList.contains('is-locating')).toBe(false);
+    } finally {
+      Reflect.deleteProperty(navigator, 'geolocation');
+    }
   });
 
   it('shows no update time until a live file is shown', () => {

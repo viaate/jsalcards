@@ -261,7 +261,13 @@ test('at the national view nothing under data/ is read, nothing glows and no sch
     return layer?.implementation.stats;
   }, GLOW_LAYER);
   expect(glow).toMatchObject({ count: 0, glowCount: 0 });
-  const text = await page.locator('body').innerText();
+  // The legend names the statuses as a key; nothing else on the page names one.
+  await expect(page.locator('ul.legend li')).toHaveText(Object.values(copy.status));
+  const text = await page.evaluate(() => {
+    const legend = document.querySelector('ul.legend');
+    const key = legend instanceof HTMLElement ? legend.innerText : '';
+    return document.body.innerText.replace(key, '');
+  });
   for (const status of Object.values(copy.status)) expect(text).not.toContain(status);
   expect(problems).toEqual([]);
   await context.close();

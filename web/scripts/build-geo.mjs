@@ -61,7 +61,12 @@ const mapshaper = /** @type {Mapshaper} */ (loadedMapshaper);
 /** @typedef {[number, number]} Point */
 /** @typedef {Point[]} Line */
 /** A polygon's rings, each closed: its last point is its first. @typedef {Line[]} Polygon */
-/** The outline is every ring of the land, as lines. @typedef {{ land: Polygon[], outline: Line[], state: Line[] }} Kinds */
+/** A state's name and every ring of its shape, islands and all. @typedef {{ name: string, rings: Line[] }} StateShape */
+/**
+ * A state's name, where it goes and how large it fits there (stateNames).
+ * @typedef {{ name: string, label: string, lon: number, lat: number, fit: number }} StateName
+ */
+/** The outline is every ring of the land, as lines. @typedef {{ land: Polygon[], outline: Line[], state: Line[], shapes: StateShape[] }} Kinds */
 /** @typedef {[number, number, number, number]} Bounds */
 /**
  * @typedef {object} LineFeature
@@ -143,6 +148,14 @@ const mercatorX = (lng) => (180 + lng) / 360;
 const mercatorY = (lat) =>
   (180 - (180 / Math.PI) * Math.log(Math.tan(Math.PI / 4 + (lat * Math.PI) / 360))) / 360;
 
+/** Back from world units to degrees. @param {number} x */
+const lngFromX = (x) => x * 360 - 180;
+/** @param {number} y */
+const latFromY = (y) =>
+  (360 / Math.PI) * Math.atan(Math.exp(((180 - y * 360) * Math.PI) / 180)) - 90;
+/** MapLibre's tiles are 512 px: the world is 512 * 2^zoom px wide. */
+const TILE_PIXELS = 512;
+
 /** @param {number} value */
 const round = (value) => Math.round(value / PRECISION) * PRECISION;
 /**
@@ -181,6 +194,400 @@ function parseOutput(text) {
 }
 
 /**
+ * Each state's name by its FIPS code, as the Census names it in the source.
+ * @param {string} topology the source TopoJSON's text
+ * @returns {Map<string, string>}
+ */
+function stateNamesByFips(topology) {
+  const parsed = /** @type {{ objects?: { states?: { geometries?: unknown } } }} */ (
+    JSON.parse(topology)
+  );
+  const geometries = parsed.objects?.states?.geometries;
+  if (!Array.isArray(geometries)) throw new Error('build-geo: the source has no states');
+  /** @type {Map<string, string>} */
+  const names = new Map();
+  for (const geometry of geometries) {
+    const { id, properties } = /** @type {{ id?: unknown, properties?: { name?: unknown } }} */ (
+      geometry
+    );
+    if (typeof id === 'string' && typeof properties?.name === 'string') {
+      names.set(id, properties.name);
+    }
+  }
+  return names;
+}
+
+/**
+ * State names, set as the map sets them (style.ts reads these from
+ * us-geo.ts): Geist Medium capitals STATE_NAME_TRACKING ems apart, lines
+ * STATE_NAME_LEADING ems apart, STATE_NAME_SIZE.from px high at zoom
+ * STATE_NAME_SIZE.fromZoom growing to STATE_NAME_SIZE.to at its toZoom.
+ */
+const STATE_NAME_TRACKING = 0.14;
+const STATE_NAME_LEADING = 1.2;
+const STATE_NAME_SIZE = Object.freeze({ fromZoom: 3, from: 9.25, toZoom: 6, to: 10.75 });
+/**
+ * Geist Medium's advance widths, in ems, as Chromium measures them. A line's
+ * width is its letters' advances and the spaces between them (MapLibre does
+ * not kern); a character not listed counts as GEIST_WIDEST.
+ * @type {Readonly<Record<string, number>>}
+ */
+const GEIST_MEDIUM_EMS = Object.freeze({
+  A: 0.689,
+  B: 0.688,
+  C: 0.713,
+  D: 0.701,
+  E: 0.609,
+  F: 0.595,
+  G: 0.713,
+  H: 0.716,
+  I: 0.28,
+  J: 0.607,
+  K: 0.656,
+  L: 0.583,
+  M: 0.89,
+  N: 0.745,
+  O: 0.751,
+  P: 0.657,
+  Q: 0.745,
+  R: 0.68,
+  S: 0.654,
+  T: 0.568,
+  U: 0.694,
+  V: 0.688,
+  W: 0.968,
+  X: 0.633,
+  Y: 0.594,
+  Z: 0.561,
+  a: 0.565,
+  b: 0.608,
+  c: 0.563,
+  d: 0.608,
+  e: 0.576,
+  f: 0.412,
+  g: 0.607,
+  h: 0.591,
+  i: 0.256,
+  j: 0.284,
+  k: 0.609,
+  l: 0.282,
+  m: 0.885,
+  n: 0.591,
+  o: 0.588,
+  p: 0.608,
+  q: 0.608,
+  r: 0.394,
+  s: 0.537,
+  t: 0.41,
+  u: 0.586,
+  v: 0.56,
+  w: 0.829,
+  x: 0.607,
+  y: 0.553,
+  z: 0.552,
+  ' ': 0.243,
+  '.': 0.213,
+  '-': 0.418,
+  "'": 0.186,
+});
+const GEIST_WIDEST = 0.97;
+/** Clear space a state's name keeps from its state's lines, in ems of its size: across, then down. */
+const STATE_NAME_MARGIN = [0.5, 0.35];
+/**
+ * The city names a state's name keeps clear of: the `cities` largest, the
+ * ones the map shows from the zoom phones open at, as style.ts sets them on
+ * a phone (the only screen that names the states): their size, spacing and
+ * clear space, and the state name's own clear space. Its tests check these
+ * against the style. A name is placed clear of them at the zoom it is first
+ * shown at (stateNames).
+ */
+const STATE_NAMES_CLEAR_OF = Object.freeze({
+  zoom: 3.8,
+  cities: 34,
+  size: Object.freeze({ fromZoom: 3, from: 10.5, toZoom: 6, to: 12 }),
+  tracking: 0.02,
+  padding: 8,
+  ownPadding: 3,
+});
+/** Points tried across and down each state, before the best of them is looked at closer. */
+const STATE_NAME_GRID = 56;
+/** Points no worse than this share of the best one are as good: the name goes at their middle. */
+const STATE_NAME_PLATEAU = 0.96;
+
+/**
+ * A line's width in ems, set with `tracking` ems between letters.
+ * @param {string} line
+ * @param {number} tracking
+ */
+function lineWidth(line, tracking) {
+  const letters = [...line];
+  const advances = letters.reduce(
+    (sum, letter) => sum + (GEIST_MEDIUM_EMS[letter] ?? GEIST_WIDEST),
+    0,
+  );
+  return advances + Math.max(0, letters.length - 1) * tracking;
+}
+
+/**
+ * A name's size in CSS pixels at `zoom`, as the map sets it: `from` at
+ * `fromZoom`, growing to `to` at `toZoom`.
+ * @param {{ fromZoom: number, from: number, toZoom: number, to: number }} size
+ * @param {number} zoom
+ */
+function sizeAt({ fromZoom, from, toZoom, to }, zoom) {
+  return from + (to - from) * Math.min(1, Math.max(0, (zoom - fromZoom) / (toZoom - fromZoom)));
+}
+
+/** The street map takes over from the bundled lines and names at this zoom (style.ts). */
+const STATE_NAMES_UNTIL = 7;
+
+/**
+ * The zoom a state name of `fit` first fits at: where its size, growing
+ * slower than the map, is fit * 2^zoom.
+ * @param {number} fit
+ */
+function zoomOfFit(fit) {
+  let [low, high] = [-4, 24];
+  while (high - low > 1e-6) {
+    const middle = (low + high) / 2;
+    if (sizeAt(STATE_NAME_SIZE, middle) > fit * 2 ** middle) low = middle;
+    else high = middle;
+  }
+  return high;
+}
+
+/**
+ * The ways a name can be set: on one line, and for a name of more than one
+ * word, on two, broken at the space that leaves the shorter longest line.
+ * @param {string} name
+ * @returns {{ label: string, width: number, height: number }[]}
+ */
+function nameLayouts(name) {
+  /** @param {string} line */
+  const width = (line) => lineWidth(line.toUpperCase(), STATE_NAME_TRACKING);
+  const layouts = [{ label: name, width: width(name), height: STATE_NAME_LEADING }];
+  const words = name.split(' ');
+  /** @type {{ label: string, width: number, height: number } | undefined} */
+  let two;
+  for (let i = 1; i < words.length; i++) {
+    const first = words.slice(0, i).join(' ');
+    const second = words.slice(i).join(' ');
+    const longest = Math.max(width(first), width(second));
+    if (two === undefined || longest < two.width) {
+      two = { label: `${first}\n${second}`, width: longest, height: 2 * STATE_NAME_LEADING };
+    }
+  }
+  if (two !== undefined) layouts.push(two);
+  return layouts;
+}
+
+/**
+ * The distance from (px, py) to the segment from (ax, ay) to (bx, by) by the
+ * larger of the two axes' distances: half the side of the largest square
+ * centered on the point that the segment does not cross. The larger axis
+ * distance along the segment is convex and piecewise linear, so its least
+ * value is at an end or where an axis distance is zero or both are equal.
+ * @param {number} px @param {number} py @param {number} ax @param {number} ay @param {number} bx @param {number} by
+ */
+function squareDistance(px, py, ax, ay, bx, by) {
+  const ux = ax - px;
+  const uy = ay - py;
+  const vx = bx - ax;
+  const vy = by - ay;
+  /** @param {number} t */
+  const at = (t) => Math.max(Math.abs(ux + t * vx), Math.abs(uy + t * vy));
+  let least = Math.min(at(0), at(1));
+  for (const t of [-ux / vx, -uy / vy, (uy - ux) / (vx - vy), -(ux + uy) / (vx + vy)]) {
+    if (t > 0 && t < 1) least = Math.min(least, at(t));
+  }
+  return least;
+}
+
+/**
+ * Where each state's name goes, and how large it can be set there.
+ *
+ * A name goes where the largest box of its shape (its lines of capitals and
+ * the clear space around them) fits inside its state, crossing no state line
+ * or shore, reckoned in Web Mercator as the map draws it, and where it keeps
+ * clear of the city names shown from the zoom phones open at
+ * (STATE_NAMES_CLEAR_OF), so both show. Among the points where that box is
+ * near its largest, the name takes the middle one, so a square state is
+ * named at its middle. A name of two or more words goes on two lines where
+ * that lets it be set larger.
+ *
+ * `fit` is the largest size, in CSS pixels at zoom 0, the name can be set at
+ * there; at zoom z it is fit * 2^z. The map names a state from the zoom its
+ * name fits at (state-names.ts).
+ * @param {readonly StateShape[]} shapes
+ * @param {readonly City[]} cities in rank order
+ * @returns {StateName[]}
+ */
+function stateNames(shapes, cities) {
+  const clear = STATE_NAMES_CLEAR_OF;
+  const shown = cities.slice(0, clear.cities);
+  return shapes.map(({ name, rings }) => {
+    // The rings in world units, y growing southward, as flat [x0, y0, x1, y1, ...] segments.
+    /** @type {number[]} */
+    const segments = [];
+    let [x0, y0, x1, y1] = [Infinity, Infinity, -Infinity, -Infinity];
+    for (const ring of rings) {
+      for (let i = 1; i < ring.length; i++) {
+        const [lngA = NaN, latA = NaN] = ring[i - 1] ?? [];
+        const [lngB = NaN, latB = NaN] = ring[i] ?? [];
+        segments.push(mercatorX(lngA), mercatorY(latA), mercatorX(lngB), mercatorY(latB));
+      }
+      for (const [lng = NaN, lat = NaN] of ring) {
+        x0 = Math.min(x0, mercatorX(lng));
+        x1 = Math.max(x1, mercatorX(lng));
+        y0 = Math.min(y0, mercatorY(lat));
+        y1 = Math.max(y1, mercatorY(lat));
+      }
+    }
+    /** Whether a point is inside the state: an odd number of its ring edges cross the ray east of it. */
+    const inside = (/** @type {number} */ x, /** @type {number} */ y) => {
+      let crossings = 0;
+      for (let i = 0; i < segments.length; i += 4) {
+        const ax = segments[i] ?? NaN;
+        const ay = segments[i + 1] ?? NaN;
+        const bx = segments[i + 2] ?? NaN;
+        const by = segments[i + 3] ?? NaN;
+        if (ay > y !== by > y && x < ax + ((y - ay) / (by - ay)) * (bx - ax)) crossings++;
+      }
+      return crossings % 2 === 1;
+    };
+
+    /** @type {StateName | undefined} */
+    let best;
+    for (const layout of nameLayouts(name)) {
+      const boxWidth = layout.width + 2 * (STATE_NAME_MARGIN[0] ?? 0);
+      const boxHeight = layout.height + 2 * (STATE_NAME_MARGIN[1] ?? 0);
+      // Down is squeezed by the box's shape, so the box is a square to squareDistance.
+      const squeeze = boxWidth / boxHeight;
+
+      /**
+       * Where the name fits largest, clear of the city names as they are set
+       * at `zoom` (or of none, with null): its place, and its fit there; null
+       * where no place is clear.
+       * @param {number | null} zoom
+       */
+      const place = (zoom) => {
+        /** @type {{ x0: number, y0: number, x1: number, y1: number }[]} */
+        let blocked = [];
+        if (zoom !== null) {
+          const scale = TILE_PIXELS * 2 ** zoom;
+          const citySize = sizeAt(clear.size, zoom);
+          const ownSize = sizeAt(STATE_NAME_SIZE, zoom);
+          // Where the name's middle may not go: so near a city name that the two would meet.
+          const ownHalfWidth = ((layout.width * ownSize) / 2 + clear.ownPadding) / scale;
+          const ownHalfHeight = ((layout.height * ownSize) / 2 + clear.ownPadding) / scale;
+          blocked = shown
+            .map((city) => {
+              const x = mercatorX(city.lon);
+              const y = mercatorY(city.lat);
+              const halfWidth =
+                ((lineWidth(city.name, clear.tracking) * citySize) / 2 + clear.padding) / scale +
+                ownHalfWidth;
+              const halfHeight =
+                ((STATE_NAME_LEADING * citySize) / 2 + clear.padding) / scale + ownHalfHeight;
+              return {
+                x0: x - halfWidth,
+                x1: x + halfWidth,
+                y0: y - halfHeight,
+                y1: y + halfHeight,
+              };
+            })
+            .filter((box) => box.x1 > x0 && box.x0 < x1 && box.y1 > y0 && box.y0 < y1);
+        }
+        /** Half the width of the largest box of this shape centered on a point, in world units. */
+        const room = (/** @type {number} */ x, /** @type {number} */ y) => {
+          if (!inside(x, y)) return 0;
+          if (blocked.some((box) => x > box.x0 && x < box.x1 && y > box.y0 && y < box.y1)) {
+            return 0;
+          }
+          let least = Infinity;
+          for (let i = 0; i < segments.length; i += 4) {
+            const ax = segments[i] ?? NaN;
+            const ay = (segments[i + 1] ?? NaN) * squeeze;
+            const bx = segments[i + 2] ?? NaN;
+            const by = (segments[i + 3] ?? NaN) * squeeze;
+            least = Math.min(least, squareDistance(x, y * squeeze, ax, ay, bx, by));
+          }
+          return least;
+        };
+        /**
+         * The points of a grid over a box, each with its room.
+         * @param {number} left @param {number} top @param {number} right @param {number} bottom @param {number} steps
+         */
+        const grid = (left, top, right, bottom, steps) => {
+          /** @type {{ x: number, y: number, room: number }[]} */
+          const points = [];
+          for (let i = 0; i <= steps; i++) {
+            for (let j = 0; j <= steps; j++) {
+              const x = left + ((right - left) * i) / steps;
+              const y = top + ((bottom - top) * j) / steps;
+              points.push({ x, y, room: room(x, y) });
+            }
+          }
+          return points;
+        };
+        const coarse = grid(x0, y0, x1, y1, STATE_NAME_GRID);
+        const peak = coarse.reduce((a, b) => (b.room > a.room ? b : a));
+        if (!(peak.room > 0)) return null;
+        // A closer look around the best point, a grid step either way.
+        const stepX = (x1 - x0) / STATE_NAME_GRID;
+        const stepY = (y1 - y0) / STATE_NAME_GRID;
+        const fine = grid(peak.x - stepX, peak.y - stepY, peak.x + stepX, peak.y + stepY, 12);
+        const points = [...coarse, ...fine];
+        const most = Math.max(...points.map((point) => point.room));
+        // The near-best points, and the one of them nearest their middle.
+        const good = points.filter((point) => point.room >= STATE_NAME_PLATEAU * most);
+        const midX = good.reduce((sum, point) => sum + point.x, 0) / good.length;
+        const midY = good.reduce((sum, point) => sum + point.y, 0) / good.length;
+        const chosen = good.reduce((a, b) =>
+          Math.hypot(b.x - midX, b.y - midY) < Math.hypot(a.x - midX, a.y - midY) ? b : a,
+        );
+        // A name set s px high is s * boxWidth / 2 px wide either side: it fits while that is its room.
+        return { x: chosen.x, y: chosen.y, fit: (2 * chosen.room * TILE_PIXELS) / boxWidth };
+      };
+
+      // Clear of the city names at the zoom it is first named at, or where phones open if that
+      // is later: the first zoom from there at which a place clear of them fits the name.
+      // Closer in, the city names cover less of the country, so a name fits sooner.
+      /** @param {number} zoom */
+      const clearAt = (zoom) => {
+        const placed = place(zoom);
+        return placed !== null && zoomOfFit(placed.fit) <= zoom ? placed : null;
+      };
+      let placed = clearAt(clear.zoom);
+      if (placed === null && clearAt(STATE_NAMES_UNTIL) !== null) {
+        let [low, high] = [clear.zoom, STATE_NAMES_UNTIL];
+        while (high - low > 0.01) {
+          const middle = (low + high) / 2;
+          if (clearAt(middle) === null) low = middle;
+          else high = middle;
+        }
+        placed = clearAt(high);
+      }
+      // A name that fits nowhere clear of them before the street map takes over goes where it
+      // fits largest, and shows where the city names leave it room.
+      placed ??= place(null);
+      if (placed === null) continue;
+      if (best === undefined || placed.fit > best.fit) {
+        best = {
+          name,
+          label: layout.label,
+          lon: Number(num(round(lngFromX(placed.x)))),
+          lat: Number(num(round(latFromY(placed.y)))),
+          fit: Number(placed.fit.toPrecision(4)),
+        };
+      }
+    }
+    if (best === undefined) throw new Error(`build-geo: no place for the name of ${name}`);
+    return best;
+  });
+}
+
+/**
  * Runs mapshaper on the TopoJSON and returns the land's polygons and the
  * lines grouped by kind: the outline (every ring of the land) and the state
  * lines. The land is the states dissolved after simplifying, so its rings
@@ -198,18 +605,35 @@ async function extractGeometry() {
     `-simplify dp interval=${String(SIMPLIFY_METERS)}m keep-shapes`,
     // The whole country as one layer of polygons, from the simplified states.
     '-dissolve + name=land',
+    // Each state's own shape, kept for its name (stateNames).
+    '-filter true target=states + name=shapes',
     // Polygon rings become lines; TYPE is "inner" for shared state borders ("outer" is the land's edge).
     '-lines target=states',
-    '-o target=states,land format=geojson',
+    '-o target=states,land,shapes format=geojson',
   ].join(' ');
   const output = await mapshaper.applyCommands(commands, { 'states.json': topology });
   const lines = /** @type {{ features: LineFeature[] }} */ (parseOutput(output['states.json']));
   const land = /** @type {{ geometries: { type: string, coordinates: number[][][][] }[] }} */ (
     parseOutput(output['land.json'])
   );
+  const shapes =
+    /** @type {{ features: { properties: { fips: string }, geometry: { type: string, coordinates: number[][][] | number[][][][] } }[] }} */ (
+      parseOutput(output['shapes.json'])
+    );
+  const names = stateNamesByFips(topology);
 
   /** @type {Kinds} */
-  const kinds = { land: [], outline: [], state: [] };
+  const kinds = { land: [], outline: [], state: [], shapes: [] };
+  for (const { properties, geometry } of shapes.features) {
+    const name = names.get(properties.fips);
+    if (name === undefined) throw new Error(`build-geo: no name for state ${properties.fips}`);
+    const polygons =
+      geometry.type === 'Polygon'
+        ? [/** @type {number[][][]} */ (geometry.coordinates)]
+        : /** @type {number[][][][]} */ (geometry.coordinates);
+    kinds.shapes.push({ name, rings: polygons.flatMap((polygon) => polygon.map(gridLine)) });
+  }
+  kinds.shapes.sort((a, b) => a.name.localeCompare(b.name));
   for (const feature of lines.features) {
     if (feature.properties.TYPE === 'outer') continue;
     const geometry = feature.geometry;
@@ -907,8 +1331,12 @@ export const US_LAND: {
 `;
 }
 
-/** @param {Kinds} kinds */
-function geojsonText(kinds, /** @type {readonly City[]} */ cities) {
+/**
+ * @param {Kinds} kinds
+ * @param {readonly City[]} cities
+ * @param {readonly StateName[]} states
+ */
+function geojsonText(kinds, cities, states) {
   /** @param {Line} line */
   const coordinates = (line) =>
     `[${line.map(([lng, lat]) => `[${num(lng)},${num(lat)}]`).join(',')}]`;
@@ -923,7 +1351,12 @@ function geojsonText(kinds, /** @type {readonly City[]} */ cities) {
     ({ name, lon, lat }, rank) =>
       `{"type":"Feature","properties":{"kind":"city","name":${JSON.stringify(name)},"rank":${String(rank)}},"geometry":{"type":"Point","coordinates":[${num(lon)},${num(lat)}]}}`,
   );
-  return `{"type":"FeatureCollection","features":[${[land, state, ...names].join(',')}]}\n`;
+  // Each state's name where it fits best, and how large it fits there.
+  const stateNameFeatures = states.map(
+    ({ name, label, lon, lat, fit }) =>
+      `{"type":"Feature","properties":{"kind":"state-name","name":${JSON.stringify(name)},"label":${JSON.stringify(label)},"fit":${String(fit)}},"geometry":{"type":"Point","coordinates":[${num(lon)},${num(lat)}]}}`,
+  );
+  return `{"type":"FeatureCollection","features":[${[land, state, ...names, ...stateNameFeatures].join(',')}]}\n`;
 }
 
 /**
@@ -1000,6 +1433,40 @@ export const STILL_VIEWBOX = '${viewBox}';
 /** Gzipped size of the bundled GeoJSON, in bytes. */
 export const US_LINES_GZIP_BYTES = ${String(gzipBytes)};
 
+/**
+ * How the state names in it are set, as their places and sizes were worked
+ * out for: the space between letters and between lines, in ems of their size,
+ * and their size in CSS pixels, \`from\` at \`fromZoom\` growing to \`to\` at \`toZoom\`.
+ */
+export const STATE_NAME_TRACKING = ${num(STATE_NAME_TRACKING)};
+export const STATE_NAME_LEADING = ${num(STATE_NAME_LEADING)};
+export const STATE_NAME_SIZE = {
+  fromZoom: ${num(STATE_NAME_SIZE.fromZoom)},
+  from: ${num(STATE_NAME_SIZE.from)},
+  toZoom: ${num(STATE_NAME_SIZE.toZoom)},
+  to: ${num(STATE_NAME_SIZE.to)},
+} as const;
+
+/**
+ * The city names each state's name was placed clear of, as a phone's map
+ * sets them: the first \`cities\` of them, shown from \`zoom\`, \`size\` px high,
+ * \`tracking\` ems apart, with \`padding\` px of clear space; and \`ownPadding\`
+ * px around the state's name.
+ */
+export const STATE_NAMES_CLEAR_OF = {
+  zoom: ${num(STATE_NAMES_CLEAR_OF.zoom)},
+  cities: ${String(STATE_NAMES_CLEAR_OF.cities)},
+  size: {
+    fromZoom: ${num(STATE_NAMES_CLEAR_OF.size.fromZoom)},
+    from: ${num(STATE_NAMES_CLEAR_OF.size.from)},
+    toZoom: ${num(STATE_NAMES_CLEAR_OF.size.toZoom)},
+    to: ${num(STATE_NAMES_CLEAR_OF.size.to)},
+  },
+  tracking: ${num(STATE_NAMES_CLEAR_OF.tracking)},
+  padding: ${num(STATE_NAMES_CLEAR_OF.padding)},
+  ownPadding: ${num(STATE_NAMES_CLEAR_OF.ownPadding)},
+} as const;
+
 `;
 }
 
@@ -1048,7 +1515,8 @@ async function main() {
     places === null || zips === null
       ? await readCities()
       : chooseCities(places, zips, kinds.outline);
-  const geojson = await format(geojsonText(kinds, cities), join(GEO_DIR, 'us-lines.json'));
+  const states = stateNames(kinds.shapes, cities);
+  const geojson = await format(geojsonText(kinds, cities, states), join(GEO_DIR, 'us-lines.json'));
   const gzipBytes = gzipSync(geojson, { level: 9 }).length;
   if (gzipBytes > MAX_GZIP_BYTES) {
     throw new Error(
@@ -1118,7 +1586,8 @@ async function main() {
     places === null
       ? `${String(cities.length)} cities, as committed (no places here)`
       : `${String(cities.length)} cities`;
-  const summary = `${String(points)} vertices, ${String(geojson.length)} B raw, ${String(gzipBytes)} B gzipped, still ${String(svg.length)} B; ${schools}; ${named}`;
+  const smallest = states.reduce((a, b) => (b.fit < a.fit ? b : a));
+  const summary = `${String(points)} vertices, ${String(geojson.length)} B raw, ${String(gzipBytes)} B gzipped, still ${String(svg.length)} B; ${schools}; ${named}; ${String(states.length)} state names (${smallest.name} fits last)`;
   if (check) {
     if (stale.length > 0) {
       process.stderr.write(

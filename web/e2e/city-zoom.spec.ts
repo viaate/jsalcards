@@ -208,6 +208,10 @@ test('at Pembroke Hill the streets are named and the buildings drawn', async ({ 
   expect(names[BASEMAP_IDS.ofmParkLabel] ?? []).toContain('Jacob L. Loose Memorial Park');
   // On screen, not only in the tiles: a good share of the map is lit by
   // footprints, streets and names, and none of it past the palette's grey.
+  // The legend's colored key sits over the map's corner: it is not the map.
+  await page.locator('ul.legend').evaluate((legend) => {
+    (legend as HTMLElement).style.visibility = 'hidden';
+  });
   const { data, info } = await sharp(await page.locator('.maplibregl-canvas').screenshot())
     .removeAlpha()
     .raw()

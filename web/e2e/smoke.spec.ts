@@ -48,26 +48,30 @@ test('loads on a black, full-viewport ground with no console errors', async ({ p
   // its city names and the chrome are lit, so nearly every pixel on screen is
   // #000 or within a step of it.
   const shot = await page.screenshot({ type: 'png' });
-  const shares = await page.evaluate(async (base64) => {
-    const bitmap = await createImageBitmap(
-      await (await fetch(`data:image/png;base64,${base64}`)).blob(),
-    );
-    const canvas = new OffscreenCanvas(bitmap.width, bitmap.height);
-    const context = canvas.getContext('2d');
-    if (context === null) return { dark: 0, black: 0 };
-    context.drawImage(bitmap, 0, 0);
-    const { data } = context.getImageData(0, 0, bitmap.width, bitmap.height);
-    let dark = 0;
-    let black = 0;
-    for (let i = 0; i < data.length; i += 4) {
-      const r = data[i] ?? 255;
-      const g = data[i + 1] ?? 255;
-      const b = data[i + 2] ?? 255;
-      if (r === g && g === b && r <= 10) dark += 1;
-      if (r === 0 && g === 0 && b === 0) black += 1;
-    }
-    return { dark: dark / (data.length / 4), black: black / (data.length / 4) };
-  }, shot.toString('base64'));
+  const shares = await page.evaluate(
+    async ([base64, ground]) => {
+      const bitmap = await createImageBitmap(
+        await (await fetch(`data:image/png;base64,${base64}`)).blob(),
+      );
+      const canvas = new OffscreenCanvas(bitmap.width, bitmap.height);
+      const context = canvas.getContext('2d');
+      if (context === null) return { dark: 0, black: 0 };
+      context.drawImage(bitmap, 0, 0);
+      const { data } = context.getImageData(0, 0, bitmap.width, bitmap.height);
+      let dark = 0;
+      let black = 0;
+      for (let i = 0; i < data.length; i += 4) {
+        const r = data[i] ?? 255;
+        const g = data[i + 1] ?? 255;
+        const b = data[i + 2] ?? 255;
+        if (r === g && g === b && r <= ground) dark += 1;
+        if (r === 0 && g === 0 && b === 0) black += 1;
+      }
+      return { dark: dark / (data.length / 4), black: black / (data.length / 4) };
+    },
+    // Everything but the lines, names and chrome is black, give or take a step of antialiasing.
+    [shot.toString('base64'), 10] as const,
+  );
   expect(shares.dark).toBeGreaterThan(0.8);
   expect(shares.black).toBeGreaterThan(0.2);
 

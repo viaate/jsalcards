@@ -4,10 +4,12 @@
   import type { Attachment } from 'svelte/attachments';
 
   import type { SearchOption, Services, Target } from './app/boot';
+  import { ZOOM } from './app/startup';
   import { copy } from './copy';
   import type { Basemap } from './map/basemap';
   import { loadBasemap } from './map/basemap/load';
   import type { Glow } from './map/glow-mount';
+  import { US_BOUNDS } from './map/basemap/us-geo';
   import { markStep, yieldToMain } from './map/basemap/reveal';
   import { afterFirstPaint } from './shell/paint';
   import { retireStill } from './shell/still';
@@ -58,6 +60,8 @@
   let UpdateTime = $state<Component<UpdateTimeProps> | null>(null);
   /** The name the field shows for the last pick, until the text changes. */
   let pickedName: string | null = null;
+  /** True while the phone is asked where it is. */
+  let locating = $state(false);
 
   const expanded = $derived(
     focused && !dismissed && Results !== null && options !== null && query.trim() !== '',
@@ -279,6 +283,33 @@
     );
   }
 
+  /** Degrees past the continental US a position can be and still be taken to it. */
+  const NEAR_US = 1;
+
+  /**
+   * Asks the phone where it is (the browser asks the person first) and takes
+   * the map there, at a city's zoom. A position far from the continental US,
+   * or none, leaves the map where it is.
+   */
+  function locate(): void {
+    if (locating || !('geolocation' in navigator)) return;
+    locating = true;
+    navigator.geolocation.getCurrentPosition(
+      ({ coords }) => {
+        locating = false;
+        const { latitude: lat, longitude: lon } = coords;
+        const [west, south, east, north] = US_BOUNDS;
+        if (lon < west - NEAR_US || lon > east + NEAR_US) return;
+        if (lat < south - NEAR_US || lat > north + NEAR_US) return;
+        show({ view: { lat, lon, zoom: ZOOM.city } });
+      },
+      () => {
+        locating = false;
+      },
+      { maximumAge: 10 * 60_000, timeout: 20_000 },
+    );
+  }
+
   function clear(): void {
     query = '';
     runSearch('');
@@ -406,6 +437,26 @@
       />
     {/if}
   </header>
+  <ul class="legend" aria-label={copy.legend.label}>
+    <li><span class="glyph is-closed" aria-hidden="true"></span>{copy.status.closed}</li>
+    <li><span class="glyph is-delayed" aria-hidden="true"></span>{copy.status.delayed}</li>
+    <li><span class="glyph is-remote" aria-hidden="true"></span>{copy.status.remote}</li>
+    <li>
+      <span class="glyph is-early-dismissal" aria-hidden="true"></span>{copy.status.earlyDismissal}
+    </li>
+  </ul>
+  <button
+    class="locate"
+    class:is-locating={locating}
+    type="button"
+    aria-label={copy.map.locate}
+    aria-busy={locating}
+    onclick={locate}
+  >
+    <svg viewBox="0 0 16 16" aria-hidden="true" focusable="false">
+      <path d="M13.25 2.75L2.75 7.1l4.6 1.55 1.55 4.6z" />
+    </svg>
+  </button>
   {#if UpdateTime !== null && updatedAt !== null}
     <UpdateTime generatedAt={updatedAt} />
   {/if}

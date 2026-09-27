@@ -9,6 +9,8 @@ import type {
 import { MAP_FONTS } from './fonts';
 import { BASEMAP_IDS } from './ids';
 import { schoolDotLayer, schoolNameLayer, schoolSource, schoolSpaceLayer } from './schools';
+import { STATE_NAME_LEADING, STATE_NAME_TRACKING, STATE_NAMES_UNTIL } from './state-names';
+import { STATE_NAME_SIZE } from './us-geo';
 import { BORDER_LAYER, MASK_LAYER } from './mask/format';
 import {
   OPENFREEMAP_ATTRIBUTION,
@@ -23,6 +25,12 @@ export interface BasemapLook {
   /** Line width in CSS pixels, the same as the still's stroke. */
   hairline: number;
   colors: BasemapColors;
+  /**
+   * Names set for a phone's small screen (a phone held either way): the
+   * states named (state-names.ts), and the city names closer together, so
+   * both fit. Off unless set.
+   */
+  phoneNames?: boolean;
 }
 
 export interface BasemapColors {
@@ -49,8 +57,11 @@ export interface BasemapColors {
 /**
  * The bundled continental US geometry as parsed from public/geo: a GeoJSON
  * FeatureCollection whose features carry `kind`: "land" (the country as
- * polygons, whose rings are the outline), "state" (the state lines) and
- * "city" (a city's name and rank, 0 for the largest, at its Census point).
+ * polygons, whose rings are the outline), "state" (the state lines),
+ * "city" (a city's name and rank, 0 for the largest, at its Census point)
+ * and "state-name" (a state's name, its `label` as set, broken over two
+ * lines where that fits it larger, and `fit`, the largest size in CSS pixels
+ * at zoom 0 it fits inside its state at, where it is placed).
  */
 export interface UsLinesData {
   type: 'FeatureCollection';
@@ -65,6 +76,14 @@ export interface BasemapStyleOptions extends BasemapLook {
    * absolute URL, or null when it ships none: then no school is drawn.
    */
   schools?: string | null;
+  /** National city names to leave out: the ones the screen's edges would cut at the home view. */
+  hiddenCityNames?: readonly string[];
+  /**
+   * The state names to draw at the start (state-names.ts stateNamesAt): the
+   * ones that fit at the zoom the map opens at. The map keeps the layer's
+   * filter to the ones that fit as it zooms (index.ts).
+   */
+  stateNames?: readonly string[];
 }
 
 /**
@@ -88,9 +107,10 @@ const KIND: ExpressionSpecification = ['get', 'kind'];
  * City names of the national view, from the bundled Census places (ranked
  * by build-geo.mjs: the centres of the largest urban areas first, lifted
  * for a city that is the only one for its region). They come in from zoom
- * 3, where a tablet shows the whole country (a phone, smaller still, shows
- * only the country), and give way at the handover to the street tiles'
- * names. They come in by bands of rank, each from its own zoom, so the
+ * 3, where a tablet shows the whole country and a phone held upright shows
+ * its part of it at the home view (a phone's national view, smaller still,
+ * shows only the country), and give way at the handover to the street
+ * tiles' names. They come in by bands of rank, each from its own zoom, so the
  * country carries a few dozen names at any screen size and more come in as
  * the map closes in; each is shown where it keeps clear of every name
  * placed before it, and MapLibre places the lowest rank first.
@@ -117,12 +137,90 @@ export const CITY_NAME_BANDS: readonly { readonly zoom: number; readonly names: 
 export const CITY_NAMES_FROM = CITY_NAME_BANDS[0]?.zoom ?? 3;
 /** Clear space around each national city name, in CSS pixels. */
 export const CITY_NAME_PADDING = 12;
+/** The national city names' size in CSS pixels: `from` at CITY_NAMES_FROM, growing to `to` at `zoom`. */
+const CITY_NAME_SIZE = { from: 10.5, zoom: 6, to: 12 } as const;
+/** Space added between a national city name's letters, in ems. */
+export const CITY_NAME_LETTER_SPACING = 0.02;
+/**
+ * The halo that parts a coastline or border running under a city name, in
+ * CSS pixels. MapLibre draws a label's glyphs with about a pixel of their
+ * distance field to spare around them at this size: a wider halo fills
+ * every glyph's whole box and shows as a block around the name.
+ */
+export const CITY_NAME_HALO = 1.2;
+
+/**
+ * The national city names' color: halfway from the neighbourhood grey to the
+ * place grey up to CITY_NAME_QUIET_UNTIL, the place grey by the handover.
+ */
+const CITY_NAME_QUIET_UNTIL = 4;
+
+/** A national city name's color at `zoom`, as the style draws it. */
+export function cityNameColor(colors: BasemapColors, zoom: number): string {
+  const quiet = mixColors(colors.labelDim, colors.label, 0.5);
+  const t = (zoom - CITY_NAME_QUIET_UNTIL) / (HANDOVER_START - CITY_NAME_QUIET_UNTIL);
+  return mixColors(quiet, colors.label, t);
+}
+
+/** A national city name's size in CSS pixels at `zoom`, as the style draws it. */
+export function cityNameSize(zoom: number): number {
+  const { from, to } = CITY_NAME_SIZE;
+  const t = Math.min(
+    1,
+    Math.max(0, (zoom - CITY_NAMES_FROM) / (CITY_NAME_SIZE.zoom - CITY_NAMES_FROM)),
+  );
+  return from + (to - from) * t;
+}
+
+/**
+ * The filter of a band of national city names: the band's ranks, less any
+ * name in `hidden` (the ones the screen's edges would cut at the home view).
+ */
+export function cityNameFilter(band: number, hidden: readonly string[] = []): FilterSpecification {
+  const from = CITY_NAME_BANDS[band - 1]?.names ?? 0;
+  const names = CITY_NAME_BANDS[band]?.names ?? Infinity;
+  const rank: ExpressionSpecification = ['get', 'rank'];
+  return [
+    'all',
+    ['==', KIND, 'city'],
+    ['>=', rank, from],
+    ...(Number.isFinite(names) ? [['<', rank, names] as ExpressionSpecification] : []),
+    ...(hidden.length === 0
+      ? []
+      : [['!', ['in', NAME, ['literal', [...hidden]]]] as ExpressionSpecification]),
+  ] as FilterSpecification;
+}
 /** Zoom levels a band of names takes to fade in, from its zoom. */
 const CITY_NAME_FADE = 0.05;
 
 /** The layer id of each band of national city names, the first band's being BASEMAP_IDS.usCityLabel. */
 export function cityNameLayerId(band: number): string {
   return band === 0 ? BASEMAP_IDS.usCityLabel : `${BASEMAP_IDS.usCityLabel}-${String(band)}`;
+}
+
+/**
+ * Clear space around each national city name on a phone, in CSS pixels:
+ * closer than elsewhere, so the city and state names both fit its small
+ * screen. build-geo.mjs places the state names clear of the city names
+ * spaced so (us-geo.ts STATE_NAMES_CLEAR_OF).
+ */
+export const CITY_NAME_PHONE_PADDING = 8;
+
+/** Clear space around each state name, in CSS pixels. */
+export const STATE_NAME_PADDING = 3;
+
+/**
+ * The filter of the state names' layer: the states in `names` alone, the
+ * ones whose names fit at the map's zoom (state-names.ts stateNamesAt). One
+ * layer holds them all, where a layer per state would cost the map a
+ * placement and a draw for each one, every frame.
+ */
+export function stateNameFilter(names: readonly string[]): FilterSpecification {
+  return [
+    'all',
+    ['==', KIND, 'state-name'],
+    ['in', NAME, ['literal', [...names]]],
+  ] as FilterSpecification;
 }
 
 /**
@@ -342,6 +440,15 @@ function hexToRgb(hex: string): [number, number, number] {
   return [(value >> 16) & 255, (value >> 8) & 255, value & 255];
 }
 
+/** Whether two colors are the same, as hex colors; any other notation counts as different. */
+export function sameColor(a: string, b: string): boolean {
+  try {
+    return hexToRgb(a).every((channel, i) => channel === hexToRgb(b)[i]);
+  } catch {
+    return false;
+  }
+}
+
 /** `from` moved `share` of the way to `to`, as a hex color. */
 export function mixColors(from: string, to: string, share: number): string {
   const a = hexToRgb(from);
@@ -465,10 +572,65 @@ const PLACE_LABEL_LAYOUT = {
   'symbol-sort-key': RANK,
 } satisfies SymbolLayerSpecification['layout'];
 
-/** The national city names, a layer per band of rank (CITY_NAME_BANDS), first band first. */
-function cityNameLayers(colors: BasemapColors): SymbolLayerSpecification[] {
-  return CITY_NAME_BANDS.map(({ zoom, names }, band) => {
-    const from = CITY_NAME_BANDS[band - 1]?.names ?? 0;
+/**
+ * The state names: one layer, drawing the states in `names` (the ones that
+ * fit at the map's zoom), and only when `shown`. Quieter than the city names,
+ * which are placed first and win where the two meet.
+ */
+function stateNameLayer(
+  colors: BasemapColors,
+  names: readonly string[],
+  shown: boolean,
+): SymbolLayerSpecification {
+  return {
+    id: BASEMAP_IDS.usStateLabel,
+    type: 'symbol',
+    source: BASEMAP_IDS.usCitySource,
+    minzoom: STATE_NAME_SIZE.fromZoom,
+    maxzoom: STATE_NAMES_UNTIL,
+    filter: stateNameFilter(names),
+    layout: {
+      ...LABEL_LAYOUT,
+      visibility: shown ? 'visible' : 'none',
+      'text-field': ['get', 'label'],
+      'text-font': [MAP_FONTS.medium],
+      'text-transform': 'uppercase',
+      'text-size': [
+        'interpolate',
+        ['linear'],
+        ['zoom'],
+        STATE_NAME_SIZE.fromZoom,
+        STATE_NAME_SIZE.from,
+        STATE_NAME_SIZE.toZoom,
+        STATE_NAME_SIZE.to,
+      ],
+      'text-letter-spacing': STATE_NAME_TRACKING,
+      'text-line-height': STATE_NAME_LEADING,
+      'text-padding': STATE_NAME_PADDING,
+      // The label carries its own line break; MapLibre breaks nothing else.
+      'text-max-width': 40,
+      'text-anchor': 'center',
+      'text-justify': 'center',
+    },
+    paint: {
+      'text-color': colors.labelDim,
+      'text-halo-color': colors.land,
+      'text-halo-width': CITY_NAME_HALO,
+      'text-halo-blur': 0.4,
+    },
+  };
+}
+
+/**
+ * The national city names, a layer per band of rank (CITY_NAME_BANDS), first
+ * band first, leaving out the names in `hidden`.
+ */
+function cityNameLayers(
+  colors: BasemapColors,
+  hidden: readonly string[],
+  padding: number,
+): SymbolLayerSpecification[] {
+  return CITY_NAME_BANDS.map(({ zoom }, band) => {
     const rank: ExpressionSpecification = ['get', 'rank'];
     return {
       id: cityNameLayerId(band),
@@ -476,20 +638,23 @@ function cityNameLayers(colors: BasemapColors): SymbolLayerSpecification[] {
       source: BASEMAP_IDS.usCitySource,
       minzoom: zoom,
       maxzoom: HANDOVER_START,
-      filter: [
-        'all',
-        ['==', KIND, 'city'],
-        ['>=', rank, from],
-        ...(Number.isFinite(names) ? [['<', rank, names] as ExpressionSpecification] : []),
-      ] as FilterSpecification,
+      filter: cityNameFilter(band, hidden),
       layout: {
         ...LABEL_LAYOUT,
         'symbol-sort-key': rank,
         'text-field': NAME,
         'text-font': [MAP_FONTS.medium],
-        'text-size': ['interpolate', ['linear'], ['zoom'], CITY_NAMES_FROM, 10.5, 6, 12],
-        'text-letter-spacing': 0.02,
-        'text-padding': CITY_NAME_PADDING,
+        'text-size': [
+          'interpolate',
+          ['linear'],
+          ['zoom'],
+          CITY_NAMES_FROM,
+          CITY_NAME_SIZE.from,
+          CITY_NAME_SIZE.zoom,
+          CITY_NAME_SIZE.to,
+        ],
+        'text-letter-spacing': CITY_NAME_LETTER_SPACING,
+        'text-padding': padding,
         'text-anchor': 'center',
         'text-max-width': 10,
       },
@@ -498,31 +663,33 @@ function cityNameLayers(colors: BasemapColors): SymbolLayerSpecification[] {
           'interpolate',
           ['linear'],
           ['zoom'],
-          4,
-          mixColors(colors.labelDim, colors.label, 0.5),
+          CITY_NAME_QUIET_UNTIL,
+          cityNameColor(colors, CITY_NAME_QUIET_UNTIL),
           HANDOVER_START,
-          colors.label,
+          cityNameColor(colors, HANDOVER_START),
         ],
         'text-opacity': ramp(zoom, zoom + CITY_NAME_FADE),
-        // Wide enough to part a coastline or border running under a name.
+        // Parts a coastline or border running under a name.
         'text-halo-color': colors.land,
-        'text-halo-width': 3,
-        'text-halo-blur': 1,
+        'text-halo-width': CITY_NAME_HALO,
+        'text-halo-blur': 0.4,
       },
     };
   });
 }
 
 /**
- * The bundled file's city names apart from its land and lines, as two
- * GeoJSON sources' data. A URL is handed to both sources as it is.
+ * The bundled file's city and state names apart from its land and lines, as
+ * two GeoJSON sources' data. A URL is handed to both sources as it is.
  */
 export function splitUsLines(
   usLines: UsLinesData | string,
 ): readonly [geometry: UsLinesData | string, cities: UsLinesData | string] {
   if (typeof usLines === 'string') return [usLines, usLines];
-  const isCity = (feature: unknown): boolean =>
-    (feature as { properties?: { kind?: unknown } } | null)?.properties?.kind === 'city';
+  const isCity = (feature: unknown): boolean => {
+    const kind = (feature as { properties?: { kind?: unknown } } | null)?.properties?.kind;
+    return kind === 'city' || kind === 'state-name';
+  };
   return [
     { type: 'FeatureCollection', features: usLines.features.filter((f) => !isCity(f)) },
     { type: 'FeatureCollection', features: usLines.features.filter(isCity) },
@@ -555,6 +722,9 @@ export function buildBasemapStyle({
   hairline,
   colors,
   schools = null,
+  hiddenCityNames = [],
+  stateNames = [],
+  phoneNames = false,
 }: BasemapStyleOptions): StyleSpecification {
   const [geometry, cities] = splitUsLines(usLines);
   const round = { 'line-join': 'round', 'line-cap': 'round' } as const;
@@ -572,12 +742,15 @@ export function buildBasemapStyle({
     },
     {
       // The country a step off the ground at the national view; the street tiles' own
-      // ground takes over at the handover, where the sea and the land are one black.
+      // ground takes over at the handover, where the sea and the land are one black. A land
+      // in the ground's own color is not drawn: filling most of a phone's screen with the
+      // color already there costs every frame and shows nothing.
       id: BASEMAP_IDS.usLand,
       type: 'fill',
       source: BASEMAP_IDS.usSource,
       maxzoom: HANDOVER_END,
       filter: ['==', KIND, 'land'],
+      layout: { visibility: sameColor(colors.land, colors.background) ? 'none' : 'visible' },
       paint: { 'fill-color': colors.land, 'fill-opacity': fadeOut, 'fill-antialias': false },
     },
     {
@@ -772,10 +945,16 @@ export function buildBasemapStyle({
       layout: round,
       paint: { 'line-color': colors.outline, 'line-width': hairline, 'line-opacity': fadeOut },
     },
+    // The state names under the city names, which MapLibre places first.
+    stateNameLayer(colors, stateNames, phoneNames),
     // The national city names, the last band lowest (MapLibre places the top layer first),
     // under the glow, which goes right before the street tiles' labels: a city's lights
     // shine over its name, never cut by the name's halo.
-    ...cityNameLayers(colors).reverse(),
+    ...cityNameLayers(
+      colors,
+      hiddenCityNames,
+      phoneNames ? CITY_NAME_PHONE_PADDING : CITY_NAME_PADDING,
+    ).reverse(),
     // Labels, lowest priority first: MapLibre places the top layer's labels first.
     {
       // Neighbourhoods in small spaced capitals, a quiet layer under the street names.

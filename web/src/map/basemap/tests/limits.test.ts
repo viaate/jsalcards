@@ -13,17 +13,20 @@ import {
 } from '../../glow/mercator';
 import { CENTER_BOUNDS, MAX_ZOOM, MIN_ZOOM } from '../bounds';
 import type { MapView } from '../bounds';
-import { ZOOM_SLACK, constrainView, screenBox, viewLimits } from '../limits';
-import type { Box, Insets, ViewLimits } from '../limits';
-import { US_BOUNDS, US_LINES_FILE } from '../us-geo';
+import { WHOLE_COUNTRY, ZOOM_SLACK, constrainView, screenBox, viewLimits } from '../limits';
+import type { Box, HomeFit, Insets, ViewLimits } from '../limits';
+import { STILL_VIEWBOX, US_BOUNDS, US_LINES_FILE } from '../us-geo';
 
-/** The frame index.html lays out: a bar and gap on top, sides and bottom inset; tighter on phones. */
+/**
+ * The frame index.html lays out: the top strip and a gap above it, the sides
+ * and the bottom inset. A phone stacks the wordmark over a taller field and
+ * keeps the legend's line clear at the bottom.
+ */
 function frameInsets(width: number): Insets {
   const phone = width <= 719;
-  const edge = phone ? 12 : 20;
-  const gap = phone ? 20 : 24;
+  const top = phone ? 16 + 40 + 48 + 24 : 20 + 44 + 24;
   const side = phone ? 16 : 48;
-  return { top: edge + 44 + gap, right: side, bottom: phone ? 24 : 48, left: side };
+  return { top, right: side, bottom: phone ? 68 : 48, left: side };
 }
 
 /** Every screen the map is held to, portrait and landscape, phones to large desktops. */
@@ -181,6 +184,109 @@ describe('the national view', () => {
   });
 });
 
+/** The screens index.html lays out for a phone held upright: the still covers their frame. */
+const UPRIGHT_PHONES = SCREENS.filter(([width, height]) => width <= 719 && height >= width);
+
+/** The home view's fit on those screens, as index.html sets it, with the focus given. */
+const cover = (focus: number): HomeFit => ({ cover: true, focus });
+
+/**
+ * Where the country is drawn at a view, on a screen of `width` by `height`:
+ * its box in CSS pixels.
+ */
+function drawnUs(view: MapView, width: number, height: number): Box {
+  const scale = scaleAt(view.zoom);
+  const [x, y] = worldPoint(view);
+  return {
+    x0: width / 2 + (US_BOX.x0 - x) * scale,
+    y0: height / 2 + (US_BOX.y0 - y) * scale,
+    x1: width / 2 + (US_BOX.x1 - x) * scale,
+    y1: height / 2 + (US_BOX.y1 - y) * scale,
+  };
+}
+
+describe('the home view', () => {
+  it('is the national view itself, the same object, unless the frame is to be covered', () => {
+    for (const screen of SCREENS) {
+      const [width, height] = screen;
+      const limits = limitsFor(screen);
+      expect(limits.home).toBe(limits.fit);
+      const whole = viewLimits({ width, height }, frameInsets(width), WHOLE_COUNTRY);
+      expect(whole.home).toBe(whole.fit);
+      expect(whole).toEqual(limits);
+    }
+  });
+
+  it("on a phone held upright, fills the frame's height with the country, as the still does", () => {
+    const [, , stillWidth = NaN, stillHeight = NaN] = STILL_VIEWBOX.split(' ').map(Number);
+    for (const [width, height] of UPRIGHT_PHONES) {
+      for (const focus of [0, 0.22, 0.5, 0.87, 0.95, 1]) {
+        const where = `${String(width)}x${String(height)} focus ${String(focus)}`;
+        const insets = frameInsets(width);
+        const limits = viewLimits({ width, height }, insets, cover(focus));
+        const frame = {
+          x0: insets.left,
+          y0: insets.top,
+          x1: width - insets.right,
+          y1: height - insets.bottom,
+        };
+        const us = drawnUs(limits.home, width, height);
+        // Drawn as index.html lays out the still: max(100cqh, 100cqw * h / w) tall, centered down,
+        // and `focus` of the way along the width it runs past the frame.
+        const frameWidth = frame.x1 - frame.x0;
+        const frameHeight = frame.y1 - frame.y0;
+        const drawnHeight = Math.max(frameHeight, (frameWidth * stillHeight) / stillWidth);
+        expect(us.y1 - us.y0, where).toBeCloseTo(drawnHeight, 1);
+        expect(us.y0 - frame.y0, where).toBeCloseTo((frameHeight - drawnHeight) / 2, 1);
+        expect(us.x0 - frame.x0, where).toBeCloseTo(focus * (frameWidth - (us.x1 - us.x0)), 1);
+        // So it runs past both sides of the frame, or reaches one of them, and fills it top to bottom.
+        expect(us.x0, where).toBeLessThanOrEqual(frame.x0 + 1e-6);
+        expect(us.x1, where).toBeGreaterThanOrEqual(frame.x1 - 1e-6);
+        expect(us.y0, where).toBeLessThanOrEqual(frame.y0 + 1e-6);
+        expect(us.y1, where).toBeGreaterThanOrEqual(frame.y1 - 1e-6);
+        // Closer than the national view, which still bounds the zoom out.
+        expect(limits.home.zoom, where).toBeGreaterThan(limits.fit.zoom + 1);
+        expect(limits.minZoom, where).toBeCloseTo(limits.fit.zoom - ZOOM_SLACK, 12);
+        // And always allowed, exactly, so nothing moves on load or at the handover.
+        expect(constrainView(limits, limits.home), where).toEqual(limits.home);
+      }
+    }
+  });
+
+  it('opens a phone in the Eastern time zone on the East Coast, and one in the Pacific on the West', () => {
+    const [width, height] = [390, 844];
+    const home = (focus: number): Box =>
+      screenBox(
+        { width, height },
+        viewLimits({ width, height }, frameInsets(width), cover(focus)).home,
+      );
+    const lngs = (box: Box): [number, number] => [
+      lngFromMercatorX(box.x0),
+      lngFromMercatorX(box.x1),
+    ];
+    // New York to Atlanta and Miami; Boston too.
+    const [eastWest, eastEast] = lngs(home(0.95));
+    expect(eastWest).toBeLessThan(-84.4);
+    expect(eastEast).toBeGreaterThan(-71.06);
+    // Seattle to Los Angeles, the coast a margin in from the screen's left edge.
+    const [westWest, westEast] = lngs(home(0));
+    expect(westWest).toBeLessThan(US_BOUNDS[0]);
+    expect(westEast).toBeGreaterThan(-118.4);
+  });
+
+  it('copes with a frame with no area, and a focus out of range', () => {
+    const none = viewLimits({ width: 0, height: 0 }, frameInsets(0), cover(0.5));
+    expect(none.home).toBe(none.fit);
+    // A focus out of range is held to the country's ends; one that is no number, to its middle.
+    const [width, height] = [390, 844];
+    const at = (focus: number): MapView =>
+      viewLimits({ width, height }, frameInsets(width), cover(focus)).home;
+    expect(at(-3)).toEqual(at(0));
+    expect(at(7)).toEqual(at(1));
+    expect(at(Number.NaN)).toEqual(at(0.5));
+  });
+});
+
 describe('zooming out', () => {
   it('stops a little past the national view, never half a level past it', () => {
     expect(ZOOM_SLACK).toBeGreaterThan(0);
@@ -228,19 +334,26 @@ function landShown(limits: ViewLimits, view: MapView, grow = 0): boolean {
 }
 
 /**
- * Whether land shows in the middle half of the screen, across and down, give
- * or take `grow` degrees: the land map's bands and shore slack.
+ * Whether land shows in the middle half of the frame (the screen less the
+ * page's bars and their gaps), across and down, give or take `grow` degrees:
+ * the land map's bands and shore slack.
  */
 function landInMiddle(limits: ViewLimits, view: MapView, grow: number): boolean {
-  const shown = screenBox(limits, view);
-  const [x, y] = worldPoint(view);
+  const insets = frameInsets(limits.width);
+  const scale = scaleAt(view.zoom);
+  const [screenX, screenY] = worldPoint(view);
+  // The frame's center, and a quarter of its width and height, in world units.
+  const x = screenX + (insets.left - insets.right) / 2 / scale;
+  const y = screenY + (insets.top - insets.bottom) / 2 / scale;
+  const quarterX = (limits.width - insets.left - insets.right) / 4 / scale;
+  const quarterY = (limits.height - insets.top - insets.bottom) / 4 / scale;
   const dx = mercatorXFromLng(grow) - mercatorXFromLng(0);
-  const dy = mercatorYFromLat(view.lat - grow) - y;
+  const dy = mercatorYFromLat(view.lat - grow) - screenY;
   return landInside({
-    x0: x - (shown.x1 - shown.x0) / 4 - dx,
-    y0: y - (shown.y1 - shown.y0) / 4 - dy,
-    x1: x + (shown.x1 - shown.x0) / 4 + dx,
-    y1: y + (shown.y1 - shown.y0) / 4 + dy,
+    x0: x - quarterX - dx,
+    y0: y - quarterY - dy,
+    x1: x + quarterX + dx,
+    y1: y + quarterY + dy,
   });
 }
 
@@ -265,7 +378,8 @@ describe('panning', () => {
         for (const far of farCenters(limits.fit)) {
           const view = constrainView(limits, { ...far, zoom });
           const where = `${String(screen)} z${zoom.toFixed(1)} toward ${far.lat.toFixed(0)},${far.lon.toFixed(0)}`;
-          // Land in the middle half of the screen, give or take the land map's band and shore slack.
+          // Land in the middle half of the frame, clear of the page's bars, give or take the land
+          // map's band and shore slack.
           expect(landInMiddle(limits, view, 0.16), where).toBe(true);
           // Up to regional zoom, where a band of the land map is small beside the screen, that land is on screen outright.
           if (zoom <= 9) expect(landShown(limits, view), where).toBe(true);

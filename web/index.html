@@ -85,9 +85,19 @@
         --field-width: 400px;
         --bar-font: 15px;
         --brand-font: 17px;
+        --brand-line: 24px;
+        /* What the wordmark adds above the field where it sits on a line of its own (a phone). */
+        --brand-stack: 0px;
         --frame-gap: 24px;
         --frame-side: 48px;
         --frame-bottom: 48px;
+        /*
+          Where a phone's home view sits across the country, 0 (the west coast
+          at the frame's left edge) to 1 (the east coast at its right edge).
+          The script below sets it from the time zone; the rest of the world
+          opens on the middle of the country, where the land fills the frame.
+        */
+        --home-focus: 0.5;
       }
 
       /* On dense screens a hairline stays about one device pixel wide. */
@@ -103,15 +113,32 @@
         }
       }
 
+      /* A phone: the wordmark on a line of its own over a full-width field, sized for a thumb. */
       @media (max-width: 719px) {
         :root {
-          --edge: 12px;
-          --brand-width: 90px;
+          --edge: 16px;
+          --bar-height: 48px;
           --bar-font: 16px;
-          --brand-font: 16px;
-          --frame-gap: 20px;
+          --brand-font: 20px;
+          --brand-line: 28px;
+          --brand-stack: 40px;
+          --frame-gap: 24px;
           --frame-side: 16px;
-          --frame-bottom: 24px;
+          /* Clear of the legend's line at the foot of the screen, by the same gap as at the top. */
+          --frame-bottom: 68px;
+        }
+      }
+
+      /*
+        A phone's small, bright screen, held either way: the lines clearer and
+        the states named, so the country reads at a glance. The land stays the
+        ground's black (the owner's call).
+      */
+      @media (max-width: 719px), (max-height: 519px) {
+        :root {
+          --line-outline: #8f8f8f;
+          --line-state: #4d4d4d;
+          --map-names: phone;
         }
       }
 
@@ -155,7 +182,9 @@
         position: absolute;
         inset: 0 0 auto;
         z-index: 1;
-        height: calc(var(--inset-top) + var(--edge) + var(--bar-height) + 40px);
+        height: calc(
+          var(--inset-top) + var(--edge) + var(--brand-stack) + var(--bar-height) + 40px
+        );
         pointer-events: none;
         content: '';
         background: linear-gradient(
@@ -169,7 +198,9 @@
 
       .frame {
         position: absolute;
-        top: calc(var(--inset-top) + var(--edge) + var(--bar-height) + var(--frame-gap));
+        top: calc(
+          var(--inset-top) + var(--edge) + var(--brand-stack) + var(--bar-height) + var(--frame-gap)
+        );
         right: calc(var(--inset-right) + var(--frame-side));
         bottom: calc(var(--inset-bottom) + var(--frame-bottom));
         left: calc(var(--inset-left) + var(--frame-side));
@@ -208,6 +239,30 @@
         opacity: 0;
       }
 
+      /*
+        A phone held upright: the whole country would be a thin band across the
+        middle, so the home view fills the frame's height with it and lets its
+        width run off the sides, placed across by --home-focus. The map reads
+        --home-fit to open at the same view (src/map/basemap/limits.ts).
+      */
+      @media (max-width: 719px) and (orientation: portrait) {
+        .frame {
+          --home-fit: cover;
+
+          container-type: size;
+        }
+
+        .still {
+          position: absolute;
+          top: 50%;
+          left: 0;
+          width: auto;
+          height: max(100cqh, 100cqw * 4385.37 / 8000);
+          aspect-ratio: 8000 / 4385.37;
+          translate: calc(var(--home-focus) * (100cqw - 100%)) -50%;
+        }
+      }
+
       /* The top strip: the wordmark, then the search field. The update time sits at the right. */
       .bar {
         position: absolute;
@@ -235,7 +290,7 @@
         overflow: hidden;
         font-size: var(--brand-font);
         font-weight: 600;
-        line-height: 24px;
+        line-height: var(--brand-line);
         letter-spacing: -0.025em;
         white-space: nowrap;
         text-shadow:
@@ -400,35 +455,191 @@
         padding-right: 44px;
       }
 
-      /* A phone: the wordmark, then the field to the edge; results span the whole strip. */
+      /*
+        A phone: the wordmark on its own line, and under it the field from edge to
+        edge, where a thumb finds it; the results span the same width.
+      */
       @media (max-width: 719px) {
         .bar {
+          grid-template-rows: var(--brand-line) var(--bar-height);
+          grid-template-columns: minmax(0, 1fr);
+          row-gap: calc(var(--brand-stack) - var(--brand-line));
+          width: calc(100% - var(--inset-left) - var(--inset-right) - 2 * var(--edge));
+          height: calc(var(--brand-stack) + var(--bar-height));
           --results-left: 0px;
         }
 
         .search-icon {
-          left: 14px;
+          left: 16px;
+          width: 18px;
+          height: 18px;
+          margin-top: -9px;
+          stroke: var(--text-2);
         }
 
         .search-input {
-          padding-left: 38px;
+          padding-left: 46px;
+        }
+
+        .search.has-query .search-input {
+          padding-right: 48px;
+        }
+
+        /* A thumb's worth of target at the field's end. */
+        .search-clear {
+          right: 4px;
+          width: 40px;
+          height: 40px;
+          margin-top: -20px;
         }
       }
 
-      /* The narrowest phones: tighter insets keep the whole placeholder in view. */
-      @media (max-width: 379px) {
-        :root {
-          --brand-width: 84px;
-        }
+      /*
+        The key to the map's four lights, in the bottom corner across from the
+        attribution: each status in its own color and shape, as the map draws it.
+      */
+      .legend {
+        position: absolute;
+        bottom: calc(var(--inset-bottom) + var(--edge));
+        left: calc(var(--inset-left) + var(--edge));
+        z-index: 1;
+        display: flex;
+        flex-wrap: wrap;
+        gap: 6px 12px;
+        align-items: center;
+        max-width: calc(
+          100% - var(--inset-left) - var(--inset-right) - 2 * var(--edge) - var(--legend-clear)
+        );
+        min-height: 28px;
+        margin: 0;
+        padding: 0;
+        font-size: 12px;
+        font-weight: 450;
+        line-height: 16px;
+        color: var(--text-2);
+        white-space: nowrap;
+        list-style: none;
+        pointer-events: none;
+        text-shadow:
+          0 0 2px #000,
+          0 0 8px #000;
+        /* Room for the attribution button at the other end of the line. */
+        --legend-clear: 40px;
+      }
 
-        .search-icon {
-          left: 12px;
-        }
+      /*
+        On a phone, a button that takes the map to where the phone is: a
+        thumb's reach above the attribution's corner, solid like the search
+        field (no backdrop blur over the moving map).
+      */
+      .locate {
+        position: absolute;
+        right: calc(var(--inset-right) + var(--edge));
+        bottom: calc(var(--inset-bottom) + var(--edge) + 28px + 12px);
+        z-index: 2;
+        display: none;
+        place-items: center;
+        width: 48px;
+        height: 48px;
+        margin: 0;
+        padding: 0;
+        color: var(--text-2);
+        cursor: pointer;
+        background: rgb(17 17 17);
+        border: 1px solid var(--border-2);
+        border-radius: 50%;
+        box-shadow:
+          inset 0 1px 0 rgb(255 255 255 / 0.04),
+          0 6px 20px rgb(0 0 0 / 0.5);
+        transition:
+          color 120ms linear,
+          border-color 120ms linear;
+      }
 
-        .search-input {
-          padding-right: 12px;
-          padding-left: 34px;
+      .locate:hover,
+      .locate:focus-visible {
+        color: var(--text-1);
+        border-color: var(--text-3);
+      }
+
+      .locate:focus-visible {
+        outline: none;
+      }
+
+      .locate svg {
+        width: 20px;
+        height: 20px;
+        fill: none;
+        stroke: currentColor;
+        stroke-width: 1.5;
+        stroke-linejoin: round;
+      }
+
+      /* Asking the phone where it is: the arrow breathes until it answers. */
+      .locate.is-locating svg {
+        animation: locating 900ms ease-in-out infinite alternate;
+      }
+
+      @keyframes locating {
+        to {
+          opacity: 0.35;
         }
+      }
+
+      @media (max-width: 719px) {
+        .locate {
+          display: grid;
+        }
+      }
+
+      /* The narrowest phones: two lines of two. */
+      @media (max-width: 374px) {
+        .legend {
+          display: grid;
+          grid-template-columns: auto auto;
+          justify-content: start;
+        }
+      }
+
+      .legend li {
+        display: flex;
+        gap: 6px;
+        align-items: center;
+      }
+
+      .glyph {
+        flex: none;
+        width: 8px;
+        height: 8px;
+        border-radius: 50%;
+      }
+
+      .glyph.is-closed {
+        background: var(--status-closed);
+        box-shadow: 0 0 6px color-mix(in srgb, var(--status-closed) 50%, transparent);
+      }
+
+      .glyph.is-delayed {
+        box-shadow:
+          inset 0 0 0 1.5px var(--status-delayed),
+          0 0 6px color-mix(in srgb, var(--status-delayed) 45%, transparent);
+      }
+
+      /* The map's diamond reaches a fifth past the dot's radius. */
+      .glyph.is-remote {
+        width: 7px;
+        height: 7px;
+        background: var(--status-remote);
+        border-radius: 1px;
+        box-shadow: 0 0 6px color-mix(in srgb, var(--status-remote) 50%, transparent);
+        transform: rotate(45deg);
+      }
+
+      .glyph.is-early-dismissal {
+        background: linear-gradient(90deg, var(--status-early-dismissal) 50%, transparent 50%);
+        box-shadow:
+          inset 0 0 0 1.5px var(--status-early-dismissal),
+          0 0 6px color-mix(in srgb, var(--status-early-dismissal) 45%, transparent);
       }
 
       /* Heard by screen readers, never seen. */
@@ -448,11 +659,49 @@
         .still,
         .search,
         .search-icon,
-        .search-key {
+        .search-key,
+        .locate {
           transition: none;
+        }
+
+        .locate.is-locating svg {
+          animation: none;
+          opacity: 0.5;
         }
       }
     </style>
+    <script>
+      // A phone opens on its own part of the country, told by its time zone: the
+      // West Coast, the Mountain states, the middle or the East. Anywhere else,
+      // --home-focus keeps its value above. Before the first paint, so the still is drawn there.
+      (function () {
+        var zone = '';
+        try {
+          zone = Intl.DateTimeFormat().resolvedOptions().timeZone || '';
+        } catch (error) {
+          return;
+        }
+        // The first match wins: Indiana's Central time zones before the rest of the state's.
+        var parts = [
+          [/^(America\/Los_Angeles|US\/Pacific)$/, 0],
+          [/^(America\/(Denver|Boise|Phoenix)|US\/(Mountain|Arizona))$/, 0.22],
+          [
+            /^(America\/(Chicago|Menominee|Indiana\/(Knox|Tell_City)|North_Dakota\/\w+)|US\/Central)$/,
+            0.5,
+          ],
+          [
+            /^(America\/(New_York|Detroit|Kentucky\/\w+|Indiana\/\w+)|US\/(Eastern|Michigan))$/,
+            0.95,
+          ],
+        ];
+        for (var i = 0; i < parts.length; i++) {
+          if (parts[i][0].test(zone)) {
+            document.documentElement.style.setProperty('--home-focus', String(parts[i][1]));
+            return;
+          }
+        }
+      })();
+    </script>
     <script type="module" src="/src/main.ts"></script>
   </head>
   <body>
@@ -512,6 +761,20 @@
             </span>
           </form>
         </header>
+        <ul class="legend" aria-label="%copy.legend.label%">
+          <li><span class="glyph is-closed" aria-hidden="true"></span>%copy.status.closed%</li>
+          <li><span class="glyph is-delayed" aria-hidden="true"></span>%copy.status.delayed%</li>
+          <li><span class="glyph is-remote" aria-hidden="true"></span>%copy.status.remote%</li>
+          <li>
+            <span class="glyph is-early-dismissal" aria-hidden="true"></span
+            >%copy.status.earlyDismissal%
+          </li>
+        </ul>
+        <button class="locate" type="button" aria-label="%copy.map.locate%">
+          <svg viewBox="0 0 16 16" aria-hidden="true" focusable="false">
+            <path d="M13.25 2.75L2.75 7.1l4.6 1.55 1.55 4.6z" />
+          </svg>
+        </button>
       </main>
     </div>
   </body>

@@ -6,10 +6,44 @@
 export const US_BOUNDS = [-124.734, 24.515, -66.982, 49.385] as const;
 
 /** The bundled GeoJSON, relative to the site base URL. */
-export const US_LINES_FILE = 'geo/us-lines.8d993712f9.json';
+export const US_LINES_FILE = 'geo/us-lines.8606da54e5.json';
 
 /** viewBox of the inline still in index.html: Web Mercator, north-west corner at 0 0. */
 export const STILL_VIEWBOX = '0 0 8000 4385.37';
 
 /** Gzipped size of the bundled GeoJSON, in bytes. */
-export const US_LINES_GZIP_BYTES = 45896;
+export const US_LINES_GZIP_BYTES = 47238;
+
+/**
+ * How the state names in it are set, as their places and sizes were worked
+ * out for: the space between letters and between lines, in ems of their size,
+ * and their size in CSS pixels, `from` at `fromZoom` growing to `to` at `toZoom`.
+ */
+export const STATE_NAME_TRACKING = 0.14;
+export const STATE_NAME_LEADING = 1.2;
+export const STATE_NAME_SIZE = {
+  fromZoom: 3,
+  from: 9.25,
+  toZoom: 6,
+  to: 10.75,
+} as const;
+
+/**
+ * The city names each state's name was placed clear of, as a phone's map
+ * sets them: the first `cities` of them, shown from `zoom`, `size` px high,
+ * `tracking` ems apart, with `padding` px of clear space; and `ownPadding`
+ * px around the state's name.
+ */
+export const STATE_NAMES_CLEAR_OF = {
+  zoom: 3.8,
+  cities: 34,
+  size: {
+    fromZoom: 3,
+    from: 10.5,
+    toZoom: 6,
+    to: 12,
+  },
+  tracking: 0.02,
+  padding: 8,
+  ownPadding: 3,
+} as const;

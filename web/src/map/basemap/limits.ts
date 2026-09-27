@@ -1,8 +1,14 @@
 /**
- * How far the map zooms out and pans on a given screen.
+ * How far the map zooms out and pans on a given screen, and where it opens.
  *
  * The national view fits the continental US into the frame, the box the
- * inline still is drawn in. From there:
+ * inline still is drawn in. The map opens at the home view: the national
+ * view, except on a screen held upright and too narrow for it (a phone),
+ * where the whole country would fill a thin band across the middle. There
+ * the home view fills the frame's height with the country, from its northern
+ * border to the Keys, and lets its width run off the sides, showing the part
+ * of it HomeFit.focus names (index.html sets both, for the still too). From
+ * the national view:
  *
  * - Zooming out stops ZOOM_SLACK levels below that fit, so the country is
  *   never much smaller than at the national view.
@@ -10,20 +16,23 @@
  *   widest zoom that leaves a few percent of play either way, so the whole
  *   country stays on screen; zoomed in, it lets the view reach every edge.
  * - Zoomed in, part of the country stays on screen: the middle half of the
- *   screen, across and down, always takes in some US land, as mapped band by
- *   band from the outline (us-reach.ts). A coast or border can be panned to,
- *   not past the middle of a half screen, so the view never drifts out over
- *   open ocean or into Canada or Mexico. Lakes and bays up to two degrees
- *   wide count as land, so they can be panned across at any zoom.
+ *   frame, across and down, always takes in some US land, as mapped band by
+ *   band from the outline (us-reach.ts). The frame is the part of the screen
+ *   the page's own bars leave to the map, so land never hides behind them. A
+ *   coast or border can be panned to, not past the middle of a half frame, so
+ *   the view never drifts out over open ocean or into Canada or Mexico. Lakes
+ *   and bays up to two degrees wide count as land, so they can be panned
+ *   across at any zoom.
  * - Every school in the directory is inside that land map, the few on islands
  *   the outline leaves out (such as Monhegan, off Maine) too, so the map can
  *   center on any school at street zoom and pan around it.
  * - The center stays inside CENTER_BOUNDS, which view links share (bounds.ts).
  *
- * The national view itself is always allowed, so nothing moves on load or
- * when the map takes over from the inline still. Everything here is plain
- * math on Web Mercator world units (0..1, y growing southward, as MapLibre
- * uses), so the map, links and tests share one implementation.
+ * The national and home views themselves are always allowed, so nothing
+ * moves on load or when the map takes over from the inline still.
+ * Everything here is plain math on Web Mercator world units (0..1, y
+ * growing southward, as MapLibre uses), so the map, links and tests share
+ * one implementation.
  */
 import {
   latFromMercatorY,
@@ -46,8 +55,8 @@ export const ZOOM_SLACK = 0.3;
 export const VIEW_MARGIN = 0.1;
 
 /**
- * Share of a half screen, across and down, that a coast or border can move
- * past the center: 0.5 keeps some of the US inside the middle half of the screen.
+ * Share of a half frame, across and down, that a coast or border can move
+ * past the frame's center: 0.5 keeps some of the US inside the middle half of the frame.
  */
 export const LEASH = 0.5;
 
@@ -90,6 +99,21 @@ export interface Box {
   readonly y1: number;
 }
 
+/**
+ * How the home view fits the country into the frame: whole (the national
+ * view), or, with `cover`, filling the frame both ways, the country's height
+ * fitted and its width running off the sides. `focus` then places it across:
+ * 0 puts its west coast at the frame's left edge, 1 its east coast at the
+ * right, as CSS object-position does.
+ */
+export interface HomeFit {
+  readonly cover: boolean;
+  readonly focus: number;
+}
+
+/** The home view is the national view. */
+export const WHOLE_COUNTRY: HomeFit = Object.freeze({ cover: false, focus: 0.5 });
+
 /** The limits for one screen. Recompute them whenever the screen or the frame changes size. */
 export interface ViewLimits {
   /** The screen, in CSS pixels. */
@@ -97,11 +121,27 @@ export interface ViewLimits {
   readonly height: number;
   /** The national view: the continental US fitted into the frame. */
   readonly fit: MapView;
+  /**
+   * Where the map opens and goes back to: the national view itself, or with a
+   * covering HomeFit, the country filling the frame. Always allowed.
+   */
+  readonly home: MapView;
   /** The widest zoom: ZOOM_SLACK below the national view. */
   readonly minZoom: number;
   readonly maxZoom: number;
   /** The rectangle the screen stays inside, in world units. */
   readonly area: Box;
+  /**
+   * The frame, in CSS pixels: its size, and how far its center sits right of
+   * and below the screen's. Land is kept in its middle half. A frame with no
+   * area is the whole screen.
+   */
+  readonly frame: {
+    readonly width: number;
+    readonly height: number;
+    readonly dx: number;
+    readonly dy: number;
+  };
 }
 
 function clamp(value: number, low: number, high: number): number {
@@ -150,9 +190,10 @@ const SLACK = SHORE_SLACK / 360;
 
 /**
  * The limits for a screen of `size` whose national view fits the US inside
- * `insets`. A frame with no area falls back to the whole screen.
+ * `insets`, and whose home view fits it as `home` says. A frame with no area
+ * falls back to the whole screen.
  */
-export function viewLimits(size: Size, insets: Insets): ViewLimits {
+export function viewLimits(size: Size, insets: Insets, home: HomeFit = WHOLE_COUNTRY): ViewLimits {
   const width = Number.isFinite(size.width) ? Math.max(0, size.width) : 0;
   const height = Number.isFinite(size.height) ? Math.max(0, size.height) : 0;
   let innerWidth = width - insets.left - insets.right;
@@ -184,10 +225,12 @@ export function viewLimits(size: Size, insets: Insets): ViewLimits {
   const widest = TILE_SIZE * 2 ** minZoom;
   const halfWidth = (width / 2 / widest) * (1 + VIEW_MARGIN);
   const halfHeight = (height / 2 / widest) * (1 + VIEW_MARGIN);
-  return {
+  const fit: MapView = { lat: latFromMercatorY(fitY), lon: lngFromMercatorX(fitX), zoom: fitZoom };
+  const limits: ViewLimits = {
     width,
     height,
-    fit: { lat: latFromMercatorY(fitY), lon: lngFromMercatorX(fitX), zoom: fitZoom },
+    fit,
+    home: fit,
     minZoom,
     maxZoom: MAX_ZOOM,
     area: {
@@ -196,7 +239,36 @@ export function viewLimits(size: Size, insets: Insets): ViewLimits {
       x1: fitX + halfWidth,
       y1: fitY + halfHeight,
     },
+    frame: { width: innerWidth, height: innerHeight, dx: offsetX, dy: offsetY },
   };
+  const covering = home.cover ? coverView(limits.frame, home.focus) : null;
+  // A frame the national view already fills both ways (or one with no area) opens at it.
+  if (covering === null || !(covering.zoom > fitZoom)) return limits;
+  return { ...limits, home: constrainView(limits, covering) };
+}
+
+/**
+ * The view that covers `frame` with the continental US, as the still is laid
+ * out in index.html on a phone: drawn `height` tall, where `height` is the
+ * frame's or, for a frame wider than the country, the country's at the
+ * frame's width; placed `focus` of the way along the frame's width it runs
+ * past, and centered down. Null for a frame with no area.
+ */
+function coverView(frame: ViewLimits['frame'], focus: number): MapView | null {
+  if (!(frame.width > 0 && frame.height > 0)) return null;
+  const usWidth = US_BOX.x1 - US_BOX.x0;
+  const usHeight = US_BOX.y1 - US_BOX.y0;
+  const drawnHeight = Math.max(frame.height, (frame.width * usHeight) / usWidth);
+  // Pixels per world unit, and where the drawn country's north-west corner sits in the frame.
+  const scale = drawnHeight / usHeight;
+  const left = clamp(Number.isFinite(focus) ? focus : 0.5, 0, 1) * (frame.width - usWidth * scale);
+  const top = (frame.height - drawnHeight) / 2;
+  // The point at the frame's center, then the screen's center, the frame's offset back from it.
+  const x = US_BOX.x0 + (frame.width / 2 - left - frame.dx) / scale;
+  const y = US_BOX.y0 + (frame.height / 2 - top - frame.dy) / scale;
+  const zoom = Math.log2(scale / TILE_SIZE);
+  if (!Number.isFinite(zoom)) return null;
+  return { lat: latFromMercatorY(y), lon: lngFromMercatorX(x), zoom: Math.min(zoom, MAX_ZOOM) };
 }
 
 /**
@@ -204,8 +276,8 @@ export function viewLimits(size: Size, insets: Insets): ViewLimits {
  * comes back exactly as given; anything else comes back at the nearest zoom
  * the limits allow and, at that zoom, the nearest allowed center.
  *
- * At one zoom the center is allowed inside any piece of land grown by the
- * leash (so the middle half of the screen takes it in), cut to the box that
+ * At one zoom the frame's center is allowed inside any piece of land grown by
+ * the leash (so the middle half of the frame takes it in), cut to the box that
  * keeps the screen in the area and the center in CENTER_BOUNDS. Being the
  * nearest point of those rectangles, a view pushed against an edge slides
  * along it and comes to rest, and never flips back and forth between two
@@ -226,9 +298,12 @@ export function constrainView(limits: ViewLimits, view: MapView): MapView {
   const scale = TILE_SIZE * 2 ** zoom;
   const halfWidth = limits.width / 2 / scale;
   const halfHeight = limits.height / 2 / scale;
-  const leashX = Math.max(LEASH * halfWidth, SLACK);
-  const leashY = Math.max(LEASH * halfHeight, SLACK);
-  const { area } = limits;
+  const { area, frame } = limits;
+  const leashX = Math.max((LEASH * frame.width) / 2 / scale, SLACK);
+  const leashY = Math.max((LEASH * frame.height) / 2 / scale, SLACK);
+  // The screen's center that puts the frame's center on a point is that far back from it.
+  const shiftX = frame.dx / scale;
+  const shiftY = frame.dy / scale;
   const boxX0 = Math.max(area.x0 + halfWidth, CENTER_BOX.x0);
   const boxX1 = Math.min(area.x1 - halfWidth, CENTER_BOX.x1);
   const boxY0 = Math.max(area.y0 + halfHeight, CENTER_BOX.y0);
@@ -237,11 +312,11 @@ export function constrainView(limits: ViewLimits, view: MapView): MapView {
   let nearestX = mercatorXFromLng(limits.fit.lon);
   let nearestY = mercatorYFromLat(limits.fit.lat);
   for (let i = 0; i < LAND.length; i += 4) {
-    const x0 = Math.max((LAND[i] ?? 0) - leashX, boxX0);
-    const x1 = Math.min((LAND[i + 2] ?? 0) + leashX, boxX1);
+    const x0 = Math.max((LAND[i] ?? 0) - leashX - shiftX, boxX0);
+    const x1 = Math.min((LAND[i + 2] ?? 0) + leashX - shiftX, boxX1);
     if (x0 > x1) continue;
-    const y0 = Math.max((LAND[i + 1] ?? 0) - leashY, boxY0);
-    const y1 = Math.min((LAND[i + 3] ?? 0) + leashY, boxY1);
+    const y0 = Math.max((LAND[i + 1] ?? 0) - leashY - shiftY, boxY0);
+    const y1 = Math.min((LAND[i + 3] ?? 0) + leashY - shiftY, boxY1);
     if (y0 > y1) continue;
     const cx = x < x0 ? x0 : x > x1 ? x1 : x;
     const cy = y < y0 ? y0 : y > y1 ? y1 : y;

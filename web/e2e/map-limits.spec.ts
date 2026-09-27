@@ -143,15 +143,31 @@ interface Lines extends Box {
 }
 
 /**
+ * Hides the legend in the bottom corner and the button over the other one
+ * (a phone's), or shows them again: they are not the map.
+ */
+async function showLegend(page: Page, shown: boolean): Promise<void> {
+  await page.evaluate((visible) => {
+    for (const element of document.querySelectorAll<HTMLElement>('ul.legend, button.locate')) {
+      element.style.visibility = visible ? '' : 'hidden';
+    }
+  }, shown);
+}
+
+/**
  * The extent of the bright pixels below the search bar, leaving out the
- * attribution button: the outline and state lines.
+ * attribution button and the legend: the outline and state lines, and the
+ * city names on them.
  */
 async function lines(page: Page, viewport: Viewport): Promise<Lines> {
   const size = page.viewportSize() ?? viewport;
   const scale = viewport.deviceScaleFactor;
   const bar = await box(page, '.bar');
   const attribution = await box(page, '.maplibregl-ctrl-attrib');
-  const { data, info } = await sharp(await page.screenshot())
+  await showLegend(page, false);
+  const shot = await page.screenshot();
+  await showLegend(page, true);
+  const { data, info } = await sharp(shot)
     .removeAlpha()
     .greyscale()
     .raw()

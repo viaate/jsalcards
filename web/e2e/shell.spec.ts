@@ -17,7 +17,7 @@ import { expect, test } from '@playwright/test';
 import type { Browser, BrowserContext, Page, Request, Route } from '@playwright/test';
 import sharp from 'sharp';
 
-import { copy } from '../src/copy';
+import { STATUS_KEYS, copy } from '../src/copy';
 import { BASEMAP_IDS } from '../src/map/basemap/ids';
 import { STILL_VIEWBOX, US_BOUNDS, US_LINES_GZIP_BYTES } from '../src/map/basemap/us-geo';
 
@@ -165,18 +165,36 @@ async function cityNames(page: Page): Promise<string[]> {
   }, BASEMAP_IDS.usCityLabel);
 }
 
+/** The state names MapLibre placed (a phone's map names the states), from every state's layer. */
+async function stateNames(page: Page): Promise<string[]> {
+  return page.evaluate((prefix) => {
+    const map = window.snowlightMap;
+    if (map === undefined) throw new Error('no map');
+    const layers = map
+      .getStyle()
+      .layers.map((layer) => layer.id)
+      .filter((id) => id.startsWith(prefix));
+    return map.queryRenderedFeatures({ layers }).flatMap((feature) => {
+      const name: unknown = (feature.properties as Record<string, unknown>).name;
+      return typeof name === 'string' ? [name] : [];
+    });
+  }, BASEMAP_IDS.usStateLabel);
+}
+
 /**
- * Hides the city names, which the still does not carry, and waits for the
- * map to draw without them: what is left is the land and its lines.
+ * Hides the city and state names, which the still does not carry, and waits
+ * for the map to draw without them: what is left is the land and its lines.
  */
 async function hideCityNames(page: Page): Promise<void> {
   await page.evaluate(
-    (prefix) =>
+    (prefixes) =>
       new Promise<void>((resolve) => {
         const map = window.snowlightMap;
         if (map === undefined) throw new Error('no map');
         for (const layer of map.getStyle().layers) {
-          if (layer.id.startsWith(prefix)) map.setLayoutProperty(layer.id, 'visibility', 'none');
+          if (prefixes.some((prefix) => layer.id.startsWith(prefix))) {
+            map.setLayoutProperty(layer.id, 'visibility', 'none');
+          }
         }
         map.once('idle', () => {
           requestAnimationFrame(() => {
@@ -187,7 +205,24 @@ async function hideCityNames(page: Page): Promise<void> {
         });
         map.triggerRepaint();
       }),
-    BASEMAP_IDS.usCityLabel,
+    [BASEMAP_IDS.usCityLabel, BASEMAP_IDS.usStateLabel],
+  );
+}
+
+/** Waits until the map has drawn everything it has asked for, the city names too. */
+async function whenIdle(page: Page): Promise<void> {
+  await page.evaluate(
+    () =>
+      new Promise<void>((resolve) => {
+        const map = window.snowlightMap;
+        if (map?.loaded() !== false) {
+          resolve();
+          return;
+        }
+        map.once('idle', () => {
+          resolve();
+        });
+      }),
   );
 }
 
@@ -390,38 +425,152 @@ test.describe('first paint, before any script', () => {
       );
       await expect(page.locator('svg.still path')).toHaveCount(2);
 
-      // The still fills the frame, and the US lines fill the still on its limiting axis.
       const frame = await box(page, '.frame');
       const still = await box(page, 'svg.still');
-      expect(still).toEqual(frame);
       const shot = await gray(await page.screenshot());
-      const region = deviceRect(frame, viewport.deviceScaleFactor, shot, 2);
-      const lit = litBounds(shot, viewport.deviceScaleFactor, region);
-      const slackX = frame.width - lit.width;
-      const slackY = frame.height - lit.height;
-      expect(Math.min(slackX, slackY)).toBeLessThanOrEqual(3);
-      expect(Math.abs(lit.x - frame.x - slackX / 2)).toBeLessThanOrEqual(2);
-      expect(Math.abs(lit.y - frame.y - slackY / 2)).toBeLessThanOrEqual(2);
-
-      // Sensible padding: clear of the search pill, off the screen edges.
       const bar = await box(page, '.bar');
-      expect(lit.y).toBeGreaterThanOrEqual(bar.y + bar.height + 12);
-      expect(lit.x).toBeGreaterThanOrEqual(12);
-      expect(viewport.width - (lit.x + lit.width)).toBeGreaterThanOrEqual(12);
-      expect(viewport.height - (lit.y + lit.height)).toBeGreaterThanOrEqual(16);
-      // And the US is as large as that padding allows: most of the width.
-      expect(lit.width / viewport.width).toBeGreaterThan(viewport.isMobile ? 0.85 : 0.75);
+      if (!viewport.isMobile) {
+        // The still fills the frame, and the US lines fill the still on its limiting axis.
+        expect(still).toEqual(frame);
+        const region = deviceRect(frame, viewport.deviceScaleFactor, shot, 2);
+        const lit = litBounds(shot, viewport.deviceScaleFactor, region);
+        const slackX = frame.width - lit.width;
+        const slackY = frame.height - lit.height;
+        expect(Math.min(slackX, slackY)).toBeLessThanOrEqual(3);
+        expect(Math.abs(lit.x - frame.x - slackX / 2)).toBeLessThanOrEqual(2);
+        expect(Math.abs(lit.y - frame.y - slackY / 2)).toBeLessThanOrEqual(2);
 
-      // Nothing shown is data: no counts, times or statuses before anything has loaded.
+        // Sensible padding: clear of the search pill, off the screen edges.
+        expect(lit.y).toBeGreaterThanOrEqual(bar.y + bar.height + 12);
+        expect(lit.x).toBeGreaterThanOrEqual(12);
+        expect(viewport.width - (lit.x + lit.width)).toBeGreaterThanOrEqual(12);
+        expect(viewport.height - (lit.y + lit.height)).toBeGreaterThanOrEqual(16);
+        // And the US is as large as that padding allows: most of the width.
+        expect(lit.width / viewport.width).toBeGreaterThan(0.75);
+      } else {
+        // A phone held upright: the still fills the frame's height and runs off both its sides,
+        // placed --home-focus of the way across (the rest of the world's here: no script ran).
+        const focus = await page.evaluate(() =>
+          Number.parseFloat(
+            getComputedStyle(document.documentElement).getPropertyValue('--home-focus'),
+          ),
+        );
+        expect(focus).toBe(0.5);
+        const [, , viewWidth = NaN, viewHeight = NaN] = STILL_VIEWBOX.split(' ').map(Number);
+        expect(Math.abs(still.height - frame.height)).toBeLessThan(0.5);
+        expect(Math.abs(still.width - (frame.height * viewWidth) / viewHeight)).toBeLessThan(0.5);
+        expect(Math.abs(still.y - frame.y)).toBeLessThan(0.5);
+        expect(Math.abs(still.x - frame.x - focus * (frame.width - still.width))).toBeLessThan(0.5);
+        // The land runs from one side of the screen to the other, and from under the search
+        // pill to the key: the northern border to the Rio Grande.
+        const band = { x: 0, y: frame.y, width: viewport.width, height: frame.height };
+        const lit = litBounds(
+          shot,
+          viewport.deviceScaleFactor,
+          deviceRect(band, viewport.deviceScaleFactor, shot),
+        );
+        expect(lit.x).toBeLessThanOrEqual(1);
+        expect(lit.x + lit.width).toBeGreaterThanOrEqual(viewport.width - 1);
+        expect(lit.y + lit.height).toBeGreaterThan(frame.y + frame.height - 48);
+        expect(lit.height / frame.height).toBeGreaterThan(0.9);
+        expect(lit.y).toBeGreaterThanOrEqual(bar.y + bar.height + 12);
+      }
+
+      // Nothing shown is data: no counts, times or statuses before anything has loaded. The
+      // legend names the four statuses as a key, in code order, and nothing else names one.
+      const legend = page.locator('ul.legend');
+      await expect(legend).toHaveAttribute('aria-label', copy.legend.label);
+      await expect(legend.locator('li')).toHaveText(STATUS_KEYS.map((key) => copy.status[key]));
       const text = await page.evaluate(() => document.body.innerText);
       expect(text).not.toMatch(/\d/);
-      for (const status of Object.values(copy.status)) expect(text).not.toContain(status);
+      const rest = await page.evaluate(() => {
+        const copyOf = document.body.cloneNode(true) as HTMLElement;
+        copyOf.querySelector('ul.legend')?.remove();
+        return copyOf.textContent;
+      });
+      for (const status of Object.values(copy.status)) expect(rest).not.toContain(status);
 
       expect(problems).toEqual([]);
       expect(foreign).toEqual([]);
       await context.close();
     });
   }
+
+  test('lays a phone out for a thumb: name, a full-width field, the country, the key', async ({
+    browser,
+  }) => {
+    const SMALL_PHONE: Viewport = {
+      name: 'small phone 320x568',
+      width: 320,
+      height: 568,
+      deviceScaleFactor: 2,
+      isMobile: true,
+    };
+    for (const viewport of [PHONE, SMALL_PHONE]) {
+      const context = await newContext(browser, viewport, { javaScriptEnabled: false });
+      const page = await context.newPage();
+      await page.goto('/', { waitUntil: 'load' });
+      const where = viewport.name;
+
+      // The wordmark on a line of its own, and under it the field from edge to edge.
+      const name = await box(page, 'h1.wordmark');
+      const field = await box(page, '.search');
+      expect(name.x, where).toBe(16);
+      expect(name.y + name.height, where).toBeLessThanOrEqual(field.y - 8);
+      expect(field.x, where).toBe(16);
+      expect(field.x + field.width, where).toBe(viewport.width - 16);
+      expect(field.height, where).toBeGreaterThanOrEqual(48);
+
+      // The key sits at the foot of the screen, clear of the attribution's corner: one line
+      // where it fits, two tidy lines of two on the narrowest phones.
+      const legend = await box(page, 'ul.legend');
+      expect(legend.x, where).toBe(16);
+      expect(viewport.height - (legend.y + legend.height), where).toBe(16);
+      expect(legend.x + legend.width, where).toBeLessThanOrEqual(viewport.width - 16 - 28 - 8);
+      const keys = await page
+        .locator('ul.legend li')
+        .evaluateAll((items) =>
+          items.map((item) => Math.round(item.getBoundingClientRect().top * 10) / 10),
+        );
+      const lines = [...new Set(keys)];
+      if (viewport.width >= 375) expect(lines, where).toHaveLength(1);
+      else expect(keys, where).toEqual([lines[0], lines[0], lines[1], lines[1]]);
+
+      // The country fills the screen between the field and the key: the frame starts as far
+      // under the field as it ends over the key, and the still fills its height, edge to edge.
+      const frame = await box(page, '.frame');
+      const still = await box(page, 'svg.still');
+      const above = frame.y - (field.y + field.height);
+      const below = legend.y - (frame.y + frame.height);
+      expect(above, where).toBe(24);
+      // The narrowest phones' key takes two lines, and part of the gap under the frame.
+      expect(below, where).toBeGreaterThanOrEqual(viewport.width >= 375 ? 24 : 12);
+      expect(Math.abs(still.height - frame.height), where).toBeLessThan(0.5);
+      expect(still.x, where).toBeLessThanOrEqual(0);
+      expect(still.x + still.width, where).toBeGreaterThanOrEqual(viewport.width);
+
+      // A button that takes the map to the phone's own area, a thumb's reach above the
+      // attribution's corner: named, and big enough to press.
+      const locate = page.locator('button.locate');
+      await expect(locate).toBeVisible();
+      await expect(locate).toHaveAttribute('aria-label', copy.map.locate);
+      const button = await box(page, 'button.locate');
+      expect(button.width, where).toBeGreaterThanOrEqual(48);
+      expect(button.height, where).toBeGreaterThanOrEqual(48);
+      expect(viewport.width - (button.x + button.width), where).toBe(16);
+      // Clear of the key and of the attribution's corner under it.
+      const apart = (a: Box, b: Box): boolean =>
+        a.x + a.width <= b.x ||
+        b.x + b.width <= a.x ||
+        a.y + a.height <= b.y ||
+        b.y + b.height <= a.y;
+      expect(apart(button, legend), where).toBe(true);
+      expect(viewport.height - (button.y + button.height), where).toBeGreaterThanOrEqual(
+        16 + 28 + 8,
+      );
+      await context.close();
+    }
+  });
 
   test('links no render-blocking stylesheet and never lets the font block paint', async ({
     browser,
@@ -494,9 +643,11 @@ test.describe('handover to the WebGL map', () => {
       mapChunk.release();
       await waitForTakeover(page);
       await expect(page.locator('.maplibregl-canvas')).toBeVisible();
-      // The map names the largest cities from a tablet's width up; the still carries none.
+      // The map names the largest cities, the whole country's on a desktop and its part of it
+      // on a phone held upright, once its first frame is up; the still carries none.
+      await whenIdle(page);
       const named = await cityNames(page);
-      if (viewport.isMobile) expect(named).toEqual([]);
+      if (viewport.isMobile) expect(named.length).toBeGreaterThanOrEqual(6);
       else expect(named.length).toBeGreaterThan(10);
       await hideCityNames(page);
       const after = await gray(await page.screenshot());
@@ -704,19 +855,7 @@ test.describe('the map at rest', () => {
       const page = await context.newPage();
       await page.goto('/');
       await waitForTakeover(page);
-      await page.evaluate(
-        () =>
-          new Promise<void>((resolve) => {
-            const map = window.snowlightMap;
-            if (map?.loaded() !== false) {
-              resolve();
-              return;
-            }
-            map.once('idle', () => {
-              resolve();
-            });
-          }),
-      );
+      await whenIdle(page);
       const names = await cityNames(page);
       test.info().annotations.push({ type: viewport.name, description: names.join(', ') });
       expect(names.length, viewport.name).toBeGreaterThanOrEqual(fewest);
@@ -763,6 +902,139 @@ test.describe('the map at rest', () => {
         ] ?? -1;
       expect(at(inland.x, inland.y)).toBe(0);
       expect(at(4, viewport.height - 4)).toBe(0);
+      await context.close();
+    }
+  });
+
+  test("a phone opens on its own part of the country, by time zone, no name cut by the screen's edges", async ({
+    browser,
+  }) => {
+    // Five maps load one after another: longer than one test's usual time.
+    test.setTimeout(120_000);
+    // Longitudes each home view takes in, whole, on a 390 x 844 phone, and a point of open
+    // country in it, clear of every line and name.
+    const ZONES: [zone: string | undefined, west: number, east: number, land: [number, number]][] =
+      [
+        // The rest of the world: the middle of the country, Kansas City in the middle.
+        [undefined, -100, -87.7, [-99.5, 39.3]],
+        ['America/New_York', -84.4, -71.1, [-74.5, 44]],
+        ['America/Chicago', -100, -87.7, [-99.5, 39.3]],
+        ['America/Denver', -112, -104.9, [-110.5, 43]],
+        ['America/Los_Angeles', -124.7, -118.2, [-120.5, 44]],
+      ];
+    for (const [zone, west, east, open] of ZONES) {
+      const where = zone ?? 'UTC';
+      const context = await browser.newContext({
+        viewport: { width: PHONE.width, height: PHONE.height },
+        deviceScaleFactor: PHONE.deviceScaleFactor,
+        isMobile: true,
+        hasTouch: true,
+        ...(zone === undefined ? {} : { timezoneId: zone }),
+      });
+      const page = await context.newPage();
+      await page.goto('/');
+      await waitForTakeover(page);
+      await whenIdle(page);
+      // The home view: no view in the address, and the screen from `west` to `east` at least.
+      expect(new URL(page.url()).search, where).toBe('');
+      const shown = await page.evaluate(() => {
+        const map = window.snowlightMap;
+        if (map === undefined) throw new Error('no map');
+        const bounds = map.getBounds();
+        return { west: bounds.getWest(), east: bounds.getEast(), zoom: map.getZoom() };
+      });
+      expect(shown.west, where).toBeLessThan(west);
+      expect(shown.east, where).toBeGreaterThan(east);
+      expect(shown.zoom, where).toBeGreaterThan(3.5);
+      const named = await cityNames(page);
+      expect(named.length, where).toBeGreaterThanOrEqual(4);
+      // And the states are named, in capitals under the city names, each once.
+      const states = await stateNames(page);
+      expect(states.length, where).toBeGreaterThanOrEqual(5);
+      expect(new Set(states).size, where).toBe(states.length);
+
+      // The land is the ground's black on a phone too (the owner's call), clear of every line and name.
+      const shot = await gray(await page.screenshot());
+      const land = await page.evaluate(([lon, lat]) => {
+        const map = window.snowlightMap;
+        if (map === undefined) throw new Error('no map');
+        const point = map.project([lon, lat]);
+        return { x: Math.round(point.x), y: Math.round(point.y) };
+      }, open);
+      const scale = PHONE.deviceScaleFactor;
+      const at = (x: number, y: number): number =>
+        shot.data[Math.round(y * scale) * shot.width + Math.round(x * scale)] ?? -1;
+      const ground = at(land.x, land.y);
+      expect(ground, where).toBe(0);
+
+      // What the names add to the picture never touches the screen's sides: none is cut there.
+      await hideCityNames(page);
+      const bare = await gray(await page.screenshot());
+      let touching = 0;
+      for (let y = 0; y < shot.height; y++) {
+        for (const x of [0, 1, shot.width - 2, shot.width - 1]) {
+          const i = y * shot.width + x;
+          if (Math.abs((shot.data[i] ?? 0) - (bare.data[i] ?? 0)) > 24) touching++;
+        }
+      }
+      expect(touching, where).toBe(0);
+      await context.close();
+    }
+  });
+
+  test('a phone names the states, clear of the city names; a wider screen names none', async ({
+    browser,
+  }) => {
+    for (const viewport of [PHONE, DESKTOP]) {
+      const context = await browser.newContext({
+        viewport: { width: viewport.width, height: viewport.height },
+        deviceScaleFactor: viewport.deviceScaleFactor,
+        isMobile: viewport.isMobile,
+        hasTouch: viewport.isMobile,
+        timezoneId: 'UTC',
+      });
+      const page = await context.newPage();
+      await page.goto('/');
+      await waitForTakeover(page);
+      await whenIdle(page);
+      const states = await stateNames(page);
+      test.info().annotations.push({ type: viewport.name, description: states.join(', ') });
+      if (!viewport.isMobile) {
+        expect(states, viewport.name).toEqual([]);
+        await context.close();
+        continue;
+      }
+      // The middle of the country, named state by state around Kansas City.
+      for (const state of ['Kansas', 'Nebraska', 'Iowa', 'Missouri', 'Oklahoma', 'Arkansas']) {
+        expect(states, state).toContain(state);
+      }
+      // Each state name keeps clear of every city name: their middles are never close.
+      const points = await page.evaluate(
+        (prefixes) => {
+          const map = window.snowlightMap;
+          if (map === undefined) throw new Error('no map');
+          const layers = map
+            .getStyle()
+            .layers.map((layer) => layer.id)
+            .filter((id) => prefixes.some((prefix) => id.startsWith(prefix)));
+          return map.queryRenderedFeatures({ layers }).map((feature) => {
+            const { coordinates } = feature.geometry as unknown as {
+              coordinates: [number, number];
+            };
+            const point = map.project(coordinates);
+            const { kind, name } = feature.properties as { kind?: unknown; name?: unknown };
+            return { x: point.x, y: point.y, kind: String(kind), name: String(name) };
+          });
+        },
+        [BASEMAP_IDS.usCityLabel, BASEMAP_IDS.usStateLabel],
+      );
+      const cities = points.filter((point) => point.kind === 'city');
+      for (const state of points.filter((point) => point.kind === 'state-name')) {
+        for (const city of cities) {
+          const apart = Math.abs(state.x - city.x) > 60 || Math.abs(state.y - city.y) > 16;
+          expect(apart, `${state.name} and ${city.name}`).toBe(true);
+        }
+      }
       await context.close();
     }
   });
@@ -853,6 +1125,10 @@ test.describe('build outputs', () => {
     const html = readFileSync(`${WEB}index.html`, 'utf8');
     expect(html).toContain(`viewBox="${STILL_VIEWBOX}"`);
     expect(html).toContain('preserveAspectRatio="xMidYMid meet"');
+    // A phone's still covers its frame at the same proportions (limits.ts covers it alike).
+    const [, , stillWidth = '', stillHeight = ''] = STILL_VIEWBOX.split(' ');
+    expect(html).toContain(`height: max(100cqh, 100cqw * ${stillHeight} / ${stillWidth});`);
+    expect(html).toContain(`aspect-ratio: ${stillWidth} / ${stillHeight};`);
   });
 
   test('the inline design tokens match src/styles/global.css', () => {

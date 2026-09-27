@@ -118,13 +118,11 @@
     }
   }
 
-  /* On a phone the line sits under the search field, at its right end. */
+  /* On a phone the line sits across from the wordmark, over the search field's right end. */
   @media (max-width: 719px) {
     .updated {
-      top: calc(var(--inset-top) + var(--edge) + var(--bar-height) + 6px);
-      right: calc(var(--inset-right) + var(--edge) + 14px);
-      height: 20px;
-      font-size: 12px;
+      height: var(--brand-line);
+      padding: 0 4px 0 0;
     }
   }
 

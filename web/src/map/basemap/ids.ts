@@ -7,7 +7,7 @@
 /** Source and layer ids other map code can place layers relative to. */
 export const BASEMAP_IDS = {
   usSource: 'us-lines',
-  /** The city names of the national view, from the same file, in a source of their own (style.ts). */
+  /** The city and state names of the national view, from the same file, in a source of their own (style.ts). */
   usCitySource: 'us-cities',
   openFreeMapSource: 'openfreemap',
   background: 'background',
@@ -51,6 +51,8 @@ export const BASEMAP_IDS = {
   ofmCityLabel: 'ofm-label-city',
   /** City names of the national view, under the glow, up to the street tiles' names at zoom 7. */
   usCityLabel: 'us-label-city',
+  /** State names on a phone, under the city names, the ones that fit at the map's zoom (style.ts). */
+  usStateLabel: 'us-label-state',
   /**
    * The first street-tile label layer. Marks drawn under every label from
    * zoom 7, taking no part in label collisions, go before it: they sit above

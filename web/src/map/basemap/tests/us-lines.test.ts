@@ -1,7 +1,8 @@
 // @vitest-environment node
 /**
  * The bundled continental US file (scripts/build-geo.mjs): the land, the
- * state lines and the national city names, as the map reads them.
+ * state lines, the national city names and the state names, as the map reads
+ * them.
  */
 import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
@@ -13,7 +14,7 @@ import type { UsLinesData } from '../style';
 import { US_BOUNDS, US_LINES_FILE } from '../us-geo';
 
 interface Feature {
-  properties: { kind: string; name?: string; rank?: number };
+  properties: { kind: string; name?: string; rank?: number; label?: string; fit?: number };
   geometry: { type: string; coordinates: unknown };
 }
 
@@ -30,6 +31,7 @@ const COMMITTED = (
 const LAND = DATA.features.filter((feature) => feature.properties.kind === 'land');
 const RINGS = LAND.flatMap((feature) => (feature.geometry.coordinates as number[][][][]).flat());
 const CITIES = DATA.features.filter((feature) => feature.properties.kind === 'city');
+const STATES = DATA.features.filter((feature) => feature.properties.kind === 'state-name');
 
 /** Inside an odd number of the land's rings. */
 function onLand([lon, lat]: readonly [number, number]): boolean {
@@ -46,9 +48,9 @@ function onLand([lon, lat]: readonly [number, number]): boolean {
 }
 
 describe('the bundled continental US file', () => {
-  it('holds the land, the state lines and the city names, nothing else', () => {
+  it('holds the land, the state lines, the city names and the state names, nothing else', () => {
     const kinds = new Set(DATA.features.map((feature) => feature.properties.kind));
-    expect([...kinds].sort()).toEqual(['city', 'land', 'state']);
+    expect([...kinds].sort()).toEqual(['city', 'land', 'state', 'state-name']);
     expect(LAND).toHaveLength(1);
     expect(LAND[0]?.geometry.type).toBe('MultiPolygon');
     // Every ring is closed, so its edge draws as the outline all the way round.
@@ -127,10 +129,47 @@ describe('the bundled continental US file', () => {
     expect(sf?.lon).toBeLessThan(-122.35);
   });
 
+  it('names each of the 48 states once, on its land, as the Census names it', () => {
+    const names = STATES.map((feature) => feature.properties.name ?? '');
+    expect(names).toHaveLength(48);
+    expect(new Set(names).size).toBe(48);
+    for (const state of ['Texas', 'California', 'Maine', 'Florida', 'Rhode Island', 'Maryland']) {
+      expect(names).toContain(state);
+    }
+    for (const outside of ['Alaska', 'Hawaii', 'Puerto Rico', 'District of Columbia']) {
+      expect(names).not.toContain(outside);
+    }
+    for (const { properties, geometry } of STATES) {
+      const { name = '', label = '', fit = NaN } = properties;
+      expect(geometry.type, name).toBe('Point');
+      expect(onLand(geometry.coordinates as [number, number]), name).toBe(true);
+      // Set as named, on one line, or on two broken at a space.
+      expect(label.replace('\n', ' '), name).toBe(name);
+      expect(label.split('\n').length, name).toBeLessThanOrEqual(2);
+      expect(fit, name).toBeGreaterThan(0);
+    }
+  });
+
+  it("sets the largest states' names largest and the smallest states' smallest", () => {
+    const fit = (state: string): number =>
+      STATES.find((feature) => feature.properties.name === state)?.properties.fit ?? NaN;
+    expect(fit('Texas')).toBeGreaterThan(fit('Kansas'));
+    expect(fit('Kansas')).toBeGreaterThan(fit('Pennsylvania'));
+    expect(fit('Pennsylvania')).toBeGreaterThan(fit('Connecticut'));
+    expect(fit('Connecticut')).toBeGreaterThan(fit('Rhode Island'));
+    // Two lines where that sets a two-word name larger: the Dakotas, not New York.
+    const label = (state: string): string | undefined =>
+      STATES.find((feature) => feature.properties.name === state)?.properties.label;
+    expect(label('North Dakota')).toBe('North\nDakota');
+    expect(label('New York')).toBe('New York');
+  });
+
   it('splits into the land and lines and a source of the names alone', () => {
-    const [geometry, cities] = splitUsLines(DATA as unknown as UsLinesData);
+    const [geometry, names] = splitUsLines(DATA as unknown as UsLinesData);
     expect(typeof geometry).toBe('object');
-    expect((cities as UsLinesData).features).toHaveLength(CITIES.length);
-    expect((geometry as UsLinesData).features).toHaveLength(DATA.features.length - CITIES.length);
+    expect((names as UsLinesData).features).toHaveLength(CITIES.length + STATES.length);
+    expect((geometry as UsLinesData).features).toHaveLength(
+      DATA.features.length - CITIES.length - STATES.length,
+    );
   });
 });

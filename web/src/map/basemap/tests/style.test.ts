@@ -37,12 +37,15 @@ import {
 } from '../schools';
 import {
   CITY_NAME_BANDS,
+  CITY_NAME_HALO,
   CITY_NAME_PADDING,
   CITY_NAMES_FROM,
   LABEL_FADE,
   ROAD_TIERS,
   buildBasemapStyle,
+  cityNameFilter,
   cityNameLayerId,
+  cityNameSize,
   mixColors,
   splitUsLines,
 } from '../style';
@@ -256,18 +259,20 @@ describe('layer order', () => {
   it('puts every name above every line and fill, the least important names lowest', () => {
     const symbols = LAYERS.filter((l) => l.type === 'symbol').map((l) => l.id);
     const bands = CITY_NAME_BANDS.map((_band, index) => cityNameLayerId(index)).reverse();
-    // The national city names come first, right over the bundled lines: the glow, which goes
-    // before BASEMAP_IDS.labels, shines over them. The street tiles' names follow.
+    // The state names (a phone's) and the national city names come first, right over the
+    // bundled lines: the glow, which goes before BASEMAP_IDS.labels, shines over them. The
+    // street tiles' names follow.
     const firstSymbol = LAYERS.findIndex((l) => l.type === 'symbol');
     expect(LAYERS[firstSymbol - 1]?.id).toBe(BASEMAP_IDS.usOutline);
-    expect(LAYERS[firstSymbol + bands.length]?.id).toBe(BASEMAP_IDS.labels);
+    expect(LAYERS[firstSymbol + 1 + bands.length]?.id).toBe(BASEMAP_IDS.labels);
     for (const drawn of LAYERS.slice(firstSymbol)) {
       expect(['symbol', 'background'], drawn.id).toContain(drawn.type);
     }
     // MapLibre places the top layer's labels first: cities win over towns, towns over route
     // numbers, route numbers over road names, and parks over the streets around them.
     expect(symbols).toEqual([
-      // The national city names, the band of the largest cities on top.
+      // The state names under the national city names, the band of the largest cities on top.
+      BASEMAP_IDS.usStateLabel,
       ...bands,
       BASEMAP_IDS.ofmNeighbourhoodLabel,
       BASEMAP_IDS.ofmWaterLabel,
@@ -376,8 +381,38 @@ describe('the national view', () => {
     expect(shown(3.85)).toBe(34);
     expect(shown(4.03)).toBe(34);
     expect(shown(3.14)).toBe(14);
-    // A phone shows the country only.
+    // A phone's national view shows the country only; its home view, 3.85 on a 390 x 844
+    // phone held upright, names its part of the country like a laptop.
     expect(shown(2.3)).toBe(0);
+  });
+
+  it('leaves out the names it is told to, in every band, and only those', () => {
+    const hidden = ['Boston', 'St. Louis'];
+    const styled = buildBasemapStyle({
+      usLines: US_LINES,
+      hairline: 1,
+      colors: COLORS,
+      hiddenCityNames: hidden,
+    });
+    CITY_NAME_BANDS.forEach((band, index) => {
+      const id = cityNameLayerId(index);
+      const found = styled.layers.find((candidate) => candidate.id === id) as {
+        filter: FilterSpecification;
+      };
+      expect(found.filter, id).toEqual(cityNameFilter(index, hidden));
+      const rank = CITY_NAME_BANDS[index - 1]?.names ?? 0;
+      const passes = (name: string): boolean =>
+        featureFilter(found.filter, 'filter').filter(
+          { zoom: band.zoom },
+          { type: GEOMETRY.point, properties: { kind: 'city', rank, name } },
+        );
+      expect(passes('Boston'), id).toBe(false);
+      expect(passes('St. Louis'), id).toBe(false);
+      expect(passes('Chicago'), id).toBe(true);
+    });
+    // With none to leave out, the filter is the band's alone.
+    expect(cityNameFilter(0, [])).toEqual(cityNameFilter(0));
+    expect(JSON.stringify(cityNameFilter(0))).not.toContain('literal');
   });
 
   it('places the largest city first, with clear space around every name', () => {
@@ -410,9 +445,16 @@ describe('the national view', () => {
     expect(national[0]).toBeGreaterThan(Number.parseInt(COLORS.labelDim.slice(1, 3), 16));
     expect(national[0]).toBeLessThan(Number.parseInt(COLORS.label.slice(1, 3), 16));
     expect(hex(rgb(id, 'text-color', OPENFREEMAP_MIN_ZOOM))).toBe(COLORS.label);
-    // A halo in the land's tone parts a coastline or border running under a name.
+    // A halo in the land's tone parts a coastline or border running under a name: a pixel
+    // or so, inside the space MapLibre's glyphs keep around them (3 of 24 px, at 10.5 to 12
+    // px under 1.5), so it follows the letters and never fills each glyph's box.
     expect(hex(rgb(id, 'text-halo-color', 4))).toBe(COLORS.land);
-    expect(num(id, 'paint', 'text-halo-width', 4)).toBeGreaterThanOrEqual(2);
+    expect(num(id, 'paint', 'text-halo-width', 4)).toBe(CITY_NAME_HALO);
+    expect(CITY_NAME_HALO).toBeGreaterThanOrEqual(1);
+    expect(CITY_NAME_HALO).toBeLessThanOrEqual((3 / 24) * 10.5);
+    for (const zoom of [CITY_NAMES_FROM, 4, 5, 6, 6.9]) {
+      expect(num(id, 'layout', 'text-size', zoom), String(zoom)).toBeCloseTo(cityNameSize(zoom), 9);
+    }
     expect(num(id, 'layout', 'text-size', 4)).toBeGreaterThanOrEqual(10.5);
     expect(num(id, 'layout', 'text-size', 4)).toBeLessThanOrEqual(12);
   });
@@ -699,10 +741,12 @@ describe('names', () => {
     const symbols = WITH_SCHOOLS.layers.filter((l) => l.type === 'symbol');
     for (const symbol of symbols) {
       // The city names hand over with the lines, the national ones come in by band (tested
-      // below), and a dot's space is never seen.
+      // below), the state names state by state (state-names.test.ts), and a dot's space is
+      // never seen.
       if (
         symbol.id === BASEMAP_IDS.ofmCityLabel ||
         symbol.id === BASEMAP_IDS.schoolSpace ||
+        symbol.id === BASEMAP_IDS.usStateLabel ||
         symbol.id.startsWith(BASEMAP_IDS.usCityLabel)
       ) {
         continue;

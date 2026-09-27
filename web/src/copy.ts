@@ -271,6 +271,8 @@ export const copy = deepFreeze({
     resetNorth: 'Reset north',
     attribution: 'Map attribution',
     closePopup: 'Close',
+    /** The button that takes the map to where the phone is. */
+    locate: 'Show my area',
   },
 } as const);
 

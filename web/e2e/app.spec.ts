@@ -768,17 +768,22 @@ test.describe('with data staged', () => {
       await expect(updated.locator('time')).toHaveAttribute('datetime', '2026-01-12T12:42:00Z');
       await expect(updated.locator('.dot')).toHaveCount(1);
 
-      // On the search field's line at the right edge; under the field, at its end, on a phone.
+      // On the search field's line at the right edge; on a phone, across from the wordmark,
+      // over the field's right end.
       const line = await updated.boundingBox();
       const field = await page.locator('.search').boundingBox();
-      if (line === null || field === null) throw new Error('no box');
+      const name = await page.locator('h1.wordmark').boundingBox();
+      if (line === null || field === null || name === null) throw new Error('no box');
       if (viewport.width >= 720) {
         expect(Math.abs(line.y + line.height / 2 - (field.y + field.height / 2))).toBeLessThan(1);
         expect(Math.abs(viewport.width - 20 - (line.x + line.width))).toBeLessThan(3);
         expect(line.x).toBeGreaterThan(field.x + field.width + 100);
       } else {
-        expect(line.y).toBeGreaterThanOrEqual(field.y + field.height);
+        expect(Math.abs(line.y + line.height / 2 - (name.y + name.height / 2))).toBeLessThan(1);
+        expect(line.y + line.height).toBeLessThanOrEqual(field.y);
         expect(line.x + line.width).toBeLessThanOrEqual(field.x + field.width);
+        expect(field.x + field.width - (line.x + line.width)).toBeLessThan(8);
+        expect(line.x).toBeGreaterThan(name.x + name.width + 24);
       }
 
       // Offline, it says so, and keeps the file's time.
