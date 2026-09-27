@@ -6,10 +6,10 @@
 export const US_BOUNDS = [-124.734, 24.515, -66.982, 49.385] as const;
 
 /** The bundled GeoJSON, relative to the site base URL. */
-export const US_LINES_FILE = 'geo/us-lines.245fff3b6e.json';
+export const US_LINES_FILE = 'geo/us-lines.8d993712f9.json';
 
 /** viewBox of the inline still in index.html: Web Mercator, north-west corner at 0 0. */
 export const STILL_VIEWBOX = '0 0 8000 4385.37';
 
 /** Gzipped size of the bundled GeoJSON, in bytes. */
-export const US_LINES_GZIP_BYTES = 40200;
+export const US_LINES_GZIP_BYTES = 45896;

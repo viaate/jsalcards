@@ -44,25 +44,33 @@ test('loads on a black, full-viewport ground with no console errors', async ({ p
   const box = await page.locator('main').boundingBox();
   expect(box).toEqual({ x: 0, y: 0, width: viewport?.width, height: viewport?.height });
 
-  // The ground is pure black: the map's hairlines and the chrome sit on it,
-  // so nearly every pixel on screen is #000.
+  // The ground is pure black and the country a hair above it (#0a0a0a): the
+  // map's hairlines, its city names and the chrome sit on them, so nearly
+  // every pixel on screen is #000 or the land's near-black, and the ground
+  // around the country, a good share of the screen, is #000.
   const shot = await page.screenshot({ type: 'png' });
-  const blackShare = await page.evaluate(async (base64) => {
+  const shares = await page.evaluate(async (base64) => {
     const bitmap = await createImageBitmap(
       await (await fetch(`data:image/png;base64,${base64}`)).blob(),
     );
     const canvas = new OffscreenCanvas(bitmap.width, bitmap.height);
     const context = canvas.getContext('2d');
-    if (context === null) return 0;
+    if (context === null) return { dark: 0, black: 0 };
     context.drawImage(bitmap, 0, 0);
     const { data } = context.getImageData(0, 0, bitmap.width, bitmap.height);
+    let dark = 0;
     let black = 0;
     for (let i = 0; i < data.length; i += 4) {
-      if (data[i] === 0 && data[i + 1] === 0 && data[i + 2] === 0) black += 1;
+      const r = data[i] ?? 255;
+      const g = data[i + 1] ?? 255;
+      const b = data[i + 2] ?? 255;
+      if (r === g && g === b && r <= 10) dark += 1;
+      if (r === 0 && g === 0 && b === 0) black += 1;
     }
-    return black / (data.length / 4);
+    return { dark: dark / (data.length / 4), black: black / (data.length / 4) };
   }, shot.toString('base64'));
-  expect(blackShare).toBeGreaterThan(0.8);
+  expect(shares.dark).toBeGreaterThan(0.8);
+  expect(shares.black).toBeGreaterThan(0.2);
 
   expect(problems).toEqual([]);
   expect(foreign).toEqual([]);

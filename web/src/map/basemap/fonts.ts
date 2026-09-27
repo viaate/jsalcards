@@ -6,8 +6,9 @@
  * `text-font` names, and reads the weight from that name ("Regular",
  * "Medium"). These faces give it those families: the variable Geist files the
  * page already ships and the service worker precaches, under one family name
- * per weight. Nothing downloads until MapLibre draws its first label glyph,
- * and only the street tiles, which start at zoom 7, carry text.
+ * per weight. Nothing downloads until MapLibre draws its first label glyph:
+ * the national view's city names, once the map is up, and the street tiles'
+ * names from zoom 7.
  *
  * Geist is licensed under the SIL Open Font License 1.1; the license ships
  * with the site as public/fonts/geist-OFL.txt.

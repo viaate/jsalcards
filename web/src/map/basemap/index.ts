@@ -183,6 +183,7 @@ function look(): BasemapLook {
     hairline: Number.isFinite(hairline) && hairline > 0 ? hairline : 1,
     colors: {
       background: token('--bg', '#000'),
+      land: token('--land', '#0a0a0a'),
       outline: token('--line-outline', '#6b6b6b'),
       state: token('--line-state', '#2a2a2a'),
       label: token('--text-2', '#a3a3a3'),

@@ -4,10 +4,13 @@
  *
  * Input: us-atlas states-10m.json (Census Bureau cartographic state boundaries,
  * 2017 edition, as TopoJSON), simplified to a tolerance finer than a pixel at
- * every zoom the lines are drawn at. Output, all deterministic:
+ * every zoom the lines are drawn at, and the Census places the pipeline writes
+ * for search (site-data/search/cities.jsonl). Output, all deterministic:
  *
- *   public/geo/us-lines.<hash>.json   GeoJSON for MapLibre: the outline (coasts,
- *                                      lake shores, borders) and the state lines.
+ *   public/geo/us-lines.<hash>.json   GeoJSON for MapLibre: the land (its rings
+ *                                      are the outline: coasts, lake shores,
+ *                                      borders), the state lines and the city
+ *                                      names of the national view.
  *   src/map/basemap/us-geo.ts          Bounds, file name and still-frame viewBox.
  *   src/map/basemap/us-reach.ts        Where the US has land in each band of
  *                                      latitude, which keeps the country on
@@ -25,9 +28,15 @@
  * When the directory is there, that file is rebuilt from it; without it (a
  * fresh checkout, CI), the file is read as committed.
  *
+ * The city names come the same way: chosen from the pipeline's places when
+ * they are there and kept in scripts/national-cities.json, read as committed
+ * when they are not. They are the largest incorporated places, and the
+ * largest of those far from any bigger one, so the plains and the mountains
+ * have names too; MapLibre shows as many as fit, the largest first.
+ *
  *   node scripts/build-geo.mjs                     write the files
  *   node scripts/build-geo.mjs --check             exit 1 if any file is stale
- *   node scripts/build-geo.mjs --site-data <dir>   read the directory from <dir>
+ *   node scripts/build-geo.mjs --site-data <dir>   read the directory and places from <dir>
  *                                                  (default ../pipeline/out/site-data)
  */
 import { createHash } from 'node:crypto';
@@ -51,7 +60,8 @@ const mapshaper = /** @type {Mapshaper} */ (loadedMapshaper);
 
 /** @typedef {[number, number]} Point */
 /** @typedef {Point[]} Line */
-/** @typedef {{ outline: Line[], state: Line[] }} Kinds */
+/** A polygon's rings, each closed: its last point is its first. @typedef {Line[]} Polygon */
+/** The outline is every ring of the land, as lines. @typedef {{ land: Polygon[], outline: Line[], state: Line[] }} Kinds */
 /** @typedef {[number, number, number, number]} Bounds */
 /**
  * @typedef {object} LineFeature
@@ -65,6 +75,7 @@ const GEO_DIR = join(WEB, 'public/geo');
 const META_FILE = join(WEB, 'src/map/basemap/us-geo.ts');
 const REACH_FILE = join(WEB, 'src/map/basemap/us-reach.ts');
 const REACH_SCHOOLS_FILE = join(WEB, 'scripts/reach-schools.json');
+const CITIES_FILE = join(WEB, 'scripts/national-cities.json');
 const INDEX_HTML = join(WEB, 'index.html');
 /** Where the pipeline writes the site's data, schools/ among it. */
 const DEFAULT_SITE_DATA = join(WEB, '../pipeline/out/site-data');
@@ -97,6 +108,30 @@ const REACH_STEP = 0.1;
 const REACH_SCANLINES = 4;
 /** Water narrower than this many degrees of longitude counts as land in the reach (Lake Michigan is 1.9). */
 const REACH_GAP = 2;
+/** Places this near a city count toward its people (chooseCities). */
+const CITY_AREA_KM = 40;
+/** A city this far from any with more people ranks as if it had more (chooseCities)... */
+const CITY_ISOLATION_KM = 200;
+/** ...up to this many times its people. */
+const CITY_ISOLATION_MAX = 3;
+/** The cities with the most people named at the national view; MapLibre shows as many as fit. */
+const CITY_TOP = 250;
+/** A smaller place is one too when no bigger candidate is within this many kilometres of it. */
+const CITY_REGION_KM = 250;
+/** A ZIP code a city's school district serves at least this share of is the city's (districtCenter). */
+const CITY_DISTRICT_SHARE = 0.5;
+/** How far off the land a city's point can be for its name to go on the nearest shore (shoreNear)... */
+const CITY_SHORE_KM = 8;
+/** ...and how far inside that shore it then goes. */
+const CITY_SHORE_INSET_KM = 2;
+/** The capital's state: its one city ranks with the largest (chooseCities). */
+const CAPITAL_STATE = 'DC';
+/** No place smaller than this is named, however remote. */
+const CITY_MIN_POPULATION = 20_000;
+/** Census place kinds that are not a city, town or other incorporated place. */
+const NOT_A_CITY = ['CDP'];
+/** States outside the continental view. */
+const EXCLUDED_STATES = ['AK', 'HI', 'PR'];
 
 const STILL_START = '<!-- geo:still:start -->';
 const STILL_END = '<!-- geo:still:end -->';
@@ -121,10 +156,38 @@ const num = (value, digits = 3) => {
 };
 
 /**
- * Runs mapshaper on the TopoJSON and returns line strings grouped by kind.
+ * A line's coordinates on the lines' grid, with repeated points dropped.
+ * @param {number[][]} coordinates
+ * @returns {Line}
+ */
+function gridLine(coordinates) {
+  /** @type {Line} */
+  const line = [];
+  for (const [lng = NaN, lat = NaN] of coordinates) {
+    /** @type {Point} */
+    const point = [round(lng), round(lat)];
+    const last = line.at(-1);
+    if (last?.[0] !== point[0] || last[1] !== point[1]) line.push(point);
+  }
+  return line;
+}
+
+/** @param {string | Uint8Array | undefined} text */
+function parseOutput(text) {
+  if (text === undefined) throw new Error('build-geo: mapshaper wrote no output');
+  /** @type {unknown} */
+  const parsed = JSON.parse(typeof text === 'string' ? text : new TextDecoder().decode(text));
+  return parsed;
+}
+
+/**
+ * Runs mapshaper on the TopoJSON and returns the land's polygons and the
+ * lines grouped by kind: the outline (every ring of the land) and the state
+ * lines. The land is the states dissolved after simplifying, so its rings
+ * are exactly the national outline and meet the state lines.
  * @returns {Promise<Kinds>}
  */
-async function extractLines() {
+async function extractGeometry() {
   const topology = await readFile(SOURCE, 'utf8');
   const commands = [
     '-i states.json id-field=fips',
@@ -133,33 +196,41 @@ async function extractLines() {
     `-each 'fips = fips === "${DC_FIPS}" ? "${MD_FIPS}" : fips'`,
     '-dissolve fips',
     `-simplify dp interval=${String(SIMPLIFY_METERS)}m keep-shapes`,
-    // Polygon rings become lines; TYPE is "outer" for the national outline and "inner" for shared state borders.
-    '-lines',
-    '-o out.json format=geojson',
+    // The whole country as one layer of polygons, from the simplified states.
+    '-dissolve + name=land',
+    // Polygon rings become lines; TYPE is "inner" for shared state borders ("outer" is the land's edge).
+    '-lines target=states',
+    '-o target=states,land format=geojson',
   ].join(' ');
   const output = await mapshaper.applyCommands(commands, { 'states.json': topology });
-  const text = output['out.json'];
-  if (text === undefined) throw new Error('build-geo: mapshaper wrote no output');
-  /** @type {unknown} */
-  const parsed = JSON.parse(typeof text === 'string' ? text : new TextDecoder().decode(text));
-  const collection = /** @type {{ features: LineFeature[] }} */ (parsed);
+  const lines = /** @type {{ features: LineFeature[] }} */ (parseOutput(output['states.json']));
+  const land = /** @type {{ geometries: { type: string, coordinates: number[][][][] }[] }} */ (
+    parseOutput(output['land.json'])
+  );
 
   /** @type {Kinds} */
-  const kinds = { outline: [], state: [] };
-  for (const feature of collection.features) {
-    const kind = feature.properties.TYPE === 'outer' ? 'outline' : 'state';
+  const kinds = { land: [], outline: [], state: [] };
+  for (const feature of lines.features) {
+    if (feature.properties.TYPE === 'outer') continue;
     const geometry = feature.geometry;
     const parts = geometry.type === 'LineString' ? [geometry.coordinates] : geometry.coordinates;
     for (const part of parts) {
-      /** @type {Line} */
-      const line = [];
-      for (const [lng = NaN, lat = NaN] of part) {
-        /** @type {Point} */
-        const point = [round(lng), round(lat)];
-        const last = line.at(-1);
-        if (last?.[0] !== point[0] || last[1] !== point[1]) line.push(point);
+      const line = gridLine(part);
+      if (line.length >= 2) kinds.state.push(line);
+    }
+  }
+  for (const geometry of land.geometries) {
+    if (geometry.type !== 'MultiPolygon')
+      throw new Error('build-geo: the land is not a MultiPolygon');
+    for (const polygon of geometry.coordinates) {
+      /** @type {Polygon} */
+      const rings = [];
+      for (const ring of polygon) {
+        const line = gridLine(ring);
+        // A closed ring needs three corners and its closing point.
+        if (line.length >= 4) rings.push(line);
       }
-      if (line.length >= 2) kinds[kind].push(line);
+      if (rings.length > 0) kinds.land.push(rings);
     }
   }
   // Stable order regardless of mapshaper's internal ordering.
@@ -168,7 +239,9 @@ async function extractLines() {
     const [lng = NaN, lat = NaN] = line[0] ?? [];
     return `${num(lng)},${num(lat)},${String(line.length)}`;
   };
-  for (const lines of Object.values(kinds)) lines.sort((a, b) => key(a).localeCompare(key(b)));
+  kinds.state.sort((a, b) => key(a).localeCompare(key(b)));
+  kinds.land.sort((a, b) => key(a[0] ?? []).localeCompare(key(b[0] ?? [])));
+  kinds.outline = kinds.land.flat();
   return kinds;
 }
 
@@ -178,7 +251,7 @@ async function extractLines() {
  */
 function boundsOf(kinds) {
   let [west, south, east, north] = [Infinity, Infinity, -Infinity, -Infinity];
-  for (const lines of Object.values(kinds)) {
+  for (const lines of [kinds.outline, kinds.state]) {
     for (const line of lines) {
       for (const [lng, lat] of line) {
         west = Math.min(west, lng);
@@ -422,6 +495,395 @@ function reachSchoolsText(schools) {
   return `${JSON.stringify({ schools: schools.map(({ id, lon, lat }) => ({ id, lon, lat })) })}\n`;
 }
 
+/**
+ * @typedef {object} City
+ * @property {string} name as the map shows it
+ * @property {string} state postal code
+ * @property {number} lon
+ * @property {number} lat
+ * @property {number} population its own
+ * @property {number} people its own and its surroundings' (chooseCities)
+ */
+
+/** Census place kinds of consolidated city-county governments. */
+const GOVERNMENTS = [
+  'unified government',
+  'consolidated government',
+  'urban county',
+  'metropolitan government',
+];
+
+/**
+ * Census places whose legal name is not the one the city goes by, by name and
+ * state: Boise, Idaho, is incorporated as "Boise City".
+ * @type {ReadonlyMap<string, string>}
+ */
+const CITY_NAMES_IN_USE = new Map([['Boise City, ID', 'Boise']]);
+
+/**
+ * A Census place's name as a map names the city. Consolidated city-county
+ * governments carry their county and legal form in the name, "Nashville-Davidson
+ * metropolitan government (balance)" or "Indianapolis city (balance)": the
+ * city's own name is the part before them. A city incorporated under another
+ * name than the one it goes by (CITY_NAMES_IN_USE) takes that one. Every other
+ * name is kept as it is.
+ * @param {string} name
+ * @param {string | null} kind
+ * @param {string} state
+ */
+function cityName(name, kind, state) {
+  const inUse = CITY_NAMES_IN_USE.get(`${name}, ${state}`);
+  if (inUse !== undefined) return inUse;
+  const legal =
+    (kind !== null && GOVERNMENTS.includes(kind)) ||
+    /\(balance\)$| County\b|government$/.test(name);
+  if (!legal) return name;
+  const bare = name.replace(/ \(balance\)$/, '').replace(/ city$/, '');
+  const city = bare.split(/[-/,]/)[0] ?? bare;
+  return city
+    .replace(/ (?:unified|consolidated|metropolitan|metro) government$/, '')
+    .replace(/ County$/, '')
+    .trim();
+}
+
+/**
+ * Whether a point lies on the land: inside an odd number of its rings.
+ * @param {Line[]} rings
+ * @param {number} lon
+ * @param {number} lat
+ */
+function onLand(rings, lon, lat) {
+  let inside = false;
+  for (const ring of rings) {
+    for (let i = 1; i < ring.length; i++) {
+      const [x0 = NaN, y0 = NaN] = ring[i - 1] ?? [];
+      const [x1 = NaN, y1 = NaN] = ring[i] ?? [];
+      if (y0 < lat === y1 < lat) continue;
+      if (lon < x0 + ((lat - y0) / (y1 - y0)) * (x1 - x0)) inside = !inside;
+    }
+  }
+  return inside;
+}
+
+/**
+ * @typedef {object} Zip
+ * @property {number} lon
+ * @property {number} lat
+ * @property {string[]} states
+ * @property {{ name: string, share: number }[]} districts
+ */
+
+/**
+ * Where a city's name goes. A Census place's point is inside the place, but
+ * a city whose limits take in open water can have it out on the water (San
+ * Francisco's is 48 km out at sea, with the Farallon Islands), and the
+ * outline, drawn for the whole country, smooths away small peninsulas
+ * (Portland, Maine's). The name goes at the city's Census point when that is
+ * on the land; else at the middle of the ZIP codes the city's own school
+ * district serves (the district named after the city: "San Francisco
+ * Unified School District"); else, when either point is within
+ * CITY_SHORE_KM of the land, just inside the nearest shore; else nowhere.
+ * @param {Line[]} rings the land's
+ * @param {readonly Zip[]} zips
+ * @param {{ name: string, state: string, lon: number, lat: number }} city
+ * @returns {{ lon: number, lat: number } | null}
+ */
+function namePoint(rings, zips, city) {
+  if (onLand(rings, city.lon, city.lat)) return { lon: city.lon, lat: city.lat };
+  const center = districtCenter(zips, city);
+  if (center !== null && onLand(rings, center.lon, center.lat)) return center;
+  return (center === null ? null : shoreNear(rings, center)) ?? shoreNear(rings, city);
+}
+
+/**
+ * The middle of the ZIP codes a city's own school district serves (its
+ * share of them at least CITY_DISTRICT_SHARE), or null when there are none.
+ * @param {readonly Zip[]} zips
+ * @param {{ name: string, state: string }} city
+ * @returns {{ lon: number, lat: number } | null}
+ */
+function districtCenter(zips, city) {
+  const prefix = `${city.name} `;
+  const served = zips.filter(
+    (zip) =>
+      zip.states.includes(city.state) &&
+      zip.districts.some(
+        (district) => district.name.startsWith(prefix) && district.share >= CITY_DISTRICT_SHARE,
+      ),
+  );
+  if (served.length === 0) return null;
+  return {
+    lon: Number(num(round(served.reduce((sum, zip) => sum + zip.lon, 0) / served.length))),
+    lat: Number(num(round(served.reduce((sum, zip) => sum + zip.lat, 0) / served.length))),
+  };
+}
+
+/** Kilometres per degree of latitude. */
+const KM_PER_DEGREE = 6371 * (Math.PI / 180);
+
+/**
+ * A point CITY_SHORE_INSET_KM inside the shore nearest to `point`, on from
+ * the water it lies on, or null when that shore is more than CITY_SHORE_KM
+ * away or the point past it is not on the land.
+ * @param {Line[]} rings the land's
+ * @param {{ lon: number, lat: number }} point
+ * @returns {{ lon: number, lat: number } | null}
+ */
+function shoreNear(rings, point) {
+  // Flat kilometres around the point: close enough over these distances.
+  const kx = KM_PER_DEGREE * Math.cos((point.lat * Math.PI) / 180);
+  const ky = KM_PER_DEGREE;
+  let best = { distance: Infinity, x: 0, y: 0 };
+  for (const ring of rings) {
+    for (let i = 1; i < ring.length; i++) {
+      const [lon0 = NaN, lat0 = NaN] = ring[i - 1] ?? [];
+      const [lon1 = NaN, lat1 = NaN] = ring[i] ?? [];
+      const ax = (lon0 - point.lon) * kx;
+      const ay = (lat0 - point.lat) * ky;
+      const bx = (lon1 - point.lon) * kx;
+      const by = (lat1 - point.lat) * ky;
+      const length = (bx - ax) ** 2 + (by - ay) ** 2;
+      const t =
+        length === 0 ? 0 : Math.max(0, Math.min(1, -(ax * (bx - ax) + ay * (by - ay)) / length));
+      const x = ax + t * (bx - ax);
+      const y = ay + t * (by - ay);
+      const distance = Math.hypot(x, y);
+      if (distance < best.distance) best = { distance, x, y };
+    }
+  }
+  if (best.distance > CITY_SHORE_KM || best.distance === 0) return null;
+  const on = (best.distance + CITY_SHORE_INSET_KM) / best.distance;
+  const lon = Number(num(round(point.lon + (best.x * on) / kx)));
+  const lat = Number(num(round(point.lat + (best.y * on) / ky)));
+  return onLand(rings, lon, lat) ? { lon, lat } : null;
+}
+
+/**
+ * The ZIP codes the pipeline writes for search, or null when they have not
+ * been built under `site`.
+ * @param {string} site
+ * @returns {Promise<Zip[] | null>}
+ */
+async function readZips(site) {
+  const text = await readFile(join(site, 'search/zips.jsonl'), 'utf8').catch(() => null);
+  if (text === null) return null;
+  return text
+    .split('\n')
+    .filter((line) => line.trim() !== '')
+    .map((line) => {
+      const { lon, lat, states, districts } = /** @type {Partial<Zip>} */ (JSON.parse(line));
+      if (
+        typeof lon !== 'number' ||
+        typeof lat !== 'number' ||
+        !Array.isArray(states) ||
+        !Array.isArray(districts)
+      ) {
+        throw new Error(
+          'build-geo: search/zips.jsonl has a ZIP code without location, states and districts',
+        );
+      }
+      return { lon, lat, states, districts };
+    });
+}
+
+/** Great-circle distance in kilometres. */
+function kilometres(/** @type {City} */ a, /** @type {City} */ b) {
+  const rad = Math.PI / 180;
+  const h =
+    Math.sin(((b.lat - a.lat) * rad) / 2) ** 2 +
+    Math.cos(a.lat * rad) * Math.cos(b.lat * rad) * Math.sin(((b.lon - a.lon) * rad) / 2) ** 2;
+  return 6371 * 2 * Math.asin(Math.min(1, Math.sqrt(h)));
+}
+
+/**
+ * The places the pipeline writes for search, or null when they have not been
+ * built under `site`.
+ * @param {string} site
+ * @returns {Promise<{ name: string, kind: string | null, state: string, lon: number, lat: number, population: number | null }[] | null>}
+ */
+async function readPlaces(site) {
+  const text = await readFile(join(site, 'search/cities.jsonl'), 'utf8').catch(() => null);
+  if (text === null) return null;
+  return text
+    .split('\n')
+    .filter((line) => line.trim() !== '')
+    .map((line) => {
+      const place = /** @type {Record<string, unknown>} */ (JSON.parse(line));
+      const { name, kind, state, lon, lat, population } = place;
+      if (
+        typeof name !== 'string' ||
+        typeof state !== 'string' ||
+        typeof lon !== 'number' ||
+        typeof lat !== 'number'
+      ) {
+        throw new Error(
+          'build-geo: search/cities.jsonl has a place without name, state and location',
+        );
+      }
+      return {
+        name,
+        kind: typeof kind === 'string' ? kind : null,
+        state,
+        lon,
+        lat,
+        population: typeof population === 'number' ? population : null,
+      };
+    });
+}
+
+/**
+ * The cities named at the national view, in the order MapLibre places them.
+ *
+ * A city's people are its own and those of every incorporated place around
+ * it (within CITY_AREA_KM) with no larger city within reach: Atlanta counts
+ * Sandy Springs and Marietta, Boston counts Cambridge and Quincy, so the
+ * cities a country map names first are the centres of its largest urban
+ * areas, not the largest city limits. (Census-designated places carry no
+ * population in the places file, so they count for nothing.)
+ *
+ * They are ranked by their people, raised for a city far from any with more
+ * (up to CITY_ISOLATION_MAX times, from CITY_ISOLATION_KM away), since its
+ * name is the only one for its region: Albuquerque and Boise come before
+ * the suburbs of Dallas; the capital, Washington, ranks with the largest. The CITY_TOP first are named, and each one after
+ * them with no named city within CITY_REGION_KM, so the plains and the
+ * mountains have names up close too. Each is named at namePoint.
+ * @param {NonNullable<Awaited<ReturnType<typeof readPlaces>>>} places
+ * @param {readonly Zip[]} zips
+ * @param {Line[]} outline
+ * @returns {City[]}
+ */
+function chooseCities(places, zips, outline) {
+  const counted = places.filter(
+    (place) => place.population !== null && !EXCLUDED_STATES.includes(place.state),
+  );
+  /** @type {Map<(typeof counted)[number], City>} */
+  const named = new Map();
+  for (const place of counted) {
+    const population = place.population ?? 0;
+    if (population < CITY_MIN_POPULATION) continue;
+    if (place.kind !== null && NOT_A_CITY.includes(place.kind)) continue;
+    const city = {
+      name: cityName(place.name, place.kind, place.state),
+      state: place.state,
+      lon: Number(num(round(place.lon))),
+      lat: Number(num(round(place.lat))),
+      population,
+      people: 0,
+    };
+    const at = namePoint(outline, zips, city);
+    if (at !== null) named.set(place, { ...city, lon: at.lon, lat: at.lat });
+  }
+  const candidates = [...named.values()].sort(
+    (a, b) => b.population - a.population || a.name.localeCompare(b.name),
+  );
+
+  // Candidates by whole degree of latitude and longitude; CITY_AREA_KM is under a degree of either.
+  /** @type {Map<string, City[]>} */
+  const cells = new Map();
+  /** @param {number} lon @param {number} lat */
+  const cellKey = (lon, lat) => `${String(Math.floor(lon))},${String(Math.floor(lat))}`;
+  for (const city of candidates) {
+    const key = cellKey(city.lon, city.lat);
+    const cell = cells.get(key) ?? [];
+    cell.push(city);
+    cells.set(key, cell);
+  }
+  for (const place of counted) {
+    // A named city counts where it is named.
+    const at = named.get(place) ?? place;
+    /** @type {City | undefined} */
+    let largest;
+    for (let dx = -1; dx <= 1; dx++) {
+      for (let dy = -1; dy <= 1; dy++) {
+        for (const city of cells.get(cellKey(at.lon + dx, at.lat + dy)) ?? []) {
+          if (largest !== undefined && city.population <= largest.population) continue;
+          if (kilometres(at, city) <= CITY_AREA_KM) largest = city;
+        }
+      }
+    }
+    if (largest !== undefined) largest.people += place.population ?? 0;
+  }
+
+  const byPeople = [...candidates].sort(
+    (a, b) => b.people - a.people || b.population - a.population || a.name.localeCompare(b.name),
+  );
+  /** @type {Map<City, number>} */
+  const score = new Map();
+  byPeople.forEach((city, index) => {
+    let isolation = Infinity;
+    for (const other of byPeople.slice(0, index)) {
+      isolation = Math.min(isolation, kilometres(city, other));
+    }
+    const lift = Math.min(CITY_ISOLATION_MAX, Math.max(1, isolation / CITY_ISOLATION_KM));
+    score.set(city, city.people * lift);
+  });
+  // The capital ranks with the largest: level with the first, and after it, the larger city.
+  const top = Math.max(...score.values());
+  for (const city of byPeople) if (city.state === CAPITAL_STATE) score.set(city, top);
+  const ranked = [...byPeople].sort(
+    (a, b) =>
+      (score.get(b) ?? 0) - (score.get(a) ?? 0) ||
+      b.population - a.population ||
+      a.name.localeCompare(b.name),
+  );
+
+  /** @type {City[]} */
+  const chosen = [];
+  for (const city of ranked) {
+    if (
+      chosen.length < CITY_TOP ||
+      chosen.every((other) => kilometres(city, other) > CITY_REGION_KM)
+    ) {
+      chosen.push(city);
+    }
+  }
+  return chosen;
+}
+
+/**
+ * The committed list of cities named at the national view.
+ * @returns {Promise<City[]>}
+ */
+async function readCities() {
+  /** @type {unknown} */
+  const parsed = JSON.parse(await readFile(CITIES_FILE, 'utf8'));
+  const cities = /** @type {{ cities?: unknown }} */ (parsed).cities;
+  if (!Array.isArray(cities)) throw new Error(`build-geo: ${CITIES_FILE} lists no cities`);
+  return cities.map((entry) => {
+    const { name, state, lon, lat, population, people } = /** @type {Partial<City>} */ (entry);
+    if (
+      typeof name !== 'string' ||
+      typeof state !== 'string' ||
+      typeof lon !== 'number' ||
+      typeof lat !== 'number' ||
+      typeof population !== 'number' ||
+      typeof people !== 'number'
+    ) {
+      throw new Error(
+        `build-geo: ${CITIES_FILE} has an entry without name, state, location and population`,
+      );
+    }
+    return { name, state, lon, lat, population, people };
+  });
+}
+
+/**
+ * scripts/national-cities.json: the cities named at the national view, in rank order.
+ * @param {readonly City[]} cities
+ */
+function citiesText(cities) {
+  return `${JSON.stringify({
+    cities: cities.map(({ name, state, lon, lat, population, people }) => ({
+      name,
+      state,
+      lon,
+      lat,
+      population,
+      people,
+    })),
+  })}\n`;
+}
+
 /** @param {Reach} reach */
 function reachText({ start, runs }) {
   const rows = runs.map((run) => `[${run.map((value) => num(value)).join(', ')}]`).join(', ');
@@ -446,16 +908,22 @@ export const US_LAND: {
 }
 
 /** @param {Kinds} kinds */
-function geojsonText(kinds) {
-  /** @param {keyof Kinds} kind */
-  const feature = (kind) =>
-    `{"type":"Feature","properties":{"kind":"${kind}"},"geometry":{"type":"MultiLineString","coordinates":[${kinds[
-      kind
-    ]
-      .map((line) => `[${line.map(([lng, lat]) => `[${num(lng)},${num(lat)}]`).join(',')}]`)
-      .join(',')}]}}`;
-  // State lines first so the outline draws on top where they meet.
-  return `{"type":"FeatureCollection","features":[${feature('state')},${feature('outline')}]}\n`;
+function geojsonText(kinds, /** @type {readonly City[]} */ cities) {
+  /** @param {Line} line */
+  const coordinates = (line) =>
+    `[${line.map(([lng, lat]) => `[${num(lng)},${num(lat)}]`).join(',')}]`;
+  const state = `{"type":"Feature","properties":{"kind":"state"},"geometry":{"type":"MultiLineString","coordinates":[${kinds.state
+    .map(coordinates)
+    .join(',')}]}}`;
+  const land = `{"type":"Feature","properties":{"kind":"land"},"geometry":{"type":"MultiPolygon","coordinates":[${kinds.land
+    .map((polygon) => `[${polygon.map(coordinates).join(',')}]`)
+    .join(',')}]}}`;
+  // Rank 0 is the largest city: MapLibre places the lowest rank first.
+  const names = cities.map(
+    ({ name, lon, lat }, rank) =>
+      `{"type":"Feature","properties":{"kind":"city","name":${JSON.stringify(name)},"rank":${String(rank)}},"geometry":{"type":"Point","coordinates":[${num(lon)},${num(lat)}]}}`,
+  );
+  return `{"type":"FeatureCollection","features":[${[land, state, ...names].join(',')}]}\n`;
 }
 
 /**
@@ -470,14 +938,17 @@ function stillSvg(kinds, bounds) {
   const scale = STILL_WIDTH / (mercatorX(east) - x0);
   const height = (mercatorY(south) - y0) * scale;
 
-  /** @param {Line[]} lines */
-  const pathData = (lines) => {
+  /**
+   * @param {Line[]} lines
+   * @param {boolean} closed each line a ring, closed with "z" in place of its last point
+   */
+  const pathData = (lines, closed) => {
     let d = '';
     for (const line of lines) {
       /** @type {Point | undefined} */
       let previous;
       let first = true;
-      for (const [lng, lat] of line) {
+      for (const [lng, lat] of closed ? line.slice(0, -1) : line) {
         const x = Math.round((mercatorX(lng) - x0) * scale);
         const y = Math.round((mercatorY(lat) - y0) * scale);
         if (previous === undefined) {
@@ -491,15 +962,20 @@ function stillSvg(kinds, bounds) {
         }
         previous = [x, y];
       }
+      if (closed) d += 'z';
     }
     return d;
   };
 
   const viewBox = `0 0 ${String(STILL_WIDTH)} ${num(height, 2)}`;
+  // The land's shape is drawn twice from one path: filled under the state lines, and its
+  // edge (the outline) stroked over them, as the WebGL map draws them.
   const svg =
     `<svg class="still" viewBox="${viewBox}" preserveAspectRatio="xMidYMid meet" aria-hidden="true" focusable="false">` +
-    `<path class="still-state" d="${pathData(kinds.state)}"/>` +
-    `<path class="still-outline" d="${pathData(kinds.outline)}"/>` +
+    `<defs><path id="still-land" vector-effect="non-scaling-stroke" d="${pathData(kinds.outline, true)}"/></defs>` +
+    `<use class="still-land" href="#still-land"/>` +
+    `<path class="still-state" d="${pathData(kinds.state, false)}"/>` +
+    `<use class="still-outline" href="#still-land"/>` +
     `</svg>`;
   return { svg, viewBox };
 }
@@ -556,9 +1032,23 @@ async function main() {
   const siteArg = siteFlag === -1 ? undefined : process.argv[siteFlag + 1];
   if (siteFlag !== -1 && siteArg === undefined)
     throw new Error('build-geo: --site-data needs a directory');
-  const kinds = await extractLines();
+  const site = siteArg === undefined ? DEFAULT_SITE_DATA : resolve(siteArg);
+  const kinds = await extractGeometry();
   const bounds = boundsOf(kinds);
-  const geojson = await format(geojsonText(kinds), join(GEO_DIR, 'us-lines.json'));
+  // The cities: chosen afresh from the pipeline's places when they are here, read as committed when not.
+  const places = await readPlaces(site);
+  if (places === null && siteArg !== undefined) {
+    throw new Error(`build-geo: no search/cities.jsonl under ${siteArg}`);
+  }
+  const zips = places === null ? null : await readZips(site);
+  if (places !== null && zips === null) {
+    throw new Error(`build-geo: search/cities.jsonl but no search/zips.jsonl under ${site}`);
+  }
+  const cities =
+    places === null || zips === null
+      ? await readCities()
+      : chooseCities(places, zips, kinds.outline);
+  const geojson = await format(geojsonText(kinds, cities), join(GEO_DIR, 'us-lines.json'));
   const gzipBytes = gzipSync(geojson, { level: 9 }).length;
   if (gzipBytes > MAX_GZIP_BYTES) {
     throw new Error(
@@ -567,7 +1057,7 @@ async function main() {
   }
   const hash = createHash('sha256').update(geojson).digest('hex').slice(0, 10);
   const fileName = `us-lines.${hash}.json`;
-  const points = Object.values(kinds).reduce(
+  const points = [kinds.outline, kinds.state].reduce(
     (sum, lines) => sum + lines.reduce((n, line) => n + line.length, 0),
     0,
   );
@@ -579,7 +1069,7 @@ async function main() {
   const html = await format(spliceStill(await readFile(INDEX_HTML, 'utf8'), svg), INDEX_HTML);
   // The schools the outline misses: found afresh in the directory when it is
   // here, read as committed when it is not.
-  const directory = await readSchools(siteArg === undefined ? DEFAULT_SITE_DATA : resolve(siteArg));
+  const directory = await readSchools(site);
   if (directory === null && siteArg !== undefined) {
     throw new Error(`build-geo: no schools/points.bin under ${siteArg}`);
   }
@@ -594,6 +1084,7 @@ async function main() {
   }
   const reach = await format(reachText(reachData), REACH_FILE);
   const reachSchools = await format(reachSchoolsText(outlying), REACH_SCHOOLS_FILE);
+  const citiesJson = await format(citiesText(cities), CITIES_FILE);
 
   /** @type {string[]} */
   const stale = [];
@@ -610,6 +1101,7 @@ async function main() {
     ...(directory === null
       ? []
       : [/** @type {[string, string]} */ ([REACH_SCHOOLS_FILE, reachSchools])]),
+    ...(places === null ? [] : [/** @type {[string, string]} */ ([CITIES_FILE, citiesJson])]),
     [INDEX_HTML, html],
   ];
   for (const [path, text] of wanted) {
@@ -622,7 +1114,11 @@ async function main() {
     directory === null
       ? `${String(outlying.length)} schools off the outline, as committed (no directory here)`
       : `${String(directory.length)} schools, ${String(outlying.length)} off the outline`;
-  const summary = `${String(points)} vertices, ${String(geojson.length)} B raw, ${String(gzipBytes)} B gzipped, still ${String(svg.length)} B; ${schools}`;
+  const named =
+    places === null
+      ? `${String(cities.length)} cities, as committed (no places here)`
+      : `${String(cities.length)} cities`;
+  const summary = `${String(points)} vertices, ${String(geojson.length)} B raw, ${String(gzipBytes)} B gzipped, still ${String(svg.length)} B; ${schools}; ${named}`;
   if (check) {
     if (stale.length > 0) {
       process.stderr.write(

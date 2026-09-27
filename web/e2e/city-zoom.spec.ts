@@ -109,20 +109,28 @@ async function labelFaces(page: Page): Promise<string[]> {
   );
 }
 
-test('below zoom 7 the map asks nothing of the network for streets or names', async ({ page }) => {
+test('below zoom 7 the map asks nothing of the network for streets or names', async ({
+  page,
+  baseURL,
+}) => {
   const problems = watch(page);
   const tiles: string[] = [];
+  const fonts: string[] = [];
   page.on('request', (request) => {
     if (request.url().startsWith(TILES)) tiles.push(request.url());
+    if (request.resourceType() === 'font') fonts.push(request.url());
   });
   await openView(page, 39.04, -94.59, 6.5);
   await page.waitForTimeout(1_000);
   expect(tiles).toEqual([]);
-  // The label faces are registered but never loaded.
+  // The city names come from the bundled file, in the site's own Geist: no glyph server.
   const faces = await labelFaces(page);
   expect(faces.length).toBeGreaterThan(0);
-  expect(faces.every((status) => status === 'unloaded')).toBe(true);
-  expect(Object.keys((await drawn(page)).counts)).not.toContain(BASEMAP_IDS.ofmRoad);
+  expect(faces.every((status) => status !== 'error')).toBe(true);
+  for (const font of fonts) expect(new URL(font).origin).toBe(new URL(baseURL ?? '').origin);
+  const { counts, names } = await drawn(page);
+  expect(Object.keys(counts)).not.toContain(BASEMAP_IDS.ofmRoad);
+  expect(Object.values(names).flat()).toContain('Kansas City');
   expect(problems).toEqual([]);
 });
 

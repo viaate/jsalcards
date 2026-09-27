@@ -1,6 +1,8 @@
 /**
- * Puts the glow layer on the map: under every label, over the ground and
- * lines, so city and street names stay crisp above the light.
+ * Puts the glow layer on the map: over the ground, the lines and the
+ * national view's city names, so a city's lights shine over its name; under
+ * every label from zoom 7, so street and place names stay crisp above the
+ * light up close.
  *
  * This module loads with the map's own code, after the first paint, and the
  * layer goes on the map with its style, before the map's first frame: adding

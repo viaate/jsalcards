@@ -18,6 +18,7 @@ import type { Browser, BrowserContext, Page, Request, Route } from '@playwright/
 import sharp from 'sharp';
 
 import { copy } from '../src/copy';
+import { BASEMAP_IDS } from '../src/map/basemap/ids';
 import { STILL_VIEWBOX, US_BOUNDS, US_LINES_GZIP_BYTES } from '../src/map/basemap/us-geo';
 
 const WEB = fileURLToPath(new URL('..', import.meta.url));
@@ -146,6 +147,48 @@ async function hold(
     await route.continue().catch(() => undefined);
   });
   return { release, held };
+}
+
+/** The city names MapLibre placed at the national view, from every band's layer. */
+async function cityNames(page: Page): Promise<string[]> {
+  return page.evaluate((prefix) => {
+    const map = window.snowlightMap;
+    if (map === undefined) throw new Error('no map');
+    const layers = map
+      .getStyle()
+      .layers.map((layer) => layer.id)
+      .filter((id) => id.startsWith(prefix));
+    return map.queryRenderedFeatures({ layers }).flatMap((feature) => {
+      const name: unknown = (feature.properties as Record<string, unknown>).name;
+      return typeof name === 'string' ? [name] : [];
+    });
+  }, BASEMAP_IDS.usCityLabel);
+}
+
+/**
+ * Hides the city names, which the still does not carry, and waits for the
+ * map to draw without them: what is left is the land and its lines.
+ */
+async function hideCityNames(page: Page): Promise<void> {
+  await page.evaluate(
+    (prefix) =>
+      new Promise<void>((resolve) => {
+        const map = window.snowlightMap;
+        if (map === undefined) throw new Error('no map');
+        for (const layer of map.getStyle().layers) {
+          if (layer.id.startsWith(prefix)) map.setLayoutProperty(layer.id, 'visibility', 'none');
+        }
+        map.once('idle', () => {
+          requestAnimationFrame(() => {
+            requestAnimationFrame(() => {
+              resolve();
+            });
+          });
+        });
+        map.triggerRepaint();
+      }),
+    BASEMAP_IDS.usCityLabel,
+  );
 }
 
 async function waitForTakeover(page: Page): Promise<void> {
@@ -451,6 +494,11 @@ test.describe('handover to the WebGL map', () => {
       mapChunk.release();
       await waitForTakeover(page);
       await expect(page.locator('.maplibregl-canvas')).toBeVisible();
+      // The map names the largest cities from a tablet's width up; the still carries none.
+      const named = await cityNames(page);
+      if (viewport.isMobile) expect(named).toEqual([]);
+      else expect(named.length).toBeGreaterThan(10);
+      await hideCityNames(page);
       const after = await gray(await page.screenshot());
 
       const scale = viewport.deviceScaleFactor;
@@ -634,6 +682,90 @@ test.describe('handover to the WebGL map', () => {
 });
 
 test.describe('the map at rest', () => {
+  test('names a few dozen of the largest cities over the lifted land, none on another', async ({
+    browser,
+  }) => {
+    const TABLET: Viewport = {
+      name: 'tablet 820x1180',
+      width: 820,
+      height: 1180,
+      deviceScaleFactor: 2,
+      isMobile: true,
+    };
+    // The largest cities each screen names: a tablet has room for New York or Washington, not both.
+    const LARGEST = ['New York', 'Los Angeles', 'Chicago', 'Houston', 'Seattle'];
+    for (const [viewport, fewest, most, named] of [
+      [DESKTOP, 24, 40, [...LARGEST, 'Washington', 'Boston', 'Atlanta']],
+      [TABLET, 8, 16, LARGEST],
+    ] as const) {
+      const context = await newContext(browser, viewport);
+      const page = await context.newPage();
+      await page.goto('/');
+      await waitForTakeover(page);
+      await page.evaluate(
+        () =>
+          new Promise<void>((resolve) => {
+            const map = window.snowlightMap;
+            if (map?.loaded() !== false) {
+              resolve();
+              return;
+            }
+            map.once('idle', () => {
+              resolve();
+            });
+          }),
+      );
+      const names = await cityNames(page);
+      test.info().annotations.push({ type: viewport.name, description: names.join(', ') });
+      expect(names.length, viewport.name).toBeGreaterThanOrEqual(fewest);
+      expect(names.length, viewport.name).toBeLessThanOrEqual(most);
+      expect(new Set(names).size, viewport.name).toBe(names.length);
+      for (const city of named) expect(names, `${viewport.name}: ${city}`).toContain(city);
+      // Each name keeps clear of the others: their boxes, as MapLibre placed them, never meet.
+      const boxes = await page.evaluate((prefix) => {
+        const map = window.snowlightMap;
+        if (map === undefined) throw new Error('no map');
+        const layers = map
+          .getStyle()
+          .layers.map((layer) => layer.id)
+          .filter((id) => id.startsWith(prefix));
+        return map.queryRenderedFeatures({ layers }).map((feature) => {
+          const { coordinates } = feature.geometry as unknown as { coordinates: [number, number] };
+          const point = map.project(coordinates);
+          return {
+            x: point.x,
+            y: point.y,
+            name: String((feature.properties as { name?: unknown }).name),
+          };
+        });
+      }, BASEMAP_IDS.usCityLabel);
+      for (const [i, a] of boxes.entries()) {
+        for (const b of boxes.slice(i + 1)) {
+          const apart = Math.abs(a.x - b.x) > 40 || Math.abs(a.y - b.y) > 14;
+          expect(apart, `${a.name} and ${b.name}`).toBe(true);
+        }
+      }
+      // The land sits a step off the black ground, inside the outline.
+      const shot = await gray(await page.screenshot());
+      const inland = await page.evaluate(() => {
+        const map = window.snowlightMap;
+        if (map === undefined) throw new Error('no map');
+        // Central Nebraska, clear of every line and name.
+        const point = map.project([-99.9, 41.95]);
+        return { x: Math.round(point.x), y: Math.round(point.y) };
+      });
+      const at = (x: number, y: number): number =>
+        shot.data[
+          Math.round(y * viewport.deviceScaleFactor) * shot.width +
+            Math.round(x * viewport.deviceScaleFactor)
+        ] ?? -1;
+      expect(at(inland.x, inland.y)).toBeGreaterThan(4);
+      expect(at(inland.x, inland.y)).toBeLessThan(16);
+      expect(at(4, viewport.height - 4)).toBe(0);
+      await context.close();
+    }
+  });
+
   test('the attribution is a small collapsed button in the bottom corner', async ({ browser }) => {
     for (const viewport of VIEWPORTS) {
       const context = await newContext(browser, viewport);

@@ -79,17 +79,19 @@ function randomStream(seed: number): () => number {
 
 /**
  * The land inside the bundled outline, as a raster of RASTER degrees: each
- * row is filled between the outline's crossings of its middle latitude.
+ * row is filled between the outline's crossings of its middle latitude. The
+ * outline is every ring of the bundled land's polygons.
  */
 const RASTER = 0.02;
 const LAND_RASTER = (() => {
   const path = fileURLToPath(new URL(`../../../../public/${US_LINES_FILE}`, import.meta.url));
   const data = JSON.parse(readFileSync(path, 'utf8')) as {
-    features: { properties: { kind: string }; geometry: { coordinates: number[][][] } }[];
+    features: { properties: { kind: string }; geometry: { coordinates: unknown } }[];
   };
   const lines = data.features
-    .filter((feature) => feature.properties.kind === 'outline')
-    .flatMap((feature) => feature.geometry.coordinates);
+    .filter((feature) => feature.properties.kind === 'land')
+    .flatMap((feature) => (feature.geometry.coordinates as number[][][][]).flat());
+  if (lines.length === 0) throw new Error('The bundled file holds no land');
   const [west, south, east, north] = US_BOUNDS;
   const columns = Math.ceil((east - west) / RASTER) + 1;
   const rows = Math.ceil((north - south) / RASTER) + 1;

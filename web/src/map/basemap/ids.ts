@@ -7,9 +7,14 @@
 /** Source and layer ids other map code can place layers relative to. */
 export const BASEMAP_IDS = {
   usSource: 'us-lines',
+  /** The city names of the national view, from the same file, in a source of their own (style.ts). */
+  usCitySource: 'us-cities',
   openFreeMapSource: 'openfreemap',
   background: 'background',
+  /** The continental US and DC, a step off the ground, below the handover to street tiles. */
+  usLand: 'us-land',
   usStates: 'us-states',
+  /** The land's edge: coasts, lake shores and the borders with Canada and Mexico. */
   usOutline: 'us-outline',
   ofmPark: 'ofm-park',
   /** School grounds from OpenStreetMap: the campus around each school, a step off the ground. */
@@ -46,9 +51,13 @@ export const BASEMAP_IDS = {
   ofmVillageLabel: 'ofm-label-village',
   ofmTownLabel: 'ofm-label-town',
   ofmCityLabel: 'ofm-label-city',
+  /** City names of the national view, under the glow, up to the street tiles' names at zoom 7. */
+  usCityLabel: 'us-label-city',
   /**
-   * The first label layer. Marks drawn under every label, taking no part in
-   * label collisions, go before it: they sit above the US mask.
+   * The first street-tile label layer. Marks drawn under every label from
+   * zoom 7, taking no part in label collisions, go before it: they sit above
+   * the US mask, and above the national city names, which give way to these
+   * labels at zoom 7.
    */
   labels: 'ofm-label-neighbourhood',
   /**

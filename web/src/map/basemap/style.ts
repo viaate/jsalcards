@@ -30,6 +30,8 @@ export interface BasemapLook {
 export interface BasemapColors {
   /** Map ground; also the halo behind labels and the gap around bridges. */
   background: string;
+  /** The continental US at the national view, a step off the ground. */
+  land: string;
   /** Coasts, lake shores and national borders. */
   outline: string;
   /** State lines. */
@@ -47,8 +49,10 @@ export interface BasemapColors {
 }
 
 /**
- * The bundled continental US lines as parsed from public/geo: a GeoJSON
- * FeatureCollection whose features carry `kind`, "outline" or "state".
+ * The bundled continental US geometry as parsed from public/geo: a GeoJSON
+ * FeatureCollection whose features carry `kind`: "land" (the country as
+ * polygons, whose rings are the outline), "state" (the state lines) and
+ * "city" (a city's name and rank, 0 for the largest, at its Census point).
  */
 export interface UsLinesData {
   type: 'FeatureCollection';
@@ -79,6 +83,55 @@ function ramp(from: number, to: number, low = 0, high = 1): ExpressionSpecificat
 
 const fadeOut = ramp(HANDOVER_START, HANDOVER_END, 1, 0);
 const fadeIn = ramp(HANDOVER_START, HANDOVER_END);
+
+const KIND: ExpressionSpecification = ['get', 'kind'];
+
+/**
+ * City names of the national view, from the bundled Census places (ranked
+ * by build-geo.mjs: the centres of the largest urban areas first, lifted
+ * for a city that is the only one for its region). They come in from zoom
+ * 3, where a tablet shows the whole country (a phone, smaller still, shows
+ * only the country), and give way at the handover to the street tiles'
+ * names. They come in by bands of rank, each from its own zoom, so the
+ * country carries a few dozen names at any screen size and more come in as
+ * the map closes in; each is shown where it keeps clear of every name
+ * placed before it, and MapLibre places the lowest rank first.
+ *
+ * Each band is a layer of its own: a layer's zoom range follows the camera
+ * exactly, where a paint value that depends on both the zoom and the
+ * feature is sampled at whole zoom levels and would leave names half faded
+ * between them.
+ */
+export const CITY_NAME_BANDS: readonly { readonly zoom: number; readonly names: number }[] =
+  Object.freeze([
+    // A tablet's national view.
+    { zoom: 3, names: 14 },
+    { zoom: 3.3, names: 21 },
+    // A laptop's or desktop's national view (1280 px wide and up).
+    { zoom: 3.8, names: 34 },
+    { zoom: 4.3, names: 54 },
+    { zoom: 4.8, names: 85 },
+    { zoom: 5.3, names: 134 },
+    { zoom: 5.8, names: 212 },
+    { zoom: 6.3, names: Infinity },
+  ]);
+/** The first zoom national city names are drawn at. */
+export const CITY_NAMES_FROM = CITY_NAME_BANDS[0]?.zoom ?? 3;
+/** Clear space around each national city name, in CSS pixels. */
+export const CITY_NAME_PADDING = 12;
+/** Zoom levels a band of names takes to fade in, from its zoom. */
+const CITY_NAME_FADE = 0.05;
+
+/** The layer id of each band of national city names, the first band's being BASEMAP_IDS.usCityLabel. */
+export function cityNameLayerId(band: number): string {
+  return band === 0 ? BASEMAP_IDS.usCityLabel : `${BASEMAP_IDS.usCityLabel}-${String(band)}`;
+}
+
+/**
+ * The zoom of the city names' one tile: at zoom 1 the continental US lies in
+ * a single tile, which MapLibre scales up for every closer view.
+ */
+const CITY_SOURCE_MAX_ZOOM = 1;
 
 /**
  * Zoom levels a label class takes to fade in before the zoom it is named
@@ -451,10 +504,76 @@ const PLACE_LABEL_LAYOUT = {
   'symbol-sort-key': RANK,
 } satisfies SymbolLayerSpecification['layout'];
 
+/** The national city names, a layer per band of rank (CITY_NAME_BANDS), first band first. */
+function cityNameLayers(colors: BasemapColors): SymbolLayerSpecification[] {
+  return CITY_NAME_BANDS.map(({ zoom, names }, band) => {
+    const from = CITY_NAME_BANDS[band - 1]?.names ?? 0;
+    const rank: ExpressionSpecification = ['get', 'rank'];
+    return {
+      id: cityNameLayerId(band),
+      type: 'symbol',
+      source: BASEMAP_IDS.usCitySource,
+      minzoom: zoom,
+      maxzoom: HANDOVER_START,
+      filter: [
+        'all',
+        ['==', KIND, 'city'],
+        ['>=', rank, from],
+        ...(Number.isFinite(names) ? [['<', rank, names] as ExpressionSpecification] : []),
+      ] as FilterSpecification,
+      layout: {
+        ...LABEL_LAYOUT,
+        'symbol-sort-key': rank,
+        'text-field': NAME,
+        'text-font': [MAP_FONTS.medium],
+        'text-size': ['interpolate', ['linear'], ['zoom'], CITY_NAMES_FROM, 10.5, 6, 12],
+        'text-letter-spacing': 0.02,
+        'text-padding': CITY_NAME_PADDING,
+        'text-anchor': 'center',
+        'text-max-width': 10,
+      },
+      paint: {
+        'text-color': [
+          'interpolate',
+          ['linear'],
+          ['zoom'],
+          4,
+          mixColors(colors.labelDim, colors.label, 0.5),
+          HANDOVER_START,
+          colors.label,
+        ],
+        'text-opacity': ramp(zoom, zoom + CITY_NAME_FADE),
+        // Wide enough to part a coastline or border running under a name.
+        'text-halo-color': colors.land,
+        'text-halo-width': 3,
+        'text-halo-blur': 1,
+      },
+    };
+  });
+}
+
+/**
+ * The bundled file's city names apart from its land and lines, as two
+ * GeoJSON sources' data. A URL is handed to both sources as it is.
+ */
+export function splitUsLines(
+  usLines: UsLinesData | string,
+): readonly [geometry: UsLinesData | string, cities: UsLinesData | string] {
+  if (typeof usLines === 'string') return [usLines, usLines];
+  const isCity = (feature: unknown): boolean =>
+    (feature as { properties?: { kind?: unknown } } | null)?.properties?.kind === 'city';
+  return [
+    { type: 'FeatureCollection', features: usLines.features.filter((f) => !isCity(f)) },
+    { type: 'FeatureCollection', features: usLines.features.filter(isCity) },
+  ];
+}
+
 /**
  * The basemap style, built in code. At the initial view it needs nothing but
- * the bundled GeoJSON: no glyphs, sprites or tiles from anywhere else. From
- * zoom 7 it draws OpenFreeMap's streets, water, parks, buildings and names
+ * the bundled GeoJSON (the land a step off the ground, its outline, the state
+ * lines and the largest cities' names) and the page's own Geist faces: no
+ * glyphs, sprites or tiles from anywhere else. From zoom 7 it draws
+ * OpenFreeMap's streets, water, parks, buildings and names
  * (the OpenMapTiles schema), cut to the continental US and DC: the street
  * tiles arrive without anything outside the US that could be drawn, placed
  * or queried (street-tiles.ts), and carry the US mask, drawn in the ground
@@ -476,6 +595,7 @@ export function buildBasemapStyle({
   colors,
   schools = null,
 }: BasemapStyleOptions): StyleSpecification {
+  const [geometry, cities] = splitUsLines(usLines);
   const round = { 'line-join': 'round', 'line-cap': 'round' } as const;
   const ofm = { source: BASEMAP_IDS.openFreeMapSource, minzoom: OPENFREEMAP_MIN_ZOOM } as const;
   const halo = {
@@ -488,6 +608,16 @@ export function buildBasemapStyle({
       id: BASEMAP_IDS.background,
       type: 'background',
       paint: { 'background-color': colors.background },
+    },
+    {
+      // The country a step off the ground at the national view; the street tiles' own
+      // ground takes over at the handover, where the sea and the land are one black.
+      id: BASEMAP_IDS.usLand,
+      type: 'fill',
+      source: BASEMAP_IDS.usSource,
+      maxzoom: HANDOVER_END,
+      filter: ['==', KIND, 'land'],
+      paint: { 'fill-color': colors.land, 'fill-opacity': fadeOut, 'fill-antialias': false },
     },
     {
       id: BASEMAP_IDS.ofmPark,
@@ -667,19 +797,24 @@ export function buildBasemapStyle({
       type: 'line',
       source: BASEMAP_IDS.usSource,
       maxzoom: HANDOVER_END,
-      filter: ['==', ['get', 'kind'], 'state'],
+      filter: ['==', KIND, 'state'],
       layout: round,
       paint: { 'line-color': colors.state, 'line-width': hairline, 'line-opacity': fadeOut },
     },
     {
+      // The land's rings: MapLibre draws a line layer on polygons along their edges.
       id: BASEMAP_IDS.usOutline,
       type: 'line',
       source: BASEMAP_IDS.usSource,
       maxzoom: HANDOVER_END,
-      filter: ['==', ['get', 'kind'], 'outline'],
+      filter: ['==', KIND, 'land'],
       layout: round,
       paint: { 'line-color': colors.outline, 'line-width': hairline, 'line-opacity': fadeOut },
     },
+    // The national city names, the last band lowest (MapLibre places the top layer first),
+    // under the glow, which goes right before the street tiles' labels: a city's lights
+    // shine over its name, never cut by the name's halo.
+    ...cityNameLayers(colors).reverse(),
     // Labels, lowest priority first: MapLibre places the top layer's labels first.
     {
       // Neighbourhoods in small spaced capitals, a quiet layer under the street names.
@@ -942,10 +1077,18 @@ export function buildBasemapStyle({
       ...(schools === null ? {} : { [BASEMAP_IDS.schoolsSource]: schoolSource(schools) }),
       [BASEMAP_IDS.usSource]: {
         type: 'geojson',
-        data: usLines,
+        data: geometry,
         // The bundled lines are only drawn below the handover, so deeper tiles are never cut.
         maxzoom: Math.ceil(HANDOVER_END),
         tolerance: 0.1,
+      },
+      [BASEMAP_IDS.usCitySource]: {
+        type: 'geojson',
+        data: cities,
+        // One tile holds every city, so MapLibre places the names strictly in rank order: names
+        // in separate tiles would be placed tile by tile, and a small city could take a large
+        // one's place. Drawn from it up to zoom 7, a unit of that tile is under 3 pixels.
+        maxzoom: CITY_SOURCE_MAX_ZOOM,
       },
       [BASEMAP_IDS.openFreeMapSource]: {
         type: 'vector',
