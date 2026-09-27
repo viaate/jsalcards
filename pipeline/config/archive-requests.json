@@ -1,56 +1,16 @@
 {
   "snapshots": [
     {
-      "timestamp": "20220104163425",
-      "url": "https://www.kxxo.com/kxxo-sftp/school_closures.html"
-    },
-    {
-      "timestamp": "20211204034445",
-      "url": "https://www.kxxo.com/kxxo-sftp/school_closures.html"
-    },
-    {
-      "timestamp": "20221202100234",
-      "url": "https://www.kxxo.com/kxxo-sftp/school_closures.html"
-    },
-    {
-      "timestamp": "20230202004850",
-      "url": "https://www.kxxo.com/kxxo-sftp/school_closures.html"
-    },
-    {
-      "timestamp": "20240223160540",
-      "url": "https://www.kxxo.com/kxxo-sftp/school_closures.html"
-    },
-    {
-      "timestamp": "20250215221835",
-      "url": "https://www.kxxo.com/kxxo-sftp/school_closures.html"
-    },
-    {
-      "timestamp": "20260123163358",
-      "url": "https://www.kxxo.com/kxxo-sftp/school_closures.html"
-    },
-    {
-      "timestamp": "20201127192308",
-      "url": "https://www.kxxo.com/kxxo-sftp/school_closures.html"
+      "timestamp": "20260306110424",
+      "url": "https://www.kxxo.com/privacy-policy/"
     },
     {
       "timestamp": "20240717061851",
-      "url": "https://www.wfrd.com/wp-content/plugins/entity-closing-lite/js/app-front.js?ver=1.0.6.8"
+      "url": "https://www.wfrd.com/privacy-statement/"
     },
     {
-      "timestamp": "20240717061851",
-      "url": "https://www.wfrd.com/wp-content/plugins/entity-closing-lite/js/routes-front.js?ver=1.0.1"
-    }
-  ],
-  "cdx": [
-    {
-      "url": "www.kxxo.com/kxxo-sftp/*",
-      "from": "20140101",
-      "to": "20260930"
-    },
-    {
-      "url": "www.wfrd.com/wp-content/plugins/entity-closing-lite/*",
-      "from": "20140101",
-      "to": "20260930"
+      "timestamp": "20260306110424",
+      "url": "https://www.kxxo.com/robots.txt"
     }
   ]
 }
