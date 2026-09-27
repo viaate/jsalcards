@@ -1,416 +1,139 @@
 {
-  "snapshots": [
+  "cdx": [
     {
-      "timestamp": "20241009120000",
-      "url": "https://www.wfla.com/weather/closings/"
+      "url": "nj1015.com/wp-content/uploads/njclosings/*",
+      "from": "20140101",
+      "to": "20260930"
     },
     {
-      "timestamp": "20220928120000",
-      "url": "https://www.wfla.com/weather/closings/"
+      "url": "schoolclosings.delaware.gov/XML/*",
+      "from": "20140101",
+      "to": "20260930"
     },
     {
-      "timestamp": "20230830120000",
-      "url": "https://www.wfla.com/weather/closings/"
+      "url": "wveis.k12.wv.us/closings/*",
+      "from": "20140101",
+      "to": "20260930"
     },
     {
-      "timestamp": "20230221120000",
-      "url": "https://www.yourbigsky.com/weather/closings/"
+      "url": "api.wral.com/closings/v1/*",
+      "from": "20140101",
+      "to": "20260930"
     },
     {
-      "timestamp": "20191129120000",
-      "url": "https://www.yourbigsky.com/weather/closings/"
+      "url": "wcavclosings.lockwoodbroadcast.com/data/*",
+      "from": "20140101",
+      "to": "20260930"
     },
     {
-      "timestamp": "20260313120000",
-      "url": "https://www.yourbigsky.com/weather/closings/"
+      "url": "9and10news.com/pf/api/v3/content/fetch/weather-school-closings*",
+      "from": "20140101",
+      "to": "20260930"
     },
     {
-      "timestamp": "20210215120000",
-      "url": "https://www.kxan.com/weather/closings/"
+      "url": "eventdelay.com/new/widget/channel/114/*",
+      "from": "20140101",
+      "to": "20260930"
     },
     {
-      "timestamp": "20230201120000",
-      "url": "https://www.kxan.com/weather/closings/"
+      "url": "koamnewsnow.com/app/closings/*",
+      "from": "20140101",
+      "to": "20260930"
     },
     {
-      "timestamp": "20220203120000",
-      "url": "https://www.kxan.com/weather/closings/"
+      "url": "kxly.com/app/closings/*",
+      "from": "20140101",
+      "to": "20260930"
     },
     {
-      "timestamp": "20241205120000",
-      "url": "https://www.cnyhomepage.com/closings/"
+      "url": "ftp2.wktv.com/*",
+      "from": "20140101",
+      "to": "20260930"
     },
     {
-      "timestamp": "20230314120000",
-      "url": "https://www.cnyhomepage.com/closings/"
+      "url": "ticker.news.sinclairinc.cloud/chameleon/*",
+      "from": "20140101",
+      "to": "20260930"
     },
     {
-      "timestamp": "20220225120000",
-      "url": "https://www.cnyhomepage.com/closings/"
+      "url": "sbgcg.com/Ticker/*",
+      "from": "20140101",
+      "to": "20260930"
     },
     {
-      "timestamp": "20250121120000",
-      "url": "https://wgno.com/weather/closings/"
+      "url": "wt1.weatherthreat.com/wt_list/*",
+      "from": "20140101",
+      "to": "20260930"
     },
     {
-      "timestamp": "20200914120000",
-      "url": "https://wgno.com/weather/closings/"
+      "url": "foxillinois.com/weather/closings*",
+      "from": "20140101",
+      "to": "20260930"
     },
     {
-      "timestamp": "20180904120000",
-      "url": "https://wgno.com/weather/closings/"
+      "url": "newschannel20.com/weather/closings*",
+      "from": "20140101",
+      "to": "20260930"
     },
     {
-      "timestamp": "20250121120000",
-      "url": "https://www.wkrg.com/weather/closings/"
+      "url": "khqa.com/weather/closings*",
+      "from": "20140101",
+      "to": "20260930"
     },
     {
-      "timestamp": "20200916120000",
-      "url": "https://www.wkrg.com/weather/closings/"
+      "url": "9and10news.com/weather/school-closings*",
+      "from": "20140101",
+      "to": "20260930"
     },
     {
-      "timestamp": "20260127120000",
-      "url": "https://www.wkrg.com/weather/closings/"
+      "url": "schoolclosings.delaware.gov*",
+      "from": "20140101",
+      "to": "20260930"
     },
     {
-      "timestamp": "20230301120000",
-      "url": "https://ktla.com/weather/closings/"
+      "url": "wral.com/weather/closings*",
+      "from": "20140101",
+      "to": "20260930"
     },
     {
-      "timestamp": "20260218120000",
-      "url": "https://ktla.com/weather/closings/"
+      "url": "cbs19news.com/weather/closings*",
+      "from": "20140101",
+      "to": "20260930"
     },
     {
-      "timestamp": "20250313120000",
-      "url": "https://ktla.com/weather/closings/"
+      "url": "wdel.com/features/wdel-stormwatch*",
+      "from": "20140101",
+      "to": "20260930"
     },
     {
-      "timestamp": "20250122120000",
-      "url": "https://www.counton2.com/weather/closings/"
+      "url": "nj1015.com/closings*",
+      "from": "20140101",
+      "to": "20260930"
     },
     {
-      "timestamp": "20220930120000",
-      "url": "https://www.counton2.com/weather/closings/"
+      "url": "itv.news12.com/school_closings/closings.jsp*",
+      "from": "20140101",
+      "to": "20260930"
     },
     {
-      "timestamp": "20190905120000",
-      "url": "https://www.counton2.com/weather/closings/"
+      "url": "spectrumlocalnews.com/services/closings.*",
+      "from": "20140101",
+      "to": "20260930"
     },
     {
-      "timestamp": "20210215120000",
-      "url": "https://www.valleycentral.com/weather/closings/"
+      "url": "wt2.weatherthreat.com/wt_list/*",
+      "from": "20140101",
+      "to": "20260930"
     },
     {
-      "timestamp": "20250121120000",
-      "url": "https://www.valleycentral.com/weather/closings/"
+      "url": "wt3.weatherthreat.com/wt_list/*",
+      "from": "20140101",
+      "to": "20260930"
     },
     {
-      "timestamp": "20220121120000",
-      "url": "https://www.valleycentral.com/weather/closings/"
-    },
-    {
-      "timestamp": "20250122120000",
-      "url": "https://www.wsav.com/closings-and-delays/"
-    },
-    {
-      "timestamp": "20230830120000",
-      "url": "https://www.wsav.com/weather/closings/"
-    },
-    {
-      "timestamp": "20181010120000",
-      "url": "https://www.wsav.com/closings-and-delays/"
-    },
-    {
-      "timestamp": "20250121120000",
-      "url": "https://www.klfy.com/weather/closings/"
-    },
-    {
-      "timestamp": "20210215120000",
-      "url": "https://www.klfy.com/weather/closings/"
-    },
-    {
-      "timestamp": "20260127120000",
-      "url": "https://www.klfy.com/weather/closings/"
-    },
-    {
-      "timestamp": "20230224120000",
-      "url": "https://www.kron4.com/weather/closings/"
-    },
-    {
-      "timestamp": "20260220120000",
-      "url": "https://www.kron4.com/weather/closings/"
-    },
-    {
-      "timestamp": "20240301120000",
-      "url": "https://www.kron4.com/weather/closings/"
-    },
-    {
-      "timestamp": "20250122120000",
-      "url": "https://www.mypanhandle.com/weather/closings/"
-    },
-    {
-      "timestamp": "20181010120000",
-      "url": "https://www.mypanhandle.com/weather/closings/"
-    },
-    {
-      "timestamp": "20260127120000",
-      "url": "https://www.mypanhandle.com/weather/closings/"
-    },
-    {
-      "timestamp": "20260218120000",
-      "url": "https://www.8newsnow.com/weather/closings/"
-    },
-    {
-      "timestamp": "20250306120000",
-      "url": "https://www.8newsnow.com/weather/closings/"
-    },
-    {
-      "timestamp": "20240208120000",
-      "url": "https://www.8newsnow.com/weather/closings/"
-    },
-    {
-      "timestamp": "20260219120000",
-      "url": "https://www.kget.com/weather/closings/"
-    },
-    {
-      "timestamp": "20250314120000",
-      "url": "https://www.kget.com/weather/closings/"
-    },
-    {
-      "timestamp": "20240329120000",
-      "url": "https://www.kget.com/weather/closings/"
-    },
-    {
-      "timestamp": "20240208120000",
-      "url": "https://fox5sandiego.com/weather/closings/"
-    },
-    {
-      "timestamp": "20230301120000",
-      "url": "https://fox5sandiego.com/weather/closings/"
-    },
-    {
-      "timestamp": "20220223120000",
-      "url": "https://fox5sandiego.com/weather/closings/"
-    },
-    {
-      "timestamp": "20220203120000",
-      "url": "https://www.ktsm.com/weather/closings/"
-    },
-    {
-      "timestamp": "20250121120000",
-      "url": "https://www.ktsm.com/weather/closings/"
-    },
-    {
-      "timestamp": "20200205120000",
-      "url": "https://www.ktsm.com/weather/closings/"
-    },
-    {
-      "timestamp": "20260223120000",
-      "url": "https://www.pix11.com/weather/school-closings-delays"
-    },
-    {
-      "timestamp": "20210201120000",
-      "url": "https://www.pix11.com/weather/school-closings-delays"
-    },
-    {
-      "timestamp": "20260223120000",
-      "url": "https://phl17.com/weather/closings/"
-    },
-    {
-      "timestamp": "20210218120000",
-      "url": "https://phl17.com/weather/closings/"
-    },
-    {
-      "timestamp": "20210215120000",
-      "url": "https://cw33.com/weather/closings/"
-    },
-    {
-      "timestamp": "20230202120000",
-      "url": "https://cw33.com/weather/closings/"
-    },
-    {
-      "timestamp": "20260126120000",
-      "url": "https://fox59.com/weather/closings/"
-    },
-    {
-      "timestamp": "20220203120000",
-      "url": "https://fox59.com/weather/closings/"
-    },
-    {
-      "timestamp": "20221215120000",
-      "url": "https://pahomepage.com/closings-and-delays"
-    },
-    {
-      "timestamp": "20210201120000",
-      "url": "https://www.2822news.com/weather/closings-and-delays/"
-    },
-    {
-      "timestamp": "20230224120000",
-      "url": "https://fox40.com/weather/closings/"
-    },
-    {
-      "timestamp": "20210127120000",
-      "url": "https://fox40.com/weather/closings/"
-    },
-    {
-      "timestamp": "20230223120000",
-      "url": "https://www.wiproud.com/weather/closings/"
-    },
-    {
-      "timestamp": "20190212120000",
-      "url": "https://www.wiproud.com/weather/closings/"
-    },
-    {
-      "timestamp": "20260126120000",
-      "url": "https://www.cbs17.com/weather/closings/"
-    },
-    {
-      "timestamp": "20250110120000",
-      "url": "https://www.cbs17.com/weather/closings/"
-    },
-    {
-      "timestamp": "20250110120000",
-      "url": "https://www.qcnews.com/weather/closings/"
-    },
-    {
-      "timestamp": "20181210120000",
-      "url": "https://www.qcnews.com/weather/closings/"
-    },
-    {
-      "timestamp": "20260316120000",
-      "url": "https://www.ourquadcities.com/weather/closings/"
-    },
-    {
-      "timestamp": "20250212120000",
-      "url": "https://www.ourquadcities.com/weather/closings/"
-    },
-    {
-      "timestamp": "20260316120000",
-      "url": "https://www.upmatters.com/weather/closings/"
-    },
-    {
-      "timestamp": "20240112120000",
-      "url": "https://www.upmatters.com/weather/closings/"
-    },
-    {
-      "timestamp": "20210126120000",
-      "url": "https://cw7az.com/weather/closings/"
-    },
-    {
-      "timestamp": "20191129120000",
-      "url": "https://cw7az.com/weather/closings/"
-    },
-    {
-      "timestamp": "20210218120000",
-      "url": "https://www.wric.com/weather/closings/"
-    },
-    {
-      "timestamp": "20250219120000",
-      "url": "https://www.wric.com/weather/closings/"
-    },
-    {
-      "timestamp": "20250212120000",
-      "url": "https://www.wvnstv.com/weather/closings-and-delays/"
-    },
-    {
-      "timestamp": "20210218120000",
-      "url": "https://www.wvnstv.com/weather/closings-and-delays/"
-    },
-    {
-      "timestamp": "20230125120000",
-      "url": "https://www.wane.com/weather/closings/"
-    },
-    {
-      "timestamp": "20220203120000",
-      "url": "https://www.wane.com/weather/closings/"
-    },
-    {
-      "timestamp": "20210215120000",
-      "url": "https://www.fox44news.com/weather/closings/"
-    },
-    {
-      "timestamp": "20230201120000",
-      "url": "https://www.fox44news.com/weather/closings/"
-    },
-    {
-      "timestamp": "20250122120000",
-      "url": "https://www.wnct.com/weather/closings/"
-    },
-    {
-      "timestamp": "20220121120000",
-      "url": "https://www.wnct.com/weather/closings/"
-    },
-    {
-      "timestamp": "20250110120000",
-      "url": "https://www.alabamas42.com/weather/closings/"
-    },
-    {
-      "timestamp": "20210215120000",
-      "url": "https://www.alabamas42.com/weather/closings/"
-    },
-    {
-      "timestamp": "20260123120000",
-      "url": "https://www.everythinglubbock.com/weather/closings/"
-    },
-    {
-      "timestamp": "20200205120000",
-      "url": "https://www.everythinglubbock.com/weather/closings/"
-    },
-    {
-      "timestamp": "20250122120000",
-      "url": "https://www.wbtw.com/weather/closings/"
-    },
-    {
-      "timestamp": "20260202120000",
-      "url": "https://www.wbtw.com/weather/closings/"
-    },
-    {
-      "timestamp": "20260123120000",
-      "url": "https://www.yourbasin.com/closings-delays/"
-    },
-    {
-      "timestamp": "20200205120000",
-      "url": "https://www.yourbasin.com/closings-delays/"
-    },
-    {
-      "timestamp": "20250110120000",
-      "url": "https://whnt.com/weather-closings/"
-    },
-    {
-      "timestamp": "20210215120000",
-      "url": "https://whnt.com/weather-closings/"
-    },
-    {
-      "timestamp": "20210217120000",
-      "url": "https://www.myarklamiss.com/weather/closings/"
-    },
-    {
-      "timestamp": "20260127120000",
-      "url": "https://www.myarklamiss.com/weather/closings/"
-    },
-    {
-      "timestamp": "20250122120000",
-      "url": "https://www.wjbf.com/weather/closings/"
-    },
-    {
-      "timestamp": "20181011120000",
-      "url": "https://www.wjbf.com/weather/closings/"
-    },
-    {
-      "timestamp": "20250121120000",
-      "url": "https://www.wrbl.com/weather/closings-and-delays/"
-    },
-    {
-      "timestamp": "20181010120000",
-      "url": "https://www.wrbl.com/weather/closings-and-delays/"
-    },
-    {
-      "timestamp": "20250121120000",
-      "url": "https://www.wdhn.com/severe-weather-closings-and-delays/"
-    },
-    {
-      "timestamp": "20181010120000",
-      "url": "https://www.wdhn.com/severe-weather-closings-and-delays/"
+      "url": "local3news.com/app/closings/*",
+      "from": "20140101",
+      "to": "20260930"
     }
   ]
 }
