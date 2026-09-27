@@ -1,114 +1,129 @@
 {
+  "snapshots": [
+    {
+      "timestamp": "20250108174641",
+      "url": "https://www.eventdelay.com/new/widget/channel/114/list/"
+    },
+    {
+      "timestamp": "20250118203425",
+      "url": "https://www.eventdelay.com/new/widget/channel/114/list/"
+    },
+    {
+      "timestamp": "20250118203420",
+      "url": "https://www.wdel.com/features/wdel-stormwatch/"
+    },
+    {
+      "timestamp": "20250108093553",
+      "url": "https://www.wdel.com/features/wdel-stormwatch/"
+    },
+    {
+      "timestamp": "20241223232853",
+      "url": "https://www.eventdelay.com/new/widget/channel/114/list/"
+    },
+    {
+      "timestamp": "20240118084735",
+      "url": "https://eventdelay.com/new/widget/channel/114/list/"
+    },
+    {
+      "timestamp": "20240303165219",
+      "url": "https://eventdelay.com/new/widget/channel/114/list/"
+    },
+    {
+      "timestamp": "20251226101110",
+      "url": "https://eventdelay.com/new/widget/channel/114/page/292"
+    },
+    {
+      "timestamp": "20260124195825",
+      "url": "https://www.wdel.com/features/wdel-stormwatch/"
+    },
+    {
+      "timestamp": "20260206232047",
+      "url": "https://www.foxillinois.com/weather/closings/"
+    },
+    {
+      "timestamp": "20260313145817",
+      "url": "https://www.foxillinois.com/weather/closings/"
+    },
+    {
+      "timestamp": "20260313145933",
+      "url": "https://www.foxillinois.com/weather/closings/"
+    },
+    {
+      "timestamp": "20260128134929",
+      "url": "https://www.khqa.com/weather/closings/"
+    },
+    {
+      "timestamp": "20260226104753",
+      "url": "https://www.newschannel20.com/weather/closings/"
+    }
+  ],
   "cdx": [
     {
-      "url": "wfla.com/weather/closings/",
+      "url": "santacruzcoe.org/schoolclosures*",
       "from": "20140101",
       "to": "20260930"
     },
     {
-      "url": "wfla.com/closings/",
+      "url": "docs.google.com/spreadsheets/d/e/2PACX-1vRTTn-nz1kHVAdHbBrAQSgMaLB0FbiNrO7cWaFDIxZxvGzGXnHnF2jv5LiRcui_Tz0JTpGAt2DidUYo/*",
       "from": "20140101",
       "to": "20260930"
     },
     {
-      "url": "wfla.com/wp-json/nxd_app/v1/closings_alerts",
+      "url": "hcoe.org/news/alerts*",
       "from": "20140101",
       "to": "20260930"
     },
     {
-      "url": "kxan.com/wp-json/nxd_app/v1/closings_alerts",
+      "url": "www.wfrd.com/99rock-school-closings-cancellations*",
       "from": "20140101",
       "to": "20260930"
     },
     {
-      "url": "ktsm.com/wp-json/nxd_app/v1/closings_alerts",
+      "url": "wfrd.com/*",
+      "from": "20140101",
+      "to": "20260930",
+      "filter": [
+        "original:.*(?i)clos.*"
+      ],
+      "collapse": "urlkey"
+    },
+    {
+      "url": "www.kxxo.com/list-school-closings*",
       "from": "20140101",
       "to": "20260930"
     },
     {
-      "url": "pix11.com/wp-json/nxd_app/v1/closings_alerts",
+      "url": "kxxo.com/*",
       "from": "20140101",
-      "to": "20260930"
+      "to": "20260930",
+      "filter": [
+        "original:.*(?i)clos.*"
+      ],
+      "collapse": "urlkey"
     },
     {
-      "url": "phl17.com/weather/school-closings/",
-      "from": "20140101",
-      "to": "20260930"
+      "url": "newschannel20.com/search/*",
+      "from": "20251101",
+      "to": "20260930",
+      "filter": [
+        "original:.*closings.*"
+      ]
     },
     {
-      "url": "cw33.com/wp-json/nxd_app/v1/closings_alerts",
-      "from": "20140101",
-      "to": "20260930"
+      "url": "foxillinois.com/search/*",
+      "from": "20251101",
+      "to": "20260930",
+      "filter": [
+        "original:.*closings.*"
+      ]
     },
     {
-      "url": "fox4kc.com/wp-json/nxd_app/v1/closings_alerts",
-      "from": "20140101",
-      "to": "20260930"
-    },
-    {
-      "url": "2822news.com/weather/closings/",
-      "from": "20140101",
-      "to": "20260930"
-    },
-    {
-      "url": "pahomepage.com/wp-json/nxd_app/v1/closings_alerts",
-      "from": "20140101",
-      "to": "20260930"
-    },
-    {
-      "url": "fox40.com/closings/",
-      "from": "20140101",
-      "to": "20260930"
-    },
-    {
-      "url": "wiproud.com/closings/",
-      "from": "20140101",
-      "to": "20260930"
-    },
-    {
-      "url": "qcnews.com/weather/closings/",
-      "from": "20140101",
-      "to": "20260930"
-    },
-    {
-      "url": "qcnews.com/wp-json/nxd_app/v1/closings_alerts",
-      "from": "20140101",
-      "to": "20260930"
-    },
-    {
-      "url": "cw7az.com/weather/closings/",
-      "from": "20140101",
-      "to": "20260930"
-    },
-    {
-      "url": "wric.com/wp-json/nxd_app/v1/closings_alerts",
-      "from": "20140101",
-      "to": "20260930"
-    },
-    {
-      "url": "fox44news.com/wp-json/nxd_app/v1/closings_alerts",
-      "from": "20140101",
-      "to": "20260930"
-    },
-    {
-      "url": "alabamas42.com/weather/closings/",
-      "from": "20140101",
-      "to": "20260930"
-    },
-    {
-      "url": "wbtw.com/closings/",
-      "from": "20140101",
-      "to": "20260930"
-    },
-    {
-      "url": "whnt.com/closings/",
-      "from": "20140101",
-      "to": "20260930"
-    },
-    {
-      "url": "wjbf.com/weather/closings/",
-      "from": "20140101",
-      "to": "20260930"
+      "url": "khqa.com/search/*",
+      "from": "20251101",
+      "to": "20260930",
+      "filter": [
+        "original:.*closings.*"
+      ]
     }
   ]
 }
