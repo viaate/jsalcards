@@ -1,41 +1,770 @@
 {
   "snapshots": [
     {
-      "timestamp": "20230318033708",
-      "url": "https://ftp2.wktv.com/CGSXML/All%20Active.html"
+      "timestamp": "20241009140000",
+      "url": "https://www.hillsboroughschools.org/"
     },
     {
-      "timestamp": "20170910080549",
-      "url": "http://abcnews4.com/resources/ftptransfer/wciv/closings.html"
+      "timestamp": "20240926140000",
+      "url": "https://www.hillsboroughschools.org/"
     },
     {
-      "timestamp": "20180127024608",
-      "url": "http://abcnews4.com/resources/ftptransfer/wciv/closings.html"
+      "timestamp": "20220928140000",
+      "url": "https://www.hillsboroughschools.org/"
     },
     {
-      "timestamp": "20240502032952",
-      "url": "https://kmph.com/resources/ftptransfer/kmph/closings/closings.html"
+      "timestamp": "20241009140000",
+      "url": "https://dcps.duvalschools.org/"
     },
     {
-      "timestamp": "20240409182758",
-      "url": "https://abcstlouis.com/resources/ftptransfer/kdnl/closings/closings.html"
+      "timestamp": "20240926140000",
+      "url": "https://dcps.duvalschools.org/"
+    },
+    {
+      "timestamp": "20220928140000",
+      "url": "https://dcps.duvalschools.org/"
+    },
+    {
+      "timestamp": "20241011190512",
+      "url": "https://www.brevardschools.org/"
+    },
+    {
+      "timestamp": "20241007230622",
+      "url": "https://www.brevardschools.org/"
+    },
+    {
+      "timestamp": "20240927115143",
+      "url": "https://www.brevardschools.org/"
+    },
+    {
+      "timestamp": "20240805121914",
+      "url": "https://www.brevardschools.org/"
+    },
+    {
+      "timestamp": "20220928183846",
+      "url": "https://www.brevardschools.org/"
+    },
+    {
+      "timestamp": "20241009140000",
+      "url": "https://www.manateeschools.net/"
+    },
+    {
+      "timestamp": "20240926140000",
+      "url": "https://www.manateeschools.net/"
+    },
+    {
+      "timestamp": "20220928140000",
+      "url": "https://www.manateeschools.net/"
+    },
+    {
+      "timestamp": "20241009140000",
+      "url": "https://www.lake.k12.fl.us/"
+    },
+    {
+      "timestamp": "20240926140000",
+      "url": "https://www.lake.k12.fl.us/"
+    },
+    {
+      "timestamp": "20220928140000",
+      "url": "https://www.lake.k12.fl.us/"
+    },
+    {
+      "timestamp": "20241009140000",
+      "url": "https://www.oneclay.net/"
+    },
+    {
+      "timestamp": "20240926140000",
+      "url": "https://www.oneclay.net/"
+    },
+    {
+      "timestamp": "20220928140000",
+      "url": "https://www.oneclay.net/"
+    },
+    {
+      "timestamp": "20241009034101",
+      "url": "https://www.sbac.edu/"
+    },
+    {
+      "timestamp": "20240926152927",
+      "url": "https://www.sbac.edu/"
+    },
+    {
+      "timestamp": "20240930124609",
+      "url": "https://www.sbac.edu/"
+    },
+    {
+      "timestamp": "20220928233245",
+      "url": "https://www.sbac.edu/"
+    },
+    {
+      "timestamp": "20221110001448",
+      "url": "https://www.sbac.edu/"
+    },
+    {
+      "timestamp": "20240226072200",
+      "url": "https://www.sd215.net/"
+    },
+    {
+      "timestamp": "20221108212631",
+      "url": "https://www.sd215.net/"
+    },
+    {
+      "timestamp": "20241009140000",
+      "url": "https://www.sarasotacountyschools.net/"
+    },
+    {
+      "timestamp": "20240926140000",
+      "url": "https://www.sarasotacountyschools.net/"
+    },
+    {
+      "timestamp": "20220928140000",
+      "url": "https://www.sarasotacountyschools.net/"
+    },
+    {
+      "timestamp": "20250214111150",
+      "url": "https://www.cassiaschools.org/"
+    },
+    {
+      "timestamp": "20230321231945",
+      "url": "https://www.cassiaschools.org/"
+    },
+    {
+      "timestamp": "20241009140000",
+      "url": "https://www.okaloosaschools.com/"
+    },
+    {
+      "timestamp": "20240926140000",
+      "url": "https://www.okaloosaschools.com/"
+    },
+    {
+      "timestamp": "20220928140000",
+      "url": "https://www.okaloosaschools.com/"
+    },
+    {
+      "timestamp": "20241009140000",
+      "url": "https://www.bay.k12.fl.us/"
+    },
+    {
+      "timestamp": "20240926140000",
+      "url": "https://www.bay.k12.fl.us/"
+    },
+    {
+      "timestamp": "20220928140000",
+      "url": "https://www.bay.k12.fl.us/"
+    },
+    {
+      "timestamp": "20240109140000",
+      "url": "https://www.msd321.com/"
+    },
+    {
+      "timestamp": "20240110140000",
+      "url": "https://www.msd321.com/"
+    },
+    {
+      "timestamp": "20241009140000",
+      "url": "https://www.martinschools.org/"
+    },
+    {
+      "timestamp": "20240926140000",
+      "url": "https://www.martinschools.org/"
+    },
+    {
+      "timestamp": "20220928140000",
+      "url": "https://www.martinschools.org/"
+    },
+    {
+      "timestamp": "20240109140000",
+      "url": "https://www.tfsd.org/"
+    },
+    {
+      "timestamp": "20240110140000",
+      "url": "https://www.tfsd.org/"
+    },
+    {
+      "timestamp": "20241009140000",
+      "url": "https://www.indianriverschools.org/"
+    },
+    {
+      "timestamp": "20240926140000",
+      "url": "https://www.indianriverschools.org/"
+    },
+    {
+      "timestamp": "20220928140000",
+      "url": "https://www.indianriverschools.org/"
+    },
+    {
+      "timestamp": "20240109140000",
+      "url": "https://www.minidokaschools.org/"
+    },
+    {
+      "timestamp": "20240110140000",
+      "url": "https://www.minidokaschools.org/"
+    },
+    {
+      "timestamp": "20240227140000",
+      "url": "https://www.jcsd1.us/"
+    },
+    {
+      "timestamp": "20240408140000",
+      "url": "https://www.jcsd1.us/"
+    },
+    {
+      "timestamp": "20241009140000",
+      "url": "https://www.nassau.k12.fl.us/"
+    },
+    {
+      "timestamp": "20240926140000",
+      "url": "https://www.nassau.k12.fl.us/"
+    },
+    {
+      "timestamp": "20220928140000",
+      "url": "https://www.nassau.k12.fl.us/"
+    },
+    {
+      "timestamp": "20251205090925",
+      "url": "https://www.fremont25.org/"
+    },
+    {
+      "timestamp": "20210204203116",
+      "url": "https://www.fremont25.org/"
+    },
+    {
+      "timestamp": "20241009140000",
+      "url": "https://www.putnamschools.org/"
+    },
+    {
+      "timestamp": "20240926140000",
+      "url": "https://www.putnamschools.org/"
+    },
+    {
+      "timestamp": "20220928140000",
+      "url": "https://www.putnamschools.org/"
+    },
+    {
+      "timestamp": "20250306140000",
+      "url": "https://www.converse2.org/"
+    },
+    {
+      "timestamp": "20250307140000",
+      "url": "https://www.converse2.org/"
+    },
+    {
+      "timestamp": "20240109140000",
+      "url": "https://www.sd381.k12.id.us/"
+    },
+    {
+      "timestamp": "20240110140000",
+      "url": "https://www.sd381.k12.id.us/"
+    },
+    {
+      "timestamp": "20221003075916",
+      "url": "https://walton.k12.fl.us/"
+    },
+    {
+      "timestamp": "20221108225747",
+      "url": "https://www.walton.k12.fl.us/"
+    },
+    {
+      "timestamp": "20241009140000",
+      "url": "https://www.keysschools.com/"
+    },
+    {
+      "timestamp": "20240926140000",
+      "url": "https://www.keysschools.com/"
+    },
+    {
+      "timestamp": "20220928140000",
+      "url": "https://www.keysschools.com/"
+    },
+    {
+      "timestamp": "20241009140000",
+      "url": "https://www.ocps.net/api/popup-alerts"
+    },
+    {
+      "timestamp": "20241009140000",
+      "url": "https://mainapi.dadeschools.net/api/v1/alerts/"
+    },
+    {
+      "timestamp": "20241009140000",
+      "url": "https://www.palmbeachschools.org/fs/pages/2/page-pops"
+    },
+    {
+      "timestamp": "20240926140000",
+      "url": "https://www.palmbeachschools.org/fs/pages/2/page-pops"
+    },
+    {
+      "timestamp": "20241009140000",
+      "url": "https://www.browardschools.com/fs/pages/2/page-pops"
+    },
+    {
+      "timestamp": "20240926140000",
+      "url": "https://www.browardschools.com/fs/pages/2/page-pops"
+    },
+    {
+      "timestamp": "20240111140000",
+      "url": "https://gfps.k12.mt.us/fs/pages/3076/page-pops"
+    },
+    {
+      "timestamp": "20240117140000",
+      "url": "https://www.billingsschools.org/fs/pages/2465/page-pops"
+    },
+    {
+      "timestamp": "20241009140000",
+      "url": "https://www.pcsb.org/fs/pages/2/page-pops"
+    },
+    {
+      "timestamp": "20240926140000",
+      "url": "https://www.pcsb.org/fs/pages/2/page-pops"
+    },
+    {
+      "timestamp": "20240109140000",
+      "url": "https://www.mcpsmt.org/fs/pages/1088/page-pops"
+    },
+    {
+      "timestamp": "20231207140000",
+      "url": "https://www.bsd7.org/fs/pages/494/page-pops"
+    },
+    {
+      "timestamp": "20241009140000",
+      "url": "https://www.osceolaschools.net/api/popup-alerts"
+    },
+    {
+      "timestamp": "20240109140000",
+      "url": "https://www.d93schools.org/api/popup-alerts"
+    },
+    {
+      "timestamp": "20241009140000",
+      "url": "https://www.vcsedu.org/fs/pages/2/page-pops"
+    },
+    {
+      "timestamp": "20240926140000",
+      "url": "https://www.vcsedu.org/fs/pages/2/page-pops"
+    },
+    {
+      "timestamp": "20240109140000",
+      "url": "https://www.sd25.us/fs/pages/2/page-pops"
+    },
+    {
+      "timestamp": "20241009140000",
+      "url": "https://www.scps.k12.fl.us/api/popup-alerts"
+    },
+    {
+      "timestamp": "20231207140000",
+      "url": "https://www.tcsd.org/fs/pages/2/page-pops"
+    },
+    {
+      "timestamp": "20241009140000",
+      "url": "https://www.leonschools.net/api/popup-alerts"
+    },
+    {
+      "timestamp": "20241009140000",
+      "url": "https://www.escambiaschools.org/fs/pages/2/page-pops"
+    },
+    {
+      "timestamp": "20240926140000",
+      "url": "https://www.escambiaschools.org/fs/pages/2/page-pops"
+    },
+    {
+      "timestamp": "20240109140000",
+      "url": "https://www.blaineschools.org/fs/pages/1217/page-pops"
+    },
+    {
+      "timestamp": "20240111140000",
+      "url": "https://www.ehpsmt.gov/fs/pages/2/page-pops"
+    },
+    {
+      "timestamp": "20240109140000",
+      "url": "https://www.sd5.k12.mt.us/fs/pages/2/page-pops"
+    },
+    {
+      "timestamp": "20231207140000",
+      "url": "https://www.bsd44.org/api/popup-alerts"
+    },
+    {
+      "timestamp": "20241009140000",
+      "url": "https://www.collierschools.com/fs/pages/2/page-pops"
+    },
+    {
+      "timestamp": "20240926140000",
+      "url": "https://www.collierschools.com/fs/pages/2/page-pops"
+    },
+    {
+      "timestamp": "20241009140000",
+      "url": "https://www.hernandoschools.org/api/popup-alerts"
+    },
+    {
+      "timestamp": "20241009140000",
+      "url": "https://www.citrusschools.org/api/popup-alerts"
+    },
+    {
+      "timestamp": "20240109140000",
+      "url": "https://www.shelleyschools.org/api/popup-alerts"
+    },
+    {
+      "timestamp": "20241009140000",
+      "url": "https://www.yourcharlotteschools.net/api/popup-alerts"
+    },
+    {
+      "timestamp": "20241009140000",
+      "url": "https://www.jcsb.org/api/popup-alerts"
+    },
+    {
+      "timestamp": "20241009140000",
+      "url": "https://www.flaglerschools.com/api/popup-alerts"
+    },
+    {
+      "timestamp": "20241009140000",
+      "url": "https://www.sumter.k12.fl.us/api/popup-alerts"
+    },
+    {
+      "timestamp": "20241009115824",
+      "url": "https://www.ocps.net/"
+    },
+    {
+      "timestamp": "20241010162254",
+      "url": "https://www.ocps.net/"
+    },
+    {
+      "timestamp": "20240926134303",
+      "url": "https://www.ocps.net/"
+    },
+    {
+      "timestamp": "20220930021116",
+      "url": "https://www.ocps.net/"
+    },
+    {
+      "timestamp": "20241010025056",
+      "url": "https://www.palmbeachschools.org/"
+    },
+    {
+      "timestamp": "20240927120830",
+      "url": "https://www.palmbeachschools.org/"
+    },
+    {
+      "timestamp": "20241009140000",
+      "url": "https://www.browardschools.com/"
+    },
+    {
+      "timestamp": "20220221043116",
+      "url": "https://www.gfps.k12.mt.us/"
+    },
+    {
+      "timestamp": "20220220163141",
+      "url": "https://www.gfps.k12.mt.us/"
+    },
+    {
+      "timestamp": "20241009140000",
+      "url": "https://www.pcsb.org/"
+    },
+    {
+      "timestamp": "20240227140000",
+      "url": "https://www.natronaschools.org/"
+    },
+    {
+      "timestamp": "20240313140000",
+      "url": "https://www.natronaschools.org/"
+    },
+    {
+      "timestamp": "20241009092654",
+      "url": "http://www.pasco.k12.fl.us/"
+    },
+    {
+      "timestamp": "20241010092555",
+      "url": "http://www.pasco.k12.fl.us/"
+    },
+    {
+      "timestamp": "20240926082831",
+      "url": "http://www.pasco.k12.fl.us/"
+    },
+    {
+      "timestamp": "20221003142234",
+      "url": "https://pasco.k12.fl.us/"
+    },
+    {
+      "timestamp": "20241010044321",
+      "url": "https://www.osceolaschools.net/"
+    },
+    {
+      "timestamp": "20220928142046",
+      "url": "https://www.osceolaschools.net/"
+    },
+    {
+      "timestamp": "20241009140000",
+      "url": "https://www.vcsedu.org/"
+    },
+    {
+      "timestamp": "20251204193152",
+      "url": "https://www.sd25.us/"
+    },
+    {
+      "timestamp": "20251205072847",
+      "url": "https://www.sd25.us/"
+    },
+    {
+      "timestamp": "20241009140000",
+      "url": "https://www.escambiaschools.org/"
+    },
+    {
+      "timestamp": "20241009140000",
+      "url": "https://www.collierschools.com/"
+    },
+    {
+      "timestamp": "20231208140000",
+      "url": "https://www.sodaschools.org/"
+    },
+    {
+      "timestamp": "20240109140000",
+      "url": "https://www.sodaschools.org/"
+    },
+    {
+      "timestamp": "20240227140000",
+      "url": "https://www.wcsd1.org/"
+    },
+    {
+      "timestamp": "20240408140000",
+      "url": "https://www.wcsd1.org/"
+    },
+    {
+      "timestamp": "20240117140000",
+      "url": "https://www.hotsprings1.org/"
+    },
+    {
+      "timestamp": "20240118140000",
+      "url": "https://www.hotsprings1.org/"
     }
   ],
   "cdx": [
     {
-      "url": "katv.com/resources/ftptransfer/*",
-      "from": "20140101",
-      "to": "20260930"
+      "url": "www.ocps.net/api/popup-alerts",
+      "from": "20170101",
+      "to": "20260927",
+      "filter": [
+        "statuscode:200"
+      ]
     },
     {
-      "url": "foxbaltimore.com/resources/ftptransfer/*",
-      "from": "20140101",
-      "to": "20260930"
+      "url": "www.palmbeachschools.org/fs/pages/2/page-pops",
+      "from": "20170101",
+      "to": "20260927",
+      "filter": [
+        "statuscode:200"
+      ]
     },
     {
-      "url": "whec.com/wp-content/uploads/dynamic-assets/*",
-      "from": "20140101",
-      "to": "20260930"
+      "url": "www.browardschools.com/fs/pages/2/page-pops",
+      "from": "20170101",
+      "to": "20260927",
+      "filter": [
+        "statuscode:200"
+      ]
+    },
+    {
+      "url": "gfps.k12.mt.us/fs/pages/3076/page-pops",
+      "from": "20170101",
+      "to": "20260927",
+      "filter": [
+        "statuscode:200"
+      ]
+    },
+    {
+      "url": "www.billingsschools.org/fs/pages/2465/page-pops",
+      "from": "20170101",
+      "to": "20260927",
+      "filter": [
+        "statuscode:200"
+      ]
+    },
+    {
+      "url": "www.pcsb.org/fs/pages/2/page-pops",
+      "from": "20170101",
+      "to": "20260927",
+      "filter": [
+        "statuscode:200"
+      ]
+    },
+    {
+      "url": "www.mcpsmt.org/fs/pages/1088/page-pops",
+      "from": "20170101",
+      "to": "20260927",
+      "filter": [
+        "statuscode:200"
+      ]
+    },
+    {
+      "url": "www.bsd7.org/fs/pages/494/page-pops",
+      "from": "20170101",
+      "to": "20260927",
+      "filter": [
+        "statuscode:200"
+      ]
+    },
+    {
+      "url": "www.osceolaschools.net/api/popup-alerts",
+      "from": "20170101",
+      "to": "20260927",
+      "filter": [
+        "statuscode:200"
+      ]
+    },
+    {
+      "url": "www.d93schools.org/api/popup-alerts",
+      "from": "20170101",
+      "to": "20260927",
+      "filter": [
+        "statuscode:200"
+      ]
+    },
+    {
+      "url": "www.vcsedu.org/fs/pages/2/page-pops",
+      "from": "20170101",
+      "to": "20260927",
+      "filter": [
+        "statuscode:200"
+      ]
+    },
+    {
+      "url": "www.sd25.us/fs/pages/2/page-pops",
+      "from": "20170101",
+      "to": "20260927",
+      "filter": [
+        "statuscode:200"
+      ]
+    },
+    {
+      "url": "www.scps.k12.fl.us/api/popup-alerts",
+      "from": "20170101",
+      "to": "20260927",
+      "filter": [
+        "statuscode:200"
+      ]
+    },
+    {
+      "url": "www.tcsd.org/fs/pages/2/page-pops",
+      "from": "20170101",
+      "to": "20260927",
+      "filter": [
+        "statuscode:200"
+      ]
+    },
+    {
+      "url": "www.leonschools.net/api/popup-alerts",
+      "from": "20170101",
+      "to": "20260927",
+      "filter": [
+        "statuscode:200"
+      ]
+    },
+    {
+      "url": "www.escambiaschools.org/fs/pages/2/page-pops",
+      "from": "20170101",
+      "to": "20260927",
+      "filter": [
+        "statuscode:200"
+      ]
+    },
+    {
+      "url": "www.blaineschools.org/fs/pages/1217/page-pops",
+      "from": "20170101",
+      "to": "20260927",
+      "filter": [
+        "statuscode:200"
+      ]
+    },
+    {
+      "url": "www.ehpsmt.gov/fs/pages/2/page-pops",
+      "from": "20170101",
+      "to": "20260927",
+      "filter": [
+        "statuscode:200"
+      ]
+    },
+    {
+      "url": "www.sd5.k12.mt.us/fs/pages/2/page-pops",
+      "from": "20170101",
+      "to": "20260927",
+      "filter": [
+        "statuscode:200"
+      ]
+    },
+    {
+      "url": "www.bsd44.org/api/popup-alerts",
+      "from": "20170101",
+      "to": "20260927",
+      "filter": [
+        "statuscode:200"
+      ]
+    },
+    {
+      "url": "www.collierschools.com/fs/pages/2/page-pops",
+      "from": "20170101",
+      "to": "20260927",
+      "filter": [
+        "statuscode:200"
+      ]
+    },
+    {
+      "url": "www.hernandoschools.org/api/popup-alerts",
+      "from": "20170101",
+      "to": "20260927",
+      "filter": [
+        "statuscode:200"
+      ]
+    },
+    {
+      "url": "www.citrusschools.org/api/popup-alerts",
+      "from": "20170101",
+      "to": "20260927",
+      "filter": [
+        "statuscode:200"
+      ]
+    },
+    {
+      "url": "www.shelleyschools.org/api/popup-alerts",
+      "from": "20170101",
+      "to": "20260927",
+      "filter": [
+        "statuscode:200"
+      ]
+    },
+    {
+      "url": "www.yourcharlotteschools.net/api/popup-alerts",
+      "from": "20170101",
+      "to": "20260927",
+      "filter": [
+        "statuscode:200"
+      ]
+    },
+    {
+      "url": "www.jcsb.org/api/popup-alerts",
+      "from": "20170101",
+      "to": "20260927",
+      "filter": [
+        "statuscode:200"
+      ]
+    },
+    {
+      "url": "www.flaglerschools.com/api/popup-alerts",
+      "from": "20170101",
+      "to": "20260927",
+      "filter": [
+        "statuscode:200"
+      ]
+    },
+    {
+      "url": "www.sumter.k12.fl.us/api/popup-alerts",
+      "from": "20170101",
+      "to": "20260927",
+      "filter": [
+        "statuscode:200"
+      ]
+    },
+    {
+      "url": "mainapi.dadeschools.net/api/v1/alerts/",
+      "from": "20170101",
+      "to": "20260927",
+      "filter": [
+        "statuscode:200"
+      ]
     }
   ]
 }
