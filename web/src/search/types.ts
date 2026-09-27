@@ -59,7 +59,8 @@ export interface SearchResults {
   readonly zips: readonly SearchHit[];
   /**
    * Suggested display order of the groups: ZIPs first for numeric input,
-   * otherwise the group with the best top match first.
+   * otherwise the group with the best top match first, places ahead of
+   * schools when their best matches are as good.
    */
   readonly order: readonly GroupName[];
 }

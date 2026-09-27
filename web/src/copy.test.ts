@@ -195,11 +195,11 @@ describe('copy', () => {
   );
 
   const searchFormat = path.join(WEB_ROOT, 'src', 'search', 'format.ts');
-  it.skipIf(!existsSync(searchFormat))('names every kind of search result', async () => {
+  it.skipIf(!existsSync(searchFormat))('heads every kind of search result', async () => {
     const { KIND_CODES } = (await import(/* @vite-ignore */ searchFormat)) as {
       KIND_CODES: readonly string[];
     };
-    expect(Object.keys(copy.search.kind).sort()).toEqual([...KIND_CODES].sort());
+    expect(Object.keys(copy.search.sections).sort()).toEqual([...KIND_CODES].sort());
   });
 });
 

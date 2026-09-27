@@ -521,6 +521,42 @@ describe('results', () => {
     expect(engine.search('mccaskey').order[0]).toBe('schools');
   });
 
+  it('puts places first when a place and a district are both named exactly as typed', () => {
+    // As pipeline/out/site-data/search and the directory have them (September 2026).
+    const record = (
+      kind: SearchRecord['kind'],
+      id: string,
+      name: string,
+      sub: string,
+      state: string,
+      weight: number,
+    ): SearchRecord => ({ kind, id, name, sub, state, lat: 39.1, lon: -94.6, weight });
+    const kc = new SearchEngine(
+      loadIndex(
+        encodeIndex([
+          record('city', '2938000', 'Kansas City', 'Missouri', 'MO', 521220),
+          record('city', '2036000', 'Kansas City', 'Kansas', 'KS', 157805),
+          record('district', '2007950', 'Kansas City', 'Kansas City, KS', 'KS', 21000),
+          record('district', '2916400', 'KANSAS CITY 33', 'Kansas City, MO', 'MO', 14000),
+          record(
+            'school',
+            'A1902690',
+            'THE PEMBROKE HILL SCHOOL - WORNALL CAMPUS',
+            'Kansas City, MO',
+            'MO',
+            1200,
+          ),
+        ]).bytes,
+      ),
+    );
+    const results = kc.search('kansas city');
+    expect(results.order).toEqual(['cities', 'schools', 'zips']);
+    expect(results.cities.map((h) => h.id)).toEqual(['2938000', '2036000']);
+    expect(results.schools[0]?.id).toBe('2007950');
+    // Names only a school has still put schools first.
+    expect(kc.search('pembroke').order[0]).toBe('schools');
+  });
+
   it('highlights the matched part of each word', () => {
     expect(first('lanc hi', 'schools')?.highlight).toEqual([
       [0, 4],

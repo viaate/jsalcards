@@ -66,12 +66,12 @@ export const copy = deepFreeze({
     clear: 'Clear search',
     results: 'Search results',
     noResults: 'No matches',
-    /** The kind of each search result, keyed like the search index's kind codes. */
-    kind: {
-      school: 'School',
-      district: 'District',
-      city: 'City',
-      zip: 'ZIP code',
+    /** The heading over each kind of search result, keyed like the search index's kind codes. */
+    sections: {
+      city: 'Places',
+      zip: 'ZIP codes',
+      district: 'Districts',
+      school: 'Schools',
     },
   },
 
@@ -281,7 +281,7 @@ export type StatusKey = keyof Copy['status'];
 export type ReasonKey = keyof Copy['reason'];
 export type HazardKey = keyof Copy['hazard'];
 export type AlertLevelKey = keyof Copy['alertLevel'];
-export type SearchKind = keyof Copy['search']['kind'];
+export type SearchKind = keyof Copy['search']['sections'];
 
 /** Status keys in code order, as the published files number them: 0 closed … 3 early dismissal. */
 export const STATUS_KEYS: readonly StatusKey[] = /* @__PURE__ */ Object.freeze([

@@ -8,7 +8,7 @@
  * Only the newest text ever shows results.
  */
 
-import type { GroupName, SearchClient, SearchHit, SearchResults } from '../search';
+import type { RecordKind, SearchClient, SearchHit, SearchResults } from '../search';
 import { casedName, nameLayout, shownRanges } from '../text/names';
 
 /** Makes a search client for an index URL (the client code loads with it). */
@@ -22,7 +22,7 @@ export interface SearchControllerOptions {
   /** Called once the index has loaded (the page can cache it for offline use). */
   readonly onIndexLoaded?: (indexUrl: string) => void;
   readonly createClient?: ClientFactory;
-  /** Results per group. Default 5. */
+  /** Results per group. Default SEARCH_LIMIT. */
   readonly limit?: number;
 }
 
@@ -44,7 +44,7 @@ const defaultClient: ClientFactory = async (indexUrl) => {
 export function createSearchController(options: SearchControllerOptions): SearchController {
   const { indexUrl } = options;
   const createClient = options.createClient ?? defaultClient;
-  const limit = options.limit ?? 5;
+  const limit = options.limit ?? SEARCH_LIMIT;
   let starting: Promise<SearchClient | null> | null = null;
   let client: SearchClient | null = null;
   let unavailable = indexUrl === null;
@@ -116,6 +116,28 @@ export function createSearchController(options: SearchControllerOptions): Search
   };
 }
 
+/**
+ * Results asked of each group: enough for a full section of districts and
+ * one of schools, which rank together, and for the rows lost to repeats.
+ */
+export const SEARCH_LIMIT = 16;
+
+/** Rows the list shows at most, unless every section's first rows need more. */
+export const LIST_ROWS = 12;
+/** Rows every section with results shows, when it has them. */
+const SECTION_FLOOR = 2;
+/** Rows each section shows before any section takes the rows others leave. */
+const SECTION_ROWS: Readonly<Record<RecordKind, number>> = {
+  city: 4,
+  district: 3,
+  school: 5,
+  zip: 5,
+};
+/** Rows one section shows at most. */
+const SECTION_MAX = 8;
+/** Degrees apart, north to south and east to west, within which two records are one place. */
+const SAME_PLACE = 0.01;
+
 /** One result as the list shows it. */
 export interface SearchOption {
   /** Element id, unique within the list. */
@@ -130,9 +152,16 @@ export interface SearchOption {
   readonly parts: readonly NamePart[];
   /** The hit's second line as shown, or ''. */
   readonly sub: string;
-  readonly group: GroupName;
-  /** The first option of a group after the first group. */
-  readonly startsGroup: boolean;
+  /** The section it is listed in: one kind of result each. */
+  readonly section: RecordKind;
+}
+
+/** One kind of result, as the list shows it under its heading. */
+export interface SearchSection {
+  readonly kind: RecordKind;
+  readonly options: readonly SearchOption[];
+  /** Its first option's place in the whole list. */
+  readonly start: number;
 }
 
 /**
@@ -150,24 +179,93 @@ function shownName(hit: SearchHit): { name: string; highlight: [number, number][
   };
 }
 
-/** The results as one list: groups in the suggested order, hits in rank order. */
-export function searchOptions(results: SearchResults, idPrefix: string): SearchOption[] {
-  const list: SearchOption[] = [];
-  for (const group of results.order) {
-    results[group].forEach((hit, index) => {
-      const shown = shownName(hit);
-      list.push({
-        id: `${idPrefix}-${String(list.length)}`,
-        hit,
-        name: shown.name,
-        parts: nameParts(shown),
-        sub: casedName(hit.sub),
-        group,
-        startsGroup: index === 0 && list.length > 0,
-      });
+interface Shown {
+  readonly hit: SearchHit;
+  readonly name: string;
+  readonly highlight: [number, number][];
+  readonly sub: string;
+}
+
+/**
+ * Whether two rows would read the same and are one place: the directory lists
+ * a few private schools twice, under two ids, at one address. Schools of one
+ * name in one town that stand apart both stay.
+ */
+function sameRow(a: Shown, b: Shown): boolean {
+  return (
+    a.hit.kind === b.hit.kind &&
+    a.name === b.name &&
+    a.sub === b.sub &&
+    Math.abs(a.hit.lat - b.hit.lat) < SAME_PLACE &&
+    Math.abs(a.hit.lon - b.hit.lon) < SAME_PLACE
+  );
+}
+
+/**
+ * Rows for each section, in list order: every section its first
+ * SECTION_FLOOR, then each in turn up to its SECTION_ROWS, then each in turn
+ * up to SECTION_MAX, while the list has room.
+ */
+function shareRows(sections: readonly { kind: RecordKind; size: number }[]): number[] {
+  const rows = sections.map(({ size }) => Math.min(size, SECTION_FLOOR));
+  let room = LIST_ROWS - rows.reduce((sum, n) => sum + n, 0);
+  for (const cap of [(kind: RecordKind) => SECTION_ROWS[kind], () => SECTION_MAX]) {
+    sections.forEach(({ kind, size }, i) => {
+      const more = Math.min(room, Math.min(size, cap(kind)) - (rows[i] ?? 0));
+      if (more <= 0) return;
+      rows[i] = (rows[i] ?? 0) + more;
+      room -= more;
     });
   }
+  return rows;
+}
+
+/**
+ * The results as one list of sections, one kind of result each: places,
+ * ZIP codes, districts and schools. Sections come in the suggested group
+ * order; districts and schools, which rank as one group, come in the order
+ * of their best hit. Hits keep their rank order, a row that repeats one
+ * above it is left out, and the list shows at most LIST_ROWS rows.
+ */
+export function searchOptions(results: SearchResults, idPrefix: string): SearchOption[] {
+  const sections: { kind: RecordKind; rows: Shown[] }[] = [];
+  for (const group of results.order) {
+    for (const hit of results[group]) {
+      const shown: Shown = { hit, ...shownName(hit), sub: casedName(hit.sub) };
+      let section = sections.find((s) => s.kind === hit.kind);
+      if (section === undefined) {
+        section = { kind: hit.kind, rows: [] };
+        sections.push(section);
+      }
+      if (!section.rows.some((row) => sameRow(row, shown))) section.rows.push(shown);
+    }
+  }
+  const counts = shareRows(sections.map(({ kind, rows }) => ({ kind, size: rows.length })));
+  const list: SearchOption[] = [];
+  sections.forEach(({ kind, rows }, s) => {
+    for (const row of rows.slice(0, counts[s] ?? 0)) {
+      list.push({
+        id: `${idPrefix}-${String(list.length)}`,
+        hit: row.hit,
+        name: row.name,
+        parts: nameParts(row),
+        sub: row.sub,
+        section: kind,
+      });
+    }
+  });
   return list;
+}
+
+/** A list's options under their sections, in list order. */
+export function searchSections(options: readonly SearchOption[]): SearchSection[] {
+  const sections: { kind: RecordKind; options: SearchOption[]; start: number }[] = [];
+  options.forEach((option, index) => {
+    const last = sections[sections.length - 1];
+    if (last?.kind === option.section) last.options.push(option);
+    else sections.push({ kind: option.section, options: [option], start: index });
+  });
+  return sections;
 }
 
 /** A name cut into runs that did and did not match, for bolding the matches. */

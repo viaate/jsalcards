@@ -48,6 +48,11 @@
   let query = $state(untrack(() => initialQuery));
   /** The newest text's results, or null when there are none to show. */
   let options = $state<readonly SearchOption[] | null>(null);
+  /**
+   * The highlighted option, which Enter picks, or -1. New results highlight
+   * their first option, the best match, so Enter alone goes there and the
+   * first Down moves on to the next.
+   */
   let active = $state(-1);
   let focused = $state(false);
   /** Escape hides the list until the text changes. */
@@ -242,7 +247,6 @@
         if (expanded) {
           event.preventDefault();
           dismissed = true;
-          active = -1;
         } else if (query !== '') {
           event.preventDefault();
           query = '';
@@ -349,7 +353,7 @@
           listId: LIST_ID,
           onResults: (next) => {
             options = next;
-            active = -1;
+            active = next !== null && next.length > 0 ? 0 : -1;
           },
           onUpdated,
         });

@@ -545,14 +545,27 @@ test.describe('with data staged', () => {
     await expect(options).toHaveCount(2);
     await expect(options.nth(0)).toContainText('Kansas City');
     await expect(options.nth(0)).toContainText('Missouri');
-    await expect(options.nth(0)).toContainText(copy.search.kind.city);
+    // Each kind of result is a group under its heading; the places come first.
+    const groups = page.locator('[role="listbox"] > [role="group"]');
+    await expect(groups).toHaveCount(1);
+    await expect(groups.nth(0)).toHaveAccessibleName(copy.search.sections.city);
+    await expect(groups.nth(0).locator('[role="option"]')).toHaveCount(2);
     await expect(input).toHaveAttribute('aria-expanded', 'true');
     await expect(input).toHaveAttribute('aria-controls', 'search-results');
 
-    // Keys move through the list; Enter picks, and the map goes to the city.
-    await input.press('ArrowDown');
+    // The best match is highlighted as the results come; keys move through the list, around
+    // its ends; Enter picks, and the map goes to the city.
     await expect(input).toHaveAttribute('aria-activedescendant', 'search-results-0');
     await expect(options.nth(0)).toHaveAttribute('aria-selected', 'true');
+    await input.press('ArrowDown');
+    await expect(input).toHaveAttribute('aria-activedescendant', 'search-results-1');
+    await expect(options.nth(0)).toHaveAttribute('aria-selected', 'false');
+    await expect(options.nth(1)).toHaveAttribute('aria-selected', 'true');
+    await input.press('ArrowDown');
+    await expect(input).toHaveAttribute('aria-activedescendant', 'search-results-0');
+    await input.press('ArrowUp');
+    await input.press('ArrowUp');
+    await expect(input).toHaveAttribute('aria-activedescendant', 'search-results-0');
     await input.press('Enter');
     await expect(input).toHaveValue('Kansas City');
     await expect(page.locator('[role="listbox"]')).toHaveCount(0);
@@ -563,7 +576,7 @@ test.describe('with data staged', () => {
     await input.fill('');
     await input.pressSequentially('64113', { delay: 20 });
     await expect(options).toHaveCount(1);
-    await expect(options.nth(0)).toContainText(copy.search.kind.zip);
+    await expect(groups.nth(0)).toHaveAccessibleName(copy.search.sections.zip);
     await options.nth(0).click();
     await expect.poll(() => new URL(page.url()).searchParams.get('zip')).toBe('64113');
     await expectMapNear(page, 39.01414, -94.595493, 12);
@@ -576,7 +589,7 @@ test.describe('with data staged', () => {
     // The directory writes this name in capitals; it shows in title case.
     await expect(options.nth(0)).toContainText('The Pembroke Hill School - Wornall Campus');
     await expect(options.nth(0).locator('b')).toHaveText('Pembroke');
-    await expect(options.nth(0)).toContainText(copy.search.kind.school);
+    await expect(groups.nth(0)).toHaveAccessibleName(copy.search.sections.school);
     await options.nth(0).click();
     await expect(input).toHaveValue('The Pembroke Hill School - Wornall Campus');
     await expect.poll(() => new URL(page.url()).searchParams.get('school')).toBe(PEMBROKE_HILL);

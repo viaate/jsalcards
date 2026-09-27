@@ -281,6 +281,11 @@
         --results-left: var(--brand-width);
       }
 
+      /* Open, its results list goes over the controls at the foot of the screen. */
+      .bar:has(.results) {
+        z-index: 3;
+      }
+
       /* Its box is the name alone, so a mask over it covers the name and nothing else. */
       .wordmark {
         justify-self: start;

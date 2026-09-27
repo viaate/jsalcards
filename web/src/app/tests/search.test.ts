@@ -2,7 +2,14 @@ import { describe, expect, it, vi } from 'vitest';
 
 import type { IndexInfo, SearchClient, SearchHit, SearchResults } from '../../search';
 import { SearchUnavailableError } from '../../search';
-import { createSearchController, nameParts, searchOptions } from '../search';
+import {
+  LIST_ROWS,
+  createSearchController,
+  nameParts,
+  searchOptions,
+  searchSections,
+} from '../search';
+import type { SearchOption } from '../search';
 
 const INFO: IndexInfo = { records: 1, tokens: 1, bytes: 1, loadMs: 1, phases: {} };
 const INDEX = 'https://snow.test/data/search-index.bin';
@@ -161,12 +168,122 @@ describe('with an index', () => {
 });
 
 describe('laying out results', () => {
-  it('numbers options in the suggested group order and marks where groups start', () => {
+  it('numbers options in the suggested group order, one section per kind', () => {
     const options = searchOptions(resultsFor('kansas'), 'list');
-    expect(options.map((option) => [option.id, option.group, option.startsGroup])).toEqual([
-      ['list-0', 'cities', false],
-      ['list-1', 'schools', true],
+    expect(options.map((option) => [option.id, option.section])).toEqual([
+      ['list-0', 'city'],
+      ['list-1', 'school'],
     ]);
+    expect(
+      searchSections(options).map((section) => [
+        section.kind,
+        section.start,
+        section.options.map((option) => option.id),
+      ]),
+    ).toEqual([
+      ['city', 0, ['list-0']],
+      ['school', 1, ['list-1']],
+    ]);
+  });
+
+  /** Search hits named `names`, of one kind, a kilometre or more apart. */
+  const hits = (kind: SearchHit['kind'], names: readonly string[]): SearchHit[] =>
+    names.map((name, i) => ({
+      ...hit(kind, `${kind}-${String(i)}`, name),
+      sub: 'Kansas City, MO',
+      lat: 39 + i / 50,
+    }));
+
+  it('lists districts and schools apart, in the order of their best hit', () => {
+    const schools = [
+      ...hits('district', ['KANSAS CITY 33']),
+      ...hits('school', ['NORTH KANSAS CITY HIGH']),
+      ...hits('district', ['NORTH KANSAS CITY 74']),
+    ];
+    const options = searchOptions(
+      { query: 'kansas city', schools, cities: [], zips: [], order: ['cities', 'schools', 'zips'] },
+      'list',
+    );
+    expect(options.map((option) => [option.section, option.name])).toEqual([
+      ['district', 'Kansas City 33'],
+      ['district', 'North Kansas City 74'],
+      ['school', 'North Kansas City High'],
+    ]);
+    expect(options.map((option) => option.id)).toEqual(['list-0', 'list-1', 'list-2']);
+    expect(searchSections(options).map((section) => section.start)).toEqual([0, 2]);
+  });
+
+  it('shares LIST_ROWS rows out: some of every kind, then each kind’s share, then the rest', () => {
+    const many = (kind: SearchHit['kind']): SearchHit[] =>
+      hits(
+        kind,
+        Array.from({ length: 16 }, (_, i) => `Kansas City ${String(i)}`),
+      );
+    const count = (options: readonly SearchOption[]): Record<string, number> =>
+      Object.fromEntries(searchSections(options).map((s) => [s.kind, s.options.length]));
+    const all = searchOptions(
+      {
+        query: 'kansas city',
+        schools: [...many('district'), ...many('school')],
+        cities: many('city'),
+        zips: [],
+        order: ['cities', 'schools', 'zips'],
+      },
+      'list',
+    );
+    expect(all).toHaveLength(LIST_ROWS);
+    expect(count(all)).toEqual({ city: 4, district: 3, school: 5 });
+    // Three places leave a row, which goes to the districts after them.
+    const few = searchOptions(
+      {
+        query: 'kansas city',
+        schools: [...many('district'), ...many('school')],
+        cities: many('city').slice(0, 3),
+        zips: [],
+        order: ['cities', 'schools', 'zips'],
+      },
+      'list',
+    );
+    expect(count(few)).toEqual({ city: 3, district: 4, school: 5 });
+    // Schools alone take up to eight rows.
+    const alone = searchOptions(
+      { query: 'kansas city', schools: many('school'), cities: [], zips: [], order: ['schools'] },
+      'list',
+    );
+    expect(count(alone)).toEqual({ school: 8 });
+    // Every kind that has hits shows some, whatever comes first.
+    const zips = searchOptions(
+      {
+        query: '6',
+        schools: [...many('district'), ...many('school')],
+        cities: many('city'),
+        zips: many('zip'),
+        order: ['zips', 'schools', 'cities'],
+      },
+      'list',
+    );
+    expect(count(zips)).toEqual({ zip: 5, district: 3, school: 2, city: 2 });
+    expect(zips).toHaveLength(LIST_ROWS);
+  });
+
+  it('lists a school the directory has twice at one address once, and keeps namesakes apart', () => {
+    const academy = (id: string, lat: number): SearchHit => ({
+      ...hit('school', id, 'KANSAS CITY ACADEMY'),
+      sub: 'Kansas City, MO',
+      lat,
+    });
+    const options = searchOptions(
+      {
+        query: 'kansas city academy',
+        // Two ids, ten metres apart, as the directory has them; then one across town.
+        schools: [academy('A9103777', 38.9837), academy('A2392120', 38.9836), academy('X', 39.1)],
+        cities: [],
+        zips: [],
+        order: ['schools'],
+      },
+      'list',
+    );
+    expect(options.map((option) => option.hit.id)).toEqual(['A9103777', 'X']);
   });
 
   it('shows names written in capitals in title case, matched where the raw name matched', () => {

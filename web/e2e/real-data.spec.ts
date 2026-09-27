@@ -292,7 +292,9 @@ test('searching “pembroke” lists Pembroke Hill, and choosing it goes there',
   const option = page.locator('[role="option"]', { hasText: PEMBROKE_HILL_NAME });
   await expect(option).toHaveCount(1, { timeout: 30_000 });
   await expect(option).toContainText('Kansas City, MO');
-  await expect(option).toContainText(copy.search.kind.school);
+  await expect(page.locator('[role="group"]', { has: option })).toHaveAccessibleName(
+    copy.search.sections.school,
+  );
   await expect(option.locator('b')).toHaveText('Pembroke');
   // The other schools, districts and places named Pembroke are listed with it, from the real index.
   expect(await page.locator('[role="option"]').count()).toBeGreaterThan(5);
@@ -338,6 +340,52 @@ test('searching “pembroke” lists Pembroke Hill, and choosing it goes there',
   expect(tiles.length).toBeGreaterThan(0);
   expect(tiles.every((request) => request.range?.startsWith('bytes=') === true)).toBe(true);
   expect(indexRequests()).toHaveLength(1);
+  expect(problems).toEqual([]);
+  await context.close();
+});
+
+test('typing “Kansas City” lists the places, then the districts, then the schools, each once', async ({
+  browser,
+}) => {
+  const context = await browser.newContext({ viewport: { width: 1440, height: 900 } });
+  const page = await context.newPage();
+  const { problems } = watch(page);
+  await page.goto(site);
+  await settle(page);
+  const input = page.locator('input.search-input');
+  await input.click();
+  await input.pressSequentially('Kansas City', { delay: 20 });
+  const groups = page.locator('[role="listbox"] > [role="group"]');
+  await expect(groups).toHaveCount(3, { timeout: 30_000 });
+  for (const [i, kind] of (['city', 'district', 'school'] as const).entries()) {
+    await expect(groups.nth(i)).toHaveAccessibleName(copy.search.sections[kind]);
+  }
+  // The city of Kansas City, Missouri first: the place Enter goes to, shown so.
+  const options = page.locator('[role="option"]');
+  await expect(options.nth(0)).toHaveText(/^\s*Kansas City\s+Missouri\s*$/);
+  await expect(options.nth(1)).toHaveText(/^\s*Kansas City\s+Kansas\s*$/);
+  await expect(options.nth(0)).toHaveClass(/is-target/);
+  // The districts named for it, then schools named for it; the one school the directory
+  // lists twice at one address shows once.
+  await expect(groups.nth(1).locator('[role="option"]').first()).toContainText('Kansas City');
+  const rows = await options.evaluateAll((all) =>
+    all.map((option) => (option instanceof HTMLElement ? option.innerText : '')),
+  );
+  expect(rows.length).toBeLessThanOrEqual(12);
+  expect(new Set(rows).size).toBe(rows.length);
+  expect(rows.filter((row) => row.startsWith('Kansas City Academy'))).toHaveLength(1);
+  // The list ends inside the screen.
+  const box = await page.locator('.results').boundingBox();
+  expect((box?.y ?? 0) + (box?.height ?? 0)).toBeLessThanOrEqual(900);
+
+  await input.press('Enter');
+  await expect(input).toHaveValue('Kansas City');
+  await expect
+    .poll(async () => {
+      const view = await mapView(page);
+      return Math.abs(view.lat - 39.125155) < 0.001 && Math.abs(view.lon - -94.550313) < 0.001;
+    })
+    .toBe(true);
   expect(problems).toEqual([]);
   await context.close();
 });

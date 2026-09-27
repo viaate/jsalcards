@@ -74,6 +74,13 @@ export const LEAD_FACTOR = 20;
 const LEAD_CODES = Math.round(Math.log2(LEAD_FACTOR) * 128);
 
 const CITIES = 1;
+/**
+ * Group order between groups whose best matches are equally good, by group
+ * index: places, then schools, then ZIP codes. A place named exactly as typed
+ * is the broadest reading of the text ("kansas city" is the city before it is
+ * the district of that name), and the place's schools are one step away.
+ */
+const TIE_RANK: readonly number[] = [1, 0, 2];
 const FULL = 0;
 /** Every word a whole word of the name, not the whole name: where leading names come from. */
 const IN_NAME = 1;
@@ -305,7 +312,7 @@ export class SearchEngine {
       const best = (g: number): number =>
         (found[g] ?? []).reduce((low, f) => Math.min(low, f.level), LEVEL_COUNT);
       order = [0, 1, 2]
-        .sort((a, b) => best(a) - best(b) || a - b)
+        .sort((a, b) => best(a) - best(b) || (TIE_RANK[a] ?? a) - (TIE_RANK[b] ?? b))
         .map((g) => GROUP_NAMES[g] ?? 'schools');
     }
     return { query: raw, schools, cities, zips, order };
