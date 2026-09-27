@@ -63,6 +63,52 @@ jobs:
       - run: npx playwright install --with-deps chromium
       - run: npm run e2e
 
+      # Traces of the tests that failed, for playwright show-trace.
+      - if: failure()
+        uses: actions/upload-artifact@v7
+        with:
+          name: e2e-results
+          path: web/test-results/
+          if-no-files-found: ignore
+          retention-days: 7
+
+  # Lighthouse on the production build (perf/lighthouse.mjs): 90 or more in all
+  # four categories in the mobile and desktop presets, mobile FCP under 1.5 s,
+  # CLS 0, no console errors and no request leaving the site at the initial
+  # view. The script exits 1 when any gate fails.
+  perf:
+    name: perf
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    defaults:
+      run:
+        working-directory: web
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: web/package-lock.json
+
+      - run: npm ci
+      # Lighthouse drives the Chromium Playwright installs.
+      - run: npx playwright install --with-deps chromium
+      - run: npm run perf
+
+      - if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: lighthouse
+          path: |
+            web/perf/lighthouse.json
+            web/perf/raw/
+          if-no-files-found: ignore
+          retention-days: 14
+
   pipeline:
     name: pipeline
     runs-on: ubuntu-24.04

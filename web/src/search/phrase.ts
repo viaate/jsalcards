@@ -70,12 +70,15 @@ function queryUnits(words: readonly PhraseWord[]): Unit[][] {
 
 /**
  * True when `words` match consecutive tokens of `tokens` in order, each at
- * `tier` or better. A single word only needs to match somewhere.
+ * `tier` or better. A single word only needs to match somewhere; with
+ * `atStart`, the words must be where the name starts ("kansas" for "Kansas
+ * City", not for "North Kansas City").
  */
 export function isPhrase(
   tokens: readonly string[],
   words: readonly PhraseWord[],
   tier: TierValue,
+  atStart = false,
 ): boolean {
   const m = words.length;
   const n = tokens.length;
@@ -118,7 +121,7 @@ export function isPhrase(
     return ok && step(i, unit, qk + 1, j, edge, nk + 1);
   };
 
-  for (let start = 0; start < n; start++) {
+  for (let start = 0; start < (atStart ? 1 : n); start++) {
     if (step(0, null, 0, start, null, 0)) return true;
     if (steps > STEP_BUDGET) return false;
   }

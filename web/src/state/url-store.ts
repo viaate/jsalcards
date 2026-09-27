@@ -6,6 +6,9 @@
  * - Opening a school, district or ZIP pushes one history entry, so Back
  *   returns to what was open before (or to nothing). Closing it replaces the
  *   current entry, so Forward never reopens something that was closed.
+ * - Going somewhere new, as a search pick does, pushes one entry that holds
+ *   both the selection (none for a city) and the view the map is going to,
+ *   so Back returns to the place before, whatever was open there.
  * - Back and Forward re-read the address and tell subscribers, with the
  *   origin "history", so the map can move to the view that entry holds.
  *
@@ -58,6 +61,11 @@ export interface UrlStoreOptions {
   debounceMs?: number;
 }
 
+export interface SelectOptions {
+  /** Keep the current history entry instead of adding one. Default false. */
+  replace?: boolean;
+}
+
 export interface ShareOptions {
   /** Whether the link keeps the map view. Defaults to true only when nothing is selected. */
   view?: boolean;
@@ -71,8 +79,20 @@ export interface UrlStore {
    * every change. Returns the function that stops it. Also a Svelte store.
    */
   subscribe(listener: UrlStateListener): () => void;
-  /** Opens a school, district or ZIP, or closes it with null. */
-  select(selection: Selection | null): void;
+  /**
+   * Opens a school, district or ZIP, or closes it with null. Opening adds a
+   * history entry, unless `replace` keeps the current one (what the app opens
+   * with by itself, such as the pinned school, is not a step to go back from).
+   */
+  select(selection: Selection | null, options?: SelectOptions): void;
+  /**
+   * Goes somewhere new, as a search pick does: pushes one history entry that
+   * holds `next.selection` (null for a place with nothing to open, such as a
+   * city) and `next.view`, where the map is going. Back returns to the entry
+   * before, with its own selection and view; Forward comes back here. Does
+   * nothing when the address already holds both.
+   */
+  navigate(next: UrlState): void;
   /** Records the map view. Written after `debounceMs` without another call. */
   setView(view: View | null): void;
   /** Writes a pending view now. */
@@ -178,13 +198,28 @@ export function createUrlStore(options: UrlStoreOptions = {}): UrlStore {
       };
     },
 
-    select(selection) {
+    select(selection, selectOptions = {}) {
       checkSelection(selection);
       if (destroyed || sameSelection(state.selection, selection)) return;
       // Leave the current entry with its latest view before moving on.
       flush();
       state = { ...state, selection };
-      write(selection === null ? 'replace' : 'push');
+      write(selection === null || selectOptions.replace === true ? 'replace' : 'push');
+      notify('app');
+    },
+
+    navigate(next) {
+      checkSelection(next.selection);
+      if (destroyed) return;
+      const target: UrlState = {
+        selection: next.selection,
+        view: next.view === null ? null : roundView(next.view),
+      };
+      if (sameState(state, target)) return;
+      // Leave the current entry with its latest view before moving on.
+      flush();
+      state = target;
+      write('push');
       notify('app');
     },
 

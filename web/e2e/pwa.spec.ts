@@ -6,11 +6,12 @@
  * with the headers GitHub Pages sends (ETag, Last-Modified, max-age=600).
  * Two things are added to those copies only, never to the build:
  *
- * - a harness script inlined into index.html that does what the app will do
- *   once the integration wires it in: call the real registerServiceWorker()
- *   from src/pwa after load, fetch live/closings.json the way a live poller
- *   should (cache: 'no-cache'), and compute the update line from the file's
- *   generated_at with src/state's updateLine();
+ * - a harness script inlined into index.html that fetches live/closings.json
+ *   the way the live poller does (cache: 'no-cache'), computes the update line
+ *   from the file's generated_at with src/state's updateLine(), and reads the
+ *   school tiles the way the map does. The app registers the service worker
+ *   itself, after load (src/app/service-worker.ts); the harness only picks up
+ *   the handle the app exposes to tests;
  * - synthetic data files, built below and named SYNTHETIC_*. They hold no
  *   schools, only the envelope and a fixed generated_at, or (for the school
  *   tile file) a byte pattern, and exist only in the test server's memory
@@ -89,11 +90,11 @@ function syntheticDirectory(generatedOn: string): string {
 
 // The harness: what the app does once src/pwa and src/state are wired in. ------------
 
-/** The app passes nothing and gets Vite's base; the harness is built on its own, so it is told. */
+/** The harness is built on its own, so it is told the base the app was built for. */
 function harness(base: string): string {
   return `
 import { FetchSource } from '${WEB}node_modules/pmtiles/dist/esm/index.js';
-import { onDataUpdate, registerServiceWorker } from '${WEB}src/pwa/index.ts';
+import { onDataUpdate } from '${WEB}src/pwa/index.ts';
 import { updateLine } from '${WEB}src/state/freshness.ts';
 
 const e2e = { updates: [], line: null, generatedAt: null, handle: null };
@@ -145,7 +146,15 @@ async function loadClosings() {
 }
 e2e.loadClosings = loadClosings;
 void loadClosings();
-void registerServiceWorker({ enabled: true, base: ${JSON.stringify(base)} }).then((handle) => {
+// The app registers the worker after load and hands tests its handle.
+const appWorker = new Promise((resolve) => {
+  const check = () => {
+    if (window.snowlightServiceWorker !== undefined) resolve(window.snowlightServiceWorker);
+    else setTimeout(check, 20);
+  };
+  check();
+});
+void appWorker.then((handle) => {
   e2e.handle = handle;
 });
 `;
@@ -236,7 +245,7 @@ function byteRange(
 
 class Site {
   readonly log: SiteRequest[] = [];
-  private readonly overlay = new Map<string, { body: Buffer; modified: Date }>();
+  private readonly overlay = new Map<string, { body: Buffer; modified: Date; delayMs?: number }>();
   private server: Server | undefined;
   origin = '';
 
@@ -256,9 +265,13 @@ class Site {
     return this.log.map((request) => request.path);
   }
 
-  /** Serves `body` at `file` (a path under the base) from now on, as a deploy would. */
-  put(file: string, body: string | Buffer, modified = new Date()): void {
-    this.overlay.set(`${this.base}${file}`, { body: Buffer.from(body), modified });
+  /**
+   * Serves `body` at `file` (a path under the base) from now on, as a deploy
+   * would. With `delayMs`, each answer for it takes that long, as from a
+   * server far away rather than on this machine.
+   */
+  put(file: string, body: string | Buffer, modified = new Date(), delayMs = 0): void {
+    this.overlay.set(`${this.base}${file}`, { body: Buffer.from(body), modified, delayMs });
   }
 
   /** The requests the server answered for `file`, a path under the base. */
@@ -321,6 +334,22 @@ class Site {
         return;
       }
     }
+    const found = file;
+    if (found.delayMs !== undefined && found.delayMs > 0) {
+      setTimeout(() => {
+        this.answer(request, response, urlPath, found);
+      }, found.delayMs);
+    } else {
+      this.answer(request, response, urlPath, found);
+    }
+  }
+
+  private answer(
+    request: IncomingMessage,
+    response: ServerResponse,
+    urlPath: string,
+    file: { body: Buffer; modified: Date },
+  ): void {
     const etag = `"${createHash('sha1').update(file.body).digest('hex').slice(0, 16)}"`;
     const headers = {
       'Content-Type': TYPES[path.extname(urlPath) || '.html'] ?? 'application/octet-stream',
@@ -686,7 +715,10 @@ test('live data: the last copy at once, the new one in the background, and word 
   const { site, page } = await openSite(context);
   try {
     await waitForOfflineReady(page, site);
-    site.put(CLOSINGS, syntheticClosings(SYNTHETIC_GENERATED_AT_LATER));
+    // The new copy comes from a server some way off, as a deployed site's does. On this
+    // machine the server would answer as fast as the worker reads its cache, and whichever
+    // came first would decide the test.
+    site.put(CLOSINGS, syntheticClosings(SYNTHETIC_GENERATED_AT_LATER), new Date(), 400);
 
     // Stale first: the cached copy answers while the worker revalidates.
     expect((await fetchJson(page, site.url(CLOSINGS))).generated_at).toBe(SYNTHETIC_GENERATED_AT);
@@ -709,6 +741,12 @@ test('the school directory is cache-first until it is evicted', async ({ browser
   try {
     await waitForOfflineReady(page, site);
     expect((await fetchJson(page, site.url(DIRECTORY))).generated_on).toBe('2026-01-01');
+    // The worker answers first and stores its copy just after: wait for the copy.
+    await page.waitForFunction(
+      async ([cacheName, url]) => (await (await caches.open(cacheName)).match(url)) !== undefined,
+      [CACHE_NAMES.staticData, site.url(DIRECTORY)] as const,
+      { timeout: 30_000 },
+    );
     const before = site.hits(DIRECTORY);
     site.put(DIRECTORY, syntheticDirectory('2026-09-01'));
     expect((await fetchJson(page, site.url(DIRECTORY))).generated_on).toBe('2026-01-01');

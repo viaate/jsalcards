@@ -104,6 +104,10 @@ export interface GlowLayerOptions {
   readonly gpuTiming?: boolean;
 }
 
+/**
+ * 'none' until the layer first has points to draw (an empty layer compiles
+ * no shaders and allocates nothing), or after the GPU could not run it.
+ */
 export type GlowRenderMode = 'float' | 'fallback' | 'none';
 
 export interface GlowLayerStats {
@@ -354,14 +358,8 @@ export class GlowLayer implements CustomLayerInterface {
     this.restoreMap = null;
     this.failed = false;
     this.cssWidthFor = -1;
-    try {
-      this.res = this.createResources(gl);
-      this.upload(gl, this.res);
-    } catch (error) {
-      this.failed = true;
-      this.res = null;
-      console.error(error);
-    }
+    this.res = null;
+    // Shaders and buffers wait for the first frame with points to draw (ensureResources).
     map.getCanvasContainer().addEventListener('webglcontextlost', this.handleContextLost, true);
     map.off('webglcontextrestored', this.handleContextRestored);
     map.on('webglcontextrestored', this.handleContextRestored);
@@ -385,7 +383,7 @@ export class GlowLayer implements CustomLayerInterface {
     const started = performance.now();
     this.frame = null;
     this.cpuMs = 0;
-    const res = this.res;
+    const res = this.ensureResources(gl);
     if (res === null || this.failed || args.shaderData.variantName !== 'mercator') return;
     const frame = this.beginFrame(gl, res);
     const packed = this.packed;
@@ -756,6 +754,27 @@ export class GlowLayer implements CustomLayerInterface {
   }
 
   // --- resources ---------------------------------------------------------
+
+  /**
+   * The GPU resources, created on the first frame that has points to draw.
+   * Until then the layer compiles no shaders and allocates nothing, so a map
+   * with nothing lit pays nothing for it: no shader compiles holding up the
+   * page while it loads. Null while there is nothing to draw or the GPU
+   * cannot run the layer.
+   */
+  private ensureResources(gl: WebGL2RenderingContext): GpuResources | null {
+    if (this.res !== null || this.failed) return this.res;
+    if ((this.packed?.count ?? 0) === 0) return null;
+    try {
+      this.res = this.createResources(gl);
+      this.upload(gl, this.res);
+    } catch (error) {
+      this.failed = true;
+      this.res = null;
+      console.error(error);
+    }
+    return this.res;
+  }
 
   private createResources(gl: WebGL2RenderingContext): GpuResources {
     const float = this.options.forceFallback !== true && supportsHalfFloatTarget(gl);

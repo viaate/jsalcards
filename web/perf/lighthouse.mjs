@@ -13,9 +13,9 @@
  * FCP under 1.5 s with applied throttling too; MapLibre's scripts at or under
  * 310 KB gzipped, with one copy of its shared module among every script loaded.
  *
- * Environment: PERF_PORT (default 5104), CHROME_PATH (default: the
- * preinstalled Playwright Chromium), PERF_RUNS (default 3), and --skip-build
- * to reuse dist/.
+ * Environment: PERF_PORT (default 5104), CHROME_PATH (default: the Chromium
+ * Playwright installed, as the e2e tests use it), PERF_RUNS (default 3), and
+ * --skip-build to reuse dist/. CI runs it as the perf job in ci.yml.
  *
  * WebGL runs wherever Chrome can run it. On a machine without a GPU that is
  * SwiftShader, a software renderer, which makes every map frame much slower
@@ -45,8 +45,7 @@ const PORT = Number(process.env.PERF_PORT ?? '5104');
 const RUNS = Number(process.env.PERF_RUNS ?? '3');
 const ORIGIN = `http://127.0.0.1:${String(PORT)}`;
 const URL_UNDER_TEST = `${ORIGIN}/`;
-const DEFAULT_CHROME = '/opt/pw-browsers/chromium-1194/chrome-linux/chrome';
-const CHROME_PATH = process.env.CHROME_PATH ?? DEFAULT_CHROME;
+const CHROME_PATH = process.env.CHROME_PATH ?? chromium.executablePath();
 
 const CATEGORIES = ['performance', 'accessibility', 'best-practices', 'seo'];
 const MIN_SCORE = 0.9;

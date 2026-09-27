@@ -28,6 +28,7 @@ export {
 export type { Selection, SelectionKind, UrlState, View } from './url';
 export { createUrlStore } from './url-store';
 export type {
+  SelectOptions,
   ShareOptions,
   StateOrigin,
   UrlStateListener,

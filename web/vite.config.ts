@@ -4,7 +4,8 @@ import { VitePWA } from 'vite-plugin-pwa';
 import { defineConfig } from 'vitest/config';
 
 import { copy } from './src/copy.ts';
-import { pwaHead, pwaOptions } from './src/pwa/config.ts';
+import { DATA_DIR, pwaHead, pwaOptions } from './src/pwa/config.ts';
+import { dataFiles } from './tools/data-files.ts';
 import { htmlCopy } from './tools/html-copy.ts';
 
 const isVitest = process.env.VITEST !== undefined;
@@ -15,6 +16,8 @@ export default defineConfig({
   plugins: [
     svelte(),
     htmlCopy(copy),
+    // Lists the data files staged in public/data/, so the page asks only for files that exist.
+    dataFiles(DATA_DIR),
     // Service worker and manifest links; the page registers the worker after load (src/pwa).
     isVitest ? [] : [VitePWA(pwaOptions()), pwaHead()],
   ],
@@ -28,9 +31,8 @@ export default defineConfig({
     environment: 'jsdom',
     include: [
       'tests/**/*.test.ts',
-      // Link state and the map's limits: plain modules, tested where they live.
-      'src/state/tests/**/*.test.ts',
-      'src/map/basemap/tests/**/*.test.ts',
+      // Every module's own tests, where they live: state, data, app wiring, map, search, offline.
+      'src/**/tests/**/*.test.ts',
     ],
   },
 });

@@ -5,3 +5,4 @@ playwright-report/
 test-results/
 bench/out/
 perf/raw/
+public/data/

@@ -224,6 +224,89 @@ describe('selection and history', () => {
     expect(store.state.selection).toBeNull();
   });
 
+  it('opening with replace keeps the current entry, so Back leaves the page as before', () => {
+    const { tab: t, store, seen } = open('https://snow.test/');
+    store.select({ kind: 'school', id: SCHOOL }, { replace: true });
+    expect(t.urls()).toEqual([`?school=${SCHOOL}`]);
+    expect(t.pushes).toBe(0);
+    expect(seen.at(-1)).toEqual([{ selection: { kind: 'school', id: SCHOOL }, view: null }, 'app']);
+    // A later pick is a step of its own again.
+    store.select({ kind: 'school', id: OTHER });
+    expect(t.urls()).toEqual([`?school=${SCHOOL}`, `?school=${OTHER}`]);
+  });
+
+  it('going somewhere new pushes one entry with its view, a place with nothing to open too', () => {
+    const { tab: t, store, seen } = open('https://snow.test/');
+    store.navigate({
+      selection: { kind: 'zip', id: '64113' },
+      view: { lat: 39.01414, lon: -94.595493, zoom: 12 },
+    });
+    store.navigate({ selection: null, view: { lat: 39.125155, lon: -94.550313, zoom: 11 } });
+    expect(t.urls()).toEqual(['', '?zip=64113&at=39.0141,-94.5955,12', '?at=39.1252,-94.5503,11']);
+    expect(t.pushes).toBe(2);
+    expect(t.replaces).toBe(0);
+    expect(seen.at(-1)).toEqual([
+      { selection: null, view: { lat: 39.1252, lon: -94.5503, zoom: 11 } },
+      'app',
+    ]);
+
+    t.back();
+    expect(store.state).toEqual({
+      selection: { kind: 'zip', id: '64113' },
+      view: { lat: 39.0141, lon: -94.5955, zoom: 12 },
+    });
+    expect(seen.at(-1)?.[1]).toBe('history');
+    t.back();
+    expect(store.state).toEqual({ selection: null, view: null });
+    expect(t.index).toBe(0);
+    t.forward();
+    t.forward();
+    expect(store.state.view).toEqual({ lat: 39.1252, lon: -94.5503, zoom: 11 });
+  });
+
+  it('going somewhere new leaves the current entry with its latest view first', () => {
+    const { tab: t, store } = open('https://snow.test/?at=40,-90,6');
+    store.setView({ lat: 41, lon: -91, zoom: 7 });
+    store.navigate({ selection: null, view: { lat: 39.1, lon: -94.5, zoom: 11 } });
+    expect(t.urls()).toEqual(['?at=41,-91,7', '?at=39.1,-94.5,11']);
+    vi.runAllTimers();
+    expect(t.urls()).toEqual(['?at=41,-91,7', '?at=39.1,-94.5,11']);
+  });
+
+  it('going where the address already is adds nothing', () => {
+    const {
+      tab: t,
+      store,
+      seen,
+    } = open(`https://snow.test/?school=${SCHOOL}&at=39.03606,-94.593,15`);
+    store.navigate({
+      selection: { kind: 'school', id: SCHOOL },
+      view: { lat: 39.03606, lon: -94.593001, zoom: 15 },
+    });
+    expect(t.pushes + t.replaces).toBe(0);
+    expect(seen).toHaveLength(1);
+    // The same school from elsewhere on the map is a step of its own.
+    store.setView({ lat: 38, lon: -94, zoom: 9 });
+    store.navigate({
+      selection: { kind: 'school', id: SCHOOL },
+      view: { lat: 39.03606, lon: -94.593001, zoom: 15 },
+    });
+    expect(t.pushes).toBe(1);
+    expect(t.urls()).toEqual([
+      `?school=${SCHOOL}&at=38,-94,9`,
+      `?school=${SCHOOL}&at=39.03606,-94.593,15`,
+    ]);
+  });
+
+  it('going somewhere with a malformed id throws and writes nothing', () => {
+    const { tab: t, store } = open('https://snow.test/');
+    expect(() => {
+      store.navigate({ selection: { kind: 'zip', id: '641' }, view: null });
+    }).toThrow(RangeError);
+    expect(t.pushes + t.replaces).toBe(0);
+    expect(store.state).toEqual({ selection: null, view: null });
+  });
+
   it('selecting what is already open does nothing', () => {
     const { tab: t, store, seen } = open(`https://snow.test/?school=${SCHOOL}`);
     store.select({ kind: 'school', id: SCHOOL });

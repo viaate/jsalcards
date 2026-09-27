@@ -1,0 +1,142 @@
+/**
+ * Everything the app does besides drawing its shell and the map, loaded
+ * after the first paint so none of it weighs on the first frame:
+ *
+ * - the pinned school, opened on a plain visit (src/state/pin.ts);
+ * - a linked or pinned selection, placed on the map once the data allows;
+ * - search: the index loads on the first focus of the search field;
+ * - today's schools lit on the glow layer (App.svelte puts it on the map);
+ * - the service worker, registered after load.
+ *
+ * A build that ships no data requests nothing under data/: the glow stays
+ * dark, search shows nothing and no selection moves the map.
+ */
+
+import type { Basemap } from '../map/basemap';
+import type { Glow } from '../map/glow-mount';
+import type { SearchHit } from '../search';
+import { createPinStore } from '../state/pin';
+import type { Selection } from '../state/url';
+import type { UrlStore } from '../state/url-store';
+import { DATA_PATHS } from '../data/files';
+import { createAppData, locate, startLiveGlow } from './data';
+import type { AppData, Target } from './data';
+import { createSearchController, searchOptions } from './search';
+import type { SearchController, SearchOption } from './search';
+import { startServiceWorker } from './service-worker';
+import { selectionForHit, startupSelection, viewForHit } from './startup';
+
+export type { Target } from './data';
+export type { SearchOption } from './search';
+
+export interface BootOptions {
+  readonly links: UrlStore;
+  /** The map once its first frame is up; undefined when it cannot start. */
+  readonly map: Promise<Basemap | undefined>;
+  /** The glow layer on that map; null when the map or the layer cannot start. */
+  readonly glow: Promise<Glow | null>;
+  /** Aborted when the app goes away. */
+  readonly signal: AbortSignal;
+  /** Moves the map to a place (the shell keeps it for later if the map is not up yet). */
+  readonly show: (target: Target) => void;
+  /** The results list's element id; options are numbered under it. */
+  readonly listId: string;
+  /** The newest text's results as options, or null to show nothing. */
+  readonly onResults: (options: readonly SearchOption[] | null) => void;
+  /** Data files to read, for tests; defaults to the ones this build ships. */
+  readonly data?: AppData;
+}
+
+export interface Services {
+  /** Whether this build ships a search index; without one, search shows nothing. */
+  readonly searchable: boolean;
+  /** Starts loading the search index (first focus). */
+  warmSearch(): void;
+  /** Searches `text`; results arrive through onResults. */
+  query(text: string): void;
+  /**
+   * Opens what a result names and moves the map to it, as one new history
+   * entry (a city's holds its view alone), so Back returns to the place before.
+   */
+  pick(hit: SearchHit): void;
+}
+
+export function boot(options: BootOptions): Services {
+  const { links, signal } = options;
+  const data = options.data ?? createAppData();
+  const pins = createPinStore();
+  const warmUrls: string[] = [];
+  const search: SearchController = createSearchController({
+    indexUrl: data.files.url(DATA_PATHS.searchIndex),
+    onResults: (results) => {
+      options.onResults(results === null ? null : searchOptions(results, options.listId));
+    },
+    onIndexLoaded: (url) => {
+      warmUrls.push(url);
+    },
+  });
+
+  // A link opens as sent; a plain visit opens the pinned school, without a history entry.
+  const opening = startupSelection(links.state, pins.school);
+  if (opening !== null && links.state.selection === null) links.select(opening, { replace: true });
+  const selection = links.state.selection;
+  if (selection !== null && links.state.view === null) {
+    void goToSelection(data, selection, search, options);
+  }
+
+  // A function, so each check reads the signal afresh after an await.
+  const aborted = (): boolean => signal.aborted;
+  const glow = options.glow;
+  let stopLive: () => void = () => undefined;
+  void glow.then(async (layer) => {
+    if (layer === null || aborted()) return;
+    stopLive = await startLiveGlow(data, glow);
+    if (aborted()) stopLive();
+  });
+
+  void startServiceWorker(warmUrls);
+
+  signal.addEventListener('abort', () => {
+    stopLive();
+    search.destroy();
+    pins.destroy();
+    void glow.then((layer) => {
+      layer?.remove();
+    });
+  });
+
+  return {
+    searchable: data.files.has(DATA_PATHS.searchIndex),
+    warmSearch: () => {
+      search.warm();
+    },
+    query: (text) => {
+      search.query(text);
+    },
+    pick(hit) {
+      // Every pick is a step of its own, a city too: Back returns to the place before.
+      const view = viewForHit(hit);
+      try {
+        links.navigate({ selection: selectionForHit(hit), view });
+      } catch {
+        // An id a link cannot carry: the step keeps the place alone.
+        links.navigate({ selection: null, view });
+      }
+      options.show({ view });
+    },
+  };
+}
+
+/** A selection the app opened by itself (a link or the pin): go to it once it is placed. */
+async function goToSelection(
+  data: AppData,
+  selection: Selection,
+  search: SearchController,
+  options: BootOptions,
+): Promise<void> {
+  const [target, map] = await Promise.all([locate(data, selection, search), options.map]);
+  // Someone moved the map meanwhile, or opened something else: leave it.
+  if (target === null || map === undefined || map.moved || options.signal.aborted) return;
+  if (options.links.state.selection !== selection) return;
+  options.show(target);
+}

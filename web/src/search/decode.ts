@@ -53,6 +53,8 @@ export interface GroupData {
   readonly kindState: Uint8Array;
   /** Rank to the word count of the name with abbreviations spelled out. */
   readonly canon: Uint8Array;
+  /** Rank to its weight code (format.ts quantizeWeight): log2(1 + weight) × 128. */
+  readonly weight: Uint16Array;
   /** Token id to the start of its ranks in namePost (length tokens + 1). */
   readonly nameOff: Uint32Array;
   /** Ranks of records whose name has each token. */
@@ -746,11 +748,14 @@ function buildGroup(input: GroupInput): GroupData {
   const size = fileIndex.length;
   const kindState = new Uint8Array(size);
   const canon = new Uint8Array(size);
+  const weight = new Uint16Array(size);
+  const { weightBytes, n } = input;
   for (let r = 0; r < size; r++) {
     const f = fileIndex[r] ?? 0;
     rankOf[f] = r;
     kindState[r] = kindStateFile[f] ?? 0;
     canon[r] = canonFile[f] ?? 0;
+    weight[r] = (weightBytes[f] ?? 0) | ((weightBytes[n + f] ?? 0) << 8);
   }
   const { off, post } = buildPostings(
     from,
@@ -776,6 +781,7 @@ function buildGroup(input: GroupInput): GroupData {
     fileIndex,
     kindState,
     canon,
+    weight,
     nameOff: off,
     namePost: post,
     subOff,

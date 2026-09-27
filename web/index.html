@@ -220,6 +220,7 @@
       }
 
       .search {
+        position: relative;
         flex: 1;
         min-width: 0;
         height: 100%;
@@ -253,6 +254,60 @@
       .search-input::-webkit-search-decoration,
       .search-input::-webkit-search-cancel-button {
         appearance: none;
+      }
+
+      .search.has-query .search-input {
+        padding-right: 44px;
+      }
+
+      .search-clear {
+        position: absolute;
+        top: 50%;
+        right: 8px;
+        display: grid;
+        place-items: center;
+        width: 28px;
+        height: 28px;
+        margin: -14px 0 0;
+        padding: 0;
+        color: var(--text-2);
+        cursor: pointer;
+        background: transparent;
+        border: 0;
+        border-radius: 50%;
+      }
+
+      .search-clear:hover,
+      .search-clear:focus-visible {
+        color: var(--text-1);
+        background: var(--border-1);
+      }
+
+      .search-clear:focus-visible {
+        outline: 1px solid var(--text-3);
+        outline-offset: 0;
+      }
+
+      .search-clear svg {
+        width: 16px;
+        height: 16px;
+        fill: none;
+        stroke: currentColor;
+        stroke-width: 1.5;
+        stroke-linecap: round;
+      }
+
+      /* Heard by screen readers, never seen. */
+      .sr-only {
+        position: absolute;
+        width: 1px;
+        height: 1px;
+        padding: 0;
+        margin: -1px;
+        overflow: hidden;
+        white-space: nowrap;
+        border: 0;
+        clip-path: inset(50%);
       }
 
       @media (prefers-reduced-motion: reduce) {
@@ -293,7 +348,7 @@
           ><!-- geo:still:end -->
         </div>
         <header class="bar">
-          <h1 class="wordmark">%copy.appName%</h1>
+          <h1 class="wordmark" data-brand>%copy.appName%</h1>
           <form class="search" role="search">
             <input
               class="search-input"

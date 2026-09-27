@@ -8,12 +8,12 @@ Live preview of the work in progress: https://viaate.github.io/jsalcards/ (rebui
 .
 ├── web/                  Svelte 5 + TypeScript + Vite static site for GitHub Pages
 │   ├── src/              App code; every UI string lives in src/copy.ts
-│   ├── public/           Static files served as-is
+│   ├── public/           Static files served as-is; the pipeline's outputs are staged in public/data/ for a build
 │   ├── tests/            Vitest unit and component tests (module tests sit in src/**/tests)
 │   ├── e2e/              Playwright smoke tests against the production build
 │   └── tools/            Build-time helpers used by vite.config.ts
 ├── pipeline/             Python 3.12 package "snowlight" (uv) that writes the site's static data
 │   ├── snowlight/        Package source
 │   └── tests/            pytest and Hypothesis tests, plus contract tests for ci.yml
-└── .github/workflows/    CI (web checks, e2e, pipeline checks), the Pages preview, and the archive capture reader
+└── .github/workflows/    CI (web checks, e2e, Lighthouse gates, pipeline checks), the Pages preview, and the archive capture reader
 ```

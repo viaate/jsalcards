@@ -20,8 +20,10 @@ export function afterFirstPaint(): Promise<void> {
       typeof PerformanceObserver === 'function' &&
       PerformanceObserver.supportedEntryTypes.includes('paint')
     ) {
-      const observer = new PerformanceObserver(() => {
-        if (!painted()) return;
+      // The entries the observer is handed, not performance's own list: the two agree in a
+      // browser, but only the first is there when a test clock stands in for performance.
+      const observer = new PerformanceObserver((list) => {
+        if (list.getEntriesByName('first-contentful-paint').length === 0) return;
         observer.disconnect();
         setTimeout(resolve, 0);
       });

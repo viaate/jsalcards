@@ -20,6 +20,12 @@
  * level is a few AND/OR passes, so the first `limit` set bits of each level
  * in rank order are the answer. Typo matching only runs when the exact and
  * prefix levels leave a group short.
+ *
+ * One exception to level order: a name that starts with the words typed, as
+ * whole words, goes ahead of an exact name it outweighs LEAD_FACTOR times
+ * over. "kansas" lists Kansas City, MO and Kansas City, KS ahead of the
+ * villages named Kansas, which still follow; "portland" keeps Portland,
+ * Tennessee ahead of South Portland, which does not start with the word.
  */
 import type { GroupData, SearchIndex } from './decode';
 import { isNumericToken, queryExpansions, tokenize, typoBudget } from './normalize';
@@ -36,9 +42,15 @@ export const MAX_LIMIT = 50;
 export const TYPO_RARE = 3;
 /** Records per level, heaviest first, checked for phrase order. */
 export const PHRASE_WINDOW = 64;
+/** How many times heavier a name starting with the words must be to lead an exact name. */
+export const LEAD_FACTOR = 20;
+/** LEAD_FACTOR in weight codes (format.ts quantizeWeight: 128 per doubling). */
+const LEAD_CODES = Math.round(Math.log2(LEAD_FACTOR) * 128);
 
 const CITIES = 1;
 const FULL = 0;
+/** Every word a whole word of the name, not the whole name: where leading names come from. */
+const IN_NAME = 1;
 const STATE_ONLY = 10;
 const LEVEL_COUNT = 11;
 /** Where a level's words may match; the third field, 2, is anywhere. */
@@ -263,7 +275,9 @@ export class SearchEngine {
     if (parsed.numeric) {
       order = ['zips', 'schools', 'cities'];
     } else {
-      const best = (g: number): number => found[g]?.[0]?.level ?? LEVEL_COUNT;
+      // A leading name can come before its group's exact names: the group's best is its lowest level.
+      const best = (g: number): number =>
+        (found[g] ?? []).reduce((low, f) => Math.min(low, f.level), LEVEL_COUNT);
       order = [0, 1, 2]
         .sort((a, b) => best(a) - best(b) || a - b)
         .map((g) => GROUP_NAMES[g] ?? 'schools');
@@ -291,16 +305,21 @@ export class SearchEngine {
     const group = this.index.groups[g];
     const pool = this.pools[g];
     if (!group || !pool || group.size === 0) return [];
-    const out: Found[] = [];
+    let out: Found[] = [];
     const taken = (rank: number): boolean => out.some((f) => f.rank === rank);
 
-    for (let level = 0; level < LEVEL_COUNT && out.length < cap; level++) {
+    for (let level = 0; level < LEVEL_COUNT; level++) {
+      // After exact names, the next level is read even when they fill the
+      // list: a far heavier name starting with the words goes ahead of them.
+      const leading = level === IN_NAME && out.length > 0;
+      if (out.length >= cap && !leading) break;
       const bits = this.levelBits(level, g, group, pool, parsed.readings, words);
       if (!bits) continue;
+      const room = leading ? cap : cap - out.length;
       const phrased = this.phraseReadings(level, parsed.readings);
       // Without phrase order, take records straight off the set; with it,
       // take the level's heaviest few and put phrases first.
-      const want = phrased ? Math.max(PHRASE_WINDOW, cap - out.length) : cap - out.length;
+      const want = phrased ? Math.max(PHRASE_WINDOW, room) : room;
       const ranks: number[] = [];
       for (let w = 0; w < bits.length && ranks.length < want; w++) {
         let x = bits[w] ?? 0;
@@ -311,19 +330,63 @@ export class SearchEngine {
           if (!taken(rank)) ranks.push(rank);
         }
       }
+      const next: Found[] = [];
       if (phrased) {
         const tier = level === FULL ? Tier.exact : levelTier(level);
         const isFirst = ranks.map((rank) => this.inPhrase(group, rank, phrased, words, tier));
         for (const first of [true, false]) {
           ranks.forEach((rank, k) => {
-            if (isFirst[k] === first && out.length < cap) out.push({ rank, level });
+            if (isFirst[k] === first && next.length < room) next.push({ rank, level });
           });
         }
       } else {
-        for (const rank of ranks) out.push({ rank, level });
+        for (const rank of ranks) next.push({ rank, level });
       }
+      out = leading
+        ? this.lead(group, out, next, parsed.readings, words).slice(0, cap)
+        : out.concat(next);
     }
     return out;
+  }
+
+  /**
+   * Exact names and the next level's records in one order: exact names
+   * first, except that a record whose name starts with the words typed goes
+   * ahead of each exact name it outweighs LEAD_FACTOR times over. Both
+   * lists keep their own order.
+   */
+  private lead(
+    group: GroupData,
+    exact: readonly Found[],
+    next: readonly Found[],
+    readings: readonly Reading[],
+    words: readonly Word[],
+  ): Found[] {
+    const usable = readings.filter((r) => r.words.length > 0 && Tier.exact >= r.floor);
+    const weight = (f: Found): number => group.weight[f.rank] ?? 0;
+    const lightest = exact.reduce((low, f) => Math.min(low, weight(f)), Number.POSITIVE_INFINITY);
+    const leaders = next.filter(
+      (f) =>
+        weight(f) - lightest >= LEAD_CODES &&
+        this.inPhrase(group, f.rank, usable, words, Tier.exact, true),
+    );
+    if (leaders.length === 0) return [...exact, ...next];
+    const merged: Found[] = [];
+    let i = 0;
+    let j = 0;
+    while (i < exact.length) {
+      const leader = leaders[j];
+      const name = exact[i];
+      if (leader && name && weight(leader) - weight(name) >= LEAD_CODES) {
+        merged.push(leader);
+        j++;
+      } else if (name) {
+        merged.push(name);
+        i++;
+      }
+    }
+    const placed = new Set(merged.map((f) => f.rank));
+    return merged.concat(next.filter((f) => !placed.has(f.rank)));
   }
 
   /**
@@ -338,20 +401,24 @@ export class SearchEngine {
     return usable.some((r) => r.words.length > 1) ? usable : null;
   }
 
-  /** Whether a record's name has the words of one of its readings side by side. */
+  /**
+   * Whether a record's name has the words of one of its readings side by
+   * side; with `atStart`, where the name starts.
+   */
   private inPhrase(
     group: GroupData,
     rank: number,
     readings: readonly Reading[],
     words: readonly Word[],
     tier: TierValue,
+    atStart = false,
   ): boolean {
     const state = (group.kindState[rank] ?? 0) & 63;
     const tokens = tokenize(this.index.name(group.fileIndex[rank] ?? 0));
     return readings.some((reading) => {
       if (reading.state >= 0 && reading.state !== state) return false;
       const list = reading.words.map((wi) => words[wi]).filter((w): w is Word => w !== undefined);
-      return isPhrase(tokens, list, tier);
+      return isPhrase(tokens, list, tier, atStart);
     });
   }
 

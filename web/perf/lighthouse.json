@@ -1,6 +1,6 @@
 {
-  "generatedAt": "2026-09-26T18:16:00.138Z",
-  "url": "http://127.0.0.1:5104/",
+  "generatedAt": "2026-09-27T01:15:01.824Z",
+  "url": "http://127.0.0.1:5177/",
   "environment": {
     "lighthouse": "13.5.0",
     "chrome": "Chromium 141.0.7390.37",
@@ -14,79 +14,100 @@
     "webglRenderer": "ANGLE (Google, Vulkan 1.3.0 (SwiftShader Device (Subzero) (0x0000C0DE)), SwiftShader driver)",
     "cpus": 4,
     "cpuModel": "Intel(R) Xeon(R) Processor @ 2.10GHz",
-    "benchmarkIndex": 2386.5,
+    "benchmarkIndex": 2531,
     "runsPerPreset": 3
   },
   "presets": {
     "mobile": {
       "throttling": "simulated slow 4G, 4x CPU",
       "median": {
-        "scores": { "performance": 98, "accessibility": 100, "best-practices": 100, "seo": 100 },
-        "fcpMs": 971,
-        "lcpMs": 1271,
-        "speedIndexMs": 1082,
-        "tbtMs": 161,
+        "scores": { "performance": 100, "accessibility": 100, "best-practices": 100, "seo": 100 },
+        "fcpMs": 915,
+        "lcpMs": 1215,
+        "speedIndexMs": 1371,
+        "tbtMs": 83,
         "cls": 0
       },
       "runs": [
         {
-          "scores": { "performance": 99, "accessibility": 100, "best-practices": 100, "seo": 100 },
-          "fcpMs": 971,
-          "lcpMs": 1271,
-          "speedIndexMs": 1291,
-          "tbtMs": 125,
+          "scores": { "performance": 100, "accessibility": 100, "best-practices": 100, "seo": 100 },
+          "fcpMs": 915,
+          "lcpMs": 1215,
+          "speedIndexMs": 1371,
+          "tbtMs": 83,
           "cls": 0,
           "consoleErrors": [],
           "foreignRequests": [],
-          "requests": 19,
+          "requests": 26,
           "scripts": [
-            "assets/basemap-BePhYeX4.js",
-            "assets/index-038-ZUd3.js",
+            "assets/basemap-jnb3iutu.js",
+            "assets/boot-DMV4mTt6.js",
+            "assets/config-Cfu3rmCc.js",
+            "assets/data-B3mD-0sU.js",
+            "assets/glow-mount-CBOFL3yZ.js",
+            "assets/ids-DLlmerev.js",
+            "assets/index-BlIZ5VHZ.js",
             "assets/maplibre-CKiCiTh7.js",
             "assets/maplibre-shared-BwZ3zNeO.js",
-            "assets/maplibre-worker-DPuic1Vc.js"
+            "assets/maplibre-worker-DPuic1Vc.js",
+            "assets/register-DMEEyNv-.js",
+            "assets/search-DgOTWa95.js"
           ],
-          "benchmarkIndex": 2536,
+          "benchmarkIndex": 2185.5,
           "warnings": []
         },
         {
-          "scores": { "performance": 98, "accessibility": 100, "best-practices": 100, "seo": 100 },
-          "fcpMs": 916,
-          "lcpMs": 1226,
-          "speedIndexMs": 1032,
-          "tbtMs": 161,
+          "scores": { "performance": 100, "accessibility": 100, "best-practices": 100, "seo": 100 },
+          "fcpMs": 919,
+          "lcpMs": 1239,
+          "speedIndexMs": 1235,
+          "tbtMs": 87,
           "cls": 0,
           "consoleErrors": [],
           "foreignRequests": [],
-          "requests": 19,
+          "requests": 26,
           "scripts": [
-            "assets/basemap-BePhYeX4.js",
-            "assets/index-038-ZUd3.js",
+            "assets/basemap-jnb3iutu.js",
+            "assets/boot-DMV4mTt6.js",
+            "assets/config-Cfu3rmCc.js",
+            "assets/data-B3mD-0sU.js",
+            "assets/glow-mount-CBOFL3yZ.js",
+            "assets/ids-DLlmerev.js",
+            "assets/index-BlIZ5VHZ.js",
             "assets/maplibre-CKiCiTh7.js",
             "assets/maplibre-shared-BwZ3zNeO.js",
-            "assets/maplibre-worker-DPuic1Vc.js"
+            "assets/maplibre-worker-DPuic1Vc.js",
+            "assets/register-DMEEyNv-.js",
+            "assets/search-DgOTWa95.js"
           ],
-          "benchmarkIndex": 2385,
+          "benchmarkIndex": 2531,
           "warnings": []
         },
         {
-          "scores": { "performance": 94, "accessibility": 100, "best-practices": 100, "seo": 100 },
-          "fcpMs": 985,
-          "lcpMs": 1296,
-          "speedIndexMs": 1082,
-          "tbtMs": 297,
+          "scores": { "performance": 100, "accessibility": 100, "best-practices": 100, "seo": 100 },
+          "fcpMs": 912,
+          "lcpMs": 1212,
+          "speedIndexMs": 1400,
+          "tbtMs": 64,
           "cls": 0,
           "consoleErrors": [],
           "foreignRequests": [],
-          "requests": 19,
+          "requests": 26,
           "scripts": [
-            "assets/basemap-BePhYeX4.js",
-            "assets/index-038-ZUd3.js",
+            "assets/basemap-jnb3iutu.js",
+            "assets/boot-DMV4mTt6.js",
+            "assets/config-Cfu3rmCc.js",
+            "assets/data-B3mD-0sU.js",
+            "assets/glow-mount-CBOFL3yZ.js",
+            "assets/ids-DLlmerev.js",
+            "assets/index-BlIZ5VHZ.js",
             "assets/maplibre-CKiCiTh7.js",
             "assets/maplibre-shared-BwZ3zNeO.js",
-            "assets/maplibre-worker-DPuic1Vc.js"
+            "assets/maplibre-worker-DPuic1Vc.js",
+            "assets/register-DMEEyNv-.js",
+            "assets/search-DgOTWa95.js"
           ],
-          "benchmarkIndex": 2327.5,
+          "benchmarkIndex": 2384.5,
           "warnings": []
         }
       ]
@@ -95,71 +116,92 @@
       "throttling": "simulated desktop dense 4G",
       "median": {
         "scores": { "performance": 100, "accessibility": 100, "best-practices": 100, "seo": 100 },
-        "fcpMs": 317,
-        "lcpMs": 407,
-        "speedIndexMs": 438,
-        "tbtMs": 73,
+        "fcpMs": 251,
+        "lcpMs": 371,
+        "speedIndexMs": 355,
+        "tbtMs": 0,
         "cls": 0
       },
       "runs": [
         {
           "scores": { "performance": 100, "accessibility": 100, "best-practices": 100, "seo": 100 },
-          "fcpMs": 330,
-          "lcpMs": 419,
-          "speedIndexMs": 456,
-          "tbtMs": 73,
-          "cls": 0,
-          "consoleErrors": [],
-          "foreignRequests": [],
-          "requests": 19,
-          "scripts": [
-            "assets/basemap-BePhYeX4.js",
-            "assets/index-038-ZUd3.js",
-            "assets/maplibre-CKiCiTh7.js",
-            "assets/maplibre-shared-BwZ3zNeO.js",
-            "assets/maplibre-worker-DPuic1Vc.js"
-          ],
-          "benchmarkIndex": 1920,
-          "warnings": []
-        },
-        {
-          "scores": { "performance": 92, "accessibility": 100, "best-practices": 100, "seo": 100 },
-          "fcpMs": 317,
-          "lcpMs": 407,
-          "speedIndexMs": 438,
-          "tbtMs": 236,
-          "cls": 0,
-          "consoleErrors": [],
-          "foreignRequests": [],
-          "requests": 19,
-          "scripts": [
-            "assets/basemap-BePhYeX4.js",
-            "assets/index-038-ZUd3.js",
-            "assets/maplibre-CKiCiTh7.js",
-            "assets/maplibre-shared-BwZ3zNeO.js",
-            "assets/maplibre-worker-DPuic1Vc.js"
-          ],
-          "benchmarkIndex": 2386.5,
-          "warnings": []
-        },
-        {
-          "scores": { "performance": 100, "accessibility": 100, "best-practices": 100, "seo": 100 },
-          "fcpMs": 279,
-          "lcpMs": 359,
-          "speedIndexMs": 385,
+          "fcpMs": 251,
+          "lcpMs": 371,
+          "speedIndexMs": 355,
           "tbtMs": 0,
           "cls": 0,
           "consoleErrors": [],
           "foreignRequests": [],
-          "requests": 19,
+          "requests": 26,
           "scripts": [
-            "assets/basemap-BePhYeX4.js",
-            "assets/index-038-ZUd3.js",
+            "assets/basemap-jnb3iutu.js",
+            "assets/boot-DMV4mTt6.js",
+            "assets/config-Cfu3rmCc.js",
+            "assets/data-B3mD-0sU.js",
+            "assets/glow-mount-CBOFL3yZ.js",
+            "assets/ids-DLlmerev.js",
+            "assets/index-BlIZ5VHZ.js",
             "assets/maplibre-CKiCiTh7.js",
             "assets/maplibre-shared-BwZ3zNeO.js",
-            "assets/maplibre-worker-DPuic1Vc.js"
+            "assets/maplibre-worker-DPuic1Vc.js",
+            "assets/register-DMEEyNv-.js",
+            "assets/search-DgOTWa95.js"
           ],
-          "benchmarkIndex": 2435.5,
+          "benchmarkIndex": 2551.5,
+          "warnings": []
+        },
+        {
+          "scores": { "performance": 100, "accessibility": 100, "best-practices": 100, "seo": 100 },
+          "fcpMs": 251,
+          "lcpMs": 371,
+          "speedIndexMs": 351,
+          "tbtMs": 0,
+          "cls": 0,
+          "consoleErrors": [],
+          "foreignRequests": [],
+          "requests": 26,
+          "scripts": [
+            "assets/basemap-jnb3iutu.js",
+            "assets/boot-DMV4mTt6.js",
+            "assets/config-Cfu3rmCc.js",
+            "assets/data-B3mD-0sU.js",
+            "assets/glow-mount-CBOFL3yZ.js",
+            "assets/ids-DLlmerev.js",
+            "assets/index-BlIZ5VHZ.js",
+            "assets/maplibre-CKiCiTh7.js",
+            "assets/maplibre-shared-BwZ3zNeO.js",
+            "assets/maplibre-worker-DPuic1Vc.js",
+            "assets/register-DMEEyNv-.js",
+            "assets/search-DgOTWa95.js"
+          ],
+          "benchmarkIndex": 2399.5,
+          "warnings": []
+        },
+        {
+          "scores": { "performance": 100, "accessibility": 100, "best-practices": 100, "seo": 100 },
+          "fcpMs": 262,
+          "lcpMs": 342,
+          "speedIndexMs": 389,
+          "tbtMs": 0,
+          "cls": 0,
+          "consoleErrors": [],
+          "foreignRequests": [],
+          "requests": 26,
+          "scripts": [
+            "assets/basemap-jnb3iutu.js",
+            "assets/boot-DMV4mTt6.js",
+            "assets/config-Cfu3rmCc.js",
+            "assets/data-B3mD-0sU.js",
+            "assets/glow-mount-CBOFL3yZ.js",
+            "assets/ids-DLlmerev.js",
+            "assets/index-BlIZ5VHZ.js",
+            "assets/maplibre-CKiCiTh7.js",
+            "assets/maplibre-shared-BwZ3zNeO.js",
+            "assets/maplibre-worker-DPuic1Vc.js",
+            "assets/register-DMEEyNv-.js",
+            "assets/search-DgOTWa95.js"
+          ],
+          "benchmarkIndex": 2690.5,
           "warnings": []
         }
       ]
@@ -168,23 +210,30 @@
       "throttling": "applied (devtools) slow 4G, 4x CPU",
       "runs": [
         {
-          "scores": { "performance": 98, "accessibility": 100, "best-practices": 100, "seo": 100 },
-          "fcpMs": 780,
-          "lcpMs": 780,
-          "speedIndexMs": 842,
-          "tbtMs": 162,
+          "scores": { "performance": 95, "accessibility": 100, "best-practices": 100, "seo": 100 },
+          "fcpMs": 751,
+          "lcpMs": 751,
+          "speedIndexMs": 811,
+          "tbtMs": 247,
           "cls": 0,
           "consoleErrors": [],
           "foreignRequests": [],
-          "requests": 19,
+          "requests": 26,
           "scripts": [
-            "assets/basemap-BePhYeX4.js",
-            "assets/index-038-ZUd3.js",
+            "assets/basemap-jnb3iutu.js",
+            "assets/boot-DMV4mTt6.js",
+            "assets/config-Cfu3rmCc.js",
+            "assets/data-B3mD-0sU.js",
+            "assets/glow-mount-CBOFL3yZ.js",
+            "assets/ids-DLlmerev.js",
+            "assets/index-BlIZ5VHZ.js",
             "assets/maplibre-CKiCiTh7.js",
             "assets/maplibre-shared-BwZ3zNeO.js",
-            "assets/maplibre-worker-DPuic1Vc.js"
+            "assets/maplibre-worker-DPuic1Vc.js",
+            "assets/register-DMEEyNv-.js",
+            "assets/search-DgOTWa95.js"
           ],
-          "benchmarkIndex": 2542,
+          "benchmarkIndex": 2639,
           "warnings": []
         }
       ]
@@ -195,9 +244,44 @@
   "lazyScripts": {
     "files": [
       {
-        "path": "assets/basemap-BePhYeX4.js",
-        "bytes": 27535,
-        "gzipBytes": 10615,
+        "path": "assets/basemap-jnb3iutu.js",
+        "bytes": 26945,
+        "gzipBytes": 10450,
+        "maplibre": false,
+        "sharedModule": false
+      },
+      {
+        "path": "assets/boot-DMV4mTt6.js",
+        "bytes": 5945,
+        "gzipBytes": 2510,
+        "maplibre": false,
+        "sharedModule": false
+      },
+      {
+        "path": "assets/config-Cfu3rmCc.js",
+        "bytes": 1156,
+        "gzipBytes": 651,
+        "maplibre": false,
+        "sharedModule": false
+      },
+      {
+        "path": "assets/data-B3mD-0sU.js",
+        "bytes": 1152,
+        "gzipBytes": 637,
+        "maplibre": false,
+        "sharedModule": false
+      },
+      {
+        "path": "assets/glow-mount-CBOFL3yZ.js",
+        "bytes": 31369,
+        "gzipBytes": 11249,
+        "maplibre": false,
+        "sharedModule": false
+      },
+      {
+        "path": "assets/ids-DLlmerev.js",
+        "bytes": 1143,
+        "gzipBytes": 534,
         "maplibre": false,
         "sharedModule": false
       },
@@ -221,6 +305,20 @@
         "gzipBytes": 6321,
         "maplibre": true,
         "sharedModule": false
+      },
+      {
+        "path": "assets/register-DMEEyNv-.js",
+        "bytes": 2005,
+        "gzipBytes": 1005,
+        "maplibre": false,
+        "sharedModule": false
+      },
+      {
+        "path": "assets/search-DgOTWa95.js",
+        "bytes": 2503,
+        "gzipBytes": 1380,
+        "maplibre": false,
+        "sharedModule": false
       }
     ],
     "maplibreFiles": 3,
@@ -228,7 +326,7 @@
     "sharedModuleCopies": 1
   },
   "gates": [
-    { "gate": "mobile performance", "value": 98, "limit": ">= 90", "pass": true },
+    { "gate": "mobile performance", "value": 100, "limit": ">= 90", "pass": true },
     { "gate": "mobile accessibility", "value": 100, "limit": ">= 90", "pass": true },
     { "gate": "mobile best-practices", "value": 100, "limit": ">= 90", "pass": true },
     { "gate": "mobile seo", "value": 100, "limit": ">= 90", "pass": true },
@@ -238,13 +336,13 @@
     { "gate": "desktop seo", "value": 100, "limit": ">= 90", "pass": true },
     {
       "gate": "mobile FCP (simulated slow 4G, median)",
-      "value": 971,
+      "value": 915,
       "limit": "< 1500 ms",
       "pass": true
     },
     {
       "gate": "mobile FCP (applied devtools 4G)",
-      "value": 780,
+      "value": 751,
       "limit": "< 1500 ms",
       "pass": true
     },

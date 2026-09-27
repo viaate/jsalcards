@@ -22,6 +22,8 @@ __pycache__/
 .eslintcache
 .cache/
 web/test-results/
+# Pipeline outputs staged for a build (tools/data-files.ts); never committed
+web/public/data/
 web/playwright-report/
 web/blob-report/
 

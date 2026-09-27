@@ -70,6 +70,13 @@ export interface Basemap {
   fitContinentalUs(options?: { animate?: boolean }): void;
   /** Moves to the nearest view the limits allow, or to the national view with null. */
   goTo(view: MapView | null): void;
+  /** Glides to the nearest view the limits allow; jumps when reduced motion is preferred. */
+  flyTo(view: MapView): void;
+  /** Glides to show [west, south, east, north] inside the frame, no closer than `maxZoom`. */
+  fitBounds(
+    bounds: readonly [number, number, number, number],
+    options?: { maxZoom?: number },
+  ): void;
   destroy(): void;
 }
 
@@ -271,6 +278,27 @@ export function createBasemap({
     const allowed = constrainView(limits, target);
     map.jumpTo({ center: [allowed.lon, allowed.lat], zoom: allowed.zoom });
   }
+  function flyTo(target: MapView): void {
+    national = false;
+    const allowed = constrainView(limits, target);
+    // Not essential: MapLibre jumps instead when the viewer prefers reduced motion.
+    map.flyTo({ center: [allowed.lon, allowed.lat], zoom: allowed.zoom, essential: false });
+  }
+  function fitBounds(
+    box: readonly [number, number, number, number],
+    options: { maxZoom?: number } = {},
+  ): void {
+    const camera = map.cameraForBounds(
+      [
+        [box[0], box[1]],
+        [box[2], box[3]],
+      ],
+      { padding: fitPadding(), maxZoom: options.maxZoom ?? MAX_ZOOM },
+    );
+    if (camera?.center === undefined || camera.zoom === undefined) return;
+    const center = maplibre.LngLat.convert(camera.center);
+    flyTo({ lat: center.lat, lon: center.lng, zoom: camera.zoom });
+  }
   /**
    * New limits for the window's new size, applied before anything is drawn at
    * it: the view moves to the nearest allowed one, and the national view is
@@ -317,6 +345,8 @@ export function createBasemap({
     },
     fitContinentalUs,
     goTo,
+    flyTo,
+    fitBounds,
     destroy() {
       if (window.snowlightMap === map) delete window.snowlightMap;
       map.remove();

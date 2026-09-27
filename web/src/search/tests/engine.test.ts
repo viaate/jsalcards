@@ -3,8 +3,8 @@ import { describe, expect, it } from 'vitest';
 
 import { loadIndex } from '../decode';
 import { encodeIndex } from '../encode';
-import { DEFAULT_LIMIT, SearchEngine, highlight } from '../engine';
-import type { GroupName, SearchResults } from '../types';
+import { DEFAULT_LIMIT, LEAD_FACTOR, SearchEngine, highlight } from '../engine';
+import type { GroupName, SearchRecord, SearchResults } from '../types';
 import { SYNTHETIC_RECORDS } from './synthetic-fixture';
 
 const engine = new SearchEngine(loadIndex(encodeIndex(SYNTHETIC_RECORDS).bytes));
@@ -26,6 +26,73 @@ describe('matching', () => {
     // Every city named exactly Lancaster, heaviest first; New Lancaster
     // matches a whole word too but is not the whole name.
     expect(ids('lancaster', 'cities')).toEqual(['SYNC02', 'SYNC01', 'SYNC04', 'SYNC03', 'SYNC05']);
+  });
+
+  describe('a name that starts with the words and is far heavier', () => {
+    // Places as pipeline/out/site-data/search has them (September 2026): the four named Kansas,
+    // the two Kansas Cities and North Kansas City; the three Portlands and South Portland.
+    const place = (
+      geoid: string,
+      name: string,
+      sub: string,
+      state: string,
+      weight: number,
+      lat: number,
+      lon: number,
+    ): SearchRecord => ({ kind: 'city', id: geoid, name, sub, state, lat, lon, weight });
+    const places = new SearchEngine(
+      loadIndex(
+        encodeIndex([
+          place('0139280', 'Kansas', 'Alabama', 'AL', 185, 33.902808, -87.556598),
+          place('1738986', 'Kansas', 'Illinois', 'IL', 647, 39.55446, -87.939554),
+          place('3939578', 'Kansas', 'Ohio', 'OH', 0, 41.24515, -83.283916),
+          place('4038600', 'Kansas', 'Oklahoma', 'OK', 756, 36.205359, -94.788945),
+          place('2036000', 'Kansas City', 'Kansas', 'KS', 157805, 39.122539, -94.741781),
+          place('2938000', 'Kansas City', 'Missouri', 'MO', 521220, 39.125155, -94.550313),
+          place('2953102', 'North Kansas City', 'Missouri', 'MO', 5613, 39.139553, -94.565159),
+          place('4159000', 'Portland', 'Oregon', 'OR', 635109, 45.536951, -122.649971),
+          place('2360545', 'Portland', 'Maine', 'ME', 69911, 43.633157, -70.185305),
+          place('4760280', 'Portland', 'Tennessee', 'TN', 13658, 36.597486, -86.526621),
+          place('2371990', 'South Portland', 'Maine', 'ME', 27007, 43.631402, -70.285989),
+        ]).bytes,
+      ),
+    );
+    const names = (q: string, limit?: number): string[] =>
+      places.search(q, limit).cities.map((h) => `${h.name}, ${h.state}`);
+
+    it('goes ahead of the exact names it outweighs, which still follow', () => {
+      expect(names('kansas')).toEqual([
+        'Kansas City, MO',
+        'Kansas City, KS',
+        'Kansas, OK',
+        'Kansas, IL',
+        'Kansas, AL',
+      ]);
+      expect(names('kansas', 10).slice(5)).toEqual(['Kansas, OH', 'North Kansas City, MO']);
+      expect(places.search('kansas').cities.every((h) => h.match === 'exact')).toBe(true);
+    });
+
+    it('needs the words where the name starts, and the weight', () => {
+      // South Portland does not start with the word; it follows every Portland.
+      expect(names('portland')).toEqual([
+        'Portland, OR',
+        'Portland, ME',
+        'Portland, TN',
+        'South Portland, ME',
+      ]);
+      expect(LEAD_FACTOR).toBeGreaterThan(27007 / 13658);
+      // Two whole words: the exact names lead, and nothing named for them is heavy enough.
+      expect(names('kansas city')).toEqual([
+        'Kansas City, MO',
+        'Kansas City, KS',
+        'North Kansas City, MO',
+      ]);
+    });
+
+    it('keeps its place in a state', () => {
+      expect(names('kansas ok')[0]).toBe('Kansas, OK');
+      expect(names('kansas mo')).toEqual(['Kansas City, MO', 'North Kansas City, MO']);
+    });
   });
 
   it('puts exact before prefix before typo', () => {

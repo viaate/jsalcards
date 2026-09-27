@@ -73,6 +73,21 @@ describe('isPhrase', () => {
     expect(phrase('Oak Hill', 'pine')).toBe(false);
   });
 
+  it('can require the words where the name starts', () => {
+    const at = (name: string, query: string): boolean =>
+      isPhrase(
+        tokenize(name),
+        tokenize(query).map((text) => ({ text, budget: 0 })),
+        Tier.exact,
+        true,
+      );
+    expect(at('Kansas City', 'kansas')).toBe(true);
+    expect(at('North Kansas City', 'kansas')).toBe(false);
+    expect(at('New York Mills', 'new york')).toBe(true);
+    expect(at('West New York', 'new york')).toBe(false);
+    expect(phrase('North Kansas City', 'kansas')).toBe(true);
+  });
+
   it('gives up quickly on pathological input', () => {
     const name = Array.from({ length: 40 }, () => 'st').join(' ');
     const query = Array.from({ length: 8 }, (_, i) => (i === 7 ? 'zzz' : 'st')).join(' ');

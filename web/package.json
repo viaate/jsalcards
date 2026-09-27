@@ -19,6 +19,7 @@
     "test": "npm run lint:copy && vitest run",
     "e2e": "playwright test",
     "build:geo": "node scripts/build-geo.mjs",
+    "bench:glow": "tsc -p bench/tsconfig.json && vitest run --dir src/map/glow && vitest run --dir bench && playwright test -c bench/playwright.config.ts",
     "perf": "node perf/lighthouse.mjs",
     "bench:search": "tsc -p bench/search/tsconfig.json && vitest run --dir src/search && playwright test -c bench/search/playwright.config.ts",
     "build:search": "node scripts/build-search-index.mjs",

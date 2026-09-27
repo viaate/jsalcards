@@ -89,7 +89,7 @@ test.beforeEach(() => {
 async function newContext(
   browser: Browser,
   viewport: Viewport,
-  options: { javaScriptEnabled?: boolean } = {},
+  options: { javaScriptEnabled?: boolean; serviceWorkers?: 'allow' | 'block' } = {},
 ): Promise<BrowserContext> {
   return browser.newContext({
     viewport: { width: viewport.width, height: viewport.height },
@@ -97,6 +97,7 @@ async function newContext(
     isMobile: viewport.isMobile,
     hasTouch: viewport.isMobile,
     javaScriptEnabled: options.javaScriptEnabled ?? true,
+    serviceWorkers: options.serviceWorkers ?? 'allow',
   });
 }
 
@@ -658,7 +659,8 @@ test.describe('the map at rest', () => {
     baseURL,
   }) => {
     const origin = new URL(baseURL ?? '').origin;
-    const context = await newContext(browser, DESKTOP);
+    // Once the service worker takes the page it fetches tiles itself, out of the route's sight.
+    const context = await newContext(browser, DESKTOP, { serviceWorkers: 'block' });
     const page = await context.newPage();
     const external: string[] = [];
     await page.route(
