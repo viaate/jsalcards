@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="ISO-8859-1" standalone="yes"  ?>
+
+<!DOCTYPE flashnews [
+	<!ATTLIST flashnews updated CDATA #REQUIRED>
+	<!ELEMENT flashnews (emergency*)>
+		<!ELEMENT emergency (emergency_category*)>
+			<!ELEMENT emergency_category (emergency_report*)>
+				<!ATTLIST emergency_category name CDATA #REQUIRED>
+				<!ELEMENT emergency_report (detail*,orgname*,tomorrow*)>
+					<!ATTLIST emergency_report custom CDATA #REQUIRED>	
+					<!ATTLIST emergency_report updated CDATA #REQUIRED>
+					<!ATTLIST emergency_report last_update CDATA #REQUIRED>
+					<!ATTLIST emergency_report testing CDATA #REQUIRED>
+					<!ATTLIST emergency_report schoolrelated CDATA #REQUIRED>
+					<!ATTLIST emergency_report orgid CDATA #REQUIRED>
+					<!ATTLIST emergency_report effective_date CDATA #REQUIRED>
+					<!ATTLIST emergency_report report_id CDATA #REQUIRED>
+					<!ATTLIST emergency_report operating_code CDATA #REQUIRED>
+					<!ATTLIST emergency_report transpo_code CDATA #REQUIRED>
+					
+		<!ELEMENT detail (#PCDATA)>
+		<!ELEMENT tomorrow (#PCDATA)>
+		<!ELEMENT orgname (#PCDATA)>			
+		<!ATTLIST orgname orgid CDATA #IMPLIED>
+        <!ATTLIST orgname zipcode CDATA #IMPLIED>
+        <!ATTLIST orgname tier CDATA #IMPLIED>
+]><flashnews updated="2026-09-26 06:39:20">
+<emergency>
+</emergency></flashnews>

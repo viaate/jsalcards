@@ -1,0 +1,1104 @@
+# Station registry for one platform. Loaded with every other file in this folder
+# by snowlight.sources.stations.registry; see its docstring for the fields.
+# `snowlight stations robots --update` rewrites the robots blocks in place.
+platform:
+  id: nbc-owned
+  name: NBC Owned Television Stations school closings
+  operator: NBCUniversal Local (NBC Owned Television Stations, Comcast)
+  adapter: nbc-owned
+  poll_minutes: 10
+  terms:
+    automated_access: forbidden
+    summary: The NBC-owned station sites' footers link NBCUniversal's Terms of Service (https://www.nbcuniversal.com/terms,
+      "Effective Date October 28, 2022; Updated December 24, 2024"), whose list of Prohibited Actions
+      (https://www.nbcuniversal.com/terms/prohibited-actions) forbids collecting data from the services
+      "by any means (whether automated or manual) other than through our currently available, published
+      interfaces" and using "any robots, spiders, crawlers, devices, scripts or other data gathering or
+      extraction software" to access, copy, monitor, scrape or aggregate content; the license is for personal
+      use. The first-hand check of 2026-09-26 read only the main page and found no such clause; the Prohibited
+      Actions page it links holds it. The project owner decided on 2026-09-25 to read the closings lists
+      anyway for this non-commercial project (owner_decision below); the terms stay recorded here.
+    evidence:
+    - url: https://www.nbcuniversal.com/terms
+      read_at: '2026-09-27T01:25:57Z'
+      sha256: 9124347a94429173bcd9898d73d1da6daaee3211e9c15e990d652493d784d589
+      excerpt:
+      - Terms of Service Effective Date October 28, 2022; Updated December 24, 2024
+      - Prohibited Actions. You may not attempt any of the actions set forth in this list of Prohibited
+        Actions or authorize, facilitate or induce others to do so.
+      - We grant you a limited, non-sublicensable, non-transferable license to access and use the NBCUniversal
+        Services for your personal use, and only in accordance with these TOS.
+    - url: https://www.nbcuniversal.com/terms/prohibited-actions
+      read_at: '2026-09-27T01:26:32Z'
+      sha256: 6b39c232850b981d4002db71f85586f850a14c405f02e376b4385a0c9099e613
+      excerpt:
+      - No Data Extraction. You may not access, search and/or collect data from, or attempt to access,
+        search and/or collect data from, the NBCUniversal Services by any means (whether automated or
+        manual) other than through our currently available, published interfaces that are made available
+        to you by us, unless NBCUniversal has given its express written authorization to do so.
+      - you may not use any robots, spiders, crawlers, devices, scripts or other data gathering or extraction
+        software and/or tools, whether automated or manual, to access, acquire, copy, monitor, scrape,
+        data mine, or aggregate any Content or any portion of the NBCUniversal Services for any purpose
+    permission: null
+    owner_decision:
+      decided_by: the project owner (Snowlight)
+      decided_on: '2026-09-25'
+      reference: 'Stated in the build instructions for the station adapters (piece s4c1, round 1): "Terms
+        of use that forbid automated access do not exclude a station: the project owner decided on 2026-09-25
+        to read them for this non-commercial project, so record each station''s terms internally in the
+        registry and read it anyway." The same instructions record the owner''s decision of 2026-09-26
+        to read closings pages and data files even where robots.txt disallows them (naming CBS''s assets1.cbsnewsstatic.com
+        feeds as an example). Relayed to the pipeline''s builder by the project''s build workflow; to
+        revoke it, remove this block and live polling of this platform stops.'
+      scope: 'Live reads of this platform''s public closings lists (the station pages and the list files
+        or routes they load) for Snowlight, a non-commercial project, although the terms above forbid
+        automated access. robots.txt is read and its verdict recorded for every URL requested; the owner
+        decided on 2026-09-26 to read closings pages and files even where robots.txt disallows them. Unchanged
+        by it: the User-Agent names the repository (never a browser string), only the closings page or
+        file is requested (no crawling), requests are paced per host (any Crawl-delay is a floor) with
+        conditional requests and backoff on 429 and 5xx answers, and a station that blocks the project
+        (a 403, or a bot challenge) is not worked around.'
+  notes: 'Station list: Wikipedia ''NBC Owned Television Stations'' currently-owned table, read 2026-09-26
+    by the first-hand check (11 English-language NBC stations). Ten NBC-owned sites publish their closings
+    list at the WordPress REST route /wp-json/nbc/v1/school-closings (the live poller''s data_url; each
+    answered HTTP 200 on 2026-09-27, three of them populated: NBC New York, NBC Connecticut and NBC Boston)
+    and render the same list on /weather/school-closings/. Archived captures (archive-captures runs 36311251817,
+    36323195832 and 36330775706) show that page in two designs, both read by the adapter: the page before
+    the WordPress platform (January 2017 to November 2019; rows at NBC Connecticut, 159 on 8 February
+    2017, NBC Philadelphia and NBC Boston) and the WordPress page (from December 2019); NBC New York,
+    Philadelphia, Washington, Boston, Connecticut and Dallas-Fort Worth listed rows on storm days (NBC
+    Connecticut 853 on 13 February 2024, NBC DFW 426 on 2 February 2022), and the REST routes of NBC New
+    York (6 items on 22 February 2026, 27 on 13 March 2020), NBC Philadelphia (22 on 16 March 2020) and
+    NBC Connecticut (430 the day after 22 February 2026) held rows. Every capture read of the NBC Los
+    Angeles, San Diego, Bay Area and Miami pages (2016 to 2026) was empty, on closure days too: all 26
+    NBC Los Angeles captures of the January 2025 fire closures (6 to 15 January) and of the November 2024
+    Mountain fire, NBC Bay Area during the October 2017 North Bay fires and the January 2023 storms, NBC
+    7 San Diego during the January 2025 fire weather, and all 11 NBC 6 Miami captures of hurricane days
+    (Eta 2020, Ian and Nicole 2022, Idalia 2023, Milton and Rafael 2024; runs 36345276947, 36348669505
+    and 36353079096). Every archived capture of their four REST routes (41, 2019 to 2026, CDX run 36345276947)
+    has one of the two digests of route captures read empty elsewhere (S7IXBYKV..., DFAKE2U3...). These
+    four stations stay unproven: their lists answer but no reader has ever seen them used. NBC Chicago''s
+    closings address redirects to the Emergency Closing Center (platform ecc), so WMAQ has no list of
+    its own. robots.txt allowed every route and page when checked.'
+  shared_paths: []
+stations:
+- id: nbc-owned-wnbc
+  platform: nbc-owned
+  call_sign: WNBC
+  name: NBC 4 New York (nbcnewyork.com)
+  market: New York
+  dma: New York, NY - CT - NJ - PA DMA
+  states: [CT, NJ, NY, PA]
+  counties:
+    basis: dma
+    source: 'DMA county list: alex-patton/US-TVDMA-BY-COUNTY usa-tvdma-county.csv at commit 7f254b8c1843c62ec976a71c40d366d45f6f29cd
+      (sha256 2e2cd00265a8d704...), names resolved to FIPS with the Census 2025 county Gazetteer; Connecticut
+      via the Census county-to-town crosswalk (snowlight.sources.stations.dma); market ''New York, NY
+      - CT - NJ - PA DMA'''
+    fips: [09120, 09140, 09190, '34003', '34013', '34017', '34019', '34023', '34025', '34027', '34029',
+      '34031', '34035', '34037', '34039', '34041', '36005', '36027', '36047', '36059', '36061', '36071',
+      '36079', '36081', '36085', '36087', '36103', '36105', '36111', '36119', '42103']
+  page_url: https://www.nbcnewyork.com/weather/school-closings/
+  data_url: https://www.nbcnewyork.com/wp-json/nbc/v1/school-closings
+  export_url: null
+  archive_urls:
+  - https://www.nbcnewyork.com/weather/school-closings/
+  - https://www.nbcnewyork.com/wp-json/nbc/v1/school-closings
+  poll_minutes: null
+  status: active
+  evidence: 'First-hand check of 2026-09-26 (docs/research/firsthand/others.json, record WNBC); closings
+    page https://www.nbcnewyork.com/weather/school-closings/ (server-rendered .closings block) and its
+    REST route https://www.nbcnewyork.com/wp-json/nbc/v1/school-closings. Live read 2026-09-27: route
+    01:08:20Z HTTP 200, 1 row (''East Islip School District'', WEEKEND CLASSES CANCELED); the page held
+    the same row. Archive: 15 Wayback captures of this station''s page or list file read (archive-captures
+    runs 36311251817, 36330775706, 36345276947, 36348669505), from 2017-01-25 to 2026-03-12; 8 with rows,
+    the most 166 on 2024-02-13 (https://web.archive.org/web/20240213140150/https://www.nbcnewyork.com/weather/school-closings/)
+    (7 empty); variants nbc-legacy-page, nbc-wp-json, nbc-wp-page; not downloaded: 3 TLS handshake timed
+    out; fixtures nbc-owned/wnbc-page-20210201150005.html, nbc-owned/wnbc-page-20230228142240.html, nbc-owned/wnbc-route-20200313141145.json,
+    nbc-owned/wnbc-route-20260222153725.json.'
+  list_files: []
+  page_check: null
+  robots:
+  - url: https://www.nbcnewyork.com/weather/school-closings/
+    checked_at: '2026-09-27T01:31:10Z'
+    state: parsed
+    allowed: true
+    rule: no rule matches
+    crawl_delay: null
+    disallowed_agents:
+    - amazonbot
+    - anthropic-ai
+    - awariorssbot
+    - awariosmartbot
+    - bytespider
+    - ccbot
+    - chatgpt-user
+    - claude-web
+    - claudebot
+    - dataforseobot
+    - diffbot
+    - facebookbot
+    - google-extended
+    - gptbot
+    - magpie-crawler
+    - news-please
+    - newsnow
+    - omgili
+    - omgilibot
+    - peer39_crawler
+    - peer39_crawler/1.0
+    - perplexitybot
+    - scrapy
+    - turnitinbot
+    sha256: 2de96b71fcd8556cfe25019c0109c2a74ef25c13b0d1ad3005bda0299453e6ec
+  - url: https://www.nbcnewyork.com/wp-json/nbc/v1/school-closings
+    checked_at: '2026-09-27T01:31:10Z'
+    state: parsed
+    allowed: true
+    rule: no rule matches
+    crawl_delay: null
+    disallowed_agents:
+    - amazonbot
+    - anthropic-ai
+    - awariorssbot
+    - awariosmartbot
+    - bytespider
+    - ccbot
+    - chatgpt-user
+    - claude-web
+    - claudebot
+    - dataforseobot
+    - diffbot
+    - facebookbot
+    - google-extended
+    - gptbot
+    - magpie-crawler
+    - news-please
+    - newsnow
+    - omgili
+    - omgilibot
+    - peer39_crawler
+    - peer39_crawler/1.0
+    - perplexitybot
+    - scrapy
+    - turnitinbot
+    sha256: 2de96b71fcd8556cfe25019c0109c2a74ef25c13b0d1ad3005bda0299453e6ec
+- id: nbc-owned-wcau
+  platform: nbc-owned
+  call_sign: WCAU
+  name: NBC 10 Philadelphia (nbcphiladelphia.com)
+  market: Philadelphia
+  dma: Philadelphia, PA - DE - NJ DMA
+  states: [DE, NJ, PA]
+  counties:
+    basis: dma
+    source: 'DMA county list: alex-patton/US-TVDMA-BY-COUNTY usa-tvdma-county.csv at commit 7f254b8c1843c62ec976a71c40d366d45f6f29cd
+      (sha256 2e2cd00265a8d704...), names resolved to FIPS with the Census 2025 county Gazetteer; Connecticut
+      via the Census county-to-town crosswalk (snowlight.sources.stations.dma); market ''Philadelphia,
+      PA - DE - NJ DMA'''
+    fips: ['10001', '10003', '34001', '34005', '34007', '34009', '34011', '34015', '34021', '34033', '42011',
+      '42017', '42029', '42045', '42077', '42091', '42095', '42101']
+  page_url: https://www.nbcphiladelphia.com/weather/school-closings/
+  data_url: https://www.nbcphiladelphia.com/wp-json/nbc/v1/school-closings
+  export_url: null
+  archive_urls:
+  - https://www.nbcphiladelphia.com/weather/school-closings/
+  - https://www.nbcphiladelphia.com/wp-json/nbc/v1/school-closings
+  poll_minutes: null
+  status: active
+  evidence: 'First-hand check of 2026-09-26 (docs/research/firsthand/others.json, record WCAU); closings
+    page https://www.nbcphiladelphia.com/weather/school-closings/ (server-rendered .closings block) and
+    its REST route https://www.nbcphiladelphia.com/wp-json/nbc/v1/school-closings. Live read 2026-09-27:
+    route 01:08:48Z HTTP 200, [] (empty). Archive: 15 Wayback captures of this station''s page or list
+    file read (archive-captures runs 36311251817, 36330775706, 36345276947, 36348669505), from 2017-01-20
+    to 2026-07-01; 5 with rows, the most 157 on 2024-01-19 (https://web.archive.org/web/20240119184449/https://www.nbcphiladelphia.com/weather/school-closings/)
+    (10 empty); variants nbc-legacy-page, nbc-wp-json, nbc-wp-page; not downloaded: 5 not reached before
+    the run''s time budget, 2 TLS handshake timed out, 2 HTTP 403; fixtures nbc-owned/wcau-page-20190220201954.html,
+    nbc-owned/wcau-page-20240119184449.html, nbc-owned/wcau-route-20200316122302.json.'
+  list_files: []
+  page_check: null
+  robots:
+  - url: https://www.nbcphiladelphia.com/weather/school-closings/
+    checked_at: '2026-09-27T01:31:10Z'
+    state: parsed
+    allowed: true
+    rule: no rule matches
+    crawl_delay: null
+    disallowed_agents:
+    - amazonbot
+    - anthropic-ai
+    - awariorssbot
+    - awariosmartbot
+    - bytespider
+    - ccbot
+    - chatgpt-user
+    - claude-web
+    - claudebot
+    - dataforseobot
+    - diffbot
+    - facebookbot
+    - google-extended
+    - gptbot
+    - magpie-crawler
+    - news-please
+    - newsnow
+    - omgili
+    - omgilibot
+    - peer39_crawler
+    - peer39_crawler/1.0
+    - perplexitybot
+    - scrapy
+    - turnitinbot
+    sha256: fa865aa489b73fbe7c4cb3ea9da4720a4ef3b6b994027954a41b0657ef87828a
+  - url: https://www.nbcphiladelphia.com/wp-json/nbc/v1/school-closings
+    checked_at: '2026-09-27T01:31:10Z'
+    state: parsed
+    allowed: true
+    rule: no rule matches
+    crawl_delay: null
+    disallowed_agents:
+    - amazonbot
+    - anthropic-ai
+    - awariorssbot
+    - awariosmartbot
+    - bytespider
+    - ccbot
+    - chatgpt-user
+    - claude-web
+    - claudebot
+    - dataforseobot
+    - diffbot
+    - facebookbot
+    - google-extended
+    - gptbot
+    - magpie-crawler
+    - news-please
+    - newsnow
+    - omgili
+    - omgilibot
+    - peer39_crawler
+    - peer39_crawler/1.0
+    - perplexitybot
+    - scrapy
+    - turnitinbot
+    sha256: fa865aa489b73fbe7c4cb3ea9da4720a4ef3b6b994027954a41b0657ef87828a
+- id: nbc-owned-wrc
+  platform: nbc-owned
+  call_sign: WRC
+  name: NBC 4 Washington (nbcwashington.com)
+  market: Washington DC
+  dma: Washington, DC - MD - PA - VA - WV DMA
+  states: [DC, MD, PA, VA, WV]
+  counties:
+    basis: dma
+    source: 'DMA county list: alex-patton/US-TVDMA-BY-COUNTY usa-tvdma-county.csv at commit 7f254b8c1843c62ec976a71c40d366d45f6f29cd
+      (sha256 2e2cd00265a8d704...), names resolved to FIPS with the Census 2025 county Gazetteer; Connecticut
+      via the Census county-to-town crosswalk (snowlight.sources.stations.dma); market ''Washington, DC
+      - MD - PA - VA - WV DMA''; plus 11001 (District of Columbia), for which that list has no row, placed
+      in this market by the second published list BritCrit/dma_county_zip dma_county_zip_data_set.csv
+      at commit 02f847923bd218c30a8c5488d561eca42ecf3614 (sha256 c931c30cef1b5d29...), used only for counties
+      the first list lacks (snowlight.sources.stations.dma.fill_missing)'
+    fips: ['11001', '24001', '24009', '24017', '24021', '24031', '24033', '24037', '24043', '42055', '42057',
+      '51013', '51043', '51047', '51059', '51061', '51069', '51099', '51107', '51139', '51153', '51157',
+      '51171', '51177', '51179', '51187', '51193', '51510', '51600', '51610', '51630', '51683', '51685',
+      '51840', '54003', '54023', '54027', '54031', '54037', '54057', '54065']
+  page_url: https://www.nbcwashington.com/weather/school-closings/
+  data_url: https://www.nbcwashington.com/wp-json/nbc/v1/school-closings
+  export_url: null
+  archive_urls:
+  - https://www.nbcwashington.com/weather/school-closings/
+  - https://www.nbcwashington.com/wp-json/nbc/v1/school-closings
+  poll_minutes: null
+  status: active
+  evidence: 'First-hand check of 2026-09-26 (docs/research/firsthand/others.json, record WRC); closings
+    page https://www.nbcwashington.com/weather/school-closings/ (server-rendered .closings block) and
+    its REST route https://www.nbcwashington.com/wp-json/nbc/v1/school-closings. Live read 2026-09-27:
+    route 01:08:38Z HTTP 200, [] (empty); page 01:21:14Z ''Forecast: School''s Open.''. Archive: 15 Wayback
+    captures of this station''s page or list file read (archive-captures runs 36311251817, 36330775706,
+    36345276947, 36348669505), from 2017-01-20 to 2026-03-16; 4 with rows, the most 193 on 2025-01-07
+    (https://web.archive.org/web/20250107085322/https://www.nbcwashington.com/weather/school-closings/)
+    (11 empty); variants nbc-legacy-page, nbc-wp-json, nbc-wp-page; not downloaded: 5 not reached before
+    the run''s time budget, 1 TLS handshake timed out; fixtures nbc-owned/wrc-page-20190322192121.html,
+    nbc-owned/wrc-page-20210218204752.html, nbc-owned/wrc-page-20220103141900.html, nbc-owned/wrc-page-20250107085322.html.'
+  list_files: []
+  page_check: null
+  robots:
+  - url: https://www.nbcwashington.com/weather/school-closings/
+    checked_at: '2026-09-27T01:31:11Z'
+    state: parsed
+    allowed: true
+    rule: no rule matches
+    crawl_delay: null
+    disallowed_agents:
+    - amazonbot
+    - anthropic-ai
+    - awariorssbot
+    - awariosmartbot
+    - bytespider
+    - ccbot
+    - chatgpt-user
+    - claude-web
+    - claudebot
+    - dataforseobot
+    - diffbot
+    - facebookbot
+    - google-extended
+    - gptbot
+    - magpie-crawler
+    - news-please
+    - newsnow
+    - omgili
+    - omgilibot
+    - peer39_crawler
+    - peer39_crawler/1.0
+    - perplexitybot
+    - scrapy
+    - turnitinbot
+    sha256: a74e5eb28fe6feaa8990e7c8403b71eb96324e7f407f3c1e914e00709812d745
+  - url: https://www.nbcwashington.com/wp-json/nbc/v1/school-closings
+    checked_at: '2026-09-27T01:31:11Z'
+    state: parsed
+    allowed: true
+    rule: no rule matches
+    crawl_delay: null
+    disallowed_agents:
+    - amazonbot
+    - anthropic-ai
+    - awariorssbot
+    - awariosmartbot
+    - bytespider
+    - ccbot
+    - chatgpt-user
+    - claude-web
+    - claudebot
+    - dataforseobot
+    - diffbot
+    - facebookbot
+    - google-extended
+    - gptbot
+    - magpie-crawler
+    - news-please
+    - newsnow
+    - omgili
+    - omgilibot
+    - peer39_crawler
+    - peer39_crawler/1.0
+    - perplexitybot
+    - scrapy
+    - turnitinbot
+    sha256: a74e5eb28fe6feaa8990e7c8403b71eb96324e7f407f3c1e914e00709812d745
+- id: nbc-owned-wbts
+  platform: nbc-owned
+  call_sign: WBTS
+  name: NBC 10 Boston (nbcboston.com)
+  market: Boston
+  dma: Boston, MA - NH DMA
+  states: [MA, NH, VT]
+  counties:
+    basis: dma
+    source: 'DMA county list: alex-patton/US-TVDMA-BY-COUNTY usa-tvdma-county.csv at commit 7f254b8c1843c62ec976a71c40d366d45f6f29cd
+      (sha256 2e2cd00265a8d704...), names resolved to FIPS with the Census 2025 county Gazetteer; Connecticut
+      via the Census county-to-town crosswalk (snowlight.sources.stations.dma); market ''Boston, MA -
+      NH DMA'''
+    fips: ['25001', '25007', '25009', '25017', '25019', '25021', '25023', '25025', '25027', '33001', '33005',
+      '33011', '33013', '33015', '33017', '50025']
+  page_url: https://www.nbcboston.com/weather/school-closings/
+  data_url: https://www.nbcboston.com/wp-json/nbc/v1/school-closings
+  export_url: null
+  archive_urls:
+  - https://www.nbcboston.com/weather/school-closings/
+  - https://www.nbcboston.com/wp-json/nbc/v1/school-closings
+  poll_minutes: null
+  status: active
+  evidence: 'First-hand check of 2026-09-26 (docs/research/firsthand/others.json, record WBTS); closings
+    page https://www.nbcboston.com/weather/school-closings/ (server-rendered .closings block) and its
+    REST route https://www.nbcboston.com/wp-json/nbc/v1/school-closings. Live read 2026-09-27: route 01:08:45Z
+    HTTP 200, 5 rows (Bristol Community College ''Closed Saturday'', ...); the page held the same 5 rows
+    under its state tabs. Archive: 18 Wayback captures of this station''s page or list file read (archive-captures
+    runs 36311251817, 36330775706, 36345276947, 36348669505, 36353079096), from 2017-02-04 to 2026-02-23;
+    9 with rows, the most 588 on 2026-02-23 (https://web.archive.org/web/20260223140106/https://www.nbcboston.com/weather/school-closings/)
+    (9 empty); variants nbc-legacy-page, nbc-wp-json, nbc-wp-page; not downloaded: 14 not reached before
+    the run''s time budget, 4 TLS handshake timed out, 1 HTTP 403; fixtures nbc-owned/wbts-page-20170204125739.html,
+    nbc-owned/wbts-page-20171222231430.html, nbc-owned/wbts-page-20240213122611.html, nbc-owned/wbts-page-20250121020156.html.'
+  list_files: []
+  page_check: null
+  robots:
+  - url: https://www.nbcboston.com/weather/school-closings/
+    checked_at: '2026-09-27T01:31:09Z'
+    state: parsed
+    allowed: true
+    rule: no rule matches
+    crawl_delay: null
+    disallowed_agents:
+    - amazonbot
+    - anthropic-ai
+    - awariorssbot
+    - awariosmartbot
+    - bytespider
+    - ccbot
+    - chatgpt-user
+    - claude-web
+    - claudebot
+    - dataforseobot
+    - diffbot
+    - facebookbot
+    - google-extended
+    - gptbot
+    - magpie-crawler
+    - news-please
+    - newsnow
+    - omgili
+    - omgilibot
+    - peer39_crawler
+    - peer39_crawler/1.0
+    - perplexitybot
+    - scrapy
+    - turnitinbot
+    sha256: 253b7561e9863bacb8400f8d8990624c9ce3f52b34eaab6a9af5b3a576a726a7
+  - url: https://www.nbcboston.com/wp-json/nbc/v1/school-closings
+    checked_at: '2026-09-27T01:31:09Z'
+    state: parsed
+    allowed: true
+    rule: no rule matches
+    crawl_delay: null
+    disallowed_agents:
+    - amazonbot
+    - anthropic-ai
+    - awariorssbot
+    - awariosmartbot
+    - bytespider
+    - ccbot
+    - chatgpt-user
+    - claude-web
+    - claudebot
+    - dataforseobot
+    - diffbot
+    - facebookbot
+    - google-extended
+    - gptbot
+    - magpie-crawler
+    - news-please
+    - newsnow
+    - omgili
+    - omgilibot
+    - peer39_crawler
+    - peer39_crawler/1.0
+    - perplexitybot
+    - scrapy
+    - turnitinbot
+    sha256: 253b7561e9863bacb8400f8d8990624c9ce3f52b34eaab6a9af5b3a576a726a7
+- id: nbc-owned-wvit
+  platform: nbc-owned
+  call_sign: WVIT
+  name: NBC Connecticut (nbcconnecticut.com)
+  market: Hartford-New Haven
+  dma: Hartford & New Haven, CT DMA
+  states: [CT]
+  counties:
+    basis: dma
+    source: 'DMA county list: alex-patton/US-TVDMA-BY-COUNTY usa-tvdma-county.csv at commit 7f254b8c1843c62ec976a71c40d366d45f6f29cd
+      (sha256 2e2cd00265a8d704...), names resolved to FIPS with the Census 2025 county Gazetteer; Connecticut
+      via the Census county-to-town crosswalk (snowlight.sources.stations.dma); market ''Hartford & New
+      Haven, CT DMA'''
+    fips: [09110, 09130, 09140, 09150, 09160, 09170, 09180, 09190]
+  page_url: https://www.nbcconnecticut.com/weather/school-closings/
+  data_url: https://www.nbcconnecticut.com/wp-json/nbc/v1/school-closings
+  export_url: null
+  archive_urls:
+  - https://www.nbcconnecticut.com/weather/school-closings/
+  - https://www.nbcconnecticut.com/wp-json/nbc/v1/school-closings
+  poll_minutes: null
+  status: active
+  evidence: 'First-hand check of 2026-09-26 (docs/research/firsthand/others.json, record WVIT); closings
+    page https://www.nbcconnecticut.com/weather/school-closings/ (server-rendered .closings block) and
+    its REST route https://www.nbcconnecticut.com/wp-json/nbc/v1/school-closings. Live read 2026-09-27:
+    route 01:08:34Z HTTP 200, 5 rows (St. James Episcopal New London ''3 Hour Delay'', ...); the page
+    (cached apart) held 7. Archive: 17 Wayback captures of this station''s page or list file read (archive-captures
+    runs 36323195832, 36330775706, 36345276947, 36348669505), from 2015-02-02 to 2026-02-23; 14 with rows,
+    the most 978 on 2015-02-02 (https://web.archive.org/web/20150202204223/http://www.nbcconnecticut.com/weather/school-closings/)
+    (3 empty); variants nbc-legacy-page, nbc-wp-json, nbc-wp-page; not downloaded: 6 not reached before
+    the run''s time budget; fixtures nbc-owned/wvit-page-20170208221931.html, nbc-owned/wvit-page-20230314130802.html,
+    nbc-owned/wvit-route-20260223233626.json.'
+  list_files: []
+  page_check: null
+  robots:
+  - url: https://www.nbcconnecticut.com/weather/school-closings/
+    checked_at: '2026-09-27T01:31:12Z'
+    state: parsed
+    allowed: true
+    rule: no rule matches
+    crawl_delay: null
+    disallowed_agents:
+    - amazonbot
+    - anthropic-ai
+    - awariorssbot
+    - awariosmartbot
+    - bytespider
+    - ccbot
+    - chatgpt-user
+    - claude-web
+    - claudebot
+    - dataforseobot
+    - diffbot
+    - facebookbot
+    - google-extended
+    - gptbot
+    - magpie-crawler
+    - news-please
+    - newsnow
+    - omgili
+    - omgilibot
+    - peer39_crawler
+    - peer39_crawler/1.0
+    - perplexitybot
+    - scrapy
+    - turnitinbot
+    sha256: c3dd8acb0f80935c1edd4b77b32092edf2fdffaadb8b87530b7a3b5eaaba4236
+  - url: https://www.nbcconnecticut.com/wp-json/nbc/v1/school-closings
+    checked_at: '2026-09-27T01:31:12Z'
+    state: parsed
+    allowed: true
+    rule: no rule matches
+    crawl_delay: null
+    disallowed_agents:
+    - amazonbot
+    - anthropic-ai
+    - awariorssbot
+    - awariosmartbot
+    - bytespider
+    - ccbot
+    - chatgpt-user
+    - claude-web
+    - claudebot
+    - dataforseobot
+    - diffbot
+    - facebookbot
+    - google-extended
+    - gptbot
+    - magpie-crawler
+    - news-please
+    - newsnow
+    - omgili
+    - omgilibot
+    - peer39_crawler
+    - peer39_crawler/1.0
+    - perplexitybot
+    - scrapy
+    - turnitinbot
+    sha256: c3dd8acb0f80935c1edd4b77b32092edf2fdffaadb8b87530b7a3b5eaaba4236
+- id: nbc-owned-kxas
+  platform: nbc-owned
+  call_sign: KXAS
+  name: NBC 5 Dallas-Fort Worth (nbcdfw.com)
+  market: Dallas-Fort Worth
+  dma: Dallas - Ft. Worth, TX DMA
+  states: [TX]
+  counties:
+    basis: dma
+    source: 'DMA county list: alex-patton/US-TVDMA-BY-COUNTY usa-tvdma-county.csv at commit 7f254b8c1843c62ec976a71c40d366d45f6f29cd
+      (sha256 2e2cd00265a8d704...), names resolved to FIPS with the Census 2025 county Gazetteer; Connecticut
+      via the Census county-to-town crosswalk (snowlight.sources.stations.dma); market ''Dallas - Ft.
+      Worth, TX DMA'''
+    fips: ['48001', '48035', '48085', '48093', '48097', '48113', '48119', '48121', '48139', '48143', '48147',
+      '48161', '48193', '48213', '48217', '48221', '48223', '48231', '48237', '48251', '48257', '48277',
+      '48337', '48349', '48363', '48367', '48379', '48397', '48425', '48439', '48467', '48497']
+  page_url: https://www.nbcdfw.com/weather/school-closings/
+  data_url: https://www.nbcdfw.com/wp-json/nbc/v1/school-closings
+  export_url: null
+  archive_urls:
+  - https://www.nbcdfw.com/weather/school-closings/
+  - https://www.nbcdfw.com/wp-json/nbc/v1/school-closings
+  poll_minutes: null
+  status: active
+  evidence: 'First-hand check of 2026-09-26 (docs/research/firsthand/others.json, record KXAS); closings
+    page https://www.nbcdfw.com/weather/school-closings/ (server-rendered .closings block) and its REST
+    route https://www.nbcdfw.com/wp-json/nbc/v1/school-closings. Live read 2026-09-27: route 01:08:52Z
+    HTTP 200, [] (empty); page 01:21:08Z ''Forecast: School''s Open.''. Archive: 13 Wayback captures of
+    this station''s page or list file read (archive-captures runs 36311251817, 36330775706, 36345276947,
+    36348669505), from 2015-03-05 to 2026-01-27; 8 with rows, the most 816 on 2015-03-05 (https://web.archive.org/web/20150305131646/http://www.nbcdfw.com:80/weather/school-closings/)
+    (5 empty); variants nbc-legacy-page, nbc-wp-json, nbc-wp-page; not downloaded: 8 not reached before
+    the run''s time budget, 1 TLS handshake timed out; fixtures nbc-owned/kxas-page-20220202214252.html,
+    nbc-owned/kxas-page-20230130131216.html.'
+  list_files: []
+  page_check: null
+  robots:
+  - url: https://www.nbcdfw.com/weather/school-closings/
+    checked_at: '2026-09-27T01:31:09Z'
+    state: parsed
+    allowed: true
+    rule: no rule matches
+    crawl_delay: null
+    disallowed_agents:
+    - amazonbot
+    - anthropic-ai
+    - awariorssbot
+    - awariosmartbot
+    - bytespider
+    - ccbot
+    - chatgpt-user
+    - claude-web
+    - claudebot
+    - dataforseobot
+    - diffbot
+    - facebookbot
+    - google-extended
+    - gptbot
+    - magpie-crawler
+    - news-please
+    - newsnow
+    - omgili
+    - omgilibot
+    - peer39_crawler
+    - peer39_crawler/1.0
+    - perplexitybot
+    - scrapy
+    - turnitinbot
+    sha256: 61764e88e9d04d7baa204df35bc45ce72d38de9dc685596205ed22a51260b8bd
+  - url: https://www.nbcdfw.com/wp-json/nbc/v1/school-closings
+    checked_at: '2026-09-27T01:31:09Z'
+    state: parsed
+    allowed: true
+    rule: no rule matches
+    crawl_delay: null
+    disallowed_agents:
+    - amazonbot
+    - anthropic-ai
+    - awariorssbot
+    - awariosmartbot
+    - bytespider
+    - ccbot
+    - chatgpt-user
+    - claude-web
+    - claudebot
+    - dataforseobot
+    - diffbot
+    - facebookbot
+    - google-extended
+    - gptbot
+    - magpie-crawler
+    - news-please
+    - newsnow
+    - omgili
+    - omgilibot
+    - peer39_crawler
+    - peer39_crawler/1.0
+    - perplexitybot
+    - scrapy
+    - turnitinbot
+    sha256: 61764e88e9d04d7baa204df35bc45ce72d38de9dc685596205ed22a51260b8bd
+- id: nbc-owned-knbc
+  platform: nbc-owned
+  call_sign: KNBC
+  name: NBC 4 Los Angeles (nbclosangeles.com)
+  market: Los Angeles
+  dma: Los Angeles, CA DMA
+  states: [CA]
+  counties:
+    basis: dma
+    source: 'DMA county list: alex-patton/US-TVDMA-BY-COUNTY usa-tvdma-county.csv at commit 7f254b8c1843c62ec976a71c40d366d45f6f29cd
+      (sha256 2e2cd00265a8d704...), names resolved to FIPS with the Census 2025 county Gazetteer; Connecticut
+      via the Census county-to-town crosswalk (snowlight.sources.stations.dma); market ''Los Angeles,
+      CA DMA'''
+    fips: ['06027', '06037', 06059, '06071', '06111']
+  page_url: https://www.nbclosangeles.com/weather/school-closings/
+  data_url: https://www.nbclosangeles.com/wp-json/nbc/v1/school-closings
+  export_url: null
+  archive_urls:
+  - https://www.nbclosangeles.com/weather/school-closings/
+  - https://www.nbclosangeles.com/wp-json/nbc/v1/school-closings
+  poll_minutes: null
+  status: active
+  evidence: 'First-hand check of 2026-09-26 (docs/research/firsthand/others.json, record KNBC); closings
+    page https://www.nbclosangeles.com/weather/school-closings/ (server-rendered .closings block) and
+    its REST route https://www.nbclosangeles.com/wp-json/nbc/v1/school-closings. Live read 2026-09-27:
+    route 01:08:24Z HTTP 200, [] (empty). Archive: 36 Wayback captures of this station''s page or list
+    file read (archive-captures runs 36311251817, 36330775706, 36345276947), from 2019-12-12 to 2026-02-10;
+    none held a row (36 empty); variants nbc-wp-json, nbc-wp-page; not downloaded: 14 not reached before
+    the run''s time budget, 2 TLS handshake timed out, 2 HTTP 403; fixtures nbc-owned/knbc-page-20250109221051.html,
+    nbc-owned/knbc-page-20260210235627.html, nbc-owned/knbc-route-20251218203605.json.'
+  list_files: []
+  page_check: null
+  robots:
+  - url: https://www.nbclosangeles.com/weather/school-closings/
+    checked_at: '2026-09-27T01:31:07Z'
+    state: parsed
+    allowed: true
+    rule: no rule matches
+    crawl_delay: null
+    disallowed_agents:
+    - amazonbot
+    - anthropic-ai
+    - awariorssbot
+    - awariosmartbot
+    - bytespider
+    - ccbot
+    - chatgpt-user
+    - claude-web
+    - claudebot
+    - dataforseobot
+    - diffbot
+    - facebookbot
+    - google-extended
+    - gptbot
+    - magpie-crawler
+    - news-please
+    - newsnow
+    - omgili
+    - omgilibot
+    - peer39_crawler
+    - peer39_crawler/1.0
+    - perplexitybot
+    - scrapy
+    - turnitinbot
+    sha256: ff8b9988679de25f6d8693af5459574086f3fbc1b1c6a06b3b5a7bc6cd5c32f6
+  - url: https://www.nbclosangeles.com/wp-json/nbc/v1/school-closings
+    checked_at: '2026-09-27T01:31:07Z'
+    state: parsed
+    allowed: true
+    rule: no rule matches
+    crawl_delay: null
+    disallowed_agents:
+    - amazonbot
+    - anthropic-ai
+    - awariorssbot
+    - awariosmartbot
+    - bytespider
+    - ccbot
+    - chatgpt-user
+    - claude-web
+    - claudebot
+    - dataforseobot
+    - diffbot
+    - facebookbot
+    - google-extended
+    - gptbot
+    - magpie-crawler
+    - news-please
+    - newsnow
+    - omgili
+    - omgilibot
+    - peer39_crawler
+    - peer39_crawler/1.0
+    - perplexitybot
+    - scrapy
+    - turnitinbot
+    sha256: ff8b9988679de25f6d8693af5459574086f3fbc1b1c6a06b3b5a7bc6cd5c32f6
+- id: nbc-owned-kntv
+  platform: nbc-owned
+  call_sign: KNTV
+  name: NBC Bay Area (nbcbayarea.com)
+  market: San Francisco-Oakland-San Jose
+  dma: San Francisco - Oakland - San Jose, CA DMA
+  states: [CA]
+  counties:
+    basis: dma
+    source: 'DMA county list: alex-patton/US-TVDMA-BY-COUNTY usa-tvdma-county.csv at commit 7f254b8c1843c62ec976a71c40d366d45f6f29cd
+      (sha256 2e2cd00265a8d704...), names resolved to FIPS with the Census 2025 county Gazetteer; Connecticut
+      via the Census county-to-town crosswalk (snowlight.sources.stations.dma); market ''San Francisco
+      - Oakland - San Jose, CA DMA'''
+    fips: ['06001', '06013', '06033', '06041', '06045', '06055', '06075', 06081, 06085, 06095, 06097]
+  page_url: https://www.nbcbayarea.com/weather/school-closings/
+  data_url: https://www.nbcbayarea.com/wp-json/nbc/v1/school-closings
+  export_url: null
+  archive_urls:
+  - https://www.nbcbayarea.com/weather/school-closings/
+  - https://www.nbcbayarea.com/wp-json/nbc/v1/school-closings
+  poll_minutes: null
+  status: active
+  evidence: 'First-hand check of 2026-09-26 (docs/research/firsthand/others.json, record KNTV); closings
+    page https://www.nbcbayarea.com/weather/school-closings/ (server-rendered .closings block) and its
+    REST route https://www.nbcbayarea.com/wp-json/nbc/v1/school-closings. Live read 2026-09-27: route
+    01:08:31Z HTTP 200, [] (empty). Archive: 10 Wayback captures of this station''s page or list file
+    read (archive-captures runs 36311251817, 36330775706, 36345276947, 36353079096), from 2017-10-12 to
+    2025-01-10; none held a row (10 empty); variants nbc-legacy-page, nbc-wp-json, nbc-wp-page; not downloaded:
+    2 not reached before the run''s time budget, 2 TLS handshake timed out; fixtures nbc-owned/kntv-page-20171012055347.html,
+    nbc-owned/kntv-page-20230110005854.html, nbc-owned/kntv-page-20230225023108.html, nbc-owned/kntv-page-20250110211815.html.'
+  list_files: []
+  page_check: null
+  robots:
+  - url: https://www.nbcbayarea.com/weather/school-closings/
+    checked_at: '2026-09-27T01:31:08Z'
+    state: parsed
+    allowed: true
+    rule: no rule matches
+    crawl_delay: null
+    disallowed_agents:
+    - amazonbot
+    - anthropic-ai
+    - awariorssbot
+    - awariosmartbot
+    - bytespider
+    - ccbot
+    - chatgpt-user
+    - claude-web
+    - claudebot
+    - dataforseobot
+    - diffbot
+    - facebookbot
+    - google-extended
+    - gptbot
+    - magpie-crawler
+    - news-please
+    - newsnow
+    - omgili
+    - omgilibot
+    - peer39_crawler
+    - peer39_crawler/1.0
+    - perplexitybot
+    - scrapy
+    - turnitinbot
+    sha256: dab5c0bd20d4df81012214a404e24c169299296e2ebb2ba12f3076629afbbb83
+  - url: https://www.nbcbayarea.com/wp-json/nbc/v1/school-closings
+    checked_at: '2026-09-27T01:31:08Z'
+    state: parsed
+    allowed: true
+    rule: no rule matches
+    crawl_delay: null
+    disallowed_agents:
+    - amazonbot
+    - anthropic-ai
+    - awariorssbot
+    - awariosmartbot
+    - bytespider
+    - ccbot
+    - chatgpt-user
+    - claude-web
+    - claudebot
+    - dataforseobot
+    - diffbot
+    - facebookbot
+    - google-extended
+    - gptbot
+    - magpie-crawler
+    - news-please
+    - newsnow
+    - omgili
+    - omgilibot
+    - peer39_crawler
+    - peer39_crawler/1.0
+    - perplexitybot
+    - scrapy
+    - turnitinbot
+    sha256: dab5c0bd20d4df81012214a404e24c169299296e2ebb2ba12f3076629afbbb83
+- id: nbc-owned-knsd
+  platform: nbc-owned
+  call_sign: KNSD
+  name: NBC 7 San Diego (nbcsandiego.com)
+  market: San Diego
+  dma: San Diego, CA DMA
+  states: [CA]
+  counties:
+    basis: dma
+    source: 'DMA county list: alex-patton/US-TVDMA-BY-COUNTY usa-tvdma-county.csv at commit 7f254b8c1843c62ec976a71c40d366d45f6f29cd
+      (sha256 2e2cd00265a8d704...), names resolved to FIPS with the Census 2025 county Gazetteer; Connecticut
+      via the Census county-to-town crosswalk (snowlight.sources.stations.dma); market ''San Diego, CA
+      DMA'''
+    fips: ['06073']
+  page_url: https://www.nbcsandiego.com/weather/school-closings/
+  data_url: https://www.nbcsandiego.com/wp-json/nbc/v1/school-closings
+  export_url: null
+  archive_urls:
+  - https://www.nbcsandiego.com/weather/school-closings/
+  - https://www.nbcsandiego.com/wp-json/nbc/v1/school-closings
+  poll_minutes: null
+  status: active
+  evidence: 'First-hand check of 2026-09-26 (docs/research/firsthand/others.json, record KNSD); closings
+    page https://www.nbcsandiego.com/weather/school-closings/ (server-rendered .closings block) and its
+    REST route https://www.nbcsandiego.com/wp-json/nbc/v1/school-closings. Live read 2026-09-27: route
+    01:08:27Z HTTP 200, [] (empty). Archive: 16 Wayback captures of this station''s page or list file
+    read (archive-captures runs 36311251817, 36330775706, 36345276947), from 2016-03-03 to 2025-01-21;
+    none held a row (16 empty); variants nbc-legacy-page, nbc-wp-json, nbc-wp-page; not downloaded: 10
+    not reached before the run''s time budget, 2 TLS handshake timed out; fixtures nbc-owned/knsd-page-20171029180138.html,
+    nbc-owned/knsd-page-20240206235932.html, nbc-owned/knsd-page-20250121210850.html.'
+  list_files: []
+  page_check: null
+  robots:
+  - url: https://www.nbcsandiego.com/weather/school-closings/
+    checked_at: '2026-09-27T01:31:08Z'
+    state: parsed
+    allowed: true
+    rule: no rule matches
+    crawl_delay: null
+    disallowed_agents:
+    - amazonbot
+    - anthropic-ai
+    - awariorssbot
+    - awariosmartbot
+    - bytespider
+    - ccbot
+    - chatgpt-user
+    - claude-web
+    - claudebot
+    - dataforseobot
+    - diffbot
+    - facebookbot
+    - google-extended
+    - gptbot
+    - magpie-crawler
+    - news-please
+    - newsnow
+    - omgili
+    - omgilibot
+    - peer39_crawler
+    - peer39_crawler/1.0
+    - perplexitybot
+    - scrapy
+    - turnitinbot
+    sha256: cfc252be9f71f747100b815eab1df5243b4afd44e6accf1c741b208dce531096
+  - url: https://www.nbcsandiego.com/wp-json/nbc/v1/school-closings
+    checked_at: '2026-09-27T01:31:08Z'
+    state: parsed
+    allowed: true
+    rule: no rule matches
+    crawl_delay: null
+    disallowed_agents:
+    - amazonbot
+    - anthropic-ai
+    - awariorssbot
+    - awariosmartbot
+    - bytespider
+    - ccbot
+    - chatgpt-user
+    - claude-web
+    - claudebot
+    - dataforseobot
+    - diffbot
+    - facebookbot
+    - google-extended
+    - gptbot
+    - magpie-crawler
+    - news-please
+    - newsnow
+    - omgili
+    - omgilibot
+    - peer39_crawler
+    - peer39_crawler/1.0
+    - perplexitybot
+    - scrapy
+    - turnitinbot
+    sha256: cfc252be9f71f747100b815eab1df5243b4afd44e6accf1c741b208dce531096
+- id: nbc-owned-wtvj
+  platform: nbc-owned
+  call_sign: WTVJ
+  name: NBC 6 South Florida (nbcmiami.com)
+  market: Miami-Fort Lauderdale
+  dma: Miami - Ft. Lauderdale, FL DMA
+  states: [FL]
+  counties:
+    basis: dma
+    source: 'DMA county list: alex-patton/US-TVDMA-BY-COUNTY usa-tvdma-county.csv at commit 7f254b8c1843c62ec976a71c40d366d45f6f29cd
+      (sha256 2e2cd00265a8d704...), names resolved to FIPS with the Census 2025 county Gazetteer; Connecticut
+      via the Census county-to-town crosswalk (snowlight.sources.stations.dma); market ''Miami - Ft. Lauderdale,
+      FL DMA'''
+    fips: ['12011', '12086', '12087']
+  page_url: https://www.nbcmiami.com/weather/school-closings/
+  data_url: https://www.nbcmiami.com/wp-json/nbc/v1/school-closings
+  export_url: null
+  archive_urls:
+  - https://www.nbcmiami.com/weather/school-closings/
+  - https://www.nbcmiami.com/wp-json/nbc/v1/school-closings
+  poll_minutes: null
+  status: active
+  evidence: 'First-hand check of 2026-09-26 (docs/research/firsthand/others.json, record WTVJ); closings
+    page https://www.nbcmiami.com/weather/school-closings/ (server-rendered .closings block) and its REST
+    route https://www.nbcmiami.com/wp-json/nbc/v1/school-closings. Live read 2026-09-27: route 01:08:41Z
+    HTTP 200, [] (empty); page 01:21:11Z an active block whose one listing has no name or notice. Archive:
+    12 Wayback captures of this station''s page or list file read (archive-captures runs 36345276947),
+    from 2016-12-14 to 2024-11-07; none held a row (12 empty); variants nbc-legacy-page, nbc-wp-page;
+    fixtures nbc-owned/wtvj-page-20201108015449.html, nbc-owned/wtvj-page-20241009002117.html.'
+  list_files: []
+  page_check: null
+  robots:
+  - url: https://www.nbcmiami.com/weather/school-closings/
+    checked_at: '2026-09-27T01:31:11Z'
+    state: parsed
+    allowed: true
+    rule: no rule matches
+    crawl_delay: null
+    disallowed_agents:
+    - amazonbot
+    - anthropic-ai
+    - awariorssbot
+    - awariosmartbot
+    - bytespider
+    - ccbot
+    - chatgpt-user
+    - claude-web
+    - claudebot
+    - dataforseobot
+    - diffbot
+    - facebookbot
+    - google-extended
+    - gptbot
+    - magpie-crawler
+    - news-please
+    - newsnow
+    - omgili
+    - omgilibot
+    - peer39_crawler
+    - peer39_crawler/1.0
+    - perplexitybot
+    - scrapy
+    - turnitinbot
+    sha256: 0332dcd1f9fc6f0c3e2668bb275e73d26ea3923902d4372f14444ceb42b34701
+  - url: https://www.nbcmiami.com/wp-json/nbc/v1/school-closings
+    checked_at: '2026-09-27T01:31:11Z'
+    state: parsed
+    allowed: true
+    rule: no rule matches
+    crawl_delay: null
+    disallowed_agents:
+    - amazonbot
+    - anthropic-ai
+    - awariorssbot
+    - awariosmartbot
+    - bytespider
+    - ccbot
+    - chatgpt-user
+    - claude-web
+    - claudebot
+    - dataforseobot
+    - diffbot
+    - facebookbot
+    - google-extended
+    - gptbot
+    - magpie-crawler
+    - news-please
+    - newsnow
+    - omgili
+    - omgilibot
+    - peer39_crawler
+    - peer39_crawler/1.0
+    - perplexitybot
+    - scrapy
+    - turnitinbot
+    sha256: 0332dcd1f9fc6f0c3e2668bb275e73d26ea3923902d4372f14444ceb42b34701
+- id: nbc-owned-wmaq
+  platform: nbc-owned
+  call_sign: WMAQ
+  name: NBC 5 Chicago (nbcchicago.com)
+  market: Chicago
+  dma: Chicago, IL - IN DMA
+  states: [IL, IN]
+  counties:
+    basis: dma
+    source: 'DMA county list: alex-patton/US-TVDMA-BY-COUNTY usa-tvdma-county.csv at commit 7f254b8c1843c62ec976a71c40d366d45f6f29cd
+      (sha256 2e2cd00265a8d704...), names resolved to FIPS with the Census 2025 county Gazetteer; Connecticut
+      via the Census county-to-town crosswalk (snowlight.sources.stations.dma); market ''Chicago, IL -
+      IN DMA'''
+    fips: ['17031', '17037', '17043', '17063', '17089', '17091', '17093', '17097', '17099', '17111', '17197',
+      '18073', '18089', '18091', '18111', '18127']
+  page_url: null
+  data_url: null
+  export_url: null
+  archive_urls: []
+  poll_minutes: null
+  status: no_endpoint
+  evidence: 'First-hand check of 2026-09-26 (docs/research/firsthand/others.json, record WMAQ); https://www.nbcchicago.com/weather/school-closings/
+    answered 301 to http://www.emergencyclosingcenter.com/ (re-read 2026-09-27: the poller refuses the
+    https-to-http redirect), whose home page frames the Emergency Closing Center application. NBC 5 Chicago''s
+    closings are the ECC''s list, read once as ecc-chicago; its REST route /wp-json/nbc/v1/school-closings
+    answered [] and is not the list the station shows. No endpoint of its own.'
+  list_files: []
+  page_check: null
+  robots: []

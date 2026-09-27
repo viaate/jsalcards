@@ -1,0 +1,739 @@
+# Station registry for one platform. Loaded with every other file in this folder
+# by snowlight.sources.stations.registry; see its docstring for the fields.
+# `snowlight stations robots --update` rewrites the robots blocks in place.
+platform:
+  id: cbs-owned
+  name: CBS News and Stations school closings
+  operator: CBS News and Stations (Paramount)
+  adapter: cbs-owned
+  poll_minutes: 10
+  terms:
+    automated_access: forbidden
+    summary: 'cbsnews.com station pages'' footers link Paramount''s CBS Interactive Terms of Use (https://legal.paramount.com/us/en/cbsi/terms-of-use,
+      "Effective Date : May 27th, 2025"), which forbid "unauthorized spidering, ''scraping,'' data mining
+      or harvesting of Content" and "any other unauthorized automated means to gather data", and permit
+      access for personal, non-commercial purposes. The feeds on assets1.cbsnewsstatic.com are also disallowed
+      by that host''s robots.txt (Disallow: / with Allow only for /fly/, /hub/ and /i/); the owner decided
+      on 2026-09-26 to read closings files regardless, and every read records the verdict. The project
+      owner decided on 2026-09-25 to read the closings lists anyway for this non-commercial project (owner_decision
+      below); the terms stay recorded here.'
+    evidence:
+    - url: https://legal.paramount.com/us/en/cbsi/terms-of-use
+      read_at: '2026-09-27T01:26:04Z'
+      sha256: 22cca1e7632f0f6809e718a46c5cd759683027aa1f1b3c3090a1cb9740792a35
+      excerpt:
+      - 'Terms of Use Effective Date : May 27th, 2025'
+      - Engage in unauthorized spidering, “scraping,” data mining or harvesting of Content, or use any
+        other unauthorized automated means to gather data from or about the Services.
+      - You are only permitted to access and view the Content for personal, non-commercial purposes in
+        accordance with these Terms
+    permission: null
+    owner_decision:
+      decided_by: the project owner (Snowlight)
+      decided_on: '2026-09-25'
+      reference: 'Stated in the build instructions for the station adapters (piece s4c1, round 1): "Terms
+        of use that forbid automated access do not exclude a station: the project owner decided on 2026-09-25
+        to read them for this non-commercial project, so record each station''s terms internally in the
+        registry and read it anyway." The same instructions record the owner''s decision of 2026-09-26
+        to read closings pages and data files even where robots.txt disallows them (naming CBS''s assets1.cbsnewsstatic.com
+        feeds as an example). Relayed to the pipeline''s builder by the project''s build workflow; to
+        revoke it, remove this block and live polling of this platform stops.'
+      scope: 'Live reads of this platform''s public closings lists (the station pages and the list files
+        or routes they load) for Snowlight, a non-commercial project, although the terms above forbid
+        automated access. robots.txt is read and its verdict recorded for every URL requested; the owner
+        decided on 2026-09-26 to read closings pages and files even where robots.txt disallows them. Unchanged
+        by it: the User-Agent names the repository (never a browser string), only the closings page or
+        file is requested (no crawling), requests are paced per host (any Crawl-delay is a floor) with
+        conditional requests and backoff on 429 and 5xx answers, and a station that blocks the project
+        (a 403, or a bot challenge) is not worked around.'
+  notes: 'Station list: Wikipedia ''CBS News and Stations'' currently-owned table, read 2026-09-26 by
+    the first-hand check (15 station groups, one per market site). Eight CBS-owned stations show a closings
+    list. Seven pages (https://www.cbsnews.com/{market}/school-closings/) name their feed in the closings
+    widget''s data-school-closings-options attribute (the live poller''s data_url, each read from the
+    live page on 2026-09-27): NewsTicker XML exports for WJZ, WBZ, WWJ, WCCO, KDKA and KTVT, and a School
+    Closings ''File'' XML for KYW (provider bti). CBS Colorado frames a NewsTicker HTML file on static.cbslocal.com.
+    On 2026-09-27 WBZ''s feed listed 2 records (Worcester Public Schools ''Early Release Day'', updated
+    2026-06-11, and a church event), the others none. Archived captures (archive-captures runs 36323195832
+    and 36330775706) show the feeds with rows at WBZ (258 records on 23 February 2026), WCCO (157), KDKA
+    (24), WJZ (32) and WWJ (7, in a shorter export without FORCED_ORGANIZATION_NAME), and KCNC''s file
+    with rows in November 2022 and January 2024; runs 36345276947 and later added KTVT''s feed with 10
+    records (4 February 2023, after the North Texas ice storm) and KYW''s with 14 (2 December 2025). CBS
+    Pittsburgh''s page named its feed on static.cbslocal.com in April 2022 (registered as an earlier list
+    file). No closings page was found (404) for KCBS/KCAL (Los Angeles), KOVR (Sacramento), KPIX (San
+    Francisco), WFOR (Miami), WCBS (New York) or WUPA (Atlanta); CBS 2 Chicago (WBBM) frames the Emergency
+    Closing Center (platform ecc).'
+  shared_paths: []
+stations:
+- id: cbs-owned-wjz
+  platform: cbs-owned
+  call_sign: WJZ
+  name: CBS News Baltimore (WJZ)
+  market: Baltimore
+  dma: Baltimore, MD DMA
+  states: [MD]
+  counties:
+    basis: dma
+    source: 'DMA county list: alex-patton/US-TVDMA-BY-COUNTY usa-tvdma-county.csv at commit 7f254b8c1843c62ec976a71c40d366d45f6f29cd
+      (sha256 2e2cd00265a8d704...), names resolved to FIPS with the Census 2025 county Gazetteer; Connecticut
+      via the Census county-to-town crosswalk (snowlight.sources.stations.dma); market ''Baltimore, MD
+      DMA'''
+    fips: ['24003', '24005', '24011', '24013', '24015', '24019', '24025', '24027', '24029', '24035', '24041',
+      '24510']
+  page_url: https://www.cbsnews.com/baltimore/school-closings/
+  data_url: https://assets1.cbsnewsstatic.com/Integrations/SchoolClosings/PRODUCTION/CBS/wjz/NEWSROOM/cbs_closings.xml
+  export_url: null
+  archive_urls:
+  - https://www.cbsnews.com/baltimore/school-closings/
+  - https://assets1.cbsnewsstatic.com/Integrations/SchoolClosings/PRODUCTION/CBS/wjz/NEWSROOM/cbs_closings.xml
+  poll_minutes: null
+  status: active
+  evidence: 'First-hand check of 2026-09-26 (docs/research/firsthand/others.json, record WJZ); closings
+    page https://www.cbsnews.com/baltimore/school-closings/; the page names it in its closings widget''s
+    data-school-closings-options (a script loads it): https://assets1.cbsnewsstatic.com/Integrations/SchoolClosings/PRODUCTION/CBS/wjz/NEWSROOM/cbs_closings.xml.
+    Live read 2026-09-27: feed 01:10:52Z HTTP 200, NewsTicker XML with NUM_CLOSINGS 0 (empty); robots.txt
+    disallows the file (recorded, read under the owner''s decision). Archive: 9 Wayback captures of this
+    station''s page or list file read (archive-captures runs 36330775706, 36345276947, 36348669505), from
+    2022-07-14 to 2026-02-17; 3 with rows, the most 32 on 2025-02-11 (https://web.archive.org/web/20250211075405/https://assets1.cbsnewsstatic.com/Integrations/SchoolClosings/PRODUCTION/CBS/wjz/NEWSROOM/cbs_closings.xml)
+    (5 framing or loading another file, 1 empty); variants cbs-widget-page, gray-file-newsticker-xml,
+    gray-file-sc-xml; fixtures cbs-owned/wjz-feed-20260128222547.xml.'
+  list_files:
+  - url: https://assets1.cbsnewsstatic.com/Integrations/SchoolClosings/PRODUCTION/CBS/wjz/NEWSROOM/cbs_closings.xml
+    loaded_by: script
+    seen: the live page https://www.cbsnews.com/baltimore/school-closings/ names it in its closings widget's
+      data-school-closings-options (a script loads it) (read 2026-09-27)
+  page_check: null
+  robots:
+  - url: https://www.cbsnews.com/baltimore/school-closings/
+    checked_at: '2026-09-27T01:30:58Z'
+    state: parsed
+    allowed: true
+    rule: no rule matches
+    crawl_delay: null
+    disallowed_agents:
+    - gptbot
+    - mazbot
+    - panscient.com
+    sha256: 3183f29f832838e64ddcdfe0fa253efe5003d650c636ba40efa6cfcfe4489570
+  - url: https://assets1.cbsnewsstatic.com/Integrations/SchoolClosings/PRODUCTION/CBS/wjz/NEWSROOM/cbs_closings.xml
+    checked_at: '2026-09-27T01:30:58Z'
+    state: parsed
+    allowed: false
+    rule: 'Disallow: /'
+    crawl_delay: null
+    disallowed_agents: []
+    sha256: 982cbdbfa2d8fba52ab689533105483221006178ed3e97f248ff023f55bc7e2d
+- id: cbs-owned-wbz
+  platform: cbs-owned
+  call_sign: WBZ
+  name: CBS News Boston (WBZ)
+  market: Boston
+  dma: Boston, MA - NH DMA
+  states: [MA, NH, VT]
+  counties:
+    basis: dma
+    source: 'DMA county list: alex-patton/US-TVDMA-BY-COUNTY usa-tvdma-county.csv at commit 7f254b8c1843c62ec976a71c40d366d45f6f29cd
+      (sha256 2e2cd00265a8d704...), names resolved to FIPS with the Census 2025 county Gazetteer; Connecticut
+      via the Census county-to-town crosswalk (snowlight.sources.stations.dma); market ''Boston, MA -
+      NH DMA'''
+    fips: ['25001', '25007', '25009', '25017', '25019', '25021', '25023', '25025', '25027', '33001', '33005',
+      '33011', '33013', '33015', '33017', '50025']
+  page_url: https://www.cbsnews.com/boston/school-closings/
+  data_url: https://assets1.cbsnewsstatic.com/Integrations/SchoolClosings/PRODUCTION/CBS/wbz/NEWSROOM/chyron/closings.xml
+  export_url: null
+  archive_urls:
+  - https://www.cbsnews.com/boston/school-closings/
+  - https://assets1.cbsnewsstatic.com/Integrations/SchoolClosings/PRODUCTION/CBS/wbz/NEWSROOM/chyron/closings.xml
+  - https://assets1.cbsnewsstatic.com/Integrations/SchoolClosings/PRODUCTION/CBS/wbz/NEWSROOM/WBZ-closingsC.xml
+  - https://cbsnews1.cbsistatic.com/Integrations/SchoolClosings/PRODUCTION/CBS/wbz/NEWSROOM/WBZ-closingsC.xml
+  poll_minutes: null
+  status: active
+  evidence: 'First-hand check of 2026-09-26 (docs/research/firsthand/others.json, record WBZ/WSBK); closings
+    page https://www.cbsnews.com/boston/school-closings/; the page names it in its closings widget''s
+    data-school-closings-options (a script loads it): https://assets1.cbsnewsstatic.com/Integrations/SchoolClosings/PRODUCTION/CBS/wbz/NEWSROOM/chyron/closings.xml.
+    Live read 2026-09-27: feed 01:10:55Z HTTP 200, NewsTicker XML with NUM_CLOSINGS 2 (Worcester Public
+    Schools, St Andrew''s Episcopal Church). Archive: 15 Wayback captures of this station''s page or list
+    file read (archive-captures runs 36330775706, 36345276947, 36348669505, 36353079096), from 2022-05-18
+    to 2026-02-24; 4 with rows, the most 393 on 2026-01-25 (https://web.archive.org/web/20260125202246/https://assets1.cbsnewsstatic.com/Integrations/SchoolClosings/PRODUCTION/CBS/wbz/NEWSROOM/chyron/closings.xml)
+    (6 framing or loading another file, 5 empty); variants cbs-widget-page, gray-file-newsticker-xml,
+    gray-file-sc-xml; not downloaded: 1 TLS handshake timed out; fixtures cbs-owned/wbz-feed-20250123093129.xml.'
+  list_files:
+  - url: https://assets1.cbsnewsstatic.com/Integrations/SchoolClosings/PRODUCTION/CBS/wbz/NEWSROOM/chyron/closings.xml
+    loaded_by: script
+    seen: the live page https://www.cbsnews.com/boston/school-closings/ names it in its closings widget's
+      data-school-closings-options (a script loads it) (read 2026-09-27)
+  - url: https://assets1.cbsnewsstatic.com/Integrations/SchoolClosings/PRODUCTION/CBS/wbz/NEWSROOM/WBZ-closingsC.xml
+    loaded_by: unseen
+    seen: 'An earlier path of this station''s list file on the same host, in the Wayback Machine''s CDX
+      listing (archive-captures run 36293423860): 4 captures from 2022-09-01 to 2023-01-03; the current
+      file''s captures begin 2023-02-11. No downloaded page capture shows the page loading it yet.'
+  - url: https://cbsnews1.cbsistatic.com/Integrations/SchoolClosings/PRODUCTION/CBS/wbz/NEWSROOM/WBZ-closingsC.xml
+    loaded_by: script
+    seen: Named by 1 archived capture of the station's page from 2022-05-18 to 2022-05-18 (archive-captures
+      run 36330775706), for example https://web.archive.org/web/20220518194816/https://www.cbsnews.com/boston/school-closings/.
+  page_check: null
+  robots:
+  - url: https://www.cbsnews.com/boston/school-closings/
+    checked_at: '2026-09-27T01:30:58Z'
+    state: parsed
+    allowed: true
+    rule: no rule matches
+    crawl_delay: null
+    disallowed_agents:
+    - gptbot
+    - mazbot
+    - panscient.com
+    sha256: 3183f29f832838e64ddcdfe0fa253efe5003d650c636ba40efa6cfcfe4489570
+  - url: https://assets1.cbsnewsstatic.com/Integrations/SchoolClosings/PRODUCTION/CBS/wbz/NEWSROOM/chyron/closings.xml
+    checked_at: '2026-09-27T01:30:58Z'
+    state: parsed
+    allowed: false
+    rule: 'Disallow: /'
+    crawl_delay: null
+    disallowed_agents: []
+    sha256: 982cbdbfa2d8fba52ab689533105483221006178ed3e97f248ff023f55bc7e2d
+- id: cbs-owned-wwj
+  platform: cbs-owned
+  call_sign: WWJ
+  name: CBS News Detroit (WWJ)
+  market: Detroit
+  dma: Detroit, MI DMA
+  states: [MI]
+  counties:
+    basis: dma
+    source: 'DMA county list: alex-patton/US-TVDMA-BY-COUNTY usa-tvdma-county.csv at commit 7f254b8c1843c62ec976a71c40d366d45f6f29cd
+      (sha256 2e2cd00265a8d704...), names resolved to FIPS with the Census 2025 county Gazetteer; Connecticut
+      via the Census county-to-town crosswalk (snowlight.sources.stations.dma); market ''Detroit, MI DMA'''
+    fips: ['26087', '26093', '26099', '26115', '26125', '26147', '26151', '26161', '26163']
+  page_url: https://www.cbsnews.com/detroit/school-closings/
+  data_url: https://assets1.cbsnewsstatic.com/Integrations/SchoolClosings/PRODUCTION/CBS/wwj/NEWSROOM/closings-active.xml
+  export_url: null
+  archive_urls:
+  - https://www.cbsnews.com/detroit/school-closings/
+  - https://assets1.cbsnewsstatic.com/Integrations/SchoolClosings/PRODUCTION/CBS/wwj/NEWSROOM/closings-active.xml
+  poll_minutes: null
+  status: active
+  evidence: 'First-hand check of 2026-09-26 (docs/research/firsthand/others.json, record WWJ/WKBD); closings
+    page https://www.cbsnews.com/detroit/school-closings/; the page names it in its closings widget''s
+    data-school-closings-options (a script loads it): https://assets1.cbsnewsstatic.com/Integrations/SchoolClosings/PRODUCTION/CBS/wwj/NEWSROOM/closings-active.xml.
+    Live read 2026-09-27: feed 01:10:58Z HTTP 200, NewsTicker XML with NUM_CLOSINGS 0 (empty); robots.txt
+    disallows the file (recorded, read under the owner''s decision). Archive: 5 Wayback captures of this
+    station''s page or list file read (archive-captures runs 36330775706, 36345276947, 36348669505), from
+    2025-01-14 to 2026-03-23; 1 with rows, the most 7 on 2026-01-19 (https://web.archive.org/web/20260119143100/https://assets1.cbsnewsstatic.com/Integrations/SchoolClosings/PRODUCTION/CBS/wwj/NEWSROOM/closings-active.xml)
+    (3 framing or loading another file, 1 empty); variants cbs-newsticker-xml-short, cbs-widget-page,
+    gray-file-newsticker-xml; fixtures cbs-owned/wwj-feed-20260119143100.xml.'
+  list_files:
+  - url: https://assets1.cbsnewsstatic.com/Integrations/SchoolClosings/PRODUCTION/CBS/wwj/NEWSROOM/closings-active.xml
+    loaded_by: script
+    seen: the live page https://www.cbsnews.com/detroit/school-closings/ names it in its closings widget's
+      data-school-closings-options (a script loads it) (read 2026-09-27)
+  page_check: null
+  robots:
+  - url: https://www.cbsnews.com/detroit/school-closings/
+    checked_at: '2026-09-27T01:30:58Z'
+    state: parsed
+    allowed: true
+    rule: no rule matches
+    crawl_delay: null
+    disallowed_agents:
+    - gptbot
+    - mazbot
+    - panscient.com
+    sha256: 3183f29f832838e64ddcdfe0fa253efe5003d650c636ba40efa6cfcfe4489570
+  - url: https://assets1.cbsnewsstatic.com/Integrations/SchoolClosings/PRODUCTION/CBS/wwj/NEWSROOM/closings-active.xml
+    checked_at: '2026-09-27T01:30:58Z'
+    state: parsed
+    allowed: false
+    rule: 'Disallow: /'
+    crawl_delay: null
+    disallowed_agents: []
+    sha256: 982cbdbfa2d8fba52ab689533105483221006178ed3e97f248ff023f55bc7e2d
+- id: cbs-owned-wcco
+  platform: cbs-owned
+  call_sign: WCCO
+  name: CBS News Minnesota (WCCO)
+  market: Minneapolis-St. Paul
+  dma: Minneapolis - St. Paul, MN - WI DMA
+  states: [MN, WI]
+  counties:
+    basis: dma
+    source: 'DMA county list: alex-patton/US-TVDMA-BY-COUNTY usa-tvdma-county.csv at commit 7f254b8c1843c62ec976a71c40d366d45f6f29cd
+      (sha256 2e2cd00265a8d704...), names resolved to FIPS with the Census 2025 county Gazetteer; Connecticut
+      via the Census county-to-town crosswalk (snowlight.sources.stations.dma); market ''Minneapolis -
+      St. Paul, MN - WI DMA'''
+    fips: ['27003', '27007', '27009', '27011', '27019', '27021', '27023', '27025', '27033', '27035', '27037',
+      '27041', '27043', '27049', '27051', '27053', '27057', '27059', '27063', '27065', '27067', '27073',
+      '27079', '27083', '27085', '27093', '27095', '27097', '27103', '27115', '27121', '27123', '27127',
+      '27129', '27131', '27139', '27141', '27143', '27145', '27147', '27149', '27151', '27153', '27155',
+      '27157', '27159', '27161', '27163', '27171', '27173', '55005', '55013', '55033', '55091', '55093',
+      '55095', '55109']
+  page_url: https://www.cbsnews.com/minnesota/school-closings/
+  data_url: https://assets1.cbsnewsstatic.com/Integrations/SchoolClosings/PRODUCTION/CBS/wcco/WCCOclosings-CBS.xml
+  export_url: null
+  archive_urls:
+  - https://www.cbsnews.com/minnesota/school-closings/
+  - https://assets1.cbsnewsstatic.com/Integrations/SchoolClosings/PRODUCTION/CBS/wcco/WCCOclosings-CBS.xml
+  poll_minutes: null
+  status: active
+  evidence: 'First-hand check of 2026-09-26 (docs/research/firsthand/others.json, record WCCO); closings
+    page https://www.cbsnews.com/minnesota/school-closings/; the page names it in its closings widget''s
+    data-school-closings-options (a script loads it): https://assets1.cbsnewsstatic.com/Integrations/SchoolClosings/PRODUCTION/CBS/wcco/WCCOclosings-CBS.xml.
+    Live read 2026-09-27: feed 01:11:01Z HTTP 200, NewsTicker XML with NUM_CLOSINGS 0 (empty); robots.txt
+    disallows the file (recorded, read under the owner''s decision). Archive: 11 Wayback captures of this
+    station''s page or list file read (archive-captures runs 36330775706, 36345276947, 36348669505), from
+    2022-06-15 to 2026-02-02; 4 with rows, the most 157 on 2024-03-26 (https://web.archive.org/web/20240326135521/https://assets1.cbsnewsstatic.com/Integrations/SchoolClosings/PRODUCTION/CBS/wcco/WCCOclosings-CBS.xml)
+    (6 framing or loading another file, 1 empty); variants cbs-widget-page, gray-file-newsticker-xml;
+    fixtures cbs-owned/wcco-feed-20230221190739.xml.'
+  list_files:
+  - url: https://assets1.cbsnewsstatic.com/Integrations/SchoolClosings/PRODUCTION/CBS/wcco/WCCOclosings-CBS.xml
+    loaded_by: script
+    seen: the live page https://www.cbsnews.com/minnesota/school-closings/ names it in its closings widget's
+      data-school-closings-options (a script loads it) (read 2026-09-27)
+  page_check: null
+  robots:
+  - url: https://www.cbsnews.com/minnesota/school-closings/
+    checked_at: '2026-09-27T01:30:58Z'
+    state: parsed
+    allowed: true
+    rule: no rule matches
+    crawl_delay: null
+    disallowed_agents:
+    - gptbot
+    - mazbot
+    - panscient.com
+    sha256: 3183f29f832838e64ddcdfe0fa253efe5003d650c636ba40efa6cfcfe4489570
+  - url: https://assets1.cbsnewsstatic.com/Integrations/SchoolClosings/PRODUCTION/CBS/wcco/WCCOclosings-CBS.xml
+    checked_at: '2026-09-27T01:30:58Z'
+    state: parsed
+    allowed: false
+    rule: 'Disallow: /'
+    crawl_delay: null
+    disallowed_agents: []
+    sha256: 982cbdbfa2d8fba52ab689533105483221006178ed3e97f248ff023f55bc7e2d
+- id: cbs-owned-kyw
+  platform: cbs-owned
+  call_sign: KYW
+  name: CBS News Philadelphia (KYW)
+  market: Philadelphia
+  dma: Philadelphia, PA - DE - NJ DMA
+  states: [DE, NJ, PA]
+  counties:
+    basis: dma
+    source: 'DMA county list: alex-patton/US-TVDMA-BY-COUNTY usa-tvdma-county.csv at commit 7f254b8c1843c62ec976a71c40d366d45f6f29cd
+      (sha256 2e2cd00265a8d704...), names resolved to FIPS with the Census 2025 county Gazetteer; Connecticut
+      via the Census county-to-town crosswalk (snowlight.sources.stations.dma); market ''Philadelphia,
+      PA - DE - NJ DMA'''
+    fips: ['10001', '10003', '34001', '34005', '34007', '34009', '34011', '34015', '34021', '34033', '42011',
+      '42017', '42029', '42045', '42077', '42091', '42095', '42101']
+  page_url: https://www.cbsnews.com/philadelphia/school-closings/
+  data_url: https://assets1.cbsnewsstatic.com/Integrations/SchoolClosings/PRODUCTION/CBS/kyw/NEWSROOM/BTI/KYW-closingsC.xml
+  export_url: null
+  archive_urls:
+  - https://www.cbsnews.com/philadelphia/school-closings/
+  - https://assets1.cbsnewsstatic.com/Integrations/SchoolClosings/PRODUCTION/CBS/kyw/NEWSROOM/BTI/KYW-closingsC.xml
+  poll_minutes: null
+  status: active
+  evidence: 'First-hand check of 2026-09-26 (docs/research/firsthand/others.json, record KYW/WPSG); closings
+    page https://www.cbsnews.com/philadelphia/school-closings/; the page names it in its closings widget''s
+    data-school-closings-options (a script loads it): https://assets1.cbsnewsstatic.com/Integrations/SchoolClosings/PRODUCTION/CBS/kyw/NEWSROOM/BTI/KYW-closingsC.xml.
+    Live read 2026-09-27: feed 01:11:04Z HTTP 200, <File Time="09/26/2026 09:10pm"> with no Closing (empty).
+    Archive: 9 Wayback captures of this station''s page or list file read (archive-captures runs 36323195832,
+    36330775706, 36345276947, 36353079096), from 2024-01-06 to 2026-02-28; 2 with rows, the most 14 on
+    2025-12-02 (https://web.archive.org/web/20251202102602/https://assets1.cbsnewsstatic.com/Integrations/SchoolClosings/PRODUCTION/CBS/kyw/NEWSROOM/BTI/KYW-closingsC.xml)
+    (5 framing or loading another file, 2 empty); variants cbs-widget-page, gray-file-sc-xml; not downloaded:
+    1 TLS handshake timed out; fixtures cbs-owned/kyw-feed-20251202102602.xml, cbs-owned/kyw-feed-20260128222544.xml,
+    cbs-owned/kyw-feed-20260131112619.xml, cbs-owned/kyw-page-20240106034957.html.'
+  list_files:
+  - url: https://assets1.cbsnewsstatic.com/Integrations/SchoolClosings/PRODUCTION/CBS/kyw/NEWSROOM/BTI/KYW-closingsC.xml
+    loaded_by: script
+    seen: the live page https://www.cbsnews.com/philadelphia/school-closings/ names it in its closings
+      widget's data-school-closings-options (a script loads it) (read 2026-09-27)
+  page_check: null
+  robots:
+  - url: https://www.cbsnews.com/philadelphia/school-closings/
+    checked_at: '2026-09-27T01:30:58Z'
+    state: parsed
+    allowed: true
+    rule: no rule matches
+    crawl_delay: null
+    disallowed_agents:
+    - gptbot
+    - mazbot
+    - panscient.com
+    sha256: 3183f29f832838e64ddcdfe0fa253efe5003d650c636ba40efa6cfcfe4489570
+  - url: https://assets1.cbsnewsstatic.com/Integrations/SchoolClosings/PRODUCTION/CBS/kyw/NEWSROOM/BTI/KYW-closingsC.xml
+    checked_at: '2026-09-27T01:30:58Z'
+    state: parsed
+    allowed: false
+    rule: 'Disallow: /'
+    crawl_delay: null
+    disallowed_agents: []
+    sha256: 982cbdbfa2d8fba52ab689533105483221006178ed3e97f248ff023f55bc7e2d
+- id: cbs-owned-kdka
+  platform: cbs-owned
+  call_sign: KDKA
+  name: CBS News Pittsburgh (KDKA)
+  market: Pittsburgh
+  dma: Pittsburgh, PA - MD- WV DMA
+  states: [MD, PA, WV]
+  counties:
+    basis: dma
+    source: 'DMA county list: alex-patton/US-TVDMA-BY-COUNTY usa-tvdma-county.csv at commit 7f254b8c1843c62ec976a71c40d366d45f6f29cd
+      (sha256 2e2cd00265a8d704...), names resolved to FIPS with the Census 2025 county Gazetteer; Connecticut
+      via the Census county-to-town crosswalk (snowlight.sources.stations.dma); market ''Pittsburgh, PA
+      - MD- WV DMA'''
+    fips: ['24023', '42003', '42005', '42007', '42019', '42031', '42051', '42059', '42063', '42073', '42121',
+      '42125', '42129', '54061', '54077']
+  page_url: https://www.cbsnews.com/pittsburgh/school-closings/
+  data_url: https://assets1.cbsnewsstatic.com/Integrations/SchoolClosings/PRODUCTION/CBS/kdka/NEWSROOM/KDKAclosings.xml
+  export_url: null
+  archive_urls:
+  - https://www.cbsnews.com/pittsburgh/school-closings/
+  - https://assets1.cbsnewsstatic.com/Integrations/SchoolClosings/PRODUCTION/CBS/kdka/NEWSROOM/KDKAclosings.xml
+  - https://static.cbslocal.com/Integrations/SchoolClosings/PRODUCTION/CBS/kdka/NEWSROOM/KDKAclosings.xml
+  poll_minutes: null
+  status: active
+  evidence: 'First-hand check of 2026-09-26 (docs/research/firsthand/others.json, record KDKA/WPKD); closings
+    page https://www.cbsnews.com/pittsburgh/school-closings/; the page names it in its closings widget''s
+    data-school-closings-options (a script loads it): https://assets1.cbsnewsstatic.com/Integrations/SchoolClosings/PRODUCTION/CBS/kdka/NEWSROOM/KDKAclosings.xml.
+    Live read 2026-09-27: feed 01:11:07Z HTTP 200, NewsTicker XML with NUM_CLOSINGS 0 (empty); robots.txt
+    disallows the file (recorded, read under the owner''s decision). Archive: 12 Wayback captures of this
+    station''s page or list file read (archive-captures runs 36323195832, 36345276947, 36348669505), from
+    2022-04-20 to 2026-03-03; 4 with rows, the most 40 on 2026-03-03 (https://web.archive.org/web/20260303121619/https://assets1.cbsnewsstatic.com/Integrations/SchoolClosings/PRODUCTION/CBS/kdka/NEWSROOM/KDKAclosings.xml)
+    (6 framing or loading another file, 2 empty); variants cbs-widget-page, gray-file-newsticker-xml;
+    fixtures cbs-owned/kdka-feed-20240116165448.xml, cbs-owned/kdka-feed-20260118153041.xml, cbs-owned/kdka-page-20220420165543.html.'
+  list_files:
+  - url: https://assets1.cbsnewsstatic.com/Integrations/SchoolClosings/PRODUCTION/CBS/kdka/NEWSROOM/KDKAclosings.xml
+    loaded_by: script
+    seen: the live page https://www.cbsnews.com/pittsburgh/school-closings/ names it in its closings widget's
+      data-school-closings-options (a script loads it) (read 2026-09-27)
+  - url: https://static.cbslocal.com/Integrations/SchoolClosings/PRODUCTION/CBS/kdka/NEWSROOM/KDKAclosings.xml
+    loaded_by: script
+    seen: Named by 1 archived capture of the station's page from 2022-04-20 to 2022-04-20 (archive-captures
+      run 36323195832), for example https://web.archive.org/web/20220420165543/https://www.cbsnews.com/pittsburgh/school-closings/.
+  page_check: null
+  robots:
+  - url: https://www.cbsnews.com/pittsburgh/school-closings/
+    checked_at: '2026-09-27T01:30:58Z'
+    state: parsed
+    allowed: true
+    rule: no rule matches
+    crawl_delay: null
+    disallowed_agents:
+    - gptbot
+    - mazbot
+    - panscient.com
+    sha256: 3183f29f832838e64ddcdfe0fa253efe5003d650c636ba40efa6cfcfe4489570
+  - url: https://assets1.cbsnewsstatic.com/Integrations/SchoolClosings/PRODUCTION/CBS/kdka/NEWSROOM/KDKAclosings.xml
+    checked_at: '2026-09-27T01:30:58Z'
+    state: parsed
+    allowed: false
+    rule: 'Disallow: /'
+    crawl_delay: null
+    disallowed_agents: []
+    sha256: 982cbdbfa2d8fba52ab689533105483221006178ed3e97f248ff023f55bc7e2d
+- id: cbs-owned-ktvt
+  platform: cbs-owned
+  call_sign: KTVT
+  name: CBS News Texas (KTVT)
+  market: Dallas-Fort Worth
+  dma: Dallas - Ft. Worth, TX DMA
+  states: [TX]
+  counties:
+    basis: dma
+    source: 'DMA county list: alex-patton/US-TVDMA-BY-COUNTY usa-tvdma-county.csv at commit 7f254b8c1843c62ec976a71c40d366d45f6f29cd
+      (sha256 2e2cd00265a8d704...), names resolved to FIPS with the Census 2025 county Gazetteer; Connecticut
+      via the Census county-to-town crosswalk (snowlight.sources.stations.dma); market ''Dallas - Ft.
+      Worth, TX DMA'''
+    fips: ['48001', '48035', '48085', '48093', '48097', '48113', '48119', '48121', '48139', '48143', '48147',
+      '48161', '48193', '48213', '48217', '48221', '48223', '48231', '48237', '48251', '48257', '48277',
+      '48337', '48349', '48363', '48367', '48379', '48397', '48425', '48439', '48467', '48497']
+  page_url: https://www.cbsnews.com/texas/school-closings/
+  data_url: https://assets1.cbsnewsstatic.com/Integrations/SchoolClosings/PRODUCTION/CBS/ktvt/NEWSROOM/KTVTclosings.xml
+  export_url: null
+  archive_urls:
+  - https://www.cbsnews.com/texas/school-closings/
+  - https://assets1.cbsnewsstatic.com/Integrations/SchoolClosings/PRODUCTION/CBS/ktvt/NEWSROOM/KTVTclosings.xml
+  poll_minutes: null
+  status: active
+  evidence: 'First-hand check of 2026-09-26 (docs/research/firsthand/others.json, record KTVT/KTXA); closings
+    page https://www.cbsnews.com/texas/school-closings/; the page names it in its closings widget''s data-school-closings-options
+    (a script loads it): https://assets1.cbsnewsstatic.com/Integrations/SchoolClosings/PRODUCTION/CBS/ktvt/NEWSROOM/KTVTclosings.xml.
+    Live read 2026-09-27: feed 01:11:10Z HTTP 200, NewsTicker XML with NUM_CLOSINGS 0 (empty); robots.txt
+    disallows the file (recorded, read under the owner''s decision). Archive: 10 Wayback captures of this
+    station''s page or list file read (archive-captures runs 36323195832, 36345276947), from 2023-01-29
+    to 2026-04-01; 3 with rows, the most 10 on 2023-02-24 (https://web.archive.org/web/20230224193204/https://assets1.cbsnewsstatic.com/Integrations/SchoolClosings/PRODUCTION/CBS/ktvt/NEWSROOM/KTVTclosings.xml)
+    (4 framing or loading another file, 3 empty); variants cbs-widget-page, gray-file-newsticker-xml;
+    fixtures cbs-owned/ktvt-feed-20230204104955.xml.'
+  list_files:
+  - url: https://assets1.cbsnewsstatic.com/Integrations/SchoolClosings/PRODUCTION/CBS/ktvt/NEWSROOM/KTVTclosings.xml
+    loaded_by: script
+    seen: the live page https://www.cbsnews.com/texas/school-closings/ names it in its closings widget's
+      data-school-closings-options (a script loads it) (read 2026-09-27)
+  page_check: null
+  robots:
+  - url: https://www.cbsnews.com/texas/school-closings/
+    checked_at: '2026-09-27T01:30:58Z'
+    state: parsed
+    allowed: true
+    rule: no rule matches
+    crawl_delay: null
+    disallowed_agents:
+    - gptbot
+    - mazbot
+    - panscient.com
+    sha256: 3183f29f832838e64ddcdfe0fa253efe5003d650c636ba40efa6cfcfe4489570
+  - url: https://assets1.cbsnewsstatic.com/Integrations/SchoolClosings/PRODUCTION/CBS/ktvt/NEWSROOM/KTVTclosings.xml
+    checked_at: '2026-09-27T01:30:58Z'
+    state: parsed
+    allowed: false
+    rule: 'Disallow: /'
+    crawl_delay: null
+    disallowed_agents: []
+    sha256: 982cbdbfa2d8fba52ab689533105483221006178ed3e97f248ff023f55bc7e2d
+- id: cbs-owned-kcnc
+  platform: cbs-owned
+  call_sign: KCNC
+  name: CBS News Colorado (KCNC)
+  market: Denver
+  dma: Denver, CO - NE - NV - WY DMA
+  states: [CO, NE, NV, WY]
+  counties:
+    basis: dma
+    source: 'DMA county list: alex-patton/US-TVDMA-BY-COUNTY usa-tvdma-county.csv at commit 7f254b8c1843c62ec976a71c40d366d45f6f29cd
+      (sha256 2e2cd00265a8d704...), names resolved to FIPS with the Census 2025 county Gazetteer; Connecticut
+      via the Census county-to-town crosswalk (snowlight.sources.stations.dma); market ''Denver, CO -
+      NE - NV - WY DMA''; plus 08014 (Broomfield County), for which that list has no row, placed in this
+      market by the second published list BritCrit/dma_county_zip dma_county_zip_data_set.csv at commit
+      02f847923bd218c30a8c5488d561eca42ecf3614 (sha256 c931c30cef1b5d29...), used only for counties the
+      first list lacks (snowlight.sources.stations.dma.fill_missing)'
+    fips: [08001, 08003, 08005, 08007, 08013, 08014, 08015, 08019, 08021, 08027, 08029, 08031, 08035,
+      08037, 08039, 08045, 08047, 08049, 08051, 08053, 08057, 08059, 08063, 08065, 08069, 08073, 08075,
+      08079, 08081, 08087, 08091, 08093, 08095, 08097, 08099, 08103, 08105, 08107, 08109, 08111, 08113,
+      08115, 08117, 08121, 08123, 08125, '31013', '31033', '31045', '31049', '31069', '31101', '31105',
+      '32011', '56001', '56005', '56007', '56027', '56031']
+  page_url: https://www.cbsnews.com/colorado/school-closings/
+  data_url: https://static.cbslocal.com/Integrations/SchoolClosings/PRODUCTION/CBS/kcnc/NEWSROOM/closings.html
+  export_url: null
+  archive_urls:
+  - https://www.cbsnews.com/colorado/school-closings/
+  - https://static.cbslocal.com/Integrations/SchoolClosings/PRODUCTION/CBS/kcnc/NEWSROOM/closings.html
+  poll_minutes: null
+  status: active
+  evidence: 'First-hand check of 2026-09-26 (docs/research/firsthand/others.json, record KCNC); closings
+    page https://www.cbsnews.com/colorado/school-closings/; the page frames it (iframe data-src): https://static.cbslocal.com/Integrations/SchoolClosings/PRODUCTION/CBS/kcnc/NEWSROOM/closings.html.
+    Live read 2026-09-27: file 01:09:55Z HTTP 200 (619 bytes), NewsTicker HTML ''There are no active records
+    at this time.''. Archive: 11 Wayback captures of this station''s page or list file read (archive-captures
+    runs 36323195832, 36345276947), from 2022-01-26 to 2026-02-17; 5 with rows, the most 19 on 2022-03-17
+    (https://web.archive.org/web/20220317132955/https://static.cbslocal.com/Integrations/SchoolClosings/PRODUCTION/CBS/kcnc/NEWSROOM/closings.html)
+    (4 framing or loading another file, 2 empty); variants cbs-frame-page, gray-file-newsticker; not downloaded:
+    6 not in the archive (404); fixtures cbs-owned/kcnc-file-20221119175006.html, cbs-owned/kcnc-file-20240117182845.html.'
+  list_files:
+  - url: https://static.cbslocal.com/Integrations/SchoolClosings/PRODUCTION/CBS/kcnc/NEWSROOM/closings.html
+    loaded_by: frame
+    seen: the live page https://www.cbsnews.com/colorado/school-closings/ frames it (iframe data-src)
+      (read 2026-09-27)
+  page_check: null
+  robots:
+  - url: https://www.cbsnews.com/colorado/school-closings/
+    checked_at: '2026-09-27T01:30:57Z'
+    state: parsed
+    allowed: true
+    rule: no rule matches
+    crawl_delay: null
+    disallowed_agents:
+    - gptbot
+    - mazbot
+    - panscient.com
+    sha256: 3183f29f832838e64ddcdfe0fa253efe5003d650c636ba40efa6cfcfe4489570
+  - url: https://static.cbslocal.com/Integrations/SchoolClosings/PRODUCTION/CBS/kcnc/NEWSROOM/closings.html
+    checked_at: '2026-09-27T01:30:58Z'
+    state: unavailable
+    allowed: true
+    rule: 'robots.txt unavailable (4xx): unrestricted'
+    crawl_delay: null
+    disallowed_agents: []
+    sha256: null
+- id: cbs-owned-kcbs
+  platform: cbs-owned
+  call_sign: KCBS
+  name: CBS News Los Angeles (KCBS)
+  market: Los Angeles
+  dma: Los Angeles, CA DMA
+  states: [CA]
+  counties:
+    basis: dma
+    source: 'DMA county list: alex-patton/US-TVDMA-BY-COUNTY usa-tvdma-county.csv at commit 7f254b8c1843c62ec976a71c40d366d45f6f29cd
+      (sha256 2e2cd00265a8d704...), names resolved to FIPS with the Census 2025 county Gazetteer; Connecticut
+      via the Census county-to-town crosswalk (snowlight.sources.stations.dma); market ''Los Angeles,
+      CA DMA'''
+    fips: ['06027', '06037', 06059, '06071', '06111']
+  page_url: null
+  data_url: null
+  export_url: null
+  archive_urls: []
+  poll_minutes: null
+  status: no_endpoint
+  evidence: First-hand check of 2026-09-26 (docs/research/firsthand/others.json, record KCBS/KCAL); https://www.cbsnews.com/losangeles/school-closings/
+    answered 404 ('Page Not Found') on 2026-09-26. No endpoint.
+  list_files: []
+  page_check: null
+  robots: []
+- id: cbs-owned-kovr
+  platform: cbs-owned
+  call_sign: KOVR
+  name: CBS News Sacramento (KOVR)
+  market: Sacramento-Stockton-Modesto
+  dma: Sacramento - Stockton - Modesto, CA DMA
+  states: [CA]
+  counties:
+    basis: dma
+    source: 'DMA county list: alex-patton/US-TVDMA-BY-COUNTY usa-tvdma-county.csv at commit 7f254b8c1843c62ec976a71c40d366d45f6f29cd
+      (sha256 2e2cd00265a8d704...), names resolved to FIPS with the Census 2025 county Gazetteer; Connecticut
+      via the Census county-to-town crosswalk (snowlight.sources.stations.dma); market ''Sacramento -
+      Stockton - Modesto, CA DMA'''
+    fips: ['06005', 06009, '06011', '06017', '06057', '06061', '06063', '06067', '06077', 06091, 06099,
+      '06101', 06109, '06113', '06115']
+  page_url: null
+  data_url: null
+  export_url: null
+  archive_urls: []
+  poll_minutes: null
+  status: no_endpoint
+  evidence: First-hand check of 2026-09-26 (docs/research/firsthand/others.json, record KOVR/KMAX); https://www.cbsnews.com/sacramento/school-closings/
+    answered 404 ('Page Not Found') on 2026-09-26. No endpoint.
+  list_files: []
+  page_check: null
+  robots: []
+- id: cbs-owned-kpix
+  platform: cbs-owned
+  call_sign: KPIX
+  name: CBS News Bay Area (KPIX)
+  market: San Francisco-Oakland-San Jose
+  dma: San Francisco - Oakland - San Jose, CA DMA
+  states: [CA]
+  counties:
+    basis: dma
+    source: 'DMA county list: alex-patton/US-TVDMA-BY-COUNTY usa-tvdma-county.csv at commit 7f254b8c1843c62ec976a71c40d366d45f6f29cd
+      (sha256 2e2cd00265a8d704...), names resolved to FIPS with the Census 2025 county Gazetteer; Connecticut
+      via the Census county-to-town crosswalk (snowlight.sources.stations.dma); market ''San Francisco
+      - Oakland - San Jose, CA DMA'''
+    fips: ['06001', '06013', '06033', '06041', '06045', '06055', '06075', 06081, 06085, 06095, 06097]
+  page_url: null
+  data_url: null
+  export_url: null
+  archive_urls: []
+  poll_minutes: null
+  status: no_endpoint
+  evidence: First-hand check of 2026-09-26 (docs/research/firsthand/others.json, record KPIX/KPYX); https://www.cbsnews.com/sanfrancisco/school-closings/
+    answered 404 ('Page Not Found') on 2026-09-26. No endpoint.
+  list_files: []
+  page_check: null
+  robots: []
+- id: cbs-owned-wfor
+  platform: cbs-owned
+  call_sign: WFOR
+  name: CBS News Miami (WFOR)
+  market: Miami-Fort Lauderdale
+  dma: Miami - Ft. Lauderdale, FL DMA
+  states: [FL]
+  counties:
+    basis: dma
+    source: 'DMA county list: alex-patton/US-TVDMA-BY-COUNTY usa-tvdma-county.csv at commit 7f254b8c1843c62ec976a71c40d366d45f6f29cd
+      (sha256 2e2cd00265a8d704...), names resolved to FIPS with the Census 2025 county Gazetteer; Connecticut
+      via the Census county-to-town crosswalk (snowlight.sources.stations.dma); market ''Miami - Ft. Lauderdale,
+      FL DMA'''
+    fips: ['12011', '12086', '12087']
+  page_url: null
+  data_url: null
+  export_url: null
+  archive_urls: []
+  poll_minutes: null
+  status: no_endpoint
+  evidence: First-hand check of 2026-09-26 (docs/research/firsthand/others.json, record WFOR/WBFS); https://www.cbsnews.com/miami/school-closings/
+    answered 404 ('Page Not Found') on 2026-09-26. No endpoint.
+  list_files: []
+  page_check: null
+  robots: []
+- id: cbs-owned-wcbs
+  platform: cbs-owned
+  call_sign: WCBS
+  name: CBS News New York (WCBS)
+  market: New York
+  dma: New York, NY - CT - NJ - PA DMA
+  states: [CT, NJ, NY, PA]
+  counties:
+    basis: dma
+    source: 'DMA county list: alex-patton/US-TVDMA-BY-COUNTY usa-tvdma-county.csv at commit 7f254b8c1843c62ec976a71c40d366d45f6f29cd
+      (sha256 2e2cd00265a8d704...), names resolved to FIPS with the Census 2025 county Gazetteer; Connecticut
+      via the Census county-to-town crosswalk (snowlight.sources.stations.dma); market ''New York, NY
+      - CT - NJ - PA DMA'''
+    fips: [09120, 09140, 09190, '34003', '34013', '34017', '34019', '34023', '34025', '34027', '34029',
+      '34031', '34035', '34037', '34039', '34041', '36005', '36027', '36047', '36059', '36061', '36071',
+      '36079', '36081', '36085', '36087', '36103', '36105', '36111', '36119', '42103']
+  page_url: null
+  data_url: null
+  export_url: null
+  archive_urls: []
+  poll_minutes: null
+  status: no_endpoint
+  evidence: First-hand check of 2026-09-26 (docs/research/firsthand/others.json, record WCBS/WLNY); https://www.cbsnews.com/newyork/school-closings/
+    answered 404 ('Page Not Found') on 2026-09-26. No endpoint.
+  list_files: []
+  page_check: null
+  robots: []
+- id: cbs-owned-wupa
+  platform: cbs-owned
+  call_sign: WUPA
+  name: CBS News Atlanta (WUPA)
+  market: Atlanta
+  dma: Atlanta, GA - AL - NC DMA
+  states: [AL, GA, NC]
+  counties:
+    basis: dma
+    source: 'DMA county list: alex-patton/US-TVDMA-BY-COUNTY usa-tvdma-county.csv at commit 7f254b8c1843c62ec976a71c40d366d45f6f29cd
+      (sha256 2e2cd00265a8d704...), names resolved to FIPS with the Census 2025 county Gazetteer; Connecticut
+      via the Census county-to-town crosswalk (snowlight.sources.stations.dma); market ''Atlanta, GA -
+      AL - NC DMA'''
+    fips: [01029, '01111', '13011', '13013', '13015', '13035', '13045', '13055', '13057', '13059', '13063',
+      '13067', '13077', '13085', '13089', '13097', '13113', '13115', '13117', '13121', '13123', '13129',
+      '13133', '13135', '13137', '13139', '13143', '13149', '13151', '13157', '13159', '13171', '13187',
+      '13195', '13199', '13211', '13217', '13219', '13221', '13223', '13227', '13231', '13233', '13237',
+      '13241', '13247', '13255', '13281', '13285', '13291', '13293', '13297', '13311', '37043']
+  page_url: null
+  data_url: null
+  export_url: null
+  archive_urls: []
+  poll_minutes: null
+  status: no_endpoint
+  evidence: First-hand check of 2026-09-26 (docs/research/firsthand/others.json, record WUPA); https://www.cbsnews.com/atlanta/school-closings/
+    answered 404 ('Page Not Found') on 2026-09-26. No endpoint.
+  list_files: []
+  page_check: null
+  robots: []
+- id: cbs-owned-wbbm
+  platform: cbs-owned
+  call_sign: WBBM
+  name: CBS News Chicago (WBBM)
+  market: Chicago
+  dma: Chicago, IL - IN DMA
+  states: [IL, IN]
+  counties:
+    basis: dma
+    source: 'DMA county list: alex-patton/US-TVDMA-BY-COUNTY usa-tvdma-county.csv at commit 7f254b8c1843c62ec976a71c40d366d45f6f29cd
+      (sha256 2e2cd00265a8d704...), names resolved to FIPS with the Census 2025 county Gazetteer; Connecticut
+      via the Census county-to-town crosswalk (snowlight.sources.stations.dma); market ''Chicago, IL -
+      IN DMA'''
+    fips: ['17031', '17037', '17043', '17063', '17089', '17091', '17093', '17097', '17099', '17111', '17197',
+      '18073', '18089', '18091', '18111', '18127']
+  page_url: null
+  data_url: null
+  export_url: null
+  archive_urls: []
+  poll_minutes: null
+  status: no_endpoint
+  evidence: 'First-hand check of 2026-09-26 (docs/research/firsthand/others.json, record WBBM); https://www.cbsnews.com/chicago/school-closings/
+    frames https://wgnr-closings.emergencyclosingcenter.com/index.html, the Emergency Closing Center application:
+    CBS 2''s list is the ECC''s, read once as ecc-chicago. No endpoint.'
+  list_files: []
+  page_check: null
+  robots: []

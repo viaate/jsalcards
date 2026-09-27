@@ -1,0 +1,602 @@
+# Station registry for one platform. Loaded with every other file in this folder
+# by snowlight.sources.stations.registry; see its docstring for the fields.
+# `snowlight stations robots --update` rewrites the robots blocks in place.
+platform:
+  id: abc-owned
+  name: ABC Owned Television Stations school closings pages
+  operator: ABC Owned Television Stations (The Walt Disney Company)
+  adapter: abc-owned
+  poll_minutes: 10
+  terms:
+    automated_access: forbidden
+    summary: 'The ABC-owned station sites'' footers link Disney''s Terms of Use (https://disneytermsofuse.com/,
+      "Last Updated: May 24, 2024"), which forbid accessing, monitoring, copying or extracting the Disney
+      Products "using a robot, spider, script, or other automated means", data mining and web scraping
+      included (public search engines excepted), and license them for personal, noncommercial use. The
+      project owner decided on 2026-09-25 to read the closings lists anyway for this non-commercial project
+      (owner_decision below); the terms stay recorded here.'
+    evidence:
+    - url: https://disneytermsofuse.com/english/
+      read_at: '2026-09-27T01:25:53Z'
+      sha256: da40caa1e5e182ec84fa5d2a1edaf4dcb3374e6caad84cc013fefefeaddcadce
+      excerpt:
+      - 'Last Updated: May 24, 2024'
+      - access, monitor, copy or extract the Disney Products using a robot, spider, script, or other automated
+        means, including, for the avoidance of doubt, for the purposes of creating or developing any AI
+        Tool, data mining or web scraping or otherwise compiling, building, creating or contributing to
+        any collection of data, data set or database (other than for a public search engine’s use of spiders
+        for creating search indices to the extent not disallowed by Disney, including through the applicable
+        robots.txt files or NOINDEX or NOFOLLOW meta-tags)
+      - You understand that the Disney Products are for your personal, noncommercial use and are intended
+        for informational and entertainment purposes only
+    permission: null
+    owner_decision:
+      decided_by: the project owner (Snowlight)
+      decided_on: '2026-09-25'
+      reference: 'Stated in the build instructions for the station adapters (piece s4c1, round 1): "Terms
+        of use that forbid automated access do not exclude a station: the project owner decided on 2026-09-25
+        to read them for this non-commercial project, so record each station''s terms internally in the
+        registry and read it anyway." The same instructions record the owner''s decision of 2026-09-26
+        to read closings pages and data files even where robots.txt disallows them (naming CBS''s assets1.cbsnewsstatic.com
+        feeds as an example). Relayed to the pipeline''s builder by the project''s build workflow; to
+        revoke it, remove this block and live polling of this platform stops.'
+      scope: 'Live reads of this platform''s public closings lists (the station pages and the list files
+        or routes they load) for Snowlight, a non-commercial project, although the terms above forbid
+        automated access. robots.txt is read and its verdict recorded for every URL requested; the owner
+        decided on 2026-09-26 to read closings pages and files even where robots.txt disallows them. Unchanged
+        by it: the User-Agent names the repository (never a browser string), only the closings page or
+        file is requested (no crawling), requests are paced per host (any Crawl-delay is a floor) with
+        conditional requests and backoff on 429 and 5xx answers, and a station that blocks the project
+        (a 403, or a bot challenge) is not worked around.'
+  notes: 'Station list: Wikipedia ''ABC Owned Television Stations'' currently-owned table, read 2026-09-26
+    by the first-hand check (8 stations). Every ABC-owned station''s closings page is https://{site}/community/schoolclosings/,
+    rendered on the server by Disney''s abcotv application; the page state''s schoolclosings.time (epoch
+    seconds) is when the list last changed, and the page''s ''Last updated'' line is that instant in UTC.
+    On 2026-09-27 the Los Angeles (KABC), San Francisco (KGO) and Fresno (KFSN) pages, and WLS''s page
+    state, all said the list was last updated 02/12/2019 08:39pm (time 1550003979): those lists have not
+    listed a closing since, so the live reader records them as stale (not working) until they change;
+    every archived capture of those three pages (May 2019 to June 2025) carries the same time. WLS (Chicago)
+    renders no list: its page frames https://wgnr-closings.s3.amazonaws.com/index.html, which answered
+    403 AccessDenied; Chicago''s working list is the Emergency Closing Center (platform ecc). Archived
+    storm-day captures (archive-captures run 36293423860) show two page designs, both read by the adapter:
+    the older server-rendered list without the page state (December 2015 to February 2019; its earliest
+    empty form is one empty list) and the abcotv application (from May 2019). The WABC, WPVI, WTVD and
+    KTRK lists held rows in both (WPVI 316 on 19 January 2024, WTVD 326 on 21 February 2020, KTRK 82 on
+    26 January 2026 and 121 during Hurricane Harvey on 27 August 2017, WABC 14 on 23 February 2026); WLS''s
+    own list held 962 rows on 8 January 2015 and 1,062 rows on 9 February 2018, and every WLS capture
+    from January 2021 to January 2026 frames the closing center copy. robots.txt on every ABC host allowed
+    the closings page when checked (see each station''s robots block).'
+  shared_paths: []
+stations:
+- id: abc-owned-wabc
+  platform: abc-owned
+  call_sign: WABC
+  name: ABC7 New York (abc7ny.com)
+  market: New York
+  dma: New York, NY - CT - NJ - PA DMA
+  states: [CT, NJ, NY, PA]
+  counties:
+    basis: dma
+    source: 'DMA county list: alex-patton/US-TVDMA-BY-COUNTY usa-tvdma-county.csv at commit 7f254b8c1843c62ec976a71c40d366d45f6f29cd
+      (sha256 2e2cd00265a8d704...), names resolved to FIPS with the Census 2025 county Gazetteer; Connecticut
+      via the Census county-to-town crosswalk (snowlight.sources.stations.dma); market ''New York, NY
+      - CT - NJ - PA DMA'''
+    fips: [09120, 09140, 09190, '34003', '34013', '34017', '34019', '34023', '34025', '34027', '34029',
+      '34031', '34035', '34037', '34039', '34041', '36005', '36027', '36047', '36059', '36061', '36071',
+      '36079', '36081', '36085', '36087', '36103', '36105', '36111', '36119', '42103']
+  page_url: https://abc7ny.com/community/schoolclosings/
+  data_url: null
+  export_url: null
+  archive_urls:
+  - https://abc7ny.com/community/schoolclosings/
+  poll_minutes: null
+  status: active
+  evidence: 'First-hand check of 2026-09-26 (docs/research/firsthand/others.json, record WABC); closings
+    page https://abc7ny.com/community/schoolclosings/, server-rendered section.school-list. Live read
+    2026-09-27 (01:07:20Z, HTTP 200): ''No Closings at this time.'', list last updated 2026-09-26 01:05:16
+    UTC per the page state. Archive: 11 Wayback captures of this station''s page or list file read (archive-captures
+    runs 36293423860, 36311251817, 36348669505), from 2016-02-16 to 2026-02-23; 10 with rows, the most
+    239 on 2018-03-22 (https://web.archive.org/web/20180322093007/http://abc7ny.com:80/community/schoolclosings)
+    (1 empty); variants abc-legacy-list, abc-otv-list; not downloaded: 2 TLS handshake timed out; fixtures
+    abc-owned/wabc-page-20170209214652.html, abc-owned/wabc-page-20180309044514.html, abc-owned/wabc-page-20190529111635.html,
+    abc-owned/wabc-page-20191211103311.html, abc-owned/wabc-page-20230314132544.html, abc-owned/wabc-page-20260223174946.html.'
+  list_files: []
+  page_check: null
+  robots:
+  - url: https://abc7ny.com/community/schoolclosings/
+    checked_at: '2026-09-27T01:30:55Z'
+    state: parsed
+    allowed: true
+    rule: no rule matches
+    crawl_delay: null
+    disallowed_agents:
+    - anthropic-ai
+    - applebot-extended
+    - bytespider
+    - ccbot
+    - chatgpt-user
+    - claritybot
+    - claudebot
+    - cohere-ai
+    - dataforseobot
+    - diffbot
+    - facebookbot
+    - friendlycrawler
+    - google-cloudvertexbot
+    - google-extended
+    - gptbot
+    - grokbot
+    - imagesiftbot
+    - magpie-crawler
+    - meta-externalagent
+    - omgili
+    - omgilibot
+    - quora-bot
+    - scrapy
+    - timpibot
+    - turnitinbot
+    sha256: 27eb8523c66400e6b51bbb88a2fc0e583e9d3b439e2a65c22b65aba1d92d4171
+- id: abc-owned-wpvi
+  platform: abc-owned
+  call_sign: WPVI
+  name: 6abc Philadelphia (6abc.com)
+  market: Philadelphia
+  dma: Philadelphia, PA - DE - NJ DMA
+  states: [DE, NJ, PA]
+  counties:
+    basis: dma
+    source: 'DMA county list: alex-patton/US-TVDMA-BY-COUNTY usa-tvdma-county.csv at commit 7f254b8c1843c62ec976a71c40d366d45f6f29cd
+      (sha256 2e2cd00265a8d704...), names resolved to FIPS with the Census 2025 county Gazetteer; Connecticut
+      via the Census county-to-town crosswalk (snowlight.sources.stations.dma); market ''Philadelphia,
+      PA - DE - NJ DMA'''
+    fips: ['10001', '10003', '34001', '34005', '34007', '34009', '34011', '34015', '34021', '34033', '42011',
+      '42017', '42029', '42045', '42077', '42091', '42095', '42101']
+  page_url: https://6abc.com/community/schoolclosings/
+  data_url: null
+  export_url: null
+  archive_urls:
+  - https://6abc.com/community/schoolclosings/
+  poll_minutes: null
+  status: active
+  evidence: 'First-hand check of 2026-09-26 (docs/research/firsthand/others.json, record WPVI); closings
+    page https://6abc.com/community/schoolclosings/, server-rendered section.school-list. Live read 2026-09-27
+    (01:07:23Z, HTTP 200): ''No Closings at this time.'', list last updated 2026-03-17 15:15:18 UTC per
+    the page state. Archive: 10 Wayback captures of this station''s page or list file read (archive-captures
+    runs 36293423860, 36311251817, 36330775706, 36348669505), from 2016-01-25 to 2026-02-24; 6 with rows,
+    the most 678 on 2016-01-25 (https://web.archive.org/web/20160125031720/http://6abc.com:80/community/schoolclosings)
+    (4 empty); variants abc-legacy-list, abc-otv-list; not downloaded: 3 TLS handshake timed out, 1 answered
+    without a body; fixtures abc-owned/wpvi-page-20170216040805.html, abc-owned/wpvi-page-20190219235902.html,
+    abc-owned/wpvi-page-20240119112718.html, abc-owned/wpvi-page-20250106010620.html, abc-owned/wpvi-page-20260224020458.html.'
+  list_files: []
+  page_check: null
+  robots:
+  - url: https://6abc.com/community/schoolclosings/
+    checked_at: '2026-09-27T01:30:56Z'
+    state: parsed
+    allowed: true
+    rule: no rule matches
+    crawl_delay: null
+    disallowed_agents:
+    - anthropic-ai
+    - applebot-extended
+    - bytespider
+    - ccbot
+    - chatgpt-user
+    - claritybot
+    - claudebot
+    - cohere-ai
+    - dataforseobot
+    - diffbot
+    - facebookbot
+    - friendlycrawler
+    - google-cloudvertexbot
+    - google-extended
+    - gptbot
+    - grokbot
+    - imagesiftbot
+    - magpie-crawler
+    - meta-externalagent
+    - omgili
+    - omgilibot
+    - quora-bot
+    - scrapy
+    - timpibot
+    - turnitinbot
+    sha256: 9443ff0809a9bef12a5c8bb73641f0483cde337a2790228099fd817e8eb1ab73
+- id: abc-owned-wtvd
+  platform: abc-owned
+  call_sign: WTVD
+  name: ABC11 Raleigh-Durham (abc11.com)
+  market: Raleigh-Durham
+  dma: Raleigh - Durham, NC - VA DMA
+  states: [NC, VA]
+  counties:
+    basis: dma
+    source: 'DMA county list: alex-patton/US-TVDMA-BY-COUNTY usa-tvdma-county.csv at commit 7f254b8c1843c62ec976a71c40d366d45f6f29cd
+      (sha256 2e2cd00265a8d704...), names resolved to FIPS with the Census 2025 county Gazetteer; Connecticut
+      via the Census county-to-town crosswalk (snowlight.sources.stations.dma); market ''Raleigh - Durham,
+      NC - VA DMA'''
+    fips: ['37037', '37051', '37063', '37065', '37069', '37077', '37083', '37085', '37093', '37101', '37105',
+      '37125', '37127', '37131', '37135', '37145', '37163', '37181', '37183', '37185', '37191', '37195',
+      '51117']
+  page_url: https://abc11.com/community/schoolclosings/
+  data_url: null
+  export_url: null
+  archive_urls:
+  - https://abc11.com/community/schoolclosings/
+  poll_minutes: null
+  status: active
+  evidence: 'First-hand check of 2026-09-26 (docs/research/firsthand/others.json, record WTVD); closings
+    page https://abc11.com/community/schoolclosings/, server-rendered section.school-list. Live read 2026-09-27
+    (01:07:26Z, HTTP 200): ''No Closings at this time.'', list last updated 2026-03-17 14:15:17 UTC per
+    the page state. Archive: 6 Wayback captures of this station''s page or list file read (archive-captures
+    runs 36293423860), from 2018-01-21 to 2026-01-26; 4 with rows, the most 326 on 2020-02-21 (https://web.archive.org/web/20200221055143/https://abc11.com/community/schoolclosings/)
+    (2 empty); variants abc-legacy-list, abc-otv-list; fixtures abc-owned/wtvd-page-20180121222911.html,
+    abc-owned/wtvd-page-20200221055143.html, abc-owned/wtvd-page-20260126234353.html.'
+  list_files: []
+  page_check: null
+  robots:
+  - url: https://abc11.com/community/schoolclosings/
+    checked_at: '2026-09-27T01:30:57Z'
+    state: parsed
+    allowed: true
+    rule: no rule matches
+    crawl_delay: null
+    disallowed_agents:
+    - anthropic-ai
+    - applebot-extended
+    - bytespider
+    - ccbot
+    - chatgpt-user
+    - claritybot
+    - claudebot
+    - cohere-ai
+    - dataforseobot
+    - diffbot
+    - facebookbot
+    - friendlycrawler
+    - google-cloudvertexbot
+    - google-extended
+    - gptbot
+    - grokbot
+    - imagesiftbot
+    - magpie-crawler
+    - meta-externalagent
+    - omgili
+    - omgilibot
+    - quora-bot
+    - scrapy
+    - timpibot
+    - turnitinbot
+    sha256: 25aab0552133290f00daf0f7183f36f37f510398d9e294c67b2844db3a5f708f
+- id: abc-owned-ktrk
+  platform: abc-owned
+  call_sign: KTRK
+  name: ABC13 Houston (abc13.com)
+  market: Houston
+  dma: Houston, TX DMA
+  states: [TX]
+  counties:
+    basis: dma
+    source: 'DMA county list: alex-patton/US-TVDMA-BY-COUNTY usa-tvdma-county.csv at commit 7f254b8c1843c62ec976a71c40d366d45f6f29cd
+      (sha256 2e2cd00265a8d704...), names resolved to FIPS with the Census 2025 county Gazetteer; Connecticut
+      via the Census county-to-town crosswalk (snowlight.sources.stations.dma); market ''Houston, TX DMA'''
+    fips: ['48015', '48039', '48057', '48071', '48089', '48157', '48167', '48185', '48201', '48239', '48291',
+      '48321', '48339', '48373', '48407', '48471', '48473', '48477', '48481']
+  page_url: https://abc13.com/community/schoolclosings/
+  data_url: null
+  export_url: null
+  archive_urls:
+  - https://abc13.com/community/schoolclosings/
+  poll_minutes: null
+  status: active
+  evidence: 'First-hand check of 2026-09-26 (docs/research/firsthand/others.json, record KTRK); closings
+    page https://abc13.com/community/schoolclosings/, server-rendered section.school-list. Live read 2026-09-27
+    (01:07:30Z, HTTP 200): ''No Closings at this time.'', list last updated 2026-09-03 21:15:16 UTC per
+    the page state. Archive: 8 Wayback captures of this station''s page or list file read (archive-captures
+    runs 36293423860, 36311251817, 36348669505), from 2015-12-16 to 2026-01-28; 4 with rows, the most
+    121 on 2017-08-28 (https://web.archive.org/web/20170828001639/http://abc13.com:80/community/schoolclosings)
+    (4 empty); variants abc-legacy-list, abc-otv-list; not downloaded: 1 TLS handshake timed out; fixtures
+    abc-owned/ktrk-page-20151216011747.html, abc-owned/ktrk-page-20170828001639.html, abc-owned/ktrk-page-20180109085112.html,
+    abc-owned/ktrk-page-20260126234132.html.'
+  list_files: []
+  page_check: null
+  robots:
+  - url: https://abc13.com/community/schoolclosings/
+    checked_at: '2026-09-27T01:30:55Z'
+    state: parsed
+    allowed: true
+    rule: no rule matches
+    crawl_delay: null
+    disallowed_agents:
+    - anthropic-ai
+    - applebot-extended
+    - bytespider
+    - ccbot
+    - chatgpt-user
+    - claritybot
+    - claudebot
+    - cohere-ai
+    - dataforseobot
+    - diffbot
+    - facebookbot
+    - friendlycrawler
+    - google-cloudvertexbot
+    - google-extended
+    - gptbot
+    - grokbot
+    - imagesiftbot
+    - magpie-crawler
+    - meta-externalagent
+    - omgili
+    - omgilibot
+    - quora-bot
+    - scrapy
+    - timpibot
+    - turnitinbot
+    sha256: c3b51bc2223f5b4e6e5bb8d08cf1d2ebe5273aeb6eddd021eda31f4d0a012f5a
+- id: abc-owned-kabc
+  platform: abc-owned
+  call_sign: KABC
+  name: ABC7 Los Angeles (abc7.com)
+  market: Los Angeles
+  dma: Los Angeles, CA DMA
+  states: [CA]
+  counties:
+    basis: dma
+    source: 'DMA county list: alex-patton/US-TVDMA-BY-COUNTY usa-tvdma-county.csv at commit 7f254b8c1843c62ec976a71c40d366d45f6f29cd
+      (sha256 2e2cd00265a8d704...), names resolved to FIPS with the Census 2025 county Gazetteer; Connecticut
+      via the Census county-to-town crosswalk (snowlight.sources.stations.dma); market ''Los Angeles,
+      CA DMA'''
+    fips: ['06027', '06037', 06059, '06071', '06111']
+  page_url: https://abc7.com/community/schoolclosings/
+  data_url: null
+  export_url: null
+  archive_urls:
+  - https://abc7.com/community/schoolclosings/
+  poll_minutes: null
+  status: active
+  evidence: 'First-hand check of 2026-09-26 (docs/research/firsthand/others.json, record KABC); closings
+    page https://abc7.com/community/schoolclosings/, server-rendered section.school-list. Live read 2026-09-27
+    (01:07:33Z, HTTP 200): ''No Closings at this time.'', list last updated 2019-02-12 20:39:39 UTC per
+    the page state (before 2024: not listed a closing since; read as stale). Archive: 2 Wayback captures
+    of this station''s page or list file read (archive-captures runs 36293423860), from 2019-05-06 to
+    2019-05-06; none held a row (2 empty); variants abc-otv-list; not downloaded: 1 TLS handshake timed
+    out; fixtures abc-owned/kabc-page-20190506191048.html.'
+  list_files: []
+  page_check: null
+  robots:
+  - url: https://abc7.com/community/schoolclosings/
+    checked_at: '2026-09-27T01:30:54Z'
+    state: parsed
+    allowed: true
+    rule: no rule matches
+    crawl_delay: null
+    disallowed_agents:
+    - anthropic-ai
+    - applebot-extended
+    - bytespider
+    - ccbot
+    - chatgpt-user
+    - claritybot
+    - claudebot
+    - cohere-ai
+    - dataforseobot
+    - diffbot
+    - facebookbot
+    - friendlycrawler
+    - google-cloudvertexbot
+    - google-extended
+    - gptbot
+    - grokbot
+    - imagesiftbot
+    - magpie-crawler
+    - meta-externalagent
+    - omgili
+    - omgilibot
+    - quora-bot
+    - scrapy
+    - timpibot
+    - turnitinbot
+    sha256: 7c6dbbe5580ea3565a34e3d4e311d17bdcc2226b04461392d2cc9ed5009a3ecc
+- id: abc-owned-kgo
+  platform: abc-owned
+  call_sign: KGO
+  name: ABC7 San Francisco (abc7news.com)
+  market: San Francisco-Oakland-San Jose
+  dma: San Francisco - Oakland - San Jose, CA DMA
+  states: [CA]
+  counties:
+    basis: dma
+    source: 'DMA county list: alex-patton/US-TVDMA-BY-COUNTY usa-tvdma-county.csv at commit 7f254b8c1843c62ec976a71c40d366d45f6f29cd
+      (sha256 2e2cd00265a8d704...), names resolved to FIPS with the Census 2025 county Gazetteer; Connecticut
+      via the Census county-to-town crosswalk (snowlight.sources.stations.dma); market ''San Francisco
+      - Oakland - San Jose, CA DMA'''
+    fips: ['06001', '06013', '06033', '06041', '06045', '06055', '06075', 06081, 06085, 06095, 06097]
+  page_url: https://abc7news.com/community/schoolclosings/
+  data_url: null
+  export_url: null
+  archive_urls:
+  - https://abc7news.com/community/schoolclosings/
+  poll_minutes: null
+  status: active
+  evidence: 'First-hand check of 2026-09-26 (docs/research/firsthand/others.json, record KGO); closings
+    page https://abc7news.com/community/schoolclosings/, server-rendered section.school-list. Live read
+    2026-09-27 (01:07:36Z, HTTP 200): ''No Closings at this time.'', list last updated 2019-02-12 20:39:39
+    UTC per the page state (before 2024: not listed a closing since; read as stale). Archive: 2 Wayback
+    captures of this station''s page or list file read (archive-captures runs 36293423860, 36348669505),
+    from 2023-09-23 to 2025-05-23; none held a row (2 empty); variants abc-otv-list; fixtures abc-owned/kgo-page-20230923204353.html.'
+  list_files: []
+  page_check: null
+  robots:
+  - url: https://abc7news.com/community/schoolclosings/
+    checked_at: '2026-09-27T01:30:55Z'
+    state: parsed
+    allowed: true
+    rule: no rule matches
+    crawl_delay: null
+    disallowed_agents:
+    - anthropic-ai
+    - applebot-extended
+    - bytespider
+    - ccbot
+    - chatgpt-user
+    - claritybot
+    - claudebot
+    - cohere-ai
+    - dataforseobot
+    - diffbot
+    - facebookbot
+    - friendlycrawler
+    - google-cloudvertexbot
+    - google-extended
+    - gptbot
+    - grokbot
+    - imagesiftbot
+    - magpie-crawler
+    - meta-externalagent
+    - omgili
+    - omgilibot
+    - quora-bot
+    - scrapy
+    - timpibot
+    - turnitinbot
+    sha256: b37e256566558467612b063508a227ccf3e707bb043681c780804bf902eca747
+- id: abc-owned-kfsn
+  platform: abc-owned
+  call_sign: KFSN
+  name: ABC30 Fresno (abc30.com)
+  market: Fresno-Visalia
+  dma: Fresno - Visalia, CA DMA
+  states: [CA]
+  counties:
+    basis: dma
+    source: 'DMA county list: alex-patton/US-TVDMA-BY-COUNTY usa-tvdma-county.csv at commit 7f254b8c1843c62ec976a71c40d366d45f6f29cd
+      (sha256 2e2cd00265a8d704...), names resolved to FIPS with the Census 2025 county Gazetteer; Connecticut
+      via the Census county-to-town crosswalk (snowlight.sources.stations.dma); market ''Fresno - Visalia,
+      CA DMA'''
+    fips: [06019, '06031', 06039, '06043', '06047', '06107']
+  page_url: https://abc30.com/community/schoolclosings/
+  data_url: null
+  export_url: null
+  archive_urls:
+  - https://abc30.com/community/schoolclosings/
+  poll_minutes: null
+  status: active
+  evidence: 'First-hand check of 2026-09-26 (docs/research/firsthand/others.json, record KFSN); closings
+    page https://abc30.com/community/schoolclosings/, server-rendered section.school-list. Live read 2026-09-27
+    (01:07:40Z, HTTP 200): ''No Closings at this time.'', list last updated 2019-02-12 20:39:39 UTC per
+    the page state (before 2024: not listed a closing since; read as stale). Archive: 3 Wayback captures
+    of this station''s page or list file read (archive-captures runs 36293423860), from 2023-09-22 to
+    2025-06-17; none held a row (3 empty); variants abc-otv-list; not downloaded: 1 TLS handshake timed
+    out; fixtures abc-owned/kfsn-page-20250617201253.html.'
+  list_files: []
+  page_check: null
+  robots:
+  - url: https://abc30.com/community/schoolclosings/
+    checked_at: '2026-09-27T01:30:54Z'
+    state: parsed
+    allowed: true
+    rule: no rule matches
+    crawl_delay: null
+    disallowed_agents:
+    - anthropic-ai
+    - applebot-extended
+    - bytespider
+    - ccbot
+    - chatgpt-user
+    - claritybot
+    - claudebot
+    - cohere-ai
+    - dataforseobot
+    - diffbot
+    - facebookbot
+    - friendlycrawler
+    - google-cloudvertexbot
+    - google-extended
+    - gptbot
+    - grokbot
+    - imagesiftbot
+    - magpie-crawler
+    - meta-externalagent
+    - omgili
+    - omgilibot
+    - quora-bot
+    - scrapy
+    - timpibot
+    - turnitinbot
+    sha256: b73215f0ad68a05c0d87dbb779c2a9bd0e47850967893d1889c71e0c1327767a
+- id: abc-owned-wls
+  platform: abc-owned
+  call_sign: WLS
+  name: ABC7 Chicago (abc7chicago.com)
+  market: Chicago
+  dma: Chicago, IL - IN DMA
+  states: [IL, IN]
+  counties:
+    basis: dma
+    source: 'DMA county list: alex-patton/US-TVDMA-BY-COUNTY usa-tvdma-county.csv at commit 7f254b8c1843c62ec976a71c40d366d45f6f29cd
+      (sha256 2e2cd00265a8d704...), names resolved to FIPS with the Census 2025 county Gazetteer; Connecticut
+      via the Census county-to-town crosswalk (snowlight.sources.stations.dma); market ''Chicago, IL -
+      IN DMA'''
+    fips: ['17031', '17037', '17043', '17063', '17089', '17091', '17093', '17097', '17099', '17111', '17197',
+      '18073', '18089', '18091', '18111', '18127']
+  page_url: https://abc7chicago.com/community/schoolclosings/
+  data_url: null
+  export_url: null
+  archive_urls:
+  - https://abc7chicago.com/community/schoolclosings/
+  - https://wgnr-closings.s3.amazonaws.com/index.html
+  poll_minutes: null
+  status: active
+  evidence: 'First-hand check of 2026-09-26 (docs/research/firsthand/others.json, record WLS); closings
+    page https://abc7chicago.com/community/schoolclosings/. Live read 2026-09-27 (01:07:43Z, HTTP 200):
+    no list; the page frames a copy of the Emergency Closing Center application at https://wgnr-closings.s3.amazonaws.com/index.html,
+    which answered 403 AccessDenied on 2026-09-26 (first-hand check), so the live read ends in that error;
+    the page state''s own schoolclosings entry says 2019-02-12 20:39:39 UTC. Chicago''s list is read from
+    the Emergency Closing Center itself (ecc-chicago). Archive: 12 Wayback captures of this station''s
+    page or list file read (archive-captures runs 36293423860, 36300019096, 36311251817, 36348669505),
+    from 2015-01-08 to 2026-02-17; 3 with rows, the most 1062 on 2018-02-09 (https://web.archive.org/web/20180209024114/http://abc7chicago.com/community/schoolclosings/)
+    (8 framing or loading another file, 1 empty); variants abc-framed-ecc-app, abc-legacy-list, abc-otv-frame,
+    abc-otv-list; not downloaded: 1 TLS handshake timed out; fixtures abc-owned/wls-frame-20210216023514.html,
+    abc-owned/wls-page-20180209024114.html, abc-owned/wls-page-20190723233408.html, abc-owned/wls-page-20260101210212.html.'
+  list_files:
+  - url: https://wgnr-closings.s3.amazonaws.com/index.html
+    loaded_by: frame
+    seen: the live page read 2026-09-27 01:07:43Z frames it in div.main-left in place of the list (the
+      abcotv script renders this frame for WLS only)
+  page_check: null
+  robots:
+  - url: https://abc7chicago.com/community/schoolclosings/
+    checked_at: '2026-09-27T01:30:56Z'
+    state: parsed
+    allowed: true
+    rule: no rule matches
+    crawl_delay: null
+    disallowed_agents:
+    - anthropic-ai
+    - applebot-extended
+    - bytespider
+    - ccbot
+    - chatgpt-user
+    - claritybot
+    - claudebot
+    - cohere-ai
+    - dataforseobot
+    - diffbot
+    - facebookbot
+    - friendlycrawler
+    - google-cloudvertexbot
+    - google-extended
+    - gptbot
+    - grokbot
+    - imagesiftbot
+    - magpie-crawler
+    - meta-externalagent
+    - omgili
+    - omgilibot
+    - quora-bot
+    - scrapy
+    - timpibot
+    - turnitinbot
+    sha256: d3af0f20829c629cece41ae5d5ba36a7b9b64957ba60731072b4a61cc012a6fd

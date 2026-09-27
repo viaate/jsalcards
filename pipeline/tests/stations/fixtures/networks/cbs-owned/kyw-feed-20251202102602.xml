@@ -1,0 +1,213 @@
+<?xml version="1.0" encoding="ISO-8859-1"?>
+<File Time="12/02/2025 05:25am">
+<Closing>
+  <Name1>DANIEL BOONE AREA SCHOOL DISTRICT</Name1>
+  <Name2></Name2>
+  <Status>Opening 2 hours late</Status>
+  <Status2></Status2>
+  <StatusCode>2</StatusCode>
+  <EntityType>School</EntityType>
+  <EntityTypeCode>10</EntityTypeCode>
+  <City>BIRDSBORO</City>
+  <County>BERKS</County>
+  <State>PA</State>
+  <Group></Group>
+  <UpdateTime>12/01/2025 08:41pm</UpdateTime>
+  <ID>0894</ID>
+</Closing>
+<Closing>
+  <Name1>EAST PENN SCHOOL DISTRICT</Name1>
+  <Name2></Name2>
+  <Status>Closed</Status>
+  <Status2></Status2>
+  <StatusCode>1</StatusCode>
+  <EntityType>School</EntityType>
+  <EntityTypeCode>10</EntityTypeCode>
+  <City>EMMAUS, PA 18049</City>
+  <County>LEHIGH</County>
+  <State></State>
+  <Group></Group>
+  <UpdateTime>12/01/2025 08:58pm</UpdateTime>
+  <ID>0004</ID>
+</Closing>
+<Closing>
+  <Name1>EXETER TOWNSHIP SCHOOL DISTRICT</Name1>
+  <Name2></Name2>
+  <Status>Opening 2 Hours late</Status>
+  <Status2></Status2>
+  <StatusCode>2</StatusCode>
+  <EntityType>School</EntityType>
+  <EntityTypeCode>10</EntityTypeCode>
+  <City>READING PA 19606</City>
+  <County>BERKS</County>
+  <State></State>
+  <Group></Group>
+  <UpdateTime>12/02/2025 04:05am</UpdateTime>
+  <ID>0005</ID>
+</Closing>
+<Closing>
+  <Name1>Kutztown Area School District</Name1>
+  <Name2></Name2>
+  <Status>Opening 2 hours late</Status>
+  <Status2></Status2>
+  <StatusCode>2</StatusCode>
+  <EntityType>School</EntityType>
+  <EntityTypeCode>10</EntityTypeCode>
+  <City>Kutztown, PA 19530</City>
+  <County>BERKS</County>
+  <State></State>
+  <Group></Group>
+  <UpdateTime>12/01/2025 09:00pm</UpdateTime>
+  <ID>0007</ID>
+</Closing>
+<Closing>
+  <Name1>NAZARETH AREA SCHOOL DISTRICT</Name1>
+  <Name2></Name2>
+  <Status>Closed</Status>
+  <Status2></Status2>
+  <StatusCode>1</StatusCode>
+  <EntityType>School</EntityType>
+  <EntityTypeCode>10</EntityTypeCode>
+  <City></City>
+  <County>Northampton</County>
+  <State></State>
+  <Group></Group>
+  <UpdateTime>12/01/2025 09:14pm</UpdateTime>
+  <ID>0001</ID>
+</Closing>
+<Closing>
+  <Name1>NORTH PENN SCHOOL DISTRICT</Name1>
+  <Name2></Name2>
+  <Status>Opening 2 Hrs late</Status>
+  <Status2></Status2>
+  <StatusCode>2</StatusCode>
+  <EntityType>School</EntityType>
+  <EntityTypeCode>10</EntityTypeCode>
+  <City>LANSDALE</City>
+  <County>MONTGOMERY</County>
+  <State>PA</State>
+  <Group></Group>
+  <UpdateTime>12/02/2025 05:03am</UpdateTime>
+  <ID>0303</ID>
+</Closing>
+<Closing>
+  <Name1>PALISADES SCHOOL DISTRICT</Name1>
+  <Name2></Name2>
+  <Status>Opening 2 hours late</Status>
+  <Status2></Status2>
+  <StatusCode>2</StatusCode>
+  <EntityType>School</EntityType>
+  <EntityTypeCode>10</EntityTypeCode>
+  <City></City>
+  <County>BUCKS</County>
+  <State></State>
+  <Group></Group>
+  <UpdateTime>12/01/2025 09:02pm</UpdateTime>
+  <ID>0022</ID>
+</Closing>
+<Closing>
+  <Name1>PERKIOMEN VALLEY SCHOOL DISTRICT</Name1>
+  <Name2></Name2>
+  <Status>Opening 2 Hrs late</Status>
+  <Status2></Status2>
+  <StatusCode>2</StatusCode>
+  <EntityType>School</EntityType>
+  <EntityTypeCode>10</EntityTypeCode>
+  <City>COLLEGEVILLE</City>
+  <County>MONTGOMERY</County>
+  <State>PA</State>
+  <Group></Group>
+  <UpdateTime>12/02/2025 05:02am</UpdateTime>
+  <ID>0317</ID>
+</Closing>
+<Closing>
+  <Name1>POTTSGROVE SCHOOL DISTRICT</Name1>
+  <Name2></Name2>
+  <Status>Opening 2 hours late</Status>
+  <Status2></Status2>
+  <StatusCode>2</StatusCode>
+  <EntityType>School</EntityType>
+  <EntityTypeCode>10</EntityTypeCode>
+  <City>POTTSTOWN</City>
+  <County>MONTGOMERY</County>
+  <State>PA</State>
+  <Group></Group>
+  <UpdateTime>12/01/2025 09:04pm</UpdateTime>
+  <ID>0290</ID>
+</Closing>
+<Closing>
+  <Name1>QUAKERTOWN CHRISTIAN SCHOOL</Name1>
+  <Name2></Name2>
+  <Status>2 Hrs late</Status>
+  <Status2>No Before School Care</Status2>
+  <StatusCode>2</StatusCode>
+  <EntityType>School</EntityType>
+  <EntityTypeCode>10</EntityTypeCode>
+  <City>QUAKERTOWN</City>
+  <County>BUCKS</County>
+  <State>PA</State>
+  <Group></Group>
+  <UpdateTime>12/02/2025 03:30am</UpdateTime>
+  <ID>0746</ID>
+</Closing>
+<Closing>
+  <Name1>SPRING-FORD AREA SCHOOL DISTRICT</Name1>
+  <Name2></Name2>
+  <Status>Opening 2 Hours late</Status>
+  <Status2></Status2>
+  <StatusCode>2</StatusCode>
+  <EntityType>School</EntityType>
+  <EntityTypeCode>10</EntityTypeCode>
+  <City>ROYERSFORD</City>
+  <County>MONTGOMERY</County>
+  <State>PA</State>
+  <Group></Group>
+  <UpdateTime>12/02/2025 04:05am</UpdateTime>
+  <ID>0308</ID>
+</Closing>
+<Closing>
+  <Name1>UPPER PERKIOMEN SCHOOL DISTRICT</Name1>
+  <Name2></Name2>
+  <Status>Opening 2 Hours late</Status>
+  <Status2></Status2>
+  <StatusCode>2</StatusCode>
+  <EntityType>School</EntityType>
+  <EntityTypeCode>10</EntityTypeCode>
+  <City>PENNSBURG</City>
+  <County>MONTGOMERY</County>
+  <State>PA</State>
+  <Group></Group>
+  <UpdateTime>12/02/2025 04:05am</UpdateTime>
+  <ID>0282</ID>
+</Closing>
+<Closing>
+  <Name1>WESTERN MONTGOMERY CTC</Name1>
+  <Name2></Name2>
+  <Status>Opening 2 Hours late</Status>
+  <Status2></Status2>
+  <StatusCode>2</StatusCode>
+  <EntityType>School</EntityType>
+  <EntityTypeCode>10</EntityTypeCode>
+  <City>LIMERICK</City>
+  <County>MONTGOMERY</County>
+  <State>PA</State>
+  <Group></Group>
+  <UpdateTime>12/02/2025 04:05am</UpdateTime>
+  <ID>0327</ID>
+</Closing>
+<Closing>
+  <Name1>WYNDCROFT SCHOOL</Name1>
+  <Name2></Name2>
+  <Status>Delayed Opening</Status>
+  <Status2></Status2>
+  <StatusCode>5</StatusCode>
+  <EntityType>School</EntityType>
+  <EntityTypeCode>10</EntityTypeCode>
+  <City>POTTSTOWN</City>
+  <County>MONTGOMERY</County>
+  <State>PA</State>
+  <Group></Group>
+  <UpdateTime>12/01/2025 08:22pm</UpdateTime>
+  <ID>0772</ID>
+</Closing>
+</File>

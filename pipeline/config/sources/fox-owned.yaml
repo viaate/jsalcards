@@ -1,0 +1,903 @@
+# Station registry for one platform. Loaded with every other file in this folder
+# by snowlight.sources.stations.registry; see its docstring for the fields.
+# `snowlight stations robots --update` rewrites the robots blocks in place.
+platform:
+  id: fox-owned
+  name: FOX Television Stations closings pages and files
+  operator: Fox Television Stations, LLC (Fox Corporation)
+  adapter: fox-owned
+  poll_minutes: 10
+  terms:
+    automated_access: forbidden
+    summary: 'FOX station footers link the FOX LOCAL Terms of Use (https://www.foxlocal.com/terms-of-use,
+      "Last Revised: 08/21/2025"), which forbid copying, downloading, scraping, capturing, archiving,
+      framing or deep-linking any content except as the terms expressly permit, and furnish the services
+      for personal, non-commercial use. FOX station robots.txt files also disallow ia_archiver, archive.org_bot
+      and wayback for the whole site (first-hand check), so archived captures of FOX station pages may
+      be few; the media.foxtv.com list files are on another host whose robots.txt answered 403 (unrestricted
+      under RFC 9309). The project owner decided on 2026-09-25 to read the closings lists anyway for this
+      non-commercial project (owner_decision below); the terms stay recorded here.'
+    evidence:
+    - url: https://www.foxlocal.com/terms-of-use
+      read_at: '2026-09-27T01:26:00Z'
+      sha256: ee64d76c28c111580b08b1c56cdce2bd44ce862752c2748dac4006dcd94c5fc3
+      excerpt:
+      - 'TERMS OF USE Last Revised: 08/21/2025'
+      - Except as expressly permitted in these Terms of Use, you may not copy, download, stream, scrape,
+        capture, reproduce, duplicate, archive, upload, create derivative works from, modify, translate,
+        publish, broadcast, transmit, retransmit, distribute, perform, display, sell, frame, deep-link,
+        make available or otherwise use any Content contained in or accessible through the Fox Services.
+      - Fox furnishes the Fox Services for your personal, non-commercial use and enjoyment.
+    permission: null
+    owner_decision:
+      decided_by: the project owner (Snowlight)
+      decided_on: '2026-09-25'
+      reference: 'Stated in the build instructions for the station adapters (piece s4c1, round 1): "Terms
+        of use that forbid automated access do not exclude a station: the project owner decided on 2026-09-25
+        to read them for this non-commercial project, so record each station''s terms internally in the
+        registry and read it anyway." The same instructions record the owner''s decision of 2026-09-26
+        to read closings pages and data files even where robots.txt disallows them (naming CBS''s assets1.cbsnewsstatic.com
+        feeds as an example). Relayed to the pipeline''s builder by the project''s build workflow; to
+        revoke it, remove this block and live polling of this platform stops.'
+      scope: 'Live reads of this platform''s public closings lists (the station pages and the list files
+        or routes they load) for Snowlight, a non-commercial project, although the terms above forbid
+        automated access. robots.txt is read and its verdict recorded for every URL requested; the owner
+        decided on 2026-09-26 to read closings pages and files even where robots.txt disallows them. Unchanged
+        by it: the User-Agent names the repository (never a browser string), only the closings page or
+        file is requested (no crawling), requests are paced per host (any Crawl-delay is a floor) with
+        conditional requests and backoff on 429 and 5xx answers, and a station that blocks the project
+        (a 403, or a bot challenge) is not worked around.'
+  notes: 'Station list: Wikipedia ''Fox Television Stations'' currently-owned table, read 2026-09-26 by
+    the first-hand check (17 station groups, one per market site). Nine FOX-owned stations show a closings
+    list: each page frames a static file on media.foxtv.com (the live poller''s data_url; all nine answered
+    HTTP 200 on 2026-09-27, all empty). Three are NewsTicker HTML exports read in Gray''s format (WJBK,
+    WNYW, WTXF), two NewsTicker exports with one cell per row (KDFW, KCPQ), two the NewsTicker export
+    with a county menu (KMSP, WITI), WAGA''s the SC paragraph file and WTTG''s a table. Archived captures
+    (archive-captures run 36323195832) show each of these formats with rows (KDFW 348 on 9 January 2025,
+    WTXF 104 on 6 January 2025, WTTG 62 on 15 December 2022, WAGA 58, WNYW 34, KMSP 17, WITI 15, KCPQ
+    1), and runs 36345276947 and later added WJBK''s file with rows (640 on 26 February 2020, 471 on 15
+    January 2026), KCPQ''s (145 on 3 February 2025), KDFW''s (341 on 24 February 2022) and the earlier
+    paths of three files (kdfw/closings.html, wnyw/closings/closing.htm, witi/closings/index.html). The
+    pages framed files on other hosts before 2021-2022 (media2.fox5ny.com, www.fox5dc.org, media.fox9.com,
+    media.fox29.com, media2.fox2detroit.com, wagaradio2.com and others), registered as each station''s
+    list_files from the page captures that frame them; run 36355124151 read them (2014 to 2021) with the
+    same readers: WJBK''s with 819 rows on 30 January 2019 (media.fox2detroit.com) and 56 on 10 January
+    2017 (media2.fox2detroit.com), WTTG''s with 135 on 29 January 2014 (fox5dc.org), WNYW''s with 25 and
+    10 in 2016 (media2.fox5ny.com), WAGA''s with 153 and 165 in March 2020 (wagaradio2.com), KMSP''s with
+    141 in June 2020; WTXF''s and KMSP''s other earlier files were read empty, and WITI''s S3 file of
+    2016 to 2021 is a tabbed shell that loads each tab''s list from a file beside it (witi_schools.html
+    first, which listed 42 rows on 17 April 2020, run 36356138811). No closings page was found for KSAZ
+    (Phoenix), KTTV (Los Angeles), KTVU (San Francisco), WOFL (Orlando), WTVT (Tampa) or KTBC (Austin),
+    and KRIV (Houston) has a page with no list; FOX 32 Chicago (WFLD) frames the Emergency Closing Center
+    (platform ecc). Those eight have no endpoint of their own here.'
+  shared_paths: []
+stations:
+- id: fox-owned-wttg
+  platform: fox-owned
+  call_sign: WTTG
+  name: FOX 5 DC (fox5dc.com)
+  market: Washington DC
+  dma: Washington, DC - MD - PA - VA - WV DMA
+  states: [DC, MD, PA, VA, WV]
+  counties:
+    basis: dma
+    source: 'DMA county list: alex-patton/US-TVDMA-BY-COUNTY usa-tvdma-county.csv at commit 7f254b8c1843c62ec976a71c40d366d45f6f29cd
+      (sha256 2e2cd00265a8d704...), names resolved to FIPS with the Census 2025 county Gazetteer; Connecticut
+      via the Census county-to-town crosswalk (snowlight.sources.stations.dma); market ''Washington, DC
+      - MD - PA - VA - WV DMA''; plus 11001 (District of Columbia), for which that list has no row, placed
+      in this market by the second published list BritCrit/dma_county_zip dma_county_zip_data_set.csv
+      at commit 02f847923bd218c30a8c5488d561eca42ecf3614 (sha256 c931c30cef1b5d29...), used only for counties
+      the first list lacks (snowlight.sources.stations.dma.fill_missing)'
+    fips: ['11001', '24001', '24009', '24017', '24021', '24031', '24033', '24037', '24043', '42055', '42057',
+      '51013', '51043', '51047', '51059', '51061', '51069', '51099', '51107', '51139', '51153', '51157',
+      '51171', '51177', '51179', '51187', '51193', '51510', '51600', '51610', '51630', '51683', '51685',
+      '51840', '54003', '54023', '54027', '54031', '54037', '54057', '54065']
+  page_url: https://www.fox5dc.com/closings
+  data_url: https://media.foxtv.com/wttg/closings/closings.html
+  export_url: null
+  archive_urls:
+  - https://www.fox5dc.com/closings
+  - https://media.foxtv.com/wttg/closings/closings.html
+  - http://www.fox5dc.org/closings/closingsnt.html
+  - https://media.foxtv.com/wttg/public_html/closings/closingsnt.html
+  poll_minutes: null
+  status: active
+  evidence: 'First-hand check of 2026-09-26 (docs/research/firsthand/others.json, record WTTG/WDCA); closings
+    page https://www.fox5dc.com/closings frames https://media.foxtv.com/wttg/closings/closings.html. Live
+    read 2026-09-27: file 01:09:14Z HTTP 200 (450 bytes), ''THERE ARE CURRENTLY NO CLOSINGS OR CANCELLATIONS'',
+    timed ''September 26, 2026 9:05 pm EDT''; page 01:09:41Z frames it. Archive: 19 Wayback captures of
+    this station''s page or list file read (archive-captures runs 36323195832, 36345276947, 36348669505,
+    36353079096, 36355124151), from 2014-01-29 to 2026-07-02; 8 with rows, the most 135 on 2014-01-29
+    (https://web.archive.org/web/20140129114941/http://www.fox5dc.org/closings/closingsnt.html) (9 framing
+    or loading another file, 2 empty); variants fox-closings-table, fox-page-frame, gray-file-newsticker;
+    not downloaded: 1 TLS handshake timed out; fixtures fox-owned/wttg-file-20140129114941.html, fox-owned/wttg-file-20210107030146.html,
+    fox-owned/wttg-file-20221215074338.html, fox-owned/wttg-file-20250104184041.html.'
+  list_files:
+  - url: https://media.foxtv.com/wttg/closings/closings.html
+    loaded_by: frame
+    seen: the live page https://www.fox5dc.com/closings frames it (iframe src, read 2026-09-27)
+  - url: http://www.fox5dc.org/closings/closingsnt.html
+    loaded_by: frame
+    seen: Framed by 3 archived captures of the station's page from 2017-02-01 to 2019-02-17 (archive-captures
+      run 36323195832), for example https://web.archive.org/web/20190217173327/http://www.fox5dc.com/closings.
+  - url: https://media.foxtv.com/wttg/public_html/closings/closingsnt.html
+    loaded_by: frame
+    seen: Framed by 1 archived capture of the station's page from 2021-02-16 to 2021-02-16 (archive-captures
+      run 36323195832), for example https://web.archive.org/web/20210216020005/https://www.fox5dc.com/closings.
+  page_check: null
+  robots:
+  - url: https://www.fox5dc.com/closings
+    checked_at: '2026-09-27T01:31:06Z'
+    state: parsed
+    allowed: true
+    rule: no rule matches
+    crawl_delay: null
+    disallowed_agents:
+    - archive.org_bot
+    - gptbot
+    - ia_archiver
+    - wayback
+    sha256: ccc8b2a5a702c0f84945bab7978e305c954d626d0f3fb3492b7f7e389a4b4b1d
+  - url: https://media.foxtv.com/wttg/closings/closings.html
+    checked_at: '2026-09-27T01:31:06Z'
+    state: unavailable
+    allowed: true
+    rule: 'robots.txt unavailable (4xx): unrestricted'
+    crawl_delay: null
+    disallowed_agents: []
+    sha256: null
+- id: fox-owned-waga
+  platform: fox-owned
+  call_sign: WAGA
+  name: FOX 5 Atlanta (fox5atlanta.com)
+  market: Atlanta
+  dma: Atlanta, GA - AL - NC DMA
+  states: [AL, GA, NC]
+  counties:
+    basis: dma
+    source: 'DMA county list: alex-patton/US-TVDMA-BY-COUNTY usa-tvdma-county.csv at commit 7f254b8c1843c62ec976a71c40d366d45f6f29cd
+      (sha256 2e2cd00265a8d704...), names resolved to FIPS with the Census 2025 county Gazetteer; Connecticut
+      via the Census county-to-town crosswalk (snowlight.sources.stations.dma); market ''Atlanta, GA -
+      AL - NC DMA'''
+    fips: [01029, '01111', '13011', '13013', '13015', '13035', '13045', '13055', '13057', '13059', '13063',
+      '13067', '13077', '13085', '13089', '13097', '13113', '13115', '13117', '13121', '13123', '13129',
+      '13133', '13135', '13137', '13139', '13143', '13149', '13151', '13157', '13159', '13171', '13187',
+      '13195', '13199', '13211', '13217', '13219', '13221', '13223', '13227', '13231', '13233', '13237',
+      '13241', '13247', '13255', '13281', '13285', '13291', '13293', '13297', '13311', '37043']
+  page_url: https://www.fox5atlanta.com/closings
+  data_url: https://media.foxtv.com/waga/closings/closings.htm
+  export_url: null
+  archive_urls:
+  - https://www.fox5atlanta.com/closings
+  - https://media.foxtv.com/waga/closings/closings.htm
+  - http://wagaradio2.com/closings/closings.htm
+  poll_minutes: null
+  status: active
+  evidence: 'First-hand check of 2026-09-26 (docs/research/firsthand/others.json, record WAGA); closings
+    page https://www.fox5atlanta.com/closings frames https://media.foxtv.com/waga/closings/closings.htm.
+    Live read 2026-09-27: file 01:09:16Z HTTP 200 (66 bytes), ''Last Updated at 9:08am on 5/28/2026 <P>No
+    Closings Reported</P>'', Last-Modified Thu, 28 May 2026 13:08:45 GMT. Archive: 10 Wayback captures
+    of this station''s page or list file read (archive-captures runs 36323195832, 36345276947, 36348669505,
+    36355124151), from 2017-12-08 to 2026-02-01; 5 with rows, the most 165 on 2020-03-27 (https://web.archive.org/web/20200327091000/https://wagaradio2.com/closings/closings.htm)
+    (4 framing or loading another file, 1 empty); variants fox-page-frame, gray-file-sc-para; fixtures
+    fox-owned/waga-file-20200320191138.htm, fox-owned/waga-file-20250109162148.htm.'
+  list_files:
+  - url: https://media.foxtv.com/waga/closings/closings.htm
+    loaded_by: frame
+    seen: the live page https://www.fox5atlanta.com/closings frames it (iframe src, read 2026-09-27)
+  - url: http://wagaradio2.com/closings/closings.htm
+    loaded_by: frame
+    seen: Framed by 1 archived capture of the station's page from 2017-12-08 to 2017-12-08 (archive-captures
+      run 36323195832), for example https://web.archive.org/web/20171208015445/http://www.fox5atlanta.com/closings.
+  page_check: null
+  robots:
+  - url: https://www.fox5atlanta.com/closings
+    checked_at: '2026-09-27T01:31:04Z'
+    state: parsed
+    allowed: true
+    rule: no rule matches
+    crawl_delay: null
+    disallowed_agents:
+    - archive.org_bot
+    - gptbot
+    - ia_archiver
+    - wayback
+    sha256: a8e631ef4101f0a9e1fb9c288363db28ade2344ea0b748b8505731daf03c2d9a
+  - url: https://media.foxtv.com/waga/closings/closings.htm
+    checked_at: '2026-09-27T01:31:04Z'
+    state: unavailable
+    allowed: true
+    rule: 'robots.txt unavailable (4xx): unrestricted'
+    crawl_delay: null
+    disallowed_agents: []
+    sha256: null
+- id: fox-owned-wjbk
+  platform: fox-owned
+  call_sign: WJBK
+  name: FOX 2 Detroit (fox2detroit.com)
+  market: Detroit
+  dma: Detroit, MI DMA
+  states: [MI]
+  counties:
+    basis: dma
+    source: 'DMA county list: alex-patton/US-TVDMA-BY-COUNTY usa-tvdma-county.csv at commit 7f254b8c1843c62ec976a71c40d366d45f6f29cd
+      (sha256 2e2cd00265a8d704...), names resolved to FIPS with the Census 2025 county Gazetteer; Connecticut
+      via the Census county-to-town crosswalk (snowlight.sources.stations.dma); market ''Detroit, MI DMA'''
+    fips: ['26087', '26093', '26099', '26115', '26125', '26147', '26151', '26161', '26163']
+  page_url: https://www.fox2detroit.com/closings
+  data_url: https://media.foxtv.com/wjbk/closings/closings.html
+  export_url: null
+  archive_urls:
+  - https://www.fox2detroit.com/closings
+  - https://media.foxtv.com/wjbk/closings/closings.html
+  - https://media.fox2detroit.com/media.fox2detroit.com/closings/closings.html
+  - http://media2.fox2detroit.com/closings.html
+  poll_minutes: null
+  status: active
+  evidence: 'First-hand check of 2026-09-26 (docs/research/firsthand/others.json, record WJBK); closings
+    page https://www.fox2detroit.com/closings frames https://media.foxtv.com/wjbk/closings/closings.html.
+    Live read 2026-09-27: file 01:09:19Z HTTP 200 (619 bytes), ''There are no active records at this time.''
+    under ''UPDATED SATURDAY, SEP 26 AT 9:05 PM''; page 01:09:44Z frames it. Archive: 17 Wayback captures
+    of this station''s page or list file read (archive-captures runs 36323195832, 36345276947, 36355124151),
+    from 2017-01-10 to 2026-01-15; 7 with rows, the most 819 on 2019-01-30 (https://web.archive.org/web/20190130160627/http://media.fox2detroit.com/media.fox2detroit.com/closings/closings.html)
+    (8 framing or loading another file, 2 empty); variants fox-page-frame, gray-file-newsticker; fixtures
+    fox-owned/wjbk-file-20170110110218.html, fox-owned/wjbk-file-20200226090819.html, fox-owned/wjbk-file-20260115053713.html.'
+  list_files:
+  - url: https://media.foxtv.com/wjbk/closings/closings.html
+    loaded_by: frame
+    seen: the live page https://www.fox2detroit.com/closings frames it (iframe src, read 2026-09-27)
+  - url: https://media.fox2detroit.com/media.fox2detroit.com/closings/closings.html
+    loaded_by: frame
+    seen: Framed by 2 archived captures of the station's page from 2019-01-30 to 2019-11-12 (archive-captures
+      run 36323195832), for example https://web.archive.org/web/20191112060911/https://www.fox2detroit.com/closings.
+  - url: http://media2.fox2detroit.com/closings.html
+    loaded_by: frame
+    seen: Framed by 1 archived capture of the station's page from 2017-12-18 to 2017-12-18 (archive-captures
+      run 36323195832), for example https://web.archive.org/web/20171218002852/http://www.fox2detroit.com/closings.
+  page_check: null
+  robots:
+  - url: https://www.fox2detroit.com/closings
+    checked_at: '2026-09-27T01:31:05Z'
+    state: parsed
+    allowed: true
+    rule: no rule matches
+    crawl_delay: null
+    disallowed_agents:
+    - archive.org_bot
+    - gptbot
+    - ia_archiver
+    - wayback
+    sha256: 5618ed51b3b3578e510627831c1c6f57ae7f36290a9c27502e0b185d9c93746e
+  - url: https://media.foxtv.com/wjbk/closings/closings.html
+    checked_at: '2026-09-27T01:31:05Z'
+    state: unavailable
+    allowed: true
+    rule: 'robots.txt unavailable (4xx): unrestricted'
+    crawl_delay: null
+    disallowed_agents: []
+    sha256: null
+- id: fox-owned-kmsp
+  platform: fox-owned
+  call_sign: KMSP
+  name: FOX 9 Minneapolis-St. Paul (fox9.com)
+  market: Minneapolis-St. Paul
+  dma: Minneapolis - St. Paul, MN - WI DMA
+  states: [MN, WI]
+  counties:
+    basis: dma
+    source: 'DMA county list: alex-patton/US-TVDMA-BY-COUNTY usa-tvdma-county.csv at commit 7f254b8c1843c62ec976a71c40d366d45f6f29cd
+      (sha256 2e2cd00265a8d704...), names resolved to FIPS with the Census 2025 county Gazetteer; Connecticut
+      via the Census county-to-town crosswalk (snowlight.sources.stations.dma); market ''Minneapolis -
+      St. Paul, MN - WI DMA'''
+    fips: ['27003', '27007', '27009', '27011', '27019', '27021', '27023', '27025', '27033', '27035', '27037',
+      '27041', '27043', '27049', '27051', '27053', '27057', '27059', '27063', '27065', '27067', '27073',
+      '27079', '27083', '27085', '27093', '27095', '27097', '27103', '27115', '27121', '27123', '27127',
+      '27129', '27131', '27139', '27141', '27143', '27145', '27147', '27149', '27151', '27153', '27155',
+      '27157', '27159', '27161', '27163', '27171', '27173', '55005', '55013', '55033', '55091', '55093',
+      '55095', '55109']
+  page_url: https://www.fox9.com/school-closings
+  data_url: https://media.foxtv.com/kmsp/closings/closings.html
+  export_url: null
+  archive_urls:
+  - https://www.fox9.com/school-closings
+  - https://www.fox9.com/closings
+  - https://media.foxtv.com/kmsp/closings/closings.html
+  - https://media.fox9.com/media.fox9.com/weather/closings.html
+  - https://media.foxtv.com/kmsp/weather/closings/closings.html
+  - http://s3.amazonaws.com/media.fox9.com/weather/closings.html
+  poll_minutes: null
+  status: active
+  evidence: 'First-hand check of 2026-09-26 (docs/research/firsthand/others.json, record KMSP/WFTC); closings
+    page https://www.fox9.com/school-closings frames https://media.foxtv.com/kmsp/closings/closings.html.
+    Live read 2026-09-27: file 01:09:22Z HTTP 200 (1704 bytes), county-menu export, ''There are no closings
+    or cancellations at this time.''; page 01:09:48Z frames it (/closings redirects to /school-closings).
+    Archive: 19 Wayback captures of this station''s page or list file read (archive-captures runs 36323195832,
+    36345276947, 36348669505, 36355124151), from 2016-02-18 to 2026-01-23; 2 with rows, the most 141 on
+    2020-06-06 (https://web.archive.org/web/20200606141723/https://media.foxtv.com/kmsp/weather/closings/closings.html)
+    (10 framing or loading another file, 7 empty); variants fox-newsticker-county, fox-page-frame, gray-file-newsticker;
+    fixtures fox-owned/kmsp-file-20200606141723.html, fox-owned/kmsp-file-20240324220544.html, fox-owned/kmsp-page-20240324220543.html.'
+  list_files:
+  - url: https://media.foxtv.com/kmsp/closings/closings.html
+    loaded_by: frame
+    seen: the live page https://www.fox9.com/school-closings frames it (iframe src, read 2026-09-27)
+  - url: https://media.fox9.com/media.fox9.com/weather/closings.html
+    loaded_by: frame
+    seen: Framed by 1 archived capture of the station's page from 2019-09-21 to 2019-09-21 (archive-captures
+      run 36323195832), for example https://web.archive.org/web/20190921013906/https://www.fox9.com/school-closings.
+  - url: https://media.foxtv.com/kmsp/weather/closings/closings.html
+    loaded_by: frame
+    seen: Framed by 2 archived captures of the station's page from 2020-02-11 to 2020-12-18 (archive-captures
+      run 36323195832), for example https://web.archive.org/web/20201218003650/https://www.fox9.com/school-closings.
+  - url: http://s3.amazonaws.com/media.fox9.com/weather/closings.html
+    loaded_by: frame
+    seen: Framed by 1 archived capture of the station's page from 2016-02-18 to 2016-02-18 (archive-captures
+      run 36323195832), for example https://web.archive.org/web/20160218070258/http://www.fox9.com/closings.
+  page_check: null
+  robots:
+  - url: https://www.fox9.com/school-closings
+    checked_at: '2026-09-27T01:31:03Z'
+    state: parsed
+    allowed: true
+    rule: no rule matches
+    crawl_delay: null
+    disallowed_agents:
+    - archive.org_bot
+    - gptbot
+    - ia_archiver
+    - wayback
+    sha256: 126f6c5db9c16543efab6131020ffbe486119b81f82572f64fb39ea8650db814
+  - url: https://media.foxtv.com/kmsp/closings/closings.html
+    checked_at: '2026-09-27T01:31:03Z'
+    state: unavailable
+    allowed: true
+    rule: 'robots.txt unavailable (4xx): unrestricted'
+    crawl_delay: null
+    disallowed_agents: []
+    sha256: null
+- id: fox-owned-wnyw
+  platform: fox-owned
+  call_sign: WNYW
+  name: FOX 5 New York (fox5ny.com)
+  market: New York
+  dma: New York, NY - CT - NJ - PA DMA
+  states: [CT, NJ, NY, PA]
+  counties:
+    basis: dma
+    source: 'DMA county list: alex-patton/US-TVDMA-BY-COUNTY usa-tvdma-county.csv at commit 7f254b8c1843c62ec976a71c40d366d45f6f29cd
+      (sha256 2e2cd00265a8d704...), names resolved to FIPS with the Census 2025 county Gazetteer; Connecticut
+      via the Census county-to-town crosswalk (snowlight.sources.stations.dma); market ''New York, NY
+      - CT - NJ - PA DMA'''
+    fips: [09120, 09140, 09190, '34003', '34013', '34017', '34019', '34023', '34025', '34027', '34029',
+      '34031', '34035', '34037', '34039', '34041', '36005', '36027', '36047', '36059', '36061', '36071',
+      '36079', '36081', '36085', '36087', '36103', '36105', '36111', '36119', '42103']
+  page_url: https://www.fox5ny.com/closings
+  data_url: https://media.foxtv.com/wnyw/closings/closings.html
+  export_url: null
+  archive_urls:
+  - https://www.fox5ny.com/closings
+  - https://media.foxtv.com/wnyw/closings/closings.html
+  - https://media.foxtv.com/wnyw/closings/closing.htm
+  - https://media2.fox5ny.com/closings/closing.htm
+  poll_minutes: null
+  status: active
+  evidence: 'First-hand check of 2026-09-26 (docs/research/firsthand/others.json, record WNYW/WWOR); closings
+    page https://www.fox5ny.com/closings frames https://media.foxtv.com/wnyw/closings/closings.html. Live
+    read 2026-09-27: file 01:09:25Z HTTP 200 (619 bytes), ''There are no active records at this time.''.
+    Archive: 19 Wayback captures of this station''s page or list file read (archive-captures runs 36323195832,
+    36345276947, 36348669505, 36353079096, 36355124151), from 2016-01-25 to 2026-02-24; 6 with rows, the
+    most 95 on 2022-01-07 (https://web.archive.org/web/20220107170453/https://media.foxtv.com/wnyw/closings/closings.html)
+    (9 framing or loading another file, 4 empty); variants fox-page-frame, gray-file-newsticker; not downloaded:
+    1 TLS handshake timed out; fixtures fox-owned/wnyw-file-20160125231819.htm, fox-owned/wnyw-file-20210202093425.htm,
+    fox-owned/wnyw-file-20240214095401.html, fox-owned/wnyw-file-20260224001014.html, fox-owned/wnyw-page-20170216035831.html.'
+  list_files:
+  - url: https://media.foxtv.com/wnyw/closings/closings.html
+    loaded_by: frame
+    seen: the live page https://www.fox5ny.com/closings frames it (iframe src, read 2026-09-27)
+  - url: https://media.foxtv.com/wnyw/closings/closing.htm
+    loaded_by: frame
+    seen: Framed by 1 archived capture of the station's page from 2021-02-02 to 2021-02-02 (archive-captures
+      run 36323195832), for example https://web.archive.org/web/20210202083553/https://www.fox5ny.com/closings.
+  - url: https://media2.fox5ny.com/closings/closing.htm
+    loaded_by: frame
+    seen: Framed by 4 archived captures of the station's page from 2017-02-16 to 2019-12-03 (archive-captures
+      run 36323195832), for example https://web.archive.org/web/20191203111026/https://www.fox5ny.com/closings.
+  page_check: null
+  robots:
+  - url: https://www.fox5ny.com/closings
+    checked_at: '2026-09-27T01:31:06Z'
+    state: parsed
+    allowed: true
+    rule: no rule matches
+    crawl_delay: null
+    disallowed_agents:
+    - archive.org_bot
+    - gptbot
+    - ia_archiver
+    - wayback
+    sha256: 89d067e250c78e60e337974f1cfa2a912ae7e2b7f1b8db3157158f9894efd650
+  - url: https://media.foxtv.com/wnyw/closings/closings.html
+    checked_at: '2026-09-27T01:31:06Z'
+    state: unavailable
+    allowed: true
+    rule: 'robots.txt unavailable (4xx): unrestricted'
+    crawl_delay: null
+    disallowed_agents: []
+    sha256: null
+- id: fox-owned-wtxf
+  platform: fox-owned
+  call_sign: WTXF
+  name: FOX 29 Philadelphia (fox29.com)
+  market: Philadelphia
+  dma: Philadelphia, PA - DE - NJ DMA
+  states: [DE, NJ, PA]
+  counties:
+    basis: dma
+    source: 'DMA county list: alex-patton/US-TVDMA-BY-COUNTY usa-tvdma-county.csv at commit 7f254b8c1843c62ec976a71c40d366d45f6f29cd
+      (sha256 2e2cd00265a8d704...), names resolved to FIPS with the Census 2025 county Gazetteer; Connecticut
+      via the Census county-to-town crosswalk (snowlight.sources.stations.dma); market ''Philadelphia,
+      PA - DE - NJ DMA'''
+    fips: ['10001', '10003', '34001', '34005', '34007', '34009', '34011', '34015', '34021', '34033', '42011',
+      '42017', '42029', '42045', '42077', '42091', '42095', '42101']
+  page_url: https://www.fox29.com/closings
+  data_url: https://media.foxtv.com/wtxf/closings/closings.html
+  export_url: null
+  archive_urls:
+  - https://www.fox29.com/closings
+  - https://media.foxtv.com/wtxf/closings/closings.html
+  - https://media.fox29.com/media.fox29.com/weather/icons/closings.html
+  - https://media.foxtv.com/wtxf/feeds/closings.html
+  - http://s3.amazonaws.com/media.fox29.com/weather/icons/closings.html
+  poll_minutes: null
+  status: active
+  evidence: 'First-hand check of 2026-09-26 (docs/research/firsthand/others.json, record WTXF); closings
+    page https://www.fox29.com/closings frames https://media.foxtv.com/wtxf/closings/closings.html. Live
+    read 2026-09-27: file 01:09:28Z HTTP 200 (634 bytes), ''There are no active records at this time.''.
+    Archive: 19 Wayback captures of this station''s page or list file read (archive-captures runs 36323195832,
+    36345276947, 36348669505, 36355124151), from 2016-04-24 to 2026-02-26; 4 with rows, the most 160 on
+    2026-01-27 (https://web.archive.org/web/20260127025735/https://media.foxtv.com/wtxf/closings/closings.html)
+    (10 framing or loading another file, 5 empty); variants fox-page-frame, gray-file-newsticker; fixtures
+    fox-owned/wtxf-file-20191111225836.html, fox-owned/wtxf-file-20250106003941.html.'
+  list_files:
+  - url: https://media.foxtv.com/wtxf/closings/closings.html
+    loaded_by: frame
+    seen: the live page https://www.fox29.com/closings frames it (iframe src, read 2026-09-27)
+  - url: https://media.fox29.com/media.fox29.com/weather/icons/closings.html
+    loaded_by: frame
+    seen: Framed by 2 archived captures of the station's page from 2018-03-19 to 2019-02-12 (archive-captures
+      run 36323195832), for example https://web.archive.org/web/20190212002141/http://www.fox29.com/closings.
+  - url: https://media.foxtv.com/wtxf/feeds/closings.html
+    loaded_by: frame
+    seen: Framed by 2 archived captures of the station's page from 2019-12-12 to 2021-02-01 (archive-captures
+      run 36323195832), for example https://web.archive.org/web/20210201221859/https://www.fox29.com/closings.
+  - url: http://s3.amazonaws.com/media.fox29.com/weather/icons/closings.html
+    loaded_by: frame
+    seen: Framed by 1 archived capture of the station's page from 2017-02-16 to 2017-02-16 (archive-captures
+      run 36323195832), for example https://web.archive.org/web/20170216182402/http://www.fox29.com/closings.
+  page_check: null
+  robots:
+  - url: https://www.fox29.com/closings
+    checked_at: '2026-09-27T01:31:07Z'
+    state: parsed
+    allowed: true
+    rule: no rule matches
+    crawl_delay: null
+    disallowed_agents:
+    - archive.org_bot
+    - gptbot
+    - ia_archiver
+    - wayback
+    sha256: 7b57e411f8d516645b086c47b6b6b82c31cb4b1585732ffd0926a82856baf497
+  - url: https://media.foxtv.com/wtxf/closings/closings.html
+    checked_at: '2026-09-27T01:31:07Z'
+    state: unavailable
+    allowed: true
+    rule: 'robots.txt unavailable (4xx): unrestricted'
+    crawl_delay: null
+    disallowed_agents: []
+    sha256: null
+- id: fox-owned-kdfw
+  platform: fox-owned
+  call_sign: KDFW
+  name: FOX 4 Dallas-Fort Worth (fox4news.com)
+  market: Dallas-Fort Worth
+  dma: Dallas - Ft. Worth, TX DMA
+  states: [TX]
+  counties:
+    basis: dma
+    source: 'DMA county list: alex-patton/US-TVDMA-BY-COUNTY usa-tvdma-county.csv at commit 7f254b8c1843c62ec976a71c40d366d45f6f29cd
+      (sha256 2e2cd00265a8d704...), names resolved to FIPS with the Census 2025 county Gazetteer; Connecticut
+      via the Census county-to-town crosswalk (snowlight.sources.stations.dma); market ''Dallas - Ft.
+      Worth, TX DMA'''
+    fips: ['48001', '48035', '48085', '48093', '48097', '48113', '48119', '48121', '48139', '48143', '48147',
+      '48161', '48193', '48213', '48217', '48221', '48223', '48231', '48237', '48251', '48257', '48277',
+      '48337', '48349', '48363', '48367', '48379', '48397', '48425', '48439', '48467', '48497']
+  page_url: https://www.fox4news.com/closings
+  data_url: https://media.foxtv.com/kdfw/closings/closings.html
+  export_url: null
+  archive_urls:
+  - https://www.fox4news.com/closings
+  - https://media.foxtv.com/kdfw/closings/closings.html
+  - https://media.foxtv.com/kdfw/closings.html
+  poll_minutes: null
+  status: active
+  evidence: 'First-hand check of 2026-09-26 (docs/research/firsthand/others.json, record KDFW/KDFI); closings
+    page https://www.fox4news.com/closings frames https://media.foxtv.com/kdfw/closings/closings.html.
+    Live read 2026-09-27: file 01:09:31Z HTTP 200 (761 bytes), ''There are no active records at this time.''.
+    Archive: 14 Wayback captures of this station''s page or list file read (archive-captures runs 36323195832,
+    36345276947, 36348669505), from 2020-04-30 to 2026-01-23; 4 with rows, the most 411 on 2023-02-02
+    (https://web.archive.org/web/20230202034900/https://media.foxtv.com/kdfw/closings/closings.html) (7
+    framing or loading another file, 3 empty); variants fox-newsticker-cell, fox-page-frame, gray-file-newsticker;
+    fixtures fox-owned/kdfw-file-20201117052253.html, fox-owned/kdfw-file-20250109195953.html.'
+  list_files:
+  - url: https://media.foxtv.com/kdfw/closings/closings.html
+    loaded_by: frame
+    seen: the live page https://www.fox4news.com/closings frames it (iframe src, read 2026-09-27)
+  - url: https://media.foxtv.com/kdfw/closings.html
+    loaded_by: frame
+    seen: Framed by 1 archived capture of the station's page from 2021-02-15 to 2021-02-15 (archive-captures
+      run 36323195832), for example https://web.archive.org/web/20210215172221/https://www.fox4news.com/closings.
+  page_check: null
+  robots:
+  - url: https://www.fox4news.com/closings
+    checked_at: '2026-09-27T01:31:03Z'
+    state: parsed
+    allowed: true
+    rule: no rule matches
+    crawl_delay: null
+    disallowed_agents:
+    - archive.org_bot
+    - gptbot
+    - ia_archiver
+    - wayback
+    sha256: f287e6e12756911cfda176ce6b4577cad05ec7761aa3f3d740d086a69dfe7c49
+  - url: https://media.foxtv.com/kdfw/closings/closings.html
+    checked_at: '2026-09-27T01:31:03Z'
+    state: unavailable
+    allowed: true
+    rule: 'robots.txt unavailable (4xx): unrestricted'
+    crawl_delay: null
+    disallowed_agents: []
+    sha256: null
+- id: fox-owned-kcpq
+  platform: fox-owned
+  call_sign: KCPQ
+  name: FOX 13 Seattle (fox13seattle.com)
+  market: Seattle-Tacoma
+  dma: Seattle - Tacoma, WA DMA
+  states: [WA]
+  counties:
+    basis: dma
+    source: 'DMA county list: alex-patton/US-TVDMA-BY-COUNTY usa-tvdma-county.csv at commit 7f254b8c1843c62ec976a71c40d366d45f6f29cd
+      (sha256 2e2cd00265a8d704...), names resolved to FIPS with the Census 2025 county Gazetteer; Connecticut
+      via the Census county-to-town crosswalk (snowlight.sources.stations.dma); market ''Seattle - Tacoma,
+      WA DMA'''
+    fips: ['53007', '53009', '53017', '53027', '53029', '53031', '53033', '53035', '53041', '53045', '53049',
+      '53053', '53055', '53057', '53061', '53067', '53073']
+  page_url: https://www.fox13seattle.com/school-closures-and-delays
+  data_url: https://media.foxtv.com/kcpq/closings/closings.html
+  export_url: null
+  archive_urls:
+  - https://www.fox13seattle.com/school-closures-and-delays
+  - https://www.fox13seattle.com/closings
+  - https://www.q13fox.com/closings
+  - https://media.foxtv.com/kcpq/closings/closings.html
+  poll_minutes: null
+  status: active
+  evidence: 'First-hand check of 2026-09-26 (docs/research/firsthand/others.json, record KCPQ/KZJO); closings
+    page https://www.fox13seattle.com/school-closures-and-delays frames https://media.foxtv.com/kcpq/closings/closings.html.
+    Live read 2026-09-27: file 01:09:34Z HTTP 200 (761 bytes), ''There are no active records at this time.''
+    (/closings redirects to /school-closures-and-delays). Archive: 13 Wayback captures of this station''s
+    page or list file read (archive-captures runs 36323195832, 36345276947, 36348669505), from 2022-12-01
+    to 2026-03-14; 4 with rows, the most 145 on 2025-02-03 (https://web.archive.org/web/20250203153906/https://media.foxtv.com/kcpq/closings/closings.html)
+    (6 framing or loading another file, 3 empty); variants fox-newsticker-cell, fox-page-frame; fixtures
+    fox-owned/kcpq-file-20240101031234.html, fox-owned/kcpq-file-20260314152206.html.'
+  list_files:
+  - url: https://media.foxtv.com/kcpq/closings/closings.html
+    loaded_by: frame
+    seen: the live page https://www.fox13seattle.com/school-closures-and-delays frames it (iframe src,
+      read 2026-09-27)
+  page_check: null
+  robots:
+  - url: https://www.fox13seattle.com/school-closures-and-delays
+    checked_at: '2026-09-27T01:31:02Z'
+    state: parsed
+    allowed: true
+    rule: no rule matches
+    crawl_delay: null
+    disallowed_agents:
+    - archive.org_bot
+    - gptbot
+    - ia_archiver
+    - wayback
+    sha256: b50b23f054455df3e1410f3a787b5be66c7b966cb8ba2429bb71ef74b4c82afa
+  - url: https://media.foxtv.com/kcpq/closings/closings.html
+    checked_at: '2026-09-27T01:31:02Z'
+    state: unavailable
+    allowed: true
+    rule: 'robots.txt unavailable (4xx): unrestricted'
+    crawl_delay: null
+    disallowed_agents: []
+    sha256: null
+- id: fox-owned-witi
+  platform: fox-owned
+  call_sign: WITI
+  name: FOX 6 Milwaukee (fox6now.com)
+  market: Milwaukee
+  dma: Milwaukee, WI DMA
+  states: [WI]
+  counties:
+    basis: dma
+    source: 'DMA county list: alex-patton/US-TVDMA-BY-COUNTY usa-tvdma-county.csv at commit 7f254b8c1843c62ec976a71c40d366d45f6f29cd
+      (sha256 2e2cd00265a8d704...), names resolved to FIPS with the Census 2025 county Gazetteer; Connecticut
+      via the Census county-to-town crosswalk (snowlight.sources.stations.dma); market ''Milwaukee, WI
+      DMA'''
+    fips: ['55027', '55055', '55059', '55079', '55089', '55101', '55117', '55127', '55131', '55133']
+  page_url: https://www.fox6now.com/closings
+  data_url: https://media.foxtv.com/witi/closings/closings.html
+  export_url: null
+  archive_urls:
+  - https://www.fox6now.com/closings
+  - https://media.foxtv.com/witi/closings/closings.html
+  - https://fox6now.com/weather/closings/
+  - https://media.foxtv.com/witi/closings/index.html
+  - http://s3.amazonaws.com/witiclosings/witi.html
+  - https://s3.amazonaws.com/witiclosings/witi_schools.html
+  poll_minutes: null
+  status: active
+  evidence: 'First-hand check of 2026-09-26 (docs/research/firsthand/others.json, record WITI); closings
+    page https://www.fox6now.com/closings frames https://media.foxtv.com/witi/closings/closings.html.
+    Live read 2026-09-27: file 01:09:37Z HTTP 200 (1704 bytes), county-menu export, ''There are no closings
+    or cancellations at this time.''. Archive: 19 Wayback captures of this station''s page or list file
+    read (archive-captures runs 36323195832, 36345276947, 36355124151, 36356138811), from 2016-10-11 to
+    2026-03-17; 5 with rows, the most 42 on 2020-04-17 (https://web.archive.org/web/20200417063108/https://s3.amazonaws.com/witiclosings/witi_schools.html)
+    (8 framing or loading another file, 6 empty); variants fox-newsticker-county, fox-page-frame, fox-page-no-closings,
+    fox-page-protected-frame, fox-tab-list, fox-tab-shell; fixtures fox-owned/witi-file-20210125215204.html,
+    fox-owned/witi-file-20260119143852.html, fox-owned/witi-page-20161011140953.html, fox-owned/witi-page-20200730224123.html,
+    fox-owned/witi-shell-20200127113059.html, fox-owned/witi-tablist-20200417063108.html.'
+  list_files:
+  - url: https://media.foxtv.com/witi/closings/closings.html
+    loaded_by: frame
+    seen: the live page https://www.fox6now.com/closings frames it (iframe src, read 2026-09-27)
+  - url: https://media.foxtv.com/witi/closings/index.html
+    loaded_by: frame
+    seen: Framed by 1 archived capture of the station's page from 2020-12-30 to 2020-12-30 (archive-captures
+      run 36323195832), for example https://web.archive.org/web/20201230110106/https://www.fox6now.com/closings.
+  - url: http://s3.amazonaws.com/witiclosings/witi.html
+    loaded_by: frame
+    seen: Framed by 1 archived capture of the station's page from 2016-10-11 to 2016-10-11 (archive-captures
+      run 36323195832), for example https://web.archive.org/web/20161011140953/http://fox6now.com/weather/closings/.
+  - url: https://s3.amazonaws.com/witiclosings/witi_schools.html
+    loaded_by: script
+    seen: Loaded by the script of the tabbed shell http://s3.amazonaws.com/witiclosings/witi.html ($(
+      "#school_list" ).load( "witi_schools.html", ...)), in the 2 archived captures of the shell read
+      (2019-08-14 and 2020-01-27, archive-captures run 36355124151); the file's capture of 2020-04-17
+      (run 36356138811) lists 42 Milwaukee-area schools.
+  page_check: null
+  robots:
+  - url: https://www.fox6now.com/closings
+    checked_at: '2026-09-27T01:31:05Z'
+    state: parsed
+    allowed: true
+    rule: no rule matches
+    crawl_delay: null
+    disallowed_agents:
+    - archive.org_bot
+    - gptbot
+    - ia_archiver
+    - wayback
+    sha256: 0d5ea7dc8d5341c49c3fd1cea356e11c6c683d8de108f501b8e3b58b26d37a29
+  - url: https://media.foxtv.com/witi/closings/closings.html
+    checked_at: '2026-09-27T01:31:05Z'
+    state: unavailable
+    allowed: true
+    rule: 'robots.txt unavailable (4xx): unrestricted'
+    crawl_delay: null
+    disallowed_agents: []
+    sha256: null
+- id: fox-owned-ksaz
+  platform: fox-owned
+  call_sign: KSAZ
+  name: FOX 10 Phoenix (fox10phoenix.com)
+  market: Phoenix
+  dma: Phoenix, AZ DMA
+  states: [AZ]
+  counties:
+    basis: dma
+    source: 'DMA county list: alex-patton/US-TVDMA-BY-COUNTY usa-tvdma-county.csv at commit 7f254b8c1843c62ec976a71c40d366d45f6f29cd
+      (sha256 2e2cd00265a8d704...), names resolved to FIPS with the Census 2025 county Gazetteer; Connecticut
+      via the Census county-to-town crosswalk (snowlight.sources.stations.dma); market ''Phoenix, AZ DMA'''
+    fips: ['04005', '04007', 04009, '04011', '04012', '04013', '04015', '04017', '04021', '04025']
+  page_url: null
+  data_url: null
+  export_url: null
+  archive_urls: []
+  poll_minutes: null
+  status: no_endpoint
+  evidence: First-hand check of 2026-09-26 (docs/research/firsthand/others.json, record KSAZ/KUTP); /closings
+    and /school-closings both answered 404 and the home page's navigation has no closings link (checked
+    2026-09-26). No endpoint.
+  list_files: []
+  page_check: null
+  robots: []
+- id: fox-owned-kttv
+  platform: fox-owned
+  call_sign: KTTV
+  name: FOX 11 Los Angeles (foxla.com)
+  market: Los Angeles
+  dma: Los Angeles, CA DMA
+  states: [CA]
+  counties:
+    basis: dma
+    source: 'DMA county list: alex-patton/US-TVDMA-BY-COUNTY usa-tvdma-county.csv at commit 7f254b8c1843c62ec976a71c40d366d45f6f29cd
+      (sha256 2e2cd00265a8d704...), names resolved to FIPS with the Census 2025 county Gazetteer; Connecticut
+      via the Census county-to-town crosswalk (snowlight.sources.stations.dma); market ''Los Angeles,
+      CA DMA'''
+    fips: ['06027', '06037', 06059, '06071', '06111']
+  page_url: null
+  data_url: null
+  export_url: null
+  archive_urls: []
+  poll_minutes: null
+  status: no_endpoint
+  evidence: First-hand check of 2026-09-26 (docs/research/firsthand/others.json, record KTTV/KCOP); /closings
+    and /school-closings both answered 404 and the home page's navigation has no closings link (checked
+    2026-09-26). No endpoint.
+  list_files: []
+  page_check: null
+  robots: []
+- id: fox-owned-ktvu
+  platform: fox-owned
+  call_sign: KTVU
+  name: KTVU FOX 2 San Francisco (ktvu.com)
+  market: San Francisco-Oakland-San Jose
+  dma: San Francisco - Oakland - San Jose, CA DMA
+  states: [CA]
+  counties:
+    basis: dma
+    source: 'DMA county list: alex-patton/US-TVDMA-BY-COUNTY usa-tvdma-county.csv at commit 7f254b8c1843c62ec976a71c40d366d45f6f29cd
+      (sha256 2e2cd00265a8d704...), names resolved to FIPS with the Census 2025 county Gazetteer; Connecticut
+      via the Census county-to-town crosswalk (snowlight.sources.stations.dma); market ''San Francisco
+      - Oakland - San Jose, CA DMA'''
+    fips: ['06001', '06013', '06033', '06041', '06045', '06055', '06075', 06081, 06085, 06095, 06097]
+  page_url: null
+  data_url: null
+  export_url: null
+  archive_urls: []
+  poll_minutes: null
+  status: no_endpoint
+  evidence: First-hand check of 2026-09-26 (docs/research/firsthand/others.json, record KTVU/KICU); /closings
+    and /school-closings both answered 404 and the home page's navigation has no closings link (checked
+    2026-09-26). No endpoint.
+  list_files: []
+  page_check: null
+  robots: []
+- id: fox-owned-wofl
+  platform: fox-owned
+  call_sign: WOFL
+  name: FOX 35 Orlando (fox35orlando.com)
+  market: Orlando
+  dma: Orlando - Daytona Beach - Melbourne, FL DMA
+  states: [FL]
+  counties:
+    basis: dma
+    source: 'DMA county list: alex-patton/US-TVDMA-BY-COUNTY usa-tvdma-county.csv at commit 7f254b8c1843c62ec976a71c40d366d45f6f29cd
+      (sha256 2e2cd00265a8d704...), names resolved to FIPS with the Census 2025 county Gazetteer; Connecticut
+      via the Census county-to-town crosswalk (snowlight.sources.stations.dma); market ''Orlando - Daytona
+      Beach - Melbourne, FL DMA'''
+    fips: ['12009', '12035', '12069', '12083', '12095', '12097', '12117', '12119', '12127']
+  page_url: null
+  data_url: null
+  export_url: null
+  archive_urls: []
+  poll_minutes: null
+  status: no_endpoint
+  evidence: First-hand check of 2026-09-26 (docs/research/firsthand/others.json, record WOFL/WOGX); /closings
+    and /school-closings both answered 404 and the home page's navigation has no closings link (checked
+    2026-09-26). No endpoint.
+  list_files: []
+  page_check: null
+  robots: []
+- id: fox-owned-wtvt
+  platform: fox-owned
+  call_sign: WTVT
+  name: FOX 13 Tampa Bay (fox13news.com)
+  market: Tampa-St. Petersburg
+  dma: Tampa - St. Petersburg - Sarasota, FL DMA
+  states: [FL]
+  counties:
+    basis: dma
+    source: 'DMA county list: alex-patton/US-TVDMA-BY-COUNTY usa-tvdma-county.csv at commit 7f254b8c1843c62ec976a71c40d366d45f6f29cd
+      (sha256 2e2cd00265a8d704...), names resolved to FIPS with the Census 2025 county Gazetteer; Connecticut
+      via the Census county-to-town crosswalk (snowlight.sources.stations.dma); market ''Tampa - St. Petersburg
+      - Sarasota, FL DMA'''
+    fips: ['12017', '12049', '12053', '12055', '12057', '12081', '12101', '12103', '12105', '12115']
+  page_url: null
+  data_url: null
+  export_url: null
+  archive_urls: []
+  poll_minutes: null
+  status: no_endpoint
+  evidence: First-hand check of 2026-09-26 (docs/research/firsthand/others.json, record WTVT); /closings
+    and /school-closings both answered 404 and the home page's navigation has no closings link (checked
+    2026-09-26). No endpoint.
+  list_files: []
+  page_check: null
+  robots: []
+- id: fox-owned-ktbc
+  platform: fox-owned
+  call_sign: KTBC
+  name: FOX 7 Austin (fox7austin.com)
+  market: Austin
+  dma: Austin, TX DMA
+  states: [TX]
+  counties:
+    basis: dma
+    source: 'DMA county list: alex-patton/US-TVDMA-BY-COUNTY usa-tvdma-county.csv at commit 7f254b8c1843c62ec976a71c40d366d45f6f29cd
+      (sha256 2e2cd00265a8d704...), names resolved to FIPS with the Census 2025 county Gazetteer; Connecticut
+      via the Census county-to-town crosswalk (snowlight.sources.stations.dma); market ''Austin, TX DMA'''
+    fips: ['48021', '48031', '48053', '48055', '48149', '48209', '48287', '48299', '48319', '48453', '48491']
+  page_url: null
+  data_url: null
+  export_url: null
+  archive_urls: []
+  poll_minutes: null
+  status: no_endpoint
+  evidence: First-hand check of 2026-09-26 (docs/research/firsthand/others.json, record KTBC); /closings
+    and /school-closings both answered 404 and the home page's navigation has no closings link (checked
+    2026-09-26). No endpoint.
+  list_files: []
+  page_check: null
+  robots: []
+- id: fox-owned-kriv
+  platform: fox-owned
+  call_sign: KRIV
+  name: FOX 26 Houston (fox26houston.com)
+  market: Houston
+  dma: Houston, TX DMA
+  states: [TX]
+  counties:
+    basis: dma
+    source: 'DMA county list: alex-patton/US-TVDMA-BY-COUNTY usa-tvdma-county.csv at commit 7f254b8c1843c62ec976a71c40d366d45f6f29cd
+      (sha256 2e2cd00265a8d704...), names resolved to FIPS with the Census 2025 county Gazetteer; Connecticut
+      via the Census county-to-town crosswalk (snowlight.sources.stations.dma); market ''Houston, TX DMA'''
+    fips: ['48015', '48039', '48057', '48071', '48089', '48157', '48167', '48185', '48201', '48239', '48291',
+      '48321', '48339', '48373', '48407', '48471', '48473', '48477', '48481']
+  page_url: null
+  data_url: null
+  export_url: null
+  archive_urls: []
+  poll_minutes: null
+  status: no_endpoint
+  evidence: 'First-hand check of 2026-09-26 (docs/research/firsthand/others.json, record KRIV/KTXH); /closings
+    answered 404; https://www.fox26houston.com/school-closings answered 200 with an introduction and stories
+    but no frame or list (checked 2026-09-26, re-read 2026-09-27 01:09:52Z: no closings frame). No endpoint.'
+  list_files: []
+  page_check: null
+  robots: []
+- id: fox-owned-wfld
+  platform: fox-owned
+  call_sign: WFLD
+  name: FOX 32 Chicago (fox32chicago.com)
+  market: Chicago
+  dma: Chicago, IL - IN DMA
+  states: [IL, IN]
+  counties:
+    basis: dma
+    source: 'DMA county list: alex-patton/US-TVDMA-BY-COUNTY usa-tvdma-county.csv at commit 7f254b8c1843c62ec976a71c40d366d45f6f29cd
+      (sha256 2e2cd00265a8d704...), names resolved to FIPS with the Census 2025 county Gazetteer; Connecticut
+      via the Census county-to-town crosswalk (snowlight.sources.stations.dma); market ''Chicago, IL -
+      IN DMA'''
+    fips: ['17031', '17037', '17043', '17063', '17089', '17091', '17093', '17097', '17099', '17111', '17197',
+      '18073', '18089', '18091', '18111', '18127']
+  page_url: null
+  data_url: null
+  export_url: null
+  archive_urls: []
+  poll_minutes: null
+  status: no_endpoint
+  evidence: 'First-hand check of 2026-09-26 (docs/research/firsthand/others.json, record WFLD/WPWR); https://www.fox32chicago.com/school-closings
+    frames https://wgnr-closings.emergencyclosingcenter.com/index.html, the Emergency Closing Center application:
+    FOX 32''s list is the ECC''s, read once as ecc-chicago. No endpoint.'
+  list_files: []
+  page_check: null
+  robots: []

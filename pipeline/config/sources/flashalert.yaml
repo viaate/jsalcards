@@ -1,0 +1,581 @@
+# Station registry for one platform. Loaded with every other file in this folder
+# by snowlight.sources.stations.registry; see its docstring for the fields.
+# `snowlight stations robots --update` rewrites the robots blocks in place.
+platform:
+  id: flashalert
+  name: FlashAlert Newswire regional closings reports
+  operator: FlashAlert Newswire (irx, LLC)
+  adapter: flashalert
+  poll_minutes: 15
+  terms:
+    automated_access: permitted
+    summary: FlashAlert's feed page (https://www.flashalert.net/xml-feeds.html) says it does not allow
+      hotlinking, but that it "is acceptable for stations to periodically pull reports from FlashAlert
+      (every 5 to 15 minutes) if FTP is not available" provided the information is cached and re-displayed
+      rather than linked or framed; its Privacy Policy & Terms of Service page has no clause on automated
+      access. The pipeline pulls each region's report every 15 minutes, keeps what it reads, and never
+      links or frames FlashAlert's pages. The permission is written for stations; Snowlight is not one,
+      which is recorded here.
+    evidence:
+    - url: https://www.flashalert.net/xml-feeds.html
+      read_at: '2026-09-27T01:27:46Z'
+      sha256: 870b682bbf46ea8ba56cc9aede5aaee998275ade374ecaa8b9303da7091d1f6f
+      excerpt:
+      - 'Important: FlashAlert does not allow "hotlinking" to its site. It is acceptable for stations
+        to periodically pull reports from FlashAlert (every 5 to 15 minutes) if FTP is not available;
+        however you need to cache and re-display this information to your site visitors instead of sending
+        them directly to our servers via hot-linking or iframing FlashAlert report pages.'
+      - Region Codes 1 Portland/Vancouver/Salem 2 Eugene/Springfield/Roseburg/Albany/Corvallis 5 Colorado
+        Springs/Rocky Mountain Area 7 Spokane/Eastern Washington/Northern Idaho 10 Bend/Central Oregon/Eastern
+        Oregon 12 Seattle/Western Washington 13 Columbia/Tri Cities/Pendleton/Yakima 15 Boise/Southern
+        Idaho 25 Medford/Klamath Falls/Grants Pass
+    - url: https://www.flashalert.net/privacy-terms
+      read_at: '2026-09-27T01:27:50Z'
+      sha256: c73ad5d791a0ab64379a0adcf5095c4a50de41c1af04facb2b021023262c3659
+      excerpt:
+      - Privacy Policy & Terms of Service - FlashAlert
+      - (no clause on robots, scraping, crawling or automated access was found in the page's text)
+    permission: null
+    owner_decision: null
+  notes: 'FlashAlert Newswire (irx, LLC) serves nine regions, each named by a RegionID on its feed page;
+    every region is registered. The live poller reads each region''s HTML report (cwc-closures.php?RegionID=N,
+    the report stations frame or receive by FTP), every 15 minutes; the emergency-only XML feed (flashnews_xml_emergency.php?RegionID=N)
+    is an archive URL too, read with the same adapter. A region''s report carries every emergency posting
+    of the region (roads and offices as well as schools; the XML marks school postings with schoolrelated="1").
+    Counties: each region is mapped to the one Nielsen market its name leads with (Portland, Eugene, Colorado
+    Springs-Pueblo, Spokane, Bend, Seattle-Tacoma, Yakima-Pasco-Richland-Kennewick for ''Columbia/Tri
+    Cities/Pendleton/Yakima'', Boise, Medford-Klamath Falls); the other places a region''s name adds (''Eastern
+    Oregon'', ''Southern Idaho'', ''Rocky Mountain Area'') are not given counties, since no published
+    list says which. Pages: FlashAlert runs a public site for eight regions (flashalertportland.net, flashalerteugene.net,
+    flashalertmedford.net, flashalertbend.net, flashalertboise.net, flashalertseattle.net, flashalertspokane.net,
+    flashalertcolumbia.net) whose emergency reports page (closures-cats.html; by time and by message at
+    closures-time.html and closures-report.html) shows the region''s postings: it is each of those regions''
+    page_url, except region 1, whose page_url is the report address with no region, which answers region
+    1''s report (the same bytes as RegionID=1, read live 2026-09-27). Colorado Springs (region 5) has
+    no site. Archive: the Wayback Machine holds the report address for regions 10 and 13 and with no region
+    (16 captures, 2017 to 2026, CDX run 36311251817: region 1''s report, with rows on 11 December 2024,
+    14 to 16 January, 5 February and 14 February 2025, 26 postings that day, schools among them); requests
+    for the other regions'' report addresses answered 404. The regional sites are archived from 2014 on
+    (CDX runs 36345716195 and 36348669505): Eugene''s page listed 43 postings on 28 February 2019, 16
+    of them Lane County schools, Seattle''s 232 on 6 February 2017, Columbia''s 44 on 11 February 2019,
+    Medford''s 8 on 5 January 2017 (5 of them under school categories), Portland''s 296 on 23 February
+    2023, Bend''s one or two road or office postings (2015 to 2024); every one of the 16 region-less report
+    captures carries region 1''s header; Region 13''s own reports held rows in January 2017, February
+    2019 and March 2020. robots.txt answered 404 (unrestricted) on www.flashalertnewswire.net and on every
+    regional site.'
+  shared_paths: []
+stations:
+- id: flashalert-portland
+  platform: flashalert
+  call_sign: FLASH-1
+  name: FlashAlert Portland/Vancouver/Salem (RegionID 1)
+  market: Portland, OR
+  dma: Portland, OR - WA DMA
+  states: [OR, WA]
+  counties:
+    basis: dma
+    source: 'DMA county list: alex-patton/US-TVDMA-BY-COUNTY usa-tvdma-county.csv at commit 7f254b8c1843c62ec976a71c40d366d45f6f29cd
+      (sha256 2e2cd00265a8d704...), names resolved to FIPS with the Census 2025 county Gazetteer; Connecticut
+      via the Census county-to-town crosswalk (snowlight.sources.stations.dma); market ''Portland, OR
+      - WA DMA'''
+    fips: ['41001', '41005', '41007', '41009', '41013', '41021', '41025', '41027', '41031', '41041', '41043',
+      '41047', '41051', '41053', '41055', '41057', '41061', '41065', '41067', '41069', '41071', '53011',
+      '53015', '53039', '53059', '53069']
+  page_url: https://www.flashalertnewswire.net/IIN/reportsX/cwc-closures.php
+  data_url: https://www.flashalertnewswire.net/IIN/reportsX/cwc-closures.php?RegionID=1
+  export_url: null
+  archive_urls:
+  - https://www.flashalertnewswire.net/IIN/reportsX/cwc-closures.php?RegionID=1
+  - https://www.flashalertnewswire.net/IIN/reportsX/cwc-closures.php?RegionID=1&Testing=0
+  - https://www.flashalertnewswire.net/IIN/reportsX/flashnews_xml_emergency.php?RegionID=1
+  - https://www.flashalertnewswire.net/IIN/reportsX/cwc-closures.php
+  - https://www.flashalertportland.net/closures-cats.html
+  - https://www.flashalertportland.net/closures-time.html
+  - https://www.flashalertportland.net/closures-report.html
+  poll_minutes: null
+  status: active
+  evidence: 'First-hand check of 2026-09-26 (docs/research/firsthand/others.json, record FlashAlert cwc-closures);
+    region 1 (Portland/Vancouver/Salem) on FlashAlert''s feed page. Live read 2026-09-27 01:12:03Z: HTTP
+    200, ''No information reported.'' (empty); its emergency XML feed https://www.flashalertnewswire.net/IIN/reportsX/flashnews_xml_emergency.php?RegionID=1
+    answered an empty <emergency> element 3 s later. County basis: the ''Portland, OR - WA DMA'' market,
+    the one market the region''s name leads with (see the platform notes). Archive: 19 Wayback captures
+    of this station''s page or list file read (archive-captures runs 36345276947, 36353079096), from 2016-12-08
+    to 2026-02-14; 8 with rows, the most 296 on 2023-02-23 (https://web.archive.org/web/20230223230724/http://www.flashalertportland.net/closures-cats.html)
+    (11 empty); variants flashalert-site-page, gray-file-flashalert; not downloaded: 10 not reached before
+    the run''s time budget, 10 not in the archive (404), 1 TLS handshake timed out; fixtures flashalert/portland-bare-20171112213709.html,
+    flashalert/portland-bare-20241211185820.html, flashalert/portland-bare-20250206025348.html, flashalert/portland-bare-20250215044644.html,
+    flashalert/portland-site-20230223230724.html. Page: the report address with no region, https://www.flashalertnewswire.net/IIN/reportsX/cwc-closures.php,
+    answers region 1''s report: read live 2026-09-27 19:43:37Z it returned the same bytes as the RegionID=1
+    address 5 s later (sha256 6a9b05dc..., header ''Portland/Vanc/Salem Emergency Info'', one ODOT road
+    posting; fixtures flashalert/portland-bare-live-20260927194337.html and flashalert/portland-report-live-20260927194342.html),
+    and every archived capture of it read carries that header, so it is this station''s page_url. FlashAlert''s
+    Portland regional site (flashalertportland.net/closures-*.html) is an archive URL too. KPTV''s FTP
+    copies of region 1''s report (Gray platform; fixtures flashalert/kptv-copy-20200317023000.html and
+    flashalert/kptv-copy-20240115042338.html, 22 and 23 rows) show the same report.'
+  list_files: []
+  page_check: null
+  robots:
+  - url: https://www.flashalertnewswire.net/IIN/reportsX/cwc-closures.php
+    checked_at: '2026-09-27T19:42:54Z'
+    state: unavailable
+    allowed: true
+    rule: 'robots.txt unavailable (4xx): unrestricted'
+    crawl_delay: null
+    disallowed_agents: []
+    sha256: null
+  - url: https://www.flashalertnewswire.net/IIN/reportsX/cwc-closures.php?RegionID=1
+    checked_at: '2026-09-27T19:42:54Z'
+    state: unavailable
+    allowed: true
+    rule: 'robots.txt unavailable (4xx): unrestricted'
+    crawl_delay: null
+    disallowed_agents: []
+    sha256: null
+- id: flashalert-eugene
+  platform: flashalert
+  call_sign: FLASH-2
+  name: FlashAlert Eugene/Springfield/Roseburg/Albany/Corvallis (RegionID 2)
+  market: Eugene, OR
+  dma: Eugene, OR DMA
+  states: [OR]
+  counties:
+    basis: dma
+    source: 'DMA county list: alex-patton/US-TVDMA-BY-COUNTY usa-tvdma-county.csv at commit 7f254b8c1843c62ec976a71c40d366d45f6f29cd
+      (sha256 2e2cd00265a8d704...), names resolved to FIPS with the Census 2025 county Gazetteer; Connecticut
+      via the Census county-to-town crosswalk (snowlight.sources.stations.dma); market ''Eugene, OR DMA'''
+    fips: ['41003', '41011', '41019', '41039']
+  page_url: https://www.flashalerteugene.net/closures-cats.html
+  data_url: https://www.flashalertnewswire.net/IIN/reportsX/cwc-closures.php?RegionID=2
+  export_url: null
+  archive_urls:
+  - https://www.flashalertnewswire.net/IIN/reportsX/cwc-closures.php?RegionID=2
+  - https://www.flashalertnewswire.net/IIN/reportsX/cwc-closures.php?RegionID=2&Testing=0
+  - https://www.flashalertnewswire.net/IIN/reportsX/flashnews_xml_emergency.php?RegionID=2
+  - https://www.flashalerteugene.net/closures-cats.html
+  - https://www.flashalerteugene.net/closures-time.html
+  - https://www.flashalerteugene.net/closures-report.html
+  poll_minutes: null
+  status: active
+  evidence: 'First-hand check of 2026-09-26 (docs/research/firsthand/others.json, record FlashAlert cwc-closures);
+    region 2 (Eugene/Springfield/Roseburg/Albany/Corvallis) on FlashAlert''s feed page. Live read 2026-09-27
+    01:12:08Z: HTTP 200, ''No information reported.'' (empty); its emergency XML feed https://www.flashalertnewswire.net/IIN/reportsX/flashnews_xml_emergency.php?RegionID=2
+    answered an empty <emergency> element 3 s later. County basis: the ''Eugene, OR DMA'' market, the
+    one market the region''s name leads with (see the platform notes). Archive: 10 Wayback captures of
+    this station''s page or list file read (archive-captures runs 36348669505), from 2015-02-13 to 2025-11-18;
+    10 with rows, the most 43 on 2019-02-28 (https://web.archive.org/web/20190228093212/http://flashalerteugene.net:80/closures-time.html);
+    variants flashalert-site-page; not downloaded: 10 not in the archive (404), 1 TLS handshake timed
+    out; fixtures flashalert/eugene-site-20180226132826.html, flashalert/eugene-site-20190228093207.html,
+    flashalert/eugene-site-20190228093212.html, flashalert/eugene-site-20200318051145.html. Page: FlashAlert''s
+    own regional site, https://www.flashalerteugene.net/closures-cats.html (the region''s emergency reports
+    sorted by category; closures-time.html and closures-report.html show the same postings by time and
+    by message, and are archive URLs), read live 2026-09-27 21:28Z: empty (''There are no emergency messages
+    to display currently.'').'
+  list_files: []
+  page_check: null
+  robots:
+  - url: https://www.flashalerteugene.net/closures-cats.html
+    checked_at: '2026-09-27T21:49:14Z'
+    state: unavailable
+    allowed: true
+    rule: 'robots.txt unavailable (4xx): unrestricted'
+    crawl_delay: null
+    disallowed_agents: []
+    sha256: null
+  - url: https://www.flashalertnewswire.net/IIN/reportsX/cwc-closures.php?RegionID=2
+    checked_at: '2026-09-27T21:49:14Z'
+    state: unavailable
+    allowed: true
+    rule: 'robots.txt unavailable (4xx): unrestricted'
+    crawl_delay: null
+    disallowed_agents: []
+    sha256: null
+- id: flashalert-colorado-springs
+  platform: flashalert
+  call_sign: FLASH-5
+  name: FlashAlert Colorado Springs/Rocky Mountain Area (RegionID 5)
+  market: Colorado Springs-Pueblo
+  dma: Colorado Springs - Pueblo, CO DMA
+  states: [CO]
+  counties:
+    basis: dma
+    source: 'DMA county list: alex-patton/US-TVDMA-BY-COUNTY usa-tvdma-county.csv at commit 7f254b8c1843c62ec976a71c40d366d45f6f29cd
+      (sha256 2e2cd00265a8d704...), names resolved to FIPS with the Census 2025 county Gazetteer; Connecticut
+      via the Census county-to-town crosswalk (snowlight.sources.stations.dma); market ''Colorado Springs
+      - Pueblo, CO DMA'''
+    fips: [08009, 08011, 08017, 08025, 08041, 08043, 08055, 08061, 08071, 08089, 08101, 08119]
+  page_url: null
+  data_url: https://www.flashalertnewswire.net/IIN/reportsX/cwc-closures.php?RegionID=5
+  export_url: null
+  archive_urls:
+  - https://www.flashalertnewswire.net/IIN/reportsX/cwc-closures.php?RegionID=5
+  - https://www.flashalertnewswire.net/IIN/reportsX/cwc-closures.php?RegionID=5&Testing=0
+  - https://www.flashalertnewswire.net/IIN/reportsX/flashnews_xml_emergency.php?RegionID=5
+  poll_minutes: null
+  status: active
+  evidence: 'First-hand check of 2026-09-26 (docs/research/firsthand/others.json, record FlashAlert cwc-closures);
+    region 5 (Colorado Springs/Rocky Mountain Area) on FlashAlert''s feed page. Live read 2026-09-27 01:12:14Z:
+    HTTP 200, ''No information reported.'' (empty); its emergency XML feed https://www.flashalertnewswire.net/IIN/reportsX/flashnews_xml_emergency.php?RegionID=5
+    answered an empty <emergency> element 3 s later. County basis: the ''Colorado Springs - Pueblo, CO
+    DMA'' market, the one market the region''s name leads with (see the platform notes). Archive: 1 Wayback
+    capture of this station''s page or list file read (archive-captures runs 36293423860), from 2011-12-08
+    to 2011-12-08; none held a row (1 empty); variants gray-file-flashalert; not downloaded: 2 TLS handshake
+    timed out; fixtures flashalert/colorado-springs-report-20111208041507.html.'
+  list_files: []
+  page_check: null
+  robots:
+  - url: https://www.flashalertnewswire.net/IIN/reportsX/cwc-closures.php?RegionID=5
+    checked_at: '2026-09-27T01:31:01Z'
+    state: unavailable
+    allowed: true
+    rule: 'robots.txt unavailable (4xx): unrestricted'
+    crawl_delay: null
+    disallowed_agents: []
+    sha256: null
+- id: flashalert-spokane
+  platform: flashalert
+  call_sign: FLASH-7
+  name: FlashAlert Spokane/Eastern Washington/Northern Idaho (RegionID 7)
+  market: Spokane
+  dma: Spokane, WA - ID - MT - OR DMA
+  states: [ID, MT, OR, WA]
+  counties:
+    basis: dma
+    source: 'DMA county list: alex-patton/US-TVDMA-BY-COUNTY usa-tvdma-county.csv at commit 7f254b8c1843c62ec976a71c40d366d45f6f29cd
+      (sha256 2e2cd00265a8d704...), names resolved to FIPS with the Census 2025 county Gazetteer; Connecticut
+      via the Census county-to-town crosswalk (snowlight.sources.stations.dma); market ''Spokane, WA -
+      ID - MT - OR DMA'''
+    fips: ['16009', '16017', '16021', '16035', '16049', '16055', '16057', '16061', '16069', '16079', '30053',
+      '41063', '53001', '53003', '53013', '53019', '53023', '53025', '53043', '53047', '53051', '53063',
+      '53065', '53075']
+  page_url: https://www.flashalertspokane.net/closures-cats.html
+  data_url: https://www.flashalertnewswire.net/IIN/reportsX/cwc-closures.php?RegionID=7
+  export_url: null
+  archive_urls:
+  - https://www.flashalertnewswire.net/IIN/reportsX/cwc-closures.php?RegionID=7
+  - https://www.flashalertnewswire.net/IIN/reportsX/cwc-closures.php?RegionID=7&Testing=0
+  - https://www.flashalertnewswire.net/IIN/reportsX/flashnews_xml_emergency.php?RegionID=7
+  - https://www.flashalertspokane.net/closures-cats.html
+  - https://www.flashalertspokane.net/closures-time.html
+  - https://www.flashalertspokane.net/closures-report.html
+  poll_minutes: null
+  status: active
+  evidence: 'First-hand check of 2026-09-26 (docs/research/firsthand/others.json, record FlashAlert cwc-closures);
+    region 7 (Spokane/Eastern Washington/Northern Idaho) on FlashAlert''s feed page. Live read 2026-09-27
+    01:12:20Z: HTTP 200, ''No information reported.'' (empty); its emergency XML feed https://www.flashalertnewswire.net/IIN/reportsX/flashnews_xml_emergency.php?RegionID=7
+    answered an empty <emergency> element 3 s later. County basis: the ''Spokane, WA - ID - MT - OR DMA''
+    market, the one market the region''s name leads with (see the platform notes). Archive: 3 Wayback
+    captures of this station''s page or list file read (archive-captures runs 36348669505), from 2021-12-08
+    to 2026-03-10; none held a row (3 empty); variants flashalert-site-page; not downloaded: 10 not reached
+    before the run''s time budget, 10 not in the archive (404), 1 TLS handshake timed out; fixtures flashalert/spokane-site-20260208072611.html.
+    Page: FlashAlert''s own regional site, https://www.flashalertspokane.net/closures-cats.html (the region''s
+    emergency reports sorted by category; closures-time.html and closures-report.html show the same postings
+    by time and by message, and are archive URLs), read live 2026-09-27 21:28Z: empty.'
+  list_files: []
+  page_check: null
+  robots:
+  - url: https://www.flashalertspokane.net/closures-cats.html
+    checked_at: '2026-09-27T21:49:15Z'
+    state: unavailable
+    allowed: true
+    rule: 'robots.txt unavailable (4xx): unrestricted'
+    crawl_delay: null
+    disallowed_agents: []
+    sha256: null
+  - url: https://www.flashalertnewswire.net/IIN/reportsX/cwc-closures.php?RegionID=7
+    checked_at: '2026-09-27T21:49:15Z'
+    state: unavailable
+    allowed: true
+    rule: 'robots.txt unavailable (4xx): unrestricted'
+    crawl_delay: null
+    disallowed_agents: []
+    sha256: null
+- id: flashalert-bend
+  platform: flashalert
+  call_sign: FLASH-10
+  name: FlashAlert Bend/Central Oregon/Eastern Oregon (RegionID 10)
+  market: Bend
+  dma: Bend, OR DMA
+  states: [OR]
+  counties:
+    basis: dma
+    source: 'DMA county list: alex-patton/US-TVDMA-BY-COUNTY usa-tvdma-county.csv at commit 7f254b8c1843c62ec976a71c40d366d45f6f29cd
+      (sha256 2e2cd00265a8d704...), names resolved to FIPS with the Census 2025 county Gazetteer; Connecticut
+      via the Census county-to-town crosswalk (snowlight.sources.stations.dma); market ''Bend, OR DMA'''
+    fips: ['41017']
+  page_url: https://www.flashalertbend.net/closures-cats.html
+  data_url: https://www.flashalertnewswire.net/IIN/reportsX/cwc-closures.php?RegionID=10
+  export_url: null
+  archive_urls:
+  - https://www.flashalertnewswire.net/IIN/reportsX/cwc-closures.php?RegionID=10
+  - https://www.flashalertnewswire.net/IIN/reportsX/cwc-closures.php?RegionID=10&Testing=0
+  - https://www.flashalertnewswire.net/IIN/reportsX/flashnews_xml_emergency.php?RegionID=10
+  - https://www.flashalertbend.net/closures-cats.html
+  - https://www.flashalertbend.net/closures-time.html
+  - https://www.flashalertbend.net/closures-report.html
+  poll_minutes: null
+  status: active
+  evidence: 'First-hand check of 2026-09-26 (docs/research/firsthand/others.json, record FlashAlert cwc-closures);
+    region 10 (Bend/Central Oregon/Eastern Oregon) on FlashAlert''s feed page. Live read 2026-09-27 01:12:26Z:
+    HTTP 200, ''No information reported.'' (empty); its emergency XML feed https://www.flashalertnewswire.net/IIN/reportsX/flashnews_xml_emergency.php?RegionID=10
+    answered an empty <emergency> element 3 s later. County basis: the ''Bend, OR DMA'' market, the one
+    market the region''s name leads with (see the platform notes). Archive: 19 Wayback captures of this
+    station''s page or list file read (archive-captures runs 36293423860, 36345276947, 36348669505, 36353079096),
+    from 2015-02-12 to 2026-06-23; 7 with rows, the most 2 on 2017-01-09 (https://web.archive.org/web/20170109085732/http://flashalertbend.net/closures-report.html)
+    (12 empty); variants flashalert-site-page, gray-file-flashalert; not downloaded: 4 TLS handshake timed
+    out; fixtures flashalert/bend-report-20251010210220.html, flashalert/bend-report-20260102095750.html,
+    flashalert/bend-site-20150212024707.html, flashalert/bend-site-20170109085732.html. Page: FlashAlert''s
+    own regional site, https://www.flashalertbend.net/closures-cats.html (the region''s emergency reports
+    sorted by category; closures-time.html and closures-report.html show the same postings by time and
+    by message, and are archive URLs), read live 2026-09-27 21:28Z: empty.'
+  list_files: []
+  page_check: null
+  robots:
+  - url: https://www.flashalertbend.net/closures-cats.html
+    checked_at: '2026-09-27T21:49:11Z'
+    state: unavailable
+    allowed: true
+    rule: 'robots.txt unavailable (4xx): unrestricted'
+    crawl_delay: null
+    disallowed_agents: []
+    sha256: null
+  - url: https://www.flashalertnewswire.net/IIN/reportsX/cwc-closures.php?RegionID=10
+    checked_at: '2026-09-27T21:49:12Z'
+    state: unavailable
+    allowed: true
+    rule: 'robots.txt unavailable (4xx): unrestricted'
+    crawl_delay: null
+    disallowed_agents: []
+    sha256: null
+- id: flashalert-seattle
+  platform: flashalert
+  call_sign: FLASH-12
+  name: FlashAlert Seattle/Western Washington (RegionID 12)
+  market: Seattle-Tacoma
+  dma: Seattle - Tacoma, WA DMA
+  states: [WA]
+  counties:
+    basis: dma
+    source: 'DMA county list: alex-patton/US-TVDMA-BY-COUNTY usa-tvdma-county.csv at commit 7f254b8c1843c62ec976a71c40d366d45f6f29cd
+      (sha256 2e2cd00265a8d704...), names resolved to FIPS with the Census 2025 county Gazetteer; Connecticut
+      via the Census county-to-town crosswalk (snowlight.sources.stations.dma); market ''Seattle - Tacoma,
+      WA DMA'''
+    fips: ['53007', '53009', '53017', '53027', '53029', '53031', '53033', '53035', '53041', '53045', '53049',
+      '53053', '53055', '53057', '53061', '53067', '53073']
+  page_url: https://www.flashalertseattle.net/closures-cats.html
+  data_url: https://www.flashalertnewswire.net/IIN/reportsX/cwc-closures.php?RegionID=12
+  export_url: null
+  archive_urls:
+  - https://www.flashalertnewswire.net/IIN/reportsX/cwc-closures.php?RegionID=12
+  - https://www.flashalertnewswire.net/IIN/reportsX/cwc-closures.php?RegionID=12&Testing=0
+  - https://www.flashalertnewswire.net/IIN/reportsX/flashnews_xml_emergency.php?RegionID=12
+  - https://www.flashalertseattle.net/closures-cats.html
+  - https://www.flashalertseattle.net/closures-time.html
+  - https://www.flashalertseattle.net/closures-report.html
+  poll_minutes: null
+  status: active
+  evidence: 'First-hand check of 2026-09-26 (docs/research/firsthand/others.json, record FlashAlert cwc-closures);
+    region 12 (Seattle/Western Washington) on FlashAlert''s feed page. Live read 2026-09-27 01:12:32Z:
+    HTTP 200, ''No information reported.'' (empty); its emergency XML feed https://www.flashalertnewswire.net/IIN/reportsX/flashnews_xml_emergency.php?RegionID=12
+    answered an empty <emergency> element 3 s later. County basis: the ''Seattle - Tacoma, WA DMA'' market,
+    the one market the region''s name leads with (see the platform notes). Archive: 4 Wayback captures
+    of this station''s page or list file read (archive-captures runs 36348669505), from 2017-02-06 to
+    2026-03-13; 4 with rows, the most 232 on 2017-02-06 (https://web.archive.org/web/20170206144203/http://www.flashalertseattle.net/closures-cats.html);
+    variants flashalert-site-page; not downloaded: 10 not reached before the run''s time budget, 10 not
+    in the archive (404), 1 TLS handshake timed out; fixtures flashalert/seattle-site-20170206144203.html.
+    Page: FlashAlert''s own regional site, https://www.flashalertseattle.net/closures-cats.html (the region''s
+    emergency reports sorted by category; closures-time.html and closures-report.html show the same postings
+    by time and by message, and are archive URLs), read live 2026-09-27 21:28Z: empty.'
+  list_files: []
+  page_check: null
+  robots:
+  - url: https://www.flashalertseattle.net/closures-cats.html
+    checked_at: '2026-09-27T21:49:15Z'
+    state: unavailable
+    allowed: true
+    rule: 'robots.txt unavailable (4xx): unrestricted'
+    crawl_delay: null
+    disallowed_agents: []
+    sha256: null
+  - url: https://www.flashalertnewswire.net/IIN/reportsX/cwc-closures.php?RegionID=12
+    checked_at: '2026-09-27T21:49:15Z'
+    state: unavailable
+    allowed: true
+    rule: 'robots.txt unavailable (4xx): unrestricted'
+    crawl_delay: null
+    disallowed_agents: []
+    sha256: null
+- id: flashalert-columbia
+  platform: flashalert
+  call_sign: FLASH-13
+  name: FlashAlert Columbia/Tri Cities/Pendleton/Yakima (RegionID 13)
+  market: Yakima-Pasco-Richland-Kennewick
+  dma: Yakima - Pasco - Richland - Kennewick, WA - OR DMA
+  states: [OR, WA]
+  counties:
+    basis: dma
+    source: 'DMA county list: alex-patton/US-TVDMA-BY-COUNTY usa-tvdma-county.csv at commit 7f254b8c1843c62ec976a71c40d366d45f6f29cd
+      (sha256 2e2cd00265a8d704...), names resolved to FIPS with the Census 2025 county Gazetteer; Connecticut
+      via the Census county-to-town crosswalk (snowlight.sources.stations.dma); market ''Yakima - Pasco
+      - Richland - Kennewick, WA - OR DMA'''
+    fips: ['41049', '41059', '53005', '53021', '53037', '53071', '53077']
+  page_url: https://www.flashalertcolumbia.net/closures-cats.html
+  data_url: https://www.flashalertnewswire.net/IIN/reportsX/cwc-closures.php?RegionID=13
+  export_url: null
+  archive_urls:
+  - https://www.flashalertnewswire.net/IIN/reportsX/cwc-closures.php?RegionID=13
+  - https://www.flashalertnewswire.net/IIN/reportsX/cwc-closures.php?RegionID=13&Testing=0
+  - https://www.flashalertnewswire.net/IIN/reportsX/flashnews_xml_emergency.php?RegionID=13
+  - https://www.flashalertcolumbia.net/closures-cats.html
+  - https://www.flashalertcolumbia.net/closures-time.html
+  - https://www.flashalertcolumbia.net/closures-report.html
+  poll_minutes: null
+  status: active
+  evidence: 'First-hand check of 2026-09-26 (docs/research/firsthand/others.json, record FlashAlert cwc-closures);
+    region 13 (Columbia/Tri Cities/Pendleton/Yakima) on FlashAlert''s feed page. Live read 2026-09-27
+    01:12:38Z: HTTP 200, ''No information reported.'' (empty); its emergency XML feed https://www.flashalertnewswire.net/IIN/reportsX/flashnews_xml_emergency.php?RegionID=13
+    answered an empty <emergency> element 3 s later. County basis: the ''Yakima - Pasco - Richland - Kennewick,
+    WA - OR DMA'' market, the one market the region''s name leads with (see the platform notes). Archive:
+    9 Wayback captures of this station''s page or list file read (archive-captures runs 36293423860, 36311251817,
+    36345276947, 36348669505, 36353079096), from 2017-01-10 to 2025-10-07; 6 with rows, the most 44 on
+    2019-02-11 (https://web.archive.org/web/20190211193009/http://www.flashalertcolumbia.net:80/closures-cats.html)
+    (3 empty); variants flashalert-site-page, gray-file-flashalert; not downloaded: 2 TLS handshake timed
+    out; fixtures flashalert/columbia-report-20170110220543.html, flashalert/columbia-report-20190215030813.html,
+    flashalert/columbia-report-20200317034110.html, flashalert/columbia-site-20190211193009.html. Page:
+    FlashAlert''s own regional site, https://www.flashalertcolumbia.net/closures-cats.html (the region''s
+    emergency reports sorted by category; closures-time.html and closures-report.html show the same postings
+    by time and by message, and are archive URLs), read live 2026-09-27 21:28Z: empty.'
+  list_files: []
+  page_check: null
+  robots:
+  - url: https://www.flashalertcolumbia.net/closures-cats.html
+    checked_at: '2026-09-27T21:49:13Z'
+    state: unavailable
+    allowed: true
+    rule: 'robots.txt unavailable (4xx): unrestricted'
+    crawl_delay: null
+    disallowed_agents: []
+    sha256: null
+  - url: https://www.flashalertnewswire.net/IIN/reportsX/cwc-closures.php?RegionID=13
+    checked_at: '2026-09-27T21:49:13Z'
+    state: unavailable
+    allowed: true
+    rule: 'robots.txt unavailable (4xx): unrestricted'
+    crawl_delay: null
+    disallowed_agents: []
+    sha256: null
+- id: flashalert-boise
+  platform: flashalert
+  call_sign: FLASH-15
+  name: FlashAlert Boise/Southern Idaho (RegionID 15)
+  market: Boise
+  dma: Boise, ID - OR DMA
+  states: [ID, OR]
+  counties:
+    basis: dma
+    source: 'DMA county list: alex-patton/US-TVDMA-BY-COUNTY usa-tvdma-county.csv at commit 7f254b8c1843c62ec976a71c40d366d45f6f29cd
+      (sha256 2e2cd00265a8d704...), names resolved to FIPS with the Census 2025 county Gazetteer; Connecticut
+      via the Census county-to-town crosswalk (snowlight.sources.stations.dma); market ''Boise, ID - OR
+      DMA'''
+    fips: ['16001', '16003', '16015', '16025', '16027', '16039', '16045', '16073', '16075', '16085', '16087',
+      '41023', '41045']
+  page_url: https://www.flashalertboise.net/closures-cats.html
+  data_url: https://www.flashalertnewswire.net/IIN/reportsX/cwc-closures.php?RegionID=15
+  export_url: null
+  archive_urls:
+  - https://www.flashalertnewswire.net/IIN/reportsX/cwc-closures.php?RegionID=15
+  - https://www.flashalertnewswire.net/IIN/reportsX/cwc-closures.php?RegionID=15&Testing=0
+  - https://www.flashalertnewswire.net/IIN/reportsX/flashnews_xml_emergency.php?RegionID=15
+  - https://www.flashalertboise.net/closures-cats.html
+  - https://www.flashalertboise.net/closures-time.html
+  - https://www.flashalertboise.net/closures-report.html
+  poll_minutes: null
+  status: active
+  evidence: 'First-hand check of 2026-09-26 (docs/research/firsthand/others.json, record FlashAlert cwc-closures);
+    region 15 (Boise/Southern Idaho) on FlashAlert''s feed page. Live read 2026-09-27 01:12:44Z: HTTP
+    200, ''No information reported.'' (empty); its emergency XML feed https://www.flashalertnewswire.net/IIN/reportsX/flashnews_xml_emergency.php?RegionID=15
+    answered an empty <emergency> element 3 s later. County basis: the ''Boise, ID - OR DMA'' market,
+    the one market the region''s name leads with (see the platform notes). Archive: 5 Wayback captures
+    of this station''s page or list file read (archive-captures runs 36348669505, 36353079096), from 2024-12-14
+    to 2026-06-09; 2 with rows, the most 1 on 2026-06-09 (https://web.archive.org/web/20260609122325/https://www.flashalertboise.net/closures-report.html)
+    (3 empty); variants flashalert-site-page; not downloaded: 9 not in the archive (404), 2 TLS handshake
+    timed out; fixtures flashalert/boise-site-20251212004048.html. Page: FlashAlert''s own regional site,
+    https://www.flashalertboise.net/closures-cats.html (the region''s emergency reports sorted by category;
+    closures-time.html and closures-report.html show the same postings by time and by message, and are
+    archive URLs), read live 2026-09-27 21:28Z: empty.'
+  list_files: []
+  page_check: null
+  robots:
+  - url: https://www.flashalertboise.net/closures-cats.html
+    checked_at: '2026-09-27T21:49:13Z'
+    state: unavailable
+    allowed: true
+    rule: 'robots.txt unavailable (4xx): unrestricted'
+    crawl_delay: null
+    disallowed_agents: []
+    sha256: null
+  - url: https://www.flashalertnewswire.net/IIN/reportsX/cwc-closures.php?RegionID=15
+    checked_at: '2026-09-27T21:49:13Z'
+    state: unavailable
+    allowed: true
+    rule: 'robots.txt unavailable (4xx): unrestricted'
+    crawl_delay: null
+    disallowed_agents: []
+    sha256: null
+- id: flashalert-medford
+  platform: flashalert
+  call_sign: FLASH-25
+  name: FlashAlert Medford/Klamath Falls/Grants Pass (RegionID 25)
+  market: Medford-Klamath Falls
+  dma: Medford - Klamath Falls, OR - CA DMA
+  states: [CA, OR]
+  counties:
+    basis: dma
+    source: 'DMA county list: alex-patton/US-TVDMA-BY-COUNTY usa-tvdma-county.csv at commit 7f254b8c1843c62ec976a71c40d366d45f6f29cd
+      (sha256 2e2cd00265a8d704...), names resolved to FIPS with the Census 2025 county Gazetteer; Connecticut
+      via the Census county-to-town crosswalk (snowlight.sources.stations.dma); market ''Medford - Klamath
+      Falls, OR - CA DMA'''
+    fips: [06049, 06093, '41015', '41029', '41033', '41035', '41037']
+  page_url: https://www.flashalertmedford.net/closures-cats.html
+  data_url: https://www.flashalertnewswire.net/IIN/reportsX/cwc-closures.php?RegionID=25
+  export_url: null
+  archive_urls:
+  - https://www.flashalertnewswire.net/IIN/reportsX/cwc-closures.php?RegionID=25
+  - https://www.flashalertnewswire.net/IIN/reportsX/cwc-closures.php?RegionID=25&Testing=0
+  - https://www.flashalertnewswire.net/IIN/reportsX/flashnews_xml_emergency.php?RegionID=25
+  - https://www.flashalertmedford.net/closures-cats.html
+  - https://www.flashalertmedford.net/closures-time.html
+  - https://www.flashalertmedford.net/closures-report.html
+  poll_minutes: null
+  status: active
+  evidence: 'First-hand check of 2026-09-26 (docs/research/firsthand/others.json, record FlashAlert cwc-closures);
+    region 25 (Medford/Klamath Falls/Grants Pass) on FlashAlert''s feed page. Live read 2026-09-27 01:12:50Z:
+    HTTP 200, ''No information reported.'' (empty); its emergency XML feed https://www.flashalertnewswire.net/IIN/reportsX/flashnews_xml_emergency.php?RegionID=25
+    answered an empty <emergency> element 3 s later. County basis: the ''Medford - Klamath Falls, OR -
+    CA DMA'' market, the one market the region''s name leads with (see the platform notes). Archive: 9
+    Wayback captures of this station''s page or list file read (archive-captures runs 36348669505, 36353079096),
+    from 2017-01-05 to 2026-01-19; 4 with rows, the most 8 on 2017-01-05 (https://web.archive.org/web/20170105163147/http://www.flashalertmedford.net:80/closures-cats.html)
+    (5 empty); variants flashalert-site-page; not downloaded: 10 not in the archive (404), 9 not reached
+    before the run''s time budget, 3 TLS handshake timed out; fixtures flashalert/medford-site-20170105163147.html,
+    flashalert/medford-site-20170106124728.html, flashalert/medford-site-20260119143607.html. Page: FlashAlert''s
+    own regional site, https://www.flashalertmedford.net/closures-cats.html (the region''s emergency reports
+    sorted by category; closures-time.html and closures-report.html show the same postings by time and
+    by message, and are archive URLs), read live 2026-09-27 21:28Z: empty.'
+  list_files: []
+  page_check: null
+  robots:
+  - url: https://www.flashalertmedford.net/closures-cats.html
+    checked_at: '2026-09-27T21:49:14Z'
+    state: unavailable
+    allowed: true
+    rule: 'robots.txt unavailable (4xx): unrestricted'
+    crawl_delay: null
+    disallowed_agents: []
+    sha256: null
+  - url: https://www.flashalertnewswire.net/IIN/reportsX/cwc-closures.php?RegionID=25
+    checked_at: '2026-09-27T21:49:14Z'
+    state: unavailable
+    allowed: true
+    rule: 'robots.txt unavailable (4xx): unrestricted'
+    crawl_delay: null
+    disallowed_agents: []
+    sha256: null

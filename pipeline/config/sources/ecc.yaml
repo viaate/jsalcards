@@ -1,0 +1,131 @@
+# Station registry for one platform. Loaded with every other file in this folder
+# by snowlight.sources.stations.registry; see its docstring for the fields.
+# `snowlight stations robots --update` rewrites the robots blocks in place.
+platform:
+  id: ecc
+  name: Emergency Closing Center (Chicago)
+  operator: Emergency Closing Center, run on WGN Radio's closings data (Nexstar Media Inc.)
+  adapter: ecc
+  poll_minutes: 10
+  terms:
+    automated_access: forbidden
+    summary: 'The Emergency Closing Center''s application (wgnr-closings.emergencyclosingcenter.com) links
+      no terms; its data file is served from Nexstar''s host media.psg.nexstardigital.net as WGN Radio''s
+      (WGNR) closings, so Nexstar''s Terms of Use apply (https://www.nexstar.tv/terms-of-use/, "UPDATED:
+      September 16, 2026", covering Nexstar "together with its Affiliates"): they forbid using "any robot,
+      spider ... or processes on the Properties, for any purpose" and to "Scrape, data-mine or data-crawl
+      the Properties". The project owner decided on 2026-09-25 to read the closings lists anyway for this
+      non-commercial project (owner_decision below); the terms stay recorded here.'
+    evidence:
+    - url: https://www.nexstar.tv/terms-of-use/
+      read_at: '2026-09-27T01:26:07Z'
+      sha256: 38dab9dbbb8635ea72e3d599bdcc107836b2ed7a373ff00fb7ba646a4ba1108b
+      excerpt:
+      - 'UPDATED: September 16, 2026'
+      - The Properties are for your personal and non-commercial use only, unless otherwise permitted by
+        us.
+      - Use any robot, spider, spyware, or any other device, method, or processes on the Properties, for
+        any purpose.
+      - Scrape, data-mine or data-crawl the Properties or engage in any data gathering or data extraction
+        practices for any purpose.
+    permission: null
+    owner_decision:
+      decided_by: the project owner (Snowlight)
+      decided_on: '2026-09-25'
+      reference: 'Stated in the build instructions for the station adapters (piece s4c1, round 1): "Terms
+        of use that forbid automated access do not exclude a station: the project owner decided on 2026-09-25
+        to read them for this non-commercial project, so record each station''s terms internally in the
+        registry and read it anyway." The same instructions record the owner''s decision of 2026-09-26
+        to read closings pages and data files even where robots.txt disallows them (naming CBS''s assets1.cbsnewsstatic.com
+        feeds as an example). Relayed to the pipeline''s builder by the project''s build workflow; to
+        revoke it, remove this block and live polling of this platform stops.'
+      scope: 'Live reads of this platform''s public closings lists (the station pages and the list files
+        or routes they load) for Snowlight, a non-commercial project, although the terms above forbid
+        automated access. robots.txt is read and its verdict recorded for every URL requested; the owner
+        decided on 2026-09-26 to read closings pages and files even where robots.txt disallows them. Unchanged
+        by it: the User-Agent names the repository (never a browser string), only the closings page or
+        file is requested (no crawling), requests are paced per host (any Crawl-delay is a floor) with
+        conditional requests and backoff on 429 and 5xx answers, and a station that blocks the project
+        (a 403, or a bot challenge) is not worked around.'
+  notes: 'The Emergency Closing Center is Chicago''s shared closings system: CBS 2 (WBBM) and FOX 32 (WFLD)
+    frame its application, NBC 5 (WMAQ) redirects its closings address to it, and WGN frames it too (WGN
+    is registered by the Nexstar platform, nexstar-wgn, which reads the same data file). The application''s
+    script (read 2026-09-26 and 2026-09-27) loads https://media.psg.nexstardigital.net/WGNR/closings/closings.json
+    every 120 s; the live poller reads that file. Its legacy page www.emergencyclosingcenter.com/complete.html
+    answered 403 AccessDenied (first-hand check); archived, that page (the closing center''s own site,
+    run by WGN Radio before the application) listed 3,274 facilities on 6 January 2014, 3,672 on 7 January
+    2014 and 3,358 on 8 January 2015 (runs 36345276947 and 36348669505; fixture ecc/chicago-legacy-20140106060437.html),
+    read as the adapter''s ecc-legacy-page variant; the old site''s home page (/ecc/home.jsp, an archive
+    URL) carried the same table below its search form (3,210 facilities on 6 January 2014, 2,860 on 30
+    January 2019; run 36355124151), read the same way and kept out of the fixtures for its size (about
+    1 MB). When the Nexstar registry is loaded beside this one, the data file''s archived captures are
+    attributed to nexstar-wgn, which lists the file among its archive URLs; this platform''s own proof
+    of the file are its test fixtures (source ecc-chicago, tests/stations/fixtures/networks/ecc/), eight
+    archived captures of the file from December 2023 to August 2026, seven of them populated (up to 203
+    closings on 20 January 2025).'
+  shared_paths: []
+stations:
+- id: ecc-chicago
+  platform: ecc
+  call_sign: ECC
+  name: Emergency Closing Center (Chicago)
+  market: Chicago
+  dma: Chicago, IL - IN DMA
+  states: [IL, IN]
+  counties:
+    basis: dma
+    source: 'DMA county list: alex-patton/US-TVDMA-BY-COUNTY usa-tvdma-county.csv at commit 7f254b8c1843c62ec976a71c40d366d45f6f29cd
+      (sha256 2e2cd00265a8d704...), names resolved to FIPS with the Census 2025 county Gazetteer; Connecticut
+      via the Census county-to-town crosswalk (snowlight.sources.stations.dma); market ''Chicago, IL -
+      IN DMA'''
+    fips: ['17031', '17037', '17043', '17063', '17089', '17091', '17093', '17097', '17099', '17111', '17197',
+      '18073', '18089', '18091', '18111', '18127']
+  page_url: https://wgnr-closings.emergencyclosingcenter.com/index.html
+  data_url: https://media.psg.nexstardigital.net/WGNR/closings/closings.json
+  export_url: null
+  archive_urls:
+  - https://wgnr-closings.emergencyclosingcenter.com/index.html
+  - https://www.emergencyclosingcenter.com/
+  - https://www.emergencyclosingcenter.com/complete.html
+  - https://www.emergencyclosingcenter.com/ecc/home.jsp
+  poll_minutes: null
+  status: active
+  evidence: 'First-hand check of 2026-09-26 (docs/research/firsthand/others.json, record ECC); application
+    https://wgnr-closings.emergencyclosingcenter.com/index.html (create-react-app shell) and its data
+    file https://media.psg.nexstardigital.net/WGNR/closings/closings.json (named in static/js/main.c73bd0ff.chunk.js,
+    read 2026-09-27). Live read 2026-09-27 01:07:46Z: HTTP 200, {"$":{"Time":"09/26/2026 08:00:31 PM"}}
+    (empty), Last-Modified Sun, 27 Sep 2026 01:00:44 GMT. The market''s DMA counties are the county basis.
+    Archive: 38 Wayback captures of this station''s page or list file read (archive-captures runs 36291380584,
+    36293423860, 36311251817, 36345276947, 36348669505, 36355124151), from 2014-01-06 to 2026-08-13; 19
+    with rows, the most 3672 on 2014-01-07 (https://web.archive.org/web/20140107060331/http://www.emergencyclosingcenter.com/complete.html)
+    (2 framing or loading another file, 16 empty, 1 in a shape no adapter knows); variants ecc-app, ecc-json,
+    ecc-legacy-page; not downloaded: 5 TLS handshake timed out, 3 not in the archive (404), 2 not reached
+    before the run''s time budget; fixtures ecc/chicago-json-20231226001930.json, ecc/chicago-json-20240115172841.json,
+    ecc/chicago-json-20250120193005.json, ecc/chicago-json-20250121040204.json, ecc/chicago-json-20250212011336.json,
+    ecc/chicago-json-20260122024138.json, ecc/chicago-json-20260126162335.json, ecc/chicago-json-20260811211402.json,
+    ecc/chicago-legacy-20140106060437.html. Every county the archived rows name (Cook, Will, DuPage, Lake
+    IL, Lake IN, Kane, Kankakee, Porter, McHenry, Kendall, DeKalb, Grundy, LaPorte) is in the market''s
+    DMA county list above. With the Nexstar registry present these captures are attributed to nexstar-wgn
+    (see the platform notes); the fixtures are this station''s proof. The closing center''s own page before
+    its application (complete.html, run by WGN Radio) held 3,274 facilities on 6 January 2014 (fixture
+    ecc/chicago-legacy-20140106060437.html); one capture of it (28 January 2014) is cut off mid-table
+    and is an error, not a list.'
+  list_files: []
+  page_check: null
+  robots:
+  - url: https://wgnr-closings.emergencyclosingcenter.com/index.html
+    checked_at: '2026-09-27T01:31:00Z'
+    state: unavailable
+    allowed: true
+    rule: 'robots.txt unavailable (4xx): unrestricted'
+    crawl_delay: null
+    disallowed_agents: []
+    sha256: null
+  - url: https://media.psg.nexstardigital.net/WGNR/closings/closings.json
+    checked_at: '2026-09-27T01:31:00Z'
+    state: unavailable
+    allowed: true
+    rule: 'robots.txt unavailable (4xx): unrestricted'
+    crawl_delay: null
+    disallowed_agents: []
+    sha256: null

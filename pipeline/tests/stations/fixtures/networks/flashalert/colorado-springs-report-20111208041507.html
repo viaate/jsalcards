@@ -1,0 +1,100 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<html>
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=iso-8859-1">
+<META HTTP-EQUIV="Refresh" CONTENT="300">
+<title>FlashNews</title><style type="text/css">
+#cwcReportContainer { 
+	background-color: #FFF;
+}
+#cwcReportBody { 
+	border-left: 1px solid #CCC;
+	border-right: 1px solid #CCC;
+	border-bottom: 1px solid #CCC;
+}
+#cwcReportSubHeader {
+	font-family: Verdana; 
+	font-size: 0.7em;
+	padding: 2px;
+	border-bottom: 1px solid #CCC;
+}
+#cwcReportHeader {
+	color: #FFF;
+	font-family: Tahoma;
+	font-size: 12pt;
+	padding: 5px;
+	background-color: #006699;
+	text-align: center;
+	font-weight: bold;
+	border: 1px solid #4C4C4C;
+}
+#cwcReportSubHeader a { color: #333; text-decoration: none; }
+
+#cwcReportFooter {
+	border-top: 1px solid #CCC;
+	font-family: Verdana;
+	font-size: 0.7em;
+	padding: 2px;
+	background-color: #EEE;
+	text-align: right;
+	color: #CCC;
+}
+#cwcReportFooter a {
+	color: #333;
+	text-decoration: none;
+}
+.cwcReport { 
+	font-family: Verdana; 
+	font-size: 0.8em;
+	margin-left: 10px;
+	padding: 2px;
+}
+.cwcReport strong {
+	color: #333;
+}
+.cwcReportCat { 
+	padding: 5px;
+	background-color: #EBEBEB;
+	border-bottom: 1px solid #CCC;
+	font-family: Tahoma;
+	font-weight: bold;	
+	font-size: 1.0em;	
+}	
+</style>
+</head>
+<body>
+<div id='cwcReportContainer'>
+	<div id='cwcReportHeader'>
+	Colorado Springs/Pueblo Emergency Info for Wed. Dec. 7 - 9:15 pm	</div>
+	<div id='cwcReportBody'>
+<div id='cwcReportSubHeader'><div style="float:left;">Breaking news from local organizations.</div><div style="float:right;"><a href="http://pdxinfo.net/IIN/closure-participants.php?RegionID=5">View Participants</a></div><div style="clear:both;"></div></div>	
+<!--SELECT DISTINCT OrgCat.CatagoryName,
+    	    Org.id as id,
+    	    Org.Name,
+    	    Reports.Note,
+            Org.Testing,
+    	    Reports.Updated,
+    	    (Reports.ClosureDate > NOW()) AS RD,
+    	    DATE_FORMAT(Reports.ClosureDate, '%a. %b %D') AS FormattedReportDate
+		FROM Reports
+   	    JOIN Org ON (Reports.OrgID = Org.id)
+		JOIN OrgCat ON (Org.OrgCatID = OrgCat.id)
+		JOIN Users ON (Users.OrgID = Org.id)
+    	LEFT JOIN Reports_Cities ON (Reports.id = Reports_Cities.ReportID)
+    	LEFT JOIN RegionCities ON (RegionCities.id = Reports_Cities.CityID)
+    	WHERE
+    	    (RegionCities.RegionID = 5 OR (Users.Tier=2 AND Org.RegionID=5)) AND
+    	    (Users.bActivated = 1) AND
+    	    (ExpirationDate >= FROM_UNIXTIME(1323317707))
+    	    AND (Org.Testing != 1)
+    	    
+    	 ORDER BY
+    	    OrgCat.Rank DESC,
+    	    OrgCat.id,
+    	    OrgCat.CatagoryName,
+    	    Org.Name--><div class='cwcReport'>No information reported.</div>	
+	</div>
+</div>
+<br/><br/>
+</body>
+</html>
