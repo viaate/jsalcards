@@ -9,7 +9,7 @@ from typing import TYPE_CHECKING
 
 from snowlight.output import JSONValue
 from snowlight.sources.nws.iem import WATCHWARN_URL
-from snowlight.weights import archive, crosscheck, zones
+from snowlight.weights import archive, crosscheck, schoolzones, zonepolys, zones
 from snowlight.weights.codes import ADDED_CODES, CODES
 from snowlight.weights.count import DECISION_TIME, SCHOOL_DAY_END
 from snowlight.weights.priority import STALE_BEFORE
@@ -42,8 +42,8 @@ def _state_table(rows: Sequence[Mapping[str, JSONValue]]) -> list[str]:
     lines = [
         "| Rank | State | Schools | Weight | Weighted days/yr | Winter days/yr "
         "| Listed winter days/yr | Any-code days/yr | Share of national closure-days "
-        "| Partial-county share |",
-        "|---|---|---|---|---|---|---|---|---|---|",
+        "| County-rule weight (rank) | County-rule days/yr |",
+        "|---|---|---|---|---|---|---|---|---|---|---|",
     ]
     for row in rows:
         subsets = _dict(row["subsets_days_per_year"])
@@ -51,7 +51,9 @@ def _state_table(rows: Sequence[Mapping[str, JSONValue]]) -> list[str]:
             f"| {row['rank']} | {row['state']} | {row['schools']} | {_f(row['weight'])} "
             f"| {_f(row['days_per_year'])} | {_f(subsets.get('winter'))} "
             f"| {_f(subsets.get('listed_winter'))} | {_f(row['any_days_per_year'])} "
-            f"| {_pct(row['share_of_weighted_closure_days'])} | {_pct(row['partial_day_share'])} |"
+            f"| {_pct(row['share_of_weighted_closure_days'])} "
+            f"| {_f(row['county_rule_weight'])} ({row['county_rule_rank']}) "
+            f"| {_f(row['county_rule_days_per_year'])} |"
         )
     return lines
 
@@ -62,16 +64,11 @@ def _flag_lines(flags: Sequence[Mapping[str, JSONValue]]) -> list[str]:
         lines.append(f"- **{flag['state']}** {flag['finding']}. {flag['reason']}")
         for county in _list(flag["counties"]):
             item = _dict(county)
-            zones_text = "; ".join(
-                f"{_dict(z)['ugc']} {_dict(z)['name']} ({_dict(z)['days']} days, "
-                f"{_dict(z)['only']} as the only zone)"
-                for z in _list(item.get("top_zones"))
-            )
+            zones_text = ", ".join(f"{k} {v}" for k, v in _dict(item.get("zones")).items())
             lines.append(
-                f"  - {item['name']} ({item['fips']}, {item['schools']} schools, "
-                f"{item['years_counted']} school years counted): "
-                f"{_f(item['days_per_year'])} weighted days/yr, "
-                f"{_f(item['whole_county_days_per_year'])} on whole-county days; {zones_text}"
+                f"  - {item['name']} ({item['fips']}, {item['schools']} schools): weight "
+                f"{_f(item['weight'])} ({_f(item['days_per_year'])} weighted days/yr), county "
+                f"rule {_f(item['county_rule_weight'])}; schools by zone: {zones_text}"
             )
     return lines
 
@@ -236,13 +233,17 @@ def _left_out_lines(report: Mapping[str, JSONValue], result: "Result") -> list[s
     left_out = [_dict(item) for item in _list(report["left_out_zones"])]
     total_rows = sum(int(str(item["rows"])) for item in left_out)
     counties = sorted(
-        (record for record in result.counties.values() if record["school_years_left_out"]),
+        (
+            record
+            for record in result.county_rule_records.values()
+            if record["school_years_left_out"]
+        ),
         key=lambda record: (-int(str(record["schools"])), str(record["fips"])),
     )
     schools = sum(int(str(record["schools"])) for record in counties)
     county_years = sum(len(_dict(record["school_years_left_out"])) for record in counties)
     lines = [
-        "#### School years left out of a county's average",
+        "##### School years left out of a county's average",
         "",
         "Zone rows left out (in no served release, left out by the name check, or given a "
         f"county code the county list lacks): {total_rows} rows of "
@@ -324,6 +325,510 @@ def _address_lines(elsewhere: Sequence[JSONValue]) -> list[str]:
     return [f"{text}. The two differ for {len(elsewhere)} schools: {names}."]
 
 
+NAMED_COUNTIES: tuple[tuple[str, str], ...] = (
+    ("49035", "Salt Lake City (Salt Lake County)"),
+    ("49049", "Provo and Orem (Utah County)"),
+    ("49011", "Davis County, UT"),
+    ("49057", "Ogden (Weber County)"),
+    ("08031", "Denver (Denver County)"),
+    ("08059", "Jefferson County, CO (Denver's west)"),
+    ("08005", "Arapahoe County, CO (Denver's south)"),
+    ("08001", "Adams County, CO (Denver's north)"),
+    ("08013", "Boulder County, CO"),
+    ("08035", "Douglas County, CO"),
+    ("16001", "Boise (Ada County)"),
+    ("16027", "Nampa and Caldwell (Canyon County)"),
+    ("53033", "Seattle (King County)"),
+    ("32003", "Las Vegas (Clark County)"),
+    ("06037", "Los Angeles County"),
+    ("44007", "Providence County, RI"),
+    ("25025", "Boston (Suffolk County)"),
+    ("36061", "Manhattan (New York County)"),
+    ("36029", "Buffalo (Erie County)"),
+    ("26163", "Detroit (Wayne County)"),
+    ("27053", "Minneapolis (Hennepin County)"),
+    ("42101", "Philadelphia"),
+    ("42003", "Pittsburgh (Allegheny County)"),
+    ("28049", "Jackson (Hinds County), MS"),
+    ("22071", "New Orleans (Orleans Parish)"),
+    ("12086", "Miami-Dade County"),
+)
+"""Counties shown side by side under both rules (the places the owner's request names, their
+neighbours, and one or two big school counties of each snowy and mild example state)."""
+MOVERS_MIN_SCHOOLS = 20
+UNCHANGED = 0.01
+
+
+def _short(key: str) -> str:
+    """``iem/NCZ051/531.0424`` to ``531.0424``, ``z_18mr25/NCZ051`` to ``z_18mr25``."""
+    return key.rsplit("/", 1)[-1] if key.startswith("iem/") else key.split("/", 1)[0]
+
+
+ALTERNATION_NOTES: dict[str, str] = {
+    "NCZ051": "NCZ051's 531 km² outline leaves out 869 km² of the 1,400 km² zone (Swain "
+    "County, NC); Cherokee's schools lie 0.73 km outside it and take its rows by the "
+    "school-year rule below.",
+    "VAZ099": "VAZ099's 998 km² outline is Accomack County's mainland alone; its 1,178 km² "
+    "outline adds the county's islands (180 km² in 363 parts, Chincoteague and Tangier "
+    "among them), and MDZ024's 1,278 km² outline holds exactly those islands: the Accomack "
+    "schools on them lay in MDZ024 in the school years whose rows use those outlines, and "
+    "take MDZ024's rows then.",
+}
+"""What the build found in the outlines of zones whose rows alternate between outlines that
+differ materially (checked when the notes were written, 2026-09-27; shown only while the
+zone is still listed)."""
+
+
+def _alternating_lines(zp: dict[str, JSONValue], log: dict[str, JSONValue]) -> list[str]:
+    """The zones whose rows go back and forth between outlines."""
+    found = [_dict(item) for item in _list(zp.get("alternating_outlines", []))]
+    material = [
+        item for item in found if float(str(item["largest_area_difference"])) > zonepolys.MATERIAL
+    ]
+    logged: dict[str, set[str]] = {}
+    for entry in _list(log.get("logged", [])):
+        item = _dict(entry)
+        logged.setdefault(str(item["zone"]), set()).add(str(item["school"]))
+    elsewhere = _dict(log.get("school_years_in_another_zone_by_own_zone", {}))
+    lines = [
+        f"- Outlines a zone's rows return to: the rows of {len(found)} zones, in time order, "
+        "go back to an outline after rows joined to another. IEM held two outlines of such a "
+        "zone at once: its archived UGC outlines of 15 January 2018 (read for the zone-name "
+        "check) list two each for NCZ051, NCZ052, MDZ024 and VAZ099. Each row is still read "
+        "against its own outline. The outline returned to and those in between differ by at "
+        f"most {zonepolys.MATERIAL:.0%} in area for {len(found) - len(material)} of them "
+        f"(redrawn edges), and more for {len(material)}" + (":" if material else "."),
+    ]
+    for item in material:
+        ugc = str(item["ugc"])
+        areas = _dict(item["outlines_km2"])
+        runs = [_dict(run) for run in _list(item["runs"])]
+        sequence = ", ".join(
+            f"{_short(str(run['version']))} {str(run['first'])[:7]} to {str(run['last'])[:7]}"
+            for run in runs
+        )
+        outlines = ", ".join(f"{_short(key)} ({_f(area, 1)} km²)" for key, area in areas.items())
+        lines.append(
+            f"  - {ugc}: outlines {outlines}; its rows in order: {sequence}. Schools with a "
+            f"school year logged for it below: {len(logged.get(ugc, set()))}; school years its "
+            f"schools lay in another zone's outline: {elsewhere.get(ugc, 0)}."
+            + (f" {ALTERNATION_NOTES[ugc]}" if ugc in ALTERNATION_NOTES else "")
+        )
+    return lines
+
+
+def _zone_polygon_lines(result: "Result") -> list[str]:
+    zp = _dict(result.checks.get("zone_polygons"))
+    counting = _dict(result.checks.get("school_counting"))
+    if not zp:
+        return ["## Each school in its own forecast zone", "", "- not run"]
+    by_source = _dict(zp["versions_by_source"])
+    rows_by_source = _dict(zp["rows_by_source"])
+    worst = _dict(zp["largest_area_difference_by_source"])
+    served = list(_dict(zp["served_releases"]))
+    lines = [
+        "## Each school in its own forecast zone",
+        "",
+        "### Zone polygons",
+        "",
+        "A zone code names an area the NWS redraws now and then (Salt Lake City's valley and "
+        "mountain zones were UTZ003 and UTZ008 until the SLC reconfiguration of 30 March 2021, "
+        "then UTZ105 and UTZ111), so each zone row is read against the polygon of its zone as "
+        "it stood when its product was issued. Every row of IEM's school-year files carries "
+        "`area2d`: the area, in km² in the US National Atlas Equal Area projection "
+        "(EPSG:2163), of the zone outline IEM joined to it: the outline IEM held for the zone "
+        "then, from the NWS zone release it had loaded (for a few zones it held two at once; "
+        "below). A zone *version* is one zone code with one such "
+        f"area; the rows hold {zp['versions']} versions.",
+        "",
+        f"- The NWS serves two zone releases, {' and '.join(served)} "
+        f"({zonepolys.PUBLIC_ZONES_PAGE}). "
+        "Of the 155 file names its zone change log gives "
+        f"({zonepolys.ZONE_CHANGE_LOG}; public and fire zones, 2005 to 2026), only z_18mr25 "
+        "answers at `https://www.weather.gov/source/gis/Shapefiles/WSOM/`; the others, and a "
+        "`z_DDmmYY.zip` for every release date of the correlation files the county rule reads "
+        "(bp02ap19 to bp10se24), answer 404 (HEAD requests, 2026-09-27).",
+        f"- A version whose area equals the equal-area size of its zone's polygon in a served "
+        f"release, to within {zp['area_tolerance']} of it, is that polygon: "
+        + ", ".join(
+            f"{by_source.get(name, 0)} versions ({rows_by_source.get(name, 0)} rows) from {name}, "
+            f"largest difference {worst.get(name, 'n/a')}"
+            for name in served
+        )
+        + ".",
+        f"- The other {by_source.get('iem', 0)} versions ({rows_by_source.get('iem', 0)} rows) are "
+        "IEM's full-resolution copies of the NWS polygon of the time (`watchwarn.py` with "
+        f"`simple=0`: {len(_list(zp['iem_requests']))} requests of one office, one code and one "
+        "minute of begin times, chosen to hold a row of every such version). Each copy's own "
+        "equal-area size agrees with its rows' `area2d` (largest difference "
+        f"{worst.get('iem', 'n/a')}). They are the zones redrawn before March 2025, and the "
+        "zones as they stood before October 2019: the NWS reduced every zone's points to a "
+        "0.0001° tolerance with z_10oc19 (zone change log), which moved their areas by 1e-5 "
+        "and more, so no version of before then is read in a later release.",
+        f"- Versions with no polygon: {len(_list(zp['unresolved'])) or 'none'} (the build "
+        "stops when there is one).",
+        *_alternating_lines(
+            zp, _dict(_dict(result.checks.get("school_zones")).get("by_school_year", {}))
+        ),
+        "",
+        "Zone rows by where their polygon came from, per school year:",
+        "",
+        f"| School year | {' | '.join(served)} | IEM copy |",
+        f"|---|{'---|' * len(served)}---|",
+    ]
+    per_year = _dict(counting.get("zone_rows_by_school_year_and_polygon_source"))
+    for label, found in per_year.items():
+        item = _dict(found)
+        cells = " | ".join(str(item.get(name, 0)) for name in served)
+        lines.append(f"| {label} | {cells} | {item.get('iem', 0)} |")
+    return lines
+
+
+def _year_run(years: list[int]) -> str:
+    """``2015-16 to 2022-23`` for consecutive school years, else a list."""
+    labels = [f"{year}-{(year + 1) % 100:02d}" for year in years]
+    if len(years) > 2 and years == list(range(years[0], years[-1] + 1)):  # noqa: PLR2004
+        return f"{labels[0]} to {labels[-1]}"
+    return ", ".join(labels)
+
+
+def _by_year_lines(log: dict[str, JSONValue]) -> list[str]:
+    """The school-year rule and every school year it logged, grouped by school."""
+    if not log:
+        return []
+    by_method = _dict(log["school_years_by_method"])
+    lines = [
+        "School year by school year, each school placed `inside` or `nearest` is checked "
+        "against the zone versions with rows that school year. When a version of its own "
+        "zone misses it and a version of another zone covers it, it lay in that zone that year "
+        "(its zone was redrawn since, or its outline changed within the year) and takes the "
+        "rows of the versions covering it: "
+        f"{log['school_years_in_another_zone']} school years of "
+        f"{log['schools_with_school_years_in_another_zone']} schools ("
+        + ", ".join(
+            f"{zone} {n}"
+            for zone, n in list(_dict(log["school_years_in_another_zone_by_own_zone"]).items())[:8]
+        )
+        + "). Otherwise, each version of its own zone (the zone it is in under the reference "
+        "release) with rows that school year that does not cover the school is a miss: when "
+        "no version of its own zone covers it that year, it takes the missed versions' rows "
+        f"of that year if each lies within {log['nearest_km']} km (`nearest`), and falls back "
+        "to its county for that school year beyond that (`county`, the county rule's counts "
+        "of that year); when another version of its own zone covers it that year (the outline "
+        "changed within the school year), it takes each missed version within "
+        f"{log['nearest_km']} km and not one beyond (`not_taken`). A school placed `nearest` "
+        "reaches its zone's rows this way. Logged: "
+        f"{sum(int(str(v)) for v in by_method.values())} school years of {log['schools']} "
+        "schools ("
+        + (", ".join(f"{k} {v}" for k, v in by_method.items()) or "none")
+        + f"); {log['schools_with_county_years']} schools fell back to their county for a "
+        "school year."
+        + (
+            " Every one (also in `manifest.json`, `school_zones.by_school_year`):"
+            if _list(log["logged"])
+            else ""
+        ),
+    ]
+    if not _list(log["logged"]):
+        return lines
+    lines += [
+        "",
+        "| School | County | Own zone | School years | Versions missed (km) | Rows taken "
+        "| Placed |",
+        "|---|---|---|---|---|---|---|",
+    ]
+    groups: dict[tuple[str, str, str, str, str], tuple[list[int], list[int]]] = {}
+    for entry in _list(log["logged"]):
+        item = _dict(entry)
+        versions = [_dict(v) for v in _list(item["versions"])]
+        missed = "; ".join(
+            f"{v['version']} ({_f(v['distance_km'], 3)})" + ("" if v["taken"] else ", not taken")
+            for v in versions
+        )
+        kind = str(item["placed"])
+        if item["inside_another_version_of_its_zone"]:
+            kind += ", inside another version that year"
+        key = (str(item["school"]), str(item["fips"]), str(item["zone"]), missed, kind)
+        years, rows = groups.setdefault(key, ([], []))
+        years.append(int(str(item["school_year"])[:4]))
+        rows.append(sum(int(str(v["rows"])) for v in versions if v["taken"]))
+    for (school, fips, zone, missed, kind), (years, rows) in groups.items():
+        lines.append(
+            f"| {school} | {fips} | {zone} | {_year_run(years)} | {missed} | {sum(rows)} | {kind} |"
+        )
+    return lines
+
+
+def _placement_lines(result: "Result") -> list[str]:
+    zoned = _dict(result.checks.get("school_zones"))
+    if not zoned:
+        return []
+    placed = _dict(zoned["placed_by"])
+    nearest = [_dict(item) for item in _list(zoned["nearest"])]
+    county = [_dict(item) for item in _list(zoned["county"])]
+    lines = [
+        "### Where each school is",
+        "",
+        f"Each school's point is placed in {zoned['reference_release']}: inside a zone polygon "
+        f"(boundary included) {placed.get('inside', 0)} schools; outside every zone polygon but "
+        f"within {zoned['nearest_km']} km of one, the nearest zone {placed.get('nearest', 0)} "
+        f"(listed below); farther than that, its county {placed.get('county', 0)} (it then "
+        "takes the county rule for zone-coded products). Distances are on a local "
+        "equirectangular plane (sphere of 6,371.0088 km), within 1% at 2 km. "
+        f"{zoned['on_shared_boundary']} points lie on a boundary two zones share (both zones' "
+        "rows reach them).",
+        "",
+        "A zone row reaches every school inside the polygon of the version it was issued for, "
+        "whatever zone the school is in under the reference release: a school whose zone was "
+        "redrawn takes, in each period, the zone it was in then.",
+        "",
+        *_by_year_lines(_dict(zoned["by_school_year"])),
+        "",
+        f"Time zones: of the schools in counties a time zone line crosses, "
+        f"{zoned['time_zone_from_zone']} are in a zone that lies in one time zone and take "
+        f"it; {zoned['time_zone_split_kept']} are in a zone the line crosses too and keep "
+        "both.",
+        "",
+        "Schools placed in the nearest zone:",
+        "",
+    ]
+    lines.extend(
+        f"- {item['school']} (county {item['fips']}): {item['zone']}, "
+        f"{_f(item['distance_km'], 3)} km"
+        for item in nearest
+    )
+    if not nearest:
+        lines.append("- none")
+    lines += ["", "Schools that fell back to their county:", ""]
+    lines.extend(
+        f"- {item['school']} (county {item['fips']}): nearest zone {item['nearest_zone']} at "
+        f"{_f(item['distance_km'], 3)} km"
+        for item in county
+    )
+    if not county:
+        lines.append(f"- none (every school is within {schoolzones.NEAREST_KM} km of a zone)")
+    return lines
+
+
+def _storm_lines(result: "Result") -> list[str]:
+    counting = _dict(result.checks.get("school_counting"))
+    storms = _dict(result.checks.get("storm_polygons"))
+    if not counting:
+        return []
+    without = _dict(counting["polygon_code_events_without_polygons"])
+    lines = [
+        "### County-coded products and storm-based polygons",
+        "",
+        f"County-coded rows (UGC `XXCnnn`) reach every school placed in the county: "
+        f"{counting['county_rows']} rows (other than the Flash Flood Warning's), "
+        f"{counting['county_rows_reaching_schools']} reaching schools. Zone rows: "
+        f"{counting['zone_rows']}, {counting['zone_rows_reaching_schools']} reaching schools.",
+        "",
+        "The Flash Flood Warning is the only storm-based code counted: it reaches the schools "
+        "inside its polygon, one version at a time (a follow-up statement that narrows the "
+        "warning issues a new polygon; each version counts over its own span under the 6 AM "
+        "rule). Its county rows are then not used "
+        f"({counting['polygon_code_county_rows_replaced_by_polygons']} rows). Events with county "
+        f"rows and no polygon in the polygon file ({len(without)}) keep their county rows: "
+        + (", ".join(f"{k} ({v} rows)" for k, v in without.items()) or "none")
+        + f". Polygon versions read: {counting['polygon_rows']}, "
+        f"{counting['polygon_rows_reaching_schools']} reaching a school.",
+        "",
+        "| School year | Polygon versions | Events | Events with polygon rows in the "
+        "school-year file | In both | Only in the school-year file | Only in the polygon file "
+        "| Blank event times |",
+        "|---|---|---|---|---|---|---|---|",
+    ]
+    for label, entry in storms.items():
+        item = _dict(entry)
+        lines.append(
+            f"| {label} | {item['polygon_rows']} | {item['events']} "
+            f"| {item['school_year_file_polygon_events']} | {item['events_in_both']} "
+            f"| {len(_list(item['only_in_school_year_file']))} "
+            f"| {len(_list(item['only_in_polygon_file']))} | {item['without_event_times']} |"
+        )
+    return lines
+
+
+def _change(new: float, old: float) -> str:
+    return "n/a" if old <= 0 else f"{new / old - 1:+.0%}"
+
+
+def _zones_listed(counted: "Counted") -> dict[str, int]:
+    """County FIPS to the zones the latest correlation release lists for it."""
+    found: dict[str, int] = {}
+    for fips_codes in counted.releases[-1].counties.values():
+        for fips in fips_codes:
+            found[fips] = found.get(fips, 0) + 1
+    return found
+
+
+def _named_lines(result: "Result", counted: "Counted") -> list[str]:
+    ratio = result.mean_days / result.county_rule_mean if result.county_rule_mean > 0 else 0.0
+    listed = _zones_listed(counted)
+    latest = counted.releases[-1].name
+    lines = [
+        "### The places named, under both rules",
+        "",
+        "Weighted days per school year are absolute; weights are relative to each rule's "
+        f"national mean, which fell from {result.county_rule_mean:.3f} (county rule) to "
+        f"{result.mean_days:.3f} ({ratio - 1:+.0%}): mountain-zone days no longer count for "
+        "valley schools anywhere, so a county whose schools lost no days gains weight.",
+        "",
+        f"| County | Schools | Zones the correlation lists for it ({latest}) "
+        "| Days/yr, county rule | Days/yr, per school | Change "
+        "| Weight, county rule | Weight, per school | Schools by zone |",
+        "|---|---|---|---|---|---|---|---|---|",
+    ]
+    unchanged: list[str] = []
+    for fips, label in NAMED_COUNTIES:
+        record = result.counties.get(fips)
+        if record is None:
+            continue
+        rule = _dict(record["county_rule"])
+        old = float(str(rule["days_per_year"]))
+        new = float(str(record["days_per_year"]))
+        zones_text = ", ".join(f"{k} {v}" for k, v in list(_dict(record["zones"]).items())[:4])
+        lines.append(
+            f"| {label} ({fips}) | {record['schools']} | {listed.get(fips, 0)} | {_f(old)} "
+            f"| {_f(new)} | {_change(new, old)} | {_f(rule['weight'])} "
+            f"| {_f(record['weight'])} | {zones_text} |"
+        )
+        if old > 0 and abs(new / old - 1) < UNCHANGED and listed.get(fips, 0) == 1:
+            unchanged.append(label)
+    if unchanged:
+        lines += [
+            "",
+            f"Unchanged in days (within {UNCHANGED:.0%}): {', '.join(unchanged)}. The "
+            "correlation lists a single zone for each of these counties, the zone (nearly) "
+            "all their schools are in (see the last column), so the county rule gave them "
+            "only that zone's warnings and there was nothing for the per-school rule to "
+            "remove; their weight rises only because the national mean fell.",
+        ]
+    return lines
+
+
+def _mover_lines(result: "Result") -> list[str]:
+    changes = []
+    for record in result.counties.values():
+        if int(str(record["schools"])) < MOVERS_MIN_SCHOOLS:
+            continue
+        rule = _dict(record["county_rule"])
+        old = float(str(rule["days_per_year"]))
+        new = float(str(record["days_per_year"]))
+        changes.append((new - old, record, old, new))
+    changes.sort(key=lambda item: (item[0], str(item[1]["fips"])))
+    header = [
+        "| County | Schools | Days/yr, county rule (years counted) | Days/yr, per school "
+        "| Change | Top zones of the county rule |",
+        "|---|---|---|---|---|---|",
+    ]
+
+    def row(item: tuple[float, Mapping[str, JSONValue], float, float]) -> str:
+        _, record, old, new = item
+        rule = _dict(record["county_rule"])
+        tops = "; ".join(
+            f"{_dict(z)['ugc']} {_dict(z)['name']} ({_dict(z)['days']} days)"
+            for z in _list(rule.get("top_zones"))[:2]
+        )
+        return (
+            f"| {record['name']} {record['state']} ({record['fips']}) | {record['schools']} "
+            f"| {_f(old)} ({rule['years_counted']}) | {_f(new)} | {_change(new, old)} | {tops} |"
+        )
+
+    return [
+        f"### Largest changes (counties with at least {MOVERS_MIN_SCHOOLS} schools)",
+        "",
+        "Fifteen largest falls in weighted days per school year:",
+        "",
+        *header,
+        *(row(item) for item in changes[:15]),
+        "",
+        "Fifteen largest rises (a per-school count can exceed the county rule's where the "
+        "county rule left a school year out, where a row's own zone version reaches a school "
+        "the correlation release did not list, or where a school's own time zone differs):",
+        "",
+        *header,
+        *(row(item) for item in reversed(changes[-15:])),
+    ]
+
+
+def _results_lines(result: "Result", counted: "Counted") -> list[str]:
+    sanity = result.sanity
+    lines = [
+        "## Results",
+        "",
+        f"Top {min(10, len(result.states))} states by weight (the mean of their schools' "
+        "weights), with the county rule beside it:",
+        "",
+        *_state_table(result.states[:10]),
+        "",
+        "Bottom 10 states:",
+        "",
+        *_state_table(result.states[-10:]),
+        "",
+        "Every state:",
+        "",
+        *_state_table(result.states),
+        "",
+        *_named_lines(result, counted),
+        "",
+        *_mover_lines(result),
+        "",
+        "### The owner's check",
+        "",
+        f"Bar: {sanity['bar']}.",
+        "",
+    ]
+    for key in ("listed_winter", "winter"):
+        item = _dict(sanity[key])
+        lines.append(
+            f"- {key.replace('_', ' ')} days per year: snowy "
+            + ", ".join(f"{k} {_f(v)}" for k, v in _dict(item["snowy_days_per_year"]).items())
+            + "; mild "
+            + ", ".join(f"{k} {_f(v)}" for k, v in _dict(item["mild_days_per_year"]).items())
+            + f"; lowest snowy over highest mild {item['lowest_snowy_over_highest_mild']}: "
+            + ("passes" if item["passes"] else "FAILS")
+            + "."
+        )
+    lines.append(
+        "- weights: " + ", ".join(f"{k} {_f(v)}" for k, v in _dict(sanity["weights"]).items())
+    )
+    lines += ["", "### Flags (surprises, with the data behind them; nothing was adjusted)", ""]
+    lines.extend(_flag_lines(result.flags) or ["- none"])
+    return lines
+
+
+def _station_lines() -> list[str]:
+    return [
+        "## For the station builders: reading per-school weights",
+        "",
+        "`pipeline/snowlight/sources/stations/coverage.py` reads `counties[].fips` and "
+        "`counties[].weight` from `closure-weights.json` and gives every school its NWS "
+        "county's weight (`Weights.placed`). That keeps working unchanged: each county's "
+        "`weight` is now the mean of its schools' own weights, so a county's schools sum to "
+        "the same total as their own weights wherever the directory county is the NWS county "
+        "(everywhere but Connecticut). Counties with no school are no longer listed (they "
+        "have no weight to give); `load_weights` accepts that. The exact change that makes "
+        "coverage count each school's own weight (not made here: that module is the station "
+        "builders'):",
+        "",
+        "1. `Weights` gains a field `by_school: Mapping[str, float] | None = None` (NCES id "
+        "to weight).",
+        '2. `load_weights` also reads `data["schools"]`, a dict keyed by NCES id whose '
+        "values each hold a numeric `weight` (at least 0), and passes it as `by_school`; it "
+        "raises `CoverageError` for a value that is not a dict with such a weight, as it does "
+        "for a county.",
+        "3. In `Weights.placed`, the weight of a school becomes "
+        "`self.by_school.get(school.school_id) if self.by_school is not None else None`, and "
+        "when that is `None`, `self.by_county.get(school.nws_fips)` as now. Nothing else "
+        "changes: the sums stay per (directory county, state), and `placed` passes "
+        "`by_school` on to the `Weights` it returns.",
+        "4. `snowlight/sources/stations/storms.py` reads `count_weather(...).tally`, the county "
+        "rule's day counts per county; that function and its tally are unchanged.",
+    ]
+
+
 def method_note(result: "Result", counted: "Counted", stamp: str) -> str:
     """Return the method note."""
     checks = result.checks
@@ -332,7 +837,9 @@ def method_note(result: "Result", counted: "Counted", stamp: str) -> str:
     total_rows = sum(int(str(v)) for v in rows_by.values())
     unmapped = _dict(mapping["unmapped_ugcs"])
     years = counted.files
-    sanity = result.sanity
+    fewest = min(
+        (int(str(r["years_counted"])) for r in result.county_rule_records.values()), default=0
+    )
     lines: list[str] = [
         "# Closure weights: method note",
         "",
@@ -340,16 +847,29 @@ def method_note(result: "Result", counted: "Counted", stamp: str) -> str:
         "",
         "## What is measured",
         "",
-        "For every county of the contiguous states and DC (the 5-digit FIPS codes of the NWS "
-        f"county list, {len(counted.counties.counties)} counties): the average number of "
-        "distinct school days per school year on which the county was under at least one "
-        "closure-type NWS event, each day weighted by the heaviest code in effect, over the "
-        f"school years {years[0].label} to {years[-1].label} ({len(years)} years), less any "
-        "school year for which zone rows covering the county could not be counted (the "
-        "county is then averaged over its other years, `years_counted`; see the section on "
-        "school years left out below). `weight` is that average divided by its mean over the "
-        f"{result.schools} directory schools (each school takes its county's value), so the "
-        f"school-weighted national mean weight is 1. That mean is {result.mean_days:.4f} "
+        f"For every school of the directory ({result.schools} schools of the contiguous states "
+        "and DC, each at its NCES latitude and longitude): the average number of distinct "
+        "school days per school year on which the school was under at least one closure-type "
+        "NWS event, each day weighted by the heaviest code in effect, over the school years "
+        f"{years[0].label} to {years[-1].label} ({len(years)} years). A zone-coded event counts "
+        "for the schools inside the polygon of the public forecast zone it was issued for, as "
+        "that zone stood when the product was issued; a county-coded event for every school "
+        "of the county; a storm-based warning (the Flash Flood Warning) for the schools inside "
+        "its polygon. `weight` is a school's average divided by the mean over every school, so "
+        f"the school-weighted national mean weight is 1. That mean is {result.mean_days:.4f} "
+        "weighted days per school year.",
+        "",
+        "Each county's record in `closure-weights.json` is the mean of its schools (so a "
+        "county's `weight` times its schools is the sum of its schools' weights); each "
+        "school's own record is under `schools`, keyed by NCES id. Counties with no school "
+        f"({len(result.counties_without_schools)}: "
+        f"{', '.join(result.counties_without_schools) or 'none'}) have no summary and are "
+        "listed in `counties_without_schools`.",
+        "",
+        "The earlier rule, which gave every county the warnings of every zone the NWS "
+        "zone-county correlation lists for it, is still computed (`county_rule` in each county "
+        "record, and the state table): it is the comparison below and the base of the "
+        f"whole-county diagnostic. Its school-weighted mean was {result.county_rule_mean:.4f} "
         "weighted days per school year.",
         "",
         "## Codes and weights",
@@ -378,24 +898,38 @@ def method_note(result: "Result", counted: "Counted", stamp: str) -> str:
         "## School days and the 6 AM rule",
         "",
         "School days are the weekdays from 15 August to 15 June (holidays are not removed). "
-        f"A day counts for a code when a row of that code covering the county was in effect at "
+        f"A day counts for a code when a row of that code reaching the school was in effect at "
         f"{DECISION_TIME:%H:%M} local time, or its product had been issued by then for a start "
         f"after {DECISION_TIME:%H:%M} and before {SCHOOL_DAY_END:%H:%M} that day and had not "
-        f"been withdrawn by {DECISION_TIME:%H:%M}. A county split by a time zone line counts "
-        "the day if the rule holds in either zone. Spans are those IEM finally recorded "
+        f"been withdrawn by {DECISION_TIME:%H:%M}. Local time is the school's own: its "
+        "zone's time zone in z_18mr25; where the NWS marks the zone as crossed by a time zone "
+        "line (a two-letter code; it does not draw the line), the county's zones, and the day "
+        "counts if the rule holds in either. Spans are those IEM finally recorded "
         "(cancellations and upgrades end them; a begin time a later product moved is read "
         "where it ended up). A row withdrawn (cancelled or upgraded) before it began is kept: "
         "IEM records it ending at the withdrawal, before its begin time, and it counts for its "
         "day when it was still standing at 6 AM; the table below gives how many such rows each "
         "school year has.",
         "",
+        *_zone_polygon_lines(result),
+        "",
+        *_placement_lines(result),
+        "",
+        *_storm_lines(result),
+        "",
         "## Sources",
         "",
         "- NWS VTEC events: the Iowa Environmental Mesonet archive, one CSV per school year "
         f"from `{WATCHWARN_URL}` (`accept=csv`, the closure-type codes, the contiguous "
         "states and DC, rows beginning 1 August to 17 June). URLs, retrieval times and SHA-256 "
-        "sums are in `manifest.json`.",
-        "- Zone to county: the NWS zone-county correlation files "
+        "sums of every file are in `manifest.json`.",
+        "- Zone polygons: the NWS public zone releases still served "
+        f"({', '.join(f'`{r.url}`' for r in zonepolys.ZONE_RELEASES)}, MD5 as "
+        f"{zonepolys.PUBLIC_ZONES_PAGE} lists it), and IEM's full-resolution copies of the "
+        f"zones no served release holds (`{WATCHWARN_URL}` with `simple=0`).",
+        "- Storm-based polygons: IEM, one shapefile per school year (`accept=shapefile`, FF.W, "
+        "`addsvs=1`).",
+        "- Zone to county (the county rule): the NWS zone-county correlation files "
         f"(`{zones.RELEASE_BASE}bpDDmmYY.dbx`, page {zones.ZONE_COUNTY_PAGE}). The page links "
         "only the two newest; every older release still served was found by requesting "
         "`bpDDmmYY.dbx` for every date from 2013-01-01 to 2026-09-26 (HEAD, 2026-09-26): "
@@ -407,7 +941,17 @@ def method_note(result: "Result", counted: "Counted", stamp: str) -> str:
         f"- Counties, states and time zones: the NWS county file `{zones.COUNTY_RELEASE.url}`.",
         "- Schools: the school directory (`pipeline/out/internal/directory/schools.parquet`).",
         "",
-        "## Zone to county",
+        *_results_lines(result, counted),
+        "",
+        *_station_lines(),
+        "",
+        "## The county rule (kept for comparison and the whole-county diagnostic)",
+        "",
+        "Everything in this part describes the earlier rule, which the per-school metric "
+        "replaced; its numbers are `county_rule` in the county records and the county-rule "
+        "columns of the state table.",
+        "",
+        "### Zone to county",
         "",
         "A zone row counts for every county the correlation release in effect on its "
         "product's issue date lists for it; a county row names its county directly. Rows by "
@@ -459,7 +1003,7 @@ def method_note(result: "Result", counted: "Counted", stamp: str) -> str:
         "",
     ]
     lines.extend(_name_lines(checks))
-    lines += ["", "### Against IEM's archived zone outlines", ""]
+    lines += ["", "#### Against IEM's archived zone outlines", ""]
     lines.extend(_outline_lines(_dict(checks.get("zone_outlines")), result))
     tropical = [
         (label, _dict(entry))
@@ -468,7 +1012,7 @@ def method_note(result: "Result", counted: "Counted", stamp: str) -> str:
     ended = [_dict(row) for _, entry in tropical for row in _list(entry.get("tropical_rows_ended"))]
     lines += [
         "",
-        "## Rows",
+        "### Rows",
         "",
         "Tropical Storm and Hurricane Warnings are issued until further notice; IEM stores "
         "a placeholder expiry for such a row. Rows no product ended were ended when the last "
@@ -495,12 +1039,12 @@ def method_note(result: "Result", counted: "Counted", stamp: str) -> str:
             f"| {label} | {entry['rows']} | {entry['kept']} | {entry['ended_before_start']} "
             f"| {entry['longest_row_days']} | {codes} |"
         )
-    lines += ["", "### Codes replaced during the period", ""]
+    lines += ["", "#### Codes replaced during the period", ""]
     lines.extend(_change_lines(_dict(checks.get("code_changes"))))
     placed = _dict(_dict(checks["schools"])["placed_by"])
     lines += [
         "",
-        "## Schools",
+        "### Schools in counties",
         "",
         "Each school takes its directory county when the NWS uses that code, else the NWS "
         "county its coordinates fall in (Connecticut's planning regions), else the nearest "
@@ -508,81 +1052,48 @@ def method_note(result: "Result", counted: "Counted", stamp: str) -> str:
         + ", ".join(f"{k} {v}" for k, v in placed.items())
         + f"; unplaced {len(_list(_dict(checks['schools'])['unplaced']))}; schools whose "
         f"directory county differs from the county their point falls in: "
-        f"{_dict(checks['schools'])['fips_point_disagreements']}.",
+        f"{_dict(checks['schools'])['fips_point_disagreements']}. County-coded products "
+        "reach a school through this county.",
         "",
         *_address_lines(_list(_dict(checks["schools"]).get("address_state_elsewhere"))),
-        "",
-        "## Results",
-        "",
-        f"Top {min(10, len(result.states))} states by weight:",
-        "",
     ]
-    lines.extend(_state_table(result.states[:10]))
-    lines += ["", "Bottom 10 states:", ""]
-    lines.extend(_state_table(result.states[-10:]))
     whole_rows = sorted(
         result.states, key=lambda row: (-float(str(row["whole_county_weight"])), str(row["state"]))
     )
     lines += [
         "",
-        "`Partial-county share`: the part of the state's school-weighted closure-days that "
-        "came from days when the covering zones were only some of the county's zones.",
-        "",
-        "Schools in counties averaged over fewer school years (incomplete years left out; "
-        "see the section on them), by state: "
-        + (
-            ", ".join(
-                f"{row['state']} {row['schools_in_counties_with_school_years_left_out']} of "
-                f"{row['schools']}"
-                for row in sorted(
-                    result.states,
-                    key=lambda r: -int(str(r["schools_in_counties_with_school_years_left_out"])),
-                )
-                if row["schools_in_counties_with_school_years_left_out"]
-            )
-            or "none"
-        )
-        + ".",
-        "",
         "### Diagnostic: whole-county days only",
         "",
         "Counting only the days an event covered every zone of a county (or the county "
         "itself), normalized the same way (school-weighted mean "
-        f"{result.whole_mean_days:.4f} days). This is not the metric; it shows how much of "
-        "the ranking the correlation rule's partial-county days carry. Top 10 and bottom 10:",
+        f"{result.whole_mean_days:.4f} days). It shows how much of the county rule's ranking "
+        "its partial-county days carried. Top 10 and bottom 10:",
         "",
-        "| State | Whole-county weight | Weight (metric) | Rank (metric) |",
-        "|---|---|---|---|",
+        "| State | Whole-county weight | Weight (metric) | Rank (metric) "
+        "| County-rule weight | Partial-county share of county-rule days |",
+        "|---|---|---|---|---|---|",
     ]
     lines.extend(
         f"| {row['state']} | {_f(row['whole_county_weight'])} | {_f(row['weight'])} "
-        f"| {row['rank']} |"
+        f"| {row['rank']} | {_f(row['county_rule_weight'])} | {_pct(row['partial_day_share'])} |"
         for row in [*whole_rows[:10], *whole_rows[-10:]]
     )
+    recount = _dict(checks.get("school_recount"))
     lines += [
         "",
-        "### The owner's check",
+        "## Cross-checks",
         "",
-        f"Bar: {sanity['bar']}.",
+        f"Per school: {recount.get('agree', 0)} of {recount.get('schools', 0)} schools (the "
+        "first school of each state by NCES id, every school placed in its nearest zone, and "
+        f"the {recount.get('school_year_rule_schools', 0)} schools with a school year logged "
+        "above) recounted directly, row by row, without the cells the count groups schools "
+        "into, re-applying the school-year rule from the rows of each school's own zone: the "
+        "same weighted days to within 1e-9, and the same versions taken in the same school "
+        "years. The recounts are in `manifest.json` (`school_recount`).",
+        "",
+        "Against the existing day-file client (`IemArchive`), county days under the county rule:",
         "",
     ]
-    for key in ("listed_winter", "winter"):
-        item = _dict(sanity[key])
-        lines.append(
-            f"- {key.replace('_', ' ')} days per year: snowy "
-            + ", ".join(f"{k} {_f(v)}" for k, v in _dict(item["snowy_days_per_year"]).items())
-            + "; mild "
-            + ", ".join(f"{k} {_f(v)}" for k, v in _dict(item["mild_days_per_year"]).items())
-            + f"; lowest snowy over highest mild {item['lowest_snowy_over_highest_mild']}: "
-            + ("passes" if item["passes"] else "FAILS")
-            + "."
-        )
-    lines.append(
-        "- weights: " + ", ".join(f"{k} {_f(v)}" for k, v in _dict(sanity["weights"]).items())
-    )
-    lines += ["", "### Flags (surprises, with the data behind them; nothing was adjusted)", ""]
-    lines.extend(_flag_lines(result.flags) or ["- none"])
-    lines += ["", "## Cross-checks", "", "Against the existing day-file client (`IemArchive`):", ""]
     lines.extend(_day_file_lines(checks) or ["- not run"])
     lines += [
         "",
@@ -590,20 +1101,23 @@ def method_note(result: "Result", counted: "Counted", stamp: str) -> str:
         "",
         "## Limits",
         "",
-        "- A zone that touches a county counts for all of it, as the correlation rule "
-        "requires; where a county holds mountains and valleys, warnings for the mountains "
-        "count for the valley schools too (see the partial-county share and the flags).",
-        "- Zones before 2 April 2019 are read in the first served release; the name check "
-        "and IEM's archived outlines test whether they changed. Rows of zones in no served "
-        "release (reconfigured before it) are left out, and so are the school years they "
-        "leave incomplete in the counties their outlines covered: those counties are "
-        "averaged over fewer years (as few as "
-        f"{min((int(str(r['years_counted'])) for r in result.counties.values()), default=0)} "
-        f"of {len(years)}), so a single mild or severe year weighs more in them.",
-        "- The correlation files have quirks of their own, kept as published: some zones "
-        "named for a county list only the independent cities inside it (see the outline "
-        "check), and a record can name one county with another's FIPS code (see Zone to "
-        "county).",
+        "- A school's zone is decided by its NCES point; a point that is off (a district "
+        "office's address, a rounded coordinate) puts the school in the zone of that point.",
+        "- The zone polygons of versions no served NWS release holds are IEM's copies of the "
+        "NWS polygons (checked against the rows' own areas, not against an NWS file). A "
+        "served polygon stands for a version when their areas agree to within 1e-6; a redraw "
+        "that kept a zone's area to that precision would go unseen.",
+        "- Whether a school is inside a zone, near one or neither is decided in z_18mr25; a "
+        "shoreline an older release drew differently can leave a shore school outside an "
+        "older version's polygon.",
+        "- A school in a zone the NWS marks as crossed by a time zone line counts a day when "
+        "the 6 AM rule holds in either zone.",
+        "- School years before 2 April 2019 are read with the zone polygon each row was issued "
+        "for, which the county rule could not do; the name and outline checks in the county "
+        "rule's part apply to the county rule only.",
+        "- Under the county rule, counties with school years left out are averaged over fewer "
+        f"years (as few as {fewest} of {len(years)}); a school that falls back to its county "
+        "(see where each school is) inherits that.",
         "- Holidays are not removed from school days; a district's own calendar is unknown.",
         "- The weights are judgment, not a measured closure rate.",
         "",
@@ -668,8 +1182,9 @@ def priority_note(document: Mapping[str, JSONValue]) -> str:
         "says why it counts (`counted_because` in the JSON). A record's "
         "counties are its market's counties in the DMA crosswalk the station registry uses; "
         "every figure is an upper bound, since a station rarely lists its whole market. "
-        "`Weighted` schools are schools times their county's closure weight (national mean "
-        "1 per school). Members whose own page said it was last updated before "
+        "`Weighted` schools are the sum of the schools' own closure weights (each school in "
+        "its own forecast zone; national mean 1 per school). Members whose own page said it "
+        "was last updated before "
         f"{STALE_BEFORE} are marked: they count, as the rule says, but have not listed a "
         "closing since.",
         "",

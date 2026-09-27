@@ -2,7 +2,8 @@
 
 Actions:
 
-* ``build``: count closure-type school days per county from the IEM archive,
+* ``build``: count closure-type school days for every school in its own forecast
+  zone (and, for comparison, per county by the county rule) from the IEM archive,
   write the closure weights, the state weights, the station priority, the method
   note and the map into ``pipeline/out/internal/weights/`` (see
   :mod:`snowlight.weights.build`). Cached files are reused; once everything is
@@ -95,16 +96,20 @@ def main(argv: Sequence[str] | None = None) -> int:
         sys.stderr.write(f"weights build failed: {error}\n")
         return 1
     _print(
-        f"{len(result.counties)} counties, {result.schools} schools; school-weighted mean "
-        f"{result.mean_days:.3f} weighted closure days per school year"
+        f"{result.schools} schools in {len(result.counties)} counties; mean "
+        f"{result.mean_days:.3f} weighted closure days per school year per school "
+        f"(county rule: {result.county_rule_mean:.3f})"
     )
-    short = [r for r in result.counties.values() if r.get("school_years_left_out")]
-    _print(
-        "counties averaged over fewer school years (incomplete years left out): "
-        f"{len(short)}, holding {sum(int(str(r['schools'])) for r in short)} schools"
+    short = sum(
+        int(str(record.get("schools_with_school_years_left_out") or 0))
+        for record in result.counties.values()
     )
+    _print(f"schools averaged over fewer school years: {short}")
     for row in result.states[:10]:
-        _print(f"  {row['rank']:>2} {row['state']} weight {row['weight']}")
+        _print(
+            f"  {row['rank']:>2} {row['state']} weight {row['weight']} "
+            f"(county rule {row.get('county_rule_weight')}, rank {row.get('county_rule_rank')})"
+        )
     for key in ("listed_winter", "winter"):
         check = result.sanity[key]
         if isinstance(check, dict):

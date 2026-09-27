@@ -12,6 +12,9 @@ these helpers through the fixtures below.
 """
 
 import hashlib
+import io
+import struct
+import zipfile
 from collections import Counter
 from dataclasses import dataclass, field
 from datetime import UTC, date, datetime, timedelta
@@ -24,7 +27,16 @@ from snowlight.sources.nws.boundaries import BoundaryRelease
 from snowlight.sources.nws.http import HttpCache
 from snowlight.sources.nws.iem import day_url
 from snowlight.weather.hazards import CONUS_STATES
-from snowlight.weights import archive, build, crosscheck, markets, outlines, zones
+from snowlight.weights import (
+    archive,
+    build,
+    crosscheck,
+    markets,
+    outlines,
+    polygons,
+    zonepolys,
+    zones,
+)
 from snowlight.weights.cache import WeightsCache
 from snowlight.weights.codes import code_pairs
 
@@ -34,11 +46,40 @@ YEARS = {2018: "iem-2018-2019.csv", 2021: "iem-2021-2022.csv", 2024: "iem-2024-2
 RELEASES = ("bp02ap19", "bp10oc19", "bp05mr24", "bp10se24", "bp16ap26")
 DAYS = tuple(date(2025, 1, 30) + timedelta(days=n) for n in range(10))
 UGCS_VALID = datetime(2019, 1, 15, 12, tzinfo=UTC)
+ZONE_SETS = ("z_18mr25", "z_16ap26")
+SLC_YEAR = 2019
+OUTSIDE_YEARS = {
+    2015: "iem-2015-2016-outside.csv",
+    2016: "iem-2016-2017-outside.csv",
+    2017: "iem-2017-2018-outside.csv",
+}
+"""The school-year slices of the school-year rule's tests (NCZ051 in 2015-16 and 2016-17;
+NYZ072, FLZ073, FLZ074 and MDZ008 in 2017-18)."""
 
 
 def fixture_bytes(name: str) -> bytes:
     """Return the bytes of a real fixture slice."""
     return (FIXTURES / name).read_bytes()
+
+
+def zone_releases() -> tuple[BoundaryRelease, ...]:
+    """The served zone releases for the zone slices (MD5 and record count of each slice)."""
+    found = []
+    for name, release in zip(ZONE_SETS, zonepolys.ZONE_RELEASES, strict=True):
+        data = fixture_bytes(f"{name}.zip")
+        md5 = hashlib.md5(data, usedforsecurity=False).hexdigest()
+        with zipfile.ZipFile(io.BytesIO(data)) as members:
+            dbf = members.read(next(n for n in members.namelist() if n.endswith(".dbf")))
+        (records,) = struct.unpack_from("<I", dbf, 4)
+        found.append(BoundaryRelease("zone", release.valid_from, release.url, md5, records))
+    return tuple(found)
+
+
+def version_request(name: str) -> zonepolys.RequestKey:
+    """The request an ``iem-zones-<office>-<code>-<begin>.zip`` fixture answers."""
+    _, _, office, code, stamp = name.removesuffix(".zip").split("-")
+    begin = datetime.strptime(stamp, "%Y%m%dT%H%M").replace(tzinfo=UTC)
+    return zonepolys.RequestKey(office, code, begin, begin.year)
 
 
 def county_release() -> BoundaryRelease:
@@ -109,6 +150,11 @@ class Kit:
         """The county release describing the county slice."""
         return county_release()
 
+    @staticmethod
+    def zone_releases() -> tuple[BoundaryRelease, ...]:
+        """The served zone releases describing the zone slices."""
+        return zone_releases()
+
     releases = RELEASES
     days = DAYS
 
@@ -131,6 +177,17 @@ def serve_all(fake: FakeServer) -> None:
     for year in (2018, 2019, 2021):
         valid = outlines.outline_valid(year)
         fake.files[outlines.outlines_url(valid)] = fixture_bytes(f"ugcs-{valid:%Y-%m-%d}.geojson")
+    for name, release in zip(ZONE_SETS, zone_releases(), strict=True):
+        fake.files[release.url] = fixture_bytes(f"{name}.zip")
+    for path in sorted(FIXTURES.glob("iem-zones-*.zip")):
+        fake.files[version_request(path.name).url] = path.read_bytes()
+    for year in (*YEARS, SLC_YEAR):
+        polygon_file = f"iem-polygons-{year}-{year + 1}.zip"
+        fake.files[polygons.polygon_url(year)] = fixture_bytes(polygon_file)
+    fake.files[archive.year_url(SLC_YEAR)] = fixture_bytes("iem-2019-2020-slc.csv")
+    for year, name in OUTSIDE_YEARS.items():
+        fake.files[archive.year_url(year)] = fixture_bytes(name)
+    fake.files[polygons.polygon_url(2017)] = fixture_bytes("iem-polygons-2017-2018.zip")
 
 
 @pytest.fixture

@@ -150,6 +150,24 @@
   "source_sha256": "69d3472d4d576b8a4924efb7a43108f7c64111f503e15efd650f43dc617a6f12",
   "source_url": "https://www.weather.gov/source/gis/Shapefiles/County/bp16ap26.dbx"
  },
+ "c_16ap26-zones.zip": {
+  "records_kept": [
+   290,
+   339,
+   599,
+   935,
+   2000,
+   2002,
+   3031,
+   3035,
+   3076,
+   3241
+  ],
+  "retrieved_at": "2026-09-25T00:07:47Z",
+  "selection": "these records' .shp and .dbf bytes unchanged, original order",
+  "source_sha256": "503f9d697a97bdbfd8a7cfe6b3b666801f43392fa220294987a68cac0bd3f03b",
+  "source_url": "https://www.weather.gov/source/gis/Shapefiles/County/c_16ap26.zip"
+ },
  "c_16ap26.zip": {
   "listed_md5": "734d75df3791bdc0cbb29fd6ed75a387",
   "records_kept": [
@@ -181,6 +199,80 @@
   "selection": "the whole file",
   "source_sha256": "f70c3ce6bac6e1e667ee29c150735224a9fb19d66edbdef17822ddc8006c238a",
   "source_url": "https://www2.census.gov/geo/docs/reference/ct_change/ct_cou_to_cousub_crosswalk.xlsx"
+ },
+ "iem-2015-2016-outside.csv": {
+  "lines_kept": [
+   9190,
+   10643,
+   15717,
+   15807,
+   15901,
+   16366,
+   16669,
+   23339,
+   23593,
+   24194,
+   26056,
+   26229,
+   26912,
+   28496
+  ],
+  "retrieved_at": "2026-09-26T18:41:40Z",
+  "selection": "the header and every NCZ051 row (14 rows), unchanged",
+  "source_sha256": "a690d6fa5071ab5bda00cdf728216a35f97e36ce41b5fc1a2369321155bb538e",
+  "source_url": "https://mesonet.agron.iastate.edu/cgi-bin/request/gis/watchwarn.py?accept=csv&sts=2015-08-01T00:00Z&ets=2016-06-17T00:00Z&limitps=1&phenomena=BZ,EC,FF,HU,IS,LE,LE,TR,WC,WS,WW,ZR&significance=W,W,W,W,W,W,Y,W,W,W,Y,Y&location_group=states&states=AL,AR,AZ,CA,CO,CT,DC,DE,FL,GA,IA,ID,IL,IN,KS,KY,LA,MA,MD,ME,MI,MN,MO,MS,MT,NC,ND,NE,NH,NJ,NM,NV,NY,OH,OK,OR,PA,RI,SC,SD,TN,TX,UT,VA,VT,WA,WI,WV,WY"
+ },
+ "iem-2016-2017-outside.csv": {
+  "lines_kept": [
+   4211,
+   12309,
+   14059,
+   14115,
+   19595,
+   19606,
+   19875,
+   23284,
+   28126,
+   28225
+  ],
+  "retrieved_at": "2026-09-26T18:41:46Z",
+  "selection": "the header and every NCZ051 row (10 rows), unchanged",
+  "source_sha256": "cc28d7fc62f9934888dac030eb269a31ff94bf0c4b1e27016fadc4e91d754394",
+  "source_url": "https://mesonet.agron.iastate.edu/cgi-bin/request/gis/watchwarn.py?accept=csv&sts=2016-08-01T00:00Z&ets=2017-06-17T00:00Z&limitps=1&phenomena=BZ,EC,FF,HU,IS,LE,LE,TR,WC,WS,WW,ZR&significance=W,W,W,W,W,W,Y,W,W,W,Y,Y&location_group=states&states=AL,AR,AZ,CA,CO,CT,DC,DE,FL,GA,IA,ID,IL,IN,KS,KY,LA,MA,MD,ME,MI,MN,MO,MS,MT,NC,ND,NE,NH,NJ,NM,NV,NY,OH,OK,OR,PA,RI,SC,SD,TN,TX,UT,VA,VT,WA,WI,WV,WY"
+ },
+ "iem-2017-2018-outside.csv": {
+  "lines_kept": [
+   2123,
+   2478,
+   3124,
+   3972,
+   5577,
+   10557,
+   10558,
+   10585,
+   10837,
+   11215,
+   12462,
+   20798,
+   21282,
+   23153,
+   23154,
+   23596,
+   23603,
+   25694,
+   25836,
+   25917,
+   30147,
+   34377,
+   35943,
+   42409,
+   42566,
+   42773
+  ],
+  "retrieved_at": "2026-09-26T18:41:55Z",
+  "selection": "the header and every NYZ072, FLZ073, FLZ074 and MDZ008 row (26 rows), unchanged",
+  "source_sha256": "12b62039497a322d02ef9d67b326bf3138f238be5204efd2d767166db6c1e668",
+  "source_url": "https://mesonet.agron.iastate.edu/cgi-bin/request/gis/watchwarn.py?accept=csv&sts=2017-08-01T00:00Z&ets=2018-06-17T00:00Z&limitps=1&phenomena=BZ,EC,FF,HU,IS,LE,LE,TR,WC,WS,WW,ZR&significance=W,W,W,W,W,W,Y,W,W,W,Y,Y&location_group=states&states=AL,AR,AZ,CA,CO,CT,DC,DE,FL,GA,IA,ID,IL,IN,KS,KY,LA,MA,MD,ME,MI,MN,MO,MS,MT,NC,ND,NE,NH,NJ,NM,NV,NY,OH,OK,OR,PA,RI,SC,SD,TN,TX,UT,VA,VT,WA,WI,WV,WY"
  },
  "iem-2018-2019.csv": {
   "lines_kept": [
@@ -320,6 +412,19 @@
   "selection": "the header and lines 5813..52962 (131 rows): Rhode Island zones; MTZ043, IDZ075 and IDZ019 (renamed or retired)",
   "source_sha256": "2419c991e1d7e2bde8da611fd4d27f7ad2efd820ef777656a79f71cb54fbcd03",
   "source_url": "https://mesonet.agron.iastate.edu/cgi-bin/request/gis/watchwarn.py?accept=csv&sts=2018-08-01T00:00Z&ets=2019-06-17T00:00Z&limitps=1&phenomena=BZ,EC,FF,HU,IS,LE,LE,TR,WC,WS,WW,ZR&significance=W,W,W,W,W,W,Y,W,W,W,Y,Y&location_group=states&states=AL,AR,AZ,CA,CO,CT,DC,DE,FL,GA,IA,ID,IL,IN,KS,KY,LA,MA,MD,ME,MI,MN,MO,MS,MT,NC,ND,NE,NH,NJ,NM,NV,NY,OH,OK,OR,PA,RI,SC,SD,TN,TX,UT,VA,VT,WA,WI,WV,WY"
+ },
+ "iem-2019-2020-slc.csv": {
+  "lines_kept": [
+   2314,
+   2536,
+   2830,
+   3237,
+   3256
+  ],
+  "retrieved_at": "2026-09-26T18:42:12Z",
+  "selection": "the header and the UTZ003 and UTZ008 rows of SLC.WS.W.0011, 0012 and 0013 of 2019 (5 rows), unchanged",
+  "source_sha256": "72e9d320eb69556a15455a6087c3fc46d8236336d79b3d21e3cf32a8995a1810",
+  "source_url": "https://mesonet.agron.iastate.edu/cgi-bin/request/gis/watchwarn.py?accept=csv&sts=2019-08-01T00:00Z&ets=2020-06-17T00:00Z&limitps=1&phenomena=BZ,EC,FF,HU,IS,LE,LE,TR,WC,WS,WW,ZR&significance=W,W,W,W,W,W,Y,W,W,W,Y,Y&location_group=states&states=AL,AR,AZ,CA,CO,CT,DC,DE,FL,GA,IA,ID,IL,IN,KS,KY,LA,MA,MD,ME,MI,MN,MO,MS,MT,NC,ND,NE,NH,NJ,NM,NV,NY,OH,OK,OR,PA,RI,SC,SD,TN,TX,UT,VA,VT,WA,WI,WV,WY"
  },
  "iem-2021-2022.csv": {
   "lines_kept": [
@@ -542,6 +647,222 @@
   "selection": "the Rhode Island county and zone rows (NWS_UGC RIZ/RIC), bytes unchanged",
   "source_sha256": "594bc89838266619ff8a63977b410e2bd941d45b6a46d2628b5bd9ecd4e77884",
   "source_url": "https://mesonet.agron.iastate.edu/cgi-bin/request/gis/watchwarn.py?accept=shapefile&sts=2025-02-08T00:00Z&ets=2025-02-09T00:00Z&limitps=1&phenomena=BZ,EC,FF,HU,IS,LE,LE,TR,WC,WS,WW,ZR&significance=W,W,W,W,W,W,Y,W,W,W,Y,Y&location_group=states&states=AL,AR,AZ,CA,CO,CT,DC,DE,FL,GA,IA,ID,IL,IN,KS,KY,LA,MA,MD,ME,MI,MN,MO,MS,MT,NC,ND,NE,NH,NJ,NM,NV,NY,OH,OK,OR,PA,RI,SC,SD,TN,TX,UT,VA,VT,WA,WI,WV,WY&simple=1&addsvs=1"
+ },
+ "iem-polygons-2016-2017-blank.zip": {
+  "records_kept": [
+   327,
+   328,
+   329
+  ],
+  "retrieved_at": "2026-09-27T01:38:38Z",
+  "selection": "the polygon rows of FF.W BOI 1 2017, .shp and .dbf bytes unchanged",
+  "source_sha256": "f7fb0e4e4d18b25f5cfcbb5d0ebf657d54c231c052acb30fb15fd0dea553b1db",
+  "source_url": "https://mesonet.agron.iastate.edu/cgi-bin/request/gis/watchwarn.py?accept=shapefile&sts=2016-08-01T00:00Z&ets=2017-06-17T00:00Z&limitps=1&phenomena=FF&significance=W&location_group=states&states=AL,AR,AZ,CA,CO,CT,DC,DE,FL,GA,IA,ID,IL,IN,KS,KY,LA,MA,MD,ME,MI,MN,MO,MS,MT,NC,ND,NE,NH,NJ,NM,NV,NY,OH,OK,OR,PA,RI,SC,SD,TN,TX,UT,VA,VT,WA,WI,WV,WY&simple=1&addsvs=1"
+ },
+ "iem-polygons-2017-2018.zip": {
+  "records_kept": [
+   2928
+  ],
+  "retrieved_at": "2026-09-27T01:39:35Z",
+  "selection": "the polygon rows of FF.W OKX 1 2018 (the first FF.W event of OKX), .shp and .dbf bytes unchanged",
+  "source_sha256": "736ec7fbdfc492049a13ae2c8d5b8500a36953f27d4e205596dbb46344bece4a",
+  "source_url": "https://mesonet.agron.iastate.edu/cgi-bin/request/gis/watchwarn.py?accept=shapefile&sts=2017-08-01T00:00Z&ets=2018-06-17T00:00Z&limitps=1&phenomena=FF&significance=W&location_group=states&states=AL,AR,AZ,CA,CO,CT,DC,DE,FL,GA,IA,ID,IL,IN,KS,KY,LA,MA,MD,ME,MI,MN,MO,MS,MT,NC,ND,NE,NH,NJ,NM,NV,NY,OH,OK,OR,PA,RI,SC,SD,TN,TX,UT,VA,VT,WA,WI,WV,WY&simple=1&addsvs=1"
+ },
+ "iem-polygons-2018-2019.zip": {
+  "records_kept": [
+   414,
+   415
+  ],
+  "retrieved_at": "2026-09-27T01:40:03Z",
+  "selection": "the polygon rows of the FF.W events BOX 13 2018, .shp and .dbf bytes unchanged",
+  "source_sha256": "ace1c9c73c611bde93aebb75ba80ffda7e25a3c6828982385858bf207d032e14",
+  "source_url": "https://mesonet.agron.iastate.edu/cgi-bin/request/gis/watchwarn.py?accept=shapefile&sts=2018-08-01T00:00Z&ets=2019-06-17T00:00Z&limitps=1&phenomena=FF&significance=W&location_group=states&states=AL,AR,AZ,CA,CO,CT,DC,DE,FL,GA,IA,ID,IL,IN,KS,KY,LA,MA,MD,ME,MI,MN,MO,MS,MT,NC,ND,NE,NH,NJ,NM,NV,NY,OH,OK,OR,PA,RI,SC,SD,TN,TX,UT,VA,VT,WA,WI,WV,WY&simple=1&addsvs=1"
+ },
+ "iem-polygons-2019-2020.zip": {
+  "records_kept": [
+   3890,
+   3891
+  ],
+  "retrieved_at": "2026-09-27T01:40:22Z",
+  "selection": "the polygon rows of FF.W SLC 17 2019, .shp and .dbf bytes unchanged",
+  "source_sha256": "3fcdb972ae807580445b0b0bb681c1fd653196d6359f15652db5e6772fabd29c",
+  "source_url": "https://mesonet.agron.iastate.edu/cgi-bin/request/gis/watchwarn.py?accept=shapefile&sts=2019-08-01T00:00Z&ets=2020-06-17T00:00Z&limitps=1&phenomena=FF&significance=W&location_group=states&states=AL,AR,AZ,CA,CO,CT,DC,DE,FL,GA,IA,ID,IL,IN,KS,KY,LA,MA,MD,ME,MI,MN,MO,MS,MT,NC,ND,NE,NH,NJ,NM,NV,NY,OH,OK,OR,PA,RI,SC,SD,TN,TX,UT,VA,VT,WA,WI,WV,WY&simple=1&addsvs=1"
+ },
+ "iem-polygons-2021-2022.zip": {
+  "records_kept": [
+   2197,
+   2198
+  ],
+  "retrieved_at": "2026-09-27T01:40:56Z",
+  "selection": "the polygon rows of the FF.W events LIX 1 2022, .shp and .dbf bytes unchanged",
+  "source_sha256": "cfe13cac5ffb5729f11f36d030f1e6b411acb43fee9a01353f24af130e5a99f9",
+  "source_url": "https://mesonet.agron.iastate.edu/cgi-bin/request/gis/watchwarn.py?accept=shapefile&sts=2021-08-01T00:00Z&ets=2022-06-17T00:00Z&limitps=1&phenomena=FF&significance=W&location_group=states&states=AL,AR,AZ,CA,CO,CT,DC,DE,FL,GA,IA,ID,IL,IN,KS,KY,LA,MA,MD,ME,MI,MN,MO,MS,MT,NC,ND,NE,NH,NJ,NM,NV,NY,OH,OK,OR,PA,RI,SC,SD,TN,TX,UT,VA,VT,WA,WI,WV,WY&simple=1&addsvs=1"
+ },
+ "iem-polygons-2024-2025.zip": {
+  "records_kept": [
+   942,
+   947,
+   950,
+   951,
+   952,
+   953,
+   7090,
+   7092,
+   7093,
+   7099,
+   7100,
+   7114,
+   7115,
+   7123,
+   7126,
+   7127,
+   7128,
+   7129,
+   7132,
+   7133,
+   7136,
+   7138
+  ],
+  "retrieved_at": "2026-09-27T01:37:35Z",
+  "selection": "the polygon rows of the FF.W events BOX 15 2024, BOX 18 2024, BOX 20 2024, BOX 21 2024, TAE 74 2024, TAE 76 2024, TAE 81 2024, TAE 82 2024, TAE 93 2024, TAE 94 2024, TAE 100 2024, TAE 103 2024, TAE 105 2024, TAE 108 2024, TAE 110 2024, .shp and .dbf bytes unchanged",
+  "source_sha256": "90c2371074d6196646e40d2df28f0fdb5bf194cb5a8abfa0aad843f1c4f8579d",
+  "source_url": "https://mesonet.agron.iastate.edu/cgi-bin/request/gis/watchwarn.py?accept=shapefile&sts=2024-08-01T00:00Z&ets=2025-06-17T00:00Z&limitps=1&phenomena=FF&significance=W&location_group=states&states=AL,AR,AZ,CA,CO,CT,DC,DE,FL,GA,IA,ID,IL,IN,KS,KY,LA,MA,MD,ME,MI,MN,MO,MS,MT,NC,ND,NE,NH,NJ,NM,NV,NY,OH,OK,OR,PA,RI,SC,SD,TN,TX,UT,VA,VT,WA,WI,WV,WY&simple=1&addsvs=1"
+ },
+ "iem-zones-BOX-WS.W-20190304T0000.zip": {
+  "records_kept": [
+   19
+  ],
+  "retrieved_at": "2026-09-27T02:11:35Z",
+  "selection": "the zone rows of the versions no served release holds (zone code and AREA_KM2), .shp and .dbf bytes unchanged",
+  "source_sha256": "54784671e4255f01603e3f8aafae3860bd1dad2a4e515241d349920d9382c644",
+  "source_url": "https://mesonet.agron.iastate.edu/cgi-bin/request/gis/watchwarn.py?accept=shapefile&sts=2019-03-04T00:00Z&ets=2019-03-04T00:01Z&limitps=1&phenomena=WS&significance=W&location_group=wfo&wfo=BOX&simple=0"
+ },
+ "iem-zones-GSP-WS.W-20160122T0000.zip": {
+  "records_kept": [
+   12
+  ],
+  "retrieved_at": "2026-09-27T01:54:38Z",
+  "selection": "the zone rows of the versions no served release holds (zone code and AREA_KM2), .shp and .dbf bytes unchanged",
+  "source_sha256": "091c2f158215767680e83deca6db668f8368f7643c6ddbbd9c6501003c3a23fc",
+  "source_url": "https://mesonet.agron.iastate.edu/cgi-bin/request/gis/watchwarn.py?accept=shapefile&sts=2016-01-22T00:00Z&ets=2016-01-22T00:01Z&limitps=1&phenomena=WS&significance=W&location_group=wfo&wfo=GSP&simple=0"
+ },
+ "iem-zones-GSP-WS.W-20170107T0000.zip": {
+  "records_kept": [
+   19
+  ],
+  "retrieved_at": "2026-09-27T01:38:23Z",
+  "selection": "the zone rows of the versions no served release holds (zone code and AREA_KM2), .shp and .dbf bytes unchanged",
+  "source_sha256": "7f9c4b7614abee84e77d2bd697aee8c0974b2a6f9d4edb541d16edd88693a61e",
+  "source_url": "https://mesonet.agron.iastate.edu/cgi-bin/request/gis/watchwarn.py?accept=shapefile&sts=2017-01-07T00:00Z&ets=2017-01-07T00:01Z&limitps=1&phenomena=WS&significance=W&location_group=wfo&wfo=GSP&simple=0"
+ },
+ "iem-zones-LIX-TR.W-20210827T2112.zip": {
+  "records_kept": [
+   0,
+   2,
+   4,
+   5
+  ],
+  "retrieved_at": "2026-09-27T01:38:36Z",
+  "selection": "the zone rows of the versions no served release holds (zone code and AREA_KM2), .shp and .dbf bytes unchanged",
+  "source_sha256": "f31b97b94463f7f7335549161f4af5890bf3be4093ea48a3743decb6522c41a0",
+  "source_url": "https://mesonet.agron.iastate.edu/cgi-bin/request/gis/watchwarn.py?accept=shapefile&sts=2021-08-27T21:12Z&ets=2021-08-27T21:13Z&limitps=1&phenomena=TR&significance=W&location_group=wfo&wfo=LIX&simple=0"
+ },
+ "iem-zones-LIX-TR.W-20210830T0929.zip": {
+  "records_kept": [
+   1,
+   3,
+   6,
+   8,
+   9,
+   12,
+   13,
+   17,
+   20,
+   22,
+   23
+  ],
+  "retrieved_at": "2026-09-27T02:11:40Z",
+  "selection": "the zone rows of the versions no served release holds (zone code and AREA_KM2), .shp and .dbf bytes unchanged",
+  "source_sha256": "f55903d23e2b694b37104b86a77768d0d93d7eb1c151d9c3f42a21b55b39c64a",
+  "source_url": "https://mesonet.agron.iastate.edu/cgi-bin/request/gis/watchwarn.py?accept=shapefile&sts=2021-08-30T09:29Z&ets=2021-08-30T09:30Z&limitps=1&phenomena=TR&significance=W&location_group=wfo&wfo=LIX&simple=0"
+ },
+ "iem-zones-LIX-TR.W-20210830T1528.zip": {
+  "records_kept": [
+   0,
+   1,
+   3
+  ],
+  "retrieved_at": "2026-09-27T02:11:42Z",
+  "selection": "the zone rows of the versions no served release holds (zone code and AREA_KM2), .shp and .dbf bytes unchanged",
+  "source_sha256": "a1ea7db20a4e2ea4890020b1eb7dfd64c05dcfbdcee28c65e6921f89112d193a",
+  "source_url": "https://mesonet.agron.iastate.edu/cgi-bin/request/gis/watchwarn.py?accept=shapefile&sts=2021-08-30T15:28Z&ets=2021-08-30T15:29Z&limitps=1&phenomena=TR&significance=W&location_group=wfo&wfo=LIX&simple=0"
+ },
+ "iem-zones-MFL-HU.W-20170908T0301.zip": {
+  "records_kept": [
+   0,
+   6
+  ],
+  "retrieved_at": "2026-09-27T01:38:57Z",
+  "selection": "the zone rows of the versions no served release holds (zone code and AREA_KM2), .shp and .dbf bytes unchanged",
+  "source_sha256": "b0b05362443a37671110fe55ade3a08e9ddf66f22040c69500b23200174a3790",
+  "source_url": "https://mesonet.agron.iastate.edu/cgi-bin/request/gis/watchwarn.py?accept=shapefile&sts=2017-09-08T03:01Z&ets=2017-09-08T03:02Z&limitps=1&phenomena=HU&significance=W&location_group=wfo&wfo=MFL&simple=0"
+ },
+ "iem-zones-MSO-BZ.W-20190203T2100.zip": {
+  "records_kept": [
+   0
+  ],
+  "retrieved_at": "2026-09-27T01:54:44Z",
+  "selection": "the zone rows of the versions no served release holds (zone code and AREA_KM2), .shp and .dbf bytes unchanged",
+  "source_sha256": "6bf8f1d403b4d86ac4c422137167c65cf27eb76955bcd4adfd8b6d90573dfa4b",
+  "source_url": "https://mesonet.agron.iastate.edu/cgi-bin/request/gis/watchwarn.py?accept=shapefile&sts=2019-02-03T21:00Z&ets=2019-02-03T21:01Z&limitps=1&phenomena=BZ&significance=W&location_group=wfo&wfo=MSO&simple=0"
+ },
+ "iem-zones-OKX-WS.W-20180104T0600.zip": {
+  "records_kept": [
+   1
+  ],
+  "retrieved_at": "2026-09-27T03:41:42Z",
+  "selection": "the zone rows of the versions no served release holds (zone code and AREA_KM2), .shp and .dbf bytes unchanged",
+  "source_sha256": "58bd1f9d1bf9696626b9674f58ae48441818d20849659025d5dd9e3b009932c8",
+  "source_url": "https://mesonet.agron.iastate.edu/cgi-bin/request/gis/watchwarn.py?accept=shapefile&sts=2018-01-04T06:00Z&ets=2018-01-04T06:01Z&limitps=1&phenomena=WS&significance=W&location_group=wfo&wfo=OKX&simple=0"
+ },
+ "iem-zones-PHI-WS.W-20180307T0825.zip": {
+  "records_kept": [
+   0
+  ],
+  "retrieved_at": "2026-09-27T03:50:55Z",
+  "selection": "the zone rows of the versions no served release holds (zone code and AREA_KM2), .shp and .dbf bytes unchanged",
+  "source_sha256": "93880a99d498237eb1d0e56aaa4930ff249e3d45221a8bd12cc2cf29cbb27360",
+  "source_url": "https://mesonet.agron.iastate.edu/cgi-bin/request/gis/watchwarn.py?accept=shapefile&sts=2018-03-07T08:25Z&ets=2018-03-07T08:26Z&limitps=1&phenomena=WS&significance=W&location_group=wfo&wfo=PHI&simple=0"
+ },
+ "iem-zones-PHI-WW.Y-20180104T0200.zip": {
+  "records_kept": [
+   25
+  ],
+  "retrieved_at": "2026-09-27T01:39:06Z",
+  "selection": "the zone rows of the versions no served release holds (zone code and AREA_KM2), .shp and .dbf bytes unchanged",
+  "source_sha256": "41d6903ddd572e816caf272cf6c3ac99f196ad52c94bb4df6d007a4782635b08",
+  "source_url": "https://mesonet.agron.iastate.edu/cgi-bin/request/gis/watchwarn.py?accept=shapefile&sts=2018-01-04T02:00Z&ets=2018-01-04T02:01Z&limitps=1&phenomena=WW&significance=Y&location_group=wfo&wfo=PHI&simple=0"
+ },
+ "iem-zones-SLC-WS.W-20191127T1100.zip": {
+  "records_kept": [
+   3,
+   5
+  ],
+  "retrieved_at": "2026-09-27T01:39:09Z",
+  "selection": "the zone rows of the versions no served release holds (zone code and AREA_KM2), .shp and .dbf bytes unchanged",
+  "source_sha256": "d8a652be470550c6ca97de1f36eacc3204af31f86578f6eb455c410be427bca7",
+  "source_url": "https://mesonet.agron.iastate.edu/cgi-bin/request/gis/watchwarn.py?accept=shapefile&sts=2019-11-27T11:00Z&ets=2019-11-27T11:01Z&limitps=1&phenomena=WS&significance=W&location_group=wfo&wfo=SLC&simple=0"
+ },
+ "iem-zones-TAE-EC.W-20250122T0600.zip": {
+  "records_kept": [
+   8,
+   14,
+   15
+  ],
+  "retrieved_at": "2026-09-27T01:39:09Z",
+  "selection": "the zone rows of the versions no served release holds (zone code and AREA_KM2), .shp and .dbf bytes unchanged",
+  "source_sha256": "3fd48686308e2b5e3e6338557a0b5324eb6a8601f40a3b2541d3a34007ccd4ed",
+  "source_url": "https://mesonet.agron.iastate.edu/cgi-bin/request/gis/watchwarn.py?accept=shapefile&sts=2025-01-22T06:00Z&ets=2025-01-22T06:01Z&limitps=1&phenomena=EC&significance=W&location_group=wfo&wfo=TAE&simple=0"
  },
  "registry/gray.yaml": {
   "lines_kept": [
@@ -1390,6 +1711,11 @@
   "source_file": "docs/research/sources.json",
   "source_sha256": "d4cace3aec57dee5b2990f636e82ca10efc0818b08208fff20854b6828e7080f"
  },
+ "schools-zones.parquet": {
+  "selection": "rows of schools 01412727, 490014201380, 120039004068, 090171000303, A0902269, 360010206660, 590006600044, 120039003051, every column unchanged",
+  "source_file": "pipeline/out/internal/directory/schools.parquet",
+  "source_sha256": "7b70f6aaddde9ed0575136c34c8b85f5618b48a884dd6a5dcdb406883400ae69"
+ },
  "schools.parquet": {
   "selection": "rows of schools 01256947, 01257011, 01257033, 01257022, 440003300225, 00262237, 120069000867, 00791679, 00230067, 00230045, 00230442, every column unchanged",
   "source_file": "pipeline/out/internal/directory/schools.parquet",
@@ -1678,5 +2004,104 @@
   "selection": "the header and the rows of 13 markets (252 rows), unchanged",
   "source_sha256": "2e2cd00265a8d7040d8aa44ae779f2d5e595fcf3fa4633bca682a1f43622fd5c",
   "source_url": "https://raw.githubusercontent.com/alex-patton/US-TVDMA-BY-COUNTY/7f254b8c1843c62ec976a71c40d366d45f6f29cd/usa-tvdma-county.csv"
+ },
+ "z_16ap26.zip": {
+  "records_kept": [
+   153,
+   164,
+   170,
+   222,
+   1244,
+   2243,
+   2244,
+   2308,
+   2381,
+   2452,
+   2453,
+   2487,
+   2488,
+   2489,
+   2490,
+   2533,
+   2535,
+   2669,
+   2670,
+   2730,
+   2731,
+   2732,
+   2736,
+   2739,
+   2775,
+   2805,
+   2835,
+   3144,
+   3167,
+   3479,
+   3481,
+   3490,
+   4061,
+   4070,
+   4079,
+   4080,
+   4093
+  ],
+  "retrieved_at": "2026-09-25T00:07:42Z",
+  "selection": "the records of the zones whose polygon here holds a version of the school-year slices' rows, and of every zone within 0.06 degrees of a fixture school; .shp and .dbf bytes unchanged",
+  "source_sha256": "010dc5eab64b6e326c969e252bd016f56a037b0444df8303658707bca4cc7fd8",
+  "source_url": "https://www.weather.gov/source/gis/Shapefiles/WSOM/z_16ap26.zip"
+ },
+ "z_18mr25.zip": {
+  "records_kept": [
+   155,
+   166,
+   172,
+   225,
+   1247,
+   2251,
+   2252,
+   2316,
+   2389,
+   2390,
+   2450,
+   2460,
+   2461,
+   2495,
+   2496,
+   2497,
+   2498,
+   2541,
+   2543,
+   2685,
+   2686,
+   2746,
+   2747,
+   2748,
+   2752,
+   2755,
+   2789,
+   2790,
+   2793,
+   2794,
+   2799,
+   2800,
+   2801,
+   2802,
+   2808,
+   2811,
+   2813,
+   2843,
+   2875,
+   2876,
+   3229,
+   3252,
+   3358,
+   3566,
+   3568,
+   3577
+  ],
+  "retrieved_at": "2026-09-25T00:09:23Z",
+  "selection": "the records of the zones whose polygon here holds a version of the school-year slices' rows, and of every zone within 0.06 degrees of a fixture school; .shp and .dbf bytes unchanged",
+  "source_sha256": "3af7485eebc773d8b7615ee6635da17c07d01a7da39eb6cf2f7934882d5cf4ca",
+  "source_url": "https://www.weather.gov/source/gis/Shapefiles/WSOM/z_18mr25.zip"
  }
 }

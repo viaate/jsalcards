@@ -1,7 +1,11 @@
 """Build the closure weights and the station priority from the cache (downloading what is missing).
 
-``python -m snowlight.weights build`` runs :func:`build`, which writes into
-``pipeline/out/internal/weights/`` (internal, never published):
+``python -m snowlight.weights build`` runs :func:`build`, which counts the rows
+twice: by the county rule (:func:`count_weather`, :func:`summarize_counties`; kept
+for comparison, the whole-county diagnostic and the station storm days) and for
+each school in its own forecast zone (:mod:`snowlight.weights.perschool`, the
+metric), and writes into ``pipeline/out/internal/weights/`` (internal, never
+published):
 
 * ``closure-weights.json``, ``state-weights.json``, ``station-priority.json``
   (shapes in :mod:`snowlight.weights`);
@@ -40,10 +44,14 @@ from snowlight.weights import (
     markets,
     notes,
     outlines,
+    perschool,
+    polygons,
     priority,
     registered,
     render,
+    schoolcount,
     schools,
+    zonepolys,
     zones,
 )
 from snowlight.weights.cache import (
@@ -60,15 +68,15 @@ DEFAULT_OUT_DIR = PIPELINE_ROOT / "out" / "internal" / "weights"
 DEFAULT_DIRECTORY = PIPELINE_ROOT / "out" / "internal" / "directory" / "schools.parquet"
 DEFAULT_COVERAGE = PIPELINE_ROOT / "out" / "internal" / "stations" / "coverage.json"
 DEFAULT_RESEARCH = REPO_ROOT / "docs" / "research"
-SCHEMA = 2
+SCHEMA = 3
 SNOWY = ("RI", "MA", "NY", "MI", "MN", "PA")
 MILD = ("MS", "LA", "FL")
 WELL_ABOVE = 2.0
 """The sanity check's bar: each snowy state's winter days at least this multiple of
 every mild state's."""
 TOP = 10
-PARTIAL = 0.5
-"""A flagged state's partial-county share at or above which that is given as the reason."""
+RANK_MOVE = 10
+"""A state whose rank moved by this many places from the county rule's is flagged."""
 LEAD_MARGIN = timedelta(days=30)
 """How long before its window a school year's first product can have been issued."""
 ALERT_TYPES_URL = "https://api.weather.gov/alerts/types"
@@ -106,8 +114,10 @@ class Result:
     """What the build computed, for the notes and the command's summary."""
 
     counties: dict[str, dict[str, JSONValue]]
+    """The county summaries (counties with schools), by FIPS code."""
     states: list[dict[str, JSONValue]]
     mean_days: float
+    """The per-school normalizer: mean weighted days per school year over every school."""
     whole_mean_days: float
     schools: int
     sanity: dict[str, JSONValue]
@@ -119,6 +129,13 @@ class Result:
     adopted: list[str] = field(default_factory=list)
     """URLs whose cached copy came from another build's cache."""
     paths: dict[str, Path] = field(default_factory=dict)
+    county_rule_mean: float = 0.0
+    """The county rule's normalizer (its school-weighted mean days per school year)."""
+    school_records: dict[str, JSONValue] = field(default_factory=dict)
+    counties_without_schools: list[str] = field(default_factory=list)
+    county_rule_records: dict[str, dict[str, JSONValue]] = field(default_factory=dict)
+    """Every county's record under the county rule (:func:`county_records`)."""
+    per_school: perschool.PerSchool | None = None
 
 
 def _sha256(path: Path) -> str:
@@ -182,6 +199,8 @@ class Scope:
     day_windows: tuple[tuple[date, date], ...] = crosscheck.WINDOWS
     dma_sha256: str = markets.DMA_CROSSWALK_SHA256
     """The DMA crosswalk's pinned SHA-256 (the registry's)."""
+    zone_releases: tuple[BoundaryRelease, ...] = zonepolys.ZONE_RELEASES
+    """The served NWS zone releases (:mod:`snowlight.weights.zonepolys`)."""
     outline_check: bool = True
     """Whether to check the zone mapping against IEM's archived outlines (without them, a
     build whose rows include left-out zone rows stops: it cannot tell which county-years
@@ -397,75 +416,6 @@ def county_records(
     return records
 
 
-def _school_mean_of(
-    placement: schools.Placement, value: Mapping[str, float]
-) -> dict[str, tuple[int, float]]:
-    totals: dict[str, list[float]] = defaultdict(lambda: [0.0, 0.0])
-    for school in placement.schools:
-        entry = totals[school.state]
-        entry[0] += 1
-        entry[1] += value[school.nws_fips]
-    return {state: (int(n), total / n) for state, (n, total) in totals.items()}
-
-
-def state_records(
-    counted: Counted, placement: schools.Placement, mean: float, whole_mean: float
-) -> list[dict[str, JSONValue]]:
-    """Return every state's record for ``state-weights.json``, heaviest first."""
-    summary = counted.summary
-
-    def of(pick: str) -> dict[str, tuple[int, float]]:
-        if pick == "days":
-            values = {fips: days.days_per_year for fips, days in summary.items()}
-        elif pick == "any":
-            values = {fips: float(days.any_days_per_year) for fips, days in summary.items()}
-        elif pick == "whole":
-            values = {fips: days.whole_county_days_per_year for fips, days in summary.items()}
-        else:
-            values = {fips: days.subset_days_per_year[pick] for fips, days in summary.items()}
-        return _school_mean_of(placement, values)
-
-    days = of("days")
-    national = sum(n * value for n, value in days.values())
-    tables = {name: of(name) for name in ("any", "whole", *SUBSETS)}
-    code_days: dict[str, dict[str, float]] = defaultdict(dict)
-    for code in CODES:
-        per_year = {fips: item.code_days_per_year(code.code) for fips, item in summary.items()}
-        for state, (_, value) in _school_mean_of(placement, per_year).items():
-            code_days[state][code.code] = value
-    short: Counter[str] = Counter()
-    for school in placement.schools:
-        if summary[school.nws_fips].years_left_out:
-            short[school.state] += 1
-    rows: list[dict[str, JSONValue]] = []
-    for state, (schools_n, value) in days.items():
-        whole = tables["whole"][state][1]
-        rows.append(
-            {
-                "state": state,
-                "schools": schools_n,
-                "schools_in_counties_with_school_years_left_out": short[state],
-                "weight": _round(value / mean),
-                "days_per_year": _round(value),
-                "share_of_weighted_closure_days": _round(schools_n * value / national, 5),
-                "any_days_per_year": _round(tables["any"][state][1]),
-                "whole_county_days_per_year": _round(whole),
-                "whole_county_weight": _round(whole / whole_mean),
-                "partial_day_share": _round(1 - whole / value, 4) if value > 0 else None,
-                "subsets_days_per_year": {
-                    name: _round(tables[name][state][1]) for name in sorted(SUBSETS)
-                },
-                "code_days_per_year": {
-                    code: _round(code_days[state][code]) for code in sorted(code_days[state])
-                },
-            }
-        )
-    rows.sort(key=lambda row: (-float(str(row["weight"])), str(row["state"])))
-    for rank, row in enumerate(rows, start=1):
-        row["rank"] = rank
-    return rows
-
-
 def _state_value(row: Mapping[str, JSONValue], key: str) -> float:
     subsets = row["subsets_days_per_year"]
     if isinstance(subsets, dict) and key in subsets:
@@ -514,77 +464,57 @@ def _code_text(row: Mapping[str, JSONValue]) -> str:
 def surprises(
     rows: Sequence[Mapping[str, JSONValue]],
     records: Mapping[str, Mapping[str, JSONValue]],
-    placement: schools.Placement,
 ) -> list[dict[str, JSONValue]]:
     """Flag results that may surprise, each with the data behind it (nothing is changed).
 
     Flagged: every top-ten state that is not one of the owner's snowy examples,
-    every other state above the national mean whose closure-days are mostly
-    partial-county days (:data:`PARTIAL`), and every snowy example whose weight is
-    below the national mean.
+    every snowy example whose weight is below the national mean, and every state
+    whose rank moved by :data:`RANK_MOVE` places or more from the county rule's. Each
+    flag gives the state's code days per year and its biggest counties by schools,
+    with their per-school and county-rule weights and the zones their schools are in.
     """
     flags: list[dict[str, JSONValue]] = []
     by_state: dict[str, list[str]] = defaultdict(list)
     for fips, record in records.items():
         by_state[str(record["state"])].append(fips)
-    per_county = placement.per_county()
     snowy_max = max(
         (float(str(row["weight"])) for row in rows if row["state"] in SNOWY), default=0.0
     )
 
     def biggest(state: str) -> list[JSONValue]:
-        codes = sorted(by_state[state], key=lambda f: (-per_county.get(f, 0), f))[:3]
+        codes = sorted(by_state[state], key=lambda f: (-int(str(records[f]["schools"])), f))[:3]
         return [_county_brief(records[fips]) for fips in codes]
 
     for position, row in enumerate(rows):
         state = str(row["state"])
-        partial = row["partial_day_share"]
-        if state in SNOWY or not isinstance(partial, float):
-            continue
-        above_by_partial = float(str(row["weight"])) > 1.0 and partial >= PARTIAL
-        if position >= TOP and not above_by_partial:
-            continue
         weight = float(str(row["weight"]))
-        finding = f"ranks {row['rank']} with weight {weight:.2f}"
+        rule_rank = int(str(row["county_rule_rank"]))
+        moved = rule_rank - int(str(row["rank"]))
+        reasons: list[str] = []
+        if position < TOP and state not in SNOWY:
+            reasons.append("in the top ten and not one of the owner's snowy examples")
+        if state in SNOWY and weight < 1.0:
+            reasons.append("one of the owner's snowy examples, below the national mean")
+        if abs(moved) >= RANK_MOVE:
+            reasons.append(
+                f"{'up' if moved > 0 else 'down'} {abs(moved)} places from the county rule"
+            )
+        if not reasons:
+            continue
+        finding = (
+            f"ranks {row['rank']} with weight {weight:.2f} ({float(str(row['days_per_year'])):.2f} "
+            f"weighted days a year); by the county rule it ranked {rule_rank} with "
+            f"{float(str(row['county_rule_weight'])):.2f}"
+        )
         if weight > snowy_max:
-            finding += f", above every one of {', '.join(SNOWY)}"
-        if partial >= PARTIAL:
-            reason = (
-                f"{partial:.0%} of its school-weighted closure-days were days when the event "
-                "covered only some of a county's zones (the correlation rule counts the whole "
-                "county); its biggest counties by schools and the zones that covered them most "
-                "often:"
-            )
-        else:
-            reason = (
-                f"its days are mostly whole-county days ({1 - partial:.0%}); its code days per "
-                f"year: {_code_text(row)}. Its biggest counties:"
-            )
+            finding += f"; above every one of {', '.join(SNOWY)}"
+        reason = (
+            "; ".join(reasons).capitalize()
+            + f". Its code days per school year: {_code_text(row)}. Its biggest counties:"
+        )
         flags.append(
             {"state": state, "finding": finding, "reason": reason, "counties": biggest(state)}
         )
-    whole_order = sorted(rows, key=lambda r: (-float(str(r["whole_county_weight"])), r["state"]))
-    whole_rank = {str(r["state"]): rank for rank, r in enumerate(whole_order, start=1)}
-    for row in rows:
-        state = str(row["state"])
-        weight = float(str(row["weight"]))
-        if state in SNOWY and weight < 1.0:
-            whole = float(str(row["whole_county_weight"]))
-            flags.append(
-                {
-                    "state": state,
-                    "finding": f"ranks {row['rank']} with weight {weight:.2f}, below 1",
-                    "reason": (
-                        f"{float(str(row['days_per_year'])):.2f} weighted school days a year "
-                        "under closure-type events, fewer than the school-weighted national mean; "
-                        f"counting whole-county days only, its weight is {whole:.2f} (rank "
-                        f"{whole_rank[state]}), so much of the mean it falls below comes from "
-                        "partial-county days elsewhere (the flags above). Its code days per "
-                        f"year: {_code_text(row)}. Its biggest counties:"
-                    ),
-                    "counties": biggest(state),
-                }
-            )
     return flags
 
 
@@ -595,14 +525,17 @@ def _nonzero(value: JSONValue) -> dict[str, float]:
 
 
 def _county_brief(record: Mapping[str, JSONValue]) -> dict[str, JSONValue]:
+    rule = record["county_rule"]
+    zones_held = record["zones"]
     return {
         "fips": record["fips"],
         "name": record["name"],
         "schools": record["schools"],
-        "years_counted": record["years_counted"],
+        "weight": record["weight"],
         "days_per_year": record["days_per_year"],
+        "county_rule_weight": rule["weight"] if isinstance(rule, dict) else None,
         "whole_county_days_per_year": record["whole_county_days_per_year"],
-        "top_zones": record["top_zones"],
+        "zones": dict(list(zones_held.items())[:4]) if isinstance(zones_held, dict) else {},
     }
 
 
@@ -852,16 +785,22 @@ class Tables:
 
 def school_tables(
     placement: schools.Placement,
-    weights: Mapping[str, float],
+    weights: Sequence[float],
     whole_weights: Mapping[str, float],
 ) -> Tables:
-    """Sum schools and their weights per directory county."""
+    """Sum schools and their weights per directory county.
+
+    ``weights`` are the schools' own weights, in the order of ``placement.schools``;
+    ``whole_weights`` are the whole-county diagnostic's, per NWS county.
+    """
+    if len(weights) != len(placement.schools):
+        raise WeightsBuildError("school weights and placed schools differ in number")
     counts: Counter[str] = Counter()
     weighted: dict[str, float] = defaultdict(float)
     whole: dict[str, float] = defaultdict(float)
-    for school in placement.schools:
+    for school, weight in zip(placement.schools, weights, strict=True):
         counts[school.directory_fips] += 1
-        weighted[school.directory_fips] += weights[school.nws_fips]
+        weighted[school.directory_fips] += weight
         whole[school.directory_fips] += whole_weights[school.nws_fips]
     plain = {fips: float(n) for fips, n in counts.items()}
     return Tables(
@@ -1101,20 +1040,46 @@ def _build(paths: Paths, cache: WeightsCache, scope: Scope, clock: Clock) -> Res
     frame = schools.read_schools(paths.directory)
     placement = schools.place_schools(frame, counted.counties)
     per_county = placement.per_county()
-    mean = school_mean({f: d.days_per_year for f, d in counted.summary.items()}, per_county)
+    rule_mean = school_mean({f: d.days_per_year for f, d in counted.summary.items()}, per_county)
     whole_mean = school_mean(
         {f: d.whole_county_days_per_year for f, d in counted.summary.items()}, per_county
     )
-    outline_report = counted.outline_report
-    records = county_records(counted, per_county, mean, whole_mean)
-    states = state_records(counted, placement, mean, whole_mean)
+    rule_records = county_records(counted, per_county, rule_mean, whole_mean)
+    try:
+        per = perschool.count_per_school(
+            cache,
+            counted.files,
+            counted.counties,
+            frame=frame,
+            placement=placement,
+            county_tally=counted.tally,
+            county_left_out={f: d.years_left_out for f, d in counted.summary.items()},
+            zone_releases=scope.zone_releases,
+        )
+    except (
+        perschool.PerSchoolError,
+        polygons.PolygonFileError,
+        schoolcount.SchoolCountError,
+        zonepolys.ZonePolygonError,
+    ) as error:
+        raise WeightsBuildError(str(error)) from error
+    records, empty = perschool.county_summaries(
+        per,
+        placement,
+        counted.counties,
+        county_rule=counted.summary,
+        county_rule_records=rule_records,
+        whole_mean=whole_mean,
+        county_rule_mean=rule_mean,
+    )
+    states = perschool.state_rows(per, placement, counted.summary, whole_mean, rule_mean)
     sanity = sanity_check(states)
-    flags = surprises(states, records, placement)
+    flags = surprises(states, records)
     checks = run_checks(cache, counted, scope.day_windows)
     changes, alert_types = code_changes(cache, counted.files)
     checks["code_changes"] = changes
-    if outline_report is not None:
-        checks["zone_outlines"] = outline_report.as_json()
+    if counted.outline_report is not None:
+        checks["zone_outlines"] = counted.outline_report.as_json()
     checks["years_counted"] = period_effects(counted, per_county)
     checks["schools"] = {
         "placed_by": dict(sorted(placement.by_method.items())),
@@ -1125,17 +1090,35 @@ def _build(paths: Paths, cache: WeightsCache, scope: Scope, clock: Clock) -> Res
             for school, address, state in placement.address_elsewhere
         ],
     }
-    weights = {fips: days.days_per_year / mean for fips, days in counted.summary.items()}
+    checks["zone_polygons"] = {
+        **per.book.as_json(),
+        "alternating_outlines": [item.as_json() for item in per.alternating],
+    }
+    checks["school_zones"] = perschool.placement_json(per)
+    checks["school_counting"] = perschool.counting_json(per)
+    checks["storm_polygons"] = perschool.polygon_files_json(per, counted.files)
+    try:
+        checks["school_recount"] = perschool.recount_check(
+            per,
+            counted.files,
+            frame,
+            placement,
+            counted.counties,
+            county_tally=counted.tally,
+            county_left_out={f: d.years_left_out for f, d in counted.summary.items()},
+        )
+    except perschool.PerSchoolError as error:
+        raise WeightsBuildError(str(error)) from error
     whole_weights = {
         fips: days.whole_county_days_per_year / whole_mean for fips, days in counted.summary.items()
     }
-    tables = school_tables(placement, weights, whole_weights)
+    tables = school_tables(placement, per.weights, whole_weights)
     priority_doc, references = station_priority(cache, paths, tables, scope)
     references["alert_types"] = _provenance(alert_types)
     result = Result(
         counties=records,
         states=states,
-        mean_days=mean,
+        mean_days=per.mean,
         whole_mean_days=whole_mean,
         schools=len(placement.schools),
         sanity=sanity,
@@ -1145,9 +1128,25 @@ def _build(paths: Paths, cache: WeightsCache, scope: Scope, clock: Clock) -> Res
         generated_at=iso_utc(started),
         references=references,
         adopted=sorted(set(cache.adopted)),
+        county_rule_mean=rule_mean,
+        school_records=perschool.school_records(per, placement),
+        counties_without_schools=empty,
+        county_rule_records=rule_records,
+        per_school=per,
     )
     result.paths = write_outputs(paths, result, counted)
     return result
+
+
+def _zone_release_sources(result: Result) -> dict[str, JSONValue]:
+    """The served zone releases and IEM's full-resolution answers read (provenance only)."""
+    per = result.per_school
+    if per is None:
+        return {}
+    return {
+        "served": {zone_set.name: _provenance(zone_set.file) for zone_set in per.book.sets},
+        "iem_full_resolution": [_provenance(file) for _, file in sorted(per.book.files.items())],
+    }
 
 
 def write_outputs(paths: Paths, result: Result, counted: Counted) -> dict[str, Path]:
@@ -1168,8 +1167,12 @@ def write_outputs(paths: Paths, result: Result, counted: Counted) -> dict[str, P
         "normalizer": {
             "school_weighted_mean_days_per_year": result.mean_days,
             "schools": result.schools,
+            "county_rule_school_weighted_mean_days_per_year": result.county_rule_mean,
+            "whole_county_school_weighted_mean_days_per_year": result.whole_mean_days,
         },
         "counties": list(result.counties.values()),
+        "counties_without_schools": _strings(result.counties_without_schools),
+        "schools": dict(result.school_records),
     }
     state_doc: dict[str, JSONValue] = {
         **header,
@@ -1187,6 +1190,11 @@ def write_outputs(paths: Paths, result: Result, counted: Counted) -> dict[str, P
                 release.name: _provenance(release.file) for release in counted.releases
             },
             "county_release": _provenance(counted.counties.file),
+            "zone_releases": _zone_release_sources(result),
+            "storm_polygons": {
+                item.label: item.file.provenance.as_json()
+                for item in (result.per_school.polygon_files if result.per_school else [])
+            },
             "adopted_from_other_caches": _strings(result.adopted),
             "references": dict(result.references),
             "directory": _local(paths.directory),
@@ -1211,6 +1219,6 @@ def write_outputs(paths: Paths, result: Result, counted: Counted) -> dict[str, P
         files["station_priority_md"], notes.priority_note(priority_doc).encode("utf-8")
     )
     weights = {fips: float(str(record["weight"])) for fips, record in result.counties.items()}
-    title = "CLOSURE WEIGHT BY COUNTY, SCHOOL YEARS 2015-16 TO 2025-26"
+    title = "CLOSURE WEIGHT BY COUNTY (MEAN OF ITS SCHOOLS), 2015-16 TO 2025-26"
     write_bytes_atomic(files["png"], render.render_weights(counted.counties, weights, title))
     return files

@@ -38,6 +38,35 @@ source URL or file, its SHA-256, when it was retrieved and what was kept):
   first school year wholly under the served correlation releases), cut to the
   zones of the 2018-19 slice; each feature unchanged (fetched into the cache first
   when missing).
+* ``z_18mr25.zip`` and ``z_16ap26.zip``: the NWS public zone releases with only the
+  records of the zones the school-year slices name and of every zone within
+  :data:`ZONE_BOX` degrees of a fixture school (the build's schools and
+  :data:`ZONE_SCHOOLS`), sliced like the county file.
+* ``iem-2019-2020-slc.csv``: the 2019-20 school-year file cut to the Salt Lake
+  valley and Wasatch mountain zone rows (UTZ003, UTZ008) of three SLC Winter Storm
+  Warnings, each line copied byte for byte.
+* ``iem-zones-<office>-<code>-<begin>.zip``: IEM's full-resolution answers
+  (``watchwarn.py``, ``simple=0``) of the requests
+  :func:`snowlight.weights.zonepolys.plan_requests` picks for the zone versions of the
+  school-year slices that no served release holds, cut to the zone rows of those
+  versions' zones (records unchanged; fetched into the cache first when missing).
+* ``iem-polygons-<first>-<last>.zip``: the storm-polygon files
+  (:mod:`snowlight.weights.polygons`) cut to the polygon rows of the FF.W events of
+  the school-year slice (and, for a slice with none, of the first FF.W event of the
+  office named in :data:`POLYGON_OFFICES`).
+* ``iem-polygons-2019-2020.zip`` (the polygon rows of SLC's FF.W 17 of 2019, for the
+  Salt Lake slice) and ``iem-polygons-2016-2017-blank.zip`` (the polygon rows of BOI's
+  FF.W 1 of 2017, whose ``ISSUED`` is blank).
+* ``schools-zones.parquet``: the rows of :data:`ZONE_SCHOOLS` from the school
+  directory, every column unchanged; ``c_16ap26-zones.zip``: the NWS county file
+  cut to :data:`ZONE_COUNTY_RECORDS`, the counties around those schools.
+* ``iem-2015-2016-outside.csv``, ``iem-2016-2017-outside.csv`` and
+  ``iem-2017-2018-outside.csv``: the school-year files cut to the zones of
+  :data:`OUTSIDE_SLICES` (every row of NCZ051, which IEM joined to two outlines by
+  turns, in 2015-16 and 2016-17; every row of NYZ072, FLZ073, FLZ074 and MDZ008 in
+  2017-18), each line copied byte for byte, and
+  ``iem-polygons-2017-2018.zip``, the 2017-18 storm-polygon file cut to the first
+  FF.W event of OKX (:data:`OUTSIDE_POLYGONS`).
 * ``registry/<platform>.yaml``: the station registry's files
   (``pipeline/config/sources/``) cut to their ``platform:`` and ``id:`` lines, the
   ``stations:`` line and the whole entries of the stations named below, each line
@@ -56,9 +85,15 @@ import struct
 import sys
 import zipfile
 from collections.abc import Callable, Iterable, Sequence
+from dataclasses import dataclass
 from pathlib import Path
+from typing import TYPE_CHECKING
 
 import polars as pl
+
+if TYPE_CHECKING:
+    from snowlight.sources.nws.boundaries import BoundaryRelease
+    from snowlight.weights.archive import EventRow
 
 PIPELINE = Path(__file__).resolve().parents[2]
 REPO = PIPELINE.parent
@@ -168,6 +203,49 @@ CT_FILE = (
 )
 
 ALERT_TYPES_FILE = CACHE / "api.weather.gov" / "alerts" / "types.json"
+WSOM = CACHE / "www.weather.gov" / "source" / "gis" / "Shapefiles" / "WSOM"
+ZONE_SETS = ("z_18mr25", "z_16ap26")
+ZONE_BOX = 0.06
+ZONE_SCHOOLS = (
+    "01412727",
+    "490014201380",
+    "120039004068",
+    "090171000303",
+    "A0902269",
+    "360010206660",
+    "590006600044",
+    "120039003051",
+)
+"""A Salt Lake valley school (UTZ105) and the county's one school in the Wasatch mountain zone
+(UTZ111), and two schools just outside every zone polygon: one in Miami-Dade (0.016 km from
+FLZ173) and one on the Connecticut shore (0.383 km from NYZ071). Then four for the school-year
+rule: British International School of New York at Waterside Plaza and Hunters Point
+Elementary in Long Island City, inside NYZ072 in z_18mr25 and 0.016 and 0.901 km outside every
+earlier outline of it; a Cherokee Central school in Swain County, NC, outside one of the two
+outlines IEM joined to NCZ051's rows; a school in west Miami-Dade, in FLZ074 now and in FLZ073's
+outline of 2017."""
+ZONE_COUNTY_RECORDS = (290, 339, 599, 935, 2000, 2002, 3031, 3035, 3076, 3241)
+"""c_16ap26 records: Westchester NY, Fairfield CT, Queens NY, Swain NC, Broward and Miami-Dade
+FL, Utah, Wasatch and Salt Lake UT, New York (Manhattan) NY."""
+OUTSIDE_SLICES: dict[str, tuple[frozenset[str], str]] = {
+    "2015-2016": (frozenset({"NCZ051"}), "every NCZ051 row"),
+    "2016-2017": (frozenset({"NCZ051"}), "every NCZ051 row"),
+    "2017-2018": (
+        frozenset({"NYZ072", "FLZ073", "FLZ074", "MDZ008"}),
+        "every NYZ072, FLZ073, FLZ074 and MDZ008 row",
+    ),
+}
+"""The school-year slices of the school-year rule: the zones kept, and why."""
+OUTSIDE_POLYGONS = {"2017-2018": "OKX"}
+"""The storm-polygon slice for a school-year slice of the rule (it has no FF.W rows): the
+polygon rows of the first FF.W event of this office."""
+EXTRA_POLYGONS = {
+    "2019-2020": ("iem-polygons-2019-2020.zip", ("SLC", 17, 2019)),
+    "2016-2017": ("iem-polygons-2016-2017-blank.zip", ("BOI", 1, 2017)),
+}
+SLC_EVENTS = frozenset({("WS", "11", "2019"), ("WS", "12", "2019"), ("WS", "13", "2019")})
+POLYGON_OFFICES = {"2018-2019": "BOX", "2021-2022": "LIX"}
+YEAR_FILES = ("iem-2018-2019.csv", "iem-2021-2022.csv", "iem-2024-2025.csv")
 REGISTRY = PIPELINE / "config" / "sources"
 REGISTRY_STATIONS: dict[str, tuple[str, ...]] = {
     "gray": ("gray-kdlt", "gray-kktv", "gray-kold", "gray-wfsb", "gray-wlbt", "gray-wtva"),
@@ -504,6 +582,260 @@ def outline_slices() -> Provenance:
     return record
 
 
+def slc_slice() -> Provenance:
+    """Cut the 2019-20 school-year file to three SLC Winter Storm Warnings' UTZ003/UTZ008 rows."""
+    source = IEM / "watchwarn-csv" / "2019-2020.csv"
+    lines = source.read_bytes().split(b"\n")
+    fields = next(csv.reader([lines[0].decode()]))
+    kept = []
+    for number, line in enumerate(lines[1:], start=1):
+        if not line:
+            continue
+        row = dict(zip(fields, next(csv.reader([line.decode()])), strict=True))
+        key = (row["phenomena"], row["eventid"], row["vtec_year"])
+        if row["wfo"] == "SLC" and row["ugc"] in {"UTZ003", "UTZ008"} and key in SLC_EVENTS:
+            kept.append(number)
+    body = b"\n".join([lines[0], *(lines[i] for i in kept)]) + b"\n"
+    (OUT / "iem-2019-2020-slc.csv").write_bytes(body)
+    return {
+        "iem-2019-2020-slc.csv": {
+            **_sidecar(source),
+            "selection": "the header and the UTZ003 and UTZ008 rows of SLC.WS.W.0011, 0012 and "
+            f"0013 of 2019 ({len(kept)} rows), unchanged",
+            "lines_kept": kept,
+        }
+    }
+
+
+def outside_slices() -> Provenance:
+    """Cut two school-year files to the zones of the school-year rule's tests."""
+    record: Provenance = {}
+    for years, (zones, why) in OUTSIDE_SLICES.items():
+        source = IEM / "watchwarn-csv" / f"{years}.csv"
+        lines = source.read_bytes().split(b"\n")
+        fields = next(csv.reader([lines[0].decode()]))
+        kept = []
+        for number, line in enumerate(lines[1:], start=1):
+            if not line:
+                continue
+            row = dict(zip(fields, next(csv.reader([line.decode()])), strict=True))
+            if row["ugc"] in zones:
+                kept.append(number)
+        body = b"\n".join([lines[0], *(lines[i] for i in kept)]) + b"\n"
+        name = f"iem-{years}-outside.csv"
+        (OUT / name).write_bytes(body)
+        record[name] = {
+            **_sidecar(source),
+            "selection": f"the header and {why} ({len(kept)} rows), unchanged",
+            "lines_kept": kept,
+        }
+    for years, office in OUTSIDE_POLYGONS.items():
+        source = IEM / "watchwarn-polygons" / f"{years}.zip"
+        rows = _dbf_rows(source)
+        first = next(r for r in rows if r["GTYPE"] == "P" and r["WFO"] == office)
+        event = _event_of(first)
+        keep = [i for i, row in enumerate(rows) if row["GTYPE"] == "P" and _event_of(row) == event]
+        name = f"iem-polygons-{years}.zip"
+        slice_shapefile(source, keep, OUT / name)
+        record[name] = {
+            **_sidecar(source),
+            "selection": f"the polygon rows of FF.W {event[0]} {event[1]} {event[2]} (the first "
+            f"FF.W event of {office}), .shp and .dbf bytes unchanged",
+            "records_kept": keep,
+        }
+    return record
+
+
+def zone_schools_slice() -> Provenance:
+    """Cut the school directory to the per-school zone test schools."""
+    source = PIPELINE / "out" / "internal" / "directory" / "schools.parquet"
+    frame = pl.read_parquet(source)
+    kept = frame.filter(pl.col("id").is_in(list(ZONE_SCHOOLS))).sort("index")
+    if kept.height != len(ZONE_SCHOOLS):
+        raise SystemExit("a named school is missing from the directory")
+    kept.write_parquet(OUT / "schools-zones.parquet")
+    return {
+        "schools-zones.parquet": {
+            "source_file": "pipeline/out/internal/directory/schools.parquet",
+            "source_sha256": _sha(source.read_bytes()),
+            "selection": f"rows of schools {', '.join(ZONE_SCHOOLS)}, every column unchanged",
+        }
+    }
+
+
+def _fixture_rows() -> list["EventRow"]:
+    from snowlight.weights.archive import read_rows  # noqa: PLC0415
+
+    rows: list[EventRow] = []
+    outside = [f"iem-{years}-outside.csv" for years in OUTSIDE_SLICES]
+    for name in (*YEAR_FILES, "iem-2019-2020-slc.csv", *outside):
+        found, _ = read_rows((OUT / name).read_text(encoding="utf-8"))
+        rows.extend(found)
+    return rows
+
+
+def zone_set_slices() -> Provenance:
+    """Cut the served zone releases to the zones the fixtures need."""
+    import shapely  # noqa: PLC0415
+
+    from snowlight.sources.nws.shapefile import read_zip  # noqa: PLC0415
+    from snowlight.weights import zonepolys  # noqa: PLC0415
+
+    points = []
+    for name in ("schools.parquet", "schools-zones.parquet"):
+        frame = pl.read_parquet(OUT / name)
+        points += list(zip(frame["lon"].to_list(), frame["lat"].to_list(), strict=True))
+    boxes = [shapely.box(x - ZONE_BOX, y - ZONE_BOX, x + ZONE_BOX, y + ZONE_BOX) for x, y in points]
+    full = [zonepolys.read_zone_set(WSOM / f"{name}.zip", r) for name, r in _releases()]
+    matched: dict[str, set[str]] = {name: set() for name in ZONE_SETS}
+    for version in zonepolys.versions_of(_fixture_rows()):
+        found = zonepolys.served_match(version, full)
+        if found is not None:
+            matched[found[0].name].add(version.ugc)
+    record: Provenance = {}
+    for name in ZONE_SETS:
+        source = WSOM / f"{name}.zip"
+        keep = []
+        for item in read_zip(source):
+            ugc = f"{item.attributes['STATE']}Z{item.attributes['ZONE']}"
+            near = item.geometry is not None and any(item.geometry.intersects(b) for b in boxes)
+            if ugc in matched[name] or near:
+                keep.append(item.index)
+        kept = slice_shapefile(source, keep, OUT / f"{name}.zip")
+        record[f"{name}.zip"] = {
+            **_sidecar(source),
+            "selection": "the records of the zones whose polygon here holds a version of the "
+            "school-year slices' rows, and of every zone within "
+            f"{ZONE_BOX} degrees of a fixture school; .shp and .dbf bytes unchanged",
+            "records_kept": kept,
+        }
+    return record
+
+
+def _releases() -> list[tuple[str, "BoundaryRelease"]]:
+    from snowlight.weights import zonepolys  # noqa: PLC0415
+
+    return [(r.url.rsplit("/", 1)[-1].removesuffix(".zip"), r) for r in zonepolys.ZONE_RELEASES]
+
+
+def zone_version_slices() -> Provenance:
+    """Fetch (or reuse) and cut IEM's full-resolution answers for the fixtures' zone versions."""
+    from snowlight.sources.nws.boundaries import BoundaryRelease  # noqa: PLC0415
+    from snowlight.sources.nws.http import HttpCache, make_client  # noqa: PLC0415
+    from snowlight.weights import zonepolys  # noqa: PLC0415
+    from snowlight.weights.cache import WeightsCache  # noqa: PLC0415
+
+    rows = _fixture_rows()
+    sets = [
+        zonepolys.read_zone_set(
+            OUT / f"{name}.zip",
+            BoundaryRelease(release.kind, release.valid_from, release.url, "", None),
+        )
+        for name, release in _releases()
+    ]
+    record: Provenance = {}
+    with HttpCache(make_client()) as http:
+        cache = WeightsCache(http, CACHE)
+        book = zonepolys.build_book(cache, rows, sets, fetch=False)
+        needed = set(book.unresolved)
+        for key in zonepolys.plan_requests(rows, book.unresolved):
+            file = cache.fetch(key.url, key.path(cache.root))
+            keep = [
+                zone.index
+                for zone in _zone_records(file.path)
+                if zonepolys.Version(zone.ugc, zone.area) in needed
+            ]
+            name = f"iem-zones-{key.wfo}-{key.code}-{key.begin:%Y%m%dT%H%M}.zip"
+            slice_shapefile(file.path, keep, OUT / name)
+            record[name] = {
+                **_sidecar(file.path),
+                "selection": "the zone rows of the versions no served release holds (zone code "
+                "and AREA_KM2), .shp and .dbf bytes unchanged",
+                "records_kept": keep,
+            }
+    return record
+
+
+@dataclass(frozen=True)
+class _ZoneRecord:
+    index: int
+    ugc: str
+    area: float
+
+
+def _zone_records(path: Path) -> list[_ZoneRecord]:
+    from snowlight.sources.nws.shapefile import read_zip  # noqa: PLC0415
+
+    found = []
+    for item in read_zip(path):
+        ugc, area = str(item.attributes.get("NWS_UGC") or ""), item.attributes.get("AREA_KM2")
+        if item.attributes.get("GTYPE") == "C" and ugc[2:3] == "Z" and isinstance(area, float):
+            found.append(_ZoneRecord(item.index, ugc, area))
+    return found
+
+
+def zone_county_slice() -> Provenance:
+    """Cut the county shapefile to the counties around the per-school zone test schools."""
+    source = NWS / "c_16ap26.zip"
+    kept = slice_shapefile(source, ZONE_COUNTY_RECORDS, OUT / "c_16ap26-zones.zip")
+    return {
+        "c_16ap26-zones.zip": {
+            **_sidecar(source),
+            "selection": "these records' .shp and .dbf bytes unchanged, original order",
+            "records_kept": kept,
+        }
+    }
+
+
+def _event_of(row: dict[str, str]) -> tuple[str, int, int]:
+    return (row["WFO"], int(float(row["ETN"])), int(float(row["VTEC_YR"])))
+
+
+def polygon_slices() -> Provenance:
+    """Cut the storm-polygon files to the FF.W events of the school-year slices."""
+    record: Provenance = {}
+    for years, (name, event) in EXTRA_POLYGONS.items():
+        source = IEM / "watchwarn-polygons" / f"{years}.zip"
+        rows = _dbf_rows(source)
+        keep = [i for i, row in enumerate(rows) if row["GTYPE"] == "P" and _event_of(row) == event]
+        slice_shapefile(source, keep, OUT / name)
+        record[name] = {
+            **_sidecar(source),
+            "selection": f"the polygon rows of FF.W {event[0]} {event[1]} {event[2]}, .shp and "
+            ".dbf bytes unchanged",
+            "records_kept": keep,
+        }
+    for name in YEAR_FILES:
+        years = name.removeprefix("iem-").removesuffix(".csv")
+        with (OUT / name).open(encoding="utf-8") as handle:
+            events = {
+                (row["wfo"], int(row["eventid"]), int(row["vtec_year"]))
+                for row in csv.DictReader(handle)
+                if row["phenomena"] == "FF"
+            }
+        source = IEM / "watchwarn-polygons" / f"{years}.zip"
+        rows = _dbf_rows(source)
+        if not events:
+            office = POLYGON_OFFICES[years]
+            first = next(r for r in rows if r["GTYPE"] == "P" and r["WFO"] == office)
+            events = {(office, int(float(first["ETN"])), int(float(first["VTEC_YR"])))}
+        keep = [
+            i
+            for i, row in enumerate(rows)
+            if row["GTYPE"] == "P"
+            and (row["WFO"], int(float(row["ETN"])), int(float(row["VTEC_YR"]))) in events
+        ]
+        slice_shapefile(source, keep, OUT / f"iem-polygons-{years}.zip")
+        record[f"iem-polygons-{years}.zip"] = {
+            **_sidecar(source),
+            "selection": "the polygon rows of the FF.W events "
+            + ", ".join(f"{w} {e} {y}" for w, e, y in sorted(events))
+            + ", .shp and .dbf bytes unchanged",
+            "records_kept": keep,
+        }
+    return record
+
+
 def _entries(lines: list[bytes]) -> tuple[int, dict[str, tuple[int, int]]]:
     """Return the ``stations:`` line and each station entry's [first, last) line range."""
     start = lines.index(b"stations:")
@@ -566,9 +898,17 @@ PARTS: dict[str, Callable[[], Provenance]] = {
     "alert-types": alert_types_copy,
     "outlines": outline_slices,
     "registry": registry_slice,
+    "slc": slc_slice,
+    "outside": outside_slices,
+    "zone-schools": zone_schools_slice,
+    "zone-sets": zone_set_slices,
+    "zone-versions": zone_version_slices,
+    "polygons": polygon_slices,
+    "zone-counties": zone_county_slice,
 }
 """Each part and what writes it, in the order they run (the UGC slice reads the 2018-19
-school-year slice)."""
+school-year slice; the zone parts read the school-year slices, the SLC slice and the two
+school slices)."""
 
 
 def main(argv: Sequence[str] = ()) -> None:

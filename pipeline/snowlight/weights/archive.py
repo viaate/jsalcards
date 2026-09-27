@@ -24,8 +24,11 @@ Columns used (the CSV has more): ``wfo``, ``phenomena``, ``significance``,
 (``C`` county or zone row, ``P`` storm-based polygon), ``ugc``, ``utc_issue`` and
 ``utc_expire`` (the row's in-effect span as IEM finally recorded it: a
 cancellation or an upgrade ends it early), ``utc_prodissue`` (when the product
-that created the row was issued) and ``product_id``. Times are
-``YYYY-MM-DD HH:MM`` in UTC.
+that created the row was issued), ``product_id`` and ``area2d`` (the area, in
+km², of the zone or county outline IEM joined to the row: the outline of that
+UGC as it stood when the product was issued, measured in the US National Atlas
+Equal Area projection; :mod:`snowlight.weights.zonepolys` uses it to tell which
+version of a zone a row was issued for). Times are ``YYYY-MM-DD HH:MM`` in UTC.
 
 Rows ended before they began
 ============================
@@ -158,6 +161,8 @@ class EventRow:
     end: datetime
     product_issued: datetime
     product_id: str
+    area_km2: float | None = None
+    """IEM's ``area2d``: the area of the UGC outline joined to the row (``None`` when blank)."""
 
     @property
     def event_key(self) -> str:
@@ -192,6 +197,8 @@ class ReadStats:
     outside_states: Counter[str] = field(default_factory=Counter)
     ended_before_start: int = 0
     """Rows withdrawn (cancelled or upgraded) before they began; kept (see the module docstring)."""
+    polygon_events: Counter[str] = field(default_factory=Counter)
+    """Storm-based polygon rows (skipped here) by event key (``WFO.PP.S.ETN.YEAR``)."""
     by_code: Counter[str] = field(default_factory=Counter)
     longest_row_days: float = 0.0
     closed_tropical: list[ClosedRow] = field(default_factory=list)
@@ -209,6 +216,18 @@ def _int(value: str, column: str, line: int) -> int:
         return int(value)
     except ValueError as error:
         raise ArchiveCsvError(f"line {line}: {column} {value!r} is not a whole number") from error
+
+
+def _area(value: str | None, line: int) -> float | None:
+    if value is None or value == "":
+        return None
+    try:
+        area = float(value)
+    except ValueError as error:
+        raise ArchiveCsvError(f"line {line}: area2d {value!r} is not a number") from error
+    if not area > 0:
+        raise ArchiveCsvError(f"line {line}: area2d {value!r} is not positive")
+    return area
 
 
 def read_rows(text: str, states: Iterable[str] = CONUS_STATES) -> tuple[list[EventRow], ReadStats]:
@@ -239,6 +258,8 @@ def read_rows(text: str, states: Iterable[str] = CONUS_STATES) -> tuple[list[Eve
         gtype = record["gtype"]
         if gtype == "P":
             stats.polygon_rows += 1
+            etn = _int(record["eventid"], "eventid", line)
+            stats.polygon_events[f"{record['wfo']}.{code}.{etn:04d}.{record['vtec_year']}"] += 1
             continue
         ugc = record["ugc"]
         if gtype != "C" or len(ugc) != 6 or ugc[2] not in {"C", "Z"}:  # noqa: PLR2004
@@ -259,6 +280,7 @@ def read_rows(text: str, states: Iterable[str] = CONUS_STATES) -> tuple[list[Eve
             end=end,
             product_issued=_time(record["utc_prodissue"], "utc_prodissue", line),
             product_id=record["product_id"],
+            area_km2=_area(record.get("area2d"), line),
         )
         rows.append(row)
     rows = close_open_tropical(rows, stats)

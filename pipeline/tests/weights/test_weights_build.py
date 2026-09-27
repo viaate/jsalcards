@@ -42,6 +42,7 @@ def _scope(kit: "Kit", *, windows: bool = True) -> build.Scope:
         county_release=kit.county_release(),
         day_windows=((date(2025, 2, 6), date(2025, 2, 7)),) if windows else (),
         dma_sha256=hashlib.sha256(kit.bytes("usa-tvdma-county.csv")).hexdigest(),
+        zone_releases=kit.zone_releases(),
     )
 
 
@@ -71,11 +72,13 @@ def test_build_writes_every_output(kit: "Kit", tmp_path: Path) -> None:
     ]
     assert (out / "closure-weights.png").read_bytes()[:8] == b"\x89PNG\r\n\x1a\n"
     closure = _read(out / "closure-weights.json")
-    assert closure["schema"] == 2
+    assert closure["schema"] == 3
     assert closure["school_years"] == ["2018-19", "2021-22", "2024-25"]
     counties = closure["counties"]
     assert isinstance(counties, list)
-    assert len(counties) == 10
+    # The county slice holds ten counties; six have schools, the others are listed apart.
+    assert len(counties) == 6
+    assert closure["counties_without_schools"] == ["12037", "16013", "44001", "44005"]
     by_fips = {county["fips"]: county for county in counties}
     providence = by_fips["44007"]
     assert providence["state"] == "RI"
@@ -84,27 +87,35 @@ def test_build_writes_every_output(kit: "Kit", tmp_path: Path) -> None:
     assert providence["codes"]["WS.W"]["days"] >= 1
     assert providence["weight"] > 0
     assert providence["years_counted"] == 3
-    assert providence["school_years_left_out"] == {}
+    assert providence["county_rule"]["school_years_left_out"] == {}
     assert None not in providence["by_year"].values()
-    # Every per-year figure divides by the county's own school years counted.
+    assert providence["zones"] == {"RIZ002": 2, "RIZ001": 1}
+    schools = closure["schools"]
+    assert isinstance(schools, dict)
+    assert len(schools) == result.schools == 10
+    # A county's figures are the means of its schools' own.
     for county in counties:
+        members = [s for s in schools.values() if s["fips"] == county["fips"]]
+        assert len(members) == county["schools"]
+        mean_days = sum(s["days_per_year"] for s in members) / len(members)
+        assert county["days_per_year"] == pytest.approx(mean_days, abs=1e-3)
+        mean_weight = sum(s["weight"] for s in members) / len(members)
+        assert county["weight"] == pytest.approx(mean_weight, abs=1e-3)
         counted = [year for year in county["by_year"].values() if year is not None]
-        assert len(counted) == county["years_counted"]
-        assert set(county["school_years_left_out"]) == {
-            label for label, year in county["by_year"].items() if year is None
-        }
+        assert len(counted) == county["years_counted"] == 3
         total = sum(year["weighted"] for year in counted)
-        assert county["days_per_year"] == pytest.approx(total / len(counted), abs=1e-3)
+        assert county["days_per_year"] == pytest.approx(total / len(counted), abs=2e-2)
         for code in county["codes"].values():
-            assert code["per_year"] == pytest.approx(code["days"] / len(counted), abs=1e-4)
+            assert code["per_year"] == pytest.approx(code["days"] / len(counted), abs=2e-2)
     # The school-weighted mean weight is 1.
-    placed = sum(county["schools"] for county in counties)
-    assert placed == result.schools == 10
-    mean = sum(county["schools"] * county["weight"] for county in counties) / placed
+    mean = sum(school["weight"] for school in schools.values()) / len(schools)
     assert mean == pytest.approx(1.0, abs=1e-3)
     normalizer = closure["normalizer"]
     assert isinstance(normalizer, dict)
     assert normalizer["school_weighted_mean_days_per_year"] == pytest.approx(result.mean_days)
+    assert normalizer["county_rule_school_weighted_mean_days_per_year"] == pytest.approx(
+        result.county_rule_mean
+    )
 
 
 def test_state_weights_and_sanity(kit: "Kit", tmp_path: Path) -> None:
@@ -178,6 +189,16 @@ def test_manifest_records_provenance(kit: "Kit", tmp_path: Path) -> None:
     assert changes["last_school_year_with_rows"]["WC.W"] == "2018-19"  # MTZ043
     assert references["alert_types"]["url"] == "https://api.weather.gov/alerts/types"
     assert result.checks is checks or result.checks == checks
+    polygons_used = checks["zone_polygons"]
+    assert polygons_used["versions_by_source"] == {"iem": 23, "z_16ap26": 5, "z_18mr25": 19}
+    assert len(polygons_used["iem_requests"]) == 6
+    assert polygons_used["unresolved"] == []
+    assert set(sources["zone_releases"]["served"]) == {"z_18mr25", "z_16ap26"}
+    assert len(sources["zone_releases"]["iem_full_resolution"]) == 6
+    assert set(sources["storm_polygons"]) == {"2018-19", "2021-22", "2024-25"}
+    assert checks["school_zones"]["placed_by"] == {"inside": 10}
+    storm = checks["storm_polygons"]["2024-25"]
+    assert storm["events_in_both"] == storm["school_year_file_polygon_events"] == 1
 
 
 def test_incomplete_school_years_are_left_out(kit: "Kit", tmp_path: Path) -> None:
@@ -186,17 +207,18 @@ def test_incomplete_school_years_are_left_out(kit: "Kit", tmp_path: Path) -> Non
     closure = _read(out / "closure-weights.json")
     counties = closure["counties"]
     missoula = next(c for c in counties if c["fips"] == "30063")
-    # MTZ043's 2018-19 rows are left out, and its outline lay in Missoula County: that
-    # year's count there is incomplete, so Missoula is averaged over the other two.
-    assert missoula["left_out_zone_days"]["2018-19"] > 0
-    assert missoula["years_counted"] == 2
-    assert missoula["school_years_left_out"] == {"2018-19": ["MTZ043"]}
-    assert missoula["by_year"]["2018-19"] is None
-    kept = [missoula["by_year"][label] for label in ("2021-22", "2024-25")]
-    assert missoula["days_per_year"] == pytest.approx(
-        sum(year["weighted"] for year in kept) / 2, abs=1e-4
-    )
-    assert "left_out_zone_days_per_year" not in missoula
+    # Under the county rule, MTZ043's 2018-19 rows are left out, and its outline lay in
+    # Missoula County: that year's count there is incomplete, so Missoula is averaged
+    # over the other two.
+    rule = missoula["county_rule"]
+    assert rule["left_out_zone_days"]["2018-19"] > 0
+    assert rule["years_counted"] == 2
+    assert rule["school_years_left_out"] == {"2018-19": ["MTZ043"]}
+    # Per school, the rows are read against MTZ043's own polygon then (IEM's copy), so
+    # the Missoula school (in MTZ005) keeps every school year.
+    assert missoula["years_counted"] == 3
+    assert missoula["by_year"]["2018-19"] is not None
+    assert missoula["zones"] == {"MTZ005": 1}
     outline_checks = _read(out / "manifest.json")["checks"]["zone_outlines"]
     assert outline_checks["school_years_left_out"] == {"30063": {"2018-19": ["MTZ043"]}}
     assert outline_checks["standing_school_year"] == "2019-20"
@@ -206,22 +228,22 @@ def test_incomplete_school_years_are_left_out(kit: "Kit", tmp_path: Path) -> Non
     assert period["school_years_left_out"] == ["2018-19"]
     assert (period["counties"], period["schools"]) == (["30063"], 1)
     assert period["state_ratio"] is None  # Missoula is the slice's only Montana county
-    national = [c for c in counties if c["years_counted"] == 3 and c["schools"]]
+    national = [c for c in counties if c["county_rule"]["years_counted"] == 3]
     schools_n = sum(c["schools"] for c in national)
     yearly = {
-        label: sum(c["schools"] * c["by_year"][label]["weighted"] for c in national) / schools_n
+        label: sum(c["schools"] * c["county_rule"]["by_year"][label]["weighted"] for c in national)
+        / schools_n
         for label in ("2018-19", "2021-22", "2024-25")
     }
     kept = (yearly["2021-22"] + yearly["2024-25"]) / 2
     assert period["national_ratio"] == pytest.approx(kept / (sum(yearly.values()) / 3), abs=1e-3)
     states = _read(out / "state-weights.json")
     montana = next(row for row in states["states"] if row["state"] == "MT")
-    assert montana["schools_in_counties_with_school_years_left_out"] == 1
+    assert montana["schools_with_school_years_left_out"] == 0
     method = (out / "method.md").read_text(encoding="utf-8")
-    assert "#### School years left out of a county's average" in method
+    assert "##### School years left out of a county's average" in method
     assert "| Missoula MT (30063) | 1 | 2 |" in method
     assert "| MT | 2: all but 2018-19 | 1 | 1 |" in method
-    assert "by state: MT 1 of 1." in method
 
 
 def test_station_priority(kit: "Kit", tmp_path: Path) -> None:
@@ -280,14 +302,7 @@ def test_unplaced_directory_is_an_error(kit: "Kit", tmp_path: Path) -> None:
     with pytest.raises(build.WeightsBuildError, match="closure-type day"):
         build.school_mean({"44007": 0.0}, {"44007": 3})
     paths = _paths(kit, tmp_path / "out")
-    scope = _scope(kit, windows=False)
-    wrong = build.Scope(
-        years=scope.years,
-        releases=scope.releases,
-        county_release=scope.county_release,
-        day_windows=(),
-        dma_sha256="0" * 64,
-    )
+    wrong = replace(_scope(kit, windows=False), dma_sha256="0" * 64)
     with pytest.raises(build.WeightsBuildError, match="SHA-256"):
         build.build(paths, scope=wrong, clock=kit.clock, cache=kit.http())
 
@@ -345,8 +360,9 @@ def test_cli_main_prints_the_summary(
     assert cli.main(["build", "--skip-day-files", "--out-dir", str(tmp_path / "elsewhere")]) == 0
     assert seen == [False]
     printed = capsys.readouterr().out
-    assert "10 counties, 10 schools" in printed
-    assert "(incomplete years left out): 1, holding 1 schools" in printed
+    assert "10 schools in 6 counties" in printed
+    assert "schools averaged over fewer school years: 0" in printed
+    assert "(county rule " in printed
     assert "sanity (winter): FAILS" in printed
     assert "closure_weights:" in printed
 

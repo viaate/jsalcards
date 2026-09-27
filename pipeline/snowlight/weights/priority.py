@@ -5,8 +5,9 @@ Inputs (all read, none changed):
 * the first-hand station checks, ``docs/research/firsthand/*.json`` (one record
   per station website or system, checked 2026-09-26), and the market anchors in
   ``docs/research/sources.json`` for the records linked to it;
-* the school directory and each school's closure weight (its NWS county's, see
-  :mod:`snowlight.weights.schools`);
+* the school directory and each school's own closure weight (the weight of the
+  school in its own forecast zone, :mod:`snowlight.weights.perschool`), summed per
+  directory county;
 * current coverage, ``pipeline/out/internal/stations/coverage.json``: a county
   is covered when a *working* Gray or Hearst source lists it (station ids
   ``gray-*`` and ``hearst-*``; other groups' working sources, added as their
