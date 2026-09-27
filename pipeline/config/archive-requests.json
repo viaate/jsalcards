@@ -1,367 +1,39 @@
 {
+  "snapshots": [
+    {
+      "timestamp": "20230318033708",
+      "url": "https://ftp2.wktv.com/CGSXML/All%20Active.html"
+    },
+    {
+      "timestamp": "20170910080549",
+      "url": "http://abcnews4.com/resources/ftptransfer/wciv/closings.html"
+    },
+    {
+      "timestamp": "20180127024608",
+      "url": "http://abcnews4.com/resources/ftptransfer/wciv/closings.html"
+    },
+    {
+      "timestamp": "20240502032952",
+      "url": "https://kmph.com/resources/ftptransfer/kmph/closings/closings.html"
+    },
+    {
+      "timestamp": "20240409182758",
+      "url": "https://abcstlouis.com/resources/ftptransfer/kdnl/closings/closings.html"
+    }
+  ],
   "cdx": [
     {
-      "url": "wfla.com/clos*",
+      "url": "katv.com/resources/ftptransfer/*",
       "from": "20140101",
       "to": "20260930"
     },
     {
-      "url": "wfla.com/wp-json/nxd_app/v1/closings_alerts*",
+      "url": "foxbaltimore.com/resources/ftptransfer/*",
       "from": "20140101",
       "to": "20260930"
     },
     {
-      "url": "kxan.com/wp-json/nxd_app/v1/closings_alerts*",
-      "from": "20140101",
-      "to": "20260930"
-    },
-    {
-      "url": "ktsm.com/wp-json/nxd_app/v1/closings_alerts*",
-      "from": "20140101",
-      "to": "20260930"
-    },
-    {
-      "url": "pix11.com/weather/clos*",
-      "from": "20140101",
-      "to": "20260930"
-    },
-    {
-      "url": "pix11.com/wp-json/nxd_app/v1/closings_alerts*",
-      "from": "20140101",
-      "to": "20260930"
-    },
-    {
-      "url": "phl17.com/weather/school-clos*",
-      "from": "20140101",
-      "to": "20260930"
-    },
-    {
-      "url": "cw33.com/clos*",
-      "from": "20140101",
-      "to": "20260930"
-    },
-    {
-      "url": "cw33.com/wp-json/nxd_app/v1/closings_alerts*",
-      "from": "20140101",
-      "to": "20260930"
-    },
-    {
-      "url": "cw33.com/weather/school-clos*",
-      "from": "20140101",
-      "to": "20260930"
-    },
-    {
-      "url": "fox4kc.com/wp-json/nxd_app/v1/closings_alerts*",
-      "from": "20140101",
-      "to": "20260930"
-    },
-    {
-      "url": "fox59.com/clos*",
-      "from": "20140101",
-      "to": "20260930"
-    },
-    {
-      "url": "fox59.com/wp-json/nxd_app/v1/closings_alerts*",
-      "from": "20140101",
-      "to": "20260930"
-    },
-    {
-      "url": "2822news.com/weather/clos*",
-      "from": "20140101",
-      "to": "20260930"
-    },
-    {
-      "url": "pahomepage.com/weather/clos*",
-      "from": "20140101",
-      "to": "20260930"
-    },
-    {
-      "url": "pahomepage.com/wp-json/nxd_app/v1/closings_alerts*",
-      "from": "20140101",
-      "to": "20260930"
-    },
-    {
-      "url": "fox40.com/weather/clos*",
-      "from": "20140101",
-      "to": "20260930"
-    },
-    {
-      "url": "fox40.com/clos*",
-      "from": "20140101",
-      "to": "20260930"
-    },
-    {
-      "url": "fox40.com/weather/school-clos*",
-      "from": "20140101",
-      "to": "20260930"
-    },
-    {
-      "url": "wiproud.com/clos*",
-      "from": "20140101",
-      "to": "20260930"
-    },
-    {
-      "url": "cbs17.com/wp-json/nxd_app/v1/closings_alerts*",
-      "from": "20140101",
-      "to": "20260930"
-    },
-    {
-      "url": "qcnews.com/weather/clos*",
-      "from": "20140101",
-      "to": "20260930"
-    },
-    {
-      "url": "qcnews.com/wp-json/nxd_app/v1/closings_alerts*",
-      "from": "20140101",
-      "to": "20260930"
-    },
-    {
-      "url": "ourquadcities.com/clos*",
-      "from": "20140101",
-      "to": "20260930"
-    },
-    {
-      "url": "upmatters.com/weather/clos*",
-      "from": "20140101",
-      "to": "20260930"
-    },
-    {
-      "url": "cw7az.com/weather/clos*",
-      "from": "20140101",
-      "to": "20260930"
-    },
-    {
-      "url": "cw7az.com/clos*",
-      "from": "20140101",
-      "to": "20260930"
-    },
-    {
-      "url": "cw7az.com/wp-json/nxd_app/v1/closings_alerts*",
-      "from": "20140101",
-      "to": "20260930"
-    },
-    {
-      "url": "wric.com/weather/clos*",
-      "from": "20140101",
-      "to": "20260930"
-    },
-    {
-      "url": "wric.com/wp-json/nxd_app/v1/closings_alerts*",
-      "from": "20140101",
-      "to": "20260930"
-    },
-    {
-      "url": "wvnstv.com/weather/clos*",
-      "from": "20140101",
-      "to": "20260930"
-    },
-    {
-      "url": "wvnstv.com/clos*",
-      "from": "20140101",
-      "to": "20260930"
-    },
-    {
-      "url": "wvnstv.com/wp-json/nxd_app/v1/closings_alerts*",
-      "from": "20140101",
-      "to": "20260930"
-    },
-    {
-      "url": "media.wvnstv.com/nxs-wvnstv-media-us-east-1/closings/*",
-      "from": "20140101",
-      "to": "20260930"
-    },
-    {
-      "url": "wane.com/weather/clos*",
-      "from": "20140101",
-      "to": "20260930"
-    },
-    {
-      "url": "wane.com/clos*",
-      "from": "20140101",
-      "to": "20260930"
-    },
-    {
-      "url": "wane.com/wp-json/nxd_app/v1/closings_alerts*",
-      "from": "20140101",
-      "to": "20260930"
-    },
-    {
-      "url": "fox44news.com/weather/clos*",
-      "from": "20140101",
-      "to": "20260930"
-    },
-    {
-      "url": "fox44news.com/clos*",
-      "from": "20140101",
-      "to": "20260930"
-    },
-    {
-      "url": "fox44news.com/wp-json/nxd_app/v1/closings_alerts*",
-      "from": "20140101",
-      "to": "20260930"
-    },
-    {
-      "url": "wnct.com/weather/clos*",
-      "from": "20140101",
-      "to": "20260930"
-    },
-    {
-      "url": "wnct.com/clos*",
-      "from": "20140101",
-      "to": "20260930"
-    },
-    {
-      "url": "wnct.com/wp-json/nxd_app/v1/closings_alerts*",
-      "from": "20140101",
-      "to": "20260930"
-    },
-    {
-      "url": "alabamas42.com/weather/clos*",
-      "from": "20140101",
-      "to": "20260930"
-    },
-    {
-      "url": "alabamas42.com/clos*",
-      "from": "20140101",
-      "to": "20260930"
-    },
-    {
-      "url": "alabamas42.com/wp-json/nxd_app/v1/closings_alerts*",
-      "from": "20140101",
-      "to": "20260930"
-    },
-    {
-      "url": "everythinglubbock.com/weather/clos*",
-      "from": "20140101",
-      "to": "20260930"
-    },
-    {
-      "url": "everythinglubbock.com/clos*",
-      "from": "20140101",
-      "to": "20260930"
-    },
-    {
-      "url": "everythinglubbock.com/wp-json/nxd_app/v1/closings_alerts*",
-      "from": "20140101",
-      "to": "20260930"
-    },
-    {
-      "url": "wbtw.com/weather/clos*",
-      "from": "20140101",
-      "to": "20260930"
-    },
-    {
-      "url": "wbtw.com/clos*",
-      "from": "20140101",
-      "to": "20260930"
-    },
-    {
-      "url": "wbtw.com/wp-json/nxd_app/v1/closings_alerts*",
-      "from": "20140101",
-      "to": "20260930"
-    },
-    {
-      "url": "yourbasin.com/weather/clos*",
-      "from": "20140101",
-      "to": "20260930"
-    },
-    {
-      "url": "yourbasin.com/clos*",
-      "from": "20140101",
-      "to": "20260930"
-    },
-    {
-      "url": "yourbasin.com/wp-json/nxd_app/v1/closings_alerts*",
-      "from": "20140101",
-      "to": "20260930"
-    },
-    {
-      "url": "whnt.com/weather/clos*",
-      "from": "20140101",
-      "to": "20260930"
-    },
-    {
-      "url": "whnt.com/clos*",
-      "from": "20140101",
-      "to": "20260930"
-    },
-    {
-      "url": "whnt.com/wp-json/nxd_app/v1/closings_alerts*",
-      "from": "20140101",
-      "to": "20260930"
-    },
-    {
-      "url": "whnt.com/weather/school-clos*",
-      "from": "20140101",
-      "to": "20260930"
-    },
-    {
-      "url": "whnt.com/weather-clos*",
-      "from": "20140101",
-      "to": "20260930"
-    },
-    {
-      "url": "myarklamiss.com/weather/clos*",
-      "from": "20140101",
-      "to": "20260930"
-    },
-    {
-      "url": "myarklamiss.com/clos*",
-      "from": "20140101",
-      "to": "20260930"
-    },
-    {
-      "url": "myarklamiss.com/wp-json/nxd_app/v1/closings_alerts*",
-      "from": "20140101",
-      "to": "20260930"
-    },
-    {
-      "url": "wjbf.com/weather/clos*",
-      "from": "20140101",
-      "to": "20260930"
-    },
-    {
-      "url": "wjbf.com/clos*",
-      "from": "20140101",
-      "to": "20260930"
-    },
-    {
-      "url": "wjbf.com/wp-json/nxd_app/v1/closings_alerts*",
-      "from": "20140101",
-      "to": "20260930"
-    },
-    {
-      "url": "wrbl.com/weather/clos*",
-      "from": "20140101",
-      "to": "20260930"
-    },
-    {
-      "url": "wrbl.com/clos*",
-      "from": "20140101",
-      "to": "20260930"
-    },
-    {
-      "url": "wrbl.com/wp-json/nxd_app/v1/closings_alerts*",
-      "from": "20140101",
-      "to": "20260930"
-    },
-    {
-      "url": "wdhn.com/weather/clos*",
-      "from": "20140101",
-      "to": "20260930"
-    },
-    {
-      "url": "wdhn.com/clos*",
-      "from": "20140101",
-      "to": "20260930"
-    },
-    {
-      "url": "wdhn.com/wp-json/nxd_app/v1/closings_alerts*",
-      "from": "20140101",
-      "to": "20260930"
-    },
-    {
-      "url": "wdhn.com/severe-weather-clos*",
+      "url": "whec.com/wp-content/uploads/dynamic-assets/*",
       "from": "20140101",
       "to": "20260930"
     }
