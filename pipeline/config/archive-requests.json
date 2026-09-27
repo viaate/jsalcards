@@ -1,164 +1,96 @@
 {
   "snapshots": [
     {
-      "timestamp": "20240224233952",
-      "url": "https://santacruzcoe.org/schoolclosures/"
+      "timestamp": "20190130160627",
+      "url": "http://media.fox2detroit.com/media.fox2detroit.com/closings/closings.html"
     },
     {
-      "timestamp": "20230530021137",
-      "url": "https://santacruzcoe.org/schoolclosures/"
+      "timestamp": "20190206134305",
+      "url": "http://media.fox2detroit.com/media.fox2detroit.com/closings/closings.html"
     },
     {
-      "timestamp": "20241203153845",
-      "url": "https://santacruzcoe.org/schoolclosures/"
+      "timestamp": "20170110110218",
+      "url": "http://media2.fox2detroit.com/closings.html"
     },
     {
-      "timestamp": "20250425032315",
-      "url": "https://santacruzcoe.org/schoolclosures/"
+      "timestamp": "20180129221017",
+      "url": "http://media2.fox2detroit.com/closings.html"
     },
     {
-      "timestamp": "20251016102309",
-      "url": "https://santacruzcoe.org/schoolclosures/"
+      "timestamp": "20160216100914",
+      "url": "http://media2.fox5ny.com/closings/closing.htm"
     },
     {
-      "timestamp": "20240616132244",
-      "url": "https://santacruzcoe.org/schoolclosures/"
+      "timestamp": "20160125231819",
+      "url": "http://media2.fox5ny.com/closings/closing.htm"
     },
     {
-      "timestamp": "20220104163425",
-      "url": "https://www.kxxo.com/list-school-closings/"
+      "timestamp": "20191214052932",
+      "url": "https://media.fox29.com/media.fox29.com/weather/icons/closings.html"
     },
     {
-      "timestamp": "20211204034445",
-      "url": "https://www.kxxo.com/list-school-closings/"
+      "timestamp": "20160424093714",
+      "url": "http://s3.amazonaws.com/media.fox29.com/weather/icons/closings.html"
     },
     {
-      "timestamp": "20221202100234",
-      "url": "https://www.kxxo.com/list-school-closings/"
+      "timestamp": "20201028205251",
+      "url": "https://media.foxtv.com/wtxf/feeds/closings.html"
     },
     {
-      "timestamp": "20230202004850",
-      "url": "https://www.kxxo.com/list-school-closings/"
+      "timestamp": "20191111225836",
+      "url": "https://media.foxtv.com/wtxf/feeds/closings.html"
     },
     {
-      "timestamp": "20230303115930",
-      "url": "https://www.kxxo.com/list-school-closings/"
+      "timestamp": "20190814165634",
+      "url": "https://media.fox9.com/media.fox9.com/weather/closings.html"
     },
     {
-      "timestamp": "20240223160540",
-      "url": "https://www.kxxo.com/list-school-closings/"
+      "timestamp": "20170206035013",
+      "url": "http://s3.amazonaws.com/media.fox9.com/weather/closings.html"
     },
     {
-      "timestamp": "20241211085146",
-      "url": "https://www.kxxo.com/list-school-closings/"
+      "timestamp": "20200606141723",
+      "url": "https://media.foxtv.com/kmsp/weather/closings/closings.html"
     },
     {
-      "timestamp": "20250215221835",
-      "url": "https://www.kxxo.com/list-school-closings/"
+      "timestamp": "20200925150223",
+      "url": "https://media.foxtv.com/wttg/public_html/closings/closingsnt.html"
     },
     {
-      "timestamp": "20260123163358",
-      "url": "https://www.kxxo.com/list-school-closings/"
+      "timestamp": "20210107030146",
+      "url": "https://media.foxtv.com/wttg/public_html/closings/closingsnt.html"
     },
     {
-      "timestamp": "20260306110424",
-      "url": "https://www.kxxo.com/list-school-closings/"
+      "timestamp": "20140129114941",
+      "url": "http://www.fox5dc.org/closings/closingsnt.html"
     },
     {
-      "timestamp": "20201127192308",
-      "url": "https://www.kxxo.com/list-school-closings/"
+      "timestamp": "20150222182323",
+      "url": "http://www.fox5dc.org/closings/closingsnt.html"
     },
     {
-      "timestamp": "20210125221251",
-      "url": "https://www.kxxo.com/list-school-closings/"
+      "timestamp": "20200127113059",
+      "url": "https://s3.amazonaws.com/witiclosings/witi.html"
     },
     {
-      "timestamp": "20250708043033",
-      "url": "https://www.kxxo.com/list-school-closings/"
+      "timestamp": "20190814133650",
+      "url": "https://s3.amazonaws.com/witiclosings/witi.html"
     },
     {
-      "timestamp": "20180118101837",
-      "url": "http://www.wfrd.com:80/99rock-school-closings-cancellations/"
+      "timestamp": "20200320191138",
+      "url": "https://wagaradio2.com/closings/closings.htm"
     },
     {
-      "timestamp": "20170129015704",
-      "url": "http://www.wfrd.com/99rock-school-closings-cancellations/"
+      "timestamp": "20200327091000",
+      "url": "https://wagaradio2.com/closings/closings.htm"
     },
     {
-      "timestamp": "20201219232727",
-      "url": "https://www.wfrd.com/99rock-school-closings-cancellations/"
+      "timestamp": "20140106024221",
+      "url": "http://www.emergencyclosingcenter.com/ecc/home.jsp"
     },
     {
-      "timestamp": "20210124062727",
-      "url": "https://www.wfrd.com/99rock-school-closings-cancellations/"
-    },
-    {
-      "timestamp": "20201119073055",
-      "url": "https://www.wfrd.com/99rock-school-closings-cancellations/"
-    },
-    {
-      "timestamp": "20201102090611",
-      "url": "https://www.wfrd.com/99rock-school-closings-cancellations/"
-    },
-    {
-      "timestamp": "20201030170342",
-      "url": "https://www.wfrd.com/99rock-school-closings-cancellations/"
-    },
-    {
-      "timestamp": "20211027113736",
-      "url": "https://www.wfrd.com/99rock-school-closings-cancellations/"
-    },
-    {
-      "timestamp": "20230904104446",
-      "url": "https://www.wfrd.com/99rock-school-closings-cancellations/"
-    },
-    {
-      "timestamp": "20240717061851",
-      "url": "https://www.wfrd.com/99rock-school-closings-cancellations/"
-    },
-    {
-      "timestamp": "20260127212631",
-      "url": "https://www.newschannel20.com/search/?f=rss&t=article&c=weather/closings&l=50&sd=desc"
-    },
-    {
-      "timestamp": "20260217145442",
-      "url": "https://hcoe.org/news/alerts/"
-    },
-    {
-      "timestamp": "20230330030823",
-      "url": "https://hcoe.org/news/alerts/"
-    },
-    {
-      "timestamp": "20190918090130",
-      "url": "https://hcoe.org/news/alerts/"
-    },
-    {
-      "timestamp": "20201210022927",
-      "url": "https://hcoe.org/news/alerts/feed/"
-    },
-    {
-      "timestamp": "20200420145041",
-      "url": "https://hcoe.org/news/alerts/feed/"
-    }
-  ],
-  "cdx": [
-    {
-      "url": "wfrd.com/*",
-      "from": "20140101",
-      "to": "20260930",
-      "filter": [
-        "original:.*[Cc]los.*"
-      ],
-      "collapse": "urlkey"
-    },
-    {
-      "url": "kxxo.com/*",
-      "from": "20140101",
-      "to": "20260930",
-      "filter": [
-        "original:.*[Cc]los.*"
-      ],
-      "collapse": "urlkey"
+      "timestamp": "20190130233217",
+      "url": "http://www.emergencyclosingcenter.com:80/ecc/home.jsp"
     }
   ]
 }
