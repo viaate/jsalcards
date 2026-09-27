@@ -1,1245 +1,730 @@
 {
   "cdx": [
     {
-      "url": "kare11.com",
-      "from": "20140101",
-      "to": "20260930",
-      "collapse": "timestamp:6"
-    },
-    {
-      "url": "9news.com",
-      "from": "20140101",
-      "to": "20260930",
-      "collapse": "timestamp:6"
-    },
-    {
-      "url": "wkyc.com",
-      "from": "20140101",
-      "to": "20260930",
-      "collapse": "timestamp:6"
-    },
-    {
-      "url": "11alive.com",
-      "from": "20140101",
-      "to": "20260930",
-      "collapse": "timestamp:6"
-    },
-    {
-      "url": "wbir.com",
-      "from": "20140101",
-      "to": "20260930",
-      "collapse": "timestamp:6"
-    },
-    {
-      "url": "wgrz.com",
-      "from": "20140101",
-      "to": "20260930",
-      "collapse": "timestamp:6"
-    },
-    {
-      "url": "wzzm13.com",
-      "from": "20140101",
-      "to": "20260930",
-      "collapse": "timestamp:6"
-    },
-    {
-      "url": "wusa9.com",
-      "from": "20140101",
-      "to": "20260930",
-      "collapse": "timestamp:6"
-    },
-    {
-      "url": "kagstv.com/closings*",
-      "from": "20140101",
-      "to": "20260930"
-    },
-    {
-      "url": "12newsnow.com/closings*",
-      "from": "20140101",
-      "to": "20260930"
-    },
-    {
-      "url": "kcentv.com/closings*",
-      "from": "20140101",
-      "to": "20260930"
-    },
-    {
-      "url": "kens5.com/closings*",
-      "from": "20140101",
-      "to": "20260930"
-    },
-    {
-      "url": "cbs8.com/closings*",
-      "from": "20140101",
-      "to": "20260930"
-    },
-    {
-      "url": "5newsonline.com/closings*",
-      "from": "20140101",
-      "to": "20260930"
-    },
-    {
-      "url": "khou.com/closings*",
-      "from": "20140101",
-      "to": "20260930"
-    },
-    {
-      "url": "myfoxzone.com/closings*",
-      "from": "20140101",
-      "to": "20260930"
-    },
-    {
-      "url": "12news.com/closings*",
-      "from": "20140101",
-      "to": "20260930"
-    },
-    {
-      "url": "thv11.com/closings*",
-      "from": "20140101",
-      "to": "20260930"
-    },
-    {
-      "url": "kvue.com/closings*",
-      "from": "20140101",
-      "to": "20260930"
-    },
-    {
-      "url": "newswest9.com/closings*",
-      "from": "20140101",
-      "to": "20260930"
-    },
-    {
-      "url": "abc10.com/closings*",
-      "from": "20140101",
-      "to": "20260930"
-    },
-    {
-      "url": "cbs19.tv/closings*",
-      "from": "20140101",
-      "to": "20260930"
-    },
-    {
-      "url": "localmemphis.com/closings*",
-      "from": "20140101",
-      "to": "20260930"
-    },
-    {
-      "url": "wfaa.com/closings*",
-      "from": "20140101",
-      "to": "20260930"
-    },
-    {
-      "url": "wltx.com/closings*",
-      "from": "20140101",
-      "to": "20260930"
-    },
-    {
-      "url": "13wmaz.com/closings*",
-      "from": "20140101",
-      "to": "20260930"
-    },
-    {
-      "url": "wthr.com/closings*",
-      "from": "20140101",
-      "to": "20260930"
-    },
-    {
-      "url": "firstcoastnews.com/closings*",
-      "from": "20140101",
-      "to": "20260930"
-    },
-    {
-      "url": "wtsp.com/closings*",
-      "from": "20140101",
-      "to": "20260930"
-    },
-    {
-      "url": "rocketcitynow.com/closings*",
-      "from": "20140101",
-      "to": "20260930"
-    },
-    {
-      "url": "myhighplains.com/weather/closings*",
-      "from": "20140101",
-      "to": "20260930"
-    },
-    {
-      "url": "kark.com/weather/closings*",
-      "from": "20140101",
-      "to": "20260930"
-    },
-    {
-      "url": "kcau9.com/weather/closings*",
-      "from": "20140101",
-      "to": "20260930"
-    },
-    {
-      "url": "ketk.com/weather/closings*",
-      "from": "20140101",
-      "to": "20260930"
-    },
-    {
-      "url": "texomashomepage.com/weather/closings*",
-      "from": "20140101",
-      "to": "20260930"
-    },
-    {
-      "url": "kfor.com/weather/closings*",
-      "from": "20140101",
-      "to": "20260930"
-    },
-    {
-      "url": "cw39.com/weather/closings*",
-      "from": "20140101",
-      "to": "20260930"
-    },
-    {
-      "url": "fox16.com/weather/closings*",
-      "from": "20140101",
-      "to": "20260930"
-    },
-    {
-      "url": "conchovalleyhomepage.com/weather/closings*",
-      "from": "20140101",
-      "to": "20260930"
-    },
-    {
-      "url": "nwahomepage.com/weather/closings*",
-      "from": "20140101",
-      "to": "20260930"
-    },
-    {
-      "url": "westernslopenow.com/weather/closings*",
-      "from": "20140101",
-      "to": "20260930"
-    },
-    {
-      "url": "krqe.com/weather/closings*",
-      "from": "20140101",
-      "to": "20260930"
-    },
-    {
-      "url": "yourcentralvalley.com/weather/closings*",
-      "from": "20140101",
-      "to": "20260930"
-    },
-    {
-      "url": "fourstateshomepage.com/weather/closings*",
-      "from": "20140101",
-      "to": "20260930"
-    },
-    {
-      "url": "ksnt.com/weather/closings*",
-      "from": "20140101",
-      "to": "20260930"
-    },
-    {
-      "url": "bigcountryhomepage.com/weather/closings*",
-      "from": "20140101",
-      "to": "20260930"
-    },
-    {
-      "url": "ktalnews.com/weather/closings*",
-      "from": "20140101",
-      "to": "20260930"
-    },
-    {
-      "url": "kxnet.com/weather/closings*",
-      "from": "20140101",
-      "to": "20260930"
-    },
-    {
-      "url": "fox21news.com/weather/closings-and-delays*",
-      "from": "20140101",
-      "to": "20260930"
-    },
-    {
-      "url": "wate.com/closings-and-delays*",
-      "from": "20140101",
-      "to": "20260930"
-    },
-    {
-      "url": "wboy.com/weather/closings*",
-      "from": "20140101",
-      "to": "20260930"
-    },
-    {
-      "url": "fox56news.com/weather/closings*",
-      "from": "20140101",
-      "to": "20260930"
-    },
-    {
-      "url": "tristatehomepage.com/weather/closings*",
-      "from": "20140101",
-      "to": "20260930"
-    },
-    {
-      "url": "mytwintiers.com/weather/closings*",
-      "from": "20140101",
-      "to": "20260930"
-    },
-    {
-      "url": "mychamplainvalley.com/weather/closings*",
-      "from": "20140101",
-      "to": "20260930"
-    },
-    {
-      "url": "wfxrtv.com/weather/closings*",
-      "from": "20140101",
-      "to": "20260930"
-    },
-    {
-      "url": "myfox8.com/weather/closings*",
-      "from": "20140101",
-      "to": "20260930"
-    },
-    {
-      "url": "louisianafirstnews.com/weather/closings*",
-      "from": "20140101",
-      "to": "20260930"
-    },
-    {
-      "url": "binghamtonhomepage.com/weather/closings*",
-      "from": "20140101",
-      "to": "20260930"
-    },
-    {
-      "url": "yourerie.com/weather/closings*",
-      "from": "20140101",
-      "to": "20260930"
-    },
-    {
-      "url": "wjhl.com/weather/closings*",
-      "from": "20140101",
-      "to": "20260930"
-    },
-    {
-      "url": "wjtv.com/weather/closings*",
-      "from": "20140101",
-      "to": "20260930"
-    },
-    {
-      "url": "wlns.com/weather/closings*",
-      "from": "20140101",
-      "to": "20260930"
-    },
-    {
-      "url": "centralillinoisproud.com/weather/closings*",
-      "from": "20140101",
-      "to": "20260930"
-    },
-    {
-      "url": "cenlanow.com/weather/closings*",
-      "from": "20140101",
-      "to": "20260930"
-    },
-    {
-      "url": "mystateline.com/weather/closings*",
-      "from": "20140101",
-      "to": "20260930"
-    },
-    {
-      "url": "rochesterfirst.com/weather/closings*",
-      "from": "20140101",
-      "to": "20260930"
-    },
-    {
-      "url": "wspa.com/weather/closings*",
-      "from": "20140101",
-      "to": "20260930"
-    },
-    {
-      "url": "wtaj.com/weather/closings*",
-      "from": "20140101",
-      "to": "20260930"
-    },
-    {
-      "url": "wtrf.com/weather/closings*",
-      "from": "20140101",
-      "to": "20260930"
-    },
-    {
-      "url": "mywabashvalley.com/weather/closings*",
-      "from": "20140101",
-      "to": "20260930"
-    },
-    {
-      "url": "informnny.com/weather/closings*",
-      "from": "20140101",
-      "to": "20260930"
-    },
-    {
-      "url": "wytv.com/weather/closings*",
-      "from": "20140101",
-      "to": "20260930"
-    },
-    {
-      "url": "ksby.com/weather/school-closings-delays*",
-      "from": "20140101",
-      "to": "20260930"
-    },
-    {
-      "url": "kxxv.com/weather/school-closings-delays*",
-      "from": "20140101",
-      "to": "20260930"
-    },
-    {
-      "url": "13wmaz.com/closings*",
-      "from": "20140101",
-      "to": "20260930"
-    },
-    {
-      "url": "firstcoastnews.com/closings*",
-      "from": "20140101",
-      "to": "20260930"
-    },
-    {
-      "url": "wtsp.com/closings*",
-      "from": "20140101",
-      "to": "20260930"
-    },
-    {
-      "url": "s3.amazonaws.com/wjwclosings/*",
-      "from": "20140101",
-      "to": "20260930"
-    },
-    {
-      "url": "s3.amazonaws.com/wgnclosings/*",
-      "from": "20140101",
-      "to": "20260930"
-    },
-    {
-      "url": "wgnr-closings.s3.amazonaws.com/*",
-      "from": "20140101",
-      "to": "20260930"
-    },
-    {
-      "url": "s3.amazonaws.com/kdvrclosings/*",
-      "from": "20140101",
-      "to": "20260930"
-    },
-    {
-      "url": "cdn.trb.tv/kdvr-ftp/*",
-      "from": "20140101",
-      "to": "20260930"
-    },
-    {
-      "url": "newcdn.tribtv.com/*",
+      "url": "abc11.com/community/schoolclosings*",
       "from": "20140101",
       "to": "20260930",
       "filter": [
-        "original:.*[Cc]losing.*"
+        "statuscode:200"
+      ]
+    },
+    {
+      "url": "nbcwashington.com/wp-json/nbc/v1/school-closings*",
+      "from": "20140101",
+      "to": "20260930",
+      "filter": [
+        "statuscode:200"
+      ]
+    },
+    {
+      "url": "nbcbayarea.com/weather/school-closings*",
+      "from": "20140101",
+      "to": "20260930",
+      "filter": [
+        "statuscode:200"
+      ]
+    },
+    {
+      "url": "fox9.com/school-closings*",
+      "from": "20140101",
+      "to": "20260930",
+      "filter": [
+        "statuscode:200"
+      ]
+    },
+    {
+      "url": "baltimore.cbslocal.com/*",
+      "from": "20140101",
+      "to": "20260930",
+      "filter": [
+        "original:.*(?:[Cc]losing|[Dd]elay|SchoolClosings|school-closings|schoolclosings|cwc-closures|xml_emergency).*",
+        "statuscode:200"
       ],
       "collapse": "urlkey"
     },
     {
-      "url": "cdn.trb.tv/*",
+      "url": "boston.cbslocal.com/*",
       "from": "20140101",
       "to": "20260930",
       "filter": [
-        "original:.*[Cc]losing.*"
+        "original:.*(?:[Cc]losing|[Dd]elay|SchoolClosings|school-closings|schoolclosings|cwc-closures|xml_emergency).*",
+        "statuscode:200"
       ],
       "collapse": "urlkey"
     },
     {
-      "url": "newcdn.tribtv.com/wreg/SchoolClosings/*",
-      "from": "20140101",
-      "to": "20260930"
-    },
-    {
-      "url": "newcdn.tribtv.com/kdvr/schoolclosing/*",
-      "from": "20140101",
-      "to": "20260930"
-    },
-    {
-      "url": "media.news10.com/nxs-wtentv-media-us-east-1/closings/*",
-      "from": "20140101",
-      "to": "20260930"
-    },
-    {
-      "url": "media.woodtv.com/nxs-woodtv-media-us-east-1/closings/*",
-      "from": "20140101",
-      "to": "20260930"
-    },
-    {
-      "url": "api.ewscloud.com/prod/closings/*",
+      "url": "detroit.cbslocal.com/*",
       "from": "20140101",
       "to": "20260930",
+      "filter": [
+        "original:.*(?:[Cc]losing|[Dd]elay|SchoolClosings|school-closings|schoolclosings|cwc-closures|xml_emergency).*",
+        "statuscode:200"
+      ],
       "collapse": "urlkey"
+    },
+    {
+      "url": "minnesota.cbslocal.com/*",
+      "from": "20140101",
+      "to": "20260930",
+      "filter": [
+        "original:.*(?:[Cc]losing|[Dd]elay|SchoolClosings|school-closings|schoolclosings|cwc-closures|xml_emergency).*",
+        "statuscode:200"
+      ],
+      "collapse": "urlkey"
+    },
+    {
+      "url": "philadelphia.cbslocal.com/*",
+      "from": "20140101",
+      "to": "20260930",
+      "filter": [
+        "original:.*(?:[Cc]losing|[Dd]elay|SchoolClosings|school-closings|schoolclosings|cwc-closures|xml_emergency).*",
+        "statuscode:200"
+      ],
+      "collapse": "urlkey"
+    },
+    {
+      "url": "pittsburgh.cbslocal.com/*",
+      "from": "20140101",
+      "to": "20260930",
+      "filter": [
+        "original:.*(?:[Cc]losing|[Dd]elay|SchoolClosings|school-closings|schoolclosings|cwc-closures|xml_emergency).*",
+        "statuscode:200"
+      ],
+      "collapse": "urlkey"
+    },
+    {
+      "url": "dfw.cbslocal.com/*",
+      "from": "20140101",
+      "to": "20260930",
+      "filter": [
+        "original:.*(?:[Cc]losing|[Dd]elay|SchoolClosings|school-closings|schoolclosings|cwc-closures|xml_emergency).*",
+        "statuscode:200"
+      ],
+      "collapse": "urlkey"
+    },
+    {
+      "url": "denver.cbslocal.com/*",
+      "from": "20140101",
+      "to": "20260930",
+      "filter": [
+        "original:.*(?:[Cc]losing|[Dd]elay|SchoolClosings|school-closings|schoolclosings|cwc-closures|xml_emergency).*",
+        "statuscode:200"
+      ],
+      "collapse": "urlkey"
+    },
+    {
+      "url": "emergencyclosingcenter.com/*",
+      "from": "20140101",
+      "to": "20260930",
+      "filter": [
+        "statuscode:200"
+      ]
+    },
+    {
+      "url": "wgnr-closings.emergencyclosingcenter.com/*",
+      "from": "20140101",
+      "to": "20260930",
+      "filter": [
+        "statuscode:200"
+      ]
+    },
+    {
+      "url": "flashalertnewswire.net/IIN/reportsX/cwc-closures.php*",
+      "from": "20140101",
+      "to": "20260930",
+      "filter": [
+        "statuscode:200"
+      ]
+    },
+    {
+      "url": "flashalertnewswire.net/IIN/reportsX/flashnews_xml_emergency.php*",
+      "from": "20140101",
+      "to": "20260930",
+      "filter": [
+        "statuscode:200"
+      ]
     }
   ],
   "snapshots": [
     {
-      "timestamp": "20190106225047",
-      "url": "https://s3.amazonaws.com/wjwclosings/wjw.html"
+      "timestamp": "20250120193005",
+      "url": "https://media.psg.nexstardigital.net/WGNR/closings/closings.json?timestamp=1703549967527"
     },
     {
-      "timestamp": "20190109110405",
-      "url": "https://s3.amazonaws.com/wjwclosings/wjw.html"
+      "timestamp": "20231209172303",
+      "url": "https://media.psg.nexstardigital.net/WGNR/closings/closings.json?timestamp=1702142582566"
     },
     {
-      "timestamp": "20200212190254",
-      "url": "https://s3.amazonaws.com/wjwclosings/wjw.html"
+      "timestamp": "20231220210038",
+      "url": "https://media.psg.nexstardigital.net/WGNR/closings/closings.json?timestamp=1703106037699"
     },
     {
-      "timestamp": "20200213035542",
-      "url": "https://s3.amazonaws.com/wjwclosings/wjw.html"
+      "timestamp": "20191128130000",
+      "url": "https://abc7.com/community/schoolclosings/"
     },
     {
-      "timestamp": "20210118113138",
-      "url": "https://s3.amazonaws.com/wjwclosings/wjw.html"
+      "timestamp": "20210127130000",
+      "url": "https://abc30.com/community/schoolclosings/"
     },
     {
-      "timestamp": "20181126073811",
-      "url": "https://s3.amazonaws.com/wgnclosings/wgn.html"
+      "timestamp": "20221223130000",
+      "url": "https://abc13.com/community/schoolclosings/"
     },
     {
-      "timestamp": "20200330115324",
-      "url": "https://wgnr-closings.s3.amazonaws.com/index.html"
+      "timestamp": "20180307130000",
+      "url": "https://abc7ny.com/community/schoolclosings/"
     },
     {
-      "timestamp": "20210216155628",
-      "url": "https://wgnr-closings.s3.amazonaws.com/index.html"
+      "timestamp": "20230228130000",
+      "url": "https://abc7ny.com/community/schoolclosings/"
     },
     {
-      "timestamp": "20190209174122",
-      "url": "https://s3.amazonaws.com/kdvrclosings/kdvr.html"
+      "timestamp": "20190212130000",
+      "url": "https://abc7chicago.com/community/schoolclosings/"
     },
     {
-      "timestamp": "20200318220445",
-      "url": "https://newcdn.tribtv.com/kdvr/schoolclosing/KDVR-Closings.html"
+      "timestamp": "20180321130000",
+      "url": "https://6abc.com/community/schoolclosings/"
     },
     {
-      "timestamp": "20200318220445",
-      "url": "https://s3.amazonaws.com/kdvrclosings/kdvr.html"
+      "timestamp": "20250106130000",
+      "url": "https://6abc.com/community/schoolclosings/"
     },
     {
-      "timestamp": "20201109050321",
-      "url": "https://cdn.trb.tv/kdvr-ftp/closings/closings.html"
+      "timestamp": "20180209130000",
+      "url": "https://wgnr-closings.emergencyclosingcenter.com/index.html"
     },
     {
-      "timestamp": "20200329031144",
-      "url": "https://newcdn.tribtv.com/wreg/SchoolClosings/closings.html"
+      "timestamp": "20251110130000",
+      "url": "https://wgnr-closings.emergencyclosingcenter.com/index.html"
     },
     {
-      "timestamp": "20181203100119",
-      "url": "https://media.news10.com/nxs-wtentv-media-us-east-1/closings/school.html"
+      "timestamp": "20231201130000",
+      "url": "https://www.flashalertnewswire.net/IIN/reportsX/cwc-closures.php?RegionID=10"
     },
     {
-      "timestamp": "20200329120158",
-      "url": "https://media.news10.com/nxs-wtentv-media-us-east-1/closings/school.html"
+      "timestamp": "20211230130000",
+      "url": "https://www.flashalertnewswire.net/IIN/reportsX/cwc-closures.php?RegionID=15"
     },
     {
-      "timestamp": "20190330155239",
-      "url": "https://media.woodtv.com/nxs-woodtv-media-us-east-1/closings/WOODclosings.xml"
+      "timestamp": "20180327130000",
+      "url": "https://www.flashalertnewswire.net/IIN/reportsX/cwc-closures.php?RegionID=5"
     },
     {
-      "timestamp": "20210205153510",
-      "url": "https://media.woodtv.com/nxs-woodtv-media-us-east-1/closings/WOODclosings.xml"
+      "timestamp": "20170118130000",
+      "url": "https://www.flashalertnewswire.net/IIN/reportsX/cwc-closures.php?RegionID=13"
     },
     {
-      "timestamp": "20200213035542",
-      "url": "https://fox8.com/closings/school-closings/"
+      "timestamp": "20201113130000",
+      "url": "https://www.flashalertnewswire.net/IIN/reportsX/cwc-closures.php?RegionID=2"
     },
     {
-      "timestamp": "20190106225047",
-      "url": "https://fox8.com/closings/school-closings/"
+      "timestamp": "20171219130000",
+      "url": "https://www.flashalertnewswire.net/IIN/reportsX/cwc-closures.php?RegionID=25"
     },
     {
-      "timestamp": "20180105011402",
-      "url": "http://fox8.com:80/closings/school-closings/"
+      "timestamp": "20190213130000",
+      "url": "https://www.flashalertnewswire.net/IIN/reportsX/cwc-closures.php?RegionID=25"
     },
     {
-      "timestamp": "20180105011402",
-      "url": "https://s3.amazonaws.com/wjwclosings/wjw.html"
+      "timestamp": "20191126130000",
+      "url": "https://www.flashalertnewswire.net/IIN/reportsX/cwc-closures.php?RegionID=25"
     },
     {
-      "timestamp": "20200319032522",
-      "url": "https://kdvr.com/weather/closings/"
+      "timestamp": "20201113130000",
+      "url": "https://www.flashalertnewswire.net/IIN/reportsX/cwc-closures.php?RegionID=25"
     },
     {
-      "timestamp": "20240114231527",
-      "url": "https://www.denver7.com/weather/school-closings-delays?_renderer=json"
+      "timestamp": "20211213130000",
+      "url": "https://www.flashalertnewswire.net/IIN/reportsX/cwc-closures.php?RegionID=25"
     },
     {
-      "timestamp": "20230222133904",
-      "url": "https://www.denver7.com/weather/school-closings-delays?_renderer=json"
+      "timestamp": "20230310130000",
+      "url": "https://www.flashalertnewswire.net/IIN/reportsX/cwc-closures.php?RegionID=25"
     },
     {
-      "timestamp": "20241126211231",
-      "url": "https://www.denver7.com/weather/school-closings-delays"
+      "timestamp": "20240109130000",
+      "url": "https://www.flashalertnewswire.net/IIN/reportsX/cwc-closures.php?RegionID=25"
     },
     {
-      "timestamp": "20210215120000",
-      "url": "https://www.kagstv.com/closings"
+      "timestamp": "20250206130000",
+      "url": "https://www.flashalertnewswire.net/IIN/reportsX/cwc-closures.php?RegionID=25"
     },
     {
-      "timestamp": "20220203120000",
-      "url": "https://www.kagstv.com/closings"
+      "timestamp": "20260217130000",
+      "url": "https://www.flashalertnewswire.net/IIN/reportsX/cwc-closures.php?RegionID=25"
     },
     {
-      "timestamp": "20210215120000",
-      "url": "https://www.12newsnow.com/closings"
+      "timestamp": "20161208130000",
+      "url": "https://www.flashalertnewswire.net/IIN/reportsX/cwc-closures.php?RegionID=1"
     },
     {
-      "timestamp": "20210215120000",
-      "url": "https://www.kcentv.com/closings"
+      "timestamp": "20180123130000",
+      "url": "https://www.flashalertnewswire.net/IIN/reportsX/cwc-closures.php?RegionID=1"
     },
     {
-      "timestamp": "20220203120000",
-      "url": "https://www.kcentv.com/closings"
+      "timestamp": "20190225130000",
+      "url": "https://www.flashalertnewswire.net/IIN/reportsX/cwc-closures.php?RegionID=1"
     },
     {
-      "timestamp": "20210215120000",
-      "url": "https://www.kens5.com/closings/"
+      "timestamp": "20191127130000",
+      "url": "https://www.flashalertnewswire.net/IIN/reportsX/cwc-closures.php?RegionID=1"
     },
     {
-      "timestamp": "20230201120000",
-      "url": "https://www.kens5.com/closings/"
+      "timestamp": "20210212130000",
+      "url": "https://www.flashalertnewswire.net/IIN/reportsX/cwc-closures.php?RegionID=1"
     },
     {
-      "timestamp": "20191127120000",
-      "url": "https://www.cbs8.com/closings"
+      "timestamp": "20211224130000",
+      "url": "https://www.flashalertnewswire.net/IIN/reportsX/cwc-closures.php?RegionID=1"
     },
     {
-      "timestamp": "20210125120000",
-      "url": "https://www.cbs8.com/closings"
+      "timestamp": "20221223130000",
+      "url": "https://www.flashalertnewswire.net/IIN/reportsX/cwc-closures.php?RegionID=1"
     },
     {
-      "timestamp": "20210215120000",
-      "url": "https://www.5newsonline.com/closings"
+      "timestamp": "20240117130000",
+      "url": "https://www.flashalertnewswire.net/IIN/reportsX/cwc-closures.php?RegionID=1"
     },
     {
-      "timestamp": "20220224120000",
-      "url": "https://www.5newsonline.com/closings"
+      "timestamp": "20250214130000",
+      "url": "https://www.flashalertnewswire.net/IIN/reportsX/cwc-closures.php?RegionID=1"
     },
     {
-      "timestamp": "20210215120000",
-      "url": "https://www.khou.com/closings"
+      "timestamp": "20260106130000",
+      "url": "https://www.flashalertnewswire.net/IIN/reportsX/cwc-closures.php?RegionID=1"
     },
     {
-      "timestamp": "20220204120000",
-      "url": "https://www.khou.com/closings"
+      "timestamp": "20170206130000",
+      "url": "https://www.flashalertnewswire.net/IIN/reportsX/cwc-closures.php?RegionID=12"
     },
     {
-      "timestamp": "20210215120000",
-      "url": "https://www.myfoxzone.com/closings"
+      "timestamp": "20171219130000",
+      "url": "https://www.flashalertnewswire.net/IIN/reportsX/cwc-closures.php?RegionID=12"
     },
     {
-      "timestamp": "20220203120000",
-      "url": "https://www.myfoxzone.com/closings"
+      "timestamp": "20190212130000",
+      "url": "https://www.flashalertnewswire.net/IIN/reportsX/cwc-closures.php?RegionID=12"
     },
     {
-      "timestamp": "20221130100428",
-      "url": "https://www.king5.com/closings"
+      "timestamp": "20191219130000",
+      "url": "https://www.flashalertnewswire.net/IIN/reportsX/cwc-closures.php?RegionID=12"
     },
     {
-      "timestamp": "20210225035136",
-      "url": "https://www.king5.com/closings"
+      "timestamp": "20210211130000",
+      "url": "https://www.flashalertnewswire.net/IIN/reportsX/cwc-closures.php?RegionID=12"
     },
     {
-      "timestamp": "20210126120000",
-      "url": "https://www.12news.com/closings"
+      "timestamp": "20211109130000",
+      "url": "https://www.flashalertnewswire.net/IIN/reportsX/cwc-closures.php?RegionID=12"
     },
     {
-      "timestamp": "20230222120000",
-      "url": "https://www.12news.com/closings"
+      "timestamp": "20221223130000",
+      "url": "https://www.flashalertnewswire.net/IIN/reportsX/cwc-closures.php?RegionID=12"
     },
     {
-      "timestamp": "20210215110034",
-      "url": "https://www.krem.com/closings"
+      "timestamp": "20240108130000",
+      "url": "https://www.flashalertnewswire.net/IIN/reportsX/cwc-closures.php?RegionID=12"
     },
     {
-      "timestamp": "20200205031918",
-      "url": "https://www.krem.com/closings"
+      "timestamp": "20241226130000",
+      "url": "https://www.flashalertnewswire.net/IIN/reportsX/cwc-closures.php?RegionID=12"
     },
     {
-      "timestamp": "20210215120000",
-      "url": "https://www.thv11.com/closings"
+      "timestamp": "20260313130000",
+      "url": "https://www.flashalertnewswire.net/IIN/reportsX/cwc-closures.php?RegionID=12"
     },
     {
-      "timestamp": "20220203120000",
-      "url": "https://www.thv11.com/closings"
+      "timestamp": "20170118130000",
+      "url": "https://www.flashalertnewswire.net/IIN/reportsX/cwc-closures.php?RegionID=7"
     },
     {
-      "timestamp": "20230310024332",
-      "url": "https://www.ktvb.com/closings"
+      "timestamp": "20171228130000",
+      "url": "https://www.flashalertnewswire.net/IIN/reportsX/cwc-closures.php?RegionID=7"
     },
     {
-      "timestamp": "20210215110715",
-      "url": "https://www.ktvb.com/closings"
+      "timestamp": "20190212130000",
+      "url": "https://www.flashalertnewswire.net/IIN/reportsX/cwc-closures.php?RegionID=7"
     },
     {
-      "timestamp": "20210215120000",
-      "url": "https://www.kvue.com/closings"
+      "timestamp": "20200110130000",
+      "url": "https://www.flashalertnewswire.net/IIN/reportsX/cwc-closures.php?RegionID=7"
     },
     {
-      "timestamp": "20230201120000",
-      "url": "https://www.kvue.com/closings"
+      "timestamp": "20201113130000",
+      "url": "https://www.flashalertnewswire.net/IIN/reportsX/cwc-closures.php?RegionID=7"
     },
     {
-      "timestamp": "20200205120000",
-      "url": "https://www.newswest9.com/closings"
+      "timestamp": "20220103130000",
+      "url": "https://www.flashalertnewswire.net/IIN/reportsX/cwc-closures.php?RegionID=7"
     },
     {
-      "timestamp": "20230201120000",
-      "url": "https://www.newswest9.com/closings"
+      "timestamp": "20221130130000",
+      "url": "https://www.flashalertnewswire.net/IIN/reportsX/cwc-closures.php?RegionID=7"
     },
     {
-      "timestamp": "20230224120000",
-      "url": "https://www.abc10.com/closings"
+      "timestamp": "20240117130000",
+      "url": "https://www.flashalertnewswire.net/IIN/reportsX/cwc-closures.php?RegionID=7"
     },
     {
-      "timestamp": "20210127120000",
-      "url": "https://www.abc10.com/closings"
+      "timestamp": "20250205130000",
+      "url": "https://www.flashalertnewswire.net/IIN/reportsX/cwc-closures.php?RegionID=7"
     },
     {
-      "timestamp": "20210215120000",
-      "url": "https://www.cbs19.tv/closings"
+      "timestamp": "20260106130000",
+      "url": "https://www.flashalertnewswire.net/IIN/reportsX/cwc-closures.php?RegionID=7"
     },
     {
-      "timestamp": "20220203120000",
-      "url": "https://www.cbs19.tv/closings"
+      "timestamp": "20170119130000",
+      "url": "https://www.nbclosangeles.com/weather/school-closings/"
     },
     {
-      "timestamp": "20210215120000",
-      "url": "https://www.localmemphis.com/closings"
+      "timestamp": "20180109130000",
+      "url": "https://www.nbclosangeles.com/weather/school-closings/"
     },
     {
-      "timestamp": "20230201120000",
-      "url": "https://www.localmemphis.com/closings"
+      "timestamp": "20190114130000",
+      "url": "https://www.nbclosangeles.com/weather/school-closings/"
     },
     {
-      "timestamp": "20250219235306",
-      "url": "https://www.wcnc.com/closings"
+      "timestamp": "20191128130000",
+      "url": "https://www.nbclosangeles.com/weather/school-closings/"
     },
     {
-      "timestamp": "20220105185150",
-      "url": "https://www.wcnc.com/closings"
+      "timestamp": "20210125130000",
+      "url": "https://www.nbclosangeles.com/weather/school-closings/"
     },
     {
-      "timestamp": "20210215120000",
-      "url": "https://www.wfaa.com/closings"
+      "timestamp": "20211214130000",
+      "url": "https://www.nbclosangeles.com/weather/school-closings/"
     },
     {
-      "timestamp": "20220203120000",
-      "url": "https://www.wfaa.com/closings"
+      "timestamp": "20230301130000",
+      "url": "https://www.nbclosangeles.com/weather/school-closings/"
     },
     {
-      "timestamp": "20220121120000",
-      "url": "https://www.wltx.com/closings"
+      "timestamp": "20230301130000",
+      "url": "https://www.nbclosangeles.com/wp-json/nbc/v1/school-closings"
     },
     {
-      "timestamp": "20210202001157",
-      "url": "https://www.wnep.com/closings?standalone=1"
+      "timestamp": "20240201130000",
+      "url": "https://www.nbclosangeles.com/weather/school-closings/"
     },
     {
-      "timestamp": "20220204032412",
-      "url": "https://www.wnep.com/closings"
+      "timestamp": "20240201130000",
+      "url": "https://www.nbclosangeles.com/wp-json/nbc/v1/school-closings"
     },
     {
-      "timestamp": "20210125202835",
-      "url": "https://www.weareiowa.com/closings"
+      "timestamp": "20250313130000",
+      "url": "https://www.nbclosangeles.com/weather/school-closings/"
     },
     {
-      "timestamp": "20220307042304",
-      "url": "https://www.weareiowa.com/closings"
+      "timestamp": "20250313130000",
+      "url": "https://www.nbclosangeles.com/wp-json/nbc/v1/school-closings"
     },
     {
-      "timestamp": "20201216023412",
-      "url": "https://www.fox43.com/closings"
+      "timestamp": "20260216130000",
+      "url": "https://www.nbclosangeles.com/weather/school-closings/"
     },
     {
-      "timestamp": "20230306110901",
-      "url": "https://www.fox43.com/closings"
+      "timestamp": "20260216130000",
+      "url": "https://www.nbclosangeles.com/wp-json/nbc/v1/school-closings"
     },
     {
-      "timestamp": "20210124174945",
-      "url": "https://www.wqad.com/closings"
+      "timestamp": "20170120130000",
+      "url": "https://www.nbcsandiego.com/weather/school-closings/"
     },
     {
-      "timestamp": "20230215233525",
-      "url": "https://www.wqad.com/closings"
+      "timestamp": "20180227130000",
+      "url": "https://www.nbcsandiego.com/weather/school-closings/"
     },
     {
-      "timestamp": "20210215120000",
-      "url": "https://www.wthr.com/closings"
+      "timestamp": "20190205130000",
+      "url": "https://www.nbcsandiego.com/weather/school-closings/"
     },
     {
-      "timestamp": "20220203120000",
-      "url": "https://www.wthr.com/closings"
+      "timestamp": "20191127130000",
+      "url": "https://www.nbcsandiego.com/weather/school-closings/"
     },
     {
-      "timestamp": "20210215120000",
-      "url": "https://www.rocketcitynow.com/closings"
+      "timestamp": "20201228130000",
+      "url": "https://www.nbcsandiego.com/weather/school-closings/"
     },
     {
-      "timestamp": "20220106120000",
-      "url": "https://www.rocketcitynow.com/closings"
+      "timestamp": "20211227130000",
+      "url": "https://www.nbcsandiego.com/weather/school-closings/"
     },
     {
-      "timestamp": "20220927120000",
-      "url": "https://www.wtsp.com/closings"
+      "timestamp": "20221212130000",
+      "url": "https://www.nbcsandiego.com/weather/school-closings/"
     },
     {
-      "timestamp": "20220928120000",
-      "url": "https://www.wtsp.com/closings"
+      "timestamp": "20221212130000",
+      "url": "https://www.nbcsandiego.com/wp-json/nbc/v1/school-closings"
     },
     {
-      "timestamp": "20220928120000",
-      "url": "https://www.firstcoastnews.com/closings"
+      "timestamp": "20240207130000",
+      "url": "https://www.nbcsandiego.com/weather/school-closings/"
     },
     {
-      "timestamp": "20221109120000",
-      "url": "https://www.firstcoastnews.com/closings"
+      "timestamp": "20240207130000",
+      "url": "https://www.nbcsandiego.com/wp-json/nbc/v1/school-closings"
     },
     {
-      "timestamp": "20250122120000",
-      "url": "https://www.13wmaz.com/closings"
+      "timestamp": "20230224130000",
+      "url": "https://www.nbcbayarea.com/weather/school-closings/"
     },
     {
-      "timestamp": "20240927120000",
-      "url": "https://www.13wmaz.com/closings"
+      "timestamp": "20230224130000",
+      "url": "https://www.nbcbayarea.com/wp-json/nbc/v1/school-closings"
     },
     {
-      "timestamp": "20230124120000",
-      "url": "https://www.myhighplains.com/weather/closings/"
+      "timestamp": "20210215130000",
+      "url": "https://www.nbcdfw.com/weather/school-closings/"
     },
     {
-      "timestamp": "20250220120000",
-      "url": "https://www.myhighplains.com/weather/closings/"
+      "timestamp": "20220203130000",
+      "url": "https://www.nbcdfw.com/weather/school-closings/"
     },
     {
-      "timestamp": "20220203120000",
-      "url": "https://www.kark.com/weather/closings/"
+      "timestamp": "20230130130000",
+      "url": "https://www.nbcdfw.com/weather/school-closings/"
     },
     {
-      "timestamp": "20250109120000",
-      "url": "https://www.kark.com/weather/closings/"
+      "timestamp": "20230130130000",
+      "url": "https://www.nbcdfw.com/wp-json/nbc/v1/school-closings"
     },
     {
-      "timestamp": "20230103120000",
-      "url": "https://www.kcau9.com/weather/closings/"
+      "timestamp": "20250109130000",
+      "url": "https://www.nbcdfw.com/weather/school-closings/"
     },
     {
-      "timestamp": "20240112120000",
-      "url": "https://www.kcau9.com/weather/closings/"
+      "timestamp": "20250109130000",
+      "url": "https://www.nbcdfw.com/wp-json/nbc/v1/school-closings"
     },
     {
-      "timestamp": "20241127114910",
-      "url": "https://kdvr.com/weather/closings/"
+      "timestamp": "20260126130000",
+      "url": "https://www.nbcdfw.com/weather/school-closings/"
     },
     {
-      "timestamp": "20240314052218",
-      "url": "https://kdvr.com/weather/closings/"
+      "timestamp": "20260126130000",
+      "url": "https://www.nbcdfw.com/wp-json/nbc/v1/school-closings"
     },
     {
-      "timestamp": "20240115120000",
-      "url": "https://www.ketk.com/weather/closings/"
+      "timestamp": "20170209130000",
+      "url": "https://www.nbcboston.com/weather/school-closings/"
     },
     {
-      "timestamp": "20220203120000",
-      "url": "https://www.ketk.com/weather/closings/"
+      "timestamp": "20180313130000",
+      "url": "https://www.nbcboston.com/weather/school-closings/"
     },
     {
-      "timestamp": "20220203120000",
-      "url": "https://www.texomashomepage.com/weather/closings/"
+      "timestamp": "20190304130000",
+      "url": "https://www.nbcboston.com/weather/school-closings/"
     },
     {
-      "timestamp": "20230201120000",
-      "url": "https://www.texomashomepage.com/weather/closings/"
+      "timestamp": "20191203130000",
+      "url": "https://www.nbcboston.com/weather/school-closings/"
     },
     {
-      "timestamp": "20220202120000",
-      "url": "https://kfor.com/weather/closings/"
+      "timestamp": "20201217130000",
+      "url": "https://www.nbcboston.com/weather/school-closings/"
     },
     {
-      "timestamp": "20230124120000",
-      "url": "https://kfor.com/weather/closings/"
+      "timestamp": "20220225130000",
+      "url": "https://www.nbcboston.com/weather/school-closings/"
     },
     {
-      "timestamp": "20250121120000",
-      "url": "https://cw39.com/weather/closings/"
+      "timestamp": "20230314130000",
+      "url": "https://www.nbcboston.com/weather/school-closings/"
     },
     {
-      "timestamp": "20220204120000",
-      "url": "https://cw39.com/weather/closings/"
+      "timestamp": "20230314130000",
+      "url": "https://www.nbcboston.com/wp-json/nbc/v1/school-closings"
     },
     {
-      "timestamp": "20220203120000",
-      "url": "https://www.fox16.com/weather/closings/"
+      "timestamp": "20240213130000",
+      "url": "https://www.nbcboston.com/weather/school-closings/"
     },
     {
-      "timestamp": "20250109120000",
-      "url": "https://www.fox16.com/weather/closings/"
+      "timestamp": "20240213130000",
+      "url": "https://www.nbcboston.com/wp-json/nbc/v1/school-closings"
     },
     {
-      "timestamp": "20220203120000",
-      "url": "https://www.conchovalleyhomepage.com/weather/closings/"
+      "timestamp": "20250120130000",
+      "url": "https://www.nbcboston.com/weather/school-closings/"
     },
     {
-      "timestamp": "20230130120000",
-      "url": "https://www.conchovalleyhomepage.com/weather/closings/"
+      "timestamp": "20250120130000",
+      "url": "https://www.nbcboston.com/wp-json/nbc/v1/school-closings"
     },
     {
-      "timestamp": "20220224120000",
-      "url": "https://www.nwahomepage.com/weather/closings/"
+      "timestamp": "20260223130000",
+      "url": "https://www.nbcboston.com/weather/school-closings/"
     },
     {
-      "timestamp": "20230124120000",
-      "url": "https://www.nwahomepage.com/weather/closings/"
+      "timestamp": "20260223130000",
+      "url": "https://www.nbcboston.com/wp-json/nbc/v1/school-closings"
     },
     {
-      "timestamp": "20210212084327",
-      "url": "https://www.koin.com/weather/closings/"
+      "timestamp": "20170209130000",
+      "url": "https://www.nbcphiladelphia.com/weather/school-closings/"
     },
     {
-      "timestamp": "20240116205142",
-      "url": "https://www.koin.com/weather/closings/"
+      "timestamp": "20180321130000",
+      "url": "https://www.nbcphiladelphia.com/weather/school-closings/"
     },
     {
-      "timestamp": "20211209120000",
-      "url": "https://www.westernslopenow.com/weather/closings/"
+      "timestamp": "20190212130000",
+      "url": "https://www.nbcphiladelphia.com/weather/school-closings/"
     },
     {
-      "timestamp": "20230222120000",
-      "url": "https://www.westernslopenow.com/weather/closings/"
+      "timestamp": "20191202130000",
+      "url": "https://www.nbcphiladelphia.com/weather/school-closings/"
     },
     {
-      "timestamp": "20230215120000",
-      "url": "https://www.krqe.com/weather/closings/"
+      "timestamp": "20210201130000",
+      "url": "https://www.nbcphiladelphia.com/weather/school-closings/"
     },
     {
-      "timestamp": "20220202120000",
-      "url": "https://www.krqe.com/weather/closings/"
+      "timestamp": "20220103130000",
+      "url": "https://www.nbcphiladelphia.com/weather/school-closings/"
     },
     {
-      "timestamp": "20230222120000",
-      "url": "https://www.yourcentralvalley.com/weather/closings/"
+      "timestamp": "20240119130000",
+      "url": "https://www.nbcphiladelphia.com/weather/school-closings/"
     },
     {
-      "timestamp": "20211214120000",
-      "url": "https://www.yourcentralvalley.com/weather/closings/"
+      "timestamp": "20240119130000",
+      "url": "https://www.nbcphiladelphia.com/wp-json/nbc/v1/school-closings"
     },
     {
-      "timestamp": "20220202120000",
-      "url": "https://www.fourstateshomepage.com/weather/closings/"
+      "timestamp": "20250106130000",
+      "url": "https://www.nbcphiladelphia.com/weather/school-closings/"
     },
     {
-      "timestamp": "20250218120000",
-      "url": "https://www.fourstateshomepage.com/weather/closings/"
+      "timestamp": "20250106130000",
+      "url": "https://www.nbcphiladelphia.com/wp-json/nbc/v1/school-closings"
     },
     {
-      "timestamp": "20250212120000",
-      "url": "https://www.ksnt.com/weather/closings/"
+      "timestamp": "20260223130000",
+      "url": "https://www.nbcphiladelphia.com/weather/school-closings/"
     },
     {
-      "timestamp": "20240109120000",
-      "url": "https://www.ksnt.com/weather/closings/"
+      "timestamp": "20260223130000",
+      "url": "https://www.nbcphiladelphia.com/wp-json/nbc/v1/school-closings"
     },
     {
-      "timestamp": "20250212033516",
-      "url": "https://www.ksn.com/closings/"
+      "timestamp": "20170209130000",
+      "url": "https://www.nbcnewyork.com/weather/school-closings/"
     },
     {
-      "timestamp": "20240325070857",
-      "url": "https://www.ksn.com/closings/"
+      "timestamp": "20180307130000",
+      "url": "https://www.nbcnewyork.com/weather/school-closings/"
     },
     {
-      "timestamp": "20220203120000",
-      "url": "https://www.bigcountryhomepage.com/weather/closings/"
+      "timestamp": "20190212130000",
+      "url": "https://www.nbcnewyork.com/weather/school-closings/"
     },
     {
-      "timestamp": "20230201120000",
-      "url": "https://www.bigcountryhomepage.com/weather/closings/"
+      "timestamp": "20191202130000",
+      "url": "https://www.nbcnewyork.com/weather/school-closings/"
     },
     {
-      "timestamp": "20240115120000",
-      "url": "https://www.ktalnews.com/weather/closings/"
+      "timestamp": "20210201130000",
+      "url": "https://www.nbcnewyork.com/weather/school-closings/"
     },
     {
-      "timestamp": "20250110120000",
-      "url": "https://www.ktalnews.com/weather/closings/"
+      "timestamp": "20230228130000",
+      "url": "https://www.nbcnewyork.com/weather/school-closings/"
     },
     {
-      "timestamp": "20221108215025",
-      "url": "https://www.abc4.com/weather/closings/"
+      "timestamp": "20230228130000",
+      "url": "https://www.nbcnewyork.com/wp-json/nbc/v1/school-closings"
     },
     {
-      "timestamp": "20240112102057",
-      "url": "https://www.abc4.com/weather/closings/"
+      "timestamp": "20240213130000",
+      "url": "https://www.nbcnewyork.com/weather/school-closings/"
     },
     {
-      "timestamp": "20221216120000",
-      "url": "https://www.kxnet.com/weather/closings/"
+      "timestamp": "20240213130000",
+      "url": "https://www.nbcnewyork.com/wp-json/nbc/v1/school-closings"
     },
     {
-      "timestamp": "20220221120000",
-      "url": "https://www.kxnet.com/weather/closings/"
+      "timestamp": "20260223130000",
+      "url": "https://www.nbcnewyork.com/weather/school-closings/"
     },
     {
-      "timestamp": "20230215120000",
-      "url": "https://www.fox21news.com/weather/closings-and-delays/"
+      "timestamp": "20260223130000",
+      "url": "https://www.nbcnewyork.com/wp-json/nbc/v1/school-closings"
     },
     {
-      "timestamp": "20241107120000",
-      "url": "https://www.fox21news.com/weather/closings-and-delays/"
+      "timestamp": "20170314130000",
+      "url": "https://www.nbcwashington.com/weather/school-closings/"
     },
     {
-      "timestamp": "20240115120000",
-      "url": "https://www.wate.com/closings-and-delays/"
+      "timestamp": "20180321130000",
+      "url": "https://www.nbcwashington.com/weather/school-closings/"
     },
     {
-      "timestamp": "20250110120000",
-      "url": "https://www.wate.com/closings-and-delays/"
+      "timestamp": "20190220130000",
+      "url": "https://www.nbcwashington.com/weather/school-closings/"
     },
     {
-      "timestamp": "20220117120000",
-      "url": "https://www.wboy.com/weather/closings/"
+      "timestamp": "20210218130000",
+      "url": "https://www.nbcwashington.com/weather/school-closings/"
     },
     {
-      "timestamp": "20250106120000",
-      "url": "https://www.wboy.com/weather/closings/"
+      "timestamp": "20220103130000",
+      "url": "https://www.nbcwashington.com/weather/school-closings/"
     },
     {
-      "timestamp": "20250110120000",
-      "url": "https://fox56news.com/weather/closings/"
+      "timestamp": "20221215130000",
+      "url": "https://www.nbcwashington.com/weather/school-closings/"
     },
     {
-      "timestamp": "20220106120000",
-      "url": "https://fox56news.com/weather/closings/"
+      "timestamp": "20221215130000",
+      "url": "https://www.nbcwashington.com/wp-json/nbc/v1/school-closings"
     },
     {
-      "timestamp": "20220203120000",
-      "url": "https://www.tristatehomepage.com/weather/closings/"
+      "timestamp": "20240116130000",
+      "url": "https://www.nbcwashington.com/weather/school-closings/"
     },
     {
-      "timestamp": "20250110120000",
-      "url": "https://www.tristatehomepage.com/weather/closings/"
+      "timestamp": "20240116130000",
+      "url": "https://www.nbcwashington.com/wp-json/nbc/v1/school-closings"
     },
     {
-      "timestamp": "20220117120000",
-      "url": "https://www.mytwintiers.com/weather/closings/"
+      "timestamp": "20250106130000",
+      "url": "https://www.nbcwashington.com/weather/school-closings/"
     },
     {
-      "timestamp": "20221215120000",
-      "url": "https://www.mytwintiers.com/weather/closings/"
+      "timestamp": "20250106130000",
+      "url": "https://www.nbcwashington.com/wp-json/nbc/v1/school-closings"
     },
     {
-      "timestamp": "20220225120000",
-      "url": "https://www.mychamplainvalley.com/weather/closings/"
+      "timestamp": "20170209130000",
+      "url": "https://www.nbcconnecticut.com/weather/school-closings/"
     },
     {
-      "timestamp": "20221216120000",
-      "url": "https://www.mychamplainvalley.com/weather/closings/"
+      "timestamp": "20180313130000",
+      "url": "https://www.nbcconnecticut.com/weather/school-closings/"
     },
     {
-      "timestamp": "20250211120000",
-      "url": "https://www.wfxrtv.com/weather/closings/"
+      "timestamp": "20190304130000",
+      "url": "https://www.nbcconnecticut.com/weather/school-closings/"
     },
     {
-      "timestamp": "20220103120000",
-      "url": "https://www.wfxrtv.com/weather/closings/"
+      "timestamp": "20191203130000",
+      "url": "https://www.nbcconnecticut.com/weather/school-closings/"
     },
     {
-      "timestamp": "20250110120000",
-      "url": "https://myfox8.com/weather/closings/"
+      "timestamp": "20201217130000",
+      "url": "https://www.nbcconnecticut.com/weather/school-closings/"
     },
     {
-      "timestamp": "20220117120000",
-      "url": "https://myfox8.com/weather/closings/"
-    },
-    {
-      "timestamp": "20250121120000",
-      "url": "https://www.louisianafirstnews.com/weather/closings/"
-    },
-    {
-      "timestamp": "20220121120000",
-      "url": "https://www.louisianafirstnews.com/weather/closings/"
-    },
-    {
-      "timestamp": "20220117120000",
-      "url": "https://www.binghamtonhomepage.com/weather/closings/"
-    },
-    {
-      "timestamp": "20221215120000",
-      "url": "https://www.binghamtonhomepage.com/weather/closings/"
-    },
-    {
-      "timestamp": "20220117120000",
-      "url": "https://www.yourerie.com/weather/closings/"
-    },
-    {
-      "timestamp": "20231128120000",
-      "url": "https://www.yourerie.com/weather/closings/"
-    },
-    {
-      "timestamp": "20240115120000",
-      "url": "https://www.wjhl.com/weather/closings/"
-    },
-    {
-      "timestamp": "20250110120000",
-      "url": "https://www.wjhl.com/weather/closings/"
-    },
-    {
-      "timestamp": "20250121120000",
-      "url": "https://www.wjtv.com/weather/closings/"
-    },
-    {
-      "timestamp": "20240115120000",
-      "url": "https://www.wjtv.com/weather/closings/"
-    },
-    {
-      "timestamp": "20220202120000",
-      "url": "https://www.wlns.com/weather/closings/"
-    },
-    {
-      "timestamp": "20230303120000",
-      "url": "https://www.wlns.com/weather/closings/"
-    },
-    {
-      "timestamp": "20220202120000",
-      "url": "https://www.centralillinoisproud.com/weather/closings/"
-    },
-    {
-      "timestamp": "20250212120000",
-      "url": "https://www.centralillinoisproud.com/weather/closings/"
-    },
-    {
-      "timestamp": "20250121120000",
-      "url": "https://www.cenlanow.com/weather/closings/"
-    },
-    {
-      "timestamp": "20240115120000",
-      "url": "https://www.cenlanow.com/weather/closings/"
-    },
-    {
-      "timestamp": "20260325192406",
-      "url": "https://www.woodtv.com/weather/closings/"
-    },
-    {
-      "timestamp": "20230131035207",
-      "url": "https://www.woodtv.com/weather/closings/"
-    },
-    {
-      "timestamp": "20230131133648",
-      "url": "https://media.psg.nexstardigital.net/wowtv/closings/closings_page.html"
-    },
-    {
-      "timestamp": "20250103102557",
-      "url": "https://media.psg.nexstardigital.net/wowtv/closings/closings_page.html"
-    },
-    {
-      "timestamp": "20240109120000",
-      "url": "https://www.mystateline.com/weather/closings/"
-    },
-    {
-      "timestamp": "20230216120000",
-      "url": "https://www.mystateline.com/weather/closings/"
-    },
-    {
-      "timestamp": "20220117120000",
-      "url": "https://www.rochesterfirst.com/weather/closings/"
-    },
-    {
-      "timestamp": "20230314120000",
-      "url": "https://www.rochesterfirst.com/weather/closings/"
-    },
-    {
-      "timestamp": "20250110120000",
-      "url": "https://www.wspa.com/weather/closings/"
-    },
-    {
-      "timestamp": "20220117120000",
-      "url": "https://www.wspa.com/weather/closings/"
-    },
-    {
-      "timestamp": "20220117120000",
-      "url": "https://www.wtaj.com/weather/closings/"
-    },
-    {
-      "timestamp": "20221215120000",
-      "url": "https://www.wtaj.com/weather/closings/"
-    },
-    {
-      "timestamp": "20220117120000",
-      "url": "https://www.wtrf.com/weather/closings/"
-    },
-    {
-      "timestamp": "20250106120000",
-      "url": "https://www.wtrf.com/weather/closings/"
-    },
-    {
-      "timestamp": "20220203120000",
-      "url": "https://www.mywabashvalley.com/weather/closings/"
-    },
-    {
-      "timestamp": "20250106120000",
-      "url": "https://www.mywabashvalley.com/weather/closings/"
-    },
-    {
-      "timestamp": "20220117120000",
-      "url": "https://www.informnny.com/weather/closings/"
-    },
-    {
-      "timestamp": "20230223120000",
-      "url": "https://www.informnny.com/weather/closings/"
-    },
-    {
-      "timestamp": "20220204120000",
-      "url": "https://www.wytv.com/weather/closings/"
-    },
-    {
-      "timestamp": "20241205120000",
-      "url": "https://www.wytv.com/weather/closings/"
-    },
-    {
-      "timestamp": "20251101173955",
-      "url": "https://www.kivitv.com/weather/school-closings-delays"
-    },
-    {
-      "timestamp": "20250330135242",
-      "url": "https://www.kivitv.com/weather/school-closings-delays"
-    },
-    {
-      "timestamp": "20240109030716",
-      "url": "https://www.3newsnow.com/weather/school-closings-delays?_renderer=json"
-    },
-    {
-      "timestamp": "20210125112844",
-      "url": "https://www.3newsnow.com/weather/school-closings-delays?_renderer=json"
-    },
-    {
-      "timestamp": "20210125120000",
-      "url": "https://www.ksby.com/weather/school-closings-delays"
-    },
-    {
-      "timestamp": "20230224120000",
-      "url": "https://www.ksby.com/weather/school-closings-delays"
-    },
-    {
-      "timestamp": "20210215120000",
-      "url": "https://www.kxxv.com/weather/school-closings-delays"
-    },
-    {
-      "timestamp": "20220203120000",
-      "url": "https://www.kxxv.com/weather/school-closings-delays"
-    },
-    {
-      "timestamp": "20230222194404",
-      "url": "https://www.nbc26.com/weather/school-closings-delays?_renderer=json"
-    },
-    {
-      "timestamp": "20240109084301",
-      "url": "https://www.nbc26.com/weather/school-closings-delays?_renderer=json"
-    },
-    {
-      "timestamp": "20220103002211",
-      "url": "https://www.wtvr.com/weather/school-closings-delays"
-    },
-    {
-      "timestamp": "20250212012050",
-      "url": "https://www.wtvr.com/weather/school-closings-delays?_renderer=json"
+      "timestamp": "20220225130000",
+      "url": "https://www.nbcconnecticut.com/weather/school-closings/"
     }
   ]
 }
