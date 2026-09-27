@@ -1,17 +1,199 @@
 {
   "snapshots": [
-    {"timestamp": "20250113174227", "url": "https://ftp2.wktv.com/CGSXML/All%20Active.html"},
-    {"timestamp": "20260128185903", "url": "https://ftp2.wktv.com/CGSXML/All%20Active.html"},
-    {"timestamp": "20240303141419", "url": "https://kmph.com/resources/ftptransfer/kmph/closings/closings.html"},
-    {"timestamp": "20240328003100", "url": "https://kmph.com/resources/ftptransfer/kmph/closings/closings.html"},
-    {"timestamp": "20251226101013", "url": "https://eventdelay.com/new/widget/channel/114/page"},
-    {"timestamp": "20210131194501", "url": "https://www.wdel.com/features/wdel-stormwatch/"}
+    {
+      "timestamp": "20230301120000",
+      "url": "https://ktla.com/weather/closings/"
+    },
+    {
+      "timestamp": "20260127120000",
+      "url": "https://www.klfy.com/weather/closings/"
+    },
+    {
+      "timestamp": "20240208120000",
+      "url": "https://fox5sandiego.com/weather/closings/"
+    },
+    {
+      "timestamp": "20260223120000",
+      "url": "https://www.pix11.com/weather/school-closings-delays"
+    },
+    {
+      "timestamp": "20250122120000",
+      "url": "https://www.wbtw.com/weather/closings/"
+    },
+    {
+      "timestamp": "20260127120000",
+      "url": "https://www.myarklamiss.com/weather/closings/"
+    },
+    {
+      "timestamp": "20250121120000",
+      "url": "https://www.wrbl.com/weather/closings-and-delays/"
+    },
+    {
+      "timestamp": "20250313130000",
+      "url": "https://www.kget.com/weather/closings/"
+    },
+    {
+      "timestamp": "20201009130000",
+      "url": "https://www.klfy.com/weather/closings/"
+    },
+    {
+      "timestamp": "20240927130000",
+      "url": "https://www.wbtw.com/weather/closings/"
+    },
+    {
+      "timestamp": "20220930130000",
+      "url": "https://www.qcnews.com/weather/closings/"
+    },
+    {
+      "timestamp": "20250219130000",
+      "url": "https://www.wnct.com/weather/closings/"
+    },
+    {
+      "timestamp": "20250212130000",
+      "url": "https://www.wvnstv.com/weather/closings/"
+    },
+    {
+      "timestamp": "20240202043228",
+      "url": "https://www.kget.com/weather/closings/"
+    },
+    {
+      "timestamp": "20240102230831",
+      "url": "https://www.8newsnow.com/weather/closings/"
+    },
+    {
+      "timestamp": "20230314110013",
+      "url": "https://www.8newsnow.com/weather/closings/"
+    },
+    {
+      "timestamp": "20241009191317",
+      "url": "https://www.counton2.com/weather/closings/"
+    },
+    {
+      "timestamp": "20240910033145",
+      "url": "https://wgno.com/weather/closings/"
+    },
+    {
+      "timestamp": "20221201124535",
+      "url": "https://www.upmatters.com/closings/"
+    },
+    {
+      "timestamp": "20210215130000",
+      "url": "https://www.myarklamiss.com/weather/closings/"
+    },
+    {
+      "timestamp": "20260126130000",
+      "url": "https://www.myarklamiss.com/weather/closings/"
+    },
+    {
+      "timestamp": "20260217130000",
+      "url": "https://www.kget.com/weather/closings/"
+    },
+    {
+      "timestamp": "20250312130000",
+      "url": "https://www.kget.com/weather/closings/"
+    },
+    {
+      "timestamp": "20260216130000",
+      "url": "https://www.8newsnow.com/weather/closings/"
+    },
+    {
+      "timestamp": "20240206130000",
+      "url": "https://www.8newsnow.com/weather/closings/"
+    },
+    {
+      "timestamp": "20201008130000",
+      "url": "https://www.klfy.com/weather/closings/"
+    },
+    {
+      "timestamp": "20240910130000",
+      "url": "https://www.klfy.com/weather/closings/"
+    },
+    {
+      "timestamp": "20260218130000",
+      "url": "https://fox40.com/weather/closings/"
+    },
+    {
+      "timestamp": "20250314130000",
+      "url": "https://fox40.com/weather/closings/"
+    },
+    {
+      "timestamp": "20221215130000",
+      "url": "https://www.2822news.com/weather/closings/"
+    },
+    {
+      "timestamp": "20210201130000",
+      "url": "https://www.2822news.com/weather/closings/"
+    },
+    {
+      "timestamp": "20190905130000",
+      "url": "https://www.wbtw.com/weather/closings/"
+    },
+    {
+      "timestamp": "20240926130000",
+      "url": "https://www.wbtw.com/weather/closings/"
+    },
+    {
+      "timestamp": "20190904130000",
+      "url": "https://www.counton2.com/weather/closings/"
+    },
+    {
+      "timestamp": "20240926130000",
+      "url": "https://www.counton2.com/weather/closings/"
+    },
+    {
+      "timestamp": "20260127130000",
+      "url": "https://wgno.com/weather/closings/"
+    },
+    {
+      "timestamp": "20240912130000",
+      "url": "https://wgno.com/weather/closings/"
+    },
+    {
+      "timestamp": "20191127130000",
+      "url": "https://www.upmatters.com/weather/closings/"
+    },
+    {
+      "timestamp": "20230223130000",
+      "url": "https://www.upmatters.com/weather/closings/"
+    },
+    {
+      "timestamp": "20210218130000",
+      "url": "https://www.qcnews.com/weather/closings/"
+    },
+    {
+      "timestamp": "20260126130000",
+      "url": "https://www.qcnews.com/weather/closings/"
+    },
+    {
+      "timestamp": "20210201130000",
+      "url": "https://phl17.com/weather/closings/"
+    },
+    {
+      "timestamp": "20250106130000",
+      "url": "https://phl17.com/weather/closings/"
+    },
+    {
+      "timestamp": "20170315035155",
+      "url": "https://s3.amazonaws.com/nxsglobal/cnyhomepage/closings/closings.html"
+    },
+    {
+      "timestamp": "20160304123244",
+      "url": "http://wx.wric.com/weather/WRIC_closings_delays.html"
+    }
   ],
   "cdx": [
-    {"url": "delmarvabroadcasting.com/wdel/*", "from": "20140101", "to": "20260930"},
-    {"url": "foreverdigitalmedia.com/wdel/*", "from": "20140101", "to": "20260930"},
-    {"url": "whec.com/wp-content/uploads/dynamic-assets/*", "from": "20140101", "to": "20260930"},
-    {"url": "katv.com/resources/ftptransfer/*", "from": "20140101", "to": "20260930", "filter": ["original:.*[Cc][Ll][Oo][Ss].*"]},
-    {"url": "foxbaltimore.com/resources/ftptransfer/*", "from": "20140101", "to": "20260930", "filter": ["original:.*[Cc][Ll][Oo][Ss].*"]}
+    {
+      "url": "s3.amazonaws.com/nxsglobal/cnyhomepage/closings/*",
+      "from": "20140101",
+      "to": "20260930"
+    },
+    {
+      "url": "wx.wric.com/weather/*",
+      "from": "20140101",
+      "to": "20260930",
+      "filter": [
+        "original:.*[Cc]losings.*"
+      ]
+    }
   ]
 }
