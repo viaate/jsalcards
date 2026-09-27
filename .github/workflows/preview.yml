@@ -1,9 +1,12 @@
 name: Preview
 
 # Publishes the current state of the site to GitHub Pages on every push to the
-# default branch, so work in progress can be seen at the repository's Pages URL.
-# Pages must be enabled once: Settings > Pages > Build and deployment > Source:
-# GitHub Actions.
+# default branch, so work in progress can be seen at https://snowlightmap.com,
+# the custom domain set in Settings > Pages (getsnowlight.com forwards to it at
+# the registrar). Pages must be enabled once: Settings > Pages > Build and
+# deployment > Source: GitHub Actions. The build's base path comes from
+# configure-pages: "/" under the custom domain, "/<repo>/" without one, so the
+# site follows the domain setting without a code change.
 #
 # The site is built with the pipeline's real data, made here: the school
 # directory (snowlight directory build: NCES files, pinned in
