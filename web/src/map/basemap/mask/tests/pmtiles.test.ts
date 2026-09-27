@@ -118,6 +118,50 @@ describe('archives', () => {
     expect(await ours.tile(9, 3, 0)).toBeNull();
   });
 
+  it('are read with gzipped tiles unzipped, as the school tiles are', async () => {
+    const plain = tile('school tile');
+    const archive = writeArchive([{ z: 11, x: 480, y: 780, bytes: gzipSync(plain) }], OPTIONS);
+    // The writer stores tiles as given: mark them gzipped in the header, as tippecanoe does.
+    archive[98] = 2;
+    expect(decodeHeader(archive).tileCompression).toBe(2);
+    const reference = new PMTiles(source(archive));
+    expect(
+      new Uint8Array((await reference.getZxy(11, 480, 780))?.data ?? new ArrayBuffer(0)),
+    ).toEqual(plain);
+    const read = await reader(archive).tile(11, 480, 780);
+    expect(new TextDecoder().decode(read ?? new Uint8Array())).toBe('school tile');
+  });
+
+  it('keep each tile once read, unless told not to', async () => {
+    const archive = writeArchive([{ z: 7, x: 30, y: 45, bytes: tile('a') }], OPTIONS);
+    const reads: number[] = [];
+    const counting = (keepTiles: boolean): ArchiveReader =>
+      new ArchiveReader(
+        (offset, length) => {
+          reads.push(offset);
+          return Promise.resolve(archive.subarray(offset, offset + length));
+        },
+        (data) => Promise.resolve(gunzipSync(data)),
+        { keepTiles },
+      );
+    const keeping = counting(true);
+    await keeping.tile(7, 30, 45);
+    await keeping.tile(7, 30, 45);
+    // The header and root in one read, then the tile once.
+    expect(reads).toHaveLength(2);
+    reads.length = 0;
+    const passing = counting(false);
+    await passing.tile(7, 30, 45);
+    await passing.tile(7, 30, 45);
+    expect(reads).toHaveLength(3);
+  });
+
+  it('refuse tiles compressed any other way', async () => {
+    const archive = writeArchive([{ z: 7, x: 30, y: 45, bytes: tile('a') }], OPTIONS);
+    archive[98] = 3;
+    await expect(reader(archive).tile(7, 30, 45)).rejects.toThrow(/tile compression 3/);
+  });
+
   it('store a tile repeated along the curve once, as one run', () => {
     const same = tile('same');
     const tiles: ArchiveTile[] = [];

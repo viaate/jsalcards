@@ -379,14 +379,29 @@ class IdTokenizer implements TokenSink {
     this.table = table;
     this.rules = new Array<AbbreviationRule<number>[] | undefined>(tokenCount);
     this.startsRule = new Uint8Array(tokenCount);
+    const ids = (words: readonly string[]): number[] =>
+      words.map((t) => table.findString(t, this.scratch));
     for (const rule of ABBREVIATIONS) {
-      const short = rule.short.map((t) => table.findString(t, this.scratch));
-      const long = rule.long.map((t) => table.findString(t, this.scratch));
+      const short = ids(rule.short);
+      const long = ids(rule.long);
       // A rule whose abbreviation is not in the dictionary matches no name.
       if (short.some((id) => id < 0)) continue;
       const first = short[0] ?? 0;
       const list = this.rules[first] ?? (this.rules[first] = []);
-      list.push({ short, long });
+      const { place } = rule;
+      list.push(
+        place === undefined
+          ? { short, long }
+          : {
+              short,
+              long,
+              // Words missing from the dictionary are in no name.
+              place: {
+                endsOrBefore: ids(place.endsOrBefore).filter((id) => id >= 0),
+                notAfter: ids(place.notAfter).filter((id) => id >= 0),
+              },
+            },
+      );
       this.startsRule[first] = 1;
     }
   }

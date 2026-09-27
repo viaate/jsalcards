@@ -1,6 +1,5 @@
 <script lang="ts">
-  import { nameParts } from '../app/search';
-  import type { NamePart, SearchOption } from '../app/search';
+  import type { SearchOption } from '../app/search';
   import { copy } from '../copy';
 
   interface Props {
@@ -14,11 +13,6 @@
   }
 
   let { id, options, active, onpick, onactive }: Props = $props();
-
-  /** The name as shown, cut where it matched: casing changes no length, so the ranges still fit. */
-  function shownParts(option: SearchOption): NamePart[] {
-    return nameParts({ name: option.name, highlight: option.hit.highlight });
-  }
 </script>
 
 <!--
@@ -53,7 +47,7 @@
         >
           <span class="text">
             <span class="name"
-              >{#each shownParts(option) as part, at (at)}{#if part.match}<b>{part.text}</b
+              >{#each option.parts as part, at (at)}{#if part.match}<b>{part.text}</b
                   >{:else}{part.text}{/if}{/each}</span
             >
             {#if option.sub !== ''}

@@ -11,10 +11,11 @@
  * module (maplibre-shared.ts). The page imports that chunk too, so it is
  * downloaded once and every worker takes it from the HTTP cache.
  *
- * Two lines are added at the end: an import of the street tiles chunk, and a
- * call that registers its protocol on the worker's scope once MapLibre's
- * worker has set that scope up. Street tiles then load, and are cut to the
- * US, in the worker that parses them.
+ * Lines are added at the end: imports of the street tiles and school tiles
+ * chunks, and calls that register their protocols on the worker's scope once
+ * MapLibre's worker has set that scope up. Street tiles then load, and are
+ * cut to the US, in the worker that parses them; school tiles load from the
+ * directory's archive, their names as the page shows them.
  *
  * A worker started from a same-origin blob is still same-origin, and a module
  * worker's absolute imports resolve as usual.
@@ -34,15 +35,17 @@ export interface WorkerUrls {
   readonly shared: string;
   /** The chunk of street-tiles.ts. */
   readonly streetTiles: string;
+  /** The chunk of school-tiles.ts. */
+  readonly schoolTiles: string;
   /** The US mask archive. */
   readonly mask: string;
 }
 
 /**
  * The worker module's source: importing its shared module from its chunk,
- * and registering the street tile protocol at the end.
+ * and registering the street and school tile protocols at the end.
  */
-export function workerSource({ shared, streetTiles, mask }: WorkerUrls): string {
+export function workerSource({ shared, streetTiles, schoolTiles, mask }: WorkerUrls): string {
   let imports = 0;
   const code = source.replace(SHARED_IMPORT, (_match, from: string) => {
     imports += 1;
@@ -55,7 +58,9 @@ export function workerSource({ shared, streetTiles, mask }: WorkerUrls): string 
   }
   return `${code.replace(SOURCE_MAP_COMMENT, '\n')}
 import { registerStreetTiles as snowlightRegisterStreetTiles } from ${JSON.stringify(streetTiles)};
+import { registerSchoolTiles as snowlightRegisterSchoolTiles } from ${JSON.stringify(schoolTiles)};
 snowlightRegisterStreetTiles(self, ${JSON.stringify(mask)});
+snowlightRegisterSchoolTiles(self);
 `;
 }
 

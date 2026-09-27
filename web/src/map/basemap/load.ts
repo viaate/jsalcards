@@ -10,11 +10,14 @@
  * - the worker's source (maplibre-worker.ts), a few KB,
  * - the street tiles code (street-tiles.ts), which the workers import to cut
  *   street tiles to the US, so it downloads once too,
+ * - the school tiles code (school-tiles.ts), which the workers import to read
+ *   the school directory's tiles, likewise,
  * - the bundled continental US lines, which the map is created with, so no
  *   worker has to fetch them after it boots.
  *
  * The US mask archive itself is read by the workers, a range at a time, only
- * once the map needs street tiles (zoom 7 and up).
+ * once the map needs street tiles (zoom 7 and up); the school tiles, when
+ * this build ships them, likewise from zoom 11.
  *
  * This module is small and ships in the entry chunk; the map code does not.
  */
@@ -55,21 +58,24 @@ function isUsLines(data: unknown): data is UsLinesData {
  * download fails; the still then stays.
  */
 export async function loadBasemap(): Promise<BasemapFactory> {
-  const [code, maplibre, shared, worker, streetTiles, usLines] = await Promise.all([
+  const [code, maplibre, shared, worker, streetTiles, schoolTiles, usLines] = await Promise.all([
     import('./index'),
     import('./maplibre'),
     import('./maplibre-shared'),
     import('./maplibre-worker'),
     import('./street-tiles'),
+    import('./school-tiles'),
     fetchUsLines(),
   ]);
   const workerUrl = worker.workerUrl({
     shared: shared.SHARED_URL,
     streetTiles: streetTiles.STREET_TILES_URL,
+    schoolTiles: schoolTiles.SCHOOL_TILES_URL,
     mask: publicUrl(US_MASK_FILE),
   });
   code.startWorkers(maplibre, workerUrl);
+  const schools = code.schoolTilesArchive();
   return {
-    create: (options) => code.createBasemap({ ...options, maplibre, workerUrl, usLines }),
+    create: (options) => code.createBasemap({ ...options, maplibre, workerUrl, usLines, schools }),
   };
 }

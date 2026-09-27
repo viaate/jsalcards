@@ -12,10 +12,19 @@
  *   last  the query is only a state name
  *
  * and inside a level records come heaviest first, ties in index order, so the
- * output is stable. On levels where every word is in the name, a name holding
- * the words side by side in the order typed comes first ("ps 12" puts "PS 12
- * Lewis and Clark" ahead of "Public Schools ... K-12"; see phrase.ts), judged
- * over the level's heaviest PHRASE_WINDOW records. Sets are bitsets over each group's weight ranks: filling
+ * output is stable. On levels where every word is in the name, judged over
+ * the level's heaviest PHRASE_WINDOW records:
+ *
+ * - with two or more words, names holding them side by side in the order
+ *   typed come first ("ps 12" puts "PS 12 Lewis and Clark" ahead of "Public
+ *   Schools ... K-12"; see phrase.ts);
+ * - among those, a name that starts with the words, a leading "The" aside,
+ *   goes ahead of one that does not unless that one is START_FACTOR times
+ *   heavier ("pembroke" puts "The Pembroke Hill School" ahead of "Franklin
+ *   Academy Pembroke Pines", and "lancaster pa" keeps the School District of
+ *   Lancaster ahead of Lancaster Mennonite School).
+ *
+ * Sets are bitsets over each group's weight ranks: filling
  * one from a dictionary range is a single run over contiguous postings, and a
  * level is a few AND/OR passes, so the first `limit` set bits of each level
  * in rank order are the answer. Typo matching only runs when the exact and
@@ -28,7 +37,14 @@
  * Tennessee ahead of South Portland, which does not start with the word.
  */
 import type { GroupData, SearchIndex } from './decode';
-import { isNumericToken, queryExpansions, tokenize, typoBudget } from './normalize';
+import {
+  isNumericToken,
+  queryExpansions,
+  ruleHolds,
+  rulesStartingWith,
+  tokenize,
+  typoBudget,
+} from './normalize';
 import { isPhrase } from './phrase';
 import { Tier, parseQuery } from './query';
 import type { ParsedQuery, Reading, TierValue } from './query';
@@ -42,6 +58,16 @@ export const MAX_LIMIT = 50;
 export const TYPO_RARE = 3;
 /** Records per level, heaviest first, checked for phrase order. */
 export const PHRASE_WINDOW = 64;
+/** Where a name has the words typed, best first (SearchEngine.wordsPlace). */
+const WORDS_START = 0;
+const WORDS_TOGETHER = 1;
+const WORDS_APART = 2;
+/** A word a name may start with before the words typed. */
+const LEADING_ARTICLE = 'the';
+/** How many times heavier a name must be to go ahead of one starting with the words. */
+export const START_FACTOR = 4;
+/** START_FACTOR in weight codes. */
+const START_CODES = Math.round(Math.log2(START_FACTOR) * 128);
 /** How many times heavier a name starting with the words must be to lead an exact name. */
 export const LEAD_FACTOR = 20;
 /** LEAD_FACTOR in weight codes (format.ts quantizeWeight: 128 per doubling). */
@@ -316,10 +342,10 @@ export class SearchEngine {
       const bits = this.levelBits(level, g, group, pool, parsed.readings, words);
       if (!bits) continue;
       const room = leading ? cap : cap - out.length;
-      const phrased = this.phraseReadings(level, parsed.readings);
-      // Without phrase order, take records straight off the set; with it,
-      // take the level's heaviest few and put phrases first.
-      const want = phrased ? Math.max(PHRASE_WINDOW, room) : room;
+      const ordered = this.orderReadings(level, parsed.readings);
+      // Without an order to judge, take records straight off the set; with
+      // one, take the level's heaviest few and put the best placed first.
+      const want = ordered ? Math.max(PHRASE_WINDOW, room) : room;
       const ranks: number[] = [];
       for (let w = 0; w < bits.length && ranks.length < want; w++) {
         let x = bits[w] ?? 0;
@@ -331,13 +357,19 @@ export class SearchEngine {
         }
       }
       const next: Found[] = [];
-      if (phrased) {
+      if (ordered) {
         const tier = level === FULL ? Tier.exact : levelTier(level);
-        const isFirst = ranks.map((rank) => this.inPhrase(group, rank, phrased, words, tier));
-        for (const first of [true, false]) {
-          ranks.forEach((rank, k) => {
-            if (isFirst[k] === first && next.length < room) next.push({ rank, level });
-          });
+        const starting: number[] = [];
+        const together: number[] = [];
+        const apart: number[] = [];
+        for (const rank of ranks) {
+          const place = this.wordsPlace(group, rank, ordered, words, tier);
+          if (place === WORDS_START) starting.push(rank);
+          else if (place === WORDS_TOGETHER) together.push(rank);
+          else apart.push(rank);
+        }
+        for (const rank of [...this.startFirst(group, starting, together), ...apart]) {
+          if (next.length < room) next.push({ rank, level });
         }
       } else {
         for (const rank of ranks) next.push({ rank, level });
@@ -390,15 +422,78 @@ export class SearchEngine {
   }
 
   /**
-   * Readings to judge phrase order by at this level, or null when order
-   * cannot matter: only on levels where every word is in the name, and only
-   * when some reading has two or more words.
+   * Names starting with the words and the rest, heaviest first each, in one
+   * order: a name starting with the words goes first unless the other is
+   * START_FACTOR times heavier or more.
    */
-  private phraseReadings(level: number, readings: readonly Reading[]): Reading[] | null {
+  private startFirst(
+    group: GroupData,
+    starting: readonly number[],
+    rest: readonly number[],
+  ): number[] {
+    const weight = (rank: number): number => group.weight[rank] ?? 0;
+    const merged: number[] = [];
+    let i = 0;
+    let j = 0;
+    while (i < starting.length || j < rest.length) {
+      const start = starting[i];
+      const other = rest[j];
+      if (
+        start !== undefined &&
+        (other === undefined || weight(other) - weight(start) < START_CODES)
+      ) {
+        merged.push(start);
+        i++;
+      } else if (other !== undefined) {
+        merged.push(other);
+        j++;
+      }
+    }
+    return merged;
+  }
+
+  /**
+   * Readings to judge the order of names by at this level, or null when order
+   * cannot matter: only on levels where every word is in the name. On exact
+   * names every name is the words, so there only phrase order can differ,
+   * and only when some reading has two or more words.
+   */
+  private orderReadings(level: number, readings: readonly Reading[]): Reading[] | null {
     if (level !== FULL && (level === STATE_ONLY || levelField(level) !== ALL_IN_NAME)) return null;
     const tier = level === FULL ? Tier.exact : levelTier(level);
     const usable = readings.filter((r) => r.words.length > 0 && tier >= r.floor);
-    return usable.some((r) => r.words.length > 1) ? usable : null;
+    if (usable.length === 0) return null;
+    if (level === FULL && !usable.some((r) => r.words.length > 1)) return null;
+    return usable;
+  }
+
+  /**
+   * Where a record's name has the words of one of its readings: where the
+   * name starts (after a leading "the", as in "The Pembroke Hill School"),
+   * side by side elsewhere, or apart. A single word is always side by side.
+   */
+  private wordsPlace(
+    group: GroupData,
+    rank: number,
+    readings: readonly Reading[],
+    words: readonly Word[],
+    tier: TierValue,
+  ): number {
+    const state = (group.kindState[rank] ?? 0) & 63;
+    const tokens = tokenize(this.index.name(group.fileIndex[rank] ?? 0));
+    const lists = readings
+      .filter((reading) => reading.state < 0 || reading.state === state)
+      .map((reading) =>
+        reading.words.map((wi) => words[wi]).filter((w): w is Word => w !== undefined),
+      );
+    if (tokens.length === 0) return WORDS_APART;
+    const rest = tokens[0] === LEADING_ARTICLE ? tokens.slice(1) : null;
+    const starts = lists.some(
+      (list) =>
+        isPhrase(tokens, list, tier, true) || (rest !== null && isPhrase(rest, list, tier, true)),
+    );
+    if (starts) return WORDS_START;
+    return lists.some((list) => isPhrase(tokens, list, tier)) ? WORDS_TOGETHER : WORDS_APART;
   }
 
   /**
@@ -604,12 +699,20 @@ export function highlight(
     const end = span[Math.min(chars, span.length - 1)] ?? start;
     if (end > start) ranges.push([start, end]);
   };
+  /** What each name token abbreviates, where it does ("HS": high school; "EL" at the end: elementary). */
+  const abbreviates = nameTokens.map((t, j) =>
+    (rulesStartingWith(t) ?? [])
+      .filter(
+        (rule) => rule.short.length === 1 && ruleHolds(nameTokens, 0, nameTokens.length, j, rule),
+      )
+      .map((rule) => rule.long),
+  );
   for (const word of words) {
     const w = word.text;
     nameTokens.forEach((t, j) => {
       if (t === w) mark(j, t.length);
       else if (t.startsWith(w)) mark(j, w.length);
-      else if (queryExpansions(t).some((long) => long.some((l) => l.startsWith(w)))) {
+      else if ((abbreviates[j] ?? []).some((long) => long.some((l) => l.startsWith(w)))) {
         // The name abbreviates the word: "St." for "saint", "HS" for "high".
         mark(j, t.length);
       } else if (tier === Tier.fuzzy && word.budget > 0 && !isNumericToken(w)) {

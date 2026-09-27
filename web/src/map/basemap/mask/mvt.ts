@@ -76,6 +76,21 @@ export class Feature {
     return this.decoded;
   }
 
+  /** The feature message with the same id, type and geometry, and these tags. */
+  withTags(tags: readonly number[]): Uint8Array {
+    const writer = new Writer();
+    let written = false;
+    const reader = new Reader(this.raw);
+    for (let field = reader.next(); field !== null; field = reader.next()) {
+      if (field.tag === FEATURE_TAGS && field.type === BYTES) {
+        if (!written) writer.packed(FEATURE_TAGS, tags);
+        written = true;
+      } else writer.raw(this.raw.subarray(field.start, field.end));
+    }
+    if (!written) writer.packed(FEATURE_TAGS, tags);
+    return writer.finish();
+  }
+
   /** The feature message with the same id, properties and type, and this geometry. */
   withParts(parts: Parts): Uint8Array {
     const writer = new Writer();

@@ -20,8 +20,10 @@ export default defineConfig({
     { name: 'phone', use: { ...devices['Pixel 7'] } },
   ],
   webServer: {
-    // Smoke-test the production build, not the dev server.
-    command: `npm run build && npm run preview -- --host 127.0.0.1 --port ${String(port)} --strictPort`,
+    // Smoke-test the production build, not the dev server. It ships no data, whatever is
+    // staged in public/data/; specs that need data build their own (e2e/app.spec.ts,
+    // e2e/real-data.spec.ts).
+    command: `SNOWLIGHT_DATA=none npm run build && npm run preview -- --host 127.0.0.1 --port ${String(port)} --strictPort`,
     url: baseURL,
     reuseExistingServer: false,
     timeout: 120_000,

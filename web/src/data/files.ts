@@ -9,10 +9,12 @@
  */
 
 import { DATA_DIR } from '../pwa/config';
+import { plainPath } from './paths';
 
 /** Published files that are not JSON documents (pipeline/snowlight/schemas/registry.py). */
 export const DATA_PATHS = Object.freeze({
   points: 'schools/points.bin',
+  schoolTiles: 'schools/schools.pmtiles',
   searchIndex: 'search-index.bin',
 } as const);
 
@@ -23,12 +25,19 @@ export interface DataFiles {
   url(path: string): string | null;
 }
 
-/** The files in `paths`, served from the absolute URL `root` (ending in a slash). */
+/**
+ * The files in `paths`, as published (a name may carry a content hash; see
+ * paths.ts), served from the absolute URL `root` (ending in a slash). Each
+ * is asked for by its plain name.
+ */
 export function createDataFiles(paths: readonly string[], root: string): DataFiles {
-  const shipped = new Set(paths);
+  const shipped = new Map(paths.map((path) => [plainPath(path), path]));
   return {
     has: (path) => shipped.has(path),
-    url: (path) => (shipped.has(path) ? new URL(path, root).href : null),
+    url: (path) => {
+      const published = shipped.get(path);
+      return published === undefined ? null : new URL(published, root).href;
+    },
   };
 }
 

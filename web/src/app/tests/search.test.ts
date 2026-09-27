@@ -172,7 +172,7 @@ describe('laying out results', () => {
   it('shows names written in capitals in title case, matched where the raw name matched', () => {
     const pembroke: SearchHit = {
       ...hit('school', 'A1902690', 'THE PEMBROKE HILL SCHOOL - WORNALL CAMPUS'),
-      sub: 'KANSAS CITY 33',
+      sub: 'Kansas City, MO',
       highlight: [[4, 12]],
     };
     const [option] = searchOptions(
@@ -180,11 +180,49 @@ describe('laying out results', () => {
       'list',
     );
     expect(option?.name).toBe('The Pembroke Hill School - Wornall Campus');
-    expect(option?.sub).toBe('Kansas City 33');
+    expect(option?.sub).toBe('Kansas City, MO');
     // The hit keeps its raw name, for search and for the link.
     expect(option?.hit.name).toBe('THE PEMBROKE HILL SCHOOL - WORNALL CAMPUS');
-    const parts = nameParts({ name: option?.name ?? '', highlight: pembroke.highlight });
-    expect(parts.filter((part) => part.match).map((part) => part.text)).toEqual(['Pembroke']);
+    expect(option?.parts.filter((part) => part.match).map((part) => part.text)).toEqual([
+      'Pembroke',
+    ]);
+  });
+
+  it('spells out a school’s shortenings and bolds the words a matched one stands for', () => {
+    const ross: SearchHit = {
+      ...hit('school', '421866004476', 'Ross El Sch'),
+      state: 'PA',
+      highlight: [
+        [0, 4],
+        [8, 11],
+      ],
+    };
+    const [option] = searchOptions(
+      { query: 'ross school', schools: [ross], cities: [], zips: [], order: ['schools'] },
+      'list',
+    );
+    expect(option?.name).toBe('Ross Elementary School');
+    expect(option?.parts).toEqual([
+      { text: 'Ross', match: true },
+      { text: ' Elementary ', match: false },
+      { text: 'School', match: true },
+    ]);
+  });
+
+  it('keeps Mississippi’s MS, and a place’s words as written', () => {
+    const blind: SearchHit = {
+      ...hit('school', '280019401239', 'NORTHEAST MS REGIONAL ALTERNATIVE'),
+      state: 'MS',
+    };
+    const city: SearchHit = { ...hit('city', '2803500', 'EL PASO'), state: 'MS' };
+    const options = searchOptions(
+      { query: 'ms', schools: [blind], cities: [city], zips: [], order: ['schools', 'cities'] },
+      'list',
+    );
+    expect(options.map((option) => option.name)).toEqual([
+      'Northeast MS Regional Alternative',
+      'El Paso',
+    ]);
   });
 
   it('cuts a name into matched and unmatched runs', () => {

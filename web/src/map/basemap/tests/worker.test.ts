@@ -11,6 +11,7 @@ import { workerSource } from '../maplibre-worker';
 const URLS = {
   shared: 'https://snowlight.test/assets/maplibre-shared-abc.js',
   streetTiles: 'https://snowlight.test/assets/street-tiles-def.js',
+  schoolTiles: 'https://snowlight.test/assets/school-tiles-ghi.js',
   mask: 'https://snowlight.test/geo/us-mask.0123456789.pmtiles',
 };
 
@@ -32,6 +33,15 @@ describe('the MapLibre worker source', () => {
     expect(register).toBeGreaterThan(setUp);
     expect(source).toContain(
       `import { registerStreetTiles as snowlightRegisterStreetTiles } from ${JSON.stringify(URLS.streetTiles)};`,
+    );
+  });
+
+  it('registers the school tile protocol after MapLibre sets up the worker', () => {
+    const setUp = source.indexOf('self.worker=new');
+    const register = source.indexOf('snowlightRegisterSchoolTiles(self);');
+    expect(register).toBeGreaterThan(setUp);
+    expect(source).toContain(
+      `import { registerSchoolTiles as snowlightRegisterSchoolTiles } from ${JSON.stringify(URLS.schoolTiles)};`,
     );
   });
 });

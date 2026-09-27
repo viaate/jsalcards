@@ -1,8 +1,10 @@
 import './maplibre.css';
 
 import type { Map as MapLibreMap, MapMovementEvent, TransformConstrainFunction } from 'maplibre-gl';
+import { DATA_FILES } from 'virtual:snowlight/data-files';
 
 import { mapLocale } from '../../copy';
+import { DATA_PATHS, createDataFiles, dataRootFor } from '../../data/files';
 import { collapsedAttribution } from './attribution';
 import { addMapFonts } from './fonts';
 import type { MapLibre } from './maplibre';
@@ -45,6 +47,8 @@ export interface BasemapResources {
   workerUrl: string;
   /** The bundled continental US lines, already fetched and parsed. */
   usLines: UsLinesData;
+  /** The school tiles' archive this build ships, as an absolute URL, or null. */
+  schools: string | null;
 }
 
 export interface Basemap {
@@ -118,6 +122,14 @@ export function startWorkers(maplibre: MapLibre, workerUrl: string): void {
   maplibre.prewarm();
 }
 
+/** The school tiles' archive this build ships, as an absolute URL, or null when it ships none. */
+export function schoolTilesArchive(
+  paths: readonly string[] = DATA_FILES,
+  base: string = import.meta.env.BASE_URL,
+): string | null {
+  return createDataFiles(paths, dataRootFor(base, document.baseURI)).url(DATA_PATHS.schoolTiles);
+}
+
 /** Padding that places the fitted bounds exactly inside the frame. */
 export function framePadding(container: Element, frame: Element): Insets {
   const outer = container.getBoundingClientRect();
@@ -150,6 +162,7 @@ function look(): BasemapLook {
       state: token('--line-state', '#2a2a2a'),
       label: token('--text-2', '#a3a3a3'),
       labelDim: token('--text-3', '#6b6b6b'),
+      labelBright: token('--text-1', '#f5f5f5'),
       building: token('--surface-2', '#111'),
       buildingEdge: token('--border-1', '#1f1f1f'),
     },
@@ -167,6 +180,7 @@ export function createBasemap({
   maplibre,
   workerUrl,
   usLines,
+  schools,
 }: BasemapOptions & BasemapResources): Basemap {
   configure(maplibre, workerUrl);
   addMapFonts();
@@ -206,7 +220,7 @@ export function createBasemap({
 
   const map = new maplibre.Map({
     container,
-    style: buildBasemapStyle({ usLines, ...look() }),
+    style: buildBasemapStyle({ usLines, schools, ...look() }),
     locale: mapLocale,
     ...(start === null
       ? { bounds, fitBoundsOptions: { padding: fitPadding() } }

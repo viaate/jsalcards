@@ -8,6 +8,7 @@ import type {
 
 import { MAP_FONTS } from './fonts';
 import { BASEMAP_IDS } from './ids';
+import { schoolDotLayer, schoolNameLayer, schoolSource } from './schools';
 import { BORDER_LAYER, MASK_LAYER } from './mask/format';
 import {
   OPENFREEMAP_ATTRIBUTION,
@@ -35,6 +36,8 @@ export interface BasemapColors {
   label: string;
   /** Neighbourhood names, and street names until they are close. */
   labelDim: string;
+  /** School names up close. */
+  labelBright: string;
   /** Building footprints. */
   building: string;
   /** Their hairline edge. */
@@ -53,6 +56,11 @@ export interface UsLinesData {
 export interface BasemapStyleOptions extends BasemapLook {
   /** The bundled continental US lines, already fetched and parsed, or their URL. */
   usLines: UsLinesData | string;
+  /**
+   * The school tiles' archive (schools.pmtiles) this build ships, as an
+   * absolute URL, or null when it ships none: then no school is drawn.
+   */
+  schools?: string | null;
 }
 
 /**
@@ -387,12 +395,14 @@ const PLACE_LABEL_LAYOUT = {
  * or queried (street-tiles.ts), and carry the US mask, drawn in the ground
  * color over every street, water, park and building layer, and the border
  * line along its edge. Labels are drawn by MapLibre from the Geist faces in
- * fonts.ts, so the style names no glyph server.
+ * fonts.ts, so the style names no glyph server. With the school tiles, every
+ * school is drawn from zoom 11 and named from zoom 13 (schools.ts).
  */
 export function buildBasemapStyle({
   usLines,
   hairline,
   colors,
+  schools = null,
 }: BasemapStyleOptions): StyleSpecification {
   const round = { 'line-join': 'round', 'line-cap': 'round' } as const;
   const ofm = { source: BASEMAP_IDS.openFreeMapSource, minzoom: OPENFREEMAP_MIN_ZOOM } as const;
@@ -711,10 +721,30 @@ export function buildBasemapStyle({
       layout: { visibility: 'none' },
     },
   ];
+  if (schools !== null) {
+    const schoolColors = {
+      dim: colors.labelDim,
+      bright: colors.label,
+      name: colors.labelBright,
+      ground: colors.background,
+    };
+    // Dots under every label (and under the glow, which goes right before the labels); names over them all.
+    layers.splice(
+      layers.findIndex((layer) => layer.id === BASEMAP_IDS.labels),
+      0,
+      schoolDotLayer(schoolColors),
+    );
+    layers.splice(
+      layers.findIndex((layer) => layer.id === BASEMAP_IDS.schools),
+      0,
+      schoolNameLayer(schoolColors),
+    );
+  }
   return {
     version: 8,
     name: 'Snowlight',
     sources: {
+      ...(schools === null ? {} : { [BASEMAP_IDS.schoolsSource]: schoolSource(schools) }),
       [BASEMAP_IDS.usSource]: {
         type: 'geojson',
         data: usLines,

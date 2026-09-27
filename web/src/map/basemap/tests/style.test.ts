@@ -16,6 +16,7 @@ import type {
   FilterSpecification,
   LayerSpecification,
   StyleSpecification,
+  SymbolLayerSpecification,
 } from '@maplibre/maplibre-gl-style-spec';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
@@ -23,6 +24,8 @@ import { MAP_FONT_FILES, MAP_FONTS, addMapFonts } from '../fonts';
 import { BASEMAP_IDS } from '../ids';
 import { BORDER_LAYER, MASK_LAYER } from '../mask/format';
 import { OPENFREEMAP_MIN_ZOOM } from '../openfreemap';
+import { SCHOOLS_TILE_LAYER, SCHOOL_TILES_PROTOCOL } from '../ids';
+import { SCHOOL_DOTS_FROM, SCHOOL_NAMES_FROM, SCHOOL_TILES_MAX_ZOOM } from '../schools';
 import { ROAD_TIERS, buildBasemapStyle, mixColors } from '../style';
 import type { BasemapColors, UsLinesData } from '../style';
 
@@ -32,6 +35,7 @@ const COLORS: BasemapColors = {
   state: '#2a2a2a',
   label: '#a3a3a3',
   labelDim: '#6b6b6b',
+  labelBright: '#f5f5f5',
   building: '#111',
   buildingEdge: '#1f1f1f',
 };
@@ -42,6 +46,14 @@ const STYLE: StyleSpecification = buildBasemapStyle({
   colors: COLORS,
 });
 const LAYERS: readonly LayerSpecification[] = STYLE.layers;
+const SCHOOL_ARCHIVE = 'https://snowlight.test/data/schools/schools.0123456789.pmtiles';
+/** The style of a build that ships the school tiles. */
+const WITH_SCHOOLS: StyleSpecification = buildBasemapStyle({
+  usLines: US_LINES,
+  hairline: 1,
+  colors: COLORS,
+  schools: SCHOOL_ARCHIVE,
+});
 
 function layer(id: string): LayerSpecification {
   const found = LAYERS.find((candidate) => candidate.id === id);
@@ -124,16 +136,25 @@ describe('the basemap style', () => {
   });
 
   it('has every id other code places layers by', () => {
-    const sources = Object.keys(STYLE.sources);
+    const sources = Object.keys(WITH_SCHOOLS.sources);
+    const layers = WITH_SCHOOLS.layers;
     for (const [key, id] of Object.entries(BASEMAP_IDS)) {
       if (key.endsWith('Source')) expect(sources, key).toContain(id);
       else
         expect(
-          LAYERS.map((l) => l.id),
+          layers.map((l) => l.id),
           key,
         ).toContain(id);
     }
-    expect(new Set(LAYERS.map((l) => l.id)).size).toBe(LAYERS.length);
+    expect(new Set(layers.map((l) => l.id)).size).toBe(layers.length);
+    expect(validateStyleMin(WITH_SCHOOLS)).toEqual([]);
+  });
+
+  it('draws no school, and reads no school tiles, when the build ships none', () => {
+    expect(Object.keys(STYLE.sources)).not.toContain(BASEMAP_IDS.schoolsSource);
+    const ids = LAYERS.map((l) => l.id);
+    expect(ids).not.toContain(BASEMAP_IDS.schoolDots);
+    expect(ids).not.toContain(BASEMAP_IDS.schoolNames);
   });
 });
 
@@ -464,6 +485,74 @@ describe('names', () => {
       expect(layout['text-allow-overlap'], symbol.id).toBe(false);
       expect(layout['text-ignore-placement'], symbol.id).toBe(false);
     }
+  });
+});
+
+describe('schools', () => {
+  const layers = WITH_SCHOOLS.layers;
+  const at = (id: string): number => layers.findIndex((l) => l.id === id);
+  const schoolLayer = (id: string): LayerSpecification => {
+    const found = layers.find((l) => l.id === id);
+    if (found === undefined) throw new Error(`No layer ${id}`);
+    return found;
+  };
+
+  it('come from the archive the build ships, through the workers, from zoom 11', () => {
+    expect(WITH_SCHOOLS.sources[BASEMAP_IDS.schoolsSource]).toEqual({
+      type: 'vector',
+      tiles: [`${SCHOOL_TILES_PROTOCOL}://${SCHOOL_ARCHIVE}/{z}/{x}/{y}`],
+      minzoom: SCHOOL_DOTS_FROM,
+      maxzoom: SCHOOL_TILES_MAX_ZOOM,
+    });
+    for (const id of [BASEMAP_IDS.schoolDots, BASEMAP_IDS.schoolNames]) {
+      expect(schoolLayer(id)).toMatchObject({
+        source: BASEMAP_IDS.schoolsSource,
+        'source-layer': SCHOOLS_TILE_LAYER,
+      });
+    }
+    expect(SCHOOL_DOTS_FROM).toBe(11);
+    expect(SCHOOL_NAMES_FROM).toBe(13);
+    expect(schoolLayer(BASEMAP_IDS.schoolDots).minzoom).toBe(11);
+    expect(schoolLayer(BASEMAP_IDS.schoolNames).minzoom).toBe(13);
+  });
+
+  it('put a dot at each school under every label, and each name over every other label', () => {
+    const labels = at(BASEMAP_IDS.labels);
+    expect(at(BASEMAP_IDS.schoolDots)).toBe(labels - 1);
+    expect(at(BASEMAP_IDS.schoolDots)).toBeGreaterThan(at(BASEMAP_IDS.usMask));
+    // MapLibre places the top layer's labels first: school names before street and place names.
+    const symbols = layers.filter((l) => l.type === 'symbol').map((l) => l.id);
+    expect(symbols[symbols.length - 1]).toBe(BASEMAP_IDS.schoolNames);
+    expect(at(BASEMAP_IDS.schoolNames)).toBe(at(BASEMAP_IDS.schools) - 1);
+    // Everything else is where it is without schools.
+    expect(
+      layers
+        .map((l) => l.id)
+        .filter((id) => id !== BASEMAP_IDS.schoolDots && id !== BASEMAP_IDS.schoolNames),
+    ).toEqual(LAYERS.map((l) => l.id));
+  });
+
+  it('name schools beside their dots, never over another name', () => {
+    const names = schoolLayer(BASEMAP_IDS.schoolNames) as SymbolLayerSpecification;
+    expect(names.layout).toMatchObject({
+      'text-allow-overlap': false,
+      'text-ignore-placement': false,
+      'text-optional': false,
+      'text-font': [MAP_FONTS.medium],
+    });
+    expect(names.layout?.['text-variable-anchor']).toEqual(['left', 'right', 'top', 'bottom']);
+  });
+
+  it('are drawn in greys, the names brightest up close', () => {
+    const paint = (id: string) =>
+      (schoolLayer(id) as { paint?: Record<string, unknown> }).paint ?? {};
+    const colors = JSON.stringify([
+      paint(BASEMAP_IDS.schoolDots),
+      paint(BASEMAP_IDS.schoolNames),
+    ]).match(/#[0-9a-f]{3,6}/gi);
+    expect(new Set(colors)).toEqual(
+      new Set([COLORS.labelDim, COLORS.label, COLORS.labelBright, COLORS.background]),
+    );
   });
 });
 

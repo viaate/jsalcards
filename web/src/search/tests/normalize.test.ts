@@ -134,6 +134,18 @@ describe('abbreviations', () => {
     ['Lancaster ISD', ['lancaster', 'isd', 'independent', 'school', 'district'], 4],
     ['Walla Walla', ['walla'], 2],
     ['Lancaster High School', ['lancaster', 'high', 'school'], 3],
+    // The shortenings the page spells out (src/text/names.ts) find their names too.
+    ['SMITH EL', ['smith', 'el', 'elementary'], 2],
+    ['Drums El/MS', ['drums', 'el', 'elementary', 'ms', 'middle', 'school'], 4],
+    ['EL DORADO HIGH SCHOOL', ['el', 'dorado', 'high', 'school'], 4],
+    ['TEMPLE BETH EL SCHOOL', ['temple', 'beth', 'el', 'school'], 4],
+    [
+      'Hershey Intrmd El Sch',
+      ['hershey', 'intrmd', 'intermediate', 'el', 'elementary', 'school', 'sch'],
+      4,
+    ],
+    ['Friendship PCS', ['friendship', 'pcs', 'public', 'charter', 'school'], 4],
+    ['COLMESNEIL JH/HS', ['colmesneil', 'jh', 'junior', 'high', 'hs', 'school'], 5],
   ])('%j indexes as %j and counts %i words', (name, tokens, words) => {
     const t = tokenize(name);
     expect(indexTokens(t)).toEqual(tokens);
@@ -144,6 +156,9 @@ describe('abbreviations', () => {
     expect(queryExpansions('hs')).toEqual([['high', 'school']]);
     expect(queryExpansions('st')).toEqual([['saint'], ['street']]);
     expect(queryExpansions('lancaster')).toEqual([]);
+    // "el" typed is the word: "el paso" is El Paso, not an elementary school in Paso.
+    expect(queryExpansions('el')).toEqual([]);
+    expect(queryExpansions('pcs')).toEqual([['public', 'charter', 'school']]);
   });
 });
 

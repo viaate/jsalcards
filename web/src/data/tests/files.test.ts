@@ -14,6 +14,24 @@ describe('the files a build ships', () => {
     expect(files.url('schools/meta.json')).toBeNull();
   });
 
+  it('finds a file published under a hashed name by its plain name', () => {
+    const files = createDataFiles(
+      [
+        'live/closings.json',
+        'schools/meta.0123456789.json',
+        'schools/schools.abcdef0123.pmtiles',
+        'search-index.9876543210.bin',
+      ],
+      ROOT,
+    );
+    expect(files.url('schools/meta.json')).toBe(`${ROOT}schools/meta.0123456789.json`);
+    expect(files.url('schools/schools.pmtiles')).toBe(`${ROOT}schools/schools.abcdef0123.pmtiles`);
+    expect(files.url('search-index.bin')).toBe(`${ROOT}search-index.9876543210.bin`);
+    expect(files.url('live/closings.json')).toBe(`${ROOT}live/closings.json`);
+    expect(files.has('schools/meta.0123456789.json')).toBe(false);
+    expect(files.has('schools/points.bin')).toBe(false);
+  });
+
   it('finds the data root for a site at the domain root or on a project path', () => {
     expect(dataRootFor('/', 'https://snow.test/?at=1,2,3')).toBe('https://snow.test/data/');
     expect(dataRootFor('/repo/', 'https://x.test/repo/')).toBe('https://x.test/repo/data/');

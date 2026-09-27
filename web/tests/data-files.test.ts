@@ -4,7 +4,15 @@ import path from 'node:path';
 
 import { afterEach, describe, expect, it } from 'vitest';
 
-import { dataFilesModule, listDataFiles, removeUnpublished } from '../tools/data-files';
+import type { Plugin } from 'vite';
+
+import {
+  clashingFiles,
+  dataFiles,
+  dataFilesModule,
+  listDataFiles,
+  removeUnpublished,
+} from '../tools/data-files';
 
 let folder = '';
 
@@ -67,5 +75,67 @@ describe('the data files a build ships', () => {
   it('are none when nothing is staged', () => {
     expect(listDataFiles(path.join(tmpdir(), 'snowlight-no-such-folder'))).toEqual([]);
     expect(dataFilesModule([])).toBe('export const DATA_FILES = Object.freeze([]);\n');
+  });
+
+  it('fail the build when a file is staged twice under different hashes', () => {
+    expect(
+      clashingFiles([
+        'schools/meta.0123456789.json',
+        'schools/meta.9876543210.json',
+        'schools/points.0123456789.bin',
+        'live/closings.json',
+      ]),
+    ).toEqual(['schools/meta.json: schools/meta.0123456789.json, schools/meta.9876543210.json']);
+    expect(clashingFiles(['schools/meta.0123456789.json', 'schools/points.bin'])).toEqual([]);
+  });
+});
+
+describe('a build that ships no data', () => {
+  /** The plugin's hooks as Vite calls them for a build rooted at `root`. */
+  function build(root: string, ship: boolean) {
+    const plugin: Plugin = dataFiles('data/', { ship });
+    const call = (hook: unknown, ...args: unknown[]): unknown =>
+      (hook as (...rest: unknown[]) => unknown).call(
+        {
+          error: (message: string) => {
+            throw new Error(message);
+          },
+        },
+        ...args,
+      );
+    call(plugin.configResolved, {
+      publicDir: path.join(root, 'public'),
+      root,
+      base: '/',
+      build: { outDir: 'dist', copyPublicDir: true },
+    });
+    return {
+      module: () => call(plugin.load, '\0virtual:snowlight/data-files') as string,
+      write: () => call(plugin.writeBundle),
+    };
+  }
+
+  it('lists nothing and leaves data/ out, whatever is staged', () => {
+    folder = mkdtempSync(path.join(tmpdir(), 'snowlight-data-files-'));
+    for (const dir of ['public/data/schools', 'dist/data/schools']) {
+      mkdirSync(path.join(folder, dir), { recursive: true });
+      writeFileSync(path.join(folder, dir, 'meta.0123456789.json'), '{}');
+    }
+    const without = build(folder, false);
+    expect(without.module()).toBe(dataFilesModule([]));
+    without.write();
+    expect(existsSync(path.join(folder, 'dist/data'))).toBe(false);
+
+    mkdirSync(path.join(folder, 'dist/data/schools'), { recursive: true });
+    const shipped = build(folder, true);
+    expect(shipped.module()).toBe(dataFilesModule(['schools/meta.0123456789.json']));
+  });
+
+  it('refuses two copies of a file', () => {
+    folder = mkdtempSync(path.join(tmpdir(), 'snowlight-data-files-'));
+    mkdirSync(path.join(folder, 'public/data'), { recursive: true });
+    writeFileSync(path.join(folder, 'public/data/search-index.0123456789.bin'), '');
+    writeFileSync(path.join(folder, 'public/data/search-index.abcdefabcd.bin'), '');
+    expect(() => build(folder, true).module()).toThrow(/more than one copy/);
   });
 });

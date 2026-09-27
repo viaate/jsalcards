@@ -50,4 +50,19 @@ export const BASEMAP_IDS = {
    * names win collisions.
    */
   schools: 'schools-slot',
+  /** Every school in the directory (schools.pmtiles), when the build ships it. */
+  schoolsSource: 'schools',
+  /** A dot at each school, under the glow and every label. */
+  schoolDots: 'school-dots',
+  /** Each school's name, over every other label. */
+  schoolNames: 'school-names',
 } as const;
+
+/** The layer of schools.pmtiles (pipeline/snowlight/directory/tiles.py). */
+export const SCHOOLS_TILE_LAYER = 'schools';
+
+/**
+ * The scheme of the school tiles' URLs, which MapLibre's workers serve from
+ * the archive (school-tiles.ts): "snowlight-schools://<archive URL>/{z}/{x}/{y}".
+ */
+export const SCHOOL_TILES_PROTOCOL = 'snowlight-schools';

@@ -4,6 +4,15 @@ name: Preview
 # default branch, so work in progress can be seen at the repository's Pages URL.
 # Pages must be enabled once: Settings > Pages > Build and deployment > Source:
 # GitHub Actions.
+#
+# The site is built with the pipeline's real data, made here: the school
+# directory (snowlight directory build: NCES files, pinned in
+# pipeline/config/directory.yaml) and the city and ZIP code records (snowlight
+# places build: Census files). Their downloads are kept between runs in
+# pipeline/.cache. npm run stage then stages what the pipeline wrote as the
+# site's data and builds the search index from it (web/scripts/stage-data.mjs).
+# If any of it fails, nothing is published: the preview never ships without
+# its data, or with data from anywhere else.
 
 on:
   push:
@@ -24,22 +33,14 @@ concurrency:
 jobs:
   build:
     if: github.ref_name == github.event.repository.default_branch
-    runs-on: ubuntu-latest
-    timeout-minutes: 20
-    defaults:
-      run:
-        working-directory: web
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
     outputs:
       enabled: ${{ steps.pages.outcome == 'success' }}
     steps:
       - uses: actions/checkout@v4
         with:
           persist-credentials: false
-      - uses: actions/setup-node@v4
-        with:
-          node-version: 22
-          cache: npm
-          cache-dependency-path: web/package-lock.json
       # Until Pages is enabled this step fails; the job then skips the build
       # and deploy with a notice instead of failing on every push.
       - id: pages
@@ -47,12 +48,60 @@ jobs:
         continue-on-error: true
       - if: steps.pages.outcome != 'success'
         run: echo "::notice::GitHub Pages is not enabled for this repository yet (Settings > Pages > Source > GitHub Actions); skipping the preview."
+
+      # The pipeline: the school directory and the city and ZIP code records.
       - if: steps.pages.outcome == 'success'
+        # setup-uv pins the v10.2.0 release commit, as ci.yml does.
+        uses: astral-sh/setup-uv@c18668ad3cf93ea998bef934396af7bb5c839dc7 # v10.2.0
+        with:
+          python-version: "3.12"
+          working-directory: pipeline
+          enable-cache: true
+          cache-dependency-glob: uv.lock
+      # tippecanoe builds schools.pmtiles; Ubuntu 24.04 packages 2.49, the release the build is checked against.
+      - if: steps.pages.outcome == 'success'
+        run: sudo apt-get update && sudo apt-get install --yes --no-install-recommends tippecanoe
+      # The NCES and Census downloads, kept between runs. A new pin in directory.yaml starts a new cache.
+      - if: steps.pages.outcome == 'success'
+        uses: actions/cache@v4
+        with:
+          path: |
+            pipeline/.cache/nces
+            pipeline/.cache/places
+          key: pipeline-downloads-${{ hashFiles('pipeline/config/directory.yaml') }}
+          restore-keys: pipeline-downloads-
+      - if: steps.pages.outcome == 'success'
+        working-directory: pipeline
+        run: |
+          uv sync --locked
+          uv run snowlight directory build
+          uv run snowlight places build
+
+      # The site, with that data staged, for the Pages base path.
+      - if: steps.pages.outcome == 'success'
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: web/package-lock.json
+      - if: steps.pages.outcome == 'success'
+        working-directory: web
         run: npm ci
       - if: steps.pages.outcome == 'success'
+        working-directory: web
+        run: npm run stage
+      - if: steps.pages.outcome == 'success'
+        working-directory: web
         run: npx vite build --base="${BASE_PATH}/"
         env:
           BASE_PATH: ${{ steps.pages.outputs.base_path }}
+      # The build carries the staged directory, school tiles and search index, or it is not published.
+      - if: steps.pages.outcome == 'success'
+        working-directory: web
+        run: |
+          for file in schools/meta schools/points schools/schools search-index; do
+            ls dist/data/${file}.*.* > /dev/null
+          done
       - if: steps.pages.outcome == 'success'
         uses: actions/upload-pages-artifact@v3
         with:

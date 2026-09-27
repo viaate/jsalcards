@@ -12,11 +12,21 @@
  * Files the pipeline keeps next to its outputs for itself (*.internal.json)
  * and dotfiles are never published: they are left off the list, removed from
  * the build's data/ after Vite copies the folder in, and not served in dev.
+ *
+ * A file may be published under a name with a content hash in it
+ * (src/data/paths.ts); two files with the same plain name, such as two
+ * stagings' copies of the directory, fail the build.
+ *
+ * `ship: false` makes a build with no data whatever is staged: nothing is
+ * listed, data/ is left out of the build and the dev server serves none of it
+ * (SNOWLIGHT_DATA=none in vite.config.ts; the end-to-end tests' own build).
  */
 import { readdirSync, rmSync } from 'node:fs';
 import path from 'node:path';
 
 import type { Plugin } from 'vite';
+
+import { plainPath } from '../src/data/paths.ts';
 
 export const DATA_FILES_MODULE = 'virtual:snowlight/data-files';
 const RESOLVED_ID = `\0${DATA_FILES_MODULE}`;
@@ -74,6 +84,18 @@ export function removeUnpublished(dir: string): string[] {
   return removed;
 }
 
+/** Published files that share a plain name, as "plain: a, b" lines; [] when none do. */
+export function clashingFiles(files: readonly string[]): string[] {
+  const byPlain = new Map<string, string[]>();
+  for (const file of files) {
+    const plain = plainPath(file);
+    byPlain.set(plain, [...(byPlain.get(plain) ?? []), file]);
+  }
+  return [...byPlain]
+    .filter(([, published]) => published.length > 1)
+    .map(([plain, published]) => `${plain}: ${published.join(', ')}`);
+}
+
 /** The module's source for a list of files. */
 export function dataFilesModule(files: readonly string[]): string {
   return `export const DATA_FILES = Object.freeze(${JSON.stringify(files)});\n`;
@@ -89,8 +111,14 @@ function sitePath(url: string): string {
   }
 }
 
+export interface DataFilesOptions {
+  /** False to ship no data, whatever is staged. Default true. */
+  readonly ship?: boolean;
+}
+
 /** The plugin, for data published under `dataDir` ("data/") of the site. */
-export function dataFiles(dataDir: string): Plugin {
+export function dataFiles(dataDir: string, options: DataFilesOptions = {}): Plugin {
+  const ship = options.ship ?? true;
   let dir = '';
   /** data/ in the build output, when the build copies the public folder there. */
   let builtDir = '';
@@ -108,14 +136,23 @@ export function dataFiles(dataDir: string): Plugin {
     },
     // Vite copies the whole public folder into the build before it writes: take back what is not published.
     writeBundle() {
-      if (builtDir !== '') removeUnpublished(builtDir);
+      if (builtDir === '') return;
+      if (ship) removeUnpublished(builtDir);
+      else rmSync(builtDir, { recursive: true, force: true });
     },
     resolveId(id) {
       return id === DATA_FILES_MODULE ? RESOLVED_ID : null;
     },
     load(id) {
       if (id !== RESOLVED_ID) return null;
-      return dataFilesModule(dir === '' ? [] : listDataFiles(dir));
+      const files = dir === '' || !ship ? [] : listDataFiles(dir);
+      const clashes = clashingFiles(files);
+      if (clashes.length > 0) {
+        this.error(
+          `${dataDir} holds more than one copy of a file; stage it again (npm run stage):\n${clashes.join('\n')}`,
+        );
+      }
+      return dataFilesModule(files);
     },
     configureServer(server) {
       if (dir === '') return;
@@ -127,7 +164,7 @@ export function dataFiles(dataDir: string): Plugin {
           return;
         }
         const names = pathname.slice(dataPath.length).split('/');
-        if (names.every((name) => name === '' || isPublished(name))) {
+        if (ship && names.every((name) => name === '' || isPublished(name))) {
           next();
           return;
         }

@@ -9,6 +9,11 @@ import { dataFiles } from './tools/data-files.ts';
 import { htmlCopy } from './tools/html-copy.ts';
 
 const isVitest = process.env.VITEST !== undefined;
+/**
+ * The build ships the data staged in public/data/ (npm run stage), if any.
+ * SNOWLIGHT_DATA=none builds without it, whatever is staged.
+ */
+const shipData = process.env.SNOWLIGHT_DATA !== 'none';
 
 export default defineConfig({
   // One static page and no client-side routes: unknown paths 404, as on GitHub Pages.
@@ -17,7 +22,7 @@ export default defineConfig({
     svelte(),
     htmlCopy(copy),
     // Lists the data files staged in public/data/, so the page asks only for files that exist.
-    dataFiles(DATA_DIR),
+    dataFiles(DATA_DIR, { ship: shipData }),
     // Service worker and manifest links; the page registers the worker after load (src/pwa).
     isVitest ? [] : [VitePWA(pwaOptions()), pwaHead()],
   ],

@@ -3,9 +3,12 @@
  * written by the mask build script and read by the street tile workers.
  *
  * The reader asks for byte ranges: the header and root directory in one
- * request, then leaf directories and tiles as they are needed, each kept once
- * read. Directories are gzipped; tiles are stored as they are (vector tiles of
- * a few hundred bytes, many of them identical and stored once).
+ * request, then leaf directories and tiles as they are needed, directories
+ * kept once read. The mask's directories are gzipped and its tiles stored as
+ * they are (vector tiles of a few hundred bytes, many of them identical and
+ * stored once, and kept once read). The school tiles
+ * (pipeline/snowlight/directory/tiles.py) are gzipped too; the reader
+ * unzips them, and keeps none of them: MapLibre keeps the tiles it shows.
  */
 import { Reader, Writer } from './protobuf';
 
@@ -350,17 +353,28 @@ export async function gunzipWithStreams(bytes: Uint8Array): Promise<Uint8Array> 
   return new Uint8Array(await new Response(stream).arrayBuffer());
 }
 
-/** An archive read through byte ranges, directories and tiles kept once read. */
+export interface ArchiveReaderOptions {
+  /** Keep each tile once read, for the next request of it. Default true. */
+  readonly keepTiles?: boolean;
+}
+
+/** An archive read through byte ranges, directories (and, unless told not to, tiles) kept once read. */
 export class ArchiveReader {
   private readonly read: RangeReader;
   private readonly gunzip: Gunzip;
+  private readonly keepTiles: boolean;
   private header: Promise<{ header: Header; root: Entry[] }> | undefined;
   private readonly leaves = new Map<number, Promise<Entry[]>>();
   private readonly tiles = new Map<number, Promise<Uint8Array>>();
 
-  constructor(read: RangeReader, gunzip: Gunzip = gunzipWithStreams) {
+  constructor(
+    read: RangeReader,
+    gunzip: Gunzip = gunzipWithStreams,
+    options: ArchiveReaderOptions = {},
+  ) {
     this.read = read;
     this.gunzip = gunzip;
+    this.keepTiles = options.keepTiles ?? true;
   }
 
   private async directory(bytes: Uint8Array, compression: number): Promise<Entry[]> {
@@ -375,8 +389,11 @@ export class ArchiveReader {
       const first = await this.read(0, ROOT_BYTES);
       const header = decodeHeader(first);
       if (header.tileType !== TILE_TYPE_MVT) throw new Error('pmtiles: not vector tiles');
-      if (header.tileCompression !== COMPRESSION_NONE) {
-        throw new Error('pmtiles: compressed tiles are not supported');
+      if (
+        header.tileCompression !== COMPRESSION_NONE &&
+        header.tileCompression !== COMPRESSION_GZIP
+      ) {
+        throw new Error(`pmtiles: unsupported tile compression ${String(header.tileCompression)}`);
       }
       const end = header.rootOffset + header.rootLength;
       const rootBytes =
@@ -422,7 +439,10 @@ export class ArchiveReader {
     throw new Error('pmtiles: directories nested too deep');
   }
 
-  /** A tile's bytes, or null. Tiles stored once are read once, whichever ids they serve. */
+  /**
+   * A tile's bytes, unzipped, or null. Kept tiles stored once are read once,
+   * whichever ids they serve.
+   */
   async tile(z: number, x: number, y: number): Promise<Uint8Array | null> {
     const entry = await this.locate(z, x, y);
     if (entry === null) return null;
@@ -430,9 +450,15 @@ export class ArchiveReader {
     const at = header.tileDataOffset + entry.offset;
     let bytes = this.tiles.get(at);
     if (bytes === undefined) {
-      bytes = this.read(at, entry.length);
-      bytes.catch(() => this.tiles.delete(at));
-      this.tiles.set(at, bytes);
+      const read = this.read(at, entry.length);
+      bytes =
+        header.tileCompression === COMPRESSION_GZIP
+          ? read.then((zipped) => this.gunzip(zipped))
+          : read;
+      if (this.keepTiles) {
+        bytes.catch(() => this.tiles.delete(at));
+        this.tiles.set(at, bytes);
+      }
     }
     return bytes;
   }

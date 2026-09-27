@@ -9,7 +9,7 @@
  */
 
 import type { GroupName, SearchClient, SearchHit, SearchResults } from '../search';
-import { displayName } from '../text/names';
+import { casedName, nameLayout, shownRanges } from '../text/names';
 
 /** Makes a search client for an index URL (the client code loads with it). */
 export type ClientFactory = (indexUrl: string) => Promise<SearchClient>;
@@ -121,8 +121,13 @@ export interface SearchOption {
   /** Element id, unique within the list. */
   readonly id: string;
   readonly hit: SearchHit;
-  /** The hit's name as shown (src/text/names.ts): only its case differs from hit.name. */
+  /**
+   * The hit's name as shown (src/text/names.ts): in title case where it is
+   * written in capitals, its shortenings spelled out.
+   */
   readonly name: string;
+  /** The shown name cut where the text typed matched, for bolding. */
+  readonly parts: readonly NamePart[];
   /** The hit's second line as shown, or ''. */
   readonly sub: string;
   readonly group: GroupName;
@@ -130,16 +135,33 @@ export interface SearchOption {
   readonly startsGroup: boolean;
 }
 
+/**
+ * A hit's name as shown, and where the text typed matched it. Schools and
+ * districts have their shortenings spelled out; places keep their words.
+ */
+function shownName(hit: SearchHit): { name: string; highlight: [number, number][] } {
+  if (hit.kind === 'city' || hit.kind === 'zip') {
+    return { name: casedName(hit.name), highlight: hit.highlight.map(([a, b]) => [a, b]) };
+  }
+  const layout = nameLayout(hit.name, { state: hit.state });
+  return {
+    name: layout.map((piece) => piece.text).join(''),
+    highlight: shownRanges(layout, hit.name, hit.highlight),
+  };
+}
+
 /** The results as one list: groups in the suggested order, hits in rank order. */
 export function searchOptions(results: SearchResults, idPrefix: string): SearchOption[] {
   const list: SearchOption[] = [];
   for (const group of results.order) {
     results[group].forEach((hit, index) => {
+      const shown = shownName(hit);
       list.push({
         id: `${idPrefix}-${String(list.length)}`,
         hit,
-        name: displayName(hit.name),
-        sub: displayName(hit.sub),
+        name: shown.name,
+        parts: nameParts(shown),
+        sub: casedName(hit.sub),
         group,
         startsGroup: index === 0 && list.length > 0,
       });
@@ -154,10 +176,7 @@ export interface NamePart {
   readonly match: boolean;
 }
 
-/**
- * `hit.name` cut at `hit.highlight`. The ranges index the raw name; a shown
- * name that differs from it only in case can be passed as `name` instead.
- */
+/** `hit.name` cut at `hit.highlight`, [start, end) ranges of it. */
 export function nameParts(hit: Pick<SearchHit, 'name' | 'highlight'>): NamePart[] {
   const parts: NamePart[] = [];
   const ranges = [...hit.highlight]

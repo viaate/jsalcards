@@ -11,7 +11,7 @@
  * "jefferson high" all read as phrases of "Jefferson HS" and of "Jefferson
  * High School". The query may stop partway through a name's abbreviation.
  */
-import { isNumericToken, queryExpansions, rulesStartingWith } from './normalize';
+import { isNumericToken, queryExpansions, ruleHolds, rulesStartingWith } from './normalize';
 import { Tier } from './query';
 import type { TierValue } from './query';
 import { prefixDistance } from './trie';
@@ -51,11 +51,9 @@ function nameEdges(tokens: readonly string[]): Edge[][] {
   return tokens.map((t, j) => {
     const edges: Edge[] = [{ consume: 1, words: [t] }];
     for (const rule of rulesStartingWith(t) ?? []) {
-      const n = rule.short.length;
-      if (j + n > tokens.length) continue;
-      let ok = true;
-      for (let k = 1; k < n && ok; k++) ok = tokens[j + k] === rule.short[k];
-      if (ok) edges.push({ consume: n, words: rule.long });
+      if (ruleHolds(tokens, 0, tokens.length, j, rule)) {
+        edges.push({ consume: rule.short.length, words: rule.long });
+      }
     }
     return edges;
   });

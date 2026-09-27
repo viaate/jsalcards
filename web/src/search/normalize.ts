@@ -16,7 +16,7 @@
  */
 
 /** Bump whenever a change here would tokenize any text differently. */
-export const NORMALIZER_VERSION = 1;
+export const NORMALIZER_VERSION = 2;
 
 /** Longest token kept, in UTF-16 code units. Longer runs are cut. */
 export const MAX_TOKEN_LENGTH = 40;
@@ -261,7 +261,9 @@ export function isNumericToken(token: string): boolean {
  * Abbreviations common in school, district and place names, with what they
  * stand for. Names are indexed with both forms, and a query abbreviation also
  * matches the full words, so "Lancaster HS", "lancaster high school" and
- * "lancaster hs" all find each other.
+ * "lancaster hs" all find each other. The page spells out the same
+ * shortenings in the names it shows (src/text/names.ts), so a name typed as
+ * shown finds its school.
  */
 const ABBREVIATION_RULES: readonly (readonly [string, string])[] = [
   ['hs', 'high school'],
@@ -309,17 +311,59 @@ const ABBREVIATION_RULES: readonly (readonly [string, string])[] = [
   ['cisd', 'consolidated independent school district'],
   ['cusd', 'community unit school district'],
   ['ccsd', 'community consolidated school district'],
+  ['pcs', 'public charter school'],
+  ['jh', 'junior high'],
+  ['schs', 'schools'],
+  ['chtr', 'charter'],
+  ['intrmd', 'intermediate'],
+  ['int', 'intermediate'],
+  ['pri', 'primary'],
+  ['lrng', 'learning'],
+  ['hgts', 'heights'],
 ];
+
+/** Where in a name an abbreviation stands for its words, for one that only does in places. */
+export interface RulePlace<T = string> {
+  /** Where the name ends with the abbreviation, or one of these follows it. */
+  readonly endsOrBefore: readonly T[];
+  /** Never first in a name, nor after one of these. */
+  readonly notAfter: readonly T[];
+}
 
 /** An abbreviation and what it stands for, as token sequences. */
 export interface AbbreviationRule<T = string> {
   readonly short: readonly T[];
   readonly long: readonly T[];
+  /**
+   * For an abbreviation that is a word elsewhere: where in a name it stands
+   * for its words. A query word never stands for them.
+   */
+  readonly place?: RulePlace<T>;
 }
 
-export const ABBREVIATIONS: readonly AbbreviationRule[] = ABBREVIATION_RULES.map(
-  ([short, long]) => ({ short: short.split(' '), long: long.split(' ') }),
-);
+/**
+ * "El" is Elementary where a name ends with it, or School or another school
+ * follows ("SMITH EL", "Ross El Sch", "Drums El/MS"), and a word elsewhere
+ * ("El Dorado", "Beth El"), as the page shows it.
+ */
+const PLACED_RULES: readonly AbbreviationRule[] = [
+  {
+    short: ['el'],
+    long: ['elementary'],
+    place: {
+      endsOrBefore: ['sch', 'schl', 'school', 'ms', 'hs', 'jh', 'middle', 'primary'],
+      notAfter: ['beth', 'bet'],
+    },
+  },
+];
+
+export const ABBREVIATIONS: readonly AbbreviationRule[] = [
+  ...ABBREVIATION_RULES.map(([short, long]) => ({
+    short: short.split(' '),
+    long: long.split(' '),
+  })),
+  ...PLACED_RULES,
+];
 
 /** Rules keyed by the first token of their short form. */
 const RULES_BY_FIRST = new Map<string, AbbreviationRule[]>();
@@ -333,7 +377,7 @@ for (const rule of ABBREVIATIONS) {
 /** Single-token abbreviations and the word lists a query token also stands for. */
 const QUERY_EXPANSIONS = new Map<string, (readonly string[])[]>();
 for (const rule of ABBREVIATIONS) {
-  if (rule.short.length !== 1) continue;
+  if (rule.short.length !== 1 || rule.place !== undefined) continue;
   const key = rule.short[0] ?? '';
   const list = QUERY_EXPANSIONS.get(key);
   if (list) list.push(rule.long);
@@ -347,6 +391,22 @@ function matchesAt<T>(tokens: ArrayLike<T>, to: number, at: number, words: reado
   if (at + words.length > to) return false;
   for (let k = 0; k < words.length; k++) if (tokens[at + k] !== words[k]) return false;
   return true;
+}
+
+/** Whether `rule` stands for its words at tokens[at] of the name tokens[from, to). */
+export function ruleHolds<T>(
+  tokens: ArrayLike<T>,
+  from: number,
+  to: number,
+  at: number,
+  rule: AbbreviationRule<T>,
+): boolean {
+  if (!matchesAt(tokens, to, at, rule.short)) return false;
+  const { place } = rule;
+  if (place === undefined) return true;
+  if (at <= from || place.notAfter.includes(tokens[at - 1] as T)) return false;
+  const next = at + rule.short.length;
+  return next === to || place.endsOrBefore.includes(tokens[next] as T);
 }
 
 /**
@@ -368,7 +428,7 @@ export function expandTokens<T>(
     const rules = rulesFor(t);
     if (!rules) continue;
     for (const rule of rules) {
-      if (!matchesAt(tokens, to, i, rule.short)) continue;
+      if (!ruleHolds(tokens, from, to, i, rule)) continue;
       for (const w of rule.long) if (!out.includes(w)) out.push(w);
     }
   }
@@ -391,7 +451,7 @@ export function expandedLength<T>(
     let words = 1;
     if (rules) {
       for (const rule of rules) {
-        if (matchesAt(tokens, to, i, rule.short)) {
+        if (ruleHolds(tokens, from, to, i, rule)) {
           step = rule.short.length;
           words = rule.long.length;
           break;

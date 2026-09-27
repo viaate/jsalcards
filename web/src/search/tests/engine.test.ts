@@ -3,7 +3,7 @@ import { describe, expect, it } from 'vitest';
 
 import { loadIndex } from '../decode';
 import { encodeIndex } from '../encode';
-import { DEFAULT_LIMIT, LEAD_FACTOR, SearchEngine, highlight } from '../engine';
+import { DEFAULT_LIMIT, LEAD_FACTOR, START_FACTOR, SearchEngine, highlight } from '../engine';
 import type { GroupName, SearchRecord, SearchResults } from '../types';
 import { SYNTHETIC_RECORDS } from './synthetic-fixture';
 
@@ -92,6 +92,165 @@ describe('matching', () => {
     it('keeps its place in a state', () => {
       expect(names('kansas ok')[0]).toBe('Kansas, OK');
       expect(names('kansas mo')).toEqual(['Kansas City, MO', 'North Kansas City, MO']);
+    });
+  });
+
+  describe('a name that starts with the words', () => {
+    // Schools as the pipeline's directory has them (September 2026), enrollment as weight.
+    const school = (
+      id: string,
+      name: string,
+      sub: string,
+      state: string,
+      weight: number,
+      lat: number,
+      lon: number,
+    ): SearchRecord => ({ kind: 'school', id, name, sub, state, lat, lon, weight });
+    const schools = new SearchEngine(
+      loadIndex(
+        encodeIndex([
+          school(
+            '120018000230',
+            'PEMBROKE PINES ELEMENTARY SCHOOL',
+            'Pembroke Pines, FL',
+            'FL',
+            559,
+            26.001842,
+            -80.22124,
+          ),
+          school(
+            '120018003307',
+            'PEMBROKE PINES CHARTER ELEMENTARY SCHOOL',
+            'Pembroke Pines, FL',
+            'FL',
+            2046,
+            25.994698,
+            -80.289443,
+          ),
+          school(
+            '120018003544',
+            'CITY/PEMBROKE PINES CHARTER MIDDLE SCHOOL',
+            'Pembroke Pines, FL',
+            'FL',
+            1353,
+            25.993762,
+            -80.393524,
+          ),
+          school(
+            '120018004318',
+            'CITY/PEMBROKE PINES CHARTER HIGH SCHOOL',
+            'Pembroke Pines, FL',
+            'FL',
+            2168,
+            26.031479,
+            -80.374666,
+          ),
+          school(
+            '120018007807',
+            'FRANKLIN ACADEMY PEMBROKE PINES',
+            'Pembroke Pines, FL',
+            'FL',
+            1367,
+            26.006209,
+            -80.39931,
+          ),
+          school(
+            '120018008456',
+            'FRANKLIN ACADEMY PEMBROKE PINES HIGH SCHOOL',
+            'Pembroke Pines, FL',
+            'FL',
+            1262,
+            26.055707,
+            -80.425,
+          ),
+          school(
+            '330558000361',
+            'Pembroke Hill School',
+            'Pembroke, NH',
+            'NH',
+            312,
+            43.157814,
+            -71.464217,
+          ),
+          school(
+            'A1902690',
+            'THE PEMBROKE HILL SCHOOL - WORNALL CAMPUS',
+            'Kansas City, MO',
+            'MO',
+            1174,
+            39.03606,
+            -94.593001,
+          ),
+        ]).bytes,
+      ),
+    );
+    const names = (q: string, limit?: number): string[] =>
+      schools.search(q, limit).schools.map((h) => h.name);
+
+    it('goes ahead of a heavier name holding them further in, a leading "The" aside', () => {
+      expect(names('pembroke')).toEqual([
+        'PEMBROKE PINES CHARTER ELEMENTARY SCHOOL',
+        'THE PEMBROKE HILL SCHOOL - WORNALL CAMPUS',
+        'PEMBROKE PINES ELEMENTARY SCHOOL',
+        'CITY/PEMBROKE PINES CHARTER HIGH SCHOOL',
+        'FRANKLIN ACADEMY PEMBROKE PINES',
+      ]);
+      expect(names('pembroke hill')).toEqual([
+        'THE PEMBROKE HILL SCHOOL - WORNALL CAMPUS',
+        'Pembroke Hill School',
+      ]);
+    });
+
+    it('stays behind a name START_FACTOR times heavier', () => {
+      expect(START_FACTOR).toBe(4);
+      // 312 students against 2168: the heavier names come first, Pembroke Hill School after them.
+      const all = names('pembroke', 10);
+      expect(all.indexOf('Pembroke Hill School')).toBeGreaterThan(
+        all.indexOf('CITY/PEMBROKE PINES CHARTER HIGH SCHOOL'),
+      );
+      // The School District of Lancaster outweighs Lancaster Mennonite School more than four times over.
+      expect(first('lancaster pa', 'schools')?.name).toBe('School District of Lancaster');
+    });
+  });
+
+  describe('a name as the page shows it', () => {
+    // Names as the pipeline's directory has them (September 2026).
+    const record = (id: string, name: string, sub: string, state: string): SearchRecord => ({
+      kind: 'school',
+      id,
+      name,
+      sub,
+      state,
+      lat: 30,
+      lon: -97,
+      weight: 500,
+    });
+    const shown = new SearchEngine(
+      loadIndex(
+        encodeIndex([
+          record('482364002589', 'TRAVIS EL', 'Austin, TX', 'TX'),
+          record('050606000328', 'EL DORADO HIGH SCHOOL', 'El Dorado, AR', 'AR'),
+          record('421185005236', 'Hershey Intrmd El Sch', 'Hershey, PA', 'PA'),
+          record('A2104035', 'TEMPLE BETH EL SCHOOL', 'Richmond, VA', 'VA'),
+        ]).bytes,
+      ),
+    );
+    const found = (q: string): string[] => shown.search(q).schools.map((hit) => hit.name);
+
+    it('finds its school, spelled out as shown', () => {
+      expect(found('travis elementary')).toEqual(['TRAVIS EL']);
+      expect(shown.search('travis elementary').schools[0]?.highlight).toEqual([
+        [0, 6],
+        [7, 9],
+      ]);
+      expect(found('hershey intermediate elementary school')).toEqual(['Hershey Intrmd El Sch']);
+      expect(found('travis el')).toEqual(['TRAVIS EL']);
+    });
+
+    it('leaves El where it is a word', () => {
+      expect(found('elementary')).toEqual(['Hershey Intrmd El Sch', 'TRAVIS EL']);
+      expect(found('el dorado')).toEqual(['EL DORADO HIGH SCHOOL']);
+      expect(found('beth elementary')).toEqual([]);
     });
   });
 
