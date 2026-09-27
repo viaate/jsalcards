@@ -1,0 +1,31 @@
+platform:
+  id: scripps
+stations:
+- id: scripps-kktv
+  platform: scripps
+  call_sign: KKTV
+  name: KKTV (kktv.com)
+  market: Colorado Springs-Pueblo
+  dma: Colorado Springs - Pueblo, CO DMA
+  states: [CO]
+  counties:
+    basis: dma
+    source: 'DMA county list: alex-patton/US-TVDMA-BY-COUNTY usa-tvdma-county.csv at commit 7f254b8c1843c62ec976a71c40d366d45f6f29cd
+      (sha256 2e2cd00265a8d704...), names resolved to FIPS with the Census 2025 county Gazetteer; Connecticut
+      via the Census county-to-town crosswalk (snowlight.sources.stations.dma); market ''Colorado Springs
+      - Pueblo, CO DMA'''
+    fips: [08009, 08011, 08017, 08025, 08041, 08043, 08055, 08061, 08071, 08089, 08101, 08119]
+  page_url: null
+  data_url: null
+  export_url: null
+  archive_urls: []
+  poll_minutes: null
+  status: no_endpoint
+  evidence: 'First-hand check 2026-09-26T17:43:39Z (docs/research/firsthand/nexstar-tegna-scripps.json,
+    record KKTV): site https://www.kktv.com. The station''s site https://www.kktv.com is still a Gray
+    Arc site whose list is the Gray export registered as gray-kktv in gray.yaml and read there, so no
+    endpoint is registered here (reading it twice would count one list twice). Market: ''Colorado Springs-Pueblo''
+    (first-hand record) is the crosswalk''s ''Colorado Springs - Pueblo, CO DMA''.'
+  list_files: []
+  page_check: null
+  robots: []

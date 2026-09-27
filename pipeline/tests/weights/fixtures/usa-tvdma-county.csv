@@ -1,0 +1,253 @@
+STATE,STATE_AB,COUNTY,Internal_State_Region,TVDMA,Metropolitan_Statistical_Areas,Metro_Grp
+CALIFORNIA,CA,INYO,Inland Empire & Deserts* ISR,"Los Angeles, CA DMA",Not Assigned to Metro Area (NAM),Non Metro GMR.
+CALIFORNIA,CA,KERN,Central Valley* ISR,"Bakersfield, CA DMA","Bakersfield, CA MSA",Other Metro GMR.
+CALIFORNIA,CA,LOS ANGELES,Los Angeles County ISR,"Los Angeles, CA DMA","Los Angeles - Long Beach, CA PMSA",LA Co. GMR.
+CALIFORNIA,CA,ORANGE,Orange & San Diego Counties* ISR,"Los Angeles, CA DMA","Orange County, CA PMSA",LA Suburbs GMR.
+CALIFORNIA,CA,SAN BERNARDINO,Inland Empire & Deserts* ISR,"Los Angeles, CA DMA","Riverside - San Bernardino, CA PMSA",LA Suburbs GMR.
+CALIFORNIA,CA,VENTURA,Central Coast ISR,"Los Angeles, CA DMA","Ventura, CA PMSA",LA Suburbs GMR.
+COLORADO,CO,ADAMS,North Central ISR,"Denver, CO - NE - NV - WY DMA","Denver, CO PMSA",GMR.
+COLORADO,CO,ALAMOSA,South Central ISR,"Denver, CO - NE - NV - WY DMA",Not Assigned to Metro Area (NAM),GMR.
+COLORADO,CO,ARAPAHOE,North Central ISR,"Denver, CO - NE - NV - WY DMA","Denver, CO PMSA",GMR.
+COLORADO,CO,ARCHULETA,Southwest ISR,"Denver, CO - NE - NV - WY DMA",Not Assigned to Metro Area (NAM),GMR.
+COLORADO,CO,BOULDER,North Central ISR,"Denver, CO - NE - NV - WY DMA","Boulder - Longmont, CO PMSA",GMR.
+COLORADO,CO,CHAFFEE,South Central ISR,"Denver, CO - NE - NV - WY DMA",Not Assigned to Metro Area (NAM),GMR.
+COLORADO,CO,CLEAR CREEK,North Central ISR,"Denver, CO - NE - NV - WY DMA",Not Assigned to Metro Area (NAM),GMR.
+COLORADO,CO,CONEJOS,South Central ISR,"Denver, CO - NE - NV - WY DMA",Not Assigned to Metro Area (NAM),GMR.
+COLORADO,CO,CUSTER,South Central ISR,"Denver, CO - NE - NV - WY DMA",Not Assigned to Metro Area (NAM),GMR.
+COLORADO,CO,DELTA,Southwest ISR,"Denver, CO - NE - NV - WY DMA",Not Assigned to Metro Area (NAM),GMR.
+COLORADO,CO,DENVER,North Central ISR,"Denver, CO - NE - NV - WY DMA","Denver, CO PMSA",GMR.
+COLORADO,CO,DOUGLAS,North Central ISR,"Denver, CO - NE - NV - WY DMA","Denver, CO PMSA",GMR.
+COLORADO,CO,EAGLE,Northwest ISR,"Denver, CO - NE - NV - WY DMA",Not Assigned to Metro Area (NAM),GMR.
+COLORADO,CO,ELBERT,Northeast ISR,"Denver, CO - NE - NV - WY DMA",Not Assigned to Metro Area (NAM),GMR.
+COLORADO,CO,GARFIELD,Northwest ISR,"Denver, CO - NE - NV - WY DMA",Not Assigned to Metro Area (NAM),GMR.
+COLORADO,CO,GILPIN,North Central ISR,"Denver, CO - NE - NV - WY DMA",Not Assigned to Metro Area (NAM),GMR.
+COLORADO,CO,GRAND,Northwest ISR,"Denver, CO - NE - NV - WY DMA",Not Assigned to Metro Area (NAM),GMR.
+COLORADO,CO,GUNNISON,Southwest ISR,"Denver, CO - NE - NV - WY DMA",Not Assigned to Metro Area (NAM),GMR.
+COLORADO,CO,HINSDALE,Southwest ISR,"Denver, CO - NE - NV - WY DMA",Not Assigned to Metro Area (NAM),GMR.
+COLORADO,CO,JACKSON,Northwest ISR,"Denver, CO - NE - NV - WY DMA",Not Assigned to Metro Area (NAM),GMR.
+COLORADO,CO,JEFFERSON,North Central ISR,"Denver, CO - NE - NV - WY DMA","Denver, CO PMSA",GMR.
+COLORADO,CO,KIT CARSON,Northeast ISR,"Denver, CO - NE - NV - WY DMA",Not Assigned to Metro Area (NAM),GMR.
+COLORADO,CO,LAKE,South Central ISR,"Denver, CO - NE - NV - WY DMA",Not Assigned to Metro Area (NAM),GMR.
+COLORADO,CO,LARIMER,North Central ISR,"Denver, CO - NE - NV - WY DMA","Fort Collins - Loveland, CO MSA",GMR.
+COLORADO,CO,LINCOLN,Northeast ISR,"Denver, CO - NE - NV - WY DMA",Not Assigned to Metro Area (NAM),GMR.
+COLORADO,CO,LOGAN,Northeast ISR,"Denver, CO - NE - NV - WY DMA",Not Assigned to Metro Area (NAM),GMR.
+COLORADO,CO,MINERAL,South Central ISR,"Denver, CO - NE - NV - WY DMA",Not Assigned to Metro Area (NAM),GMR.
+COLORADO,CO,MOFFAT,Northwest ISR,"Denver, CO - NE - NV - WY DMA",Not Assigned to Metro Area (NAM),GMR.
+COLORADO,CO,MORGAN,Northeast ISR,"Denver, CO - NE - NV - WY DMA",Not Assigned to Metro Area (NAM),GMR.
+COLORADO,CO,OURAY,Southwest ISR,"Denver, CO - NE - NV - WY DMA",Not Assigned to Metro Area (NAM),GMR.
+COLORADO,CO,PARK,South Central ISR,"Denver, CO - NE - NV - WY DMA",Not Assigned to Metro Area (NAM),GMR.
+COLORADO,CO,PHILLIPS,Northeast ISR,"Denver, CO - NE - NV - WY DMA",Not Assigned to Metro Area (NAM),GMR.
+COLORADO,CO,PITKIN,Northwest ISR,"Denver, CO - NE - NV - WY DMA",Not Assigned to Metro Area (NAM),GMR.
+COLORADO,CO,PROWERS,Southeast ISR,"Denver, CO - NE - NV - WY DMA",Not Assigned to Metro Area (NAM),GMR.
+COLORADO,CO,RIO BLANCO,Northwest ISR,"Denver, CO - NE - NV - WY DMA",Not Assigned to Metro Area (NAM),GMR.
+COLORADO,CO,RIO GRANDE,South Central ISR,"Denver, CO - NE - NV - WY DMA",Not Assigned to Metro Area (NAM),GMR.
+COLORADO,CO,ROUTT,Northwest ISR,"Denver, CO - NE - NV - WY DMA",Not Assigned to Metro Area (NAM),GMR.
+COLORADO,CO,SAGUACHE,South Central ISR,"Denver, CO - NE - NV - WY DMA",Not Assigned to Metro Area (NAM),GMR.
+COLORADO,CO,SAN JUAN,Southwest ISR,"Denver, CO - NE - NV - WY DMA",Not Assigned to Metro Area (NAM),GMR.
+COLORADO,CO,SAN MIGUEL,Southwest ISR,"Denver, CO - NE - NV - WY DMA",Not Assigned to Metro Area (NAM),GMR.
+COLORADO,CO,SEDGWICK,Northeast ISR,"Denver, CO - NE - NV - WY DMA",Not Assigned to Metro Area (NAM),GMR.
+COLORADO,CO,SUMMIT,Northwest ISR,"Denver, CO - NE - NV - WY DMA",Not Assigned to Metro Area (NAM),GMR.
+COLORADO,CO,WASHINGTON,Northeast ISR,"Denver, CO - NE - NV - WY DMA",Not Assigned to Metro Area (NAM),GMR.
+COLORADO,CO,WELD,Northeast ISR,"Denver, CO - NE - NV - WY DMA","Greeley, CO PMSA",GMR.
+COLORADO,CO,YUMA,Northeast ISR,"Denver, CO - NE - NV - WY DMA",Not Assigned to Metro Area (NAM),GMR.
+CONNECTICUT,CT,HARTFORD,No. Central  Greater Hartford ISR,"Hartford & New Haven, CT DMA","Hartford, CT NECMA",Hartford & Tolland Co. GMR.
+CONNECTICUT,CT,TOLLAND,No. Central  Greater Hartford ISR,"Hartford & New Haven, CT DMA","Hartford, CT NECMA",Hartford & Tolland Co. GMR.
+CONNECTICUT,CT,WINDHAM,Northeast Plains ISR,"Hartford & New Haven, CT DMA",Not Assigned to Metro Area (NAM),Non Metro GMR.
+CONNECTICUT,CT,LITCHFIELD,Northwest Hills ISR,"Hartford & New Haven, CT DMA",Not Assigned to Metro Area (NAM),Non Metro GMR.
+CONNECTICUT,CT,MIDDLESEX,Southeast Coast ISR,"Hartford & New Haven, CT DMA","Hartford, CT NECMA",Other Metro GMR.
+CONNECTICUT,CT,NEW LONDON,Southeast Coast ISR,"Hartford & New Haven, CT DMA","New London - Norwich, CT NECMA",Other Metro GMR.
+CONNECTICUT,CT,FAIRFIELD,Southwest Greater New York ISR,"New York, NY - CT - NJ - PA DMA","New Haven- Bridgeport- Stamford- Waterbury- Danbury,CT NECMA",Fairfield Co. GMR.
+CONNECTICUT,CT,NEW HAVEN,Southwest Greater New York ISR,"Hartford & New Haven, CT DMA","New Haven- Bridgeport- Stamford- Waterbury- Danbury,CT NECMA",New Haven Co. GMR
+FLORIDA,FL,BAY,Northwest ISR,"Panama City, FL DMA","Panama City, FL MSA",Other Metro GMR.
+FLORIDA,FL,CALHOUN,Northwest ISR,"Panama City, FL DMA",Not Assigned to Metro Area (NAM),Non Metro GMR.
+FLORIDA,FL,FRANKLIN,Northwest ISR,"Panama City, FL DMA",Not Assigned to Metro Area (NAM),Non Metro GMR.
+FLORIDA,FL,GULF,Northwest ISR,"Panama City, FL DMA",Not Assigned to Metro Area (NAM),Non Metro GMR.
+FLORIDA,FL,HOLMES,Northwest ISR,"Panama City, FL DMA",Not Assigned to Metro Area (NAM),Non Metro GMR.
+FLORIDA,FL,JACKSON,Northwest ISR,"Panama City, FL DMA",Not Assigned to Metro Area (NAM),Non Metro GMR.
+FLORIDA,FL,LIBERTY,Northwest ISR,"Panama City, FL DMA",Not Assigned to Metro Area (NAM),Non Metro GMR.
+FLORIDA,FL,WALTON,Northwest ISR,"Panama City, FL DMA",Not Assigned to Metro Area (NAM),Non Metro GMR.
+FLORIDA,FL,WASHINGTON,Northwest ISR,"Panama City, FL DMA",Not Assigned to Metro Area (NAM),Non Metro GMR.
+ILLINOIS,IL,COOK,Chicagoland ISR,"Chicago, IL - IN DMA","Chicago, IL PMSA",Cook Co. GMR.
+ILLINOIS,IL,DE KALB,Northern ISR,"Chicago, IL - IN DMA","Chicago, IL PMSA",Chicago Suburbs GMR.
+ILLINOIS,IL,DU PAGE,Chicagoland ISR,"Chicago, IL - IN DMA","Chicago, IL PMSA",Chicago Suburbs GMR.
+ILLINOIS,IL,GRUNDY,Chicagoland ISR,"Chicago, IL - IN DMA","Chicago, IL PMSA",Chicago Suburbs GMR.
+ILLINOIS,IL,KANE,Chicagoland ISR,"Chicago, IL - IN DMA","Chicago, IL PMSA",Chicago Suburbs GMR.
+ILLINOIS,IL,KANKAKEE,Chicagoland ISR,"Chicago, IL - IN DMA","Kankakee, IL PMSA",Other Metro GMR.
+ILLINOIS,IL,KENDALL,Chicagoland ISR,"Chicago, IL - IN DMA","Chicago, IL PMSA",Chicago Suburbs GMR.
+ILLINOIS,IL,LAKE,Chicagoland ISR,"Chicago, IL - IN DMA","Chicago, IL PMSA",Chicago Suburbs GMR.
+ILLINOIS,IL,LA SALLE,Northern ISR,"Chicago, IL - IN DMA",Not Assigned to Metro Area (NAM),Non Metro GMR.
+ILLINOIS,IL,MCHENRY,Chicagoland ISR,"Chicago, IL - IN DMA","Chicago, IL PMSA",Chicago Suburbs GMR.
+ILLINOIS,IL,WILL,Chicagoland ISR,"Chicago, IL - IN DMA","Chicago, IL PMSA",Chicago Suburbs GMR.
+INDIANA,IN,JASPER,Northern ISR,"Chicago, IL - IN DMA",Not Assigned to Metro Area (NAM),Non Metro GMR.
+INDIANA,IN,LAKE,Northern ISR,"Chicago, IL - IN DMA","Gary, IN PMSA",Gary Metro GMR.
+INDIANA,IN,LA PORTE,Northern ISR,"Chicago, IL - IN DMA",Not Assigned to Metro Area (NAM),Non Metro GMR.
+INDIANA,IN,NEWTON,Western ISR,"Chicago, IL - IN DMA",Not Assigned to Metro Area (NAM),Non Metro GMR.
+INDIANA,IN,PORTER,Northern ISR,"Chicago, IL - IN DMA","Gary, IN PMSA",Gary Metro GMR.
+IOWA,IA,LYON,Northwest ISR,"Sioux Falls (Mitchell), SD - IA - MN - NE DMA",Not Assigned to Metro Area (NAM),Non Metro GMR.
+IOWA,IA,OSCEOLA,Northwest ISR,"Sioux Falls (Mitchell), SD - IA - MN - NE DMA",Not Assigned to Metro Area (NAM),Non Metro GMR.
+MARYLAND,MD,ANNE ARUNDEL,Central Maryland ISR,"Baltimore, MD DMA","Baltimore, MD PMSA",Other Metro GMR.
+MARYLAND,MD,BALTIMORE,Central Maryland ISR,"Baltimore, MD DMA","Baltimore, MD PMSA",Baltimore City & Co. GMR.
+MARYLAND,MD,CAROLINE,Chesapeake Country ISR,"Baltimore, MD DMA",Not Assigned to Metro Area (NAM),Non Metro GMR.
+MARYLAND,MD,CARROLL,Central Maryland ISR,"Baltimore, MD DMA","Baltimore, MD PMSA",Other Metro GMR.
+MARYLAND,MD,CECIL,Central Maryland ISR,"Baltimore, MD DMA","Wilmington - Newark, DE - MD PMSA",Other Metro GMR.
+MARYLAND,MD,DORCHESTER,Southern Eastern Shore ISR,"Baltimore, MD DMA",Not Assigned to Metro Area (NAM),Non Metro GMR.
+MARYLAND,MD,HARFORD,Central Maryland ISR,"Baltimore, MD DMA","Baltimore, MD PMSA",Other Metro GMR.
+MARYLAND,MD,HOWARD,Central Maryland ISR,"Baltimore, MD DMA","Baltimore, MD PMSA",Other Metro GMR.
+MARYLAND,MD,KENT,Chesapeake Country ISR,"Baltimore, MD DMA",Not Assigned to Metro Area (NAM),Non Metro GMR.
+MARYLAND,MD,QUEEN ANNES,Chesapeake Country ISR,"Baltimore, MD DMA","Baltimore, MD PMSA",Other Metro GMR.
+MARYLAND,MD,TALBOT,Chesapeake Country ISR,"Baltimore, MD DMA",Not Assigned to Metro Area (NAM),Non Metro GMR.
+MARYLAND,MD,BALTIMORE CITY,Central Maryland ISR,"Baltimore, MD DMA","Baltimore, MD PMSA",Baltimore City & Co. GMR.
+MASSACHUSETTS,MA,BRISTOL,"Fall River - Providence, RI ISR","Providence, RI - New Bedford, MA DMA","Boston- Worcester- Lawrence- Lowell- Brockton, MA - NH NECMA",Boston Outer Sub
+MINNESOTA,MN,LINCOLN,Southern ISR,"Sioux Falls (Mitchell), SD - IA - MN - NE DMA",Not Assigned to Metro Area (NAM),Non Metro GMR.
+MINNESOTA,MN,MURRAY,Southern ISR,"Sioux Falls (Mitchell), SD - IA - MN - NE DMA",Not Assigned to Metro Area (NAM),Non Metro GMR.
+MINNESOTA,MN,NOBLES,Southern ISR,"Sioux Falls (Mitchell), SD - IA - MN - NE DMA",Not Assigned to Metro Area (NAM),Non Metro GMR.
+MINNESOTA,MN,PIPESTONE,Southern ISR,"Sioux Falls (Mitchell), SD - IA - MN - NE DMA",Not Assigned to Metro Area (NAM),Non Metro GMR.
+MINNESOTA,MN,ROCK,Southern ISR,"Sioux Falls (Mitchell), SD - IA - MN - NE DMA",Not Assigned to Metro Area (NAM),Non Metro GMR.
+MISSISSIPPI,MS,ADAMS,Southern ISR,"Jackson, MS DMA",Not Assigned to Metro Area (NAM),Non Metro GMR.
+MISSISSIPPI,MS,ATTALA,Central ISR,"Jackson, MS DMA",Not Assigned to Metro Area (NAM),Non Metro GMR.
+MISSISSIPPI,MS,CLAIBORNE,Central ISR,"Jackson, MS DMA",Not Assigned to Metro Area (NAM),Non Metro GMR.
+MISSISSIPPI,MS,COPIAH,Central ISR,"Jackson, MS DMA",Not Assigned to Metro Area (NAM),Non Metro GMR.
+MISSISSIPPI,MS,FRANKLIN,Southern ISR,"Jackson, MS DMA",Not Assigned to Metro Area (NAM),Non Metro GMR.
+MISSISSIPPI,MS,HINDS,Central ISR,"Jackson, MS DMA","Jackson, MS MSA",Jackson Metro GMR.
+MISSISSIPPI,MS,HOLMES,Central ISR,"Jackson, MS DMA",Not Assigned to Metro Area (NAM),Non Metro GMR.
+MISSISSIPPI,MS,HUMPHREYS,Central ISR,"Jackson, MS DMA",Not Assigned to Metro Area (NAM),Non Metro GMR.
+MISSISSIPPI,MS,ISSAQUENA,Central ISR,"Jackson, MS DMA",Not Assigned to Metro Area (NAM),Non Metro GMR.
+MISSISSIPPI,MS,JEFFERSON,Southern ISR,"Jackson, MS DMA",Not Assigned to Metro Area (NAM),Non Metro GMR.
+MISSISSIPPI,MS,JEFFERSON DAVIS,Southern ISR,"Jackson, MS DMA",Not Assigned to Metro Area (NAM),Non Metro GMR.
+MISSISSIPPI,MS,LAWRENCE,Southern ISR,"Jackson, MS DMA",Not Assigned to Metro Area (NAM),Non Metro GMR.
+MISSISSIPPI,MS,LEAKE,Central ISR,"Jackson, MS DMA",Not Assigned to Metro Area (NAM),Non Metro GMR.
+MISSISSIPPI,MS,LINCOLN,Southern ISR,"Jackson, MS DMA",Not Assigned to Metro Area (NAM),Non Metro GMR.
+MISSISSIPPI,MS,MADISON,Central ISR,"Jackson, MS DMA","Jackson, MS MSA",Jackson Metro GMR.
+MISSISSIPPI,MS,PIKE,Southern ISR,"Jackson, MS DMA",Not Assigned to Metro Area (NAM),Non Metro GMR.
+MISSISSIPPI,MS,RANKIN,Central ISR,"Jackson, MS DMA","Jackson, MS MSA",Jackson Metro GMR.
+MISSISSIPPI,MS,SCOTT,Central ISR,"Jackson, MS DMA",Not Assigned to Metro Area (NAM),Non Metro GMR.
+MISSISSIPPI,MS,SHARKEY,Central ISR,"Jackson, MS DMA",Not Assigned to Metro Area (NAM),Non Metro GMR.
+MISSISSIPPI,MS,SIMPSON,Central ISR,"Jackson, MS DMA",Not Assigned to Metro Area (NAM),Non Metro GMR.
+MISSISSIPPI,MS,SMITH,Central ISR,"Jackson, MS DMA",Not Assigned to Metro Area (NAM),Non Metro GMR.
+MISSISSIPPI,MS,WALTHALL,Southern ISR,"Jackson, MS DMA",Not Assigned to Metro Area (NAM),Non Metro GMR.
+MISSISSIPPI,MS,WARREN,Central ISR,"Jackson, MS DMA",Not Assigned to Metro Area (NAM),Non Metro GMR.
+MISSISSIPPI,MS,YAZOO,Central ISR,"Jackson, MS DMA",Not Assigned to Metro Area (NAM),Non Metro GMR.
+MONTANA,MT,CARTER,Custer Country ISR,"Rapid City, SD - MT - NE - WY DMA",Not Assigned to Metro Area (NAM),Non Metro GMR.
+MONTANA,MT,FLATHEAD,Glacier Country ISR,"Missoula, MT DMA",Not Assigned to Metro Area (NAM),Non Metro GMR.
+MONTANA,MT,GRANITE,Gold West Country ISR,"Missoula, MT DMA",Not Assigned to Metro Area (NAM),Non Metro GMR.
+MONTANA,MT,LAKE,Glacier Country ISR,"Missoula, MT DMA",Not Assigned to Metro Area (NAM),Non Metro GMR.
+MONTANA,MT,MINERAL,Glacier Country ISR,"Missoula, MT DMA",Not Assigned to Metro Area (NAM),Non Metro GMR.
+MONTANA,MT,MISSOULA,Glacier Country ISR,"Missoula, MT DMA","Missoula, MT MSA",Missoula Metro GMR.
+MONTANA,MT,RAVALLI,Glacier Country ISR,"Missoula, MT DMA",Not Assigned to Metro Area (NAM),Non Metro GMR.
+MONTANA,MT,SANDERS,Glacier Country ISR,"Missoula, MT DMA",Not Assigned to Metro Area (NAM),Non Metro GMR.
+NEBRASKA,NE,BANNER,Western Nebraska ISR,"Rapid City, SD - MT - NE - WY DMA",Not Assigned to Metro Area (NAM),Non Metro GMR.
+NEBRASKA,NE,BOX BUTTE,Western Nebraska ISR,"Denver, CO - NE - NV - WY DMA",Not Assigned to Metro Area (NAM),Non Metro GMR.
+NEBRASKA,NE,CHERRY,Niobrara River Counties ISR,"Sioux Falls (Mitchell), SD - IA - MN - NE DMA",Not Assigned to Metro Area (NAM),Non Metro GMR.
+NEBRASKA,NE,CHEYENNE,Western Nebraska ISR,"Denver, CO - NE - NV - WY DMA",Not Assigned to Metro Area (NAM),Non Metro GMR.
+NEBRASKA,NE,DAWES,Western Nebraska ISR,"Denver, CO - NE - NV - WY DMA",Not Assigned to Metro Area (NAM),Non Metro GMR.
+NEBRASKA,NE,DEUEL,Western Nebraska ISR,"Denver, CO - NE - NV - WY DMA",Not Assigned to Metro Area (NAM),Non Metro GMR.
+NEBRASKA,NE,GARDEN,Western Nebraska ISR,"Denver, CO - NE - NV - WY DMA",Not Assigned to Metro Area (NAM),Non Metro GMR.
+NEBRASKA,NE,GRANT,Western Nebraska ISR,"Rapid City, SD - MT - NE - WY DMA",Not Assigned to Metro Area (NAM),Non Metro GMR.
+NEBRASKA,NE,KEITH,Western Nebraska ISR,"Denver, CO - NE - NV - WY DMA",Not Assigned to Metro Area (NAM),Non Metro GMR.
+NEBRASKA,NE,KIMBALL,Western Nebraska ISR,"Denver, CO - NE - NV - WY DMA",Not Assigned to Metro Area (NAM),Non Metro GMR.
+NEBRASKA,NE,MORRILL,Western Nebraska ISR,"Rapid City, SD - MT - NE - WY DMA",Not Assigned to Metro Area (NAM),Non Metro GMR.
+NEBRASKA,NE,SHERIDAN,Western Nebraska ISR,"Rapid City, SD - MT - NE - WY DMA",Not Assigned to Metro Area (NAM),Non Metro GMR.
+NEBRASKA,NE,SIOUX,Western Nebraska ISR,"Rapid City, SD - MT - NE - WY DMA",Not Assigned to Metro Area (NAM),Non Metro GMR.
+NEVADA,NV,EUREKA,Pony Express Territory ISR,"Denver, CO - NE - NV - WY DMA",Not Assigned to Metro Area (NAM),Non Metro GMR.
+NEW JERSEY,NJ,BERGEN,Gateway ISR,"New York, NY - CT - NJ - PA DMA","Bergen - Passaic, NJ PMSA",NYC Suburbs GMR.
+NEW JERSEY,NJ,ESSEX,Gateway ISR,"New York, NY - CT - NJ - PA DMA","Newark, NJ PMSA",NYC Suburbs GMR.
+NEW JERSEY,NJ,HUDSON,Gateway ISR,"New York, NY - CT - NJ - PA DMA","Jersey City, NJ PMSA",NYC Suburbs GMR.
+NEW JERSEY,NJ,HUNTERDON,Skylands ISR,"New York, NY - CT - NJ - PA DMA","Middlesex - Somerset - Hunterdon, NJ PMSA",NYC Suburbs GMR.
+NEW JERSEY,NJ,MIDDLESEX,Gateway ISR,"New York, NY - CT - NJ - PA DMA","Middlesex - Somerset - Hunterdon, NJ PMSA",NYC Suburbs GMR.
+NEW JERSEY,NJ,MONMOUTH,Shore ISR,"New York, NY - CT - NJ - PA DMA","Monmouth - Ocean, NJ PMSA",NYC Suburbs GMR.
+NEW JERSEY,NJ,MORRIS,Skylands ISR,"New York, NY - CT - NJ - PA DMA","Newark, NJ PMSA",NYC Suburbs GMR.
+NEW JERSEY,NJ,OCEAN,Shore ISR,"New York, NY - CT - NJ - PA DMA","Monmouth - Ocean, NJ PMSA",NYC Suburbs GMR.
+NEW JERSEY,NJ,PASSAIC,Gateway ISR,"New York, NY - CT - NJ - PA DMA","Bergen - Passaic, NJ PMSA",NYC Suburbs GMR.
+NEW JERSEY,NJ,SOMERSET,Skylands ISR,"New York, NY - CT - NJ - PA DMA","Middlesex - Somerset - Hunterdon, NJ PMSA",NYC Suburbs GMR.
+NEW JERSEY,NJ,SUSSEX,Skylands ISR,"New York, NY - CT - NJ - PA DMA","Newark, NJ PMSA",NYC Suburbs GMR.
+NEW JERSEY,NJ,UNION,Gateway ISR,"New York, NY - CT - NJ - PA DMA","Newark, NJ PMSA",NYC Suburbs GMR.
+NEW JERSEY,NJ,WARREN,Skylands ISR,"New York, NY - CT - NJ - PA DMA","Newark, NJ PMSA",Other Metro GMR.
+NEW YORK,NY,BRONX,New York City ISR,"New York, NY - CT - NJ - PA DMA","New York, NY PMSA",NYC-Inner Core GMR.
+NEW YORK,NY,DUTCHESS,Hudson Valley ISR,"New York, NY - CT - NJ - PA DMA","Dutchess County, NY PMSA",Other Metro GMR.
+NEW YORK,NY,KINGS,New York City ISR,"New York, NY - CT - NJ - PA DMA","New York, NY PMSA",NYC-Inner Core GMR.
+NEW YORK,NY,NASSAU,Long Island ISR,"New York, NY - CT - NJ - PA DMA","Nassau - Suffolk, NY PMSA",NYC-Islands GMR.
+NEW YORK,NY,NEW YORK,New York City ISR,"New York, NY - CT - NJ - PA DMA","New York, NY PMSA",NYC-Inner Core GMR.
+NEW YORK,NY,ORANGE,Hudson Valley ISR,"New York, NY - CT - NJ - PA DMA","Newburgh, NY - PA PMSA",NYC-Metro North GMR.
+NEW YORK,NY,PUTNAM,Hudson Valley ISR,"New York, NY - CT - NJ - PA DMA","New York, NY PMSA",NYC-Metro North GMR.
+NEW YORK,NY,QUEENS,New York City ISR,"New York, NY - CT - NJ - PA DMA","New York, NY PMSA",NYC-Inner Core GMR.
+NEW YORK,NY,RICHMOND,New York City ISR,"New York, NY - CT - NJ - PA DMA","New York, NY PMSA",NYC-Islands GMR.
+NEW YORK,NY,ROCKLAND,Hudson Valley ISR,"New York, NY - CT - NJ - PA DMA","New York, NY PMSA",NYC-Metro North GMR.
+NEW YORK,NY,SUFFOLK,Long Island ISR,"New York, NY - CT - NJ - PA DMA","Nassau - Suffolk, NY PMSA",NYC-Islands GMR.
+NEW YORK,NY,SULLIVAN,Catskills ISR,"New York, NY - CT - NJ - PA DMA",Not Assigned to Metro Area (NAM),Non Metro GMR.
+NEW YORK,NY,ULSTER,Catskills ISR,"New York, NY - CT - NJ - PA DMA",Not Assigned to Metro Area (NAM),Non Metro GMR.
+NEW YORK,NY,WESTCHESTER,Hudson Valley ISR,"New York, NY - CT - NJ - PA DMA","New York, NY PMSA",NYC-Metro North GMR.
+PENNSYLVANIA,PA,PIKE,Pocono Mountains ISR,"New York, NY - CT - NJ - PA DMA","Newburgh, NY - PA PMSA",Other Metro GMR.
+RHODE ISLAND,RI,BRISTOL,Southeast Islands ISR,"Providence, RI - New Bedford, MA DMA","Providence - Warwick - Pawtucket, RI NECMA",Other Metro GMR.
+RHODE ISLAND,RI,KENT,Western Central Coast ISR,"Providence, RI - New Bedford, MA DMA","Providence - Warwick - Pawtucket, RI NECMA",Other Metro GMR.
+RHODE ISLAND,RI,NEWPORT,Southeast Islands ISR,"Providence, RI - New Bedford, MA DMA",Not Assigned to Metro Area (NAM),Non Metro GMR.
+RHODE ISLAND,RI,PROVIDENCE,North Providence ISR,"Providence, RI - New Bedford, MA DMA","Providence - Warwick - Pawtucket, RI NECMA",Providence Inner (Prov. Co.) GMR.
+RHODE ISLAND,RI,WASHINGTON,Western Central Coast ISR,"Providence, RI - New Bedford, MA DMA","Providence - Warwick - Pawtucket, RI NECMA",Other Metro GMR.
+SOUTH DAKOTA,SD,AURORA,Great Lakes ISR,"Sioux Falls (Mitchell), SD - IA - MN - NE DMA",Not Assigned to Metro Area (NAM),Non Metro GMR.
+SOUTH DAKOTA,SD,BEADLE,Glacial Lakes & Prairies ISR,"Sioux Falls (Mitchell), SD - IA - MN - NE DMA",Not Assigned to Metro Area (NAM),Non Metro GMR.
+SOUTH DAKOTA,SD,BENNETT,"Black Hills, Badlands & Lakes ISR","Rapid City, SD - MT - NE - WY DMA",Not Assigned to Metro Area (NAM),Non Metro GMR.
+SOUTH DAKOTA,SD,BON HOMME,Dakota Heritage & Lakes ISR,"Sioux Falls (Mitchell), SD - IA - MN - NE DMA",Not Assigned to Metro Area (NAM),Non Metro GMR.
+SOUTH DAKOTA,SD,BROOKINGS,Glacial Lakes & Prairies ISR,"Sioux Falls (Mitchell), SD - IA - MN - NE DMA",Not Assigned to Metro Area (NAM),Non Metro GMR.
+SOUTH DAKOTA,SD,BROWN,Glacial Lakes & Prairies ISR,"Sioux Falls (Mitchell), SD - IA - MN - NE DMA",Not Assigned to Metro Area (NAM),Non Metro GMR.
+SOUTH DAKOTA,SD,BRULE,Great Lakes ISR,"Sioux Falls (Mitchell), SD - IA - MN - NE DMA",Not Assigned to Metro Area (NAM),Non Metro GMR.
+SOUTH DAKOTA,SD,BUFFALO,Great Lakes ISR,"Sioux Falls (Mitchell), SD - IA - MN - NE DMA",Not Assigned to Metro Area (NAM),Non Metro GMR.
+SOUTH DAKOTA,SD,BUTTE,"Black Hills, Badlands & Lakes ISR","Rapid City, SD - MT - NE - WY DMA",Not Assigned to Metro Area (NAM),Non Metro GMR.
+SOUTH DAKOTA,SD,CHARLES MIX,Great Lakes ISR,"Sioux Falls (Mitchell), SD - IA - MN - NE DMA",Not Assigned to Metro Area (NAM),Non Metro GMR.
+SOUTH DAKOTA,SD,CLARK,Glacial Lakes & Prairies ISR,"Sioux Falls (Mitchell), SD - IA - MN - NE DMA",Not Assigned to Metro Area (NAM),Non Metro GMR.
+SOUTH DAKOTA,SD,CLAY,Dakota Heritage & Lakes ISR,"Sioux Falls (Mitchell), SD - IA - MN - NE DMA",Not Assigned to Metro Area (NAM),Non Metro GMR.
+SOUTH DAKOTA,SD,CODINGTON,Glacial Lakes & Prairies ISR,"Sioux Falls (Mitchell), SD - IA - MN - NE DMA",Not Assigned to Metro Area (NAM),Non Metro GMR.
+SOUTH DAKOTA,SD,CUSTER,"Black Hills, Badlands & Lakes ISR","Rapid City, SD - MT - NE - WY DMA",Not Assigned to Metro Area (NAM),Non Metro GMR.
+SOUTH DAKOTA,SD,DAVISON,Great Lakes ISR,"Sioux Falls (Mitchell), SD - IA - MN - NE DMA",Not Assigned to Metro Area (NAM),Non Metro GMR.
+SOUTH DAKOTA,SD,DAY,Glacial Lakes & Prairies ISR,"Sioux Falls (Mitchell), SD - IA - MN - NE DMA",Not Assigned to Metro Area (NAM),Non Metro GMR.
+SOUTH DAKOTA,SD,DEUEL,Glacial Lakes & Prairies ISR,"Sioux Falls (Mitchell), SD - IA - MN - NE DMA",Not Assigned to Metro Area (NAM),Non Metro GMR.
+SOUTH DAKOTA,SD,DOUGLAS,Great Lakes ISR,"Sioux Falls (Mitchell), SD - IA - MN - NE DMA",Not Assigned to Metro Area (NAM),Non Metro GMR.
+SOUTH DAKOTA,SD,EDMUNDS,Great Lakes ISR,"Sioux Falls (Mitchell), SD - IA - MN - NE DMA",Not Assigned to Metro Area (NAM),Non Metro GMR.
+SOUTH DAKOTA,SD,FALL RIVER,"Black Hills, Badlands & Lakes ISR","Rapid City, SD - MT - NE - WY DMA",Not Assigned to Metro Area (NAM),Non Metro GMR.
+SOUTH DAKOTA,SD,FAULK,Glacial Lakes & Prairies ISR,"Sioux Falls (Mitchell), SD - IA - MN - NE DMA",Not Assigned to Metro Area (NAM),Non Metro GMR.
+SOUTH DAKOTA,SD,GRANT,Glacial Lakes & Prairies ISR,"Sioux Falls (Mitchell), SD - IA - MN - NE DMA",Not Assigned to Metro Area (NAM),Non Metro GMR.
+SOUTH DAKOTA,SD,GREGORY,Great Lakes ISR,"Sioux Falls (Mitchell), SD - IA - MN - NE DMA",Not Assigned to Metro Area (NAM),Non Metro GMR.
+SOUTH DAKOTA,SD,HAAKON,"Black Hills, Badlands & Lakes ISR","Rapid City, SD - MT - NE - WY DMA",Not Assigned to Metro Area (NAM),Non Metro GMR.
+SOUTH DAKOTA,SD,HAMLIN,Glacial Lakes & Prairies ISR,"Sioux Falls (Mitchell), SD - IA - MN - NE DMA",Not Assigned to Metro Area (NAM),Non Metro GMR.
+SOUTH DAKOTA,SD,HAND,Glacial Lakes & Prairies ISR,"Sioux Falls (Mitchell), SD - IA - MN - NE DMA",Not Assigned to Metro Area (NAM),Non Metro GMR.
+SOUTH DAKOTA,SD,HANSON,Dakota Heritage & Lakes ISR,"Sioux Falls (Mitchell), SD - IA - MN - NE DMA",Not Assigned to Metro Area (NAM),Non Metro GMR.
+SOUTH DAKOTA,SD,HARDING,"Black Hills, Badlands & Lakes ISR","Rapid City, SD - MT - NE - WY DMA",Not Assigned to Metro Area (NAM),Non Metro GMR.
+SOUTH DAKOTA,SD,HUGHES,Great Lakes ISR,"Sioux Falls (Mitchell), SD - IA - MN - NE DMA",Not Assigned to Metro Area (NAM),Non Metro GMR.
+SOUTH DAKOTA,SD,HUTCHINSON,Dakota Heritage & Lakes ISR,"Sioux Falls (Mitchell), SD - IA - MN - NE DMA",Not Assigned to Metro Area (NAM),Non Metro GMR.
+SOUTH DAKOTA,SD,HYDE,Great Lakes ISR,"Sioux Falls (Mitchell), SD - IA - MN - NE DMA",Not Assigned to Metro Area (NAM),Non Metro GMR.
+SOUTH DAKOTA,SD,JACKSON,"Black Hills, Badlands & Lakes ISR","Rapid City, SD - MT - NE - WY DMA",Not Assigned to Metro Area (NAM),Non Metro GMR.
+SOUTH DAKOTA,SD,JERAULD,Great Lakes ISR,"Sioux Falls (Mitchell), SD - IA - MN - NE DMA",Not Assigned to Metro Area (NAM),Non Metro GMR.
+SOUTH DAKOTA,SD,JONES,"Black Hills, Badlands & Lakes ISR","Sioux Falls (Mitchell), SD - IA - MN - NE DMA",Not Assigned to Metro Area (NAM),Non Metro GMR.
+SOUTH DAKOTA,SD,KINGSBURY,Glacial Lakes & Prairies ISR,"Sioux Falls (Mitchell), SD - IA - MN - NE DMA",Not Assigned to Metro Area (NAM),Non Metro GMR.
+SOUTH DAKOTA,SD,LAKE,Dakota Heritage & Lakes ISR,"Sioux Falls (Mitchell), SD - IA - MN - NE DMA",Not Assigned to Metro Area (NAM),Non Metro GMR.
+SOUTH DAKOTA,SD,LAWRENCE,"Black Hills, Badlands & Lakes ISR","Rapid City, SD - MT - NE - WY DMA",Not Assigned to Metro Area (NAM),Non Metro GMR.
+SOUTH DAKOTA,SD,LINCOLN,Dakota Heritage & Lakes ISR,"Sioux Falls (Mitchell), SD - IA - MN - NE DMA","Sioux Falls, SD MSA",Sioux Falls Metro GMR.
+SOUTH DAKOTA,SD,LYMAN,Great Lakes ISR,"Sioux Falls (Mitchell), SD - IA - MN - NE DMA",Not Assigned to Metro Area (NAM),Non Metro GMR.
+SOUTH DAKOTA,SD,MCCOOK,Dakota Heritage & Lakes ISR,"Sioux Falls (Mitchell), SD - IA - MN - NE DMA",Not Assigned to Metro Area (NAM),Non Metro GMR.
+SOUTH DAKOTA,SD,MCPHERSON,Great Lakes ISR,"Sioux Falls (Mitchell), SD - IA - MN - NE DMA",Not Assigned to Metro Area (NAM),Non Metro GMR.
+SOUTH DAKOTA,SD,MARSHALL,Glacial Lakes & Prairies ISR,"Sioux Falls (Mitchell), SD - IA - MN - NE DMA",Not Assigned to Metro Area (NAM),Non Metro GMR.
+SOUTH DAKOTA,SD,MEADE,"Black Hills, Badlands & Lakes ISR","Rapid City, SD - MT - NE - WY DMA",Not Assigned to Metro Area (NAM),Non Metro GMR.
+SOUTH DAKOTA,SD,MELLETTE,"Black Hills, Badlands & Lakes ISR","Sioux Falls (Mitchell), SD - IA - MN - NE DMA",Not Assigned to Metro Area (NAM),Non Metro GMR.
+SOUTH DAKOTA,SD,MINER,Dakota Heritage & Lakes ISR,"Sioux Falls (Mitchell), SD - IA - MN - NE DMA",Not Assigned to Metro Area (NAM),Non Metro GMR.
+SOUTH DAKOTA,SD,MINNEHAHA,Dakota Heritage & Lakes ISR,"Sioux Falls (Mitchell), SD - IA - MN - NE DMA","Sioux Falls, SD MSA",Sioux Falls Metro GMR.
+SOUTH DAKOTA,SD,MOODY,Glacial Lakes & Prairies ISR,"Sioux Falls (Mitchell), SD - IA - MN - NE DMA",Not Assigned to Metro Area (NAM),Non Metro GMR.
+SOUTH DAKOTA,SD,PENNINGTON,"Black Hills, Badlands & Lakes ISR","Rapid City, SD - MT - NE - WY DMA","Rapid City, SD MSA",Rapid City Metro GMR.
+SOUTH DAKOTA,SD,POTTER,Great Lakes ISR,"Sioux Falls (Mitchell), SD - IA - MN - NE DMA",Not Assigned to Metro Area (NAM),Non Metro GMR.
+SOUTH DAKOTA,SD,ROBERTS,Glacial Lakes & Prairies ISR,"Sioux Falls (Mitchell), SD - IA - MN - NE DMA",Not Assigned to Metro Area (NAM),Non Metro GMR.
+SOUTH DAKOTA,SD,SANBORN,Great Lakes ISR,"Sioux Falls (Mitchell), SD - IA - MN - NE DMA",Not Assigned to Metro Area (NAM),Non Metro GMR.
+SOUTH DAKOTA,SD,SHANNON,"Black Hills, Badlands & Lakes ISR","Rapid City, SD - MT - NE - WY DMA",Not Assigned to Metro Area (NAM),Non Metro GMR.
+SOUTH DAKOTA,SD,SPINK,Glacial Lakes & Prairies ISR,"Sioux Falls (Mitchell), SD - IA - MN - NE DMA",Not Assigned to Metro Area (NAM),Non Metro GMR.
+SOUTH DAKOTA,SD,STANLEY,Great Lakes ISR,"Sioux Falls (Mitchell), SD - IA - MN - NE DMA",Not Assigned to Metro Area (NAM),Non Metro GMR.
+SOUTH DAKOTA,SD,SULLY,Great Lakes ISR,"Sioux Falls (Mitchell), SD - IA - MN - NE DMA",Not Assigned to Metro Area (NAM),Non Metro GMR.
+SOUTH DAKOTA,SD,TODD,"Black Hills, Badlands & Lakes ISR","Sioux Falls (Mitchell), SD - IA - MN - NE DMA",Not Assigned to Metro Area (NAM),Non Metro GMR.
+SOUTH DAKOTA,SD,TRIPP,Great Lakes ISR,"Sioux Falls (Mitchell), SD - IA - MN - NE DMA",Not Assigned to Metro Area (NAM),Non Metro GMR.
+SOUTH DAKOTA,SD,TURNER,Dakota Heritage & Lakes ISR,"Sioux Falls (Mitchell), SD - IA - MN - NE DMA",Not Assigned to Metro Area (NAM),Non Metro GMR.
+SOUTH DAKOTA,SD,WALWORTH,Great Lakes ISR,"Sioux Falls (Mitchell), SD - IA - MN - NE DMA",Not Assigned to Metro Area (NAM),Non Metro GMR.
+SOUTH DAKOTA,SD,YANKTON,Dakota Heritage & Lakes ISR,"Sioux Falls (Mitchell), SD - IA - MN - NE DMA",Not Assigned to Metro Area (NAM),Non Metro GMR.
+SOUTH DAKOTA,SD,ZIEBACH,"Black Hills, Badlands & Lakes ISR","Rapid City, SD - MT - NE - WY DMA",Not Assigned to Metro Area (NAM),Non Metro GMR.
+WYOMING,WY,ALBANY,Medicine Bow-Flaming Gorge ISR,"Denver, CO - NE - NV - WY DMA",Not Assigned to Metro Area (NAM),Non Metro GMR.
+WYOMING,WY,CAMPBELL,Devils Tower-Buffalo Bill ISR,"Denver, CO - NE - NV - WY DMA",Not Assigned to Metro Area (NAM),Non Metro GMR.
+WYOMING,WY,CARBON,Medicine Bow-Flaming Gorge ISR,"Denver, CO - NE - NV - WY DMA",Not Assigned to Metro Area (NAM),Non Metro GMR.
+WYOMING,WY,CROOK,Devils Tower-Buffalo Bill ISR,"Rapid City, SD - MT - NE - WY DMA",Not Assigned to Metro Area (NAM),Non Metro GMR.
+WYOMING,WY,NIOBRARA,Oregon Trail-Rendezvous ISR,"Denver, CO - NE - NV - WY DMA",Not Assigned to Metro Area (NAM),Non Metro GMR.
+WYOMING,WY,PLATTE,Oregon Trail-Rendezvous ISR,"Denver, CO - NE - NV - WY DMA",Not Assigned to Metro Area (NAM),Non Metro GMR.
+WYOMING,WY,SHERIDAN,Devils Tower-Buffalo Bill ISR,"Rapid City, SD - MT - NE - WY DMA",Not Assigned to Metro Area (NAM),Non Metro GMR.
+WYOMING,WY,WESTON,Devils Tower-Buffalo Bill ISR,"Rapid City, SD - MT - NE - WY DMA",Not Assigned to Metro Area (NAM),Non Metro GMR.

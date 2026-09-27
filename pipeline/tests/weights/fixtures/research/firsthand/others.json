@@ -1,0 +1,443 @@
+[
+ {
+  "group": "Sinclair",
+  "source_id": "KBAK",
+  "market_or_region": "Bakersfield, CA",
+  "states": [
+   "CA"
+  ],
+  "origin": "https://bakersfieldnow.com",
+  "closings_url": "https://bakersfieldnow.com/weather/closings",
+  "status": 200,
+  "robots": {
+   "page": "allowed (robots.txt HTTP 200; Allow: /)",
+   "data": "unreachable (robots.txt fetch failed: ConnectError: [SSL: CERTIFICATE_VERIFY_FAILED] certificate verify failed: unable to get local issuer certificate (_ssl.c); treated as disallowed, not fetched"
+  },
+  "rendering": "iframe",
+  "variant": "sinclair-next-external-iframe",
+  "data_endpoint": {
+   "url": "https://alertline.kern.org/",
+   "method": "GET",
+   "shape": "Not read: TLS verification of alertline.kern.org failed ('unable to get local issuer certificate'); http:// redirects to https."
+  },
+  "empty_state_text": null,
+  "vendor": "Kern County Superintendent of Schools AlertLine (alertline.kern.org)",
+  "terms_note": "Station footers link https://sbgi.net/terms-conditions/ (read 2026-09-26): a grep of its text for robot/spider/scrape/crawl/data-mining/automated clauses found none; it allows display and printing 'for your personal, non-commercial use'. Station robots.txt blocks AI crawlers (GPTBot, ClaudeBot, anthropic-ai, CCBot and others) by name, not snowlight-pipeline.",
+  "wayback_patterns": [
+   "https://bakersfieldnow.com/weather/closings*",
+   "alertline.kern.org/*"
+  ],
+  "checked_at": "2026-09-26T17:35:12Z",
+  "notes": "Sinclair station map: KBAK, KBFX-CD; CBS, FOX; O&O. KBAK frames the Kern County school alert line: a county-level California system (new).",
+  "reach_schools_60mi": null,
+  "lead_id": null
+ },
+ {
+  "group": "Sinclair",
+  "source_id": "WBFF",
+  "market_or_region": "Baltimore, MD",
+  "states": [
+   "MD"
+  ],
+  "origin": "https://foxbaltimore.com",
+  "closings_url": "https://foxbaltimore.com/weather/closings",
+  "status": 200,
+  "robots": {
+   "page": "allowed (robots.txt HTTP 200; Allow: /)",
+   "data": "allowed (robots.txt HTTP 403: unavailable, unrestricted per RFC 9309)"
+  },
+  "rendering": "iframe",
+  "variant": "sinclair-next-external-newsticker",
+  "data_endpoint": {
+   "url": "https://ftptransfer.sinclairstoryline.com/wbff/closings/closings.html",
+   "method": "GET",
+   "shape": "NewsTicker-style HTML export (observed only at WBFF/KCNC/FOX and RIBA): TABLE with TD.timestamp 'UPDATED <DAY>, <MON> <D> AT <h:mm> <AM|PM>' then rows TD.orgname / FONT.status; empty file holds TD.status or TD.prereporting 'There are no active records at this time.' Meta refresh 20 s; ends with a WorldNow iframe-resize script."
+  },
+  "empty_state_text": "There are no active records at this time.",
+  "vendor": "ftptransfer.sinclairstoryline.com (Sinclair); NewsTicker-style export",
+  "terms_note": "Station footers link https://sbgi.net/terms-conditions/ (read 2026-09-26): a grep of its text for robot/spider/scrape/crawl/data-mining/automated clauses found none; it allows display and printing 'for your personal, non-commercial use'. Station robots.txt blocks AI crawlers (GPTBot, ClaudeBot, anthropic-ai, CCBot and others) by name, not snowlight-pipeline.",
+  "wayback_patterns": [
+   "https://foxbaltimore.com/weather/closings*",
+   "https://ftptransfer.sinclairstoryline.com/wbff/closings/*"
+  ],
+  "checked_at": "2026-09-26T17:35:12Z",
+  "notes": "Sinclair station map: WBFF; FOX; O&O. The only Sinclair page seen framing the bare ftptransfer host; its robots.txt answers 403 (unrestricted). Whether other call signs are served there was NOT tested: the station hosts disallow /resources/ftptransfer/, and reading their files from this host would sidestep that rule; owner decision.",
+  "reach_schools_60mi": 3120,
+  "lead_id": null
+ },
+ {
+  "group": "Sinclair",
+  "source_id": "KFXL",
+  "market_or_region": "Lincoln - Hastings - Kearney, NE",
+  "states": [
+   "NE"
+  ],
+  "origin": "https://foxnebraska.com",
+  "closings_url": "https://foxnebraska.com/weather/closings",
+  "status": 200,
+  "robots": {
+   "page": "allowed (robots.txt HTTP 200; Allow: /)",
+   "data": "allowed (robots.txt HTTP 404: unavailable, unrestricted per RFC 9309)"
+  },
+  "rendering": "script",
+  "variant": "weatherthreat-js",
+  "data_endpoint": {
+   "url": "https://wt1.weatherthreat.com/wt_list/viewClosings.php?media_id=ntv&plugin=1&server=wt1&version=2.0.2&directory=",
+   "method": "GET",
+   "shape": "See the WeatherThreat record (JavaScript that fills var closings)."
+  },
+  "empty_state_text": "No closings were found that match the selected criteria.",
+  "vendor": "WeatherThreat.com (Hollman Media), media_id=ntv",
+  "terms_note": "Station footers link https://sbgi.net/terms-conditions/ (read 2026-09-26): a grep of its text for robot/spider/scrape/crawl/data-mining/automated clauses found none; it allows display and printing 'for your personal, non-commercial use'. Station robots.txt blocks AI crawlers (GPTBot, ClaudeBot, anthropic-ai, CCBot and others) by name, not snowlight-pipeline.",
+  "wayback_patterns": [
+   "wt1.weatherthreat.com/wt_list/viewClosings.php?media_id=ntv*",
+   "https://foxnebraska.com/weather/closings*"
+  ],
+  "checked_at": "2026-09-26T17:33:04Z",
+  "notes": "Sinclair station map: KFXL; FOX; O&O. The page's htmlEmbed holds the WeatherThreat plugin v2.0.1 inline, broken: the second script block was replaced by pasted chatbot text ('Certainly! It looks like there might be a missing opening <script> tag...'), so the list probably never loads here.",
+  "reach_schools_60mi": 826,
+  "lead_id": null
+ },
+ {
+  "group": "Sinclair",
+  "source_id": "WJAR",
+  "market_or_region": "Providence-New Bedford, RI",
+  "states": [
+   "RI"
+  ],
+  "origin": "https://turnto10.com",
+  "closings_url": "https://turnto10.com/weather/closings",
+  "status": 200,
+  "robots": {
+   "page": "allowed (robots.txt HTTP 200; Allow: /)",
+   "data": "allowed (robots.txt HTTP 200; no rule matches)"
+  },
+  "rendering": "iframe",
+  "variant": "riba-newsticker",
+  "data_endpoint": {
+   "url": "https://www.ribroadcasters.com/news_and_events/closings_delays/",
+   "method": "GET",
+   "shape": "See the RIBA record (server-rendered NewsTicker-style table)."
+  },
+  "empty_state_text": null,
+  "vendor": "Rhode Island Broadcasters Association",
+  "terms_note": "Station footers link https://sbgi.net/terms-conditions/ (read 2026-09-26): a grep of its text for robot/spider/scrape/crawl/data-mining/automated clauses found none; it allows display and printing 'for your personal, non-commercial use'. Station robots.txt blocks AI crawlers (GPTBot, ClaudeBot, anthropic-ai, CCBot and others) by name, not snowlight-pipeline.",
+  "wayback_patterns": [
+   "www.ribroadcasters.com/news_and_events/closings_delays/*"
+  ],
+  "checked_at": "2026-09-26T17:35:12Z",
+  "notes": "Sinclair station map: WJAR; NBC; O&O. WJAR frames the RIBA statewide list.",
+  "reach_schools_60mi": 2378,
+  "lead_id": null
+ },
+ {
+  "group": "Sinclair",
+  "source_id": "WVAH",
+  "market_or_region": "Charleston - Huntington, WV",
+  "states": [
+   "WV"
+  ],
+  "origin": "https://wvah.com",
+  "closings_url": null,
+  "status": null,
+  "robots": {
+   "page": "unreachable (robots.txt fetch failed: ConnectError: [SSL: CERTIFICATE_VERIFY_FAILED] certificate verify failed: certificate has expired (_ssl.c:1000)); treated as disallowed, not fetched",
+   "data": null
+  },
+  "rendering": "none-found",
+  "variant": "robots-unreachable",
+  "data_endpoint": null,
+  "empty_state_text": null,
+  "vendor": null,
+  "terms_note": "Station footers link https://sbgi.net/terms-conditions/ (read 2026-09-26): a grep of its text for robot/spider/scrape/crawl/data-mining/automated clauses found none; it allows display and printing 'for your personal, non-commercial use'. Station robots.txt blocks AI crawlers (GPTBot, ClaudeBot, anthropic-ai, CCBot and others) by name, not snowlight-pipeline.",
+  "wayback_patterns": [
+   "https://wvah.com/weather/closings*"
+  ],
+  "checked_at": "2026-09-26T17:33:45Z",
+  "notes": "Sinclair station map: WVAH; ; JSA. robots.txt could not be read (TLS certificate expired), so nothing on the host was fetched.",
+  "reach_schools_60mi": 433,
+  "lead_id": null
+ },
+ {
+  "group": "CBS News and Stations",
+  "source_id": "KCNC",
+  "market_or_region": "Denver",
+  "states": [
+   "CO"
+  ],
+  "origin": "https://www.cbsnews.com/colorado/",
+  "closings_url": "https://www.cbsnews.com/colorado/school-closings/",
+  "status": 200,
+  "robots": {
+   "page": "allowed (robots.txt HTTP 200; no rule matches)",
+   "data": "allowed (robots.txt HTTP 403: unavailable, unrestricted per RFC 9309)"
+  },
+  "rendering": "iframe",
+  "variant": "newsticker-export",
+  "data_endpoint": {
+   "url": "https://static.cbslocal.com/Integrations/SchoolClosings/PRODUCTION/CBS/kcnc/NEWSROOM/closings.html",
+   "method": "GET",
+   "shape": "NewsTicker-style HTML export: TABLE with TD.timestamp 'UPDATED SATURDAY, SEP 26 AT 1:35 PM'; empty file has one TD.status row. Populated rows (by other NewsTicker exports such as RIBA): TD.orgname group headers and FONT.orgname name + FONT.status status."
+  },
+  "empty_state_text": "There are no active records at this time.",
+  "vendor": "static.cbslocal.com NewsTicker export (NEWSROOM)",
+  "terms_note": "Footer links https://legal.paramount.com/us/en/cbsi/terms-of-use (read 2026-09-26): users may not 'Engage in unauthorized spidering, \u201cscraping,\u201d data mining or harvesting of Content, or use any other unauthorized automated means to gather data'. Blocker on its face.",
+  "wayback_patterns": [
+   "https://www.cbsnews.com/colorado/school-closings/*",
+   "https://static.cbslocal.com/Integrations/SchoolClosings/PRODUCTION/CBS/kcnc/*"
+  ],
+  "checked_at": "2026-09-26T17:41:54Z",
+  "notes": "Unlike the other CBS pages, Colorado frames the cbslocal-era file on static.cbslocal.com (robots.txt 403, unrestricted); fetched: 200, 619 bytes. Also frames an engage.cbslocal.com signup form.",
+  "reach_schools_60mi": 1354,
+  "lead_id": "kcnc"
+ },
+ {
+  "group": "CBS News and Stations",
+  "source_id": "WBBM",
+  "market_or_region": "Chicago",
+  "states": [
+   "IL",
+   "IN"
+  ],
+  "origin": "https://www.cbsnews.com/chicago/",
+  "closings_url": "https://www.cbsnews.com/chicago/school-closings/",
+  "status": 200,
+  "robots": {
+   "page": "allowed (robots.txt HTTP 200; no rule matches)",
+   "data": "allowed (robots.txt HTTP 403: unavailable, unrestricted per RFC 9309)"
+  },
+  "rendering": "iframe",
+  "variant": "ecc-react",
+  "data_endpoint": {
+   "url": "https://media.psg.nexstardigital.net/WGNR/closings/closings.json",
+   "method": "GET",
+   "shape": "See the ECC record."
+  },
+  "empty_state_text": "No closings to report.",
+  "vendor": "Emergency Closing Center",
+  "terms_note": "Footer links https://legal.paramount.com/us/en/cbsi/terms-of-use (read 2026-09-26): users may not 'Engage in unauthorized spidering, \u201cscraping,\u201d data mining or harvesting of Content, or use any other unauthorized automated means to gather data'. Blocker on its face.",
+  "wayback_patterns": [
+   "https://www.cbsnews.com/chicago/school-closings/*"
+  ],
+  "checked_at": "2026-09-26T17:41:10Z",
+  "notes": "Frames https://wgnr-closings.emergencyclosingcenter.com/index.html.",
+  "reach_schools_60mi": 3314,
+  "lead_id": "wbbm"
+ },
+ {
+  "group": "ABC Owned Television Stations",
+  "source_id": "KABC",
+  "market_or_region": "Los Angeles",
+  "states": [
+   "CA"
+  ],
+  "origin": "https://abc7.com",
+  "closings_url": "https://abc7.com/community/schoolclosings/",
+  "status": 200,
+  "robots": {
+   "page": "allowed (robots.txt HTTP 200; no rule matches)",
+   "data": null
+  },
+  "rendering": "server",
+  "variant": "abc-otv-school-list",
+  "data_endpoint": null,
+  "empty_state_text": "No Closings at this time.",
+  "vendor": "ABC OTV (abcotvs) site",
+  "terms_note": "Footer links https://disneytermsofuse.com/; the served HTML held only 867 characters of text (script-rendered), so the terms were not read.",
+  "wayback_patterns": [
+   "https://abc7.com/community/schoolclosings/*"
+  ],
+  "checked_at": "2026-09-26T17:42:43Z",
+  "notes": "Server-rendered: section.school-list > div.meta ('Last updated: 02/12/2019 08:39pm') > li.school-closing > span.school-closing-name. Populated rows not seen; the ABC11 scraper in the leads used the same classes. A 2019 'Last updated' means this market has not listed a closing since then.",
+  "reach_schools_60mi": null,
+  "lead_id": null
+ },
+ {
+  "group": "Independent (News 12 / Altice)",
+  "source_id": "News 12 CT",
+  "market_or_region": "Connecticut (Fairfield County)",
+  "states": [
+   "CT"
+  ],
+  "origin": "https://itv.news12.com",
+  "closings_url": "https://itv.news12.com/school_closings/closings.jsp?region=CT",
+  "status": 200,
+  "robots": {
+   "page": "allowed (robots.txt HTTP 404: unavailable, unrestricted per RFC 9309)",
+   "data": null
+  },
+  "rendering": "server",
+  "variant": "news12-jsp",
+  "data_endpoint": null,
+  "empty_state_text": "No 'Today' closings/delays have been submitted for this region. / No closings/delays have been submitted for tomorrow for this region.",
+  "vendor": "News 12 ITV closings JSP (jQuery Mobile, tablesorter)",
+  "terms_note": "Footer links http://www.news12.com/story/35212665/terms-of-service; not read.",
+  "wayback_patterns": [
+   "itv.news12.com/school_closings/closings.jsp?region=CT*"
+  ],
+  "checked_at": "2026-09-26T17:48:29Z",
+  "notes": "Server-rendered Today and Tomorrow tabs ('Today Sat Sep 26, 2026' / 'Tomorrow Sun Sep 27, 2026'), each a sortable table Name | City | Status. Populated at check time (businesses and churches, e.g. '2-hour delayed start').",
+  "reach_schools_60mi": null,
+  "lead_id": null
+ },
+ {
+  "group": "Independent (Townsquare Media radio)",
+  "source_id": "NJ 101.5",
+  "market_or_region": "New Jersey (statewide, by county)",
+  "states": [
+   "NJ"
+  ],
+  "origin": "https://nj1015.com",
+  "closings_url": "https://nj1015.com/closings/",
+  "status": 200,
+  "robots": {
+   "page": "allowed (robots.txt HTTP 200; no rule matches)",
+   "data": "allowed (robots.txt HTTP 200; Allow: /wp-content/uploads)"
+  },
+  "rendering": "iframe",
+  "variant": "townsquare-njclosings",
+  "data_endpoint": {
+   "url": "https://nj1015.com/wp-content/uploads/njclosings/ByCountyclosings.html",
+   "method": "GET",
+   "shape": "Static HTML (styles from tsm-css.s3.amazonaws.com/closings/styles.css): 'Closings Last Updated at 1:49pm on 9/26/2026' then table#closings-table; empty has one bold row. Populated grouping (by county, per the file name) not seen."
+  },
+  "empty_state_text": "No Closings have been reported at this time",
+  "vendor": "Townsquare Media closings export",
+  "terms_note": "https://nj1015.com/terms/ (read 2026-09-26): no robot/scrape clause found.",
+  "wayback_patterns": [
+   "https://nj1015.com/closings/*",
+   "https://nj1015.com/wp-content/uploads/njclosings/*"
+  ],
+  "checked_at": "2026-09-26T17:53:34Z",
+  "notes": "New statewide NJ source (the page calls itself 'the statewide source for closings'). Page notes that entries marked 'TEST REPORT' are not actual closings. Other Townsquare sites checked: wgna.com/closings frames a dead schoolclosingsnetwork.com URL (404); wnbf.com and wibx950.com /closings resolve to old articles; kfyo.com/closings is 404.",
+  "reach_schools_60mi": null,
+  "lead_id": null
+ },
+ {
+  "group": "Aggregator",
+  "source_id": "ECC",
+  "market_or_region": "Chicago (Emergency Closing Center)",
+  "states": [
+   "IL",
+   "IN",
+   "WI"
+  ],
+  "origin": "https://www.emergencyclosingcenter.com",
+  "closings_url": "https://wgnr-closings.emergencyclosingcenter.com/index.html",
+  "status": 200,
+  "robots": {
+   "page": "allowed (robots.txt HTTP 403: unavailable, unrestricted per RFC 9309)",
+   "data": "allowed (robots.txt HTTP 403: unavailable, unrestricted per RFC 9309)"
+  },
+  "rendering": "script",
+  "variant": "ecc-react",
+  "data_endpoint": {
+   "url": "https://media.psg.nexstardigital.net/WGNR/closings/closings.json?timestamp={ms}",
+   "method": "GET",
+   "shape": "xml2js-style JSON. Empty: {\"$\":{\"Time\":\"09/26/2026 12:30:31 PM\"}}. Populated: {\"$\":{...},\"Closing\":[{...,\"Name1\":[str],\"City\":[str],\"EntityType\":[str],...}]} (arrays of one string, per the app's use of e.Name1[0], e.City[0], e.EntityType[0]). Entity types filtered by the tabs: Public School, Private School, College, Day Care, Government, Business, Religious. App polls every 120 s."
+  },
+  "empty_state_text": "No closings to report.",
+  "vendor": "ECC React app (create-react-app) on WGN Radio's data (Nexstar PSG host); intake via schoolclosings.org scstart.aspx?id=WGN",
+  "terms_note": "Terms not found. media.psg.nexstardigital.net is a Nexstar host (robots.txt 403); Nexstar's terms (see the other scout's file) may apply to it.",
+  "wayback_patterns": [
+   "wgnr-closings.emergencyclosingcenter.com/*",
+   "media.psg.nexstardigital.net/WGNR/closings/closings.json*",
+   "www.emergencyclosingcenter.com/complete.html"
+  ],
+  "checked_at": "2026-09-26T17:40:49Z",
+  "notes": "Found by reading main.c73bd0ff.chunk.js (no browser needed). The bundle also references https://523jwhpmcc.execute-api.us-east-1.amazonaws.com/dev/closings/{path} (getData); not called. Legacy www.emergencyclosingcenter.com/complete.html now 403 AccessDenied (S3). Used by CBS 2, FOX 32 and NBC 5 Chicago (NBC's URL redirects to ECC); ABC7 Chicago frames a dead S3 copy.",
+  "reach_schools_60mi": 3314,
+  "lead_id": "ecc"
+ },
+ {
+  "group": "Statewide system",
+  "source_id": "WVEIS",
+  "market_or_region": "West Virginia statewide",
+  "states": [
+   "WV"
+  ],
+  "origin": "https://wveis.k12.wv.us",
+  "closings_url": null,
+  "status": null,
+  "robots": {
+   "page": "disallowed (robots.txt HTTP 200; Disallow: /)",
+   "data": "disallowed (robots.txt HTTP 200; Disallow: /)"
+  },
+  "rendering": "none-found",
+  "variant": "robots-blocked",
+  "data_endpoint": {
+   "url": "https://wveis.k12.wv.us/closings/rss.php",
+   "method": "GET",
+   "shape": "RSS per the leads; not fetched."
+  },
+  "empty_state_text": null,
+  "vendor": "WV Department of Education",
+  "terms_note": "Not read.",
+  "wayback_patterns": [
+   "wveis.k12.wv.us/closings/*",
+   "wveis.k12.wv.us/closings/rss.php*"
+  ],
+  "checked_at": "2026-09-26T17:49:22Z",
+  "notes": "robots.txt is 'User-Agent: * / Disallow: /', so neither the page nor the RSS was fetched. The highest-value statewide source is closed to us by robots; ask the WVDE for permission or a feed.",
+  "reach_schools_60mi": 769,
+  "lead_id": "wveis"
+ },
+ {
+  "group": "Statewide system",
+  "source_id": "RIBA",
+  "market_or_region": "Rhode Island statewide (plus nearby MA)",
+  "states": [
+   "RI",
+   "MA"
+  ],
+  "origin": "https://www.ribroadcasters.com",
+  "closings_url": "https://www.ribroadcasters.com/news_and_events/closings_delays/",
+  "status": 200,
+  "robots": {
+   "page": "allowed (robots.txt HTTP 200; no rule matches)",
+   "data": null
+  },
+  "rendering": "server",
+  "variant": "riba-newsticker",
+  "data_endpoint": null,
+  "empty_state_text": null,
+  "vendor": "Rhode Island Broadcasters Association; NewsTicker-style export",
+  "terms_note": "Not read.",
+  "wayback_patterns": [
+   "www.ribroadcasters.com/News_and_Events/Closings_Delays/*",
+   "www.ribroadcasters.com/news_and_events/closings_delays/*"
+  ],
+  "checked_at": "2026-09-26T17:49:21Z",
+  "notes": "Populated at check time (e.g. RI PUBLIC SCHOOLS > Pawtucket: 'Pawtucket Pub. Schools: All Activities Canceled Today'; COLLEGES > Fall River ...). Markup: TD.timestamp 'UPDATED SATURDAY, SEP 26 AT 1:33 PM'; group header TD.orgname > B > A[name=id] ('RI PUBLIC SCHOOLS', 'COLLEGES'); rows TD (FONT.status town) + TD (FONT.orgname name ': ' FONT.status status). The http lead URL redirects to https. Framed by WJAR turnto10.com.",
+  "reach_schools_60mi": 390,
+  "lead_id": "riba"
+ },
+ {
+  "group": "Regional system",
+  "source_id": "Sonoma COE school closures",
+  "market_or_region": "Sonoma County CA",
+  "states": [
+   "CA"
+  ],
+  "origin": "https://www.scoe.org",
+  "closings_url": "https://www.scoe.org/for-families/school-closures",
+  "status": 200,
+  "robots": {
+   "page": "allowed (robots.txt HTTP 200; no rule matches)",
+   "data": null
+  },
+  "rendering": "server",
+  "variant": "county-office-page",
+  "data_endpoint": null,
+  "empty_state_text": "Any public school closures will be listed here.",
+  "vendor": "Sonoma County Office of Education",
+  "terms_note": "Not read.",
+  "wayback_patterns": [
+   "www.scoe.org/for-families/school-closures*"
+  ],
+  "checked_at": "2026-09-26T17:56:01Z",
+  "notes": "New CA county source (found by web search). Section 'School/District Closures' held only the placeholder line; populated markup unknown.",
+  "reach_schools_60mi": null,
+  "lead_id": null
+ }
+]

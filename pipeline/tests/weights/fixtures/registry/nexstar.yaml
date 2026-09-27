@@ -1,0 +1,361 @@
+platform:
+  id: nexstar
+stations:
+- id: nexstar-wjtv
+  platform: nexstar
+  call_sign: WJTV
+  name: WJTV / WHLT (wjtv.com)
+  market: Jackson MS
+  dma: Jackson, MS DMA
+  states: [MS]
+  counties:
+    basis: dma
+    source: 'DMA county list: alex-patton/US-TVDMA-BY-COUNTY usa-tvdma-county.csv at commit 7f254b8c1843c62ec976a71c40d366d45f6f29cd
+      (sha256 2e2cd00265a8d704...), names resolved to FIPS with the Census 2025 county Gazetteer; Connecticut
+      via the Census county-to-town crosswalk (snowlight.sources.stations.dma); market ''Jackson, MS DMA'''
+    fips: ['28001', '28007', '28021', '28029', '28037', '28049', '28051', '28053', '28055', '28063', '28065',
+      '28077', '28079', '28085', '28089', '28113', '28121', '28123', '28125', '28127', '28129', '28147',
+      '28149', '28163']
+  page_url: https://www.wjtv.com/weather/closings/
+  data_url: https://www.wjtv.com/wp-json/wp/v2/pages/1348846
+  export_url: null
+  archive_urls:
+  - https://www.wjtv.com/weather/closings/
+  - https://www.wjtv.com/wp-json/nxd_app/v1/closings_alerts
+  - https://www.wjtv.com/wp-json/wp/v2/pages/1348846
+  poll_minutes: null
+  status: active
+  evidence: 'First-hand check 2026-09-26T17:44:14Z (docs/research/firsthand/nexstar-tegna-scripps.json,
+    record WJTV): site https://www.wjtv.com. Closings page https://www.wjtv.com/weather/closings/ (''Closings'',
+    modified 2023-02-28T23:37:19), a closings-page article rendered on the server. Its HTML answers this
+    pipeline''s User-Agent with a PerimeterX challenge (HTTP 403, not worked around), so the same page
+    is read through the WordPress REST API: https://www.wjtv.com/wp-json/wp/v2/pages?slug=closings returned
+    page id 1348846 with the closings article (2026-09-26T23:04:04Z), and the poller reads https://www.wjtv.com/wp-json/wp/v2/pages/1348846
+    (a single page object, so a missing page is an error, never an empty list). Empty-state text: ''Most
+    recent closings and delays are listed here when there are active closures.'' The app feed https://www.wjtv.com/wp-json/nxd_app/v1/closings_alerts
+    carries the same rows (they matched at WTNH and WPRI on 2026-09-26); it is kept as an archive URL.
+    Market: ''Jackson MS'' (first-hand record) is the crosswalk''s ''Jackson, MS DMA''.'
+  list_files: []
+  page_check: null
+  robots:
+  - url: https://www.wjtv.com/weather/closings/
+    checked_at: '2026-09-26T23:05:31Z'
+    state: parsed
+    allowed: true
+    rule: no rule matches
+    crawl_delay: null
+    disallowed_agents:
+    - anthropic-ai
+    - applebot-extended
+    - awariorssbot
+    - awariosmartbot
+    - bytespider
+    - ccbot
+    - chatgpt-user
+    - claude-web
+    - claudebot
+    - cohere-ai
+    - dataforseobot
+    - diffbot
+    - facebookbot
+    - friendlycrawler
+    - google-cloudvertexbot
+    - google-extended
+    - gptbot
+    - ia_archiver
+    - imagesiftbot
+    - magpie-crawler
+    - meta-externalagent
+    - news-please
+    - newsnow
+    - oai-searchbot
+    - omgili
+    - omgilibot
+    - peer39_crawler
+    - peer39_crawler/1.0
+    - perplexitybot
+    - quora-bot
+    - scrapy
+    - turnitinbot
+    sha256: d84beb7d6ff3600814fb07c4f784dc965a4e55ab3250481d79c4c8b460803969
+  - url: https://www.wjtv.com/wp-json/wp/v2/pages/1348846
+    checked_at: '2026-09-26T23:05:31Z'
+    state: parsed
+    allowed: true
+    rule: no rule matches
+    crawl_delay: null
+    disallowed_agents:
+    - anthropic-ai
+    - applebot-extended
+    - awariorssbot
+    - awariosmartbot
+    - bytespider
+    - ccbot
+    - chatgpt-user
+    - claude-web
+    - claudebot
+    - cohere-ai
+    - dataforseobot
+    - diffbot
+    - facebookbot
+    - friendlycrawler
+    - google-cloudvertexbot
+    - google-extended
+    - gptbot
+    - ia_archiver
+    - imagesiftbot
+    - magpie-crawler
+    - meta-externalagent
+    - news-please
+    - newsnow
+    - oai-searchbot
+    - omgili
+    - omgilibot
+    - peer39_crawler
+    - peer39_crawler/1.0
+    - perplexitybot
+    - quora-bot
+    - scrapy
+    - turnitinbot
+    sha256: d84beb7d6ff3600814fb07c4f784dc965a4e55ab3250481d79c4c8b460803969
+- id: nexstar-wpri
+  platform: nexstar
+  call_sign: WPRI
+  name: WPRI / WNAC (wpri.com)
+  market: Providence-New Bedford
+  dma: Providence, RI - New Bedford, MA DMA
+  states: [MA, RI]
+  counties:
+    basis: dma
+    source: 'DMA county list: alex-patton/US-TVDMA-BY-COUNTY usa-tvdma-county.csv at commit 7f254b8c1843c62ec976a71c40d366d45f6f29cd
+      (sha256 2e2cd00265a8d704...), names resolved to FIPS with the Census 2025 county Gazetteer; Connecticut
+      via the Census county-to-town crosswalk (snowlight.sources.stations.dma); market ''Providence, RI
+      - New Bedford, MA DMA'''
+    fips: ['25005', '44001', '44003', '44005', '44007', '44009']
+  page_url: https://www.wpri.com/weather/closings/
+  data_url: https://www.wpri.com/wp-json/wp/v2/pages/1820672
+  export_url: null
+  archive_urls:
+  - https://media.wpri.com/nxs-wpritv-media-us-east-1/html/toolbox/closings/WPRI_closings.html
+  - https://www.wpri.com/weather/closings/
+  - https://www.wpri.com/wp-json/nxd_app/v1/closings_alerts
+  - https://www.wpri.com/wp-json/wp/v2/pages/1820672
+  poll_minutes: null
+  status: active
+  evidence: 'First-hand check 2026-09-26T17:43:24Z (docs/research/firsthand/nexstar-tegna-scripps.json,
+    record WPRI): site https://www.wpri.com. Closings page https://www.wpri.com/weather/closings/ (''Closings'',
+    modified 2024-01-08T09:59:01), a closings-page article rendered on the server. Its HTML answers this
+    pipeline''s User-Agent with a PerimeterX challenge (HTTP 403, not worked around), so the same page
+    is read through the WordPress REST API: https://www.wpri.com/wp-json/wp/v2/pages?slug=closings returned
+    page id 1820672 with the closings article (2026-09-26T23:03:11Z), and the poller reads https://www.wpri.com/wp-json/wp/v2/pages/1820672
+    (a single page object, so a missing page is an error, never an empty list). The list held rows when
+    checked. Populated on 2026-09-26: 21 rows (first: Amer French Genealogical Society / Closed; Bridgemark
+    Inc / Closed; Bristol Community College / Closed). The app feed https://www.wpri.com/wp-json/nxd_app/v1/closings_alerts
+    carries the same rows (they matched at WTNH and WPRI on 2026-09-26); it is kept as an archive URL.
+    Market: ''Providence-New Bedford'' (first-hand record) is the crosswalk''s ''Providence, RI - New
+    Bedford, MA DMA''.'
+  list_files:
+  - url: https://media.wpri.com/nxs-wpritv-media-us-east-1/html/toolbox/closings/WPRI_closings.html
+    loaded_by: frame
+    seen: the station's older page https://www.wpri.com/weather/closings-delays/ (modified 2023-02-27)
+      frames it (first-hand check 2026-09-26); its host's robots.txt could not be read then
+  page_check: null
+  robots:
+  - url: https://www.wpri.com/weather/closings/
+    checked_at: '2026-09-26T23:05:33Z'
+    state: parsed
+    allowed: true
+    rule: no rule matches
+    crawl_delay: null
+    disallowed_agents:
+    - anthropic-ai
+    - applebot-extended
+    - awariorssbot
+    - awariosmartbot
+    - bytespider
+    - ccbot
+    - chatgpt-user
+    - claude-web
+    - claudebot
+    - cohere-ai
+    - dataforseobot
+    - diffbot
+    - facebookbot
+    - friendlycrawler
+    - google-cloudvertexbot
+    - google-extended
+    - gptbot
+    - ia_archiver
+    - imagesiftbot
+    - magpie-crawler
+    - meta-externalagent
+    - news-please
+    - newsnow
+    - oai-searchbot
+    - omgili
+    - omgilibot
+    - peer39_crawler
+    - peer39_crawler/1.0
+    - perplexitybot
+    - quora-bot
+    - scrapy
+    - turnitinbot
+    sha256: d700adbaba7730b32724ea79748f292d75d54165e033389fedccb4c514dd3849
+  - url: https://www.wpri.com/wp-json/wp/v2/pages/1820672
+    checked_at: '2026-09-26T23:05:33Z'
+    state: parsed
+    allowed: true
+    rule: no rule matches
+    crawl_delay: null
+    disallowed_agents:
+    - anthropic-ai
+    - applebot-extended
+    - awariorssbot
+    - awariosmartbot
+    - bytespider
+    - ccbot
+    - chatgpt-user
+    - claude-web
+    - claudebot
+    - cohere-ai
+    - dataforseobot
+    - diffbot
+    - facebookbot
+    - friendlycrawler
+    - google-cloudvertexbot
+    - google-extended
+    - gptbot
+    - ia_archiver
+    - imagesiftbot
+    - magpie-crawler
+    - meta-externalagent
+    - news-please
+    - newsnow
+    - oai-searchbot
+    - omgili
+    - omgilibot
+    - peer39_crawler
+    - peer39_crawler/1.0
+    - perplexitybot
+    - quora-bot
+    - scrapy
+    - turnitinbot
+    sha256: d700adbaba7730b32724ea79748f292d75d54165e033389fedccb4c514dd3849
+- id: nexstar-wtnh
+  platform: nexstar
+  call_sign: WTNH
+  name: WTNH / WCTX (wtnh.com)
+  market: Hartford-New Haven
+  dma: Hartford & New Haven, CT DMA
+  states: [CT]
+  counties:
+    basis: dma
+    source: 'DMA county list: alex-patton/US-TVDMA-BY-COUNTY usa-tvdma-county.csv at commit 7f254b8c1843c62ec976a71c40d366d45f6f29cd
+      (sha256 2e2cd00265a8d704...), names resolved to FIPS with the Census 2025 county Gazetteer; Connecticut
+      via the Census county-to-town crosswalk (snowlight.sources.stations.dma); market ''Hartford & New
+      Haven, CT DMA'''
+    fips: [09110, 09130, 09140, 09150, 09160, 09170, 09180, 09190]
+  page_url: https://www.wtnh.com/weather/closings/
+  data_url: https://www.wtnh.com/wp-json/wp/v2/pages/5894
+  export_url: null
+  archive_urls:
+  - https://www.wtnh.com/weather/closings/
+  - https://www.wtnh.com/wp-json/nxd_app/v1/closings_alerts
+  - https://www.wtnh.com/wp-json/wp/v2/pages/5894
+  poll_minutes: null
+  status: active
+  evidence: 'First-hand check 2026-09-26T17:42:57Z (docs/research/firsthand/nexstar-tegna-scripps.json,
+    record WTNH): site https://www.wtnh.com. Closings page https://www.wtnh.com/weather/closings/ (''Closings
+    & Delays in Connecticut'', modified 2026-06-12T10:45:27), a closings-page article rendered on the
+    server. Its HTML answers this pipeline''s User-Agent with a PerimeterX challenge (HTTP 403, not worked
+    around), so the same page is read through the WordPress REST API: https://www.wtnh.com/wp-json/wp/v2/pages?slug=closings
+    returned page id 5894 with the closings article (2026-09-26T23:02:45Z), and the poller reads https://www.wtnh.com/wp-json/wp/v2/pages/5894
+    (a single page object, so a missing page is an error, never an empty list). The list held rows when
+    checked. Populated on 2026-09-26: 2 rows (first: Short Beach Union Church Branford / Tag sale postponed
+    to Oct 3; UCC of Westerly / All Services Cancelled). The app feed https://www.wtnh.com/wp-json/nxd_app/v1/closings_alerts
+    carries the same rows (they matched at WTNH and WPRI on 2026-09-26); it is kept as an archive URL.
+    Market: ''Hartford-New Haven'' (first-hand record) is the crosswalk''s ''Hartford & New Haven, CT
+    DMA''.'
+  list_files: []
+  page_check: null
+  robots:
+  - url: https://www.wtnh.com/weather/closings/
+    checked_at: '2026-09-26T23:05:36Z'
+    state: parsed
+    allowed: true
+    rule: no rule matches
+    crawl_delay: null
+    disallowed_agents:
+    - anthropic-ai
+    - applebot-extended
+    - awariorssbot
+    - awariosmartbot
+    - bytespider
+    - ccbot
+    - chatgpt-user
+    - claude-web
+    - claudebot
+    - cohere-ai
+    - dataforseobot
+    - diffbot
+    - facebookbot
+    - friendlycrawler
+    - google-cloudvertexbot
+    - google-extended
+    - gptbot
+    - ia_archiver
+    - imagesiftbot
+    - magpie-crawler
+    - meta-externalagent
+    - news-please
+    - newsnow
+    - oai-searchbot
+    - omgili
+    - omgilibot
+    - peer39_crawler
+    - peer39_crawler/1.0
+    - perplexitybot
+    - quora-bot
+    - scrapy
+    - turnitinbot
+    sha256: 484f4e9109c326e9da2744056cc89e0a4527739a0342f2ac95cfb56900263cf6
+  - url: https://www.wtnh.com/wp-json/wp/v2/pages/5894
+    checked_at: '2026-09-26T23:05:36Z'
+    state: parsed
+    allowed: true
+    rule: no rule matches
+    crawl_delay: null
+    disallowed_agents:
+    - anthropic-ai
+    - applebot-extended
+    - awariorssbot
+    - awariosmartbot
+    - bytespider
+    - ccbot
+    - chatgpt-user
+    - claude-web
+    - claudebot
+    - cohere-ai
+    - dataforseobot
+    - diffbot
+    - facebookbot
+    - friendlycrawler
+    - google-cloudvertexbot
+    - google-extended
+    - gptbot
+    - ia_archiver
+    - imagesiftbot
+    - magpie-crawler
+    - meta-externalagent
+    - news-please
+    - newsnow
+    - oai-searchbot
+    - omgili
+    - omgilibot
+    - peer39_crawler
+    - peer39_crawler/1.0
+    - perplexitybot
+    - quora-bot
+    - scrapy
+    - turnitinbot
+    sha256: 484f4e9109c326e9da2744056cc89e0a4527739a0342f2ac95cfb56900263cf6

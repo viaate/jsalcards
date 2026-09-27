@@ -1,0 +1,89 @@
+{
+ "generated_at": "2026-09-26T18:53:25Z",
+ "counties": {
+  "44001": {
+   "dmas": [
+    "Providence, RI - New Bedford, MA DMA"
+   ],
+   "name": "Bristol County",
+   "not_working": [],
+   "schools": 18,
+   "state": "RI",
+   "working": []
+  },
+  "44003": {
+   "dmas": [
+    "Providence, RI - New Bedford, MA DMA"
+   ],
+   "name": "Kent County",
+   "not_working": [],
+   "schools": 59,
+   "state": "RI",
+   "working": []
+  },
+  "44005": {
+   "dmas": [
+    "Providence, RI - New Bedford, MA DMA"
+   ],
+   "name": "Newport County",
+   "not_working": [],
+   "schools": 26,
+   "state": "RI",
+   "working": []
+  },
+  "44007": {
+   "dmas": [
+    "Providence, RI - New Bedford, MA DMA"
+   ],
+   "name": "Providence County",
+   "not_working": [],
+   "schools": 248,
+   "state": "RI",
+   "working": []
+  },
+  "44009": {
+   "dmas": [
+    "Providence, RI - New Bedford, MA DMA"
+   ],
+   "name": "Washington County",
+   "not_working": [],
+   "schools": 39,
+   "state": "RI",
+   "working": []
+  },
+  "09110": {
+   "dmas": [
+    "Hartford & New Haven, CT DMA"
+   ],
+   "name": "Capitol Planning Region",
+   "not_working": [],
+   "schools": 330,
+   "state": "CT",
+   "working": [
+    "gray-wfsb"
+   ]
+  },
+  "12045": {
+   "dmas": [
+    "Panama City, FL DMA"
+   ],
+   "name": "Gulf County",
+   "not_working": [],
+   "schools": 8,
+   "state": "FL",
+   "working": [
+    "gray-wjhg"
+   ]
+  },
+  "30063": {
+   "dmas": [
+    "Missoula, MT DMA"
+   ],
+   "name": "Missoula County",
+   "not_working": [],
+   "schools": 61,
+   "state": "MT",
+   "working": []
+  }
+ }
+}

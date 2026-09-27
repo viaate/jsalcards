@@ -1,0 +1,384 @@
+[
+ {
+  "group": "Nexstar",
+  "call_sign": "WPIX",
+  "call_signs": [
+   "WPIX"
+  ],
+  "owner_status": "MSA",
+  "market": "New York",
+  "states": [
+   "NY",
+   "NJ",
+   "CT"
+  ],
+  "origin": "https://pix11.com",
+  "domains": [
+   "pix11.com"
+  ],
+  "closings_url": null,
+  "status": 403,
+  "robots": {
+   "page": null,
+   "data": "allowed (robots.txt HTTP 200; no rule matches)"
+  },
+  "rendering": "none-found",
+  "variant": "none-found",
+  "data_endpoint": null,
+  "empty_state_text": null,
+  "vendor": null,
+  "terms_note": "Nexstar Terms of Use (https://www.nexstar.tv/terms-of-use/, 'UPDATED: September 16, 2026'; station footers link it, e.g. abc27.com via /wp-json/lakana/v1/footer), read first-hand 2026-09-26: users may not 'Use any robot, spider, spyware, or any other device, method, or processes on the Properties, for any purpose' or 'Scrape, data-mine or data-crawl the Properties or engage in any data gathering or data extraction practices for any purpose'; the Properties are 'for your personal and non-commercial use only'. Terms cover Nexstar 'together with its Affiliates'. Blocker on its face; owner decided to proceed.",
+  "wayback_patterns": [
+   "https://pix11.com/wp-json/nxd_app/v1/closings_alerts*",
+   "https://www.pix11.com/weather/school-closings-delays*"
+  ],
+  "checked_at": "2026-09-26T17:42:23Z",
+  "notes": "No live closings page found. wp-json pages?slug= (closings, closings-delays, closings-and-delays, school-closings, school-closings-delays, closings-2, weather-closings, school-closings-and-delays) returned 0 page(s); navigation (lakana/v1/navigation-bar) closings links: none. Lakana page-data path lookups: /weather/school-closings-delays/ -> 404; /weather/closings/ -> 404. What a browser sees at the nav link could not be checked: all 93 Nexstar HTML page requests in this pass returned PerimeterX 403. Lead URL https://pix11.com/weather/school-closings-delays returned HTTP 403 (PerimeterX 'Access to this page has been denied'). pages?search=closings returned: https://pix11.com/election-results/, https://pix11.com/some-parts-of-nyc-could-see-snow-to-start-the-week/, https://pix11.com/regional-news-partners/, https://pix11.com/about-us/contact/. former Tribune; owned by Mission Broadcasting, operated by Nexstar (MSA)",
+  "sources_json_id": "wpix",
+  "lead_url": "https://www.pix11.com/weather/school-closings-delays",
+  "reach_schools_60mi": 6535,
+  "reach_basis": "sources.json wpix",
+  "companion_endpoints": [
+   {
+    "url": "https://pix11.com/wp-json/nxd_app/v1/closings_alerts",
+    "method": "GET",
+    "status": 200,
+    "robots": "allowed (robots.txt HTTP 200; no rule matches)",
+    "shape": "JSON array of row objects {content (organization name), category, status, county, city, comments_line1, url (the station closings page), uuid}; empty state is []",
+    "observed": "0 rows"
+   }
+  ],
+  "nav_closings_links": []
+ },
+ {
+  "group": "Nexstar",
+  "call_sign": "WTNH",
+  "call_signs": [
+   "WTNH",
+   "WCTX"
+  ],
+  "owner_status": "O&O",
+  "market": "Hartford-New Haven",
+  "states": [
+   "CT"
+  ],
+  "origin": "https://www.wtnh.com",
+  "domains": [
+   "wtnh.com"
+  ],
+  "closings_url": "https://www.wtnh.com/weather/closings/",
+  "status": 403,
+  "robots": {
+   "page": "allowed (robots.txt HTTP 200; no rule matches)",
+   "data": "allowed (robots.txt HTTP 200; no rule matches)"
+  },
+  "rendering": "server",
+  "variant": "nexstar-wp-closings",
+  "data_endpoint": {
+   "url": "https://www.wtnh.com/wp-json/wp/v2/pages?slug=closings",
+   "method": "GET",
+   "status": 200,
+   "shape": "JSON array of WP page objects; [i].link == closings page; [i].content.rendered holds the server-rendered list: <article class=\"closings-page\" data-component=\"closingsPage\"> with an A-Z nav (span.closings-nav__item--empty / a.closings-nav__item--filled href=#letter-x) and <div class=\"closings-list\">; each row is <div class=\"closing\"> with h3.closing__title (name), p.closing__details > span.closing__locality / span.closing__category, and div.closing__status, grouped under h2.closings-list__heading letters; empty state is a <p> inside div.closings-list"
+  },
+  "empty_state_text": null,
+  "vendor": "Newsroom Solutions (secure1.newsroomsolutions.com closings sign-in/submission form)",
+  "terms_note": "Nexstar Terms of Use (https://www.nexstar.tv/terms-of-use/, 'UPDATED: September 16, 2026'; station footers link it, e.g. abc27.com via /wp-json/lakana/v1/footer), read first-hand 2026-09-26: users may not 'Use any robot, spider, spyware, or any other device, method, or processes on the Properties, for any purpose' or 'Scrape, data-mine or data-crawl the Properties or engage in any data gathering or data extraction practices for any purpose'; the Properties are 'for your personal and non-commercial use only'. Terms cover Nexstar 'together with its Affiliates'. Blocker on its face; owner decided to proceed.",
+  "wayback_patterns": [
+   "https://www.wtnh.com/weather/closings/*",
+   "https://www.wtnh.com/wp-json/wp/v2/pages?slug=closings*",
+   "https://www.wtnh.com/wp-json/nxd_app/v1/closings_alerts*"
+  ],
+  "checked_at": "2026-09-26T17:42:57Z",
+  "notes": "",
+  "sources_json_id": "wtnh",
+  "lead_url": "https://www.wtnh.com/weather/closings/",
+  "reach_schools_60mi": 2963,
+  "reach_basis": "sources.json wtnh",
+  "companion_endpoints": [
+   {
+    "url": "https://www.wtnh.com/wp-json/nxd_app/v1/closings_alerts",
+    "method": "GET",
+    "status": 200,
+    "robots": "allowed (robots.txt HTTP 200; no rule matches)",
+    "shape": "JSON array of row objects {content (organization name), category, status, county, city, comments_line1, url (the station closings page), uuid}; empty state is []",
+    "observed": "2 rows",
+    "observed_sample": [
+     {
+      "content": "Short Beach Union Church Branford",
+      "category": "Religious",
+      "status": "Tag sale postponed to Oct 3",
+      "county": "",
+      "city": "",
+      "comments_line1": "",
+      "url": "https://www.wtnh.com/weather/closings/",
+      "uuid": "2697ed2b-919e-5079-9578-10a81425b761"
+     },
+     {
+      "content": "UCC of Westerly",
+      "category": "Religious",
+      "status": "All Services Cancelled",
+      "county": "",
+      "city": "",
+      "comments_line1": "",
+      "url": "https://www.wtnh.com/weather/closings/",
+      "uuid": "c22af454-e8c3-5d31-9da6-b59276026f98"
+     }
+    ]
+   }
+  ],
+  "status_note": "HTML page returned 403 with a PerimeterX 'Access to this page has been denied' captcha page",
+  "populated_sample": {
+   "rows": 2,
+   "first": [
+    [
+     "Short Beach Union Church Branford",
+     "Tag sale postponed to Oct 3"
+    ],
+    [
+     "UCC of Westerly",
+     "All Services Cancelled"
+    ]
+   ]
+  },
+  "page_title": "Closings & Delays in Connecticut",
+  "page_modified_gmt": "2026-06-12T10:45:27",
+  "other_pages": [
+   "https://www.wtnh.com/enter-your-closings-and-delays/ ('Enter Your Closings and Delays', modified 2023-12-17; no list markup)"
+  ],
+  "nav_closings_links": [
+   "https://www.wtnh.com/weather/closings/",
+   "https://www.wtnh.com/enter-your-closings-and-delays/"
+  ]
+ },
+ {
+  "group": "Nexstar",
+  "call_sign": "WPRI",
+  "call_signs": [
+   "WPRI",
+   "WNAC"
+  ],
+  "owner_status": "O&O",
+  "market": "Providence-New Bedford",
+  "states": [
+   "RI",
+   "MA"
+  ],
+  "origin": "https://www.wpri.com",
+  "domains": [
+   "wpri.com"
+  ],
+  "closings_url": "https://www.wpri.com/weather/closings/",
+  "status": 403,
+  "robots": {
+   "page": "allowed (robots.txt HTTP 200; no rule matches)",
+   "data": "allowed (robots.txt HTTP 200; no rule matches)"
+  },
+  "rendering": "server",
+  "variant": "nexstar-wp-closings",
+  "data_endpoint": {
+   "url": "https://www.wpri.com/wp-json/wp/v2/pages?slug=closings",
+   "method": "GET",
+   "status": 200,
+   "shape": "JSON array of WP page objects; [i].link == closings page; [i].content.rendered holds the server-rendered list: <article class=\"closings-page\" data-component=\"closingsPage\"> with an A-Z nav (span.closings-nav__item--empty / a.closings-nav__item--filled href=#letter-x) and <div class=\"closings-list\">; each row is <div class=\"closing\"> with h3.closing__title (name), p.closing__details > span.closing__locality / span.closing__category, and div.closing__status, grouped under h2.closings-list__heading letters; empty state is a <p> inside div.closings-list"
+  },
+  "empty_state_text": null,
+  "vendor": null,
+  "terms_note": "Nexstar Terms of Use (https://www.nexstar.tv/terms-of-use/, 'UPDATED: September 16, 2026'; station footers link it, e.g. abc27.com via /wp-json/lakana/v1/footer), read first-hand 2026-09-26: users may not 'Use any robot, spider, spyware, or any other device, method, or processes on the Properties, for any purpose' or 'Scrape, data-mine or data-crawl the Properties or engage in any data gathering or data extraction practices for any purpose'; the Properties are 'for your personal and non-commercial use only'. Terms cover Nexstar 'together with its Affiliates'. Blocker on its face; owner decided to proceed.",
+  "wayback_patterns": [
+   "https://www.wpri.com/weather/closings/*",
+   "https://www.wpri.com/wp-json/wp/v2/pages?slug=closings*",
+   "https://www.wpri.com/wp-json/nxd_app/v1/closings_alerts*"
+  ],
+  "checked_at": "2026-09-26T17:43:24Z",
+  "notes": "WNAC: foxprovidence.com redirects to https://www.wpri.com/fox-providence/ (a section of this site).",
+  "sources_json_id": "wpri",
+  "lead_url": "https://www.wpri.com/weather/closings/",
+  "reach_schools_60mi": 2378,
+  "reach_basis": "sources.json wpri",
+  "companion_endpoints": [
+   {
+    "url": "https://www.wpri.com/wp-json/nxd_app/v1/closings_alerts",
+    "method": "GET",
+    "status": 200,
+    "robots": "allowed (robots.txt HTTP 200; no rule matches)",
+    "shape": "JSON array of row objects {content (organization name), category, status, county, city, comments_line1, url (the station closings page), uuid}; empty state is []",
+    "observed": "21 rows",
+    "observed_sample": [
+     {
+      "content": "Amer French Genealogical Society",
+      "category": "Community Groups",
+      "status": "Closed",
+      "county": "",
+      "city": "Woonsocket",
+      "comments_line1": "",
+      "url": "https://www.wpri.com/weather/closings/",
+      "uuid": "a8d731b5-a8a7-5280-88a8-fac512b439ab"
+     },
+     {
+      "content": "Bridgemark Inc",
+      "category": "Health Services",
+      "status": "Closed",
+      "county": "",
+      "city": "Warwick",
+      "comments_line1": "",
+      "url": "https://www.wpri.com/weather/closings/",
+      "uuid": "eba9f9ee-942f-59c1-a558-5610a579bcaa"
+     }
+    ]
+   }
+  ],
+  "status_note": "HTML page returned 403 with a PerimeterX 'Access to this page has been denied' captcha page",
+  "populated_sample": {
+   "rows": 21,
+   "first": [
+    [
+     "Amer French Genealogical Society",
+     "Closed"
+    ],
+    [
+     "Bridgemark Inc",
+     "Closed"
+    ],
+    [
+     "Bristol Community College",
+     "Closed"
+    ]
+   ]
+  },
+  "page_title": "Closings",
+  "page_modified_gmt": "2024-01-08T09:59:01",
+  "other_pages": [
+   "https://www.wpri.com/weather/closings-delays/ ('Closings and Delays', modified 2023-02-27; frame https://www.ribroadcasters.com/news_and_events/closings_delays/, https://media.wpri.com/nxs-wpritv-media-us-east-1/html/toolbox/closings/WPRI_closings.html)"
+  ],
+  "nav_closings_links": [
+   "https://www.wpri.com/weather/closings/"
+  ]
+ },
+ {
+  "group": "Nexstar",
+  "call_sign": "WJTV",
+  "call_signs": [
+   "WJTV",
+   "WHLT"
+  ],
+  "owner_status": "O&O",
+  "market": "Jackson MS",
+  "states": [
+   "MS"
+  ],
+  "origin": "https://www.wjtv.com",
+  "domains": [
+   "wjtv.com"
+  ],
+  "closings_url": "https://www.wjtv.com/weather/closings/",
+  "status": 403,
+  "robots": {
+   "page": "allowed (robots.txt HTTP 200; no rule matches)",
+   "data": "allowed (robots.txt HTTP 200; no rule matches)"
+  },
+  "rendering": "server",
+  "variant": "nexstar-wp-closings",
+  "data_endpoint": {
+   "url": "https://www.wjtv.com/wp-json/wp/v2/pages?slug=closings",
+   "method": "GET",
+   "status": 200,
+   "shape": "JSON array of WP page objects; [i].link == closings page; [i].content.rendered holds the server-rendered list: <article class=\"closings-page\" data-component=\"closingsPage\"> with an A-Z nav (span.closings-nav__item--empty / a.closings-nav__item--filled href=#letter-x) and <div class=\"closings-list\">; each row is <div class=\"closing\"> with h3.closing__title (name), p.closing__details > span.closing__locality / span.closing__category, and div.closing__status, grouped under h2.closings-list__heading letters; empty state is a <p> inside div.closings-list"
+  },
+  "empty_state_text": "Most recent closings and delays are listed here when there are active closures.",
+  "vendor": null,
+  "terms_note": "Nexstar Terms of Use (https://www.nexstar.tv/terms-of-use/, 'UPDATED: September 16, 2026'; station footers link it, e.g. abc27.com via /wp-json/lakana/v1/footer), read first-hand 2026-09-26: users may not 'Use any robot, spider, spyware, or any other device, method, or processes on the Properties, for any purpose' or 'Scrape, data-mine or data-crawl the Properties or engage in any data gathering or data extraction practices for any purpose'; the Properties are 'for your personal and non-commercial use only'. Terms cover Nexstar 'together with its Affiliates'. Blocker on its face; owner decided to proceed.",
+  "wayback_patterns": [
+   "https://www.wjtv.com/weather/closings/*",
+   "https://www.wjtv.com/wp-json/wp/v2/pages?slug=closings*",
+   "https://www.wjtv.com/wp-json/nxd_app/v1/closings_alerts*"
+  ],
+  "checked_at": "2026-09-26T17:44:14Z",
+  "notes": "WHLT: whlt.com redirects to https://www.wjtv.com/pine-belt-news/ (a section of this site).",
+  "sources_json_id": null,
+  "lead_url": null,
+  "reach_schools_60mi": 307,
+  "reach_basis": "borrowed from sources.json wapt (median of 2 record(s) with market anchor Jackson|MS); not this station's own figure",
+  "companion_endpoints": [
+   {
+    "url": "https://www.wjtv.com/wp-json/nxd_app/v1/closings_alerts",
+    "method": "GET",
+    "status": 200,
+    "robots": "allowed (robots.txt HTTP 200; no rule matches)",
+    "shape": "JSON array of row objects {content (organization name), category, status, county, city, comments_line1, url (the station closings page), uuid}; empty state is []",
+    "observed": "0 rows"
+   }
+  ],
+  "status_note": "HTML page returned 403 with a PerimeterX 'Access to this page has been denied' captcha page",
+  "page_title": "Closings",
+  "page_modified_gmt": "2023-02-28T23:37:19",
+  "nav_closings_links": []
+ },
+ {
+  "group": "Nexstar",
+  "call_sign": "KELO",
+  "call_signs": [
+   "KELO",
+   "KCLO"
+  ],
+  "owner_status": "O&O",
+  "market": "Sioux Falls and Rapid City",
+  "states": [
+   "SD",
+   "MN",
+   "IA",
+   "NE"
+  ],
+  "origin": "https://www.keloland.com",
+  "domains": [
+   "keloland.com"
+  ],
+  "closings_url": "https://www.keloland.com/weather/closings/",
+  "status": 403,
+  "robots": {
+   "page": "allowed (robots.txt HTTP 200; no rule matches)",
+   "data": "allowed (robots.txt HTTP 200; no rule matches)"
+  },
+  "rendering": "server",
+  "variant": "nexstar-wp-closings",
+  "data_endpoint": {
+   "url": "https://www.keloland.com/wp-json/wp/v2/pages?slug=closings",
+   "method": "GET",
+   "status": 200,
+   "shape": "JSON array of WP page objects; [i].link == closings page; [i].content.rendered holds the server-rendered list: <article class=\"closings-page\" data-component=\"closingsPage\"> with an A-Z nav (span.closings-nav__item--empty / a.closings-nav__item--filled href=#letter-x) and <div class=\"closings-list\">; each row is <div class=\"closing\"> with h3.closing__title (name), p.closing__details > span.closing__locality / span.closing__category, and div.closing__status, grouped under h2.closings-list__heading letters; empty state is a <p> inside div.closings-list"
+  },
+  "empty_state_text": "Most recent closings and delays are listed here when there are active closures.",
+  "vendor": null,
+  "terms_note": "Nexstar Terms of Use (https://www.nexstar.tv/terms-of-use/, 'UPDATED: September 16, 2026'; station footers link it, e.g. abc27.com via /wp-json/lakana/v1/footer), read first-hand 2026-09-26: users may not 'Use any robot, spider, spyware, or any other device, method, or processes on the Properties, for any purpose' or 'Scrape, data-mine or data-crawl the Properties or engage in any data gathering or data extraction practices for any purpose'; the Properties are 'for your personal and non-commercial use only'. Terms cover Nexstar 'together with its Affiliates'. Blocker on its face; owner decided to proceed.",
+  "wayback_patterns": [
+   "https://www.keloland.com/weather/closings/*",
+   "https://www.keloland.com/wp-json/wp/v2/pages?slug=closings*",
+   "https://www.keloland.com/wp-json/nxd_app/v1/closings_alerts*"
+  ],
+  "checked_at": "2026-09-26T17:44:28Z",
+  "notes": "KCLO (Rapid City) listed with keloland.com",
+  "sources_json_id": "kelo",
+  "lead_url": "https://www.keloland.com/weather/closings/",
+  "reach_schools_60mi": 356,
+  "reach_basis": "sources.json kelo",
+  "companion_endpoints": [
+   {
+    "url": "https://www.keloland.com/wp-json/nxd_app/v1/closings_alerts",
+    "method": "GET",
+    "status": 200,
+    "robots": "allowed (robots.txt HTTP 200; no rule matches)",
+    "shape": "JSON array of row objects {content (organization name), category, status, county, city, comments_line1, url (the station closings page), uuid}; empty state is []",
+    "observed": "0 rows"
+   }
+  ],
+  "status_note": "HTML page returned 403 with a PerimeterX 'Access to this page has been denied' captcha page",
+  "page_title": "Closings",
+  "page_modified_gmt": "2026-01-21T22:38:14",
+  "other_pages": [
+   "https://www.keloland.com/weather/submit-a-closing/ ('Submit A Closing', modified 2024-09-17; no list markup)"
+  ],
+  "nav_closings_links": [
+   "https://www.keloland.com/weather/closings/",
+   "https://www.keloland.com/weather/submit-a-closing/"
+  ]
+ }
+]

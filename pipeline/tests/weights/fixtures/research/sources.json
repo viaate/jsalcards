@@ -1,0 +1,283 @@
+{
+ "stations": [
+  {
+   "id": "wpix",
+   "name": "WPIX PIX11 (former Tribune)",
+   "kind": "station",
+   "role": "live_lead",
+   "market": "New York",
+   "states": [
+    "NY",
+    "NJ",
+    "CT"
+   ],
+   "group": "Nexstar",
+   "platform": "nexstar-wp",
+   "closings_page_url": "https://www.pix11.com/weather/school-closings-delays",
+   "how_found": "Nexstar lane WebSearch 'pix11.com school closings weather', result titled 'PIX11'; not re-run, because the session's WebSearch budget (200) was used up. A saved pix11.com homepage (seclab-ucr/A4 rendering_stream/html/pix11.com.html) has a nav link 'Closings and Delays' to this URL, but the markup is pre-Nexstar-platform, so the path may be stale and may not be on the nxs platform. The Mission licence claim was not re-checked.",
+   "fetch_observation": "WebFetch on 2026-09-24 returned EGRESS_BLOCKED. Round 3 (r3-cdx): WebFetch on 2026-09-25 returned EGRESS_BLOCKED.",
+   "verified": "unverified",
+   "priority_check": false,
+   "market_anchors": [
+    "New York|NY"
+   ],
+   "lanes": [
+    "nexstar",
+    "r3-cdx"
+   ],
+   "round3": "updated",
+   "reach_schools_60mi": 6535
+  },
+  {
+   "id": "wtnh",
+   "name": "WTNH News 8",
+   "kind": "station",
+   "role": "live_lead",
+   "market": "Hartford-New Haven",
+   "states": [
+    "CT"
+   ],
+   "group": "Nexstar",
+   "platform": "nexstar-wp",
+   "closings_page_url": "https://www.wtnh.com/weather/closings/",
+   "how_found": "Nexstar lane WebSearch 'wtnh.com weather closings Connecticut'; not re-run, because the session's WebSearch budget (200) was used up. Cached wtnh.com HTML from 2020-06-30 (mikeizbicki/metahtml tests/.cache) has a WordPress menu item 'Closings' (menu-item-object-page) linking this URL.",
+   "fetch_observation": "WebFetch on 2026-09-24 returned EGRESS_BLOCKED. Round 3 (r3-cdx): WebFetch on 2026-09-25 returned EGRESS_BLOCKED.",
+   "verified": "unverified",
+   "priority_check": false,
+   "market_anchors": [
+    "New Haven|CT"
+   ],
+   "lanes": [
+    "nexstar",
+    "r3-cdx"
+   ],
+   "round3": "updated",
+   "reach_schools_60mi": 2963
+  },
+  {
+   "id": "wpri",
+   "name": "WPRI 12 / WNAC",
+   "kind": "station",
+   "role": "live_lead",
+   "market": "Providence-New Bedford",
+   "states": [
+    "RI",
+    "MA"
+   ],
+   "group": "Nexstar",
+   "platform": "nexstar-wp",
+   "closings_page_url": "https://www.wpri.com/weather/closings/",
+   "alt_page_urls": [
+    "https://www.wpri.com/weather/closings-delays/"
+   ],
+   "how_found": "Nexstar lane WebSearch 'wpri.com closings Rhode Island schools delays'; not re-run, because the session's WebSearch budget (200) was used up. GitHub has no copy of this path. Saved wpri.com HTML circa 2020 (mariamaOlive/projeto2-nlp-sidi-residencia) links /weather/closings-delays/ instead.",
+   "fetch_observation": "WebFetch on 2026-09-24 returned EGRESS_BLOCKED. Round 3 (r3-cdx): WebFetch on 2026-09-25 returned EGRESS_BLOCKED.",
+   "verified": "unverified",
+   "priority_check": false,
+   "market_anchors": [
+    "Providence|RI"
+   ],
+   "lanes": [
+    "nexstar",
+    "r3-cdx"
+   ],
+   "round3": "updated",
+   "reach_schools_60mi": 2378
+  },
+  {
+   "id": "kelo",
+   "name": "KELO KELOLAND",
+   "kind": "station",
+   "role": "live_lead",
+   "market": "Sioux Falls",
+   "states": [
+    "SD",
+    "MN",
+    "IA",
+    "NE"
+   ],
+   "group": "Nexstar",
+   "platform": "nexstar-wp",
+   "closings_page_url": "https://www.keloland.com/weather/closings/",
+   "alt_page_urls": [
+    "https://www.keloland.com/closings/"
+   ],
+   "how_found": "Nexstar lane WebSearch 'keloland closings'; not re-run, because the session's WebSearch budget (200) was used up. The lane reported https://www.keloland.com/closings/ from a result titled 'closings | KELOLAND.com', which looks like a tag archive and has 0 GitHub hits. The verifier's replacement URL is the Google top result for 'keloland closeline' captured 2026-03-17 (haofeix keloland-closeline/result.json, fragment 'South Dakota, Iowa and Minnesota') and is also linked in saved 2021 HTML (mariamaOlive .../37/1561233537.html).",
+   "fetch_observation": "WebFetch on 2026-09-24 returned EGRESS_BLOCKED.",
+   "verified": "unverified",
+   "priority_check": false,
+   "market_anchors": [
+    "Sioux Falls|SD"
+   ],
+   "lanes": [
+    "nexstar"
+   ],
+   "reach_schools_60mi": 356
+  },
+  {
+   "id": "ecc",
+   "name": "Emergency Closing Center (WGN Radio 720; used across Chicago TV and radio)",
+   "kind": "aggregator",
+   "role": "live_lead",
+   "market": "Chicago",
+   "states": [
+    "IL",
+    "IN",
+    "WI"
+   ],
+   "group": "WGN Radio / Nexstar per the Nexstar lane (not re-checked; the vendors lane says the operator is unconfirmed)",
+   "platform": "ecc",
+   "closings_page_url": "https://www.emergencyclosingcenter.com/",
+   "data_endpoint_url": "https://wgnr-closings.emergencyclosingcenter.com/index.html",
+   "endpoint_format": "React single-page app, JS-only per glance RESEARCH.md ('no public JSON/XML found'); no JSON API seen",
+   "historical_urls": [
+    {
+     "url": "http://www.emergencyclosingcenter.com/complete.html",
+     "how_found": "awallish/DelayAlerts scrapableNBCStations: '# nbc chicago redirects to this page' (about 2018). A 2016 Wayback-looking link in grantat/news-similarity is only the Wayback Machine rewriting an outlink inside a Chicago Tribune capture, so it does not prove complete.html was archived.",
+     "status": "unverified"
+    }
+   ],
+   "how_found": "Nexstar lane WebSearch 'WGN closings \"Emergency Closing Center\" Chicago' (not re-run). Corroborated on GitHub: glance-led-dev RESEARCH.md (the wgnr-closings iframe), arunkumar-mourougappane/L.I.N.C.O.L.N civil/constants.py, and haofeix Google results dated 2026-03-17/18 with fragments 'ECC - Emergency Closing Center - Chicago' and 'Below is an alphabetical listing ... new closings information becomes available'. Round 4 (r4-midwest): glance RESEARCH.md was last changed in commit 3ddc616 on 2026-09-15 (880fe70 on 2026-09-24 is the repo HEAD, an unrelated app); its CBS Chicago section reads 'Format: JS-only; no useful HTML listing without executing JavaScript' and 'no public JSON/XML found'. app.star fetch_cbs (line 1393) returns {\"kind\": \"unsupported\"} for any feed containing 'emergencyclosingcenter.com'. The only operator evidence is glance's label 'CBS Chicago / WGN Radio widget on CBS'; no source names the operator. No page_analysis copy of the ECC root exists in haofeix (three URL-variant hashes checked). http://www.emergencyclosingcenter.com/ecc/search.jsp appears only as an XSS test payload in an unrelated corpus, which does not show it ever served closings. 2019 robots.txt copies for nbcchicago.com, wgntv.com and abc7chicago.com (scrapy/protego) do not cover any closings path; none is ECC's own file.",
+   "fetch_observation": "WebFetch on 2026-09-24 returned EGRESS_BLOCKED for www.emergencyclosingcenter.com (/ and /complete.html), wgnr-closings.emergencyclosingcenter.com and wgnradio.com. Whether the March 2026 alphabetical list is in static HTML is unknown. Round 3 (r3-cdx): WebFetch on 2026-09-25 returned EGRESS_BLOCKED. Round 4 WebFetch on 2026-09-25 returned EGRESS_BLOCKED for https://www.emergencyclosingcenter.com/, https://wgnr-closings.emergencyclosingcenter.com/index.html and http://www.emergencyclosingcenter.com/complete.html; a Wayback CDX domain query was refused. The next step is a one-time browser devtools capture of the data request behind the app.",
+   "verified": "unverified",
+   "priority_check": true,
+   "market_anchors": [
+    "Chicago|IL"
+   ],
+   "lanes": [
+    "nexstar",
+    "vendors",
+    "history",
+    "r3-cdx",
+    "r4-midwest"
+   ],
+   "notes": "Likely the single most valuable Chicago source: CBS 2 and NBC 5 point to it. Operator, terms and robots.txt are unknown.",
+   "round3": "updated",
+   "round4": "updated",
+   "reach_schools_60mi": 3314
+  },
+  {
+   "id": "wbbm",
+   "name": "WBBM CBS News Chicago (embeds ECC)",
+   "kind": "station",
+   "role": "pointer",
+   "market": "Chicago",
+   "states": [
+    "IL",
+    "IN"
+   ],
+   "group": "CBS (Paramount)",
+   "platform": "ecc",
+   "closings_page_url": "https://www.cbsnews.com/chicago/school-closings/",
+   "data_endpoint_url": "https://wgnr-closings.emergencyclosingcenter.com/index.html",
+   "endpoint_format": "iframe to the ECC React SPA",
+   "historical_urls": [
+    {
+     "url": "http://chicago.cbslocal.com/school-closings/",
+     "how_found": "AdarshKumar712/NLP_Shared_Task_2022 articles/64/1483922664.html (2019-12-31), 'Chicago School Closings' in the 'Weather Links' block.",
+     "status": "unverified",
+     "observation": "cbslocal-era Wayback target only."
+    }
+   ],
+   "how_found": "glance-led-dev RESEARCH.md (confirmed verbatim): 'Ownership group: CBS Chicago / WGN Radio widget on CBS ... Data endpoint: iframe https://wgnr-closings.emergencyclosingcenter.com/index.html'. app.star returns 'unsupported' for this feed. Round 3 (r3-oo-state) re-read the provenance on 2026-09-25: glance RESEARCH.md at HEAD lists https://www.cbsnews.com/chicago/school-closings/ among its CBS Closings URLs. The round-3 lane filed it as a CBS NewsTicker page with a template endpoint, but glance's own CBS Chicago entry names the ECC iframe (JS-only), so this report keeps it as an ECC pointer. Round 4 (r4-midwest): glance RESEARCH.md lists the page as its CBS Chicago example with the ECC iframe (confirmed again).",
+   "fetch_observation": "EGRESS_BLOCKED for cbsnews.com and wgnr-closings.emergencyclosingcenter.com on 2026-09-24. Round 3 WebFetch on 2026-09-25 returned EGRESS_BLOCKED. Round 4 WebFetch on 2026-09-25 returned EGRESS_BLOCKED.",
+   "verified": "unverified",
+   "priority_check": false,
+   "market_anchors": [
+    "Chicago|IL"
+   ],
+   "lanes": [
+    "vendors",
+    "history",
+    "r3-oo-state",
+    "r4-midwest"
+   ],
+   "notes": "Same data as the ECC record; build the ECC adapter, not a CBS Chicago one.",
+   "round3": "updated",
+   "round4": "updated"
+  },
+  {
+   "id": "riba",
+   "name": "Rhode Island Broadcasters Association cancellation system",
+   "kind": "state_system",
+   "role": "live_lead",
+   "market": "Statewide Rhode Island",
+   "states": [
+    "RI"
+   ],
+   "group": "Rhode Island Broadcasters Association",
+   "platform": "riba",
+   "closings_page_url": "http://www.ribroadcasters.com/News_and_Events/Closings_Delays/",
+   "endpoint_format": "HTML table (td.orgname, #PARKING-BAN-CLOSINGS per DevLab2425/ri-school-closings)",
+   "how_found": "akhavan12/FF03D1D1D403328562431RawNECSI docs/usnwc.edu/About/Emergency-Informationindex.html links it; DevLab2425/ri-school-closings index.js (2017-2018) scrapes exactly this URL.",
+   "fetch_observation": "www.ribroadcasters.com EGRESS_BLOCKED on 2026-09-24. The scrapers are old, so the structure may have changed.",
+   "verified": "unverified",
+   "priority_check": false,
+   "statewide": "RI",
+   "lanes": [
+    "vendors"
+   ],
+   "reach_schools_60mi": 390
+  },
+  {
+   "id": "wveis",
+   "name": "West Virginia Department of Education closings (WVEIS)",
+   "kind": "state_system",
+   "role": "live_lead",
+   "market": "Statewide West Virginia",
+   "states": [
+    "WV"
+   ],
+   "group": "WV Department of Education",
+   "platform": "wveis",
+   "closings_page_url": "https://wveis.k12.wv.us/closings/",
+   "data_endpoint_url": "https://wveis.k12.wv.us/closings/rss.php",
+   "endpoint_format": "RSS <item> with <title>/<description>. The 'All schools in {County}' title form is inferred from the parser's title.replace(\"All schools in \", \"\"); no sample item is in the repo. The parser treats zero items as 'No school announcements at this time.'",
+   "how_found": "Mentioned by the southern-states lane as seen during its GitHub provenance work ('Seen but outside the lane: wveis.k12.wv.us/closings/ (WV)'). The exact source file was not cited and the scheme (http or https) was not recorded. ROUND 2 SOURCE (r2-priority): dlukekopp/fsu_weather (commits 2025-12-12 to 2025-12-16) fetches 'https://api.allorigins.win/raw?url=https://wveis.k12.wv.us/closings/rss.php' in v2/index.html:270, v3/index.html:621, v2/rss-test.html:3 and v2/rss-test2.html:13, and v3/admin-config.json:20 links https://wveis.k12.wv.us/closings/. 11 haofeix files dated 2026-03-14, 03-17 and 03-18 list the page URL. The only known client goes through the allorigins CORS proxy, which says nothing about whether direct requests are accepted. Round 3 (r3-oo-state) re-read the provenance on 2026-09-25: GitHub code search for \"wveis.k12.wv.us/closings\" returns 16 files (5 in dlukekopp/fsu_weather, 11 in haofeix). The verifier did not route around the block through the api.allorigins.win proxy, which would not show whether the origin accepts direct server-side requests.",
+   "fetch_observation": "Not fetched. Round 2 WebFetch on 2026-09-25 of the page and of /closings/rss.php both returned EGRESS_BLOCKED. Round 3 WebFetch on 2026-09-25 returned EGRESS_BLOCKED.",
+   "verified": "unverified",
+   "priority_check": true,
+   "statewide": "WV",
+   "lanes": [
+    "south",
+    "r2-priority",
+    "r3-oo-state"
+   ],
+   "notes": "An official statewide list for every WV county, now with a concrete RSS URL from third-party code. Check it first.",
+   "round2": "updated",
+   "round3": "updated",
+   "reach_schools_60mi": 769
+  },
+  {
+   "id": "kcnc",
+   "name": "KCNC CBS News Colorado",
+   "kind": "station",
+   "role": "url_unknown",
+   "market": "Denver",
+   "states": [
+    "CO"
+   ],
+   "group": "CBS News and Stations (Paramount)",
+   "platform": "cbs-schoolclosings",
+   "historical_urls": [
+    {
+     "url": "https://denver.cbslocal.com/school-closings/",
+     "how_found": "genieck/genieck.github.io saved denver.cbslocal.com page (2020-04-19).",
+     "status": "unverified",
+     "observation": "Wayback target for the cbslocal era only."
+    }
+   ],
+   "how_found": "Round 4 (r4-midwest): no current cbsnews.com/colorado closings URL was seen. The historical cbslocal page is linked as 'Colorado School Closings' in genieck/genieck.github.io denver.cbslocal.com/2020/04/19/protests-colorado-capitol-coronavirus/index.html.",
+   "fetch_observation": "denver.cbslocal.com returned EGRESS_BLOCKED on 2026-09-25.",
+   "verified": "unverified",
+   "priority_check": false,
+   "market_anchors": [
+    "Denver|CO"
+   ],
+   "lanes": [
+    "r4-midwest"
+   ],
+   "round4": "new"
+  }
+ ]
+}

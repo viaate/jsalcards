@@ -1,0 +1,419 @@
+platform:
+  id: gray
+stations:
+- id: gray-kdlt
+  platform: gray
+  call_sign: KDLT
+  name: KDLT-TV NBC
+  market: Sioux Falls
+  dma: Sioux Falls (Mitchell), SD - IA - MN - NE DMA
+  states: [IA, MN, NE, SD]
+  counties: null
+  page_url: null
+  data_url: null
+  export_url: null
+  archive_urls: []
+  poll_minutes: null
+  status: no_endpoint
+  evidence: 'No closings endpoint is known: the research probe of https://s3.amazonaws.com/grayfilestore-kdlt/closingsData/closings_KDLT.json
+    answered HTTP 404 (docs/research/sources.json, gray_s3_key_probes.no_bucket_404), and the English
+    Wikipedia navbox Template:Gray Media (read 2026-09-25T04:37:19Z, sha256 f22ecf5f105e8187...) lists
+    it as a Gray Media station. Market: the ''Sioux Falls TV'' navbox on its English Wikipedia article
+    (read 2026-09-25). Live read 2026-09-26: https://www.dakotanewsnow.com/weather/closings/ is an Arc
+    page of the site ''ksfy'' (Fusion.arcSite), gray-ksfy''s registered page, so KDLT''s closings are
+    gray-ksfy''s.'
+  list_files: []
+  page_check: null
+  robots: []
+- id: gray-kktv
+  platform: gray
+  call_sign: KKTV
+  name: KKTV 11
+  market: Colorado Springs-Pueblo
+  dma: Colorado Springs - Pueblo, CO DMA
+  states: [CO]
+  counties:
+    basis: dma
+    source: 'DMA county list: alex-patton/US-TVDMA-BY-COUNTY usa-tvdma-county.csv at commit 7f254b8c1843c62ec976a71c40d366d45f6f29cd
+      (sha256 2e2cd00265a8d704...), names resolved to FIPS with the Census 2025 county Gazetteer; Connecticut
+      via the Census county-to-town crosswalk (snowlight.sources.stations.dma); market ''Colorado Springs
+      - Pueblo, CO DMA'''
+    fips: [08009, 08011, 08017, 08025, 08041, 08043, 08055, 08061, 08071, 08089, 08101, 08119]
+  page_url: https://www.kktv.com/weather/closings/
+  data_url: https://s3.amazonaws.com/grayfilestore-kktv/closingsData/closings_KKTV.json
+  export_url: https://s3.amazonaws.com/grayfilestore-kktv/closingsData/closings_KKTV.json
+  archive_urls:
+  - https://s3.amazonaws.com/grayfilestore-kktv/closingsData/closings_KKTV.json
+  - https://grayfilestore-kktv.s3.amazonaws.com/closingsData/closings_KKTV.json
+  - http://www.kktv.com/weather/closings
+  - http://www.kktv.com:80/weather/closings
+  - https://www.kktv.com/weather/closings
+  - https://www.kktv.com/weather/closings/
+  poll_minutes: null
+  status: active
+  evidence: 'Export https://s3.amazonaws.com/grayfilestore-kktv/closingsData/closings_KKTV.json: Endpoint
+    verified: the station''s S3 GSync export key exists and returned an explicit empty export on 2026-09-25.
+    WebFetch shows no Last-Modified header, so whether the station still writes to this file is unproven.
+    The closings page itself was not loaded. (research round 3-4, docs/research/sources.json). Station
+    site: kktv.com (wikidata Q6332143 via en.wikipedia KKTV). Market ''Colorado Springs-Pueblo'' from
+    the research record. Archive: closings page confirmed by Wayback captures read with the gray adapter:
+    2014-02-14 17:34Z http://www.kktv.com/weather/closings (gray-gdm-list, populated, 12 rows; run 36136683508);
+    2015-02-26 06:09Z http://www.kktv.com:80/weather/closings (gray-gdm-table, populated, 49 rows; run
+    36136683508); 2016-03-18 17:56Z http://www.kktv.com/weather/closings (gray-gdm-table, populated, 23
+    rows; run 36136683508); 2017-03-24 14:00Z http://www.kktv.com/weather/closings (gray-gdm-table, populated,
+    107 rows; run 36136683508); 2018-02-20 15:52Z http://www.kktv.com/weather/closings (gray-gdm-table,
+    populated, 83 rows; run 36136683508); 2019-03-04 15:04Z https://www.kktv.com/weather/closings (gray-gdm-table,
+    populated, 117 rows; run 36136683508); 2023-12-16 20:34Z https://www.kktv.com/weather/closings/ (gray-fusion-orgs,
+    empty, 0 rows; run 36094846376). Wayback CDX: 6265 captures with HTTP 200 of http://www.kktv.com/weather/closings,
+    http://www.kktv.com/weather/closingsadmin, http://www.kktv.com:80/weather/closings and other forms,
+    2014-01-04 to 2026-05-06. The export in the Wayback Machine: 4 captures of the export (fetched by
+    the station page with a cache-busting query), 2024-01-17 to 2026-01-16 (CDX inventory of s3.amazonaws.com/grayfilestore-*,
+    archive-captures run 36089770410). Export captures read with the gray adapter: 2025-02-21 16:00Z (populated,
+    49 rows; run 36108881203).'
+  list_files: []
+  page_check:
+    checked_at: '2026-09-26T22:37:50Z'
+    page: https://www.kktv.com/weather/closings/
+    loads:
+    - https://s3.amazonaws.com/grayfilestore-kktv/closingsData/closings_KKTV.json
+    shows: 'The page''s closings area: No closings are listed at this time.'
+    method: 'Opened in Chromium 141 (Playwright 1.56.1, headless) with the project''s User-Agent; images,
+      media and fonts not loaded; waited 12 s, scrolled to the end and waited 5 s more, recording every
+      request and response (survey of 2026-09-26). loads: the closings list files the page requested that
+      answered 200, without the cache-busting query the page adds.'
+  robots:
+  - url: https://www.kktv.com/weather/closings/
+    checked_at: '2026-09-26T23:07:14Z'
+    state: parsed
+    allowed: true
+    rule: 'Allow: /weather/'
+    crawl_delay: null
+    disallowed_agents:
+    - amazonbot
+    - anthropic-ai
+    - bytespider
+    - ccbot
+    - chatgpt-user
+    - claude-web
+    - claudebot
+    - facebookbot
+    - google-extended
+    - gptbot
+    - omgili
+    - omgilibot
+    - perplexitybot
+    sha256: 18b9e01fd0a2b24eb5ef1dc309fec85882d6d2c17a72f998aec13a67fad161c8
+  - url: https://s3.amazonaws.com/grayfilestore-kktv/closingsData/closings_KKTV.json
+    checked_at: '2026-09-26T23:07:14Z'
+    state: unavailable
+    allowed: true
+    rule: 'robots.txt unavailable (4xx): unrestricted'
+    crawl_delay: null
+    disallowed_agents: []
+    sha256: null
+- id: gray-kold
+  platform: gray
+  call_sign: KOLD
+  name: KOLD 13
+  market: Tucson
+  dma: Tucson (Nogales), AZ DMA
+  states: [AZ]
+  counties:
+    basis: dma
+    source: 'DMA county list: alex-patton/US-TVDMA-BY-COUNTY usa-tvdma-county.csv at commit 7f254b8c1843c62ec976a71c40d366d45f6f29cd
+      (sha256 2e2cd00265a8d704...), names resolved to FIPS with the Census 2025 county Gazetteer; Connecticut
+      via the Census county-to-town crosswalk (snowlight.sources.stations.dma); market ''Tucson (Nogales),
+      AZ DMA'''
+    fips: ['04003', 04019, '04023']
+  page_url: null
+  data_url: null
+  export_url: https://s3.amazonaws.com/grayfilestore-kold/closingsData/closings_KOLD.json
+  archive_urls:
+  - https://s3.amazonaws.com/grayfilestore-kold/closingsData/closings_KOLD.json
+  - https://grayfilestore-kold.s3.amazonaws.com/closingsData/closings_KOLD.json
+  - https://www.kold.com/weather/closings/
+  poll_minutes: null
+  status: no_endpoint
+  evidence: 'Export https://s3.amazonaws.com/grayfilestore-kold/closingsData/closings_KOLD.json: Endpoint
+    verified: the station''s S3 GSync export key exists and returned an explicit empty export on 2026-09-25.
+    WebFetch shows no Last-Modified header, so whether the station still writes to this file is unproven.
+    The closings page itself was not loaded. (research round 3-4, docs/research/sources.json). Station
+    site: kold.com (wikidata-owner-query). no closings page URL confirmed. Market ''Tucson'' from the
+    research record. Archive: Wayback CDX: no capture with HTTP 200 of kold.com/weather/closings* (2014-01-01
+    to 2026-09-30; archive-captures run 36092166220). Page check 2026-09-26T23:01:53Z (Chromium, the project''s
+    User-Agent): https://www.kold.com/weather/closings/: The page lists weather articles (the first dated
+    Feb. 22, 2023) and has no closings component; it requests only a gsync-closings count, and no list
+    file. The station publishes no closings list that can be read today. Its GSync export (https://s3.amazonaws.com/grayfilestore-kold/closingsData/closings_KOLD.json)
+    was last modified 2019-09-19T16:04:10Z (HEAD, 2026-09-26) and no page loads it; it stays an archive
+    URL.'
+  list_files: []
+  page_check: null
+  robots:
+  - url: https://s3.amazonaws.com/grayfilestore-kold/closingsData/closings_KOLD.json
+    checked_at: '2026-09-25T08:13:04Z'
+    state: unavailable
+    allowed: true
+    rule: 'robots.txt unavailable (4xx): unrestricted'
+    crawl_delay: null
+    disallowed_agents: []
+    sha256: null
+- id: gray-wfsb
+  platform: gray
+  call_sign: WFSB
+  name: WFSB 3
+  market: Hartford-New Haven
+  dma: Hartford & New Haven, CT DMA
+  states: [CT]
+  counties:
+    basis: dma
+    source: 'DMA county list: alex-patton/US-TVDMA-BY-COUNTY usa-tvdma-county.csv at commit 7f254b8c1843c62ec976a71c40d366d45f6f29cd
+      (sha256 2e2cd00265a8d704...), names resolved to FIPS with the Census 2025 county Gazetteer; Connecticut
+      via the Census county-to-town crosswalk (snowlight.sources.stations.dma); market ''Hartford & New
+      Haven, CT DMA'''
+    fips: [09110, 09130, 09140, 09150, 09160, 09170, 09180, 09190]
+  page_url: https://www.wfsb.com/weather/closings/
+  data_url: https://webpubcontent.gray.tv/wfsb/xml/WFSBclosings.html
+  export_url: https://s3.amazonaws.com/grayfilestore-wfsb/closingsData/closings_WFSB.json
+  archive_urls:
+  - https://s3.amazonaws.com/grayfilestore-wfsb/closingsData/closings_WFSB.json
+  - https://grayfilestore-wfsb.s3.amazonaws.com/closingsData/closings_WFSB.json
+  - https://www.wfsb.com/weather/closings/
+  - http://lmgcorporate.com/closings/wfsb/Closings/WFSBclosings.xml
+  - https://webpubcontent.gray.tv/wfsb/xml/WFSBclosings.html
+  poll_minutes: null
+  status: active
+  evidence: 'Export https://s3.amazonaws.com/grayfilestore-wfsb/closingsData/closings_WFSB.json: Endpoint
+    verified: the station''s S3 GSync export key exists and returned an explicit empty export on 2026-09-25.
+    WebFetch shows no Last-Modified header, so whether the station still writes to this file is unproven.
+    The closings page itself was not loaded. (research round 3-4, docs/research/sources.json). Station
+    site: wfsb.com (wikidata-owner-query). Market ''Hartford-New Haven'' from the research record. Archive:
+    closings page confirmed by Wayback captures read with the gray adapter: 2018-12-12 16:14Z https://www.wfsb.com/weather/closings/
+    (gray-blox-script, deferred, 0 rows; run 36136683508); 2019-11-13 09:49Z https://www.wfsb.com/weather/closings/
+    (gray-blox-script, deferred, 0 rows; run 36136683508); 2020-03-13 17:52Z https://www.wfsb.com/weather/closings/
+    (gray-blox-script, deferred, 0 rows; run 36136683508); 2024-12-05 16:25Z https://www.wfsb.com/weather/closings/
+    (gray-fusion-orgs, empty, 0 rows; run 36111087246). Wayback CDX: 363 captures with HTTP 200 of https://www.wfsb.com/weather/closings/,
+    https://www.wfsb.com/weather/closings/&/, https://www.wfsb.com/weather/closings/&/&/ and other forms,
+    2018-09-11 to 2026-09-02.'
+  list_files:
+  - url: http://lmgcorporate.com/closings/wfsb/Closings/WFSBclosings.xml
+    loaded_by: script
+    seen: gray-blox-script page https://www.wfsb.com/weather/closings/ captured 2018-12-12T16:14:45Z (and
+      2 more captures to 2020-03-13T17:52:50Z) loads it
+  - url: https://webpubcontent.gray.tv/wfsb/xml/WFSBclosings.html
+    loaded_by: frame
+    seen: gray-fusion-frame page https://www.wfsb.com/weather/closings/ captured 2024-12-05T16:25:14Z
+      frames it
+  page_check:
+    checked_at: '2026-09-26T22:48:50Z'
+    page: https://www.wfsb.com/weather/closings/
+    loads:
+    - https://webpubcontent.gray.tv/wfsb/xml/WFSBclosings.html
+    shows: 'The framed list: UPDATED SATURDAY, SEP 26 AT 6:48 PM First Church/Christ Cong-E Haddam: No
+      Services Tomorrow; No Religious Ed. First Congregational Ch-Plainfield: Closed Tomorrow First Spiritualist
+      Ch-Willimantic: Closed Tomorrow Morning; No Services Korean Language-Cultural Inst-Htfd: Closed
+      Today; Event Cancelled '
+    method: 'Opened in Chromium 141 (Playwright 1.56.1, headless) with the project''s User-Agent; images,
+      media and fonts not loaded; waited 12 s, scrolled to the end and waited 5 s more, recording every
+      request and response (survey of 2026-09-26). loads: the closings list files the page requested that
+      answered 200, without the cache-busting query the page adds.'
+  robots:
+  - url: https://www.wfsb.com/weather/closings/
+    checked_at: '2026-09-26T23:07:49Z'
+    state: parsed
+    allowed: true
+    rule: 'Allow: /weather/'
+    crawl_delay: null
+    disallowed_agents:
+    - amazonbot
+    - anthropic-ai
+    - bytespider
+    - ccbot
+    - chatgpt-user
+    - claude-web
+    - claudebot
+    - facebookbot
+    - google-extended
+    - gptbot
+    - omgili
+    - omgilibot
+    - perplexitybot
+    sha256: 3012747d29734f55603cae374c6791419fd85e1971c7c6555e0334b7b9286cda
+  - url: https://webpubcontent.gray.tv/wfsb/xml/WFSBclosings.html
+    checked_at: '2026-09-26T23:07:49Z'
+    state: parsed
+    allowed: false
+    rule: 'Disallow: /'
+    crawl_delay: null
+    disallowed_agents: []
+    sha256: e3d6204ad4708e10050adbeafefd2abf9fa8764b5b590bd61ba36f709a4bf202
+- id: gray-wlbt
+  platform: gray
+  call_sign: WLBT
+  name: WLBT 3
+  market: Jackson MS
+  dma: Jackson, MS DMA
+  states: [MS]
+  counties:
+    basis: dma
+    source: 'DMA county list: alex-patton/US-TVDMA-BY-COUNTY usa-tvdma-county.csv at commit 7f254b8c1843c62ec976a71c40d366d45f6f29cd
+      (sha256 2e2cd00265a8d704...), names resolved to FIPS with the Census 2025 county Gazetteer; Connecticut
+      via the Census county-to-town crosswalk (snowlight.sources.stations.dma); market ''Jackson, MS DMA'''
+    fips: ['28001', '28007', '28021', '28029', '28037', '28049', '28051', '28053', '28055', '28063', '28065',
+      '28077', '28079', '28085', '28089', '28113', '28121', '28123', '28125', '28127', '28129', '28147',
+      '28149', '28163']
+  page_url: https://www.wlbt.com/weather/closings/
+  data_url: https://s3.amazonaws.com/grayfilestore-wlbt/closingsData/closings_WLBT.json
+  export_url: https://s3.amazonaws.com/grayfilestore-wlbt/closingsData/closings_WLBT.json
+  archive_urls:
+  - https://s3.amazonaws.com/grayfilestore-wlbt/closingsData/closings_WLBT.json
+  - https://grayfilestore-wlbt.s3.amazonaws.com/closingsData/closings_WLBT.json
+  - https://www.wlbt.com/pf/api/v3/content/fetch/gsync-closings
+  - https://www.wlbt.com/weather/closings/
+  poll_minutes: null
+  status: active
+  evidence: 'Export https://s3.amazonaws.com/grayfilestore-wlbt/closingsData/closings_WLBT.json: Endpoint
+    verified: the station''s S3 GSync export key exists and returned an explicit empty export on 2026-09-25.
+    WebFetch shows no Last-Modified header, so whether the station still writes to this file is unproven.
+    The closings page itself was not loaded. (research round 3-4, docs/research/sources.json). Station
+    site: wlbt.com (research). Market ''Jackson MS'' from the research record. Archive: closings page
+    confirmed by Wayback captures read with the gray adapter: 2026-01-18 06:23Z https://www.wlbt.com/weather/closings/
+    (gray-fusion-count, empty, 0 rows; run 36094846376). Wayback CDX: 215 captures with HTTP 200 of http://www.wlbt.com/weather/closings/,
+    http://www.wlbt.com/weather/closings/&/, http://www.wlbt.com/weather/closings/&/&quot;/pf/resources/images/logo-icons/wlbt.svg
+    and other forms, 2018-09-07 to 2026-09-17. The export in the Wayback Machine: 8 captures of the export
+    (fetched by the station page with a cache-busting query), 2025-01-20 to 2026-01-18 (CDX inventory
+    of s3.amazonaws.com/grayfilestore-*, archive-captures run 36089770410). Arc content API captures read
+    with the gray adapter: 2022-11-29 19:43Z https://www.wlbt.com/pf/api/v3/content/fetch/gsync-closings
+    (gray-api-orgs, populated, 14 rows; run 36123975119). Export captures read with the gray adapter:
+    2025-01-20 19:17Z (populated, 20 rows; run 36108881203).'
+  list_files: []
+  page_check:
+    checked_at: '2026-09-26T22:51:01Z'
+    page: https://www.wlbt.com/weather/closings/
+    loads:
+    - https://s3.amazonaws.com/grayfilestore-wlbt/closingsData/closings_WLBT.json
+    shows: 'The page''s closings area: No closings are listed at this time.'
+    method: 'Opened in Chromium 141 (Playwright 1.56.1, headless) with the project''s User-Agent; images,
+      media and fonts not loaded; waited 12 s, scrolled to the end and waited 5 s more, recording every
+      request and response (survey of 2026-09-26). loads: the closings list files the page requested that
+      answered 200, without the cache-busting query the page adds.'
+  robots:
+  - url: https://www.wlbt.com/weather/closings/
+    checked_at: '2026-09-26T23:07:59Z'
+    state: parsed
+    allowed: true
+    rule: 'Allow: /weather/'
+    crawl_delay: null
+    disallowed_agents:
+    - amazonbot
+    - anthropic-ai
+    - bytespider
+    - ccbot
+    - chatgpt-user
+    - claude-web
+    - claudebot
+    - facebookbot
+    - google-extended
+    - gptbot
+    - omgili
+    - omgilibot
+    - perplexitybot
+    sha256: eb39b8f24a1c1bc77c2054a070a604a755a5971cfb63a21dae63888b671ec3b3
+  - url: https://s3.amazonaws.com/grayfilestore-wlbt/closingsData/closings_WLBT.json
+    checked_at: '2026-09-26T23:07:59Z'
+    state: unavailable
+    allowed: true
+    rule: 'robots.txt unavailable (4xx): unrestricted'
+    crawl_delay: null
+    disallowed_agents: []
+    sha256: null
+- id: gray-wtva
+  platform: gray
+  call_sign: WTVA
+  name: WTVA 9
+  market: Tupelo-Columbus MS
+  dma: Columbus - Tupelo - West Point, MS - AL DMA
+  states: [AL, MS]
+  counties:
+    basis: dma
+    source: 'DMA county list: alex-patton/US-TVDMA-BY-COUNTY usa-tvdma-county.csv at commit 7f254b8c1843c62ec976a71c40d366d45f6f29cd
+      (sha256 2e2cd00265a8d704...), names resolved to FIPS with the Census 2025 county Gazetteer; Connecticut
+      via the Census county-to-town crosswalk (snowlight.sources.stations.dma); market ''Columbus - Tupelo
+      - West Point, MS - AL DMA'''
+    fips: ['01075', '28013', '28017', '28019', '28025', '28057', '28081', '28087', '28095', '28097', '28103',
+      '28105', '28115', '28117', '28141', '28145', '28155', '28159', '28161']
+  page_url: https://www.wtva.com/weather/closings/
+  data_url: https://s3.amazonaws.com/grayfilestore-wtva/closingsData/closings_WTVA.json
+  export_url: https://s3.amazonaws.com/grayfilestore-wtva/closingsData/closings_WTVA.json
+  archive_urls:
+  - https://s3.amazonaws.com/grayfilestore-wtva/closingsData/closings_WTVA.json
+  - https://grayfilestore-wtva.s3.amazonaws.com/closingsData/closings_WTVA.json
+  - https://www.wtva.com/weather/closings/
+  - https://amb-feeds.s3.amazonaws.com/WTVA_closings.json
+  - https://ftp2.wtva.com/All_Active.html
+  poll_minutes: null
+  status: active
+  evidence: 'Export https://s3.amazonaws.com/grayfilestore-wtva/closingsData/closings_WTVA.json: Endpoint
+    verified: the station''s S3 GSync export key exists and returned an explicit empty export on 2026-09-25.
+    WebFetch shows no Last-Modified header, so whether the station still writes to this file is unproven.
+    The closings page itself was not loaded. (research round 3-4, docs/research/sources.json). Station
+    site: wtva.com (research, wikidata-owner-query). Market ''Tupelo-Columbus MS'' from the research record.
+    A capture of https://www.wtva.com/weather/closings/ (2024-11-22 22:17Z, run 36123975119) is not a
+    page the gray adapter reads (it is a TownNews BLOX page (tncms), the station''s site before it moved
+    to Gray''s Arc XP platform; BLOX pages belong to the townnews-blox platform''s adapter, not this one),
+    so it confirms nothing. A capture of https://www.wtva.com/weather/closings/ (2024-11-22 22:17Z, run
+    36123975119) is not a page the gray adapter reads (it is a TownNews BLOX page (tncms), the station''s
+    site before it moved to Gray''s Arc XP platform; BLOX pages belong to the townnews-blox platform''s
+    adapter, not this one), so it confirms nothing. Archive: closings page confirmed by Wayback captures
+    read with the gray adapter: 2024-11-22 22:17Z https://www.wtva.com/weather/closings/ (gray-blox-script,
+    deferred, 0 rows; run 36123975119). No capture of it since 2023 read so far is one of Gray''s Arc
+    pages, so its current address is not confirmed and it is kept only as an archive URL. Wayback CDX:
+    267 captures with HTTP 200 of http://www.wtva.com/weather/closings/, http://www.wtva.com:80/weather/closings/,
+    https://www.wtva.com/weather/closings/, 2017-11-10 to 2026-08-09.'
+  list_files:
+  - url: https://amb-feeds.s3.amazonaws.com/WTVA_closings.json
+    loaded_by: script
+    seen: gray-frame page https://www.wtva.com/weather/closings/ captured 2024-11-22T22:17:20Z loads it
+  - url: https://ftp2.wtva.com/All_Active.html
+    loaded_by: frame
+    seen: gray-frame page https://www.wtva.com/weather/closings/ captured 2024-11-22T22:17:20Z frames
+      it
+  page_check:
+    checked_at: '2026-09-26T22:55:01Z'
+    page: https://www.wtva.com/weather/closings/
+    loads:
+    - https://s3.amazonaws.com/grayfilestore-wtva/closingsData/closings_WTVA.json
+    shows: 'The page''s closings area: No closings are listed at this time.'
+    method: 'Opened in Chromium 141 (Playwright 1.56.1, headless) with the project''s User-Agent; images,
+      media and fonts not loaded; waited 12 s, scrolled to the end and waited 5 s more, recording every
+      request and response (survey of 2026-09-26). loads: the closings list files the page requested that
+      answered 200, without the cache-busting query the page adds.'
+  robots:
+  - url: https://www.wtva.com/weather/closings/
+    checked_at: '2026-09-26T23:08:14Z'
+    state: parsed
+    allowed: true
+    rule: 'Allow: /weather/'
+    crawl_delay: null
+    disallowed_agents:
+    - amazonbot
+    - anthropic-ai
+    - bytespider
+    - ccbot
+    - chatgpt-user
+    - claude-web
+    - claudebot
+    - facebookbot
+    - google-extended
+    - gptbot
+    - omgili
+    - omgilibot
+    - perplexitybot
+    sha256: 32a316b29cc78c2a109796ecef5ae6638da1765d44817ea571156bf7452b71b8
+  - url: https://s3.amazonaws.com/grayfilestore-wtva/closingsData/closings_WTVA.json
+    checked_at: '2026-09-26T23:08:14Z'
+    state: unavailable
+    allowed: true
+    rule: 'robots.txt unavailable (4xx): unrestricted'
+    crawl_delay: null
+    disallowed_agents: []
+    sha256: null
