@@ -79,6 +79,7 @@ jobs:
           cat > "$RUNNER_TEMP/archive_reader.py" <<'PY'
           """Wayback CDX listings and raw snapshot downloads (stdlib only)."""
           import hashlib
+          import http.client
           import json
           import os
           import re
@@ -197,7 +198,10 @@ jobs:
                       last = f"HTTP {error.code}"
                       retry_after = error.headers.get("Retry-After", "")
                       wait = float(retry_after) if retry_after.isdigit() else None
-                  except (urllib.error.URLError, TimeoutError, ConnectionError, OSError) as error:
+                  except (urllib.error.URLError, http.client.HTTPException, TimeoutError,
+                          ConnectionError, OSError) as error:
+                      # HTTPException covers a body cut off mid-read (IncompleteRead),
+                      # which is transient like a reset connection.
                       last = f"{type(error).__name__}: {error}"
                       wait = None
                   if attempt + 1 < ATTEMPTS:
@@ -320,7 +324,13 @@ jobs:
                           continue
                       if index:
                           time.sleep(PAUSE)
-                      record = download(item)
+                      try:
+                          record = download(item)
+                      except Exception as error:  # one bad capture must not end the run
+                          record = {"timestamp": item["timestamp"], "url": item["url"],
+                                    "requested": f"{WAYBACK}/web/{item['timestamp']}id_/{item['url']}",
+                                    "hops": [], "retrieved_at": now(),
+                                    "error": f"{type(error).__name__}: {error}"}
                       saved += "sha256" in record
                       manifest.write(json.dumps(record, sort_keys=True) + "\n")
                       manifest.flush()
@@ -330,7 +340,10 @@ jobs:
           for index, item in enumerate(listings):
               if index or snapshots:
                   time.sleep(PAUSE)
-              listed += list_captures(item)
+              try:
+                  listed += list_captures(item)
+              except Exception as error:  # one bad listing must not end the run
+                  print(f"{item['url']}: request failed ({type(error).__name__}: {error})")
           print(f"snapshots: {saved} of {len(snapshots)}; listings: {listed} of {len(listings)}")
           PY
       - name: Download snapshots
