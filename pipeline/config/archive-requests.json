@@ -1,124 +1,44 @@
 {
-  "cdx": [
+  "snapshots": [
     {
-      "url": "www.fox5dc.org/closings/closingsnt.html*",
-      "from": "20140101",
-      "to": "20260930",
-      "filter": [
-        "statuscode:200"
-      ]
+      "timestamp": "20250214035445",
+      "url": "https://fox4kc.com/wp-json/nxd_app/v1/closings_alerts"
     },
     {
-      "url": "media.foxtv.com/wttg/public_html/closings/closingsnt.html*",
-      "from": "20140101",
-      "to": "20260930",
-      "filter": [
-        "statuscode:200"
-      ]
+      "timestamp": "20250119005054",
+      "url": "https://www.pahomepage.com/wp-json/nxd_app/v1/closings_alerts"
     },
     {
-      "url": "wagaradio2.com/closings/closings.htm*",
-      "from": "20140101",
-      "to": "20260930",
-      "filter": [
-        "statuscode:200"
-      ]
+      "timestamp": "20250117232810",
+      "url": "https://www.wric.com/wp-json/nxd_app/v1/closings_alerts"
     },
     {
-      "url": "media.fox2detroit.com/media.fox2detroit.com/closings/closings.html*",
-      "from": "20140101",
-      "to": "20260930",
-      "filter": [
-        "statuscode:200"
-      ]
+      "timestamp": "20250127004519",
+      "url": "https://www.wric.com/wp-json/nxd_app/v1/closings_alerts"
     },
     {
-      "url": "media2.fox2detroit.com/closings.html*",
-      "from": "20140101",
-      "to": "20260930",
-      "filter": [
-        "statuscode:200"
-      ]
+      "timestamp": "20250821110549",
+      "url": "https://www.wric.com/wp-json/nxd_app/v1/closings_alerts"
     },
     {
-      "url": "media.fox9.com/media.fox9.com/weather/closings.html*",
-      "from": "20140101",
-      "to": "20260930",
-      "filter": [
-        "statuscode:200"
-      ]
+      "timestamp": "20251026114537",
+      "url": "https://www.wric.com/wp-json/nxd_app/v1/closings_alerts"
     },
     {
-      "url": "media.foxtv.com/kmsp/weather/closings/closings.html*",
-      "from": "20140101",
-      "to": "20260930",
-      "filter": [
-        "statuscode:200"
-      ]
+      "timestamp": "20260208074307",
+      "url": "https://www.wric.com/wp-json/nxd_app/v1/closings_alerts"
     },
     {
-      "url": "s3.amazonaws.com/media.fox9.com/weather/closings.html*",
-      "from": "20140101",
-      "to": "20260930",
-      "filter": [
-        "statuscode:200"
-      ]
+      "timestamp": "20241106023324",
+      "url": "https://www.ktsm.com/wp-json/nxd_app/v1/closings_alerts"
     },
     {
-      "url": "media2.fox5ny.com/closings/closing.htm*",
-      "from": "20140101",
-      "to": "20260930",
-      "filter": [
-        "statuscode:200"
-      ]
+      "timestamp": "20241102055842",
+      "url": "https://www.ktsm.com/wp-json/nxd_app/v1/closings_alerts"
     },
     {
-      "url": "media.fox29.com/media.fox29.com/weather/icons/closings.html*",
-      "from": "20140101",
-      "to": "20260930",
-      "filter": [
-        "statuscode:200"
-      ]
-    },
-    {
-      "url": "media.foxtv.com/wtxf/feeds/closings.html*",
-      "from": "20140101",
-      "to": "20260930",
-      "filter": [
-        "statuscode:200"
-      ]
-    },
-    {
-      "url": "s3.amazonaws.com/media.fox29.com/weather/icons/closings.html*",
-      "from": "20140101",
-      "to": "20260930",
-      "filter": [
-        "statuscode:200"
-      ]
-    },
-    {
-      "url": "s3.amazonaws.com/witiclosings/witi.html*",
-      "from": "20140101",
-      "to": "20260930",
-      "filter": [
-        "statuscode:200"
-      ]
-    },
-    {
-      "url": "static.cbslocal.com/Integrations/SchoolClosings/PRODUCTION/CBS/kdka/NEWSROOM/KDKAclosings.xml*",
-      "from": "20140101",
-      "to": "20260930",
-      "filter": [
-        "statuscode:200"
-      ]
-    },
-    {
-      "url": "www.emergencyclosingcenter.com/ecc/*",
-      "from": "20140101",
-      "to": "20260930",
-      "filter": [
-        "statuscode:200"
-      ]
+      "timestamp": "20251219092407",
+      "url": "https://www.2822news.com/weather/closings/"
     }
   ]
 }
