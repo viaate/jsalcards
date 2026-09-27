@@ -53,13 +53,15 @@ const SHARED_CHUNK = /\/assets\/maplibre-shared-[\w-]+\.js$/;
 /**
  * Everything the map downloads after first paint, by name without the content
  * hash: the basemap code, MapLibre's page module, its shared module, its
- * worker's source, and the bundled US lines.
+ * worker's source, the street tile code its workers import, and the bundled
+ * US lines.
  */
 const MAP_DOWNLOADS = [
   'basemap',
   'maplibre',
   'maplibre-shared',
   'maplibre-worker',
+  'street-tiles',
   'us-lines',
 ] as const;
 /** MapLibre's scripts, gzipped at zlib's default level, as a static host serves them. */
@@ -541,7 +543,9 @@ test.describe('handover to the WebGL map', () => {
       fcp: performance.getEntriesByName('first-contentful-paint')[0]?.startTime ?? Infinity,
       starts: performance
         .getEntriesByType('resource')
-        .filter((entry) => /\/(assets|geo)\/(basemap|maplibre|us-lines)/.test(entry.name))
+        .filter((entry) =>
+          /\/(assets|geo)\/(basemap|maplibre|street-tiles|us-lines)/.test(entry.name),
+        )
         .map((entry) => entry.startTime),
     }));
     expect(timing.starts.length).toBeGreaterThanOrEqual(MAP_DOWNLOADS.length);

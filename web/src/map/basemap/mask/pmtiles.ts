@@ -1,0 +1,455 @@
+/**
+ * PMTiles version 3 (https://github.com/protomaps/PMTiles/blob/main/spec/v3/spec.md),
+ * written by the mask build script and read by the street tile workers.
+ *
+ * The reader asks for byte ranges: the header and root directory in one
+ * request, then leaf directories and tiles as they are needed, each kept once
+ * read. Directories are gzipped; tiles are stored as they are (vector tiles of
+ * a few hundred bytes, many of them identical and stored once).
+ */
+import { Reader, Writer } from './protobuf';
+
+export const HEADER_BYTES = 127;
+/** The header and root directory together fit in this many bytes, so one request reads both. */
+export const ROOT_BYTES = 16_384;
+
+const COMPRESSION_NONE = 1;
+const COMPRESSION_GZIP = 2;
+const TILE_TYPE_MVT = 1;
+
+export interface Entry {
+  readonly tileId: number;
+  readonly offset: number;
+  readonly length: number;
+  /** Tiles in a row sharing these bytes; 0 marks a leaf directory. */
+  readonly runLength: number;
+}
+
+export interface Header {
+  readonly rootOffset: number;
+  readonly rootLength: number;
+  readonly metadataOffset: number;
+  readonly metadataLength: number;
+  readonly leafOffset: number;
+  readonly leafLength: number;
+  readonly tileDataOffset: number;
+  readonly tileDataLength: number;
+  readonly addressedTiles: number;
+  readonly tileEntries: number;
+  readonly tileContents: number;
+  readonly clustered: boolean;
+  readonly internalCompression: number;
+  readonly tileCompression: number;
+  readonly tileType: number;
+  readonly minZoom: number;
+  readonly maxZoom: number;
+  /** West, south, east, north in degrees. */
+  readonly bounds: readonly [number, number, number, number];
+  readonly center: readonly [lon: number, lat: number, zoom: number];
+}
+
+/** Tiles above zoom z, all counted: where zoom z's ids start. */
+function zoomStart(z: number): number {
+  return (4 ** z - 1) / 3;
+}
+
+/** A tile's id: its zoom's start plus its place along a Hilbert curve over the zoom. */
+export function zxyToTileId(z: number, x: number, y: number): number {
+  const n = 2 ** z;
+  if (!Number.isInteger(z) || z < 0 || z > 26 || x < 0 || y < 0 || x >= n || y >= n) {
+    throw new Error(`pmtiles: no tile ${String(z)}/${String(x)}/${String(y)}`);
+  }
+  let d = 0;
+  let tx = x;
+  let ty = y;
+  for (let s = n / 2; s >= 1; s /= 2) {
+    const rx = Math.floor(tx / s) % 2;
+    const ry = Math.floor(ty / s) % 2;
+    d += s * s * ((3 * rx) ^ ry);
+    if (ry === 0) {
+      if (rx === 1) {
+        tx = s - 1 - (tx % s);
+        ty = s - 1 - (ty % s);
+      }
+      [tx, ty] = [ty, tx];
+    }
+    tx %= s;
+    ty %= s;
+  }
+  return zoomStart(z) + d;
+}
+
+export function serializeDirectory(entries: readonly Entry[]): Uint8Array {
+  const writer = new Writer();
+  writer.varint(entries.length);
+  let lastId = 0;
+  for (const entry of entries) {
+    writer.varint(entry.tileId - lastId);
+    lastId = entry.tileId;
+  }
+  for (const entry of entries) writer.varint(entry.runLength);
+  for (const entry of entries) writer.varint(entry.length);
+  entries.forEach((entry, i) => {
+    const previous = i > 0 ? entries[i - 1] : undefined;
+    if (previous !== undefined && entry.offset === previous.offset + previous.length) {
+      writer.varint(0);
+    } else {
+      writer.varint(entry.offset + 1);
+    }
+  });
+  return writer.finish();
+}
+
+export function deserializeDirectory(bytes: Uint8Array): Entry[] {
+  const reader = new Reader(bytes);
+  const count = reader.varint();
+  const ids: number[] = [];
+  let lastId = 0;
+  for (let i = 0; i < count; i++) {
+    lastId += reader.varint();
+    ids.push(lastId);
+  }
+  const runs = Array.from({ length: count }, () => reader.varint());
+  const lengths = Array.from({ length: count }, () => reader.varint());
+  const entries: Entry[] = [];
+  for (let i = 0; i < count; i++) {
+    const raw = reader.varint();
+    const previous = entries[i - 1];
+    const length = lengths[i] ?? 0;
+    const offset =
+      raw === 0 && previous !== undefined ? previous.offset + previous.length : raw - 1;
+    entries.push({ tileId: ids[i] ?? 0, offset, length, runLength: runs[i] ?? 0 });
+  }
+  return entries;
+}
+
+/** The entry that holds `tileId`, a leaf directory that may, or null. */
+export function findEntry(entries: readonly Entry[], tileId: number): Entry | null {
+  let low = 0;
+  let high = entries.length - 1;
+  while (low <= high) {
+    const mid = (low + high) >> 1;
+    const entry = entries[mid];
+    if (entry === undefined) break;
+    if (entry.tileId < tileId) low = mid + 1;
+    else if (entry.tileId > tileId) high = mid - 1;
+    else return entry;
+  }
+  const entry = entries[high];
+  if (entry === undefined) return null;
+  if (entry.runLength === 0 || tileId - entry.tileId < entry.runLength) return entry;
+  return null;
+}
+
+function writeU64(view: DataView, at: number, value: number): void {
+  view.setBigUint64(at, BigInt(value), true);
+}
+
+function readU64(view: DataView, at: number): number {
+  return Number(view.getBigUint64(at, true));
+}
+
+export function encodeHeader(header: Header): Uint8Array {
+  const bytes = new Uint8Array(HEADER_BYTES);
+  bytes.set(new TextEncoder().encode('PMTiles'), 0);
+  bytes[7] = 3;
+  const view = new DataView(bytes.buffer);
+  const u64 = [
+    header.rootOffset,
+    header.rootLength,
+    header.metadataOffset,
+    header.metadataLength,
+    header.leafOffset,
+    header.leafLength,
+    header.tileDataOffset,
+    header.tileDataLength,
+    header.addressedTiles,
+    header.tileEntries,
+    header.tileContents,
+  ];
+  u64.forEach((value, i) => {
+    writeU64(view, 8 + i * 8, value);
+  });
+  view.setUint8(96, header.clustered ? 1 : 0);
+  view.setUint8(97, header.internalCompression);
+  view.setUint8(98, header.tileCompression);
+  view.setUint8(99, header.tileType);
+  view.setUint8(100, header.minZoom);
+  view.setUint8(101, header.maxZoom);
+  const e7 = (degrees: number): number => Math.round(degrees * 1e7);
+  const [west, south, east, north] = header.bounds;
+  view.setInt32(102, e7(west), true);
+  view.setInt32(106, e7(south), true);
+  view.setInt32(110, e7(east), true);
+  view.setInt32(114, e7(north), true);
+  view.setUint8(118, header.center[2]);
+  view.setInt32(119, e7(header.center[0]), true);
+  view.setInt32(123, e7(header.center[1]), true);
+  return bytes;
+}
+
+export function decodeHeader(bytes: Uint8Array): Header {
+  if (bytes.length < HEADER_BYTES || new TextDecoder().decode(bytes.subarray(0, 7)) !== 'PMTiles') {
+    throw new Error('pmtiles: not a PMTiles archive');
+  }
+  if (bytes[7] !== 3) throw new Error(`pmtiles: version ${String(bytes[7])}, expected 3`);
+  const view = new DataView(bytes.buffer, bytes.byteOffset, bytes.byteLength);
+  const u64 = (i: number): number => readU64(view, 8 + i * 8);
+  const e7 = (at: number): number => view.getInt32(at, true) / 1e7;
+  return {
+    rootOffset: u64(0),
+    rootLength: u64(1),
+    metadataOffset: u64(2),
+    metadataLength: u64(3),
+    leafOffset: u64(4),
+    leafLength: u64(5),
+    tileDataOffset: u64(6),
+    tileDataLength: u64(7),
+    addressedTiles: u64(8),
+    tileEntries: u64(9),
+    tileContents: u64(10),
+    clustered: view.getUint8(96) === 1,
+    internalCompression: view.getUint8(97),
+    tileCompression: view.getUint8(98),
+    tileType: view.getUint8(99),
+    minZoom: view.getUint8(100),
+    maxZoom: view.getUint8(101),
+    bounds: [e7(102), e7(106), e7(110), e7(114)],
+    center: [e7(119), e7(123), view.getUint8(118)],
+  };
+}
+
+export interface ArchiveTile {
+  readonly z: number;
+  readonly x: number;
+  readonly y: number;
+  readonly bytes: Uint8Array;
+}
+
+export interface ArchiveOptions {
+  readonly metadata: unknown;
+  readonly bounds: readonly [number, number, number, number];
+  readonly center: readonly [lon: number, lat: number, zoom: number];
+  /** gzip, from the platform: node:zlib in the build. */
+  readonly gzip: (bytes: Uint8Array) => Uint8Array;
+}
+
+function concat(parts: readonly Uint8Array[]): Uint8Array {
+  const out = new Uint8Array(parts.reduce((sum, part) => sum + part.length, 0));
+  let at = 0;
+  for (const part of parts) {
+    out.set(part, at);
+    at += part.length;
+  }
+  return out;
+}
+
+function key(bytes: Uint8Array): string {
+  // Tiles are small; their bytes as text make an exact key for finding repeats.
+  let text = '';
+  for (const byte of bytes) text += String.fromCharCode(byte);
+  return text;
+}
+
+/**
+ * A complete archive: tiles in id order, each distinct content stored once,
+ * runs of a repeated tile in one entry, and the directory split into leaves
+ * when it would not fit in the first ROOT_BYTES.
+ */
+export function writeArchive(tiles: readonly ArchiveTile[], options: ArchiveOptions): Uint8Array {
+  const sorted = tiles
+    .map((tile) => ({ id: zxyToTileId(tile.z, tile.x, tile.y), tile }))
+    .sort((a, b) => a.id - b.id);
+  const data: Uint8Array[] = [];
+  let dataLength = 0;
+  const stored = new Map<string, { offset: number; length: number }>();
+  const entries: Entry[] = [];
+  for (const { id, tile } of sorted) {
+    const previous = entries[entries.length - 1];
+    if (previous?.tileId === id) {
+      throw new Error(`pmtiles: tile ${String(tile.z)}/${String(tile.x)}/${String(tile.y)} twice`);
+    }
+    const content = key(tile.bytes);
+    let place = stored.get(content);
+    if (place === undefined) {
+      place = { offset: dataLength, length: tile.bytes.length };
+      stored.set(content, place);
+      data.push(tile.bytes);
+      dataLength += tile.bytes.length;
+    }
+    if (previous?.offset === place.offset && previous.tileId + previous.runLength === id) {
+      entries[entries.length - 1] = { ...previous, runLength: previous.runLength + 1 };
+    } else {
+      entries.push({ tileId: id, offset: place.offset, length: place.length, runLength: 1 });
+    }
+  }
+
+  const metadata = options.gzip(new TextEncoder().encode(JSON.stringify(options.metadata)));
+  let root = options.gzip(serializeDirectory(entries));
+  let leaves: Uint8Array = new Uint8Array(0);
+  // Split into leaves, larger each try, until the root fits beside the header.
+  for (let leafSize = 4096; HEADER_BYTES + root.length > ROOT_BYTES; leafSize *= 2) {
+    const leafParts: Uint8Array[] = [];
+    const rootEntries: Entry[] = [];
+    let leafOffset = 0;
+    for (let i = 0; i < entries.length; i += leafSize) {
+      const chunk = entries.slice(i, i + leafSize);
+      const leaf = options.gzip(serializeDirectory(chunk));
+      rootEntries.push({
+        tileId: chunk[0]?.tileId ?? 0,
+        offset: leafOffset,
+        length: leaf.length,
+        runLength: 0,
+      });
+      leafParts.push(leaf);
+      leafOffset += leaf.length;
+    }
+    root = options.gzip(serializeDirectory(rootEntries));
+    leaves = concat(leafParts);
+  }
+
+  const zooms = tiles.map((tile) => tile.z);
+  const rootOffset = HEADER_BYTES;
+  const metadataOffset = rootOffset + root.length;
+  const leafOffset = metadataOffset + metadata.length;
+  const tileDataOffset = leafOffset + leaves.length;
+  const header = encodeHeader({
+    rootOffset,
+    rootLength: root.length,
+    metadataOffset,
+    metadataLength: metadata.length,
+    leafOffset,
+    leafLength: leaves.length,
+    tileDataOffset,
+    tileDataLength: dataLength,
+    addressedTiles: sorted.length,
+    tileEntries: entries.length,
+    tileContents: data.length,
+    clustered: true,
+    internalCompression: COMPRESSION_GZIP,
+    tileCompression: COMPRESSION_NONE,
+    tileType: TILE_TYPE_MVT,
+    minZoom: zooms.length > 0 ? Math.min(...zooms) : 0,
+    maxZoom: zooms.length > 0 ? Math.max(...zooms) : 0,
+    bounds: options.bounds,
+    center: options.center,
+  });
+  return concat([header, root, metadata, leaves, ...data]);
+}
+
+/** Reads `length` bytes at `offset` of the archive. */
+export type RangeReader = (offset: number, length: number) => Promise<Uint8Array>;
+
+/** Gunzips bytes: DecompressionStream in the browser, node:zlib in tests. */
+export type Gunzip = (bytes: Uint8Array) => Promise<Uint8Array>;
+
+export async function gunzipWithStreams(bytes: Uint8Array): Promise<Uint8Array> {
+  const stream = new Blob([bytes as Uint8Array<ArrayBuffer>])
+    .stream()
+    .pipeThrough(new DecompressionStream('gzip'));
+  return new Uint8Array(await new Response(stream).arrayBuffer());
+}
+
+/** An archive read through byte ranges, directories and tiles kept once read. */
+export class ArchiveReader {
+  private readonly read: RangeReader;
+  private readonly gunzip: Gunzip;
+  private header: Promise<{ header: Header; root: Entry[] }> | undefined;
+  private readonly leaves = new Map<number, Promise<Entry[]>>();
+  private readonly tiles = new Map<number, Promise<Uint8Array>>();
+
+  constructor(read: RangeReader, gunzip: Gunzip = gunzipWithStreams) {
+    this.read = read;
+    this.gunzip = gunzip;
+  }
+
+  private async directory(bytes: Uint8Array, compression: number): Promise<Entry[]> {
+    if (compression === COMPRESSION_GZIP) return deserializeDirectory(await this.gunzip(bytes));
+    if (compression === COMPRESSION_NONE) return deserializeDirectory(bytes);
+    throw new Error(`pmtiles: unsupported compression ${String(compression)}`);
+  }
+
+  /** The header and root directory; a failed read is tried again next time. */
+  start(): Promise<{ header: Header; root: Entry[] }> {
+    this.header ??= (async () => {
+      const first = await this.read(0, ROOT_BYTES);
+      const header = decodeHeader(first);
+      if (header.tileType !== TILE_TYPE_MVT) throw new Error('pmtiles: not vector tiles');
+      if (header.tileCompression !== COMPRESSION_NONE) {
+        throw new Error('pmtiles: compressed tiles are not supported');
+      }
+      const end = header.rootOffset + header.rootLength;
+      const rootBytes =
+        end <= first.length
+          ? first.subarray(header.rootOffset, end)
+          : await this.read(header.rootOffset, header.rootLength);
+      return {
+        header,
+        root: await this.directory(rootBytes, header.internalCompression),
+      };
+    })().catch((error: unknown) => {
+      this.header = undefined;
+      throw error;
+    });
+    return this.header;
+  }
+
+  private leaf(header: Header, entry: Entry): Promise<Entry[]> {
+    const at = header.leafOffset + entry.offset;
+    let leaf = this.leaves.get(at);
+    if (leaf === undefined) {
+      leaf = this.read(at, entry.length).then((bytes) =>
+        this.directory(bytes, header.internalCompression),
+      );
+      leaf.catch(() => this.leaves.delete(at));
+      this.leaves.set(at, leaf);
+    }
+    return leaf;
+  }
+
+  /** Where a tile's bytes are, or null when the archive has no such tile. */
+  async locate(z: number, x: number, y: number): Promise<Entry | null> {
+    const { header, root } = await this.start();
+    if (z < header.minZoom || z > header.maxZoom) return null;
+    const id = zxyToTileId(z, x, y);
+    let entries = root;
+    for (let depth = 0; depth < 4; depth++) {
+      const entry = findEntry(entries, id);
+      if (entry === null) return null;
+      if (entry.runLength > 0) return entry;
+      entries = await this.leaf(header, entry);
+    }
+    throw new Error('pmtiles: directories nested too deep');
+  }
+
+  /** A tile's bytes, or null. Tiles stored once are read once, whichever ids they serve. */
+  async tile(z: number, x: number, y: number): Promise<Uint8Array | null> {
+    const entry = await this.locate(z, x, y);
+    if (entry === null) return null;
+    const { header } = await this.start();
+    const at = header.tileDataOffset + entry.offset;
+    let bytes = this.tiles.get(at);
+    if (bytes === undefined) {
+      bytes = this.read(at, entry.length);
+      bytes.catch(() => this.tiles.delete(at));
+      this.tiles.set(at, bytes);
+    }
+    return bytes;
+  }
+}
+
+/** Reads byte ranges of a file over HTTP, taking a whole-file answer too. */
+export function httpRangeReader(url: string): RangeReader {
+  return async (offset, length) => {
+    const response = await fetch(url, {
+      headers: { Range: `bytes=${String(offset)}-${String(offset + length - 1)}` },
+    });
+    if (!response.ok) throw new Error(`${url}: HTTP ${String(response.status)}`);
+    const bytes = new Uint8Array(await response.arrayBuffer());
+    // A server that ignores Range sends the whole file.
+    if (response.status === 200 && bytes.length > length) {
+      return bytes.slice(offset, offset + length);
+    }
+    return bytes;
+  };
+}

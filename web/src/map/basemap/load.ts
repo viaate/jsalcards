@@ -8,14 +8,20 @@
  * - MapLibre's shared module (maplibre-shared.ts), which the page module
  *   imports and MapLibre's workers import too, so it downloads once,
  * - the worker's source (maplibre-worker.ts), a few KB,
+ * - the street tiles code (street-tiles.ts), which the workers import to cut
+ *   street tiles to the US, so it downloads once too,
  * - the bundled continental US lines, which the map is created with, so no
  *   worker has to fetch them after it boots.
+ *
+ * The US mask archive itself is read by the workers, a range at a time, only
+ * once the map needs street tiles (zoom 7 and up).
  *
  * This module is small and ships in the entry chunk; the map code does not.
  */
 import type { Basemap, BasemapOptions } from './index';
 import type { UsLinesData } from './style';
 import { US_LINES_FILE } from './us-geo';
+import { US_MASK_FILE } from './us-mask';
 
 export interface BasemapFactory {
   /** Creates the map. Synchronous: everything it needs is already here. */
@@ -49,14 +55,19 @@ function isUsLines(data: unknown): data is UsLinesData {
  * download fails; the still then stays.
  */
 export async function loadBasemap(): Promise<BasemapFactory> {
-  const [code, maplibre, shared, worker, usLines] = await Promise.all([
+  const [code, maplibre, shared, worker, streetTiles, usLines] = await Promise.all([
     import('./index'),
     import('./maplibre'),
     import('./maplibre-shared'),
     import('./maplibre-worker'),
+    import('./street-tiles'),
     fetchUsLines(),
   ]);
-  const workerUrl = worker.workerUrl(shared.SHARED_URL);
+  const workerUrl = worker.workerUrl({
+    shared: shared.SHARED_URL,
+    streetTiles: streetTiles.STREET_TILES_URL,
+    mask: publicUrl(US_MASK_FILE),
+  });
   code.startWorkers(maplibre, workerUrl);
   return {
     create: (options) => code.createBasemap({ ...options, maplibre, workerUrl, usLines }),

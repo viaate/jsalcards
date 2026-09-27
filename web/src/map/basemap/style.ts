@@ -8,6 +8,7 @@ import type {
 
 import { MAP_FONTS } from './fonts';
 import { BASEMAP_IDS } from './ids';
+import { BORDER_LAYER, MASK_LAYER } from './mask/format';
 import {
   OPENFREEMAP_ATTRIBUTION,
   OPENFREEMAP_MAX_ZOOM,
@@ -99,7 +100,14 @@ const buildingOpacity: ExpressionSpecification = [
   1,
 ];
 
-/** Water and park fills: tone shifts a hair off the ground, never a color. */
+/**
+ * Water and park fills: tone shifts a hair off the ground, never a color.
+ * The sea takes no fill: it is ground, as at the national view, so the US
+ * mask's edge out at sea (3 nautical miles off the coast, 9 off Texas and
+ * western Florida) never shows. The coast is the shore line. Lakes and
+ * rivers shared with Canada or Mexico keep the tone on the US side up to the
+ * border, where the border line is drawn along the mask's edge.
+ */
 const WATER_FILL = '#0c0c0c';
 const PARK_FILL = '#090909';
 /** Streams and rivers drawn as lines: a step above the water's fill, so they still read. */
@@ -118,6 +126,8 @@ const SHORE_DIM_END = 11;
 
 /** OpenMapTiles `water` classes left out: pools would speckle every suburb with shorelines. */
 const HIDDEN_WATER = ['swimming_pool'];
+/** Water classes with no fill: the sea. */
+const UNFILLED_WATER = [...HIDDEN_WATER, 'ocean'];
 
 /** Green space from OpenMapTiles `landcover`, drawn as the park tone. */
 const PARK_SUBCLASSES = ['park', 'recreation_ground', 'golf_course'];
@@ -372,8 +382,12 @@ const PLACE_LABEL_LAYOUT = {
  * The basemap style, built in code. At the initial view it needs nothing but
  * the bundled GeoJSON: no glyphs, sprites or tiles from anywhere else. From
  * zoom 7 it draws OpenFreeMap's streets, water, parks, buildings and names
- * (the OpenMapTiles schema). Labels are drawn by MapLibre from the Geist
- * faces in fonts.ts, so the style names no glyph server.
+ * (the OpenMapTiles schema), cut to the continental US and DC: the street
+ * tiles arrive without anything outside the US that could be drawn, placed
+ * or queried (street-tiles.ts), and carry the US mask, drawn in the ground
+ * color over every street, water, park and building layer, and the border
+ * line along its edge. Labels are drawn by MapLibre from the Geist faces in
+ * fonts.ts, so the style names no glyph server.
  */
 export function buildBasemapStyle({
   usLines,
@@ -394,24 +408,6 @@ export function buildBasemapStyle({
       paint: { 'background-color': colors.background },
     },
     {
-      id: BASEMAP_IDS.usStates,
-      type: 'line',
-      source: BASEMAP_IDS.usSource,
-      maxzoom: HANDOVER_END,
-      filter: ['==', ['get', 'kind'], 'state'],
-      layout: round,
-      paint: { 'line-color': colors.state, 'line-width': hairline, 'line-opacity': fadeOut },
-    },
-    {
-      id: BASEMAP_IDS.usOutline,
-      type: 'line',
-      source: BASEMAP_IDS.usSource,
-      maxzoom: HANDOVER_END,
-      filter: ['==', ['get', 'kind'], 'outline'],
-      layout: round,
-      paint: { 'line-color': colors.outline, 'line-width': hairline, 'line-opacity': fadeOut },
-    },
-    {
       id: BASEMAP_IDS.ofmPark,
       type: 'fill',
       ...ofm,
@@ -425,7 +421,7 @@ export function buildBasemapStyle({
       type: 'fill',
       ...ofm,
       'source-layer': 'water',
-      filter: ['match', CLASS, HIDDEN_WATER, false, true],
+      filter: ['match', CLASS, UNFILLED_WATER, false, true],
       paint: { 'fill-color': WATER_FILL, 'fill-opacity': fadeIn, 'fill-antialias': false },
     },
     {
@@ -488,15 +484,6 @@ export function buildBasemapStyle({
       },
     },
     {
-      id: BASEMAP_IDS.ofmCountries,
-      type: 'line',
-      ...ofm,
-      'source-layer': 'boundary',
-      filter: ['all', ['==', ['get', 'admin_level'], 2], ['!=', ['get', 'maritime'], 1]],
-      layout: round,
-      paint: { 'line-color': colors.outline, 'line-width': hairline, 'line-opacity': fadeIn },
-    },
-    {
       id: BASEMAP_IDS.ofmRoadTunnel,
       type: 'line',
       ...ofm,
@@ -548,6 +535,41 @@ export function buildBasemapStyle({
       filter: roadFilter('bridge'),
       layout: { ...round, 'line-sort-key': ROAD_SORT_KEY },
       paint: { 'line-color': roadColor(colors.background), 'line-width': roadWidth() },
+    },
+    {
+      // The ground over everything outside the US: street tiles carry it (street-tiles.ts).
+      id: BASEMAP_IDS.usMask,
+      type: 'fill',
+      ...ofm,
+      'source-layer': MASK_LAYER,
+      paint: { 'fill-color': colors.background },
+    },
+    {
+      id: BASEMAP_IDS.usBorder,
+      type: 'line',
+      ...ofm,
+      'source-layer': BORDER_LAYER,
+      layout: round,
+      paint: { 'line-color': colors.outline, 'line-width': hairline, 'line-opacity': fadeIn },
+    },
+    // The bundled lines are the US's own, so they draw over the mask while they hand over.
+    {
+      id: BASEMAP_IDS.usStates,
+      type: 'line',
+      source: BASEMAP_IDS.usSource,
+      maxzoom: HANDOVER_END,
+      filter: ['==', ['get', 'kind'], 'state'],
+      layout: round,
+      paint: { 'line-color': colors.state, 'line-width': hairline, 'line-opacity': fadeOut },
+    },
+    {
+      id: BASEMAP_IDS.usOutline,
+      type: 'line',
+      source: BASEMAP_IDS.usSource,
+      maxzoom: HANDOVER_END,
+      filter: ['==', ['get', 'kind'], 'outline'],
+      layout: round,
+      paint: { 'line-color': colors.outline, 'line-width': hairline, 'line-opacity': fadeOut },
     },
     // Labels, lowest priority first: MapLibre places the top layer's labels first.
     {

@@ -19,7 +19,6 @@ export type MapLibre = Pick<
   | 'LngLat'
   | 'LngLatBounds'
   | 'Map'
-  | 'addProtocol'
   | 'prewarm'
   | 'setWorkerCount'
   | 'setWorkerUrl'

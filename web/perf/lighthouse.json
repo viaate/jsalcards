@@ -1,6 +1,6 @@
 {
-  "generatedAt": "2026-09-27T01:15:01.824Z",
-  "url": "http://127.0.0.1:5177/",
+  "generatedAt": "2026-09-27T02:57:22.349Z",
+  "url": "http://127.0.0.1:5171/",
   "environment": {
     "lighthouse": "13.5.0",
     "chrome": "Chromium 141.0.7390.37",
@@ -14,7 +14,7 @@
     "webglRenderer": "ANGLE (Google, Vulkan 1.3.0 (SwiftShader Device (Subzero) (0x0000C0DE)), SwiftShader driver)",
     "cpus": 4,
     "cpuModel": "Intel(R) Xeon(R) Processor @ 2.10GHz",
-    "benchmarkIndex": 2531,
+    "benchmarkIndex": 2582,
     "runsPerPreset": 3
   },
   "presets": {
@@ -22,92 +22,98 @@
       "throttling": "simulated slow 4G, 4x CPU",
       "median": {
         "scores": { "performance": 100, "accessibility": 100, "best-practices": 100, "seo": 100 },
-        "fcpMs": 915,
-        "lcpMs": 1215,
-        "speedIndexMs": 1371,
-        "tbtMs": 83,
+        "fcpMs": 912,
+        "lcpMs": 1212,
+        "speedIndexMs": 1431,
+        "tbtMs": 44,
         "cls": 0
       },
       "runs": [
         {
           "scores": { "performance": 100, "accessibility": 100, "best-practices": 100, "seo": 100 },
-          "fcpMs": 915,
-          "lcpMs": 1215,
-          "speedIndexMs": 1371,
-          "tbtMs": 83,
+          "fcpMs": 910,
+          "lcpMs": 1210,
+          "speedIndexMs": 1447,
+          "tbtMs": 66,
           "cls": 0,
           "consoleErrors": [],
           "foreignRequests": [],
-          "requests": 26,
+          "requests": 32,
           "scripts": [
-            "assets/basemap-jnb3iutu.js",
-            "assets/boot-DMV4mTt6.js",
+            "assets/basemap-C0xaEna9.js",
+            "assets/boot-MmiBEmqp.js",
             "assets/config-Cfu3rmCc.js",
             "assets/data-B3mD-0sU.js",
-            "assets/glow-mount-CBOFL3yZ.js",
-            "assets/ids-DLlmerev.js",
-            "assets/index-BlIZ5VHZ.js",
+            "assets/format-KZXjwQfA.js",
+            "assets/glow-mount-BehQJTOM.js",
+            "assets/ids-C7FF6oqR.js",
+            "assets/index-Crxuwd1R.js",
             "assets/maplibre-CKiCiTh7.js",
             "assets/maplibre-shared-BwZ3zNeO.js",
-            "assets/maplibre-worker-DPuic1Vc.js",
+            "assets/maplibre-worker-CMZutg5O.js",
             "assets/register-DMEEyNv-.js",
-            "assets/search-DgOTWa95.js"
+            "assets/search-D7P8jcIO.js",
+            "assets/street-tiles-B1iqxfbm.js"
           ],
-          "benchmarkIndex": 2185.5,
-          "warnings": []
-        },
-        {
-          "scores": { "performance": 100, "accessibility": 100, "best-practices": 100, "seo": 100 },
-          "fcpMs": 919,
-          "lcpMs": 1239,
-          "speedIndexMs": 1235,
-          "tbtMs": 87,
-          "cls": 0,
-          "consoleErrors": [],
-          "foreignRequests": [],
-          "requests": 26,
-          "scripts": [
-            "assets/basemap-jnb3iutu.js",
-            "assets/boot-DMV4mTt6.js",
-            "assets/config-Cfu3rmCc.js",
-            "assets/data-B3mD-0sU.js",
-            "assets/glow-mount-CBOFL3yZ.js",
-            "assets/ids-DLlmerev.js",
-            "assets/index-BlIZ5VHZ.js",
-            "assets/maplibre-CKiCiTh7.js",
-            "assets/maplibre-shared-BwZ3zNeO.js",
-            "assets/maplibre-worker-DPuic1Vc.js",
-            "assets/register-DMEEyNv-.js",
-            "assets/search-DgOTWa95.js"
-          ],
-          "benchmarkIndex": 2531,
+          "benchmarkIndex": 2553.5,
           "warnings": []
         },
         {
           "scores": { "performance": 100, "accessibility": 100, "best-practices": 100, "seo": 100 },
           "fcpMs": 912,
           "lcpMs": 1212,
-          "speedIndexMs": 1400,
-          "tbtMs": 64,
+          "speedIndexMs": 1426,
+          "tbtMs": 44,
           "cls": 0,
           "consoleErrors": [],
           "foreignRequests": [],
-          "requests": 26,
+          "requests": 32,
           "scripts": [
-            "assets/basemap-jnb3iutu.js",
-            "assets/boot-DMV4mTt6.js",
+            "assets/basemap-C0xaEna9.js",
+            "assets/boot-MmiBEmqp.js",
             "assets/config-Cfu3rmCc.js",
             "assets/data-B3mD-0sU.js",
-            "assets/glow-mount-CBOFL3yZ.js",
-            "assets/ids-DLlmerev.js",
-            "assets/index-BlIZ5VHZ.js",
+            "assets/format-KZXjwQfA.js",
+            "assets/glow-mount-BehQJTOM.js",
+            "assets/ids-C7FF6oqR.js",
+            "assets/index-Crxuwd1R.js",
             "assets/maplibre-CKiCiTh7.js",
             "assets/maplibre-shared-BwZ3zNeO.js",
-            "assets/maplibre-worker-DPuic1Vc.js",
+            "assets/maplibre-worker-CMZutg5O.js",
             "assets/register-DMEEyNv-.js",
-            "assets/search-DgOTWa95.js"
+            "assets/search-D7P8jcIO.js",
+            "assets/street-tiles-B1iqxfbm.js"
           ],
-          "benchmarkIndex": 2384.5,
+          "benchmarkIndex": 2691.5,
+          "warnings": []
+        },
+        {
+          "scores": { "performance": 100, "accessibility": 100, "best-practices": 100, "seo": 100 },
+          "fcpMs": 912,
+          "lcpMs": 1212,
+          "speedIndexMs": 1431,
+          "tbtMs": 37,
+          "cls": 0,
+          "consoleErrors": [],
+          "foreignRequests": [],
+          "requests": 32,
+          "scripts": [
+            "assets/basemap-C0xaEna9.js",
+            "assets/boot-MmiBEmqp.js",
+            "assets/config-Cfu3rmCc.js",
+            "assets/data-B3mD-0sU.js",
+            "assets/format-KZXjwQfA.js",
+            "assets/glow-mount-BehQJTOM.js",
+            "assets/ids-C7FF6oqR.js",
+            "assets/index-Crxuwd1R.js",
+            "assets/maplibre-CKiCiTh7.js",
+            "assets/maplibre-shared-BwZ3zNeO.js",
+            "assets/maplibre-worker-CMZutg5O.js",
+            "assets/register-DMEEyNv-.js",
+            "assets/search-D7P8jcIO.js",
+            "assets/street-tiles-B1iqxfbm.js"
+          ],
+          "benchmarkIndex": 2733.5,
           "warnings": []
         }
       ]
@@ -116,92 +122,98 @@
       "throttling": "simulated desktop dense 4G",
       "median": {
         "scores": { "performance": 100, "accessibility": 100, "best-practices": 100, "seo": 100 },
-        "fcpMs": 251,
-        "lcpMs": 371,
-        "speedIndexMs": 355,
+        "fcpMs": 256,
+        "lcpMs": 336,
+        "speedIndexMs": 386,
         "tbtMs": 0,
         "cls": 0
       },
       "runs": [
         {
           "scores": { "performance": 100, "accessibility": 100, "best-practices": 100, "seo": 100 },
-          "fcpMs": 251,
-          "lcpMs": 371,
-          "speedIndexMs": 355,
+          "fcpMs": 252,
+          "lcpMs": 334,
+          "speedIndexMs": 380,
           "tbtMs": 0,
           "cls": 0,
           "consoleErrors": [],
           "foreignRequests": [],
-          "requests": 26,
+          "requests": 32,
           "scripts": [
-            "assets/basemap-jnb3iutu.js",
-            "assets/boot-DMV4mTt6.js",
+            "assets/basemap-C0xaEna9.js",
+            "assets/boot-MmiBEmqp.js",
             "assets/config-Cfu3rmCc.js",
             "assets/data-B3mD-0sU.js",
-            "assets/glow-mount-CBOFL3yZ.js",
-            "assets/ids-DLlmerev.js",
-            "assets/index-BlIZ5VHZ.js",
+            "assets/format-KZXjwQfA.js",
+            "assets/glow-mount-BehQJTOM.js",
+            "assets/ids-C7FF6oqR.js",
+            "assets/index-Crxuwd1R.js",
             "assets/maplibre-CKiCiTh7.js",
             "assets/maplibre-shared-BwZ3zNeO.js",
-            "assets/maplibre-worker-DPuic1Vc.js",
+            "assets/maplibre-worker-CMZutg5O.js",
             "assets/register-DMEEyNv-.js",
-            "assets/search-DgOTWa95.js"
+            "assets/search-D7P8jcIO.js",
+            "assets/street-tiles-B1iqxfbm.js"
           ],
-          "benchmarkIndex": 2551.5,
+          "benchmarkIndex": 2448.5,
           "warnings": []
         },
         {
           "scores": { "performance": 100, "accessibility": 100, "best-practices": 100, "seo": 100 },
-          "fcpMs": 251,
-          "lcpMs": 371,
-          "speedIndexMs": 351,
+          "fcpMs": 265,
+          "lcpMs": 348,
+          "speedIndexMs": 386,
           "tbtMs": 0,
           "cls": 0,
           "consoleErrors": [],
           "foreignRequests": [],
-          "requests": 26,
+          "requests": 32,
           "scripts": [
-            "assets/basemap-jnb3iutu.js",
-            "assets/boot-DMV4mTt6.js",
+            "assets/basemap-C0xaEna9.js",
+            "assets/boot-MmiBEmqp.js",
             "assets/config-Cfu3rmCc.js",
             "assets/data-B3mD-0sU.js",
-            "assets/glow-mount-CBOFL3yZ.js",
-            "assets/ids-DLlmerev.js",
-            "assets/index-BlIZ5VHZ.js",
+            "assets/format-KZXjwQfA.js",
+            "assets/glow-mount-BehQJTOM.js",
+            "assets/ids-C7FF6oqR.js",
+            "assets/index-Crxuwd1R.js",
             "assets/maplibre-CKiCiTh7.js",
             "assets/maplibre-shared-BwZ3zNeO.js",
-            "assets/maplibre-worker-DPuic1Vc.js",
+            "assets/maplibre-worker-CMZutg5O.js",
             "assets/register-DMEEyNv-.js",
-            "assets/search-DgOTWa95.js"
+            "assets/search-D7P8jcIO.js",
+            "assets/street-tiles-B1iqxfbm.js"
           ],
-          "benchmarkIndex": 2399.5,
+          "benchmarkIndex": 2642.5,
           "warnings": []
         },
         {
           "scores": { "performance": 100, "accessibility": 100, "best-practices": 100, "seo": 100 },
-          "fcpMs": 262,
-          "lcpMs": 342,
-          "speedIndexMs": 389,
-          "tbtMs": 0,
+          "fcpMs": 256,
+          "lcpMs": 336,
+          "speedIndexMs": 408,
+          "tbtMs": 4,
           "cls": 0,
           "consoleErrors": [],
           "foreignRequests": [],
-          "requests": 26,
+          "requests": 32,
           "scripts": [
-            "assets/basemap-jnb3iutu.js",
-            "assets/boot-DMV4mTt6.js",
+            "assets/basemap-C0xaEna9.js",
+            "assets/boot-MmiBEmqp.js",
             "assets/config-Cfu3rmCc.js",
             "assets/data-B3mD-0sU.js",
-            "assets/glow-mount-CBOFL3yZ.js",
-            "assets/ids-DLlmerev.js",
-            "assets/index-BlIZ5VHZ.js",
+            "assets/format-KZXjwQfA.js",
+            "assets/glow-mount-BehQJTOM.js",
+            "assets/ids-C7FF6oqR.js",
+            "assets/index-Crxuwd1R.js",
             "assets/maplibre-CKiCiTh7.js",
             "assets/maplibre-shared-BwZ3zNeO.js",
-            "assets/maplibre-worker-DPuic1Vc.js",
+            "assets/maplibre-worker-CMZutg5O.js",
             "assets/register-DMEEyNv-.js",
-            "assets/search-DgOTWa95.js"
+            "assets/search-D7P8jcIO.js",
+            "assets/street-tiles-B1iqxfbm.js"
           ],
-          "benchmarkIndex": 2690.5,
+          "benchmarkIndex": 2582,
           "warnings": []
         }
       ]
@@ -210,30 +222,32 @@
       "throttling": "applied (devtools) slow 4G, 4x CPU",
       "runs": [
         {
-          "scores": { "performance": 95, "accessibility": 100, "best-practices": 100, "seo": 100 },
-          "fcpMs": 751,
-          "lcpMs": 751,
-          "speedIndexMs": 811,
-          "tbtMs": 247,
+          "scores": { "performance": 97, "accessibility": 100, "best-practices": 100, "seo": 100 },
+          "fcpMs": 784,
+          "lcpMs": 784,
+          "speedIndexMs": 857,
+          "tbtMs": 195,
           "cls": 0,
           "consoleErrors": [],
           "foreignRequests": [],
-          "requests": 26,
+          "requests": 32,
           "scripts": [
-            "assets/basemap-jnb3iutu.js",
-            "assets/boot-DMV4mTt6.js",
+            "assets/basemap-C0xaEna9.js",
+            "assets/boot-MmiBEmqp.js",
             "assets/config-Cfu3rmCc.js",
             "assets/data-B3mD-0sU.js",
-            "assets/glow-mount-CBOFL3yZ.js",
-            "assets/ids-DLlmerev.js",
-            "assets/index-BlIZ5VHZ.js",
+            "assets/format-KZXjwQfA.js",
+            "assets/glow-mount-BehQJTOM.js",
+            "assets/ids-C7FF6oqR.js",
+            "assets/index-Crxuwd1R.js",
             "assets/maplibre-CKiCiTh7.js",
             "assets/maplibre-shared-BwZ3zNeO.js",
-            "assets/maplibre-worker-DPuic1Vc.js",
+            "assets/maplibre-worker-CMZutg5O.js",
             "assets/register-DMEEyNv-.js",
-            "assets/search-DgOTWa95.js"
+            "assets/search-D7P8jcIO.js",
+            "assets/street-tiles-B1iqxfbm.js"
           ],
-          "benchmarkIndex": 2639,
+          "benchmarkIndex": 2579.5,
           "warnings": []
         }
       ]
@@ -244,16 +258,16 @@
   "lazyScripts": {
     "files": [
       {
-        "path": "assets/basemap-jnb3iutu.js",
-        "bytes": 26945,
-        "gzipBytes": 10450,
+        "path": "assets/basemap-C0xaEna9.js",
+        "bytes": 25653,
+        "gzipBytes": 9916,
         "maplibre": false,
         "sharedModule": false
       },
       {
-        "path": "assets/boot-DMV4mTt6.js",
+        "path": "assets/boot-MmiBEmqp.js",
         "bytes": 5945,
-        "gzipBytes": 2510,
+        "gzipBytes": 2507,
         "maplibre": false,
         "sharedModule": false
       },
@@ -272,16 +286,23 @@
         "sharedModule": false
       },
       {
-        "path": "assets/glow-mount-CBOFL3yZ.js",
-        "bytes": 31369,
-        "gzipBytes": 11249,
+        "path": "assets/format-KZXjwQfA.js",
+        "bytes": 6394,
+        "gzipBytes": 2582,
         "maplibre": false,
         "sharedModule": false
       },
       {
-        "path": "assets/ids-DLlmerev.js",
-        "bytes": 1143,
-        "gzipBytes": 534,
+        "path": "assets/glow-mount-BehQJTOM.js",
+        "bytes": 31369,
+        "gzipBytes": 11251,
+        "maplibre": false,
+        "sharedModule": false
+      },
+      {
+        "path": "assets/ids-C7FF6oqR.js",
+        "bytes": 1148,
+        "gzipBytes": 544,
         "maplibre": false,
         "sharedModule": false
       },
@@ -300,9 +321,9 @@
         "sharedModule": true
       },
       {
-        "path": "assets/maplibre-worker-DPuic1Vc.js",
-        "bytes": 19685,
-        "gzipBytes": 6321,
+        "path": "assets/maplibre-worker-CMZutg5O.js",
+        "bytes": 19888,
+        "gzipBytes": 6399,
         "maplibre": true,
         "sharedModule": false
       },
@@ -314,15 +335,22 @@
         "sharedModule": false
       },
       {
-        "path": "assets/search-DgOTWa95.js",
+        "path": "assets/search-D7P8jcIO.js",
         "bytes": 2503,
         "gzipBytes": 1380,
+        "maplibre": false,
+        "sharedModule": false
+      },
+      {
+        "path": "assets/street-tiles-B1iqxfbm.js",
+        "bytes": 11614,
+        "gzipBytes": 4706,
         "maplibre": false,
         "sharedModule": false
       }
     ],
     "maplibreFiles": 3,
-    "maplibreGzipBytes": 303954,
+    "maplibreGzipBytes": 304032,
     "sharedModuleCopies": 1
   },
   "gates": [
@@ -336,13 +364,13 @@
     { "gate": "desktop seo", "value": 100, "limit": ">= 90", "pass": true },
     {
       "gate": "mobile FCP (simulated slow 4G, median)",
-      "value": 915,
+      "value": 912,
       "limit": "< 1500 ms",
       "pass": true
     },
     {
       "gate": "mobile FCP (applied devtools 4G)",
-      "value": 751,
+      "value": 784,
       "limit": "< 1500 ms",
       "pass": true
     },
@@ -356,7 +384,7 @@
     },
     {
       "gate": "MapLibre's scripts, gzipped",
-      "value": 303954,
+      "value": 304032,
       "limit": "<= 310000 B",
       "pass": true
     },

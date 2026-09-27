@@ -21,6 +21,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 
 import { MAP_FONT_FILES, MAP_FONTS, addMapFonts } from '../fonts';
 import { BASEMAP_IDS } from '../ids';
+import { BORDER_LAYER, MASK_LAYER } from '../mask/format';
 import { OPENFREEMAP_MIN_ZOOM } from '../openfreemap';
 import { ROAD_TIERS, buildBasemapStyle, mixColors } from '../style';
 import type { BasemapColors, UsLinesData } from '../style';
@@ -137,26 +138,75 @@ describe('the basemap style', () => {
 });
 
 describe('layer order', () => {
-  it('draws the ground, then fills, shores and borders, then roads, then names', () => {
+  it('draws the ground, then fills, shores and roads, then the US mask and borders, then names', () => {
     const order = [
       BASEMAP_IDS.background,
-      BASEMAP_IDS.usStates,
-      BASEMAP_IDS.usOutline,
       BASEMAP_IDS.ofmPark,
       BASEMAP_IDS.ofmWaterFill,
       BASEMAP_IDS.ofmWaterway,
       BASEMAP_IDS.ofmStates,
       BASEMAP_IDS.ofmWater,
-      BASEMAP_IDS.ofmCountries,
       BASEMAP_IDS.ofmRoadTunnel,
       BASEMAP_IDS.ofmBuilding,
       BASEMAP_IDS.ofmRoad,
       BASEMAP_IDS.ofmBridgeCasing,
       BASEMAP_IDS.ofmBridge,
+      BASEMAP_IDS.usMask,
+      BASEMAP_IDS.usBorder,
+      BASEMAP_IDS.usStates,
+      BASEMAP_IDS.usOutline,
       BASEMAP_IDS.labels,
+      BASEMAP_IDS.schools,
     ];
     const indices = order.map(indexOf);
     expect(indices).toEqual([...indices].sort((a, b) => a - b));
+  });
+
+  it('draws the mask over every street, water, park and building layer, in the ground color', () => {
+    const mask = indexOf(BASEMAP_IDS.usMask);
+    const below = LAYERS.slice(0, mask).filter(
+      (l) => 'source' in l && l.source === BASEMAP_IDS.openFreeMapSource,
+    );
+    expect(below.length).toBeGreaterThan(8);
+    const above = LAYERS.slice(mask + 1);
+    for (const drawn of above) {
+      // Over the mask: only the border line, the bundled US lines, names and the schools slot.
+      expect(
+        drawn.type === 'symbol' ||
+          drawn.id === BASEMAP_IDS.usBorder ||
+          drawn.id === BASEMAP_IDS.schools ||
+          ('source' in drawn && drawn.source === BASEMAP_IDS.usSource),
+        drawn.id,
+      ).toBe(true);
+    }
+    expect(layer(BASEMAP_IDS.usMask)).toMatchObject({
+      type: 'fill',
+      source: BASEMAP_IDS.openFreeMapSource,
+      'source-layer': MASK_LAYER,
+    });
+    expect(value(BASEMAP_IDS.usMask, 'paint', 'fill-color', 12)).toMatchObject({
+      r: 0,
+      g: 0,
+      b: 0,
+      a: 1,
+    });
+    // Fully drawn from the first street tile: no zoom sees streets through it.
+    expect(layer(BASEMAP_IDS.usMask).paint).not.toHaveProperty('fill-opacity');
+    expect(draws(BASEMAP_IDS.usMask, 7, {}, GEOMETRY.polygon)).toBe(true);
+  });
+
+  it('draws the border line from the mask, in the outline tone', () => {
+    expect(layer(BASEMAP_IDS.usBorder)).toMatchObject({
+      type: 'line',
+      source: BASEMAP_IDS.openFreeMapSource,
+      'source-layer': BORDER_LAYER,
+    });
+    expect(hex(rgb(BASEMAP_IDS.usBorder, 'line-color', 12))).toBe(COLORS.outline);
+    // No OpenFreeMap country line: those run past the US.
+    for (const drawn of LAYERS) {
+      const filter = JSON.stringify((drawn as { filter?: unknown }).filter ?? null);
+      expect(filter, drawn.id).not.toContain('"admin_level"],2');
+    }
   });
 
   it('puts every name above every line and fill, the least important names lowest', () => {
@@ -302,6 +352,15 @@ describe('buildings, water and parks', () => {
     expect(opacity).toEqual([...opacity].sort((a, b) => a - b));
     expect(opacity[3]).toBe(1);
     expect(value(BUILDING, 'paint', 'fill-outline-color', 14)).toBeDefined();
+  });
+
+  it('leaves the sea unfilled, as ground, so the edge of US waters never shows', () => {
+    expect(draws(BASEMAP_IDS.ofmWaterFill, 12, { class: 'ocean' }, 3)).toBe(false);
+    for (const inland of ['lake', 'river', 'pond', 'dock']) {
+      expect(draws(BASEMAP_IDS.ofmWaterFill, 12, { class: inland }, 3), inland).toBe(true);
+    }
+    // The coast is still drawn, as the shore line.
+    expect(draws(BASEMAP_IDS.ofmWater, 12, { class: 'ocean' }, 3)).toBe(true);
   });
 
   it('fills water and parks a hair off the ground, and leaves out swimming pools', () => {

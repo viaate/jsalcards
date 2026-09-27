@@ -1,6 +1,4 @@
-import type { AddProtocolAction, GetResourceResponse } from 'maplibre-gl';
-
-import type { MapLibre } from './maplibre';
+import type { GetResourceResponse } from 'maplibre-gl';
 
 /**
  * OpenFreeMap vector tiles, used from zoom 7 up.
@@ -9,12 +7,16 @@ import type { MapLibre } from './maplibre';
  * tiles are requested through a custom protocol: the style names
  * `openfreemap://planet/{z}/{x}/{y}` and the TileJSON is only fetched when the
  * first zoom 7+ tile is needed. Below zoom 7 nothing leaves the site.
+ *
+ * The protocol is served in MapLibre's workers (street-tiles.ts), which cut
+ * each tile to the US before MapLibre reads it.
  */
 
-const PROTOCOL = 'openfreemap';
+/** The style's URL scheme for OpenFreeMap tiles. */
+export const OPENFREEMAP_PROTOCOL = 'openfreemap';
 const TILEJSON_URL = 'https://tiles.openfreemap.org/planet';
 
-export const OPENFREEMAP_TILES = `${PROTOCOL}://planet/{z}/{x}/{y}`;
+export const OPENFREEMAP_TILES = `${OPENFREEMAP_PROTOCOL}://planet/{z}/{x}/{y}`;
 export const OPENFREEMAP_MIN_ZOOM = 7;
 export const OPENFREEMAP_MAX_ZOOM = 14;
 
@@ -56,25 +58,23 @@ export function tileUrl(templateUrl: string, requestUrl: string): string {
   return templateUrl.replace('{z}', z).replace('{x}', x).replace('{y}', y);
 }
 
-const loadTile: AddProtocolAction = async (request, abortController) => {
-  let url = tileUrl(await tileTemplate(), request.url);
-  let response = await fetch(url, { signal: abortController.signal });
+/** The tile the style names `openfreemap://planet/z/x/y`, from the current tile set. */
+export async function loadOpenFreeMapTile(
+  requestUrl: string,
+  signal: AbortSignal,
+): Promise<GetResourceResponse<ArrayBuffer>> {
+  let url = tileUrl(await tileTemplate(), requestUrl);
+  let response = await fetch(url, { signal });
   if (response.status === 404) {
     // The dated tile set was retired while the page was open: look up the current one once.
     template = undefined;
-    url = tileUrl(await tileTemplate(), request.url);
-    response = await fetch(url, { signal: abortController.signal });
+    url = tileUrl(await tileTemplate(), requestUrl);
+    response = await fetch(url, { signal });
   }
   if (!response.ok) throw new Error(`OpenFreeMap tile: HTTP ${String(response.status)}`);
-  const result: GetResourceResponse<ArrayBuffer> = {
+  return {
     data: await response.arrayBuffer(),
     cacheControl: response.headers.get('cache-control'),
     expires: response.headers.get('expires'),
   };
-  return result;
-};
-
-/** Lets the style's `openfreemap://` tile URLs load. Safe to call more than once. */
-export function registerOpenFreeMap(maplibre: MapLibre): void {
-  maplibre.addProtocol(PROTOCOL, loadTile);
 }

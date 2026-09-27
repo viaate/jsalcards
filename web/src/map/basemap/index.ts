@@ -6,7 +6,7 @@ import { mapLocale } from '../../copy';
 import { collapsedAttribution } from './attribution';
 import { addMapFonts } from './fonts';
 import type { MapLibre } from './maplibre';
-import { OPENFREEMAP_ATTRIBUTION, registerOpenFreeMap } from './openfreemap';
+import { OPENFREEMAP_ATTRIBUTION } from './openfreemap';
 import { MAX_ZOOM } from './bounds';
 import type { MapView } from './bounds';
 import { constrainView, viewLimits } from './limits';
@@ -97,12 +97,15 @@ declare global {
 
 let configured: MapLibre | undefined;
 
-/** MapLibre's global settings; they must be in place before the first map starts its workers. */
+/**
+ * MapLibre's global settings; they must be in place before the first map
+ * starts its workers. Street tiles load in the workers, which cut them to the
+ * US (street-tiles.ts); the page itself fetches none.
+ */
 function configure(maplibre: MapLibre, workerUrl: string): void {
   if (configured === maplibre) return;
   maplibre.setWorkerUrl(workerUrl);
   maplibre.setWorkerCount(WORKERS);
-  registerOpenFreeMap(maplibre);
   configured = maplibre;
 }
 

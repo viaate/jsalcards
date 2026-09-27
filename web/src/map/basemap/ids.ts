@@ -16,12 +16,22 @@ export const BASEMAP_IDS = {
   ofmWaterway: 'ofm-waterway',
   ofmStates: 'ofm-state-lines',
   ofmWater: 'ofm-water-edge',
-  ofmCountries: 'ofm-country-lines',
   ofmRoadTunnel: 'ofm-road-tunnel',
   ofmBuilding: 'ofm-building',
   ofmRoad: 'ofm-road',
   ofmBridgeCasing: 'ofm-bridge-casing',
   ofmBridge: 'ofm-bridge',
+  /**
+   * The ground drawn over everything outside the continental US and DC, from
+   * zoom 7 (mask/format.ts). Every street, water, park and building layer is
+   * under it; the border line, the bundled US lines, every label and the
+   * school layers are over it. Street tiles are cut to the US before they are
+   * drawn (street-tiles.ts), so nothing outside it is placed or queryable
+   * either; the mask hides the parts of areas the border crosses.
+   */
+  usMask: 'us-mask',
+  /** The border with Canada and Mexico on land, lakes and rivers, along the mask's edge. */
+  usBorder: 'us-border',
   ofmNeighbourhoodLabel: 'ofm-label-neighbourhood',
   ofmStreetLabel: 'ofm-label-street',
   ofmMajorRoadLabel: 'ofm-label-major-road',
@@ -30,13 +40,14 @@ export const BASEMAP_IDS = {
   ofmCityLabel: 'ofm-label-city',
   /**
    * The first label layer. Marks drawn under every label, taking no part in
-   * label collisions, go before it.
+   * label collisions, go before it: they sit above the US mask.
    */
   labels: 'ofm-label-neighbourhood',
   /**
    * Where the school layers go: add them before this empty layer, the last in
-   * the style. They then sit above every street and place label, and MapLibre
-   * places labels from the top layer down, so school names win collisions.
+   * the style. They then sit above the US mask and every street and place
+   * label, and MapLibre places labels from the top layer down, so school
+   * names win collisions.
    */
   schools: 'schools-slot',
 } as const;
