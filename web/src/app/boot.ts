@@ -5,7 +5,8 @@
  * - the pinned school, opened on a plain visit (src/state/pin.ts);
  * - a linked or pinned selection, placed on the map once the data allows;
  * - search: the index loads on the first focus of the search field;
- * - today's schools lit on the glow layer (App.svelte puts it on the map);
+ * - today's schools lit on the glow layer (App.svelte puts it on the map), and
+ *   the time of the live file they come from, for the update time;
  * - the service worker, registered after load.
  *
  * A build that ships no data requests nothing under data/: the glow stays
@@ -18,6 +19,7 @@ import type { SearchHit } from '../search';
 import { createPinStore } from '../state/pin';
 import type { Selection } from '../state/url';
 import type { UrlStore } from '../state/url-store';
+import type { UtcInstant } from '../types/generated';
 import { DATA_PATHS } from '../data/files';
 import { createAppData, locate, startLiveGlow } from './data';
 import type { AppData, Target } from './data';
@@ -43,6 +45,8 @@ export interface BootOptions {
   readonly listId: string;
   /** The newest text's results as options, or null to show nothing. */
   readonly onResults: (options: readonly SearchOption[] | null) => void;
+  /** The generated_at of the live file the map shows, for the update time; null when none is. */
+  readonly onUpdated?: (generatedAt: UtcInstant | null) => void;
   /** Data files to read, for tests; defaults to the ones this build ships. */
   readonly data?: AppData;
 }
@@ -90,7 +94,9 @@ export function boot(options: BootOptions): Services {
   let stopLive: () => void = () => undefined;
   void glow.then(async (layer) => {
     if (layer === null || aborted()) return;
-    stopLive = await startLiveGlow(data, glow);
+    stopLive = await startLiveGlow(data, glow, (generatedAt) => {
+      if (!aborted()) options.onUpdated?.(generatedAt);
+    });
     if (aborted()) stopLive();
   });
 

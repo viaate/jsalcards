@@ -16,6 +16,7 @@ import type { MapView } from '../map/basemap/bounds';
 import type { Glow } from '../map/glow-mount';
 import type { Selection } from '../state/url';
 import { PUBLISHED_PATHS } from '../types/generated';
+import type { UtcInstant } from '../types/generated';
 import type { SearchController } from './search';
 import { ZOOM, viewForHit, zipHit } from './startup';
 
@@ -81,11 +82,13 @@ export async function locate(
 /**
  * Lights today's affected schools on the glow, and keeps them current: a
  * build without live/closings.json never asks for it, and nothing glows.
- * Returns the function that stops it.
+ * `onShown` hears the generated_at of the file shown (null when none is), for
+ * the update time. Returns the function that stops it.
  */
 export async function startLiveGlow(
   data: AppData,
   glow: Promise<Glow | null>,
+  onShown?: (generatedAt: UtcInstant | null) => void,
 ): Promise<() => void> {
   if (!data.files.has(PUBLISHED_PATHS.closings)) return () => undefined;
   const [{ closingsUrl, startLive }, { onDataUpdate }] = await Promise.all([
@@ -99,6 +102,9 @@ export async function startLiveGlow(
       void glow.then((layer) => {
         layer?.light(lit);
       });
+    },
+    onShown: (generatedAt) => {
+      onShown?.(generatedAt);
     },
   });
   const url = closingsUrl(data.files);

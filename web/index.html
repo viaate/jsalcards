@@ -80,8 +80,11 @@
         --inset-left: env(safe-area-inset-left, 0px);
         --edge: 20px;
         --bar-height: 44px;
-        --bar-width: 440px;
+        /* The wordmark's column, fixed so a font swap never moves the search field. */
+        --brand-width: 98px;
+        --field-width: 400px;
         --bar-font: 15px;
+        --brand-font: 17px;
         --frame-gap: 24px;
         --frame-side: 48px;
         --frame-bottom: 48px;
@@ -103,7 +106,9 @@
       @media (max-width: 719px) {
         :root {
           --edge: 12px;
+          --brand-width: 90px;
           --bar-font: 16px;
+          --brand-font: 16px;
           --frame-gap: 20px;
           --frame-side: 16px;
           --frame-bottom: 24px;
@@ -143,6 +148,23 @@
       .map {
         position: absolute;
         inset: 0;
+      }
+
+      /* A soft veil under the top strip keeps its words clear of the streets beneath them. */
+      .stage::before {
+        position: absolute;
+        inset: 0 0 auto;
+        z-index: 1;
+        height: calc(var(--inset-top) + var(--edge) + var(--bar-height) + 40px);
+        pointer-events: none;
+        content: '';
+        background: linear-gradient(
+          rgb(0 0 0 / 0.64),
+          rgb(0 0 0 / 0.5) 25%,
+          rgb(0 0 0 / 0.28) 55%,
+          rgb(0 0 0 / 0.1) 80%,
+          rgb(0 0 0 / 0)
+        );
       }
 
       .frame {
@@ -186,51 +208,88 @@
         opacity: 0;
       }
 
+      /* The top strip: the wordmark, then the search field. The update time sits at the right. */
       .bar {
         position: absolute;
         top: calc(var(--inset-top) + var(--edge));
         left: calc(var(--inset-left) + var(--edge));
         z-index: 2;
-        display: flex;
+        display: grid;
+        grid-template-columns: var(--brand-width) minmax(0, 1fr);
         align-items: center;
         width: min(
-          var(--bar-width),
+          var(--brand-width) + var(--field-width),
           100% - var(--inset-left) - var(--inset-right) - 2 * var(--edge)
         );
         height: var(--bar-height);
+        /* Where the results list starts: under the field on a wide screen. */
+        --results-left: var(--brand-width);
+      }
+
+      /* Its box is the name alone, so a mask over it covers the name and nothing else. */
+      .wordmark {
+        justify-self: start;
+        max-width: 100%;
+        margin: 0;
+        padding: 0;
+        overflow: hidden;
+        font-size: var(--brand-font);
+        font-weight: 600;
+        line-height: 24px;
+        letter-spacing: -0.025em;
+        white-space: nowrap;
+        text-shadow:
+          0 0 2px #000,
+          0 0 10px #000;
+        /* A layer of its own from the first frame, so its text renders the same once the map is under it. */
+        will-change: transform;
+      }
+
+      .search {
+        position: relative;
+        height: 100%;
+        min-width: 0;
+        margin: 0;
+        cursor: text;
+        background: rgb(17 17 17 / 0.86);
         border: 1px solid var(--border-2);
         border-radius: calc(var(--bar-height) / 2);
-        background: rgb(17 17 17 / 0.72);
+        /* A faint top edge and a soft shadow lift the field off the streets below it. */
+        box-shadow:
+          inset 0 1px 0 rgb(255 255 255 / 0.04),
+          0 6px 20px rgb(0 0 0 / 0.5);
         -webkit-backdrop-filter: blur(16px);
         backdrop-filter: blur(16px);
         transition: border-color 120ms linear;
       }
 
-      .bar:focus-within {
+      .search:focus-within {
         border-color: var(--text-3);
       }
 
-      /* The wordmark's box is its name and divider only, inside the pill's edge. */
-      .wordmark {
-        flex: none;
-        width: 85px;
-        margin: 0 0 0 19px;
-        padding: 0;
-        overflow: hidden;
-        font-size: 15px;
-        font-weight: 600;
-        line-height: 20px;
-        letter-spacing: -0.01em;
-        white-space: nowrap;
-        border-right: 1px solid var(--border-2);
+      .search-icon,
+      .search-key,
+      .search-clear {
+        position: absolute;
+        top: 50%;
       }
 
-      .search {
-        position: relative;
-        flex: 1;
-        min-width: 0;
-        height: 100%;
-        margin: 0;
+      .search-icon {
+        left: 16px;
+        width: 16px;
+        height: 16px;
+        margin-top: -8px;
+        pointer-events: none;
+        fill: none;
+        stroke: var(--text-3);
+        stroke-width: 1.5;
+        stroke-linecap: round;
+        transition: stroke 120ms linear;
+      }
+
+      .search:hover .search-icon,
+      .search:focus-within .search-icon {
+        stroke: var(--text-2);
       }
 
       .search-input {
@@ -238,16 +297,17 @@
         width: 100%;
         height: 100%;
         margin: 0;
-        padding: 0 20px 0 14px;
+        padding: 0 46px 0 42px;
         overflow: hidden;
         font: inherit;
         font-size: var(--bar-font);
         line-height: 20px;
         color: var(--text-1);
         text-overflow: ellipsis;
+        cursor: text;
         background: transparent;
         border: 0;
-        border-radius: 0 calc(var(--bar-height) / 2) calc(var(--bar-height) / 2) 0;
+        border-radius: inherit;
         outline: none;
         appearance: none;
       }
@@ -262,13 +322,36 @@
         appearance: none;
       }
 
-      .search.has-query .search-input {
-        padding-right: 44px;
+      /* "/" goes to the field; shown only where there is a keyboard and nothing typed yet. */
+      .search-key {
+        right: 13px;
+        display: grid;
+        place-items: center;
+        width: 20px;
+        height: 20px;
+        margin-top: -10px;
+        color: var(--text-3);
+        pointer-events: none;
+        border: 1px solid var(--border-2);
+        border-radius: 5px;
+        transition: opacity 120ms linear;
+      }
+
+      .search-key svg {
+        width: 12px;
+        height: 12px;
+        fill: none;
+        stroke: currentColor;
+        stroke-width: 1.5;
+        stroke-linecap: round;
+      }
+
+      .search:focus-within .search-key,
+      .search.has-query .search-key {
+        opacity: 0;
       }
 
       .search-clear {
-        position: absolute;
-        top: 50%;
         right: 8px;
         display: grid;
         place-items: center;
@@ -303,6 +386,52 @@
         stroke-linecap: round;
       }
 
+      /* Touch screens have no "/" key to press: the field keeps its space for text. */
+      @media (hover: none), (pointer: coarse) {
+        .search-key {
+          display: none;
+        }
+
+        .search-input {
+          padding-right: 16px;
+        }
+      }
+
+      .search.has-query .search-input {
+        padding-right: 44px;
+      }
+
+      /* A phone: the wordmark, then the field to the edge; results span the whole strip. */
+      @media (max-width: 719px) {
+        .bar {
+          --results-left: 0px;
+        }
+
+        .search-icon {
+          left: 14px;
+        }
+
+        .search-input {
+          padding-left: 38px;
+        }
+      }
+
+      /* The narrowest phones: tighter insets keep the whole placeholder in view. */
+      @media (max-width: 379px) {
+        :root {
+          --brand-width: 84px;
+        }
+
+        .search-icon {
+          left: 12px;
+        }
+
+        .search-input {
+          padding-right: 12px;
+          padding-left: 34px;
+        }
+      }
+
       /* Heard by screen readers, never seen. */
       .sr-only {
         position: absolute;
@@ -318,7 +447,9 @@
 
       @media (prefers-reduced-motion: reduce) {
         .still,
-        .bar {
+        .search,
+        .search-icon,
+        .search-key {
           transition: none;
         }
       }
@@ -361,17 +492,25 @@
         <header class="bar">
           <h1 class="wordmark" data-brand>%copy.appName%</h1>
           <form class="search" role="search">
+            <svg class="search-icon" viewBox="0 0 16 16" aria-hidden="true" focusable="false">
+              <circle cx="7" cy="7" r="4.75" />
+              <path d="M10.5 10.5l3.5 3.5" />
+            </svg>
             <input
               class="search-input"
               type="search"
               name="q"
               placeholder="%copy.search.placeholder%"
               aria-label="%copy.search.placeholder%"
+              aria-keyshortcuts="/"
               autocomplete="off"
               autocapitalize="off"
               spellcheck="false"
               enterkeyhint="search"
             />
+            <span class="search-key" aria-hidden="true">
+              <svg viewBox="0 0 12 12" focusable="false"><path d="M7.75 1.75l-3.5 8.5" /></svg>
+            </span>
           </form>
         </header>
       </main>

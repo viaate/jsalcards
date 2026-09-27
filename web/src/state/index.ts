@@ -37,5 +37,5 @@ export type {
 } from './url-store';
 export { PIN_KEY, createPinStore, readPin, writePin } from './pin';
 export type { PinListener, PinStore, PinStoreOptions } from './pin';
-export { createConnectivity, parseInstant, updateLine } from './freshness';
-export type { Connectivity, UpdateLineInput } from './freshness';
+export { createConnectivity, parseInstant, updateLine, updateState } from './freshness';
+export type { Connectivity, UpdateLineInput, UpdateState } from './freshness';

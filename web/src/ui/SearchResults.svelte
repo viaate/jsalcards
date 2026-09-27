@@ -64,11 +64,12 @@
 </div>
 
 <style>
+  /* Under the search field; the shell sets where it starts (--results-left), as wide as the strip on a phone. */
   .results {
     position: absolute;
     top: calc(100% + 8px);
-    right: -1px;
-    left: -1px;
+    right: 0;
+    left: var(--results-left, 0);
     z-index: 3;
     max-height: min(60vh, 460px);
     padding: 6px 0;

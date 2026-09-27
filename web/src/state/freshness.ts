@@ -25,20 +25,33 @@ export interface UpdateLineInput {
   readonly now: Date;
 }
 
+/** The update line, and whether it calls the file live. */
+export interface UpdateState {
+  readonly text: string;
+  readonly live: boolean;
+}
+
 /**
  * "Live · 6:42 AM", "Updated 6:42 AM" or "Offline · Updated 6:42 AM", with the
  * date added when the file is from another day. Null when generatedAt is not a
  * valid instant, so nothing false is shown.
  */
-export function updateLine(input: UpdateLineInput): string | null {
+export function updateState(input: UpdateLineInput): UpdateState | null {
   const generated = parseInstant(input.generatedAt);
   if (generated === null) return null;
   const { online, liveWithinMs, timeZone, now } = input;
-  if (!online) return format.offline(generated, timeZone, now);
+  if (!online) return { text: format.offline(generated, timeZone, now), live: false };
   const age = now.getTime() - generated.getTime();
   // A file stamped in the future means a skewed clock here: not proof it is live.
-  if (age >= 0 && age <= liveWithinMs) return format.liveAt(generated, timeZone);
-  return format.updatedAt(generated, timeZone, now);
+  if (age >= 0 && age <= liveWithinMs) {
+    return { text: format.liveAt(generated, timeZone), live: true };
+  }
+  return { text: format.updatedAt(generated, timeZone, now), live: false };
+}
+
+/** updateState's line alone. */
+export function updateLine(input: UpdateLineInput): string | null {
+  return updateState(input)?.text ?? null;
 }
 
 /** The parts of `window` connectivity uses, so tests can hand it a fake. */

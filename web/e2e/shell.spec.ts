@@ -547,7 +547,9 @@ test.describe('handover to the WebGL map', () => {
     const entry = /<script type="module" crossorigin src="([^"]+)"/.exec(html)?.[1];
     expect(entry).toBeDefined();
     const entryJs = await (await request.get(entry ?? '')).text();
-    expect(entryJs.length).toBeLessThan(60_000);
+    // MapLibre alone is about 800 kB. The entry is the shell, Svelte and the copy module,
+    // whose formatters (the update time's among them) come with it wherever they are used.
+    expect(entryJs.length).toBeLessThan(75_000);
     expect(entryJs).not.toMatch(/maplibregl-/);
 
     const context = await newContext(browser, DESKTOP);

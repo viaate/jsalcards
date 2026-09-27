@@ -13,6 +13,7 @@
   import { retireStill } from './shell/still';
   import { createUrlStore } from './state/url-store';
   import type { UrlStore } from './state/url-store';
+  import type { UtcInstant } from './types/generated';
 
   interface Props {
     /** The inline still from index.html, handed over by main.ts. */
@@ -27,6 +28,10 @@
     active: number;
     onpick: (option: SearchOption) => void;
     onactive: (index: number) => void;
+  }
+
+  interface UpdateTimeProps {
+    generatedAt: UtcInstant;
   }
 
   let { still = null, initialQuery = '' }: Props = $props();
@@ -47,6 +52,10 @@
   let dismissed = $state(false);
   /** The results list, loaded with the search index on first focus. */
   let Results = $state<Component<ResultsProps> | null>(null);
+  /** When the live file the map shows was made; null until one is shown. */
+  let updatedAt = $state<UtcInstant | null>(null);
+  /** The update time, loaded with the first live file shown. */
+  let UpdateTime = $state<Component<UpdateTimeProps> | null>(null);
   /** The name the field shows for the last pick, until the text changes. */
   let pickedName: string | null = null;
 
@@ -239,6 +248,37 @@
     }
   }
 
+  /** "/" anywhere but in a text field goes to the search field, as on most sites with search. */
+  function onShortcut(event: KeyboardEvent): void {
+    if (event.key !== '/' || event.defaultPrevented || event.isComposing) return;
+    if (event.ctrlKey || event.metaKey || event.altKey) return;
+    const target = event.target;
+    if (
+      target instanceof Element &&
+      target.closest(
+        'input, textarea, select, [contenteditable]:not([contenteditable="false"])',
+      ) !== null
+    ) {
+      return;
+    }
+    if (inputElement === undefined) return;
+    event.preventDefault();
+    inputElement.focus();
+    inputElement.select();
+  }
+
+  /** A live file is shown, or none is: the update time follows it. */
+  function onUpdated(generatedAt: UtcInstant | null): void {
+    updatedAt = generatedAt;
+    if (generatedAt === null || UpdateTime !== null) return;
+    import('./ui/UpdateTime.svelte').then(
+      (module) => {
+        UpdateTime = module.default;
+      },
+      () => undefined,
+    );
+  }
+
   function clear(): void {
     query = '';
     runSearch('');
@@ -280,6 +320,7 @@
             options = next;
             active = -1;
           },
+          onUpdated,
         });
       })
       .catch(() => null);
@@ -290,6 +331,8 @@
     };
   });
 </script>
+
+<svelte:window onkeydown={onShortcut} />
 
 <main class="stage">
   <div class="map" bind:this={mapElement}></div>
@@ -312,6 +355,10 @@
         event.preventDefault();
       }}
     >
+      <svg class="search-icon" viewBox="0 0 16 16" aria-hidden="true" focusable="false">
+        <circle cx="7" cy="7" r="4.75" />
+        <path d="M10.5 10.5l3.5 3.5" />
+      </svg>
       <input
         class="search-input"
         type="search"
@@ -320,6 +367,7 @@
         bind:value={query}
         placeholder={copy.search.placeholder}
         aria-label={copy.search.placeholder}
+        aria-keyshortcuts="/"
         role="combobox"
         aria-autocomplete="list"
         aria-expanded={listed}
@@ -335,6 +383,9 @@
         }}
         onkeydown={onKeydown}
       />
+      <span class="search-key" aria-hidden="true">
+        <svg viewBox="0 0 12 12" focusable="false"><path d="M7.75 1.75l-3.5 8.5" /></svg>
+      </span>
       {#if query !== ''}
         <button class="search-clear" type="button" aria-label={copy.search.clear} onclick={clear}>
           <svg viewBox="0 0 16 16" aria-hidden="true" focusable="false">
@@ -355,6 +406,9 @@
       />
     {/if}
   </header>
+  {#if UpdateTime !== null && updatedAt !== null}
+    <UpdateTime generatedAt={updatedAt} />
+  {/if}
   <p class="sr-only" role="status">
     {expanded && options?.length === 0 ? copy.search.noResults : ''}
   </p>

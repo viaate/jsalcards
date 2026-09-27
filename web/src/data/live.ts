@@ -9,10 +9,15 @@
  *
  * A build without the file never asks for it. A read that fails keeps what
  * is shown: the last file read is still true as of its own time.
+ *
+ * `onShown` hears the generated_at of the file the lit schools come from, for
+ * the update time: a file is shown once it has been read against its
+ * directory, or when it has no schools today. A file whose directory cannot be
+ * had shows nothing, so no time is given for it either.
  */
 
 import { PUBLISHED_PATHS } from '../types/generated';
-import type { ClosingsFile, DirectoryStamp } from '../types/generated';
+import type { ClosingsFile, DirectoryStamp, UtcInstant } from '../types/generated';
 import { NOTHING_LIT, lightSchools, parseClosings, todayEverywhere } from './closings';
 import type { LitSchools } from './closings';
 import type { Directory } from './directory';
@@ -32,6 +37,8 @@ export interface LiveOptions {
   readonly directory: (stamp: DirectoryStamp) => Promise<Directory | null>;
   /** Called with the schools to light whenever they change. */
   readonly onLight: (lit: LitSchools) => void;
+  /** Called with the shown file's generated_at whenever it changes; null when none is shown. */
+  readonly onShown?: (generatedAt: UtcInstant | null) => void;
   readonly fetch?: Fetch;
   readonly now?: () => Date;
   /** performance.now(), the glow layer's clock. */
@@ -71,6 +78,14 @@ export function startLive(options: LiveOptions): Live {
   let running: Promise<void> | null = null;
   let again = false;
   let lastRead = -Infinity;
+  /** The generated_at last passed to onShown. */
+  let shownAt: UtcInstant | null = null;
+
+  const report = (generatedAt: UtcInstant | null): void => {
+    if (generatedAt === shownAt) return;
+    shownAt = generatedAt;
+    options.onShown?.(generatedAt);
+  };
 
   const relight = async (file: ClosingsFile): Promise<void> => {
     const today = todayEverywhere(now());
@@ -78,15 +93,19 @@ export function startLive(options: LiveOptions): Live {
     if (key === shownKey) return;
     const group = file.days.find((item) => item.day === today);
     let next: LitSchools = NOTHING_LIT;
+    // With no schools today there is nothing to read against the directory.
+    let shown = group === undefined;
     if (group !== undefined) {
       const directory = await options.directory(file.directory);
       if (stopped || file !== closings) return;
       if (directory !== null) {
         next = lightSchools(file, directory, { now: now(), previous: lit, bornMs: clock() });
+        shown = true;
       }
     }
     if (stopped) return;
     shownKey = key;
+    report(shown ? file.generated_at : null);
     // Nothing lit before and nothing now: the layer has nothing to change.
     if (lit === null && next.schools.size === 0) return;
     lit = next.schools;

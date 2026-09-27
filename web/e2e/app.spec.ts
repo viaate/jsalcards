@@ -39,7 +39,7 @@ import type { Page } from '@playwright/test';
 import { build, preview } from 'vite';
 import type { PreviewServer } from 'vite';
 
-import { copy } from '../src/copy';
+import { copy, format } from '../src/copy';
 
 const WEB = fileURLToPath(new URL('..', import.meta.url));
 const GLOW_LAYER = 'snowlight-glow';
@@ -285,6 +285,50 @@ test.describe('with no data shipped', () => {
     await page.waitForTimeout(500);
     expect(new URL(page.url()).searchParams.get('school')).toBe('291640000557');
     await context.close();
+  });
+
+  test('"/" goes to the search field; its key shows only with a keyboard, and no update time shows', async ({
+    browser,
+  }) => {
+    const context = await browser.newContext({ viewport: { width: 1440, height: 900 } });
+    const page = await context.newPage();
+    const { problems } = watch(page);
+    await page.goto('/');
+    await waitForMap(page);
+    const input = page.locator('input.search-input');
+    const key = page.locator('.search-key');
+    await expect(key).toBeVisible();
+    await expect(input).toHaveAttribute('aria-keyshortcuts', '/');
+
+    // From the map: the field takes focus, nothing is typed, and the key steps aside.
+    await page.mouse.click(720, 500);
+    await expect(input).not.toBeFocused();
+    await page.keyboard.press('/');
+    await expect(input).toBeFocused();
+    await expect(input).toHaveValue('');
+    await expect(key).toHaveCSS('opacity', '0');
+    // In the field, "/" is text like any other.
+    await page.keyboard.type('a/b');
+    await expect(input).toHaveValue('a/b');
+    // Back on the map, "/" returns to the field with its text selected, ready to replace.
+    await page.mouse.click(720, 500);
+    await page.keyboard.press('/');
+    await expect(input).toBeFocused();
+    await page.keyboard.type('duluth');
+    await expect(input).toHaveValue('duluth');
+
+    // Nothing live is shown, so no time is given.
+    await expect(page.locator('.updated, time')).toHaveCount(0);
+    expect(problems).toEqual([]);
+    await context.close();
+
+    // A touch screen has no "/" key: the hint is not shown.
+    const phone = await browser.newContext(devices['Pixel 7']);
+    const touch = await phone.newPage();
+    await touch.goto('/');
+    await expect(touch.locator('input.search-input')).toBeVisible();
+    await expect(touch.locator('.search-key')).toBeHidden();
+    await phone.close();
   });
 
   test('the build holds no data, and nothing made up', () => {
@@ -701,6 +745,69 @@ test.describe('with data staged', () => {
     expect(new URL(page.url()).searchParams.get('school')).toBe(PEMBROKE_HILL);
     expect(problems).toEqual([]);
     await context.close();
+  });
+
+  test('the update time is the live file’s own time: live while recent, then when it was updated', async ({
+    browser,
+  }) => {
+    const zone = 'America/Chicago';
+    const generated = new Date('2026-01-12T12:42:00Z');
+    for (const viewport of [
+      { width: 1440, height: 900 },
+      { width: 390, height: 844 },
+    ]) {
+      const context = await browser.newContext({ viewport, timezoneId: zone });
+      const page = await context.newPage();
+      // Eight minutes after the file was made.
+      await page.clock.setFixedTime(new Date('2026-01-12T12:50:00Z'));
+      const { problems } = watch(page);
+      await page.goto(site);
+      await waitForMap(page);
+      const updated = page.locator('.updated');
+      await expect(updated).toHaveText(format.liveAt(generated, zone), { timeout: 30_000 });
+      await expect(updated.locator('time')).toHaveAttribute('datetime', '2026-01-12T12:42:00Z');
+      await expect(updated.locator('.dot')).toHaveCount(1);
+
+      // On the search field's line at the right edge; under the field, at its end, on a phone.
+      const line = await updated.boundingBox();
+      const field = await page.locator('.search').boundingBox();
+      if (line === null || field === null) throw new Error('no box');
+      if (viewport.width >= 720) {
+        expect(Math.abs(line.y + line.height / 2 - (field.y + field.height / 2))).toBeLessThan(1);
+        expect(Math.abs(viewport.width - 20 - (line.x + line.width))).toBeLessThan(3);
+        expect(line.x).toBeGreaterThan(field.x + field.width + 100);
+      } else {
+        expect(line.y).toBeGreaterThanOrEqual(field.y + field.height);
+        expect(line.x + line.width).toBeLessThanOrEqual(field.x + field.width);
+      }
+
+      // Offline, it says so, and keeps the file's time.
+      await context.setOffline(true);
+      await expect(updated).toHaveText(
+        format.offline(generated, zone, new Date('2026-01-12T12:50:00Z')),
+      );
+      await expect(updated.locator('.dot')).toHaveCount(0);
+      await context.setOffline(false);
+      await expect(updated).toHaveText(format.liveAt(generated, zone));
+      expect(problems).toEqual([]);
+      await context.close();
+    }
+
+    // That afternoon the same file is no longer live: the line says when it was updated.
+    const later = await browser.newContext({
+      viewport: { width: 1440, height: 900 },
+      timezoneId: zone,
+    });
+    const page = await later.newPage();
+    await page.clock.setFixedTime(SYNTHETIC_NOW);
+    await page.goto(site);
+    await waitForMap(page);
+    const updated = page.locator('.updated');
+    await expect(updated).toHaveText(format.updatedAt(generated, zone, SYNTHETIC_NOW), {
+      timeout: 30_000,
+    });
+    await expect(updated.locator('.dot')).toHaveCount(0);
+    await later.close();
   });
 
   test('today’s schools glow, read from the live file against the directory', async ({

@@ -39,12 +39,14 @@ function setup(answer: () => Promise<Response>, shipped = ['live/closings.json']
   const fetchImpl = vi.fn<(input: string, init?: RequestInit) => Promise<Response>>(answer);
   const directory = vi.fn(() => Promise.resolve<Directory | null>(DIRECTORY));
   const lights: LitSchools[] = [];
+  const shown: (string | null)[] = [];
   const host = fakeHost();
   let now = NOON;
   const live = startLive({
     files: createDataFiles(shipped, ROOT),
     directory,
     onLight: (lit) => lights.push(lit),
+    onShown: (generatedAt) => shown.push(generatedAt),
     fetch: fetchImpl,
     now: () => now,
     clock: () => 1000,
@@ -55,6 +57,7 @@ function setup(answer: () => Promise<Response>, shipped = ['live/closings.json']
     fetchImpl,
     directory,
     lights,
+    shown,
     host,
     setNow: (next: Date) => {
       now = next;
@@ -92,9 +95,10 @@ describe('a missing or broken file', () => {
       () => Promise.reject(new TypeError('Failed to fetch')),
       () => Promise.resolve(jsonResponse({ schema_version: 1 })),
     ]) {
-      const { live, lights, directory } = setup(answer);
+      const { live, lights, directory, shown } = setup(answer);
       await live.refresh();
       expect(lights).toEqual([]);
+      expect(shown).toEqual([]);
       expect(directory).not.toHaveBeenCalled();
       expect(live.closings).toBeNull();
       live.stop();
@@ -177,10 +181,40 @@ describe('a file with schools today', () => {
   });
 
   it('lights nothing when the directory the file names cannot be had', async () => {
-    const { live, lights, directory } = setup(() => Promise.resolve(jsonResponse(file)));
+    const { live, lights, directory, shown } = setup(() => Promise.resolve(jsonResponse(file)));
     directory.mockResolvedValue(null);
     await live.refresh();
     expect(lights).toEqual([]);
+    // Nothing from the file is shown, so no time is given for it.
+    expect(shown).toEqual([]);
+    live.stop();
+  });
+
+  it('gives the time of the file shown, once for each file', async () => {
+    let current: unknown = file;
+    const { live, shown, directory } = setup(() => Promise.resolve(jsonResponse(current)));
+    await live.refresh();
+    expect(shown).toEqual(['2026-01-12T12:42:00Z']);
+    // The same file read again, and a failed read, change nothing.
+    await vi.advanceTimersByTimeAsync(LIVE_POLL_MS);
+    current = { broken: true };
+    await vi.advanceTimersByTimeAsync(LIVE_POLL_MS);
+    expect(shown).toEqual(['2026-01-12T12:42:00Z']);
+    // A newer file whose directory cannot be had takes the time away with its schools.
+    current = testClosings('2026-01-12T12:57:00Z', META, file.days);
+    directory.mockResolvedValue(null);
+    await vi.advanceTimersByTimeAsync(LIVE_POLL_MS);
+    expect(shown).toEqual(['2026-01-12T12:42:00Z', null]);
+    live.stop();
+  });
+
+  it('gives the time of a file with no schools today', async () => {
+    const quiet = testClosings('2026-01-12T12:42:00Z', META, []);
+    const { live, lights, shown, directory } = setup(() => Promise.resolve(jsonResponse(quiet)));
+    await live.refresh();
+    expect(lights).toEqual([]);
+    expect(directory).not.toHaveBeenCalled();
+    expect(shown).toEqual(['2026-01-12T12:42:00Z']);
     live.stop();
   });
 });

@@ -5,7 +5,7 @@ import { fileURLToPath } from 'node:url';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { format } from '../../copy';
-import { createConnectivity, parseInstant, updateLine } from '../freshness';
+import { createConnectivity, parseInstant, updateLine, updateState } from '../freshness';
 import type { ConnectivityHost } from '../freshness';
 
 // The house style lives in scripts/check-copy.mjs, a plain Node module (see src/copy.test.ts).
@@ -103,6 +103,41 @@ describe('updateLine', () => {
     expect(
       updateLine({
         generatedAt: '2026-01-12T12:42',
+        online: true,
+        liveWithinMs: MINUTE,
+        timeZone: ZONE,
+        now: new Date(),
+      }),
+    ).toBeNull();
+  });
+});
+
+describe('updateState', () => {
+  const state = (now: string, online: boolean) =>
+    updateState({
+      generatedAt: GENERATED,
+      online,
+      liveWithinMs: 20 * MINUTE,
+      timeZone: ZONE,
+      now: new Date(now),
+    });
+
+  it('marks the line live exactly when it says live', () => {
+    for (const [now, online, live] of [
+      ['2026-01-12T12:50:00Z', true, true],
+      ['2026-01-12T13:03:00Z', true, false],
+      ['2026-01-12T12:50:00Z', false, false],
+      ['2026-01-12T12:30:00Z', true, false],
+    ] as const) {
+      expect(state(now, online)).toEqual({ text: line(now, online), live });
+    }
+    expect(state('2026-01-12T12:50:00Z', true)?.text).toMatch(/^Live/);
+  });
+
+  it('gives nothing for a file without a valid time', () => {
+    expect(
+      updateState({
+        generatedAt: 'garbage',
         online: true,
         liveWithinMs: MINUTE,
         timeZone: ZONE,
