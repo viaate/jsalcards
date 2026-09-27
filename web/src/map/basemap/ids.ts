@@ -12,6 +12,10 @@ export const BASEMAP_IDS = {
   usStates: 'us-states',
   usOutline: 'us-outline',
   ofmPark: 'ofm-park',
+  /** School grounds from OpenStreetMap: the campus around each school, a step off the ground. */
+  ofmSchoolGrounds: 'ofm-school-grounds',
+  /** Their hairline edge, up close. */
+  ofmSchoolGroundsEdge: 'ofm-school-grounds-edge',
   ofmWaterFill: 'ofm-water-fill',
   ofmWaterway: 'ofm-waterway',
   ofmStates: 'ofm-state-lines',
@@ -33,8 +37,12 @@ export const BASEMAP_IDS = {
   /** The border with Canada and Mexico on land, lakes and rivers, along the mask's edge. */
   usBorder: 'us-border',
   ofmNeighbourhoodLabel: 'ofm-label-neighbourhood',
+  ofmWaterLabel: 'ofm-label-water',
   ofmStreetLabel: 'ofm-label-street',
+  ofmParkLabel: 'ofm-label-park',
   ofmMajorRoadLabel: 'ofm-label-major-road',
+  /** Route numbers of highways, each on a small badge (shield.ts). */
+  ofmRoadShield: 'ofm-label-road-shield',
   ofmVillageLabel: 'ofm-label-village',
   ofmTownLabel: 'ofm-label-town',
   ofmCityLabel: 'ofm-label-city',
@@ -56,6 +64,8 @@ export const BASEMAP_IDS = {
   schoolDots: 'school-dots',
   /** Each school's name, over every other label. */
   schoolNames: 'school-names',
+  /** The space each dot keeps up close, unseen, placed before every label. */
+  schoolSpace: 'school-space',
 } as const;
 
 /** The layer of schools.pmtiles (pipeline/snowlight/directory/tiles.py). */

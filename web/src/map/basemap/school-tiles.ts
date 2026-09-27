@@ -35,12 +35,69 @@ const TILE_URL = new RegExp(`^${SCHOOL_TILES_PROTOCOL}://(.+)/(\\d+)/(\\d+)/(\\d
 const LAYER_VALUES = 4;
 const VALUE_STRING = 1;
 
-/** Public school ids are 12 digits and start with the state's FIPS code; 28 is Mississippi. */
-const MISSISSIPPI_SCHOOL = /^28\d{10}$/;
+/** Public school ids are 12 digits and start with the state's FIPS code. */
+const PUBLIC_SCHOOL = /^\d{12}$/;
 
-/** The state a school's name may need to be read in (names.ts keeps MS in Mississippi's). */
-function stateOf(id: string | null): string | null {
-  return id !== null && MISSISSIPPI_SCHOOL.test(id) ? 'MS' : null;
+/** USPS codes of the states and DC by FIPS code, for the schools the map draws. */
+const STATE_BY_FIPS: Readonly<Record<string, string>> = {
+  '01': 'AL',
+  '04': 'AZ',
+  '05': 'AR',
+  '06': 'CA',
+  '08': 'CO',
+  '09': 'CT',
+  '10': 'DE',
+  '11': 'DC',
+  '12': 'FL',
+  '13': 'GA',
+  '16': 'ID',
+  '17': 'IL',
+  '18': 'IN',
+  '19': 'IA',
+  '20': 'KS',
+  '21': 'KY',
+  '22': 'LA',
+  '23': 'ME',
+  '24': 'MD',
+  '25': 'MA',
+  '26': 'MI',
+  '27': 'MN',
+  '28': 'MS',
+  '29': 'MO',
+  '30': 'MT',
+  '31': 'NE',
+  '32': 'NV',
+  '33': 'NH',
+  '34': 'NJ',
+  '35': 'NM',
+  '36': 'NY',
+  '37': 'NC',
+  '38': 'ND',
+  '39': 'OH',
+  '40': 'OK',
+  '41': 'OR',
+  '42': 'PA',
+  '44': 'RI',
+  '45': 'SC',
+  '46': 'SD',
+  '47': 'TN',
+  '48': 'TX',
+  '49': 'UT',
+  '50': 'VT',
+  '51': 'VA',
+  '53': 'WA',
+  '54': 'WV',
+  '55': 'WI',
+  '56': 'WY',
+};
+
+/**
+ * The state of a public school, from its id, for the parts of its name that
+ * read by state (names.ts: MS stays in Mississippi's names, a state's own code
+ * stays in capitals); null for a private school, whose id does not say.
+ */
+export function stateOf(id: string | null): string | null {
+  return id !== null && PUBLIC_SCHOOL.test(id) ? (STATE_BY_FIPS[id.slice(0, 2)] ?? null) : null;
 }
 
 /**

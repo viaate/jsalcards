@@ -150,6 +150,14 @@ async function drawn(page: Page, layer: string): Promise<{ id: string; name: str
   }, layer);
 }
 
+/** Pembroke Hill's zoom-14 street tile, the deepest OpenFreeMap has: z/x/y. */
+const PEMBROKE_HILL_STREET_TILE = '/14/3886/6259.pbf';
+
+/** Whether the map keeps loading the tiles it has zoomed past, as it does during a flight. */
+async function keepsTiles(page: Page): Promise<boolean> {
+  return page.evaluate(() => window.snowlightMap?.cancelPendingTileRequestsWhileZooming === false);
+}
+
 async function mapView(page: Page): Promise<{ lat: number; lon: number; zoom: number }> {
   return page.evaluate(() => {
     const map = window.snowlightMap;
@@ -284,6 +292,16 @@ test('searching “pembroke” lists Pembroke Hill, and choosing it goes there',
   expect(await page.locator('[role="option"]').count()).toBeGreaterThan(5);
 
   await option.click();
+  // The street tiles the flight ends on are asked for as it sets off, long before it gets there,
+  // and every tile it asks for on the way keeps loading until the flight is over.
+  await expect
+    .poll(() => requests.some((request) => request.url.endsWith(PEMBROKE_HILL_STREET_TILE)), {
+      timeout: 10_000,
+      intervals: [50],
+    })
+    .toBe(true);
+  expect((await mapView(page)).zoom).toBeLessThan(13);
+  expect(await keepsTiles(page)).toBe(true);
   await expect(input).toHaveValue(PEMBROKE_HILL_NAME);
   await expect.poll(() => new URL(page.url()).searchParams.get('school')).toBe(PEMBROKE_HILL.id);
   await expect
@@ -300,6 +318,7 @@ test('searching “pembroke” lists Pembroke Hill, and choosing it goes there',
     )
     .toBe(true);
   await settle(page);
+  expect(await keepsTiles(page)).toBe(false);
   // Its dot and its name are on the map, read from the school tiles in byte ranges.
   expect(await drawn(page, BASEMAP_IDS.schoolDots)).toContainEqual({
     id: PEMBROKE_HILL.id,
@@ -345,16 +364,37 @@ test('schools are dots from zoom 11 and named from zoom 13, never one name over 
   // Names as the page shows them: none drawn in capitals.
   for (const { name } of named) expect(name).toMatch(/[a-z]/);
   // Where names would collide, fewer are drawn: every school keeps its dot, not every one its name.
-  expect(dots.length).toBeGreaterThan(named.length);
+  expect(dots.length).toBeGreaterThanOrEqual(named.length);
+  // No name, a school's or a street's, is drawn across a school's dot.
+  const covered = await page.evaluate(
+    ({ dotLayer, space }) => {
+      const map = window.snowlightMap;
+      if (map === undefined) return ['no map'];
+      const labels = map
+        .getLayersOrder()
+        .filter((id) => map.getLayer(id)?.type === 'symbol' && id !== space);
+      return map.queryRenderedFeatures({ layers: [dotLayer] }).flatMap((dot) => {
+        const [lon, lat] = (dot.geometry as { coordinates: [number, number] }).coordinates;
+        const point = map.project([lon, lat]);
+        return map
+          .queryRenderedFeatures(point, { layers: labels })
+          .map((label) => `${String(label.properties.name)} over ${String(dot.properties.name)}`);
+      });
+    },
+    { dotLayer: BASEMAP_IDS.schoolDots, space: BASEMAP_IDS.schoolSpace },
+  );
+  expect(covered).toEqual([]);
   const placement = await page.evaluate((layer) => {
     const map = window.snowlightMap;
     const names = ['text-allow-overlap', 'text-ignore-placement', 'text-optional'] as const;
     return names.map((name) => map?.getLayoutProperty(layer, name) as unknown);
   }, BASEMAP_IDS.schoolNames);
   expect(placement).toEqual([false, false, false]);
-  // School names are placed first, so no street or place name takes their room.
+  // School names are placed first, after the space each dot keeps, so no street or place name
+  // takes their room.
   const order = await page.evaluate(() => window.snowlightMap?.getLayersOrder() ?? []);
-  expect(order.indexOf(BASEMAP_IDS.schoolNames)).toBe(order.indexOf(BASEMAP_IDS.schools) - 1);
+  expect(order.indexOf(BASEMAP_IDS.schoolSpace)).toBe(order.indexOf(BASEMAP_IDS.schools) - 1);
+  expect(order.indexOf(BASEMAP_IDS.schoolNames)).toBe(order.indexOf(BASEMAP_IDS.schools) - 2);
   expect(order.indexOf(BASEMAP_IDS.schoolDots)).toBeLessThan(order.indexOf(GLOW_LAYER));
   expect(problems).toEqual([]);
   await context.close();

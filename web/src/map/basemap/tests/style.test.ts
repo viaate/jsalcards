@@ -25,8 +25,18 @@ import { BASEMAP_IDS } from '../ids';
 import { BORDER_LAYER, MASK_LAYER } from '../mask/format';
 import { OPENFREEMAP_MIN_ZOOM } from '../openfreemap';
 import { SCHOOLS_TILE_LAYER, SCHOOL_TILES_PROTOCOL } from '../ids';
-import { SCHOOL_DOTS_FROM, SCHOOL_NAMES_FROM, SCHOOL_TILES_MAX_ZOOM } from '../schools';
-import { ROAD_TIERS, buildBasemapStyle, mixColors } from '../style';
+import {
+  SCHOOL_DOTS_FROM,
+  SCHOOL_FADE,
+  SCHOOL_NAMES_FROM,
+  SCHOOL_SPACE_IMAGE,
+  SCHOOL_SPACE_SIZE,
+  SCHOOL_TILES_MAX_ZOOM,
+  SCHOOL_TILES_MIN_ZOOM,
+  schoolSpaceImage,
+} from '../schools';
+import { SHIELD_IMAGE } from '../shield';
+import { LABEL_FADE, ROAD_TIERS, buildBasemapStyle, mixColors } from '../style';
 import type { BasemapColors, UsLinesData } from '../style';
 
 const COLORS: BasemapColors = {
@@ -56,7 +66,7 @@ const WITH_SCHOOLS: StyleSpecification = buildBasemapStyle({
 });
 
 function layer(id: string): LayerSpecification {
-  const found = LAYERS.find((candidate) => candidate.id === id);
+  const found = [...LAYERS, ...WITH_SCHOOLS.layers].find((candidate) => candidate.id === id);
   if (found === undefined) throw new Error(`No layer ${id}`);
   return found;
 }
@@ -163,6 +173,8 @@ describe('layer order', () => {
     const order = [
       BASEMAP_IDS.background,
       BASEMAP_IDS.ofmPark,
+      BASEMAP_IDS.ofmSchoolGrounds,
+      BASEMAP_IDS.ofmSchoolGroundsEdge,
       BASEMAP_IDS.ofmWaterFill,
       BASEMAP_IDS.ofmWaterway,
       BASEMAP_IDS.ofmStates,
@@ -237,11 +249,15 @@ describe('layer order', () => {
     for (const drawn of LAYERS.slice(firstSymbol)) {
       expect(['symbol', 'background'], drawn.id).toContain(drawn.type);
     }
-    // MapLibre places the top layer's labels first: cities win over towns, towns over streets.
+    // MapLibre places the top layer's labels first: cities win over towns, towns over route
+    // numbers, route numbers over road names, and parks over the streets around them.
     expect(symbols).toEqual([
       BASEMAP_IDS.ofmNeighbourhoodLabel,
+      BASEMAP_IDS.ofmWaterLabel,
       BASEMAP_IDS.ofmStreetLabel,
+      BASEMAP_IDS.ofmParkLabel,
       BASEMAP_IDS.ofmMajorRoadLabel,
+      BASEMAP_IDS.ofmRoadShield,
       BASEMAP_IDS.ofmVillageLabel,
       BASEMAP_IDS.ofmTownLabel,
       BASEMAP_IDS.ofmCityLabel,
@@ -357,7 +373,8 @@ describe('roads', () => {
       );
       expect(r === g && g === b, tier.color).toBe(true);
       expect(r).toBeGreaterThanOrEqual(0x11);
-      expect(r).toBeLessThanOrEqual(0x3a);
+      // Below the dimmest text (#6b6b6b) by a wide margin: roads never read as labels.
+      expect(r).toBeLessThanOrEqual(0x48);
     }
   });
 });
@@ -365,11 +382,13 @@ describe('roads', () => {
 describe('buildings, water and parks', () => {
   const BUILDING = BASEMAP_IDS.ofmBuilding;
 
-  it('draws building footprints from zoom 13, fading in by 14', () => {
+  it('draws building footprints from zoom 13, most of the way in at once, fully by 14', () => {
     expect(draws(BUILDING, 12, {}, GEOMETRY.polygon)).toBe(false);
     expect(draws(BUILDING, 13, {}, GEOMETRY.polygon)).toBe(true);
     const opacity = [13, 13.25, 13.5, 14, 16].map((z) => num(BUILDING, 'paint', 'fill-opacity', z));
-    expect(opacity[0]).toBe(0);
+    // A view at zoom 13 already shows its blocks.
+    expect(opacity[0]).toBeGreaterThanOrEqual(0.5);
+    expect(opacity[0]).toBeLessThan(1);
     expect(opacity).toEqual([...opacity].sort((a, b) => a - b));
     expect(opacity[3]).toBe(1);
     expect(value(BUILDING, 'paint', 'fill-outline-color', 14)).toBeDefined();
@@ -399,6 +418,34 @@ describe('buildings, water and parks', () => {
     );
   });
 
+  it('marks school grounds a step brighter than parks, under the buildings, with an edge up close', () => {
+    const grounds = BASEMAP_IDS.ofmSchoolGrounds;
+    const edge = BASEMAP_IDS.ofmSchoolGroundsEdge;
+    for (const kind of ['school', 'kindergarten']) {
+      expect(draws(grounds, 11, { class: kind }, 3), kind).toBe(false);
+      expect(draws(grounds, 12, { class: kind }, 3), kind).toBe(true);
+    }
+    // K-12 grounds only: no college campuses, playgrounds or pitches.
+    for (const other of ['college', 'university', 'playground', 'pitch']) {
+      expect(draws(grounds, 14, { class: other }, 3), other).toBe(false);
+    }
+    const tone = rgb(grounds, 'fill-color', 13, { class: 'school' })[0];
+    expect(tone).toBeGreaterThan(
+      rgb(BASEMAP_IDS.ofmPark, 'fill-color', 13, { subclass: 'park' })[0],
+    );
+    expect(tone).toBeLessThan(0x11);
+    expect(num(grounds, 'paint', 'fill-opacity', 13)).toBe(1);
+    expect(indexOf(grounds)).toBeLessThan(indexOf(BASEMAP_IDS.ofmBuilding));
+    expect(draws(edge, 13, { class: 'school' }, 3)).toBe(false);
+    expect(draws(edge, 14, { class: 'school' }, 3)).toBe(true);
+    expect(num(edge, 'paint', 'line-opacity', 14)).toBe(1);
+    expect(num(edge, 'paint', 'line-width', 14)).toBe(1);
+    // Dimmer than any road, so a campus never reads as a street.
+    expect(rgb(edge, 'line-color', 14)[0]).toBeLessThan(
+      rgb(ROAD, 'line-color', 14, { class: 'minor' })[0] + 3,
+    );
+  });
+
   it('dims lake shores below the coasts, and every shore once the streets are in', () => {
     const shore = (zoom: number, waterClass: string): number =>
       rgb(BASEMAP_IDS.ofmWater, 'line-color', zoom, { class: waterClass })[0];
@@ -416,6 +463,8 @@ describe('names', () => {
   it('names streets along the line from zoom 13, and major roads from 12', () => {
     const street = BASEMAP_IDS.ofmStreetLabel;
     const major = BASEMAP_IDS.ofmMajorRoadLabel;
+    expect(draws(street, 12, { class: 'tertiary', name: 'Gillham Road' })).toBe(false);
+    expect(draws(street, 13, { class: 'tertiary', name: 'Gillham Road' })).toBe(true);
     expect(draws(street, 12, { class: 'minor', name: 'Wornall Road' })).toBe(false);
     expect(draws(street, 13, { class: 'minor', name: 'Wornall Road' })).toBe(true);
     expect(draws(street, 14, { class: 'service', name: 'Alley' })).toBe(false);
@@ -425,10 +474,121 @@ describe('names', () => {
     for (const id of [street, major]) {
       expect(value(id, 'layout', 'symbol-placement', 14)).toBe('line');
     }
-    // A highway with no name goes by its number.
-    expect(
-      value(major, 'layout', 'text-field', 13, { class: 'motorway', ref: 'I 35' }),
-    ).toMatchObject({ sections: [{ text: 'I 35' }] });
+    // A highway's number goes on a badge, not along the line; a ramp's exit number goes nowhere.
+    expect(draws(major, 13, { class: 'motorway', ref: '35', network: 'us-interstate' })).toBe(
+      false,
+    );
+    expect(draws(major, 13, { class: 'motorway', ref: '2T' })).toBe(false);
+    expect(draws(BASEMAP_IDS.ofmRoadShield, 13, { class: 'motorway', ref: '2T' })).toBe(false);
+  });
+
+  it('names through streets before the side streets that cross them', () => {
+    const key = (street: string): number =>
+      num(BASEMAP_IDS.ofmStreetLabel, 'layout', 'symbol-sort-key', 15, { class: street });
+    expect(key('tertiary')).toBeLessThan(key('minor'));
+    expect(key('minor')).toBeLessThan(key('service'));
+  });
+
+  it('sets street names a step above the dimmest grey where they come in, and in the place grey up close', () => {
+    const shade = (id: string, zoom: number): number => rgb(id, 'text-color', zoom)[0];
+    const dim = 0x6b;
+    const full = 0xa3;
+    for (const id of [BASEMAP_IDS.ofmStreetLabel, BASEMAP_IDS.ofmMajorRoadLabel]) {
+      expect(shade(id, 13), id).toBeGreaterThan(dim);
+      expect(shade(id, 16), id).toBe(full);
+      for (const zoom of [13, 14, 15]) {
+        expect(shade(id, zoom + 1), id).toBeGreaterThanOrEqual(shade(id, zoom));
+      }
+    }
+    // Major roads a step ahead of the streets off them.
+    expect(shade(BASEMAP_IDS.ofmMajorRoadLabel, 13)).toBeGreaterThan(
+      shade(BASEMAP_IDS.ofmStreetLabel, 13),
+    );
+    expect(num(BASEMAP_IDS.ofmStreetLabel, 'layout', 'text-size', 13)).toBeGreaterThanOrEqual(11);
+  });
+
+  it('sets school names larger than any street or road name at every zoom they share', () => {
+    for (const zoom of [13, 13.5, 14, 15, 16, 17, 18]) {
+      const school = num(BASEMAP_IDS.schoolNames, 'layout', 'text-size', zoom);
+      for (const id of [
+        BASEMAP_IDS.ofmStreetLabel,
+        BASEMAP_IDS.ofmMajorRoadLabel,
+        BASEMAP_IDS.ofmWaterLabel,
+        BASEMAP_IDS.ofmParkLabel,
+        BASEMAP_IDS.ofmNeighbourhoodLabel,
+      ]) {
+        expect(school, `${id} at ${String(zoom)}`).toBeGreaterThan(
+          num(id, 'layout', 'text-size', zoom),
+        );
+      }
+    }
+  });
+
+  it('puts route numbers on upright badges: interstates from zoom 11, US and state routes from 12', () => {
+    const shield = BASEMAP_IDS.ofmRoadShield;
+    const interstate = { class: 'motorway', ref: '35', network: 'us-interstate' };
+    const us = { class: 'trunk', ref: '71', network: 'us-highway', route_1_network: 'US:US' };
+    const state = { class: 'primary', ref: '9', network: 'us-state', route_1_network: 'US:MO' };
+    expect(draws(shield, 10, interstate)).toBe(false);
+    expect(draws(shield, 11, interstate)).toBe(true);
+    expect(draws(shield, 11, us)).toBe(false);
+    expect(draws(shield, 12, us)).toBe(true);
+    expect(draws(shield, 12, state)).toBe(true);
+    // Local streets carry no badge, whatever their number.
+    expect(draws(shield, 14, { class: 'minor', ref: '4', network: 'us-state' })).toBe(false);
+    const text = (p: Properties): unknown => value(shield, 'layout', 'text-field', 13, p);
+    expect(text(interstate)).toMatchObject({ sections: [{ text: 'I-35' }] });
+    expect(text(us)).toMatchObject({ sections: [{ text: 'US 71' }] });
+    expect(text(state)).toMatchObject({ sections: [{ text: 'MO 9' }] });
+    expect(text({ ...state, route_1_network: '' })).toMatchObject({ sections: [{ text: '9' }] });
+    const layout = layer(shield).layout as Record<string, unknown>;
+    expect(layout).toMatchObject({
+      'icon-image': SHIELD_IMAGE,
+      'icon-text-fit': 'both',
+      'text-rotation-alignment': 'viewport',
+      'icon-rotation-alignment': 'viewport',
+      'icon-allow-overlap': false,
+    });
+  });
+
+  it('names rivers along their course from zoom 13, and parks from 14, quietly', () => {
+    const water = BASEMAP_IDS.ofmWaterLabel;
+    const park = BASEMAP_IDS.ofmParkLabel;
+    expect(draws(water, 12, { class: 'river', name: 'Brush Creek' })).toBe(false);
+    expect(draws(water, 13, { class: 'river', name: 'Brush Creek' })).toBe(true);
+    expect(draws(water, 14, { class: 'stream', name: 'Rock Creek' })).toBe(false);
+    expect(draws(water, 14, { class: 'river' })).toBe(false);
+    expect(value(water, 'layout', 'symbol-placement', 14)).toBe('line');
+    const loose = { class: 'park', name: 'Jacob L. Loose Memorial Park', rank: 1 };
+    expect(draws(park, 13, loose, 1)).toBe(false);
+    expect(draws(park, 14, loose, 1)).toBe(true);
+    expect(draws(park, 14, { ...loose, rank: 20 }, 1)).toBe(false);
+    expect(draws(park, 15, { ...loose, rank: 20 }, 1)).toBe(true);
+    expect(draws(park, 14, { class: 'park', rank: 1 }, 1)).toBe(false);
+    expect(draws(park, 14, { class: 'school', name: 'A school', rank: 1 }, 1)).toBe(false);
+    for (const id of [water, park]) {
+      expect(hex(rgb(id, 'text-color', 15)), id).toBe(COLORS.labelDim);
+    }
+  });
+
+  it('sets neighbourhoods in small spaced capitals, under the street and place names', () => {
+    const layout = layer(BASEMAP_IDS.ofmNeighbourhoodLabel).layout as Record<string, unknown>;
+    expect(layout['text-transform']).toBe('uppercase');
+    expect(layout['text-letter-spacing']).toBeGreaterThanOrEqual(0.1);
+    expect(hex(rgb(BASEMAP_IDS.ofmNeighbourhoodLabel, 'text-color', 14))).toBe(COLORS.labelDim);
+  });
+
+  it('draws every name class in full at the zoom it is named from, so whole-zoom views miss none', () => {
+    const symbols = WITH_SCHOOLS.layers.filter((l) => l.type === 'symbol');
+    for (const symbol of symbols) {
+      // The city names hand over with the lines; a dot's space is never seen.
+      if (symbol.id === BASEMAP_IDS.ofmCityLabel || symbol.id === BASEMAP_IDS.schoolSpace) continue;
+      const from = (symbol.minzoom ?? 0) + LABEL_FADE;
+      expect(Number.isInteger(from), symbol.id).toBe(true);
+      expect(num(symbol.id, 'paint', 'text-opacity', from), symbol.id).toBe(1);
+      expect(num(symbol.id, 'paint', 'text-opacity', from - LABEL_FADE), symbol.id).toBe(0);
+    }
+    expect(SCHOOL_FADE).toBe(LABEL_FADE);
   });
 
   /** Each place class, the first zoom it is drawn at, and a feature of it. */
@@ -449,8 +609,14 @@ describe('names', () => {
     it(`names each ${placeClass} from zoom ${String(from)}`, () => {
       if (from > OPENFREEMAP_MIN_ZOOM) expect(draws(id, from - 1, place, 1)).toBe(false);
       expect(draws(id, from, place, 1)).toBe(true);
-      expect(num(id, 'paint', 'text-opacity', from)).toBe(0);
-      expect(num(id, 'paint', 'text-opacity', from + 0.5)).toBe(1);
+      if (id === BASEMAP_IDS.ofmCityLabel) {
+        // Cities come in with the street tiles, over the half level the bundled lines hand over.
+        expect(num(id, 'paint', 'text-opacity', from)).toBe(0);
+        expect(num(id, 'paint', 'text-opacity', from + 0.5)).toBe(1);
+      } else {
+        expect(num(id, 'paint', 'text-opacity', from - LABEL_FADE)).toBe(0);
+        expect(num(id, 'paint', 'text-opacity', from)).toBe(1);
+      }
     });
   }
 
@@ -501,9 +667,11 @@ describe('schools', () => {
     expect(WITH_SCHOOLS.sources[BASEMAP_IDS.schoolsSource]).toEqual({
       type: 'vector',
       tiles: [`${SCHOOL_TILES_PROTOCOL}://${SCHOOL_ARCHIVE}/{z}/{x}/{y}`],
-      minzoom: SCHOOL_DOTS_FROM,
+      minzoom: SCHOOL_TILES_MIN_ZOOM,
       maxzoom: SCHOOL_TILES_MAX_ZOOM,
     });
+    // The tileset holds zooms 9 to 14; the dots' fade just below 11 reads zoom 10.
+    expect(SCHOOL_TILES_MIN_ZOOM).toBe(Math.floor(SCHOOL_DOTS_FROM - SCHOOL_FADE));
     for (const id of [BASEMAP_IDS.schoolDots, BASEMAP_IDS.schoolNames]) {
       expect(schoolLayer(id)).toMatchObject({
         source: BASEMAP_IDS.schoolsSource,
@@ -512,24 +680,90 @@ describe('schools', () => {
     }
     expect(SCHOOL_DOTS_FROM).toBe(11);
     expect(SCHOOL_NAMES_FROM).toBe(13);
-    expect(schoolLayer(BASEMAP_IDS.schoolDots).minzoom).toBe(11);
-    expect(schoolLayer(BASEMAP_IDS.schoolNames).minzoom).toBe(13);
+    // Each fully drawn at its zoom, fading in over the quarter level before it.
+    expect(schoolLayer(BASEMAP_IDS.schoolDots).minzoom).toBe(11 - SCHOOL_FADE);
+    expect(schoolLayer(BASEMAP_IDS.schoolNames).minzoom).toBe(13 - SCHOOL_FADE);
+    expect(num(BASEMAP_IDS.schoolDots, 'paint', 'circle-opacity', 11)).toBe(1);
+    expect(num(BASEMAP_IDS.schoolDots, 'paint', 'circle-opacity', 11 - SCHOOL_FADE)).toBe(0);
+    expect(num(BASEMAP_IDS.schoolNames, 'paint', 'text-opacity', 13)).toBe(1);
+  });
+
+  it('put a campus written after a spaced dash on a second, dimmer line', () => {
+    const label = (name: string): unknown =>
+      value(BASEMAP_IDS.schoolNames, 'layout', 'text-field', 15, { name });
+    expect(label('The Pembroke Hill School - Wornall Campus')).toMatchObject({
+      sections: [
+        { text: 'The Pembroke Hill School', scale: null },
+        { text: '\n' },
+        { text: 'Wornall Campus', scale: 0.88 },
+      ],
+    });
+    const campus = (label('Crossroads - Quality Hill') as { sections: { textColor: unknown }[] })
+      .sections[2]?.textColor as { r: number; a: number };
+    expect(Math.round((campus.r / campus.a) * 255)).toBe(0xa3);
+    // Anything else is one name, as written.
+    expect(label('Frontier School of Excellence-U')).toMatchObject({
+      sections: [{ text: 'Frontier School of Excellence-U' }],
+    });
+    expect(label('Visitation Catholic School')).toMatchObject({
+      sections: [{ text: 'Visitation Catholic School' }],
+    });
+  });
+
+  it('draw a dot white up close, over a dark ring, larger than the road it stands on', () => {
+    expect(hex(rgb(BASEMAP_IDS.schoolDots, 'circle-color', 15))).toBe(COLORS.labelBright);
+    expect(hex(rgb(BASEMAP_IDS.schoolDots, 'circle-color', 13))).toBe(COLORS.labelBright);
+    expect(hex(rgb(BASEMAP_IDS.schoolDots, 'circle-stroke-color', 15))).toBe('#000000');
+    const radii = [11, 12, 13, 15, 17].map((z) =>
+      num(BASEMAP_IDS.schoolDots, 'paint', 'circle-radius', z),
+    );
+    expect(radii).toEqual([...radii].sort((a, b) => a - b));
+    expect((radii[2] ?? 0) * 2).toBeGreaterThan(
+      num(ROAD, 'paint', 'line-width', 15, { class: 'minor' }),
+    );
   });
 
   it('put a dot at each school under every label, and each name over every other label', () => {
     const labels = at(BASEMAP_IDS.labels);
     expect(at(BASEMAP_IDS.schoolDots)).toBe(labels - 1);
     expect(at(BASEMAP_IDS.schoolDots)).toBeGreaterThan(at(BASEMAP_IDS.usMask));
-    // MapLibre places the top layer's labels first: school names before street and place names.
+    // MapLibre places the top layer's labels first: each dot's space, then school names, then
+    // street and place names.
     const symbols = layers.filter((l) => l.type === 'symbol').map((l) => l.id);
-    expect(symbols[symbols.length - 1]).toBe(BASEMAP_IDS.schoolNames);
-    expect(at(BASEMAP_IDS.schoolNames)).toBe(at(BASEMAP_IDS.schools) - 1);
+    expect(symbols.slice(-2)).toEqual([BASEMAP_IDS.schoolNames, BASEMAP_IDS.schoolSpace]);
+    expect(at(BASEMAP_IDS.schoolSpace)).toBe(at(BASEMAP_IDS.schools) - 1);
     // Everything else is where it is without schools.
-    expect(
-      layers
-        .map((l) => l.id)
-        .filter((id) => id !== BASEMAP_IDS.schoolDots && id !== BASEMAP_IDS.schoolNames),
-    ).toEqual(LAYERS.map((l) => l.id));
+    const added: string[] = [
+      BASEMAP_IDS.schoolDots,
+      BASEMAP_IDS.schoolNames,
+      BASEMAP_IDS.schoolSpace,
+    ];
+    expect(layers.map((l) => l.id).filter((id) => !added.includes(id))).toEqual(
+      LAYERS.map((l) => l.id),
+    );
+  });
+
+  it('keep each dot clear of every name up close, unseen', () => {
+    const space = schoolLayer(BASEMAP_IDS.schoolSpace) as SymbolLayerSpecification;
+    expect(space.minzoom).toBe(SCHOOL_NAMES_FROM - SCHOOL_FADE);
+    expect(space.layout).toMatchObject({
+      'icon-image': SCHOOL_SPACE_IMAGE,
+      'icon-allow-overlap': true,
+      'icon-ignore-placement': false,
+    });
+    expect(space.paint).toEqual({ 'icon-opacity': 0 });
+    // As wide as the dot and its ring at each zoom.
+    for (const zoom of [13, 15, 17]) {
+      const across = num(BASEMAP_IDS.schoolSpace, 'layout', 'icon-size', zoom) * SCHOOL_SPACE_SIZE;
+      const dot =
+        2 *
+        (num(BASEMAP_IDS.schoolDots, 'paint', 'circle-radius', zoom) +
+          num(BASEMAP_IDS.schoolDots, 'paint', 'circle-stroke-width', zoom));
+      expect(across).toBeCloseTo(dot, 1);
+    }
+    const image = schoolSpaceImage();
+    expect([image.width, image.height]).toEqual([SCHOOL_SPACE_SIZE, SCHOOL_SPACE_SIZE]);
+    expect(image.data.every((byte) => byte === 0)).toBe(true);
   });
 
   it('name schools beside their dots, never over another name', () => {
@@ -540,7 +774,32 @@ describe('schools', () => {
       'text-optional': false,
       'text-font': [MAP_FONTS.medium],
     });
-    expect(names.layout?.['text-variable-anchor']).toEqual(['left', 'right', 'top', 'bottom']);
+    // Beside the dot first, then above or below, then at a corner.
+    expect(names.layout?.['text-variable-anchor']).toEqual([
+      'left',
+      'right',
+      'top',
+      'bottom',
+      'bottom-left',
+      'bottom-right',
+      'top-left',
+      'top-right',
+    ]);
+  });
+
+  it('stand out across a metro: light grey, ringed, several pixels across', () => {
+    for (const zoom of [11, 12]) {
+      // At least the place-name grey: brighter than every road, street name and shore.
+      expect(rgb(BASEMAP_IDS.schoolDots, 'circle-color', zoom)[0]).toBeGreaterThanOrEqual(
+        Number.parseInt(COLORS.label.slice(1, 3), 16),
+      );
+      expect(num(BASEMAP_IDS.schoolDots, 'paint', 'circle-radius', zoom)).toBeGreaterThanOrEqual(
+        2.2,
+      );
+      expect(
+        num(BASEMAP_IDS.schoolDots, 'paint', 'circle-stroke-width', zoom),
+      ).toBeGreaterThanOrEqual(1);
+    }
   });
 
   it('are drawn in greys, the names brightest up close', () => {
@@ -550,9 +809,7 @@ describe('schools', () => {
       paint(BASEMAP_IDS.schoolDots),
       paint(BASEMAP_IDS.schoolNames),
     ]).match(/#[0-9a-f]{3,6}/gi);
-    expect(new Set(colors)).toEqual(
-      new Set([COLORS.labelDim, COLORS.label, COLORS.labelBright, COLORS.background]),
-    );
+    expect(new Set(colors)).toEqual(new Set([COLORS.label, COLORS.labelBright, COLORS.background]));
   });
 });
 

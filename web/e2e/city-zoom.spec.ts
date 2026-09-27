@@ -147,6 +147,27 @@ test('the Country Club Plaza view draws roads, buildings, water and names', asyn
   expect(problems).toEqual([]);
 });
 
+test('a view at a whole zoom level names its streets, and its highways by number', async ({
+  page,
+}) => {
+  const problems = watch(page);
+  // Downtown Kansas City at zoom 13, the zoom street names come in at.
+  await openView(page, 39.0997, -94.5786, 13);
+  const { names } = await drawn(page);
+  expect(names[BASEMAP_IDS.ofmStreetLabel]?.length ?? 0).toBeGreaterThan(3);
+  // Highways go by their numbers on badges; ramps' exit numbers are nowhere.
+  const shields = await page.evaluate(
+    (layer) =>
+      window.snowlightMap
+        ?.queryRenderedFeatures({ layers: [layer] })
+        .map((feature) => String((feature.properties as Record<string, unknown>).ref)) ?? [],
+    BASEMAP_IDS.ofmRoadShield,
+  );
+  expect(shields.length).toBeGreaterThan(0);
+  expect(shields.every((ref) => /^\d{1,3}$/.test(ref))).toBe(true);
+  expect(problems).toEqual([]);
+});
+
 test('at Pembroke Hill the streets are named and the buildings drawn', async ({ page }) => {
   const problems = watch(page);
   await openView(page, 39.0362, -94.593, 15.2);
@@ -157,7 +178,22 @@ test('at Pembroke Hill the streets are named and the buildings drawn', async ({ 
     ...(names[BASEMAP_IDS.ofmMajorRoadLabel] ?? []),
   ];
   expect(streets).toContain('Wornall Road');
-  expect(streets).toContain('West 51st Street');
+  // 51st Street, which the campus fronts, by name on one side of Wornall Road or the other:
+  // which side has room depends on the names around it. A phone is too narrow to count on it.
+  if (test.info().project.name === 'desktop') {
+    expect(streets.some((name) => /^(West|East) 51st Street$/.test(name))).toBe(true);
+  }
+  // The school stands on its grounds, and the park south of it goes by its name.
+  const grounds = await page.evaluate(
+    ({ layer, lon, lat }) => {
+      const map = window.snowlightMap;
+      if (map === undefined) return 0;
+      return map.queryRenderedFeatures(map.project([lon, lat]), { layers: [layer] }).length;
+    },
+    { layer: BASEMAP_IDS.ofmSchoolGrounds, lon: -94.593001, lat: 39.03606 },
+  );
+  expect(grounds).toBeGreaterThan(0);
+  expect(names[BASEMAP_IDS.ofmParkLabel] ?? []).toContain('Jacob L. Loose Memorial Park');
   // On screen, not only in the tiles: a good share of the map is lit by
   // footprints, streets and names, and none of it past the palette's grey.
   const { data, info } = await sharp(await page.locator('.maplibregl-canvas').screenshot())

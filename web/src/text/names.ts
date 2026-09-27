@@ -13,6 +13,8 @@
  * Case (`casedName`, the only change for places): a name written in capitals
  * is shown in title case; a name with any lowercase letter keeps its case.
  * Within a capitalized name:
+ * - the code of the school's own state stays in capitals where it stands for
+ *   the state (MO in "WESTERN MO CORRECTIONAL CENTER", a Missouri school);
  * - acronyms stay in capitals: words with no vowel (PS, HS, JHS, LLC), a list
  *   of common ones that have vowels (KIPP, STEM, ISD), and Roman numerals;
  * - single letters stay capitals (initials such as the H in JOHN H GLENN);
@@ -26,8 +28,15 @@
  *
  * Shortenings (school and district names, `displayName`), each only where
  * NCES uses it for these words:
- * - Sch, Schl: School; Elem: Elementary; Acad: Academy; Ctr: Center;
- *   Chtr: Charter; Intrmd: Intermediate; Lrng: Learning; Hts: Heights;
+ * - Sch, Schl: School; Schls, Schs: Schools; Elem: Elementary; Acad: Academy;
+ *   Ctr: Center; Chtr: Charter; Intrmd: Intermediate; Lrng: Learning;
+ *   Hts: Heights; Twp: Township;
+ * - Pub: Public before School, Schools or Charter ("Shawnee Mission Pub Sch");
+ * - Com, Comm: Community, but before Arts ("Bradwell Comm Arts & Sci");
+ * - Co: County after a name, never first or joined by a hyphen ("Butler Co.
+ *   Area Technology Center", but "Co-op");
+ * - H S: High School, never at the start of a name, where they are initials
+ *   ("Carbondale Comm H S", "Premier H.S. of Waco");
  * - El: Elementary before School or another school, or at the end of a name
  *   or part of one ("Ross El Sch", "SMITH EL", "Drums El/MS"), never in "El
  *   Dorado" or "Beth El";
@@ -140,8 +149,16 @@ function title(word: string): string {
   return first + lower(word.slice(first.length));
 }
 
-function caseWord(word: string, before: string, first: boolean): string {
+function caseWord(
+  word: string,
+  before: string,
+  after: string,
+  first: boolean,
+  hint: NameHint,
+): string {
   if (APOSTROPHE.test(before)) return word.length <= 2 ? lower(word) : title(word);
+  // The school's own state, by its code: not a word ("IN") or half of one ("CO-OP").
+  if (word === hint.state && !SMALL_WORDS.has(word) && after !== '-') return word;
   if (DIGIT.test(before)) return ORDINALS.has(word) ? lower(word) : word;
   if (ONE_LETTER.test(word)) return word;
   // McKinley: the M, a lowercase c, then the rest title-cased.
@@ -155,25 +172,25 @@ function caseWord(word: string, before: string, first: boolean): string {
   return title(word);
 }
 
+/** What is known about where a name is from. */
+export interface NameHint {
+  /** The USPS code of the state the school or district is in, when known. */
+  readonly state?: string | null;
+}
+
 /**
  * A name in the case the page shows: title case when it is written in
  * capitals, else as written. Only the case of letters changes, so the text
  * keeps its length.
  */
-export function casedName(raw: string): string {
+export function casedName(raw: string, hint: NameHint = {}): string {
   if (LOWER.test(raw)) return raw;
   let first = true;
   return raw.replace(WORD, (word: string, at: number) => {
-    const shown = caseWord(word, raw.charAt(at - 1), first);
+    const shown = caseWord(word, raw.charAt(at - 1), raw.charAt(at + word.length), first, hint);
     first = false;
     return shown;
   });
-}
-
-/** What is known about where a name is from. */
-export interface NameHint {
-  /** The USPS code of the state the school or district is in, when known. */
-  readonly state?: string | null;
 }
 
 /** One stretch of a written name and how it is shown. */
@@ -221,6 +238,7 @@ const ALWAYS: Readonly<Record<string, string>> = {
   SCH: 'School',
   SCHL: 'School',
   SCHS: 'Schools',
+  SCHLS: 'Schools',
   ELEM: 'Elementary',
   ACAD: 'Academy',
   CTR: 'Center',
@@ -230,7 +248,20 @@ const ALWAYS: Readonly<Record<string, string>> = {
   LRNG: 'Learning',
   HTS: 'Heights',
   HGTS: 'Heights',
+  TWP: 'Township',
 };
+
+/** Words after which Pub is Public. */
+const PUBLIC_BEFORE: ReadonlySet<string> = new Set([
+  ...SCHOOL_WORDS,
+  'SCHS',
+  'SCHLS',
+  'SCHOOLS',
+  'CHTR',
+  'CHARTER',
+]);
+/** Words before which Comm is not Community ("Comm Arts": Communication Arts). */
+const NOT_COMMUNITY_BEFORE: ReadonlySet<string> = new Set(['ARTS', 'ART']);
 
 /** The first character after a token that is not a space, past one period; '' at the end. */
 function markAfter(raw: string, token: Token): string {
@@ -288,9 +319,30 @@ function spellOut(raw: string, tokens: readonly Token[], i: number, hint: NameHi
       return capitals && last && raw[token.to] !== "'" && !first ? 'Intermediate' : null;
     case 'PRI':
       return !first && (last || PRIMARY_BEFORE.has(next.upper)) ? 'Primary' : null;
+    case 'PUB':
+      return !last && PUBLIC_BEFORE.has(next.upper) ? 'Public' : null;
+    case 'COM':
+    case 'COMM':
+      // Not the end of a web address ("School.com").
+      if (raw[token.from - 1] === '.') return null;
+      return last || !NOT_COMMUNITY_BEFORE.has(next.upper) ? 'Community' : null;
+    case 'CO':
+      // "Co-op" and "Co/..." are words of their own.
+      return !first && !last && /^[.\s]/u.test(raw.slice(token.to)) ? 'County' : null;
     default:
       return null;
   }
+}
+
+/**
+ * Where tokens i and i + 1 are "H S" or "H.S." after the start of a name,
+ * High School; else null.
+ */
+function highSchool(raw: string, tokens: readonly Token[], i: number): string | null {
+  const h = tokens[i];
+  const s = tokens[i + 1];
+  if (i === 0 || h?.text !== 'H' || s?.text !== 'S') return null;
+  return /^[ .]$/u.test(raw.slice(h.to, s.from)) ? 'High School' : null;
 }
 
 /**
@@ -299,7 +351,7 @@ function spellOut(raw: string, tokens: readonly Token[], i: number, hint: NameHi
  * name in order.
  */
 export function nameLayout(raw: string, hint: NameHint = {}): NamePiece[] {
-  const cased = casedName(raw);
+  const cased = casedName(raw, hint);
   const tokens: Token[] = [];
   for (const match of raw.matchAll(TOKEN)) {
     const from = match.index;
@@ -312,31 +364,39 @@ export function nameLayout(raw: string, hint: NameHint = {}): NamePiece[] {
   }
   const pieces: NamePiece[] = [];
   let at = 0;
-  tokens.forEach((token, i) => {
-    const words = spellOut(raw, tokens, i, hint);
-    if (words === null) return;
+  for (let i = 0; i < tokens.length; i++) {
+    const token = tokens[i];
+    if (token === undefined) break;
+    // A shortening of two words ("H S") ends at the second.
+    const pair = highSchool(raw, tokens, i);
+    const words = pair ?? spellOut(raw, tokens, i, hint);
+    if (words === null) continue;
+    const end = (pair === null ? token : tokens[++i]) ?? token;
     // "ELEM." is "Elementary": the period goes with the shortening, unless a word follows it at once.
     const to =
-      raw[token.to] === '.' && !LETTER_OR_DIGIT.test(raw[token.to + 1] ?? '')
-        ? token.to + 1
-        : token.to;
+      raw[end.to] === '.' && !LETTER_OR_DIGIT.test(raw[end.to + 1] ?? '') ? end.to + 1 : end.to;
     if (token.from > at) {
       pieces.push({ from: at, to: token.from, text: cased.slice(at, token.from), spelled: false });
     }
     pieces.push({ from: token.from, to, text: words, spelled: true });
     at = to;
-  });
+  }
   if (at < raw.length) {
     pieces.push({ from: at, to: raw.length, text: cased.slice(at), spelled: false });
   }
   return pieces;
 }
 
-/** A school or district name as the page shows it. */
+/**
+ * A school or district name as the page shows it, with any run of spaces NCES
+ * left in it ("M. L. King  Elementary") shown as one.
+ */
 export function displayName(raw: string, hint: NameHint = {}): string {
   return nameLayout(raw, hint)
     .map((piece) => piece.text)
-    .join('');
+    .join('')
+    .replace(/\s{2,}/gu, ' ')
+    .trim();
 }
 
 /**

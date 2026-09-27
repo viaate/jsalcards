@@ -11,6 +11,12 @@ describe('displayName', () => {
     expect(displayName('CLEMENTINE MONTESSORI SCHOOL')).toBe('Clementine Montessori School');
   });
 
+  it('shows a run of spaces NCES left in a name as one space', () => {
+    expect(displayName('M. L. King  Elementary')).toBe('M. L. King Elementary');
+    expect(displayName('MANUAL CAREER  TECH. CENTER ')).toBe('Manual Career Tech. Center');
+    expect(displayName('ROSS  EL SCH')).toBe('Ross Elementary School');
+  });
+
   it('keeps the case of a name with any lowercase letter', () => {
     for (const name of [
       'Kate D Smith DAR High School',
@@ -62,6 +68,48 @@ describe('displayName', () => {
     expect(displayName('PASEO ACAD. OF PERFORMING ARTS')).toBe('Paseo Academy of Performing Arts');
   });
 
+  it('spells out the shortenings left over after the first pass', () => {
+    expect(displayName('Shawnee Mission Pub Sch')).toBe('Shawnee Mission Public School');
+    expect(displayName('Decatur Pub. Schs. Alt. Education')).toBe(
+      'Decatur Public Schools Alt. Education',
+    );
+    expect(displayName('MSD Southwest Allen County Schls')).toBe(
+      'MSD Southwest Allen County Schools',
+    );
+    expect(displayName('Evanston Twp High School')).toBe('Evanston Township High School');
+    expect(displayName('Carbondale Comm H S')).toBe('Carbondale Community High School');
+    expect(displayName('LEE A. TOLBERT COM. ACADEMY')).toBe('Lee A. Tolbert Community Academy');
+    expect(displayName('North Harrison Com School Corp')).toBe(
+      'North Harrison Community School Corp',
+    );
+    expect(displayName('COLLEGE STATION H S')).toBe('College Station High School');
+    expect(displayName('PREMIER H S OF WACO')).toBe('Premier High School of Waco');
+    expect(displayName('ST LAURENCE H.S.')).toBe('St Laurence High School');
+    expect(displayName('BOOKER JH/H S')).toBe('Booker Junior High/High School');
+    expect(displayName('Butler Co. Area Technology Center')).toBe(
+      'Butler County Area Technology Center',
+    );
+    expect(displayName('BERGEN CO JDC')).toBe('Bergen County JDC');
+  });
+
+  it("keeps a state's own code in capitals", () => {
+    expect(displayName('MO SCHLS FOR THE SEV DISABLED', { state: 'MO' })).toBe(
+      'MO Schools for the Sev Disabled',
+    );
+    expect(displayName('WESTERN MO CORRECTIONAL CENTER', { state: 'MO' })).toBe(
+      'Western MO Correctional Center',
+    );
+    expect(displayName('UNIVERSITY OF MO - COLUMBIA', { state: 'MO' })).toBe(
+      'University of MO - Columbia',
+    );
+    // Only the school's own state, and never a small word.
+    expect(displayName('WESTERN MO CORRECTIONAL CENTER')).toBe('Western Mo Correctional Center');
+    expect(displayName('SCHOOL IN THE WOODS', { state: 'IN' })).toBe('School in the Woods');
+    expect(displayName('HOPE ONLINE LEARNING ACADEMY CO-OP', { state: 'CO' })).toBe(
+      'Hope Online Learning Academy Co-Op',
+    );
+  });
+
   it('leaves words that only look like shortenings', () => {
     expect(displayName('EL DORADO HIGH SCHOOL')).toBe('El Dorado High School');
     expect(displayName('John Adams Academy - El Dorado Hills')).toBe(
@@ -70,6 +118,15 @@ describe('displayName', () => {
     expect(displayName('TEMPLE BETH EL SCHOOL')).toBe('Temple Beth El School');
     expect(displayName('RALEIGH PRIMARY/EL ACADEMY')).toBe('Raleigh Primary/El Academy');
     expect(displayName('CS Brown High - STEM Program')).toBe('CS Brown High - STEM Program');
+    // Initials, a pub, communication arts, a co-op.
+    expect(displayName('H S THOMPSON LEARNING CENTER')).toBe('H S Thompson Learning Center');
+    expect(displayName('THE PUB ACADEMY')).toBe('The Pub Academy');
+    expect(displayName('Bradwell Comm Arts & Sci Elem Sch')).toBe(
+      'Bradwell Comm Arts & Sci Elementary School',
+    );
+    expect(displayName('RIVER VALLEY CO-OP SCHOOL')).toBe('River Valley Co-Op School');
+    expect(displayName('K12.COM ACADEMY')).toBe('K12.Com Academy');
+    expect(displayName('CO SPRINGS ACADEMY')).toBe('Co Springs Academy');
     expect(displayName("SOUTHWEST PUBLIC SCHOOLS INT'L LEADERSHIP ACADEMY")).toBe(
       "Southwest Public Schools Int'l Leadership Academy",
     );
@@ -131,6 +188,8 @@ describe('displayName', () => {
       "O'NEILL INT'L ACADEMY",
       'Friendship PCS - Collegiate Academy',
       'Ross El Sch',
+      'Carbondale Comm H S',
+      'ST LAURENCE H.S.',
     ];
     for (const name of names) {
       const layout = nameLayout(name);
@@ -195,6 +254,11 @@ describe('shownRanges', () => {
         [8, 11],
       ]),
     ).toEqual(['Elementary', 'School']);
+  });
+
+  it('marks both words of a two-word shortening', () => {
+    expect(ranges('Carbondale Comm H S', [[16, 17]])).toEqual(['High School']);
+    expect(ranges('Carbondale Comm H S', [[0, 10]])).toEqual(['Carbondale']);
   });
 
   it('keeps ranges after a spelled-out word in place', () => {

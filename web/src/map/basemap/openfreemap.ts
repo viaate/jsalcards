@@ -9,7 +9,9 @@ import type { GetResourceResponse } from 'maplibre-gl';
  * first zoom 7+ tile is needed. Below zoom 7 nothing leaves the site.
  *
  * The protocol is served in MapLibre's workers (street-tiles.ts), which cut
- * each tile to the US before MapLibre reads it.
+ * each tile to the US before MapLibre reads it. The page only ever asks for
+ * tiles ahead of a flight (prefetch.ts), to have them cached, never to draw
+ * them.
  */
 
 /** The style's URL scheme for OpenFreeMap tiles. */
@@ -56,6 +58,37 @@ export function tileUrl(templateUrl: string, requestUrl: string): string {
   if (match === null) throw new Error(`OpenFreeMap: unexpected tile request ${requestUrl}`);
   const [, z = '', x = '', y = ''] = match;
   return templateUrl.replace('{z}', z).replace('{x}', x).replace('{y}', y);
+}
+
+/**
+ * Asks OpenFreeMap for tiles ahead of the map, so the browser has them when a
+ * worker asks (street-tiles.ts): the TileJSON and the tiles are cacheable, and
+ * the page and its workers share one cache. Nothing is read from them here,
+ * and a tile that fails is simply asked for again by the worker.
+ */
+export async function prefetchOpenFreeMapTiles(
+  tiles: readonly (readonly [z: number, x: number, y: number])[],
+): Promise<void> {
+  if (tiles.length === 0) return;
+  let templateUrl: string;
+  try {
+    templateUrl = await tileTemplate();
+  } catch {
+    return;
+  }
+  await Promise.all(
+    tiles.map(async ([z, x, y]) => {
+      try {
+        const response = await fetch(
+          tileUrl(templateUrl, `/${String(z)}/${String(x)}/${String(y)}`),
+        );
+        // Read to the end: only a whole response is kept.
+        await response.arrayBuffer();
+      } catch {
+        // The worker asks for it again.
+      }
+    }),
+  );
 }
 
 /** The tile the style names `openfreemap://planet/z/x/y`, from the current tile set. */

@@ -15,7 +15,7 @@ import { ArchiveReader } from '../mask/pmtiles';
 import { decodeTile, stringProperty } from '../mask/mvt';
 import type { Layer } from '../mask/mvt';
 import { Writer, zigzag } from '../mask/protobuf';
-import { schoolTileLoader, showSchoolNames } from '../school-tiles';
+import { schoolTileLoader, showSchoolNames, stateOf } from '../school-tiles';
 import { schoolTilesTemplate } from '../schools';
 
 interface School {
@@ -136,6 +136,25 @@ describe('school names in the tiles', () => {
       ['420000000002', 'Jackson Middle School'],
       ['OAK SCH', 'Elm School'],
       ['A0000004', 'Oak School'],
+    ]);
+  });
+
+  it("read a public school's state from its id, and keep that state's code", () => {
+    expect(stateOf('290002502748')).toBe('MO');
+    expect(stateOf('280019401239')).toBe('MS');
+    expect(stateOf('110000000001')).toBe('DC');
+    // A private school's id does not say; nor does a district's, or a code of no state drawn.
+    expect(stateOf('A1902690')).toBeNull();
+    expect(stateOf('2900001')).toBeNull();
+    expect(stateOf('020000000001')).toBeNull();
+    expect(stateOf(null)).toBeNull();
+    const tile = schoolTile([
+      { index: 1, id: '290000000001', name: 'WESTERN MO CORRECTIONAL CENTER', kind: 0 },
+      { index: 2, id: '290000000002', name: 'MO SCHLS FOR THE SEV DISABLED', kind: 0 },
+    ]);
+    expect(names(showSchoolNames(tile))).toEqual([
+      ['290000000001', 'Western MO Correctional Center'],
+      ['290000000002', 'MO Schools for the Sev Disabled'],
     ]);
   });
 

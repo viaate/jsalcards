@@ -8,12 +8,16 @@ import { DATA_PATHS, createDataFiles, dataRootFor } from '../../data/files';
 import { collapsedAttribution } from './attribution';
 import { addMapFonts } from './fonts';
 import type { MapLibre } from './maplibre';
-import { OPENFREEMAP_ATTRIBUTION } from './openfreemap';
+import { OPENFREEMAP_ATTRIBUTION, prefetchOpenFreeMapTiles } from './openfreemap';
 import { MAX_ZOOM } from './bounds';
 import type { MapView } from './bounds';
 import { constrainView, viewLimits } from './limits';
 import type { Insets, Size, ViewLimits } from './limits';
+import { flightTiles } from './prefetch';
 import { afterNextFrame, LIVE_CLASS, markStep, whenGpuIdle } from './reveal';
+import { SCHOOL_SPACE_IMAGE, schoolSpaceImage } from './schools';
+import { SHIELD_IMAGE, shieldImage } from './shield';
+import type { ShieldColors } from './shield';
 import { BASEMAP_IDS, buildBasemapStyle } from './style';
 import type { BasemapLook, UsLinesData } from './style';
 import { US_BOUNDS } from './us-geo';
@@ -55,7 +59,8 @@ export interface Basemap {
   readonly map: MapLibreMap;
   /**
    * Resolves once the canvas is on screen showing the bundled US lines: after
-   * the first complete frame, or as soon as someone moves the map.
+   * the first complete frame, or as soon as someone moves the map. A view
+   * from a link is shown by LINK_REVEAL_MS after the map is created.
    */
   readonly ready: Promise<void>;
   /** True once someone has moved the map. */
@@ -92,6 +97,14 @@ const NO_PADDING: Insets = { top: 0, right: 0, bottom: 0, left: 0 };
 /** Workers parse the bundled lines and, from zoom 7, vector tiles; two is plenty. */
 const WORKERS = 2;
 
+/**
+ * A view opened from a link is not the national view the inline still shows,
+ * so the map is shown by this long after it is created, whether or not every
+ * tile of the view is in: a slow tile or a busy GPU never leaves the still of
+ * the whole country standing over a street.
+ */
+export const LINK_REVEAL_MS = 2500;
+
 declare global {
   interface Window {
     /** The map, for end-to-end tests: set only when navigator.webdriver is true. */
@@ -104,7 +117,8 @@ let configured: MapLibre | undefined;
 /**
  * MapLibre's global settings; they must be in place before the first map
  * starts its workers. Street tiles load in the workers, which cut them to the
- * US (street-tiles.ts); the page itself fetches none.
+ * US (street-tiles.ts); the page only asks for them ahead of a flight, to have
+ * them cached (prefetch.ts).
  */
 function configure(maplibre: MapLibre, workerUrl: string): void {
   if (configured === maplibre) return;
@@ -142,17 +156,28 @@ export function framePadding(container: Element, frame: Element): Insets {
   };
 }
 
+/** A design token's value, or `fallback` when the page has none. */
+function tokenReader(): (name: string, fallback: string) => string {
+  const style = getComputedStyle(document.documentElement);
+  return (name, fallback) => {
+    const value = style.getPropertyValue(name).trim();
+    return value === '' ? fallback : value;
+  };
+}
+
+/** Route number badges in the tones of the page's own controls: a surface with a hairline border. */
+function shieldColors(): ShieldColors {
+  const token = tokenReader();
+  return { fill: token('--surface-2', '#111'), edge: token('--border-2', '#2a2a2a') };
+}
+
 /**
  * Line colors and width come from the same CSS custom properties that draw the
  * inline still, so the two cannot drift apart; label and building tones come
  * from the design tokens the rest of the page uses.
  */
 function look(): BasemapLook {
-  const style = getComputedStyle(document.documentElement);
-  const token = (name: string, fallback: string): string => {
-    const value = style.getPropertyValue(name).trim();
-    return value === '' ? fallback : value;
-  };
+  const token = tokenReader();
   const hairline = Number.parseFloat(token('--hairline', '1px'));
   return {
     hairline: Number.isFinite(hairline) && hairline > 0 ? hairline : 1,
@@ -240,6 +265,16 @@ export function createBasemap({
     cancelPendingTileRequestsWhileZooming: true,
   });
   markStep('map-created');
+  // The route badge and a dot's space are made here the first time the style needs them: it names no sprite.
+  map.setMissingStyleImageResolver((id) => {
+    if (map.hasImage(id)) return;
+    if (id === SHIELD_IMAGE) {
+      const { image, options } = shieldImage(shieldColors(), window.devicePixelRatio);
+      map.addImage(SHIELD_IMAGE, image, options);
+    } else if (id === SCHOOL_SPACE_IMAGE) {
+      map.addImage(SCHOOL_SPACE_IMAGE, schoolSpaceImage());
+    }
+  });
   map.touchZoomRotate.disableRotation();
   map.keyboard.disableRotation();
   map.addControl(
@@ -269,6 +304,7 @@ export function createBasemap({
     if (gl === null) goLive();
     else void whenGpuIdle(gl).then(goLive);
   });
+  const revealTimer = start === null ? undefined : window.setTimeout(goLive, LINK_REVEAL_MS);
 
   const onUserMove = (): void => {
     moved = true;
@@ -295,11 +331,29 @@ export function createBasemap({
     const allowed = constrainView(limits, target);
     map.jumpTo({ center: [allowed.lon, allowed.lat], zoom: allowed.zoom });
   }
+  /**
+   * Keeps every tile a flight asks for loading until it arrives, instead of
+   * dropping the ones the camera has zoomed past: each is drawn, scaled up,
+   * until the closer ones are in, so the map shows streets all the way in.
+   * Zooming by hand drops them again once the flight is over.
+   */
+  let flights = 0;
+  const keepTilesWhileFlying = (): void => {
+    if (!map.isMoving()) return;
+    const flight = ++flights;
+    map.cancelPendingTileRequestsWhileZooming = false;
+    map.once('moveend', () => {
+      if (flight === flights) map.cancelPendingTileRequestsWhileZooming = true;
+    });
+  };
   function flyTo(target: MapView): void {
     national = false;
     const allowed = constrainView(limits, target);
+    // The tiles it ends on, and the ones it passes on the way, asked for before it starts.
+    void prefetchOpenFreeMapTiles(flightTiles(allowed, size()));
     // Not essential: MapLibre jumps instead when the viewer prefers reduced motion.
     map.flyTo({ center: [allowed.lon, allowed.lat], zoom: allowed.zoom, essential: false });
+    keepTilesWhileFlying();
   }
   function fitBounds(
     box: readonly [number, number, number, number],
@@ -365,6 +419,7 @@ export function createBasemap({
     flyTo,
     fitBounds,
     destroy() {
+      window.clearTimeout(revealTimer);
       if (window.snowlightMap === map) delete window.snowlightMap;
       map.remove();
       container.classList.remove(LIVE_CLASS);

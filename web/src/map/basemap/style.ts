@@ -6,9 +6,11 @@ import type {
   SymbolLayerSpecification,
 } from 'maplibre-gl';
 
+import { copy } from '../../copy';
 import { MAP_FONTS } from './fonts';
 import { BASEMAP_IDS } from './ids';
-import { schoolDotLayer, schoolNameLayer, schoolSource } from './schools';
+import { schoolDotLayer, schoolNameLayer, schoolSource, schoolSpaceLayer } from './schools';
+import { SHIELD_IMAGE } from './shield';
 import { BORDER_LAYER, MASK_LAYER } from './mask/format';
 import {
   OPENFREEMAP_ATTRIBUTION,
@@ -79,20 +81,26 @@ const fadeOut = ramp(HANDOVER_START, HANDOVER_END, 1, 0);
 const fadeIn = ramp(HANDOVER_START, HANDOVER_END);
 
 /**
- * Zoom levels a label class takes to fade in from the zoom it starts at:
- * quick, so a map at rest never shows half-faded names.
+ * Zoom levels a label class takes to fade in before the zoom it is named
+ * from: quick, so a map at rest never shows half-faded names, and over by
+ * that zoom, so a view at a whole zoom level shows every name it should.
  */
-const LABEL_FADE = 0.25;
+export const LABEL_FADE = 0.25;
 
-/** A label class's opacity: none below `zoom`, all of it a moment later. */
+/** A label class's opacity: fading in just below `zoom`, all of it from `zoom` on. */
 function labelsFrom(zoom: number): ExpressionSpecification {
-  return ramp(zoom, zoom + LABEL_FADE);
+  return ramp(zoom - LABEL_FADE, zoom);
+}
+
+/** The layer zoom a label class named from `zoom` starts at: where its fade begins. */
+function labelMinZoom(zoom: number): number {
+  return zoom - LABEL_FADE;
 }
 
 /**
- * Building footprints come in at zoom 13 and are fully drawn by 14. They are
- * most of the way in a quarter level after they start, so a neighbourhood
- * view just past 13 already shows its blocks.
+ * Building footprints come in with the first tiles that carry them, at zoom
+ * 13, half drawn, so a neighbourhood view at 13 already shows its blocks as a
+ * quiet texture under the streets; they are fully drawn by 14.
  */
 const BUILDINGS_FROM = 13;
 const BUILDINGS_FULL = 14;
@@ -101,9 +109,7 @@ const buildingOpacity: ExpressionSpecification = [
   ['linear'],
   ['zoom'],
   BUILDINGS_FROM,
-  0,
-  BUILDINGS_FROM + 0.25,
-  0.6,
+  0.55,
   BUILDINGS_FULL,
   1,
 ];
@@ -117,7 +123,18 @@ const buildingOpacity: ExpressionSpecification = [
  * border, where the border line is drawn along the mask's edge.
  */
 const WATER_FILL = '#0c0c0c';
-const PARK_FILL = '#090909';
+const PARK_FILL = '#0d0d0d';
+/**
+ * School grounds: the campus around a school, a step brighter than a park so
+ * the block a school stands on reads at a glance, with a hairline edge up
+ * close. Buildings draw over them.
+ */
+const SCHOOL_GROUNDS_FILL = '#0f0f0f';
+const SCHOOL_GROUNDS_EDGE = '#262626';
+const SCHOOL_GROUNDS_FROM = 12;
+const SCHOOL_GROUNDS_EDGE_FROM = 14;
+/** OpenMapTiles `landuse` classes of school grounds: K-12 schools and kindergartens. */
+const SCHOOL_GROUNDS = ['school', 'kindergarten'];
 /** Streams and rivers drawn as lines: a step above the water's fill, so they still read. */
 const WATERWAY = '#161616';
 
@@ -159,13 +176,17 @@ interface RoadTier {
   readonly width: readonly Stop[];
 }
 
-/** Road classes, bottom to top: width and brightness grow with importance. */
+/**
+ * Road classes, bottom to top: width and brightness grow with importance, so
+ * the highways and arterials a person steers by stand out from the grid of
+ * local streets at every zoom.
+ */
 export const ROAD_TIERS: readonly RoadTier[] = Object.freeze([
   {
     classes: ['service'],
     minzoom: 14,
     full: 15,
-    color: '#1c1c1c',
+    color: '#1a1a1a',
     width: [
       [14, 0.5],
       [16, 2.5],
@@ -175,10 +196,11 @@ export const ROAD_TIERS: readonly RoadTier[] = Object.freeze([
     classes: ['minor'],
     minzoom: 12,
     full: 13,
-    color: '#262626',
+    color: '#242424',
     width: [
-      [12, 0.5],
-      [14, 1.5],
+      [12, 0.4],
+      [13, 0.7],
+      [14, 1.4],
       [16, 5],
     ],
   },
@@ -186,7 +208,7 @@ export const ROAD_TIERS: readonly RoadTier[] = Object.freeze([
     classes: ['tertiary'],
     minzoom: 10,
     full: 11,
-    color: '#2b2b2b',
+    color: '#2c2c2c',
     width: [
       [10, 0.4],
       [12, 0.9],
@@ -198,11 +220,11 @@ export const ROAD_TIERS: readonly RoadTier[] = Object.freeze([
     classes: ['secondary'],
     minzoom: 9,
     full: 10,
-    color: '#2f2f2f',
+    color: '#333333',
     width: [
       [9, 0.4],
-      [12, 1.1],
-      [14, 2.6],
+      [12, 1.2],
+      [14, 2.8],
       [16, 7.5],
     ],
   },
@@ -210,11 +232,11 @@ export const ROAD_TIERS: readonly RoadTier[] = Object.freeze([
     classes: ['primary'],
     minzoom: 7,
     full: 8,
-    color: '#343434',
+    color: '#3a3a3a',
     width: [
       [7, 0.5],
-      [12, 1.4],
-      [14, 3],
+      [12, 1.5],
+      [14, 3.2],
       [16, 8.5],
     ],
   },
@@ -222,11 +244,11 @@ export const ROAD_TIERS: readonly RoadTier[] = Object.freeze([
     classes: ['motorway', 'trunk'],
     minzoom: 7,
     full: 8,
-    color: '#3a3a3a',
+    color: '#454545',
     width: [
       [7, 0.6],
-      [12, 1.8],
-      [14, 3.6],
+      [12, 2],
+      [14, 4],
       [16, 10],
     ],
   },
@@ -358,6 +380,49 @@ const ROAD_SORT_KEY = [
 const NAME: ExpressionSpecification = ['coalesce', ['get', 'name'], ''];
 const RANK: ExpressionSpecification = ['coalesce', ['get', 'rank'], 99];
 
+/** Zoom levels each class of name is fully drawn from. */
+const NEIGHBOURHOODS_FROM = 13;
+const STREET_NAMES_FROM = 13;
+const MAJOR_ROAD_NAMES_FROM = 12;
+const WATER_NAMES_FROM = 13;
+const PARK_NAMES_FROM = 14;
+/** Interstate badges from zoom 11, US and state routes from 12 (tile zooms, so whole levels). */
+const SHIELDS_FROM = 11;
+const STATE_SHIELDS_FROM = 12;
+
+const NETWORK: ExpressionSpecification = ['coalesce', ['get', 'network'], ''];
+/** OpenMapTiles route networks whose numbers go on badges. */
+const ROUTE_NETWORKS = ['us-interstate', 'us-highway', 'us-state'];
+/**
+ * A route's number as it is signed: "I-35", "US 71", and a state route with
+ * its state's code ("MO 9") when the tiles carry it, else the number alone.
+ */
+const ROUTE_NUMBER: ExpressionSpecification = [
+  'let',
+  'ref',
+  ['to-string', ['get', 'ref']],
+  'state',
+  ['coalesce', ['get', 'route_1_network'], ''],
+  [
+    'match',
+    NETWORK,
+    'us-interstate',
+    ['concat', copy.map.route.interstate, ['var', 'ref']],
+    'us-highway',
+    ['concat', copy.map.route.usHighway, ' ', ['var', 'ref']],
+    [
+      'case',
+      [
+        'all',
+        ['==', ['index-of', 'US:', ['var', 'state']], 0],
+        ['==', ['length', ['var', 'state']], 5],
+      ],
+      ['concat', ['slice', ['var', 'state'], 3], ' ', ['var', 'ref']],
+      ['var', 'ref'],
+    ],
+  ],
+];
+
 /** Text laid out the same way for every label: collision-aware, never overlapping. */
 const LABEL_LAYOUT = {
   'text-allow-overlap': false,
@@ -395,8 +460,15 @@ const PLACE_LABEL_LAYOUT = {
  * or queried (street-tiles.ts), and carry the US mask, drawn in the ground
  * color over every street, water, park and building layer, and the border
  * line along its edge. Labels are drawn by MapLibre from the Geist faces in
- * fonts.ts, so the style names no glyph server. With the school tiles, every
- * school is drawn from zoom 11 and named from zoom 13 (schools.ts).
+ * fonts.ts, so the style names no glyph server, and highway numbers sit on a
+ * badge drawn in code (shield.ts), so it names no sprite either. With the
+ * school tiles, every school is drawn from zoom 11 and named from zoom 13
+ * (schools.ts), over school grounds drawn a step off the ground.
+ *
+ * Up close the hierarchy runs, brightest first: school names; towns, suburbs
+ * and route numbers; major road names; street names; neighbourhoods in small
+ * spaced capitals, parks and rivers. Roads step up in width and tone from
+ * local streets to highways.
  */
 export function buildBasemapStyle({
   usLines,
@@ -425,6 +497,33 @@ export function buildBasemapStyle({
       minzoom: 10,
       filter: ['match', ['get', 'subclass'], PARK_SUBCLASSES, true, false],
       paint: { 'fill-color': PARK_FILL, 'fill-opacity': ramp(10, 11), 'fill-antialias': false },
+    },
+    {
+      id: BASEMAP_IDS.ofmSchoolGrounds,
+      type: 'fill',
+      ...ofm,
+      'source-layer': 'landuse',
+      minzoom: SCHOOL_GROUNDS_FROM,
+      filter: ['match', CLASS, SCHOOL_GROUNDS, true, false],
+      paint: {
+        'fill-color': SCHOOL_GROUNDS_FILL,
+        'fill-opacity': ramp(SCHOOL_GROUNDS_FROM, SCHOOL_GROUNDS_FROM + 1),
+        'fill-antialias': false,
+      },
+    },
+    {
+      id: BASEMAP_IDS.ofmSchoolGroundsEdge,
+      type: 'line',
+      ...ofm,
+      'source-layer': 'landuse',
+      minzoom: SCHOOL_GROUNDS_EDGE_FROM - 0.5,
+      filter: ['match', CLASS, SCHOOL_GROUNDS, true, false],
+      layout: round,
+      paint: {
+        'line-color': SCHOOL_GROUNDS_EDGE,
+        'line-width': hairline,
+        'line-opacity': ramp(SCHOOL_GROUNDS_EDGE_FROM - 0.5, SCHOOL_GROUNDS_EDGE_FROM),
+      },
     },
     {
       id: BASEMAP_IDS.ofmWaterFill,
@@ -583,69 +682,68 @@ export function buildBasemapStyle({
     },
     // Labels, lowest priority first: MapLibre places the top layer's labels first.
     {
+      // Neighbourhoods in small spaced capitals, a quiet layer under the street names.
       id: BASEMAP_IDS.ofmNeighbourhoodLabel,
       type: 'symbol',
       ...ofm,
       'source-layer': 'place',
-      minzoom: 13,
+      minzoom: labelMinZoom(NEIGHBOURHOODS_FROM),
       filter: ['match', CLASS, ['neighbourhood', 'hamlet'], true, false],
       layout: {
         ...PLACE_LABEL_LAYOUT,
         'text-field': NAME,
-        'text-font': [MAP_FONTS.regular],
-        'text-size': ['interpolate', ['linear'], ['zoom'], 13, 11, 16, 12.5],
-        'text-letter-spacing': 0.04,
+        'text-font': [MAP_FONTS.medium],
+        'text-transform': 'uppercase',
+        'text-size': ['interpolate', ['linear'], ['zoom'], 13, 10, 16, 11.5],
+        'text-letter-spacing': 0.12,
+        'text-max-width': 9,
       },
-      paint: { 'text-color': colors.labelDim, 'text-opacity': labelsFrom(13), ...halo },
+      paint: {
+        'text-color': colors.labelDim,
+        'text-opacity': labelsFrom(NEIGHBOURHOODS_FROM),
+        ...halo,
+      },
+    },
+    {
+      // Rivers and creeks along their course.
+      id: BASEMAP_IDS.ofmWaterLabel,
+      type: 'symbol',
+      ...ofm,
+      'source-layer': 'waterway',
+      minzoom: labelMinZoom(WATER_NAMES_FROM),
+      filter: ['all', ['==', CLASS, 'river'], ['has', 'name']],
+      layout: {
+        ...ROAD_LABEL_LAYOUT,
+        'text-field': NAME,
+        'text-font': [MAP_FONTS.regular],
+        'text-size': ['interpolate', ['linear'], ['zoom'], 13, 10.5, 16, 12],
+        'text-letter-spacing': 0.08,
+        'symbol-spacing': 480,
+      },
+      paint: {
+        'text-color': colors.labelDim,
+        'text-opacity': labelsFrom(WATER_NAMES_FROM),
+        ...halo,
+      },
     },
     {
       id: BASEMAP_IDS.ofmStreetLabel,
       type: 'symbol',
       ...ofm,
       'source-layer': 'transportation_name',
-      minzoom: 13,
+      minzoom: labelMinZoom(STREET_NAMES_FROM),
       filter: [
         'all',
         ['match', CLASS, ['tertiary', 'minor', 'service'], true, false],
-        ['>=', ['zoom'], ['match', CLASS, 'service', 15, 13]],
+        ['>=', ['zoom'], ['match', CLASS, 'service', 15, 'minor', STREET_NAMES_FROM, 12]],
       ],
       layout: {
         ...ROAD_LABEL_LAYOUT,
+        // Through streets are named before the side streets that cross them.
+        'symbol-sort-key': ['match', CLASS, 'tertiary', 0, 'minor', 1, 2],
         'text-field': NAME,
         'text-font': [MAP_FONTS.regular],
-        'text-size': ['interpolate', ['linear'], ['zoom'], 13, 10.5, 16, 12.5],
-      },
-      paint: {
-        'text-color': [
-          'interpolate',
-          ['linear'],
-          ['zoom'],
-          13.5,
-          colors.labelDim,
-          15,
-          colors.label,
-        ],
-        'text-opacity': labelsFrom(13),
-        ...halo,
-      },
-    },
-    {
-      id: BASEMAP_IDS.ofmMajorRoadLabel,
-      type: 'symbol',
-      ...ofm,
-      'source-layer': 'transportation_name',
-      minzoom: 12,
-      filter: [
-        'all',
-        ['match', CLASS, ['motorway', 'trunk', 'primary', 'secondary'], true, false],
-        ['!=', ['coalesce', ['get', 'subclass'], ''], 'junction'],
-      ],
-      layout: {
-        ...ROAD_LABEL_LAYOUT,
-        // Highways without a name go by their number.
-        'text-field': ['coalesce', ['get', 'name'], ['get', 'ref'], ''],
-        'text-font': [MAP_FONTS.regular],
-        'text-size': ['interpolate', ['linear'], ['zoom'], 12, 11, 16, 13],
+        'text-size': ['interpolate', ['linear'], ['zoom'], 13, 11, 16, 13],
       },
       paint: {
         'text-color': [
@@ -654,11 +752,107 @@ export function buildBasemapStyle({
           ['zoom'],
           12.5,
           colors.labelDim,
-          14,
+          16,
           colors.label,
         ],
-        'text-opacity': labelsFrom(12),
+        'text-opacity': labelsFrom(STREET_NAMES_FROM),
         ...halo,
+      },
+    },
+    {
+      // Parks by name up close, the landmarks between the streets.
+      id: BASEMAP_IDS.ofmParkLabel,
+      type: 'symbol',
+      ...ofm,
+      'source-layer': 'poi',
+      minzoom: labelMinZoom(PARK_NAMES_FROM),
+      filter: [
+        'all',
+        ['==', CLASS, 'park'],
+        ['has', 'name'],
+        ['<=', RANK, ['step', ['zoom'], 3, 15, 99]],
+      ],
+      layout: {
+        ...PLACE_LABEL_LAYOUT,
+        'text-field': NAME,
+        'text-font': [MAP_FONTS.regular],
+        'text-size': ['interpolate', ['linear'], ['zoom'], 14, 11, 16, 12.5],
+        'text-max-width': 7,
+        'text-letter-spacing': 0.02,
+      },
+      paint: {
+        'text-color': colors.labelDim,
+        'text-opacity': labelsFrom(PARK_NAMES_FROM),
+        ...halo,
+      },
+    },
+    {
+      id: BASEMAP_IDS.ofmMajorRoadLabel,
+      type: 'symbol',
+      ...ofm,
+      'source-layer': 'transportation_name',
+      minzoom: labelMinZoom(MAJOR_ROAD_NAMES_FROM),
+      filter: [
+        'all',
+        ['match', CLASS, ['motorway', 'trunk', 'primary', 'secondary'], true, false],
+        ['!=', ['coalesce', ['get', 'subclass'], ''], 'junction'],
+        // Numbers go on badges (the shield layer); a ramp's exit number is left out.
+        ['has', 'name'],
+      ],
+      layout: {
+        ...ROAD_LABEL_LAYOUT,
+        'text-field': NAME,
+        'text-font': [MAP_FONTS.medium],
+        'text-size': ['interpolate', ['linear'], ['zoom'], 12, 11, 16, 13.5],
+      },
+      paint: {
+        'text-color': ['interpolate', ['linear'], ['zoom'], 12, colors.labelDim, 14, colors.label],
+        'text-opacity': labelsFrom(MAJOR_ROAD_NAMES_FROM),
+        ...halo,
+      },
+    },
+    {
+      // Interstate, US and state route numbers on small upright badges along their road.
+      id: BASEMAP_IDS.ofmRoadShield,
+      type: 'symbol',
+      ...ofm,
+      'source-layer': 'transportation_name',
+      minzoom: labelMinZoom(SHIELDS_FROM),
+      filter: [
+        'all',
+        ['match', CLASS, ['motorway', 'trunk', 'primary', 'secondary'], true, false],
+        ['match', NETWORK, ROUTE_NETWORKS, true, false],
+        ['>=', ['zoom'], ['match', NETWORK, 'us-interstate', SHIELDS_FROM, STATE_SHIELDS_FROM]],
+        ['has', 'ref'],
+        // A route number, not a list of them run together.
+        ['<=', ['length', ['to-string', ['get', 'ref']]], 4],
+      ],
+      layout: {
+        ...LABEL_LAYOUT,
+        'symbol-placement': 'line',
+        'symbol-spacing': ['interpolate', ['linear'], ['zoom'], 11, 300, 13, 380, 16, 800],
+        'symbol-sort-key': ['match', NETWORK, 'us-interstate', 0, 'us-highway', 1, 2],
+        'text-field': ROUTE_NUMBER,
+        'text-font': [MAP_FONTS.medium],
+        'text-size': 10,
+        'text-letter-spacing': 0.02,
+        'text-rotation-alignment': 'viewport',
+        'text-pitch-alignment': 'viewport',
+        // Room around each badge, so the two carriageways of a highway show one number, not two.
+        'text-padding': 14,
+        'icon-padding': 14,
+        'icon-image': SHIELD_IMAGE,
+        'icon-text-fit': 'both',
+        'icon-text-fit-padding': [2, 4, 2, 4],
+        'icon-rotation-alignment': 'viewport',
+        'icon-pitch-alignment': 'viewport',
+        'icon-allow-overlap': false,
+        'icon-ignore-placement': false,
+      },
+      paint: {
+        'text-color': colors.label,
+        'text-opacity': labelsFrom(SHIELDS_FROM),
+        'icon-opacity': labelsFrom(SHIELDS_FROM),
       },
     },
     {
@@ -666,13 +860,13 @@ export function buildBasemapStyle({
       type: 'symbol',
       ...ofm,
       'source-layer': 'place',
-      minzoom: 11,
+      minzoom: labelMinZoom(11),
       filter: ['match', CLASS, ['village', 'suburb', 'quarter'], true, false],
       layout: {
         ...PLACE_LABEL_LAYOUT,
         'text-field': NAME,
-        'text-font': [MAP_FONTS.regular],
-        'text-size': ['interpolate', ['linear'], ['zoom'], 11, 11.5, 15, 13.5],
+        'text-font': [MAP_FONTS.medium],
+        'text-size': ['interpolate', ['linear'], ['zoom'], 11, 11.5, 15, 14],
       },
       paint: { 'text-color': colors.label, 'text-opacity': labelsFrom(11), ...halo },
     },
@@ -681,13 +875,13 @@ export function buildBasemapStyle({
       type: 'symbol',
       ...ofm,
       'source-layer': 'place',
-      minzoom: 9,
+      minzoom: labelMinZoom(9),
       filter: ['==', CLASS, 'town'],
       layout: {
         ...PLACE_LABEL_LAYOUT,
         'text-field': NAME,
         'text-font': [MAP_FONTS.medium],
-        'text-size': ['interpolate', ['linear'], ['zoom'], 9, 11.5, 13, 14],
+        'text-size': ['interpolate', ['linear'], ['zoom'], 9, 11.5, 13, 14.5],
       },
       paint: { 'text-color': colors.label, 'text-opacity': labelsFrom(9), ...halo },
     },
@@ -723,12 +917,12 @@ export function buildBasemapStyle({
   ];
   if (schools !== null) {
     const schoolColors = {
-      dim: colors.labelDim,
       bright: colors.label,
       name: colors.labelBright,
       ground: colors.background,
     };
-    // Dots under every label (and under the glow, which goes right before the labels); names over them all.
+    // Dots under every label (and under the glow, which goes right before the labels); names
+    // over them all, and over the names the space each dot keeps, placed first.
     layers.splice(
       layers.findIndex((layer) => layer.id === BASEMAP_IDS.labels),
       0,
@@ -738,6 +932,7 @@ export function buildBasemapStyle({
       layers.findIndex((layer) => layer.id === BASEMAP_IDS.schools),
       0,
       schoolNameLayer(schoolColors),
+      schoolSpaceLayer(),
     );
   }
   return {

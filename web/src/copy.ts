@@ -271,6 +271,11 @@ export const copy = deepFreeze({
     resetNorth: 'Reset north',
     attribution: 'Map attribution',
     closePopup: 'Close',
+    /** What goes before a highway's number on its badge: "I-35", "US 71". */
+    route: {
+      interstate: 'I-',
+      usHighway: 'US',
+    },
   },
 } as const);
 
