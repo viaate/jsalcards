@@ -1,129 +1,96 @@
 {
   "snapshots": [
     {
-      "timestamp": "20250108174641",
-      "url": "https://www.eventdelay.com/new/widget/channel/114/list/"
+      "timestamp": "20170105163147",
+      "url": "http://www.flashalertmedford.net:80/closures-cats.html"
     },
     {
-      "timestamp": "20250118203425",
-      "url": "https://www.eventdelay.com/new/widget/channel/114/list/"
+      "timestamp": "20170106124658",
+      "url": "http://www.flashalertmedford.net:80/closures-report.html"
     },
     {
-      "timestamp": "20250118203420",
-      "url": "https://www.wdel.com/features/wdel-stormwatch/"
+      "timestamp": "20240615095309",
+      "url": "https://www.flashalertmedford.net/closures-report.html"
     },
     {
-      "timestamp": "20250108093553",
-      "url": "https://www.wdel.com/features/wdel-stormwatch/"
+      "timestamp": "20170109051410",
+      "url": "http://flashalertbend.net/closures-time.html"
     },
     {
-      "timestamp": "20241223232853",
-      "url": "https://www.eventdelay.com/new/widget/channel/114/list/"
+      "timestamp": "20240724121902",
+      "url": "https://www.flashalertbend.net/closures-cats.html"
     },
     {
-      "timestamp": "20240118084735",
-      "url": "https://eventdelay.com/new/widget/channel/114/list/"
+      "timestamp": "20221004065927",
+      "url": "https://www.flashalertbend.net/closures-cats.html"
     },
     {
-      "timestamp": "20240303165219",
-      "url": "https://eventdelay.com/new/widget/channel/114/list/"
+      "timestamp": "20251212010916",
+      "url": "http://flashalertboise.net/closures-report.html"
     },
     {
-      "timestamp": "20251226101110",
-      "url": "https://eventdelay.com/new/widget/channel/114/page/292"
+      "timestamp": "20260609120231",
+      "url": "https://www.flashalertboise.net/closures-time.html"
     },
     {
-      "timestamp": "20260124195825",
-      "url": "https://www.wdel.com/features/wdel-stormwatch/"
+      "timestamp": "20260609122325",
+      "url": "https://www.flashalertboise.net/closures-report.html"
     },
     {
-      "timestamp": "20260206232047",
-      "url": "https://www.foxillinois.com/weather/closings/"
+      "timestamp": "20210216030629",
+      "url": "http://www.flashalertcolumbia.net/closures-cats.html?alert=1"
     },
     {
-      "timestamp": "20260313145817",
-      "url": "https://www.foxillinois.com/weather/closings/"
+      "timestamp": "20230223230724",
+      "url": "http://www.flashalertportland.net/closures-cats.html"
     },
     {
-      "timestamp": "20260313145933",
-      "url": "https://www.foxillinois.com/weather/closings/"
+      "timestamp": "20161208205020",
+      "url": "http://flashalertportland.net:80/closures-cats.html?"
     },
     {
-      "timestamp": "20260128134929",
-      "url": "https://www.khqa.com/weather/closings/"
+      "timestamp": "20210212050632",
+      "url": "http://www.flashalertportland.net/closures-cats.html"
     },
     {
-      "timestamp": "20260226104753",
-      "url": "https://www.newschannel20.com/weather/closings/"
-    }
-  ],
-  "cdx": [
-    {
-      "url": "santacruzcoe.org/schoolclosures*",
-      "from": "20140101",
-      "to": "20260930"
+      "timestamp": "20250209050422",
+      "url": "http://www.flashalertnewswire.net/IIN/reportsX/cwc-closures.php"
     },
     {
-      "url": "docs.google.com/spreadsheets/d/e/2PACX-1vRTTn-nz1kHVAdHbBrAQSgMaLB0FbiNrO7cWaFDIxZxvGzGXnHnF2jv5LiRcui_Tz0JTpGAt2DidUYo/*",
-      "from": "20140101",
-      "to": "20260930"
+      "timestamp": "20260108023656",
+      "url": "https://www.flashalertnewswire.net/IIN/reportsX/cwc-closures.php?RegionID=10&Testing=0"
     },
     {
-      "url": "hcoe.org/news/alerts*",
-      "from": "20140101",
-      "to": "20260930"
+      "timestamp": "20230110005854",
+      "url": "https://www.nbcbayarea.com/weather/school-closings/"
     },
     {
-      "url": "www.wfrd.com/99rock-school-closings-cancellations*",
-      "from": "20140101",
-      "to": "20260930"
+      "timestamp": "20230109090155",
+      "url": "https://www.nbcbayarea.com/weather/school-closings/"
     },
     {
-      "url": "wfrd.com/*",
-      "from": "20140101",
-      "to": "20260930",
-      "filter": [
-        "original:.*(?i)clos.*"
-      ],
-      "collapse": "urlkey"
+      "timestamp": "20240201113708",
+      "url": "https://www.nbcbayarea.com/weather/school-closings/"
     },
     {
-      "url": "www.kxxo.com/list-school-closings*",
-      "from": "20140101",
-      "to": "20260930"
+      "timestamp": "20251202102602",
+      "url": "https://assets1.cbsnewsstatic.com/Integrations/SchoolClosings/PRODUCTION/CBS/kyw/NEWSROOM/BTI/KYW-closingsC.xml"
     },
     {
-      "url": "kxxo.com/*",
-      "from": "20140101",
-      "to": "20260930",
-      "filter": [
-        "original:.*(?i)clos.*"
-      ],
-      "collapse": "urlkey"
+      "timestamp": "20251112065538",
+      "url": "https://www.nbcboston.com/wp-json/nbc/v1/school-closings"
     },
     {
-      "url": "newschannel20.com/search/*",
-      "from": "20251101",
-      "to": "20260930",
-      "filter": [
-        "original:.*closings.*"
-      ]
+      "timestamp": "20201205022545",
+      "url": "https://media.foxtv.com/wnyw/closings/closings.html"
     },
     {
-      "url": "foxillinois.com/search/*",
-      "from": "20251101",
-      "to": "20260930",
-      "filter": [
-        "original:.*closings.*"
-      ]
+      "timestamp": "20260127225542",
+      "url": "https://media.foxtv.com/wttg/closings/closings.html"
     },
     {
-      "url": "khqa.com/search/*",
-      "from": "20251101",
-      "to": "20260930",
-      "filter": [
-        "original:.*closings.*"
-      ]
+      "timestamp": "20230101025442",
+      "url": "https://assets1.cbsnewsstatic.com/Integrations/SchoolClosings/PRODUCTION/CBS/wbz/NEWSROOM/WBZ-closingsC.xml"
     }
   ]
 }
