@@ -1,348 +1,272 @@
 {
   "snapshots": [
     {
-      "timestamp": "20250106130000",
-      "url": "https://6abc.com/community/schoolclosings/"
+      "timestamp": "20191129120000",
+      "url": "https://www.yourbigsky.com/weather/closings/"
     },
     {
-      "timestamp": "20180327130000",
-      "url": "https://www.flashalertnewswire.net/IIN/reportsX/cwc-closures.php?RegionID=5"
+      "timestamp": "20250121120000",
+      "url": "https://wgno.com/weather/closings/"
     },
     {
-      "timestamp": "20171219130000",
-      "url": "https://www.flashalertnewswire.net/IIN/reportsX/cwc-closures.php?RegionID=25"
+      "timestamp": "20230301120000",
+      "url": "https://ktla.com/weather/closings/"
     },
     {
-      "timestamp": "20250206130000",
-      "url": "https://www.flashalertnewswire.net/IIN/reportsX/cwc-closures.php?RegionID=25"
+      "timestamp": "20250122120000",
+      "url": "https://www.counton2.com/weather/closings/"
     },
     {
-      "timestamp": "20241226130000",
-      "url": "https://www.flashalertnewswire.net/IIN/reportsX/cwc-closures.php?RegionID=12"
+      "timestamp": "20250122120000",
+      "url": "https://www.wsav.com/closings-and-delays/"
     },
     {
-      "timestamp": "20240117130000",
-      "url": "https://www.flashalertnewswire.net/IIN/reportsX/cwc-closures.php?RegionID=7"
+      "timestamp": "20260127120000",
+      "url": "https://www.klfy.com/weather/closings/"
     },
     {
-      "timestamp": "20170119130000",
-      "url": "https://www.nbclosangeles.com/weather/school-closings/"
+      "timestamp": "20260219120000",
+      "url": "https://www.kget.com/weather/closings/"
+    },
+    {
+      "timestamp": "20240208120000",
+      "url": "https://fox5sandiego.com/weather/closings/"
+    },
+    {
+      "timestamp": "20220223120000",
+      "url": "https://fox5sandiego.com/weather/closings/"
+    },
+    {
+      "timestamp": "20260223120000",
+      "url": "https://www.pix11.com/weather/school-closings-delays"
+    },
+    {
+      "timestamp": "20210201120000",
+      "url": "https://www.2822news.com/weather/closings-and-delays/"
+    },
+    {
+      "timestamp": "20250110120000",
+      "url": "https://www.cbs17.com/weather/closings/"
+    },
+    {
+      "timestamp": "20210218120000",
+      "url": "https://www.wric.com/weather/closings/"
+    },
+    {
+      "timestamp": "20210218120000",
+      "url": "https://www.wvnstv.com/weather/closings-and-delays/"
+    },
+    {
+      "timestamp": "20250122120000",
+      "url": "https://www.wnct.com/weather/closings/"
+    },
+    {
+      "timestamp": "20250122120000",
+      "url": "https://www.wbtw.com/weather/closings/"
+    },
+    {
+      "timestamp": "20210217120000",
+      "url": "https://www.myarklamiss.com/weather/closings/"
+    },
+    {
+      "timestamp": "20260127120000",
+      "url": "https://www.myarklamiss.com/weather/closings/"
+    },
+    {
+      "timestamp": "20250121120000",
+      "url": "https://www.wrbl.com/weather/closings-and-delays/"
+    },
+    {
+      "timestamp": "20260218130000",
+      "url": "https://www.kget.com/weather/closings/"
     },
     {
       "timestamp": "20250313130000",
-      "url": "https://www.nbclosangeles.com/weather/school-closings/"
+      "url": "https://www.kget.com/weather/closings/"
     },
     {
-      "timestamp": "20190205130000",
-      "url": "https://www.nbcsandiego.com/weather/school-closings/"
+      "timestamp": "20260217130000",
+      "url": "https://www.8newsnow.com/weather/closings/"
     },
     {
-      "timestamp": "20221212130000",
-      "url": "https://www.nbcsandiego.com/wp-json/nbc/v1/school-closings"
+      "timestamp": "20250213130000",
+      "url": "https://www.8newsnow.com/weather/closings/"
     },
     {
-      "timestamp": "20230224130000",
-      "url": "https://www.nbcbayarea.com/wp-json/nbc/v1/school-closings"
+      "timestamp": "20230124130000",
+      "url": "https://www.everythinglubbock.com/weather/closings/"
     },
     {
-      "timestamp": "20250109130000",
-      "url": "https://www.nbcdfw.com/wp-json/nbc/v1/school-closings"
+      "timestamp": "20260126130000",
+      "url": "https://www.everythinglubbock.com/weather/closings/"
     },
     {
-      "timestamp": "20180313130000",
-      "url": "https://www.nbcboston.com/weather/school-closings/"
+      "timestamp": "20201009130000",
+      "url": "https://www.klfy.com/weather/closings/"
     },
     {
-      "timestamp": "20230314130000",
-      "url": "https://www.nbcboston.com/wp-json/nbc/v1/school-closings"
-    },
-    {
-      "timestamp": "20250120130000",
-      "url": "https://www.nbcboston.com/wp-json/nbc/v1/school-closings"
-    },
-    {
-      "timestamp": "20191202130000",
-      "url": "https://www.nbcphiladelphia.com/weather/school-closings/"
-    },
-    {
-      "timestamp": "20240119130000",
-      "url": "https://www.nbcphiladelphia.com/wp-json/nbc/v1/school-closings"
-    },
-    {
-      "timestamp": "20170209130000",
-      "url": "https://www.nbcnewyork.com/weather/school-closings/"
-    },
-    {
-      "timestamp": "20230228130000",
-      "url": "https://www.nbcnewyork.com/weather/school-closings/"
-    },
-    {
-      "timestamp": "20260223130000",
-      "url": "https://www.nbcnewyork.com/weather/school-closings/"
-    },
-    {
-      "timestamp": "20170314130000",
-      "url": "https://www.nbcwashington.com/weather/school-closings/"
-    },
-    {
-      "timestamp": "20221215130000",
-      "url": "https://www.nbcwashington.com/wp-json/nbc/v1/school-closings"
-    },
-    {
-      "timestamp": "20240116130000",
-      "url": "https://www.nbcwashington.com/weather/school-closings/"
-    },
-    {
-      "timestamp": "20240116130000",
-      "url": "https://www.nbcwashington.com/wp-json/nbc/v1/school-closings"
-    },
-    {
-      "timestamp": "20250106130000",
-      "url": "https://www.nbcwashington.com/weather/school-closings/"
-    },
-    {
-      "timestamp": "20250106130000",
-      "url": "https://www.nbcwashington.com/wp-json/nbc/v1/school-closings"
-    },
-    {
-      "timestamp": "20170209130000",
-      "url": "https://www.nbcconnecticut.com/weather/school-closings/"
-    },
-    {
-      "timestamp": "20180313130000",
-      "url": "https://www.nbcconnecticut.com/weather/school-closings/"
-    },
-    {
-      "timestamp": "20190304130000",
-      "url": "https://www.nbcconnecticut.com/weather/school-closings/"
-    },
-    {
-      "timestamp": "20191203130000",
-      "url": "https://www.nbcconnecticut.com/weather/school-closings/"
-    },
-    {
-      "timestamp": "20201217130000",
-      "url": "https://www.nbcconnecticut.com/weather/school-closings/"
-    },
-    {
-      "timestamp": "20220225130000",
-      "url": "https://www.nbcconnecticut.com/weather/school-closings/"
-    },
-    {
-      "timestamp": "20240119130000",
-      "url": "https://www.cbsnews.com/philadelphia/school-closings/"
-    },
-    {
-      "timestamp": "20240119130000",
-      "url": "https://assets1.cbsnewsstatic.com/Integrations/SchoolClosings/PRODUCTION/CBS/kyw/NEWSROOM/BTI/KYW-closingsC.xml"
-    },
-    {
-      "timestamp": "20250106130000",
-      "url": "https://www.cbsnews.com/philadelphia/school-closings/"
-    },
-    {
-      "timestamp": "20250106130000",
-      "url": "https://assets1.cbsnewsstatic.com/Integrations/SchoolClosings/PRODUCTION/CBS/kyw/NEWSROOM/BTI/KYW-closingsC.xml"
-    },
-    {
-      "timestamp": "20260223130000",
-      "url": "https://www.cbsnews.com/philadelphia/school-closings/"
-    },
-    {
-      "timestamp": "20260223130000",
-      "url": "https://assets1.cbsnewsstatic.com/Integrations/SchoolClosings/PRODUCTION/CBS/kyw/NEWSROOM/BTI/KYW-closingsC.xml"
-    },
-    {
-      "timestamp": "20170209130000",
-      "url": "https://www.cbsnews.com/boston/school-closings/"
-    },
-    {
-      "timestamp": "20180313130000",
-      "url": "https://www.cbsnews.com/boston/school-closings/"
-    },
-    {
-      "timestamp": "20190304130000",
-      "url": "https://www.cbsnews.com/boston/school-closings/"
-    },
-    {
-      "timestamp": "20191203130000",
-      "url": "https://www.cbsnews.com/boston/school-closings/"
-    },
-    {
-      "timestamp": "20201217130000",
-      "url": "https://www.cbsnews.com/boston/school-closings/"
-    },
-    {
-      "timestamp": "20220225130000",
-      "url": "https://www.cbsnews.com/boston/school-closings/"
-    },
-    {
-      "timestamp": "20230314130000",
-      "url": "https://www.cbsnews.com/boston/school-closings/"
-    },
-    {
-      "timestamp": "20230314130000",
-      "url": "https://assets1.cbsnewsstatic.com/Integrations/SchoolClosings/PRODUCTION/CBS/wbz/NEWSROOM/chyron/closings.xml"
-    },
-    {
-      "timestamp": "20240213130000",
-      "url": "https://www.cbsnews.com/boston/school-closings/"
-    },
-    {
-      "timestamp": "20240213130000",
-      "url": "https://assets1.cbsnewsstatic.com/Integrations/SchoolClosings/PRODUCTION/CBS/wbz/NEWSROOM/chyron/closings.xml"
-    },
-    {
-      "timestamp": "20250120130000",
-      "url": "https://www.cbsnews.com/boston/school-closings/"
-    },
-    {
-      "timestamp": "20250120130000",
-      "url": "https://assets1.cbsnewsstatic.com/Integrations/SchoolClosings/PRODUCTION/CBS/wbz/NEWSROOM/chyron/closings.xml"
-    },
-    {
-      "timestamp": "20260223130000",
-      "url": "https://www.cbsnews.com/boston/school-closings/"
-    },
-    {
-      "timestamp": "20260223130000",
-      "url": "https://assets1.cbsnewsstatic.com/Integrations/SchoolClosings/PRODUCTION/CBS/wbz/NEWSROOM/chyron/closings.xml"
-    },
-    {
-      "timestamp": "20161216130000",
-      "url": "https://www.cbsnews.com/minnesota/school-closings/"
-    },
-    {
-      "timestamp": "20180305130000",
-      "url": "https://www.cbsnews.com/minnesota/school-closings/"
-    },
-    {
-      "timestamp": "20190220130000",
-      "url": "https://www.cbsnews.com/minnesota/school-closings/"
-    },
-    {
-      "timestamp": "20200117130000",
-      "url": "https://www.cbsnews.com/minnesota/school-closings/"
-    },
-    {
-      "timestamp": "20201223130000",
-      "url": "https://www.cbsnews.com/minnesota/school-closings/"
-    },
-    {
-      "timestamp": "20220222130000",
-      "url": "https://www.cbsnews.com/minnesota/school-closings/"
-    },
-    {
-      "timestamp": "20230223130000",
-      "url": "https://www.cbsnews.com/minnesota/school-closings/"
-    },
-    {
-      "timestamp": "20230223130000",
-      "url": "https://assets1.cbsnewsstatic.com/Integrations/SchoolClosings/PRODUCTION/CBS/wcco/WCCOclosings-CBS.xml"
-    },
-    {
-      "timestamp": "20240325130000",
-      "url": "https://www.cbsnews.com/minnesota/school-closings/"
-    },
-    {
-      "timestamp": "20240325130000",
-      "url": "https://assets1.cbsnewsstatic.com/Integrations/SchoolClosings/PRODUCTION/CBS/wcco/WCCOclosings-CBS.xml"
-    },
-    {
-      "timestamp": "20241219130000",
-      "url": "https://www.cbsnews.com/minnesota/school-closings/"
-    },
-    {
-      "timestamp": "20241219130000",
-      "url": "https://assets1.cbsnewsstatic.com/Integrations/SchoolClosings/PRODUCTION/CBS/wcco/WCCOclosings-CBS.xml"
+      "timestamp": "20240911130000",
+      "url": "https://www.klfy.com/weather/closings/"
     },
     {
       "timestamp": "20260123130000",
-      "url": "https://www.cbsnews.com/minnesota/school-closings/"
+      "url": "https://www.yourbasin.com/weather/closings/"
     },
     {
-      "timestamp": "20260123130000",
-      "url": "https://assets1.cbsnewsstatic.com/Integrations/SchoolClosings/PRODUCTION/CBS/wcco/WCCOclosings-CBS.xml"
+      "timestamp": "20230201130000",
+      "url": "https://www.yourbasin.com/weather/closings/"
     },
     {
-      "timestamp": "20170314130000",
-      "url": "https://www.cbsnews.com/baltimore/school-closings/"
+      "timestamp": "20260219130000",
+      "url": "https://fox40.com/weather/closings/"
     },
     {
-      "timestamp": "20180321130000",
-      "url": "https://www.cbsnews.com/baltimore/school-closings/"
+      "timestamp": "20250331130000",
+      "url": "https://fox40.com/weather/closings/"
     },
     {
-      "timestamp": "20190220130000",
-      "url": "https://www.cbsnews.com/baltimore/school-closings/"
+      "timestamp": "20220930130000",
+      "url": "https://www.wbtw.com/weather/closings/"
+    },
+    {
+      "timestamp": "20240927130000",
+      "url": "https://www.wbtw.com/weather/closings/"
+    },
+    {
+      "timestamp": "20230830130000",
+      "url": "https://www.counton2.com/weather/closings/"
+    },
+    {
+      "timestamp": "20240927130000",
+      "url": "https://www.counton2.com/weather/closings/"
+    },
+    {
+      "timestamp": "20201028130000",
+      "url": "https://wgno.com/weather/closings/"
+    },
+    {
+      "timestamp": "20240911130000",
+      "url": "https://wgno.com/weather/closings/"
+    },
+    {
+      "timestamp": "20260313130000",
+      "url": "https://www.upmatters.com/weather/closings/"
+    },
+    {
+      "timestamp": "20210204130000",
+      "url": "https://www.upmatters.com/weather/closings/"
+    },
+    {
+      "timestamp": "20210108130000",
+      "url": "https://www.qcnews.com/weather/closings/"
+    },
+    {
+      "timestamp": "20220930130000",
+      "url": "https://www.qcnews.com/weather/closings/"
+    },
+    {
+      "timestamp": "20250305130000",
+      "url": "https://www.wiproud.com/weather/closings/"
+    },
+    {
+      "timestamp": "20240112130000",
+      "url": "https://www.wiproud.com/weather/closings/"
+    },
+    {
+      "timestamp": "20250219130000",
+      "url": "https://www.cbs17.com/weather/closings/"
+    },
+    {
+      "timestamp": "20220121130000",
+      "url": "https://www.cbs17.com/weather/closings/"
+    },
+    {
+      "timestamp": "20250219130000",
+      "url": "https://www.wnct.com/weather/closings/"
+    },
+    {
+      "timestamp": "20260202130000",
+      "url": "https://www.wnct.com/weather/closings/"
+    },
+    {
+      "timestamp": "20210202130000",
+      "url": "https://phl17.com/weather/closings/"
+    },
+    {
+      "timestamp": "20240119130000",
+      "url": "https://phl17.com/weather/closings/"
+    },
+    {
+      "timestamp": "20250122130000",
+      "url": "https://www.wsav.com/weather/closings/"
+    },
+    {
+      "timestamp": "20220930130000",
+      "url": "https://www.wsav.com/weather/closings/"
+    },
+    {
+      "timestamp": "20250212130000",
+      "url": "https://www.wvnstv.com/weather/closings/"
     },
     {
       "timestamp": "20210218130000",
-      "url": "https://www.cbsnews.com/baltimore/school-closings/"
+      "url": "https://www.wvnstv.com/weather/closings/"
     },
     {
-      "timestamp": "20220103130000",
-      "url": "https://www.cbsnews.com/baltimore/school-closings/"
+      "timestamp": "20240315105253",
+      "url": "https://www.westernslopenow.com/weather/closings/"
     },
     {
-      "timestamp": "20240116130000",
-      "url": "https://www.cbsnews.com/baltimore/school-closings/"
+      "timestamp": "20240102235320",
+      "url": "https://www.yourcentralvalley.com/weather/closings/"
     },
     {
-      "timestamp": "20240116130000",
-      "url": "https://assets1.cbsnewsstatic.com/Integrations/SchoolClosings/PRODUCTION/CBS/wjz/NEWSROOM/cbs_closings.xml"
+      "timestamp": "20240314060811",
+      "url": "https://www.abc4.com/weather/closings/"
     },
     {
-      "timestamp": "20250106130000",
-      "url": "https://www.cbsnews.com/baltimore/school-closings/"
+      "timestamp": "20170825123320",
+      "url": "http://www.kens5.com/closings"
     },
     {
-      "timestamp": "20250106130000",
-      "url": "https://assets1.cbsnewsstatic.com/Integrations/SchoolClosings/PRODUCTION/CBS/wjz/NEWSROOM/cbs_closings.xml"
+      "timestamp": "20230213081439",
+      "url": "https://www.cbs8.com/closings"
     },
     {
-      "timestamp": "20260223130000",
-      "url": "https://www.cbsnews.com/baltimore/school-closings/"
+      "timestamp": "20230130015742",
+      "url": "https://www.kvue.com/closings"
     },
     {
-      "timestamp": "20260223130000",
-      "url": "https://assets1.cbsnewsstatic.com/Integrations/SchoolClosings/PRODUCTION/CBS/wjz/NEWSROOM/cbs_closings.xml"
+      "timestamp": "20180119113818",
+      "url": "http://www.abc10.com/closings"
     },
     {
-      "timestamp": "20171213130000",
-      "url": "https://www.cbsnews.com/detroit/school-closings/"
+      "timestamp": "20221109093253",
+      "url": "https://www.abc10.com/closings"
     },
     {
-      "timestamp": "20190130130000",
-      "url": "https://www.cbsnews.com/detroit/school-closings/"
+      "timestamp": "20201117222230",
+      "url": "https://www.abc10.com/closings"
     },
     {
-      "timestamp": "20191111130000",
-      "url": "https://www.cbsnews.com/detroit/school-closings/"
+      "timestamp": "20200826050057",
+      "url": "https://www.cbs19.tv/closings"
     },
     {
-      "timestamp": "20210216130000",
-      "url": "https://www.cbsnews.com/detroit/school-closings/"
+      "timestamp": "20210212213420",
+      "url": "https://www.kxan.com/weather/weather-delays-llano-isd-on-2-hour-delay-thursday-due-to-potential-ice-on-roads/"
     },
     {
-      "timestamp": "20220202130000",
-      "url": "https://www.cbsnews.com/detroit/school-closings/"
+      "timestamp": "20210215033019",
+      "url": "https://www.kxan.com/weather/weather-delays-llano-isd-on-2-hour-delay-thursday-due-to-potential-ice-on-roads/"
     },
     {
-      "timestamp": "20221223130000",
-      "url": "https://www.cbsnews.com/detroit/school-closings/"
+      "timestamp": "20210219084809",
+      "url": "https://www.kxan.com/weather/weather-delays-llano-isd-on-2-hour-delay-thursday-due-to-potential-ice-on-roads/"
     },
     {
-      "timestamp": "20221223130000",
-      "url": "https://assets1.cbsnewsstatic.com/Integrations/SchoolClosings/PRODUCTION/CBS/wwj/NEWSROOM/closings-active.xml"
-    },
-    {
-      "timestamp": "20250212130000",
-      "url": "https://www.cbsnews.com/detroit/school-closings/"
-    },
-    {
-      "timestamp": "20250212130000",
-      "url": "https://assets1.cbsnewsstatic.com/Integrations/SchoolClosings/PRODUCTION/CBS/wwj/NEWSROOM/closings-active.xml"
+      "timestamp": "20230131174919",
+      "url": "https://www.kxan.com/weather/weather-delays-llano-isd-on-2-hour-delay-thursday-due-to-potential-ice-on-roads/"
     }
   ]
 }
