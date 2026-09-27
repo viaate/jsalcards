@@ -1,36 +1,100 @@
 {
   "snapshots": [
     {
-      "timestamp": "20170910043202",
-      "url": "http://abcnews4.com:80/weather/closings"
+      "timestamp": "20230228010724",
+      "url": "https://pix11.com/weather/closings/"
     },
     {
-      "timestamp": "20170909173438",
-      "url": "http://abcnews4.com/weather/closings"
+      "timestamp": "20220225000441",
+      "url": "https://pix11.com/weather/closings/"
     },
     {
-      "timestamp": "20221130005457",
-      "url": "https://www.kxly.com/weather/school-closures/"
+      "timestamp": "20230228111115",
+      "url": "https://www.pahomepage.com/weather/closings/?utm_campaign=socialflow&utm_medium=referral&utm_source=t.co"
     },
     {
-      "timestamp": "20240117115112",
-      "url": "https://www.kxly.com/weather/school-closures/"
+      "timestamp": "20220204100622",
+      "url": "https://www.pahomepage.com/weather/closings/?utm_campaign=socialflow&utm_source=t.co&utm_medium=referral"
     },
     {
-      "timestamp": "20220106073901",
-      "url": "https://www.kxly.com/weather/school-closures/"
+      "timestamp": "20241216082748",
+      "url": "https://www.pahomepage.com/weather/closings/?ipid=promo-link-block1"
     },
     {
-      "timestamp": "20210215110102",
-      "url": "https://www.kxly.com/weather/school-closures/"
+      "timestamp": "20200322163836",
+      "url": "https://www.pahomepage.com/weather/closings/"
     },
     {
-      "timestamp": "20151125235831",
-      "url": "http://kneb.com:80/weather-closings/"
+      "timestamp": "20230329074417",
+      "url": "https://fox40.com/weather/closings/"
     },
     {
-      "timestamp": "20230118123348",
-      "url": "https://ruralradio.com/kneb-am/weather-closings/"
+      "timestamp": "20250205173658",
+      "url": "https://fox40.com/weather/closings/"
+    },
+    {
+      "timestamp": "20240228175237",
+      "url": "https://fox40.com/weather/closings/"
+    },
+    {
+      "timestamp": "20211109075703",
+      "url": "https://fox40.com/weather/closings/"
+    },
+    {
+      "timestamp": "20230119151130",
+      "url": "https://www.upmatters.com/weather/closings/"
+    },
+    {
+      "timestamp": "20191209012422",
+      "url": "https://www.upmatters.com/weather/closings/"
+    },
+    {
+      "timestamp": "20231108024828",
+      "url": "https://www.upmatters.com/weather/closings/"
+    },
+    {
+      "timestamp": "20240925202211",
+      "url": "https://www.wbtw.com/weather/closings/"
+    },
+    {
+      "timestamp": "20230829201311",
+      "url": "https://www.wbtw.com/weather/closings/"
+    },
+    {
+      "timestamp": "20240926023920",
+      "url": "https://www.wrbl.com/weather/closings-and-delays/"
+    },
+    {
+      "timestamp": "20250115064930",
+      "url": "https://www.wane.com/wp-json/nxd_app/v1/closings_alerts"
+    },
+    {
+      "timestamp": "20251112205659",
+      "url": "https://www.myarklamiss.com/wp-json/nxd_app/v1/closings_alerts"
+    },
+    {
+      "timestamp": "20250205172803",
+      "url": "https://pix11.com/weather/closings/"
+    },
+    {
+      "timestamp": "20230124211925",
+      "url": "https://pix11.com/weather/closings/"
+    },
+    {
+      "timestamp": "20240124085235",
+      "url": "https://pix11.com/weather/closings/"
+    },
+    {
+      "timestamp": "20230125041946",
+      "url": "https://www.pahomepage.com/weather/closings/?ipid=promo-link-block2"
+    },
+    {
+      "timestamp": "20220225100800",
+      "url": "https://www.pahomepage.com/weather/closings/?utm_source=t.co&utm_campaign=socialflow&utm_medium=referral"
+    },
+    {
+      "timestamp": "20241204182929",
+      "url": "https://www.pahomepage.com/weather/closings/"
     }
   ]
 }
