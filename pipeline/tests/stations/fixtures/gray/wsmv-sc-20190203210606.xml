@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="ISO-8859-1"?>
+<File Time="02/03/2019 03:05pm">
+<Closing>
+  <Name1>Smith County Schools</Name1>
+  <Name2></Name2>
+  <Status>Closed - Illness (reopen 2/5)</Status>
+  <Status2></Status2>
+  <StatusCode>1</StatusCode>
+  <EntityType>Tennessee County</EntityType>
+  <EntityTypeCode>05</EntityTypeCode>
+  <City>Carthage</City>
+  <County>Smith</County>
+  <State>TN</State>
+  <Group></Group>
+  <Comments>Contact: Mr. Barry Smith</Comments>
+  <UpdateTime>01/31/2019 04:27pm</UpdateTime>
+  <ID>4078</ID>
+</Closing>
+</File>

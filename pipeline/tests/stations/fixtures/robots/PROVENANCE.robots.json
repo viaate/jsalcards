@@ -1,0 +1,16 @@
+{
+  "www.kmbc.com.robots.txt": {
+    "url": "https://www.kmbc.com/robots.txt",
+    "retrieved_at": "2026-09-25T04:10:13Z",
+    "http_status": 200,
+    "sha256": "3113c3fb87c8bb240d8c60c34cedcd9942a34e9ad7eb52d1ba0c8b3fa661d5f6",
+    "bytes": 3734
+  },
+  "www.kctv5.com.robots.txt": {
+    "url": "https://www.kctv5.com/robots.txt",
+    "retrieved_at": "2026-09-25T04:10:13Z",
+    "http_status": 200,
+    "sha256": "948e6a83d317fefc8b7e494264eb3212ecf75c181adf85dae813fd374ce20974",
+    "bytes": 1193
+  }
+}

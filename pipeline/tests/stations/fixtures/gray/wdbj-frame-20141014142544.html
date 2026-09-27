@@ -1,0 +1,362 @@
+<head>
+<style type="text/css">
+body, html {
+	margin:0px;
+	padding:0px;
+	background:none transparent;
+}
+
+#wx_closings_bkg{
+	position:absolute;
+	padding-left:5px;
+	height:349px;
+	background-position:0px -65px;
+	background-image:url();
+	background-repeat:no-repeat;
+	width: 305px;
+	padding:20px;
+	top: 110px;
+	left: 4px;
+}
+#wx_closings_cell{
+left:10px;
+overflow-x:hidden;
+padding:0;
+position:absolute;
+top:10px;
+width:300px;
+}
+#closing_cell{
+width:290px;
+border:1px solid #000;
+padding:0px;
+margin:0px;
+margin-bottom:3px;
+}
+#closing_name{
+	background-color:#fff;
+	border:1px solid #999;
+	font-family:Verdana, Geneva, sans-serif;
+	font-size:12px;
+	font-weight:bold;
+	color:#000;
+	padding:2px 0px;
+	text-align:left;
+}
+#closing_desc{
+	background-color:#eee;
+	border:1px solid #999;
+	font-family:Verdana, Geneva, sans-serif;
+	font-size:12px;
+	padding:2px 1px;
+	color:#000;
+
+}
+
+#closing_desc2{
+	background-color:#eee;
+	border:1px solid #999;
+	font-family:Verdana, Geneva, sans-serif;
+	font-size:10px;
+	padding:2px 1px;
+	color:#000;
+	font-style:italic;
+}
+</style>
+<script>
+
+var TRange = null;
+var dupeRange = null;
+var TestRange = null;
+var win = null;
+
+
+//  SELECTED BROWSER SNIFFER COMPONENTS DOCUMENTED AT
+//  http://www.mozilla.org/docs/web-developer/sniffer/browser_type.html
+
+var nom = navigator.appName.toLowerCase();
+var agt = navigator.userAgent.toLowerCase();
+var is_major   = parseInt(navigator.appVersion);
+var is_minor   = parseFloat(navigator.appVersion);
+var is_ie      = (agt.indexOf("msie") != -1);
+var is_ie4up   = (is_ie && (is_major >= 4));
+var is_not_moz = (agt.indexOf('netscape')!=-1)
+var is_nav     = (nom.indexOf('netscape')!=-1);
+var is_nav4    = (is_nav && (is_major == 4));
+var is_mac     = (agt.indexOf("mac")!=-1);
+var is_gecko   = (agt.indexOf('gecko') != -1);
+var is_opera   = (agt.indexOf("opera") != -1);
+
+
+//  GECKO REVISION
+
+var is_rev=0
+if (is_gecko) {
+temp = agt.split("rv:")
+is_rev = parseFloat(temp[1])
+}
+
+
+//  USE THE FOLLOWING VARIABLE TO CONFIGURE FRAMES TO SEARCH
+//  (SELF OR CHILD FRAME)
+
+//  If you want to search another frame, change from "self" to
+//  the name of the target frame:
+//  e.g., var frametosearch = 'main'
+
+//var frametosearch = 'main';
+var frametosearch = self;
+
+
+function search(whichform, whichframe) {
+
+//  TEST FOR IE5 FOR MAC (NO DOCUMENTATION)
+
+if (is_ie4up && is_mac) return;
+
+//  TEST FOR NAV 6 (NO DOCUMENTATION)
+
+if (is_gecko && (is_rev <1)) return;
+
+//  TEST FOR Opera (NO DOCUMENTATION)
+
+if (is_opera) return;
+
+//  INITIALIZATIONS FOR FIND-IN-PAGE SEARCHES
+
+if(whichform.findthis.value!=null && whichform.findthis.value!='') {
+
+       str = whichform.findthis.value;
+       win = whichframe;
+       var frameval=false;
+       if(win!=self)
+{
+
+       frameval=true;  // this will enable Nav7 to search child frame
+       win = parent.frames[whichframe];
+
+}
+
+    
+}
+
+else return;  //  i.e., no search string was entered
+
+var strFound;
+
+//  NAVIGATOR 4 SPECIFIC CODE
+
+if(is_nav4 && (is_minor < 5)) {
+   
+  strFound=win.find(str); // case insensitive, forward search by default
+
+//  There are 3 arguments available:
+//  searchString: type string and it's the item to be searched
+//  caseSensitive: boolean -- is search case sensitive?
+//  backwards: boolean --should we also search backwards?
+//  strFound=win.find(str, false, false) is the explicit
+//  version of the above
+//  The Mac version of Nav4 has wrapAround, but
+//  cannot be specified in JS
+
+ 
+        }
+
+//  NAVIGATOR 7 and Mozilla rev 1+ SPECIFIC CODE (WILL NOT WORK WITH NAVIGATOR 6)
+
+if (is_gecko && (is_rev >= 1)) {
+   
+    if(frameval!=false) win.focus(); // force search in specified child frame
+    strFound=win.find(str, false, false, true, false, frameval, false);
+
+//  The following statement enables reversion of focus 
+//  back to the search box after each search event 
+//  allowing the user to press the ENTER key instead
+//  of clicking the search button to continue search.
+//  Note: tends to be buggy in Mozilla as of 1.3.1
+//  (see www.mozilla.org) so is excluded from users 
+//  of that browser.
+
+    if (is_not_moz)  whichform.findthis.focus();
+
+//  There are 7 arguments available:
+//  searchString: type string and it's the item to be searched
+//  caseSensitive: boolean -- is search case sensitive?
+//  backwards: boolean --should we also search backwards?
+//  wrapAround: boolean -- should we wrap the search?
+//  wholeWord: boolean: should we search only for whole words
+//  searchInFrames: boolean -- should we search in frames?
+//  showDialog: boolean -- should we show the Find Dialog?
+
+
+}
+
+ if (is_ie4up) {
+
+  // EXPLORER-SPECIFIC CODE revised 5/21/03
+
+  if (TRange!=null) {
+	  
+   TestRange=win.document.body.createTextRange();
+ 
+	  
+
+   if (dupeRange.inRange(TestRange)) {
+
+   TRange.collapse(false);
+   strFound=TRange.findText(str);
+    if (strFound) {
+        //the following line added by Mike and Susan Keenan, 7 June 2003
+        win.document.body.scrollTop = win.document.body.scrollTop + TRange.offsetTop;
+        TRange.select();
+        }
+
+
+   }
+   
+   else {
+
+     TRange=win.document.body.createTextRange();
+     TRange.collapse(false);
+     strFound=TRange.findText(str);
+     if (strFound) {
+        //the following line added by Mike and Susan Keenan, 7 June 2003
+        win.document.body.scrollTop = TRange.offsetTop;
+        TRange.select();
+        }
+
+
+
+   }
+  }
+  
+   if (TRange==null || strFound==0) {
+   TRange=win.document.body.createTextRange();
+   dupeRange = TRange.duplicate();
+   strFound=TRange.findText(str);
+    if (strFound) {
+        //the following line added by Mike and Susan Keenan, 7 June 2003
+        win.document.body.scrollTop = TRange.offsetTop;
+        TRange.select();
+        }
+
+   
+   }
+
+ }
+
+  if (!strFound) alert ("Search '"+str+"' not found!") // string not found
+
+        
+}
+// -->
+</script>
+</head>
+
+<body>
+
+<DIV id="wx_closings_container" style="position:relative; width:640px;">
+<div style="position:absolute; background-image:url(titlebarpixel.png); height:30px; width:640px; background-repeat:repeat-x; left:5px; top: 4px;"><span style="font-family:Verdana, Geneva, sans-serif; font-size:16px; color:#fff; font-weight:bold; padding-left:8px; line-height:30px;">Search for Closings</span></div>
+<div style="position:absolute; width:638px; height:45px; border:1px solid #ccc; top: 33px; left: 5px;">
+<div style="padding-left:20px; position:absolute; width: 510px; left: 70px; top: 10px;"><form name="form1" onSubmit="search(document.form1, frametosearch); return false"><input value="Search for School Closings or Other Closings then press enter" type="text" size="60" name="findthis" onClick="this.value='';"> </form></div>
+</div>
+<div style="position:absolute; background-image:url(titlebarpixel.png); height:30px; width:315px; background-repeat:repeat-x; top: 80px; left: 5px;"><span style="font-family:Verdana, Geneva, sans-serif; font-size:16px; color:#fff; font-weight:bold; padding-left:8px; line-height:30px;">School Closings</span>
+</div>
+
+<div id="wx_closings_bkg">
+<div id="wx_closings_cell">
+<script type="text/javascript">
+if (window.XMLHttpRequest)
+  {// code for IE7+, Firefox, Chrome, Opera, Safari
+  xmlhttp=new XMLHttpRequest();
+  }
+else
+  {// code for IE6, IE5
+  xmlhttp=new ActiveXObject("Microsoft.XMLHTTP");
+  }
+xmlhttp.open("GET","../WDBJ-SC4C.xml?random=" + Math.random(),false);
+//xmlhttp.open("GET","report_widget_feed.xml?random=" + Math.random(),false);
+xmlhttp.send();
+xmlDoc=xmlhttp.responseXML; 
+xml=xmlDoc.getElementsByTagName("Closing"); 
+
+
+var school_closings = [];
+var other_closings = [];
+
+for (var k=0;k<xml.length;k++){
+	var school_valid = xml[k].getElementsByTagName("EntityType")[0].childNodes[0].nodeValue; 
+	 				   
+	if (school_valid == "Schools"){	
+	
+		school_closings.push(xml[k]);
+	}else{
+		other_closings.push(xml[k]) 
+	}
+}
+
+//document.write(school_closings[0].getElementsByTagName("Name1")[0].childNodes[0].nodeValue);
+if(school_closings.length >= 1){
+for (var i=0;i<school_closings.length;i++){
+	var s_name = school_closings[i].getElementsByTagName("Name1")[0].childNodes[0].nodeValue; 
+	
+	if(school_closings[i].getElementsByTagName("Status")[0].childNodes.length == 0 && school_closings[i].getElementsByTagName("Status2")[0].childNodes.length == 0){
+		document.write("<div id='closing_cell'> <div id='closing_name'>" + s_name + " </div> <div id='closing_desc'> </div></div>");
+		
+	}else if(school_closings[i].getElementsByTagName("Status")[0].childNodes.length == 0 && school_closings[i].getElementsByTagName("Status2")[0].childNodes.length != 0){
+		var s_details2 = school_closings[i].getElementsByTagName("Status2")[0].childNodes[0].nodeValue;
+		document.write("<div id='closing_cell'> <div id='closing_name'>" + s_name + " </div> <div id='closing_desc'>"+s_details2+"</div></div>");
+	
+	}else if(school_closings[i].getElementsByTagName("Status")[0].childNodes.length != 0 && school_closings[i].getElementsByTagName("Status2")[0].childNodes.length == 0){
+	
+		var s_details = school_closings[i].getElementsByTagName("Status")[0].childNodes[0].nodeValue; 
+		document.write("<div id='closing_cell'> <div id='closing_name'>" + s_name + " </div> <div id='closing_desc'>"+s_details+"</div></div>");
+	
+	}else if(school_closings[i].getElementsByTagName("Status")[0].childNodes.length != 0 && school_closings[i].getElementsByTagName("Status2")[0].childNodes.length != 0){
+		
+		var s_details = school_closings[i].getElementsByTagName("Status")[0].childNodes[0].nodeValue;
+		var s_details2 = school_closings[i].getElementsByTagName("Status2")[0].childNodes[0].nodeValue; 
+		document.write("<div id='closing_cell'> <div id='closing_name'>" + s_name + " </div> <div id='closing_desc'>"+s_details+"</div><div id='closing_desc2'>"+s_details2+"</div></div>");
+
+}}}
+else{
+	document.write("<div id='closing_cell'> <div id='closing_name'>There are no school closings</div> <div id='closing_desc'></div></div>");
+}
+
+document.write("</div></div><div style='position:absolute; background-image:url(titlebarpixel.png); height:30px; width:315px; background-repeat:repeat-x; left:330px; top: 80px;'><span style='font-family:Verdana, Geneva, sans-serif; font-size:16px; color:#fff; font-weight:bold; padding-left:8px; line-height:30px;'>Other Closings</span></div><div id='wx_closings_bkg' style='left:332px;'><div id='wx_closings_cell'>");
+
+if(other_closings.length >= 1){
+for (var i=0;i<other_closings.length;i++){
+	var o_name = other_closings[i].getElementsByTagName("Name1")[0].childNodes[0].nodeValue; 
+	
+	if(other_closings[i].getElementsByTagName("Status")[0].childNodes.length == 0 && other_closings[i].getElementsByTagName("Status2")[0].childNodes.length == 0){
+		document.write("<div id='closing_cell'> <div id='closing_name'>" + o_name + " </div> <div id='closing_desc'> </div></div>");
+		
+	}else if(other_closings[i].getElementsByTagName("Status")[0].childNodes.length == 0 && other_closings[i].getElementsByTagName("Status2")[0].childNodes.length != 0){
+		var o_details2 = other_closings[i].getElementsByTagName("Status2")[0].childNodes[0].nodeValue;
+		document.write("<div id='closing_cell'> <div id='closing_name'>" + o_name + " </div> <div id='closing_desc'>"+o_details2+"</div></div>");
+	
+	}else if(other_closings[i].getElementsByTagName("Status")[0].childNodes.length != 0 && other_closings[i].getElementsByTagName("Status2")[0].childNodes.length == 0){
+	
+		var o_details = other_closings[i].getElementsByTagName("Status")[0].childNodes[0].nodeValue; 
+		document.write("<div id='closing_cell'> <div id='closing_name'>" + o_name + " </div> <div id='closing_desc'>"+o_details+"</div></div>");
+	
+	}else if(other_closings[i].getElementsByTagName("Status")[0].childNodes.length != 0 && other_closings[i].getElementsByTagName("Status2")[0].childNodes.length != 0){
+		
+		var o_details = other_closings[i].getElementsByTagName("Status")[0].childNodes[0].nodeValue;
+		var o_details2 = other_closings[i].getElementsByTagName("Status2")[0].childNodes[0].nodeValue; 
+		document.write("<div id='closing_cell'> <div id='closing_name'>" + o_name + " </div> <div id='closing_desc'>"+o_details+"</div><div id='closing_desc2'>"+o_details2+"</div></div>");
+
+}}}
+else{
+	document.write("<div id='closing_cell'> <div id='closing_name'>There are no other closings</div> <div id='closing_desc'></div></div>");
+}
+</script>
+
+</div>
+</div>
+
+</DIV>
+
+</body>
+</html>

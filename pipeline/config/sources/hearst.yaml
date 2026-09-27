@@ -1,0 +1,2031 @@
+# Station registry for one platform. Loaded with every other file in this folder
+# by snowlight.sources.stations.registry; see its docstring for the fields.
+# `snowlight stations robots --update` rewrites the robots blocks in place.
+platform:
+  id: hearst
+  name: Hearst Television closings pages
+  operator: Hearst Television Inc.
+  adapter: hearst
+  poll_minutes: 10
+  terms:
+    automated_access: forbidden
+    summary: 'Every Hearst Television station site states its terms at the top of its robots.txt: no software
+      robots, spiders, crawlers or other data gathering or extraction tools, automated or manual, may
+      access, copy, monitor, scrape or aggregate the site or its content, and copying, downloading or
+      archiving content needs prior written permission from Hearst Television; creating or providing archived
+      or cached data sets of its content to others and any commercial purpose are named as prohibited
+      uses. The full terms page (https://www.hearst.com/-/tv-terms-of-use) answered HTTP 403 to this pipeline
+      on 2026-09-25. The same robots.txt disallows the whole site to ClaudeBot, Claude-Web, anthropic-ai,
+      GPTBot, CCBot and archive.org_bot. The project owner decided on 2026-09-25 to read these lists anyway
+      for this non-commercial project (owner_decision below); the terms stay recorded here, and the pipeline
+      never uses the /api/ and /ajax/ paths robots.txt disallows to every crawler. The file names htvdigitalopsleads
+      at hearst dot com as the contact.'
+    evidence:
+    - url: https://www.kmbc.com/robots.txt
+      read_at: '2026-09-25T04:10:13Z'
+      sha256: 3113c3fb87c8bb240d8c60c34cedcd9942a34e9ad7eb52d1ba0c8b3fa661d5f6
+      excerpt:
+      - 'Hearst Television Inc. content is made available for your personal, non-commercial use subject
+        to our Terms of Service here: https://www.hearst.com/-/tv-terms-of-use You may not either directly
+        or through the use of a device or other means copy, download, stream, reproduce, duplicate, archive,
+        distribute, upload, publish, modify, translate, broadcast, perform, display, sell, transmit or
+        retransmit the website or content without prior written permission from Hearst Television Inc.'
+      - You may also not use any software robots, spider, crawlers, or other data gathering or extraction
+        tools, whether automated or manual, to access, acquire, copy, monitor, scrape or aggregate the
+        content or website or any portion thereof.
+      - You may not knowingly or intentionally take any action that may impose an unreasonable burden
+        or load on the website or its servers and infrastructures.
+      - 'Prohibited uses include but are not limited to: (1) text and data mining activities under Art.
+        4 of the EU Directive on Copyright in the Digital Single Market; (2) the development of any software,
+        machine learning, artificial intelligence (AI), and/or large language models (LLMs); (3) creating
+        or providing archived or cached data sets containing our content to others; and/or (4) any commercial
+        purposes.'
+      - Contact htvdigitalopsleads at hearst dot com for assistance.
+    permission: null
+    owner_decision:
+      decided_by: the project owner (Snowlight)
+      decided_on: '2026-09-25'
+      reference: 'Stated in the build instructions for the station adapters (piece s4a, round 2): "terms
+        of use that forbid automated access do not exclude a station: the project owner decided on 2026-09-25
+        to read them for this non-commercial project, so record each station''s terms internally in the
+        registry and read it anyway." Relayed to the pipeline''s builder by the project''s build workflow;
+        to revoke it, remove this block and live polling of this platform stops. The robots.txt decision
+        is stated in the build instructions for piece s4a, round 3: "robots.txt does not exclude a station
+        either: the owner decided on 2026-09-26 to read closings pages and data files even where robots.txt
+        disallows them ... Still fetch and record each host''s robots.txt verdict in the registry and
+        health output."'
+      scope: 'Live reads of this platform''s public closings lists (the station pages and the data files
+        they load) for Snowlight, a non-commercial project, although the terms above forbid automated
+        access. robots.txt: the project owner decided on 2026-09-26 to read closings pages and the list
+        files they load even where robots.txt disallows them; robots.txt is still read for every URL and
+        its verdict recorded here (each station''s robots block) and in every live read''s health, and
+        any Crawl-delay it sets paces the requests. Unchanged: the User-Agent names the repository (never
+        a browser string), requests touch only the closings page or the list file it loads (never a crawl),
+        are paced per host with conditional requests and backoff on 429 (honouring Retry-After) and 5xx
+        answers, and a station that actively blocks the project (a 403, a bot challenge) is dropped and
+        noted, never worked around.'
+  notes: 'The closings page is https://www.{site}/weather/closings on every station site. Its format changed
+    twice in the captures read so far: server-rendered weather-closings-data-item rows (2023 to January
+    2026; each row gives a name, a ''County, City, ST'' location and a status), then a Next.js page whose
+    React Server Component payload embeds the whole list as a closingsData JSON object (from February
+    2026). One adapter reads both (snowlight.sources.stations.hearst). WPTZ and WNNE share mynbc5.com;
+    KHBS and KHOG share 4029tv.com. Sister channels the English Wikipedia navbox Template:Hearst (read
+    2026-09-25) names under Hearst Television publish through a registered station''s site, per their
+    own infoboxes (read 2026-09-25), and are not registered separately: KCWE (kmbc.com), KQCA (kcra.com),
+    WCWG (wxii12.com), WKCF (wesh.com), KHOG (4029tv.com, with KHBS), WPXT (wmtw.com) and WZVN (gulfcoastnewsnow.com,
+    with WBBH); WNNE shares WPTZ''s Champlain Valley market and mynbc5.com. WMOR-TV (Tampa, independent)
+    is registered with no endpoint: its infobox names no news site.'
+  shared_paths: []
+stations:
+- id: hearst-kcci
+  platform: hearst
+  call_sign: KCCI
+  name: KCCI 8
+  market: Des Moines
+  dma: Des Moines - Ames, IA - MO DMA
+  states: [IA, MO]
+  counties:
+    basis: dma
+    source: 'DMA county list: alex-patton/US-TVDMA-BY-COUNTY usa-tvdma-county.csv at commit 7f254b8c1843c62ec976a71c40d366d45f6f29cd
+      (sha256 2e2cd00265a8d704...), names resolved to FIPS with the Census 2025 county Gazetteer; Connecticut
+      via the Census county-to-town crosswalk (snowlight.sources.stations.dma); market ''Des Moines -
+      Ames, IA - MO DMA'''
+    fips: ['19001', '19007', '19009', '19015', '19025', '19027', '19039', '19049', '19053', '19069', '19073',
+      '19077', '19079', '19083', '19091', '19099', '19109', '19117', '19121', '19123', '19125', '19127',
+      '19135', '19151', '19153', '19157', '19159', '19169', '19173', '19175', '19181', '19185', '19187',
+      '19197', '29129']
+  page_url: https://www.kcci.com/weather/closings
+  data_url: null
+  export_url: null
+  archive_urls:
+  - http://www.kcci.com/weather/closings
+  - https://www.kcci.com/weather/closings
+  poll_minutes: null
+  status: active
+  evidence: 'Site kcci.com: Wikidata official website (P856) of the station''s item, or the research record.
+    Market: the ''Des Moines TV'' navbox on the English Wikipedia article ''KCCI'' (read 2026-09-25).
+    Research record kcci (live_lead), closings page https://www.kcci.com/weather/closings. Archive: closings
+    page confirmed by Wayback captures read with the hearst adapter: 2014-01-06 02:42Z http://www.kcci.com/weather/closings
+    (hearst-ibsys, populated, 203 rows; run 36123975119); 2015-01-07 04:46Z http://www.kcci.com/weather/closings
+    (hearst-ibsys, populated, 227 rows; run 36123975119); 2016-11-09 01:36Z http://www.kcci.com/weather/closings
+    (hearst-rows, empty, 0 rows; run 36123975119); 2017-11-19 07:20Z http://www.kcci.com/weather/closings
+    (hearst-rows, empty, 0 rows; run 36123975119); 2018-01-16 06:48Z http://www.kcci.com/weather/closings
+    (hearst-rows, populated, 147 rows; run 36123975119); 2019-01-30 21:49Z https://www.kcci.com/weather/closings
+    (hearst-rows, populated, 424 rows; run 36123975119); 2020-01-19 06:53Z https://www.kcci.com/weather/closings
+    (hearst-rows, populated, 201 rows; run 36123975119); 2021-02-15 16:37Z https://www.kcci.com/weather/closings
+    (hearst-rows, populated, 131 rows; run 36123975119); 2022-02-22 16:14Z https://www.kcci.com/weather/closings
+    (hearst-rows, populated, 164 rows; run 36123975119); 2024-01-12 22:48Z https://www.kcci.com/weather/closings
+    (hearst-rows, populated, 255 rows; run 36094846376); 2025-02-11 14:58Z https://www.kcci.com/weather/closings
+    (hearst-rows, populated, 5 rows; run 36111087246); 2026-03-23 23:06Z https://www.kcci.com/weather/closings
+    (hearst-next, populated, 2 rows; run 36111087246). Wayback CDX: 492 captures with HTTP 200 of http://www.kcci.com/weather/closings,
+    http://www.kcci.com:80/weather/closings, https://www.kcci.com/weather/closings, 2014-01-04 to 2026-05-18.'
+  list_files: []
+  page_check: null
+  robots:
+  - url: https://www.kcci.com/weather/closings
+    checked_at: '2026-09-26T23:08:21Z'
+    state: parsed
+    allowed: true
+    rule: no rule matches
+    crawl_delay: 10.0
+    disallowed_agents:
+    - ahrefsbot
+    - ai2bot
+    - ai2bot-dolma
+    - amazon-qbusiness
+    - amazonbot
+    - anthropic-ai
+    - applebot-extended
+    - archive.org_bot
+    - awariorssbot
+    - awariosmartbot
+    - bytespider
+    - ccbot
+    - chatgpt-user
+    - claude-web
+    - claudebot
+    - cloudflarebrowserrenderingcrawler
+    - cohere-ai
+    - cohere-training-data-crawler
+    - dataforseobot
+    - diffbot
+    - facebookbot
+    - google-extended
+    - gptbot
+    - imagesiftbot
+    - magpie-crawler
+    - meta-externalagent
+    - meta-externalfetcher
+    - meta-webindexer
+    - meta-webindexer/1.1
+    - mycentralaiscraperbot
+    - news-please
+    - nicecrawler
+    - omgili
+    - omgilibot
+    - perplexitybot
+    - poseidon research crawler
+    - seekrbot
+    - timpibot
+    - youbot
+    sha256: 82248278320e09a9c1b6901ebe52cd4877a600ec541cfe839e9e71ff0394c8ec
+- id: hearst-kcra
+  platform: hearst
+  call_sign: KCRA
+  name: KCRA 3
+  market: Sacramento
+  dma: Sacramento - Stockton - Modesto, CA DMA
+  states: [CA]
+  counties:
+    basis: dma
+    source: 'DMA county list: alex-patton/US-TVDMA-BY-COUNTY usa-tvdma-county.csv at commit 7f254b8c1843c62ec976a71c40d366d45f6f29cd
+      (sha256 2e2cd00265a8d704...), names resolved to FIPS with the Census 2025 county Gazetteer; Connecticut
+      via the Census county-to-town crosswalk (snowlight.sources.stations.dma); market ''Sacramento -
+      Stockton - Modesto, CA DMA'''
+    fips: ['06005', 06009, '06011', '06017', '06057', '06061', '06063', '06067', '06077', 06091, 06099,
+      '06101', 06109, '06113', '06115']
+  page_url: https://www.kcra.com/weather/closings
+  data_url: null
+  export_url: null
+  archive_urls:
+  - https://www.kcra.com/weather/closings
+  poll_minutes: null
+  status: active
+  evidence: 'Site kcra.com: Wikidata official website (P856) of the station''s item, or the research record.
+    Market: the ''Sacramento TV'' navbox on the English Wikipedia article ''KCRA-TV'' (read 2026-09-25).
+    Research record kcra (live_lead), closings page https://www.kcra.com/weather/closings. Archive: closings
+    page confirmed by Wayback captures read with the hearst adapter: 2024-02-05 21:48Z https://www.kcra.com/weather/closings
+    (hearst-rows, populated, 16 rows; run 36111087246); 2025-01-26 10:25Z https://www.kcra.com/weather/closings
+    (hearst-rows, empty, 0 rows; run 36094846376); 2026-02-17 06:08Z https://www.kcra.com/weather/closings
+    (hearst-next, populated, 9 rows; run 36111087246). Wayback CDX: 248 captures with HTTP 200 of https://www.kcra.com/weather/closings,
+    2019-10-30 to 2026-02-28.'
+  list_files: []
+  page_check: null
+  robots:
+  - url: https://www.kcra.com/weather/closings
+    checked_at: '2026-09-26T23:08:21Z'
+    state: parsed
+    allowed: true
+    rule: no rule matches
+    crawl_delay: 10.0
+    disallowed_agents:
+    - ahrefsbot
+    - ai2bot
+    - ai2bot-dolma
+    - amazon-qbusiness
+    - amazonbot
+    - anthropic-ai
+    - applebot-extended
+    - archive.org_bot
+    - awariorssbot
+    - awariosmartbot
+    - bytespider
+    - ccbot
+    - chatgpt-user
+    - claude-web
+    - claudebot
+    - cloudflarebrowserrenderingcrawler
+    - cohere-ai
+    - cohere-training-data-crawler
+    - dataforseobot
+    - diffbot
+    - facebookbot
+    - google-extended
+    - gptbot
+    - imagesiftbot
+    - magpie-crawler
+    - meta-externalagent
+    - meta-externalfetcher
+    - meta-webindexer
+    - meta-webindexer/1.1
+    - mycentralaiscraperbot
+    - news-please
+    - nicecrawler
+    - omgili
+    - omgilibot
+    - perplexitybot
+    - poseidon research crawler
+    - seekrbot
+    - timpibot
+    - youbot
+    sha256: 3d6da2eb5f46fe25c7aa170fec5516809f074a8d79e30b632b11171d1f12e47f
+- id: hearst-ketv
+  platform: hearst
+  call_sign: KETV
+  name: KETV NewsWatch 7
+  market: Omaha
+  dma: Omaha, NE - IA - MO DMA
+  states: [IA, MO, NE]
+  counties:
+    basis: dma
+    source: 'DMA county list: alex-patton/US-TVDMA-BY-COUNTY usa-tvdma-county.csv at commit 7f254b8c1843c62ec976a71c40d366d45f6f29cd
+      (sha256 2e2cd00265a8d704...), names resolved to FIPS with the Census 2025 county Gazetteer; Connecticut
+      via the Census county-to-town crosswalk (snowlight.sources.stations.dma); market ''Omaha, NE - IA
+      - MO DMA'''
+    fips: ['19003', '19029', '19047', '19071', '19085', '19129', '19137', '19145', '19155', '19165', '29005',
+      '31021', '31023', '31025', '31037', '31039', '31053', '31055', '31097', '31127', '31131', '31133',
+      '31141', '31147', '31153', '31155', '31177']
+  page_url: https://www.ketv.com/weather/closings
+  data_url: null
+  export_url: null
+  archive_urls:
+  - https://www.ketv.com/weather/closings
+  poll_minutes: null
+  status: active
+  evidence: 'Site ketv.com: Wikidata official website (P856) of the station''s item, or the research record.
+    Market: the ''Omaha TV'' navbox on the English Wikipedia article ''KETV'' (read 2026-09-25). Research
+    record ketv (live_lead), closings page https://www.ketv.com/weather/closings. Archive: closings page
+    confirmed by Wayback captures read with the hearst adapter: 2024-01-11 19:37Z https://www.ketv.com/weather/closings
+    (hearst-rows, populated, 13 rows; run 36094846376); 2025-02-17 21:21Z https://www.ketv.com/weather/closings
+    (hearst-rows, populated, 38 rows; run 36111087246). Wayback CDX: 273 captures with HTTP 200 of http://www.ketv.com/weather/closings,
+    http://www.ketv.com:80/weather/closings, https://www.ketv.com/weather/closings, 2014-01-29 to 2026-05-09.'
+  list_files: []
+  page_check: null
+  robots:
+  - url: https://www.ketv.com/weather/closings
+    checked_at: '2026-09-26T23:08:22Z'
+    state: parsed
+    allowed: true
+    rule: no rule matches
+    crawl_delay: 10.0
+    disallowed_agents:
+    - ahrefsbot
+    - ai2bot
+    - ai2bot-dolma
+    - amazon-qbusiness
+    - amazonbot
+    - anthropic-ai
+    - applebot-extended
+    - archive.org_bot
+    - awariorssbot
+    - awariosmartbot
+    - bytespider
+    - ccbot
+    - chatgpt-user
+    - claude-web
+    - claudebot
+    - cloudflarebrowserrenderingcrawler
+    - cohere-ai
+    - cohere-training-data-crawler
+    - dataforseobot
+    - diffbot
+    - facebookbot
+    - google-extended
+    - gptbot
+    - imagesiftbot
+    - magpie-crawler
+    - meta-externalagent
+    - meta-externalfetcher
+    - meta-webindexer
+    - meta-webindexer/1.1
+    - mycentralaiscraperbot
+    - news-please
+    - nicecrawler
+    - omgili
+    - omgilibot
+    - perplexitybot
+    - poseidon research crawler
+    - seekrbot
+    - timpibot
+    - youbot
+    sha256: cf48db4f6c7d752560332a41285f71585aab351f51adf647044a8596049365be
+- id: hearst-khbs
+  platform: hearst
+  call_sign: KHBS
+  name: KHBS/KHOG 40/29 News
+  market: Fort Smith
+  dma: Ft. Smith - Fay - Springdale - Rogers, AR - OK DMA
+  states: [AR, OK]
+  counties:
+    basis: dma
+    source: 'DMA county list: alex-patton/US-TVDMA-BY-COUNTY usa-tvdma-county.csv at commit 7f254b8c1843c62ec976a71c40d366d45f6f29cd
+      (sha256 2e2cd00265a8d704...), names resolved to FIPS with the Census 2025 county Gazetteer; Connecticut
+      via the Census county-to-town crosswalk (snowlight.sources.stations.dma); market ''Ft. Smith - Fay
+      - Springdale - Rogers, AR - OK DMA'''
+    fips: ['05007', '05033', '05047', 05083, 05087, '05127', '05131', '05143', '40079', '40135']
+  page_url: https://www.4029tv.com/weather/closings
+  data_url: null
+  export_url: null
+  archive_urls:
+  - https://www.4029tv.com/weather/closings
+  poll_minutes: null
+  status: active
+  evidence: 'Site 4029tv.com: Wikidata official website (P856) of the station''s item, or the research
+    record. Market: the ''Fort Smith TV'' navbox on the English Wikipedia article ''KHBS'' (read 2026-09-25).
+    Archive: closings page confirmed by Wayback captures read with the hearst adapter: 2024-01-20 20:56Z
+    https://www.4029tv.com/weather/closings (hearst-rows, populated, 1 rows; run 36111087246); 2024-12-27
+    02:52Z https://www.4029tv.com/weather/closings (hearst-rows, empty, 0 rows; run 36094846376); 2026-02-23
+    02:51Z https://www.4029tv.com/weather/closings (hearst-next, empty, 0 rows; run 36111087246). Wayback
+    CDX: 258 captures with HTTP 200 of http://www.4029tv.com/weather/closings, http://www.4029tv.com/weather/closings-signup/14417442,
+    http://www.4029tv.com:80/weather/closings and other forms, 2014-01-10 to 2026-05-01.'
+  list_files: []
+  page_check: null
+  robots:
+  - url: https://www.4029tv.com/weather/closings
+    checked_at: '2026-09-26T23:08:22Z'
+    state: parsed
+    allowed: true
+    rule: no rule matches
+    crawl_delay: 10.0
+    disallowed_agents:
+    - ahrefsbot
+    - ai2bot
+    - ai2bot-dolma
+    - amazon-qbusiness
+    - amazonbot
+    - anthropic-ai
+    - applebot-extended
+    - archive.org_bot
+    - awariorssbot
+    - awariosmartbot
+    - bytespider
+    - ccbot
+    - chatgpt-user
+    - claude-web
+    - claudebot
+    - cloudflarebrowserrenderingcrawler
+    - cohere-ai
+    - cohere-training-data-crawler
+    - dataforseobot
+    - diffbot
+    - facebookbot
+    - google-extended
+    - gptbot
+    - imagesiftbot
+    - magpie-crawler
+    - meta-externalagent
+    - meta-externalfetcher
+    - meta-webindexer
+    - meta-webindexer/1.1
+    - mycentralaiscraperbot
+    - news-please
+    - nicecrawler
+    - omgili
+    - omgilibot
+    - perplexitybot
+    - poseidon research crawler
+    - seekrbot
+    - timpibot
+    - youbot
+    sha256: 06e9636d3a051411a0072f53456ec42bc6395fa2079e5759cd119c997f1330e9
+- id: hearst-kmbc
+  platform: hearst
+  call_sign: KMBC
+  name: KMBC 9
+  market: Kansas City
+  dma: Kansas City, MO - KS DMA
+  states: [KS, MO]
+  counties:
+    basis: dma
+    source: 'DMA county list: alex-patton/US-TVDMA-BY-COUNTY usa-tvdma-county.csv at commit 7f254b8c1843c62ec976a71c40d366d45f6f29cd
+      (sha256 2e2cd00265a8d704...), names resolved to FIPS with the Census 2025 county Gazetteer; Connecticut
+      via the Census county-to-town crosswalk (snowlight.sources.stations.dma); market ''Kansas City,
+      MO - KS DMA'''
+    fips: ['20003', '20005', '20045', '20059', '20091', '20103', '20107', '20121', '20209', '29013', '29025',
+      '29033', '29037', '29047', '29049', '29061', '29075', '29079', '29081', '29083', '29095', '29101',
+      '29107', '29115', '29117', '29159', '29165', '29177', '29195']
+  page_url: https://www.kmbc.com/weather/closings
+  data_url: null
+  export_url: null
+  archive_urls:
+  - https://www.kmbc.com/weather/closings
+  poll_minutes: null
+  status: active
+  evidence: 'Site kmbc.com: Wikidata official website (P856) of the station''s item, or the research record.
+    Market: the ''Kansas City TV'' navbox on the English Wikipedia article ''KMBC-TV'' (read 2026-09-25).
+    Research record kmbc (live_lead), closings page https://www.kmbc.com/weather/closings. Page URL confirmed
+    by the Wayback CDX listing of www.kmbc.com/weather/closings* (archive-captures run 1, 2023-11-01 to
+    2026-03-31: 39 captures with HTTP 200 among them). Archive: closings page confirmed by Wayback captures
+    read with the hearst adapter: 2024-01-17 20:33Z https://www.kmbc.com/weather/closings (hearst-rows,
+    populated, 4 rows; run 36111087246); 2024-02-14 22:30Z https://www.kmbc.com/weather/closings (hearst-rows,
+    populated, 7 rows; run 36111087246); 2025-01-08 11:26Z https://www.kmbc.com/weather/closings (hearst-rows,
+    populated, 170 rows; run 36092979109); 2025-02-18 14:18Z https://www.kmbc.com/weather/closings (hearst-rows,
+    populated, 241 rows; run 36111087246); 2025-12-01 23:04Z https://www.kmbc.com/weather/closings (hearst-rows,
+    populated, 13 rows; run 36111087246); 2026-01-22 21:39Z https://www.kmbc.com/weather/closings (hearst-rows,
+    populated, 1 rows; run 36092979109). Wayback CDX: 271 captures with HTTP 200 of http://www.kmbc.com/weather/closings,
+    http://www.kmbc.com:80/weather/closings, https://www.kmbc.com/weather/closings, 2014-01-04 to 2026-02-26.'
+  list_files: []
+  page_check: null
+  robots:
+  - url: https://www.kmbc.com/weather/closings
+    checked_at: '2026-09-26T23:08:22Z'
+    state: parsed
+    allowed: true
+    rule: no rule matches
+    crawl_delay: 10.0
+    disallowed_agents:
+    - ahrefsbot
+    - ai2bot
+    - ai2bot-dolma
+    - amazon-qbusiness
+    - amazonbot
+    - anthropic-ai
+    - applebot-extended
+    - archive.org_bot
+    - awariorssbot
+    - awariosmartbot
+    - bytespider
+    - ccbot
+    - chatgpt-user
+    - claude-web
+    - claudebot
+    - cloudflarebrowserrenderingcrawler
+    - cohere-ai
+    - cohere-training-data-crawler
+    - dataforseobot
+    - diffbot
+    - facebookbot
+    - google-extended
+    - gptbot
+    - imagesiftbot
+    - magpie-crawler
+    - meta-externalagent
+    - meta-externalfetcher
+    - meta-webindexer
+    - meta-webindexer/1.1
+    - mycentralaiscraperbot
+    - news-please
+    - nicecrawler
+    - omgili
+    - omgilibot
+    - perplexitybot
+    - poseidon research crawler
+    - seekrbot
+    - timpibot
+    - youbot
+    sha256: 3113c3fb87c8bb240d8c60c34cedcd9942a34e9ad7eb52d1ba0c8b3fa661d5f6
+- id: hearst-koat
+  platform: hearst
+  call_sign: KOAT
+  name: KOAT Action 7
+  market: Albuquerque
+  dma: Albuquerque - Santa Fe, NM - AZ - CO DMA
+  states: [AZ, CO, NM]
+  counties:
+    basis: dma
+    source: 'DMA county list: alex-patton/US-TVDMA-BY-COUNTY usa-tvdma-county.csv at commit 7f254b8c1843c62ec976a71c40d366d45f6f29cd
+      (sha256 2e2cd00265a8d704...), names resolved to FIPS with the Census 2025 county Gazetteer; Connecticut
+      via the Census county-to-town crosswalk (snowlight.sources.stations.dma); market ''Albuquerque -
+      Santa Fe, NM - AZ - CO DMA'''
+    fips: ['04001', 08023, 08067, 08083, '35001', '35003', '35005', '35006', '35007', '35011', '35015',
+      '35017', '35019', '35021', '35023', '35025', '35027', '35028', '35029', '35031', '35033', '35035',
+      '35039', '35043', '35045', '35047', '35049', '35051', '35053', '35055', '35057', '35061']
+  page_url: https://www.koat.com/weather/closings
+  data_url: null
+  export_url: null
+  archive_urls:
+  - https://www.koat.com/weather/closings
+  poll_minutes: null
+  status: active
+  evidence: 'Site koat.com: Wikidata official website (P856) of the station''s item, or the research record.
+    Market: the ''Albuquerque TV'' navbox on the English Wikipedia article ''KOAT-TV'' (read 2026-09-25).
+    Archive: closings page confirmed by Wayback captures read with the hearst adapter: 2024-01-06 18:51Z
+    https://www.koat.com/weather/closings (hearst-rows, empty, 0 rows; run 36111087246); 2025-01-23 18:31Z
+    https://www.koat.com/weather/closings (hearst-rows, populated, 3 rows; run 36111087246); 2026-02-08
+    15:56Z https://www.koat.com/weather/closings (hearst-next, empty, 0 rows; run 36111087246). Wayback
+    CDX: 427 captures with HTTP 200 of http://www.koat.com/weather/closings, http://www.koat.com/weather/closingssignup,
+    http://www.koat.com:80/weather/closings and other forms, 2014-01-04 to 2026-06-13.'
+  list_files: []
+  page_check: null
+  robots:
+  - url: https://www.koat.com/weather/closings
+    checked_at: '2026-09-26T23:08:22Z'
+    state: parsed
+    allowed: true
+    rule: no rule matches
+    crawl_delay: 10.0
+    disallowed_agents:
+    - ahrefsbot
+    - ai2bot
+    - ai2bot-dolma
+    - amazon-qbusiness
+    - amazonbot
+    - anthropic-ai
+    - applebot-extended
+    - archive.org_bot
+    - awariorssbot
+    - awariosmartbot
+    - bytespider
+    - ccbot
+    - chatgpt-user
+    - claude-web
+    - claudebot
+    - cloudflarebrowserrenderingcrawler
+    - cohere-ai
+    - cohere-training-data-crawler
+    - dataforseobot
+    - diffbot
+    - facebookbot
+    - google-extended
+    - gptbot
+    - imagesiftbot
+    - magpie-crawler
+    - meta-externalagent
+    - meta-externalfetcher
+    - meta-webindexer
+    - meta-webindexer/1.1
+    - mycentralaiscraperbot
+    - news-please
+    - nicecrawler
+    - omgili
+    - omgilibot
+    - perplexitybot
+    - poseidon research crawler
+    - seekrbot
+    - timpibot
+    - youbot
+    sha256: dc96931e4f72fd0798b5c46d29f120cd07c44e3cd0fcfe74d5f7c11e0eace72b
+- id: hearst-koco
+  platform: hearst
+  call_sign: KOCO
+  name: KOCO 5
+  market: Oklahoma City
+  dma: Oklahoma City, OK DMA
+  states: [OK]
+  counties:
+    basis: dma
+    source: 'DMA county list: alex-patton/US-TVDMA-BY-COUNTY usa-tvdma-county.csv at commit 7f254b8c1843c62ec976a71c40d366d45f6f29cd
+      (sha256 2e2cd00265a8d704...), names resolved to FIPS with the Census 2025 county Gazetteer; Connecticut
+      via the Census county-to-town crosswalk (snowlight.sources.stations.dma); market ''Oklahoma City,
+      OK DMA'''
+    fips: ['40003', '40009', '40011', '40015', '40017', '40027', '40039', '40043', '40045', '40047', '40049',
+      '40051', '40053', '40055', '40057', '40059', '40063', '40071', '40073', '40075', '40081', '40083',
+      '40087', '40093', '40099', '40103', '40109', '40119', '40125', '40129', '40133', '40149', '40151',
+      '40153']
+  page_url: https://www.koco.com/weather/closings
+  data_url: null
+  export_url: null
+  archive_urls:
+  - https://www.koco.com/weather/closings
+  poll_minutes: null
+  status: active
+  evidence: 'Site koco.com: Wikidata official website (P856) of the station''s item, or the research record.
+    Market: the ''Oklahoma City TV'' navbox on the English Wikipedia article ''KOCO-TV'' (read 2026-09-25).
+    Research record koco (live_lead), closings page https://www.koco.com/weather/closings. Archive: closings
+    page confirmed by Wayback captures read with the hearst adapter: 2024-01-22 06:13Z https://www.koco.com/weather/closings
+    (hearst-rows, populated, 472 rows; run 36111087246); 2025-02-19 23:20Z https://www.koco.com/weather/closings
+    (hearst-rows, populated, 555 rows; run 36094846376); 2026-01-25 01:31Z https://www.koco.com/weather/closings
+    (hearst-rows, populated, 807 rows; run 36111087246). Wayback CDX: 579 captures with HTTP 200 of http://www.koco.com/weather/closings,
+    http://www.koco.com:80/weather/closings, https://www.koco.com/weather/closings and other forms, 2014-01-04
+    to 2026-08-27.'
+  list_files: []
+  page_check: null
+  robots:
+  - url: https://www.koco.com/weather/closings
+    checked_at: '2026-09-26T23:08:22Z'
+    state: parsed
+    allowed: true
+    rule: no rule matches
+    crawl_delay: 10.0
+    disallowed_agents:
+    - ahrefsbot
+    - ai2bot
+    - ai2bot-dolma
+    - amazon-qbusiness
+    - amazonbot
+    - anthropic-ai
+    - applebot-extended
+    - archive.org_bot
+    - awariorssbot
+    - awariosmartbot
+    - bytespider
+    - ccbot
+    - chatgpt-user
+    - claude-web
+    - claudebot
+    - cloudflarebrowserrenderingcrawler
+    - cohere-ai
+    - cohere-training-data-crawler
+    - dataforseobot
+    - diffbot
+    - facebookbot
+    - google-extended
+    - gptbot
+    - imagesiftbot
+    - magpie-crawler
+    - meta-externalagent
+    - meta-externalfetcher
+    - meta-webindexer
+    - meta-webindexer/1.1
+    - mycentralaiscraperbot
+    - news-please
+    - nicecrawler
+    - omgili
+    - omgilibot
+    - perplexitybot
+    - poseidon research crawler
+    - seekrbot
+    - timpibot
+    - youbot
+    sha256: 56d594754a0d2de858bb6593695228045e97cb0b4bbe06a0ddc0beee244c03f1
+- id: hearst-ksbw
+  platform: hearst
+  call_sign: KSBW
+  name: KSBW Action News 8
+  market: Monterey
+  dma: Monterey - Salinas, CA DMA
+  states: [CA]
+  counties:
+    basis: dma
+    source: 'DMA county list: alex-patton/US-TVDMA-BY-COUNTY usa-tvdma-county.csv at commit 7f254b8c1843c62ec976a71c40d366d45f6f29cd
+      (sha256 2e2cd00265a8d704...), names resolved to FIPS with the Census 2025 county Gazetteer; Connecticut
+      via the Census county-to-town crosswalk (snowlight.sources.stations.dma); market ''Monterey - Salinas,
+      CA DMA'''
+    fips: ['06053', 06069, 06087]
+  page_url: null
+  data_url: null
+  export_url: null
+  archive_urls: []
+  poll_minutes: null
+  status: no_endpoint
+  evidence: 'Site ksbw.com: Wikidata official website (P856) of the station''s item, or the research record.
+    Market: the ''Monterey TV'' navbox on the English Wikipedia article ''KSBW'' (read 2026-09-25). Closings
+    page not yet confirmed from Wayback listings. Archive: Wayback CDX: no capture with HTTP 200 of ksbw.com/weather/closings*
+    (2014-01-01 to 2026-09-30; archive-captures run 36092166220). Live read 2026-09-26T18:04:52Z (robots.txt
+    allows it): https://www.ksbw.com/weather/closings answers HTTP 200 (sha256 a74fe68fa7972bdc...), but
+    the closingsData object the page embeds reports {''success'': False, ''code'': 404, ''err'': ''No
+    closings data for station: ksbw''}: Hearst''s closings system holds no list for this station, so it
+    has no closings endpoint.'
+  list_files: []
+  page_check: null
+  robots: []
+- id: hearst-wapt
+  platform: hearst
+  call_sign: WAPT
+  name: WAPT 16
+  market: Jackson
+  dma: Jackson, MS DMA
+  states: [MS]
+  counties:
+    basis: dma
+    source: 'DMA county list: alex-patton/US-TVDMA-BY-COUNTY usa-tvdma-county.csv at commit 7f254b8c1843c62ec976a71c40d366d45f6f29cd
+      (sha256 2e2cd00265a8d704...), names resolved to FIPS with the Census 2025 county Gazetteer; Connecticut
+      via the Census county-to-town crosswalk (snowlight.sources.stations.dma); market ''Jackson, MS DMA'''
+    fips: ['28001', '28007', '28021', '28029', '28037', '28049', '28051', '28053', '28055', '28063', '28065',
+      '28077', '28079', '28085', '28089', '28113', '28121', '28123', '28125', '28127', '28129', '28147',
+      '28149', '28163']
+  page_url: https://www.wapt.com/weather/closings
+  data_url: null
+  export_url: null
+  archive_urls:
+  - https://www.wapt.com/weather/closings
+  poll_minutes: null
+  status: active
+  evidence: 'Site wapt.com: Wikidata official website (P856) of the station''s item, or the research record.
+    Market: the ''Jackson TV'' navbox on the English Wikipedia article ''WAPT'' (read 2026-09-25). Research
+    record wapt (live_lead), closings page https://www.wapt.com/weather/closings. Archive: closings page
+    confirmed by Wayback captures read with the hearst adapter: 2024-01-16 04:55Z https://www.wapt.com/weather/closings
+    (hearst-rows, populated, 40 rows; run 36111087246); 2025-01-20 19:17Z https://www.wapt.com/weather/closings
+    (hearst-rows, populated, 7 rows; run 36094846376); 2026-01-09 20:26Z https://www.wapt.com/weather/closings
+    (hearst-rows, populated, 20 rows; run 36111087246). Wayback CDX: 103 captures with HTTP 200 of http://www.wapt.com/weather/closings,
+    http://www.wapt.com:80/weather/closings, https://www.wapt.com/weather/closings, 2014-01-25 to 2026-05-06.'
+  list_files: []
+  page_check: null
+  robots:
+  - url: https://www.wapt.com/weather/closings
+    checked_at: '2026-09-26T23:08:23Z'
+    state: parsed
+    allowed: true
+    rule: no rule matches
+    crawl_delay: 10.0
+    disallowed_agents:
+    - ahrefsbot
+    - ai2bot
+    - ai2bot-dolma
+    - amazon-qbusiness
+    - amazonbot
+    - anthropic-ai
+    - applebot-extended
+    - archive.org_bot
+    - awariorssbot
+    - awariosmartbot
+    - bytespider
+    - ccbot
+    - chatgpt-user
+    - claude-web
+    - claudebot
+    - cloudflarebrowserrenderingcrawler
+    - cohere-ai
+    - cohere-training-data-crawler
+    - dataforseobot
+    - diffbot
+    - facebookbot
+    - google-extended
+    - gptbot
+    - imagesiftbot
+    - magpie-crawler
+    - meta-externalagent
+    - meta-externalfetcher
+    - meta-webindexer
+    - meta-webindexer/1.1
+    - mycentralaiscraperbot
+    - news-please
+    - nicecrawler
+    - omgili
+    - omgilibot
+    - perplexitybot
+    - poseidon research crawler
+    - seekrbot
+    - timpibot
+    - youbot
+    sha256: b4f947b72b34f6586273ab9e34159040ac843ccb537f644d09dd2193790a71b0
+- id: hearst-wbal
+  platform: hearst
+  call_sign: WBAL
+  name: WBAL-TV 11
+  market: Baltimore
+  dma: Baltimore, MD DMA
+  states: [MD]
+  counties:
+    basis: dma
+    source: 'DMA county list: alex-patton/US-TVDMA-BY-COUNTY usa-tvdma-county.csv at commit 7f254b8c1843c62ec976a71c40d366d45f6f29cd
+      (sha256 2e2cd00265a8d704...), names resolved to FIPS with the Census 2025 county Gazetteer; Connecticut
+      via the Census county-to-town crosswalk (snowlight.sources.stations.dma); market ''Baltimore, MD
+      DMA'''
+    fips: ['24003', '24005', '24011', '24013', '24015', '24019', '24025', '24027', '24029', '24035', '24041',
+      '24510']
+  page_url: https://www.wbaltv.com/weather/closings
+  data_url: null
+  export_url: null
+  archive_urls:
+  - http://www.wbaltv.com/weather/closings
+  - https://www.wbaltv.com/weather/closings
+  poll_minutes: null
+  status: active
+  evidence: 'Site wbaltv.com: Wikidata official website (P856) of the station''s item, or the research
+    record. Market: the ''Baltimore TV'' navbox on the English Wikipedia article ''WBAL-TV'' (read 2026-09-25).
+    Research record wbal (live_lead), closings page https://www.wbaltv.com/weather/closings. Archive:
+    closings page confirmed by Wayback captures read with the hearst adapter: 2014-01-07 09:25Z http://www.wbaltv.com/weather/closings
+    (hearst-ibsys, populated, 17 rows; run 36136683508); 2015-03-26 15:43Z http://www.wbaltv.com/weather/closings
+    (hearst-ibsys, empty, 0 rows; run 36136683508); 2024-01-19 04:22Z https://www.wbaltv.com/weather/closings
+    (hearst-rows, populated, 153 rows; run 36111087246); 2025-02-12 07:38Z https://www.wbaltv.com/weather/closings
+    (hearst-rows, populated, 183 rows; run 36111087246); 2026-01-27 21:19Z https://www.wbaltv.com/weather/closings
+    (hearst-rows, populated, 59 rows; run 36094846376). Wayback CDX: 438 captures with HTTP 200 of http://www.wbaltv.com/weather/closings,
+    http://www.wbaltv.com/weather/closingssignup, http://www.wbaltv.com:80/weather/closings and other
+    forms, 2014-01-04 to 2026-07-02.'
+  list_files: []
+  page_check: null
+  robots:
+  - url: https://www.wbaltv.com/weather/closings
+    checked_at: '2026-09-26T23:08:23Z'
+    state: parsed
+    allowed: true
+    rule: no rule matches
+    crawl_delay: 10.0
+    disallowed_agents:
+    - ahrefsbot
+    - ai2bot
+    - ai2bot-dolma
+    - amazon-qbusiness
+    - amazonbot
+    - anthropic-ai
+    - applebot-extended
+    - archive.org_bot
+    - awariorssbot
+    - awariosmartbot
+    - bytespider
+    - ccbot
+    - chatgpt-user
+    - claude-web
+    - claudebot
+    - cloudflarebrowserrenderingcrawler
+    - cohere-ai
+    - cohere-training-data-crawler
+    - dataforseobot
+    - diffbot
+    - facebookbot
+    - google-extended
+    - gptbot
+    - imagesiftbot
+    - magpie-crawler
+    - meta-externalagent
+    - meta-externalfetcher
+    - meta-webindexer
+    - meta-webindexer/1.1
+    - mycentralaiscraperbot
+    - news-please
+    - nicecrawler
+    - omgili
+    - omgilibot
+    - perplexitybot
+    - poseidon research crawler
+    - seekrbot
+    - timpibot
+    - youbot
+    sha256: 5920adf8d65d2d5a1895b0b8c33063f212de605a1f10f1a7e506552f2bf75593
+- id: hearst-wbbh
+  platform: hearst
+  call_sign: WBBH
+  name: WBBH NBC2 (with WZVN ABC7)
+  market: SWFL
+  dma: Ft. Myers - Naples, FL DMA
+  states: [FL]
+  counties: null
+  page_url: null
+  data_url: null
+  export_url: null
+  archive_urls: []
+  poll_minutes: null
+  status: no_endpoint
+  evidence: 'Not in the research report. The English Wikipedia navbox Template:Hearst (read 2026-09-25T07:55:50Z,
+    sha256 2c6b0b2181f0a5ea...) lists it under Hearst Television; its English Wikipedia article ''WBBH-TV''
+    (read 2026-09-25T07:57Z) names the owner, carries the ''SWFL TV'' navbox, and its infobox names the
+    site gulfcoastnewsnow.com. No closings endpoint is confirmed. Archive: Wayback CDX: no capture with
+    HTTP 200 of gulfcoastnewsnow.com/weather/closings* (2014-01-01 to 2026-09-30; archive-captures run
+    36111087246). Live read 2026-09-26T18:05:02Z (robots.txt allows it): https://www.gulfcoastnewsnow.com/weather/closings
+    answers HTTP 200 (sha256 df37fd9029e7e446...), but the closingsData object the page embeds reports
+    {''success'': False, ''code'': 404, ''err'': ''No closings data for station: wbbh''}: Hearst''s closings
+    system holds no list for this station, so it has no closings endpoint.'
+  list_files: []
+  page_check: null
+  robots: []
+- id: hearst-wcvb
+  platform: hearst
+  call_sign: WCVB
+  name: WCVB NewsCenter 5
+  market: Boston
+  dma: Boston, MA - NH DMA
+  states: [MA, NH, VT]
+  counties:
+    basis: dma
+    source: 'DMA county list: alex-patton/US-TVDMA-BY-COUNTY usa-tvdma-county.csv at commit 7f254b8c1843c62ec976a71c40d366d45f6f29cd
+      (sha256 2e2cd00265a8d704...), names resolved to FIPS with the Census 2025 county Gazetteer; Connecticut
+      via the Census county-to-town crosswalk (snowlight.sources.stations.dma); market ''Boston, MA -
+      NH DMA'''
+    fips: ['25001', '25007', '25009', '25017', '25019', '25021', '25023', '25025', '25027', '33001', '33005',
+      '33011', '33013', '33015', '33017', '50025']
+  page_url: https://www.wcvb.com/weather/closings
+  data_url: null
+  export_url: null
+  archive_urls:
+  - http://www.wcvb.com/weather/closings
+  - https://www.wcvb.com/weather/closings
+  poll_minutes: null
+  status: active
+  evidence: 'Site wcvb.com: Wikidata official website (P856) of the station''s item, or the research record.
+    Market: the ''Boston TV'' navbox on the English Wikipedia article ''WCVB-TV'' (read 2026-09-25). Research
+    record wcvb (live_lead), closings page https://www.wcvb.com/weather/closings. Page URL confirmed by
+    the Wayback CDX listing of www.wcvb.com/weather/closings* (archive-captures run 1, 2023-11-01 to 2026-03-31:
+    136 captures with HTTP 200 among them). Archive: closings page confirmed by Wayback captures read
+    with the hearst adapter: 2014-01-04 00:47Z http://www.wcvb.com/weather/closings (hearst-ibsys, populated,
+    18 rows; run 36136683508); 2015-02-01 19:38Z http://www.wcvb.com/weather/closings (hearst-ibsys, populated,
+    23 rows; run 36136683508); 2016-12-29 04:31Z http://www.wcvb.com/weather/closings (hearst-rows, populated,
+    1 rows; run 36136683508); 2024-02-13 17:02Z https://www.wcvb.com/weather/closings (hearst-rows, populated,
+    386 rows; run 36111087246); 2025-02-09 15:19Z https://www.wcvb.com/weather/closings (hearst-rows,
+    populated, 42 rows; run 36111087246); 2026-01-26 14:21Z https://www.wcvb.com/weather/closings (hearst-rows,
+    populated, 508 rows; run 36092979109); 2026-02-23 15:01Z https://www.wcvb.com/weather/closings (hearst-next,
+    populated, 492 rows; run 36111087246). Wayback CDX: 666 captures with HTTP 200 of http://www.wcvb.com/weather/closings,
+    http://www.wcvb.com/weather/closingssignup, http://www.wcvb.com:80/weather/closings and other forms,
+    2014-01-04 to 2026-05-07.'
+  list_files: []
+  page_check: null
+  robots:
+  - url: https://www.wcvb.com/weather/closings
+    checked_at: '2026-09-26T23:08:23Z'
+    state: parsed
+    allowed: true
+    rule: no rule matches
+    crawl_delay: 10.0
+    disallowed_agents:
+    - ahrefsbot
+    - ai2bot
+    - ai2bot-dolma
+    - amazon-qbusiness
+    - amazonbot
+    - anthropic-ai
+    - applebot-extended
+    - archive.org_bot
+    - awariorssbot
+    - awariosmartbot
+    - bytespider
+    - ccbot
+    - chatgpt-user
+    - claude-web
+    - claudebot
+    - cloudflarebrowserrenderingcrawler
+    - cohere-ai
+    - cohere-training-data-crawler
+    - dataforseobot
+    - diffbot
+    - facebookbot
+    - google-extended
+    - gptbot
+    - imagesiftbot
+    - magpie-crawler
+    - meta-externalagent
+    - meta-externalfetcher
+    - meta-webindexer
+    - meta-webindexer/1.1
+    - mycentralaiscraperbot
+    - news-please
+    - nicecrawler
+    - omgili
+    - omgilibot
+    - perplexitybot
+    - poseidon research crawler
+    - seekrbot
+    - timpibot
+    - youbot
+    sha256: 77c3f3b6ccf4cfea1c020711721b6296d5ff1a2c0b83df1e4f45f619f065e869
+- id: hearst-wdsu
+  platform: hearst
+  call_sign: WDSU
+  name: WDSU News 6
+  market: New Orleans
+  dma: New Orleans, LA - MS DMA
+  states: [LA, MS]
+  counties:
+    basis: dma
+    source: 'DMA county list: alex-patton/US-TVDMA-BY-COUNTY usa-tvdma-county.csv at commit 7f254b8c1843c62ec976a71c40d366d45f6f29cd
+      (sha256 2e2cd00265a8d704...), names resolved to FIPS with the Census 2025 county Gazetteer; Connecticut
+      via the Census county-to-town crosswalk (snowlight.sources.stations.dma); market ''New Orleans,
+      LA - MS DMA'''
+    fips: ['22051', '22057', '22071', '22075', '22087', '22089', '22093', '22095', '22103', '22105', '22109',
+      '22117', '28045', '28109']
+  page_url: null
+  data_url: null
+  export_url: null
+  archive_urls:
+  - http://www.wdsu.com/weather/closings
+  poll_minutes: null
+  status: no_endpoint
+  evidence: 'Site wdsu.com: Wikidata official website (P856) of the station''s item, or the research record.
+    Market: the ''New Orleans TV'' navbox on the English Wikipedia article ''WDSU'' (read 2026-09-25).
+    Research record wdsu (url_unknown), closings page None. Archive: closings page confirmed by Wayback
+    captures read with the hearst adapter: 2017-01-08 05:34Z http://www.wdsu.com/weather/closings (hearst-rows,
+    empty, 0 rows; run 36094846376). The archive holds no capture of this page after 2017, so its current
+    address is not confirmed and it is kept only as an archive URL. Wayback CDX: 23 captures with HTTP
+    200 of http://www.wdsu.com/weather/closings, http://www.wdsu.com:80/weather/closings, 2014-03-07 to
+    2017-01-08. Live read 2026-09-26T18:05:12Z (robots.txt allows it): https://www.wdsu.com/weather/closings
+    answers HTTP 200 (sha256 e34f9d7f7fdb6396...), but the closingsData object the page embeds reports
+    {''success'': False, ''code'': 404, ''err'': ''No closings data for station: wdsu''}: Hearst''s closings
+    system holds no list for this station, so it has no closings endpoint.'
+  list_files: []
+  page_check: null
+  robots: []
+- id: hearst-wesh
+  platform: hearst
+  call_sign: WESH
+  name: WESH 2
+  market: Orlando
+  dma: Orlando - Daytona Beach - Melbourne, FL DMA
+  states: [FL]
+  counties:
+    basis: dma
+    source: 'DMA county list: alex-patton/US-TVDMA-BY-COUNTY usa-tvdma-county.csv at commit 7f254b8c1843c62ec976a71c40d366d45f6f29cd
+      (sha256 2e2cd00265a8d704...), names resolved to FIPS with the Census 2025 county Gazetteer; Connecticut
+      via the Census county-to-town crosswalk (snowlight.sources.stations.dma); market ''Orlando - Daytona
+      Beach - Melbourne, FL DMA'''
+    fips: ['12009', '12035', '12069', '12083', '12095', '12097', '12117', '12119', '12127']
+  page_url: null
+  data_url: null
+  export_url: null
+  archive_urls:
+  - http://www.wesh.com/weather/closings
+  poll_minutes: null
+  status: no_endpoint
+  evidence: 'Site wesh.com: Wikidata official website (P856) of the station''s item, or the research record.
+    Market: the ''Orlando TV'' navbox on the English Wikipedia article ''WESH'' (read 2026-09-25). Archive:
+    closings page confirmed by Wayback captures read with the hearst adapter: 2017-07-15 20:53Z http://www.wesh.com/weather/closings
+    (hearst-rows, empty, 0 rows; run 36094846376). The archive holds no capture of this page after 2017,
+    so its current address is not confirmed and it is kept only as an archive URL. Wayback CDX: 1 captures
+    with HTTP 200 of http://www.wesh.com/weather/closings, 2017-07-15 to 2017-07-15. Live read 2026-09-26T18:05:23Z
+    (robots.txt allows it): https://www.wesh.com/weather/closings answers HTTP 200 (sha256 71aec088f333fa8b...),
+    but the closingsData object the page embeds reports {''success'': False, ''code'': 404, ''err'': ''No
+    closings data for station: wesh''}: Hearst''s closings system holds no list for this station, so it
+    has no closings endpoint.'
+  list_files: []
+  page_check: null
+  robots: []
+- id: hearst-wgal
+  platform: hearst
+  call_sign: WGAL
+  name: WGAL News 8
+  market: Harrisburg/Lancaster/York
+  dma: Harrisburg - Lancaster - Lebanon - York, PA DMA
+  states: [PA]
+  counties:
+    basis: dma
+    source: 'DMA county list: alex-patton/US-TVDMA-BY-COUNTY usa-tvdma-county.csv at commit 7f254b8c1843c62ec976a71c40d366d45f6f29cd
+      (sha256 2e2cd00265a8d704...), names resolved to FIPS with the Census 2025 county Gazetteer; Connecticut
+      via the Census county-to-town crosswalk (snowlight.sources.stations.dma); market ''Harrisburg -
+      Lancaster - Lebanon - York, PA DMA'''
+    fips: ['42001', '42041', '42043', '42067', '42071', '42075', '42087', '42099', '42133']
+  page_url: https://www.wgal.com/weather/closings
+  data_url: null
+  export_url: null
+  archive_urls:
+  - https://www.wgal.com/weather/closings
+  poll_minutes: null
+  status: active
+  evidence: 'Site wgal.com: Wikidata official website (P856) of the station''s item, or the research record.
+    Market: the ''Harrisburg/Lancaster/York TV'' navbox on the English Wikipedia article ''WGAL'' (read
+    2026-09-25). Research record wgal (live_lead), closings page https://www.wgal.com/weather/closings.
+    Page URL confirmed by the Wayback CDX listing of www.wgal.com/weather/closings* (archive-captures
+    run 1, 2023-11-01 to 2026-03-31: 62 captures with HTTP 200 among them). Archive: closings page confirmed
+    by Wayback captures read with the hearst adapter: 2024-01-19 04:08Z https://www.wgal.com/weather/closings
+    (hearst-rows, populated, 221 rows; run 36111087246); 2025-01-23 20:46Z https://www.wgal.com/weather/closings
+    (hearst-rows, populated, 9 rows; run 36092979109); 2025-03-21 13:12Z https://www.wgal.com/weather/closings
+    (hearst-rows, populated, 1 rows; run 36111087246); 2026-01-25 02:06Z https://www.wgal.com/weather/closings
+    (hearst-rows, populated, 381 rows; run 36092979109); 2026-01-26 19:38Z https://www.wgal.com/weather/closings
+    (hearst-rows, populated, 466 rows; run 36111087246). Wayback CDX: 355 captures with HTTP 200 of http://www.wgal.com/weather/closings,
+    http://www.wgal.com/weather/closingssignup, http://www.wgal.com:80/weather/closings and other forms,
+    2014-01-04 to 2026-05-28.'
+  list_files: []
+  page_check: null
+  robots:
+  - url: https://www.wgal.com/weather/closings
+    checked_at: '2026-09-26T23:08:23Z'
+    state: parsed
+    allowed: true
+    rule: no rule matches
+    crawl_delay: 10.0
+    disallowed_agents:
+    - ahrefsbot
+    - ai2bot
+    - ai2bot-dolma
+    - amazon-qbusiness
+    - amazonbot
+    - anthropic-ai
+    - applebot-extended
+    - archive.org_bot
+    - awariorssbot
+    - awariosmartbot
+    - bytespider
+    - ccbot
+    - chatgpt-user
+    - claude-web
+    - claudebot
+    - cloudflarebrowserrenderingcrawler
+    - cohere-ai
+    - cohere-training-data-crawler
+    - dataforseobot
+    - diffbot
+    - facebookbot
+    - google-extended
+    - gptbot
+    - imagesiftbot
+    - magpie-crawler
+    - meta-externalagent
+    - meta-externalfetcher
+    - meta-webindexer
+    - meta-webindexer/1.1
+    - mycentralaiscraperbot
+    - news-please
+    - nicecrawler
+    - omgili
+    - omgilibot
+    - perplexitybot
+    - poseidon research crawler
+    - seekrbot
+    - timpibot
+    - youbot
+    sha256: 1407b50c0f3d0911c45e88af7752255bd56a9e5417898acb6241806c1f3ac639
+- id: hearst-wisn
+  platform: hearst
+  call_sign: WISN
+  name: WISN 12
+  market: Milwaukee
+  dma: Milwaukee, WI DMA
+  states: [WI]
+  counties:
+    basis: dma
+    source: 'DMA county list: alex-patton/US-TVDMA-BY-COUNTY usa-tvdma-county.csv at commit 7f254b8c1843c62ec976a71c40d366d45f6f29cd
+      (sha256 2e2cd00265a8d704...), names resolved to FIPS with the Census 2025 county Gazetteer; Connecticut
+      via the Census county-to-town crosswalk (snowlight.sources.stations.dma); market ''Milwaukee, WI
+      DMA'''
+    fips: ['55027', '55055', '55059', '55079', '55089', '55101', '55117', '55127', '55131', '55133']
+  page_url: https://www.wisn.com/weather/closings
+  data_url: null
+  export_url: null
+  archive_urls:
+  - https://www.wisn.com/weather/closings
+  poll_minutes: null
+  status: active
+  evidence: 'Site wisn.com: Wikidata official website (P856) of the station''s item, or the research record.
+    Market: the ''Milwaukee TV'' navbox on the English Wikipedia article ''WISN-TV'' (read 2026-09-25).
+    Research record wisn (live_lead), closings page https://www.wisn.com/weather/closings. Archive: closings
+    page confirmed by Wayback captures read with the hearst adapter: 2024-01-14 05:42Z https://www.wisn.com/weather/closings
+    (hearst-rows, populated, 37 rows; run 36094846376); 2025-01-19 10:41Z https://www.wisn.com/weather/closings
+    (hearst-rows, populated, 5 rows; run 36111087246); 2026-03-10 14:05Z https://www.wisn.com/weather/closings
+    (hearst-next, empty, 0 rows; run 36111087246). Wayback CDX: 259 captures with HTTP 200 of http://www.wisn.com/weather/closings,
+    http://www.wisn.com/weather/closingssignup, http://www.wisn.com:80/weather/closings and other forms,
+    2014-01-25 to 2026-07-27.'
+  list_files: []
+  page_check: null
+  robots:
+  - url: https://www.wisn.com/weather/closings
+    checked_at: '2026-09-26T23:08:23Z'
+    state: parsed
+    allowed: true
+    rule: no rule matches
+    crawl_delay: 10.0
+    disallowed_agents:
+    - ahrefsbot
+    - ai2bot
+    - ai2bot-dolma
+    - amazon-qbusiness
+    - amazonbot
+    - anthropic-ai
+    - applebot-extended
+    - archive.org_bot
+    - awariorssbot
+    - awariosmartbot
+    - bytespider
+    - ccbot
+    - chatgpt-user
+    - claude-web
+    - claudebot
+    - cloudflarebrowserrenderingcrawler
+    - cohere-ai
+    - cohere-training-data-crawler
+    - dataforseobot
+    - diffbot
+    - facebookbot
+    - google-extended
+    - gptbot
+    - imagesiftbot
+    - magpie-crawler
+    - meta-externalagent
+    - meta-externalfetcher
+    - meta-webindexer
+    - meta-webindexer/1.1
+    - mycentralaiscraperbot
+    - news-please
+    - nicecrawler
+    - omgili
+    - omgilibot
+    - perplexitybot
+    - poseidon research crawler
+    - seekrbot
+    - timpibot
+    - youbot
+    sha256: eee7a3b4b4771688eec04880264e6034af339062f4f0d6c7e33e0091c9e088c8
+- id: hearst-wjcl
+  platform: hearst
+  call_sign: WJCL
+  name: WJCL News 22
+  market: Savannah
+  dma: Savannah, GA - SC DMA
+  states: [GA, SC]
+  counties:
+    basis: dma
+    source: 'DMA county list: alex-patton/US-TVDMA-BY-COUNTY usa-tvdma-county.csv at commit 7f254b8c1843c62ec976a71c40d366d45f6f29cd
+      (sha256 2e2cd00265a8d704...), names resolved to FIPS with the Census 2025 county Gazetteer; Connecticut
+      via the Census county-to-town crosswalk (snowlight.sources.stations.dma); market ''Savannah, GA
+      - SC DMA'''
+    fips: ['13001', '13005', '13029', '13031', '13043', '13051', '13103', '13109', '13161', '13179', '13183',
+      '13191', '13209', '13251', '13267', '13279', '13305', '45013', '45049', '45053']
+  page_url: null
+  data_url: null
+  export_url: null
+  archive_urls: []
+  poll_minutes: null
+  status: no_endpoint
+  evidence: 'Site wjcl.com: Wikidata official website (P856) of the station''s item, or the research record.
+    Market: the ''Savannah TV'' navbox on the English Wikipedia article ''WJCL (TV)'' (read 2026-09-25).
+    Closings page not yet confirmed from Wayback listings. Archive: Wayback CDX: no capture with HTTP
+    200 of wjcl.com/weather/closings* (2014-01-01 to 2026-09-30; archive-captures run 36092166220). Live
+    read 2026-09-26T18:05:33Z (robots.txt allows it): https://www.wjcl.com/weather/closings answers HTTP
+    200 (sha256 b80dd95d6ed057d7...), but the closingsData object the page embeds reports {''success'':
+    False, ''code'': 404, ''err'': ''No closings data for station: wjcl''}: Hearst''s closings system
+    holds no list for this station, so it has no closings endpoint.'
+  list_files: []
+  page_check: null
+  robots: []
+- id: hearst-wlky
+  platform: hearst
+  call_sign: WLKY
+  name: WLKY News
+  market: Louisville
+  dma: Louisville, KY - IN DMA
+  states: [IN, KY]
+  counties:
+    basis: dma
+    source: 'DMA county list: alex-patton/US-TVDMA-BY-COUNTY usa-tvdma-county.csv at commit 7f254b8c1843c62ec976a71c40d366d45f6f29cd
+      (sha256 2e2cd00265a8d704...), names resolved to FIPS with the Census 2025 county Gazetteer; Connecticut
+      via the Census county-to-town crosswalk (snowlight.sources.stations.dma); market ''Louisville, KY
+      - IN DMA'''
+    fips: ['18019', '18025', '18043', '18061', '18071', '18077', '18079', '18117', '18143', '18175', '21027',
+      '21029', '21041', '21085', '21087', '21093', '21103', '21111', '21123', '21155', '21163', '21179',
+      '21185', '21211', '21215', '21217', '21223', '21229']
+  page_url: https://www.wlky.com/weather/closings
+  data_url: null
+  export_url: null
+  archive_urls:
+  - https://www.wlky.com/weather/closings
+  poll_minutes: null
+  status: active
+  evidence: 'Site wlky.com: Wikidata official website (P856) of the station''s item, or the research record.
+    Market: the ''Louisville TV'' navbox on the English Wikipedia article ''WLKY'' (read 2026-09-25).
+    Research record wlky (live_lead), closings page https://www.wlky.com/weather/closings. Archive: closings
+    page confirmed by Wayback captures read with the hearst adapter: 2024-01-20 00:55Z https://www.wlky.com/weather/closings
+    (hearst-rows, populated, 10 rows; run 36111087246); 2025-01-15 18:24Z https://www.wlky.com/weather/closings
+    (hearst-rows, populated, 2 rows; run 36094846376); 2026-03-03 00:29Z https://www.wlky.com/weather/closings
+    (hearst-rows, empty, 0 rows; run 36111087246). Wayback CDX: 337 captures with HTTP 200 of http://www.wlky.com/weather/closings,
+    http://www.wlky.com:80/weather/closings, https://www.wlky.com/weather/closings, 2014-01-25 to 2026-04-24.'
+  list_files: []
+  page_check: null
+  robots:
+  - url: https://www.wlky.com/weather/closings
+    checked_at: '2026-09-26T23:08:23Z'
+    state: parsed
+    allowed: true
+    rule: no rule matches
+    crawl_delay: 10.0
+    disallowed_agents:
+    - ahrefsbot
+    - ai2bot
+    - ai2bot-dolma
+    - amazon-qbusiness
+    - amazonbot
+    - anthropic-ai
+    - applebot-extended
+    - archive.org_bot
+    - awariorssbot
+    - awariosmartbot
+    - bytespider
+    - ccbot
+    - chatgpt-user
+    - claude-web
+    - claudebot
+    - cloudflarebrowserrenderingcrawler
+    - cohere-ai
+    - cohere-training-data-crawler
+    - dataforseobot
+    - diffbot
+    - facebookbot
+    - google-extended
+    - gptbot
+    - imagesiftbot
+    - magpie-crawler
+    - meta-externalagent
+    - meta-externalfetcher
+    - meta-webindexer
+    - meta-webindexer/1.1
+    - mycentralaiscraperbot
+    - news-please
+    - nicecrawler
+    - omgili
+    - omgilibot
+    - perplexitybot
+    - poseidon research crawler
+    - seekrbot
+    - timpibot
+    - youbot
+    sha256: e014ac6ddcbe88bff58ce712c3ebc1b69fa03c4997364753fbdac72b9d2cc81c
+- id: hearst-wlwt
+  platform: hearst
+  call_sign: WLWT
+  name: WLWT News 5
+  market: Cincy
+  dma: Cincinnati, OH -IN - KY DMA
+  states: [IN, KY, OH]
+  counties:
+    basis: dma
+    source: 'DMA county list: alex-patton/US-TVDMA-BY-COUNTY usa-tvdma-county.csv at commit 7f254b8c1843c62ec976a71c40d366d45f6f29cd
+      (sha256 2e2cd00265a8d704...), names resolved to FIPS with the Census 2025 county Gazetteer; Connecticut
+      via the Census county-to-town crosswalk (snowlight.sources.stations.dma); market ''Cincinnati, OH
+      -IN - KY DMA'''
+    fips: ['18029', '18047', '18115', '18137', '18155', '18161', '21015', '21023', '21037', '21077', '21081',
+      '21117', '21161', '21187', '21191', '21201', '39001', '39015', '39017', '39025', '39027', '39061',
+      '39071', '39165']
+  page_url: https://www.wlwt.com/weather/closings
+  data_url: null
+  export_url: null
+  archive_urls:
+  - http://www.wlwt.com/weather/closings
+  - https://www.wlwt.com/weather/closings
+  poll_minutes: null
+  status: active
+  evidence: 'Site wlwt.com: Wikidata official website (P856) of the station''s item, or the research record.
+    Market: the ''Cincy TV'' navbox on the English Wikipedia article ''WLWT'' (read 2026-09-25). Research
+    record wlwt (live_lead), closings page https://www.wlwt.com/weather/closings. Archive: closings page
+    confirmed by Wayback captures read with the hearst adapter: 2015-02-18 15:05Z http://www.wlwt.com/weather/closings
+    (hearst-ibsys, populated, 426 rows; run 36136683508); 2024-01-21 04:30Z https://www.wlwt.com/weather/closings
+    (hearst-rows, populated, 5 rows; run 36111087246); 2025-01-05 14:20Z https://www.wlwt.com/weather/closings
+    (hearst-rows, populated, 58 rows; run 36094846376); 2026-01-15 16:23Z https://www.wlwt.com/weather/closings
+    (hearst-rows, populated, 4 rows; run 36111087246). Wayback CDX: 310 captures with HTTP 200 of http://www.wlwt.com/weather/closings,
+    http://www.wlwt.com:80/weather/closings, https://www.wlwt.com/weather/closings, 2014-01-04 to 2026-04-16.'
+  list_files: []
+  page_check: null
+  robots:
+  - url: https://www.wlwt.com/weather/closings
+    checked_at: '2026-09-26T23:08:24Z'
+    state: parsed
+    allowed: true
+    rule: no rule matches
+    crawl_delay: 10.0
+    disallowed_agents:
+    - ahrefsbot
+    - ai2bot
+    - ai2bot-dolma
+    - amazon-qbusiness
+    - amazonbot
+    - anthropic-ai
+    - applebot-extended
+    - archive.org_bot
+    - awariorssbot
+    - awariosmartbot
+    - bytespider
+    - ccbot
+    - chatgpt-user
+    - claude-web
+    - claudebot
+    - cloudflarebrowserrenderingcrawler
+    - cohere-ai
+    - cohere-training-data-crawler
+    - dataforseobot
+    - diffbot
+    - facebookbot
+    - google-extended
+    - gptbot
+    - imagesiftbot
+    - magpie-crawler
+    - meta-externalagent
+    - meta-externalfetcher
+    - meta-webindexer
+    - meta-webindexer/1.1
+    - mycentralaiscraperbot
+    - news-please
+    - nicecrawler
+    - omgili
+    - omgilibot
+    - perplexitybot
+    - poseidon research crawler
+    - seekrbot
+    - timpibot
+    - youbot
+    sha256: 8e82d5fa63942766369117390906517c0dc4bad33ba5f8613d65882d25061120
+- id: hearst-wmor
+  platform: hearst
+  call_sign: WMOR
+  name: WMOR-TV
+  market: Tampa Bay
+  dma: Tampa - St. Petersburg - Sarasota, FL DMA
+  states: [FL]
+  counties: null
+  page_url: null
+  data_url: null
+  export_url: null
+  archive_urls: []
+  poll_minutes: null
+  status: no_endpoint
+  evidence: Not in the research report. The English Wikipedia navbox Template:Hearst (read 2026-09-25T07:55:50Z,
+    sha256 2c6b0b2181f0a5ea...) lists it under Hearst Television; its English Wikipedia article 'WMOR-TV'
+    (read 2026-09-25T07:57Z) names the owner, carries the 'Tampa Bay TV' navbox, and its infobox names
+    no news site. No closings endpoint is confirmed.
+  list_files: []
+  page_check: null
+  robots: []
+- id: hearst-wmtw
+  platform: hearst
+  call_sign: WMTW
+  name: WMTW News 8
+  market: Portland Maine
+  dma: Portland - Auburn, ME - NH - VT DMA
+  states: [ME, NH]
+  counties:
+    basis: dma
+    source: 'DMA county list: alex-patton/US-TVDMA-BY-COUNTY usa-tvdma-county.csv at commit 7f254b8c1843c62ec976a71c40d366d45f6f29cd
+      (sha256 2e2cd00265a8d704...), names resolved to FIPS with the Census 2025 county Gazetteer; Connecticut
+      via the Census county-to-town crosswalk (snowlight.sources.stations.dma); market ''Portland - Auburn,
+      ME - NH - VT DMA'''
+    fips: ['23001', '23005', '23007', '23011', '23013', '23015', '23017', '23023', '23031', '33003', '33007']
+  page_url: https://www.wmtw.com/weather/closings
+  data_url: null
+  export_url: null
+  archive_urls:
+  - https://www.wmtw.com/weather/closings
+  poll_minutes: null
+  status: active
+  evidence: 'Site wmtw.com: Wikidata official website (P856) of the station''s item, or the research record.
+    Market: the ''Portland Maine TV'' navbox on the English Wikipedia article ''WMTW (TV)'' (read 2026-09-25).
+    Archive: closings page confirmed by Wayback captures read with the hearst adapter: 2024-01-24 01:54Z
+    https://www.wmtw.com/weather/closings (hearst-rows, populated, 1 rows; run 36094846376); 2024-12-24
+    02:27Z https://www.wmtw.com/weather/closings (hearst-rows, populated, 5 rows; run 36111087246); 2026-02-23
+    15:02Z https://www.wmtw.com/weather/closings (hearst-next, populated, 350 rows; run 36111087246).
+    Wayback CDX: 416 captures with HTTP 200 of http://www.wmtw.com/weather/closings, http://www.wmtw.com:80/weather/closings,
+    http://www.wmtw.com:80/weather/closingssignup/-/9237094/-/tff0np/-/index.html and other forms, 2014-01-19
+    to 2026-03-21.'
+  list_files: []
+  page_check: null
+  robots:
+  - url: https://www.wmtw.com/weather/closings
+    checked_at: '2026-09-26T23:08:24Z'
+    state: parsed
+    allowed: true
+    rule: no rule matches
+    crawl_delay: 10.0
+    disallowed_agents:
+    - ahrefsbot
+    - ai2bot
+    - ai2bot-dolma
+    - amazon-qbusiness
+    - amazonbot
+    - anthropic-ai
+    - applebot-extended
+    - archive.org_bot
+    - awariorssbot
+    - awariosmartbot
+    - bytespider
+    - ccbot
+    - chatgpt-user
+    - claude-web
+    - claudebot
+    - cloudflarebrowserrenderingcrawler
+    - cohere-ai
+    - cohere-training-data-crawler
+    - dataforseobot
+    - diffbot
+    - facebookbot
+    - google-extended
+    - gptbot
+    - imagesiftbot
+    - magpie-crawler
+    - meta-externalagent
+    - meta-externalfetcher
+    - meta-webindexer
+    - meta-webindexer/1.1
+    - mycentralaiscraperbot
+    - news-please
+    - nicecrawler
+    - omgili
+    - omgilibot
+    - perplexitybot
+    - poseidon research crawler
+    - seekrbot
+    - timpibot
+    - youbot
+    sha256: ab2c0f157fa1f3ec9eba175c61a2b73b11438fad059585e5ce9509f85a988906
+- id: hearst-wmur
+  platform: hearst
+  call_sign: WMUR
+  name: WMUR-TV News 9
+  market: Boston
+  dma: Boston, MA - NH DMA
+  states: [MA, NH, VT]
+  counties:
+    basis: dma
+    source: 'DMA county list: alex-patton/US-TVDMA-BY-COUNTY usa-tvdma-county.csv at commit 7f254b8c1843c62ec976a71c40d366d45f6f29cd
+      (sha256 2e2cd00265a8d704...), names resolved to FIPS with the Census 2025 county Gazetteer; Connecticut
+      via the Census county-to-town crosswalk (snowlight.sources.stations.dma); market ''Boston, MA -
+      NH DMA'''
+    fips: ['25001', '25007', '25009', '25017', '25019', '25021', '25023', '25025', '25027', '33001', '33005',
+      '33011', '33013', '33015', '33017', '50025']
+  page_url: https://www.wmur.com/weather/closings
+  data_url: null
+  export_url: null
+  archive_urls:
+  - http://www.wmur.com/weather/closings
+  - https://www.wmur.com/weather/closings
+  poll_minutes: null
+  status: active
+  evidence: 'Site wmur.com: Wikidata official website (P856) of the station''s item, or the research record.
+    Market: the ''Boston TV'' navbox on the English Wikipedia article ''WMUR-TV'' (read 2026-09-25). Research
+    record wmur (live_lead), closings page https://www.wmur.com/weather/closings. Archive: closings page
+    confirmed by Wayback captures read with the hearst adapter: 2015-02-02 16:25Z http://www.wmur.com/weather/closings
+    (hearst-ibsys, populated, 630 rows; run 36136683508); 2024-02-13 13:14Z https://www.wmur.com/weather/closings
+    (hearst-rows, populated, 77 rows; run 36094846376); 2025-02-06 13:01Z https://www.wmur.com/weather/closings
+    (hearst-rows, populated, 768 rows; run 36111087246); 2026-03-06 14:45Z https://www.wmur.com/weather/closings
+    (hearst-next, populated, 573 rows; run 36111087246). Wayback CDX: 1009 captures with HTTP 200 of http://www.wmur.com/weather/closings,
+    http://www.wmur.com:80/weather/closings, https://www.wmur.com/weather/closings, 2014-01-04 to 2026-07-26.'
+  list_files: []
+  page_check: null
+  robots:
+  - url: https://www.wmur.com/weather/closings
+    checked_at: '2026-09-26T23:08:24Z'
+    state: parsed
+    allowed: true
+    rule: no rule matches
+    crawl_delay: 10.0
+    disallowed_agents:
+    - ahrefsbot
+    - ai2bot
+    - ai2bot-dolma
+    - amazon-qbusiness
+    - amazonbot
+    - anthropic-ai
+    - applebot-extended
+    - archive.org_bot
+    - awariorssbot
+    - awariosmartbot
+    - bytespider
+    - ccbot
+    - chatgpt-user
+    - claude-web
+    - claudebot
+    - cloudflarebrowserrenderingcrawler
+    - cohere-ai
+    - cohere-training-data-crawler
+    - dataforseobot
+    - diffbot
+    - facebookbot
+    - google-extended
+    - gptbot
+    - imagesiftbot
+    - magpie-crawler
+    - meta-externalagent
+    - meta-externalfetcher
+    - meta-webindexer
+    - meta-webindexer/1.1
+    - mycentralaiscraperbot
+    - news-please
+    - nicecrawler
+    - omgili
+    - omgilibot
+    - perplexitybot
+    - poseidon research crawler
+    - seekrbot
+    - timpibot
+    - youbot
+    sha256: d12efefea2a3887c2dc8bf9e1bf33cf161a2c133fa5b2f47c5c6e8ed0f15c98b
+- id: hearst-wpbf
+  platform: hearst
+  call_sign: WPBF
+  name: WPBF 25
+  market: West Palm Beach
+  dma: West Palm Beach - Ft. Pierce, FL DMA
+  states: [FL]
+  counties:
+    basis: dma
+    source: 'DMA county list: alex-patton/US-TVDMA-BY-COUNTY usa-tvdma-county.csv at commit 7f254b8c1843c62ec976a71c40d366d45f6f29cd
+      (sha256 2e2cd00265a8d704...), names resolved to FIPS with the Census 2025 county Gazetteer; Connecticut
+      via the Census county-to-town crosswalk (snowlight.sources.stations.dma); market ''West Palm Beach
+      - Ft. Pierce, FL DMA'''
+    fips: ['12061', '12085', '12093', '12099', '12111']
+  page_url: null
+  data_url: null
+  export_url: null
+  archive_urls: []
+  poll_minutes: null
+  status: no_endpoint
+  evidence: 'Site wpbf.com: Wikidata official website (P856) of the station''s item, or the research record.
+    Market: the ''West Palm Beach TV'' navbox on the English Wikipedia article ''WPBF'' (read 2026-09-25).
+    Closings page not yet confirmed from Wayback listings. Archive: Wayback CDX: no capture with HTTP
+    200 of wpbf.com/weather/closings* (2014-01-01 to 2026-09-30; archive-captures run 36092166220). Live
+    read 2026-09-26T18:05:43Z (robots.txt allows it): https://www.wpbf.com/weather/closings answers HTTP
+    200 (sha256 30a91c580e6741e2...), but the closingsData object the page embeds reports {''success'':
+    False, ''code'': 404, ''err'': ''No closings data for station: wpbf''}: Hearst''s closings system
+    holds no list for this station, so it has no closings endpoint.'
+  list_files: []
+  page_check: null
+  robots: []
+- id: hearst-wptz
+  platform: hearst
+  call_sign: WPTZ
+  name: WPTZ NBC 5 (with WNNE)
+  market: Champlain Valley
+  dma: Burlington, VT - Plattsburgh, NY DMA
+  states: [NH, NY, VT]
+  counties:
+    basis: dma
+    source: 'DMA county list: alex-patton/US-TVDMA-BY-COUNTY usa-tvdma-county.csv at commit 7f254b8c1843c62ec976a71c40d366d45f6f29cd
+      (sha256 2e2cd00265a8d704...), names resolved to FIPS with the Census 2025 county Gazetteer; Connecticut
+      via the Census county-to-town crosswalk (snowlight.sources.stations.dma); market ''Burlington, VT
+      - Plattsburgh, NY DMA'''
+    fips: ['33009', '33019', '36019', '36031', '36033', '50001', '50005', '50007', '50009', '50011', '50013',
+      '50015', '50017', '50019', '50021', '50023', '50027']
+  page_url: https://www.mynbc5.com/weather/closings
+  data_url: null
+  export_url: null
+  archive_urls:
+  - https://www.mynbc5.com/weather/closings
+  poll_minutes: null
+  status: active
+  evidence: 'Site mynbc5.com: Wikidata official website (P856) of the station''s item, or the research
+    record. Market: the ''Champlain Valley TV'' navbox on the English Wikipedia article ''WPTZ'' (read
+    2026-09-25). Archive: closings page confirmed by Wayback captures read with the hearst adapter: 2024-01-09
+    18:59Z https://www.mynbc5.com/weather/closings (hearst-rows, populated, 2 rows; run 36094846376);
+    2025-01-02 18:09Z https://www.mynbc5.com/weather/closings (hearst-rows, populated, 9 rows; run 36111087246);
+    2026-03-26 19:19Z https://www.mynbc5.com/weather/closings (hearst-next, populated, 3 rows; run 36111087246).
+    Wayback CDX: 274 captures with HTTP 200 of http://www.mynbc5.com/weather/closings, http://www.mynbc5.com:80/weather/closings,
+    https://www.mynbc5.com/weather/closings, 2016-11-22 to 2026-05-16.'
+  list_files: []
+  page_check: null
+  robots:
+  - url: https://www.mynbc5.com/weather/closings
+    checked_at: '2026-09-26T23:08:25Z'
+    state: parsed
+    allowed: true
+    rule: no rule matches
+    crawl_delay: 10.0
+    disallowed_agents:
+    - ahrefsbot
+    - ai2bot
+    - ai2bot-dolma
+    - amazon-qbusiness
+    - amazonbot
+    - anthropic-ai
+    - applebot-extended
+    - archive.org_bot
+    - awariorssbot
+    - awariosmartbot
+    - bytespider
+    - ccbot
+    - chatgpt-user
+    - claude-web
+    - claudebot
+    - cloudflarebrowserrenderingcrawler
+    - cohere-ai
+    - cohere-training-data-crawler
+    - dataforseobot
+    - diffbot
+    - facebookbot
+    - google-extended
+    - gptbot
+    - imagesiftbot
+    - magpie-crawler
+    - meta-externalagent
+    - meta-externalfetcher
+    - meta-webindexer
+    - meta-webindexer/1.1
+    - mycentralaiscraperbot
+    - news-please
+    - nicecrawler
+    - omgili
+    - omgilibot
+    - perplexitybot
+    - poseidon research crawler
+    - seekrbot
+    - timpibot
+    - youbot
+    sha256: 82b47d5abddee75240b77e356fe6e5bb5f5039c8e8335325cb53d75198d0a962
+- id: hearst-wtae
+  platform: hearst
+  call_sign: WTAE
+  name: WTAE-TV Pittsburgh's Action News 4
+  market: Pittsburgh
+  dma: Pittsburgh, PA - MD- WV DMA
+  states: [MD, PA, WV]
+  counties:
+    basis: dma
+    source: 'DMA county list: alex-patton/US-TVDMA-BY-COUNTY usa-tvdma-county.csv at commit 7f254b8c1843c62ec976a71c40d366d45f6f29cd
+      (sha256 2e2cd00265a8d704...), names resolved to FIPS with the Census 2025 county Gazetteer; Connecticut
+      via the Census county-to-town crosswalk (snowlight.sources.stations.dma); market ''Pittsburgh, PA
+      - MD- WV DMA'''
+    fips: ['24023', '42003', '42005', '42007', '42019', '42031', '42051', '42059', '42063', '42073', '42121',
+      '42125', '42129', '54061', '54077']
+  page_url: https://www.wtae.com/weather/closings
+  data_url: null
+  export_url: null
+  archive_urls:
+  - https://www.wtae.com/weather/closings
+  poll_minutes: null
+  status: active
+  evidence: 'Site wtae.com: Wikidata official website (P856) of the station''s item, or the research record.
+    Market: the ''Pittsburgh TV'' navbox on the English Wikipedia article ''WTAE-TV'' (read 2026-09-25).
+    Research record wtae (live_lead), closings page https://www.wtae.com/weather/closings. Archive: closings
+    page confirmed by Wayback captures read with the hearst adapter: 2024-01-19 13:44Z https://www.wtae.com/weather/closings
+    (hearst-rows, populated, 411 rows; run 36111087246); 2025-01-22 00:32Z https://www.wtae.com/weather/closings
+    (hearst-rows, populated, 321 rows; run 36111087246); 2026-01-26 14:22Z https://www.wtae.com/weather/closings
+    (hearst-rows, populated, 521 rows; run 36094846376). Wayback CDX: 603 captures with HTTP 200 of http://www.wtae.com/weather/closings,
+    http://www.wtae.com:80/weather/closings, http://www.wtae.com:80/weather/closingssignup/9682600 and
+    other forms, 2014-02-04 to 2026-05-08.'
+  list_files: []
+  page_check: null
+  robots:
+  - url: https://www.wtae.com/weather/closings
+    checked_at: '2026-09-26T23:08:25Z'
+    state: parsed
+    allowed: true
+    rule: no rule matches
+    crawl_delay: 10.0
+    disallowed_agents:
+    - ahrefsbot
+    - ai2bot
+    - ai2bot-dolma
+    - amazon-qbusiness
+    - amazonbot
+    - anthropic-ai
+    - applebot-extended
+    - archive.org_bot
+    - awariorssbot
+    - awariosmartbot
+    - bytespider
+    - ccbot
+    - chatgpt-user
+    - claude-web
+    - claudebot
+    - cloudflarebrowserrenderingcrawler
+    - cohere-ai
+    - cohere-training-data-crawler
+    - dataforseobot
+    - diffbot
+    - facebookbot
+    - google-extended
+    - gptbot
+    - imagesiftbot
+    - magpie-crawler
+    - meta-externalagent
+    - meta-externalfetcher
+    - meta-webindexer
+    - meta-webindexer/1.1
+    - mycentralaiscraperbot
+    - news-please
+    - nicecrawler
+    - omgili
+    - omgilibot
+    - perplexitybot
+    - poseidon research crawler
+    - seekrbot
+    - timpibot
+    - youbot
+    sha256: 55dfcd5e3f7f7b4cf23fd070c969cb10ead2f33247fda6d6bc11e87797a48d1f
+- id: hearst-wvtm
+  platform: hearst
+  call_sign: WVTM
+  name: WVTM 13
+  market: Birmingham
+  dma: Birmingham, AL DMA
+  states: [AL]
+  counties:
+    basis: dma
+    source: 'DMA county list: alex-patton/US-TVDMA-BY-COUNTY usa-tvdma-county.csv at commit 7f254b8c1843c62ec976a71c40d366d45f6f29cd
+      (sha256 2e2cd00265a8d704...), names resolved to FIPS with the Census 2025 county Gazetteer; Connecticut
+      via the Census county-to-town crosswalk (snowlight.sources.stations.dma); market ''Birmingham, AL
+      DMA'''
+    fips: ['01007', 01009, '01015', 01019, '01021', '01027', '01043', '01055', '01057', '01063', '01065',
+      '01073', 01093, '01107', '01115', '01117', '01121', '01125', '01127', '01133']
+  page_url: https://www.wvtm13.com/weather/closings
+  data_url: null
+  export_url: null
+  archive_urls:
+  - https://www.wvtm13.com/weather/closings
+  poll_minutes: null
+  status: active
+  evidence: 'Site wvtm13.com: Wikidata official website (P856) of the station''s item, or the research
+    record. Market: the ''Birmingham TV'' navbox on the English Wikipedia article ''WVTM-TV'' (read 2026-09-25).
+    Archive: closings page confirmed by Wayback captures read with the hearst adapter: 2024-01-14 23:19Z
+    https://www.wvtm13.com/weather/closings (hearst-rows, populated, 1 rows; run 36111087246); 2025-01-15
+    04:24Z https://www.wvtm13.com/weather/closings (hearst-rows, empty, 0 rows; run 36094846376); 2026-03-09
+    19:38Z https://www.wvtm13.com/weather/closings (hearst-next, populated, 1 rows; run 36111087246).
+    Wayback CDX: 143 captures with HTTP 200 of http://www.wvtm13.com/weather/closings, http://www.wvtm13.com:80/weather/closings,
+    https://www.wvtm13.com/weather/closings, 2015-03-30 to 2026-05-06.'
+  list_files: []
+  page_check: null
+  robots:
+  - url: https://www.wvtm13.com/weather/closings
+    checked_at: '2026-09-26T23:08:25Z'
+    state: parsed
+    allowed: true
+    rule: no rule matches
+    crawl_delay: 10.0
+    disallowed_agents:
+    - ahrefsbot
+    - ai2bot
+    - ai2bot-dolma
+    - amazon-qbusiness
+    - amazonbot
+    - anthropic-ai
+    - applebot-extended
+    - archive.org_bot
+    - awariorssbot
+    - awariosmartbot
+    - bytespider
+    - ccbot
+    - chatgpt-user
+    - claude-web
+    - claudebot
+    - cloudflarebrowserrenderingcrawler
+    - cohere-ai
+    - cohere-training-data-crawler
+    - dataforseobot
+    - diffbot
+    - facebookbot
+    - google-extended
+    - gptbot
+    - imagesiftbot
+    - magpie-crawler
+    - meta-externalagent
+    - meta-externalfetcher
+    - meta-webindexer
+    - meta-webindexer/1.1
+    - mycentralaiscraperbot
+    - news-please
+    - nicecrawler
+    - omgili
+    - omgilibot
+    - perplexitybot
+    - poseidon research crawler
+    - seekrbot
+    - timpibot
+    - youbot
+    sha256: b9d8fdb658157720a8054fd5e516becf8f5a9f17b3b6b82d85e5f9c6f7e60b7d
+- id: hearst-wxii
+  platform: hearst
+  call_sign: WXII
+  name: WXII 12
+  market: Piedmont Triad
+  dma: Greensboro - H.Point - W.Salem, NC - VA DMA
+  states: [NC, VA]
+  counties:
+    basis: dma
+    source: 'DMA county list: alex-patton/US-TVDMA-BY-COUNTY usa-tvdma-county.csv at commit 7f254b8c1843c62ec976a71c40d366d45f6f29cd
+      (sha256 2e2cd00265a8d704...), names resolved to FIPS with the Census 2025 county Gazetteer; Connecticut
+      via the Census county-to-town crosswalk (snowlight.sources.stations.dma); market ''Greensboro -
+      H.Point - W.Salem, NC - VA DMA'''
+    fips: ['37001', '37005', '37033', '37057', '37059', '37067', '37081', '37123', '37151', '37157', '37169',
+      '37171', '37193', '37197', '51077', '51141']
+  page_url: https://www.wxii12.com/weather/closings
+  data_url: null
+  export_url: null
+  archive_urls:
+  - http://www.wxii12.com:80/weather/closings
+  - https://www.wxii12.com/weather/closings
+  poll_minutes: null
+  status: active
+  evidence: 'Site wxii12.com: Wikidata official website (P856) of the station''s item, or the research
+    record. Market: the ''Piedmont Triad TV'' navbox on the English Wikipedia article ''WXII-TV'' (read
+    2026-09-25). Research record wxii (live_lead), closings page https://www.wxii12.com/weather/closings.
+    Archive: closings page confirmed by Wayback captures read with the hearst adapter: 2014-02-14 00:48Z
+    http://www.wxii12.com:80/weather/closings (hearst-ibsys, populated, 794 rows; run 36136683508); 2016-01-23
+    22:15Z http://www.wxii12.com:80/weather/closings (hearst-ibsys, populated, 730 rows; run 36136683508);
+    2024-01-09 03:24Z https://www.wxii12.com/weather/closings (hearst-rows, populated, 76 rows; run 36111087246);
+    2025-01-12 00:53Z https://www.wxii12.com/weather/closings (hearst-rows, populated, 451 rows; run 36111087246);
+    2026-02-19 00:38Z https://www.wxii12.com/weather/closings (hearst-next, populated, 1 rows; run 36111087246).
+    Wayback CDX: 502 captures with HTTP 200 of http://www.wxii12.com/weather/closings, http://www.wxii12.com/weather/closings/,
+    http://www.wxii12.com:80/weather/closings and other forms, 2014-01-08 to 2026-04-19.'
+  list_files: []
+  page_check: null
+  robots:
+  - url: https://www.wxii12.com/weather/closings
+    checked_at: '2026-09-26T23:08:25Z'
+    state: parsed
+    allowed: true
+    rule: no rule matches
+    crawl_delay: 10.0
+    disallowed_agents:
+    - ahrefsbot
+    - ai2bot
+    - ai2bot-dolma
+    - amazon-qbusiness
+    - amazonbot
+    - anthropic-ai
+    - applebot-extended
+    - archive.org_bot
+    - awariorssbot
+    - awariosmartbot
+    - bytespider
+    - ccbot
+    - chatgpt-user
+    - claude-web
+    - claudebot
+    - cloudflarebrowserrenderingcrawler
+    - cohere-ai
+    - cohere-training-data-crawler
+    - dataforseobot
+    - diffbot
+    - facebookbot
+    - google-extended
+    - gptbot
+    - imagesiftbot
+    - magpie-crawler
+    - meta-externalagent
+    - meta-externalfetcher
+    - meta-webindexer
+    - meta-webindexer/1.1
+    - mycentralaiscraperbot
+    - news-please
+    - nicecrawler
+    - omgili
+    - omgilibot
+    - perplexitybot
+    - poseidon research crawler
+    - seekrbot
+    - timpibot
+    - youbot
+    sha256: 9d31d4d99b9ea73dbd219d8d7d99a36f6375915a2298c8eb7a0c9a301df3d6f6
+- id: hearst-wyff
+  platform: hearst
+  call_sign: WYFF
+  name: WYFF News 4
+  market: Greenville–Spartanburg–Asheville
+  dma: Greenville - Spartanburg, SC- Asheville - And., NC - GA  DMA
+  states: [GA, NC, SC]
+  counties:
+    basis: dma
+    source: 'DMA county list: alex-patton/US-TVDMA-BY-COUNTY usa-tvdma-county.csv at commit 7f254b8c1843c62ec976a71c40d366d45f6f29cd
+      (sha256 2e2cd00265a8d704...), names resolved to FIPS with the Census 2025 county Gazetteer; Connecticut
+      via the Census county-to-town crosswalk (snowlight.sources.stations.dma); market ''Greenville -
+      Spartanburg, SC- Asheville - And., NC - GA  DMA'''
+    fips: ['13105', '13119', '13147', '13257', '37021', '37075', '37087', '37089', '37099', '37111', '37113',
+      '37115', '37121', '37149', '37161', '37173', '37175', '37199', '45001', '45007', '45021', '45045',
+      '45047', '45059', '45073', '45077', '45083', '45087']
+  page_url: https://www.wyff4.com/weather/closings
+  data_url: null
+  export_url: null
+  archive_urls:
+  - http://www.wyff4.com/weather/closings
+  - https://www.wyff4.com/weather/closings
+  poll_minutes: null
+  status: active
+  evidence: 'Site wyff4.com: Wikidata official website (P856) of the station''s item, or the research
+    record. Market: the ''Greenville–Spartanburg–Asheville TV'' navbox on the English Wikipedia article
+    ''WYFF'' (read 2026-09-25). Research record wyff (live_lead), closings page https://www.wyff4.com/closings.
+    Archive: closings page confirmed by Wayback captures read with the hearst adapter: 2014-02-13 10:27Z
+    http://www.wyff4.com/weather/closings (hearst-ibsys, populated, 1195 rows; run 36123975119); 2015-02-20
+    00:49Z http://www.wyff4.com/weather/closings (hearst-ibsys, populated, 67 rows; run 36123975119);
+    2016-11-10 17:49Z http://www.wyff4.com/weather/closings (hearst-rows, empty, 0 rows; run 36123975119);
+    2017-01-30 02:55Z http://www.wyff4.com/weather/closings (hearst-rows, populated, 8 rows; run 36123975119);
+    2018-01-17 02:49Z http://www.wyff4.com/weather/closings (hearst-rows, populated, 148 rows; run 36123975119);
+    2019-01-23 14:18Z https://www.wyff4.com/weather/closings (hearst-rows, populated, 24 rows; run 36123975119);
+    2020-02-21 16:53Z https://www.wyff4.com/weather/closings (hearst-rows, populated, 281 rows; run 36123975119);
+    2021-03-24 23:40Z http://www.wyff4.com/weather/closings (hearst-rows, empty, 0 rows; run 36123975119);
+    2022-01-18 08:52Z https://www.wyff4.com/weather/closings (hearst-rows, populated, 1019 rows; run 36123975119);
+    2024-01-19 13:29Z https://www.wyff4.com/weather/closings (hearst-rows, populated, 12 rows; run 36111087246);
+    2025-01-17 09:28Z https://www.wyff4.com/weather/closings (hearst-rows, populated, 1 rows; run 36094846376);
+    2026-02-22 21:36Z https://www.wyff4.com/weather/closings (hearst-next, populated, 1 rows; run 36111087246).
+    Wayback CDX: 647 captures with HTTP 200 of http://www.wyff4.com/weather/closings, http://www.wyff4.com:80/weather/closings,
+    http://www.wyff4.com:80/weather/closingsdelays/-/9325714/24151624/-/o4ra5bz/-/index.html and other
+    forms, 2014-01-12 to 2026-07-12.'
+  list_files: []
+  page_check: null
+  robots:
+  - url: https://www.wyff4.com/weather/closings
+    checked_at: '2026-09-26T23:08:26Z'
+    state: parsed
+    allowed: true
+    rule: no rule matches
+    crawl_delay: 10.0
+    disallowed_agents:
+    - ahrefsbot
+    - ai2bot
+    - ai2bot-dolma
+    - amazon-qbusiness
+    - amazonbot
+    - anthropic-ai
+    - applebot-extended
+    - archive.org_bot
+    - awariorssbot
+    - awariosmartbot
+    - bytespider
+    - ccbot
+    - chatgpt-user
+    - claude-web
+    - claudebot
+    - cloudflarebrowserrenderingcrawler
+    - cohere-ai
+    - cohere-training-data-crawler
+    - dataforseobot
+    - diffbot
+    - facebookbot
+    - google-extended
+    - gptbot
+    - imagesiftbot
+    - magpie-crawler
+    - meta-externalagent
+    - meta-externalfetcher
+    - meta-webindexer
+    - meta-webindexer/1.1
+    - mycentralaiscraperbot
+    - news-please
+    - nicecrawler
+    - omgili
+    - omgilibot
+    - perplexitybot
+    - poseidon research crawler
+    - seekrbot
+    - timpibot
+    - youbot
+    sha256: 739520ae1fc71ab8a9aaf258e9c7883a97dc5d8874f90c5de060d7800aad5cb6

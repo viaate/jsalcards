@@ -1,0 +1,89 @@
+<!doctype html>
+<html><body>
+<meta name="tncms-access-version" content="" />
+<script>
+        // URL of the XML data
+        const xmlUrl = 'https://www.kake.com/app/closings/closings.xml';
+
+        // Fetch and parse XML data
+        fetch(xmlUrl)
+            .then(response => response.text())
+            .then(data => {
+                // Parse XML data
+                const parser = new DOMParser();
+                const xmlDoc = parser.parseFromString(data, "text/xml");
+
+                // Get all records
+                const records = xmlDoc.getElementsByTagName('RECORD');
+
+                // Check if there are no records
+                if (records.length === 0) {
+                    document.getElementById('content').innerHTML = '<p class="no-data">There are no closings at this time.';
+                    return;  // Exit early if no records
+                }
+
+                // Object to hold categories and their records
+                const categories = {};
+
+                // Process each record
+                Array.from(records).forEach(record => {
+                    const categoryName = record.getElementsByTagName('FORCED_CATEGORY_NAME')[0].textContent;
+
+                    if (!categories[categoryName]) {
+                        categories[categoryName] = [];
+                    }
+
+                    // Extract record details
+                    const details = {
+                        orgName: record.getElementsByTagName('FORCED_ORGANIZATION_NAME')[0].textContent,
+                        address: [
+                            record.getElementsByTagName('ADDRESS1')[0].textContent,
+                            record.getElementsByTagName('ADDRESS2')[0].textContent,
+                            `${record.getElementsByTagName('CITY')[0].textContent}, ${record.getElementsByTagName('STATE')[0].textContent} ${record.getElementsByTagName('ZIPCODE')[0].textContent}`
+                        ].filter(Boolean).join(' '),
+                        status: record.getElementsByTagName('COMPLETE_STATUS')[0].textContent,
+                        homepage: record.getElementsByTagName('ORGANIZATION_HOMEPAGE')[0].textContent
+                    };
+
+                    categories[categoryName].push(details);
+                });
+
+                // Define custom sort order for categories
+                const categoryOrder = ["Schools", "Daycare/Pre-school", "Government", "Businesses", "Events", "Local Pro Sports"];
+
+                // Generate HTML content
+                const contentDiv = document.getElementById('content');
+                Object.keys(categories)
+                    .sort((a, b) => categoryOrder.indexOf(a) - categoryOrder.indexOf(b)) // Sort by custom order
+                    .forEach(category => {
+                        const records = categories[category];
+
+                        // Sort records alphabetically by organization name
+                        records.sort((a, b) => a.orgName.localeCompare(b.orgName));
+
+                        const categoryDiv = document.createElement('div');
+                        categoryDiv.classList.add('category');
+                        const categoryHeader = document.createElement('h3');
+                        categoryHeader.textContent = category;
+                        categoryDiv.appendChild(categoryHeader);
+
+                        records.forEach(record => {
+                            const recordDiv = document.createElement('div');
+                            recordDiv.classList.add('record');
+                            recordDiv.innerHTML = `
+                                <p>
+                                    <span class="org-name">${record.orgName} - 
+                                    <span class="status">${record.status}
+                                
+                            `;
+                            categoryDiv.appendChild(recordDiv);
+                        });
+
+                        contentDiv.appendChild(categoryDiv);
+                    });
+            })
+            .catch(error => {
+                console.error('Error fetching or parsing XML:', error);
+            });
+    </script>
+</body></html>

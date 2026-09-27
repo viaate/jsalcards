@@ -1,0 +1,9 @@
+{
+ "dma_county_zip_data_set.slice.csv": {
+  "url": "https://raw.githubusercontent.com/BritCrit/dma_county_zip/02f847923bd218c30a8c5488d561eca42ecf3614/dma_county_zip_data_set.csv",
+  "original_sha256": "c931c30cef1b5d2997e1a181dfaa91ecd71516e85813889ad2988424528cf8fe",
+  "retrieved_at": "2026-09-27T02:13:59Z",
+  "slice": "the header and the first row (in file order) of each of the FIPS codes 11001, 24031, 51059, 51013, 8014, 8001, 8031, 38105, 38101, 2013, verbatim",
+  "sha256": "49179d0f0d55be795b20097632b6f126ebaff22cad7905cdeb0bee4985ffda7d"
+ }
+}

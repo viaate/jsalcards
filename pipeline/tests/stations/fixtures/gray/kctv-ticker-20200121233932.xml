@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ticker lastupdate="01/21/2020 05:39:18 PM">
+<closing id="100196">
+  <type>Churches</type>
+  <name>Immanuel Baptist Church, Indep., MO</name>
+  <state>MO</state>
+  <status>Wednesday, Jan 22, noon service cancelled </status>
+  <updatetime>01/21/2020 11:10:15 AM</updatetime>
+</closing>
+<closing id="052980">
+  <type>Schools</type>
+  <name>Livingston Co. R-III School, Chula, MO</name>
+  <state>MO</state>
+  <status>Closed </status>
+  <updatetime>01/21/2020 05:09:53 PM</updatetime>
+</closing>
+</ticker>

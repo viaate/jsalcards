@@ -1,0 +1,164 @@
+<!doctype html>
+<html><body>
+<div id="tncms-region-mobile-nav-top-left-region" class="tncms-region ">
+<script language="javascript" type="text/javascript">
+  var sortAscending = true;
+
+  
+  function tabCheck(tab){
+    switch(tab) {
+      case 1: return "school";
+      case 2: return "religious";
+      case 3: return "business";
+      case 4: return "community";
+      case 5: return "government";
+      default: return "other";
+    }
+  }
+
+  
+  function parseJSON(json) {
+    var a2z_unordered = {};
+    var a2z_ordered = {};
+    var tab = 1; //which tab should be visible
+
+    
+    if (json.hasOwnProperty('closing')){
+
+      
+      $.each(json.closing, function(key, val) {
+
+        
+        a2z_unordered[String(val.name)] = {'Name1': val.name, 'EntityType': val.type, 'Status1': val.status};
+      });
+
+      
+      Object.keys(a2z_unordered).sort().forEach(function(key) {
+        a2z_ordered[key] = a2z_unordered[key];
+      });
+
+      
+      $.each(a2z_ordered, function(key, val) {
+
+        
+        switch(val.EntityType.toLowerCase()) {
+          case "schools": val.EntityType = 'School'; tab = 1; break;
+          case "churches": val.EntityType = 'Religious'; tab = 2; break;
+          case "government": val.EntityType = 'Government'; tab = 5; break;
+          default: tab = 6; break;
+        }
+
+        
+        var html_items = '';
+        html_items += '<div class="name1">'+check(val.Name1)+'</div>';
+        html_items += '<div class="status1">'+check(val.Status1)+'</div>';
+        html_items += '<div class="entitytype">'+check(val.EntityType)+'</div>';
+        var html_row = '<div class="closing_row" data-sort="">'+ html_items +'</div>';
+
+        
+        $("#closings > .tables_wrap > .tables > #closings_"+tabCheck(tab)).append(html_row);
+
+      });
+
+      
+      $("#closings > .tables_wrap > .tables > .table").each(function(key) {
+        var closing_table = $(this).attr('id');
+        $("#" + closing_table + " > .closing_row").each(function (index, el) {
+          $(el).attr("data-sort", index );
+        });
+      });
+    }
+
+    
+    var cnt = $("#closings_"+tabCheck(1)+ " > .closing_row").length;
+    $("#closings > .table_meta > #table_info").html("About "+ cnt + " "+ capitalize(tabCheck(1)) + " listings found...");
+    $("#closings > .table_meta > #table_sort").show();
+  }
+
+  
+  // Run it...
+  $(document).ready(function(){var xml_url = "http://lmgcorporate.com/closings/kctv/closings.xml";
+      var jsonp_url = 'https://webhooks.meredithlmg.com/jsonp/?xml_url='+xml_url+'&callback=processJSON';
+
+      $.ajax({
+        url: jsonp_url,
+        dataType: 'jsonp',
+        cache: false,
+        timeout: 5000,
+        success: parseJSON,
+        error: parseError
+      });});
+
+  function parseError(data) {
+    console.log(data);
+      $("#closings > .table_meta > #table_sort").html("");
+      $("#closings > .table_meta > #table_info").html("An error has occurred retrieving the listings.  Please try refreshing the page.");
+  }
+
+  // Capitalize String
+  function capitalize(str) {
+      return str.charAt(0).toUpperCase() + str.slice(1);
+  }
+
+  // Check if String or Object
+  function check(obj) {
+    if (typeof obj == 'string'){
+      return String(obj);
+    } else {
+      return "";
+    }
+  }
+
+  // Tab click events
+  $("#closings > .tabs > .tab" ).click(function() {
+
+    $("#closings > .tabs > .tab" ).removeClass( "active" );
+    $(this).addClass('active');
+    $("#closings > .tables_wrap > .tables > .table" ).removeClass( "active" );
+
+    var table = "#"+$(this).data('select');
+    $("#closings > .tables_wrap > .tables > "+ table ).addClass('active');
+
+    var cnt = $("#closings > .tables_wrap > .tables > "+table+" > .closing_row").length;
+    $("#closings > .table_meta > #table_info").html("About "+ cnt + " "+ $(this).html() + " listings found...");
+
+  });
+
+  // Handle sorting of listing rows
+  $(".table_meta > #table_sort").click(function () {
+    sortAscending = !sortAscending;
+
+    // Change Sort Info in Table Meta bar
+    if (!sortAscending) {
+      $(".table_meta > #table_sort").removeClass("table_asc");
+      $(".table_meta > #table_sort").addClass("table_desc");
+      $("#table_sort_meta").html("Z - A");
+    } else {
+      $(".table_meta > #table_sort").removeClass("table_desc");
+      $(".table_meta > #table_sort").addClass("table_asc");
+      $("#table_sort_meta").html("A - Z");
+    }
+
+    // Iterate through each of the closings tables
+    $("#closings > .tables_wrap > .tables > .table").each(function(key) {
+      var closing_table = $(this).attr('id');
+      var closing_rows = $("#" + closing_table +" > .closing_row");
+
+      // Grab each row's data-sort value & re-sort
+      closing_rows.sort(function (a, b) {
+        var sort = a.getAttribute('data-sort') * 1;
+        var sort2 = b.getAttribute('data-sort') * 1;
+
+        var mult = 1;
+        if (!sortAscending) { mult = -1; }
+        if (sort > sort2) { return 1 * mult; }
+        if (sort < sort2) { return -1 * mult; }
+
+        return 0;
+      });
+      closing_rows.detach().appendTo("#"+ closing_table);
+
+    });
+  });
+  </script>
+</body></html>

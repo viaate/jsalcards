@@ -1,0 +1,30 @@
+{
+  "usa-tvdma-county.slice.csv": {
+    "url": "https://raw.githubusercontent.com/alex-patton/US-TVDMA-BY-COUNTY/7f254b8c1843c62ec976a71c40d366d45f6f29cd/usa-tvdma-county.csv",
+    "original_sha256": "2e2cd00265a8d7040d8aa44ae779f2d5e595fcf3fa4633bca682a1f43622fd5c",
+    "slice": "the header, its first repetition, and every row for Connecticut, the Kansas City DMA, SD SHANNON, FL DADE, VA BEDFORD/BEDFORD CITY/FAIRFAX/FAIRFAX CITY, MO ST LOUIS/ST LOUIS CITY and AK ANCHORAGE, verbatim and in file order",
+    "sha256": "4adfa4cc00984880ed029ee4703d9071051a700b60bc3cb4fd835ca851a562e2",
+    "retrieved_at": "2026-09-25T04:01:54Z"
+  },
+  "2025_Gaz_counties_national.slice.zip": {
+    "url": "https://www2.census.gov/geo/docs/maps-data/data/gazetteer/2025_Gazetteer/2025_Gaz_counties_national.zip",
+    "original_sha256": "4c90d0f805779923b5958ab13d0c1e9b99fe4932b786bfcf75dd739bb2dcb4ea",
+    "slice": "the header and every row for AK, CT, FL, KS, MO, SD and VA of 2025_Gaz_counties_national.txt, verbatim, re-zipped under the same member name",
+    "sha256": "91119933e2b197203c3d9be54d18c495e791b236f4dfe0e427c6bd1955e849d7",
+    "retrieved_at": "2026-09-25T04:01:55Z"
+  },
+  "ct_cou_to_cousub_crosswalk.xlsx": {
+    "url": "https://www2.census.gov/geo/docs/reference/ct_change/ct_cou_to_cousub_crosswalk.xlsx",
+    "original_sha256": "f70c3ce6bac6e1e667ee29c150735224a9fb19d66edbdef17822ddc8006c238a",
+    "slice": "none (the whole file)",
+    "sha256": "f70c3ce6bac6e1e667ee29c150735224a9fb19d66edbdef17822ddc8006c238a",
+    "retrieved_at": "2026-09-25T04:01:55Z"
+  },
+  "state.txt": {
+    "url": "https://www2.census.gov/geo/docs/reference/state.txt",
+    "original_sha256": "bea4e03f71a1fa0045ae732aabad11fa541e5932b071c2369bb0d325e8cba5a0",
+    "slice": "none (the whole file)",
+    "sha256": "bea4e03f71a1fa0045ae732aabad11fa541e5932b071c2369bb0d325e8cba5a0",
+    "retrieved_at": "2026-09-25T08:09:42Z"
+  }
+}

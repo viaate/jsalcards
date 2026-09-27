@@ -1,0 +1,312 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, minimum-scale=1.0, maximum-scale=1.0" />
+<meta name="apple-mobile-web-app-capable" content="yes" />
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+
+<script type="text/javascript" src="../scripts/tabcontent.js"></script>
+
+<script>
+  (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+  (i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+  m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+  })(window,document,'script','//www.google-analytics.com/analytics.js','ga');
+
+  ga('create', 'UA-27349400-2', {'name': 't2'});/*WDBJ Mobile*/
+  ga('t2.send', 'pageview');
+  ga('create', 'UA-42977100-1', {'name': 't1'});/*Global Mobile*/
+  ga('t1.send', 'pageview');
+</script>
+
+
+<script type='text/javascript'>
+var googletag = googletag || {};
+googletag.cmd = googletag.cmd || [];
+(function() {
+var gads = document.createElement('script');
+gads.async = true;
+gads.type = 'text/javascript';
+var useSSL = 'https:' == document.location.protocol;
+gads.src = (useSSL ? 'https:' : 'http:') + 
+'//www.googletagservices.com/tag/js/gpt.js';
+var node = document.getElementsByTagName('script')[0];
+node.parentNode.insertBefore(gads, node);
+})();
+</script>
+
+<script type='text/javascript'>
+googletag.cmd.push(function() {
+googletag.defineSlot('/5773/sci.mob.wdbjtv/m_weather/closings', [[300, 50], [320, 50]], 'div-weather-closings').addService(googletag.pubads());
+googletag.pubads().enableSingleRequest();
+googletag.pubads().collapseEmptyDivs();
+googletag.enableServices();
+});
+</script>
+
+
+<style type="text/css" media="all">
+body,ul,li {
+	padding:0;
+	margin:0;
+	border:0;
+}
+
+body {
+	font-size:12px;
+	-webkit-user-select:none;
+    -webkit-text-size-adjust:none;
+	font-family:helvetica;
+	width:98%;
+/*	padding-bottom:44px;	/*	This prevents the scroller to lock if the user swipes down outside of the screen.
+							 	NOT needed if in home screen mode and on Android. */
+}
+
+#header {
+	width:100%;
+	height:45px;
+	line-height:45px;
+	background-image:-webkit-gradient(linear, 0 0, 0 100%, color-stop(0, #707070), color-stop(0.05, #444444), color-stop(1, #2a2a2a));  
+	padding:0;
+	color:#eee;
+	font-size:20px;
+	text-align:center;
+}
+
+#header a {
+	color:#f3f3f3;
+	text-decoration:none;
+	font-weight:bold;
+	text-shadow:0 -1px 0 rgba(0,0,0,0.5);
+}
+
+#footer {
+	display:none;
+	width:100%;
+	height:48px;
+	background-image:-webkit-gradient(linear, 0 0, 0 100%, color-stop(0, #999), color-stop(0.02, #666), color-stop(1, #222));;
+	padding:0;
+	border-top:1px solid #444;
+
+}
+
+#footer li {
+	float:left;
+}
+
+#footer li {
+	width:50%;
+	text-align:center;
+}
+
+#footer a.remove {
+	border-right:1px solid #333;
+}
+
+#footer a.add {
+	border-left:1px solid #6a6a6a;
+}
+
+#footer a {
+	display:block;
+	text-decoration:none;
+	font-size:12px;
+	color:#eee;
+	line-height:24px;
+	text-shadow:0 -1px 0 #000;
+}
+
+#footer span {
+	display:block;
+	font-size:30px;
+	font-weight:bold;
+}
+
+#wrapper {
+	height:100%;		/* Of course you need to specify the object height */
+
+	position:relative;	/* On older OS versions "position" and "z-index" must be defined (absolute | relative), */
+	z-index:1;			/* it seems that recent webkit is less picky and works anyway. */
+
+	width:100%;
+	background:#aaa;
+	overflow:hidden;
+}
+
+#scroller {
+/*	-webkit-touch-callout:none;*/
+	-webkit-tap-highlight-color:rgba(0,0,0,0);
+	height:100%;
+	overflow-y:scroll;
+	overflow-x:hidden;
+	float:left;
+	width:100%;
+	padding:0;
+
+/*	-webkit-box-shadow:0 0 8px #555;	/* Don't use box shadows, they slow down drastically CSS animations */
+}
+
+#scroller ul {
+	list-style:none;
+	padding:0;
+	margin:0px 0px 40px 0px;
+	width:100%;
+	text-align:left;
+}
+
+#scroller li {
+	padding: 5px 0px;
+	min-height:40px;
+	line-height:40px;
+	border-bottom:1px solid #ccc;
+	border-top:1px solid #fff;
+	background-color:#fafafa;
+	font-size:14px;
+}
+
+#scroller li > a {
+	display:block;
+}
+
+#closing_cell {
+	background-color: #CCCCCC;
+    background-image:-webkit-gradient(linear, 0 0, 0 100%, color-stop(0, #e8e8e8), color-stop(0.05, #d5d5d5), color-stop(1, #ccc));
+    background-repeat: repeat-x;
+    padding: 8px 5px 5px 5px;
+	border-bottom: 1px solid #999999;
+}
+#closing_desc, #closing_desc2{
+	margin:0px 0px 0px 18px;
+}
+#closing_desc, #closing_desc2, #closing_name {
+	
+	line-height:20px;
+}
+
+#closing_name {
+font-weight:bold;
+padding:0px;
+margin:0px 0px 0px 10px;
+}
+.shadetabs{
+padding: 18px;
+margin-left: 0;
+margin-bottom: 0;
+font: bold 12px Verdana;
+list-style-type: none;
+text-align: center; /*set to left, center, or right to align the menu as desired*/
+}
+
+.shadetabs li{
+display: inline;
+margin: 0;
+}
+
+.shadetabs li a{
+text-decoration: none;
+position: relative;
+z-index: 1;
+padding: 10px 7px;
+margin-right: 3px;
+border-bottom: 1px solid #778;
+color: #fff;
+background-image:-webkit-gradient(linear, 0 0, 0 100%, color-stop(0, #82807f), color-stop(0.05, #82807f), color-stop(1, #646464));
+border-radius:10px 10px 0px 0px;
+}
+
+.shadetabs li a:visited{
+color: #2d2b2b;
+}
+
+.shadetabs li a:hover{
+text-decoration: underline;
+color: #2d2b2b;
+}
+
+.shadetabs li a.selected{ /*selected main tab style */
+position: relative;
+background-image:-webkit-gradient(linear, 0 0, 0 100%, color-stop(0, #858aab), color-stop(0.05, #8990b8), color-stop(1, #6d75a0));
+}
+
+.shadetabs li a.selected:hover{ /*selected main tab style */
+text-decoration: none;
+}
+
+.tabcontent{
+display:none;
+}
+
+#closingsignup {
+	text-align:center;
+	background-color:#383838;
+	font-size:18px;
+	height:100%;
+}
+
+#closingsignup a{
+	line-height:30px;
+	text-decoration:none;
+	color:#ffffff;
+	font-weight:bold;
+}
+
+#div-weather-closings {
+    margin-left: auto;
+    margin-right: auto;
+    width: 320px;
+}
+
+@media print {
+.tabcontent {
+display:block !important;
+}
+</style>
+</head>
+<body>
+
+<!-- sci.mob.wdbjtv/m_weather/closings -->
+<div id='div-weather-closings'>
+<script type='text/javascript'>
+googletag.cmd.push(function() { googletag.display('div-weather-closings'); });
+</script>
+</div>
+<br />
+<div id="closingsignup">
+<a target="_blank" href="https://docs.google.com/a/schurz.com/forms/d/18GFKXp3JW57uctNfIdThF6pluWS5y_P15YySyXjM0qw/viewform">Tap here to register your school, church or business for closings and delays.</a> 
+</div>
+<div id="header">
+<ul id="countrytabs" class="shadetabs">
+<li><a href="#" rel="country1" class="selected">School Closings</a></li>
+<li><a href="#" rel="country2">Other Closings</a></li>
+</ul></div>
+<div id="country1" class="tabcontent">
+<div id="wrapper">
+	<div id="scroller">
+    
+		<ul id="thelist">
+			 <li id='closing_cell' class='radius'> <div id='closing_name' class='radius'>There are no SCHOOL closings</div> <div id='closing_desc' class='radius'> </div></li>		</ul>
+        
+       </div>  
+	</div>
+</div>
+
+<div id="country2" class="tabcontent">
+<div id="wrapper">
+	<div id="scroller">
+		<ul id="thelist">
+ <li id='closing_cell' class='radius'> <div id='closing_name' class='radius'>There are no OTHER closings</div> <div id='closing_desc' class='radius'> </div></li> 	</ul>
+	</div>
+</div>
+</div>
+<script type="text/javascript">
+
+var countries=new ddtabcontent("countrytabs")
+countries.setpersist(true)
+countries.setselectedClassTarget("link") //"link" or "linkparent"
+countries.init()
+
+</script>
+
+</body>
+</html>

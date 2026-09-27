@@ -1,0 +1,213 @@
+<!doctype html>
+<html><body>
+<h2>School and Organization Closings and Delays</h2>
+<section>
+	<link rel="stylesheet" href="https://code.jquery.com/ui/1.12.1/themes/smoothness/jquery-ui.css">
+	<script src="https://code.jquery.com/ui/1.12.1/jquery-ui.js"></script>
+	<script src="https://www.graydc.com/underscore-min.js"></script>
+	<style>
+	 div.closings > div:nth-of-type(odd) {
+	  background: #eee;
+	 }
+	 .clRow{
+	 padding: 5px;
+	 height: 30px;
+	 border-bottom: 1px solid #000;
+	 }
+	 .clickable{
+	 cursor: pointer;
+	 color:blue;
+	 font-weight:bold;
+	 }
+	 .stateHeader{
+	 text-align:center; 
+	 font-size:20px; 
+	 font-weight:bold; 
+	 color:#fff; 
+	 background-color:#376A8F; 
+	 padding:10px;
+	 margin-bottom:10px;
+	 }
+	 
+	 .no-gutters {
+  margin-right: 0;
+  margin-left: 0;
+
+  > .col,
+  > [class*="col-"] {
+    padding-right: 0;
+    padding-left: 0;
+  }
+}
+	</style>
+	<script>
+	 var url = 'https://s3.amazonaws.com/grayfilestore-wbko/closingsData/closings_WBKO.json?c=n&r=16111196558';
+
+  var json; 
+  var titles = [];
+  var types = [];
+  var build = [];
+  var fOrder = 0;
+	 function drinit(){
+    jQuery.ajax({
+      url: url,
+      jsonp: "callback",
+      dataType: 'json',
+      success: function(e){
+        json = e; 
+        for (var i = 0; i < json[0]['record'].length; i++) {
+	    var item = json[0]['record'][i];
+	    //add the name for user filtering. 
+	    var titleI=[];
+	    titleI['label'] = item['forced_organization_name'];
+	    titleI['value'] = i;
+	    titles.push(titleI);
+	    ntype = item['forced_category_name'];
+	    var check = (types.indexOf(ntype) > -1)
+	    if(!check){
+	    	types.push(ntype);
+	    }
+	}
+        showRaces();
+        BindControls();
+        buildDropdown();
+      }
+    });
+  }
+  
+  function buildDropdown(){
+  	var selectC=''
+  	var arrayLength = types.length;
+    for (var i = 0; i < arrayLength; i++) {
+        selectC+='<option value="'+types[i]+'">'+types[i]+'</option>';
+    }
+  	document.getElementById('closingTypes').innerHTML=selectC;
+  }
+	 function BindControls() {
+	  //document.getElementById('election_search').style.display = 'block';
+	  jQuery("#titles").autocomplete({
+	   source: titles,
+	   select: function( event, ui ) {
+	    event.preventDefault();
+	    writeClosings(ui.item.label)
+	   }
+	  })
+	 }
+	 
+	 //function to create state containers. 
+	 //what if there are NO states?
+	 function showRaces(e){
+	  var i = 0;
+	  var state = '';
+	  var type = '';
+	  build = [];
+	  for (var i = 0; i < json[0]['record'].length; i++) {
+		var item = json[0]['record'][i];
+		var itemT = [];
+		if(!build.hasOwnProperty(item['state'])){
+			build[item['state']] = new Array();
+		}
+	
+		itemT['name'] = item['forced_organization_name'];
+		itemT['type'] = item['forced_category_name'];
+		itemT['status'] = item['forced_status_name'];
+		itemT['county'] = item['county_name1'];
+		itemT['information'] = item['comments_line1'];
+		itemT['expiration'] = item['expiration'];
+		build[item['state']].push(itemT); 
+	}
+	for (var key in build){
+	   k = _.sortBy( build[key], 'name' );
+	   if(e){
+	    build[key]=_.sortBy( k, e );
+	   }else{
+	    build[key] = k;
+	   }
+	   if(fOrder == 1){
+	    build[key].reverse();
+	   }
+	}
+	  togglefOrder();
+	  writeClosings('all')
+	 }
+	 
+	 function togglefOrder(){
+	  if(fOrder == 0){
+	   fOrder = 1;
+	  }else{
+	   fOrder = 0;
+	  }
+	 }
+	 
+	 function writeClosings(v){
+		var colAlign = 'col-xs-6 col-sm-6 col-md-6 col-lg-6';
+		var html ='<div>';
+			for (var state in build){
+				var passHTML = false;
+				var closingItem = '';
+				closingItem+='<div class="stateHeader">'+state+'</div>';
+				closingItem+='<div class="row">';
+				closingItem+='<div class="'+colAlign+' clickable" onClick="showRaces(\'name\')">Organization</div>';
+				closingItem+='<div class="'+colAlign+' clickable" onClick="showRaces(\'county\')">County</div>';
+				//closingItem+='<div class="'+colAlign+'">Organization</div>';
+				closingItem+='<div class="'+colAlign+'"><strong>Status</strong></div>';
+				closingItem+='<div class="'+colAlign+' clickable" onClick="showRaces(\'type\')">Type</div>';
+				//closingItem+='<div class="'+colAlign+'">Type</div>';
+				closingItem+='</div>';
+				closingItem+='<div class="closings">';
+				for (var t in build[state]){
+					var item = build[state][t];
+					if((item['name'] == v && v) || (item['type'] == v && v) || v=='all'){
+						closingItem+='<div class="row no-gutters">';
+						closingItem+='<div class="'+colAlign+'">';
+						closingItem+='<b>'+item['name']+'</b>';
+						closingItem+='</div>';
+						
+						closingItem+='<div class="'+colAlign+'">';
+						closingItem+='<small>'+item['county']+'</small>';
+						closingItem+='</div>';
+						
+						closingItem+='<div class="'+colAlign+'">';
+						closingItem+='<small>'+item['status']+'</small>';
+						if(item['information']){
+							closingItem+='<br/><small>'+item['information']+'</small>';
+						}
+						closingItem+='</div>';
+						closingItem+='<div class="'+colAlign+'">';
+						closingItem+='<small>'+item['type']+'</small>';
+						closingItem+='</div>';
+						closingItem+='</div>';
+						passHTML = true;
+					}
+				}
+				closingItem+='</div>';
+
+				if(passHTML == true){
+					html+=closingItem;
+				}
+			}
+		html+='</div>';
+		document.getElementById('closingResults').innerHTML = html;
+	}
+	</script>
+<div id="election_search" class="well well-small" tabindex="-1">
+  <div class="ui-front" style="display:inline">
+    <form class="form-inline">
+      <div class="form-group" style="margin-right: 10px;">
+        <input type="text" id="titles" class="form-control" placeholder="Search by name"/>
+      </div>
+      <div class="form-group" style="margin-right: 10px;">
+        <select id="closingTypes" class="mdb-select md-form form-control" searchable="Search here.." onchange="writeClosings(this.value)"></select> 
+      </div>
+      <div class="form-group">
+        <div onClick="writeClosings('all')" class="btn btn-default btn-small pull-right">CLEAR</div>
+      </div>
+  </div>
+  <ul id="myTab" class="nav nav-tabs" style="border-bottom: 0px solid #ddd;"></ul> 
+</div>
+<div id="closingResults"></div>
+	<script>
+	 drinit();
+	</script>
+</section>
+</body></html>

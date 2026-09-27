@@ -1,0 +1,48 @@
+STATE,STATE_AB,COUNTY,Internal_State_Region,TVDMA,Metropolitan_Statistical_Areas,Metro_Grp
+ALASKA,AK,ANCHORAGE BOR. 3,,"Anchorage, AK DMA",,
+CONNECTICUT,CT,HARTFORD,No. Central  Greater Hartford ISR,"Hartford & New Haven, CT DMA","Hartford, CT NECMA",Hartford & Tolland Co. GMR.
+CONNECTICUT,CT,TOLLAND,No. Central  Greater Hartford ISR,"Hartford & New Haven, CT DMA","Hartford, CT NECMA",Hartford & Tolland Co. GMR.
+CONNECTICUT,CT,WINDHAM,Northeast Plains ISR,"Hartford & New Haven, CT DMA",Not Assigned to Metro Area (NAM),Non Metro GMR.
+CONNECTICUT,CT,LITCHFIELD,Northwest Hills ISR,"Hartford & New Haven, CT DMA",Not Assigned to Metro Area (NAM),Non Metro GMR.
+CONNECTICUT,CT,MIDDLESEX,Southeast Coast ISR,"Hartford & New Haven, CT DMA","Hartford, CT NECMA",Other Metro GMR.
+CONNECTICUT,CT,NEW LONDON,Southeast Coast ISR,"Hartford & New Haven, CT DMA","New London - Norwich, CT NECMA",Other Metro GMR.
+CONNECTICUT,CT,FAIRFIELD,Southwest Greater New York ISR,"New York, NY - CT - NJ - PA DMA","New Haven- Bridgeport- Stamford- Waterbury- Danbury,CT NECMA",Fairfield Co. GMR.
+CONNECTICUT,CT,NEW HAVEN,Southwest Greater New York ISR,"Hartford & New Haven, CT DMA","New Haven- Bridgeport- Stamford- Waterbury- Danbury,CT NECMA",New Haven Co. GMR
+FLORIDA,FL,DADE,Southeast ISR,"Miami - Ft. Lauderdale, FL DMA","Miami, FL PMSA",Miami Metro GMR.
+KANSAS,KS,ANDERSON,Southeast ISR,"Kansas City, MO - KS DMA",Not Assigned to Metro Area (NAM),Non Metro GMR.
+KANSAS,KS,ATCHISON,Northeast ISR,"Kansas City, MO - KS DMA",Not Assigned to Metro Area (NAM),Non Metro GMR.
+KANSAS,KS,DOUGLAS,Northeast ISR,"Kansas City, MO - KS DMA","Lawrence, KS MSA",Other Metro GMR.
+KANSAS,KS,FRANKLIN,Northeast ISR,"Kansas City, MO - KS DMA",Not Assigned to Metro Area (NAM),Non Metro GMR.
+KANSAS,KS,JOHNSON,Northeast ISR,"Kansas City, MO - KS DMA","Kansas City, MO - KS MSA",Kansas City Metro GMR.
+KANSAS,KS,LEAVENWORTH,Northeast ISR,"Kansas City, MO - KS DMA","Kansas City, MO - KS MSA",Kansas City Metro GMR.
+KANSAS,KS,LINN,Southeast ISR,"Kansas City, MO - KS DMA",Not Assigned to Metro Area (NAM),Non Metro GMR.
+KANSAS,KS,MIAMI,Northeast ISR,"Kansas City, MO - KS DMA","Kansas City, MO - KS MSA",Kansas City Metro GMR.
+KANSAS,KS,WYANDOTTE,Northeast ISR,"Kansas City, MO - KS DMA","Kansas City, MO - KS MSA",Kansas City Metro GMR.
+MISSOURI,MO,BATES,Osage Lakes ISR,"Kansas City, MO - KS DMA",Not Assigned to Metro Area (NAM),Non Metro GMR.
+MISSOURI,MO,CALDWELL,Pony Express ISR,"Kansas City, MO - KS DMA",Not Assigned to Metro Area (NAM),Non Metro GMR.
+MISSOURI,MO,CARROLL,Chariton Valley ISR,"Kansas City, MO - KS DMA",Not Assigned to Metro Area (NAM),Non Metro GMR.
+MISSOURI,MO,CASS,Kansas City Area ISR,"Kansas City, MO - KS DMA","Kansas City, MO - KS MSA",Kansas City Metro GMR.
+MISSOURI,MO,CLAY,Kansas City Area ISR,"Kansas City, MO - KS DMA","Kansas City, MO - KS MSA",Kansas City Metro GMR.
+MISSOURI,MO,CLINTON,Pony Express ISR,"Kansas City, MO - KS DMA","Kansas City, MO - KS MSA",Kansas City Metro GMR.
+MISSOURI,MO,DAVIESS,Pony Express ISR,"Kansas City, MO - KS DMA",Not Assigned to Metro Area (NAM),Non Metro GMR.
+MISSOURI,MO,GENTRY,Pony Express ISR,"Kansas City, MO - KS DMA",Not Assigned to Metro Area (NAM),Non Metro GMR.
+MISSOURI,MO,GRUNDY,Chariton Valley ISR,"Kansas City, MO - KS DMA",Not Assigned to Metro Area (NAM),Non Metro GMR.
+MISSOURI,MO,HARRISON,Pony Express ISR,"Kansas City, MO - KS DMA",Not Assigned to Metro Area (NAM),Non Metro GMR.
+MISSOURI,MO,HENRY,Osage Lakes ISR,"Kansas City, MO - KS DMA",Not Assigned to Metro Area (NAM),Non Metro GMR.
+MISSOURI,MO,JACKSON,Kansas City Area ISR,"Kansas City, MO - KS DMA","Kansas City, MO - KS MSA",Kansas City Metro GMR.
+MISSOURI,MO,JOHNSON,Osage Lakes ISR,"Kansas City, MO - KS DMA",Not Assigned to Metro Area (NAM),Non Metro GMR.
+MISSOURI,MO,LAFAYETTE,Kansas City Area ISR,"Kansas City, MO - KS DMA","Kansas City, MO - KS MSA",Kansas City Metro GMR.
+MISSOURI,MO,LINN,Chariton Valley ISR,"Kansas City, MO - KS DMA",Not Assigned to Metro Area (NAM),Non Metro GMR.
+MISSOURI,MO,LIVINGSTON,Chariton Valley ISR,"Kansas City, MO - KS DMA",Not Assigned to Metro Area (NAM),Non Metro GMR.
+MISSOURI,MO,PETTIS,Osage Lakes ISR,"Kansas City, MO - KS DMA",Not Assigned to Metro Area (NAM),Non Metro GMR.
+MISSOURI,MO,PLATTE,Kansas City Area ISR,"Kansas City, MO - KS DMA","Kansas City, MO - KS MSA",Kansas City Metro GMR.
+MISSOURI,MO,RAY,Pony Express ISR,"Kansas City, MO - KS DMA","Kansas City, MO - KS MSA",Kansas City Metro GMR.
+MISSOURI,MO,ST LOUIS,St. Louis Area ISR,"St. Louis, MO - IL DMA","St. Louis, MO - IL MSA",St. Louis Metro GMR.
+MISSOURI,MO,SALINE,Lake of the Ozarks ISR,"Kansas City, MO - KS DMA",Not Assigned to Metro Area (NAM),Non Metro GMR.
+MISSOURI,MO,ST LOUIS CITY,St. Louis Area ISR,"St. Louis, MO - IL DMA","St. Louis, MO - IL MSA",St. Louis Metro GMR.
+SOUTH DAKOTA,SD,SHANNON,"Black Hills, Badlands & Lakes ISR","Rapid City, SD - MT - NE - WY DMA",Not Assigned to Metro Area (NAM),Non Metro GMR.
+STATE,STATE_AB,COUNTY,Internal_State_Region,TVDMA,Metropolitan_Statistical_Areas,Metro_Grp
+VIRGINIA,VA,BEDFORD,"Central Virginia, Piedmont ISR","Roanoke - Lynchburg, VA - WV DMA","Lynchburg, VA MSA",Other Metro GMR.
+VIRGINIA,VA,FAIRFAX,Northern Virginia ISR,"Washington, DC - MD - PA - VA - WV DMA","Washington, DC - MD - VA - WV PMSA","Washington, DC Metro GMR."
+VIRGINIA,VA,BEDFORD CITY,"Central Virginia, Piedmont ISR","Roanoke - Lynchburg, VA - WV DMA","Lynchburg, VA MSA",Other Metro GMR.
+VIRGINIA,VA,FAIRFAX CITY,Northern Virginia ISR,"Washington, DC - MD - PA - VA - WV DMA","Washington, DC - MD - VA - WV PMSA","Washington, DC Metro GMR."
