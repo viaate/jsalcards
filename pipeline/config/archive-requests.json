@@ -1,196 +1,369 @@
 {
-  "snapshots": [
+  "cdx": [
     {
-      "timestamp": "20241204134924",
-      "url": "https://www.cnyhomepage.com/weather/closings/"
+      "url": "wfla.com/clos*",
+      "from": "20140101",
+      "to": "20260930"
     },
     {
-      "timestamp": "20220203090503",
-      "url": "https://www.cnyhomepage.com/weather/closings/"
+      "url": "wfla.com/wp-json/nxd_app/v1/closings_alerts*",
+      "from": "20140101",
+      "to": "20260930"
     },
     {
-      "timestamp": "20191201194911",
-      "url": "https://www.cnyhomepage.com/weather/closings/"
+      "url": "kxan.com/wp-json/nxd_app/v1/closings_alerts*",
+      "from": "20140101",
+      "to": "20260930"
     },
     {
-      "timestamp": "20170315035155",
-      "url": "http://www.cnyhomepage.com/closings-and-delays"
+      "url": "ktsm.com/wp-json/nxd_app/v1/closings_alerts*",
+      "from": "20140101",
+      "to": "20260930"
     },
     {
-      "timestamp": "20240911090605",
-      "url": "https://wgno.com/weather/closings/"
+      "url": "pix11.com/weather/clos*",
+      "from": "20140101",
+      "to": "20260930"
     },
     {
-      "timestamp": "20250122041151",
-      "url": "https://www.counton2.com/weather/closings/"
+      "url": "pix11.com/wp-json/nxd_app/v1/closings_alerts*",
+      "from": "20140101",
+      "to": "20260930"
     },
     {
-      "timestamp": "20230829193113",
-      "url": "https://www.counton2.com/weather/closings/"
+      "url": "phl17.com/weather/school-clos*",
+      "from": "20140101",
+      "to": "20260930"
     },
     {
-      "timestamp": "20250121002324",
-      "url": "https://www.valleycentral.com/wp-json/nxd_app/v1/closings_alerts"
+      "url": "cw33.com/clos*",
+      "from": "20140101",
+      "to": "20260930"
     },
     {
-      "timestamp": "20250122100754",
-      "url": "https://www.wsav.com/weather/closings/"
+      "url": "cw33.com/wp-json/nxd_app/v1/closings_alerts*",
+      "from": "20140101",
+      "to": "20260930"
     },
     {
-      "timestamp": "20220929043553",
-      "url": "https://www.wsav.com/weather/closings/"
+      "url": "cw33.com/weather/school-clos*",
+      "from": "20140101",
+      "to": "20260930"
     },
     {
-      "timestamp": "20240201041845",
-      "url": "https://www.8newsnow.com/weather/closings/"
+      "url": "fox4kc.com/wp-json/nxd_app/v1/closings_alerts*",
+      "from": "20140101",
+      "to": "20260930"
     },
     {
-      "timestamp": "20230329022621",
-      "url": "https://www.8newsnow.com/weather/closings/"
+      "url": "fox59.com/clos*",
+      "from": "20140101",
+      "to": "20260930"
     },
     {
-      "timestamp": "20240218213710",
-      "url": "https://www.kget.com/weather/closings/"
+      "url": "fox59.com/wp-json/nxd_app/v1/closings_alerts*",
+      "from": "20140101",
+      "to": "20260930"
     },
     {
-      "timestamp": "20230329080611",
-      "url": "https://www.kget.com/weather/closings/"
+      "url": "2822news.com/weather/clos*",
+      "from": "20140101",
+      "to": "20260930"
     },
     {
-      "timestamp": "20180321062215",
-      "url": "http://pix11.com/school-closings-and-delays/"
+      "url": "pahomepage.com/weather/clos*",
+      "from": "20140101",
+      "to": "20260930"
     },
     {
-      "timestamp": "20210217230323",
-      "url": "https://www.pix11.com/weather/school-closings-delays?_renderer=json"
+      "url": "pahomepage.com/wp-json/nxd_app/v1/closings_alerts*",
+      "from": "20140101",
+      "to": "20260930"
     },
     {
-      "timestamp": "20191211013446",
-      "url": "https://www.pix11.com/weather/school-closings-delays"
+      "url": "fox40.com/weather/clos*",
+      "from": "20140101",
+      "to": "20260930"
     },
     {
-      "timestamp": "20250205165230",
-      "url": "https://phl17.com/weather/closings/"
+      "url": "fox40.com/clos*",
+      "from": "20140101",
+      "to": "20260930"
     },
     {
-      "timestamp": "20210115014243",
-      "url": "https://fox4kc.com/weather/school-closings/"
+      "url": "fox40.com/weather/school-clos*",
+      "from": "20140101",
+      "to": "20260930"
     },
     {
-      "timestamp": "20180111071111",
-      "url": "http://fox4kc.com:80/weather/school-closings/"
+      "url": "wiproud.com/clos*",
+      "from": "20140101",
+      "to": "20260930"
     },
     {
-      "timestamp": "20191215201741",
-      "url": "https://fox4kc.com/weather/school-closings/"
+      "url": "cbs17.com/wp-json/nxd_app/v1/closings_alerts*",
+      "from": "20140101",
+      "to": "20260930"
     },
     {
-      "timestamp": "20230125090257",
-      "url": "https://fox59.com/weather/closings/"
+      "url": "qcnews.com/weather/clos*",
+      "from": "20140101",
+      "to": "20260930"
     },
     {
-      "timestamp": "20250110020636",
-      "url": "https://fox59.com/weather/closings/"
+      "url": "qcnews.com/wp-json/nxd_app/v1/closings_alerts*",
+      "from": "20140101",
+      "to": "20260930"
     },
     {
-      "timestamp": "20210124210223",
-      "url": "https://fox59.com/weather/closings/"
+      "url": "ourquadcities.com/clos*",
+      "from": "20140101",
+      "to": "20260930"
     },
     {
-      "timestamp": "20240122234159",
-      "url": "https://fox59.com/weather/closings/"
+      "url": "upmatters.com/weather/clos*",
+      "from": "20140101",
+      "to": "20260930"
     },
     {
-      "timestamp": "20170207005629",
-      "url": "http://www.pahomepage.com/closings-and-delays"
+      "url": "cw7az.com/weather/clos*",
+      "from": "20140101",
+      "to": "20260930"
     },
     {
-      "timestamp": "20220221181636",
-      "url": "https://www.wiproud.com/weather/closings/"
+      "url": "cw7az.com/clos*",
+      "from": "20140101",
+      "to": "20260930"
     },
     {
-      "timestamp": "20210115081158",
-      "url": "https://www.wiproud.com/weather/closings/"
+      "url": "cw7az.com/wp-json/nxd_app/v1/closings_alerts*",
+      "from": "20140101",
+      "to": "20260930"
     },
     {
-      "timestamp": "20250212040151",
-      "url": "https://www.wiproud.com/weather/closings/"
+      "url": "wric.com/weather/clos*",
+      "from": "20140101",
+      "to": "20260930"
     },
     {
-      "timestamp": "20250109193707",
-      "url": "https://www.cbs17.com/weather/closings/?ipid=promo-link-block1"
+      "url": "wric.com/wp-json/nxd_app/v1/closings_alerts*",
+      "from": "20140101",
+      "to": "20260930"
     },
     {
-      "timestamp": "20220930044816",
-      "url": "https://www.cbs17.com/weather/closings/"
+      "url": "wvnstv.com/weather/clos*",
+      "from": "20140101",
+      "to": "20260930"
     },
     {
-      "timestamp": "20190904190142",
-      "url": "https://www.cbs17.com/weather/closings/"
+      "url": "wvnstv.com/clos*",
+      "from": "20140101",
+      "to": "20260930"
     },
     {
-      "timestamp": "20220113233757",
-      "url": "https://www.ourquadcities.com/weather/closings/"
+      "url": "wvnstv.com/wp-json/nxd_app/v1/closings_alerts*",
+      "from": "20140101",
+      "to": "20260930"
     },
     {
-      "timestamp": "20191111030008",
-      "url": "https://www.ourquadcities.com/weather/closings/"
+      "url": "media.wvnstv.com/nxs-wvnstv-media-us-east-1/closings/*",
+      "from": "20140101",
+      "to": "20260930"
     },
     {
-      "timestamp": "20201124122058",
-      "url": "https://www.ourquadcities.com/weather/closings/"
+      "url": "wane.com/weather/clos*",
+      "from": "20140101",
+      "to": "20260930"
     },
     {
-      "timestamp": "20230223004907",
-      "url": "https://www.upmatters.com/closings/"
+      "url": "wane.com/clos*",
+      "from": "20140101",
+      "to": "20260930"
     },
     {
-      "timestamp": "20221130133756",
-      "url": "https://www.upmatters.com/closings-and-delays/"
+      "url": "wane.com/wp-json/nxd_app/v1/closings_alerts*",
+      "from": "20140101",
+      "to": "20260930"
     },
     {
-      "timestamp": "20160317042348",
-      "url": "http://www.upmatters.com/closings"
+      "url": "fox44news.com/weather/clos*",
+      "from": "20140101",
+      "to": "20260930"
     },
     {
-      "timestamp": "20160304123244",
-      "url": "http://wric.com:80/closings/"
+      "url": "fox44news.com/clos*",
+      "from": "20140101",
+      "to": "20260930"
     },
     {
-      "timestamp": "20250205204455",
-      "url": "https://www.ourquadcities.com/wp-json/nxd_app/v1/closings_alerts"
+      "url": "fox44news.com/wp-json/nxd_app/v1/closings_alerts*",
+      "from": "20140101",
+      "to": "20260930"
     },
     {
-      "timestamp": "20241214034603",
-      "url": "https://www.ourquadcities.com/wp-json/nxd_app/v1/closings_alerts"
+      "url": "wnct.com/weather/clos*",
+      "from": "20140101",
+      "to": "20260930"
     },
     {
-      "timestamp": "20251215184910",
-      "url": "https://www.ourquadcities.com/wp-json/nxd_app/v1/closings_alerts"
+      "url": "wnct.com/clos*",
+      "from": "20140101",
+      "to": "20260930"
     },
     {
-      "timestamp": "20250305200502",
-      "url": "https://www.ourquadcities.com/wp-json/nxd_app/v1/closings_alerts"
+      "url": "wnct.com/wp-json/nxd_app/v1/closings_alerts*",
+      "from": "20140101",
+      "to": "20260930"
     },
     {
-      "timestamp": "20250216165548",
-      "url": "https://www.ourquadcities.com/wp-json/nxd_app/v1/closings_alerts"
+      "url": "alabamas42.com/weather/clos*",
+      "from": "20140101",
+      "to": "20260930"
     },
     {
-      "timestamp": "20241107083412",
-      "url": "https://www.valleycentral.com/wp-json/nxd_app/v1/closings_alerts"
+      "url": "alabamas42.com/clos*",
+      "from": "20140101",
+      "to": "20260930"
     },
     {
-      "timestamp": "20251112055310",
-      "url": "https://www.wkrg.com/wp-json/nxd_app/v1/closings_alerts"
+      "url": "alabamas42.com/wp-json/nxd_app/v1/closings_alerts*",
+      "from": "20140101",
+      "to": "20260930"
     },
     {
-      "timestamp": "20251113055738",
-      "url": "https://www.klfy.com/wp-json/nxd_app/v1/closings_alerts"
+      "url": "everythinglubbock.com/weather/clos*",
+      "from": "20140101",
+      "to": "20260930"
     },
     {
-      "timestamp": "20260221155606",
-      "url": "https://fox5sandiego.com/wp-json/nxd_app/v1/closings_alerts"
+      "url": "everythinglubbock.com/clos*",
+      "from": "20140101",
+      "to": "20260930"
+    },
+    {
+      "url": "everythinglubbock.com/wp-json/nxd_app/v1/closings_alerts*",
+      "from": "20140101",
+      "to": "20260930"
+    },
+    {
+      "url": "wbtw.com/weather/clos*",
+      "from": "20140101",
+      "to": "20260930"
+    },
+    {
+      "url": "wbtw.com/clos*",
+      "from": "20140101",
+      "to": "20260930"
+    },
+    {
+      "url": "wbtw.com/wp-json/nxd_app/v1/closings_alerts*",
+      "from": "20140101",
+      "to": "20260930"
+    },
+    {
+      "url": "yourbasin.com/weather/clos*",
+      "from": "20140101",
+      "to": "20260930"
+    },
+    {
+      "url": "yourbasin.com/clos*",
+      "from": "20140101",
+      "to": "20260930"
+    },
+    {
+      "url": "yourbasin.com/wp-json/nxd_app/v1/closings_alerts*",
+      "from": "20140101",
+      "to": "20260930"
+    },
+    {
+      "url": "whnt.com/weather/clos*",
+      "from": "20140101",
+      "to": "20260930"
+    },
+    {
+      "url": "whnt.com/clos*",
+      "from": "20140101",
+      "to": "20260930"
+    },
+    {
+      "url": "whnt.com/wp-json/nxd_app/v1/closings_alerts*",
+      "from": "20140101",
+      "to": "20260930"
+    },
+    {
+      "url": "whnt.com/weather/school-clos*",
+      "from": "20140101",
+      "to": "20260930"
+    },
+    {
+      "url": "whnt.com/weather-clos*",
+      "from": "20140101",
+      "to": "20260930"
+    },
+    {
+      "url": "myarklamiss.com/weather/clos*",
+      "from": "20140101",
+      "to": "20260930"
+    },
+    {
+      "url": "myarklamiss.com/clos*",
+      "from": "20140101",
+      "to": "20260930"
+    },
+    {
+      "url": "myarklamiss.com/wp-json/nxd_app/v1/closings_alerts*",
+      "from": "20140101",
+      "to": "20260930"
+    },
+    {
+      "url": "wjbf.com/weather/clos*",
+      "from": "20140101",
+      "to": "20260930"
+    },
+    {
+      "url": "wjbf.com/clos*",
+      "from": "20140101",
+      "to": "20260930"
+    },
+    {
+      "url": "wjbf.com/wp-json/nxd_app/v1/closings_alerts*",
+      "from": "20140101",
+      "to": "20260930"
+    },
+    {
+      "url": "wrbl.com/weather/clos*",
+      "from": "20140101",
+      "to": "20260930"
+    },
+    {
+      "url": "wrbl.com/clos*",
+      "from": "20140101",
+      "to": "20260930"
+    },
+    {
+      "url": "wrbl.com/wp-json/nxd_app/v1/closings_alerts*",
+      "from": "20140101",
+      "to": "20260930"
+    },
+    {
+      "url": "wdhn.com/weather/clos*",
+      "from": "20140101",
+      "to": "20260930"
+    },
+    {
+      "url": "wdhn.com/clos*",
+      "from": "20140101",
+      "to": "20260930"
+    },
+    {
+      "url": "wdhn.com/wp-json/nxd_app/v1/closings_alerts*",
+      "from": "20140101",
+      "to": "20260930"
+    },
+    {
+      "url": "wdhn.com/severe-weather-clos*",
+      "from": "20140101",
+      "to": "20260930"
     }
   ]
 }
