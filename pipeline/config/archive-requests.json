@@ -1,32 +1,188 @@
 {
-  "cdx": [
+  "snapshots": [
     {
-      "url": "kstp.com/*",
-      "from": "20140101",
-      "to": "20260930",
-      "filter": [
-        "urlkey:.*school.?alert.*"
-      ],
-      "collapse": "urlkey"
+      "timestamp": "20221002163613",
+      "url": "https://flathead.mt.gov/department-directory/schools/emergency-school-closures"
     },
     {
-      "url": "kstp.com/*",
-      "from": "20140101",
-      "to": "20260930",
-      "filter": [
-        "urlkey:.*closing.*"
-      ],
-      "collapse": "urlkey"
+      "timestamp": "20221002163614",
+      "url": "https://flathead.mt.gov/department-directory/schools/emergency-school-closures"
     },
     {
-      "url": "kstp.com/wp-content/uploads/dynamic-assets/*",
-      "from": "20140101",
-      "to": "20260930"
+      "timestamp": "20221205142410",
+      "url": "https://flathead.mt.gov/department-directory/schools/emergency-school-closures"
     },
     {
-      "url": "kstp.com/school-alert*",
-      "from": "20140101",
-      "to": "20260930"
+      "timestamp": "20230103134706",
+      "url": "https://flathead.mt.gov/department-directory/schools/emergency-school-closures"
+    },
+    {
+      "timestamp": "20230103134707",
+      "url": "https://flathead.mt.gov/department-directory/schools/emergency-school-closures"
+    },
+    {
+      "timestamp": "20230109022217",
+      "url": "https://flathead.mt.gov/department-directory/schools/emergency-school-closures"
+    },
+    {
+      "timestamp": "20230330074229",
+      "url": "https://flathead.mt.gov/department-directory/schools/emergency-school-closures"
+    },
+    {
+      "timestamp": "20230526184637",
+      "url": "https://flathead.mt.gov/department-directory/schools/emergency-school-closures"
+    },
+    {
+      "timestamp": "20230606052520",
+      "url": "https://flathead.mt.gov/department-directory/schools/emergency-school-closures"
+    },
+    {
+      "timestamp": "20230606052528",
+      "url": "https://flathead.mt.gov/department-directory/schools/emergency-school-closures"
+    },
+    {
+      "timestamp": "20230705093452",
+      "url": "https://flathead.mt.gov/department-directory/schools/emergency-school-closures"
+    },
+    {
+      "timestamp": "20230705093516",
+      "url": "https://flathead.mt.gov/department-directory/schools/emergency-school-closures"
+    },
+    {
+      "timestamp": "20231002210436",
+      "url": "https://flathead.mt.gov/department-directory/schools/emergency-school-closures"
+    },
+    {
+      "timestamp": "20240209104252",
+      "url": "https://flathead.mt.gov/department-directory/schools/emergency-school-closures"
+    },
+    {
+      "timestamp": "20240209110604",
+      "url": "https://flathead.mt.gov/department-directory/schools/emergency-school-closures"
+    },
+    {
+      "timestamp": "20240209112143",
+      "url": "https://flathead.mt.gov/department-directory/schools/emergency-school-closures"
+    },
+    {
+      "timestamp": "20240418172751",
+      "url": "https://flathead.mt.gov/department-directory/schools/emergency-school-closures"
+    },
+    {
+      "timestamp": "20240505060415",
+      "url": "https://flathead.mt.gov/department-directory/schools/emergency-school-closures"
+    },
+    {
+      "timestamp": "20240518183521",
+      "url": "https://flathead.mt.gov/department-directory/schools/emergency-school-closures"
+    },
+    {
+      "timestamp": "20240529135832",
+      "url": "https://flathead.mt.gov/department-directory/schools/emergency-school-closures"
+    },
+    {
+      "timestamp": "20240605104041",
+      "url": "https://flathead.mt.gov/department-directory/schools/emergency-school-closures"
+    },
+    {
+      "timestamp": "20240707193409",
+      "url": "https://flathead.mt.gov/department-directory/schools/emergency-school-closures"
+    },
+    {
+      "timestamp": "20240720153051",
+      "url": "https://flathead.mt.gov/department-directory/schools/emergency-school-closures"
+    },
+    {
+      "timestamp": "20240804080337",
+      "url": "https://flathead.mt.gov/department-directory/schools/emergency-school-closures"
+    },
+    {
+      "timestamp": "20240904013436",
+      "url": "https://flathead.mt.gov/department-directory/schools/emergency-school-closures"
+    },
+    {
+      "timestamp": "20240912100417",
+      "url": "https://flathead.mt.gov/department-directory/schools/emergency-school-closures"
+    },
+    {
+      "timestamp": "20240914175947",
+      "url": "https://flathead.mt.gov/department-directory/schools/emergency-school-closures"
+    },
+    {
+      "timestamp": "20241013103209",
+      "url": "https://flathead.mt.gov/department-directory/schools/emergency-school-closures"
+    },
+    {
+      "timestamp": "20241203080930",
+      "url": "https://flathead.mt.gov/department-directory/schools/emergency-school-closures"
+    },
+    {
+      "timestamp": "20250103100547",
+      "url": "https://flathead.mt.gov/department-directory/schools/emergency-school-closures"
+    },
+    {
+      "timestamp": "20250113162149",
+      "url": "https://www.flathead.mt.gov/department-directory/schools/emergency-school-closures"
+    },
+    {
+      "timestamp": "20250114124314",
+      "url": "https://flathead.mt.gov/department-directory/schools/emergency-school-closures"
+    },
+    {
+      "timestamp": "20250203020524",
+      "url": "https://flathead.mt.gov/department-directory/schools/emergency-school-closures"
+    },
+    {
+      "timestamp": "20250227002745",
+      "url": "https://flathead.mt.gov/department-directory/schools/emergency-school-closures"
+    },
+    {
+      "timestamp": "20250305183800",
+      "url": "https://flathead.mt.gov/department-directory/schools/emergency-school-closures"
+    },
+    {
+      "timestamp": "20250309220059",
+      "url": "https://www.flathead.mt.gov/department-directory/schools/emergency-school-closures"
+    },
+    {
+      "timestamp": "20250421172158",
+      "url": "https://flathead.mt.gov/department-directory/schools/emergency-school-closures"
+    },
+    {
+      "timestamp": "20250523140336",
+      "url": "https://flathead.mt.gov/department-directory/schools/emergency-school-closures"
+    },
+    {
+      "timestamp": "20250523203232",
+      "url": "https://www.flathead.mt.gov/department-directory/schools/emergency-school-closures"
+    },
+    {
+      "timestamp": "20250815084820",
+      "url": "https://flathead.mt.gov/department-directory/schools/emergency-school-closures"
+    },
+    {
+      "timestamp": "20190716125943",
+      "url": "https://www.kulr8.com/schoolclosures/"
+    },
+    {
+      "timestamp": "20190820123509",
+      "url": "https://www.kulr8.com/schoolclosures/"
+    },
+    {
+      "timestamp": "20191019051152",
+      "url": "https://www.kulr8.com/schoolclosures/"
+    },
+    {
+      "timestamp": "20191208163701",
+      "url": "https://www.kulr8.com/schoolclosures/"
+    },
+    {
+      "timestamp": "20210126221816",
+      "url": "https://www.kulr8.com/schoolclosures/"
+    },
+    {
+      "timestamp": "20210917232219",
+      "url": "https://www.kulr8.com/schoolclosures/"
     }
   ]
 }
