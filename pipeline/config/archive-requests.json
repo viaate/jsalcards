@@ -1,60 +1,148 @@
 {
   "snapshots": [
     {
-      "timestamp": "20171202111944",
-      "url": "http://delmarvabroadcasting.com/wdel/snowatch.php"
+      "timestamp": "20231129025520",
+      "url": "https://www.abc4.com/weather/closings/"
     },
     {
-      "timestamp": "20180121234109",
-      "url": "http://delmarvabroadcasting.com:80/wdel/snowatch.php"
+      "timestamp": "20241204152121",
+      "url": "https://www.abc4.com/weather/closings/"
     },
     {
-      "timestamp": "20180326120357",
-      "url": "http://delmarvabroadcasting.com:80/wdel/snowatch.php"
+      "timestamp": "20250117073341",
+      "url": "https://www.abc4.com/weather/closings/"
     },
     {
-      "timestamp": "20180530033343",
-      "url": "http://delmarvabroadcasting.com:80/wdel/snowatch.php"
+      "timestamp": "20230206233127",
+      "url": "https://www.abc4.com/weather/closings/"
     },
     {
-      "timestamp": "20181108182009",
-      "url": "http://delmarvabroadcasting.com:80/wdel/snowatch.php"
+      "timestamp": "20240327221146",
+      "url": "https://www.abc4.com/weather/closings/"
     },
     {
-      "timestamp": "20181213072020",
-      "url": "https://delmarvabroadcasting.com/wdel/snowatch.php"
+      "timestamp": "20230107034302",
+      "url": "https://www.abc4.com/weather/closings/"
     },
     {
-      "timestamp": "20181220020732",
-      "url": "http://delmarvabroadcasting.com:80/wdel/snowatch.php"
+      "timestamp": "20231226231729",
+      "url": "https://www.yourerie.com/weather/closings/"
     },
     {
-      "timestamp": "20190425123819",
-      "url": "https://delmarvabroadcasting.com/wdel/snowatch.php"
+      "timestamp": "20230303160539",
+      "url": "https://www.yourerie.com/weather/closings/"
     },
     {
-      "timestamp": "20230202034905",
-      "url": "https://katv.com/weather/closings"
+      "timestamp": "20230329124831",
+      "url": "https://www.yourerie.com/weather/closings/"
     },
     {
-      "timestamp": "20230202034907",
-      "url": "https://katv.com/resources/ftptransfer/katv/closings/closings.html"
+      "timestamp": "20231121230755",
+      "url": "https://www.yourerie.com/weather/closings/"
     },
     {
-      "timestamp": "20250121120954",
-      "url": "https://katv.com/resources/ftptransfer/katv/closings/closings.html"
+      "timestamp": "20241219091210",
+      "url": "https://www.yourerie.com/weather/closings/"
     },
     {
-      "timestamp": "20250206135126",
-      "url": "https://katv.com/resources/ftptransfer/katv/closings/closings.html"
+      "timestamp": "20231107231322",
+      "url": "https://www.yourerie.com/weather/closings/"
     },
     {
-      "timestamp": "20220107144203",
-      "url": "https://foxbaltimore.com/resources/ftptransfer/wbff/closings/closings.htm"
+      "timestamp": "20230213101349",
+      "url": "https://www.kens5.com/closings"
     },
     {
-      "timestamp": "20220521053941",
-      "url": "https://foxbaltimore.com/resources/ftptransfer/wbff/closings/closings.htm"
+      "timestamp": "20230313034600",
+      "url": "https://www.kens5.com/closings"
+    },
+    {
+      "timestamp": "20230310084702",
+      "url": "https://www.kens5.com/closings"
+    },
+    {
+      "timestamp": "20241126205724",
+      "url": "https://www.kens5.com/closings"
+    },
+    {
+      "timestamp": "20230307095636",
+      "url": "https://www.kens5.com/closings"
+    },
+    {
+      "timestamp": "20210111010325",
+      "url": "https://www.kens5.com/closings"
+    },
+    {
+      "timestamp": "20230213092343",
+      "url": "https://www.12newsnow.com/closings"
+    },
+    {
+      "timestamp": "20241127031105",
+      "url": "https://www.12newsnow.com/closings"
+    },
+    {
+      "timestamp": "20260313122959",
+      "url": "https://www.12newsnow.com/closings"
+    },
+    {
+      "timestamp": "20240123192714",
+      "url": "https://www.yourcentralvalley.com/weather/closings/"
+    },
+    {
+      "timestamp": "20231201145118",
+      "url": "https://www.yourcentralvalley.com/weather/closings/"
+    },
+    {
+      "timestamp": "20231129073922",
+      "url": "https://www.yourcentralvalley.com/weather/closings/"
+    },
+    {
+      "timestamp": "20230310005641",
+      "url": "https://www.cbs8.com/closings"
+    },
+    {
+      "timestamp": "20230315060600",
+      "url": "https://www.cbs8.com/closings"
+    },
+    {
+      "timestamp": "20221105091025",
+      "url": "https://www.cbs8.com/closings"
+    },
+    {
+      "timestamp": "20240112051846",
+      "url": "https://www.westernslopenow.com/weather/closings/"
+    },
+    {
+      "timestamp": "20240208171823",
+      "url": "https://www.westernslopenow.com/weather/closings/"
+    },
+    {
+      "timestamp": "20240124120552",
+      "url": "https://www.westernslopenow.com/weather/closings/"
+    },
+    {
+      "timestamp": "20210303233206",
+      "url": "https://www.ksby.com/weather/school-closings-delays"
+    },
+    {
+      "timestamp": "20251118094426",
+      "url": "https://www.ksby.com/weather/school-closings-delays"
+    },
+    {
+      "timestamp": "20250328102751",
+      "url": "https://www.ksby.com/weather/school-closings-delays"
+    }
+  ],
+  "cdx": [
+    {
+      "url": "mytwintiers.com/weather/closings*",
+      "from": "20140101",
+      "to": "20260930"
+    },
+    {
+      "url": "louisianafirstnews.com/weather/closings*",
+      "from": "20140101",
+      "to": "20260930"
     }
   ]
 }
