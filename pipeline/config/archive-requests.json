@@ -1,513 +1,650 @@
 {
-  "cdx": [],
-  "snapshots": [
+  "cdx": [
     {
-      "timestamp": "20260126113000",
-      "url": "https://www.northcountrypublicradio.org/storm.php"
+      "url": "www.northcountrypublicradio.org/storm.php*",
+      "from": "20140101",
+      "to": "20260930"
     },
     {
-      "timestamp": "20260115113000",
-      "url": "https://www.northcountrypublicradio.org/storm.php"
+      "url": "wcyb.com/weather/closings*",
+      "from": "20140101",
+      "to": "20260930"
     },
     {
-      "timestamp": "20241213113000",
-      "url": "https://www.northcountrypublicradio.org/storm.php"
+      "url": "wcyb.com/resources/ftptransfer/wcyb/closings/*",
+      "from": "20140101",
+      "to": "20260930"
     },
     {
-      "timestamp": "20260126113000",
-      "url": "https://spectrumlocalnews.com/services/closings.54e4f3852861e36744edafbe.json"
+      "url": "wgme.com/weather/closings*",
+      "from": "20140101",
+      "to": "20260930"
     },
     {
-      "timestamp": "20250110113000",
-      "url": "https://spectrumlocalnews.com/services/closings.54e4f3852861e36744edafbe.json"
+      "url": "wgme.com/resources/ftptransfer/wgme/closings/*",
+      "from": "20140101",
+      "to": "20260930"
     },
     {
-      "timestamp": "20260202113000",
-      "url": "https://spectrumlocalnews.com/services/closings.54e4f4372861e36744edafc0.json"
+      "url": "wjactv.com/weather/closings*",
+      "from": "20140101",
+      "to": "20260930"
     },
     {
-      "timestamp": "20250122113000",
-      "url": "https://spectrumlocalnews.com/services/closings.54e4f4372861e36744edafc0.json"
+      "url": "wjactv.com/resources/ftptransfer/wjac/closings/*",
+      "from": "20140101",
+      "to": "20260930"
     },
     {
-      "timestamp": "20260126113000",
-      "url": "https://spectrumlocalnews.com/services/closings.54e4ff48ceafc43649b4dae5.json"
+      "url": "wjla.com/weather/closings*",
+      "from": "20140101",
+      "to": "20260930"
     },
     {
-      "timestamp": "20250121113000",
-      "url": "https://spectrumlocalnews.com/services/closings.54e4ff48ceafc43649b4dae5.json"
+      "url": "wjla.com/resources/ftptransfer/wjla/closings/*",
+      "from": "20140101",
+      "to": "20260930"
     },
     {
-      "timestamp": "20260126113000",
-      "url": "https://spectrumlocalnews.com/services/closings.54e4ff75ceafc43649b4dae7.json"
+      "url": "wlos.com/weather/closings*",
+      "from": "20140101",
+      "to": "20260930"
     },
     {
-      "timestamp": "20250121113000",
-      "url": "https://spectrumlocalnews.com/services/closings.54e4ff75ceafc43649b4dae7.json"
+      "url": "wlos.com/resources/ftptransfer/wlos/closings/*",
+      "from": "20140101",
+      "to": "20260930"
     },
     {
-      "timestamp": "20260223113000",
-      "url": "https://itv.news12.com/school_closings/closings.jsp?region=NJ"
+      "url": "wsbt.com/weather/closings*",
+      "from": "20140101",
+      "to": "20260930"
     },
     {
-      "timestamp": "20250206113000",
-      "url": "https://itv.news12.com/school_closings/closings.jsp?region=NJ"
+      "url": "wsbt.com/resources/ftptransfer/wsbt/closings/*",
+      "from": "20140101",
+      "to": "20260930"
     },
     {
-      "timestamp": "20260223113000",
-      "url": "https://itv.news12.com/school_closings/closings.jsp?region=HV"
+      "url": "wset.com/weather/closings*",
+      "from": "20140101",
+      "to": "20260930"
     },
     {
-      "timestamp": "20250206113000",
-      "url": "https://itv.news12.com/school_closings/closings.jsp?region=HV"
+      "url": "wset.com/resources/ftptransfer/wset/closings/*",
+      "from": "20140101",
+      "to": "20260930"
     },
     {
-      "timestamp": "20260223113000",
-      "url": "https://itv.news12.com/school_closings/closings.jsp?region=BX"
+      "url": "wtov9.com/weather/closings*",
+      "from": "20140101",
+      "to": "20260930"
     },
     {
-      "timestamp": "20250206113000",
-      "url": "https://itv.news12.com/school_closings/closings.jsp?region=BX"
+      "url": "wtov9.com/resources/ftptransfer/wtov/closings/*",
+      "from": "20140101",
+      "to": "20260930"
     },
     {
-      "timestamp": "20260223113000",
-      "url": "https://itv.news12.com/school_closings/closings.jsp?region=BK"
+      "url": "wwmt.com/weather/closings*",
+      "from": "20140101",
+      "to": "20260930"
     },
     {
-      "timestamp": "20250206113000",
-      "url": "https://itv.news12.com/school_closings/closings.jsp?region=BK"
+      "url": "wwmt.com/resources/ftptransfer/wwmt/closings/*",
+      "from": "20140101",
+      "to": "20260930"
     },
     {
-      "timestamp": "20260223113000",
-      "url": "https://nj1015.com/wp-content/uploads/njclosings/ByCountyclosings.html"
+      "url": "foxbaltimore.com/weather/closings*",
+      "from": "20140101",
+      "to": "20260930"
     },
     {
-      "timestamp": "20250106113000",
-      "url": "https://nj1015.com/wp-content/uploads/njclosings/ByCountyclosings.html"
+      "url": "ftptransfer.sinclairstoryline.com/wbff/closings/*",
+      "from": "20140101",
+      "to": "20260930"
     },
     {
-      "timestamp": "20260223113000",
-      "url": "https://schoolclosings.delaware.gov/XML/PortalFeed"
+      "url": "katv.com/weather/closings*",
+      "from": "20140101",
+      "to": "20260930"
     },
     {
-      "timestamp": "20250106113000",
-      "url": "https://schoolclosings.delaware.gov/XML/PortalFeed"
+      "url": "kwwl.com/weather/closings*",
+      "from": "20140101",
+      "to": "20260930"
     },
     {
-      "timestamp": "20260126113000",
-      "url": "https://wveis.k12.wv.us/closings/rss.php"
+      "url": "ftp2.kwwl.com/*",
+      "from": "20140101",
+      "to": "20260930"
     },
     {
-      "timestamp": "20250106113000",
-      "url": "https://wveis.k12.wv.us/closings/rss.php"
+      "url": "wxow.com/weather/closings*",
+      "from": "20140101",
+      "to": "20260930"
     },
     {
-      "timestamp": "20260126113000",
-      "url": "https://api.wral.com/closings/v1/"
+      "url": "ftp2.wxow.com/*",
+      "from": "20140101",
+      "to": "20260930"
     },
     {
-      "timestamp": "20250110113000",
-      "url": "https://api.wral.com/closings/v1/"
+      "url": "wqow.com/weather/closings*",
+      "from": "20140101",
+      "to": "20260930"
     },
     {
-      "timestamp": "20260127113000",
-      "url": "https://wcavclosings.lockwoodbroadcast.com/data/closings.json"
+      "url": "ftp2.wqow.com/*",
+      "from": "20140101",
+      "to": "20260930"
     },
     {
-      "timestamp": "20250106113000",
-      "url": "https://wcavclosings.lockwoodbroadcast.com/data/closings.json"
+      "url": "waow.com/weather/closings*",
+      "from": "20140101",
+      "to": "20260930"
     },
     {
-      "timestamp": "20260223113000",
-      "url": "https://whdh.com/storm-closings-delays/"
+      "url": "ftp2.waow.com/*",
+      "from": "20140101",
+      "to": "20260930"
     },
     {
-      "timestamp": "20250120113000",
-      "url": "https://whdh.com/storm-closings-delays/"
+      "url": "wkow.com/weather/closings*",
+      "from": "20140101",
+      "to": "20260930"
     },
     {
-      "timestamp": "20251229113000",
-      "url": "https://www.9and10news.com/pf/api/v3/content/fetch/weather-school-closings"
+      "url": "ftp2.wkow.com/*",
+      "from": "20140101",
+      "to": "20260930"
     },
     {
-      "timestamp": "20241212113000",
-      "url": "https://www.9and10news.com/pf/api/v3/content/fetch/weather-school-closings"
+      "url": "kimt.com/weather/closings*",
+      "from": "20140101",
+      "to": "20260930"
     },
     {
-      "timestamp": "20260223113000",
-      "url": "https://eventdelay.com/new/widget/channel/114/page"
+      "url": "ftp2.kimt.com/*",
+      "from": "20140101",
+      "to": "20260930"
     },
     {
-      "timestamp": "20250106113000",
-      "url": "https://eventdelay.com/new/widget/channel/114/page"
+      "url": "wktv.com/weather/closings*",
+      "from": "20140101",
+      "to": "20260930"
     },
     {
-      "timestamp": "20260123113000",
-      "url": "https://www.koamnewsnow.com/app/closings/KOAM-closingsC.xml"
+      "url": "ftp2.wktv.com/*",
+      "from": "20140101",
+      "to": "20260930"
     },
     {
-      "timestamp": "20260123113000",
-      "url": "https://www.koamnewsnow.com/weather/closings-and-delays/"
+      "url": "wsbtv.com/weather/school-closings*",
+      "from": "20140101",
+      "to": "20260930"
     },
     {
-      "timestamp": "20250218113000",
-      "url": "https://www.koamnewsnow.com/app/closings/KOAM-closingsC.xml"
+      "url": "wsbtv.com/pf/api/v3/content/fetch/closing*",
+      "from": "20140101",
+      "to": "20260930"
     },
     {
-      "timestamp": "20250218113000",
-      "url": "https://www.koamnewsnow.com/weather/closings-and-delays/"
+      "url": "boston25news.com/weather/school-closings*",
+      "from": "20140101",
+      "to": "20260930"
     },
     {
-      "timestamp": "20260106113000",
-      "url": "https://www.kxly.com/app/closings/closings.xml"
+      "url": "boston25news.com/pf/api/v3/content/fetch/closing*",
+      "from": "20140101",
+      "to": "20260930"
     },
     {
-      "timestamp": "20260106113000",
-      "url": "https://www.kxly.com/weather/school-closures/"
+      "url": "wsoctv.com/weather/school-closings*",
+      "from": "20140101",
+      "to": "20260930"
     },
     {
-      "timestamp": "20250205113000",
-      "url": "https://www.kxly.com/app/closings/closings.xml"
+      "url": "wsoctv.com/pf/api/v3/content/fetch/closing*",
+      "from": "20140101",
+      "to": "20260930"
     },
     {
-      "timestamp": "20250205113000",
-      "url": "https://www.kxly.com/weather/school-closures/"
+      "url": "whio.com/weather/school-closings*",
+      "from": "20140101",
+      "to": "20260930"
     },
     {
-      "timestamp": "20260130113000",
-      "url": "https://local3news.com/app/closings/closings.html"
+      "url": "whio.com/pf/api/v3/content/fetch/closing*",
+      "from": "20140101",
+      "to": "20260930"
     },
     {
-      "timestamp": "20260130113000",
-      "url": "https://www.local3news.com/local-weather/school-closings/"
+      "url": "wpxi.com/weather/school-closings*",
+      "from": "20140101",
+      "to": "20260930"
     },
     {
-      "timestamp": "20250110113000",
-      "url": "https://local3news.com/app/closings/closings.html"
+      "url": "wpxi.com/pf/api/v3/content/fetch/closing*",
+      "from": "20140101",
+      "to": "20260930"
     },
     {
-      "timestamp": "20250110113000",
-      "url": "https://www.local3news.com/local-weather/school-closings/"
+      "url": "kiro7.com/weather/school-closings*",
+      "from": "20140101",
+      "to": "20260930"
     },
     {
-      "timestamp": "20260126113000",
-      "url": "https://www.foxillinois.com/weather/closings/"
+      "url": "kiro7.com/pf/api/v3/content/fetch/closing*",
+      "from": "20140101",
+      "to": "20260930"
     },
     {
-      "timestamp": "20250106113000",
-      "url": "https://www.foxillinois.com/weather/closings/"
+      "url": "clickondetroit.com/school_closings*",
+      "from": "20140101",
+      "to": "20260930"
     },
     {
-      "timestamp": "20260126113000",
-      "url": "https://www.newschannel20.com/weather/closings/"
+      "url": "clickondetroit.com/pf/api/v3/content/fetch/school-closings*",
+      "from": "20140101",
+      "to": "20260930"
     },
     {
-      "timestamp": "20250106113000",
-      "url": "https://www.newschannel20.com/weather/closings/"
+      "url": "wsls.com/school-closings*",
+      "from": "20140101",
+      "to": "20260930"
     },
     {
-      "timestamp": "20260316113000",
-      "url": "https://www.khqa.com/weather/closings/"
+      "url": "wsls.com/pf/api/v3/content/fetch/school-closings*",
+      "from": "20140101",
+      "to": "20260930"
     },
     {
-      "timestamp": "20250212113000",
-      "url": "https://www.khqa.com/weather/closings/"
+      "url": "kstp.com/school-alert*",
+      "from": "20140101",
+      "to": "20260930"
     },
     {
-      "timestamp": "20260219113000",
-      "url": "https://wt1.weatherthreat.com/wt_list/viewClosings.php?media_id=ntv&plugin=1&server=wt1&version=2.0.2&directory="
+      "url": "kstp.com/wp-content/uploads/dynamic-assets/*",
+      "from": "20140101",
+      "to": "20260930"
     },
     {
-      "timestamp": "20250319113000",
-      "url": "https://wt1.weatherthreat.com/wt_list/viewClosings.php?media_id=ntv&plugin=1&server=wt1&version=2.0.2&directory="
+      "url": "wdio.com/school-alert*",
+      "from": "20140101",
+      "to": "20260930"
     },
     {
-      "timestamp": "20260306113000",
-      "url": "https://wt1.weatherthreat.com/wt_list/viewClosings.php?media_id=kneb&plugin=1&server=wt1&version=2.0.2&directory="
+      "url": "wdio.com/wp-content/uploads/dynamic-assets/*",
+      "from": "20140101",
+      "to": "20260930"
     },
     {
-      "timestamp": "20250120113000",
-      "url": "https://wt1.weatherthreat.com/wt_list/viewClosings.php?media_id=kneb&plugin=1&server=wt1&version=2.0.2&directory="
+      "url": "wnyt.com/closings*",
+      "from": "20140101",
+      "to": "20260930"
     },
     {
-      "timestamp": "20260223113000",
-      "url": "https://itv.news12.com/school_closings/closings.jsp?region=LI"
+      "url": "wnyt.com/wp-content/uploads/dynamic-assets/*",
+      "from": "20140101",
+      "to": "20260930"
     },
     {
-      "timestamp": "20250206113000",
-      "url": "https://itv.news12.com/school_closings/closings.jsp?region=LI"
+      "url": "kaaltv.com/weather/school-closings*",
+      "from": "20140101",
+      "to": "20260930"
     },
     {
-      "timestamp": "20260223113000",
-      "url": "https://itv.news12.com/school_closings/closings.jsp?region=WC"
+      "url": "kaaltv.com/wp-content/uploads/dynamic-assets/*",
+      "from": "20140101",
+      "to": "20260930"
     },
     {
-      "timestamp": "20250206113000",
-      "url": "https://itv.news12.com/school_closings/closings.jsp?region=WC"
+      "url": "kob.com/closings*",
+      "from": "20140101",
+      "to": "20260930"
     },
     {
-      "timestamp": "20260126113000",
-      "url": "https://www.ribroadcasters.com/news_and_events/closings_delays/"
+      "url": "kob.com/wp-content/uploads/dynamic-assets/*",
+      "from": "20140101",
+      "to": "20260930"
     },
     {
-      "timestamp": "20250120113000",
-      "url": "https://www.ribroadcasters.com/news_and_events/closings_delays/"
+      "url": "whec.com/closings-and-delays*",
+      "from": "20140101",
+      "to": "20260930"
     },
     {
-      "timestamp": "20260223113000",
-      "url": "https://www.coasttv.com/closings/"
+      "url": "whec.com/wp-content/uploads/dynamic-assets/*",
+      "from": "20140101",
+      "to": "20260930"
     },
     {
-      "timestamp": "20250106113000",
-      "url": "https://www.coasttv.com/closings/"
+      "url": "wtop.com/closings-and-delays*",
+      "from": "20140101",
+      "to": "20260930"
     },
     {
-      "timestamp": "20241228215601",
-      "url": "https://abcstlouis.com/resources/ftptransfer/kdnl/closings/closings.html"
+      "url": "spectrumlocalnews.com/nys/capital-region/weather/closings*",
+      "from": "20140101",
+      "to": "20260930"
     },
     {
-      "timestamp": "20250205222530",
-      "url": "https://cbs2iowa.com/resources/ftptransfer/kgan/closings/closings.html"
+      "url": "spectrumlocalnews.com/services/closings.*",
+      "from": "20140101",
+      "to": "20260930"
     },
     {
-      "timestamp": "20250121065521",
-      "url": "https://cbs2iowa.com/resources/ftptransfer/kgan/closings/closings.html"
+      "url": "spectrumlocalnews.com/nys/central-ny/weather/closings*",
+      "from": "20140101",
+      "to": "20260930"
     },
     {
-      "timestamp": "20190321125916",
-      "url": "https://cbs2iowa.com/resources/ftptransfer/kgan/closings/closings.html"
+      "url": "spectrumlocalnews.com/nys/rochester/weather/closings*",
+      "from": "20140101",
+      "to": "20260930"
     },
     {
-      "timestamp": "20160224030410",
-      "url": "http://cbs2iowa.com/resources/ftptransfer/kgan/closings/closings.html"
+      "url": "spectrumlocalnews.com/nys/buffalo/weather/closings*",
+      "from": "20140101",
+      "to": "20260930"
     },
     {
-      "timestamp": "20250206163714",
-      "url": "https://kmph.com/resources/ftptransfer/kmph/closings/closings.html"
+      "url": "spectrumlocalnews.com/nys/hudson-valley/weather/closings*",
+      "from": "20140101",
+      "to": "20260930"
     },
     {
-      "timestamp": "20191213022029",
-      "url": "https://kmph.com/resources/ftptransfer/kmph/closings/closings.html"
+      "url": "spectrumlocalnews.com/nc/charlotte/weather/closings*",
+      "from": "20140101",
+      "to": "20260930"
     },
     {
-      "timestamp": "20250116043025",
-      "url": "https://okcfox.com/resources/ftptransfer/kokh/closings/closings.htm"
+      "url": "spectrumlocalnews.com/nc/triangle-sandhills/weather/closings*",
+      "from": "20140101",
+      "to": "20260930"
     },
     {
-      "timestamp": "20250109201120",
-      "url": "https://okcfox.com/resources/ftptransfer/kokh/closings/closings.htm"
+      "url": "spectrumlocalnews.com/nc/triad/weather/closings*",
+      "from": "20140101",
+      "to": "20260930"
     },
     {
-      "timestamp": "20191224105613",
-      "url": "https://okcfox.com/resources/ftptransfer/kokh/closings/closings.htm"
+      "url": "spectrumlocalnews.com/nc/coastal/weather/closings*",
+      "from": "20140101",
+      "to": "20260930"
     },
     {
-      "timestamp": "20250206204915",
-      "url": "https://komonews.com/resources/ftptransfer/komo/closings/komoclosings.html"
+      "url": "spectrumlocalnews.com/tx/austin/weather/closings*",
+      "from": "20140101",
+      "to": "20260930"
     },
     {
-      "timestamp": "20241211231516",
-      "url": "https://komonews.com/resources/ftptransfer/komo/closings/komoclosings.html"
+      "url": "spectrumlocalnews.com/tx/san-antonio/weather/closings*",
+      "from": "20140101",
+      "to": "20260930"
     },
     {
-      "timestamp": "20240312042114",
-      "url": "https://komonews.com/resources/ftptransfer/komo/closings/komoclosings.html"
+      "url": "itv.news12.com/school_closings/closings.jsp*",
+      "from": "20140101",
+      "to": "20260930"
     },
     {
-      "timestamp": "20231224211053",
-      "url": "https://komonews.com/resources/ftptransfer/komo/closings/komoclosings.html"
+      "url": "nj1015.com/closings*",
+      "from": "20140101",
+      "to": "20260930"
     },
     {
-      "timestamp": "20200207062108",
-      "url": "https://komonews.com/resources/ftptransfer/komo/closings/komoclosings.html"
+      "url": "nj1015.com/wp-content/uploads/njclosings/*",
+      "from": "20140101",
+      "to": "20260930"
     },
     {
-      "timestamp": "20250206025412",
-      "url": "https://krcgtv.com/resources/ftptransfer/krcg/closings/WebClose.htm"
+      "url": "schoolclosings.delaware.gov*",
+      "from": "20140101",
+      "to": "20260930"
     },
     {
-      "timestamp": "20241107103213",
-      "url": "https://krcgtv.com/resources/ftptransfer/krcg/closings/WebClose.htm"
+      "url": "schoolclosings.delaware.gov/XML/*",
+      "from": "20140101",
+      "to": "20260930"
     },
     {
-      "timestamp": "20240304052023",
-      "url": "https://krcgtv.com/resources/ftptransfer/krcg/closings/WebClose.htm"
+      "url": "ribroadcasters.com/news_and_events/closings_delays*",
+      "from": "20140101",
+      "to": "20260930"
     },
     {
-      "timestamp": "20210318145555",
-      "url": "https://krcgtv.com/resources/ftptransfer/krcg/closings/WebClose.htm"
+      "url": "wveis.k12.wv.us/closings*",
+      "from": "20140101",
+      "to": "20260930"
     },
     {
-      "timestamp": "20200319061602",
-      "url": "https://krcgtv.com/resources/ftptransfer/krcg/closings/WebClose.htm"
+      "url": "wveis.k12.wv.us/closings/*",
+      "from": "20140101",
+      "to": "20260930"
     },
     {
-      "timestamp": "20260324225316",
-      "url": "https://ktul.com/resources/ftptransfer/ktul/closings/closings.html"
+      "url": "wral.com/weather/closings*",
+      "from": "20140101",
+      "to": "20260930"
     },
     {
-      "timestamp": "20251206122002",
-      "url": "https://ktul.com/resources/ftptransfer/ktul/closings/closings.html"
+      "url": "api.wral.com/closings/v1/*",
+      "from": "20140101",
+      "to": "20260930"
     },
     {
-      "timestamp": "20250219161325",
-      "url": "https://ktul.com/resources/ftptransfer/ktul/closings/closings.html"
+      "url": "cbs19news.com/weather/closings*",
+      "from": "20140101",
+      "to": "20260930"
     },
     {
-      "timestamp": "20250213030209",
-      "url": "https://ktul.com/resources/ftptransfer/ktul/closings/closings.html"
+      "url": "wcavclosings.lockwoodbroadcast.com/data/*",
+      "from": "20140101",
+      "to": "20260930"
     },
     {
-      "timestamp": "20240306030558",
-      "url": "https://ktul.com/resources/ftptransfer/ktul/closings/closings.html"
+      "url": "whdh.com/storm-closings-delays*",
+      "from": "20140101",
+      "to": "20260930"
     },
     {
-      "timestamp": "20240322003855",
-      "url": "https://ktxs.com/resources/ftptransfer/ktxs/closings/closings.html"
+      "url": "9and10news.com/weather/school-closings*",
+      "from": "20140101",
+      "to": "20260930"
     },
     {
-      "timestamp": "20191225082912",
-      "url": "https://ktxs.com/resources/ftptransfer/ktxs/closings/closings.html"
+      "url": "9and10news.com/pf/api/v3/content/fetch/weather-school-closings*",
+      "from": "20140101",
+      "to": "20260930"
     },
     {
-      "timestamp": "20200217031519",
-      "url": "http://cwtreasurevalley.com/resources/ftptransfer/kboi/closings/closings.html"
+      "url": "wdel.com/features/wdel-stormwatch*",
+      "from": "20140101",
+      "to": "20260930"
     },
     {
-      "timestamp": "20250208205834",
-      "url": "https://wchstv.com/resources/ftptransfer/wchs/closings/closings.html"
+      "url": "eventdelay.com/new/widget/channel/114/*",
+      "from": "20140101",
+      "to": "20260930"
     },
     {
-      "timestamp": "20241212034341",
-      "url": "https://wchstv.com/resources/ftptransfer/wchs/closings/closings.html"
+      "url": "cbs6albany.com/weather/closings*",
+      "from": "20140101",
+      "to": "20260930"
     },
     {
-      "timestamp": "20191224105846",
-      "url": "https://wchstv.com/resources/ftptransfer/wchs/closings/closings.html"
+      "url": "closings.cbs6albany.com/community/schoolwatch/*",
+      "from": "20140101",
+      "to": "20260930"
     },
     {
-      "timestamp": "20250220175640",
-      "url": "https://13wham.com/resources/ftptransfer/wham/closings/closings.html"
+      "url": "koamnewsnow.com/weather/closings-and-delays*",
+      "from": "20140101",
+      "to": "20260930"
     },
     {
-      "timestamp": "20250217001731",
-      "url": "https://13wham.com/resources/ftptransfer/wham/closings/closings.html"
+      "url": "koamnewsnow.com/app/closings/*",
+      "from": "20140101",
+      "to": "20260930"
     },
     {
-      "timestamp": "20240229124155",
-      "url": "https://13wham.com/resources/ftptransfer/wham/closings/closings.html"
+      "url": "kxly.com/weather/school-closures*",
+      "from": "20140101",
+      "to": "20260930"
     },
     {
-      "timestamp": "20240228145249",
-      "url": "https://13wham.com/resources/ftptransfer/wham/closings/closings.html"
+      "url": "kxly.com/app/closings/*",
+      "from": "20140101",
+      "to": "20260930"
     },
     {
-      "timestamp": "20191224111310",
-      "url": "https://13wham.com/resources/ftptransfer/wham/closings/closings.html"
+      "url": "local3news.com/local-weather/school-closings*",
+      "from": "20140101",
+      "to": "20260930"
     },
     {
-      "timestamp": "20241209092347",
-      "url": "https://dayton247now.com/resources/ftptransfer/wrgt/closings/closings.html"
+      "url": "local3news.com/app/closings/*",
+      "from": "20140101",
+      "to": "20260930"
     },
     {
-      "timestamp": "20241210075836",
-      "url": "https://cnycentral.com/resources/ftptransfer/wstm/closings/closings.htm"
+      "url": "coasttv.com/closings*",
+      "from": "20140101",
+      "to": "20260930"
     },
     {
-      "timestamp": "20241121122715",
-      "url": "https://cnycentral.com/resources/ftptransfer/wstm/closings/closings.htm"
+      "url": "foxillinois.com/weather/closings*",
+      "from": "20140101",
+      "to": "20260930"
     },
     {
-      "timestamp": "20240220025522",
-      "url": "https://cnycentral.com/resources/ftptransfer/wstm/closings/closings.htm"
+      "url": "newschannel20.com/weather/closings*",
+      "from": "20140101",
+      "to": "20260930"
     },
     {
-      "timestamp": "20240215075938",
-      "url": "https://cnycentral.com/resources/ftptransfer/wstm/closings/closings.htm"
+      "url": "khqa.com/weather/closings*",
+      "from": "20140101",
+      "to": "20260930"
     },
     {
-      "timestamp": "20191213204418",
-      "url": "https://cnycentral.com/resources/ftptransfer/wstm/closings/closings.htm"
+      "url": "nebraska.tv/weather/closings*",
+      "from": "20140101",
+      "to": "20260930"
     },
     {
-      "timestamp": "20250116060400",
-      "url": "https://abc6onyourside.com/resources/ftptransfer/wsyx/closings/closings.html"
+      "url": "wt1.weatherthreat.com/wt_list/*",
+      "from": "20140101",
+      "to": "20260930"
     },
     {
-      "timestamp": "20241208035945",
-      "url": "https://abc6onyourside.com/resources/ftptransfer/wsyx/closings/closings.html"
+      "url": "ruralradio.com/kneb-am/weather-closings*",
+      "from": "20140101",
+      "to": "20260930"
     },
     {
-      "timestamp": "20240226231435",
-      "url": "https://abc6onyourside.com/resources/ftptransfer/wsyx/closings/closings.html"
+      "url": "ftptransfer.sinclairstoryline.com/*",
+      "from": "20140101",
+      "to": "20260930"
     },
     {
-      "timestamp": "20210219223450",
-      "url": "https://abc6onyourside.com/resources/ftptransfer/wsyx/closings/closings.html"
+      "url": "ticker.news.sinclairinc.cloud/chameleon/*",
+      "from": "20140101",
+      "to": "20260930"
     },
     {
-      "timestamp": "20191224110349",
-      "url": "https://abc6onyourside.com/resources/ftptransfer/wsyx/closings/closings.html"
+      "url": "sbgcg.com/Ticker/*",
+      "from": "20140101",
+      "to": "20260930"
     },
     {
-      "timestamp": "20240314033631",
-      "url": "https://myfox28columbus.com/resources/ftptransfer/wtte/closings/closings.html"
+      "url": "amb-feeds.s3.amazonaws.com/*",
+      "from": "20140101",
+      "to": "20260930"
     },
     {
-      "timestamp": "20240213014120",
-      "url": "https://myfox28columbus.com/resources/ftptransfer/wtte/closings/closings.html"
+      "url": "closings.wsls.com/*",
+      "from": "20140101",
+      "to": "20260930"
     },
     {
-      "timestamp": "20191224110216",
-      "url": "https://myfox28columbus.com/resources/ftptransfer/wtte/closings/closings.html"
+      "url": "whdh.com/school-closings*",
+      "from": "20140101",
+      "to": "20260930"
     },
     {
-      "timestamp": "20250121190902",
-      "url": "https://abc45.com/resources/ftptransfer/wxlv/closings/closings.html"
+      "url": "kneb.com/weather-closings*",
+      "from": "20140101",
+      "to": "20260930"
     },
     {
-      "timestamp": "20241223194742",
-      "url": "https://abc45.com/resources/ftptransfer/wxlv/closings/closings.html"
+      "url": "wt2.weatherthreat.com/wt_list/*",
+      "from": "20140101",
+      "to": "20260930"
     },
     {
-      "timestamp": "20201120045540",
-      "url": "http://abc45.com/resources/ftptransfer/wxlv/closings/closings.html"
+      "url": "wt3.weatherthreat.com/wt_list/*",
+      "from": "20140101",
+      "to": "20260930"
     },
     {
-      "timestamp": "20200113195131",
-      "url": "http://abc45.com/resources/ftptransfer/wxlv/closings/closings.html"
+      "url": "nebraska.tv/resources/assets/khgi/files/closings/*",
+      "from": "20140101",
+      "to": "20260930"
     },
     {
-      "timestamp": "20191119000218",
-      "url": "http://abc45.com/resources/ftptransfer/wxlv/closings/closings.html"
+      "url": "foxnebraska.com/weather/closings*",
+      "from": "20140101",
+      "to": "20260930"
     },
     {
-      "timestamp": "20241225233223",
-      "url": "https://fox17.com/resources/ftptransfer/wztv/closings/report.html"
+      "url": "turnto10.com/weather/closings*",
+      "from": "20140101",
+      "to": "20260930"
     },
     {
-      "timestamp": "20240215193258",
-      "url": "https://fox17.com/resources/ftptransfer/wztv/closings/report.html"
+      "url": "wtop.com/closings-and-delays/closings-and-delays-map*",
+      "from": "20140101",
+      "to": "20260930"
     },
     {
-      "timestamp": "20240215193219",
-      "url": "https://fox17.com/resources/ftptransfer/wztv/closings/report.html"
+      "url": "news12.com/school-closings*",
+      "from": "20140101",
+      "to": "20260930"
     },
     {
-      "timestamp": "20230203020919",
-      "url": "https://fox17.com/resources/ftptransfer/wztv/closings/report.html"
+      "url": "alertline.kern.org/*",
+      "from": "20140101",
+      "to": "20260930"
     },
     {
-      "timestamp": "20230131022244",
-      "url": "https://fox17.com/resources/ftptransfer/wztv/closings/report.html"
+      "url": "bakersfieldnow.com/weather/closings*",
+      "from": "20140101",
+      "to": "20260930"
     },
     {
-      "timestamp": "20260212014018",
-      "url": "https://abcnews4.com/weather/closings?_rsc=19929"
+      "url": "kvoa.com/weather/closings*",
+      "from": "20140101",
+      "to": "20260930"
     },
     {
-      "timestamp": "20260201192709",
-      "url": "https://abcnews4.com/weather/closings?_rsc=1iskt"
+      "url": "kezi.com/weather/closings*",
+      "from": "20140101",
+      "to": "20260930"
+    },
+    {
+      "url": "kdrv.com/weather/closings*",
+      "from": "20140101",
+      "to": "20260930"
+    },
+    {
+      "url": "actionnewsnow.com/weather/closings*",
+      "from": "20140101",
+      "to": "20260930"
     }
-  ]
+  ],
+  "snapshots": []
 }
