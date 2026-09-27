@@ -1,148 +1,355 @@
 {
   "snapshots": [
     {
-      "timestamp": "20231129025520",
-      "url": "https://www.abc4.com/weather/closings/"
+      "timestamp": "20190228093207",
+      "url": "http://flashalerteugene.net:80/closures-cats.html"
     },
     {
-      "timestamp": "20241204152121",
-      "url": "https://www.abc4.com/weather/closings/"
+      "timestamp": "20190228093212",
+      "url": "http://flashalerteugene.net:80/closures-time.html"
     },
     {
-      "timestamp": "20250117073341",
-      "url": "https://www.abc4.com/weather/closings/"
+      "timestamp": "20230130133950",
+      "url": "http://www.flashalerteugene.net/closures-cats.html"
     },
     {
-      "timestamp": "20230206233127",
-      "url": "https://www.abc4.com/weather/closings/"
+      "timestamp": "20220119220029",
+      "url": "http://www.flashalerteugene.net/closures-cats.html"
     },
     {
-      "timestamp": "20240327221146",
-      "url": "https://www.abc4.com/weather/closings/"
+      "timestamp": "20231208212806",
+      "url": "http://www.flashalerteugene.net/closures-cats.html"
     },
     {
-      "timestamp": "20230107034302",
-      "url": "https://www.abc4.com/weather/closings/"
+      "timestamp": "20251118000628",
+      "url": "http://www.flashalerteugene.net/closures-cats.html"
     },
     {
-      "timestamp": "20231226231729",
-      "url": "https://www.yourerie.com/weather/closings/"
+      "timestamp": "20250123131110",
+      "url": "http://flashalerteugene.net/closures-cats.html"
     },
     {
-      "timestamp": "20230303160539",
-      "url": "https://www.yourerie.com/weather/closings/"
+      "timestamp": "20200318051145",
+      "url": "http://www.flashalerteugene.net/closures-cats.html"
     },
     {
-      "timestamp": "20230329124831",
-      "url": "https://www.yourerie.com/weather/closings/"
+      "timestamp": "20150213131631",
+      "url": "http://flashalerteugene.net/closures-cats.html"
     },
     {
-      "timestamp": "20231121230755",
-      "url": "https://www.yourerie.com/weather/closings/"
+      "timestamp": "20180226132826",
+      "url": "http://flashalerteugene.net:80/closures-report.html"
     },
     {
-      "timestamp": "20241219091210",
-      "url": "https://www.yourerie.com/weather/closings/"
+      "timestamp": "20170105163147",
+      "url": "http://www.flashalertmedford.net:80/closures-cats.html"
     },
     {
-      "timestamp": "20231107231322",
-      "url": "https://www.yourerie.com/weather/closings/"
+      "timestamp": "20170106124728",
+      "url": "http://www.flashalertmedford.net:80/closures-time.html"
     },
     {
-      "timestamp": "20230213101349",
-      "url": "https://www.kens5.com/closings"
+      "timestamp": "20200318051718",
+      "url": "http://www.flashalertmedford.net/closures-cats.html"
     },
     {
-      "timestamp": "20230313034600",
-      "url": "https://www.kens5.com/closings"
+      "timestamp": "20220121083502",
+      "url": "http://www.flashalertmedford.net/closures-cats.html"
     },
     {
-      "timestamp": "20230310084702",
-      "url": "https://www.kens5.com/closings"
+      "timestamp": "20221204045538",
+      "url": "http://flashalertmedford.net/closures-cats.html"
     },
     {
-      "timestamp": "20241126205724",
-      "url": "https://www.kens5.com/closings"
+      "timestamp": "20250121113626",
+      "url": "http://flashalertmedford.net/closures-cats.html"
     },
     {
-      "timestamp": "20230307095636",
-      "url": "https://www.kens5.com/closings"
+      "timestamp": "20260119143607",
+      "url": "http://flashalertmedford.net/closures-cats.html"
     },
     {
-      "timestamp": "20210111010325",
-      "url": "https://www.kens5.com/closings"
+      "timestamp": "20150212024707",
+      "url": "http://flashalertbend.net/closures-cats.html"
     },
     {
-      "timestamp": "20230213092343",
-      "url": "https://www.12newsnow.com/closings"
+      "timestamp": "20170109051410",
+      "url": "http://flashalertbend.net/closures-time.html"
     },
     {
-      "timestamp": "20241127031105",
-      "url": "https://www.12newsnow.com/closings"
+      "timestamp": "20170109085732",
+      "url": "http://flashalertbend.net/closures-report.html"
     },
     {
-      "timestamp": "20260313122959",
-      "url": "https://www.12newsnow.com/closings"
+      "timestamp": "20220123024552",
+      "url": "http://flashalertbend.net/closures-cats.html"
     },
     {
-      "timestamp": "20240123192714",
-      "url": "https://www.yourcentralvalley.com/weather/closings/"
+      "timestamp": "20220125190417",
+      "url": "http://www.flashalertbend.net/closures-cats.html"
     },
     {
-      "timestamp": "20231201145118",
-      "url": "https://www.yourcentralvalley.com/weather/closings/"
+      "timestamp": "20200318051913",
+      "url": "http://www.flashalertbend.net/closures-cats.html"
     },
     {
-      "timestamp": "20231129073922",
-      "url": "https://www.yourcentralvalley.com/weather/closings/"
+      "timestamp": "20230207071517",
+      "url": "http://www.flashalertbend.net/closures-cats.html"
     },
     {
-      "timestamp": "20230310005641",
-      "url": "https://www.cbs8.com/closings"
+      "timestamp": "20260117025204",
+      "url": "http://www.flashalertbend.net/closures-cats.html"
     },
     {
-      "timestamp": "20230315060600",
-      "url": "https://www.cbs8.com/closings"
+      "timestamp": "20251212004048",
+      "url": "http://flashalertboise.net/closures-cats.html"
     },
     {
-      "timestamp": "20221105091025",
-      "url": "https://www.cbs8.com/closings"
+      "timestamp": "20251212010916",
+      "url": "http://flashalertboise.net/closures-report.html"
     },
     {
-      "timestamp": "20240112051846",
-      "url": "https://www.westernslopenow.com/weather/closings/"
+      "timestamp": "20241214194547",
+      "url": "http://flashalertboise.net/closures-cats.html"
     },
     {
-      "timestamp": "20240208171823",
-      "url": "https://www.westernslopenow.com/weather/closings/"
+      "timestamp": "20170206144203",
+      "url": "http://www.flashalertseattle.net/closures-cats.html"
     },
     {
-      "timestamp": "20240124120552",
-      "url": "https://www.westernslopenow.com/weather/closings/"
+      "timestamp": "20221201071314",
+      "url": "http://www.flashalertseattle.net/closures-cats.html"
     },
     {
-      "timestamp": "20210303233206",
-      "url": "https://www.ksby.com/weather/school-closings-delays"
+      "timestamp": "20200117151450",
+      "url": "http://www.flashalertseattle.net:80/closures-cats.html"
     },
     {
-      "timestamp": "20251118094426",
-      "url": "https://www.ksby.com/weather/school-closings-delays"
+      "timestamp": "20260313205343",
+      "url": "http://flashalertseattle.net/closures-cats.html"
     },
     {
-      "timestamp": "20250328102751",
-      "url": "https://www.ksby.com/weather/school-closings-delays"
+      "timestamp": "20260208072611",
+      "url": "http://flashalertspokane.net/closures-report.html"
+    },
+    {
+      "timestamp": "20260118230155",
+      "url": "http://flashalertspokane.net/closures-cats.html"
+    },
+    {
+      "timestamp": "20211208063057",
+      "url": "http://flashalertspokane.net/closures-cats.html"
+    },
+    {
+      "timestamp": "20190211193009",
+      "url": "http://www.flashalertcolumbia.net:80/closures-cats.html"
+    },
+    {
+      "timestamp": "20210216030629",
+      "url": "http://www.flashalertcolumbia.net/closures-cats.html?alert=1"
+    },
+    {
+      "timestamp": "20220103025553",
+      "url": "http://flashalertcolumbia.net/closures-cats.html"
+    },
+    {
+      "timestamp": "20140107060331",
+      "url": "http://www.emergencyclosingcenter.com/complete.html"
+    },
+    {
+      "timestamp": "20140128025750",
+      "url": "http://www.emergencyclosingcenter.com/complete.html"
+    },
+    {
+      "timestamp": "20150108045221",
+      "url": "http://www.emergencyclosingcenter.com/complete.html"
+    },
+    {
+      "timestamp": "20150305131646",
+      "url": "http://www.nbcdfw.com:80/weather/school-closings/?"
+    },
+    {
+      "timestamp": "20210216012417",
+      "url": "https://www.nbcdfw.com/weather/school-closings/"
+    },
+    {
+      "timestamp": "20260125052006",
+      "url": "https://www.nbcdfw.com/weather/school-closings/"
+    },
+    {
+      "timestamp": "20170213071119",
+      "url": "http://www.nbcboston.com:80/weather/school-closings/?viewAll=true&viewAll=true"
+    },
+    {
+      "timestamp": "20200804093858",
+      "url": "https://www.nbcboston.com/weather/school-closings/"
+    },
+    {
+      "timestamp": "20250213101042",
+      "url": "https://www.nbcboston.com/weather/school-closings/"
+    },
+    {
+      "timestamp": "20200710173546",
+      "url": "https://www.nbcphiladelphia.com/weather/school-closings/"
+    },
+    {
+      "timestamp": "20260701223501",
+      "url": "https://www.nbcphiladelphia.com/weather/school-closings/"
+    },
+    {
+      "timestamp": "20170216170126",
+      "url": "http://www.nbcnewyork.com:80/weather/school-closings/?_osource=SocialFlowFB_NYBrand"
+    },
+    {
+      "timestamp": "20200804161819",
+      "url": "https://www.nbcnewyork.com/weather/school-closings/"
+    },
+    {
+      "timestamp": "20240717212010",
+      "url": "https://www.nbcnewyork.com/weather/school-closings/"
+    },
+    {
+      "timestamp": "20170120205501",
+      "url": "http://www.nbcwashington.com/weather/school-closings/"
+    },
+    {
+      "timestamp": "20200803124020",
+      "url": "https://www.nbcwashington.com/weather/school-closings/"
+    },
+    {
+      "timestamp": "20260316104901",
+      "url": "https://www.nbcwashington.com/weather/school-closings/"
+    },
+    {
+      "timestamp": "20150202204223",
+      "url": "http://www.nbcconnecticut.com/weather/school-closings/"
+    },
+    {
+      "timestamp": "20200804120708",
+      "url": "https://www.nbcconnecticut.com/weather/school-closings/?hhh"
+    },
+    {
+      "timestamp": "20250523141059",
+      "url": "https://abc7news.com/community/schoolclosings/"
+    },
+    {
+      "timestamp": "20151216011747",
+      "url": "http://abc13.com:80/community/schoolclosings"
+    },
+    {
+      "timestamp": "20170828001639",
+      "url": "http://abc13.com:80/community/schoolclosings"
+    },
+    {
+      "timestamp": "20260128024344",
+      "url": "https://abc13.com/community/schoolclosings/"
+    },
+    {
+      "timestamp": "20160216115137",
+      "url": "http://abc7ny.com:80/community/schoolclosings"
+    },
+    {
+      "timestamp": "20180322093007",
+      "url": "http://abc7ny.com:80/community/schoolclosings"
+    },
+    {
+      "timestamp": "20260127072028",
+      "url": "https://abc7ny.com/community/schoolclosings/"
+    },
+    {
+      "timestamp": "20150108085105",
+      "url": "http://abc7chicago.com:80/community/schoolclosings"
+    },
+    {
+      "timestamp": "20150219210346",
+      "url": "http://abc7chicago.com:80/community/schoolclosings"
+    },
+    {
+      "timestamp": "20260217104348",
+      "url": "https://abc7chicago.com/community/schoolclosings/"
+    },
+    {
+      "timestamp": "20160125031720",
+      "url": "http://6abc.com:80/community/schoolclosings"
+    },
+    {
+      "timestamp": "20180109222553",
+      "url": "http://6abc.com:80/community/schoolclosings"
+    },
+    {
+      "timestamp": "20250827052546",
+      "url": "http://www.cbsnews.com/pittsburgh/school-closings/"
+    },
+    {
+      "timestamp": "20250829130551",
+      "url": "https://www.cbsnews.com/boston/school-closings/"
+    },
+    {
+      "timestamp": "20250829231905",
+      "url": "https://www.cbsnews.com/minnesota/school-closings/"
+    },
+    {
+      "timestamp": "20250831070115",
+      "url": "https://www.cbsnews.com/baltimore/school-closings/"
+    },
+    {
+      "timestamp": "20260323163928",
+      "url": "https://www.cbsnews.com/detroit/school-closings/"
+    },
+    {
+      "timestamp": "20221201092316",
+      "url": "https://www.q13fox.com/closings"
+    },
+    {
+      "timestamp": "20251211235055",
+      "url": "https://www.fox13seattle.com/school-closures-and-delays"
+    },
+    {
+      "timestamp": "20211022091859",
+      "url": "https://www.fox4news.com/closings"
+    },
+    {
+      "timestamp": "20220120022601",
+      "url": "https://www.fox4news.com/closings/"
+    },
+    {
+      "timestamp": "20220527003120",
+      "url": "https://www.fox9.com/closings"
+    },
+    {
+      "timestamp": "20200916162618",
+      "url": "https://www.fox5atlanta.com/closings"
+    },
+    {
+      "timestamp": "20260222185100",
+      "url": "https://www.fox5ny.com/closings"
+    },
+    {
+      "timestamp": "20260702050321",
+      "url": "https://www.fox5dc.com/closings"
+    },
+    {
+      "timestamp": "20200604054036",
+      "url": "https://www.fox29.com/closings"
     }
   ],
   "cdx": [
     {
-      "url": "mytwintiers.com/weather/closings*",
+      "url": "flashalertportland.net/*",
       "from": "20140101",
-      "to": "20260930"
+      "to": "20260930",
+      "filter": [
+        "statuscode:200",
+        "original:.*closures.*"
+      ]
     },
     {
-      "url": "louisianafirstnews.com/weather/closings*",
+      "url": "flashalertportland.net/",
       "from": "20140101",
-      "to": "20260930"
+      "to": "20260930",
+      "filter": [
+        "statuscode:200"
+      ]
     }
   ]
 }
