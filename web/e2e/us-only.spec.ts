@@ -38,7 +38,6 @@ const LABELS = [
   BASEMAP_IDS.ofmNeighbourhoodLabel,
   BASEMAP_IDS.ofmStreetLabel,
   BASEMAP_IDS.ofmMajorRoadLabel,
-  BASEMAP_IDS.ofmRoadShield,
   BASEMAP_IDS.ofmWaterLabel,
   BASEMAP_IDS.ofmParkLabel,
   BASEMAP_IDS.ofmVillageLabel,

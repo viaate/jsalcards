@@ -109,11 +109,10 @@
   min-height: 28px;
   padding: 0;
   color: var(--text-2);
-  background: rgb(17 17 17 / 0.72);
+  /* Solid: a backdrop blur over the moving WebGL map makes some GPUs flicker. */
+  background: rgb(17 17 17);
   border: 1px solid var(--border-2);
   border-radius: 14px;
-  -webkit-backdrop-filter: blur(16px);
-  backdrop-filter: blur(16px);
 }
 
 .maplibregl-attrib-empty {

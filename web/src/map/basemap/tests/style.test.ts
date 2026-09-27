@@ -35,7 +35,6 @@ import {
   SCHOOL_TILES_MIN_ZOOM,
   schoolSpaceImage,
 } from '../schools';
-import { SHIELD_IMAGE } from '../shield';
 import {
   CITY_NAME_BANDS,
   CITY_NAME_PADDING,
@@ -275,7 +274,6 @@ describe('layer order', () => {
       BASEMAP_IDS.ofmStreetLabel,
       BASEMAP_IDS.ofmParkLabel,
       BASEMAP_IDS.ofmMajorRoadLabel,
-      BASEMAP_IDS.ofmRoadShield,
       BASEMAP_IDS.ofmVillageLabel,
       BASEMAP_IDS.ofmTownLabel,
       BASEMAP_IDS.ofmCityLabel,
@@ -611,12 +609,11 @@ describe('names', () => {
     for (const id of [street, major]) {
       expect(value(id, 'layout', 'symbol-placement', 14)).toBe('line');
     }
-    // A highway's number goes on a badge, not along the line; a ramp's exit number goes nowhere.
+    // A highway's number and a ramp's exit number go nowhere.
     expect(draws(major, 13, { class: 'motorway', ref: '35', network: 'us-interstate' })).toBe(
       false,
     );
     expect(draws(major, 13, { class: 'motorway', ref: '2T' })).toBe(false);
-    expect(draws(BASEMAP_IDS.ofmRoadShield, 13, { class: 'motorway', ref: '2T' })).toBe(false);
   });
 
   it('names through streets before the side streets that cross them', () => {
@@ -661,31 +658,14 @@ describe('names', () => {
     }
   });
 
-  it('puts route numbers on upright badges: interstates from zoom 11, US and state routes from 12', () => {
-    const shield = BASEMAP_IDS.ofmRoadShield;
-    const interstate = { class: 'motorway', ref: '35', network: 'us-interstate' };
-    const us = { class: 'trunk', ref: '71', network: 'us-highway', route_1_network: 'US:US' };
-    const state = { class: 'primary', ref: '9', network: 'us-state', route_1_network: 'US:MO' };
-    expect(draws(shield, 10, interstate)).toBe(false);
-    expect(draws(shield, 11, interstate)).toBe(true);
-    expect(draws(shield, 11, us)).toBe(false);
-    expect(draws(shield, 12, us)).toBe(true);
-    expect(draws(shield, 12, state)).toBe(true);
-    // Local streets carry no badge, whatever their number.
-    expect(draws(shield, 14, { class: 'minor', ref: '4', network: 'us-state' })).toBe(false);
-    const text = (p: Properties): unknown => value(shield, 'layout', 'text-field', 13, p);
-    expect(text(interstate)).toMatchObject({ sections: [{ text: 'I-35' }] });
-    expect(text(us)).toMatchObject({ sections: [{ text: 'US 71' }] });
-    expect(text(state)).toMatchObject({ sections: [{ text: 'MO 9' }] });
-    expect(text({ ...state, route_1_network: '' })).toMatchObject({ sections: [{ text: '9' }] });
-    const layout = layer(shield).layout as Record<string, unknown>;
-    expect(layout).toMatchObject({
-      'icon-image': SHIELD_IMAGE,
-      'icon-text-fit': 'both',
-      'text-rotation-alignment': 'viewport',
-      'icon-rotation-alignment': 'viewport',
-      'icon-allow-overlap': false,
-    });
+  it('leaves highway numbers off the map: no label reads a route number and none draws a badge', () => {
+    for (const candidate of [...LAYERS, ...WITH_SCHOOLS.layers]) {
+      if (candidate.type !== 'symbol') continue;
+      const layout = (candidate.layout ?? {}) as Record<string, unknown>;
+      expect(JSON.stringify(layout['text-field'] ?? ''), candidate.id).not.toContain('"ref"');
+      // The only image is the blank space that keeps names clear of a school's dot.
+      expect([undefined, SCHOOL_SPACE_IMAGE], candidate.id).toContain(layout['icon-image']);
+    }
   });
 
   it('names rivers along their course from zoom 13, and parks from 14, quietly', () => {

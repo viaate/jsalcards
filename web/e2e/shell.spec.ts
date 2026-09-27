@@ -684,7 +684,7 @@ test.describe('handover to the WebGL map', () => {
 });
 
 test.describe('the map at rest', () => {
-  test('names a few dozen of the largest cities over the lifted land, none on another', async ({
+  test('names a few dozen of the largest cities over black land, none on another', async ({
     browser,
   }) => {
     const TABLET: Viewport = {
@@ -747,7 +747,7 @@ test.describe('the map at rest', () => {
           expect(apart, `${a.name} and ${b.name}`).toBe(true);
         }
       }
-      // The land sits a step off the black ground, inside the outline.
+      // The land is the ground's own black (the owner's call): only lines and names are lit.
       const shot = await gray(await page.screenshot());
       const inland = await page.evaluate(() => {
         const map = window.snowlightMap;
@@ -761,8 +761,7 @@ test.describe('the map at rest', () => {
           Math.round(y * viewport.deviceScaleFactor) * shot.width +
             Math.round(x * viewport.deviceScaleFactor)
         ] ?? -1;
-      expect(at(inland.x, inland.y)).toBeGreaterThan(4);
-      expect(at(inland.x, inland.y)).toBeLessThan(16);
+      expect(at(inland.x, inland.y)).toBe(0);
       expect(at(4, viewport.height - 4)).toBe(0);
       await context.close();
     }

@@ -75,11 +75,10 @@
     padding: 6px 0;
     overflow-y: auto;
     overscroll-behavior: contain;
-    background: rgb(10 10 10 / 0.94);
+    /* Solid: a backdrop blur over the moving WebGL map makes some GPUs flicker. */
+    background: rgb(10 10 10);
     border: 1px solid var(--border-2);
     border-radius: 18px;
-    -webkit-backdrop-filter: blur(16px);
-    backdrop-filter: blur(16px);
   }
 
   .list {

@@ -6,11 +6,9 @@ import type {
   SymbolLayerSpecification,
 } from 'maplibre-gl';
 
-import { copy } from '../../copy';
 import { MAP_FONTS } from './fonts';
 import { BASEMAP_IDS } from './ids';
 import { schoolDotLayer, schoolNameLayer, schoolSource, schoolSpaceLayer } from './schools';
-import { SHIELD_IMAGE } from './shield';
 import { BORDER_LAYER, MASK_LAYER } from './mask/format';
 import {
   OPENFREEMAP_ATTRIBUTION,
@@ -439,43 +437,6 @@ const STREET_NAMES_FROM = 13;
 const MAJOR_ROAD_NAMES_FROM = 12;
 const WATER_NAMES_FROM = 13;
 const PARK_NAMES_FROM = 14;
-/** Interstate badges from zoom 11, US and state routes from 12 (tile zooms, so whole levels). */
-const SHIELDS_FROM = 11;
-const STATE_SHIELDS_FROM = 12;
-
-const NETWORK: ExpressionSpecification = ['coalesce', ['get', 'network'], ''];
-/** OpenMapTiles route networks whose numbers go on badges. */
-const ROUTE_NETWORKS = ['us-interstate', 'us-highway', 'us-state'];
-/**
- * A route's number as it is signed: "I-35", "US 71", and a state route with
- * its state's code ("MO 9") when the tiles carry it, else the number alone.
- */
-const ROUTE_NUMBER: ExpressionSpecification = [
-  'let',
-  'ref',
-  ['to-string', ['get', 'ref']],
-  'state',
-  ['coalesce', ['get', 'route_1_network'], ''],
-  [
-    'match',
-    NETWORK,
-    'us-interstate',
-    ['concat', copy.map.route.interstate, ['var', 'ref']],
-    'us-highway',
-    ['concat', copy.map.route.usHighway, ' ', ['var', 'ref']],
-    [
-      'case',
-      [
-        'all',
-        ['==', ['index-of', 'US:', ['var', 'state']], 0],
-        ['==', ['length', ['var', 'state']], 5],
-      ],
-      ['concat', ['slice', ['var', 'state'], 3], ' ', ['var', 'ref']],
-      ['var', 'ref'],
-    ],
-  ],
-];
-
 /** Text laid out the same way for every label: collision-aware, never overlapping. */
 const LABEL_LAYOUT = {
   'text-allow-overlap': false,
@@ -579,13 +540,13 @@ export function splitUsLines(
  * or queried (street-tiles.ts), and carry the US mask, drawn in the ground
  * color over every street, water, park and building layer, and the border
  * line along its edge. Labels are drawn by MapLibre from the Geist faces in
- * fonts.ts, so the style names no glyph server, and highway numbers sit on a
- * badge drawn in code (shield.ts), so it names no sprite either. With the
+ * fonts.ts, so the style names no glyph server, and it draws no icons, so it
+ * names no sprite either. Highway numbers are left off the map. With the
  * school tiles, every school is drawn from zoom 11 and named from zoom 13
  * (schools.ts), over school grounds drawn a step off the ground.
  *
- * Up close the hierarchy runs, brightest first: school names; towns, suburbs
- * and route numbers; major road names; street names; neighbourhoods in small
+ * Up close the hierarchy runs, brightest first: school names; towns and
+ * suburbs; major road names; street names; neighbourhoods in small
  * spaced capitals, parks and rivers. Roads step up in width and tone from
  * local streets to highways.
  */
@@ -931,7 +892,7 @@ export function buildBasemapStyle({
         'all',
         ['match', CLASS, ['motorway', 'trunk', 'primary', 'secondary'], true, false],
         ['!=', ['coalesce', ['get', 'subclass'], ''], 'junction'],
-        // Numbers go on badges (the shield layer); a ramp's exit number is left out.
+        // Named roads only: route numbers and a ramp's exit number are left out.
         ['has', 'name'],
       ],
       layout: {
@@ -944,50 +905,6 @@ export function buildBasemapStyle({
         'text-color': ['interpolate', ['linear'], ['zoom'], 12, colors.labelDim, 14, colors.label],
         'text-opacity': labelsFrom(MAJOR_ROAD_NAMES_FROM),
         ...halo,
-      },
-    },
-    {
-      // Interstate, US and state route numbers on small upright badges along their road.
-      id: BASEMAP_IDS.ofmRoadShield,
-      type: 'symbol',
-      ...ofm,
-      'source-layer': 'transportation_name',
-      minzoom: labelMinZoom(SHIELDS_FROM),
-      filter: [
-        'all',
-        ['match', CLASS, ['motorway', 'trunk', 'primary', 'secondary'], true, false],
-        ['match', NETWORK, ROUTE_NETWORKS, true, false],
-        ['>=', ['zoom'], ['match', NETWORK, 'us-interstate', SHIELDS_FROM, STATE_SHIELDS_FROM]],
-        ['has', 'ref'],
-        // A route number, not a list of them run together.
-        ['<=', ['length', ['to-string', ['get', 'ref']]], 4],
-      ],
-      layout: {
-        ...LABEL_LAYOUT,
-        'symbol-placement': 'line',
-        'symbol-spacing': ['interpolate', ['linear'], ['zoom'], 11, 300, 13, 380, 16, 800],
-        'symbol-sort-key': ['match', NETWORK, 'us-interstate', 0, 'us-highway', 1, 2],
-        'text-field': ROUTE_NUMBER,
-        'text-font': [MAP_FONTS.medium],
-        'text-size': 10,
-        'text-letter-spacing': 0.02,
-        'text-rotation-alignment': 'viewport',
-        'text-pitch-alignment': 'viewport',
-        // Room around each badge, so the two carriageways of a highway show one number, not two.
-        'text-padding': 14,
-        'icon-padding': 14,
-        'icon-image': SHIELD_IMAGE,
-        'icon-text-fit': 'both',
-        'icon-text-fit-padding': [2, 4, 2, 4],
-        'icon-rotation-alignment': 'viewport',
-        'icon-pitch-alignment': 'viewport',
-        'icon-allow-overlap': false,
-        'icon-ignore-placement': false,
-      },
-      paint: {
-        'text-color': colors.label,
-        'text-opacity': labelsFrom(SHIELDS_FROM),
-        'icon-opacity': labelsFrom(SHIELDS_FROM),
       },
     },
     {

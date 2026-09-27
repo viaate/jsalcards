@@ -68,7 +68,7 @@
         --font-mono: 'Geist Mono Variable', ui-monospace, monospace;
 
         /* Basemap ground and hairlines. The WebGL style reads these, so the still and the map match. */
-        --land: #0a0a0a;
+        --land: #000;
         --line-outline: #6b6b6b;
         --line-state: #2a2a2a;
         --hairline: 1px;
@@ -251,15 +251,14 @@
         min-width: 0;
         margin: 0;
         cursor: text;
-        background: rgb(17 17 17 / 0.86);
+        /* Solid, not a blur of the map behind it: a backdrop blur over the WebGL map makes some GPUs flicker while it moves. */
+        background: rgb(17 17 17);
         border: 1px solid var(--border-2);
         border-radius: calc(var(--bar-height) / 2);
         /* A faint top edge and a soft shadow lift the field off the streets below it. */
         box-shadow:
           inset 0 1px 0 rgb(255 255 255 / 0.04),
           0 6px 20px rgb(0 0 0 / 0.5);
-        -webkit-backdrop-filter: blur(16px);
-        backdrop-filter: blur(16px);
         transition: border-color 120ms linear;
       }
 

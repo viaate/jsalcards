@@ -46,8 +46,6 @@ export const BASEMAP_IDS = {
   ofmStreetLabel: 'ofm-label-street',
   ofmParkLabel: 'ofm-label-park',
   ofmMajorRoadLabel: 'ofm-label-major-road',
-  /** Route numbers of highways, each on a small badge (shield.ts). */
-  ofmRoadShield: 'ofm-label-road-shield',
   ofmVillageLabel: 'ofm-label-village',
   ofmTownLabel: 'ofm-label-town',
   ofmCityLabel: 'ofm-label-city',

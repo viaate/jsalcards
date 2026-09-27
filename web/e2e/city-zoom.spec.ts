@@ -163,16 +163,20 @@ test('a view at a whole zoom level names its streets, and its highways by number
   await openView(page, 39.0997, -94.5786, 13);
   const { names } = await drawn(page);
   expect(names[BASEMAP_IDS.ofmStreetLabel]?.length ?? 0).toBeGreaterThan(3);
-  // Highways go by their numbers on badges; ramps' exit numbers are nowhere.
-  const shields = await page.evaluate(
-    (layer) =>
+  // Highway and exit numbers are nowhere: no label reads a route number.
+  const numbered = await page.evaluate(
+    () =>
       window.snowlightMap
-        ?.queryRenderedFeatures({ layers: [layer] })
-        .map((feature) => String((feature.properties as Record<string, unknown>).ref)) ?? [],
-    BASEMAP_IDS.ofmRoadShield,
+        ?.getStyle()
+        .layers.filter((layer) => layer.type === 'symbol')
+        .filter((layer) =>
+          JSON.stringify(
+            (layer.layout as Record<string, unknown> | undefined)?.['text-field'] ?? '',
+          ).includes('"ref"'),
+        )
+        .map((layer) => layer.id) ?? null,
   );
-  expect(shields.length).toBeGreaterThan(0);
-  expect(shields.every((ref) => /^\d{1,3}$/.test(ref))).toBe(true);
+  expect(numbered).toEqual([]);
   expect(problems).toEqual([]);
 });
 

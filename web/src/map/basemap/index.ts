@@ -16,8 +16,6 @@ import type { Insets, Size, ViewLimits } from './limits';
 import { flightTiles } from './prefetch';
 import { afterNextFrame, LIVE_CLASS, markStep, whenGpuIdle } from './reveal';
 import { SCHOOL_SPACE_IMAGE, schoolSpaceImage } from './schools';
-import { SHIELD_IMAGE, shieldImage } from './shield';
-import type { ShieldColors } from './shield';
 import { BASEMAP_IDS, buildBasemapStyle } from './style';
 import type { BasemapLook, UsLinesData } from './style';
 import { US_BOUNDS } from './us-geo';
@@ -165,12 +163,6 @@ function tokenReader(): (name: string, fallback: string) => string {
   };
 }
 
-/** Route number badges in the tones of the page's own controls: a surface with a hairline border. */
-function shieldColors(): ShieldColors {
-  const token = tokenReader();
-  return { fill: token('--surface-2', '#111'), edge: token('--border-2', '#2a2a2a') };
-}
-
 /**
  * Line colors and width come from the same CSS custom properties that draw the
  * inline still, so the two cannot drift apart; label and building tones come
@@ -183,7 +175,7 @@ function look(): BasemapLook {
     hairline: Number.isFinite(hairline) && hairline > 0 ? hairline : 1,
     colors: {
       background: token('--bg', '#000'),
-      land: token('--land', '#0a0a0a'),
+      land: token('--land', '#000'),
       outline: token('--line-outline', '#6b6b6b'),
       state: token('--line-state', '#2a2a2a'),
       label: token('--text-2', '#a3a3a3'),
@@ -266,15 +258,10 @@ export function createBasemap({
     cancelPendingTileRequestsWhileZooming: true,
   });
   markStep('map-created');
-  // The route badge and a dot's space are made here the first time the style needs them: it names no sprite.
+  // A dot's space is made here the first time the style needs it: the style names no sprite.
   map.setMissingStyleImageResolver((id) => {
     if (map.hasImage(id)) return;
-    if (id === SHIELD_IMAGE) {
-      const { image, options } = shieldImage(shieldColors(), window.devicePixelRatio);
-      map.addImage(SHIELD_IMAGE, image, options);
-    } else if (id === SCHOOL_SPACE_IMAGE) {
-      map.addImage(SCHOOL_SPACE_IMAGE, schoolSpaceImage());
-    }
+    if (id === SCHOOL_SPACE_IMAGE) map.addImage(SCHOOL_SPACE_IMAGE, schoolSpaceImage());
   });
   map.touchZoomRotate.disableRotation();
   map.keyboard.disableRotation();

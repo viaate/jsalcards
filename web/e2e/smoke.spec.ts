@@ -44,10 +44,9 @@ test('loads on a black, full-viewport ground with no console errors', async ({ p
   const box = await page.locator('main').boundingBox();
   expect(box).toEqual({ x: 0, y: 0, width: viewport?.width, height: viewport?.height });
 
-  // The ground is pure black and the country a hair above it (#0a0a0a): the
-  // map's hairlines, its city names and the chrome sit on them, so nearly
-  // every pixel on screen is #000 or the land's near-black, and the ground
-  // around the country, a good share of the screen, is #000.
+  // The ground and the country are both pure black: only the map's hairlines,
+  // its city names and the chrome are lit, so nearly every pixel on screen is
+  // #000 or within a step of it.
   const shot = await page.screenshot({ type: 'png' });
   const shares = await page.evaluate(async (base64) => {
     const bitmap = await createImageBitmap(
