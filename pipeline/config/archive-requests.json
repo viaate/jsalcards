@@ -1,159 +1,60 @@
 {
-  "cdx": [
+  "snapshots": [
     {
-      "url": "flashalertportland.net/*",
-      "from": "20140101",
-      "to": "20260930",
-      "filter": [
-        "statuscode:200",
-        "original:.*closures.*"
-      ]
+      "timestamp": "20171202111944",
+      "url": "http://delmarvabroadcasting.com/wdel/snowatch.php"
     },
     {
-      "url": "flashalertportland.net/",
-      "from": "20140101",
-      "to": "20260930",
-      "filter": [
-        "statuscode:200"
-      ]
+      "timestamp": "20180121234109",
+      "url": "http://delmarvabroadcasting.com:80/wdel/snowatch.php"
     },
     {
-      "url": "flashalerteugene.net/*",
-      "from": "20140101",
-      "to": "20260930",
-      "filter": [
-        "statuscode:200",
-        "original:.*closures.*"
-      ]
+      "timestamp": "20180326120357",
+      "url": "http://delmarvabroadcasting.com:80/wdel/snowatch.php"
     },
     {
-      "url": "flashalerteugene.net/",
-      "from": "20140101",
-      "to": "20260930",
-      "filter": [
-        "statuscode:200"
-      ]
+      "timestamp": "20180530033343",
+      "url": "http://delmarvabroadcasting.com:80/wdel/snowatch.php"
     },
     {
-      "url": "flashalertmedford.net/*",
-      "from": "20140101",
-      "to": "20260930",
-      "filter": [
-        "statuscode:200",
-        "original:.*closures.*"
-      ]
+      "timestamp": "20181108182009",
+      "url": "http://delmarvabroadcasting.com:80/wdel/snowatch.php"
     },
     {
-      "url": "flashalertmedford.net/",
-      "from": "20140101",
-      "to": "20260930",
-      "filter": [
-        "statuscode:200"
-      ]
+      "timestamp": "20181213072020",
+      "url": "https://delmarvabroadcasting.com/wdel/snowatch.php"
     },
     {
-      "url": "flashalertbend.net/*",
-      "from": "20140101",
-      "to": "20260930",
-      "filter": [
-        "statuscode:200",
-        "original:.*closures.*"
-      ]
+      "timestamp": "20181220020732",
+      "url": "http://delmarvabroadcasting.com:80/wdel/snowatch.php"
     },
     {
-      "url": "flashalertbend.net/",
-      "from": "20140101",
-      "to": "20260930",
-      "filter": [
-        "statuscode:200"
-      ]
+      "timestamp": "20190425123819",
+      "url": "https://delmarvabroadcasting.com/wdel/snowatch.php"
     },
     {
-      "url": "flashalertboise.net/*",
-      "from": "20140101",
-      "to": "20260930",
-      "filter": [
-        "statuscode:200",
-        "original:.*closures.*"
-      ]
+      "timestamp": "20230202034905",
+      "url": "https://katv.com/weather/closings"
     },
     {
-      "url": "flashalertboise.net/",
-      "from": "20140101",
-      "to": "20260930",
-      "filter": [
-        "statuscode:200"
-      ]
+      "timestamp": "20230202034907",
+      "url": "https://katv.com/resources/ftptransfer/katv/closings/closings.html"
     },
     {
-      "url": "flashalertseattle.net/*",
-      "from": "20140101",
-      "to": "20260930",
-      "filter": [
-        "statuscode:200",
-        "original:.*closures.*"
-      ]
+      "timestamp": "20250121120954",
+      "url": "https://katv.com/resources/ftptransfer/katv/closings/closings.html"
     },
     {
-      "url": "flashalertseattle.net/",
-      "from": "20140101",
-      "to": "20260930",
-      "filter": [
-        "statuscode:200"
-      ]
+      "timestamp": "20250206135126",
+      "url": "https://katv.com/resources/ftptransfer/katv/closings/closings.html"
     },
     {
-      "url": "flashalertspokane.net/*",
-      "from": "20140101",
-      "to": "20260930",
-      "filter": [
-        "statuscode:200",
-        "original:.*closures.*"
-      ]
+      "timestamp": "20220107144203",
+      "url": "https://foxbaltimore.com/resources/ftptransfer/wbff/closings/closings.htm"
     },
     {
-      "url": "flashalertspokane.net/",
-      "from": "20140101",
-      "to": "20260930",
-      "filter": [
-        "statuscode:200"
-      ]
-    },
-    {
-      "url": "flashalertcolumbia.net/*",
-      "from": "20140101",
-      "to": "20260930",
-      "filter": [
-        "statuscode:200",
-        "original:.*closures.*"
-      ]
-    },
-    {
-      "url": "flashalertcolumbia.net/",
-      "from": "20140101",
-      "to": "20260930",
-      "filter": [
-        "statuscode:200"
-      ]
-    },
-    {
-      "url": "flashalert.net/*",
-      "from": "20100101",
-      "to": "20260930",
-      "filter": [
-        "statuscode:200",
-        "original:.*(closure|Closure|emerg|Emerg).*"
-      ],
-      "collapse": "urlkey"
-    },
-    {
-      "url": "flashalertnewswire.net/*",
-      "from": "20100101",
-      "to": "20260930",
-      "filter": [
-        "statuscode:200"
-      ],
-      "collapse": "urlkey"
+      "timestamp": "20220521053941",
+      "url": "https://foxbaltimore.com/resources/ftptransfer/wbff/closings/closings.htm"
     }
   ]
 }
