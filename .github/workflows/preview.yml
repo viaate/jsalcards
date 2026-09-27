@@ -72,10 +72,26 @@ jobs:
           restore-keys: pipeline-downloads-
       - if: steps.pages.outcome == 'success'
         working-directory: pipeline
+        # The downloader gives up after about 15 s, too soon to ride out a
+        # passing network fault between the runner and nces.ed.gov, so each
+        # build gets two more tries after a pause. A failed try prints what the
+        # runner sees at the directory's first file, so a lasting block shows
+        # its cause in the log.
         run: |
           uv sync --locked
-          uv run snowlight directory build
-          uv run snowlight places build
+          build() {
+            for pause in 0 60 180; do
+              sleep "$pause"
+              if uv run snowlight "$1" build; then return 0; fi
+              echo "::warning::snowlight $1 build failed; probing nces.ed.gov"
+              curl -sS -o /dev/null -r 0-1023 --max-time 30 \
+                -w 'HTTP %{http_code} in %{time_total}s from %{remote_ip}\n' \
+                https://nces.ed.gov/programs/edge/data/EDGE_GEOCODE_PUBLICSCH_2425.zip || true
+            done
+            return 1
+          }
+          build directory
+          build places
 
       # The site, with that data staged, for the Pages base path.
       - if: steps.pages.outcome == 'success'
