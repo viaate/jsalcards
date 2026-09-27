@@ -1,137 +1,159 @@
 {
-  "snapshots": [
-    {
-      "timestamp": "20230120012340",
-      "url": "https://www.whec.com/wp-content/uploads/dynamic-assets/schoolalert.html?_=1674177820288"
-    },
-    {
-      "timestamp": "20231102220653",
-      "url": "https://www.whec.com/wp-content/uploads/dynamic-assets/schoolalert.html?_=1698962813307"
-    },
-    {
-      "timestamp": "20240719091616",
-      "url": "https://www.whec.com/wp-content/uploads/dynamic-assets/schoolalert.html?_=1721380575922"
-    },
-    {
-      "timestamp": "20250219051823",
-      "url": "https://www.whec.com/wp-content/uploads/dynamic-assets/schoolalert.html?_=1739942303141"
-    },
-    {
-      "timestamp": "20250421040519",
-      "url": "https://www.whec.com/wp-content/uploads/dynamic-assets/schoolalert.html?_=1745208319164"
-    },
-    {
-      "timestamp": "20250422155219",
-      "url": "https://www.whec.com/wp-content/uploads/dynamic-assets/schoolalert.html?_=1745337139620"
-    },
-    {
-      "timestamp": "20260423150242",
-      "url": "https://www.whec.com/wp-content/uploads/dynamic-assets/schoolalert.html?_=1776956562495"
-    },
-    {
-      "timestamp": "20260216142005",
-      "url": "https://www.whec.com/wp-content/uploads/dynamic-assets/closings.html?_=1661315281332"
-    },
-    {
-      "timestamp": "20221225013721",
-      "url": "https://www.whec.com/wp-content/uploads/dynamic-assets/closings.html?_=1671932239469"
-    },
-    {
-      "timestamp": "20221226023300",
-      "url": "https://www.whec.com/wp-content/uploads/dynamic-assets/closings.html?_=1672021974299"
-    },
-    {
-      "timestamp": "20221228174033",
-      "url": "https://www.whec.com/wp-content/uploads/dynamic-assets/closings.html?_=1672249230508"
-    },
-    {
-      "timestamp": "20241213233300",
-      "url": "https://www.whec.com/wp-content/uploads/dynamic-assets/closings.html?_=1734132779627"
-    },
-    {
-      "timestamp": "20260311001153",
-      "url": "https://www.whec.com/wp-content/uploads/dynamic-assets/closings.html?_=1773187911743"
-    },
-    {
-      "timestamp": "20190613122111",
-      "url": "https://foreverdigitalmedia.com/wdel/snowatch.php"
-    },
-    {
-      "timestamp": "20200115184549",
-      "url": "https://foreverdigitalmedia.com/wdel/snowatch.php"
-    },
-    {
-      "timestamp": "20200314004443",
-      "url": "https://foreverdigitalmedia.com/wdel/snowatch.php"
-    },
-    {
-      "timestamp": "20200315031316",
-      "url": "https://foreverdigitalmedia.com/wdel/snowatch.php"
-    },
-    {
-      "timestamp": "20200315181538",
-      "url": "https://foreverdigitalmedia.com/wdel/snowatch.php"
-    },
-    {
-      "timestamp": "20200317121332",
-      "url": "https://foreverdigitalmedia.com/wdel/snowatch.php"
-    },
-    {
-      "timestamp": "20200321032026",
-      "url": "https://foreverdigitalmedia.com/wdel/snowatch.php"
-    },
-    {
-      "timestamp": "20200328125420",
-      "url": "https://foreverdigitalmedia.com/wdel/snowatch.php"
-    },
-    {
-      "timestamp": "20200516180901",
-      "url": "https://foreverdigitalmedia.com/wdel/snowatch.php"
-    },
-    {
-      "timestamp": "20200519091043",
-      "url": "https://foreverdigitalmedia.com/wdel/snowatch.php"
-    },
-    {
-      "timestamp": "20200601191547",
-      "url": "https://foreverdigitalmedia.com/wdel/snowatch.php"
-    },
-    {
-      "timestamp": "20200702180514",
-      "url": "https://foreverdigitalmedia.com/wdel/snowatch.php"
-    },
-    {
-      "timestamp": "20200925064821",
-      "url": "https://foreverdigitalmedia.com/wdel/snowatch.php?type=7"
-    },
-    {
-      "timestamp": "20201103000948",
-      "url": "https://foreverdigitalmedia.com/wdel/snowatch.php"
-    },
-    {
-      "timestamp": "20201226151740",
-      "url": "https://foreverdigitalmedia.com/wdel/snowatch.php"
-    },
-    {
-      "timestamp": "20210413152247",
-      "url": "https://foreverdigitalmedia.com/wdel/snowatch.php"
-    }
-  ],
   "cdx": [
     {
-      "url": "delmarvabroadcasting.com/wdel/snowatch.php",
+      "url": "flashalertportland.net/*",
       "from": "20140101",
-      "to": "20260930"
+      "to": "20260930",
+      "filter": [
+        "statuscode:200",
+        "original:.*closures.*"
+      ]
     },
     {
-      "url": "katv.com/resources/ftptransfer/katv/closings/*",
+      "url": "flashalertportland.net/",
       "from": "20140101",
-      "to": "20260930"
+      "to": "20260930",
+      "filter": [
+        "statuscode:200"
+      ]
     },
     {
-      "url": "foxbaltimore.com/resources/ftptransfer/wbff/closings/*",
+      "url": "flashalerteugene.net/*",
       "from": "20140101",
-      "to": "20260930"
+      "to": "20260930",
+      "filter": [
+        "statuscode:200",
+        "original:.*closures.*"
+      ]
+    },
+    {
+      "url": "flashalerteugene.net/",
+      "from": "20140101",
+      "to": "20260930",
+      "filter": [
+        "statuscode:200"
+      ]
+    },
+    {
+      "url": "flashalertmedford.net/*",
+      "from": "20140101",
+      "to": "20260930",
+      "filter": [
+        "statuscode:200",
+        "original:.*closures.*"
+      ]
+    },
+    {
+      "url": "flashalertmedford.net/",
+      "from": "20140101",
+      "to": "20260930",
+      "filter": [
+        "statuscode:200"
+      ]
+    },
+    {
+      "url": "flashalertbend.net/*",
+      "from": "20140101",
+      "to": "20260930",
+      "filter": [
+        "statuscode:200",
+        "original:.*closures.*"
+      ]
+    },
+    {
+      "url": "flashalertbend.net/",
+      "from": "20140101",
+      "to": "20260930",
+      "filter": [
+        "statuscode:200"
+      ]
+    },
+    {
+      "url": "flashalertboise.net/*",
+      "from": "20140101",
+      "to": "20260930",
+      "filter": [
+        "statuscode:200",
+        "original:.*closures.*"
+      ]
+    },
+    {
+      "url": "flashalertboise.net/",
+      "from": "20140101",
+      "to": "20260930",
+      "filter": [
+        "statuscode:200"
+      ]
+    },
+    {
+      "url": "flashalertseattle.net/*",
+      "from": "20140101",
+      "to": "20260930",
+      "filter": [
+        "statuscode:200",
+        "original:.*closures.*"
+      ]
+    },
+    {
+      "url": "flashalertseattle.net/",
+      "from": "20140101",
+      "to": "20260930",
+      "filter": [
+        "statuscode:200"
+      ]
+    },
+    {
+      "url": "flashalertspokane.net/*",
+      "from": "20140101",
+      "to": "20260930",
+      "filter": [
+        "statuscode:200",
+        "original:.*closures.*"
+      ]
+    },
+    {
+      "url": "flashalertspokane.net/",
+      "from": "20140101",
+      "to": "20260930",
+      "filter": [
+        "statuscode:200"
+      ]
+    },
+    {
+      "url": "flashalertcolumbia.net/*",
+      "from": "20140101",
+      "to": "20260930",
+      "filter": [
+        "statuscode:200",
+        "original:.*closures.*"
+      ]
+    },
+    {
+      "url": "flashalertcolumbia.net/",
+      "from": "20140101",
+      "to": "20260930",
+      "filter": [
+        "statuscode:200"
+      ]
+    },
+    {
+      "url": "flashalert.net/*",
+      "from": "20100101",
+      "to": "20260930",
+      "filter": [
+        "statuscode:200",
+        "original:.*(closure|Closure|emerg|Emerg).*"
+      ],
+      "collapse": "urlkey"
+    },
+    {
+      "url": "flashalertnewswire.net/*",
+      "from": "20100101",
+      "to": "20260930",
+      "filter": [
+        "statuscode:200"
+      ],
+      "collapse": "urlkey"
     }
   ]
 }
