@@ -1,96 +1,30 @@
 {
   "snapshots": [
     {
-      "timestamp": "20190130160627",
-      "url": "http://media.fox2detroit.com/media.fox2detroit.com/closings/closings.html"
-    },
-    {
-      "timestamp": "20190206134305",
-      "url": "http://media.fox2detroit.com/media.fox2detroit.com/closings/closings.html"
-    },
-    {
-      "timestamp": "20170110110218",
-      "url": "http://media2.fox2detroit.com/closings.html"
-    },
-    {
-      "timestamp": "20180129221017",
-      "url": "http://media2.fox2detroit.com/closings.html"
-    },
-    {
-      "timestamp": "20160216100914",
-      "url": "http://media2.fox5ny.com/closings/closing.htm"
-    },
-    {
-      "timestamp": "20160125231819",
-      "url": "http://media2.fox5ny.com/closings/closing.htm"
-    },
-    {
-      "timestamp": "20191214052932",
-      "url": "https://media.fox29.com/media.fox29.com/weather/icons/closings.html"
-    },
-    {
-      "timestamp": "20160424093714",
-      "url": "http://s3.amazonaws.com/media.fox29.com/weather/icons/closings.html"
-    },
-    {
-      "timestamp": "20201028205251",
-      "url": "https://media.foxtv.com/wtxf/feeds/closings.html"
-    },
-    {
-      "timestamp": "20191111225836",
-      "url": "https://media.foxtv.com/wtxf/feeds/closings.html"
-    },
-    {
-      "timestamp": "20190814165634",
-      "url": "https://media.fox9.com/media.fox9.com/weather/closings.html"
-    },
-    {
-      "timestamp": "20170206035013",
-      "url": "http://s3.amazonaws.com/media.fox9.com/weather/closings.html"
-    },
-    {
-      "timestamp": "20200606141723",
-      "url": "https://media.foxtv.com/kmsp/weather/closings/closings.html"
-    },
-    {
-      "timestamp": "20200925150223",
-      "url": "https://media.foxtv.com/wttg/public_html/closings/closingsnt.html"
-    },
-    {
-      "timestamp": "20210107030146",
-      "url": "https://media.foxtv.com/wttg/public_html/closings/closingsnt.html"
-    },
-    {
-      "timestamp": "20140129114941",
-      "url": "http://www.fox5dc.org/closings/closingsnt.html"
-    },
-    {
-      "timestamp": "20150222182323",
-      "url": "http://www.fox5dc.org/closings/closingsnt.html"
+      "timestamp": "20190130120000",
+      "url": "http://s3.amazonaws.com/witiclosings/witi_schools.html"
     },
     {
       "timestamp": "20200127113059",
-      "url": "https://s3.amazonaws.com/witiclosings/witi.html"
+      "url": "http://s3.amazonaws.com/witiclosings/witi_schools.html"
     },
     {
-      "timestamp": "20190814133650",
-      "url": "https://s3.amazonaws.com/witiclosings/witi.html"
+      "timestamp": "20180122120000",
+      "url": "http://s3.amazonaws.com/witiclosings/witi_schools.html"
     },
     {
-      "timestamp": "20200320191138",
-      "url": "https://wagaradio2.com/closings/closings.htm"
-    },
+      "timestamp": "20170112120000",
+      "url": "http://s3.amazonaws.com/witiclosings/witi_schools.html"
+    }
+  ],
+  "cdx": [
     {
-      "timestamp": "20200327091000",
-      "url": "https://wagaradio2.com/closings/closings.htm"
-    },
-    {
-      "timestamp": "20140106024221",
-      "url": "http://www.emergencyclosingcenter.com/ecc/home.jsp"
-    },
-    {
-      "timestamp": "20190130233217",
-      "url": "http://www.emergencyclosingcenter.com:80/ecc/home.jsp"
+      "url": "s3.amazonaws.com/witiclosings/*",
+      "from": "20140101",
+      "to": "20260930",
+      "filter": [
+        "statuscode:200"
+      ]
     }
   ]
 }
