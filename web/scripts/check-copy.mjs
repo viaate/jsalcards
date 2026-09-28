@@ -130,6 +130,10 @@ export const PROPER_NOUNS = new Set([
   'PM',
   'K-12',
   'I',
+  // School grades: prekindergarten, transitional kindergarten and kindergarten ("PK–12", "PK–K").
+  'PK',
+  'TK',
+  'K',
   ...['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August'],
   ...['September', 'October', 'November', 'December'],
   ...['Jan', 'Feb', 'Mar', 'Apr', 'Jun', 'Jul', 'Aug', 'Sep', 'Sept', 'Oct', 'Nov', 'Dec'],
@@ -200,8 +204,9 @@ export function problems(text) {
 
   if (/^\p{Ll}/u.test(text)) found.push('starts with a lowercase letter');
   for (const segment of text.split(SEGMENT_BREAK)) {
+    // An en dash joins a range ("PK–12", "2025–26"): each end is a word of its own.
     const words = segment
-      .split(/\s+/u)
+      .split(/[\s–]+/u)
       .map((word) => word.replace(EDGE_PUNCTUATION, ''))
       .filter((word) => word.length > 0);
     words.forEach((word, index) => {

@@ -419,6 +419,62 @@ function directoryPoints(): Buffer {
   return bytes;
 }
 
+/**
+ * Those two schools as the directory's own tables list them (the detail files
+ * scripts/stage-data.mjs writes, src/data/details-format.ts), one shard and its index.
+ */
+function directoryDetails(): { index: string; shard: string } {
+  const directory = { generated_on: DIRECTORY_ON, schools: 2, districts: 1 };
+  const rows = [
+    [
+      '291640000557',
+      'BORDER STAR MONTESSORI',
+      0,
+      0,
+      '2916400',
+      'KANSAS CITY 33',
+      '6321 WORNALL RD',
+      'KANSAS CITY',
+      'MO',
+      '64113',
+      'Jackson County',
+      'PK',
+      '06',
+      251,
+      '8164185150',
+      [[1, PEMBROKE_HILL, 'THE PEMBROKE HILL SCHOOL - WORNALL CAMPUS', 2530, -94.593001, 39.03606]],
+    ],
+    [
+      PEMBROKE_HILL,
+      'THE PEMBROKE HILL SCHOOL - WORNALL CAMPUS',
+      1,
+      null,
+      null,
+      null,
+      '400 W 51ST ST',
+      'KANSAS CITY',
+      'MO',
+      '64112',
+      'Jackson County',
+      'PK',
+      '12',
+      1174,
+      '8169361230',
+      [[0, '291640000557', 'BORDER STAR MONTESSORI', 2530, -94.592692, 39.013304]],
+    ],
+  ];
+  return {
+    index: JSON.stringify({
+      schema_version: 1,
+      directory,
+      shards: 1,
+      first_ids: ['291640000557'],
+      files: ['0.json'],
+    }),
+    shard: JSON.stringify({ schema_version: 1, directory, first: 0, rows }),
+  };
+}
+
 /** SYNTHETIC: made-up statuses for the two schools, for this test only. */
 const SYNTHETIC_DAY = '2026-01-12';
 const SYNTHETIC_NOW = new Date('2026-01-12T18:00:00Z');
@@ -486,6 +542,10 @@ test.describe('with data staged', () => {
     writeFileSync(path.join(data, 'schools/meta.json'), directoryMeta());
     writeFileSync(path.join(data, 'schools/points.bin'), directoryPoints());
     writeFileSync(path.join(data, 'live/closings.json'), syntheticClosings());
+    mkdirSync(path.join(data, 'schools/details'), { recursive: true });
+    const details = directoryDetails();
+    writeFileSync(path.join(data, 'schools/details/index.json'), details.index);
+    writeFileSync(path.join(data, 'schools/details/0.json'), details.shard);
     // Staged as the pipeline writes it: its own records sit next to the outputs, never published.
     writeFileSync(path.join(data, 'schools/manifest.internal.json'), '{}');
     writeFileSync(path.join(data, '.gitkeep'), '');
@@ -518,6 +578,8 @@ test.describe('with data staged', () => {
     const shipped = filesIn(path.join(root, 'site', 'data')).sort();
     expect(shipped).toEqual([
       'live/closings.json',
+      'schools/details/0.json',
+      'schools/details/index.json',
       'schools/meta.json',
       'schools/points.bin',
       'search-index.bin',
@@ -769,6 +831,88 @@ test.describe('with data staged', () => {
     await waitForMap(page);
     await expectMapNear(page, 39.03606, -94.593001, 15);
     expect(new URL(page.url()).searchParams.get('school')).toBe(PEMBROKE_HILL);
+    expect(problems).toEqual([]);
+    await context.close();
+  });
+
+  test('a picked school lands in its panel: its day from the live file, what it is, pin, share and close', async ({
+    browser,
+  }) => {
+    const context = await browser.newContext({
+      viewport: { width: 1440, height: 900 },
+      timezoneId: 'America/Chicago',
+      permissions: ['clipboard-read', 'clipboard-write'],
+    });
+    const page = await context.newPage();
+    await page.clock.setFixedTime(SYNTHETIC_NOW);
+    const { problems } = watch(page);
+    await page.goto(site);
+    await waitForMap(page);
+    const input = page.locator('input.search-input');
+    await input.click();
+    await input.pressSequentially('pembroke', { delay: 20 });
+    await page.locator('[role="option"]').first().click();
+
+    const panel = page.locator('aside.detail');
+    await expect(panel).toHaveAccessibleName(copy.detail.label);
+    await expect(panel.locator('h2')).toHaveText('The Pembroke Hill SchoolWornall Campus');
+    await expect(panel.locator('.kind')).toHaveText(`${copy.detail.privateSchool} · PK–12`);
+    await expect(panel.locator('.place')).toHaveText('Kansas City, MO · Jackson County');
+    // SYNTHETIC statuses: delayed today, as the made-up live file says, and nothing made up here.
+    await expect(panel.locator('.status .headline')).toHaveText([copy.statusLine.delayed.today]);
+    await expect(panel.locator('.status .line-detail')).toHaveText(format.delay(120, null) ?? '');
+    await expect(panel.locator('.status .line-note')).toHaveText(
+      `${copy.reason.ice} · ${format.posted(new Date('2026-01-12T12:02:00Z'), 'America/Chicago', SYNTHETIC_NOW)}`,
+    );
+    await expect(panel.locator('.status .glyph.is-delayed')).toHaveCount(1);
+    // No chances are published: no history gives one.
+    await expect(panel.locator('.outlook .quiet')).toHaveText(copy.empty.notEnoughData);
+    await expect(panel.locator('.fact dt')).toHaveText([
+      copy.detail.students,
+      copy.detail.address,
+      copy.detail.phone,
+    ]);
+    await expect(panel.locator('.fact a')).toHaveAttribute('href', 'tel:+18169361230');
+    // The school nearest it, keyed with its status today (SYNTHETIC: closed).
+    await expect(panel.locator('.near-name')).toHaveText(['Border Star Montessori']);
+    await expect(panel.locator('.near-distance')).toHaveText([format.miles(2530)]);
+    await expect(panel.locator('.near .glyph.is-closed')).toHaveCount(1);
+    // After a pick the panel has the focus.
+    await expect(panel).toBeFocused();
+
+    const [pin, share] = [panel.locator('.action').nth(0), panel.locator('.action').nth(1)];
+    await pin.click();
+    await expect(pin).toHaveAttribute('aria-pressed', 'true');
+    await expect(pin).toHaveText(copy.pin.mySchool);
+    expect(await page.evaluate((key) => localStorage.getItem(key), PIN_KEY)).toBe(
+      JSON.stringify({ v: 1, school: PEMBROKE_HILL }),
+    );
+    await share.click();
+    await expect(share).toHaveText(copy.share.copied);
+    expect(await page.evaluate(() => navigator.clipboard.readText())).toBe(
+      `${site}?school=${PEMBROKE_HILL}`,
+    );
+    await expect(share).toHaveText(copy.actions.share, { timeout: 5000 });
+
+    // Escape closes it: the school leaves the address.
+    await page.keyboard.press('Escape');
+    await expect(panel).toHaveCount(0);
+    expect(new URL(page.url()).searchParams.get('school')).toBeNull();
+
+    // A link to a public school opens its panel too: closed today, with its district.
+    await page.goto(`${site}?school=291640000557`);
+    await expect(panel.locator('h2')).toHaveText('Border Star Montessori');
+    await expect(panel.locator('.status .headline')).toHaveText([copy.statusLine.closed.today]);
+    await expect(panel.locator('.status .glyph.is-closed')).toHaveCount(1);
+    await expect(panel.locator('.fact dt').first()).toHaveText(copy.detail.district);
+    await expect(panel.locator('.fact dd').first()).toHaveText('Kansas City 33');
+    // Its nearest school opens from the list: the map goes there, and its panel takes this one's place.
+    await panel.locator('.near').first().click();
+    await expect(panel.locator('h2')).toHaveText('The Pembroke Hill SchoolWornall Campus');
+    await expect.poll(() => new URL(page.url()).searchParams.get('school')).toBe(PEMBROKE_HILL);
+    await expectMapNear(page, 39.03606, -94.593001, 15);
+    await panel.locator('.close').click();
+    await expect(panel).toHaveCount(0);
     expect(problems).toEqual([]);
     await context.close();
   });

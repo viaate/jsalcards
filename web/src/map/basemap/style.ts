@@ -8,7 +8,13 @@ import type {
 
 import { MAP_FONTS } from './fonts';
 import { BASEMAP_IDS } from './ids';
-import { schoolDotLayer, schoolNameLayer, schoolSource, schoolSpaceLayer } from './schools';
+import {
+  schoolDotLayer,
+  schoolNameLayer,
+  schoolSelectedLayer,
+  schoolSource,
+  schoolSpaceLayer,
+} from './schools';
 import { STATE_AREAS_UNTIL } from './state-areas';
 import {
   STATE_NAME_LEADING,
@@ -1410,6 +1416,7 @@ export function buildBasemapStyle({
     layers.splice(
       layers.findIndex((layer) => layer.id === BASEMAP_IDS.glowSlot),
       0,
+      schoolSelectedLayer(schoolColors),
       schoolDotLayer(schoolColors),
     );
     layers.splice(

@@ -36,6 +36,7 @@ import {
   SCHOOL_TILES_MAX_ZOOM,
   SCHOOL_TILES_MIN_ZOOM,
   schoolSpaceImage,
+  selectedSchoolFilter,
 } from '../schools';
 import {
   BUNDLED_LINES_UNTIL,
@@ -1079,6 +1080,7 @@ describe('schools', () => {
     expect(at(BASEMAP_IDS.schoolSpace)).toBe(at(BASEMAP_IDS.schools) - 1);
     // Everything else is where it is without schools.
     const added: string[] = [
+      BASEMAP_IDS.schoolSelected,
       BASEMAP_IDS.schoolDots,
       BASEMAP_IDS.schoolNames,
       BASEMAP_IDS.schoolSpace,
@@ -1086,6 +1088,29 @@ describe('schools', () => {
     expect(layers.map((l) => l.id).filter((id) => !added.includes(id))).toEqual(
       LAYERS.map((l) => l.id),
     );
+  });
+
+  it('ring the school whose panel is open, under its dot, in white, and no school until one is', () => {
+    expect(at(BASEMAP_IDS.schoolSelected)).toBe(at(BASEMAP_IDS.schoolDots) - 1);
+    const ring = schoolLayer(BASEMAP_IDS.schoolSelected);
+    expect(ring).toMatchObject({
+      type: 'circle',
+      source: BASEMAP_IDS.schoolsSource,
+      'source-layer': SCHOOLS_TILE_LAYER,
+      minzoom: SCHOOL_DOTS_FROM - SCHOOL_FADE,
+      filter: selectedSchoolFilter(null),
+    });
+    expect(selectedSchoolFilter('A1902690')).toEqual(['==', ['get', 'id'], 'A1902690']);
+    expect(hex(rgb(BASEMAP_IDS.schoolSelected, 'circle-stroke-color', 15))).toBe(
+      COLORS.labelBright,
+    );
+    // Clear of the dot and its dark ring at every zoom, so the dot stands inside it.
+    for (const z of [11, 13, 15, 17]) {
+      const dot =
+        num(BASEMAP_IDS.schoolDots, 'paint', 'circle-radius', z) +
+        num(BASEMAP_IDS.schoolDots, 'paint', 'circle-stroke-width', z);
+      expect(num(BASEMAP_IDS.schoolSelected, 'paint', 'circle-radius', z)).toBeGreaterThan(dot + 2);
+    }
   });
 
   it('keep each dot clear of every name up close, unseen', () => {

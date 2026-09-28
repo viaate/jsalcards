@@ -164,6 +164,17 @@ async function keepsTiles(page: Page): Promise<boolean> {
   return page.evaluate(() => window.snowlightMap?.cancelPendingTileRequestsWhileZooming === false);
 }
 
+/** Where Pembroke Hill is on the screen, in CSS pixels. */
+async function schoolOnScreen(page: Page): Promise<{ x: number; y: number }> {
+  return page.evaluate(({ lon, lat }) => {
+    const map = window.snowlightMap;
+    if (map === undefined) throw new Error('no map');
+    const point = map.project([lon, lat]);
+    const box = map.getContainer().getBoundingClientRect();
+    return { x: box.left + point.x, y: box.top + point.y };
+  }, PEMBROKE_HILL);
+}
+
 async function mapView(page: Page): Promise<{ lat: number; lon: number; zoom: number }> {
   return page.evaluate(() => {
     const map = window.snowlightMap;
@@ -341,15 +352,27 @@ test('the build ships the pipeline’s own files, under names that change with t
     expect(name).toContain(digest.slice(0, 10));
   }
   const index = hashed('search-index.bin');
+  // The school details, staged from the directory's tables: an index and a file per 256 schools.
+  const details = shipped.filter((file) => file.startsWith('schools/details/'));
+  const meta = JSON.parse(readFileSync(path.join(SITE_DATA, 'schools/meta.json'), 'utf8')) as {
+    count: number;
+  };
+  expect(details).toHaveLength(Math.ceil(meta.count / 256) + 1);
+  for (const file of details) {
+    expect(file).toMatch(/^schools\/details\/(?:\d+|index)\.[0-9a-f]{10}\.json$/);
+    expect(file).toContain(sha256(path.join(data, file)).slice(0, 10));
+  }
   // Everything else the pipeline published, as it wrote it; never its own records or the index inputs.
   const rest = shipped.filter(
-    (file) => !/^(schools\/(meta|points|schools)|search-index)\.[0-9a-f]{10}\./.test(file),
+    (file) =>
+      !/^(schools\/(meta|points|schools)|search-index)\.[0-9a-f]{10}\./.test(file) &&
+      !details.includes(file),
   );
   for (const file of rest) {
     expect(sha256(path.join(data, file))).toBe(sha256(path.join(SITE_DATA, file)));
   }
   expect(shipped.filter((file) => /internal|\.jsonl$|^search\//.test(file))).toEqual([]);
-  expect(shipped).toHaveLength(rest.length + 4);
+  expect(shipped).toHaveLength(rest.length + details.length + 4);
   expect(index).toMatch(/^search-index\.[0-9a-f]{10}\.bin$/);
 });
 
@@ -425,14 +448,59 @@ test('searching “pembroke” lists Pembroke Hill, and choosing it goes there',
   expect(await keepsTiles(page)).toBe(true);
   await expect(input).toHaveValue(PEMBROKE_HILL_NAME);
   await expect.poll(() => new URL(page.url()).searchParams.get('school')).toBe(PEMBROKE_HILL.id);
+  // It lands in the school's panel: the name, what the school is and where, from the directory.
+  const panel = page.locator('aside.detail');
+  await expect(panel.locator('h2')).toHaveText('The Pembroke Hill SchoolWornall Campus');
+  await expect(panel.locator('.kind')).toHaveText(`${copy.detail.privateSchool} · PK–12`);
+  await expect(panel.locator('.place')).toHaveText('Kansas City, MO · Jackson County');
+  await expect(panel.locator('.fact dt')).toHaveText([
+    copy.detail.students,
+    copy.detail.address,
+    copy.detail.phone,
+  ]);
+  await expect(panel.locator('.fact dd')).toHaveText([
+    '1,174',
+    '400 W 51st StKansas City, MO 64112',
+    /^\(816\)\s936-1230$/,
+  ]);
+  // It is September: no status, and no chance of a closure without the history to give one.
+  await expect(panel.locator('.outlook .quiet')).toHaveText(copy.empty.notEnoughData);
+  await expect(panel.locator('.status')).toHaveCount(0);
+  // The schools nearest it, by the directory's places, nearest first.
+  await expect(panel.locator('.near-name')).toHaveText([
+    'Visitation Catholic School',
+    "St Teresa's Academy",
+    'Allen Village High School',
+    'Allen Village Elementary Academy',
+  ]);
+  await expect(panel.locator('.near-distance')).toHaveText([
+    `0.3\u00a0mi`,
+    `0.7\u00a0mi`,
+    `1.1\u00a0mi`,
+    `1.2\u00a0mi`,
+  ]);
+  // Its dot is ringed on the map, the one the panel is about.
+  await expect
+    .poll(
+      () =>
+        page.evaluate((id) => {
+          const map = window.snowlightMap;
+          return map?.getLayer(id) === undefined ? null : map.getFilter(id);
+        }, BASEMAP_IDS.schoolSelected),
+      { timeout: 30_000 },
+    )
+    .toEqual(['==', ['get', 'id'], PEMBROKE_HILL.id]);
+  // The map ends at zoom 15 with the school in the middle of what the panel leaves in view.
   await expect
     .poll(
       async () => {
         const view = await mapView(page);
+        const where = await schoolOnScreen(page);
+        const panelRight = ((await panel.boundingBox())?.x ?? 0) + 368;
         return (
-          Math.abs(view.lat - PEMBROKE_HILL.lat) < 0.001 &&
-          Math.abs(view.lon - PEMBROKE_HILL.lon) < 0.001 &&
-          Math.abs(view.zoom - 15) < 0.05
+          Math.abs(view.zoom - 15) < 0.05 &&
+          Math.abs(where.x - (panelRight + 1440) / 2) < 3 &&
+          Math.abs(where.y - (64 + 900) / 2) < 3
         );
       },
       { timeout: 30_000 },

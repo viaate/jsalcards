@@ -462,6 +462,39 @@ describe('format', () => {
     });
   });
 
+  describe('a school’s grades and phone number', () => {
+    it('reads the grades a school teaches from its lowest and highest NCES codes', () => {
+      expect(format.grades('PK', '12')).toBe('PK–12');
+      expect(format.grades('KG', '05')).toBe('K–5');
+      expect(format.grades('09', '12')).toBe('9–12');
+      expect(format.grades('TK', '08')).toBe('TK–8');
+      expect(format.grades('KG', 'KG')).toBe('K');
+      expect(format.grades('13', '13')).toBe('13');
+      for (const bad of ['T1', '00', '14', 'K', '', '5']) {
+        expect(() => format.grades(bad, '12')).toThrow(RangeError);
+      }
+    });
+
+    it('writes a distance in miles, to a tenth under ten miles', () => {
+      expect(format.miles(0)).toBe(`0.1${NBSP}mi`);
+      expect(format.miles(643)).toBe(`0.4${NBSP}mi`);
+      expect(format.miles(1609.344)).toBe(`1.0${NBSP}mi`);
+      expect(format.miles(15_900)).toBe(`9.9${NBSP}mi`);
+      expect(format.miles(16_100)).toBe(`10${NBSP}mi`);
+      expect(format.miles(1_609_344)).toBe(`1,000${NBSP}mi`);
+      for (const bad of [-1, Number.NaN, Infinity]) {
+        expect(() => format.miles(bad)).toThrow(RangeError);
+      }
+    });
+
+    it('writes a phone number as it is dialed in the US, never broken across lines', () => {
+      expect(format.phone('8169361230')).toBe(`(816)${NBSP}936-1230`);
+      for (const bad of ['816936123', '816-936-1230', '81693612300']) {
+        expect(() => format.phone(bad)).toThrow(RangeError);
+      }
+    });
+  });
+
   describe('chances and the track record', () => {
     it('writes a probability as a whole percentage that never claims certainty', () => {
       expect(format.chance(0.34)).toBe('34%');
@@ -590,6 +623,17 @@ describe('format', () => {
       for (let minute = 0; minute < 1440; minute += 5) {
         outputs.push(format.delay(null, minute), format.dismissal(null, minute));
       }
+      expect(allProblems(outputs)).toEqual([]);
+    });
+
+    it('for every grade span and a phone number', () => {
+      const codes = ['PK', 'TK', 'KG', '01', '02', '03', '04', '05', '06', '07', '08', '09'];
+      codes.push('10', '11', '12', '13');
+      const outputs = codes.flatMap((low, i) =>
+        codes.slice(i).map((high) => format.grades(low, high)),
+      );
+      outputs.push(format.phone('8169361230'));
+      for (let metres = 0; metres < 40_000; metres += 97) outputs.push(format.miles(metres));
       expect(allProblems(outputs)).toEqual([]);
     });
 

@@ -24,6 +24,9 @@
  *   schools/meta.<hash>.json          the directory, as the pipeline wrote it
  *   schools/points.<hash>.bin
  *   schools/schools.<hash>.pmtiles
+ *   schools/details/<n>.<hash>.json   what the directory says about each school,
+ *                                     1,024 schools a file, and index.<hash>.json,
+ *                                     where each file starts (src/data/details-format.ts)
  *   search-index.<hash>.bin           built by scripts/build-search-index.mjs from
  *                                     the directory's schools and districts and
  *                                     the places build's cities and ZIP codes
@@ -44,6 +47,16 @@
  *             its schools' enrollment together as weight; a district that is
  *             one school of the same name (most charter schools) is found as
  *             that school
+ *
+ * School details, for the detail panel: each school's id, name, kind flags
+ * and district (meta.json, points.bin), and its street, town, state, ZIP
+ * code, county, lowest and highest grade, enrollment and phone number, as
+ * NCES lists them in the directory's own tables, each null where NCES gives
+ * none (a grade code the page does not know, a phone number that is not ten
+ * digits). Nothing is filled in. Each also lists the schools nearest it, by
+ * the directory's places: up to four within five miles, virtual schools
+ * aside, and a school listed twice at one place (the same name within 50 m)
+ * not listed as its own neighbor.
  *
  * Each also carries its name as the page shows it (src/text/names.ts, with
  * the directory's fixes, src/text/school-names.ts) where that reads with
@@ -93,6 +106,19 @@ const { nameFixes, stateOfId } = await import('../src/text/school-names.ts');
 const { hashedPath } = await import('../src/data/paths.ts');
 const { STATE_INDEX } = await import('../src/search/states.ts');
 const { canonicalLength, indexTokens, tokenize } = await import('../src/search/normalize.ts');
+const {
+  DETAILS_INDEX_PATH,
+  GRADE_CODES,
+  KIND_FLAGS,
+  NEARBY_COUNT,
+  NEARBY_MAX_METRES,
+  SCHOOLS_PER_SHARD,
+  compareSchoolIds,
+  detailsShardPath,
+  isDetailRow,
+  metresBetween,
+  phoneDigits,
+} = await import('../src/data/details-format.ts');
 
 const WEB = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 
@@ -161,7 +187,7 @@ function sha256(bytes) {
 }
 
 /**
- * @typedef {{ ids: string[], names: string[], count: number,
+ * @typedef {{ ids: string[], names: string[], count: number, generated_on: string,
  *   districts: { ids: string[], names: string[] } }} Meta
  */
 
@@ -205,6 +231,7 @@ function readPoints(bytes, meta) {
   const lon = new Float64Array(meta.count);
   const lat = new Float64Array(meta.count);
   const district = new Int32Array(meta.count);
+  const flags = new Uint8Array(meta.count);
   for (let i = 0; i < meta.count; i++) {
     const at = POINTS_HEADER + POINTS_RECORD * i;
     lon[i] = bytes.readInt32LE(at) / 1e6;
@@ -214,8 +241,9 @@ function readPoints(bytes, meta) {
       throw new StageError(`${POINTS}: school ${String(i)} points past the districts`);
     }
     district[i] = index === NO_DISTRICT ? -1 : index;
+    flags[i] = bytes.readUInt8(at + 12);
   }
-  return { lon, lat, district };
+  return { lon, lat, district, flags };
 }
 
 /**
@@ -416,6 +444,173 @@ function directoryRecords(meta, points, tables) {
   return { schoolRecords, districtRecords, merged };
 }
 
+/** @param {unknown} value */
+const textOrNull = (value) => (isText(value) ? String(value).trim() : null);
+
+/** @param {unknown} value */
+const gradeOrNull = (value) =>
+  typeof value === 'string' && GRADE_CODES.includes(value) ? value : null;
+
+/** @param {unknown} value */
+const zipOrNull = (value) => {
+  const match = typeof value === 'string' ? /^(\d{5})(?:-\d{4})?$/.exec(value.trim()) : null;
+  return match === null ? null : (match[1] ?? null);
+};
+
+/** Degrees of latitude and longitude a grid cell spans, for finding each school's neighbors. */
+const NEARBY_CELL = 0.1;
+/** Metres in a degree of latitude, at least, and of longitude at the equator. */
+const METRES_PER_DEGREE_LAT = 110_574;
+const METRES_PER_DEGREE_LON = 111_320;
+/** Within this many metres, a school of the same name is the same school listed twice. */
+const SAME_PLACE_METRES = 50;
+
+/**
+ * Each school's nearest other schools, nearest first (ties by position):
+ * up to NEARBY_COUNT within NEARBY_MAX_METRES, never a virtual school, as
+ * details-format.ts rows list them.
+ * @param {Meta} meta
+ * @param {ReturnType<typeof readPoints>} points
+ */
+function nearbyOf(meta, points) {
+  /** @type {Map<string, number[]>} */
+  const cells = new Map();
+  const cellOf = (/** @type {number} */ lon, /** @type {number} */ lat) => [
+    Math.floor(lon / NEARBY_CELL),
+    Math.floor(lat / NEARBY_CELL),
+  ];
+  for (let i = 0; i < meta.count; i++) {
+    if (((points.flags[i] ?? 0) & KIND_FLAGS.virtual) !== 0) continue;
+    const [x, y] = cellOf(points.lon[i] ?? 0, points.lat[i] ?? 0);
+    const key = `${String(x)},${String(y)}`;
+    const cell = cells.get(key);
+    if (cell === undefined) cells.set(key, [i]);
+    else cell.push(i);
+  }
+  const rad = Math.PI / 180;
+  const spanY = Math.ceil(NEARBY_MAX_METRES / (NEARBY_CELL * METRES_PER_DEGREE_LAT));
+  return meta.ids.map((_id, i) => {
+    const lon = points.lon[i] ?? 0;
+    const lat = points.lat[i] ?? 0;
+    const name = (meta.names[i] ?? '').toUpperCase();
+    const [x, y] = cellOf(lon, lat);
+    const spanX = Math.ceil(
+      NEARBY_MAX_METRES /
+        (NEARBY_CELL * METRES_PER_DEGREE_LON * Math.max(0.2, Math.cos((Math.abs(lat) + 1) * rad))),
+    );
+    /** @type {{ j: number, metres: number }[]} */
+    const best = [];
+    for (let dx = -spanX; dx <= spanX; dx++) {
+      for (let dy = -spanY; dy <= spanY; dy++) {
+        for (const j of cells.get(`${String(x + dx)},${String(y + dy)}`) ?? []) {
+          if (j === i) continue;
+          const metres = metresBetween(lon, lat, points.lon[j] ?? 0, points.lat[j] ?? 0);
+          if (metres > NEARBY_MAX_METRES) continue;
+          if (metres < SAME_PLACE_METRES && (meta.names[j] ?? '').toUpperCase() === name) continue;
+          const worst = best[best.length - 1];
+          if (
+            best.length === NEARBY_COUNT &&
+            worst !== undefined &&
+            (metres > worst.metres || (metres === worst.metres && j > worst.j))
+          ) {
+            continue;
+          }
+          best.push({ j, metres });
+          best.sort((a, b) => a.metres - b.metres || a.j - b.j);
+          if (best.length > NEARBY_COUNT) best.pop();
+        }
+      }
+    }
+    return best.map(({ j, metres }) => [
+      j,
+      meta.ids[j] ?? '',
+      meta.names[j] ?? '',
+      Math.min(NEARBY_MAX_METRES, Math.round(metres)),
+      points.lon[j] ?? 0,
+      points.lat[j] ?? 0,
+    ]);
+  });
+}
+
+/**
+ * The school detail files (src/data/details-format.ts): one row per school,
+ * in the directory's order, SCHOOLS_PER_SHARD a file, and the index of where
+ * each file starts, all stamped with the directory they point into.
+ * @param {Meta} meta
+ * @param {ReturnType<typeof readPoints>} points
+ * @param {ReturnType<typeof readTables>} tables
+ * @returns {{ path: string, bytes: Buffer }[]}
+ */
+function detailFiles(meta, points, tables) {
+  const stamp = {
+    generated_on: meta.generated_on,
+    schools: meta.count,
+    districts: meta.districts.ids.length,
+  };
+  const nearby = nearbyOf(meta, points);
+  const rows = tables.schools.map((row, i) => {
+    const id = meta.ids[i] ?? '';
+    if (i > 0 && compareSchoolIds(meta.ids[i - 1] ?? '', id) >= 0) {
+      throw new StageError(`${META}: school ${id} is out of the directory's order`);
+    }
+    const enrollment = row.enrollment ?? null;
+    const district = points.district[i] ?? -1;
+    const detail = [
+      id,
+      meta.names[i] ?? '',
+      points.flags[i] ?? 0,
+      district < 0 ? null : district,
+      district < 0 ? null : (meta.districts.ids[district] ?? null),
+      district < 0 ? null : (meta.districts.names[district] ?? null),
+      textOrNull(row.street),
+      textOrNull(row.city),
+      String(row.state),
+      zipOrNull(row.zip),
+      textOrNull(row.county_name),
+      gradeOrNull(row.grade_low),
+      gradeOrNull(row.grade_high),
+      typeof enrollment === 'number' ? enrollment : null,
+      phoneDigits(row.phone),
+      nearby[i] ?? [],
+    ];
+    if (!isDetailRow(detail)) {
+      throw new StageError(`school ${meta.ids[i] ?? String(i)} has details the page cannot read`);
+    }
+    return detail;
+  });
+  const files = [];
+  const firstIds = [];
+  for (let first = 0; first < rows.length; first += SCHOOLS_PER_SHARD) {
+    firstIds.push(meta.ids[first] ?? '');
+    files.push({
+      path: detailsShardPath(first / SCHOOLS_PER_SHARD),
+      bytes: Buffer.from(
+        JSON.stringify({
+          schema_version: 1,
+          directory: stamp,
+          first,
+          rows: rows.slice(first, first + SCHOOLS_PER_SHARD),
+        }),
+      ),
+    });
+  }
+  // The index names each shard's file as it is published, with its content hash.
+  const names = files.map(({ path, bytes }) => basename(hashedPath(path, sha256(bytes))));
+  files.push({
+    path: DETAILS_INDEX_PATH,
+    bytes: Buffer.from(
+      JSON.stringify({
+        schema_version: 1,
+        directory: stamp,
+        shards: files.length,
+        first_ids: firstIds,
+        files: names,
+      }),
+    ),
+  });
+  return files;
+}
+
 /** @param {string} file @param {readonly object[]} records */
 function writeJsonLines(file, records) {
   writeFileSync(file, records.map((record) => JSON.stringify(record)).join('\n') + '\n');
@@ -468,6 +663,7 @@ function main() {
     const points = readPoints(pointsBytes, meta);
     const tables = readTables(args, work);
     const { schoolRecords, districtRecords, merged } = directoryRecords(meta, points, tables);
+    const details = detailFiles(meta, points, tables);
     const schoolsFile = join(work, 'schools.jsonl');
     const districtsFile = join(work, 'districts.jsonl');
     writeJsonLines(schoolsFile, schoolRecords);
@@ -503,6 +699,11 @@ function main() {
     putHashed(POINTS, pointsBytes);
     putHashed(TILES, tilesBytes);
     putHashed(SEARCH_INDEX, readFileSync(indexFile));
+    const stagedBefore = staged.length;
+    for (const { path, bytes } of details) putHashed(path, bytes);
+    // One line for the school details: there are over a hundred files.
+    const shardBytes = staged.splice(stagedBefore).reduce((sum, [, size]) => sum + size, 0);
+    staged.push([`schools/details/ (${String(details.length)} files)`, shardBytes]);
     for (const path of filesUnder(args.site)) {
       if (HANDLED.has(path) || path.startsWith('search/') || !published(path)) continue;
       mkdirSync(dirname(join(args.to, path)), { recursive: true });

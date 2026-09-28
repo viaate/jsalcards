@@ -180,7 +180,16 @@ export const copy = deepFreeze({
     posted: 'Posted',
     publicSchool: 'Public school',
     privateSchool: 'Private school',
+    charterSchool: 'Charter school',
+    virtualSchool: 'Virtual school',
     district: 'District',
+    grades: 'Grades',
+    students: 'Students',
+    address: 'Address',
+    phone: 'Phone',
+    /** The status heading over today's and tomorrow's lines. */
+    status: 'Status',
+    nearby: 'Nearby schools',
   },
 
   /** The chance of a weather closure. "Not enough data yet" and "No weather threat" are in `empty`. */
@@ -644,6 +653,46 @@ function speed(multiple: number): string {
   return `${speedFormat.format(multiple)}×`;
 }
 
+/** How a grade code reads (NCES codes: PK, TK, KG, 01 to 13). */
+const GRADE_NAMES: Readonly<Record<string, string>> = {
+  PK: 'PK',
+  TK: 'TK',
+  KG: 'K',
+};
+
+function gradeName(code: string): string {
+  const named = GRADE_NAMES[code];
+  if (named !== undefined) return named;
+  const grade = /^(?:0[1-9]|1[0-3])$/.exec(code) === null ? NaN : Number(code);
+  if (Number.isNaN(grade)) throw new RangeError(`copy: "${code}" is not a grade`);
+  return String(grade);
+}
+
+/** A school's grades from its lowest and highest, as NCES codes: "PK–12", "K–5", "9–12", "K". */
+function grades(low: string, high: string): string {
+  const first = gradeName(low);
+  const last = gradeName(high);
+  return first === last ? first : `${first}–${last}`;
+}
+
+/** A 10-digit US phone number: "(816) 936-1230". */
+function phone(digits: string): string {
+  if (!/^\d{10}$/.test(digits)) throw new RangeError(`copy: "${digits}" is not a phone number`);
+  return `(${digits.slice(0, 3)})${NBSP}${digits.slice(3, 6)}-${digits.slice(6)}`;
+}
+
+const METRES_PER_MILE = 1609.344;
+
+/** A distance in miles, from metres: "0.4 mi" under ten miles, "12 mi" beyond; never under "0.1 mi". */
+function miles(metres: number): string {
+  if (!Number.isFinite(metres) || metres < 0) {
+    throw new RangeError(`copy: a distance is 0 metres or more, not ${String(metres)}`);
+  }
+  const tenths = Math.max(1, Math.round((metres / METRES_PER_MILE) * 10));
+  if (tenths < 100) return `${(tenths / 10).toFixed(1)}${NBSP}mi`;
+  return `${number(Math.round(metres / METRES_PER_MILE))}${NBSP}mi`;
+}
+
 /** A weather alert: "Winter weather warning". */
 function alertName(hazard: HazardKey, level: AlertLevelKey): string {
   const name = copy.hazard[checkKey(copy.hazard, hazard, 'hazard')];
@@ -669,6 +718,9 @@ export const format = /* @__PURE__ */ deepFreeze({
   delay,
   dismissal,
   chance,
+  grades,
+  phone,
+  miles,
   percentRange,
   outOf,
   lead,

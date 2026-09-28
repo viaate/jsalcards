@@ -11,10 +11,14 @@ import { PIN_KEY, encodePin } from '../../state/pin';
 import { createUrlStore } from '../../state/url-store';
 import type { UrlStoreHost } from '../../state/url-store';
 import { boot } from '../boot';
+// Loaded here as well as on demand, so a busy machine's first transform does not run out a wait.
+import '../school';
 import type { BootOptions } from '../boot';
 import type { AppData, Target } from '../data';
 import { ZOOM } from '../startup';
 
+/** How long a test waits for code loaded on demand, on a busy machine. */
+const WAIT = { timeout: 4_000 };
 const PEMBROKE_HILL = 'A1902690';
 const ROOT = 'https://snow.test/data/';
 
@@ -88,7 +92,13 @@ const NO_DATA: AppData = {
   directories: () => Promise.resolve(null),
 };
 
-function start(url: string, data: AppData, moved = false, glow: Glow | null = null) {
+function start(
+  url: string,
+  data: AppData,
+  moved = false,
+  glow: Glow | null = null,
+  frame?: BootOptions['frame'],
+) {
   const tab = new FakeTab(url);
   const links = createUrlStore({ host: tab });
   const controller = new AbortController();
@@ -105,6 +115,7 @@ function start(url: string, data: AppData, moved = false, glow: Glow | null = nu
     listId: 'list',
     onResults: (next) => results.push(next),
     data,
+    ...(frame === undefined ? {} : { frame }),
   };
   const services = boot(options);
   return { tab, links, controller, shown, results, services };
@@ -218,6 +229,65 @@ describe('search', () => {
     });
     expect(tab.pushes).toBe(1);
     expect(shown).toEqual([{ view: { lat: 39.03606, lon: -94.593001, zoom: ZOOM.school } }]);
+    controller.abort();
+  });
+
+  it('a picked school is framed clear of its panel, in the link and on the map alike', () => {
+    const frame = vi.fn((view: { lat: number; lon: number; zoom: number }, opened: unknown) =>
+      opened === null ? view : { ...view, lon: view.lon - 0.004 },
+    );
+    const { services, links, shown, controller } = start(
+      'https://snow.test/',
+      NO_DATA,
+      false,
+      null,
+      frame,
+    );
+    services.pick(SCHOOL_HIT);
+    expect(frame).toHaveBeenCalledWith(
+      { lat: 39.03606, lon: -94.593001, zoom: ZOOM.school },
+      { kind: 'school', id: PEMBROKE_HILL },
+    );
+    expect(links.state.view).toEqual({ lat: 39.03606, lon: -94.597, zoom: ZOOM.school });
+    expect(shown).toEqual([{ view: { lat: 39.03606, lon: -94.597001, zoom: ZOOM.school } }]);
+    // A city opens no panel: its view is its own.
+    services.pick(CITY_HIT);
+    expect(shown[1]).toEqual({ view: { lat: 39.125155, lon: -94.550313, zoom: ZOOM.city } });
+    controller.abort();
+  });
+
+  it('a linked school the map goes to by itself is framed clear of its panel too', async () => {
+    const frame = (view: { lat: number; lon: number; zoom: number }) => ({ ...view, lat: 0 });
+    const { shown, controller } = start(
+      `https://snow.test/?school=${PEMBROKE_HILL}`,
+      withDirectory(),
+      false,
+      null,
+      frame,
+    );
+    await settle();
+    expect(shown).toEqual([{ view: { lon: -94.593001, lat: 0, zoom: ZOOM.school } }]);
+    controller.abort();
+  });
+
+  it('reads a school for its panel, and says there is none without its record', async () => {
+    const { services, controller } = start('https://snow.test/', NO_DATA);
+    const views: unknown[] = [];
+    const hint = { id: PEMBROKE_HILL, name: 'The Pembroke Hill School', sub: 'Kansas City, MO' };
+    const stop = services.watchSchool(PEMBROKE_HILL, hint, (view) => views.push(view));
+    await vi.waitFor(() => {
+      expect(views).toHaveLength(2);
+    }, WAIT);
+    // What the pick knew, then that, for good: this build ships no records.
+    expect(views[0]).toMatchObject({ name: 'The Pembroke Hill School', loading: true });
+    expect(views[1]).toMatchObject({ name: 'The Pembroke Hill School', loading: false, facts: [] });
+    stop();
+    const none: unknown[] = [];
+    services.watchSchool(PEMBROKE_HILL, null, (view) => none.push(view));
+    await vi.waitFor(() => {
+      expect(none).toEqual([null]);
+    }, WAIT);
+    expect(services.pins.school).toBeNull();
     controller.abort();
   });
 

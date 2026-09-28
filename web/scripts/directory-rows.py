@@ -5,15 +5,18 @@ schools/meta.json and schools/points.bin, and keeps the rest of what NCES
 says about each school and district in two tables it never publishes:
 ``schools.parquet`` and ``districts.parquet`` in pipeline/out/internal/directory.
 Search needs a little of that rest: the town and state a school or district
-is in, and its enrollment, which ranks equal matches. This script reads those
-columns and writes them, one JSON object per row, in the directory's order:
+is in, and its enrollment, which ranks equal matches. A school's detail panel
+needs a little more: its street address, county, grades and phone number.
+This script reads those columns and writes them, one JSON object per row, in
+the directory's order:
 
-    schools.jsonl    {"index", "id", "city", "state", "enrollment"}
+    schools.jsonl    {"index", "id", "city", "state", "enrollment", "street",
+                      "zip", "county_name", "grade_low", "grade_high", "phone"}
     districts.jsonl  {"index", "id", "city", "state", "lat", "lon"}
 
-``enrollment`` is null where NCES reports none. Nothing is added or guessed:
+Each column is null where NCES gives none. Nothing is added or guessed:
 scripts/stage-data.mjs checks every row against the published directory and
-builds the search records from both.
+builds the search records and the school details from both.
 
 Run with the pipeline's environment, which has polars:
 
@@ -27,7 +30,19 @@ from pathlib import Path
 
 import polars as pl
 
-SCHOOL_COLUMNS = ["index", "id", "city", "state", "enrollment"]
+SCHOOL_COLUMNS = [
+    "index",
+    "id",
+    "city",
+    "state",
+    "enrollment",
+    "street",
+    "zip",
+    "county_name",
+    "grade_low",
+    "grade_high",
+    "phone",
+]
 DISTRICT_COLUMNS = ["index", "district_id", "city", "state", "lat", "lon"]
 
 

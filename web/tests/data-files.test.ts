@@ -11,6 +11,7 @@ import {
   dataFiles,
   dataFilesModule,
   listDataFiles,
+  listedDataFiles,
   removeUnpublished,
 } from '../tools/data-files';
 
@@ -41,6 +42,22 @@ describe('the data files a build ships', () => {
       'schools/meta.json',
       'schools/points.bin',
       'search-index.bin',
+    ]);
+  });
+
+  it('are listed for the page by name, all but the school detail shards, which their index names', () => {
+    expect(
+      listedDataFiles([
+        'live/closings.json',
+        'schools/details/0.0123456789.json',
+        'schools/details/461.abcdefabcd.json',
+        'schools/details/index.9876543210.json',
+        'schools/meta.b5c6259854.json',
+      ]),
+    ).toEqual([
+      'live/closings.json',
+      'schools/details/index.9876543210.json',
+      'schools/meta.b5c6259854.json',
     ]);
   });
 

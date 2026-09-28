@@ -26,6 +26,7 @@ import path from 'node:path';
 
 import type { Plugin } from 'vite';
 
+import { isDetailShard } from '../src/data/details-format.ts';
 import { plainPath } from '../src/data/paths.ts';
 
 export const DATA_FILES_MODULE = 'virtual:snowlight/data-files';
@@ -96,6 +97,15 @@ export function clashingFiles(files: readonly string[]): string[] {
     .map(([plain, published]) => `${plain}: ${published.join(', ')}`);
 }
 
+/**
+ * The files the page asks for by name, of those published: all but the
+ * school detail shards, hundreds of files the page finds through their
+ * index (src/data/details-format.ts), which is listed.
+ */
+export function listedDataFiles(files: readonly string[]): string[] {
+  return files.filter((file) => !isDetailShard(file));
+}
+
 /** The module's source for a list of files. */
 export function dataFilesModule(files: readonly string[]): string {
   return `export const DATA_FILES = Object.freeze(${JSON.stringify(files)});\n`;
@@ -152,7 +162,7 @@ export function dataFiles(dataDir: string, options: DataFilesOptions = {}): Plug
           `${dataDir} holds more than one copy of a file; stage it again (npm run stage):\n${clashes.join('\n')}`,
         );
       }
-      return dataFilesModule(files);
+      return dataFilesModule(listedDataFiles(files));
     },
     configureServer(server) {
       if (dir === '') return;

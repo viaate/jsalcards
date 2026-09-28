@@ -20,11 +20,14 @@
  * quarter level before it, so a view at a whole zoom level shows it all.
  *
  * A dot or a name says only where a school is. What a school is doing today
- * is the glow's to show.
+ * is the glow's to show. The school whose panel is open has a ring around its
+ * dot, a faint disc edged in white, under the dot, so the one the panel is
+ * about is found at a glance.
  */
 import type {
   CircleLayerSpecification,
   ExpressionSpecification,
+  FilterSpecification,
   SymbolLayerSpecification,
   VariableAnchorOffsetCollectionSpecification,
   VectorSourceSpecification,
@@ -142,6 +145,44 @@ export function schoolDotLayer(colors: SchoolColors): CircleLayerSpecification {
       'circle-stroke-color': colors.ground,
       'circle-stroke-width': byZoom(...DOT_RING.flat()),
       'circle-stroke-opacity': fadeIn,
+      'circle-pitch-alignment': 'map',
+    },
+  };
+}
+
+/** The ring's radius in CSS pixels, by zoom: a few pixels clear of the dot. */
+const RING_RADIUS: readonly (readonly [zoom: number, px: number])[] = [
+  [SCHOOL_DOTS_FROM, 6.5],
+  [13, 7.5],
+  [15, 9.5],
+  [17, 12],
+];
+
+/** The filter that picks the school with this id, or none for null. */
+export function selectedSchoolFilter(id: string | null): FilterSpecification {
+  return ['==', ['get', 'id'], id ?? ''];
+}
+
+/**
+ * A ring around one school's dot, the one whose panel is open: a white edge
+ * and a faint disc, under the dot and every label. Monochrome: a status's
+ * color is the glow's alone.
+ */
+export function schoolSelectedLayer(colors: SchoolColors): CircleLayerSpecification {
+  return {
+    id: BASEMAP_IDS.schoolSelected,
+    type: 'circle',
+    source: BASEMAP_IDS.schoolsSource,
+    'source-layer': SCHOOLS_TILE_LAYER,
+    minzoom: SCHOOL_DOTS_FROM - SCHOOL_FADE,
+    filter: selectedSchoolFilter(null),
+    paint: {
+      'circle-radius': byZoom(...RING_RADIUS.flat()),
+      'circle-color': colors.name,
+      'circle-opacity': 0.14,
+      'circle-stroke-color': colors.name,
+      'circle-stroke-width': 1.25,
+      'circle-stroke-opacity': 0.9,
       'circle-pitch-alignment': 'map',
     },
   };

@@ -3,10 +3,17 @@
   import type { Component } from 'svelte';
   import type { Attachment } from 'svelte/attachments';
 
-  import type { SearchOption, Services, Target } from './app/boot';
+  import type {
+    NearbyView,
+    SchoolHint,
+    SchoolView,
+    SearchOption,
+    Services,
+    Target,
+  } from './app/boot';
   import { grantedPlace, opensNearby } from './app/nearby';
   import { copy } from './copy';
-  import type { Basemap, Place } from './map/basemap';
+  import type { Basemap, MapView, Place } from './map/basemap';
   import { loadBasemap } from './map/basemap/load';
   import type { Glow } from './map/glow-mount';
   import { markStep, yieldToMain } from './map/basemap/reveal';
@@ -15,7 +22,8 @@
   import { pinnedSchool } from './state/pin';
   import { createUrlStore } from './state/url-store';
   import type { UrlStore } from './state/url-store';
-  import type { UtcInstant } from './types/generated';
+  import type { Selection } from './state/url';
+  import type { SchoolId, UtcInstant } from './types/generated';
 
   interface Props {
     /** The inline still from index.html, handed over by main.ts. */
@@ -34,6 +42,17 @@
 
   interface UpdateTimeProps {
     generatedAt: UtcInstant;
+  }
+
+  interface DetailProps {
+    view: SchoolView;
+    pinned: boolean;
+    copied: boolean;
+    onclose: () => void;
+    onpin: () => void;
+    onshare: () => void;
+    onnearby?: (school: NearbyView) => void;
+    element?: HTMLElement | undefined;
   }
 
   let { still = null, initialQuery = '' }: Props = $props();
@@ -68,6 +87,26 @@
   let pickedName: string | null = null;
   /** True while the phone is asked where it is. */
   let locating = $state(false);
+  /** What the address opens: a school's panel shows while it holds one. */
+  let selection = $state<Selection | null>(null);
+  /** The open school's panel, loaded the first time a school opens. */
+  let Detail = $state<Component<DetailProps> | null>(null);
+  /** The open school's view; null while none is open, or for an id with no school. */
+  let schoolView = $state<SchoolView | null>(null);
+  let detailElement = $state<HTMLElement>();
+  /** The pinned school, once the pin is read. */
+  let pinnedId = $state<SchoolId | null>(null);
+  /** True for a moment after the panel's link was copied. */
+  let copied = $state(false);
+  let copiedTimer: ReturnType<typeof setTimeout> | undefined;
+  /** What the last pick knew about the school it opened, shown until its record is read. */
+  let pickedHint: SchoolHint | null = null;
+  /** Whether the panel takes focus when it shows: after a pick, not for a link or the pin. */
+  let focusPanel = false;
+  /** The address store, once the app has started. */
+  let urls: UrlStore | undefined;
+
+  const schoolId = $derived(selection?.kind === 'school' ? selection.id : null);
 
   const expanded = $derived(
     focused && !dismissed && Results !== null && options !== null && query.trim() !== '',
@@ -89,7 +128,7 @@
   }
 
   /** The page's controls over the map, which its labels keep clear of (the results list aside). */
-  const CONTROLS = '.wordmark, .search, .updated, .legend, .locate';
+  const CONTROLS = '.wordmark, .search, .updated, .legend, .locate, .detail';
 
   /**
    * Loads MapLibre after the first paint and hands the view over from the
@@ -167,6 +206,7 @@
       map.destroy();
     });
     basemap = map;
+    map.selectSchool(schoolId);
     followLinks(map, links, signal);
     if (pendingNear !== null) map.showNear(pendingNear);
     if (pendingTarget !== null) show(pendingTarget);
@@ -207,6 +247,39 @@
     else basemap.fitBounds(target.bounds, { maxZoom: target.maxZoom });
   }
 
+  /** The panel's width and its gap from the edge (DetailPanel.svelte), and a phone's sheet at most. */
+  const PANEL_WIDTH = 368;
+  const PANEL_EDGE = 20;
+  const SHEET_HEIGHT = 520;
+  const SHEET_SHARE = 0.64;
+  /** MapLibre's tile size in CSS pixels. */
+  const TILE = 512;
+
+  /**
+   * The view that shows `view`'s middle in the middle of the map the panel
+   * leaves in view: right of the panel beside the map, above the sheet on a
+   * phone, and below the search strip either way.
+   */
+  function clearOfPanel(view: MapView): MapView {
+    const width = window.innerWidth;
+    const height = window.innerHeight;
+    const top = headerElement?.getBoundingClientRect().bottom ?? 0;
+    const phone = width < 720;
+    const covered = phone
+      ? { left: 0, bottom: Math.min(SHEET_HEIGHT, height * SHEET_SHARE) }
+      : { left: PANEL_EDGE + PANEL_WIDTH, bottom: 0 };
+    // Where the place goes, from the screen's middle, in pixels.
+    const dx = covered.left / 2;
+    const dy = (top + height - covered.bottom) / 2 - height / 2;
+    const scale = TILE * 2 ** view.zoom;
+    const x = ((view.lon + 180) / 360) * scale - dx;
+    const sin = Math.sin((view.lat * Math.PI) / 180);
+    const y = (0.5 - Math.log((1 + sin) / (1 - sin)) / (4 * Math.PI)) * scale - dy;
+    const lon = (x / scale) * 360 - 180;
+    const lat = (Math.atan(Math.sinh(Math.PI * (1 - (2 * y) / scale))) * 180) / Math.PI;
+    return { lat, lon, zoom: view.zoom };
+  }
+
   function runSearch(text: string): void {
     dismissed = false;
     active = -1;
@@ -240,10 +313,118 @@
     pickedName = option.name;
     options = null;
     active = -1;
+    if (option.hit.kind === 'school') {
+      pickedHint = { id: option.hit.id, name: option.name, sub: option.sub };
+      focusPanel = true;
+    }
     inputElement?.blur();
     void services.then((app) => {
       app?.pick(option.hit);
     });
+  }
+
+  // The school the address holds: its view, read and kept current while it is open.
+  $effect(() => {
+    const id = schoolId;
+    schoolView = null;
+    basemap?.selectSchool(id);
+    if (id === null) return;
+    let stop: () => void = () => undefined;
+    let cancelled = false;
+    const hint = untrack(() => pickedHint);
+    void services.then((app) => {
+      if (cancelled || app === null) return;
+      stop = app.watchSchool(id, hint, (view) => {
+        if (!cancelled) schoolView = view;
+      });
+    });
+    if (untrack(() => Detail) === null) {
+      import('./ui/DetailPanel.svelte').then(
+        (module) => {
+          Detail = module.default;
+        },
+        () => undefined,
+      );
+    }
+    return () => {
+      cancelled = true;
+      stop();
+    };
+  });
+
+  /** Opens a school from the nearby list, as a pick of it would. */
+  function openNearby(school: NearbyView): void {
+    query = school.name;
+    pickedName = school.name;
+    pickedHint = { id: school.id, name: school.name, sub: '' };
+    void services.then((app) => {
+      app?.pick({
+        kind: 'school',
+        id: school.id,
+        name: school.name,
+        sub: '',
+        state: '',
+        lat: school.lat,
+        lon: school.lon,
+        match: 'exact',
+        highlight: [],
+      });
+    });
+  }
+
+  // The panel comes or goes over the map: its labels keep clear of it.
+  const panelShown = $derived(Detail !== null && schoolView !== null);
+  let panelWasShown = false;
+  $effect(() => {
+    if (panelShown === panelWasShown) return;
+    panelWasShown = panelShown;
+    basemap?.controlsChanged();
+  });
+
+  // After a pick the panel takes focus, so the keyboard goes on from where the pick lands.
+  $effect(() => {
+    if (!panelShown || detailElement === undefined || !focusPanel) return;
+    focusPanel = false;
+    detailElement.focus({ preventScroll: true });
+  });
+
+  function closeSchool(): void {
+    urls?.select(null);
+  }
+
+  function togglePin(): void {
+    const id = schoolId;
+    if (id === null) return;
+    void services.then((app) => {
+      if (app === null) return;
+      if (app.pins.school === id) app.pins.unpin();
+      else app.pins.pin(id);
+    });
+  }
+
+  /**
+   * Shares a link to the open school: the share sheet where the device has
+   * one for a thumb, else the link copied, and said so on the button.
+   */
+  function shareSchool(): void {
+    if (urls === undefined || schoolView === null) return;
+    const url = urls.shareUrl();
+    const title = schoolView.name;
+    const touch = window.matchMedia('(pointer: coarse)').matches;
+    if (touch && typeof navigator.share === 'function') {
+      navigator.share({ title, url }).catch(() => undefined);
+      return;
+    }
+    navigator.clipboard.writeText(url).then(
+      () => {
+        copied = true;
+        clearTimeout(copiedTimer);
+        copiedTimer = setTimeout(() => {
+          copied = false;
+        }, 2000);
+      },
+      () => undefined,
+    );
   }
 
   function onKeydown(event: KeyboardEvent): void {
@@ -292,6 +473,13 @@
 
   /** "/" anywhere but in a text field goes to the search field, as on most sites with search. */
   function onShortcut(event: KeyboardEvent): void {
+    // Escape outside the search field closes an open school.
+    if (event.key === 'Escape' && !event.defaultPrevented && schoolView !== null) {
+      if (event.target instanceof Element && event.target.closest('.search') !== null) return;
+      event.preventDefault();
+      closeSchool();
+      return;
+    }
     if (event.key !== '/' || event.defaultPrevented || event.isComposing) return;
     if (event.ctrlKey || event.metaKey || event.altKey) return;
     const target = event.target;
@@ -364,6 +552,7 @@
   onMount(() => {
     const controller = new AbortController();
     const links = createUrlStore();
+    urls = links;
     // Back and Forward leave the last pick: the field no longer names what the map shows.
     const stopFollowing = links.subscribe((_state, origin) => {
       if (origin !== 'history' || pickedName === null) return;
@@ -386,6 +575,8 @@
           glow,
           signal: controller.signal,
           show,
+          // A school opens its panel: the map puts it in the middle of what the panel leaves in view.
+          frame: (view, opened) => (opened?.kind === 'school' ? clearOfPanel(view) : view),
           listId: LIST_ID,
           onResults: (next) => {
             options = next;
@@ -395,8 +586,22 @@
         });
       })
       .catch(() => null);
+    // Subscribed once the app's services are on their way: an open school reads through them.
+    const stopSelection = links.subscribe((state) => {
+      selection = state.selection;
+    });
+    let stopPins: () => void = () => undefined;
+    void services.then((app) => {
+      if (app === null || controller.signal.aborted) return;
+      stopPins = app.pins.subscribe((id) => {
+        pinnedId = id;
+      });
+    });
     return () => {
       stopFollowing();
+      stopSelection();
+      stopPins();
+      clearTimeout(copiedTimer);
       controller.abort();
       links.destroy();
     };
@@ -499,6 +704,18 @@
   </button>
   {#if UpdateTime !== null && updatedAt !== null}
     <UpdateTime generatedAt={updatedAt} />
+  {/if}
+  {#if Detail !== null && schoolView !== null}
+    <Detail
+      view={schoolView}
+      pinned={pinnedId === schoolView.id}
+      {copied}
+      onclose={closeSchool}
+      onpin={togglePin}
+      onshare={shareSchool}
+      onnearby={openNearby}
+      bind:element={detailElement}
+    />
   {/if}
   <p class="sr-only" role="status">
     {expanded && options?.length === 0 ? copy.search.noResults : ''}

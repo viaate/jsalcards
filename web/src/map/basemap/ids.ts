@@ -90,6 +90,8 @@ export const BASEMAP_IDS = {
   schoolsSource: 'schools',
   /** A dot at each school, under the glow and every label. */
   schoolDots: 'school-dots',
+  /** A ring around the school a panel is open for, under its dot (index.ts selectSchool). */
+  schoolSelected: 'school-selected',
   /** Each school's name, over every other label. */
   schoolNames: 'school-names',
   /** The space each dot keeps up close, unseen, placed before every label. */

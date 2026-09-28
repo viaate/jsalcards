@@ -43,7 +43,7 @@ import type { LoadedTile } from './flight';
 import { heldFrame } from './held-frame';
 import { flightTiles } from './prefetch';
 import { afterNextFrame, LIVE_CLASS, markStep, whenGpuIdle, yieldToMain } from './reveal';
-import { SCHOOL_SPACE_IMAGE, schoolSpaceImage } from './schools';
+import { SCHOOL_SPACE_IMAGE, schoolSpaceImage, selectedSchoolFilter } from './schools';
 import { STATE_AREAS_UNTIL, keptNames, nameBox, parseStateAreas, stateSpots } from './state-areas';
 import type { ScreenRect, SetName, StateArea } from './state-areas';
 import {
@@ -172,6 +172,8 @@ export interface Basemap {
    * nothing moves, for a place off the continental US.
    */
   showNear(place: Place): boolean;
+  /** Rings the school with this id (its panel is open), or none with null. */
+  selectSchool(id: string | null): void;
   /** Moves to the nearest view the limits allow, or to the home view with null. */
   goTo(view: MapView | null): void;
   /** Glides to the nearest view the limits allow; jumps when reduced motion is preferred. */
@@ -1381,6 +1383,12 @@ export async function createBasemap({
     },
     controlsChanged() {
       map.triggerRepaint();
+    },
+    selectSchool(id) {
+      // A build without the school tiles has no ring to draw.
+      if (staged.order.includes(BASEMAP_IDS.schoolSelected)) {
+        setFilter(BASEMAP_IDS.schoolSelected, selectedSchoolFilter(id));
+      }
     },
     showHome,
     showNear,
