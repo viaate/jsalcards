@@ -1,6 +1,12 @@
 <script lang="ts">
+  import { untrack } from 'svelte';
+  import type { Attachment } from 'svelte/attachments';
+
   import type { NearbyView, SchoolView } from '../app/school';
   import { copy } from '../copy';
+  import { attachSheet } from './sheet';
+  import type { Detent, Sheet } from './sheet';
+  import { PHONE_QUERY } from './sheet-geometry';
 
   interface Props {
     view: SchoolView;
@@ -13,6 +19,8 @@
     onshare: () => void;
     /** Opens a school from the nearby list. */
     onnearby?: (school: NearbyView) => void;
+    /** On a phone, the sheet came to rest at another height: the map's labels make room for it. */
+    onsettle?: () => void;
     /** The panel's element, for the page to focus after a pick. */
     element?: HTMLElement | undefined;
   }
@@ -25,8 +33,63 @@
     onpin,
     onshare,
     onnearby = () => undefined,
+    onsettle = () => undefined,
     element = $bindable(),
   }: Props = $props();
+
+  /** On a phone, the sheet's detent: where it rests, or is going; null beside the map on a wide screen. */
+  let detent = $state<Detent | null>(null);
+  /** What moves the sheet, while the panel is one (a phone). */
+  let sheet: Sheet | null = null;
+
+  /**
+   * On a phone the panel is a bottom sheet (ui/sheet.ts), and beside the map
+   * again once the screen is wide (a phone turned on its side).
+   */
+  const asSheet: Attachment<HTMLElement> = (node) => {
+    if (typeof window.matchMedia !== 'function') return;
+    const query = window.matchMedia(PHONE_QUERY);
+    const body = node.querySelector<HTMLElement>('.body');
+    const follow = (): void => {
+      if (query.matches && sheet === null && body !== null) {
+        sheet = attachSheet({
+          sheet: node,
+          body,
+          handles: () => [node.querySelector('.grip'), node.querySelector('.head')],
+          head: () => node.querySelector('.head'),
+          onclose: () => {
+            onclose();
+          },
+          onsettle: () => {
+            onsettle();
+          },
+          onchange: (next) => {
+            detent = next;
+          },
+        });
+      } else if (!query.matches && sheet !== null) {
+        sheet.destroy();
+        sheet = null;
+        detent = null;
+      }
+    };
+    untrack(follow);
+    query.addEventListener('change', follow);
+    return () => {
+      query.removeEventListener('change', follow);
+      sheet?.destroy();
+      sheet = null;
+    };
+  };
+
+  // Another school in the same sheet (a nearby one picked): it opens afresh, at its opening height.
+  let shownId = untrack(() => view.id);
+  $effect(() => {
+    const id = view.id;
+    if (id === shownId) return;
+    shownId = id;
+    sheet?.reset();
+  });
 
   /** The glyph's class for a status line's tone, as the legend draws each status. */
   const GLYPHS = {
@@ -48,8 +111,9 @@
   What it answers first is the school's day, when the live files state it;
   then the chance of a weather closure, when the district's history gives
   one; then what the directory says about the school. Beside the map on a
-  wide screen, a sheet over its foot on a phone. Every line comes from the
-  view (app/school.ts); nothing here is made up or filled in.
+  wide screen, a sheet over its foot on a phone (ui/sheet.ts), where the
+  answer comes before the buttons. Every line comes from the view
+  (app/school.ts); nothing here is made up or filled in.
 -->
 <aside
   class="detail"
@@ -58,156 +122,178 @@
   aria-busy={view.loading}
   tabindex="-1"
   bind:this={element}
+  {@attach asSheet}
 >
-  <header class="head">
-    {#if view.name === ''}
-      <div class="skeleton" aria-hidden="true">
-        <span class="bone is-short"></span>
-        <span class="bone is-title"></span>
-        <span class="bone is-line"></span>
-      </div>
-    {:else}
-      {#if view.kind !== null}
-        <p class="kind">{view.kind}</p>
+  <!-- The sheet's grip, on a phone: a drag moves the sheet, a press takes it up or back. -->
+  <button
+    class="grip"
+    type="button"
+    aria-label={detent === 'full' ? copy.detail.less : copy.detail.more}
+    aria-expanded={detent === 'full'}
+    onclick={() => {
+      sheet?.toggle();
+    }}
+  ></button>
+  <div class="body">
+    <header class="head">
+      {#if view.name === ''}
+        <div class="skeleton" aria-hidden="true">
+          <span class="bone is-short"></span>
+          <span class="bone is-title"></span>
+          <span class="bone is-line"></span>
+        </div>
+      {:else}
+        {#if view.kind !== null}
+          <p class="kind">{view.kind}</p>
+        {/if}
+        <h2 class="name">
+          {view.name}{#if view.campus !== null}<span class="campus">{view.campus}</span>{/if}
+        </h2>
+        {#if view.place !== null}
+          <p class="place">{view.place}</p>
+        {/if}
       {/if}
-      <h2 class="name">
-        {view.name}{#if view.campus !== null}<span class="campus">{view.campus}</span>{/if}
-      </h2>
-      {#if view.place !== null}
-        <p class="place">{view.place}</p>
-      {/if}
-    {/if}
-    <button class="close" type="button" aria-label={copy.detail.close} onclick={onclose}>
-      <svg viewBox="0 0 16 16" aria-hidden="true" focusable="false">
-        <path d="M4.5 4.5l7 7M11.5 4.5l-7 7" />
-      </svg>
-    </button>
-  </header>
-
-  {#if view.name !== ''}
-    <div class="actions">
       <button
-        class="action"
-        class:is-on={pinned}
+        class="close"
         type="button"
-        aria-pressed={pinned}
-        onclick={onpin}
+        aria-label={copy.detail.close}
+        onclick={() => {
+          // A sheet glides away first.
+          if (sheet === null) onclose();
+          else sheet.dismiss();
+        }}
       >
         <svg viewBox="0 0 16 16" aria-hidden="true" focusable="false">
-          <path d="M5.75 2.25h4.5l-.6 4.1 2.1 2.15v1.25h-7.5V8.5l2.1-2.15z" />
-          <path d="M8 9.75v4" />
+          <path d="M4.5 4.5l7 7M11.5 4.5l-7 7" />
         </svg>
-        {pinned ? copy.pin.mySchool : copy.actions.pin}
       </button>
-      <button class="action" class:is-on={copied} type="button" onclick={onshare}>
-        <svg viewBox="0 0 16 16" aria-hidden="true" focusable="false">
-          {#if copied}
-            <path d="M3.5 8.5l3 3 6-6.5" />
-          {:else}
-            <path d="M8 2.5v7.25M5.25 5.25L8 2.5l2.75 2.75" />
-            <path d="M4.75 7.75h-.5v5.75h7.5V7.75h-.5" />
-          {/if}
-        </svg>
-        {copied ? copy.share.copied : copy.actions.share}
-      </button>
-    </div>
-  {/if}
+    </header>
 
-  {#if view.status.length > 0}
-    <section class="card status" aria-label={copy.detail.status}>
-      {#each view.status as line, n (n)}
-        <div class="line">
-          <span class="glyph {GLYPHS[line.tone]}" aria-hidden="true"></span>
-          <div class="line-text">
-            <p class="headline">{line.headline}</p>
-            {#if line.detail !== null}
-              <p class="line-detail">{line.detail}</p>
+    {#if view.name !== ''}
+      <div class="actions">
+        <button
+          class="action"
+          class:is-on={pinned}
+          type="button"
+          aria-pressed={pinned}
+          onclick={onpin}
+        >
+          <svg viewBox="0 0 16 16" aria-hidden="true" focusable="false">
+            <path d="M5.75 2.25h4.5l-.6 4.1 2.1 2.15v1.25h-7.5V8.5l2.1-2.15z" />
+            <path d="M8 9.75v4" />
+          </svg>
+          {pinned ? copy.pin.mySchool : copy.actions.pin}
+        </button>
+        <button class="action" class:is-on={copied} type="button" onclick={onshare}>
+          <svg viewBox="0 0 16 16" aria-hidden="true" focusable="false">
+            {#if copied}
+              <path d="M3.5 8.5l3 3 6-6.5" />
+            {:else}
+              <path d="M8 2.5v7.25M5.25 5.25L8 2.5l2.75 2.75" />
+              <path d="M4.75 7.75h-.5v5.75h7.5V7.75h-.5" />
             {/if}
-            {#if line.note !== null}
-              <p class="line-note">{line.note}</p>
-            {/if}
-          </div>
-        </div>
-      {/each}
-    </section>
-  {/if}
+          </svg>
+          {copied ? copy.share.copied : copy.actions.share}
+        </button>
+      </div>
+    {/if}
 
-  {#if view.outlook !== null}
-    <section class="card outlook" aria-labelledby="detail-outlook">
-      <h3 class="card-title" id="detail-outlook">{copy.predictions.title}</h3>
-      {#if outlookDays === null}
-        <p class="quiet">{copy.empty.notEnoughData}</p>
-      {:else}
-        <div class="days">
-          {#each outlookDays as day (day.label)}
-            <div class="day">
-              <p class="day-label">{day.label}</p>
-              {#if day.chance !== null}
-                <p class="chance">{day.chance}</p>
-                <p class="day-line">{day.line}</p>
-                <span class="meter" aria-hidden="true">
-                  <span class="meter-fill" style:transform="scaleX({day.share ?? 0})"></span>
-                </span>
-                {#if day.delay !== null}
-                  <p class="day-more">{day.delay}</p>
-                {/if}
-                {#if day.reasons !== null}
-                  <p class="day-more">{day.reasons}</p>
-                {/if}
-              {:else}
-                <p class="day-line is-plain">{day.line}</p>
+    {#if view.status.length > 0}
+      <section class="card status" aria-label={copy.detail.status}>
+        {#each view.status as line, n (n)}
+          <div class="line">
+            <span class="glyph {GLYPHS[line.tone]}" aria-hidden="true"></span>
+            <div class="line-text">
+              <p class="headline">{line.headline}</p>
+              {#if line.detail !== null}
+                <p class="line-detail">{line.detail}</p>
+              {/if}
+              {#if line.note !== null}
+                <p class="line-note">{line.note}</p>
               {/if}
             </div>
-          {/each}
-        </div>
-      {/if}
-    </section>
-  {/if}
-
-  {#if view.facts.length > 0}
-    <dl class="facts">
-      {#each view.facts as fact (fact.label)}
-        <div class="fact">
-          <dt>{fact.label}</dt>
-          <dd>
-            {#if fact.href !== null}
-              <a href={fact.href}>{fact.lines.join(' ')}</a>
-            {:else}
-              {#each fact.lines as text, n (n)}
-                <span class="fact-line">{text}</span>
-              {/each}
-            {/if}
-          </dd>
-        </div>
-      {/each}
-    </dl>
-  {/if}
-
-  {#if view.nearby.length > 0}
-    <section class="nearby" aria-labelledby="detail-nearby">
-      <h3 class="card-title" id="detail-nearby">{copy.detail.nearby}</h3>
-      <ul class="near-list">
-        {#each view.nearby as school (school.id)}
-          <li>
-            <button
-              class="near"
-              type="button"
-              onclick={() => {
-                onnearby(school);
-              }}
-            >
-              <span
-                class="near-dot {school.tone === null ? '' : `glyph ${GLYPHS[school.tone]}`}"
-                aria-hidden="true"
-              ></span>
-              <span class="near-name">{school.name}</span>
-              <span class="near-distance">{school.distance}</span>
-            </button>
-          </li>
+          </div>
         {/each}
-      </ul>
-    </section>
-  {/if}
+      </section>
+    {/if}
+
+    {#if view.outlook !== null}
+      <section class="card outlook" aria-labelledby="detail-outlook">
+        <h3 class="card-title" id="detail-outlook">{copy.predictions.title}</h3>
+        {#if outlookDays === null}
+          <p class="quiet">{copy.empty.notEnoughData}</p>
+        {:else}
+          <div class="days">
+            {#each outlookDays as day (day.label)}
+              <div class="day">
+                <p class="day-label">{day.label}</p>
+                {#if day.chance !== null}
+                  <p class="chance">{day.chance}</p>
+                  <p class="day-line">{day.line}</p>
+                  <span class="meter" aria-hidden="true">
+                    <span class="meter-fill" style:transform="scaleX({day.share ?? 0})"></span>
+                  </span>
+                  {#if day.delay !== null}
+                    <p class="day-more">{day.delay}</p>
+                  {/if}
+                  {#if day.reasons !== null}
+                    <p class="day-more">{day.reasons}</p>
+                  {/if}
+                {:else}
+                  <p class="day-line is-plain">{day.line}</p>
+                {/if}
+              </div>
+            {/each}
+          </div>
+        {/if}
+      </section>
+    {/if}
+
+    {#if view.facts.length > 0}
+      <dl class="facts">
+        {#each view.facts as fact (fact.label)}
+          <div class="fact">
+            <dt>{fact.label}</dt>
+            <dd>
+              {#if fact.href !== null}
+                <a href={fact.href}>{fact.lines.join(' ')}</a>
+              {:else}
+                {#each fact.lines as text, n (n)}
+                  <span class="fact-line">{text}</span>
+                {/each}
+              {/if}
+            </dd>
+          </div>
+        {/each}
+      </dl>
+    {/if}
+
+    {#if view.nearby.length > 0}
+      <section class="nearby" aria-labelledby="detail-nearby">
+        <h3 class="card-title" id="detail-nearby">{copy.detail.nearby}</h3>
+        <ul class="near-list">
+          {#each view.nearby as school (school.id)}
+            <li>
+              <button
+                class="near"
+                type="button"
+                onclick={() => {
+                  onnearby(school);
+                }}
+              >
+                <span
+                  class="near-dot {school.tone === null ? '' : `glyph ${GLYPHS[school.tone]}`}"
+                  aria-hidden="true"
+                ></span>
+                <span class="near-name">{school.name}</span>
+                <span class="near-distance">{school.distance}</span>
+              </button>
+            </li>
+          {/each}
+        </ul>
+      </section>
+    {/if}
+  </div>
 </aside>
 
 <style>
@@ -223,17 +309,12 @@
     z-index: 2;
     display: flex;
     flex-direction: column;
-    gap: 16px;
     width: 368px;
     max-height: calc(
       100dvh - var(--inset-top) - var(--inset-bottom) - 2 * var(--edge) - var(--bar-height) - 16px -
         var(--control-height) - 16px
     );
-    padding: 20px;
-    overflow-y: auto;
-    overscroll-behavior: contain;
-    scrollbar-width: thin;
-    scrollbar-color: var(--border-2) transparent;
+    overflow: hidden;
     background: var(--surface-1);
     border: 1px solid var(--border-2);
     border-radius: 18px;
@@ -243,6 +324,25 @@
       0 0 0 1px var(--bg),
       0 20px 48px rgb(0 0 0 / 0.65);
     animation: arrive 200ms cubic-bezier(0.2, 0.7, 0.2, 1) both;
+  }
+
+  /* What the panel says, in one column; what does not fit scrolls inside it. */
+  .body {
+    display: flex;
+    flex: 1 1 auto;
+    flex-direction: column;
+    gap: 16px;
+    min-height: 0;
+    padding: 20px;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    scrollbar-width: thin;
+    scrollbar-color: var(--border-2) transparent;
+  }
+
+  /* The sheet's grip: a phone's alone. */
+  .grip {
+    display: none;
   }
 
   @keyframes arrive {
@@ -673,53 +773,204 @@
   }
 
   /*
-    A phone: a sheet over the foot of the screen, the map above it, its name
-    first and what does not fit a thumb's scroll away. It covers the key and
-    the locate button; the search results, when open, go over it.
+    A phone: a sheet over the foot of the screen (ui/sheet.ts). It is as tall
+    as the screen under the search field, and shows as much of itself as its
+    detent asks, moved down by a transform alone: open, half the screen, with
+    the school in the middle of the map above it; full, up to just under the
+    field; or the name alone. Its name first, then the answer (today's status
+    and the chance of a closure), then the buttons, then the rest. It covers
+    the key and the locate button; the search results, when open, go over it.
+    Solid, like the search field: nothing over the moving map is blurred.
   */
   @media (max-width: 719px) {
     .detail {
-      top: auto;
+      top: calc(var(--inset-top) + var(--edge) + var(--brand-stack) + var(--bar-height) + 12px);
       right: 0;
       bottom: 0;
       left: 0;
       width: auto;
-      max-height: min(64dvh, 520px);
-      padding: 20px calc(var(--inset-right) + 16px) calc(var(--inset-bottom) + 20px)
-        calc(var(--inset-left) + 16px);
+      max-height: none;
+      /* The home indicator's room: the sheet's content ends above it. */
+      padding-bottom: var(--inset-bottom);
       border-width: 1px 0 0;
-      border-radius: 20px 20px 0 0;
-      box-shadow: 0 -12px 40px rgb(0 0 0 / 0.6);
-      animation-name: rise;
+      border-radius: 24px 24px 0 0;
+      /*
+        A lit top edge, a shadow over the map above it, and a skirt of its own
+        surface under its foot, for the give past full height.
+      */
+      box-shadow:
+        inset 0 1px 0 rgb(255 255 255 / 0.05),
+        0 -12px 40px rgb(0 0 0 / 0.55),
+        0 40px 0 0 var(--surface-1);
+      /* Off the foot of the screen until the sheet takes over, and rises. */
+      transform: translate3d(0, 100%, 0);
+      transition: transform 420ms cubic-bezier(0.32, 0.72, 0, 1);
+      animation: none;
+      /* Every drag on it is the sheet's; only its content at full height scrolls. */
+      touch-action: none;
+      will-change: transform;
+    }
+
+    /*
+      What runs on below the fold fades into the sheet at the foot of the
+      screen, over the home indicator's room: held there against the sheet's
+      own move, gliding as it glides.
+    */
+    .detail::after {
+      position: absolute;
+      right: 0;
+      bottom: 0;
+      left: 0;
+      z-index: 1;
+      height: calc(24px + var(--inset-bottom));
+      pointer-events: none;
+      content: '';
+      background: linear-gradient(transparent, var(--surface-1) 24px);
+      transform: translate3d(0, calc(-1 * var(--sheet-offset, 0px)), 0);
+      transition: transform 420ms cubic-bezier(0.32, 0.72, 0, 1);
+    }
+
+    .detail:global([data-dragging]),
+    .detail:global([data-dragging])::after {
+      transition: none;
+    }
+
+    /*
+      The grip: a short pill at the top edge, in a target a thumb finds, over
+      the sheet's own top padding.
+    */
+    .grip {
+      position: absolute;
+      top: 0;
+      left: 50%;
+      z-index: 1;
+      display: block;
+      width: 120px;
+      height: 36px;
+      margin: 0 0 0 -60px;
+      padding: 0;
+      cursor: grab;
+      touch-action: none;
+      background: transparent;
+      border: 0;
+      border-radius: 0 0 18px 18px;
+    }
+
+    .grip::before {
+      position: absolute;
+      top: 8px;
+      left: 50%;
+      width: 36px;
+      height: 5px;
+      margin-left: -18px;
+      content: '';
+      background: var(--text-3);
+      border-radius: 3px;
+      opacity: 0.72;
+      transition: opacity 120ms linear;
+    }
+
+    .grip:hover::before,
+    .grip:focus-visible::before {
+      opacity: 1;
+    }
+
+    .grip:focus-visible {
+      outline: none;
+      box-shadow: inset 0 0 0 1px var(--text-3);
+    }
+
+    .detail:global([data-dragging]) .grip {
+      cursor: grabbing;
+    }
+
+    .body {
+      height: 100%;
+      padding: 28px calc(var(--inset-right) + 16px) 24px calc(var(--inset-left) + 16px);
+      overflow: hidden;
+      touch-action: none;
+    }
+
+    .detail:global([data-detent='full']) .body {
+      overflow-y: auto;
+      touch-action: pan-y;
+    }
+
+    /* The name drags the sheet even at full height. */
+    .head {
+      padding-right: 48px;
+      touch-action: none;
+    }
+
+    .name {
+      font-size: 24px;
+      line-height: 29px;
+    }
+
+    .campus {
+      font-size: 17px;
+      line-height: 22px;
+    }
+
+    .place {
+      font-size: 14px;
+      line-height: 19px;
+    }
+
+    /* The answer first, a thumb's reach under the name; the buttons after it. */
+    .actions {
+      order: 1;
+    }
+
+    .facts,
+    .nearby {
+      order: 2;
     }
 
     .action {
       height: 44px;
+      font-size: 14px;
       border-radius: 22px;
     }
 
     .near {
       min-height: 44px;
+      font-size: 14px;
+    }
+
+    .fact dt,
+    .fact dd {
+      font-size: 14px;
+      line-height: 20px;
+    }
+
+    /* A phone number to tap: the whole row's height, not just its line. */
+    .facts a {
+      display: block;
+      margin: -10px 0;
+      padding: 10px 0;
     }
 
     .close {
+      top: -6px;
+      right: -4px;
       width: 40px;
       height: 40px;
-      top: -8px;
-      right: -4px;
     }
-  }
 
-  @keyframes rise {
-    from {
-      transform: translateY(24px);
-      opacity: 0;
+    /* A thumb's target around the button. */
+    .close::after {
+      position: absolute;
+      inset: -4px;
+      content: '';
     }
   }
 
   @media (prefers-reduced-motion: reduce) {
-    .detail {
+    .detail,
+    .detail::after {
       animation: none;
+      transition: none;
     }
 
     .close,

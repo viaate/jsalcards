@@ -13,7 +13,7 @@
   } from './app/boot';
   import { grantedPlace, opensNearby } from './app/nearby';
   import { copy } from './copy';
-  import type { Basemap, MapView, Place } from './map/basemap';
+  import type { Basemap, Place } from './map/basemap';
   import { loadBasemap } from './map/basemap/load';
   import type { Glow } from './map/glow-mount';
   import { markStep, yieldToMain } from './map/basemap/reveal';
@@ -52,6 +52,7 @@
     onpin: () => void;
     onshare: () => void;
     onnearby?: (school: NearbyView) => void;
+    onsettle?: () => void;
     element?: HTMLElement | undefined;
   }
 
@@ -245,39 +246,6 @@
     pendingTarget = null;
     if ('view' in target) basemap.flyTo(target.view);
     else basemap.fitBounds(target.bounds, { maxZoom: target.maxZoom });
-  }
-
-  /** The panel's width and its gap from the edge (DetailPanel.svelte), and a phone's sheet at most. */
-  const PANEL_WIDTH = 368;
-  const PANEL_EDGE = 20;
-  const SHEET_HEIGHT = 520;
-  const SHEET_SHARE = 0.64;
-  /** MapLibre's tile size in CSS pixels. */
-  const TILE = 512;
-
-  /**
-   * The view that shows `view`'s middle in the middle of the map the panel
-   * leaves in view: right of the panel beside the map, above the sheet on a
-   * phone, and below the search strip either way.
-   */
-  function clearOfPanel(view: MapView): MapView {
-    const width = window.innerWidth;
-    const height = window.innerHeight;
-    const top = headerElement?.getBoundingClientRect().bottom ?? 0;
-    const phone = width < 720;
-    const covered = phone
-      ? { left: 0, bottom: Math.min(SHEET_HEIGHT, height * SHEET_SHARE) }
-      : { left: PANEL_EDGE + PANEL_WIDTH, bottom: 0 };
-    // Where the place goes, from the screen's middle, in pixels.
-    const dx = covered.left / 2;
-    const dy = (top + height - covered.bottom) / 2 - height / 2;
-    const scale = TILE * 2 ** view.zoom;
-    const x = ((view.lon + 180) / 360) * scale - dx;
-    const sin = Math.sin((view.lat * Math.PI) / 180);
-    const y = (0.5 - Math.log((1 + sin) / (1 - sin)) / (4 * Math.PI)) * scale - dy;
-    const lon = (x / scale) * 360 - 180;
-    const lat = (Math.atan(Math.sinh(Math.PI * (1 - (2 * y) / scale))) * 180) / Math.PI;
-    return { lat, lon, zoom: view.zoom };
   }
 
   function runSearch(text: string): void {
@@ -567,7 +535,7 @@
     const glow = started.then((parts) => parts?.glow ?? null);
     services = afterFirstPaint()
       .then(() => import('./app/boot'))
-      .then(({ boot }) => {
+      .then(({ boot, clearOfPanel }) => {
         if (controller.signal.aborted) return null;
         return boot({
           links,
@@ -576,7 +544,14 @@
           signal: controller.signal,
           show,
           // A school opens its panel: the map puts it in the middle of what the panel leaves in view.
-          frame: (view, opened) => (opened?.kind === 'school' ? clearOfPanel(view) : view),
+          frame: (view, opened) =>
+            opened?.kind === 'school'
+              ? clearOfPanel(view, {
+                  width: window.innerWidth,
+                  height: window.innerHeight,
+                  top: headerElement?.getBoundingClientRect().bottom ?? 0,
+                })
+              : view,
           listId: LIST_ID,
           onResults: (next) => {
             options = next;
@@ -714,6 +689,7 @@
       onpin={togglePin}
       onshare={shareSchool}
       onnearby={openNearby}
+      onsettle={() => basemap?.controlsChanged()}
       bind:element={detailElement}
     />
   {/if}

@@ -220,6 +220,38 @@ describe('DetailPanel', () => {
     expect(copied?.textContent.trim()).toBe(copy.share.copied);
   });
 
+  it('is a sheet on a phone: it opens part way, and its grip takes it up and back down', () => {
+    const query = { matches: true, addEventListener: vi.fn(), removeEventListener: vi.fn() };
+    const matchMedia = vi.fn(() => query);
+    Object.defineProperty(window, 'matchMedia', { configurable: true, value: matchMedia });
+    try {
+      const { panel } = show(VIEW);
+      expect(matchMedia).toHaveBeenCalledWith('(max-width: 719px)');
+      const grip = panel.querySelector<HTMLButtonElement>('.grip');
+      expect(panel.dataset.detent).toBe('open');
+      expect(grip?.getAttribute('aria-label')).toBe(copy.detail.more);
+      expect(grip?.getAttribute('aria-expanded')).toBe('false');
+      grip?.click();
+      flushSync();
+      expect(panel.dataset.detent).toBe('full');
+      expect(grip?.getAttribute('aria-label')).toBe(copy.detail.less);
+      expect(grip?.getAttribute('aria-expanded')).toBe('true');
+      grip?.click();
+      flushSync();
+      expect(panel.dataset.detent).toBe('open');
+      // The grip says nothing a sighted reader sees.
+      expect(grip?.textContent).toBe('');
+    } finally {
+      Reflect.deleteProperty(window, 'matchMedia');
+    }
+  });
+
+  it('is a panel beside the map on a wide screen: no sheet', () => {
+    const { panel } = show(VIEW);
+    expect(panel.dataset.detent).toBeUndefined();
+    expect(panel.style.transform).toBe('');
+  });
+
   it('shows the shape of what is coming, and no words, until the school is read', () => {
     const { panel } = show({
       ...VIEW,

@@ -917,6 +917,124 @@ test.describe('with data staged', () => {
     await context.close();
   });
 
+  test('on a phone a school opens in a sheet half up, over the map with the school in the middle of what it leaves, and the sheet drags', async ({
+    browser,
+  }) => {
+    const context = await browser.newContext({
+      ...devices['Pixel 7'],
+      timezoneId: 'America/Chicago',
+    });
+    const page = await context.newPage();
+    const { problems } = watch(page);
+    const touch = await context.newCDPSession(page);
+    /** A finger put down at (x, from), moved to (x, to) over `ms`, and lifted. */
+    const drag = async (x: number, from: number, to: number, ms: number): Promise<void> => {
+      await touch.send('Input.dispatchTouchEvent', {
+        type: 'touchStart',
+        touchPoints: [{ x, y: from }],
+      });
+      const steps = Math.max(2, Math.round(ms / 16));
+      for (let step = 1; step <= steps; step++) {
+        await touch.send('Input.dispatchTouchEvent', {
+          type: 'touchMove',
+          touchPoints: [{ x, y: from + ((to - from) * step) / steps }],
+        });
+        await page.waitForTimeout(16);
+      }
+      await touch.send('Input.dispatchTouchEvent', { type: 'touchEnd', touchPoints: [] });
+    };
+    const { width, height } = page.viewportSize() ?? { width: 0, height: 0 };
+    const sheet = page.locator('aside.detail');
+    const grip = sheet.locator('.grip');
+    const sheetTop = async (): Promise<number> => (await sheet.boundingBox())?.y ?? Number.NaN;
+    const opensAt = height - Math.round(height / 2);
+
+    // A link with no view: the map goes to the school, which lands on its streets in the middle
+    // of the map between the search field and the sheet, as a search pick lands.
+    await page.goto(`${site}?school=${PEMBROKE_HILL}`);
+    await expect(sheet.locator('h2')).toHaveText('The Pembroke Hill SchoolWornall Campus');
+    await expect(sheet).toHaveAttribute('data-detent', 'open');
+    await expect(grip).toHaveAttribute('aria-expanded', 'false');
+    const barBottom = await page
+      .locator('.bar')
+      .evaluate((bar) => bar.getBoundingClientRect().bottom);
+    await expect.poll(sheetTop).toBeCloseTo(opensAt, 0);
+    await expect
+      .poll(() => new URL(page.url()).searchParams.get('at'), { timeout: 30_000 })
+      .not.toBeNull();
+    const school = await page.evaluate(() => {
+      const map = window.snowlightMap;
+      if (map === undefined) throw new Error('no map');
+      const point = map.project([-94.593001, 39.03606]);
+      return { x: point.x, y: point.y, zoom: map.getZoom() };
+    });
+    expect(school.zoom).toBeCloseTo(15, 1);
+    expect(Math.abs(school.x - width / 2)).toBeLessThan(4);
+    expect(Math.abs(school.y - (barBottom + opensAt) / 2)).toBeLessThan(4);
+
+    // Down by the grip: the name alone, and the most of the map in view.
+    await drag(width / 2, opensAt + 12, height - 200, 400);
+    await expect(sheet).toHaveAttribute('data-detent', 'peek');
+    await expect.poll(sheetTop).toBeGreaterThan(height - 260);
+    const peekTop = await sheetTop();
+    const name = await sheet.locator('h2').boundingBox();
+    expect((name?.y ?? height) + (name?.height ?? 0)).toBeLessThan(height);
+    // Up by the name, most of the way: open again.
+    await drag(width / 2, peekTop + 40, opensAt + 60, 400);
+    await expect(sheet).toHaveAttribute('data-detent', 'open');
+    await expect.poll(sheetTop).toBeCloseTo(opensAt, 0);
+    // The grip takes it up to just under the search field, and says so.
+    await grip.tap();
+    await expect(sheet).toHaveAttribute('data-detent', 'full');
+    await expect(grip).toHaveAttribute('aria-expanded', 'true');
+    await expect(grip).toHaveAttribute('aria-label', copy.detail.less);
+    await expect.poll(sheetTop).toBeCloseTo(barBottom + 12, 0);
+    // Dragged down by the name, even at full height: open.
+    const named = await sheet.locator('h2').boundingBox();
+    const nameY = (named?.y ?? 0) + 8;
+    await drag(width / 2, nameY, nameY + 220, 300);
+    await expect(sheet).toHaveAttribute('data-detent', 'open');
+    await expect.poll(sheetTop).toBeCloseTo(opensAt, 0);
+    // Its buttons take a tap: a thumb's height, and the pin pins.
+    const pin = sheet.locator('.action').first();
+    expect((await pin.boundingBox())?.height).toBeGreaterThanOrEqual(44);
+    await pin.tap();
+    await expect(pin).toHaveAttribute('aria-pressed', 'true');
+    await expect(sheet).toHaveAttribute('data-detent', 'open');
+    // Pulled down past the name, it goes, and the school leaves the address.
+    await drag(width / 2, opensAt + 12, height - 8, 300);
+    await expect(sheet).toHaveCount(0);
+    expect(new URL(page.url()).searchParams.get('school')).toBeNull();
+
+    // On the made-up storm day: the answer (today's status and the chance of a closure) is above
+    // the fold as the sheet opens, and the buttons come after it.
+    const stormy = await context.newPage();
+    const stormProblems = watch(stormy).problems;
+    await stormy.clock.setFixedTime(SYNTHETIC_NOW);
+    await stormy.goto(`${site}?school=${PEMBROKE_HILL}&at=39.0334,-94.593,15`);
+    const panel = stormy.locator('aside.detail');
+    await expect(panel.locator('.status .headline')).toHaveText([copy.statusLine.delayed.today]);
+    await expect(panel).toHaveAttribute('data-detent', 'open');
+    await expect.poll(async () => (await panel.boundingBox())?.y).toBeCloseTo(opensAt, 0);
+    const bottomOf = async (selector: string): Promise<number> => {
+      const box = await panel.locator(selector).boundingBox();
+      return (box?.y ?? Number.POSITIVE_INFINITY) + (box?.height ?? 0);
+    };
+    expect(await bottomOf('.head')).toBeLessThan(height);
+    expect(await bottomOf('.status')).toBeLessThan(height);
+    expect(await bottomOf('.outlook')).toBeLessThan(height);
+    expect((await panel.locator('.actions').boundingBox())?.y).toBeGreaterThan(
+      await bottomOf('.outlook'),
+    );
+    // Its close button: the sheet glides away, and the school leaves the address.
+    await panel.locator('.close').tap();
+    await expect(panel).toHaveCount(0);
+    expect(new URL(stormy.url()).searchParams.get('school')).toBeNull();
+    expect(problems).toEqual([]);
+    expect(stormProblems).toEqual([]);
+    await context.close();
+  });
+
   test('the update time is the live file’s own time: live while recent, then when it was updated', async ({
     browser,
   }) => {

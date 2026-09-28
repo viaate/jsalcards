@@ -33,6 +33,7 @@ import type { SchoolHint, SchoolView, WatchOptions } from './school';
 import { startServiceWorker } from './service-worker';
 import { selectionForHit, startupSelection, viewForHit } from './startup';
 
+export { clearOfPanel } from './frame';
 export type { Target } from './data';
 export type { SearchOption } from './search';
 export type { NearbyView, SchoolHint, SchoolView } from './school';

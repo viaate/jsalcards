@@ -190,6 +190,9 @@ export const copy = deepFreeze({
     /** The status heading over today's and tomorrow's lines. */
     status: 'Status',
     nearby: 'Nearby schools',
+    /** The phone sheet's grip, for a screen reader: it takes the sheet up, or back down. */
+    more: 'Show more',
+    less: 'Show less',
   },
 
   /** The chance of a weather closure. "Not enough data yet" and "No weather threat" are in `empty`. */
