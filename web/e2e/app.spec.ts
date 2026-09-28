@@ -215,7 +215,10 @@ async function mapView(page: Page): Promise<{ lat: number; lon: number; zoom: nu
  */
 const FIRST_FLIGHT_MS = 90_000;
 
-/** Resolves once the map has come to rest near a place. */
+/**
+ * Resolves once the map has come to rest near a place. The map is waited for first: a linked
+ * school's panel can show before MapLibre has loaded, and a poll that throws is not polled again.
+ */
 async function expectMapNear(
   page: Page,
   lat: number,
@@ -223,6 +226,7 @@ async function expectMapNear(
   zoom: number,
   timeout = 30_000,
 ): Promise<void> {
+  await page.waitForFunction(() => window.snowlightMap !== undefined, null, { timeout });
   await expect
     .poll(
       async () => {
