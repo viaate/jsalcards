@@ -1,0 +1,20 @@
+# Listings the name matcher cannot place on its own, pinned by hand to NCES ids.
+# Read by snowlight.match.aliases. An alias always wins over the matcher.
+#
+# Add an entry only after checking the listing against the NCES records, usually
+# from the unmatched queue the ingest writes, which lists each unplaced listing
+# with its best candidates. Listing text is compared exactly, except that runs of
+# whitespace count as one space, the ends are trimmed and case is ignored. A
+# listing that names a school system NCES splits into several districts is
+# pinned to every one of them, and its status reaches all of their schools.
+#
+#   markets:
+#     <market id>:                  # the closings source's id, lowercase
+#       "<listing text>": "<NCES id>" # 7-digit district, 12-digit school, 8-char PPIN
+#       "<listing text>": ["<NCES id>", "<NCES id>"]
+#
+# Empty until a closings source is live: every entry must come from a listing
+# actually seen in that market.
+
+schema_version: 1
+markets: {}
