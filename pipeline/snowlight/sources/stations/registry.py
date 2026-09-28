@@ -435,13 +435,31 @@ def _json_value(value: object) -> str:
     raise TypeError(f"not a registry value: {value!r}")
 
 
+# PyYAML's C parser (libyaml) reads the same documents about nine times faster
+# than the pure-Python one; the constructor, and so every value, is the same.
+_YAML_LOADER: Any = getattr(yaml, "CSafeLoader", yaml.SafeLoader)
+
+# The registry is read many times in one process (every CLI action, every test),
+# so each file's JSON text is kept by its exact content: an edited file is parsed
+# again, and the text is immutable, so callers never share validated objects.
+_YAML_JSON: dict[str, str] = {}
+
+
 def _load_yaml(path: Path) -> str:
     """Return the YAML file's content as JSON text, for strict validation."""
     try:
-        data: Any = yaml.safe_load(path.read_text(encoding="utf-8"))
-    except (OSError, yaml.YAMLError) as error:
+        text = path.read_text(encoding="utf-8")
+    except OSError as error:
         raise RegistryError(f"{path.name}: {error}") from error
-    return json.dumps(data, default=_json_value)
+    cached = _YAML_JSON.get(text)
+    if cached is not None:
+        return cached
+    try:
+        data: Any = yaml.load(text, Loader=_YAML_LOADER)  # noqa: S506 - a safe loader
+    except yaml.YAMLError as error:
+        raise RegistryError(f"{path.name}: {error}") from error
+    _YAML_JSON[text] = json.dumps(data, default=_json_value)
+    return _YAML_JSON[text]
 
 
 def load_registry(folder: Path = DEFAULT_REGISTRY_DIR) -> Registry:

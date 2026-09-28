@@ -370,3 +370,29 @@ def test_malformed_yaml_is_an_error(tmp_path: Path) -> None:
     (tmp_path / "demo.yaml").write_text("platform: [unclosed", encoding="utf-8")
     with pytest.raises(RegistryError):
         load_registry(tmp_path)
+
+
+def test_an_edited_file_is_read_again(tmp_path: Path) -> None:
+    # The parsed text is kept by content, so a change on disk is never missed.
+    _write(tmp_path, "demo", {"platform": _platform(), "stations": [_station()]})
+    first = load_registry(tmp_path)
+    _write(tmp_path, "demo", {"platform": _platform(), "stations": []})
+    second = load_registry(tmp_path)
+    assert len(first.stations) == 1
+    assert second.stations == {}
+
+
+def test_each_load_gives_its_own_objects(tmp_path: Path) -> None:
+    _write(tmp_path, "demo", {"platform": _platform(), "stations": [_station()]})
+    first = load_registry(tmp_path)
+    first.stations.clear()
+    assert len(load_registry(tmp_path).stations) == 1
+
+
+def test_the_c_parser_reads_the_real_registry_as_the_python_one_does() -> None:
+    loader = getattr(yaml, "CSafeLoader", None)
+    if loader is None:
+        pytest.skip("PyYAML was built without libyaml")
+    for path in sorted(DEFAULT_REGISTRY_DIR.glob("*.yaml")):
+        text = path.read_text(encoding="utf-8")
+        assert yaml.load(text, Loader=loader) == yaml.safe_load(text), path.name  # noqa: S506
