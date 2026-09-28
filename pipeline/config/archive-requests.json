@@ -1,56 +1,259 @@
 {
+  "cdx": [
+    {
+      "url": "www.billingsschools.org/",
+      "from": "20181101",
+      "to": "20260930",
+      "filter": [
+        "statuscode:200"
+      ],
+      "collapse": "timestamp:10"
+    },
+    {
+      "url": "www.mcpsmt.org/",
+      "from": "20181101",
+      "to": "20260930",
+      "filter": [
+        "statuscode:200"
+      ],
+      "collapse": "timestamp:10"
+    },
+    {
+      "url": "www.bsd7.org/",
+      "from": "20181101",
+      "to": "20260930",
+      "filter": [
+        "statuscode:200"
+      ],
+      "collapse": "timestamp:10"
+    },
+    {
+      "url": "www.sd5.k12.mt.us/",
+      "from": "20181101",
+      "to": "20260930",
+      "filter": [
+        "statuscode:200"
+      ],
+      "collapse": "timestamp:10"
+    },
+    {
+      "url": "www.ehpsmt.gov/",
+      "from": "20181101",
+      "to": "20260930",
+      "filter": [
+        "statuscode:200"
+      ],
+      "collapse": "timestamp:10"
+    },
+    {
+      "url": "www.lewistown.k12.mt.us/",
+      "from": "20181101",
+      "to": "20260930",
+      "filter": [
+        "statuscode:200"
+      ],
+      "collapse": "timestamp:10"
+    },
+    {
+      "url": "www.laurel.k12.mt.us/",
+      "from": "20181101",
+      "to": "20260930",
+      "filter": [
+        "statuscode:200"
+      ],
+      "collapse": "timestamp:10"
+    },
+    {
+      "url": "www.thompsonfalls.net/",
+      "from": "20181101",
+      "to": "20260930",
+      "filter": [
+        "statuscode:200"
+      ],
+      "collapse": "timestamp:10"
+    },
+    {
+      "url": "www.baker.k12.mt.us/",
+      "from": "20181101",
+      "to": "20260930",
+      "filter": [
+        "statuscode:200"
+      ],
+      "collapse": "timestamp:10"
+    }
+  ],
   "snapshots": [
     {
-      "timestamp": "20220301120000",
-      "url": "https://schoolnotification.alsde.edu/SchoolClosuresPublic.aspx"
+      "timestamp": "20250202180723",
+      "url": "https://www.billingsschools.org/fs/pages/2465/page-pops"
     },
     {
-      "timestamp": "20221215120000",
-      "url": "https://schoolnotification.alsde.edu/SchoolClosuresPublic.aspx"
+      "timestamp": "20260323174106",
+      "url": "https://www.billingsschools.org/fs/pages/2465/page-pops"
     },
     {
-      "timestamp": "20230515120000",
-      "url": "https://schoolnotification.alsde.edu/SchoolClosuresPublic.aspx"
+      "timestamp": "20250102172009",
+      "url": "https://www.bsd7.org/fs/pages/494/page-pops"
     },
     {
-      "timestamp": "20240112130000",
-      "url": "https://schoolnotification.alsde.edu/SchoolClosuresPublic.aspx"
+      "timestamp": "20251106001921",
+      "url": "https://www.bsd7.org/fs/pages/494/page-pops"
     },
     {
-      "timestamp": "20240520120000",
-      "url": "https://schoolnotification.alsde.edu/SchoolClosuresPublic.aspx"
+      "timestamp": "20250202181809",
+      "url": "https://www.ehpsmt.gov/fs/pages/2/page-pops"
     },
     {
-      "timestamp": "20240911130000",
-      "url": "https://schoolnotification.alsde.edu/SchoolClosuresPublic.aspx"
+      "timestamp": "20221109001007",
+      "url": "https://www.gfps.k12.mt.us/"
     },
     {
-      "timestamp": "20241201120000",
-      "url": "https://schoolnotification.alsde.edu/SchoolClosuresPublic.aspx"
+      "timestamp": "20240115073350",
+      "url": "https://www.gfps.k12.mt.us/"
     },
     {
-      "timestamp": "20250520120000",
-      "url": "https://schoolnotification.alsde.edu/SchoolClosuresPublic.aspx"
+      "timestamp": "20231102002412",
+      "url": "https://www.gfps.k12.mt.us/"
     },
     {
-      "timestamp": "20260301120000",
-      "url": "https://schoolnotification.alsde.edu/SchoolClosuresPublic.aspx"
+      "timestamp": "20240122015022",
+      "url": "https://www.gfps.k12.mt.us/"
     },
     {
-      "timestamp": "20200408134548",
-      "url": "https://ftp2.kq2.com/closings.html"
+      "timestamp": "20250102201541",
+      "url": "https://gfps.k12.mt.us/"
     },
     {
-      "timestamp": "20210128140316",
-      "url": "http://ftp2.kq2.com/closings.html"
+      "timestamp": "20250102201128",
+      "url": "https://gfps.k12.mt.us/"
     },
     {
-      "timestamp": "20211027231543",
-      "url": "https://ftp2.kq2.com/closings.html"
+      "timestamp": "20250202163142",
+      "url": "https://gfps.k12.mt.us/"
     },
     {
-      "timestamp": "20260410191243",
-      "url": "https://ftp2.kq2.com/closings.html"
+      "timestamp": "20260312050913",
+      "url": "https://gfps.k12.mt.us/"
+    },
+    {
+      "timestamp": "20260312205757",
+      "url": "https://gfps.k12.mt.us/"
+    },
+    {
+      "timestamp": "20260312011659",
+      "url": "https://gfps.k12.mt.us/"
+    },
+    {
+      "timestamp": "20230321103356",
+      "url": "https://www.blueponyk12.com/"
+    },
+    {
+      "timestamp": "20230207121136",
+      "url": "https://www.blueponyk12.com/"
+    },
+    {
+      "timestamp": "20230331213533",
+      "url": "https://www.blueponyk12.com/"
+    },
+    {
+      "timestamp": "20231203063633",
+      "url": "https://www.blueponyk12.com/"
+    },
+    {
+      "timestamp": "20240301183240",
+      "url": "https://www.blueponyk12.com/"
+    },
+    {
+      "timestamp": "20240227194049",
+      "url": "https://www.blueponyk12.com/"
+    },
+    {
+      "timestamp": "20250202161320",
+      "url": "https://www.blueponyk12.com/"
+    },
+    {
+      "timestamp": "20250210023958",
+      "url": "https://www.blueponyk12.com/"
+    },
+    {
+      "timestamp": "20250209164120",
+      "url": "https://www.blueponyk12.com/"
+    },
+    {
+      "timestamp": "20251128062229",
+      "url": "https://www.blueponyk12.com/"
+    },
+    {
+      "timestamp": "20251212064014",
+      "url": "https://www.blueponyk12.com/"
+    },
+    {
+      "timestamp": "20260313020230",
+      "url": "https://www.blueponyk12.com/"
+    },
+    {
+      "timestamp": "20230321045456",
+      "url": "https://www.hellgate.k12.mt.us/"
+    },
+    {
+      "timestamp": "20231118173949",
+      "url": "https://www.hellgate.k12.mt.us/"
+    },
+    {
+      "timestamp": "20250202160717",
+      "url": "https://www.hellgate.k12.mt.us/"
+    },
+    {
+      "timestamp": "20241218052526",
+      "url": "https://www.hellgate.k12.mt.us/"
+    },
+    {
+      "timestamp": "20250117012739",
+      "url": "https://www.hellgate.k12.mt.us/"
+    },
+    {
+      "timestamp": "20260312014344",
+      "url": "https://www.hellgate.k12.mt.us/"
+    },
+    {
+      "timestamp": "20230328140321",
+      "url": "https://www.hobson.k12.mt.us/"
+    },
+    {
+      "timestamp": "20230205033014",
+      "url": "https://www.hobson.k12.mt.us/"
+    },
+    {
+      "timestamp": "20231209104347",
+      "url": "https://www.hobson.k12.mt.us/"
+    },
+    {
+      "timestamp": "20241102151834",
+      "url": "https://www.hobson.k12.mt.us/"
+    },
+    {
+      "timestamp": "20241202173338",
+      "url": "https://www.hobson.k12.mt.us/"
+    },
+    {
+      "timestamp": "20241208112600",
+      "url": "https://www.hobson.k12.mt.us/"
+    },
+    {
+      "timestamp": "20251112191402",
+      "url": "https://www.hobson.k12.mt.us/"
+    },
+    {
+      "timestamp": "20251208131312",
+      "url": "https://www.hobson.k12.mt.us/"
+    },
+    {
+      "timestamp": "20250102180130",
+      "url": "https://www.sd5.k12.mt.us/fs/pages/2/page-pops"
+    },
+    {
+      "timestamp": "20250202223451",
+      "url": "https://www.sd5.k12.mt.us/fs/pages/2/page-pops"
     }
   ]
 }
