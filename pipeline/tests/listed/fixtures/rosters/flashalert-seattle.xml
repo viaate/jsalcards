@@ -1,0 +1,95 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes"  ?>
+
+<!DOCTYPE flashnews [
+    <!ATTLIST flashnews updated CDATA #REQUIRED>
+    <!ELEMENT flashnews (psacalendar*, news*, emergency*, participants*)>
+
+
+                        <!ATTLIST orgname orgid CDATA #IMPLIED>
+                        <!ATTLIST orgname zipcode CDATA #IMPLIED>
+                        <!ATTLIST orgname tier CDATA #IMPLIED>
+
+
+        <!ELEMENT news (news_category*)>
+            <!ELEMENT news_category (news_report*)>
+                <!ATTLIST news_category name CDATA #REQUIRED>
+                <!ELEMENT news_report (orgname*,headline*,detail*,enclosure*)>
+                    <!ATTLIST news_report testing CDATA #REQUIRED>
+                    <!ATTLIST news_report effective_date CDATA #REQUIRED>
+                    <!ATTLIST news_report news_id CDATA #REQUIRED>
+                    <!ELEMENT headline (#PCDATA)>
+                    <!ELEMENT detail (#PCDATA)>
+                    <!ELEMENT orgname (#PCDATA)>
+
+        <!ELEMENT emergency (emergency_category*)>
+            <!ELEMENT emergency_category (emergency_report*)>
+                <!ATTLIST emergency_category name CDATA #REQUIRED>
+                <!ELEMENT emergency_report (detail*,orgname*)>
+                    <!ATTLIST emergency_report custom CDATA #REQUIRED>
+                    <!ATTLIST emergency_report updated CDATA #REQUIRED>
+                    <!ATTLIST emergency_report last_update CDATA #REQUIRED>
+                    <!ATTLIST emergency_report testing CDATA #REQUIRED>
+                    <!ATTLIST emergency_report schoolrelated CDATA #REQUIRED>
+                    <!ATTLIST emergency_report orgid CDATA #REQUIRED>
+                    <!ATTLIST emergency_report effective_date CDATA #REQUIRED>
+                    <!ATTLIST emergency_report report_id CDATA #REQUIRED>
+                    <!ATTLIST emergency_report operating_code CDATA #REQUIRED>
+                    <!ATTLIST emergency_report transpo_code CDATA #REQUIRED>
+
+        <!ELEMENT participants (participant_category*)>
+            <!ELEMENT participant_category (org*)>
+                <!ATTLIST participant_category name CDATA #REQUIRED>
+                <!ELEMENT org (orgname*,orgurl*)>
+                    <!ELEMENT orgurl (#PCDATA)>
+
+        <!ELEMENT enclosure EMPTY>
+            <!ATTLIST enclosure url CDATA #REQUIRED>
+            <!ATTLIST enclosure dateadded CDATA #REQUIRED>
+            <!ATTLIST enclosure thumbnail CDATA #REQUIRED>
+            <!ATTLIST enclosure filesize CDATA #REQUIRED>
+            <!ATTLIST enclosure filetype CDATA #REQUIRED>
+            <!ATTLIST enclosure caption CDATA #IMPLIED>
+]><flashnews updated="2026-09-27 07:26:12">
+<participants>
+		<participant_category name="Colleges &amp; Universities">
+			<org>
+				<orgname orgid="4205" tier="1" zipcode="98405"><![CDATA[Bates Technical College]]></orgname>
+				<orgurl><![CDATA[http://www.batestech.edu]]></orgurl>
+			</org>
+		</participant_category>
+		<participant_category name="King Co. School Districts">
+			<org>
+				<orgname orgid="4203" tier="1" zipcode="98002"><![CDATA[Auburn SD]]></orgname>
+				<orgurl><![CDATA[http://www.auburn.wednet.edu]]></orgurl>
+			</org>
+			<org>
+				<orgname orgid="4337" tier="1" zipcode="98005"><![CDATA[Bellevue SD]]></orgname>
+				<orgurl><![CDATA[http://www.bsd405.org]]></orgurl>
+			</org>
+			<org>
+				<orgname orgid="7938" tier="1" zipcode="98105"><![CDATA[Emerald Learning Center - SEATTLE]]></orgname>
+				<orgurl><![CDATA[https://emeraldlearningwa.com/]]></orgurl>
+			</org>
+		</participant_category>
+		<participant_category name="Seattle-area Privates, Charters, Childcares">
+			<org>
+				<orgname orgid="7150" tier="1" zipcode="98007"><![CDATA[Bellevue Children's Academy]]></orgname>
+				<orgurl><![CDATA[https://www.bcacademy.com/]]></orgurl>
+			</org>
+			<org>
+				<orgname orgid="4207" tier="1" zipcode="98004-3400"><![CDATA[Bellevue Christian School]]></orgname>
+				<orgurl><![CDATA[http://www.bellevuechristian.org]]></orgurl>
+			</org>
+			<org>
+				<orgname orgid="4315" tier="1" zipcode="98004"><![CDATA[Bellevue Montessori School]]></orgname>
+				<orgurl><![CDATA[https://bellmontessori.com]]></orgurl>
+			</org>
+		</participant_category>
+		<participant_category name="Businesses">
+			<org>
+				<orgname orgid="7526" tier="1" zipcode=""><![CDATA[GenusWave]]></orgname>
+				<orgurl><![CDATA[https://genuswave.com/]]></orgurl>
+			</org>
+		</participant_category>
+</participants>
+</flashnews>

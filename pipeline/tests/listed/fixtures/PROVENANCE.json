@@ -1,0 +1,101 @@
+{
+  "note": "Every fixture here is real data sliced from the files named below, except where a test says SYNTHETIC. Rows and reads are verbatim lines. Roster bodies are verbatim slices of the bodies read on 2026-09-28 by `snowlight listed rosters` (User-Agent snowlight-pipeline); the slice method is given per file.",
+  "files": [
+    {
+      "file": "kc/rows.jsonl",
+      "sha256": "d5f5e37a8710f6a8ae0b1362c8ad9bbd9d69c5d13234daba7f42b8f2608b6fc9",
+      "source": "pipeline/out/internal/stations/rows.jsonl and pipeline/out/internal/stations/archive/rows.jsonl, as snapshotted by `snowlight listed build` on 2026-09-28",
+      "source_sha256": {
+        "live_rows": "65a29bf97f2251d9bf9d422a0b54020b9aebf62caf822448043d14bbb10c0aa2",
+        "archive_rows": "1e27e8c4e69892402ac1f9cf48f396a8756fc73cc1eb641be7bc5b6818b61eb2"
+      },
+      "slice": "every row (verbatim line) whose source_id and raw_name are one of the named cases: Pembroke Hill (hearst-kmbc, scripps-kshb, nexstar-wdaf, hearst-wmur), Shawnee Mission USD 512 and Shawnee Mission Christian School, Kansas City MO/KS public schools, churches, senior centers, businesses, Meals on Wheels and daycares on the Kansas City lists, and three rows for the place guard (nbc-owned-wbts 'Canton Public Schools', ecc-chicago and abc-owned-wls 'DIST #81', ecc-chicago 'YORK COMMUNITY HIGH SCHOOL'). Other rows of the same reads are left out."
+    },
+    {
+      "file": "kc/reads.jsonl",
+      "sha256": "0041ce80c74e54afcf580417e2bb202d5f88287bfb052e13f25507c51cedc37b",
+      "source": "pipeline/out/internal/stations/reads.jsonl and pipeline/out/internal/stations/archive/reads.jsonl, snapshotted with the rows",
+      "source_sha256": {
+        "live_reads": "7c657247074fe200ec235717fbda2a877e65bb76160a6e53cfa4a30692e4023c",
+        "archive_reads": "69d19f07421787ef38c167709ba211b545b8cbe853c5273ec24864805d48dca5"
+      },
+      "slice": "every read (verbatim line) that holds a row of kc/rows.jsonl; its sha256 is the SHA-256 of the body the rows came from"
+    },
+    {
+      "file": "kc/contexts.json",
+      "sha256": "73e6febd3bf734dbaf510f94ab1d155d6b736b3b3a03197616b284fa6bab74a2",
+      "source": "pipeline/config/sources/*.yaml as snapshotted on 2026-09-28 (registry_sha256 per station)",
+      "slice": "each station's registry states and county FIPS codes, the matcher context of its list"
+    },
+    {
+      "file": "kmbc-20240117/reads.jsonl",
+      "sha256": "fff4593fa82ae7723f380f6438f1db24ab0fa5fe3eefebb9871fb758b86d251b",
+      "source": "pipeline/out/internal/stations/archive/reads.jsonl",
+      "source_sha256": "69d19f07421787ef38c167709ba211b545b8cbe853c5273ec24864805d48dca5",
+      "slice": "the one read of hearst-kmbc captured 2024-01-17T20:33:33Z (Wayback capture of https://www.kmbc.com/weather/closings)"
+    },
+    {
+      "file": "kmbc-20240117/rows.jsonl",
+      "sha256": "7ca918251f8f28aac6b24f0f3e1fcf7f2c0080561907448773292c1ed3c62be1",
+      "source": "pipeline/out/internal/stations/archive/rows.jsonl",
+      "source_sha256": "1e27e8c4e69892402ac1f9cf48f396a8756fc73cc1eb641be7bc5b6818b61eb2",
+      "slice": "all four rows of that read, verbatim"
+    },
+    {
+      "file": "rosters/flashalert-seattle.xml",
+      "url": "https://www.flashalertnewswire.net/IIN/reportsX/flashnews_xml2.php?RegionID=12",
+      "fetched_at": "2026-09-28T02:26:12Z",
+      "original_sha256": "e896f75dc53fb50b7ab2b9fbb1118fc4b6fcc3952cac0d22167509bfdab99c85",
+      "original_bytes": 97802,
+      "slice": "the feed header and DTD kept; news and emergency sections dropped; participants cut to the first orgs of four categories: Colleges &amp; Universities (1), King Co. School Districts (3), Seattle-area Privates, Charters, Childcares (3), Businesses (1)",
+      "sha256": "d6bec2a3ff50bf6bb7999730bafb1e8ca7a14085174560f496ca1c854736a884"
+    },
+    {
+      "file": "rosters/wral-organizations.json",
+      "url": "https://api.wral.com/closings/v1/organizations?pageSize=500&page=N (N = 1..13)",
+      "fetched_at": "2026-09-28T02:26:20Z",
+      "original_sha256": [
+        "153027f37f7cacec560831af3237997a9f204e3d0f16163353c9e89ceca7d728",
+        "70e6465ccae46ce31ec8d091c47406db780010868d35d5937c4e82b656f1c623"
+      ],
+      "slice": "organizations copied verbatim from the pages that hold them: the first 3 Public (S) and 3 Private (P) schools, 1 college (U), 1 business (B), 1 daycare (D), and the one organization with a null name; total rewritten to the slice's count and page to 1, so the slice is a whole roster",
+      "sha256": "dd5f95a47bc064df482b8ebbb0320fe222812d015ff977380c0e9a54f7161065"
+    },
+    {
+      "file": "rosters/cbs6-index.html",
+      "url": "https://closings.cbs6albany.com/community/schoolwatch/Default.asp",
+      "fetched_at": "2026-09-28T02:26:57Z",
+      "original_sha256": "dd27ef81c85c4100321bd93e827f896c394886079ba65385e27f40477e152338",
+      "original_bytes": 39713,
+      "slice": "the first link of each of AlbanyNY, BenningtonVT and FairfieldCT, verbatim, in a minimal table",
+      "sha256": "c998185183e942798ef2df5f50f9861bfa4e0871ea59bedcf1d369ab34e2fe12"
+    },
+    {
+      "file": "rosters/cbs6-albanyny.html",
+      "url": "https://closings.cbs6albany.com/community/schoolwatch/Default.asp?County=AlbanyNY",
+      "fetched_at": "2026-09-28T02:27:00Z",
+      "original_sha256": "d69c77157afe1b2e526b5f5698f6685dab3bdc7e3f7472bc96bbcead871e7312",
+      "original_bytes": 123600,
+      "slice": "the county heading, the participating-list header, the first 14 names, the end marker and the page-created line, verbatim",
+      "sha256": "be310370e8c13fbb00057fb9ed5ae461fe6cd09469d37d503913eff91103986a"
+    },
+    {
+      "file": "rosters/cbs6-benningtonvt.html",
+      "url": "https://closings.cbs6albany.com/community/schoolwatch/Default.asp?County=BenningtonVT",
+      "fetched_at": "2026-09-28T02:27:03Z",
+      "original_sha256": "6cbaf03b2b614ee607c8f7e84830522554ea4d506a543c81c46dc8e026512aba",
+      "original_bytes": 39226,
+      "slice": "the county heading, the participating-list header, the first 4 names, the end marker and the page-created line, verbatim",
+      "sha256": "1c580a960fcc9af41a6d7c7e00076aae06ac8802931f644c192a59c02762bd1d"
+    },
+    {
+      "file": "rosters/cbs6-fairfieldct.html",
+      "url": "https://closings.cbs6albany.com/community/schoolwatch/Default.asp?County=FairfieldCT",
+      "fetched_at": "2026-09-28T02:27:27Z",
+      "original_sha256": "718e1949ea98cc3892ae067fa2c532d1011e9199012e21482d61761a36d8fdc7",
+      "original_bytes": 31433,
+      "slice": "the county heading, the participating-list header, the first 0 names, the end marker and the page-created line, verbatim",
+      "sha256": "f85ba003b7b2b55afc5eafa0064d08c72dff0ce7a651f69af79309bcc9017b6f"
+    }
+  ]
+}
