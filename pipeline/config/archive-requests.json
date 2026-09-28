@@ -1,450 +1,226 @@
 {
- "snapshots": [
-  {
-   "timestamp": "20260219150000",
-   "url": "https://www.natronaschools.org/"
-  },
-  {
-   "timestamp": "20250307150000",
-   "url": "https://www.natronaschools.org/"
-  },
-  {
-   "timestamp": "20240116150000",
-   "url": "https://www.natronaschools.org/"
-  },
-  {
-   "timestamp": "20250203150000",
-   "url": "https://www.livingston.k12.mt.us/"
-  },
-  {
-   "timestamp": "20240216150000",
-   "url": "https://www.livingston.k12.mt.us/"
-  },
-  {
-   "timestamp": "20250214150000",
-   "url": "https://www.sodaschools.org/"
-  },
-  {
-   "timestamp": "20250203150000",
-   "url": "https://www.sodaschools.org/"
-  },
-  {
-   "timestamp": "20250307150000",
-   "url": "https://www.sublette9.org/"
-  },
-  {
-   "timestamp": "20260218150000",
-   "url": "https://www.bps.k12.mt.us/en-US"
-  },
-  {
-   "timestamp": "20250217150000",
-   "url": "https://www.bps.k12.mt.us/en-US"
-  },
-  {
-   "timestamp": "20250220150000",
-   "url": "https://www.uinta1.com/"
-  },
-  {
-   "timestamp": "20240227150000",
-   "url": "https://www.uinta1.com/"
-  },
-  {
-   "timestamp": "20250307150000",
-   "url": "https://www.sub1.org/"
-  },
-  {
-   "timestamp": "20250214150000",
-   "url": "https://www.sd149.com/en-US"
-  },
-  {
-   "timestamp": "20250121140000",
-   "url": "https://www.lfcisd.net/"
-  },
-  {
-   "timestamp": "20240116140000",
-   "url": "https://www.lfcisd.net/"
-  },
-  {
-   "timestamp": "20210216140000",
-   "url": "https://www.lfcisd.net/"
-  },
-  {
-   "timestamp": "20250121140000",
-   "url": "https://www.kingsvilleisd.com/"
-  },
-  {
-   "timestamp": "20240116140000",
-   "url": "https://www.kingsvilleisd.com/"
-  },
-  {
-   "timestamp": "20210216140000",
-   "url": "https://www.kingsvilleisd.com/"
-  },
-  {
-   "timestamp": "20250121140000",
-   "url": "https://www.robstownisd.org/"
-  },
-  {
-   "timestamp": "20240116140000",
-   "url": "https://www.robstownisd.org/"
-  },
-  {
-   "timestamp": "20250121140000",
-   "url": "https://www.rfisd.us/"
-  },
-  {
-   "timestamp": "20240708140000",
-   "url": "https://www.rfisd.us/"
-  },
-  {
-   "timestamp": "20250121140000",
-   "url": "https://www.ogisd.net/"
-  },
-  {
-   "timestamp": "20250121140000",
-   "url": "https://www.hidalgo-isd.org/"
-  },
-  {
-   "timestamp": "20250121140000",
-   "url": "https://www.jhcisdpk12.org/"
-  },
-  {
-   "timestamp": "20250121140000",
-   "url": "https://www.sgisd.net/"
-  },
-  {
-   "timestamp": "20240116140000",
-   "url": "https://www.mcisd.net/"
-  },
-  {
-   "timestamp": "20210216140000",
-   "url": "https://www.mcisd.net/"
-  },
-  {
-   "timestamp": "20260126140000",
-   "url": "https://www.mcisd.net/"
-  },
-  {
-   "timestamp": "20240116140000",
-   "url": "https://www.ecisd.us/"
-  },
-  {
-   "timestamp": "20260126140000",
-   "url": "https://www.ecisd.us/"
-  },
-  {
-   "timestamp": "20210216150000",
-   "url": "https://ideapublicschools.org/"
-  },
-  {
-   "timestamp": "20240116150000",
-   "url": "https://ideapublicschools.org/"
-  },
-  {
-   "timestamp": "20250121150000",
-   "url": "https://ideapublicschools.org/"
-  },
-  {
-   "timestamp": "20221102002228",
-   "url": "http://www.shelbypublicschools.org/"
-  },
-  {
-   "timestamp": "20251213013925",
-   "url": "https://www.shelbypublicschools.org/"
-  },
-  {
-   "timestamp": "20241107053918",
-   "url": "https://www.beltschool.com/"
-  },
-  {
-   "timestamp": "20230314202541",
-   "url": "https://www.beltschool.com/"
-  },
-  {
-   "timestamp": "20251128173814",
-   "url": "https://www.beltschool.com/"
-  },
-  {
-   "timestamp": "20240226210536",
-   "url": "https://www.bssd72.org/"
-  },
-  {
-   "timestamp": "20230324154940",
-   "url": "https://www.bssd72.org/"
-  },
-  {
-   "timestamp": "20230314201402",
-   "url": "https://www.bssd72.org/"
-  },
-  {
-   "timestamp": "20230314202439",
-   "url": "https://www.centerville.k12.mt.us/"
-  },
-  {
-   "timestamp": "20230127215056",
-   "url": "https://www.conradschools.org/"
-  },
-  {
-   "timestamp": "20221201234524",
-   "url": "https://www.conradschools.org/"
-  },
-  {
-   "timestamp": "20221101233948",
-   "url": "https://www.conradschools.org/"
-  },
-  {
-   "timestamp": "20241105174315",
-   "url": "https://www.ftsd.org/"
-  },
-  {
-   "timestamp": "20221223012105",
-   "url": "https://www.ftsd.org/"
-  },
-  {
-   "timestamp": "20221201235600",
-   "url": "https://www.ftsd.org/"
-  },
-  {
-   "timestamp": "20230327192646",
-   "url": "https://www.hardin.k12.mt.us/"
-  },
-  {
-   "timestamp": "20221221103018",
-   "url": "https://www.hardin.k12.mt.us/"
-  },
-  {
-   "timestamp": "20210211201219",
-   "url": "https://www.hsd3.org/"
-  },
-  {
-   "timestamp": "20241105005446",
-   "url": "https://www.hssdmt.org/"
-  },
-  {
-   "timestamp": "20221202005618",
-   "url": "https://www.hssdmt.org/"
-  },
-  {
-   "timestamp": "20240316011527",
-   "url": "https://www.laramie1.org/"
-  },
-  {
-   "timestamp": "20240314103915",
-   "url": "https://www.laramie1.org/"
-  },
-  {
-   "timestamp": "20240313105032",
-   "url": "https://www.laramie1.org/"
-  },
-  {
-   "timestamp": "20240226110332",
-   "url": "https://www.noxonschools.com/"
-  },
-  {
-   "timestamp": "20221202010021",
-   "url": "https://www.noxonschools.com/"
-  },
-  {
-   "timestamp": "20230324224743",
-   "url": "https://www.park6.org/"
-  },
-  {
-   "timestamp": "20221202145213",
-   "url": "https://www.park6.org/"
-  },
-  {
-   "timestamp": "20221104180818",
-   "url": "https://www.park6.org/"
-  },
-  {
-   "timestamp": "20220201201602",
-   "url": "https://www.philipsburgschools.org/"
-  },
-  {
-   "timestamp": "20240226113947",
-   "url": "https://www.ssd3.us/"
-  },
-  {
-   "timestamp": "20221202023921",
-   "url": "https://www.ssd3.us/"
-  },
-  {
-   "timestamp": "20251205075422",
-   "url": "https://www.ssd3.us/"
-  },
-  {
-   "timestamp": "20241106154139",
-   "url": "https://www.tfschools.com/"
-  },
-  {
-   "timestamp": "20221202025816",
-   "url": "https://www.tfschools.com/"
-  },
-  {
-   "timestamp": "20260313052922",
-   "url": "https://www.tfschools.com/"
-  },
-  {
-   "timestamp": "20200921102332",
-   "url": "http://apisd.org/"
-  },
-  {
-   "timestamp": "20220121084702",
-   "url": "http://www.apisd.org/"
-  },
-  {
-   "timestamp": "20200724092939",
-   "url": "http://www.eeisd.org:80/"
-  },
-  {
-   "timestamp": "20220202221635",
-   "url": "https://www.eeisd.org/"
-  },
-  {
-   "timestamp": "20220204161105",
-   "url": "https://www.g-pisd.org/"
-  },
-  {
-   "timestamp": "20260125102853",
-   "url": "https://www.g-pisd.org/"
-  },
-  {
-   "timestamp": "20260126102947",
-   "url": "https://www.g-pisd.org/"
-  },
-  {
-   "timestamp": "20260127102826",
-   "url": "https://www.g-pisd.org/"
-  },
-  {
-   "timestamp": "20260128102826",
-   "url": "https://www.g-pisd.org/"
-  },
-  {
-   "timestamp": "20220122053656",
-   "url": "https://www.inglesideisd.org/"
-  },
-  {
-   "timestamp": "20240910172040",
-   "url": "https://www.inglesideisd.org/"
-  },
-  {
-   "timestamp": "20220202221635",
-   "url": "https://www.misdtx.net/"
-  },
-  {
-   "timestamp": "20220202194602",
-   "url": "https://www.pi-isd.net/"
-  },
-  {
-   "timestamp": "20250123210012",
-   "url": "https://www.refugioisd.net/"
-  },
-  {
-   "timestamp": "20210913163311",
-   "url": "http://www.refugioisd.net/"
-  },
-  {
-   "timestamp": "20240910193253",
-   "url": "https://www.sdisd.us/"
-  }
- ],
- "cdx": [
-  {
-   "url": "www.natronaschools.org/",
-   "from": "20210101",
-   "to": "20260930",
-   "filter": [
-    "statuscode:200"
-   ],
-   "collapse": "timestamp:8"
-  },
-  {
-   "url": "www.livingston.k12.mt.us/",
-   "from": "20210101",
-   "to": "20260930",
-   "filter": [
-    "statuscode:200"
-   ],
-   "collapse": "timestamp:8"
-  },
-  {
-   "url": "www.uinta1.com/",
-   "from": "20210101",
-   "to": "20260930",
-   "filter": [
-    "statuscode:200"
-   ],
-   "collapse": "timestamp:8"
-  },
-  {
-   "url": "www.bps.k12.mt.us/",
-   "from": "20210101",
-   "to": "20260930",
-   "filter": [
-    "statuscode:200"
-   ],
-   "collapse": "timestamp:8"
-  },
-  {
-   "url": "www.ecisd.us/",
-   "from": "20210101",
-   "to": "20260930",
-   "filter": [
-    "statuscode:200"
-   ],
-   "collapse": "timestamp:8"
-  },
-  {
-   "url": "www.lfcisd.net/",
-   "from": "20210101",
-   "to": "20260930",
-   "filter": [
-    "statuscode:200"
-   ],
-   "collapse": "timestamp:8"
-  },
-  {
-   "url": "www.krgv.com/*",
-   "from": "20150101",
-   "to": "20260930",
-   "filter": [
-    "original:.*(closings|school-closings|closures|cierres).*"
-   ],
-   "collapse": "urlkey"
-  },
-  {
-   "url": "kvia.com/*",
-   "from": "20150101",
-   "to": "20260930",
-   "filter": [
-    "original:.*(closings|school-closings|closures|cierres).*"
-   ],
-   "collapse": "urlkey"
-  },
-  {
-   "url": "www.kztv10.com/*",
-   "from": "20150101",
-   "to": "20260930",
-   "filter": [
-    "original:.*(closings|school-closings|closures|cierres).*"
-   ],
-   "collapse": "urlkey"
-  },
-  {
-   "url": "www.crossroadstoday.com/*",
-   "from": "20150101",
-   "to": "20260930",
-   "filter": [
-    "original:.*(closings|school-closings|closures|cierres).*"
-   ],
-   "collapse": "urlkey"
-  },
-  {
-   "url": "www.telemundo40.com/wp-json/nbc/v1/school-closings",
-   "from": "20190101",
-   "to": "20260930",
-   "collapse": "digest"
-  }
- ]
+  "cdx": [
+    {
+      "url": "www.mcpss.com/",
+      "from": "20170101",
+      "to": "20260930",
+      "filter": [
+        "statuscode:200"
+      ],
+      "collapse": "timestamp:10"
+    },
+    {
+      "url": "www.bcbe.org/",
+      "from": "20170101",
+      "to": "20260930",
+      "filter": [
+        "statuscode:200"
+      ],
+      "collapse": "timestamp:10"
+    },
+    {
+      "url": "www.santarosaschools.org/",
+      "from": "20170101",
+      "to": "20260930",
+      "filter": [
+        "statuscode:200"
+      ],
+      "collapse": "timestamp:10"
+    },
+    {
+      "url": "www.santarosa.k12.fl.us/",
+      "from": "20170101",
+      "to": "20260930",
+      "filter": [
+        "statuscode:200"
+      ],
+      "collapse": "timestamp:10"
+    },
+    {
+      "url": "www.escambiak12.net/",
+      "from": "20170101",
+      "to": "20260930",
+      "filter": [
+        "statuscode:200"
+      ],
+      "collapse": "timestamp:10"
+    },
+    {
+      "url": "www.wcbek12.org/",
+      "from": "20170101",
+      "to": "20260930",
+      "filter": [
+        "statuscode:200"
+      ],
+      "collapse": "timestamp:10"
+    },
+    {
+      "url": "www.chickasawschools.com/",
+      "from": "20170101",
+      "to": "20260930",
+      "filter": [
+        "statuscode:200"
+      ],
+      "collapse": "timestamp:10"
+    },
+    {
+      "url": "www.monroe.k12.al.us/",
+      "from": "20170101",
+      "to": "20260930",
+      "filter": [
+        "statuscode:200"
+      ],
+      "collapse": "timestamp:10"
+    },
+    {
+      "url": "www.clarkecountyschools.org/",
+      "from": "20170101",
+      "to": "20260930",
+      "filter": [
+        "statuscode:200"
+      ],
+      "collapse": "timestamp:10"
+    },
+    {
+      "url": "www.saralandboe.org/",
+      "from": "20170101",
+      "to": "20260930",
+      "filter": [
+        "statuscode:200"
+      ],
+      "collapse": "timestamp:10"
+    },
+    {
+      "url": "www.gsboe.org/",
+      "from": "20170101",
+      "to": "20260930",
+      "filter": [
+        "statuscode:200"
+      ],
+      "collapse": "timestamp:10"
+    },
+    {
+      "url": "orangebeachboe.org/",
+      "from": "20170101",
+      "to": "20260930",
+      "filter": [
+        "statuscode:200"
+      ],
+      "collapse": "timestamp:10"
+    },
+    {
+      "url": "www.satsumaschools.com/",
+      "from": "20170101",
+      "to": "20260930",
+      "filter": [
+        "statuscode:200"
+      ],
+      "collapse": "timestamp:10"
+    },
+    {
+      "url": "www.thomasvilleschools.org/",
+      "from": "20170101",
+      "to": "20260930",
+      "filter": [
+        "statuscode:200"
+      ],
+      "collapse": "timestamp:10"
+    },
+    {
+      "url": "www.brewtoncityschools.org/",
+      "from": "20170101",
+      "to": "20260930",
+      "filter": [
+        "statuscode:200"
+      ],
+      "collapse": "timestamp:10"
+    },
+    {
+      "url": "www.fpcvpaa.com/",
+      "from": "20170101",
+      "to": "20260930",
+      "filter": [
+        "statuscode:200"
+      ],
+      "collapse": "timestamp:10"
+    },
+    {
+      "url": "www.monroe.k12.al.us/en-US",
+      "from": "20170101",
+      "to": "20260930",
+      "filter": [
+        "statuscode:200"
+      ],
+      "collapse": "timestamp:10"
+    },
+    {
+      "url": "www.bcbe.org/fs/pages/*",
+      "from": "20170101",
+      "to": "20260930",
+      "filter": [
+        "original:.*page-pops.*"
+      ]
+    },
+    {
+      "url": "www.wcbek12.org/fs/pages/*",
+      "from": "20170101",
+      "to": "20260930",
+      "filter": [
+        "original:.*page-pops.*"
+      ]
+    },
+    {
+      "url": "www.chickasawschools.com/fs/pages/*",
+      "from": "20170101",
+      "to": "20260930",
+      "filter": [
+        "original:.*page-pops.*"
+      ]
+    },
+    {
+      "url": "www.clarkecountyschools.org/fs/pages/*",
+      "from": "20170101",
+      "to": "20260930",
+      "filter": [
+        "original:.*page-pops.*"
+      ]
+    },
+    {
+      "url": "www.saralandboe.org/fs/pages/*",
+      "from": "20170101",
+      "to": "20260930",
+      "filter": [
+        "original:.*page-pops.*"
+      ]
+    },
+    {
+      "url": "www.gsboe.org/fs/pages/*",
+      "from": "20170101",
+      "to": "20260930",
+      "filter": [
+        "original:.*page-pops.*"
+      ]
+    },
+    {
+      "url": "www.satsumaschools.com/fs/pages/*",
+      "from": "20170101",
+      "to": "20260930",
+      "filter": [
+        "original:.*page-pops.*"
+      ]
+    },
+    {
+      "url": "www.fpcvpaa.com/fs/pages/*",
+      "from": "20170101",
+      "to": "20260930",
+      "filter": [
+        "original:.*page-pops.*"
+      ]
+    },
+    {
+      "url": "orangebeachboe.org/api/popup-alerts",
+      "from": "20170101",
+      "to": "20260930"
+    }
+  ]
 }
