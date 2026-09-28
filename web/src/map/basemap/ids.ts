@@ -90,6 +90,8 @@ export const BASEMAP_IDS = {
   schoolsSource: 'schools',
   /** A dot at each school, under the glow and every label. */
   schoolDots: 'school-dots',
+  /** The light around each dot across a metro, under the dots. */
+  schoolLight: 'school-light',
   /** A ring around the school a panel is open for, under its dot (index.ts selectSchool). */
   schoolSelected: 'school-selected',
   /** Each school's name, over every other label. */
@@ -100,6 +102,15 @@ export const BASEMAP_IDS = {
 
 /** The layer of schools.pmtiles (pipeline/snowlight/directory/tiles.py). */
 export const SCHOOLS_TILE_LAYER = 'schools';
+
+/**
+ * The feature state of a school the glow lights today (glow-mount.ts sets
+ * it). A school's feature id in the tiles is its place in the directory, as
+ * in the glow's own data, so each lit school's dot is found by it: its dot
+ * and the light around it give way to the glow's light, in its status's
+ * color (schools.ts).
+ */
+export const SCHOOL_LIT_STATE = 'lit';
 
 /**
  * The scheme of the school tiles' URLs, which MapLibre's workers serve from

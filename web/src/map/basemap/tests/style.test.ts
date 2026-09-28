@@ -24,10 +24,14 @@ import { MAP_FONT_FILES, MAP_FONTS, addMapFonts } from '../fonts';
 import { BASEMAP_IDS } from '../ids';
 import { BORDER_LAYER, MASK_LAYER } from '../mask/format';
 import { OPENFREEMAP_MIN_ZOOM } from '../openfreemap';
-import { SCHOOLS_TILE_LAYER, SCHOOL_TILES_PROTOCOL } from '../ids';
+import { SCHOOLS_TILE_LAYER, SCHOOL_LIT_STATE, SCHOOL_TILES_PROTOCOL } from '../ids';
+import { NEARBY_ZOOM } from '../limits';
 import {
   SCHOOL_DOTS_FROM,
+  SCHOOL_DOT_FADE,
   SCHOOL_FADE,
+  SCHOOL_LIGHT_OPACITY,
+  SCHOOL_LIGHT_UNTIL,
   SCHOOL_NAMES_FROM,
   SCHOOL_SPACE_IMAGE,
   SCHOOL_NAME_PADDING,
@@ -48,6 +52,8 @@ import {
   CLOSE_FROM,
   CLOSE_ZOOM,
   LABEL_FADE,
+  METRO_PLACE_HALO,
+  METRO_ROAD_TONE,
   ROAD_TIERS,
   SIMPLE_LINES_UNTIL,
   buildBasemapStyle,
@@ -55,6 +61,7 @@ import {
   cityNameLayerId,
   cityNameOffset,
   cityNameSize,
+  metroRoadTone,
   mixColors,
   splitUsLines,
   stageStyle,
@@ -125,7 +132,19 @@ function value(
   zoom: number,
   properties: Properties = {},
 ): unknown {
-  const target = layer(id) as unknown as Record<Section, Record<string, unknown> | undefined> & {
+  return valueOf(layer(id), section, name, zoom, properties);
+}
+
+/** A paint or layout value of this layer, evaluated at a zoom for a feature. */
+function valueOf(
+  of: LayerSpecification,
+  section: Section,
+  name: string,
+  zoom: number,
+  properties: Properties = {},
+): unknown {
+  const id = of.id;
+  const target = of as unknown as Record<Section, Record<string, unknown> | undefined> & {
     type: string;
   };
   const input = target[section]?.[name];
@@ -146,7 +165,12 @@ function num(id: string, section: Section, name: string, zoom: number, p: Proper
 
 /** A color value as 0-255 channels, alpha dropped. */
 function rgb(id: string, name: string, zoom: number, p: Properties = {}): [number, number, number] {
-  const color = value(id, 'paint', name, zoom, p) as { r: number; g: number; b: number; a: number };
+  return channels(value(id, 'paint', name, zoom, p));
+}
+
+/** A color value MapLibre evaluated as 0-255 channels, alpha dropped. */
+function channels(evaluated: unknown): [number, number, number] {
+  const color = evaluated as { r: number; g: number; b: number; a: number };
   // Colors come back premultiplied by alpha, from 0 to 1.
   const scale = color.a === 0 ? 0 : 255 / color.a;
   return [color.r * scale, color.g * scale, color.b * scale].map(Math.round) as [
@@ -1008,28 +1032,34 @@ describe('schools', () => {
     return found;
   };
 
-  it('come from the archive the build ships, through the workers, from zoom 11', () => {
+  it("come from the archive the build ships, through the workers, from a metro's zoom", () => {
     expect(WITH_SCHOOLS.sources[BASEMAP_IDS.schoolsSource]).toEqual({
       type: 'vector',
       tiles: [`${SCHOOL_TILES_PROTOCOL}://${SCHOOL_ARCHIVE}/{z}/{x}/{y}`],
       minzoom: SCHOOL_TILES_MIN_ZOOM,
       maxzoom: SCHOOL_TILES_MAX_ZOOM,
     });
-    // The tileset holds zooms 9 to 14; the dots' fade just below 11 reads zoom 10.
-    expect(SCHOOL_TILES_MIN_ZOOM).toBe(Math.floor(SCHOOL_DOTS_FROM - SCHOOL_FADE));
-    for (const id of [BASEMAP_IDS.schoolDots, BASEMAP_IDS.schoolNames]) {
+    // The tileset holds zooms 9 to 14: the dots fade in from the first of them.
+    expect(SCHOOL_TILES_MIN_ZOOM).toBe(9);
+    expect(SCHOOL_DOTS_FROM - SCHOOL_DOT_FADE).toBe(SCHOOL_TILES_MIN_ZOOM);
+    for (const id of [BASEMAP_IDS.schoolDots, BASEMAP_IDS.schoolNames, BASEMAP_IDS.schoolLight]) {
       expect(schoolLayer(id)).toMatchObject({
         source: BASEMAP_IDS.schoolsSource,
         'source-layer': SCHOOLS_TILE_LAYER,
       });
     }
-    expect(SCHOOL_DOTS_FROM).toBe(11);
+    // Every school is drawn across a metro: at the zoom "Show my area" opens at, and wider.
+    expect(SCHOOL_DOTS_FROM).toBe(9.5);
+    expect(SCHOOL_DOTS_FROM).toBeLessThan(NEARBY_ZOOM);
     expect(SCHOOL_NAMES_FROM).toBe(13);
-    // Each fully drawn at its zoom, fading in over the quarter level before it.
-    expect(schoolLayer(BASEMAP_IDS.schoolDots).minzoom).toBe(11 - SCHOOL_FADE);
+    // Each fully drawn at its zoom, fading in before it.
+    expect(schoolLayer(BASEMAP_IDS.schoolDots).minzoom).toBe(SCHOOL_TILES_MIN_ZOOM);
     expect(schoolLayer(BASEMAP_IDS.schoolNames).minzoom).toBe(13 - SCHOOL_FADE);
-    expect(num(BASEMAP_IDS.schoolDots, 'paint', 'circle-opacity', 11)).toBe(1);
-    expect(num(BASEMAP_IDS.schoolDots, 'paint', 'circle-opacity', 11 - SCHOOL_FADE)).toBe(0);
+    expect(num(BASEMAP_IDS.schoolDots, 'paint', 'circle-opacity', SCHOOL_TILES_MIN_ZOOM)).toBe(0);
+    for (const zoom of [SCHOOL_DOTS_FROM, NEARBY_ZOOM, 11, 13, 16]) {
+      expect(num(BASEMAP_IDS.schoolDots, 'paint', 'circle-opacity', zoom), String(zoom)).toBe(1);
+      expect(num(BASEMAP_IDS.schoolDots, 'paint', 'circle-stroke-opacity', zoom)).toBe(1);
+    }
     expect(num(BASEMAP_IDS.schoolNames, 'paint', 'text-opacity', 13)).toBe(1);
   });
 
@@ -1055,17 +1085,50 @@ describe('schools', () => {
     });
   });
 
-  it('draw a dot white up close, over a dark ring, larger than the road it stands on', () => {
-    expect(hex(rgb(BASEMAP_IDS.schoolDots, 'circle-color', 15))).toBe(COLORS.labelBright);
-    expect(hex(rgb(BASEMAP_IDS.schoolDots, 'circle-color', 13))).toBe(COLORS.labelBright);
-    expect(hex(rgb(BASEMAP_IDS.schoolDots, 'circle-stroke-color', 15))).toBe('#000000');
-    const radii = [11, 12, 13, 15, 17].map((z) =>
+  it('draw a dot white at every zoom, over a dark ring, larger than the road it stands on', () => {
+    for (const zoom of [SCHOOL_DOTS_FROM, 10.2, 11, 12, 13, 15]) {
+      expect(hex(rgb(BASEMAP_IDS.schoolDots, 'circle-color', zoom)), String(zoom)).toBe(
+        COLORS.labelBright,
+      );
+      expect(hex(rgb(BASEMAP_IDS.schoolDots, 'circle-stroke-color', zoom))).toBe('#000000');
+    }
+    const radii = [SCHOOL_DOTS_FROM, 10, 11, 12, 13, 15, 17].map((z) =>
       num(BASEMAP_IDS.schoolDots, 'paint', 'circle-radius', z),
     );
     expect(radii).toEqual([...radii].sort((a, b) => a - b));
-    expect((radii[2] ?? 0) * 2).toBeGreaterThan(
+    expect(new Set(radii).size).toBe(radii.length);
+    expect((radii[4] ?? 0) * 2).toBeGreaterThan(
       num(ROAD, 'paint', 'line-width', 15, { class: 'minor' }),
     );
+  });
+
+  it('leave a school the glow lights to its light: no white dot and no white light around it', () => {
+    const opacity = (id: string, name: string, zoom: number, lit: boolean): unknown => {
+      const paint = (schoolLayer(id) as { paint: Record<string, unknown> }).paint;
+      const spec = (latest as unknown as Record<string, Record<string, unknown>>).paint_circle?.[
+        name
+      ];
+      const parsed = expression.createPropertyExpression(paint[name], name, spec as never);
+      if (parsed.result !== 'success') throw new Error(`${id} ${name}`);
+      const state = lit ? { [SCHOOL_LIT_STATE]: true } : {};
+      return parsed.value.evaluate({ zoom }, { type: GEOMETRY.point, properties: {} }, state);
+    };
+    const drawn: [string, string][] = [
+      [BASEMAP_IDS.schoolDots, 'circle-opacity'],
+      [BASEMAP_IDS.schoolDots, 'circle-stroke-opacity'],
+      [BASEMAP_IDS.schoolLight, 'circle-opacity'],
+    ];
+    for (const [id, name] of drawn) {
+      for (const zoom of [SCHOOL_DOTS_FROM, 10.2, 11, 12, 13, 15, 17]) {
+        if (zoom > (schoolLayer(id).maxzoom ?? 24)) continue;
+        const where = `${id} ${name} ${String(zoom)}`;
+        expect(opacity(id, name, zoom, true), where).toBe(0);
+        expect(opacity(id, name, zoom, false), where).toBe(num(id, 'paint', name, zoom));
+        expect(opacity(id, name, zoom, false), where).toBeGreaterThan(0);
+      }
+    }
+    // The ring around the school a panel is open for stays, lit or not.
+    expect(JSON.stringify(schoolLayer(BASEMAP_IDS.schoolSelected))).not.toContain(SCHOOL_LIT_STATE);
   });
 
   it('put a dot at each school under every label, and each name over every other label', () => {
@@ -1080,6 +1143,7 @@ describe('schools', () => {
     expect(at(BASEMAP_IDS.schoolSpace)).toBe(at(BASEMAP_IDS.schools) - 1);
     // Everything else is where it is without schools.
     const added: string[] = [
+      BASEMAP_IDS.schoolLight,
       BASEMAP_IDS.schoolSelected,
       BASEMAP_IDS.schoolDots,
       BASEMAP_IDS.schoolNames,
@@ -1097,7 +1161,7 @@ describe('schools', () => {
       type: 'circle',
       source: BASEMAP_IDS.schoolsSource,
       'source-layer': SCHOOLS_TILE_LAYER,
-      minzoom: SCHOOL_DOTS_FROM - SCHOOL_FADE,
+      minzoom: SCHOOL_TILES_MIN_ZOOM,
       filter: selectedSchoolFilter(null),
     });
     expect(selectedSchoolFilter('A1902690')).toEqual(['==', ['get', 'id'], 'A1902690']);
@@ -1105,7 +1169,7 @@ describe('schools', () => {
       COLORS.labelBright,
     );
     // Clear of the dot and its dark ring at every zoom, so the dot stands inside it.
-    for (const z of [11, 13, 15, 17]) {
+    for (const z of [SCHOOL_DOTS_FROM, 10, 11, 13, 15, 17]) {
       const dot =
         num(BASEMAP_IDS.schoolDots, 'paint', 'circle-radius', z) +
         num(BASEMAP_IDS.schoolDots, 'paint', 'circle-stroke-width', z);
@@ -1168,29 +1232,136 @@ describe('schools', () => {
     }
   });
 
-  it('stand out across a metro: light grey, ringed, several pixels across', () => {
-    for (const zoom of [11, 12]) {
-      // At least the place-name grey: brighter than every road, street name and shore.
-      expect(rgb(BASEMAP_IDS.schoolDots, 'circle-color', zoom)[0]).toBeGreaterThanOrEqual(
-        Number.parseInt(COLORS.label.slice(1, 3), 16),
+  it('stand out across a metro: the brightest marks on the map, ringed, pixels apart', () => {
+    for (const zoom of [SCHOOL_DOTS_FROM, 10, 10.2, 11, 12]) {
+      const where = String(zoom);
+      const dot = rgb(BASEMAP_IDS.schoolDots, 'circle-color', zoom)[0];
+      // Brighter than every place name, and so than every road, street name and shore.
+      expect(dot, where).toBeGreaterThan(Number.parseInt(COLORS.label.slice(1, 3), 16));
+      expect(num(BASEMAP_IDS.schoolDots, 'paint', 'circle-radius', zoom), where).toBeGreaterThan(
+        zoom < 10 ? 1.7 : 2,
       );
-      expect(num(BASEMAP_IDS.schoolDots, 'paint', 'circle-radius', zoom)).toBeGreaterThanOrEqual(
-        2.2,
-      );
+      // Parted from the road under it and the dot beside it by a ring of the ground.
       expect(
         num(BASEMAP_IDS.schoolDots, 'paint', 'circle-stroke-width', zoom),
-      ).toBeGreaterThanOrEqual(1);
+        where,
+      ).toBeGreaterThanOrEqual(0.75);
     }
   });
 
-  it('are drawn in greys, the names brightest up close', () => {
+  it('knock the dots out under a place name across a metro, with a wider halo there only', () => {
+    const halo = (style: StyleSpecification, id: string, name: string, zoom: number): unknown => {
+      const found = style.layers.find((l) => l.id === id);
+      if (found === undefined) throw new Error(`No layer ${id}`);
+      return valueOf(found, 'paint', name, zoom);
+    };
+    const places = [
+      BASEMAP_IDS.ofmCityLabel,
+      BASEMAP_IDS.ofmTownLabel,
+      BASEMAP_IDS.ofmVillageLabel,
+    ] as const;
+    for (const id of places) {
+      for (const zoom of [SCHOOL_DOTS_FROM, 10.2, 11, 12, SCHOOL_NAMES_FROM - SCHOOL_FADE]) {
+        const where = `${id} ${String(zoom)}`;
+        expect(halo(WITH_SCHOOLS, id, 'text-halo-width', zoom), where).toBe(METRO_PLACE_HALO);
+        expect(halo(WITH_SCHOOLS, id, 'text-halo-color', zoom)).toEqual(
+          halo(STYLE, id, 'text-halo-color', zoom),
+        );
+        // Wide enough to cover a dot and its ring between two letters.
+        const dot =
+          num(BASEMAP_IDS.schoolDots, 'paint', 'circle-radius', zoom) +
+          num(BASEMAP_IDS.schoolDots, 'paint', 'circle-stroke-width', zoom);
+        expect(2 * METRO_PLACE_HALO, where).toBeGreaterThan(dot);
+      }
+      // The street tiles' own halo further out, up close, and without the schools.
+      for (const zoom of [7, 8, SCHOOL_TILES_MIN_ZOOM, SCHOOL_NAMES_FROM, 15]) {
+        const plain = halo(STYLE, id, 'text-halo-width', zoom);
+        expect(plain).toBe(num(BASEMAP_IDS.ofmStreetLabel, 'paint', 'text-halo-width', zoom));
+        expect(halo(WITH_SCHOOLS, id, 'text-halo-width', zoom), `${id} ${String(zoom)}`).toBe(
+          plain,
+        );
+      }
+      expect(halo(STYLE, id, 'text-halo-width', 10.2)).toBeLessThan(METRO_PLACE_HALO);
+    }
+  });
+
+  it('step the roads back across a metro, and only there, where the schools are drawn', () => {
+    const road = (style: StyleSpecification, id: string): LayerSpecification => {
+      const found = style.layers.find((l) => l.id === id);
+      if (found === undefined) throw new Error(`No layer ${id}`);
+      return found;
+    };
+    const tone = (style: StyleSpecification, id: string, zoom: number, roadClass: string) =>
+      channels(valueOf(road(style, id), 'paint', 'line-color', zoom, { class: roadClass }))[0];
+    for (const id of [ROAD, BRIDGE, TUNNEL]) {
+      for (const roadClass of ['motorway', 'primary', 'secondary']) {
+        const what = `${id} ${roadClass}`;
+        // Across a metro, METRO_ROAD_TONE of the tone they have without the schools.
+        for (const zoom of [SCHOOL_DOTS_FROM, 10.2, 11, 12]) {
+          const full = tone(STYLE, id, zoom, roadClass);
+          expect(tone(WITH_SCHOOLS, id, zoom, roadClass), `${what} ${String(zoom)}`).toBeCloseTo(
+            full * METRO_ROAD_TONE,
+            -0.5,
+          );
+          expect(metroRoadTone(zoom)).toBe(METRO_ROAD_TONE);
+        }
+        // Their own tone further out, and up close from the zoom names come in at.
+        for (const zoom of [7.5, 8, SCHOOL_TILES_MIN_ZOOM, SCHOOL_NAMES_FROM, 14, 16]) {
+          expect(tone(WITH_SCHOOLS, id, zoom, roadClass), `${what} ${String(zoom)}`).toBe(
+            tone(STYLE, id, zoom, roadClass),
+          );
+          expect(metroRoadTone(zoom)).toBe(1);
+        }
+      }
+    }
+    // Still in their order, and each under the schools' white.
+    for (const zoom of [10.2, 12]) {
+      const tones = ['motorway', 'primary', 'secondary'].map((c) =>
+        tone(WITH_SCHOOLS, ROAD, zoom, c),
+      );
+      expect(tones).toEqual([...tones].sort((a, b) => b - a));
+      expect(Math.max(...tones)).toBeLessThan(Number.parseInt(COLORS.label.slice(1, 3), 16) / 2);
+    }
+  });
+
+  it('light each dot softly across a metro, under the dots, gone before the names come in', () => {
+    const light = schoolLayer(BASEMAP_IDS.schoolLight);
+    expect(at(BASEMAP_IDS.schoolLight)).toBe(at(BASEMAP_IDS.schoolSelected) - 1);
+    expect(light).toMatchObject({ type: 'circle', minzoom: SCHOOL_TILES_MIN_ZOOM });
+    expect(light.maxzoom).toBeLessThanOrEqual(SCHOOL_NAMES_FROM - SCHOOL_FADE);
+    expect(num(BASEMAP_IDS.schoolLight, 'paint', 'circle-blur', 10)).toBe(1);
+    expect(num(BASEMAP_IDS.schoolLight, 'paint', 'circle-opacity', SCHOOL_TILES_MIN_ZOOM)).toBe(0);
+    expect(
+      num(BASEMAP_IDS.schoolLight, 'paint', 'circle-opacity', SCHOOL_NAMES_FROM - SCHOOL_FADE),
+    ).toBe(0);
+    for (const zoom of [SCHOOL_DOTS_FROM, 10.2, 11, SCHOOL_LIGHT_UNTIL]) {
+      const where = String(zoom);
+      expect(hex(rgb(BASEMAP_IDS.schoolLight, 'circle-color', zoom))).toBe(COLORS.labelBright);
+      // Soft: a lone school is a point of light, and only a crowd of them a glow.
+      expect(num(BASEMAP_IDS.schoolLight, 'paint', 'circle-opacity', zoom), where).toBe(
+        SCHOOL_LIGHT_OPACITY,
+      );
+      expect(SCHOOL_LIGHT_OPACITY).toBeLessThanOrEqual(0.35);
+      // Past the dot and its ring, all round.
+      const dot =
+        num(BASEMAP_IDS.schoolDots, 'paint', 'circle-radius', zoom) +
+        num(BASEMAP_IDS.schoolDots, 'paint', 'circle-stroke-width', zoom);
+      expect(num(BASEMAP_IDS.schoolLight, 'paint', 'circle-radius', zoom), where).toBeGreaterThan(
+        2 * dot,
+      );
+    }
+  });
+
+  it('are drawn in white on the ground, the names brightest up close', () => {
     const paint = (id: string) =>
       (schoolLayer(id) as { paint?: Record<string, unknown> }).paint ?? {};
     const colors = JSON.stringify([
+      paint(BASEMAP_IDS.schoolLight),
+      paint(BASEMAP_IDS.schoolSelected),
       paint(BASEMAP_IDS.schoolDots),
       paint(BASEMAP_IDS.schoolNames),
     ]).match(/#[0-9a-f]{3,6}/gi);
-    expect(new Set(colors)).toEqual(new Set([COLORS.label, COLORS.labelBright, COLORS.background]));
+    expect(new Set(colors)).toEqual(new Set([COLORS.labelBright, COLORS.background]));
   });
 });
 

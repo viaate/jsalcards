@@ -10,10 +10,15 @@ import { MAP_FONTS } from './fonts';
 import { BASEMAP_IDS } from './ids';
 import {
   schoolDotLayer,
+  schoolLightLayer,
   schoolNameLayer,
   schoolSelectedLayer,
   schoolSource,
   schoolSpaceLayer,
+  SCHOOL_DOT_FADE,
+  SCHOOL_DOTS_FROM,
+  SCHOOL_FADE,
+  SCHOOL_NAMES_FROM,
 } from './schools';
 import { STATE_AREAS_UNTIL } from './state-areas';
 import {
@@ -669,13 +674,82 @@ function tierTone(tier: RoadTier, zoom: number): string {
   return mixColors(tier.color, tier.close, (zoom - CLOSE_FROM) / (CLOSE_ZOOM - CLOSE_FROM));
 }
 
-/** Road color by class and zoom: up from the ground as each tier fades in, scaled by `strength`. */
-function roadColor(ground: string, strength = 1): ExpressionSpecification {
-  const stops = ROAD_ZOOMS.flatMap((zoom) => [
+/**
+ * Across a metro, where every school is a point of light (schools.ts), the
+ * roads step back to METRO_ROAD_TONE of their tone, so the schools read
+ * first, the place names next and the roads last: from the zoom the dots
+ * come in at, back to their full tone by the zoom the schools' and the
+ * streets' names come in at.
+ */
+export const METRO_ROAD_TONE = 0.72;
+const METRO_ROADS: readonly Stop[] = [
+  [SCHOOL_DOTS_FROM - SCHOOL_DOT_FADE, 1],
+  [SCHOOL_DOTS_FROM, METRO_ROAD_TONE],
+  [12, METRO_ROAD_TONE],
+  [SCHOOL_NAMES_FROM, 1],
+];
+
+/** The halo around every street-tile name: its width and its blur, in CSS pixels. */
+const LABEL_HALO = 1.4;
+const LABEL_HALO_BLUR = 0.4;
+/**
+ * Across a metro, a place's name knocks out the schools' dots under it
+ * whole, with a wider, softer halo than elsewhere (METRO_PLACE_HALO): no
+ * part of a dot shows between its letters or at their edge, where it would
+ * read as a mark on the name. From the zoom the schools' names come in at,
+ * each dot keeps its own space and no name crosses one (schools.ts).
+ */
+export const METRO_PLACE_HALO = 2.4;
+const METRO_PLACE_HALO_BLUR = 0.8;
+
+/** A place name's halo, `metro` or not: its width and blur by zoom. */
+function placeHalo(
+  metro: boolean,
+): Record<'text-halo-width' | 'text-halo-blur', number | ExpressionSpecification> {
+  if (!metro) return { 'text-halo-width': LABEL_HALO, 'text-halo-blur': LABEL_HALO_BLUR };
+  const across = (plain: number, wide: number): ExpressionSpecification =>
+    [
+      'interpolate',
+      ['linear'],
+      ['zoom'],
+      SCHOOL_DOTS_FROM - SCHOOL_DOT_FADE,
+      plain,
+      SCHOOL_DOTS_FROM,
+      wide,
+      SCHOOL_NAMES_FROM - SCHOOL_FADE,
+      wide,
+      SCHOOL_NAMES_FROM,
+      plain,
+    ] as unknown as ExpressionSpecification;
+  return {
+    'text-halo-width': across(LABEL_HALO, METRO_PLACE_HALO),
+    'text-halo-blur': across(LABEL_HALO_BLUR, METRO_PLACE_HALO_BLUR),
+  };
+}
+
+/** The share of their tone roads are drawn at, at `zoom`: METRO_ROADS, and all of it elsewhere. */
+export function metroRoadTone(zoom: number): number {
+  const first = METRO_ROADS[0];
+  const last = METRO_ROADS[METRO_ROADS.length - 1];
+  if (first === undefined || last === undefined || zoom <= first[0] || zoom >= last[0]) return 1;
+  return interpolate(METRO_ROADS, zoom, 1);
+}
+
+/**
+ * Road color by class and zoom: up from the ground as each tier fades in,
+ * scaled by `strength`, and stepped back across a metro when the schools are
+ * drawn there (`metro`).
+ */
+function roadColor(ground: string, strength = 1, metro = false): ExpressionSpecification {
+  const zooms = metro
+    ? [...new Set([...ROAD_ZOOMS, ...METRO_ROADS.map(([zoom]) => zoom)])].sort((a, b) => a - b)
+    : ROAD_ZOOMS;
+  const stops = zooms.flatMap((zoom) => [
     zoom,
     byTier((tier) => {
-      const shown = (zoom - tier.minzoom) / (tier.full - tier.minzoom);
-      return mixColors(ground, tierTone(tier, zoom), Math.min(1, Math.max(0, shown)) * strength);
+      const shown = Math.min(1, Math.max(0, (zoom - tier.minzoom) / (tier.full - tier.minzoom)));
+      const tone = strength * (metro ? metroRoadTone(zoom) : 1);
+      return mixColors(ground, tierTone(tier, zoom), shown * tone);
     }, ground),
   ]);
   return ['interpolate', ['linear'], ['zoom'], ...stops] as unknown as ExpressionSpecification;
@@ -913,11 +987,14 @@ export function splitUsLines(
  * line along its edge. Labels are drawn by MapLibre from the Geist faces in
  * fonts.ts, so the style names no glyph server, and it draws no icons, so it
  * names no sprite either. Highway numbers are left off the map. With the
- * school tiles, every school is drawn from zoom 11 and named from zoom 13
- * (schools.ts), over school grounds drawn a step off the ground.
+ * school tiles, every school is drawn across a metro, from zoom 9.5, and
+ * named from zoom 13 (schools.ts), over school grounds drawn a step off the
+ * ground.
  *
- * Up close the hierarchy runs, brightest first: school names; towns and
- * suburbs; major road names; street names; neighbourhoods in small
+ * Across a metro the hierarchy runs, brightest first: the schools' dots;
+ * city and town names, each clear of the dots under it (METRO_PLACE_HALO);
+ * the roads, stepped back (METRO_ROAD_TONE). Up close: school names; towns
+ * and suburbs; major road names; street names; neighbourhoods in small
  * spaced capitals, parks and rivers. Roads step up in width and tone from
  * local streets to highways.
  */
@@ -933,13 +1010,17 @@ export function buildBasemapStyle({
   phoneNames = false,
 }: BasemapStyleOptions): StyleSpecification {
   const [geometry, cities] = splitUsLines(usLines);
+  // Where every school is drawn across a metro, the roads step back there.
+  const metro = schools !== null;
   const round = { 'line-join': 'round', 'line-cap': 'round' } as const;
   const ofm = { source: BASEMAP_IDS.openFreeMapSource, minzoom: OPENFREEMAP_MIN_ZOOM } as const;
   const halo = {
     'text-halo-color': colors.background,
-    'text-halo-width': 1.4,
-    'text-halo-blur': 0.4,
+    'text-halo-width': LABEL_HALO,
+    'text-halo-blur': LABEL_HALO_BLUR,
   } as const;
+  // Town and city names knock out the dots under them across a metro, where there are dots.
+  const placeNameHalo = { ...halo, ...placeHalo(metro) };
   const layers: LayerSpecification[] = [
     {
       id: BASEMAP_IDS.background,
@@ -1071,7 +1152,7 @@ export function buildBasemapStyle({
       filter: roadFilter('tunnel'),
       layout: { ...round, 'line-sort-key': ROAD_SORT_KEY },
       paint: {
-        'line-color': roadColor(colors.background, TUNNEL_STRENGTH),
+        'line-color': roadColor(colors.background, TUNNEL_STRENGTH, metro),
         'line-width': roadWidth(),
       },
     },
@@ -1110,7 +1191,7 @@ export function buildBasemapStyle({
       'source-layer': 'transportation',
       filter: roadFilter('ground'),
       layout: { ...round, 'line-sort-key': ROAD_SORT_KEY },
-      paint: { 'line-color': roadColor(colors.background), 'line-width': roadWidth() },
+      paint: { 'line-color': roadColor(colors.background, 1, metro), 'line-width': roadWidth() },
     },
     {
       // A dark gap either side of a bridge, so the road it crosses passes under it.
@@ -1130,7 +1211,7 @@ export function buildBasemapStyle({
       'source-layer': 'transportation',
       filter: roadFilter('bridge'),
       layout: { ...round, 'line-sort-key': ROAD_SORT_KEY },
-      paint: { 'line-color': roadColor(colors.background), 'line-width': roadWidth() },
+      paint: { 'line-color': roadColor(colors.background, 1, metro), 'line-width': roadWidth() },
     },
     {
       // The ground over everything outside the US: street tiles carry it (street-tiles.ts).
@@ -1357,7 +1438,7 @@ export function buildBasemapStyle({
         'text-font': [MAP_FONTS.medium],
         'text-size': ['interpolate', ['linear'], ['zoom'], 11, 11.5, 15, 14],
       },
-      paint: { 'text-color': colors.label, 'text-opacity': labelsFrom(11), ...halo },
+      paint: { 'text-color': colors.label, 'text-opacity': labelsFrom(11), ...placeNameHalo },
     },
     {
       id: BASEMAP_IDS.ofmTownLabel,
@@ -1372,7 +1453,7 @@ export function buildBasemapStyle({
         'text-font': [MAP_FONTS.medium],
         'text-size': ['interpolate', ['linear'], ['zoom'], 9, 11.5, 13, 14.5],
       },
-      paint: { 'text-color': colors.label, 'text-opacity': labelsFrom(9), ...halo },
+      paint: { 'text-color': colors.label, 'text-opacity': labelsFrom(9), ...placeNameHalo },
     },
     {
       // The largest cities from zoom 7, more of them level by level.
@@ -1395,7 +1476,7 @@ export function buildBasemapStyle({
           ['step', RANK, 17, 5, 16, 9, 15],
         ],
       },
-      paint: { 'text-color': colors.label, 'text-opacity': fadeIn, ...halo },
+      paint: { 'text-color': colors.label, 'text-opacity': fadeIn, ...placeNameHalo },
     },
     stateAreaLayer(colors, phoneNames),
     {
@@ -1416,6 +1497,7 @@ export function buildBasemapStyle({
     layers.splice(
       layers.findIndex((layer) => layer.id === BASEMAP_IDS.glowSlot),
       0,
+      schoolLightLayer(schoolColors),
       schoolSelectedLayer(schoolColors),
       schoolDotLayer(schoolColors),
     );

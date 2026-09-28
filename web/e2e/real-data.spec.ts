@@ -156,6 +156,43 @@ async function drawn(page: Page, layer: string): Promise<{ id: string; name: str
   }, layer);
 }
 
+/** Every school's NCES id and place, from the directory the pipeline wrote (points.bin). */
+function directory(): { id: string; lon: number; lat: number }[] {
+  const meta = JSON.parse(readFileSync(path.join(SITE_DATA, 'schools/meta.json'), 'utf8')) as {
+    ids: string[];
+  };
+  const points = readFileSync(path.join(SITE_DATA, 'schools/points.bin'));
+  // A 16-byte header, then 13 bytes a school: longitude and latitude in millionths of a degree.
+  return meta.ids.map((id, i) => ({
+    id,
+    lon: points.readInt32LE(16 + 13 * i) / 1e6,
+    lat: points.readInt32LE(20 + 13 * i) / 1e6,
+  }));
+}
+
+/** The ids of the schools the directory puts inside the map's view. */
+async function schoolsInView(page: Page): Promise<Set<string>> {
+  const bounds = await page.evaluate(() => {
+    const map = window.snowlightMap;
+    if (map === undefined) throw new Error('no map');
+    const box = map.getBounds();
+    return {
+      west: box.getWest(),
+      east: box.getEast(),
+      south: box.getSouth(),
+      north: box.getNorth(),
+    };
+  });
+  return new Set(
+    directory()
+      .filter(
+        ({ lon, lat }) =>
+          lon > bounds.west && lon < bounds.east && lat > bounds.south && lat < bounds.north,
+      )
+      .map(({ id }) => id),
+  );
+}
+
 /** Pembroke Hill's zoom-14 street tile, the deepest OpenFreeMap has: z/x/y. */
 const PEMBROKE_HILL_STREET_TILE = '/14/3886/6259.pbf';
 
@@ -909,7 +946,7 @@ test('typing “Kansas City” lists the places, then the districts, then the sc
   await context.close();
 });
 
-test('schools are dots from zoom 11 and named from zoom 13, never one name over another', async ({
+test('every school in view is a dot across a metro, and named from zoom 13, never one name over another', async ({
   browser,
 }) => {
   const context = await browser.newContext({ viewport: { width: 1440, height: 900 } });
@@ -918,11 +955,37 @@ test('schools are dots from zoom 11 and named from zoom 13, never one name over 
   const tileRequests = (): number =>
     requests.filter((request) => SCHOOL_TILES.test(request.url)).length;
 
-  // Kansas City: the metro, the Plaza, Pembroke Hill.
-  await page.goto(`${site}?at=39.03,-94.58,10.2`);
+  // Kansas City: the region, the metro, the Plaza, Pembroke Hill.
+  await page.goto(`${site}?at=39.03,-94.58,8.6`);
   await settle(page);
   expect(await drawn(page, BASEMAP_IDS.schoolDots)).toEqual([]);
   expect(tileRequests()).toBe(0);
+
+  // Across the metro, every school the directory puts in view has its dot, and its light, and
+  // none its name yet.
+  await page.goto(`${site}?at=39.03,-94.58,10.2`);
+  await settle(page);
+  const inView = await schoolsInView(page);
+  expect(inView.size).toBeGreaterThan(500);
+  const metro = new Set((await drawn(page, BASEMAP_IDS.schoolDots)).map(({ id }) => id));
+  expect([...inView].filter((id) => !metro.has(id))).toEqual([]);
+  // A dot whose school stands just past the edge still shows its edge on the screen.
+  expect(metro.size - inView.size).toBeLessThan(inView.size / 100);
+  const lit = new Set((await drawn(page, BASEMAP_IDS.schoolLight)).map(({ id }) => id));
+  expect([...inView].filter((id) => !lit.has(id))).toEqual([]);
+  expect(await drawn(page, BASEMAP_IDS.schoolNames)).toEqual([]);
+  // Each dot's feature id is its school's place in the directory, as in the glow's own data: the
+  // glow takes the dot of each school it lights off the map by it (glow-mount.ts).
+  const places = new Map(directory().map(({ id }, index) => [id, index]));
+  const features = await page.evaluate(
+    (layer) =>
+      window.snowlightMap
+        ?.queryRenderedFeatures({ layers: [layer] })
+        .map((feature) => [String(feature.properties.id), feature.id] as const) ?? [],
+    BASEMAP_IDS.schoolDots,
+  );
+  expect(features.length).toBeGreaterThan(500);
+  expect(features.filter(([id, feature]) => places.get(id) !== feature)).toEqual([]);
 
   await page.goto(`${site}?at=39.03,-94.58,11.5`);
   await settle(page);

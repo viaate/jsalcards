@@ -22,7 +22,7 @@
  *
  * The US mask archive itself is read by the workers, a range at a time, only
  * once the map needs street tiles (zoom 7 and up); the school tiles, when
- * this build ships them, likewise from zoom 11.
+ * this build ships them, likewise from zoom 9.
  *
  * This module is small and ships in the entry chunk; the map code does not.
  */

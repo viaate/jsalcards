@@ -8,11 +8,14 @@
  * layer goes on the map with its style, before the map's first frame: adding
  * it later would make the map draw every frame again. Until schools are lit
  * it holds no points, draws nothing and compiles nothing on the GPU.
+ *
+ * Each school it lights loses its quiet white dot (basemap/schools.ts), so
+ * its light shows in its status's color alone.
  */
 import type { Map as MapLibreMap } from 'maplibre-gl';
 
 import type { LitSchools } from '../data/closings';
-import { BASEMAP_IDS } from './basemap/ids';
+import { BASEMAP_IDS, SCHOOLS_TILE_LAYER, SCHOOL_LIT_STATE } from './basemap/ids';
 import { GlowLayer } from './glow';
 
 export const GLOW_LAYER_ID = BASEMAP_IDS.glow;
@@ -23,9 +26,43 @@ export interface Glow {
   remove(): void;
 }
 
+/** The lit schools' dots, marked by their feature ids: each school's place in the directory. */
+interface LitDots {
+  /** Marks these schools, and no others. */
+  mark(schools: ReadonlySet<number>): void;
+  /** Marks them once the style is in, where it was not before. */
+  update(): void;
+}
+
+function markLitDots(map: MapLibreMap): LitDots {
+  let marked: ReadonlySet<number> = new Set();
+  let wanted: ReadonlySet<number> = marked;
+  const update = (): void => {
+    // A build without the school tiles draws no dots, and a map with no style yet none so far.
+    if (wanted === marked || map.getSource(BASEMAP_IDS.schoolsSource) === undefined) return;
+    const source = { source: BASEMAP_IDS.schoolsSource, sourceLayer: SCHOOLS_TILE_LAYER };
+    for (const id of marked) {
+      if (!wanted.has(id)) map.removeFeatureState({ ...source, id }, SCHOOL_LIT_STATE);
+    }
+    for (const id of wanted) {
+      if (!marked.has(id)) map.setFeatureState({ ...source, id }, { [SCHOOL_LIT_STATE]: true });
+    }
+    marked = wanted;
+  };
+  return {
+    mark(schools) {
+      wanted = schools;
+      update();
+    },
+    update,
+  };
+}
+
 export function mountGlow(map: MapLibreMap): Glow {
   const layer = new GlowLayer({ id: GLOW_LAYER_ID });
+  const dots = markLitDots(map);
   const add = (): void => {
+    dots.update();
     if (map.getLayer(GLOW_LAYER_ID) !== undefined) return;
     // Right over its slot, whichever layers the map has on so far (index.ts adds them in turn).
     const order = map.getLayersOrder();
@@ -41,6 +78,7 @@ export function mountGlow(map: MapLibreMap): Glow {
           ? { lngLat: lit.lngLat, status: lit.status }
           : { lngLat: lit.lngLat, status: lit.status, bornAt: lit.bornAt },
       );
+      dots.mark(lit.schools);
     },
     remove() {
       map.off('style.load', add);
