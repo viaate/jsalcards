@@ -5,7 +5,8 @@
  * own. A record's level is the best of:
  *
  *   0  exact name: every word matches a whole word and together they are the
- *      whole name ("lancaster" for the city Lancaster)
+ *      whole name ("lancaster" for the city Lancaster), or the whole name
+ *      as the page shows it (a record's shown name, types.ts SearchRecord)
  *   then for each tier (exact, then prefix, then typo):
  *      all words in the name / some in the name, rest in the place / all in
  *      the place ("lancaster" for a school in Lancaster, PA)
@@ -50,7 +51,7 @@ import { Tier, parseQuery } from './query';
 import type { ParsedQuery, Reading, TierValue } from './query';
 import { prefixDistance } from './trie';
 import { GROUP_NAMES } from './types';
-import type { GroupName, MatchKind, SearchHit, SearchResults } from './types';
+import type { GroupName, MatchKind, NearView, SearchHit, SearchResults } from './types';
 
 export const DEFAULT_LIMIT = 5;
 export const MAX_LIMIT = 50;
@@ -268,6 +269,24 @@ class StateMasks {
 interface Found {
   readonly rank: number;
   readonly level: number;
+  /** Near where the person is looking (NearView). */
+  readonly near?: boolean;
+}
+
+/**
+ * Levels on which a record near where the person is looking goes first: the
+ * exact name, and every word typed in the name, whole or as its start. A
+ * record matched only through its place, or through a typo, keeps its level.
+ */
+const NEAR_LEVELS: readonly number[] = [FULL, IN_NAME, IN_NAME + 3];
+/** Kilometres in a degree of latitude, and of longitude at the equator. */
+const KM_PER_DEGREE = 111.2;
+
+/** Whether a point is within `near.km` of `near`: flat-earth distance, fine at a region's scale. */
+function isNear(near: NearView, lat: number, lon: number): boolean {
+  const dy = (lat - near.lat) * KM_PER_DEGREE;
+  const dx = (lon - near.lon) * KM_PER_DEGREE * Math.cos((near.lat * Math.PI) / 180);
+  return dx * dx + dy * dy <= near.km * near.km;
 }
 
 export class SearchEngine {
@@ -280,7 +299,12 @@ export class SearchEngine {
     this.pools = index.groups.map((g) => new BitPool(g.words));
   }
 
-  search(raw: string, limit = DEFAULT_LIMIT): SearchResults {
+  /**
+   * With `near`, the records within its distance whose names have every word
+   * typed (NEAR_LEVELS) come first in their group, best level first, and a
+   * group with such records comes before the groups without.
+   */
+  search(raw: string, limit = DEFAULT_LIMIT, near?: NearView): SearchResults {
     const cap = Math.max(1, Math.min(MAX_LIMIT, Math.floor(limit) || DEFAULT_LIMIT));
     const parsed = parseQuery(raw);
     const empty: SearchResults = {
@@ -296,7 +320,7 @@ export class SearchEngine {
     const found: Found[][] = [];
     try {
       for (let g = 0; g < this.index.groups.length; g++) {
-        found.push(this.searchGroup(g, parsed, words, cap));
+        found.push(this.searchGroup(g, parsed, words, cap, near));
       }
     } finally {
       for (const pool of this.pools) pool.releaseAll();
@@ -311,8 +335,12 @@ export class SearchEngine {
       // A leading name can come before its group's exact names: the group's best is its lowest level.
       const best = (g: number): number =>
         (found[g] ?? []).reduce((low, f) => Math.min(low, f.level), LEVEL_COUNT);
+      // A group with records near where the person is looking comes first.
+      const far = (g: number): number => ((found[g] ?? []).some((f) => f.near === true) ? 0 : 1);
       order = [0, 1, 2]
-        .sort((a, b) => best(a) - best(b) || (TIE_RANK[a] ?? a) - (TIE_RANK[b] ?? b))
+        .sort(
+          (a, b) => far(a) - far(b) || best(a) - best(b) || (TIE_RANK[a] ?? a) - (TIE_RANK[b] ?? b),
+        )
         .map((g) => GROUP_NAMES[g] ?? 'schools');
     }
     return { query: raw, schools, cities, zips, order };
@@ -322,11 +350,49 @@ export class SearchEngine {
     const group = this.index.groups[g];
     const rec = this.index.record(group?.fileIndex[f.rank] ?? 0);
     const tier = f.level === STATE_ONLY ? Tier.exact : levelTier(f.level);
-    return {
+    const hit: SearchHit = {
       ...rec,
       match: MATCH_KIND[tier] ?? 'exact',
       highlight: highlight(rec.name, words, tier),
     };
+    return rec.shown === undefined
+      ? hit
+      : { ...hit, shownHighlight: highlight(rec.shown, words, tier) };
+  }
+
+  /**
+   * A group's records near `near` on NEAR_LEVELS, best level first, heaviest
+   * first within a level; at most `cap`.
+   */
+  private nearGroup(
+    g: number,
+    group: GroupData,
+    pool: BitPool,
+    parsed: ParsedQuery,
+    words: readonly Word[],
+    cap: number,
+    near: NearView,
+  ): Found[] {
+    const out: Found[] = [];
+    const seen = new Set<number>();
+    for (const level of NEAR_LEVELS) {
+      const bits = this.levelBits(level, g, group, pool, parsed.readings, words);
+      if (!bits) continue;
+      for (let w = 0; w < bits.length && out.length < cap; w++) {
+        let x = bits[w] ?? 0;
+        while (x !== 0 && out.length < cap) {
+          const low = x & -x;
+          const rank = w * 32 + 31 - Math.clz32(low);
+          x ^= low;
+          if (seen.has(rank)) continue;
+          const file = group.fileIndex[rank] ?? 0;
+          if (!isNear(near, this.index.lat(file), this.index.lon(file))) continue;
+          seen.add(rank);
+          out.push({ rank, level, near: true });
+        }
+      }
+    }
+    return out;
   }
 
   private searchGroup(
@@ -334,12 +400,16 @@ export class SearchEngine {
     parsed: ParsedQuery,
     words: readonly Word[],
     cap: number,
+    near?: NearView,
   ): Found[] {
     const group = this.index.groups[g];
     const pool = this.pools[g];
     if (!group || !pool || group.size === 0) return [];
+    const nearby =
+      near === undefined ? [] : this.nearGroup(g, group, pool, parsed, words, cap, near);
+    const placed = new Set(nearby.map((f) => f.rank));
     let out: Found[] = [];
-    const taken = (rank: number): boolean => out.some((f) => f.rank === rank);
+    const taken = (rank: number): boolean => placed.has(rank) || out.some((f) => f.rank === rank);
 
     for (let level = 0; level < LEVEL_COUNT; level++) {
       // After exact names, the next level is read even when they fill the
@@ -385,7 +455,7 @@ export class SearchEngine {
         ? this.lead(group, out, next, parsed.readings, words).slice(0, cap)
         : out.concat(next);
     }
-    return out;
+    return nearby.length === 0 ? out : [...nearby, ...out].slice(0, cap);
   }
 
   /**
@@ -487,20 +557,31 @@ export class SearchEngine {
     tier: TierValue,
   ): number {
     const state = (group.kindState[rank] ?? 0) & 63;
-    const tokens = tokenize(this.index.name(group.fileIndex[rank] ?? 0));
     const lists = readings
       .filter((reading) => reading.state < 0 || reading.state === state)
       .map((reading) =>
         reading.words.map((wi) => words[wi]).filter((w): w is Word => w !== undefined),
       );
-    if (tokens.length === 0) return WORDS_APART;
-    const rest = tokens[0] === LEADING_ARTICLE ? tokens.slice(1) : null;
-    const starts = lists.some(
-      (list) =>
-        isPhrase(tokens, list, tier, true) || (rest !== null && isPhrase(rest, list, tier, true)),
-    );
-    if (starts) return WORDS_START;
-    return lists.some((list) => isPhrase(tokens, list, tier)) ? WORDS_TOGETHER : WORDS_APART;
+    let place = WORDS_APART;
+    for (const tokens of this.nameTokens(group, rank)) {
+      if (tokens.length === 0) continue;
+      const rest = tokens[0] === LEADING_ARTICLE ? tokens.slice(1) : null;
+      const starts = lists.some(
+        (list) =>
+          isPhrase(tokens, list, tier, true) || (rest !== null && isPhrase(rest, list, tier, true)),
+      );
+      if (starts) return WORDS_START;
+      if (lists.some((list) => isPhrase(tokens, list, tier))) place = WORDS_TOGETHER;
+    }
+    return place;
+  }
+
+  /** The tokens of a record's name, and of its shown name when it has one. */
+  private nameTokens(group: GroupData, rank: number): string[][] {
+    const file = group.fileIndex[rank] ?? 0;
+    const names = [tokenize(this.index.name(file))];
+    if ((group.shownCanon[rank] ?? 0) > 0) names.push(tokenize(this.index.shown(file)));
+    return names;
   }
 
   /**
@@ -516,11 +597,11 @@ export class SearchEngine {
     atStart = false,
   ): boolean {
     const state = (group.kindState[rank] ?? 0) & 63;
-    const tokens = tokenize(this.index.name(group.fileIndex[rank] ?? 0));
+    const names = this.nameTokens(group, rank);
     return readings.some((reading) => {
       if (reading.state >= 0 && reading.state !== state) return false;
       const list = reading.words.map((wi) => words[wi]).filter((w): w is Word => w !== undefined);
-      return isPhrase(tokens, list, tier, atStart);
+      return names.some((tokens) => isPhrase(tokens, list, tier, atStart));
     });
   }
 
@@ -595,7 +676,8 @@ export class SearchEngine {
       andInto(acc, anyName);
     }
     if (level === FULL) {
-      const canon = group.canon;
+      // The whole name: as many words as it has, or as its shown name has.
+      const { canon, shownCanon } = group;
       for (let w = 0; w < acc.length; w++) {
         let x = acc[w] ?? 0;
         let keep = 0;
@@ -603,7 +685,7 @@ export class SearchEngine {
           const low = x & -x;
           x ^= low;
           const rank = w * 32 + 31 - Math.clz32(low);
-          if (canon[rank] === reading.canon) keep |= low;
+          if (canon[rank] === reading.canon || shownCanon[rank] === reading.canon) keep |= low;
         }
         acc[w] = keep;
       }

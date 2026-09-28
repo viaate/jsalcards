@@ -79,6 +79,11 @@ export function readPin(storage: Storage | null): SchoolId | null {
   }
 }
 
+/** The school pinned on this device, read once without a store; null when there is none. */
+export function pinnedSchool(host: PinHost = window): SchoolId | null {
+  return readPin(storageOf(host));
+}
+
 /** Saves or clears the pin. False if storage refused. */
 export function writePin(storage: Storage | null, school: SchoolId | null): boolean {
   if (storage === null) return false;

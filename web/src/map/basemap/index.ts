@@ -1,56 +1,119 @@
-import './maplibre.css';
-
-import type { Map as MapLibreMap, MapMovementEvent, TransformConstrainFunction } from 'maplibre-gl';
+import type {
+  FilterSpecification,
+  GeoJSONSource,
+  LayerSpecification,
+  Map as MapLibreMap,
+  MapMovementEvent,
+  TransformConstrainFunction,
+} from 'maplibre-gl';
 import { DATA_FILES } from 'virtual:snowlight/data-files';
 
 import { mapLocale } from '../../copy';
 import { DATA_PATHS, createDataFiles, dataRootFor } from '../../data/files';
+import { mercatorXFromLng, mercatorYFromLat } from '../glow/mercator';
 import { collapsedAttribution } from './attribution';
+import { prepareCanvas, warmFirstPrograms, warmTilePrograms, withCanvas } from './warm-up';
+import { workerCount } from './workers';
+import { CONTROL_CLEARANCE, keepLabelsClear } from './clearance';
 import { cityNamesOf, namesCutByEdges, stateNamesCutByEdges, textMeasure } from './home-names';
 import { addMapFonts } from './fonts';
 import type { MapLibre } from './maplibre';
-import { OPENFREEMAP_ATTRIBUTION, prefetchOpenFreeMapTiles } from './openfreemap';
+import {
+  OPENFREEMAP_ATTRIBUTION,
+  OPENFREEMAP_MIN_ZOOM,
+  prefetchOpenFreeMapTiles,
+} from './openfreemap';
 import { MAX_ZOOM } from './bounds';
 import type { MapView } from './bounds';
-import { WHOLE_COUNTRY, constrainView, viewLimits } from './limits';
-import type { HomeFit, Insets, Size, ViewLimits } from './limits';
+import { constrainView, viewLimits } from './limits';
+import type { Insets, Place, Size, ViewLimits } from './limits';
+import {
+  FLIGHT_HOLD_MS,
+  FLIGHT_LEAD,
+  FLIGHT_MS_PER_ZOOM,
+  FLIGHT_STOP_ZOOM,
+  coverPoints,
+  flightCeiling,
+  flightEasing,
+  pacedProgress,
+  progressAt,
+  streetTileZoom,
+} from './flight';
+import type { LoadedTile } from './flight';
+import { heldFrame } from './held-frame';
 import { flightTiles } from './prefetch';
-import { afterNextFrame, LIVE_CLASS, markStep, whenGpuIdle } from './reveal';
+import { afterNextFrame, LIVE_CLASS, markStep, whenGpuIdle, yieldToMain } from './reveal';
 import { SCHOOL_SPACE_IMAGE, schoolSpaceImage } from './schools';
-import { namedStates, stateNamesAt, stateNamesOf } from './state-names';
+import { STATE_AREAS_UNTIL, keptNames, nameBox, parseStateAreas, stateSpots } from './state-areas';
+import type { ScreenRect, SetName, StateArea } from './state-areas';
+import {
+  STATE_NAME_LEADING,
+  STATE_NAME_SMALL,
+  STATE_NAME_TRACKING,
+  namedStates,
+  smallStateNamesAt,
+  stateNameSize,
+  stateNameSizeFor,
+  stateNamesAt,
+  stateNamesOf,
+} from './state-names';
 import {
   BASEMAP_IDS,
+  BUNDLED_LINES_UNTIL,
   CITY_NAME_BANDS,
   CITY_NAME_PADDING,
   CITY_NAME_PHONE_PADDING,
+  STATE_NAME_PADDING,
   buildBasemapStyle,
+  cityNameSize,
   cityNameFilter,
   cityNameLayerId,
+  stageStyle,
   stateNameFilter,
+  stateNameSizeExpression,
 } from './style';
 import type { BasemapLook, UsLinesData } from './style';
-import { US_BOUNDS } from './us-geo';
+import { STATE_NAME_SIZE, US_BOUNDS } from './us-geo';
 
 export { BASEMAP_IDS } from './style';
+export { FLIGHT_STOP_ZOOM } from './flight';
 export { US_BOUNDS } from './us-geo';
 export type { MapView } from './bounds';
-export type { ViewLimits } from './limits';
+export type { Place, ViewLimits } from './limits';
 
 export interface BasemapOptions {
   /** Element the map fills. */
   container: HTMLElement;
   /**
-   * Element whose box the continental US is fitted into at the national view,
-   * and which says how the home view fits it (homeFit). The inline still in
-   * index.html is laid out on the same box by the same rules, which is what
-   * makes the handover invisible.
+   * Element whose box the continental US is fitted into at the national view.
+   * The inline still in index.html is laid out on the same box by the same
+   * rules, which is what makes the handover invisible.
    */
   frame: HTMLElement;
+  /**
+   * The viewer's own place, when a phone knows it: the home view is then
+   * their area, at NEARBY_ZOOM (limits.ts), instead of the national view.
+   */
+  near?: Place | null;
   /**
    * A view to open at instead of the home view, such as one from a link.
    * The map opens at the nearest view its limits allow.
    */
   view?: MapView | null;
+  /**
+   * The page's controls over the map (the search field, the legend and the
+   * like): the map's labels keep clear of them (clearance.ts), as of its
+   * own attribution button.
+   */
+  controls?: () => Iterable<Element>;
+  /**
+   * Runs once, in the task that first shows the canvas, just before it does.
+   * `national` says whether the map is at the national view, the one the
+   * inline still draws: when it is not (a link's view, the viewer's area, or
+   * a flight or a hand already on the move), the page takes the still away
+   * here, so the country is never laid over a street.
+   */
+  onReveal?: (reveal: { national: boolean }) => void;
 }
 
 /** What load.ts fetched in parallel before the map is created. */
@@ -59,18 +122,23 @@ export interface BasemapResources {
   maplibre: MapLibre;
   /** URL MapLibre starts its workers from (maplibre-worker.ts). */
   workerUrl: string;
-  /** The bundled continental US lines, already fetched and parsed. */
-  usLines: UsLinesData;
+  /** The bundled continental US lines' city and state names, already fetched and parsed. */
+  usNames: UsLinesData;
+  /** Where the map's GeoJSON sources read the lines and the names from (style.ts). */
+  usLinesUrls: { readonly lines: string; readonly names: string };
   /** The school tiles' archive this build ships, as an absolute URL, or null. */
   schools: string | null;
+  /** The states' shapes a phone names the states in view by (state-areas.ts), fetched when first needed. */
+  stateAreas?: string;
 }
 
 export interface Basemap {
   readonly map: MapLibreMap;
   /**
-   * Resolves once the canvas is on screen showing the bundled US lines: after
-   * the first complete frame, or as soon as someone moves the map. A view
-   * from a link is shown by LINK_REVEAL_MS after the map is created.
+   * Resolves once the canvas is on screen: at the national view after its
+   * first complete frame, and at any other view once it has drawn that view
+   * (the street tiles across the screen), or by LINK_REVEAL_MS after the map
+   * is created; at once when someone moves the map.
    */
   readonly ready: Promise<void>;
   /** True once someone has moved the map. */
@@ -83,10 +151,27 @@ export interface Basemap {
   readonly national: boolean;
   /** Where the map is now. */
   readonly view: MapView;
+  /**
+   * True while a flight into streets is on its way, short of where it is
+   * going: at its stop over its destination, gliding in, or waiting on the
+   * way in for the street tiles (flight.ts). The view is on the way, not
+   * where the map is going.
+   */
+  readonly flightStopped: boolean;
   /** How far the map zooms out and pans on this screen; they follow the window's size. */
   readonly limits: ViewLimits;
-  /** Goes to the home view, as at the start: the country fitted into the frame, or filling it. */
+  /**
+   * Places the labels again, clear of the page's controls as they are now:
+   * for a control that has just appeared over the map.
+   */
+  controlsChanged(): void;
+  /** Goes to the home view, as at the start: the country fitted into the frame, or the viewer's area. */
   showHome(options?: { animate?: boolean }): void;
+  /**
+   * Makes the area around `place` the home view, and glides there; false, and
+   * nothing moves, for a place off the continental US.
+   */
+  showNear(place: Place): boolean;
   /** Moves to the nearest view the limits allow, or to the home view with null. */
   goTo(view: MapView | null): void;
   /** Glides to the nearest view the limits allow; jumps when reduced motion is preferred. */
@@ -99,21 +184,49 @@ export interface Basemap {
   destroy(): void;
 }
 
+/**
+ * How far past the screen's edges, as a share of its size, a view may reach
+ * and still be glided to from the streets on screen: the tiles drawn reach
+ * a little past the edges.
+ */
+export const ON_SCREEN_MARGIN = 0.125;
+
 /** MapLibre's size for a container that has none yet. */
 const FALLBACK_SIZE: Size = { width: 400, height: 300 };
 
 const NO_PADDING: Insets = { top: 0, right: 0, bottom: 0, left: 0 };
 
-/** Workers parse the bundled lines and, from zoom 7, vector tiles; two is plenty. */
-const WORKERS = 2;
+/**
+ * How long each turn of adding the style's layers after it is in (style.ts
+ * stageStyle) may run, in milliseconds, before the page gets the main thread
+ * back.
+ */
+const LAYER_TURN_MS = 4;
+
+/** Style changes made here go in as built: style.test.ts checks every layer against the spec. */
+const NOT_CHECKED = { validate: false } as const;
 
 /**
- * A view opened from a link is not the home view the inline still shows,
- * so the map is shown by this long after it is created, whether or not every
- * tile of the view is in: a slow tile or a busy GPU never leaves the still of
- * the whole country standing over a street.
+ * A view other than the national one (a link's, or the viewer's area) is not
+ * what the inline still shows: the map is shown in its place once it has
+ * drawn the view, and by this long after it is created whatever it has, so a
+ * slow tile never keeps the whole country standing in for a street for long.
  */
-export const LINK_REVEAL_MS = 2500;
+export const LINK_REVEAL_MS = 4000;
+
+/**
+ * How far a state's name as measured here may run past the box MapLibre
+ * sets it in, in CSS pixels: the room kept on top of the clear space the
+ * map keeps between its labels and around the page's controls.
+ */
+const LABEL_SLACK = 2;
+
+/** A state's name in the source of the states-in-view layer, set `scale` times the usual size. */
+interface StateAreaFeature {
+  readonly type: 'Feature';
+  readonly properties: { readonly name: string; readonly label: string; readonly scale: number };
+  readonly geometry: { readonly type: 'Point'; readonly coordinates: [number, number] };
+}
 
 declare global {
   interface Window {
@@ -133,7 +246,7 @@ let configured: MapLibre | undefined;
 function configure(maplibre: MapLibre, workerUrl: string): void {
   if (configured === maplibre) return;
   maplibre.setWorkerUrl(workerUrl);
-  maplibre.setWorkerCount(WORKERS);
+  maplibre.setWorkerCount(workerCount(navigator.hardwareConcurrency));
   configured = maplibre;
 }
 
@@ -164,19 +277,6 @@ export function framePadding(container: Element, frame: Element): Insets {
     bottom: Math.max(0, outer.bottom - inner.bottom),
     left: Math.max(0, inner.left - outer.left),
   };
-}
-
-/**
- * How the home view fits the country into `frame`, from the custom
- * properties index.html sets on it where the still covers the frame (a phone
- * held upright): --home-fit is "cover" there, and --home-focus places the
- * country across, 0 to 1. Anywhere else the home view is the national view.
- */
-export function homeFit(frame: Element): HomeFit {
-  const style = getComputedStyle(frame);
-  if (style.getPropertyValue('--home-fit').trim() !== 'cover') return WHOLE_COUNTRY;
-  const focus = Number.parseFloat(style.getPropertyValue('--home-focus'));
-  return { cover: true, focus: Number.isFinite(focus) ? focus : WHOLE_COUNTRY.focus };
 }
 
 /** The names left out at the home view: the ones the screen's edges would cut. */
@@ -238,18 +338,24 @@ function look(): BasemapLook {
 }
 
 /**
- * Creates the WebGL basemap from what load.ts fetched. Construction is
- * synchronous; `ready` resolves once the bundled lines are on screen.
+ * Creates the WebGL basemap from what load.ts fetched: the style is built in
+ * one task and the map created in the next, as each is sizable work on the
+ * page's main thread. `ready` resolves once the map is on screen.
  */
-export function createBasemap({
+export async function createBasemap({
   container,
   frame,
   view = null,
+  near: nearAtStart = null,
+  controls,
+  onReveal,
   maplibre,
   workerUrl,
-  usLines,
+  usNames,
+  usLinesUrls,
   schools,
-}: BasemapOptions & BasemapResources): Basemap {
+  stateAreas: stateAreasUrl,
+}: BasemapOptions & BasemapResources): Promise<Basemap> {
   configure(maplibre, workerUrl);
   addMapFonts();
   const bounds = new maplibre.LngLatBounds(
@@ -270,7 +376,9 @@ export function createBasemap({
       ? padding
       : NO_PADDING;
   };
-  let limits = viewLimits(size(), fitPadding(), homeFit(frame));
+  /** The viewer's place, whose area is the home view, or null for the national view. */
+  let near: Place | null = nearAtStart;
+  let limits = viewLimits(size(), fitPadding(), near);
   /** Whether the home view is the national view, which MapLibre's own fitBounds places. */
   const homeIsNational = (): boolean => limits.home === limits.fit;
   /** MapLibre runs this on every change of view: wheel, drag, pinch, keys, animations, resizes. */
@@ -289,8 +397,8 @@ export function createBasemap({
   const start = view === null ? null : constrainView(limits, view);
 
   // At the home view, the names the screen's edges would cut are left out (home-names.ts).
-  const cities = cityNamesOf(usLines);
-  const states = namedStates(stateNamesOf(usLines));
+  const cities = cityNamesOf(usNames);
+  const states = namedStates(stateNamesOf(usNames));
   const measure = textMeasure();
   const initialLook = look();
   /** Whether the names are set for a phone, as the page says; it can change as the window does. */
@@ -304,38 +412,80 @@ export function createBasemap({
   let drawnStates: readonly string[] = phoneNames
     ? stateNamesAt(states, (start ?? limits.home).zoom, hiddenNames.states)
     : [];
+  /** Of those, the ones drawn at the small size. */
+  let smallStates: readonly string[] = phoneNames
+    ? smallStateNamesAt(states, (start ?? limits.home).zoom, hiddenNames.states)
+    : [];
 
-  const map = new maplibre.Map({
-    container,
-    style: buildBasemapStyle({
-      usLines,
-      schools,
-      hiddenCityNames: hiddenNames.cities,
-      stateNames: drawnStates,
-      ...initialLook,
-    }),
-    locale: mapLocale,
-    ...(start === null && homeIsNational()
-      ? { bounds, fitBoundsOptions: { padding: fitPadding() } }
-      : {
-          center: [(start ?? limits.home).lon, (start ?? limits.home).lat] as [number, number],
-          zoom: (start ?? limits.home).zoom,
-        }),
-    attributionControl: false,
-    maplibreLogo: false,
-    minZoom: limits.minZoom,
-    maxZoom: MAX_ZOOM,
-    transformConstrain: constrainer(limits),
-    maxPitch: 0,
-    dragRotate: false,
-    pitchWithRotate: false,
-    touchPitch: false,
-    renderWorldCopies: false,
-    validateStyle: false,
-    fadeDuration: 0,
-    cancelPendingTileRequestsWhileZooming: true,
+  /**
+   * The bundled names the layer's filter lets through: the ones that fit at
+   * the map's zoom, until the states in view are named at rest; from then on
+   * only those in `bundledKept`.
+   */
+  let filteredStates: readonly string[] = drawnStates;
+  /**
+   * Null while the states-in-view layer names no state (refreshStateAreas):
+   * the bundled layer names every state that fits. Once that layer names the
+   * states in view it names every state the map names, and the bundled layer
+   * none, but for a moment the ones in here: each drawn by both at the same
+   * spot, the same size, until that layer's names are on screen, so a name
+   * is never missing as one layer hands it to the other (where two names
+   * meet MapLibre draws the first, and that layer is placed first).
+   */
+  let bundledKept: ReadonlySet<string> | null = null;
+
+  // The map starts with its style's sources and the ground, and takes on the layers a few at a
+  // time once that is in: the ones its view draws, then the rest, or all at once if the camera
+  // moves first. Each layer is MapLibre's work on the page's main thread (style.ts stageStyle).
+  // The names are set above, the style built below and staged after it, each in a task of its own.
+  await yieldToMain();
+  const style = buildBasemapStyle({
+    usLines: usNames,
+    usLinesUrls,
+    schools,
+    hiddenCityNames: hiddenNames.cities,
+    stateNames: drawnStates,
+    smallStateNames: smallStates,
+    ...initialLook,
   });
+  await yieldToMain();
+  const staged = stageStyle(style, (start ?? limits.home).zoom);
+  await yieldToMain();
+  // Its canvas and WebGL context first, in tasks of their own, then the map (warm-up.ts).
+  const canvas = await prepareCanvas(size(), window.devicePixelRatio);
+  await yieldToMain();
+  const map = withCanvas(
+    canvas,
+    () =>
+      new maplibre.Map({
+        container,
+        // No style yet: it goes on in a task of its own (below).
+        locale: mapLocale,
+        // At the national view, limits.fit is where MapLibre's fitBounds would put the country
+        // (limits.ts), without the work of an animation of no length.
+        center: [(start ?? limits.home).lon, (start ?? limits.home).lat],
+        zoom: (start ?? limits.home).zoom,
+        attributionControl: false,
+        maplibreLogo: false,
+        minZoom: limits.minZoom,
+        maxZoom: MAX_ZOOM,
+        transformConstrain: constrainer(limits),
+        maxPitch: 0,
+        dragRotate: false,
+        pitchWithRotate: false,
+        touchPitch: false,
+        renderWorldCopies: false,
+        validateStyle: false,
+        fadeDuration: 0,
+        cancelPendingTileRequestsWhileZooming: true,
+      }),
+  );
   markStep('map-created');
+  // Setting the map up goes in the task after its creation: each is sizable work.
+  await yieldToMain();
+  // The map is never tilted, so it never shows a horizon or a sky. MapLibre draws its sky in
+  // every frame all the same, a pass over the whole screen, and builds its shader for the first.
+  map.painter.drawFunctions = { ...map.painter.drawFunctions, sky: () => undefined };
   // A dot's space is made here the first time the style needs it: the style names no sprite.
   map.setMissingStyleImageResolver((id) => {
     if (map.hasImage(id)) return;
@@ -343,15 +493,166 @@ export function createBasemap({
   });
   map.touchZoomRotate.disableRotation();
   map.keyboard.disableRotation();
-  map.addControl(
-    collapsedAttribution(maplibre, { customAttribution: OPENFREEMAP_ATTRIBUTION }),
-    'bottom-right',
-  );
+  // The attribution button goes on once the style is in, in a task of its own: reading the
+  // sources' attributions takes MapLibre a moment, and the button has nothing to show before.
+  let attributed = false;
+  const addAttribution = (): void => {
+    if (attributed) return;
+    attributed = true;
+    map.addControl(
+      collapsedAttribution(maplibre, { customAttribution: OPENFREEMAP_ATTRIBUTION }),
+      'bottom-right',
+    );
+  };
+  map.once('load', () => {
+    window.setTimeout(addAttribution, 0);
+  });
+
+  /** The layers the map has yet to take on (style.ts stageStyle), in the order to add them. */
+  const pendingLayers = [...staged.now, ...staged.later];
+  /** How many of them its view draws from (stageStyle's `now`), all first. */
+  let nowLeft = staged.now.length;
+  /**
+   * Adds the pending layers, each where the full style has it: before the
+   * next layer after it that the map has. With a budget, it stops once that
+   * many milliseconds have gone. Says whether any are left.
+   *
+   * MapLibre's own addLayer checks the layer against the whole style, which
+   * it writes out again for each one, and draws a frame for each; here the
+   * layers go on as built (style.test.ts checks the full style), and the map
+   * takes them in with its next frame: the ones its view draws once they are
+   * all on, and the rest once they are.
+   */
+  function addPendingLayers(budgetMs = Infinity): boolean {
+    const started = performance.now();
+    for (let layer = pendingLayers[0]; layer !== undefined; layer = pendingLayers[0]) {
+      const at = staged.order.indexOf(layer.id);
+      const before = staged.order.slice(at + 1).find((id) => map.getLayer(id) !== undefined);
+      map.style.addLayer(layer, before, NOT_CHECKED);
+      pendingLayers.shift();
+      if (nowLeft > 0) nowLeft -= 1;
+      const viewLayersOn = nowLeft === 0 && pendingLayers.length === staged.later.length;
+      if (viewLayersOn || pendingLayers.length === 0) map._update(true);
+      if (performance.now() - started >= budgetMs) break;
+    }
+    return pendingLayers.length > 0;
+  }
+  /** Changes a layer that has yet to go on the map (null) where it waits; else says where it is. */
+  function changePending(
+    id: string,
+    change: (layer: LayerSpecification) => LayerSpecification,
+  ): boolean {
+    const index = pendingLayers.findIndex((layer) => layer.id === id);
+    const layer = pendingLayers[index];
+    if (layer === undefined) return false;
+    pendingLayers[index] = change(layer);
+    return true;
+  }
+  /** Sets a layer's filter, on the map or on the layer still to go on. */
+  function setFilter(id: string, filter: FilterSpecification): void {
+    if (!changePending(id, (layer) => ({ ...layer, filter }) as LayerSpecification)) {
+      map.setFilter(id, filter, NOT_CHECKED);
+    }
+  }
+  /** Sets one of a layer's layout properties, on the map or on the layer still to go on. */
+  function setLayoutProperty(
+    id: string,
+    name: Parameters<MapLibreMap['setLayoutProperty']>[1],
+    value: Parameters<MapLibreMap['setLayoutProperty']>[2],
+  ): void {
+    const changed = changePending(id, (layer) => ({
+      ...layer,
+      layout: { ...(layer as { layout?: object }).layout, [name]: value },
+    }));
+    if (!changed) map.setLayoutProperty(id, name, value, NOT_CHECKED);
+  }
+  // The programs its frames draw with, each built in a task of its own (warm-up.ts): the first
+  // frame's once the style is in, and each tile's lines' and names' as the tile comes in.
+  const inTaskOfItsOwn = (run: () => void): void => {
+    window.setTimeout(run, 0);
+  };
+  map.once('style.load', () => {
+    warmFirstPrograms(map, inTaskOfItsOwn);
+  });
+  const stopWarming = warmTilePrograms(map, inTaskOfItsOwn);
+  /** Runs once every layer is on the map (the turns below). */
+  let onAllLayers: (() => void) | null = null;
+  /**
+   * Once the style is in, adds the pending layers a turn at a time, each turn
+   * a task of its own, from the one after the glow layer goes on (glow-mount.ts).
+   */
+  map.once('style.load', () => {
+    const turn = (): void => {
+      if (addPendingLayers(LAYER_TURN_MS)) {
+        window.setTimeout(turn, 0);
+        return;
+      }
+      const then = onAllLayers;
+      onAllLayers = null;
+      then?.();
+    };
+    window.setTimeout(turn, 0);
+  });
+  /**
+   * Before the camera leaves the zoom the map opened at, every layer goes on
+   * at once: the ones still to go on are drawn only at other zooms.
+   */
+  const needAllLayers = (): void => {
+    if (pendingLayers.length === 0) return;
+    try {
+      addPendingLayers();
+    } catch {
+      // The style is still loading: its turns start once it is in.
+    }
+  };
+  const onZoomAllLayers = (): void => {
+    needAllLayers();
+    if (pendingLayers.length === 0) map.off('zoom', onZoomAllLayers);
+  };
+  map.on('zoom', onZoomAllLayers);
+  // No label runs under the page's controls, or under the attribution button.
+  const clearance = keepLabelsClear(map, () => [
+    ...(controls?.() ?? []),
+    ...container.querySelectorAll('.maplibregl-ctrl'),
+  ]);
   // End-to-end tests read what the map drew; only a browser under automation gets the handle.
   if (navigator.webdriver) window.snowlightMap = map;
 
+  /** The view a cut leaves, held over the map until it has drawn the new one (held-frame.ts). */
+  const held = heldFrame();
+  /**
+   * A flight keeps every tile it asks for loading until it arrives, instead of
+   * dropping the ones the camera has zoomed past: each is drawn, scaled up,
+   * until the closer ones are in, so the map shows streets all the way in.
+   * Zooming by hand drops them again once the flight is over.
+   *
+   * From the country (the bundled lines) a flight into streets flies to a
+   * stop over its destination at FLIGHT_STOP_ZOOM, where the bundled lines
+   * still show. From streets, it glides to a view on the screen, and cuts to
+   * one off it, whose way there crosses streets the map has none of: to its
+   * destination FLIGHT_LEAD levels out (straight to it, where it takes in
+   * the place the map is at), the view it leaves held on screen until the
+   * map has drawn the new one (held-frame.ts). From the stop, and in a
+   * glide, it goes in no further ahead of the street tiles on screen than
+   * they can be drawn (flight.ts). No frame on the way is an empty black
+   * screen.
+   */
+  let flights = 0;
+  /** Moves someone made by hand, counted: a flight they interrupt goes no further. */
+  let handMoves = 0;
+  /** A flight is on its way, short of where it is going (Basemap flightStopped). */
+  let stopped = false;
+  /** Ends a flight on its way, where it is: the map is going somewhere else. */
+  const cancelFlight = (): void => {
+    flights++;
+    held.release(false);
+    stopped = false;
+    map.cancelPendingTileRequestsWhileZooming = true;
+  };
   let moved = false;
   let national = start === null;
+  /** Whether the map opens on the national view, the one the inline still draws. */
+  const opensNational = start === null && homeIsNational();
   let live = false;
   let markReady: () => void = () => undefined;
   const ready = new Promise<void>((resolve) => {
@@ -360,17 +661,36 @@ export function createBasemap({
   const goLive = (): void => {
     if (live) return;
     live = true;
+    // Where the map is now: at the national view unless it opened elsewhere or has moved off it.
+    onReveal?.({ national: national && homeIsNational() && !map.isMoving() });
     container.classList.add(LIVE_CLASS);
     markStep('map-live');
     void afterNextFrame().then(markReady);
   };
-  map.once('load', () => {
-    markStep('map-load');
+  /** Shows the canvas once the GPU has drawn what it was given, so no half-drawn frame shows. */
+  const goLiveWhenDrawn = (): void => {
     const gl = map.getCanvas().getContext('webgl2');
     if (gl === null) goLive();
     else void whenGpuIdle(gl).then(goLive);
+  };
+  map.once('load', () => {
+    markStep('map-load');
   });
-  const revealTimer = start === null ? undefined : window.setTimeout(goLive, LINK_REVEAL_MS);
+  // The national view shows once every layer is on and has drawn it, the still standing in
+  // for it until then.
+  if (opensNational) {
+    onAllLayers = () => {
+      const check = (): void => {
+        if (live || !viewDrawn()) return;
+        map.off('render', check);
+        goLiveWhenDrawn();
+      };
+      map.on('render', check);
+      map.triggerRepaint();
+    };
+  }
+  // The still shows the whole country: a map opening anywhere else is shown in time, as a link's.
+  const revealTimer = opensNational ? undefined : window.setTimeout(goLive, LINK_REVEAL_MS);
 
   /**
    * Leaves out these national city and state names, and brings back any other
@@ -382,7 +702,7 @@ export function createBasemap({
     if (citiesChanged) {
       whenStyled(() => {
         CITY_NAME_BANDS.forEach((_band, band) => {
-          map.setFilter(cityNameLayerId(band), cityNameFilter(band, hiddenNames.cities));
+          setFilter(cityNameLayerId(band), cityNameFilter(band, hiddenNames.cities));
         });
       });
     }
@@ -391,15 +711,36 @@ export function createBasemap({
 
   /**
    * Keeps the state names' one layer to the states whose names fit at the
-   * map's zoom, less those left out: it changes only when the zoom crosses
-   * the zoom a state's name fits at.
+   * map's zoom, less those left out (and, once the states in view are named,
+   * to `bundledKept`): it changes only when the zoom crosses the zoom a
+   * state's name fits at.
    */
   function refreshStateNames(): void {
-    const names = phoneNames ? stateNamesAt(states, map.getZoom(), hiddenNames.states) : [];
-    if (sameNames(names, drawnStates)) return;
+    const zoom = map.getZoom();
+    const names = phoneNames ? stateNamesAt(states, zoom, hiddenNames.states) : [];
+    const small = phoneNames ? smallStateNamesAt(states, zoom, hiddenNames.states) : [];
     drawnStates = names;
+    if (!sameNames(small, smallStates)) {
+      smallStates = small;
+      whenStyled(() => {
+        setLayoutProperty(
+          BASEMAP_IDS.usStateLabel,
+          'text-size',
+          stateNameSizeExpression(smallStates),
+        );
+      });
+    }
+    filterStateNames();
+  }
+
+  /** Sets the bundled layer's filter to the names it draws now, when they have changed. */
+  function filterStateNames(): void {
+    const kept = bundledKept;
+    const names = kept === null ? drawnStates : drawnStates.filter((name) => kept.has(name));
+    if (sameNames(names, filteredStates)) return;
+    filteredStates = names;
     whenStyled(() => {
-      map.setFilter(BASEMAP_IDS.usStateLabel, stateNameFilter(drawnStates));
+      setFilter(BASEMAP_IDS.usStateLabel, stateNameFilter(filteredStates));
     });
   }
   let stateNamesTimer: number | undefined;
@@ -427,8 +768,221 @@ export function createBasemap({
     }
   }
 
+  /**
+   * The states in view, named on a phone as the map comes to rest closer in
+   * (state-areas.ts): their shapes load the first time a view needs them.
+   */
+  let stateAreas: Promise<readonly StateArea[] | null> | null = null;
+  const loadStateAreas = (): Promise<readonly StateArea[] | null> => {
+    stateAreas ??=
+      stateAreasUrl === undefined
+        ? Promise.resolve(null)
+        : fetch(stateAreasUrl)
+            .then(async (response) => (response.ok ? ((await response.json()) as unknown) : null))
+            .then((data) => (data === null ? null : parseStateAreas(data)))
+            .catch(() => null);
+    return stateAreas;
+  };
+  // Every state's name, the ones too small to name before the handover too: closer in, they fit.
+  const stateByName = new Map(stateNamesOf(usNames).map((state) => [state.name, state]));
+  /** A state's name as set at a size: its lines' widest and their height, in CSS pixels. */
+  const stateNameBox = (label: string, fontSize: number): { width: number; height: number } => {
+    const lines = label.toUpperCase().split('\n');
+    const width = Math.max(
+      ...lines.map(
+        (line) =>
+          measure(line, fontSize) + Math.max(0, line.length - 1) * STATE_NAME_TRACKING * fontSize,
+      ),
+    );
+    return { width, height: lines.length * fontSize * STATE_NAME_LEADING };
+  };
+  /** The place names on the screen now, as boxes, near enough: what a state's name moves off. */
+  const placeNameBoxes = (zoom: number): ScreenRect[] => {
+    const layers = [
+      ...CITY_NAME_BANDS.map((_band, band) => cityNameLayerId(band)),
+      BASEMAP_IDS.ofmCityLabel,
+      BASEMAP_IDS.ofmTownLabel,
+      BASEMAP_IDS.ofmVillageLabel,
+    ].filter((id) => map.getLayer(id) !== undefined);
+    const fontSize = zoom < OPENFREEMAP_MIN_ZOOM ? cityNameSize(zoom) : 14;
+    return map.queryRenderedFeatures({ layers }).flatMap((feature) => {
+      const geometry = feature.geometry as unknown as { type?: unknown; coordinates?: unknown };
+      if (geometry.type !== 'Point' || !Array.isArray(geometry.coordinates)) return [];
+      const [lon, lat] = geometry.coordinates as unknown[];
+      if (typeof lon !== 'number' || typeof lat !== 'number') return [];
+      const point = map.project([lon, lat]);
+      const name = (feature.properties as { name?: unknown }).name;
+      const half = measure(typeof name === 'string' ? name : '', fontSize) / 2 + 4;
+      return [
+        { x0: point.x - half, y0: point.y - fontSize, x1: point.x + half, y1: point.y + fontSize },
+      ];
+    });
+  };
+  /** Which refresh is the latest: an earlier one still loading the shapes gives way. */
+  let stateAreaRound = 0;
+  /**
+   * The states the states-in-view layer names now: the ones it was last
+   * given, and until those are drawn, the ones before them too.
+   */
+  let areaNames: ReadonlySet<string> = new Set();
+  /** Which of its names that layer was last given: a later set replaces an earlier one. */
+  let areaData = 0;
+  /** Resolves once a source's tiles are all in and a frame has drawn them. */
+  const whenSourceDrawn = (id: string): Promise<void> =>
+    new Promise((resolve) => {
+      const check = (): void => {
+        if (!sourceIn(id)) return;
+        map.off('render', check);
+        resolve();
+      };
+      map.on('render', check);
+      map.triggerRepaint();
+    });
+  /**
+   * Gives the states-in-view layer its names. Resolves once they are drawn:
+   * true, or false when a later set came first.
+   */
+  async function setStateAreas(
+    source: GeoJSONSource,
+    features: StateAreaFeature[],
+  ): Promise<boolean> {
+    const data = ++areaData;
+    const names = new Set(features.map((feature) => feature.properties.name));
+    areaNames = new Set([...areaNames, ...names]);
+    await source.setData({ type: 'FeatureCollection', features });
+    await whenSourceDrawn(BASEMAP_IDS.usStateAreaSource);
+    if (data !== areaData) return false;
+    areaNames = names;
+    return true;
+  }
+  /**
+   * The states-in-view layer names nothing, and once that is drawn, the
+   * bundled layer names every state that fits.
+   */
+  function clearStateAreas(source: GeoJSONSource | undefined): void {
+    const unlock = (): void => {
+      bundledKept = null;
+      filterStateNames();
+    };
+    if (areaNames.size === 0 || source === undefined) {
+      unlock();
+      return;
+    }
+    void setStateAreas(source, []).then((current) => {
+      if (current) unlock();
+    });
+  }
+  /**
+   * Names the states in view, where the map has come to rest: on a phone,
+   * from the bundled names' first zoom up to STATE_AREAS_UNTIL, each state
+   * whose bundled name is set whole in the frame there, the rest where they
+   * have room. The states-in-view layer draws them all, the bundled layer
+   * none: no state is named twice, whichever way its names come and go.
+   */
+  function refreshStateAreas(): void {
+    const round = ++stateAreaRound;
+    const zoom = map.getZoom();
+    const source = map.getSource<GeoJSONSource>(BASEMAP_IDS.usStateAreaSource);
+    if (!phoneNames || zoom < STATE_NAME_SIZE.fromZoom || !(zoom < STATE_AREAS_UNTIL)) {
+      clearStateAreas(source);
+      return;
+    }
+    void loadStateAreas().then((areas) => {
+      if (areas === null || source === undefined) return;
+      if (round !== stateAreaRound || map.isMoving()) return;
+      const { width, height } = size();
+      const padding = fitPadding();
+      const frame = {
+        x0: padding.left,
+        y0: padding.top,
+        x1: width - padding.right,
+        y1: height - padding.bottom,
+      };
+      const at = map.getZoom();
+      const center = map.getCenter();
+      // The bundled names as the map sets them now: the ones whole in the frame stay there.
+      const set: SetName[] = drawnStates.flatMap((name) => {
+        const state = stateByName.get(name);
+        if (state === undefined) return [];
+        const point = map.project([state.lon, state.lat]);
+        return [
+          {
+            name,
+            x: point.x,
+            y: point.y,
+            ...stateNameBox(state.label, stateNameSizeFor(state, at)),
+          },
+        ];
+      });
+      // Where the map would not draw a name: under the page's controls or at the screen's edges.
+      const clear = CONTROL_CLEARANCE + STATE_NAME_PADDING + LABEL_SLACK;
+      const blocked = clearance.boxes().map((box) => ({
+        x0: box.x0 - clear,
+        y0: box.y0 - clear,
+        x1: box.x1 + clear,
+        y1: box.y1 + clear,
+      }));
+      const kept = keptNames(set, frame, 2 * STATE_NAME_PADDING + LABEL_SLACK, blocked);
+      const small = new Set(smallStates);
+      const fontSize = stateNameSize(at);
+      const spots = stateSpots(areas, {
+        view: { lat: center.lat, lon: center.lng, zoom: at },
+        screen: { width, height },
+        frame,
+        nameSize: (name) => {
+          const state = stateByName.get(name);
+          return state === undefined ? null : stateNameBox(state.label, fontSize);
+        },
+        avoid: [...placeNameBoxes(at), ...kept.map(nameBox)],
+        skip: new Set(kept.map((name) => name.name)),
+        blocked,
+      });
+      const feature = (
+        name: string,
+        lon: number,
+        lat: number,
+        scale: number,
+      ): StateAreaFeature => ({
+        type: 'Feature',
+        properties: { name, label: stateByName.get(name)?.label ?? name, scale },
+        geometry: { type: 'Point', coordinates: [lon, lat] },
+      });
+      const features = [
+        // A bundled name kept is set just as the bundled layer sets it.
+        ...kept.flatMap(({ name }) => {
+          const state = stateByName.get(name);
+          if (state === undefined) return [];
+          return [feature(name, state.lon, state.lat, small.has(name) ? STATE_NAME_SMALL : 1)];
+        }),
+        ...spots.map((spot) => {
+          const { lng, lat } = map.unproject([spot.x, spot.y]);
+          return feature(spot.name, lng, lat, 1);
+        }),
+      ];
+      // First the bundled layer lets go of every name this one is to set elsewhere, or still
+      // sets somewhere: it keeps only the ones this one is to set at the same spot and size.
+      // Once that is drawn, this layer takes its names; once those are drawn, the bundled
+      // layer lets go of the rest. At no step is a state named in two places.
+      const before = areaNames;
+      bundledKept = new Set(kept.map((name) => name.name).filter((name) => !before.has(name)));
+      filterStateNames();
+      void whenSourceDrawn(BASEMAP_IDS.usCitySource).then(async () => {
+        if (round !== stateAreaRound) return;
+        const current = await setStateAreas(source, features);
+        if (!current || round !== stateAreaRound) return;
+        bundledKept = new Set();
+        filterStateNames();
+      });
+    });
+  }
+
   const onUserMove = (): void => {
+    // Someone is moving the map before it has every layer: it takes them all on now.
+    needAllLayers();
+    held.release(false);
     moved = true;
+    handMoves++;
+    stopped = false;
     national = false;
     hideNames(NONE_HIDDEN);
     // Someone is moving the map: show it now, finished or not.
@@ -438,6 +992,7 @@ export function createBasemap({
     if (event.originalEvent !== undefined) onUserMove();
   };
   function showHome(options: { animate?: boolean } = {}): void {
+    cancelFlight();
     national = true;
     hideNames(cutAtHome());
     const animate = options.animate ?? false;
@@ -446,43 +1001,298 @@ export function createBasemap({
       return;
     }
     const { lat, lon, zoom } = limits.home;
+    needAllLayers();
     if (animate) map.easeTo({ center: [lon, lat], zoom });
     else map.jumpTo({ center: [lon, lat], zoom });
+  }
+  function showNear(place: Place): boolean {
+    const next = viewLimits(size(), fitPadding(), place);
+    if (next.home === next.fit) return false;
+    near = place;
+    limits = next;
+    map.setTransformConstrain(constrainer(limits));
+    flyTo(limits.home);
+    // On its way home: the address names no view, as at the start.
+    national = true;
+    return true;
   }
   function goTo(target: MapView | null): void {
     if (target === null) {
       showHome();
       return;
     }
+    cancelFlight();
     national = false;
     hideNames(NONE_HIDDEN);
     const allowed = constrainView(limits, target);
+    needAllLayers();
     map.jumpTo({ center: [allowed.lon, allowed.lat], zoom: allowed.zoom });
   }
-  /**
-   * Keeps every tile a flight asks for loading until it arrives, instead of
-   * dropping the ones the camera has zoomed past: each is drawn, scaled up,
-   * until the closer ones are in, so the map shows streets all the way in.
-   * Zooming by hand drops them again once the flight is over.
-   */
-  let flights = 0;
-  const keepTilesWhileFlying = (): void => {
-    if (!map.isMoving()) return;
-    const flight = ++flights;
-    map.cancelPendingTileRequestsWhileZooming = false;
-    map.once('moveend', () => {
-      if (flight === flights) map.cancelPendingTileRequestsWhileZooming = true;
-    });
+  /** Whether a source's tiles for the view are all in (or failed), as of the last frame drawn. */
+  const sourceIn = (id: string): boolean => {
+    try {
+      return map.isSourceLoaded(id);
+    } catch {
+      return true;
+    }
   };
+  const streetTilesIn = (): boolean => sourceIn(BASEMAP_IDS.openFreeMapSource);
+  /**
+   * The zoom of the coarsest street tiles the map draws across the screen, or
+   * null while some part of it has none (flight.ts streetTileZoom).
+   */
+  const coarsestStreetTiles = (): number | null => {
+    const tiles = map.style.tileManagers[BASEMAP_IDS.openFreeMapSource];
+    if (tiles === undefined) return null;
+    const loaded: LoadedTile[] = tiles.getIds().flatMap((id) => {
+      const tile = tiles.getTileByID(id);
+      if (tile?.hasData() !== true) return [];
+      const { canonical, overscaledZ } = tile.tileID;
+      return [{ z: canonical.z, x: canonical.x, y: canonical.y, zoom: overscaledZ }];
+    });
+    if (loaded.length === 0) return null;
+    const { width, height } = size();
+    const points = coverPoints(width, height).map((point) => {
+      const { lng, lat } = map.unproject(point);
+      return { x: mercatorXFromLng(lng), y: mercatorYFromLat(lat) };
+    });
+    return streetTileZoom(points, loaded);
+  };
+  /** The closest the camera may be now, with the street tiles on screen. */
+  const ceiling = (): number => flightCeiling(coarsestStreetTiles(), FLIGHT_STOP_ZOOM);
+  /**
+   * Resolves true once `ready` holds, checked as tiles come in and frames are
+   * drawn, or false after FLIGHT_HOLD_MS.
+   */
+  const holdUntil = (ready: () => boolean): Promise<boolean> =>
+    new Promise((resolve) => {
+      if (ready()) {
+        resolve(true);
+        return;
+      }
+      const done = (result: boolean): void => {
+        window.clearTimeout(timer);
+        map.off('sourcedata', check);
+        map.off('render', check);
+        map.off('idle', check);
+        resolve(result);
+      };
+      const check = (): void => {
+        if (ready()) done(true);
+      };
+      const timer = window.setTimeout(() => {
+        done(false);
+      }, FLIGHT_HOLD_MS);
+      map.on('sourcedata', check);
+      map.on('render', check);
+      map.on('idle', check);
+    });
+  /** Whether MapLibre jumps instead of flying: the viewer prefers reduced motion. */
+  const reducedMotion = (): boolean =>
+    window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  /**
+   * Whether the map draws the view it is at: the bundled lines and names
+   * below the handover, street tiles from it.
+   */
+  const viewDrawn = (): boolean =>
+    map.getZoom() < BUNDLED_LINES_UNTIL
+      ? sourceIn(BASEMAP_IDS.usSource) && sourceIn(BASEMAP_IDS.usCitySource)
+      : coarsestStreetTiles() !== null;
+  // A map opening off the national view shows as soon as it has every layer and has drawn its
+  // view, all of it on screen: every other tile (a school's, a name's) can come after.
+  if (!opensNational) {
+    const revealWhenDrawn = (): void => {
+      if (live || pendingLayers.length > 0 || !viewDrawn()) return;
+      map.off('render', revealWhenDrawn);
+      goLiveWhenDrawn();
+    };
+    map.on('render', revealWhenDrawn);
+  }
+  /**
+   * Cuts to `view`: the frame the map shows now stays on screen, still, until
+   * the map has drawn `view` (or FLIGHT_HOLD_MS), and fades out over it. For
+   * a flight out of the streets to a place far off, whose way there crosses
+   * streets the map has none of. `then` runs as it fades.
+   */
+  function cutTo(view: MapView, current: () => boolean, then: () => void): void {
+    map.once('render', () => {
+      if (!current()) {
+        then();
+        return;
+      }
+      // The frame just drawn, before it is on screen: after, the canvas is empty.
+      held.hold(map.getCanvas());
+      map.jumpTo({ center: [view.lon, view.lat], zoom: view.zoom });
+      let drawn = false;
+      map.once('render', () => {
+        drawn = true;
+      });
+      void holdUntil(() => drawn && viewDrawn()).then(() => {
+        held.release(!reducedMotion());
+        then();
+      });
+    });
+    map.triggerRepaint();
+  }
+  /**
+   * Whether the view a flight goes to is on the screen now, give or take
+   * ON_SCREEN_MARGIN: the street tiles the map has cover it, and it glides
+   * there (a school to the next one, a street view closer in).
+   */
+  const onScreen = (target: MapView): boolean => {
+    const { width, height } = size();
+    // The view it goes to, as it would lie on the screen now.
+    const scale = 2 ** (map.getZoom() - target.zoom);
+    const there = map.project([target.lon, target.lat]);
+    const halfWidth = (width / 2) * scale;
+    const halfHeight = (height / 2) * scale;
+    const marginX = width * ON_SCREEN_MARGIN;
+    const marginY = height * ON_SCREEN_MARGIN;
+    return (
+      there.x - halfWidth >= -marginX &&
+      there.x + halfWidth <= width + marginX &&
+      there.y - halfHeight >= -marginY &&
+      there.y + halfHeight <= height + marginY
+    );
+  };
+  /** Whether `view`, on the screen, would show the place in the middle of the screen now. */
+  const around = (view: MapView): boolean => {
+    const { width, height } = size();
+    const here = map.getCenter();
+    const world = 512 * 2 ** view.zoom;
+    const dx = (mercatorXFromLng(here.lng) - mercatorXFromLng(view.lon)) * world;
+    const dy = (mercatorYFromLat(here.lat) - mercatorYFromLat(view.lat)) * world;
+    return Math.abs(dx) <= width / 2 && Math.abs(dy) <= height / 2;
+  };
+  /**
+   * The last leg of a flight into streets, from its stop (or from streets on
+   * screen) straight in to `target`: a glide that goes no closer than the
+   * street tiles on screen allow (flight.ts), waits there for closer ones,
+   * and glides on. `then` runs once it arrives, or once something else moves
+   * the map.
+   */
+  function zoomIn(target: MapView, current: () => boolean, then: () => void): void {
+    /** Paced until a wait outlasts FLIGHT_HOLD_MS: then the flight goes on without the tiles. */
+    let paced = true;
+    // Nothing to wait for once no street tile is loading: the rest failed.
+    const clear = (): boolean => !paced || ceiling() > map.getZoom() + 1e-3 || streetTilesIn();
+    const glide = (): void => {
+      void holdUntil(clear).then((cleared) => {
+        if (!current()) {
+          then();
+          return;
+        }
+        if (!cleared) paced = false;
+        if (reducedMotion()) {
+          // MapLibre jumps: straight there.
+          stopped = false;
+          map.once('moveend', then);
+          map.jumpTo({ center: [target.lon, target.lat], zoom: target.zoom });
+          return;
+        }
+        const from = map.getZoom();
+        let shown = 0;
+        /** Why the glide ended: it arrived, or it reached the tiles' limit; anything else is someone else's move. */
+        let ended: 'arrived' | 'held' | null = null;
+        let over = false;
+        map.once('moveend', () => {
+          over = true;
+          if (ended === 'held' && current()) glide();
+          else then();
+        });
+        map.easeTo({
+          center: [target.lon, target.lat],
+          zoom: target.zoom,
+          duration: Math.max(1, target.zoom - from) * FLIGHT_MS_PER_ZOOM,
+          essential: true,
+          easing: (t) => {
+            const limit = paced && current() ? progressAt(from, target.zoom, ceiling()) : 1;
+            shown = pacedProgress(shown, flightEasing(t), limit);
+            if (shown >= 1) {
+              ended = 'arrived';
+              // Arrived: the address takes this view as the flight ends.
+              stopped = false;
+            } else if ((shown >= limit || t >= 1) && ended === null) {
+              // As far as the tiles allow: end the glide once this frame is drawn, and wait.
+              ended = 'held';
+              queueMicrotask(() => {
+                if (!over) map.stop();
+              });
+            }
+            return shown;
+          },
+        });
+      });
+    };
+    glide();
+  }
   function flyTo(target: MapView): void {
     national = false;
     hideNames(NONE_HIDDEN);
     const allowed = constrainView(limits, target);
-    // The tiles it ends on, and the ones it passes on the way, asked for before it starts.
-    void prefetchOpenFreeMapTiles(flightTiles(allowed, size()));
+    needAllLayers();
+    const zoom = map.getZoom();
+    const intoStreets = allowed.zoom > FLIGHT_STOP_ZOOM + 0.5;
+    /**
+     * How it goes: from the streets, a glide to a view on screen, or a cut
+     * to one that is not, whose way there crosses streets the map has none
+     * of (to FLIGHT_LEAD levels out from it, or to it, short of the streets);
+     * from the bundled lines, a flight, into the streets by way of a stop.
+     */
+    const from: 'glide' | 'cut' | 'fly' =
+      zoom < BUNDLED_LINES_UNTIL ? 'fly' : onScreen(allowed) ? 'glide' : 'cut';
+    // A cut out to a view around where the map is (a school's town) goes straight there; one
+    // elsewhere arrives from FLIGHT_LEAD levels out, and glides in.
+    const stop: MapView | null =
+      from === 'glide' || !intoStreets || (from === 'cut' && around(allowed))
+        ? null
+        : {
+            ...allowed,
+            zoom:
+              from === 'cut'
+                ? Math.max(FLIGHT_STOP_ZOOM, allowed.zoom - FLIGHT_LEAD)
+                : FLIGHT_STOP_ZOOM,
+          };
+    // The tiles it stops at and ends on, and the ones it passes on the way, asked for before it starts.
+    const paceFrom = Math.floor(stop?.zoom ?? zoom);
+    void prefetchOpenFreeMapTiles([
+      ...(stop === null ? [] : flightTiles(stop, size(), paceFrom)),
+      ...flightTiles(allowed, size(), paceFrom),
+    ]);
+    const flight = ++flights;
+    const hand = handMoves;
+    const current = (): boolean => flight === flights && hand === handMoves;
+    // An earlier flight stops here, before this one listens for its own end.
+    map.stop();
+    held.release(false);
+    stopped = false;
+    map.cancelPendingTileRequestsWhileZooming = false;
+    const land = (): void => {
+      if (flight !== flights) return;
+      stopped = false;
+      map.cancelPendingTileRequestsWhileZooming = true;
+    };
+    const goIn = (): void => {
+      if (!current() || stop === null) {
+        land();
+        return;
+      }
+      zoomIn(allowed, current, land);
+    };
+    // Short of where it is going, the address keeps where it was: it takes the view it arrives at.
+    stopped = stop !== null || from === 'glide';
+    if (from === 'glide') {
+      zoomIn(allowed, current, land);
+      return;
+    }
+    if (from === 'cut') {
+      cutTo(stop ?? allowed, current, goIn);
+      return;
+    }
     // Not essential: MapLibre jumps instead when the viewer prefers reduced motion.
-    map.flyTo({ center: [allowed.lon, allowed.lat], zoom: allowed.zoom, essential: false });
-    keepTilesWhileFlying();
+    map.once('moveend', goIn);
+    const view = stop ?? allowed;
+    map.flyTo({ center: [view.lon, view.lat], zoom: view.zoom, essential: false });
   }
   function fitBounds(
     box: readonly [number, number, number, number],
@@ -505,7 +1315,7 @@ export function createBasemap({
    * fitted afresh (a phone turned on its side goes to the national view).
    */
   const onResize = (): void => {
-    limits = viewLimits(size(), fitPadding(), homeFit(frame));
+    limits = viewLimits(size(), fitPadding(), near);
     map.setTransformConstrain(constrainer(limits));
     map.setMinZoom(limits.minZoom);
     const wanted = phoneNamesWanted();
@@ -514,16 +1324,20 @@ export function createBasemap({
       whenStyled(() => {
         const padding = phoneNames ? CITY_NAME_PHONE_PADDING : CITY_NAME_PADDING;
         CITY_NAME_BANDS.forEach((_band, band) => {
-          map.setLayoutProperty(cityNameLayerId(band), 'text-padding', padding);
+          setLayoutProperty(cityNameLayerId(band), 'text-padding', padding);
         });
         const visibility = phoneNames ? 'visible' : 'none';
-        map.setLayoutProperty(BASEMAP_IDS.usStateLabel, 'visibility', visibility);
+        setLayoutProperty(BASEMAP_IDS.usStateLabel, 'visibility', visibility);
+        setLayoutProperty(BASEMAP_IDS.usStateAreaLabel, 'visibility', visibility);
       });
       refreshStateNames();
+      refreshStateAreas();
     }
     if (national) showHome();
   };
   map.on('movestart', onMoveStart);
+  map.on('moveend', refreshStateAreas);
+  map.once('idle', refreshStateAreas);
   map.on('zoom', onZoom);
   map.on('zoomend', onZoomEnd);
   // A wheel or trackpad zoom often starts without an event on movestart; its wheel event says who moved it.
@@ -542,6 +1356,10 @@ export function createBasemap({
     console.error(event.error);
   });
 
+  // The style goes on in a task of its own: MapLibre sets part of it up as it takes it.
+  await yieldToMain();
+  map.setStyle(staged.style);
+
   return {
     map,
     ready,
@@ -551,6 +1369,9 @@ export function createBasemap({
     get national() {
       return national;
     },
+    get flightStopped() {
+      return stopped;
+    },
     get view() {
       const center = map.getCenter();
       return { lat: center.lat, lon: center.lng, zoom: map.getZoom() };
@@ -558,13 +1379,21 @@ export function createBasemap({
     get limits() {
       return limits;
     },
+    controlsChanged() {
+      map.triggerRepaint();
+    },
     showHome,
+    showNear,
     goTo,
     flyTo,
     fitBounds,
     destroy() {
+      // A flight on its way goes no further.
+      cancelFlight();
       window.clearTimeout(revealTimer);
       window.clearTimeout(stateNamesTimer);
+      clearance.destroy();
+      stopWarming();
       if (window.snowlightMap === map) delete window.snowlightMap;
       map.remove();
       container.classList.remove(LIVE_CLASS);

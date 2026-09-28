@@ -4,8 +4,12 @@ import type { IndexInfo, SearchClient, SearchHit, SearchResults } from '../../se
 import { SearchUnavailableError } from '../../search';
 import {
   LIST_ROWS,
+  NEAR_FROM_ZOOM,
+  NEAR_MAX_KM,
+  NEAR_MIN_KM,
   createSearchController,
   nameParts,
+  nearView,
   searchOptions,
   searchSections,
 } from '../search';
@@ -42,20 +46,18 @@ function resultsFor(query: string): SearchResults {
 function fakeClient(ready: Promise<IndexInfo> = Promise.resolve(INFO)) {
   const pending = new Map<string, (results: SearchResults) => void>();
   const destroy = vi.fn();
-  const client: SearchClient = {
-    ready,
-    search: vi.fn(
-      (query: string) =>
-        new Promise<SearchResults>((resolve, reject) => {
-          ready.then(() => {
-            pending.set(query, resolve);
-          }, reject);
-        }),
-    ),
-    destroy,
-  };
+  const search = vi.fn(
+    (query: string) =>
+      new Promise<SearchResults>((resolve, reject) => {
+        ready.then(() => {
+          pending.set(query, resolve);
+        }, reject);
+      }),
+  );
+  const client: SearchClient = { ready, search, destroy };
   return {
     client,
+    search,
     destroy,
     answer: (query: string) => pending.get(query)?.(resultsFor(query)),
   };
@@ -164,6 +166,46 @@ describe('with an index', () => {
     await settle();
     search.destroy();
     expect(destroy).toHaveBeenCalled();
+  });
+});
+
+describe('near where the person is looking', () => {
+  it('asks the index for what is near the view, closer in than the country', async () => {
+    const { client, search: asked } = fakeClient();
+    const search = createSearchController({
+      indexUrl: INDEX,
+      onResults: vi.fn(),
+      createClient: () => Promise.resolve(client),
+    });
+    const near = { lat: 39.1, lon: -94.58, km: 60 };
+    search.query('pembroke', near);
+    search.query('pembroke hill');
+    await settle();
+    expect(asked).toHaveBeenCalledWith('pembroke', expect.objectContaining({ near }));
+    expect(asked).toHaveBeenLastCalledWith(
+      'pembroke hill',
+      expect.not.objectContaining({ near: expect.anything() as unknown }),
+    );
+  });
+
+  it('is the screen around the view, from a region to a town', () => {
+    // Kansas City's metro on a 1440 x 900 screen.
+    const metro = nearView({ lat: 39.1, lon: -94.58, zoom: 8 }, 1440, 900);
+    expect(metro?.lat).toBe(39.1);
+    expect(metro?.lon).toBe(-94.58);
+    expect(metro?.km).toBeGreaterThan(NEAR_MIN_KM);
+    expect(metro?.km).toBeLessThan(NEAR_MAX_KM);
+    // Half as far one zoom closer.
+    const closer = nearView({ lat: 39.1, lon: -94.58, zoom: 9 }, 1440, 900);
+    expect((closer?.km ?? 0) * 2).toBeCloseTo(metro?.km ?? NaN, 6);
+    // A street's view still takes in the town; a state's is held to a region.
+    expect(nearView({ lat: 39.1, lon: -94.58, zoom: 15 }, 1440, 900)?.km).toBe(NEAR_MIN_KM);
+    expect(nearView({ lat: 39.1, lon: -94.58, zoom: 6 }, 1440, 900)?.km).toBe(NEAR_MAX_KM);
+    // The country, or most of it: nothing is near.
+    expect(nearView({ lat: 39.1, lon: -94.58, zoom: NEAR_FROM_ZOOM - 0.01 }, 1440, 900)).toBe(
+      undefined,
+    );
+    expect(nearView({ lat: 39.1, lon: -94.58, zoom: NaN }, 1440, 900)).toBe(undefined);
   });
 });
 
@@ -323,6 +365,47 @@ describe('laying out results', () => {
       { text: 'Ross', match: true },
       { text: ' Elementary ', match: false },
       { text: 'School', match: true },
+    ]);
+  });
+
+  it('names a school by its charter first, as the map does, and bolds what matched there', () => {
+    // "MIDDLE SCHOOL" of Citizens of the World Charter, Kansas City (the directory, 2024-25).
+    const middle: SearchHit = {
+      ...hit('school', '290061203365', 'MIDDLE SCHOOL'),
+      sub: 'Kansas City, MO',
+      highlight: [[0, 6]],
+      shown: 'Citizens of the World Charter - Middle School',
+      shownHighlight: [
+        [0, 8],
+        [32, 38],
+      ],
+    };
+    const results: SearchResults = {
+      query: 'citizens middle',
+      schools: [middle],
+      cities: [],
+      zips: [],
+      order: ['schools'],
+    };
+    const fixes = {
+      schools: { '290061203365': { district: 'Citizens of the World Charter' } },
+      districts: {},
+    };
+    const [option] = searchOptions(results, 'list', fixes);
+    expect(option?.name).toBe('Citizens of the World Charter - Middle School');
+    expect(option?.parts).toEqual([
+      { text: 'Citizens', match: true },
+      { text: ' of the World Charter - ', match: false },
+      { text: 'Middle', match: true },
+      { text: ' School', match: false },
+    ]);
+    // An index staged before the page's names changed: the page's name, marked where the
+    // written name matched.
+    const [stale] = searchOptions(results, 'list', { schools: {}, districts: {} });
+    expect(stale?.name).toBe('Middle School');
+    expect(stale?.parts).toEqual([
+      { text: 'Middle', match: true },
+      { text: ' School', match: false },
     ]);
   });
 

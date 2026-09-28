@@ -6,6 +6,8 @@
  */
 import { describe, expect, it } from 'vitest';
 
+import rawSource from 'maplibre-gl/dist/maplibre-gl-worker.mjs?raw';
+
 import { workerSource } from '../maplibre-worker';
 
 const URLS = {
@@ -22,6 +24,15 @@ describe('the MapLibre worker source', () => {
     expect(source).not.toContain('./maplibre-gl-shared.mjs');
     expect(source.split(JSON.stringify(URLS.shared))).toHaveLength(2);
     expect(source).not.toMatch(/sourceMappingURL/);
+  });
+
+  it('keeps GeoJSON read from a URL in the worker: nothing goes back for the page to copy in', () => {
+    // MapLibre's own source hands it back once, in its GeoJSON worker source's loadData.
+    expect(rawSource.match(/\b(\w+)\.request&&\((\w+)\.data=\1\.data\)/g)).toHaveLength(1);
+    expect(source).not.toMatch(/\b(\w+)\.request&&\((\w+)\.data=\1\.data\)/);
+    expect(source).toMatch(
+      /clearLoaded\(\);let (\w+)=\{\};return !1,this\._finishRequestTiming\(\w+,\w+,\1\),\1\}/,
+    );
   });
 
   it('registers the street tile protocol after MapLibre sets up the worker', () => {

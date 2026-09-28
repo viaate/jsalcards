@@ -31,6 +31,11 @@ const COMMITTED = (
 const LAND = DATA.features.filter((feature) => feature.properties.kind === 'land');
 const RINGS = LAND.flatMap((feature) => (feature.geometry.coordinates as number[][][][]).flat());
 const CITIES = DATA.features.filter((feature) => feature.properties.kind === 'city');
+const SIMPLE_LAND = DATA.features.filter((feature) => feature.properties.kind === 'land-simple');
+const SIMPLE_RINGS = SIMPLE_LAND.flatMap((feature) =>
+  (feature.geometry.coordinates as number[][][][]).flat(),
+);
+const vertices = (rings: number[][][]): number => rings.reduce((n, ring) => n + ring.length, 0);
 const STATES = DATA.features.filter((feature) => feature.properties.kind === 'state-name');
 
 /** Inside an odd number of the land's rings. */
@@ -50,14 +55,63 @@ function onLand([lon, lat]: readonly [number, number]): boolean {
 describe('the bundled continental US file', () => {
   it('holds the land, the state lines, the city names and the state names, nothing else', () => {
     const kinds = new Set(DATA.features.map((feature) => feature.properties.kind));
-    expect([...kinds].sort()).toEqual(['city', 'land', 'state', 'state-name']);
+    expect([...kinds].sort()).toEqual([
+      'city',
+      'land',
+      'land-simple',
+      'state',
+      'state-name',
+      'state-simple',
+    ]);
     expect(LAND).toHaveLength(1);
     expect(LAND[0]?.geometry.type).toBe('MultiPolygon');
+    expect(SIMPLE_LAND).toHaveLength(1);
+    expect(SIMPLE_LAND[0]?.geometry.type).toBe('MultiPolygon');
     // Every ring is closed, so its edge draws as the outline all the way round.
     for (const ring of RINGS) {
       expect(ring.length).toBeGreaterThanOrEqual(4);
       expect(ring[0]).toEqual(ring.at(-1));
     }
+  });
+
+  it("draws the national view's coast as a hairline: simplified, without the smallest islands", () => {
+    // Every ring closed, far fewer points than the detailed coast, and fewer rings.
+    for (const ring of SIMPLE_RINGS) {
+      expect(ring.length).toBeGreaterThanOrEqual(4);
+      expect(ring[0]).toEqual(ring.at(-1));
+    }
+    expect(vertices(SIMPLE_RINGS)).toBeLessThan(vertices(RINGS) / 2);
+    expect(SIMPLE_RINGS.length).toBeLessThan(RINGS.length / 2);
+    // Every simplified point is a point of the detailed coast or of a state line: nothing moved.
+    const detailed = new Set(
+      DATA.features
+        .filter(
+          (feature) => feature.properties.kind === 'land' || feature.properties.kind === 'state',
+        )
+        .flatMap(
+          (feature) =>
+            JSON.stringify(feature.geometry.coordinates).match(/-?[\d.]+,-?[\d.]+/g) ?? [],
+        ),
+    );
+    for (const ring of SIMPLE_RINGS) {
+      for (const point of ring) expect(detailed.has(point.join(','))).toBe(true);
+    }
+  });
+
+  it('sets a few city names off the outline, a short way, and the rest on their points', () => {
+    const offsets = CITIES.map(
+      (feature): readonly [number, number] =>
+        (feature.properties as { offset?: [number, number] }).offset ?? [0, 0],
+    );
+    const moved = offsets.filter(([x, y]) => x !== 0 || y !== 0);
+    expect(moved.length).toBeGreaterThan(0);
+    expect(moved.length).toBeLessThan(CITIES.length / 2);
+    const offsetOf = (name: string): readonly [number, number] | undefined =>
+      offsets[CITIES.findIndex((feature) => feature.properties.name === name)];
+    // Seattle's name goes inland, east of the Sound; Denver's stays on its point.
+    expect(offsetOf('Seattle')?.[0]).toBeGreaterThan(0);
+    expect(offsetOf('Denver')).toEqual([0, 0]);
+    for (const [x, y] of moved) expect(Math.hypot(x, y)).toBeLessThan(6);
   });
 
   it('keeps the land inside the bounds the map is fitted to', () => {

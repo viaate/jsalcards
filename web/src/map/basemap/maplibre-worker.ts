@@ -6,10 +6,12 @@
  * MapLibre's worker module is 19 KB of code that imports the 516 KB shared
  * module by the relative name './maplibre-gl-shared.mjs'. Built as a separate
  * worker bundle (Vite's `?worker`), it would carry a second copy of the shared
- * module. Instead the worker runs the untouched source from a blob URL, with
+ * module. Instead the worker runs its published source from a blob URL, with
  * that one specifier replaced by the URL of the chunk that holds the shared
  * module (maplibre-shared.ts). The page imports that chunk too, so it is
- * downloaded once and every worker takes it from the HTTP cache.
+ * downloaded once and every worker takes it from the HTTP cache. One other
+ * change: GeoJSON the worker reads from a URL stays in the worker, instead of
+ * going back to the page (DATA_RETURNED).
  *
  * Lines are added at the end: imports of the street tiles and school tiles
  * chunks, and calls that register their protocols on the worker's scope once
@@ -26,6 +28,16 @@ import source from 'maplibre-gl/dist/maplibre-gl-worker.mjs?raw';
 const SHARED_IMPORT = /(\bfrom\s*)(["'])\.\/maplibre-gl-shared\.mjs\2/g;
 /** Its source map comment points next to the published file, which a blob URL has no notion of. */
 const SOURCE_MAP_COMMENT = /\n\/\/# sourceMappingURL=\S*\s*$/;
+/**
+ * Where its GeoJSON worker source, having read a source's data from a URL,
+ * puts that data in its answer to the page (maplibre-gl 6.11
+ * GeoJSONWorkerSource.loadData: `params.request && (result.data =
+ * params.data)`), for the source's getData(). The page would then copy all
+ * of it in, a property at a time, on its main thread. The only GeoJSON the
+ * map reads from a URL is the bundled lines (load.ts), and the page never
+ * asks a source for its data: the worker keeps it.
+ */
+const DATA_RETURNED = /\b(\w+)\.request&&\((\w+)\.data=\1\.data\)/g;
 
 const urls = new Map<string, string>();
 
@@ -56,7 +68,17 @@ export function workerSource({ shared, streetTiles, schoolTiles, mask }: WorkerU
       `MapLibre worker: expected one import of the shared module, found ${String(imports)}`,
     );
   }
-  return `${code.replace(SOURCE_MAP_COMMENT, '\n')}
+  let returns = 0;
+  const kept = code.replace(DATA_RETURNED, () => {
+    returns += 1;
+    return '!1';
+  });
+  if (returns !== 1) {
+    throw new Error(
+      `MapLibre worker: expected one place GeoJSON data goes back to the page, found ${String(returns)}`,
+    );
+  }
+  return `${kept.replace(SOURCE_MAP_COMMENT, '\n')}
 import { registerStreetTiles as snowlightRegisterStreetTiles } from ${JSON.stringify(streetTiles)};
 import { registerSchoolTiles as snowlightRegisterSchoolTiles } from ${JSON.stringify(schoolTiles)};
 snowlightRegisterStreetTiles(self, ${JSON.stringify(mask)});

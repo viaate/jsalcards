@@ -16,6 +16,9 @@ export const BASEMAP_IDS = {
   usStates: 'us-states',
   /** The land's edge: coasts, lake shores and the borders with Canada and Mexico. */
   usOutline: 'us-outline',
+  /** The national view's own state lines and outline, simplified (style.ts SIMPLE_LINES_UNTIL). */
+  usStatesSimple: 'us-states-simple',
+  usOutlineSimple: 'us-outline-simple',
   ofmPark: 'ofm-park',
   /** School grounds from OpenStreetMap: the campus around each school, a step off the ground. */
   ofmSchoolGrounds: 'ofm-school-grounds',
@@ -51,8 +54,15 @@ export const BASEMAP_IDS = {
   ofmCityLabel: 'ofm-label-city',
   /** City names of the national view, under the glow, up to the street tiles' names at zoom 7. */
   usCityLabel: 'us-label-city',
-  /** State names on a phone, under the city names, the ones that fit at the map's zoom (style.ts). */
+  /** State names on a phone, over the city names, the ones that fit at the map's zoom (style.ts). */
   usStateLabel: 'us-label-state',
+  /**
+   * The states in view on a phone closer in, named where their part in view
+   * has room (state-areas.ts): a source the map fills as it comes to rest, and
+   * its layer, over every place name.
+   */
+  usStateAreaSource: 'us-states-in-view',
+  usStateAreaLabel: 'us-states-in-view-label',
   /**
    * The first street-tile label layer. Marks drawn under every label from
    * zoom 7, taking no part in label collisions, go before it: they sit above
@@ -60,6 +70,15 @@ export const BASEMAP_IDS = {
    * labels at zoom 7.
    */
   labels: 'ofm-label-neighbourhood',
+  /**
+   * Where the glow layer (glow-mount.ts) goes: right over this empty layer,
+   * which is right before `labels`. It is then over the ground, the lines,
+   * the national names and the school dots, and under every label from zoom
+   * 7, whatever order the other layers go on the map in (index.ts).
+   */
+  glowSlot: 'glow-slot',
+  /** The glow layer. */
+  glow: 'snowlight-glow',
   /**
    * Where the school layers go: add them before this empty layer, the last in
    * the style. They then sit above the US mask and every street and place

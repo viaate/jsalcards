@@ -20,6 +20,7 @@ import sharp from 'sharp';
 
 import { mercatorXFromLng, mercatorYFromLat } from '../src/map/glow/mercator';
 import { VIEW_LIMITS } from '../src/state/url';
+import { BASEMAP_IDS } from '../src/map/basemap/ids';
 import { US_BOUNDS } from '../src/map/basemap/us-geo';
 
 interface Viewport {
@@ -155,17 +156,62 @@ async function showLegend(page: Page, shown: boolean): Promise<void> {
 }
 
 /**
+ * Hides the city and state names, which may be set out over the sea beside
+ * their cities, or shows them again as they were, and waits for the frame.
+ */
+async function showNames(page: Page, shown: boolean): Promise<void> {
+  await page.evaluate(
+    ({ visible, prefixes }) =>
+      new Promise<void>((resolve) => {
+        const map = window.snowlightMap;
+        if (map === undefined) {
+          resolve();
+          return;
+        }
+        const saved = window as unknown as { nameVisibility?: Record<string, unknown> };
+        for (const layer of map.getStyle().layers) {
+          if (!prefixes.some((prefix) => layer.id.startsWith(prefix))) continue;
+          if (visible) {
+            const was = saved.nameVisibility?.[layer.id];
+            map.setLayoutProperty(layer.id, 'visibility', was === 'none' ? 'none' : 'visible');
+          } else {
+            saved.nameVisibility ??= {};
+            saved.nameVisibility[layer.id] = map.getLayoutProperty(layer.id, 'visibility');
+            map.setLayoutProperty(layer.id, 'visibility', 'none');
+          }
+        }
+        map.once('render', () => {
+          requestAnimationFrame(() => {
+            requestAnimationFrame(() => {
+              resolve();
+            });
+          });
+        });
+        map.triggerRepaint();
+      }),
+    { visible: shown, prefixes: [BASEMAP_IDS.usCityLabel, BASEMAP_IDS.usStateLabel] as string[] },
+  );
+}
+
+/**
  * The extent of the bright pixels below the search bar, leaving out the
  * attribution button and the legend: the outline and state lines, and the
- * city names on them.
+ * city names on them, or with `names` false the lines alone, as the view is
+ * fitted to them (a name can be set out over the sea beside its city).
  */
-async function lines(page: Page, viewport: Viewport): Promise<Lines> {
+async function lines(
+  page: Page,
+  viewport: Viewport,
+  { names = true }: { names?: boolean } = {},
+): Promise<Lines> {
   const size = page.viewportSize() ?? viewport;
   const scale = viewport.deviceScaleFactor;
   const bar = await box(page, '.bar');
   const attribution = await box(page, '.maplibregl-ctrl-attrib');
   await showLegend(page, false);
+  if (!names) await showNames(page, false);
   const shot = await page.screenshot();
+  if (!names) await showNames(page, true);
   await showLegend(page, true);
   const { data, info } = await sharp(shot)
     .removeAlpha()
@@ -220,7 +266,7 @@ function expectWholeCountry(found: Lines, width: number, height: number, where: 
 /** Zoomed all the way out, the country is about as large as at the national view. */
 async function expectNationalSize(page: Page, viewport: Viewport, where: string): Promise<Lines> {
   const size = page.viewportSize() ?? viewport;
-  const found = await lines(page, viewport);
+  const found = await lines(page, viewport, { names: false });
   const fitted = await fittedWidth(page);
   expectWholeCountry(found, size.width, size.height, where);
   expect(found.width, where).toBeGreaterThanOrEqual(fitted * 2 ** -MAX_SLACK - 2);
@@ -337,7 +383,7 @@ test.describe('zooming out', () => {
       await wheelOut(page, 10);
       await settle(page, 400);
       await expectAtRest(page, viewport, 'wheel at the widest zoom');
-      const pushed = await lines(page, viewport);
+      const pushed = await lines(page, viewport, { names: false });
       expect(Math.abs(pushed.width - wheeled.width)).toBeLessThanOrEqual(1);
 
       // Back in with the keyboard, then out hard with it.
@@ -519,7 +565,7 @@ test.describe('the window', () => {
     await open(page);
     await page.setViewportSize({ width: 1100, height: 800 });
     await settle(page);
-    const refitted = await lines(page, DESKTOP);
+    const refitted = await lines(page, DESKTOP, { names: false });
     expect(Math.abs(refitted.width - (await fittedWidth(page)))).toBeLessThanOrEqual(3);
     expect(new URL(page.url()).search).toBe('');
 
@@ -680,7 +726,7 @@ test.describe('the other controls', () => {
     for (const key of ['ArrowLeft', 'ArrowUp', 'ArrowRight', 'ArrowDown']) {
       await keys(page, key, 15);
       await settle(page);
-      const found = await lines(page, DESKTOP);
+      const found = await lines(page, DESKTOP, { names: false });
       expectWholeCountry(found, width, height, key);
       expect(Math.abs(found.width - widest.width), key).toBeLessThanOrEqual(2);
     }

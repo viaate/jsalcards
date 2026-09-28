@@ -45,6 +45,14 @@
  *             one school of the same name (most charter schools) is found as
  *             that school
  *
+ * Each also carries its name as the page shows it (src/text/names.ts, with
+ * the directory's fixes, src/text/school-names.ts) where that reads with
+ * words the written name is not found by, or with more or fewer of them:
+ * "MIDDLE SCHOOL" of Citizens of the World Charter is also found as "Citizens
+ * of the World Charter - Middle School", and "ALLEN VILLAGE ELEMENTARY ACADE"
+ * as "Allen Village Elementary Academy". Staging again after the name rules
+ * change keeps the two in step.
+ *
  *   node scripts/stage-data.mjs [--site DIR] [--internal DIR] [--pipeline DIR] [--to DIR]
  */
 import { spawnSync } from 'node:child_process';
@@ -80,9 +88,11 @@ registerHooks({
   },
 });
 
-const { casedName } = await import('../src/text/names.ts');
+const { casedName, displayName } = await import('../src/text/names.ts');
+const { nameFixes, stateOfId } = await import('../src/text/school-names.ts');
 const { hashedPath } = await import('../src/data/paths.ts');
 const { STATE_INDEX } = await import('../src/search/states.ts');
+const { canonicalLength, indexTokens, tokenize } = await import('../src/search/normalize.ts');
 
 const WEB = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 
@@ -289,6 +299,22 @@ const isText = (value) => typeof value === 'string' && value.trim() !== '';
  */
 const townOf = (city, state) => `${casedName(String(city).trim())}, ${state}`;
 
+/**
+ * The name a school or district is shown by, when search needs it: when it
+ * has a word the written name is not found by, or a different number of
+ * words (search.ts SearchRecord.shown). Otherwise undefined.
+ * @param {string} id @param {string} name @param {import('../src/text/names.ts').NameFix | undefined} fix
+ */
+function shownFor(id, name, fix) {
+  const shown = displayName(name, { state: stateOfId(id) }, fix ?? {});
+  const written = tokenize(name);
+  const found = new Set(indexTokens(written));
+  const words = tokenize(shown);
+  const differs =
+    words.some((word) => !found.has(word)) || canonicalLength(words) !== canonicalLength(written);
+  return differs ? shown : undefined;
+}
+
 /** Whitespace and case aside, whether two names are the same. */
 const sameName = (/** @type {string} */ a, /** @type {string} */ b) =>
   a.trim().replace(/\s+/g, ' ').toUpperCase() === b.trim().replace(/\s+/g, ' ').toUpperCase();
@@ -307,6 +333,13 @@ function directoryRecords(meta, points, tables) {
         `districts) are not those of ${META}; build the directory again`,
     );
   }
+  // The names the page shows another way: cut off by NCES, or only generic words.
+  const fixes = nameFixes({
+    ids: meta.ids,
+    names: meta.names,
+    districtOf: points.district,
+    districts: meta.districts,
+  });
   const enrollment = new Float64Array(districts.length);
   const members = new Int32Array(districts.length);
   /** The school each district has, while it has only one. */
@@ -330,10 +363,13 @@ function directoryRecords(meta, points, tables) {
       members[district] = (members[district] ?? 0) + 1;
       onlySchool[district] = i;
     }
+    const name = meta.names[i] ?? '';
+    const shown = shownFor(id, name, fixes.schools[id]);
     return {
       kind: 'school',
       id,
-      name: meta.names[i] ?? '',
+      name,
+      ...(shown === undefined ? {} : { shown }),
       sub: townOf(row.city, state),
       state,
       lat: points.lat[i] ?? 0,
@@ -364,10 +400,12 @@ function directoryRecords(meta, points, tables) {
       merged++;
       continue;
     }
+    const shown = shownFor(id, name, fixes.districts[id]);
     districtRecords.push({
       kind: 'district',
       id,
       name,
+      ...(shown === undefined ? {} : { shown }),
       sub: townOf(row.city, state),
       state,
       lat,

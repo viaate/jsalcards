@@ -17,11 +17,13 @@
  * or leaves a query unanswered for `queryTimeoutMs`, only the query in
  * flight rejects and later searches go on.
  */
-import type { IndexInfo, SearchResults, WorkerRequest, WorkerResponse } from './types';
+import type { IndexInfo, NearView, SearchResults, WorkerRequest, WorkerResponse } from './types';
 
 export interface SearchOptions {
   /** Results per group, 1 to 50. Default 5. */
   readonly limit?: number;
+  /** Where the person is looking: good matches near it come first (NearView). */
+  readonly near?: NearView;
   /** Aborting rejects this search with an AbortError. */
   readonly signal?: AbortSignal;
 }
@@ -114,6 +116,7 @@ interface Pending {
   readonly id: number;
   readonly q: string;
   readonly limit: number;
+  readonly near: NearView | undefined;
   readonly resolve: (results: SearchResults) => void;
   readonly reject: (error: unknown) => void;
   /** Rejected already; its answer is ignored. */
@@ -185,7 +188,11 @@ export function createSearchClient(url: string | URL, options: ClientOptions = {
     if (!isReady || failure !== null || inFlight || !queued) return;
     const p = queued;
     queued = null;
-    if (!post({ type: 'query', id: p.id, q: p.q, limit: p.limit })) {
+    const message: WorkerRequest =
+      p.near === undefined
+        ? { type: 'query', id: p.id, q: p.q, limit: p.limit }
+        : { type: 'query', id: p.id, q: p.q, limit: p.limit, near: p.near };
+    if (!post(message)) {
       settle(p, new Error('Snowlight search: the search worker could not take the query'));
       return;
     }
@@ -328,6 +335,7 @@ export function createSearchClient(url: string | URL, options: ClientOptions = {
         id: nextId++,
         q: query,
         limit,
+        near: opts.near,
         resolve,
         reject,
         settled: false,

@@ -30,26 +30,36 @@ import {
   SCHOOL_FADE,
   SCHOOL_NAMES_FROM,
   SCHOOL_SPACE_IMAGE,
+  SCHOOL_NAME_PADDING,
+  SCHOOL_NAME_UNDER,
   SCHOOL_SPACE_SIZE,
   SCHOOL_TILES_MAX_ZOOM,
   SCHOOL_TILES_MIN_ZOOM,
   schoolSpaceImage,
 } from '../schools';
 import {
+  BUNDLED_LINES_UNTIL,
   CITY_NAME_BANDS,
   CITY_NAME_HALO,
+  CITY_NAME_LETTER_SPACING,
   CITY_NAME_PADDING,
   CITY_NAMES_FROM,
+  CLOSE_FROM,
+  CLOSE_ZOOM,
   LABEL_FADE,
   ROAD_TIERS,
+  SIMPLE_LINES_UNTIL,
   buildBasemapStyle,
   cityNameFilter,
   cityNameLayerId,
+  cityNameOffset,
   cityNameSize,
   mixColors,
   splitUsLines,
+  stageStyle,
 } from '../style';
 import type { BasemapColors, UsLinesData } from '../style';
+import { CITY_NAMES_SET_OFF } from '../us-geo';
 
 const COLORS: BasemapColors = {
   background: '#000',
@@ -90,7 +100,7 @@ function indexOf(id: string): number {
   return index;
 }
 
-type Properties = Record<string, string | number>;
+type Properties = Record<string, string | number | readonly number[]>;
 
 /** OpenMapTiles geometry types: 1 point, 2 line, 3 polygon. */
 const GEOMETRY = { point: 1, line: 2, polygon: 3 } as const;
@@ -162,6 +172,8 @@ describe('the basemap style', () => {
     const sources = Object.keys(WITH_SCHOOLS.sources);
     const layers = WITH_SCHOOLS.layers;
     for (const [key, id] of Object.entries(BASEMAP_IDS)) {
+      // The glow layer is MapLibre's custom layer, put on the map by glow-mount.ts at its slot.
+      if (id === BASEMAP_IDS.glow) continue;
       if (key.endsWith('Source')) expect(sources, key).toContain(id);
       else
         expect(
@@ -200,7 +212,9 @@ describe('layer order', () => {
       BASEMAP_IDS.ofmBridge,
       BASEMAP_IDS.usMask,
       BASEMAP_IDS.usBorder,
+      BASEMAP_IDS.usStatesSimple,
       BASEMAP_IDS.usStates,
+      BASEMAP_IDS.usOutlineSimple,
       BASEMAP_IDS.usOutline,
       BASEMAP_IDS.labels,
       BASEMAP_IDS.schools,
@@ -217,10 +231,12 @@ describe('layer order', () => {
     expect(below.length).toBeGreaterThan(8);
     const above = LAYERS.slice(mask + 1);
     for (const drawn of above) {
-      // Over the mask: only the border line, the bundled US lines, names and the schools slot.
+      // Over the mask: only the border line, the bundled US lines, names, and the empty slots
+      // of the glow layer and the schools.
       expect(
         drawn.type === 'symbol' ||
           drawn.id === BASEMAP_IDS.usBorder ||
+          drawn.id === BASEMAP_IDS.glowSlot ||
           drawn.id === BASEMAP_IDS.schools ||
           ('source' in drawn && drawn.source === BASEMAP_IDS.usSource),
         drawn.id,
@@ -259,21 +275,23 @@ describe('layer order', () => {
   it('puts every name above every line and fill, the least important names lowest', () => {
     const symbols = LAYERS.filter((l) => l.type === 'symbol').map((l) => l.id);
     const bands = CITY_NAME_BANDS.map((_band, index) => cityNameLayerId(index)).reverse();
-    // The state names (a phone's) and the national city names come first, right over the
-    // bundled lines: the glow, which goes before BASEMAP_IDS.labels, shines over them. The
-    // street tiles' names follow.
+    // The national city names and the state names (a phone's) come first, right over the
+    // bundled lines: the glow, which goes on right over its slot before BASEMAP_IDS.labels,
+    // shines over them. The street tiles' names follow.
     const firstSymbol = LAYERS.findIndex((l) => l.type === 'symbol');
     expect(LAYERS[firstSymbol - 1]?.id).toBe(BASEMAP_IDS.usOutline);
-    expect(LAYERS[firstSymbol + 1 + bands.length]?.id).toBe(BASEMAP_IDS.labels);
+    expect(LAYERS[firstSymbol + bands.length + 1]?.id).toBe(BASEMAP_IDS.glowSlot);
+    expect(LAYERS[firstSymbol + bands.length + 2]?.id).toBe(BASEMAP_IDS.labels);
     for (const drawn of LAYERS.slice(firstSymbol)) {
       expect(['symbol', 'background'], drawn.id).toContain(drawn.type);
     }
     // MapLibre places the top layer's labels first: cities win over towns, towns over route
     // numbers, route numbers over road names, and parks over the streets around them.
     expect(symbols).toEqual([
-      // The state names under the national city names, the band of the largest cities on top.
-      BASEMAP_IDS.usStateLabel,
+      // The national city names, the band of the largest cities on top, under the state names:
+      // a state's name never gives way to a city's.
       ...bands,
+      BASEMAP_IDS.usStateLabel,
       BASEMAP_IDS.ofmNeighbourhoodLabel,
       BASEMAP_IDS.ofmWaterLabel,
       BASEMAP_IDS.ofmStreetLabel,
@@ -282,7 +300,16 @@ describe('layer order', () => {
       BASEMAP_IDS.ofmVillageLabel,
       BASEMAP_IDS.ofmTownLabel,
       BASEMAP_IDS.ofmCityLabel,
+      // The states in view on a phone closer in, over every place name (state-areas.ts).
+      BASEMAP_IDS.usStateAreaLabel,
     ]);
+  });
+
+  it('keeps an empty slot for the glow layer, right under the street tiles’ names', () => {
+    const slot = layer(BASEMAP_IDS.glowSlot);
+    expect(slot.type).toBe('background');
+    expect(slot.layout).toEqual({ visibility: 'none' });
+    expect(indexOf(BASEMAP_IDS.labels) - 1).toBe(indexOf(BASEMAP_IDS.glowSlot));
   });
 
   it('ends with an empty slot, so school layers added before it win every label collision', () => {
@@ -320,6 +347,8 @@ describe('layer order', () => {
 
 describe('the national view', () => {
   const LAND = { kind: 'land' };
+  const SIMPLE_LAND = { kind: 'land-simple' };
+  const SIMPLE_STATE = { kind: 'state-simple' };
   const city = (rank: number): Properties => ({ kind: 'city', name: 'A city', rank });
   /** The band layers that draw a city of this rank at this zoom. */
   const bandsDrawing = (rank: number, zoom: number): string[] =>
@@ -333,7 +362,9 @@ describe('the national view', () => {
       source: BASEMAP_IDS.usSource,
       paint: { 'fill-antialias': false },
     });
-    expect(draws(BASEMAP_IDS.usLand, 4, LAND, GEOMETRY.polygon)).toBe(true);
+    // The national view's own land, as the still fills it.
+    expect(draws(BASEMAP_IDS.usLand, 4, SIMPLE_LAND, GEOMETRY.polygon)).toBe(true);
+    expect(draws(BASEMAP_IDS.usLand, 4, LAND, GEOMETRY.polygon)).toBe(false);
     expect(draws(BASEMAP_IDS.usLand, 4, { kind: 'state' })).toBe(false);
     expect(draws(BASEMAP_IDS.usLand, 4, city(0), GEOMETRY.point)).toBe(false);
     expect(hex(rgb(BASEMAP_IDS.usLand, 'fill-color', 4))).toBe(COLORS.land);
@@ -343,13 +374,132 @@ describe('the national view', () => {
   });
 
   it("draws the outline along the land's edge, and the state lines apart from it", () => {
-    expect(layer(BASEMAP_IDS.usOutline).type).toBe('line');
-    expect(draws(BASEMAP_IDS.usOutline, 4, LAND, GEOMETRY.polygon)).toBe(true);
-    expect(draws(BASEMAP_IDS.usOutline, 4, { kind: 'state' })).toBe(false);
-    expect(draws(BASEMAP_IDS.usStates, 4, { kind: 'state' })).toBe(true);
-    expect(draws(BASEMAP_IDS.usStates, 4, LAND, GEOMETRY.polygon)).toBe(false);
-    expect(hex(rgb(BASEMAP_IDS.usOutline, 'line-color', 4))).toBe(COLORS.outline);
-    expect(hex(rgb(BASEMAP_IDS.usStates, 'line-color', 4))).toBe(COLORS.state);
+    for (const [outline, states, land, lines, zoom] of [
+      [BASEMAP_IDS.usOutlineSimple, BASEMAP_IDS.usStatesSimple, SIMPLE_LAND, SIMPLE_STATE, 4],
+      [BASEMAP_IDS.usOutline, BASEMAP_IDS.usStates, LAND, { kind: 'state' }, 6.5],
+    ] as const) {
+      expect(layer(outline).type).toBe('line');
+      expect(draws(outline, zoom, land, GEOMETRY.polygon)).toBe(true);
+      expect(draws(outline, zoom, lines)).toBe(false);
+      expect(draws(states, zoom, lines)).toBe(true);
+      expect(draws(states, zoom, land, GEOMETRY.polygon)).toBe(false);
+      expect(hex(rgb(outline, 'line-color', zoom))).toBe(COLORS.outline);
+      expect(hex(rgb(states, 'line-color', zoom))).toBe(COLORS.state);
+    }
+    // The state lines a step dimmer than the coast and the border, on every screen.
+    for (const colors of [COLORS, { ...COLORS, outline: '#8f8f8f', state: '#4d4d4d' }]) {
+      expect(Number.parseInt(colors.state.slice(1, 3), 16)).toBeLessThan(
+        Number.parseInt(colors.outline.slice(1, 3), 16) * 0.6,
+      );
+    }
+  });
+
+  it('draws the simplified lines at the national view, the detailed ones closer in', () => {
+    for (const id of [BASEMAP_IDS.usOutlineSimple, BASEMAP_IDS.usStatesSimple]) {
+      expect(num(id, 'paint', 'line-opacity', 3)).toBe(1);
+      expect(num(id, 'paint', 'line-opacity', SIMPLE_LINES_UNTIL - 0.25)).toBe(1);
+      expect(num(id, 'paint', 'line-opacity', SIMPLE_LINES_UNTIL + 0.25)).toBe(0);
+    }
+    for (const id of [BASEMAP_IDS.usOutline, BASEMAP_IDS.usStates]) {
+      expect(num(id, 'paint', 'line-opacity', 3)).toBe(0);
+      expect(num(id, 'paint', 'line-opacity', SIMPLE_LINES_UNTIL - 0.25)).toBe(0);
+      expect(num(id, 'paint', 'line-opacity', SIMPLE_LINES_UNTIL + 0.25)).toBe(1);
+      expect(num(id, 'paint', 'line-opacity', OPENFREEMAP_MIN_ZOOM)).toBe(1);
+      expect(num(id, 'paint', 'line-opacity', OPENFREEMAP_MIN_ZOOM + 0.5)).toBe(0);
+    }
+    // Above the home view of every screen up to 2560 px wide.
+    expect(SIMPLE_LINES_UNTIL - 0.25).toBeGreaterThan(5);
+  });
+
+  it('keeps both sets of bundled lines in every tile up to the handover', () => {
+    // A layer's zoom range cuts it out of the tiles outside it: a flight past zoom 6 faster than
+    // the tiles there are cut draws the national view's tiles, which must carry the detailed lines.
+    for (const id of [
+      BASEMAP_IDS.usOutlineSimple,
+      BASEMAP_IDS.usStatesSimple,
+      BASEMAP_IDS.usOutline,
+      BASEMAP_IDS.usStates,
+    ]) {
+      expect(layer(id).minzoom).toBeUndefined();
+      expect(layer(id).maxzoom).toBe(BUNDLED_LINES_UNTIL);
+    }
+    expect(BUNDLED_LINES_UNTIL).toBe(OPENFREEMAP_MIN_ZOOM + 0.5);
+  });
+
+  it('sets the city names as build-geo.mjs set them off the outline', () => {
+    const set = CITY_NAMES_SET_OFF;
+    expect(set.halo).toBe(CITY_NAME_HALO);
+    expect(set.padding).toBe(CITY_NAME_PADDING);
+    // Kept clear of the names the map shows, band by band.
+    expect(set.shown).toEqual(CITY_NAME_BANDS.slice(0, set.shown.length));
+    expect(set.tracking).toBe(CITY_NAME_LETTER_SPACING);
+    expect(set.simpleLinesUntil).toBe(SIMPLE_LINES_UNTIL);
+    for (const zoom of [3, 4, 5, 6, 6.9]) {
+      const { fromZoom, from, toZoom, to } = set.size;
+      const t = Math.min(1, Math.max(0, (zoom - fromZoom) / (toZoom - fromZoom)));
+      expect(from + (to - from) * t).toBeCloseTo(cityNameSize(zoom), 9);
+    }
+    // Checked from the first zoom names are drawn at to the handover, against the simplified
+    // lines and then the detailed ones.
+    expect(set.zooms[0]).toBe(CITY_NAMES_FROM);
+    for (const zoom of set.zooms) expect(zoom).toBeLessThan(OPENFREEMAP_MIN_ZOOM);
+    expect(set.zooms.some((zoom) => zoom < SIMPLE_LINES_UNTIL)).toBe(true);
+    expect(set.zooms.some((zoom) => zoom >= SIMPLE_LINES_UNTIL)).toBe(true);
+  });
+
+  it('sets a city name where the file sets it off the outline, and on its point otherwise', () => {
+    const feature = (rank: number, offset?: unknown): unknown => ({
+      type: 'Feature',
+      properties: { kind: 'city', name: `City ${String(rank)}`, rank, offset },
+      geometry: { type: 'Point', coordinates: [-100, 40] },
+    });
+    const file: UsLinesData = {
+      type: 'FeatureCollection',
+      features: [
+        feature(0, [0.4, -0.8]),
+        feature(1),
+        feature(2, [2.1, 0]),
+        // Malformed or on the point: left there.
+        feature(3, '[1,1]'),
+        feature(4, [0, 0]),
+        feature(5, [1, 'x']),
+      ],
+    };
+    const styled = buildBasemapStyle({ usLines: file, hairline: 1, colors: COLORS });
+    const offsetAt = (id: string, properties: Properties): unknown => {
+      const target = styled.layers.find((candidate) => candidate.id === id) as
+        { layout?: Record<string, unknown> } | undefined;
+      const spec = (latest as unknown as Record<string, Record<string, unknown>>).layout_symbol?.[
+        'text-offset'
+      ];
+      const parsed = expression.createPropertyExpression(
+        target?.layout?.['text-offset'],
+        'text-offset',
+        spec as never,
+      );
+      if (parsed.result !== 'success') throw new Error(JSON.stringify(parsed.value));
+      return parsed.value.evaluate({ zoom: 4 }, { type: GEOMETRY.point, properties });
+    };
+    for (const [index] of CITY_NAME_BANDS.entries()) {
+      const id = cityNameLayerId(index);
+      expect(offsetAt(id, city(0)), id).toEqual([0.4, -0.8]);
+      // By its rank, whatever MapLibre makes of the array in the tile it parses again.
+      expect(offsetAt(id, { ...city(2), offset: '[2.1,0]' }), id).toEqual([2.1, 0]);
+      for (const rank of [1, 3, 4, 5, 6]) expect(offsetAt(id, city(rank)), id).toEqual([0, 0]);
+    }
+    expect(cityNameOffset(file)).toEqual([
+      'match',
+      ['get', 'rank'],
+      0,
+      ['literal', [0.4, -0.8]],
+      2,
+      ['literal', [2.1, 0]],
+      ['literal', [0, 0]],
+    ]);
+    // No names set off, or the file not read yet: every name on its point.
+    expect(cityNameOffset(US_LINES)).toEqual([0, 0]);
+    expect(cityNameOffset('https://snowlight.test/geo/us-lines.json')).toEqual([0, 0]);
+    expect(validateStyleMin(styled)).toEqual([]);
   });
 
   it('names each city in exactly one band, the largest from the first zoom', () => {
@@ -425,9 +575,12 @@ describe('the national view', () => {
       expect(layout['text-allow-overlap'], id).toBe(false);
       expect(layout['text-ignore-placement'], id).toBe(false);
     });
-    // Band 0 is the top of the bands, right under the street tiles' labels (which are
-    // gone below zoom 7): MapLibre places it first of them.
-    expect(indexOf(BASEMAP_IDS.labels) - 1).toBe(indexOf(cityNameLayerId(0)));
+    // Band 0 is the top of the bands, right under the state names and the street tiles'
+    // labels (which are gone below zoom 7), the glow's empty slot between: MapLibre places it
+    // first of them.
+    expect(indexOf(BASEMAP_IDS.usStateLabel) - 1).toBe(indexOf(cityNameLayerId(0)));
+    expect(indexOf(BASEMAP_IDS.glowSlot) - 1).toBe(indexOf(BASEMAP_IDS.usStateLabel));
+    expect(indexOf(BASEMAP_IDS.labels) - 1).toBe(indexOf(BASEMAP_IDS.glowSlot));
   });
 
   it('fades each band in quickly at its zoom, so a map at rest shows each name fully', () => {
@@ -445,13 +598,12 @@ describe('the national view', () => {
     expect(national[0]).toBeGreaterThan(Number.parseInt(COLORS.labelDim.slice(1, 3), 16));
     expect(national[0]).toBeLessThan(Number.parseInt(COLORS.label.slice(1, 3), 16));
     expect(hex(rgb(id, 'text-color', OPENFREEMAP_MIN_ZOOM))).toBe(COLORS.label);
-    // A halo in the land's tone parts a coastline or border running under a name: a pixel
-    // or so, inside the space MapLibre's glyphs keep around them (3 of 24 px, at 10.5 to 12
-    // px under 1.5), so it follows the letters and never fills each glyph's box.
-    expect(hex(rgb(id, 'text-halo-color', 4))).toBe(COLORS.land);
+    // A black halo a pixel wide parts a line running under a name, inside the space
+    // MapLibre's glyphs keep around them (3 of 24 px, at 10.5 to 12 px under 1.5), so it
+    // follows the letters and never fills each glyph's box.
+    expect(hex(rgb(id, 'text-halo-color', 4))).toBe('#000000');
     expect(num(id, 'paint', 'text-halo-width', 4)).toBe(CITY_NAME_HALO);
-    expect(CITY_NAME_HALO).toBeGreaterThanOrEqual(1);
-    expect(CITY_NAME_HALO).toBeLessThanOrEqual((3 / 24) * 10.5);
+    expect(CITY_NAME_HALO).toBe(1);
     for (const zoom of [CITY_NAMES_FROM, 4, 5, 6, 6.9]) {
       expect(num(id, 'layout', 'text-size', zoom), String(zoom)).toBeCloseTo(cityNameSize(zoom), 9);
     }
@@ -569,6 +721,29 @@ describe('buildings, water and parks', () => {
     expect(opacity).toEqual([...opacity].sort((a, b) => a - b));
     expect(opacity[3]).toBe(1);
     expect(value(BUILDING, 'paint', 'fill-outline-color', 14)).toBeDefined();
+  });
+
+  it("steps the footprints and the local streets up a tone at a street's zoom, under the names", () => {
+    const tone = (channels: readonly number[]): number => channels[0] ?? 0;
+    const building = (zoom: number) => rgb(BUILDING, 'fill-color', zoom, {});
+    const edge = (zoom: number) => rgb(BUILDING, 'fill-outline-color', zoom, {});
+    const minor = (zoom: number) =>
+      rgb(BASEMAP_IDS.ofmRoad, 'line-color', zoom, { class: 'minor' });
+    // A step up from zoom 14 to 15, where the blocks and the local streets carry the map.
+    expect(tone(building(15))).toBeGreaterThan(tone(building(CLOSE_FROM)));
+    expect(tone(edge(15))).toBeGreaterThan(tone(edge(CLOSE_FROM)));
+    expect(tone(minor(15))).toBeGreaterThan(tone(minor(CLOSE_FROM)));
+    expect(CLOSE_ZOOM).toBe(15);
+    // The hierarchy holds: blocks under the streets, the streets under every name, the school
+    // names brightest.
+    expect(tone(building(15))).toBeLessThan(tone(minor(15)));
+    expect(tone(edge(15))).toBeLessThan(tone(minor(15)));
+    for (const tier of ROAD_TIERS) {
+      expect(Number.parseInt(tier.close.slice(1, 3), 16), tier.close).toBeLessThan(0x6b);
+    }
+    expect(Number.parseInt(COLORS.labelBright.slice(1, 3), 16)).toBeGreaterThan(
+      Number.parseInt(COLORS.label.slice(1, 3), 16),
+    );
   });
 
   it('leaves the sea unfilled, as ground, so the edge of US waters never shows', () => {
@@ -747,6 +922,7 @@ describe('names', () => {
         symbol.id === BASEMAP_IDS.ofmCityLabel ||
         symbol.id === BASEMAP_IDS.schoolSpace ||
         symbol.id === BASEMAP_IDS.usStateLabel ||
+        symbol.id === BASEMAP_IDS.usStateAreaLabel ||
         symbol.id.startsWith(BASEMAP_IDS.usCityLabel)
       ) {
         continue;
@@ -892,8 +1068,9 @@ describe('schools', () => {
   });
 
   it('put a dot at each school under every label, and each name over every other label', () => {
-    const labels = at(BASEMAP_IDS.labels);
-    expect(at(BASEMAP_IDS.schoolDots)).toBe(labels - 1);
+    // Right under the glow's slot, so the glow shines over the dots, and the labels over both.
+    expect(at(BASEMAP_IDS.schoolDots)).toBe(at(BASEMAP_IDS.glowSlot) - 1);
+    expect(at(BASEMAP_IDS.glowSlot)).toBe(at(BASEMAP_IDS.labels) - 1);
     expect(at(BASEMAP_IDS.schoolDots)).toBeGreaterThan(at(BASEMAP_IDS.usMask));
     // MapLibre places the top layer's labels first: each dot's space, then school names, then
     // street and place names.
@@ -942,8 +1119,9 @@ describe('schools', () => {
       'text-optional': false,
       'text-font': [MAP_FONTS.medium],
     });
-    // Beside the dot first, then above or below, then at a corner.
-    expect(names.layout?.['text-variable-anchor']).toEqual([
+    // Beside the dot first, then under or over it, then at a corner.
+    const anchors = names.layout?.['text-variable-anchor-offset'] as unknown as unknown[];
+    expect(anchors.filter((_value, i) => i % 2 === 0)).toEqual([
       'left',
       'right',
       'top',
@@ -953,6 +1131,16 @@ describe('schools', () => {
       'top-left',
       'top-right',
     ]);
+    // Under or over, the name clears its dot's space and its own padding: a phone's narrow
+    // screen, with no room at either side, still has a place for it.
+    for (const zoom of [13, 14, 15, 16]) {
+      const size = num(BASEMAP_IDS.schoolNames, 'layout', 'text-size', zoom);
+      const space =
+        (num(BASEMAP_IDS.schoolSpace, 'layout', 'icon-size', zoom) * SCHOOL_SPACE_SIZE) / 2;
+      expect(SCHOOL_NAME_UNDER * size - SCHOOL_NAME_PADDING, String(zoom)).toBeGreaterThan(
+        space + 1,
+      );
+    }
   });
 
   it('stand out across a metro: light grey, ringed, several pixels across', () => {
@@ -991,17 +1179,29 @@ describe('the network', () => {
     expect(sources[BASEMAP_IDS.usCitySource]).toMatchObject({ type: 'geojson', data: US_LINES });
     const tiles = sources[BASEMAP_IDS.openFreeMapSource];
     expect(tiles).toMatchObject({ type: 'vector', minzoom: 7 });
+    // The states in view start empty: the map fills them in on a phone, from the site's own file.
+    expect(sources[BASEMAP_IDS.usStateAreaSource]).toEqual({
+      type: 'geojson',
+      data: { type: 'FeatureCollection', features: [] },
+    });
     expect(Object.keys(sources).sort()).toEqual(
-      [BASEMAP_IDS.usSource, BASEMAP_IDS.usCitySource, BASEMAP_IDS.openFreeMapSource].sort(),
+      [
+        BASEMAP_IDS.usSource,
+        BASEMAP_IDS.usCitySource,
+        BASEMAP_IDS.usStateAreaSource,
+        BASEMAP_IDS.openFreeMapSource,
+      ].sort(),
     );
     for (const drawn of LAYERS) {
       if (!('source' in drawn)) continue;
       if (drawn.source === BASEMAP_IDS.openFreeMapSource) {
         expect(drawn.minzoom ?? 0, drawn.id).toBeGreaterThanOrEqual(OPENFREEMAP_MIN_ZOOM);
       } else if (drawn.type === 'symbol') {
-        // Below zoom 7 only the national city names draw text, from the page's own Geist
-        // faces (fonts.ts): no glyph file is asked for.
-        expect(drawn.source, drawn.id).toBe(BASEMAP_IDS.usCitySource);
+        // Below zoom 7 only the national city and state names draw text, from the page's own
+        // Geist faces (fonts.ts): no glyph file is asked for.
+        expect([BASEMAP_IDS.usCitySource, BASEMAP_IDS.usStateAreaSource], drawn.id).toContain(
+          drawn.source,
+        );
       }
     }
   });
@@ -1074,5 +1274,112 @@ describe('label faces', () => {
         file.unicodeRange.split(',').some((range) => /^U\+(0000-00FF|0020)$/.test(range)),
       ).toBe(true);
     }
+  });
+});
+
+describe('the bundled lines’ sources', () => {
+  const URLS = {
+    lines: 'https://snowlight.test/geo/us-lines.0123456789.json',
+    names: 'https://snowlight.test/geo/us-names.0123456789.json',
+  };
+  const FROM_FILES = buildBasemapStyle({
+    usLines: US_LINES,
+    usLinesUrls: URLS,
+    hairline: 1,
+    colors: COLORS,
+  });
+  const keeps = (source: string, kind: string): boolean => {
+    const { filter } = FROM_FILES.sources[source] as { filter?: FilterSpecification };
+    if (filter === undefined) return true;
+    return featureFilter(filter, 'filter').filter({ zoom: 0 }, { type: 1, properties: { kind } });
+  };
+
+  it('read the lines and their names from the files, for MapLibre’s workers to fetch', () => {
+    expect(FROM_FILES.sources[BASEMAP_IDS.usSource]).toMatchObject({
+      type: 'geojson',
+      data: URLS.lines,
+    });
+    expect(FROM_FILES.sources[BASEMAP_IDS.usCitySource]).toMatchObject({
+      type: 'geojson',
+      data: URLS.names,
+    });
+    expect(validateStyleMin(FROM_FILES)).toEqual([]);
+  });
+
+  it('each keep their own kinds of feature, whatever the file holds', () => {
+    for (const kind of ['land', 'state', 'land-simple', 'state-simple']) {
+      expect(keeps(BASEMAP_IDS.usSource, kind), kind).toBe(true);
+      expect(keeps(BASEMAP_IDS.usCitySource, kind), kind).toBe(false);
+    }
+    for (const kind of ['city', 'state-name']) {
+      expect(keeps(BASEMAP_IDS.usSource, kind), kind).toBe(false);
+      expect(keeps(BASEMAP_IDS.usCitySource, kind), kind).toBe(true);
+    }
+  });
+});
+
+describe('staging the style', () => {
+  const ids = (layers: readonly LayerSpecification[]): string[] => layers.map((l) => l.id);
+  const sourceOf = (l: LayerSpecification): string | null =>
+    'source' in l && typeof l.source === 'string' ? l.source : null;
+  /** Whether MapLibre draws the layer at the zoom: shown and in its zoom range. */
+  const drawnAt = (l: LayerSpecification, zoom: number): boolean =>
+    (l.layout as { visibility?: string } | undefined)?.visibility !== 'none' &&
+    zoom >= (l.minzoom ?? 0) &&
+    zoom < (l.maxzoom ?? 24);
+  const ZOOMS = {
+    'a phone’s whole country': 2.2,
+    'a desktop’s national view': 3.93,
+    'a metro view': 10,
+    'a street view': 14.5,
+  };
+
+  for (const [view, zoom] of Object.entries(ZOOMS)) {
+    it(`takes every layer once, in the full style’s order within each step (${view})`, () => {
+      const staged = stageStyle(WITH_SCHOOLS, zoom);
+      const all = [...staged.style.layers, ...staged.now, ...staged.later];
+      expect(new Set(ids(all)).size).toBe(WITH_SCHOOLS.layers.length);
+      expect(ids(all).sort()).toEqual(ids(WITH_SCHOOLS.layers).sort());
+      expect(staged.order).toEqual(ids(WITH_SCHOOLS.layers));
+      for (const step of [staged.style.layers, staged.now, staged.later]) {
+        const at = ids(step).map((id) => staged.order.indexOf(id));
+        expect(at).toEqual([...at].sort((a, b) => a - b));
+      }
+      // Every source is there from the start; the style is otherwise the full one.
+      expect(staged.style.sources).toEqual(WITH_SCHOOLS.sources);
+      expect({ ...staged.style, layers: [] }).toEqual({ ...WITH_SCHOOLS, layers: [] });
+    });
+
+    it(`creates the map with the ground and the slots, then the view’s sources (${view})`, () => {
+      const staged = stageStyle(WITH_SCHOOLS, zoom);
+      // No layer that reads a source: the ground, and the glow's and the schools' slots.
+      expect(ids(staged.style.layers)).toEqual([
+        BASEMAP_IDS.background,
+        BASEMAP_IDS.glowSlot,
+        BASEMAP_IDS.schools,
+      ]);
+      // Then every layer of each source a layer drawn at the zoom reads, all of them, so no
+      // source has its tiles cut again for a layer that comes after: the rest read the others.
+      const inView = new Set(WITH_SCHOOLS.layers.filter((l) => drawnAt(l, zoom)).map(sourceOf));
+      inView.delete(null);
+      expect(new Set(staged.now.map(sourceOf))).toEqual(inView);
+      expect(staged.later.some((l) => inView.has(sourceOf(l)))).toBe(false);
+      expect(staged.now.some((l) => drawnAt(l, zoom))).toBe(true);
+    });
+  }
+
+  it('puts a phone’s whole country on the bundled lines alone, the names and streets after', () => {
+    const staged = stageStyle(WITH_SCHOOLS, 2.2);
+    expect(new Set(staged.now.map(sourceOf))).toEqual(new Set([BASEMAP_IDS.usSource]));
+    expect(staged.later.map(sourceOf)).toContain(BASEMAP_IDS.usCitySource);
+    expect(staged.later.map(sourceOf)).toContain(BASEMAP_IDS.openFreeMapSource);
+  });
+
+  it('puts a street view on the street and school tiles, the national lines after', () => {
+    const staged = stageStyle(WITH_SCHOOLS, 14.5);
+    expect(new Set(staged.now.map(sourceOf))).toEqual(
+      new Set([BASEMAP_IDS.openFreeMapSource, BASEMAP_IDS.schoolsSource]),
+    );
+    expect(ids(staged.later)).toContain(BASEMAP_IDS.usOutline);
   });
 });

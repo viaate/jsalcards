@@ -575,3 +575,228 @@ describe('results', () => {
     expect(ranges).toEqual([[0, 9]]);
   });
 });
+
+describe('near where the person is looking', () => {
+  // As the directory and the places build have them (September 2026), weights made up for size.
+  const record = (
+    kind: SearchRecord['kind'],
+    id: string,
+    name: string,
+    sub: string,
+    state: string,
+    lat: number,
+    lon: number,
+    weight: number,
+  ): SearchRecord => ({ kind, id, name, sub, state, lat, lon, weight });
+  const pembroke = new SearchEngine(
+    loadIndex(
+      encodeIndex([
+        record('city', '1257425', 'Pembroke Pines', 'Florida', 'FL', 26.0128, -80.3382, 171178),
+        record('city', '3751000', 'Pembroke', 'North Carolina', 'NC', 34.6816, -79.1953, 2823),
+        record('school', '2509660', 'Pembroke', 'Pembroke, MA', 'MA', 42.0624, -70.8033, 3000),
+        record(
+          'school',
+          '330579000321',
+          'Pembroke Academy',
+          'Pembroke, NH',
+          'NH',
+          43.1476,
+          -71.4556,
+          900,
+        ),
+        record(
+          'school',
+          'A1902690',
+          'The Pembroke Hill School - Wornall Campus',
+          'Kansas City, MO',
+          'MO',
+          39.03606,
+          -94.593001,
+          600,
+        ),
+        record(
+          'school',
+          '290000000001',
+          'Lincoln Elementary',
+          'Kansas City, MO',
+          'MO',
+          39.05,
+          -94.6,
+          500,
+        ),
+      ]).bytes,
+    ),
+  );
+  const kansasCity = { lat: 39.1, lon: -94.58, km: 100 };
+
+  it('lists the records named so near it first, their group first', () => {
+    const near = pembroke.search('pembroke', 5, kansasCity);
+    expect(near.order[0]).toBe('schools');
+    expect(near.schools.map((hit) => hit.id)).toEqual(['A1902690', '2509660', '330579000321']);
+    expect(near.cities.map((hit) => hit.id)).toEqual(['1257425', '3751000']);
+  });
+
+  it('changes nothing from far away, or with nothing near', () => {
+    const plain = pembroke.search('pembroke', 5);
+    expect(plain.schools.map((hit) => hit.id)).toEqual(['2509660', '330579000321', 'A1902690']);
+    expect(pembroke.search('pembroke', 5, { lat: 47.6, lon: -122.3, km: 100 })).toEqual(plain);
+  });
+
+  it('leaves a record near it that only its place matches where it was', () => {
+    // Lincoln Elementary is in Kansas City, but its name has no Kansas in it.
+    const near = pembroke.search('kansas city', 5, kansasCity);
+    expect(near.schools[0]?.id).toBe('A1902690');
+    expect(near).toEqual(pembroke.search('kansas city', 5));
+  });
+});
+
+describe('names as the page shows them', () => {
+  // As the directory has them (September 2026), with the names the page shows them by
+  // (stage-data.mjs); weights made up for size.
+  const school = (
+    id: string,
+    name: string,
+    shown: string | undefined,
+    sub: string,
+    state: string,
+    lat: number,
+    lon: number,
+    weight: number,
+  ): SearchRecord => ({
+    kind: 'school',
+    id,
+    name,
+    ...(shown === undefined ? {} : { shown }),
+    sub,
+    state,
+    lat,
+    lon,
+    weight,
+  });
+  const shownEngine = new SearchEngine(
+    loadIndex(
+      encodeIndex([
+        school(
+          '290061203365',
+          'MIDDLE SCHOOL',
+          'Citizens of the World Charter - Middle School',
+          'Kansas City, MO',
+          'MO',
+          39.0646,
+          -94.5899,
+          200,
+        ),
+        school(
+          '290061203286',
+          'ELEMENTARY SCHOOL',
+          'Citizens of the World Charter - Elementary School',
+          'Kansas City, MO',
+          'MO',
+          39.0646,
+          -94.5899,
+          400,
+        ),
+        school(
+          '290738000311',
+          'MIDDLE SCHOOL',
+          'Carrollton R-VII - Middle School',
+          'Carrollton, MO',
+          'MO',
+          39.3688,
+          -93.4901,
+          250,
+        ),
+        school(
+          '060205012708',
+          'Citizens of the World Charter School Hollywood',
+          undefined,
+          'Los Angeles, CA',
+          'CA',
+          34.0949,
+          -118.3176,
+          500,
+        ),
+        {
+          kind: 'district',
+          id: '2900612',
+          name: 'CITIZENS OF THE WORLD CHARTER',
+          sub: 'Kansas City, MO',
+          state: 'MO',
+          lat: 39.0646,
+          lon: -94.5899,
+          weight: 600,
+        },
+        school(
+          '290002502748',
+          'ALLEN VILLAGE ELEMENTARY ACADE',
+          'Allen Village Elementary Academy',
+          'Kansas City, MO',
+          'MO',
+          39.0529,
+          -94.5948,
+          300,
+        ),
+        school(
+          '290002503325',
+          'ALLEN VILLAGE JUNIOR ACADEMY',
+          undefined,
+          'Kansas City, MO',
+          'MO',
+          39.0529,
+          -94.5948,
+          100,
+        ),
+        school(
+          '170019006798',
+          'Five County Reg Voc Center',
+          'Five County Regional Vocational Center',
+          'Ullin, IL',
+          'IL',
+          37.2316,
+          -89.271,
+          50,
+        ),
+      ]).bytes,
+    ),
+  );
+  const found = (q: string): string[] => shownEngine.search(q, 10).schools.map((hit) => hit.id);
+
+  it('finds a school by its name exactly as shown, first and as an exact name', () => {
+    const results = shownEngine.search('Citizens of the World Charter - Middle School', 10);
+    expect(results.schools[0]?.id).toBe('290061203365');
+    expect(results.schools[0]?.match).toBe('exact');
+    expect(found('Allen Village Elementary Academy')[0]).toBe('290002502748');
+    expect(found('five county regional vocational center')).toEqual(['170019006798']);
+  });
+
+  it('finds it by some of the words it is shown by', () => {
+    expect(found('citizens middle')).toEqual(['290061203365']);
+    expect(found('citizens of the world charter elementary')[0]).toBe('290061203286');
+    expect(found('citizens of the world')).toEqual(
+      expect.arrayContaining(['290061203365', '290061203286', '060205012708', '2900612']),
+    );
+    expect(found('carrollton middle')).toEqual(['290738000311']);
+  });
+
+  it('still finds it by its name as written', () => {
+    expect(found('middle school').slice(0, 2).sort()).toEqual(['290061203365', '290738000311']);
+    expect(found('allen village elementary acade')[0]).toBe('290002502748');
+    expect(found('five county reg voc')).toEqual(['170019006798']);
+  });
+
+  it('marks the match in the shown name', () => {
+    const hit = shownEngine.search('citizens middle', 10).schools[0];
+    expect(hit?.shown).toBe('Citizens of the World Charter - Middle School');
+    const marked = (hit?.shownHighlight ?? []).map(([a, b]) => hit?.shown?.slice(a, b));
+    expect(marked).toEqual(['Citizens', 'Middle']);
+    expect(hit?.highlight.map(([a, b]) => hit.name.slice(a, b))).toEqual(['MIDDLE']);
+    const allen = shownEngine.search('allen village acade', 10).schools[0];
+    expect((allen?.shownHighlight ?? []).map(([a, b]) => allen?.shown?.slice(a, b))).toEqual([
+      'Allen',
+      'Village',
+      'Acade',
+    ]);
+    // A record the page shows as written has no shown name to mark.
+    expect(shownEngine.search('hollywood', 10).schools[0]).not.toHaveProperty('shown');
+  });
+});

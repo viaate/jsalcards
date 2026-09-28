@@ -13,9 +13,9 @@ import {
 } from '../../glow/mercator';
 import { CENTER_BOUNDS, MAX_ZOOM, MIN_ZOOM } from '../bounds';
 import type { MapView } from '../bounds';
-import { WHOLE_COUNTRY, ZOOM_SLACK, constrainView, screenBox, viewLimits } from '../limits';
-import type { Box, HomeFit, Insets, ViewLimits } from '../limits';
-import { STILL_VIEWBOX, US_BOUNDS, US_LINES_FILE } from '../us-geo';
+import { NEARBY_ZOOM, ZOOM_SLACK, constrainView, nearUs, screenBox, viewLimits } from '../limits';
+import type { Box, Insets, Place, ViewLimits } from '../limits';
+import { US_BOUNDS, US_LINES_FILE } from '../us-geo';
 
 /**
  * The frame index.html lays out: the top strip and a gap above it, the sides
@@ -184,12 +184,6 @@ describe('the national view', () => {
   });
 });
 
-/** The screens index.html lays out for a phone held upright: the still covers their frame. */
-const UPRIGHT_PHONES = SCREENS.filter(([width, height]) => width <= 719 && height >= width);
-
-/** The home view's fit on those screens, as index.html sets it, with the focus given. */
-const cover = (focus: number): HomeFit => ({ cover: true, focus });
-
 /**
  * Where the country is drawn at a view, on a screen of `width` by `height`:
  * its box in CSS pixels.
@@ -205,85 +199,116 @@ function drawnUs(view: MapView, width: number, height: number): Box {
   };
 }
 
+/** Kansas City, Missouri, where a phone's viewer is in these tests. */
+const KANSAS_CITY: Place = { lat: 39.0997, lon: -94.5786 };
+
 describe('the home view', () => {
-  it('is the national view itself, the same object, unless the frame is to be covered', () => {
+  it('is the national view itself, the same object, where the viewer is not known', () => {
     for (const screen of SCREENS) {
       const [width, height] = screen;
       const limits = limitsFor(screen);
       expect(limits.home).toBe(limits.fit);
-      const whole = viewLimits({ width, height }, frameInsets(width), WHOLE_COUNTRY);
-      expect(whole.home).toBe(whole.fit);
-      expect(whole).toEqual(limits);
+      const unknown = viewLimits({ width, height }, frameInsets(width), null);
+      expect(unknown.home).toBe(unknown.fit);
+      expect(unknown).toEqual(limits);
     }
   });
 
-  it("on a phone held upright, fills the frame's height with the country, as the still does", () => {
-    const [, , stillWidth = NaN, stillHeight = NaN] = STILL_VIEWBOX.split(' ').map(Number);
-    for (const [width, height] of UPRIGHT_PHONES) {
-      for (const focus of [0, 0.22, 0.5, 0.87, 0.95, 1]) {
-        const where = `${String(width)}x${String(height)} focus ${String(focus)}`;
-        const insets = frameInsets(width);
-        const limits = viewLimits({ width, height }, insets, cover(focus));
-        const frame = {
-          x0: insets.left,
-          y0: insets.top,
-          x1: width - insets.right,
-          y1: height - insets.bottom,
-        };
-        const us = drawnUs(limits.home, width, height);
-        // Drawn as index.html lays out the still: max(100cqh, 100cqw * h / w) tall, centered down,
-        // and `focus` of the way along the width it runs past the frame.
-        const frameWidth = frame.x1 - frame.x0;
-        const frameHeight = frame.y1 - frame.y0;
-        const drawnHeight = Math.max(frameHeight, (frameWidth * stillHeight) / stillWidth);
-        expect(us.y1 - us.y0, where).toBeCloseTo(drawnHeight, 1);
-        expect(us.y0 - frame.y0, where).toBeCloseTo((frameHeight - drawnHeight) / 2, 1);
-        expect(us.x0 - frame.x0, where).toBeCloseTo(focus * (frameWidth - (us.x1 - us.x0)), 1);
-        // So it runs past both sides of the frame, or reaches one of them, and fills it top to bottom.
-        expect(us.x0, where).toBeLessThanOrEqual(frame.x0 + 1e-6);
-        expect(us.x1, where).toBeGreaterThanOrEqual(frame.x1 - 1e-6);
-        expect(us.y0, where).toBeLessThanOrEqual(frame.y0 + 1e-6);
-        expect(us.y1, where).toBeGreaterThanOrEqual(frame.y1 - 1e-6);
-        // Closer than the national view, which still bounds the zoom out.
-        expect(limits.home.zoom, where).toBeGreaterThan(limits.fit.zoom + 1);
-        expect(limits.minZoom, where).toBeCloseTo(limits.fit.zoom - ZOOM_SLACK, 12);
-        // And always allowed, exactly, so nothing moves on load or at the handover.
-        expect(constrainView(limits, limits.home), where).toEqual(limits.home);
-      }
+  it('shows a phone the whole country, from one side of the page to the other, nothing cropped', () => {
+    for (const [width, height] of SCREENS.filter(([w, h]) => w <= 719 && h >= w)) {
+      const where = `${String(width)}x${String(height)}`;
+      const insets = frameInsets(width);
+      const limits = viewLimits({ width, height }, insets);
+      const us = drawnUs(limits.home, width, height);
+      // As wide as the frame, the page's side margins either side, and centered down it.
+      expect(us.x0, where).toBeCloseTo(insets.left, 6);
+      expect(us.x1, where).toBeCloseTo(width - insets.right, 6);
+      const frameMiddle = (insets.top + height - insets.bottom) / 2;
+      expect((us.y0 + us.y1) / 2, where).toBeCloseTo(frameMiddle, 6);
+      expect(us.y0, where).toBeGreaterThan(insets.top);
+      expect(us.y1, where).toBeLessThan(height - insets.bottom);
     }
   });
 
-  it('opens a phone in the Eastern time zone on the East Coast, and one in the Pacific on the West', () => {
-    const [width, height] = [390, 844];
-    const home = (focus: number): Box =>
-      screenBox(
-        { width, height },
-        viewLimits({ width, height }, frameInsets(width), cover(focus)).home,
+  it("opens over the viewer's own area, at NEARBY_ZOOM, centered in the frame", () => {
+    for (const screen of SCREENS) {
+      const [width, height] = screen;
+      const where = `${String(width)}x${String(height)}`;
+      const insets = frameInsets(width);
+      const limits = viewLimits({ width, height }, insets, KANSAS_CITY);
+      expect(limits.home.zoom, where).toBe(NEARBY_ZOOM);
+      // Kansas City at the frame's middle, between the search field and the legend.
+      const scale = scaleAt(NEARBY_ZOOM);
+      const [x, y] = worldPoint(limits.home);
+      const [kx, ky] = worldPoint({ ...KANSAS_CITY, zoom: NEARBY_ZOOM });
+      expect(width / 2 + (kx - x) * scale, where).toBeCloseTo(
+        (insets.left + width - insets.right) / 2,
+        6,
       );
-    const lngs = (box: Box): [number, number] => [
-      lngFromMercatorX(box.x0),
-      lngFromMercatorX(box.x1),
-    ];
-    // New York to Atlanta and Miami; Boston too.
-    const [eastWest, eastEast] = lngs(home(0.95));
-    expect(eastWest).toBeLessThan(-84.4);
-    expect(eastEast).toBeGreaterThan(-71.06);
-    // Seattle to Los Angeles, the coast a margin in from the screen's left edge.
-    const [westWest, westEast] = lngs(home(0));
-    expect(westWest).toBeLessThan(US_BOUNDS[0]);
-    expect(westEast).toBeGreaterThan(-118.4);
+      expect(height / 2 + (ky - y) * scale, where).toBeCloseTo(
+        (insets.top + height - insets.bottom) / 2,
+        6,
+      );
+      // The national view stays what zooming out stops at, and the home view is allowed as it is.
+      expect(limits.fit).toEqual(limitsFor(screen).fit);
+      expect(limits.minZoom).toBe(limitsFor(screen).minZoom);
+      expect(constrainView(limits, limits.home), where).toEqual(limits.home);
+    }
   });
 
-  it('copes with a frame with no area, and a focus out of range', () => {
-    const none = viewLimits({ width: 0, height: 0 }, frameInsets(0), cover(0.5));
-    expect(none.home).toBe(none.fit);
-    // A focus out of range is held to the country's ends; one that is no number, to its middle.
+  it('holds a viewer by a shore or a border to the nearest view the limits allow', () => {
     const [width, height] = [390, 844];
-    const at = (focus: number): MapView =>
-      viewLimits({ width, height }, frameInsets(width), cover(focus)).home;
-    expect(at(-3)).toEqual(at(0));
-    expect(at(7)).toEqual(at(1));
-    expect(at(Number.NaN)).toEqual(at(0.5));
+    // Key West, and Point Roberts across the water from the rest of Washington.
+    for (const place of [
+      { lat: 24.5551, lon: -81.78 },
+      { lat: 48.985, lon: -123.068 },
+    ]) {
+      const limits = viewLimits({ width, height }, frameInsets(width), place);
+      expect(limits.home).not.toBe(limits.fit);
+      expect(limits.home.zoom).toBe(NEARBY_ZOOM);
+      expect(constrainView(limits, limits.home)).toEqual(limits.home);
+    }
+  });
+
+  it('opens on the national view for a viewer off the continental US, or nowhere', () => {
+    const [width, height] = [390, 844];
+    for (const place of [
+      { lat: 43.6532, lon: -79.3832 },
+      { lat: 21.3069, lon: -157.8583 },
+      { lat: 61.2181, lon: -149.9003 },
+      { lat: 19.4326, lon: -99.1332 },
+      { lat: 51.5072, lon: -0.1276 },
+      { lat: Number.NaN, lon: -94.58 },
+    ]) {
+      const limits = viewLimits({ width, height }, frameInsets(width), place);
+      expect(limits.home, JSON.stringify(place)).toBe(limits.fit);
+    }
+    const none = viewLimits({ width: 0, height: 0 }, frameInsets(0), KANSAS_CITY);
+    expect(none.home.zoom).toBe(NEARBY_ZOOM);
+  });
+});
+
+describe('nearUs', () => {
+  it('takes in the continental US, its islands and a shore, and nothing far past it', () => {
+    for (const place of [
+      KANSAS_CITY,
+      { lat: 47.6062, lon: -122.3321 },
+      { lat: 25.7617, lon: -80.1918 },
+      { lat: 44.3876, lon: -68.2039 },
+      { lat: 42.3314, lon: -83.0458 },
+      { lat: 43.7684, lon: -69.3167 },
+    ]) {
+      expect(nearUs(place), JSON.stringify(place)).toBe(true);
+    }
+    for (const place of [
+      { lat: 43.6532, lon: -79.3832 },
+      { lat: 49.2827, lon: -123.1207 },
+      { lat: 21.3069, lon: -157.8583 },
+      { lat: 19.4326, lon: -99.1332 },
+      { lat: 30, lon: -60 },
+    ]) {
+      expect(nearUs(place), JSON.stringify(place)).toBe(false);
+    }
   });
 });
 
@@ -450,6 +475,9 @@ describe('panning', () => {
   });
 
   it('slides along every edge without jumping or shaking', () => {
+    // Every frame of every drag is checked; the ones that fail are listed, and the list must be
+    // empty (one expectation, not hundreds of thousands).
+    const failures: string[] = [];
     for (const screen of [
       [1565, 957],
       [390, 844],
@@ -473,20 +501,23 @@ describe('panning', () => {
             const previous = path[i - 1] ?? view;
             const current = path[i] ?? view;
             // No frame moves further than the drag and the slide along an edge together.
-            expect(pixelsApart(current, previous, zoom), where).toBeLessThanOrEqual(80 + 1e-6);
+            const moved = pixelsApart(current, previous, zoom);
+            if (!(moved <= 80 + 1e-6))
+              failures.push(`${where}, frame ${String(i)}: jumps ${String(moved)} px`);
             // Never back toward where it was two frames before: no shaking at an edge.
             const before = path[i - 2];
             if (before === undefined) continue;
             const step = pixelsApart(previous, before, zoom);
-            if (step > 1) {
-              expect(pixelsApart(current, before, zoom), where).toBeGreaterThan(step * 0.5);
+            if (step > 1 && !(pixelsApart(current, before, zoom) > step * 0.5)) {
+              failures.push(`${where}, frame ${String(i)}: shakes`);
             }
           }
           // And the country is still on screen at the end.
-          expect(landShown(limits, view), where).toBe(true);
+          if (!landShown(limits, view)) failures.push(`${where}: the country is off screen`);
         }
       }
     }
+    expect(failures).toEqual([]);
   });
 
   it('moves smoothly when zooming out against an edge', () => {

@@ -7,7 +7,7 @@
  */
 import { loadIndex } from './decode';
 import { DEFAULT_LIMIT, SearchEngine } from './engine';
-import type { IndexInfo, WorkerRequest, WorkerResponse } from './types';
+import type { IndexInfo, NearView, WorkerRequest, WorkerResponse } from './types';
 
 /** Where messages come from and go to: the worker global, or a MessagePort in tests. */
 export interface Endpoint {
@@ -76,6 +76,15 @@ interface Pending {
   readonly id: number;
   readonly q: string;
   readonly limit: number;
+  readonly near: NearView | undefined;
+}
+
+/** Whether a message's `near` is absent or a point and a distance. */
+function isNear(value: unknown): boolean {
+  if (value === undefined) return true;
+  if (typeof value !== 'object' || value === null) return false;
+  const { lat, lon, km } = value as Record<string, unknown>;
+  return [lat, lon, km].every((n) => typeof n === 'number' && Number.isFinite(n));
 }
 
 function isRequest(data: unknown): data is WorkerRequest {
@@ -85,7 +94,12 @@ function isRequest(data: unknown): data is WorkerRequest {
     case 'load':
       return typeof m.url === 'string';
     case 'query':
-      return typeof m.id === 'number' && typeof m.q === 'string' && typeof m.limit === 'number';
+      return (
+        typeof m.id === 'number' &&
+        typeof m.q === 'string' &&
+        typeof m.limit === 'number' &&
+        isNear(m.near)
+      );
     case 'cancel':
       return typeof m.id === 'number';
     default:
@@ -108,7 +122,7 @@ export function serve(endpoint: Endpoint, fetcher: IndexFetcher = fetchIndex): v
     if (!engine) return;
     try {
       const t0 = performance.now();
-      const results = engine.search(p.q, p.limit);
+      const results = engine.search(p.q, p.limit, p.near);
       endpoint.postMessage({ type: 'result', id: p.id, results, ms: performance.now() - t0 });
     } catch (error) {
       endpoint.postMessage({ type: 'query-error', id: p.id, message: message(error) });
@@ -150,7 +164,7 @@ export function serve(endpoint: Endpoint, fetcher: IndexFetcher = fetchIndex): v
         void load(data.url);
         return;
       case 'query': {
-        const p = { id: data.id, q: data.q, limit: data.limit || DEFAULT_LIMIT };
+        const p = { id: data.id, q: data.q, limit: data.limit || DEFAULT_LIMIT, near: data.near };
         if (failed !== null) {
           endpoint.postMessage({ type: 'query-error', id: p.id, message: failed });
         } else if (engine) answer(p);

@@ -16,6 +16,7 @@ export type {
   GroupName,
   IndexInfo,
   MatchKind,
+  NearView,
   RecordKind,
   SearchHit,
   SearchRecord,

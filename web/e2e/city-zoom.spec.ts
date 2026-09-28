@@ -155,7 +155,7 @@ test('the Country Club Plaza view draws roads, buildings, water and names', asyn
   expect(problems).toEqual([]);
 });
 
-test('a view at a whole zoom level names its streets, and its highways by number', async ({
+test('a view at a whole zoom level names its streets, and no highway by its number', async ({
   page,
 }) => {
   const problems = watch(page);

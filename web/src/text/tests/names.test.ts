@@ -71,7 +71,7 @@ describe('displayName', () => {
   it('spells out the shortenings left over after the first pass', () => {
     expect(displayName('Shawnee Mission Pub Sch')).toBe('Shawnee Mission Public School');
     expect(displayName('Decatur Pub. Schs. Alt. Education')).toBe(
-      'Decatur Public Schools Alt. Education',
+      'Decatur Public Schools Alternative Education',
     );
     expect(displayName('MSD Southwest Allen County Schls')).toBe(
       'MSD Southwest Allen County Schools',
@@ -92,15 +92,233 @@ describe('displayName', () => {
     expect(displayName('BERGEN CO JDC')).toBe('Bergen County JDC');
   });
 
-  it("keeps a state's own code in capitals", () => {
+  it('spells out every shortening the directory uses a few times, where it has one meaning', () => {
+    const shown: [string, string][] = [
+      ['Quincy Area Voc Ctr', 'Quincy Area Vocational Center'],
+      ['Chana Educ Center/Rock River', 'Chana Education Center/Rock River'],
+      ['ROE Alt. Edu. Center-Macoupin', 'ROE Alternative Education Center-Macoupin'],
+      ['ESCAMBIA SCH. DIST. JAIL PROG.', 'Escambia School District Jail Program'],
+      ['West 40 Reg Safe Sch Middle Prg', 'West 40 Regional Safe School Middle Program'],
+      ['New Beginnings Regnl Safe Sch Pgm', 'New Beginnings Regional Safe School Program'],
+      ['Coop HS 1', 'Cooperative HS 1'],
+      ['Lozano Elem Bilingual & Intl Ctr', 'Lozano Elementary Bilingual & International Center'],
+      ['Univ of Chicago Chtr-Woodlawn', 'University of Chicago Charter-Woodlawn'],
+      ['Home & Hosp/Transition Support', 'Home & Hospital/Transition Support'],
+      ['Treasure Mtn. Junior High School', 'Treasure Mountain Junior High School'],
+      ['Regl Inst Scholastic Excellence', 'Regional Institute Scholastic Excellence'],
+      ['STUBBLEFIELD LRN CTR', 'Stubblefield Learning Center'],
+      ['HUMBOLDT ACAD OF HIGHER LRNING', 'Humboldt Academy of Higher Learning'],
+      ["ONONDAGA CNTY SHERIFF'S DEPT", "Onondaga County Sheriff's Department"],
+      ['Twin Cities German Immersion Chrtr', 'Twin Cities German Immersion Charter'],
+      ['Hiawatha Leadership Acdy-Northrop', 'Hiawatha Leadership Academy-Northrop'],
+      ['Crown Elem Comm Acd Fine Arts Ctr', 'Crown Elementary Community Academy Fine Arts Center'],
+      ['Mary D Lang Kdg Ctr', 'Mary D Lang Kindergarten Center'],
+      ['GREEN FOREST INTERMED SCHOOL', 'Green Forest Intermediate School'],
+      ['WASHINGTON IRVING INTERM SCHOOL', 'Washington Irving Intermediate School'],
+      ['CONG. MIKOR HATORAH', 'Congregation Mikor Hatorah'],
+      ['South Mountain Secure Trmnt Unit', 'South Mountain Secure Treatment Unit'],
+      ["WOMEN'S EAST REGION TRTMT CTR", "Women's East Region Treatment Center"],
+      ['Plymouth Commun Intermediate', 'Plymouth Community Intermediate'],
+      ['Gaylord High SchoolVoc Bldg', 'Gaylord High SchoolVoc Building'],
+      ['PALM AVENUE EXCEP. STUDENT CENTER', 'Palm Avenue Exceptional Student Center'],
+      ['LOCKWOOD SPECL. EDUC. COOP.', 'Lockwood Special Education Cooperative'],
+      ['Pine Hills Youth Corr Facil HS', 'Pine Hills Youth Correctional Facility High School'],
+      ['AD Johnston JrSr High School', 'AD Johnston Junior-Senior High School'],
+      ['WESTERN RECEPT/DIAG CORR CENTR', 'Western Reception/Diagnostic Correctional Center'],
+      ['Dimmick Comm Cons SD 175', 'Dimmick Community Consolidated School District 175'],
+      [
+        'The SD of Philadelphia Virtual Academy',
+        'The School District of Philadelphia Virtual Academy',
+      ],
+      ['Pike Road Jr High School', 'Pike Road Junior High School'],
+      ['Music Mountain Jr./Sr. High School', 'Music Mountain Junior/Senior High School'],
+      ['Zion-Benton Twnshp Hi Sch', 'Zion-Benton Township High School'],
+      ['GIFT - Ft. Thomas High School', 'GIFT - Fort Thomas High School'],
+      ['Wm E Bishop Elementary School', 'William E Bishop Elementary School'],
+      ['IZARD COUNTY CONS MIDDLE SCHOOL', 'Izard County Consolidated Middle School'],
+      ['Ogden Ave Elem School', 'Ogden Avenue Elementary School'],
+      ['MARION REG. JUVENILE DETENTION CENTER', 'Marion Regional Juvenile Detention Center'],
+      ['Levy Sp Ed Center', 'Levy Special Education Center'],
+      ['JUVENILE JUSTICE CENTER ALT ED', 'Juvenile Justice Center Alternative Education'],
+      ['Old National Trail Spec Serv Coop', 'Old National Trail Special Services Cooperative'],
+      ['CENTRAL VISUAL/PERF. ARTS HIGH', 'Central Visual/Performing Arts High'],
+      [
+        'Ivy Bound Acad of Math Sci and Tech Charter Mid',
+        'Ivy Bound Academy of Math Science and Tech Charter Middle',
+      ],
+      ['Belgrade-Brooten-Elrosa Sec.', 'Belgrade-Brooten-Elrosa Secondary'],
+      ['PINELLAS JUVENILE DET CENTER', 'Pinellas Juvenile Detention Center'],
+      ['Vermilion Co Area Vocational Cent', 'Vermilion County Area Vocational Center'],
+      ['Person Early College Innovation & Ldrshp', 'Person Early College Innovation & Leadership'],
+      ['Mt Carmel Elementary School', 'Mount Carmel Elementary School'],
+      ['GIFT - Mt. Graham High School', 'GIFT - Mount Graham High School'],
+      ['RUSSELL BLVD. ELEM.', 'Russell Boulevard Elementary'],
+      ['Sandshore Rd. Elementary School', 'Sandshore Road Elementary School'],
+      ['GREENE CTY TECH HIGH SCHOOL', 'Greene County Tech High School'],
+      ['BRAZORIA CO ALTER ED CTR', 'Brazoria County Alternative Education Center'],
+      ['NORTH HEIGHTS ALTER', 'North Heights Alternative'],
+    ];
+    for (const [written, expected] of shown) expect(displayName(written)).toBe(expected);
+  });
+
+  it('spells out the rest the directory uses, each where it has one meaning', () => {
+    const shown: [string, string, string?][] = [
+      [
+        'Crenshaw Sci Tech Engr Math and Med Magnet',
+        'Crenshaw Science Tech Engineering Math and Med Magnet',
+      ],
+      [
+        'Env Academy of Research Tech and Earth Scis',
+        'Environmental Academy of Research Tech and Earth Sciences',
+      ],
+      ['Hope D Wall TMH Child Dev Ctr', 'Hope D Wall TMH Child Development Center'],
+      ['Paradise Prof Dev ES', 'Paradise Professional Development Elementary School'],
+      ['Indiana Academy for Sci Math Hmn', 'Indiana Academy for Science Math Humanities'],
+      ['Hoover Elementary BioMed Sci Egng', 'Hoover Elementary BioMed Science Engineering'],
+      [
+        'Cesar E. Chavez Learning Acads-Soc Just Humanitas Academy',
+        'Cesar E. Chavez Learning Academies-Social Justice Humanitas Academy',
+      ],
+      ['KIPP Chicago Chrtrs - Ascend Acad', 'KIPP Chicago Charters - Ascend Academy'],
+      ['Christopher House Chrt ES', 'Christopher House Charter Elementary School'],
+      ['Asian Human Srvcs-Passage Chrtr', 'Asian Human Services-Passage Charter'],
+      ['Southside Sp Srvs Of Marion Co', 'Southside Special Services Of Marion Co'],
+      ['Alternative Spcl Needs Div Occ', 'Alternative Special Needs Div Occ'],
+      ['MT Sch For Deaf & Blnd HS', 'Montana School For Deaf & Blind High School', 'MT'],
+      ['IN School for the Blind & Vis Imprd', 'IN School for the Blind & Visually Impaired'],
+      ['Lincoln Cltrl Ctr-Montessori Elem', 'Lincoln Cultural Center-Montessori Elementary'],
+      ['Thornton Fractnl No High School', 'Thornton Fractional No High School'],
+      [
+        'Linda Esperanza Marquez High A Hntngtn Park Inst of Appl Med',
+        'Linda Esperanza Marquez High A Huntington Park Institute of Applied Med',
+      ],
+      ['N Pekin & Marquette Hght SD 102', 'N Pekin & Marquette Heights School District 102'],
+      ['Boothbay-Boothbay Hbr CSD', 'Boothbay-Boothbay Harbor CSD'],
+      ['Tri-County Sp Ed Jnt Agreement', 'Tri-County Special Education Joint Agreement'],
+      ['Univ of Chicago Chtr-Nth Kenwood', 'University of Chicago Charter-North Kenwood'],
+      ['Harrisburg HS - SciTech Cmp', 'Harrisburg High School - SciTech Campus'],
+      [
+        'Matanzas Christian Academy Priv School Sys Inc',
+        'Matanzas Christian Academy Private School System Inc',
+      ],
+      ['Hillsborough Virt Instr PRGS', 'Hillsborough Virtual Instr Programs'],
+      ['283-Ind Stdy 15 and Under - I.S.', '283-Independent Study 15 and Under - I.S.'],
+      ['Fridley Moore Lk Area Learning Ctr', 'Fridley Moore Lake Area Learning Center'],
+      ['Pt. Pleasant Primary', 'Point Pleasant Primary'],
+      ['BASIS SAN ANTONIO PRI - NORTHEAST CAMPUS', 'Basis San Antonio Primary - Northeast Campus'],
+      ['LA VEGA PRI PHIL BANCALE CAMPUS', 'La Vega Primary Phil Bancale Campus'],
+      ['PRI DAEP', 'Primary DAEP'],
+      ['Perspectives Chtr - Leadership Ac', 'Perspectives Charter - Leadership Academy'],
+      ['Mount Ascension Learning Ac HS', 'Mount Ascension Learning Academy High School'],
+      ['ARKANSAS CHRISTIAN AC', 'Arkansas Christian Academy'],
+      ['HIGHER HEIGHTS CHRISTIAN ACA', 'Higher Heights Christian Academy'],
+      [
+        'Kaizen Education Foundation dba Liberty Arts Acade (90334)',
+        'Kaizen Education Foundation dba Liberty Arts Academy (90334)',
+      ],
+      ['TARPON SPRINGS FUNDAMENTAL ELE', 'Tarpon Springs Fundamental Elementary'],
+      ['RED BIRD CHRISTIAN SCHO', 'Red Bird Christian School'],
+      [
+        'ST VINCENT DE PAUL DUAL LANGUAGE IMMERSION SCHOO',
+        'St Vincent De Paul Dual Language Immersion School',
+      ],
+      ['Jeannette Rankin Elementary Sc', 'Jeannette Rankin Elementary School'],
+      ['MADGE T. JAMES KIND. CTR.', 'Madge T. James Kindergarten Center'],
+      [
+        'REYNOLDA PRESBYTERIAN PRESCHOOL AND KIND',
+        'Reynolda Presbyterian Preschool and Kindergarten',
+      ],
+      ['GENTRY RESIDENTIAL TREAT. FAC.', 'Gentry Residential Treatment Facility'],
+      [
+        'Gr Lawrence Regional Vocational Technical',
+        'Greater Lawrence Regional Vocational Technical',
+      ],
+      ['Raymore-Peculiar Ninth Gr Cntr', 'Raymore-Peculiar Ninth Grade Center'],
+      [
+        'South Shore International Col Prep High School',
+        'South Shore International College Prep High School',
+      ],
+      ['LAMAR CONS H S', 'Lamar Consolidated High School'],
+      ['Mundelein Cons HSD 120', 'Mundelein Consolidated HSD 120'],
+      [
+        'Wilmington Mid Sci Tech Engr Arts Math (STEAM) Magnet',
+        'Wilmington Middle Science Tech Engineering Arts Math (STEAM) Magnet',
+      ],
+    ];
+    for (const [written, expected, state] of shown) {
+      expect(displayName(written, { state: state ?? null })).toBe(expected);
+    }
+  });
+
+  it('keeps acronyms that only look like words in capitals', () => {
+    expect(displayName('ACADEMIE LAFAYETTE ARMOUR IHS')).toBe('Academie Lafayette Armour IHS');
+    expect(displayName('ST BARNABAS CATHOLIC SCHOOL IMS')).toBe('St Barnabas Catholic School IMS');
+    expect(displayName('ELK CITY IES')).toBe('Elk City IES');
+    expect(displayName('CROSBYTON CISD PRE K-12')).toBe('Crosbyton CISD Pre K-12');
+    expect(displayName('VISD SUCCESS ACADEMY')).toBe('VISD Success Academy');
+    expect(displayName('EBISD WCJJAEP')).toBe('EBISD WCJJAEP');
+  });
+
+  it('leaves a shortening where it has another meaning', () => {
+    // Named for a man, not a grade.
+    expect(displayName('MARTIN LUTHER KING JR HIGH SCHOOL')).toBe(
+      'Martin Luther King Jr High School',
+    );
+    expect(displayName('Cloves C Campbell Sr Elementary School')).toBe(
+      'Cloves C Campbell Sr Elementary School',
+    );
+    // Ed Pastor, Mid Valley, Corr the family, Spec. the rank, South Dakota's SD.
+    expect(displayName('Ed Pastor Elementary 4')).toBe('Ed Pastor Elementary 4');
+    expect(displayName('Mid Valley Alternative Charter')).toBe('Mid Valley Alternative Charter');
+    expect(displayName('CORR ELEMENTARY SCHOOL')).toBe('Corr Elementary School');
+    expect(displayName('SPEC RAFAEL HERNANDO MIDDLE')).toBe('Spec Rafael Hernando Middle');
+    expect(displayName('SD SCH FOR THE DEAF')).toBe('SD School for the Deaf');
+    // Mountain View or Mount View; an ordinal's ending; Alter the archbishop.
+    expect(displayName('Mt View Middle School')).toBe('Mt View Middle School');
+    expect(displayName('63RD ST MULTICULTURAL ACAD')).toBe('63rd St Multicultural Academy');
+    expect(displayName('ARCHBISHOP ALTER HIGH SCHOOL')).toBe('Archbishop Alter High School');
+    // Tech is Technical or Technology, St Saint or Street, Int International or Intermediate,
+    // Med Medicine or Medical, Spec Special or Specialty.
+    expect(displayName('63RD ST MULTICULTURAL ACAD')).toBe('63rd St Multicultural Academy');
+    expect(displayName('Ogden Int High School')).toBe('Ogden Int High School');
+    expect(displayName('COLLEGIATE SCHOOL OF MED/BIO')).toBe('Collegiate School of Med/Bio');
+    expect(displayName('Reavis Elem Math & Sci Spec Schl')).toBe(
+      'Reavis Elementary Math & Science Spec School',
+    );
+    // A person's name, a program's own, a first word, a grade with its numbers.
+    expect(displayName('SCHOO MIDDLE SCHOOL')).toBe('Schoo Middle School');
+    expect(displayName('NTSH PRI PROGRAM WICHITA CAMPUS')).toBe('NTSH Pri Program Wichita Campus');
+    expect(displayName('AC PREP ELEMENTARY')).toBe('Ac Prep Elementary');
+    expect(displayName('FAC CHRISTIAN SCHOOL')).toBe('Fac Christian School');
+    expect(displayName('LaCrescent Gr 9-12')).toBe('LaCrescent Gr 9-12');
+    expect(displayName('Col. J. K. Tuffree Middle')).toBe('Col. J. K. Tuffree Middle');
+    expect(displayName('Jeannette Rankin Elementary Sc', { state: 'SC' })).toBe(
+      'Jeannette Rankin Elementary Sc',
+    );
+  });
+
+  it("spells out a school's own state, by its code", () => {
     expect(displayName('MO SCHLS FOR THE SEV DISABLED', { state: 'MO' })).toBe(
-      'MO Schools for the Sev Disabled',
+      'Missouri Schools for the Severely Disabled',
     );
     expect(displayName('WESTERN MO CORRECTIONAL CENTER', { state: 'MO' })).toBe(
-      'Western MO Correctional Center',
+      'Western Missouri Correctional Center',
     );
     expect(displayName('UNIVERSITY OF MO - COLUMBIA', { state: 'MO' })).toBe(
-      'University of MO - Columbia',
+      'University of Missouri - Columbia',
+    );
+    expect(displayName('MN Online High School - I.S.', { state: 'MN' })).toBe(
+      'Minnesota Online High School - I.S.',
+    );
+    expect(displayName('SD SCH FOR THE BLIND & VISUALLY IMPAIRED', { state: 'SD' })).toBe(
+      'South Dakota School for the Blind & Visually Impaired',
+    );
+    // A code that is also a word, a name or another shortening stays: Colorado's CO is County too.
+    expect(displayName('LA SCHOOL FOR AG SCIENCE', { state: 'LA' })).toBe(
+      'LA School for Ag Science',
+    );
+    expect(displayName('KIPP DC - KEY Academy PCS', { state: 'DC' })).toBe(
+      'KIPP DC - KEY Academy Public Charter School',
     );
     // Only the school's own state, and never a small word.
     expect(displayName('WESTERN MO CORRECTIONAL CENTER')).toBe('Western Mo Correctional Center');
@@ -122,7 +340,7 @@ describe('displayName', () => {
     expect(displayName('H S THOMPSON LEARNING CENTER')).toBe('H S Thompson Learning Center');
     expect(displayName('THE PUB ACADEMY')).toBe('The Pub Academy');
     expect(displayName('Bradwell Comm Arts & Sci Elem Sch')).toBe(
-      'Bradwell Comm Arts & Sci Elementary School',
+      'Bradwell Comm Arts & Science Elementary School',
     );
     expect(displayName('RIVER VALLEY CO-OP SCHOOL')).toBe('River Valley Co-Op School');
     expect(displayName('K12.COM ACADEMY')).toBe('K12.Com Academy');

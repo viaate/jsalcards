@@ -4,15 +4,15 @@
   import type { Attachment } from 'svelte/attachments';
 
   import type { SearchOption, Services, Target } from './app/boot';
-  import { ZOOM } from './app/startup';
+  import { grantedPlace, opensNearby } from './app/nearby';
   import { copy } from './copy';
-  import type { Basemap } from './map/basemap';
+  import type { Basemap, Place } from './map/basemap';
   import { loadBasemap } from './map/basemap/load';
   import type { Glow } from './map/glow-mount';
-  import { US_BOUNDS } from './map/basemap/us-geo';
   import { markStep, yieldToMain } from './map/basemap/reveal';
   import { afterFirstPaint } from './shell/paint';
   import { retireStill } from './shell/still';
+  import { pinnedSchool } from './state/pin';
   import { createUrlStore } from './state/url-store';
   import type { UrlStore } from './state/url-store';
   import type { UtcInstant } from './types/generated';
@@ -40,6 +40,7 @@
 
   const LIST_ID = 'search-results';
 
+  let stageElement = $state<HTMLElement>();
   let mapElement = $state<HTMLDivElement>();
   let frameElement = $state<HTMLDivElement>();
   let inputElement = $state<HTMLInputElement>();
@@ -76,6 +77,8 @@
   let basemap: Basemap | undefined;
   /** Where to go once the map exists, for a result picked before it did. */
   let pendingTarget: Target | null = null;
+  /** The viewer's place, found before the map existed: their area is its home view. */
+  let pendingNear: Place | null = null;
   /** The rest of the app (search, data, glow, offline), loaded after the first paint. */
   let services: Promise<Services | null> = Promise.resolve(null);
 
@@ -85,13 +88,22 @@
     glow: Glow | null;
   }
 
+  /** The page's controls over the map, which its labels keep clear of (the results list aside). */
+  const CONTROLS = '.wordmark, .search, .updated, .legend, .locate';
+
   /**
    * Loads MapLibre after the first paint and hands the view over from the
-   * still to the WebGL map once the map draws the same lines. If the map
-   * cannot start (no WebGL), the still simply stays. A link's view opens at
-   * the nearest view the map allows on this screen. The glow layer's code
-   * loads alongside MapLibre's, and the layer goes on with the map's style,
-   * so it never makes the map draw its first frames again.
+   * still to the WebGL map. At the national view the map draws the still's
+   * own lines, and the still fades out over them once the map is up. Anywhere
+   * else (a link's view, the viewer's own area) the still goes at once, in
+   * the frame the map first shows, so the country is never laid over a
+   * street. If the map cannot start (no WebGL), the still simply stays. A
+   * link's view opens at the nearest view the map allows on this screen. A
+   * phone with nothing linked or pinned opens over its viewer's area when
+   * they have already let the site know where they are (app/nearby.ts), read
+   * while MapLibre loads. The glow layer's code loads alongside MapLibre's,
+   * and the layer goes on with the map's style, so it never makes the map
+   * draw its first frames again.
    */
   async function startMap(signal: AbortSignal, links: UrlStore): Promise<MapParts | undefined> {
     // A function, so each check reads the signal afresh after an await.
@@ -100,18 +112,48 @@
     if (aborted() || mapElement === undefined || frameElement === undefined) return;
     const container = mapElement;
     const frame = frameElement;
+    const stage = stageElement;
+    let handedOver = false;
+    /** The still goes: faded out over the same lines at the national view, at once anywhere else. */
+    const handOver = (national: boolean): void => {
+      if (handedOver || still === null) return;
+      handedOver = true;
+      retireStill(still, { fade: national });
+      markStep('map-takeover');
+    };
     let map: Basemap;
     let glow: Glow | null = null;
     try {
-      const [factory, glowCode] = await Promise.all([
-        loadBasemap(),
-        import('./map/glow-mount').catch(() => null),
+      const loading = Promise.all([loadBasemap(), import('./map/glow-mount').catch(() => null)]);
+      // Held until it is awaited below: a download that fails at once is not left unhandled.
+      loading.catch(() => undefined);
+      // Reading the pin opens the site's storage, a wait of its own: once the downloads are going.
+      await yieldToMain();
+      const linked =
+        links.state.view !== null || links.state.selection !== null || pinnedSchool() !== null;
+      const [[factory, glowCode], near] = await Promise.all([
+        loading,
+        linked || !opensNearby(frame) ? null : grantedPlace(),
       ]);
       markStep('map-loaded');
       // Evaluating MapLibre and creating the map are each sizable; keep them in separate tasks.
       await yieldToMain();
       if (aborted()) return;
-      map = factory.create({ container, frame, view: links.state.view });
+      map = await factory.create({
+        container,
+        frame,
+        view: links.state.view,
+        near,
+        controls: () => stage?.querySelectorAll(CONTROLS) ?? [],
+        // Off the national view, the still goes as the map first shows, never over it.
+        onReveal: ({ national }) => {
+          if (!national) handOver(false);
+        },
+      });
+      if (aborted()) {
+        map.destroy();
+        return;
+      }
       try {
         glow = glowCode?.mountGlow(map.map) ?? null;
       } catch {
@@ -126,22 +168,12 @@
     });
     basemap = map;
     followLinks(map, links, signal);
+    if (pendingNear !== null) map.showNear(pendingNear);
     if (pendingTarget !== null) show(pendingTarget);
 
-    let handedOver = false;
-    const handOver = (): void => {
-      if (handedOver || still === null) return;
-      handedOver = true;
-      retireStill(still);
-      markStep('map-takeover');
-    };
-    // Someone moving the map before it is ready must not see a frozen still on top.
-    map.map.on('movestart', (event) => {
-      if (event.originalEvent !== undefined) handOver();
-    });
-    map.map.on('wheel', handOver);
+    // Someone moving the map before it is up shows it at once (index.ts), and the still goes then.
     await map.ready;
-    if (!aborted()) handOver();
+    if (!aborted()) handOver(true);
     return { basemap: map, glow };
   }
 
@@ -151,6 +183,8 @@
    */
   function followLinks(map: Basemap, links: UrlStore, signal: AbortSignal): void {
     const record = (): void => {
+      // A flight waiting at its stop is on its way: the address keeps where it is going.
+      if (map.flightStopped) return;
       links.setView(map.national ? null : map.view);
     };
     // A link outside this screen's limits opened at the nearest allowed view: write that one.
@@ -275,6 +309,11 @@
     inputElement.select();
   }
 
+  // The update time appears over the map: its labels keep clear of it.
+  $effect(() => {
+    if (UpdateTime !== null && updatedAt !== null) basemap?.controlsChanged();
+  });
+
   /** A live file is shown, or none is: the update time follows it. */
   function onUpdated(generatedAt: UtcInstant | null): void {
     updatedAt = generatedAt;
@@ -287,13 +326,12 @@
     );
   }
 
-  /** Degrees past the continental US a position can be and still be taken to it. */
-  const NEAR_US = 1;
-
   /**
-   * Asks the phone where it is (the browser asks the person first) and takes
-   * the map there, at a city's zoom. A position far from the continental US,
-   * or none, leaves the map where it is.
+   * Asks the phone where it is (the browser asks the person first, this once)
+   * and glides the map to their area, which the map then keeps as its home
+   * view; with that allowed, the phone opens there from then on
+   * (app/nearby.ts). A position off the continental US, or none, leaves the
+   * map where it is.
    */
   function locate(): void {
     if (locating || !('geolocation' in navigator)) return;
@@ -301,11 +339,9 @@
     navigator.geolocation.getCurrentPosition(
       ({ coords }) => {
         locating = false;
-        const { latitude: lat, longitude: lon } = coords;
-        const [west, south, east, north] = US_BOUNDS;
-        if (lon < west - NEAR_US || lon > east + NEAR_US) return;
-        if (lat < south - NEAR_US || lat > north + NEAR_US) return;
-        show({ view: { lat, lon, zoom: ZOOM.city } });
+        const place = { lat: coords.latitude, lon: coords.longitude };
+        if (basemap === undefined) pendingNear = place;
+        else basemap.showNear(place);
       },
       () => {
         locating = false;
@@ -369,7 +405,7 @@
 
 <svelte:window onkeydown={onShortcut} />
 
-<main class="stage">
+<main class="stage" bind:this={stageElement}>
   <div class="map" bind:this={mapElement}></div>
   <div class="frame" aria-hidden="true" bind:this={frameElement} {@attach adoptStill}></div>
   <header

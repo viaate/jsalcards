@@ -88,6 +88,36 @@ describe('build-search-index', () => {
     expect(engine.search('synthetic hollow').cities[0]?.id).toBe('4200001');
   });
 
+  it('finds a record by the name the page shows it by as well as its own', () => {
+    // The staged directory's record for a school NCES names only by its level (stage-data.mjs),
+    // kept out of the folder the other tests read whole.
+    const shown = join(mkdtempSync(join(dir, 'shown-')), 'shown.jsonl');
+    writeFileSync(
+      shown,
+      JSON.stringify({
+        kind: 'school',
+        id: '290061203365',
+        name: 'MIDDLE SCHOOL',
+        shown: 'Citizens of the World Charter - Middle School',
+        sub: 'Kansas City, MO',
+        state: 'MO',
+        lat: 39.0646,
+        lon: -94.5899,
+        weight: 0,
+      }),
+    );
+    const shownOut = join(dir, 'shown.bin');
+    expect(build('--out', shownOut, shown).code).toBe(0);
+    const engine = new SearchEngine(loadIndex(new Uint8Array(gunzipSync(readFileSync(shownOut)))));
+    for (const text of ['citizens of the world charter middle school', 'middle school']) {
+      expect(engine.search(text).schools[0]).toMatchObject({
+        id: '290061203365',
+        name: 'MIDDLE SCHOOL',
+        shown: 'Citizens of the World Charter - Middle School',
+      });
+    }
+  });
+
   it('writes the same bytes every time', () => {
     const again = join(dir, 'again.bin');
     build('--out', again, zips, cities, schools);

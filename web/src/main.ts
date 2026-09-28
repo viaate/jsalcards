@@ -1,7 +1,6 @@
 import { flushSync, mount } from 'svelte';
 
 import App from './App.svelte';
-import { afterFirstPaint } from './shell/paint';
 import { takeStaticShell } from './shell/static-shell';
 
 /*
@@ -16,16 +15,28 @@ if (target === null) {
   throw new Error('Snowlight: missing #app mount point in index.html');
 }
 
-const staticShell = takeStaticShell(target);
-mount(App, {
-  target,
-  props: { still: staticShell?.still ?? null, initialQuery: staticShell?.query ?? '' },
-});
-// Run onMount now, so the live shell has adopted the still before the static one goes.
-flushSync();
-staticShell?.retire(target);
+/**
+ * Swaps the static shell for the live one, in one task: the task after this
+ * module has run, so the browser is not held up by both at once. The static
+ * shell takes typing meanwhile, and what was typed carries over.
+ */
+function start(root: HTMLElement): void {
+  const staticShell = takeStaticShell(root);
+  mount(App, {
+    target: root,
+    props: { still: staticShell?.still ?? null, initialQuery: staticShell?.query ?? '' },
+  });
+  // Run onMount now, so the live shell has adopted the still before the static one goes.
+  flushSync();
+  staticShell?.retire(root);
+}
+setTimeout(() => {
+  start(target);
+}, 0);
 
-// Shared styles and the mono face are not needed for the first frame.
-void afterFirstPaint().then(() =>
-  Promise.all([import('./styles/global.css'), import('@fontsource-variable/geist-mono')]),
-);
+/*
+ * Nothing else is linked: the inline critical CSS carries every rule of
+ * src/styles/global.css (e2e/shell.spec.ts checks the tokens match), and no
+ * text is set in the mono face. A stylesheet linked now would only make the
+ * browser style and lay out the whole page again as the map starts.
+ */

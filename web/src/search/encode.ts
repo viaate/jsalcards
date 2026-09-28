@@ -30,8 +30,20 @@ export class RecordError extends Error {
   }
 }
 
-const RECORD_KEYS = new Set(['kind', 'id', 'name', 'sub', 'state', 'lat', 'lon', 'weight']);
+const RECORD_KEYS = new Set([
+  'kind',
+  'id',
+  'name',
+  'shown',
+  'sub',
+  'state',
+  'lat',
+  'lon',
+  'weight',
+]);
 const MAX_NAME = 200;
+/** A shown name can have a district's name before the school's own. */
+const MAX_SHOWN = 2 * MAX_NAME;
 const MAX_ID = 64;
 // Control characters are exactly what this strips.
 // eslint-disable-next-line no-control-regex
@@ -55,7 +67,7 @@ export function validateRecord(value: unknown, where: string): SearchRecord {
   for (const key of Object.keys(obj)) {
     if (!RECORD_KEYS.has(key)) throw new RecordError(where, `unknown field "${key}"`);
   }
-  const { kind, id, name, sub, state, lat, lon, weight } = obj;
+  const { kind, id, name, shown, sub, state, lat, lon, weight } = obj;
   if (typeof kind !== 'string' || !(KIND_CODES as readonly string[]).includes(kind)) {
     throw new RecordError(where, `kind must be one of ${KIND_CODES.join(', ')}`);
   }
@@ -69,6 +81,13 @@ export function validateRecord(value: unknown, where: string): SearchRecord {
   }
   if (tokenize(cleanName).length === 0) {
     throw new RecordError(where, `name "${cleanName}" has no letters or digits to search by`);
+  }
+  if (shown !== undefined && typeof shown !== 'string') {
+    throw new RecordError(where, 'shown must be a string when given');
+  }
+  const cleanShown = cleanText(shown ?? '');
+  if (cleanShown.length > MAX_SHOWN) {
+    throw new RecordError(where, `shown must be at most ${String(MAX_SHOWN)} characters`);
   }
   if (typeof sub !== 'string') throw new RecordError(where, 'sub must be a string');
   const cleanSub = cleanText(sub);
@@ -87,7 +106,7 @@ export function validateRecord(value: unknown, where: string): SearchRecord {
   if (typeof weight !== 'number' || !Number.isFinite(weight) || weight < 0) {
     throw new RecordError(where, 'weight must be a finite number of 0 or more');
   }
-  return {
+  const record: SearchRecord = {
     kind: kind as RecordKind,
     id,
     name: cleanName,
@@ -97,6 +116,10 @@ export function validateRecord(value: unknown, where: string): SearchRecord {
     lon,
     weight,
   };
+  // A shown name with nothing to search by, or the name itself, adds nothing.
+  return cleanShown === cleanName || tokenize(cleanShown).length === 0
+    ? record
+    : { ...record, shown: cleanShown };
 }
 
 const STATE_WORDS = new Set<string>();
@@ -214,6 +237,13 @@ export function encodeIndex(input: readonly SearchRecord[]): {
     const toks = indexTokens(tokenize(r.name));
     postings += toks.length;
     for (const t of toks) dict.add(t);
+    if (r.shown !== undefined) {
+      const own = new Set(toks);
+      for (const t of indexTokens(tokenize(r.shown))) {
+        dict.add(t);
+        if (!own.has(t)) postings++;
+      }
+    }
   }
   subList.forEach((s, i) => {
     const len = subLoc[i] ?? 0;
@@ -320,6 +350,7 @@ export function encodeIndex(input: readonly SearchRecord[]): {
   });
   sections[Section.dictShared] = shared;
   sections[Section.dictSuffix] = enc.encode(suffixes.join(''));
+  sections[Section.shown] = enc.encode(records.map((r) => `${r.shown ?? ''}\n`).join(''));
 
   const out = new ByteWriter();
   out.u32(MAGIC);

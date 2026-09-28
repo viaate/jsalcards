@@ -5,7 +5,14 @@ import { fileURLToPath } from 'node:url';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { format } from '../../copy';
-import { createConnectivity, parseInstant, updateLine, updateState } from '../freshness';
+import {
+  LIVE_FRESH_MS,
+  createConnectivity,
+  liveUntil,
+  parseInstant,
+  updateLine,
+  updateState,
+} from '../freshness';
 import type { ConnectivityHost } from '../freshness';
 
 // The house style lives in scripts/check-copy.mjs, a plain Node module (see src/copy.test.ts).
@@ -31,6 +38,24 @@ function line(now: string, online: boolean, liveWithinMs = 20 * MINUTE): string 
     now: new Date(now),
   });
 }
+
+describe('the live threshold', () => {
+  it('is one named constant, used when no other is given', () => {
+    expect(LIVE_FRESH_MS).toBeGreaterThan(0);
+    const at = (ms: number): boolean | undefined =>
+      updateState({
+        generatedAt: GENERATED,
+        online: true,
+        timeZone: ZONE,
+        now: new Date(Date.parse(GENERATED) + ms),
+      })?.live;
+    expect(at(0)).toBe(true);
+    expect(at(LIVE_FRESH_MS)).toBe(true);
+    expect(at(LIVE_FRESH_MS + 1)).toBe(false);
+    expect(liveUntil(GENERATED)).toBe(Date.parse(GENERATED) + LIVE_FRESH_MS);
+    expect(liveUntil('2026-01-12')).toBeNull();
+  });
+});
 
 describe('parseInstant', () => {
   it('reads a UtcInstant', () => {

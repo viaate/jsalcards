@@ -19,11 +19,14 @@ import type { MeasureText } from '../home-names';
 import { BASEMAP_IDS } from '../ids';
 import { OPENFREEMAP_MIN_ZOOM } from '../openfreemap';
 import {
+  STATE_NAME_SMALL,
   STATE_NAMES_UNTIL,
   namedStates,
+  smallStateNamesAt,
   stateNameFrom,
   stateNameShown,
   stateNameSize,
+  stateNameSizeFor,
   stateNamesAt,
   stateNamesOf,
 } from '../state-names';
@@ -38,6 +41,7 @@ import {
   cityNameLayerId,
   cityNameSize,
   stateNameFilter,
+  stateNameSizeExpression,
 } from '../style';
 import type { BasemapColors, UsLinesData } from '../style';
 import { STATE_NAME_SIZE, STATE_NAMES_CLEAR_OF, US_LINES_FILE } from '../us-geo';
@@ -83,12 +87,13 @@ function stateLayer(layers: readonly LayerSpecification[]): LayerSpecification {
   return layer;
 }
 
-/** A layout or paint value of a layer at a zoom. */
+/** A layout or paint value of a layer at a zoom, for a feature with these properties. */
 function evaluate(
   layer: LayerSpecification,
   section: 'layout' | 'paint',
   name: string,
   zoom: number,
+  properties: Record<string, unknown> = {},
 ): unknown {
   const input = (layer as unknown as Record<string, Record<string, unknown> | undefined>)[
     section
@@ -97,7 +102,7 @@ function evaluate(
   const spec = reference[`${section}_${layer.type}`]?.[name];
   const parsed = expression.createPropertyExpression(input, name, spec as never);
   if (parsed.result !== 'success') throw new Error(JSON.stringify(parsed.value));
-  return parsed.value.evaluate({ zoom }, { type: 1, properties: {} });
+  return parsed.value.evaluate({ zoom }, { type: 1, properties });
 }
 
 describe('the state names in the bundled file', () => {
@@ -123,6 +128,39 @@ describe('the state names in the bundled file', () => {
         ],
       }),
     ).toEqual([]);
+  });
+
+  it('carry the zoom a name is clear at its usual size from, where it is only small before', () => {
+    expect(
+      stateNamesOf({
+        features: [
+          {
+            properties: { kind: 'state-name', name: 'Small', label: 'Small', fit: 1, usualFrom: 4 },
+            geometry: { type: 'Point', coordinates: [-100, 40] },
+          },
+          {
+            properties: {
+              kind: 'state-name',
+              name: 'Usual',
+              label: 'Usual',
+              fit: 1,
+              usualFrom: 'x',
+            },
+            geometry: { type: 'Point', coordinates: [-90, 40] },
+          },
+        ],
+      }),
+    ).toEqual([
+      { name: 'Small', label: 'Small', fit: 1, lon: -100, lat: 40, usualFrom: 4 },
+      { name: 'Usual', label: 'Usual', fit: 1, lon: -90, lat: 40 },
+    ]);
+    // Only a name build-geo.mjs cleared only at the small size carries it.
+    const carrying = STATES.filter((state) => state.usualFrom !== undefined);
+    expect(carrying.map((state) => state.name)).toContain('Pennsylvania');
+    for (const state of carrying) {
+      expect(state.usualFrom, state.name).toBeGreaterThan(stateNameFrom(state.fit));
+      expect(state.usualFrom, state.name).toBeLessThanOrEqual(STATE_NAMES_UNTIL);
+    }
   });
 });
 
@@ -172,6 +210,38 @@ describe('when a state is named', () => {
     expect(stateNamesAt(NAMED, 7)).toEqual([]);
   });
 
+  it("names every state a phone's opening view holds, smaller where only that fits", () => {
+    // A 390 x 844 phone opens at about 3.85; Pennsylvania is clear of New York's name at the
+    // usual size only closer in, North Carolina fits it only closer in.
+    const pennsylvania = NAMED.find((state) => state.name === 'Pennsylvania');
+    expect(pennsylvania?.usualFrom).toBeGreaterThan(3.85);
+    expect(pennsylvania?.from).toBe(pennsylvania?.usualFrom);
+    expect(pennsylvania?.fromSmall).toBeLessThanOrEqual(3.85);
+    const northCarolina = NAMED.find((state) => state.name === 'North Carolina');
+    expect(stateNameFrom(northCarolina?.fit ?? NaN)).toBeGreaterThan(3.85);
+    const small = smallStateNamesAt(NAMED, 3.85);
+    for (const name of ['Pennsylvania', 'North Carolina']) {
+      expect(AT_HOME, name).toContain(name);
+      expect(small, name).toContain(name);
+    }
+    // Texas is at its usual size; the small ones are a share of it, and still fit inside.
+    expect(small).not.toContain('Texas');
+    for (const state of NAMED.filter((named) => small.includes(named.name))) {
+      const size = stateNameSizeFor(state, 3.85);
+      expect(size, state.name).toBeCloseTo(STATE_NAME_SMALL * stateNameSize(3.85), 9);
+      expect(size, state.name).toBeLessThanOrEqual(state.fit * 2 ** 3.85 + 1e-9);
+    }
+    // At its usual size from the zoom that fits, clear.
+    const from = pennsylvania?.from ?? NaN;
+    expect(smallStateNamesAt(NAMED, from)).not.toContain('Pennsylvania');
+    expect(smallStateNamesAt(NAMED, from - 0.01)).toContain('Pennsylvania');
+    expect(stateNameSizeFor(pennsylvania ?? { fit: NaN }, from)).toBe(stateNameSize(from));
+    expect(stateNameSizeFor({ fit: pennsylvania?.fit ?? NaN }, from - 0.01)).toBe(
+      stateNameSize(from - 0.01),
+    );
+    expect(STATE_NAME_SMALL).toBeGreaterThanOrEqual(0.8);
+  });
+
   it('names most of the country where phones open', () => {
     // A 390 x 844 phone opens at about 3.85, a 430 x 932 one at about 4.
     expect(stateNamesAt(NAMED, 3.85).length).toBeGreaterThanOrEqual(30);
@@ -205,13 +275,14 @@ describe("the style's state names", () => {
     expect(passes(stateNameFilter([]), 'Kansas')).toBe(false);
   });
 
-  it('sets them in quiet spaced capitals under the city names, at the size they were fitted at', () => {
+  it('sets them in quiet spaced capitals over the city names, at the size they were fitted at', () => {
     const ids = PHONE.layers.map((layer) => layer.id);
-    const firstCity = Math.min(
+    const lastCity = Math.max(
       ...CITY_NAME_BANDS.map((_band, band) => ids.indexOf(cityNameLayerId(band))),
     );
     const layer = stateLayer(PHONE.layers);
-    expect(ids.indexOf(layer.id)).toBeLessThan(firstCity);
+    // Over them all, so MapLibre places them first: a state's name never gives way to a city's.
+    expect(ids.indexOf(layer.id)).toBeGreaterThan(lastCity);
     expect(evaluate(layer, 'layout', 'text-transform', 4)).toBe('uppercase');
     expect(evaluate(layer, 'layout', 'text-padding', 4)).toBe(STATE_NAME_PADDING);
     for (const zoom of [3, 3.85, 4.5, 6, 6.9]) {
@@ -220,10 +291,67 @@ describe("the style's state names", () => {
         9,
       );
     }
+    // The states named small at the small size, the rest at the usual one.
+    const sized = (small: readonly string[], name: string, zoom: number): number => {
+      const parsed = expression.createPropertyExpression(
+        stateNameSizeExpression(small),
+        'text-size',
+        (latest as unknown as Record<string, Record<string, unknown>>).layout_symbol?.[
+          'text-size'
+        ] as never,
+      );
+      if (parsed.result !== 'success') throw new Error(JSON.stringify(parsed.value));
+      return parsed.value.evaluate({ zoom }, { type: 1, properties: { name } }) as number;
+    };
+    for (const zoom of [3, 3.85, 4.5, 6]) {
+      expect(sized(['Pennsylvania'], 'Pennsylvania', zoom)).toBeCloseTo(
+        STATE_NAME_SMALL * stateNameSize(zoom),
+        9,
+      );
+      expect(sized(['Pennsylvania'], 'Texas', zoom)).toBeCloseTo(stateNameSize(zoom), 9);
+      expect(sized([], 'Pennsylvania', zoom)).toBeCloseTo(stateNameSize(zoom), 9);
+    }
     // The dim label grey: quieter than the city names, never a status color.
     const color = evaluate(layer, 'paint', 'text-color', 4) as { r: number; g: number };
     expect(Math.round(color.r * 255)).toBe(0x6b);
     expect(color.r).toBe(color.g);
+  });
+
+  it('sets the states named in view just as the bundled names, a small one kept small', () => {
+    const bundled = stateLayer(PHONE.layers);
+    const inView = PHONE.layers.find((layer) => layer.id === BASEMAP_IDS.usStateAreaLabel);
+    if (inView === undefined) throw new Error('no states in view');
+    // Over every place name, and over the bundled names: MapLibre places them first.
+    const ids = PHONE.layers.map((layer) => layer.id);
+    expect(ids.indexOf(inView.id)).toBeGreaterThan(ids.indexOf(bundled.id));
+    const layout = (layer: LayerSpecification): Record<string, unknown> => layer.layout ?? {};
+    for (const name of [
+      'text-font',
+      'text-transform',
+      'text-letter-spacing',
+      'text-line-height',
+      'text-padding',
+      'text-anchor',
+      'text-field',
+    ]) {
+      expect(layout(inView)[name], name).toEqual(layout(bundled)[name]);
+    }
+    for (const zoom of [3, 3.85, 4.5, 6, 9]) {
+      // A name the layer takes over from the bundled one keeps its size, small or usual.
+      expect(
+        evaluate(inView, 'layout', 'text-size', zoom, { name: 'Iowa', scale: 1 }) as number,
+      ).toBeCloseTo(stateNameSize(zoom), 9);
+      expect(evaluate(inView, 'layout', 'text-size', zoom, { name: 'Iowa' }) as number).toBeCloseTo(
+        stateNameSize(zoom),
+        9,
+      );
+      expect(
+        evaluate(inView, 'layout', 'text-size', zoom, {
+          name: 'Pennsylvania',
+          scale: STATE_NAME_SMALL,
+        }) as number,
+      ).toBeCloseTo(STATE_NAME_SMALL * stateNameSize(zoom), 9);
+    }
   });
 
   it('spaces the city names closer on a phone, as the state names were placed clear of', () => {

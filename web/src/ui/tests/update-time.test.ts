@@ -2,6 +2,7 @@ import { flushSync, mount, unmount } from 'svelte';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { format } from '../../copy';
+import { LIVE_FRESH_MS } from '../../state/freshness';
 import UpdateTime from '../UpdateTime.svelte';
 
 const GENERATED = '2026-01-12T12:42:00Z';
@@ -49,6 +50,28 @@ describe('UpdateTime', () => {
     expect(line?.textContent.trim()).toBe(format.updatedAt(generated, zone, new Date()));
     expect(line?.classList.contains('is-live')).toBe(false);
     expect(line?.querySelector('.dot')).toBeNull();
+  });
+
+  it('stops saying live the moment the file is older than the live threshold, between ticks', async () => {
+    // Ticks fall at :10 and :40 past each minute from here; the file turns stale at 13:02:00.
+    vi.setSystemTime(new Date('2026-01-12T12:50:10Z'));
+    const target = show();
+    const stale = new Date(GENERATED).getTime() + LIVE_FRESH_MS;
+    await vi.advanceTimersByTimeAsync(stale - Date.now() - 1000);
+    flushSync();
+    expect(target.querySelector('.updated')?.classList.contains('is-live')).toBe(true);
+    await vi.advanceTimersByTimeAsync(1000 + 5);
+    flushSync();
+    const line = target.querySelector('.updated');
+    expect(line?.classList.contains('is-live')).toBe(false);
+    expect(line?.textContent.trim()).toBe(format.updatedAt(generated, zone, new Date()));
+  });
+
+  it('never says live for a file already older than the threshold', () => {
+    vi.setSystemTime(new Date(new Date(GENERATED).getTime() + LIVE_FRESH_MS + 1));
+    const target = show();
+    expect(target.querySelector('.updated')?.classList.contains('is-live')).toBe(false);
+    expect(target.querySelector('.dot')).toBeNull();
   });
 
   it('says offline while the page is offline, and live again once back', () => {

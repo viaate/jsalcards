@@ -33,8 +33,10 @@
  *     dictShared  u8 per dictionary token: prefix length shared with the
  *                 token before it
  *     dictSuffix  UTF-8, the rest of each token, each ended by '\n'
+ *     shown       UTF-8, per record, its shown name (types.ts
+ *                 SearchRecord.shown) or nothing, each ended by '\n'
  *
- * The dictionary holds every token any name or place is indexed under,
+ * The dictionary holds every token any name, shown name or place is indexed under,
  * sorted by UTF-16 code units. Records are stored grouped, and by id within a
  * group, which keeps ids, places and coordinates close to their neighbours so
  * they compress well. The worker orders them by weight when it loads.
@@ -44,7 +46,8 @@
 
 /** 'SLSI' read as a little-endian u32. */
 export const MAGIC = 0x49534c53;
-export const FORMAT_VERSION = 1;
+/** 2: records carry the name the page shows them by (the shown section). */
+export const FORMAT_VERSION = 2;
 export const HEADER_BYTES = 40;
 /** 10^-4 degrees is about 11 m, finer than the sources' own geocoding. */
 export const COORD_DECIMALS = 4;
@@ -62,8 +65,9 @@ export const Section = {
   ids: 7,
   dictShared: 8,
   dictSuffix: 9,
+  shown: 10,
 } as const;
-export const SECTION_COUNT = 10;
+export const SECTION_COUNT = 11;
 
 /** Kind codes as stored in kindState. */
 export const KIND_CODES = ['school', 'district', 'city', 'zip'] as const;

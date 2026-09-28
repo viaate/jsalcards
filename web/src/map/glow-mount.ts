@@ -1,8 +1,8 @@
 /**
- * Puts the glow layer on the map: over the ground, the lines and the
- * national view's city names, so a city's lights shine over its name; under
- * every label from zoom 7, so street and place names stay crisp above the
- * light up close.
+ * Puts the glow layer on the map, right over the style's slot for it
+ * (BASEMAP_IDS.glowSlot): over the ground, the lines and the national view's
+ * city names, so a city's lights shine over its name; under every label from
+ * zoom 7, so street and place names stay crisp above the light up close.
  *
  * This module loads with the map's own code, after the first paint, and the
  * layer goes on the map with its style, before the map's first frame: adding
@@ -15,7 +15,7 @@ import type { LitSchools } from '../data/closings';
 import { BASEMAP_IDS } from './basemap/ids';
 import { GlowLayer } from './glow';
 
-export const GLOW_LAYER_ID = 'snowlight-glow';
+export const GLOW_LAYER_ID = BASEMAP_IDS.glow;
 
 export interface Glow {
   /** Shows these schools, replacing the ones shown before. */
@@ -27,8 +27,10 @@ export function mountGlow(map: MapLibreMap): Glow {
   const layer = new GlowLayer({ id: GLOW_LAYER_ID });
   const add = (): void => {
     if (map.getLayer(GLOW_LAYER_ID) !== undefined) return;
-    const before = map.getLayer(BASEMAP_IDS.labels) === undefined ? undefined : BASEMAP_IDS.labels;
-    map.addLayer(layer, before);
+    // Right over its slot, whichever layers the map has on so far (index.ts adds them in turn).
+    const order = map.getLayersOrder();
+    const slot = order.indexOf(BASEMAP_IDS.glowSlot);
+    map.addLayer(layer, slot < 0 ? undefined : order[slot + 1]);
   };
   if (map.isStyleLoaded() === true) add();
   else map.once('style.load', add);

@@ -139,7 +139,7 @@ describe('school names in the tiles', () => {
     ]);
   });
 
-  it("read a public school's state from its id, and keep that state's code", () => {
+  it("read a public school's state from its id, and spell out that state's code", () => {
     expect(stateOf('290002502748')).toBe('MO');
     expect(stateOf('280019401239')).toBe('MS');
     expect(stateOf('110000000001')).toBe('DC');
@@ -153,8 +153,26 @@ describe('school names in the tiles', () => {
       { index: 2, id: '290000000002', name: 'MO SCHLS FOR THE SEV DISABLED', kind: 0 },
     ]);
     expect(names(showSchoolNames(tile))).toEqual([
-      ['290000000001', 'Western MO Correctional Center'],
-      ['290000000002', 'MO Schools for the Sev Disabled'],
+      ['290000000001', 'Western Missouri Correctional Center'],
+      ['290000000002', 'Missouri Schools for the Severely Disabled'],
+    ]);
+  });
+
+  it("show a name as the directory's fix for it says", () => {
+    const tile = schoolTile([
+      { index: 1, id: '290061203286', name: 'ELEMENTARY SCHOOL', kind: 0 },
+      { index: 2, id: '290002502748', name: 'ALLEN VILLAGE ELEMENTARY ACADE', kind: 0 },
+      { index: 3, id: '290000000003', name: 'ELEMENTARY SCHOOL', kind: 0 },
+    ]);
+    const fixes = {
+      '290061203286': { district: 'Citizens of the World Charter' },
+      '290002502748': { end: 24 },
+    };
+    expect(names(showSchoolNames(tile, fixes))).toEqual([
+      ['290061203286', 'Citizens of the World Charter - Elementary School'],
+      ['290002502748', 'Allen Village Elementary'],
+      // The same written name, with no fix of its own.
+      ['290000000003', 'Elementary School'],
     ]);
   });
 

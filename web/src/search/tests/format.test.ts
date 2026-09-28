@@ -75,6 +75,30 @@ describe('records', () => {
     expect(r.name).toBe('A B');
   });
 
+  it('keeps a shown name only where it says more than the name', () => {
+    const base = {
+      kind: 'school',
+      id: '290061203286',
+      name: 'MIDDLE SCHOOL',
+      sub: 'Kansas City, MO',
+      state: 'MO',
+      lat: 39,
+      lon: -94.5,
+      weight: 3,
+    };
+    expect(
+      validateRecord({ ...base, shown: ' Citizens of the World Charter  - Middle School' }, 't:1')
+        .shown,
+    ).toBe('Citizens of the World Charter - Middle School');
+    expect(validateRecord({ ...base, shown: 'MIDDLE  SCHOOL' }, 't:2')).not.toHaveProperty('shown');
+    expect(validateRecord({ ...base, shown: ' - ' }, 't:3')).not.toHaveProperty('shown');
+    expect(validateRecord(base, 't:4')).not.toHaveProperty('shown');
+    expect(() => validateRecord({ ...base, shown: 7 }, 't:5')).toThrow('shown must be a string');
+    expect(() => validateRecord({ ...base, shown: 'x'.repeat(401) }, 't:6')).toThrow(
+      'shown must be at most 400',
+    );
+  });
+
   it.each([
     [null, 'expected a JSON object'],
     [[], 'expected a JSON object'],
@@ -249,10 +273,22 @@ describe('index round trip', () => {
         weight: i,
       });
     }
+    records.push({
+      kind: 'school',
+      id: '290061203286',
+      name: 'MIDDLE SCHOOL',
+      shown: 'Citizens of the World Charter - Middle School',
+      sub: 'Kansas City, MO',
+      state: 'MO',
+      lat: 39.0351,
+      lon: -94.5627,
+      weight: 300,
+    });
     const back = allRecords(encodeIndex(records).bytes);
     for (const r of records) {
       const got = back.find((b) => b.kind === r.kind && b.id === r.id);
       expect(got?.name, r.id).toBe(r.name);
+      expect(got?.shown, r.id).toBe(r.shown);
       // Coordinates keep 4 decimals: off by at most half a unit.
       expect(Math.abs((got?.lat ?? 0) - r.lat)).toBeLessThanOrEqual(0.00005 + 1e-9);
       expect(Math.abs((got?.lon ?? 0) - r.lon)).toBeLessThanOrEqual(0.00005 + 1e-9);

@@ -12,7 +12,7 @@ import { mercatorXFromLng, mercatorYFromLat } from '../../glow/mercator';
 import type { MapView } from '../bounds';
 import { cityNamesOf, namesCutByEdges, textMeasure } from '../home-names';
 import type { CityName, MeasureText } from '../home-names';
-import { WHOLE_COUNTRY, viewLimits } from '../limits';
+import { viewLimits } from '../limits';
 import { CITY_NAME_BANDS, CITY_NAME_HALO, cityNameSize } from '../style';
 import type { UsLinesData } from '../style';
 import { US_LINES_FILE } from '../us-geo';
@@ -31,13 +31,19 @@ const SCREEN = { width: 400, height: 800 };
 const VIEW: MapView = { lat: 38, lon: -90, zoom: 4 };
 
 /** A city at a screen point of VIEW on SCREEN. */
-function cityAt(name: string, x: number, y: number, rank = 0): CityName {
+function cityAt(
+  name: string,
+  x: number,
+  y: number,
+  rank = 0,
+  offset: readonly [number, number] = [0, 0],
+): CityName {
   const scale = 512 * 2 ** VIEW.zoom;
   const worldX = mercatorXFromLng(VIEW.lon) + (x - SCREEN.width / 2) / scale;
   const worldY = mercatorYFromLat(VIEW.lat) + (y - SCREEN.height / 2) / scale;
   const lon = worldX * 360 - 180;
   const lat = (Math.atan(Math.sinh(Math.PI * (1 - 2 * worldY))) * 180) / Math.PI;
-  return { name, rank, lon, lat };
+  return { name, rank, lon, lat, offset };
 }
 
 describe('the city names', () => {
@@ -45,6 +51,9 @@ describe('the city names', () => {
     const cities = cityNamesOf(US_LINES);
     expect(cities.length).toBeGreaterThan(200);
     expect(cities[0]).toMatchObject({ name: 'New York', rank: 0 });
+    // A name set off the outline carries where it goes; the rest sit on their points.
+    expect(cities.some((city) => city.offset[0] !== 0 || city.offset[1] !== 0)).toBe(true);
+    expect(cities.find((city) => city.name === 'Denver')?.offset).toEqual([0, 0]);
     for (const city of cities) {
       expect(city.name).not.toBe('');
       expect(Number.isInteger(city.rank)).toBe(true);
@@ -97,6 +106,17 @@ describe('names cut by the edges', () => {
     expect(namesCutByEdges(cities, VIEW, SCREEN, HALF_EM)).toEqual([]);
   });
 
+  it('reckons with where a name is set off its point', () => {
+    const margin = half + CITY_NAME_HALO + 4;
+    const cities = [
+      // Clear of the edge on its point, across it where it is set.
+      cityAt('Edgeton', margin, 400, 0, [-2, 0]),
+      // Across the edge on its point, clear of it where it is set.
+      cityAt('Farside', 2, 500, 0, [4, 0]),
+    ];
+    expect(namesCutByEdges(cities, VIEW, SCREEN, HALF_EM)).toEqual(['Edgeton']);
+  });
+
   it('measures only the names near an edge', () => {
     const measured: string[] = [];
     const spy: MeasureText = (text, size) => {
@@ -129,7 +149,7 @@ describe('names cut by the edges', () => {
 
   it("at a laptop's national view cuts none: the whole country is inside the frame", () => {
     const screen = { width: 1440, height: 900 };
-    const limits = viewLimits(screen, { top: 88, right: 48, bottom: 48, left: 48 }, WHOLE_COUNTRY);
+    const limits = viewLimits(screen, { top: 88, right: 48, bottom: 48, left: 48 });
     const wide: MeasureText = (text, size) => text.length * size * 0.66;
     expect(namesCutByEdges(cityNamesOf(US_LINES), limits.home, screen, wide)).toEqual([]);
   });

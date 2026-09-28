@@ -102,14 +102,14 @@
 
 <style>
   /*
-    Under the search field; the shell sets where it starts (--results-left), as
-    wide as the strip on a phone. It never runs past the bottom of the screen:
-    what does not fit scrolls.
+    Under the search field; the shell sets where it starts and ends
+    (--results-left, --results-right), as wide as the strip on a phone. It
+    never runs past the bottom of the screen: what does not fit scrolls.
   */
   .results {
     position: absolute;
     top: calc(100% + 8px);
-    right: 0;
+    right: var(--results-right, 0);
     left: var(--results-left, 0);
     z-index: 3;
     max-height: calc(
@@ -187,7 +187,12 @@
     min-width: 0;
   }
 
-  .name,
+  /* A long name wraps at its spaces, whole: no name is cut short. */
+  .name {
+    overflow-wrap: break-word;
+    text-wrap: pretty;
+  }
+
   .sub {
     overflow: hidden;
     text-overflow: ellipsis;

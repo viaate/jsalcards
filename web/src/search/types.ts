@@ -19,6 +19,13 @@ export interface SearchRecord {
   /** Stable identifier: NCES ID, Census GEOID or ZIP code. */
   readonly id: string;
   readonly name: string;
+  /**
+   * The name as the page shows it, where that has words the written name
+   * is not found by ("MIDDLE SCHOOL" of Citizens of the World Charter is
+   * shown "Citizens of the World Charter - Middle School"): the record is
+   * found by these words as well as its name's. Optional.
+   */
+  readonly shown?: string;
   /** Second line, such as "Lancaster, PA". May be empty. */
   readonly sub: string;
   /** USPS code, such as "PA". */
@@ -48,6 +55,10 @@ export interface SearchHit {
   readonly match: MatchKind;
   /** [start, end) UTF-16 ranges of `name` that matched, for bolding. */
   readonly highlight: readonly (readonly [number, number])[];
+  /** The record's shown name (SearchRecord.shown), when it has one. */
+  readonly shown?: string;
+  /** [start, end) UTF-16 ranges of `shown` that matched, when it has one. */
+  readonly shownHighlight?: readonly (readonly [number, number])[];
 }
 
 /** What a search resolves to. */
@@ -77,6 +88,17 @@ export interface IndexInfo {
   readonly phases: Readonly<Record<string, number>>;
 }
 
+/**
+ * Where the person is looking: records within `km` of this point rank ahead
+ * of the rest, among the ones whose names have every word typed.
+ */
+export interface NearView {
+  readonly lat: number;
+  readonly lon: number;
+  /** Kilometres from the point that count as near. */
+  readonly km: number;
+}
+
 /** Page to worker. */
 export type WorkerRequest =
   | { readonly type: 'load'; readonly url: string }
@@ -85,6 +107,7 @@ export type WorkerRequest =
       readonly id: number;
       readonly q: string;
       readonly limit: number;
+      readonly near?: NearView;
     }
   | { readonly type: 'cancel'; readonly id: number };
 

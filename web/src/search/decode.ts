@@ -53,6 +53,8 @@ export interface GroupData {
   readonly kindState: Uint8Array;
   /** Rank to the word count of the name with abbreviations spelled out. */
   readonly canon: Uint8Array;
+  /** Rank to the same count of its shown name (types.ts SearchRecord.shown); 0 for none. */
+  readonly shownCanon: Uint8Array;
   /** Rank to its weight code (format.ts quantizeWeight): log2(1 + weight) × 128. */
   readonly weight: Uint16Array;
   /** Token id to the start of its ranks in namePost (length tokens + 1). */
@@ -69,6 +71,8 @@ export interface RecordView {
   readonly kind: RecordKind;
   readonly id: string;
   readonly name: string;
+  /** The name as the page shows it, where the record has one (types.ts SearchRecord.shown). */
+  readonly shown?: string;
   readonly sub: string;
   readonly state: string;
   readonly lat: number;
@@ -91,6 +95,8 @@ interface IndexParts {
   readonly locSubs: Uint32Array;
   readonly names: string;
   readonly nameStart: Uint32Array;
+  readonly shown: string;
+  readonly shownStart: Uint32Array;
   readonly subs: readonly string[];
   readonly recordSub: Uint32Array;
   readonly kindStateFile: Uint8Array;
@@ -126,11 +132,27 @@ export class SearchIndex {
     return names.slice(nameStart[file] ?? 0, (nameStart[file + 1] ?? 1) - 1);
   }
 
+  /** A record's latitude and longitude in degrees, without the rest of it. */
+  lat(file: number): number {
+    return (this.parts.lat[file] ?? 0) / this.parts.coordScale;
+  }
+
+  lon(file: number): number {
+    return (this.parts.lon[file] ?? 0) / this.parts.coordScale;
+  }
+
+  /** A record's shown name (types.ts SearchRecord.shown), or '' when it has none. */
+  shown(file: number): string {
+    const { shown, shownStart } = this.parts;
+    return shown.slice(shownStart[file] ?? 0, (shownStart[file + 1] ?? 1) - 1);
+  }
+
   record(file: number): RecordView {
     const p = this.parts;
     const ks = p.kindStateFile[file] ?? 0;
     const name = this.name(file);
-    return {
+    const shown = this.shown(file);
+    const view: RecordView = {
       kind: KIND_CODES[ks >>> 6] ?? 'school',
       id: p.ids.get(file) ?? name,
       name,
@@ -139,6 +161,7 @@ export class SearchIndex {
       lat: (p.lat[file] ?? 0) / p.coordScale,
       lon: (p.lon[file] ?? 0) / p.coordScale,
     };
+    return shown === '' ? view : { ...view, shown };
   }
 }
 
@@ -423,6 +446,23 @@ class IdTokenizer implements TokenSink {
     this.rules[id];
 
   /**
+   * Drops the ids from `own` on that are already in [begin, own): the
+   * tokens of a second text of the same record (its shown name) that its
+   * first did not have.
+   */
+  keepNew(begin: number, own: number): void {
+    const data = this.data;
+    let w = own;
+    for (let i = own; i < this.length; i++) {
+      const id = data[i] ?? 0;
+      let seen = false;
+      for (let j = begin; j < own; j++) if (data[j] === id) seen = true;
+      if (!seen) data[w++] = id;
+    }
+    this.length = w;
+  }
+
+  /**
    * Appends the indexed token ids of text[start, end) and returns the
    * expanded word count. Throws when a token is missing from the dictionary.
    */
@@ -641,19 +681,34 @@ class IdColumn {
   }
 }
 
+/**
+ * Each record's indexed tokens, in one list: its name's, then its shown
+ * name's that its name does not have, so a record is found by either.
+ */
 function tokenizeNames(
   names: string,
   nameStart: Uint32Array,
+  shown: string,
+  shownStart: Uint32Array,
   n: number,
   tokenizer: IdTokenizer,
-): { fwd: Int32Array; fwdStart: Uint32Array; canon: Uint8Array } {
+): { fwd: Int32Array; fwdStart: Uint32Array; canon: Uint8Array; shownCanon: Uint8Array } {
   const fwdStart = new Uint32Array(n + 1);
   const canon = new Uint8Array(n);
+  const shownCanon = new Uint8Array(n);
   for (let i = 0; i < n; i++) {
+    const begin = tokenizer.length;
     canon[i] = tokenizer.add(names, nameStart[i] ?? 0, (nameStart[i + 1] ?? 1) - 1);
+    const from = shownStart[i] ?? 0;
+    const to = (shownStart[i + 1] ?? 1) - 1;
+    if (to > from) {
+      const own = tokenizer.length;
+      shownCanon[i] = tokenizer.add(shown, from, to);
+      tokenizer.keepNew(begin, own);
+    }
     fwdStart[i + 1] = tokenizer.length;
   }
-  return { fwd: tokenizer.data, fwdStart, canon };
+  return { fwd: tokenizer.data, fwdStart, canon, shownCanon };
 }
 
 /** File indexes of a group in rank order: heaviest first, ties in file order. */
@@ -747,6 +802,7 @@ interface GroupInput {
   readonly weightBytes: Uint8Array;
   readonly kindStateFile: Uint8Array;
   readonly canonFile: Uint8Array;
+  readonly shownCanonFile: Uint8Array;
   readonly fwd: Int32Array;
   readonly fwdStart: Uint32Array;
   readonly recordSub: Uint32Array;
@@ -757,12 +813,13 @@ interface GroupInput {
 }
 
 function buildGroup(input: GroupInput): GroupData {
-  const { g, kindStateFile, canonFile, recordSub } = input;
+  const { g, kindStateFile, canonFile, shownCanonFile, recordSub } = input;
   const { from, to, rankOf } = input;
   const fileIndex = rankGroup(input.weightBytes, input.n, kindStateFile, g, from, to);
   const size = fileIndex.length;
   const kindState = new Uint8Array(size);
   const canon = new Uint8Array(size);
+  const shownCanon = new Uint8Array(size);
   const weight = new Uint16Array(size);
   const { weightBytes, n } = input;
   for (let r = 0; r < size; r++) {
@@ -770,6 +827,7 @@ function buildGroup(input: GroupInput): GroupData {
     rankOf[f] = r;
     kindState[r] = kindStateFile[f] ?? 0;
     canon[r] = canonFile[f] ?? 0;
+    shownCanon[r] = shownCanonFile[f] ?? 0;
     weight[r] = (weightBytes[f] ?? 0) | ((weightBytes[n + f] ?? 0) << 8);
   }
   const { off, post } = buildPostings(
@@ -796,6 +854,7 @@ function buildGroup(input: GroupInput): GroupData {
     fileIndex,
     kindState,
     canon,
+    shownCanon,
     weight,
     nameOff: off,
     namePost: post,
@@ -855,6 +914,8 @@ export function loadIndex(bytes: Uint8Array, phases?: Record<string, number>): S
 
   const names = decoder.decode(section(Section.names));
   const nameStart = lineStarts(names, n, 'names');
+  const shown = decoder.decode(section(Section.shown));
+  const shownStart = lineStarts(shown, n, 'shown');
   const subsText = decoder.decode(section(Section.subs));
   const subStart = lineStarts(subsText, subCount, 'subs');
   const subs = new Array<string>(subCount);
@@ -876,7 +937,14 @@ export function loadIndex(bytes: Uint8Array, phases?: Record<string, number>): S
   lap('attributes');
 
   const tokenizer = new IdTokenizer(table, tokenCount);
-  const { fwd, fwdStart, canon } = tokenizeNames(names, nameStart, n, tokenizer);
+  const { fwd, fwdStart, canon, shownCanon } = tokenizeNames(
+    names,
+    nameStart,
+    shown,
+    shownStart,
+    n,
+    tokenizer,
+  );
   lap('tokenize');
 
   const groups: GroupData[] = [];
@@ -893,6 +961,7 @@ export function loadIndex(bytes: Uint8Array, phases?: Record<string, number>): S
         weightBytes,
         kindStateFile,
         canonFile: canon,
+        shownCanonFile: shownCanon,
         fwd,
         fwdStart,
         recordSub,
@@ -920,6 +989,8 @@ export function loadIndex(bytes: Uint8Array, phases?: Record<string, number>): S
     locSubs: places.subs,
     names,
     nameStart,
+    shown,
+    shownStart,
     subs,
     recordSub,
     kindStateFile,

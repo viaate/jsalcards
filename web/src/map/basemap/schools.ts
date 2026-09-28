@@ -26,6 +26,7 @@ import type {
   CircleLayerSpecification,
   ExpressionSpecification,
   SymbolLayerSpecification,
+  VariableAnchorOffsetCollectionSpecification,
   VectorSourceSpecification,
 } from 'maplibre-gl';
 
@@ -44,6 +45,8 @@ export const SCHOOL_DOTS_FROM = 11;
 export const SCHOOL_NAMES_FROM = 13;
 /** Zoom levels a class takes to fade in, before the zoom it is drawn from. */
 export const SCHOOL_FADE = 0.25;
+/** Clear space kept around each school's name, in CSS pixels. */
+export const SCHOOL_NAME_PADDING = 5;
 /** Where the campus part of a name starts: after a spaced dash. */
 const CAMPUS_MARK = ' - ';
 
@@ -173,6 +176,43 @@ export function schoolLabel(colors: SchoolColors): ExpressionSpecification {
   ] as unknown as ExpressionSpecification;
 }
 
+/**
+ * How far a name sits from its dot, in ems of its size, beside the dot and
+ * under or over it. Under or over, it clears the dot's own space (and the
+ * name's padding) with a pixel to spare at every zoom names are drawn at, so
+ * a name with no room at either side, on a phone's narrow screen, still has
+ * a place: its dot keeps the space a name must not cross.
+ */
+export const SCHOOL_NAME_BESIDE = 0.75;
+export const SCHOOL_NAME_UNDER = 1;
+/** Across, at a corner: less than beside, as the name is also moved down or up. */
+const SCHOOL_NAME_CORNER = 0.5;
+
+/** The sides a name tries, in turn, each with its offset from the dot in ems. */
+export function schoolNameAnchors(): VariableAnchorOffsetCollectionSpecification {
+  const beside = SCHOOL_NAME_BESIDE;
+  const under = SCHOOL_NAME_UNDER;
+  const corner = SCHOOL_NAME_CORNER;
+  return [
+    'left',
+    [beside, 0],
+    'right',
+    [-beside, 0],
+    'top',
+    [0, under],
+    'bottom',
+    [0, -under],
+    'bottom-left',
+    [corner, -under],
+    'bottom-right',
+    [-corner, -under],
+    'top-left',
+    [corner, under],
+    'top-right',
+    [-corner, under],
+  ];
+}
+
 /** Each school's name beside its dot, on whichever side has room. */
 export function schoolNameLayer(colors: SchoolColors): SymbolLayerSpecification {
   return {
@@ -186,23 +226,14 @@ export function schoolNameLayer(colors: SchoolColors): SymbolLayerSpecification 
       'text-font': [MAP_FONTS.medium],
       // A size above every street name's at each zoom, so a school reads first.
       'text-size': byZoom(SCHOOL_NAMES_FROM, 12, 15, 13.5, 17, 15),
-      // Beside the dot first, then above or below it, then at a corner: wherever there is room.
-      'text-variable-anchor': [
-        'left',
-        'right',
-        'top',
-        'bottom',
-        'bottom-left',
-        'bottom-right',
-        'top-left',
-        'top-right',
-      ],
-      'text-radial-offset': 0.75,
+      // Beside the dot first, then under or over it, then at a corner: wherever there is room.
+      'text-variable-anchor-offset': schoolNameAnchors(),
       'text-justify': 'auto',
       'text-max-width': 11,
       'text-line-height': 1.2,
       'text-letter-spacing': 0.01,
-      'text-padding': 1,
+      // Clear space around each name: where two would crowd, one yields, whole.
+      'text-padding': SCHOOL_NAME_PADDING,
       'text-allow-overlap': false,
       'text-ignore-placement': false,
       'text-optional': false,

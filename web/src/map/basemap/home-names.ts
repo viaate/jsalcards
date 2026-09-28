@@ -2,18 +2,20 @@
  * The national city and state names the screen's edges would cut.
  *
  * MapLibre places a label that runs off the screen as readily as one inside
- * it. At a phone's home view the country runs off both sides of the screen,
- * and a name cut in half at the edge of the first screen reads as a fault:
+ * it. At a phone's home view the country fills the screen's width, so a name
+ * by a coast can run past its edge, and a name cut in half at the edge of the
+ * first screen reads as a fault:
  * the map leaves those names out there (style.ts), and brings them back once
  * someone moves it, when names come and go at the edges as on any map.
  */
 import { mercatorXFromLng, mercatorYFromLat } from '../glow/mercator';
 import type { MapView } from './bounds';
+import { OPENFREEMAP_MIN_ZOOM } from './openfreemap';
 import {
   STATE_NAME_LEADING,
   STATE_NAME_TRACKING,
   stateNameShown,
-  stateNameSize,
+  stateNameSizeFor,
 } from './state-names';
 import type { StateName } from './state-names';
 import { CITY_NAME_BANDS, CITY_NAME_HALO, CITY_NAME_LETTER_SPACING, cityNameSize } from './style';
@@ -25,6 +27,8 @@ export interface CityName {
   readonly rank: number;
   readonly lon: number;
   readonly lat: number;
+  /** Where the name goes from the city's point, in ems of its size (build-geo.mjs); [0, 0] on it. */
+  readonly offset: readonly [number, number];
 }
 
 /** The width, in CSS pixels, of `text` set `size` pixels high in the city names' face. */
@@ -71,17 +75,26 @@ export function cityNamesOf(usLines: UsLinesData): CityName[] {
   const names: CityName[] = [];
   for (const feature of usLines.features) {
     const { properties, geometry } = (feature ?? {}) as {
-      properties?: { kind?: unknown; name?: unknown; rank?: unknown };
+      properties?: { kind?: unknown; name?: unknown; rank?: unknown; offset?: unknown };
       geometry?: { type?: unknown; coordinates?: unknown };
     };
     if (properties?.kind !== 'city' || geometry?.type !== 'Point') continue;
-    const { name, rank } = properties;
+    const { name, rank, offset } = properties;
     const [lon, lat]: readonly unknown[] = Array.isArray(geometry.coordinates)
       ? (geometry.coordinates as readonly unknown[])
       : [];
     if (typeof name !== 'string' || typeof rank !== 'number') continue;
     if (typeof lon !== 'number' || typeof lat !== 'number') continue;
-    names.push({ name, rank, lon, lat });
+    const [ox, oy]: readonly unknown[] = Array.isArray(offset)
+      ? (offset as readonly unknown[])
+      : [];
+    names.push({
+      name,
+      rank,
+      lon,
+      lat,
+      offset: typeof ox === 'number' && typeof oy === 'number' ? [ox, oy] : [0, 0],
+    });
   }
   return names;
 }
@@ -112,8 +125,12 @@ export function textMeasure(
   };
 }
 
-/** How many of the largest cities the map names at `zoom`: the bands in from there. */
+/**
+ * How many of the largest cities the map names at `zoom`: the bands in from
+ * there, and none from the handover to the street tiles' own names on.
+ */
 function namedAt(zoom: number): number {
+  if (!(zoom < OPENFREEMAP_MIN_ZOOM)) return 0;
   let named = 0;
   for (const band of CITY_NAME_BANDS) if (zoom >= band.zoom) named = band.names;
   return named;
@@ -149,13 +166,13 @@ export function namesCutByEdges(
   const labels = cities
     .filter((city) => city.rank < named)
     .map((city): Label => {
-      const [x, y] = screenPoint(view, screen, city.lon, city.lat);
+      const [px, py] = screenPoint(view, screen, city.lon, city.lat);
       const lines = [city.name];
       return {
         name: city.name,
         lines,
-        x,
-        y,
+        x: px + city.offset[0] * size,
+        y: py + city.offset[1] * size,
         size,
         tracking: CITY_NAME_LETTER_SPACING,
         leading: LINE_HEIGHT,
@@ -171,7 +188,6 @@ export function stateNamesCutByEdges(
   screen: Screen,
   measure: MeasureText,
 ): string[] {
-  const size = stateNameSize(view.zoom);
   const labels = states
     .filter((state) => stateNameShown(state.fit, view.zoom))
     .map((state): Label => {
@@ -182,7 +198,7 @@ export function stateNamesCutByEdges(
         lines,
         x,
         y,
-        size,
+        size: stateNameSizeFor(state, view.zoom),
         tracking: STATE_NAME_TRACKING,
         leading: STATE_NAME_LEADING,
       };

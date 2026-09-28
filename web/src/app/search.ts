@@ -8,8 +8,12 @@
  * Only the newest text ever shows results.
  */
 
-import type { RecordKind, SearchClient, SearchHit, SearchResults } from '../search';
+import { DISTRICT_NAME_FIXES, SCHOOL_NAME_FIXES } from 'virtual:snowlight/school-names';
+
+import type { NearView, RecordKind, SearchClient, SearchHit, SearchResults } from '../search';
 import { casedName, nameLayout, shownRanges } from '../text/names';
+import type { NameFix } from '../text/names';
+import { stateOfId } from '../text/school-names';
 
 /** Makes a search client for an index URL (the client code loads with it). */
 export type ClientFactory = (indexUrl: string) => Promise<SearchClient>;
@@ -29,10 +33,13 @@ export interface SearchControllerOptions {
 export interface SearchController {
   /** Starts loading the index, if it has not started. */
   warm(): void;
-  /** Searches `text`; an empty text shows nothing. */
-  query(text: string): void;
+  /**
+   * Searches `text`; an empty text shows nothing. With `near`, where the
+   * person is looking: good matches there come first.
+   */
+  query(text: string, near?: NearView): void;
   /** Resolves to the results for `text` once the index is loaded, or null. For links to a ZIP code. */
-  lookup(text: string): Promise<SearchResults | null>;
+  lookup(text: string, near?: NearView): Promise<SearchResults | null>;
   destroy(): void;
 }
 
@@ -80,12 +87,12 @@ export function createSearchController(options: SearchControllerOptions): Search
     return starting;
   };
 
-  const lookup = async (text: string): Promise<SearchResults | null> => {
+  const lookup = async (text: string, near?: NearView): Promise<SearchResults | null> => {
     if (unavailable || text.trim() === '') return null;
     const made = await start();
     if (made === null || destroyed) return null;
     try {
-      return await made.search(text, { limit });
+      return await made.search(text, near === undefined ? { limit } : { limit, near });
     } catch {
       // Superseded by newer text, or search is unavailable: nothing to show.
       return null;
@@ -96,13 +103,13 @@ export function createSearchController(options: SearchControllerOptions): Search
     warm() {
       if (!unavailable) void start();
     },
-    query(text) {
+    query(text, near) {
       latest = text;
       if (text.trim() === '' || unavailable) {
         options.onResults(null);
         return;
       }
-      void lookup(text).then((results) => {
+      void lookup(text, near).then((results) => {
         if (destroyed || latest !== text || results === null) return;
         options.onResults(results);
       });
@@ -113,6 +120,37 @@ export function createSearchController(options: SearchControllerOptions): Search
       client?.destroy();
       client = null;
     },
+  };
+}
+
+/**
+ * Where the person is looking, for search to put good matches there first:
+ * from zoom NEAR_FROM_ZOOM in, a view's middle and the distance to its
+ * corners, kept between NEAR_MIN_KM (a town's schools) and NEAR_MAX_KM (a
+ * region's). Further out the view is the country, or most of it, and no
+ * place is nearer than another.
+ */
+export const NEAR_FROM_ZOOM = 6;
+export const NEAR_MIN_KM = 40;
+export const NEAR_MAX_KM = 250;
+/** The Earth's circumference at the equator, in metres, and MapLibre's tile size in CSS pixels. */
+const EARTH_METRES = 40_075_016.686;
+const TILE_PIXELS = 512;
+
+/** The near view of a map view on a screen `width` by `height` CSS pixels, or undefined. */
+export function nearView(
+  view: { readonly lat: number; readonly lon: number; readonly zoom: number },
+  width: number,
+  height: number,
+): NearView | undefined {
+  if (!(view.zoom >= NEAR_FROM_ZOOM)) return undefined;
+  const metresPerPixel =
+    (EARTH_METRES * Math.cos((view.lat * Math.PI) / 180)) / (TILE_PIXELS * 2 ** view.zoom);
+  const km = (Math.hypot(width, height) / 2) * (metresPerPixel / 1000);
+  return {
+    lat: view.lat,
+    lon: view.lon,
+    km: Math.min(NEAR_MAX_KM, Math.max(NEAR_MIN_KM, km)),
   };
 }
 
@@ -164,19 +202,42 @@ export interface SearchSection {
   readonly start: number;
 }
 
+/** The directory's fixes for the names of schools and of districts (tools/school-names.ts). */
+export interface NameFixTables {
+  readonly schools: Readonly<Record<string, NameFix>>;
+  readonly districts: Readonly<Record<string, NameFix>>;
+}
+
+const BUILD_FIXES: NameFixTables = { schools: SCHOOL_NAME_FIXES, districts: DISTRICT_NAME_FIXES };
+
 /**
  * A hit's name as shown, and where the text typed matched it. Schools and
- * districts have their shortenings spelled out; places keep their words.
+ * districts read as the map names them (school-tiles.ts), by the state their
+ * id says: their shortenings spelled out, and the directory's fix for their
+ * name applied (a name NCES cut off, or a school named only "Elementary
+ * School" named with its district first). Places keep their words.
+ *
+ * Where the shown name has words the written one is not found by, the index
+ * has it too (SearchHit.shown), and the match is marked in it as it is.
  */
-function shownName(hit: SearchHit): { name: string; highlight: [number, number][] } {
+function shownName(
+  hit: SearchHit,
+  fixes: NameFixTables,
+): { name: string; highlight: [number, number][] } {
   if (hit.kind === 'city' || hit.kind === 'zip') {
     return { name: casedName(hit.name), highlight: hit.highlight.map(([a, b]) => [a, b]) };
   }
-  const layout = nameLayout(hit.name, { state: hit.state });
-  return {
-    name: layout.map((piece) => piece.text).join(''),
-    highlight: shownRanges(layout, hit.name, hit.highlight),
-  };
+  const fix = (hit.kind === 'school' ? fixes.schools : fixes.districts)[hit.id] ?? {};
+  const layout = nameLayout(hit.name, { state: stateOfId(hit.id) }, fix);
+  const name = layout.map((piece) => piece.text).join('');
+  if (
+    hit.shown !== undefined &&
+    hit.shownHighlight !== undefined &&
+    hit.shown === name.replace(/\s{2,}/gu, ' ').trim()
+  ) {
+    return { name: hit.shown, highlight: hit.shownHighlight.map(([a, b]) => [a, b]) };
+  }
+  return { name, highlight: shownRanges(layout, hit.name, hit.highlight) };
 }
 
 interface Shown {
@@ -227,11 +288,15 @@ function shareRows(sections: readonly { kind: RecordKind; size: number }[]): num
  * of their best hit. Hits keep their rank order, a row that repeats one
  * above it is left out, and the list shows at most LIST_ROWS rows.
  */
-export function searchOptions(results: SearchResults, idPrefix: string): SearchOption[] {
+export function searchOptions(
+  results: SearchResults,
+  idPrefix: string,
+  fixes: NameFixTables = BUILD_FIXES,
+): SearchOption[] {
   const sections: { kind: RecordKind; rows: Shown[] }[] = [];
   for (const group of results.order) {
     for (const hit of results[group]) {
-      const shown: Shown = { hit, ...shownName(hit), sub: casedName(hit.sub) };
+      const shown: Shown = { hit, ...shownName(hit, fixes), sub: casedName(hit.sub) };
       let section = sections.find((s) => s.kind === hit.kind);
       if (section === undefined) {
         section = { kind: hit.kind, rows: [] };

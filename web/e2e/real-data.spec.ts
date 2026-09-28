@@ -31,6 +31,8 @@ import { build, preview } from 'vite';
 import type { PreviewServer } from 'vite';
 
 import { copy } from '../src/copy';
+import { FLIGHT_LEAD } from '../src/map/basemap/flight';
+import { HELD_FRAME_CLASS } from '../src/map/basemap/held-frame';
 import { BASEMAP_IDS } from '../src/map/basemap/ids';
 
 const WEB = fileURLToPath(new URL('..', import.meta.url));
@@ -39,6 +41,10 @@ const SITE_DATA = path.join(PIPELINE_OUT, 'site-data');
 const GLOW_LAYER = 'snowlight-glow';
 const PEMBROKE_HILL = { id: 'A1902690', lon: -94.593001, lat: 39.03606 };
 const PEMBROKE_HILL_NAME = 'The Pembroke Hill School - Wornall Campus';
+/** Named "ELEMENTARY SCHOOL" by the directory, under Citizens of the World Charter. */
+const CITIZENS_ELEMENTARY = '290061203286';
+/** "ALLEN VILLAGE ELEMENTARY ACADE" in the directory: 30 characters, all Missouri keeps. */
+const ALLEN_VILLAGE_ELEMENTARY = '290002502748';
 /** The school tiles' archive, as the build publishes it. */
 const SCHOOL_TILES = /\/data\/schools\/schools\.[0-9a-f]{10}\.pmtiles$/;
 const GPU_DRIVER_NOISE =
@@ -165,6 +171,113 @@ async function mapView(page: Page): Promise<{ lat: number; lon: number; zoom: nu
     const center = map.getCenter();
     return { lat: center.lat, lon: center.lng, zoom: map.getZoom() };
   });
+}
+
+/** A frame the map drew: how much of it was lit, and what it drew it from. */
+interface Frame {
+  zoom: number;
+  lat: number;
+  lon: number;
+  /** Pixels lit, of `read`: every fourth row read back. */
+  lit: number;
+  read: number;
+  /** The same, of the view a cut left, held over the map (held-frame.ts), while it is shown whole. */
+  held: number | null;
+  /** The view the address names. */
+  at: string | null;
+  /** The zoom of the coarsest street tiles drawn. */
+  coarsest: number | null;
+}
+
+/** Records every frame the map draws from here on (recordedFrames). */
+async function recordFrames(page: Page): Promise<void> {
+  await page.evaluate(
+    ({ streets, heldClass }) => {
+      const map = window.snowlightMap;
+      if (map === undefined) throw new Error('no map');
+      const gl = map.getCanvas().getContext('webgl2');
+      if (gl === null) throw new Error('no WebGL 2');
+      const frames: Frame[] = [];
+      (window as unknown as { frames_: Frame[] }).frames_ = frames;
+      const lit = (row: Uint8Array | Uint8ClampedArray, width: number): number => {
+        let count = 0;
+        for (let x = 0; x < width; x++) {
+          const i = x * 4;
+          if (Math.max(row[i] ?? 0, row[i + 1] ?? 0, row[i + 2] ?? 0) > 8) count++;
+        }
+        return count;
+      };
+      const coarsest = (): number | null => {
+        const tiles = map.style.tileManagers[streets];
+        if (tiles === undefined) return null;
+        const zooms = tiles
+          .getRenderableIds()
+          .map((id) => tiles.getTileByID(id)?.tileID.overscaledZ ?? Number.POSITIVE_INFINITY);
+        const least = Math.min(...zooms);
+        return Number.isFinite(least) ? least : null;
+      };
+      const heldLit = (): number | null => {
+        const held = document.querySelector(`canvas.${heldClass}`);
+        if (!(held instanceof HTMLCanvasElement) || getComputedStyle(held).opacity !== '1') {
+          return null;
+        }
+        // Read from a copy made for reading, so the page's own canvas is never read back.
+        const copy = document.createElement('canvas');
+        copy.width = held.width;
+        copy.height = held.height;
+        const context = copy.getContext('2d', { willReadFrequently: true });
+        if (context === null) return null;
+        context.drawImage(held, 0, 0);
+        const pixels = context.getImageData(0, 0, copy.width, copy.height).data;
+        let count = 0;
+        for (let y = 1; y < copy.height; y += 4) {
+          const start = y * copy.width * 4;
+          count += lit(pixels.subarray(start, start + copy.width * 4), copy.width);
+        }
+        return count;
+      };
+      map.on('render', () => {
+        const width = gl.drawingBufferWidth;
+        const height = gl.drawingBufferHeight;
+        const row = new Uint8Array(width * 4);
+        let count = 0;
+        let read = 0;
+        for (let y = 1; y < height; y += 4) {
+          gl.readPixels(0, y, width, 1, gl.RGBA, gl.UNSIGNED_BYTE, row);
+          count += lit(row, width);
+          read += width;
+        }
+        const center = map.getCenter();
+        frames.push({
+          zoom: map.getZoom(),
+          lat: center.lat,
+          lon: center.lng,
+          lit: count,
+          read,
+          held: heldLit(),
+          at: new URL(location.href).searchParams.get('at'),
+          coarsest: coarsest(),
+        });
+      });
+    },
+    { streets: BASEMAP_IDS.openFreeMapSource, heldClass: HELD_FRAME_CLASS },
+  );
+}
+
+/** The frames drawn since recordFrames. */
+async function recordedFrames(page: Page): Promise<Frame[]> {
+  return page.evaluate(() => (window as unknown as { frames_: Frame[] }).frames_);
+}
+
+/**
+ * The frames a viewer saw blank: less than a thousandth of the frame lit, as when the map drew
+ * only the black ground above zoom 7 while the street tiles were still coming. A frame under the
+ * view a cut left, held whole over it, shows that view.
+ */
+function blankFrames(frames: readonly Frame[]): string[] {
+  return frames
+    .filter((frame) => (frame.held ?? frame.lit) < frame.read / 1000)
+    .map((frame) => `zoom ${frame.zoom.toFixed(2)}: ${String(frame.held ?? frame.lit)} lit`);
 }
 
 let root = '';
@@ -344,6 +457,285 @@ test('searching “pembroke” lists Pembroke Hill, and choosing it goes there',
   await context.close();
 });
 
+test('looking at Kansas City, “Pembroke” lists Pembroke Hill first, above Pembroke, Massachusetts', async ({
+  browser,
+}) => {
+  const context = await browser.newContext({ viewport: { width: 1440, height: 900 } });
+  const page = await context.newPage();
+  const { problems } = watch(page);
+  const rows = async (): Promise<string[]> =>
+    page
+      .locator('[role="option"]')
+      .evaluateAll((all) =>
+        all.map((option) => (option instanceof HTMLElement ? option.innerText : '')),
+      );
+
+  // The metro, as someone there sees it.
+  await page.goto(`${site}?at=39.1,-94.58,10`);
+  await settle(page);
+  const input = page.locator('input.search-input');
+  await input.click();
+  await input.pressSequentially('Pembroke', { delay: 20 });
+  const options = page.locator('[role="option"]');
+  await expect(options.first()).toContainText(PEMBROKE_HILL_NAME, { timeout: 30_000 });
+  await expect(options.first()).toContainText('Kansas City, MO');
+  await expect(options.first()).toHaveClass(/is-target/);
+  const near = await rows();
+  const massachusetts = near.findIndex((row) => row.includes('Pembroke, MA'));
+  expect(massachusetts).toBeGreaterThan(0);
+  // Its section comes first, the others after it, each still in the list.
+  await expect(page.locator('[role="listbox"] > [role="group"]').first()).toHaveAccessibleName(
+    copy.search.sections.school,
+  );
+
+  // From the national view nothing is near: the places named Pembroke lead, as before.
+  await page.goto(site);
+  await settle(page);
+  await input.click();
+  await input.pressSequentially('Pembroke', { delay: 20 });
+  await expect(options.first()).not.toContainText(PEMBROKE_HILL_NAME, { timeout: 30_000 });
+  await expect(page.locator('[role="listbox"] > [role="group"]').first()).toHaveAccessibleName(
+    copy.search.sections.city,
+  );
+  expect(await rows()).toEqual(
+    expect.arrayContaining([expect.stringContaining(PEMBROKE_HILL_NAME)]),
+  );
+  expect(problems).toEqual([]);
+  await context.close();
+});
+
+test('a school’s name typed as the map shows it finds that school first, its name whole', async ({
+  browser,
+}) => {
+  const context = await browser.newContext({ viewport: { width: 1440, height: 900 } });
+  const page = await context.newPage();
+  const { problems } = watch(page);
+  await page.goto(`${site}?at=39.06,-94.59,12`);
+  await settle(page);
+  const input = page.locator('input.search-input');
+  const first = page.locator('[role="option"]').first();
+  /** Whether a row's name shows less than all of itself. */
+  const cut = (): Promise<boolean> =>
+    first
+      .locator('.name')
+      .evaluate(
+        (name) =>
+          name.scrollWidth > name.clientWidth + 1 || name.scrollHeight > name.clientHeight + 1,
+      );
+  // Typed as the map names them, whole or in part: a generic name under its charter, a name NCES
+  // cut off, and shortenings the page spells out.
+  const typed: [string, string][] = [
+    [
+      'Citizens of the World Charter - Middle School',
+      'Citizens of the World Charter - Middle School',
+    ],
+    [
+      'citizens of the world charter elementary',
+      'Citizens of the World Charter - Elementary School',
+    ],
+    ['citizens middle', 'Citizens of the World Charter - Middle School'],
+    ['allen village elementary academy', 'Allen Village Elementary Academy'],
+    ['missouri school for the deaf', 'Missouri School for the Deaf'],
+    ['five county regional vocational center', 'Five County Regional Vocational Center'],
+  ];
+  await input.click();
+  for (const [text, name] of typed) {
+    await input.fill(text);
+    await expect(first.locator('.name'), text).toHaveText(name, { timeout: 30_000 });
+    expect(await cut(), name).toBe(false);
+  }
+  // Both of the charter's Kansas City schools are among the schools of that name.
+  await input.fill('citizens of the world');
+  await expect(page.locator('[role="option"]', { hasText: 'Middle School' })).toHaveCount(1, {
+    timeout: 30_000,
+  });
+  await expect(page.locator('[role="option"]', { hasText: 'Elementary School' })).toHaveCount(1);
+
+  // Picked, the field holds the name the map draws it by, and it finds the school again.
+  await input.fill('citizens of the world charter elementary');
+  await expect(first).toContainText('Citizens of the World Charter - Elementary School', {
+    timeout: 30_000,
+  });
+  await first.click();
+  await expect(input).toHaveValue('Citizens of the World Charter - Elementary School');
+  await expect
+    .poll(() => new URL(page.url()).searchParams.get('school'), { timeout: 30_000 })
+    .toBe(CITIZENS_ELEMENTARY);
+  await expect
+    .poll(async () => (await mapView(page)).zoom, { timeout: 30_000 })
+    .toBeGreaterThan(14.9);
+  await settle(page);
+  expect(await drawn(page, BASEMAP_IDS.schoolNames)).toContainEqual({
+    id: CITIZENS_ELEMENTARY,
+    name: 'Citizens of the World Charter - Elementary School',
+  });
+  await input.fill('');
+  await input.fill('Citizens of the World Charter - Elementary School');
+  await expect(first.locator('.name')).toHaveText(
+    'Citizens of the World Charter - Elementary School',
+    { timeout: 30_000 },
+  );
+  expect(problems).toEqual([]);
+  await context.close();
+});
+
+test('flying from the national view to a school, no frame on the way is blank', async ({
+  browser,
+}) => {
+  const context = await browser.newContext({ viewport: { width: 1440, height: 900 } });
+  const page = await context.newPage();
+  const { problems } = watch(page);
+  await page.goto(site);
+  await settle(page);
+  const input = page.locator('input.search-input');
+  await input.click();
+  await input.pressSequentially('pembroke', { delay: 20 });
+  const option = page.locator('[role="option"]', { hasText: PEMBROKE_HILL_NAME });
+  await expect(option).toHaveCount(1, { timeout: 30_000 });
+
+  await recordFrames(page);
+  await option.click();
+  await expect
+    .poll(
+      async () => {
+        const view = await mapView(page);
+        return Math.abs(view.zoom - 15) < 0.05;
+      },
+      { timeout: 60_000 },
+    )
+    .toBe(true);
+  await settle(page);
+  const frames = await recordedFrames(page);
+  // The flight went from the national view through the handover to the street tiles at zoom 7
+  // and on to the school.
+  expect(frames.length).toBeGreaterThan(10);
+  expect(Math.min(...frames.map((frame) => frame.zoom))).toBeLessThan(6);
+  expect(frames.filter((frame) => frame.zoom > 7.5).length).toBeGreaterThan(3);
+  expect(blankFrames(frames)).toEqual([]);
+  // Past the handover every frame draws street tiles: the flight waited at its stop for the first
+  // ones, and went in no faster than closer ones came (flight.ts).
+  const bare = frames.filter((frame) => frame.zoom >= 7.5 && frame.coarsest === null);
+  expect(bare.map((frame) => `zoom ${frame.zoom.toFixed(2)}`)).toEqual([]);
+  // The address names where the map is going all the way, never a view on the way there.
+  const addresses = new Set(frames.map((frame) => frame.at));
+  for (const at of addresses) expect(Number(at?.split(',')[2]), String(at)).toBeGreaterThan(14.9);
+  expect(problems).toEqual([]);
+  await context.close();
+});
+
+test('from the metro, Pembroke Hill on the screen glides in, no frame on the way blank', async ({
+  browser,
+}) => {
+  const context = await browser.newContext({ viewport: { width: 1440, height: 900 } });
+  const page = await context.newPage();
+  const { problems } = watch(page);
+  await page.goto(`${site}?at=39.1,-94.58,10`);
+  await settle(page);
+  const input = page.locator('input.search-input');
+  await input.click();
+  await input.pressSequentially('pembroke', { delay: 20 });
+  const option = page.locator('[role="option"]', { hasText: PEMBROKE_HILL_NAME });
+  await expect(option).toHaveCount(1, { timeout: 30_000 });
+  await recordFrames(page);
+  await option.click();
+  await expect
+    .poll(async () => Math.abs((await mapView(page)).zoom - 15) < 0.05, { timeout: 60_000 })
+    .toBe(true);
+  await settle(page);
+  const frames = await recordedFrames(page);
+  // A glide: no view held over the map, no zooming out on the way, streets in every frame.
+  expect(frames.filter((frame) => frame.held !== null)).toEqual([]);
+  expect(Math.min(...frames.map((frame) => frame.zoom))).toBeGreaterThan(9.99);
+  expect(blankFrames(frames)).toEqual([]);
+  expect(frames.filter((frame) => frame.coarsest === null)).toEqual([]);
+  expect(problems).toEqual([]);
+  await context.close();
+});
+
+/**
+ * Places off the screen at Pembroke Hill: a school across the state line and a city far off,
+ * arrived at from FLIGHT_LEAD levels out, and the city it is in, cut to straight.
+ */
+const OFF_SCREEN = [
+  {
+    name: 'a school across town',
+    query: 'Miege',
+    pick: /^\s*Bishop Miege High School\b/,
+    straight: false,
+  },
+  { name: 'another city', query: 'Denver', pick: /^\s*Denver\s+Colorado\s*$/, straight: false },
+  {
+    name: 'the city around it',
+    query: 'Kansas City',
+    pick: /^\s*Kansas City\s+Missouri\s*$/,
+    straight: true,
+  },
+] as const;
+
+for (const { name, query, pick, straight } of OFF_SCREEN) {
+  test(`from a school’s streets to ${name} off the screen, the view it leaves stays until the new one is drawn`, async ({
+    browser,
+  }) => {
+    const context = await browser.newContext({ viewport: { width: 1440, height: 900 } });
+    const page = await context.newPage();
+    const { problems } = watch(page);
+    await page.goto(`${site}?at=${String(PEMBROKE_HILL.lat)},${String(PEMBROKE_HILL.lon)},15`);
+    await settle(page);
+    const start = await mapView(page);
+    const input = page.locator('input.search-input');
+    await input.click();
+    await input.pressSequentially(query, { delay: 20 });
+    const option = page.locator('[role="option"]', { hasText: pick });
+    await expect(option).toHaveCount(1, { timeout: 30_000 });
+    // The address names where it is going from the start; the map gets there.
+    const at = (): Promise<string | null> =>
+      page.evaluate(() => new URL(location.href).searchParams.get('at'));
+    const before = await at();
+    await recordFrames(page);
+    await option.click();
+    await expect.poll(at).not.toBe(before);
+    const [lat = NaN, lon = NaN, zoom = NaN] = ((await at()) ?? '').split(',').map(Number);
+    await expect
+      .poll(
+        async () => {
+          const view = await mapView(page);
+          return (
+            Math.abs(view.lat - lat) < 1e-3 &&
+            Math.abs(view.lon - lon) < 1e-3 &&
+            Math.abs(view.zoom - zoom) < 0.05
+          );
+        },
+        { timeout: 60_000 },
+      )
+      .toBe(true);
+    await settle(page);
+    const frames = await recordedFrames(page);
+    // It cut there instead of flying over streets the map had none of: every frame is over one
+    // place or the other, the one it left held on screen while the map drew the other, then gone.
+    const between = frames.filter(
+      (frame) =>
+        !(Math.abs(frame.lat - start.lat) < 1e-6 && Math.abs(frame.lon - start.lon) < 1e-6) &&
+        !(Math.abs(frame.lat - lat) < 1e-3 && Math.abs(frame.lon - lon) < 1e-3),
+    );
+    expect(between.map((frame) => `${frame.lat.toFixed(3)},${frame.lon.toFixed(3)}`)).toEqual([]);
+    expect(frames.filter((frame) => frame.held !== null).length).toBeGreaterThan(0);
+    // Around the place it left, straight to the view; elsewhere, from FLIGHT_LEAD levels out.
+    const there = frames.filter((frame) => Math.abs(frame.lon - start.lon) > 1e-6);
+    const closest = straight ? zoom : zoom - FLIGHT_LEAD;
+    expect(Math.min(...there.map((frame) => frame.zoom))).toBeGreaterThan(closest - 0.01);
+    if (!straight) expect(Math.min(...there.map((frame) => frame.zoom))).toBeLessThan(zoom - 1);
+    expect(await page.locator(`canvas.${HELD_FRAME_CLASS}`).count()).toBe(0);
+    expect(blankFrames(frames)).toEqual([]);
+    // Past the handover every frame not under the held view draws street tiles.
+    const bare = frames.filter(
+      (frame) => frame.held === null && frame.zoom >= 7.5 && frame.coarsest === null,
+    );
+    expect(bare.map((frame) => `zoom ${frame.zoom.toFixed(2)}`)).toEqual([]);
+    expect(problems).toEqual([]);
+    await context.close();
+  });
+}
+
 test('typing “Kansas City” lists the places, then the districts, then the schools, each once', async ({
   browser,
 }) => {
@@ -417,6 +809,11 @@ test('schools are dots from zoom 11 and named from zoom 13, never one name over 
   expect(named.length).toBeGreaterThan(10);
   // Names as the page shows them: none drawn in capitals.
   for (const { name } of named) expect(name).toMatch(/[a-z]/);
+  // A school the directory names only by its level carries its charter's name first; one it cut
+  // off mid-word ends with the word its district's other schools show it can only be.
+  const shown = new Map([...named, ...dots].map(({ id, name }) => [id, name] as const));
+  expect(shown.get(CITIZENS_ELEMENTARY)).toBe('Citizens of the World Charter - Elementary School');
+  expect(shown.get(ALLEN_VILLAGE_ELEMENTARY)).toBe('Allen Village Elementary Academy');
   // Where names would collide, fewer are drawn: every school keeps its dot, not every one its name.
   expect(dots.length).toBeGreaterThanOrEqual(named.length);
   // No name, a school's or a street's, is drawn across a school's dot.
@@ -452,4 +849,110 @@ test('schools are dots from zoom 11 and named from zoom 13, never one name over 
   expect(order.indexOf(BASEMAP_IDS.schoolDots)).toBeLessThan(order.indexOf(GLOW_LAYER));
   expect(problems).toEqual([]);
   await context.close();
+});
+
+test('no label runs under the search field, the legend or any control, or off the screen, from zoom 13 to 15', async ({
+  browser,
+}) => {
+  test.setTimeout(300_000);
+  // The Plaza and Allen Village, where the judges saw names cut by the field and printed through
+  // the legend, at a desktop's size and a phone's.
+  const VIEWS = [
+    [39.045, -94.595, 13.2],
+    [39.052, -94.596, 14],
+    [39.0535, -94.5955, 15],
+    [39.0362, -94.593, 15.2],
+    [39.06, -94.58, 13],
+    [39.04, -94.6, 14.5],
+  ] as const;
+  const SCREENS = [
+    { width: 1440, height: 900, deviceScaleFactor: 1, isMobile: false },
+    { width: 390, height: 844, deviceScaleFactor: 3, isMobile: true },
+  ];
+  const found: string[] = [];
+  for (const screen of SCREENS) {
+    const context = await browser.newContext({
+      viewport: { width: screen.width, height: screen.height },
+      deviceScaleFactor: screen.deviceScaleFactor,
+      isMobile: screen.isMobile,
+      hasTouch: screen.isMobile,
+    });
+    const page = await context.newPage();
+    const { problems } = watch(page);
+    let schools = 0;
+    let streets = 0;
+    for (const [lat, lon, zoom] of VIEWS) {
+      const where = `${String(screen.width)}x${String(screen.height)} at ${String(lat)},${String(lon)},${String(zoom)}`;
+      await page.goto(`${site}?at=${String(lat)},${String(lon)},${String(zoom)}`);
+      await settle(page);
+      const result = await page.evaluate(
+        ({ space, schoolNames, streetNames }) => {
+          const map = window.snowlightMap;
+          if (map === undefined) throw new Error('no map');
+          const labels = map
+            .getLayersOrder()
+            .filter((id) => map.getLayer(id)?.type === 'symbol' && id !== space);
+          const canvas = map.getCanvas().getBoundingClientRect();
+          const controls = [
+            ...document.querySelectorAll(
+              '.wordmark, .search, .updated, .legend, .locate, .maplibregl-ctrl',
+            ),
+          ]
+            .map((element) => ({
+              name: (element.getAttribute('class') ?? '').split(' ')[0] ?? '',
+              rect: element.getBoundingClientRect(),
+            }))
+            .filter(({ rect }) => rect.width > 0 && rect.height > 0);
+          const { width, height } = canvas;
+          // A pixel's strip along each edge of the screen: a label that crosses one is cut.
+          const edges = [
+            { name: 'left edge', rect: new DOMRect(0, 0, 1, height) },
+            { name: 'right edge', rect: new DOMRect(width - 1, 0, 1, height) },
+            { name: 'top edge', rect: new DOMRect(0, 0, width, 1) },
+            { name: 'bottom edge', rect: new DOMRect(0, height - 1, width, 1) },
+          ];
+          const under = [...controls, ...edges].flatMap(({ name, rect }) =>
+            map
+              .queryRenderedFeatures(
+                [
+                  [rect.left - canvas.left, rect.top - canvas.top],
+                  [rect.right - canvas.left, rect.bottom - canvas.top],
+                ],
+                { layers: labels },
+              )
+              .map(
+                (feature) =>
+                  `${feature.layer.id} "${String(feature.properties.name ?? feature.properties.label)}" under ${name}`,
+              ),
+          );
+          const count = (id: string): number =>
+            map.getLayer(id) === undefined ? 0 : map.queryRenderedFeatures({ layers: [id] }).length;
+          return {
+            under,
+            controls: controls.map(({ name }) => name),
+            schools: count(schoolNames),
+            streets: count(streetNames),
+          };
+        },
+        {
+          space: BASEMAP_IDS.schoolSpace,
+          schoolNames: BASEMAP_IDS.schoolNames,
+          streetNames: BASEMAP_IDS.ofmStreetLabel,
+        },
+      );
+      // The controls were there to keep clear of.
+      expect(result.controls, where).toEqual(
+        expect.arrayContaining(['wordmark', 'search', 'legend', 'maplibregl-ctrl']),
+      );
+      schools += result.schools;
+      streets += result.streets;
+      found.push(...result.under.map((label) => `${where}: ${label}`));
+    }
+    // And names were drawn around them, schools' and streets'.
+    expect(schools).toBeGreaterThan(VIEWS.length);
+    expect(streets).toBeGreaterThan(5 * VIEWS.length);
+    expect(problems).toEqual([]);
+    await context.close();
+  }
+  expect(found).toEqual([]);
 });

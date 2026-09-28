@@ -1,14 +1,16 @@
 // @vitest-environment node
 /**
  * The street tiles fetched ahead of a flight: the ones the view it ends on is
- * drawn from, and a few levels below, which the map draws scaled up on the
- * way in, and nothing outside the continental US's box or below zoom 7.
+ * drawn from, and the levels below it the flight draws scaled up on the way in
+ * where the tiles lag, and nothing outside the continental US's box or below
+ * zoom 7.
  */
 import { describe, expect, it } from 'vitest';
 
 import { mercatorXFromLng, mercatorYFromLat } from '../../glow/mercator';
+import { FLIGHT_LEAD, FLIGHT_STOP_ZOOM, flightZooms } from '../flight';
 import { OPENFREEMAP_MAX_ZOOM, OPENFREEMAP_MIN_ZOOM } from '../openfreemap';
-import { FLIGHT_STEPS, MAX_FLIGHT_TILES, flightTiles } from '../prefetch';
+import { MAX_FLIGHT_TILES, flightTiles } from '../prefetch';
 import type { TileId } from '../prefetch';
 
 const DESKTOP = { width: 1440, height: 900 };
@@ -49,15 +51,16 @@ describe('the tiles fetched ahead of a flight', () => {
   it('take the zooms the flight passes, furthest first, the middle of each first', () => {
     const tiles = flightTiles(PEMBROKE, DESKTOP);
     const zooms = [...new Set(tiles.map(([z]) => z))];
-    // Street zoom is drawn from OpenFreeMap's deepest tiles, zoom 14.
-    expect(zooms).toEqual(FLIGHT_STEPS.map((step) => OPENFREEMAP_MAX_ZOOM - step));
-    expect(zooms).toEqual([...zooms].sort((a, b) => a - b));
+    // Street zoom is drawn from OpenFreeMap's deepest tiles, zoom 14; on the way in from the stop
+    // at zoom 7, the flight waits where it must on zoom 10 and zoom 13 (flight.ts).
+    expect(zooms).toEqual(flightZooms(OPENFREEMAP_MAX_ZOOM));
+    expect(zooms).toEqual([10, 13, 14]);
     for (const zoom of zooms) {
       const first = tiles.find(([z]) => z === zoom);
       expect(first).toEqual(tileAt(PEMBROKE.lat, PEMBROKE.lon, zoom));
     }
-    // Pembroke Hill's own zoom-8 tile, which the map can draw long before the street tiles are in.
-    expect(tiles[0]).toEqual(tileAt(PEMBROKE.lat, PEMBROKE.lon, 8));
+    // Pembroke Hill's own zoom-10 tile, which the map draws long before the street tiles are in.
+    expect(tiles[0]).toEqual(tileAt(PEMBROKE.lat, PEMBROKE.lon, 10));
     expect(new Set(tiles.map((tile) => tile.join('/'))).size).toBe(tiles.length);
   });
 
@@ -68,7 +71,29 @@ describe('the tiles fetched ahead of a flight', () => {
     );
     const phone = flightTiles(PLAZA, PHONE);
     expect(phone.length).toBeLessThan(flightTiles(PLAZA, DESKTOP).length);
-    expect(phone.length).toBeGreaterThanOrEqual(FLIGHT_STEPS.length);
+    expect(phone.length).toBeGreaterThanOrEqual(flightZooms(13).length);
+  });
+
+  it('follow the pacing of a flight: FLIGHT_LEAD apart from its stop, and the tiles it ends on', () => {
+    expect(flightZooms(FLIGHT_STOP_ZOOM)).toEqual([FLIGHT_STOP_ZOOM]);
+    expect(flightZooms(FLIGHT_STOP_ZOOM + FLIGHT_LEAD)).toEqual([FLIGHT_STOP_ZOOM + FLIGHT_LEAD]);
+    expect(flightZooms(11)).toEqual([10, 11]);
+    expect(flightZooms(12)).toEqual([10, 12]);
+    expect(flightZooms(6)).toEqual([]);
+    // Paced from a stop closer in, as a cut from the streets makes (index.ts): its own zoom's tiles,
+    // then the ones it ends on.
+    expect(flightZooms(12, 12)).toEqual([12]);
+    expect(flightZooms(14, 12)).toEqual([14]);
+    expect(flightZooms(14, 10)).toEqual([13, 14]);
+  });
+
+  it('take the tiles of a flight paced from a stop closer in', () => {
+    const stop = { ...PEMBROKE, zoom: PEMBROKE.zoom - FLIGHT_LEAD };
+    const atStop = flightTiles(stop, DESKTOP, 12);
+    expect([...new Set(atStop.map(([z]) => z))]).toEqual([12]);
+    expect(atStop[0]).toEqual(tileAt(PEMBROKE.lat, PEMBROKE.lon, 12));
+    const atEnd = flightTiles(PEMBROKE, DESKTOP, 12);
+    expect([...new Set(atEnd.map(([z]) => z))]).toEqual([14]);
   });
 
   it('ask for nothing below zoom 7, nor below it on the way', () => {

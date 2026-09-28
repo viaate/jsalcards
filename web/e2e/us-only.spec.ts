@@ -203,3 +203,151 @@ test('San Diego keeps its roads; Tijuana across the border has none', async ({ p
   expect(names).not.toContain('Tijuana');
   expect(problems).toEqual([]);
 });
+
+/** Canada across the river from Detroit, well clear of the border: land and lake. */
+const ONTARIO: readonly { readonly name: string; readonly box: Box }[] = [
+  // Windsor south to Essex County, all land.
+  { name: 'Windsor and Essex County', box: [-83.04, 42.1, -82.55, 42.28] },
+  // Lake St. Clair's Canadian part and its south shore.
+  { name: 'Lake St. Clair', box: [-82.75, 42.33, -82.45, 42.42] },
+];
+
+/**
+ * Zooms from one zoom to another over `seconds`, reading every frame drawn,
+ * streets loading and all, with nothing but the areas and lines under the
+ * mask shown (no labels, border line, schools or glow): for each box, the
+ * brightest pixel of each frame over it.
+ */
+async function framesOver(
+  page: Page,
+  boxes: readonly Box[],
+  toZoom: number,
+  seconds: number,
+): Promise<{ zoom: number; brightest: number[]; masked: (boolean | null)[] }[]> {
+  return page.evaluate(
+    async ({ boxes: areas, toZoom: zoom, seconds: duration }) => {
+      const map = window.snowlightMap;
+      if (map === undefined) throw new Error('no map');
+      for (const id of map.getLayersOrder()) {
+        const type = map.getLayer(id)?.type;
+        if (
+          type === 'symbol' ||
+          type === 'custom' ||
+          id === 'us-border' ||
+          id.startsWith('school')
+        ) {
+          map.setLayoutProperty(id, 'visibility', 'none');
+        }
+      }
+      const canvas = map.getCanvas();
+      const gl = canvas.getContext('webgl2');
+      if (gl === null) throw new Error('no WebGL 2');
+      const frames: { zoom: number; brightest: number[]; masked: (boolean | null)[] }[] = [];
+      const read = (): void => {
+        const width = gl.drawingBufferWidth;
+        const height = gl.drawingBufferHeight;
+        const ratio = width / canvas.clientWidth;
+        const row = new Uint8Array(width * 4);
+        const brightest = areas.map(([west, south, east, north]) => {
+          const a = map.project([west, north]);
+          const b = map.project([east, south]);
+          const x0 = Math.max(0, Math.ceil(a.x));
+          const x1 = Math.min(canvas.clientWidth - 1, Math.floor(b.x));
+          const y0 = Math.max(0, Math.ceil(a.y));
+          const y1 = Math.min(canvas.clientHeight - 1, Math.floor(b.y));
+          let most = x1 >= x0 && y1 >= y0 ? 0 : -1;
+          for (let y = y0; y <= y1; y += 2) {
+            gl.readPixels(
+              0,
+              height - 1 - Math.round(y * ratio),
+              width,
+              1,
+              gl.RGBA,
+              gl.UNSIGNED_BYTE,
+              row,
+            );
+            for (let x = x0; x <= x1; x += 2) {
+              const i = Math.round(x * ratio) * 4;
+              most = Math.max(most, row[i] ?? 0, row[i + 1] ?? 0, row[i + 2] ?? 0);
+            }
+          }
+          return most;
+        });
+        // Whether the mask is there, under the middle of each box's part on screen (null for none).
+        const masked = areas.map(([west, south, east, north]) => {
+          const a = map.project([west, north]);
+          const b = map.project([east, south]);
+          const x0 = Math.max(0, a.x);
+          const x1 = Math.min(canvas.clientWidth, b.x);
+          const y0 = Math.max(0, a.y);
+          const y1 = Math.min(canvas.clientHeight, b.y);
+          if (x1 - x0 < 4 || y1 - y0 < 4) return null;
+          const middle: [number, number] = [(x0 + x1) / 2, (y0 + y1) / 2];
+          return map.queryRenderedFeatures(middle, { layers: ['us-mask'] }).length > 0;
+        });
+        frames.push({ zoom: map.getZoom(), brightest, masked });
+      };
+      map.on('render', read);
+      await new Promise<void>((resolve) => {
+        map.once('idle', () => {
+          resolve();
+        });
+        map.triggerRepaint();
+      });
+      map.easeTo({ zoom, duration: duration * 1000 });
+      await new Promise<void>((resolve) => {
+        map.once('moveend', () => {
+          resolve();
+        });
+      });
+      await new Promise<void>((resolve) => {
+        map.once('idle', () => {
+          resolve();
+        });
+        map.triggerRepaint();
+      });
+      map.off('render', read);
+      return frames;
+    },
+    { boxes, toZoom, seconds },
+  );
+}
+
+for (const [place, lat, lon] of [
+  // Detroit's east side, with the lake in view on a phone too; Windsor, across the river.
+  ['Detroit', 42.35, -82.98],
+  ['Windsor', 42.26, -82.9],
+] as const) {
+  test(`nothing of Canada shows past the mask from ${place}, zoom 9 to 11 and back, every frame`, async ({
+    page,
+  }) => {
+    const problems = watch(page);
+    await openView(page, lat, lon, 9);
+    const boxes = ONTARIO.map(({ box }) => box);
+    const frames = [
+      ...(await framesOver(page, boxes, 10, 1.5)),
+      ...(await framesOver(page, boxes, 11, 1.5)),
+      ...(await framesOver(page, boxes, 9, 2)),
+    ];
+    expect(frames.length).toBeGreaterThan(20);
+    // Every zoom from 9 to 11 was drawn, settled ones included.
+    for (const zoom of [9, 10, 11]) {
+      expect(frames.some((frame) => Math.abs(frame.zoom - zoom) < 0.01)).toBe(true);
+    }
+    // Windsor is on screen at every zoom; the lake, from where it is.
+    expect(frames.filter((frame) => (frame.brightest[0] ?? -1) >= 0).length).toBeGreaterThan(5);
+    ONTARIO.forEach(({ name }, i) => {
+      const drawn = frames.filter((frame) => (frame.brightest[i] ?? -1) >= 0);
+      // Black ground: no road, water, park or tile edge of Canada in any frame.
+      const lit = drawn.filter((frame) => (frame.brightest[i] ?? 0) > 2);
+      expect(
+        lit.map((frame) => `${frame.zoom.toFixed(2)}: ${String(frame.brightest[i])}`),
+        name,
+      ).toEqual([]);
+      // Black because the mask covers it once the streets are in, not only because they are not.
+      const settled = frames.filter((frame) => frame.masked[i] !== null).at(-1);
+      if (i === 0 || settled !== undefined) expect(settled?.masked[i], name).toBe(true);
+    });
+    expect(problems).toEqual([]);
+  });
+}

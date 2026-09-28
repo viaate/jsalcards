@@ -533,6 +533,19 @@ test.describe('with data staged', () => {
     const { problems, requests } = watch(page);
     await page.goto(site);
     await waitForMap(page);
+    // A data file the page loads before the service worker takes over is fetched once more,
+    // through the worker, for offline use (src/pwa/data.ts warmDataCache): search starts here
+    // once the worker is in control, so the index is fetched once, through it.
+    await page.evaluate(async () => {
+      const worker = (
+        window as unknown as {
+          snowlightServiceWorker?: Promise<{ warmed: Promise<number> } | null>;
+        }
+      ).snowlightServiceWorker;
+      await (
+        await worker
+      )?.warmed;
+    });
     await page.waitForTimeout(500);
     const indexRequests = (): string[] => requests.filter((url) => url.includes('search-index'));
     expect(indexRequests()).toEqual([]);

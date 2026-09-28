@@ -18,7 +18,11 @@
  */
 import type { AddProtocolAction } from 'maplibre-gl';
 
+import { SCHOOL_NAME_FIXES } from 'virtual:snowlight/school-names';
+
 import { displayName } from '../../text/names';
+import type { NameFix } from '../../text/names';
+import { stateOfId } from '../../text/school-names';
 import { SCHOOLS_TILE_LAYER, SCHOOL_TILES_PROTOCOL } from './ids';
 import { ArchiveReader, gunzipWithStreams, httpRangeReader } from './mask/pmtiles';
 import { decodeTile, encodeTile } from './mask/mvt';
@@ -38,66 +42,13 @@ const VALUE_STRING = 1;
 /** Public school ids are 12 digits and start with the state's FIPS code. */
 const PUBLIC_SCHOOL = /^\d{12}$/;
 
-/** USPS codes of the states and DC by FIPS code, for the schools the map draws. */
-const STATE_BY_FIPS: Readonly<Record<string, string>> = {
-  '01': 'AL',
-  '04': 'AZ',
-  '05': 'AR',
-  '06': 'CA',
-  '08': 'CO',
-  '09': 'CT',
-  '10': 'DE',
-  '11': 'DC',
-  '12': 'FL',
-  '13': 'GA',
-  '16': 'ID',
-  '17': 'IL',
-  '18': 'IN',
-  '19': 'IA',
-  '20': 'KS',
-  '21': 'KY',
-  '22': 'LA',
-  '23': 'ME',
-  '24': 'MD',
-  '25': 'MA',
-  '26': 'MI',
-  '27': 'MN',
-  '28': 'MS',
-  '29': 'MO',
-  '30': 'MT',
-  '31': 'NE',
-  '32': 'NV',
-  '33': 'NH',
-  '34': 'NJ',
-  '35': 'NM',
-  '36': 'NY',
-  '37': 'NC',
-  '38': 'ND',
-  '39': 'OH',
-  '40': 'OK',
-  '41': 'OR',
-  '42': 'PA',
-  '44': 'RI',
-  '45': 'SC',
-  '46': 'SD',
-  '47': 'TN',
-  '48': 'TX',
-  '49': 'UT',
-  '50': 'VT',
-  '51': 'VA',
-  '53': 'WA',
-  '54': 'WV',
-  '55': 'WI',
-  '56': 'WY',
-};
-
 /**
  * The state of a public school, from its id, for the parts of its name that
  * read by state (names.ts: MS stays in Mississippi's names, a state's own code
  * stays in capitals); null for a private school, whose id does not say.
  */
 export function stateOf(id: string | null): string | null {
-  return id !== null && PUBLIC_SCHOOL.test(id) ? (STATE_BY_FIPS[id.slice(0, 2)] ?? null) : null;
+  return id !== null && PUBLIC_SCHOOL.test(id) ? stateOfId(id) : null;
 }
 
 /**
@@ -106,7 +57,7 @@ export function stateOf(id: string | null): string | null {
  * school whose name reads differently, or whose name is also another
  * property's value, gets a value of its own.
  */
-function showNames(layer: Layer): LayerOutput {
+function showNames(layer: Layer, fixes: Readonly<Record<string, NameFix>>): LayerOutput {
   const nameKey = layer.keys.indexOf('name');
   const idKey = layer.keys.indexOf('id');
   const features = layer.features.map((feature) => feature.raw);
@@ -135,7 +86,7 @@ function showNames(layer: Layer): LayerOutput {
     const value = tags[nameAt] ?? -1;
     const raw = layer.values[value];
     if (nameAt < 0 || raw === null || raw === undefined) return;
-    const shown = displayName(raw, { state: stateOf(id) });
+    const shown = displayName(raw, { state: stateOf(id) }, fixes[id ?? ''] ?? {});
     // A value another property uses keeps its text for that property.
     const first = replaced.get(value) ?? (shared.has(value) ? raw : undefined);
     if (first === undefined) {
@@ -172,13 +123,19 @@ function valueField(text: string): Uint8Array {
     .finish();
 }
 
-/** A school tile with every school's name as the page shows it. */
-export function showSchoolNames(tile: Uint8Array): Uint8Array {
+/**
+ * A school tile with every school's name as the page shows it, with the
+ * directory's fixes for its names (school-names.ts; this build's by default).
+ */
+export function showSchoolNames(
+  tile: Uint8Array,
+  fixes: Readonly<Record<string, NameFix>> = SCHOOL_NAME_FIXES,
+): Uint8Array {
   const layers = decodeTile(tile);
   return encodeTile(
     layers.map((layer) =>
       layer.name === SCHOOLS_TILE_LAYER
-        ? showNames(layer)
+        ? showNames(layer, fixes)
         : { fields: layer.fields, features: layer.features.map((feature) => feature.raw) },
     ),
   );

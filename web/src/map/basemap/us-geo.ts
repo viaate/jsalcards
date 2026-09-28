@@ -6,13 +6,19 @@
 export const US_BOUNDS = [-124.734, 24.515, -66.982, 49.385] as const;
 
 /** The bundled GeoJSON, relative to the site base URL. */
-export const US_LINES_FILE = 'geo/us-lines.8606da54e5.json';
+export const US_LINES_FILE = 'geo/us-lines.7870806d7b.json';
+
+/** Its city and state names alone, relative to the site base URL. */
+export const US_NAMES_FILE = 'geo/us-names.02509ac47d.json';
+
+/** The states' shapes a phone names the states in view by (state-areas.ts), relative to the site base URL. */
+export const US_STATES_FILE = 'geo/us-states.9e73d2ac75.json';
 
 /** viewBox of the inline still in index.html: Web Mercator, north-west corner at 0 0. */
 export const STILL_VIEWBOX = '0 0 8000 4385.37';
 
 /** Gzipped size of the bundled GeoJSON, in bytes. */
-export const US_LINES_GZIP_BYTES = 47238;
+export const US_LINES_GZIP_BYTES = 57634;
 
 /**
  * How the state names in it are set, as their places and sizes were worked
@@ -27,6 +33,9 @@ export const STATE_NAME_SIZE = {
   toZoom: 6,
   to: 10.75,
 } as const;
+
+/** The share of that size a name is set at where only that fits inside its state. */
+export const STATE_NAME_SMALL = 0.85;
 
 /**
  * The city names each state's name was placed clear of, as a phone's map
@@ -46,4 +55,34 @@ export const STATE_NAMES_CLEAR_OF = {
   tracking: 0.02,
   padding: 8,
   ownPadding: 3,
+} as const;
+
+/**
+ * How the city names were set off the line work, as a map sets them: their
+ * size, spacing, halo and clear space, the bands of names the map shows, the
+ * zooms they were checked at, and the zoom below which the simplified lines
+ * are drawn and from which the detailed ones.
+ */
+export const CITY_NAMES_SET_OFF = {
+  size: {
+    fromZoom: 3,
+    from: 10.5,
+    toZoom: 6,
+    to: 12,
+  },
+  tracking: 0.02,
+  halo: 1,
+  padding: 12,
+  shown: [
+    { zoom: 3, names: 14 },
+    { zoom: 3.3, names: 21 },
+    { zoom: 3.8, names: 34 },
+    { zoom: 4.3, names: 54 },
+    { zoom: 4.8, names: 85 },
+    { zoom: 5.3, names: 134 },
+    { zoom: 5.8, names: 212 },
+    { zoom: 6.3, names: Infinity },
+  ],
+  zooms: [3, 3.3, 3.5, 3.85, 4, 4.25, 4.5, 4.75, 5, 5.25, 5.5, 5.75, 6, 6.25, 6.5, 6.75],
+  simpleLinesUntil: 5.75,
 } as const;

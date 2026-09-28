@@ -12,13 +12,24 @@ import { parseInstant } from './instant';
 
 export { parseInstant } from './instant';
 
+/**
+ * How long after its generated_at a live file still counts as live, in
+ * milliseconds, while the page is online. The one threshold the page uses.
+ *
+ * To be set from the live ingest's publish cadence: a file published on
+ * schedule is never older than this, so an older one means the ingest has
+ * stopped and the file is stale. Until that cadence is settled it is four
+ * of the page's own reads (src/data/live.ts LIVE_POLL_MS, five minutes).
+ */
+export const LIVE_FRESH_MS = 20 * 60_000;
+
 export interface UpdateLineInput {
   /** The file's generated_at. */
   readonly generatedAt: UtcInstant;
   /** Whether the page is online now. */
   readonly online: boolean;
-  /** A file generated at most this long ago counts as live, while online. */
-  readonly liveWithinMs: number;
+  /** A file generated at most this long ago counts as live, while online. Default LIVE_FRESH_MS. */
+  readonly liveWithinMs?: number;
   /** The viewer's time zone, such as "America/Chicago". */
   readonly timeZone: string;
   /** Now; only used to judge age and to add a date to an older time. */
@@ -39,7 +50,7 @@ export interface UpdateState {
 export function updateState(input: UpdateLineInput): UpdateState | null {
   const generated = parseInstant(input.generatedAt);
   if (generated === null) return null;
-  const { online, liveWithinMs, timeZone, now } = input;
+  const { online, liveWithinMs = LIVE_FRESH_MS, timeZone, now } = input;
   if (!online) return { text: format.offline(generated, timeZone, now), live: false };
   const age = now.getTime() - generated.getTime();
   // A file stamped in the future means a skewed clock here: not proof it is live.
@@ -47,6 +58,15 @@ export function updateState(input: UpdateLineInput): UpdateState | null {
     return { text: format.liveAt(generated, timeZone), live: true };
   }
   return { text: format.updatedAt(generated, timeZone, now), live: false };
+}
+
+/**
+ * The moment a file stops counting as live, in milliseconds since the epoch,
+ * or null when generatedAt is not a valid instant.
+ */
+export function liveUntil(generatedAt: UtcInstant, liveWithinMs = LIVE_FRESH_MS): number | null {
+  const generated = parseInstant(generatedAt);
+  return generated === null ? null : generated.getTime() + liveWithinMs;
 }
 
 /** updateState's line alone. */

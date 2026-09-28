@@ -9,7 +9,13 @@ import type {
 import { MAP_FONTS } from './fonts';
 import { BASEMAP_IDS } from './ids';
 import { schoolDotLayer, schoolNameLayer, schoolSource, schoolSpaceLayer } from './schools';
-import { STATE_NAME_LEADING, STATE_NAME_TRACKING, STATE_NAMES_UNTIL } from './state-names';
+import { STATE_AREAS_UNTIL } from './state-areas';
+import {
+  STATE_NAME_LEADING,
+  STATE_NAME_SMALL,
+  STATE_NAME_TRACKING,
+  STATE_NAMES_UNTIL,
+} from './state-names';
 import { STATE_NAME_SIZE } from './us-geo';
 import { BORDER_LAYER, MASK_LAYER } from './mask/format';
 import {
@@ -57,8 +63,11 @@ export interface BasemapColors {
 /**
  * The bundled continental US geometry as parsed from public/geo: a GeoJSON
  * FeatureCollection whose features carry `kind`: "land" (the country as
- * polygons, whose rings are the outline), "state" (the state lines),
- * "city" (a city's name and rank, 0 for the largest, at its Census point)
+ * polygons, whose rings are the outline), "state" (the state lines), each
+ * also simplified for the national view ("land-simple", "state-simple"),
+ * "city" (a city's name and rank, 0 for the largest, at its Census point,
+ * and `offset`, where its name goes from there in ems, where it is set off
+ * the outline)
  * and "state-name" (a state's name, its `label` as set, broken over two
  * lines where that fits it larger, and `fit`, the largest size in CSS pixels
  * at zoom 0 it fits inside its state at, where it is placed).
@@ -72,6 +81,13 @@ export interface BasemapStyleOptions extends BasemapLook {
   /** The bundled continental US lines, already fetched and parsed, or their URL. */
   usLines: UsLinesData | string;
   /**
+   * Where the two GeoJSON sources read the lines and the names from (the
+   * bundled file, and its names alone), or null to hand them `usLines`,
+   * parsed: MapLibre's workers then fetch and parse the files themselves, and
+   * the page never copies the parsed lines over to them.
+   */
+  usLinesUrls?: { readonly lines: string; readonly names: string } | null;
+  /**
    * The school tiles' archive (schools.pmtiles) this build ships, as an
    * absolute URL, or null when it ships none: then no school is drawn.
    */
@@ -84,6 +100,8 @@ export interface BasemapStyleOptions extends BasemapLook {
    * filter to the ones that fit as it zooms (index.ts).
    */
   stateNames?: readonly string[];
+  /** Of those, the ones that fit only at the small size (state-names.ts smallStateNamesAt). */
+  smallStateNames?: readonly string[];
 }
 
 /**
@@ -101,7 +119,52 @@ function ramp(from: number, to: number, low = 0, high = 1): ExpressionSpecificat
 const fadeOut = ramp(HANDOVER_START, HANDOVER_END, 1, 0);
 const fadeIn = ramp(HANDOVER_START, HANDOVER_END);
 
+/**
+ * The national view draws its own lines (build-geo.mjs): the outline and the
+ * state lines simplified, so the coast reads as one hairline at zoom 3 to 5,
+ * the still in index.html drawn from them too. They give way to the detailed
+ * lines over the half zoom level around SIMPLE_LINES_UNTIL, above every
+ * screen's home view.
+ *
+ * The two sets part by their opacity alone, never by their layers' zoom
+ * ranges: MapLibre cuts a layer out of every tile below its minzoom (and from
+ * its maxzoom up), and a flight that passes zoom 6 before the tiles there are
+ * cut draws the tiles it has, the national view's. Each of those carries both
+ * sets, so it draws whichever set the zoom calls for (BUNDLED_LINES_UNTIL).
+ */
+export const SIMPLE_LINES_UNTIL = 5.75;
+const SIMPLE_FADE = 0.25;
+const simpleFadeOut = ramp(
+  SIMPLE_LINES_UNTIL - SIMPLE_FADE,
+  SIMPLE_LINES_UNTIL + SIMPLE_FADE,
+  1,
+  0,
+);
+/** The detailed lines: in as the simplified ones go, out at the handover to the street tiles. */
+const detailedLines: ExpressionSpecification = [
+  'interpolate',
+  ['linear'],
+  ['zoom'],
+  SIMPLE_LINES_UNTIL - SIMPLE_FADE,
+  0,
+  SIMPLE_LINES_UNTIL + SIMPLE_FADE,
+  1,
+  HANDOVER_START,
+  1,
+  HANDOVER_END,
+  0,
+];
+
+/**
+ * Where the bundled lines' four layers end, the simplified and the detailed
+ * alike: the handover to the street tiles, where the detailed ones have faded
+ * out and the simplified ones long since.
+ */
+export const BUNDLED_LINES_UNTIL = HANDOVER_END;
+
 const KIND: ExpressionSpecification = ['get', 'kind'];
+/** The kinds of feature in the bundled lines that are names: the rest is land and lines. */
+const NAME_KINDS = ['city', 'state-name'];
 
 /**
  * City names of the national view, from the bundled Census places (ranked
@@ -142,12 +205,14 @@ const CITY_NAME_SIZE = { from: 10.5, zoom: 6, to: 12 } as const;
 /** Space added between a national city name's letters, in ems. */
 export const CITY_NAME_LETTER_SPACING = 0.02;
 /**
- * The halo that parts a coastline or border running under a city name, in
- * CSS pixels. MapLibre draws a label's glyphs with about a pixel of their
- * distance field to spare around them at this size: a wider halo fills
- * every glyph's whole box and shows as a block around the name.
+ * The black halo that parts a line running under a city name, in CSS
+ * pixels: a pixel. MapLibre draws a label's glyphs with about a pixel of
+ * their distance field to spare around them at this size: a wider halo fills
+ * every glyph's whole box and shows as a block around the name. Names are
+ * set off the outline besides (build-geo.mjs): a state line, a step dimmer,
+ * may still pass under one.
  */
-export const CITY_NAME_HALO = 1.2;
+export const CITY_NAME_HALO = 1;
 
 /**
  * The national city names' color: halfway from the neighbourhood grey to the
@@ -192,6 +257,37 @@ export function cityNameFilter(band: number, hidden: readonly string[] = []): Fi
 }
 /** Zoom levels a band of names takes to fade in, from its zoom. */
 const CITY_NAME_FADE = 0.05;
+/**
+ * Where each national city name goes from its point, in ems: the `offset`
+ * the bundled file gives the city (build-geo.mjs set it off the outline), by
+ * the city's rank, and [0, 0] for the rest. Read here rather than by
+ * ['get', 'offset'] on the map: once MapLibre parses a GeoJSON tile again (a
+ * layout change, such as a phone's padding), an array property reaches the
+ * layout as JSON text, and the name would fall back to its point.
+ */
+export function cityNameOffset(
+  cities: UsLinesData | string,
+): ExpressionSpecification | [number, number] {
+  if (typeof cities === 'string') return [0, 0];
+  const cases: (number | ExpressionSpecification)[] = [];
+  const ranks = new Set<number>();
+  for (const feature of cities.features) {
+    const properties = (feature as { properties?: Record<string, unknown> } | null)?.properties;
+    if (properties?.kind !== 'city') continue;
+    const { rank, offset } = properties;
+    if (typeof rank !== 'number' || !Number.isInteger(rank) || ranks.has(rank)) continue;
+    if (!Array.isArray(offset) || offset.length !== 2) continue;
+    const [x, y] = offset as unknown[];
+    if (typeof x !== 'number' || typeof y !== 'number') continue;
+    if (!Number.isFinite(x) || !Number.isFinite(y) || (x === 0 && y === 0)) continue;
+    ranks.add(rank);
+    cases.push(rank, ['literal', [x, y]]);
+  }
+  if (cases.length === 0) return [0, 0];
+  // A match of one label or more: the spec's type spells out only its first.
+  const match: unknown = ['match', ['get', 'rank'], ...cases, ['literal', [0, 0]]];
+  return match as ExpressionSpecification;
+}
 
 /** The layer id of each band of national city names, the first band's being BASEMAP_IDS.usCityLabel. */
 export function cityNameLayerId(band: number): string {
@@ -208,6 +304,45 @@ export const CITY_NAME_PHONE_PADDING = 8;
 
 /** Clear space around each state name, in CSS pixels. */
 export const STATE_NAME_PADDING = 3;
+
+/**
+ * The state names' size: STATE_NAME_SIZE by zoom, and STATE_NAME_SMALL of it
+ * for the states in `small`, whose names fit only so at the map's zoom
+ * (state-names.ts smallStateNamesAt). Linear between the size's two zooms,
+ * so MapLibre sets each name at exactly this size at every zoom.
+ */
+export function stateNameSizeExpression(small: readonly string[]): ExpressionSpecification {
+  const scale: ExpressionSpecification = [
+    'case',
+    ['in', NAME, ['literal', [...small]]],
+    STATE_NAME_SMALL,
+    1,
+  ];
+  return stateNameSizeScaled(scale);
+}
+
+/** STATE_NAME_SIZE by zoom, times `scale`. */
+function stateNameSizeScaled(scale: ExpressionSpecification): ExpressionSpecification {
+  return [
+    'interpolate',
+    ['linear'],
+    ['zoom'],
+    STATE_NAME_SIZE.fromZoom,
+    ['*', STATE_NAME_SIZE.from, scale],
+    STATE_NAME_SIZE.toZoom,
+    ['*', STATE_NAME_SIZE.to, scale],
+  ];
+}
+
+/**
+ * The size of a name in the states-in-view layer: STATE_NAME_SIZE by zoom,
+ * times the `scale` its feature carries (1 when it carries none), so a name
+ * that layer takes over from the bundled layer keeps its size there.
+ */
+export const STATE_AREA_SIZE: ExpressionSpecification = stateNameSizeScaled([
+  'to-number',
+  ['coalesce', ['get', 'scale'], 1],
+]);
 
 /**
  * The filter of the state names' layer: the states in `names` alone, the
@@ -253,6 +388,13 @@ function labelMinZoom(zoom: number): number {
  */
 const BUILDINGS_FROM = 13;
 const BUILDINGS_FULL = 14;
+/**
+ * Up close, where the blocks are what a person finds their way by, the
+ * footprints and their edges step up a tone (CLOSE_FROM to CLOSE_ZOOM),
+ * still well under the streets between them.
+ */
+const BUILDING_CLOSE = '#191919';
+const BUILDING_EDGE_CLOSE = '#282828';
 const buildingOpacity: ExpressionSpecification = [
   'interpolate',
   ['linear'],
@@ -322,8 +464,18 @@ interface RoadTier {
   readonly minzoom: number;
   readonly full: number;
   readonly color: string;
+  /**
+   * The tier's color up close, a step brighter, reached at CLOSE_ZOOM: at a
+   * street's zoom the grid of local streets carries the map and must read
+   * against the blocks between them.
+   */
+  readonly close: string;
   readonly width: readonly Stop[];
 }
+
+/** Roads and buildings step up from their tone to their close-up tone between these zooms. */
+export const CLOSE_FROM = 14;
+export const CLOSE_ZOOM = 15;
 
 /**
  * Road classes, bottom to top: width and brightness grow with importance, so
@@ -336,6 +488,7 @@ export const ROAD_TIERS: readonly RoadTier[] = Object.freeze([
     minzoom: 14,
     full: 15,
     color: '#1a1a1a',
+    close: '#222222',
     width: [
       [14, 0.5],
       [16, 2.5],
@@ -346,6 +499,7 @@ export const ROAD_TIERS: readonly RoadTier[] = Object.freeze([
     minzoom: 12,
     full: 13,
     color: '#242424',
+    close: '#303030',
     width: [
       [12, 0.4],
       [13, 0.7],
@@ -358,6 +512,7 @@ export const ROAD_TIERS: readonly RoadTier[] = Object.freeze([
     minzoom: 10,
     full: 11,
     color: '#2c2c2c',
+    close: '#383838',
     width: [
       [10, 0.4],
       [12, 0.9],
@@ -370,6 +525,7 @@ export const ROAD_TIERS: readonly RoadTier[] = Object.freeze([
     minzoom: 9,
     full: 10,
     color: '#333333',
+    close: '#3e3e3e',
     width: [
       [9, 0.4],
       [12, 1.2],
@@ -382,6 +538,7 @@ export const ROAD_TIERS: readonly RoadTier[] = Object.freeze([
     minzoom: 7,
     full: 8,
     color: '#3a3a3a',
+    close: '#444444',
     width: [
       [7, 0.5],
       [12, 1.5],
@@ -394,6 +551,7 @@ export const ROAD_TIERS: readonly RoadTier[] = Object.freeze([
     minzoom: 7,
     full: 8,
     color: '#454545',
+    close: '#4d4d4d',
     width: [
       [7, 0.6],
       [12, 2],
@@ -467,9 +625,11 @@ const CLASS: ExpressionSpecification = ['get', 'class'];
 const ROAD_CLASSES = ROAD_TIERS.flatMap((tier) => tier.classes);
 /** Every zoom level a road curve changes at: where the expressions put their stops. */
 const ROAD_ZOOMS = [
-  ...new Set(
-    ROAD_TIERS.flatMap((tier) => [tier.minzoom, tier.full, ...tier.width.map(([zoom]) => zoom)]),
-  ),
+  ...new Set([
+    CLOSE_FROM,
+    CLOSE_ZOOM,
+    ...ROAD_TIERS.flatMap((tier) => [tier.minzoom, tier.full, ...tier.width.map(([zoom]) => zoom)]),
+  ]),
 ].sort((a, b) => a - b);
 
 /** A `match` on the road class, one branch per tier. */
@@ -498,13 +658,18 @@ function roadWidth(extra: readonly Stop[] = []): ExpressionSpecification {
   ] as unknown as ExpressionSpecification;
 }
 
+/** A tier's color at `zoom` once it is fully drawn: its own, stepping up to its close-up tone. */
+function tierTone(tier: RoadTier, zoom: number): string {
+  return mixColors(tier.color, tier.close, (zoom - CLOSE_FROM) / (CLOSE_ZOOM - CLOSE_FROM));
+}
+
 /** Road color by class and zoom: up from the ground as each tier fades in, scaled by `strength`. */
 function roadColor(ground: string, strength = 1): ExpressionSpecification {
   const stops = ROAD_ZOOMS.flatMap((zoom) => [
     zoom,
     byTier((tier) => {
       const shown = (zoom - tier.minzoom) / (tier.full - tier.minzoom);
-      return mixColors(ground, tier.color, Math.min(1, Math.max(0, shown)) * strength);
+      return mixColors(ground, tierTone(tier, zoom), Math.min(1, Math.max(0, shown)) * strength);
     }, ground),
   ]);
   return ['interpolate', ['linear'], ['zoom'], ...stops] as unknown as ExpressionSpecification;
@@ -575,11 +740,12 @@ const PLACE_LABEL_LAYOUT = {
 /**
  * The state names: one layer, drawing the states in `names` (the ones that
  * fit at the map's zoom), and only when `shown`. Quieter than the city names,
- * which are placed first and win where the two meet.
+ * and placed before them: where the two meet, the city's name gives way.
  */
 function stateNameLayer(
   colors: BasemapColors,
   names: readonly string[],
+  small: readonly string[],
   shown: boolean,
 ): SymbolLayerSpecification {
   return {
@@ -589,36 +755,65 @@ function stateNameLayer(
     minzoom: STATE_NAME_SIZE.fromZoom,
     maxzoom: STATE_NAMES_UNTIL,
     filter: stateNameFilter(names),
-    layout: {
-      ...LABEL_LAYOUT,
-      visibility: shown ? 'visible' : 'none',
-      'text-field': ['get', 'label'],
-      'text-font': [MAP_FONTS.medium],
-      'text-transform': 'uppercase',
-      'text-size': [
-        'interpolate',
-        ['linear'],
-        ['zoom'],
-        STATE_NAME_SIZE.fromZoom,
-        STATE_NAME_SIZE.from,
-        STATE_NAME_SIZE.toZoom,
-        STATE_NAME_SIZE.to,
-      ],
-      'text-letter-spacing': STATE_NAME_TRACKING,
-      'text-line-height': STATE_NAME_LEADING,
-      'text-padding': STATE_NAME_PADDING,
-      // The label carries its own line break; MapLibre breaks nothing else.
-      'text-max-width': 40,
-      'text-anchor': 'center',
-      'text-justify': 'center',
-    },
-    paint: {
-      'text-color': colors.labelDim,
-      'text-halo-color': colors.land,
-      'text-halo-width': CITY_NAME_HALO,
-      'text-halo-blur': 0.4,
-    },
+    layout: stateNameLayout(small, shown),
+    paint: stateNamePaint(colors),
   };
+}
+
+/** How a state's name is set: quiet spaced capitals, broken where its label breaks. */
+function stateNameLayout(
+  small: readonly string[],
+  shown: boolean,
+): NonNullable<SymbolLayerSpecification['layout']> {
+  return {
+    ...LABEL_LAYOUT,
+    visibility: shown ? 'visible' : 'none',
+    'text-field': ['get', 'label'],
+    'text-font': [MAP_FONTS.medium],
+    'text-transform': 'uppercase',
+    'text-size': stateNameSizeExpression(small),
+    'text-letter-spacing': STATE_NAME_TRACKING,
+    'text-line-height': STATE_NAME_LEADING,
+    'text-padding': STATE_NAME_PADDING,
+    // The label carries its own line break; MapLibre breaks nothing else.
+    'text-max-width': 40,
+    'text-anchor': 'center',
+    'text-justify': 'center',
+  };
+}
+
+function stateNamePaint(colors: BasemapColors): NonNullable<SymbolLayerSpecification['paint']> {
+  return {
+    'text-color': colors.labelDim,
+    'text-halo-color': colors.background,
+    'text-halo-width': CITY_NAME_HALO,
+    'text-halo-blur': 0.4,
+  };
+}
+
+/**
+ * The states in view on a phone closer in (state-areas.ts): named alike, from
+ * the source the map fills as it comes to rest, over every place name, so
+ * MapLibre places them before any: a state's name never gives way to a
+ * city's, and the map sets it off the city names where the state has room.
+ * Once filled, it names every state the map names there, the bundled layer
+ * none (index.ts): a state's name is drawn once.
+ */
+function stateAreaLayer(colors: BasemapColors, shown: boolean): SymbolLayerSpecification {
+  return {
+    id: BASEMAP_IDS.usStateAreaLabel,
+    type: 'symbol',
+    source: BASEMAP_IDS.usStateAreaSource,
+    minzoom: STATE_NAME_SIZE.fromZoom,
+    maxzoom: STATE_AREAS_UNTIL,
+    layout: { ...stateNameLayout([], shown), 'text-size': STATE_AREA_SIZE },
+    paint: stateNamePaint(colors),
+  };
+}
+
+/** Nothing yet: the map fills the states in view as it comes to rest. */
+function noStateAreas(): { type: 'FeatureCollection'; features: [] } {
+  return { type: 'FeatureCollection', features: [] };
 }
 
 /**
@@ -629,6 +824,7 @@ function cityNameLayers(
   colors: BasemapColors,
   hidden: readonly string[],
   padding: number,
+  offset: ExpressionSpecification | [number, number],
 ): SymbolLayerSpecification[] {
   return CITY_NAME_BANDS.map(({ zoom }, band) => {
     const rank: ExpressionSpecification = ['get', 'rank'];
@@ -656,6 +852,8 @@ function cityNameLayers(
         'text-letter-spacing': CITY_NAME_LETTER_SPACING,
         'text-padding': padding,
         'text-anchor': 'center',
+        // Set off the outline where it runs under the city's point (build-geo.mjs).
+        'text-offset': offset,
         'text-max-width': 10,
       },
       paint: {
@@ -669,8 +867,8 @@ function cityNameLayers(
           cityNameColor(colors, HANDOVER_START),
         ],
         'text-opacity': ramp(zoom, zoom + CITY_NAME_FADE),
-        // Parts a coastline or border running under a name.
-        'text-halo-color': colors.land,
+        // Parts a line running under a name.
+        'text-halo-color': colors.background,
         'text-halo-width': CITY_NAME_HALO,
         'text-halo-blur': 0.4,
       },
@@ -688,7 +886,7 @@ export function splitUsLines(
   if (typeof usLines === 'string') return [usLines, usLines];
   const isCity = (feature: unknown): boolean => {
     const kind = (feature as { properties?: { kind?: unknown } } | null)?.properties?.kind;
-    return kind === 'city' || kind === 'state-name';
+    return typeof kind === 'string' && NAME_KINDS.includes(kind);
   };
   return [
     { type: 'FeatureCollection', features: usLines.features.filter((f) => !isCity(f)) },
@@ -719,11 +917,13 @@ export function splitUsLines(
  */
 export function buildBasemapStyle({
   usLines,
+  usLinesUrls = null,
   hairline,
   colors,
   schools = null,
   hiddenCityNames = [],
   stateNames = [],
+  smallStateNames = [],
   phoneNames = false,
 }: BasemapStyleOptions): StyleSpecification {
   const [geometry, cities] = splitUsLines(usLines);
@@ -749,7 +949,8 @@ export function buildBasemapStyle({
       type: 'fill',
       source: BASEMAP_IDS.usSource,
       maxzoom: HANDOVER_END,
-      filter: ['==', KIND, 'land'],
+      // The still fills the same shape.
+      filter: ['==', KIND, 'land-simple'],
       layout: { visibility: sameColor(colors.land, colors.background) ? 'none' : 'visible' },
       paint: { 'fill-color': colors.land, 'fill-opacity': fadeOut, 'fill-antialias': false },
     },
@@ -875,8 +1076,24 @@ export function buildBasemapStyle({
       'source-layer': 'building',
       minzoom: BUILDINGS_FROM,
       paint: {
-        'fill-color': colors.building,
-        'fill-outline-color': colors.buildingEdge,
+        'fill-color': [
+          'interpolate',
+          ['linear'],
+          ['zoom'],
+          CLOSE_FROM,
+          colors.building,
+          CLOSE_ZOOM,
+          BUILDING_CLOSE,
+        ],
+        'fill-outline-color': [
+          'interpolate',
+          ['linear'],
+          ['zoom'],
+          CLOSE_FROM,
+          colors.buildingEdge,
+          CLOSE_ZOOM,
+          BUILDING_EDGE_CLOSE,
+        ],
         'fill-opacity': buildingOpacity,
       },
     },
@@ -926,27 +1143,52 @@ export function buildBasemapStyle({
       paint: { 'line-color': colors.outline, 'line-width': hairline, 'line-opacity': fadeIn },
     },
     // The bundled lines are the US's own, so they draw over the mask while they hand over.
+    // Simplified at the national view, detailed from SIMPLE_LINES_UNTIL (build-geo.mjs).
+    {
+      id: BASEMAP_IDS.usStatesSimple,
+      type: 'line',
+      source: BASEMAP_IDS.usSource,
+      maxzoom: BUNDLED_LINES_UNTIL,
+      filter: ['==', KIND, 'state-simple'],
+      layout: round,
+      paint: { 'line-color': colors.state, 'line-width': hairline, 'line-opacity': simpleFadeOut },
+    },
     {
       id: BASEMAP_IDS.usStates,
       type: 'line',
       source: BASEMAP_IDS.usSource,
-      maxzoom: HANDOVER_END,
+      maxzoom: BUNDLED_LINES_UNTIL,
       filter: ['==', KIND, 'state'],
       layout: round,
-      paint: { 'line-color': colors.state, 'line-width': hairline, 'line-opacity': fadeOut },
+      paint: { 'line-color': colors.state, 'line-width': hairline, 'line-opacity': detailedLines },
     },
     {
       // The land's rings: MapLibre draws a line layer on polygons along their edges.
+      id: BASEMAP_IDS.usOutlineSimple,
+      type: 'line',
+      source: BASEMAP_IDS.usSource,
+      maxzoom: BUNDLED_LINES_UNTIL,
+      filter: ['==', KIND, 'land-simple'],
+      layout: round,
+      paint: {
+        'line-color': colors.outline,
+        'line-width': hairline,
+        'line-opacity': simpleFadeOut,
+      },
+    },
+    {
       id: BASEMAP_IDS.usOutline,
       type: 'line',
       source: BASEMAP_IDS.usSource,
-      maxzoom: HANDOVER_END,
+      maxzoom: BUNDLED_LINES_UNTIL,
       filter: ['==', KIND, 'land'],
       layout: round,
-      paint: { 'line-color': colors.outline, 'line-width': hairline, 'line-opacity': fadeOut },
+      paint: {
+        'line-color': colors.outline,
+        'line-width': hairline,
+        'line-opacity': detailedLines,
+      },
     },
-    // The state names under the city names, which MapLibre places first.
-    stateNameLayer(colors, stateNames, phoneNames),
     // The national city names, the last band lowest (MapLibre places the top layer first),
     // under the glow, which goes right before the street tiles' labels: a city's lights
     // shine over its name, never cut by the name's halo.
@@ -954,7 +1196,17 @@ export function buildBasemapStyle({
       colors,
       hiddenCityNames,
       phoneNames ? CITY_NAME_PHONE_PADDING : CITY_NAME_PADDING,
+      cityNameOffset(cities),
     ).reverse(),
+    // The state names over the city names, so MapLibre places them first: a state named where
+    // its name fits is never left unnamed for a city's name, which goes instead.
+    stateNameLayer(colors, stateNames, smallStateNames, phoneNames),
+    {
+      // Empty: the glow layer goes right over it (BASEMAP_IDS.glowSlot).
+      id: BASEMAP_IDS.glowSlot,
+      type: 'background',
+      layout: { visibility: 'none' },
+    },
     // Labels, lowest priority first: MapLibre places the top layer's labels first.
     {
       // Neighbourhoods in small spaced capitals, a quiet layer under the street names.
@@ -1139,6 +1391,7 @@ export function buildBasemapStyle({
       },
       paint: { 'text-color': colors.label, 'text-opacity': fadeIn, ...halo },
     },
+    stateAreaLayer(colors, phoneNames),
     {
       // Empty: the school layers are added before it (BASEMAP_IDS.schools).
       id: BASEMAP_IDS.schools,
@@ -1155,7 +1408,7 @@ export function buildBasemapStyle({
     // Dots under every label (and under the glow, which goes right before the labels); names
     // over them all, and over the names the space each dot keeps, placed first.
     layers.splice(
-      layers.findIndex((layer) => layer.id === BASEMAP_IDS.labels),
+      layers.findIndex((layer) => layer.id === BASEMAP_IDS.glowSlot),
       0,
       schoolDotLayer(schoolColors),
     );
@@ -1173,14 +1426,19 @@ export function buildBasemapStyle({
       ...(schools === null ? {} : { [BASEMAP_IDS.schoolsSource]: schoolSource(schools) }),
       [BASEMAP_IDS.usSource]: {
         type: 'geojson',
-        data: geometry,
+        data: usLinesUrls?.lines ?? geometry,
+        // The land and lines alone: the file at a URL has the names too.
+        filter: ['match', KIND, NAME_KINDS, false, true],
         // The bundled lines are only drawn below the handover, so deeper tiles are never cut.
         maxzoom: Math.ceil(HANDOVER_END),
         tolerance: 0.1,
       },
+      [BASEMAP_IDS.usStateAreaSource]: { type: 'geojson', data: noStateAreas() },
       [BASEMAP_IDS.usCitySource]: {
         type: 'geojson',
-        data: cities,
+        data: usLinesUrls?.names ?? cities,
+        // The names alone, whatever the data holds.
+        filter: ['match', KIND, NAME_KINDS, true, false],
         // One tile holds every city, so MapLibre places the names strictly in rank order: names
         // in separate tiles would be placed tile by tile, and a small city could take a large
         // one's place. Drawn from it up to zoom 7, a unit of that tile is under 3 pixels.
@@ -1195,5 +1453,60 @@ export function buildBasemapStyle({
       },
     },
     layers,
+  };
+}
+
+/** Whether MapLibre draws `layer` at `zoom`: shown, and within its zoom range. */
+function drawnAt(layer: LayerSpecification, zoom: number): boolean {
+  const visibility = (layer.layout as { visibility?: unknown } | undefined)?.visibility;
+  return visibility !== 'none' && zoom >= (layer.minzoom ?? 0) && zoom < (layer.maxzoom ?? 24);
+}
+
+/** A style as the map is created with it, and the layers it takes on after. */
+export interface StagedStyle {
+  /** The style to create the map with: every source, and the layers without one. */
+  readonly style: StyleSpecification;
+  /**
+   * The layers of each source a layer drawn at the zoom the map opens at
+   * reads, in the full style's order: the first to add.
+   */
+  readonly now: readonly LayerSpecification[];
+  /** The rest, drawn only further in or out, in the full style's order: added after. */
+  readonly later: readonly LayerSpecification[];
+  /** Every layer of the full style, in order: where each goes as it is added. */
+  readonly order: readonly string[];
+}
+
+/**
+ * Splits `style` into the style a map opening at `zoom` is created with and
+ * the layers it takes on once that style is in, a few at a time (index.ts):
+ * setting up a layer is MapLibre's work on the page's main thread, and all
+ * of it at once would hold the page up.
+ *
+ * The map is created with the layers without a source (the ground and the
+ * glow layer's place). A source loads no tiles until a layer on it is drawn,
+ * and a layer added to a source whose tiles are in has them all cut again:
+ * so the layers of each source a layer drawn at `zoom` reads go on first,
+ * all of them before the map next draws, and the rest after.
+ */
+export function stageStyle(style: StyleSpecification, zoom: number): StagedStyle {
+  const sourceOf = (layer: LayerSpecification): string | null =>
+    'source' in layer && typeof layer.source === 'string' ? layer.source : null;
+  const inUse = new Set(
+    style.layers.flatMap((layer) => {
+      const source = sourceOf(layer);
+      return source !== null && drawnAt(layer, zoom) ? [source] : [];
+    }),
+  );
+  const stage = (layer: LayerSpecification): 'first' | 'now' | 'later' => {
+    const source = sourceOf(layer);
+    if (source === null) return 'first';
+    return inUse.has(source) ? 'now' : 'later';
+  };
+  return {
+    style: { ...style, layers: style.layers.filter((layer) => stage(layer) === 'first') },
+    now: style.layers.filter((layer) => stage(layer) === 'now'),
+    later: style.layers.filter((layer) => stage(layer) === 'later'),
+    order: style.layers.map((layer) => layer.id),
   };
 }

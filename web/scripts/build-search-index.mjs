@@ -6,7 +6,8 @@
  * Input: JSON Lines files, one record per line, in any of three shapes:
  *
  *   search record  {"kind":"school"|"district"|"city"|"zip","id","name","sub",
- *                   "state","lat","lon","weight"}   (see src/search/types.ts)
+ *                   "state","lat","lon","weight"}, and optionally "shown", the
+ *                   name as the page shows it   (see src/search/types.ts)
  *   city           {"geoid","name","kind","state","lat","lon","population"}
  *                   as `snowlight places build` writes cities.jsonl
  *   ZIP code       {"zcta","states","lat","lon","districts"}

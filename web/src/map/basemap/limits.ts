@@ -2,13 +2,10 @@
  * How far the map zooms out and pans on a given screen, and where it opens.
  *
  * The national view fits the continental US into the frame, the box the
- * inline still is drawn in. The map opens at the home view: the national
- * view, except on a screen held upright and too narrow for it (a phone),
- * where the whole country would fill a thin band across the middle. There
- * the home view fills the frame's height with the country, from its northern
- * border to the Keys, and lets its width run off the sides, showing the part
- * of it HomeFit.focus names (index.html sets both, for the still too). From
- * the national view:
+ * inline still is drawn in: on every screen, a phone's too, the whole country
+ * with nothing cropped. The map opens at the home view: the national view, or,
+ * for a phone whose viewer has let the site know where they are, their own
+ * area at NEARBY_ZOOM (App.svelte, nearby.ts). From the national view:
  *
  * - Zooming out stops ZOOM_SLACK levels below that fit, so the country is
  *   never much smaller than at the national view.
@@ -99,20 +96,24 @@ export interface Box {
   readonly y1: number;
 }
 
-/**
- * How the home view fits the country into the frame: whole (the national
- * view), or, with `cover`, filling the frame both ways, the country's height
- * fitted and its width running off the sides. `focus` then places it across:
- * 0 puts its west coast at the frame's left edge, 1 its east coast at the
- * right, as CSS object-position does.
- */
-export interface HomeFit {
-  readonly cover: boolean;
-  readonly focus: number;
+/** A place, in degrees. */
+export interface Place {
+  readonly lat: number;
+  readonly lon: number;
 }
 
-/** The home view is the national view. */
-export const WHOLE_COUNTRY: HomeFit = Object.freeze({ cover: false, focus: 0.5 });
+/**
+ * The zoom a phone opens at over its viewer's own area: a metro, their city
+ * filling the screen.
+ */
+export const NEARBY_ZOOM = 10;
+
+/**
+ * Degrees off the land map (us-reach.ts) a viewer's place can be and still
+ * have its area as the home view: a shore, a ferry, a bridge. Farther off,
+ * the home view is the national view.
+ */
+export const NEARBY_SLACK = 0.25;
 
 /** The limits for one screen. Recompute them whenever the screen or the frame changes size. */
 export interface ViewLimits {
@@ -122,8 +123,9 @@ export interface ViewLimits {
   /** The national view: the continental US fitted into the frame. */
   readonly fit: MapView;
   /**
-   * Where the map opens and goes back to: the national view itself, or with a
-   * covering HomeFit, the country filling the frame. Always allowed.
+   * Where the map opens and goes back to: the national view itself, or the
+   * area around a place at NEARBY_ZOOM, as near it as the limits allow.
+   * Always allowed.
    */
   readonly home: MapView;
   /** The widest zoom: ZOOM_SLACK below the national view. */
@@ -190,10 +192,11 @@ const SLACK = SHORE_SLACK / 360;
 
 /**
  * The limits for a screen of `size` whose national view fits the US inside
- * `insets`, and whose home view fits it as `home` says. A frame with no area
- * falls back to the whole screen.
+ * `insets`, and whose home view is the area around `near`, centered in the
+ * frame, when that is on the continental US (nearUs), else the national
+ * view. A frame with no area falls back to the whole screen.
  */
-export function viewLimits(size: Size, insets: Insets, home: HomeFit = WHOLE_COUNTRY): ViewLimits {
+export function viewLimits(size: Size, insets: Insets, near: Place | null = null): ViewLimits {
   const width = Number.isFinite(size.width) ? Math.max(0, size.width) : 0;
   const height = Number.isFinite(size.height) ? Math.max(0, size.height) : 0;
   let innerWidth = width - insets.left - insets.right;
@@ -241,34 +244,15 @@ export function viewLimits(size: Size, insets: Insets, home: HomeFit = WHOLE_COU
     },
     frame: { width: innerWidth, height: innerHeight, dx: offsetX, dy: offsetY },
   };
-  const covering = home.cover ? coverView(limits.frame, home.focus) : null;
-  // A frame the national view already fills both ways (or one with no area) opens at it.
-  if (covering === null || !(covering.zoom > fitZoom)) return limits;
-  return { ...limits, home: constrainView(limits, covering) };
-}
-
-/**
- * The view that covers `frame` with the continental US, as the still is laid
- * out in index.html on a phone: drawn `height` tall, where `height` is the
- * frame's or, for a frame wider than the country, the country's at the
- * frame's width; placed `focus` of the way along the frame's width it runs
- * past, and centered down. Null for a frame with no area.
- */
-function coverView(frame: ViewLimits['frame'], focus: number): MapView | null {
-  if (!(frame.width > 0 && frame.height > 0)) return null;
-  const usWidth = US_BOX.x1 - US_BOX.x0;
-  const usHeight = US_BOX.y1 - US_BOX.y0;
-  const drawnHeight = Math.max(frame.height, (frame.width * usHeight) / usWidth);
-  // Pixels per world unit, and where the drawn country's north-west corner sits in the frame.
-  const scale = drawnHeight / usHeight;
-  const left = clamp(Number.isFinite(focus) ? focus : 0.5, 0, 1) * (frame.width - usWidth * scale);
-  const top = (frame.height - drawnHeight) / 2;
-  // The point at the frame's center, then the screen's center, the frame's offset back from it.
-  const x = US_BOX.x0 + (frame.width / 2 - left - frame.dx) / scale;
-  const y = US_BOX.y0 + (frame.height / 2 - top - frame.dy) / scale;
-  const zoom = Math.log2(scale / TILE_SIZE);
-  if (!Number.isFinite(zoom)) return null;
-  return { lat: latFromMercatorY(y), lon: lngFromMercatorX(x), zoom: Math.min(zoom, MAX_ZOOM) };
+  if (near === null || !nearUs(near)) return limits;
+  // The place at the frame's center: the screen's center that far back from it.
+  const nearScale = TILE_SIZE * 2 ** NEARBY_ZOOM;
+  const home = constrainView(limits, {
+    lat: latFromMercatorY(mercatorYFromLat(near.lat) - offsetY / nearScale),
+    lon: lngFromMercatorX(mercatorXFromLng(near.lon) - offsetX / nearScale),
+    zoom: NEARBY_ZOOM,
+  });
+  return { ...limits, home };
 }
 
 /**
@@ -337,6 +321,29 @@ export function constrainView(limits: ViewLimits, view: MapView): MapView {
     lon: clamp(lngFromMercatorX(nearestX), west, east),
     zoom,
   };
+}
+
+/**
+ * Whether a place is on the continental US as the land map has it
+ * (us-reach.ts: its islands in, lakes and bays up to two degrees wide
+ * closed), or within `slack` degrees of it.
+ */
+export function nearUs(place: Place, slack = NEARBY_SLACK): boolean {
+  const { lat, lon } = place;
+  if (!Number.isFinite(lat) || !Number.isFinite(lon)) return false;
+  for (const run of US_LAND.runs) {
+    for (let i = 0; i + 3 < run.length; i += 4) {
+      if (
+        lon >= item(run, i) - slack &&
+        lon <= item(run, i + 1) + slack &&
+        lat >= item(run, i + 2) - slack &&
+        lat <= item(run, i + 3) + slack
+      ) {
+        return true;
+      }
+    }
+  }
+  return false;
 }
 
 /** The screen at a view, in world units: for tests and for callers placing things on screen. */

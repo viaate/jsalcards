@@ -7,7 +7,7 @@
  * - search: the index loads on the first focus of the search field;
  * - today's schools lit on the glow layer (App.svelte puts it on the map), and
  *   the time of the live file they come from, for the update time;
- * - the service worker, registered after load.
+ * - the service worker, registered once the map is on screen.
  *
  * A build that ships no data requests nothing under data/: the glow stays
  * dark, search shows nothing and no selection moves the map.
@@ -23,7 +23,7 @@ import type { UtcInstant } from '../types/generated';
 import { DATA_PATHS } from '../data/files';
 import { createAppData, locate, startLiveGlow } from './data';
 import type { AppData, Target } from './data';
-import { createSearchController, searchOptions } from './search';
+import { createSearchController, nearView, searchOptions } from './search';
 import type { SearchController, SearchOption } from './search';
 import { startServiceWorker } from './service-worker';
 import { selectionForHit, startupSelection, viewForHit } from './startup';
@@ -56,7 +56,10 @@ export interface Services {
   readonly searchable: boolean;
   /** Starts loading the search index (first focus). */
   warmSearch(): void;
-  /** Searches `text`; results arrive through onResults. */
+  /**
+   * Searches `text`; results arrive through onResults. Good matches near
+   * where the map is looking come first.
+   */
   query(text: string): void;
   /**
    * Opens what a result names and moves the map to it, as one new history
@@ -90,6 +93,16 @@ export function boot(options: BootOptions): Services {
 
   // A function, so each check reads the signal afresh after an await.
   const aborted = (): boolean => signal.aborted;
+  /** The map, once it is up, for where the person is looking when they search. */
+  let basemap: Basemap | undefined;
+  void options.map.then((map) => {
+    basemap = map;
+  });
+  const near = (): ReturnType<typeof nearView> => {
+    if (basemap === undefined) return undefined;
+    const container = basemap.map.getContainer();
+    return nearView(basemap.view, container.clientWidth, container.clientHeight);
+  };
   const glow = options.glow;
   let stopLive: () => void = () => undefined;
   void glow.then(async (layer) => {
@@ -100,7 +113,8 @@ export function boot(options: BootOptions): Services {
     if (aborted()) stopLive();
   });
 
-  void startServiceWorker(warmUrls);
+  // Once the map is on screen: installing the worker would otherwise run alongside its start.
+  void startServiceWorker(warmUrls, options.map);
 
   signal.addEventListener('abort', () => {
     stopLive();
@@ -117,7 +131,7 @@ export function boot(options: BootOptions): Services {
       search.warm();
     },
     query: (text) => {
-      search.query(text);
+      search.query(text, near());
     },
     pick(hit) {
       // Every pick is a step of its own, a city too: Back returns to the place before.
