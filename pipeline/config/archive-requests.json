@@ -1,14 +1,44 @@
 {
- "cdx": [
+ "snapshots": [
   {
-   "url": "ftp2.kimt.com/closings.html",
-   "from": "20140101",
-   "to": "20260930"
+   "timestamp": "20200327123705",
+   "url": "https://ftp2.kimt.com/closings.html"
   },
   {
-   "url": "ftp2.wkow.com/closings.html",
-   "from": "20140101",
-   "to": "20260930"
+   "timestamp": "20221221202029",
+   "url": "https://ftp2.kimt.com/closings.html"
+  },
+  {
+   "timestamp": "20230223060952",
+   "url": "https://ftp2.kimt.com/closings.html"
+  },
+  {
+   "timestamp": "20240114022730",
+   "url": "https://ftp2.kimt.com/closings.html"
+  },
+  {
+   "timestamp": "20251210121740",
+   "url": "http://ftp2.kimt.com/closings.html"
+  },
+  {
+   "timestamp": "20260122231824",
+   "url": "http://ftp2.kimt.com/closings.html"
+  },
+  {
+   "timestamp": "20221210234259",
+   "url": "https://ftp2.wkow.com/closings.html"
+  },
+  {
+   "timestamp": "20230304222508",
+   "url": "http://ftp2.wkow.com/closings.html"
+  },
+  {
+   "timestamp": "20241216180057",
+   "url": "https://ftp2.wkow.com/closings.html"
+  },
+  {
+   "timestamp": "20250124160525",
+   "url": "https://ftp2.wkow.com/closings.html"
   }
  ]
 }
