@@ -10,10 +10,13 @@ slower, so the timed calls run with the tracer paused (the other tests cover
 the same lines). ``tests/match/bench_match.py`` measures the same thing in a
 plain interpreter.
 
-This machine's four CPUs are shared (another build, a browser under test), and a
-run they slow down says nothing of the code: a timed step that misses its bar is
-run again, cold, up to :data:`ATTEMPTS` times, and the fastest run counts, as
-``timeit`` takes the best of its repeats.
+This machine's four CPUs are shared (other builds, a browser under test), and a
+run they slow down says nothing of the code. The timed calls therefore count the
+CPU time of this process (``time.process_time``), which other processes waiting
+for a CPU do not add to, rather than wall-clock time. The matcher is
+single-threaded, so on an idle machine the two agree. A timed step that still
+misses its bar is run again, cold, up to :data:`ATTEMPTS` times, and the fastest
+run counts, as ``timeit`` takes the best of its repeats.
 """
 
 import functools
@@ -42,13 +45,13 @@ def big() -> list[synthetic.SyntheticRecord]:
 
 
 def _timed[T](work: Callable[[], T]) -> tuple[T, float]:
-    """Run ``work`` untraced; return its result and the seconds it took."""
+    """Run ``work`` untraced; return its result and the CPU seconds it took."""
     tracer = sys.gettrace()
     sys.settrace(None)
     try:
-        started = time.perf_counter()
+        started = time.process_time()
         result = work()
-        return result, time.perf_counter() - started
+        return result, time.process_time() - started
     finally:
         sys.settrace(tracer)
 
@@ -124,6 +127,13 @@ def test_timing_restores_the_tracer() -> None:
         sys.settrace(previous)
 
 
+def _spin(seconds: float) -> None:
+    """Keep this process busy for ``seconds`` of CPU time (sleeping takes none)."""
+    until = time.process_time() + seconds
+    while time.process_time() < until:
+        pass
+
+
 def test_the_fastest_of_a_few_cold_runs_counts() -> None:
     """A run slowed past the bar is timed again, cold; one under it ends the timing."""
     delays = iter((0.05, 0.0, 0.05))
@@ -132,13 +142,19 @@ def test_the_fastest_of_a_few_cold_runs_counts() -> None:
     def work(attempt: int) -> int:
         runs.append((attempt, len(normalize._PARSED)))
         normalize.record_form("Tollgate Elementary School", district=False)
-        time.sleep(next(delays))
+        _spin(next(delays))
         return attempt
 
     result, seconds = _fastest(lambda attempt: attempt, work, bar=0.04)
     assert result == 1
     assert seconds < 0.04
     assert runs == [(0, 0), (1, 0)]  # set up afresh and cold each time
-    slow, taken = _fastest(lambda _attempt: 0.01, time.sleep, bar=0.0)
+    slow, taken = _fastest(lambda _attempt: 0.01, _spin, bar=0.0)
     assert slow is None
     assert taken >= 0.01
+
+
+def test_waiting_for_a_cpu_is_not_counted() -> None:
+    """Time spent off the CPU (here, asleep) does not count against the bar."""
+    _, seconds = _timed(functools.partial(time.sleep, 0.2))
+    assert seconds < 0.1
