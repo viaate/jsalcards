@@ -23,6 +23,8 @@ name: Archive captures
 # while the job still has time. Snapshots are
 # uploaded as the artifact snapshots-<run id> as soon as they are read, before the
 # listings start; listings are uploaded as cdx-<run id>.
+# Both are kept 90 days, the longest GitHub allows for this repository, so the
+# pipeline's copies can be refreshed long after a run.
 #
 # Run it by hand with inputs, or push a change to
 # pipeline/config/archive-requests.json:
@@ -365,7 +367,7 @@ jobs:
           name: snapshots-${{ github.run_id }}
           path: out/snapshots-run
           if-no-files-found: ignore
-          retention-days: 30
+          retention-days: 90
       - name: List captures
         env:
           EVENT: ${{ github.event_name }}
@@ -384,4 +386,4 @@ jobs:
           name: cdx-${{ github.run_id }}
           path: out/cdx-run
           if-no-files-found: ignore
-          retention-days: 30
+          retention-days: 90
