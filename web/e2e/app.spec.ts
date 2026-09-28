@@ -841,6 +841,73 @@ test.describe('with data staged', () => {
     await later.close();
   });
 
+  test('the update time at its longest keeps beside the field, and the list opens under it', async ({
+    browser,
+  }) => {
+    const zone = 'America/Chicago';
+    const generated = new Date('2026-01-12T12:42:00Z');
+    // The next day, so the line names the file's day; offline too, it runs longest.
+    const nextDay = new Date('2026-01-13T15:00:00Z');
+
+    /** The line's words right of the field and clear of it, inside the strip, ending at its edge. */
+    async function besideField(page: Page, width: number, where: string): Promise<void> {
+      const field = await page.locator('.search').boundingBox();
+      if (field === null) throw new Error('no field');
+      const words = await page.locator('.updated time').evaluate((time) => {
+        const range = document.createRange();
+        range.selectNodeContents(time);
+        const { left, right, top, bottom } = range.getBoundingClientRect();
+        return { left, right, top, bottom, clipped: time.scrollWidth > time.clientWidth };
+      });
+      expect(words.left, where).toBeGreaterThanOrEqual(field.x + field.width + 12);
+      expect(Math.abs(width - 20 - words.right), where).toBeLessThan(4);
+      expect(words.top, where).toBeGreaterThanOrEqual(field.y);
+      expect(words.bottom, where).toBeLessThanOrEqual(field.y + field.height);
+      expect(words.clipped, where).toBe(false);
+    }
+
+    for (const viewport of [
+      { width: 720, height: 900 },
+      { width: 800, height: 900 },
+      { width: 1024, height: 768 },
+      { width: 844, height: 390 },
+    ]) {
+      const where = `${String(viewport.width)}x${String(viewport.height)}`;
+      const context = await browser.newContext({ viewport, timezoneId: zone });
+      const page = await context.newPage();
+      await page.clock.setFixedTime(nextDay);
+      const { problems } = watch(page);
+      await page.goto(site);
+      await waitForMap(page);
+
+      // The results list runs under the field, as wide as it.
+      const input = page.locator('.search-input');
+      await input.click();
+      await input.pressSequentially('kansas city', { delay: 20 });
+      await expect(page.locator('.results [role="option"]').first()).toBeVisible();
+      const field = await page.locator('.search').boundingBox();
+      const list = await page.locator('.results').boundingBox();
+      if (field === null || list === null) throw new Error('no box');
+      expect(Math.abs(list.x - field.x), where).toBeLessThan(0.5);
+      expect(Math.abs(list.width - field.width), where).toBeLessThan(0.5);
+      expect(list.y, where).toBeGreaterThan(field.y + field.height);
+      await input.press('Escape');
+      await input.press('Escape');
+
+      const updated = page.locator('.updated');
+      await expect(updated).toHaveText(format.updatedAt(generated, zone, nextDay), {
+        timeout: 30_000,
+      });
+      await besideField(page, viewport.width, where);
+      await context.setOffline(true);
+      await expect(updated).toHaveText(format.offline(generated, zone, nextDay));
+      await besideField(page, viewport.width, `${where}, offline`);
+      await context.setOffline(false);
+      expect(problems).toEqual([]);
+      await context.close();
+    }
+  });
+
   test('today’s schools glow, read from the live file against the directory', async ({
     browser,
   }) => {

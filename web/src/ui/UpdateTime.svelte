@@ -133,6 +133,29 @@
     }
   }
 
+  /*
+    Beside the search field, the line keeps to the room right of it (the
+    strip's width less the wordmark, the gaps and the widest field), and never
+    less than the room the strip keeps for it. Longer than that room (a narrow
+    window, offline, a file from another day), it wraps to two balanced lines,
+    both inside the strip, rather than run under the field.
+  */
+  @media (min-width: 720px) {
+    .updated {
+      max-width: max(
+        var(--side-width),
+        100vw - var(--inset-left) - var(--inset-right) - 2 * var(--edge) - var(--brand-width) - 2 *
+          var(--brand-gap) - var(--field-width)
+      );
+      white-space: normal;
+      text-align: right;
+    }
+
+    time {
+      text-wrap: balance;
+    }
+  }
+
   /* On a phone the line sits across from the wordmark, over the search field's right end. */
   @media (max-width: 719px) {
     .updated {

@@ -82,10 +82,13 @@
         --edge: 20px;
         --bar-height: 44px;
         /*
-          Room kept at each side of the search field: for the wordmark at the
-          left, the update time at the right. Fixed, so a font swap never moves
-          the field.
+          The strip's room, all of it fixed, so a font swap never moves the
+          field: the wordmark's slot at the left (the name as Geist sets it, and
+          a little over), the gap after it, and the room kept at the right for
+          the update time.
         */
+        --brand-width: 84px;
+        --brand-gap: 20px;
         --side-width: 180px;
         --field-width: 400px;
         --bar-font: 15px;
@@ -244,10 +247,9 @@
       }
 
       /*
-        The top strip, edge to edge: the wordmark at the left edge, the search
-        field on the page's middle line, over the middle of the map, and the
-        update time at the right edge. The field lines up with the map
-        whatever stands beside it, and each side keeps room for its words.
+        The top strip, edge to edge: the wordmark at the left edge with the
+        search field just after it (the owner's call), and the update time at
+        the right edge. The field narrows before the update time's room does.
       */
       .bar {
         position: absolute;
@@ -257,8 +259,9 @@
         z-index: 2;
         display: grid;
         grid-template-columns:
-          minmax(var(--side-width), 1fr) minmax(0, var(--field-width))
+          var(--brand-width) minmax(0, var(--field-width))
           minmax(var(--side-width), 1fr);
+        column-gap: var(--brand-gap);
         align-items: center;
         height: var(--bar-height);
         /* The strip is the map's where nothing is on it. */
@@ -269,9 +272,18 @@
           after, so nothing in the strip changes at the handover.
         */
         will-change: transform;
-        /* Where the results list runs: under the field. */
-        --results-left: calc((100% - min(var(--field-width), 100% - 2 * var(--side-width))) / 2);
-        --results-right: var(--results-left);
+        /* Where the results list runs: under the field, as wide as it. */
+        --results-left: calc(var(--brand-width) + var(--brand-gap));
+        --results-right: calc(
+          100% - var(--results-left) -
+            max(
+              0px,
+              min(
+                var(--field-width),
+                100% - var(--results-left) - var(--brand-gap) - var(--side-width)
+              )
+            )
+        );
       }
 
       .bar > * {
@@ -283,11 +295,14 @@
         z-index: 3;
       }
 
-      /* Its box is the name alone, so a mask over it covers the name and nothing else. */
+      /*
+        Its box is the name alone, so a mask over it covers the name and nothing
+        else. Beside the field, a fallback face wider than its slot runs a
+        little into the gap after it until Geist loads, as the legend's keys do.
+      */
       .wordmark {
         grid-column: 1;
         justify-self: start;
-        max-width: 100%;
         margin: 0;
         padding: 0;
         overflow: hidden;

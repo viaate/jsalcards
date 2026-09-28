@@ -762,6 +762,48 @@ test.describe('first paint, before any script', () => {
     }
   });
 
+  test('lays a wider screen out with the field just after the name, in either face', async ({
+    browser,
+  }) => {
+    // The owner's call: from 720px wide, the field at the left, after the wordmark.
+    const screens: Viewport[] = [
+      { ...DESKTOP, name: 'narrow window 720x900', width: 720 },
+      { ...DESKTOP, name: 'window 1024x768', width: 1024, height: 768 },
+      DESKTOP,
+      { ...DESKTOP, name: 'wide 2560x1440', width: 2560, height: 1440 },
+      { ...PHONE, name: 'phone held sideways 844x390', width: 844, height: 390 },
+    ];
+    for (const viewport of screens) {
+      for (const face of ['Geist', 'fallback'] as const) {
+        const where = `${viewport.name}, ${face}`;
+        const context = await newContext(browser, viewport);
+        const page = await context.newPage();
+        if (face === 'fallback') await page.route(/\.woff2$/, (route) => route.abort());
+        await page.goto('/', { waitUntil: 'load' });
+        if (face === 'Geist') {
+          await expect
+            .poll(() => page.evaluate(() => document.fonts.check('600 17px "Geist Variable"')))
+            .toBe(true);
+        }
+
+        // The field starts where the name's slot and the gap after it end, whatever the face
+        // (so a font swap never moves it), and narrows before the 180px kept at the right for
+        // the update time does. The name sits clear of it, on its line.
+        const name = await box(page, 'h1.wordmark');
+        const field = await box(page, '.search');
+        expect(name.x, where).toBe(20);
+        expect(field.x, where).toBe(20 + 84 + 20);
+        expect(field.width, where).toBe(Math.min(400, viewport.width - 40 - 84 - 40 - 180));
+        expect(name.x + name.width, where).toBeLessThanOrEqual(field.x - 8);
+        expect(
+          Math.abs(name.y + name.height / 2 - (field.y + field.height / 2)),
+          where,
+        ).toBeLessThan(1);
+        await context.close();
+      }
+    }
+  });
+
   test('the key keeps its place as the font loads, on every screen', async ({ browser }) => {
     test.setTimeout(180_000);
     const SMALL: Viewport = { ...PHONE, name: 'phone 360x740', width: 360, height: 740 };
