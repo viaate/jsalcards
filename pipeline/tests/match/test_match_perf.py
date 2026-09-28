@@ -17,6 +17,15 @@ for a CPU do not add to, rather than wall-clock time. The matcher is
 single-threaded, so on an idle machine the two agree. A timed step that still
 misses its bar is run again, cold, up to :data:`ATTEMPTS` times, and the fastest
 run counts, as ``timeit`` takes the best of its repeats.
+
+CPU time still depends on the CPU: CI's runners are not all the same machine,
+and on a slower one the index took 7.1 s (run 36465387215) on code that takes
+under 4 s here. The bars were set on this machine, so each is scaled by how
+much slower the machine running the test does a fixed piece of plain Python
+string and dict work (:func:`_calibration`) than this one did
+(:data:`REFERENCE_CALIBRATION`). A faster machine keeps the bars as they are.
+Slower code still fails anywhere: the index takes about 14 times the
+calibration, and the bar allows about 17.7.
 """
 
 import functools
@@ -34,6 +43,9 @@ MATCH_SECONDS = 2.0
 RECORDS = 130_000
 LISTINGS = 1_000
 ATTEMPTS = 3
+# The calibration's CPU seconds on the machine the bars were set on (the
+# development container, September 2026).
+REFERENCE_CALIBRATION = 0.282
 
 
 @pytest.fixture(scope="module")
@@ -54,6 +66,28 @@ def _timed[T](work: Callable[[], T]) -> tuple[T, float]:
         return result, time.process_time() - started
     finally:
         sys.settrace(tracer)
+
+
+def _calibration() -> float:
+    """CPU seconds, fastest of three, for fixed string and dict work, untraced.
+
+    No project code runs in it, so it measures the machine and not the matcher.
+    """
+    words = [f"{word}{i % 977}" for i in range(100_000) for word in ("north", "saint", "elem")]
+
+    def work() -> int:
+        seen: dict[str, list[int]] = {}
+        for i, word in enumerate(words):
+            key = " ".join(sorted(f"{word.upper()} school {i % 31}".lower().split()))
+            seen.setdefault(key[:12], []).append(i)
+        return len(seen)
+
+    return min(_timed(work)[1] for _ in range(3))
+
+
+def _machine_scale(calibration: float) -> float:
+    """How much slower than the reference machine this one is; never under 1."""
+    return max(1.0, calibration / REFERENCE_CALIBRATION)
 
 
 def _fastest[S, T](
@@ -80,11 +114,16 @@ def _fastest[S, T](
 
 def test_index_build_and_matching_are_fast(big: list[synthetic.SyntheticRecord]) -> None:
     cases = synthetic.build_cases(big, count=LISTINGS, seed=11)
+    calibration = _calibration()
+    scale = _machine_scale(calibration)
+    build_bar = BUILD_SECONDS * scale
+    match_bar = MATCH_SECONDS * scale
+    machine = f"calibration {calibration:.3f} s, bars scaled by {scale:.2f}"
 
     def build(_nothing: None = None) -> Matcher:
         return Matcher(Directory(item.record for item in big))
 
-    matcher, built = _fastest(lambda _attempt: None, build, BUILD_SECONDS)
+    matcher, built = _fastest(lambda _attempt: None, build, build_bar)
 
     def match_all(fresh: Matcher) -> list[MatchResult]:
         return [
@@ -101,12 +140,12 @@ def test_index_build_and_matching_are_fast(big: list[synthetic.SyntheticRecord])
     # A repeat matches with an index of its own, whose towns and vocabularies no
     # earlier run has read yet.
     results, matched = _fastest(
-        lambda attempt: matcher if attempt == 0 else build(), match_all, MATCH_SECONDS
+        lambda attempt: matcher if attempt == 0 else build(), match_all, match_bar
     )
 
     assert len(results) == LISTINGS
-    assert built < BUILD_SECONDS, f"index build took {built:.2f} s"
-    assert matched < MATCH_SECONDS, f"matching {LISTINGS} listings took {matched:.2f} s"
+    assert built < build_bar, f"index build took {built:.2f} s ({machine})"
+    assert matched < match_bar, f"matching {LISTINGS} listings took {matched:.2f} s ({machine})"
     correct = sum(
         frozenset(record.id for record in r.targets) == case.targets
         for r, case in zip(results, cases, strict=True)
@@ -152,6 +191,13 @@ def test_the_fastest_of_a_few_cold_runs_counts() -> None:
     slow, taken = _fastest(lambda _attempt: 0.01, _spin, bar=0.0)
     assert slow is None
     assert taken >= 0.01
+
+
+def test_a_slower_machine_gets_proportionally_more_time() -> None:
+    """The bars stretch with the machine's speed, and never shrink below the reference."""
+    assert _machine_scale(REFERENCE_CALIBRATION * 1.8) == pytest.approx(1.8)
+    assert _machine_scale(REFERENCE_CALIBRATION / 2) == 1.0
+    assert _calibration() > 0
 
 
 def test_waiting_for_a_cpu_is_not_counted() -> None:
