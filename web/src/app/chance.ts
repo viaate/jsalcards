@@ -21,6 +21,7 @@
 import { STATUS_KEYS, copy, format, localHour } from '../copy';
 import type { BaseInput, ReasonInput, RecordCount, StatusKey } from '../copy';
 import { decodeDay } from '../data/closings';
+import { NO_DETAIL } from '../data/forecast-detail';
 import type {
   EventDetail,
   ForecastDetail,
@@ -803,15 +804,7 @@ export function chanceView(input: ChanceInput): ChanceView | null {
   const forecast = headlineDay(outlook, decided, now);
   if (forecast?.day === undefined) return null;
   const { day, noSchool } = forecast;
-  const detail = forecast.detail ?? {
-    previous: null,
-    announcesAt: null,
-    busesAt: null,
-    hours: null,
-    why: null,
-    record: null,
-    events: [],
-  };
+  const detail = forecast.detail ?? NO_DETAIL;
   const neighbors =
     outlook !== null && outlook !== 'not_enough_data' ? (outlook.neighbors ?? []) : [];
   let moments: MomentView[];

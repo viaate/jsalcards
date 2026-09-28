@@ -12,10 +12,13 @@
  *   from real records: two cities and one ZIP code copied from the pipeline's
  *   search records, and two schools with the names and places the pipeline's
  *   school directory gives them. Its directory holds those two schools as the
- *   pipeline wrote them. Its closings file is SYNTHETIC: no real closings exist
- *   in September, so the two statuses are made up for this test and live only
- *   in the temporary folder while it runs. So are its season stats and track
- *   record, for the menu: the pipeline publishes neither yet.
+ *   pipeline wrote them, and three more near Kansas City for the chance
+ *   section (Shawnee Mission East and a school in each district next door).
+ *   Its closings and predictions files are SYNTHETIC: no real closings or
+ *   forecasts exist in September, so the statuses, the storm and its chances
+ *   are made up for this test and live only in the temporary folder while it
+ *   runs. So are its season stats and track record, for the menu: the
+ *   pipeline publishes neither yet.
  *
  * Runs once, under the desktop project; tests set their own viewports.
  * WebGL here is SwiftShader, whose frames are slow, and a page's first flight
@@ -55,6 +58,7 @@ const BORDER_STAR = { lon: -94.592692, lat: 39.013304 };
 const PANEL_RIGHT = 20 + 368;
 /** Where Pembroke Hill is, as the directory has it. */
 const PEMBROKE_HILL_PLACE = { lon: -94.593001, lat: 39.03606 };
+const SHAWNEE_MISSION_EAST = '201164001574';
 const PIN_KEY = 'snowlight:pin';
 /** Chrome's own lines about SwiftShader, not the page's. */
 const GPU_DRIVER_NOISE =
@@ -575,14 +579,41 @@ const SEARCH_RECORDS = [
   '{"kind":"school","id":"A1902690","name":"THE PEMBROKE HILL SCHOOL - WORNALL CAMPUS","sub":"","state":"MO","lat":39.03606,"lon":-94.593001,"weight":0}',
 ];
 
-/** Those two schools as the pipeline's directory has them (schools/meta.json, points.bin). */
+/**
+ * Those two schools as the pipeline's directory has them (schools/meta.json, points.bin),
+ * and three near Kansas City for the chance section, in the directory's order (by id).
+ */
 const DIRECTORY_SCHOOLS = [
+  {
+    id: '201014000137',
+    name: 'Olathe North Sr High',
+    lon: -94.8093,
+    lat: 38.888,
+    district: 0,
+    kind: 0,
+  },
+  {
+    id: SHAWNEE_MISSION_EAST,
+    name: 'Shawnee Mission East High',
+    lon: -94.631999,
+    lat: 38.991687,
+    district: 1,
+    kind: 0,
+  },
+  {
+    id: '201200000112',
+    name: 'Blue Valley High',
+    lon: -94.656,
+    lat: 38.839,
+    district: 2,
+    kind: 0,
+  },
   {
     id: '291640000557',
     name: 'BORDER STAR MONTESSORI',
     lon: -94.592692,
     lat: 39.013304,
-    district: 0,
+    district: 3,
     kind: 0,
   },
   {
@@ -595,6 +626,18 @@ const DIRECTORY_SCHOOLS = [
   },
 ] as const;
 const DIRECTORY_ON = '2026-09-25';
+/** The directory's districts, in its order (by id). */
+const DISTRICTS = [
+  ['2010140', 'Olathe'],
+  ['2011640', 'Shawnee Mission Pub Sch'],
+  ['2012000', 'Blue Valley'],
+  ['2916400', 'KANSAS CITY 33'],
+] as const;
+const STAMP = {
+  generated_on: DIRECTORY_ON,
+  schools: DIRECTORY_SCHOOLS.length,
+  districts: DISTRICTS.length,
+};
 
 function directoryMeta(): string {
   return JSON.stringify({
@@ -603,7 +646,10 @@ function directoryMeta(): string {
     count: DIRECTORY_SCHOOLS.length,
     ids: DIRECTORY_SCHOOLS.map((school) => school.id),
     names: DIRECTORY_SCHOOLS.map((school) => school.name),
-    districts: { ids: ['2916400'], names: ['KANSAS CITY 33'] },
+    districts: {
+      ids: DISTRICTS.map(([id]) => id),
+      names: DISTRICTS.map(([, name]) => name),
+    },
     school_years: { public: '2024-2025', private: '2023-2024' },
   });
 }
@@ -614,7 +660,7 @@ function directoryPoints(): Buffer {
   bytes.writeUInt16LE(1, 4);
   bytes.writeUInt16LE(13, 6);
   bytes.writeUInt32LE(DIRECTORY_SCHOOLS.length, 8);
-  bytes.writeUInt32LE(1, 12);
+  bytes.writeUInt32LE(DISTRICTS.length, 12);
   DIRECTORY_SCHOOLS.forEach((school, i) => {
     const at = 16 + 13 * i;
     bytes.writeInt32LE(Math.round(school.lon * 1e6), at);
@@ -626,17 +672,77 @@ function directoryPoints(): Buffer {
 }
 
 /**
- * Those two schools as the directory's own tables list them (the detail files
+ * Those schools as the directory's own tables list them (the detail files
  * scripts/stage-data.mjs writes, src/data/details-format.ts), one shard and its index.
  */
 function directoryDetails(): { index: string; shard: string } {
-  const directory = { generated_on: DIRECTORY_ON, schools: 2, districts: 1 };
+  const directory = STAMP;
+  const kansas = (
+    id: string,
+    name: string,
+    district: number,
+    street: string,
+    city: string,
+    zip: string,
+    enrollment: number,
+    phone: string,
+  ): unknown[] => {
+    const [districtId, districtName] = DISTRICTS[district] ?? ['', ''];
+    return [
+      id,
+      name,
+      0,
+      district,
+      districtId,
+      districtName,
+      street,
+      city,
+      'KS',
+      zip,
+      'Johnson County',
+      '09',
+      '12',
+      enrollment,
+      phone,
+      [],
+    ];
+  };
   const rows = [
+    kansas(
+      '201014000137',
+      'Olathe North Sr High',
+      0,
+      '600 E Prairie St',
+      'Olathe',
+      '66061',
+      2011,
+      '9137807140',
+    ),
+    kansas(
+      SHAWNEE_MISSION_EAST,
+      'Shawnee Mission East High',
+      1,
+      '7500 Mission Rd',
+      'Prairie Village',
+      '66208',
+      1737,
+      '9139936600',
+    ),
+    kansas(
+      '201200000112',
+      'Blue Valley High',
+      2,
+      '6001 W. 159th St.',
+      'Stilwell',
+      '66085',
+      1396,
+      '9132394800',
+    ),
     [
       '291640000557',
       'BORDER STAR MONTESSORI',
       0,
-      0,
+      3,
       '2916400',
       'KANSAS CITY 33',
       '6321 WORNALL RD',
@@ -648,7 +754,7 @@ function directoryDetails(): { index: string; shard: string } {
       '06',
       251,
       '8164185150',
-      [[1, PEMBROKE_HILL, 'THE PEMBROKE HILL SCHOOL - WORNALL CAMPUS', 2530, -94.593001, 39.03606]],
+      [[4, PEMBROKE_HILL, 'THE PEMBROKE HILL SCHOOL - WORNALL CAMPUS', 2530, -94.593001, 39.03606]],
     ],
     [
       PEMBROKE_HILL,
@@ -666,7 +772,7 @@ function directoryDetails(): { index: string; shard: string } {
       '12',
       1174,
       '8169361230',
-      [[0, '291640000557', 'BORDER STAR MONTESSORI', 2530, -94.592692, 39.013304]],
+      [[3, '291640000557', 'BORDER STAR MONTESSORI', 2530, -94.592692, 39.013304]],
     ],
   ];
   return {
@@ -674,25 +780,25 @@ function directoryDetails(): { index: string; shard: string } {
       schema_version: 1,
       directory,
       shards: 1,
-      first_ids: ['291640000557'],
+      first_ids: [DIRECTORY_SCHOOLS[0].id],
       files: ['0.json'],
     }),
     shard: JSON.stringify({ schema_version: 1, directory, first: 0, rows }),
   };
 }
 
-/** SYNTHETIC: made-up statuses for the two schools, for this test only. */
+/** SYNTHETIC: made-up statuses for Border Star and Pembroke Hill, for this test only. */
 const SYNTHETIC_DAY = '2026-01-12';
 const SYNTHETIC_NOW = new Date('2026-01-12T18:00:00Z');
 function syntheticClosings(): string {
   return JSON.stringify({
     schema_version: 1,
     generated_at: '2026-01-12T12:42:00Z',
-    directory: { generated_on: DIRECTORY_ON, schools: 2, districts: 1 },
+    directory: STAMP,
     days: [
       {
         day: SYNTHETIC_DAY,
-        gaps: [0, 0],
+        gaps: [3, 0],
         statuses: [0, 1],
         announced: [98, 40],
         reasons: [0, 1],
@@ -739,6 +845,163 @@ function syntheticTrackRecord(): string {
     last_day: '2026-01-12',
     leads: [{ lead_days: 1, no_school: calibration(4, 3), delay: calibration(0, 0) }],
   });
+}
+
+/** SYNTHETIC: that Monday at 9:05 PM in Kansas City, the evening before the made-up storm. */
+const EVENING = new Date('2026-01-13T03:05:00Z');
+const ZONE = 'America/Chicago';
+
+/**
+ * SYNTHETIC: the live file that evening at 9:00 PM. Monday's two statuses as before, and for
+ * Tuesday, Blue Valley (8:41 PM) and Olathe (8:52 PM), next door to Shawnee Mission, canceled.
+ */
+function syntheticEveningClosings(): string {
+  return JSON.stringify({
+    schema_version: 1,
+    generated_at: '2026-01-13T03:00:00Z',
+    directory: STAMP,
+    days: [
+      {
+        day: SYNTHETIC_DAY,
+        gaps: [3, 0],
+        statuses: [0, 1],
+        announced: [956, 898],
+        reasons: [0, 1],
+        shifts: [120],
+        clocks: [null],
+      },
+      {
+        day: '2026-01-13',
+        gaps: [0, 1],
+        statuses: [0, 0],
+        announced: [8, 19],
+        reasons: [0, 0],
+        shifts: [],
+        clocks: [],
+      },
+    ],
+  });
+}
+
+/**
+ * SYNTHETIC: the chances made that evening, in the shape the prediction engine is to write
+ * (pipeline/snowlight/schemas/predictions.py). Shawnee Mission (district 1): 64% for Tuesday,
+ * the snow on the ground hour by hour and how that adds up. Kansas City 33 (district 3), closed
+ * Monday: 22% for Tuesday, with how cold it will feel. Olathe and Blue Valley: no forecast.
+ */
+function syntheticPredictions(): string {
+  const nothing = { state: 'no_threat' };
+  return JSON.stringify({
+    schema_version: 1,
+    generated_at: '2026-01-13T03:00:00Z',
+    directory: STAMP,
+    days: ['2026-01-12', '2026-01-13'],
+    districts: [
+      {
+        district: 1,
+        neighbors: [2, 0],
+        days: [
+          nothing,
+          {
+            state: 'forecast',
+            p_no_school: 0.64,
+            p_delay: 0.18,
+            reasons: [0, 2],
+            previous: { p_no_school: 0.41, at: '2026-01-12T23:00:00Z' },
+            announces_at: '2026-01-13T11:30:00Z',
+            buses_at: '2026-01-13T13:00:00Z',
+            hours: {
+              kind: 'snow_total',
+              start: '2026-01-13T03:00:00Z',
+              values: [0.0, 0.0, 0.2, 0.6, 1.1, 1.8, 3.3, 4.8, 6.3, 7.1, 7.5],
+              low: 6.0,
+              high: 9.0,
+              heavy: { first: 6, last: 8 },
+            },
+            why: {
+              base: { kind: 'alert', points: 30, alert: 'winter_storm_warning' },
+              reasons: [
+                { kind: 'snow_total', points: 16, low: 6.0, high: 9.0, overnight: true },
+                { kind: 'neighbors', points: 9, districts: [2, 0], status: 0 },
+                {
+                  kind: 'timing',
+                  points: 7,
+                  start: '2026-01-13T08:00:00Z',
+                  end: '2026-01-13T11:00:00Z',
+                },
+                { kind: 'wind_chill', points: 5, feels_like: -4 },
+                { kind: 'snow_stops', points: -3, at: '2026-01-13T13:00:00Z' },
+              ],
+            },
+            record: {
+              proves: 'snow_total',
+              inches: 6.0,
+              days: [
+                { day: '2024-01-09', inches: 8.0, status: 0 },
+                { day: '2025-01-06', inches: 10.0, status: 0 },
+                { day: '2025-01-10', inches: 6.0, status: 0 },
+                { day: '2025-02-05', inches: 6.0, status: 1 },
+                { day: '2025-02-18', inches: 7.0, status: 0 },
+              ],
+            },
+            events: [],
+          },
+        ],
+      },
+      {
+        district: 3,
+        neighbors: [],
+        days: [
+          nothing,
+          {
+            state: 'forecast',
+            p_no_school: 0.22,
+            p_delay: 0.31,
+            reasons: [2, 0],
+            previous: { p_no_school: 0.3, at: '2026-01-12T15:00:00Z' },
+            announces_at: '2026-01-13T11:30:00Z',
+            buses_at: '2026-01-13T13:00:00Z',
+            hours: {
+              kind: 'wind_chill',
+              start: '2026-01-13T03:00:00Z',
+              values: [-1.0, -2.0, -3.0, -3.0, -4.0, -5.0, -6.0, -6.0, -7.0, -8.0, -8.0],
+              low: null,
+              high: null,
+              heavy: null,
+            },
+            why: {
+              base: { kind: 'day_after', points: 25 },
+              reasons: [
+                { kind: 'snow_stops', points: -8, at: '2026-01-12T12:00:00Z' },
+                { kind: 'cold', points: 6, feels_like: -8 },
+                { kind: 'sun', points: -5 },
+                { kind: 'icy_roads', points: 4, inches: 8.0 },
+              ],
+            },
+            record: {
+              proves: 'base',
+              inches: null,
+              days: [
+                { day: '2024-01-10', inches: null, status: null },
+                { day: '2025-01-07', inches: null, status: 0 },
+                { day: '2025-01-13', inches: null, status: null },
+                { day: '2025-02-19', inches: null, status: null },
+              ],
+            },
+            events: [{ kind: 'snow_stopped', at: '2026-01-12T12:00:00Z', inches: 8.0 }],
+          },
+        ],
+      },
+    ],
+  });
+}
+
+/** Whether two boxes on the page overlap. */
+function overlaps(
+  a: { x: number; y: number; width: number; height: number },
+  b: { x: number; y: number; width: number; height: number },
+): boolean {
+  return a.x < b.x + b.width && b.x < a.x + a.width && a.y < b.y + b.height && b.y < a.y + a.height;
 }
 
 async function freePort(): Promise<number> {
@@ -920,6 +1183,8 @@ test.describe('with data staged', () => {
     mkdirSync(path.join(data, 'stats'), { recursive: true });
     writeFileSync(path.join(data, 'stats/season.json'), syntheticSeason());
     writeFileSync(path.join(data, 'track-record.json'), syntheticTrackRecord());
+    mkdirSync(path.join(data, 'predictions'), { recursive: true });
+    writeFileSync(path.join(data, 'predictions/latest.json'), syntheticPredictions());
     mkdirSync(path.join(data, 'schools/details'), { recursive: true });
     const details = directoryDetails();
     writeFileSync(path.join(data, 'schools/details/index.json'), details.index);
@@ -956,6 +1221,7 @@ test.describe('with data staged', () => {
     const shipped = filesIn(path.join(root, 'site', 'data')).sort();
     expect(shipped).toEqual([
       'live/closings.json',
+      'predictions/latest.json',
       'schools/details/0.json',
       'schools/details/index.json',
       'schools/meta.json',
@@ -1439,6 +1705,7 @@ test.describe('with data staged', () => {
     await expect(panel.locator('.status .glyph.is-delayed')).toHaveCount(1);
     // A private school has no district history to give a chance: there is no chance card.
     await expect(panel.locator('.outlook')).toHaveCount(0);
+    await expect(panel.locator('.chance')).toHaveCount(0);
     await expect(panel.locator('.fact dt')).toHaveText([
       copy.detail.students,
       copy.detail.address,
@@ -1490,6 +1757,226 @@ test.describe('with data staged', () => {
     await expectMapNear(page, 39.03606, -94.593001, 15);
     await panel.locator('.close').click();
     await expect(panel).toHaveCount(0);
+    expect(problems).toEqual([]);
+    await context.close();
+  });
+
+  test('the chance section, the night before: the chance first, the evening, the night, and how it adds up', async ({
+    browser,
+  }) => {
+    // A first flight into streets (FIRST_FLIGHT_MS).
+    test.setTimeout(240_000);
+    const context = await browser.newContext({
+      viewport: { width: 1440, height: 900 },
+      timezoneId: ZONE,
+      // The evening's live file comes from the route below, not a worker's cache.
+      serviceWorkers: 'block',
+    });
+    const page = await context.newPage();
+    await fixDate(page, EVENING);
+    const { problems } = watch(page);
+    await page.route('**/data/live/closings.json*', (route) =>
+      route.fulfill({ contentType: 'application/json', body: syntheticEveningClosings() }),
+    );
+    await page.goto(`${site}?school=${SHAWNEE_MISSION_EAST}`);
+    const panel = page.locator('aside.detail');
+    const section = panel.locator('.chance');
+    await expect(panel.locator('h2')).toHaveText('Shawnee Mission East High');
+
+    // The chance is the headline, for Tuesday, with what moved it.
+    await expect(section.locator('.number')).toHaveText('64%', { timeout: 60_000 });
+    await expect(section.locator('.meaning')).toContainText(format.chanceOn('2026-01-13'));
+    await expect(section.locator('.change')).toHaveText(
+      format.moved({
+        previous: 0.41,
+        current: 0.64,
+        at: new Date('2026-01-12T23:00:00Z'),
+        now: EVENING,
+        timeZone: ZONE,
+      }) ?? '',
+    );
+    // No status is posted for this school yet: none above the chance.
+    await expect(section.locator('.status')).toHaveCount(0);
+
+    // The districts next door that canceled, from the live file, then when this one announces.
+    await expect(section.locator('.moment')).toHaveText([
+      `${format.time(new Date('2026-01-13T02:41:00Z'), ZONE)} Blue Valley canceled Tuesday`,
+      `${format.time(new Date('2026-01-13T02:52:00Z'), ZONE)} Olathe canceled Tuesday`,
+      `${format.time(new Date('2026-01-13T11:30:00Z'), ZONE)} Shawnee Mission usually announces in 8h 25m`,
+    ]);
+    await expect(section.locator('.moment .glyph.is-closed')).toHaveCount(2);
+
+    // The chart: a bar an hour, the heaviest lit, the two moments, the range at the bus hour.
+    const chart = section.locator('.chart');
+    await expect(chart.locator('figcaption')).toHaveText(copy.chance.snowTitle);
+    await expect(chart.locator('.col')).toHaveCount(11);
+    await expect(chart.locator('.col.is-lit')).toHaveCount(3);
+    await expect(chart.locator('.flag')).toHaveText([
+      format.announcesFlag(new Date('2026-01-13T11:30:00Z'), ZONE),
+      format.busesFlag(new Date('2026-01-13T13:00:00Z'), ZONE),
+    ]);
+    await expect(chart.locator('.end')).toHaveText(format.inches(6, 9));
+    await expect(chart.locator('.range')).toHaveCount(1);
+    await expect(chart.locator('.lit-label')).toBeVisible();
+    // Laid out, no words meet: the moments', the times', and the lit hours' with the bars.
+    const boxes = async (selector: string) =>
+      (await chart.locator(selector).evaluateAll((nodes) =>
+        nodes.map((node) => {
+          const { x, y, width, height } = node.getBoundingClientRect();
+          return { x, y, width, height };
+        }),
+      )) as { x: number; y: number; width: number; height: number }[];
+    const panelBox = await panel.boundingBox();
+    if (panelBox === null) throw new Error('no panel');
+    const words = [
+      ...(await boxes('.flag')),
+      ...(await boxes('.time')),
+      ...(await boxes('.lit-label')),
+      ...(await boxes('.end')),
+      ...(await boxes('.rule-label')),
+    ];
+    words.forEach((box, i) => {
+      words.slice(i + 1).forEach((other, j) => {
+        expect(overlaps(box, other), `words ${String(i)} and ${String(i + 1 + j)}`).toBe(false);
+      });
+      expect(box.x).toBeGreaterThanOrEqual(panelBox.x);
+      expect(box.x + box.width).toBeLessThanOrEqual(panelBox.x + panelBox.width);
+    });
+    const bars = await boxes('.col');
+    for (const box of await boxes('.lit-label')) {
+      for (const bar of bars) expect(overlaps(box, bar)).toBe(false);
+    }
+
+    // How it adds up, always open: the base, each reason's points, the total, and they add up.
+    await expect(section.locator('.why-title')).toHaveText(format.howWeGot(0.64));
+    const rows = section.locator('.sum > li');
+    await expect(rows).toHaveCount(7);
+    await expect(rows.nth(1)).toContainText(
+      '+16 A bigger storm than most, 6 to 9 inches overnight. It closed 4 of the last 5 times it got 6 inches or more.',
+    );
+    await expect(rows.nth(1).locator('.record li')).toHaveCount(5);
+    await expect(rows.nth(2)).toHaveText(
+      '+9 Blue Valley and Olathe, next door, have already canceled.',
+    );
+    await expect(section.locator('.is-total')).toHaveText(`64% ${format.chanceOn('2026-01-13')}`);
+    const numbers = (await section.locator('.sum .num').allTextContents()).map((text) =>
+      Number(text.replace('−', '-')),
+    );
+    const total = numbers.at(-1);
+    expect(numbers.slice(0, -1).reduce((sum, n) => sum + n, 0)).toBe(total);
+    expect(total).toBe(64);
+    await expect(section.locator('details, [aria-expanded="false"]')).toHaveCount(0);
+    await expect(section.locator('.delay')).toHaveText(format.delayInstead(0.18));
+    await expect(section.locator('.delay .glyph.is-delayed')).toHaveCount(1);
+
+    // Wider beside the map on a wide screen, so the chart is bigger: 460 px, 420 px, then 368.
+    expect(panelBox.width).toBeCloseTo(460, 0);
+    await page.setViewportSize({ width: 1100, height: 900 });
+    await expect.poll(async () => (await panel.boundingBox())?.width).toBeCloseTo(420, 0);
+    await page.setViewportSize({ width: 900, height: 900 });
+    await expect.poll(async () => (await panel.boundingBox())?.width).toBeCloseTo(368, 0);
+    expect(problems).toEqual([]);
+    await context.close();
+  });
+
+  test('the chance section on a phone: in the sheet, the chance above the fold, all of it in the sheet’s width', async ({
+    browser,
+  }) => {
+    test.setTimeout(240_000);
+    const context = await browser.newContext({
+      viewport: { width: 390, height: 844 },
+      deviceScaleFactor: 3,
+      isMobile: true,
+      hasTouch: true,
+      timezoneId: ZONE,
+      serviceWorkers: 'block',
+    });
+    const page = await context.newPage();
+    await fixDate(page, EVENING);
+    const { problems } = watch(page);
+    await page.route('**/data/live/closings.json*', (route) =>
+      route.fulfill({ contentType: 'application/json', body: syntheticEveningClosings() }),
+    );
+    await page.goto(`${site}?school=${SHAWNEE_MISSION_EAST}`);
+    const sheet = page.locator('aside.detail');
+    const section = sheet.locator('.chance');
+    await expect(section.locator('.number')).toHaveText('64%', { timeout: 60_000 });
+    await expect(sheet).toHaveAttribute('data-detent', 'open');
+    // Open part way, the sheet shows the chance, before the buttons.
+    await expect.poll(async () => (await sheet.boundingBox())?.y).toBeCloseTo(844 - 422, 0);
+    const hero = await section.locator('.hero').boundingBox();
+    expect((hero?.y ?? 844) + (hero?.height ?? 0)).toBeLessThan(844);
+    const actions = await sheet.locator('.actions').boundingBox();
+    expect(actions?.y).toBeGreaterThan((hero?.y ?? 0) + (hero?.height ?? 0));
+    // Up to full height, then down to the sum: every part of the section inside the sheet.
+    await sheet.locator('.grip').tap();
+    await expect(sheet).toHaveAttribute('data-detent', 'full');
+    for (const part of ['.moments', '.chart', '.why', '.is-total', '.delay']) {
+      const node = section.locator(part);
+      await node.scrollIntoViewIfNeeded();
+      const box = await node.boundingBox();
+      if (box === null) throw new Error(`no ${part}`);
+      expect(box.x, part).toBeGreaterThanOrEqual(16);
+      expect(box.x + box.width, part).toBeLessThanOrEqual(390 - 16 + 0.5);
+      expect(box.y, part).toBeGreaterThanOrEqual(0);
+      expect(box.y + box.height, part).toBeLessThanOrEqual(844);
+    }
+    // The chart's words stay in the sheet too, and nothing scrolls sideways.
+    const end = await section.locator('.chart .end').boundingBox();
+    expect((end?.x ?? 0) + (end?.width ?? 0)).toBeLessThanOrEqual(390);
+    expect(
+      await sheet.locator('.body').evaluate((body) => body.scrollWidth <= body.clientWidth),
+    ).toBe(true);
+    await expect(section.locator('.is-total')).toHaveText(`64% ${format.chanceOn('2026-01-13')}`);
+    expect(problems).toEqual([]);
+    await context.close();
+  });
+
+  test('the chance section the evening of a closed day: the status first, then tomorrow’s chance and its cold night', async ({
+    browser,
+  }) => {
+    test.setTimeout(240_000);
+    const context = await browser.newContext({
+      viewport: { width: 1440, height: 900 },
+      timezoneId: ZONE,
+    });
+    const page = await context.newPage();
+    await fixDate(page, EVENING);
+    const { problems } = watch(page);
+    // The staged live file, from that morning: Border Star closed Monday.
+    await page.goto(`${site}?school=291640000557`);
+    const panel = page.locator('aside.detail');
+    const section = panel.locator('.chance');
+    await expect(section.locator('.number')).toHaveText('22%', { timeout: 60_000 });
+    await expect(section.locator('.status .headline')).toHaveText([copy.statusLine.closed.today]);
+    await expect(section.locator('.status .glyph.is-closed')).toHaveCount(1);
+    const status = await section.locator('.status').boundingBox();
+    const hero = await section.locator('.hero').boundingBox();
+    expect((status?.y ?? 0) + (status?.height ?? 0)).toBeLessThanOrEqual(hero?.y ?? 0);
+    await expect(section.locator('.meaning')).toContainText(format.chanceOn('2026-01-13'));
+    await expect(section.locator('.change')).toHaveText(
+      format.moved({
+        previous: 0.3,
+        current: 0.22,
+        at: new Date('2026-01-12T15:00:00Z'),
+        now: EVENING,
+        timeZone: ZONE,
+      }) ?? '',
+    );
+    await expect(section.locator('.moment')).toHaveText([
+      `${format.time(new Date('2026-01-12T12:00:00Z'), ZONE)} Snow stopped, 8 inches in all`,
+      `${format.time(new Date('2026-01-13T11:30:00Z'), ZONE)} Kansas City 33 usually announces in 8h 25m`,
+    ]);
+    const chart = section.locator('.chart');
+    await expect(chart.locator('figcaption')).toHaveText(copy.chance.coldTonight);
+    await expect(chart.locator('.col.is-below')).toHaveCount(11);
+    await expect(chart.locator('.end')).toHaveText(format.degrees(-8));
+    await expect(section.locator('.is-start .record li')).toHaveCount(4);
+    await expect(section.locator('.is-total')).toHaveText(`22% ${format.chanceOn('2026-01-13')}`);
+    await expect(section.locator('.delay')).toHaveText(format.delayInstead(0.31));
+    // The rest of the panel is as it was: the district, and no chance card of the old kind.
+    await expect(panel.locator('.fact dd').first()).toHaveText('Kansas City 33');
+    await expect(panel.locator('.outlook')).toHaveCount(0);
     expect(problems).toEqual([]);
     await context.close();
   });
