@@ -5,7 +5,14 @@ import type { DetailsSource, SchoolRecord } from '../../data/details';
 import { createDataFiles } from '../../data/files';
 import { NO_STATUS } from '../../data/school-day';
 import type { DayOutlook, StatusRow } from '../../data/school-day';
-import { jsonResponse, testClosings, testDay, testMeta } from '../../data/tests/builders';
+import { createDirectory, parsePoints } from '../../data/directory';
+import {
+  jsonResponse,
+  testClosings,
+  testDay,
+  testMeta,
+  testPoints,
+} from '../../data/tests/builders';
 import { schoolView, watchSchool } from '../school';
 import type { SchoolView, ViewInput } from '../school';
 
@@ -180,6 +187,7 @@ describe('schoolView', () => {
       place: 'Kansas City, MO',
       status: [],
       outlook: null,
+      chance: null,
       facts: [],
       nearby: [],
       loading: true,
@@ -472,6 +480,150 @@ describe('watchSchool', () => {
     await vi.advanceTimersByTimeAsync(5000);
     expect(fetchImpl).toHaveBeenCalledTimes(2);
     expect(views).toHaveLength(shown);
+    fetchImpl.mockRestore();
+  });
+});
+
+describe('the chance section in the panel', () => {
+  afterEach(() => {
+    vi.useRealTimers();
+  });
+
+  /** Three schools: the panel's (district 0), and one in each of two districts next door. */
+  const meta = testMeta(
+    [
+      { id: '290000199999', name: 'BELLE ELEM.', lon: -94.6, lat: 39, district: 0 },
+      { id: '290000299999', name: 'NEXT DOOR ELEM.', lon: -94.5, lat: 39, district: 1 },
+      { id: '290000399999', name: 'OTHER SIDE ELEM.', lon: -94.7, lat: 39, district: 2 },
+    ],
+    ['2999999', '2900002', '2900003'],
+  );
+  const stamp = { generated_on: meta.generated_on, schools: 3, districts: 3 };
+  const record: SchoolRecord = {
+    ...PUBLIC,
+    index: 0,
+    district: { index: 0, id: '2999999', name: 'MARIES CO. R-II' },
+    directory: stamp,
+  };
+  /** Monday Jan 12, 2026, 9:05 PM in Kansas City. */
+  const evening = new Date('2026-01-13T03:05:00Z');
+  const predictions = {
+    schema_version: 1,
+    generated_at: '2026-01-13T03:00:00Z',
+    directory: stamp,
+    days: ['2026-01-12', '2026-01-13'],
+    districts: [
+      {
+        district: 0,
+        neighbors: [1, 2],
+        days: [
+          { state: 'no_threat' },
+          {
+            state: 'forecast',
+            p_no_school: 0.45,
+            p_delay: 0.2,
+            reasons: [0],
+            previous: null,
+            announces_at: '2026-01-13T12:00:00Z',
+            buses_at: null,
+            hours: null,
+            why: {
+              base: { kind: 'similar_days', points: 30 },
+              reasons: [{ kind: 'neighbors', points: 15, districts: [1, 2], status: 0 }],
+            },
+            record: null,
+            events: [],
+          },
+        ],
+      },
+    ],
+  };
+  const closings = testClosings('2026-01-13T03:00:00Z', meta, [
+    {
+      ...testDay('2026-01-13', [
+        [1, 0],
+        [2, 0],
+      ]),
+      announced: [20, 10],
+    },
+  ]);
+
+  it('gives a public school its district’s chance, and a private school none', () => {
+    const outlook = {
+      today: { state: 'no_threat' } as const,
+      tomorrow: {
+        state: 'forecast' as const,
+        noSchool: 0.45,
+        delay: 0.2,
+        reasons: [0 as const],
+        day: '2026-01-13',
+      },
+    };
+    const view = schoolView(input({ id: record.id, record, outlook, now: evening }));
+    expect(view?.chance).toMatchObject({
+      number: '45',
+      meaning: 'Chance of no school Tuesday',
+      delay: '20% chance of a delayed start instead',
+    });
+    expect(schoolView(input({ outlook, now: evening }))?.chance).toBeNull();
+    // With no chance to give, the panel keeps its status and outlook cards instead.
+    expect(schoolView(input({ id: record.id, record, now: evening }))?.chance).toBeNull();
+  });
+
+  it('reads the districts next door through the directory, once, and names them when it comes', async () => {
+    const files = createDataFiles(
+      ['live/closings.json', 'predictions/latest.json', 'schools/details/index.0123456789.json'],
+      ROOT,
+    );
+    const fetchImpl = vi.spyOn(globalThis, 'fetch').mockImplementation((request) => {
+      const url = request instanceof Request ? request.url : request.toString();
+      return Promise.resolve(jsonResponse(url.includes('predictions') ? predictions : closings));
+    });
+    const points = parsePoints(
+      testPoints(
+        meta.ids.map((id, i) => ({
+          id,
+          name: meta.names[i] ?? '',
+          lon: -94.6,
+          lat: 39,
+          district: i,
+        })),
+        3,
+      ),
+      meta,
+    );
+    if (points === null) throw new Error('no points');
+    const directory = vi.fn(() => Promise.resolve(createDirectory(meta, points)));
+    const views: (SchoolView | null)[] = [];
+    const stop = watchSchool({
+      files,
+      details: { get: vi.fn(() => Promise.resolve(record)) },
+      id: record.id,
+      hint: null,
+      onView: (view) => views.push(view),
+      now: () => evening,
+      timeZone: () => 'America/Chicago',
+      directory,
+    });
+    await vi.waitFor(() => {
+      expect(views.at(-1)?.chance?.moments).toHaveLength(3);
+    }, WAIT);
+    const named = views.at(-1)?.chance;
+    expect(named?.moments.map((moment) => moment.text)).toEqual([
+      'District 2900002 canceled Tuesday',
+      'District 2900003 canceled Tuesday',
+      'Maries County R-II usually announces',
+    ]);
+    expect(named?.why?.lines.map((line) => `${line.points} ${line.lead}${line.rest}`)).toEqual([
+      '+15 District 2900002 and District 2900003, next door, have already canceled.',
+    ]);
+    // Before the directory came, the same sum, by how many.
+    const first = views.find((view) => (view?.chance ?? null) !== null)?.chance;
+    expect(first?.moments.map((moment) => moment.mark)).toEqual(['next']);
+    expect(first?.why?.lines[0]?.lead).toBe('2 districts next door');
+    expect(directory).toHaveBeenCalledTimes(1);
+    expect(directory).toHaveBeenCalledWith(stamp);
+    stop();
     fetchImpl.mockRestore();
   });
 });

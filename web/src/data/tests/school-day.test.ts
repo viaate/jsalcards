@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 
 import type { ClosingsDay, CoveredFile, PredictionsFile } from '../../types/generated';
+import { NO_DETAIL } from '../forecast-detail';
 import {
   NO_STATUS,
   covers,
@@ -25,6 +26,16 @@ const STAMP = { generated_on: META.generated_on, schools: 4, districts: 1 };
 /** Noon in Alabama, 18:00 UTC on Jan 12: the same day everywhere in the contiguous US. */
 const NOON = new Date('2026-01-12T18:00:00Z');
 const GENERATED = '2026-01-12T17:40:00Z';
+/** A forecast's chance section parts, all left out. */
+const NO_PARTS = {
+  previous: null,
+  announces_at: null,
+  buses_at: null,
+  hours: null,
+  why: null,
+  record: null,
+  events: [],
+} as const;
 
 function covered(ranges: CoveredFile['ranges'], generatedAt = GENERATED): CoveredFile {
   return { schema_version: 1, generated_at: generatedAt, directory: STAMP, ranges };
@@ -79,8 +90,9 @@ describe('reading covered.json and predictions', () => {
       districts: [
         {
           district: 0,
+          neighbors: [],
           days: [
-            { state: 'forecast', p_no_school: 0.34, p_delay: 0.12, reasons: [0, 1] },
+            { state: 'forecast', p_no_school: 0.34, p_delay: 0.12, reasons: [0, 1], ...NO_PARTS },
             { state: 'no_threat' },
           ],
         },
@@ -183,25 +195,39 @@ describe('a school’s outlook', () => {
     districts: [
       {
         district: 0,
+        neighbors: [],
         days: [
-          { state: 'forecast', p_no_school: 0.34, p_delay: 0.12, reasons: [0] },
+          { state: 'forecast', p_no_school: 0.34, p_delay: 0.12, reasons: [0], ...NO_PARTS },
           { state: 'no_threat' },
         ],
       },
-      { district: 1, days: [{ state: 'not_enough_data' }, { state: 'not_enough_data' }] },
+      {
+        district: 1,
+        neighbors: [],
+        days: [{ state: 'not_enough_data' }, { state: 'not_enough_data' }],
+      },
     ],
   };
   const input = { district: 0, directory: STAMP, shipped: true, predictions, now: NOON };
 
   it('gives today’s and tomorrow’s chances from the district’s forecast', () => {
     expect(schoolOutlook(input)).toEqual({
-      today: { state: 'forecast', noSchool: 0.34, delay: 0.12, reasons: [0] },
+      today: {
+        state: 'forecast',
+        noSchool: 0.34,
+        delay: 0.12,
+        reasons: [0],
+        day: '2026-01-12',
+        detail: NO_DETAIL,
+      },
       tomorrow: { state: 'no_threat' },
+      neighbors: [],
     });
     // The file's last day is today: tomorrow has none.
     expect(schoolOutlook({ ...input, now: new Date('2026-01-13T18:00:00Z') })).toEqual({
       today: { state: 'no_threat' },
       tomorrow: null,
+      neighbors: [],
     });
   });
 

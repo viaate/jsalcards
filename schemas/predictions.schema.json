@@ -1,11 +1,109 @@
 {
   "$comment": "Generated from pipeline/snowlight/schemas by `uv run python -m snowlight.schemas`. Do not edit.",
   "$defs": {
+    "AlertBase": {
+      "additionalProperties": false,
+      "description": "The district closes for about ``points`` in 100 of these alerts.",
+      "properties": {
+        "alert": {
+          "$ref": "#/$defs/AlertKind"
+        },
+        "kind": {
+          "const": "alert",
+          "type": "string"
+        },
+        "points": {
+          "$ref": "#/$defs/Percent"
+        }
+      },
+      "required": [
+        "kind",
+        "points",
+        "alert"
+      ],
+      "title": "AlertBase",
+      "type": "object"
+    },
+    "AlertKind": {
+      "description": "The weather alert a district's base chance is counted over.",
+      "enum": [
+        "winter_storm_warning",
+        "winter_weather_advisory",
+        "ice_storm_warning",
+        "blizzard_warning",
+        "extreme_cold_warning"
+      ],
+      "type": "string"
+    },
+    "Base": {
+      "description": "Where the chance starts, before any reason.",
+      "discriminator": {
+        "mapping": {
+          "alert": "#/$defs/AlertBase",
+          "day_after": "#/$defs/DayAfterBase",
+          "similar_days": "#/$defs/SimilarDaysBase"
+        },
+        "propertyName": "kind"
+      },
+      "oneOf": [
+        {
+          "$ref": "#/$defs/AlertBase"
+        },
+        {
+          "$ref": "#/$defs/DayAfterBase"
+        },
+        {
+          "$ref": "#/$defs/SimilarDaysBase"
+        }
+      ]
+    },
+    "ColdReason": {
+      "additionalProperties": false,
+      "description": "It will feel like ``feels_like`` at the bus stop that morning.",
+      "properties": {
+        "feels_like": {
+          "$ref": "#/$defs/Fahrenheit"
+        },
+        "kind": {
+          "const": "cold",
+          "type": "string"
+        },
+        "points": {
+          "$ref": "#/$defs/Points"
+        }
+      },
+      "required": [
+        "kind",
+        "points",
+        "feels_like"
+      ],
+      "title": "ColdReason",
+      "type": "object"
+    },
     "Count": {
       "description": "A whole number of things.",
       "maximum": 4294967294,
       "minimum": 0,
       "type": "integer"
+    },
+    "DayAfterBase": {
+      "additionalProperties": false,
+      "description": "After a day closed for weather, the district stays closed the next day this often.",
+      "properties": {
+        "kind": {
+          "const": "day_after",
+          "type": "string"
+        },
+        "points": {
+          "$ref": "#/$defs/Percent"
+        }
+      },
+      "required": [
+        "kind",
+        "points"
+      ],
+      "title": "DayAfterBase",
+      "type": "object"
     },
     "DayForecast": {
       "description": "One district's outlook for one day.",
@@ -63,10 +161,19 @@
         },
         "district": {
           "$ref": "#/$defs/DistrictIndex"
+        },
+        "neighbors": {
+          "description": "The districts next door, nearest first: every other district with a school within 10 miles of one of this district's schools.",
+          "items": {
+            "$ref": "#/$defs/DistrictIndex"
+          },
+          "maxItems": 12,
+          "type": "array"
         }
       },
       "required": [
         "district",
+        "neighbors",
         "days"
       ],
       "title": "DistrictForecast",
@@ -78,15 +185,70 @@
       "minimum": 0,
       "type": "integer"
     },
+    "Fahrenheit": {
+      "description": "How cold or warm it feels, in whole degrees F.",
+      "maximum": 130,
+      "minimum": -80,
+      "type": "integer"
+    },
     "Forecast": {
       "additionalProperties": false,
       "description": "Weather that has closed or delayed these schools before is forecast that day.",
       "properties": {
+        "announces_at": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/UtcInstant"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "description": "When the district usually posts its decision for this day."
+        },
+        "buses_at": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/UtcInstant"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "description": "When the district's first buses usually run that day."
+        },
+        "events": {
+          "items": {
+            "$ref": "#/$defs/WeatherEvent"
+          },
+          "maxItems": 4,
+          "type": "array"
+        },
+        "hours": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Hours"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
         "p_delay": {
           "$ref": "#/$defs/Probability"
         },
         "p_no_school": {
           "$ref": "#/$defs/Probability"
+        },
+        "previous": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/PreviousChance"
+            },
+            {
+              "type": "null"
+            }
+          ]
         },
         "reasons": {
           "description": "The forecast weather, most important first.",
@@ -96,25 +258,226 @@
           "minItems": 1,
           "type": "array"
         },
+        "record": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/PastRecord"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
         "state": {
           "const": "forecast",
           "type": "string"
+        },
+        "why": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Why"
+            },
+            {
+              "type": "null"
+            }
+          ]
         }
       },
       "required": [
         "state",
         "p_no_school",
         "p_delay",
-        "reasons"
+        "reasons",
+        "previous",
+        "announces_at",
+        "buses_at",
+        "hours",
+        "why",
+        "record",
+        "events"
       ],
       "title": "Forecast",
       "type": "object"
+    },
+    "HourSpan": {
+      "additionalProperties": false,
+      "description": "Hours of an hourly series, by position: first to last, both included.",
+      "properties": {
+        "first": {
+          "exclusiveMaximum": 36,
+          "minimum": 0,
+          "type": "integer"
+        },
+        "last": {
+          "exclusiveMaximum": 36,
+          "minimum": 0,
+          "type": "integer"
+        }
+      },
+      "required": [
+        "first",
+        "last"
+      ],
+      "title": "HourSpan",
+      "type": "object"
+    },
+    "Hours": {
+      "additionalProperties": false,
+      "description": "One weather measure, an hour at a time from ``start`` to the bus hour, for the chart.\n\n``snow_total``: the snow on the ground, as the running total since ``start``, in\ninches; ``low`` and ``high`` bound the total at the bus hour; ``heavy`` marks the\nhours the snow falls fastest (value i is the total at the end of hour i, so the\nheaviest snow falls from ``start`` + (first - 1) hours to ``start`` + last hours).\n``wind_chill``: how cold it will feel each hour, in degrees F; no range, no heavy hours.",
+      "properties": {
+        "heavy": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/HourSpan"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "high": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Inches"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "kind": {
+          "enum": [
+            "snow_total",
+            "wind_chill"
+          ],
+          "type": "string"
+        },
+        "low": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Inches"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "start": {
+          "$ref": "#/$defs/UtcInstant",
+          "description": "The first value's hour, on the hour."
+        },
+        "values": {
+          "description": "One value an hour, in tenths: inches of snow, or degrees F.",
+          "items": {
+            "maximum": 130.0,
+            "minimum": -80.0,
+            "type": "number"
+          },
+          "maxItems": 36,
+          "minItems": 2,
+          "type": "array"
+        }
+      },
+      "required": [
+        "kind",
+        "start",
+        "values",
+        "low",
+        "high",
+        "heavy"
+      ],
+      "title": "Hours",
+      "type": "object"
+    },
+    "IceReason": {
+      "additionalProperties": false,
+      "description": "Freezing rain could leave ``inches`` of ice on the roads.",
+      "properties": {
+        "inches": {
+          "$ref": "#/$defs/Inches"
+        },
+        "kind": {
+          "const": "ice",
+          "type": "string"
+        },
+        "points": {
+          "$ref": "#/$defs/Points"
+        }
+      },
+      "required": [
+        "kind",
+        "points",
+        "inches"
+      ],
+      "title": "IceReason",
+      "type": "object"
+    },
+    "IcyRoadsReason": {
+      "additionalProperties": false,
+      "description": "Side streets could stay icy after ``inches`` of snow.",
+      "properties": {
+        "inches": {
+          "$ref": "#/$defs/Inches"
+        },
+        "kind": {
+          "const": "icy_roads",
+          "type": "string"
+        },
+        "points": {
+          "$ref": "#/$defs/Points"
+        }
+      },
+      "required": [
+        "kind",
+        "points",
+        "inches"
+      ],
+      "title": "IcyRoadsReason",
+      "type": "object"
+    },
+    "Inches": {
+      "description": "Inches of snow or ice, in tenths (6.5, not 6.53).",
+      "maximum": 120.0,
+      "minimum": 0.0,
+      "type": "number"
     },
     "LocalDate": {
       "description": "A calendar day in the school's own time zone: YYYY-MM-DD.",
       "format": "date",
       "pattern": "^\\d{4}-\\d{2}-\\d{2}$",
       "type": "string"
+    },
+    "NeighborsReason": {
+      "additionalProperties": false,
+      "description": "Districts next door (the entry's ``neighbors``) that already posted ``status``.",
+      "properties": {
+        "districts": {
+          "items": {
+            "$ref": "#/$defs/DistrictIndex"
+          },
+          "maxItems": 12,
+          "minItems": 1,
+          "type": "array"
+        },
+        "kind": {
+          "const": "neighbors",
+          "type": "string"
+        },
+        "points": {
+          "$ref": "#/$defs/Points"
+        },
+        "status": {
+          "$ref": "#/$defs/Status"
+        }
+      },
+      "required": [
+        "kind",
+        "points",
+        "districts",
+        "status"
+      ],
+      "title": "NeighborsReason",
+      "type": "object"
     },
     "NoThreat": {
       "additionalProperties": false,
@@ -144,6 +507,113 @@
         "state"
       ],
       "title": "NotEnoughData",
+      "type": "object"
+    },
+    "PastDay": {
+      "additionalProperties": false,
+      "description": "One day in the district's record: its snow and what the district did.",
+      "properties": {
+        "day": {
+          "$ref": "#/$defs/LocalDate"
+        },
+        "inches": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Inches"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "status": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Status"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "description": "What the district did; null when it opened."
+        }
+      },
+      "required": [
+        "day",
+        "inches",
+        "status"
+      ],
+      "title": "PastDay",
+      "type": "object"
+    },
+    "PastRecord": {
+      "additionalProperties": false,
+      "description": "The district's own record in days like this one, oldest first.\n\n``proves`` names the line it sits under: ``base`` (the base chance) or a reason's\nkind. ``inches`` is the least snow of a storm counted as similar, or null when the\ndays are not storms (the days after one, say).",
+      "properties": {
+        "days": {
+          "items": {
+            "$ref": "#/$defs/PastDay"
+          },
+          "maxItems": 8,
+          "minItems": 1,
+          "type": "array"
+        },
+        "inches": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Inches"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "proves": {
+          "enum": [
+            "base",
+            "snow_total",
+            "record"
+          ],
+          "type": "string"
+        }
+      },
+      "required": [
+        "proves",
+        "inches",
+        "days"
+      ],
+      "title": "PastRecord",
+      "type": "object"
+    },
+    "Percent": {
+      "description": "Whole percentage points.",
+      "maximum": 100,
+      "minimum": 0,
+      "type": "integer"
+    },
+    "Points": {
+      "description": "Whole percentage points a reason adds to the chance, or below 0 takes away.",
+      "maximum": 100,
+      "minimum": -100,
+      "type": "integer"
+    },
+    "PreviousChance": {
+      "additionalProperties": false,
+      "description": "The chance of no school the run before this one gave the same district and day.",
+      "properties": {
+        "at": {
+          "$ref": "#/$defs/UtcInstant",
+          "description": "When that run was made."
+        },
+        "p_no_school": {
+          "$ref": "#/$defs/Probability"
+        }
+      },
+      "required": [
+        "p_no_school",
+        "at"
+      ],
+      "title": "PreviousChance",
       "type": "object"
     },
     "Probability": {
@@ -177,16 +647,326 @@
         "power_outage"
       ]
     },
+    "ReasonPoints": {
+      "description": "One reason, of a kind, and the points it adds.",
+      "discriminator": {
+        "mapping": {
+          "cold": "#/$defs/ColdReason",
+          "ice": "#/$defs/IceReason",
+          "icy_roads": "#/$defs/IcyRoadsReason",
+          "neighbors": "#/$defs/NeighborsReason",
+          "record": "#/$defs/RecordReason",
+          "snow_stops": "#/$defs/SnowStopsReason",
+          "snow_total": "#/$defs/SnowTotalReason",
+          "sun": "#/$defs/SunReason",
+          "timing": "#/$defs/TimingReason",
+          "wind_chill": "#/$defs/WindChillReason"
+        },
+        "propertyName": "kind"
+      },
+      "oneOf": [
+        {
+          "$ref": "#/$defs/SnowTotalReason"
+        },
+        {
+          "$ref": "#/$defs/RecordReason"
+        },
+        {
+          "$ref": "#/$defs/NeighborsReason"
+        },
+        {
+          "$ref": "#/$defs/TimingReason"
+        },
+        {
+          "$ref": "#/$defs/WindChillReason"
+        },
+        {
+          "$ref": "#/$defs/ColdReason"
+        },
+        {
+          "$ref": "#/$defs/SnowStopsReason"
+        },
+        {
+          "$ref": "#/$defs/SunReason"
+        },
+        {
+          "$ref": "#/$defs/IcyRoadsReason"
+        },
+        {
+          "$ref": "#/$defs/IceReason"
+        }
+      ]
+    },
+    "RecordReason": {
+      "additionalProperties": false,
+      "description": "The district's own record in storms like this one (the file's ``record``).",
+      "properties": {
+        "kind": {
+          "const": "record",
+          "type": "string"
+        },
+        "points": {
+          "$ref": "#/$defs/Points"
+        }
+      },
+      "required": [
+        "kind",
+        "points"
+      ],
+      "title": "RecordReason",
+      "type": "object"
+    },
     "SchemaVersion": {
       "const": 1,
       "description": "The file format's version. A reader refuses a file with any other.",
       "type": "integer"
+    },
+    "SimilarDaysBase": {
+      "additionalProperties": false,
+      "description": "The district closes for about ``points`` in 100 days with weather like this.",
+      "properties": {
+        "kind": {
+          "const": "similar_days",
+          "type": "string"
+        },
+        "points": {
+          "$ref": "#/$defs/Percent"
+        }
+      },
+      "required": [
+        "kind",
+        "points"
+      ],
+      "title": "SimilarDaysBase",
+      "type": "object"
+    },
+    "SnowStarted": {
+      "additionalProperties": false,
+      "description": "Snow started falling at ``at``.",
+      "properties": {
+        "at": {
+          "$ref": "#/$defs/UtcInstant"
+        },
+        "kind": {
+          "const": "snow_started",
+          "type": "string"
+        }
+      },
+      "required": [
+        "kind",
+        "at"
+      ],
+      "title": "SnowStarted",
+      "type": "object"
+    },
+    "SnowStopped": {
+      "additionalProperties": false,
+      "description": "Snow stopped at ``at``, ``inches`` in all.",
+      "properties": {
+        "at": {
+          "$ref": "#/$defs/UtcInstant"
+        },
+        "inches": {
+          "$ref": "#/$defs/Inches"
+        },
+        "kind": {
+          "const": "snow_stopped",
+          "type": "string"
+        }
+      },
+      "required": [
+        "kind",
+        "at",
+        "inches"
+      ],
+      "title": "SnowStopped",
+      "type": "object"
+    },
+    "SnowStopsReason": {
+      "additionalProperties": false,
+      "description": "The snow stops (or stopped) at ``at``, before the plows' work.",
+      "properties": {
+        "at": {
+          "$ref": "#/$defs/UtcInstant"
+        },
+        "kind": {
+          "const": "snow_stops",
+          "type": "string"
+        },
+        "points": {
+          "$ref": "#/$defs/Points"
+        }
+      },
+      "required": [
+        "kind",
+        "points",
+        "at"
+      ],
+      "title": "SnowStopsReason",
+      "type": "object"
+    },
+    "SnowTotalReason": {
+      "additionalProperties": false,
+      "description": "How much snow is coming: ``low`` to ``high`` inches, overnight or not.",
+      "properties": {
+        "high": {
+          "$ref": "#/$defs/Inches"
+        },
+        "kind": {
+          "const": "snow_total",
+          "type": "string"
+        },
+        "low": {
+          "$ref": "#/$defs/Inches"
+        },
+        "overnight": {
+          "type": "boolean"
+        },
+        "points": {
+          "$ref": "#/$defs/Points"
+        }
+      },
+      "required": [
+        "kind",
+        "points",
+        "low",
+        "high",
+        "overnight"
+      ],
+      "title": "SnowTotalReason",
+      "type": "object"
+    },
+    "Status": {
+      "description": "What a school is doing on a day because of weather.\n\n0 closed, 1 delayed start, 2 remote or e-learning, 3 early dismissal.",
+      "enum": [
+        0,
+        1,
+        2,
+        3
+      ],
+      "title": "Status",
+      "type": "integer",
+      "x-enum-names": [
+        "closed",
+        "delayed",
+        "remote",
+        "early_dismissal"
+      ]
+    },
+    "SunReason": {
+      "additionalProperties": false,
+      "description": "Sun the afternoon before helps melt the ice.",
+      "properties": {
+        "kind": {
+          "const": "sun",
+          "type": "string"
+        },
+        "points": {
+          "$ref": "#/$defs/Points"
+        }
+      },
+      "required": [
+        "kind",
+        "points"
+      ],
+      "title": "SunReason",
+      "type": "object"
+    },
+    "TimingReason": {
+      "additionalProperties": false,
+      "description": "When the heaviest snow falls, against when the buses run.",
+      "properties": {
+        "end": {
+          "$ref": "#/$defs/UtcInstant"
+        },
+        "kind": {
+          "const": "timing",
+          "type": "string"
+        },
+        "points": {
+          "$ref": "#/$defs/Points"
+        },
+        "start": {
+          "$ref": "#/$defs/UtcInstant"
+        }
+      },
+      "required": [
+        "kind",
+        "points",
+        "start",
+        "end"
+      ],
+      "title": "TimingReason",
+      "type": "object"
     },
     "UtcInstant": {
       "description": "A moment in UTC, whole seconds: YYYY-MM-DDTHH:MM:SSZ.",
       "format": "date-time",
       "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}Z$",
       "type": "string"
+    },
+    "WeatherEvent": {
+      "description": "Weather that already happened, with its time.",
+      "discriminator": {
+        "mapping": {
+          "snow_started": "#/$defs/SnowStarted",
+          "snow_stopped": "#/$defs/SnowStopped"
+        },
+        "propertyName": "kind"
+      },
+      "oneOf": [
+        {
+          "$ref": "#/$defs/SnowStarted"
+        },
+        {
+          "$ref": "#/$defs/SnowStopped"
+        }
+      ]
+    },
+    "Why": {
+      "additionalProperties": false,
+      "description": "How the chance adds up: the base, then each reason's points, biggest first.",
+      "properties": {
+        "base": {
+          "$ref": "#/$defs/Base"
+        },
+        "reasons": {
+          "items": {
+            "$ref": "#/$defs/ReasonPoints"
+          },
+          "maxItems": 8,
+          "type": "array"
+        }
+      },
+      "required": [
+        "base",
+        "reasons"
+      ],
+      "title": "Why",
+      "type": "object"
+    },
+    "WindChillReason": {
+      "additionalProperties": false,
+      "description": "The wind will make it feel like ``feels_like`` at the bus stop.",
+      "properties": {
+        "feels_like": {
+          "$ref": "#/$defs/Fahrenheit"
+        },
+        "kind": {
+          "const": "wind_chill",
+          "type": "string"
+        },
+        "points": {
+          "$ref": "#/$defs/Points"
+        }
+      },
+      "required": [
+        "kind",
+        "points",
+        "feels_like"
+      ],
+      "title": "WindChillReason",
+      "type": "object"
     }
   },
   "$schema": "https://json-schema.org/draft/2020-12/schema",

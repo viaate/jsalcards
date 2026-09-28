@@ -13,6 +13,9 @@
   "districts": [
     {
       "district": 0,
+      "neighbors": [
+        1
+      ],
       "days": [
         {
           "state": "forecast",
@@ -21,20 +24,209 @@
           "reasons": [
             0,
             2
+          ],
+          "previous": {
+            "p_no_school": 0.41,
+            "at": "2027-01-11T23:00:00Z"
+          },
+          "announces_at": "2027-01-12T11:30:00Z",
+          "buses_at": "2027-01-12T13:00:00Z",
+          "hours": {
+            "kind": "snow_total",
+            "start": "2027-01-12T03:00:00Z",
+            "values": [
+              0.0,
+              0.0,
+              0.2,
+              0.6,
+              1.1,
+              1.8,
+              3.3,
+              4.8,
+              6.3,
+              7.1,
+              7.5
+            ],
+            "low": 6.0,
+            "high": 9.0,
+            "heavy": {
+              "first": 6,
+              "last": 8
+            }
+          },
+          "why": {
+            "base": {
+              "kind": "alert",
+              "points": 30,
+              "alert": "winter_storm_warning"
+            },
+            "reasons": [
+              {
+                "kind": "snow_total",
+                "points": 14,
+                "low": 6.0,
+                "high": 9.0,
+                "overnight": true
+              },
+              {
+                "kind": "neighbors",
+                "points": 9,
+                "districts": [
+                  1
+                ],
+                "status": 0
+              },
+              {
+                "kind": "timing",
+                "points": 7,
+                "start": "2027-01-12T08:00:00Z",
+                "end": "2027-01-12T11:00:00Z"
+              },
+              {
+                "kind": "wind_chill",
+                "points": 5,
+                "feels_like": -4
+              },
+              {
+                "kind": "snow_stops",
+                "points": -3,
+                "at": "2027-01-12T13:00:00Z"
+              }
+            ]
+          },
+          "record": {
+            "proves": "snow_total",
+            "inches": 6.0,
+            "days": [
+              {
+                "day": "2024-01-09",
+                "inches": 8.0,
+                "status": 0
+              },
+              {
+                "day": "2025-01-06",
+                "inches": 10.0,
+                "status": 0
+              },
+              {
+                "day": "2025-01-10",
+                "inches": 6.0,
+                "status": 0
+              },
+              {
+                "day": "2025-02-05",
+                "inches": 6.0,
+                "status": 1
+              },
+              {
+                "day": "2025-02-18",
+                "inches": 7.0,
+                "status": 0
+              }
+            ]
+          },
+          "events": [
+            {
+              "kind": "snow_started",
+              "at": "2027-01-12T05:00:00Z"
+            }
           ]
         },
         {
           "state": "forecast",
-          "p_no_school": 0.18,
-          "p_delay": 0.35,
+          "p_no_school": 0.22,
+          "p_delay": 0.31,
           "reasons": [
             2
-          ]
+          ],
+          "previous": {
+            "p_no_school": 0.3,
+            "at": "2027-01-12T03:00:00Z"
+          },
+          "announces_at": "2027-01-13T11:30:00Z",
+          "buses_at": "2027-01-13T13:00:00Z",
+          "hours": {
+            "kind": "wind_chill",
+            "start": "2027-01-13T03:00:00Z",
+            "values": [
+              -1.0,
+              -2.0,
+              -3.0,
+              -3.0,
+              -4.0,
+              -5.0,
+              -6.0,
+              -6.0,
+              -7.0,
+              -8.0,
+              -8.0
+            ],
+            "low": null,
+            "high": null,
+            "heavy": null
+          },
+          "why": {
+            "base": {
+              "kind": "day_after",
+              "points": 25
+            },
+            "reasons": [
+              {
+                "kind": "snow_stops",
+                "points": -8,
+                "at": "2027-01-12T12:00:00Z"
+              },
+              {
+                "kind": "cold",
+                "points": 6,
+                "feels_like": -8
+              },
+              {
+                "kind": "sun",
+                "points": -5
+              },
+              {
+                "kind": "icy_roads",
+                "points": 4,
+                "inches": 8.0
+              }
+            ]
+          },
+          "record": {
+            "proves": "base",
+            "inches": null,
+            "days": [
+              {
+                "day": "2024-01-10",
+                "inches": null,
+                "status": null
+              },
+              {
+                "day": "2025-01-07",
+                "inches": null,
+                "status": 0
+              },
+              {
+                "day": "2025-01-13",
+                "inches": null,
+                "status": null
+              },
+              {
+                "day": "2025-02-19",
+                "inches": null,
+                "status": null
+              }
+            ]
+          },
+          "events": []
         }
       ]
     },
     {
       "district": 1,
+      "neighbors": [
+        0
+      ],
       "days": [
         {
           "state": "no_threat"

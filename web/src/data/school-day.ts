@@ -28,6 +28,8 @@ import type {
   Reason,
 } from '../types/generated';
 import { decodeDay, todayEverywhere } from './closings';
+import { forecastDetail, neighborsOf } from './forecast-detail';
+import type { ForecastDetail } from './forecast-detail';
 
 const LOCAL_DATE = /^\d{4}-\d{2}-\d{2}$/;
 const MAX_INDEX = 4_294_967_294;
@@ -245,6 +247,9 @@ export type DayOutlook =
       readonly noSchool: number;
       readonly delay: number;
       readonly reasons: readonly Reason[];
+      /** The day it is for, and what the chance section shows of it (forecast-detail.ts). */
+      readonly day?: LocalDate;
+      readonly detail?: ForecastDetail;
     }
   | { readonly state: 'no_threat' }
   | { readonly state: 'not_enough_data' };
@@ -253,10 +258,17 @@ export type DayOutlook =
  * The outlook the panel shows: today and tomorrow (tomorrow null when the
  * file stops at today), "not_enough_data" when no history gives a chance, or
  * null when the files cannot say for now (a stale or unreadable file, the
- * overnight hours).
+ * overnight hours). `neighbors` are the districts next door, as the file lists
+ * them.
  */
 export type Outlook =
-  { readonly today: DayOutlook; readonly tomorrow: DayOutlook | null } | 'not_enough_data' | null;
+  | {
+      readonly today: DayOutlook;
+      readonly tomorrow: DayOutlook | null;
+      readonly neighbors?: readonly number[];
+    }
+  | 'not_enough_data'
+  | null;
 
 export interface OutlookInput {
   /** The school's district position, or null for a school outside a district. */
@@ -269,7 +281,11 @@ export interface OutlookInput {
   readonly now: Date;
 }
 
-function dayOutlook(value: PredictionsFile['districts'][number]['days'][number]): DayOutlook {
+function dayOutlook(
+  value: PredictionsFile['districts'][number]['days'][number],
+  day: LocalDate,
+  file: PredictionsFile,
+): DayOutlook {
   switch (value.state) {
     case 'forecast':
       return {
@@ -277,6 +293,13 @@ function dayOutlook(value: PredictionsFile['districts'][number]['days'][number])
         noSchool: value.p_no_school,
         delay: value.p_delay,
         reasons: value.reasons,
+        day,
+        detail: forecastDetail(
+          value,
+          day,
+          file.directory.districts,
+          parseInstant(file.generated_at) ?? new Date(0),
+        ),
       };
     case 'no_threat':
       return { state: 'no_threat' };
@@ -296,9 +319,16 @@ export function schoolOutlook(input: OutlookInput): Outlook {
   const first = entry.days[at];
   if (first === undefined) return null;
   const second = entry.days[at + 1];
+  const firstDay = predictions.days[at] ?? '';
+  const secondDay = predictions.days[at + 1] ?? nextDay(firstDay);
   const outlook = {
-    today: dayOutlook(first),
-    tomorrow: second === undefined ? null : dayOutlook(second),
+    today: dayOutlook(first, firstDay, predictions),
+    tomorrow: second === undefined ? null : dayOutlook(second, secondDay, predictions),
+    neighbors: neighborsOf(
+      (entry as { readonly neighbors?: unknown }).neighbors,
+      district,
+      predictions.directory.districts,
+    ),
   };
   const known = [outlook.today, outlook.tomorrow].some(
     (day) => day !== null && day.state !== 'not_enough_data',

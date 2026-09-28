@@ -25,7 +25,7 @@ from snowlight.schemas.live import (
     local_days,
     ranges_from_indices,
 )
-from snowlight.schemas.predictions import PredictionsFile
+from snowlight.schemas.predictions import Forecast, PredictionsFile
 from snowlight.schemas.registry import PublishedFile
 from snowlight.schemas.replays import ReplayFile, ReplayIndex, check_summary
 from snowlight.schemas.scalars import (
@@ -474,6 +474,178 @@ def test_prediction_days_and_districts_line_up() -> None:
     value = example("predictions")
     value["districts"][1]["district"] = 2
     _refused(PredictionsFile, value, "not in the directory")
+
+
+# What the school panel's chance section is drawn from --------------------------------
+
+
+def _night(value: Any) -> Any:
+    """The example's night-before forecast (district 0, the first day), to change in place."""
+    return value["districts"][0]["days"][0]
+
+
+def _morning(value: Any) -> Any:
+    """The example's next-morning forecast (district 0, the second day)."""
+    return value["districts"][0]["days"][1]
+
+
+def test_the_chance_section_reads_back_as_kinds_and_numbers() -> None:
+    document = _parse(PredictionsFile, example("predictions"))
+    night, morning = document.districts[0].days
+    assert isinstance(night, Forecast)
+    assert isinstance(morning, Forecast)
+    assert document.districts[0].neighbors == (1,)
+    assert night.previous is not None
+    assert night.previous.p_no_school == 0.41
+    assert night.hours is not None
+    assert night.hours.kind == "snow_total"
+    assert night.hours.hour(10) == night.buses_at
+    assert night.why is not None
+    assert night.why.total() == 62
+    assert [reason.kind for reason in night.why.reasons] == [
+        "snow_total",
+        "neighbors",
+        "timing",
+        "wind_chill",
+        "snow_stops",
+    ]
+    assert night.record is not None
+    assert night.record.proves == "snow_total"
+    assert morning.why is not None
+    assert morning.why.base.kind == "day_after"
+    assert morning.why.total() == 22
+    assert morning.hours is not None
+    assert morning.hours.kind == "wind_chill"
+
+
+@pytest.mark.parametrize(
+    ("change", "match"),
+    [
+        # The sum is exact: the base and every reason's points make the chance of no school.
+        (lambda d: d["why"]["reasons"][0].update(points=15), "adds up to 63, not the chance of 62"),
+        (lambda d: d.update(p_no_school=0.63), "adds up to 62, not the chance of 63"),
+        (lambda d: d["why"]["base"].update(points=101), "less than or equal to 100"),
+        (lambda d: d["why"]["reasons"][1].update(points=0), "at least one point"),
+        (lambda d: d["why"]["reasons"][0].update(points=7.5), "points"),
+        (lambda d: d["why"]["reasons"].append(dict(d["why"]["reasons"][3])), "comes once"),
+        # Only kinds and numbers: no sentence, and no kind the site has no words for.
+        (lambda d: d["why"]["reasons"][3].update(text="Cold at the bus stop"), "Extra inputs"),
+        (lambda d: d["why"]["reasons"][3].update(kind="gossip"), "does not match any"),
+        (lambda d: d["why"]["base"].update(alert="tornado_warning"), "alert"),
+        (lambda d: d["why"]["reasons"][0].update(low=10.0), "low is above its high"),
+        (lambda d: d["why"]["reasons"][0].update(high=8.25), "tenths"),
+        (lambda d: d["why"]["reasons"][2].update(end="2027-01-12T08:00:00Z"), "ends before"),
+        (lambda d: d["why"]["reasons"][2].update(end="2027-01-12T12:00:00Z"), "disagree"),
+        # The record sits under the line it proves, and proves it.
+        (lambda d: d["record"].update(proves="record"), "not in why"),
+        (lambda d: d["record"]["days"][2].update(inches=5.0), "less snow than 6.0"),
+        (lambda d: d["record"]["days"][2].update(inches=None), "less snow"),
+        (lambda d: d["record"].update(inches=None), "needs its inches"),
+        (lambda d: d["record"]["days"].reverse(), "sorted and unique"),
+        (lambda d: d["record"]["days"][4].update(day="2027-01-12"), "not before the day"),
+        (lambda d: d["record"].update(days=[]), "at least 1"),
+        # The chart: an hour a value, from on the hour, to the bus hour.
+        (lambda d: d["hours"].update(start="2027-01-12T03:30:00Z"), "on the hour"),
+        (lambda d: d["hours"]["values"].__setitem__(4, 0.1), "never goes down"),
+        (lambda d: d["hours"]["values"].__setitem__(0, -1.0), "never below 0"),
+        (lambda d: d["hours"]["values"].__setitem__(3, 0.65), "tenths"),
+        (lambda d: d["hours"].update(low=8.0), "outside its low-to-high range"),
+        (lambda d: d["hours"].update(high=None), "come together"),
+        (lambda d: d["hours"].update(heavy={"first": 0, "last": 2}), "after its first hour"),
+        (lambda d: d["hours"].update(heavy={"first": 9, "last": 11}), "within the series"),
+        (lambda d: d["hours"]["values"].append(7.6), "ends at the bus hour"),
+        (lambda d: d.update(buses_at="2027-01-12T14:00:00Z"), "ends at the bus hour"),
+        (lambda d: d.update(buses_at=None), "needs buses_at"),
+        (lambda d: d["hours"].update(values=[0.0]), "at least 2"),
+        # What already happened is before the file was made.
+        (lambda d: d["previous"].update(at="2027-01-12T11:00:00Z"), "previous run is not before"),
+        (lambda d: d["events"][0].update(at="2027-01-12T11:01:00Z"), "has not happened"),
+        (
+            lambda d: d["events"].insert(
+                0, {"kind": "snow_stopped", "at": "2027-01-12T06:00:00Z", "inches": 1.0}
+            ),
+            "time order",
+        ),
+        (
+            lambda d: d["events"].append({"kind": "snow_stopped", "at": "2027-01-12T06:00:00Z"}),
+            "inches",
+        ),
+    ],
+)
+def test_the_night_before_is_checked(change: Any, match: str) -> None:
+    value = example("predictions")
+    change(_night(value))
+    _refused(PredictionsFile, value, match)
+
+
+@pytest.mark.parametrize(
+    ("change", "match"),
+    [
+        (lambda d: d["hours"].update(low=1.0, high=2.0), "no range"),
+        (lambda d: d["hours"].update(heavy={"first": 1, "last": 2}), "no heavy hours"),
+        (
+            lambda d: (
+                d["why"]["reasons"].append({"kind": "record", "points": 1}),
+                d["why"]["base"].update(points=24),
+            ),
+            "record it counts",
+        ),
+        (lambda d: d["why"]["reasons"][1].update(feels_like=-81), "greater than or equal to -80"),
+        (lambda d: d["why"]["base"].update(kind="alert"), "alert"),
+    ],
+)
+def test_the_next_morning_is_checked(change: Any, match: str) -> None:
+    value = example("predictions")
+    change(_morning(value))
+    _refused(PredictionsFile, value, match)
+
+
+def test_a_record_reason_counts_the_record_under_it() -> None:
+    value = example("predictions")
+    night = _night(value)
+    night["why"]["reasons"][0]["points"] = 10
+    night["why"]["reasons"].append({"kind": "record", "points": 4})
+    night["record"]["proves"] = "record"
+    document = _parse(PredictionsFile, value)
+    forecast = document.districts[0].days[0]
+    assert isinstance(forecast, Forecast)
+    assert forecast.why is not None
+    assert forecast.why.total() == 62
+    assert forecast.record is not None
+    assert forecast.record.proves == "record"
+
+
+def test_each_part_of_the_section_can_be_left_out() -> None:
+    value = example("predictions")
+    night = _night(value)
+    for key in ("previous", "announces_at", "buses_at", "hours", "why", "record"):
+        night[key] = None
+    night["events"] = []
+    document = _parse(PredictionsFile, value)
+    forecast = document.districts[0].days[0]
+    assert isinstance(forecast, Forecast)
+    assert (forecast.why, forecast.hours, forecast.record) == (None, None, None)
+    # Each key is still stated, as null: nothing is left to a default.
+    del night["why"]
+    _refused(PredictionsFile, value, "missing")
+
+
+def test_neighbors_are_other_districts_in_the_directory_and_back_the_reason() -> None:
+    value = example("predictions")
+    value["districts"][0]["neighbors"] = [1, 1]
+    _refused(PredictionsFile, value, "must not repeat")
+    value = example("predictions")
+    value["districts"][0]["neighbors"] = [0, 1]
+    _refused(PredictionsFile, value, "not its own neighbor")
+    value = example("predictions")
+    value["districts"][1]["neighbors"] = [0, 5]
+    _refused(PredictionsFile, value, "neighbor is not in the directory")
+    value = example("predictions")
+    value["districts"][0]["neighbors"] = []
+    _refused(PredictionsFile, value, "not next door")
+    value = example("predictions")
+    _night(value)["why"]["reasons"][1]["districts"] = []
+    _refused(PredictionsFile, value, "at least 1")
 
 
 # stats/season.json and track-record.json ----------------------------------------------

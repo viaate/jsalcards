@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 
 import { OPEN_SHARE } from '../../ui/sheet-geometry';
-import { PANEL_EDGE, PANEL_WIDTH, clearOfPanel, openArea } from '../frame';
+import { PANEL_EDGE, PANEL_WIDTH, clearOfPanel, openArea, panelWidth } from '../frame';
 
 /** Pembroke Hill, on its streets. */
 const SCHOOL = { lat: 39.03606, lon: -94.593001, zoom: 15 };
@@ -41,10 +41,20 @@ describe('clearOfPanel', () => {
   });
 
   it('beside the map, puts it in the middle of the map right of the panel', () => {
-    const screen = { width: 1440, height: 900, top: 64 };
-    const at = onScreen(clearOfPanel(SCHOOL, screen), screen);
-    expect(at.x).toBeCloseTo((PANEL_EDGE + PANEL_WIDTH + screen.width) / 2, 6);
-    expect(at.y).toBeCloseTo((screen.top + screen.height) / 2, 6);
+    for (const [width, panel] of [
+      [800, PANEL_WIDTH],
+      [1023, 368],
+      [1024, 420],
+      [1279, 420],
+      [1280, 460],
+      [1440, 460],
+    ] as const) {
+      const screen = { width, height: 900, top: 64 };
+      expect(panelWidth(width)).toBe(panel);
+      const at = onScreen(clearOfPanel(SCHOOL, screen), screen);
+      expect(at.x).toBeCloseTo((PANEL_EDGE + panel + screen.width) / 2, 6);
+      expect(at.y).toBeCloseTo((screen.top + screen.height) / 2, 6);
+    }
   });
 
   it('takes a phone for a screen under 720 pixels wide', () => {
@@ -64,7 +74,7 @@ describe('clearOfPanel', () => {
 describe('openArea', () => {
   it('is the map right of the panel and under the search strip beside the map', () => {
     expect(openArea({ width: 1440, height: 900, top: 64 })).toEqual({
-      left: PANEL_EDGE + PANEL_WIDTH,
+      left: PANEL_EDGE + panelWidth(1440),
       top: 64,
       right: 1440,
       bottom: 900,

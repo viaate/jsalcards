@@ -112,6 +112,9 @@ export const BANNED = [
   ['artificial intelligence', 'artificial\\s+intelligence'],
   ['machine learning', 'machine\\s+learning'],
   ['model', 'model(?:s|ed|ing|led|ling)?'],
+  // The chance section says "chance" and "reason", as a 12-year-old would.
+  ['probability', 'probabilit(?:y|ies)'],
+  ['factor', 'factor(?:s|ed|ing)?'],
   ['neural', 'neural'],
   ['LLM', 'llms?'],
   ['scrape', 'scrap(?:e|es|ed|ing|er|ers)'],
@@ -128,6 +131,8 @@ export const PROPER_NOUNS = new Set([
   'ZIP',
   'AM',
   'PM',
+  // Degrees Fahrenheit: "-8 F".
+  'F',
   'K-12',
   'I',
   // School grades: prekindergarten, transitional kindergarten and kindergarten ("PK–12", "PK–K").

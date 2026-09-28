@@ -223,7 +223,9 @@ async function expectLandedBesidePanel(page: Page): Promise<void> {
       async () => {
         const view = await mapView(page);
         const where = await schoolOnScreen(page);
-        const panelRight = ((await panel.boundingBox())?.x ?? 0) + 368;
+        // The panel's own width: wider on a wide screen (app/frame.ts PANEL_WIDTHS).
+        const box = await panel.boundingBox();
+        const panelRight = (box?.x ?? 0) + (box?.width ?? 0);
         return (
           Math.abs(view.zoom - 15) < 0.05 &&
           Math.abs(where.x - (panelRight + 1440) / 2) < 3 &&

@@ -14,6 +14,7 @@ const VIEW: SchoolView = {
   place: 'Kansas City, MO · Jackson County',
   status: [],
   outlook: null,
+  chance: null,
   facts: [
     { label: copy.detail.students, lines: ['1,174'], href: null },
     { label: copy.detail.address, lines: ['400 W 51st St', 'Kansas City, MO 64112'], href: null },

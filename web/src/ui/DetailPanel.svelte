@@ -4,6 +4,7 @@
 
   import type { NearbyView, SchoolView } from '../app/school';
   import { copy } from '../copy';
+  import ChanceSection from './ChanceSection.svelte';
   import { attachSheet } from './sheet';
   import type { Detent, Sheet } from './sheet';
   import { PHONE_QUERY } from './sheet-geometry';
@@ -196,7 +197,10 @@
       </div>
     {/if}
 
-    {#if view.status.length > 0}
+    {#if view.chance !== null}
+      <!-- A chance to give: the section says the status, then the chance (ChanceSection.svelte). -->
+      <ChanceSection chance={view.chance} />
+    {:else if view.status.length > 0}
       <section class="card status" aria-label={copy.detail.status}>
         {#each view.status as line, n (n)}
           <div class="line">
@@ -215,7 +219,7 @@
       </section>
     {/if}
 
-    {#if view.outlook !== null}
+    {#if view.chance === null && view.outlook !== null}
       <section class="card outlook" aria-labelledby="detail-outlook">
         <h3 class="card-title" id="detail-outlook">{copy.predictions.title}</h3>
         <div class="days">
@@ -318,6 +322,22 @@
       0 0 0 1px var(--bg),
       0 20px 48px rgb(0 0 0 / 0.65);
     animation: arrive 200ms cubic-bezier(0.2, 0.7, 0.2, 1) both;
+  }
+
+  /*
+    Wider on a wide screen, so the chance section's chart is bigger and its
+    lines wrap less: still one column (app/frame.ts PANEL_WIDTHS).
+  */
+  @media (min-width: 1024px) {
+    .detail {
+      width: 420px;
+    }
+  }
+
+  @media (min-width: 1280px) {
+    .detail {
+      width: 460px;
+    }
   }
 
   /* What the panel says, in one column; what does not fit scrolls inside it. */

@@ -11,9 +11,23 @@
 import type { MapView } from '../map/basemap';
 import { OPEN_SHARE } from '../ui/sheet-geometry';
 
-/** The panel's width and its gap from the screen's edge beside the map (DetailPanel.svelte). */
+/**
+ * The panel's width beside the map, by the screen's width (DetailPanel.svelte):
+ * wider from 1024 and 1280 pixels, so its chart is bigger and its lines wrap less.
+ */
+export const PANEL_WIDTHS: readonly { readonly from: number; readonly width: number }[] = [
+  { from: 1280, width: 460 },
+  { from: 1024, width: 420 },
+  { from: 0, width: 368 },
+];
+/** The panel's width on the narrowest screen it sits beside the map on. */
 export const PANEL_WIDTH = 368;
 export const PANEL_EDGE = 20;
+
+/** The panel's width on a screen `screenWidth` pixels wide, beside the map. */
+export function panelWidth(screenWidth: number): number {
+  return PANEL_WIDTHS.find((step) => screenWidth >= step.from)?.width ?? PANEL_WIDTH;
+}
 /** Screens narrower than this show the panel as a sheet over the foot of the map (index.html). */
 export const PHONE_WIDTH = 720;
 /** MapLibre's tile size in CSS pixels. */
@@ -44,7 +58,7 @@ export function openArea(screen: Screen): Area {
   const { width, height, top } = screen;
   return width < PHONE_WIDTH
     ? { left: 0, top, right: width, bottom: height - Math.round(height * OPEN_SHARE) }
-    : { left: PANEL_EDGE + PANEL_WIDTH, top, right: width, bottom: height };
+    : { left: PANEL_EDGE + panelWidth(width), top, right: width, bottom: height };
 }
 
 /** The view that shows `view`'s middle in the middle of the map the panel leaves in view. */

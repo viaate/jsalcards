@@ -38,16 +38,20 @@ import {
   schoolStatus,
 } from '../data/school-day';
 import type { DayOutlook, Outlook, SchoolStatus, StatusRow } from '../data/school-day';
+import type { Directory } from '../data/directory';
 import { casedName, displayName } from '../text/names';
 import { stateOfId } from '../text/school-names';
 import { PUBLISHED_PATHS, Status } from '../types/generated';
 import type {
   ClosingsFile,
   CoveredFile,
+  DirectoryStamp,
   PredictionsFile,
   Reason,
   SchoolId,
 } from '../types/generated';
+import { chanceView, shortDistrictName } from './chance';
+import type { ChanceView, Names } from './chance';
 
 /** What a search pick already knows about a school: its shown name and its town. */
 export interface SchoolHint {
@@ -123,8 +127,15 @@ export interface SchoolView {
   /**
    * The days of the outlook, but for a day with no history to give a chance
    * and a day whose status is decided; null to leave the chance card out.
+   * Shown only without a chance section (a day with no weather threat).
    */
   readonly outlook: readonly DayView[] | null;
+  /**
+   * The chance section (app/chance.ts): the chance of no school for the first
+   * day not decided, with the status lines above it; null when there is no
+   * chance to give, and the panel shows the status and outlook cards instead.
+   */
+  readonly chance: ChanceView | null;
   readonly facts: readonly FactView[];
   /** The schools nearest it, nearest first; empty until its record is read, or where none is near. */
   readonly nearby: readonly NearbyView[];
@@ -293,6 +304,39 @@ function factsOf(record: SchoolRecord): FactView[] {
   return facts;
 }
 
+/** A district's name as the panel shows it, then short, as a family says it: "Shawnee Mission". */
+function districtShortName(id: string, name: string): string {
+  return shortDistrictName(
+    displayName(name, { state: stateOfId(id), district: true }, DISTRICT_NAME_FIXES[id] ?? {}),
+  );
+}
+
+/** The directory's district names and each school's district, for the chance section. */
+export function namesOf(directory: Directory): Names {
+  const { ids, names } = directory.meta.districts;
+  const stamp: DirectoryStamp = {
+    generated_on: directory.meta.generated_on,
+    schools: directory.count,
+    districts: ids.length,
+  };
+  const short = new Map<number, string | null>();
+  return {
+    stamp,
+    districtOf: (school) => directory.district[school] ?? -1,
+    name: (district) => {
+      if (!short.has(district)) {
+        const id = ids[district];
+        const name = names[district];
+        short.set(
+          district,
+          id === undefined || name === undefined ? null : districtShortName(id, name),
+        );
+      }
+      return short.get(district) ?? null;
+    },
+  };
+}
+
 /** A school's name as the map and search show it. */
 function shownName(id: string, name: string): string {
   return displayName(name, { state: stateOfId(id) }, SCHOOL_NAME_FIXES[id] ?? {});
@@ -329,6 +373,8 @@ export interface ViewInput {
   readonly outlook: Outlook;
   /** The live closings file, for the nearby schools' statuses; null when there is none. */
   readonly closings?: ClosingsFile | null;
+  /** The directory's district names, for the districts next door; null until read. */
+  readonly names?: Names | null;
   readonly now: Date;
   /** The viewer's time zone, for posted times. */
   readonly timeZone: string;
@@ -350,6 +396,7 @@ export function schoolView(input: ViewInput): SchoolView | null {
       place: hint.sub === '' ? null : hint.sub,
       status: [],
       outlook: null,
+      chance: null,
       facts: [],
       nearby: [],
       loading: !settled,
@@ -365,6 +412,12 @@ export function schoolView(input: ViewInput): SchoolView | null {
   } catch {
     // A time zone or a value the formatters refuse: no status rather than a wrong one.
   }
+  // Each day's decided status, where its line shows (none does where the formatters refuse
+  // them); "open" says only that no closing is posted, and decides nothing.
+  const decided = {
+    today: input.status.today !== null && input.status.today !== 'open' && status.length > 0,
+    tomorrow: input.status.tomorrow !== null && status.length > 0,
+  };
   return {
     id,
     name,
@@ -372,12 +425,21 @@ export function schoolView(input: ViewInput): SchoolView | null {
     kind: kindOf(record),
     place: place.length > 0 ? place.join(DOT) : null,
     status,
-    // Each day's decided status, where its line shows (none does where the formatters refuse
-    // them); "open" says only that no closing is posted, and decides nothing.
-    outlook: outlookView(input.outlook, {
-      today: input.status.today !== null && input.status.today !== 'open' && status.length > 0,
-      tomorrow: input.status.tomorrow !== null && status.length > 0,
-    }),
+    outlook: outlookView(input.outlook, decided),
+    // A private school has no district, and no district forecast: no chance section.
+    chance:
+      record.district === null
+        ? null
+        : chanceView({
+            outlook: input.outlook,
+            decided,
+            status,
+            district: districtShortName(record.district.id, record.district.name),
+            closings: input.closings ?? null,
+            names: input.names ?? null,
+            now,
+            timeZone,
+          }),
     facts: factsOf(record),
     nearby: nearbyOf(record, input.closings ?? null, now),
     loading: false,
@@ -393,6 +455,7 @@ function loadingView(id: SchoolId): SchoolView {
     place: null,
     status: [],
     outlook: null,
+    chance: null,
     facts: [],
     nearby: [],
     loading: true,
@@ -417,6 +480,11 @@ export interface WatchOptions {
   readonly timeZone?: () => string;
   /** How often to read the live files again. Default LIVE_POLL_MS. */
   readonly pollMs?: number;
+  /**
+   * The directory a stamp names, or null, for the names of the districts next
+   * door; asked only when a chance is shown for a district that has neighbors.
+   */
+  readonly directory?: (stamp: DirectoryStamp) => Promise<Directory | null>;
 }
 
 function viewerTimeZone(): string {
@@ -436,6 +504,9 @@ export function watchSchool(options: WatchOptions): () => void {
   let record: SchoolRecord | null = null;
   let settled = false;
   const live: LiveFiles = { closings: null, covered: null, predictions: null };
+  /** The directory's names, once asked for and read. */
+  let names: Names | null = null;
+  let askedNames = false;
 
   const show = (): void => {
     if (stopped) return;
@@ -460,19 +531,41 @@ export function watchSchool(options: WatchOptions): () => void {
             predictions: live.predictions,
             now: at,
           });
-    onView(
-      schoolView({
-        id,
-        hint,
-        record,
-        settled,
-        status,
-        outlook,
-        closings: live.closings,
-        now: at,
-        timeZone: timeZone(),
-      }),
-    );
+    const view = schoolView({
+      id,
+      hint,
+      record,
+      settled,
+      status,
+      outlook,
+      closings: live.closings,
+      names,
+      now: at,
+      timeZone: timeZone(),
+    });
+    onView(view);
+    // A chance for a district with neighbors: their names, and their schools' districts, come
+    // from the directory, read once (the glow has most often read it already).
+    const neighbors =
+      outlook !== null && outlook !== 'not_enough_data' ? (outlook.neighbors ?? []) : [];
+    const stamp = live.closings?.directory ?? live.predictions?.directory ?? null;
+    if (
+      !askedNames &&
+      view !== null &&
+      view.chance !== null &&
+      neighbors.length > 0 &&
+      stamp !== null
+    ) {
+      askedNames = true;
+      void options
+        .directory?.(stamp)
+        .then((directory) => {
+          if (directory === null || stopped) return;
+          names = namesOf(directory);
+          show();
+        })
+        .catch(() => undefined);
+    }
   };
 
   const readLive = async (): Promise<void> => {

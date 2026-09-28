@@ -371,7 +371,15 @@ export function boot(options: BootOptions): Services {
       loadSchoolCode().then(
         ({ watch, source }) => {
           if (stopped || aborted()) return;
-          stop = watch({ files: data.files, details: source, id, hint, onView });
+          stop = watch({
+            files: data.files,
+            details: source,
+            id,
+            hint,
+            onView,
+            // The districts next door, for the chance section: the directory the glow reads.
+            directory: async (stamp) => (await (await data.directories())?.get(stamp)) ?? null,
+          });
         },
         () => {
           if (!stopped) onView(null);
