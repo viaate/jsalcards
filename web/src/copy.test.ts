@@ -113,7 +113,6 @@ describe('copy', () => {
     expect(copy.replay.exit).toBeTruthy();
     expect(copy.detail.close).toBeTruthy();
     expect(copy.predictions.title).toBe('Chance of a weather closure');
-    expect(copy.empty.notEnoughData).toBe('Not enough data yet');
     expect(copy.empty.noThreat).toBe('No weather threat in the forecast');
     expect(copy.actions.pin).toBe('Pin as my school');
     expect(copy.pin.unpin).toBeTruthy();

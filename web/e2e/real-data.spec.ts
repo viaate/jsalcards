@@ -463,8 +463,8 @@ test('searching “pembroke” lists Pembroke Hill, and choosing it goes there',
     '400 W 51st StKansas City, MO 64112',
     /^\(816\)\s936-1230$/,
   ]);
-  // It is September: no status, and no chance of a closure without the history to give one.
-  await expect(panel.locator('.outlook .quiet')).toHaveText(copy.empty.notEnoughData);
+  // It is September: no status, and no chance card without the history to give a chance.
+  await expect(panel.locator('.outlook')).toHaveCount(0);
   await expect(panel.locator('.status')).toHaveCount(0);
   // The schools nearest it, by the directory's places, nearest first.
   await expect(panel.locator('.near-name')).toHaveText([
@@ -528,6 +528,8 @@ test('searching “pembroke” lists Pembroke Hill, and choosing it goes there',
 test('a link to Pembroke Hill lands as picking it does: its streets, right of the panel', async ({
   browser,
 }) => {
+  // Two landings, each waited for up to 90 s.
+  test.setTimeout(240_000);
   const context = await browser.newContext({ viewport: { width: 1440, height: 900 } });
   /** Where the map comes to rest, once it has: its zoom, and the school on the screen. */
   const landing = async (page: Page): Promise<{ zoom: number; x: number; y: number }> => {

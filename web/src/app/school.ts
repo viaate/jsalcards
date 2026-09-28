@@ -12,9 +12,11 @@
  * `schoolView` turns what is known into the panel's lines, every word from
  * src/copy.ts or the directory itself. A status line shows only where the
  * live files state one (or confirm the school open today); a chance only
- * where the district's history gives one, "Not enough data yet" where it
- * does not, and nothing where the files cannot say for now. A day's chance
- * never shows beside that day's status: the fact beats the forecast.
+ * where the district's history gives one, and nothing where it does not or
+ * the files cannot say for now. A day's chance never shows beside a status
+ * the school decided for that day (closed, delayed, remote, early
+ * dismissal): the fact beats the forecast. "Open today" is no decision, only
+ * that no closing is posted yet, and the chance stays beside it.
  */
 
 import { DISTRICT_NAME_FIXES, SCHOOL_NAME_FIXES } from 'virtual:snowlight/school-names';
@@ -119,10 +121,10 @@ export interface SchoolView {
   /** The status block's lines, today first; empty when the files state nothing. */
   readonly status: readonly StatusLineView[];
   /**
-   * The days of the outlook, but for a day whose status is shown; "not
-   * enough data"; or null to leave the outlook out.
+   * The days of the outlook, but for a day with no history to give a chance
+   * and a day whose status is decided; null to leave the chance card out.
    */
-  readonly outlook: readonly DayView[] | 'not_enough_data' | null;
+  readonly outlook: readonly DayView[] | null;
   readonly facts: readonly FactView[];
   /** The schools nearest it, nearest first; empty until its record is read, or where none is near. */
   readonly nearby: readonly NearbyView[];
@@ -209,7 +211,8 @@ function statusLines(status: SchoolStatus, now: Date, timeZone: string): StatusL
   return lines;
 }
 
-function dayView(label: string, day: DayOutlook): DayView {
+/** One day of the outlook; null for a day with no history to give a chance, which is left out. */
+function dayView(label: string, day: DayOutlook): DayView | null {
   switch (day.state) {
     case 'forecast': {
       const reasons = day.reasons.map(reasonName).filter((name): name is string => name !== null);
@@ -232,31 +235,26 @@ function dayView(label: string, day: DayOutlook): DayView {
         share: null,
       };
     case 'not_enough_data':
-      return {
-        label,
-        chance: null,
-        line: copy.empty.notEnoughData,
-        delay: null,
-        reasons: null,
-        share: null,
-      };
+      return null;
   }
 }
 
 /**
- * The outlook's days, but for a day whose status is shown: the fact beats
- * the forecast. With no day left to give a chance for, no outlook.
+ * The outlook's days, but for a day whose status is decided (the fact beats
+ * the forecast) and a day with no history to give a chance. With no day
+ * left, or no history at all, no outlook: the panel has no chance card.
  */
 function outlookView(
   outlook: Outlook,
-  shown: { readonly today: boolean; readonly tomorrow: boolean },
+  decided: { readonly today: boolean; readonly tomorrow: boolean },
 ): SchoolView['outlook'] {
-  if (outlook === null || outlook === 'not_enough_data') return outlook;
-  const days: DayView[] = [];
-  if (!shown.today) days.push(dayView(copy.days.today, outlook.today));
-  if (outlook.tomorrow !== null && !shown.tomorrow) {
-    days.push(dayView(copy.days.tomorrow, outlook.tomorrow));
-  }
+  if (outlook === null || outlook === 'not_enough_data') return null;
+  const days = [
+    decided.today ? null : dayView(copy.days.today, outlook.today),
+    outlook.tomorrow === null || decided.tomorrow
+      ? null
+      : dayView(copy.days.tomorrow, outlook.tomorrow),
+  ].filter((day): day is DayView => day !== null);
   return days.length > 0 ? days : null;
 }
 
@@ -374,9 +372,10 @@ export function schoolView(input: ViewInput): SchoolView | null {
     kind: kindOf(record),
     place: place.length > 0 ? place.join(DOT) : null,
     status,
-    // Each day's status, where its line shows (none does where the formatters refuse them).
+    // Each day's decided status, where its line shows (none does where the formatters refuse
+    // them); "open" says only that no closing is posted, and decides nothing.
     outlook: outlookView(input.outlook, {
-      today: input.status.today !== null && status.length > 0,
+      today: input.status.today !== null && input.status.today !== 'open' && status.length > 0,
       tomorrow: input.status.tomorrow !== null && status.length > 0,
     }),
     facts: factsOf(record),

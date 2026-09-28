@@ -127,6 +127,19 @@ describe('name fixes', () => {
     expect(fixes.schools['040039902325']).toBeUndefined();
   });
 
+  it('name a school first with its district as the district reads, its Pub Sch Public Schools', () => {
+    const fixes = nameFixes(
+      directory(
+        [['201251002087', 'The Learning Center', 0]],
+        [['2012510', 'Valley Center Pub Sch']],
+      ),
+    );
+    expect(fixes.schools['201251002087']).toEqual({ district: 'Valley Center Public Schools' });
+    expect(displayName('The Learning Center', { state: 'KS' }, fixes.schools['201251002087'])).toBe(
+      'Valley Center Public Schools - The Learning Center',
+    );
+  });
+
   it('name the district first by its name proper, without the number or county after it', () => {
     const fixes = nameFixes(
       directory(

@@ -13,7 +13,7 @@ const VIEW: SchoolView = {
   kind: `${copy.detail.privateSchool} · PK–12`,
   place: 'Kansas City, MO · Jackson County',
   status: [],
-  outlook: 'not_enough_data',
+  outlook: null,
   facts: [
     { label: copy.detail.students, lines: ['1,174'], href: null },
     { label: copy.detail.address, lines: ['400 W 51st St', 'Kansas City, MO 64112'], href: null },
@@ -69,22 +69,15 @@ describe('DetailPanel', () => {
     expect(panel.querySelector('.fact a')?.getAttribute('href')).toBe('tel:+18165550100');
   });
 
-  it('says “Not enough data yet” and nothing more where no history gives a chance, and no status', () => {
+  it('has no chance card and no status where there is no chance to give and no day stated', () => {
     const { panel } = show(VIEW);
-    const outlook = panel.querySelector('.outlook');
-    expect(outlook?.querySelector('h3')?.textContent).toBe(copy.predictions.title);
-    expect(outlook?.querySelector('.quiet')?.textContent).toBe(copy.empty.notEnoughData);
-    expect(outlook?.querySelectorAll('p')).toHaveLength(1);
+    expect(panel.querySelector('.outlook')).toBeNull();
+    expect(panel.textContent).not.toContain(copy.predictions.title);
     expect(panel.querySelector('.status')).toBeNull();
     for (const line of Object.values(copy.statusLine)) {
       expect(panel.textContent).not.toContain(line.today);
     }
     expect(panel.textContent).not.toContain(copy.open.today);
-  });
-
-  it('leaves the outlook out when the files cannot say for now', () => {
-    const { panel } = show({ ...VIEW, outlook: null });
-    expect(panel.querySelector('.outlook')).toBeNull();
   });
 
   it('keys each status line with its glyph, today first', () => {

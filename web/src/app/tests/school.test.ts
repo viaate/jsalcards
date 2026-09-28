@@ -86,7 +86,8 @@ describe('schoolView', () => {
       kind: `${copy.detail.privateSchool} · PK–12`,
       place: 'Kansas City, MO · Jackson County',
       status: [],
-      outlook: 'not_enough_data',
+      // No history gives a chance: no chance card at all.
+      outlook: null,
       loading: false,
     });
     expect(view?.facts).toEqual([
@@ -259,6 +260,26 @@ describe('schoolView', () => {
     expect(schoolView(input({ outlook: null }))?.outlook).toBeNull();
   });
 
+  it('leaves out a day with no history to give a chance, and the card with no day left', () => {
+    const forecast: DayOutlook = { state: 'forecast', noSchool: 0.34, delay: 0.12, reasons: [] };
+    const none: DayOutlook = { state: 'not_enough_data' };
+    expect(
+      schoolView(input({ outlook: { today: forecast, tomorrow: none } }))?.outlook?.map((day) => [
+        day.label,
+        day.chance,
+      ]),
+    ).toEqual([[copy.days.today, '34%']]);
+    expect(
+      schoolView(input({ outlook: { today: none, tomorrow: forecast } }))?.outlook?.map((day) => [
+        day.label,
+        day.chance,
+      ]),
+    ).toEqual([[copy.days.tomorrow, '34%']]);
+    expect(schoolView(input({ outlook: { today: none, tomorrow: none } }))?.outlook).toBeNull();
+    expect(schoolView(input({ outlook: { today: none, tomorrow: null } }))?.outlook).toBeNull();
+    expect(schoolView(input({ outlook: 'not_enough_data' }))?.outlook).toBeNull();
+  });
+
   it('leaves a day’s chance out beside that day’s status: the fact beats the forecast', () => {
     const today: DayOutlook = { state: 'forecast', noSchool: 0.97, delay: 0.02, reasons: [0] };
     const tomorrow: DayOutlook = { state: 'forecast', noSchool: 0.4, delay: 0.2, reasons: [] };
@@ -283,11 +304,16 @@ describe('schoolView', () => {
         share: 0.4,
       },
     ]);
-    // Open today, as the live check confirmed, is today's status too.
-    expect(
-      schoolView(input({ status: { today: 'open', tomorrow: null }, outlook: { today, tomorrow } }))
-        ?.outlook,
-    ).toMatchObject([{ label: copy.days.tomorrow, chance: '40%' }]);
+    // "Open today" decides nothing: no closing is posted yet, and on a storm morning the chance
+    // is what warns. It stays, beside the open line.
+    const open = schoolView(
+      input({ status: { today: 'open', tomorrow: null }, outlook: { today, tomorrow } }),
+    );
+    expect(open?.status.map((line) => line.headline)).toEqual([copy.open.today]);
+    expect(open?.outlook).toMatchObject([
+      { label: copy.days.today, chance: '97%' },
+      { label: copy.days.tomorrow, chance: '40%' },
+    ]);
     // A file that stops at today leaves no chance to give: no outlook at all.
     expect(
       schoolView(
@@ -308,19 +334,18 @@ describe('schoolView', () => {
         share: 0.97,
       },
     ]);
-    // Both days known, or open today and closed tomorrow: no day left to give a chance for.
-    for (const first of [closed, 'open'] as const) {
-      expect(
-        schoolView(
-          input({ status: { today: first, tomorrow: closed }, outlook: { today, tomorrow } }),
-        )?.outlook,
-      ).toBeNull();
-    }
-    // "Not enough data" gives no chance to leave out.
+    // Both days decided: no day left to give a chance for, and no card.
     expect(
-      schoolView(input({ status: { today: closed, tomorrow: null }, outlook: 'not_enough_data' }))
-        ?.outlook,
-    ).toBe('not_enough_data');
+      schoolView(
+        input({ status: { today: closed, tomorrow: closed }, outlook: { today, tomorrow } }),
+      )?.outlook,
+    ).toBeNull();
+    // Open today and closed tomorrow: today's chance alone.
+    expect(
+      schoolView(
+        input({ status: { today: 'open', tomorrow: closed }, outlook: { today, tomorrow } }),
+      )?.outlook,
+    ).toMatchObject([{ label: copy.days.today, chance: '97%' }]);
     // A status the formatters refuse shows no line: today's chance stays.
     expect(
       schoolView(
@@ -377,8 +402,8 @@ describe('watchSchool', () => {
       name: 'The Test Hill School',
       loading: false,
       status: [{ tone: 'closed', headline: copy.statusLine.closed.today }],
-      // The build ships no predictions: no history gives a chance.
-      outlook: 'not_enough_data',
+      // The build ships no predictions: no history gives a chance, and there is no chance card.
+      outlook: null,
     });
     expect(fetchImpl).toHaveBeenCalledTimes(1);
     stop();

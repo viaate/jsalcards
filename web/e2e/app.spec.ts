@@ -17,7 +17,10 @@
  *   in the temporary folder while it runs.
  *
  * Runs once, under the desktop project; tests set their own viewports.
- * WebGL here is SwiftShader; nothing below depends on frame rates.
+ * WebGL here is SwiftShader, whose frames are slow, and a page's first flight
+ * into streets holds the page for seconds (FIRST_FLIGHT_MS). A test that
+ * waits on the map or on a timer waits in real time, with the date fixed
+ * alone (fixDate): a faked clock would stretch each by the frames it draws.
  */
 import { execFileSync } from 'node:child_process';
 import {
@@ -904,8 +907,8 @@ test.describe('with data staged', () => {
       `${copy.reason.ice} · ${format.posted(new Date('2026-01-12T12:02:00Z'), 'America/Chicago', SYNTHETIC_NOW)}`,
     );
     await expect(panel.locator('.status .glyph.is-delayed')).toHaveCount(1);
-    // No chances are published: no history gives one.
-    await expect(panel.locator('.outlook .quiet')).toHaveText(copy.empty.notEnoughData);
+    // A private school has no district history to give a chance: there is no chance card.
+    await expect(panel.locator('.outlook')).toHaveCount(0);
     await expect(panel.locator('.fact dt')).toHaveText([
       copy.detail.students,
       copy.detail.address,
@@ -1066,9 +1069,10 @@ test.describe('with data staged', () => {
     };
     expect(await bottomOf('.head')).toBeLessThan(height);
     expect(await bottomOf('.status')).toBeLessThan(height);
-    expect(await bottomOf('.outlook')).toBeLessThan(height);
+    // A private school has no district history to give a chance: no chance card.
+    await expect(panel.locator('.outlook')).toHaveCount(0);
     expect((await panel.locator('.actions').boundingBox())?.y).toBeGreaterThan(
-      await bottomOf('.outlook'),
+      await bottomOf('.status'),
     );
     // Its close button: the sheet glides away, and the school leaves the address.
     await panel.locator('.close').tap();

@@ -99,11 +99,6 @@
     earlyDismissal: 'is-early-dismissal',
     open: 'is-open',
   } as const;
-
-  /** The outlook's days, or null for "not enough data" (or no outlook at all). */
-  const outlookDays = $derived(
-    view.outlook === null || view.outlook === 'not_enough_data' ? null : view.outlook,
-  );
 </script>
 
 <!--
@@ -223,32 +218,28 @@
     {#if view.outlook !== null}
       <section class="card outlook" aria-labelledby="detail-outlook">
         <h3 class="card-title" id="detail-outlook">{copy.predictions.title}</h3>
-        {#if outlookDays === null}
-          <p class="quiet">{copy.empty.notEnoughData}</p>
-        {:else}
-          <div class="days">
-            {#each outlookDays as day (day.label)}
-              <div class="day">
-                <p class="day-label">{day.label}</p>
-                {#if day.chance !== null}
-                  <p class="chance">{day.chance}</p>
-                  <p class="day-line">{day.line}</p>
-                  <span class="meter" aria-hidden="true">
-                    <span class="meter-fill" style:transform="scaleX({day.share ?? 0})"></span>
-                  </span>
-                  {#if day.delay !== null}
-                    <p class="day-more">{day.delay}</p>
-                  {/if}
-                  {#if day.reasons !== null}
-                    <p class="day-more">{day.reasons}</p>
-                  {/if}
-                {:else}
-                  <p class="day-line is-plain">{day.line}</p>
+        <div class="days">
+          {#each view.outlook as day (day.label)}
+            <div class="day">
+              <p class="day-label">{day.label}</p>
+              {#if day.chance !== null}
+                <p class="chance">{day.chance}</p>
+                <p class="day-line">{day.line}</p>
+                <span class="meter" aria-hidden="true">
+                  <span class="meter-fill" style:transform="scaleX({day.share ?? 0})"></span>
+                </span>
+                {#if day.delay !== null}
+                  <p class="day-more">{day.delay}</p>
                 {/if}
-              </div>
-            {/each}
-          </div>
-        {/if}
+                {#if day.reasons !== null}
+                  <p class="day-more">{day.reasons}</p>
+                {/if}
+              {:else}
+                <p class="day-line is-plain">{day.line}</p>
+              {/if}
+            </div>
+          {/each}
+        </div>
       </section>
     {/if}
 
@@ -514,13 +505,6 @@
     color: var(--text-2);
   }
 
-  .quiet {
-    margin: 6px 0 0;
-    font-size: 14px;
-    line-height: 20px;
-    color: var(--text-1);
-  }
-
   .status {
     display: flex;
     flex-direction: column;
@@ -579,6 +563,11 @@
     grid-template-columns: 1fr 1fr;
     gap: 16px;
     margin-top: 10px;
+  }
+
+  /* A day alone (the other decided, or not in the file) takes the card's width. */
+  .day:only-child {
+    grid-column: 1 / -1;
   }
 
   .day-label {

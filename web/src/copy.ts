@@ -149,7 +149,6 @@ export const copy = deepFreeze({
 
   empty: {
     noClosures: 'No weather closures today',
-    notEnoughData: 'Not enough data yet',
     noThreat: 'No weather threat in the forecast',
   },
 
@@ -195,7 +194,7 @@ export const copy = deepFreeze({
     less: 'Show less',
   },
 
-  /** The chance of a weather closure. "Not enough data yet" and "No weather threat" are in `empty`. */
+  /** The chance of a weather closure. "No weather threat" is in `empty`. */
   predictions: {
     title: 'Chance of a weather closure',
     noSchool: 'No school',

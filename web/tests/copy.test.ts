@@ -49,7 +49,6 @@ describe('copy', () => {
     });
     expect(copy.empty).toEqual({
       noClosures: 'No weather closures today',
-      notEnoughData: 'Not enough data yet',
       noThreat: 'No weather threat in the forecast',
     });
     expect(copy.actions).toEqual({
