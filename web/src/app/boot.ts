@@ -10,7 +10,9 @@
  *   are lit in each status, for the legend;
  * - the service worker, registered once the map is on screen;
  * - the school a pick or a link opens: its detail panel's view (app/school.ts,
- *   loaded when a school is first opened), and the pin.
+ *   loaded when a school is first opened), and the pin;
+ * - a school clicked or tapped on the map, once it is on screen
+ *   (map/school-taps.ts), handed to the page to open as a pick of it.
  *
  * A build that ships no data requests nothing under data/: the glow stays
  * dark, search shows nothing and no selection moves the map.
@@ -18,6 +20,7 @@
 
 import type { Basemap, MapView } from '../map/basemap';
 import type { Glow } from '../map/glow-mount';
+import type { SchoolHit } from '../map/school-taps';
 import type { SearchHit } from '../search';
 import { createPinStore } from '../state/pin';
 import type { PinStore } from '../state/pin';
@@ -37,6 +40,7 @@ import { selectionForHit, startupSelection, viewForHit } from './startup';
 
 export { clearOfPanel } from './frame';
 export type { StatusCounts } from '../data/closings';
+export type { SchoolHit } from '../map/school-taps';
 export type { Target } from './data';
 export type { SearchOption } from './search';
 export type { NearbyView, SchoolHint, SchoolView } from './school';
@@ -64,6 +68,11 @@ export interface BootOptions {
   readonly onUpdated?: (generatedAt: UtcInstant | null) => void;
   /** How many schools the map lights in each status, for the legend; null while none is lit. */
   readonly onCounts?: (counts: StatusCounts | null) => void;
+  /**
+   * A school clicked or tapped on the map, its dot, its name or its light:
+   * the page opens it as a pick of it would. Without it, a click opens nothing.
+   */
+  readonly onSchool?: (school: SchoolHit) => void;
   /** Data files to read, for tests; defaults to the ones this build ships. */
   readonly data?: AppData;
 }
@@ -154,7 +163,23 @@ export function boot(options: BootOptions): Services {
   // Once the map is on screen: installing the worker would otherwise run alongside its start.
   void startServiceWorker(warmUrls, options.map);
 
+  // Clicks on schools, once the map is on screen too; their code loads then. A lit school is
+  // found in the glow's own data, read as each click comes.
+  let stopTaps: () => void = () => undefined;
+  const onSchool = options.onSchool;
+  if (onSchool !== undefined) {
+    void Promise.all([options.map, glow])
+      .then(async ([map, layer]) => {
+        if (map === undefined || aborted()) return;
+        const { attachSchoolTaps } = await import('../map/school-taps');
+        if (aborted()) return;
+        stopTaps = attachSchoolTaps(map.map, { lit: () => layer?.lit ?? null, onSchool });
+      })
+      .catch(() => undefined);
+  }
+
   signal.addEventListener('abort', () => {
+    stopTaps();
     stopLive();
     search.destroy();
     pins.destroy();

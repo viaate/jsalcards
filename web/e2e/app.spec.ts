@@ -49,6 +49,7 @@ const WEB = fileURLToPath(new URL('..', import.meta.url));
 const GLOW_LAYER = 'snowlight-glow';
 const FIRST_LABEL_LAYER = 'ofm-label-neighbourhood';
 const PEMBROKE_HILL = 'A1902690';
+const BORDER_STAR = { lon: -94.592692, lat: 39.013304 };
 const PIN_KEY = 'snowlight:pin';
 /** Chrome's own lines about SwiftShader, not the page's. */
 const GPU_DRIVER_NOISE =
@@ -169,6 +170,32 @@ async function glowStats(page: Page): Promise<GlowStats> {
     const { count, glowCount, frames, mode } = layer.implementation.stats;
     return { count, glowCount, frames, mode };
   }, GLOW_LAYER);
+}
+
+/** Resolves once the map is at rest with every tile in. */
+async function settleMap(page: Page): Promise<void> {
+  await page.waitForFunction(
+    () => {
+      const map = window.snowlightMap;
+      return map !== undefined && map.loaded() && map.areTilesLoaded() && !map.isMoving();
+    },
+    null,
+    { timeout: 30_000, polling: 100 },
+  );
+}
+
+/** Where a place is on the screen, in CSS pixels. */
+async function onScreen(
+  page: Page,
+  place: { readonly lon: number; readonly lat: number },
+): Promise<{ x: number; y: number }> {
+  return page.evaluate(({ lon, lat }) => {
+    const map = window.snowlightMap;
+    if (map === undefined) throw new Error('no map');
+    const point = map.project([lon, lat]);
+    const box = map.getContainer().getBoundingClientRect();
+    return { x: box.left + point.x, y: box.top + point.y };
+  }, place);
 }
 
 async function mapView(page: Page): Promise<{ lat: number; lon: number; zoom: number }> {
@@ -1299,6 +1326,104 @@ test.describe('with data staged', () => {
     await expect(next.locator('ul.legend li.is-none')).toHaveCount(0);
     expect(nextWatch.problems).toEqual([]);
     await later.close();
+    await context.close();
+  });
+
+  test('a lit school takes a click at the national view, and opens as a search pick of it does', async ({
+    browser,
+  }) => {
+    // Two first flights into streets, one a page (FIRST_FLIGHT_MS).
+    test.setTimeout(240_000);
+    const context = await browser.newContext({
+      viewport: { width: 1440, height: 900 },
+      timezoneId: 'America/Chicago',
+    });
+    const page = await context.newPage();
+    // Its calendar alone: the flights and the click's wait for a second click run in real time.
+    await fixDate(page, SYNTHETIC_NOW);
+    const { problems } = watch(page);
+    const panel = page.locator('aside.detail');
+    const input = page.locator('input.search-input');
+    const cursor = (): Promise<string> =>
+      page.evaluate(() => {
+        const canvas = document.querySelector('.maplibregl-canvas');
+        return canvas === null ? '' : getComputedStyle(canvas).cursor;
+      });
+    /** Where the map lands for Border Star once its panel is open, as the address and the screen say. */
+    const landing = async (): Promise<number[]> => {
+      const barBottom = await page
+        .locator('.bar')
+        .evaluate((bar) => bar.getBoundingClientRect().bottom);
+      const panelRight = await panel.evaluate((aside) => aside.getBoundingClientRect().right);
+      // At street level, with the school in the middle of what the panel leaves in view.
+      await expect
+        .poll(
+          async () => {
+            const view = await mapView(page);
+            const school = await onScreen(page, BORDER_STAR);
+            return (
+              Math.abs(view.zoom - 15) < 0.01 &&
+              Math.abs(school.x - (panelRight + 1440) / 2) < 2 &&
+              Math.abs(school.y - (barBottom + 900) / 2) < 2
+            );
+          },
+          { timeout: FIRST_FLIGHT_MS },
+        )
+        .toBe(true);
+      await settleMap(page);
+      const at = (new URL(page.url()).searchParams.get('at') ?? '').split(',').map(Number);
+      const school = await onScreen(page, BORDER_STAR);
+      return [...at, school.x, school.y];
+    };
+
+    // Picked in search, from the national view.
+    await page.goto(site);
+    await waitForMap(page);
+    await input.click();
+    await input.pressSequentially('border star', { delay: 20 });
+    await page.locator('[role="option"]').first().click();
+    await expect(panel.locator('h2')).toHaveText('Border Star Montessori');
+    const picked = await landing();
+
+    // Clicked on the national view, where the two schools' lights are under a pixel apart: a
+    // click a few pixels under Border Star's means it, the nearer of the two.
+    await page.goto(site);
+    await waitForMap(page);
+    await expect.poll(async () => (await glowStats(page)).glowCount, { timeout: 30_000 }).toBe(2);
+    const national = await mapView(page);
+    expect(national.zoom).toBeLessThan(5);
+    const light = await onScreen(page, BORDER_STAR);
+    const click = { x: Math.round(light.x), y: Math.round(light.y) + 3 };
+    await page.mouse.move(click.x, click.y);
+    await expect.poll(cursor).toBe('pointer');
+    await page.mouse.move(click.x + 60, click.y);
+    await expect.poll(cursor).toBe('grab');
+    await page.mouse.click(click.x, click.y);
+    // The same panel, the same address and the same camera as the pick. SwiftShader draws the
+    // map on the main thread, which keeps the page busy for seconds after it loads.
+    await expect(panel.locator('h2')).toHaveText('Border Star Montessori', { timeout: 30_000 });
+    await expect(panel.locator('.status .headline')).toHaveText([copy.statusLine.closed.today]);
+    expect(new URL(page.url()).searchParams.get('school')).toBe('291640000557');
+    await expect(input).toHaveValue('Border Star Montessori');
+    await expect(panel).toBeFocused();
+    // The search index keeps places to 4 decimals (search/format.ts), about 10 m, and the glow
+    // the directory's own: the view in the address, and the school on the screen, as near as that.
+    const clicked = await landing();
+    expect(clicked).toHaveLength(5);
+    clicked.forEach((value, i) => {
+      expect(Math.abs(value - (picked[i] ?? Number.NaN))).toBeLessThan(i < 3 ? 2e-5 : 1);
+    });
+
+    // A click on the map where no school is leaves the panel open.
+    await page.mouse.click(1300, 200);
+    await page.waitForTimeout(1000);
+    await expect(panel.locator('h2')).toHaveText('Border Star Montessori');
+    expect(new URL(page.url()).searchParams.get('school')).toBe('291640000557');
+    // The click was a step of its own: Back returns to the national view.
+    await page.goBack();
+    await expect(panel).toHaveCount(0);
+    expect(new URL(page.url()).search).toBe('');
+    expect(problems).toEqual([]);
     await context.close();
   });
 });

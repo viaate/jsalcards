@@ -360,7 +360,7 @@ describe('search', () => {
 describe('the glow', () => {
   it('stays dark, and nothing is fetched, when no live file is shipped', async () => {
     const fetchSpy = vi.spyOn(globalThis, 'fetch');
-    const glow = { light: vi.fn(), remove: vi.fn() };
+    const glow = { light: vi.fn(), lit: null, remove: vi.fn() };
     const { controller } = start('https://snow.test/', withDirectory(), false, glow);
     await settle();
     expect(glow.light).not.toHaveBeenCalled();
@@ -369,6 +369,66 @@ describe('the glow', () => {
     await settle();
     expect(glow.remove).toHaveBeenCalledOnce();
     fetchSpy.mockRestore();
+  });
+});
+
+describe('a school clicked on the map', () => {
+  /** A map on screen that keeps its listeners by type, and boots with it once it is up. */
+  function withTaps(onSchool?: BootOptions['onSchool']) {
+    const listeners = new Map<string, unknown>();
+    const map = {
+      moved: false,
+      ready: new Promise<void>(() => undefined),
+      map: {
+        getCanvasContainer: () => document.createElement('div'),
+        on: (type: string, listener: unknown) => listeners.set(type, listener),
+        off: (type: string) => listeners.delete(type),
+      },
+    } as unknown as Basemap;
+    let mapUp: (map: Basemap) => void = () => undefined;
+    const controller = new AbortController();
+    boot({
+      links: createUrlStore({ host: new FakeTab('https://snow.test/') }),
+      map: new Promise((resolve) => {
+        mapUp = resolve;
+      }),
+      glow: Promise.resolve({ light: vi.fn(), lit: null, remove: vi.fn() }),
+      signal: controller.signal,
+      show: () => undefined,
+      listId: 'list',
+      onResults: () => undefined,
+      data: NO_DATA,
+      ...(onSchool === undefined ? {} : { onSchool }),
+    });
+    return {
+      listeners,
+      controller,
+      mapUp: () => {
+        mapUp(map);
+      },
+    };
+  }
+
+  it('is listened for once the map is on screen, and no longer once the page goes', async () => {
+    const onSchool = vi.fn();
+    const { listeners, controller, mapUp } = withTaps(onSchool);
+    await settle();
+    expect(listeners.size).toBe(0);
+    mapUp();
+    await vi.waitFor(() => {
+      expect(listeners.has('click')).toBe(true);
+    }, WAIT);
+    expect(onSchool).not.toHaveBeenCalled();
+    controller.abort();
+    expect(listeners.size).toBe(0);
+  });
+
+  it('is not listened for by a page that opens nothing from the map', async () => {
+    const { listeners, controller, mapUp } = withTaps();
+    mapUp();
+    await settle();
+    expect(listeners.size).toBe(0);
+    controller.abort();
   });
 });
 

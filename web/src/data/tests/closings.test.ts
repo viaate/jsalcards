@@ -95,6 +95,9 @@ describe('the schools lit today', () => {
       -86.8, 33.5, -94.5, 39.1, -94.593001, 39.03606,
     ]);
     expect([...lit.schools]).toEqual([0, 2, 3]);
+    // Which school each light is, for a tap on it.
+    expect(lit.ids).toEqual(['010000500870', '290000000001', 'A1902690']);
+    expect(lit.names).toEqual(['First', 'Third', 'Fourth']);
     // A first load shows everything at once.
     expect(lit.bornAt).toBeUndefined();
   });

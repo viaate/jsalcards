@@ -25,7 +25,7 @@ import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
-import { expect, test } from '@playwright/test';
+import { devices, expect, test } from '@playwright/test';
 import type { Page } from '@playwright/test';
 import { build, preview } from 'vite';
 import type { PreviewServer } from 'vite';
@@ -210,6 +210,61 @@ async function schoolOnScreen(page: Page): Promise<{ x: number; y: number }> {
     const box = map.getContainer().getBoundingClientRect();
     return { x: box.left + point.x, y: box.top + point.y };
   }, PEMBROKE_HILL);
+}
+
+/**
+ * Resolves once the map is where a pick of Pembroke Hill takes it on a wide screen: at zoom 15,
+ * with the school in the middle of what its panel leaves in view.
+ */
+async function expectLandedBesidePanel(page: Page): Promise<void> {
+  const panel = page.locator('aside.detail');
+  await expect
+    .poll(
+      async () => {
+        const view = await mapView(page);
+        const where = await schoolOnScreen(page);
+        const panelRight = ((await panel.boundingBox())?.x ?? 0) + 368;
+        return (
+          Math.abs(view.zoom - 15) < 0.05 &&
+          Math.abs(where.x - (panelRight + 1440) / 2) < 3 &&
+          Math.abs(where.y - (64 + 900) / 2) < 3
+        );
+      },
+      { timeout: 60_000 },
+    )
+    .toBe(true);
+}
+
+/** The cursor over the map. */
+async function mapCursor(page: Page): Promise<string> {
+  return page.evaluate(() => {
+    const canvas = document.querySelector('.maplibregl-canvas');
+    return canvas === null ? '' : getComputedStyle(canvas).cursor;
+  });
+}
+
+/**
+ * How far the nearest dot MapLibre drew other than Pembroke Hill's is from a point on the
+ * screen, in CSS pixels, or Infinity: how clear of other schools a click there is.
+ */
+async function nearestOtherSchool(page: Page, x: number, y: number): Promise<number> {
+  return page.evaluate(
+    ({ x, y, layers, id }) => {
+      const map = window.snowlightMap;
+      if (map === undefined) throw new Error('no map');
+      const box = map.getContainer().getBoundingClientRect();
+      const distances = map
+        .queryRenderedFeatures({ layers })
+        .filter((feature) => feature.properties.id !== id)
+        .map((feature) => {
+          const [lon, lat] = (feature.geometry as { coordinates: [number, number] }).coordinates;
+          const at = map.project([lon, lat]);
+          return Math.hypot(box.left + at.x - x, box.top + at.y - y);
+        });
+      return Math.min(Infinity, ...distances);
+    },
+    { x, y, layers: [BASEMAP_IDS.schoolDots], id: PEMBROKE_HILL.id },
+  );
 }
 
 async function mapView(page: Page): Promise<{ lat: number; lon: number; zoom: number }> {
@@ -527,22 +582,7 @@ test('searching “pembroke” lists Pembroke Hill, and choosing it goes there',
       { timeout: 30_000 },
     )
     .toEqual(['==', ['get', 'id'], PEMBROKE_HILL.id]);
-  // The map ends at zoom 15 with the school in the middle of what the panel leaves in view.
-  await expect
-    .poll(
-      async () => {
-        const view = await mapView(page);
-        const where = await schoolOnScreen(page);
-        const panelRight = ((await panel.boundingBox())?.x ?? 0) + 368;
-        return (
-          Math.abs(view.zoom - 15) < 0.05 &&
-          Math.abs(where.x - (panelRight + 1440) / 2) < 3 &&
-          Math.abs(where.y - (64 + 900) / 2) < 3
-        );
-      },
-      { timeout: 30_000 },
-    )
-    .toBe(true);
+  await expectLandedBesidePanel(page);
   await settle(page);
   expect(await keepsTiles(page)).toBe(false);
   // Its dot and its name are on the map, read from the school tiles in byte ranges.
@@ -1145,4 +1185,295 @@ test('no label runs under the search field, the legend or any control, or off th
     await context.close();
   }
   expect(found).toEqual([]);
+});
+
+/**
+ * How far apart a hand's presses and releases come in a quick double click or double tap, in
+ * seconds. The tests stamp each with its time, so the page hears them as a hand makes them:
+ * one after another, awaited, they can come a second apart on a busy machine, as two single
+ * clicks.
+ */
+const HAND_S = 0.07;
+
+/** Pembroke Hill among its neighbours at zoom 14, its dot drawn and its name beside it. */
+const AT_PEMBROKE_HILL = `${String(PEMBROKE_HILL.lat)},${String(PEMBROKE_HILL.lon)},14`;
+
+test('a school’s dot takes a click and opens as a search pick does; a drag or a double click opens nothing', async ({
+  browser,
+}) => {
+  test.setTimeout(300_000);
+  const context = await browser.newContext({ viewport: { width: 1440, height: 900 } });
+  const page = await context.newPage();
+  const { problems } = watch(page);
+  const panel = page.locator('aside.detail');
+  /** A while after a click or a gesture: no school's panel, and no school in the address. */
+  const openedNothing = async (): Promise<void> => {
+    await page.waitForTimeout(1500);
+    await expect(panel).toHaveCount(0);
+    expect(new URL(page.url()).searchParams.get('school')).toBeNull();
+  };
+  /** Where the map lands for Pembroke Hill: the view in the address, and the school on the screen. */
+  const landing = async (): Promise<number[]> => {
+    await expectLandedBesidePanel(page);
+    await settle(page);
+    const at = (new URL(page.url()).searchParams.get('at') ?? '').split(',').map(Number);
+    const where = await schoolOnScreen(page);
+    return [...at, where.x, where.y];
+  };
+
+  await page.goto(`${site}?at=${AT_PEMBROKE_HILL}`);
+  await settle(page);
+  let dot = await schoolOnScreen(page);
+  // A pointer over the dot, and the map's own cursor off it.
+  expect(await nearestOtherSchool(page, dot.x, dot.y)).toBeGreaterThan(40);
+  await page.mouse.move(dot.x + 3, dot.y - 2);
+  await expect.poll(() => mapCursor(page)).toBe('pointer');
+  await page.mouse.move(dot.x - 40, dot.y - 40);
+  await expect.poll(() => mapCursor(page)).toBe('grab');
+
+  // A drag across the dot, and one from it: the map moves, and nothing opens.
+  await page.mouse.move(dot.x - 60, dot.y);
+  await page.mouse.down();
+  await page.mouse.move(dot.x + 60, dot.y, { steps: 12 });
+  await page.mouse.up();
+  await openedNothing();
+  dot = await schoolOnScreen(page);
+  await page.mouse.move(dot.x, dot.y);
+  await page.mouse.down();
+  await page.mouse.move(dot.x + 80, dot.y + 40, { steps: 12 });
+  await page.mouse.up();
+  await openedNothing();
+
+  // A double click on the dot zooms the map in a level, and opens nothing.
+  await settle(page);
+  dot = await schoolOnScreen(page);
+  const mouse = await context.newCDPSession(page);
+  const presses = ['mousePressed', 'mouseReleased', 'mousePressed', 'mouseReleased'] as const;
+  const clickedAt = Date.now() / 1000 - 1;
+  await Promise.all(
+    presses.map((type, i) =>
+      mouse.send('Input.dispatchMouseEvent', {
+        type,
+        x: dot.x,
+        y: dot.y,
+        button: 'left',
+        buttons: type === 'mousePressed' ? 1 : 0,
+        clickCount: i < 2 ? 1 : 2,
+        timestamp: clickedAt + i * HAND_S,
+      }),
+    ),
+  );
+  await expect.poll(async () => (await mapView(page)).zoom, { timeout: 30_000 }).toBeCloseTo(15, 1);
+  await openedNothing();
+
+  // A click on the dot, from zoom 14: the school's panel, its address and the pick's camera.
+  await page.goto(`${site}?at=${AT_PEMBROKE_HILL}`);
+  await settle(page);
+  dot = await schoolOnScreen(page);
+  const before = new URL(page.url()).searchParams.get('at');
+  await page.mouse.click(dot.x + 2, dot.y + 2);
+  await expect(panel.locator('h2')).toHaveText('The Pembroke Hill SchoolWornall Campus', {
+    timeout: 30_000,
+  });
+  await expect.poll(() => new URL(page.url()).searchParams.get('school')).toBe(PEMBROKE_HILL.id);
+  await expect(page.locator('input.search-input')).toHaveValue(PEMBROKE_HILL_NAME);
+  await expect(panel).toBeFocused();
+  const clicked = await landing();
+  expect(
+    await page.evaluate(
+      (id) => window.snowlightMap?.getFilter(id) as unknown,
+      BASEMAP_IDS.schoolSelected,
+    ),
+  ).toEqual(['==', ['get', 'id'], PEMBROKE_HILL.id]);
+
+  // A click where no school is leaves the panel open.
+  const empty = { x: 1300, y: 160 };
+  expect(await nearestOtherSchool(page, empty.x, empty.y)).toBeGreaterThan(40);
+  await page.mouse.click(empty.x, empty.y);
+  await page.waitForTimeout(1500);
+  await expect(panel.locator('h2')).toHaveText('The Pembroke Hill SchoolWornall Campus');
+  expect(new URL(page.url()).searchParams.get('school')).toBe(PEMBROKE_HILL.id);
+  // The click was a step of its own: Back goes to the view before it.
+  await page.goBack();
+  await expect(panel).toHaveCount(0);
+  expect(new URL(page.url()).searchParams.get('at')).toBe(before);
+
+  // Picked in search from that same view, the school lands as the click took it: the same panel,
+  // the same address, and the same camera, as near as the search index's places go. It keeps
+  // them to 4 decimals (search/format.ts), about 10 m: a few pixels here, and the address's last
+  // decimal.
+  await settle(page);
+  const input = page.locator('input.search-input');
+  await input.fill('');
+  await input.pressSequentially('pembroke', { delay: 20 });
+  await page.locator('[role="option"]', { hasText: PEMBROKE_HILL_NAME }).click();
+  await expect(panel.locator('h2')).toHaveText('The Pembroke Hill SchoolWornall Campus');
+  await expect.poll(() => new URL(page.url()).searchParams.get('school')).toBe(PEMBROKE_HILL.id);
+  await expect(panel).toBeFocused();
+  const picked = await landing();
+  expect(clicked).toHaveLength(5);
+  expect(clicked[2]).toBe(15);
+  // Latitude, longitude and zoom in the address, then the school's place on the screen.
+  const near = [1e-4, 1e-4, 0, 4, 4];
+  clicked.forEach((value, i) => {
+    expect(Math.abs(value - (picked[i] ?? Number.NaN))).toBeLessThanOrEqual(near[i] ?? 0);
+  });
+  expect(problems).toEqual([]);
+  await context.close();
+});
+
+test('on a phone a tap a little off a dot opens it; a drag, a pinch or a double tap opens nothing', async ({
+  browser,
+}) => {
+  test.setTimeout(300_000);
+  const context = await browser.newContext({ ...devices['Pixel 7'] });
+  const page = await context.newPage();
+  const { problems } = watch(page);
+  const touch = await context.newCDPSession(page);
+  const sheet = page.locator('aside.detail');
+  interface Finger {
+    x: number;
+    y: number;
+  }
+  /**
+   * Fingers put down at `from`, moved to `to` over `ms`, and lifted: sent at once, each event
+   * stamped with its time, as for the double tap below.
+   */
+  const gesture = async (from: Finger[], to: Finger[], ms: number): Promise<void> => {
+    const steps = ms > 0 ? Math.max(1, Math.round(ms / 16)) : 0;
+    const start = Date.now() / 1000 - 1;
+    const moves = Array.from({ length: steps }, (_, n) => ({
+      type: 'touchMove' as const,
+      touchPoints: from.map((finger, i) => ({
+        x: finger.x + (((to[i] ?? finger).x - finger.x) * (n + 1)) / steps,
+        y: finger.y + (((to[i] ?? finger).y - finger.y) * (n + 1)) / steps,
+      })),
+    }));
+    const events = [
+      { type: 'touchStart' as const, touchPoints: from },
+      ...moves,
+      { type: 'touchEnd' as const, touchPoints: [] },
+    ];
+    await Promise.all(
+      events.map((event, n) =>
+        touch.send('Input.dispatchTouchEvent', { ...event, timestamp: start + n * 0.016 }),
+      ),
+    );
+  };
+  const openedNothing = async (): Promise<void> => {
+    await page.waitForTimeout(1500);
+    await expect(sheet).toHaveCount(0);
+    expect(new URL(page.url()).searchParams.get('school')).toBeNull();
+  };
+
+  await page.goto(`${site}?at=${AT_PEMBROKE_HILL}`);
+  await settle(page);
+  let dot = await schoolOnScreen(page);
+  // A finger dragged across the dot.
+  await gesture([{ x: dot.x - 60, y: dot.y }], [{ x: dot.x + 60, y: dot.y }], 300);
+  await openedNothing();
+  // Two fingers pinched out over it.
+  await settle(page);
+  dot = await schoolOnScreen(page);
+  await gesture(
+    [
+      { x: dot.x - 20, y: dot.y },
+      { x: dot.x + 20, y: dot.y },
+    ],
+    [
+      { x: dot.x - 90, y: dot.y },
+      { x: dot.x + 90, y: dot.y },
+    ],
+    300,
+  );
+  await openedNothing();
+  // Two fingers tapped on it: MapLibre zooms out.
+  await settle(page);
+  dot = await schoolOnScreen(page);
+  const zoom = (await mapView(page)).zoom;
+  await gesture(
+    [
+      { x: dot.x - 8, y: dot.y },
+      { x: dot.x + 8, y: dot.y },
+    ],
+    [],
+    0,
+  );
+  await expect
+    .poll(async () => (await mapView(page)).zoom, { timeout: 30_000 })
+    .toBeLessThan(zoom - 0.5);
+  await openedNothing();
+  // A tap 11 px off the dot, past a mouse's reach and within a finger's: the school's sheet, its
+  // address, and the school in the middle of the map above the sheet, as a pick puts it. In real
+  // time: the double tap below holds the page's clock, which would stretch this flight.
+  await page.goto(`${site}?at=${AT_PEMBROKE_HILL}`);
+  await settle(page);
+  dot = await schoolOnScreen(page);
+  const offDot = { x: dot.x + 9, y: dot.y + 7 };
+  expect(await nearestOtherSchool(page, offDot.x, offDot.y)).toBeGreaterThan(40);
+  await page.touchscreen.tap(offDot.x, offDot.y);
+  await expect(sheet.locator('h2')).toHaveText('The Pembroke Hill SchoolWornall Campus', {
+    timeout: 30_000,
+  });
+  await expect(sheet).toHaveAttribute('data-detent', 'open');
+  await expect.poll(() => new URL(page.url()).searchParams.get('school')).toBe(PEMBROKE_HILL.id);
+  const { width, height } = page.viewportSize() ?? { width: 0, height: 0 };
+  const barBottom = await page
+    .locator('.bar')
+    .evaluate((bar) => bar.getBoundingClientRect().bottom);
+  const opensAt = height - Math.round(height / 2);
+  await expect
+    .poll(
+      async () => {
+        const view = await mapView(page);
+        const where = await schoolOnScreen(page);
+        return (
+          Math.abs(view.zoom - 15) < 0.05 &&
+          Math.abs(where.x - width / 2) < 4 &&
+          Math.abs(where.y - (barBottom + opensAt) / 2) < 4
+        );
+      },
+      { timeout: 60_000 },
+    )
+    .toBe(true);
+
+  // Last, a double tap on it zooms in a level. Each tap is sent once the page has heard the one
+  // before, stamped a hand's time after it, and the page's clock holds still from the first tap
+  // to the second: however late a busy machine sends the second, the page hears a double tap.
+  await page.clock.install();
+  await page.goto(`${site}?at=${AT_PEMBROKE_HILL}`);
+  await settle(page);
+  dot = await schoolOnScreen(page);
+  await page.clock.pauseAt(Date.now() + 500);
+  const tappedAt = Date.now() / 1000;
+  // The first tap is heard with its click; the second, a double tap's with none, as it ends.
+  for (const [tap, heard] of [
+    [0, 'click'],
+    [1, 'touchend'],
+  ] as const) {
+    await page.evaluate((type) => {
+      (window as unknown as { tapHeard?: Promise<void> }).tapHeard = new Promise((resolve) => {
+        window.addEventListener(
+          type,
+          () => {
+            resolve();
+          },
+          { once: true, capture: true },
+        );
+      });
+    }, heard);
+    for (const type of ['touchStart', 'touchEnd'] as const) {
+      await touch.send('Input.dispatchTouchEvent', {
+        type,
+        touchPoints: type === 'touchStart' ? [{ x: dot.x, y: dot.y }] : [],
+        timestamp: tappedAt + (tap * 2 + (type === 'touchEnd' ? 1 : 0)) * HAND_S,
+      });
+    }
+    await page.evaluate(() => (window as unknown as { tapHeard?: Promise<void> }).tapHeard);
+  }
+  await page.clock.resume();
+  await expect.poll(async () => (await mapView(page)).zoom, { timeout: 30_000 }).toBeCloseTo(15, 1);
+  await openedNothing();
+  expect(problems).toEqual([]);
+  await context.close();
 });

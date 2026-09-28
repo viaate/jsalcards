@@ -6,6 +6,7 @@
   import type {
     NearbyView,
     SchoolHint,
+    SchoolHit,
     SchoolView,
     SearchOption,
     Services,
@@ -284,18 +285,34 @@
   }
 
   function pick(option: SearchOption): void {
-    query = option.name;
-    pickedName = option.name;
+    if (option.hit.kind === 'school') focusOpened(option.hit.id);
+    inputElement?.blur();
+    go(option.hit, option.name, option.sub);
+  }
+
+  /**
+   * What a pick does, for a result or for a school opened from the nearby
+   * list or the map: the field shows its name, the list closes, and it opens
+   * as a step of its own, the map going there (Services.pick).
+   */
+  function go(hit: SearchOption['hit'], name: string, sub: string): void {
+    query = name;
+    pickedName = name;
     options = null;
     active = -1;
-    if (option.hit.kind === 'school') {
-      pickedHint = { id: option.hit.id, name: option.name, sub: option.sub };
-      focusPanel = true;
-    }
-    inputElement?.blur();
+    if (hit.kind === 'school') pickedHint = { id: hit.id, name, sub };
     void services.then((app) => {
-      app?.pick(option.hit);
+      app?.pick(hit);
     });
+  }
+
+  /**
+   * After a pick, a school's panel takes the focus: once it shows, or at once
+   * when it shows this school already.
+   */
+  function focusOpened(id: SchoolId): void {
+    if (id === schoolView?.id) detailElement?.focus({ preventScroll: true });
+    else focusPanel = true;
   }
 
   // The school the address holds: its view, read and kept current while it is open.
@@ -327,24 +344,36 @@
     };
   });
 
+  /** A school the page opens itself, from the nearby list or the map, as a search result. */
+  function schoolHit(school: Pick<NearbyView, 'id' | 'name' | 'lat' | 'lon'>): SearchOption['hit'] {
+    const { id, name, lat, lon } = school;
+    return {
+      kind: 'school',
+      id,
+      name,
+      sub: '',
+      state: '',
+      lat,
+      lon,
+      match: 'exact',
+      highlight: [],
+    };
+  }
+
   /** Opens a school from the nearby list, as a pick of it would. */
   function openNearby(school: NearbyView): void {
-    query = school.name;
-    pickedName = school.name;
-    pickedHint = { id: school.id, name: school.name, sub: '' };
-    void services.then((app) => {
-      app?.pick({
-        kind: 'school',
-        id: school.id,
-        name: school.name,
-        sub: '',
-        state: '',
-        lat: school.lat,
-        lon: school.lon,
-        match: 'exact',
-        highlight: [],
-      });
-    });
+    go(schoolHit(school), school.name, '');
+  }
+
+  /**
+   * Opens a school clicked or tapped on the map, its dot, its name or its
+   * light, as a pick of it would: the same step, the same camera, the same
+   * panel, and the focus on it.
+   */
+  function openTapped(school: SchoolHit): void {
+    focusOpened(school.id);
+    inputElement?.blur();
+    go(schoolHit(school), school.name, '');
   }
 
   // The panel comes or goes over the map: its labels keep clear of it.
@@ -572,6 +601,7 @@
           },
           onUpdated,
           onCounts,
+          onSchool: openTapped,
         });
       })
       .catch(() => null);

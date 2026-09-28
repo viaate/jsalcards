@@ -15,7 +15,7 @@
 
 import { parseInstant } from '../state/instant';
 import { Status } from '../types/generated';
-import type { ClosingsDay, ClosingsFile, LocalDate } from '../types/generated';
+import type { ClosingsDay, ClosingsFile, LocalDate, SchoolId } from '../types/generated';
 import { sameDirectory } from './directory';
 import type { Directory } from './directory';
 
@@ -141,7 +141,10 @@ export function todayEverywhere(now: Date): LocalDate | null {
   return east === west ? east : null;
 }
 
-/** What the glow layer draws: where each lit school is and its status. */
+/**
+ * What the glow layer draws: where each lit school is and its status, and
+ * which school each is, for a tap on its light (map/school-taps.ts).
+ */
 export interface LitSchools {
   /** Longitude, latitude pairs in degrees. */
   readonly lngLat: Float64Array;
@@ -151,12 +154,17 @@ export interface LitSchools {
   readonly bornAt?: Float64Array;
   /** The school positions lit, to tell which are new next time. */
   readonly schools: ReadonlySet<number>;
+  /** Each school's id, and its name as the directory writes it. */
+  readonly ids: readonly SchoolId[];
+  readonly names: readonly string[];
 }
 
 export const NOTHING_LIT: LitSchools = Object.freeze({
   lngLat: new Float64Array(0),
   status: new Uint8Array(0),
   schools: new Set<number>(),
+  ids: [],
+  names: [],
 });
 
 export interface LightOptions {
@@ -190,9 +198,13 @@ export function lightSchools(
   const lngLat = new Float64Array(count * 2);
   const bornAt = options.previous === null ? undefined : new Float64Array(count);
   const schools = new Set<number>();
+  const ids: SchoolId[] = [];
+  const names: string[] = [];
   for (let i = 0; i < count; i++) {
     const school = rows.schools[i] ?? 0;
     schools.add(school);
+    ids.push(directory.meta.ids[school] ?? '');
+    names.push(directory.meta.names[school] ?? '');
     lngLat[i * 2] = directory.lngLat[school * 2] ?? 0;
     lngLat[i * 2 + 1] = directory.lngLat[school * 2 + 1] ?? 0;
     if (bornAt !== undefined) {
@@ -200,8 +212,8 @@ export function lightSchools(
     }
   }
   return bornAt === undefined
-    ? { lngLat, status: rows.statuses, schools }
-    : { lngLat, status: rows.statuses, bornAt, schools };
+    ? { lngLat, status: rows.statuses, schools, ids, names }
+    : { lngLat, status: rows.statuses, bornAt, schools, ids, names };
 }
 
 /** How many schools the map lights in each status, by status code (closed … early dismissal). */

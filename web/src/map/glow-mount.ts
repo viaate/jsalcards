@@ -23,6 +23,8 @@ export const GLOW_LAYER_ID = BASEMAP_IDS.glow;
 export interface Glow {
   /** Shows these schools, replacing the ones shown before. */
   light(lit: LitSchools): void;
+  /** The schools shown now, or null before any are: what a tap on a light finds (school-taps.ts). */
+  readonly lit: LitSchools | null;
   remove(): void;
 }
 
@@ -71,14 +73,19 @@ export function mountGlow(map: MapLibreMap): Glow {
   };
   if (map.isStyleLoaded() === true) add();
   else map.once('style.load', add);
+  let shown: LitSchools | null = null;
   return {
     light(lit) {
+      shown = lit;
       layer.setData(
         lit.bornAt === undefined
           ? { lngLat: lit.lngLat, status: lit.status }
           : { lngLat: lit.lngLat, status: lit.status, bornAt: lit.bornAt },
       );
       dots.mark(lit.schools);
+    },
+    get lit() {
+      return shown;
     },
     remove() {
       map.off('style.load', add);
