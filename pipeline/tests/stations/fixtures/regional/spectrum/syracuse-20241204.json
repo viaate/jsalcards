@@ -1,0 +1,57 @@
+[
+    {
+        "orgType": "School (K-12)",
+        "closings": [
+            {
+                "status": "No Afterschool Activities",
+                "accountName": "Adirondack CSD",
+                "expires": "12/04/2024"
+            },
+            {
+                "status": "No Afterschool Activities, No Evening Events",
+                "accountName": "Camden CSD",
+                "expires": "12/04/2024"
+            },
+            {
+                "status": "No Afterschool Activities",
+                "accountName": "Ihsan School of Excellence",
+                "expires": "12/04/2024"
+            },
+            {
+                "status": "No Afterschool Activities, No Evening Events",
+                "accountName": "Morrisville-Eaton CSD",
+                "expires": "12/04/2024"
+            },
+            {
+                "status": "No Afterschool Activities",
+                "accountName": "Oneida City SD",
+                "expires": "12/04/2024"
+            },
+            {
+                "status": "No Afterschool Activities",
+                "accountName": "South Jefferson CSD",
+                "expires": "12/04/2024"
+            },
+            {
+                "status": "No Afterschool Activities",
+                "accountName": "Stockbridge Valley SD",
+                "expires": "12/04/2024"
+            },
+            {
+                "status": "No After School Activities , No Evening Activities ",
+                "accountName": "Syracuse City SD",
+                "expires": "12/04/2024"
+            }
+        ]
+    },
+    {
+        "orgType": "Church",
+        "closings": [
+            {
+                "status": "Closed on Monday, Services Canceled",
+                "accountName": "Eternal Hope Worship-Syr",
+                "expires": "12/04/2024"
+            }
+        ]
+    }
+]

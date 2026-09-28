@@ -1,0 +1,112 @@
+# Station registry for one platform. Loaded with every other file in this folder
+# by snowlight.sources.stations.registry; see its docstring for the fields.
+# `snowlight stations robots --update` rewrites the robots blocks in place.
+platform:
+  id: heritage
+  name: 9&10 News school closings (Heritage Broadcasting, northern Michigan)
+  operator: Heritage Broadcasting (WWTV, WWUP)
+  adapter: heritage
+  poll_minutes: 10
+  terms:
+    automated_access: permitted
+    summary: No 9&10 News terms of use were found (/terms-of-use/ and /visitor-agreement/ answered 404
+      on 2026-09-27). No clause on automated access was read; robots.txt allows the content route.
+    evidence:
+    - url: https://www.9and10news.com/weather/school-closings/
+      read_at: '2026-09-27T06:18:55Z'
+      sha256: a8273947ca1e72ecad473e94ee755de0c5cf90d1635208936566f0929f9ad81b
+      excerpt:
+      - '(no terms of use were found for the site: the closings page links no terms; https://www.9and10news.com/terms-of-use/
+        and /visitor-agreement/ answered HTTP 404 on 2026-09-27)'
+    permission: null
+    owner_decision: null
+  notes: 9&10 News' closings page is an Arc XP Fusion page reading the content source weather-school-closings;
+    the live poller reads its route /pf/api/v3/content/fetch/weather-school-closings.
+  shared_paths: []
+stations:
+- id: heritage-wwtv
+  platform: heritage
+  call_sign: WWTV
+  name: 9&10 News (9and10news.com)
+  market: Traverse City - Cadillac, MI
+  dma: Traverse City - Cadillac, MI DMA
+  states: [MI]
+  counties:
+    basis: dma
+    source: 'DMA county list: alex-patton/US-TVDMA-BY-COUNTY usa-tvdma-county.csv at commit 7f254b8c1843c62ec976a71c40d366d45f6f29cd
+      (sha256 2e2cd00265a8d704...), names resolved to FIPS with the Census 2025 county Gazetteer; Connecticut
+      via the Census county-to-town crosswalk (snowlight.sources.stations.dma); market ''Traverse City
+      - Cadillac, MI DMA'''
+    fips: ['26009', '26019', '26029', '26031', '26033', '26035', '26039', '26047', '26055', '26079', '26085',
+      '26089', '26095', '26097', '26101', '26105', '26107', '26113', '26119', '26133', '26135', '26137',
+      '26141', '26143', '26165']
+  page_url: https://www.9and10news.com/weather/school-closings/
+  data_url: https://www.9and10news.com/pf/api/v3/content/fetch/weather-school-closings
+  export_url: null
+  archive_urls:
+  - https://www.9and10news.com/weather/school-closings/
+  - https://www.9and10news.com/pf/api/v3/content/fetch/weather-school-closings
+  poll_minutes: null
+  status: active
+  evidence: 'First-hand check of 2026-09-26 (docs/research/firsthand/others.json, record WWTV/WWUP; variant
+    arc-fusion-schoolclosings). Live read of https://www.9and10news.com/weather/school-closings/ 2026-09-27T06:18:55Z:
+    HTTP 200, 144853 bytes, Last-Modified Sun, 27 Sep 2026 06:17:09 GMT; heritage-arc-page, empty. Live
+    read of https://www.9and10news.com/pf/api/v3/content/fetch/weather-school-closings 2026-09-27T06:18:50Z:
+    HTTP 200, 109 bytes, Last-Modified Sun, 27 Sep 2026 06:17:09 GMT; heritage-arc-content, empty. Archived
+    captures read (archive-captures run 36324857670): 3 populated. Archived https://www.9and10news.com/pf/api/v3/content/fetch/weather-school-closings?query=%7B%22...
+    captured 2023-02-07T14:06:34Z: heritage-arc-content, 130 rows (''Alanson Public Schools'', ''Alba
+    Public'', ...). Archived https://www.9and10news.com/weather/school-closings/ captured 2021-02-05T08:07:07Z:
+    heritage-bti-table, 66 rows (''Baldwin Community'', ''Bay Mills Medical Center'', ...).'
+  list_files: []
+  page_check: null
+  robots:
+  - url: https://www.9and10news.com/weather/school-closings/
+    checked_at: '2026-09-27T07:03:32Z'
+    state: parsed
+    allowed: true
+    rule: 'Allow: /'
+    crawl_delay: null
+    disallowed_agents:
+    - amazonbot
+    - anthropic-ai
+    - applebot-extended
+    - bytespider
+    - ccbot
+    - chatgpt-user
+    - claude-web
+    - claudebot
+    - diffbot
+    - facebookbot
+    - google-extended
+    - gptbot
+    - imagesiftbot
+    - omgili
+    - omgilibot
+    - perplexitybot
+    - youbot
+    sha256: 0d0735020e0fd0cda860fe93eb0438f8d6938c4d5594c4ccc28cc0c78bcf159a
+  - url: https://www.9and10news.com/pf/api/v3/content/fetch/weather-school-closings
+    checked_at: '2026-09-27T07:03:32Z'
+    state: parsed
+    allowed: true
+    rule: 'Allow: /'
+    crawl_delay: null
+    disallowed_agents:
+    - amazonbot
+    - anthropic-ai
+    - applebot-extended
+    - bytespider
+    - ccbot
+    - chatgpt-user
+    - claude-web
+    - claudebot
+    - diffbot
+    - facebookbot
+    - google-extended
+    - gptbot
+    - imagesiftbot
+    - omgili
+    - omgilibot
+    - perplexitybot
+    - youbot
+    sha256: 0d0735020e0fd0cda860fe93eb0438f8d6938c4d5594c4ccc28cc0c78bcf159a

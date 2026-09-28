@@ -1,0 +1,101 @@
+# Station registry for one platform. Loaded with every other file in this folder
+# by snowlight.sources.stations.registry; see its docstring for the fields.
+# `snowlight stations robots --update` rewrites the robots blocks in place.
+platform:
+  id: santacruzcoe
+  name: 'Santa Cruz County Office of Education: school closures (a published Google Sheet)'
+  operator: Santa Cruz County Office of Education (the page); Google Sheets (the published sheet)
+  adapter: santacruzcoe
+  poll_minutes: 15
+  terms:
+    automated_access: permitted
+    summary: 'santacruzcoe.org links no terms of use; its privacy policy (read 2026-09-27) says nothing
+      about reading the site with software. The list is a Google Sheet published to the web: Google''s
+      Terms of Service (read 2026-09-27) bar ''using automated means to access content from any of our
+      services in violation of the machine-readable instructions on our web pages (for example, robots.txt
+      files ...)''; docs.google.com''s robots.txt allows /spreadsheet (Crawl-delay 1), and the poller
+      reads only the widget view and the tab page it loads there.'
+    evidence:
+    - url: https://santacruzcoe.org/privacy-policy/
+      read_at: '2026-09-27T21:50:28Z'
+      sha256: 08b3190b3fa82450de255996417ec5ebdc2120d32af0055a158128c412969f74
+      excerpt:
+      - (the privacy policy holds no clause on robots, crawling, scraping or automated access; the site
+        links no terms of use)
+    - url: https://policies.google.com/terms?hl=en-US
+      read_at: '2026-09-27T21:52:14Z'
+      sha256: 85d3a4aedfcce131e4b441fa39f1c748b47f3ea38985887655e693f0066cd636
+      excerpt:
+      - using automated means to access content from any of our services in violation of the machine-readable
+        instructions on our web pages (for example, robots.txt files that disallow crawling, training,
+        or other activities)
+    permission: null
+    owner_decision: null
+  notes: 'The county office''s school closures page (https://santacruzcoe.org/schoolclosures/) lists ''school
+    closures across Santa Cruz County due to emergencies and/or events that school districts share with
+    the County Office of Education'', yesterday, today and in the future, in a framed Google Sheet (''School
+    Closure (Responses)'', tab CLOSURES: CLOSURE DATE, DISTRICT, SCHOOLS CLOSED, REASON, CONTACT). Found
+    by the first-hand checks of 2026-09-26 (docs/research/firsthand/others.json, record Santa Cruz COE
+    school closures); the sheet was empty then and on 2026-09-27. A district-level source: it speaks for
+    the school districts of Santa Cruz County (the districts NCES places in the county), so it counts
+    their public schools only, not the county''s private schools.'
+  shared_paths: []
+stations:
+- id: santacruzcoe-closures
+  platform: santacruzcoe
+  call_sign: SCCOE
+  name: Santa Cruz County Office of Education school closures (santacruzcoe.org)
+  market: Santa Cruz County, CA
+  dma: null
+  states: [CA]
+  counties:
+    basis: district
+    source: 'NCES CCD 2024-25 school directory (pipeline/out/internal/directory/schools.parquet and districts.parquet,
+      sha256 7b70f6aaddde9ed0...): the counties of the 82 schools of santacruzcoe-closures''s districts,
+      the 19 school districts NCES places in Santa Cruz County (06087), the districts whose closures the
+      county office''s page lists. Pajaro Valley Unified has three of its schools in Monterey County (06053).'
+    fips: ['06053', 06087]
+  page_url: https://santacruzcoe.org/schoolclosures/
+  data_url: https://docs.google.com/spreadsheets/d/e/2PACX-1vRTTn-nz1kHVAdHbBrAQSgMaLB0FbiNrO7cWaFDIxZxvGzGXnHnF2jv5LiRcui_Tz0JTpGAt2DidUYo/pubhtml/sheet?headers=false&gid=1755311565
+  export_url: null
+  archive_urls:
+  - https://santacruzcoe.org/schoolclosures/
+  - https://docs.google.com/spreadsheets/d/e/2PACX-1vRTTn-nz1kHVAdHbBrAQSgMaLB0FbiNrO7cWaFDIxZxvGzGXnHnF2jv5LiRcui_Tz0JTpGAt2DidUYo/pubhtml?gid=1755311565&single=true&widget=true&headers=false
+  - https://docs.google.com/spreadsheets/d/e/2PACX-1vRTTn-nz1kHVAdHbBrAQSgMaLB0FbiNrO7cWaFDIxZxvGzGXnHnF2jv5LiRcui_Tz0JTpGAt2DidUYo/pubhtml/sheet?headers=false&gid=1755311565
+  poll_minutes: null
+  status: active
+  evidence: 'First-hand check of 2026-09-26 (docs/research/firsthand/others.json, record Santa Cruz COE
+    school closures; variant google-sheet-pubhtml). Live read of https://santacruzcoe.org/schoolclosures/
+    2026-09-27T21:51:13Z: HTTP 200, 165433 bytes; santacruzcoe-page, deferred, frames the sheet''s widget
+    view https://docs.google.com/spreadsheets/d/e/2PACX-1vRTTn-nz1kHVAdHbBrAQSgMaLB0FbiNrO7cWaFDIxZxvGzGXnHnF2jv5LiRcui_Tz0JTpGAt2DidUYo/pubhtml?gid=1755311565&single=true&widget=true&headers=false
+    (read 2026-09-27T21:51:18Z: HTTP 200, 52929 bytes; santacruzcoe-widget, deferred), which names the
+    tab page https://docs.google.com/spreadsheets/d/e/2PACX-1vRTTn-nz1kHVAdHbBrAQSgMaLB0FbiNrO7cWaFDIxZxvGzGXnHnF2jv5LiRcui_Tz0JTpGAt2DidUYo/pubhtml/sheet?headers=false&gid=1755311565
+    (read 2026-09-27T21:51:23Z: HTTP 200, 55005 bytes; santacruzcoe-sheet, empty: the header row and ten
+    empty rows). Never seen with a row.'
+  list_files:
+  - url: https://docs.google.com/spreadsheets/d/e/2PACX-1vRTTn-nz1kHVAdHbBrAQSgMaLB0FbiNrO7cWaFDIxZxvGzGXnHnF2jv5LiRcui_Tz0JTpGAt2DidUYo/pubhtml?gid=1755311565&single=true&widget=true&headers=false
+    loaded_by: frame
+    seen: The county office's page frames it (live reads of 2026-09-26 and 2026-09-27).
+  - url: https://docs.google.com/spreadsheets/d/e/2PACX-1vRTTn-nz1kHVAdHbBrAQSgMaLB0FbiNrO7cWaFDIxZxvGzGXnHnF2jv5LiRcui_Tz0JTpGAt2DidUYo/pubhtml/sheet?headers=false&gid=1755311565
+    loaded_by: script
+    seen: The widget view's script names it as the CLOSURES tab's pageUrl and loads it (live read 2026-09-27).
+  page_check: null
+  robots:
+  - url: https://santacruzcoe.org/schoolclosures/
+    checked_at: '2026-09-27T21:52:51Z'
+    state: parsed
+    allowed: true
+    rule: no rule matches
+    crawl_delay: null
+    disallowed_agents: []
+    sha256: f9b54a5d53e87f211547121d0228d43f0ccfb1a295f47b052e01ed85b46d92b5
+  - url: https://docs.google.com/spreadsheets/d/e/2PACX-1vRTTn-nz1kHVAdHbBrAQSgMaLB0FbiNrO7cWaFDIxZxvGzGXnHnF2jv5LiRcui_Tz0JTpGAt2DidUYo/pubhtml/sheet?headers=false&gid=1755311565
+    checked_at: '2026-09-27T21:52:52Z'
+    state: parsed
+    allowed: true
+    rule: 'Allow: /spreadsheet'
+    crawl_delay: 1.0
+    disallowed_agents: []
+    sha256: c961ee90a56ffca2483087a7896bc4fc819a29ac0e7f0f8bba17df8a5da47a37
+  leaids: ['0600043', '0600143', '0601472', 0602428, 0602497, '0602517', '0602542', '0605640', '0616560',
+    0621990, '0622350', '0626070', 0629340, 0629490, '0634740', 0635590, '0635600', 0637290, 0691036]

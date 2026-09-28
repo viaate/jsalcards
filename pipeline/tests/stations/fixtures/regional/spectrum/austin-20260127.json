@@ -1,0 +1,207 @@
+[
+    {
+        "orgType": "School (K-12)",
+        "closings": [
+            {
+                "status": "Closed on Tuesday",
+                "accountName": " IDEA Public Schools ",
+                "expires": "01/27/2026"
+            },
+            {
+                "status": "Closed on Tuesday",
+                "accountName": "Academy ISD",
+                "expires": "01/27/2026"
+            },
+            {
+                "status": "Closed on Tuesday",
+                "accountName": "Aquilla ISD ",
+                "expires": "01/27/2026"
+            },
+            {
+                "status": "Closed on Tuesday",
+                "accountName": "Austin ISD",
+                "expires": "01/28/2026"
+            },
+            {
+                "status": "Closed on Tuesday",
+                "accountName": "Blanco ISD",
+                "expires": "01/27/2026"
+            },
+            {
+                "status": "Delayed by 2 hours",
+                "accountName": "Bryan ISD",
+                "expires": "01/27/2026"
+            },
+            {
+                "status": "Closed on Tuesday",
+                "accountName": "Burnet CISD",
+                "expires": "01/27/2026"
+            },
+            {
+                "status": "Delayed by 2 hours",
+                "accountName": "College Station ISD",
+                "expires": "01/27/2026"
+            },
+            {
+                "status": "Closed on Tuesday",
+                "accountName": "Crawford ISD",
+                "expires": "01/27/2026"
+            },
+            {
+                "status": "Closed on Tuesday",
+                "accountName": "Del Valle ISD",
+                "expires": "01/27/2026"
+            },
+            {
+                "status": "Closed on Tuesday",
+                "accountName": "Dripping Springs ISD",
+                "expires": "01/27/2026"
+            },
+            {
+                "status": "Closed on Tuesday",
+                "accountName": "Eanes ISD",
+                "expires": "01/27/2026"
+            },
+            {
+                "status": "Closed on Tuesday",
+                "accountName": "Franklin ISD",
+                "expires": "01/27/2026"
+            },
+            {
+                "status": "Closed on Tuesday",
+                "accountName": "Harmony Public Schools-Central Texas",
+                "expires": "01/27/2026"
+            },
+            {
+                "status": "Closed on Tuesday",
+                "accountName": "Harper ISD",
+                "expires": "01/28/2026"
+            },
+            {
+                "status": "Closed on Tuesday",
+                "accountName": "Hays CISD",
+                "expires": "01/27/2026"
+            },
+            {
+                "status": "Closed on Tuesday",
+                "accountName": "KIPP Texas-Austin Schools",
+                "expires": "01/27/2026"
+            },
+            {
+                "status": "Closed on Tuesday",
+                "accountName": "Killeen ISD",
+                "expires": "01/27/2026"
+            },
+            {
+                "status": "Closed on Tuesday",
+                "accountName": "Lago Vista ISD",
+                "expires": "01/27/2026"
+            },
+            {
+                "status": "Closed on Tuesday",
+                "accountName": "Lake Travis ISD",
+                "expires": "01/27/2026"
+            },
+            {
+                "status": "Closed on Tuesday",
+                "accountName": "Lake Travis ISD ",
+                "expires": "01/27/2026"
+            },
+            {
+                "status": "Closed on Tuesday",
+                "accountName": "Leander ISD ",
+                "expires": "01/28/2026"
+            },
+            {
+                "status": "Delayed by 2 hours",
+                "accountName": "Lockhart ISD",
+                "expires": "01/28/2026"
+            },
+            {
+                "status": "Closed on Tuesday",
+                "accountName": "Lorena ISD",
+                "expires": "01/27/2026"
+            },
+            {
+                "status": "Closed on Tuesday",
+                "accountName": "Manor ISD",
+                "expires": "01/28/2026"
+            },
+            {
+                "status": "Closed on Tuesday",
+                "accountName": "Marble Falls ISD",
+                "expires": "01/27/2026"
+            },
+            {
+                "status": "Closed on Tuesday",
+                "accountName": "TX School for the Blind & Visually Impaired",
+                "expires": "01/27/2026"
+            },
+            {
+                "status": "Closed on Tuesday",
+                "accountName": "Temple ISD",
+                "expires": "01/27/2026"
+            },
+            {
+                "status": "Closed on Tuesday",
+                "accountName": "Texas Empowerment Academy",
+                "expires": "01/27/2026"
+            },
+            {
+                "status": "Closed on Tuesday",
+                "accountName": "Texas School for the Deaf",
+                "expires": "01/27/2026"
+            },
+            {
+                "status": "Closed on Tuesday",
+                "accountName": "Troy ISD",
+                "expires": "01/27/2026"
+            },
+            {
+                "status": "Closed on Tuesday",
+                "accountName": "Waco ISD",
+                "expires": "01/27/2026"
+            }
+        ]
+    },
+    {
+        "orgType": "College / University",
+        "closings": [
+            {
+                "status": "Closed on Tuesday",
+                "accountName": "Austin Community College",
+                "expires": "01/27/2026"
+            },
+            {
+                "status": "Closed on Tuesday",
+                "accountName": "Texas State Technical College - Wilco",
+                "expires": "01/27/2026"
+            }
+        ]
+    },
+    {
+        "orgType": "Government Agency",
+        "closings": [
+            {
+                "status": "Closed on Tuesday",
+                "accountName": "Fort Hood facilities",
+                "expires": "01/27/2026"
+            },
+            {
+                "status": "Closed on Tuesday",
+                "accountName": "Travis County Offices",
+                "expires": "01/27/2026"
+            }
+        ]
+    },
+    {
+        "orgType": "Daycare / Preschool",
+        "closings": [
+            {
+                "status": "Closed on Tuesday",
+                "accountName": "Child Inc Head Start",
+                "expires": "01/27/2026"
+            }
+        ]
+    }
+]

@@ -102,12 +102,15 @@ def capture_time(stamp: str) -> datetime:
     return datetime.strptime(stamp, "%Y%m%d%H%M%S").replace(tzinfo=UTC)
 
 
-KEY_QUERY = frozenset({"regionid"})
+KEY_QUERY = frozenset({"regionid", "region", "media_id"})
 """Query parameters that name a different list at one address, kept in :func:`url_key`.
 
 FlashAlert serves every region's report from one script, told apart only by its
-``RegionID`` (``cwc-closures.php?RegionID=1``); every other query (cache-busting
-counters, ``arc-site``) is dropped.
+``RegionID`` (``cwc-closures.php?RegionID=1``); News 12 serves each region's list
+from one page, told apart by ``region`` (``closings.jsp?region=LI``); WeatherThreat
+serves each outlet's list from one script, told apart by ``media_id``
+(``viewClosings.php?media_id=ntv``). Every other query (cache-busting counters,
+``arc-site``, WeatherThreat's ``t`` and ``server``) is dropped.
 """
 
 

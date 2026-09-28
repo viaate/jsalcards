@@ -1,0 +1,22 @@
+[
+    {
+        "orgType": "School (K-12)",
+        "closings": [
+            {
+                "status": "Closed on Monday",
+                "accountName": "Wayne County Schools",
+                "expires": "02/01/2026"
+            }
+        ]
+    },
+    {
+        "orgType": "Church",
+        "closings": [
+            {
+                "status": "All Sunday services canceled",
+                "accountName": "St. Paul's Lutheran Church",
+                "expires": "02/01/2026"
+            }
+        ]
+    }
+]

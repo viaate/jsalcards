@@ -1,0 +1,307 @@
+# Station registry for one platform. Loaded with every other file in this folder
+# by snowlight.sources.stations.registry; see its docstring for the fields.
+# `snowlight stations robots --update` rewrites the robots blocks in place.
+platform:
+  id: news12
+  name: News 12 school closings and delays (one page per region)
+  operator: News 12 Networks (Altice USA)
+  adapter: news12
+  poll_minutes: 10
+  terms:
+    automated_access: permitted
+    summary: The closings pages' footer links News 12's terms of service at http://www.news12.com/story/35212665/terms-of-service,
+      an address from News 12's former site; it did not answer this pipeline within its timeouts on 2026-09-27,
+      and no current terms page was found. No clause on automated access was read.
+    evidence:
+    - url: https://itv.news12.com/school_closings/closings.jsp?region=LI
+      read_at: '2026-09-27T06:09:31Z'
+      sha256: null
+      excerpt:
+      - '(no terms of use were found for the site: the page''s footer links http://www.news12.com/story/35212665/terms-of-service,
+        which did not answer within the pipeline''s timeouts on 2026-09-27)'
+    permission: null
+    owner_decision: null
+  notes: 'Found by the first-hand check of 2026-09-26: one server-rendered page per region, https://itv.news12.com/school_closings/closings.jsp?region={LI,NJ,WC,HV,CT,BX,BK}
+    (NJ confirmed by a News 12 page; HV, BX and BK answer the same template). Each region is given the
+    New York market''s counties (News 12''s regions are cable channels inside that market; the page names
+    no counties). The pages were populated live on 2026-09-26 and 2026-09-27 (LI 6 rows, WC 1, CT 4).'
+  shared_paths: []
+stations:
+- id: news12-li
+  platform: news12
+  call_sign: N12-LI
+  name: News 12 Long Island
+  market: Long Island
+  dma: New York, NY - CT - NJ - PA DMA
+  states: [CT, NJ, NY, PA]
+  counties:
+    basis: dma
+    source: 'DMA county list: alex-patton/US-TVDMA-BY-COUNTY usa-tvdma-county.csv at commit 7f254b8c1843c62ec976a71c40d366d45f6f29cd
+      (sha256 2e2cd00265a8d704...), names resolved to FIPS with the Census 2025 county Gazetteer; Connecticut
+      via the Census county-to-town crosswalk (snowlight.sources.stations.dma); market ''New York, NY
+      - CT - NJ - PA DMA'''
+    fips: [09120, 09140, 09190, '34003', '34013', '34017', '34019', '34023', '34025', '34027', '34029',
+      '34031', '34035', '34037', '34039', '34041', '36005', '36027', '36047', '36059', '36061', '36071',
+      '36079', '36081', '36085', '36087', '36103', '36105', '36111', '36119', '42103']
+  page_url: https://itv.news12.com/school_closings/closings.jsp?region=LI
+  data_url: null
+  export_url: null
+  archive_urls:
+  - https://itv.news12.com/school_closings/closings.jsp?region=LI
+  poll_minutes: null
+  status: active
+  evidence: 'First-hand check of 2026-09-26 (docs/research/firsthand/others.json, record News 12 LI; variant
+    news12-jsp). Live read of https://itv.news12.com/school_closings/closings.jsp?region=LI 2026-09-27T06:09:31Z:
+    HTTP 200, 11202 bytes; news12-jsp, populated, 6 rows (''Our Holy Redeemer Religious Ed School-Freeport'',
+    ''St. Boniface Religious Ed Program-Elmont'', ...). Archived captures read (archive-captures run 36317643857):
+    1 empty, 1 populated. Archived https://itv.news12.com/school_closings/closings.jsp?region=LI captured
+    2025-02-12T07:38:34Z: news12-jsp, 156 rows (''Amagansett School District'', ''Amityville School District'',
+    ...).'
+  list_files: []
+  page_check: null
+  robots:
+  - url: https://itv.news12.com/school_closings/closings.jsp?region=LI
+    checked_at: '2026-09-27T07:03:34Z'
+    state: unavailable
+    allowed: true
+    rule: 'robots.txt unavailable (4xx): unrestricted'
+    crawl_delay: null
+    disallowed_agents: []
+    sha256: null
+- id: news12-nj
+  platform: news12
+  call_sign: N12-NJ
+  name: News 12 New Jersey
+  market: New Jersey
+  dma: New York, NY - CT - NJ - PA DMA
+  states: [CT, NJ, NY, PA]
+  counties:
+    basis: dma
+    source: 'DMA county list: alex-patton/US-TVDMA-BY-COUNTY usa-tvdma-county.csv at commit 7f254b8c1843c62ec976a71c40d366d45f6f29cd
+      (sha256 2e2cd00265a8d704...), names resolved to FIPS with the Census 2025 county Gazetteer; Connecticut
+      via the Census county-to-town crosswalk (snowlight.sources.stations.dma); market ''New York, NY
+      - CT - NJ - PA DMA'''
+    fips: [09120, 09140, 09190, '34003', '34013', '34017', '34019', '34023', '34025', '34027', '34029',
+      '34031', '34035', '34037', '34039', '34041', '36005', '36027', '36047', '36059', '36061', '36071',
+      '36079', '36081', '36085', '36087', '36103', '36105', '36111', '36119', '42103']
+  page_url: https://itv.news12.com/school_closings/closings.jsp?region=NJ
+  data_url: null
+  export_url: null
+  archive_urls:
+  - https://itv.news12.com/school_closings/closings.jsp?region=NJ
+  poll_minutes: null
+  status: active
+  evidence: 'First-hand check of 2026-09-26 (docs/research/firsthand/others.json, record News 12 NJ; variant
+    news12-jsp). Live read of https://itv.news12.com/school_closings/closings.jsp?region=NJ 2026-09-27T05:52:22Z:
+    HTTP 200, 10327 bytes; news12-jsp, empty. Archived captures read (archive-captures run 36317643857):
+    1 empty, 1 populated. Archived https://itv.news12.com/school_closings/closings.jsp?region=NJ captured
+    2026-02-23T05:49:19Z: news12-jsp, 213 rows (''A Star Is Rising Early Learning Center'', ''Ability
+    School Inc'', ...).'
+  list_files: []
+  page_check: null
+  robots:
+  - url: https://itv.news12.com/school_closings/closings.jsp?region=NJ
+    checked_at: '2026-09-27T07:03:34Z'
+    state: unavailable
+    allowed: true
+    rule: 'robots.txt unavailable (4xx): unrestricted'
+    crawl_delay: null
+    disallowed_agents: []
+    sha256: null
+- id: news12-wc
+  platform: news12
+  call_sign: N12-WC
+  name: News 12 Westchester
+  market: Westchester
+  dma: New York, NY - CT - NJ - PA DMA
+  states: [CT, NJ, NY, PA]
+  counties:
+    basis: dma
+    source: 'DMA county list: alex-patton/US-TVDMA-BY-COUNTY usa-tvdma-county.csv at commit 7f254b8c1843c62ec976a71c40d366d45f6f29cd
+      (sha256 2e2cd00265a8d704...), names resolved to FIPS with the Census 2025 county Gazetteer; Connecticut
+      via the Census county-to-town crosswalk (snowlight.sources.stations.dma); market ''New York, NY
+      - CT - NJ - PA DMA'''
+    fips: [09120, 09140, 09190, '34003', '34013', '34017', '34019', '34023', '34025', '34027', '34029',
+      '34031', '34035', '34037', '34039', '34041', '36005', '36027', '36047', '36059', '36061', '36071',
+      '36079', '36081', '36085', '36087', '36103', '36105', '36111', '36119', '42103']
+  page_url: https://itv.news12.com/school_closings/closings.jsp?region=WC
+  data_url: null
+  export_url: null
+  archive_urls:
+  - https://itv.news12.com/school_closings/closings.jsp?region=WC
+  poll_minutes: null
+  status: active
+  evidence: 'First-hand check of 2026-09-26 (docs/research/firsthand/others.json, record News 12 WC; variant
+    news12-jsp). Live read of https://itv.news12.com/school_closings/closings.jsp?region=WC 2026-09-27T06:09:41Z:
+    HTTP 200, 10462 bytes; news12-jsp, populated, 1 rows (''Westchester Community College''). Archived
+    captures read (archive-captures run 36317643857): 1 empty, 1 populated. Archived https://itv.news12.com/school_closings/closings.jsp?region=WC
+    captured 2026-02-24T00:47:44Z: news12-jsp, 78 rows (''ACDS Pelham'', ''ACDS-Westchester'', ...).'
+  list_files: []
+  page_check: null
+  robots:
+  - url: https://itv.news12.com/school_closings/closings.jsp?region=WC
+    checked_at: '2026-09-27T07:03:34Z'
+    state: unavailable
+    allowed: true
+    rule: 'robots.txt unavailable (4xx): unrestricted'
+    crawl_delay: null
+    disallowed_agents: []
+    sha256: null
+- id: news12-hv
+  platform: news12
+  call_sign: N12-HV
+  name: News 12 Hudson Valley
+  market: Hudson Valley
+  dma: New York, NY - CT - NJ - PA DMA
+  states: [CT, NJ, NY, PA]
+  counties:
+    basis: dma
+    source: 'DMA county list: alex-patton/US-TVDMA-BY-COUNTY usa-tvdma-county.csv at commit 7f254b8c1843c62ec976a71c40d366d45f6f29cd
+      (sha256 2e2cd00265a8d704...), names resolved to FIPS with the Census 2025 county Gazetteer; Connecticut
+      via the Census county-to-town crosswalk (snowlight.sources.stations.dma); market ''New York, NY
+      - CT - NJ - PA DMA'''
+    fips: [09120, 09140, 09190, '34003', '34013', '34017', '34019', '34023', '34025', '34027', '34029',
+      '34031', '34035', '34037', '34039', '34041', '36005', '36027', '36047', '36059', '36061', '36071',
+      '36079', '36081', '36085', '36087', '36103', '36105', '36111', '36119', '42103']
+  page_url: https://itv.news12.com/school_closings/closings.jsp?region=HV
+  data_url: null
+  export_url: null
+  archive_urls:
+  - https://itv.news12.com/school_closings/closings.jsp?region=HV
+  poll_minutes: null
+  status: active
+  evidence: 'First-hand check of 2026-09-26 (docs/research/firsthand/others.json, record News 12 HV; variant
+    news12-jsp). Live read of https://itv.news12.com/school_closings/closings.jsp?region=HV 2026-09-27T05:52:32Z:
+    HTTP 200, 10330 bytes; news12-jsp, empty. Archived captures read (archive-captures run 36317643857):
+    1 empty, 1 populated. Archived https://itv.news12.com/school_closings/closings.jsp?region=HV captured
+    2026-02-24T00:36:27Z: news12-jsp, 13 rows (''BOCES Rockland-West Nyack'', ''BOCES-Nyack Adult Education'',
+    ...).'
+  list_files: []
+  page_check: null
+  robots:
+  - url: https://itv.news12.com/school_closings/closings.jsp?region=HV
+    checked_at: '2026-09-27T07:03:34Z'
+    state: unavailable
+    allowed: true
+    rule: 'robots.txt unavailable (4xx): unrestricted'
+    crawl_delay: null
+    disallowed_agents: []
+    sha256: null
+- id: news12-ct
+  platform: news12
+  call_sign: N12-CT
+  name: News 12 Connecticut
+  market: Connecticut
+  dma: New York, NY - CT - NJ - PA DMA
+  states: [CT, NJ, NY, PA]
+  counties:
+    basis: dma
+    source: 'DMA county list: alex-patton/US-TVDMA-BY-COUNTY usa-tvdma-county.csv at commit 7f254b8c1843c62ec976a71c40d366d45f6f29cd
+      (sha256 2e2cd00265a8d704...), names resolved to FIPS with the Census 2025 county Gazetteer; Connecticut
+      via the Census county-to-town crosswalk (snowlight.sources.stations.dma); market ''New York, NY
+      - CT - NJ - PA DMA'''
+    fips: [09120, 09140, 09190, '34003', '34013', '34017', '34019', '34023', '34025', '34027', '34029',
+      '34031', '34035', '34037', '34039', '34041', '36005', '36027', '36047', '36059', '36061', '36071',
+      '36079', '36081', '36085', '36087', '36103', '36105', '36111', '36119', '42103']
+  page_url: https://itv.news12.com/school_closings/closings.jsp?region=CT
+  data_url: null
+  export_url: null
+  archive_urls:
+  - https://itv.news12.com/school_closings/closings.jsp?region=CT
+  poll_minutes: null
+  status: active
+  evidence: 'First-hand check of 2026-09-26 (docs/research/firsthand/others.json, record News 12 CT; variant
+    news12-jsp). Live read of https://itv.news12.com/school_closings/closings.jsp?region=CT 2026-09-27T06:09:36Z:
+    HTTP 200, 10803 bytes; news12-jsp, populated, 4 rows (''Ballaro Real Estate'', ''Brain Balance Center
+    of Norwalk'', ...).'
+  list_files: []
+  page_check: null
+  robots:
+  - url: https://itv.news12.com/school_closings/closings.jsp?region=CT
+    checked_at: '2026-09-27T07:03:34Z'
+    state: unavailable
+    allowed: true
+    rule: 'robots.txt unavailable (4xx): unrestricted'
+    crawl_delay: null
+    disallowed_agents: []
+    sha256: null
+- id: news12-bx
+  platform: news12
+  call_sign: N12-BX
+  name: News 12 The Bronx
+  market: The Bronx
+  dma: New York, NY - CT - NJ - PA DMA
+  states: [CT, NJ, NY, PA]
+  counties:
+    basis: dma
+    source: 'DMA county list: alex-patton/US-TVDMA-BY-COUNTY usa-tvdma-county.csv at commit 7f254b8c1843c62ec976a71c40d366d45f6f29cd
+      (sha256 2e2cd00265a8d704...), names resolved to FIPS with the Census 2025 county Gazetteer; Connecticut
+      via the Census county-to-town crosswalk (snowlight.sources.stations.dma); market ''New York, NY
+      - CT - NJ - PA DMA'''
+    fips: [09120, 09140, 09190, '34003', '34013', '34017', '34019', '34023', '34025', '34027', '34029',
+      '34031', '34035', '34037', '34039', '34041', '36005', '36027', '36047', '36059', '36061', '36071',
+      '36079', '36081', '36085', '36087', '36103', '36105', '36111', '36119', '42103']
+  page_url: https://itv.news12.com/school_closings/closings.jsp?region=BX
+  data_url: null
+  export_url: null
+  archive_urls:
+  - https://itv.news12.com/school_closings/closings.jsp?region=BX
+  poll_minutes: null
+  status: active
+  evidence: 'First-hand check of 2026-09-26 (docs/research/firsthand/others.json, record News 12 BX; variant
+    news12-jsp). Live read of https://itv.news12.com/school_closings/closings.jsp?region=BX 2026-09-27T05:52:42Z:
+    HTTP 200, 10323 bytes; news12-jsp, empty. Archived captures read (archive-captures run 36317643857):
+    2 empty. Never seen with a row: the archive holds 10 captures of this region''s list (listing, run
+    36322116061), each the size of the empty page; the two largest winter ones (2025-02-06, 2026-02-24)
+    were read and list nothing.'
+  list_files: []
+  page_check: null
+  robots:
+  - url: https://itv.news12.com/school_closings/closings.jsp?region=BX
+    checked_at: '2026-09-27T07:03:34Z'
+    state: unavailable
+    allowed: true
+    rule: 'robots.txt unavailable (4xx): unrestricted'
+    crawl_delay: null
+    disallowed_agents: []
+    sha256: null
+- id: news12-bk
+  platform: news12
+  call_sign: N12-BK
+  name: News 12 Brooklyn
+  market: Brooklyn
+  dma: New York, NY - CT - NJ - PA DMA
+  states: [CT, NJ, NY, PA]
+  counties:
+    basis: dma
+    source: 'DMA county list: alex-patton/US-TVDMA-BY-COUNTY usa-tvdma-county.csv at commit 7f254b8c1843c62ec976a71c40d366d45f6f29cd
+      (sha256 2e2cd00265a8d704...), names resolved to FIPS with the Census 2025 county Gazetteer; Connecticut
+      via the Census county-to-town crosswalk (snowlight.sources.stations.dma); market ''New York, NY
+      - CT - NJ - PA DMA'''
+    fips: [09120, 09140, 09190, '34003', '34013', '34017', '34019', '34023', '34025', '34027', '34029',
+      '34031', '34035', '34037', '34039', '34041', '36005', '36027', '36047', '36059', '36061', '36071',
+      '36079', '36081', '36085', '36087', '36103', '36105', '36111', '36119', '42103']
+  page_url: https://itv.news12.com/school_closings/closings.jsp?region=BK
+  data_url: null
+  export_url: null
+  archive_urls:
+  - https://itv.news12.com/school_closings/closings.jsp?region=BK
+  poll_minutes: null
+  status: active
+  evidence: 'First-hand check of 2026-09-26 (docs/research/firsthand/others.json, record News 12 BK; variant
+    news12-jsp). Live read of https://itv.news12.com/school_closings/closings.jsp?region=BK 2026-09-27T05:52:47Z:
+    HTTP 200, 10326 bytes; news12-jsp, empty. Archived captures read (archive-captures runs 36317643857,
+    36324857670): 3 empty. Never seen with a row: the archive holds 6 captures of this region''s list
+    (listing, run 36322116061), each the size of the empty page; the two largest winter ones (2021-01-23,
+    2026-02-24) were read and list nothing.'
+  list_files: []
+  page_check: null
+  robots:
+  - url: https://itv.news12.com/school_closings/closings.jsp?region=BK
+    checked_at: '2026-09-27T07:03:34Z'
+    state: unavailable
+    allowed: true
+    rule: 'robots.txt unavailable (4xx): unrestricted'
+    crawl_delay: null
+    disallowed_agents: []
+    sha256: null

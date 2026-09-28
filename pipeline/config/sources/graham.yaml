@@ -1,0 +1,288 @@
+# Station registry for one platform. Loaded with every other file in this folder
+# by snowlight.sources.stations.registry; see its docstring for the fields.
+# `snowlight stations robots --update` rewrites the robots blocks in place.
+platform:
+  id: graham
+  name: Graham Media Group stations' school closings (Arc XP 'school-closings' content)
+  operator: Graham Media Group
+  adapter: graham
+  poll_minutes: 10
+  terms:
+    automated_access: permitted
+    summary: 'Graham Media Group Terms of Use (https://www.grahammedia.com/terms, read 2026-09-27): services
+      and content are for personal, non-commercial use; content may not be downloaded, republished or
+      reproduced without written authorization. No clause on robots, scraping, crawling or automated access
+      was found.'
+    evidence:
+    - url: https://www.grahammedia.com/terms
+      read_at: '2026-09-27T06:24:37Z'
+      sha256: 0ab43a669b5f06ffec7636ab41c577eff7b0c513f69344d738ea31af6bd0c5cd
+      excerpt:
+      - Restrictions on Use You may use the Services and the Content solely for your personal, non-commercial
+        use as set forth in these Terms of Use
+      - You shall not download, distribute, republish, retransmit, reproduce or otherwise use in any medium
+        any part of the Content without GMG's prior written authorization
+      - (no clause on robots, spiders, scraping, crawling or automated access was found in the page's
+        text)
+    permission: null
+    owner_decision: null
+  notes: 'Station list: Wikipedia''s Graham Media Group table as read by the first-hand check of 2026-09-26.
+    WDIV and WSLS publish a closings page on Arc XP Fusion backed by the content source ''school-closings'';
+    the live poller reads its route /pf/api/v3/content/fetch/school-closings?_website={site}. WJXT, WKMG,
+    KPRC and KSAT have no closings page.'
+  shared_paths: []
+stations:
+- id: graham-wdiv
+  platform: graham
+  call_sign: WDIV
+  name: Local 4 WDIV (clickondetroit.com)
+  market: Detroit, MI
+  dma: Detroit, MI DMA
+  states: [MI]
+  counties:
+    basis: dma
+    source: 'DMA county list: alex-patton/US-TVDMA-BY-COUNTY usa-tvdma-county.csv at commit 7f254b8c1843c62ec976a71c40d366d45f6f29cd
+      (sha256 2e2cd00265a8d704...), names resolved to FIPS with the Census 2025 county Gazetteer; Connecticut
+      via the Census county-to-town crosswalk (snowlight.sources.stations.dma); market ''Detroit, MI DMA'''
+    fips: ['26087', '26093', '26099', '26115', '26125', '26147', '26151', '26161', '26163']
+  page_url: https://www.clickondetroit.com/school_closings/
+  data_url: https://www.clickondetroit.com/pf/api/v3/content/fetch/school-closings?_website=wdiv
+  export_url: null
+  archive_urls:
+  - https://www.clickondetroit.com/school_closings/
+  - https://www.clickondetroit.com/pf/api/v3/content/fetch/school-closings?_website=wdiv
+  poll_minutes: null
+  status: active
+  evidence: 'First-hand check of 2026-09-26 (docs/research/firsthand/others.json, record WDIV; variant
+    graham-arc-school-closings). Live read of https://www.clickondetroit.com/school_closings/ 2026-09-27T06:18:29Z:
+    HTTP 200, 394361 bytes, Last-Modified Sun, 27 Sep 2026 06:16:54 GMT; graham-arc-page, empty. Live
+    read of https://www.clickondetroit.com/pf/api/v3/content/fetch/school-closings?_website=wdiv 2026-09-27T05:50:40Z:
+    HTTP 200, 110 bytes, Last-Modified Sun, 27 Sep 2026 05:44:20 GMT; graham-arc-content, empty. Archived
+    captures read (archive-captures run 36299187602): 1 empty, 1 populated. Archived https://www.clickondetroit.com/school_closings/
+    captured 2025-02-12T18:10:10Z: graham-arc-page, 24 rows (''Algonac Community Schools'', ''Bethany
+    Christian'', ...).'
+  list_files: []
+  page_check: null
+  robots:
+  - url: https://www.clickondetroit.com/school_closings/
+    checked_at: '2026-09-27T07:03:31Z'
+    state: parsed
+    allowed: true
+    rule: no rule matches
+    crawl_delay: null
+    disallowed_agents:
+    - ahrefsbot
+    - amazonbot
+    - amzn-searchbot
+    - arachnysspider
+    - baiduspider
+    - baiduspider-render
+    - bytespider
+    - dataforseobot
+    - dotbot
+    - gptbot
+    - mj12bot
+    - petalbot
+    - seekportbot
+    - semrushbot
+    - semrushbot-ba
+    - semrushbot-eo
+    - sogou web spider
+    - yisouspider
+    sha256: c1e130c8b19281e9a84c0a018f10719a2e08ca71905be3295835083a0a76bcd9
+  - url: https://www.clickondetroit.com/pf/api/v3/content/fetch/school-closings?_website=wdiv
+    checked_at: '2026-09-27T07:03:31Z'
+    state: parsed
+    allowed: true
+    rule: no rule matches
+    crawl_delay: null
+    disallowed_agents:
+    - ahrefsbot
+    - amazonbot
+    - amzn-searchbot
+    - arachnysspider
+    - baiduspider
+    - baiduspider-render
+    - bytespider
+    - dataforseobot
+    - dotbot
+    - gptbot
+    - mj12bot
+    - petalbot
+    - seekportbot
+    - semrushbot
+    - semrushbot-ba
+    - semrushbot-eo
+    - sogou web spider
+    - yisouspider
+    sha256: c1e130c8b19281e9a84c0a018f10719a2e08ca71905be3295835083a0a76bcd9
+- id: graham-wsls
+  platform: graham
+  call_sign: WSLS
+  name: WSLS 10 (wsls.com)
+  market: Roanoke - Lynchburg, VA
+  dma: Roanoke - Lynchburg, VA - WV DMA
+  states: [VA, WV]
+  counties:
+    basis: dma
+    source: 'DMA county list: alex-patton/US-TVDMA-BY-COUNTY usa-tvdma-county.csv at commit 7f254b8c1843c62ec976a71c40d366d45f6f29cd
+      (sha256 2e2cd00265a8d704...), names resolved to FIPS with the Census 2025 county Gazetteer; Connecticut
+      via the Census county-to-town crosswalk (snowlight.sources.stations.dma); market ''Roanoke - Lynchburg,
+      VA - WV DMA'''
+    fips: ['51005', '51009', '51011', '51017', '51019', '51023', '51031', '51035', '51037', '51045', '51063',
+      '51067', '51071', '51083', '51089', '51091', '51121', '51125', '51143', '51155', '51161', '51163',
+      '51197', '51530', '51580', '51590', '51640', '51678', '51680', '51690', '51750', '51770', '51775',
+      '54075']
+  page_url: https://www.wsls.com/school-closings/
+  data_url: https://www.wsls.com/pf/api/v3/content/fetch/school-closings?_website=wsls
+  export_url: null
+  archive_urls:
+  - https://www.wsls.com/school-closings/
+  - https://www.wsls.com/pf/api/v3/content/fetch/school-closings?_website=wsls
+  poll_minutes: null
+  status: active
+  evidence: 'First-hand check of 2026-09-26 (docs/research/firsthand/others.json, record WSLS; variant
+    graham-arc-school-closings). Live read of https://www.wsls.com/school-closings/ 2026-09-27T06:18:35Z:
+    HTTP 200, 363107 bytes, Last-Modified Sun, 27 Sep 2026 06:17:37 GMT; graham-arc-page, empty. Live
+    read of https://www.wsls.com/pf/api/v3/content/fetch/school-closings?_website=wsls 2026-09-27T05:50:46Z:
+    HTTP 200, 171 bytes, Last-Modified Sun, 16 Aug 2026 16:19:15 GMT; graham-arc-content, empty. Archived
+    captures read (archive-captures run 36299187602): 2 populated. Archived https://www.wsls.com/school-closings/
+    captured 2026-02-02T02:11:39Z: graham-arc-page, 137 rows (''Alleghany Highlands Public Schools'',
+    ''Appalachian Veterinary Services'', ...). Archived https://www.wsls.com/school-closings/ captured
+    2025-02-11T01:24:33Z: graham-arc-page, 119 rows (''Adult Care Center-Roanoke'', ''Agape Center Vinton'',
+    ...).'
+  list_files: []
+  page_check: null
+  robots:
+  - url: https://www.wsls.com/school-closings/
+    checked_at: '2026-09-27T07:03:31Z'
+    state: parsed
+    allowed: true
+    rule: no rule matches
+    crawl_delay: null
+    disallowed_agents:
+    - ahrefsbot
+    - amazonbot
+    - amzn-searchbot
+    - arachnysspider
+    - baiduspider
+    - baiduspider-render
+    - bytespider
+    - dataforseobot
+    - dotbot
+    - gptbot
+    - mj12bot
+    - petalbot
+    - seekportbot
+    - semrushbot
+    - semrushbot-ba
+    - semrushbot-eo
+    - sogou web spider
+    - yisouspider
+    sha256: 534bce7f98677e58fd175d1f32988ace1ac8dc9b044baab51f339422b406dc09
+  - url: https://www.wsls.com/pf/api/v3/content/fetch/school-closings?_website=wsls
+    checked_at: '2026-09-27T07:03:31Z'
+    state: parsed
+    allowed: true
+    rule: no rule matches
+    crawl_delay: null
+    disallowed_agents:
+    - ahrefsbot
+    - amazonbot
+    - amzn-searchbot
+    - arachnysspider
+    - baiduspider
+    - baiduspider-render
+    - bytespider
+    - dataforseobot
+    - dotbot
+    - gptbot
+    - mj12bot
+    - petalbot
+    - seekportbot
+    - semrushbot
+    - semrushbot-ba
+    - semrushbot-eo
+    - sogou web spider
+    - yisouspider
+    sha256: 534bce7f98677e58fd175d1f32988ace1ac8dc9b044baab51f339422b406dc09
+- id: graham-wjxt
+  platform: graham
+  call_sign: WJXT
+  name: WJXT
+  market: Jacksonville, FL
+  dma: null
+  states: [FL, GA]
+  counties: null
+  page_url: null
+  data_url: null
+  export_url: null
+  archive_urls: []
+  poll_minutes: null
+  status: no_endpoint
+  evidence: 'First-hand check of 2026-09-26 (docs/research/firsthand/others.json, record WJXT/WCWJ; variant
+    none-found). No closings page (first-hand check of 2026-09-26: the closings addresses answered 404
+    and the site''s navigation has no closings entry).'
+  list_files: []
+  page_check: null
+  robots: []
+- id: graham-wkmg
+  platform: graham
+  call_sign: WKMG
+  name: WKMG
+  market: Orlando, FL
+  dma: null
+  states: [FL]
+  counties: null
+  page_url: null
+  data_url: null
+  export_url: null
+  archive_urls: []
+  poll_minutes: null
+  status: no_endpoint
+  evidence: 'First-hand check of 2026-09-26 (docs/research/firsthand/others.json, record WKMG; variant
+    none-found). No closings page (first-hand check of 2026-09-26: the closings addresses answered 404
+    and the site''s navigation has no closings entry).'
+  list_files: []
+  page_check: null
+  robots: []
+- id: graham-kprc
+  platform: graham
+  call_sign: KPRC
+  name: KPRC
+  market: Houston, TX
+  dma: null
+  states: [TX]
+  counties: null
+  page_url: null
+  data_url: null
+  export_url: null
+  archive_urls: []
+  poll_minutes: null
+  status: no_endpoint
+  evidence: 'First-hand check of 2026-09-26 (docs/research/firsthand/others.json, record KPRC; variant
+    none-found). No closings page (first-hand check of 2026-09-26: the closings addresses answered 404
+    and the site''s navigation has no closings entry).'
+  list_files: []
+  page_check: null
+  robots: []
+- id: graham-ksat
+  platform: graham
+  call_sign: KSAT
+  name: KSAT
+  market: San Antonio, TX
+  dma: null
+  states: [TX]
+  counties: null
+  page_url: null
+  data_url: null
+  export_url: null
+  archive_urls: []
+  poll_minutes: null
+  status: no_endpoint
+  evidence: 'First-hand check of 2026-09-26 (docs/research/firsthand/others.json, record KSAT; variant
+    none-found). No closings page (first-hand check of 2026-09-26: the closings addresses answered 404
+    and the site''s navigation has no closings entry).'
+  list_files: []
+  page_check: null
+  robots: []

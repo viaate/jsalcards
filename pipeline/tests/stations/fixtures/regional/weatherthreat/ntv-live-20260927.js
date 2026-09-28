@@ -1,0 +1,5 @@
+function closing(theData) {}
+var closings = new Array();
+closings[0] = new closing('weat~~weathera~~~~Dense Fog Advisory~~Dense Fog Advisory issued September 26 at 8:34PM CDT until September 27 at 11:00AM CDT by NWS Hastin~~~~Phillips County~~KS~~Phillips~~Weather Alert~~National Weather Service~~1790472840~~1790524800~~~~1790472840~~nws~~79f7ceaf4c73~~1~~~~2026-09-27 01:36:02~~39.784508~~-99.342148~~2~~0~~https://api.weather.gov/alerts/urn:oid:2.49.0.1.840.0.90f271feb05b85c900951ea609d18e9366a9282c.001.1');
+closings[1] = new closing('weat~~weathera~~~~Dense Fog Advisory~~Dense Fog Advisory issued September 26 at 8:33PM CDT until September 27 at 10:00AM CDT by NWS Goodla~~~~Rawlins County~~KS~~Rawlins~~Weather Alert~~National Weather Service~~1790472780~~1790502300~~~~1790472780~~nws~~9cae91d42ab6~~1~~~~2026-09-27 01:36:02~~39.786198~~-101.076736~~2~~0~~https://api.weather.gov/alerts/urn:oid:2.49.0.1.840.0.4271fcb3c0f0d553b220e0761cfb1b808de8d677.001.1');
+toWrite += '<span class="closing_text"> (updated 09/27 02:06 Central)</span>';

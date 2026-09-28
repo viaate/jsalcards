@@ -1,0 +1,84 @@
+# Station registry for one platform. Loaded with every other file in this folder
+# by snowlight.sources.stations.registry; see its docstring for the fields.
+# `snowlight stations robots --update` rewrites the robots blocks in place.
+platform:
+  id: delaware
+  name: Delaware school closings (Delaware Department of Education)
+  operator: State of Delaware, Department of Education
+  adapter: delaware
+  poll_minutes: 10
+  terms:
+    automated_access: permitted
+    summary: schoolclosings.delaware.gov links no terms of use (its page has no terms or legal link).
+      No clause on automated access was found.
+    evidence:
+    - url: https://schoolclosings.delaware.gov/
+      read_at: '2026-09-27T06:20:33Z'
+      sha256: null
+      excerpt:
+      - '(no terms of use were found for the site: the state''s closings page links no terms of use or
+        legal page)'
+    permission: null
+    owner_decision: null
+  notes: 'Delaware''s statewide list: the state''s page fills a jqGrid table from /XML/PortalFeed, which
+    the live poller reads (HTTP 200 ''<rows><records>0</records></rows>'' on 2026-09-27; one row on 2026-09-28,
+    in five cells, which the adapter reads by position as the page''s grid does). Counties: Delaware statewide
+    (every county).'
+  shared_paths: []
+stations:
+- id: delaware-doe
+  platform: delaware
+  call_sign: DEDOE
+  name: Delaware school closings (schoolclosings.delaware.gov)
+  market: Delaware
+  dma: null
+  states: [DE]
+  counties:
+    basis: state
+    source: 'Statewide list: every county of DE in the Census 2025 county Gazetteer (2025_Gaz_counties_national.zip,
+      as snowlight.sources.stations.dma reads it); the list is the Delaware Department of Education''s
+      statewide school closings system'
+    fips: ['10001', '10003', '10005']
+  page_url: https://schoolclosings.delaware.gov/
+  data_url: https://schoolclosings.delaware.gov/XML/PortalFeed
+  export_url: null
+  archive_urls:
+  - https://schoolclosings.delaware.gov/
+  - https://schoolclosings.delaware.gov/XML/PortalFeed
+  - https://schoolclosings.delaware.gov/Mobile/
+  poll_minutes: null
+  status: active
+  evidence: 'First-hand check of 2026-09-26 (docs/research/firsthand/others.json, record Delaware DNS;
+    variant delaware-jqgrid-xml). Live read of https://schoolclosings.delaware.gov/ 2026-09-27T06:20:33Z:
+    HTTP 200, 35930 bytes; delaware-page, deferred, loads /XML/PortalFeed. Live read of https://schoolclosings.delaware.gov/XML/PortalFeed
+    2026-09-27T05:52:58Z: HTTP 200, 71 bytes; delaware-portal-xml, empty. Live read of https://schoolclosings.delaware.gov/XML/PortalFeed
+    2026-09-28T00:27:38Z: HTTP 200, 871 bytes; delaware-portal-xml, populated, 1 row (''Indian River School
+    District CLosed on Monday''; five cells, the fifth the district''s RSS item, kept as cell_5). Archived
+    captures read (archive-captures runs 36317643857, 36324857670): 2 deferred, 1 empty, 2 populated.
+    Archived https://schoolclosings.delaware.gov/XML/PortalFeed?_search=false&nd=1550623048723&rows=...
+    captured 2019-02-20T00:37:29Z: delaware-portal-xml, 185 rows (''ALFRED G. WATERS MIDDLE SCHOOL'',
+    ''APPOQUINIMINK ADMINISTRATIVE OFFICE'', ...). Archived https://schoolclosings.delaware.gov/XML/PortalFeed?_search=false&nd=1550623120599&rows=...
+    captured 2019-02-20T00:38:41Z: delaware-portal-xml, 185 rows (''ALFRED G. WATERS MIDDLE SCHOOL'',
+    ''APPOQUINIMINK ADMINISTRATIVE OFFICE'', ...).'
+  list_files:
+  - url: https://schoolclosings.delaware.gov/XML/PortalFeed
+    loaded_by: script
+    seen: 'The state''s page''s jqGrid reads it (url: ''/XML/PortalFeed''; live read 2026-09-27).'
+  page_check: null
+  robots:
+  - url: https://schoolclosings.delaware.gov/
+    checked_at: '2026-09-27T07:03:30Z'
+    state: parsed
+    allowed: true
+    rule: no rule matches
+    crawl_delay: null
+    disallowed_agents: []
+    sha256: e9b95473c70ed56fd372dac59765207b03d4c1396bde818a30aaed4293fc3ce8
+  - url: https://schoolclosings.delaware.gov/XML/PortalFeed
+    checked_at: '2026-09-27T07:03:30Z'
+    state: parsed
+    allowed: true
+    rule: no rule matches
+    crawl_delay: null
+    disallowed_agents: []
+    sha256: e9b95473c70ed56fd372dac59765207b03d4c1396bde818a30aaed4293fc3ce8

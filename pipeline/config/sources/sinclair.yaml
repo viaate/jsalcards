@@ -1,0 +1,3701 @@
+# Station registry for one platform. Loaded with every other file in this folder
+# by snowlight.sources.stations.registry; see its docstring for the fields.
+# `snowlight stations robots --update` rewrites the robots blocks in place.
+platform:
+  id: sinclair
+  name: Sinclair stations' closings lists (NewsTicker files their pages frame, Chameleon ticker)
+  operator: Sinclair, Inc. (Sinclair Broadcast Group) and its partner stations
+  adapter: sinclair
+  poll_minutes: 10
+  terms:
+    automated_access: forbidden
+    summary: 'Every Sinclair station site''s footer links Sinclair''s Terms & Conditions (https://sbgi.net/terms-conditions/),
+      read 2026-09-27: use is for personal, non-commercial purposes, and among the prohibited uses is
+      to ''Access the Service with any mining, scraping, data extraction or other tools''. (The first-hand
+      check of 2026-09-26 searched the same page and missed that line.) The project owner decided on 2026-09-25
+      to read the closings lists anyway for this non-commercial project (owner_decision below); the terms
+      stay recorded here. robots.txt on every Sinclair Next.js host disallows /resources/ftptransfer/,
+      the folder of the list files; the owner decided on 2026-09-26 to read closings files regardless,
+      and each read records the verdict.'
+    evidence:
+    - url: https://sbgi.net/terms-conditions/
+      read_at: '2026-09-27T06:24:26Z'
+      sha256: d134f3ef7f7f08ade77dfb7404943fb666f2f9958fd4339c80a677e13a0a9fce
+      excerpt:
+      - You may only use the material and the services available through this Service for your personal
+        and non-commercial use.
+      - Access the Service with any mining, scraping, data extraction or other tools;
+      - 'The following provision applies to all visitors to this Service (including, without limitation,
+        persons, representatives of legal entities, and digital engines of any kind, including, without
+        limitation, ones that crawl, index, scrape, copy, store, or transmit digital content): By accessing
+        this Service, you specifically acknowledge and agree that: (i) AP Material shall not be published,
+        broadcast, rewritten for broadcast or publication, or redistributed directly or indirectly in
+        any medium;'
+    permission: null
+    owner_decision:
+      decided_by: the project owner (Snowlight)
+      decided_on: '2026-09-25'
+      reference: 'Stated in the build instructions for the station adapters (piece s4c2, round 1): "Terms
+        of use that forbid automated access do not exclude a station: the project owner decided on 2026-09-25
+        to read them for this non-commercial project, so record each station''s terms internally in the
+        registry and read it anyway." The same instructions record the owner''s decision of 2026-09-26
+        to read closings pages and data files even where robots.txt disallows them (naming Sinclair''s
+        /resources/ftptransfer/ files, Allen''s ftp2 files and WVEIS as examples). Relayed to the pipeline''s
+        builder by the project''s build workflow; to revoke it, remove this block and live polling of
+        this platform stops.'
+      scope: 'Live reads of this platform''s public closings lists (the station pages and the list files
+        they frame or load) for Snowlight, a non-commercial project, although the terms above forbid automated
+        access. robots.txt is read and its verdict recorded for every URL requested; the owner decided
+        on 2026-09-26 to read closings pages and files even where robots.txt disallows them. Unchanged
+        by it: the User-Agent names the repository (never a browser string), only the closings page or
+        file is requested (no crawling), requests are paced per host (any Crawl-delay is a floor) with
+        conditional requests and backoff on 429 and 5xx answers, and a station that blocks the project
+        (a 403, or a bot challenge) is not worked around.'
+  notes: 'Station list: Sinclair''s station map (https://sbgi.net/wp-json/sbg/v1/station-map, 140 station
+    web domains), checked station by station in the first-hand check of 2026-09-26 (docs/research/firsthand/others.json,
+    group Sinclair) and re-read live by this part on 2026-09-27. 38 news stations publish a list this
+    adapter reads: 36 frame a NewsTicker export (or, at WJAC, WSBT, WTOV, WCYB and KRCG, a ''Closings
+    Last Updated at'' grid) under /resources/ftptransfer/{call}/closings/ on their own host; WBFF frames
+    its export on ftptransfer.sinclairstoryline.com; KATV and WZTV frame a Chameleon display page whose
+    script reads the Chameleon ticker (ticker.news.sinclairinc.cloud). The live poller reads each framed
+    file directly (data_url); the Chameleon display pages are followed to the ticker address they carry
+    (base64-encoded, with the page''s own public key, which is therefore not written here). Five secondary
+    sites frame a copy of their news station''s file under their own host and are read once, as that station:
+    foxrochester.com (WUHF: WHAM''s file), foxchattanooga.com (WTVC''s), cw7michigan.com / arcwestmichigan.com
+    (WWMT''s), cwcentralpa.com (WHP''s) and fox23maine.com (WPFO: WGME''s). Stations whose pages frame
+    another platform''s list are registered there: KHGI''s WeatherThreat list (weatherthreat-ntv), WJAR''s
+    frame of the Rhode Island Broadcasters Association list (riba-statewide), the TownNews BLOX pages
+    of WRSP, WICS and KHQA (blox), and the FlashAlert region reports KATU, KUNP, KVAL, KPIC, KCBY and
+    KMTR frame (platform flashalert). The news stations without a readable list are registered as no_endpoint
+    with the check that found none; the 37 secondary CW, MyTV and Telemundo sites without a closings page
+    are not listed (their news station''s record covers the market).'
+  shared_paths: []
+stations:
+- id: sinclair-wham
+  platform: sinclair
+  call_sign: WHAM
+  name: WHAM (13wham.com)
+  market: Rochester, NY
+  dma: Rochester, NY DMA
+  states: [NY]
+  counties:
+    basis: dma
+    source: 'DMA county list: alex-patton/US-TVDMA-BY-COUNTY usa-tvdma-county.csv at commit 7f254b8c1843c62ec976a71c40d366d45f6f29cd
+      (sha256 2e2cd00265a8d704...), names resolved to FIPS with the Census 2025 county Gazetteer; Connecticut
+      via the Census county-to-town crosswalk (snowlight.sources.stations.dma); market ''Rochester, NY
+      DMA'''
+    fips: ['36051', '36055', '36069', '36117', '36123']
+  page_url: https://13wham.com/weather/closings
+  data_url: https://13wham.com/resources/ftptransfer/wham/closings/closings.html
+  export_url: null
+  archive_urls:
+  - https://13wham.com/weather/closings
+  - https://13wham.com/resources/ftptransfer/wham/closings/closings.html
+  - https://foxrochester.com/weather/closings
+  - https://foxrochester.com/resources/ftptransfer/wham/closings/closings.html
+  poll_minutes: null
+  status: active
+  evidence: 'First-hand check of 2026-09-26 (docs/research/firsthand/others.json, record WHAM; variant
+    sinclair-next-ftptransfer). Live read of https://13wham.com/weather/closings 2026-09-27T06:09:05Z:
+    HTTP 200, 198083 bytes; sinclair-next-page, deferred, loads /resources/ftptransfer/wham/closings/closings.html.
+    Live read of https://13wham.com/resources/ftptransfer/wham/closings/closings.html 2026-09-27T05:45:29Z:
+    HTTP 200, 1848 bytes, Last-Modified Sun, 27 Sep 2026 05:40:05 GMT; newsticker-html, empty. Archived
+    captures read (archive-captures runs 36299187602, 36317643857, 36324857670): 2 deferred, 3 empty,
+    4 populated. Archived http://13wham.com/resources/ftptransfer/wham/closings/closings.html captured
+    2016-02-16T16:54:20Z: newsticker-html, 124 rows (''Alfred State College'', ''ARC Monroe County'',
+    ...). Archived https://13wham.com/resources/ftptransfer/wham/closings/closings.html captured 2024-02-29T12:41:55Z:
+    newsticker-html, 11 rows (''Candy Apple Childrens Ctr'', ''Newark Education Ctr & Career Creations'',
+    ...). foxrochester.com (WUHF) frames the same file on its own host.'
+  list_files:
+  - url: https://13wham.com/resources/ftptransfer/wham/closings/closings.html
+    loaded_by: frame
+    seen: The station's Next.js closings page frames it (NewsCustomPage htmlEmbed iframe), per the first-hand
+      check of 2026-09-26 and this part's live read of 2026-09-27.
+  page_check: null
+  robots:
+  - url: https://13wham.com/weather/closings
+    checked_at: '2026-09-27T07:03:42Z'
+    state: parsed
+    allowed: true
+    rule: 'Allow: /'
+    crawl_delay: null
+    disallowed_agents:
+    - anthropic-ai
+    - applebot-extended
+    - ccbot
+    - chatgpt-user
+    - claude-web
+    - claudebot
+    - cohere-ai
+    - google-extended
+    - gptbot
+    sha256: 48836ba75318ca8123f939350dcd058c9dc25bc8d3db287f1d45773e9aa6cb8b
+  - url: https://13wham.com/resources/ftptransfer/wham/closings/closings.html
+    checked_at: '2026-09-27T07:03:42Z'
+    state: parsed
+    allowed: false
+    rule: 'Disallow: /resources/ftptransfer/'
+    crawl_delay: null
+    disallowed_agents:
+    - anthropic-ai
+    - applebot-extended
+    - ccbot
+    - chatgpt-user
+    - claude-web
+    - claudebot
+    - cohere-ai
+    - google-extended
+    - gptbot
+    sha256: 48836ba75318ca8123f939350dcd058c9dc25bc8d3db287f1d45773e9aa6cb8b
+- id: sinclair-wxlv
+  platform: sinclair
+  call_sign: WXLV
+  name: WXLV (abc45.com)
+  market: Greensboro - High Point - Winston Salem, NC
+  dma: Greensboro - H.Point - W.Salem, NC - VA DMA
+  states: [NC, VA]
+  counties:
+    basis: dma
+    source: 'DMA county list: alex-patton/US-TVDMA-BY-COUNTY usa-tvdma-county.csv at commit 7f254b8c1843c62ec976a71c40d366d45f6f29cd
+      (sha256 2e2cd00265a8d704...), names resolved to FIPS with the Census 2025 county Gazetteer; Connecticut
+      via the Census county-to-town crosswalk (snowlight.sources.stations.dma); market ''Greensboro -
+      H.Point - W.Salem, NC - VA DMA'''
+    fips: ['37001', '37005', '37033', '37057', '37059', '37067', '37081', '37123', '37151', '37157', '37169',
+      '37171', '37193', '37197', '51077', '51141']
+  page_url: https://abc45.com/weather/closings
+  data_url: https://abc45.com/resources/ftptransfer/wxlv/closings/closings.html
+  export_url: null
+  archive_urls:
+  - https://abc45.com/weather/closings
+  - https://abc45.com/resources/ftptransfer/wxlv/closings/closings.html
+  poll_minutes: null
+  status: active
+  evidence: 'First-hand check of 2026-09-26 (docs/research/firsthand/others.json, record WXLV; variant
+    sinclair-next-ftptransfer). Live read of https://abc45.com/resources/ftptransfer/wxlv/closings/closings.html
+    2026-09-27T05:45:34Z: HTTP 200, 617 bytes, Last-Modified Sun, 27 Sep 2026 05:40:05 GMT; newsticker-html,
+    empty. Archived captures read (archive-captures runs 36299187602, 36317643857, 36324857670): 1 deferred,
+    5 empty, 2 populated. Archived http://abc45.com/resources/ftptransfer/wxlv/closings/closings.html
+    captured 2018-01-04T04:10:18Z: newsticker-html, 8 rows (''Carroll County Public Schools'', ''Davidson
+    County Schools'', ...). Archived https://abc45.com/resources/ftptransfer/wxlv/closings/closings.html
+    captured 2025-01-21T19:09:02Z: newsticker-html, 4 rows (''Davidson County Schools'', ''Davidson-Davie
+    Community College All locations'', ...).'
+  list_files:
+  - url: https://abc45.com/resources/ftptransfer/wxlv/closings/closings.html
+    loaded_by: frame
+    seen: The station's Next.js closings page frames it (NewsCustomPage htmlEmbed iframe), per the first-hand
+      check of 2026-09-26 and this part's live read of 2026-09-27.
+  page_check: null
+  robots:
+  - url: https://abc45.com/weather/closings
+    checked_at: '2026-09-27T07:03:48Z'
+    state: parsed
+    allowed: true
+    rule: 'Allow: /'
+    crawl_delay: null
+    disallowed_agents:
+    - anthropic-ai
+    - applebot-extended
+    - ccbot
+    - chatgpt-user
+    - claude-web
+    - claudebot
+    - cohere-ai
+    - google-extended
+    - gptbot
+    sha256: 48836ba75318ca8123f939350dcd058c9dc25bc8d3db287f1d45773e9aa6cb8b
+  - url: https://abc45.com/resources/ftptransfer/wxlv/closings/closings.html
+    checked_at: '2026-09-27T07:03:48Z'
+    state: parsed
+    allowed: false
+    rule: 'Disallow: /resources/ftptransfer/'
+    crawl_delay: null
+    disallowed_agents:
+    - anthropic-ai
+    - applebot-extended
+    - ccbot
+    - chatgpt-user
+    - claude-web
+    - claudebot
+    - cohere-ai
+    - google-extended
+    - gptbot
+    sha256: 48836ba75318ca8123f939350dcd058c9dc25bc8d3db287f1d45773e9aa6cb8b
+- id: sinclair-wsyx
+  platform: sinclair
+  call_sign: WSYX
+  name: WSYX (abc6onyourside.com)
+  market: Columbus, OH
+  dma: Columbus, OH DMA
+  states: [OH]
+  counties:
+    basis: dma
+    source: 'DMA county list: alex-patton/US-TVDMA-BY-COUNTY usa-tvdma-county.csv at commit 7f254b8c1843c62ec976a71c40d366d45f6f29cd
+      (sha256 2e2cd00265a8d704...), names resolved to FIPS with the Census 2025 county Gazetteer; Connecticut
+      via the Census county-to-town crosswalk (snowlight.sources.stations.dma); market ''Columbus, OH
+      DMA'''
+    fips: ['39031', '39033', '39041', '39045', '39047', '39049', '39065', '39073', '39083', '39089', '39097',
+      '39101', '39115', '39117', '39127', '39129', '39131', '39141', '39159']
+  page_url: https://abc6onyourside.com/weather/closings
+  data_url: https://abc6onyourside.com/resources/ftptransfer/wsyx/closings/closings.html
+  export_url: null
+  archive_urls:
+  - https://abc6onyourside.com/weather/closings
+  - https://abc6onyourside.com/resources/ftptransfer/wsyx/closings/closings.html
+  poll_minutes: null
+  status: active
+  evidence: 'First-hand check of 2026-09-26 (docs/research/firsthand/others.json, record WSYX; variant
+    sinclair-next-ftptransfer). Live read of https://abc6onyourside.com/resources/ftptransfer/wsyx/closings/closings.html
+    2026-09-27T05:45:39Z: HTTP 200, 212 bytes, Last-Modified Tue, 21 Jul 2026 13:15:09 GMT; newsticker-html,
+    empty. Archived captures read (archive-captures runs 36299187602, 36317643857, 36324857670): 2 deferred,
+    5 empty, 3 populated. Archived https://abc6onyourside.com/resources/ftptransfer/wsyx/closings/closings.html
+    captured 2025-01-16T06:04:00Z: newsticker-html, 8 rows (''Champaign County'', ''Coshocton County'',
+    ...). Archived https://abc6onyourside.com/resources/ftptransfer/wsyx/closings/closings.html captured
+    2025-02-06T09:51:55Z: newsticker-html, 8 rows (''Fairfield County'', ''Franklin Local'', ...).'
+  list_files:
+  - url: https://abc6onyourside.com/resources/ftptransfer/wsyx/closings/closings.html
+    loaded_by: frame
+    seen: The station's Next.js closings page frames it (NewsCustomPage htmlEmbed iframe), per the first-hand
+      check of 2026-09-26 and this part's live read of 2026-09-27.
+  page_check: null
+  robots:
+  - url: https://abc6onyourside.com/weather/closings
+    checked_at: '2026-09-27T07:03:46Z'
+    state: parsed
+    allowed: true
+    rule: 'Allow: /'
+    crawl_delay: null
+    disallowed_agents:
+    - anthropic-ai
+    - applebot-extended
+    - ccbot
+    - chatgpt-user
+    - claude-web
+    - claudebot
+    - cohere-ai
+    - google-extended
+    - gptbot
+    sha256: 48836ba75318ca8123f939350dcd058c9dc25bc8d3db287f1d45773e9aa6cb8b
+  - url: https://abc6onyourside.com/resources/ftptransfer/wsyx/closings/closings.html
+    checked_at: '2026-09-27T07:03:46Z'
+    state: parsed
+    allowed: false
+    rule: 'Disallow: /resources/ftptransfer/'
+    crawl_delay: null
+    disallowed_agents:
+    - anthropic-ai
+    - applebot-extended
+    - ccbot
+    - chatgpt-user
+    - claude-web
+    - claudebot
+    - cohere-ai
+    - google-extended
+    - gptbot
+    sha256: 48836ba75318ca8123f939350dcd058c9dc25bc8d3db287f1d45773e9aa6cb8b
+- id: sinclair-kvii
+  platform: sinclair
+  call_sign: KVII
+  name: KVII (abc7amarillo.com)
+  market: Amarillo, TX
+  dma: Amarillo, TX -NM - OK DMA
+  states: [KS, NM, OK, TX]
+  counties:
+    basis: dma
+    source: 'DMA county list: alex-patton/US-TVDMA-BY-COUNTY usa-tvdma-county.csv at commit 7f254b8c1843c62ec976a71c40d366d45f6f29cd
+      (sha256 2e2cd00265a8d704...), names resolved to FIPS with the Census 2025 county Gazetteer; Connecticut
+      via the Census county-to-town crosswalk (snowlight.sources.stations.dma); market ''Amarillo, TX
+      -NM - OK DMA'''
+    fips: ['20129', '35009', '35037', '35041', '35059', '40007', '40025', '40139', '48011', '48045', '48065',
+      '48069', '48075', '48087', '48101', '48111', '48117', '48129', '48179', '48191', '48195', '48205',
+      '48211', '48233', '48295', '48341', '48357', '48359', '48369', '48375', '48381', '48393', '48421',
+      '48437', '48483']
+  page_url: https://abc7amarillo.com/weather/closings
+  data_url: https://abc7amarillo.com/resources/ftptransfer/kvii/closings/closings.html
+  export_url: null
+  archive_urls:
+  - https://abc7amarillo.com/weather/closings
+  - https://abc7amarillo.com/resources/ftptransfer/kvii/closings/closings.html
+  poll_minutes: null
+  status: active
+  evidence: 'First-hand check of 2026-09-26 (docs/research/firsthand/others.json, record KVIH/KVII; variant
+    sinclair-next-ftptransfer). Live read of https://abc7amarillo.com/resources/ftptransfer/kvii/closings/closings.html
+    2026-09-27T05:45:44Z: HTTP 200, 629 bytes, Last-Modified Sun, 27 Sep 2026 05:40:05 GMT; newsticker-html,
+    empty. Archived captures read (archive-captures run 36299187602): 1 deferred, 1 populated. Archived
+    https://abc7amarillo.com/resources/ftptransfer/kvii/closings/closings.html captured 2026-01-28T05:37:08Z:
+    newsticker-html, 5 rows (''Hart ISD'', ''Hedley ISD'', ...).'
+  list_files:
+  - url: https://abc7amarillo.com/resources/ftptransfer/kvii/closings/closings.html
+    loaded_by: frame
+    seen: The station's Next.js closings page frames it (NewsCustomPage htmlEmbed iframe), per the first-hand
+      check of 2026-09-26 and this part's live read of 2026-09-27.
+  page_check: null
+  robots:
+  - url: https://abc7amarillo.com/weather/closings
+    checked_at: '2026-09-27T07:03:38Z'
+    state: parsed
+    allowed: true
+    rule: 'Allow: /'
+    crawl_delay: null
+    disallowed_agents:
+    - anthropic-ai
+    - applebot-extended
+    - ccbot
+    - chatgpt-user
+    - claude-web
+    - claudebot
+    - cohere-ai
+    - google-extended
+    - gptbot
+    sha256: 48836ba75318ca8123f939350dcd058c9dc25bc8d3db287f1d45773e9aa6cb8b
+  - url: https://abc7amarillo.com/resources/ftptransfer/kvii/closings/closings.html
+    checked_at: '2026-09-27T07:03:38Z'
+    state: parsed
+    allowed: false
+    rule: 'Disallow: /resources/ftptransfer/'
+    crawl_delay: null
+    disallowed_agents:
+    - anthropic-ai
+    - applebot-extended
+    - ccbot
+    - chatgpt-user
+    - claude-web
+    - claudebot
+    - cohere-ai
+    - google-extended
+    - gptbot
+    sha256: 48836ba75318ca8123f939350dcd058c9dc25bc8d3db287f1d45773e9aa6cb8b
+- id: sinclair-wciv
+  platform: sinclair
+  call_sign: WCIV
+  name: WCIV (abcnews4.com)
+  market: Charleston, SC
+  dma: Charleston, SC DMA
+  states: [SC]
+  counties:
+    basis: dma
+    source: 'DMA county list: alex-patton/US-TVDMA-BY-COUNTY usa-tvdma-county.csv at commit 7f254b8c1843c62ec976a71c40d366d45f6f29cd
+      (sha256 2e2cd00265a8d704...), names resolved to FIPS with the Census 2025 county Gazetteer; Connecticut
+      via the Census county-to-town crosswalk (snowlight.sources.stations.dma); market ''Charleston, SC
+      DMA'''
+    fips: ['45015', '45019', '45029', '45035', '45043', '45089']
+  page_url: https://abcnews4.com/weather/closings
+  data_url: https://abcnews4.com/resources/ftptransfer/wciv/closings/closings.html
+  export_url: null
+  archive_urls:
+  - https://abcnews4.com/weather/closings
+  - https://abcnews4.com/resources/ftptransfer/wciv/closings/closings.html
+  - http://abcnews4.com/resources/ftptransfer/wciv/closings.html
+  poll_minutes: null
+  status: active
+  evidence: 'First-hand check of 2026-09-26 (docs/research/firsthand/others.json, record WCIV-2; variant
+    sinclair-next-ftptransfer). Live read of https://abcnews4.com/resources/ftptransfer/wciv/closings/closings.html
+    2026-09-27T05:45:49Z: HTTP 200, 211 bytes, Last-Modified Sun, 27 Sep 2026 05:40:05 GMT; newsticker-html,
+    empty. Archived captures read (archive-captures runs 36299187602, 36317643857, 36341591786, 36349462045):
+    3 deferred, 1 empty, 2 populated. Archived http://abcnews4.com/resources/ftptransfer/wciv/closings.html
+    captured 2017-09-10T08:05:49Z: newsticker-html, 49 rows (''Ashley Oaks OBGYN'', ''Ashley River Baptist
+    Church'', ...). Archived http://abcnews4.com/resources/ftptransfer/wciv/closings.html captured 2018-01-27T02:46:08Z:
+    newsticker-html, 17 rows (''William-Randolph Christian Preparatory'', ''Berkeley County School District'',
+    ...). Proven through its closings page: the page''s capture of 2017-09-10 04:32 UTC framed the station''s
+    earlier NewsTicker file (/resources/ftptransfer/wciv/closings.html), whose capture 3.5 hours later,
+    during Hurricane Irma, lists 49 rows (runs 36341591786 and 36349462045; it lists 17 on 2018-01-27).
+    The file the page frames today (/resources/ftptransfer/wciv/closings/closings.html) is archived once,
+    empty (2026-02-12).'
+  list_files:
+  - url: https://abcnews4.com/resources/ftptransfer/wciv/closings/closings.html
+    loaded_by: frame
+    seen: The station's Next.js closings page frames it (NewsCustomPage htmlEmbed iframe), per the first-hand
+      check of 2026-09-26 and this part's live read of 2026-09-27.
+  - url: http://abcnews4.com/resources/ftptransfer/wciv/closings.html
+    loaded_by: unseen
+    seen: WCIV's NewsTicker export at an earlier address in the station's own /resources/ftptransfer/wciv/
+      folder on abcnews4.com (no downloaded page capture names it); its captures of 2017-09-10 (Hurricane
+      Irma, 49 rows) and 2018-01-27 (17 rows) list Charleston-area school districts, colleges and county
+      offices (archive-captures run 36341591786).
+  page_check: null
+  robots:
+  - url: https://abcnews4.com/weather/closings
+    checked_at: '2026-09-27T07:03:41Z'
+    state: parsed
+    allowed: true
+    rule: 'Allow: /'
+    crawl_delay: null
+    disallowed_agents:
+    - anthropic-ai
+    - applebot-extended
+    - ccbot
+    - chatgpt-user
+    - claude-web
+    - claudebot
+    - cohere-ai
+    - google-extended
+    - gptbot
+    sha256: 48836ba75318ca8123f939350dcd058c9dc25bc8d3db287f1d45773e9aa6cb8b
+  - url: https://abcnews4.com/resources/ftptransfer/wciv/closings/closings.html
+    checked_at: '2026-09-27T07:03:41Z'
+    state: parsed
+    allowed: false
+    rule: 'Disallow: /resources/ftptransfer/'
+    crawl_delay: null
+    disallowed_agents:
+    - anthropic-ai
+    - applebot-extended
+    - ccbot
+    - chatgpt-user
+    - claude-web
+    - claudebot
+    - cohere-ai
+    - google-extended
+    - gptbot
+    sha256: 48836ba75318ca8123f939350dcd058c9dc25bc8d3db287f1d45773e9aa6cb8b
+- id: sinclair-kdnl
+  platform: sinclair
+  call_sign: KDNL
+  name: KDNL (abcstlouis.com)
+  market: St. Louis, MO
+  dma: St. Louis, MO - IL DMA
+  states: [IL, MO]
+  counties:
+    basis: dma
+    source: 'DMA county list: alex-patton/US-TVDMA-BY-COUNTY usa-tvdma-county.csv at commit 7f254b8c1843c62ec976a71c40d366d45f6f29cd
+      (sha256 2e2cd00265a8d704...), names resolved to FIPS with the Census 2025 county Gazetteer; Connecticut
+      via the Census county-to-town crosswalk (snowlight.sources.stations.dma); market ''St. Louis, MO
+      - IL DMA'''
+    fips: ['17005', '17013', '17027', '17051', '17061', '17083', '17117', '17119', '17121', '17133', '17135',
+      '17157', '17163', '17189', '29055', '29071', '29073', '29093', '29099', '29113', '29163', '29183',
+      '29186', '29187', '29189', '29219', '29221', '29510']
+  page_url: https://abcstlouis.com/weather/closings
+  data_url: https://abcstlouis.com/resources/ftptransfer/kdnl/closings/closings.html
+  export_url: null
+  archive_urls:
+  - https://abcstlouis.com/weather/closings
+  - https://abcstlouis.com/resources/ftptransfer/kdnl/closings/closings.html
+  poll_minutes: null
+  status: active
+  evidence: 'First-hand check of 2026-09-26 (docs/research/firsthand/others.json, record KDNL; variant
+    sinclair-next-ftptransfer). Live read of https://abcstlouis.com/resources/ftptransfer/kdnl/closings/closings.html
+    2026-09-27T05:45:54Z: HTTP 200, 224 bytes, Last-Modified Sun, 27 Sep 2026 05:40:04 GMT; newsticker-html,
+    empty. Archived captures read (archive-captures runs 36299187602, 36317643857, 36324857670, 36341591786):
+    2 deferred, 5 empty. Never seen with a row: the archive lists 11 captures of its list file (2017 to
+    2025; listings of run 36299187602); the archive lists 202 captures of its page (2017 to 2026; listings
+    of run 36299187602). Downloaded and read: 2 deferred, 5 empty; 2 not read (a page with no list whose
+    file was not captured near it, or a capture the archive did not serve).'
+  list_files:
+  - url: https://abcstlouis.com/resources/ftptransfer/kdnl/closings/closings.html
+    loaded_by: frame
+    seen: The station's Next.js closings page frames it (NewsCustomPage htmlEmbed iframe), per the first-hand
+      check of 2026-09-26 and this part's live read of 2026-09-27.
+  page_check: null
+  robots:
+  - url: https://abcstlouis.com/weather/closings
+    checked_at: '2026-09-27T07:03:36Z'
+    state: parsed
+    allowed: true
+    rule: 'Allow: /'
+    crawl_delay: null
+    disallowed_agents:
+    - anthropic-ai
+    - applebot-extended
+    - ccbot
+    - chatgpt-user
+    - claude-web
+    - claudebot
+    - cohere-ai
+    - google-extended
+    - gptbot
+    sha256: 48836ba75318ca8123f939350dcd058c9dc25bc8d3db287f1d45773e9aa6cb8b
+  - url: https://abcstlouis.com/resources/ftptransfer/kdnl/closings/closings.html
+    checked_at: '2026-09-27T07:03:36Z'
+    state: parsed
+    allowed: false
+    rule: 'Disallow: /resources/ftptransfer/'
+    crawl_delay: null
+    disallowed_agents:
+    - anthropic-ai
+    - applebot-extended
+    - ccbot
+    - chatgpt-user
+    - claude-web
+    - claudebot
+    - cohere-ai
+    - google-extended
+    - gptbot
+    sha256: 48836ba75318ca8123f939350dcd058c9dc25bc8d3db287f1d45773e9aa6cb8b
+- id: sinclair-kgan
+  platform: sinclair
+  call_sign: KGAN
+  name: KGAN (cbs2iowa.com)
+  market: Cedar Rapids - Waterloo - Dubuque, IA
+  dma: Cedar Rapids - Waterloo&Dubuque, IA - WI DMA
+  states: [IA]
+  counties:
+    basis: dma
+    source: 'DMA county list: alex-patton/US-TVDMA-BY-COUNTY usa-tvdma-county.csv at commit 7f254b8c1843c62ec976a71c40d366d45f6f29cd
+      (sha256 2e2cd00265a8d704...), names resolved to FIPS with the Census 2025 county Gazetteer; Connecticut
+      via the Census county-to-town crosswalk (snowlight.sources.stations.dma); market ''Cedar Rapids
+      - Waterloo&Dubuque, IA - WI DMA'''
+    fips: ['19005', '19011', '19013', '19017', '19019', '19023', '19031', '19037', '19043', '19055', '19061',
+      '19065', '19075', '19095', '19103', '19105', '19107', '19113', '19171', '19183', '19191']
+  page_url: https://cbs2iowa.com/weather/closings
+  data_url: https://cbs2iowa.com/resources/ftptransfer/kgan/closings/closings.html
+  export_url: null
+  archive_urls:
+  - https://cbs2iowa.com/weather/closings
+  - https://cbs2iowa.com/resources/ftptransfer/kgan/closings/closings.html
+  poll_minutes: null
+  status: active
+  evidence: 'First-hand check of 2026-09-26 (docs/research/firsthand/others.json, record KGAN; variant
+    sinclair-next-ftptransfer). Live read of https://cbs2iowa.com/resources/ftptransfer/kgan/closings/closings.html
+    2026-09-27T05:45:59Z: HTTP 200, 722 bytes, Last-Modified Sun, 27 Sep 2026 05:40:04 GMT; newsticker-html,
+    empty. Archived captures read (archive-captures runs 36299187602, 36317643857, 36324857670): 2 deferred,
+    5 empty, 2 populated. Archived https://cbs2iowa.com/resources/ftptransfer/kgan/closings/closings.html
+    captured 2025-01-21T06:55:21Z: newsticker-html, 82 rows (''AGWSR CSD'', ''Alburnett CSD'', ...). Archived
+    https://cbs2iowa.com/resources/ftptransfer/kgan/closings/closings.html captured 2025-02-05T22:25:30Z:
+    newsticker-html, 36 rows (''Anchor Bible Church - Center Point'', ''Bethany Lutheran Church - Cedar
+    Rapids'', ...).'
+  list_files:
+  - url: https://cbs2iowa.com/resources/ftptransfer/kgan/closings/closings.html
+    loaded_by: frame
+    seen: The station's Next.js closings page frames it (NewsCustomPage htmlEmbed iframe), per the first-hand
+      check of 2026-09-26 and this part's live read of 2026-09-27.
+  page_check: null
+  robots:
+  - url: https://cbs2iowa.com/weather/closings
+    checked_at: '2026-09-27T07:03:36Z'
+    state: parsed
+    allowed: true
+    rule: 'Allow: /'
+    crawl_delay: null
+    disallowed_agents:
+    - anthropic-ai
+    - applebot-extended
+    - ccbot
+    - chatgpt-user
+    - claude-web
+    - claudebot
+    - cohere-ai
+    - google-extended
+    - gptbot
+    sha256: 48836ba75318ca8123f939350dcd058c9dc25bc8d3db287f1d45773e9aa6cb8b
+  - url: https://cbs2iowa.com/resources/ftptransfer/kgan/closings/closings.html
+    checked_at: '2026-09-27T07:03:36Z'
+    state: parsed
+    allowed: false
+    rule: 'Disallow: /resources/ftptransfer/'
+    crawl_delay: null
+    disallowed_agents:
+    - anthropic-ai
+    - applebot-extended
+    - ccbot
+    - chatgpt-user
+    - claude-web
+    - claudebot
+    - cohere-ai
+    - google-extended
+    - gptbot
+    sha256: 48836ba75318ca8123f939350dcd058c9dc25bc8d3db287f1d45773e9aa6cb8b
+- id: sinclair-wstm
+  platform: sinclair
+  call_sign: WSTM
+  name: WSTM (cnycentral.com)
+  market: Syracuse, NY
+  dma: Syracuse, NY DMA*
+  states: [NY]
+  counties:
+    basis: dma
+    source: 'DMA county list: alex-patton/US-TVDMA-BY-COUNTY usa-tvdma-county.csv at commit 7f254b8c1843c62ec976a71c40d366d45f6f29cd
+      (sha256 2e2cd00265a8d704...), names resolved to FIPS with the Census 2025 county Gazetteer; Connecticut
+      via the Census county-to-town crosswalk (snowlight.sources.stations.dma); market ''Syracuse, NY
+      DMA*'''
+    fips: ['36011', '36023', '36053', '36067', '36075', '36099', '36109']
+  page_url: https://cnycentral.com/weather/closings
+  data_url: https://cnycentral.com/resources/ftptransfer/wstm/closings/closings.htm
+  export_url: null
+  archive_urls:
+  - https://cnycentral.com/weather/closings
+  - https://cnycentral.com/resources/ftptransfer/wstm/closings/closings.htm
+  poll_minutes: null
+  status: active
+  evidence: 'First-hand check of 2026-09-26 (docs/research/firsthand/others.json, record WSTM/WTVH; variant
+    sinclair-next-ftptransfer). Live read of https://cnycentral.com/resources/ftptransfer/wstm/closings/closings.htm
+    2026-09-27T05:46:05Z: HTTP 200, 618 bytes, Last-Modified Tue, 21 Jul 2026 13:25:10 GMT; newsticker-html,
+    empty. Archived captures read (archive-captures runs 36299187602, 36317643857, 36324857670): 2 deferred,
+    4 empty, 4 populated. Archived https://cnycentral.com/resources/ftptransfer/wstm/closings/closings.htm
+    captured 2025-01-10T00:36:13Z: newsticker-html, 5 rows (''Grace Chapel in Skaneateles'', ''Holy Cross
+    Church, DeWitt'', ...). Archived https://cnycentral.com/resources/ftptransfer/wstm/closings/closings.htm
+    captured 2025-02-06T08:29:41Z: newsticker-html, 3 rows (''Fabius-Pompey Central Schools'', ''Moravia
+    Central Schools'', ...).'
+  list_files:
+  - url: https://cnycentral.com/resources/ftptransfer/wstm/closings/closings.htm
+    loaded_by: frame
+    seen: The station's Next.js closings page frames it (NewsCustomPage htmlEmbed iframe), per the first-hand
+      check of 2026-09-26 and this part's live read of 2026-09-27.
+  page_check: null
+  robots:
+  - url: https://cnycentral.com/weather/closings
+    checked_at: '2026-09-27T07:03:46Z'
+    state: parsed
+    allowed: true
+    rule: 'Allow: /'
+    crawl_delay: null
+    disallowed_agents:
+    - anthropic-ai
+    - applebot-extended
+    - ccbot
+    - chatgpt-user
+    - claude-web
+    - claudebot
+    - cohere-ai
+    - google-extended
+    - gptbot
+    sha256: 48836ba75318ca8123f939350dcd058c9dc25bc8d3db287f1d45773e9aa6cb8b
+  - url: https://cnycentral.com/resources/ftptransfer/wstm/closings/closings.htm
+    checked_at: '2026-09-27T07:03:46Z'
+    state: parsed
+    allowed: false
+    rule: 'Disallow: /resources/ftptransfer/'
+    crawl_delay: null
+    disallowed_agents:
+    - anthropic-ai
+    - applebot-extended
+    - ccbot
+    - chatgpt-user
+    - claude-web
+    - claudebot
+    - cohere-ai
+    - google-extended
+    - gptbot
+    sha256: 48836ba75318ca8123f939350dcd058c9dc25bc8d3db287f1d45773e9aa6cb8b
+- id: sinclair-kyuu-ld
+  platform: sinclair
+  call_sign: KYUU
+  name: KYUU-LD (cwtreasurevalley.com)
+  market: Boise, ID
+  dma: Boise, ID - OR DMA
+  states: [ID, OR]
+  counties:
+    basis: dma
+    source: 'DMA county list: alex-patton/US-TVDMA-BY-COUNTY usa-tvdma-county.csv at commit 7f254b8c1843c62ec976a71c40d366d45f6f29cd
+      (sha256 2e2cd00265a8d704...), names resolved to FIPS with the Census 2025 county Gazetteer; Connecticut
+      via the Census county-to-town crosswalk (snowlight.sources.stations.dma); market ''Boise, ID - OR
+      DMA'''
+    fips: ['16001', '16003', '16015', '16025', '16027', '16039', '16045', '16073', '16075', '16085', '16087',
+      '41023', '41045']
+  page_url: null
+  data_url: null
+  export_url: null
+  archive_urls:
+  - https://cwtreasurevalley.com/weather/closings
+  - https://cwtreasurevalley.com/resources/ftptransfer/kboi/closings/closings.html
+  poll_minutes: null
+  status: no_endpoint
+  evidence: 'First-hand check of 2026-09-26 (docs/research/firsthand/others.json, record KYUU-LD; variant
+    sinclair-next-ftptransfer). The closings page (https://cwtreasurevalley.com/weather/closings, live
+    2026-09-27T21:53Z, HTTP 200) still frames https://cwtreasurevalley.com/resources/ftptransfer/kboi/closings/closings.html,
+    but that file is empty: live reads of 2026-09-27T05:46:20Z and 2026-09-27T21:53Z answered HTTP 200
+    with 0 bytes (Content-Length 0, ETag d41d8cd98f00b204e9800998ecf8427e, the MD5 of no bytes), Last-Modified
+    Tue, 21 Jul 2026 13:18:09 GMT. A file of no bytes is not a NewsTicker export: the same file''s archived
+    captures of 2020-02-17 (1,848 bytes) and 2021-10-20 (618 bytes) were NewsTicker exports listing nothing,
+    and nothing in them or in any live read says what an empty file means. So the station has no list
+    to read today and is not polled; its page and file stay in archive_urls. Re-check in the first winter
+    week: if the file is written again, set this station active.'
+  list_files:
+  - url: https://cwtreasurevalley.com/resources/ftptransfer/kboi/closings/closings.html
+    loaded_by: frame
+    seen: The station's Next.js closings page frames it (NewsCustomPage htmlEmbed iframe), per the first-hand
+      check of 2026-09-26 and this part's live read of 2026-09-27.
+  page_check: null
+  robots:
+  - url: https://cwtreasurevalley.com/weather/closings
+    checked_at: '2026-09-27T07:03:39Z'
+    state: parsed
+    allowed: true
+    rule: 'Allow: /'
+    crawl_delay: null
+    disallowed_agents:
+    - anthropic-ai
+    - applebot-extended
+    - ccbot
+    - chatgpt-user
+    - claude-web
+    - claudebot
+    - cohere-ai
+    - google-extended
+    - gptbot
+    sha256: 48836ba75318ca8123f939350dcd058c9dc25bc8d3db287f1d45773e9aa6cb8b
+  - url: https://cwtreasurevalley.com/resources/ftptransfer/kboi/closings/closings.html
+    checked_at: '2026-09-27T07:03:39Z'
+    state: parsed
+    allowed: false
+    rule: 'Disallow: /resources/ftptransfer/'
+    crawl_delay: null
+    disallowed_agents:
+    - anthropic-ai
+    - applebot-extended
+    - ccbot
+    - chatgpt-user
+    - claude-web
+    - claudebot
+    - cohere-ai
+    - google-extended
+    - gptbot
+    sha256: 48836ba75318ca8123f939350dcd058c9dc25bc8d3db287f1d45773e9aa6cb8b
+- id: sinclair-wkef
+  platform: sinclair
+  call_sign: WKEF
+  name: WKEF (dayton247now.com)
+  market: Dayton, OH
+  dma: Dayton, OH - IN DMA
+  states: [IN, OH]
+  counties:
+    basis: dma
+    source: 'DMA county list: alex-patton/US-TVDMA-BY-COUNTY usa-tvdma-county.csv at commit 7f254b8c1843c62ec976a71c40d366d45f6f29cd
+      (sha256 2e2cd00265a8d704...), names resolved to FIPS with the Census 2025 county Gazetteer; Connecticut
+      via the Census county-to-town crosswalk (snowlight.sources.stations.dma); market ''Dayton, OH -
+      IN DMA'''
+    fips: ['18177', '39011', '39021', '39023', '39037', '39057', '39091', '39107', '39109', '39113', '39135',
+      '39149']
+  page_url: https://dayton247now.com/weather/closings
+  data_url: https://dayton247now.com/resources/ftptransfer/wrgt/closings/closings.html
+  export_url: null
+  archive_urls:
+  - https://dayton247now.com/weather/closings
+  - https://dayton247now.com/resources/ftptransfer/wrgt/closings/closings.html
+  poll_minutes: null
+  status: active
+  evidence: 'First-hand check of 2026-09-26 (docs/research/firsthand/others.json, record WKEF; variant
+    sinclair-next-ftptransfer). Live read of https://dayton247now.com/resources/ftptransfer/wrgt/closings/closings.html
+    2026-09-27T05:46:26Z: HTTP 200, 556 bytes, Last-Modified Tue, 21 Jul 2026 13:15:27 GMT; newsticker-html,
+    empty. Archived captures read (archive-captures runs 36299187602, 36317643857, 36324857670): 1 deferred,
+    4 empty. Never seen with a row: the archive lists 7 captures of its list file (2021 to 2025; listings
+    of run 36299187602); the archive lists 465 captures of its page (2019 to 2026; listings of run 36299187602).
+    Downloaded and read: 1 deferred, 4 empty; 1 not read (a page with no list whose file was not captured
+    near it, or a capture the archive did not serve).'
+  list_files:
+  - url: https://dayton247now.com/resources/ftptransfer/wrgt/closings/closings.html
+    loaded_by: frame
+    seen: The station's Next.js closings page frames it (NewsCustomPage htmlEmbed iframe), per the first-hand
+      check of 2026-09-26 and this part's live read of 2026-09-27.
+  page_check: null
+  robots:
+  - url: https://dayton247now.com/weather/closings
+    checked_at: '2026-09-27T07:03:43Z'
+    state: parsed
+    allowed: true
+    rule: 'Allow: /'
+    crawl_delay: null
+    disallowed_agents:
+    - anthropic-ai
+    - applebot-extended
+    - ccbot
+    - chatgpt-user
+    - claude-web
+    - claudebot
+    - cohere-ai
+    - google-extended
+    - gptbot
+    sha256: 48836ba75318ca8123f939350dcd058c9dc25bc8d3db287f1d45773e9aa6cb8b
+  - url: https://dayton247now.com/resources/ftptransfer/wrgt/closings/closings.html
+    checked_at: '2026-09-27T07:03:43Z'
+    state: parsed
+    allowed: false
+    rule: 'Disallow: /resources/ftptransfer/'
+    crawl_delay: null
+    disallowed_agents:
+    - anthropic-ai
+    - applebot-extended
+    - ccbot
+    - chatgpt-user
+    - claude-web
+    - claudebot
+    - cohere-ai
+    - google-extended
+    - gptbot
+    sha256: 48836ba75318ca8123f939350dcd058c9dc25bc8d3db287f1d45773e9aa6cb8b
+- id: sinclair-wztv
+  platform: sinclair
+  call_sign: WZTV
+  name: WZTV (fox17.com)
+  market: Nashville, TN
+  dma: Nashville, TN - KY DMA
+  states: [KY, TN]
+  counties:
+    basis: dma
+    source: 'DMA county list: alex-patton/US-TVDMA-BY-COUNTY usa-tvdma-county.csv at commit 7f254b8c1843c62ec976a71c40d366d45f6f29cd
+      (sha256 2e2cd00265a8d704...), names resolved to FIPS with the Census 2025 county Gazetteer; Connecticut
+      via the Census county-to-town crosswalk (snowlight.sources.stations.dma); market ''Nashville, TN
+      - KY DMA'''
+    fips: ['21003', '21047', '21053', '21141', '21171', '21213', '21219', '21221', '47003', '47005', '47015',
+      '47021', '47027', '47031', '47037', '47039', '47041', '47043', '47051', '47055', '47079', '47081',
+      '47083', '47085', '47087', '47099', '47101', '47111', '47117', '47119', '47125', '47127', '47133',
+      '47135', '47137', '47141', '47147', '47149', '47159', '47161', '47165', '47169', '47175', '47177',
+      '47185', '47187', '47189']
+  page_url: https://fox17.com/weather/closings
+  data_url: https://fox17.com/resources/ftptransfer/wztv/closings/report.html
+  export_url: null
+  archive_urls:
+  - https://fox17.com/weather/closings
+  - https://fox17.com/resources/ftptransfer/wztv/closings/report.html
+  - https://ticker.news.sinclairinc.cloud/chameleon/blade/query/3/CLIOSING/3
+  poll_minutes: null
+  status: active
+  evidence: 'First-hand check of 2026-09-26 (docs/research/firsthand/others.json, record WZTV; variant
+    sinclair-next-ftptransfer). Live read of https://fox17.com/weather/closings 2026-09-27T06:21:29Z:
+    HTTP 200, 223036 bytes; sinclair-next-page, deferred, loads /resources/ftptransfer/wztv/closings/report.html.
+    Live read of https://fox17.com/resources/ftptransfer/wztv/closings/report.html 2026-09-27T05:46:31Z:
+    HTTP 200, 16091 bytes, Last-Modified Tue, 20 May 2025 18:49:27 GMT; sinclair-chameleon-page, deferred,
+    loads https://ticker.news.sinclairinc.cloud/chameleon/blade/query/3/CLIOSING/3?format=json&h=3&timestamp&false=&pretty=true&api_key=(key).
+    Archived captures read (archive-captures runs 36299187602, 36317643857, 36324857670): 5 deferred,
+    5 populated. Archived http://fox17.com/resources/ftptransfer/wztv/closings/report.html captured 2016-02-09T15:22:00Z:
+    newsticker-html, 126 rows (''Fair Board meeting'', ''Aaron Academy'', ...). Archived https://fox17.com/resources/ftptransfer/wztv/closings/report.html
+    captured 2023-01-31T02:22:44Z: newsticker-html, 31 rows (''Austin Peay State University'', ''Benton
+    County Schools'', ...).'
+  list_files:
+  - url: https://fox17.com/resources/ftptransfer/wztv/closings/report.html
+    loaded_by: frame
+    seen: The station's Next.js closings page frames it (NewsCustomPage htmlEmbed iframe), per the first-hand
+      check of 2026-09-26 and this part's live read of 2026-09-27.
+  - url: https://ticker.news.sinclairinc.cloud/chameleon/blade/query/3/CLIOSING/3
+    loaded_by: script
+    seen: The framed report.html is a Chameleon display page whose script reads this query (address written
+      base64-encoded in the page, with a public key); read live 2026-09-27.
+  page_check: null
+  robots:
+  - url: https://fox17.com/weather/closings
+    checked_at: '2026-09-27T07:03:49Z'
+    state: parsed
+    allowed: true
+    rule: 'Allow: /'
+    crawl_delay: null
+    disallowed_agents:
+    - anthropic-ai
+    - applebot-extended
+    - ccbot
+    - chatgpt-user
+    - claude-web
+    - claudebot
+    - cohere-ai
+    - google-extended
+    - gptbot
+    sha256: 48836ba75318ca8123f939350dcd058c9dc25bc8d3db287f1d45773e9aa6cb8b
+  - url: https://fox17.com/resources/ftptransfer/wztv/closings/report.html
+    checked_at: '2026-09-27T07:03:49Z'
+    state: parsed
+    allowed: false
+    rule: 'Disallow: /resources/ftptransfer/'
+    crawl_delay: null
+    disallowed_agents:
+    - anthropic-ai
+    - applebot-extended
+    - ccbot
+    - chatgpt-user
+    - claude-web
+    - claudebot
+    - cohere-ai
+    - google-extended
+    - gptbot
+    sha256: 48836ba75318ca8123f939350dcd058c9dc25bc8d3db287f1d45773e9aa6cb8b
+- id: sinclair-kmph
+  platform: sinclair
+  call_sign: KMPH
+  name: KMPH (kmph.com)
+  market: Fresno - Visalia, CA
+  dma: Fresno - Visalia, CA DMA
+  states: [CA]
+  counties:
+    basis: dma
+    source: 'DMA county list: alex-patton/US-TVDMA-BY-COUNTY usa-tvdma-county.csv at commit 7f254b8c1843c62ec976a71c40d366d45f6f29cd
+      (sha256 2e2cd00265a8d704...), names resolved to FIPS with the Census 2025 county Gazetteer; Connecticut
+      via the Census county-to-town crosswalk (snowlight.sources.stations.dma); market ''Fresno - Visalia,
+      CA DMA'''
+    fips: [06019, '06031', 06039, '06043', '06047', '06107']
+  page_url: https://kmph.com/weather/closings
+  data_url: https://kmph.com/resources/ftptransfer/kmph/closings/closings.html
+  export_url: null
+  archive_urls:
+  - https://kmph.com/weather/closings
+  - https://kmph.com/resources/ftptransfer/kmph/closings/closings.html
+  poll_minutes: null
+  status: active
+  evidence: 'First-hand check of 2026-09-26 (docs/research/firsthand/others.json, record KFRE/KMPH; variant
+    sinclair-next-ftptransfer). Live read of https://kmph.com/resources/ftptransfer/kmph/closings/closings.html
+    2026-09-27T05:46:57Z: HTTP 200, 619 bytes, Last-Modified Sun, 27 Sep 2026 05:35:04 GMT; newsticker-html,
+    empty. Archived captures read (archive-captures runs 36299187602, 36317643857, 36324857670, 36341591786,
+    36344069635): 2 deferred, 8 empty. Never seen with a row: the archive lists 12 captures of its list
+    file (2019 to 2025; listings of run 36299187602); the archive lists 196 captures of its page (2019
+    to 2026; listings of run 36299187602). Downloaded and read: 2 deferred, 8 empty; 2 not read (a page
+    with no list whose file was not captured near it, or a capture the archive did not serve).'
+  list_files:
+  - url: https://kmph.com/resources/ftptransfer/kmph/closings/closings.html
+    loaded_by: frame
+    seen: The station's Next.js closings page frames it (NewsCustomPage htmlEmbed iframe), per the first-hand
+      check of 2026-09-26 and this part's live read of 2026-09-27.
+  page_check: null
+  robots:
+  - url: https://kmph.com/weather/closings
+    checked_at: '2026-09-27T07:03:37Z'
+    state: parsed
+    allowed: true
+    rule: 'Allow: /'
+    crawl_delay: null
+    disallowed_agents:
+    - anthropic-ai
+    - applebot-extended
+    - ccbot
+    - chatgpt-user
+    - claude-web
+    - claudebot
+    - cohere-ai
+    - google-extended
+    - gptbot
+    sha256: 48836ba75318ca8123f939350dcd058c9dc25bc8d3db287f1d45773e9aa6cb8b
+  - url: https://kmph.com/resources/ftptransfer/kmph/closings/closings.html
+    checked_at: '2026-09-27T07:03:37Z'
+    state: parsed
+    allowed: false
+    rule: 'Disallow: /resources/ftptransfer/'
+    crawl_delay: null
+    disallowed_agents:
+    - anthropic-ai
+    - applebot-extended
+    - ccbot
+    - chatgpt-user
+    - claude-web
+    - claudebot
+    - cohere-ai
+    - google-extended
+    - gptbot
+    sha256: 48836ba75318ca8123f939350dcd058c9dc25bc8d3db287f1d45773e9aa6cb8b
+- id: sinclair-komo
+  platform: sinclair
+  call_sign: KOMO
+  name: KOMO (komonews.com)
+  market: Seattle - Tacoma, WA
+  dma: Seattle - Tacoma, WA DMA
+  states: [WA]
+  counties:
+    basis: dma
+    source: 'DMA county list: alex-patton/US-TVDMA-BY-COUNTY usa-tvdma-county.csv at commit 7f254b8c1843c62ec976a71c40d366d45f6f29cd
+      (sha256 2e2cd00265a8d704...), names resolved to FIPS with the Census 2025 county Gazetteer; Connecticut
+      via the Census county-to-town crosswalk (snowlight.sources.stations.dma); market ''Seattle - Tacoma,
+      WA DMA'''
+    fips: ['53007', '53009', '53017', '53027', '53029', '53031', '53033', '53035', '53041', '53045', '53049',
+      '53053', '53055', '53057', '53061', '53067', '53073']
+  page_url: https://komonews.com/weather/closings
+  data_url: https://komonews.com/resources/ftptransfer/komo/closings/komoclosings.html
+  export_url: null
+  archive_urls:
+  - https://komonews.com/weather/closings
+  - https://komonews.com/resources/ftptransfer/komo/closings/komoclosings.html
+  poll_minutes: null
+  status: active
+  evidence: 'First-hand check of 2026-09-26 (docs/research/firsthand/others.json, record KOMO; variant
+    sinclair-next-ftptransfer). Live read of https://komonews.com/resources/ftptransfer/komo/closings/komoclosings.html
+    2026-09-27T05:47:02Z: HTTP 200, 1850 bytes, Last-Modified Sun, 27 Sep 2026 05:45:04 GMT; newsticker-html,
+    empty. Archived captures read (archive-captures runs 36299187602, 36317643857, 36324857670): 2 deferred,
+    3 empty, 5 populated. Archived https://komonews.com/resources/ftptransfer/komo/closings/komoclosings.html
+    captured 2019-02-11T17:00:53Z: newsticker-html, 310 rows (''Academy Schools'', ''Adna SD'', ...).
+    Archived https://komonews.com/resources/ftptransfer/komo/closings/komoclosings.html captured 2019-02-04T17:15:17Z:
+    newsticker-html, 303 rows (''Aberdeen SD'', ''Academy Schools'', ...).'
+  list_files:
+  - url: https://komonews.com/resources/ftptransfer/komo/closings/komoclosings.html
+    loaded_by: frame
+    seen: The station's Next.js closings page frames it (NewsCustomPage htmlEmbed iframe), per the first-hand
+      check of 2026-09-26 and this part's live read of 2026-09-27.
+  page_check: null
+  robots:
+  - url: https://komonews.com/weather/closings
+    checked_at: '2026-09-27T07:03:37Z'
+    state: parsed
+    allowed: true
+    rule: 'Allow: /'
+    crawl_delay: null
+    disallowed_agents:
+    - anthropic-ai
+    - applebot-extended
+    - ccbot
+    - chatgpt-user
+    - claude-web
+    - claudebot
+    - cohere-ai
+    - google-extended
+    - gptbot
+    sha256: 48836ba75318ca8123f939350dcd058c9dc25bc8d3db287f1d45773e9aa6cb8b
+  - url: https://komonews.com/resources/ftptransfer/komo/closings/komoclosings.html
+    checked_at: '2026-09-27T07:03:37Z'
+    state: parsed
+    allowed: false
+    rule: 'Disallow: /resources/ftptransfer/'
+    crawl_delay: null
+    disallowed_agents:
+    - anthropic-ai
+    - applebot-extended
+    - ccbot
+    - chatgpt-user
+    - claude-web
+    - claudebot
+    - cohere-ai
+    - google-extended
+    - gptbot
+    sha256: 48836ba75318ca8123f939350dcd058c9dc25bc8d3db287f1d45773e9aa6cb8b
+- id: sinclair-krcg
+  platform: sinclair
+  call_sign: KRCG
+  name: KRCG (krcgtv.com)
+  market: Columbia - Jefferson City, MO
+  dma: Columbia - Jefferson City, MO DMA
+  states: [MO]
+  counties:
+    basis: dma
+    source: 'DMA county list: alex-patton/US-TVDMA-BY-COUNTY usa-tvdma-county.csv at commit 7f254b8c1843c62ec976a71c40d366d45f6f29cd
+      (sha256 2e2cd00265a8d704...), names resolved to FIPS with the Census 2025 county Gazetteer; Connecticut
+      via the Census county-to-town crosswalk (snowlight.sources.stations.dma); market ''Columbia - Jefferson
+      City, MO DMA'''
+    fips: ['29007', '29019', '29027', '29041', '29051', '29053', '29089', '29125', '29131', '29135', '29139',
+      '29141', '29151', '29175']
+  page_url: https://krcgtv.com/weather/closings
+  data_url: https://krcgtv.com/resources/ftptransfer/krcg/closings/WebClose.htm
+  export_url: null
+  archive_urls:
+  - https://krcgtv.com/weather/closings
+  - https://krcgtv.com/resources/ftptransfer/krcg/closings/WebClose.htm
+  poll_minutes: null
+  status: active
+  evidence: 'First-hand check of 2026-09-26 (docs/research/firsthand/others.json, record KRCG; variant
+    sinclair-next-ftptransfer). Live read of https://krcgtv.com/resources/ftptransfer/krcg/closings/WebClose.htm
+    2026-09-27T05:47:07Z: HTTP 200, 230 bytes, Last-Modified Sun, 27 Sep 2026 05:46:28 GMT; closings-grid,
+    empty. Archived captures read (archive-captures runs 36299187602, 36317643857, 36324857670): 2 deferred,
+    7 empty, 1 populated. Archived https://krcgtv.com/resources/ftptransfer/krcg/closings/WebClose.htm
+    captured 2025-02-06T02:54:12Z: closings-grid, 3 rows (''Crocker R-II Schools'', ''Jamestown C-1'',
+    ...).'
+  list_files:
+  - url: https://krcgtv.com/resources/ftptransfer/krcg/closings/WebClose.htm
+    loaded_by: frame
+    seen: The station's Next.js closings page frames it (NewsCustomPage htmlEmbed iframe), per the first-hand
+      check of 2026-09-26 and this part's live read of 2026-09-27.
+  page_check: null
+  robots:
+  - url: https://krcgtv.com/weather/closings
+    checked_at: '2026-09-27T07:03:38Z'
+    state: parsed
+    allowed: true
+    rule: 'Allow: /'
+    crawl_delay: null
+    disallowed_agents:
+    - anthropic-ai
+    - applebot-extended
+    - ccbot
+    - chatgpt-user
+    - claude-web
+    - claudebot
+    - cohere-ai
+    - google-extended
+    - gptbot
+    sha256: 48836ba75318ca8123f939350dcd058c9dc25bc8d3db287f1d45773e9aa6cb8b
+  - url: https://krcgtv.com/resources/ftptransfer/krcg/closings/WebClose.htm
+    checked_at: '2026-09-27T07:03:38Z'
+    state: parsed
+    allowed: false
+    rule: 'Disallow: /resources/ftptransfer/'
+    crawl_delay: null
+    disallowed_agents:
+    - anthropic-ai
+    - applebot-extended
+    - ccbot
+    - chatgpt-user
+    - claude-web
+    - claudebot
+    - cohere-ai
+    - google-extended
+    - gptbot
+    sha256: 48836ba75318ca8123f939350dcd058c9dc25bc8d3db287f1d45773e9aa6cb8b
+- id: sinclair-ktul
+  platform: sinclair
+  call_sign: KTUL
+  name: KTUL (ktul.com)
+  market: Tulsa, OK
+  dma: Tulsa, OK - KS DMA
+  states: [KS, OK]
+  counties:
+    basis: dma
+    source: 'DMA county list: alex-patton/US-TVDMA-BY-COUNTY usa-tvdma-county.csv at commit 7f254b8c1843c62ec976a71c40d366d45f6f29cd
+      (sha256 2e2cd00265a8d704...), names resolved to FIPS with the Census 2025 county Gazetteer; Connecticut
+      via the Census county-to-town crosswalk (snowlight.sources.stations.dma); market ''Tulsa, OK - KS
+      DMA'''
+    fips: ['20019', '20125', '40001', '40021', '40035', '40037', '40041', '40061', '40077', '40091', '40097',
+      '40101', '40105', '40107', '40111', '40113', '40117', '40121', '40131', '40143', '40145', '40147']
+  page_url: https://ktul.com/weather/closings
+  data_url: https://ktul.com/resources/ftptransfer/ktul/closings/closings.html
+  export_url: null
+  archive_urls:
+  - https://ktul.com/weather/closings
+  - https://ktul.com/resources/ftptransfer/ktul/closings/closings.html
+  poll_minutes: null
+  status: active
+  evidence: 'First-hand check of 2026-09-26 (docs/research/firsthand/others.json, record KTUL; variant
+    sinclair-next-ftptransfer). Live read of https://ktul.com/resources/ftptransfer/ktul/closings/closings.html
+    2026-09-27T05:47:12Z: HTTP 200, 724 bytes, Last-Modified Sun, 27 Sep 2026 05:40:05 GMT; newsticker-html,
+    empty. Archived captures read (archive-captures runs 36299187602, 36317643857, 36324857670): 1 deferred,
+    3 empty, 4 populated. Archived https://ktul.com/resources/ftptransfer/ktul/closings/closings.html
+    captured 2025-02-19T16:13:25Z: newsticker-html, 36 rows (''Dahlonegah School'', ''Tahlequah Sequoyah
+    Schools'', ...). Archived https://ktul.com/resources/ftptransfer/ktul/closings/closings.html captured
+    2025-02-13T03:02:09Z: newsticker-html, 18 rows (''Lowrey Public School'', ''Grove Public Schools'',
+    ...).'
+  list_files:
+  - url: https://ktul.com/resources/ftptransfer/ktul/closings/closings.html
+    loaded_by: frame
+    seen: The station's Next.js closings page frames it (NewsCustomPage htmlEmbed iframe), per the first-hand
+      check of 2026-09-26 and this part's live read of 2026-09-27.
+  page_check: null
+  robots:
+  - url: https://ktul.com/weather/closings
+    checked_at: '2026-09-27T07:03:38Z'
+    state: parsed
+    allowed: true
+    rule: 'Allow: /'
+    crawl_delay: null
+    disallowed_agents:
+    - anthropic-ai
+    - applebot-extended
+    - ccbot
+    - chatgpt-user
+    - claude-web
+    - claudebot
+    - cohere-ai
+    - google-extended
+    - gptbot
+    sha256: 48836ba75318ca8123f939350dcd058c9dc25bc8d3db287f1d45773e9aa6cb8b
+  - url: https://ktul.com/resources/ftptransfer/ktul/closings/closings.html
+    checked_at: '2026-09-27T07:03:38Z'
+    state: parsed
+    allowed: false
+    rule: 'Disallow: /resources/ftptransfer/'
+    crawl_delay: null
+    disallowed_agents:
+    - anthropic-ai
+    - applebot-extended
+    - ccbot
+    - chatgpt-user
+    - claude-web
+    - claudebot
+    - cohere-ai
+    - google-extended
+    - gptbot
+    sha256: 48836ba75318ca8123f939350dcd058c9dc25bc8d3db287f1d45773e9aa6cb8b
+- id: sinclair-ktxs
+  platform: sinclair
+  call_sign: KTXS
+  name: KTXS (ktxs.com)
+  market: Abilene - Sweetwater, TX
+  dma: Abilene - Sweetwater, TX DMA
+  states: [TX]
+  counties:
+    basis: dma
+    source: 'DMA county list: alex-patton/US-TVDMA-BY-COUNTY usa-tvdma-county.csv at commit 7f254b8c1843c62ec976a71c40d366d45f6f29cd
+      (sha256 2e2cd00265a8d704...), names resolved to FIPS with the Census 2025 county Gazetteer; Connecticut
+      via the Census county-to-town crosswalk (snowlight.sources.stations.dma); market ''Abilene - Sweetwater,
+      TX DMA'''
+    fips: ['48049', '48059', '48083', '48133', '48151', '48207', '48253', '48335', '48353', '48399', '48415',
+      '48417', '48429', '48433', '48441']
+  page_url: https://ktxs.com/weather/closings
+  data_url: https://ktxs.com/resources/ftptransfer/ktxs/closings/closings.html
+  export_url: null
+  archive_urls:
+  - https://ktxs.com/weather/closings
+  - https://ktxs.com/resources/ftptransfer/ktxs/closings/closings.html
+  poll_minutes: null
+  status: active
+  evidence: 'First-hand check of 2026-09-26 (docs/research/firsthand/others.json, record KTXS; variant
+    sinclair-next-ftptransfer). Live read of https://ktxs.com/resources/ftptransfer/ktxs/closings/closings.html
+    2026-09-27T05:47:17Z: HTTP 200, 617 bytes, Last-Modified Mon, 09 Jun 2025 04:20:09 GMT; newsticker-html,
+    empty. Archived captures read (archive-captures runs 36299187602, 36317643857): 1 deferred, 3 empty.'
+  list_files:
+  - url: https://ktxs.com/resources/ftptransfer/ktxs/closings/closings.html
+    loaded_by: frame
+    seen: The station's Next.js closings page frames it (NewsCustomPage htmlEmbed iframe), per the first-hand
+      check of 2026-09-26 and this part's live read of 2026-09-27.
+  page_check: null
+  robots:
+  - url: https://ktxs.com/weather/closings
+    checked_at: '2026-09-27T07:03:38Z'
+    state: parsed
+    allowed: true
+    rule: 'Allow: /'
+    crawl_delay: null
+    disallowed_agents:
+    - anthropic-ai
+    - applebot-extended
+    - ccbot
+    - chatgpt-user
+    - claude-web
+    - claudebot
+    - cohere-ai
+    - google-extended
+    - gptbot
+    sha256: 48836ba75318ca8123f939350dcd058c9dc25bc8d3db287f1d45773e9aa6cb8b
+  - url: https://ktxs.com/resources/ftptransfer/ktxs/closings/closings.html
+    checked_at: '2026-09-27T07:03:38Z'
+    state: parsed
+    allowed: false
+    rule: 'Disallow: /resources/ftptransfer/'
+    crawl_delay: null
+    disallowed_agents:
+    - anthropic-ai
+    - applebot-extended
+    - ccbot
+    - chatgpt-user
+    - claude-web
+    - claudebot
+    - cohere-ai
+    - google-extended
+    - gptbot
+    sha256: 48836ba75318ca8123f939350dcd058c9dc25bc8d3db287f1d45773e9aa6cb8b
+- id: sinclair-wkrc
+  platform: sinclair
+  call_sign: WKRC
+  name: WKRC (local12.com)
+  market: Cincinnati, OH
+  dma: Cincinnati, OH -IN - KY DMA
+  states: [IN, KY, OH]
+  counties:
+    basis: dma
+    source: 'DMA county list: alex-patton/US-TVDMA-BY-COUNTY usa-tvdma-county.csv at commit 7f254b8c1843c62ec976a71c40d366d45f6f29cd
+      (sha256 2e2cd00265a8d704...), names resolved to FIPS with the Census 2025 county Gazetteer; Connecticut
+      via the Census county-to-town crosswalk (snowlight.sources.stations.dma); market ''Cincinnati, OH
+      -IN - KY DMA'''
+    fips: ['18029', '18047', '18115', '18137', '18155', '18161', '21015', '21023', '21037', '21077', '21081',
+      '21117', '21161', '21187', '21191', '21201', '39001', '39015', '39017', '39025', '39027', '39061',
+      '39071', '39165']
+  page_url: https://local12.com/weather/closings
+  data_url: https://local12.com/resources/ftptransfer/wkrc/closings/closings.html
+  export_url: null
+  archive_urls:
+  - https://local12.com/weather/closings
+  - https://local12.com/resources/ftptransfer/wkrc/closings/closings.html
+  poll_minutes: null
+  status: active
+  evidence: 'First-hand check of 2026-09-26 (docs/research/firsthand/others.json, record WKRC; variant
+    sinclair-next-ftptransfer). Live read of https://local12.com/resources/ftptransfer/wkrc/closings/closings.html
+    2026-09-27T05:47:23Z: HTTP 200, 224 bytes, Last-Modified Sun, 27 Sep 2026 05:39:06 GMT; newsticker-html,
+    empty. Archived captures read (archive-captures run 36299187602): 1 deferred, 1 populated. Archived
+    https://local12.com/resources/ftptransfer/wkrc/closings/closings.html captured 2026-01-26T06:27:22Z:
+    newsticker-html, 438 rows (''2ND BAPT-HAMILTON'', ''360 Total Care'', ...).'
+  list_files:
+  - url: https://local12.com/resources/ftptransfer/wkrc/closings/closings.html
+    loaded_by: frame
+    seen: The station's Next.js closings page frames it (NewsCustomPage htmlEmbed iframe), per the first-hand
+      check of 2026-09-26 and this part's live read of 2026-09-27.
+  page_check: null
+  robots:
+  - url: https://local12.com/weather/closings
+    checked_at: '2026-09-27T07:03:44Z'
+    state: parsed
+    allowed: true
+    rule: 'Allow: /'
+    crawl_delay: null
+    disallowed_agents:
+    - anthropic-ai
+    - applebot-extended
+    - ccbot
+    - chatgpt-user
+    - claude-web
+    - claudebot
+    - cohere-ai
+    - google-extended
+    - gptbot
+    sha256: 48836ba75318ca8123f939350dcd058c9dc25bc8d3db287f1d45773e9aa6cb8b
+  - url: https://local12.com/resources/ftptransfer/wkrc/closings/closings.html
+    checked_at: '2026-09-27T07:03:44Z'
+    state: parsed
+    allowed: false
+    rule: 'Disallow: /resources/ftptransfer/'
+    crawl_delay: null
+    disallowed_agents:
+    - anthropic-ai
+    - applebot-extended
+    - ccbot
+    - chatgpt-user
+    - claude-web
+    - claudebot
+    - cohere-ai
+    - google-extended
+    - gptbot
+    sha256: 48836ba75318ca8123f939350dcd058c9dc25bc8d3db287f1d45773e9aa6cb8b
+- id: sinclair-whp
+  platform: sinclair
+  call_sign: WHP
+  name: WHP (local21news.com)
+  market: Harrisburg - Lancaster - Lebanon - York, PA
+  dma: Harrisburg - Lancaster - Lebanon - York, PA DMA
+  states: [PA]
+  counties:
+    basis: dma
+    source: 'DMA county list: alex-patton/US-TVDMA-BY-COUNTY usa-tvdma-county.csv at commit 7f254b8c1843c62ec976a71c40d366d45f6f29cd
+      (sha256 2e2cd00265a8d704...), names resolved to FIPS with the Census 2025 county Gazetteer; Connecticut
+      via the Census county-to-town crosswalk (snowlight.sources.stations.dma); market ''Harrisburg -
+      Lancaster - Lebanon - York, PA DMA'''
+    fips: ['42001', '42041', '42043', '42067', '42071', '42075', '42087', '42099', '42133']
+  page_url: https://local21news.com/weather/closings
+  data_url: https://local21news.com/resources/ftptransfer/whp/closings/closings.html
+  export_url: null
+  archive_urls:
+  - https://local21news.com/weather/closings
+  - https://local21news.com/resources/ftptransfer/whp/closings/closings.html
+  - https://cwcentralpa.com/weather/closings
+  - https://cwcentralpa.com/resources/ftptransfer/whp/closings/closings.html
+  poll_minutes: null
+  status: active
+  evidence: 'First-hand check of 2026-09-26 (docs/research/firsthand/others.json, record WHP; variant
+    sinclair-next-ftptransfer). Live read of https://local21news.com/resources/ftptransfer/whp/closings/closings.html
+    2026-09-27T05:47:28Z: HTTP 200, 617 bytes, Last-Modified Sun, 27 Sep 2026 05:40:06 GMT; newsticker-html,
+    empty. Archived captures read (archive-captures run 36299187602): 1 deferred, 1 populated. Archived
+    https://local21news.com/resources/ftptransfer/whp/closings/closings.html captured 2025-02-08T21:39:16Z:
+    newsticker-html, 4 rows (''Middle Spring Presbyterian Church'', ''NEWVILLE FIRST CHURCH OF GOD'',
+    ...). cwcentralpa.com (WHP-3) frames the same file on its own host.'
+  list_files:
+  - url: https://local21news.com/resources/ftptransfer/whp/closings/closings.html
+    loaded_by: frame
+    seen: The station's Next.js closings page frames it (NewsCustomPage htmlEmbed iframe), per the first-hand
+      check of 2026-09-26 and this part's live read of 2026-09-27.
+  page_check: null
+  robots:
+  - url: https://local21news.com/weather/closings
+    checked_at: '2026-09-27T07:03:42Z'
+    state: parsed
+    allowed: true
+    rule: 'Allow: /'
+    crawl_delay: null
+    disallowed_agents:
+    - anthropic-ai
+    - applebot-extended
+    - ccbot
+    - chatgpt-user
+    - claude-web
+    - claudebot
+    - cohere-ai
+    - google-extended
+    - gptbot
+    sha256: 48836ba75318ca8123f939350dcd058c9dc25bc8d3db287f1d45773e9aa6cb8b
+  - url: https://local21news.com/resources/ftptransfer/whp/closings/closings.html
+    checked_at: '2026-09-27T07:03:42Z'
+    state: parsed
+    allowed: false
+    rule: 'Disallow: /resources/ftptransfer/'
+    crawl_delay: null
+    disallowed_agents:
+    - anthropic-ai
+    - applebot-extended
+    - ccbot
+    - chatgpt-user
+    - claude-web
+    - claudebot
+    - cohere-ai
+    - google-extended
+    - gptbot
+    sha256: 48836ba75318ca8123f939350dcd058c9dc25bc8d3db287f1d45773e9aa6cb8b
+- id: sinclair-weyi
+  platform: sinclair
+  call_sign: WEYI
+  name: WEYI (midmichigannow.com)
+  market: Flint - Saginaw - Bay City, MI
+  dma: Flint - Saginaw - Bay City, MI DMA
+  states: [MI]
+  counties:
+    basis: dma
+    source: 'DMA county list: alex-patton/US-TVDMA-BY-COUNTY usa-tvdma-county.csv at commit 7f254b8c1843c62ec976a71c40d366d45f6f29cd
+      (sha256 2e2cd00265a8d704...), names resolved to FIPS with the Census 2025 county Gazetteer; Connecticut
+      via the Census county-to-town crosswalk (snowlight.sources.stations.dma); market ''Flint - Saginaw
+      - Bay City, MI DMA'''
+    fips: ['26011', '26017', '26049', '26051', '26057', '26063', '26069', '26073', '26111', '26129', '26145',
+      '26155', '26157']
+  page_url: https://midmichigannow.com/weather/closings
+  data_url: https://midmichigannow.com/resources/ftptransfer/weyi/closings/closings.htm
+  export_url: null
+  archive_urls:
+  - https://midmichigannow.com/weather/closings
+  - https://midmichigannow.com/resources/ftptransfer/weyi/closings/closings.htm
+  poll_minutes: null
+  status: active
+  evidence: 'First-hand check of 2026-09-26 (docs/research/firsthand/others.json, record WEYI/WSMH; variant
+    sinclair-next-ftptransfer). Live read of https://midmichigannow.com/resources/ftptransfer/weyi/closings/closings.htm
+    2026-09-27T05:47:33Z: HTTP 200, 617 bytes, Last-Modified Sun, 27 Sep 2026 05:45:05 GMT; newsticker-html,
+    empty. Archived captures read (archive-captures run 36299187602): 1 deferred, 1 populated. Archived
+    https://midmichigannow.com/resources/ftptransfer/weyi/closings/closings.htm captured 2026-02-17T06:29:54Z:
+    newsticker-html, 1 rows (''Atherton Community Schools'').'
+  list_files:
+  - url: https://midmichigannow.com/resources/ftptransfer/weyi/closings/closings.htm
+    loaded_by: frame
+    seen: The station's Next.js closings page frames it (NewsCustomPage htmlEmbed iframe), per the first-hand
+      check of 2026-09-26 and this part's live read of 2026-09-27.
+  page_check: null
+  robots:
+  - url: https://midmichigannow.com/weather/closings
+    checked_at: '2026-09-27T07:03:41Z'
+    state: parsed
+    allowed: true
+    rule: 'Allow: /'
+    crawl_delay: null
+    disallowed_agents:
+    - anthropic-ai
+    - applebot-extended
+    - ccbot
+    - chatgpt-user
+    - claude-web
+    - claudebot
+    - cohere-ai
+    - google-extended
+    - gptbot
+    sha256: 48836ba75318ca8123f939350dcd058c9dc25bc8d3db287f1d45773e9aa6cb8b
+  - url: https://midmichigannow.com/resources/ftptransfer/weyi/closings/closings.htm
+    checked_at: '2026-09-27T07:03:41Z'
+    state: parsed
+    allowed: false
+    rule: 'Disallow: /resources/ftptransfer/'
+    crawl_delay: null
+    disallowed_agents:
+    - anthropic-ai
+    - applebot-extended
+    - ccbot
+    - chatgpt-user
+    - claude-web
+    - claudebot
+    - cohere-ai
+    - google-extended
+    - gptbot
+    sha256: 48836ba75318ca8123f939350dcd058c9dc25bc8d3db287f1d45773e9aa6cb8b
+- id: sinclair-wtte
+  platform: sinclair
+  call_sign: WTTE
+  name: WTTE (myfox28columbus.com)
+  market: Columbus, OH
+  dma: Columbus, OH DMA
+  states: [OH]
+  counties:
+    basis: dma
+    source: 'DMA county list: alex-patton/US-TVDMA-BY-COUNTY usa-tvdma-county.csv at commit 7f254b8c1843c62ec976a71c40d366d45f6f29cd
+      (sha256 2e2cd00265a8d704...), names resolved to FIPS with the Census 2025 county Gazetteer; Connecticut
+      via the Census county-to-town crosswalk (snowlight.sources.stations.dma); market ''Columbus, OH
+      DMA'''
+    fips: ['39031', '39033', '39041', '39045', '39047', '39049', '39065', '39073', '39083', '39089', '39097',
+      '39101', '39115', '39117', '39127', '39129', '39131', '39141', '39159']
+  page_url: https://myfox28columbus.com/weather/closings
+  data_url: https://myfox28columbus.com/resources/ftptransfer/wtte/closings/closings.html
+  export_url: null
+  archive_urls:
+  - https://myfox28columbus.com/weather/closings
+  - https://myfox28columbus.com/resources/ftptransfer/wtte/closings/closings.html
+  poll_minutes: null
+  status: active
+  evidence: 'First-hand check of 2026-09-26 (docs/research/firsthand/others.json, record WSYX-3; variant
+    sinclair-next-ftptransfer). Live read of https://myfox28columbus.com/resources/ftptransfer/wtte/closings/closings.html
+    2026-09-27T05:47:38Z: HTTP 200, 212 bytes, Last-Modified Tue, 21 Jul 2026 13:15:17 GMT; newsticker-html,
+    empty. Archived captures read (archive-captures runs 36299187602, 36317643857, 36324857670): 1 deferred,
+    6 empty. Never seen with a row: the archive lists 14 captures of its list file (2018 to 2025; listings
+    of run 36299187602); the archive lists 620 captures of its page (2015 to 2026; listings of run 36299187602).
+    Downloaded and read: 1 deferred, 6 empty; 1 not read (a page with no list whose file was not captured
+    near it, or a capture the archive did not serve).'
+  list_files:
+  - url: https://myfox28columbus.com/resources/ftptransfer/wtte/closings/closings.html
+    loaded_by: frame
+    seen: The station's Next.js closings page frames it (NewsCustomPage htmlEmbed iframe), per the first-hand
+      check of 2026-09-26 and this part's live read of 2026-09-27.
+  page_check: null
+  robots:
+  - url: https://myfox28columbus.com/weather/closings
+    checked_at: '2026-09-27T07:03:47Z'
+    state: parsed
+    allowed: true
+    rule: 'Allow: /'
+    crawl_delay: null
+    disallowed_agents:
+    - anthropic-ai
+    - applebot-extended
+    - ccbot
+    - chatgpt-user
+    - claude-web
+    - claudebot
+    - cohere-ai
+    - google-extended
+    - gptbot
+    sha256: 48836ba75318ca8123f939350dcd058c9dc25bc8d3db287f1d45773e9aa6cb8b
+  - url: https://myfox28columbus.com/resources/ftptransfer/wtte/closings/closings.html
+    checked_at: '2026-09-27T07:03:47Z'
+    state: parsed
+    allowed: false
+    rule: 'Disallow: /resources/ftptransfer/'
+    crawl_delay: null
+    disallowed_agents:
+    - anthropic-ai
+    - applebot-extended
+    - ccbot
+    - chatgpt-user
+    - claude-web
+    - claudebot
+    - cohere-ai
+    - google-extended
+    - gptbot
+    sha256: 48836ba75318ca8123f939350dcd058c9dc25bc8d3db287f1d45773e9aa6cb8b
+- id: sinclair-wnwo
+  platform: sinclair
+  call_sign: WNWO
+  name: WNWO (nbc24.com)
+  market: Toledo, OH
+  dma: Toledo, OH - MI DMA
+  states: [MI, OH]
+  counties:
+    basis: dma
+    source: 'DMA county list: alex-patton/US-TVDMA-BY-COUNTY usa-tvdma-county.csv at commit 7f254b8c1843c62ec976a71c40d366d45f6f29cd
+      (sha256 2e2cd00265a8d704...), names resolved to FIPS with the Census 2025 county Gazetteer; Connecticut
+      via the Census county-to-town crosswalk (snowlight.sources.stations.dma); market ''Toledo, OH -
+      MI DMA'''
+    fips: ['26091', '39039', '39051', '39063', '39069', '39095', '39123', '39137', '39143', '39147', '39171',
+      '39173', '39175']
+  page_url: https://nbc24.com/weather/closings
+  data_url: https://nbc24.com/resources/ftptransfer/wnwo/closings/closings.html
+  export_url: null
+  archive_urls:
+  - https://nbc24.com/weather/closings
+  - https://nbc24.com/resources/ftptransfer/wnwo/closings/closings.html
+  poll_minutes: null
+  status: active
+  evidence: 'First-hand check of 2026-09-26 (docs/research/firsthand/others.json, record WNWO; variant
+    sinclair-next-ftptransfer). Live read of https://nbc24.com/resources/ftptransfer/wnwo/closings/closings.html
+    2026-09-27T05:47:43Z: HTTP 200, 286 bytes, Last-Modified Tue, 21 Jul 2026 13:15:09 GMT; newsticker-html,
+    populated, 1 rows (''Four County Career Center''). Archived captures read (archive-captures run 36299187602):
+    1 deferred, 1 empty.'
+  list_files:
+  - url: https://nbc24.com/resources/ftptransfer/wnwo/closings/closings.html
+    loaded_by: frame
+    seen: The station's Next.js closings page frames it (NewsCustomPage htmlEmbed iframe), per the first-hand
+      check of 2026-09-26 and this part's live read of 2026-09-27.
+  page_check: null
+  robots:
+  - url: https://nbc24.com/weather/closings
+    checked_at: '2026-09-27T07:03:44Z'
+    state: parsed
+    allowed: true
+    rule: 'Allow: /'
+    crawl_delay: null
+    disallowed_agents:
+    - anthropic-ai
+    - applebot-extended
+    - ccbot
+    - chatgpt-user
+    - claude-web
+    - claudebot
+    - cohere-ai
+    - google-extended
+    - gptbot
+    sha256: 48836ba75318ca8123f939350dcd058c9dc25bc8d3db287f1d45773e9aa6cb8b
+  - url: https://nbc24.com/resources/ftptransfer/wnwo/closings/closings.html
+    checked_at: '2026-09-27T07:03:44Z'
+    state: parsed
+    allowed: false
+    rule: 'Disallow: /resources/ftptransfer/'
+    crawl_delay: null
+    disallowed_agents:
+    - anthropic-ai
+    - applebot-extended
+    - ccbot
+    - chatgpt-user
+    - claude-web
+    - claudebot
+    - cohere-ai
+    - google-extended
+    - gptbot
+    sha256: 48836ba75318ca8123f939350dcd058c9dc25bc8d3db287f1d45773e9aa6cb8b
+- id: sinclair-wtvc
+  platform: sinclair
+  call_sign: WTVC
+  name: WTVC (newschannel9.com)
+  market: Chattanooga, TN
+  dma: Chattanooga, TN - GA - NC DMA
+  states: [GA, NC, TN]
+  counties:
+    basis: dma
+    source: 'DMA county list: alex-patton/US-TVDMA-BY-COUNTY usa-tvdma-county.csv at commit 7f254b8c1843c62ec976a71c40d366d45f6f29cd
+      (sha256 2e2cd00265a8d704...), names resolved to FIPS with the Census 2025 county Gazetteer; Connecticut
+      via the Census county-to-town crosswalk (snowlight.sources.stations.dma); market ''Chattanooga,
+      TN - GA - NC DMA'''
+    fips: ['13047', '13083', '13111', '13213', '13295', '13313', '37039', '47007', '47011', '47061', '47065',
+      '47107', '47115', '47121', '47139', '47143', '47153']
+  page_url: https://newschannel9.com/weather/closings
+  data_url: https://newschannel9.com/resources/ftptransfer/wtvc/closings/WTVCclosings.html
+  export_url: null
+  archive_urls:
+  - https://newschannel9.com/weather/closings
+  - https://newschannel9.com/resources/ftptransfer/wtvc/closings/WTVCclosings.html
+  - https://foxchattanooga.com/weather/closings
+  - https://foxchattanooga.com/resources/ftptransfer/wtvc/closings/WTVCclosings.html
+  poll_minutes: null
+  status: active
+  evidence: 'First-hand check of 2026-09-26 (docs/research/firsthand/others.json, record WTVC; variant
+    sinclair-next-ftptransfer). Live read of https://newschannel9.com/resources/ftptransfer/wtvc/closings/WTVCclosings.html
+    2026-09-27T06:09:20Z: HTTP 200, 773 bytes, Last-Modified Sun, 27 Sep 2026 06:00:05 GMT; newsticker-html,
+    populated, 1 rows (''Sequatchie Co. Schools''). Archived captures read (archive-captures run 36299187602):
+    1 deferred, 1 empty. foxchattanooga.com (WTVC-2) frames the same file on its own host.'
+  list_files:
+  - url: https://newschannel9.com/resources/ftptransfer/wtvc/closings/WTVCclosings.html
+    loaded_by: frame
+    seen: The station's Next.js closings page frames it (NewsCustomPage htmlEmbed iframe), per the first-hand
+      check of 2026-09-26 and this part's live read of 2026-09-27.
+  page_check: null
+  robots:
+  - url: https://newschannel9.com/weather/closings
+    checked_at: '2026-09-27T07:03:47Z'
+    state: parsed
+    allowed: true
+    rule: 'Allow: /'
+    crawl_delay: null
+    disallowed_agents:
+    - anthropic-ai
+    - applebot-extended
+    - ccbot
+    - chatgpt-user
+    - claude-web
+    - claudebot
+    - cohere-ai
+    - google-extended
+    - gptbot
+    sha256: 48836ba75318ca8123f939350dcd058c9dc25bc8d3db287f1d45773e9aa6cb8b
+  - url: https://newschannel9.com/resources/ftptransfer/wtvc/closings/WTVCclosings.html
+    checked_at: '2026-09-27T07:03:47Z'
+    state: parsed
+    allowed: false
+    rule: 'Disallow: /resources/ftptransfer/'
+    crawl_delay: null
+    disallowed_agents:
+    - anthropic-ai
+    - applebot-extended
+    - ccbot
+    - chatgpt-user
+    - claude-web
+    - claudebot
+    - cohere-ai
+    - google-extended
+    - gptbot
+    sha256: 48836ba75318ca8123f939350dcd058c9dc25bc8d3db287f1d45773e9aa6cb8b
+- id: sinclair-kokh
+  platform: sinclair
+  call_sign: KOKH
+  name: KOKH (okcfox.com)
+  market: Oklahoma City, OK
+  dma: Oklahoma City, OK DMA
+  states: [OK]
+  counties:
+    basis: dma
+    source: 'DMA county list: alex-patton/US-TVDMA-BY-COUNTY usa-tvdma-county.csv at commit 7f254b8c1843c62ec976a71c40d366d45f6f29cd
+      (sha256 2e2cd00265a8d704...), names resolved to FIPS with the Census 2025 county Gazetteer; Connecticut
+      via the Census county-to-town crosswalk (snowlight.sources.stations.dma); market ''Oklahoma City,
+      OK DMA'''
+    fips: ['40003', '40009', '40011', '40015', '40017', '40027', '40039', '40043', '40045', '40047', '40049',
+      '40051', '40053', '40055', '40057', '40059', '40063', '40071', '40073', '40075', '40081', '40083',
+      '40087', '40093', '40099', '40103', '40109', '40119', '40125', '40129', '40133', '40149', '40151',
+      '40153']
+  page_url: https://okcfox.com/weather/closings
+  data_url: https://okcfox.com/resources/ftptransfer/kokh/closings/closings.htm
+  export_url: null
+  archive_urls:
+  - https://okcfox.com/weather/closings
+  - https://okcfox.com/resources/ftptransfer/kokh/closings/closings.htm
+  poll_minutes: null
+  status: active
+  evidence: 'First-hand check of 2026-09-26 (docs/research/firsthand/others.json, record KOKH; variant
+    sinclair-next-ftptransfer). Live read of https://okcfox.com/resources/ftptransfer/kokh/closings/closings.htm
+    2026-09-27T05:47:54Z: HTTP 200, 213 bytes, Last-Modified Sun, 27 Sep 2026 05:45:05 GMT; newsticker-html,
+    empty. Archived captures read (archive-captures runs 36299187602, 36317643857, 36324857670): 1 deferred,
+    5 empty, 1 populated. Archived https://okcfox.com/resources/ftptransfer/kokh/closings/closings.htm
+    captured 2025-01-09T20:11:20Z: newsticker-html, 323 rows (''Ada Public Schools'', ''Alert Driving
+    School NW'', ...).'
+  list_files:
+  - url: https://okcfox.com/resources/ftptransfer/kokh/closings/closings.htm
+    loaded_by: frame
+    seen: The station's Next.js closings page frames it (NewsCustomPage htmlEmbed iframe), per the first-hand
+      check of 2026-09-26 and this part's live read of 2026-09-27.
+  page_check: null
+  robots:
+  - url: https://okcfox.com/weather/closings
+    checked_at: '2026-09-27T07:03:37Z'
+    state: parsed
+    allowed: true
+    rule: 'Allow: /'
+    crawl_delay: null
+    disallowed_agents:
+    - anthropic-ai
+    - applebot-extended
+    - ccbot
+    - chatgpt-user
+    - claude-web
+    - claudebot
+    - cohere-ai
+    - google-extended
+    - gptbot
+    sha256: 48836ba75318ca8123f939350dcd058c9dc25bc8d3db287f1d45773e9aa6cb8b
+  - url: https://okcfox.com/resources/ftptransfer/kokh/closings/closings.htm
+    checked_at: '2026-09-27T07:03:37Z'
+    state: parsed
+    allowed: false
+    rule: 'Disallow: /resources/ftptransfer/'
+    crawl_delay: null
+    disallowed_agents:
+    - anthropic-ai
+    - applebot-extended
+    - ccbot
+    - chatgpt-user
+    - claude-web
+    - claudebot
+    - cohere-ai
+    - google-extended
+    - gptbot
+    sha256: 48836ba75318ca8123f939350dcd058c9dc25bc8d3db287f1d45773e9aa6cb8b
+- id: sinclair-wpbn
+  platform: sinclair
+  call_sign: WPBN
+  name: WPBN (upnorthlive.com)
+  market: Traverse City - Cadillac, MI
+  dma: Traverse City - Cadillac, MI DMA
+  states: [MI]
+  counties:
+    basis: dma
+    source: 'DMA county list: alex-patton/US-TVDMA-BY-COUNTY usa-tvdma-county.csv at commit 7f254b8c1843c62ec976a71c40d366d45f6f29cd
+      (sha256 2e2cd00265a8d704...), names resolved to FIPS with the Census 2025 county Gazetteer; Connecticut
+      via the Census county-to-town crosswalk (snowlight.sources.stations.dma); market ''Traverse City
+      - Cadillac, MI DMA'''
+    fips: ['26009', '26019', '26029', '26031', '26033', '26035', '26039', '26047', '26055', '26079', '26085',
+      '26089', '26095', '26097', '26101', '26105', '26107', '26113', '26119', '26133', '26135', '26137',
+      '26141', '26143', '26165']
+  page_url: https://upnorthlive.com/weather/closings
+  data_url: https://upnorthlive.com/resources/ftptransfer/wpbn/closings/closings.html
+  export_url: null
+  archive_urls:
+  - https://upnorthlive.com/weather/closings
+  - https://upnorthlive.com/resources/ftptransfer/wpbn/closings/closings.html
+  poll_minutes: null
+  status: active
+  evidence: 'First-hand check of 2026-09-26 (docs/research/firsthand/others.json, record WGTQ/WGTU/WPBN/WTOM;
+    variant sinclair-next-ftptransfer). Live read of https://upnorthlive.com/resources/ftptransfer/wpbn/closings/closings.html
+    2026-09-27T05:47:59Z: HTTP 200, 617 bytes, Last-Modified Sun, 27 Sep 2026 05:40:05 GMT; newsticker-html,
+    empty. Archived captures read (archive-captures run 36299187602): 1 deferred, 1 populated. Archived
+    https://upnorthlive.com/resources/ftptransfer/wpbn/closings/closings.html captured 2025-01-27T12:22:35Z:
+    newsticker-html, 9 rows (''DeTour Area Schools'', ''Ludington Area Catholic School'', ...).'
+  list_files:
+  - url: https://upnorthlive.com/resources/ftptransfer/wpbn/closings/closings.html
+    loaded_by: frame
+    seen: The station's Next.js closings page frames it (NewsCustomPage htmlEmbed iframe), per the first-hand
+      check of 2026-09-26 and this part's live read of 2026-09-27.
+  page_check: null
+  robots:
+  - url: https://upnorthlive.com/weather/closings
+    checked_at: '2026-09-27T07:03:45Z'
+    state: parsed
+    allowed: true
+    rule: 'Allow: /'
+    crawl_delay: null
+    disallowed_agents:
+    - anthropic-ai
+    - applebot-extended
+    - ccbot
+    - chatgpt-user
+    - claude-web
+    - claudebot
+    - cohere-ai
+    - google-extended
+    - gptbot
+    sha256: 48836ba75318ca8123f939350dcd058c9dc25bc8d3db287f1d45773e9aa6cb8b
+  - url: https://upnorthlive.com/resources/ftptransfer/wpbn/closings/closings.html
+    checked_at: '2026-09-27T07:03:45Z'
+    state: parsed
+    allowed: false
+    rule: 'Disallow: /resources/ftptransfer/'
+    crawl_delay: null
+    disallowed_agents:
+    - anthropic-ai
+    - applebot-extended
+    - ccbot
+    - chatgpt-user
+    - claude-web
+    - claudebot
+    - cohere-ai
+    - google-extended
+    - gptbot
+    sha256: 48836ba75318ca8123f939350dcd058c9dc25bc8d3db287f1d45773e9aa6cb8b
+- id: sinclair-wach
+  platform: sinclair
+  call_sign: WACH
+  name: WACH (wach.com)
+  market: Columbia, SC
+  dma: Columbia, SC DMA
+  states: [SC]
+  counties:
+    basis: dma
+    source: 'DMA county list: alex-patton/US-TVDMA-BY-COUNTY usa-tvdma-county.csv at commit 7f254b8c1843c62ec976a71c40d366d45f6f29cd
+      (sha256 2e2cd00265a8d704...), names resolved to FIPS with the Census 2025 county Gazetteer; Connecticut
+      via the Census county-to-town crosswalk (snowlight.sources.stations.dma); market ''Columbia, SC
+      DMA'''
+    fips: ['45017', '45027', '45039', '45055', '45061', '45063', '45071', '45075', '45079', '45085']
+  page_url: https://wach.com/weather/closings
+  data_url: https://wach.com/resources/ftptransfer/wach/closings/closings.html
+  export_url: null
+  archive_urls:
+  - https://wach.com/weather/closings
+  - https://wach.com/resources/ftptransfer/wach/closings/closings.html
+  poll_minutes: null
+  status: active
+  evidence: 'First-hand check of 2026-09-26 (docs/research/firsthand/others.json, record WACH; variant
+    sinclair-next-ftptransfer). Live read of https://wach.com/resources/ftptransfer/wach/closings/closings.html
+    2026-09-27T06:09:15Z: HTTP 200, 699 bytes, Last-Modified Sun, 27 Sep 2026 06:00:05 GMT; newsticker-html,
+    populated, 1 rows (''Lexington School District Three'').'
+  list_files:
+  - url: https://wach.com/resources/ftptransfer/wach/closings/closings.html
+    loaded_by: frame
+    seen: The station's Next.js closings page frames it (NewsCustomPage htmlEmbed iframe), per the first-hand
+      check of 2026-09-26 and this part's live read of 2026-09-27.
+  page_check: null
+  robots:
+  - url: https://wach.com/weather/closings
+    checked_at: '2026-09-27T07:03:39Z'
+    state: parsed
+    allowed: true
+    rule: 'Allow: /'
+    crawl_delay: null
+    disallowed_agents:
+    - anthropic-ai
+    - applebot-extended
+    - ccbot
+    - chatgpt-user
+    - claude-web
+    - claudebot
+    - cohere-ai
+    - google-extended
+    - gptbot
+    sha256: 48836ba75318ca8123f939350dcd058c9dc25bc8d3db287f1d45773e9aa6cb8b
+  - url: https://wach.com/resources/ftptransfer/wach/closings/closings.html
+    checked_at: '2026-09-27T07:03:39Z'
+    state: parsed
+    allowed: false
+    rule: 'Disallow: /resources/ftptransfer/'
+    crawl_delay: null
+    disallowed_agents:
+    - anthropic-ai
+    - applebot-extended
+    - ccbot
+    - chatgpt-user
+    - claude-web
+    - claudebot
+    - cohere-ai
+    - google-extended
+    - gptbot
+    sha256: 48836ba75318ca8123f939350dcd058c9dc25bc8d3db287f1d45773e9aa6cb8b
+- id: sinclair-wchs
+  platform: sinclair
+  call_sign: WCHS
+  name: WCHS (wchstv.com)
+  market: Charleston - Huntington, WV
+  dma: Charleston - Huntington, WV - KY - OH DMA
+  states: [KY, OH, WV]
+  counties:
+    basis: dma
+    source: 'DMA county list: alex-patton/US-TVDMA-BY-COUNTY usa-tvdma-county.csv at commit 7f254b8c1843c62ec976a71c40d366d45f6f29cd
+      (sha256 2e2cd00265a8d704...), names resolved to FIPS with the Census 2025 county Gazetteer; Connecticut
+      via the Census county-to-town crosswalk (snowlight.sources.stations.dma); market ''Charleston -
+      Huntington, WV - KY - OH DMA'''
+    fips: ['21019', '21043', '21063', '21071', '21089', '21115', '21127', '21135', '21153', '21159', '21195',
+      '39009', '39053', '39079', '39087', '39105', '39145', '39163', '54005', '54007', '54011', '54013',
+      '54015', '54035', '54039', '54043', '54045', '54053', '54059', '54067', '54079', '54087', '54099',
+      '54105']
+  page_url: https://wchstv.com/weather/closings
+  data_url: https://wchstv.com/resources/ftptransfer/wchs/closings/closings.html
+  export_url: null
+  archive_urls:
+  - https://wchstv.com/weather/closings
+  - https://wchstv.com/resources/ftptransfer/wchs/closings/closings.html
+  poll_minutes: null
+  status: active
+  evidence: 'First-hand check of 2026-09-26 (docs/research/firsthand/others.json, record WCHS; variant
+    sinclair-next-ftptransfer). Live read of https://wchstv.com/resources/ftptransfer/wchs/closings/closings.html
+    2026-09-27T05:48:09Z: HTTP 200, 617 bytes, Last-Modified Sun, 27 Sep 2026 05:40:06 GMT; newsticker-html,
+    empty. Archived captures read (archive-captures runs 36299187602, 36317643857, 36324857670): 1 deferred,
+    3 empty, 3 populated. Archived http://wchstv.com/resources/ftptransfer/wchs/closings/closings.html
+    captured 2018-02-21T21:19:34Z: newsticker-html, 47 rows (''WV - Cabell County'', ''WV - Calhoun County'',
+    ...). Archived https://wchstv.com/resources/ftptransfer/wchs/closings/closings.html captured 2025-02-06T11:26:41Z:
+    newsticker-html, 19 rows (''WV - Boone County'', ''WV - Braxton County'', ...).'
+  list_files:
+  - url: https://wchstv.com/resources/ftptransfer/wchs/closings/closings.html
+    loaded_by: frame
+    seen: The station's Next.js closings page frames it (NewsCustomPage htmlEmbed iframe), per the first-hand
+      check of 2026-09-26 and this part's live read of 2026-09-27.
+  page_check: null
+  robots:
+  - url: https://wchstv.com/weather/closings
+    checked_at: '2026-09-27T07:03:41Z'
+    state: parsed
+    allowed: true
+    rule: 'Allow: /'
+    crawl_delay: null
+    disallowed_agents:
+    - anthropic-ai
+    - applebot-extended
+    - ccbot
+    - chatgpt-user
+    - claude-web
+    - claudebot
+    - cohere-ai
+    - google-extended
+    - gptbot
+    sha256: 48836ba75318ca8123f939350dcd058c9dc25bc8d3db287f1d45773e9aa6cb8b
+  - url: https://wchstv.com/resources/ftptransfer/wchs/closings/closings.html
+    checked_at: '2026-09-27T07:03:41Z'
+    state: parsed
+    allowed: false
+    rule: 'Disallow: /resources/ftptransfer/'
+    crawl_delay: null
+    disallowed_agents:
+    - anthropic-ai
+    - applebot-extended
+    - ccbot
+    - chatgpt-user
+    - claude-web
+    - claudebot
+    - cohere-ai
+    - google-extended
+    - gptbot
+    sha256: 48836ba75318ca8123f939350dcd058c9dc25bc8d3db287f1d45773e9aa6cb8b
+- id: sinclair-wcti
+  platform: sinclair
+  call_sign: WCTI
+  name: WCTI (wcti12.com)
+  market: Greenville - New Bern - Washington, NC
+  dma: Greenville - New Bern - Washington, NC DMA
+  states: [NC]
+  counties:
+    basis: dma
+    source: 'DMA county list: alex-patton/US-TVDMA-BY-COUNTY usa-tvdma-county.csv at commit 7f254b8c1843c62ec976a71c40d366d45f6f29cd
+      (sha256 2e2cd00265a8d704...), names resolved to FIPS with the Census 2025 county Gazetteer; Connecticut
+      via the Census county-to-town crosswalk (snowlight.sources.stations.dma); market ''Greenville -
+      New Bern - Washington, NC DMA'''
+    fips: ['37013', '37015', '37031', '37049', '37061', '37079', '37095', '37103', '37107', '37117', '37133',
+      '37137', '37147', '37177', '37187']
+  page_url: https://wcti12.com/weather/closings
+  data_url: https://wcti12.com/resources/ftptransfer/wcti/closings/closings.html
+  export_url: null
+  archive_urls:
+  - https://wcti12.com/weather/closings
+  - https://wcti12.com/resources/ftptransfer/wcti/closings/closings.html
+  poll_minutes: null
+  status: active
+  evidence: 'First-hand check of 2026-09-26 (docs/research/firsthand/others.json, record WCTI/WYDO; variant
+    sinclair-next-ftptransfer). Live read of https://wcti12.com/resources/ftptransfer/wcti/closings/closings.html
+    2026-09-27T06:09:10Z: HTTP 200, 598 bytes, Last-Modified Sun, 27 Sep 2026 06:00:06 GMT; newsticker-html,
+    populated, 3 rows (''ARAPAHOE CHARTER'', ''HYDE COUNTY SCHOOL SYSTEM'', ...). Archived captures read
+    (archive-captures run 36299187602): 1 deferred, 1 empty.'
+  list_files:
+  - url: https://wcti12.com/resources/ftptransfer/wcti/closings/closings.html
+    loaded_by: frame
+    seen: The station's Next.js closings page frames it (NewsCustomPage htmlEmbed iframe), per the first-hand
+      check of 2026-09-26 and this part's live read of 2026-09-27.
+  page_check: null
+  robots:
+  - url: https://wcti12.com/weather/closings
+    checked_at: '2026-09-27T07:03:41Z'
+    state: parsed
+    allowed: true
+    rule: 'Allow: /'
+    crawl_delay: null
+    disallowed_agents:
+    - anthropic-ai
+    - applebot-extended
+    - ccbot
+    - chatgpt-user
+    - claude-web
+    - claudebot
+    - cohere-ai
+    - google-extended
+    - gptbot
+    sha256: 48836ba75318ca8123f939350dcd058c9dc25bc8d3db287f1d45773e9aa6cb8b
+  - url: https://wcti12.com/resources/ftptransfer/wcti/closings/closings.html
+    checked_at: '2026-09-27T07:03:41Z'
+    state: parsed
+    allowed: false
+    rule: 'Disallow: /resources/ftptransfer/'
+    crawl_delay: null
+    disallowed_agents:
+    - anthropic-ai
+    - applebot-extended
+    - ccbot
+    - chatgpt-user
+    - claude-web
+    - claudebot
+    - cohere-ai
+    - google-extended
+    - gptbot
+    sha256: 48836ba75318ca8123f939350dcd058c9dc25bc8d3db287f1d45773e9aa6cb8b
+- id: sinclair-wcyb
+  platform: sinclair
+  call_sign: WCYB
+  name: WCYB (wcyb.com)
+  market: Tri-Cities, TN-VA
+  dma: Tri - Cities, TN - VA - KY DMA
+  states: [KY, TN, VA]
+  counties:
+    basis: dma
+    source: 'DMA county list: alex-patton/US-TVDMA-BY-COUNTY usa-tvdma-county.csv at commit 7f254b8c1843c62ec976a71c40d366d45f6f29cd
+      (sha256 2e2cd00265a8d704...), names resolved to FIPS with the Census 2025 county Gazetteer; Connecticut
+      via the Census county-to-town crosswalk (snowlight.sources.stations.dma); market ''Tri - Cities,
+      TN - VA - KY DMA'''
+    fips: ['21131', '21133', '47019', '47059', '47073', '47091', '47163', '47171', '47179', '51027', '51051',
+      '51105', '51167', '51169', '51173', '51191', '51195', '51520', '51720']
+  page_url: https://wcyb.com/weather/closings
+  data_url: https://wcyb.com/resources/ftptransfer/wcyb/closings/Schools.html
+  export_url: null
+  archive_urls:
+  - https://wcyb.com/weather/closings
+  - https://wcyb.com/resources/ftptransfer/wcyb/closings/Schools.html
+  poll_minutes: null
+  status: active
+  evidence: 'First-hand check of 2026-09-26 (docs/research/firsthand/others.json, record WCYB/WEMT; variant
+    sinclair-next-ftptransfer). Live read of https://wcyb.com/resources/ftptransfer/wcyb/closings/Schools.html
+    2026-09-27T05:48:19Z: HTTP 200, 229 bytes, Last-Modified Wed, 16 Sep 2026 12:51:21 GMT; closings-grid,
+    empty. Archived captures read (archive-captures run 36299187602): 1 deferred, 1 populated. Archived
+    https://wcyb.com/resources/ftptransfer/wcyb/closings/Schools.html captured 2026-02-23T05:15:54Z: closings-grid,
+    35 rows (''BUCHANAN CO. SCHOOLS'', ''CARTER CO. SCHOOLS'', ...).'
+  list_files:
+  - url: https://wcyb.com/resources/ftptransfer/wcyb/closings/Schools.html
+    loaded_by: frame
+    seen: The station's Next.js closings page frames it (NewsCustomPage htmlEmbed iframe), per the first-hand
+      check of 2026-09-26 and this part's live read of 2026-09-27.
+  page_check: null
+  robots:
+  - url: https://wcyb.com/weather/closings
+    checked_at: '2026-09-27T07:03:41Z'
+    state: parsed
+    allowed: true
+    rule: 'Allow: /'
+    crawl_delay: null
+    disallowed_agents:
+    - anthropic-ai
+    - applebot-extended
+    - ccbot
+    - chatgpt-user
+    - claude-web
+    - claudebot
+    - cohere-ai
+    - google-extended
+    - gptbot
+    sha256: 48836ba75318ca8123f939350dcd058c9dc25bc8d3db287f1d45773e9aa6cb8b
+  - url: https://wcyb.com/resources/ftptransfer/wcyb/closings/Schools.html
+    checked_at: '2026-09-27T07:03:41Z'
+    state: parsed
+    allowed: false
+    rule: 'Disallow: /resources/ftptransfer/'
+    crawl_delay: null
+    disallowed_agents:
+    - anthropic-ai
+    - applebot-extended
+    - ccbot
+    - chatgpt-user
+    - claude-web
+    - claudebot
+    - cohere-ai
+    - google-extended
+    - gptbot
+    sha256: 48836ba75318ca8123f939350dcd058c9dc25bc8d3db287f1d45773e9aa6cb8b
+- id: sinclair-wgme
+  platform: sinclair
+  call_sign: WGME
+  name: WGME (wgme.com)
+  market: Portland - Auburn, ME
+  dma: Portland - Auburn, ME - NH - VT DMA
+  states: [ME, NH]
+  counties:
+    basis: dma
+    source: 'DMA county list: alex-patton/US-TVDMA-BY-COUNTY usa-tvdma-county.csv at commit 7f254b8c1843c62ec976a71c40d366d45f6f29cd
+      (sha256 2e2cd00265a8d704...), names resolved to FIPS with the Census 2025 county Gazetteer; Connecticut
+      via the Census county-to-town crosswalk (snowlight.sources.stations.dma); market ''Portland - Auburn,
+      ME - NH - VT DMA'''
+    fips: ['23001', '23005', '23007', '23011', '23013', '23015', '23017', '23023', '23031', '33003', '33007']
+  page_url: https://wgme.com/weather/closings
+  data_url: https://wgme.com/resources/ftptransfer/wgme/closings/close.html
+  export_url: null
+  archive_urls:
+  - https://wgme.com/weather/closings
+  - https://wgme.com/resources/ftptransfer/wgme/closings/close.html
+  - https://fox23maine.com/weather/closings
+  - https://fox23maine.com/resources/ftptransfer/wgme/closings/close.html
+  poll_minutes: null
+  status: active
+  evidence: 'First-hand check of 2026-09-26 (docs/research/firsthand/others.json, record WGME; variant
+    sinclair-next-ftptransfer). Live read of https://wgme.com/resources/ftptransfer/wgme/closings/close.html
+    2026-09-27T05:48:24Z: HTTP 200, 903 bytes, Last-Modified Sun, 27 Sep 2026 05:40:06 GMT; newsticker-html,
+    empty. Archived captures read (archive-captures runs 36299187602, 36338052203): 1 deferred, 1 empty,
+    2 populated. Archived https://wgme.com/resources/ftptransfer/wgme/closings/close.html captured 2021-02-02T13:24:46Z:
+    newsticker-html, 514 rows (''AOS 93'', ''AOS 98'', ...). Archived https://wgme.com/resources/ftptransfer/wgme/closings/close.html
+    captured 2025-02-06T12:16:28Z: newsticker-html, 223 rows (''AOS 93'', ''AOS 98'', ...). fox23maine.com
+    (WPFO) frames the same file on its own host.'
+  list_files:
+  - url: https://wgme.com/resources/ftptransfer/wgme/closings/close.html
+    loaded_by: frame
+    seen: The station's Next.js closings page frames it (NewsCustomPage htmlEmbed iframe), per the first-hand
+      check of 2026-09-26 and this part's live read of 2026-09-27.
+  page_check: null
+  robots:
+  - url: https://wgme.com/weather/closings
+    checked_at: '2026-09-27T07:03:42Z'
+    state: parsed
+    allowed: true
+    rule: 'Allow: /'
+    crawl_delay: null
+    disallowed_agents:
+    - anthropic-ai
+    - applebot-extended
+    - ccbot
+    - chatgpt-user
+    - claude-web
+    - claudebot
+    - cohere-ai
+    - google-extended
+    - gptbot
+    sha256: 48836ba75318ca8123f939350dcd058c9dc25bc8d3db287f1d45773e9aa6cb8b
+  - url: https://wgme.com/resources/ftptransfer/wgme/closings/close.html
+    checked_at: '2026-09-27T07:03:42Z'
+    state: parsed
+    allowed: false
+    rule: 'Disallow: /resources/ftptransfer/'
+    crawl_delay: null
+    disallowed_agents:
+    - anthropic-ai
+    - applebot-extended
+    - ccbot
+    - chatgpt-user
+    - claude-web
+    - claudebot
+    - cohere-ai
+    - google-extended
+    - gptbot
+    sha256: 48836ba75318ca8123f939350dcd058c9dc25bc8d3db287f1d45773e9aa6cb8b
+- id: sinclair-wjac
+  platform: sinclair
+  call_sign: WJAC
+  name: WJAC (wjactv.com)
+  market: Johnstown - Altoona, PA
+  dma: Johnstown - Altoona, PA DMA
+  states: [PA]
+  counties:
+    basis: dma
+    source: 'DMA county list: alex-patton/US-TVDMA-BY-COUNTY usa-tvdma-county.csv at commit 7f254b8c1843c62ec976a71c40d366d45f6f29cd
+      (sha256 2e2cd00265a8d704...), names resolved to FIPS with the Census 2025 county Gazetteer; Connecticut
+      via the Census county-to-town crosswalk (snowlight.sources.stations.dma); market ''Johnstown - Altoona,
+      PA DMA'''
+    fips: ['42009', '42013', '42021', '42023', '42027', '42033', '42047', '42053', '42061', '42065', '42111']
+  page_url: https://wjactv.com/weather/closings
+  data_url: https://wjactv.com/resources/ftptransfer/wjac/closings/closings.html
+  export_url: null
+  archive_urls:
+  - https://wjactv.com/weather/closings
+  - https://wjactv.com/resources/ftptransfer/wjac/closings/closings.html
+  poll_minutes: null
+  status: active
+  evidence: 'First-hand check of 2026-09-26 (docs/research/firsthand/others.json, record WJAC; variant
+    sinclair-next-ftptransfer). Live read of https://wjactv.com/resources/ftptransfer/wjac/closings/closings.html
+    2026-09-27T05:48:29Z: HTTP 200, 229 bytes, Last-Modified Sun, 27 Sep 2026 05:38:45 GMT; closings-grid,
+    empty. Archived captures read (archive-captures runs 36299187602, 36338052203): 1 deferred, 1 empty,
+    2 populated. Archived https://wjactv.com/resources/ftptransfer/wjac/closings/closings.html captured
+    2021-02-01T03:26:50Z: closings-grid, 90 rows (''A.Y.S. DAY TREATMENT'', ''ADMIRAL PEARY AREA VO TECH'',
+    ...). Archived https://wjactv.com/resources/ftptransfer/wjac/closings/closings.html captured 2024-12-16T13:27:31Z:
+    closings-grid, 67 rows (''ALTOONA AREA SCHOOL DISTRICT'', ''ALTOONA PUBLIC LIBRARY'', ...).'
+  list_files:
+  - url: https://wjactv.com/resources/ftptransfer/wjac/closings/closings.html
+    loaded_by: frame
+    seen: The station's Next.js closings page frames it (NewsCustomPage htmlEmbed iframe), per the first-hand
+      check of 2026-09-26 and this part's live read of 2026-09-27.
+  page_check: null
+  robots:
+  - url: https://wjactv.com/weather/closings
+    checked_at: '2026-09-27T07:03:43Z'
+    state: parsed
+    allowed: true
+    rule: 'Allow: /'
+    crawl_delay: null
+    disallowed_agents:
+    - anthropic-ai
+    - applebot-extended
+    - ccbot
+    - chatgpt-user
+    - claude-web
+    - claudebot
+    - cohere-ai
+    - google-extended
+    - gptbot
+    sha256: 48836ba75318ca8123f939350dcd058c9dc25bc8d3db287f1d45773e9aa6cb8b
+  - url: https://wjactv.com/resources/ftptransfer/wjac/closings/closings.html
+    checked_at: '2026-09-27T07:03:43Z'
+    state: parsed
+    allowed: false
+    rule: 'Disallow: /resources/ftptransfer/'
+    crawl_delay: null
+    disallowed_agents:
+    - anthropic-ai
+    - applebot-extended
+    - ccbot
+    - chatgpt-user
+    - claude-web
+    - claudebot
+    - cohere-ai
+    - google-extended
+    - gptbot
+    sha256: 48836ba75318ca8123f939350dcd058c9dc25bc8d3db287f1d45773e9aa6cb8b
+- id: sinclair-wjla
+  platform: sinclair
+  call_sign: WJLA
+  name: WJLA (wjla.com)
+  market: Washington, DC
+  dma: Washington, DC - MD - PA - VA - WV DMA
+  states: [DC, MD, PA, VA, WV]
+  counties:
+    basis: dma
+    source: 'DMA county list: alex-patton/US-TVDMA-BY-COUNTY usa-tvdma-county.csv at commit 7f254b8c1843c62ec976a71c40d366d45f6f29cd
+      (sha256 2e2cd00265a8d704...), names resolved to FIPS with the Census 2025 county Gazetteer; Connecticut
+      via the Census county-to-town crosswalk (snowlight.sources.stations.dma); market ''Washington, DC
+      - MD - PA - VA - WV DMA'''
+    fips: ['11001', '24001', '24009', '24017', '24021', '24031', '24033', '24037', '24043', '42055', '42057',
+      '51013', '51043', '51047', '51059', '51061', '51069', '51099', '51107', '51139', '51153', '51157',
+      '51171', '51177', '51179', '51187', '51193', '51510', '51600', '51610', '51630', '51683', '51685',
+      '51840', '54003', '54023', '54027', '54031', '54037', '54057', '54065']
+  page_url: https://wjla.com/weather/closings
+  data_url: https://wjla.com/resources/ftptransfer/wjla/closings/closings.html
+  export_url: null
+  archive_urls:
+  - https://wjla.com/weather/closings
+  - https://wjla.com/resources/ftptransfer/wjla/closings/closings.html
+  poll_minutes: null
+  status: active
+  evidence: 'First-hand check of 2026-09-26 (docs/research/firsthand/others.json, record WJLA; variant
+    sinclair-next-ftptransfer). Live read of https://wjla.com/resources/ftptransfer/wjla/closings/closings.html
+    2026-09-27T05:48:34Z: HTTP 200, 1873 bytes, Last-Modified Sun, 27 Sep 2026 05:40:06 GMT; newsticker-html,
+    empty. Archived captures read (archive-captures runs 36299187602, 36338052203): 1 deferred, 1 empty,
+    1 populated. Archived https://wjla.com/resources/ftptransfer/wjla/closings/closings.html captured
+    2025-01-08T10:57:51Z: newsticker-html, 101 rows (''AL-HUDA SCHOOL'', ''ALEXANDRIA COUNTRY DAY SCHOOL'',
+    ...).'
+  list_files:
+  - url: https://wjla.com/resources/ftptransfer/wjla/closings/closings.html
+    loaded_by: frame
+    seen: The station's Next.js closings page frames it (NewsCustomPage htmlEmbed iframe), per the first-hand
+      check of 2026-09-26 and this part's live read of 2026-09-27.
+  page_check: null
+  robots:
+  - url: https://wjla.com/weather/closings
+    checked_at: '2026-09-27T07:03:43Z'
+    state: parsed
+    allowed: true
+    rule: 'Allow: /'
+    crawl_delay: null
+    disallowed_agents:
+    - anthropic-ai
+    - applebot-extended
+    - ccbot
+    - chatgpt-user
+    - claude-web
+    - claudebot
+    - cohere-ai
+    - google-extended
+    - gptbot
+    sha256: 48836ba75318ca8123f939350dcd058c9dc25bc8d3db287f1d45773e9aa6cb8b
+  - url: https://wjla.com/resources/ftptransfer/wjla/closings/closings.html
+    checked_at: '2026-09-27T07:03:43Z'
+    state: parsed
+    allowed: false
+    rule: 'Disallow: /resources/ftptransfer/'
+    crawl_delay: null
+    disallowed_agents:
+    - anthropic-ai
+    - applebot-extended
+    - ccbot
+    - chatgpt-user
+    - claude-web
+    - claudebot
+    - cohere-ai
+    - google-extended
+    - gptbot
+    sha256: 48836ba75318ca8123f939350dcd058c9dc25bc8d3db287f1d45773e9aa6cb8b
+- id: sinclair-wlos
+  platform: sinclair
+  call_sign: WLOS
+  name: WLOS (wlos.com)
+  market: Greenville - Spartanburg, SC / Asheville, NC
+  dma: Greenville - Spartanburg, SC- Asheville - And., NC - GA  DMA
+  states: [GA, NC, SC]
+  counties:
+    basis: dma
+    source: 'DMA county list: alex-patton/US-TVDMA-BY-COUNTY usa-tvdma-county.csv at commit 7f254b8c1843c62ec976a71c40d366d45f6f29cd
+      (sha256 2e2cd00265a8d704...), names resolved to FIPS with the Census 2025 county Gazetteer; Connecticut
+      via the Census county-to-town crosswalk (snowlight.sources.stations.dma); market ''Greenville -
+      Spartanburg, SC- Asheville - And., NC - GA  DMA'''
+    fips: ['13105', '13119', '13147', '13257', '37021', '37075', '37087', '37089', '37099', '37111', '37113',
+      '37115', '37121', '37149', '37161', '37173', '37175', '37199', '45001', '45007', '45021', '45045',
+      '45047', '45059', '45073', '45077', '45083', '45087']
+  page_url: https://wlos.com/weather/closings
+  data_url: https://wlos.com/resources/ftptransfer/wlos/closings/schoolclosing.html
+  export_url: null
+  archive_urls:
+  - https://wlos.com/weather/closings
+  - https://wlos.com/resources/ftptransfer/wlos/closings/schoolclosing.html
+  poll_minutes: null
+  status: active
+  evidence: 'First-hand check of 2026-09-26 (docs/research/firsthand/others.json, record WLOS; variant
+    sinclair-next-ftptransfer). Live read of https://wlos.com/resources/ftptransfer/wlos/closings/schoolclosing.html
+    2026-09-27T05:48:39Z: HTTP 200, 617 bytes, Last-Modified Sun, 27 Sep 2026 05:40:05 GMT; newsticker-html,
+    empty. Archived captures read (archive-captures runs 36299187602, 36338052203): 1 deferred, 1 empty,
+    2 populated. Archived http://wlos.com/resources/ftptransfer/wlos/closings/schoolclosing.html captured
+    2020-12-01T11:05:49Z: newsticker-html, 42 rows ("All God''s Children CEC", ''Arden Presbyterian Preschool'',
+    ...). Archived https://wlos.com/resources/ftptransfer/wlos/closings/schoolclosing.html captured 2024-12-04T10:27:02Z:
+    newsticker-html, 7 rows (''Avery County Schools'', ''Irene Wortham Center Adult Day Center'', ...).'
+  list_files:
+  - url: https://wlos.com/resources/ftptransfer/wlos/closings/schoolclosing.html
+    loaded_by: frame
+    seen: The station's Next.js closings page frames it (NewsCustomPage htmlEmbed iframe), per the first-hand
+      check of 2026-09-26 and this part's live read of 2026-09-27.
+  page_check: null
+  robots:
+  - url: https://wlos.com/weather/closings
+    checked_at: '2026-09-27T07:03:44Z'
+    state: parsed
+    allowed: true
+    rule: 'Allow: /'
+    crawl_delay: null
+    disallowed_agents:
+    - anthropic-ai
+    - applebot-extended
+    - ccbot
+    - chatgpt-user
+    - claude-web
+    - claudebot
+    - cohere-ai
+    - google-extended
+    - gptbot
+    sha256: 48836ba75318ca8123f939350dcd058c9dc25bc8d3db287f1d45773e9aa6cb8b
+  - url: https://wlos.com/resources/ftptransfer/wlos/closings/schoolclosing.html
+    checked_at: '2026-09-27T07:03:44Z'
+    state: parsed
+    allowed: false
+    rule: 'Disallow: /resources/ftptransfer/'
+    crawl_delay: null
+    disallowed_agents:
+    - anthropic-ai
+    - applebot-extended
+    - ccbot
+    - chatgpt-user
+    - claude-web
+    - claudebot
+    - cohere-ai
+    - google-extended
+    - gptbot
+    sha256: 48836ba75318ca8123f939350dcd058c9dc25bc8d3db287f1d45773e9aa6cb8b
+- id: sinclair-wsbt
+  platform: sinclair
+  call_sign: WSBT
+  name: WSBT (wsbt.com)
+  market: South Bend - Elkhart, IN
+  dma: South Bend - Elkhart, IN - MI DMA
+  states: [IN, MI]
+  counties:
+    basis: dma
+    source: 'DMA county list: alex-patton/US-TVDMA-BY-COUNTY usa-tvdma-county.csv at commit 7f254b8c1843c62ec976a71c40d366d45f6f29cd
+      (sha256 2e2cd00265a8d704...), names resolved to FIPS with the Census 2025 county Gazetteer; Connecticut
+      via the Census county-to-town crosswalk (snowlight.sources.stations.dma); market ''South Bend -
+      Elkhart, IN - MI DMA'''
+    fips: ['18039', '18049', '18085', '18087', '18099', '18131', '18141', '18149', '26021', '26027']
+  page_url: https://wsbt.com/weather/closings
+  data_url: https://wsbt.com/resources/ftptransfer/wsbt/closings/wsbt-closings.htm
+  export_url: null
+  archive_urls:
+  - https://wsbt.com/weather/closings
+  - https://wsbt.com/resources/ftptransfer/wsbt/closings/wsbt-closings.htm
+  poll_minutes: null
+  status: active
+  evidence: 'First-hand check of 2026-09-26 (docs/research/firsthand/others.json, record WSBT; variant
+    sinclair-next-ftptransfer). Live read of https://wsbt.com/resources/ftptransfer/wsbt/closings/wsbt-closings.htm
+    2026-09-27T05:48:44Z: HTTP 200, 229 bytes, Last-Modified Sun, 27 Sep 2026 05:43:13 GMT; closings-grid,
+    empty. Archived captures read (archive-captures runs 36299187602, 36338052203): 1 deferred, 1 empty,
+    2 populated. Archived https://wsbt.com/resources/ftptransfer/wsbt/closings/wsbt-closings.htm captured
+    2020-03-28T02:11:52Z: closings-grid, 30 rows (''8th Street Preschool'', ''Berrien Springs Community
+    Library'', ...). Archived https://wsbt.com/resources/ftptransfer/wsbt/closings/wsbt-closings.htm captured
+    2025-12-01T22:37:33Z: closings-grid, 10 rows (''Berrien Springs Community Library'', ''Bible Study
+    Fellowship - South Bend EW'', ...).'
+  list_files:
+  - url: https://wsbt.com/resources/ftptransfer/wsbt/closings/wsbt-closings.htm
+    loaded_by: frame
+    seen: The station's Next.js closings page frames it (NewsCustomPage htmlEmbed iframe), per the first-hand
+      check of 2026-09-26 and this part's live read of 2026-09-27.
+  page_check: null
+  robots:
+  - url: https://wsbt.com/weather/closings
+    checked_at: '2026-09-27T07:03:45Z'
+    state: parsed
+    allowed: true
+    rule: 'Allow: /'
+    crawl_delay: null
+    disallowed_agents:
+    - anthropic-ai
+    - applebot-extended
+    - ccbot
+    - chatgpt-user
+    - claude-web
+    - claudebot
+    - cohere-ai
+    - google-extended
+    - gptbot
+    sha256: 48836ba75318ca8123f939350dcd058c9dc25bc8d3db287f1d45773e9aa6cb8b
+  - url: https://wsbt.com/resources/ftptransfer/wsbt/closings/wsbt-closings.htm
+    checked_at: '2026-09-27T07:03:45Z'
+    state: parsed
+    allowed: false
+    rule: 'Disallow: /resources/ftptransfer/'
+    crawl_delay: null
+    disallowed_agents:
+    - anthropic-ai
+    - applebot-extended
+    - ccbot
+    - chatgpt-user
+    - claude-web
+    - claudebot
+    - cohere-ai
+    - google-extended
+    - gptbot
+    sha256: 48836ba75318ca8123f939350dcd058c9dc25bc8d3db287f1d45773e9aa6cb8b
+- id: sinclair-wset
+  platform: sinclair
+  call_sign: WSET
+  name: WSET (wset.com)
+  market: Roanoke - Lynchburg, VA
+  dma: Roanoke - Lynchburg, VA - WV DMA
+  states: [VA, WV]
+  counties:
+    basis: dma
+    source: 'DMA county list: alex-patton/US-TVDMA-BY-COUNTY usa-tvdma-county.csv at commit 7f254b8c1843c62ec976a71c40d366d45f6f29cd
+      (sha256 2e2cd00265a8d704...), names resolved to FIPS with the Census 2025 county Gazetteer; Connecticut
+      via the Census county-to-town crosswalk (snowlight.sources.stations.dma); market ''Roanoke - Lynchburg,
+      VA - WV DMA'''
+    fips: ['51005', '51009', '51011', '51017', '51019', '51023', '51031', '51035', '51037', '51045', '51063',
+      '51067', '51071', '51083', '51089', '51091', '51121', '51125', '51143', '51155', '51161', '51163',
+      '51197', '51530', '51580', '51590', '51640', '51678', '51680', '51690', '51750', '51770', '51775',
+      '54075']
+  page_url: https://wset.com/weather/closings
+  data_url: https://wset.com/resources/ftptransfer/wset/closings/closings.html
+  export_url: null
+  archive_urls:
+  - https://wset.com/weather/closings
+  - https://wset.com/resources/ftptransfer/wset/closings/closings.html
+  poll_minutes: null
+  status: active
+  evidence: 'First-hand check of 2026-09-26 (docs/research/firsthand/others.json, record WSET; variant
+    sinclair-next-ftptransfer). Live read of https://wset.com/resources/ftptransfer/wset/closings/closings.html
+    2026-09-27T05:48:49Z: HTTP 200, 692 bytes, Last-Modified Sun, 27 Sep 2026 05:40:05 GMT; newsticker-html,
+    empty. Archived captures read (archive-captures runs 36299187602, 36338052203): 1 deferred, 1 empty,
+    2 populated. Archived https://wset.com/resources/ftptransfer/wset/closings/closings.html captured
+    2025-01-06T12:54:37Z: newsticker-html, 387 rows (''Albemarle County Schools'', ''Alleghany Highlands
+    Public Schools'', ...). Archived https://wset.com/resources/ftptransfer/wset/closings/closings.html
+    captured 2025-02-10T23:17:35Z: newsticker-html, 147 rows (''Albemarle County Schools'', ''Alleghany
+    Highlands Public Schools'', ...).'
+  list_files:
+  - url: https://wset.com/resources/ftptransfer/wset/closings/closings.html
+    loaded_by: frame
+    seen: The station's Next.js closings page frames it (NewsCustomPage htmlEmbed iframe), per the first-hand
+      check of 2026-09-26 and this part's live read of 2026-09-27.
+  page_check: null
+  robots:
+  - url: https://wset.com/weather/closings
+    checked_at: '2026-09-27T07:03:45Z'
+    state: parsed
+    allowed: true
+    rule: 'Allow: /'
+    crawl_delay: null
+    disallowed_agents:
+    - anthropic-ai
+    - applebot-extended
+    - ccbot
+    - chatgpt-user
+    - claude-web
+    - claudebot
+    - cohere-ai
+    - google-extended
+    - gptbot
+    sha256: 48836ba75318ca8123f939350dcd058c9dc25bc8d3db287f1d45773e9aa6cb8b
+  - url: https://wset.com/resources/ftptransfer/wset/closings/closings.html
+    checked_at: '2026-09-27T07:03:45Z'
+    state: parsed
+    allowed: false
+    rule: 'Disallow: /resources/ftptransfer/'
+    crawl_delay: null
+    disallowed_agents:
+    - anthropic-ai
+    - applebot-extended
+    - ccbot
+    - chatgpt-user
+    - claude-web
+    - claudebot
+    - cohere-ai
+    - google-extended
+    - gptbot
+    sha256: 48836ba75318ca8123f939350dcd058c9dc25bc8d3db287f1d45773e9aa6cb8b
+- id: sinclair-wtov
+  platform: sinclair
+  call_sign: WTOV
+  name: WTOV (wtov9.com)
+  market: Wheeling, WV - Steubenville, OH
+  dma: Wheeling - Steubenville, WV - OH DMA
+  states: [OH, WV]
+  counties:
+    basis: dma
+    source: 'DMA county list: alex-patton/US-TVDMA-BY-COUNTY usa-tvdma-county.csv at commit 7f254b8c1843c62ec976a71c40d366d45f6f29cd
+      (sha256 2e2cd00265a8d704...), names resolved to FIPS with the Census 2025 county Gazetteer; Connecticut
+      via the Census county-to-town crosswalk (snowlight.sources.stations.dma); market ''Wheeling - Steubenville,
+      WV - OH DMA'''
+    fips: ['39013', '39059', '39067', '39081', '39111', '39121', '54009', '54029', '54051', '54069', '54095',
+      '54103']
+  page_url: https://wtov9.com/weather/closings
+  data_url: https://wtov9.com/resources/ftptransfer/wtov/closings/closings.html
+  export_url: null
+  archive_urls:
+  - https://wtov9.com/weather/closings
+  - https://wtov9.com/resources/ftptransfer/wtov/closings/closings.html
+  poll_minutes: null
+  status: active
+  evidence: 'First-hand check of 2026-09-26 (docs/research/firsthand/others.json, record WTOV; variant
+    sinclair-next-ftptransfer). Live read of https://wtov9.com/resources/ftptransfer/wtov/closings/closings.html
+    2026-09-27T05:48:55Z: HTTP 200, 229 bytes, Last-Modified Sun, 27 Sep 2026 05:37:34 GMT; closings-grid,
+    empty. Archived captures read (archive-captures runs 36299187602, 36338052203): 1 deferred, 2 empty,
+    1 populated. Archived https://wtov9.com/resources/ftptransfer/wtov/closings/closings.html captured
+    2025-01-29T05:43:08Z: closings-grid, 3 rows (''HANCOCK COUNTY SCHOOLS'', ''MADONNA HIGH SCHOOL'',
+    ...).'
+  list_files:
+  - url: https://wtov9.com/resources/ftptransfer/wtov/closings/closings.html
+    loaded_by: frame
+    seen: The station's Next.js closings page frames it (NewsCustomPage htmlEmbed iframe), per the first-hand
+      check of 2026-09-26 and this part's live read of 2026-09-27.
+  page_check: null
+  robots:
+  - url: https://wtov9.com/weather/closings
+    checked_at: '2026-09-27T07:03:47Z'
+    state: parsed
+    allowed: true
+    rule: 'Allow: /'
+    crawl_delay: null
+    disallowed_agents:
+    - anthropic-ai
+    - applebot-extended
+    - ccbot
+    - chatgpt-user
+    - claude-web
+    - claudebot
+    - cohere-ai
+    - google-extended
+    - gptbot
+    sha256: 48836ba75318ca8123f939350dcd058c9dc25bc8d3db287f1d45773e9aa6cb8b
+  - url: https://wtov9.com/resources/ftptransfer/wtov/closings/closings.html
+    checked_at: '2026-09-27T07:03:47Z'
+    state: parsed
+    allowed: false
+    rule: 'Disallow: /resources/ftptransfer/'
+    crawl_delay: null
+    disallowed_agents:
+    - anthropic-ai
+    - applebot-extended
+    - ccbot
+    - chatgpt-user
+    - claude-web
+    - claudebot
+    - cohere-ai
+    - google-extended
+    - gptbot
+    sha256: 48836ba75318ca8123f939350dcd058c9dc25bc8d3db287f1d45773e9aa6cb8b
+- id: sinclair-wwmt
+  platform: sinclair
+  call_sign: WWMT
+  name: WWMT (wwmt.com)
+  market: Grand Rapids - Kalamazoo - Battle Creek, MI
+  dma: Grand Rapids - Kalamazoo - Battle Creek, MI DMA
+  states: [MI]
+  counties:
+    basis: dma
+    source: 'DMA county list: alex-patton/US-TVDMA-BY-COUNTY usa-tvdma-county.csv at commit 7f254b8c1843c62ec976a71c40d366d45f6f29cd
+      (sha256 2e2cd00265a8d704...), names resolved to FIPS with the Census 2025 county Gazetteer; Connecticut
+      via the Census county-to-town crosswalk (snowlight.sources.stations.dma); market ''Grand Rapids
+      - Kalamazoo - Battle Creek, MI DMA'''
+    fips: ['26005', '26015', '26023', '26025', '26067', '26077', '26081', '26117', '26121', '26123', '26127',
+      '26139', '26149', '26159']
+  page_url: https://wwmt.com/weather/closings
+  data_url: https://wwmt.com/resources/ftptransfer/wwmt/closings/closings.html
+  export_url: null
+  archive_urls:
+  - https://wwmt.com/weather/closings
+  - https://wwmt.com/resources/ftptransfer/wwmt/closings/closings.html
+  - https://cw7michigan.com/resources/ftptransfer/wwmt/closings/closings.html
+  - https://arcwestmichigan.com/weather/closings
+  poll_minutes: null
+  status: active
+  evidence: 'First-hand check of 2026-09-26 (docs/research/firsthand/others.json, record WWMT; variant
+    sinclair-next-ftptransfer). Live read of https://wwmt.com/resources/ftptransfer/wwmt/closings/closings.html
+    2026-09-27T06:09:25Z: HTTP 200, 769 bytes, Last-Modified Sun, 27 Sep 2026 06:00:05 GMT; newsticker-html,
+    populated, 1 rows (''KENT Michigan Works in Kent Co''). Archived captures read (archive-captures run
+    36299187602): 1 deferred, 1 empty. cw7michigan.com and arcwestmichigan.com (WWMT-2) serve the same
+    file.'
+  list_files:
+  - url: https://wwmt.com/resources/ftptransfer/wwmt/closings/closings.html
+    loaded_by: frame
+    seen: The station's Next.js closings page frames it (NewsCustomPage htmlEmbed iframe), per the first-hand
+      check of 2026-09-26 and this part's live read of 2026-09-27.
+  page_check: null
+  robots:
+  - url: https://wwmt.com/weather/closings
+    checked_at: '2026-09-27T07:03:48Z'
+    state: parsed
+    allowed: true
+    rule: 'Allow: /'
+    crawl_delay: null
+    disallowed_agents:
+    - anthropic-ai
+    - applebot-extended
+    - ccbot
+    - chatgpt-user
+    - claude-web
+    - claudebot
+    - cohere-ai
+    - google-extended
+    - gptbot
+    sha256: 48836ba75318ca8123f939350dcd058c9dc25bc8d3db287f1d45773e9aa6cb8b
+  - url: https://wwmt.com/resources/ftptransfer/wwmt/closings/closings.html
+    checked_at: '2026-09-27T07:03:48Z'
+    state: parsed
+    allowed: false
+    rule: 'Disallow: /resources/ftptransfer/'
+    crawl_delay: null
+    disallowed_agents:
+    - anthropic-ai
+    - applebot-extended
+    - ccbot
+    - chatgpt-user
+    - claude-web
+    - claudebot
+    - cohere-ai
+    - google-extended
+    - gptbot
+    sha256: 48836ba75318ca8123f939350dcd058c9dc25bc8d3db287f1d45773e9aa6cb8b
+- id: sinclair-wbff
+  platform: sinclair
+  call_sign: WBFF
+  name: FOX45 Baltimore (foxbaltimore.com)
+  market: Baltimore, MD
+  dma: Baltimore, MD DMA
+  states: [MD]
+  counties:
+    basis: dma
+    source: 'DMA county list: alex-patton/US-TVDMA-BY-COUNTY usa-tvdma-county.csv at commit 7f254b8c1843c62ec976a71c40d366d45f6f29cd
+      (sha256 2e2cd00265a8d704...), names resolved to FIPS with the Census 2025 county Gazetteer; Connecticut
+      via the Census county-to-town crosswalk (snowlight.sources.stations.dma); market ''Baltimore, MD
+      DMA'''
+    fips: ['24003', '24005', '24011', '24013', '24015', '24019', '24025', '24027', '24029', '24035', '24041',
+      '24510']
+  page_url: https://foxbaltimore.com/weather/closings
+  data_url: https://ftptransfer.sinclairstoryline.com/wbff/closings/closings.html
+  export_url: null
+  archive_urls:
+  - https://foxbaltimore.com/weather/closings
+  - https://ftptransfer.sinclairstoryline.com/wbff/closings/closings.html
+  - https://foxbaltimore.com/resources/ftptransfer/wbff/closings/closings.htm
+  poll_minutes: null
+  status: active
+  evidence: 'First-hand check of 2026-09-26 (docs/research/firsthand/others.json, record WBFF; variant
+    sinclair-next-external-newsticker). Live read of https://foxbaltimore.com/weather/closings 2026-09-27T06:21:24Z:
+    HTTP 200, 203830 bytes; sinclair-next-page, deferred, loads https://ftptransfer.sinclairstoryline.com/wbff/closings/closings.html.
+    Live read of https://ftptransfer.sinclairstoryline.com/wbff/closings/closings.html 2026-09-27T05:46:41Z:
+    HTTP 200, 1847 bytes, Last-Modified Sun, 27 Sep 2026 05:45:04 GMT; newsticker-html, empty. Archived
+    captures read (archive-captures runs 36299187602, 36347638809): 1 deferred, 2 empty, 1 populated.
+    Archived https://foxbaltimore.com/resources/ftptransfer/wbff/closings/closings.htm captured 2022-01-07T14:42:03Z:
+    closings-paragraphs, 58 rows (''Annapolis City Government'', ''Anne Arundel Co Circuit Court'', ...).
+    Never seen with a row at its current address: the archive lists no capture of ftptransfer.sinclairstoryline.com/wbff/closings/closings.html
+    and 621 of the page (listing, run 36317655310), whose captures read hold no list of their own. The
+    station''s earlier file, foxbaltimore.com/resources/ftptransfer/wbff/closings/closings.htm (22 captures,
+    2016 to 2023; listing, run 36345392102), lists 58 Maryland school systems, courts and colleges on
+    2022-01-07 and none on 2022-05-21 (run 36347638809; fixtures sinclair/wbff-20220107.html and wbff-20220521.html);
+    no page capture lies near it, so it is evidence, not proof of the current list.'
+  list_files:
+  - url: https://ftptransfer.sinclairstoryline.com/wbff/closings/closings.html
+    loaded_by: frame
+    seen: The station's Next.js closings page frames it (first-hand check 2026-09-26, live read 2026-09-27).
+  - url: https://foxbaltimore.com/resources/ftptransfer/wbff/closings/closings.htm
+    loaded_by: unseen
+    seen: WBFF's earlier list file, in the station's own /resources/ftptransfer/wbff/ folder on foxbaltimore.com
+      (22 captures, 2016 to 2023; no downloaded page capture names it); its capture of 2022-01-07 lists
+      58 Maryland school systems, courts and colleges (archive-captures run 36347638809).
+  page_check: null
+  robots:
+  - url: https://foxbaltimore.com/weather/closings
+    checked_at: '2026-09-27T07:03:39Z'
+    state: parsed
+    allowed: true
+    rule: 'Allow: /'
+    crawl_delay: null
+    disallowed_agents:
+    - anthropic-ai
+    - applebot-extended
+    - ccbot
+    - chatgpt-user
+    - claude-web
+    - claudebot
+    - cohere-ai
+    - google-extended
+    - gptbot
+    sha256: 48836ba75318ca8123f939350dcd058c9dc25bc8d3db287f1d45773e9aa6cb8b
+  - url: https://ftptransfer.sinclairstoryline.com/wbff/closings/closings.html
+    checked_at: '2026-09-27T07:03:40Z'
+    state: unavailable
+    allowed: true
+    rule: 'robots.txt unavailable (4xx): unrestricted'
+    crawl_delay: null
+    disallowed_agents: []
+    sha256: null
+- id: sinclair-katv
+  platform: sinclair
+  call_sign: KATV
+  name: KATV Channel 7 (katv.com)
+  market: Little Rock - Pine Bluff, AR
+  dma: Little Rock - Pine Bluff, AR DMA
+  states: [AR]
+  counties:
+    basis: dma
+    source: 'DMA county list: alex-patton/US-TVDMA-BY-COUNTY usa-tvdma-county.csv at commit 7f254b8c1843c62ec976a71c40d366d45f6f29cd
+      (sha256 2e2cd00265a8d704...), names resolved to FIPS with the Census 2025 county Gazetteer; Connecticut
+      via the Census county-to-town crosswalk (snowlight.sources.stations.dma); market ''Little Rock -
+      Pine Bluff, AR DMA'''
+    fips: ['05001', '05011', '05013', 05019, '05023', '05025', 05029, 05039, '05041', '05043', '05045',
+      '05051', '05053', 05059, '05063', '05067', 05069, '05071', 05079, 05085, 05095, 05097, '05103',
+      '05105', 05109, '05113', '05115', '05117', 05119, '05125', 05129, '05137', '05141', '05145', '05147',
+      05149]
+  page_url: https://katv.com/weather/closings
+  data_url: https://sbgcg.com/Ticker/Stations/KATV/closings.html
+  export_url: null
+  archive_urls:
+  - https://katv.com/weather/closings
+  - https://sbgcg.com/Ticker/Stations/KATV/closings.html
+  - https://ticker.news.sinclairinc.cloud/chameleon/blade/query/28/CLOSINGS/
+  - https://katv.com/resources/ftptransfer/katv/closings/closings.html
+  poll_minutes: null
+  status: active
+  evidence: 'First-hand check of 2026-09-26 (docs/research/firsthand/others.json, record KATV; variant
+    sinclair-chameleon-json). Live read of https://katv.com/weather/closings 2026-09-27T05:50:02Z: HTTP
+    200, 205834 bytes; sinclair-next-page, deferred, loads https://sbgcg.com/Ticker/Stations/KATV/closings.html.
+    Live read of https://sbgcg.com/Ticker/Stations/KATV/closings.html 2026-09-27T06:09:00Z: HTTP 200,
+    15692 bytes, Last-Modified Tue, 02 Dec 2025 18:06:12 GMT; sinclair-chameleon-page, deferred, loads
+    https://ticker.news.sinclairinc.cloud/chameleon/blade/query/28/CLOSINGS/?format=json&h=12&timestamp=false&pretty=true&api_key=(key).
+    Archived captures read (archive-captures runs 36299187602, 36347638809): 1 deferred, 1 empty, 2 populated.
+    Archived https://katv.com/resources/ftptransfer/katv/closings/closings.html captured 2023-02-02T03:49:07Z:
+    allen-header-table, 116 rows ("AEDD - Children''s Center", ''AEDD - Little Rock'', ...). Archived
+    https://katv.com/resources/ftptransfer/katv/closings/closings.html captured 2025-01-21T12:09:54Z:
+    allen-header-table, 1 rows (''New Generation Child Development Center''). Proven through its closings
+    page: the page''s capture of 2023-02-02 03:49:05 UTC framed the station''s earlier list file, whose
+    capture two seconds later lists 116 rows (run 36347638809; the file also lists 1 on 2025-01-21 and
+    none on 2025-02-06). The Chameleon display page the page frames today has no capture, and its query
+    has not been seen with rows.'
+  list_files:
+  - url: https://sbgcg.com/Ticker/Stations/KATV/closings.html
+    loaded_by: frame
+    seen: The station's Next.js closings page frames this Chameleon display page (live read 2026-09-27).
+  - url: https://ticker.news.sinclairinc.cloud/chameleon/blade/query/28/CLOSINGS/
+    loaded_by: script
+    seen: 'The display page''s script reads this Chameleon query (address base64-encoded in the page,
+      with a public key); read live 2026-09-27: {"bladeQueryItem": []}.'
+  - url: https://katv.com/resources/ftptransfer/katv/closings/closings.html
+    loaded_by: frame
+    seen: 'KATV''s earlier list file: the station''s closings page framed it in its capture of 2023-02-02
+      03:49:05 UTC (the facade''s injected markup), and the file''s capture two seconds later lists 116
+      Arkansas schools and organizations during the February 2023 ice storm (archive-captures run 36347638809);
+      43 captures, 2016 to 2025.'
+  page_check: null
+  robots:
+  - url: https://katv.com/weather/closings
+    checked_at: '2026-09-27T07:03:35Z'
+    state: parsed
+    allowed: true
+    rule: 'Allow: /'
+    crawl_delay: null
+    disallowed_agents:
+    - anthropic-ai
+    - applebot-extended
+    - ccbot
+    - chatgpt-user
+    - claude-web
+    - claudebot
+    - cohere-ai
+    - google-extended
+    - gptbot
+    sha256: 48836ba75318ca8123f939350dcd058c9dc25bc8d3db287f1d45773e9aa6cb8b
+  - url: https://sbgcg.com/Ticker/Stations/KATV/closings.html
+    checked_at: '2026-09-27T07:03:36Z'
+    state: unavailable
+    allowed: true
+    rule: 'robots.txt unavailable (4xx): unrestricted'
+    crawl_delay: null
+    disallowed_agents: []
+    sha256: null
+- id: sinclair-kbak
+  platform: sinclair
+  call_sign: KBAK
+  name: KBAK (bakersfieldnow.com)
+  market: Bakersfield, CA
+  dma: null
+  states: [CA]
+  counties: null
+  page_url: null
+  data_url: null
+  export_url: null
+  archive_urls: []
+  poll_minutes: null
+  status: no_endpoint
+  evidence: First-hand check of 2026-09-26 (docs/research/firsthand/others.json, record KBAK; variant
+    sinclair-next-external-iframe). Its closings page frames the Kern County Superintendent of Schools
+    AlertLine (alertline.kern.org), whose TLS certificate chain could not be verified on 2026-09-26; no
+    list read.
+  list_files: []
+  page_check: null
+  robots: []
+- id: sinclair-wpec
+  platform: sinclair
+  call_sign: WPEC
+  name: WPEC (cbs12.com)
+  market: West Palm Beach - Fort Pierce, FL
+  dma: null
+  states: [FL]
+  counties: null
+  page_url: null
+  data_url: null
+  export_url: null
+  archive_urls: []
+  poll_minutes: null
+  status: no_endpoint
+  evidence: 'First-hand check of 2026-09-26 (docs/research/firsthand/others.json, record WPEC; variant
+    none-found). No closings page: /weather/closings answered 404 and the site''s navigation has no closings
+    entry (first-hand check of 2026-09-26).'
+  list_files: []
+  page_check: null
+  robots: []
+- id: sinclair-kdbc
+  platform: sinclair
+  call_sign: KDBC
+  name: KDBC (cbs4local.com)
+  market: El Paso, TX
+  dma: null
+  states: [TX]
+  counties: null
+  page_url: null
+  data_url: null
+  export_url: null
+  archive_urls: []
+  poll_minutes: null
+  status: no_endpoint
+  evidence: 'First-hand check of 2026-09-26 (docs/research/firsthand/others.json, record KDBC; variant
+    none-found). No closings page: /weather/closings answered 404 and the site''s navigation has no closings
+    entry (first-hand check of 2026-09-26).'
+  list_files: []
+  page_check: null
+  robots: []
+- id: sinclair-wrgb
+  platform: sinclair
+  call_sign: WRGB
+  name: WRGB (cbs6albany.com)
+  market: Albany - Schenectady - Troy, NY
+  dma: null
+  states: [NY]
+  counties: null
+  page_url: null
+  data_url: null
+  export_url: null
+  archive_urls: []
+  poll_minutes: null
+  status: no_endpoint
+  evidence: First-hand check of 2026-09-26 (docs/research/firsthand/others.json, record WRGB; variant
+    sinclair-next-external-iframe). Its closings page frames CBS6 SchoolWatch (closings.cbs6albany.com/community/schoolwatch/),
+    a county map whose list is split over 34 county pages (Default.asp?County=...); no single list to
+    poll, so not read (reading all 34 pages each poll would be crawling).
+  list_files: []
+  page_check: null
+  robots: []
+- id: sinclair-keye
+  platform: sinclair
+  call_sign: KEYE
+  name: KEYE (cbsaustin.com)
+  market: Austin, TX
+  dma: null
+  states: [TX]
+  counties: null
+  page_url: null
+  data_url: null
+  export_url: null
+  archive_urls: []
+  poll_minutes: null
+  status: no_endpoint
+  evidence: 'First-hand check of 2026-09-26 (docs/research/firsthand/others.json, record KEYE; variant
+    none-found). No closings page: /weather/closings answered 404 and the site''s navigation has no closings
+    entry (first-hand check of 2026-09-26).'
+  list_files: []
+  page_check: null
+  robots: []
+- id: sinclair-wvtv
+  platform: sinclair
+  call_sign: WVTV
+  name: WVTV (cw18milwaukee.com)
+  market: Milwaukee, WI
+  dma: null
+  states: [WI]
+  counties: null
+  page_url: null
+  data_url: null
+  export_url: null
+  archive_urls: []
+  poll_minutes: null
+  status: no_endpoint
+  evidence: 'First-hand check of 2026-09-26 (docs/research/firsthand/others.json, record WVTV; variant
+    blocked-429). Its closings address answered HTTP 429 (TownNews throttling) on 2026-09-26; re-read
+    once on 2026-09-27 it redirected to the triyaknews.com home page (KEPR, KIMA, KUNW) or answered 429
+    again after backoff (WVTV): no list read.'
+  list_files: []
+  page_check: null
+  robots: []
+- id: sinclair-wwho
+  platform: sinclair
+  call_sign: WWHO
+  name: WWHO (cwcolumbus.com)
+  market: Columbus, OH
+  dma: null
+  states: [OH]
+  counties: null
+  page_url: null
+  data_url: null
+  export_url: null
+  archive_urls: []
+  poll_minutes: null
+  status: no_endpoint
+  evidence: First-hand check of 2026-09-26 (docs/research/firsthand/others.json, record WWHO; variant
+    sinclair-next-empty-embed). Its /weather/closings page exists but its embed frames nothing (no list).
+  list_files: []
+  page_check: null
+  robots: []
+- id: sinclair-wluk
+  platform: sinclair
+  call_sign: WLUK
+  name: WLUK (fox11online.com)
+  market: Green Bay - Appleton, WI
+  dma: null
+  states: [WI]
+  counties: null
+  page_url: null
+  data_url: null
+  export_url: null
+  archive_urls: []
+  poll_minutes: null
+  status: no_endpoint
+  evidence: 'First-hand check of 2026-09-26 (docs/research/firsthand/others.json, record WLUK; variant
+    blocked-js-challenge). Its list page (fox11digital.com/closings/closings.php) answers with a Sucuri
+    JavaScript bot challenge: the station actively blocks automated readers, so it is dropped and not
+    worked around.'
+  list_files: []
+  page_check: null
+  robots: []
+- id: sinclair-wtgs
+  platform: sinclair
+  call_sign: WTGS
+  name: WTGS (fox28savannah.com)
+  market: Savannah, GA
+  dma: null
+  states: [GA]
+  counties: null
+  page_url: null
+  data_url: null
+  export_url: null
+  archive_urls: []
+  poll_minutes: null
+  status: no_endpoint
+  evidence: 'First-hand check of 2026-09-26 (docs/research/firsthand/others.json, record WTGS; variant
+    none-found). No closings page: /weather/closings answered 404 and the site''s navigation has no closings
+    entry (first-hand check of 2026-09-26).'
+  list_files: []
+  page_check: null
+  robots: []
+- id: sinclair-kscc
+  platform: sinclair
+  call_sign: KSCC
+  name: KSCC (fox38corpuschristi.com)
+  market: Corpus Christi, TX
+  dma: null
+  states: [TX]
+  counties: null
+  page_url: null
+  data_url: null
+  export_url: null
+  archive_urls: []
+  poll_minutes: null
+  status: no_endpoint
+  evidence: 'First-hand check of 2026-09-26 (docs/research/firsthand/others.json, record KSCC; variant
+    none-found). No closings page: /weather/closings answered 404 and the site''s navigation has no closings
+    entry (first-hand check of 2026-09-26).'
+  list_files: []
+  page_check: null
+  robots: []
+- id: sinclair-kptm
+  platform: sinclair
+  call_sign: KPTM
+  name: KPTM (fox42kptm.com)
+  market: Omaha, NE
+  dma: null
+  states: [NE]
+  counties: null
+  page_url: null
+  data_url: null
+  export_url: null
+  archive_urls: []
+  poll_minutes: null
+  status: no_endpoint
+  evidence: 'First-hand check of 2026-09-26 (docs/research/firsthand/others.json, record KPTM; variant
+    none-found). No closings page: /weather/closings answered 404 and the site''s navigation has no closings
+    entry (first-hand check of 2026-09-26).'
+  list_files: []
+  page_check: null
+  robots: []
+- id: sinclair-wmsn
+  platform: sinclair
+  call_sign: WMSN
+  name: WMSN (fox47.com)
+  market: Madison, WI
+  dma: null
+  states: [WI]
+  counties: null
+  page_url: null
+  data_url: null
+  export_url: null
+  archive_urls: []
+  poll_minutes: null
+  status: no_endpoint
+  evidence: 'First-hand check of 2026-09-26 (docs/research/firsthand/others.json, record WMSN; variant
+    none-found). No closings page: /weather/closings answered 404 and the site''s navigation has no closings
+    entry (first-hand check of 2026-09-26).'
+  list_files: []
+  page_check: null
+  robots: []
+- id: sinclair-wolf
+  platform: sinclair
+  call_sign: WOLF
+  name: WOLF (fox56.com)
+  market: Wilkes Barre - Scranton, PA
+  dma: null
+  states: [PA]
+  counties: null
+  page_url: null
+  data_url: null
+  export_url: null
+  archive_urls: []
+  poll_minutes: null
+  status: no_endpoint
+  evidence: 'First-hand check of 2026-09-26 (docs/research/firsthand/others.json, record WOLF/WQMY; variant
+    none-found). No closings page: /weather/closings answered 404 and the site''s navigation has no closings
+    entry (first-hand check of 2026-09-26).'
+  list_files: []
+  page_check: null
+  robots: []
+- id: sinclair-kaas
+  platform: sinclair
+  call_sign: KAAS
+  name: KAAS (foxkansas.com)
+  market: Wichita - Hutchinson, KS
+  dma: null
+  states: [KS]
+  counties: null
+  page_url: null
+  data_url: null
+  export_url: null
+  archive_urls: []
+  poll_minutes: null
+  status: no_endpoint
+  evidence: 'First-hand check of 2026-09-26 (docs/research/firsthand/others.json, record KAAS/KSAS; variant
+    none-found). No closings page: /weather/closings answered 404 and the site''s navigation has no closings
+    entry (first-hand check of 2026-09-26).'
+  list_files: []
+  page_check: null
+  robots: []
+- id: sinclair-krxi
+  platform: sinclair
+  call_sign: KRXI
+  name: KRXI (foxreno.com)
+  market: Reno, NV
+  dma: null
+  states: [NV]
+  counties: null
+  page_url: null
+  data_url: null
+  export_url: null
+  archive_urls: []
+  poll_minutes: null
+  status: no_endpoint
+  evidence: 'First-hand check of 2026-09-26 (docs/research/firsthand/others.json, record KRXI; variant
+    none-found). No closings page: /weather/closings answered 404 and the site''s navigation has no closings
+    entry (first-hand check of 2026-09-26).'
+  list_files: []
+  page_check: null
+  robots: []
+- id: sinclair-wrlh
+  platform: sinclair
+  call_sign: WRLH
+  name: WRLH (foxrichmond.com)
+  market: Richmond - Petersburg, VA
+  dma: null
+  states: [VA]
+  counties: null
+  page_url: null
+  data_url: null
+  export_url: null
+  archive_urls: []
+  poll_minutes: null
+  status: no_endpoint
+  evidence: 'First-hand check of 2026-09-26 (docs/research/firsthand/others.json, record WRLH; variant
+    none-found). No closings page: /weather/closings answered 404 and the site''s navigation has no closings
+    entry (first-hand check of 2026-09-26).'
+  list_files: []
+  page_check: null
+  robots: []
+- id: sinclair-kabb
+  platform: sinclair
+  call_sign: KABB
+  name: KABB (foxsanantonio.com)
+  market: San Antonio, TX
+  dma: null
+  states: [TX]
+  counties: null
+  page_url: null
+  data_url: null
+  export_url: null
+  archive_urls: []
+  poll_minutes: null
+  status: no_endpoint
+  evidence: 'First-hand check of 2026-09-26 (docs/research/firsthand/others.json, record KABB; variant
+    none-found). No closings page: /weather/closings answered 404 and the site''s navigation has no closings
+    entry (first-hand check of 2026-09-26).'
+  list_files: []
+  page_check: null
+  robots: []
+- id: sinclair-kboi
+  platform: sinclair
+  call_sign: KBOI
+  name: KBOI (idahonews.com)
+  market: Boise, ID
+  dma: null
+  states: [ID]
+  counties: null
+  page_url: null
+  data_url: null
+  export_url: null
+  archive_urls: []
+  poll_minutes: null
+  status: no_endpoint
+  evidence: 'First-hand check of 2026-09-26 (docs/research/firsthand/others.json, record KBOI; variant
+    none-found). No closings page: /weather/closings answered 404 and the site''s navigation has no closings
+    entry (first-hand check of 2026-09-26).'
+  list_files: []
+  page_check: null
+  robots: []
+- id: sinclair-kdsm
+  platform: sinclair
+  call_sign: KDSM
+  name: KDSM (kdsm17.com)
+  market: Des Moines - Ames, IA
+  dma: null
+  states: [IA]
+  counties: null
+  page_url: null
+  data_url: null
+  export_url: null
+  archive_urls: []
+  poll_minutes: null
+  status: no_endpoint
+  evidence: 'First-hand check of 2026-09-26 (docs/research/firsthand/others.json, record KDSM; variant
+    none-found). No closings page: /weather/closings answered 404 and the site''s navigation has no closings
+    entry (first-hand check of 2026-09-26).'
+  list_files: []
+  page_check: null
+  robots: []
+- id: sinclair-kepr
+  platform: sinclair
+  call_sign: KEPR
+  name: KEPR (keprtv.com)
+  market: Yakima - Pasco - Richland - Kennewick, WA
+  dma: null
+  states: [WA]
+  counties: null
+  page_url: null
+  data_url: null
+  export_url: null
+  archive_urls: []
+  poll_minutes: null
+  status: no_endpoint
+  evidence: 'First-hand check of 2026-09-26 (docs/research/firsthand/others.json, record KEPR; variant
+    blocked-429). Its closings address answered HTTP 429 (TownNews throttling) on 2026-09-26; re-read
+    once on 2026-09-27 it redirected to the triyaknews.com home page (KEPR, KIMA, KUNW) or answered 429
+    again after backoff (WVTV): no list read.'
+  list_files: []
+  page_check: null
+  robots: []
+- id: sinclair-kfdm
+  platform: sinclair
+  call_sign: KFDM
+  name: KFDM (kfdm.com)
+  market: Beaumont - Port Arthur, TX
+  dma: null
+  states: [TX]
+  counties: null
+  page_url: null
+  data_url: null
+  export_url: null
+  archive_urls: []
+  poll_minutes: null
+  status: no_endpoint
+  evidence: 'First-hand check of 2026-09-26 (docs/research/firsthand/others.json, record KFDM; variant
+    none-found). No closings page: /weather/closings answered 404 and the site''s navigation has no closings
+    entry (first-hand check of 2026-09-26).'
+  list_files: []
+  page_check: null
+  robots: []
+- id: sinclair-kfox
+  platform: sinclair
+  call_sign: KFOX
+  name: KFOX (kfoxtv.com)
+  market: El Paso, TX
+  dma: null
+  states: [TX]
+  counties: null
+  page_url: null
+  data_url: null
+  export_url: null
+  archive_urls: []
+  poll_minutes: null
+  status: no_endpoint
+  evidence: 'First-hand check of 2026-09-26 (docs/research/firsthand/others.json, record KFOX; variant
+    none-found). No closings page: /weather/closings answered 404 and the site''s navigation has no closings
+    entry (first-hand check of 2026-09-26).'
+  list_files: []
+  page_check: null
+  robots: []
+- id: sinclair-kima
+  platform: sinclair
+  call_sign: KIMA
+  name: KIMA (kimatv.com)
+  market: Yakima - Pasco - Richland - Kennewick, WA
+  dma: null
+  states: [WA]
+  counties: null
+  page_url: null
+  data_url: null
+  export_url: null
+  archive_urls: []
+  poll_minutes: null
+  status: no_endpoint
+  evidence: 'First-hand check of 2026-09-26 (docs/research/firsthand/others.json, record KIMA; variant
+    blocked-429). Its closings address answered HTTP 429 (TownNews throttling) on 2026-09-26; re-read
+    once on 2026-09-27 it redirected to the triyaknews.com home page (KEPR, KIMA, KUNW) or answered 429
+    again after backoff (WVTV): no list read.'
+  list_files: []
+  page_check: null
+  robots: []
+- id: sinclair-kjzz
+  platform: sinclair
+  call_sign: KJZZ
+  name: KJZZ (kjzz.com)
+  market: Salt Lake City, UT
+  dma: null
+  states: [UT]
+  counties: null
+  page_url: null
+  data_url: null
+  export_url: null
+  archive_urls: []
+  poll_minutes: null
+  status: no_endpoint
+  evidence: 'First-hand check of 2026-09-26 (docs/research/firsthand/others.json, record KJZZ; variant
+    none-found). No closings page: /weather/closings answered 404 and the site''s navigation has no closings
+    entry (first-hand check of 2026-09-26).'
+  list_files: []
+  page_check: null
+  robots: []
+- id: sinclair-klew
+  platform: sinclair
+  call_sign: KLEW
+  name: KLEW (klewtv.com)
+  market: Spokane, WA
+  dma: null
+  states: [WA]
+  counties: null
+  page_url: null
+  data_url: null
+  export_url: null
+  archive_urls: []
+  poll_minutes: null
+  status: no_endpoint
+  evidence: First-hand check of 2026-09-26 (docs/research/firsthand/others.json, record KLEW; variant
+    none-found). klewtv.com redirects to the triyaknews.com home page; no closings list.
+  list_files: []
+  page_check: null
+  robots: []
+- id: sinclair-ktvl
+  platform: sinclair
+  call_sign: KTVL
+  name: KTVL (ktvl.com)
+  market: Medford - Klamath Falls, OR
+  dma: null
+  states: [OR]
+  counties: null
+  page_url: null
+  data_url: null
+  export_url: null
+  archive_urls: []
+  poll_minutes: null
+  status: no_endpoint
+  evidence: 'First-hand check of 2026-09-26 (docs/research/firsthand/others.json, record KTVL; variant
+    none-found). No closings page: /weather/closings answered 404 and the site''s navigation has no closings
+    entry (first-hand check of 2026-09-26).'
+  list_files: []
+  page_check: null
+  robots: []
+- id: sinclair-kunw-cd
+  platform: sinclair
+  call_sign: KUNW-CD
+  name: KUNW-CD (kunwtv.com)
+  market: Yakima - Pasco - Richland - Kennewick, WA
+  dma: null
+  states: [WA]
+  counties: null
+  page_url: null
+  data_url: null
+  export_url: null
+  archive_urls: []
+  poll_minutes: null
+  status: no_endpoint
+  evidence: 'First-hand check of 2026-09-26 (docs/research/firsthand/others.json, record KUNW-CD/KVVK-CD;
+    variant blocked-429). Its closings address answered HTTP 429 (TownNews throttling) on 2026-09-26;
+    re-read once on 2026-09-27 it redirected to the triyaknews.com home page (KEPR, KIMA, KUNW) or answered
+    429 again after backoff (WVTV): no list read.'
+  list_files: []
+  page_check: null
+  robots: []
+- id: sinclair-kutv
+  platform: sinclair
+  call_sign: KUTV
+  name: KUTV (kutv.com)
+  market: Salt Lake City, UT
+  dma: null
+  states: [UT]
+  counties: null
+  page_url: null
+  data_url: null
+  export_url: null
+  archive_urls: []
+  poll_minutes: null
+  status: no_endpoint
+  evidence: 'First-hand check of 2026-09-26 (docs/research/firsthand/others.json, record KUTV; variant
+    none-found). No closings page: /weather/closings answered 404 and the site''s navigation has no closings
+    entry (first-hand check of 2026-09-26).'
+  list_files: []
+  page_check: null
+  robots: []
+- id: sinclair-wgfl
+  platform: sinclair
+  call_sign: WGFL
+  name: WGFL (mycbs4.com)
+  market: Gainesville, FL
+  dma: null
+  states: [FL]
+  counties: null
+  page_url: null
+  data_url: null
+  export_url: null
+  archive_urls: []
+  poll_minutes: null
+  status: no_endpoint
+  evidence: 'First-hand check of 2026-09-26 (docs/research/firsthand/others.json, record WGFL/WNBW; variant
+    none-found). No closings page: /weather/closings answered 404 and the site''s navigation has no closings
+    entry (first-hand check of 2026-09-26).'
+  list_files: []
+  page_check: null
+  robots: []
+- id: sinclair-wpmi
+  platform: sinclair
+  call_sign: WPMI
+  name: WPMI (mynbc15.com)
+  market: Mobile, AL / Pensacola, FL
+  dma: null
+  states: [AL, FL]
+  counties: null
+  page_url: null
+  data_url: null
+  export_url: null
+  archive_urls: []
+  poll_minutes: null
+  status: no_endpoint
+  evidence: 'First-hand check of 2026-09-26 (docs/research/firsthand/others.json, record WPMI; variant
+    none-found). No closings page: /weather/closings answered 404 and the site''s navigation has no closings
+    entry (first-hand check of 2026-09-26).'
+  list_files: []
+  page_check: null
+  robots: []
+- id: sinclair-krnv
+  platform: sinclair
+  call_sign: KRNV
+  name: KRNV (mynews4.com)
+  market: Reno, NV
+  dma: null
+  states: [NV]
+  counties: null
+  page_url: null
+  data_url: null
+  export_url: null
+  archive_urls: []
+  poll_minutes: null
+  status: no_endpoint
+  evidence: 'First-hand check of 2026-09-26 (docs/research/firsthand/others.json, record KRNV; variant
+    none-found). No closings page: /weather/closings answered 404 and the site''s navigation has no closings
+    entry (first-hand check of 2026-09-26).'
+  list_files: []
+  page_check: null
+  robots: []
+- id: sinclair-kcfw
+  platform: sinclair
+  call_sign: KCFW
+  name: KCFW (nbcmontana.com)
+  market: Missoula, MT
+  dma: null
+  states: [MT]
+  counties: null
+  page_url: null
+  data_url: null
+  export_url: null
+  archive_urls: []
+  poll_minutes: null
+  status: no_endpoint
+  evidence: 'First-hand check of 2026-09-26 (docs/research/firsthand/others.json, record KCFW/KECI; variant
+    none-found). No closings page: /weather/closings answered 404 and the site''s navigation has no closings
+    entry (first-hand check of 2026-09-26).'
+  list_files: []
+  page_check: null
+  robots: []
+- id: sinclair-ksnv
+  platform: sinclair
+  call_sign: KSNV
+  name: KSNV (news3lv.com)
+  market: Las Vegas, NV
+  dma: null
+  states: [NV]
+  counties: null
+  page_url: null
+  data_url: null
+  export_url: null
+  archive_urls: []
+  poll_minutes: null
+  status: no_endpoint
+  evidence: 'First-hand check of 2026-09-26 (docs/research/firsthand/others.json, record KSNV; variant
+    none-found). No closings page: /weather/closings answered 404 and the site''s navigation has no closings
+    entry (first-hand check of 2026-09-26).'
+  list_files: []
+  page_check: null
+  robots: []
+- id: sinclair-woai
+  platform: sinclair
+  call_sign: WOAI
+  name: WOAI (news4sanantonio.com)
+  market: San Antonio, TX
+  dma: null
+  states: [TX]
+  counties: null
+  page_url: null
+  data_url: null
+  export_url: null
+  archive_urls: []
+  poll_minutes: null
+  status: no_endpoint
+  evidence: 'First-hand check of 2026-09-26 (docs/research/firsthand/others.json, record WOAI; variant
+    none-found). No closings page: /weather/closings answered 404 and the site''s navigation has no closings
+    entry (first-hand check of 2026-09-26).'
+  list_files: []
+  page_check: null
+  robots: []
+- id: sinclair-kmeg
+  platform: sinclair
+  call_sign: KMEG
+  name: KMEG (siouxlandnews.com)
+  market: Sioux City, IA
+  dma: null
+  states: [IA]
+  counties: null
+  page_url: null
+  data_url: null
+  export_url: null
+  archive_urls: []
+  poll_minutes: null
+  status: no_endpoint
+  evidence: 'First-hand check of 2026-09-26 (docs/research/firsthand/others.json, record KMEG/KPTH; variant
+    none-found). No closings page: /weather/closings answered 404 and the site''s navigation has no closings
+    entry (first-hand check of 2026-09-26).'
+  list_files: []
+  page_check: null
+  robots: []
+- id: sinclair-wear
+  platform: sinclair
+  call_sign: WEAR
+  name: WEAR (weartv.com)
+  market: Mobile, AL / Pensacola, FL
+  dma: null
+  states: [AL, FL]
+  counties: null
+  page_url: null
+  data_url: null
+  export_url: null
+  archive_urls: []
+  poll_minutes: null
+  status: no_endpoint
+  evidence: 'First-hand check of 2026-09-26 (docs/research/firsthand/others.json, record WEAR; variant
+    none-found). No closings page: /weather/closings answered 404 and the site''s navigation has no closings
+    entry (first-hand check of 2026-09-26).'
+  list_files: []
+  page_check: null
+  robots: []
+- id: sinclair-wgxa
+  platform: sinclair
+  call_sign: WGXA
+  name: WGXA (wgxa.tv)
+  market: Macon, GA
+  dma: null
+  states: [GA]
+  counties: null
+  page_url: null
+  data_url: null
+  export_url: null
+  archive_urls: []
+  poll_minutes: null
+  status: no_endpoint
+  evidence: 'First-hand check of 2026-09-26 (docs/research/firsthand/others.json, record WGXA; variant
+    none-found). No closings page: /weather/closings answered 404 and the site''s navigation has no closings
+    entry (first-hand check of 2026-09-26).'
+  list_files: []
+  page_check: null
+  robots: []
+- id: sinclair-wpde
+  platform: sinclair
+  call_sign: WPDE
+  name: WPDE (wpde.com)
+  market: Florence - Myrtle Beach, SC
+  dma: null
+  states: [SC]
+  counties: null
+  page_url: null
+  data_url: null
+  export_url: null
+  archive_urls: []
+  poll_minutes: null
+  status: no_endpoint
+  evidence: 'First-hand check of 2026-09-26 (docs/research/firsthand/others.json, record WPDE/WWMB; variant
+    none-found). No closings page: /weather/closings answered 404 and the site''s navigation has no closings
+    entry (first-hand check of 2026-09-26).'
+  list_files: []
+  page_check: null
+  robots: []
+- id: sinclair-wpgh
+  platform: sinclair
+  call_sign: WPGH
+  name: WPGH (wpgh53.com)
+  market: Pittsburgh, PA
+  dma: null
+  states: [PA]
+  counties: null
+  page_url: null
+  data_url: null
+  export_url: null
+  archive_urls: []
+  poll_minutes: null
+  status: no_endpoint
+  evidence: 'First-hand check of 2026-09-26 (docs/research/firsthand/others.json, record WPGH; variant
+    none-found). No closings page: /weather/closings answered 404 and the site''s navigation has no closings
+    entry (first-hand check of 2026-09-26).'
+  list_files: []
+  page_check: null
+  robots: []
+- id: sinclair-wtto
+  platform: sinclair
+  call_sign: WTTO
+  name: WTTO (wtto21.com)
+  market: Birmingham, AL
+  dma: null
+  states: [AL]
+  counties: null
+  page_url: null
+  data_url: null
+  export_url: null
+  archive_urls: []
+  poll_minutes: null
+  status: no_endpoint
+  evidence: 'First-hand check of 2026-09-26 (docs/research/firsthand/others.json, record WTTO; variant
+    none-found). No closings page: /weather/closings answered 404 and the site''s navigation has no closings
+    entry (first-hand check of 2026-09-26).'
+  list_files: []
+  page_check: null
+  robots: []
+- id: sinclair-wtwc
+  platform: sinclair
+  call_sign: WTWC
+  name: WTWC (wtwc40.com)
+  market: Tallahassee, FL - Thomasville, GA
+  dma: null
+  states: [FL, GA]
+  counties: null
+  page_url: null
+  data_url: null
+  export_url: null
+  archive_urls: []
+  poll_minutes: null
+  status: no_endpoint
+  evidence: 'First-hand check of 2026-09-26 (docs/research/firsthand/others.json, record WTWC; variant
+    none-found). No closings page: /weather/closings answered 404 and the site''s navigation has no closings
+    entry (first-hand check of 2026-09-26).'
+  list_files: []
+  page_check: null
+  robots: []
+- id: sinclair-wutv
+  platform: sinclair
+  call_sign: WUTV
+  name: WUTV (wutv29.com)
+  market: Buffalo, NY
+  dma: null
+  states: [NY]
+  counties: null
+  page_url: null
+  data_url: null
+  export_url: null
+  archive_urls: []
+  poll_minutes: null
+  status: no_endpoint
+  evidence: 'First-hand check of 2026-09-26 (docs/research/firsthand/others.json, record WUTV; variant
+    none-found). No closings page: /weather/closings answered 404 and the site''s navigation has no closings
+    entry (first-hand check of 2026-09-26).'
+  list_files: []
+  page_check: null
+  robots: []
+- id: sinclair-wvah
+  platform: sinclair
+  call_sign: WVAH
+  name: WVAH (wvah.com)
+  market: Charleston - Huntington, WV
+  dma: null
+  states: [WV]
+  counties: null
+  page_url: null
+  data_url: null
+  export_url: null
+  archive_urls: []
+  poll_minutes: null
+  status: no_endpoint
+  evidence: First-hand check of 2026-09-26 (docs/research/firsthand/others.json, record WVAH; variant
+    robots-unreachable). Its host's TLS certificate had expired on 2026-09-26, so nothing was read.
+  list_files: []
+  page_check: null
+  robots: []

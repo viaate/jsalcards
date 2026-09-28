@@ -1,0 +1,557 @@
+[
+    {
+        "orgType": "Private/Religious School",
+        "closings": [
+            {
+                "status": "Closed",
+                "accountName": "Albany Academy",
+                "expires": "01/28/2026"
+            },
+            {
+                "status": "Delayed 2 Hrs, Classes begin @ 10:00., Aftercare available, Clubs from 3:00-4:00.",
+                "accountName": "Blessed Sacrament School",
+                "expires": "01/28/2026"
+            },
+            {
+                "status": "Delayed 2 Hrs",
+                "accountName": "Columbia Christian Academy",
+                "expires": "01/28/2026"
+            },
+            {
+                "status": "Delayed 2 Hrs, Doors will open at 9:30 am",
+                "accountName": "Doane Stuart School",
+                "expires": "01/28/2026"
+            },
+            {
+                "status": "Delayed 2 Hrs",
+                "accountName": "Grapeville Christian School",
+                "expires": "01/28/2026"
+            },
+            {
+                "status": "Closed",
+                "accountName": "Green Tech High Charter School",
+                "expires": "01/28/2026"
+            },
+            {
+                "status": "Delayed 2 Hrs",
+                "accountName": "Hawthorne Valley School",
+                "expires": "01/28/2026"
+            },
+            {
+                "status": "Delayed 2 Hrs, No 2 Year Old Program",
+                "accountName": "Kreative Kids Early Childhood Progr",
+                "expires": "01/28/2026"
+            },
+            {
+                "status": "Delayed 2 Hrs",
+                "accountName": "La Salle Institute (Troy)",
+                "expires": "01/28/2026"
+            },
+            {
+                "status": "Delayed 2 Hrs, No AM Pgm",
+                "accountName": "Mater Christi School",
+                "expires": "01/28/2026"
+            },
+            {
+                "status": "Delayed 2 Hrs",
+                "accountName": "Mt Moriah Academy",
+                "expires": "01/28/2026"
+            },
+            {
+                "status": "Delayed 2 Hrs, Staff arrive at 10:00am",
+                "accountName": "Neil Hellman Day Treatment Albany",
+                "expires": "01/28/2026"
+            },
+            {
+                "status": "Delayed 2 Hrs, No AM Pgm, Parker will open by 10:30.",
+                "accountName": "Robert C. Parker School",
+                "expires": "01/28/2026"
+            },
+            {
+                "status": "Delayed 2 Hrs, Tuesday 1/27/26 No preK 2",
+                "accountName": "St Gregory's School",
+                "expires": "01/28/2026"
+            },
+            {
+                "status": "Delayed 2 Hrs, Buses Late, Greene County, Transportation Delayed, Due To Weather",
+                "accountName": "Ulster-Greene ARC (Catskill)",
+                "expires": "01/28/2026"
+            },
+            {
+                "status": "Delayed 2 Hrs, Open @ 10am, carline @10:15, No AM Toddler, No morning care",
+                "accountName": "Woodland Hill Montessori School",
+                "expires": "01/28/2026"
+            }
+        ]
+    },
+    {
+        "orgType": "Public School/District",
+        "closings": [
+            {
+                "status": "Delayed 2 Hrs",
+                "accountName": "Albany City SD",
+                "expires": "01/28/2026"
+            },
+            {
+                "status": "Closed",
+                "accountName": "Albany Leadership Charter High",
+                "expires": "01/28/2026"
+            },
+            {
+                "status": "Delayed 2 Hrs, No AM BOCES, Final decision",
+                "accountName": "Averill Park CSD",
+                "expires": "01/28/2026"
+            },
+            {
+                "status": "Delayed 2 Hrs",
+                "accountName": "Berkshire Arts & Technology Charter",
+                "expires": "01/28/2026"
+            },
+            {
+                "status": "Delayed 2 Hrs",
+                "accountName": "Berlin CSD",
+                "expires": "01/28/2026"
+            },
+            {
+                "status": "Delayed 2 Hrs, No Breakfast",
+                "accountName": "Brighter Choice Charter Schools",
+                "expires": "01/28/2026"
+            },
+            {
+                "status": "Delayed, No AM BOCES, No Breakfast",
+                "accountName": "Brunswick (Brittonkill) CSD",
+                "expires": "01/28/2026"
+            },
+            {
+                "status": "Closed",
+                "accountName": "Catskill CSD",
+                "expires": "01/28/2026"
+            },
+            {
+                "status": "Delayed 2 Hrs, No AM BOCES, No Breakfast",
+                "accountName": "Chatham CSD",
+                "expires": "01/28/2026"
+            },
+            {
+                "status": "Delayed 2 Hrs",
+                "accountName": "Clarksburg Elementary",
+                "expires": "01/28/2026"
+            },
+            {
+                "status": "Delayed 2 Hrs, No AM BOCES, No Breakfast",
+                "accountName": "Coxsackie-Athens CSD",
+                "expires": "01/28/2026"
+            },
+            {
+                "status": "Delayed 2 Hrs, No AM BOCES, No Breakfast",
+                "accountName": "East Greenbush CSD",
+                "expires": "01/28/2026"
+            },
+            {
+                "status": "Delayed 2 Hrs",
+                "accountName": "Emma L. Miller Memorial School",
+                "expires": "01/28/2026"
+            },
+            {
+                "status": "Delayed 2 Hrs",
+                "accountName": "Florida Elementary",
+                "expires": "01/28/2026"
+            },
+            {
+                "status": "Delayed 2 Hrs",
+                "accountName": "Franklin County Technical SD",
+                "expires": "01/28/2026"
+            },
+            {
+                "status": "Delayed 2 Hrs, No AM BOCES, No Breakfast",
+                "accountName": "Germantown CSD",
+                "expires": "01/28/2026"
+            },
+            {
+                "status": "Delayed 2 Hrs",
+                "accountName": "Green Island UFSD",
+                "expires": "01/28/2026"
+            },
+            {
+                "status": "Delayed 2 Hrs, Buses Late, Greene County Transit, Delayed Due To Weather, Shuttle On Time",
+                "accountName": "Greene County Transit",
+                "expires": "01/28/2026"
+            },
+            {
+                "status": "Delayed 2 Hrs, No AM BOCES",
+                "accountName": "Greenville CSD",
+                "expires": "01/28/2026"
+            },
+            {
+                "status": "Delayed 2 Hrs, No Breakfast",
+                "accountName": "Henry Johnson Charter School",
+                "expires": "01/28/2026"
+            },
+            {
+                "status": "Delayed 2 Hrs, No Preschool",
+                "accountName": "Hoosac Valley Regional SD",
+                "expires": "01/28/2026"
+            },
+            {
+                "status": "Delayed 2 Hrs, No AM BOCES, No Breakfast",
+                "accountName": "Hoosic Valley CSD",
+                "expires": "01/28/2026"
+            },
+            {
+                "status": "Delayed 2 Hrs, No Breakfast",
+                "accountName": "Hoosick Falls CSD",
+                "expires": "01/28/2026"
+            },
+            {
+                "status": "Delayed 2 Hrs, No AM BOCES",
+                "accountName": "Hunter-Tannersville CSD",
+                "expires": "01/28/2026"
+            },
+            {
+                "status": "Delayed 2 Hrs, No AM BOCES, No Breakfast",
+                "accountName": "Ichabod Crane (Kinderhook) CSD",
+                "expires": "01/28/2026"
+            },
+            {
+                "status": "Delayed 2 Hrs",
+                "accountName": "KIPP Albany Community Charter Sch",
+                "expires": "01/28/2026"
+            },
+            {
+                "status": "Delayed 2 Hrs, This includes KIPP Capital, High School",
+                "accountName": "KIPP Troy Prep",
+                "expires": "01/28/2026"
+            },
+            {
+                "status": "Delayed 2 Hrs",
+                "accountName": "KIPP: Tech Valley Charter School",
+                "expires": "01/28/2026"
+            },
+            {
+                "status": "Delayed 2 Hrs",
+                "accountName": "Kingston City SD",
+                "expires": "01/28/2026"
+            },
+            {
+                "status": "Delayed 2 Hrs",
+                "accountName": "Lansingburgh CSD",
+                "expires": "01/28/2026"
+            },
+            {
+                "status": "Delayed 2 Hrs",
+                "accountName": "Mohawk Trail Regional SD",
+                "expires": "01/28/2026"
+            },
+            {
+                "status": "Delayed 2 Hrs",
+                "accountName": "N. Greenbush Little Red School",
+                "expires": "01/28/2026"
+            },
+            {
+                "status": "Delayed 2 Hrs",
+                "accountName": "New Lebanon CSD",
+                "expires": "01/28/2026"
+            },
+            {
+                "status": "Delayed 2 Hrs",
+                "accountName": "New Paltz CSD",
+                "expires": "01/28/2026"
+            },
+            {
+                "status": "Delayed 2 Hrs, No AM Pre-K, No Breakfast",
+                "accountName": "North Adams Public Schools",
+                "expires": "01/28/2026"
+            },
+            {
+                "status": "Closed",
+                "accountName": "Onteora CSD",
+                "expires": "01/28/2026"
+            },
+            {
+                "status": "Delayed 2 Hrs",
+                "accountName": "Pine Plains CSD",
+                "expires": "01/28/2026"
+            },
+            {
+                "status": "Delayed 3 Hrs",
+                "accountName": "Poughkeepsie City School District",
+                "expires": "01/29/2026"
+            },
+            {
+                "status": "Questar III New Visions, New Visions, All classes remote",
+                "accountName": "Questar III -New Visions",
+                "expires": "01/28/2026"
+            },
+            {
+                "status": "Delayed 2 Hrs",
+                "accountName": "Questar III @ Maple Hill",
+                "expires": "01/28/2026"
+            },
+            {
+                "status": "Delayed 2 Hrs",
+                "accountName": "Questar III BOCES - Robin Sobol TA",
+                "expires": "01/28/2026"
+            },
+            {
+                "status": "Delayed 2 Hrs, No AM CTE",
+                "accountName": "Questar III Donald Kline Technical",
+                "expires": "01/28/2026"
+            },
+            {
+                "status": "Delayed 2 Hrs, Final Decision",
+                "accountName": "Questar III George Washington Sch'l",
+                "expires": "01/28/2026"
+            },
+            {
+                "status": "Closed",
+                "accountName": "Questar III Noonan School @ Durham",
+                "expires": "01/28/2026"
+            },
+            {
+                "status": "Delayed 2 Hrs",
+                "accountName": "Questar III STEM HS",
+                "expires": "01/28/2026"
+            },
+            {
+                "status": "Delayed 2 Hrs",
+                "accountName": "Questar III Sackett Educational Ctr",
+                "expires": "01/28/2026"
+            },
+            {
+                "status": "Delayed 2 Hrs",
+                "accountName": "Rensselaer City SD",
+                "expires": "01/28/2026"
+            },
+            {
+                "status": "Delayed 2 Hrs, No Breakfast, No a.m. transportation to, the high schools., No breakfast or snack.",
+                "accountName": "Richmond Consolidated",
+                "expires": "01/28/2026"
+            },
+            {
+                "status": "Delayed 2 Hrs",
+                "accountName": "Rondout Valley CSD",
+                "expires": "01/28/2026"
+            },
+            {
+                "status": "Delayed 2 Hrs",
+                "accountName": "Rowe Elementary School",
+                "expires": "01/28/2026"
+            },
+            {
+                "status": "Delayed 2 Hrs, No AM BOCES, No Breakfast",
+                "accountName": "Salem CSD",
+                "expires": "01/28/2026"
+            },
+            {
+                "status": "Closed",
+                "accountName": "Saugerties CSD",
+                "expires": "01/28/2026"
+            },
+            {
+                "status": "Delayed 2 Hrs",
+                "accountName": "Schodack CSD",
+                "expires": "01/28/2026"
+            },
+            {
+                "status": "Delayed 2 Hrs",
+                "accountName": "Sullivan BOCES",
+                "expires": "01/28/2026"
+            },
+            {
+                "status": "Delayed 2 Hrs, No AM BOCES, No Breakfast",
+                "accountName": "Taconic Hills CSD",
+                "expires": "01/28/2026"
+            },
+            {
+                "status": "Delayed 2 Hrs",
+                "accountName": "Troy City SD",
+                "expires": "01/28/2026"
+            },
+            {
+                "status": "Delayed 2 Hrs, No AM BOCES, No Breakfast",
+                "accountName": "Watervliet City SD",
+                "expires": "01/28/2026"
+            },
+            {
+                "status": "Delayed 2 Hrs",
+                "accountName": "Windham-Ashland-Jewett CSD",
+                "expires": "01/28/2026"
+            },
+            {
+                "status": "Delayed 2 Hrs",
+                "accountName": "Wynantskill UFSD",
+                "expires": "01/28/2026"
+            }
+        ]
+    },
+    {
+        "orgType": "Day Care/Pre-school/After School",
+        "closings": [
+            {
+                "status": "Delayed 2 Hrs",
+                "accountName": "Anderson Erly Lrng Acdmy Latham",
+                "expires": "01/28/2026"
+            },
+            {
+                "status": "Delayed 2 Hrs",
+                "accountName": "Anderson Erly Lrng Acdmy Pine Plain",
+                "expires": "01/28/2026"
+            },
+            {
+                "status": "Closed",
+                "accountName": "Anderson Erly Lrng Acdmy Saugerties",
+                "expires": "01/28/2026"
+            },
+            {
+                "status": "Delayed, No Breakfast, Opening @10:00 a.m, UPK Opens @ 10:30, Staff report @ 9:45 a.m",
+                "accountName": "Children's Place at the Plaza",
+                "expires": "01/28/2026"
+            },
+            {
+                "status": "Delayed 2-1/2 Hrs, No Breakfast, Opens at 9:00 AM",
+                "accountName": "Childtime of Latham Johnson Road",
+                "expires": "01/28/2026"
+            },
+            {
+                "status": "Delayed 2 Hrs, ECEC Albany delayed 2 hours",
+                "accountName": "Early Childhood (ECEC) Albany",
+                "expires": "01/28/2026"
+            },
+            {
+                "status": "Delayed 2 Hrs",
+                "accountName": "Early Childhood (ECEC) Troy",
+                "expires": "01/28/2026"
+            },
+            {
+                "status": "No AM Program",
+                "accountName": "Greenbush Child Caring",
+                "expires": "01/28/2026"
+            },
+            {
+                "status": "Delayed 2 Hrs, No AM snack,, Staff report 9:15am,, Final decision by 7am",
+                "accountName": "Jubilee Child Day Care Center",
+                "expires": "01/28/2026"
+            },
+            {
+                "status": "Delayed 2 Hrs",
+                "accountName": "Natalie's Daycare Center LLC (BCA)",
+                "expires": "01/28/2026"
+            },
+            {
+                "status": "Delayed 2 Hrs, Program Opens at 9:30am., No Morning Snack. Program, Staff Report at 9:15am.",
+                "accountName": "Pooh's Corner Early Childhood Ctr",
+                "expires": "01/28/2026"
+            },
+            {
+                "status": "Delayed 2 Hrs",
+                "accountName": "R&E May School (St Catherine's)",
+                "expires": "01/28/2026"
+            },
+            {
+                "status": "Delayed 2 Hrs, Tuesday Open at 9., No Before Care.",
+                "accountName": "Story Place Preschool",
+                "expires": "01/28/2026"
+            },
+            {
+                "status": "Delayed 2-1/2 Hrs, Day Care opening at 9:30am.",
+                "accountName": "Sunnyside Center Day Care",
+                "expires": "01/28/2026"
+            },
+            {
+                "status": "Delayed 2 Hrs, No Breakfast",
+                "accountName": "Sunshine Day Nursery & DC East Grbh",
+                "expires": "01/28/2026"
+            },
+            {
+                "status": "Delayed 2 Hrs",
+                "accountName": "TLC Christian Day Care",
+                "expires": "01/28/2026"
+            }
+        ]
+    },
+    {
+        "orgType": "Non-profit",
+        "closings": [
+            {
+                "status": "Closed, Due to heating issue",
+                "accountName": "The Children's Museum at Saratoga",
+                "expires": "01/28/2026"
+            },
+            {
+                "status": "Delayed 2 Hrs",
+                "accountName": "YWCA of the Greater Capital Region",
+                "expires": "01/28/2026"
+            }
+        ]
+    },
+    {
+        "orgType": "Colleges/Universities/Technical Schools",
+        "closings": [
+            {
+                "status": "Delayed 2 Hrs, College to open at 10am",
+                "accountName": "Columbia-Greene Comm College",
+                "expires": "01/28/2026"
+            },
+            {
+                "status": "Delayed 2 Hrs, Opening at 10am",
+                "accountName": "EOC (Capital District)",
+                "expires": "01/28/2026"
+            },
+            {
+                "status": "Delayed Until 10:30a",
+                "accountName": "Mass. College of Liberal Arts",
+                "expires": "01/28/2026"
+            },
+            {
+                "status": "Delayed 3 Hrs, Classes start at 12:00pm",
+                "accountName": "Orlo School of Hair Design",
+                "expires": "01/28/2026"
+            },
+            {
+                "status": "Delayed 2 Hrs",
+                "accountName": "Questar III Rensselaer Academy",
+                "expires": "01/28/2026"
+            },
+            {
+                "status": "Delayed 2 Hrs, No AM BOCES, No AM CTE, Regents Prog delayed 2hours",
+                "accountName": "Questar III Robert Gibson Technical",
+                "expires": "01/28/2026"
+            },
+            {
+                "status": "Delayed, College Opening at 11:00am;, Staff to report at 11:00",
+                "accountName": "SUNY Schenectady",
+                "expires": "01/28/2026"
+            }
+        ]
+    },
+    {
+        "orgType": "Churches/Synagogues",
+        "closings": [
+            {
+                "status": "Closed, Church building is closed, No meetings or groups",
+                "accountName": "McKownville United Methodist Church",
+                "expires": "01/28/2026"
+            }
+        ]
+    },
+    {
+        "orgType": "Government Agency",
+        "closings": [
+            {
+                "status": "Delayed 1 Hr",
+                "accountName": "Waterford Public Library",
+                "expires": "01/28/2026"
+            }
+        ]
+    },
+    {
+        "orgType": "Health/Human/Social Services",
+        "closings": [
+            {
+                "status": "Delayed 2 Hrs",
+                "accountName": "Wildwood Adult Day Services",
+                "expires": "01/28/2026"
+            }
+        ]
+    }
+]

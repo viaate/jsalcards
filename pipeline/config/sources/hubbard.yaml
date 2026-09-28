@@ -1,0 +1,640 @@
+# Station registry for one platform. Loaded with every other file in this folder
+# by snowlight.sources.stations.registry; see its docstring for the fields.
+# `snowlight stations robots --update` rewrites the robots blocks in place.
+platform:
+  id: hubbard
+  name: Hubbard Broadcasting TV stations' School Alert lists
+  operator: Hubbard Broadcasting
+  adapter: hubbard
+  poll_minutes: 10
+  terms:
+    automated_access: permitted
+    summary: 'Hubbard''s station terms (https://kstp.com/general-information/terms-of-use/, the same template
+      at every Hubbard TV site and at WTOP), read 2026-09-27: pages may be downloaded, printed or viewed
+      for private, noncommercial use; no clause on robots, scraping, crawling or automated access was
+      found.'
+    evidence:
+    - url: https://kstp.com/general-information/terms-of-use/
+      read_at: '2026-09-27T06:24:42Z'
+      sha256: 6f572b5403b82c48064ca3d97b80b20aa512d7bed945069860d127c71d5b3266
+      excerpt:
+      - Except where otherwise noted, you may download, print or view individual pages at the Site for
+        private, noncommercial use, provided you do not delete, change or otherwise modify any of the
+        Content, including, but not limited to, any copyright or trademark notices.
+      - (no clause on robots, spiders, scraping, crawling or automated access was found in the page's
+        text)
+    permission: null
+    owner_decision: null
+  notes: 'Station list: Wikipedia''s Hubbard Broadcasting table as read by the first-hand check of 2026-09-26.
+    All six Hubbard TV sites load the same file path, /wp-content/uploads/dynamic-assets/schoolalert.html,
+    into their closings page with jQuery; the live poller reads the file (data_url). WTOP (Hubbard radio)
+    is its own platform (wtop).'
+  shared_paths: []
+stations:
+- id: hubbard-kstp
+  platform: hubbard
+  call_sign: KSTP
+  name: KSTP (kstp.com)
+  market: Minneapolis - St. Paul, MN
+  dma: Minneapolis - St. Paul, MN - WI DMA
+  states: [MN, WI]
+  counties:
+    basis: dma
+    source: 'DMA county list: alex-patton/US-TVDMA-BY-COUNTY usa-tvdma-county.csv at commit 7f254b8c1843c62ec976a71c40d366d45f6f29cd
+      (sha256 2e2cd00265a8d704...), names resolved to FIPS with the Census 2025 county Gazetteer; Connecticut
+      via the Census county-to-town crosswalk (snowlight.sources.stations.dma); market ''Minneapolis -
+      St. Paul, MN - WI DMA'''
+    fips: ['27003', '27007', '27009', '27011', '27019', '27021', '27023', '27025', '27033', '27035', '27037',
+      '27041', '27043', '27049', '27051', '27053', '27057', '27059', '27063', '27065', '27067', '27073',
+      '27079', '27083', '27085', '27093', '27095', '27097', '27103', '27115', '27121', '27123', '27127',
+      '27129', '27131', '27139', '27141', '27143', '27145', '27147', '27149', '27151', '27153', '27155',
+      '27157', '27159', '27161', '27163', '27171', '27173', '55005', '55013', '55033', '55091', '55093',
+      '55095', '55109']
+  page_url: https://kstp.com/school-alert/
+  data_url: https://kstp.com/wp-content/uploads/dynamic-assets/schoolalert.html
+  export_url: null
+  archive_urls:
+  - https://kstp.com/school-alert/
+  - https://kstp.com/wp-content/uploads/dynamic-assets/schoolalert.html
+  poll_minutes: null
+  status: active
+  evidence: 'First-hand check of 2026-09-26 (docs/research/firsthand/others.json, record KSTP; variant
+    hubbard-schoolalert-asset). Live read of https://kstp.com/school-alert/ 2026-09-27T06:18:40Z: HTTP
+    200, 166780 bytes; hubbard-page, deferred, loads /wp-content/uploads/dynamic-assets/schoolalert.html.
+    Live read of https://kstp.com/wp-content/uploads/dynamic-assets/schoolalert.html 2026-09-27T05:50:51Z:
+    HTTP 200, 300 bytes, Last-Modified Sun, 27 Sep 2026 05:47:08 GMT; hubbard-schoolalert, empty. Archived
+    captures read (archive-captures runs 36299187602, 36324857670): 5 deferred, 2 empty, 1 populated.
+    Archived https://kstp.com/wp-content/uploads/dynamic-assets/schoolalert.html?_=1743705589902 captured
+    2025-04-03T18:39:50Z: hubbard-schoolalert, 4 rows (''ASHBY PUBLIC SCHOOL DISTRICT'', ''CLINTON-GRACEVILLE-BEARDSLEY'',
+    ...).'
+  list_files:
+  - url: https://kstp.com/wp-content/uploads/dynamic-assets/schoolalert.html
+    loaded_by: script
+    seen: The station's closings page loads it with jQuery (fileClosingsList = '/wp-content/uploads/dynamic-assets/schoolalert.html';
+      live read 2026-09-27).
+  page_check: null
+  robots:
+  - url: https://kstp.com/school-alert/
+    checked_at: '2026-09-27T07:03:33Z'
+    state: parsed
+    allowed: true
+    rule: no rule matches
+    crawl_delay: null
+    disallowed_agents:
+    - ai2bot
+    - applebot-extended
+    - bytespider
+    - ccbot
+    - claudebot
+    - cohere-training-data-crawler
+    - cotoyogi
+    - datenbank crawler
+    - diffbot
+    - facebookbot
+    - factset_spyderbot
+    - google-extended
+    - gptbot
+    - icc-crawler
+    - kangaroo bot
+    - meta-externalagent
+    - netestate imprint crawler
+    - omgili
+    - pangubot
+    - petalbot
+    - semrushbot-ocob
+    - timpibot
+    - webzio-extended
+    sha256: a8f287b61fd8c8179c6c44c2475dfe47a3526cd4fbac3e55d6740ce21f23f37c
+  - url: https://kstp.com/wp-content/uploads/dynamic-assets/schoolalert.html
+    checked_at: '2026-09-27T07:03:33Z'
+    state: parsed
+    allowed: true
+    rule: no rule matches
+    crawl_delay: null
+    disallowed_agents:
+    - ai2bot
+    - applebot-extended
+    - bytespider
+    - ccbot
+    - claudebot
+    - cohere-training-data-crawler
+    - cotoyogi
+    - datenbank crawler
+    - diffbot
+    - facebookbot
+    - factset_spyderbot
+    - google-extended
+    - gptbot
+    - icc-crawler
+    - kangaroo bot
+    - meta-externalagent
+    - netestate imprint crawler
+    - omgili
+    - pangubot
+    - petalbot
+    - semrushbot-ocob
+    - timpibot
+    - webzio-extended
+    sha256: a8f287b61fd8c8179c6c44c2475dfe47a3526cd4fbac3e55d6740ce21f23f37c
+- id: hubbard-wdio
+  platform: hubbard
+  call_sign: WDIO
+  name: WDIO (wdio.com)
+  market: Duluth - Superior, MN
+  dma: Duluth - Superior, MN - MI - WI DMA
+  states: [MI, MN, WI]
+  counties:
+    basis: dma
+    source: 'DMA county list: alex-patton/US-TVDMA-BY-COUNTY usa-tvdma-county.csv at commit 7f254b8c1843c62ec976a71c40d366d45f6f29cd
+      (sha256 2e2cd00265a8d704...), names resolved to FIPS with the Census 2025 county Gazetteer; Connecticut
+      via the Census county-to-town crosswalk (snowlight.sources.stations.dma); market ''Duluth - Superior,
+      MN - MI - WI DMA'''
+    fips: ['26053', '27001', '27017', '27031', '27061', '27071', '27075', '27137', '55003', '55007', '55031',
+      '55051', '55113', '55129']
+  page_url: https://www.wdio.com/school-alert/
+  data_url: https://www.wdio.com/wp-content/uploads/dynamic-assets/schoolalert.html
+  export_url: null
+  archive_urls:
+  - https://www.wdio.com/school-alert/
+  - https://www.wdio.com/wp-content/uploads/dynamic-assets/schoolalert.html
+  poll_minutes: null
+  status: active
+  evidence: 'First-hand check of 2026-09-26 (docs/research/firsthand/others.json, record WDIO/WIRT; variant
+    hubbard-schoolalert-asset). Live read of https://www.wdio.com/wp-content/uploads/dynamic-assets/schoolalert.html
+    2026-09-27T05:50:56Z: HTTP 200, 300 bytes, Last-Modified Sun, 27 Sep 2026 05:46:48 GMT; hubbard-schoolalert,
+    empty. Archived captures read (archive-captures runs 36299187602, 36338052203): 2 deferred, 1 populated.
+    Archived https://www.wdio.com/wp-content/uploads/dynamic-assets/schoolalert.html?_=1769176611474 captured
+    2026-01-23T13:56:51Z: hubbard-schoolalert, 67 rows (''Aitkin Public Schools'', ''Ashland Schools -
+    Ashland Schools'', ...).'
+  list_files:
+  - url: https://www.wdio.com/wp-content/uploads/dynamic-assets/schoolalert.html
+    loaded_by: script
+    seen: The station's closings page loads it with jQuery (fileClosingsList = '/wp-content/uploads/dynamic-assets/schoolalert.html';
+      live read 2026-09-27).
+  page_check: null
+  robots:
+  - url: https://www.wdio.com/school-alert/
+    checked_at: '2026-09-27T07:03:33Z'
+    state: parsed
+    allowed: true
+    rule: no rule matches
+    crawl_delay: null
+    disallowed_agents:
+    - ai2bot
+    - applebot-extended
+    - bytespider
+    - ccbot
+    - claudebot
+    - cohere-training-data-crawler
+    - cotoyogi
+    - datenbank crawler
+    - diffbot
+    - facebookbot
+    - factset_spyderbot
+    - google-extended
+    - gptbot
+    - icc-crawler
+    - kangaroo bot
+    - meta-externalagent
+    - netestate imprint crawler
+    - omgili
+    - pangubot
+    - petalbot
+    - semrushbot-ocob
+    - timpibot
+    - webzio-extended
+    sha256: a8f287b61fd8c8179c6c44c2475dfe47a3526cd4fbac3e55d6740ce21f23f37c
+  - url: https://www.wdio.com/wp-content/uploads/dynamic-assets/schoolalert.html
+    checked_at: '2026-09-27T07:03:33Z'
+    state: parsed
+    allowed: true
+    rule: no rule matches
+    crawl_delay: null
+    disallowed_agents:
+    - ai2bot
+    - applebot-extended
+    - bytespider
+    - ccbot
+    - claudebot
+    - cohere-training-data-crawler
+    - cotoyogi
+    - datenbank crawler
+    - diffbot
+    - facebookbot
+    - factset_spyderbot
+    - google-extended
+    - gptbot
+    - icc-crawler
+    - kangaroo bot
+    - meta-externalagent
+    - netestate imprint crawler
+    - omgili
+    - pangubot
+    - petalbot
+    - semrushbot-ocob
+    - timpibot
+    - webzio-extended
+    sha256: a8f287b61fd8c8179c6c44c2475dfe47a3526cd4fbac3e55d6740ce21f23f37c
+- id: hubbard-wnyt
+  platform: hubbard
+  call_sign: WNYT
+  name: WNYT (wnyt.com)
+  market: Albany - Schenectady - Troy, NY
+  dma: Albany - Schenectady - Troy, NY - MA - VT DMA
+  states: [MA, NY, VT]
+  counties:
+    basis: dma
+    source: 'DMA county list: alex-patton/US-TVDMA-BY-COUNTY usa-tvdma-county.csv at commit 7f254b8c1843c62ec976a71c40d366d45f6f29cd
+      (sha256 2e2cd00265a8d704...), names resolved to FIPS with the Census 2025 county Gazetteer; Connecticut
+      via the Census county-to-town crosswalk (snowlight.sources.stations.dma); market ''Albany - Schenectady
+      - Troy, NY - MA - VT DMA'''
+    fips: ['25003', '36001', '36021', '36035', '36039', '36041', '36057', '36083', '36091', '36093', '36095',
+      '36113', '36115', '50003']
+  page_url: https://wnyt.com/closings/
+  data_url: https://wnyt.com/wp-content/uploads/dynamic-assets/schoolalert.html
+  export_url: null
+  archive_urls:
+  - https://wnyt.com/closings/
+  - https://wnyt.com/wp-content/uploads/dynamic-assets/schoolalert.html
+  poll_minutes: null
+  status: active
+  evidence: 'First-hand check of 2026-09-26 (docs/research/firsthand/others.json, record WNYT; variant
+    hubbard-schoolalert-asset). Live read of https://wnyt.com/wp-content/uploads/dynamic-assets/schoolalert.html
+    2026-09-27T05:51:01Z: HTTP 200, 300 bytes, Last-Modified Sun, 27 Sep 2026 05:48:21 GMT; hubbard-schoolalert,
+    empty. Archived captures read (archive-captures runs 36299187602, 36338052203): 2 deferred, 3 populated.
+    Archived https://wnyt.com/wp-content/uploads/dynamic-assets/schoolalert.html?_=1738868095259 captured
+    2025-02-06T18:54:57Z: hubbard-schoolalert, 511 rows (''18 Degrees, Berkshire County, MA'', ''ABC Nursery
+    School, Saratoga County, NY'', ...). Archived https://wnyt.com/wp-content/uploads/dynamic-assets/schoolalert.html?_=1739458687066
+    captured 2025-02-13T14:58:07Z: hubbard-schoolalert, 291 rows (''18 Degrees, Berkshire County, MA'',
+    ''Abilities, Saratoga County, NY'', ...).'
+  list_files:
+  - url: https://wnyt.com/wp-content/uploads/dynamic-assets/schoolalert.html
+    loaded_by: script
+    seen: The station's closings page loads it with jQuery (fileClosingsList = '/wp-content/uploads/dynamic-assets/schoolalert.html';
+      live read 2026-09-27).
+  page_check: null
+  robots:
+  - url: https://wnyt.com/closings/
+    checked_at: '2026-09-27T07:03:33Z'
+    state: parsed
+    allowed: true
+    rule: no rule matches
+    crawl_delay: null
+    disallowed_agents:
+    - ai2bot
+    - applebot-extended
+    - bytespider
+    - ccbot
+    - claudebot
+    - cohere-training-data-crawler
+    - cotoyogi
+    - datenbank crawler
+    - diffbot
+    - facebookbot
+    - factset_spyderbot
+    - google-extended
+    - gptbot
+    - icc-crawler
+    - kangaroo bot
+    - meta-externalagent
+    - netestate imprint crawler
+    - omgili
+    - pangubot
+    - petalbot
+    - semrushbot-ocob
+    - timpibot
+    - webzio-extended
+    sha256: a8f287b61fd8c8179c6c44c2475dfe47a3526cd4fbac3e55d6740ce21f23f37c
+  - url: https://wnyt.com/wp-content/uploads/dynamic-assets/schoolalert.html
+    checked_at: '2026-09-27T07:03:33Z'
+    state: parsed
+    allowed: true
+    rule: no rule matches
+    crawl_delay: null
+    disallowed_agents:
+    - ai2bot
+    - applebot-extended
+    - bytespider
+    - ccbot
+    - claudebot
+    - cohere-training-data-crawler
+    - cotoyogi
+    - datenbank crawler
+    - diffbot
+    - facebookbot
+    - factset_spyderbot
+    - google-extended
+    - gptbot
+    - icc-crawler
+    - kangaroo bot
+    - meta-externalagent
+    - netestate imprint crawler
+    - omgili
+    - pangubot
+    - petalbot
+    - semrushbot-ocob
+    - timpibot
+    - webzio-extended
+    sha256: a8f287b61fd8c8179c6c44c2475dfe47a3526cd4fbac3e55d6740ce21f23f37c
+- id: hubbard-kaal
+  platform: hubbard
+  call_sign: KAAL
+  name: KAAL (kaaltv.com)
+  market: Rochester - Mason City - Austin, MN
+  dma: Rochester - Mason City - Austin, MN - IA DMA
+  states: [IA, MN]
+  counties:
+    basis: dma
+    source: 'DMA county list: alex-patton/US-TVDMA-BY-COUNTY usa-tvdma-county.csv at commit 7f254b8c1843c62ec976a71c40d366d45f6f29cd
+      (sha256 2e2cd00265a8d704...), names resolved to FIPS with the Census 2025 county Gazetteer; Connecticut
+      via the Census county-to-town crosswalk (snowlight.sources.stations.dma); market ''Rochester - Mason
+      City - Austin, MN - IA DMA'''
+    fips: ['19033', '19067', '19081', '19089', '19131', '19189', '19195', '27039', '27045', '27047', '27099',
+      '27109']
+  page_url: https://www.kaaltv.com/weather/school-closings/
+  data_url: https://www.kaaltv.com/wp-content/uploads/dynamic-assets/schoolalert.html
+  export_url: null
+  archive_urls:
+  - https://www.kaaltv.com/weather/school-closings/
+  - https://www.kaaltv.com/wp-content/uploads/dynamic-assets/schoolalert.html
+  poll_minutes: null
+  status: active
+  evidence: 'First-hand check of 2026-09-26 (docs/research/firsthand/others.json, record KAAL; variant
+    hubbard-schoolalert-asset). Live read of https://www.kaaltv.com/wp-content/uploads/dynamic-assets/schoolalert.html
+    2026-09-27T05:51:06Z: HTTP 200, 300 bytes, Last-Modified Sun, 27 Sep 2026 05:46:04 GMT; hubbard-schoolalert,
+    empty. Archived captures read (archive-captures runs 36299187602, 36338052203): 2 deferred, 1 populated.
+    Archived https://www.kaaltv.com/wp-content/uploads/dynamic-assets/schoolalert.html?_=1739460835643
+    captured 2025-02-13T15:33:56Z: hubbard-schoolalert, 2 rows (''First Baptist Church - Forest City'',
+    ''North Union Community Schools'').'
+  list_files:
+  - url: https://www.kaaltv.com/wp-content/uploads/dynamic-assets/schoolalert.html
+    loaded_by: script
+    seen: The station's closings page loads it with jQuery (fileClosingsList = '/wp-content/uploads/dynamic-assets/schoolalert.html';
+      live read 2026-09-27).
+  page_check: null
+  robots:
+  - url: https://www.kaaltv.com/weather/school-closings/
+    checked_at: '2026-09-27T07:03:32Z'
+    state: parsed
+    allowed: true
+    rule: no rule matches
+    crawl_delay: null
+    disallowed_agents:
+    - ai2bot
+    - applebot-extended
+    - bytespider
+    - ccbot
+    - claudebot
+    - cohere-training-data-crawler
+    - cotoyogi
+    - datenbank crawler
+    - diffbot
+    - facebookbot
+    - factset_spyderbot
+    - google-extended
+    - gptbot
+    - icc-crawler
+    - kangaroo bot
+    - meta-externalagent
+    - netestate imprint crawler
+    - omgili
+    - pangubot
+    - petalbot
+    - semrushbot-ocob
+    - timpibot
+    - webzio-extended
+    sha256: a8f287b61fd8c8179c6c44c2475dfe47a3526cd4fbac3e55d6740ce21f23f37c
+  - url: https://www.kaaltv.com/wp-content/uploads/dynamic-assets/schoolalert.html
+    checked_at: '2026-09-27T07:03:32Z'
+    state: parsed
+    allowed: true
+    rule: no rule matches
+    crawl_delay: null
+    disallowed_agents:
+    - ai2bot
+    - applebot-extended
+    - bytespider
+    - ccbot
+    - claudebot
+    - cohere-training-data-crawler
+    - cotoyogi
+    - datenbank crawler
+    - diffbot
+    - facebookbot
+    - factset_spyderbot
+    - google-extended
+    - gptbot
+    - icc-crawler
+    - kangaroo bot
+    - meta-externalagent
+    - netestate imprint crawler
+    - omgili
+    - pangubot
+    - petalbot
+    - semrushbot-ocob
+    - timpibot
+    - webzio-extended
+    sha256: a8f287b61fd8c8179c6c44c2475dfe47a3526cd4fbac3e55d6740ce21f23f37c
+- id: hubbard-kob
+  platform: hubbard
+  call_sign: KOB
+  name: KOB (kob.com)
+  market: Albuquerque - Santa Fe, NM
+  dma: Albuquerque - Santa Fe, NM - AZ - CO DMA
+  states: [AZ, CO, NM]
+  counties:
+    basis: dma
+    source: 'DMA county list: alex-patton/US-TVDMA-BY-COUNTY usa-tvdma-county.csv at commit 7f254b8c1843c62ec976a71c40d366d45f6f29cd
+      (sha256 2e2cd00265a8d704...), names resolved to FIPS with the Census 2025 county Gazetteer; Connecticut
+      via the Census county-to-town crosswalk (snowlight.sources.stations.dma); market ''Albuquerque -
+      Santa Fe, NM - AZ - CO DMA'''
+    fips: ['04001', 08023, 08067, 08083, '35001', '35003', '35005', '35006', '35007', '35011', '35015',
+      '35017', '35019', '35021', '35023', '35025', '35027', '35028', '35029', '35031', '35033', '35035',
+      '35039', '35043', '35045', '35047', '35049', '35051', '35053', '35055', '35057', '35061']
+  page_url: https://www.kob.com/closings/
+  data_url: https://www.kob.com/wp-content/uploads/dynamic-assets/schoolalert.html
+  export_url: null
+  archive_urls:
+  - https://www.kob.com/closings/
+  - https://www.kob.com/wp-content/uploads/dynamic-assets/schoolalert.html
+  poll_minutes: null
+  status: active
+  evidence: 'First-hand check of 2026-09-26 (docs/research/firsthand/others.json, record KOB; variant
+    hubbard-schoolalert-asset). Live read of https://www.kob.com/wp-content/uploads/dynamic-assets/schoolalert.html
+    2026-09-27T05:51:11Z: HTTP 200, 300 bytes, Last-Modified Sun, 27 Sep 2026 05:48:47 GMT; hubbard-schoolalert,
+    empty. Archived captures read (archive-captures runs 36299187602, 36338052203): 2 deferred, 1 empty,
+    2 populated. Archived https://www.kob.com/wp-content/uploads/dynamic-assets/schoolalert.html?_=1741363043325
+    captured 2025-03-07T15:57:23Z: hubbard-schoolalert, 5 rows ("Ch''ooshgai Community School", ''City
+    of Gallup Municipal Court'', ...). Archived https://www.kob.com/wp-content/uploads/dynamic-assets/schoolalert.html?_=1710793538433
+    captured 2024-03-18T20:25:38Z: hubbard-schoolalert, 1 rows (''BIE'').'
+  list_files:
+  - url: https://www.kob.com/wp-content/uploads/dynamic-assets/schoolalert.html
+    loaded_by: script
+    seen: The station's closings page loads it with jQuery (fileClosingsList = '/wp-content/uploads/dynamic-assets/schoolalert.html';
+      live read 2026-09-27).
+  page_check: null
+  robots:
+  - url: https://www.kob.com/closings/
+    checked_at: '2026-09-27T07:03:32Z'
+    state: parsed
+    allowed: true
+    rule: no rule matches
+    crawl_delay: null
+    disallowed_agents:
+    - ai2bot
+    - applebot-extended
+    - bytespider
+    - ccbot
+    - claudebot
+    - cohere-training-data-crawler
+    - cotoyogi
+    - datenbank crawler
+    - diffbot
+    - facebookbot
+    - factset_spyderbot
+    - google-extended
+    - gptbot
+    - icc-crawler
+    - kangaroo bot
+    - meta-externalagent
+    - netestate imprint crawler
+    - omgili
+    - pangubot
+    - petalbot
+    - semrushbot-ocob
+    - timpibot
+    - webzio-extended
+    sha256: a8f287b61fd8c8179c6c44c2475dfe47a3526cd4fbac3e55d6740ce21f23f37c
+  - url: https://www.kob.com/wp-content/uploads/dynamic-assets/schoolalert.html
+    checked_at: '2026-09-27T07:03:32Z'
+    state: parsed
+    allowed: true
+    rule: no rule matches
+    crawl_delay: null
+    disallowed_agents:
+    - ai2bot
+    - applebot-extended
+    - bytespider
+    - ccbot
+    - claudebot
+    - cohere-training-data-crawler
+    - cotoyogi
+    - datenbank crawler
+    - diffbot
+    - facebookbot
+    - factset_spyderbot
+    - google-extended
+    - gptbot
+    - icc-crawler
+    - kangaroo bot
+    - meta-externalagent
+    - netestate imprint crawler
+    - omgili
+    - pangubot
+    - petalbot
+    - semrushbot-ocob
+    - timpibot
+    - webzio-extended
+    sha256: a8f287b61fd8c8179c6c44c2475dfe47a3526cd4fbac3e55d6740ce21f23f37c
+- id: hubbard-whec
+  platform: hubbard
+  call_sign: WHEC
+  name: WHEC (whec.com)
+  market: Rochester, NY
+  dma: Rochester, NY DMA
+  states: [NY]
+  counties:
+    basis: dma
+    source: 'DMA county list: alex-patton/US-TVDMA-BY-COUNTY usa-tvdma-county.csv at commit 7f254b8c1843c62ec976a71c40d366d45f6f29cd
+      (sha256 2e2cd00265a8d704...), names resolved to FIPS with the Census 2025 county Gazetteer; Connecticut
+      via the Census county-to-town crosswalk (snowlight.sources.stations.dma); market ''Rochester, NY
+      DMA'''
+    fips: ['36051', '36055', '36069', '36117', '36123']
+  page_url: https://www.whec.com/closings-and-delays/
+  data_url: https://www.whec.com/wp-content/uploads/dynamic-assets/schoolalert.html
+  export_url: null
+  archive_urls:
+  - https://www.whec.com/closings-and-delays/
+  - https://www.whec.com/wp-content/uploads/dynamic-assets/schoolalert.html
+  - https://www.whec.com/wp-content/uploads/dynamic-assets/closings.html
+  poll_minutes: null
+  status: active
+  evidence: 'First-hand check of 2026-09-26 (docs/research/firsthand/others.json, record WHEC; variant
+    hubbard-schoolalert-asset). Live read of https://www.whec.com/wp-content/uploads/dynamic-assets/schoolalert.html
+    2026-09-27T05:51:16Z: HTTP 200, 300 bytes, Last-Modified Sun, 27 Sep 2026 05:48:15 GMT; hubbard-schoolalert,
+    empty. Archived captures read (archive-captures runs 36299187602, 36345392102): 6 count_only, 2 deferred,
+    7 empty. Never seen with a row: the archive holds 7 captures of WHEC''s School Alert file (2023-01-20
+    to 2026-04-23; listing of the dynamic-assets folder, run 36344069635), all read (run 36345392102)
+    and all empty. The site alert banner beside it (dynamic-assets/closings.html, 3,725 captures) counted
+    9, 3 and 1 school closings on 2022-12-24 to 2022-12-28 and 1 on 2024-12-13, 2026-02-16 and 2026-03-11
+    (six captures read, run 36345392102): the list is used, but no capture of the file itself holds its
+    rows. The file has the markup of the five other Hubbard stations'' files, which are seen with rows.'
+  list_files:
+  - url: https://www.whec.com/wp-content/uploads/dynamic-assets/schoolalert.html
+    loaded_by: script
+    seen: The station's closings page loads it with jQuery (fileClosingsList = '/wp-content/uploads/dynamic-assets/schoolalert.html';
+      live read 2026-09-27).
+  page_check: null
+  robots:
+  - url: https://www.whec.com/closings-and-delays/
+    checked_at: '2026-09-27T07:03:33Z'
+    state: parsed
+    allowed: true
+    rule: no rule matches
+    crawl_delay: null
+    disallowed_agents:
+    - ai2bot
+    - applebot-extended
+    - bytespider
+    - ccbot
+    - claudebot
+    - cohere-training-data-crawler
+    - cotoyogi
+    - datenbank crawler
+    - diffbot
+    - facebookbot
+    - factset_spyderbot
+    - google-extended
+    - gptbot
+    - icc-crawler
+    - kangaroo bot
+    - meta-externalagent
+    - netestate imprint crawler
+    - omgili
+    - pangubot
+    - petalbot
+    - semrushbot-ocob
+    - timpibot
+    - webzio-extended
+    sha256: a8f287b61fd8c8179c6c44c2475dfe47a3526cd4fbac3e55d6740ce21f23f37c
+  - url: https://www.whec.com/wp-content/uploads/dynamic-assets/schoolalert.html
+    checked_at: '2026-09-27T07:03:33Z'
+    state: parsed
+    allowed: true
+    rule: no rule matches
+    crawl_delay: null
+    disallowed_agents:
+    - ai2bot
+    - applebot-extended
+    - bytespider
+    - ccbot
+    - claudebot
+    - cohere-training-data-crawler
+    - cotoyogi
+    - datenbank crawler
+    - diffbot
+    - facebookbot
+    - factset_spyderbot
+    - google-extended
+    - gptbot
+    - icc-crawler
+    - kangaroo bot
+    - meta-externalagent
+    - netestate imprint crawler
+    - omgili
+    - pangubot
+    - petalbot
+    - semrushbot-ocob
+    - timpibot
+    - webzio-extended
+    sha256: a8f287b61fd8c8179c6c44c2475dfe47a3526cd4fbac3e55d6740ce21f23f37c

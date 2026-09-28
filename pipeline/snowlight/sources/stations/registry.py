@@ -47,6 +47,14 @@ holds one platform and its stations::
                                     # capture shows how, ``seen`` says why it is
                                     # the station's
         robots: [{url, checked_at, state, allowed, rule, crawl_delay, disallowed_agents}]
+        leaids: ["2200030", ...]    # a district-level source only: the NCES district
+                                    # IDs whose schools it covers (see below)
+
+A district-level source (a school district's own alert page, or a state's list of
+its school systems) names the districts it speaks for in ``leaids``, NCES district
+IDs (LEAIDs, seven digits): it covers exactly the schools of those districts, never
+a whole county (:func:`snowlight.sources.stations.coverage.district_cover`), and
+its ``counties`` (basis ``district``) are the counties those schools stand in.
 
 The live poller reads ``data_url`` when there is one, else ``page_url``.
 ``data_url`` is the list the station's page loads today (``page_check`` records
@@ -64,7 +72,8 @@ not polled. robots.txt does not exclude a station: the owner decided on
 URL's verdict is recorded in ``robots`` (by ``snowlight stations robots``) and in
 every live read's health. Counties are five-digit county FIPS codes; ``basis`` says
 where they come from (``dma``: the station's market in a published DMA county list;
-``observed``: counties that appear in the station's own lists).
+``observed``: counties that appear in the station's own lists; ``state``: a
+statewide list, every county of its state).
 """
 
 import json
@@ -92,6 +101,8 @@ type HttpsUrl = Annotated[str, StringConstraints(pattern=r"^https://[^\s]+$", ma
 type Text = Annotated[str, StringConstraints(min_length=1, max_length=4000)]
 type LongText = Annotated[str, StringConstraints(min_length=1, max_length=8000)]
 type Fips = Annotated[str, StringConstraints(pattern=r"^[0-9]{5}$")]
+type Leaid = Annotated[str, StringConstraints(pattern=r"^[0-9]{7}$")]
+"""An NCES local education agency (school district) ID, as the CCD writes it."""
 type StateCode = Annotated[str, StringConstraints(pattern=r"^[A-Z]{2}$")]
 type Slug = Annotated[str, StringConstraints(pattern=r"^[a-z0-9]+(?:-[a-z0-9]+)*$", max_length=40)]
 
@@ -219,6 +230,12 @@ class CountyBasis(StrEnum):
 
     DMA = "dma"
     OBSERVED = "observed"
+    DISTRICT = "district"
+    """A district-level source (``Station.leaids``): the counties its districts'
+    schools stand in, in the NCES school directory. Only those schools count."""
+    STATE = "state"
+    """A statewide list (a state agency's, or one arranged by every county of a state):
+    every county of its state in the Census county Gazetteer."""
 
 
 class Counties(InternalModel):
@@ -308,6 +325,13 @@ class Station(InternalModel):
     list_files: tuple[ListFile, ...] = ()
     page_check: PageCheck | None = None
     robots: tuple[RobotsCheck, ...] = ()
+    leaids: tuple[Leaid, ...] = Field(
+        default=(),
+        description=(
+            "A district-level source's NCES district IDs: it covers exactly those "
+            "districts' schools, not its counties whole (empty for every other source)."
+        ),
+    )
 
     @model_validator(mode="after")
     def _check(self) -> Self:
@@ -327,6 +351,14 @@ class Station(InternalModel):
             raise ValueError(f"{self.id}: a station with no endpoint lists no URL")
         if list(self.states) != sorted(set(self.states)) or not self.states:
             raise ValueError(f"{self.id}: states are listed once each, in order")
+        if list(self.leaids) != sorted(set(self.leaids)):
+            raise ValueError(f"{self.id}: LEAIDs are listed once each, in order")
+        district = self.counties is not None and self.counties.basis is CountyBasis.DISTRICT
+        if bool(self.leaids) != district:
+            raise ValueError(
+                f"{self.id}: a district-level source names its LEAIDs, and only its "
+                "counties have the district basis"
+            )
         return self
 
     @property
@@ -453,6 +485,9 @@ _Dumper.add_representer(list, _list_representer)
 def dump_platform_file(content: PlatformFile) -> bytes:
     """Serialize a platform file deterministically (fields in model order)."""
     data = content.model_dump(mode="json")
+    for station in data["stations"]:
+        if not station.get("leaids"):
+            station.pop("leaids", None)  # only a district-level source names LEAIDs
     text: str = yaml.dump(
         data, Dumper=_Dumper, sort_keys=False, allow_unicode=True, width=100, indent=2
     )

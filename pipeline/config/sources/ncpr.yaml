@@ -1,0 +1,203 @@
+# Station registry for one platform. Loaded with every other file in this folder
+# by snowlight.sources.stations.registry; see its docstring for the fields.
+# `snowlight stations robots --update` rewrites the robots blocks in place.
+platform:
+  id: ncpr
+  name: North Country Public Radio storm list (Canton, NY)
+  operator: St. Lawrence University (North Country Public Radio)
+  adapter: ncpr
+  poll_minutes: 10
+  terms:
+    automated_access: permitted
+    summary: 'No terms of use were found for northcountrypublicradio.org (the storm page, read 2026-09-27,
+      links none). robots.txt disallows every path to every agent (''User-agent: * / Disallow: /''): recorded,
+      and read anyway under the owner''s decision of 2026-09-26; only the storm page is requested.'
+    evidence:
+    - url: https://www.northcountrypublicradio.org/storm.php
+      read_at: '2026-09-27T11:12:50Z'
+      sha256: 618b8e1ac399037a7581297f18ad56593bcd10b10df80ef383db5e5c6399cfdc
+      excerpt:
+      - '(no terms of use were found for the site: the storm page links no terms of use; its footer links
+        only about, coverage, staff and station-governance pages)'
+    permission: null
+    owner_decision: null
+  notes: NCPR renders the closings reported to it on its storm page (https://www.northcountrypublicradio.org/storm.php,
+    'Closings and delays reported to NCPR'); the live poller reads that page. Empty on 2026-09-27. Its
+    listeners are northern New York's North Country (St. Lawrence, Jefferson, Franklin, Clinton and Essex
+    counties); the county list is the Watertown DMA, the part of that area in one DMA, so it undercounts
+    rather than overclaims.
+  shared_paths: []
+stations:
+- id: ncpr-storm
+  platform: ncpr
+  call_sign: NCPR
+  name: North Country Public Radio storm list (northcountrypublicradio.org)
+  market: Watertown, NY
+  dma: Watertown, NY DMA
+  states: [NY]
+  counties:
+    basis: dma
+    source: 'DMA county list: alex-patton/US-TVDMA-BY-COUNTY usa-tvdma-county.csv at commit 7f254b8c1843c62ec976a71c40d366d45f6f29cd
+      (sha256 2e2cd00265a8d704...), names resolved to FIPS with the Census 2025 county Gazetteer; Connecticut
+      via the Census county-to-town crosswalk (snowlight.sources.stations.dma); market ''Watertown, NY
+      DMA'''
+    fips: ['36045', '36049', '36089']
+  page_url: https://www.northcountrypublicradio.org/storm.php
+  data_url: null
+  export_url: null
+  archive_urls:
+  - https://www.northcountrypublicradio.org/storm.php
+  poll_minutes: null
+  status: active
+  evidence: 'First-hand check of 2026-09-26 (docs/research/firsthand/others.json, record North Country
+    Public Radio storm list; variant robots-blocked). Live read of https://www.northcountrypublicradio.org/storm.php
+    2026-09-27T11:12:50Z: HTTP 200, 46960 bytes; ncpr-storm-page, empty. Archived captures read (archive-captures
+    runs 36317643857, 36338052203): 2 empty, 2 populated. Archived https://www.northcountrypublicradio.org/storm.php
+    captured 2025-02-06T19:01:02Z: ncpr-storm-page, 54 rows (''Adirondack Christian School, Wilmington,
+    NY'', ''Adirondack Educational Center, Saranac Lake, NY'', ...). Archived https://www.northcountrypublicradio.org/storm.php
+    captured 2024-12-16T14:33:41Z: ncpr-storm-page, 1 rows (''Corinth Central School District, Corinth,
+    NY'').'
+  list_files: []
+  page_check: null
+  robots:
+  - url: https://www.northcountrypublicradio.org/storm.php
+    checked_at: '2026-09-27T11:16:42Z'
+    state: parsed
+    allowed: false
+    rule: 'Disallow: /'
+    crawl_delay: null
+    disallowed_agents:
+    - aqua_products
+    - asterias
+    - b2w/0.1
+    - backdoorbot/1.0
+    - black hole
+    - blowfish/1.0
+    - bookmark search tool
+    - botalot
+    - builtbottough
+    - bullseye/1.0
+    - bunnyslippers
+    - cegbfeieh
+    - cheesebot
+    - cherrypicker
+    - cherrypicker /1.0
+    - cherrypickerelite/1.0
+    - cherrypickerse/1.0
+    - copyrightcheck
+    - cosmos
+    - crescent
+    - crescent internet toolpak http ole control v.1.0
+    - dittospyder
+    - emailcollector
+    - emailsiphon
+    - emailwolf
+    - erocrawler
+    - extractorpro
+    - fairad client
+    - flaming attackbot
+    - foobot
+    - gaisbot
+    - getright/4.2
+    - grub
+    - grub-client
+    - harvest/1.5
+    - hloader
+    - httplib
+    - humanlinks
+    - infonavirobot
+    - iron33/1.0.2
+    - jennybot
+    - kenjin spider
+    - keyword density/0.9
+    - larbin
+    - lexibot
+    - libweb/clshttp
+    - linkextractorpro
+    - linkscan/8.1a unix
+    - linkwalker
+    - lnspiderguy
+    - lwp-trivial
+    - lwp-trivial/1.34
+    - mata hari
+    - microsoft url control
+    - microsoft url control - 5.01.4511
+    - microsoft url control - 6.00.8169
+    - miixpc
+    - miixpc/4.2
+    - mister pix
+    - moget
+    - moget/2.1
+    - mozilla/4
+    - mozilla/4.0 (compatible; bullseye; windows 95)
+    - mozilla/4.0 (compatible; msie 4.0; windows 2000)
+    - mozilla/4.0 (compatible; msie 4.0; windows 95)
+    - mozilla/4.0 (compatible; msie 4.0; windows 98)
+    - mozilla/4.0 (compatible; msie 4.0; windows me)
+    - mozilla/4.0 (compatible; msie 4.0; windows nt)
+    - mozilla/4.0 (compatible; msie 4.0; windows xp)
+    - mozilla/5
+    - msiecrawler
+    - netants
+    - netmechanic
+    - nicerspro
+    - offline explorer
+    - openbot
+    - openfind
+    - openfind data gathere
+    - oracle ultra search
+    - perman
+    - propowerbot/2.14
+    - prowebwalker
+    - psbot
+    - python-urllib
+    - queryn metasearch
+    - radiation retriever 1.1
+    - repomonkey
+    - repomonkey bait & tackle/v1.01
+    - rma
+    - searchpreview
+    - sitesnagger
+    - spankbot
+    - spanner
+    - suzuran
+    - szukacz/1.4
+    - teleport
+    - teleportpro
+    - telesoft
+    - the intraformant
+    - thenomad
+    - tighttwatbot
+    - titan
+    - tocrawl/urldispatcher
+    - true_robot
+    - true_robot/1.0
+    - turingos
+    - url control
+    - url_spider_pro
+    - urly warning
+    - vci
+    - vci webviewer vci webviewer win32
+    - web image collector
+    - webauto
+    - webbandit
+    - webbandit/3.50
+    - webcopier
+    - webenhancer
+    - webmasterworldforumbot
+    - websauger
+    - website quester
+    - webster pro
+    - webstripper
+    - webzip
+    - webzip/4.0
+    - wget
+    - wget/1.5.3
+    - wget/1.6
+    - www-collector-e
+    - xenu's
+    - xenu's link sleuth 1.1c
+    - zeus
+    - zeus 32297 webster pro v2.9 win32
+    - zeus link scout
+    sha256: aee754eebf9c4c851c0a77791078fe90bb7fecfbb0d7095dc7b6b2f363927ce1

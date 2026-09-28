@@ -1,0 +1,103 @@
+# Station registry for one platform. Loaded with every other file in this folder
+# by snowlight.sources.stations.registry; see its docstring for the fields.
+# `snowlight stations robots --update` rewrites the robots blocks in place.
+platform:
+  id: wtop
+  name: WTOP Closings and Delays System (Washington, DC)
+  operator: WTOP (Hubbard Broadcasting)
+  adapter: wtop
+  poll_minutes: 10
+  terms:
+    automated_access: permitted
+    summary: 'WTOP''s Terms of Use (https://wtop.com/terms-of-use/, Hubbard''s template), read 2026-09-27:
+      pages may be viewed for private, noncommercial use; no clause on robots, scraping, crawling or automated
+      access was found.'
+    evidence:
+    - url: https://wtop.com/terms-of-use/
+      read_at: '2026-09-27T06:24:47Z'
+      sha256: 7cf9a8d345c1429b9f8ab393be94c4d155202444d79ff7b813f7ae0d72660606
+      excerpt:
+      - Except where otherwise noted, you may download, print or view individual pages at the Site for
+        private, noncommercial use, provided you do not delete, change or otherwise modify any of the
+        Content, including, but not limited to, any copyright or trademark notices.
+      - (no clause on robots, spiders, scraping, crawling or automated access was found in the page's
+        text)
+    permission: null
+    owner_decision: null
+  notes: WTOP (news radio, Washington, DC) writes its Closings and Delays System into its page (https://wtop.com/closings-and-delays/);
+    the live poller reads the page.
+  shared_paths: []
+stations:
+- id: wtop-wtop
+  platform: wtop
+  call_sign: WTOP
+  name: WTOP News (wtop.com)
+  market: Washington, DC
+  dma: Washington, DC - MD - PA - VA - WV DMA
+  states: [DC, MD, PA, VA, WV]
+  counties:
+    basis: dma
+    source: 'DMA county list: alex-patton/US-TVDMA-BY-COUNTY usa-tvdma-county.csv at commit 7f254b8c1843c62ec976a71c40d366d45f6f29cd
+      (sha256 2e2cd00265a8d704...), names resolved to FIPS with the Census 2025 county Gazetteer; Connecticut
+      via the Census county-to-town crosswalk (snowlight.sources.stations.dma); market ''Washington, DC
+      - MD - PA - VA - WV DMA'''
+    fips: ['11001', '24001', '24009', '24017', '24021', '24031', '24033', '24037', '24043', '42055', '42057',
+      '51013', '51043', '51047', '51059', '51061', '51069', '51099', '51107', '51139', '51153', '51157',
+      '51171', '51177', '51179', '51187', '51193', '51510', '51600', '51610', '51630', '51683', '51685',
+      '51840', '54003', '54023', '54027', '54031', '54037', '54057', '54065']
+  page_url: https://wtop.com/closings-and-delays/
+  data_url: null
+  export_url: null
+  archive_urls:
+  - https://wtop.com/closings-and-delays/
+  - https://wtop.com/closings-and-delays/closings-and-delays-map/
+  poll_minutes: null
+  status: active
+  evidence: 'First-hand check of 2026-09-26 (docs/research/firsthand/others.json, record WTOP; variant
+    wtop-stormdesk). Live read of https://wtop.com/closings-and-delays/ 2026-09-27T05:53:24Z: HTTP 200,
+    141048 bytes; wtop-page, empty. Archived captures read (archive-captures run 36299187602): 2 populated.
+    Archived https://wtop.com/closings-and-delays/ captured 2025-01-06T17:23:28Z: wtop-page, 217 rows
+    (''United States Federal Government'', ''Alexandria City Public Schools'', ...). Archived https://wtop.com/closings-and-delays/
+    captured 2026-03-03T12:54:59Z: wtop-page, 24 rows (''Fairfax County Public Schools'', ''Fauquier County
+    Public Schools'', ...).'
+  list_files: []
+  page_check: null
+  robots:
+  - url: https://wtop.com/closings-and-delays/
+    checked_at: '2026-09-27T07:03:52Z'
+    state: parsed
+    allowed: true
+    rule: no rule matches
+    crawl_delay: null
+    disallowed_agents:
+    - ahrefsbot
+    - amazonbot
+    - amzn-searchbot
+    - awariorssbot
+    - awariosmartbot
+    - baiduspider
+    - bytespider
+    - ccbot
+    - chatgpt-user
+    - claude-searchbot
+    - claude-user
+    - claudebot
+    - criteobot/0.1
+    - dataforseobot
+    - exabot
+    - google-extended
+    - gptbot
+    - imagesiftbot
+    - mj12bot
+    - msrbot
+    - oai-searchbot
+    - petalbot
+    - seekportbot
+    - semrushbot
+    - sentibot
+    - serpstatbot
+    - sogou
+    - trendictionbot
+    - yandexbot
+    - youdaobot
+    sha256: c3641f4748da6292e7180e41154a58d27409fa12da3e1e55685e7fa58e547f00

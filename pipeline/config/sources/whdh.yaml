@@ -1,0 +1,88 @@
+# Station registry for one platform. Loaded with every other file in this folder
+# by snowlight.sources.stations.registry; see its docstring for the fields.
+# `snowlight stations robots --update` rewrites the robots blocks in place.
+platform:
+  id: whdh
+  name: WHDH 7News storm closings and delays (Sunbeam, Boston)
+  operator: Sunbeam Television (WHDH, WLVI)
+  adapter: whdh
+  poll_minutes: 10
+  terms:
+    automated_access: forbidden
+    summary: 'WHDH''s Terms of Service (https://whdh.com/terms-of-service/), read 2026-09-27: users may
+      not ''Use any robot, spider, other automatic device, or manual process to monitor or copy our web
+      pages or the content contained herein, without the prior express consent of an authorized Sunbeam
+      representative.'' The project owner decided on 2026-09-25 to read the closings list anyway for this
+      non-commercial project (owner_decision below); the terms stay recorded here.'
+    evidence:
+    - url: https://whdh.com/terms-of-service/
+      read_at: '2026-09-27T06:25:02Z'
+      sha256: 75a9ad102383578a7b3bf3ffb55982a164cd509653e68d78b08ae11329c360ef
+      excerpt:
+      - Accessing this website in any manner, whether automated or otherwise, constitutes use of the website
+        and your agreement to be bound by these Terms.
+      - Use any robot, spider, other automatic device, or manual process to monitor or copy our web pages
+        or the content contained herein, without the prior express consent of an authorized Sunbeam representative.
+    permission: null
+    owner_decision:
+      decided_by: the project owner (Snowlight)
+      decided_on: '2026-09-25'
+      reference: 'Stated in the build instructions for the station adapters (piece s4c2, round 1): "Terms
+        of use that forbid automated access do not exclude a station: the project owner decided on 2026-09-25
+        to read them for this non-commercial project, so record each station''s terms internally in the
+        registry and read it anyway." The same instructions record the owner''s decision of 2026-09-26
+        to read closings pages and data files even where robots.txt disallows them (naming Sinclair''s
+        /resources/ftptransfer/ files, Allen''s ftp2 files and WVEIS as examples). Relayed to the pipeline''s
+        builder by the project''s build workflow; to revoke it, remove this block and live polling of
+        this platform stops.'
+      scope: 'Live reads of this platform''s public closings lists (the station pages and the list files
+        they frame or load) for Snowlight, a non-commercial project, although the terms above forbid automated
+        access. robots.txt is read and its verdict recorded for every URL requested; the owner decided
+        on 2026-09-26 to read closings pages and files even where robots.txt disallows them. Unchanged
+        by it: the User-Agent names the repository (never a browser string), only the closings page or
+        file is requested (no crawling), requests are paced per host (any Crawl-delay is a floor) with
+        conditional requests and backoff on 429 and 5xx answers, and a station that blocks the project
+        (a 403, or a bot challenge) is not worked around.'
+  notes: WHDH writes its storm closings into its page (https://whdh.com/storm-closings-delays/; /school-closings/
+    redirects there); the live poller reads the page.
+  shared_paths: []
+stations:
+- id: whdh-whdh
+  platform: whdh
+  call_sign: WHDH
+  name: WHDH 7News (whdh.com)
+  market: Boston, MA
+  dma: Boston, MA - NH DMA
+  states: [MA, NH, VT]
+  counties:
+    basis: dma
+    source: 'DMA county list: alex-patton/US-TVDMA-BY-COUNTY usa-tvdma-county.csv at commit 7f254b8c1843c62ec976a71c40d366d45f6f29cd
+      (sha256 2e2cd00265a8d704...), names resolved to FIPS with the Census 2025 county Gazetteer; Connecticut
+      via the Census county-to-town crosswalk (snowlight.sources.stations.dma); market ''Boston, MA -
+      NH DMA'''
+    fips: ['25001', '25007', '25009', '25017', '25019', '25021', '25023', '25025', '25027', '33001', '33005',
+      '33011', '33013', '33015', '33017', '50025']
+  page_url: https://whdh.com/storm-closings-delays/
+  data_url: null
+  export_url: null
+  archive_urls:
+  - https://whdh.com/storm-closings-delays/
+  - https://whdh.com/school-closings/
+  poll_minutes: null
+  status: active
+  evidence: 'First-hand check of 2026-09-26 (docs/research/firsthand/others.json, record WHDH/WLVI; variant
+    whdh-closure-notice). Live read of https://whdh.com/storm-closings-delays/ 2026-09-27T06:09:51Z: HTTP
+    200, 331743 bytes; whdh-closings-block, empty. Archived captures read (archive-captures run 36317643857):
+    1 empty, 1 populated. Archived https://whdh.com/storm-closings-delays/ captured 2026-02-22T21:23:57Z:
+    whdh-closings-block, 379 rows (''Abby Kelley Foster Charter Public School'', ''Abington'', ...).'
+  list_files: []
+  page_check: null
+  robots:
+  - url: https://whdh.com/storm-closings-delays/
+    checked_at: '2026-09-27T07:03:51Z'
+    state: parsed
+    allowed: true
+    rule: no rule matches
+    crawl_delay: null
+    disallowed_agents: []
+    sha256: 6e3e2501c6b4fe322f9e56d43f638276637235a0c8a4e6d566d8d884d0a1501e

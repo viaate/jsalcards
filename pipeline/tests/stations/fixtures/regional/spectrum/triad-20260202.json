@@ -1,0 +1,272 @@
+[
+    {
+        "orgType": "School (K-12)",
+        "closings": [
+            {
+                "status": "Remote Learning Day on Monday",
+                "accountName": "Alamance-Burlington School System",
+                "expires": "02/02/2026"
+            },
+            {
+                "status": "Remote Learning Day on Monday",
+                "accountName": "Asheboro City Schools",
+                "expires": "02/02/2026"
+            },
+            {
+                "status": "Closed on Monday",
+                "accountName": "Caldwell Academy",
+                "expires": "02/02/2026"
+            },
+            {
+                "status": "Closed",
+                "accountName": "Community Baptist Schools",
+                "expires": "02/02/2026"
+            },
+            {
+                "status": "Closed on Monday",
+                "accountName": "Davidson County Schools",
+                "expires": "02/02/2026"
+            },
+            {
+                "status": "Closed on Monday",
+                "accountName": "Davie County Schools",
+                "expires": "02/02/2026"
+            },
+            {
+                "status": "Closed on Monday",
+                "accountName": "Greensboro Day School",
+                "expires": "02/02/2026"
+            },
+            {
+                "status": "Closed on Monday",
+                "accountName": "Greensboro Montessori School",
+                "expires": "02/02/2026"
+            },
+            {
+                "status": "Closed on Monday, After-school activities canceled",
+                "accountName": "Guilford County Schools",
+                "expires": "02/02/2026"
+            },
+            {
+                "status": "Closed",
+                "accountName": "Lexington City Schools",
+                "expires": "02/02/2026"
+            },
+            {
+                "status": "Closed on Monday",
+                "accountName": "Montgomery County Schools",
+                "expires": "02/02/2026"
+            },
+            {
+                "status": "Remote Learning Day on Monday",
+                "accountName": "Mount Airy City Schools",
+                "expires": "02/02/2026"
+            },
+            {
+                "status": "Remote Learning Day on Monday, After-school activities canceled",
+                "accountName": "Our Lady of Mercy School",
+                "expires": "02/02/2026"
+            },
+            {
+                "status": "Remote Learning Day",
+                "accountName": "Randolph County Schools",
+                "expires": "02/02/2026"
+            },
+            {
+                "status": "Closed on Monday, Remote Learning Day",
+                "accountName": "River Mill Academy",
+                "expires": "02/02/2026"
+            },
+            {
+                "status": "Remote Learning Day on Monday",
+                "accountName": "Rockingham County Schools",
+                "expires": "02/03/2026"
+            },
+            {
+                "status": "Closed on Tuesday",
+                "accountName": "Stokes County Schools",
+                "expires": "02/02/2026"
+            },
+            {
+                "status": "Closed on Monday",
+                "accountName": "Surry County Schools",
+                "expires": "02/02/2026"
+            },
+            {
+                "status": "Closed on Monday",
+                "accountName": "Thomasville City Schools",
+                "expires": "02/02/2026"
+            },
+            {
+                "status": "Remote Learning Day on Monday",
+                "accountName": "Westchester Country Day School",
+                "expires": "02/02/2026"
+            },
+            {
+                "status": "Closed on Monday",
+                "accountName": "Wilkes County Schools ",
+                "expires": "02/03/2026"
+            },
+            {
+                "status": "Closed on Monday",
+                "accountName": "Winston-Salem/Forsyth Co. Schools",
+                "expires": "02/02/2026"
+            }
+        ]
+    },
+    {
+        "orgType": "Medical",
+        "closings": [
+            {
+                "status": "Closed on Monday, Offices closed",
+                "accountName": "DeVaney Dentistry at Oak Ridge",
+                "expires": "02/02/2026"
+            },
+            {
+                "status": "Closed on Monday",
+                "accountName": "Kernodle Clinic",
+                "expires": "02/02/2026"
+            },
+            {
+                "status": "Closed on Monday",
+                "accountName": "PACE of the Triad",
+                "expires": "02/02/2026"
+            },
+            {
+                "status": "Adverse Weather Plan for Staff",
+                "accountName": "Randolph Health",
+                "expires": "02/03/2026"
+            }
+        ]
+    },
+    {
+        "orgType": "Church",
+        "closings": [
+            {
+                "status": "Closed",
+                "accountName": "First Baptist Church Lexington ",
+                "expires": "02/02/2026"
+            },
+            {
+                "status": "Closed on Monday",
+                "accountName": "Jamestown United Methodist Church",
+                "expires": "02/02/2026"
+            },
+            {
+                "status": "Closed on Sunday, All Sunday services canceled, No service Sunday",
+                "accountName": "Pinnacle Baptist Church",
+                "expires": "02/02/2026"
+            },
+            {
+                "status": "Closed on Monday, Offices closed",
+                "accountName": "St. Peter's World Outreach Center",
+                "expires": "02/02/2026"
+            }
+        ]
+    },
+    {
+        "orgType": "Government Agency",
+        "closings": [
+            {
+                "status": "Opening at 4:30am, Life-sustaining trips only",
+                "accountName": "Access GSO",
+                "expires": "02/02/2026"
+            },
+            {
+                "status": "Closed on Monday",
+                "accountName": "Alamance  County Courts",
+                "expires": "02/02/2026"
+            },
+            {
+                "status": "Closed on Monday",
+                "accountName": "Greensboro Transit Agency",
+                "expires": "02/02/2026"
+            },
+            {
+                "status": "Closed on Monday",
+                "accountName": "Guilford County Courts",
+                "expires": "02/02/2026"
+            },
+            {
+                "status": "Closed",
+                "accountName": "High Point Housing Authority",
+                "expires": "02/02/2026"
+            },
+            {
+                "status": "Closed on Monday",
+                "accountName": "Randolph Co. Government Offices",
+                "expires": "02/02/2026"
+            },
+            {
+                "status": "Closed on Monday, BOC Meetings Rescheduled",
+                "accountName": "Rockingham County Government",
+                "expires": "02/02/2026"
+            }
+        ]
+    },
+    {
+        "orgType": "Nonprofit / Service",
+        "closings": [
+            {
+                "status": "Closed on Monday",
+                "accountName": "Greensboro Science Center",
+                "expires": "02/02/2026"
+            },
+            {
+                "status": "Closed on Monday",
+                "accountName": "RCATS Montgomery County",
+                "expires": "02/02/2026"
+            },
+            {
+                "status": "Opening at 10:00am",
+                "accountName": "Ragsdale Family YMCA",
+                "expires": "02/02/2026"
+            },
+            {
+                "status": "Closed on Monday",
+                "accountName": "Randolph Senior Adults Association",
+                "expires": "02/02/2026"
+            }
+        ]
+    },
+    {
+        "orgType": "College / University",
+        "closings": [
+            {
+                "status": "Remote Learning Day on Monday, Offices closed",
+                "accountName": "Forsyth Technical Community College",
+                "expires": "02/02/2026"
+            },
+            {
+                "status": "Closed on Monday",
+                "accountName": "Guilford Technical Community College",
+                "expires": "02/02/2026"
+            },
+            {
+                "status": "Virtual/Remote on Monday",
+                "accountName": "Wake Forest University",
+                "expires": "02/02/2026"
+            }
+        ]
+    },
+    {
+        "orgType": "Other",
+        "closings": [
+            {
+                "status": "Closed on Monday",
+                "accountName": "RCATS Randolph County ",
+                "expires": "02/02/2026"
+            }
+        ]
+    },
+    {
+        "orgType": "Business",
+        "closings": [
+            {
+                "status": "Closed on Monday",
+                "accountName": "IFB Solutions",
+                "expires": "02/02/2026"
+            }
+        ]
+    }
+]

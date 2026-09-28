@@ -1,0 +1,102 @@
+[
+    {
+        "orgType": "Medical",
+        "closings": [
+            {
+                "status": "Closed",
+                "accountName": "CaroMont Heart & Vascular - All Locations",
+                "expires": "01/25/2026"
+            }
+        ]
+    },
+    {
+        "orgType": "Church",
+        "closings": [
+            {
+                "status": "Closed on Sunday, All activities cancelled",
+                "accountName": "Connect Christian Church",
+                "expires": "01/25/2026"
+            },
+            {
+                "status": "Closed on Sunday, All Sunday services canceled",
+                "accountName": "Eastside Church of the Nazarene",
+                "expires": "01/25/2026"
+            },
+            {
+                "status": "Closed on Sunday, All activities cancelled",
+                "accountName": "Lee Park Baptist Church",
+                "expires": "01/25/2026"
+            },
+            {
+                "status": "Closed, All Sunday services canceled",
+                "accountName": "Macedonia Baptist Church-Concord",
+                "expires": "01/25/2026"
+            },
+            {
+                "status": "Virtual/Remote on Sunday, Morning services canceled, Youth activities canceled",
+                "accountName": "Meeting Place Church",
+                "expires": "01/25/2026"
+            },
+            {
+                "status": "Closed, All Sunday services canceled",
+                "accountName": "Rockwell A.M.E. Zion Church",
+                "expires": "01/25/2026"
+            },
+            {
+                "status": "Closed, All Sunday services canceled",
+                "accountName": "Silver Mount Baptist Church",
+                "expires": "01/25/2026"
+            },
+            {
+                "status": "Closed on Sunday, All activities cancelled, All Sunday services canceled",
+                "accountName": "Steele Creek Presbyterian Church",
+                "expires": "01/25/2026"
+            },
+            {
+                "status": "Closed on Sunday",
+                "accountName": "The Genesis Church",
+                "expires": "01/25/2026"
+            }
+        ]
+    },
+    {
+        "orgType": "College / University",
+        "closings": [
+            {
+                "status": "Closed, Classes canceled though Monday",
+                "accountName": "UNC Charlotte",
+                "expires": "01/25/2026"
+            }
+        ]
+    },
+    {
+        "orgType": "Other",
+        "closings": [
+            {
+                "status": "Closed on Sunday",
+                "accountName": "NASCAR Hall of Fame",
+                "expires": "01/25/2026"
+            }
+        ]
+    },
+    {
+        "orgType": "Government Agency",
+        "closings": [
+            {
+                "status": "Closed on Sunday",
+                "accountName": "Charlotte Mecklenburg Library",
+                "expires": "01/25/2026"
+            }
+        ]
+    },
+    {
+        "orgType": "School (K-12)",
+        "closings": [
+            {
+                "status": "Closed on Monday",
+                "accountName": "Gaston County Schools",
+                "expires": "01/25/2026"
+            }
+        ]
+    }
+]

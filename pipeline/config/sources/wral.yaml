@@ -1,0 +1,108 @@
+# Station registry for one platform. Loaded with every other file in this folder
+# by snowlight.sources.stations.registry; see its docstring for the fields.
+# `snowlight stations robots --update` rewrites the robots blocks in place.
+platform:
+  id: wral
+  name: WRAL closings (Capitol Broadcasting, Raleigh-Durham)
+  operator: Capitol Broadcasting Company (WRAL)
+  adapter: wral
+  poll_minutes: 10
+  terms:
+    automated_access: permitted
+    summary: No WRAL terms of use were found (https://www.wral.com/terms-of-use/ and /terms/ answered
+      404 on 2026-09-27). No clause on automated access was read. The API's robots.txt answered 404 (unrestricted).
+    evidence:
+    - url: https://www.wral.com/weather/closings/
+      read_at: '2026-09-27T06:20:44Z'
+      sha256: cfe1bb677d2b2695dc281b1edeaf873834c693496acd8ef37f4b1c45fe253f98
+      excerpt:
+      - '(no terms of use were found for the site: the closings application page links no terms; https://www.wral.com/terms-of-use/
+        and https://www.wral.com/terms/ answered HTTP 404 on 2026-09-27)'
+    permission: null
+    owner_decision: null
+  notes: 'WRAL''s closings page is a script application that names its API in a meta tag (closings-api:
+    https://api.wral.com/closings) and reads the active closings from /v1/; the live poller reads https://api.wral.com/closings/v1/
+    (HTTP 200 {"count":0,"closings":[]} on 2026-09-27). The application''s admin, portal and TV-feed routes
+    are never requested.'
+  shared_paths: []
+stations:
+- id: wral-wral
+  platform: wral
+  call_sign: WRAL
+  name: WRAL (wral.com)
+  market: Raleigh - Durham, NC
+  dma: Raleigh - Durham, NC - VA DMA
+  states: [NC, VA]
+  counties:
+    basis: dma
+    source: 'DMA county list: alex-patton/US-TVDMA-BY-COUNTY usa-tvdma-county.csv at commit 7f254b8c1843c62ec976a71c40d366d45f6f29cd
+      (sha256 2e2cd00265a8d704...), names resolved to FIPS with the Census 2025 county Gazetteer; Connecticut
+      via the Census county-to-town crosswalk (snowlight.sources.stations.dma); market ''Raleigh - Durham,
+      NC - VA DMA'''
+    fips: ['37037', '37051', '37063', '37065', '37069', '37077', '37083', '37085', '37093', '37101', '37105',
+      '37125', '37127', '37131', '37135', '37145', '37163', '37181', '37183', '37185', '37191', '37195',
+      '51117']
+  page_url: https://www.wral.com/weather/closings/
+  data_url: https://api.wral.com/closings/v1/
+  export_url: null
+  archive_urls:
+  - https://www.wral.com/weather/closings/
+  - https://api.wral.com/closings/v1/
+  poll_minutes: null
+  status: active
+  evidence: 'First-hand check of 2026-09-26 (docs/research/firsthand/others.json, record WRAL; variant
+    wral-closings-api). Live read of https://www.wral.com/weather/closings/ 2026-09-27T06:20:44Z: HTTP
+    200, 8522 bytes; wral-app-page, deferred, loads https://api.wral.com/closings/v1/. Live read of https://api.wral.com/closings/v1/
+    2026-09-27T05:53:13Z: HTTP 200, 25 bytes; wral-api, empty. Archived captures read (archive-captures
+    run 36324857670): 4 populated. Archived https://www.wral.com/weather/closings/ captured 2022-01-21T15:26:35Z:
+    wral-page-table, 485 rows (''1st Bapt Academy/Raeford'', ''1st Bapt Ch/Raleigh, Salisbury St'', ...).
+    Archived https://www.wral.com/weather/closings/?v3_show_only_content=1 captured 2025-02-19T09:35:27Z:
+    wral-page-table, 418 rows (''1st Bapt Ch/Smithfield'', ''1st Place Academy/Creedmoor'', ...).'
+  list_files:
+  - url: https://api.wral.com/closings/v1/
+    loaded_by: script
+    seen: The closings application reads it (meta closings-api https://api.wral.com/closings, route /v1/
+      in its bundle closings/v0.1.13/assets/index-BRqO2Ll0.js; live read 2026-09-27).
+  page_check: null
+  robots:
+  - url: https://www.wral.com/weather/closings/
+    checked_at: '2026-09-27T07:03:52Z'
+    state: parsed
+    allowed: true
+    rule: no rule matches
+    crawl_delay: null
+    disallowed_agents:
+    - ai2bot
+    - amazonbot
+    - applebot-extended
+    - awariorssbot
+    - awariosmartbot
+    - bytespider
+    - ccbot
+    - claudebot
+    - cohere-ai
+    - cohere-training-data-crawler
+    - diffbot
+    - google-extended
+    - gptbot
+    - magpie-crawler
+    - meltwater
+    - meta-externalagent
+    - news-please
+    - newsnow
+    - omgili
+    - omgilibot
+    - pangubot
+    - scrapy
+    - tiktokspider
+    - timpibot
+    - webzio-extended
+    sha256: 1c83d3ec12c13d8e390d14359c4564aeda536250f771a5aa41b26de88c23739d
+  - url: https://api.wral.com/closings/v1/
+    checked_at: '2026-09-27T07:03:52Z'
+    state: unavailable
+    allowed: true
+    rule: 'robots.txt unavailable (4xx): unrestricted'
+    crawl_delay: null
+    disallowed_agents: []
+    sha256: null

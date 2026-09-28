@@ -1,0 +1,106 @@
+# Station registry for one platform. Loaded with every other file in this folder
+# by snowlight.sources.stations.registry; see its docstring for the fields.
+# `snowlight stations robots --update` rewrites the robots blocks in place.
+platform:
+  id: townsquare
+  name: New Jersey 101.5 statewide closings (Townsquare Media)
+  operator: Townsquare Media (WKXW New Jersey 101.5)
+  adapter: townsquare
+  poll_minutes: 10
+  terms:
+    automated_access: forbidden
+    summary: Townsquare's terms (https://nj1015.com/terms/, read 2026-09-27) say the sites are for users'
+      personal use and that 'Any automated use of the system, such as using scripts, is prohibited.' (The
+      first-hand check of 2026-09-26 found no such clause; it is there.) The project owner decided on
+      2026-09-25 to read the closings lists anyway for this non-commercial project (owner_decision below);
+      the terms stay recorded here.
+    evidence:
+    - url: https://nj1015.com/terms/
+      read_at: '2026-09-27T06:24:57Z'
+      sha256: 5031d2b27ab752db93e8744870d7790395340e729190949fac290e7d9063f80a
+      excerpt:
+      - Non Commercial Use The Websites is for the personal use of our users only and may not be used
+        in connection with any commercial endeavors except those that are specifically endorsed or approved
+        by the management of Townsquare.
+      - (h) Any automated use of the system, such as using scripts, is prohibited.
+    permission: null
+    owner_decision:
+      decided_by: the project owner (Snowlight)
+      decided_on: '2026-09-25'
+      reference: 'Stated in the build instructions for the station adapters (piece s4c2, round 1): "Terms
+        of use that forbid automated access do not exclude a station: the project owner decided on 2026-09-25
+        to read them for this non-commercial project, so record each station''s terms internally in the
+        registry and read it anyway." The same instructions record the owner''s decision of 2026-09-26
+        to read closings pages and data files even where robots.txt disallows them (naming Sinclair''s
+        /resources/ftptransfer/ files, Allen''s ftp2 files and WVEIS as examples). Relayed to the pipeline''s
+        builder by the project''s build workflow; to revoke it, remove this block and live polling of
+        this platform stops.'
+      scope: 'Live reads of this platform''s public closings lists (the station pages and the list files
+        they frame or load) for Snowlight, a non-commercial project, although the terms above forbid automated
+        access. robots.txt is read and its verdict recorded for every URL requested; the owner decided
+        on 2026-09-26 to read closings pages and files even where robots.txt disallows them. Unchanged
+        by it: the User-Agent names the repository (never a browser string), only the closings page or
+        file is requested (no crawling), requests are paced per host (any Crawl-delay is a floor) with
+        conditional requests and backoff on 429 and 5xx answers, and a station that blocks the project
+        (a 403, or a bot challenge) is not worked around.'
+  notes: 'Found by the first-hand check of 2026-09-26: NJ 101.5''s closings page (https://nj1015.com/closings/),
+    which calls itself the statewide source for closings, frames /wp-content/uploads/njclosings/ByCountyclosings.html,
+    a list arranged by county; the live poller reads the file. Counties: New Jersey statewide (every county).
+    Other Townsquare sites checked have no working list (wgna.com frames a dead URL; wnbf.com, wibx950.com
+    and kfyo.com have none).'
+  shared_paths: []
+stations:
+- id: townsquare-wkxw
+  platform: townsquare
+  call_sign: WKXW
+  name: New Jersey 101.5 (nj1015.com)
+  market: New Jersey
+  dma: null
+  states: [NJ]
+  counties:
+    basis: state
+    source: 'Statewide list: every county of NJ in the Census 2025 county Gazetteer (2025_Gaz_counties_national.zip,
+      as snowlight.sources.stations.dma reads it); the list is New Jersey 101.5''s statewide by-county
+      closings file (the page calls itself ''the statewide source for closings'')'
+    fips: ['34001', '34003', '34005', '34007', '34009', '34011', '34013', '34015', '34017', '34019', '34021',
+      '34023', '34025', '34027', '34029', '34031', '34033', '34035', '34037', '34039', '34041']
+  page_url: https://nj1015.com/closings/
+  data_url: https://nj1015.com/wp-content/uploads/njclosings/ByCountyclosings.html
+  export_url: null
+  archive_urls:
+  - https://nj1015.com/closings/
+  - https://nj1015.com/wp-content/uploads/njclosings/ByCountyclosings.html
+  poll_minutes: null
+  status: active
+  evidence: 'First-hand check of 2026-09-26 (docs/research/firsthand/others.json, record NJ 101.5; variant
+    townsquare-njclosings). Live read of https://nj1015.com/closings/ 2026-09-27T06:21:09Z: HTTP 200,
+    204691 bytes; townsquare-page, deferred, loads /wp-content/uploads/njclosings/ByCountyclosings.html.
+    Live read of https://nj1015.com/wp-content/uploads/njclosings/ByCountyclosings.html 2026-09-27T05:52:52Z:
+    HTTP 200, 428 bytes; townsquare-closings-table, empty. Archived captures read (archive-captures runs
+    36317643857, 36324857670, 36338052203): 3 deferred, 1 empty, 2 populated. Archived http://nj1015.com/wp-content/uploads/njclosings/ByCountyclosings.html
+    captured 2015-03-05T03:42:49Z: townsquare-closings-table, 185 rows (''ESTELL MANOR PUBLIC SCHOOLS'',
+    ''Folsom Elementary School'', ...). Archived https://nj1015.com/wp-content/uploads/njclosings/ByCountyclosings.html
+    captured 2025-12-27T04:31:07Z: townsquare-closings-table, 1 rows (''Amboy Bank-Old Bridge'').'
+  list_files:
+  - url: https://nj1015.com/wp-content/uploads/njclosings/ByCountyclosings.html
+    loaded_by: frame
+    seen: The closings page's post body frames it (<iframe src="/wp-content/uploads/njclosings/ByCountyclosings.html">;
+      live read 2026-09-27).
+  page_check: null
+  robots:
+  - url: https://nj1015.com/closings/
+    checked_at: '2026-09-27T07:03:49Z'
+    state: parsed
+    allowed: true
+    rule: no rule matches
+    crawl_delay: null
+    disallowed_agents: []
+    sha256: 5e564ff03956a90dd4442503920c19b35547fb242b37eddbf24d5f9fb6e374bd
+  - url: https://nj1015.com/wp-content/uploads/njclosings/ByCountyclosings.html
+    checked_at: '2026-09-27T07:03:49Z'
+    state: parsed
+    allowed: true
+    rule: 'Allow: /wp-content/uploads'
+    crawl_delay: null
+    disallowed_agents: []
+    sha256: 5e564ff03956a90dd4442503920c19b35547fb242b37eddbf24d5f9fb6e374bd

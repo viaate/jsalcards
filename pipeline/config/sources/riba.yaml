@@ -1,0 +1,67 @@
+# Station registry for one platform. Loaded with every other file in this folder
+# by snowlight.sources.stations.registry; see its docstring for the fields.
+# `snowlight stations robots --update` rewrites the robots blocks in place.
+platform:
+  id: riba
+  name: Rhode Island Broadcasters Association closings and delays
+  operator: Rhode Island Broadcasters Association
+  adapter: newsticker
+  poll_minutes: 10
+  terms:
+    automated_access: permitted
+    summary: ribroadcasters.com links no terms of use (https://www.ribroadcasters.com/terms-of-use/ answered
+      404 on 2026-09-27). No clause on automated access was found.
+    evidence:
+    - url: https://www.ribroadcasters.com/news_and_events/closings_delays/
+      read_at: '2026-09-27T06:09:46Z'
+      sha256: null
+      excerpt:
+      - '(no terms of use were found for the site: the closings page links no terms; https://www.ribroadcasters.com/terms-of-use/
+        answered HTTP 404 on 2026-09-27)'
+    permission: null
+    owner_decision: null
+  notes: 'Rhode Island''s shared closings list, run by the state broadcasters'' association and framed
+    by WJAR (turnto10.com/weather/closings); the page is a NewsTicker export, which the live poller reads
+    (populated on 2026-09-26 and 2026-09-27). Counties: Rhode Island statewide (every county); its Massachusetts
+    rows (Seekonk and the like) are not counted.'
+  shared_paths: []
+stations:
+- id: riba-statewide
+  platform: riba
+  call_sign: RIBA
+  name: RIBA closings and delays (ribroadcasters.com)
+  market: Rhode Island
+  dma: null
+  states: [RI]
+  counties:
+    basis: state
+    source: 'Statewide list: every county of RI in the Census 2025 county Gazetteer (2025_Gaz_counties_national.zip,
+      as snowlight.sources.stations.dma reads it); the list is the Rhode Island Broadcasters Association''s
+      statewide closings list (groups such as RI PUBLIC SCHOOLS)'
+    fips: ['44001', '44003', '44005', '44007', '44009']
+  page_url: https://www.ribroadcasters.com/news_and_events/closings_delays/
+  data_url: null
+  export_url: null
+  archive_urls:
+  - https://www.ribroadcasters.com/news_and_events/closings_delays/
+  poll_minutes: null
+  status: active
+  evidence: 'First-hand check of 2026-09-26 (docs/research/firsthand/others.json, record RIBA; variant
+    riba-newsticker). Live read of https://www.ribroadcasters.com/news_and_events/closings_delays/ 2026-09-27T06:09:46Z:
+    HTTP 200, 3545 bytes; newsticker-html, populated, 11 rows (''Roger Williams Park Zoo'', ''Apponaug
+    Pentacostal Church'', ...). Archived captures read (archive-captures run 36317643857): 2 populated.
+    Archived https://ribroadcasters.com/news_and_events/closings_delays/ captured 2026-01-26T11:39:53Z:
+    newsticker-html, 586 rows (''Barrington Pub. Schools'', ''Bristol-Warren Pub Schools'', ...). Archived
+    https://www.ribroadcasters.com/News_and_Events/Closings_Delays/ captured 2025-01-20T13:56:19Z: newsticker-html,
+    42 rows (''Eleanor Briggs School'', ''Prov. Hebrew Day'', ...).'
+  list_files: []
+  page_check: null
+  robots:
+  - url: https://www.ribroadcasters.com/news_and_events/closings_delays/
+    checked_at: '2026-09-27T07:03:35Z'
+    state: parsed
+    allowed: true
+    rule: no rule matches
+    crawl_delay: null
+    disallowed_agents: []
+    sha256: 482150fe5389ae45422fe0a160d9a35cbc5bcf3262f8d37206f000fc9b23f639

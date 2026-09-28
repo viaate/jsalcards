@@ -1,0 +1,1075 @@
+# Station registry for one platform. Loaded with every other file in this folder
+# by snowlight.sources.stations.registry; see its docstring for the fields.
+# `snowlight stations robots --update` rewrites the robots blocks in place.
+platform:
+  id: spectrum
+  name: Spectrum News 1 closings (one JSON file per viewing area)
+  operator: Charter Communications (Spectrum News)
+  adapter: spectrum
+  poll_minutes: 10
+  terms:
+    automated_access: permitted
+    summary: 'spectrumlocalnews.com links no site terms of use: its footer''s terms link is the Spectrum
+      cable service''s residential terms (https://www.spectrum.com/policies/residential-terms.html, which
+      timed out to this pipeline on 2026-09-27), and https://spectrumlocalnews.com/terms-of-use answered
+      404. No clause on automated access was found. robots.txt sets Crawl-delay 1 (a pacing floor) and
+      disallows /nyc/*, /ny/* and /content/news/* among others; the closings files are allowed.'
+    evidence:
+    - url: https://spectrumlocalnews.com/nys/capital-region/weather/closings
+      read_at: '2026-09-27T06:18:45Z'
+      sha256: null
+      excerpt:
+      - '(no terms of use were found for the site: the page''s footer links only the cable service''s
+        residential terms and privacy policies; https://spectrumlocalnews.com/terms-of-use answered HTTP
+        404 on 2026-09-27)'
+    permission: null
+    owner_decision: null
+  notes: 'Found by the first-hand check of 2026-09-26: each Spectrum News 1 region''s closings page carries
+    the region''s id (data-ravenid) and its script reads /services/closings.{ravenid}.json, which the
+    live poller reads (all eleven answered HTTP 200 ''[ ]'' on 2026-09-27). Northern NY''s and the Southern
+    Tier''s closings addresses are 404, and NY1 (New York City) is disallowed by robots.txt and has no
+    closings list. Counties: each region is given the one Nielsen market it serves (Spectrum News 1 is
+    a cable channel, not a broadcast station, so this is the market of the region''s cities); Coastal
+    NC is given the Wilmington market only (its Greenville - New Bern towns are not counted), and Hudson
+    Valley the New York market.'
+  shared_paths: []
+stations:
+- id: spectrum-albany
+  platform: spectrum
+  call_sign: SN1-ALB
+  name: Spectrum News 1 Capital Region (Albany)
+  market: Capital Region, NY
+  dma: Albany - Schenectady - Troy, NY - MA - VT DMA
+  states: [MA, NY, VT]
+  counties:
+    basis: dma
+    source: 'DMA county list: alex-patton/US-TVDMA-BY-COUNTY usa-tvdma-county.csv at commit 7f254b8c1843c62ec976a71c40d366d45f6f29cd
+      (sha256 2e2cd00265a8d704...), names resolved to FIPS with the Census 2025 county Gazetteer; Connecticut
+      via the Census county-to-town crosswalk (snowlight.sources.stations.dma); market ''Albany - Schenectady
+      - Troy, NY - MA - VT DMA'''
+    fips: ['25003', '36001', '36021', '36035', '36039', '36041', '36057', '36083', '36091', '36093', '36095',
+      '36113', '36115', '50003']
+  page_url: https://spectrumlocalnews.com/nys/capital-region/weather/closings
+  data_url: https://spectrumlocalnews.com/services/closings.54e4ffc9ceafc43649b4dae9.json
+  export_url: null
+  archive_urls:
+  - https://spectrumlocalnews.com/nys/capital-region/weather/closings
+  - https://spectrumlocalnews.com/services/closings.54e4ffc9ceafc43649b4dae9.json
+  poll_minutes: null
+  status: active
+  evidence: 'First-hand check of 2026-09-26 (docs/research/firsthand/others.json, record Spectrum News
+    1 Capital Region (Albany); variant spectrum-raven-json). Live read of https://spectrumlocalnews.com/nys/capital-region/weather/closings
+    2026-09-27T06:18:45Z: HTTP 200, 74331 bytes; spectrum-page, deferred, loads /services/closings.54e4ffc9ceafc43649b4dae9.json.
+    Live read of https://spectrumlocalnews.com/services/closings.54e4ffc9ceafc43649b4dae9.json 2026-09-27T05:51:22Z:
+    HTTP 200, 8 bytes; spectrum-json, empty. Archived captures read (archive-captures run 36299187602):
+    1 empty, 1 populated. Archived https://spectrumlocalnews.com/services/closings.54e4ffc9ceafc43649b4dae9.json
+    captured 2026-01-28T07:25:41Z: spectrum-json, 103 rows (''Albany Academy'', ''Blessed Sacrament School'',
+    ...).'
+  list_files:
+  - url: https://spectrumlocalnews.com/services/closings.54e4ffc9ceafc43649b4dae9.json
+    loaded_by: script
+    seen: The region's page carries data-ravenid="54e4ffc9ceafc43649b4dae9" and its closings script reads
+      this file (first-hand check 2026-09-26; live read 2026-09-27).
+  page_check: null
+  robots:
+  - url: https://spectrumlocalnews.com/nys/capital-region/weather/closings
+    checked_at: '2026-09-27T07:03:49Z'
+    state: parsed
+    allowed: true
+    rule: no rule matches
+    crawl_delay: 1.0
+    disallowed_agents:
+    - ai2bot
+    - amazonbot
+    - anthropic-ai
+    - anthropicbot
+    - applebot-extended
+    - bytespider
+    - ccbot
+    - chatgpt
+    - claude-web
+    - claudebot
+    - cohere-ai
+    - diffbot
+    - google-extended
+    - gptbot
+    - meta-externalagent
+    - mistralai-user
+    - omgili
+    - perplexitybot
+    - petalbot
+    - timpibot
+    - yeti
+    sha256: 9b1518412fc514f0858ba4e31691afe80f53be23c51ce93e497d4f71f215defc
+  - url: https://spectrumlocalnews.com/services/closings.54e4ffc9ceafc43649b4dae9.json
+    checked_at: '2026-09-27T07:03:49Z'
+    state: parsed
+    allowed: true
+    rule: no rule matches
+    crawl_delay: 1.0
+    disallowed_agents:
+    - ai2bot
+    - amazonbot
+    - anthropic-ai
+    - anthropicbot
+    - applebot-extended
+    - bytespider
+    - ccbot
+    - chatgpt
+    - claude-web
+    - claudebot
+    - cohere-ai
+    - diffbot
+    - google-extended
+    - gptbot
+    - meta-externalagent
+    - mistralai-user
+    - omgili
+    - perplexitybot
+    - petalbot
+    - timpibot
+    - yeti
+    sha256: 9b1518412fc514f0858ba4e31691afe80f53be23c51ce93e497d4f71f215defc
+- id: spectrum-syracuse
+  platform: spectrum
+  call_sign: SN1-SYR
+  name: Spectrum News 1 Central NY (Syracuse)
+  market: Central New York
+  dma: Syracuse, NY DMA*
+  states: [NY]
+  counties:
+    basis: dma
+    source: 'DMA county list: alex-patton/US-TVDMA-BY-COUNTY usa-tvdma-county.csv at commit 7f254b8c1843c62ec976a71c40d366d45f6f29cd
+      (sha256 2e2cd00265a8d704...), names resolved to FIPS with the Census 2025 county Gazetteer; Connecticut
+      via the Census county-to-town crosswalk (snowlight.sources.stations.dma); market ''Syracuse, NY
+      DMA*'''
+    fips: ['36011', '36023', '36053', '36067', '36075', '36099', '36109']
+  page_url: https://spectrumlocalnews.com/nys/central-ny/weather/closings
+  data_url: https://spectrumlocalnews.com/services/closings.54e5003cceafc43649b4daed.json
+  export_url: null
+  archive_urls:
+  - https://spectrumlocalnews.com/nys/central-ny/weather/closings
+  - https://spectrumlocalnews.com/services/closings.54e5003cceafc43649b4daed.json
+  poll_minutes: null
+  status: active
+  evidence: 'First-hand check of 2026-09-26 (docs/research/firsthand/others.json, record Spectrum News
+    1 Central NY (Syracuse); variant spectrum-raven-json). Live read of https://spectrumlocalnews.com/services/closings.54e5003cceafc43649b4daed.json
+    2026-09-27T05:51:27Z: HTTP 200, 8 bytes; spectrum-json, empty. Archived captures read (archive-captures
+    run 36299187602): 1 empty, 1 populated. Archived https://spectrumlocalnews.com/services/closings.54e5003cceafc43649b4daed.json
+    captured 2024-12-04T22:20:34Z: spectrum-json, 9 rows (''Adirondack CSD'', ''Camden CSD'', ...).'
+  list_files:
+  - url: https://spectrumlocalnews.com/services/closings.54e5003cceafc43649b4daed.json
+    loaded_by: script
+    seen: The region's page carries data-ravenid="54e5003cceafc43649b4daed" and its closings script reads
+      this file (first-hand check 2026-09-26; live read 2026-09-27).
+  page_check: null
+  robots:
+  - url: https://spectrumlocalnews.com/nys/central-ny/weather/closings
+    checked_at: '2026-09-27T07:03:49Z'
+    state: parsed
+    allowed: true
+    rule: no rule matches
+    crawl_delay: 1.0
+    disallowed_agents:
+    - ai2bot
+    - amazonbot
+    - anthropic-ai
+    - anthropicbot
+    - applebot-extended
+    - bytespider
+    - ccbot
+    - chatgpt
+    - claude-web
+    - claudebot
+    - cohere-ai
+    - diffbot
+    - google-extended
+    - gptbot
+    - meta-externalagent
+    - mistralai-user
+    - omgili
+    - perplexitybot
+    - petalbot
+    - timpibot
+    - yeti
+    sha256: 9b1518412fc514f0858ba4e31691afe80f53be23c51ce93e497d4f71f215defc
+  - url: https://spectrumlocalnews.com/services/closings.54e5003cceafc43649b4daed.json
+    checked_at: '2026-09-27T07:03:49Z'
+    state: parsed
+    allowed: true
+    rule: no rule matches
+    crawl_delay: 1.0
+    disallowed_agents:
+    - ai2bot
+    - amazonbot
+    - anthropic-ai
+    - anthropicbot
+    - applebot-extended
+    - bytespider
+    - ccbot
+    - chatgpt
+    - claude-web
+    - claudebot
+    - cohere-ai
+    - diffbot
+    - google-extended
+    - gptbot
+    - meta-externalagent
+    - mistralai-user
+    - omgili
+    - perplexitybot
+    - petalbot
+    - timpibot
+    - yeti
+    sha256: 9b1518412fc514f0858ba4e31691afe80f53be23c51ce93e497d4f71f215defc
+- id: spectrum-rochester
+  platform: spectrum
+  call_sign: SN1-ROC
+  name: Spectrum News 1 Rochester
+  market: Rochester, NY
+  dma: Rochester, NY DMA
+  states: [NY]
+  counties:
+    basis: dma
+    source: 'DMA county list: alex-patton/US-TVDMA-BY-COUNTY usa-tvdma-county.csv at commit 7f254b8c1843c62ec976a71c40d366d45f6f29cd
+      (sha256 2e2cd00265a8d704...), names resolved to FIPS with the Census 2025 county Gazetteer; Connecticut
+      via the Census county-to-town crosswalk (snowlight.sources.stations.dma); market ''Rochester, NY
+      DMA'''
+    fips: ['36051', '36055', '36069', '36117', '36123']
+  page_url: https://spectrumlocalnews.com/nys/rochester/weather/closings
+  data_url: https://spectrumlocalnews.com/services/closings.54e50069ceafc43649b4daf0.json
+  export_url: null
+  archive_urls:
+  - https://spectrumlocalnews.com/nys/rochester/weather/closings
+  - https://spectrumlocalnews.com/services/closings.54e50069ceafc43649b4daf0.json
+  poll_minutes: null
+  status: active
+  evidence: 'First-hand check of 2026-09-26 (docs/research/firsthand/others.json, record Spectrum News
+    1 Rochester; variant spectrum-raven-json). Live read of https://spectrumlocalnews.com/services/closings.54e50069ceafc43649b4daf0.json
+    2026-09-27T05:51:32Z: HTTP 200, 8 bytes; spectrum-json, empty. Archived captures read (archive-captures
+    run 36299187602): 1 empty, 1 populated. Archived https://spectrumlocalnews.com/services/closings.54e50069ceafc43649b4daf0.json
+    captured 2026-01-15T06:56:10Z: spectrum-json, 30 rows (''Albion Central'', ''Archangel School'', ...).'
+  list_files:
+  - url: https://spectrumlocalnews.com/services/closings.54e50069ceafc43649b4daf0.json
+    loaded_by: script
+    seen: The region's page carries data-ravenid="54e50069ceafc43649b4daf0" and its closings script reads
+      this file (first-hand check 2026-09-26; live read 2026-09-27).
+  page_check: null
+  robots:
+  - url: https://spectrumlocalnews.com/nys/rochester/weather/closings
+    checked_at: '2026-09-27T07:03:49Z'
+    state: parsed
+    allowed: true
+    rule: no rule matches
+    crawl_delay: 1.0
+    disallowed_agents:
+    - ai2bot
+    - amazonbot
+    - anthropic-ai
+    - anthropicbot
+    - applebot-extended
+    - bytespider
+    - ccbot
+    - chatgpt
+    - claude-web
+    - claudebot
+    - cohere-ai
+    - diffbot
+    - google-extended
+    - gptbot
+    - meta-externalagent
+    - mistralai-user
+    - omgili
+    - perplexitybot
+    - petalbot
+    - timpibot
+    - yeti
+    sha256: 9b1518412fc514f0858ba4e31691afe80f53be23c51ce93e497d4f71f215defc
+  - url: https://spectrumlocalnews.com/services/closings.54e50069ceafc43649b4daf0.json
+    checked_at: '2026-09-27T07:03:49Z'
+    state: parsed
+    allowed: true
+    rule: no rule matches
+    crawl_delay: 1.0
+    disallowed_agents:
+    - ai2bot
+    - amazonbot
+    - anthropic-ai
+    - anthropicbot
+    - applebot-extended
+    - bytespider
+    - ccbot
+    - chatgpt
+    - claude-web
+    - claudebot
+    - cohere-ai
+    - diffbot
+    - google-extended
+    - gptbot
+    - meta-externalagent
+    - mistralai-user
+    - omgili
+    - perplexitybot
+    - petalbot
+    - timpibot
+    - yeti
+    sha256: 9b1518412fc514f0858ba4e31691afe80f53be23c51ce93e497d4f71f215defc
+- id: spectrum-buffalo
+  platform: spectrum
+  call_sign: SN1-BUF
+  name: Spectrum News 1 Buffalo
+  market: Buffalo, NY
+  dma: Buffalo, NY - PA DMA
+  states: [NY, PA]
+  counties:
+    basis: dma
+    source: 'DMA county list: alex-patton/US-TVDMA-BY-COUNTY usa-tvdma-county.csv at commit 7f254b8c1843c62ec976a71c40d366d45f6f29cd
+      (sha256 2e2cd00265a8d704...), names resolved to FIPS with the Census 2025 county Gazetteer; Connecticut
+      via the Census county-to-town crosswalk (snowlight.sources.stations.dma); market ''Buffalo, NY -
+      PA DMA'''
+    fips: ['36003', '36009', '36013', '36029', '36037', '36063', '36073', '36121', '42083', '42105']
+  page_url: https://spectrumlocalnews.com/nys/buffalo/weather/closings
+  data_url: https://spectrumlocalnews.com/services/closings.54e50077ceafc43649b4daf1.json
+  export_url: null
+  archive_urls:
+  - https://spectrumlocalnews.com/nys/buffalo/weather/closings
+  - https://spectrumlocalnews.com/services/closings.54e50077ceafc43649b4daf1.json
+  poll_minutes: null
+  status: active
+  evidence: 'First-hand check of 2026-09-26 (docs/research/firsthand/others.json, record Spectrum News
+    1 Buffalo; variant spectrum-raven-json). Live read of https://spectrumlocalnews.com/services/closings.54e50077ceafc43649b4daf1.json
+    2026-09-27T05:51:37Z: HTTP 200, 8 bytes; spectrum-json, empty. Archived captures read (archive-captures
+    run 36299187602): 1 empty, 1 populated. Archived https://spectrumlocalnews.com/services/closings.54e50077ceafc43649b4daf1.json
+    captured 2025-01-21T17:16:55Z: spectrum-json, 69 rows (''Buffalo City Hall'', ''Cattaraugus Territory'',
+    ...).'
+  list_files:
+  - url: https://spectrumlocalnews.com/services/closings.54e50077ceafc43649b4daf1.json
+    loaded_by: script
+    seen: The region's page carries data-ravenid="54e50077ceafc43649b4daf1" and its closings script reads
+      this file (first-hand check 2026-09-26; live read 2026-09-27).
+  page_check: null
+  robots:
+  - url: https://spectrumlocalnews.com/nys/buffalo/weather/closings
+    checked_at: '2026-09-27T07:03:49Z'
+    state: parsed
+    allowed: true
+    rule: no rule matches
+    crawl_delay: 1.0
+    disallowed_agents:
+    - ai2bot
+    - amazonbot
+    - anthropic-ai
+    - anthropicbot
+    - applebot-extended
+    - bytespider
+    - ccbot
+    - chatgpt
+    - claude-web
+    - claudebot
+    - cohere-ai
+    - diffbot
+    - google-extended
+    - gptbot
+    - meta-externalagent
+    - mistralai-user
+    - omgili
+    - perplexitybot
+    - petalbot
+    - timpibot
+    - yeti
+    sha256: 9b1518412fc514f0858ba4e31691afe80f53be23c51ce93e497d4f71f215defc
+  - url: https://spectrumlocalnews.com/services/closings.54e50077ceafc43649b4daf1.json
+    checked_at: '2026-09-27T07:03:49Z'
+    state: parsed
+    allowed: true
+    rule: no rule matches
+    crawl_delay: 1.0
+    disallowed_agents:
+    - ai2bot
+    - amazonbot
+    - anthropic-ai
+    - anthropicbot
+    - applebot-extended
+    - bytespider
+    - ccbot
+    - chatgpt
+    - claude-web
+    - claudebot
+    - cohere-ai
+    - diffbot
+    - google-extended
+    - gptbot
+    - meta-externalagent
+    - mistralai-user
+    - omgili
+    - perplexitybot
+    - petalbot
+    - timpibot
+    - yeti
+    sha256: 9b1518412fc514f0858ba4e31691afe80f53be23c51ce93e497d4f71f215defc
+- id: spectrum-hudson-valley
+  platform: spectrum
+  call_sign: SN1-HV
+  name: Spectrum News 1 Hudson Valley
+  market: Hudson Valley, NY
+  dma: New York, NY - CT - NJ - PA DMA
+  states: [CT, NJ, NY, PA]
+  counties:
+    basis: dma
+    source: 'DMA county list: alex-patton/US-TVDMA-BY-COUNTY usa-tvdma-county.csv at commit 7f254b8c1843c62ec976a71c40d366d45f6f29cd
+      (sha256 2e2cd00265a8d704...), names resolved to FIPS with the Census 2025 county Gazetteer; Connecticut
+      via the Census county-to-town crosswalk (snowlight.sources.stations.dma); market ''New York, NY
+      - CT - NJ - PA DMA'''
+    fips: [09120, 09140, 09190, '34003', '34013', '34017', '34019', '34023', '34025', '34027', '34029',
+      '34031', '34035', '34037', '34039', '34041', '36005', '36027', '36047', '36059', '36061', '36071',
+      '36079', '36081', '36085', '36087', '36103', '36105', '36111', '36119', '42103']
+  page_url: https://spectrumlocalnews.com/nys/hudson-valley/weather/closings
+  data_url: https://spectrumlocalnews.com/services/closings.54e4ffd8ceafc43649b4daea.json
+  export_url: null
+  archive_urls:
+  - https://spectrumlocalnews.com/nys/hudson-valley/weather/closings
+  - https://spectrumlocalnews.com/services/closings.54e4ffd8ceafc43649b4daea.json
+  poll_minutes: null
+  status: active
+  evidence: 'First-hand check of 2026-09-26 (docs/research/firsthand/others.json, record Spectrum News
+    1 Hudson Valley; variant spectrum-raven-json). Live read of https://spectrumlocalnews.com/services/closings.54e4ffd8ceafc43649b4daea.json
+    2026-09-27T05:51:42Z: HTTP 200, 8 bytes; spectrum-json, empty. Archived captures read (archive-captures
+    run 36299187602): 1 empty, 1 populated. Archived https://spectrumlocalnews.com/services/closings.54e4ffd8ceafc43649b4daea.json
+    captured 2025-02-06T09:29:33Z: spectrum-json, 14 rows (''Beacon City School'', ''Eldred Central School
+    District'', ...).'
+  list_files:
+  - url: https://spectrumlocalnews.com/services/closings.54e4ffd8ceafc43649b4daea.json
+    loaded_by: script
+    seen: The region's page carries data-ravenid="54e4ffd8ceafc43649b4daea" and its closings script reads
+      this file (first-hand check 2026-09-26; live read 2026-09-27).
+  page_check: null
+  robots:
+  - url: https://spectrumlocalnews.com/nys/hudson-valley/weather/closings
+    checked_at: '2026-09-27T07:03:49Z'
+    state: parsed
+    allowed: true
+    rule: no rule matches
+    crawl_delay: 1.0
+    disallowed_agents:
+    - ai2bot
+    - amazonbot
+    - anthropic-ai
+    - anthropicbot
+    - applebot-extended
+    - bytespider
+    - ccbot
+    - chatgpt
+    - claude-web
+    - claudebot
+    - cohere-ai
+    - diffbot
+    - google-extended
+    - gptbot
+    - meta-externalagent
+    - mistralai-user
+    - omgili
+    - perplexitybot
+    - petalbot
+    - timpibot
+    - yeti
+    sha256: 9b1518412fc514f0858ba4e31691afe80f53be23c51ce93e497d4f71f215defc
+  - url: https://spectrumlocalnews.com/services/closings.54e4ffd8ceafc43649b4daea.json
+    checked_at: '2026-09-27T07:03:49Z'
+    state: parsed
+    allowed: true
+    rule: no rule matches
+    crawl_delay: 1.0
+    disallowed_agents:
+    - ai2bot
+    - amazonbot
+    - anthropic-ai
+    - anthropicbot
+    - applebot-extended
+    - bytespider
+    - ccbot
+    - chatgpt
+    - claude-web
+    - claudebot
+    - cohere-ai
+    - diffbot
+    - google-extended
+    - gptbot
+    - meta-externalagent
+    - mistralai-user
+    - omgili
+    - perplexitybot
+    - petalbot
+    - timpibot
+    - yeti
+    sha256: 9b1518412fc514f0858ba4e31691afe80f53be23c51ce93e497d4f71f215defc
+- id: spectrum-charlotte
+  platform: spectrum
+  call_sign: SN1-CLT
+  name: Spectrum News 1 Charlotte
+  market: Charlotte, NC
+  dma: Charlotte, NC - SC DMA
+  states: [NC, SC]
+  counties:
+    basis: dma
+    source: 'DMA county list: alex-patton/US-TVDMA-BY-COUNTY usa-tvdma-county.csv at commit 7f254b8c1843c62ec976a71c40d366d45f6f29cd
+      (sha256 2e2cd00265a8d704...), names resolved to FIPS with the Census 2025 county Gazetteer; Connecticut
+      via the Census county-to-town crosswalk (snowlight.sources.stations.dma); market ''Charlotte, NC
+      - SC DMA'''
+    fips: ['37003', '37007', '37009', '37011', '37023', '37025', '37027', '37035', '37045', '37071', '37097',
+      '37109', '37119', '37153', '37159', '37167', '37179', '37189', '45023', '45025', '45057', '45091']
+  page_url: https://spectrumlocalnews.com/nc/charlotte/weather/closings
+  data_url: https://spectrumlocalnews.com/services/closings.54e4f3932861e36744edafbf.json
+  export_url: null
+  archive_urls:
+  - https://spectrumlocalnews.com/nc/charlotte/weather/closings
+  - https://spectrumlocalnews.com/services/closings.54e4f3932861e36744edafbf.json
+  poll_minutes: null
+  status: active
+  evidence: 'First-hand check of 2026-09-26 (docs/research/firsthand/others.json, record Spectrum News
+    1 Charlotte; variant spectrum-raven-json). Live read of https://spectrumlocalnews.com/services/closings.54e4f3932861e36744edafbf.json
+    2026-09-27T05:51:47Z: HTTP 200, 8 bytes; spectrum-json, empty. Archived captures read (archive-captures
+    run 36299187602): 2 populated. Archived https://spectrumlocalnews.com/services/closings.54e4f3932861e36744edafbf.json
+    captured 2026-01-25T01:54:45Z: spectrum-json, 14 rows (''CaroMont Heart & Vascular - All Locations'',
+    ''Connect Christian Church'', ...). Archived https://spectrumlocalnews.com/services/closings.54e4f3932861e36744edafbf.json
+    captured 2025-01-11T16:34:09Z: spectrum-json, 4 rows (''South Piedmont Community College'', ''NASCAR
+    Hall of Fame'', ...).'
+  list_files:
+  - url: https://spectrumlocalnews.com/services/closings.54e4f3932861e36744edafbf.json
+    loaded_by: script
+    seen: The region's page carries data-ravenid="54e4f3932861e36744edafbf" and its closings script reads
+      this file (first-hand check 2026-09-26; live read 2026-09-27).
+  page_check: null
+  robots:
+  - url: https://spectrumlocalnews.com/nc/charlotte/weather/closings
+    checked_at: '2026-09-27T07:03:49Z'
+    state: parsed
+    allowed: true
+    rule: no rule matches
+    crawl_delay: 1.0
+    disallowed_agents:
+    - ai2bot
+    - amazonbot
+    - anthropic-ai
+    - anthropicbot
+    - applebot-extended
+    - bytespider
+    - ccbot
+    - chatgpt
+    - claude-web
+    - claudebot
+    - cohere-ai
+    - diffbot
+    - google-extended
+    - gptbot
+    - meta-externalagent
+    - mistralai-user
+    - omgili
+    - perplexitybot
+    - petalbot
+    - timpibot
+    - yeti
+    sha256: 9b1518412fc514f0858ba4e31691afe80f53be23c51ce93e497d4f71f215defc
+  - url: https://spectrumlocalnews.com/services/closings.54e4f3932861e36744edafbf.json
+    checked_at: '2026-09-27T07:03:49Z'
+    state: parsed
+    allowed: true
+    rule: no rule matches
+    crawl_delay: 1.0
+    disallowed_agents:
+    - ai2bot
+    - amazonbot
+    - anthropic-ai
+    - anthropicbot
+    - applebot-extended
+    - bytespider
+    - ccbot
+    - chatgpt
+    - claude-web
+    - claudebot
+    - cohere-ai
+    - diffbot
+    - google-extended
+    - gptbot
+    - meta-externalagent
+    - mistralai-user
+    - omgili
+    - perplexitybot
+    - petalbot
+    - timpibot
+    - yeti
+    sha256: 9b1518412fc514f0858ba4e31691afe80f53be23c51ce93e497d4f71f215defc
+- id: spectrum-triangle
+  platform: spectrum
+  call_sign: SN1-RAL
+  name: Spectrum News 1 Central NC (Raleigh)
+  market: Triangle and Sandhills, NC
+  dma: Raleigh - Durham, NC - VA DMA
+  states: [NC, VA]
+  counties:
+    basis: dma
+    source: 'DMA county list: alex-patton/US-TVDMA-BY-COUNTY usa-tvdma-county.csv at commit 7f254b8c1843c62ec976a71c40d366d45f6f29cd
+      (sha256 2e2cd00265a8d704...), names resolved to FIPS with the Census 2025 county Gazetteer; Connecticut
+      via the Census county-to-town crosswalk (snowlight.sources.stations.dma); market ''Raleigh - Durham,
+      NC - VA DMA'''
+    fips: ['37037', '37051', '37063', '37065', '37069', '37077', '37083', '37085', '37093', '37101', '37105',
+      '37125', '37127', '37131', '37135', '37145', '37163', '37181', '37183', '37185', '37191', '37195',
+      '51117']
+  page_url: https://spectrumlocalnews.com/nc/triangle-sandhills/weather/closings
+  data_url: https://spectrumlocalnews.com/services/closings.54ee414a16bcd1b42c1c1bbe.json
+  export_url: null
+  archive_urls:
+  - https://spectrumlocalnews.com/nc/triangle-sandhills/weather/closings
+  - https://spectrumlocalnews.com/services/closings.54ee414a16bcd1b42c1c1bbe.json
+  poll_minutes: null
+  status: active
+  evidence: 'First-hand check of 2026-09-26 (docs/research/firsthand/others.json, record Spectrum News
+    1 Central NC (Raleigh); variant spectrum-raven-json). Live read of https://spectrumlocalnews.com/services/closings.54ee414a16bcd1b42c1c1bbe.json
+    2026-09-27T05:51:52Z: HTTP 200, 8 bytes; spectrum-json, empty. Archived captures read (archive-captures
+    run 36299187602): 1 empty, 1 populated. Archived https://spectrumlocalnews.com/services/closings.54ee414a16bcd1b42c1c1bbe.json
+    captured 2026-01-28T02:20:28Z: spectrum-json, 9 rows (''Central Carolina Academy'', ''Chatham Charter
+    School'', ...).'
+  list_files:
+  - url: https://spectrumlocalnews.com/services/closings.54ee414a16bcd1b42c1c1bbe.json
+    loaded_by: script
+    seen: The region's page carries data-ravenid="54ee414a16bcd1b42c1c1bbe" and its closings script reads
+      this file (first-hand check 2026-09-26; live read 2026-09-27).
+  page_check: null
+  robots:
+  - url: https://spectrumlocalnews.com/nc/triangle-sandhills/weather/closings
+    checked_at: '2026-09-27T07:03:49Z'
+    state: parsed
+    allowed: true
+    rule: no rule matches
+    crawl_delay: 1.0
+    disallowed_agents:
+    - ai2bot
+    - amazonbot
+    - anthropic-ai
+    - anthropicbot
+    - applebot-extended
+    - bytespider
+    - ccbot
+    - chatgpt
+    - claude-web
+    - claudebot
+    - cohere-ai
+    - diffbot
+    - google-extended
+    - gptbot
+    - meta-externalagent
+    - mistralai-user
+    - omgili
+    - perplexitybot
+    - petalbot
+    - timpibot
+    - yeti
+    sha256: 9b1518412fc514f0858ba4e31691afe80f53be23c51ce93e497d4f71f215defc
+  - url: https://spectrumlocalnews.com/services/closings.54ee414a16bcd1b42c1c1bbe.json
+    checked_at: '2026-09-27T07:03:49Z'
+    state: parsed
+    allowed: true
+    rule: no rule matches
+    crawl_delay: 1.0
+    disallowed_agents:
+    - ai2bot
+    - amazonbot
+    - anthropic-ai
+    - anthropicbot
+    - applebot-extended
+    - bytespider
+    - ccbot
+    - chatgpt
+    - claude-web
+    - claudebot
+    - cohere-ai
+    - diffbot
+    - google-extended
+    - gptbot
+    - meta-externalagent
+    - mistralai-user
+    - omgili
+    - perplexitybot
+    - petalbot
+    - timpibot
+    - yeti
+    sha256: 9b1518412fc514f0858ba4e31691afe80f53be23c51ce93e497d4f71f215defc
+- id: spectrum-triad
+  platform: spectrum
+  call_sign: SN1-GSO
+  name: Spectrum News 1 Triad (Greensboro)
+  market: Triad, NC
+  dma: Greensboro - H.Point - W.Salem, NC - VA DMA
+  states: [NC, VA]
+  counties:
+    basis: dma
+    source: 'DMA county list: alex-patton/US-TVDMA-BY-COUNTY usa-tvdma-county.csv at commit 7f254b8c1843c62ec976a71c40d366d45f6f29cd
+      (sha256 2e2cd00265a8d704...), names resolved to FIPS with the Census 2025 county Gazetteer; Connecticut
+      via the Census county-to-town crosswalk (snowlight.sources.stations.dma); market ''Greensboro -
+      H.Point - W.Salem, NC - VA DMA'''
+    fips: ['37001', '37005', '37033', '37057', '37059', '37067', '37081', '37123', '37151', '37157', '37169',
+      '37171', '37193', '37197', '51077', '51141']
+  page_url: https://spectrumlocalnews.com/nc/triad/weather/closings
+  data_url: https://spectrumlocalnews.com/services/closings.54e4f3852861e36744edafbe.json
+  export_url: null
+  archive_urls:
+  - https://spectrumlocalnews.com/nc/triad/weather/closings
+  - https://spectrumlocalnews.com/services/closings.54e4f3852861e36744edafbe.json
+  poll_minutes: null
+  status: active
+  evidence: 'First-hand check of 2026-09-26 (docs/research/firsthand/others.json, record Spectrum News
+    1 Triad (Greensboro); variant spectrum-raven-json). Live read of https://spectrumlocalnews.com/services/closings.54e4f3852861e36744edafbe.json
+    2026-09-27T05:51:57Z: HTTP 200, 8 bytes; spectrum-json, empty. Archived captures read (archive-captures
+    runs 36317643857, 36324857670): 1 empty, 2 populated. Archived https://spectrumlocalnews.com/services/closings.54e4f3852861e36744edafbe.json
+    captured 2026-02-02T07:50:13Z: spectrum-json, 46 rows (''Alamance-Burlington School System'', ''Asheboro
+    City Schools'', ...). Archived https://spectrumlocalnews.com/services/closings.54e4f3852861e36744edafbe.json
+    captured 2021-01-08T12:21:42Z: spectrum-json, 21 rows (''Alamance Community College'', ''Guilford
+    Technical Community College'', ...).'
+  list_files:
+  - url: https://spectrumlocalnews.com/services/closings.54e4f3852861e36744edafbe.json
+    loaded_by: script
+    seen: The region's page carries data-ravenid="54e4f3852861e36744edafbe" and its closings script reads
+      this file (first-hand check 2026-09-26; live read 2026-09-27).
+  page_check: null
+  robots:
+  - url: https://spectrumlocalnews.com/nc/triad/weather/closings
+    checked_at: '2026-09-27T07:03:49Z'
+    state: parsed
+    allowed: true
+    rule: no rule matches
+    crawl_delay: 1.0
+    disallowed_agents:
+    - ai2bot
+    - amazonbot
+    - anthropic-ai
+    - anthropicbot
+    - applebot-extended
+    - bytespider
+    - ccbot
+    - chatgpt
+    - claude-web
+    - claudebot
+    - cohere-ai
+    - diffbot
+    - google-extended
+    - gptbot
+    - meta-externalagent
+    - mistralai-user
+    - omgili
+    - perplexitybot
+    - petalbot
+    - timpibot
+    - yeti
+    sha256: 9b1518412fc514f0858ba4e31691afe80f53be23c51ce93e497d4f71f215defc
+  - url: https://spectrumlocalnews.com/services/closings.54e4f3852861e36744edafbe.json
+    checked_at: '2026-09-27T07:03:49Z'
+    state: parsed
+    allowed: true
+    rule: no rule matches
+    crawl_delay: 1.0
+    disallowed_agents:
+    - ai2bot
+    - amazonbot
+    - anthropic-ai
+    - anthropicbot
+    - applebot-extended
+    - bytespider
+    - ccbot
+    - chatgpt
+    - claude-web
+    - claudebot
+    - cohere-ai
+    - diffbot
+    - google-extended
+    - gptbot
+    - meta-externalagent
+    - mistralai-user
+    - omgili
+    - perplexitybot
+    - petalbot
+    - timpibot
+    - yeti
+    sha256: 9b1518412fc514f0858ba4e31691afe80f53be23c51ce93e497d4f71f215defc
+- id: spectrum-coastal
+  platform: spectrum
+  call_sign: SN1-ILM
+  name: Spectrum News 1 Coastal NC
+  market: Coastal North Carolina
+  dma: Wilmington, NC DMA
+  states: [NC]
+  counties:
+    basis: dma
+    source: 'DMA county list: alex-patton/US-TVDMA-BY-COUNTY usa-tvdma-county.csv at commit 7f254b8c1843c62ec976a71c40d366d45f6f29cd
+      (sha256 2e2cd00265a8d704...), names resolved to FIPS with the Census 2025 county Gazetteer; Connecticut
+      via the Census county-to-town crosswalk (snowlight.sources.stations.dma); market ''Wilmington, NC
+      DMA'''
+    fips: ['37017', '37019', '37047', '37129', '37141']
+  page_url: https://spectrumlocalnews.com/nc/coastal/weather/closings
+  data_url: https://spectrumlocalnews.com/services/closings.54e4f4372861e36744edafc0.json
+  export_url: null
+  archive_urls:
+  - https://spectrumlocalnews.com/nc/coastal/weather/closings
+  - https://spectrumlocalnews.com/services/closings.54e4f4372861e36744edafc0.json
+  poll_minutes: null
+  status: active
+  evidence: 'First-hand check of 2026-09-26 (docs/research/firsthand/others.json, record Spectrum News
+    1 Coastal NC; variant spectrum-raven-json). Live read of https://spectrumlocalnews.com/services/closings.54e4f4372861e36744edafc0.json
+    2026-09-27T05:52:02Z: HTTP 200, 8 bytes; spectrum-json, empty. Archived captures read (archive-captures
+    runs 36317643857, 36324857670): 1 empty, 3 populated. Archived https://spectrumlocalnews.com/services/closings.54e4f4372861e36744edafc0.json
+    captured 2026-02-05T01:59:21Z: spectrum-json, 7 rows (''Carteret Co. Government Offices'', ''Carteret
+    County Senior Center'', ...). Archived https://spectrumlocalnews.com/services/closings.54e4f4372861e36744edafc0.json
+    captured 2026-03-16T01:56:04Z: spectrum-json, 4 rows (''Bladen County Schools'', ''Northampton County
+    Schools'', ...).'
+  list_files:
+  - url: https://spectrumlocalnews.com/services/closings.54e4f4372861e36744edafc0.json
+    loaded_by: script
+    seen: The region's page carries data-ravenid="54e4f4372861e36744edafc0" and its closings script reads
+      this file (first-hand check 2026-09-26; live read 2026-09-27).
+  page_check: null
+  robots:
+  - url: https://spectrumlocalnews.com/nc/coastal/weather/closings
+    checked_at: '2026-09-27T07:03:49Z'
+    state: parsed
+    allowed: true
+    rule: no rule matches
+    crawl_delay: 1.0
+    disallowed_agents:
+    - ai2bot
+    - amazonbot
+    - anthropic-ai
+    - anthropicbot
+    - applebot-extended
+    - bytespider
+    - ccbot
+    - chatgpt
+    - claude-web
+    - claudebot
+    - cohere-ai
+    - diffbot
+    - google-extended
+    - gptbot
+    - meta-externalagent
+    - mistralai-user
+    - omgili
+    - perplexitybot
+    - petalbot
+    - timpibot
+    - yeti
+    sha256: 9b1518412fc514f0858ba4e31691afe80f53be23c51ce93e497d4f71f215defc
+  - url: https://spectrumlocalnews.com/services/closings.54e4f4372861e36744edafc0.json
+    checked_at: '2026-09-27T07:03:49Z'
+    state: parsed
+    allowed: true
+    rule: no rule matches
+    crawl_delay: 1.0
+    disallowed_agents:
+    - ai2bot
+    - amazonbot
+    - anthropic-ai
+    - anthropicbot
+    - applebot-extended
+    - bytespider
+    - ccbot
+    - chatgpt
+    - claude-web
+    - claudebot
+    - cohere-ai
+    - diffbot
+    - google-extended
+    - gptbot
+    - meta-externalagent
+    - mistralai-user
+    - omgili
+    - perplexitybot
+    - petalbot
+    - timpibot
+    - yeti
+    sha256: 9b1518412fc514f0858ba4e31691afe80f53be23c51ce93e497d4f71f215defc
+- id: spectrum-austin
+  platform: spectrum
+  call_sign: SN1-AUS
+  name: Spectrum News 1 Austin
+  market: Austin, TX
+  dma: Austin, TX DMA
+  states: [TX]
+  counties:
+    basis: dma
+    source: 'DMA county list: alex-patton/US-TVDMA-BY-COUNTY usa-tvdma-county.csv at commit 7f254b8c1843c62ec976a71c40d366d45f6f29cd
+      (sha256 2e2cd00265a8d704...), names resolved to FIPS with the Census 2025 county Gazetteer; Connecticut
+      via the Census county-to-town crosswalk (snowlight.sources.stations.dma); market ''Austin, TX DMA'''
+    fips: ['48021', '48031', '48053', '48055', '48149', '48209', '48287', '48299', '48319', '48453', '48491']
+  page_url: https://spectrumlocalnews.com/tx/austin/weather/closings
+  data_url: https://spectrumlocalnews.com/services/closings.54e4ff48ceafc43649b4dae5.json
+  export_url: null
+  archive_urls:
+  - https://spectrumlocalnews.com/tx/austin/weather/closings
+  - https://spectrumlocalnews.com/services/closings.54e4ff48ceafc43649b4dae5.json
+  poll_minutes: null
+  status: active
+  evidence: 'First-hand check of 2026-09-26 (docs/research/firsthand/others.json, record Spectrum News
+    1 Austin; variant spectrum-raven-json). Live read of https://spectrumlocalnews.com/services/closings.54e4ff48ceafc43649b4dae5.json
+    2026-09-27T05:52:07Z: HTTP 200, 8 bytes; spectrum-json, empty. Archived captures read (archive-captures
+    runs 36317643857, 36324857670): 1 empty, 2 populated. Archived https://spectrumlocalnews.com/services/closings.54e4ff48ceafc43649b4dae5.json
+    captured 2026-01-27T16:24:51Z: spectrum-json, 37 rows (''IDEA Public Schools'', ''Academy ISD'', ...).
+    Archived https://spectrumlocalnews.com/services/closings.54e4ff48ceafc43649b4dae5.json captured 2026-01-28T15:51:47Z:
+    spectrum-json, 9 rows (''Burnet CISD'', ''Jonesboro ISD'', ...).'
+  list_files:
+  - url: https://spectrumlocalnews.com/services/closings.54e4ff48ceafc43649b4dae5.json
+    loaded_by: script
+    seen: The region's page carries data-ravenid="54e4ff48ceafc43649b4dae5" and its closings script reads
+      this file (first-hand check 2026-09-26; live read 2026-09-27).
+  page_check: null
+  robots:
+  - url: https://spectrumlocalnews.com/tx/austin/weather/closings
+    checked_at: '2026-09-27T07:03:49Z'
+    state: parsed
+    allowed: true
+    rule: no rule matches
+    crawl_delay: 1.0
+    disallowed_agents:
+    - ai2bot
+    - amazonbot
+    - anthropic-ai
+    - anthropicbot
+    - applebot-extended
+    - bytespider
+    - ccbot
+    - chatgpt
+    - claude-web
+    - claudebot
+    - cohere-ai
+    - diffbot
+    - google-extended
+    - gptbot
+    - meta-externalagent
+    - mistralai-user
+    - omgili
+    - perplexitybot
+    - petalbot
+    - timpibot
+    - yeti
+    sha256: 9b1518412fc514f0858ba4e31691afe80f53be23c51ce93e497d4f71f215defc
+  - url: https://spectrumlocalnews.com/services/closings.54e4ff48ceafc43649b4dae5.json
+    checked_at: '2026-09-27T07:03:49Z'
+    state: parsed
+    allowed: true
+    rule: no rule matches
+    crawl_delay: 1.0
+    disallowed_agents:
+    - ai2bot
+    - amazonbot
+    - anthropic-ai
+    - anthropicbot
+    - applebot-extended
+    - bytespider
+    - ccbot
+    - chatgpt
+    - claude-web
+    - claudebot
+    - cohere-ai
+    - diffbot
+    - google-extended
+    - gptbot
+    - meta-externalagent
+    - mistralai-user
+    - omgili
+    - perplexitybot
+    - petalbot
+    - timpibot
+    - yeti
+    sha256: 9b1518412fc514f0858ba4e31691afe80f53be23c51ce93e497d4f71f215defc
+- id: spectrum-san-antonio
+  platform: spectrum
+  call_sign: SN1-SAT
+  name: Spectrum News 1 San Antonio
+  market: San Antonio, TX
+  dma: San Antonio, TX DMA
+  states: [TX]
+  counties:
+    basis: dma
+    source: 'DMA county list: alex-patton/US-TVDMA-BY-COUNTY usa-tvdma-county.csv at commit 7f254b8c1843c62ec976a71c40d366d45f6f29cd
+      (sha256 2e2cd00265a8d704...), names resolved to FIPS with the Census 2025 county Gazetteer; Connecticut
+      via the Census county-to-town crosswalk (snowlight.sources.stations.dma); market ''San Antonio,
+      TX DMA'''
+    fips: ['48013', '48019', '48029', '48091', '48123', '48127', '48137', '48163', '48171', '48175', '48177',
+      '48187', '48255', '48259', '48265', '48271', '48283', '48285', '48311', '48323', '48325', '48385',
+      '48463', '48465', '48493', '48507']
+  page_url: https://spectrumlocalnews.com/tx/san-antonio/weather/closings
+  data_url: https://spectrumlocalnews.com/services/closings.54e4ff75ceafc43649b4dae7.json
+  export_url: null
+  archive_urls:
+  - https://spectrumlocalnews.com/tx/san-antonio/weather/closings
+  - https://spectrumlocalnews.com/services/closings.54e4ff75ceafc43649b4dae7.json
+  poll_minutes: null
+  status: active
+  evidence: 'First-hand check of 2026-09-26 (docs/research/firsthand/others.json, record Spectrum News
+    1 San Antonio; variant spectrum-raven-json). Live read of https://spectrumlocalnews.com/services/closings.54e4ff75ceafc43649b4dae7.json
+    2026-09-27T05:52:12Z: HTTP 200, 8 bytes; spectrum-json, empty. Archived captures read (archive-captures
+    runs 36317643857, 36324857670): 4 empty. Never seen with a row: the archive holds 175 captures of
+    the file (listing, run 36322116061), all with one content digest (2RDCSQ4X...), so every capture is
+    the same body; the winter captures of 2021-02-11 (during the February 2021 freeze), 2025-03-24, 2025-11-07
+    and 2026-02-01 were read and are empty.'
+  list_files:
+  - url: https://spectrumlocalnews.com/services/closings.54e4ff75ceafc43649b4dae7.json
+    loaded_by: script
+    seen: The region's page carries data-ravenid="54e4ff75ceafc43649b4dae7" and its closings script reads
+      this file (first-hand check 2026-09-26; live read 2026-09-27).
+  page_check: null
+  robots:
+  - url: https://spectrumlocalnews.com/tx/san-antonio/weather/closings
+    checked_at: '2026-09-27T07:03:49Z'
+    state: parsed
+    allowed: true
+    rule: no rule matches
+    crawl_delay: 1.0
+    disallowed_agents:
+    - ai2bot
+    - amazonbot
+    - anthropic-ai
+    - anthropicbot
+    - applebot-extended
+    - bytespider
+    - ccbot
+    - chatgpt
+    - claude-web
+    - claudebot
+    - cohere-ai
+    - diffbot
+    - google-extended
+    - gptbot
+    - meta-externalagent
+    - mistralai-user
+    - omgili
+    - perplexitybot
+    - petalbot
+    - timpibot
+    - yeti
+    sha256: 9b1518412fc514f0858ba4e31691afe80f53be23c51ce93e497d4f71f215defc
+  - url: https://spectrumlocalnews.com/services/closings.54e4ff75ceafc43649b4dae7.json
+    checked_at: '2026-09-27T07:03:49Z'
+    state: parsed
+    allowed: true
+    rule: no rule matches
+    crawl_delay: 1.0
+    disallowed_agents:
+    - ai2bot
+    - amazonbot
+    - anthropic-ai
+    - anthropicbot
+    - applebot-extended
+    - bytespider
+    - ccbot
+    - chatgpt
+    - claude-web
+    - claudebot
+    - cohere-ai
+    - diffbot
+    - google-extended
+    - gptbot
+    - meta-externalagent
+    - mistralai-user
+    - omgili
+    - perplexitybot
+    - petalbot
+    - timpibot
+    - yeti
+    sha256: 9b1518412fc514f0858ba4e31691afe80f53be23c51ce93e497d4f71f215defc

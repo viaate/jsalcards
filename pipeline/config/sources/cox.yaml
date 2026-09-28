@@ -1,0 +1,395 @@
+# Station registry for one platform. Loaded with every other file in this folder
+# by snowlight.sources.stations.registry; see its docstring for the fields.
+# `snowlight stations robots --update` rewrites the robots blocks in place.
+platform:
+  id: cox
+  name: Cox Media Group stations' school closings (Arc XP 'closing' content)
+  operator: Cox Media Group
+  adapter: cox
+  poll_minutes: 10
+  terms:
+    automated_access: permitted
+    summary: 'Cox station sites link a Visitor Agreement (https://www.wsbtv.com/visitor-agreement/, read
+      2026-09-27; the terms-of-use address the first-hand check tried is 404): content is for personal,
+      non-commercial display and printing and may not otherwise be reproduced or distributed without permission;
+      its only mention of crawling is the Associated Press clause (AP material may not be republished
+      or stored). No clause on robots, scraping or automated access to the site was found.'
+    evidence:
+    - url: https://www.wsbtv.com/visitor-agreement/
+      read_at: '2026-09-27T06:43:29Z'
+      sha256: 1ea6c96f7a2c8fc5cfb8393cc5432ac915e34d7b5982c7c3104cf5f6adc00baf
+      excerpt:
+      - You are free to display and print for your personal, non-commercial use the content you receive
+        through this Service, provided that you reprint any copyright and other rights notices included
+        in such content.
+      - You may not otherwise reproduce any of the materials on this Service, or distribute copies of
+        materials found on this Service in any form (including by email or other electronic means), without
+        prior written permission from the owner.
+      - The following provision applies to all visitors to this Service (including, without limitation,
+        persons, representatives of legal entities, and digital engines of any kind, including, without
+        limitation, ones that crawl, index, scrape, copy, store, or transmit digital content).
+    permission: null
+    owner_decision: null
+  notes: 'Station list: Wikipedia''s Cox Media Group table as read by the first-hand check of 2026-09-26.
+    Six stations publish a closings page on Arc XP Fusion (/weather/school-closings/) backed by the content
+    source ''closing''; the live poller reads the content source''s route /pf/api/v3/content/fetch/closing?_website={arc
+    site} (each answered HTTP 200 on 2026-09-27, empty). WFTV (Orlando), WJAX (Jacksonville) and KLSR
+    (Eugene) have no closings page.'
+  shared_paths: []
+stations:
+- id: cox-wsb
+  platform: cox
+  call_sign: WSB
+  name: WSB (wsbtv.com)
+  market: Atlanta, GA
+  dma: Atlanta, GA - AL - NC DMA
+  states: [AL, GA, NC]
+  counties:
+    basis: dma
+    source: 'DMA county list: alex-patton/US-TVDMA-BY-COUNTY usa-tvdma-county.csv at commit 7f254b8c1843c62ec976a71c40d366d45f6f29cd
+      (sha256 2e2cd00265a8d704...), names resolved to FIPS with the Census 2025 county Gazetteer; Connecticut
+      via the Census county-to-town crosswalk (snowlight.sources.stations.dma); market ''Atlanta, GA -
+      AL - NC DMA'''
+    fips: [01029, '01111', '13011', '13013', '13015', '13035', '13045', '13055', '13057', '13059', '13063',
+      '13067', '13077', '13085', '13089', '13097', '13113', '13115', '13117', '13121', '13123', '13129',
+      '13133', '13135', '13137', '13139', '13143', '13149', '13151', '13157', '13159', '13171', '13187',
+      '13195', '13199', '13211', '13217', '13219', '13221', '13223', '13227', '13231', '13233', '13237',
+      '13241', '13247', '13255', '13281', '13285', '13291', '13293', '13297', '13311', '37043']
+  page_url: https://www.wsbtv.com/weather/school-closings/
+  data_url: https://www.wsbtv.com/pf/api/v3/content/fetch/closing?_website=cmg-tv-10010
+  export_url: null
+  archive_urls:
+  - https://www.wsbtv.com/weather/school-closings/
+  - https://www.wsbtv.com/pf/api/v3/content/fetch/closing?_website=cmg-tv-10010
+  poll_minutes: null
+  status: active
+  evidence: 'First-hand check of 2026-09-26 (docs/research/firsthand/others.json, record WSB; variant
+    cox-arc-closing). Live read of https://www.wsbtv.com/weather/school-closings/ 2026-09-27T06:18:24Z:
+    HTTP 200, 283647 bytes, Last-Modified Sun, 27 Sep 2026 06:18:24 GMT; cox-arc-page, empty. Live read
+    of https://www.wsbtv.com/pf/api/v3/content/fetch/closing?_website=cmg-tv-10010 2026-09-27T05:50:07Z:
+    HTTP 200, 106 bytes, Last-Modified Sun, 27 Sep 2026 05:50:02 GMT; cox-arc-content, empty. Archived
+    captures read (archive-captures run 36299187602): 1 empty, 1 populated. Archived https://www.wsbtv.com/weather/school-closings/
+    captured 2025-01-10T12:00:04Z: cox-arc-page, 222 rows (''ABC-Another Bright Creation Douglasville'',
+    ''ABC-Another Bright Creation Palmetto'', ...).'
+  list_files: []
+  page_check: null
+  robots:
+  - url: https://www.wsbtv.com/weather/school-closings/
+    checked_at: '2026-09-27T07:03:29Z'
+    state: parsed
+    allowed: true
+    rule: no rule matches
+    crawl_delay: null
+    disallowed_agents: []
+    sha256: be004fe5adadd0e3e3f122bd44ae27618bf456be9d5ed49ff65cceff55ef096f
+  - url: https://www.wsbtv.com/pf/api/v3/content/fetch/closing?_website=cmg-tv-10010
+    checked_at: '2026-09-27T07:03:29Z'
+    state: parsed
+    allowed: true
+    rule: no rule matches
+    crawl_delay: null
+    disallowed_agents: []
+    sha256: be004fe5adadd0e3e3f122bd44ae27618bf456be9d5ed49ff65cceff55ef096f
+- id: cox-wfxt
+  platform: cox
+  call_sign: WFXT
+  name: WFXT (boston25news.com)
+  market: Boston, MA
+  dma: Boston, MA - NH DMA
+  states: [MA, NH, VT]
+  counties:
+    basis: dma
+    source: 'DMA county list: alex-patton/US-TVDMA-BY-COUNTY usa-tvdma-county.csv at commit 7f254b8c1843c62ec976a71c40d366d45f6f29cd
+      (sha256 2e2cd00265a8d704...), names resolved to FIPS with the Census 2025 county Gazetteer; Connecticut
+      via the Census county-to-town crosswalk (snowlight.sources.stations.dma); market ''Boston, MA -
+      NH DMA'''
+    fips: ['25001', '25007', '25009', '25017', '25019', '25021', '25023', '25025', '25027', '33001', '33005',
+      '33011', '33013', '33015', '33017', '50025']
+  page_url: https://www.boston25news.com/weather/school-closings/
+  data_url: https://www.boston25news.com/pf/api/v3/content/fetch/closing?_website=cmg-tv-10020
+  export_url: null
+  archive_urls:
+  - https://www.boston25news.com/weather/school-closings/
+  - https://www.boston25news.com/pf/api/v3/content/fetch/closing?_website=cmg-tv-10020
+  poll_minutes: null
+  status: active
+  evidence: 'First-hand check of 2026-09-26 (docs/research/firsthand/others.json, record WFXT; variant
+    cox-arc-closing). Live read of https://www.boston25news.com/pf/api/v3/content/fetch/closing?_website=cmg-tv-10020
+    2026-09-27T05:50:12Z: HTTP 200, 106 bytes, Last-Modified Sun, 27 Sep 2026 05:47:50 GMT; cox-arc-content,
+    empty. Archived captures read (archive-captures run 36299187602): 1 empty, 1 populated. Archived https://www.boston25news.com/weather/school-closings/
+    captured 2026-02-25T18:54:07Z: cox-arc-page, 11 rows (''Atlantis Charter District'', ''Barnstable
+    Public'', ...).'
+  list_files: []
+  page_check: null
+  robots:
+  - url: https://www.boston25news.com/weather/school-closings/
+    checked_at: '2026-09-27T07:03:28Z'
+    state: parsed
+    allowed: true
+    rule: no rule matches
+    crawl_delay: null
+    disallowed_agents: []
+    sha256: a4caa1fd04984d515e0ff96a5e891b08300618013bcc5e80263cbefa9035ae8e
+  - url: https://www.boston25news.com/pf/api/v3/content/fetch/closing?_website=cmg-tv-10020
+    checked_at: '2026-09-27T07:03:28Z'
+    state: parsed
+    allowed: true
+    rule: no rule matches
+    crawl_delay: null
+    disallowed_agents: []
+    sha256: a4caa1fd04984d515e0ff96a5e891b08300618013bcc5e80263cbefa9035ae8e
+- id: cox-wsoc
+  platform: cox
+  call_sign: WSOC
+  name: WSOC (wsoctv.com)
+  market: Charlotte, NC
+  dma: Charlotte, NC - SC DMA
+  states: [NC, SC]
+  counties:
+    basis: dma
+    source: 'DMA county list: alex-patton/US-TVDMA-BY-COUNTY usa-tvdma-county.csv at commit 7f254b8c1843c62ec976a71c40d366d45f6f29cd
+      (sha256 2e2cd00265a8d704...), names resolved to FIPS with the Census 2025 county Gazetteer; Connecticut
+      via the Census county-to-town crosswalk (snowlight.sources.stations.dma); market ''Charlotte, NC
+      - SC DMA'''
+    fips: ['37003', '37007', '37009', '37011', '37023', '37025', '37027', '37035', '37045', '37071', '37097',
+      '37109', '37119', '37153', '37159', '37167', '37179', '37189', '45023', '45025', '45057', '45091']
+  page_url: https://www.wsoctv.com/weather/school-closings/
+  data_url: https://www.wsoctv.com/pf/api/v3/content/fetch/closing?_website=cmg-tv-10030
+  export_url: null
+  archive_urls:
+  - https://www.wsoctv.com/weather/school-closings/
+  - https://www.wsoctv.com/pf/api/v3/content/fetch/closing?_website=cmg-tv-10030
+  poll_minutes: null
+  status: active
+  evidence: 'First-hand check of 2026-09-26 (docs/research/firsthand/others.json, record WSOC/WAXN; variant
+    cox-arc-closing). Live read of https://www.wsoctv.com/pf/api/v3/content/fetch/closing?_website=cmg-tv-10030
+    2026-09-27T05:50:18Z: HTTP 200, 106 bytes, Last-Modified Sun, 27 Sep 2026 05:47:43 GMT; cox-arc-content,
+    empty. Archived captures read (archive-captures run 36299187602): 2 populated. Archived https://www.wsoctv.com/weather/school-closings/
+    captured 2026-01-26T11:20:46Z: cox-arc-page, 334 rows (''Abound Health'', ''Admark Graphics Systems'',
+    ...). Archived https://www.wsoctv.com/weather/school-closings/ captured 2025-01-08T18:50:13Z: cox-arc-page,
+    2 rows (''Avery County Schools'', ''Legacy Health and Wellness'').'
+  list_files: []
+  page_check: null
+  robots:
+  - url: https://www.wsoctv.com/weather/school-closings/
+    checked_at: '2026-09-27T07:03:30Z'
+    state: parsed
+    allowed: true
+    rule: no rule matches
+    crawl_delay: null
+    disallowed_agents: []
+    sha256: 8752a78442aeff2dd935f3ef5d58380c9847e0f0b5a9666ed3a0a99a73e2a042
+  - url: https://www.wsoctv.com/pf/api/v3/content/fetch/closing?_website=cmg-tv-10030
+    checked_at: '2026-09-27T07:03:30Z'
+    state: parsed
+    allowed: true
+    rule: no rule matches
+    crawl_delay: null
+    disallowed_agents: []
+    sha256: 8752a78442aeff2dd935f3ef5d58380c9847e0f0b5a9666ed3a0a99a73e2a042
+- id: cox-whio
+  platform: cox
+  call_sign: WHIO
+  name: WHIO (whio.com)
+  market: Dayton, OH
+  dma: Dayton, OH - IN DMA
+  states: [IN, OH]
+  counties:
+    basis: dma
+    source: 'DMA county list: alex-patton/US-TVDMA-BY-COUNTY usa-tvdma-county.csv at commit 7f254b8c1843c62ec976a71c40d366d45f6f29cd
+      (sha256 2e2cd00265a8d704...), names resolved to FIPS with the Census 2025 county Gazetteer; Connecticut
+      via the Census county-to-town crosswalk (snowlight.sources.stations.dma); market ''Dayton, OH -
+      IN DMA'''
+    fips: ['18177', '39011', '39021', '39023', '39037', '39057', '39091', '39107', '39109', '39113', '39135',
+      '39149']
+  page_url: https://www.whio.com/weather/school-closings/
+  data_url: https://www.whio.com/pf/api/v3/content/fetch/closing?_website=cmg-tv-10040
+  export_url: null
+  archive_urls:
+  - https://www.whio.com/weather/school-closings/
+  - https://www.whio.com/pf/api/v3/content/fetch/closing?_website=cmg-tv-10040
+  poll_minutes: null
+  status: active
+  evidence: 'First-hand check of 2026-09-26 (docs/research/firsthand/others.json, record WHIO; variant
+    cox-arc-closing). Live read of https://www.whio.com/pf/api/v3/content/fetch/closing?_website=cmg-tv-10040
+    2026-09-27T05:50:23Z: HTTP 200, 106 bytes, Last-Modified Sun, 27 Sep 2026 05:48:55 GMT; cox-arc-content,
+    empty. Archived captures read (archive-captures run 36299187602): 2 populated. Archived https://www.whio.com/weather/school-closings/
+    captured 2025-01-06T08:08:05Z: cox-arc-page, 283 rows (''A & D Daycare Learning Center'', ''Adventure
+    Central'', ...). Archived https://www.whio.com/weather/school-closings/ captured 2026-02-17T11:48:09Z:
+    cox-arc-page, 48 rows (''Anna Local Schools'', ''Bellefontaine City Schools'', ...).'
+  list_files: []
+  page_check: null
+  robots:
+  - url: https://www.whio.com/weather/school-closings/
+    checked_at: '2026-09-27T07:03:28Z'
+    state: parsed
+    allowed: true
+    rule: no rule matches
+    crawl_delay: null
+    disallowed_agents: []
+    sha256: e49cb854b64d13eb5482f26ec86985788fd14bc1b4c55dd99387c994de00e8d4
+  - url: https://www.whio.com/pf/api/v3/content/fetch/closing?_website=cmg-tv-10040
+    checked_at: '2026-09-27T07:03:28Z'
+    state: parsed
+    allowed: true
+    rule: no rule matches
+    crawl_delay: null
+    disallowed_agents: []
+    sha256: e49cb854b64d13eb5482f26ec86985788fd14bc1b4c55dd99387c994de00e8d4
+- id: cox-wpxi
+  platform: cox
+  call_sign: WPXI
+  name: WPXI (wpxi.com)
+  market: Pittsburgh, PA
+  dma: Pittsburgh, PA - MD- WV DMA
+  states: [MD, PA, WV]
+  counties:
+    basis: dma
+    source: 'DMA county list: alex-patton/US-TVDMA-BY-COUNTY usa-tvdma-county.csv at commit 7f254b8c1843c62ec976a71c40d366d45f6f29cd
+      (sha256 2e2cd00265a8d704...), names resolved to FIPS with the Census 2025 county Gazetteer; Connecticut
+      via the Census county-to-town crosswalk (snowlight.sources.stations.dma); market ''Pittsburgh, PA
+      - MD- WV DMA'''
+    fips: ['24023', '42003', '42005', '42007', '42019', '42031', '42051', '42059', '42063', '42073', '42121',
+      '42125', '42129', '54061', '54077']
+  page_url: https://www.wpxi.com/weather/school-closings/
+  data_url: https://www.wpxi.com/pf/api/v3/content/fetch/closing?_website=cmg-tv-10080
+  export_url: null
+  archive_urls:
+  - https://www.wpxi.com/weather/school-closings/
+  - https://www.wpxi.com/pf/api/v3/content/fetch/closing?_website=cmg-tv-10080
+  poll_minutes: null
+  status: active
+  evidence: 'First-hand check of 2026-09-26 (docs/research/firsthand/others.json, record WPXI; variant
+    cox-arc-closing). Live read of https://www.wpxi.com/pf/api/v3/content/fetch/closing?_website=cmg-tv-10080
+    2026-09-27T05:50:29Z: HTTP 200, 106 bytes, Last-Modified Sun, 27 Sep 2026 05:50:28 GMT; cox-arc-content,
+    empty. Archived captures read (archive-captures run 36299187602): 2 populated. Archived https://www.wpxi.com/weather/school-closings/
+    captured 2025-12-14T06:23:35Z: cox-arc-page, 39 rows (''Appleby Manor Mem. Presbyterian Church'',
+    ''Blessed Trinity Faith Formation'', ...). Archived https://www.wpxi.com/weather/school-closings/
+    captured 2025-01-04T09:50:07Z: cox-arc-page, 4 rows (''Carmichaels Senior Citizens Activity Center'',
+    "L''Asilo by La Scuola d''Italia Galileo Galilei", ...).'
+  list_files: []
+  page_check: null
+  robots:
+  - url: https://www.wpxi.com/weather/school-closings/
+    checked_at: '2026-09-27T07:03:29Z'
+    state: parsed
+    allowed: true
+    rule: no rule matches
+    crawl_delay: null
+    disallowed_agents: []
+    sha256: 7e296b4802957249cb7d5cb4d52d12e003ecded130a3345d588d2405f7efa6f3
+  - url: https://www.wpxi.com/pf/api/v3/content/fetch/closing?_website=cmg-tv-10080
+    checked_at: '2026-09-27T07:03:29Z'
+    state: parsed
+    allowed: true
+    rule: no rule matches
+    crawl_delay: null
+    disallowed_agents: []
+    sha256: 7e296b4802957249cb7d5cb4d52d12e003ecded130a3345d588d2405f7efa6f3
+- id: cox-kiro
+  platform: cox
+  call_sign: KIRO
+  name: KIRO (kiro7.com)
+  market: Seattle - Tacoma, WA
+  dma: Seattle - Tacoma, WA DMA
+  states: [WA]
+  counties:
+    basis: dma
+    source: 'DMA county list: alex-patton/US-TVDMA-BY-COUNTY usa-tvdma-county.csv at commit 7f254b8c1843c62ec976a71c40d366d45f6f29cd
+      (sha256 2e2cd00265a8d704...), names resolved to FIPS with the Census 2025 county Gazetteer; Connecticut
+      via the Census county-to-town crosswalk (snowlight.sources.stations.dma); market ''Seattle - Tacoma,
+      WA DMA'''
+    fips: ['53007', '53009', '53017', '53027', '53029', '53031', '53033', '53035', '53041', '53045', '53049',
+      '53053', '53055', '53057', '53061', '53067', '53073']
+  page_url: https://www.kiro7.com/weather/school-closings/
+  data_url: https://www.kiro7.com/pf/api/v3/content/fetch/closing?_website=cmg-tv-10090
+  export_url: null
+  archive_urls:
+  - https://www.kiro7.com/weather/school-closings/
+  - https://www.kiro7.com/pf/api/v3/content/fetch/closing?_website=cmg-tv-10090
+  poll_minutes: null
+  status: active
+  evidence: 'First-hand check of 2026-09-26 (docs/research/firsthand/others.json, record KIRO; variant
+    cox-arc-closing). Live read of https://www.kiro7.com/pf/api/v3/content/fetch/closing?_website=cmg-tv-10090
+    2026-09-27T05:50:34Z: HTTP 200, 106 bytes, Last-Modified Sun, 27 Sep 2026 05:49:31 GMT; cox-arc-content,
+    empty. Archived captures read (archive-captures run 36299187602): 1 empty, 1 populated. Archived https://www.kiro7.com/weather/school-closings/
+    captured 2026-02-19T14:14:44Z: cox-arc-page, 2 rows (''Granite Falls SD'', ''Port Angeles SD'').'
+  list_files: []
+  page_check: null
+  robots:
+  - url: https://www.kiro7.com/weather/school-closings/
+    checked_at: '2026-09-27T07:03:27Z'
+    state: parsed
+    allowed: true
+    rule: no rule matches
+    crawl_delay: null
+    disallowed_agents: []
+    sha256: 09f0ac5f1cd1fa8c008c6cbca6afce9050621aa8a5789414ffbe388ba60e2304
+  - url: https://www.kiro7.com/pf/api/v3/content/fetch/closing?_website=cmg-tv-10090
+    checked_at: '2026-09-27T07:03:27Z'
+    state: parsed
+    allowed: true
+    rule: no rule matches
+    crawl_delay: null
+    disallowed_agents: []
+    sha256: 09f0ac5f1cd1fa8c008c6cbca6afce9050621aa8a5789414ffbe388ba60e2304
+- id: cox-wftv
+  platform: cox
+  call_sign: WFTV
+  name: WFTV
+  market: Orlando, FL
+  dma: null
+  states: [FL]
+  counties: null
+  page_url: null
+  data_url: null
+  export_url: null
+  archive_urls: []
+  poll_minutes: null
+  status: no_endpoint
+  evidence: 'First-hand check of 2026-09-26 (docs/research/firsthand/others.json, record WFTV/WRDQ; variant
+    none-found). No closings page (first-hand check of 2026-09-26: /weather/school-closings/ answered
+    404 and the site''s navigation has no closings entry).'
+  list_files: []
+  page_check: null
+  robots: []
+- id: cox-wjax
+  platform: cox
+  call_sign: WJAX
+  name: WJAX
+  market: Jacksonville, FL
+  dma: null
+  states: [FL, GA]
+  counties: null
+  page_url: null
+  data_url: null
+  export_url: null
+  archive_urls: []
+  poll_minutes: null
+  status: no_endpoint
+  evidence: 'First-hand check of 2026-09-26 (docs/research/firsthand/others.json, record WJAX/WFOX; variant
+    none-found). No closings page (first-hand check of 2026-09-26: /weather/school-closings/ answered
+    404 and the site''s navigation has no closings entry).'
+  list_files: []
+  page_check: null
+  robots: []
+- id: cox-klsr
+  platform: cox
+  call_sign: KLSR
+  name: KLSR
+  market: Eugene, OR
+  dma: null
+  states: [OR]
+  counties: null
+  page_url: null
+  data_url: null
+  export_url: null
+  archive_urls: []
+  poll_minutes: null
+  status: no_endpoint
+  evidence: 'First-hand check of 2026-09-26 (docs/research/firsthand/others.json, record KLSR/KEVU; variant
+    none-found). No closings page (first-hand check of 2026-09-26: /weather/school-closings/ answered
+    404 and the site''s navigation has no closings entry).'
+  list_files: []
+  page_check: null
+  robots: []

@@ -1,0 +1,706 @@
+# Station registry for one platform. Loaded with every other file in this folder
+# by snowlight.sources.stations.registry; see its docstring for the fields.
+# `snowlight stations robots --update` rewrites the robots blocks in place.
+platform:
+  id: allen
+  name: Allen Media Broadcasting stations' closings files (ftp2 hosts)
+  operator: Allen Media Broadcasting (Allen Media Group)
+  adapter: allen
+  poll_minutes: 10
+  terms:
+    automated_access: permitted
+    summary: 'Allen Media''s station terms (https://www.kwwl.com/site/terms.html, the same template at
+      every Allen BLOX site), read 2026-09-27: use is for lawful, non-commercial purposes, content may
+      not be reproduced, published or exploited; no clause on robots, scraping, crawling or automated
+      access was found (grep of the page''s text). robots.txt on most ftp2 hosts is ''Disallow: /'' (KWWL,
+      WXOW, WQOW, WAOW, WKTV, WJRT); the owner decided on 2026-09-26 to read closings files regardless,
+      and each read records the verdict.'
+    evidence:
+    - url: https://www.kwwl.com/site/terms.html
+      read_at: '2026-09-27T06:24:32Z'
+      sha256: 26eaf99bbc746f83f103a29db7bfed1b982d7d7750cf4e74f527587040fd4609
+      excerpt:
+      - You shall use the Services for lawful, non-commercial purposes only and on a non-exclusive, non-assignable,
+        non-transferable basis.
+      - You may not remove, modify, reproduce, publish, transmit, publicly display, publicly perform,
+        participate in the transfer or sale, create derivative works, or in any way exploit, any of the
+        content, in whole or in part.
+      - (no clause on robots, spiders, scraping, crawling or automated access was found in the page's
+        text)
+    permission: null
+    owner_decision: null
+  notes: 'Station list: Wikipedia''s Allen Media Group table as read by the first-hand check of 2026-09-26
+    (docs/research/firsthand/others.json). Seven stations frame a closings file on their ftp2 host from
+    their BLOX closings page: KWWL, WXOW, WQOW, WAOW and WKOW (NewsTicker exports), KIMT (a header table)
+    and WKTV (a CGS Infographics ''All Active'' page). WJRT, which frames ftp2.wjrt.com the same way,
+    is now a Gray station and is registered there (gray-wjrt). The live poller reads the ftp2 file (data_url).
+    The banner counter each page reads (amb-feeds.s3.amazonaws.com/{CALL}_closings.json: a count, not
+    a list) is kept as an archive URL. KVOA, KEZI, KDRV and KHSL publish no list this pipeline could read
+    (their pages answered 404 or HTTP 429 from TownNews on 2026-09-26 and 2026-09-27); the nine stations
+    Allen sold in 2026 are Gray sites now (platform gray).'
+  shared_paths: []
+stations:
+- id: allen-kwwl
+  platform: allen
+  call_sign: KWWL
+  name: KWWL (kwwl.com)
+  market: Cedar Rapids - Waterloo - Dubuque, IA
+  dma: Cedar Rapids - Waterloo&Dubuque, IA - WI DMA
+  states: [IA]
+  counties:
+    basis: dma
+    source: 'DMA county list: alex-patton/US-TVDMA-BY-COUNTY usa-tvdma-county.csv at commit 7f254b8c1843c62ec976a71c40d366d45f6f29cd
+      (sha256 2e2cd00265a8d704...), names resolved to FIPS with the Census 2025 county Gazetteer; Connecticut
+      via the Census county-to-town crosswalk (snowlight.sources.stations.dma); market ''Cedar Rapids
+      - Waterloo&Dubuque, IA - WI DMA'''
+    fips: ['19005', '19011', '19013', '19017', '19019', '19023', '19031', '19037', '19043', '19055', '19061',
+      '19065', '19075', '19095', '19103', '19105', '19107', '19113', '19171', '19183', '19191']
+  page_url: https://www.kwwl.com/weather/closings/
+  data_url: https://ftp2.kwwl.com/closings.html
+  export_url: null
+  archive_urls:
+  - https://www.kwwl.com/weather/closings/
+  - https://ftp2.kwwl.com/closings.html
+  - https://amb-feeds.s3.amazonaws.com/KWWL_closings.json
+  poll_minutes: null
+  status: active
+  evidence: 'First-hand check of 2026-09-26 (docs/research/firsthand/others.json, record KWWL; variant
+    allen-blox-ftp2-frame). Live read of https://www.kwwl.com/weather/closings/ 2026-09-27T05:57:18Z:
+    HTTP 200, 212066 bytes, Last-Modified Sun, 27 Sep 2026 05:52:26 GMT; allen-blox-page, deferred, loads
+    https://ftp2.kwwl.com/closings.html. Live read of https://ftp2.kwwl.com/closings.html 2026-09-27T05:57:29Z:
+    HTTP 200, 617 bytes, Last-Modified Sun, 27 Sep 2026 05:57:02 GMT; newsticker-html, empty. Archived
+    captures read (archive-captures run 36299187602): 2 populated. Archived https://ftp2.kwwl.com/closings.html
+    captured 2025-01-21T14:35:48Z: newsticker-html, 140 rows (''AEA - River Hills'', ''AGWSR Schools'',
+    ...). Archived https://ftp2.kwwl.com/closings.html captured 2026-02-23T16:12:45Z: newsticker-html,
+    3 rows (''City of New Hampton'', ''Hampton-Dumont-CAL'', ...).'
+  list_files:
+  - url: https://ftp2.kwwl.com/closings.html
+    loaded_by: frame
+    seen: The station's BLOX closings page frames it (<iframe src=...> in tncms-block; live read 2026-09-27).
+  page_check: null
+  robots:
+  - url: https://www.kwwl.com/weather/closings/
+    checked_at: '2026-09-27T07:03:20Z'
+    state: parsed
+    allowed: true
+    rule: no rule matches
+    crawl_delay: null
+    disallowed_agents:
+    - ai2bot
+    - ai2bot-dolma
+    - anthropic-ai
+    - applebot-extended
+    - bytespider
+    - ccbot
+    - chatgpt-user
+    - claude-web
+    - claudebot
+    - cohere-ai
+    - diffbot
+    - facebookbot
+    - friendlycrawler
+    - google-extended
+    - gptbot
+    - iaskspider/2.0
+    - icc-crawler
+    - imagesiftbot
+    - img2dataset
+    - meta-externalagent
+    - oai-searchbot
+    - omgili
+    - omgilibot
+    - perplexitybot
+    - petalbot
+    - scrapy
+    - timpibot
+    - velenpublicwebcrawler
+    - webzio-extended
+    - youbot
+    sha256: ab41c1ccf3f89cf939cf3def2ddae1171a6f8b66b31dba89a6cb49f13e926fca
+  - url: https://ftp2.kwwl.com/closings.html
+    checked_at: '2026-09-27T07:03:21Z'
+    state: parsed
+    allowed: false
+    rule: 'Disallow: /'
+    crawl_delay: null
+    disallowed_agents: []
+    sha256: 133e4db054e73a10017a1f429c80c35cd5bfa9c3a1aba581b364ecc459c48a4b
+- id: allen-wxow
+  platform: allen
+  call_sign: WXOW
+  name: WXOW (wxow.com)
+  market: La Crosse - Eau Claire, WI
+  dma: LaCrosse - Eau Claire, WI - MN DMA
+  states: [MN, WI]
+  counties:
+    basis: dma
+    source: 'DMA county list: alex-patton/US-TVDMA-BY-COUNTY usa-tvdma-county.csv at commit 7f254b8c1843c62ec976a71c40d366d45f6f29cd
+      (sha256 2e2cd00265a8d704...), names resolved to FIPS with the Census 2025 county Gazetteer; Connecticut
+      via the Census county-to-town crosswalk (snowlight.sources.stations.dma); market ''LaCrosse - Eau
+      Claire, WI - MN DMA'''
+    fips: ['27055', '27169', '55011', '55017', '55019', '55023', '55035', '55053', '55063', '55081', '55107',
+      '55121', '55123']
+  page_url: https://www.wxow.com/weather/closings/
+  data_url: https://ftp2.wxow.com/closings.html
+  export_url: null
+  archive_urls:
+  - https://www.wxow.com/weather/closings/
+  - https://ftp2.wxow.com/closings.html
+  - https://amb-feeds.s3.amazonaws.com/WXOW_closings.json
+  poll_minutes: null
+  status: active
+  evidence: 'First-hand check of 2026-09-26 (docs/research/firsthand/others.json, record WXOW; variant
+    allen-blox-ftp2-frame). Live read of https://ftp2.wxow.com/closings.html 2026-09-27T05:57:41Z: HTTP
+    200, 628 bytes, Last-Modified Sun, 27 Sep 2026 05:57:02 GMT; newsticker-html, empty. Archived captures
+    read (archive-captures runs 36299187602, 36338052203): 3 empty. Never seen with a row: the archive
+    lists 16 captures of its list file (2021 to 2024; listings of run 36317655310); the archive lists
+    55 captures of its page (2021 to 2026; listings of run 36317655310). Downloaded and read: 3 empty.'
+  list_files:
+  - url: https://ftp2.wxow.com/closings.html
+    loaded_by: frame
+    seen: The station's BLOX closings page frames it (<iframe src=...> in tncms-block; live read 2026-09-27).
+  page_check: null
+  robots:
+  - url: https://www.wxow.com/weather/closings/
+    checked_at: '2026-09-27T07:03:24Z'
+    state: parsed
+    allowed: true
+    rule: no rule matches
+    crawl_delay: null
+    disallowed_agents:
+    - ai2bot
+    - ai2bot-dolma
+    - anthropic-ai
+    - applebot-extended
+    - bytespider
+    - ccbot
+    - chatgpt-user
+    - claude-web
+    - claudebot
+    - cohere-ai
+    - diffbot
+    - facebookbot
+    - friendlycrawler
+    - google-extended
+    - gptbot
+    - iaskspider/2.0
+    - icc-crawler
+    - imagesiftbot
+    - img2dataset
+    - meta-externalagent
+    - oai-searchbot
+    - omgili
+    - omgilibot
+    - perplexitybot
+    - petalbot
+    - scrapy
+    - timpibot
+    - velenpublicwebcrawler
+    - webzio-extended
+    - youbot
+    sha256: 3e36df6463be7a0f71e07eef8eb24790ce9652720f4923f6677e3f92003da754
+  - url: https://ftp2.wxow.com/closings.html
+    checked_at: '2026-09-27T07:03:25Z'
+    state: parsed
+    allowed: false
+    rule: 'Disallow: /'
+    crawl_delay: null
+    disallowed_agents: []
+    sha256: 133e4db054e73a10017a1f429c80c35cd5bfa9c3a1aba581b364ecc459c48a4b
+- id: allen-wqow
+  platform: allen
+  call_sign: WQOW
+  name: WQOW (wqow.com)
+  market: La Crosse - Eau Claire, WI
+  dma: LaCrosse - Eau Claire, WI - MN DMA
+  states: [MN, WI]
+  counties:
+    basis: dma
+    source: 'DMA county list: alex-patton/US-TVDMA-BY-COUNTY usa-tvdma-county.csv at commit 7f254b8c1843c62ec976a71c40d366d45f6f29cd
+      (sha256 2e2cd00265a8d704...), names resolved to FIPS with the Census 2025 county Gazetteer; Connecticut
+      via the Census county-to-town crosswalk (snowlight.sources.stations.dma); market ''LaCrosse - Eau
+      Claire, WI - MN DMA'''
+    fips: ['27055', '27169', '55011', '55017', '55019', '55023', '55035', '55053', '55063', '55081', '55107',
+      '55121', '55123']
+  page_url: https://www.wqow.com/weather/closings/
+  data_url: https://ftp2.wqow.com/closings.html
+  export_url: null
+  archive_urls:
+  - https://www.wqow.com/weather/closings/
+  - https://ftp2.wqow.com/closings.html
+  - https://amb-feeds.s3.amazonaws.com/WQOW_closings.json
+  poll_minutes: null
+  status: active
+  evidence: 'First-hand check of 2026-09-26 (docs/research/firsthand/others.json, record WQOW; variant
+    allen-blox-ftp2-frame). Live read of https://ftp2.wqow.com/closings.html 2026-09-27T05:57:52Z: HTTP
+    200, 617 bytes, Last-Modified Sun, 27 Sep 2026 05:57:02 GMT; newsticker-html, empty. Archived captures
+    read (archive-captures runs 36299187602, 36338052203): 4 empty. Never seen with a row: the archive
+    lists 11 captures of its list file (2021 to 2026; listings of run 36317655310); the archive lists
+    56 captures of its page (2021 to 2026; listings of run 36317655310). Downloaded and read: 4 empty.'
+  list_files:
+  - url: https://ftp2.wqow.com/closings.html
+    loaded_by: frame
+    seen: The station's BLOX closings page frames it (<iframe src=...> in tncms-block; live read 2026-09-27).
+  page_check: null
+  robots:
+  - url: https://www.wqow.com/weather/closings/
+    checked_at: '2026-09-27T07:03:24Z'
+    state: parsed
+    allowed: true
+    rule: no rule matches
+    crawl_delay: null
+    disallowed_agents:
+    - ai2bot
+    - ai2bot-dolma
+    - anthropic-ai
+    - applebot-extended
+    - bytespider
+    - ccbot
+    - chatgpt-user
+    - claude-web
+    - claudebot
+    - cohere-ai
+    - diffbot
+    - facebookbot
+    - friendlycrawler
+    - google-extended
+    - gptbot
+    - iaskspider/2.0
+    - icc-crawler
+    - imagesiftbot
+    - img2dataset
+    - meta-externalagent
+    - oai-searchbot
+    - omgili
+    - omgilibot
+    - perplexitybot
+    - petalbot
+    - scrapy
+    - timpibot
+    - velenpublicwebcrawler
+    - webzio-extended
+    - youbot
+    sha256: 8c3536eafca6973596efc58f368fc8294abd51e81a4119cac8ae8293c96fcfd7
+  - url: https://ftp2.wqow.com/closings.html
+    checked_at: '2026-09-27T07:03:24Z'
+    state: parsed
+    allowed: false
+    rule: 'Disallow: /'
+    crawl_delay: null
+    disallowed_agents: []
+    sha256: 133e4db054e73a10017a1f429c80c35cd5bfa9c3a1aba581b364ecc459c48a4b
+- id: allen-waow
+  platform: allen
+  call_sign: WAOW
+  name: WAOW (waow.com)
+  market: Wausau - Rhinelander, WI
+  dma: Wausau - Rhinelander, WI DMA
+  states: [WI]
+  counties:
+    basis: dma
+    source: 'DMA county list: alex-patton/US-TVDMA-BY-COUNTY usa-tvdma-county.csv at commit 7f254b8c1843c62ec976a71c40d366d45f6f29cd
+      (sha256 2e2cd00265a8d704...), names resolved to FIPS with the Census 2025 county Gazetteer; Connecticut
+      via the Census county-to-town crosswalk (snowlight.sources.stations.dma); market ''Wausau - Rhinelander,
+      WI DMA'''
+    fips: ['55001', '55041', '55067', '55069', '55073', '55085', '55097', '55099', '55119', '55125', '55141']
+  page_url: https://www.waow.com/weather/closings/
+  data_url: https://ftp2.waow.com/closings.html
+  export_url: null
+  archive_urls:
+  - https://www.waow.com/weather/closings/
+  - https://ftp2.waow.com/closings.html
+  - https://amb-feeds.s3.amazonaws.com/WAOW_closings.json
+  poll_minutes: null
+  status: active
+  evidence: 'First-hand check of 2026-09-26 (docs/research/firsthand/others.json, record WAOW/WMOW; variant
+    allen-blox-ftp2-frame). Live read of https://ftp2.waow.com/closings.html 2026-09-27T05:58:03Z: HTTP
+    200, 777 bytes, Last-Modified Sun, 27 Sep 2026 05:57:01 GMT; newsticker-html, empty. Archived captures
+    read (archive-captures runs 36299187602, 36338052203): 2 empty, 1 populated. Archived https://ftp2.waow.com/closings.html
+    captured 2022-12-19T23:00:17Z: newsticker-html, 1 rows (''Minocqua-Hazelhurst-Lake Tomahwak School
+    District'').'
+  list_files:
+  - url: https://ftp2.waow.com/closings.html
+    loaded_by: frame
+    seen: The station's BLOX closings page frames it (<iframe src=...> in tncms-block; live read 2026-09-27).
+  page_check: null
+  robots:
+  - url: https://www.waow.com/weather/closings/
+    checked_at: '2026-09-27T07:03:21Z'
+    state: parsed
+    allowed: true
+    rule: no rule matches
+    crawl_delay: null
+    disallowed_agents:
+    - ai2bot
+    - ai2bot-dolma
+    - anthropic-ai
+    - applebot-extended
+    - bytespider
+    - ccbot
+    - chatgpt-user
+    - claude-web
+    - claudebot
+    - cohere-ai
+    - diffbot
+    - facebookbot
+    - friendlycrawler
+    - google-extended
+    - gptbot
+    - iaskspider/2.0
+    - icc-crawler
+    - imagesiftbot
+    - img2dataset
+    - meta-externalagent
+    - oai-searchbot
+    - omgili
+    - omgilibot
+    - perplexitybot
+    - petalbot
+    - scrapy
+    - timpibot
+    - velenpublicwebcrawler
+    - webzio-extended
+    - youbot
+    sha256: 12134cfde361f3910b040292baa24d709b5b490f3df444e727584b56fea64be4
+  - url: https://ftp2.waow.com/closings.html
+    checked_at: '2026-09-27T07:03:21Z'
+    state: parsed
+    allowed: false
+    rule: 'Disallow: /'
+    crawl_delay: null
+    disallowed_agents: []
+    sha256: 133e4db054e73a10017a1f429c80c35cd5bfa9c3a1aba581b364ecc459c48a4b
+- id: allen-wkow
+  platform: allen
+  call_sign: WKOW
+  name: WKOW (wkow.com)
+  market: Madison, WI
+  dma: Madison, WI DMA
+  states: [WI]
+  counties:
+    basis: dma
+    source: 'DMA county list: alex-patton/US-TVDMA-BY-COUNTY usa-tvdma-county.csv at commit 7f254b8c1843c62ec976a71c40d366d45f6f29cd
+      (sha256 2e2cd00265a8d704...), names resolved to FIPS with the Census 2025 county Gazetteer; Connecticut
+      via the Census county-to-town crosswalk (snowlight.sources.stations.dma); market ''Madison, WI DMA'''
+    fips: ['55021', '55025', '55043', '55045', '55049', '55057', '55065', '55077', '55103', '55105', '55111']
+  page_url: https://www.wkow.com/weather/closings/
+  data_url: https://ftp2.wkow.com/closings.html
+  export_url: null
+  archive_urls:
+  - https://www.wkow.com/weather/closings/
+  - https://ftp2.wkow.com/closings.html
+  - https://amb-feeds.s3.amazonaws.com/WKOW_closings.json
+  poll_minutes: null
+  status: active
+  evidence: 'First-hand check of 2026-09-26 (docs/research/firsthand/others.json, record WKOW; variant
+    allen-blox-ftp2-frame). Live read of https://www.wkow.com/weather/closings/ 2026-09-27T06:20:23Z:
+    HTTP 200, 182386 bytes, Last-Modified Sun, 27 Sep 2026 06:02:59 GMT; allen-blox-page, deferred, loads
+    https://ftp2.wkow.com/closings.html. Live read of https://ftp2.wkow.com/closings.html 2026-09-27T05:58:15Z:
+    HTTP 200, 744 bytes, Last-Modified Sun, 27 Sep 2026 05:57:01 GMT; newsticker-html, empty. Archived
+    captures read (archive-captures run 36299187602): 1 empty, 1 populated. Archived http://ftp2.wkow.com/closings.html
+    captured 2025-01-24T15:20:41Z: newsticker-html, 1 rows (''Wisconsin Heights Schools''). Listed in
+    full by run 36363136243 (50 captures of the file, 2021-2026); the largest winter captures downloaded
+    by run 36363837899: newsticker-html, 6 rows on 2022-12-10, empty on 2023-03-04, 1 row on 2025-01-24
+    16:05 (the capture of 2024-12-16 timed out at the TLS handshake).'
+  list_files:
+  - url: https://ftp2.wkow.com/closings.html
+    loaded_by: frame
+    seen: The station's BLOX closings page frames it (<iframe src=...> in tncms-block; live read 2026-09-27).
+  page_check: null
+  robots:
+  - url: https://www.wkow.com/weather/closings/
+    checked_at: '2026-09-27T07:03:22Z'
+    state: parsed
+    allowed: true
+    rule: no rule matches
+    crawl_delay: null
+    disallowed_agents:
+    - ai2bot
+    - ai2bot-dolma
+    - anthropic-ai
+    - applebot-extended
+    - bytespider
+    - ccbot
+    - chatgpt-user
+    - claude-web
+    - claudebot
+    - cohere-ai
+    - diffbot
+    - facebookbot
+    - friendlycrawler
+    - google-extended
+    - gptbot
+    - iaskspider/2.0
+    - icc-crawler
+    - imagesiftbot
+    - img2dataset
+    - meta-externalagent
+    - oai-searchbot
+    - omgili
+    - omgilibot
+    - perplexitybot
+    - petalbot
+    - scrapy
+    - timpibot
+    - velenpublicwebcrawler
+    - webzio-extended
+    - youbot
+    sha256: 2d98d084c472a2dbc76720e832d4f89226995fc62f7b3cbc0cb5e85da7a0b58d
+  - url: https://ftp2.wkow.com/closings.html
+    checked_at: '2026-09-27T07:03:23Z'
+    state: unavailable
+    allowed: true
+    rule: 'robots.txt unavailable (4xx): unrestricted'
+    crawl_delay: null
+    disallowed_agents: []
+    sha256: null
+- id: allen-kimt
+  platform: allen
+  call_sign: KIMT
+  name: KIMT (kimt.com)
+  market: Rochester - Mason City - Austin, MN-IA
+  dma: Rochester - Mason City - Austin, MN - IA DMA
+  states: [IA, MN]
+  counties:
+    basis: dma
+    source: 'DMA county list: alex-patton/US-TVDMA-BY-COUNTY usa-tvdma-county.csv at commit 7f254b8c1843c62ec976a71c40d366d45f6f29cd
+      (sha256 2e2cd00265a8d704...), names resolved to FIPS with the Census 2025 county Gazetteer; Connecticut
+      via the Census county-to-town crosswalk (snowlight.sources.stations.dma); market ''Rochester - Mason
+      City - Austin, MN - IA DMA'''
+    fips: ['19033', '19067', '19081', '19089', '19131', '19189', '19195', '27039', '27045', '27047', '27099',
+      '27109']
+  page_url: https://www.kimt.com/weather/closings/
+  data_url: https://ftp2.kimt.com/closings.html
+  export_url: null
+  archive_urls:
+  - https://www.kimt.com/weather/closings/
+  - https://ftp2.kimt.com/closings.html
+  - https://amb-feeds.s3.amazonaws.com/KIMT_closings.json
+  poll_minutes: null
+  status: active
+  evidence: 'First-hand check of 2026-09-26 (docs/research/firsthand/others.json, record KIMT; variant
+    allen-blox-ftp2-frame). Live read of https://www.kimt.com/weather/closings/ 2026-09-27T06:20:28Z:
+    HTTP 200, 172725 bytes, Last-Modified Sun, 27 Sep 2026 05:54:47 GMT; allen-blox-page, deferred, loads
+    https://ftp2.kimt.com/closings.html. Live read of https://ftp2.kimt.com/closings.html 2026-09-27T05:58:26Z:
+    HTTP 200, 409 bytes, Last-Modified Sun, 27 Sep 2026 05:55:02 GMT; allen-header-table, empty. Archived
+    captures read (archive-captures run 36299187602): 1 empty, 1 populated. Archived http://ftp2.kimt.com/closings.html
+    captured 2026-03-17T03:39:33Z: allen-header-table, 21 rows (''Cedar Valley Seminary Senior Meal Program'',
+    ''Central Springs'', ...). Listed in full by run 36363136243 (94 captures of the file, 2019-2026);
+    the largest winter capture of each year downloaded by run 36363837899: the file was a CGS ''All Active''
+    page from 2020 to 2024 (cgs-all-active, 85 rows on 2020-03-27, 61 on 2022-12-21, 90 on 2023-02-23,
+    98 on 2024-01-14) and the header table since 2025 (53 rows on 2025-12-10, 61 on 2026-01-22).'
+  list_files:
+  - url: https://ftp2.kimt.com/closings.html
+    loaded_by: frame
+    seen: The station's BLOX closings page frames it (<iframe src=...> in tncms-block; live read 2026-09-27).
+  page_check: null
+  robots:
+  - url: https://www.kimt.com/weather/closings/
+    checked_at: '2026-09-27T07:03:19Z'
+    state: parsed
+    allowed: true
+    rule: no rule matches
+    crawl_delay: null
+    disallowed_agents:
+    - ai2bot
+    - ai2bot-dolma
+    - anthropic-ai
+    - applebot-extended
+    - bytespider
+    - ccbot
+    - chatgpt-user
+    - claude-web
+    - claudebot
+    - cohere-ai
+    - diffbot
+    - facebookbot
+    - friendlycrawler
+    - google-extended
+    - gptbot
+    - iaskspider/2.0
+    - icc-crawler
+    - imagesiftbot
+    - img2dataset
+    - meta-externalagent
+    - oai-searchbot
+    - omgili
+    - omgilibot
+    - perplexitybot
+    - petalbot
+    - scrapy
+    - timpibot
+    - velenpublicwebcrawler
+    - webzio-extended
+    - youbot
+    sha256: 4750cd75b3c200009dfb967f355994abd77ad8ebf3ef67bad133e4336cc5aa17
+  - url: https://ftp2.kimt.com/closings.html
+    checked_at: '2026-09-27T07:03:20Z'
+    state: unavailable
+    allowed: true
+    rule: 'robots.txt unavailable (4xx): unrestricted'
+    crawl_delay: null
+    disallowed_agents: []
+    sha256: null
+- id: allen-wktv
+  platform: allen
+  call_sign: WKTV
+  name: WKTV (wktv.com)
+  market: Utica, NY
+  dma: Utica, NY DMA*
+  states: [NY]
+  counties:
+    basis: dma
+    source: 'DMA county list: alex-patton/US-TVDMA-BY-COUNTY usa-tvdma-county.csv at commit 7f254b8c1843c62ec976a71c40d366d45f6f29cd
+      (sha256 2e2cd00265a8d704...), names resolved to FIPS with the Census 2025 county Gazetteer; Connecticut
+      via the Census county-to-town crosswalk (snowlight.sources.stations.dma); market ''Utica, NY DMA*'''
+    fips: ['36043', '36065', '36077']
+  page_url: https://www.wktv.com/weather/closings/
+  data_url: https://ftp2.wktv.com/CGSXML/All%20Active.html
+  export_url: null
+  archive_urls:
+  - https://www.wktv.com/weather/closings/
+  - https://ftp2.wktv.com/CGSXML/All%20Active.html
+  - https://amb-feeds.s3.amazonaws.com/WKTV_closings.json
+  poll_minutes: null
+  status: active
+  evidence: 'First-hand check of 2026-09-26 (docs/research/firsthand/others.json, record WKTV; variant
+    allen-blox-ftp2-frame). Live read of https://ftp2.wktv.com/CGSXML/All%20Active.html 2026-09-27T05:58:37Z:
+    HTTP 200, 3617 bytes, Last-Modified Thu, 24 Sep 2026 23:04:25 GMT; cgs-all-active, empty. Archived
+    captures read (archive-captures runs 36299187602, 36338052203, 36341591786, 36344069635): 9 empty.
+    Never seen with a row: the archive lists 17 captures of WKTV''s CGS All Active page (2022 to 2026,
+    listing of run 36317655310); eight were read (runs 36299187602, 36338052203, 36341591786 and 36344069635):
+    the six largest (2022-03-14, 2022-11-01, 2023-02-17, 2023-03-18, 2025-02-11 and 2025-11-28) and those
+    of the two stormiest listed days (2025-01-13 and 2026-01-28), all in the empty state. The page''s
+    rows have not been seen, so a page that lists any raises (snowlight.sources.stations.cgs).'
+  list_files:
+  - url: https://ftp2.wktv.com/CGSXML/All%20Active.html
+    loaded_by: frame
+    seen: The station's BLOX closings page frames it (<iframe src=...> in tncms-block; live read 2026-09-27).
+  page_check: null
+  robots:
+  - url: https://www.wktv.com/weather/closings/
+    checked_at: '2026-09-27T07:03:23Z'
+    state: parsed
+    allowed: true
+    rule: no rule matches
+    crawl_delay: null
+    disallowed_agents:
+    - ai2bot
+    - ai2bot-dolma
+    - anthropic-ai
+    - applebot-extended
+    - bytespider
+    - ccbot
+    - chatgpt-user
+    - claude-web
+    - claudebot
+    - cohere-ai
+    - diffbot
+    - facebookbot
+    - friendlycrawler
+    - google-extended
+    - gptbot
+    - iaskspider/2.0
+    - icc-crawler
+    - imagesiftbot
+    - img2dataset
+    - meta-externalagent
+    - oai-searchbot
+    - omgili
+    - omgilibot
+    - perplexitybot
+    - petalbot
+    - scrapy
+    - timpibot
+    - velenpublicwebcrawler
+    - webzio-extended
+    - youbot
+    sha256: ac46cbf175e9440874d4696f2c52d7bc16bb0acd57f821ff5b4e10048f782381
+  - url: https://ftp2.wktv.com/CGSXML/All%20Active.html
+    checked_at: '2026-09-27T07:03:23Z'
+    state: parsed
+    allowed: false
+    rule: 'Disallow: /'
+    crawl_delay: null
+    disallowed_agents: []
+    sha256: 133e4db054e73a10017a1f429c80c35cd5bfa9c3a1aba581b364ecc459c48a4b
+- id: allen-kvoa
+  platform: allen
+  call_sign: KVOA
+  name: KVOA
+  market: Tucson, AZ
+  dma: null
+  states: [AZ]
+  counties: null
+  page_url: null
+  data_url: null
+  export_url: null
+  archive_urls: []
+  poll_minutes: null
+  status: no_endpoint
+  evidence: First-hand check of 2026-09-26 (docs/research/firsthand/others.json, record KVOA; variant
+    blocked-429). Its closings address (kvoa.com/weather/closings/) answered 404 on 2026-09-27 and HTTP
+    429 (TownNews) on 2026-09-26; its banner counter answered 403. No list read.
+  list_files: []
+  page_check: null
+  robots: []
+- id: allen-kezi
+  platform: allen
+  call_sign: KEZI
+  name: KEZI
+  market: Eugene, OR
+  dma: null
+  states: [OR]
+  counties: null
+  page_url: null
+  data_url: null
+  export_url: null
+  archive_urls: []
+  poll_minutes: null
+  status: no_endpoint
+  evidence: First-hand check of 2026-09-26 (docs/research/firsthand/others.json, record KEZI; variant
+    blocked-429). Its closings address answered HTTP 429 (TownNews) on 2026-09-26 and 404 on 2026-09-27;
+    its banner counter was last written 2024-01-08. No list read.
+  list_files: []
+  page_check: null
+  robots: []
+- id: allen-kdrv
+  platform: allen
+  call_sign: KDRV
+  name: KDRV
+  market: Medford - Klamath Falls, OR
+  dma: null
+  states: [CA, OR]
+  counties: null
+  page_url: null
+  data_url: null
+  export_url: null
+  archive_urls: []
+  poll_minutes: null
+  status: no_endpoint
+  evidence: First-hand check of 2026-09-26 (docs/research/firsthand/others.json, record KDRV/KDKF; variant
+    blocked-429). Its closings address answered HTTP 429 (TownNews) on 2026-09-26 and 2026-09-27; its
+    banner counter was last written 2024-01-08. No list read.
+  list_files: []
+  page_check: null
+  robots: []
+- id: allen-khsl
+  platform: allen
+  call_sign: KHSL
+  name: KHSL
+  market: Chico - Redding, CA
+  dma: null
+  states: [CA]
+  counties: null
+  page_url: null
+  data_url: null
+  export_url: null
+  archive_urls: []
+  poll_minutes: null
+  status: no_endpoint
+  evidence: First-hand check of 2026-09-26 (docs/research/firsthand/others.json, record KHSL/KNVN; variant
+    blocked-429). Its closings address answered HTTP 429 (TownNews) on 2026-09-26 and 2026-09-27; its
+    banner counter was last written 2024-01-08. No list read.
+  list_files: []
+  page_check: null
+  robots: []

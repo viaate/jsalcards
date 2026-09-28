@@ -1,0 +1,644 @@
+# Station registry for one platform. Loaded with every other file in this folder
+# by snowlight.sources.stations.registry; see its docstring for the fields.
+# `snowlight stations robots --update` rewrites the robots blocks in place.
+platform:
+  id: blox
+  name: TownNews BLOX sites' closings (station pages and the closings application's files)
+  operator: 'Several owners on TownNews BLOX: Morgan Murphy Media (KOAM, KXLY), WRCB, Draper Media (Coast
+    TV), Rincon (WRSP, WICS, KHQA; Sinclair partner stations)'
+  adapter: blox
+  poll_minutes: 10
+  terms:
+    automated_access: forbidden
+    summary: Each site has its own BLOX terms page. Coast TV's (https://www.coasttv.com/site/terms.html,
+      read 2026-09-27) prohibits manipulating the service 'by any means, including but not limited to
+      the use of bots, botnets, automated scripts or other automated or electronic means'; the Rincon
+      sites' (WRSP foxillinois.com, WICS newschannel20.com, KHQA khqa.com; Sinclair's template) prohibit
+      accessing the service 'with any mining, scraping, data extraction or other tools'. KOAM's terms
+      answered HTTP 429 (TownNews throttling) and KXLY's and WRCB's were not found. The project owner
+      decided on 2026-09-25 to read the closings lists anyway for this non-commercial project (owner_decision
+      below); the terms stay recorded here. TownNews answers bursts with HTTP 429; the poller paces each
+      host and backs off, and never retries around a refusal.
+    evidence:
+    - url: https://www.coasttv.com/site/terms.html
+      read_at: '2026-09-27T06:25:41Z'
+      sha256: cf772c96bb280b34c38752cb0f178b96b8abdce3450e11055b6653940348bfa0
+      excerpt:
+      - Prohibited Uses You will not manipulate the Service by any means, including but not limited to
+        the use of bots, botnets, automated scripts or other automated or electronic means.
+    - url: https://www.foxillinois.com/site/terms.html
+      read_at: '2026-09-27T06:25:46Z'
+      sha256: 74d3b2ec8bd1be8bbf50b561d2009b815bc8a11e640f52c3d86657d3054fd163
+      excerpt:
+      - Access the Service with any mining, scraping, data extraction or other tools;
+      - You may only use the material and the services available through this Service for your personal
+        and non-commercial use.
+    - url: https://www.newschannel20.com/site/terms.html
+      read_at: '2026-09-27T06:41:58Z'
+      sha256: 569e25c11c12dcb031f65b4b96a06a304fdd78b74eafd29e7abc0df7e06edd67
+      excerpt:
+      - Access the Service with any mining, scraping, data extraction or other tools;
+    - url: https://www.khqa.com/site/terms.html
+      read_at: '2026-09-27T06:42:03Z'
+      sha256: c78e56fcb0a30d723f27f936ae4e26c6417fc4bc52ba561387b3ab0ded8d7ff0
+      excerpt:
+      - Access the Service with any mining, scraping, data extraction or other tools;
+    permission: null
+    owner_decision:
+      decided_by: the project owner (Snowlight)
+      decided_on: '2026-09-25'
+      reference: 'Stated in the build instructions for the station adapters (piece s4c2, round 1): "Terms
+        of use that forbid automated access do not exclude a station: the project owner decided on 2026-09-25
+        to read them for this non-commercial project, so record each station''s terms internally in the
+        registry and read it anyway." The same instructions record the owner''s decision of 2026-09-26
+        to read closings pages and data files even where robots.txt disallows them (naming Sinclair''s
+        /resources/ftptransfer/ files, Allen''s ftp2 files and WVEIS as examples). Relayed to the pipeline''s
+        builder by the project''s build workflow; to revoke it, remove this block and live polling of
+        this platform stops.'
+      scope: 'Live reads of this platform''s public closings lists (the station pages and the list files
+        they frame or load) for Snowlight, a non-commercial project, although the terms above forbid automated
+        access. robots.txt is read and its verdict recorded for every URL requested; the owner decided
+        on 2026-09-26 to read closings pages and files even where robots.txt disallows them. Unchanged
+        by it: the User-Agent names the repository (never a browser string), only the closings page or
+        file is requested (no crawling), requests are paced per host (any Crawl-delay is a floor) with
+        conditional requests and backoff on 429 and 5xx answers, and a station that blocks the project
+        (a 403, or a bot challenge) is not worked around.'
+  notes: 'Stations on TownNews BLOX sites whose closings the first-hand check of 2026-09-26 found: KOAM
+    and KXLY load a closings XML file by script, WRCB frames the closings application''s HTML export,
+    Coast TV writes each closing as an article card, and the Rincon/Sinclair partner stations WRSP, WICS
+    and KHQA write rows into hidden weather-closings tables. The live poller reads the list file where
+    the page names one, else the page.'
+  shared_paths: []
+stations:
+- id: blox-koam
+  platform: blox
+  call_sign: KOAM
+  name: KOAM News Now (koamnewsnow.com)
+  market: Joplin - Pittsburg, MO-KS
+  dma: Joplin - Pittsburg, MO - KS - OK DMA
+  states: [KS, MO, OK]
+  counties:
+    basis: dma
+    source: 'DMA county list: alex-patton/US-TVDMA-BY-COUNTY usa-tvdma-county.csv at commit 7f254b8c1843c62ec976a71c40d366d45f6f29cd
+      (sha256 2e2cd00265a8d704...), names resolved to FIPS with the Census 2025 county Gazetteer; Connecticut
+      via the Census county-to-town crosswalk (snowlight.sources.stations.dma); market ''Joplin - Pittsburg,
+      MO - KS - OK DMA'''
+    fips: ['20001', '20011', '20021', '20037', '20099', '20133', '20205', '20207', '29011', '29097', '29119',
+      '29145', '29217', '40115']
+  page_url: https://www.koamnewsnow.com/weather/closings-and-delays/
+  data_url: https://www.koamnewsnow.com/app/closings/KOAM-closingsC.xml
+  export_url: null
+  archive_urls:
+  - https://www.koamnewsnow.com/weather/closings-and-delays/
+  - https://www.koamnewsnow.com/app/closings/KOAM-closingsC.xml
+  - https://www.koamnewsnow.com/app/closings/closings.xml
+  poll_minutes: null
+  status: active
+  evidence: 'First-hand check of 2026-09-26 (docs/research/firsthand/others.json, record KOAM; variant
+    blox-closings-xml). Live read of https://www.koamnewsnow.com/weather/closings-and-delays/ 2026-09-27T06:21:14Z:
+    HTTP 200, 372100 bytes, Last-Modified Sun, 27 Sep 2026 06:11:03 GMT; blox-script-page, deferred, loads
+    /app/closings/KOAM-closingsC.xml. Live read of https://www.koamnewsnow.com/app/closings/KOAM-closingsC.xml
+    2026-09-27T05:59:37Z: HTTP 200, 83 bytes, Last-Modified Tue, 10 Feb 2026 07:02:46 GMT; blox-sc-xml,
+    empty. Archived captures read (archive-captures runs 36317643857, 36324857670): 1 deferred, 2 populated.
+    Archived https://www.koamnewsnow.com/app/closings/closings.xml captured 2023-02-01T18:18:26Z: blox-cgs-xml,
+    24 rows (''BEARSKIN HEALTH CLINIC'', ''VETERANS HEALTH CARE OF THE OZARKS-ALL COM CLINICS'', ...).
+    Archived https://www.koamnewsnow.com/app/closings/closings.xml captured 2024-01-10T17:54:15Z: blox-cgs-xml,
+    1 rows (''LITTLE BALKANS QUILT GUILD'').'
+  list_files:
+  - url: https://www.koamnewsnow.com/app/closings/KOAM-closingsC.xml
+    loaded_by: script
+    seen: The station's closings page's list script requests it and writes each Closing's Name1 into the
+      table (live read 2026-09-27).
+  page_check: null
+  robots:
+  - url: https://www.koamnewsnow.com/weather/closings-and-delays/
+    checked_at: '2026-09-27T07:03:25Z'
+    state: parsed
+    allowed: true
+    rule: no rule matches
+    crawl_delay: null
+    disallowed_agents:
+    - ai2bot
+    - ai2bot-dolma
+    - anthropic-ai
+    - applebot-extended
+    - bytespider
+    - ccbot
+    - chatgpt-user
+    - claude-web
+    - claudebot
+    - cohere-ai
+    - diffbot
+    - facebookbot
+    - friendlycrawler
+    - google-extended
+    - gptbot
+    - iaskspider/2.0
+    - icc-crawler
+    - imagesiftbot
+    - img2dataset
+    - meta-externalagent
+    - oai-searchbot
+    - omgili
+    - omgilibot
+    - perplexitybot
+    - petalbot
+    - scrapy
+    - timpibot
+    - velenpublicwebcrawler
+    - webzio-extended
+    - youbot
+    sha256: 80eb09a56314b51f124fc48d2dd0fc7c84202a362f8d5cbfe3c6e44c1ae69ab9
+  - url: https://www.koamnewsnow.com/app/closings/KOAM-closingsC.xml
+    checked_at: '2026-09-27T07:03:25Z'
+    state: parsed
+    allowed: true
+    rule: no rule matches
+    crawl_delay: null
+    disallowed_agents:
+    - ai2bot
+    - ai2bot-dolma
+    - anthropic-ai
+    - applebot-extended
+    - bytespider
+    - ccbot
+    - chatgpt-user
+    - claude-web
+    - claudebot
+    - cohere-ai
+    - diffbot
+    - facebookbot
+    - friendlycrawler
+    - google-extended
+    - gptbot
+    - iaskspider/2.0
+    - icc-crawler
+    - imagesiftbot
+    - img2dataset
+    - meta-externalagent
+    - oai-searchbot
+    - omgili
+    - omgilibot
+    - perplexitybot
+    - petalbot
+    - scrapy
+    - timpibot
+    - velenpublicwebcrawler
+    - webzio-extended
+    - youbot
+    sha256: 80eb09a56314b51f124fc48d2dd0fc7c84202a362f8d5cbfe3c6e44c1ae69ab9
+- id: blox-kxly
+  platform: blox
+  call_sign: KXLY
+  name: KXLY 4 (kxly.com)
+  market: Spokane, WA
+  dma: Spokane, WA - ID - MT - OR DMA
+  states: [ID, MT, OR, WA]
+  counties:
+    basis: dma
+    source: 'DMA county list: alex-patton/US-TVDMA-BY-COUNTY usa-tvdma-county.csv at commit 7f254b8c1843c62ec976a71c40d366d45f6f29cd
+      (sha256 2e2cd00265a8d704...), names resolved to FIPS with the Census 2025 county Gazetteer; Connecticut
+      via the Census county-to-town crosswalk (snowlight.sources.stations.dma); market ''Spokane, WA -
+      ID - MT - OR DMA'''
+    fips: ['16009', '16017', '16021', '16035', '16049', '16055', '16057', '16061', '16069', '16079', '30053',
+      '41063', '53001', '53003', '53013', '53019', '53023', '53025', '53043', '53047', '53051', '53063',
+      '53065', '53075']
+  page_url: https://www.kxly.com/weather/school-closures/
+  data_url: null
+  export_url: null
+  archive_urls:
+  - https://www.kxly.com/weather/school-closures/
+  - https://www.kxly.com/app/closings/closings.xml
+  poll_minutes: null
+  status: active
+  evidence: 'First-hand check of 2026-09-26 (docs/research/firsthand/others.json, record KXLY; variant
+    blox-closings-xml). Live read of https://www.kxly.com/weather/school-closures/ 2026-09-27T06:57:17Z:
+    HTTP 200, 215859 bytes, Last-Modified Sun, 27 Sep 2026 06:50:37 GMT; blox-script-page, deferred, loads
+    /app/closings/closings.xml. Archived captures read (archive-captures runs 36317643857, 36349462045):
+    3 deferred, 2 empty, 2 populated. Archived https://www.kxly.com/weather/school-closures/ captured
+    2022-11-30T00:54:57Z: heritage-bti-table, 3 rows (''Deer Park School District'', ''Paschal Sherman
+    Indian School'', ...). Archived https://www.kxly.com/weather/school-closures/ captured 2022-01-06T07:39:01Z:
+    heritage-bti-table, 3 rows (''Grand Coulee Dam School District'', ''Kootenai District'', ...). The
+    page''s script reads /app/closings/closings.xml, which answered HTTP 429 (TownNews throttling) after
+    backoff on 2026-09-26 and 2026-09-27; the live poller reads the page and follows it. Proven through
+    its closings page: before BLOX (captures of 2021 and 2022) the page carried the schoolclosings.org
+    table in its own HTML, with 3 rows on 2022-01-06 and on 2022-11-30 and the no-closings line on 2021-02-15
+    (run 36349462045). The closings XML the page loads today (/app/closings/closings.xml) is archived
+    once, empty (2023-05-23), and live reads of it are often refused with HTTP 429. The read of 2026-09-27
+    23:18Z answered HTTP 200 (empty); those of 2026-09-28 00:33Z and 00:50Z (the platform''s poll interval
+    apart) were refused with HTTP 429 ''Too Many Requests'' and no Retry-After, and were not retried beyond
+    the framework''s backoff.'
+  list_files: []
+  page_check: null
+  robots:
+  - url: https://www.kxly.com/weather/school-closures/
+    checked_at: '2026-09-27T07:03:26Z'
+    state: parsed
+    allowed: true
+    rule: no rule matches
+    crawl_delay: null
+    disallowed_agents:
+    - ai2bot
+    - ai2bot-dolma
+    - anthropic-ai
+    - applebot-extended
+    - bytespider
+    - ccbot
+    - chatgpt-user
+    - claude-web
+    - claudebot
+    - cohere-ai
+    - diffbot
+    - facebookbot
+    - friendlycrawler
+    - google-extended
+    - gptbot
+    - iaskspider/2.0
+    - icc-crawler
+    - imagesiftbot
+    - img2dataset
+    - meta-externalagent
+    - oai-searchbot
+    - omgili
+    - omgilibot
+    - perplexitybot
+    - petalbot
+    - scrapy
+    - timpibot
+    - velenpublicwebcrawler
+    - webzio-extended
+    - youbot
+    sha256: ac8a663d33610df041ad6c5a896814b51565d37f5d93078d69ae603ff56731dd
+- id: blox-wrcb
+  platform: blox
+  call_sign: WRCB
+  name: Local 3 News WRCB (local3news.com)
+  market: Chattanooga, TN
+  dma: Chattanooga, TN - GA - NC DMA
+  states: [GA, NC, TN]
+  counties:
+    basis: dma
+    source: 'DMA county list: alex-patton/US-TVDMA-BY-COUNTY usa-tvdma-county.csv at commit 7f254b8c1843c62ec976a71c40d366d45f6f29cd
+      (sha256 2e2cd00265a8d704...), names resolved to FIPS with the Census 2025 county Gazetteer; Connecticut
+      via the Census county-to-town crosswalk (snowlight.sources.stations.dma); market ''Chattanooga,
+      TN - GA - NC DMA'''
+    fips: ['13047', '13083', '13111', '13213', '13295', '13313', '37039', '47007', '47011', '47061', '47065',
+      '47107', '47115', '47121', '47139', '47143', '47153']
+  page_url: https://www.local3news.com/local-weather/school-closings/
+  data_url: https://local3news.com/app/closings/closings.html
+  export_url: null
+  archive_urls:
+  - https://www.local3news.com/local-weather/school-closings/
+  - https://local3news.com/app/closings/closings.html
+  poll_minutes: null
+  status: active
+  evidence: 'First-hand check of 2026-09-26 (docs/research/firsthand/others.json, record WRCB; variant
+    blox-app-closings). Live read of https://www.local3news.com/local-weather/school-closings/ 2026-09-27T06:59:26Z:
+    HTTP 200, 329389 bytes, Last-Modified Sun, 27 Sep 2026 05:07:51 GMT; blox-frame-page, deferred, loads
+    https://local3news.com/app/closings/closings.html. Live read of https://local3news.com/app/closings/closings.html
+    2026-09-27T06:20:07Z: HTTP 200, 991 bytes, Last-Modified Sun, 27 Sep 2026 06:18:03 GMT; newsticker-html,
+    populated, 2 rows (''HAMILTON'', ''WHITFIELD''). Archived captures read (archive-captures run 36317643857):
+    2 deferred, 1 empty, 1 populated. Archived https://local3news.com/app/closings/closings.html captured
+    2025-01-09T12:24:16Z: newsticker-html, 24 rows (''Allied Pediatrics'', ''Collegedale Public Library'',
+    ...).'
+  list_files:
+  - url: https://local3news.com/app/closings/closings.html
+    loaded_by: frame
+    seen: The first-hand check of 2026-09-26 found the closings page framing it; this part read it live
+      on 2026-09-27 (a NewsTicker export, 2 rows).
+  page_check: null
+  robots:
+  - url: https://www.local3news.com/local-weather/school-closings/
+    checked_at: '2026-09-27T07:03:26Z'
+    state: parsed
+    allowed: true
+    rule: no rule matches
+    crawl_delay: null
+    disallowed_agents:
+    - ai2bot
+    - ai2bot-dolma
+    - anthropic-ai
+    - applebot-extended
+    - bytespider
+    - ccbot
+    - chatgpt-user
+    - claude-web
+    - claudebot
+    - cohere-ai
+    - diffbot
+    - facebookbot
+    - friendlycrawler
+    - google-extended
+    - gptbot
+    - iaskspider/2.0
+    - icc-crawler
+    - imagesiftbot
+    - img2dataset
+    - meta-externalagent
+    - oai-searchbot
+    - omgili
+    - omgilibot
+    - perplexitybot
+    - petalbot
+    - scrapy
+    - timpibot
+    - velenpublicwebcrawler
+    - webzio-extended
+    - youbot
+    sha256: 4db33b0fce7aa6f28ac08247a7f621bb6d6e93a5bc3bae0dca7e28b502e9b0b5
+  - url: https://local3news.com/app/closings/closings.html
+    checked_at: '2026-09-27T07:03:26Z'
+    state: parsed
+    allowed: true
+    rule: no rule matches
+    crawl_delay: null
+    disallowed_agents:
+    - ai2bot
+    - ai2bot-dolma
+    - anthropic-ai
+    - applebot-extended
+    - bytespider
+    - ccbot
+    - chatgpt-user
+    - claude-web
+    - claudebot
+    - cohere-ai
+    - diffbot
+    - facebookbot
+    - friendlycrawler
+    - google-extended
+    - gptbot
+    - iaskspider/2.0
+    - icc-crawler
+    - imagesiftbot
+    - img2dataset
+    - meta-externalagent
+    - oai-searchbot
+    - omgili
+    - omgilibot
+    - perplexitybot
+    - petalbot
+    - scrapy
+    - timpibot
+    - velenpublicwebcrawler
+    - webzio-extended
+    - youbot
+    sha256: cf8f9cd97bc92f32aa70ca3369149c0c8617ed67e16b2172002e4a9b8e630a45
+- id: blox-wrde
+  platform: blox
+  call_sign: WRDE
+  name: Coast TV (coasttv.com)
+  market: Salisbury, MD (Delmarva)
+  dma: Salisbury, MD - DE DMA
+  states: [DE, MD]
+  counties:
+    basis: dma
+    source: 'DMA county list: alex-patton/US-TVDMA-BY-COUNTY usa-tvdma-county.csv at commit 7f254b8c1843c62ec976a71c40d366d45f6f29cd
+      (sha256 2e2cd00265a8d704...), names resolved to FIPS with the Census 2025 county Gazetteer; Connecticut
+      via the Census county-to-town crosswalk (snowlight.sources.stations.dma); market ''Salisbury, MD
+      - DE DMA'''
+    fips: ['10005', '24039', '24045', '24047']
+  page_url: https://www.coasttv.com/closings/
+  data_url: null
+  export_url: null
+  archive_urls:
+  - https://www.coasttv.com/closings/
+  poll_minutes: null
+  status: active
+  evidence: 'First-hand check of 2026-09-26 (docs/research/firsthand/others.json, record Coast TV (WRDE);
+    variant blox-closings-assets). Live read of https://www.coasttv.com/closings/ 2026-09-27T06:09:56Z:
+    HTTP 200, 191831 bytes, Last-Modified Sun, 27 Sep 2026 06:09:46 GMT; blox-closings-cards, populated,
+    2 rows (''ATLANTIC UMC OCEAN CITY'', ''St. Matthews by the Sea''). Archived captures read (archive-captures
+    run 36317643857): 2 empty.'
+  list_files: []
+  page_check: null
+  robots:
+  - url: https://www.coasttv.com/closings/
+    checked_at: '2026-09-27T07:03:27Z'
+    state: parsed
+    allowed: true
+    rule: no rule matches
+    crawl_delay: null
+    disallowed_agents: []
+    sha256: df9eeaf1be5dcf68b44b93a5288e3f3dc80befa07d471cb9d6216e68f6b43066
+- id: blox-wrsp
+  platform: blox
+  call_sign: WRSP
+  name: FOX Illinois WRSP (foxillinois.com)
+  market: Champaign - Springfield - Decatur, IL
+  dma: Champaign - Springfield - Decatur, IL DMA
+  states: [IL]
+  counties:
+    basis: dma
+    source: 'DMA county list: alex-patton/US-TVDMA-BY-COUNTY usa-tvdma-county.csv at commit 7f254b8c1843c62ec976a71c40d366d45f6f29cd
+      (sha256 2e2cd00265a8d704...), names resolved to FIPS with the Census 2025 county Gazetteer; Connecticut
+      via the Census county-to-town crosswalk (snowlight.sources.stations.dma); market ''Champaign - Springfield
+      - Decatur, IL DMA'''
+    fips: ['17019', '17021', '17029', '17035', '17039', '17041', '17049', '17053', '17075', '17107', '17115',
+      '17129', '17137', '17139', '17147', '17167', '17173', '17183']
+  page_url: https://www.foxillinois.com/weather/closings/
+  data_url: null
+  export_url: null
+  archive_urls:
+  - https://www.foxillinois.com/weather/closings/
+  poll_minutes: null
+  status: active
+  evidence: 'First-hand check of 2026-09-26 (docs/research/firsthand/others.json, record WRSP; variant
+    blox-weather-closings-table). Live read of https://www.foxillinois.com/weather/closings/ 2026-09-27T06:01:18Z:
+    HTTP 200, 233813 bytes, Last-Modified Sun, 27 Sep 2026 05:02:39 GMT; blox-weather-closings, empty.
+    Archived captures read (archive-captures runs 36317643857, 36324857670, 36352967678): 4 deferred,
+    3 empty. The weather closings tables this page has shown since February 2026 have never been seen
+    with rows: the archive holds 7 captures of the page since then (listing, run 36322116061), and the
+    three of winter 2026, the largest (2026-02-06 23:20 UTC; 2026-03-13 14:58 and 14:59 UTC, 267 KB each),
+    were read in round 3 (run 36352967678): every table empty; the rest are of May to July. Before that
+    (captures of 2019 to January 2026) Sinclair ran the page and framed a NewsTicker file (/resources/ftptransfer/wics/closings/closings.html);
+    those captures are read as Sinclair pages. A table with rows raises until its columns are seen, so
+    the station is unproven.'
+  list_files: []
+  page_check: null
+  robots:
+  - url: https://www.foxillinois.com/weather/closings/
+    checked_at: '2026-09-27T07:03:27Z'
+    state: parsed
+    allowed: true
+    rule: no rule matches
+    crawl_delay: null
+    disallowed_agents:
+    - ai2bot
+    - ai2bot-dolma
+    - anthropic-ai
+    - applebot-extended
+    - bytespider
+    - ccbot
+    - chatgpt-user
+    - claude-web
+    - claudebot
+    - cohere-ai
+    - diffbot
+    - facebookbot
+    - friendlycrawler
+    - google-extended
+    - gptbot
+    - iaskspider/2.0
+    - icc-crawler
+    - imagesiftbot
+    - img2dataset
+    - meta-externalagent
+    - oai-searchbot
+    - omgili
+    - omgilibot
+    - perplexitybot
+    - petalbot
+    - scrapy
+    - timpibot
+    - velenpublicwebcrawler
+    - webzio-extended
+    - youbot
+    sha256: 6ae630be81633b0064f675e73c83da41513c52c4dfa1970aa02376e23ddda0b9
+- id: blox-wics
+  platform: blox
+  call_sign: WICS
+  name: NewsChannel 20 WICS (newschannel20.com)
+  market: Champaign - Springfield - Decatur, IL
+  dma: Champaign - Springfield - Decatur, IL DMA
+  states: [IL]
+  counties:
+    basis: dma
+    source: 'DMA county list: alex-patton/US-TVDMA-BY-COUNTY usa-tvdma-county.csv at commit 7f254b8c1843c62ec976a71c40d366d45f6f29cd
+      (sha256 2e2cd00265a8d704...), names resolved to FIPS with the Census 2025 county Gazetteer; Connecticut
+      via the Census county-to-town crosswalk (snowlight.sources.stations.dma); market ''Champaign - Springfield
+      - Decatur, IL DMA'''
+    fips: ['17019', '17021', '17029', '17035', '17039', '17041', '17049', '17053', '17075', '17107', '17115',
+      '17129', '17137', '17139', '17147', '17167', '17173', '17183']
+  page_url: https://www.newschannel20.com/weather/closings/
+  data_url: null
+  export_url: null
+  archive_urls:
+  - https://www.newschannel20.com/weather/closings/
+  poll_minutes: null
+  status: active
+  evidence: 'First-hand check of 2026-09-26 (docs/research/firsthand/others.json, record WICS/WICD; variant
+    blox-weather-closings-table). Live read of https://www.newschannel20.com/weather/closings/ 2026-09-27T06:02:10Z:
+    HTTP 200, 243219 bytes, Last-Modified Sun, 27 Sep 2026 05:11:57 GMT; blox-weather-closings, empty.
+    Archived captures read (archive-captures runs 36317643857, 36324857670, 36352967678): 4 deferred,
+    1 empty. The weather closings tables this page has shown since February 2026 have never been seen
+    with rows: the archive holds 3 captures of the page since then (listing, run 36322116061); the one
+    of winter, 2026-02-26 10:47 UTC, was read in round 3 (run 36352967678): every table empty; the others
+    are of July and August. (The archive also lists two closing articles of 2026-03-17 under /weather/closings/,
+    Beardstown Christian Academy and Beardstown Public Schools, both answering 404 when captured.) Before
+    that Sinclair ran the page and framed a NewsTicker file (/resources/ftptransfer/wics/closings/closings.html).
+    A table with rows raises until its columns are seen, so the station is unproven.'
+  list_files: []
+  page_check: null
+  robots:
+  - url: https://www.newschannel20.com/weather/closings/
+    checked_at: '2026-09-27T07:03:26Z'
+    state: parsed
+    allowed: true
+    rule: no rule matches
+    crawl_delay: null
+    disallowed_agents:
+    - ai2bot
+    - ai2bot-dolma
+    - anthropic-ai
+    - applebot-extended
+    - bytespider
+    - ccbot
+    - chatgpt-user
+    - claude-web
+    - claudebot
+    - cohere-ai
+    - diffbot
+    - facebookbot
+    - friendlycrawler
+    - google-extended
+    - gptbot
+    - iaskspider/2.0
+    - icc-crawler
+    - imagesiftbot
+    - img2dataset
+    - meta-externalagent
+    - oai-searchbot
+    - omgili
+    - omgilibot
+    - perplexitybot
+    - petalbot
+    - scrapy
+    - timpibot
+    - velenpublicwebcrawler
+    - webzio-extended
+    - youbot
+    sha256: 05427241c504a1ff58641e591cfd5af45dbe4a4e1ceb81777b2876a6fb50b292
+- id: blox-khqa
+  platform: blox
+  call_sign: KHQA
+  name: KHQA 7 (khqa.com)
+  market: Quincy - Hannibal - Keokuk
+  dma: Quincy - Hannibal - Keokuk, MO - IL - IA DMA
+  states: [IA, IL, MO]
+  counties:
+    basis: dma
+    source: 'DMA county list: alex-patton/US-TVDMA-BY-COUNTY usa-tvdma-county.csv at commit 7f254b8c1843c62ec976a71c40d366d45f6f29cd
+      (sha256 2e2cd00265a8d704...), names resolved to FIPS with the Census 2025 county Gazetteer; Connecticut
+      via the Census county-to-town crosswalk (snowlight.sources.stations.dma); market ''Quincy - Hannibal
+      - Keokuk, MO - IL - IA DMA'''
+    fips: ['17001', '17009', '17017', '17067', '17109', '17149', '17169', '17171', '19111', '29045', '29103',
+      '29111', '29127', '29137', '29173', '29199', '29205']
+  page_url: https://www.khqa.com/weather/closings/
+  data_url: null
+  export_url: null
+  archive_urls:
+  - https://www.khqa.com/weather/closings/
+  poll_minutes: null
+  status: active
+  evidence: 'First-hand check of 2026-09-26 (docs/research/firsthand/others.json, record KHQA-TV; variant
+    blox-weather-closings-table). Live read of https://www.khqa.com/weather/closings/ 2026-09-27T06:02:21Z:
+    HTTP 200, 228155 bytes, Last-Modified Sun, 27 Sep 2026 05:03:17 GMT; blox-weather-closings, empty.
+    Archived captures read (archive-captures runs 36317643857, 36324857670, 36352967678): 4 deferred,
+    1 empty. The weather closings tables this page has shown since February 2026 have never been seen
+    with rows: the archive holds 5 captures of the page since 2026-01-28 (listing, run 36322116061); the
+    one of 2026-01-28 13:49 UTC (read in round 3, run 36352967678) is still Sinclair''s page framing the
+    NewsTicker file, the one of 2026-02-26 08:18 UTC shows the tables, empty, and the rest are of May
+    to August. Before that Sinclair ran the page and framed a NewsTicker file (/resources/ftptransfer/khqa/closings/closings01.htm).
+    A table with rows raises until its columns are seen, so the station is unproven.'
+  list_files: []
+  page_check: null
+  robots:
+  - url: https://www.khqa.com/weather/closings/
+    checked_at: '2026-09-27T07:03:25Z'
+    state: parsed
+    allowed: true
+    rule: no rule matches
+    crawl_delay: null
+    disallowed_agents:
+    - ai2bot
+    - ai2bot-dolma
+    - anthropic-ai
+    - applebot-extended
+    - bytespider
+    - ccbot
+    - chatgpt-user
+    - claude-web
+    - claudebot
+    - cohere-ai
+    - diffbot
+    - facebookbot
+    - friendlycrawler
+    - google-extended
+    - gptbot
+    - iaskspider/2.0
+    - icc-crawler
+    - imagesiftbot
+    - img2dataset
+    - meta-externalagent
+    - oai-searchbot
+    - omgili
+    - omgilibot
+    - perplexitybot
+    - petalbot
+    - scrapy
+    - timpibot
+    - velenpublicwebcrawler
+    - webzio-extended
+    - youbot
+    sha256: 9f547e73ab0b8ac1d75b19427d1a55714d4243d2856b054da889a440c3b7452c

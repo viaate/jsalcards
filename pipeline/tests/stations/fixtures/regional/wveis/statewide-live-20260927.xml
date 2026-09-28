@@ -1,0 +1,22 @@
+<?xml version="1.0"?>
+	<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
+		<channel>
+		<atom:link href="https://wveis.k12.wv.us/closings/rss.php" rel="self" type="application/rss+xml" />
+				<title>WV School Closings and Delays</title>
+				<link></link>
+				<description>WV School Closings and Delays</description>
+				<language>en-us</language>
+				<!--
+					This is the new RSS feed for the school closings page. This comment is its documentation.
+
+					This is a government site, so only information regarding public schools is provided.
+
+					Announcements affecting entire counties at once or individual schools in counties are sufficient for
+					a very large majority of use cases.
+
+					Given the above, the following are currently not available:
+
+					- Information for private / nonpublic schools
+					- Information for colleges, universities, other higher ed entities
+					- Bus announcements
+				--><pubDate>Sun, 27 Sep 2026 03:08:59 -0400</pubDate><lastBuildDate>Sun, 27 Sep 2026 03:08:59 -0400</lastBuildDate><item><title>No closings to report</title><link>https://wveis.k12.wv.us/closings/</link><description>Nothing to report</description></item></channel></rss>

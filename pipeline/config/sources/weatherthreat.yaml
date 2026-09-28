@@ -1,0 +1,214 @@
+# Station registry for one platform. Loaded with every other file in this folder
+# by snowlight.sources.stations.registry; see its docstring for the fields.
+# `snowlight stations robots --update` rewrites the robots blocks in place.
+platform:
+  id: weatherthreat
+  name: WeatherThreat closings lists (Hollman Media)
+  operator: Hollman Media (WeatherThreat)
+  adapter: weatherthreat
+  poll_minutes: 10
+  terms:
+    automated_access: forbidden
+    summary: The list script says 'You must agree to the WeatherThreat.com user agreement to use this
+      web page'. The agreement (https://weatherthreat.com/user-agreement/, read 2026-09-27) licenses the
+      network for personal, non-commercial use and forbids to 'use any automatic or manual process to
+      harvest information from the Network'; the script also says 'Republishing, rebroadcasting, rewriting,
+      redistributing prohibited.' The project owner decided on 2026-09-25 to read the closings lists anyway
+      for this non-commercial project (owner_decision below); the terms stay recorded here.
+    evidence:
+    - url: https://weatherthreat.com/user-agreement/
+      read_at: '2026-09-27T06:25:07Z'
+      sha256: d9c2c73cf71b6c92f6ac1144bef67838d51f78f9194361bad490b7355f900039
+      excerpt:
+      - (h) use any automatic or manual process to harvest information from the Network;
+      - All Closings are provided on a non-exclusive license basis only for your personal use for non-commercial
+        purposes (See Section 25 for additional Media allowances), without any right to re-license, sublicense,
+        distribute, assign or transfer such license.
+    permission: null
+    owner_decision:
+      decided_by: the project owner (Snowlight)
+      decided_on: '2026-09-25'
+      reference: 'Stated in the build instructions for the station adapters (piece s4c2, round 1): "Terms
+        of use that forbid automated access do not exclude a station: the project owner decided on 2026-09-25
+        to read them for this non-commercial project, so record each station''s terms internally in the
+        registry and read it anyway." The same instructions record the owner''s decision of 2026-09-26
+        to read closings pages and data files even where robots.txt disallows them (naming Sinclair''s
+        /resources/ftptransfer/ files, Allen''s ftp2 files and WVEIS as examples). Relayed to the pipeline''s
+        builder by the project''s build workflow; to revoke it, remove this block and live polling of
+        this platform stops.'
+      scope: 'Live reads of this platform''s public closings lists (the station pages and the list files
+        they frame or load) for Snowlight, a non-commercial project, although the terms above forbid automated
+        access. robots.txt is read and its verdict recorded for every URL requested; the owner decided
+        on 2026-09-26 to read closings pages and files even where robots.txt disallows them. Unchanged
+        by it: the User-Agent names the repository (never a browser string), only the closings page or
+        file is requested (no crawling), requests are paced per host (any Crawl-delay is a floor) with
+        conditional requests and backoff on 429 and 5xx answers, and a station that blocks the project
+        (a 403, or a bot challenge) is not worked around.'
+  notes: 'Outlets that license WeatherThreat embed its list script (https://wt{1-3}.weatherthreat.com/wt_list/viewClosings.php?media_id={id});
+    the live poller reads the script for each known media id: ntv (NTV Nebraska, KHGI, whose page frames
+    /resources/assets/khgi/files/closings/TestWeatherClosings.html) and kneb (KNEB Rural Radio). KFXL''s
+    page embeds the same ntv list.'
+  shared_paths: []
+stations:
+- id: weatherthreat-ntv
+  platform: weatherthreat
+  call_sign: KHGI
+  name: NTV News Nebraska (nebraska.tv)
+  market: Lincoln & Hastings - Kearney, NE
+  dma: Lincoln & Hastings - Kearney Plus, NE - KS DMA
+  states: [KS, NE]
+  counties:
+    basis: dma
+    source: 'DMA county list: alex-patton/US-TVDMA-BY-COUNTY usa-tvdma-county.csv at commit 7f254b8c1843c62ec976a71c40d366d45f6f29cd
+      (sha256 2e2cd00265a8d704...), names resolved to FIPS with the Census 2025 county Gazetteer; Connecticut
+      via the Census county-to-town crosswalk (snowlight.sources.stations.dma); market ''Lincoln & Hastings
+      - Kearney Plus, NE - KS DMA'''
+    fips: ['20089', '20147', '20157', '20183', '31001', '31003', '31011', '31015', '31017', '31019', '31029',
+      '31035', '31041', '31047', '31059', '31061', '31063', '31065', '31067', '31071', '31073', '31077',
+      '31079', '31081', '31083', '31085', '31087', '31089', '31093', '31095', '31099', '31103', '31109',
+      '31115', '31121', '31125', '31129', '31135', '31137', '31143', '31145', '31149', '31151', '31159',
+      '31163', '31169', '31175', '31181', '31183', '31185']
+  page_url: https://nebraska.tv/weather/closings
+  data_url: https://wt1.weatherthreat.com/wt_list/viewClosings.php?media_id=ntv&plugin=1&server=wt1&version=2.0.2&directory=
+  export_url: null
+  archive_urls:
+  - https://nebraska.tv/weather/closings
+  - https://wt1.weatherthreat.com/wt_list/viewClosings.php?media_id=ntv&plugin=1&server=wt1&version=2.0.2&directory=
+  - https://nebraska.tv/resources/assets/khgi/files/closings/TestWeatherClosings.html
+  - https://foxnebraska.com/weather/closings
+  poll_minutes: null
+  status: active
+  evidence: 'First-hand check of 2026-09-26 (docs/research/firsthand/others.json, record KHGI; variant
+    weatherthreat-js). Live read of https://nebraska.tv/weather/closings 2026-09-27T06:19:32Z: HTTP 200,
+    227555 bytes; not read (not a WeatherThreat closings script). Live read of https://wt1.weatherthreat.com/wt_list/viewClosings.php?media_id=ntv&plugin=1&server=wt1...
+    2026-09-27T06:19:21Z: HTTP 200, 15675 bytes; weatherthreat-js, empty. Archived captures read (archive-captures
+    run 36324857670): 2 populated. Archived https://wt1.weatherthreat.com/wt_list/viewClosings.php?media_id=ntv&t=1610389770752&plu...
+    captured 2021-02-14T20:44:54Z: weatherthreat-js, 44 rows (''ELGIN LIVESTOCK MARKET'', ''YORK FIRST
+    UMC'', ...). Archived https://wt1.weatherthreat.com/wt_list/viewClosings.php?media_id=ntv&t=1613335145708&plu...
+    captured 2021-02-14T20:39:06Z: weatherthreat-js, 43 rows (''ELGIN LIVESTOCK MARKET'', ''YORK FIRST
+    UMC'', ...).'
+  list_files:
+  - url: https://wt1.weatherthreat.com/wt_list/viewClosings.php?media_id=ntv&plugin=1&server=wt1&version=2.0.2&directory=
+    loaded_by: script
+    seen: The frame TestWeatherClosings.html holds the WeatherThreat plugin, which loads this script (first-hand
+      check 2026-09-26; live read 2026-09-27).
+  page_check: null
+  robots:
+  - url: https://nebraska.tv/weather/closings
+    checked_at: '2026-09-27T07:03:51Z'
+    state: parsed
+    allowed: true
+    rule: 'Allow: /'
+    crawl_delay: null
+    disallowed_agents:
+    - anthropic-ai
+    - applebot-extended
+    - ccbot
+    - chatgpt-user
+    - claude-web
+    - claudebot
+    - cohere-ai
+    - google-extended
+    - gptbot
+    sha256: 48836ba75318ca8123f939350dcd058c9dc25bc8d3db287f1d45773e9aa6cb8b
+  - url: https://wt1.weatherthreat.com/wt_list/viewClosings.php?media_id=ntv&plugin=1&server=wt1&version=2.0.2&directory=
+    checked_at: '2026-09-27T07:03:51Z'
+    state: unavailable
+    allowed: true
+    rule: 'robots.txt unavailable (4xx): unrestricted'
+    crawl_delay: null
+    disallowed_agents: []
+    sha256: null
+- id: weatherthreat-kneb
+  platform: weatherthreat
+  call_sign: KNEB
+  name: KNEB Rural Radio (ruralradio.com)
+  market: Scottsbluff, NE
+  dma: Cheyenne - Scottsbluff - Sterling, WY - NE DMA
+  states: [NE, WY]
+  counties:
+    basis: dma
+    source: 'DMA county list: alex-patton/US-TVDMA-BY-COUNTY usa-tvdma-county.csv at commit 7f254b8c1843c62ec976a71c40d366d45f6f29cd
+      (sha256 2e2cd00265a8d704...), names resolved to FIPS with the Census 2025 county Gazetteer; Connecticut
+      via the Census county-to-town crosswalk (snowlight.sources.stations.dma); market ''Cheyenne - Scottsbluff
+      - Sterling, WY - NE DMA'''
+    fips: ['31157', '56015', '56021']
+  page_url: https://ruralradio.com/kneb-am/weather-closings/
+  data_url: https://wt1.weatherthreat.com/wt_list/viewClosings.php?media_id=kneb&plugin=1&server=wt1&version=2.0.2&directory=
+  export_url: null
+  archive_urls:
+  - https://ruralradio.com/kneb-am/weather-closings/
+  - https://wt1.weatherthreat.com/wt_list/viewClosings.php?media_id=kneb&plugin=1&server=wt1&version=2.0.2&directory=
+  - https://kneb.com/weather-closings/
+  poll_minutes: null
+  status: active
+  evidence: 'First-hand check of 2026-09-26 (docs/research/firsthand/others.json, record KNEB; variant
+    weatherthreat-js). Live read of https://ruralradio.com/kneb-am/weather-closings/ 2026-09-27T06:19:44Z:
+    HTTP 200, 168545 bytes; weatherthreat-page, deferred, loads https://wt1.weatherthreat.com/wt_list/viewClosings.php?media_id=kneb&plugin=1&server=wt1&version=2.0.2&directory=.
+    Live read of https://wt1.weatherthreat.com/wt_list/viewClosings.php?media_id=kneb&plugin=1&server=wt...
+    2026-09-27T06:19:26Z: HTTP 200, 14835 bytes; weatherthreat-js, empty. Archived captures read (archive-captures
+    run 36349462045): 1 deferred, 1 populated. Archived https://ruralradio.com/kneb-am/weather-closings/
+    captured 2023-01-18T12:33:48Z: weatherthreat-banner, 22 rows (''WESTERN COMMUNITY COLLEGE AREA BOARD
+    OF GOVERNORS'', ''CITY OF GERING'', ...). Proven through its closings page: KNEB''s page of 2023-01-18
+    12:33 UTC carries the site''s ''CLOSINGS & CANCELLATIONS'' alert bar with 22 WeatherThreat postings
+    (run 36349462045), read as variant weatherthreat-banner; the list script itself has no capture on
+    wt1 and two on wt3 (the one of 2025-03-12 was read and is empty), so whether the bar held every posting
+    is not known.'
+  list_files:
+  - url: https://wt1.weatherthreat.com/wt_list/viewClosings.php?media_id=kneb&plugin=1&server=wt1&version=2.0.2&directory=
+    loaded_by: script
+    seen: The station page's WeatherThreat template loads this script (first-hand check 2026-09-26; live
+      read 2026-09-27).
+  page_check: null
+  robots:
+  - url: https://ruralradio.com/kneb-am/weather-closings/
+    checked_at: '2026-09-27T07:03:50Z'
+    state: parsed
+    allowed: true
+    rule: no rule matches
+    crawl_delay: 10.0
+    disallowed_agents:
+    - ai2bot
+    - ai2bot-dolma
+    - amazonbot
+    - anthropic-ai
+    - applebot
+    - applebot-extended
+    - bytespider
+    - ccbot
+    - chatgpt-user
+    - claude-web
+    - claudebot
+    - cohere-ai
+    - diffbot
+    - friendlycrawler
+    - google-extended
+    - gptbot
+    - iaskspider/2.0
+    - icc-crawler
+    - imagesiftbot
+    - img2dataset
+    - isscyberriskcrawler
+    - kangaroo bot
+    - meta-externalagent
+    - meta-externalfetcher
+    - oai-searchbot
+    - omgili
+    - omgilibot
+    - perplexitybot
+    - petalbot
+    - scrapy
+    - sidetrade indexer bot
+    - timpibot
+    - velenpublicwebcrawler
+    - webzio-extended
+    - youbot
+    sha256: 598aa5a55dbf1dd371c79526cbd523830858c80966c39cf168a9362552bfd84a
+  - url: https://wt1.weatherthreat.com/wt_list/viewClosings.php?media_id=kneb&plugin=1&server=wt1&version=2.0.2&directory=
+    checked_at: '2026-09-27T07:03:50Z'
+    state: unavailable
+    allowed: true
+    rule: 'robots.txt unavailable (4xx): unrestricted'
+    crawl_delay: null
+    disallowed_agents: []
+    sha256: null

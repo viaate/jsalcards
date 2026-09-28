@@ -1,0 +1,167 @@
+# Station registry for one platform. Loaded with every other file in this folder
+# by snowlight.sources.stations.registry; see its docstring for the fields.
+# `snowlight stations robots --update` rewrites the robots blocks in place.
+platform:
+  id: eventdelay
+  name: EventDelay closings widgets (WDEL SnoWatch)
+  operator: Envisionwise (EventDelay) for Delmarva Broadcasting (WDEL)
+  adapter: eventdelay
+  poll_minutes: 10
+  terms:
+    automated_access: forbidden
+    summary: EventDelay links no terms of its own (https://eventdelay.com/terms answered 404 on 2026-09-27).
+      WDEL's site terms (https://www.wdel.com/site/terms.html, Draper Media), read 2026-09-27, say users
+      will not 'Use bots, automated scripts, or similar mechanisms to manipulate or interact with the
+      Service.' The project owner decided on 2026-09-25 to read the closings list anyway for this non-commercial
+      project (owner_decision below); the terms stay recorded here.
+    evidence:
+    - url: https://www.wdel.com/site/terms.html
+      read_at: '2026-09-27T06:41:53Z'
+      sha256: bd49b0776295e23eb96ef195f070c21d2213efbb08d79dc41f93e32bae60eb59
+      excerpt:
+      - 'Prohibited Uses You agree that you will not: Use bots, automated scripts, or similar mechanisms
+        to manipulate or interact with the Service.'
+      - You may not copy, reproduce, distribute, modify, adapt, publicly display, or otherwise exploit
+        any material from the Service without prior written consent from Draper Media.
+    permission: null
+    owner_decision:
+      decided_by: the project owner (Snowlight)
+      decided_on: '2026-09-25'
+      reference: 'Stated in the build instructions for the station adapters (piece s4c2, round 1): "Terms
+        of use that forbid automated access do not exclude a station: the project owner decided on 2026-09-25
+        to read them for this non-commercial project, so record each station''s terms internally in the
+        registry and read it anyway." The same instructions record the owner''s decision of 2026-09-26
+        to read closings pages and data files even where robots.txt disallows them (naming Sinclair''s
+        /resources/ftptransfer/ files, Allen''s ftp2 files and WVEIS as examples). Relayed to the pipeline''s
+        builder by the project''s build workflow; to revoke it, remove this block and live polling of
+        this platform stops.'
+      scope: 'Live reads of this platform''s public closings lists (the station pages and the list files
+        they frame or load) for Snowlight, a non-commercial project, although the terms above forbid automated
+        access. robots.txt is read and its verdict recorded for every URL requested; the owner decided
+        on 2026-09-26 to read closings pages and files even where robots.txt disallows them. Unchanged
+        by it: the User-Agent names the repository (never a browser string), only the closings page or
+        file is requested (no crawling), requests are paced per host (any Crawl-delay is a floor) with
+        conditional requests and backoff on 429 and 5xx answers, and a station that blocks the project
+        (a 403, or a bot challenge) is not worked around.'
+  notes: 'WDEL''s SnoWatch page (https://www.wdel.com/features/wdel-stormwatch/) frames EventDelay''s
+    widget for channel 114 (''Wilmington''), which the server writes whole. The widget shows one list
+    in two display modes: list mode (/list/, which the page framed from 2024 to December 2025, captured
+    with rows on the storm days of 2025-01-08 and 2025-01-18) and page mode (/page, which the page frames
+    since; seen only empty, and its template closes a table after each day, so its rows are written in
+    a form never seen). The live poller reads list mode, which still answers with the same days (live
+    2026-09-27). Before EventDelay the page framed the SnoWatch list (foreverdigitalmedia.com/wdel/snowatch.php;
+    on delmarvabroadcasting.com in 2018); since 2025 that frame is inside an HTML comment, and the adapter
+    reads its archived captures only (snowlight.sources.stations.snowatch). Other EventDelay channels
+    were not enumerated.'
+  shared_paths: []
+stations:
+- id: eventdelay-wdel
+  platform: eventdelay
+  call_sign: WDEL
+  name: WDEL SnoWatch (EventDelay channel 114)
+  market: Wilmington, DE
+  dma: Philadelphia, PA - DE - NJ DMA
+  states: [DE, NJ, PA]
+  counties:
+    basis: dma
+    source: 'DMA county list: alex-patton/US-TVDMA-BY-COUNTY usa-tvdma-county.csv at commit 7f254b8c1843c62ec976a71c40d366d45f6f29cd
+      (sha256 2e2cd00265a8d704...), names resolved to FIPS with the Census 2025 county Gazetteer; Connecticut
+      via the Census county-to-town crosswalk (snowlight.sources.stations.dma); market ''Philadelphia,
+      PA - DE - NJ DMA'''
+    fips: ['10001', '10003', '34001', '34005', '34007', '34009', '34011', '34015', '34021', '34033', '42011',
+      '42017', '42029', '42045', '42077', '42091', '42095', '42101']
+  page_url: https://www.wdel.com/features/wdel-stormwatch/
+  data_url: https://www.eventdelay.com/new/widget/channel/114/list/
+  export_url: null
+  archive_urls:
+  - https://www.wdel.com/features/wdel-stormwatch/
+  - https://www.eventdelay.com/new/widget/channel/114/list/
+  - https://eventdelay.com/new/widget/channel/114/page
+  - https://foreverdigitalmedia.com/wdel/snowatch.php
+  - https://delmarvabroadcasting.com/wdel/snowatch.php
+  poll_minutes: null
+  status: active
+  evidence: 'First-hand check of 2026-09-26 (docs/research/firsthand/others.json, record WDEL SnoWatch;
+    variant eventdelay-widget). Live read of https://www.wdel.com/features/wdel-stormwatch/ 2026-09-27T19:25:30Z:
+    HTTP 200, 184655 bytes; eventdelay-page, deferred, frames https://eventdelay.com/new/widget/channel/114/page
+    (its SnoWatch frame is commented out). Live read of https://www.eventdelay.com/new/widget/channel/114/list/
+    2026-09-27T22:02:43Z: HTTP 200, 4997 bytes; eventdelay-list, empty (five days, each ''There are no
+    closings to display at this time.''); the page-mode widget read 2026-09-27T22:02:53Z shows the same
+    five days, empty. Archived captures of the list-mode widget (archive-captures run 36352967678): 2025-01-08T17:46:41Z,
+    eventdelay-list, 9 rows (''Caesar Rodney School District'' Asynchronous learning, ''Capital School
+    District'', ''Cecil County Public Schools'' 2 hr Delay, ''Harford County Public Schools'', ''Queen
+    Anne''s County Public Schools'' Closed, ''SMYRNA SCHOOL DISTRICT'', ''Osher Lifelong Learning'', ''THE
+    MUSIC SCHOOL OF DELAWARE'', ''DELAWARE STATE OFFICES SUSSEX COUNTY''); 2025-01-18T20:34:25Z, 1 row
+    (''DELAWARE MUSEUM OF NATURE AND SCIENCE''), five seconds after a capture of the station page that
+    frames this address; 2024-01-18, 2024-03-03 and 2024-12-23, empty. The archive holds 17 captures of
+    the list-mode address (2024-01-18 to 2025-12-02) and 6 of the page-mode address (2025-12-13 to 2026-07-21),
+    all of the latter empty where read. The station page''s own list before EventDelay, SnoWatch, is evidence
+    only: its captures of 2018 to 2021 are read by the adapter, and one (a Community/Non-Profit page of
+    2020-09-25, 1 row) held a row; none falls on a winter storm day.'
+  list_files:
+  - url: https://eventdelay.com/new/widget/channel/114/page
+    loaded_by: frame
+    seen: WDEL's SnoWatch page frames it (captures of 2026-01-24 and later; live read 2026-09-27).
+  - url: https://www.eventdelay.com/new/widget/channel/114/list/
+    loaded_by: frame
+    seen: WDEL's SnoWatch page framed it in 2024 and 2025 (captures of 2025-01-08 09:35 and 2025-01-18
+      20:34 UTC); the same channel's list in list mode, which still answers (live read 2026-09-27) and
+      which the live poller reads.
+  - url: https://foreverdigitalmedia.com/wdel/snowatch.php
+    loaded_by: frame
+    seen: WDEL's SnoWatch page framed it in the capture of 2021-02-01 18:50 UTC; since 2025 the frame
+      is inside an HTML comment (captures of 2025-01-08, 2025-01-18 and 2026-01-24, and the live page
+      of 2026-09-27). The station's list before EventDelay; the archive holds 276 captures of it, 2019-06-13
+      to 2022-10-25 (listing, run 36344069635).
+  - url: https://delmarvabroadcasting.com/wdel/snowatch.php
+    loaded_by: frame
+    seen: WDEL's SnoWatch page framed it in the capture of 2018-01-04 06:30 UTC (the same list, on the
+      host before foreverdigitalmedia.com; the domain is parked now).
+  page_check: null
+  robots:
+  - url: https://www.wdel.com/features/wdel-stormwatch/
+    checked_at: '2026-09-27T22:04:09Z'
+    state: parsed
+    allowed: true
+    rule: no rule matches
+    crawl_delay: null
+    disallowed_agents:
+    - ai2bot
+    - ai2bot-dolma
+    - anthropic-ai
+    - applebot-extended
+    - bytespider
+    - ccbot
+    - chatgpt-user
+    - claude-web
+    - claudebot
+    - cohere-ai
+    - diffbot
+    - facebookbot
+    - friendlycrawler
+    - google-extended
+    - gptbot
+    - iaskspider/2.0
+    - icc-crawler
+    - imagesiftbot
+    - img2dataset
+    - meta-externalagent
+    - oai-searchbot
+    - omgili
+    - omgilibot
+    - perplexitybot
+    - petalbot
+    - scrapy
+    - timpibot
+    - velenpublicwebcrawler
+    - webzio-extended
+    - youbot
+    sha256: 7f2cb23378f18c5d97d4439d806043f761ede27b1c8a4e17b3969e1dee7befeb
+  - url: https://www.eventdelay.com/new/widget/channel/114/list/
+    checked_at: '2026-09-27T22:04:09Z'
+    state: unavailable
+    allowed: true
+    rule: 'robots.txt unavailable (4xx): unrestricted'
+    crawl_delay: null
+    disallowed_agents: []
+    sha256: null

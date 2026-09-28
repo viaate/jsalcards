@@ -1,0 +1,35 @@
+[
+  {
+    "file": "errors/komo-20240312.html",
+    "source_id": "sinclair-komo",
+    "adapter": "sinclair",
+    "url": "https://komonews.com/resources/ftptransfer/komo/closings/komoclosings.html",
+    "captured_at": "2024-03-12T04:21:14Z",
+    "archive_url": "https://web.archive.org/web/20240312042114id_/https://komonews.com/resources/ftptransfer/komo/closings/komoclosings.html",
+    "sha256": "54244f5c7fab5384de1f8d46067b8abfa4ac3c29a3b64320158cf156bf7837e3",
+    "bytes": 1768,
+    "reason": "A NewsTicker export holding only its update time (UPDATED MONDAY, MAR 11 AT 2:35 PM): no rows and no no-records sentence, so it is not read as an empty list."
+  },
+  {
+    "file": "errors/kyuu-ld-live-20260927.html",
+    "source_id": "sinclair-kyuu-ld",
+    "adapter": "sinclair",
+    "url": "https://cwtreasurevalley.com/resources/ftptransfer/kboi/closings/closings.html",
+    "captured_at": "2026-09-27T07:06:23Z",
+    "archive_url": null,
+    "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "bytes": 0,
+    "reason": "The file answered HTTP 200 with an empty body (0 bytes, Last-Modified 2026-07-21): no list, no no-records sentence."
+  },
+  {
+    "file": "errors/wfrd-page-20240717.html",
+    "source_id": "radio-wfrd",
+    "adapter": "radio",
+    "url": "https://www.wfrd.com/99rock-school-closings-cancellations/",
+    "captured_at": "2024-07-17T06:18:51Z",
+    "archive_url": "https://web.archive.org/web/20240717061851id_/https://www.wfrd.com/99rock-school-closings-cancellations/",
+    "sha256": "e97e4e4b1ccf0e934c8172f670ec773c4dc3efe2dfbc29efad648fd7d7d797cc",
+    "bytes": 17355,
+    "reason": "WFRD's closings page is the Entity Closing Lite plugin's Angular app: the page holds no list and names no file; the app POSTs a key from the page to the plugin's list-front.php, which no GET request reads (the station is registered without an endpoint)."
+  }
+]

@@ -1,0 +1,27 @@
+{
+  "generated": "2025-01-31T11:02:54.1764791Z",
+  "bladeQueryItem": [
+    {
+      "id": 4,
+      "name": "School",
+      "group_id": 2,
+      "group_name": "Closings & Delays",
+      "broadcastName": "Closings & Delays",
+      "institution_name": "Heritage Christian Academy  KY",
+      "statusName": "CLOSED THURSDAY AND FRIDAY",
+      "lastModified": "2025-01-29T18:47:45-05:00",
+      "rowNum": 1
+    },
+    {
+      "id": 4,
+      "name": "School",
+      "group_id": 3,
+      "group_name": "Schools",
+      "broadcastName": "Schools",
+      "institution_name": "Lewis County Schools",
+      "statusName": "CLOSED FRIDAY",
+      "lastModified": "2025-01-30T16:31:58-05:00",
+      "rowNum": 2
+    }
+  ]
+}

@@ -1,0 +1,131 @@
+# Station registry for one platform. Loaded with every other file in this folder
+# by snowlight.sources.stations.registry; see its docstring for the fields.
+# `snowlight stations robots --update` rewrites the robots blocks in place.
+platform:
+  id: radio
+  name: Independent radio stations' closings pages (KXXO Olympia, WFRD Hanover)
+  operator: KXXO Mixx 96.1 (Olympia, WA); WFRD 99Rock (Dartmouth Broadcasting, Hanover, NH)
+  adapter: radio
+  poll_minutes: 10
+  terms:
+    automated_access: permitted
+    summary: 'KXXO''s site links no terms of use: its footer (captures of 2020 to 2026) links a sitemap,
+      a privacy policy, EEO and FCC files, and the privacy policy (archived 2026-01-23, read 2026-09-27;
+      the site does not answer from the build environment) has no clause on robots, crawling, scraping
+      or automated access. KXXO''s robots.txt (archived 2025-08-05) disallows only /wp-admin/ and a forms
+      folder. WFRD is not polled (it has no list a GET request can read, see its entry); its footer links
+      only a privacy statement (archived 2024-08-12), which mentions ''our Terms of Use'' without linking
+      them, and its robots.txt reads ''User-agent: * / Disallow: /'' (live, 2026-09-27).'
+    evidence:
+    - url: https://web.archive.org/web/20260123163554id_/https://www.kxxo.com/privacy-policy/
+      read_at: '2026-09-27T23:22:45Z'
+      sha256: 688efbb563a603c11effd78bd5380aa1350738e43bfddfbff1be86b424feb768
+      excerpt:
+      - (KXXO's privacy policy holds no clause on robots, crawling, scraping or automated access; the
+        site links no terms of use)
+    - url: https://web.archive.org/web/20250805140214id_/https://www.kxxo.com/robots.txt
+      read_at: '2026-09-27T23:30:30Z'
+      sha256: cf8a16ec6682d3c6def552279b5f37fe2559317a9dcafc7f5d3f2957731006b4
+      excerpt:
+      - 'User-agent: * Disallow: /wp-admin/ Allow: /wp-admin/admin-ajax.php Disallow: /wp-content/uploads/wpforms/'
+    - url: https://web.archive.org/web/20240812075120id_/https://www.wfrd.com/privacy-statement/
+      read_at: '2026-09-27T23:25:12Z'
+      sha256: 269458677862bb1edee2fb47849f57a8d61d5e3ae3ad98953aebcdd18efcf468
+      excerpt:
+      - to verify or enforce our Terms of Use or other applicable policies
+    permission: null
+    owner_decision: null
+  notes: Two radio stations the first-hand checks of 2026-09-26 found (docs/research/firsthand/others.json,
+    records KXXO Mixx 96.1 school closings and WFRD). Neither site answers from the build environment
+    (upstream connection reset or timeout through the egress proxy, 2026-09-26 and 2026-09-27), so both
+    were read in the Internet Archive. KXXO's page frames its main list, a copy of FlashAlert Newswire's
+    Seattle/Western Washington report written to KXXO's own server (kxxo-sftp/school_closures.html); FlashAlert's
+    own copy of the same report is registered by part 3a as flashalert-seattle, so KXXO adds a second
+    host for one list, not a second list. WFRD's page is the Entity Closing Lite plugin's Angular app,
+    which POSTs to the plugin's list-front.php with a key from the page; no GET form of the list exists,
+    and the archive (which keeps GET answers only) holds none.
+  shared_paths: []
+stations:
+- id: radio-kxxo
+  platform: radio
+  call_sign: KXXO
+  name: KXXO Mixx 96.1 school closings (kxxo.com)
+  market: Olympia, WA
+  dma: Seattle - Tacoma, WA DMA
+  states: [WA]
+  counties:
+    basis: dma
+    source: 'DMA county list: alex-patton/US-TVDMA-BY-COUNTY usa-tvdma-county.csv at commit 7f254b8c1843c62ec976a71c40d366d45f6f29cd
+      (sha256 2e2cd00265a8d704...), names resolved to FIPS with the Census 2025 county Gazetteer; Connecticut
+      via the Census county-to-town crosswalk (snowlight.sources.stations.dma); market ''Seattle - Tacoma,
+      WA DMA'''
+    fips: ['53007', '53009', '53017', '53027', '53029', '53031', '53033', '53035', '53041', '53045', '53049',
+      '53053', '53055', '53057', '53061', '53067', '53073']
+  page_url: https://www.kxxo.com/list-school-closings/
+  data_url: https://www.kxxo.com/kxxo-sftp/school_closures.html
+  export_url: null
+  archive_urls:
+  - https://www.kxxo.com/list-school-closings/
+  - https://www.kxxo.com/kxxo-sftp/school_closures.html
+  poll_minutes: null
+  status: active
+  evidence: 'First-hand check of 2026-09-26 (docs/research/firsthand/others.json, record KXXO Mixx 96.1
+    school closings; variant robots-blocked: the robots.txt request was reset). Live reads of https://www.kxxo.com/list-school-closings/,
+    https://www.kxxo.com/robots.txt and https://kxxo.com/ on 2026-09-27 21:41-21:43 UTC failed (connection
+    reset; HTTP 503 from the egress proxy for http://www.kxxo.com/: upstream connection timeout), so the
+    list was read in the archive. The archive holds 30 captures of the page (2020-08-14 to 2026-03-06;
+    listing, run 36352967678) and 22 of the framed file (2019-09-20 to 2026-03-06; listing, run 36357297115).
+    Archived page captures read (run 36354877675): 13 of 2020-11-27 to 2026-03-06, each kxxo-page, deferred,
+    framing //www.kxxo.com/kxxo-sftp/school_closures.html. Archived file captures read (run 36357297115):
+    2022-01-04T16:36:38Z, flashalert-copy, 113 rows (''Evergreen State College'' Opening at 11 am, ''Auburn
+    SD'' 2 Hours Late, ... ''South Sound YMCA-Child Care Services''; header ''Seattle/Western Wash. Emergency
+    Info for Tue. Jan. 4 - 8:30 am''); 2021-01-18, 2022-10-07, 2023-02-02, 2024-04-24, 2024-12-11 and
+    2026-03-06, empty (''No information reported.'').'
+  list_files:
+  - url: https://www.kxxo.com/kxxo-sftp/school_closures.html
+    loaded_by: frame
+    seen: The station's closings page frames it (every archived capture of the page, 2020-11-27 to 2026-03-06).
+  page_check: null
+  robots:
+  - url: https://www.kxxo.com/list-school-closings/
+    checked_at: '2026-09-27T23:33:15Z'
+    state: unreachable
+    allowed: false
+    rule: 'robots.txt unreachable (5xx or network error): nothing may be fetched'
+    crawl_delay: null
+    disallowed_agents: []
+    sha256: null
+  - url: https://www.kxxo.com/kxxo-sftp/school_closures.html
+    checked_at: '2026-09-27T23:33:15Z'
+    state: unreachable
+    allowed: false
+    rule: 'robots.txt unreachable (5xx or network error): nothing may be fetched'
+    crawl_delay: null
+    disallowed_agents: []
+    sha256: null
+- id: radio-wfrd
+  platform: radio
+  call_sign: WFRD
+  name: WFRD 99Rock school closings and cancellations (wfrd.com)
+  market: Hanover, NH - White River Junction, VT
+  dma: null
+  states: [NH, VT]
+  counties: null
+  page_url: null
+  data_url: null
+  export_url: null
+  archive_urls: []
+  poll_minutes: null
+  status: no_endpoint
+  evidence: 'First-hand check of 2026-09-26 (docs/research/firsthand/others.json, record WFRD; variant
+    robots-blocked: robots.txt reads ''User-agent: * / Disallow: /''). The closings page, http://www.wfrd.com/99rock-school-closings-cancellations/,
+    answered HTTP 503 from the egress proxy on 2026-09-27 (upstream connection terminated). The archive
+    holds 29 captures of it (2016-08-19 to 2024-07-17; listing, run 36352967678); the ten read (run 36354877675:
+    2017-01-29, 2018-01-18, 2020-10-30 to 2021-10-27, 2023-09-04, 2024-07-17) are all the Entity Closing
+    Lite plugin''s Angular app (ng-app wcdWebAppFront) with no list in the page. Its script (app-front.js,
+    archived 2024-03-27, run 36357297115) loads the list by POSTing a key from the page to /wp-content/plugins/entity-closing-lite/post/list-front.php;
+    there is no GET form of the list and the archive keeps none of its answers. No list read, so no endpoint
+    is registered.'
+  list_files: []
+  page_check: null
+  robots: []

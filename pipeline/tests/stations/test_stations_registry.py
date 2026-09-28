@@ -12,6 +12,7 @@ from snowlight.sources.stations.fetch import skip_reason
 from snowlight.sources.stations.registry import (
     DEFAULT_REGISTRY_DIR,
     AccessPolicy,
+    CountyBasis,
     PlatformFile,
     RegistryError,
     StationStatus,
@@ -138,6 +139,17 @@ def test_active_stations_have_counties_matching_their_states() -> None:
     for station in registry.active():
         assert station.counties is not None, station.id
         assert station.counties.fips, station.id
+        if station.leaids:
+            # A district-level source: its districts' counties, from the school directory.
+            assert station.counties.basis.value == "district", station.id
+            assert station.id in station.counties.source, station.id
+            continue
+        if station.counties.basis is CountyBasis.STATE:
+            # A statewide list: every county of its one state, and no market.
+            assert station.dma is None, station.id
+            assert len(station.states) == 1, station.id
+            assert f"every county of {station.states[0]}" in station.counties.source
+            continue
         assert station.dma, station.id
         assert station.id in station.counties.source or station.dma in station.counties.source
 

@@ -1,0 +1,111 @@
+# Station registry for one platform. Loaded with every other file in this folder
+# by snowlight.sources.stations.registry; see its docstring for the fields.
+# `snowlight stations robots --update` rewrites the robots blocks in place.
+platform:
+  id: lockwood
+  name: CBS19 News closings (WCAV, Lockwood Broadcast)
+  operator: Lockwood Broadcast Group (WCAV)
+  adapter: lockwood
+  poll_minutes: 10
+  terms:
+    automated_access: permitted
+    summary: 'CBS19 News'' terms (https://www.cbs19news.com/site/terms.html), read 2026-09-27: no clause
+      on robots, scraping, crawling or automated access was found.'
+    evidence:
+    - url: https://www.cbs19news.com/site/terms.html
+      read_at: '2026-09-27T06:25:36Z'
+      sha256: 1e485974e044526664c5e09c2bd2d112e613a8006e30f2e590dfe647e29cf41e
+      excerpt:
+      - (no clause on robots, spiders, scraping, crawling or automated access was found in the page's
+        text)
+    permission: null
+    owner_decision: null
+  notes: WCAV's closings page (a BLOX page) reads https://wcavclosings.lockwoodbroadcast.com/data/closings.json
+    with its own script; the live poller reads that file.
+  shared_paths: []
+stations:
+- id: lockwood-wcav
+  platform: lockwood
+  call_sign: WCAV
+  name: CBS19 News (cbs19news.com)
+  market: Charlottesville, VA
+  dma: Charlottesville, VA DMA
+  states: [VA]
+  counties:
+    basis: dma
+    source: 'DMA county list: alex-patton/US-TVDMA-BY-COUNTY usa-tvdma-county.csv at commit 7f254b8c1843c62ec976a71c40d366d45f6f29cd
+      (sha256 2e2cd00265a8d704...), names resolved to FIPS with the Census 2025 county Gazetteer; Connecticut
+      via the Census county-to-town crosswalk (snowlight.sources.stations.dma); market ''Charlottesville,
+      VA DMA'''
+    fips: ['51003', '51079', '51113', '51540']
+  page_url: https://www.cbs19news.com/weather/closings/
+  data_url: https://wcavclosings.lockwoodbroadcast.com/data/closings.json
+  export_url: null
+  archive_urls:
+  - https://www.cbs19news.com/weather/closings/
+  - https://wcavclosings.lockwoodbroadcast.com/data/closings.json
+  poll_minutes: null
+  status: active
+  evidence: 'First-hand check of 2026-09-26 (docs/research/firsthand/others.json, record WCAV; variant
+    gsync-style-json). Live read of https://www.cbs19news.com/weather/closings/ 2026-09-27T06:20:49Z:
+    HTTP 200, 186348 bytes, Last-Modified Sun, 27 Sep 2026 06:16:41 GMT; not read (body is not JSON: Expecting
+    value: line 7 column 1 (char 9)). Live read of https://wcavclosings.lockwoodbroadcast.com/data/closings.json
+    2026-09-27T05:53:19Z: HTTP 200, 68 bytes, Last-Modified Sun, 27 Sep 2026 05:50:02 GMT; lockwood-json,
+    empty. Archived captures read (archive-captures runs 36317643857, 36324857670): 1 empty, 4 populated.
+    Archived https://wcavclosings.lockwoodbroadcast.com/data/closings.json captured 2026-01-26T12:10:36Z:
+    lockwood-json, 107 rows (''Albemarle County Public Schools'', ''Buckingham County Public Schools'',
+    ...). Archived https://wcavclosings.lockwoodbroadcast.com/data/closings.json captured 2025-12-09T11:25:37Z:
+    lockwood-json, 91 rows (''Albemarle County Public Schools'', ''Buckingham County Public Schools'',
+    ...).'
+  list_files:
+  - url: https://wcavclosings.lockwoodbroadcast.com/data/closings.json
+    loaded_by: script
+    seen: The station's closings page reads it with fetch() and renders its records (live read 2026-09-27).
+  page_check: null
+  robots:
+  - url: https://www.cbs19news.com/weather/closings/
+    checked_at: '2026-09-27T07:03:33Z'
+    state: parsed
+    allowed: true
+    rule: no rule matches
+    crawl_delay: null
+    disallowed_agents:
+    - ai2bot
+    - ai2bot-dolma
+    - anthropic-ai
+    - applebot-extended
+    - bytespider
+    - ccbot
+    - chatgpt-user
+    - claude-web
+    - claudebot
+    - cohere-ai
+    - diffbot
+    - facebookbot
+    - friendlycrawler
+    - google-extended
+    - gptbot
+    - iaskspider/2.0
+    - icc-crawler
+    - imagesiftbot
+    - img2dataset
+    - meta-externalagent
+    - oai-searchbot
+    - omgili
+    - omgilibot
+    - perplexitybot
+    - petalbot
+    - scrapy
+    - timpibot
+    - velenpublicwebcrawler
+    - webzio-extended
+    - youbot
+    sha256: 8d10773850089bb4a9765591293d7ef1c6fe85c43c4db95ecf5f61acee69653e
+  - url: https://wcavclosings.lockwoodbroadcast.com/data/closings.json
+    checked_at: '2026-09-27T07:03:34Z'
+    state: unavailable
+    allowed: true
+    rule: 'robots.txt unavailable (4xx): unrestricted'
+    crawl_delay: null
+    disallowed_agents: []
+    sha256: null
