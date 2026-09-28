@@ -1,0 +1,165 @@
+
+<!-- saved from url=(0079)https://media.psg.nexstardigital.net/wowtv/closings/closings_page.html -->
+<html><script type="text/javascript" async="" src="./closings_page_files/ga.js"></script><script src="chrome-extension://kndnhcfdajkaickocacghchhpieogbjh/content-scripts/injected.js"></script><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+        <title>WOWK Mobile Main - West Virginia, Ohio, Kentucky Closings</title>
+        
+<meta name="viewport" content="width=device-width, user-scalable=no"><meta http-equiv="CACHE-CONTROL" content="NO-CACHE">
+<meta http-equiv="REFRESH" content="30">
+        <link rel="stylesheet" href="./closings_page_files/style.css" type="text/css" media="screen">
+
+
+<script>
+function loadXMLDoc(filename)
+{
+if (window.XMLHttpRequest)
+  {
+  xhttp=new XMLHttpRequest();
+  }
+else // code for IE5 and IE6
+  {
+  xhttp=new ActiveXObject("Microsoft.XMLHTTP");
+  }
+xhttp.open("GET",filename,false);
+xhttp.send();
+return xhttp.responseXML;
+}
+
+
+function loadXMLString(txt) 
+{
+if (window.DOMParser)
+  {
+  parser=new DOMParser();
+  xmlDoc=parser.parseFromString(txt,"text/xml");
+  }
+else // Internet Explorer
+  {
+  xmlDoc=new ActiveXObject("Microsoft.XMLDOM");
+  xmlDoc.async=false;
+  xmlDoc.loadXML(txt); 
+  }
+return xmlDoc;
+}
+</script>
+    <style>
+        *{
+            margin:0;
+            padding:0;
+        }
+        body{
+            font-family: Georgia, serif;
+            font-size: 16px;
+            font-style: italic;
+            font-weight: normal;
+            letter-spacing: normal;
+            background: #000324;
+        }
+        #content{
+            background-color:#000324;
+            width: 100%;
+            padding:0px;
+            margin:0 auto;
+            -moz-box-shadow:0px 0px 16px #aaa;
+        }
+        .head{
+            font-family:Helvetica,Arial,Verdana;
+            font-weight:bold;
+            font-size:16px;
+            font-style:normal;
+            letter-spacing:3px;
+            color:#888;
+            border-bottom:3px solid #f0f0f0;
+            padding-bottom:10px;
+            margin-bottom:10px;
+        }
+        .head a{
+            color:#1D81B6;
+            text-decoration:none;
+            float:right;
+            text-shadow:1px 1px 1px #888;
+        }
+        .head a:hover{
+            color:#f0f0f0;
+        }
+        #content h1{
+            font-family:"Trebuchet MS",sans-serif;
+            color:#1D81B6;
+            font-weight:normal;
+            font-style:normal;
+            font-size:16px;
+            text-shadow:1px 1px 1px #aaa;
+        }
+        #content h2{
+            font-family:"Trebuchet MS",sans-serif;
+            font-size:16px;
+            font-style:normal;
+            background-color:#f0f0f0;
+            margin:40px 0px 30px -40px;
+            padding:0px 40px;
+            clear:both;
+            float:left;
+            width:100%;
+            color:#aaa;
+            text-shadow:1px 1px 1px #fff;
+        }
+
+    </style></head>
+    
+<body width="100%"><div style="display: none;"></div>
+         <center>
+<div id="content">
+<img src="./closings_page_files/closings_banner.png" id="ImageMap1" alt="" usemap="#ImageMapImageMap0" align="top" border="0" width="100%">
+<a href="https://www.secure1.newsroomsolutions.com/s/closings?client=wowk_c1pce"><img src="./closings_page_files/admin_access.png" id="ImageMap1" alt="" usemap="#ImageMapImageMap0" align="top" border="0" width="100%"></a>
+            <table width="100%" class="table3">
+                <thead>
+                    <tr>
+                        <th scope="col" abbr="Starter" width="50%">NAME</th>
+                        <th scope="col" abbr="Medium" width="50%">STATUS</th>
+						</tr>
+						
+                    
+                </thead>
+                <tbody>
+<script>
+
+xmlDoc=loadXMLDoc("closings.xml");
+
+/*xmlhttp.open("GET","closings.xml",true);
+xmlhttp.send();
+xmlDoc=xmlhttp.responseXML;*/
+
+var x=xmlDoc.getElementsByTagName("RECORD");
+
+for (i=0;i<x.length;i++)
+  {
+  document.write("<tr><td>");
+  document.write(x[i].getElementsByTagName("ORGANIZATION_NAME2")[0].childNodes[0].nodeValue);
+  document.write("</td><td>");
+  document.write(x[i].getElementsByTagName("COMPLETE_STATUS")[0].childNodes[0].nodeValue);
+  document.write("</td>");
+  }
+</script>
+
+
+
+
+                </tr></tbody>
+            </table>
+        </div>
+ </center>
+
+    
+	<script type="text/javascript">
+
+  var _gaq = _gaq || [];
+  _gaq.push(['_setAccount', 'UA-1162494-2']);
+  _gaq.push(['_trackPageview']);
+
+  (function() {
+    var ga = document.createElement('script'); ga.type = 'text/javascript'; ga.async = true;
+    ga.src = ('https:' == document.location.protocol ? 'https://ssl' : 'http://www') + '.google-analytics.com/ga.js';
+    var s = document.getElementsByTagName('script')[0]; s.parentNode.insertBefore(ga, s);
+  })();
+
+</script>
+</body></html>

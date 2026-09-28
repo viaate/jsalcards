@@ -21,6 +21,15 @@ For each station in the registry (in id order):
    are not kept and the source does not count as working, since nothing has been
    written to it for a whole winter (a station that moved its list elsewhere
    leaves the old file behind).
+5. A list typed by hand into a page (``Listing.typed``, see
+   :mod:`snowlight.sources.stations.typed`) keeps its rows only when the page says
+   it changed within :data:`TYPED_CURRENT` of the read. Typed text stays up long
+   after the day it names: rows of a page last changed earlier are old notes, not
+   kept (the read is ``empty``: the station's list holds nothing current). A page
+   that says no time for itself keeps its rows only when its own words pin down a
+   day near the read (:func:`snowlight.sources.stations.typed.names_day_near`);
+   otherwise they cannot be told from old notes, so they are not kept either and
+   the read is ``stale``.
 
 Outputs, under ``pipeline/out/internal/stations/`` (internal, never published)::
 
@@ -34,7 +43,7 @@ Outputs, under ``pipeline/out/internal/stations/`` (internal, never published)::
 from collections import Counter
 from collections.abc import Callable, Iterable, Sequence
 from dataclasses import dataclass, field
-from datetime import UTC, datetime
+from datetime import UTC, datetime, timedelta
 from email.utils import parsedate_to_datetime
 from pathlib import Path
 from urllib.parse import urljoin, urlsplit
@@ -42,6 +51,7 @@ from urllib.parse import urljoin, urlsplit
 from snowlight import __version__
 from snowlight.output import JSONValue, write_bytes_atomic, write_json
 from snowlight.schemas.internal import RunManifest, SourceSnapshot
+from snowlight.sources.stations import typed
 from snowlight.sources.stations.adapters import adapter_for
 from snowlight.sources.stations.http import (
     Fetched,
@@ -79,6 +89,8 @@ DEFAULT_CACHE_DIR = PIPELINE_ROOT / ".cache" / "stations" / "live"
 MAX_REASON = 500
 MAX_FOLLOW_DEPTH = 3
 """How many files deep a page that loads its list from another file is followed."""
+TYPED_CURRENT = timedelta(hours=36)
+"""How long after a typed list's page last changed its rows are taken as current (step 5)."""
 UNREAD_STATES = frozenset({ListingState.COUNT_ONLY, ListingState.DEFERRED})
 
 
@@ -126,6 +138,16 @@ def listing_health(listing: Listing) -> tuple[HealthStatus, str | None]:
     if listing.state is ListingState.EMPTY:
         return HealthStatus.EMPTY, None
     return HealthStatus.ERROR, count_only_reason(listing)
+
+
+def typed_not_current(listing: Listing, read_at: datetime) -> bool:
+    """Whether a list typed by hand holds rows its page does not show as current (step 5)."""
+    if not listing.typed or not listing.rows:
+        return False
+    said = listing.list_updated_at
+    if said is None:
+        return not typed.names_day_near(listing, read_at)
+    return said < read_at - TYPED_CURRENT
 
 
 def stamp_rows(source_id: str, fetched_at: datetime, listing: Listing) -> list[RawRow]:
@@ -370,7 +392,8 @@ def read_station(
     stale = (modified is not None and modified < threshold) or (
         said is not None and said < threshold
     )
-    rows = [] if stale else stamp_rows(station.id, fetched.fetched_at, listing)
+    typed_old = typed_not_current(listing, fetched.fetched_at)
+    rows = [] if stale or typed_old else stamp_rows(station.id, fetched.fetched_at, listing)
     result.rows.extend(rows)
     described = listing_read(
         station.id,
@@ -394,6 +417,20 @@ def read_station(
             f"the list says it was last updated {iso_utc(said)}, before the last winter "
             f"began ({iso_utc(threshold)}); it has not changed since, so its "
             f"{len(listing.rows)} rows are not kept ({listing.variant}, {listing.state.value})"
+        )
+    elif typed_old and said is None:
+        status = HealthStatus.STALE
+        why = _clip(
+            f"a list typed by hand into the page, which says no time for it and names no day "
+            f"near the read: its {len(listing.rows)} rows cannot be told from old notes, so they "
+            f"are not kept ({listing.variant})"
+        )
+    elif typed_old and said is not None:
+        status = HealthStatus.EMPTY
+        why = _clip(
+            f"a list typed by hand into the page, last changed {iso_utc(said)}, more than "
+            f"{TYPED_CURRENT.total_seconds() / 3600:.0f} hours before the read: its "
+            f"{len(listing.rows)} rows are old notes, not kept ({listing.variant})"
         )
     result.health.append(
         _health(

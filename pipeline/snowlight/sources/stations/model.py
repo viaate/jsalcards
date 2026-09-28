@@ -150,6 +150,17 @@ class Listing(InternalModel):
             "stale, as it does a file whose Last-Modified says so. None when it does not say."
         ),
     )
+    typed: bool = Field(
+        default=False,
+        description=(
+            "A list typed by hand into a page's text (a station's article or rich-text "
+            "block) rather than kept by a closings system (see "
+            ":mod:`snowlight.sources.stations.typed`): such text stays up long after the "
+            "day it names, so the live reader keeps its rows only while "
+            "``list_updated_at`` says the page changed within ``fetch.TYPED_CURRENT`` of "
+            "the read."
+        ),
+    )
 
     @model_validator(mode="after")
     def _check(self) -> Self:

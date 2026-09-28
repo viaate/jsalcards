@@ -23,7 +23,8 @@ Actions:
   :mod:`snowlight.sources.stations.pagecheck`);
 * ``coverage``: measure the share of schools covered, plain and closure-weighted,
   and draw the coverage map (and check county lists against the counties archived
-  rows name).
+  rows name); with the proven share, counting only lists seen populated at least
+  once, live, archived or in a fixture (see :mod:`snowlight.sources.stations.proof`).
 """
 
 import argparse
@@ -48,6 +49,7 @@ from snowlight.sources.stations import (
     fixtures,
     observed,
     pagecheck,
+    proof,
     storms,
 )
 from snowlight.sources.stations.adapters import AdapterRegistry
@@ -91,6 +93,7 @@ _FAILURES = (
     dma.DmaError,
     observed.ObservedError,
     ShapeError,
+    proof.ProofError,
     ReferenceFetchError,
     ShapefileError,
     WeightsBuildError,
@@ -156,6 +159,31 @@ def register(subparsers: "argparse._SubParsersAction[argparse.ArgumentParser]") 
         help="closure weights per county (the weights build's closure-weights.json)",
     )
     coverage_p.add_argument("--no-weights", action="store_true", help="report plain shares only")
+    coverage_p.add_argument(
+        "--live-reads",
+        type=Path,
+        default=fetch.DEFAULT_OUT_DIR / "reads.jsonl",
+        help="the last live fetch's reads, as evidence of lists seen populated",
+    )
+    coverage_p.add_argument(
+        "--archive-reads",
+        type=Path,
+        default=fetch.DEFAULT_OUT_DIR / "archive" / "reads.jsonl",
+        help="reads of archived captures, as evidence of lists seen populated",
+    )
+    coverage_p.add_argument(
+        "--archive-health",
+        type=Path,
+        default=fetch.DEFAULT_OUT_DIR / "archive" / "health.json",
+        help="the archived captures that could not be read, for the unproven list",
+    )
+    coverage_p.add_argument(
+        "--fixtures",
+        type=Path,
+        default=DEFAULT_FIXTURES,
+        help="test fixtures (real bodies with provenance), as evidence of lists seen populated",
+    )
+    coverage_p.add_argument("--no-proof", action="store_true", help="leave out the proven share")
     coverage_p.add_argument("--no-png", action="store_true")
     coverage_p.set_defaults(handler=run_coverage)
 
@@ -621,7 +649,12 @@ def run_coverage(args: argparse.Namespace) -> int:
         registry = load_registry(args.registry)
         health_at, health = coverage.load_health(args.health)
         states = coverage.station_states(registry, health)
-        schools = pl.read_parquet(args.directory, columns=["state", "county_fips", "county_name"])
+        wanted = ["index", "state", "county_fips", "county_name", "district_id"]
+        present = set(pl.scan_parquet(args.directory).collect_schema().names())
+        # district_id (and index, for per-school weights) feed district-level sources.
+        schools = pl.read_parquet(
+            args.directory, columns=[name for name in wanted if name in present]
+        )
         with HttpCache(make_reference_client()) as cache:
             references = _references(cache, args.reference_dir)
             weights = None if args.no_weights else _school_weights(args, cache)
@@ -635,6 +668,14 @@ def run_coverage(args: argparse.Namespace) -> int:
             connecticut,
         )
         result = coverage.measure(registry, schools, states, dmas, seen, weights=weights)
+        if not args.no_proof:
+            evidence = proof.gather(
+                live_reads=args.live_reads,
+                archive_reads=args.archive_reads,
+                archive_health=args.archive_health,
+                fixtures=args.fixtures,
+            )
+            proof.add_proven(result, registry, schools, states, evidence, weights=weights)
         shapes = None if args.no_png else coverage.county_shapes(references["shapes"])
         meta = coverage.CoverageMeta(now, health_at, args.directory, _provenance(references))
         paths = coverage.write_coverage(args.out_dir, result, meta, shapes)
@@ -649,6 +690,9 @@ def run_coverage(args: argparse.Namespace) -> int:
         weighted = national.get("weighted")
         if isinstance(weighted, dict):
             _print(f"national, closure-weighted: {weighted['share']:.1%}")
+    line = proof.summary_line(result)
+    if line is not None:
+        _print(line)
     for name, path in paths.items():
         _print(f"{name}: {path}")
     return 0

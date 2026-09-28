@@ -1,0 +1,4159 @@
+<!doctype html>
+<html><body>
+<iframe>', {
+								frameborder: '0',
+								scrolling: 'no',
+								allowfullscreen: 'true',
+								webkitallowfullscreen: 'true',
+								mozallowfullscreen: 'true'
+							});
+							$iframe.attr(lazyLoad ? 'data-src' : 'src', embed);
+							if(lazyLoad){
+								$iframe.addClass(lazyLoad['scroll'] ? 'delay-iframe-load' : 'delay-load');
+							}
+							$iframe.appendTo( $container.empty().addClass('wrapper-video syndicaster-video iframed') );
+						};
+						if( window.JSON && JSON.stringify && JSON.parse ){
+							render( JSON.stringify );
+						} else {
+							A.use('json-parse', 'json-stringify', function(){
+								 render(A.JSON.stringify);
+							});
+						}
+					},
+					/* ENSM-759 */
+					embedJWPlayVideo: function($container, config){
+						if(config == null) {
+							return;
+						}
+						/* Default config */
+						config = A.mix({
+							div_id : A.guid('videoplayer-'),
+							width: 690,
+							height: 388
+						}, config, true);
+						/* Resize to container */
+						var w = $container.width();
+						var h = (config.height * w) / config.width;
+						config.width = Math.round(w);
+						config.height = Math.round(h);
+						$container.html('<div class="syndicaster-video" id=' + config.div_id + '>\x3C/div>');
+						cm = new CMPlayer(config.div_id)
+						.setup(config);
+					}
+				 			}, true);
+		})(AUI(), jQuery);
+	</script>
+	
+					<script type="text/javascript" src="http://aka-cdn-ns.adtechus.com/dt/common/DAC.js"></script>
+	<script type="text/javascript">
+		function getViewPort()
+		{
+			var screenWidth, screenHeight;
+			if ( typeof window.innerWidth == 'number' )
+			{
+				screenWidth = window.innerWidth;
+				screenHeight = window.innerHeight;
+			} else if ( document.documentElement && ( document.documentElement.clientWidth || document.documentElement.clientHeight ) )
+			{
+				screenWidth = document.documentElement.clientWidth;
+				screenHeight = document.documentElement.clientHeight;
+			} else if( document.body && ( document.body.clientWidth || document.body.clientHeight ) ) {
+				screenWidth = document.body.clientWidth;
+				screenHeight = document.body.clientHeight;
+			}
+			return { width: screenWidth, height: screenHeight };
+		}
+
+		function getTagInfo()
+		{
+			window.groupId = window.groupId == undefined ? Math.round( Math.random() * 1000 ) : window.groupId;
+			var viewPort = getViewPort();
+			//ENSM-1859
+			var alias = viewPort.width <= 1006 ? 'mobile' : 'display';
+			var domain = alias == 'mobile' ? 'a' : 'adserver';
+			return { domain: domain, alias: alias, groupId: groupId, viewPort: viewPort }
+		}
+
+		function loadAdTech(adIndex) {
+			if (!('isLoading' in ADTECH.config.placements[adIndex])) {
+				ADTECH.config.placements[adIndex].isLoading = false;
+				ADTECH.config.placements[adIndex].complete = function() {ADTECH.config.placements[adIndex].isLoading = false;};
+			}
+			if (!ADTECH.config.placements[adIndex].isLoading) {
+				ADTECH.config.placements[adIndex].isLoading = true;
+				ADTECH.loadAd(adIndex);
+			}
+		}
+	</script>
+		<!-- Nativo Integration Start -->
+				<script type="text/javascript" src="http://a.postrelease.com/serve/load.js?async=true"></script>
+		<!-- Nativo Integration End -->
+</head>
+<body class="skin-cnyhomepage controls-visible signed-out public-page organization-site ">
+		
+	<!--[if lt IE 9]>
+	<p class="chromeframe">You are using an <strong>outdated</strong> browser. Please <a href="http://browsehappy.com/">upgrade your browser</a> or <a href="http://www.google.com/chromeframe/?redirect=true">activate Google Chrome Frame</a> to improve your experience.</p>
+	<![endif]-->
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<!-- begin: WRAPPER -->
+<div id="wrapper">
+
+        		
+					<style type="text/css">
+			.logo-main-mobile, .logo-main {
+				background-image: url(http://static.lakana.com/nxsglobal/cnyhomepage/theme/images/digital_brand_color-min.png) !important;
+				background-size: contain !important;
+			}
+		</style>
+	
+			    <!-- begin: HEADER -->
+		
+												<img id="printStationLogo" src="http://static.lakana.com/nxsglobal/cnyhomepage/theme/images/digital_brand_color-min.png">
+		<header id="header" class="container" role="banner">
+			<div class="row-container">
+				<a class="current logo-main ir" href="http://www.cnyhomepage.com">CNYHOMEPAGE</a>
+				<div class="header-links">
+						<!-- begin: WEATHER -->
+	
+
+
+
+
+
+
+
+
+    		
+
+    
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+			
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+ 
+
+
+
+
+
+ 
+ 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<section class="mod-wrapper mod-weather head">
+    <div class="mod-body">
+     <div class="row no-margin">
+   <div class="col-8 visual">
+           <span class="temperature">14&deg;</span>
+    <i class="weather-forecast-icon" style="background:url(http://static.lakana.com/nxsglobal/cnyhomepage/weather/icons/60_clear/wx_108.png);background-size:contain"></i>
+   </div>
+  
+   <div class="col-2 info">
+    <span class="location">Utica</span>
+    <span class="forecast">Overcast</span>
+    
+   </div>
+   
+                        </div>
+ </div>
+</section>
+
+
+	<!-- end: WEATHER -->
+				</div>
+			</div>
+			
+			<div class="strikethrough"></div>
+			
+							
+<nav class="nav-bar">
+    <div class="row-container">
+        <div class="title-area ui-medium-screen and-down">
+            <a class="current logo-main-mobile ir" href="http://www.cnyhomepage.com">CNYHOMEPAGE</a>
+										
+
+
+
+
+
+
+
+
+    		
+
+    
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+			
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+ 
+
+
+
+
+
+ 
+ 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<section class="mod-wrapper mod-weather head">
+    <div class="mod-body">
+     <div class="row no-margin">
+   <div class="col-8 visual">
+           <span class="temperature">14&deg;</span>
+    <i class="weather-forecast-icon" style="background:url(http://static.lakana.com/nxsglobal/cnyhomepage/weather/icons/60_clear/wx_108.png);background-size:contain"></i>
+   </div>
+  
+   <div class="col-2 info">
+    <span class="location">Utica</span>
+    <span class="forecast">Overcast</span>
+    
+   </div>
+   
+                        </div>
+ </div>
+</section>
+
+
+						
+						<ul class="nav mobile-only">
+                																																																														
+	    	<li class="featured skin-cnyhomepage current">
+        		<a class="toggle-menu" href="http://www.cnyhomepage.com/sections" ><i class="ep-icon-navicon1"></i> Sections</a>
+        	    </li>
+																																																	
+	    				<li class="featured skin-cnyhomepage">
+        		<a class="" href="/news" >News</a>
+        	    </li>
+																																																			
+	    				<li class="featured skin-cnyhomepage">
+        		<a class="" href="/weather" ><i class="nxs-icon-weather"></i>  Weather</a>
+        	    </li>
+																																														            </ul>
+
+        </div>
+        <div class="row mini-grid nav-container">
+			<ul class="nav col-a">
+																																																																    	
+	    	<li class="featured skin-cnyhomepage current has-submenu">
+        		<a class="" href="http://www.cnyhomepage.com/sections" ><i class="ep-icon-navicon1"></i> Sections</a>
+                	<div class="aui-menu aui-overlaycontext-hidden">
+				<div class="aui-menu-content">
+					<div class="aui-wrapitup">
+													<ul class="secondary-nav">
+																					
+	    	<li class="level3 skin-cnyhomepage">
+        		<a class="" href="http://www.cnyhomepage.com/news" >News</a>
+        																				<ul>
+																																				
+	    	<li class=" skin-cnyhomepage">
+        		<a class="" href="http://www.cnyhomepage.com/news/word-of-life" >Word of Life Trial</a>
+        	    </li>
+																																					
+	    	<li class=" skin-cnyhomepage">
+        		<a class="" href="http://www.cnyhomepage.com/news/national-news" >National News</a>
+        	    </li>
+																																					
+	    	<li class=" skin-cnyhomepage">
+        		<a class="" href="http://www.cnyhomepage.com/news/local-news" >Local News</a>
+        	    </li>
+																																					
+	    	<li class=" skin-cnyhomepage">
+        		<a class="" href="http://www.cnyhomepage.com/news/weird-news" >Weird News</a>
+        	    </li>
+																																					
+	    	<li class=" skin-cnyhomepage">
+        		<a class="" href="http://www.cnyhomepage.com/news/election-headquarters" >Election Headquarters</a>
+        	    </li>
+																																					
+	    	<li class=" skin-cnyhomepage">
+        		<a class="" href="http://www.cnyhomepage.com/news/business" >Business News</a>
+        	    </li>
+																																					
+	    	<li class=" skin-cnyhomepage">
+        		<a class="" href="http://www.cnyhomepage.com/news/news-tips" >News Tips</a>
+        	    </li>
+																																					
+	    	<li class=" skin-cnyhomepage">
+        		<a class="" href="http://www.cnyhomepage.com/news/app-mobile" >Mobile App</a>
+        	    </li>
+																																					
+	    	<li class=" skin-cnyhomepage">
+        		<a class="" href="http://www.cnyhomepage.com/hidden-history" >Hidden History</a>
+        	    </li>
+																						</ul>
+																	</li>
+							</ul>
+													<ul class="secondary-nav">
+																    					
+	    	<li class="level3 skin-cnyhomepage current-parent">
+        		<a class="" href="http://www.cnyhomepage.com/weather" >Weather</a>
+        																				<ul>
+																																				
+	    				<li class=" skin-cnyhomepage">
+        		<a class="" href="/weather" >Weather</a>
+        	    </li>
+																																					
+	    	<li class=" skin-cnyhomepage">
+        		<a class="" href="http://www.cnyhomepage.com/weather/weather-talk" >Weather Blog</a>
+        	    </li>
+																																					
+	    	<li class=" skin-cnyhomepage">
+        		<a class="" href="http://www.cnyhomepage.com/snowmobilereport" >Snowmobile Report</a>
+        	    </li>
+																																					
+	    	<li class=" skin-cnyhomepage">
+        		<a class="" href="http://www.cnyhomepage.com/weather-alerts" >Weather Alerts</a>
+        	    </li>
+																																					
+	    	<li class=" skin-cnyhomepage">
+        		<a class="" href="http://www.cnyhomepage.com/interactive-radar" >Interactive Radar</a>
+        	    </li>
+																																						
+	    	<li class=" skin-cnyhomepage current">
+        		<a class="" href="http://www.cnyhomepage.com/closings-and-delays" >Closings And Delays</a>
+        	    </li>
+																																					
+	    	<li class=" skin-cnyhomepage">
+        		<a class="" href="http://www.cnyhomepage.com/forecast" >Forecast</a>
+        	    </li>
+																																					
+	    	<li class=" skin-cnyhomepage">
+        		<a class="" href="http://www.cnyhomepage.com/map-center" >Map Center</a>
+        	    </li>
+																																					
+	    	<li class=" skin-cnyhomepage">
+        		<a class="" href="http://www.cnyhomepage.com/weather/almanac" >Almanac</a>
+        	    </li>
+																																					
+	    	<li class=" skin-cnyhomepage">
+        		<a class="" href="http://www.cnyhomepage.com/weather/eyenet" >EyeNet Weather Cameras</a>
+        	    </li>
+																																					
+	    	<li class=" skin-cnyhomepage">
+        		<a class="" href="http://www.cnyhomepage.com/weather/power-outages" >Power Outages</a>
+        	    </li>
+																																					
+	    	<li class=" skin-cnyhomepage">
+        		<a class="" href="http://www.cnyhomepage.com/weather/ski-report" >Ski Report</a>
+        	    </li>
+																						</ul>
+																	</li>
+							</ul>
+													<ul class="secondary-nav">
+																					
+	    	<li class="level3 skin-cnyhomepage">
+        		<a class="" href="http://www.cnyhomepage.com/sports" >Sports</a>
+        																				<ul>
+																																				
+	    	<li class=" skin-cnyhomepage">
+        		<a class="" href="http://www.cnyhomepage.com/sports/local-sports" >Local Sports</a>
+        	    </li>
+																																					
+	    	<li class=" skin-cnyhomepage">
+        		<a class="" href="http://www.cnyhomepage.com/sports/big-race-daytona" >Big Race Daytona</a>
+        	    </li>
+																																					
+	    	<li class=" skin-cnyhomepage">
+        		<a class="" href="http://www.cnyhomepage.com/big-game" >Big Game</a>
+        	    </li>
+																																					
+	    	<li class=" skin-cnyhomepage">
+        		<a class="" href="http://www.cnyhomepage.com/sports/cometsfaceoff" >Comets Faceoff</a>
+        	    </li>
+																																					
+	    				<li class=" skin-cnyhomepage">
+        		<a class="" href="/sports" >Sports</a>
+        	    </li>
+																																					
+	    	<li class=" skin-cnyhomepage">
+        		<a class="" href="http://www.cnyhomepage.com/sports/fever" >Friday Night Fever</a>
+        	    </li>
+																																					
+	    	<li class=" skin-cnyhomepage">
+        		<a class="" href="http://www.cnyhomepage.com/nba" >NBA</a>
+        	    </li>
+																																					
+	    	<li class=" skin-cnyhomepage">
+        		<a class="" href="http://www.cnyhomepage.com/nhl" >NHL</a>
+        	    </li>
+																																					
+	    	<li class=" skin-cnyhomepage">
+        		<a class="" href="http://www.cnyhomepage.com/auto-racing" >Auto Racing</a>
+        	    </li>
+																																					
+	    	<li class=" skin-cnyhomepage">
+        		<a class="" href="http://www.cnyhomepage.com/sports/buffalo-blitz" >Buffalo Blitz</a>
+        	    </li>
+																																					
+	    	<li class=" skin-cnyhomepage">
+        		<a class="" href="http://www.cnyhomepage.com/sports/orange-nation" >Orange Nation</a>
+        	    </li>
+																																					
+	    	<li class=" skin-cnyhomepage">
+        		<a class="" href="http://www.cnyhomepage.com/sports/ny-giants" >New York Giants</a>
+        	    </li>
+																						</ul>
+																	</li>
+							</ul>
+													<ul class="secondary-nav">
+																					
+	    	<li class="level3 skin-cnyhomepage">
+        		<a class="" href="http://www.cnyhomepage.com/marketplace" >Marketplace</a>
+        																				<ul>
+																																				
+	    	<li class=" skin-cnyhomepage">
+        		<a class="" href="http://www.cnyhomepage.biz" >Business Directory</a>
+        	    </li>
+																																					
+	    	<li class=" skin-cnyhomepage">
+        		<a class="" href="http://www.cnyhomepage.com/marketplace/professional" >Ask the Professional</a>
+        	    </li>
+																						</ul>
+																	</li>
+							</ul>
+													<ul class="secondary-nav">
+																					
+	    	<li class="level3 skin-cnyhomepage">
+        		<a class="" href="http://www.cnyhomepage.com/community" >Community</a>
+        																				<ul>
+																																				
+	    	<li class=" skin-cnyhomepage">
+        		<a class="" href="http://www.cnyhomepage.com/military-holiday-greetings1" >Military Holiday Greetings</a>
+        	    </li>
+																																					
+	    	<li class=" skin-cnyhomepage">
+        		<a class="" href="http://www.cnyhomepage.com/community/relay-for-life" >Relay For Life</a>
+        	    </li>
+																																					
+	    	<li class=" skin-cnyhomepage">
+        		<a class="" href="http://shareit.cnyhomepage.com/upload" >Your Photos</a>
+        	    </li>
+																																					
+	    	<li class=" skin-cnyhomepage">
+        		<a class="" href="http://cnyhomepage.tributes.com/national/home" >Obituaries</a>
+        	    </li>
+																																					
+	    	<li class=" skin-cnyhomepage">
+        		<a class="" href="http://www.cnyhomepage.com/your-events" >Your Events</a>
+        	    </li>
+																																					
+	    	<li class=" skin-cnyhomepage">
+        		<a class="" href="http://www.cnyhomepage.com/contests" >Contests</a>
+        	    </li>
+																																					
+	    	<li class=" skin-cnyhomepage">
+        		<a class="" href="http://www.cnyhomepage.com/community/organized-in-60" >Organized in 60</a>
+        	    </li>
+																																					
+	    	<li class=" skin-cnyhomepage">
+        		<a class="" href="http://www.cnyhomepage.com/community/games" >Puzzles &amp; Games</a>
+        	    </li>
+																																					
+	    	<li class=" skin-cnyhomepage">
+        		<a class="" href="http://www.cnyhomepage.com/community/joekelly" >Joe Kelly Show</a>
+        	    </li>
+																																					
+	    	<li class=" skin-cnyhomepage">
+        		<a class="" href="http://www.cnyhomepage.com/community/movies" >Movies</a>
+        	    </li>
+																						</ul>
+																	</li>
+							</ul>
+													<ul class="secondary-nav">
+																					
+	    	<li class="level3 skin-cnyhomepage">
+        		<a class="" href="http://www.cnyhomepage.com/lifestyle" >Lifestyle</a>
+        																				<ul>
+																																				
+	    	<li class=" skin-cnyhomepage">
+        		<a class="" href="http://www.cnyhomepage.com/lifestyle/health" >Health News</a>
+        	    </li>
+																																					
+	    	<li class=" skin-cnyhomepage">
+        		<a class="" href="http://www.cnyhomepage.com/at-the-movies-2" >At the Movies</a>
+        	    </li>
+																																					
+	    	<li class=" no-skin">
+        		<a class="" href="http://www.cnyhomepage.com/health-resource-center" >Health Resource Center</a>
+        	    </li>
+																																					
+	    	<li class=" skin-cnyhomepage">
+        		<a class="" href="http://www.cnyhomepage.com/lifestyle/entertainment-news" >Entertainment News</a>
+        	    </li>
+																																					
+	    	<li class=" skin-cnyhomepage">
+        		<a class="" href="http://www.cnyhomepage.com/lottery" >Lottery</a>
+        	    </li>
+																																					
+	    	<li class=" skin-cnyhomepage">
+        		<a class="" href="http://www.cnyhomepage.com/horoscopes" >Horoscopes</a>
+        	    </li>
+																																					
+	    				<li class=" skin-cnyhomepage">
+        		<a class="" href="/weddings-2" >Weddings</a>
+        	    </li>
+																																					
+	    				<li class=" skin-cnyhomepage">
+        		<a class="" href="/automotive-essentials-2" >Automotive Essentials</a>
+        	    </li>
+																																					
+	    				<li class=" skin-cnyhomepage">
+        		<a class="" href="/real-estate-essentials-2" >Real Estate Essentials</a>
+        	    </li>
+																																					
+	    	<li class=" skin-cnyhomepage">
+        		<a class="" href="http://www.cnyhomepage.com/healthy-heart" >Healthy Heart</a>
+        	    </li>
+																																					
+	    	<li class=" skin-cnyhomepage">
+        		<a class="" href="http://www.cnyhomepage.com/taxes-2017" >Taxes</a>
+        	    </li>
+																																					
+	    	<li class=" skin-cnyhomepage">
+        		<a class="" href="http://www.cnyhomepage.com/healthy-pets-2" >Healthy Pets</a>
+        	    </li>
+																						</ul>
+																	</li>
+							</ul>
+													<ul class="secondary-nav">
+																					
+	    	<li class="level3 skin-cnyhomepage">
+        		<a class="" href="http://www.cnyhomepage.com/about-us" >About Us</a>
+        																				<ul>
+																																				
+	    	<li class=" skin-cnyhomepage">
+        		<a class="" href="http://www.cnyhomepage.com/meet-the-team" >Meet the Team</a>
+        	    </li>
+																																					
+	    	<li class=" skin-cnyhomepage">
+        		<a class="" href="http://www.cnyhomepage.com/tv-schedule" >TV Schedule</a>
+        	    </li>
+																																					
+	    	<li class=" skin-cnyhomepage">
+        		<a class="" href="http://www.cnyhomepage.com/contact-us" >Contact Us</a>
+        	    </li>
+																																					
+	    	<li class=" skin-cnyhomepage">
+        		<a class="" href="http://www.cnyhomepage.com/advertise-with-us" >Advertise With Us</a>
+        	    </li>
+																																					
+	    	<li class=" skin-cnyhomepage">
+        		<a class="" href="http://www.cnyhomepage.com/work-for-us" >Work for Us</a>
+        	    </li>
+																						</ul>
+																	</li>
+							</ul>
+													<ul class="secondary-nav">
+																					
+	    	<li class="level3 skin-cnyhomepage">
+        		<a class="" href="http://www.cnyhomepage.com/alerts" >Alerts</a>
+        																		</li>
+							</ul>
+											</div>
+				</div>
+			</div>
+			    </li>
+																																																							
+	    				<li class="featured skin-cnyhomepage">
+        		<a class="" href="/news" >News</a>
+        	    </li>
+																																																									
+	    				<li class="featured skin-cnyhomepage">
+        		<a class="" href="/weather" ><i class="nxs-icon-weather"></i>  Weather</a>
+        	    </li>
+																																																				
+	    				<li class=" skin-cnyhomepage">
+        		<a class="" href="/sports/local-sports" >Sports</a>
+        	    </li>
+																																																				
+	    				<li class=" skin-cnyhomepage">
+        		<a class="" href="/community" >Community</a>
+        	    </li>
+																																																				
+	    				<li class=" skin-cnyhomepage">
+        		<a class="" href="/news/video-center" >Video Center</a>
+        	    </li>
+																																																				
+	    				<li class=" skin-cnyhomepage">
+        		<a class="" href="/contests" >Contests</a>
+        	    </li>
+													</ul>
+			<div class="ui-search-list col-b">
+					<!--Begin:Search Box -->
+	
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+	
+
+	<div id="p_p_id_searchbox_WAR_sitesearchportlet_" class="portlet-boundary portlet-boundary_searchbox_WAR_sitesearchportlet_  portlet-static portlet-static-end portlet-borderless search-box-portlet " >
+		<span id="p_searchbox_WAR_sitesearchportlet"></span>
+
+		<div class="portlet-body">
+
+
+
+	
+	
+	
+	
+
+		
+
+			
+				
+					
+						
+					
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+	
+	
+	
+	
+	
+
+		
+
+		
+			
+			
+
+				
+
+				<div class="portlet-borderless-container" style="">
+					
+
+					
+
+
+	<div class="portlet-body">
+
+
+
+	
+		
+			
+			
+				
+					
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+	
+
+				
+
+				
+					
+					
+						
+
+
+	
+
+		
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+    
+
+
+
+
+
+
+
+<div id="searchbox__searchbox_WAR_sitesearchportlet_">
+	
+	<!-- begin UI: SEARCH -->
+	<div class="col-12">
+		<form id="nav-search" action="http://www.cnyhomepage.com/search?p_p_id=searchresult_WAR_sitesearchportlet&p_p_lifecycle=1&p_p_state=normal&_searchresult_WAR_sitesearchportlet_javax.portlet.action=search" method="GET" name="sf" class="ui-search non-compact">
+			<section class="mod-wrapper mod-search"> 
+				
+				<div class="search-length">
+					<div class="column-6">
+						<input type="text" placeholder="" tabindex="1" id="searchTerm_box" name="searchTerm_box" value=""/>
+					</div>
+					<div class="column-4 select-dropdown" style="display: none;">
+						<select name="scopeType" id="scopeType">
+							<option value="0" >Site</option>
+							
+						</select>
+						
+						<select name="sortType" id="sortType" style="display: none;">
+							<option value="0" selected>Relevance</option>
+							<option value="1" >Date</option>
+						</select>
+					</div>
+				</div>
+				
+				<button type="button" class="ui-btn" onclick="submit_searchbox_WAR_sitesearchportlet_Form()"><i class="ep-icon-search"></i> <span class="visuallyhidden">Search</span></button>
+			</section>
+			<span class="is-1140"></span>
+		</form>
+	</div>
+	<!-- end UI: SEARCH -->
+	
+</div>
+
+<script type="text/javascript">
+	function submit_searchbox_WAR_sitesearchportlet_Form(){
+		var url = $("#searchbox__searchbox_WAR_sitesearchportlet_ #nav-search").attr("action");
+		var amp = "&";
+		
+		var appendSnippet = "";
+		var searchTerms=$("[name='searchTerm_box']");
+		var scopeTypes=$("[name='scopeType']");
+		var sortTypes=$("[name='sortType']");
+		for(var i=0 ; i<searchTerms.length ; i++){
+    		if(searchTerms[i].value){
+    			appendSnippet += amp + "searchTerm=" + encodeURIComponent(searchTerms[i].value);
+    			appendSnippet += amp + "scopeType="  + scopeTypes[i].value;
+    			appendSnippet += amp + "sortType="   + sortTypes[i].value;
+    			i=searchTerms.length;
+    		  }
+		}
+		window.location = url+appendSnippet;
+	}
+	$('#searchbox__searchbox_WAR_sitesearchportlet_ #nav-search').submit(function(e) {
+		e.preventDefault();
+		submit_searchbox_WAR_sitesearchportlet_Form();
+	});
+</script>
+
+
+	
+	
+
+					
+				
+			
+			
+		
+	
+	
+
+
+
+	</div>
+
+				</div>
+
+				
+			
+		
+	
+
+				
+				
+			
+
+		
+
+	
+
+
+
+
+
+			
+		</div>
+	</div>
+
+
+
+
+
+	<!--End:Search Box -->
+			</div>
+		</div>
+        <div class="mobile-secondary-nav-container">
+<ul class="mobile-secondary-nav-search">
+<li class="search">
+	<!--Begin:Search Box -->
+	
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+	
+
+	<div id="p_p_id_searchbox_WAR_sitesearchportlet_" class="portlet-boundary portlet-boundary_searchbox_WAR_sitesearchportlet_  portlet-static portlet-static-end portlet-borderless search-box-portlet " >
+		<span id="p_searchbox_WAR_sitesearchportlet"></span>
+
+		<div class="portlet-body">
+
+
+
+	
+	
+	
+	
+
+		
+
+			
+				
+					
+						
+					
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+	
+	
+	
+	
+	
+
+		
+
+		
+			
+			
+
+				
+
+				<div class="portlet-borderless-container" style="">
+					
+
+					
+
+
+	<div class="portlet-body">
+
+
+
+	
+		
+			
+			
+				
+					
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+	
+
+				
+
+				
+					
+					
+						
+
+
+	
+
+		
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+    
+
+
+
+
+
+
+
+<div id="searchbox__searchbox_WAR_sitesearchportlet_">
+	
+	<!-- begin UI: SEARCH -->
+	<div class="col-12">
+		<form id="nav-search" action="http://www.cnyhomepage.com/search?p_p_id=searchresult_WAR_sitesearchportlet&p_p_lifecycle=1&p_p_state=normal&_searchresult_WAR_sitesearchportlet_javax.portlet.action=search" method="GET" name="sf" class="ui-search non-compact">
+			<section class="mod-wrapper mod-search"> 
+				
+				<div class="search-length">
+					<div class="column-6">
+						<input type="text" placeholder="" tabindex="1" id="searchTerm_box" name="searchTerm_box" value=""/>
+					</div>
+					<div class="column-4 select-dropdown" style="display: none;">
+						<select name="scopeType" id="scopeType">
+							<option value="0" >Site</option>
+							
+						</select>
+						
+						<select name="sortType" id="sortType" style="display: none;">
+							<option value="0" selected>Relevance</option>
+							<option value="1" >Date</option>
+						</select>
+					</div>
+				</div>
+				
+				<button type="button" class="ui-btn" onclick="submit_searchbox_WAR_sitesearchportlet_Form()"><i class="ep-icon-search"></i> <span class="visuallyhidden">Search</span></button>
+			</section>
+			<span class="is-1140"></span>
+		</form>
+	</div>
+	<!-- end UI: SEARCH -->
+	
+</div>
+
+<script type="text/javascript">
+	function submit_searchbox_WAR_sitesearchportlet_Form(){
+		var url = $("#searchbox__searchbox_WAR_sitesearchportlet_ #nav-search").attr("action");
+		var amp = "&";
+		
+		var appendSnippet = "";
+		var searchTerms=$("[name='searchTerm_box']");
+		var scopeTypes=$("[name='scopeType']");
+		var sortTypes=$("[name='sortType']");
+		for(var i=0 ; i<searchTerms.length ; i++){
+    		if(searchTerms[i].value){
+    			appendSnippet += amp + "searchTerm=" + encodeURIComponent(searchTerms[i].value);
+    			appendSnippet += amp + "scopeType="  + scopeTypes[i].value;
+    			appendSnippet += amp + "sortType="   + sortTypes[i].value;
+    			i=searchTerms.length;
+    		  }
+		}
+		window.location = url+appendSnippet;
+	}
+	$('#searchbox__searchbox_WAR_sitesearchportlet_ #nav-search').submit(function(e) {
+		e.preventDefault();
+		submit_searchbox_WAR_sitesearchportlet_Form();
+	});
+</script>
+
+
+	
+	
+
+					
+				
+			
+			
+		
+	
+	
+
+
+
+	</div>
+
+				</div>
+
+				
+			
+		
+	
+
+				
+				
+			
+
+		
+
+	
+
+
+
+
+
+			
+		</div>
+	</div>
+
+
+
+
+
+	<!--End:Search Box -->
+</li>
+</ul>
+            									<ul class="mobile-secondary-nav">
+																									
+	    	<li class="level3 skin-cnyhomepage">
+                		<a class="" href="http://www.cnyhomepage.com/news" >News <span class="drop-icon"><i class="ep-icon-arrow-down-05"></i></span><label title="Toggle Drop-down" class="drop-icon" for="sm0"><i class="ep-icon-arrow-down-05"></i></label></a>
+        			<input id="sm0" type="checkbox"/>
+			<ul class="sub-nav-bar">
+																						
+	    	<li class=" skin-cnyhomepage">
+        		<a class="" href="http://www.cnyhomepage.com/news/word-of-life" >Word of Life Trial</a>
+        	    </li>
+																							
+	    	<li class=" skin-cnyhomepage">
+        		<a class="" href="http://www.cnyhomepage.com/news/national-news" >National News</a>
+        	    </li>
+																							
+	    	<li class=" skin-cnyhomepage">
+        		<a class="" href="http://www.cnyhomepage.com/news/local-news" >Local News</a>
+        	    </li>
+																							
+	    	<li class=" skin-cnyhomepage">
+        		<a class="" href="http://www.cnyhomepage.com/news/weird-news" >Weird News</a>
+        	    </li>
+																							
+	    	<li class=" skin-cnyhomepage">
+        		<a class="" href="http://www.cnyhomepage.com/news/election-headquarters" >Election Headquarters</a>
+        	    </li>
+																							
+	    	<li class=" skin-cnyhomepage">
+        		<a class="" href="http://www.cnyhomepage.com/news/business" >Business News</a>
+        	    </li>
+																							
+	    	<li class=" skin-cnyhomepage">
+        		<a class="" href="http://www.cnyhomepage.com/news/news-tips" >News Tips</a>
+        	    </li>
+																							
+	    	<li class=" skin-cnyhomepage">
+        		<a class="" href="http://www.cnyhomepage.com/news/app-mobile" >Mobile App</a>
+        	    </li>
+																							
+	    	<li class=" skin-cnyhomepage">
+        		<a class="" href="http://www.cnyhomepage.com/hidden-history" >Hidden History</a>
+        	    </li>
+								</ul>
+        	    </li>
+						</ul>
+									<ul class="mobile-secondary-nav">
+																				    					
+	    	<li class="level3 skin-cnyhomepage current-parent">
+                		<a class="" href="http://www.cnyhomepage.com/weather" >Weather <span class="drop-icon"><i class="ep-icon-arrow-down-05"></i></span><label title="Toggle Drop-down" class="drop-icon" for="sm1"><i class="ep-icon-arrow-down-05"></i></label></a>
+        			<input id="sm1" type="checkbox"/>
+			<ul class="sub-nav-bar">
+																						
+	    				<li class=" skin-cnyhomepage">
+        		<a class="" href="/weather" >Weather</a>
+        	    </li>
+																							
+	    	<li class=" skin-cnyhomepage">
+        		<a class="" href="http://www.cnyhomepage.com/weather/weather-talk" >Weather Blog</a>
+        	    </li>
+																							
+	    	<li class=" skin-cnyhomepage">
+        		<a class="" href="http://www.cnyhomepage.com/snowmobilereport" >Snowmobile Report</a>
+        	    </li>
+																							
+	    	<li class=" skin-cnyhomepage">
+        		<a class="" href="http://www.cnyhomepage.com/weather-alerts" >Weather Alerts</a>
+        	    </li>
+																							
+	    	<li class=" skin-cnyhomepage">
+        		<a class="" href="http://www.cnyhomepage.com/interactive-radar" >Interactive Radar</a>
+        	    </li>
+																								
+	    	<li class=" skin-cnyhomepage current">
+        		<a class="" href="http://www.cnyhomepage.com/closings-and-delays" >Closings And Delays</a>
+        	    </li>
+																							
+	    	<li class=" skin-cnyhomepage">
+        		<a class="" href="http://www.cnyhomepage.com/forecast" >Forecast</a>
+        	    </li>
+																							
+	    	<li class=" skin-cnyhomepage">
+        		<a class="" href="http://www.cnyhomepage.com/map-center" >Map Center</a>
+        	    </li>
+																							
+	    	<li class=" skin-cnyhomepage">
+        		<a class="" href="http://www.cnyhomepage.com/weather/almanac" >Almanac</a>
+        	    </li>
+																							
+	    	<li class=" skin-cnyhomepage">
+        		<a class="" href="http://www.cnyhomepage.com/weather/eyenet" >EyeNet Weather Cameras</a>
+        	    </li>
+																							
+	    	<li class=" skin-cnyhomepage">
+        		<a class="" href="http://www.cnyhomepage.com/weather/power-outages" >Power Outages</a>
+        	    </li>
+																							
+	    	<li class=" skin-cnyhomepage">
+        		<a class="" href="http://www.cnyhomepage.com/weather/ski-report" >Ski Report</a>
+        	    </li>
+								</ul>
+        	    </li>
+						</ul>
+									<ul class="mobile-secondary-nav">
+																									
+	    	<li class="level3 skin-cnyhomepage">
+                		<a class="" href="http://www.cnyhomepage.com/sports" >Sports <span class="drop-icon"><i class="ep-icon-arrow-down-05"></i></span><label title="Toggle Drop-down" class="drop-icon" for="sm2"><i class="ep-icon-arrow-down-05"></i></label></a>
+        			<input id="sm2" type="checkbox"/>
+			<ul class="sub-nav-bar">
+																						
+	    	<li class=" skin-cnyhomepage">
+        		<a class="" href="http://www.cnyhomepage.com/sports/local-sports" >Local Sports</a>
+        	    </li>
+																							
+	    	<li class=" skin-cnyhomepage">
+        		<a class="" href="http://www.cnyhomepage.com/sports/big-race-daytona" >Big Race Daytona</a>
+        	    </li>
+																							
+	    	<li class=" skin-cnyhomepage">
+        		<a class="" href="http://www.cnyhomepage.com/big-game" >Big Game</a>
+        	    </li>
+																							
+	    	<li class=" skin-cnyhomepage">
+        		<a class="" href="http://www.cnyhomepage.com/sports/cometsfaceoff" >Comets Faceoff</a>
+        	    </li>
+																							
+	    				<li class=" skin-cnyhomepage">
+        		<a class="" href="/sports" >Sports</a>
+        	    </li>
+																							
+	    	<li class=" skin-cnyhomepage">
+        		<a class="" href="http://www.cnyhomepage.com/sports/fever" >Friday Night Fever</a>
+        	    </li>
+																							
+	    	<li class=" skin-cnyhomepage">
+        		<a class="" href="http://www.cnyhomepage.com/nba" >NBA</a>
+        	    </li>
+																							
+	    	<li class=" skin-cnyhomepage">
+        		<a class="" href="http://www.cnyhomepage.com/nhl" >NHL</a>
+        	    </li>
+																							
+	    	<li class=" skin-cnyhomepage">
+        		<a class="" href="http://www.cnyhomepage.com/auto-racing" >Auto Racing</a>
+        	    </li>
+																							
+	    	<li class=" skin-cnyhomepage">
+        		<a class="" href="http://www.cnyhomepage.com/sports/buffalo-blitz" >Buffalo Blitz</a>
+        	    </li>
+																							
+	    	<li class=" skin-cnyhomepage">
+        		<a class="" href="http://www.cnyhomepage.com/sports/orange-nation" >Orange Nation</a>
+        	    </li>
+																							
+	    	<li class=" skin-cnyhomepage">
+        		<a class="" href="http://www.cnyhomepage.com/sports/ny-giants" >New York Giants</a>
+        	    </li>
+								</ul>
+        	    </li>
+						</ul>
+									<ul class="mobile-secondary-nav">
+																									
+	    	<li class="level3 skin-cnyhomepage">
+                		<a class="" href="http://www.cnyhomepage.com/marketplace" >Marketplace <span class="drop-icon"><i class="ep-icon-arrow-down-05"></i></span><label title="Toggle Drop-down" class="drop-icon" for="sm3"><i class="ep-icon-arrow-down-05"></i></label></a>
+        			<input id="sm3" type="checkbox"/>
+			<ul class="sub-nav-bar">
+																						
+	    	<li class=" skin-cnyhomepage">
+        		<a class="" href="http://www.cnyhomepage.biz" >Business Directory</a>
+        	    </li>
+																							
+	    	<li class=" skin-cnyhomepage">
+        		<a class="" href="http://www.cnyhomepage.com/marketplace/professional" >Ask the Professional</a>
+        	    </li>
+								</ul>
+        	    </li>
+						</ul>
+									<ul class="mobile-secondary-nav">
+																									
+	    	<li class="level3 skin-cnyhomepage">
+                		<a class="" href="http://www.cnyhomepage.com/community" >Community <span class="drop-icon"><i class="ep-icon-arrow-down-05"></i></span><label title="Toggle Drop-down" class="drop-icon" for="sm4"><i class="ep-icon-arrow-down-05"></i></label></a>
+        			<input id="sm4" type="checkbox"/>
+			<ul class="sub-nav-bar">
+																						
+	    	<li class=" skin-cnyhomepage">
+        		<a class="" href="http://www.cnyhomepage.com/military-holiday-greetings1" >Military Holiday Greetings</a>
+        	    </li>
+																							
+	    	<li class=" skin-cnyhomepage">
+        		<a class="" href="http://www.cnyhomepage.com/community/relay-for-life" >Relay For Life</a>
+        	    </li>
+																							
+	    	<li class=" skin-cnyhomepage">
+        		<a class="" href="http://shareit.cnyhomepage.com/upload" >Your Photos</a>
+        	    </li>
+																							
+	    	<li class=" skin-cnyhomepage">
+        		<a class="" href="http://cnyhomepage.tributes.com/national/home" >Obituaries</a>
+        	    </li>
+																							
+	    	<li class=" skin-cnyhomepage">
+        		<a class="" href="http://www.cnyhomepage.com/your-events" >Your Events</a>
+        	    </li>
+																							
+	    	<li class=" skin-cnyhomepage">
+        		<a class="" href="http://www.cnyhomepage.com/contests" >Contests</a>
+        	    </li>
+																							
+	    	<li class=" skin-cnyhomepage">
+        		<a class="" href="http://www.cnyhomepage.com/community/organized-in-60" >Organized in 60</a>
+        	    </li>
+																							
+	    	<li class=" skin-cnyhomepage">
+        		<a class="" href="http://www.cnyhomepage.com/community/games" >Puzzles &amp; Games</a>
+        	    </li>
+																							
+	    	<li class=" skin-cnyhomepage">
+        		<a class="" href="http://www.cnyhomepage.com/community/joekelly" >Joe Kelly Show</a>
+        	    </li>
+																							
+	    	<li class=" skin-cnyhomepage">
+        		<a class="" href="http://www.cnyhomepage.com/community/movies" >Movies</a>
+        	    </li>
+								</ul>
+        	    </li>
+						</ul>
+									<ul class="mobile-secondary-nav">
+																									
+	    	<li class="level3 skin-cnyhomepage">
+                		<a class="" href="http://www.cnyhomepage.com/lifestyle" >Lifestyle <span class="drop-icon"><i class="ep-icon-arrow-down-05"></i></span><label title="Toggle Drop-down" class="drop-icon" for="sm5"><i class="ep-icon-arrow-down-05"></i></label></a>
+        			<input id="sm5" type="checkbox"/>
+			<ul class="sub-nav-bar">
+																						
+	    	<li class=" skin-cnyhomepage">
+        		<a class="" href="http://www.cnyhomepage.com/lifestyle/health" >Health News</a>
+        	    </li>
+																							
+	    	<li class=" skin-cnyhomepage">
+        		<a class="" href="http://www.cnyhomepage.com/at-the-movies-2" >At the Movies</a>
+        	    </li>
+																							
+	    	<li class=" no-skin">
+        		<a class="" href="http://www.cnyhomepage.com/health-resource-center" >Health Resource Center</a>
+        	    </li>
+																							
+	    	<li class=" skin-cnyhomepage">
+        		<a class="" href="http://www.cnyhomepage.com/lifestyle/entertainment-news" >Entertainment News</a>
+        	    </li>
+																							
+	    	<li class=" skin-cnyhomepage">
+        		<a class="" href="http://www.cnyhomepage.com/lottery" >Lottery</a>
+        	    </li>
+																							
+	    	<li class=" skin-cnyhomepage">
+        		<a class="" href="http://www.cnyhomepage.com/horoscopes" >Horoscopes</a>
+        	    </li>
+																							
+	    				<li class=" skin-cnyhomepage">
+        		<a class="" href="/weddings-2" >Weddings</a>
+        	    </li>
+																							
+	    				<li class=" skin-cnyhomepage">
+        		<a class="" href="/automotive-essentials-2" >Automotive Essentials</a>
+        	    </li>
+																							
+	    				<li class=" skin-cnyhomepage">
+        		<a class="" href="/real-estate-essentials-2" >Real Estate Essentials</a>
+        	    </li>
+																							
+	    	<li class=" skin-cnyhomepage">
+        		<a class="" href="http://www.cnyhomepage.com/healthy-heart" >Healthy Heart</a>
+        	    </li>
+																							
+	    	<li class=" skin-cnyhomepage">
+        		<a class="" href="http://www.cnyhomepage.com/taxes-2017" >Taxes</a>
+        	    </li>
+																							
+	    	<li class=" skin-cnyhomepage">
+        		<a class="" href="http://www.cnyhomepage.com/healthy-pets-2" >Healthy Pets</a>
+        	    </li>
+								</ul>
+        	    </li>
+						</ul>
+									<ul class="mobile-secondary-nav">
+																									
+	    	<li class="level3 skin-cnyhomepage">
+                		<a class="" href="http://www.cnyhomepage.com/about-us" >About Us <span class="drop-icon"><i class="ep-icon-arrow-down-05"></i></span><label title="Toggle Drop-down" class="drop-icon" for="sm6"><i class="ep-icon-arrow-down-05"></i></label></a>
+        			<input id="sm6" type="checkbox"/>
+			<ul class="sub-nav-bar">
+																						
+	    	<li class=" skin-cnyhomepage">
+        		<a class="" href="http://www.cnyhomepage.com/meet-the-team" >Meet the Team</a>
+        	    </li>
+																							
+	    	<li class=" skin-cnyhomepage">
+        		<a class="" href="http://www.cnyhomepage.com/tv-schedule" >TV Schedule</a>
+        	    </li>
+																							
+	    	<li class=" skin-cnyhomepage">
+        		<a class="" href="http://www.cnyhomepage.com/contact-us" >Contact Us</a>
+        	    </li>
+																							
+	    	<li class=" skin-cnyhomepage">
+        		<a class="" href="http://www.cnyhomepage.com/advertise-with-us" >Advertise With Us</a>
+        	    </li>
+																							
+	    	<li class=" skin-cnyhomepage">
+        		<a class="" href="http://www.cnyhomepage.com/work-for-us" >Work for Us</a>
+        	    </li>
+								</ul>
+        	    </li>
+						</ul>
+									<ul class="mobile-secondary-nav">
+																									
+	    	<li class="level3 skin-cnyhomepage">
+        		<a class="" href="http://www.cnyhomepage.com/alerts" >Alerts</a>
+        	    </li>
+						</ul>
+										
+
+        </div>
+    </div>
+</nav>
+<script>
+(function($, A){
+		
+	$('.mobile-secondary-nav-container li.level3').each(function(idx, li) {
+		var $li = $(li);
+		var $subList = $li.children('.sub-nav-bar');
+		var $input = $li.children('input:checkbox');
+		var $aLink = $li.children('a[href]');
+		var cls = 'checked';
+		if($subList.length && $input.length && $aLink.length){
+			$aLink.click(function(e) {
+				e.preventDefault();
+				var checked = $input.is(':'+cls);
+				$input.attr(cls, !checked);
+			});
+		}
+	});
+	 })(jQuery, AUI());
+</script>						
+			<!-- Background Header Image Desktop -->
+			<div class="bg-image ui-large-screen and-up" style="background-image: url(http://static.lakana.com/nxsglobal/cnyhomepage/theme/images/cnyhomepage_header_blue-min.jpg);"></div>
+			
+			<!-- Background Header Image Mobile -->
+			<div class="bg-image mobile-only ui-medium-screen and-down" style="background-image: url(http://static.lakana.com/nxsglobal/cnyhomepage/theme/images/cnyhomepage_header_blue-min.jpg);"></div>
+		</header>
+		
+    <!-- end: HEADER -->
+
+	<div id="main" class="container" data-role="content">
+
+					
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+	
+		
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+	
+
+	<div id="p_p_id_103_" class="portlet-boundary portlet-boundary_103_  portlet-static portlet-static-end portlet-borderless  " >
+		<span id="p_103"></span>
+
+		<div class="portlet-body">
+
+
+
+	
+	
+	
+	
+
+		
+
+			
+				
+				
+					
+				
+			
+
+		
+
+	
+
+
+
+
+
+			
+		</div>
+	</div>
+
+
+
+
+
+	
+
+<div class="nxs-base-layout" id="main-content" role="main">
+
+	<section class="row">
+		<div class="portlet-column col-12" id="column-1">
+			<div class="portlet-dropzone empty portlet-column-content" id="layout-column_column-1"></div>
+		</div>
+	</section>
+
+	<section class="row">
+		<div class="row-container">
+			<div class="portlet-column col-12" id="column-2">
+				<div class="portlet-dropzone empty portlet-column-content" id="layout-column_column-2"></div>
+			</div>
+		</div>
+	</section>
+
+	<section class="row">
+		<div class="row-container">
+			<div class="portlet-column col-12" id="column-3">
+				<div class="portlet-dropzone empty portlet-column-content" id="layout-column_column-3"></div>
+			</div>
+
+			<div class="row custom-8x4-row-container">
+				<div class="col-8 wrap-full">
+					<div class="row">
+						<div class="portlet-column col-12" id="column-4">
+							<div class="portlet-dropzone portlet-column-content" id="layout-column_column-4">
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+	
+		
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+	
+
+	<div id="p_p_id_56_INSTANCE_EAmwX8eNyEAx_" class="portlet-boundary portlet-boundary_56_  portlet-static portlet-static-end portlet-borderless portlet-journal-content " >
+		<span id="p_56_INSTANCE_EAmwX8eNyEAx"></span>
+
+		<div class="portlet-body">
+
+
+
+	
+	
+	
+	
+
+		
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+	
+	
+	
+	
+	
+
+		
+
+		
+			
+			
+
+				
+
+				<div class="portlet-borderless-container" style="">
+					
+
+					
+
+
+	<div class="portlet-body">
+
+
+
+	
+		
+			
+			
+				
+					
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+	
+
+				
+
+				
+					
+					
+						
+
+
+	
+	
+		
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+    
+
+    
+
+    <div class="journal-content-article" id="article_10155_54710705_54717034_1.3">
+        
+
+
+
+
+
+
+
+
+    		
+
+    
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+			
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+        
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+ 
+
+
+
+
+
+ 
+ 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+	                    
+                            			        						                    		                        		                                                    	    						        
+                <section class="mod-wrapper mod-ad ad-728">
+	    <div class="mod-body">
+	    		    <div id="54717034" class="adtech-container"></div>		
+	            </div>
+    </section>
+            <script>
+        (function($){
+            var oldContainerId = '54717034';
+			var index = EP.Clients.NXS.AdTech.length;
+			var adContainerId = oldContainerId + '_' + index;
+			var adContainer = $('#'+oldContainerId);
+			if( adContainer.length ){
+				adContainer.get(0).id = adContainerId;
+				adContainer.attr('id', adContainerId);
+				var adInfo = getTagInfo();
+				ADTECH.config.page = { protocol: 'http', server: adInfo.domain + '.adtechus.com', network: '5336.1', params: { loc: '100' }};
+				var aliasIndex = 'wutr_middletop_display'.lastIndexOf("_");
+				var finalAlias = 'wutr_middletop_display'.substring(0, aliasIndex) + "_" + adInfo.alias;
+				ADTECH.config.placements[index] = { sizeid: '225', adContainerId: adContainerId,
+					params: {alias: finalAlias, target: '_blank', key: 'closings-and-delays' , kvcat: 'Weather', kvtopics: '', grp: adInfo.groupId + '', misc: new Date().getTime() + '' }};
+				if(false) {
+					ADTECH.config.placements[index].params.allowedSizes = '300x250,300x600';
+				}
+				EP.Clients.NXS.AdTech[index] = ADTECH.config.placements[index];
+				loadAdTech(index);
+				adContainer.data("adIndex", index);
+			}
+        })(jQuery);
+    </script>
+	
+    </div>
+
+    
+
+
+
+
+
+
+
+
+
+
+
+    
+
+    
+
+    
+
+	
+
+					
+				
+			
+			
+		
+	
+	
+
+
+
+	</div>
+
+				</div>
+
+				
+			
+		
+	
+
+
+	
+
+
+
+
+
+			
+		</div>
+	</div>
+
+
+
+
+
+	
+	
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+	
+		
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+	
+
+	<div id="p_p_id_56_INSTANCE_VfbX0ZJpNEij_" class="portlet-boundary portlet-boundary_56_  portlet-static portlet-static-end portlet-borderless portlet-journal-content " >
+		<span id="p_56_INSTANCE_VfbX0ZJpNEij"></span>
+
+		<div class="portlet-body">
+
+
+
+	
+	
+	
+	
+
+		
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+	
+	
+	
+	
+	
+
+		
+
+		
+			
+			
+
+				
+
+				<div class="portlet-borderless-container" style="">
+					
+
+					
+
+
+	<div class="portlet-body">
+
+
+
+	
+		
+			
+			
+				
+					
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+	
+
+				
+
+				
+					
+					
+						
+
+
+	
+	
+		
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+    
+
+    
+
+    <div class="journal-content-article" id="article_10155_54710705_386566945_1.1">
+        <iframe frameborder="0" height="600" scrolling="auto" src="https://s3.amazonaws.com/nxsglobal/cnyhomepage/closings/closings.html" width="100%"></iframe>
+</body></html>

@@ -1,0 +1,2072 @@
+# Station registry for one platform. Loaded with every other file in this folder
+# by snowlight.sources.stations.registry; see its docstring for the fields.
+# `snowlight stations robots --update` rewrites the robots blocks in place.
+platform:
+  id: tegna
+  name: TEGNA closings pages
+  operator: TEGNA Inc. (a subsidiary of Nexstar Media Group, per nexstar.tv on 2026-09-26)
+  adapter: tegna
+  poll_minutes: 10
+  terms:
+    automated_access: forbidden
+    summary: 'TEGNA''s Terms of Service (footer link /terms on every station site; read at https://www.wusa9.com/terms,
+      "Last Updated: June 26, 2025") forbid using "software or automated agents or scripts ... to generate
+      automated searches, requests, or queries to (or to strip, scrape, or mine data from) the Services",
+      with a revocable exception for public search engines, and license the Services for personal, noncommercial
+      use. The project owner decided on 2026-09-25 to read the closings lists anyway for this non-commercial
+      project (owner_decision below); the terms stay recorded here.'
+    evidence:
+    - url: https://www.wusa9.com/terms
+      read_at: '2026-09-26T22:53:28Z'
+      sha256: 942bfbd0b9ac48f857b32df6fb17abd036cd5342513b202b5ec0e6bef2c8188d
+      excerpt:
+      - 'Last Updated: June 26, 2025'
+      - use software or automated agents or scripts to produce multiple accounts on the Services, or to
+        generate automated searches, requests, or queries to (or to strip, scrape, or mine data from)
+        the Services (provided, however, that we conditionally grant to the operators of public search
+        engines revocable permission to use spiders to copy materials from the Services for the sole purpose
+        of and solely to the extent necessary for creating publicly available searchable indices of the
+        materials, but not caches or archives of such materials, subject to the parameters set forth in
+        our robots.txt file)
+      - we grant you a non-transferable, non-exclusive, revocable, limited license to use and access the
+        Services solely for your personal, noncommercial use.
+    permission: null
+    owner_decision:
+      decided_by: the project owner (Snowlight)
+      decided_on: '2026-09-25'
+      reference: 'Stated in the build instructions for the station adapters (piece s4b, round 1): "Terms
+        of use that forbid automated access do not exclude a station: the project owner decided on 2026-09-25
+        to read them for this non-commercial project, so record each station''s terms internally in the
+        registry and read it anyway." The same instructions record the owner''s decision of 2026-09-26
+        to read closings pages and data files even where robots.txt disallows them. Relayed to the pipeline''s
+        builder by the project''s build workflow; to revoke it, remove this block and live polling of
+        this platform stops.'
+      scope: 'Live reads of this platform''s public closings lists (the station pages, the WordPress REST
+        routes that publish the same pages, and the list files the pages frame) for Snowlight, a non-commercial
+        project, although the terms above forbid automated access. robots.txt is read and its verdict
+        recorded for every URL requested (no closings URL registered here was disallowed when checked
+        on 2026-09-26); the owner decided on 2026-09-26 to read closings pages and files even where robots.txt
+        disallows them. Unchanged by it: the User-Agent names the repository (never a browser string),
+        only the closings page or file is requested (no crawling), requests are paced per host (any Crawl-delay
+        is a floor) with conditional requests and backoff on 429 and 5xx answers, and a station that blocks
+        the project (a 403, or a bot challenge such as the PerimeterX page Nexstar''s HTML pages answer
+        with) is not worked around.'
+  notes: 'Station list: https://www.tegna.com/brands/ ("64 Local News Brands in 51 Markets"), cross-checked
+    with the TEGNA rows of https://www.nexstar.tv/stations/ (first-hand check 2026-09-26, docs/research/firsthand/nexstar-tegna-scripps.md);
+    WTIC/WCCT and WFMY are on tegna.com only and are included. One registry entry per website (50 sites,
+    67 full-power call signs). Every site serves https://www.{site}/closings rendered on the server with
+    the TEGNA closings module (read with the tegna adapter), except KGW, whose page frames the FlashAlert
+    Newswire report on content.kgw.com. KMSB/KTTU (Tucson) publish on kold.com, a Gray site already registered
+    as gray-kold. WWL and KIII have no closings list the pipeline can read: their /closings pages held
+    the module, empty, in every capture read (WWL on the Hurricane Sally and Ida days too), and now redirect,
+    WWL''s to winter articles whose /article/ addresses answer this pipeline with 403 (not worked around),
+    KIII''s to the front page.'
+  shared_paths: []
+stations:
+- id: tegna-kags
+  platform: tegna
+  call_sign: KAGS
+  name: KAGS (kagstv.com)
+  market: Waco-Temple-Bryan (Bryan-College Station)
+  dma: Waco - Temple - Bryan, TX DMA
+  states: [TX]
+  counties:
+    basis: dma
+    source: 'DMA county list: alex-patton/US-TVDMA-BY-COUNTY usa-tvdma-county.csv at commit 7f254b8c1843c62ec976a71c40d366d45f6f29cd
+      (sha256 2e2cd00265a8d704...), names resolved to FIPS with the Census 2025 county Gazetteer; Connecticut
+      via the Census county-to-town crosswalk (snowlight.sources.stations.dma); market ''Waco - Temple
+      - Bryan, TX DMA'''
+    fips: ['48027', '48041', '48051', '48099', '48145', '48281', '48289', '48293', '48309', '48313', '48331',
+      '48333', '48395', '48411']
+  page_url: https://www.kagstv.com/closings
+  data_url: null
+  export_url: null
+  archive_urls:
+  - https://www.kagstv.com/closings
+  poll_minutes: null
+  status: active
+  evidence: 'First-hand check 2026-09-26T17:43:28Z (docs/research/firsthand/nexstar-tegna-scripps.json,
+    record KAGS): site https://www.kagstv.com. Closings page https://www.kagstv.com/closings (HTTP 200)
+    holds the TEGNA closings module rendered on the server; the poller reads the page itself. page data-market
+    ''College Station, TX''. Empty-state text: ''No delays or closings.''. Market: ''Waco-Temple-Bryan
+    (Bryan-College Station)'' (first-hand record) is the crosswalk''s ''Waco - Temple - Bryan, TX DMA''.'
+  list_files: []
+  page_check: null
+  robots:
+  - url: https://www.kagstv.com/closings
+    checked_at: '2026-09-26T23:05:50Z'
+    state: parsed
+    allowed: true
+    rule: no rule matches
+    crawl_delay: null
+    disallowed_agents: []
+    sha256: fd5a73b7236ca1cedbddfba5c72c0c406c67edf4f62d08c7f541a35f483d8210
+- id: tegna-kare
+  platform: tegna
+  call_sign: KARE
+  name: KARE (kare11.com)
+  market: Minneapolis-St. Paul
+  dma: Minneapolis - St. Paul, MN - WI DMA
+  states: [MN, WI]
+  counties:
+    basis: dma
+    source: 'DMA county list: alex-patton/US-TVDMA-BY-COUNTY usa-tvdma-county.csv at commit 7f254b8c1843c62ec976a71c40d366d45f6f29cd
+      (sha256 2e2cd00265a8d704...), names resolved to FIPS with the Census 2025 county Gazetteer; Connecticut
+      via the Census county-to-town crosswalk (snowlight.sources.stations.dma); market ''Minneapolis -
+      St. Paul, MN - WI DMA'''
+    fips: ['27003', '27007', '27009', '27011', '27019', '27021', '27023', '27025', '27033', '27035', '27037',
+      '27041', '27043', '27049', '27051', '27053', '27057', '27059', '27063', '27065', '27067', '27073',
+      '27079', '27083', '27085', '27093', '27095', '27097', '27103', '27115', '27121', '27123', '27127',
+      '27129', '27131', '27139', '27141', '27143', '27145', '27147', '27149', '27151', '27153', '27155',
+      '27157', '27159', '27161', '27163', '27171', '27173', '55005', '55013', '55033', '55091', '55093',
+      '55095', '55109']
+  page_url: https://www.kare11.com/closings
+  data_url: null
+  export_url: null
+  archive_urls:
+  - https://www.kare11.com/closings
+  poll_minutes: null
+  status: active
+  evidence: 'First-hand check 2026-09-26T17:43:09Z (docs/research/firsthand/nexstar-tegna-scripps.json,
+    record KARE): site https://www.kare11.com. Closings page https://www.kare11.com/closings (HTTP 200)
+    holds the TEGNA closings module rendered on the server; the poller reads the page itself. page data-market
+    ''Minneapolis, MN''. Empty-state text: ''No delays or closings.''. Market: ''Minneapolis-St. Paul''
+    (first-hand record) is the crosswalk''s ''Minneapolis - St. Paul, MN - WI DMA''. Wayback Machine:
+    the archive holds nothing for this site: its CDX server answered HTTP 403 for kare11.com itself (archive-captures
+    run 36300019096, where the same query for wusa9.com listed 153 captures), the listing of kare11.com/closings*
+    from 2018 to 2026 is empty (run 36281601087), and id_ requests for https://www.kare11.com/closings
+    answered HTTP 403 without redirecting to any capture (run 36285593343). The host is excluded from
+    the archive, so this list can be proven only by a live read with rows.'
+  list_files: []
+  page_check: null
+  robots:
+  - url: https://www.kare11.com/closings
+    checked_at: '2026-09-26T23:05:50Z'
+    state: parsed
+    allowed: true
+    rule: no rule matches
+    crawl_delay: null
+    disallowed_agents: []
+    sha256: 96c695e5238d5e9fa31e48cd66dce5cc0cc875ea671751ef754e17c3af66f56b
+- id: tegna-kbmt
+  platform: tegna
+  call_sign: KBMT
+  name: KBMT / KJAC (12newsnow.com)
+  market: Beaumont-Port Arthur
+  dma: Beaumont - Port Arthur, TX DMA
+  states: [TX]
+  counties:
+    basis: dma
+    source: 'DMA county list: alex-patton/US-TVDMA-BY-COUNTY usa-tvdma-county.csv at commit 7f254b8c1843c62ec976a71c40d366d45f6f29cd
+      (sha256 2e2cd00265a8d704...), names resolved to FIPS with the Census 2025 county Gazetteer; Connecticut
+      via the Census county-to-town crosswalk (snowlight.sources.stations.dma); market ''Beaumont - Port
+      Arthur, TX DMA'''
+    fips: ['48199', '48241', '48245', '48351', '48361', '48457']
+  page_url: https://www.12newsnow.com/closings
+  data_url: null
+  export_url: null
+  archive_urls:
+  - https://www.12newsnow.com/closings
+  poll_minutes: null
+  status: active
+  evidence: 'First-hand check 2026-09-26T17:43:30Z (docs/research/firsthand/nexstar-tegna-scripps.json,
+    record KBMT): site https://www.12newsnow.com. Closings page https://www.12newsnow.com/closings (HTTP
+    200) holds the TEGNA closings module rendered on the server; the poller reads the page itself. page
+    data-market ''Beaumont, TX''. Empty-state text: ''No delays or closings.''. Market: ''Beaumont-Port
+    Arthur'' (first-hand record) is the crosswalk''s ''Beaumont - Port Arthur, TX DMA''.'
+  list_files: []
+  page_check: null
+  robots:
+  - url: https://www.12newsnow.com/closings
+    checked_at: '2026-09-26T23:05:51Z'
+    state: parsed
+    allowed: true
+    rule: no rule matches
+    crawl_delay: null
+    disallowed_agents: []
+    sha256: 7b2095469f65dbd18332f8726b096ca44820a9d315c6e896c59dbbb08cf0d16e
+- id: tegna-kcen
+  platform: tegna
+  call_sign: KCEN
+  name: KCEN (kcentv.com)
+  market: Waco-Temple-Bryan
+  dma: Waco - Temple - Bryan, TX DMA
+  states: [TX]
+  counties:
+    basis: dma
+    source: 'DMA county list: alex-patton/US-TVDMA-BY-COUNTY usa-tvdma-county.csv at commit 7f254b8c1843c62ec976a71c40d366d45f6f29cd
+      (sha256 2e2cd00265a8d704...), names resolved to FIPS with the Census 2025 county Gazetteer; Connecticut
+      via the Census county-to-town crosswalk (snowlight.sources.stations.dma); market ''Waco - Temple
+      - Bryan, TX DMA'''
+    fips: ['48027', '48041', '48051', '48099', '48145', '48281', '48289', '48293', '48309', '48313', '48331',
+      '48333', '48395', '48411']
+  page_url: https://www.kcentv.com/closings
+  data_url: null
+  export_url: null
+  archive_urls:
+  - https://www.kcentv.com/closings
+  poll_minutes: null
+  status: active
+  evidence: 'First-hand check 2026-09-26T17:43:27Z (docs/research/firsthand/nexstar-tegna-scripps.json,
+    record KCEN): site https://www.kcentv.com. Closings page https://www.kcentv.com/closings (HTTP 200)
+    holds the TEGNA closings module rendered on the server; the poller reads the page itself. page data-market
+    ''Temple, TX''. Empty-state text: ''No delays or closings.''. Market: ''Waco-Temple-Bryan'' (first-hand
+    record) is the crosswalk''s ''Waco - Temple - Bryan, TX DMA''.'
+  list_files: []
+  page_check: null
+  robots:
+  - url: https://www.kcentv.com/closings
+    checked_at: '2026-09-26T23:05:52Z'
+    state: parsed
+    allowed: true
+    rule: no rule matches
+    crawl_delay: null
+    disallowed_agents: []
+    sha256: 6d6982c9f39c2f8f1b3e51230ded339ba926a6121bf17ff70205931c7b314543
+- id: tegna-kens
+  platform: tegna
+  call_sign: KENS
+  name: KENS (kens5.com)
+  market: San Antonio
+  dma: San Antonio, TX DMA
+  states: [TX]
+  counties:
+    basis: dma
+    source: 'DMA county list: alex-patton/US-TVDMA-BY-COUNTY usa-tvdma-county.csv at commit 7f254b8c1843c62ec976a71c40d366d45f6f29cd
+      (sha256 2e2cd00265a8d704...), names resolved to FIPS with the Census 2025 county Gazetteer; Connecticut
+      via the Census county-to-town crosswalk (snowlight.sources.stations.dma); market ''San Antonio,
+      TX DMA'''
+    fips: ['48013', '48019', '48029', '48091', '48123', '48127', '48137', '48163', '48171', '48175', '48177',
+      '48187', '48255', '48259', '48265', '48271', '48283', '48285', '48311', '48323', '48325', '48385',
+      '48463', '48465', '48493', '48507']
+  page_url: https://www.kens5.com/closings/
+  data_url: null
+  export_url: null
+  archive_urls:
+  - https://www.kens5.com/closings
+  - https://www.kens5.com/closings/
+  poll_minutes: null
+  status: active
+  evidence: 'First-hand check 2026-09-26T17:43:14Z (docs/research/firsthand/nexstar-tegna-scripps.json,
+    record KENS): site https://www.kens5.com. Closings page https://www.kens5.com/closings/ (HTTP 200)
+    holds the TEGNA closings module rendered on the server; the poller reads the page itself. page data-market
+    ''San Antonio, TX''. Empty-state text: ''No delays or closings.''. Market: ''San Antonio'' (first-hand
+    record) is the crosswalk''s ''San Antonio, TX DMA''.'
+  list_files: []
+  page_check: null
+  robots:
+  - url: https://www.kens5.com/closings/
+    checked_at: '2026-09-26T23:05:53Z'
+    state: parsed
+    allowed: true
+    rule: no rule matches
+    crawl_delay: null
+    disallowed_agents: []
+    sha256: de927c3c75be0b974645d0092d1a967c371efacc98e3020d91db0968f86a3c78
+- id: tegna-kfmb
+  platform: tegna
+  call_sign: KFMB
+  name: KFMB (cbs8.com)
+  market: San Diego
+  dma: San Diego, CA DMA
+  states: [CA]
+  counties:
+    basis: dma
+    source: 'DMA county list: alex-patton/US-TVDMA-BY-COUNTY usa-tvdma-county.csv at commit 7f254b8c1843c62ec976a71c40d366d45f6f29cd
+      (sha256 2e2cd00265a8d704...), names resolved to FIPS with the Census 2025 county Gazetteer; Connecticut
+      via the Census county-to-town crosswalk (snowlight.sources.stations.dma); market ''San Diego, CA
+      DMA'''
+    fips: ['06073']
+  page_url: https://www.cbs8.com/closings
+  data_url: null
+  export_url: null
+  archive_urls:
+  - https://www.cbs8.com/closings
+  poll_minutes: null
+  status: active
+  evidence: 'First-hand check 2026-09-26T17:43:26Z (docs/research/firsthand/nexstar-tegna-scripps.json,
+    record KFMB): site https://www.cbs8.com. Closings page https://www.cbs8.com/closings (HTTP 200) holds
+    the TEGNA closings module rendered on the server; the poller reads the page itself. page data-market
+    ''San Diego, CA''. Empty-state text: ''No delays or closings.''. Market: ''San Diego'' (first-hand
+    record) is the crosswalk''s ''San Diego, CA DMA''.'
+  list_files: []
+  page_check: null
+  robots:
+  - url: https://www.cbs8.com/closings
+    checked_at: '2026-09-26T23:05:53Z'
+    state: parsed
+    allowed: true
+    rule: no rule matches
+    crawl_delay: null
+    disallowed_agents: []
+    sha256: adbb3cf89089c735a381aaf2e06728ae6d0c95e0c9ce5f5036a78e1279d58965
+- id: tegna-kfsm
+  platform: tegna
+  call_sign: KFSM
+  name: KFSM (5newsonline.com)
+  market: Fort Smith-Fayetteville
+  dma: Ft. Smith - Fay - Springdale - Rogers, AR - OK DMA
+  states: [AR, OK]
+  counties:
+    basis: dma
+    source: 'DMA county list: alex-patton/US-TVDMA-BY-COUNTY usa-tvdma-county.csv at commit 7f254b8c1843c62ec976a71c40d366d45f6f29cd
+      (sha256 2e2cd00265a8d704...), names resolved to FIPS with the Census 2025 county Gazetteer; Connecticut
+      via the Census county-to-town crosswalk (snowlight.sources.stations.dma); market ''Ft. Smith - Fay
+      - Springdale - Rogers, AR - OK DMA'''
+    fips: ['05007', '05033', '05047', 05083, 05087, '05127', '05131', '05143', '40079', '40135']
+  page_url: https://www.5newsonline.com/closings
+  data_url: null
+  export_url: null
+  archive_urls:
+  - https://www.5newsonline.com/closings
+  poll_minutes: null
+  status: active
+  evidence: 'First-hand check 2026-09-26T17:43:23Z (docs/research/firsthand/nexstar-tegna-scripps.json,
+    record KFSM): site https://www.5newsonline.com. Closings page https://www.5newsonline.com/closings
+    (HTTP 200) holds the TEGNA closings module rendered on the server; the poller reads the page itself.
+    page data-market ''Northwest Arkansas and the River Valley, AR''. Empty-state text: ''No delays or
+    closings.''. Market: ''Fort Smith-Fayetteville'' (first-hand record) is the crosswalk''s ''Ft. Smith
+    - Fay - Springdale - Rogers, AR - OK DMA''.'
+  list_files: []
+  page_check: null
+  robots:
+  - url: https://www.5newsonline.com/closings
+    checked_at: '2026-09-26T23:05:53Z'
+    state: parsed
+    allowed: true
+    rule: no rule matches
+    crawl_delay: null
+    disallowed_agents: []
+    sha256: 358a4b312891f18e4bde48c3733bbf7e82606213b85e1fd4122084ff3fbbb88a
+- id: tegna-kgw
+  platform: tegna
+  call_sign: KGW
+  name: KGW (kgw.com)
+  market: Portland OR
+  dma: Portland, OR - WA DMA
+  states: [OR, WA]
+  counties:
+    basis: dma
+    source: 'DMA county list: alex-patton/US-TVDMA-BY-COUNTY usa-tvdma-county.csv at commit 7f254b8c1843c62ec976a71c40d366d45f6f29cd
+      (sha256 2e2cd00265a8d704...), names resolved to FIPS with the Census 2025 county Gazetteer; Connecticut
+      via the Census county-to-town crosswalk (snowlight.sources.stations.dma); market ''Portland, OR
+      - WA DMA'''
+    fips: ['41001', '41005', '41007', '41009', '41013', '41021', '41025', '41027', '41031', '41041', '41043',
+      '41047', '41051', '41053', '41055', '41057', '41061', '41065', '41067', '41069', '41071', '53011',
+      '53015', '53039', '53059', '53069']
+  page_url: https://www.kgw.com/closings
+  data_url: https://content.kgw.com/station/flashalert/allclosures.html
+  export_url: null
+  archive_urls:
+  - https://content.kgw.com/station/flashalert/allclosures.html
+  - https://www.kgw.com/closings
+  poll_minutes: null
+  status: active
+  evidence: 'First-hand check 2026-09-26T17:43:23Z (docs/research/firsthand/nexstar-tegna-scripps.json,
+    record KGW): site https://www.kgw.com. Closings page https://www.kgw.com/closings holds only a raw-HTML
+    module framing the FlashAlert Newswire report https://content.kgw.com/station/flashalert/allclosures.html
+    (Portland/Vancouver/Salem region), which the poller reads (gray_files'' gray-file-flashalert format).
+    Market: ''Portland OR'' (first-hand record) is the crosswalk''s ''Portland, OR - WA DMA''.'
+  list_files:
+  - url: https://content.kgw.com/station/flashalert/allclosures.html
+    loaded_by: frame
+    seen: the page https://www.kgw.com/closings frames it (page HTML read 2026-09-26)
+  page_check:
+    checked_at: '2026-09-26T22:48:09Z'
+    page: https://www.kgw.com/closings
+    loads:
+    - https://content.kgw.com/station/flashalert/allclosures.html
+    shows: Portland/Vanc/Salem Emergency Info ... No information reported.
+    method: 'the page''s HTML read with the pipeline''s User-Agent: the raw-HTML module''s one iframe
+      (not opened in a browser)'
+  robots:
+  - url: https://www.kgw.com/closings
+    checked_at: '2026-09-26T23:05:54Z'
+    state: parsed
+    allowed: true
+    rule: no rule matches
+    crawl_delay: null
+    disallowed_agents: []
+    sha256: 64f2ce65ef33d8620bdcb46560d0b65b4347ade88562e9b51c8398b0c9833e61
+  - url: https://content.kgw.com/station/flashalert/allclosures.html
+    checked_at: '2026-09-26T23:05:55Z'
+    state: unavailable
+    allowed: true
+    rule: 'robots.txt unavailable (4xx): unrestricted'
+    crawl_delay: null
+    disallowed_agents: []
+    sha256: null
+- id: tegna-khou
+  platform: tegna
+  call_sign: KHOU
+  name: KHOU / KTBU (khou.com)
+  market: Houston
+  dma: Houston, TX DMA
+  states: [TX]
+  counties:
+    basis: dma
+    source: 'DMA county list: alex-patton/US-TVDMA-BY-COUNTY usa-tvdma-county.csv at commit 7f254b8c1843c62ec976a71c40d366d45f6f29cd
+      (sha256 2e2cd00265a8d704...), names resolved to FIPS with the Census 2025 county Gazetteer; Connecticut
+      via the Census county-to-town crosswalk (snowlight.sources.stations.dma); market ''Houston, TX DMA'''
+    fips: ['48015', '48039', '48057', '48071', '48089', '48157', '48167', '48185', '48201', '48239', '48291',
+      '48321', '48339', '48373', '48407', '48471', '48473', '48477', '48481']
+  page_url: https://www.khou.com/closings
+  data_url: null
+  export_url: null
+  archive_urls:
+  - https://www.khou.com/closings
+  poll_minutes: null
+  status: active
+  evidence: 'First-hand check 2026-09-26T17:43:14Z (docs/research/firsthand/nexstar-tegna-scripps.json,
+    record KHOU): site https://www.khou.com. Closings page https://www.khou.com/closings (HTTP 200) holds
+    the TEGNA closings module rendered on the server; the poller reads the page itself. page data-market
+    ''Houston, TX''. Empty-state text: ''No delays or closings.''. Market: ''Houston'' (first-hand record)
+    is the crosswalk''s ''Houston, TX DMA''.'
+  list_files: []
+  page_check: null
+  robots:
+  - url: https://www.khou.com/closings
+    checked_at: '2026-09-26T23:05:55Z'
+    state: parsed
+    allowed: true
+    rule: no rule matches
+    crawl_delay: null
+    disallowed_agents: []
+    sha256: 567b0bc339b171e48da41e3483fc173b1bde4a10a01686d0bab58d30401c70b4
+- id: tegna-kidy
+  platform: tegna
+  call_sign: KIDY
+  name: KIDY / KXVA (myfoxzone.com)
+  market: San Angelo and Abilene
+  dma: San Angelo, TX DMA
+  states: [TX]
+  counties:
+    basis: dma
+    source: 'DMA county list: alex-patton/US-TVDMA-BY-COUNTY usa-tvdma-county.csv at commit 7f254b8c1843c62ec976a71c40d366d45f6f29cd
+      (sha256 2e2cd00265a8d704...), names resolved to FIPS with the Census 2025 county Gazetteer; Connecticut
+      via the Census county-to-town crosswalk (snowlight.sources.stations.dma); market ''San Angelo, TX
+      DMA'''
+    fips: ['48081', '48095', '48105', '48235', '48267', '48307', '48327', '48413', '48431', '48435', '48451']
+  page_url: https://www.myfoxzone.com/closings
+  data_url: null
+  export_url: null
+  archive_urls:
+  - https://www.myfoxzone.com/closings
+  poll_minutes: null
+  status: active
+  evidence: 'First-hand check 2026-09-26T17:43:30Z (docs/research/firsthand/nexstar-tegna-scripps.json,
+    record KIDY): site https://www.myfoxzone.com. Closings page https://www.myfoxzone.com/closings (HTTP
+    200) holds the TEGNA closings module rendered on the server; the poller reads the page itself. page
+    data-market ''San Angelo, TX''. Empty-state text: ''No delays or closings.''. Market: ''San Angelo
+    and Abilene'' (first-hand record) is the crosswalk''s ''San Angelo, TX DMA''. KXVA serves the Abilene
+    - Sweetwater, TX DMA from the same site; only the San Angelo market is listed here.'
+  list_files: []
+  page_check: null
+  robots:
+  - url: https://www.myfoxzone.com/closings
+    checked_at: '2026-09-26T23:05:56Z'
+    state: parsed
+    allowed: true
+    rule: no rule matches
+    crawl_delay: null
+    disallowed_agents: []
+    sha256: a067d4be11198a93121a143317748d0119e8f7499e7fb7e9eae3cbb1fa2e381c
+- id: tegna-kiii
+  platform: tegna
+  call_sign: KIII
+  name: KIII (kiiitv.com)
+  market: Corpus Christi
+  dma: Corpus Christi, TX DMA
+  states: [TX]
+  counties:
+    basis: dma
+    source: 'DMA county list: alex-patton/US-TVDMA-BY-COUNTY usa-tvdma-county.csv at commit 7f254b8c1843c62ec976a71c40d366d45f6f29cd
+      (sha256 2e2cd00265a8d704...), names resolved to FIPS with the Census 2025 county Gazetteer; Connecticut
+      via the Census county-to-town crosswalk (snowlight.sources.stations.dma); market ''Corpus Christi,
+      TX DMA'''
+    fips: ['48007', '48025', '48047', '48131', '48247', '48249', '48261', '48273', '48297', '48355', '48391',
+      '48409']
+  page_url: null
+  data_url: null
+  export_url: null
+  archive_urls:
+  - https://www.kiiitv.com/closings
+  poll_minutes: null
+  status: no_endpoint
+  evidence: 'First-hand check 2026-09-26T17:43:28Z (docs/research/firsthand/nexstar-tegna-scripps.json,
+    record KIII): site https://www.kiiitv.com. No closings page found. Notes: https://www.kiiitv.com/closings
+    answered 302 to the homepage (https://www.kiiitv.com/); the homepage nav still links ''Closings &
+    Delays'' to /closings. Archive check: no archive request before 2026-09-28 covered this site. Asked
+    for since, in commits 1eadbc8 (run 36360179859), 4214b42 (run 36364542360), 7b1fc13 (run 36369419399),
+    f13b2c8 (run 36373148805), ec162d3 (run 36379606160): CDX listings (2014 to 2026) of kiiitv.com/weather/clos*,
+    kiiitv.com/clos*, kiiitv.com/weather/school-clos*, kiiitv.com/school-clos* and a listing of every
+    address of the site whose URL names closings, closures, delays or cancellations (one row per address),
+    and 10 captures of its closings pages on storm days and in past winters (each capture and why it was
+    picked is listed under ''no_endpoint_scripps_tegna'' in pipeline/config/sources/archive-wanted-s4b.json).
+    Results: Listings: kiiitv.com/closings 203 captures with HTTP 200 (72 in November to March, 36 redirects;
+    2016-2025); kiiitv.com//closings 2 captures with HTTP 200 (0 in November to March; 2022-2022); the
+    site-wide listing (run 36364542360) names 0 addresses with closings, closures, delays or cancellations
+    in them, besides the closings paths above: news stories, one per storm or event, not a list kept at
+    one address. Captures read: kiiitv.com/closings (20171208064939 empty, 20180111234946 empty, 20210111015748
+    empty, 20210119140122 empty, 20230327182020 empty, 20241224185430 empty); not read: 1 (the runner
+    could not reach the archive), 1 (the archive answered 403). No read shows a row: the closings module
+    was empty on 2024-12-24, and today the page redirects to the site''s front page. No endpoint is registered.
+    Market: ''Corpus Christi'' (first-hand record) is the crosswalk''s ''Corpus Christi, TX DMA''.'
+  list_files: []
+  page_check: null
+  robots: []
+- id: tegna-king
+  platform: tegna
+  call_sign: KING
+  name: KING / KONG (king5.com)
+  market: Seattle-Tacoma
+  dma: Seattle - Tacoma, WA DMA
+  states: [WA]
+  counties:
+    basis: dma
+    source: 'DMA county list: alex-patton/US-TVDMA-BY-COUNTY usa-tvdma-county.csv at commit 7f254b8c1843c62ec976a71c40d366d45f6f29cd
+      (sha256 2e2cd00265a8d704...), names resolved to FIPS with the Census 2025 county Gazetteer; Connecticut
+      via the Census county-to-town crosswalk (snowlight.sources.stations.dma); market ''Seattle - Tacoma,
+      WA DMA'''
+    fips: ['53007', '53009', '53017', '53027', '53029', '53031', '53033', '53035', '53041', '53045', '53049',
+      '53053', '53055', '53057', '53061', '53067', '53073']
+  page_url: https://www.king5.com/closings
+  data_url: null
+  export_url: null
+  archive_urls:
+  - https://www.king5.com/closings
+  poll_minutes: null
+  status: active
+  evidence: 'First-hand check 2026-09-26T17:43:23Z (docs/research/firsthand/nexstar-tegna-scripps.json,
+    record KING): site https://www.king5.com. Closings page https://www.king5.com/closings (HTTP 200)
+    holds the TEGNA closings module rendered on the server; the poller reads the page itself. page data-market
+    ''Seattle, WA''. Empty-state text: ''No delays or closings.''. Market: ''Seattle-Tacoma'' (first-hand
+    record) is the crosswalk''s ''Seattle - Tacoma, WA DMA''.'
+  list_files: []
+  page_check: null
+  robots:
+  - url: https://www.king5.com/closings
+    checked_at: '2026-09-26T23:05:56Z'
+    state: parsed
+    allowed: true
+    rule: no rule matches
+    crawl_delay: null
+    disallowed_agents: []
+    sha256: 9cf7ec81ff0b3bd584c206ce1d3dc0f0948ed5ebf3e486a0546d5a6710865358
+- id: tegna-kmsb
+  platform: tegna
+  call_sign: KMSB
+  name: KMSB / KTTU (kold.com)
+  market: Tucson
+  dma: Tucson (Nogales), AZ DMA
+  states: [AZ]
+  counties:
+    basis: dma
+    source: 'DMA county list: alex-patton/US-TVDMA-BY-COUNTY usa-tvdma-county.csv at commit 7f254b8c1843c62ec976a71c40d366d45f6f29cd
+      (sha256 2e2cd00265a8d704...), names resolved to FIPS with the Census 2025 county Gazetteer; Connecticut
+      via the Census county-to-town crosswalk (snowlight.sources.stations.dma); market ''Tucson (Nogales),
+      AZ DMA'''
+    fips: ['04003', 04019, '04023']
+  page_url: null
+  data_url: null
+  export_url: null
+  archive_urls: []
+  poll_minutes: null
+  status: no_endpoint
+  evidence: 'First-hand check 2026-09-26T17:43:32Z (docs/research/firsthand/nexstar-tegna-scripps.json,
+    record KMSB): site https://www.kold.com. The station''s closings are on https://www.kold.com, a Gray
+    Arc site: the list is Gray''s KOLD list, registered as gray-kold in gray.yaml and read there, so no
+    endpoint is registered here (reading it twice would count one list twice). Archive check: no archive
+    request before 2026-09-28 covered this site. Asked for since, in commits 1eadbc8 (run 36360179859),
+    4214b42 (run 36364542360), 7b1fc13 (run 36369419399): CDX listings (2014 to 2026) of kmsb.com/weather/clos*,
+    kmsb.com/clos*, kmsb.com/weather/school-clos*, kmsb.com/school-clos*, tucsonnewsnow.com/weather/clos*,
+    tucsonnewsnow.com/clos* and a listing of every address of the site whose URL names closings, closures,
+    delays or cancellations (one row per address). Results: Listings: no capture of a closings path; the
+    site-wide listing (run 36364542360) names 0 addresses with closings, closures, delays or cancellations
+    in them, besides the closings paths above: news stories, one per storm or event, not a list kept at
+    one address. Captures read: none. No read shows a row of a list the station keeps, so no endpoint
+    is registered. Market: ''Tucson'' (first-hand record) is the crosswalk''s ''Tucson (Nogales), AZ DMA''.'
+  list_files: []
+  page_check: null
+  robots: []
+- id: tegna-kpnx
+  platform: tegna
+  call_sign: KPNX
+  name: KPNX / KNAZ (12news.com)
+  market: Phoenix (Flagstaff)
+  dma: Phoenix, AZ DMA
+  states: [AZ]
+  counties:
+    basis: dma
+    source: 'DMA county list: alex-patton/US-TVDMA-BY-COUNTY usa-tvdma-county.csv at commit 7f254b8c1843c62ec976a71c40d366d45f6f29cd
+      (sha256 2e2cd00265a8d704...), names resolved to FIPS with the Census 2025 county Gazetteer; Connecticut
+      via the Census county-to-town crosswalk (snowlight.sources.stations.dma); market ''Phoenix, AZ DMA'''
+    fips: ['04005', '04007', 04009, '04011', '04012', '04013', '04015', '04017', '04021', '04025']
+  page_url: https://www.12news.com/closings
+  data_url: null
+  export_url: null
+  archive_urls:
+  - https://www.12news.com/closings
+  poll_minutes: null
+  status: active
+  evidence: 'First-hand check 2026-09-26T17:43:26Z (docs/research/firsthand/nexstar-tegna-scripps.json,
+    record KPNX): site https://www.12news.com. Closings page https://www.12news.com/closings (HTTP 200)
+    holds the TEGNA closings module rendered on the server; the poller reads the page itself. page data-market
+    ''Phoenix, AZ''. Empty-state text: ''No delays or closings.''. Market: ''Phoenix (Flagstaff)'' (first-hand
+    record) is the crosswalk''s ''Phoenix, AZ DMA''.'
+  list_files: []
+  page_check: null
+  robots:
+  - url: https://www.12news.com/closings
+    checked_at: '2026-09-26T23:05:57Z'
+    state: parsed
+    allowed: true
+    rule: no rule matches
+    crawl_delay: null
+    disallowed_agents: []
+    sha256: b45adeafd94d993a3e137d96d36930f2109e2cf38aff8844e4798abc008d4918
+- id: tegna-krem
+  platform: tegna
+  call_sign: KREM
+  name: KREM / KSKN (krem.com)
+  market: Spokane
+  dma: Spokane, WA - ID - MT - OR DMA
+  states: [ID, MT, OR, WA]
+  counties:
+    basis: dma
+    source: 'DMA county list: alex-patton/US-TVDMA-BY-COUNTY usa-tvdma-county.csv at commit 7f254b8c1843c62ec976a71c40d366d45f6f29cd
+      (sha256 2e2cd00265a8d704...), names resolved to FIPS with the Census 2025 county Gazetteer; Connecticut
+      via the Census county-to-town crosswalk (snowlight.sources.stations.dma); market ''Spokane, WA -
+      ID - MT - OR DMA'''
+    fips: ['16009', '16017', '16021', '16035', '16049', '16055', '16057', '16061', '16069', '16079', '30053',
+      '41063', '53001', '53003', '53013', '53019', '53023', '53025', '53043', '53047', '53051', '53063',
+      '53065', '53075']
+  page_url: https://www.krem.com/closings
+  data_url: null
+  export_url: null
+  archive_urls:
+  - https://www.krem.com/closings
+  poll_minutes: null
+  status: active
+  evidence: 'First-hand check 2026-09-26T17:43:25Z (docs/research/firsthand/nexstar-tegna-scripps.json,
+    record KREM): site https://www.krem.com. Closings page https://www.krem.com/closings (HTTP 200) holds
+    the TEGNA closings module rendered on the server; the poller reads the page itself. page data-market
+    ''Spokane, WA''. Empty-state text: ''No delays or closings.''. Market: ''Spokane'' (first-hand record)
+    is the crosswalk''s ''Spokane, WA - ID - MT - OR DMA''.'
+  list_files: []
+  page_check: null
+  robots:
+  - url: https://www.krem.com/closings
+    checked_at: '2026-09-26T23:05:57Z'
+    state: parsed
+    allowed: true
+    rule: no rule matches
+    crawl_delay: null
+    disallowed_agents: []
+    sha256: 70b04e3fe5652c2bccfebb65c0b4870291dee380be5f52186078d21e416b08e1
+- id: tegna-ksdk
+  platform: tegna
+  call_sign: KSDK
+  name: KSDK (ksdk.com)
+  market: St. Louis
+  dma: St. Louis, MO - IL DMA
+  states: [IL, MO]
+  counties:
+    basis: dma
+    source: 'DMA county list: alex-patton/US-TVDMA-BY-COUNTY usa-tvdma-county.csv at commit 7f254b8c1843c62ec976a71c40d366d45f6f29cd
+      (sha256 2e2cd00265a8d704...), names resolved to FIPS with the Census 2025 county Gazetteer; Connecticut
+      via the Census county-to-town crosswalk (snowlight.sources.stations.dma); market ''St. Louis, MO
+      - IL DMA'''
+    fips: ['17005', '17013', '17027', '17051', '17061', '17083', '17117', '17119', '17121', '17133', '17135',
+      '17157', '17163', '17189', '29055', '29071', '29073', '29093', '29099', '29113', '29163', '29183',
+      '29186', '29187', '29189', '29219', '29221', '29510']
+  page_url: https://www.ksdk.com/closings
+  data_url: null
+  export_url: null
+  archive_urls:
+  - https://www.ksdk.com/closings
+  poll_minutes: null
+  status: active
+  evidence: 'First-hand check 2026-09-26T17:43:11Z (docs/research/firsthand/nexstar-tegna-scripps.json,
+    record KSDK): site https://www.ksdk.com. Closings page https://www.ksdk.com/closings (HTTP 200) holds
+    the TEGNA closings module rendered on the server; the poller reads the page itself. page data-market
+    ''St. Louis, MO''. Empty-state text: ''No delays or closings.''. Market: ''St. Louis'' (first-hand
+    record) is the crosswalk''s ''St. Louis, MO - IL DMA''.'
+  list_files: []
+  page_check: null
+  robots:
+  - url: https://www.ksdk.com/closings
+    checked_at: '2026-09-26T23:05:58Z'
+    state: parsed
+    allowed: true
+    rule: no rule matches
+    crawl_delay: null
+    disallowed_agents: []
+    sha256: 558d975b63986ea8f69817bdbbc5e18870aed5089d209c3338389f313ecb6a9a
+- id: tegna-kthv
+  platform: tegna
+  call_sign: KTHV
+  name: KTHV (thv11.com)
+  market: Little Rock-Pine Bluff
+  dma: Little Rock - Pine Bluff, AR DMA
+  states: [AR]
+  counties:
+    basis: dma
+    source: 'DMA county list: alex-patton/US-TVDMA-BY-COUNTY usa-tvdma-county.csv at commit 7f254b8c1843c62ec976a71c40d366d45f6f29cd
+      (sha256 2e2cd00265a8d704...), names resolved to FIPS with the Census 2025 county Gazetteer; Connecticut
+      via the Census county-to-town crosswalk (snowlight.sources.stations.dma); market ''Little Rock -
+      Pine Bluff, AR DMA'''
+    fips: ['05001', '05011', '05013', 05019, '05023', '05025', 05029, 05039, '05041', '05043', '05045',
+      '05051', '05053', 05059, '05063', '05067', 05069, '05071', 05079, 05085, 05095, 05097, '05103',
+      '05105', 05109, '05113', '05115', '05117', 05119, '05125', 05129, '05137', '05141', '05145', '05147',
+      05149]
+  page_url: https://www.thv11.com/closings
+  data_url: null
+  export_url: null
+  archive_urls:
+  - https://www.thv11.com/closings
+  poll_minutes: null
+  status: active
+  evidence: 'First-hand check 2026-09-26T17:43:23Z (docs/research/firsthand/nexstar-tegna-scripps.json,
+    record KTHV): site https://www.thv11.com. Closings page https://www.thv11.com/closings (HTTP 200)
+    holds the TEGNA closings module rendered on the server; the poller reads the page itself. page data-market
+    ''Little Rock, AR''. Empty-state text: ''No delays or closings.''. Market: ''Little Rock-Pine Bluff''
+    (first-hand record) is the crosswalk''s ''Little Rock - Pine Bluff, AR DMA''.'
+  list_files: []
+  page_check: null
+  robots:
+  - url: https://www.thv11.com/closings
+    checked_at: '2026-09-26T23:05:58Z'
+    state: parsed
+    allowed: true
+    rule: no rule matches
+    crawl_delay: null
+    disallowed_agents: []
+    sha256: 165e0da4f18b7b851eb04c6248355c6a97b0a2fe6f5cc5896be3be3be04d58ef
+- id: tegna-ktvb
+  platform: tegna
+  call_sign: KTVB
+  name: KTVB / KTFT (ktvb.com)
+  market: Boise and Twin Falls
+  dma: Boise, ID - OR DMA
+  states: [ID, OR]
+  counties:
+    basis: dma
+    source: 'DMA county list: alex-patton/US-TVDMA-BY-COUNTY usa-tvdma-county.csv at commit 7f254b8c1843c62ec976a71c40d366d45f6f29cd
+      (sha256 2e2cd00265a8d704...), names resolved to FIPS with the Census 2025 county Gazetteer; Connecticut
+      via the Census county-to-town crosswalk (snowlight.sources.stations.dma); market ''Boise, ID - OR
+      DMA'''
+    fips: ['16001', '16003', '16015', '16025', '16027', '16039', '16045', '16073', '16075', '16085', '16087',
+      '41023', '41045']
+  page_url: https://www.ktvb.com/closings
+  data_url: null
+  export_url: null
+  archive_urls:
+  - https://www.ktvb.com/closings
+  poll_minutes: null
+  status: active
+  evidence: 'First-hand check 2026-09-26T17:43:23Z (docs/research/firsthand/nexstar-tegna-scripps.json,
+    record KTVB): site https://www.ktvb.com. Closings page https://www.ktvb.com/closings (HTTP 200) holds
+    the TEGNA closings module rendered on the server; the poller reads the page itself. page data-market
+    ''Boise, ID''. Empty-state text: ''No delays or closings.''. Market: ''Boise and Twin Falls'' (first-hand
+    record) is the crosswalk''s ''Boise, ID - OR DMA''. KTFT serves the Twin Falls, ID DMA from the same
+    site; only the Boise market is listed here.'
+  list_files: []
+  page_check: null
+  robots:
+  - url: https://www.ktvb.com/closings
+    checked_at: '2026-09-26T23:05:59Z'
+    state: parsed
+    allowed: true
+    rule: no rule matches
+    crawl_delay: null
+    disallowed_agents: []
+    sha256: 2bf65d4bb0642bc90b80bbcfe08b55b0d8c068a06d4daff83cc1962196e5a196
+- id: tegna-kusa
+  platform: tegna
+  call_sign: KUSA
+  name: KUSA / KTVD (9news.com)
+  market: Denver
+  dma: Denver, CO - NE - NV - WY DMA
+  states: [CO, NE, NV, WY]
+  counties:
+    basis: dma
+    source: 'DMA county list: alex-patton/US-TVDMA-BY-COUNTY usa-tvdma-county.csv at commit 7f254b8c1843c62ec976a71c40d366d45f6f29cd
+      (sha256 2e2cd00265a8d704...), names resolved to FIPS with the Census 2025 county Gazetteer; Connecticut
+      via the Census county-to-town crosswalk (snowlight.sources.stations.dma); market ''Denver, CO -
+      NE - NV - WY DMA''; plus 08014 (Broomfield County, CO), for which that list has no row, placed in
+      this market (Nielsen DMA 751 DENVER) by the second published list BritCrit/dma_county_zip dma_county_zip_data_set.csv
+      at commit 02f847923bd218c30a8c5488d561eca42ecf3614 (sha256 c931c30cef1b5d29...), used only for counties
+      the first list lacks (snowlight.sources.stations.dma.fill_missing)'
+    fips: [08001, 08003, 08005, 08007, 08013, 08014, 08015, 08019, 08021, 08027, 08029, 08031, 08035,
+      08037, 08039, 08045, 08047, 08049, 08051, 08053, 08057, 08059, 08063, 08065, 08069, 08073, 08075,
+      08079, 08081, 08087, 08091, 08093, 08095, 08097, 08099, 08103, 08105, 08107, 08109, 08111, 08113,
+      08115, 08117, 08121, 08123, 08125, '31013', '31033', '31045', '31049', '31069', '31101', '31105',
+      '32011', '56001', '56005', '56007', '56027', '56031']
+  page_url: https://www.9news.com/closings
+  data_url: null
+  export_url: null
+  archive_urls:
+  - https://www.9news.com/closings
+  poll_minutes: null
+  status: active
+  evidence: 'First-hand check 2026-09-26T17:43:14Z (docs/research/firsthand/nexstar-tegna-scripps.json,
+    record KUSA): site https://www.9news.com. Closings page https://www.9news.com/closings (HTTP 200)
+    holds the TEGNA closings module rendered on the server; the poller reads the page itself. page data-market
+    ''Denver, CO''. Empty-state text: ''No delays or closings.''. Market: ''Denver'' (first-hand record)
+    is the crosswalk''s ''Denver, CO - NE - NV - WY DMA''. Wayback Machine: the archive holds nothing
+    for this site: its CDX server answered HTTP 403 for 9news.com itself (archive-captures run 36300019096,
+    where the same query for wusa9.com listed 153 captures), the listing of 9news.com/closings* from 2018
+    to 2026 is empty (run 36281601087), and id_ requests for https://www.9news.com/closings answered HTTP
+    403 without redirecting to any capture (run 36285593343). The host is excluded from the archive, so
+    this list can be proven only by a live read with rows.'
+  list_files: []
+  page_check: null
+  robots:
+  - url: https://www.9news.com/closings
+    checked_at: '2026-09-26T23:05:59Z'
+    state: parsed
+    allowed: true
+    rule: no rule matches
+    crawl_delay: null
+    disallowed_agents: []
+    sha256: 9420fb27a0442860012b03f25f79532673a273a0c9ec67c313c7bd39b9a952d0
+- id: tegna-kvue
+  platform: tegna
+  call_sign: KVUE
+  name: KVUE (kvue.com)
+  market: Austin
+  dma: Austin, TX DMA
+  states: [TX]
+  counties:
+    basis: dma
+    source: 'DMA county list: alex-patton/US-TVDMA-BY-COUNTY usa-tvdma-county.csv at commit 7f254b8c1843c62ec976a71c40d366d45f6f29cd
+      (sha256 2e2cd00265a8d704...), names resolved to FIPS with the Census 2025 county Gazetteer; Connecticut
+      via the Census county-to-town crosswalk (snowlight.sources.stations.dma); market ''Austin, TX DMA'''
+    fips: ['48021', '48031', '48053', '48055', '48149', '48209', '48287', '48299', '48319', '48453', '48491']
+  page_url: https://www.kvue.com/closings
+  data_url: null
+  export_url: null
+  archive_urls:
+  - https://www.kvue.com/closings
+  poll_minutes: null
+  status: active
+  evidence: 'First-hand check 2026-09-26T17:43:14Z (docs/research/firsthand/nexstar-tegna-scripps.json,
+    record KVUE): site https://www.kvue.com. Closings page https://www.kvue.com/closings (HTTP 200) holds
+    the TEGNA closings module rendered on the server; the poller reads the page itself. page data-market
+    ''Austin, TX''. Empty-state text: ''No delays or closings.''. Market: ''Austin'' (first-hand record)
+    is the crosswalk''s ''Austin, TX DMA''.'
+  list_files: []
+  page_check: null
+  robots:
+  - url: https://www.kvue.com/closings
+    checked_at: '2026-09-26T23:06:00Z'
+    state: parsed
+    allowed: true
+    rule: no rule matches
+    crawl_delay: null
+    disallowed_agents: []
+    sha256: d99031b7cc5646bc5669e06acd21103440bb564aa30f3a03a1716f0f8f60b6bc
+- id: tegna-kwes
+  platform: tegna
+  call_sign: KWES
+  name: KWES (newswest9.com)
+  market: Midland-Odessa
+  dma: Odessa - Midland, TX DMA
+  states: [TX]
+  counties:
+    basis: dma
+    source: 'DMA county list: alex-patton/US-TVDMA-BY-COUNTY usa-tvdma-county.csv at commit 7f254b8c1843c62ec976a71c40d366d45f6f29cd
+      (sha256 2e2cd00265a8d704...), names resolved to FIPS with the Census 2025 county Gazetteer; Connecticut
+      via the Census county-to-town crosswalk (snowlight.sources.stations.dma); market ''Odessa - Midland,
+      TX DMA'''
+    fips: ['48003', '48043', '48103', '48135', '48173', '48227', '48243', '48301', '48317', '48329', '48371',
+      '48377', '48383', '48389', '48443', '48461', '48475', '48495']
+  page_url: https://www.newswest9.com/closings
+  data_url: null
+  export_url: null
+  archive_urls:
+  - https://www.newswest9.com/closings
+  poll_minutes: null
+  status: active
+  evidence: 'First-hand check 2026-09-26T17:43:30Z (docs/research/firsthand/nexstar-tegna-scripps.json,
+    record KWES): site https://www.newswest9.com. Closings page https://www.newswest9.com/closings (HTTP
+    200) holds the TEGNA closings module rendered on the server; the poller reads the page itself. page
+    data-market ''Midland-Odessa, TX''. Empty-state text: ''No delays or closings.''. Market: ''Midland-Odessa''
+    (first-hand record) is the crosswalk''s ''Odessa - Midland, TX DMA''.'
+  list_files: []
+  page_check: null
+  robots:
+  - url: https://www.newswest9.com/closings
+    checked_at: '2026-09-26T23:06:00Z'
+    state: parsed
+    allowed: true
+    rule: no rule matches
+    crawl_delay: null
+    disallowed_agents: []
+    sha256: fb91306b832f2ca8939365ea7bf8a7645551f44d777dfdeae13089d74cea9c43
+- id: tegna-kxtv
+  platform: tegna
+  call_sign: KXTV
+  name: KXTV (abc10.com)
+  market: Sacramento-Stockton-Modesto
+  dma: Sacramento - Stockton - Modesto, CA DMA
+  states: [CA]
+  counties:
+    basis: dma
+    source: 'DMA county list: alex-patton/US-TVDMA-BY-COUNTY usa-tvdma-county.csv at commit 7f254b8c1843c62ec976a71c40d366d45f6f29cd
+      (sha256 2e2cd00265a8d704...), names resolved to FIPS with the Census 2025 county Gazetteer; Connecticut
+      via the Census county-to-town crosswalk (snowlight.sources.stations.dma); market ''Sacramento -
+      Stockton - Modesto, CA DMA'''
+    fips: ['06005', 06009, '06011', '06017', '06057', '06061', '06063', '06067', '06077', 06091, 06099,
+      '06101', 06109, '06113', '06115']
+  page_url: https://www.abc10.com/closings
+  data_url: null
+  export_url: null
+  archive_urls:
+  - https://www.abc10.com/closings
+  poll_minutes: null
+  status: active
+  evidence: 'First-hand check 2026-09-26T17:43:25Z (docs/research/firsthand/nexstar-tegna-scripps.json,
+    record KXTV): site https://www.abc10.com. Closings page https://www.abc10.com/closings (HTTP 200)
+    holds the TEGNA closings module rendered on the server; the poller reads the page itself. page data-market
+    ''Sacramento, CA''. Empty-state text: ''No delays or closings.''. Market: ''Sacramento-Stockton-Modesto''
+    (first-hand record) is the crosswalk''s ''Sacramento - Stockton - Modesto, CA DMA''.'
+  list_files: []
+  page_check: null
+  robots:
+  - url: https://www.abc10.com/closings
+    checked_at: '2026-09-26T23:06:01Z'
+    state: parsed
+    allowed: true
+    rule: no rule matches
+    crawl_delay: null
+    disallowed_agents: []
+    sha256: 7909a0ba0b137f6c6136567883f29ba4de39348a65283eb42fe855e68fb7266f
+- id: tegna-kytx
+  platform: tegna
+  call_sign: KYTX
+  name: KYTX (cbs19.tv)
+  market: Tyler-Longview
+  dma: Tyler - Longview (Lufkin&Nacogdoches), TX DMA
+  states: [TX]
+  counties:
+    basis: dma
+    source: 'DMA county list: alex-patton/US-TVDMA-BY-COUNTY usa-tvdma-county.csv at commit 7f254b8c1843c62ec976a71c40d366d45f6f29cd
+      (sha256 2e2cd00265a8d704...), names resolved to FIPS with the Census 2025 county Gazetteer; Connecticut
+      via the Census county-to-town crosswalk (snowlight.sources.stations.dma); market ''Tyler - Longview
+      (Lufkin&Nacogdoches), TX DMA'''
+    fips: ['48005', '48073', '48159', '48183', '48225', '48347', '48401', '48405', '48423', '48455', '48459',
+      '48499']
+  page_url: https://www.cbs19.tv/closings
+  data_url: null
+  export_url: null
+  archive_urls:
+  - https://www.cbs19.tv/closings
+  poll_minutes: null
+  status: active
+  evidence: 'First-hand check 2026-09-26T17:43:28Z (docs/research/firsthand/nexstar-tegna-scripps.json,
+    record KYTX): site https://www.cbs19.tv. Closings page https://www.cbs19.tv/closings (HTTP 200) holds
+    the TEGNA closings module rendered on the server; the poller reads the page itself. page data-market
+    ''Tyler, TX''. Empty-state text: ''No delays or closings.''. Market: ''Tyler-Longview'' (first-hand
+    record) is the crosswalk''s ''Tyler - Longview (Lufkin&Nacogdoches), TX DMA''.'
+  list_files: []
+  page_check: null
+  robots:
+  - url: https://www.cbs19.tv/closings
+    checked_at: '2026-09-26T23:06:01Z'
+    state: parsed
+    allowed: true
+    rule: no rule matches
+    crawl_delay: null
+    disallowed_agents: []
+    sha256: 487c0ddfc5100a58cf196d69a69352cb6724a96df80228aee1a9f8198a29e925
+- id: tegna-watn
+  platform: tegna
+  call_sign: WATN
+  name: WATN / WLMT (localmemphis.com)
+  market: Memphis
+  dma: Memphis, TN - AR- MS - MO DMA
+  states: [AR, MO, MS, TN]
+  counties:
+    basis: dma
+    source: 'DMA county list: alex-patton/US-TVDMA-BY-COUNTY usa-tvdma-county.csv at commit 7f254b8c1843c62ec976a71c40d366d45f6f29cd
+      (sha256 2e2cd00265a8d704...), names resolved to FIPS with the Census 2025 county Gazetteer; Connecticut
+      via the Census county-to-town crosswalk (snowlight.sources.stations.dma); market ''Memphis, TN -
+      AR- MS - MO DMA'''
+    fips: ['05035', '05037', '05077', 05093, '05107', '05111', '05123', '28003', '28009', '28027', '28033',
+      '28071', '28093', '28107', '28119', '28137', '28139', '28143', '29155', '47023', '47033', '47045',
+      '47047', '47053', '47069', '47075', '47097', '47109', '47157', '47167']
+  page_url: https://www.localmemphis.com/closings
+  data_url: null
+  export_url: null
+  archive_urls:
+  - https://www.localmemphis.com/closings
+  poll_minutes: null
+  status: active
+  evidence: 'First-hand check 2026-09-26T17:43:19Z (docs/research/firsthand/nexstar-tegna-scripps.json,
+    record WATN): site https://www.localmemphis.com. Closings page https://www.localmemphis.com/closings
+    (HTTP 200) holds the TEGNA closings module rendered on the server; the poller reads the page itself.
+    page data-market ''Memphis, TN''. Empty-state text: ''No delays or closings.''. Market: ''Memphis''
+    (first-hand record) is the crosswalk''s ''Memphis, TN - AR- MS - MO DMA''.'
+  list_files: []
+  page_check: null
+  robots:
+  - url: https://www.localmemphis.com/closings
+    checked_at: '2026-09-26T23:06:02Z'
+    state: parsed
+    allowed: true
+    rule: no rule matches
+    crawl_delay: null
+    disallowed_agents: []
+    sha256: 7fbe9966a2e790deaa94c3a1b260ed91d3443b527e0c706ed2568ad44f25c657
+- id: tegna-wbir
+  platform: tegna
+  call_sign: WBIR
+  name: WBIR (wbir.com)
+  market: Knoxville
+  dma: Knoxville, TN - KY DMA
+  states: [KY, TN]
+  counties:
+    basis: dma
+    source: 'DMA county list: alex-patton/US-TVDMA-BY-COUNTY usa-tvdma-county.csv at commit 7f254b8c1843c62ec976a71c40d366d45f6f29cd
+      (sha256 2e2cd00265a8d704...), names resolved to FIPS with the Census 2025 county Gazetteer; Connecticut
+      via the Census county-to-town crosswalk (snowlight.sources.stations.dma); market ''Knoxville, TN
+      - KY DMA'''
+    fips: ['21013', '21095', '21147', '47001', '47009', '47013', '47025', '47029', '47035', '47049', '47057',
+      '47063', '47067', '47089', '47093', '47105', '47123', '47129', '47145', '47151', '47155', '47173']
+  page_url: https://www.wbir.com/closings
+  data_url: null
+  export_url: null
+  archive_urls:
+  - https://www.wbir.com/closings
+  poll_minutes: null
+  status: active
+  evidence: 'First-hand check 2026-09-26T17:43:18Z (docs/research/firsthand/nexstar-tegna-scripps.json,
+    record WBIR): site https://www.wbir.com. Closings page https://www.wbir.com/closings (HTTP 200) holds
+    the TEGNA closings module rendered on the server; the poller reads the page itself. page data-market
+    ''Knoxville, TN''. Empty-state text: ''No delays or closings.''. Market: ''Knoxville'' (first-hand
+    record) is the crosswalk''s ''Knoxville, TN - KY DMA''. Wayback Machine: the archive holds nothing
+    for this site: its CDX server answered HTTP 403 for wbir.com itself (archive-captures run 36300019096,
+    where the same query for wusa9.com listed 153 captures), the listing of wbir.com/closings* from 2018
+    to 2026 is empty (run 36281601087), and id_ requests for https://www.wbir.com/closings answered HTTP
+    403 without redirecting to any capture (run 36285593343). The host is excluded from the archive, so
+    this list can be proven only by a live read with rows.'
+  list_files: []
+  page_check: null
+  robots:
+  - url: https://www.wbir.com/closings
+    checked_at: '2026-09-26T23:06:03Z'
+    state: parsed
+    allowed: true
+    rule: no rule matches
+    crawl_delay: null
+    disallowed_agents: []
+    sha256: 4eb7dc847b593997315850d0aed8311c1346b3a18e9702b5fd880c4629eaabac
+- id: tegna-wbns
+  platform: tegna
+  call_sign: WBNS
+  name: WBNS (10tv.com)
+  market: Columbus OH
+  dma: Columbus, OH DMA
+  states: [OH]
+  counties:
+    basis: dma
+    source: 'DMA county list: alex-patton/US-TVDMA-BY-COUNTY usa-tvdma-county.csv at commit 7f254b8c1843c62ec976a71c40d366d45f6f29cd
+      (sha256 2e2cd00265a8d704...), names resolved to FIPS with the Census 2025 county Gazetteer; Connecticut
+      via the Census county-to-town crosswalk (snowlight.sources.stations.dma); market ''Columbus, OH
+      DMA'''
+    fips: ['39031', '39033', '39041', '39045', '39047', '39049', '39065', '39073', '39083', '39089', '39097',
+      '39101', '39115', '39117', '39127', '39129', '39131', '39141', '39159']
+  page_url: https://www.10tv.com/closings
+  data_url: null
+  export_url: null
+  archive_urls:
+  - https://www.10tv.com/closings
+  poll_minutes: null
+  status: active
+  evidence: 'First-hand check 2026-09-26T17:43:12Z (docs/research/firsthand/nexstar-tegna-scripps.json,
+    record WBNS): site https://www.10tv.com. Closings page https://www.10tv.com/closings (HTTP 200) holds
+    the TEGNA closings module rendered on the server; the poller reads the page itself. page data-market
+    ''Columbus, OH''. Empty-state text: ''No delays or closings.''. Market: ''Columbus OH'' (first-hand
+    record) is the crosswalk''s ''Columbus, OH DMA''.'
+  list_files: []
+  page_check: null
+  robots:
+  - url: https://www.10tv.com/closings
+    checked_at: '2026-09-26T23:06:03Z'
+    state: parsed
+    allowed: true
+    rule: no rule matches
+    crawl_delay: null
+    disallowed_agents: []
+    sha256: 900aa7538a89bb2e37927e33e79b602c523e2bd9a0ff680d5edde0f60205fc5c
+- id: tegna-wcnc
+  platform: tegna
+  call_sign: WCNC
+  name: WCNC (wcnc.com)
+  market: Charlotte
+  dma: Charlotte, NC - SC DMA
+  states: [NC, SC]
+  counties:
+    basis: dma
+    source: 'DMA county list: alex-patton/US-TVDMA-BY-COUNTY usa-tvdma-county.csv at commit 7f254b8c1843c62ec976a71c40d366d45f6f29cd
+      (sha256 2e2cd00265a8d704...), names resolved to FIPS with the Census 2025 county Gazetteer; Connecticut
+      via the Census county-to-town crosswalk (snowlight.sources.stations.dma); market ''Charlotte, NC
+      - SC DMA'''
+    fips: ['37003', '37007', '37009', '37011', '37023', '37025', '37027', '37035', '37045', '37071', '37097',
+      '37109', '37119', '37153', '37159', '37167', '37179', '37189', '45023', '45025', '45057', '45091']
+  page_url: https://www.wcnc.com/closings
+  data_url: null
+  export_url: null
+  archive_urls:
+  - https://www.wcnc.com/closings
+  poll_minutes: null
+  status: active
+  evidence: 'First-hand check 2026-09-26T17:43:09Z (docs/research/firsthand/nexstar-tegna-scripps.json,
+    record WCNC): site https://www.wcnc.com. Closings page https://www.wcnc.com/closings (HTTP 200) holds
+    the TEGNA closings module rendered on the server; the poller reads the page itself. page data-market
+    ''Charlotte, NC''. Empty-state text: ''No delays or closings.''. Market: ''Charlotte'' (first-hand
+    record) is the crosswalk''s ''Charlotte, NC - SC DMA''.'
+  list_files: []
+  page_check: null
+  robots:
+  - url: https://www.wcnc.com/closings
+    checked_at: '2026-09-26T23:06:04Z'
+    state: parsed
+    allowed: true
+    rule: no rule matches
+    crawl_delay: null
+    disallowed_agents: []
+    sha256: bf34fea35e363e572c298d67b7906becef9394c6eba57eedad8f5235fd50e4a2
+- id: tegna-wcsh
+  platform: tegna
+  call_sign: WCSH
+  name: WCSH / WLBZ (newscentermaine.com)
+  market: Portland-Auburn and Bangor
+  dma: Portland - Auburn, ME - NH - VT DMA
+  states: [ME, NH]
+  counties:
+    basis: dma
+    source: 'DMA county list: alex-patton/US-TVDMA-BY-COUNTY usa-tvdma-county.csv at commit 7f254b8c1843c62ec976a71c40d366d45f6f29cd
+      (sha256 2e2cd00265a8d704...), names resolved to FIPS with the Census 2025 county Gazetteer; Connecticut
+      via the Census county-to-town crosswalk (snowlight.sources.stations.dma); market ''Portland - Auburn,
+      ME - NH - VT DMA'''
+    fips: ['23001', '23005', '23007', '23011', '23013', '23015', '23017', '23023', '23031', '33003', '33007']
+  page_url: https://www.newscentermaine.com/closings
+  data_url: null
+  export_url: null
+  archive_urls:
+  - https://www.newscentermaine.com/closings
+  poll_minutes: null
+  status: active
+  evidence: 'First-hand check 2026-09-26T17:43:17Z (docs/research/firsthand/nexstar-tegna-scripps.json,
+    record WCSH): site https://www.newscentermaine.com. Closings page https://www.newscentermaine.com/closings
+    (HTTP 200) holds the TEGNA closings module rendered on the server; the poller reads the page itself.
+    page data-market ''Portland, ME''. Empty-state text: ''No delays or closings.''. Market: ''Portland-Auburn
+    and Bangor'' (first-hand record) is the crosswalk''s ''Portland - Auburn, ME - NH - VT DMA''. WLBZ
+    serves the Bangor, ME DMA from the same site; only the Portland - Auburn market is listed here.'
+  list_files: []
+  page_check: null
+  robots:
+  - url: https://www.newscentermaine.com/closings
+    checked_at: '2026-09-26T23:06:04Z'
+    state: parsed
+    allowed: true
+    rule: no rule matches
+    crawl_delay: null
+    disallowed_agents: []
+    sha256: 53a33e3edd7d8df44eb7d797cce6a6d3a896931926eccfcb5b01031f6c4455b8
+- id: tegna-wfaa
+  platform: tegna
+  call_sign: WFAA
+  name: WFAA / KFAA (wfaa.com)
+  market: Dallas-Fort Worth
+  dma: Dallas - Ft. Worth, TX DMA
+  states: [TX]
+  counties:
+    basis: dma
+    source: 'DMA county list: alex-patton/US-TVDMA-BY-COUNTY usa-tvdma-county.csv at commit 7f254b8c1843c62ec976a71c40d366d45f6f29cd
+      (sha256 2e2cd00265a8d704...), names resolved to FIPS with the Census 2025 county Gazetteer; Connecticut
+      via the Census county-to-town crosswalk (snowlight.sources.stations.dma); market ''Dallas - Ft.
+      Worth, TX DMA'''
+    fips: ['48001', '48035', '48085', '48093', '48097', '48113', '48119', '48121', '48139', '48143', '48147',
+      '48161', '48193', '48213', '48217', '48221', '48223', '48231', '48237', '48251', '48257', '48277',
+      '48337', '48349', '48363', '48367', '48379', '48397', '48425', '48439', '48467', '48497']
+  page_url: https://www.wfaa.com/closings
+  data_url: null
+  export_url: null
+  archive_urls:
+  - https://www.wfaa.com/closings
+  poll_minutes: null
+  status: active
+  evidence: 'First-hand check 2026-09-26T17:43:10Z (docs/research/firsthand/nexstar-tegna-scripps.json,
+    record WFAA): site https://www.wfaa.com. Closings page https://www.wfaa.com/closings (HTTP 200) holds
+    the TEGNA closings module rendered on the server; the poller reads the page itself. page data-market
+    ''Dallas, TX''. Empty-state text: ''No delays or closings.''. Market: ''Dallas-Fort Worth'' (first-hand
+    record) is the crosswalk''s ''Dallas - Ft. Worth, TX DMA''.'
+  list_files: []
+  page_check: null
+  robots:
+  - url: https://www.wfaa.com/closings
+    checked_at: '2026-09-26T23:06:05Z'
+    state: parsed
+    allowed: true
+    rule: no rule matches
+    crawl_delay: null
+    disallowed_agents: []
+    sha256: ff61583731f93bc5ba08d78adbfb5dfb1b8f5c4f134c21e5921ccf072589dcad
+- id: tegna-wfmy
+  platform: tegna
+  call_sign: WFMY
+  name: WFMY (wfmynews2.com)
+  market: Greensboro-Winston-Salem-High Point
+  dma: Greensboro - H.Point - W.Salem, NC - VA DMA
+  states: [NC, VA]
+  counties:
+    basis: dma
+    source: 'DMA county list: alex-patton/US-TVDMA-BY-COUNTY usa-tvdma-county.csv at commit 7f254b8c1843c62ec976a71c40d366d45f6f29cd
+      (sha256 2e2cd00265a8d704...), names resolved to FIPS with the Census 2025 county Gazetteer; Connecticut
+      via the Census county-to-town crosswalk (snowlight.sources.stations.dma); market ''Greensboro -
+      H.Point - W.Salem, NC - VA DMA'''
+    fips: ['37001', '37005', '37033', '37057', '37059', '37067', '37081', '37123', '37151', '37157', '37169',
+      '37171', '37193', '37197', '51077', '51141']
+  page_url: https://www.wfmynews2.com/closings
+  data_url: null
+  export_url: null
+  archive_urls:
+  - https://www.wfmynews2.com/closings
+  poll_minutes: null
+  status: active
+  evidence: 'First-hand check 2026-09-26T17:43:19Z (docs/research/firsthand/nexstar-tegna-scripps.json,
+    record WFMY): site https://www.wfmynews2.com. Closings page https://www.wfmynews2.com/closings (HTTP
+    200) holds the TEGNA closings module rendered on the server; the poller reads the page itself. page
+    data-market ''Greensboro, NC''. Empty-state text: ''No delays or closings.''. Market: ''Greensboro-Winston-Salem-High
+    Point'' (first-hand record) is the crosswalk''s ''Greensboro - H.Point - W.Salem, NC - VA DMA''.'
+  list_files: []
+  page_check: null
+  robots:
+  - url: https://www.wfmynews2.com/closings
+    checked_at: '2026-09-26T23:06:05Z'
+    state: parsed
+    allowed: true
+    rule: no rule matches
+    crawl_delay: null
+    disallowed_agents: []
+    sha256: 6e6b70e95529a88178ee58dd0b1694fe1a93cf76ec47354a626fed5edb454e68
+- id: tegna-wgrz
+  platform: tegna
+  call_sign: WGRZ
+  name: WGRZ (wgrz.com)
+  market: Buffalo
+  dma: Buffalo, NY - PA DMA
+  states: [NY, PA]
+  counties:
+    basis: dma
+    source: 'DMA county list: alex-patton/US-TVDMA-BY-COUNTY usa-tvdma-county.csv at commit 7f254b8c1843c62ec976a71c40d366d45f6f29cd
+      (sha256 2e2cd00265a8d704...), names resolved to FIPS with the Census 2025 county Gazetteer; Connecticut
+      via the Census county-to-town crosswalk (snowlight.sources.stations.dma); market ''Buffalo, NY -
+      PA DMA'''
+    fips: ['36003', '36009', '36013', '36029', '36037', '36063', '36073', '36121', '42083', '42105']
+  page_url: https://www.wgrz.com/closings
+  data_url: null
+  export_url: null
+  archive_urls:
+  - https://www.wgrz.com/closings
+  poll_minutes: null
+  status: active
+  evidence: 'First-hand check 2026-09-26T17:43:09Z (docs/research/firsthand/nexstar-tegna-scripps.json,
+    record WGRZ): site https://www.wgrz.com. Closings page https://www.wgrz.com/closings (HTTP 200) holds
+    the TEGNA closings module rendered on the server; the poller reads the page itself. page data-market
+    ''Buffalo, NY''. Empty-state text: ''No delays or closings.''. Market: ''Buffalo'' (first-hand record)
+    is the crosswalk''s ''Buffalo, NY - PA DMA''. Wayback Machine: the archive holds nothing for this
+    site: its CDX server answered HTTP 403 for wgrz.com itself (archive-captures run 36300019096, where
+    the same query for wusa9.com listed 153 captures), the listing of wgrz.com/closings* from 2018 to
+    2026 is empty (run 36281601087), and id_ requests for https://www.wgrz.com/closings answered HTTP
+    403 without redirecting to any capture (run 36285593343). The host is excluded from the archive, so
+    this list can be proven only by a live read with rows.'
+  list_files: []
+  page_check: null
+  robots:
+  - url: https://www.wgrz.com/closings
+    checked_at: '2026-09-26T23:06:06Z'
+    state: parsed
+    allowed: true
+    rule: no rule matches
+    crawl_delay: null
+    disallowed_agents: []
+    sha256: f3bc82305c292c1b1d77c3cfc9436f712036a5ef8e0d111676a9194546cc0d63
+- id: tegna-whas
+  platform: tegna
+  call_sign: WHAS
+  name: WHAS (whas11.com)
+  market: Louisville
+  dma: Louisville, KY - IN DMA
+  states: [IN, KY]
+  counties:
+    basis: dma
+    source: 'DMA county list: alex-patton/US-TVDMA-BY-COUNTY usa-tvdma-county.csv at commit 7f254b8c1843c62ec976a71c40d366d45f6f29cd
+      (sha256 2e2cd00265a8d704...), names resolved to FIPS with the Census 2025 county Gazetteer; Connecticut
+      via the Census county-to-town crosswalk (snowlight.sources.stations.dma); market ''Louisville, KY
+      - IN DMA'''
+    fips: ['18019', '18025', '18043', '18061', '18071', '18077', '18079', '18117', '18143', '18175', '21027',
+      '21029', '21041', '21085', '21087', '21093', '21103', '21111', '21123', '21155', '21163', '21179',
+      '21185', '21211', '21215', '21217', '21223', '21229']
+  page_url: https://www.whas11.com/closings
+  data_url: null
+  export_url: null
+  archive_urls:
+  - https://www.whas11.com/closings
+  poll_minutes: null
+  status: active
+  evidence: 'First-hand check 2026-09-26T17:43:18Z (docs/research/firsthand/nexstar-tegna-scripps.json,
+    record WHAS): site https://www.whas11.com. Closings page https://www.whas11.com/closings (HTTP 200)
+    holds the TEGNA closings module rendered on the server; the poller reads the page itself. page data-market
+    ''Louisville, TX''. Empty-state text: ''No delays or closings.''. Market: ''Louisville'' (first-hand
+    record) is the crosswalk''s ''Louisville, KY - IN DMA''.'
+  list_files: []
+  page_check: null
+  robots:
+  - url: https://www.whas11.com/closings
+    checked_at: '2026-09-26T23:06:06Z'
+    state: parsed
+    allowed: true
+    rule: no rule matches
+    crawl_delay: null
+    disallowed_agents: []
+    sha256: dac13b763fed50b174ab8c312e8c9672d118bc5b51dc5a5cd37e1fca7b82b677
+- id: tegna-wkyc
+  platform: tegna
+  call_sign: WKYC
+  name: WKYC (wkyc.com)
+  market: Cleveland-Akron-Canton
+  dma: Cleveland, OH DMA
+  states: [OH]
+  counties:
+    basis: dma
+    source: 'DMA county list: alex-patton/US-TVDMA-BY-COUNTY usa-tvdma-county.csv at commit 7f254b8c1843c62ec976a71c40d366d45f6f29cd
+      (sha256 2e2cd00265a8d704...), names resolved to FIPS with the Census 2025 county Gazetteer; Connecticut
+      via the Census county-to-town crosswalk (snowlight.sources.stations.dma); market ''Cleveland, OH
+      DMA'''
+    fips: ['39005', '39007', '39019', '39035', '39043', '39055', '39075', '39077', '39085', '39093', '39103',
+      '39133', '39139', '39151', '39153', '39157', '39169']
+  page_url: https://www.wkyc.com/closings
+  data_url: null
+  export_url: null
+  archive_urls:
+  - https://www.wkyc.com/closings
+  poll_minutes: null
+  status: active
+  evidence: 'First-hand check 2026-09-26T17:43:11Z (docs/research/firsthand/nexstar-tegna-scripps.json,
+    record WKYC): site https://www.wkyc.com. Closings page https://www.wkyc.com/closings (HTTP 200) holds
+    the TEGNA closings module rendered on the server; the poller reads the page itself. page data-market
+    ''Cleveland, OH''. Empty-state text: ''No delays or closings.''. Market: ''Cleveland-Akron-Canton''
+    (first-hand record) is the crosswalk''s ''Cleveland, OH DMA''. Wayback Machine: the archive holds
+    nothing for this site: its CDX server answered HTTP 403 for wkyc.com itself (archive-captures run
+    36300019096, where the same query for wusa9.com listed 153 captures), the listing of wkyc.com/closings*
+    from 2018 to 2026 is empty (run 36281601087), and id_ requests for https://www.wkyc.com/closings answered
+    HTTP 403 without redirecting to any capture (run 36285593343). The host is excluded from the archive,
+    so this list can be proven only by a live read with rows.'
+  list_files: []
+  page_check: null
+  robots:
+  - url: https://www.wkyc.com/closings
+    checked_at: '2026-09-26T23:06:07Z'
+    state: parsed
+    allowed: true
+    rule: no rule matches
+    crawl_delay: null
+    disallowed_agents: []
+    sha256: 253a14125af8308eae9cf9f1359039dfdf59eba22901c82cf183c5a810817a45
+- id: tegna-wltx
+  platform: tegna
+  call_sign: WLTX
+  name: WLTX (wltx.com)
+  market: Columbia SC
+  dma: Columbia, SC DMA
+  states: [SC]
+  counties:
+    basis: dma
+    source: 'DMA county list: alex-patton/US-TVDMA-BY-COUNTY usa-tvdma-county.csv at commit 7f254b8c1843c62ec976a71c40d366d45f6f29cd
+      (sha256 2e2cd00265a8d704...), names resolved to FIPS with the Census 2025 county Gazetteer; Connecticut
+      via the Census county-to-town crosswalk (snowlight.sources.stations.dma); market ''Columbia, SC
+      DMA'''
+    fips: ['45017', '45027', '45039', '45055', '45061', '45063', '45071', '45075', '45079', '45085']
+  page_url: https://www.wltx.com/closings
+  data_url: null
+  export_url: null
+  archive_urls:
+  - https://www.wltx.com/closings
+  poll_minutes: null
+  status: active
+  evidence: 'First-hand check 2026-09-26T17:43:20Z (docs/research/firsthand/nexstar-tegna-scripps.json,
+    record WLTX): site https://www.wltx.com. Closings page https://www.wltx.com/closings (HTTP 200) holds
+    the TEGNA closings module rendered on the server; the poller reads the page itself. page data-market
+    ''Columbia, SC''. Empty-state text: ''No delays or closings.''. Market: ''Columbia SC'' (first-hand
+    record) is the crosswalk''s ''Columbia, SC DMA''. Wayback Machine: the archive holds no capture of
+    this page: the listing of wltx.com/closings* from 2014 to 2026 is empty and id_ requests for https://www.wltx.com/closings
+    (20220121120000) answered HTTP 403 without redirecting to any capture (archive-captures run 36300019096),
+    as for the TEGNA hosts the archive excludes; this list can be proven only by a live read with rows.'
+  list_files: []
+  page_check: null
+  robots:
+  - url: https://www.wltx.com/closings
+    checked_at: '2026-09-26T23:06:07Z'
+    state: parsed
+    allowed: true
+    rule: no rule matches
+    crawl_delay: null
+    disallowed_agents: []
+    sha256: 33f949c52e51f846e6425aac8e1b8cf409e5865b798dcc9fc9e933156e78eda2
+- id: tegna-wmaz
+  platform: tegna
+  call_sign: WMAZ
+  name: WMAZ (13wmaz.com)
+  market: Macon
+  dma: Macon, GA DMA
+  states: [GA]
+  counties:
+    basis: dma
+    source: 'DMA county list: alex-patton/US-TVDMA-BY-COUNTY usa-tvdma-county.csv at commit 7f254b8c1843c62ec976a71c40d366d45f6f29cd
+      (sha256 2e2cd00265a8d704...), names resolved to FIPS with the Census 2025 county Gazetteer; Connecticut
+      via the Census county-to-town crosswalk (snowlight.sources.stations.dma); market ''Macon, GA DMA'''
+    fips: ['13009', '13021', '13023', '13079', '13091', '13093', '13141', '13153', '13167', '13169', '13175',
+      '13193', '13207', '13225', '13235', '13271', '13283', '13289', '13303', '13309', '13315', '13319']
+  page_url: https://www.13wmaz.com/closings
+  data_url: null
+  export_url: null
+  archive_urls:
+  - https://www.13wmaz.com/closings
+  poll_minutes: null
+  status: active
+  evidence: 'First-hand check 2026-09-26T17:43:21Z (docs/research/firsthand/nexstar-tegna-scripps.json,
+    record WMAZ): site https://www.13wmaz.com. Closings page https://www.13wmaz.com/closings (HTTP 200)
+    holds the TEGNA closings module rendered on the server; the poller reads the page itself. page data-market
+    ''Macon, GA''. Empty-state text: ''No delays or closings.''. Market: ''Macon'' (first-hand record)
+    is the crosswalk''s ''Macon, GA DMA''. Wayback Machine: the archive holds no capture of this page:
+    the listing of 13wmaz.com/closings* from 2014 to 2026 is empty and id_ requests for https://www.13wmaz.com/closings
+    (20240927120000, 20250122120000) answered HTTP 403 without redirecting to any capture (archive-captures
+    run 36300019096), as for the TEGNA hosts the archive excludes; this list can be proven only by a live
+    read with rows.'
+  list_files: []
+  page_check: null
+  robots:
+  - url: https://www.13wmaz.com/closings
+    checked_at: '2026-09-26T23:06:08Z'
+    state: parsed
+    allowed: true
+    rule: no rule matches
+    crawl_delay: null
+    disallowed_agents: []
+    sha256: 2dfdf1a574ac5991dff60e16e54b2839aa07d05f1f051a6756cae65965afcbbf
+- id: tegna-wnep
+  platform: tegna
+  call_sign: WNEP
+  name: WNEP (wnep.com)
+  market: Wilkes-Barre-Scranton
+  dma: Wilkes Barre - Scranton, PA DMA
+  states: [PA]
+  counties:
+    basis: dma
+    source: 'DMA county list: alex-patton/US-TVDMA-BY-COUNTY usa-tvdma-county.csv at commit 7f254b8c1843c62ec976a71c40d366d45f6f29cd
+      (sha256 2e2cd00265a8d704...), names resolved to FIPS with the Census 2025 county Gazetteer; Connecticut
+      via the Census county-to-town crosswalk (snowlight.sources.stations.dma); market ''Wilkes Barre
+      - Scranton, PA DMA'''
+    fips: ['42015', '42025', '42035', '42037', '42069', '42079', '42081', '42089', '42093', '42097', '42107',
+      '42109', '42113', '42115', '42119', '42127', '42131']
+  page_url: https://www.wnep.com/closings
+  data_url: null
+  export_url: null
+  archive_urls:
+  - https://www.wnep.com/closings
+  poll_minutes: null
+  status: active
+  evidence: 'First-hand check 2026-09-26T17:43:15Z (docs/research/firsthand/nexstar-tegna-scripps.json,
+    record WNEP): site https://www.wnep.com. Closings page https://www.wnep.com/closings (HTTP 200) holds
+    the TEGNA closings module rendered on the server; the poller reads the page itself. page data-market
+    ''Scranton, PA''. Empty-state text: ''No delays or closings.''. Market: ''Wilkes-Barre-Scranton''
+    (first-hand record) is the crosswalk''s ''Wilkes Barre - Scranton, PA DMA''.'
+  list_files: []
+  page_check: null
+  robots:
+  - url: https://www.wnep.com/closings
+    checked_at: '2026-09-26T23:06:08Z'
+    state: parsed
+    allowed: true
+    rule: no rule matches
+    crawl_delay: null
+    disallowed_agents: []
+    sha256: 312d7687711da1539e642f0c96f064da86f40300aba822585d229d3e532a34ee
+- id: tegna-woi
+  platform: tegna
+  call_sign: WOI
+  name: WOI / KCWI (weareiowa.com)
+  market: Des Moines-Ames
+  dma: Des Moines - Ames, IA - MO DMA
+  states: [IA, MO]
+  counties:
+    basis: dma
+    source: 'DMA county list: alex-patton/US-TVDMA-BY-COUNTY usa-tvdma-county.csv at commit 7f254b8c1843c62ec976a71c40d366d45f6f29cd
+      (sha256 2e2cd00265a8d704...), names resolved to FIPS with the Census 2025 county Gazetteer; Connecticut
+      via the Census county-to-town crosswalk (snowlight.sources.stations.dma); market ''Des Moines -
+      Ames, IA - MO DMA'''
+    fips: ['19001', '19007', '19009', '19015', '19025', '19027', '19039', '19049', '19053', '19069', '19073',
+      '19077', '19079', '19083', '19091', '19099', '19109', '19117', '19121', '19123', '19125', '19127',
+      '19135', '19151', '19153', '19157', '19159', '19169', '19173', '19175', '19181', '19185', '19187',
+      '19197', '29129']
+  page_url: https://www.weareiowa.com/closings
+  data_url: null
+  export_url: null
+  archive_urls:
+  - https://www.weareiowa.com/closings
+  poll_minutes: null
+  status: active
+  evidence: 'First-hand check 2026-09-26T17:43:16Z (docs/research/firsthand/nexstar-tegna-scripps.json,
+    record WOI): site https://www.weareiowa.com. Closings page https://www.weareiowa.com/closings (HTTP
+    200) holds the TEGNA closings module rendered on the server; the poller reads the page itself. page
+    data-market ''Des Moines, IA''. Empty-state text: ''No delays or closings.''. Market: ''Des Moines-Ames''
+    (first-hand record) is the crosswalk''s ''Des Moines - Ames, IA - MO DMA''.'
+  list_files: []
+  page_check: null
+  robots:
+  - url: https://www.weareiowa.com/closings
+    checked_at: '2026-09-26T23:06:09Z'
+    state: parsed
+    allowed: true
+    rule: no rule matches
+    crawl_delay: null
+    disallowed_agents: []
+    sha256: 96e918415ceba9c1fc57aa43d0291ecc103455c7e6ff10a57942a93c1bb03031
+- id: tegna-wpmt
+  platform: tegna
+  call_sign: WPMT
+  name: WPMT (fox43.com)
+  market: Harrisburg-Lancaster-Lebanon-York
+  dma: Harrisburg - Lancaster - Lebanon - York, PA DMA
+  states: [PA]
+  counties:
+    basis: dma
+    source: 'DMA county list: alex-patton/US-TVDMA-BY-COUNTY usa-tvdma-county.csv at commit 7f254b8c1843c62ec976a71c40d366d45f6f29cd
+      (sha256 2e2cd00265a8d704...), names resolved to FIPS with the Census 2025 county Gazetteer; Connecticut
+      via the Census county-to-town crosswalk (snowlight.sources.stations.dma); market ''Harrisburg -
+      Lancaster - Lebanon - York, PA DMA'''
+    fips: ['42001', '42041', '42043', '42067', '42071', '42075', '42087', '42099', '42133']
+  page_url: https://www.fox43.com/closings/
+  data_url: null
+  export_url: null
+  archive_urls:
+  - https://www.fox43.com/closings
+  - https://www.fox43.com/closings/
+  poll_minutes: null
+  status: active
+  evidence: 'First-hand check 2026-09-26T17:43:15Z (docs/research/firsthand/nexstar-tegna-scripps.json,
+    record WPMT): site https://www.fox43.com. Closings page https://www.fox43.com/closings/ (HTTP 200)
+    holds the TEGNA closings module rendered on the server; the poller reads the page itself. page data-market
+    ''Central Pennsylvania, PA''. Empty-state text: ''No delays or closings.''. Market: ''Harrisburg-Lancaster-Lebanon-York''
+    (first-hand record) is the crosswalk''s ''Harrisburg - Lancaster - Lebanon - York, PA DMA''.'
+  list_files: []
+  page_check: null
+  robots:
+  - url: https://www.fox43.com/closings/
+    checked_at: '2026-09-26T23:06:09Z'
+    state: parsed
+    allowed: true
+    rule: no rule matches
+    crawl_delay: null
+    disallowed_agents: []
+    sha256: 6cf8e71b2ff7b257137fea0a4f0bbc9e380cd39f1ba1cfea3bd381731b03c9a4
+- id: tegna-wqad
+  platform: tegna
+  call_sign: WQAD
+  name: WQAD (wqad.com)
+  market: Davenport-Rock Island-Moline
+  dma: Davenport - Rock Island - Moline, IA - IL DMA
+  states: [IA, IL]
+  counties:
+    basis: dma
+    source: 'DMA county list: alex-patton/US-TVDMA-BY-COUNTY usa-tvdma-county.csv at commit 7f254b8c1843c62ec976a71c40d366d45f6f29cd
+      (sha256 2e2cd00265a8d704...), names resolved to FIPS with the Census 2025 county Gazetteer; Connecticut
+      via the Census county-to-town crosswalk (snowlight.sources.stations.dma); market ''Davenport - Rock
+      Island - Moline, IA - IL DMA'''
+    fips: ['17011', '17015', '17071', '17073', '17085', '17095', '17131', '17161', '17187', '17195', '19045',
+      '19057', '19087', '19097', '19115', '19139', '19163']
+  page_url: https://www.wqad.com/closings
+  data_url: null
+  export_url: null
+  archive_urls:
+  - https://www.wqad.com/closings
+  poll_minutes: null
+  status: active
+  evidence: 'First-hand check 2026-09-26T17:43:16Z (docs/research/firsthand/nexstar-tegna-scripps.json,
+    record WQAD): site https://www.wqad.com. Closings page https://www.wqad.com/closings (HTTP 200) holds
+    the TEGNA closings module rendered on the server; the poller reads the page itself. page data-market
+    ''Moline, MN''. Empty-state text: ''No delays or closings.''. Market: ''Davenport-Rock Island-Moline''
+    (first-hand record) is the crosswalk''s ''Davenport - Rock Island - Moline, IA - IL DMA''.'
+  list_files: []
+  page_check: null
+  robots:
+  - url: https://www.wqad.com/closings
+    checked_at: '2026-09-26T23:06:10Z'
+    state: parsed
+    allowed: true
+    rule: no rule matches
+    crawl_delay: null
+    disallowed_agents: []
+    sha256: bdbf57dd349df10b2a4978135934c9afeeb4a7ce49bbe034c25c6c9db864e5b7
+- id: tegna-wthr
+  platform: tegna
+  call_sign: WTHR
+  name: WTHR (wthr.com)
+  market: Indianapolis
+  dma: Indianapolis, IN DMA
+  states: [IN]
+  counties:
+    basis: dma
+    source: 'DMA county list: alex-patton/US-TVDMA-BY-COUNTY usa-tvdma-county.csv at commit 7f254b8c1843c62ec976a71c40d366d45f6f29cd
+      (sha256 2e2cd00265a8d704...), names resolved to FIPS with the Census 2025 county Gazetteer; Connecticut
+      via the Census county-to-town crosswalk (snowlight.sources.stations.dma); market ''Indianapolis,
+      IN DMA'''
+    fips: ['18005', '18007', '18009', '18011', '18013', '18015', '18017', '18023', '18031', '18035', '18041',
+      '18045', '18053', '18057', '18059', '18063', '18065', '18067', '18081', '18093', '18095', '18097',
+      '18103', '18105', '18107', '18109', '18119', '18133', '18135', '18139', '18145', '18159', '18181']
+  page_url: https://www.wthr.com/closings
+  data_url: null
+  export_url: null
+  archive_urls:
+  - https://www.wthr.com/closings
+  poll_minutes: null
+  status: active
+  evidence: 'First-hand check 2026-09-26T17:43:09Z (docs/research/firsthand/nexstar-tegna-scripps.json,
+    record WTHR): site https://www.wthr.com. Closings page https://www.wthr.com/closings (HTTP 200) holds
+    the TEGNA closings module rendered on the server; the poller reads the page itself. page data-market
+    ''Indianapolis, IN''. Empty-state text: ''No delays or closings.''. Market: ''Indianapolis'' (first-hand
+    record) is the crosswalk''s ''Indianapolis, IN DMA''.'
+  list_files: []
+  page_check: null
+  robots:
+  - url: https://www.wthr.com/closings
+    checked_at: '2026-09-26T23:06:10Z'
+    state: parsed
+    allowed: true
+    rule: no rule matches
+    crawl_delay: null
+    disallowed_agents: []
+    sha256: 55eac73cd7b3f7fa67352324668dbdb1e0f42291525b7f46883ff8dd52bb88f7
+- id: tegna-wtic
+  platform: tegna
+  call_sign: WTIC
+  name: WTIC / WCCT (fox61.com)
+  market: Hartford-New Haven
+  dma: Hartford & New Haven, CT DMA
+  states: [CT]
+  counties:
+    basis: dma
+    source: 'DMA county list: alex-patton/US-TVDMA-BY-COUNTY usa-tvdma-county.csv at commit 7f254b8c1843c62ec976a71c40d366d45f6f29cd
+      (sha256 2e2cd00265a8d704...), names resolved to FIPS with the Census 2025 county Gazetteer; Connecticut
+      via the Census county-to-town crosswalk (snowlight.sources.stations.dma); market ''Hartford & New
+      Haven, CT DMA'''
+    fips: [09110, 09130, 09140, 09150, 09160, 09170, 09180, 09190]
+  page_url: https://www.fox61.com/closings
+  data_url: null
+  export_url: null
+  archive_urls:
+  - https://www.fox61.com/closings
+  poll_minutes: null
+  status: active
+  evidence: 'First-hand check 2026-09-26T17:43:16Z (docs/research/firsthand/nexstar-tegna-scripps.json,
+    record WTIC): site https://www.fox61.com. Closings page https://www.fox61.com/closings (HTTP 200)
+    holds the TEGNA closings module rendered on the server; the poller reads the page itself. page data-market
+    ''Hartford, CT''. Populated on 2026-09-26: 1 rows (first: MDC All Recreational Facilities / Closed
+    Sat). Market: ''Hartford-New Haven'' (first-hand record) is the crosswalk''s ''Hartford & New Haven,
+    CT DMA''.'
+  list_files: []
+  page_check: null
+  robots:
+  - url: https://www.fox61.com/closings
+    checked_at: '2026-09-26T23:06:11Z'
+    state: parsed
+    allowed: true
+    rule: no rule matches
+    crawl_delay: null
+    disallowed_agents: []
+    sha256: 78c5bc6cce4cb2f2e75414b8a387b93d6346fc4a1e115ebfc18543992171f449
+- id: tegna-wtlv
+  platform: tegna
+  call_sign: WTLV
+  name: WTLV / WJXX (firstcoastnews.com)
+  market: Jacksonville
+  dma: Jacksonville, FL - Brunswick, GA DMA
+  states: [FL, GA]
+  counties:
+    basis: dma
+    source: 'DMA county list: alex-patton/US-TVDMA-BY-COUNTY usa-tvdma-county.csv at commit 7f254b8c1843c62ec976a71c40d366d45f6f29cd
+      (sha256 2e2cd00265a8d704...), names resolved to FIPS with the Census 2025 county Gazetteer; Connecticut
+      via the Census county-to-town crosswalk (snowlight.sources.stations.dma); market ''Jacksonville,
+      FL - Brunswick, GA DMA'''
+    fips: ['12003', '12007', '12019', '12023', '12031', '12089', '12107', '12109', '12125', '13025', '13039',
+      '13049', '13127', '13229', '13299']
+  page_url: https://www.firstcoastnews.com/closings
+  data_url: null
+  export_url: null
+  archive_urls:
+  - https://www.firstcoastnews.com/closings
+  poll_minutes: null
+  status: active
+  evidence: 'First-hand check 2026-09-26T17:43:21Z (docs/research/firsthand/nexstar-tegna-scripps.json,
+    record WTLV): site https://www.firstcoastnews.com. Closings page https://www.firstcoastnews.com/closings
+    (HTTP 200) holds the TEGNA closings module rendered on the server; the poller reads the page itself.
+    page data-market ''Jacksonville, FL''. Empty-state text: ''No delays or closings.''. Market: ''Jacksonville''
+    (first-hand record) is the crosswalk''s ''Jacksonville, FL - Brunswick, GA DMA''. Wayback Machine:
+    the archive holds no capture of this page: the listing of firstcoastnews.com/closings* from 2014 to
+    2026 is empty and id_ requests for https://www.firstcoastnews.com/closings (20220928120000, 20221109120000)
+    answered HTTP 403 without redirecting to any capture (archive-captures run 36300019096), as for the
+    TEGNA hosts the archive excludes; this list can be proven only by a live read with rows.'
+  list_files: []
+  page_check: null
+  robots:
+  - url: https://www.firstcoastnews.com/closings
+    checked_at: '2026-09-26T23:06:11Z'
+    state: parsed
+    allowed: true
+    rule: no rule matches
+    crawl_delay: null
+    disallowed_agents: []
+    sha256: 38e0c968ded6b4fafb6ed44d72d08f1fb00604fb3ad75bf93d250455e652e3ee
+- id: tegna-wtol
+  platform: tegna
+  call_sign: WTOL
+  name: WTOL (wtol.com)
+  market: Toledo
+  dma: Toledo, OH - MI DMA
+  states: [MI, OH]
+  counties:
+    basis: dma
+    source: 'DMA county list: alex-patton/US-TVDMA-BY-COUNTY usa-tvdma-county.csv at commit 7f254b8c1843c62ec976a71c40d366d45f6f29cd
+      (sha256 2e2cd00265a8d704...), names resolved to FIPS with the Census 2025 county Gazetteer; Connecticut
+      via the Census county-to-town crosswalk (snowlight.sources.stations.dma); market ''Toledo, OH -
+      MI DMA'''
+    fips: ['26091', '39039', '39051', '39063', '39069', '39095', '39123', '39137', '39143', '39147', '39171',
+      '39173', '39175']
+  page_url: https://www.wtol.com/closings
+  data_url: null
+  export_url: null
+  archive_urls:
+  - https://www.wtol.com/closings
+  poll_minutes: null
+  status: active
+  evidence: 'First-hand check 2026-09-26T17:43:12Z (docs/research/firsthand/nexstar-tegna-scripps.json,
+    record WTOL): site https://www.wtol.com. Closings page https://www.wtol.com/closings (HTTP 200) holds
+    the TEGNA closings module rendered on the server; the poller reads the page itself. page data-market
+    ''Toledo, OH''. Empty-state text: ''No delays or closings.''. Market: ''Toledo'' (first-hand record)
+    is the crosswalk''s ''Toledo, OH - MI DMA''.'
+  list_files: []
+  page_check: null
+  robots:
+  - url: https://www.wtol.com/closings
+    checked_at: '2026-09-26T23:06:12Z'
+    state: parsed
+    allowed: true
+    rule: no rule matches
+    crawl_delay: null
+    disallowed_agents: []
+    sha256: 57f637e77e01960f684063e5b49ac9624172b333f71170d8b6520ac4d63b3982
+- id: tegna-wtsp
+  platform: tegna
+  call_sign: WTSP
+  name: WTSP (wtsp.com)
+  market: Tampa-St. Petersburg
+  dma: Tampa - St. Petersburg - Sarasota, FL DMA
+  states: [FL]
+  counties:
+    basis: dma
+    source: 'DMA county list: alex-patton/US-TVDMA-BY-COUNTY usa-tvdma-county.csv at commit 7f254b8c1843c62ec976a71c40d366d45f6f29cd
+      (sha256 2e2cd00265a8d704...), names resolved to FIPS with the Census 2025 county Gazetteer; Connecticut
+      via the Census county-to-town crosswalk (snowlight.sources.stations.dma); market ''Tampa - St. Petersburg
+      - Sarasota, FL DMA'''
+    fips: ['12017', '12049', '12053', '12055', '12057', '12081', '12101', '12103', '12105', '12115']
+  page_url: https://www.wtsp.com/closings
+  data_url: null
+  export_url: null
+  archive_urls:
+  - https://www.wtsp.com/closings
+  poll_minutes: null
+  status: active
+  evidence: 'First-hand check 2026-09-26T17:43:21Z (docs/research/firsthand/nexstar-tegna-scripps.json,
+    record WTSP): site https://www.wtsp.com. Closings page https://www.wtsp.com/closings (HTTP 200) holds
+    the TEGNA closings module rendered on the server; the poller reads the page itself. page data-market
+    ''Tampa, FL''. Empty-state text: ''No delays or closings.''. Market: ''Tampa-St. Petersburg'' (first-hand
+    record) is the crosswalk''s ''Tampa - St. Petersburg - Sarasota, FL DMA''. Wayback Machine: the archive
+    holds no capture of this page: the listing of wtsp.com/closings* from 2014 to 2026 is empty and id_
+    requests for https://www.wtsp.com/closings (20220927120000, 20220928120000) answered HTTP 403 without
+    redirecting to any capture (archive-captures run 36300019096), as for the TEGNA hosts the archive
+    excludes; this list can be proven only by a live read with rows.'
+  list_files: []
+  page_check: null
+  robots:
+  - url: https://www.wtsp.com/closings
+    checked_at: '2026-09-26T23:06:13Z'
+    state: parsed
+    allowed: true
+    rule: no rule matches
+    crawl_delay: null
+    disallowed_agents: []
+    sha256: 79b07193c29967a0f47e992b7505984e4a20a5ca03ae393a857a11ae846dd3ac
+- id: tegna-wusa
+  platform: tegna
+  call_sign: WUSA
+  name: WUSA (wusa9.com)
+  market: Washington DC
+  dma: Washington, DC - MD - PA - VA - WV DMA
+  states: [DC, MD, PA, VA, WV]
+  counties:
+    basis: dma
+    source: 'DMA county list: alex-patton/US-TVDMA-BY-COUNTY usa-tvdma-county.csv at commit 7f254b8c1843c62ec976a71c40d366d45f6f29cd
+      (sha256 2e2cd00265a8d704...), names resolved to FIPS with the Census 2025 county Gazetteer; Connecticut
+      via the Census county-to-town crosswalk (snowlight.sources.stations.dma); market ''Washington, DC
+      - MD - PA - VA - WV DMA''; plus 11001 (District of Columbia), for which that list has no row, placed
+      in this market (Nielsen DMA 511 WASHINGTON, DC-HAGRSTWN) by the second published list BritCrit/dma_county_zip
+      dma_county_zip_data_set.csv at commit 02f847923bd218c30a8c5488d561eca42ecf3614 (sha256 c931c30cef1b5d29...),
+      used only for counties the first list lacks (snowlight.sources.stations.dma.fill_missing)'
+    fips: ['11001', '24001', '24009', '24017', '24021', '24031', '24033', '24037', '24043', '42055', '42057',
+      '51013', '51043', '51047', '51059', '51061', '51069', '51099', '51107', '51139', '51153', '51157',
+      '51171', '51177', '51179', '51187', '51193', '51510', '51600', '51610', '51630', '51683', '51685',
+      '51840', '54003', '54023', '54027', '54031', '54037', '54057', '54065']
+  page_url: https://www.wusa9.com/closings
+  data_url: null
+  export_url: null
+  archive_urls:
+  - https://www.wusa9.com/closings
+  poll_minutes: null
+  status: active
+  evidence: 'First-hand check 2026-09-26T17:43:09Z (docs/research/firsthand/nexstar-tegna-scripps.json,
+    record WUSA): site https://www.wusa9.com. Closings page https://www.wusa9.com/closings (HTTP 200)
+    holds the TEGNA closings module rendered on the server; the poller reads the page itself. page data-market
+    ''Washington, DC, DC''. Empty-state text: ''No delays or closings.''. Market: ''Washington DC'' (first-hand
+    record) is the crosswalk''s ''Washington, DC - MD - PA - VA - WV DMA''.'
+  list_files: []
+  page_check: null
+  robots:
+  - url: https://www.wusa9.com/closings
+    checked_at: '2026-09-26T23:06:13Z'
+    state: parsed
+    allowed: true
+    rule: no rule matches
+    crawl_delay: null
+    disallowed_agents: []
+    sha256: a7a481aacfcdcd2a6fbee4d675935c17e16c1f8559e3d8d3bad1c5f169d9941b
+- id: tegna-wvec
+  platform: tegna
+  call_sign: WVEC
+  name: WVEC (13newsnow.com)
+  market: Norfolk-Portsmouth-Newport News
+  dma: Norfolk - Portsmouth - Newport News, VA - NC DMA
+  states: [NC, VA]
+  counties:
+    basis: dma
+    source: 'DMA county list: alex-patton/US-TVDMA-BY-COUNTY usa-tvdma-county.csv at commit 7f254b8c1843c62ec976a71c40d366d45f6f29cd
+      (sha256 2e2cd00265a8d704...), names resolved to FIPS with the Census 2025 county Gazetteer; Connecticut
+      via the Census county-to-town crosswalk (snowlight.sources.stations.dma); market ''Norfolk - Portsmouth
+      - Newport News, VA - NC DMA'''
+    fips: ['37029', '37041', '37053', '37055', '37073', '37091', '37139', '37143', '51001', '51073', '51093',
+      '51095', '51115', '51131', '51175', '51181', '51199', '51550', '51620', '51650', '51700', '51710',
+      '51735', '51740', '51800', '51810', '51830']
+  page_url: https://www.13newsnow.com/closings
+  data_url: null
+  export_url: null
+  archive_urls:
+  - https://www.13newsnow.com/closings
+  poll_minutes: null
+  status: active
+  evidence: 'First-hand check 2026-09-26T17:43:19Z (docs/research/firsthand/nexstar-tegna-scripps.json,
+    record WVEC): site https://www.13newsnow.com. Closings page https://www.13newsnow.com/closings (HTTP
+    200) holds the TEGNA closings module rendered on the server; the poller reads the page itself. page
+    data-market ''Norfolk, VA''. Empty-state text: ''No delays or closings.''. Market: ''Norfolk-Portsmouth-Newport
+    News'' (first-hand record) is the crosswalk''s ''Norfolk - Portsmouth - Newport News, VA - NC DMA''.'
+  list_files: []
+  page_check: null
+  robots:
+  - url: https://www.13newsnow.com/closings
+    checked_at: '2026-09-26T23:06:14Z'
+    state: parsed
+    allowed: true
+    rule: no rule matches
+    crawl_delay: null
+    disallowed_agents: []
+    sha256: ae84288d8494ef71944b54d484c7d22c9f32f5414bd35f6c52614579cabe1fe7
+- id: tegna-wwl
+  platform: tegna
+  call_sign: WWL
+  name: WWL / WUPL (wwltv.com)
+  market: New Orleans
+  dma: New Orleans, LA - MS DMA
+  states: [LA, MS]
+  counties:
+    basis: dma
+    source: 'DMA county list: alex-patton/US-TVDMA-BY-COUNTY usa-tvdma-county.csv at commit 7f254b8c1843c62ec976a71c40d366d45f6f29cd
+      (sha256 2e2cd00265a8d704...), names resolved to FIPS with the Census 2025 county Gazetteer; Connecticut
+      via the Census county-to-town crosswalk (snowlight.sources.stations.dma); market ''New Orleans,
+      LA - MS DMA'''
+    fips: ['22051', '22057', '22071', '22075', '22087', '22089', '22093', '22095', '22103', '22105', '22109',
+      '22117', '28045', '28109']
+  page_url: null
+  data_url: null
+  export_url: null
+  archive_urls:
+  - https://www.wwltv.com/closings
+  poll_minutes: null
+  status: no_endpoint
+  evidence: 'First-hand check 2026-09-26T17:43:21Z (docs/research/firsthand/nexstar-tegna-scripps.json,
+    record WWL): site https://www.wwltv.com. No closings page found. Notes: https://www.wwltv.com/closings
+    answered 302 to an article (https://www.wwltv.com/article/news/local/louisiana-school-city-office-closures-parish-by-parish-winter-weather-jan-21/289-138f07f2-6bc4-4a1c-9aec-3ec5fd41e50f),
+    and that article answered 403 ''Access Denied'' (edge bot block on /article/ paths; not retried).
+    No closings module seen. The live page https://www.wwltv.com/closings answered 302 to a winter-weather
+    article whose /article/ address answered this pipeline''s User-Agent with 403 ''Access Denied'' again
+    on 2026-09-27 (an edge block, not worked around, and no other address serves the article), so even
+    a list there could not be read live. Archive check: no archive request before 2026-09-28 covered this
+    site. Asked for since, in commits 1eadbc8 (run 36360179859), 4214b42 (run 36364542360), 7b1fc13 (run
+    36369419399), f13b2c8 (run 36373148805), ec162d3 (run 36379606160): CDX listings (2014 to 2026) of
+    wwltv.com/weather/clos*, wwltv.com/clos*, wwltv.com/weather/school-clos*, wwltv.com/school-clos* and
+    a listing of every address of the site whose URL names closings, closures, delays or cancellations
+    (one row per address), and 15 captures of its closings pages on storm days and in past winters (each
+    capture and why it was picked is listed under ''no_endpoint_scripps_tegna'' in pipeline/config/sources/archive-wanted-s4b.json).
+    Results: Listings: wwltv.com/closings 407 captures with HTTP 200 (140 in November to March, 21 redirects;
+    2016-2025); wwltv.com/weather/closings/updated-tangipahoa-parish-road-closures/79001622 4 captures
+    with HTTP 200 (1 in November to March; 2016-2016); wwltv.com/weather/school-closures-due-to-tornado/295168984
+    3 captures with HTTP 200 (3 in November to March; 2017-2017); 3 more addresses with fewer captures;
+    the site-wide listing did not come back (run 36364542360 did not return it; run 36360179859 was still
+    listing when this was written). Captures read: wwltv.com/closings (20180123181021 empty, 20180903124704
+    empty, 20200914142749 empty, 20210301195519 empty, 20210829195433 empty, 20210829235628 empty, 20230213082136
+    empty, 20231219030319 empty, 20240912163001 empty, 20241126222420 empty); not read: 2 (the archive
+    answered 403), 1 (the runner could not reach the archive). Every capture read holds TEGNA''s closings
+    module, empty, on the Hurricane Sally and Ida days too; later closings are articles, which answer
+    403. No read shows a row of a list the pipeline could read, so no endpoint is registered. Market:
+    ''New Orleans'' (first-hand record) is the crosswalk''s ''New Orleans, LA - MS DMA''.'
+  list_files: []
+  page_check: null
+  robots: []
+- id: tegna-wxia
+  platform: tegna
+  call_sign: WXIA
+  name: WXIA / WATL (11alive.com)
+  market: Atlanta
+  dma: Atlanta, GA - AL - NC DMA
+  states: [AL, GA, NC]
+  counties:
+    basis: dma
+    source: 'DMA county list: alex-patton/US-TVDMA-BY-COUNTY usa-tvdma-county.csv at commit 7f254b8c1843c62ec976a71c40d366d45f6f29cd
+      (sha256 2e2cd00265a8d704...), names resolved to FIPS with the Census 2025 county Gazetteer; Connecticut
+      via the Census county-to-town crosswalk (snowlight.sources.stations.dma); market ''Atlanta, GA -
+      AL - NC DMA'''
+    fips: [01029, '01111', '13011', '13013', '13015', '13035', '13045', '13055', '13057', '13059', '13063',
+      '13067', '13077', '13085', '13089', '13097', '13113', '13115', '13117', '13121', '13123', '13129',
+      '13133', '13135', '13137', '13139', '13143', '13149', '13151', '13157', '13159', '13171', '13187',
+      '13195', '13199', '13211', '13217', '13219', '13221', '13223', '13227', '13231', '13233', '13237',
+      '13241', '13247', '13255', '13281', '13285', '13291', '13293', '13297', '13311', '37043']
+  page_url: https://www.11alive.com/closings
+  data_url: null
+  export_url: null
+  archive_urls:
+  - https://www.11alive.com/closings
+  poll_minutes: null
+  status: active
+  evidence: 'First-hand check 2026-09-26T17:43:09Z (docs/research/firsthand/nexstar-tegna-scripps.json,
+    record WXIA): site https://www.11alive.com. Closings page https://www.11alive.com/closings (HTTP 200)
+    holds the TEGNA closings module rendered on the server; the poller reads the page itself. page data-market
+    ''Atlanta, GA''. Empty-state text: ''No delays or closings.''. Market: ''Atlanta'' (first-hand record)
+    is the crosswalk''s ''Atlanta, GA - AL - NC DMA''. Wayback Machine: the archive holds nothing for
+    this site: its CDX server answered HTTP 403 for 11alive.com itself (archive-captures run 36300019096,
+    where the same query for wusa9.com listed 153 captures), the listing of 11alive.com/closings* from
+    2018 to 2026 is empty (run 36281601087), and id_ requests for https://www.11alive.com/closings answered
+    HTTP 403 without redirecting to any capture (run 36285593343). The host is excluded from the archive,
+    so this list can be proven only by a live read with rows.'
+  list_files: []
+  page_check: null
+  robots:
+  - url: https://www.11alive.com/closings
+    checked_at: '2026-09-26T23:06:14Z'
+    state: parsed
+    allowed: true
+    rule: no rule matches
+    crawl_delay: null
+    disallowed_agents: []
+    sha256: 3631e5205b39170653b7ab6fcfa3584e765a805aaa3d3aba3de0bcf02e9e48f1
+- id: tegna-wzdx
+  platform: tegna
+  call_sign: WZDX
+  name: WZDX (rocketcitynow.com)
+  market: Huntsville-Decatur
+  dma: Huntsville - Decatur - Florence, AL - TN DMA
+  states: [AL, TN]
+  counties:
+    basis: dma
+    source: 'DMA county list: alex-patton/US-TVDMA-BY-COUNTY usa-tvdma-county.csv at commit 7f254b8c1843c62ec976a71c40d366d45f6f29cd
+      (sha256 2e2cd00265a8d704...), names resolved to FIPS with the Census 2025 county Gazetteer; Connecticut
+      via the Census county-to-town crosswalk (snowlight.sources.stations.dma); market ''Huntsville -
+      Decatur - Florence, AL - TN DMA'''
+    fips: ['01033', 01049, 01059, '01071', '01077', 01079, 01083, 01089, 01095, '01103', '47103', '47181']
+  page_url: https://www.rocketcitynow.com/closings
+  data_url: null
+  export_url: null
+  archive_urls:
+  - https://www.rocketcitynow.com/closings
+  poll_minutes: null
+  status: active
+  evidence: 'First-hand check 2026-09-26T17:43:32Z (docs/research/firsthand/nexstar-tegna-scripps.json,
+    record WZDX): site https://www.rocketcitynow.com. Closings page https://www.rocketcitynow.com/closings
+    (HTTP 200) holds the TEGNA closings module rendered on the server; the poller reads the page itself.
+    page data-market ''Huntsville, AL''. Empty-state text: ''No delays or closings.''. Market: ''Huntsville-Decatur''
+    (first-hand record) is the crosswalk''s ''Huntsville - Decatur - Florence, AL - TN DMA''.'
+  list_files: []
+  page_check: null
+  robots:
+  - url: https://www.rocketcitynow.com/closings
+    checked_at: '2026-09-26T23:06:15Z'
+    state: parsed
+    allowed: true
+    rule: no rule matches
+    crawl_delay: null
+    disallowed_agents: []
+    sha256: 67d642c66996e1cb0b330eaee525803ed9aa24d11f10f8382d593b005dd50c2a
+- id: tegna-wzzm
+  platform: tegna
+  call_sign: WZZM
+  name: WZZM (wzzm13.com)
+  market: Grand Rapids-Kalamazoo
+  dma: Grand Rapids - Kalamazoo - Battle Creek, MI DMA
+  states: [MI]
+  counties:
+    basis: dma
+    source: 'DMA county list: alex-patton/US-TVDMA-BY-COUNTY usa-tvdma-county.csv at commit 7f254b8c1843c62ec976a71c40d366d45f6f29cd
+      (sha256 2e2cd00265a8d704...), names resolved to FIPS with the Census 2025 county Gazetteer; Connecticut
+      via the Census county-to-town crosswalk (snowlight.sources.stations.dma); market ''Grand Rapids
+      - Kalamazoo - Battle Creek, MI DMA'''
+    fips: ['26005', '26015', '26023', '26025', '26067', '26077', '26081', '26117', '26121', '26123', '26127',
+      '26139', '26149', '26159']
+  page_url: https://www.wzzm13.com/closings
+  data_url: null
+  export_url: null
+  archive_urls:
+  - https://www.wzzm13.com/closings
+  poll_minutes: null
+  status: active
+  evidence: 'First-hand check 2026-09-26T17:43:12Z (docs/research/firsthand/nexstar-tegna-scripps.json,
+    record WZZM): site https://www.wzzm13.com. Closings page https://www.wzzm13.com/closings (HTTP 200)
+    holds the TEGNA closings module rendered on the server; the poller reads the page itself. page data-market
+    ''Grand Rapids, MI''. Empty-state text: ''No delays or closings.''. Market: ''Grand Rapids-Kalamazoo''
+    (first-hand record) is the crosswalk''s ''Grand Rapids - Kalamazoo - Battle Creek, MI DMA''. Wayback
+    Machine: the archive holds nothing for this site: its CDX server answered HTTP 403 for wzzm13.com
+    itself (archive-captures run 36300019096, where the same query for wusa9.com listed 153 captures),
+    the listing of wzzm13.com/closings* from 2018 to 2026 is empty (run 36281601087), and id_ requests
+    for https://www.wzzm13.com/closings answered HTTP 403 without redirecting to any capture (run 36285593343).
+    The host is excluded from the archive, so this list can be proven only by a live read with rows.'
+  list_files: []
+  page_check: null
+  robots:
+  - url: https://www.wzzm13.com/closings
+    checked_at: '2026-09-26T23:06:15Z'
+    state: parsed
+    allowed: true
+    rule: no rule matches
+    crawl_delay: null
+    disallowed_agents: []
+    sha256: 2543c7c28479b2c68d37336abba0c9478889d7c5c09e24990c8865a02d912fc0

@@ -1,0 +1,416 @@
+<!-- GENERATED: 2016-03-04 18:16:51 -0500 -->
+<!doctype html>
+<html lang="en">
+<head>
+	<meta charset="UTF-8" />
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<title>Closings &amp; Delays</title>
+	<style type="text/css">
+		body,
+		html {
+			margin: 0;
+			padding: 0;
+			font-family: Arial, Helvetica, sans-serif;
+			font-size: 13px;
+			color: #454545;
+		}
+		#weather_clmod {
+			font-size: 105%;
+		}
+		#weather_clmod h2 {
+			margin: 0.83em 0 0.7em;
+		}
+		#weather_clmod h3 {
+			text-transform: uppercase;
+		}
+		#weather_clmod ul {
+			list-style: none;
+			padding: 0;
+			margin: 0;
+		}
+		#weather_clmod a,
+		#weather_clmod a:visited,
+		#weather_clmod a:hover,
+		#weather_clmod a:focus,
+		#weather_clmod a:active {
+			color: #347ca8;
+			text-decoration: none;
+		}
+		#weather_clmod #clmod_head {
+			position: fixed;
+			width: 100%;
+			top: 0;
+			background-color: #FFF;
+		}
+		#weather_clmod #clmod_title {
+			height: 44px;
+			background-color: #ececec;
+			border-top: 1px solid #CCC;
+		}
+		#weather_clmod #clmod_title h1 {
+			margin: 8px 0;
+			float: left;
+			font-size: 1.4rem;
+			line-height: 1.4em;
+			padding-left: 10px;
+			border-left: 1px solid #a5a5a5;
+		}
+		#weather_clmod .tools {
+			margin: 12px 0;
+		}
+		#weather_clmod .clmod_title_subject {
+			text-transform: uppercase;
+		}
+		#weather_clmod .clmod_title_display {
+			text-transform: capitalize;
+		}
+		#weather_clmod .clmod_closing_updated { font-size: 0.8em; text-transform: none; font-weight: normal; margin:0;padding:0; }
+		#weather_clmod .clmod_closing_delay,
+		#weather_clmod .clmod-county {
+			display: none;
+		}
+		#weather_clmod .clmod_closing_delay.alpha-show.type-show,
+		#weather_clmod .clmod-county.alpha-show.type-show {
+			display: block;
+		}
+		#weather_clmod #closing_alpha_nav {
+			padding: 0px 0 12px 0;
+		}
+		#weather_clmod #clmod_type_tab {
+			position: relative;
+			float: left;
+			font-size: 16px;
+			padding: 6px 10px;
+		}
+		#weather_clmod #clmod_type_tab div.clmod-label {
+			font-size: 1.3rem;
+			line-height: 1.9em;
+			cursor: pointer;
+		}
+		#weather_clmod #clmod_type_tab ul {
+			position: absolute;
+			top: 100%;
+			left: 0;
+			padding: 6px;
+			color: #999;
+			background-color: #CCC;
+		}
+		#weather_clmod #clmod_type_tab li {
+			line-height: 22px;
+		}
+		#weather_clmod #clmod_type_tab a {
+			color: #454545;
+		}
+		#weather_clmod #clmod_type_tab li.type-active a {
+			color: #000;
+		}
+		#weather_clmod #clmod_search_field {
+			position: absolute;
+			right: 0;
+			width: 300px;
+			font-size: 1em;
+			padding: 9px 9px 0 0;
+			text-align: right;
+		}
+		#weather_clmod #clmod_nav {
+			clear: both;
+			padding: 2px 0;
+			border-top: 1px solid #454545;
+			border-bottom: 9px solid #454545;
+			color: #999;
+			font-size: 130%;
+			text-align: center;
+			height: 22px;
+		}
+		#weather_clmod #clmod_nav ul {
+			padding: 0 4px;
+			height: 33px;
+			max-width: 650px;
+			box-sizing: border-box;
+		}
+		#weather_clmod #clmod_nav li {
+			float: left;
+			height: 100%;
+			width: 3.5714285714285714285714285714286%;
+			box-sizing: border-box;
+		}
+		#weather_clmod #clmod_nav a {
+			display: block;
+			color: #454545;
+			box-sizing: border-box;
+		}
+		#weather_clmod #clmod_nav li.alpha-active a {
+			display: block;
+			height:100%;
+			color: #000;
+			background: url(data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABMAAAAHCAYAAADqF3ZBAAAAn0lEQVQoU2NkIAL8//9fmpGR8SkhpYz4FAANYQHK1wNxJRAvAuJ8oKGfcenBaRjQIBWgpqVAbIak+S6QHQM08AQ2A7EaBjQoGah4AhDzYNH0ByjWDMRtQENBbDhAMQxoiAhQZjYQBxAKH6D8MSCOBRp4D6YWbhjQIDeg4AIgliTCIJgSUPiBwnE+SIARaAgHkG4HCYL4JBiErHQNkJMOABY6KBcwQWvAAAAAAElFTkSuQmCC) bottom no-repeat;
+		}
+		#weather_clmod > div.closing-type-list {
+			margin-top: 100px;
+		}
+		#weather_clmod .clmod-county-list ul {
+			margin-bottom: 1em;
+		}
+
+		#weather_clmod .clmod-county-list li {
+			padding: 0 0 6px;
+		}
+		#weather_clmod .clmod-county-list b { }
+		#weather_clmod .clmod-county-list span { }
+
+		@media only screen and (max-width: 490px) {
+			#weather_clmod #clmod_title {
+				height: 37px;
+				background-color: #ececec;
+			}
+			#weather_clmod #clmod_type_tab { font-size: 90%; }
+			#weather_clmod #clmod_search_field {
+				font-size: 90%;
+				padding: 5px 5px 0 0;
+			}
+			#weather_clmod #clmod_title h1 { font-size: 1.1rem; }
+			#weather_clmod h2 { font-size: 100%; }
+			#weather_clmod h3 { font-size: 90%; }
+			#weather_clmod .tools { font-size: 80%; }
+			#weather_clmod .clmod-county-list li { font-size: 80%; }
+			#weather_clmod #clmod_type_tab div.clmod-label { font-size: 1.1em; }
+			#weather_clmod #clmod_nav {
+				font-size: 90%;
+				height: auto;
+				padding: 2px 0;
+				border-top: 1px solid #bbb;
+				border-bottom: 1px solid #bbb;
+				text-align: center;
+			}
+			#weather_clmod #clmod_nav ul {
+				width: 100%;
+				max-width: 400px;
+/*				min-width: 300px;*/
+				display: inline-block;
+				height: 43px;
+				padding: 4px 6px 10px;
+			}
+			#weather_clmod #clmod_nav li {
+				height: 22px;
+				width: 7%;
+			}
+			.clmod-alpha-m { clear: both; }
+			#weather_clmod #clmod_nav li {
+				color: #bbb;
+				text-align: center;
+			}
+			#weather_clmod #clmod_nav li a {
+				display: inline-block;
+			}
+			#weather_clmod #clmod_nav li.alpha-active a {
+				background-image: none;
+				border-bottom: 6px solid #454545;
+			}
+		}
+		@media only screen and (max-width: 435px) {
+			#weather_clmod #clmod_title {
+				height: 67px;
+			}
+			#weather_clmod #clmod_search_field {
+				padding-top: 0;
+				float: right;
+				position: static;
+			}
+			#weather_clmod > div.closing-type-list {
+				margin-top: 130px;
+			}
+		}
+	</style>
+
+	<script src="//ajax.googleapis.com/ajax/libs/jquery/1.10.2/jquery.min.js"></script>
+
+</head>
+<body>
+
+	<div id="weather_clmod">
+
+		<div id="clmod_head">
+
+			<div id="clmod_title">
+
+				<div id="clmod_type_tab" class="menu">
+					<div class="clmod-label">All</div>
+
+					<ul style="display:none;">
+<li class="clmod-tab-type tab-all" title="no closings/delays for all">All</li><li class="clmod-tab-type tab-school" title="no closings/delays for school">School</li><li class="clmod-tab-type tab-religious" title="no closings/delays for religious">Religious</li><li class="clmod-tab-type tab-business" title="no closings/delays for business">Business</li><li class="clmod-tab-type tab-other" title="no closings/delays for other">Other</li>					</ul>
+				</div>
+
+				<h1>Closings &amp; Delays</h1>
+
+				<div id="clmod_search_field">
+					Search by name: <input type='text' name='clmod_search' id='clmod_search'>
+				</div>
+
+			</div>
+
+				<div id="clmod_all" class="closing-type all hide">
+				<div id="closing_alpha_nav"><div id="clmod_nav" class="clmod-alpha-nav"><ul><li class="clmod-alpha-all" title="no closings/delays under All">All</li><li class="clmod-alpha-0" title="no closings/delays under #">#</li><li class="clmod-alpha-a" title="no closings/delays under A">A</li><li class="clmod-alpha-b" title="no closings/delays under B">B</li><li class="clmod-alpha-c" title="no closings/delays under C">C</li><li class="clmod-alpha-d" title="no closings/delays under D">D</li><li class="clmod-alpha-e" title="no closings/delays under E">E</li><li class="clmod-alpha-f" title="no closings/delays under F">F</li><li class="clmod-alpha-g" title="no closings/delays under G">G</li><li class="clmod-alpha-h" title="no closings/delays under H">H</li><li class="clmod-alpha-i" title="no closings/delays under I">I</li><li class="clmod-alpha-j" title="no closings/delays under J">J</li><li class="clmod-alpha-k" title="no closings/delays under K">K</li><li class="clmod-alpha-l" title="no closings/delays under L">L</li><li class="clmod-alpha-m" title="no closings/delays under M">M</li><li class="clmod-alpha-n" title="no closings/delays under N">N</li><li class="clmod-alpha-o" title="no closings/delays under O">O</li><li class="clmod-alpha-p" title="no closings/delays under P">P</li><li class="clmod-alpha-q" title="no closings/delays under Q">Q</li><li class="clmod-alpha-r" title="no closings/delays under R">R</li><li class="clmod-alpha-s" title="no closings/delays under S">S</li><li class="clmod-alpha-t" title="no closings/delays under T">T</li><li class="clmod-alpha-u" title="no closings/delays under U">U</li><li class="clmod-alpha-v" title="no closings/delays under V">V</li><li class="clmod-alpha-w" title="no closings/delays under W">W</li><li class="clmod-alpha-x" title="no closings/delays under X">X</li><li class="clmod-alpha-y" title="no closings/delays under Y">Y</li><li class="clmod-alpha-z" title="no closings/delays under Z">Z</li></ul></div>				</div>
+			</div>
+		</div>
+		<div class="closing-type-list">
+				<div id="clmod_all_all" class="alpha alpha-all">
+				<h2 class="clmod_display_description">Displaying <b class="clmod_title_subject">all</b> closings and delays<b class="clmod_title_display"></b>.</h2>
+				<div class="clmod_closing_updated">As of 6:16pm on Mar. 4th, 2016.</div>
+				<div class="clmod-all">
+		There are no reported closings or delays at this time.				</div>
+				</div>
+		</div>
+	</div>
+
+	</div>
+
+	<script type="text/javascript">
+
+		$('#weather_clmod .tab-all').addClass('type-active');
+		$('#weather_clmod .clmod-alpha-all').addClass('alpha-active');
+
+		$('#weather_clmod .clmod-tab-type a, #weather_clmod .clmod-alpha-nav a').click(function(e){
+			e.preventDefault();
+
+			var info = $(this).attr('href').replace('#','.').split('_');
+			var kind = info[1];
+			var type = (info[2] == '0' ? '#' : info[2]);
+			$(this).parent().parent().find('.'+kind+'-active').removeClass(kind+'-active');
+			$(this).parent().addClass(kind+'-active');
+			console.log(kind);
+			if(kind == 'type'){
+				$('#weather_clmod #clmod_all_all .clmod_title_subject').html(type);
+				$('#clmod_type_tab.menu ul').toggle(); // toggle menu display
+				$('#clmod_type_tab.menu div').html($(this).html());
+			}
+			else
+				$('#weather_clmod #clmod_all_all .clmod_title_display').html(type);
+			clmod_display();
+
+			if($('#weather_clmod #clmod_search').val().length > 0)
+				clmod_search();
+
+			clmod_write_display_desc();
+
+			// expand the full list
+			$('#weather_clmod .clmod-county-list').show();
+
+			return false;
+		});
+
+		$('.menu').on('click','div',function(e){
+			$(this).parents('.menu').find('ul').toggle();
+		});
+
+		function clmod_write_display_desc()
+		{
+			if($('#weather_clmod #clmod_search').val().length > 0)
+				var ctxt = ' that include the text <b>&ldquo;'+ $('#weather_clmod #clmod_search').val() +'&rdquo;</b>';
+			else var ctxt = '';
+
+			var subj = ' <b class="clmod_title_subject">'+ $('#weather_clmod #clmod_all_all .clmod_title_subject').html() +'</b> closings and delays';
+			var disp = '<b class="clmod_title_display"></b>';
+			txt = $('#weather_clmod #clmod_all_all .clmod_title_display').html();
+			console.log(txt);
+			if(txt.indexOf('all')!==0&&txt!='')
+				disp = ' under <b class="clmod_title_display">'+ txt +'</b>';
+
+			$('#weather_clmod .clmod_display_description').html('Displaying'+subj+disp+ctxt+'.');
+		}
+
+		function clmod_display()
+		{
+			var a = 'type', b = 'alpha';
+			// remove all elements
+			$('#weather_clmod .clmod-county-list').children().removeClass(a+'-show').removeClass(b+'-show');
+			$('#weather_clmod .clmod-county-list').prev().removeClass(a+'-show').removeClass(b+'-show');
+
+			var set = '.'+$('#weather_clmod .type-active a').attr('href').substring(1)+'.'+$('#weather_clmod .alpha-active a').attr('href').substring(1);
+			// add the elements needed
+			var showels = $('#weather_clmod .clmod-county-list '+set);
+			if(showels.length > 0)
+			{
+				showels.each(function(k,el){
+					var cty = $(el).parent().prev();
+					if(!cty.hasClass(a+'-show')) cty.addClass(a+'-show');
+					if(!cty.hasClass(b+'-show')) cty.addClass(b+'-show');
+					if($(el).parent().find(set).length != cty.find('span').html())
+					{
+						cty.find('span').html($(el).parent().find(set).length);
+					}
+					$(el).addClass(a+'-show').addClass(b+'-show');
+				});
+			}
+			else
+			{
+				// DISPLAY THE EMPTY RESULTS NOTICE
+				$('#clmod_no_results').addClass(a+'-show').addClass(b+'-show').parent().show().prev().addClass(a+'-show').addClass(b+'-show');
+			}
+		}
+
+		$('#weather_clmod #clmod_search').keyup(function(event) {
+			clmod_search();
+		}).keydown(function(event) {
+			if (event.which == 13) {
+				event.preventDefault();
+			}
+		});
+
+		function clmod_search( )
+		{
+			var text = $('#weather_clmod #clmod_search').val();
+			var a = 'type', b = 'alpha';
+			// remove all elements
+			$('#weather_clmod .clmod-county-list').children().removeClass(a+'-show').removeClass(b+'-show').removeClass('search-show');
+			$('#weather_clmod .clmod-county-list').prev().removeClass(a+'-show').removeClass(b+'-show');
+
+			var set = $('#weather_clmod .type-active a').attr('href').replace('#','.')+$('#weather_clmod .alpha-active a').attr('href').replace('#','.');
+			// add the elements needed
+			var showels = $('#weather_clmod .clmod-county-list '+set+' b').each(function(k,el){
+				if($(el).html().toLowerCase().indexOf(text.toLowerCase()) != -1)
+				{
+					$(el).parent().addClass(a+'-show').addClass(b+'-show').addClass('search-show').parent().prev().addClass(a+'-show').addClass(b+'-show');
+				}
+			});
+
+			if($('#weather_clmod .clmod-county-list .search-show').length < 1)
+			{
+				// DISPLAY THE EMPTY RESULTS NOTICE
+				$('#clmod_no_results').addClass(a+'-show').addClass(b+'-show').parent().show().prev().addClass(a+'-show').addClass(b+'-show');
+			}
+
+			clmod_write_display_desc();
+
+			$('#weather_clmod .clmod-county-list').show();
+
+		}
+
+		$('#weather_clmod .show-all').click(function(e){
+			e.preventDefault();
+			$('#weather_clmod .clmod-county-list').show();
+			return false;
+		});
+
+		$('#weather_clmod .hide-all').click(function(e){
+			e.preventDefault();
+			$('#weather_clmod .clmod-county-list').hide();
+			return false;
+		});
+
+		$('#weather_clmod .clmod-county').click(function() {
+			$(this).next().toggle('blind');
+			return false;
+		});
+
+		$(function(){
+			if(true && 0 < 50){
+				$('#weather_clmod .clmod-county-list').show();
+			} else {
+				$('#weather_clmod .clmod-county-list').hide();
+			}
+		});
+
+	</script>
+	<pre id='test' style="display:none;"></pre>
+</body>
+</html>

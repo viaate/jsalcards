@@ -12,6 +12,13 @@ measure: they are notes in the registry and in each read's health, and the
 project owner decided to read these lists anyway (terms on 2026-09-25, robots.txt
 on 2026-09-26; see :class:`~snowlight.sources.stations.registry.Terms`).
 
+District-level sources: a station that names NCES district IDs (``leaids``: a
+school district's own alert page, or a state's list of its school systems) covers
+exactly the schools of those districts (the directory's ``district_id``), never its
+counties whole (:func:`district_cover`). A school is covered when its county is in
+a working source's county list, or its district is in a working district-level
+source's ``leaids``. Every other source is measured as before.
+
 Closure weights: when the weights build's ``closure-weights.json`` is given (a
 weight per county, normalized so the school-weighted national mean is 1), each
 share is also reported weighted, every school counting its county's weight; the
@@ -28,12 +35,15 @@ Writes (internal, never published) ``coverage.json``::
                         "unplaced_schools", "schools_without_weight"},
      "national": Share, "states": {"AL": Share, ...},
      "counties": {"01001": {"state", "name", "schools", "weighted_schools", "working": [...],
-                            "not_working": [...], "dmas": [...]}, ...},
+                            "not_working": [...], "dmas": [...], "districts": [...],
+                            "districts_not_working": [...], "covered"}, ...},
      "dmas": {label: {"counties", "schools", "working": [...], "not_working": [...]}, ...},
      "counties_without_dma": [...],
+     "districts": {"sources": [...], "working": [...], "schools_added",
+                   "weighted_added"},
      "stations": {id: {"state": "working" | "stale" | "skipped" | "error" | "no_endpoint"
                                 | "not_read",
-                       "reason", "counties", "schools", "weighted_schools",
+                       "reason", "counties", "schools", "weighted_schools", "leaids",
                        "observed": null | {"archived_rows", "counties_named", "in_county_list",
                                            "outside_county_list": [fips...],
                                            "unmatched_places"}}},
@@ -43,6 +53,12 @@ Writes (internal, never published) ``coverage.json``::
 read was not ok or empty (stale, an error, skipped or not read). ``observed``
 compares a station's county list with the counties its archived rows name
 (:mod:`snowlight.sources.stations.observed`), as a check on the list's basis.
+A county's ``districts`` and ``districts_not_working`` are the district-level
+sources with schools in it (working, or active and not working); ``covered`` is
+how many of its schools are covered (all when a whole-county source works). A
+district-level station's ``schools`` are its districts' schools, ``leaids`` its
+districts (absent for other stations); ``districts.schools_added`` counts the
+schools covered only by district-level sources.
 
     Share = {"schools", "covered", "share", "meets_target",
              "weighted": {"schools", "covered", "share", "meets_target"}}
@@ -52,10 +68,18 @@ of county weights, rounded to one decimal. A school in a county the weights do n
 list counts in the plain share only, and ``weights.schools_without_weight`` says how
 many there are.)
 
+With evidence of which lists have been seen populated,
+:func:`snowlight.sources.stations.proof.add_proven` adds the *proven* share (the
+same measure counting only stations whose current list has held a row, live or
+archived), each station's ``proof`` and the ``unproven`` list; see that module.
+
 and ``coverage.png``: counties a working source covers (bright), counties only a
 source that is not working lists (amber: stale, failed or not read), counties with
-schools and no source (grey), and counties with no schools (black); the title gives
-the plain and the weighted national share, and a panel under the map each state's.
+schools and no source (grey), counties where only a district-level source covers
+some schools (dim gold), and counties with no schools (black); the title gives
+the plain and the weighted national share, and a panel under the map the legend and
+each state's (with the proven shares, national and per state, when the result has
+them); nothing is drawn over the map.
 """
 
 import hashlib
@@ -87,6 +111,7 @@ STATE_TARGET = 0.90
 WORKING_COLOR: Rgb = (255, 214, 102)
 DOWN_COLOR: Rgb = (120, 72, 24)
 GAP_COLOR: Rgb = (70, 70, 78)
+PART_COLOR: Rgb = (150, 118, 52)
 EMPTY_COLOR: Rgb = (12, 12, 14)
 BACKGROUND: Rgb = (0, 0, 0)
 
@@ -177,19 +202,29 @@ class Weights:
     """(Directory county, school state) to the summed weights of its weighted schools."""
     school_counts: Mapping[tuple[str, str], int] | None = None
     """(Directory county, school state) to the number of its schools given a weight."""
+    by_school: Mapping[int, float] | None = None
+    """Each placed school's own weight, by its directory ``index``."""
 
     def placed(self, placement: Placement) -> "Weights":
         """Return these weights with every school's own county weight, summed by county."""
         sums: dict[tuple[str, str], float] = defaultdict(float)
         counts: dict[tuple[str, str], int] = defaultdict(int)
+        by_school: dict[int, float] = {}
         for school in placement.schools:
             weight = self.by_county.get(school.nws_fips)
             if weight is not None:
+                by_school[school.index] = weight
                 key = (school.directory_fips, school.address_state)
                 sums[key] += weight
                 counts[key] += 1
         provenance = {**self.provenance, "unplaced_schools": len(placement.unplaced)}
-        return Weights(self.by_county, provenance, dict(sums), dict(counts))
+        return Weights(self.by_county, provenance, dict(sums), dict(counts), by_school)
+
+    def school(self, index: int | None, fips: str) -> float | None:
+        """Return one school's weight: its own when placed, else its county's (or None)."""
+        if self.by_school is not None:
+            return self.by_school.get(index) if index is not None else None
+        return self.by_county.get(fips)
 
     def county(self, fips: str, state: str, schools: int) -> tuple[float, int]:
         """Return the summed weight of a directory county's schools in ``state``.
@@ -252,7 +287,8 @@ def _station_counties(
     working: dict[str, list[str]] = defaultdict(list)
     down: dict[str, list[str]] = defaultdict(list)
     for station in sorted(registry.stations.values(), key=lambda s: s.id):
-        if station.counties is None:
+        # A district-level source covers its districts' schools, not its counties whole.
+        if station.counties is None or station.leaids:
             continue
         state = states[station.id].state
         target = working if state == "working" else down if state in _NOT_WORKING else None
@@ -263,6 +299,77 @@ def _station_counties(
     return working, down
 
 
+@dataclass(frozen=True, slots=True)
+class DistrictCover:
+    """What the district-level sources cover (see :func:`district_cover`)."""
+
+    covered: Mapping[tuple[str, str], int]
+    """(County, school state) to its schools a working district-level source covers."""
+    weighted: Mapping[tuple[str, str], float]
+    """The same schools' summed closure weights (empty without weights)."""
+    working: Mapping[str, list[str]]
+    """County to the working district-level sources with schools in it."""
+    down: Mapping[str, list[str]]
+    """County to the active district-level sources with schools in it that are not working."""
+    station_schools: Mapping[str, int]
+    """Each district-level source (working or not) to its districts' schools."""
+    station_weighted: Mapping[str, float]
+
+
+def district_cover(
+    registry: Registry,
+    schools: pl.DataFrame,
+    states: Mapping[str, StationState],
+    weights: Weights | None = None,
+) -> DistrictCover:
+    """Return the schools that district-level sources (``Station.leaids``) cover.
+
+    A school is covered by such a source when its ``district_id`` (the NCES LEAID
+    of the directory) is one of the source's ``leaids`` and the source is working;
+    private schools, which have no district, never are. Nothing is counted when no
+    station names LEAIDs or the directory frame has no ``district_id`` column. Its
+    weight is its own (``Weights.school``: by the frame's ``index`` when the
+    weights are placed).
+    """
+    owners: dict[str, list[str]] = defaultdict(list)
+    for station in sorted(registry.stations.values(), key=lambda s: s.id):
+        for leaid in station.leaids:
+            owners[leaid].append(station.id)
+    covered: dict[tuple[str, str], int] = defaultdict(int)
+    weighted: dict[tuple[str, str], float] = defaultdict(float)
+    working: dict[str, set[str]] = defaultdict(set)
+    down: dict[str, set[str]] = defaultdict(set)
+    station_schools: dict[str, int] = defaultdict(int)
+    station_weighted: dict[str, float] = defaultdict(float)
+    if owners and "district_id" in schools.columns:
+        columns = ["district_id", "county_fips", "state"]
+        columns += ["index"] if "index" in schools.columns else []
+        rows = schools.select(columns).filter(pl.col("district_id").is_in(list(owners)))
+        for row in rows.iter_rows(named=True):
+            fips, state = str(row["county_fips"]), str(row["state"])
+            index = row.get("index")
+            place = int(index) if index is not None else None
+            weight = weights.school(place, fips) if weights is not None else None
+            ids = owners[str(row["district_id"])]
+            up = [i for i in ids if states[i].state == "working"]
+            for station_id in ids:
+                if station_id in up or states[station_id].state in _NOT_WORKING:
+                    station_schools[station_id] += 1
+                    station_weighted[station_id] += weight or 0.0
+                    (working if station_id in up else down)[fips].add(station_id)
+            if up:
+                covered[(fips, state)] += 1
+                weighted[(fips, state)] += weight or 0.0
+    return DistrictCover(
+        covered=dict(covered),
+        weighted=dict(weighted),
+        working={fips: sorted(ids) for fips, ids in working.items()},
+        down={fips: sorted(ids) for fips, ids in down.items()},
+        station_schools=dict(station_schools),
+        station_weighted=dict(station_weighted),
+    )
+
+
 def _dma_table(
     registry: Registry,
     states: Mapping[str, StationState],
@@ -271,7 +378,8 @@ def _dma_table(
 ) -> dict[str, JSONValue]:
     stations_by_dma: dict[str, list[str]] = defaultdict(list)
     for station in registry.stations.values():
-        if station.dma:
+        # A district-level source speaks for its districts, not for its market.
+        if station.dma and not station.leaids:
             stations_by_dma[station.dma].append(station.id)
     table: dict[str, JSONValue] = {}
     for label, fips_list in dmas.by_dma.items():
@@ -363,6 +471,12 @@ def measure(  # noqa: PLR0913 - one pass over the counties fills every table
         .rows(named=True)
     )
     working, down = _station_counties(registry, states)
+    districts = district_cover(registry, schools, states, weights)
+    district_ids: list[JSONValue] = [
+        i for i in sorted(registry.stations) if registry.stations[i].leaids
+    ]
+    county_covered: dict[str, int] = defaultdict(int)
+    added = [0, 0.0]
     counties: dict[str, JSONValue] = {}
     county_schools: dict[str, int] = {}
     by_state: dict[str, list[int]] = defaultdict(lambda: [0, 0])
@@ -380,17 +494,22 @@ def measure(  # noqa: PLR0913 - one pass over the counties fills every table
         fips, state, count = str(row["county_fips"]), str(row["state"]), int(row["len"])
         county_schools[fips] = county_schools.get(fips, 0) + count
         here = working.get(fips, [])
+        part = count if here else min(districts.covered.get((fips, state), 0), count)
+        county_covered[fips] += part
+        added[0] += 0 if here else part
         for bucket in (by_state[state], total):
             bucket[0] += count
-            bucket[1] += count if here else 0
+            bucket[1] += part
         summed = 0.0
         if weights is not None:
             summed, missing = weights.county(fips, state, count)
             without_weight += missing
             weighted_county[fips] += summed
+            share = summed if here else min(districts.weighted.get((fips, state), 0.0), summed)
+            added[1] += 0.0 if here else share
             for fbucket in (weighted_by_state[state], weighted_total):
                 fbucket[0] += summed
-                fbucket[1] += summed if here else 0.0
+                fbucket[1] += share
         for station_id in here + down.get(fips, []):
             station_schools[station_id] += count
             station_weighted[station_id] += summed
@@ -403,7 +522,13 @@ def measure(  # noqa: PLR0913 - one pass over the counties fills every table
             "working": list(here),
             "not_working": list(down.get(fips, [])),
             "dmas": list(dmas.dma_of(fips)) if dmas is not None else [],
+            "districts": list(districts.working.get(fips, [])),
+            "districts_not_working": list(districts.down.get(fips, [])),
+            "covered": county_covered[fips],
         }
+    for station_id, number in districts.station_schools.items():
+        station_schools[station_id] = number
+        station_weighted[station_id] = districts.station_weighted.get(station_id, 0.0)
     counties = dict(sorted(counties.items()))
     without: list[JSONValue] = (
         [fips for fips in counties if not dmas.dma_of(fips)] if dmas is not None else []
@@ -429,6 +554,12 @@ def measure(  # noqa: PLR0913 - one pass over the counties fills every table
         "counties": counties,
         "dmas": dma_table,
         "counties_without_dma": without,
+        "districts": {
+            "sources": district_ids,
+            "working": [i for i in district_ids if states[str(i)].state == "working"],
+            "schools_added": int(added[0]),
+            "weighted_added": round(float(added[1]), 1) if weighted else None,
+        },
         "stations": {
             station.id: {
                 "state": states[station.id].state,
@@ -439,6 +570,7 @@ def measure(  # noqa: PLR0913 - one pass over the counties fills every table
                 if weighted
                 else None,
                 "observed": checked.get(station.id),
+                **({"leaids": list(station.leaids)} if station.leaids else {}),
             }
             for station in sorted(registry.stations.values(), key=lambda s: s.id)
         },
@@ -474,12 +606,14 @@ def render_png(result: Mapping[str, JSONValue], shapes: Mapping[str, BaseGeometr
             continue
         if info.get("working"):
             color = WORKING_COLOR
+        elif info.get("districts"):
+            color = PART_COLOR
         elif info.get("not_working"):
             color = DOWN_COLOR
         else:
             color = GAP_COLOR
         colors[fips] = color
-        tallies[color] += 1
+        tallies[color] = tallies.get(color, 0) + 1
     in_scope = {fips[:2] for fips in counties}
     drawn = {fips: shape for fips, shape in shapes.items() if fips[:2] in in_scope}
     image = render(drawn, colors, background=BACKGROUND, default=EMPTY_COLOR)
@@ -490,51 +624,90 @@ def render_png(result: Mapping[str, JSONValue], shapes: Mapping[str, BaseGeometr
         weighted = national.get("weighted")
         if isinstance(weighted, dict):
             title += f" (CLOSURE-WEIGHTED {float(str(weighted['share'])):.1%})"
-    draw_text(image, title, (24, 24), (230, 230, 230))
+    # The title and the legend go in bands above and below the map, never over it.
+    header = _band(image.shape[1], HEADER_HEIGHT)
+    draw_text(header, title, (24, 24), (230, 230, 230))
     labels = {
+        PART_COLOR: "SOME SCHOOLS COVERED BY A WORKING DISTRICT SOURCE",
         WORKING_COLOR: "COVERED BY A WORKING SOURCE",
         DOWN_COLOR: "LISTED ONLY BY A SOURCE THAT IS STALE, FAILED OR NOT READ",
         GAP_COLOR: "NO SOURCE",
         EMPTY_COLOR: "NO SCHOOL IN THE DIRECTORY",
     }
     tallies[EMPTY_COLOR] = sum(fips not in colors for fips in drawn)
-    top = image.shape[0] - len(tallies) * 24 - 16
+    legend = _band(image.shape[1], len(tallies) * 24 + 8)
     for offset, (color, count) in enumerate(tallies.items()):
-        row = top + offset * 24
-        image[row : row + 14, 24:38] = color
+        row = 8 + offset * 24
+        legend[row : row + 14, 24:38] = color
         if color == EMPTY_COLOR:
-            image[row, 24:38] = image[row + 13, 24:38] = GAP_COLOR
-            image[row : row + 14, 24] = image[row : row + 14, 37] = GAP_COLOR
-        draw_text(image, f"{labels[color]}: {count} COUNTIES", (48, row), (200, 200, 200))
-    return png_bytes(_with_state_table(image, result.get("states")))
+            legend[row, 24:38] = legend[row + 13, 24:38] = GAP_COLOR
+            legend[row : row + 14, 24] = legend[row : row + 14, 37] = GAP_COLOR
+        draw_text(legend, f"{labels[color]}: {count} COUNTIES", (48, row), (200, 200, 200))
+    image = np.vstack([header, image, legend])
+    return png_bytes(_with_state_table(image, result.get("states"), result.get("proven")))
 
 
 STATE_COLUMNS = 7
+STATE_COLUMNS_WITH_PROOF = 3
 STATE_ROW = 22
+HEADER_HEIGHT = 48
 
 
-def _with_state_table(image: npt.NDArray[np.uint8], states: JSONValue) -> npt.NDArray[np.uint8]:
-    """Add a panel under the map: each state's covered share, plain and closure-weighted."""
+def _band(width: int, height: int) -> npt.NDArray[np.uint8]:
+    """An empty strip of the image's background, ``height`` pixels tall."""
+    band = np.empty((height, width, 3), dtype=np.uint8)
+    band[:, :] = BACKGROUND
+    return band
+
+
+def _shares_text(share: Mapping[str, JSONValue], digits: int) -> str:
+    """``share`` as a percentage, with its closure-weighted share after a slash when given."""
+    text = f"{float(str(share['share'])):.{digits}%}"
+    inner = share.get("weighted")
+    if isinstance(inner, dict):
+        text += f" / {float(str(inner['share'])):.{digits}%}"
+    return text
+
+
+def _with_state_table(
+    image: npt.NDArray[np.uint8], states: JSONValue, proven: JSONValue = None
+) -> npt.NDArray[np.uint8]:
+    """Add a panel under the map: each state's covered share, plain and closure-weighted.
+
+    With ``proven`` (the ``proven`` part of the result, see
+    :func:`snowlight.sources.stations.proof.add_proven`), the panel opens with the
+    national proven share and gives each state's proven shares after its covered
+    ones, in fewer columns; nothing is drawn over the map.
+    """
     if not isinstance(states, dict) or not states:
         return image
-    rows = -(-len(states) // STATE_COLUMNS)
-    panel = np.empty((rows * STATE_ROW + 56, image.shape[1], 3), dtype=np.uint8)
-    panel[:, :] = BACKGROUND
+    national = proven.get("national") if isinstance(proven, dict) else None
+    by_state = proven.get("states") if isinstance(proven, dict) else None
+    if not isinstance(national, dict) or not isinstance(by_state, dict):
+        national = by_state = None
+    columns = STATE_COLUMNS if by_state is None else STATE_COLUMNS_WITH_PROOF
+    top = 8 if national is None else 40
+    rows = -(-len(states) // columns)
+    panel = _band(image.shape[1], rows * STATE_ROW + top + 48)
+    if national is not None:
+        line = "PROVEN (COUNTING ONLY LISTS SEEN WITH ROWS AT LEAST ONCE): "
+        draw_text(panel, line + _shares_text(national, 1), (24, 8), (230, 230, 230))
     weighted = any(isinstance(v, dict) and "weighted" in v for v in states.values())
     heading = "BY STATE: SHARE OF SCHOOLS COVERED"
-    heading += " / CLOSURE-WEIGHTED SHARE (TARGET 90%)" if weighted else " (TARGET 90%)"
-    draw_text(panel, heading, (24, 8), (230, 230, 230))
-    width = (image.shape[1] - 48) // STATE_COLUMNS
+    heading += " / CLOSURE-WEIGHTED SHARE" if weighted else ""
+    heading += ", THEN PROVEN SHARES" if by_state is not None else ""
+    draw_text(panel, heading + " (TARGET 90%)", (24, top), (230, 230, 230))
+    width = (image.shape[1] - 48) // columns
     for number, (state, share) in enumerate(sorted(states.items())):
         if not isinstance(share, dict):
             continue
-        text = f"{state} {float(str(share['share'])):.0%}"
-        inner = share.get("weighted")
-        if isinstance(inner, dict):
-            text += f" / {float(str(inner['share'])):.0%}"
+        text = f"{state} {_shares_text(share, 0)}"
+        proven_share = by_state.get(state) if by_state is not None else None
+        if isinstance(proven_share, dict):
+            text += f", PROVEN {_shares_text(proven_share, 0)}"
         color = (255, 214, 102) if share.get("meets_target") else (170, 170, 176)
-        column, row = number % STATE_COLUMNS, number // STATE_COLUMNS
-        draw_text(panel, text, (24 + column * width, 40 + row * STATE_ROW), color)
+        column, row = number % columns, number // columns
+        draw_text(panel, text, (24 + column * width, top + 32 + row * STATE_ROW), color)
     return np.vstack([image, panel])
 
 

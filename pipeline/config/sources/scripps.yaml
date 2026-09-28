@@ -1,0 +1,1573 @@
+# Station registry for one platform. Loaded with every other file in this folder
+# by snowlight.sources.stations.registry; see its docstring for the fields.
+# `snowlight stations robots --update` rewrites the robots blocks in place.
+platform:
+  id: scripps
+  name: E.W. Scripps closings pages
+  operator: The E.W. Scripps Company
+  adapter: scripps
+  poll_minutes: 10
+  terms:
+    automated_access: forbidden
+    summary: Scripps' Terms of Use (footer link /terms-of-use on every station site; read at https://www.wtvr.com/terms-of-use,
+      "Last Modified & Effective April 1, 2015") forbid using "an automatic device (such as a robot or
+      spider) or manual process to copy or “scrape” the Services or Service Content for any purpose without
+      our express written permission" and provide access for personal, non-commercial use. The project
+      owner decided on 2026-09-25 to read the closings lists anyway for this non-commercial project (owner_decision
+      below); the terms stay recorded here.
+    evidence:
+    - url: https://www.wtvr.com/terms-of-use
+      read_at: '2026-09-26T22:53:31Z'
+      sha256: d07a49c26769d1052ac05dd2282200834722c0081995573c822ea1bf13e50d93
+      excerpt:
+      - Terms of Use (Last Modified & Effective April 1, 2015)
+      - use an automatic device (such as a robot or spider) or manual process to copy or “scrape” the
+        Services or Service Content for any purpose without our express written permission.
+      - Access to the Services including, without limitation, the Service Content is provided for your
+        information and personal, non-commercial use only.
+    permission: null
+    owner_decision:
+      decided_by: the project owner (Snowlight)
+      decided_on: '2026-09-25'
+      reference: 'Stated in the build instructions for the station adapters (piece s4b, round 1): "Terms
+        of use that forbid automated access do not exclude a station: the project owner decided on 2026-09-25
+        to read them for this non-commercial project, so record each station''s terms internally in the
+        registry and read it anyway." The same instructions record the owner''s decision of 2026-09-26
+        to read closings pages and data files even where robots.txt disallows them. Relayed to the pipeline''s
+        builder by the project''s build workflow; to revoke it, remove this block and live polling of
+        this platform stops.'
+      scope: 'Live reads of this platform''s public closings lists (the station pages, the WordPress REST
+        routes that publish the same pages, and the list files the pages frame) for Snowlight, a non-commercial
+        project, although the terms above forbid automated access. robots.txt is read and its verdict
+        recorded for every URL requested (no closings URL registered here was disallowed when checked
+        on 2026-09-26); the owner decided on 2026-09-26 to read closings pages and files even where robots.txt
+        disallows them. Unchanged by it: the User-Agent names the repository (never a browser string),
+        only the closings page or file is requested (no crawling), requests are paced per host (any Crawl-delay
+        is a floor) with conditional requests and backoff on 429 and 5xx answers, and a station that blocks
+        the project (a 403, or a bot challenge such as the PerimeterX page Nexstar''s HTML pages answer
+        with) is not worked around.'
+  notes: 'Station list: https://scripps.com/our-brands/local-media/ (68 entries, read 2026-09-26 by the
+    first-hand check, docs/research/firsthand/nexstar-tegna-scripps.md): 41 news websites serving 49 full-power
+    call signs are registered, one entry per website. Not registered: the ION/The Spot and similar entries
+    whose links go to thespottv.com (no local news site), KZCO (courttv.com), KAJA (Spanish-language telemundocc.com),
+    KCDO (a section of denver7.com) and KAJ; WRTV, KATC and WFTX are not on the list (other owners now).
+    Brightspot sites serve https://www.{site}/weather/school-closings-delays rendered on the server with
+    the Scripps closings module (read with the scripps adapter); KPAX serves it at /school-closings-delays
+    and KGUN and KTNV at /weather/closings-and-delays (addresses found in the archive''s listings on 2026-09-28).
+    WTVQ (WordPress) frames a static SnoWatch file. KKTV, KKCO, KJCT and KMVT are still Gray Arc sites
+    whose Gray exports are registered in gray.yaml. KSTU''s /weather/closings page (typed by hand in storms)
+    and the Montana (MTN) sites'' /weather/closings pages (nothing on them in every capture read, winters
+    2021 to 2026) are filed in scripps-typed.yaml, the only Scripps stations read as typed pages: this
+    platform''s adapter never reads one, so a page here without its closings module, list file or list
+    frame is an error, not an empty list. KERO''s page frames Kern County''s AlertLine, whose TLS chain
+    could not be verified; it has no endpoint here. Each no-endpoint site''s archive check (listings and
+    storm-day captures asked for from 2026-09-28, and what they showed) is in its evidence.'
+  shared_paths: []
+stations:
+- id: scripps-kero
+  platform: scripps
+  call_sign: KERO
+  name: KERO (turnto23.com)
+  market: Bakersfield
+  dma: Bakersfield, CA DMA
+  states: [CA]
+  counties:
+    basis: dma
+    source: 'DMA county list: alex-patton/US-TVDMA-BY-COUNTY usa-tvdma-county.csv at commit 7f254b8c1843c62ec976a71c40d366d45f6f29cd
+      (sha256 2e2cd00265a8d704...), names resolved to FIPS with the Census 2025 county Gazetteer; Connecticut
+      via the Census county-to-town crosswalk (snowlight.sources.stations.dma); market ''Bakersfield,
+      CA DMA'''
+    fips: [06029]
+  page_url: null
+  data_url: null
+  export_url: null
+  archive_urls:
+  - https://www.turnto23.com/weather/school-closings-delays
+  poll_minutes: null
+  status: no_endpoint
+  evidence: 'First-hand check 2026-09-26T17:43:32Z (docs/research/firsthand/nexstar-tegna-scripps.json,
+    record KERO): site https://www.turnto23.com. https://www.turnto23.com/weather/school-closings-delays
+    frames //alertline.kern.org/ (Kern County''s AlertLine), whose TLS chain could not be verified on
+    2026-09-26, so it was not requested. Notes: Brightspot page ''School Closings'' whose body is an iframe
+    to //alertline.kern.org/ (no Scripps closings module). Its page frames Kern County''s AlertLine (alertline.kern.org),
+    a county office''s system, not the station''s list; the AlertLine''s TLS certificate chain could not
+    be verified through this build environment''s proxy again on 2026-09-28 (curl: ''unable to get local
+    issuer certificate''), so it was not read. Archive check: no archive request before 2026-09-28 covered
+    this site. Asked for since, in commits 1eadbc8 (run 36360179859), 4214b42 (run 36364542360), 7b1fc13
+    (run 36369419399): CDX listings (2014 to 2026) of turnto23.com/weather/clos*, turnto23.com/clos*,
+    turnto23.com/weather/school-clos*, turnto23.com/school-clos*, alertline.kern.org/* and a listing of
+    every address of the site whose URL names closings, closures, delays or cancellations (one row per
+    address), and 3 captures of its closings pages on storm days and in past winters (each capture and
+    why it was picked is listed under ''no_endpoint_scripps_tegna'' in pipeline/config/sources/archive-wanted-s4b.json).
+    Results: Listings: turnto23.com/weather/school-closings-delays 587 captures with HTTP 200 (225 in
+    November to March, 1 redirect; 2019-2026); alertline.kern.org/ 132 captures with HTTP 200 (75 in November
+    to March, 53 redirects; 2014-2026); alertline.kern.org/viewAlert.html 28 captures with HTTP 200 (13
+    in November to March, 10 redirects; 2014-2024); 23 more addresses with fewer captures; the site-wide
+    listing (run 36364542360) names 3446 addresses with closings, closures, delays or cancellations in
+    them, besides the closings paths above: news stories, one per storm or event, not a list kept at one
+    address. Captures read: none; not read: 1 (a page without a list this adapter reads), 1 (the runner
+    could not reach the archive), 1 (the archive answered 403). The page holds no list of its own (the
+    capture of 2024-04-22 frames the AlertLine, whose TLS chain still failed through this environment''s
+    proxy on 2026-09-28), so no endpoint is registered here. Market: ''Bakersfield'' (first-hand record)
+    is the crosswalk''s ''Bakersfield, CA DMA''.'
+  list_files: []
+  page_check: null
+  robots: []
+- id: scripps-kgtv
+  platform: scripps
+  call_sign: KGTV
+  name: KGTV (10news.com)
+  market: San Diego
+  dma: San Diego, CA DMA
+  states: [CA]
+  counties:
+    basis: dma
+    source: 'DMA county list: alex-patton/US-TVDMA-BY-COUNTY usa-tvdma-county.csv at commit 7f254b8c1843c62ec976a71c40d366d45f6f29cd
+      (sha256 2e2cd00265a8d704...), names resolved to FIPS with the Census 2025 county Gazetteer; Connecticut
+      via the Census county-to-town crosswalk (snowlight.sources.stations.dma); market ''San Diego, CA
+      DMA'''
+    fips: ['06073']
+  page_url: null
+  data_url: null
+  export_url: null
+  archive_urls:
+  - https://www.10news.com/weather/school-closings-delays
+  poll_minutes: null
+  status: no_endpoint
+  evidence: 'First-hand check 2026-09-26T17:43:57Z (docs/research/firsthand/nexstar-tegna-scripps.json,
+    record KGTV): site https://www.10news.com. No closings page found. Notes: https://www.10news.com/weather/school-closings-delays
+    returned 404; https://www.10news.com/weather/closings and https://www.10news.com/closings also 404;
+    homepage has no closings link. Archive check: no archive request before 2026-09-28 covered this site.
+    Asked for since, in commits 1eadbc8 (run 36360179859), 4214b42 (run 36364542360), 7b1fc13 (run 36369419399):
+    CDX listings (2014 to 2026) of 10news.com/weather/clos*, 10news.com/clos*, 10news.com/weather/school-clos*,
+    10news.com/school-clos* and a listing of every address of the site whose URL names closings, closures,
+    delays or cancellations (one row per address), and 2 captures of its closings pages on storm days
+    and in past winters (each capture and why it was picked is listed under ''no_endpoint_scripps_tegna''
+    in pipeline/config/sources/archive-wanted-s4b.json). Results: Listings: 10news.com/closing-door-can-save-life-in-fire/
+    3 captures with HTTP 200 (0 in November to March; 2021-2023); 10news.com/weather/school-closings-delays
+    0 captures with HTTP 200 (0 in November to March, 2 redirects; 2018-2025); the site-wide listing did
+    not come back (run 36364542360 did not return it; run 36360179859 was still listing when this was
+    written). Captures read: none; not read: 2 (HTTP 404 from the archive: the page missing when archived,
+    or no capture). The captures nearest its storm days are HTTP 404 answers (the page did not exist when
+    archived), as the page is today. No read shows a row, so no endpoint is registered. Market: ''San
+    Diego'' (first-hand record) is the crosswalk''s ''San Diego, CA DMA''.'
+  list_files: []
+  page_check: null
+  robots: []
+- id: scripps-kgun
+  platform: scripps
+  call_sign: KGUN
+  name: KGUN (kgun9.com)
+  market: Tucson
+  dma: Tucson (Nogales), AZ DMA
+  states: [AZ]
+  counties:
+    basis: dma
+    source: 'DMA county list: alex-patton/US-TVDMA-BY-COUNTY usa-tvdma-county.csv at commit 7f254b8c1843c62ec976a71c40d366d45f6f29cd
+      (sha256 2e2cd00265a8d704...), names resolved to FIPS with the Census 2025 county Gazetteer; Connecticut
+      via the Census county-to-town crosswalk (snowlight.sources.stations.dma); market ''Tucson (Nogales),
+      AZ DMA'''
+    fips: ['04003', 04019, '04023']
+  page_url: https://www.kgun9.com/weather/closings-and-delays
+  data_url: null
+  export_url: null
+  archive_urls:
+  - https://www.kgun9.com/weather/school-closings-delays
+  - https://www.kgun9.com/weather/closings-and-delays
+  poll_minutes: null
+  status: active
+  evidence: 'First-hand check 2026-09-26T17:44:03Z (docs/research/firsthand/nexstar-tegna-scripps.json,
+    record KGUN): site https://www.kgun9.com. No closings page found. Notes: https://www.kgun9.com/weather/school-closings-delays
+    returned 404; https://www.kgun9.com/weather/closings and https://www.kgun9.com/closings also 404;
+    homepage has no closings link. Archive check: no archive request before 2026-09-28 covered this site.
+    Asked for since, in commits 1eadbc8 (run 36360179859), 4214b42 (run 36364542360), 7b1fc13 (run 36369419399),
+    ec162d3 (run 36379606160): CDX listings (2014 to 2026) of kgun9.com/weather/clos*, kgun9.com/clos*,
+    kgun9.com/weather/school-clos*, kgun9.com/school-clos* and a listing of every address of the site
+    whose URL names closings, closures, delays or cancellations (one row per address), and 6 captures
+    of its closings pages on storm days and in past winters (each capture and why it was picked is listed
+    under ''no_endpoint_scripps_tegna'' in pipeline/config/sources/archive-wanted-s4b.json). Results:
+    Listings: kgun9.com/weather/closings-and-delays 6 captures with HTTP 200 (3 in November to March;
+    2019-2025); kgun9.com/weather/school-closings-delays 2 captures with HTTP 200 (1 in November to March;
+    2017-2025); kgun9.com/closing-door-can-save-life-in-fire/ 2 captures with HTTP 200 (0 in November
+    to March; 2021-2022); the site-wide listing (run 36364542360) names 2909 addresses with closings,
+    closures, delays or cancellations in them, besides the closings paths above: news stories, one per
+    storm or event, not a list kept at one address. Captures read: kgun9.com/weather/closings-and-delays
+    (20201203110603 empty, 20221204220004 empty, 20250122114804 empty); not read: 2 (HTTP 404 from the
+    archive: the page missing when archived, or no capture), 1 (a page without a list this adapter reads).
+    The station''s closings list is at https://www.kgun9.com/weather/closings-and-delays, an address the
+    first-hand check did not try: the CDX listing of the site''s closings paths (run 36369419399) named
+    it, and a live read on 2026-09-28 found the Scripps closings module there with its empty sentence
+    (''There are currently no active closings or delays.''). It is registered: the poller reads that page
+    (scripps-closings-module). Market: ''Tucson'' (first-hand record) is the crosswalk''s ''Tucson (Nogales),
+    AZ DMA''.'
+  list_files: []
+  page_check: null
+  robots:
+  - url: https://www.kgun9.com/weather/closings-and-delays
+    checked_at: '2026-09-28T04:54:37Z'
+    state: parsed
+    allowed: true
+    rule: no rule matches
+    crawl_delay: null
+    disallowed_agents:
+    - google-extended
+    - gptbot
+    sha256: d671780491fbafe9e6d341c6fe5dbcfaab3fdd2c1fd7771561333855f440e381
+- id: scripps-kivi
+  platform: scripps
+  call_sign: KIVI
+  name: KIVI / KSAW (kivitv.com)
+  market: Boise and Twin Falls
+  dma: Boise, ID - OR DMA
+  states: [ID, OR]
+  counties:
+    basis: dma
+    source: 'DMA county list: alex-patton/US-TVDMA-BY-COUNTY usa-tvdma-county.csv at commit 7f254b8c1843c62ec976a71c40d366d45f6f29cd
+      (sha256 2e2cd00265a8d704...), names resolved to FIPS with the Census 2025 county Gazetteer; Connecticut
+      via the Census county-to-town crosswalk (snowlight.sources.stations.dma); market ''Boise, ID - OR
+      DMA'''
+    fips: ['16001', '16003', '16015', '16025', '16027', '16039', '16045', '16073', '16075', '16085', '16087',
+      '41023', '41045']
+  page_url: https://www.kivitv.com/weather/school-closings-delays
+  data_url: null
+  export_url: null
+  archive_urls:
+  - https://www.kivitv.com/weather/school-closings-delays
+  poll_minutes: null
+  status: active
+  evidence: 'First-hand check 2026-09-26T17:43:34Z (docs/research/firsthand/nexstar-tegna-scripps.json,
+    record KIVI): site https://www.kivitv.com. Closings page https://www.kivitv.com/weather/school-closings-delays
+    (HTTP 200) holds the Scripps closings module rendered on the server; the poller reads the page itself.
+    page heading ''Closings''. Empty-state text: ''There are currently no active closings or delays.''.
+    Market: ''Boise and Twin Falls'' (first-hand record) is the crosswalk''s ''Boise, ID - OR DMA''. KSAW
+    serves the Twin Falls, ID DMA from the same site; only the Boise market is listed here.'
+  list_files: []
+  page_check: null
+  robots:
+  - url: https://www.kivitv.com/weather/school-closings-delays
+    checked_at: '2026-09-26T23:05:38Z'
+    state: parsed
+    allowed: true
+    rule: no rule matches
+    crawl_delay: null
+    disallowed_agents:
+    - google-extended
+    - gptbot
+    sha256: e395b931891aaf418faf6d8ed960a994650998877c45638d2964b6bd444f17a4
+- id: scripps-kjct
+  platform: scripps
+  call_sign: KJCT
+  name: KJCT (kjct8.com)
+  market: Grand Junction-Montrose
+  dma: Grand Junction - Montrose, CO DMA
+  states: [CO]
+  counties:
+    basis: dma
+    source: 'DMA county list: alex-patton/US-TVDMA-BY-COUNTY usa-tvdma-county.csv at commit 7f254b8c1843c62ec976a71c40d366d45f6f29cd
+      (sha256 2e2cd00265a8d704...), names resolved to FIPS with the Census 2025 county Gazetteer; Connecticut
+      via the Census county-to-town crosswalk (snowlight.sources.stations.dma); market ''Grand Junction
+      - Montrose, CO DMA'''
+    fips: [08033, 08077, 08085]
+  page_url: null
+  data_url: null
+  export_url: null
+  archive_urls: []
+  poll_minutes: null
+  status: no_endpoint
+  evidence: 'First-hand check 2026-09-26T17:43:42Z (docs/research/firsthand/nexstar-tegna-scripps.json,
+    record KJCT): site https://www.kjct8.com. The station''s site https://www.kjct8.com is still a Gray
+    Arc site whose list is the Gray export registered as gray-kjct in gray.yaml and read there, so no
+    endpoint is registered here (reading it twice would count one list twice). Archive check: the closings
+    page is on the Gray site, so its Wayback captures are read for gray-kjct (gray.yaml, whose evidence
+    lists them) and not asked for again here; gray-kjct was read stale at 2026-09-28T01:45:04Z (its export
+    last modified 2022-02-24T22:08:03Z). Market: ''Grand Junction-Montrose'' (first-hand record) is the
+    crosswalk''s ''Grand Junction - Montrose, CO DMA''.'
+  list_files: []
+  page_check: null
+  robots: []
+- id: scripps-kjrh
+  platform: scripps
+  call_sign: KJRH
+  name: KJRH (kjrh.com)
+  market: Tulsa
+  dma: Tulsa, OK - KS DMA
+  states: [KS, OK]
+  counties:
+    basis: dma
+    source: 'DMA county list: alex-patton/US-TVDMA-BY-COUNTY usa-tvdma-county.csv at commit 7f254b8c1843c62ec976a71c40d366d45f6f29cd
+      (sha256 2e2cd00265a8d704...), names resolved to FIPS with the Census 2025 county Gazetteer; Connecticut
+      via the Census county-to-town crosswalk (snowlight.sources.stations.dma); market ''Tulsa, OK - KS
+      DMA'''
+    fips: ['20019', '20125', '40001', '40021', '40035', '40037', '40041', '40061', '40077', '40091', '40097',
+      '40101', '40105', '40107', '40111', '40113', '40117', '40121', '40131', '40143', '40145', '40147']
+  page_url: https://www.kjrh.com/weather/school-closings-delays
+  data_url: null
+  export_url: null
+  archive_urls:
+  - https://www.kjrh.com/weather/school-closings
+  - https://www.kjrh.com/weather/school-closings-delays
+  poll_minutes: null
+  status: active
+  evidence: 'First-hand check 2026-09-26T17:44:03Z (docs/research/firsthand/nexstar-tegna-scripps.json,
+    record KJRH): site https://www.kjrh.com. Closings page https://www.kjrh.com/weather/school-closings-delays
+    (HTTP 200) holds the Scripps closings module rendered on the server; the poller reads the page itself.
+    page heading ''School Closings and Delays''. Empty-state text: ''There are currently no active closings
+    or delays.''. Market: ''Tulsa'' (first-hand record) is the crosswalk''s ''Tulsa, OK - KS DMA''.'
+  list_files: []
+  page_check: null
+  robots:
+  - url: https://www.kjrh.com/weather/school-closings-delays
+    checked_at: '2026-09-26T23:05:39Z'
+    state: parsed
+    allowed: true
+    rule: no rule matches
+    crawl_delay: null
+    disallowed_agents:
+    - google-extended
+    - gptbot
+    sha256: 027aecccd7fa2af57180a67cf654835691fbbcd00ebfe91109448d699fcf1811
+- id: scripps-kkco
+  platform: scripps
+  call_sign: KKCO
+  name: KKCO (kkco11news.com)
+  market: Grand Junction-Montrose
+  dma: Grand Junction - Montrose, CO DMA
+  states: [CO]
+  counties:
+    basis: dma
+    source: 'DMA county list: alex-patton/US-TVDMA-BY-COUNTY usa-tvdma-county.csv at commit 7f254b8c1843c62ec976a71c40d366d45f6f29cd
+      (sha256 2e2cd00265a8d704...), names resolved to FIPS with the Census 2025 county Gazetteer; Connecticut
+      via the Census county-to-town crosswalk (snowlight.sources.stations.dma); market ''Grand Junction
+      - Montrose, CO DMA'''
+    fips: [08033, 08077, 08085]
+  page_url: null
+  data_url: null
+  export_url: null
+  archive_urls: []
+  poll_minutes: null
+  status: no_endpoint
+  evidence: 'First-hand check 2026-09-26T17:43:42Z (docs/research/firsthand/nexstar-tegna-scripps.json,
+    record KKCO): site https://www.kkco11news.com. The station''s site https://www.kkco11news.com is still
+    a Gray Arc site whose list is the Gray export registered as gray-kkco in gray.yaml and read there,
+    so no endpoint is registered here (reading it twice would count one list twice). Archive check: the
+    closings page is on the Gray site, so its Wayback captures are read for gray-kkco (gray.yaml, whose
+    evidence lists them) and not asked for again here; gray-kkco was read stale at 2026-09-28T01:45:09Z
+    (its export last modified 2022-02-24T22:08:03Z). Market: ''Grand Junction-Montrose'' (first-hand record)
+    is the crosswalk''s ''Grand Junction - Montrose, CO DMA''.'
+  list_files: []
+  page_check: null
+  robots: []
+- id: scripps-kktv
+  platform: scripps
+  call_sign: KKTV
+  name: KKTV (kktv.com)
+  market: Colorado Springs-Pueblo
+  dma: Colorado Springs - Pueblo, CO DMA
+  states: [CO]
+  counties:
+    basis: dma
+    source: 'DMA county list: alex-patton/US-TVDMA-BY-COUNTY usa-tvdma-county.csv at commit 7f254b8c1843c62ec976a71c40d366d45f6f29cd
+      (sha256 2e2cd00265a8d704...), names resolved to FIPS with the Census 2025 county Gazetteer; Connecticut
+      via the Census county-to-town crosswalk (snowlight.sources.stations.dma); market ''Colorado Springs
+      - Pueblo, CO DMA'''
+    fips: [08009, 08011, 08017, 08025, 08041, 08043, 08055, 08061, 08071, 08089, 08101, 08119]
+  page_url: null
+  data_url: null
+  export_url: null
+  archive_urls: []
+  poll_minutes: null
+  status: no_endpoint
+  evidence: 'First-hand check 2026-09-26T17:43:39Z (docs/research/firsthand/nexstar-tegna-scripps.json,
+    record KKTV): site https://www.kktv.com. The station''s site https://www.kktv.com is still a Gray
+    Arc site whose list is the Gray export registered as gray-kktv in gray.yaml and read there, so no
+    endpoint is registered here (reading it twice would count one list twice). Archive check: the closings
+    page is on the Gray site, so its Wayback captures are read for gray-kktv (gray.yaml, whose evidence
+    lists them) and not asked for again here; gray-kktv was read empty at 2026-09-28T01:45:14Z (its export
+    last modified 2026-05-21T03:00:07Z). Market: ''Colorado Springs-Pueblo'' (first-hand record) is the
+    crosswalk''s ''Colorado Springs - Pueblo, CO DMA''.'
+  list_files: []
+  page_check: null
+  robots: []
+- id: scripps-kmgh
+  platform: scripps
+  call_sign: KMGH
+  name: KMGH (thedenverchannel.com)
+  market: Denver
+  dma: Denver, CO - NE - NV - WY DMA
+  states: [CO, NE, NV, WY]
+  counties:
+    basis: dma
+    source: 'DMA county list: alex-patton/US-TVDMA-BY-COUNTY usa-tvdma-county.csv at commit 7f254b8c1843c62ec976a71c40d366d45f6f29cd
+      (sha256 2e2cd00265a8d704...), names resolved to FIPS with the Census 2025 county Gazetteer; Connecticut
+      via the Census county-to-town crosswalk (snowlight.sources.stations.dma); market ''Denver, CO -
+      NE - NV - WY DMA''; plus 08014 (Broomfield County, CO), for which that list has no row, placed in
+      this market (Nielsen DMA 751 DENVER) by the second published list BritCrit/dma_county_zip dma_county_zip_data_set.csv
+      at commit 02f847923bd218c30a8c5488d561eca42ecf3614 (sha256 c931c30cef1b5d29...), used only for counties
+      the first list lacks (snowlight.sources.stations.dma.fill_missing)'
+    fips: [08001, 08003, 08005, 08007, 08013, 08014, 08015, 08019, 08021, 08027, 08029, 08031, 08035,
+      08037, 08039, 08045, 08047, 08049, 08051, 08053, 08057, 08059, 08063, 08065, 08069, 08073, 08075,
+      08079, 08081, 08087, 08091, 08093, 08095, 08097, 08099, 08103, 08105, 08107, 08109, 08111, 08113,
+      08115, 08117, 08121, 08123, 08125, '31013', '31033', '31045', '31049', '31069', '31101', '31105',
+      '32011', '56001', '56005', '56007', '56027', '56031']
+  page_url: https://www.denver7.com/weather/school-closings-delays
+  data_url: null
+  export_url: null
+  archive_urls:
+  - https://www.denver7.com/weather/school-closings-delays
+  poll_minutes: null
+  status: active
+  evidence: 'First-hand check 2026-09-26T17:43:40Z (docs/research/firsthand/nexstar-tegna-scripps.json,
+    record KMGH): site https://www.thedenverchannel.com. Closings page https://www.denver7.com/weather/school-closings-delays
+    (HTTP 200) holds the Scripps closings module rendered on the server; the poller reads the page itself.
+    page heading ''School Closings and Delays''. Empty-state text: ''There are currently no active closings
+    or delays.''. Market: ''Denver'' (first-hand record) is the crosswalk''s ''Denver, CO - NE - NV -
+    WY DMA''.'
+  list_files: []
+  page_check: null
+  robots:
+  - url: https://www.denver7.com/weather/school-closings-delays
+    checked_at: '2026-09-26T23:05:40Z'
+    state: parsed
+    allowed: true
+    rule: no rule matches
+    crawl_delay: null
+    disallowed_agents:
+    - google-extended
+    - gptbot
+    sha256: 30da48f18fc6decc4668c14d8915910a94ef3906f5e0e84c4452c269c548f97a
+- id: scripps-kmtv
+  platform: scripps
+  call_sign: KMTV
+  name: KMTV (3newsnow.com)
+  market: Omaha
+  dma: Omaha, NE - IA - MO DMA
+  states: [IA, MO, NE]
+  counties:
+    basis: dma
+    source: 'DMA county list: alex-patton/US-TVDMA-BY-COUNTY usa-tvdma-county.csv at commit 7f254b8c1843c62ec976a71c40d366d45f6f29cd
+      (sha256 2e2cd00265a8d704...), names resolved to FIPS with the Census 2025 county Gazetteer; Connecticut
+      via the Census county-to-town crosswalk (snowlight.sources.stations.dma); market ''Omaha, NE - IA
+      - MO DMA'''
+    fips: ['19003', '19029', '19047', '19071', '19085', '19129', '19137', '19145', '19155', '19165', '29005',
+      '31021', '31023', '31025', '31037', '31039', '31053', '31055', '31097', '31127', '31131', '31133',
+      '31141', '31147', '31153', '31155', '31177']
+  page_url: https://www.3newsnow.com/weather/school-closings-delays
+  data_url: null
+  export_url: null
+  archive_urls:
+  - https://www.3newsnow.com/weather/school-closings-delays
+  poll_minutes: null
+  status: active
+  evidence: 'First-hand check 2026-09-26T17:43:55Z (docs/research/firsthand/nexstar-tegna-scripps.json,
+    record KMTV): site https://www.3newsnow.com. Closings page https://www.3newsnow.com/weather/school-closings-delays
+    (HTTP 200) holds the Scripps closings module rendered on the server; the poller reads the page itself.
+    page heading ''Closings and Delays''. Empty-state text: ''There are currently no active closings or
+    delays.''. Market: ''Omaha'' (first-hand record) is the crosswalk''s ''Omaha, NE - IA - MO DMA''.'
+  list_files: []
+  page_check: null
+  robots:
+  - url: https://www.3newsnow.com/weather/school-closings-delays
+    checked_at: '2026-09-26T23:05:40Z'
+    state: parsed
+    allowed: true
+    rule: no rule matches
+    crawl_delay: null
+    disallowed_agents:
+    - google-extended
+    - gptbot
+    sha256: bd354d3b6f8d78181b30e90b608d19f16186c11a209daf005276934105821242
+- id: scripps-kmvt
+  platform: scripps
+  call_sign: KMVT
+  name: KMVT (kmvt.com)
+  market: Twin Falls
+  dma: Twin Falls, ID DMA
+  states: [ID]
+  counties:
+    basis: dma
+    source: 'DMA county list: alex-patton/US-TVDMA-BY-COUNTY usa-tvdma-county.csv at commit 7f254b8c1843c62ec976a71c40d366d45f6f29cd
+      (sha256 2e2cd00265a8d704...), names resolved to FIPS with the Census 2025 county Gazetteer; Connecticut
+      via the Census county-to-town crosswalk (snowlight.sources.stations.dma); market ''Twin Falls, ID
+      DMA'''
+    fips: ['16013', '16031', '16047', '16053', '16063', '16067', '16083']
+  page_url: null
+  data_url: null
+  export_url: null
+  archive_urls: []
+  poll_minutes: null
+  status: no_endpoint
+  evidence: 'First-hand check 2026-09-26T17:44:04Z (docs/research/firsthand/nexstar-tegna-scripps.json,
+    record KMVT): site https://www.kmvt.com. The station''s site https://www.kmvt.com is still a Gray
+    Arc site whose list is the Gray export registered as gray-kmvt in gray.yaml and read there, so no
+    endpoint is registered here (reading it twice would count one list twice). Archive check: the closings
+    page is on the Gray site, so its Wayback captures are read for gray-kmvt (gray.yaml, whose evidence
+    lists them) and not asked for again here; gray-kmvt was read stale at 2026-09-28T01:45:29Z (its export
+    last modified 2025-08-23T18:00:12Z). Market: ''Twin Falls'' (first-hand record) is the crosswalk''s
+    ''Twin Falls, ID DMA''.'
+  list_files: []
+  page_check: null
+  robots: []
+- id: scripps-knxv
+  platform: scripps
+  call_sign: KNXV
+  name: KNXV / KASW (abc15.com)
+  market: Phoenix
+  dma: Phoenix, AZ DMA
+  states: [AZ]
+  counties:
+    basis: dma
+    source: 'DMA county list: alex-patton/US-TVDMA-BY-COUNTY usa-tvdma-county.csv at commit 7f254b8c1843c62ec976a71c40d366d45f6f29cd
+      (sha256 2e2cd00265a8d704...), names resolved to FIPS with the Census 2025 county Gazetteer; Connecticut
+      via the Census county-to-town crosswalk (snowlight.sources.stations.dma); market ''Phoenix, AZ DMA'''
+    fips: ['04005', '04007', 04009, '04011', '04012', '04013', '04015', '04017', '04021', '04025']
+  page_url: null
+  data_url: null
+  export_url: null
+  archive_urls:
+  - https://www.abc15.com/weather/school-closings-delays
+  poll_minutes: null
+  status: no_endpoint
+  evidence: 'First-hand check 2026-09-26T17:43:55Z (docs/research/firsthand/nexstar-tegna-scripps.json,
+    record KNXV): site https://www.abc15.com. No closings page found. Notes: https://www.abc15.com/weather/school-closings-delays
+    returned 404; https://www.abc15.com/weather/closings and https://www.abc15.com/closings also 404;
+    homepage has no closings link. Archive check: no archive request before 2026-09-28 covered this site.
+    Asked for since, in commits 1eadbc8 (run 36360179859), 4214b42 (run 36364542360), 7b1fc13 (run 36369419399),
+    ec162d3 (run 36379606160): CDX listings (2014 to 2026) of abc15.com/weather/clos*, abc15.com/clos*,
+    abc15.com/weather/school-clos*, abc15.com/school-clos* and a listing of every address of the site
+    whose URL names closings, closures, delays or cancellations (one row per address), and 4 captures
+    of its closings pages on storm days and in past winters (each capture and why it was picked is listed
+    under ''no_endpoint_scripps_tegna'' in pipeline/config/sources/archive-wanted-s4b.json). Results:
+    Listings: abc15.com/closedcaptioning 12 captures with HTTP 200 (5 in November to March; 2014-2017);
+    abc15.com/closing-door-can-save-life-in-fire/ 5 captures with HTTP 200 (2 in November to March; 2021-2026);
+    abc15.com/weather/school-closings-delays 2 captures with HTTP 200 (1 in November to March, 2 redirects;
+    2017-2025); the site-wide listing (run 36364542360) names 3766 addresses with closings, closures,
+    delays or cancellations in them, besides the closings paths above: news stories, one per storm or
+    event, not a list kept at one address. Captures read: none; not read: 3 (HTTP 404 from the archive:
+    the page missing when archived, or no capture), 1 (a page without a list this adapter reads). The
+    captures nearest its storm days are HTTP 404 answers (the page did not exist when archived), as the
+    page is today. No read shows a row, so no endpoint is registered. Market: ''Phoenix'' (first-hand
+    record) is the crosswalk''s ''Phoenix, AZ DMA''.'
+  list_files: []
+  page_check: null
+  robots: []
+- id: scripps-koaa
+  platform: scripps
+  call_sign: KOAA
+  name: KOAA (koaa.com)
+  market: Colorado Springs-Pueblo
+  dma: Colorado Springs - Pueblo, CO DMA
+  states: [CO]
+  counties:
+    basis: dma
+    source: 'DMA county list: alex-patton/US-TVDMA-BY-COUNTY usa-tvdma-county.csv at commit 7f254b8c1843c62ec976a71c40d366d45f6f29cd
+      (sha256 2e2cd00265a8d704...), names resolved to FIPS with the Census 2025 county Gazetteer; Connecticut
+      via the Census county-to-town crosswalk (snowlight.sources.stations.dma); market ''Colorado Springs
+      - Pueblo, CO DMA'''
+    fips: [08009, 08011, 08017, 08025, 08041, 08043, 08055, 08061, 08071, 08089, 08101, 08119]
+  page_url: https://www.koaa.com/weather/school-closings-delays
+  data_url: null
+  export_url: null
+  archive_urls:
+  - https://www.koaa.com/weather/school-closings-delays
+  poll_minutes: null
+  status: active
+  evidence: 'First-hand check 2026-09-26T17:43:39Z (docs/research/firsthand/nexstar-tegna-scripps.json,
+    record KOAA): site https://www.koaa.com. Closings page https://www.koaa.com/weather/school-closings-delays
+    (HTTP 200) holds the Scripps closings module rendered on the server; the poller reads the page itself.
+    page heading ''School Closings and Delays''. Empty-state text: ''There are currently no active closings
+    or delays.''. Market: ''Colorado Springs-Pueblo'' (first-hand record) is the crosswalk''s ''Colorado
+    Springs - Pueblo, CO DMA''.'
+  list_files: []
+  page_check: null
+  robots:
+  - url: https://www.koaa.com/weather/school-closings-delays
+    checked_at: '2026-09-26T23:05:41Z'
+    state: parsed
+    allowed: true
+    rule: no rule matches
+    crawl_delay: null
+    disallowed_agents:
+    - google-extended
+    - gptbot
+    sha256: 60e89c9ff646c772643a9536a105f9b3fa93ee8b510f8f94dd7e6e8a18b23517
+- id: scripps-kpax
+  platform: scripps
+  call_sign: KPAX
+  name: KPAX (kpax.com)
+  market: Missoula
+  dma: Missoula, MT DMA
+  states: [MT]
+  counties:
+    basis: dma
+    source: 'DMA county list: alex-patton/US-TVDMA-BY-COUNTY usa-tvdma-county.csv at commit 7f254b8c1843c62ec976a71c40d366d45f6f29cd
+      (sha256 2e2cd00265a8d704...), names resolved to FIPS with the Census 2025 county Gazetteer; Connecticut
+      via the Census county-to-town crosswalk (snowlight.sources.stations.dma); market ''Missoula, MT
+      DMA'''
+    fips: ['30029', '30039', '30047', '30061', '30063', '30081', '30089']
+  page_url: https://www.kpax.com/school-closings-delays
+  data_url: null
+  export_url: null
+  archive_urls:
+  - https://www.kpax.com/weather/school-closings-delays
+  - https://www.kpax.com/weather/closings
+  - https://www.kpax.com/school-closings-delays
+  poll_minutes: null
+  status: active
+  evidence: 'First-hand check 2026-09-26T17:43:53Z (docs/research/firsthand/nexstar-tegna-scripps.json,
+    record KPAX): site https://www.kpax.com. No closings page found. Notes: https://www.kpax.com/weather/school-closings-delays
+    returned 404; https://www.kpax.com/weather/closings and https://www.kpax.com/closings also 404; homepage
+    has no closings link. mtnmontana.com (MTN statewide brand on scripps.com) redirects to https://www.thespottv.com/mtnmontana...
+    (robots.txt path 404), not a news site. Archive check: no archive request before 2026-09-28 covered
+    this site. Asked for since, in commits 1eadbc8 (run 36360179859), 4214b42 (run 36364542360), 7b1fc13
+    (run 36369419399), ec162d3 (run 36379606160): CDX listings (2014 to 2026) of kpax.com/weather/clos*,
+    kpax.com/clos*, kpax.com/weather/school-clos*, kpax.com/school-clos* and a listing of every address
+    of the site whose URL names closings, closures, delays or cancellations (one row per address), and
+    14 captures of its closings pages on storm days and in past winters (each capture and why it was picked
+    is listed under ''no_endpoint_scripps_tegna'' in pipeline/config/sources/archive-wanted-s4b.json).
+    Results: Listings: kpax.com/weather/school-closings-delays 384 captures with HTTP 200 (98 in November
+    to March, 1 redirect; 2019-2025); kpax.com/school-closings-delays/western-montana-school-delays-closures-for-january-22-2024
+    13 captures with HTTP 200 (10 in November to March; 2024-2026); kpax.com/school-closings-delays 10
+    captures with HTTP 200 (7 in November to March; 2022-2026); 9 more addresses with fewer captures;
+    the site-wide listing did not come back (run 36364542360 did not return it; run 36360179859 was still
+    listing when this was written). Captures read: kpax.com/weather/school-closings-delays (20200206042948
+    empty, 20200207044658 empty, 20200331203141 empty, 20210226124809 empty); kpax.com/school-closings-delays
+    (20231204133247 empty, 20231204234656 empty, 20231212050654 empty, 20240325050002 empty, 20241209045337
+    empty, 20250209174912 empty, 20260121135012 empty); not read: 2 (HTTP 404 from the archive: the page
+    missing when archived, or no capture), 1 (the runner could not reach the archive). The station''s
+    closings list is at https://www.kpax.com/school-closings-delays, an address the first-hand check did
+    not try: the CDX listing of the site''s closings paths (run 36369419399) named it, and a live read
+    on 2026-09-28 found the Scripps closings module there with its empty sentence (''There are currently
+    no active closings or delays.''). It is registered: the poller reads that page (scripps-closings-module).
+    Market: ''Missoula'' (first-hand record) is the crosswalk''s ''Missoula, MT DMA''.'
+  list_files: []
+  page_check: null
+  robots:
+  - url: https://www.kpax.com/school-closings-delays
+    checked_at: '2026-09-28T04:54:37Z'
+    state: parsed
+    allowed: true
+    rule: no rule matches
+    crawl_delay: null
+    disallowed_agents:
+    - google-extended
+    - gptbot
+    sha256: 504ff764839472645fdba8b1ad43267c134fa5dd5001f3c903c4d41c077e7653
+- id: scripps-kris
+  platform: scripps
+  call_sign: KRIS
+  name: KRIS (kristv.com)
+  market: Corpus Christi
+  dma: Corpus Christi, TX DMA
+  states: [TX]
+  counties:
+    basis: dma
+    source: 'DMA county list: alex-patton/US-TVDMA-BY-COUNTY usa-tvdma-county.csv at commit 7f254b8c1843c62ec976a71c40d366d45f6f29cd
+      (sha256 2e2cd00265a8d704...), names resolved to FIPS with the Census 2025 county Gazetteer; Connecticut
+      via the Census county-to-town crosswalk (snowlight.sources.stations.dma); market ''Corpus Christi,
+      TX DMA'''
+    fips: ['48007', '48025', '48047', '48131', '48247', '48249', '48261', '48273', '48297', '48355', '48391',
+      '48409']
+  page_url: null
+  data_url: null
+  export_url: null
+  archive_urls:
+  - https://www.kristv.com/weather/school-closings-delays
+  poll_minutes: null
+  status: no_endpoint
+  evidence: 'First-hand check 2026-09-26T17:43:40Z (docs/research/firsthand/nexstar-tegna-scripps.json,
+    record KRIS): site https://www.kristv.com. No closings page found. Notes: https://www.kristv.com/weather/school-closings-delays
+    returned 404; https://www.kristv.com/weather/closings and https://www.kristv.com/closings also 404;
+    homepage has no closings link. Archive check: no archive request before 2026-09-28 covered this site.
+    Asked for since, in commits 1eadbc8 (run 36360179859), 4214b42 (run 36364542360), 7b1fc13 (run 36369419399),
+    f13b2c8 (run 36373148805), ec162d3 (run 36379606160): CDX listings (2014 to 2026) of kristv.com/weather/clos*,
+    kristv.com/clos*, kristv.com/weather/school-clos*, kristv.com/school-clos* and a listing of every
+    address of the site whose URL names closings, closures, delays or cancellations (one row per address),
+    and 7 captures of its closings pages on storm days and in past winters (each capture and why it was
+    picked is listed under ''no_endpoint_scripps_tegna'' in pipeline/config/sources/archive-wanted-s4b.json).
+    Results: Listings: kristv.com/weather/school-closings-delays 243 captures with HTTP 200 (46 in November
+    to March; 2019-2025); kristv.com/closing-door-can-save-life-in-fire/ 5 captures with HTTP 200 (0 in
+    November to March; 2021-2025); the site-wide listing (run 36364542360) names 4963 addresses with closings,
+    closures, delays or cancellations in them, besides the closings paths above: news stories, one per
+    storm or event, not a list kept at one address. Captures read: kristv.com/weather/school-closings-delays
+    (20190702004714 empty, 20200327110335 empty, 20210209232219 empty); not read: 2 (HTTP 404 from the
+    archive: the page missing when archived, or no capture), 1 (the runner could not reach the archive).
+    The closings page held Scripps''s closings module, empty, in the capture of 2021-02-09 (before the
+    Texas freeze); the captures nearest 2025-01-14 and 2025-11-12 are HTTP 404, and the page answers 404
+    today. No read shows a row, so no endpoint is registered. Market: ''Corpus Christi'' (first-hand record)
+    is the crosswalk''s ''Corpus Christi, TX DMA''.'
+  list_files: []
+  page_check: null
+  robots: []
+- id: scripps-ksby
+  platform: scripps
+  call_sign: KSBY
+  name: KSBY (ksby.com)
+  market: Santa Barbara-San Luis Obispo
+  dma: Santa Barbara - Santa Maria - San Luis Obispo, CA DMA
+  states: [CA]
+  counties:
+    basis: dma
+    source: 'DMA county list: alex-patton/US-TVDMA-BY-COUNTY usa-tvdma-county.csv at commit 7f254b8c1843c62ec976a71c40d366d45f6f29cd
+      (sha256 2e2cd00265a8d704...), names resolved to FIPS with the Census 2025 county Gazetteer; Connecticut
+      via the Census county-to-town crosswalk (snowlight.sources.stations.dma); market ''Santa Barbara
+      - Santa Maria - San Luis Obispo, CA DMA'''
+    fips: [06079, 06083]
+  page_url: https://www.ksby.com/weather/school-closings-delays
+  data_url: null
+  export_url: null
+  archive_urls:
+  - https://www.ksby.com/weather/school-closings-delays
+  poll_minutes: null
+  status: active
+  evidence: 'First-hand check 2026-09-26T17:43:57Z (docs/research/firsthand/nexstar-tegna-scripps.json,
+    record KSBY): site https://www.ksby.com. Closings page https://www.ksby.com/weather/school-closings-delays
+    (HTTP 200) holds the Scripps closings module rendered on the server; the poller reads the page itself.
+    page heading ''School Closings and Delays''. Empty-state text: ''There are currently no active closings
+    or delays.''. Market: ''Santa Barbara-San Luis Obispo'' (first-hand record) is the crosswalk''s ''Santa
+    Barbara - Santa Maria - San Luis Obispo, CA DMA''.'
+  list_files: []
+  page_check: null
+  robots:
+  - url: https://www.ksby.com/weather/school-closings-delays
+    checked_at: '2026-09-26T23:05:41Z'
+    state: parsed
+    allowed: true
+    rule: no rule matches
+    crawl_delay: null
+    disallowed_agents:
+    - google-extended
+    - gptbot
+    sha256: fe9132e3cfe24a7d2dade84abc79ca53cd69ab7fdf10e14323c16884308e74e2
+- id: scripps-kshb
+  platform: scripps
+  call_sign: KSHB
+  name: KSHB / KMCI (kshb.com)
+  market: Kansas City
+  dma: Kansas City, MO - KS DMA
+  states: [KS, MO]
+  counties:
+    basis: dma
+    source: 'DMA county list: alex-patton/US-TVDMA-BY-COUNTY usa-tvdma-county.csv at commit 7f254b8c1843c62ec976a71c40d366d45f6f29cd
+      (sha256 2e2cd00265a8d704...), names resolved to FIPS with the Census 2025 county Gazetteer; Connecticut
+      via the Census county-to-town crosswalk (snowlight.sources.stations.dma); market ''Kansas City,
+      MO - KS DMA'''
+    fips: ['20003', '20005', '20045', '20059', '20091', '20103', '20107', '20121', '20209', '29013', '29025',
+      '29033', '29037', '29047', '29049', '29061', '29075', '29079', '29081', '29083', '29095', '29101',
+      '29107', '29115', '29117', '29159', '29165', '29177', '29195']
+  page_url: https://www.kshb.com/weather/school-closings-delays
+  data_url: null
+  export_url: null
+  archive_urls:
+  - https://www.kshb.com/weather/school-closings
+  - https://www.kshb.com/weather/school-closings-delays
+  poll_minutes: null
+  status: active
+  evidence: 'First-hand check 2026-09-26T17:43:47Z (docs/research/firsthand/nexstar-tegna-scripps.json,
+    record KSHB): site https://www.kshb.com. Closings page https://www.kshb.com/weather/school-closings-delays
+    (HTTP 200) holds the Scripps closings module rendered on the server; the poller reads the page itself.
+    page heading ''School Closings and Delays''. Empty-state text: ''There are currently no active closings
+    or delays.''. Market: ''Kansas City'' (first-hand record) is the crosswalk''s ''Kansas City, MO -
+    KS DMA''.'
+  list_files: []
+  page_check: null
+  robots:
+  - url: https://www.kshb.com/weather/school-closings-delays
+    checked_at: '2026-09-26T23:05:42Z'
+    state: parsed
+    allowed: true
+    rule: no rule matches
+    crawl_delay: null
+    disallowed_agents:
+    - google-extended
+    - gptbot
+    sha256: 6a82ee900ceda98a02584c81977bb8c3893bfb4899b86948636b076cadf106fb
+- id: scripps-ktnv
+  platform: scripps
+  call_sign: KTNV
+  name: KTNV (ktnv.com)
+  market: Las Vegas
+  dma: Las Vegas, NV DMA
+  states: [NV]
+  counties:
+    basis: dma
+    source: 'DMA county list: alex-patton/US-TVDMA-BY-COUNTY usa-tvdma-county.csv at commit 7f254b8c1843c62ec976a71c40d366d45f6f29cd
+      (sha256 2e2cd00265a8d704...), names resolved to FIPS with the Census 2025 county Gazetteer; Connecticut
+      via the Census county-to-town crosswalk (snowlight.sources.stations.dma); market ''Las Vegas, NV
+      DMA'''
+    fips: ['32003', '32017', '32023']
+  page_url: https://www.ktnv.com/weather/closings-and-delays
+  data_url: null
+  export_url: null
+  archive_urls:
+  - https://www.ktnv.com/weather/school-closings-delays
+  - https://www.ktnv.com/weather/closings-and-delays
+  poll_minutes: null
+  status: active
+  evidence: 'First-hand check 2026-09-26T17:43:47Z (docs/research/firsthand/nexstar-tegna-scripps.json,
+    record KTNV): site https://www.ktnv.com. No closings page found. Notes: https://www.ktnv.com/weather/school-closings-delays
+    returned 404; https://www.ktnv.com/weather/closings and https://www.ktnv.com/closings also 404; homepage
+    has no closings link. Archive check: no archive request before 2026-09-28 covered this site. Asked
+    for since, in commits 1eadbc8 (run 36360179859), 4214b42 (run 36364542360), 7b1fc13 (run 36369419399),
+    ec162d3 (run 36379606160): CDX listings (2014 to 2026) of ktnv.com/weather/clos*, ktnv.com/clos*,
+    ktnv.com/weather/school-clos*, ktnv.com/school-clos* and a listing of every address of the site whose
+    URL names closings, closures, delays or cancellations (one row per address), and 5 captures of its
+    closings pages on storm days and in past winters (each capture and why it was picked is listed under
+    ''no_endpoint_scripps_tegna'' in pipeline/config/sources/archive-wanted-s4b.json). Results: Listings:
+    ktnv.com/weather/closings-and-delays 5 captures with HTTP 200 (3 in November to March; 2021-2026);
+    ktnv.com/closing-door-can-save-life-in-fire/ 4 captures with HTTP 200 (0 in November to March; 2021-2024);
+    ktnv.com/weather/school-closings-delays 0 captures with HTTP 200 (0 in November to March, 3 redirects;
+    2017-2025); the site-wide listing (run 36364542360) names 3063 addresses with closings, closures,
+    delays or cancellations in them, besides the closings paths above: news stories, one per storm or
+    event, not a list kept at one address. Captures read: ktnv.com/weather/closings-and-delays (20231130071909
+    empty, 20250215100700 empty, 20260124020910 empty); not read: 2 (HTTP 404 from the archive: the page
+    missing when archived, or no capture). The station''s closings list is at https://www.ktnv.com/weather/closings-and-delays,
+    an address the first-hand check did not try: the CDX listing of the site''s closings paths (run 36369419399)
+    named it, and a live read on 2026-09-28 found the Scripps closings module there with its empty sentence
+    (''There are currently no active closings or delays.''). It is registered: the poller reads that page
+    (scripps-closings-module). Market: ''Las Vegas'' (first-hand record) is the crosswalk''s ''Las Vegas,
+    NV DMA''.'
+  list_files: []
+  page_check: null
+  robots:
+  - url: https://www.ktnv.com/weather/closings-and-delays
+    checked_at: '2026-09-28T04:54:38Z'
+    state: parsed
+    allowed: true
+    rule: no rule matches
+    crawl_delay: null
+    disallowed_agents:
+    - google-extended
+    - gptbot
+    sha256: f07f722f9f8d1252f7ac382a079061573b91ab690b66fb5a1370e505a272c6ac
+- id: scripps-kxxv
+  platform: scripps
+  call_sign: KXXV
+  name: KXXV / KRHD (kxxv.com)
+  market: Waco-Temple-Bryan
+  dma: Waco - Temple - Bryan, TX DMA
+  states: [TX]
+  counties:
+    basis: dma
+    source: 'DMA county list: alex-patton/US-TVDMA-BY-COUNTY usa-tvdma-county.csv at commit 7f254b8c1843c62ec976a71c40d366d45f6f29cd
+      (sha256 2e2cd00265a8d704...), names resolved to FIPS with the Census 2025 county Gazetteer; Connecticut
+      via the Census county-to-town crosswalk (snowlight.sources.stations.dma); market ''Waco - Temple
+      - Bryan, TX DMA'''
+    fips: ['48027', '48041', '48051', '48099', '48145', '48281', '48289', '48293', '48309', '48313', '48331',
+      '48333', '48395', '48411']
+  page_url: https://www.kxxv.com/weather/school-closings-delays
+  data_url: null
+  export_url: null
+  archive_urls:
+  - https://www.kxxv.com/weather/school-closings-delays
+  poll_minutes: null
+  status: active
+  evidence: 'First-hand check 2026-09-26T17:43:35Z (docs/research/firsthand/nexstar-tegna-scripps.json,
+    record KXXV): site https://www.kxxv.com. Closings page https://www.kxxv.com/weather/school-closings-delays
+    (HTTP 200) holds the Scripps closings module rendered on the server; the poller reads the page itself.
+    page heading ''School Closings and Delays''. Empty-state text: ''There are currently no active closings
+    or delays.''. Market: ''Waco-Temple-Bryan'' (first-hand record) is the crosswalk''s ''Waco - Temple
+    - Bryan, TX DMA''.'
+  list_files: []
+  page_check: null
+  robots:
+  - url: https://www.kxxv.com/weather/school-closings-delays
+    checked_at: '2026-09-26T23:05:42Z'
+    state: parsed
+    allowed: true
+    rule: no rule matches
+    crawl_delay: null
+    disallowed_agents:
+    - google-extended
+    - gptbot
+    sha256: bfa7e806afe0ab6447662547fcfe00fc37e8d9ae4bb6016fa863a1165b9ee82a
+- id: scripps-wcpo
+  platform: scripps
+  call_sign: WCPO
+  name: WCPO (wcpo.com)
+  market: Cincinnati
+  dma: Cincinnati, OH -IN - KY DMA
+  states: [IN, KY, OH]
+  counties:
+    basis: dma
+    source: 'DMA county list: alex-patton/US-TVDMA-BY-COUNTY usa-tvdma-county.csv at commit 7f254b8c1843c62ec976a71c40d366d45f6f29cd
+      (sha256 2e2cd00265a8d704...), names resolved to FIPS with the Census 2025 county Gazetteer; Connecticut
+      via the Census county-to-town crosswalk (snowlight.sources.stations.dma); market ''Cincinnati, OH
+      -IN - KY DMA'''
+    fips: ['18029', '18047', '18115', '18137', '18155', '18161', '21015', '21023', '21037', '21077', '21081',
+      '21117', '21161', '21187', '21191', '21201', '39001', '39015', '39017', '39025', '39027', '39061',
+      '39071', '39165']
+  page_url: https://www.wcpo.com/weather/school-closings-delays
+  data_url: null
+  export_url: null
+  archive_urls:
+  - https://www.wcpo.com/weather/school-closings-delays
+  poll_minutes: null
+  status: active
+  evidence: 'First-hand check 2026-09-26T17:43:37Z (docs/research/firsthand/nexstar-tegna-scripps.json,
+    record WCPO): site https://www.wcpo.com. Closings page https://www.wcpo.com/weather/school-closings-delays
+    (HTTP 200) holds the Scripps closings module rendered on the server; the poller reads the page itself.
+    page heading ''School Closings and Delays''. Empty-state text: ''There are currently no active closings
+    or delays.''. Market: ''Cincinnati'' (first-hand record) is the crosswalk''s ''Cincinnati, OH -IN
+    - KY DMA''.'
+  list_files: []
+  page_check: null
+  robots:
+  - url: https://www.wcpo.com/weather/school-closings-delays
+    checked_at: '2026-09-26T23:05:43Z'
+    state: parsed
+    allowed: true
+    rule: no rule matches
+    crawl_delay: null
+    disallowed_agents:
+    - google-extended
+    - gptbot
+    sha256: ea0a34bd10ce1a2cf1e87c86bfbf3d072d7a820dc13d785c5c26b98479a0e911
+- id: scripps-wews
+  platform: scripps
+  call_sign: WEWS
+  name: WEWS (news5cleveland.com)
+  market: Cleveland-Akron-Canton
+  dma: Cleveland, OH DMA
+  states: [OH]
+  counties:
+    basis: dma
+    source: 'DMA county list: alex-patton/US-TVDMA-BY-COUNTY usa-tvdma-county.csv at commit 7f254b8c1843c62ec976a71c40d366d45f6f29cd
+      (sha256 2e2cd00265a8d704...), names resolved to FIPS with the Census 2025 county Gazetteer; Connecticut
+      via the Census county-to-town crosswalk (snowlight.sources.stations.dma); market ''Cleveland, OH
+      DMA'''
+    fips: ['39005', '39007', '39019', '39035', '39043', '39055', '39075', '39077', '39085', '39093', '39103',
+      '39133', '39139', '39151', '39153', '39157', '39169']
+  page_url: https://www.news5cleveland.com/weather/school-closings-delays
+  data_url: null
+  export_url: null
+  archive_urls:
+  - https://www.news5cleveland.com/weather/school-closings-delays
+  poll_minutes: null
+  status: active
+  evidence: 'First-hand check 2026-09-26T17:43:37Z (docs/research/firsthand/nexstar-tegna-scripps.json,
+    record WEWS): site https://www.news5cleveland.com. Closings page https://www.news5cleveland.com/weather/school-closings-delays
+    (HTTP 200) holds the Scripps closings module rendered on the server; the poller reads the page itself.
+    page heading ''School Closings''. Empty-state text: ''There are currently no active closings or delays.''.
+    Market: ''Cleveland-Akron-Canton'' (first-hand record) is the crosswalk''s ''Cleveland, OH DMA''.'
+  list_files: []
+  page_check: null
+  robots:
+  - url: https://www.news5cleveland.com/weather/school-closings-delays
+    checked_at: '2026-09-26T23:05:43Z'
+    state: parsed
+    allowed: true
+    rule: no rule matches
+    crawl_delay: null
+    disallowed_agents:
+    - google-extended
+    - gptbot
+    sha256: a97903249f1a380ef6a4d8962432d540491b286d6cf03df7bf8426ca3a6c7a06
+- id: scripps-wfts
+  platform: scripps
+  call_sign: WFTS
+  name: WFTS (abcactionnews.com)
+  market: Tampa-St. Petersburg
+  dma: Tampa - St. Petersburg - Sarasota, FL DMA
+  states: [FL]
+  counties:
+    basis: dma
+    source: 'DMA county list: alex-patton/US-TVDMA-BY-COUNTY usa-tvdma-county.csv at commit 7f254b8c1843c62ec976a71c40d366d45f6f29cd
+      (sha256 2e2cd00265a8d704...), names resolved to FIPS with the Census 2025 county Gazetteer; Connecticut
+      via the Census county-to-town crosswalk (snowlight.sources.stations.dma); market ''Tampa - St. Petersburg
+      - Sarasota, FL DMA'''
+    fips: ['12017', '12049', '12053', '12055', '12057', '12081', '12101', '12103', '12105', '12115']
+  page_url: null
+  data_url: null
+  export_url: null
+  archive_urls:
+  - https://www.abcactionnews.com/weather/school-closings-delays
+  poll_minutes: null
+  status: no_endpoint
+  evidence: 'First-hand check 2026-09-26T17:43:59Z (docs/research/firsthand/nexstar-tegna-scripps.json,
+    record WFTS): site https://www.abcactionnews.com. No closings page found. Notes: https://www.abcactionnews.com/weather/school-closings-delays
+    returned 404 (after redirect to https://www.tampabay28.com/weather/school-closings-delays); https://www.abcactionnews.com/weather/closings
+    and https://www.abcactionnews.com/closings also 404; homepage has no closings link. Archive check:
+    no archive request before 2026-09-28 covered this site. Asked for since, in commits 1eadbc8 (run 36360179859),
+    4214b42 (run 36364542360), 7b1fc13 (run 36369419399): CDX listings (2014 to 2026) of abcactionnews.com/weather/clos*,
+    abcactionnews.com/clos*, abcactionnews.com/weather/school-clos*, abcactionnews.com/school-clos*, tampabay28.com/weather/*
+    and a listing of every address of the site whose URL names closings, closures, delays or cancellations
+    (one row per address), and 3 captures of its closings pages on storm days and in past winters (each
+    capture and why it was picked is listed under ''no_endpoint_scripps_tegna'' in pipeline/config/sources/archive-wanted-s4b.json).
+    Results: Listings: tampabay28.com/weather/alerts 134 captures with HTTP 200 (40 in November to March;
+    2025-2026); tampabay28.com/weather/alert-details 87 captures with HTTP 200 (66 in November to March;
+    2026-2026); tampabay28.com/weather/daily-forecast 87 captures with HTTP 200 (22 in November to March;
+    2025-2026); 2760 more addresses with fewer captures; the site-wide listing (run 36364542360) names
+    2705 addresses with closings, closures, delays or cancellations in them, besides the closings paths
+    above: news stories, one per storm or event, not a list kept at one address. Captures read: none;
+    not read: 2 (HTTP 404 from the archive: the page missing when archived, or no capture), 1 (the runner
+    could not reach the archive). The captures nearest its storm days are HTTP 404 answers (the page did
+    not exist when archived), as the page is today. No read shows a row, so no endpoint is registered.
+    Market: ''Tampa-St. Petersburg'' (first-hand record) is the crosswalk''s ''Tampa - St. Petersburg
+    - Sarasota, FL DMA''.'
+  list_files: []
+  page_check: null
+  robots: []
+- id: scripps-wgba
+  platform: scripps
+  call_sign: WGBA
+  name: WGBA / WACY (nbc26.com)
+  market: Green Bay-Appleton
+  dma: Green Bay - Appleton, WI - MI DMA
+  states: [MI, WI]
+  counties:
+    basis: dma
+    source: 'DMA county list: alex-patton/US-TVDMA-BY-COUNTY usa-tvdma-county.csv at commit 7f254b8c1843c62ec976a71c40d366d45f6f29cd
+      (sha256 2e2cd00265a8d704...), names resolved to FIPS with the Census 2025 county Gazetteer; Connecticut
+      via the Census county-to-town crosswalk (snowlight.sources.stations.dma); market ''Green Bay - Appleton,
+      WI - MI DMA'''
+    fips: ['26109', '55009', '55015', '55029', '55039', '55047', '55061', '55071', '55075', '55078', '55083',
+      '55087', '55115', '55135', '55137', '55139']
+  page_url: https://www.nbc26.com/weather/school-closings-delays
+  data_url: null
+  export_url: null
+  archive_urls:
+  - https://www.nbc26.com/weather/school-closings-delays
+  poll_minutes: null
+  status: active
+  evidence: 'First-hand check 2026-09-26T17:43:44Z (docs/research/firsthand/nexstar-tegna-scripps.json,
+    record WGBA): site https://www.nbc26.com. Closings page https://www.nbc26.com/weather/school-closings-delays
+    (HTTP 200) holds the Scripps closings module rendered on the server; the poller reads the page itself.
+    page heading ''School Closings and Delays''. Empty-state text: ''There are currently no active closings
+    or delays.''. Market: ''Green Bay-Appleton'' (first-hand record) is the crosswalk''s ''Green Bay -
+    Appleton, WI - MI DMA''.'
+  list_files: []
+  page_check: null
+  robots:
+  - url: https://www.nbc26.com/weather/school-closings-delays
+    checked_at: '2026-09-26T23:05:44Z'
+    state: parsed
+    allowed: true
+    rule: no rule matches
+    crawl_delay: null
+    disallowed_agents:
+    - google-extended
+    - gptbot
+    sha256: 34efc840b3c8e6a8d4d62bd7845416686ba67a5d033a95c37d29ba8c179a42b0
+- id: scripps-wkbw
+  platform: scripps
+  call_sign: WKBW
+  name: WKBW (wkbw.com)
+  market: Buffalo
+  dma: Buffalo, NY - PA DMA
+  states: [NY, PA]
+  counties:
+    basis: dma
+    source: 'DMA county list: alex-patton/US-TVDMA-BY-COUNTY usa-tvdma-county.csv at commit 7f254b8c1843c62ec976a71c40d366d45f6f29cd
+      (sha256 2e2cd00265a8d704...), names resolved to FIPS with the Census 2025 county Gazetteer; Connecticut
+      via the Census county-to-town crosswalk (snowlight.sources.stations.dma); market ''Buffalo, NY -
+      PA DMA'''
+    fips: ['36003', '36009', '36013', '36029', '36037', '36063', '36073', '36121', '42083', '42105']
+  page_url: https://www.wkbw.com/weather/school-closings-delays
+  data_url: null
+  export_url: null
+  archive_urls:
+  - https://www.wkbw.com/weather/school-closings-delays
+  poll_minutes: null
+  status: active
+  evidence: 'First-hand check 2026-09-26T17:43:35Z (docs/research/firsthand/nexstar-tegna-scripps.json,
+    record WKBW): site https://www.wkbw.com. Closings page https://www.wkbw.com/weather/school-closings-delays
+    (HTTP 200) holds the Scripps closings module rendered on the server; the poller reads the page itself.
+    Empty-state text: ''There are currently no active closings or delays.''. Market: ''Buffalo'' (first-hand
+    record) is the crosswalk''s ''Buffalo, NY - PA DMA''.'
+  list_files: []
+  page_check: null
+  robots:
+  - url: https://www.wkbw.com/weather/school-closings-delays
+    checked_at: '2026-09-26T23:05:44Z'
+    state: parsed
+    allowed: true
+    rule: no rule matches
+    crawl_delay: null
+    disallowed_agents:
+    - google-extended
+    - gptbot
+    sha256: e524d9988374fd6316382164fdd69c736018d1ab65c437e856c8cbbfb64614fb
+- id: scripps-wlex
+  platform: scripps
+  call_sign: WLEX
+  name: WLEX (lex18.com)
+  market: Lexington
+  dma: Lexington, KY DMA
+  states: [KY]
+  counties:
+    basis: dma
+    source: 'DMA county list: alex-patton/US-TVDMA-BY-COUNTY usa-tvdma-county.csv at commit 7f254b8c1843c62ec976a71c40d366d45f6f29cd
+      (sha256 2e2cd00265a8d704...), names resolved to FIPS with the Census 2025 county Gazetteer; Connecticut
+      via the Census county-to-town crosswalk (snowlight.sources.stations.dma); market ''Lexington, KY
+      DMA'''
+    fips: ['21005', '21011', '21017', '21021', '21025', '21045', '21049', '21051', '21065', '21067', '21069',
+      '21073', '21079', '21097', '21109', '21113', '21119', '21121', '21125', '21129', '21137', '21151',
+      '21165', '21167', '21173', '21175', '21181', '21189', '21193', '21197', '21199', '21203', '21205',
+      '21207', '21209', '21231', '21235', '21237', '21239']
+  page_url: https://www.lex18.com/weather/school-closings-delays
+  data_url: null
+  export_url: null
+  archive_urls:
+  - https://www.lex18.com/weather/school-closings
+  - https://www.lex18.com/weather/school-closings-delays
+  poll_minutes: null
+  status: active
+  evidence: 'First-hand check 2026-09-26T17:43:48Z (docs/research/firsthand/nexstar-tegna-scripps.json,
+    record WLEX): site https://www.lex18.com. Closings page https://www.lex18.com/weather/school-closings-delays
+    (HTTP 200) holds the Scripps closings module rendered on the server; the poller reads the page itself.
+    page heading ''School Closings and Delays''. Empty-state text: ''There are currently no active closings
+    or delays.''. Market: ''Lexington'' (first-hand record) is the crosswalk''s ''Lexington, KY DMA''.'
+  list_files: []
+  page_check: null
+  robots:
+  - url: https://www.lex18.com/weather/school-closings-delays
+    checked_at: '2026-09-26T23:05:45Z'
+    state: parsed
+    allowed: true
+    rule: no rule matches
+    crawl_delay: null
+    disallowed_agents:
+    - google-extended
+    - gptbot
+    sha256: 4f27ed6328413a4f87f0734926fc3247e940b9e94f1de9088899a97d8db1b3d8
+- id: scripps-wmar
+  platform: scripps
+  call_sign: WMAR
+  name: WMAR (wmar2news.com)
+  market: Baltimore
+  dma: Baltimore, MD DMA
+  states: [MD]
+  counties:
+    basis: dma
+    source: 'DMA county list: alex-patton/US-TVDMA-BY-COUNTY usa-tvdma-county.csv at commit 7f254b8c1843c62ec976a71c40d366d45f6f29cd
+      (sha256 2e2cd00265a8d704...), names resolved to FIPS with the Census 2025 county Gazetteer; Connecticut
+      via the Census county-to-town crosswalk (snowlight.sources.stations.dma); market ''Baltimore, MD
+      DMA'''
+    fips: ['24003', '24005', '24011', '24013', '24015', '24019', '24025', '24027', '24029', '24035', '24041',
+      '24510']
+  page_url: https://www.wmar2news.com/weather/school-closings-delays
+  data_url: null
+  export_url: null
+  archive_urls:
+  - https://www.wmar2news.com/weather/school-closings-delays
+  poll_minutes: null
+  status: active
+  evidence: 'First-hand check 2026-09-26T17:43:33Z (docs/research/firsthand/nexstar-tegna-scripps.json,
+    record WMAR): site https://www.wmar2news.com. Closings page https://www.wmar2news.com/weather/school-closings-delays
+    (HTTP 200) holds the Scripps closings module rendered on the server; the poller reads the page itself.
+    Empty-state text: ''There are currently no active closings or delays.''. Market: ''Baltimore'' (first-hand
+    record) is the crosswalk''s ''Baltimore, MD DMA''.'
+  list_files: []
+  page_check: null
+  robots:
+  - url: https://www.wmar2news.com/weather/school-closings-delays
+    checked_at: '2026-09-26T23:05:45Z'
+    state: parsed
+    allowed: true
+    rule: no rule matches
+    crawl_delay: null
+    disallowed_agents:
+    - google-extended
+    - gptbot
+    sha256: e0117b93b82705983b97c4a971d9b4fc57c8d419024d12ea9ab24a20ea8f09a1
+- id: scripps-wptv
+  platform: scripps
+  call_sign: WPTV
+  name: WPTV (wptv.com)
+  market: West Palm Beach-Fort Pierce
+  dma: West Palm Beach - Ft. Pierce, FL DMA
+  states: [FL]
+  counties:
+    basis: dma
+    source: 'DMA county list: alex-patton/US-TVDMA-BY-COUNTY usa-tvdma-county.csv at commit 7f254b8c1843c62ec976a71c40d366d45f6f29cd
+      (sha256 2e2cd00265a8d704...), names resolved to FIPS with the Census 2025 county Gazetteer; Connecticut
+      via the Census county-to-town crosswalk (snowlight.sources.stations.dma); market ''West Palm Beach
+      - Ft. Pierce, FL DMA'''
+    fips: ['12061', '12085', '12093', '12099', '12111']
+  page_url: null
+  data_url: null
+  export_url: null
+  archive_urls:
+  - https://www.wptv.com/weather/school-closings-delays
+  poll_minutes: null
+  status: no_endpoint
+  evidence: 'First-hand check 2026-09-26T17:44:05Z (docs/research/firsthand/nexstar-tegna-scripps.json,
+    record WPTV): site https://www.wptv.com. No closings page found. Notes: https://www.wptv.com/weather/school-closings-delays
+    returned 404; https://www.wptv.com/weather/closings and https://www.wptv.com/closings also 404; homepage
+    has no closings link. Archive check: no archive request before 2026-09-28 covered this site. Asked
+    for since, in commits 1eadbc8 (run 36360179859), 4214b42 (run 36364542360), 7b1fc13 (run 36369419399):
+    CDX listings (2014 to 2026) of wptv.com/weather/clos*, wptv.com/clos*, wptv.com/weather/school-clos*,
+    wptv.com/school-clos* and a listing of every address of the site whose URL names closings, closures,
+    delays or cancellations (one row per address), and 3 captures of its closings pages on storm days
+    and in past winters (each capture and why it was picked is listed under ''no_endpoint_scripps_tegna''
+    in pipeline/config/sources/archive-wanted-s4b.json). Results: Listings: wptv.com/closing-door-can-save-life-in-fire/
+    1 capture with HTTP 200 (1 in November to March; 2023-2023); wptv.com/weather/school-closings-delays
+    0 captures with HTTP 200 (0 in November to March, 2 redirects; 2019-2025); the site-wide listing (run
+    36364542360) names 3666 addresses with closings, closures, delays or cancellations in them, besides
+    the closings paths above: news stories, one per storm or event, not a list kept at one address. Captures
+    read: none; not read: 3 (HTTP 404 from the archive: the page missing when archived, or no capture).
+    The captures nearest its storm days are HTTP 404 answers (the page did not exist when archived), as
+    the page is today. No read shows a row, so no endpoint is registered. Market: ''West Palm Beach-Fort
+    Pierce'' (first-hand record) is the crosswalk''s ''West Palm Beach - Ft. Pierce, FL DMA''.'
+  list_files: []
+  page_check: null
+  robots: []
+- id: scripps-wtkr
+  platform: scripps
+  call_sign: WTKR
+  name: WTKR / WGNT (wtkr.com)
+  market: Norfolk-Portsmouth-Newport News
+  dma: Norfolk - Portsmouth - Newport News, VA - NC DMA
+  states: [NC, VA]
+  counties:
+    basis: dma
+    source: 'DMA county list: alex-patton/US-TVDMA-BY-COUNTY usa-tvdma-county.csv at commit 7f254b8c1843c62ec976a71c40d366d45f6f29cd
+      (sha256 2e2cd00265a8d704...), names resolved to FIPS with the Census 2025 county Gazetteer; Connecticut
+      via the Census county-to-town crosswalk (snowlight.sources.stations.dma); market ''Norfolk - Portsmouth
+      - Newport News, VA - NC DMA'''
+    fips: ['37029', '37041', '37053', '37055', '37073', '37091', '37139', '37143', '51001', '51073', '51093',
+      '51095', '51115', '51131', '51175', '51181', '51199', '51550', '51620', '51650', '51700', '51710',
+      '51735', '51740', '51800', '51810', '51830']
+  page_url: https://www.wtkr.com/weather/school-closings-delays
+  data_url: null
+  export_url: null
+  archive_urls:
+  - https://www.wtkr.com/weather/school-closings-delays
+  poll_minutes: null
+  status: active
+  evidence: 'First-hand check 2026-09-26T17:43:53Z (docs/research/firsthand/nexstar-tegna-scripps.json,
+    record WTKR): site https://www.wtkr.com. Closings page https://www.wtkr.com/weather/school-closings-delays
+    (HTTP 200) holds the Scripps closings module rendered on the server; the poller reads the page itself.
+    page heading ''Hampton Roads Closings & Delays''. Populated on 2026-09-26: 4 rows (first: Poquoson
+    Public Schools / Virtual Learning / 2026-09-27T03:59:59.999999Z; The Williams School / 2 Hour Delay
+    Thursday / 2026-09-27T03:59:59.999999Z; VPCC - Historic Triangle Campus / Closed Wednesday due to
+    power outage / 2026-09-27T03:59:59.999999Z). Market: ''Norfolk-Portsmouth-Newport News'' (first-hand
+    record) is the crosswalk''s ''Norfolk - Portsmouth - Newport News, VA - NC DMA''.'
+  list_files: []
+  page_check: null
+  robots:
+  - url: https://www.wtkr.com/weather/school-closings-delays
+    checked_at: '2026-09-26T23:05:46Z'
+    state: parsed
+    allowed: true
+    rule: no rule matches
+    crawl_delay: null
+    disallowed_agents:
+    - google-extended
+    - gptbot
+    sha256: 6c7df4b4c7f0d13d8fedca4de42ca3aee99319daa96f4893db8a15379c1daf97
+- id: scripps-wtmj
+  platform: scripps
+  call_sign: WTMJ
+  name: WTMJ (tmj4.com)
+  market: Milwaukee
+  dma: Milwaukee, WI DMA
+  states: [WI]
+  counties:
+    basis: dma
+    source: 'DMA county list: alex-patton/US-TVDMA-BY-COUNTY usa-tvdma-county.csv at commit 7f254b8c1843c62ec976a71c40d366d45f6f29cd
+      (sha256 2e2cd00265a8d704...), names resolved to FIPS with the Census 2025 county Gazetteer; Connecticut
+      via the Census county-to-town crosswalk (snowlight.sources.stations.dma); market ''Milwaukee, WI
+      DMA'''
+    fips: ['55027', '55055', '55059', '55079', '55089', '55101', '55117', '55127', '55131', '55133']
+  page_url: https://www.tmj4.com/weather/school-closings-delays
+  data_url: null
+  export_url: null
+  archive_urls:
+  - https://www.tmj4.com/weather/school-closings-delays
+  poll_minutes: null
+  status: active
+  evidence: 'First-hand check 2026-09-26T17:43:51Z (docs/research/firsthand/nexstar-tegna-scripps.json,
+    record WTMJ): site https://www.tmj4.com. Closings page https://www.tmj4.com/weather/school-closings-delays
+    (HTTP 200) holds the Scripps closings module rendered on the server; the poller reads the page itself.
+    page heading ''School Closings and Delays''. Empty-state text: ''There are currently no active closings
+    or delays.''. Market: ''Milwaukee'' (first-hand record) is the crosswalk''s ''Milwaukee, WI DMA''.'
+  list_files: []
+  page_check: null
+  robots:
+  - url: https://www.tmj4.com/weather/school-closings-delays
+    checked_at: '2026-09-26T23:05:47Z'
+    state: parsed
+    allowed: true
+    rule: no rule matches
+    crawl_delay: null
+    disallowed_agents:
+    - google-extended
+    - gptbot
+    sha256: 91c035f15de632fcce3943912bdda0a68eba5aa09918488e110a24fa206ede0a
+- id: scripps-wtvf
+  platform: scripps
+  call_sign: WTVF
+  name: WTVF (newschannel5.com)
+  market: Nashville
+  dma: Nashville, TN - KY DMA
+  states: [KY, TN]
+  counties:
+    basis: dma
+    source: 'DMA county list: alex-patton/US-TVDMA-BY-COUNTY usa-tvdma-county.csv at commit 7f254b8c1843c62ec976a71c40d366d45f6f29cd
+      (sha256 2e2cd00265a8d704...), names resolved to FIPS with the Census 2025 county Gazetteer; Connecticut
+      via the Census county-to-town crosswalk (snowlight.sources.stations.dma); market ''Nashville, TN
+      - KY DMA'''
+    fips: ['21003', '21047', '21053', '21141', '21171', '21213', '21219', '21221', '47003', '47005', '47015',
+      '47021', '47027', '47031', '47037', '47039', '47041', '47043', '47051', '47055', '47079', '47081',
+      '47083', '47085', '47087', '47099', '47101', '47111', '47117', '47119', '47125', '47127', '47133',
+      '47135', '47137', '47141', '47147', '47149', '47159', '47161', '47165', '47169', '47175', '47177',
+      '47185', '47187', '47189']
+  page_url: https://www.newschannel5.com/weather/school-closings-delays
+  data_url: null
+  export_url: null
+  archive_urls:
+  - https://www.newschannel5.com/weather/school-closings-delays
+  poll_minutes: null
+  status: active
+  evidence: 'First-hand check 2026-09-26T17:43:53Z (docs/research/firsthand/nexstar-tegna-scripps.json,
+    record WTVF): site https://www.newschannel5.com. Closings page https://www.newschannel5.com/weather/school-closings-delays
+    (HTTP 200) holds the Scripps closings module rendered on the server; the poller reads the page itself.
+    page heading ''School Closings and Delays''. Empty-state text: ''There are currently no active closings
+    or delays.''. Market: ''Nashville'' (first-hand record) is the crosswalk''s ''Nashville, TN - KY DMA''.'
+  list_files: []
+  page_check: null
+  robots:
+  - url: https://www.newschannel5.com/weather/school-closings-delays
+    checked_at: '2026-09-26T23:05:47Z'
+    state: parsed
+    allowed: true
+    rule: no rule matches
+    crawl_delay: null
+    disallowed_agents:
+    - google-extended
+    - gptbot
+    sha256: 9b0f64fc3deab9b3d57524c359c3abd194b22b07fecb9f5f2d749ff423b3157b
+- id: scripps-wtvq
+  platform: scripps
+  call_sign: WTVQ
+  name: WTVQ (wtvq.com)
+  market: Lexington
+  dma: Lexington, KY DMA
+  states: [KY]
+  counties:
+    basis: dma
+    source: 'DMA county list: alex-patton/US-TVDMA-BY-COUNTY usa-tvdma-county.csv at commit 7f254b8c1843c62ec976a71c40d366d45f6f29cd
+      (sha256 2e2cd00265a8d704...), names resolved to FIPS with the Census 2025 county Gazetteer; Connecticut
+      via the Census county-to-town crosswalk (snowlight.sources.stations.dma); market ''Lexington, KY
+      DMA'''
+    fips: ['21005', '21011', '21017', '21021', '21025', '21045', '21049', '21051', '21065', '21067', '21069',
+      '21073', '21079', '21097', '21109', '21113', '21119', '21121', '21125', '21129', '21137', '21151',
+      '21165', '21167', '21173', '21175', '21181', '21189', '21193', '21197', '21199', '21203', '21205',
+      '21207', '21209', '21231', '21235', '21237', '21239']
+  page_url: https://www.wtvq.com/closings/
+  data_url: https://www.wtvq.com/content/uploads/weather-images/SnoWatch.html
+  export_url: null
+  archive_urls:
+  - https://www.wtvq.com/closings/
+  - https://www.wtvq.com/content/uploads/weather-images/SnoWatch.html
+  poll_minutes: null
+  status: active
+  evidence: 'First-hand check 2026-09-26T17:43:49Z (docs/research/firsthand/nexstar-tegna-scripps.json,
+    record WTVQ): site https://www.wtvq.com. Closings page https://www.wtvq.com/closings/ (WordPress,
+    not Brightspot) frames the static file https://www.wtvq.com/content/uploads/weather-images/SnoWatch.html,
+    which the poller reads (gray_files'' gray-file-grid format: ''Closings Last Updated at 8:27am on 3/20/2026
+    No Closings have been reported at this time'' on 2026-09-26, Last-Modified 2026-03-20). Market: ''Lexington''
+    (first-hand record) is the crosswalk''s ''Lexington, KY DMA''.'
+  list_files:
+  - url: https://www.wtvq.com/content/uploads/weather-images/SnoWatch.html
+    loaded_by: frame
+    seen: the page https://www.wtvq.com/closings/ frames it (page HTML read 2026-09-26)
+  page_check:
+    checked_at: '2026-09-26T22:48:13Z'
+    page: https://www.wtvq.com/closings/
+    loads:
+    - https://www.wtvq.com/content/uploads/weather-images/SnoWatch.html
+    shows: Closings Last Updated at 8:27am on 3/20/2026 No Closings have been reported at this time
+    method: 'the page''s HTML read with the pipeline''s User-Agent: its SnoWatch iframe (not opened in
+      a browser)'
+  robots:
+  - url: https://www.wtvq.com/closings/
+    checked_at: '2026-09-26T23:05:47Z'
+    state: parsed
+    allowed: true
+    rule: no rule matches
+    crawl_delay: null
+    disallowed_agents:
+    - ccbot
+    - chatgpt-user
+    - google-extended
+    - gptbot
+    sha256: 59f9138043c451b0715db0e5185110d08dcc39cf4b89f896258cef28ace83fe8
+  - url: https://www.wtvq.com/content/uploads/weather-images/SnoWatch.html
+    checked_at: '2026-09-26T23:05:47Z'
+    state: parsed
+    allowed: true
+    rule: no rule matches
+    crawl_delay: null
+    disallowed_agents:
+    - ccbot
+    - chatgpt-user
+    - google-extended
+    - gptbot
+    sha256: 59f9138043c451b0715db0e5185110d08dcc39cf4b89f896258cef28ace83fe8
+- id: scripps-wtvr
+  platform: scripps
+  call_sign: WTVR
+  name: WTVR (wtvr.com)
+  market: Richmond
+  dma: Richmond - Petersburg, VA DMA
+  states: [VA]
+  counties:
+    basis: dma
+    source: 'DMA county list: alex-patton/US-TVDMA-BY-COUNTY usa-tvdma-county.csv at commit 7f254b8c1843c62ec976a71c40d366d45f6f29cd
+      (sha256 2e2cd00265a8d704...), names resolved to FIPS with the Census 2025 county Gazetteer; Connecticut
+      via the Census county-to-town crosswalk (snowlight.sources.stations.dma); market ''Richmond - Petersburg,
+      VA DMA'''
+    fips: ['51007', '51025', '51029', '51033', '51036', '51041', '51049', '51053', '51057', '51065', '51075',
+      '51081', '51085', '51087', '51097', '51101', '51103', '51109', '51111', '51119', '51127', '51133',
+      '51135', '51137', '51145', '51147', '51149', '51159', '51183', '51570', '51595', '51670', '51730',
+      '51760', '51790', '51820']
+  page_url: https://www.wtvr.com/weather/school-closings-delays
+  data_url: null
+  export_url: null
+  archive_urls:
+  - https://www.wtvr.com/weather/school-closings-delays
+  poll_minutes: null
+  status: active
+  evidence: 'First-hand check 2026-09-26T17:43:56Z (docs/research/firsthand/nexstar-tegna-scripps.json,
+    record WTVR): site https://www.wtvr.com. Closings page https://www.wtvr.com/weather/school-closings-delays
+    (HTTP 200) holds the Scripps closings module rendered on the server; the poller reads the page itself.
+    page heading ''School Closings & Delays''. Empty-state text: ''There are currently no active closings
+    or delays.''. Market: ''Richmond'' (first-hand record) is the crosswalk''s ''Richmond - Petersburg,
+    VA DMA''.'
+  list_files: []
+  page_check: null
+  robots:
+  - url: https://www.wtvr.com/weather/school-closings-delays
+    checked_at: '2026-09-26T23:05:48Z'
+    state: parsed
+    allowed: true
+    rule: no rule matches
+    crawl_delay: null
+    disallowed_agents:
+    - google-extended
+    - gptbot
+    sha256: c7456e45ff797eb82342450c02e0dc18c7d6a9342053d8e8313a4aad36e838e1
+- id: scripps-wtxl
+  platform: scripps
+  call_sign: WTXL
+  name: WTXL (wtxl.com)
+  market: Tallahassee
+  dma: Tallahassee - Thomasville, FL - GA DMA
+  states: [FL, GA]
+  counties:
+    basis: dma
+    source: 'DMA county list: alex-patton/US-TVDMA-BY-COUNTY usa-tvdma-county.csv at commit 7f254b8c1843c62ec976a71c40d366d45f6f29cd
+      (sha256 2e2cd00265a8d704...), names resolved to FIPS with the Census 2025 county Gazetteer; Connecticut
+      via the Census county-to-town crosswalk (snowlight.sources.stations.dma); market ''Tallahassee -
+      Thomasville, FL - GA DMA'''
+    fips: ['12039', '12047', '12065', '12067', '12073', '12079', '12121', '12123', '12129', '13027', '13065',
+      '13087', '13101', '13131', '13173', '13185', '13201', '13275']
+  page_url: null
+  data_url: null
+  export_url: null
+  archive_urls:
+  - https://www.wtxl.com/weather/school-closings-delays
+  poll_minutes: null
+  status: no_endpoint
+  evidence: 'First-hand check 2026-09-26T17:43:58Z (docs/research/firsthand/nexstar-tegna-scripps.json,
+    record WTXL): site https://www.wtxl.com. No closings page found. Notes: https://www.wtxl.com/weather/school-closings-delays
+    returned 404; https://www.wtxl.com/weather/closings and https://www.wtxl.com/closings also 404; homepage
+    has no closings link. Archive check: no archive request before 2026-09-28 covered this site. Asked
+    for since, in commits 1eadbc8 (run 36360179859), 4214b42 (run 36364542360), 7b1fc13 (run 36369419399):
+    CDX listings (2014 to 2026) of wtxl.com/weather/clos*, wtxl.com/clos*, wtxl.com/weather/school-clos*,
+    wtxl.com/school-clos* and a listing of every address of the site whose URL names closings, closures,
+    delays or cancellations (one row per address), and 3 captures of its closings pages on storm days
+    and in past winters (each capture and why it was picked is listed under ''no_endpoint_scripps_tegna''
+    in pipeline/config/sources/archive-wanted-s4b.json). Results: Listings: wtxl.com/school-closings-ahead-of-winter-weather-impacts-this-week
+    13 captures with HTTP 200 (11 in November to March; 2025-2025); wtxl.com/school-closings-and-delays-ahead-of-idalia
+    11 captures with HTTP 200 (3 in November to March; 2023-2025); wtxl.com/school-closures-announced-ahead-of-severe-weather
+    10 captures with HTTP 200 (1 in November to March; 2024-2025); 1 more addresses with fewer captures;
+    the site-wide listing (run 36364542360) names 2202 addresses with closings, closures, delays or cancellations
+    in them, besides the closings paths above: news stories, one per storm or event, not a list kept at
+    one address. Captures read: none; not read: 3 (HTTP 404 from the archive: the page missing when archived,
+    or no capture). The captures nearest its storm days are HTTP 404 answers (the page did not exist when
+    archived), as the page is today. No read shows a row, so no endpoint is registered. Market: ''Tallahassee''
+    (first-hand record) is the crosswalk''s ''Tallahassee - Thomasville, FL - GA DMA''.'
+  list_files: []
+  page_check: null
+  robots: []
+- id: scripps-wxmi
+  platform: scripps
+  call_sign: WXMI
+  name: WXMI (fox17online.com)
+  market: Grand Rapids-Kalamazoo
+  dma: Grand Rapids - Kalamazoo - Battle Creek, MI DMA
+  states: [MI]
+  counties:
+    basis: dma
+    source: 'DMA county list: alex-patton/US-TVDMA-BY-COUNTY usa-tvdma-county.csv at commit 7f254b8c1843c62ec976a71c40d366d45f6f29cd
+      (sha256 2e2cd00265a8d704...), names resolved to FIPS with the Census 2025 county Gazetteer; Connecticut
+      via the Census county-to-town crosswalk (snowlight.sources.stations.dma); market ''Grand Rapids
+      - Kalamazoo - Battle Creek, MI DMA'''
+    fips: ['26005', '26015', '26023', '26025', '26067', '26077', '26081', '26117', '26121', '26123', '26127',
+      '26139', '26149', '26159']
+  page_url: https://www.fox17online.com/weather/school-closings-delays
+  data_url: null
+  export_url: null
+  archive_urls:
+  - https://www.fox17online.com/weather/school-closings-delays
+  poll_minutes: null
+  status: active
+  evidence: 'First-hand check 2026-09-26T17:43:44Z (docs/research/firsthand/nexstar-tegna-scripps.json,
+    record WXMI): site https://www.fox17online.com. Closings page https://www.fox17online.com/weather/school-closings-delays
+    (HTTP 200) holds the Scripps closings module rendered on the server; the poller reads the page itself.
+    Empty-state text: ''There are currently no active closings or delays.''. Market: ''Grand Rapids-Kalamazoo''
+    (first-hand record) is the crosswalk''s ''Grand Rapids - Kalamazoo - Battle Creek, MI DMA''.'
+  list_files: []
+  page_check: null
+  robots:
+  - url: https://www.fox17online.com/weather/school-closings-delays
+    checked_at: '2026-09-26T23:05:49Z'
+    state: parsed
+    allowed: true
+    rule: no rule matches
+    crawl_delay: null
+    disallowed_agents:
+    - google-extended
+    - gptbot
+    sha256: b0c742bdafae2d7d2e9cf3b232992a049c24dd823b34cf56ff52cf75946288ca
+- id: scripps-wxyz
+  platform: scripps
+  call_sign: WXYZ
+  name: WXYZ (wxyz.com)
+  market: Detroit
+  dma: Detroit, MI DMA
+  states: [MI]
+  counties:
+    basis: dma
+    source: 'DMA county list: alex-patton/US-TVDMA-BY-COUNTY usa-tvdma-county.csv at commit 7f254b8c1843c62ec976a71c40d366d45f6f29cd
+      (sha256 2e2cd00265a8d704...), names resolved to FIPS with the Census 2025 county Gazetteer; Connecticut
+      via the Census county-to-town crosswalk (snowlight.sources.stations.dma); market ''Detroit, MI DMA'''
+    fips: ['26087', '26093', '26099', '26115', '26125', '26147', '26151', '26161', '26163']
+  page_url: https://www.wxyz.com/weather/school-closings-delays
+  data_url: null
+  export_url: null
+  archive_urls:
+  - https://www.wxyz.com/weather/school-closings-delays
+  poll_minutes: null
+  status: active
+  evidence: 'First-hand check 2026-09-26T17:43:42Z (docs/research/firsthand/nexstar-tegna-scripps.json,
+    record WXYZ): site https://www.wxyz.com. Closings page https://www.wxyz.com/weather/school-closings-delays
+    (HTTP 200) holds the Scripps closings module rendered on the server; the poller reads the page itself.
+    page heading ''School Closings and Delays''. Empty-state text: ''There are currently no active closings
+    or delays.''. Market: ''Detroit'' (first-hand record) is the crosswalk''s ''Detroit, MI DMA''.'
+  list_files: []
+  page_check: null
+  robots:
+  - url: https://www.wxyz.com/weather/school-closings-delays
+    checked_at: '2026-09-26T23:05:49Z'
+    state: parsed
+    allowed: true
+    rule: no rule matches
+    crawl_delay: null
+    disallowed_agents:
+    - google-extended
+    - gptbot
+    sha256: bfbf7dc08e599806bc7a61a51b408f58a32a20e8698be6ff842b158d0b972595

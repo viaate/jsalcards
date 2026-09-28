@@ -1,0 +1,101 @@
+[
+  {
+    "file": "errors/koin-feed-20260926223959.json",
+    "source_id": "nexstar-koin",
+    "adapter": "nexstar",
+    "url": "https://www.koin.com/wp-json/nxd_app/v1/closings_alerts",
+    "captured_at": "2026-09-26T22:39:59Z",
+    "sha256": "fdadf1badbc1a30f31c4f3c114b764e6bd7ba34384ddb01d0f957501adf0279c",
+    "bytes": 220,
+    "reason": "Its one row has a status ('2 Hours Late, AM buses on snow routes.') and a blank name, so there is nothing to keep: every row is nameless (KOIN's page showed no rows).",
+    "archive_url": null
+  },
+  {
+    "file": "errors/krtv-page-20260928000518.html",
+    "source_id": "scripps-typed-krtv",
+    "adapter": "scripps-typed",
+    "url": "https://www.krtv.com/weather/closings",
+    "captured_at": "2026-09-28T00:05:18Z",
+    "sha256": "88a64125c59b551d7335e38d35bef18221f179a6c755b8068ff815aab4e0273d",
+    "bytes": 67632,
+    "reason": "KRTV's Brightspot closings page read live: the heading 'Closings' over an empty left column, with no closings module, no rich-text module and no text, so nothing on it says it is an empty list (the scripps-typed adapter reads an empty rich-text module, the typed list cleared, as the empty state, but not a page with nothing on it).",
+    "archive_url": null
+  },
+  {
+    "file": "errors/ktvq-page-20260118082038.html",
+    "source_id": "scripps-typed-ktvq",
+    "adapter": "scripps-typed",
+    "url": "https://www.ktvq.com/weather/closings",
+    "captured_at": "2026-01-18T08:20:38Z",
+    "sha256": "a8ee302f14cfcf2acb26ea5178479f66e99d6a003b36b94521f91f0f8192caac",
+    "bytes": 217596,
+    "reason": "KTVQ's Brightspot closings page archived on 2026-01-18: the heading 'Closings' over an empty left column, with no closings module, no rich-text module and no text; nothing on it says it is an empty list, so it is not read as one.",
+    "archive_url": "https://web.archive.org/web/20260118082038id_/https://www.ktvq.com/weather/closings"
+  },
+  {
+    "file": "errors/kxan-article-20210219084809.html",
+    "source_id": "nexstar-kxan",
+    "adapter": "nexstar",
+    "url": "https://www.kxan.com/weather/weather-delays-llano-isd-on-2-hour-delay-thursday-due-to-potential-ice-on-roads/",
+    "captured_at": "2021-02-19T08:48:09Z",
+    "sha256": "35160bb27e300fd2ba4d5042c7ace0312a0f6054a011ddd2ab8c1313ed7d0205",
+    "bytes": 464762,
+    "reason": "A KXAN news article of February 2021 whose text lists closings typed by hand, captured under the closings path listings: not the station's closings list, and KXAN is not filed as a station that types its closings, so the nexstar adapter refuses it.",
+    "archive_url": "https://web.archive.org/web/20210219084809id_/https://www.kxan.com/weather/weather-delays-llano-isd-on-2-hour-delay-thursday-due-to-potential-ice-on-roads/"
+  },
+  {
+    "file": "errors/wcmh-page-20190218124348.html",
+    "source_id": "nexstar-wcmh",
+    "adapter": "nexstar",
+    "url": "https://www.nbc4i.com/weather/closings",
+    "captured_at": "2019-02-18T12:43:48Z",
+    "sha256": "cc30bf8c78b4dfa06c1683e5e521039f415d61243588ddb5b039e1bf04edf459",
+    "bytes": 163076,
+    "reason": "WCMH's closings page on the Frankly (WorldNow) platform in February 2019: a script (the 'closing-alerts-auto-complete' module) loaded the list from an address the page does not name, so the capture holds no list and names no list file.",
+    "archive_url": "https://web.archive.org/web/20190218124348id_/https://www.nbc4i.com/weather/closings"
+  },
+  {
+    "file": "errors/wdaf-cgs-20201107163159.html",
+    "source_id": "nexstar-wdaf",
+    "adapter": "nexstar",
+    "url": "https://cdn.trb.tv/wdaf-ftp/closings/allactive.html",
+    "captured_at": "2020-11-07T16:31:59Z",
+    "sha256": "428a47401898299d0d420e9d7877f370ad592cec1cea5f5b0acbf5df5852cf18",
+    "bytes": 9134,
+    "reason": "By November 2020 the cdn.trb.tv domain that held WDAF's CGS 'All Active' file answered a domain-sale page ('trb.tv - trb Resources and Information'), not a list.",
+    "archive_url": "https://web.archive.org/web/20201107163159id_/https://cdn.trb.tv/wdaf-ftp/closings/allactive.html"
+  },
+  {
+    "file": "errors/wjmn-page-20230223004907.html",
+    "source_id": "nexstar-wjmn",
+    "adapter": "nexstar",
+    "url": "https://www.upmatters.com/closings/",
+    "captured_at": "2023-02-23T00:49:07Z",
+    "sha256": "7d629c3897bed97f25cdf4acd4e9e8d025248bac21f041d3748a244a407f0619",
+    "bytes": 63107,
+    "reason": "WJMN's /closings/ page archived on 2023-02-23, a storm day: the WordPress page left over from the Liferay site's tabbed Closing Alerts module, holding only 'There are no current closings for schools in this range. Please check other tabs above for possible closings.' There are no tabs on the page: it is no list, and the nexstar adapter (which never reads a typed page) refuses it.",
+    "archive_url": "https://web.archive.org/web/20230223004907id_/https://www.upmatters.com/closings/"
+  },
+  {
+    "file": "errors/wntz-alerts-20250911033628.html",
+    "source_id": "nexstar-typed-wntz",
+    "adapter": "nexstar-typed",
+    "url": "https://www.cenlanow.com/weather/closings-alerts/",
+    "captured_at": "2025-09-11T03:36:28Z",
+    "sha256": "47dbe10b091046eb4c5ec4eb893c7113ec6bd88bbc33921fd86257de9707da69",
+    "bytes": 76712,
+    "reason": "WNTZ's /weather/closings-alerts/ page archived on 2025-09-11 (titled 'Closings & Delays'): a header image and the sentence 'Test Block per Support', no entry and nothing saying the list is empty.",
+    "archive_url": "https://web.archive.org/web/20250911033628id_/https://www.cenlanow.com/weather/closings-alerts/"
+  },
+  {
+    "file": "errors/wrbl-page-20230207213448.html",
+    "source_id": "nexstar-typed-wrbl",
+    "adapter": "nexstar-typed",
+    "url": "https://www.wrbl.com/weather/closings-and-delays/",
+    "captured_at": "2023-02-07T21:34:48Z",
+    "sha256": "8160052f20dc519c6769018f949c7b58cecf35c6ededb1b06e4b694681ddea61",
+    "bytes": 447615,
+    "reason": "WRBL's closings page archived on 2023-02-07: its rich-text block holds only injected widgets (a forecast article carousel), no list item, no paragraph and no sentence saying there are no closings, so it is not read as an empty list.",
+    "archive_url": "https://web.archive.org/web/20230207213448id_/https://www.wrbl.com/weather/closings-and-delays/"
+  }
+]

@@ -1,0 +1,1 @@
+{"closings":[{"_styledTemplate":"/thirdParty/Closings.hbs","_template":"/thirdParty/ThirdPartyModule.hbs","data":{"resultsArray":[{"expiration":"2020-12-31T05:59:59Z","name":"City of Watertown","state":"other","status":"Snow Emergency"}],"singleValues":[{"datasource":"https://api.ewscloud.com/prod/closings/v1/tmj4/active-closings?temp_orgs=true"}]},"isCached":true}]}

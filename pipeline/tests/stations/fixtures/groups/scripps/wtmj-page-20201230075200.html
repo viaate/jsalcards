@@ -1,0 +1,44 @@
+<!doctype html>
+<html><body>
+<article class="module module--closings js-filter">
+    <div class="inner">
+        <header class="header--light">
+            <a class="button" href="/account/closings">Get closing alert emails</a>
+            
+                <div class="inputContainer">
+                    <input type="text" id="clInput" onkeyup="closingSearch()" placeholder="Search for organization.." title="Type in a name">
+                </div>
+                <nav class="closings__filters js-filter__triggers" style="display:none;">
+                    <button type="button" class="button--text js-all">All</button>
+                    <button type="button" class="button--text" data-target=".js-num">#</button>
+                    <button type="button" class="button--text" data-target=".js-a-f">A-F</button>
+                    <button type="button" class="button--text" data-target=".js-g-l">G-L</button>
+                    <button type="button" class="button--text" data-target=".js-m-s">M-S</button>
+                    <button type="button" class="button--text" data-target=".js-t-z">T-Z</button>
+                </nav>
+            
+        </header>
+        
+            <div class="blocks js-filter__targets">
+                <div class="js-num">
+                </div>
+                <div class="js-a-f cls">
+                </div>
+                <div class="js-g-l cls">
+                </div>
+                <div class="js-m-s cls">
+                </div>
+                <div class="js-t-z cls">
+                </div>
+                
+                  <article class="closing js-block">
+                      <p class="text--primary js-sort-value">City of Watertown</p>
+                      <p class="text--secondary">Snow Emergency</p>
+                      <p class="text--secondary">2020-12-31T05:59:59Z</p>
+                  </article>
+                
+            </div>
+        
+    </div>
+</article>
+</body></html>

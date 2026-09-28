@@ -1,0 +1,858 @@
+# Station registry for one platform. Loaded with every other file in this folder
+# by snowlight.sources.stations.registry; see its docstring for the fields.
+# `snowlight stations robots --update` rewrites the robots blocks in place.
+platform:
+  id: nexstar-typed
+  name: Nexstar Media Group closings pages typed by hand
+  operator: Nexstar Media Inc. and its affiliates (its own stations, the former Tribune, Media General
+    and LIN stations, and stations it operates for Mission Broadcasting, White Knight Broadcasting and
+    others)
+  adapter: nexstar-typed
+  poll_minutes: 10
+  terms:
+    automated_access: forbidden
+    summary: 'Nexstar''s Terms of Use (https://www.nexstar.tv/terms-of-use/, "UPDATED: September 16, 2026";
+      station footers link them) cover Nexstar "together with its Affiliates" and forbid using "any robot,
+      spider ... or processes on the Properties, for any purpose" and to "Scrape, data-mine or data-crawl
+      the Properties"; the Properties are for personal and non-commercial use. The project owner decided
+      on 2026-09-25 to read the closings lists anyway for this non-commercial project (owner_decision
+      below); the terms stay recorded here. The stations'' HTML pages answer this pipeline''s User-Agent
+      with a PerimeterX challenge (HTTP 403), which is never worked around: the same pages are read through
+      the WordPress REST API that robots.txt allows.'
+    evidence:
+    - url: https://www.nexstar.tv/terms-of-use/
+      read_at: '2026-09-26T22:53:26Z'
+      sha256: 4ec42b00a8dd67aed0e013ca27080a632c92fa31413136801551e492cb2d08a0
+      excerpt:
+      - 'UPDATED: September 16, 2026'
+      - Nexstar Media Inc., together with its Affiliates (collectively, “Company”, “we”, “us”, or “our”),
+        offers
+      - The Properties are for your personal and non-commercial use only, unless otherwise permitted by
+        us.
+      - Use any robot, spider, spyware, or any other device, method, or processes on the Properties, for
+        any purpose.
+      - Scrape, data-mine or data-crawl the Properties or engage in any data gathering or data extraction
+        practices for any purpose.
+    permission: null
+    owner_decision:
+      decided_by: the project owner (Snowlight)
+      decided_on: '2026-09-25'
+      reference: 'Stated in the build instructions for the station adapters (piece s4b, round 1): "Terms
+        of use that forbid automated access do not exclude a station: the project owner decided on 2026-09-25
+        to read them for this non-commercial project, so record each station''s terms internally in the
+        registry and read it anyway." The same instructions record the owner''s decision of 2026-09-26
+        to read closings pages and data files even where robots.txt disallows them. Relayed to the pipeline''s
+        builder by the project''s build workflow; to revoke it, remove this block and live polling of
+        this platform stops.'
+      scope: 'Live reads of this platform''s public closings lists (the station pages, the WordPress REST
+        routes that publish the same pages, and the list files the pages frame) for Snowlight, a non-commercial
+        project, although the terms above forbid automated access. robots.txt is read and its verdict
+        recorded for every URL requested (no closings URL registered here was disallowed when checked
+        on 2026-09-26); the owner decided on 2026-09-26 to read closings pages and files even where robots.txt
+        disallows them. Unchanged by it: the User-Agent names the repository (never a browser string),
+        only the closings page or file is requested (no crawling), requests are paced per host (any Crawl-delay
+        is a floor) with conditional requests and backoff on 429 and 5xx answers, and a station that blocks
+        the project (a 403, or a bot challenge such as the PerimeterX page Nexstar''s HTML pages answer
+        with) is not worked around.'
+  notes: 'Nexstar stations whose closings are typed by hand, filed apart from nexstar.yaml so that only
+    they are read that way: the nexstar adapter never reads a typed page, so on every other Nexstar station''s
+    page a missing, blank or script-filled list is an error, not an empty list. A station is filed here
+    when its closings address was archived on storm days as a page typed by hand: WHNT''s /weather-closings/,
+    WDHN''s /severe-weather-closings-and-delays/ and WRBL''s /weather/closings-and-delays/ (each read
+    live through the WordPress REST API, whose HTML pages answer 403 PerimeterX as every Nexstar site''s
+    do), and WNTZ, whose /weather/closings/ page holds the closings article today (read as nexstar-wp-closings)
+    but was archived in 2021 and 2024 as the 2017 article it then redirected to, a typed table. The nexstar-typed
+    adapter (snowlight.sources.stations.nexstar_typed) reads every variant the nexstar adapter reads,
+    and a typed page besides (nexstar-wp-typed through the REST API, nexstar-typed-page in archived captures).
+    Its rows are the page''s list items, table rows or paragraph entries, whatever words they use (snowlight.sources.stations.typed);
+    a page with none is the empty state only when it says so (a sentence that there are no closings, or
+    the page''s standing note alone), and an error otherwise. Two stations are filed here because they
+    type closings into their closings page beside the closings article, which stays empty meanwhile: KIAH
+    (CW39 Houston; eight districts typed below the empty article for the storm of January 2025, archived
+    2025-01-25 and 2026-01-11) and WIVB (a school''s closing typed above the article, live on 2026-09-28,
+    dated 2026-09-04). The adapter reads such entries (the page''s list items and table rows beside the
+    article, else its paragraph entries with no link in them; snowlight.sources.stations.typed.entries_beside)
+    as the list, nexstar-wp-typed-beside through the REST API and nexstar-page-typed-beside in archived
+    pages, stamped with the page''s time; an article that lists rows while the page types entries beside
+    it is an error. It also reads the Tribune-era template of WHNT''s page (div.entry-content, archived
+    2018-12-11) as nexstar-typed-entry-content. The sites, terms, robots.txt verdicts and access are Nexstar''s,
+    as recorded in nexstar.yaml; the terms are repeated here word for word.'
+  shared_paths: []
+stations:
+- id: nexstar-typed-kiah
+  platform: nexstar-typed
+  call_sign: KIAH
+  name: KIAH (cw39.com)
+  market: Houston
+  dma: Houston, TX DMA
+  states: [TX]
+  counties:
+    basis: dma
+    source: 'DMA county list: alex-patton/US-TVDMA-BY-COUNTY usa-tvdma-county.csv at commit 7f254b8c1843c62ec976a71c40d366d45f6f29cd
+      (sha256 2e2cd00265a8d704...), names resolved to FIPS with the Census 2025 county Gazetteer; Connecticut
+      via the Census county-to-town crosswalk (snowlight.sources.stations.dma); market ''Houston, TX DMA'''
+    fips: ['48015', '48039', '48057', '48071', '48089', '48157', '48167', '48185', '48201', '48239', '48291',
+      '48321', '48339', '48373', '48407', '48471', '48473', '48477', '48481']
+  page_url: https://cw39.com/weather/closings/
+  data_url: https://cw39.com/wp-json/wp/v2/pages/414787
+  export_url: null
+  archive_urls:
+  - https://cw39.com/weather/closings/
+  - https://cw39.com/wp-json/nxd_app/v1/closings_alerts
+  - https://cw39.com/wp-json/wp/v2/pages/414787
+  poll_minutes: null
+  status: active
+  evidence: 'First-hand check 2026-09-26T17:42:23Z (docs/research/firsthand/nexstar-tegna-scripps.json,
+    record KIAH): site https://cw39.com. Closings page https://cw39.com/weather/closings/ (''Closings
+    and Delays'', modified 2026-09-01T16:58:20), a closings-page article rendered on the server. Its HTML
+    answers this pipeline''s User-Agent with a PerimeterX challenge (HTTP 403, not worked around), so
+    the same page is read through the WordPress REST API: https://cw39.com/wp-json/wp/v2/pages?slug=closings
+    returned page id 414787 with the closings article (2026-09-26T23:02:25Z), and the poller reads https://cw39.com/wp-json/wp/v2/pages/414787
+    (a single page object, so a missing page is an error, never an empty list). Empty-state text: ''Most
+    recent closings and delays are listed here when there are active closures.'' The app feed https://cw39.com/wp-json/nxd_app/v1/closings_alerts
+    carries the same rows (they matched at WTNH and WPRI on 2026-09-26); it is kept as an archive URL.
+    Market: ''Houston'' (first-hand record) is the crosswalk''s ''Houston, TX DMA''. Typed beside the
+    closings article (checked 2026-09-28): the station types closings into the same page, below its closings
+    article, while the article stays empty. Its Wayback capture of 2025-01-25T18:39:00Z (https://web.archive.org/web/20250125183900/https://cw39.com/weather/closings/,
+    sha256 c4f86c15ee73cc73..., page modified 2025-01-22T21:49:30Z) shows the article''s empty sentence
+    and, below it, a list of eight districts typed for the storm of 21-22 January 2025: Cleveland ISD
+    (2-hour delay on Thursday), and Crosby, Dayton, Devers, High Island, Huffman, Hull-Daisetta and Liberty
+    ISD (closed Thursday). The capture of 2026-01-11T12:44:31Z (sha256 0994b5da03f97862...) still shows
+    the same list, the page unchanged since 2025-01-22; the REST page read live since (modified_gmt 2026-09-01T16:58:20)
+    no longer holds it, its article empty and nothing typed beside it. Filed under nexstar-typed so those
+    entries are read as the station''s list (nexstar-page-typed-beside in archived pages, nexstar-wp-typed-beside
+    through the REST API, stamped with the page''s time, so the live reader keeps them only while the
+    page changed within 36 hours of the read); an article with rows beside typed entries is an error,
+    and the plain nexstar adapter refuses any page with entries typed beside its article. These captures
+    were read as empty before (the entries were missed).'
+  list_files: []
+  page_check: null
+  robots:
+  - url: https://cw39.com/weather/closings/
+    checked_at: '2026-09-26T23:05:18Z'
+    state: parsed
+    allowed: true
+    rule: no rule matches
+    crawl_delay: null
+    disallowed_agents:
+    - anthropic-ai
+    - applebot-extended
+    - awariorssbot
+    - awariosmartbot
+    - bytespider
+    - ccbot
+    - chatgpt-user
+    - claude-web
+    - claudebot
+    - cohere-ai
+    - dataforseobot
+    - diffbot
+    - facebookbot
+    - friendlycrawler
+    - google-cloudvertexbot
+    - google-extended
+    - gptbot
+    - ia_archiver
+    - imagesiftbot
+    - magpie-crawler
+    - meta-externalagent
+    - news-please
+    - newsnow
+    - oai-searchbot
+    - omgili
+    - omgilibot
+    - peer39_crawler
+    - peer39_crawler/1.0
+    - perplexitybot
+    - quora-bot
+    - scrapy
+    - turnitinbot
+    sha256: 25031e5074dba1d532596697189a29a9e6bbad9fa6cb7fd792095c3b34837a37
+  - url: https://cw39.com/wp-json/wp/v2/pages/414787
+    checked_at: '2026-09-26T23:05:18Z'
+    state: parsed
+    allowed: true
+    rule: no rule matches
+    crawl_delay: null
+    disallowed_agents:
+    - anthropic-ai
+    - applebot-extended
+    - awariorssbot
+    - awariosmartbot
+    - bytespider
+    - ccbot
+    - chatgpt-user
+    - claude-web
+    - claudebot
+    - cohere-ai
+    - dataforseobot
+    - diffbot
+    - facebookbot
+    - friendlycrawler
+    - google-cloudvertexbot
+    - google-extended
+    - gptbot
+    - ia_archiver
+    - imagesiftbot
+    - magpie-crawler
+    - meta-externalagent
+    - news-please
+    - newsnow
+    - oai-searchbot
+    - omgili
+    - omgilibot
+    - peer39_crawler
+    - peer39_crawler/1.0
+    - perplexitybot
+    - quora-bot
+    - scrapy
+    - turnitinbot
+    sha256: 25031e5074dba1d532596697189a29a9e6bbad9fa6cb7fd792095c3b34837a37
+- id: nexstar-typed-wdhn
+  platform: nexstar-typed
+  call_sign: WDHN
+  name: WDHN (wdhn.com)
+  market: Dothan
+  dma: Dothan, AL - GA DMA
+  states: [AL, GA]
+  counties:
+    basis: dma
+    source: 'DMA county list: alex-patton/US-TVDMA-BY-COUNTY usa-tvdma-county.csv at commit 7f254b8c1843c62ec976a71c40d366d45f6f29cd
+      (sha256 2e2cd00265a8d704...), names resolved to FIPS with the Census 2025 county Gazetteer; Connecticut
+      via the Census county-to-town crosswalk (snowlight.sources.stations.dma); market ''Dothan, AL -
+      GA DMA'''
+    fips: ['01031', '01045', '01061', '01067', 01069, '13099', '13253']
+  page_url: https://www.wdhn.com/severe-weather-closings-and-delays/
+  data_url: https://www.wdhn.com/wp-json/wp/v2/pages/1518310
+  export_url: null
+  archive_urls:
+  - https://www.wdhn.com/severe-weather-closings-and-delays/
+  - https://www.wdhn.com/wp-json/wp/v2/pages/1518310
+  - https://www.wdhn.com/wp-json/nxd_app/v1/closings_alerts
+  poll_minutes: null
+  status: active
+  evidence: 'First-hand check 2026-09-26T17:45:09Z (docs/research/firsthand/nexstar-tegna-scripps.json,
+    record WDHN): site https://www.wdhn.com. Closings page https://www.wdhn.com/severe-weather-closings-and-delays/
+    (''Severe Weather Closings and Delays'', WordPress page 1518310) is typed by hand: bulleted sentences
+    under county headings, not a closings system''s list. Its HTML answers this pipeline''s User-Agent
+    with a PerimeterX challenge (HTTP 403, not worked around), so the poller reads the same page through
+    the WordPress REST API, https://www.wdhn.com/wp-json/wp/v2/pages/1518310, as nexstar-wp-typed (snowlight.sources.stations.typed):
+    each list item, table row or paragraph entry of the page is a row, whatever its words (and a page
+    with none is the empty list only when it says so), and the page''s modified_gmt is each row''s time.
+    Typed text stays up long after the day it names: read at 2026-09-28T00:05:02Z the page still held
+    a note of a lightning delay at a football game (modified 2026-08-21), so the live reader keeps a typed
+    page''s rows only while the page changed within 36 hours of the read (older lines are old notes, and
+    the read is empty). The station''s archived closings page shows typed closings on storm days (Wayback
+    id_ captures read as nexstar-typed-page): 20241109012642 (26 rows), 20250201215557 (41 rows). The
+    app feed https://www.wdhn.com/wp-json/nxd_app/v1/closings_alerts answered 200 with an empty list at
+    the first-hand check and again at 2026-09-27; it has never been seen with a row and is kept as an
+    archive URL. Archive check: no archive request before 2026-09-27 covered this site. Asked for since:
+    CDX listings (2014 to 2026) of wdhn.com/weather/clos*, wdhn.com/clos*, wdhn.com/wp-json/nxd_app/v1/closings_alerts*,
+    wdhn.com/severe-weather-clos* (commit 0491318, run 36320180498; the 4 it did not return, again in
+    329a3c8, run 36341557928, which returned 4 of them), and 5 captures of its closings pages (commits
+    7743961, f13b2c8; each capture and why it was picked is listed under ''no_endpoint_nexstar'' in pipeline/config/sources/archive-wanted-s4b.json).
+    Results: Listings: wdhn.com/severe-weather-closings-and-delays/ 13 captures with HTTP 200 (8 in November
+    to March, 2023-2026); the app feed 3 (2025-2026). Captures read: wdhn.com/severe-weather-closings-and-delays/
+    (20231103133724 empty, 20231117162124 empty, 20241109012642 26 rows, 20250201215557 41 rows, 20251123104109
+    empty). The typed closings page shows rows, so it is registered (page_url the page, data_url its REST
+    object). Market: ''Dothan'' (first-hand record) is the crosswalk''s ''Dothan, AL - GA DMA''.'
+  list_files: []
+  page_check: null
+  robots:
+  - url: https://www.wdhn.com/severe-weather-closings-and-delays/
+    checked_at: '2026-09-28T00:22:15Z'
+    state: parsed
+    allowed: true
+    rule: no rule matches
+    crawl_delay: null
+    disallowed_agents:
+    - anthropic-ai
+    - applebot-extended
+    - awariorssbot
+    - awariosmartbot
+    - bytespider
+    - ccbot
+    - chatgpt-user
+    - claude-web
+    - claudebot
+    - cohere-ai
+    - dataforseobot
+    - diffbot
+    - facebookbot
+    - friendlycrawler
+    - google-cloudvertexbot
+    - google-extended
+    - gptbot
+    - ia_archiver
+    - imagesiftbot
+    - magpie-crawler
+    - meta-externalagent
+    - news-please
+    - newsnow
+    - oai-searchbot
+    - omgili
+    - omgilibot
+    - peer39_crawler
+    - peer39_crawler/1.0
+    - perplexitybot
+    - quora-bot
+    - scrapy
+    - turnitinbot
+    sha256: c2f467a2f2b1dfa6ec8e66051f0dba34dfd5714b293989929430d329f5ad7672
+  - url: https://www.wdhn.com/wp-json/wp/v2/pages/1518310
+    checked_at: '2026-09-28T00:22:15Z'
+    state: parsed
+    allowed: true
+    rule: no rule matches
+    crawl_delay: null
+    disallowed_agents:
+    - anthropic-ai
+    - applebot-extended
+    - awariorssbot
+    - awariosmartbot
+    - bytespider
+    - ccbot
+    - chatgpt-user
+    - claude-web
+    - claudebot
+    - cohere-ai
+    - dataforseobot
+    - diffbot
+    - facebookbot
+    - friendlycrawler
+    - google-cloudvertexbot
+    - google-extended
+    - gptbot
+    - ia_archiver
+    - imagesiftbot
+    - magpie-crawler
+    - meta-externalagent
+    - news-please
+    - newsnow
+    - oai-searchbot
+    - omgili
+    - omgilibot
+    - peer39_crawler
+    - peer39_crawler/1.0
+    - perplexitybot
+    - quora-bot
+    - scrapy
+    - turnitinbot
+    sha256: c2f467a2f2b1dfa6ec8e66051f0dba34dfd5714b293989929430d329f5ad7672
+- id: nexstar-typed-whnt
+  platform: nexstar-typed
+  call_sign: WHNT
+  name: WHNT / WHDF (whnt.com)
+  market: Huntsville-Decatur
+  dma: Huntsville - Decatur - Florence, AL - TN DMA
+  states: [AL, TN]
+  counties:
+    basis: dma
+    source: 'DMA county list: alex-patton/US-TVDMA-BY-COUNTY usa-tvdma-county.csv at commit 7f254b8c1843c62ec976a71c40d366d45f6f29cd
+      (sha256 2e2cd00265a8d704...), names resolved to FIPS with the Census 2025 county Gazetteer; Connecticut
+      via the Census county-to-town crosswalk (snowlight.sources.stations.dma); market ''Huntsville -
+      Decatur - Florence, AL - TN DMA'''
+    fips: ['01033', 01049, 01059, '01071', '01077', 01079, 01083, 01089, 01095, '01103', '47103', '47181']
+  page_url: https://whnt.com/weather-closings/
+  data_url: https://whnt.com/wp-json/wp/v2/pages/528267
+  export_url: null
+  archive_urls:
+  - https://whnt.com/weather-closings/
+  - https://whnt.com/wp-json/wp/v2/pages/528267
+  - https://whnt.com/wp-json/nxd_app/v1/closings_alerts
+  poll_minutes: null
+  status: active
+  evidence: 'First-hand check 2026-09-26T17:43:48Z (docs/research/firsthand/nexstar-tegna-scripps.json,
+    record WHNT): site https://whnt.com. Closings page https://whnt.com/weather-closings/ (''Weather Closings,
+    Delays and Dismissals'', WordPress page 528267) is typed by hand: paragraphs and bulleted lines under
+    county headings, not a closings system''s list. Its HTML answers this pipeline''s User-Agent with
+    a PerimeterX challenge (HTTP 403, not worked around), so the poller reads the same page through the
+    WordPress REST API, https://whnt.com/wp-json/wp/v2/pages/528267, as nexstar-wp-typed (snowlight.sources.stations.typed):
+    each list item, table row or paragraph entry of the page is a row, whatever its words (and a page
+    with none is the empty list only when it says so), and the page''s modified_gmt is each row''s time.
+    Typed text stays up long after the day it names: read at 2026-09-28T00:04:57Z the page still held
+    its entry for Monday, June 8, 2026 (Madison County Schools on a two-hour delay; modified 2026-06-07),
+    so the live reader keeps a typed page''s rows only while the page changed within 36 hours of the read
+    (older lines are old notes, and the read is empty). The station''s archived closings page shows typed
+    closings on storm days (Wayback id_ captures read as nexstar-typed-page, and the Tribune-era template
+    of 2018 as nexstar-typed-entry-content): 20181211023820 (25 rows: 24 schools and one business delayed
+    on 11 December 2018), 20210215043159 (39 rows), 20210227062030 (1 row), 20220318204207 (2 rows), 20250108205534
+    (5 rows). The app feed https://whnt.com/wp-json/nxd_app/v1/closings_alerts answered 200 with an empty
+    list at the first-hand check and again at 2026-09-27; it has never been seen with a row and is kept
+    as an archive URL. Archive check: no archive request before 2026-09-27 covered this site. Asked for
+    since: CDX listings (2014 to 2026) of whnt.com/weather/clos*, whnt.com/clos*, whnt.com/wp-json/nxd_app/v1/closings_alerts*,
+    whnt.com/weather/school-clos*, whnt.com/weather-clos* (commit 0491318, run 36320180498; the 5 it did
+    not return, again in 329a3c8, run 36341557928, which returned 4 of them; the exact addresses whnt.com/closings/
+    in 00d80e0, run 36352057358), and 6 captures of its closings pages (commits 7743961, f13b2c8; each
+    capture and why it was picked is listed under ''no_endpoint_nexstar'' in pipeline/config/sources/archive-wanted-s4b.json).
+    Results: Listings: whnt.com/weather-closings/ 880 captures with HTTP 200 (520 in November to March,
+    2018-2026); the app feed 5 (2020-2025); not returned by runs 36320180498 and 36341557928: 1 of its
+    5 listings. Exact-address listings (run 36352057358): whnt.com/closings/ 0 captures with HTTP 200
+    (0 in November to March). Captures read: whnt.com/weather-closings/ (20181211023820 25 rows, 20200323124213
+    empty, 20210215043159 39 rows, 20210227062030 1 row, 20220318204207 2 rows, 20250108205534 5 rows).
+    The typed closings page shows rows, so it is registered (page_url the page, data_url its REST object).
+    Market: ''Huntsville-Decatur'' (first-hand record) is the crosswalk''s ''Huntsville - Decatur - Florence,
+    AL - TN DMA''.'
+  list_files: []
+  page_check: null
+  robots:
+  - url: https://whnt.com/weather-closings/
+    checked_at: '2026-09-28T00:22:15Z'
+    state: parsed
+    allowed: true
+    rule: no rule matches
+    crawl_delay: null
+    disallowed_agents:
+    - anthropic-ai
+    - applebot-extended
+    - awariorssbot
+    - awariosmartbot
+    - bytespider
+    - ccbot
+    - chatgpt-user
+    - claude-web
+    - claudebot
+    - cohere-ai
+    - dataforseobot
+    - diffbot
+    - facebookbot
+    - friendlycrawler
+    - google-cloudvertexbot
+    - google-extended
+    - gptbot
+    - ia_archiver
+    - imagesiftbot
+    - magpie-crawler
+    - meta-externalagent
+    - news-please
+    - newsnow
+    - oai-searchbot
+    - omgili
+    - omgilibot
+    - peer39_crawler
+    - peer39_crawler/1.0
+    - perplexitybot
+    - quora-bot
+    - scrapy
+    - turnitinbot
+    sha256: 545df5f2045f5d0ebedcea9a476ee29de053036a1b6c546dbdaf4e6eff36c11f
+  - url: https://whnt.com/wp-json/wp/v2/pages/528267
+    checked_at: '2026-09-28T00:22:15Z'
+    state: parsed
+    allowed: true
+    rule: no rule matches
+    crawl_delay: null
+    disallowed_agents:
+    - anthropic-ai
+    - applebot-extended
+    - awariorssbot
+    - awariosmartbot
+    - bytespider
+    - ccbot
+    - chatgpt-user
+    - claude-web
+    - claudebot
+    - cohere-ai
+    - dataforseobot
+    - diffbot
+    - facebookbot
+    - friendlycrawler
+    - google-cloudvertexbot
+    - google-extended
+    - gptbot
+    - ia_archiver
+    - imagesiftbot
+    - magpie-crawler
+    - meta-externalagent
+    - news-please
+    - newsnow
+    - oai-searchbot
+    - omgili
+    - omgilibot
+    - peer39_crawler
+    - peer39_crawler/1.0
+    - perplexitybot
+    - quora-bot
+    - scrapy
+    - turnitinbot
+    sha256: 545df5f2045f5d0ebedcea9a476ee29de053036a1b6c546dbdaf4e6eff36c11f
+- id: nexstar-typed-wivb
+  platform: nexstar-typed
+  call_sign: WIVB
+  name: WIVB / WNLO (wivb.com)
+  market: Buffalo
+  dma: Buffalo, NY - PA DMA
+  states: [NY, PA]
+  counties:
+    basis: dma
+    source: 'DMA county list: alex-patton/US-TVDMA-BY-COUNTY usa-tvdma-county.csv at commit 7f254b8c1843c62ec976a71c40d366d45f6f29cd
+      (sha256 2e2cd00265a8d704...), names resolved to FIPS with the Census 2025 county Gazetteer; Connecticut
+      via the Census county-to-town crosswalk (snowlight.sources.stations.dma); market ''Buffalo, NY -
+      PA DMA'''
+    fips: ['36003', '36009', '36013', '36029', '36037', '36063', '36073', '36121', '42083', '42105']
+  page_url: https://www.wivb.com/weather/closings/
+  data_url: https://www.wivb.com/wp-json/wp/v2/pages/1344717
+  export_url: null
+  archive_urls:
+  - https://www.wivb.com/weather/closings/
+  - https://www.wivb.com/wp-json/nxd_app/v1/closings_alerts
+  - https://www.wivb.com/wp-json/wp/v2/pages/1344717
+  poll_minutes: null
+  status: active
+  evidence: 'First-hand check 2026-09-26T17:43:26Z (docs/research/firsthand/nexstar-tegna-scripps.json,
+    record WIVB): site https://www.wivb.com. Closings page https://www.wivb.com/weather/closings/ (''Closings'',
+    modified 2026-09-04T03:40:28), a closings-page article rendered on the server. Its HTML answers this
+    pipeline''s User-Agent with a PerimeterX challenge (HTTP 403, not worked around), so the same page
+    is read through the WordPress REST API: https://www.wivb.com/wp-json/wp/v2/pages?slug=closings returned
+    page id 1344717 with the closings article (2026-09-26T23:03:13Z), and the poller reads https://www.wivb.com/wp-json/wp/v2/pages/1344717
+    (a single page object, so a missing page is an error, never an empty list). Empty-state text: ''Most
+    recent closings and delays are listed here when there are active closures.'' The app feed https://www.wivb.com/wp-json/nxd_app/v1/closings_alerts
+    carries the same rows (they matched at WTNH and WPRI on 2026-09-26); it is kept as an archive URL.
+    Market: ''Buffalo'' (first-hand record) is the crosswalk''s ''Buffalo, NY - PA DMA''. Typed beside
+    the closings article (checked 2026-09-28): the REST page read live on 2026-09-28T06:58:45Z (modified_gmt
+    2026-09-04T03:40:28) holds, above its empty closings article, a list item typed by hand, ''Charter
+    School for Applied Technologies, middle school only, will be closed Friday, Sept. 4'', besides the
+    standing note ''Administrators: To submit a closing, click here.'' (a link, not an entry). Filed under
+    nexstar-typed so such entries are read as the station''s list (nexstar-wp-typed-beside, stamped with
+    the page''s time: this one, weeks old, is an old note the live reader does not keep); its winter captures
+    show the closings article itself with rows (read as before), and the plain nexstar adapter refuses
+    any page with entries typed beside its article.'
+  list_files: []
+  page_check: null
+  robots:
+  - url: https://www.wivb.com/weather/closings/
+    checked_at: '2026-09-26T23:05:29Z'
+    state: parsed
+    allowed: true
+    rule: no rule matches
+    crawl_delay: null
+    disallowed_agents:
+    - anthropic-ai
+    - applebot-extended
+    - awariorssbot
+    - awariosmartbot
+    - bytespider
+    - ccbot
+    - chatgpt-user
+    - claude-web
+    - claudebot
+    - cohere-ai
+    - dataforseobot
+    - diffbot
+    - facebookbot
+    - friendlycrawler
+    - google-cloudvertexbot
+    - google-extended
+    - gptbot
+    - ia_archiver
+    - imagesiftbot
+    - magpie-crawler
+    - meta-externalagent
+    - news-please
+    - newsnow
+    - oai-searchbot
+    - omgili
+    - omgilibot
+    - peer39_crawler
+    - peer39_crawler/1.0
+    - perplexitybot
+    - quora-bot
+    - scrapy
+    - turnitinbot
+    sha256: c5801c52e855791e390b1b7724e3dda9955452b9cb4244b8d02b4742ab214f68
+  - url: https://www.wivb.com/wp-json/wp/v2/pages/1344717
+    checked_at: '2026-09-26T23:05:29Z'
+    state: parsed
+    allowed: true
+    rule: no rule matches
+    crawl_delay: null
+    disallowed_agents:
+    - anthropic-ai
+    - applebot-extended
+    - awariorssbot
+    - awariosmartbot
+    - bytespider
+    - ccbot
+    - chatgpt-user
+    - claude-web
+    - claudebot
+    - cohere-ai
+    - dataforseobot
+    - diffbot
+    - facebookbot
+    - friendlycrawler
+    - google-cloudvertexbot
+    - google-extended
+    - gptbot
+    - ia_archiver
+    - imagesiftbot
+    - magpie-crawler
+    - meta-externalagent
+    - news-please
+    - newsnow
+    - oai-searchbot
+    - omgili
+    - omgilibot
+    - peer39_crawler
+    - peer39_crawler/1.0
+    - perplexitybot
+    - quora-bot
+    - scrapy
+    - turnitinbot
+    sha256: c5801c52e855791e390b1b7724e3dda9955452b9cb4244b8d02b4742ab214f68
+- id: nexstar-typed-wntz
+  platform: nexstar-typed
+  call_sign: WNTZ
+  name: WNTZ (cenlanow.com)
+  market: Alexandria LA
+  dma: Alexandria, LA DMA
+  states: [LA]
+  counties:
+    basis: dma
+    source: 'DMA county list: alex-patton/US-TVDMA-BY-COUNTY usa-tvdma-county.csv at commit 7f254b8c1843c62ec976a71c40d366d45f6f29cd
+      (sha256 2e2cd00265a8d704...), names resolved to FIPS with the Census 2025 county Gazetteer; Connecticut
+      via the Census county-to-town crosswalk (snowlight.sources.stations.dma); market ''Alexandria, LA
+      DMA'''
+    fips: ['22009', '22043', '22079', '22115']
+  page_url: https://www.cenlanow.com/weather/closings/
+  data_url: https://www.cenlanow.com/wp-json/wp/v2/pages/1559012
+  export_url: null
+  archive_urls:
+  - https://www.cenlanow.com/weather/closings/
+  - https://www.cenlanow.com/wp-json/nxd_app/v1/closings_alerts
+  - https://www.cenlanow.com/uncategorized/closings-and-delays-for-friday-december-8/
+  - https://www.cenlanow.com/wp-json/wp/v2/pages/1559012
+  poll_minutes: null
+  status: active
+  evidence: 'First-hand check 2026-09-26T17:45:19Z (docs/research/firsthand/nexstar-tegna-scripps.json,
+    record WNTZ): site https://www.cenlanow.com. Closings page https://www.cenlanow.com/weather/closings/
+    (''Weather Closings'', modified 2025-06-17T00:25:04), a closings-page article rendered on the server.
+    Its HTML answers this pipeline''s User-Agent with a PerimeterX challenge (HTTP 403, not worked around),
+    so the same page is read through the WordPress REST API: https://www.cenlanow.com/wp-json/wp/v2/pages?slug=closings
+    returned page id 1559012 with the closings article (2026-09-26T23:05:08Z), and the poller reads https://www.cenlanow.com/wp-json/wp/v2/pages/1559012
+    (a single page object, so a missing page is an error, never an empty list). Empty-state text: ''Most
+    recent closings and delays are listed here when there are active closures.'' The app feed https://www.cenlanow.com/wp-json/nxd_app/v1/closings_alerts
+    carries the same rows (they matched at WTNH and WPRI on 2026-09-26); it is kept as an archive URL.
+    Archived captures of https://www.cenlanow.com/weather/closings/ requested for 2021-02-17 and 2024-01-15
+    (archive-captures runs 36300019096 and 36318474516) were served as captures of https://www.cenlanow.com/uncategorized/closings-and-delays-for-friday-december-8/,
+    the article the page then redirected to: a table typed by hand for Friday, December 8, 2017 (modified
+    2017-12-08; 62 entries, read as nexstar-typed-page), from before the closings article the page holds
+    today. The poller reads the page''s REST object, not that article. Market: ''Alexandria LA'' (first-hand
+    record) is the crosswalk''s ''Alexandria, LA DMA''.'
+  list_files: []
+  page_check: null
+  robots:
+  - url: https://www.cenlanow.com/weather/closings/
+    checked_at: '2026-09-26T23:05:32Z'
+    state: parsed
+    allowed: true
+    rule: no rule matches
+    crawl_delay: null
+    disallowed_agents:
+    - anthropic-ai
+    - applebot-extended
+    - awariorssbot
+    - awariosmartbot
+    - bytespider
+    - ccbot
+    - chatgpt-user
+    - claude-web
+    - claudebot
+    - cohere-ai
+    - dataforseobot
+    - diffbot
+    - facebookbot
+    - friendlycrawler
+    - google-cloudvertexbot
+    - google-extended
+    - gptbot
+    - ia_archiver
+    - imagesiftbot
+    - magpie-crawler
+    - meta-externalagent
+    - news-please
+    - newsnow
+    - oai-searchbot
+    - omgili
+    - omgilibot
+    - peer39_crawler
+    - peer39_crawler/1.0
+    - perplexitybot
+    - quora-bot
+    - scrapy
+    - turnitinbot
+    sha256: d8630e59b358f1655fade7eed88222196cdece72b47ddb48efad39a074aec1a2
+  - url: https://www.cenlanow.com/wp-json/wp/v2/pages/1559012
+    checked_at: '2026-09-26T23:05:32Z'
+    state: parsed
+    allowed: true
+    rule: no rule matches
+    crawl_delay: null
+    disallowed_agents:
+    - anthropic-ai
+    - applebot-extended
+    - awariorssbot
+    - awariosmartbot
+    - bytespider
+    - ccbot
+    - chatgpt-user
+    - claude-web
+    - claudebot
+    - cohere-ai
+    - dataforseobot
+    - diffbot
+    - facebookbot
+    - friendlycrawler
+    - google-cloudvertexbot
+    - google-extended
+    - gptbot
+    - ia_archiver
+    - imagesiftbot
+    - magpie-crawler
+    - meta-externalagent
+    - news-please
+    - newsnow
+    - oai-searchbot
+    - omgili
+    - omgilibot
+    - peer39_crawler
+    - peer39_crawler/1.0
+    - perplexitybot
+    - quora-bot
+    - scrapy
+    - turnitinbot
+    sha256: d8630e59b358f1655fade7eed88222196cdece72b47ddb48efad39a074aec1a2
+- id: nexstar-typed-wrbl
+  platform: nexstar-typed
+  call_sign: WRBL
+  name: WRBL (wrbl.com)
+  market: Columbus GA
+  dma: Columbus, GA - AL DMA
+  states: [AL, GA]
+  counties:
+    basis: dma
+    source: 'DMA county list: alex-patton/US-TVDMA-BY-COUNTY usa-tvdma-county.csv at commit 7f254b8c1843c62ec976a71c40d366d45f6f29cd
+      (sha256 2e2cd00265a8d704...), names resolved to FIPS with the Census 2025 county Gazetteer; Connecticut
+      via the Census county-to-town crosswalk (snowlight.sources.stations.dma); market ''Columbus, GA
+      - AL DMA'''
+    fips: ['01005', '01017', 01081, '01113', '13053', '13061', '13145', '13197', '13215', '13239', '13243',
+      '13249', '13259', '13261', '13263', '13269', '13307']
+  page_url: https://www.wrbl.com/weather/closings-and-delays/
+  data_url: https://www.wrbl.com/wp-json/wp/v2/pages/4462
+  export_url: null
+  archive_urls:
+  - https://www.wrbl.com/weather/closings-and-delays/
+  - https://www.wrbl.com/wp-json/wp/v2/pages/4462
+  - https://www.wrbl.com/wp-json/nxd_app/v1/closings_alerts
+  poll_minutes: null
+  status: active
+  evidence: 'First-hand check 2026-09-26T17:44:42Z (docs/research/firsthand/nexstar-tegna-scripps.json,
+    record WRBL): site https://www.wrbl.com. Closings page https://www.wrbl.com/weather/closings-and-delays/
+    (''Closings and Delays'', WordPress page 4462) is typed by hand: bold names with their status on the
+    lines after, under headings, not a closings system''s list. Its HTML answers this pipeline''s User-Agent
+    with a PerimeterX challenge (HTTP 403, not worked around), so the poller reads the same page through
+    the WordPress REST API, https://www.wrbl.com/wp-json/wp/v2/pages/4462, as nexstar-wp-typed (snowlight.sources.stations.typed):
+    each list item, table row or paragraph entry of the page is a row, whatever its words (and a page
+    with none is the empty list only when it says so), and the page''s modified_gmt is each row''s time.
+    Typed text stays up long after the day it names: read at 2026-09-28T00:05:08Z the page still held
+    ''Harris County Schools - 2-hour delay, Thursday, May 7, 2026'' (modified 2026-05-07), so the live
+    reader keeps a typed page''s rows only while the page changed within 36 hours of the read (older lines
+    are old notes, and the read is empty). The station''s archived closings page shows typed closings
+    on storm days (Wayback id_ captures read as nexstar-typed-page): 20240926023920 (43 rows). The app
+    feed https://www.wrbl.com/wp-json/nxd_app/v1/closings_alerts answered 200 with an empty list at the
+    first-hand check and again at 2026-09-27; it has never been seen with a row and is kept as an archive
+    URL. Archive check: no archive request before 2026-09-27 covered this site. Asked for since: CDX listings
+    (2014 to 2026) of wrbl.com/weather/clos*, wrbl.com/clos*, wrbl.com/wp-json/nxd_app/v1/closings_alerts*
+    (commit 0491318, run 36320180498; the 3 it did not return, again in 329a3c8, run 36341557928, which
+    returned 3 of them), and 8 captures of its closings pages (commits 7743961, 2d37c18, e85e61f, bd9e904,
+    f13b2c8; each capture and why it was picked is listed under ''no_endpoint_nexstar'' in pipeline/config/sources/archive-wanted-s4b.json).
+    Results: Listings: wrbl.com/weather/closings-and-delays 31 captures with HTTP 200 (17 in November
+    to March, 2018-2026); wrbl.com/closings/ 1 captures with HTTP 200 (0 in November to March, 2015-2015);
+    the app feed 4 (2024-2026). Captures read: wrbl.com/weather/closings-and-delays/ (20240926023920 43
+    rows); not read: 3 (a page without a list this adapter reads), 1 (a typed page with no entry and nothing
+    saying it holds none), 1 (the runner could not reach the archive). The typed closings page shows rows,
+    so it is registered (page_url the page, data_url its REST object). Market: ''Columbus GA'' (first-hand
+    record) is the crosswalk''s ''Columbus, GA - AL DMA''.'
+  list_files: []
+  page_check: null
+  robots:
+  - url: https://www.wrbl.com/weather/closings-and-delays/
+    checked_at: '2026-09-28T00:22:15Z'
+    state: parsed
+    allowed: true
+    rule: no rule matches
+    crawl_delay: null
+    disallowed_agents:
+    - anthropic-ai
+    - applebot-extended
+    - awariorssbot
+    - awariosmartbot
+    - bytespider
+    - ccbot
+    - chatgpt-user
+    - claude-web
+    - claudebot
+    - cohere-ai
+    - dataforseobot
+    - diffbot
+    - facebookbot
+    - friendlycrawler
+    - google-cloudvertexbot
+    - google-extended
+    - gptbot
+    - ia_archiver
+    - imagesiftbot
+    - magpie-crawler
+    - meta-externalagent
+    - news-please
+    - newsnow
+    - oai-searchbot
+    - omgili
+    - omgilibot
+    - peer39_crawler
+    - peer39_crawler/1.0
+    - perplexitybot
+    - quora-bot
+    - scrapy
+    - turnitinbot
+    sha256: 93db96a8ba2fbe149ab20350f5e3215ea9f60e691ad79d037c90d8a4adcd5ffe
+  - url: https://www.wrbl.com/wp-json/wp/v2/pages/4462
+    checked_at: '2026-09-28T00:22:15Z'
+    state: parsed
+    allowed: true
+    rule: no rule matches
+    crawl_delay: null
+    disallowed_agents:
+    - anthropic-ai
+    - applebot-extended
+    - awariorssbot
+    - awariosmartbot
+    - bytespider
+    - ccbot
+    - chatgpt-user
+    - claude-web
+    - claudebot
+    - cohere-ai
+    - dataforseobot
+    - diffbot
+    - facebookbot
+    - friendlycrawler
+    - google-cloudvertexbot
+    - google-extended
+    - gptbot
+    - ia_archiver
+    - imagesiftbot
+    - magpie-crawler
+    - meta-externalagent
+    - news-please
+    - newsnow
+    - oai-searchbot
+    - omgili
+    - omgilibot
+    - peer39_crawler
+    - peer39_crawler/1.0
+    - perplexitybot
+    - quora-bot
+    - scrapy
+    - turnitinbot
+    sha256: 93db96a8ba2fbe149ab20350f5e3215ea9f60e691ad79d037c90d8a4adcd5ffe

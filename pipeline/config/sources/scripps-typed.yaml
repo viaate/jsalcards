@@ -1,0 +1,374 @@
+# Station registry for one platform. Loaded with every other file in this folder
+# by snowlight.sources.stations.registry; see its docstring for the fields.
+# `snowlight stations robots --update` rewrites the robots blocks in place.
+platform:
+  id: scripps-typed
+  name: E.W. Scripps closings pages typed by hand
+  operator: The E.W. Scripps Company
+  adapter: scripps-typed
+  poll_minutes: 10
+  terms:
+    automated_access: forbidden
+    summary: Scripps' Terms of Use (footer link /terms-of-use on every station site; read at https://www.wtvr.com/terms-of-use,
+      "Last Modified & Effective April 1, 2015") forbid using "an automatic device (such as a robot or
+      spider) or manual process to copy or “scrape” the Services or Service Content for any purpose without
+      our express written permission" and provide access for personal, non-commercial use. The project
+      owner decided on 2026-09-25 to read the closings lists anyway for this non-commercial project (owner_decision
+      below); the terms stay recorded here.
+    evidence:
+    - url: https://www.wtvr.com/terms-of-use
+      read_at: '2026-09-26T22:53:31Z'
+      sha256: d07a49c26769d1052ac05dd2282200834722c0081995573c822ea1bf13e50d93
+      excerpt:
+      - Terms of Use (Last Modified & Effective April 1, 2015)
+      - use an automatic device (such as a robot or spider) or manual process to copy or “scrape” the
+        Services or Service Content for any purpose without our express written permission.
+      - Access to the Services including, without limitation, the Service Content is provided for your
+        information and personal, non-commercial use only.
+    permission: null
+    owner_decision:
+      decided_by: the project owner (Snowlight)
+      decided_on: '2026-09-25'
+      reference: 'Stated in the build instructions for the station adapters (piece s4b, round 1): "Terms
+        of use that forbid automated access do not exclude a station: the project owner decided on 2026-09-25
+        to read them for this non-commercial project, so record each station''s terms internally in the
+        registry and read it anyway." The same instructions record the owner''s decision of 2026-09-26
+        to read closings pages and data files even where robots.txt disallows them. Relayed to the pipeline''s
+        builder by the project''s build workflow; to revoke it, remove this block and live polling of
+        this platform stops.'
+      scope: 'Live reads of this platform''s public closings lists (the station pages, the WordPress REST
+        routes that publish the same pages, and the list files the pages frame) for Snowlight, a non-commercial
+        project, although the terms above forbid automated access. robots.txt is read and its verdict
+        recorded for every URL requested (no closings URL registered here was disallowed when checked
+        on 2026-09-26); the owner decided on 2026-09-26 to read closings pages and files even where robots.txt
+        disallows them. Unchanged by it: the User-Agent names the repository (never a browser string),
+        only the closings page or file is requested (no crawling), requests are paced per host (any Crawl-delay
+        is a floor) with conditional requests and backoff on 429 and 5xx answers, and a station that blocks
+        the project (a 403, or a bot challenge such as the PerimeterX page Nexstar''s HTML pages answer
+        with) is not worked around.'
+  notes: 'Scripps stations whose closings pages are typed by hand, filed apart from scripps.yaml so that
+    only they are read that way: the scripps adapter never reads a typed page, so on every other Scripps
+    station''s page a missing, blank or script-filled closings module is an error, not an empty list.
+    KSTU''s /weather/closings holds hand-typed rich text rather than the closings module (archived with
+    typed closings on 2022-12-13, 2023-02-22 and 2023-02-26; it held the closings module in 2020 to 2022,
+    read the same way). The Montana (MTN) sites'' /weather/closings pages are the same Brightspot template,
+    with nothing on them in every capture read (winters 2021 to 2026): an empty left column, no module
+    and no text, which the adapter reads as an error (nothing on the page says it is an empty list); they
+    have no endpoint. The scripps-typed adapter (snowlight.sources.stations.scripps_typed) reads every
+    variant the scripps adapter reads, and a typed page besides (scripps-typed-page): its rows are the
+    left column''s list items or paragraph entries, whatever words they use (snowlight.sources.stations.typed);
+    an empty rich-text module (the typed list cleared) or a sentence that there are no closings is the
+    empty state, and a page with neither rows nor such a sign is an error. The sites, terms, robots.txt
+    verdicts and access are Scripps''s, as recorded in scripps.yaml; the terms are repeated here word
+    for word.'
+  shared_paths: []
+stations:
+- id: scripps-typed-krtv
+  platform: scripps-typed
+  call_sign: KRTV
+  name: KRTV / KTGF (krtv.com)
+  market: Great Falls
+  dma: Great Falls, MT DMA
+  states: [MT]
+  counties:
+    basis: dma
+    source: 'DMA county list: alex-patton/US-TVDMA-BY-COUNTY usa-tvdma-county.csv at commit 7f254b8c1843c62ec976a71c40d366d45f6f29cd
+      (sha256 2e2cd00265a8d704...), names resolved to FIPS with the Census 2025 county Gazetteer; Connecticut
+      via the Census county-to-town crosswalk (snowlight.sources.stations.dma); market ''Great Falls,
+      MT DMA'''
+    fips: ['30005', '30013', '30015', '30027', '30035', '30041', '30045', '30051', '30071', '30073', '30099',
+      '30101', '30105']
+  page_url: null
+  data_url: null
+  export_url: null
+  archive_urls:
+  - https://www.krtv.com/weather/closings
+  - https://www.krtv.com/weather/school-closings-delays
+  poll_minutes: null
+  status: no_endpoint
+  evidence: 'First-hand check 2026-09-26T17:43:44Z (docs/research/firsthand/nexstar-tegna-scripps.json,
+    record KRTV): site https://www.krtv.com. https://www.krtv.com/weather/closings is a page with the
+    heading ''Closings'' and an empty body (no closings module, no frame, no text). Notes: /weather/school-closings-delays
+    is 404. https://www.krtv.com/weather/closings returns a page with heading ''Closings'' and an empty
+    left column (no closings module, no frame, no text). mtnmontana.com (MTN statewide brand on scripps.com)
+    redirects to https://www.thespottv.com/mtnmontana... (robots.txt path 404), not a news site. Archive
+    check: no archive request before 2026-09-28 covered this site. Asked for since, in commits 1eadbc8
+    (run 36360179859), 4214b42 (run 36364542360), 7b1fc13 (run 36369419399), f13b2c8 (run 36373148805):
+    CDX listings (2014 to 2026) of krtv.com/weather/clos*, krtv.com/clos*, krtv.com/weather/school-clos*,
+    krtv.com/school-clos* and a listing of every address of the site whose URL names closings, closures,
+    delays or cancellations (one row per address), and 7 captures of its closings pages on storm days
+    and in past winters (each capture and why it was picked is listed under ''no_endpoint_scripps_tegna''
+    in pipeline/config/sources/archive-wanted-s4b.json). Results: Listings: krtv.com/weather/closings
+    2 captures with HTTP 200 (1 in November to March; 2025-2026); krtv.com/weather/school-closings-delays
+    0 captures with HTTP 200 (0 in November to March; 2019-2025); the site-wide listing (run 36364542360)
+    names 2035 addresses with closings, closures, delays or cancellations in them, besides the closings
+    paths above: news stories, one per storm or event, not a list kept at one address. Captures read:
+    none; not read: 2 (the runner could not reach the archive), 1 (a page with nothing on it: no closings
+    module and no typed text). Every capture shows the page with nothing on it, in winter too: the heading
+    over an empty left column, with no closings module, no rich-text module and no text (read as an error,
+    since nothing on the page says it is an empty list). No read shows a row, so no endpoint is registered.
+    Market: ''Great Falls'' (first-hand record) is the crosswalk''s ''Great Falls, MT DMA''.'
+  list_files: []
+  page_check: null
+  robots: []
+- id: scripps-typed-kstu
+  platform: scripps-typed
+  call_sign: KSTU
+  name: KSTU (fox13now.com)
+  market: Salt Lake City
+  dma: Salt Lake City, UT - ID - WY DMA
+  states: [ID, NV, UT, WY]
+  counties:
+    basis: dma
+    source: 'DMA county list: alex-patton/US-TVDMA-BY-COUNTY usa-tvdma-county.csv at commit 7f254b8c1843c62ec976a71c40d366d45f6f29cd
+      (sha256 2e2cd00265a8d704...), names resolved to FIPS with the Census 2025 county Gazetteer; Connecticut
+      via the Census county-to-town crosswalk (snowlight.sources.stations.dma); market ''Salt Lake City,
+      UT - ID - WY DMA'''
+    fips: ['16007', '16041', '16071', '32007', '32033', '49001', '49003', '49005', '49007', '49009', '49011',
+      '49013', '49015', '49017', '49019', '49021', '49023', '49025', '49027', '49029', '49031', '49033',
+      '49035', '49037', '49039', '49041', '49043', '49045', '49047', '49049', '49051', '49053', '49055',
+      '49057', '56035', '56037', '56041']
+  page_url: https://www.fox13now.com/weather/closings
+  data_url: null
+  export_url: null
+  archive_urls:
+  - https://www.fox13now.com/weather/closings
+  - https://www.fox13now.com/weather/school-closings-delays
+  poll_minutes: null
+  status: active
+  evidence: 'First-hand check 2026-09-26T17:43:56Z (docs/research/firsthand/nexstar-tegna-scripps.json,
+    record KSTU): site https://www.fox13now.com. https://www.fox13now.com/weather/closings holds only
+    hand-typed RichText, no closings module or row markup. Notes: /weather/school-closings-delays is 404.
+    https://www.fox13now.com/weather/closings (heading ''School Closings & Delays'') has no closings module,
+    only hand-typed RichText: ''Provo City School District will operate on a Two Hour Late Start schedule
+    on Tuesday. This means that school will start two hours later than normal at each school. Schools
+    will still release at their normal times. The tr''. Archive check: no archive request before 2026-09-28
+    covered this site. Asked for since, in commits 1eadbc8 (run 36360179859), 4214b42 (run 36364542360),
+    7b1fc13 (run 36369419399), f13b2c8 (run 36373148805), ec162d3 (run 36379606160): CDX listings (2014
+    to 2026) of fox13now.com/weather/clos*, fox13now.com/clos*, fox13now.com/weather/school-clos*, fox13now.com/school-clos*,
+    cdn.trb.tv/kstu* and a listing of every address of the site whose URL names closings, closures, delays
+    or cancellations (one row per address), and 13 captures of its closings pages on storm days and in
+    past winters (each capture and why it was picked is listed under ''no_endpoint_scripps_tegna'' in
+    pipeline/config/sources/archive-wanted-s4b.json). Results: Listings: fox13now.com/weather/closings
+    25 captures with HTTP 200 (15 in November to March, 2 redirects; 2020-2026); fox13now.com/closures-expected-statewide-for-utah-restaurants-bars-will-have-to-go-dry
+    9 captures with HTTP 200 (4 in November to March; 2020-2026); fox13now.com/weather/school-closings-delays
+    0 captures with HTTP 200 (0 in November to March; 2020-2025); 1 more addresses with fewer captures;
+    the site-wide listing did not come back (run 36364542360 did not return it; run 36360179859 was still
+    listing when this was written). Captures read: fox13now.com/weather/closings (20200930004225 empty,
+    20220122093637 empty, 20221213030846 1 row, 20230220165100 empty, 20230222072329 19 rows, 20230222072846
+    19 rows, 20230226220604 41 rows, 20230301005700 empty, 20250211130945 empty, 20251217132420 1 row);
+    not read: 1 (the runner could not reach the archive). The station''s closings page was archived with
+    closings typed on it on 2022-12-13 (a two-hour delay typed as a paragraph under the headings ''TUESDAY,
+    DECEMBER 13'' and ''DELAYS'') and around the Utah snow days of February 2023 (19 list items under
+    day headings on the 22nd, among them Granite School District''s distance learning day, and 41 on the
+    26th, read as scripps-typed-page), so it is registered: the poller reads the page itself, as scripps-typed-page
+    (or scripps-closings-module, the Scripps closings module it held in 2020 to 2022, archived empty on
+    2020-09-30 and 2022-01-22). Brightspot states no time for typed text, so the live reader keeps the
+    page''s typed rows only when the text names a day near the read, as the 2023 headings did (''WEDNESDAY,
+    FEB. 22''); the page''s text on 2026-09-26 to 28 (the Provo late start of an unnamed Tuesday, already
+    there when archived on 2025-12-17) names none, so its row is not kept and the read is stale. Market:
+    ''Salt Lake City'' (first-hand record) is the crosswalk''s ''Salt Lake City, UT - ID - WY DMA''.'
+  list_files: []
+  page_check: null
+  robots:
+  - url: https://www.fox13now.com/weather/closings
+    checked_at: '2026-09-28T03:23:59Z'
+    state: parsed
+    allowed: true
+    rule: no rule matches
+    crawl_delay: null
+    disallowed_agents:
+    - google-extended
+    - gptbot
+    sha256: ea8413c5dd51f17de702e9e51471c0e6ba81b624d6cffa1e5a3c41ad5b4ef296
+- id: scripps-typed-ktvh
+  platform: scripps-typed
+  call_sign: KTVH
+  name: KTVH (ktvh.com)
+  market: Helena
+  dma: Helena, MT DMA
+  states: [MT]
+  counties:
+    basis: dma
+    source: 'DMA county list: alex-patton/US-TVDMA-BY-COUNTY usa-tvdma-county.csv at commit 7f254b8c1843c62ec976a71c40d366d45f6f29cd
+      (sha256 2e2cd00265a8d704...), names resolved to FIPS with the Census 2025 county Gazetteer; Connecticut
+      via the Census county-to-town crosswalk (snowlight.sources.stations.dma); market ''Helena, MT DMA'''
+    fips: ['30049']
+  page_url: null
+  data_url: null
+  export_url: null
+  archive_urls:
+  - https://www.ktvh.com/weather/closings
+  - https://www.ktvh.com/weather/school-closings-delays
+  poll_minutes: null
+  status: no_endpoint
+  evidence: 'First-hand check 2026-09-26T17:43:45Z (docs/research/firsthand/nexstar-tegna-scripps.json,
+    record KTVH): site https://www.ktvh.com. https://www.ktvh.com/weather/closings is a page with the
+    heading ''Closings'' and an empty body (no closings module, no frame, no text). Notes: /weather/school-closings-delays
+    is 404. https://www.ktvh.com/weather/closings returns a page with heading ''Closings'' and an empty
+    left column (no closings module, no frame, no text). mtnmontana.com (MTN statewide brand on scripps.com)
+    redirects to https://www.thespottv.com/mtnmontana... (robots.txt path 404), not a news site. Archive
+    check: no archive request before 2026-09-28 covered this site. Asked for since, in commits 1eadbc8
+    (run 36360179859), 4214b42 (run 36364542360), 7b1fc13 (run 36369419399), f13b2c8 (run 36373148805):
+    CDX listings (2014 to 2026) of ktvh.com/weather/clos*, ktvh.com/clos*, ktvh.com/weather/school-clos*,
+    ktvh.com/school-clos* and a listing of every address of the site whose URL names closings, closures,
+    delays or cancellations (one row per address), and 5 captures of its closings pages on storm days
+    and in past winters (each capture and why it was picked is listed under ''no_endpoint_scripps_tegna''
+    in pipeline/config/sources/archive-wanted-s4b.json). Results: Listings: ktvh.com/weather/close-the-door
+    8 captures with HTTP 200 (4 in November to March; 2022-2025); ktvh.com/weather/closing-out-summer-with-a-fall-feel
+    8 captures with HTTP 200 (2 in November to March; 2021-2025); ktvh.com/weather/closings 6 captures
+    with HTTP 200 (2 in November to March; 2021-2025); 7 more addresses with fewer captures; the site-wide
+    listing (run 36364542360) names 2349 addresses with closings, closures, delays or cancellations in
+    them, besides the closings paths above: news stories, one per storm or event, not a list kept at one
+    address. Captures read: none; not read: 2 (a page with nothing on it: no closings module and no typed
+    text). Every capture shows the page with nothing on it, in winter too: the heading over an empty left
+    column, with no closings module, no rich-text module and no text (read as an error, since nothing
+    on the page says it is an empty list). No read shows a row, so no endpoint is registered. Market:
+    ''Helena'' (first-hand record) is the crosswalk''s ''Helena, MT DMA''.'
+  list_files: []
+  page_check: null
+  robots: []
+- id: scripps-typed-ktvq
+  platform: scripps-typed
+  call_sign: KTVQ
+  name: KTVQ (ktvq.com)
+  market: Billings
+  dma: Billings, MT - ID DMA
+  states: [MT, WY]
+  counties:
+    basis: dma
+    source: 'DMA county list: alex-patton/US-TVDMA-BY-COUNTY usa-tvdma-county.csv at commit 7f254b8c1843c62ec976a71c40d366d45f6f29cd
+      (sha256 2e2cd00265a8d704...), names resolved to FIPS with the Census 2025 county Gazetteer; Connecticut
+      via the Census county-to-town crosswalk (snowlight.sources.stations.dma); market ''Billings, MT
+      - ID DMA'''
+    fips: ['30003', '30009', '30017', '30033', '30037', '30059', '30065', '30067', '30069', '30075', '30087',
+      '30095', '30097', '30103', '30107', '30111', '56003', '56029']
+  page_url: null
+  data_url: null
+  export_url: null
+  archive_urls:
+  - https://www.ktvq.com/weather/closings
+  - https://www.ktvq.com/weather/school-closings-delays
+  poll_minutes: null
+  status: no_endpoint
+  evidence: 'First-hand check 2026-09-26T17:43:33Z (docs/research/firsthand/nexstar-tegna-scripps.json,
+    record KTVQ): site https://www.ktvq.com. https://www.ktvq.com/weather/closings is a page with the
+    heading ''Closings'' and an empty body (no closings module, no frame, no text). Notes: /weather/school-closings-delays
+    is 404. https://www.ktvq.com/weather/closings returns a page with heading ''Closings'' and an empty
+    left column (no closings module, no frame, no text). Montana Television Network mtnmontana.com (MTN
+    statewide brand on scripps.com) redirects to https://www.thespottv.com/mtnmontana... (robots.txt path
+    404), not a news site. Archive check: no archive request before 2026-09-28 covered this site. Asked
+    for since, in commits 1eadbc8 (run 36360179859), 4214b42 (run 36364542360), 7b1fc13 (run 36369419399),
+    f13b2c8 (run 36373148805): CDX listings (2014 to 2026) of ktvq.com/weather/clos*, ktvq.com/clos*,
+    ktvq.com/weather/school-clos*, ktvq.com/school-clos* and a listing of every address of the site whose
+    URL names closings, closures, delays or cancellations (one row per address), and 7 captures of its
+    closings pages on storm days and in past winters (each capture and why it was picked is listed under
+    ''no_endpoint_scripps_tegna'' in pipeline/config/sources/archive-wanted-s4b.json). Results: Listings:
+    ktvq.com/weather/closings 5 captures with HTTP 200 (3 in November to March; 2021-2026); ktvq.com/closing-door-can-save-life-in-fire/
+    2 captures with HTTP 200 (1 in November to March; 2021-2021); ktvq.com/weather/school-closings-delays
+    0 captures with HTTP 200 (0 in November to March; 2019-2025); the site-wide listing (run 36364542360)
+    names 3124 addresses with closings, closures, delays or cancellations in them, besides the closings
+    paths above: news stories, one per storm or event, not a list kept at one address. Captures read:
+    none; not read: 3 (a page with nothing on it: no closings module and no typed text), 1 (the runner
+    could not reach the archive). Every capture shows the page with nothing on it, in winter too: the
+    heading over an empty left column, with no closings module, no rich-text module and no text (read
+    as an error, since nothing on the page says it is an empty list). No read shows a row, so no endpoint
+    is registered. Market: ''Billings'' (first-hand record) is the crosswalk''s ''Billings, MT - ID DMA''.'
+  list_files: []
+  page_check: null
+  robots: []
+- id: scripps-typed-kxlf
+  platform: scripps-typed
+  call_sign: KXLF
+  name: KXLF / KBZK (kxlf.com)
+  market: Butte-Bozeman
+  dma: Butte - Bozeman, MT DMA
+  states: [MT]
+  counties:
+    basis: dma
+    source: 'DMA county list: alex-patton/US-TVDMA-BY-COUNTY usa-tvdma-county.csv at commit 7f254b8c1843c62ec976a71c40d366d45f6f29cd
+      (sha256 2e2cd00265a8d704...), names resolved to FIPS with the Census 2025 county Gazetteer; Connecticut
+      via the Census county-to-town crosswalk (snowlight.sources.stations.dma); market ''Butte - Bozeman,
+      MT DMA'''
+    fips: ['30001', '30007', '30023', '30031', '30043', '30057', '30077', '30093']
+  page_url: null
+  data_url: null
+  export_url: null
+  archive_urls:
+  - https://www.kxlf.com/weather/closings
+  - https://www.kxlf.com/weather/school-closings-delays
+  poll_minutes: null
+  status: no_endpoint
+  evidence: 'First-hand check 2026-09-26T17:43:37Z (docs/research/firsthand/nexstar-tegna-scripps.json,
+    record KXLF): site https://www.kxlf.com. https://www.kxlf.com/weather/closings is a page with the
+    heading ''Closings'' and an empty body (no closings module, no frame, no text). Notes: /weather/school-closings-delays
+    is 404. https://www.kxlf.com/weather/closings returns a page with heading ''Closings'' and an empty
+    left column (no closings module, no frame, no text). mtnmontana.com (MTN statewide brand on scripps.com)
+    redirects to https://www.thespottv.com/mtnmontana... (robots.txt path 404), not a news site. Archive
+    check: no archive request before 2026-09-28 covered this site. Asked for since, in commits 1eadbc8
+    (run 36360179859), 4214b42 (run 36364542360), 7b1fc13 (run 36369419399), f13b2c8 (run 36373148805),
+    ec162d3 (run 36379606160): CDX listings (2014 to 2026) of kxlf.com/weather/clos*, kxlf.com/clos*,
+    kxlf.com/weather/school-clos*, kxlf.com/school-clos*, kbzk.com/weather/clos*, kbzk.com/clos* and a
+    listing of every address of the site whose URL names closings, closures, delays or cancellations (one
+    row per address), and 9 captures of its closings pages on storm days and in past winters (each capture
+    and why it was picked is listed under ''no_endpoint_scripps_tegna'' in pipeline/config/sources/archive-wanted-s4b.json).
+    Results: Listings: kxlf.com/weather/school-closings-delays 74 captures with HTTP 200 (32 in November
+    to March, 1 redirect; 2019-2025); kbzk.com/weather/closings 5 captures with HTTP 200 (2 in November
+    to March; 2024-2026); kxlf.com/weather/closings 4 captures with HTTP 200 (2 in November to March;
+    2024-2025); the site-wide listing (run 36364542360) names 2594 addresses with closings, closures,
+    delays or cancellations in them, besides the closings paths above: news stories, one per storm or
+    event, not a list kept at one address. Captures read: none; not read: 4 (a page with nothing on it:
+    no closings module and no typed text). Every capture shows the page with nothing on it, in winter
+    too: the heading over an empty left column, with no closings module, no rich-text module and no text
+    (read as an error, since nothing on the page says it is an empty list). No read shows a row, so no
+    endpoint is registered. Market: ''Butte-Bozeman'' (first-hand record) is the crosswalk''s ''Butte
+    - Bozeman, MT DMA''. KBZK (Bozeman) is in the same Butte - Bozeman market.'
+  list_files: []
+  page_check: null
+  robots: []
+- id: scripps-typed-kxlh
+  platform: scripps-typed
+  call_sign: KXLH
+  name: KXLH (kxlh.com)
+  market: Helena
+  dma: Helena, MT DMA
+  states: [MT]
+  counties:
+    basis: dma
+    source: 'DMA county list: alex-patton/US-TVDMA-BY-COUNTY usa-tvdma-county.csv at commit 7f254b8c1843c62ec976a71c40d366d45f6f29cd
+      (sha256 2e2cd00265a8d704...), names resolved to FIPS with the Census 2025 county Gazetteer; Connecticut
+      via the Census county-to-town crosswalk (snowlight.sources.stations.dma); market ''Helena, MT DMA'''
+    fips: ['30049']
+  page_url: null
+  data_url: null
+  export_url: null
+  archive_urls:
+  - https://www.kxlh.com/weather/closings
+  - https://www.kxlh.com/weather/school-closings-delays
+  poll_minutes: null
+  status: no_endpoint
+  evidence: 'First-hand check 2026-09-26T17:43:46Z (docs/research/firsthand/nexstar-tegna-scripps.json,
+    record KXLH): site https://www.kxlh.com. https://www.kxlh.com/weather/closings is a page with the
+    heading ''Closings'' and an empty body (no closings module, no frame, no text). Notes: /weather/school-closings-delays
+    is 404. https://www.kxlh.com/weather/closings returns a page with heading ''Closings'' and an empty
+    left column (no closings module, no frame, no text). Archive check: no archive request before 2026-09-28
+    covered this site. Asked for since, in commits 1eadbc8 (run 36360179859), 4214b42 (run 36364542360),
+    7b1fc13 (run 36369419399), f13b2c8 (run 36373148805): CDX listings (2014 to 2026) of kxlh.com/weather/clos*,
+    kxlh.com/clos*, kxlh.com/weather/school-clos*, kxlh.com/school-clos* and a listing of every address
+    of the site whose URL names closings, closures, delays or cancellations (one row per address), and
+    5 captures of its closings pages on storm days and in past winters (each capture and why it was picked
+    is listed under ''no_endpoint_scripps_tegna'' in pipeline/config/sources/archive-wanted-s4b.json).
+    Results: Listings: kxlh.com/weather/closings 4 captures with HTTP 200 (1 in November to March; 2021-2025);
+    kxlh.com/closing-door-can-save-life-in-fire/ 1 capture with HTTP 200 (0 in November to March; 2021-2021);
+    kxlh.com/weather/school-closings-delays 0 captures with HTTP 200 (0 in November to March; 2019-2025);
+    1 more addresses with fewer captures; the site-wide listing (run 36364542360) names 2144 addresses
+    with closings, closures, delays or cancellations in them, besides the closings paths above: news stories,
+    one per storm or event, not a list kept at one address. Captures read: none; not read: 3 (a page with
+    nothing on it: no closings module and no typed text). Every capture shows the page with nothing on
+    it, in winter too: the heading over an empty left column, with no closings module, no rich-text module
+    and no text (read as an error, since nothing on the page says it is an empty list). No read shows
+    a row, so no endpoint is registered. Market: ''Helena'' (first-hand record) is the crosswalk''s ''Helena,
+    MT DMA''.'
+  list_files: []
+  page_check: null
+  robots: []

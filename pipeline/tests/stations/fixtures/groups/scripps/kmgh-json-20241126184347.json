@@ -1,0 +1,1 @@
+{"closings":[{"_styledTemplate":"/thirdParty/Closings.hbs","_template":"/thirdParty/ThirdPartyModule.hbs","data":{"resultsArray":[],"singleValues":[{"datasource":"https://api.ewscloud.com/prod/closings/v1/kmgh/active-closings?temp_orgs=true"}]},"isCached":true}]}
