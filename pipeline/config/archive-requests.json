@@ -1,132 +1,603 @@
 {
  "snapshots": [
   {
-   "timestamp": "20231204133247",
-   "url": "https://www.kpax.com/school-closings-delays"
+   "timestamp": "20250121140000",
+   "url": "https://www.ccisd.us/"
   },
   {
-   "timestamp": "20231204234656",
-   "url": "https://www.kpax.com/school-closings-delays"
+   "timestamp": "20210216140000",
+   "url": "https://www.ccisd.us/"
   },
   {
-   "timestamp": "20231212050654",
-   "url": "https://www.kpax.com/school-closings-delays"
+   "timestamp": "20240116140000",
+   "url": "https://www.ccisd.us/"
   },
   {
-   "timestamp": "20240325050002",
-   "url": "https://www.kpax.com/school-closings-delays"
+   "timestamp": "20260126140000",
+   "url": "https://www.ccisd.us/"
   },
   {
-   "timestamp": "20241209045337",
-   "url": "https://www.kpax.com/school-closings-delays"
+   "timestamp": "20230822140000",
+   "url": "https://www.ccisd.us/"
   },
   {
-   "timestamp": "20250209174912",
-   "url": "https://www.kpax.com/school-closings-delays"
+   "timestamp": "20200727140000",
+   "url": "https://www.ccisd.us/"
   },
   {
-   "timestamp": "20260121135012",
-   "url": "https://www.kpax.com/school-closings-delays"
+   "timestamp": "20240708140000",
+   "url": "https://www.ccisd.us/"
   },
   {
-   "timestamp": "20200207044658",
-   "url": "https://www.kpax.com/weather/school-closings-delays"
+   "timestamp": "20220204140000",
+   "url": "https://www.ccisd.us/"
   },
   {
-   "timestamp": "20200206042948",
-   "url": "https://www.kpax.com/weather/school-closings-delays"
+   "timestamp": "20210218140000",
+   "url": "https://www.ccisd.us/"
   },
   {
-   "timestamp": "20210226124809",
-   "url": "https://www.kpax.com/weather/school-closings-delays"
+   "timestamp": "20171208140000",
+   "url": "https://www.ccisd.us/"
   },
   {
-   "timestamp": "20200331203141",
-   "url": "https://www.kpax.com/weather/school-closings-delays"
+   "timestamp": "20170825140000",
+   "url": "https://www.ccisd.us/"
   },
   {
-   "timestamp": "20201203110603",
-   "url": "https://www.kgun9.com/weather/closings-and-delays"
+   "timestamp": "20250121140000",
+   "url": "https://www.visd.net/"
   },
   {
-   "timestamp": "20221204220004",
-   "url": "https://www.kgun9.com/weather/closings-and-delays"
+   "timestamp": "20210216140000",
+   "url": "https://www.visd.net/"
   },
   {
-   "timestamp": "20250122114804",
-   "url": "https://www.kgun9.com/weather/closings-and-delays"
+   "timestamp": "20240116140000",
+   "url": "https://www.visd.net/"
   },
   {
-   "timestamp": "20170316090541",
-   "url": "http://www.kgun9.com:80/weather/school-closings-delays"
+   "timestamp": "20260126140000",
+   "url": "https://www.visd.net/"
   },
   {
-   "timestamp": "20231130071909",
-   "url": "https://www.ktnv.com/weather/closings-and-delays"
+   "timestamp": "20240708140000",
+   "url": "https://www.visd.net/"
   },
   {
-   "timestamp": "20250215100700",
-   "url": "https://www.ktnv.com/weather/closings-and-delays"
+   "timestamp": "20220204140000",
+   "url": "https://www.visd.net/"
   },
   {
-   "timestamp": "20260124020910",
-   "url": "https://www.ktnv.com/weather/closings-and-delays"
+   "timestamp": "20210218140000",
+   "url": "https://www.visd.net/"
   },
   {
-   "timestamp": "20170314180326",
-   "url": "http://www.abc15.com:80/weather/school-closings-delays"
+   "timestamp": "20240117140000",
+   "url": "https://www.visd.net/"
   },
   {
-   "timestamp": "20210205054539",
-   "url": "https://www.kxlf.com/weather/school-closings-delays"
+   "timestamp": "20170825140000",
+   "url": "https://www.visd.net/"
   },
   {
-   "timestamp": "20210210060601",
-   "url": "https://www.kxlf.com/weather/school-closings-delays"
+   "timestamp": "20250121140000",
+   "url": "https://www.bisd.us/"
   },
   {
-   "timestamp": "20200327110335",
-   "url": "https://www.kristv.com/weather/school-closings-delays"
+   "timestamp": "20210216140000",
+   "url": "https://www.bisd.us/"
   },
   {
-   "timestamp": "20230222072329",
-   "url": "https://www.fox13now.com/weather/closings"
+   "timestamp": "20240116140000",
+   "url": "https://www.bisd.us/"
   },
   {
-   "timestamp": "20230220165100",
-   "url": "https://www.fox13now.com/weather/closings"
+   "timestamp": "20260126140000",
+   "url": "https://www.bisd.us/"
   },
   {
-   "timestamp": "20230226220604",
-   "url": "https://www.fox13now.com/weather/closings"
+   "timestamp": "20230822140000",
+   "url": "https://www.bisd.us/"
   },
   {
-   "timestamp": "20180903124704",
-   "url": "https://www.wwltv.com/closings"
+   "timestamp": "20200727140000",
+   "url": "https://www.bisd.us/"
   },
   {
-   "timestamp": "20210829195433",
-   "url": "https://www.wwltv.com/closings"
+   "timestamp": "20210218140000",
+   "url": "https://www.bisd.us/"
   },
   {
-   "timestamp": "20230213082136",
-   "url": "https://www.wwltv.com/closings"
+   "timestamp": "20171208140000",
+   "url": "https://www.bisd.us/"
   },
   {
-   "timestamp": "20241126222420",
-   "url": "https://www.wwltv.com/closings"
+   "timestamp": "20250121140000",
+   "url": "https://www.mcallenisd.org/"
   },
   {
-   "timestamp": "20171208064939",
-   "url": "http://www.kiiitv.com:80/closings?"
+   "timestamp": "20210216140000",
+   "url": "https://www.mcallenisd.org/"
   },
   {
-   "timestamp": "20230327182020",
-   "url": "https://www.kiiitv.com/closings"
+   "timestamp": "20240116140000",
+   "url": "https://www.mcallenisd.org/"
   },
   {
-   "timestamp": "20210111015748",
-   "url": "https://www.kiiitv.com/closings"
+   "timestamp": "20260126140000",
+   "url": "https://www.mcallenisd.org/"
+  },
+  {
+   "timestamp": "20230822140000",
+   "url": "https://www.mcallenisd.org/"
+  },
+  {
+   "timestamp": "20200727140000",
+   "url": "https://www.mcallenisd.org/"
+  },
+  {
+   "timestamp": "20210218140000",
+   "url": "https://www.mcallenisd.org/"
+  },
+  {
+   "timestamp": "20171208140000",
+   "url": "https://www.mcallenisd.org/"
+  },
+  {
+   "timestamp": "20250121140000",
+   "url": "https://www.laredoisd.org/"
+  },
+  {
+   "timestamp": "20210216140000",
+   "url": "https://www.laredoisd.org/"
+  },
+  {
+   "timestamp": "20240116140000",
+   "url": "https://www.laredoisd.org/"
+  },
+  {
+   "timestamp": "20260126140000",
+   "url": "https://www.laredoisd.org/"
+  },
+  {
+   "timestamp": "20220204140000",
+   "url": "https://www.laredoisd.org/"
+  },
+  {
+   "timestamp": "20210218140000",
+   "url": "https://www.laredoisd.org/"
+  },
+  {
+   "timestamp": "20220203140000",
+   "url": "https://www.episd.org/"
+  },
+  {
+   "timestamp": "20250121140000",
+   "url": "https://www.episd.org/"
+  },
+  {
+   "timestamp": "20250121140000",
+   "url": "https://www.donnaisd.net/"
+  },
+  {
+   "timestamp": "20210216140000",
+   "url": "https://www.donnaisd.net/"
+  },
+  {
+   "timestamp": "20240116140000",
+   "url": "https://www.donnaisd.net/"
+  },
+  {
+   "timestamp": "20250121140000",
+   "url": "https://www.myrgcgisd.org/"
+  },
+  {
+   "timestamp": "20210216140000",
+   "url": "https://www.myrgcgisd.org/"
+  },
+  {
+   "timestamp": "20240116140000",
+   "url": "https://www.myrgcgisd.org/"
+  },
+  {
+   "timestamp": "20220203140000",
+   "url": "https://www.sisd.net/"
+  },
+  {
+   "timestamp": "20250121140000",
+   "url": "https://www.sisd.net/"
+  },
+  {
+   "timestamp": "20220203140000",
+   "url": "https://www.yisd.net/"
+  },
+  {
+   "timestamp": "20250121140000",
+   "url": "https://www.yisd.net/"
+  },
+  {
+   "timestamp": "20250121140000",
+   "url": "https://www.g-pisd.org/"
+  },
+  {
+   "timestamp": "20210216140000",
+   "url": "https://www.g-pisd.org/"
+  },
+  {
+   "timestamp": "20230822140000",
+   "url": "https://www.g-pisd.org/"
+  },
+  {
+   "timestamp": "20250121140000",
+   "url": "https://www.misdtx.net/"
+  },
+  {
+   "timestamp": "20210216140000",
+   "url": "https://www.misdtx.net/"
+  },
+  {
+   "timestamp": "20250121140000",
+   "url": "https://www.eeisd.org/"
+  },
+  {
+   "timestamp": "20210216140000",
+   "url": "https://www.eeisd.org/"
+  },
+  {
+   "timestamp": "20250121140000",
+   "url": "https://www.apisd.org/"
+  },
+  {
+   "timestamp": "20230822140000",
+   "url": "https://www.apisd.org/"
+  },
+  {
+   "timestamp": "20250121140000",
+   "url": "https://www.inglesideisd.org/"
+  },
+  {
+   "timestamp": "20230822140000",
+   "url": "https://www.inglesideisd.org/"
+  },
+  {
+   "timestamp": "20250121140000",
+   "url": "https://www.uisd.net/api/popup-alerts"
+  },
+  {
+   "timestamp": "20250121140000",
+   "url": "https://www.uisd.net/"
+  },
+  {
+   "timestamp": "20210216140000",
+   "url": "https://www.uisd.net/api/popup-alerts"
+  },
+  {
+   "timestamp": "20210216140000",
+   "url": "https://www.uisd.net/"
+  },
+  {
+   "timestamp": "20250121140000",
+   "url": "https://www.lajoyaisd.com/api/popup-alerts"
+  },
+  {
+   "timestamp": "20250121140000",
+   "url": "https://www.lajoyaisd.com/"
+  },
+  {
+   "timestamp": "20210216140000",
+   "url": "https://www.lajoyaisd.com/api/popup-alerts"
+  },
+  {
+   "timestamp": "20210216140000",
+   "url": "https://www.lajoyaisd.com/"
+  },
+  {
+   "timestamp": "20171208140000",
+   "url": "https://www.lajoyaisd.com/api/popup-alerts"
+  },
+  {
+   "timestamp": "20171208140000",
+   "url": "https://www.lajoyaisd.com/"
+  },
+  {
+   "timestamp": "20250121140000",
+   "url": "https://www.hcisd.org/api/popup-alerts"
+  },
+  {
+   "timestamp": "20250121140000",
+   "url": "https://www.hcisd.org/"
+  },
+  {
+   "timestamp": "20210216140000",
+   "url": "https://www.hcisd.org/api/popup-alerts"
+  },
+  {
+   "timestamp": "20210216140000",
+   "url": "https://www.hcisd.org/"
+  },
+  {
+   "timestamp": "20200727140000",
+   "url": "https://www.hcisd.org/api/popup-alerts"
+  },
+  {
+   "timestamp": "20200727140000",
+   "url": "https://www.hcisd.org/"
+  },
+  {
+   "timestamp": "20171208140000",
+   "url": "https://www.hcisd.org/api/popup-alerts"
+  },
+  {
+   "timestamp": "20171208140000",
+   "url": "https://www.hcisd.org/"
+  },
+  {
+   "timestamp": "20250121140000",
+   "url": "https://www.psjaisd.us/fs/pages/2/page-pops"
+  },
+  {
+   "timestamp": "20250121140000",
+   "url": "https://www.psjaisd.us/"
+  },
+  {
+   "timestamp": "20250121140000",
+   "url": "https://www.sbcisd.net/fs/pages/2/page-pops"
+  },
+  {
+   "timestamp": "20250121140000",
+   "url": "https://www.sbcisd.net/"
+  },
+  {
+   "timestamp": "20250121140000",
+   "url": "https://www.wisd.us/fs/pages/2/page-pops"
+  },
+  {
+   "timestamp": "20250121140000",
+   "url": "https://www.wisd.us/"
+  },
+  {
+   "timestamp": "20250121140000",
+   "url": "https://www.ecisd.us/"
+  },
+  {
+   "timestamp": "20210216140000",
+   "url": "https://www.ecisd.us/"
+  },
+  {
+   "timestamp": "20250121140000",
+   "url": "https://www.mcisd.net/"
+  },
+  {
+   "timestamp": "20250121140000",
+   "url": "https://www.lfcisd.net/"
+  }
+ ],
+ "cdx": [
+  {
+   "url": "www.g-pisd.org/",
+   "from": "20200701",
+   "to": "20260930",
+   "filter": [
+    "statuscode:200"
+   ],
+   "collapse": "timestamp:8"
+  },
+  {
+   "url": "www.misdtx.net/",
+   "from": "20200701",
+   "to": "20260930",
+   "filter": [
+    "statuscode:200"
+   ],
+   "collapse": "timestamp:8"
+  },
+  {
+   "url": "www.eeisd.org/",
+   "from": "20200701",
+   "to": "20260930",
+   "filter": [
+    "statuscode:200"
+   ],
+   "collapse": "timestamp:8"
+  },
+  {
+   "url": "www.apisd.org/",
+   "from": "20200701",
+   "to": "20260930",
+   "filter": [
+    "statuscode:200"
+   ],
+   "collapse": "timestamp:8"
+  },
+  {
+   "url": "www.inglesideisd.org/",
+   "from": "20200701",
+   "to": "20260930",
+   "filter": [
+    "statuscode:200"
+   ],
+   "collapse": "timestamp:8"
+  },
+  {
+   "url": "www.bisd-tx.org/",
+   "from": "20200701",
+   "to": "20260930",
+   "filter": [
+    "statuscode:200"
+   ],
+   "collapse": "timestamp:8"
+  },
+  {
+   "url": "www.refugioisd.net/",
+   "from": "20200701",
+   "to": "20260930",
+   "filter": [
+    "statuscode:200"
+   ],
+   "collapse": "timestamp:8"
+  },
+  {
+   "url": "www.vviewisd.net/",
+   "from": "20200701",
+   "to": "20260930",
+   "filter": [
+    "statuscode:200"
+   ],
+   "collapse": "timestamp:8"
+  },
+  {
+   "url": "www.rivieraisd.us/",
+   "from": "20200701",
+   "to": "20260930",
+   "filter": [
+    "statuscode:200"
+   ],
+   "collapse": "timestamp:8"
+  },
+  {
+   "url": "www.taftisd.net/",
+   "from": "20200701",
+   "to": "20260930",
+   "filter": [
+    "statuscode:200"
+   ],
+   "collapse": "timestamp:8"
+  },
+  {
+   "url": "www.pi-isd.net/",
+   "from": "20200701",
+   "to": "20260930",
+   "filter": [
+    "statuscode:200"
+   ],
+   "collapse": "timestamp:8"
+  },
+  {
+   "url": "www.rhisd.net/",
+   "from": "20200701",
+   "to": "20260930",
+   "filter": [
+    "statuscode:200"
+   ],
+   "collapse": "timestamp:8"
+  },
+  {
+   "url": "www.sdisd.us/",
+   "from": "20200701",
+   "to": "20260930",
+   "filter": [
+    "statuscode:200"
+   ],
+   "collapse": "timestamp:8"
+  },
+  {
+   "url": "www.lyfordcisd.net/",
+   "from": "20200701",
+   "to": "20260930",
+   "filter": [
+    "statuscode:200"
+   ],
+   "collapse": "timestamp:8"
+  },
+  {
+   "url": "www.romaisd.com/api/popup-alerts",
+   "from": "20200701",
+   "to": "20260930",
+   "filter": [
+    "statuscode:200"
+   ],
+   "collapse": "timestamp:8"
+  },
+  {
+   "url": "www.beevilleisd.net/api/popup-alerts",
+   "from": "20200701",
+   "to": "20260930",
+   "filter": [
+    "statuscode:200"
+   ],
+   "collapse": "timestamp:8"
+  },
+  {
+   "url": "www.tmisd.us/api/popup-alerts",
+   "from": "20200701",
+   "to": "20260930",
+   "filter": [
+    "statuscode:200"
+   ],
+   "collapse": "timestamp:8"
+  },
+  {
+   "url": "www.sintonisd.net/api/popup-alerts",
+   "from": "20200701",
+   "to": "20260930",
+   "filter": [
+    "statuscode:200"
+   ],
+   "collapse": "timestamp:8"
+  },
+  {
+   "url": "www.zcisd.org/api/popup-alerts",
+   "from": "20200701",
+   "to": "20260930",
+   "filter": [
+    "statuscode:200"
+   ],
+   "collapse": "timestamp:8"
+  },
+  {
+   "url": "www.psjaisd.us/fs/pages/2/page-pops",
+   "from": "20200701",
+   "to": "20260930",
+   "filter": [
+    "statuscode:200"
+   ],
+   "collapse": "timestamp:8"
+  },
+  {
+   "url": "www.sbcisd.net/fs/pages/2/page-pops",
+   "from": "20200701",
+   "to": "20260930",
+   "filter": [
+    "statuscode:200"
+   ],
+   "collapse": "timestamp:8"
+  },
+  {
+   "url": "www.wisd.us/fs/pages/2/page-pops",
+   "from": "20200701",
+   "to": "20260930",
+   "filter": [
+    "statuscode:200"
+   ],
+   "collapse": "timestamp:8"
+  },
+  {
+   "url": "www.sharylandisd.org/fs/pages/461/page-pops",
+   "from": "20200701",
+   "to": "20260930",
+   "filter": [
+    "statuscode:200"
+   ],
+   "collapse": "timestamp:8"
+  },
+  {
+   "url": "www.calallen.org/fs/pages/524/page-pops",
+   "from": "20200701",
+   "to": "20260930",
+   "filter": [
+    "statuscode:200"
+   ],
+   "collapse": "timestamp:8"
+  },
+  {
+   "url": "www.ecisd.us/",
+   "from": "20200701",
+   "to": "20260930",
+   "filter": [
+    "statuscode:200"
+   ],
+   "collapse": "timestamp:8"
   }
  ]
 }
