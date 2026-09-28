@@ -386,9 +386,14 @@ test.describe('zooming out', () => {
       const pushed = await lines(page, viewport, { names: false });
       expect(Math.abs(pushed.width - wheeled.width)).toBeLessThanOrEqual(1);
 
-      // Back in with the keyboard, then out hard with it.
+      // Back in with the keyboard, then out hard with it. One key at a time: a key
+      // pressed while the last zoom still eases adds its level to where the map is
+      // mid-ease, not to where it is heading, so two quick presses land short by
+      // however much ease was left (0.06 on a slow CI runner).
       const widestZoom = linkView(page)?.zoom ?? NaN;
-      await keys(page, 'Equal', 2);
+      await keys(page, 'Equal', 1);
+      await settle(page);
+      await keys(page, 'Equal', 1);
       await settle(page);
       expect(linkView(page)?.zoom).toBeCloseTo(widestZoom + 2, 1);
       await keys(page, 'Minus', 10);
