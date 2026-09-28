@@ -47,6 +47,7 @@ import { build, preview } from 'vite';
 import type { PreviewServer } from 'vite';
 
 import { STATUS_KEYS, copy, format } from '../src/copy';
+import { chanceFormat } from '../src/copy-chance';
 import { COPIED_MS } from '../src/ui/share';
 
 const WEB = fileURLToPath(new URL('..', import.meta.url));
@@ -1785,9 +1786,9 @@ test.describe('with data staged', () => {
 
     // The chance is the headline, for Tuesday, with what moved it.
     await expect(section.locator('.number')).toHaveText('64%', { timeout: 60_000 });
-    await expect(section.locator('.meaning')).toContainText(format.chanceOn('2026-01-13'));
+    await expect(section.locator('.meaning')).toContainText(chanceFormat.chanceOn('2026-01-13'));
     await expect(section.locator('.change')).toHaveText(
-      format.moved({
+      chanceFormat.moved({
         previous: 0.41,
         current: 0.64,
         at: new Date('2026-01-12T23:00:00Z'),
@@ -1812,10 +1813,10 @@ test.describe('with data staged', () => {
     await expect(chart.locator('.col')).toHaveCount(11);
     await expect(chart.locator('.col.is-lit')).toHaveCount(3);
     await expect(chart.locator('.flag')).toHaveText([
-      format.announcesFlag(new Date('2026-01-13T11:30:00Z'), ZONE),
-      format.busesFlag(new Date('2026-01-13T13:00:00Z'), ZONE),
+      chanceFormat.announcesFlag(new Date('2026-01-13T11:30:00Z'), ZONE),
+      chanceFormat.busesFlag(new Date('2026-01-13T13:00:00Z'), ZONE),
     ]);
-    await expect(chart.locator('.end')).toHaveText(format.inches(6, 9));
+    await expect(chart.locator('.end')).toHaveText(chanceFormat.inches(6, 9));
     await expect(chart.locator('.range')).toHaveCount(1);
     await expect(chart.locator('.lit-label')).toBeVisible();
     // Laid out, no words meet: the moments', the times', and the lit hours' with the bars.
@@ -1848,7 +1849,7 @@ test.describe('with data staged', () => {
     }
 
     // How it adds up, always open: the base, each reason's points, the total, and they add up.
-    await expect(section.locator('.why-title')).toHaveText(format.howWeGot(0.64));
+    await expect(section.locator('.why-title')).toHaveText(chanceFormat.howWeGot(0.64));
     const rows = section.locator('.sum > li');
     await expect(rows).toHaveCount(7);
     await expect(rows.nth(1)).toContainText(
@@ -1858,7 +1859,9 @@ test.describe('with data staged', () => {
     await expect(rows.nth(2)).toHaveText(
       '+9 Blue Valley and Olathe, next door, have already canceled.',
     );
-    await expect(section.locator('.is-total')).toHaveText(`64% ${format.chanceOn('2026-01-13')}`);
+    await expect(section.locator('.is-total')).toHaveText(
+      `64% ${chanceFormat.chanceOn('2026-01-13')}`,
+    );
     const numbers = (await section.locator('.sum .num').allTextContents()).map((text) =>
       Number(text.replace('−', '-')),
     );
@@ -1866,7 +1869,7 @@ test.describe('with data staged', () => {
     expect(numbers.slice(0, -1).reduce((sum, n) => sum + n, 0)).toBe(total);
     expect(total).toBe(64);
     await expect(section.locator('details, [aria-expanded="false"]')).toHaveCount(0);
-    await expect(section.locator('.delay')).toHaveText(format.delayInstead(0.18));
+    await expect(section.locator('.delay')).toHaveText(chanceFormat.delayInstead(0.18));
     await expect(section.locator('.delay .glyph.is-delayed')).toHaveCount(1);
 
     // Wider beside the map on a wide screen, so the chart is bigger: 460 px, 420 px, then 368.
@@ -1927,7 +1930,9 @@ test.describe('with data staged', () => {
     expect(
       await sheet.locator('.body').evaluate((body) => body.scrollWidth <= body.clientWidth),
     ).toBe(true);
-    await expect(section.locator('.is-total')).toHaveText(`64% ${format.chanceOn('2026-01-13')}`);
+    await expect(section.locator('.is-total')).toHaveText(
+      `64% ${chanceFormat.chanceOn('2026-01-13')}`,
+    );
     expect(problems).toEqual([]);
     await context.close();
   });
@@ -1953,9 +1958,9 @@ test.describe('with data staged', () => {
     const status = await section.locator('.status').boundingBox();
     const hero = await section.locator('.hero').boundingBox();
     expect((status?.y ?? 0) + (status?.height ?? 0)).toBeLessThanOrEqual(hero?.y ?? 0);
-    await expect(section.locator('.meaning')).toContainText(format.chanceOn('2026-01-13'));
+    await expect(section.locator('.meaning')).toContainText(chanceFormat.chanceOn('2026-01-13'));
     await expect(section.locator('.change')).toHaveText(
-      format.moved({
+      chanceFormat.moved({
         previous: 0.3,
         current: 0.22,
         at: new Date('2026-01-12T15:00:00Z'),
@@ -1970,10 +1975,12 @@ test.describe('with data staged', () => {
     const chart = section.locator('.chart');
     await expect(chart.locator('figcaption')).toHaveText(copy.chance.coldTonight);
     await expect(chart.locator('.col.is-below')).toHaveCount(11);
-    await expect(chart.locator('.end')).toHaveText(format.degrees(-8));
+    await expect(chart.locator('.end')).toHaveText(chanceFormat.degrees(-8));
     await expect(section.locator('.is-start .record li')).toHaveCount(4);
-    await expect(section.locator('.is-total')).toHaveText(`22% ${format.chanceOn('2026-01-13')}`);
-    await expect(section.locator('.delay')).toHaveText(format.delayInstead(0.31));
+    await expect(section.locator('.is-total')).toHaveText(
+      `22% ${chanceFormat.chanceOn('2026-01-13')}`,
+    );
+    await expect(section.locator('.delay')).toHaveText(chanceFormat.delayInstead(0.31));
     // The rest of the panel is as it was: the district, and no chance card of the old kind.
     await expect(panel.locator('.fact dd').first()).toHaveText('Kansas City 33');
     await expect(panel.locator('.outlook')).toHaveCount(0);

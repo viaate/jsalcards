@@ -2,7 +2,8 @@
   import { onMount } from 'svelte';
 
   import type { ChanceView } from '../app/chance';
-  import { copy, format } from '../copy';
+  import { copy } from '../copy';
+  import { chanceFormat } from '../copy-chance';
   import ChanceChart from './ChanceChart.svelte';
   import ChanceRecord from './ChanceRecord.svelte';
 
@@ -35,7 +36,7 @@
   /** "in 8h 25m", or null once the moment has come. */
   function countdown(at: Date): string | null {
     try {
-      return format.countdown(at, new Date(now), chance.timeZone);
+      return chanceFormat.countdown(at, new Date(now), chance.timeZone);
     } catch {
       return null;
     }
@@ -76,7 +77,7 @@
     <div class="hero-text">
       <p class="meaning" id="chance-meaning">
         <span class="sr-only">{chance.number}%</span>
-        {copy.chance.noSchool} <br />{format.weekday(chance.day)}
+        {copy.chance.noSchool} <br />{chanceFormat.weekday(chance.day)}
       </p>
       {#if chance.moved !== null}
         <p class="change is-{chance.moved.direction}">

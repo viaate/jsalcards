@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 
-import { copy, format } from '../../copy';
+import { copy } from '../../copy';
+import { chanceFormat } from '../../copy-chance';
 import type { ForecastDetail, WhyDetail } from '../../data/forecast-detail';
 import type { Outlook } from '../../data/school-day';
 import {
@@ -98,7 +99,7 @@ describe('the chance section, the night before', () => {
       [`8:52${NBSP}PM`, 'closed', 'Olathe canceled Tuesday', null],
       [`5:30${NBSP}AM`, 'next', 'Shawnee Mission usually announces', at('2026-01-13T11:30:00Z')],
     ]);
-    expect(format.countdown(at('2026-01-13T11:30:00Z'), A_NOW, ZONE)).toBe('in 8h 25m');
+    expect(chanceFormat.countdown(at('2026-01-13T11:30:00Z'), A_NOW, ZONE)).toBe('in 8h 25m');
   });
 
   it('adds up to the headline, a sentence a reason, with the record under the reason it proves', () => {
@@ -200,7 +201,9 @@ describe('the chance section, the next morning', () => {
       [`6:00${NBSP}AM`, 'event', 'Snow stopped, 8 inches in all'],
       [`5:30${NBSP}AM`, 'next', 'Shawnee Mission usually announces'],
     ]);
-    expect(format.countdown(at('2026-01-14T11:30:00Z'), B_NOW, ZONE)).toBe('Wednesday, in 23h 10m');
+    expect(chanceFormat.countdown(at('2026-01-14T11:30:00Z'), B_NOW, ZONE)).toBe(
+      'Wednesday, in 23h 10m',
+    );
   });
 
   it('adds up from the day after a snow day, with the record under the base', () => {
@@ -445,29 +448,31 @@ describe('the countdown', () => {
 
   it('counts hours and minutes, and says the day when it is half a day or more away', () => {
     const announce = at('2026-01-13T11:30:00Z');
-    expect(format.countdown(announce, at('2026-01-13T11:29:30Z'), ZONE)).toBe('in 1m');
-    expect(format.countdown(announce, at('2026-01-13T11:15:00Z'), ZONE)).toBe('in 15m');
-    expect(format.countdown(announce, at('2026-01-13T09:30:00Z'), ZONE)).toBe('in 2h');
-    expect(format.countdown(announce, at('2026-01-12T23:31:00Z'), ZONE)).toBe('in 11h 59m');
-    expect(format.countdown(announce, at('2026-01-12T23:30:00Z'), ZONE)).toBe('Tuesday, in 12h');
-    expect(format.countdown(announce, announce, ZONE)).toBeNull();
-    expect(format.countdown(announce, at('2026-01-13T12:00:00Z'), ZONE)).toBeNull();
+    expect(chanceFormat.countdown(announce, at('2026-01-13T11:29:30Z'), ZONE)).toBe('in 1m');
+    expect(chanceFormat.countdown(announce, at('2026-01-13T11:15:00Z'), ZONE)).toBe('in 15m');
+    expect(chanceFormat.countdown(announce, at('2026-01-13T09:30:00Z'), ZONE)).toBe('in 2h');
+    expect(chanceFormat.countdown(announce, at('2026-01-12T23:31:00Z'), ZONE)).toBe('in 11h 59m');
+    expect(chanceFormat.countdown(announce, at('2026-01-12T23:30:00Z'), ZONE)).toBe(
+      'Tuesday, in 12h',
+    );
+    expect(chanceFormat.countdown(announce, announce, ZONE)).toBeNull();
+    expect(chanceFormat.countdown(announce, at('2026-01-13T12:00:00Z'), ZONE)).toBeNull();
   });
 
   it('runs across midnight, and names the day where the viewer is', () => {
     // 11:50 PM to 12:10 AM, Central.
-    expect(format.countdown(at('2026-01-13T06:10:00Z'), at('2026-01-13T05:50:00Z'), ZONE)).toBe(
-      'in 20m',
-    );
+    expect(
+      chanceFormat.countdown(at('2026-01-13T06:10:00Z'), at('2026-01-13T05:50:00Z'), ZONE),
+    ).toBe('in 20m');
     // 11:30 PM Tuesday in Kansas City is 12:30 AM Wednesday in New York.
     const late = at('2026-01-14T05:30:00Z');
     const morning = at('2026-01-13T12:00:00Z');
-    expect(format.countdown(late, morning, ZONE)).toBe('Tuesday, in 17h 30m');
-    expect(format.countdown(late, morning, ny)).toBe('Wednesday, in 17h 30m');
+    expect(chanceFormat.countdown(late, morning, ZONE)).toBe('Tuesday, in 17h 30m');
+    expect(chanceFormat.countdown(late, morning, ny)).toBe('Wednesday, in 17h 30m');
     // Across a change of clocks: real hours, not wall-clock ones.
-    expect(format.countdown(at('2026-03-08T12:00:00Z'), at('2026-03-08T06:00:00Z'), ZONE)).toBe(
-      'in 6h',
-    );
+    expect(
+      chanceFormat.countdown(at('2026-03-08T12:00:00Z'), at('2026-03-08T06:00:00Z'), ZONE),
+    ).toBe('in 6h');
   });
 });
 

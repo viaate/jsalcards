@@ -5,7 +5,10 @@
  *
  * Every customer-facing string lives in src/copy.ts and follows one house style:
  * short, plain, confident, sentence case, with no banned word, exclamation
- * mark, emoji or em dash. This file holds those rules once, for two callers:
+ * mark, emoji or em dash. (The school panel's chance section words its
+ * sentences in src/copy-chance.ts, which loads with the panel rather than with
+ * the page; COPY_MODULES reads it as part of copy.ts.) This file holds those
+ * rules once, for two callers:
  *
  * - `problems(text)` checks one string. src/copy.test.ts runs it over every
  *   string in copy.ts and over the formatters' output.
@@ -70,6 +73,15 @@ import { renderHtmlCopy } from '../tools/html-copy.ts';
 
 const HERE = path.dirname(fileURLToPath(import.meta.url));
 const WEB_ROOT = path.resolve(HERE, '..');
+
+/**
+ * The copy modules, from the web root: copy.ts, and the part of it that loads
+ * later with the code that shows it, so the page's first script carries none
+ * of it. Each is read as copy.ts is: never scanned for literal text, and what
+ * it exports is copy. The first is copy.ts itself, whose `copy` tree holds the
+ * fixed strings.
+ */
+export const COPY_MODULES = ['src/copy.ts', 'src/copy-chance.ts'];
 
 // House style --------------------------------------------------------------------------
 
@@ -1320,6 +1332,8 @@ class Project {
     this.parse = parse;
     this.html = html;
     this.copyFile = path.join(root, 'src', 'copy.ts');
+    /** copy.ts and the copy modules that load later (COPY_MODULES). */
+    this.copyFiles = COPY_MODULES.map((file) => path.join(root, ...file.split('/')));
     /** @type {Module[]} */
     this.modules = [];
     /** @type {Module[]} Modules the lint reports on. */
@@ -1354,6 +1368,15 @@ class Project {
     const loaded = await import(pathToFileURL(copyFile).href);
     if (!isFields(loaded)) return;
     const exports = /** @type {Record<string, unknown>} */ ({ ...loaded });
+    // The copy modules that load later: their exports are copy too, under their own names.
+    for (const later of this.copyFiles.filter((file) => file !== copyFile && existsSync(file))) {
+      /** @type {unknown} */
+      const more = await import(pathToFileURL(later).href);
+      if (!isFields(more)) continue;
+      for (const [name, value] of Object.entries(more)) {
+        if (!Object.hasOwn(exports, name)) exports[name] = value;
+      }
+    }
     this.copyRuntime = {
       exports,
       leaves: new Set(copyLeaves(exports.copy).map(([, text]) => text)),
@@ -1509,7 +1532,7 @@ class Project {
   find(from, source) {
     const { file, query } = this.locate(from, source);
     const inside = file !== undefined && !path.relative(this.root, file).startsWith('..');
-    if (file === undefined || !inside || file === this.copyFile) return undefined;
+    if (file === undefined || !inside || this.copyFiles.includes(file)) return undefined;
     if (file.split(path.sep).includes('node_modules')) return undefined;
     if (query === 'raw') return this.load(file, 'text');
     if (query !== undefined) return undefined;
@@ -1558,7 +1581,7 @@ class Project {
    */
   importsCopy(from, source) {
     const { file, query } = this.locate(from, source);
-    return file === this.copyFile && query === undefined;
+    return file !== undefined && this.copyFiles.includes(file) && query === undefined;
   }
 
   /**
@@ -5723,7 +5746,7 @@ function isPageScript(relative) {
     !/\.d\.[cm]?ts$/u.test(relative) &&
     !/\.(?:test|spec)\.[cm]?[jt]s$/u.test(relative) &&
     !/(?:^|\/)(?:tests?|__tests__|generated)\//u.test(relative) &&
-    relative !== 'src/copy.ts'
+    !COPY_MODULES.includes(relative)
   );
 }
 

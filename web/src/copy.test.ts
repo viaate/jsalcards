@@ -5,7 +5,9 @@ import { fileURLToPath } from 'node:url';
 import { afterAll, describe, expect, it } from 'vitest';
 
 import { copy, format, mapLocale, REASON_KEYS, STATUS_KEYS } from './copy';
-import type { AlertLevelKey, BaseInput, HazardKey, ReasonInput, StatusKey } from './copy';
+import type { AlertLevelKey, HazardKey, StatusKey } from './copy';
+import { chanceFormat } from './copy-chance';
+import type { BaseInput, ReasonInput } from './copy-chance';
 
 // The house-style rules and the lint live in scripts/check-copy.mjs, a plain
 // Node module; this is the slice of it the tests use.
@@ -544,26 +546,27 @@ describe('format', () => {
     const morning = at('2026-01-13T12:20:00Z');
     const said = (text: { lead: string; rest: string }): string => `${text.lead}${text.rest}`;
     const reason = (input: ReasonInput, now = evening, zone = kc): string =>
-      said(format.reason(input, 'Riverside', now, zone));
+      said(chanceFormat.reason(input, 'Riverside', now, zone));
     const record = { closed: 4, days: 5, inches: 6 };
 
     it('heads the section with the chance and its day', () => {
-      expect(format.weekday('2026-01-13')).toBe('Tuesday');
-      expect(format.chanceOn('2026-01-14')).toBe('Chance of no school Wednesday');
-      expect(format.chanceNumber(0.64)).toBe('64');
-      expect(format.chanceNumber(0)).toBe('<1');
-      expect(format.chanceNumber(1)).toBe('>99');
-      expect(format.howWeGot(0.64)).toBe('How we got 64%');
-      expect(format.delayInstead(0.18)).toBe('18% chance of a delayed start instead');
-      expect(format.points(16)).toBe('+16');
-      expect(format.points(-3)).toBe('−3');
-      expect(() => format.points(0)).toThrow(RangeError);
-      expect(() => format.points(1.5)).toThrow(RangeError);
+      expect(Object.isFrozen(chanceFormat)).toBe(true);
+      expect(chanceFormat.weekday('2026-01-13')).toBe('Tuesday');
+      expect(chanceFormat.chanceOn('2026-01-14')).toBe('Chance of no school Wednesday');
+      expect(chanceFormat.chanceNumber(0.64)).toBe('64');
+      expect(chanceFormat.chanceNumber(0)).toBe('<1');
+      expect(chanceFormat.chanceNumber(1)).toBe('>99');
+      expect(chanceFormat.howWeGot(0.64)).toBe('How we got 64%');
+      expect(chanceFormat.delayInstead(0.18)).toBe('18% chance of a delayed start instead');
+      expect(chanceFormat.points(16)).toBe('+16');
+      expect(chanceFormat.points(-3)).toBe('−3');
+      expect(() => chanceFormat.points(0)).toThrow(RangeError);
+      expect(() => chanceFormat.points(1.5)).toThrow(RangeError);
     });
 
     it('says what moved the chance, and since when', () => {
       const moved = (previous: number, current: number, then: string, now = evening) =>
-        format.moved({ previous, current, at: at(then), now, timeZone: kc });
+        chanceFormat.moved({ previous, current, at: at(then), now, timeZone: kc });
       expect(moved(0.41, 0.64, '2026-01-12T23:00:00Z')).toBe(`Up from 41% at 5${NBSP}PM`);
       expect(moved(0.7, 0.64, '2026-01-12T23:30:00Z')).toBe(`Down from 70% at 5:30${NBSP}PM`);
       expect(moved(0.64, 0.64, '2026-01-12T23:00:00Z')).toBe(`Same as at 5${NBSP}PM`);
@@ -578,62 +581,65 @@ describe('format', () => {
 
     it('words the timeline: who posted, what happened, and the usual time', () => {
       const posted = (status: StatusKey): string =>
-        format.neighborPosted('Riverside', status, '2026-01-13');
+        chanceFormat.neighborPosted('Riverside', status, '2026-01-13');
       expect(posted('closed')).toBe('Riverside canceled Tuesday');
       expect(posted('delayed')).toBe('Riverside starts late Tuesday');
       expect(posted('remote')).toBe('Riverside is remote Tuesday');
       expect(posted('earlyDismissal')).toBe('Riverside lets out early Tuesday');
-      expect(format.usuallyAnnounces('Riverside')).toBe('Riverside usually announces');
-      expect(format.weatherEvent('snow_started', null)).toBe('Snow started');
-      expect(format.weatherEvent('snow_stopped', 8)).toBe('Snow stopped, 8 inches in all');
-      expect(format.weatherEvent('snow_stopped', 1)).toBe('Snow stopped, 1 inch in all');
+      expect(chanceFormat.usuallyAnnounces('Riverside')).toBe('Riverside usually announces');
+      expect(chanceFormat.weatherEvent('snow_started', null)).toBe('Snow started');
+      expect(chanceFormat.weatherEvent('snow_stopped', 8)).toBe('Snow stopped, 8 inches in all');
+      expect(chanceFormat.weatherEvent('snow_stopped', 1)).toBe('Snow stopped, 1 inch in all');
       // Within the last day, its time; before that, its day.
-      expect(format.momentTime(at('2026-01-13T02:41:00Z'), evening, kc)).toBe(`8:41${NBSP}PM`);
-      expect(format.momentTime(at('2026-01-12T03:04:00Z'), evening, kc)).toBe('Sun, Jan 11');
+      expect(chanceFormat.momentTime(at('2026-01-13T02:41:00Z'), evening, kc)).toBe(
+        `8:41${NBSP}PM`,
+      );
+      expect(chanceFormat.momentTime(at('2026-01-12T03:04:00Z'), evening, kc)).toBe('Sun, Jan 11');
     });
 
     it('words the chart: its scale, its times and its moments', () => {
-      const span = (from: string, to: string): string => format.hourSpan(at(from), at(to), kc);
-      expect(format.inches(7.5)).toBe(`7.5${NBSP}in`);
-      expect(format.inches(6, 9)).toBe(`6 to 9${NBSP}in`);
-      expect(format.inches(0.25)).toBe(`0.3${NBSP}in`);
-      expect(format.degrees(-8)).toBe(`-8${NBSP}F`);
-      expect(format.degrees(-0.4)).toBe(`0${NBSP}F`);
-      expect(format.shortTime(at('2026-01-13T13:00:00Z'), kc)).toBe(`7${NBSP}AM`);
-      expect(format.shortTime(at('2026-01-13T06:00:00Z'), kc)).toBe(`12${NBSP}AM`);
-      expect(format.shortTime(at('2026-01-13T11:30:00Z'), kc)).toBe(`5:30${NBSP}AM`);
+      const span = (from: string, to: string): string =>
+        chanceFormat.hourSpan(at(from), at(to), kc);
+      expect(chanceFormat.inches(7.5)).toBe(`7.5${NBSP}in`);
+      expect(chanceFormat.inches(6, 9)).toBe(`6 to 9${NBSP}in`);
+      expect(chanceFormat.inches(0.25)).toBe(`0.3${NBSP}in`);
+      expect(chanceFormat.degrees(-8)).toBe(`-8${NBSP}F`);
+      expect(chanceFormat.degrees(-0.4)).toBe(`0${NBSP}F`);
+      expect(chanceFormat.shortTime(at('2026-01-13T13:00:00Z'), kc)).toBe(`7${NBSP}AM`);
+      expect(chanceFormat.shortTime(at('2026-01-13T06:00:00Z'), kc)).toBe(`12${NBSP}AM`);
+      expect(chanceFormat.shortTime(at('2026-01-13T11:30:00Z'), kc)).toBe(`5:30${NBSP}AM`);
       expect(span('2026-01-13T08:00:00Z', '2026-01-13T11:00:00Z')).toBe(`2 to 5${NBSP}AM`);
       expect(span('2026-01-13T05:00:00Z', '2026-01-13T08:00:00Z')).toBe(
         `11${NBSP}PM to 2${NBSP}AM`,
       );
       expect(span('2026-01-13T08:30:00Z', '2026-01-13T11:00:00Z')).toBe(`2:30 to 5${NBSP}AM`);
-      expect(format.announcesFlag(at('2026-01-13T11:30:00Z'), kc)).toBe(
+      expect(chanceFormat.announcesFlag(at('2026-01-13T11:30:00Z'), kc)).toBe(
         `Usually announces 5:30${NBSP}AM`,
       );
-      expect(format.busesFlag(at('2026-01-13T13:00:00Z'), kc)).toBe(`Buses 7${NBSP}AM`);
-      expect(format.heaviest(at('2026-01-13T08:00:00Z'), at('2026-01-13T11:00:00Z'), kc)).toBe(
-        `Heaviest snow 2 to 5${NBSP}AM`,
-      );
-      expect(format.chartSummary('wind_chill', at('2026-01-14T13:00:00Z'), -8, -8, kc)).toBe(
+      expect(chanceFormat.busesFlag(at('2026-01-13T13:00:00Z'), kc)).toBe(`Buses 7${NBSP}AM`);
+      expect(
+        chanceFormat.heaviest(at('2026-01-13T08:00:00Z'), at('2026-01-13T11:00:00Z'), kc),
+      ).toBe(`Heaviest snow 2 to 5${NBSP}AM`);
+      expect(chanceFormat.chartSummary('wind_chill', at('2026-01-14T13:00:00Z'), -8, -8, kc)).toBe(
         `At 7${NBSP}AM, when the buses run, it will feel like -8${NBSP}F.`,
       );
     });
 
     it('starts the sum from the district’s own rate, as a count', () => {
-      expect(format.shareOf(30)).toEqual({ some: 3, of: 10 });
-      expect(format.shareOf(25)).toEqual({ some: 1, of: 4 });
-      expect(format.shareOf(33)).toEqual({ some: 1, of: 3 });
-      expect(format.shareOf(64)).toEqual({ some: 13, of: 20 });
-      expect(format.shareOf(1)).toEqual({ some: 1, of: 50 });
-      expect(format.shareOf(97)).toEqual({ some: 24, of: 25 });
-      expect(format.shareOf(71)).toEqual({ some: 7, of: 10 });
-      expect(format.shareOf(99)).toEqual({ some: 99, of: 100 });
+      expect(chanceFormat.shareOf(30)).toEqual({ some: 3, of: 10 });
+      expect(chanceFormat.shareOf(25)).toEqual({ some: 1, of: 4 });
+      expect(chanceFormat.shareOf(33)).toEqual({ some: 1, of: 3 });
+      expect(chanceFormat.shareOf(64)).toEqual({ some: 13, of: 20 });
+      expect(chanceFormat.shareOf(1)).toEqual({ some: 1, of: 50 });
+      expect(chanceFormat.shareOf(97)).toEqual({ some: 24, of: 25 });
+      expect(chanceFormat.shareOf(71)).toEqual({ some: 7, of: 10 });
+      expect(chanceFormat.shareOf(99)).toEqual({ some: 99, of: 100 });
       for (let percent = 1; percent <= 99; percent++) {
-        const { some, of } = format.shareOf(percent);
+        const { some, of } = chanceFormat.shareOf(percent);
         expect(Math.abs(some / of - percent / 100)).toBeLessThanOrEqual(0.02);
       }
-      expect(() => format.shareOf(0)).toThrow(RangeError);
-      const base = (input: BaseInput): string => said(format.baseReason(input, 'Riverside'));
+      expect(() => chanceFormat.shareOf(0)).toThrow(RangeError);
+      const base = (input: BaseInput): string => said(chanceFormat.baseReason(input, 'Riverside'));
       expect(base({ kind: 'alert', points: 30, alert: 'winter_storm_warning' })).toBe(
         'Where we start: Riverside cancels for about 3 in 10 winter storm warnings.',
       );
@@ -659,7 +665,7 @@ describe('format', () => {
         'Where we start: on days like this, Riverside almost never closes.',
       );
       expect(() =>
-        format.baseReason({ kind: 'alert', points: 30, alert: 'fog' as never }, 'Riverside'),
+        chanceFormat.baseReason({ kind: 'alert', points: 30, alert: 'fog' as never }, 'Riverside'),
       ).toThrow(RangeError);
     });
 
@@ -768,10 +774,12 @@ describe('format', () => {
     });
 
     it('names each day of a district’s record', () => {
-      expect(format.recordOutcome('open')).toBe(copy.chance.open);
-      expect(format.recordOutcome('earlyDismissal')).toBe(copy.chance.earlyDismissal);
-      expect(format.recordDay('closed', '2024-01-09', 8)).toBe('Closed, Jan 9, 2024, 8 inches');
-      expect(format.recordDay('open', '2025-01-13', null)).toBe('Open, Jan 13, 2025');
+      expect(chanceFormat.recordOutcome('open')).toBe(copy.chance.open);
+      expect(chanceFormat.recordOutcome('earlyDismissal')).toBe(copy.chance.earlyDismissal);
+      expect(chanceFormat.recordDay('closed', '2024-01-09', 8)).toBe(
+        'Closed, Jan 9, 2024, 8 inches',
+      );
+      expect(chanceFormat.recordDay('open', '2025-01-13', null)).toBe('Open, Jan 13, 2025');
     });
 
     it('follows the house style, with the words around a district’s name', () => {
@@ -779,19 +787,19 @@ describe('format', () => {
       for (const zone of ZONES) {
         for (let hour = 0; hour < 48; hour++) {
           const then = new Date(evening.getTime() + hour * 3_600_000);
-          const countdown = format.countdown(then, evening, zone);
+          const countdown = chanceFormat.countdown(then, evening, zone);
           outputs.push(
-            format.shortTime(then, zone),
-            format.announcesFlag(then, zone),
-            format.busesFlag(then, zone),
-            format.heaviest(evening, then, zone),
-            format.momentTime(then, morning, zone),
-            format.chartSummary('snow_total', then, 2, 5, zone),
+            chanceFormat.shortTime(then, zone),
+            chanceFormat.announcesFlag(then, zone),
+            chanceFormat.busesFlag(then, zone),
+            chanceFormat.heaviest(evening, then, zone),
+            chanceFormat.momentTime(then, morning, zone),
+            chanceFormat.chartSummary('snow_total', then, 2, 5, zone),
             countdown === null
               ? 'Riverside usually announces'
               : `Riverside usually announces ${countdown}`,
           );
-          const moved = format.moved({
+          const moved = chanceFormat.moved({
             previous: 0.3,
             current: 0.2,
             at: evening,
@@ -803,21 +811,21 @@ describe('format', () => {
       }
       for (let percent = 0; percent <= 100; percent++) {
         const chance = percent / 100;
-        outputs.push(format.chanceOn('2026-01-13'), format.howWeGot(chance));
-        outputs.push(format.delayInstead(chance));
+        outputs.push(chanceFormat.chanceOn('2026-01-13'), chanceFormat.howWeGot(chance));
+        outputs.push(chanceFormat.delayInstead(chance));
         outputs.push(
           said(
-            format.baseReason(
+            chanceFormat.baseReason(
               { kind: 'alert', points: percent, alert: 'extreme_cold_warning' },
               'the district',
             ),
           ),
-          said(format.baseReason({ kind: 'day_after', points: percent }, 'the district')),
-          said(format.baseReason({ kind: 'similar_days', points: percent }, 'the district')),
+          said(chanceFormat.baseReason({ kind: 'day_after', points: percent }, 'the district')),
+          said(chanceFormat.baseReason({ kind: 'similar_days', points: percent }, 'the district')),
         );
       }
       for (const status of ['closed', 'delayed', 'remote', 'earlyDismissal'] as const) {
-        outputs.push(format.neighborPosted('Riverside', status, '2026-01-16'));
+        outputs.push(chanceFormat.neighborPosted('Riverside', status, '2026-01-16'));
         outputs.push(
           reason({ kind: 'neighbors', points: 2, names: ['Riverside'], count: 1, status }),
         );
@@ -825,7 +833,10 @@ describe('format', () => {
       }
       for (let tenths = 0; tenths <= 240; tenths += 5) {
         const inches = tenths / 10;
-        outputs.push(format.inches(inches), format.weatherEvent('snow_stopped', inches));
+        outputs.push(
+          chanceFormat.inches(inches),
+          chanceFormat.weatherEvent('snow_stopped', inches),
+        );
         outputs.push(reason({ kind: 'icy_roads', points: 2, inches }));
         outputs.push(reason({ kind: 'ice', points: 2, inches }));
         outputs.push(
@@ -840,13 +851,16 @@ describe('format', () => {
         );
       }
       for (let degrees = -40; degrees <= 40; degrees++) {
-        outputs.push(format.degrees(degrees));
+        outputs.push(chanceFormat.degrees(degrees));
         outputs.push(reason({ kind: 'wind_chill', points: 2, feelsLike: degrees }));
         outputs.push(reason({ kind: 'cold', points: 2, feelsLike: degrees, day: '2026-01-15' }));
       }
-      for (const points of [-100, -9, -1, 1, 9, 100]) outputs.push(format.points(points));
+      for (const points of [-100, -9, -1, 1, 9, 100]) outputs.push(chanceFormat.points(points));
       for (const status of ['open', 'closed', 'delayed', 'remote', 'earlyDismissal'] as const) {
-        outputs.push(format.recordDay(status, '2025-02-05', 6), format.recordOutcome(status));
+        outputs.push(
+          chanceFormat.recordDay(status, '2025-02-05', 6),
+          chanceFormat.recordOutcome(status),
+        );
       }
       expect(allProblems(outputs)).toEqual([]);
     });
@@ -1170,6 +1184,30 @@ mark(document.body, copy.search.label, 3);
     expect(findings).toEqual([]);
     expect(scanned).toMatchObject({ svelte: 3, scripts: 1, styles: 1, html: 1, manifests: 1 });
   }, 30_000);
+
+  it('reads the copy modules that load later as part of copy.ts, and no other module', async () => {
+    await expectFindings(
+      {
+        'src/copy.ts': cleanCopy,
+        'src/copy-chance.ts': `import { copy } from './copy.ts';
+export const chanceFormat = {
+  canceled: (name: string): string => \`\${name} canceled \${copy.status.closed}\`,
+};
+`,
+        'src/words.ts': `export const words = { canceled: (name: string): string => \`\${name} canceled\` };
+`,
+        'src/Moment.svelte': `<script lang="ts">
+  import { chanceFormat } from './copy-chance';
+  import { words } from './words';
+  let { name }: { name: string } = $props();
+</script>
+<p>{chanceFormat.canceled(name)}</p>
+<p>{words.canceled(name)}</p>
+`,
+      },
+      [['src/words.ts', 'canceled`', 'literal text "canceled" in <p> at src/Moment.svelte']],
+    );
+  });
 
   it('finds literal text in components, DOM writes, index.html and manifests', async () => {
     const bad = `<script lang="ts">

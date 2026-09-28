@@ -18,8 +18,10 @@
  * and nothing is filled in.
  */
 
-import { STATUS_KEYS, copy, format, localHour } from '../copy';
-import type { BaseInput, ReasonInput, RecordCount, StatusKey } from '../copy';
+import { STATUS_KEYS, copy, format } from '../copy';
+import type { StatusKey } from '../copy';
+import { chanceFormat, localHour } from '../copy-chance';
+import type { BaseInput, ReasonInput, RecordCount } from '../copy-chance';
 import { decodeDay } from '../data/closings';
 import { NO_DETAIL } from '../data/forecast-detail';
 import type {
@@ -258,7 +260,13 @@ export function movedView(
   if (previous === null) return null;
   let text: string | null;
   try {
-    text = format.moved({ previous: previous.noSchool, current, at: previous.at, now, timeZone });
+    text = chanceFormat.moved({
+      previous: previous.noSchool,
+      current,
+      at: previous.at,
+      now,
+      timeZone,
+    });
   } catch {
     return null;
   }
@@ -340,8 +348,11 @@ export function momentsOf(
       at: event.at,
       moment: {
         key: `event ${event.kind} ${String(event.at.getTime())}`,
-        time: format.momentTime(event.at, now, timeZone),
-        text: format.weatherEvent(event.kind, event.kind === 'snow_stopped' ? event.inches : null),
+        time: chanceFormat.momentTime(event.at, now, timeZone),
+        text: chanceFormat.weatherEvent(
+          event.kind,
+          event.kind === 'snow_stopped' ? event.inches : null,
+        ),
         mark: 'event',
         at: null,
       },
@@ -354,8 +365,8 @@ export function momentsOf(
       at: post.at,
       moment: {
         key: `district ${String(post.district)}`,
-        time: format.momentTime(post.at, now, timeZone),
-        text: format.neighborPosted(name, post.status, day),
+        time: chanceFormat.momentTime(post.at, now, timeZone),
+        text: chanceFormat.neighborPosted(name, post.status, day),
         mark: post.status,
         at: null,
       },
@@ -368,7 +379,7 @@ export function momentsOf(
     moments.push({
       key: 'next',
       time: format.time(at, timeZone),
-      text: format.usuallyAnnounces(district),
+      text: chanceFormat.usuallyAnnounces(district),
       mark: 'next',
       at,
     });
@@ -461,7 +472,8 @@ export function chartTimes(input: {
     if (first > 0) wanted.push(first);
   }
   for (let at = 1; at < count - 1; at++) {
-    if (Number(format.shortTime(hourOf(at), timeZone).split(/\s|:/u)[0]) % 3 === 0) wanted.push(at);
+    if (Number(chanceFormat.shortTime(hourOf(at), timeZone).split(/\s|:/u)[0]) % 3 === 0)
+      wanted.push(at);
   }
   const gap = timeGap(count);
   const placed: number[] = [];
@@ -474,7 +486,7 @@ export function chartTimes(input: {
     .sort((a, b) => a - b)
     .map((at) => ({
       at,
-      label: format.shortTime(hourOf(at), timeZone),
+      label: chanceFormat.shortTime(hourOf(at), timeZone),
       sub: at === 0 && isNow ? copy.chance.now : null,
     }));
 }
@@ -520,7 +532,7 @@ export function chartView(detail: ForecastDetail, now: Date, timeZone: string): 
   });
   const snow = hours.kind === 'snow_total';
   const unit = (value: number): string =>
-    snow ? (value === 0 ? '0' : format.inches(value)) : format.degrees(value);
+    snow ? (value === 0 ? '0' : chanceFormat.inches(value)) : chanceFormat.degrees(value);
   const position = (instant: Date): number => (instant.getTime() - start.getTime()) / HOUR_MS;
   const flags: FlagView[] = [];
   if (announcesAt !== null) {
@@ -529,7 +541,7 @@ export function chartView(detail: ForecastDetail, now: Date, timeZone: string): 
       flags.push({
         key: 'announces',
         at,
-        label: format.announcesFlag(announcesAt, timeZone),
+        label: chanceFormat.announcesFlag(announcesAt, timeZone),
         prefer: 'left',
         downTo: 0,
       });
@@ -539,7 +551,7 @@ export function chartView(detail: ForecastDetail, now: Date, timeZone: string): 
   flags.push({
     key: 'buses',
     at: busAt,
-    label: format.busesFlag(busesAt, timeZone),
+    label: chanceFormat.busesFlag(busesAt, timeZone),
     prefer: 'right',
     downTo: (snow ? y(hours.range?.high ?? last) : zero) + 3,
   });
@@ -547,7 +559,7 @@ export function chartView(detail: ForecastDetail, now: Date, timeZone: string): 
   return {
     kind: hours.kind,
     title: snow ? copy.chance.snowTitle : evening ? copy.chance.coldTonight : copy.chance.coldTitle,
-    summary: format.chartSummary(
+    summary: chanceFormat.chartSummary(
       hours.kind,
       busesAt,
       hours.range?.low ?? last,
@@ -564,14 +576,15 @@ export function chartView(detail: ForecastDetail, now: Date, timeZone: string): 
         ? null
         : { bottom: y(hours.range.low), height: y(hours.range.high) - y(hours.range.low) },
     end: {
-      label: hours.range === null ? unit(last) : format.inches(hours.range.low, hours.range.high),
+      label:
+        hours.range === null ? unit(last) : chanceFormat.inches(hours.range.low, hours.range.high),
       bottom: y(last),
     },
     lit:
       heavy === null || hours.heavy === null
         ? null
         : {
-            label: format.heaviest(
+            label: chanceFormat.heaviest(
               new Date(hours.start.getTime() + (hours.heavy.first - 1) * HOUR_MS),
               new Date(hours.start.getTime() + hours.heavy.last * HOUR_MS),
               timeZone,
@@ -682,8 +695,9 @@ export function recordDays(record: RecordDetail): RecordDayView[] {
     return {
       key: past.day,
       tone,
-      label: past.inches === null ? format.recordOutcome(tone) : format.inches(past.inches),
-      spoken: format.recordDay(tone, past.day, past.inches),
+      label:
+        past.inches === null ? chanceFormat.recordOutcome(tone) : chanceFormat.inches(past.inches),
+      spoken: chanceFormat.recordDay(tone, past.day, past.inches),
     };
   });
 }
@@ -757,26 +771,26 @@ export function whyView(input: {
   const shown = record === null ? null : recordDays(record);
   try {
     const base: BaseInput = why.base;
-    const start = format.baseReason(base, district);
+    const start = chanceFormat.baseReason(base, district);
     const lines: WhyLineView[] = [];
     for (const reason of why.reasons) {
       const said = reasonInput(reason, detail, day, names);
       if (said === null) return null;
-      const { lead, rest } = format.reason(said, district, now, timeZone);
+      const { lead, rest } = chanceFormat.reason(said, district, now, timeZone);
       const under =
         record !== null && record.proves === reason.kind && recordCount(record) !== null
           ? shown
           : null;
       lines.push({
         key: reason.kind,
-        points: format.points(reason.points),
+        points: chanceFormat.points(reason.points),
         lead,
         rest,
         record: under,
       });
     }
     return {
-      title: format.howWeGot(chance),
+      title: chanceFormat.howWeGot(chance),
       key: copy.chance.key,
       base: {
         number: String(why.base.points),
@@ -784,7 +798,7 @@ export function whyView(input: {
         record: record?.proves === 'base' ? shown : null,
       },
       lines,
-      total: { number: format.chanceNumber(chance), text: format.chanceOn(day) },
+      total: { number: chanceFormat.chanceNumber(chance), text: chanceFormat.chanceOn(day) },
     };
   } catch {
     // A number the words refuse: no sum rather than a wrong one.
@@ -812,8 +826,8 @@ export function chanceView(input: ChanceInput): ChanceView | null {
   let number: string;
   let meaning: string;
   try {
-    number = format.chanceNumber(noSchool);
-    meaning = format.chanceOn(day);
+    number = chanceFormat.chanceNumber(noSchool);
+    meaning = chanceFormat.chanceOn(day);
   } catch {
     return null;
   }
@@ -836,7 +850,7 @@ export function chanceView(input: ChanceInput): ChanceView | null {
   let delay: string | null = null;
   if (Math.round(forecast.delay * 100) >= 1) {
     try {
-      delay = format.delayInstead(forecast.delay);
+      delay = chanceFormat.delayInstead(forecast.delay);
     } catch {
       delay = null;
     }
