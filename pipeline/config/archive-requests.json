@@ -26,15 +26,6 @@
       "to": "20260930"
     },
     {
-      "url": "fox13now.com/*",
-      "from": "20140101",
-      "to": "20260930",
-      "filter": [
-        "original:.*([Cc]losing|[Cc]losure|[Dd]elay|[Cc]ancel).*"
-      ],
-      "collapse": "urlkey"
-    },
-    {
       "url": "ktvq.com/weather/clos*",
       "from": "20140101",
       "to": "20260930"
@@ -55,15 +46,6 @@
       "to": "20260930"
     },
     {
-      "url": "ktvq.com/*",
-      "from": "20140101",
-      "to": "20260930",
-      "filter": [
-        "original:.*([Cc]losing|[Cc]losure|[Dd]elay|[Cc]ancel).*"
-      ],
-      "collapse": "urlkey"
-    },
-    {
       "url": "krtv.com/weather/clos*",
       "from": "20140101",
       "to": "20260930"
@@ -82,15 +64,6 @@
       "url": "krtv.com/school-clos*",
       "from": "20140101",
       "to": "20260930"
-    },
-    {
-      "url": "krtv.com/*",
-      "from": "20140101",
-      "to": "20260930",
-      "filter": [
-        "original:.*([Cc]losing|[Cc]losure|[Dd]elay|[Cc]ancel).*"
-      ],
-      "collapse": "urlkey"
     },
     {
       "url": "kxlf.com/weather/clos*",
@@ -123,15 +96,6 @@
       "to": "20260930"
     },
     {
-      "url": "kxlf.com/*",
-      "from": "20140101",
-      "to": "20260930",
-      "filter": [
-        "original:.*([Cc]losing|[Cc]losure|[Dd]elay|[Cc]ancel).*"
-      ],
-      "collapse": "urlkey"
-    },
-    {
       "url": "ktvh.com/weather/clos*",
       "from": "20140101",
       "to": "20260930"
@@ -150,15 +114,6 @@
       "url": "ktvh.com/school-clos*",
       "from": "20140101",
       "to": "20260930"
-    },
-    {
-      "url": "ktvh.com/*",
-      "from": "20140101",
-      "to": "20260930",
-      "filter": [
-        "original:.*([Cc]losing|[Cc]losure|[Dd]elay|[Cc]ancel).*"
-      ],
-      "collapse": "urlkey"
     },
     {
       "url": "kxlh.com/weather/clos*",
@@ -181,15 +136,6 @@
       "to": "20260930"
     },
     {
-      "url": "kxlh.com/*",
-      "from": "20140101",
-      "to": "20260930",
-      "filter": [
-        "original:.*([Cc]losing|[Cc]losure|[Dd]elay|[Cc]ancel).*"
-      ],
-      "collapse": "urlkey"
-    },
-    {
       "url": "kpax.com/weather/clos*",
       "from": "20140101",
       "to": "20260930"
@@ -208,15 +154,6 @@
       "url": "kpax.com/school-clos*",
       "from": "20140101",
       "to": "20260930"
-    },
-    {
-      "url": "kpax.com/*",
-      "from": "20140101",
-      "to": "20260930",
-      "filter": [
-        "original:.*([Cc]losing|[Cc]losure|[Dd]elay|[Cc]ancel).*"
-      ],
-      "collapse": "urlkey"
     },
     {
       "url": "wwltv.com/weather/clos*",
@@ -239,15 +176,6 @@
       "to": "20260930"
     },
     {
-      "url": "wwltv.com/*",
-      "from": "20140101",
-      "to": "20260930",
-      "filter": [
-        "original:.*([Cc]losing|[Cc]losure|[Dd]elay|[Cc]ancel).*"
-      ],
-      "collapse": "urlkey"
-    },
-    {
       "url": "kiiitv.com/weather/clos*",
       "from": "20140101",
       "to": "20260930"
@@ -266,15 +194,6 @@
       "url": "kiiitv.com/school-clos*",
       "from": "20140101",
       "to": "20260930"
-    },
-    {
-      "url": "kiiitv.com/*",
-      "from": "20140101",
-      "to": "20260930",
-      "filter": [
-        "original:.*([Cc]losing|[Cc]losure|[Dd]elay|[Cc]ancel).*"
-      ],
-      "collapse": "urlkey"
     },
     {
       "url": "kristv.com/weather/clos*",
@@ -297,15 +216,6 @@
       "to": "20260930"
     },
     {
-      "url": "kristv.com/*",
-      "from": "20140101",
-      "to": "20260930",
-      "filter": [
-        "original:.*([Cc]losing|[Cc]losure|[Dd]elay|[Cc]ancel).*"
-      ],
-      "collapse": "urlkey"
-    },
-    {
       "url": "abc15.com/weather/clos*",
       "from": "20140101",
       "to": "20260930"
@@ -324,15 +234,6 @@
       "url": "abc15.com/school-clos*",
       "from": "20140101",
       "to": "20260930"
-    },
-    {
-      "url": "abc15.com/*",
-      "from": "20140101",
-      "to": "20260930",
-      "filter": [
-        "original:.*([Cc]losing|[Cc]losure|[Dd]elay|[Cc]ancel).*"
-      ],
-      "collapse": "urlkey"
     },
     {
       "url": "kgun9.com/weather/clos*",
@@ -355,15 +256,6 @@
       "to": "20260930"
     },
     {
-      "url": "kgun9.com/*",
-      "from": "20140101",
-      "to": "20260930",
-      "filter": [
-        "original:.*([Cc]losing|[Cc]losure|[Dd]elay|[Cc]ancel).*"
-      ],
-      "collapse": "urlkey"
-    },
-    {
       "url": "ktnv.com/weather/clos*",
       "from": "20140101",
       "to": "20260930"
@@ -384,15 +276,6 @@
       "to": "20260930"
     },
     {
-      "url": "ktnv.com/*",
-      "from": "20140101",
-      "to": "20260930",
-      "filter": [
-        "original:.*([Cc]losing|[Cc]losure|[Dd]elay|[Cc]ancel).*"
-      ],
-      "collapse": "urlkey"
-    },
-    {
       "url": "10news.com/weather/clos*",
       "from": "20140101",
       "to": "20260930"
@@ -411,15 +294,6 @@
       "url": "10news.com/school-clos*",
       "from": "20140101",
       "to": "20260930"
-    },
-    {
-      "url": "10news.com/*",
-      "from": "20140101",
-      "to": "20260930",
-      "filter": [
-        "original:.*([Cc]losing|[Cc]losure|[Dd]elay|[Cc]ancel).*"
-      ],
-      "collapse": "urlkey"
     },
     {
       "url": "turnto23.com/weather/clos*",
@@ -447,15 +321,6 @@
       "to": "20260930"
     },
     {
-      "url": "turnto23.com/*",
-      "from": "20140101",
-      "to": "20260930",
-      "filter": [
-        "original:.*([Cc]losing|[Cc]losure|[Dd]elay|[Cc]ancel).*"
-      ],
-      "collapse": "urlkey"
-    },
-    {
       "url": "wtxl.com/weather/clos*",
       "from": "20140101",
       "to": "20260930"
@@ -474,15 +339,6 @@
       "url": "wtxl.com/school-clos*",
       "from": "20140101",
       "to": "20260930"
-    },
-    {
-      "url": "wtxl.com/*",
-      "from": "20140101",
-      "to": "20260930",
-      "filter": [
-        "original:.*([Cc]losing|[Cc]losure|[Dd]elay|[Cc]ancel).*"
-      ],
-      "collapse": "urlkey"
     },
     {
       "url": "abcactionnews.com/weather/clos*",
@@ -510,15 +366,6 @@
       "to": "20260930"
     },
     {
-      "url": "abcactionnews.com/*",
-      "from": "20140101",
-      "to": "20260930",
-      "filter": [
-        "original:.*([Cc]losing|[Cc]losure|[Dd]elay|[Cc]ancel).*"
-      ],
-      "collapse": "urlkey"
-    },
-    {
       "url": "wptv.com/weather/clos*",
       "from": "20140101",
       "to": "20260930"
@@ -537,15 +384,6 @@
       "url": "wptv.com/school-clos*",
       "from": "20140101",
       "to": "20260930"
-    },
-    {
-      "url": "wptv.com/*",
-      "from": "20140101",
-      "to": "20260930",
-      "filter": [
-        "original:.*([Cc]losing|[Cc]losure|[Dd]elay|[Cc]ancel).*"
-      ],
-      "collapse": "urlkey"
     },
     {
       "url": "kmsb.com/weather/clos*",
@@ -576,15 +414,6 @@
       "url": "tucsonnewsnow.com/clos*",
       "from": "20140101",
       "to": "20260930"
-    },
-    {
-      "url": "kmsb.com/*",
-      "from": "20140101",
-      "to": "20260930",
-      "filter": [
-        "original:.*([Cc]losing|[Cc]losure|[Dd]elay|[Cc]ancel).*"
-      ],
-      "collapse": "urlkey"
     }
   ]
 }
