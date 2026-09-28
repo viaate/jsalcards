@@ -24,6 +24,7 @@
   import type { UrlStore } from './state/url-store';
   import type { Selection } from './state/url';
   import type { SchoolId, UtcInstant } from './types/generated';
+  import { COPIED_MS } from './ui/share';
 
   interface Props {
     /** The inline still from index.html, handed over by main.ts. */
@@ -389,7 +390,7 @@
         clearTimeout(copiedTimer);
         copiedTimer = setTimeout(() => {
           copied = false;
-        }, 2000);
+        }, COPIED_MS);
       },
       () => undefined,
     );

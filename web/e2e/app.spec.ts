@@ -40,6 +40,7 @@ import { build, preview } from 'vite';
 import type { PreviewServer } from 'vite';
 
 import { copy, format } from '../src/copy';
+import { COPIED_MS } from '../src/ui/share';
 
 const WEB = fileURLToPath(new URL('..', import.meta.url));
 const GLOW_LAYER = 'snowlight-glow';
@@ -89,6 +90,27 @@ function watch(page: Page): Watch {
   return { problems, requests };
 }
 
+/**
+ * Stops the page's calendar at `now`, and nothing else: `new Date()` and `Date.now()` give `now`,
+ * while timers, animation frames and performance.now run as they do. page.clock fakes those too,
+ * and its time then moves on 16 ms for each frame the page draws: where a frame takes longer, as
+ * the map's do in software, a flight or a timer takes that many times as long in real time.
+ */
+async function fixDate(page: Page, now: Date): Promise<void> {
+  await page.addInitScript((time: number) => {
+    class FixedDate extends Date {
+      constructor(...args: unknown[]) {
+        super(...((args.length === 0 ? [time] : args) as [number]));
+      }
+
+      static override now(): number {
+        return time;
+      }
+    }
+    globalThis.Date = FixedDate as unknown as DateConstructor;
+  }, now.getTime());
+}
+
 async function waitForMap(page: Page): Promise<void> {
   await page.waitForFunction(() => document.querySelector('svg.still') === null, null, {
     timeout: 30_000,
@@ -125,8 +147,22 @@ async function mapView(page: Page): Promise<{ lat: number; lon: number; zoom: nu
   });
 }
 
+/**
+ * How long a page's first flight into streets may take here. The first frames that draw the
+ * street layers hold the page while the software renderer builds what it draws them with: 10 to
+ * 20 s on a busy machine (Chrome's trace: the frame's commit waits in ReadPixels on
+ * ContextVk::finishImpl), on top of the flight's own seconds. Later flights take seconds.
+ */
+const FIRST_FLIGHT_MS = 90_000;
+
 /** Resolves once the map has come to rest near a place. */
-async function expectMapNear(page: Page, lat: number, lon: number, zoom: number): Promise<void> {
+async function expectMapNear(
+  page: Page,
+  lat: number,
+  lon: number,
+  zoom: number,
+  timeout = 30_000,
+): Promise<void> {
   await expect
     .poll(
       async () => {
@@ -137,7 +173,7 @@ async function expectMapNear(page: Page, lat: number, lon: number, zoom: number)
           Math.abs(view.zoom - zoom) < 0.05
         );
       },
-      { timeout: 30_000 },
+      { timeout },
     )
     .toBe(true);
 }
@@ -838,13 +874,16 @@ test.describe('with data staged', () => {
   test('a picked school lands in its panel: its day from the live file, what it is, pin, share and close', async ({
     browser,
   }) => {
+    // Two first flights into streets, one a page (FIRST_FLIGHT_MS).
+    test.setTimeout(240_000);
     const context = await browser.newContext({
       viewport: { width: 1440, height: 900 },
       timezoneId: 'America/Chicago',
       permissions: ['clipboard-read', 'clipboard-write'],
     });
     const page = await context.newPage();
-    await page.clock.setFixedTime(SYNTHETIC_NOW);
+    // Its calendar alone: the flights below and the share button's timer run in real time.
+    await fixDate(page, SYNTHETIC_NOW);
     const { problems } = watch(page);
     await page.goto(site);
     await waitForMap(page);
@@ -879,6 +918,8 @@ test.describe('with data staged', () => {
     await expect(panel.locator('.near .glyph.is-closed')).toHaveCount(1);
     // After a pick the panel has the focus.
     await expect(panel).toBeFocused();
+    // The map lands on the school: the share button's timer below then runs on a page at rest.
+    await expectMapNear(page, 39.03606, -94.593001, 15, FIRST_FLIGHT_MS);
 
     const [pin, share] = [panel.locator('.action').nth(0), panel.locator('.action').nth(1)];
     await pin.click();
@@ -892,7 +933,8 @@ test.describe('with data staged', () => {
     expect(await page.evaluate(() => navigator.clipboard.readText())).toBe(
       `${site}?school=${PEMBROKE_HILL}`,
     );
-    await expect(share).toHaveText(copy.actions.share, { timeout: 5000 });
+    // Back to Share once the button's own time is up, with a moment's slack for a busy page.
+    await expect(share).toHaveText(copy.actions.share, { timeout: COPIED_MS + 3000 });
 
     // Escape closes it: the school leaves the address.
     await page.keyboard.press('Escape');
@@ -906,6 +948,8 @@ test.describe('with data staged', () => {
     await expect(panel.locator('.status .glyph.is-closed')).toHaveCount(1);
     await expect(panel.locator('.fact dt').first()).toHaveText(copy.detail.district);
     await expect(panel.locator('.fact dd').first()).toHaveText('Kansas City 33');
+    // It lands there first, as a link does: the nearby school below is picked from its streets.
+    await expectMapNear(page, 39.013304, -94.592692, 15, FIRST_FLIGHT_MS);
     // Its nearest school opens from the list: the map goes there, and its panel takes this one's place.
     await panel.locator('.near').first().click();
     await expect(panel.locator('h2')).toHaveText('The Pembroke Hill SchoolWornall Campus');

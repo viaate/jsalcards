@@ -259,7 +259,7 @@ describe('schoolView', () => {
     expect(schoolView(input({ outlook: null }))?.outlook).toBeNull();
   });
 
-  it('leaves today’s chance out beside today’s status: the fact beats the forecast', () => {
+  it('leaves a day’s chance out beside that day’s status: the fact beats the forecast', () => {
     const today: DayOutlook = { state: 'forecast', noSchool: 0.97, delay: 0.02, reasons: [0] };
     const tomorrow: DayOutlook = { state: 'forecast', noSchool: 0.4, delay: 0.2, reasons: [] };
     const closed: StatusRow = {
@@ -294,14 +294,28 @@ describe('schoolView', () => {
         input({ status: { today: closed, tomorrow: null }, outlook: { today, tomorrow: null } }),
       )?.outlook,
     ).toBeNull();
-    // A status tomorrow alone leaves today's chance in.
+    // Tomorrow's status known, as a district that announced it the night before: today's alone.
     expect(
       schoolView(input({ status: { today: null, tomorrow: closed }, outlook: { today, tomorrow } }))
         ?.outlook,
-    ).toMatchObject([
-      { label: copy.days.today, chance: '97%' },
-      { label: copy.days.tomorrow, chance: '40%' },
+    ).toEqual([
+      {
+        label: copy.days.today,
+        chance: '97%',
+        line: copy.predictions.noSchool,
+        delay: `${copy.predictions.delay} 2%`,
+        reasons: copy.reason.winterStorm,
+        share: 0.97,
+      },
     ]);
+    // Both days known, or open today and closed tomorrow: no day left to give a chance for.
+    for (const first of [closed, 'open'] as const) {
+      expect(
+        schoolView(
+          input({ status: { today: first, tomorrow: closed }, outlook: { today, tomorrow } }),
+        )?.outlook,
+      ).toBeNull();
+    }
     // "Not enough data" gives no chance to leave out.
     expect(
       schoolView(input({ status: { today: closed, tomorrow: null }, outlook: 'not_enough_data' }))
