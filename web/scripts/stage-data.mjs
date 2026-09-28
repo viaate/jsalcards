@@ -332,9 +332,10 @@ const townOf = (city, state) => `${casedName(String(city).trim())}, ${state}`;
  * has a word the written name is not found by, or a different number of
  * words (search.ts SearchRecord.shown). Otherwise undefined.
  * @param {string} id @param {string} name @param {import('../src/text/names.ts').NameFix | undefined} fix
+ * @param {boolean} district
  */
-function shownFor(id, name, fix) {
-  const shown = displayName(name, { state: stateOfId(id) }, fix ?? {});
+function shownFor(id, name, fix, district) {
+  const shown = displayName(name, { state: stateOfId(id), district }, fix ?? {});
   const written = tokenize(name);
   const found = new Set(indexTokens(written));
   const words = tokenize(shown);
@@ -392,7 +393,7 @@ function directoryRecords(meta, points, tables) {
       onlySchool[district] = i;
     }
     const name = meta.names[i] ?? '';
-    const shown = shownFor(id, name, fixes.schools[id]);
+    const shown = shownFor(id, name, fixes.schools[id], false);
     return {
       kind: 'school',
       id,
@@ -428,7 +429,7 @@ function directoryRecords(meta, points, tables) {
       merged++;
       continue;
     }
-    const shown = shownFor(id, name, fixes.districts[id]);
+    const shown = shownFor(id, name, fixes.districts[id], true);
     districtRecords.push({
       kind: 'district',
       id,

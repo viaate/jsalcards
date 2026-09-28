@@ -31,7 +31,10 @@
  * - Sch, Schl: School; Schls, Schs: Schools; Elem: Elementary; Acad: Academy;
  *   Ctr: Center; Chtr: Charter; Intrmd: Intermediate; Lrng: Learning;
  *   Hts: Heights; Twp: Township;
- * - Pub: Public before School, Schools or Charter ("Shawnee Mission Pub Sch");
+ * - Pub: Public before School, Schools or Charter ("Decatur Pub. Schs."); in
+ *   a district's name, Pub Sch is Public Schools, as the two districts that
+ *   have it call themselves ("Shawnee Mission Pub Sch", "Valley Center Pub
+ *   Sch"; but "... Pub Chtr Sch" is a Public Charter School);
  * - Com, Comm: Community, but before Arts ("Bradwell Comm Arts & Sci");
  * - Co: County after a name, never first or joined by a hyphen ("Butler Co.
  *   Area Technology Center", but "Co-op");
@@ -261,6 +264,8 @@ function caseWord(
 export interface NameHint {
   /** The USPS code of the state the school or district is in, when known. */
   readonly state?: string | null;
+  /** True for a district's name. */
+  readonly district?: boolean;
 }
 
 /**
@@ -655,6 +660,8 @@ function spellOut(raw: string, tokens: readonly Token[], i: number, hint: NameHi
   const token = tokens[i];
   if (token === undefined) return null;
   const { upper } = token;
+  // A district's "Pub Sch" is its Public Schools.
+  if (hint.district === true && upper === 'SCH' && tokens[i - 1]?.upper === 'PUB') return 'Schools';
   const always = ALWAYS[upper];
   if (always !== undefined) return always;
   const capitals = token.text === upper;

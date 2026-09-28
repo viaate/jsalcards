@@ -368,6 +368,20 @@ describe('laying out results', () => {
     ]);
   });
 
+  it('names a district with Pub Sch its Public Schools, and a school by that name its School', () => {
+    const written = 'Shawnee Mission Pub Sch';
+    const district: SearchHit = { ...hit('district', '2011640', written), state: 'KS' };
+    const school: SearchHit = { ...hit('school', 'ZZ000001', written), state: 'KS' };
+    const options = searchOptions(
+      { query: 'shawnee', schools: [district, school], cities: [], zips: [], order: ['schools'] },
+      'list',
+    );
+    expect(options.map((option) => [option.hit.kind, option.name])).toEqual([
+      ['district', 'Shawnee Mission Public Schools'],
+      ['school', 'Shawnee Mission Public School'],
+    ]);
+  });
+
   it('names a school by its charter first, as the map does, and bolds what matched there', () => {
     // "MIDDLE SCHOOL" of Citizens of the World Charter, Kansas City (the directory, 2024-25).
     const middle: SearchHit = {

@@ -13,7 +13,8 @@
  * src/copy.ts or the directory itself. A status line shows only where the
  * live files state one (or confirm the school open today); a chance only
  * where the district's history gives one, "Not enough data yet" where it
- * does not, and nothing where the files cannot say for now.
+ * does not, and nothing where the files cannot say for now. Today's chance
+ * never shows beside today's status: the fact beats the forecast.
  */
 
 import { DISTRICT_NAME_FIXES, SCHOOL_NAME_FIXES } from 'virtual:snowlight/school-names';
@@ -117,7 +118,10 @@ export interface SchoolView {
   readonly place: string | null;
   /** The status block's lines, today first; empty when the files state nothing. */
   readonly status: readonly StatusLineView[];
-  /** The two days of the outlook, "not enough data", or null to leave the outlook out. */
+  /**
+   * The days of the outlook (tomorrow's alone beside today's status), "not
+   * enough data", or null to leave the outlook out.
+   */
   readonly outlook: readonly DayView[] | 'not_enough_data' | null;
   readonly facts: readonly FactView[];
   /** The schools nearest it, nearest first; empty until its record is read, or where none is near. */
@@ -239,11 +243,15 @@ function dayView(label: string, day: DayOutlook): DayView {
   }
 }
 
-function outlookView(outlook: Outlook): SchoolView['outlook'] {
+/**
+ * The outlook's days. With today's status shown, today's chance is left out
+ * (the fact beats the forecast): tomorrow's alone, or no outlook without one.
+ */
+function outlookView(outlook: Outlook, statusToday: boolean): SchoolView['outlook'] {
   if (outlook === null || outlook === 'not_enough_data') return outlook;
-  const days = [dayView(copy.days.today, outlook.today)];
+  const days = statusToday ? [] : [dayView(copy.days.today, outlook.today)];
   if (outlook.tomorrow !== null) days.push(dayView(copy.days.tomorrow, outlook.tomorrow));
-  return days;
+  return days.length > 0 ? days : null;
 }
 
 function factsOf(record: SchoolRecord): FactView[] {
@@ -252,7 +260,9 @@ function factsOf(record: SchoolRecord): FactView[] {
     const { id, name } = record.district;
     facts.push({
       label: copy.detail.district,
-      lines: [displayName(name, { state: stateOfId(id) }, DISTRICT_NAME_FIXES[id] ?? {})],
+      lines: [
+        displayName(name, { state: stateOfId(id), district: true }, DISTRICT_NAME_FIXES[id] ?? {}),
+      ],
       href: null,
     });
   }
@@ -358,7 +368,8 @@ export function schoolView(input: ViewInput): SchoolView | null {
     kind: kindOf(record),
     place: place.length > 0 ? place.join(DOT) : null,
     status,
-    outlook: outlookView(input.outlook),
+    // Today's status, where its line shows (none does where the formatters refuse it).
+    outlook: outlookView(input.outlook, input.status.today !== null && status.length > 0),
     facts: factsOf(record),
     nearby: nearbyOf(record, input.closings ?? null, now),
     loading: false,

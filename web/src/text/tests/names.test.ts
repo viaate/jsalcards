@@ -69,7 +69,6 @@ describe('displayName', () => {
   });
 
   it('spells out the shortenings left over after the first pass', () => {
-    expect(displayName('Shawnee Mission Pub Sch')).toBe('Shawnee Mission Public School');
     expect(displayName('Decatur Pub. Schs. Alt. Education')).toBe(
       'Decatur Public Schools Alternative Education',
     );
@@ -90,6 +89,36 @@ describe('displayName', () => {
       'Butler County Area Technology Center',
     );
     expect(displayName('BERGEN CO JDC')).toBe('Bergen County JDC');
+  });
+
+  it('reads Pub Sch in a district’s name as the Public Schools the district is', () => {
+    expect(displayName('Shawnee Mission Pub Sch', { state: 'KS', district: true })).toBe(
+      'Shawnee Mission Public Schools',
+    );
+    expect(displayName('Valley Center Pub Sch', { state: 'KS', district: true })).toBe(
+      'Valley Center Public Schools',
+    );
+    expect(displayName('SHAWNEE MISSION PUB. SCH.', { district: true })).toBe(
+      'Shawnee Mission Public Schools',
+    );
+    // A public charter school is one school; a school's name keeps its School.
+    expect(
+      displayName('AMIGOS POR VIDA-FRIENDS FOR LIFE PUB CHTR SCH', { state: 'WI', district: true }),
+    ).toBe('Amigos Por Vida-Friends for Life Public Charter School');
+    expect(displayName('Shawnee Mission Pub Sch')).toBe('Shawnee Mission Public School');
+    expect(displayName('Shawnee Mission Pub Sch', { district: false })).toBe(
+      'Shawnee Mission Public School',
+    );
+    // Only the Sch after Pub: a district's other shortenings read as they always do.
+    expect(displayName('Ross Sch Dist', { district: true })).toBe('Ross School District');
+    expect(displayName('Decatur Pub. Schs. Alt. Education', { district: true })).toBe(
+      'Decatur Public Schools Alternative Education',
+    );
+    // A search match of the written Sch marks Schools, and one of its Sc the Sc of Schools.
+    const raw = 'Shawnee Mission Pub Sch';
+    const layout = nameLayout(raw, { district: true });
+    expect(shownRanges(layout, raw, [[20, 23]])).toEqual([[23, 30]]);
+    expect(shownRanges(layout, raw, [[20, 22]])).toEqual([[23, 25]]);
   });
 
   it('spells out every shortening the directory uses a few times, where it has one meaning', () => {

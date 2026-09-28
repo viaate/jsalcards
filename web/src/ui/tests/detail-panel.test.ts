@@ -269,4 +269,15 @@ describe('DetailPanel', () => {
     expect(panel.querySelector('.actions')).toBeNull();
     expect(panel.textContent.trim()).toBe('');
   });
+
+  it('keeps the kind’s place over what a pick knew while the record is read, and none after', () => {
+    const picked = { ...VIEW, kind: null, facts: [], outlook: null, loading: true };
+    const { panel } = show(picked);
+    expect(panel.querySelector('.head .bone.is-kind')).not.toBeNull();
+    expect(panel.querySelector('.kind')).toBeNull();
+    if (component !== undefined) void unmount(component);
+    // The record was not found: what the pick knew, and no place kept for words that will not come.
+    const { panel: settled } = show({ ...picked, loading: false });
+    expect(settled.querySelector('.bone')).toBeNull();
+  });
 });

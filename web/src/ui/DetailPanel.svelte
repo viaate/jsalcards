@@ -145,6 +145,9 @@
       {:else}
         {#if view.kind !== null}
           <p class="kind">{view.kind}</p>
+        {:else if view.loading}
+          <!-- The chip's place while the record is read: the name stays where it is when it comes. -->
+          <span class="bone is-kind" aria-hidden="true"></span>
         {/if}
         <h2 class="name">
           {view.name}{#if view.campus !== null}<span class="campus">{view.campus}</span>{/if}
@@ -352,19 +355,25 @@
     }
   }
 
-  /* The school's name, what it is and where: the one heading, then two quiet lines. */
+  /* What the school is, on a chip over its name, the one heading; then where it is, quietly. */
   .head {
     position: relative;
     padding-right: 40px;
   }
 
+  /* A small solid chip, bright on the panel: the first thing read. */
   .kind {
-    margin: 0 0 6px;
+    width: fit-content;
+    max-width: 100%;
+    margin: 0 0 10px;
+    padding: 3px 8px;
     font-size: 12px;
-    font-weight: 500;
+    font-weight: 600;
     line-height: 16px;
     letter-spacing: 0.01em;
-    color: var(--text-2);
+    color: var(--text-1);
+    background: var(--border-2);
+    border-radius: 6px;
   }
 
   .name {
@@ -759,8 +768,15 @@
     border-radius: 6px;
   }
 
-  .bone.is-short {
+  /* The chip's size, so the name below it does not move when the words come. */
+  .bone.is-short,
+  .bone.is-kind {
     width: 30%;
+    height: 22px;
+  }
+
+  .bone.is-kind {
+    margin-bottom: 10px;
   }
 
   .bone.is-title {

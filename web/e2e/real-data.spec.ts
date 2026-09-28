@@ -525,6 +525,63 @@ test('searching “pembroke” lists Pembroke Hill, and choosing it goes there',
   await context.close();
 });
 
+test('a link to Pembroke Hill lands as picking it does: its streets, right of the panel', async ({
+  browser,
+}) => {
+  const context = await browser.newContext({ viewport: { width: 1440, height: 900 } });
+  /** Where the map comes to rest, once it has: its zoom, and the school on the screen. */
+  const landing = async (page: Page): Promise<{ zoom: number; x: number; y: number }> => {
+    let last = '';
+    await expect
+      .poll(
+        async () => {
+          await settle(page);
+          const { lat, lon, zoom } = await mapView(page);
+          const now = `${lat.toFixed(6)},${lon.toFixed(6)},${zoom.toFixed(3)}`;
+          const still = now === last;
+          last = now;
+          return still;
+        },
+        { timeout: 90_000, intervals: [1000] },
+      )
+      .toBe(true);
+    return { zoom: (await mapView(page)).zoom, ...(await schoolOnScreen(page)) };
+  };
+
+  const picked = await context.newPage();
+  const { problems } = watch(picked);
+  await picked.goto(site);
+  await settle(picked);
+  const input = picked.locator('input.search-input');
+  await input.click();
+  await input.pressSequentially('pembroke', { delay: 20 });
+  await picked.locator('[role="option"]', { hasText: PEMBROKE_HILL_NAME }).click();
+  await expect(picked.locator('aside.detail h2')).toHaveText(
+    'The Pembroke Hill SchoolWornall Campus',
+  );
+  const pick = await landing(picked);
+
+  const linked = await context.newPage();
+  const linkProblems = watch(linked).problems;
+  await linked.goto(`${site}?school=${PEMBROKE_HILL.id}`);
+  const panel = linked.locator('aside.detail');
+  await expect(panel.locator('h2')).toHaveText('The Pembroke Hill SchoolWornall Campus');
+  const link = await landing(linked);
+  const box = await panel.boundingBox();
+  const panelRight = (box?.x ?? 0) + (box?.width ?? 0);
+
+  // The same zoom, the school at the same spot, but for the search index's rounding of its
+  // place (up to 6 m, 3 pixels here): the middle of the map the panel leaves in view.
+  expect(link.zoom).toBeCloseTo(pick.zoom, 2);
+  expect(link.zoom).toBeCloseTo(15, 2);
+  expect(Math.abs(link.x - pick.x)).toBeLessThan(4);
+  expect(Math.abs(link.y - pick.y)).toBeLessThan(4);
+  expect(Math.abs(link.x - (panelRight + 1440) / 2)).toBeLessThan(3);
+  expect(Math.abs(link.y - (64 + 900) / 2)).toBeLessThan(3);
+  expect([...problems, ...linkProblems]).toEqual([]);
+  await context.close();
+});
+
 test('looking at Kansas City, “Pembroke” lists Pembroke Hill first, above Pembroke, Massachusetts', async ({
   browser,
 }) => {

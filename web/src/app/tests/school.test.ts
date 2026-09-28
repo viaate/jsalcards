@@ -4,6 +4,7 @@ import { copy, format } from '../../copy';
 import type { DetailsSource, SchoolRecord } from '../../data/details';
 import { createDataFiles } from '../../data/files';
 import { NO_STATUS } from '../../data/school-day';
+import type { DayOutlook, StatusRow } from '../../data/school-day';
 import { jsonResponse, testClosings, testDay, testMeta } from '../../data/tests/builders';
 import { schoolView, watchSchool } from '../school';
 import type { SchoolView, ViewInput } from '../school';
@@ -152,6 +153,18 @@ describe('schoolView', () => {
     );
   });
 
+  it('names a district by what NCES shortened, its Pub Sch as the Public Schools it is', () => {
+    const record: SchoolRecord = {
+      ...PUBLIC,
+      district: { index: 0, id: '2011640', name: 'Shawnee Mission Pub Sch' },
+    };
+    expect(schoolView(input({ id: PUBLIC.id, record }))?.facts[0]).toEqual({
+      label: copy.detail.district,
+      lines: ['Shawnee Mission Public Schools'],
+      href: null,
+    });
+  });
+
   it('shows what a pick knew until the record is read, and nothing for an id with no school', () => {
     const hint = {
       id: PRIVATE.id,
@@ -244,6 +257,72 @@ describe('schoolView', () => {
       },
     ]);
     expect(schoolView(input({ outlook: null }))?.outlook).toBeNull();
+  });
+
+  it('leaves today’s chance out beside today’s status: the fact beats the forecast', () => {
+    const today: DayOutlook = { state: 'forecast', noSchool: 0.97, delay: 0.02, reasons: [0] };
+    const tomorrow: DayOutlook = { state: 'forecast', noSchool: 0.4, delay: 0.2, reasons: [] };
+    const closed: StatusRow = {
+      status: 0,
+      reason: 0,
+      announcedAt: null,
+      shiftMinutes: null,
+      clockMinute: null,
+    };
+    const view = schoolView(
+      input({ status: { today: closed, tomorrow: null }, outlook: { today, tomorrow } }),
+    );
+    expect(view?.status.map((line) => line.headline)).toEqual([copy.statusLine.closed.today]);
+    expect(view?.outlook).toEqual([
+      {
+        label: copy.days.tomorrow,
+        chance: '40%',
+        line: copy.predictions.noSchool,
+        delay: `${copy.predictions.delay} 20%`,
+        reasons: null,
+        share: 0.4,
+      },
+    ]);
+    // Open today, as the live check confirmed, is today's status too.
+    expect(
+      schoolView(input({ status: { today: 'open', tomorrow: null }, outlook: { today, tomorrow } }))
+        ?.outlook,
+    ).toMatchObject([{ label: copy.days.tomorrow, chance: '40%' }]);
+    // A file that stops at today leaves no chance to give: no outlook at all.
+    expect(
+      schoolView(
+        input({ status: { today: closed, tomorrow: null }, outlook: { today, tomorrow: null } }),
+      )?.outlook,
+    ).toBeNull();
+    // A status tomorrow alone leaves today's chance in.
+    expect(
+      schoolView(input({ status: { today: null, tomorrow: closed }, outlook: { today, tomorrow } }))
+        ?.outlook,
+    ).toMatchObject([
+      { label: copy.days.today, chance: '97%' },
+      { label: copy.days.tomorrow, chance: '40%' },
+    ]);
+    // "Not enough data" gives no chance to leave out.
+    expect(
+      schoolView(input({ status: { today: closed, tomorrow: null }, outlook: 'not_enough_data' }))
+        ?.outlook,
+    ).toBe('not_enough_data');
+    // A status the formatters refuse shows no line: today's chance stays.
+    expect(
+      schoolView(
+        input({
+          status: {
+            today: { ...closed, announcedAt: new Date('2026-01-12T11:12:00Z') },
+            tomorrow: null,
+          },
+          outlook: { today, tomorrow },
+          timeZone: 'Not/A_Zone',
+        }),
+      ),
+    ).toMatchObject({
+      status: [],
+      outlook: [{ label: copy.days.today }, { label: copy.days.tomorrow }],
+    });
   });
 });
 

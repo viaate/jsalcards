@@ -428,7 +428,7 @@ export function nameFixes(directory: DirectoryNames): NameFixes {
    */
   const districtShown = (d: number): string => {
     const id = districts.ids[d] ?? '';
-    const hint: NameHint = { state: stateOfId(id) };
+    const hint: NameHint = { state: stateOfId(id), district: true };
     const shown = displayName(districts.names[d] ?? '', hint, districtFixes[id]);
     const match = DISTRICT_PROPER.exec(shown);
     const own = match?.[1] ?? '';

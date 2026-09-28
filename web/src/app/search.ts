@@ -228,7 +228,8 @@ function shownName(
     return { name: casedName(hit.name), highlight: hit.highlight.map(([a, b]) => [a, b]) };
   }
   const fix = (hit.kind === 'school' ? fixes.schools : fixes.districts)[hit.id] ?? {};
-  const layout = nameLayout(hit.name, { state: stateOfId(hit.id) }, fix);
+  const hint = { state: stateOfId(hit.id), district: hit.kind === 'district' };
+  const layout = nameLayout(hit.name, hint, fix);
   const name = layout.map((piece) => piece.text).join('');
   if (
     hit.shown !== undefined &&
