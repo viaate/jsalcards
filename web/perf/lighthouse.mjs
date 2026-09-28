@@ -153,7 +153,9 @@ async function launchChrome() {
       chrome.kill();
       await exited;
     }
-    await rm(profile, { recursive: true, force: true });
+    // Chrome's helper processes can still be writing to the profile for a moment after the
+    // browser exits (ENOTEMPTY in CI run 36455905517), so the removal tries again as they finish.
+    await rm(profile, { recursive: true, force: true, maxRetries: 10, retryDelay: 100 });
   };
   try {
     /** @type {number} */
