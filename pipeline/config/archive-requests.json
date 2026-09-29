@@ -1,744 +1,278 @@
 {
+  "cdx": [
+    {
+      "url": "www.pcschools.us/cms/Tools/OnScreenAlerts/*",
+      "from": "20160101",
+      "to": "20260930",
+      "filter": [
+        "statuscode:200"
+      ]
+    },
+    {
+      "url": "www.ccsdut.org/cms/Tools/OnScreenAlerts/*",
+      "from": "20160101",
+      "to": "20260930",
+      "filter": [
+        "statuscode:200"
+      ]
+    },
+    {
+      "url": "www.judsonisd.org/cms/Tools/OnScreenAlerts/*",
+      "from": "20160101",
+      "to": "20260930",
+      "filter": [
+        "statuscode:200"
+      ]
+    },
+    {
+      "url": "www.harlandale.net/cms/Tools/OnScreenAlerts/*",
+      "from": "20160101",
+      "to": "20260930",
+      "filter": [
+        "statuscode:200"
+      ]
+    },
+    {
+      "url": "www.hsd3.org/cms/Tools/OnScreenAlerts/*",
+      "from": "20160101",
+      "to": "20260930",
+      "filter": [
+        "statuscode:200"
+      ]
+    },
+    {
+      "url": "www.blueponyk12.com/cms/Tools/OnScreenAlerts/*",
+      "from": "20160101",
+      "to": "20260930",
+      "filter": [
+        "statuscode:200"
+      ]
+    },
+    {
+      "url": "www.hellgate.k12.mt.us/cms/Tools/OnScreenAlerts/*",
+      "from": "20160101",
+      "to": "20260930",
+      "filter": [
+        "statuscode:200"
+      ]
+    },
+    {
+      "url": "www.hobson.k12.mt.us/cms/Tools/OnScreenAlerts/*",
+      "from": "20160101",
+      "to": "20260930",
+      "filter": [
+        "statuscode:200"
+      ]
+    },
+    {
+      "url": "www.sumter.k12.fl.us/cms/Tools/OnScreenAlerts/*",
+      "from": "20160101",
+      "to": "20260930",
+      "filter": [
+        "statuscode:200"
+      ]
+    },
+    {
+      "url": "www.donnaisd.net/cms/Tools/OnScreenAlerts/*",
+      "from": "20160101",
+      "to": "20260930",
+      "filter": [
+        "statuscode:200"
+      ]
+    },
+    {
+      "url": "www.hcisd.org/cms/Tools/OnScreenAlerts/*",
+      "from": "20160101",
+      "to": "20260930",
+      "filter": [
+        "statuscode:200"
+      ]
+    },
+    {
+      "url": "www.wcbek12.org/cms/Tools/OnScreenAlerts/*",
+      "from": "20160101",
+      "to": "20260930",
+      "filter": [
+        "statuscode:200"
+      ]
+    },
+    {
+      "url": "www.episd.org/cms/Tools/OnScreenAlerts/*",
+      "from": "20160101",
+      "to": "20260930",
+      "filter": [
+        "statuscode:200"
+      ]
+    }
+  ],
   "snapshots": [
     {
-      "timestamp": "20260607230438",
-      "url": "https://www.tcoek12.org/school-districts/school-closure-information"
+      "timestamp": "20231230195943",
+      "url": "https://www.hillsboroughschools.org/"
     },
     {
-      "timestamp": "20210225074316",
-      "url": "http://flashalertspokane.net/closures-cats.html"
+      "timestamp": "20231230194042",
+      "url": "https://www.hillsboroughschools.org/cms/Tools/OnScreenAlerts/UserControls/OnScreenAlertDialogListWrapper.aspx?OnScreenAlertCookie=&SiteID=4&_=1703931969248"
     },
     {
-      "timestamp": "20221204183645",
-      "url": "http://flashalertspokane.net/closures-cats.html"
+      "timestamp": "20230106223714",
+      "url": "https://www.hillsboroughschools.org/"
     },
     {
-      "timestamp": "20201124174727",
-      "url": "http://flashalertspokane.net/closures-cats.html"
+      "timestamp": "20230106180700",
+      "url": "https://www.hillsboroughschools.org/cms/Tools/OnScreenAlerts/UserControls/OnScreenAlertDialogListWrapper.aspx?OnScreenAlertCookie=&SiteID=4&_=1668077923308"
     },
     {
-      "timestamp": "20210216160616",
-      "url": "https://www.ktre.com/weather/closings/"
+      "timestamp": "20220930163909",
+      "url": "https://www.hillsboroughschools.org/"
     },
     {
-      "timestamp": "20220203131209",
-      "url": "https://www.ktre.com/weather/closings/"
+      "timestamp": "20220930174753",
+      "url": "https://www.hillsboroughschools.org/cms/Tools/OnScreenAlerts/UserControls/OnScreenAlertDialogListWrapper.aspx?OnScreenAlertCookie=&SiteID=4&_=1664555949145"
     },
     {
-      "timestamp": "20230228224352",
-      "url": "https://www.nbclosangeles.com/weather/school-closings/"
+      "timestamp": "20220928001729",
+      "url": "https://www.browardschools.com/cms/Tools/OnScreenAlerts/UserControls/OnScreenAlertDialogListWrapper.aspx?OnScreenAlertCookie=&SiteID=4&_=1627683547399"
     },
     {
-      "timestamp": "20200407104027",
-      "url": "https://www.nbclosangeles.com/weather/school-closings/"
+      "timestamp": "20240924211726",
+      "url": "https://www.browardschools.com/"
     },
     {
-      "timestamp": "20211227153519",
-      "url": "https://www.nbclosangeles.com/weather/school-closings/"
+      "timestamp": "20240924193716",
+      "url": "https://www.browardschools.com/cms/Tools/OnScreenAlerts/UserControls/OnScreenAlertDialogListWrapper.aspx?OnScreenAlertCookie=&SiteID=4&_=1656538413086"
     },
     {
-      "timestamp": "20230223031155",
-      "url": "https://www.nbclosangeles.com/weather/school-closings/"
+      "timestamp": "20241008221855",
+      "url": "https://www.browardschools.com/cms/Tools/OnScreenAlerts/UserControls/OnScreenAlertDialogListWrapper.aspx?OnScreenAlertCookie=&SiteID=4&_=1627683544364"
     },
     {
-      "timestamp": "20201228091953",
-      "url": "https://www.nbclosangeles.com/weather/school-closings/"
+      "timestamp": "20240615220214",
+      "url": "https://www.browardschools.com/"
     },
     {
-      "timestamp": "20210311013839",
-      "url": "https://www.nbclosangeles.com/weather/school-closings/"
+      "timestamp": "20240616024820",
+      "url": "https://www.browardschools.com/cms/Tools/OnScreenAlerts/UserControls/OnScreenAlertDialogListWrapper.aspx?OnScreenAlertCookie=&SiteID=4&_=1627683545400"
     },
     {
-      "timestamp": "20230328225100",
-      "url": "https://www.nbclosangeles.com/weather/school-closings/"
+      "timestamp": "20240614211554",
+      "url": "https://www.browardschools.com/"
     },
     {
-      "timestamp": "20220327211620",
-      "url": "https://www.nbclosangeles.com/weather/school-closings/"
+      "timestamp": "20240615015742",
+      "url": "https://www.browardschools.com/cms/Tools/OnScreenAlerts/UserControls/OnScreenAlertDialogListWrapper.aspx?OnScreenAlertCookie=&SiteID=4&_=1627683544886"
     },
     {
-      "timestamp": "20221109082427",
-      "url": "https://www.nbclosangeles.com/weather/school-closings/"
+      "timestamp": "20210908004504",
+      "url": "https://www.browardschools.com/"
     },
     {
-      "timestamp": "20200410092807",
-      "url": "https://www.nbclosangeles.com/weather/school-closings/"
+      "timestamp": "20210907211206",
+      "url": "https://www.browardschools.com/cms/Tools/OnScreenAlerts/UserControls/OnScreenAlertDialogListWrapper.aspx?OnScreenAlertCookie=&SiteID=4&_=1614638729871"
     },
     {
-      "timestamp": "20250127005542",
-      "url": "https://www.nbclosangeles.com/weather/school-closings/"
+      "timestamp": "20231116034005",
+      "url": "https://www.browardschools.com/"
     },
     {
-      "timestamp": "20211223175230",
-      "url": "https://www.nbclosangeles.com/weather/school-closings/"
+      "timestamp": "20231116034442",
+      "url": "https://www.browardschools.com/cms/Tools/OnScreenAlerts/UserControls/OnScreenAlertDialogListWrapper.aspx?OnScreenAlertCookie=&SiteID=4&_=1700106006176"
     },
     {
-      "timestamp": "20211025150459",
-      "url": "https://www.nbclosangeles.com/weather/school-closings/"
+      "timestamp": "20221110061237",
+      "url": "https://www.browardschools.com/"
     },
     {
-      "timestamp": "20220329125243",
-      "url": "https://www.nbclosangeles.com/weather/school-closings/"
+      "timestamp": "20221110033451",
+      "url": "https://www.browardschools.com/cms/Tools/OnScreenAlerts/UserControls/OnScreenAlertDialogListWrapper.aspx?OnScreenAlertCookie=&SiteID=4&_=1591325488780"
     },
     {
-      "timestamp": "20221227043808",
-      "url": "https://www.nbclosangeles.com/weather/school-closings/"
+      "timestamp": "20230413102621",
+      "url": "https://www.browardschools.com/"
     },
     {
-      "timestamp": "20230103194610",
-      "url": "https://www.nbclosangeles.com/weather/school-closings/"
+      "timestamp": "20230413131101",
+      "url": "https://www.browardschools.com/cms/Tools/OnScreenAlerts/UserControls/OnScreenAlertDialogListWrapper.aspx?OnScreenAlertCookie=&SiteID=4&_=1681257400406"
     },
     {
-      "timestamp": "20240103094448",
-      "url": "https://www.nbclosangeles.com/weather/school-closings/"
+      "timestamp": "20231116215057",
+      "url": "https://www.browardschools.com/"
     },
     {
-      "timestamp": "20241124190920",
-      "url": "https://www.nbclosangeles.com/weather/school-closings/"
+      "timestamp": "20231116185455",
+      "url": "https://www.browardschools.com/cms/Tools/OnScreenAlerts/UserControls/OnScreenAlertDialogListWrapper.aspx?OnScreenAlertCookie=&SiteID=4&_=1627683549608"
     },
     {
-      "timestamp": "20241125233701",
-      "url": "https://www.nbclosangeles.com/weather/school-closings/"
+      "timestamp": "20201111014733",
+      "url": "https://www.browardschools.com/"
     },
     {
-      "timestamp": "20250204072339",
-      "url": "https://www.nbclosangeles.com/weather/school-closings/"
+      "timestamp": "20201110223653",
+      "url": "https://www.browardschools.com/cms/Tools/OnScreenAlerts/UserControls/OnScreenAlertDialogListWrapper.aspx?OnScreenAlertCookie=&SiteID=4&_=1604969298407"
     },
     {
-      "timestamp": "20250205010322",
-      "url": "https://www.nbclosangeles.com/weather/school-closings/"
+      "timestamp": "20230414033003",
+      "url": "https://www.browardschools.com/"
     },
     {
-      "timestamp": "20250205180441",
-      "url": "https://www.nbclosangeles.com/weather/school-closings/"
+      "timestamp": "20230414033006",
+      "url": "https://www.browardschools.com/cms/Tools/OnScreenAlerts/UserControls/OnScreenAlertDialogListWrapper.aspx?OnScreenAlertCookie=&SiteID=4&_=1681443004095"
     },
     {
-      "timestamp": "20250206232305",
-      "url": "https://www.nbclosangeles.com/weather/school-closings/"
+      "timestamp": "20240927002513",
+      "url": "https://www.browardschools.com/"
     },
     {
-      "timestamp": "20250212230532",
-      "url": "https://www.nbclosangeles.com/weather/school-closings/"
+      "timestamp": "20240927004516",
+      "url": "https://www.browardschools.com/cms/Tools/OnScreenAlerts/UserControls/OnScreenAlertDialogListWrapper.aspx?OnScreenAlertCookie=&SiteID=4&_=1627683549783"
     },
     {
-      "timestamp": "20220215155632",
-      "url": "https://www.nbclosangeles.com/weather/school-closings/"
+      "timestamp": "20240529235410",
+      "url": "https://www.browardschools.com/"
     },
     {
-      "timestamp": "20230504044707",
-      "url": "https://www.nbclosangeles.com/weather/school-closings/"
+      "timestamp": "20240529194227",
+      "url": "https://www.browardschools.com/cms/Tools/OnScreenAlerts/UserControls/OnScreenAlertDialogListWrapper.aspx?OnScreenAlertCookie=&SiteID=4&_=1716933755432"
     },
     {
-      "timestamp": "20240307054903",
-      "url": "https://www.nbclosangeles.com/weather/school-closings/"
+      "timestamp": "20241008091114",
+      "url": "https://www.pcsb.org/"
     },
     {
-      "timestamp": "20210303051741",
-      "url": "https://www.nbclosangeles.com/weather/school-closings/"
+      "timestamp": "20241008135017",
+      "url": "https://www.pcsb.org/cms/Tools/OnScreenAlerts/UserControls/OnScreenAlertDialogListWrapper.aspx?OnScreenAlertCookie=&SiteID=4&_=1728395414600"
     },
     {
-      "timestamp": "20220222120929",
-      "url": "https://www.nbclosangeles.com/weather/school-closings/"
+      "timestamp": "20230830155124",
+      "url": "https://www.pcsb.org/cms/Tools/OnScreenAlerts/UserControls/OnScreenAlertDialogListWrapper.aspx?OnScreenAlertCookie=&SiteID=4&_=1693410024765"
     },
     {
-      "timestamp": "20221102200702",
-      "url": "https://www.nbclosangeles.com/weather/school-closings/"
+      "timestamp": "20230828111620",
+      "url": "https://www.pcsb.org/"
     },
     {
-      "timestamp": "20210119065849",
-      "url": "https://www.nbclosangeles.com/weather/school-closings/"
+      "timestamp": "20230828161235",
+      "url": "https://www.pcsb.org/cms/Tools/OnScreenAlerts/UserControls/OnScreenAlertDialogListWrapper.aspx?OnScreenAlertCookie=&SiteID=4&_=1584534237618"
     },
     {
-      "timestamp": "20240104143719",
-      "url": "https://www.nbclosangeles.com/weather/school-closings/"
+      "timestamp": "20221110151356",
+      "url": "https://www.pcsb.org/cms/Tools/OnScreenAlerts/UserControls/OnScreenAlertDialogListWrapper.aspx?OnScreenAlertCookie=&SiteID=4&_=1668093232967"
     },
     {
-      "timestamp": "20240404101406",
-      "url": "https://www.nbclosangeles.com/weather/school-closings/"
+      "timestamp": "20240929181900",
+      "url": "https://www.pcsb.org/"
     },
     {
-      "timestamp": "20241115054350",
-      "url": "https://www.nbclosangeles.com/weather/school-closings/"
+      "timestamp": "20240929222527",
+      "url": "https://www.pcsb.org/cms/Tools/OnScreenAlerts/UserControls/OnScreenAlertDialogListWrapper.aspx?OnScreenAlertCookie=&SiteID=4&_=1727406321333"
     },
     {
-      "timestamp": "20250214000612",
-      "url": "https://www.nbclosangeles.com/weather/school-closings/"
+      "timestamp": "20241006193710",
+      "url": "https://www.pcsb.org/"
     },
     {
-      "timestamp": "20220223070055",
-      "url": "https://www.nbcsandiego.com/weather/school-closings/"
-    },
-    {
-      "timestamp": "20230222224738",
-      "url": "https://www.nbcsandiego.com/weather/school-closings/"
-    },
-    {
-      "timestamp": "20230224142905",
-      "url": "https://www.nbcsandiego.com/weather/school-closings/"
-    },
-    {
-      "timestamp": "20200318154717",
-      "url": "https://www.nbcsandiego.com/weather/school-closings/"
-    },
-    {
-      "timestamp": "20200327123232",
-      "url": "https://www.nbcsandiego.com/weather/school-closings/"
-    },
-    {
-      "timestamp": "20200407190648",
-      "url": "https://www.nbcsandiego.com/weather/school-closings/"
-    },
-    {
-      "timestamp": "20200409103817",
-      "url": "https://www.nbcsandiego.com/weather/school-closings/"
-    },
-    {
-      "timestamp": "20210129103818",
-      "url": "https://www.nbcsandiego.com/weather/school-closings/"
-    },
-    {
-      "timestamp": "20210303121104",
-      "url": "https://www.nbcsandiego.com/weather/school-closings/"
-    },
-    {
-      "timestamp": "20211228200030",
-      "url": "https://www.nbcsandiego.com/weather/school-closings/"
-    },
-    {
-      "timestamp": "20250127123445",
-      "url": "https://www.nbcsandiego.com/weather/school-closings/"
-    },
-    {
-      "timestamp": "20230223214728",
-      "url": "https://www.nbcbayarea.com/weather/school-closings/"
-    },
-    {
-      "timestamp": "20230226175930",
-      "url": "https://www.nbcbayarea.com/weather/school-closings/"
-    },
-    {
-      "timestamp": "20230223001143",
-      "url": "https://www.nbcbayarea.com/weather/school-closings/"
-    },
-    {
-      "timestamp": "20210125172334",
-      "url": "https://www.nbcbayarea.com/weather/school-closings/"
-    },
-    {
-      "timestamp": "20210127050301",
-      "url": "https://www.nbcbayarea.com/weather/school-closings/"
-    },
-    {
-      "timestamp": "20211223205038",
-      "url": "https://www.nbcbayarea.com/weather/school-closings/"
-    },
-    {
-      "timestamp": "20211226174901",
-      "url": "https://www.nbcbayarea.com/weather/school-closings/"
-    },
-    {
-      "timestamp": "20240229233754",
-      "url": "https://www.nbcbayarea.com/weather/school-closings/"
-    },
-    {
-      "timestamp": "20230222045735",
-      "url": "https://www.nbcbayarea.com/weather/school-closings/"
-    },
-    {
-      "timestamp": "20220603073124",
-      "url": "https://www.nbcmiami.com/weather/school-closings/"
-    },
-    {
-      "timestamp": "20241105162155",
-      "url": "https://www.nbcmiami.com/weather/school-closings/"
-    },
-    {
-      "timestamp": "20220410210225",
-      "url": "https://www.yourcentralvalley.com/weather/closings/"
-    },
-    {
-      "timestamp": "20240116214717",
-      "url": "https://www.yourcentralvalley.com/weather/closings/"
-    },
-    {
-      "timestamp": "20240327210303",
-      "url": "https://www.yourcentralvalley.com/weather/closings/"
-    },
-    {
-      "timestamp": "20220106220745",
-      "url": "https://www.abc4.com/weather/closings/"
-    },
-    {
-      "timestamp": "20220304030856",
-      "url": "https://www.abc4.com/weather/closings/"
-    },
-    {
-      "timestamp": "20220202085529",
-      "url": "https://www.abc4.com/weather/closings/"
-    },
-    {
-      "timestamp": "20211118220335",
-      "url": "https://www.abc4.com/weather/closings/"
-    },
-    {
-      "timestamp": "20211101065655",
-      "url": "https://www.abc4.com/weather/closings/"
-    },
-    {
-      "timestamp": "20211102105634",
-      "url": "https://www.abc4.com/weather/closings/"
-    },
-    {
-      "timestamp": "20211103040601",
-      "url": "https://www.abc4.com/weather/closings/"
-    },
-    {
-      "timestamp": "20211104095342",
-      "url": "https://www.abc4.com/weather/closings/"
-    },
-    {
-      "timestamp": "20211107035344",
-      "url": "https://www.abc4.com/weather/closings/"
-    },
-    {
-      "timestamp": "20211107165749",
-      "url": "https://www.abc4.com/weather/closings/"
-    },
-    {
-      "timestamp": "20211108053644",
-      "url": "https://www.abc4.com/weather/closings/"
-    },
-    {
-      "timestamp": "20211111235045",
-      "url": "https://www.abc4.com/weather/closings/"
-    },
-    {
-      "timestamp": "20211202224210",
-      "url": "https://www.abc4.com/weather/closings/"
-    },
-    {
-      "timestamp": "20211211075707",
-      "url": "https://www.abc4.com/weather/closings/"
-    },
-    {
-      "timestamp": "20220103053528",
-      "url": "https://www.abc4.com/weather/closings/"
-    },
-    {
-      "timestamp": "20220124212733",
-      "url": "https://www.abc4.com/weather/closings/"
-    },
-    {
-      "timestamp": "20220125050641",
-      "url": "https://www.abc4.com/weather/closings/"
-    },
-    {
-      "timestamp": "20220126044029",
-      "url": "https://www.abc4.com/weather/closings/"
-    },
-    {
-      "timestamp": "20220126064014",
-      "url": "https://www.abc4.com/weather/closings/"
-    },
-    {
-      "timestamp": "20220130000305",
-      "url": "https://www.abc4.com/weather/closings/"
-    },
-    {
-      "timestamp": "20220131071054",
-      "url": "https://www.abc4.com/weather/closings/"
-    },
-    {
-      "timestamp": "20220201083129",
-      "url": "https://www.abc4.com/weather/closings/"
-    },
-    {
-      "timestamp": "20220206215929",
-      "url": "https://www.abc4.com/weather/closings/"
-    },
-    {
-      "timestamp": "20220206222324",
-      "url": "https://www.abc4.com/weather/closings/"
-    },
-    {
-      "timestamp": "20220207002250",
-      "url": "https://www.abc4.com/weather/closings/"
-    },
-    {
-      "timestamp": "20220212085111",
-      "url": "https://www.abc4.com/weather/closings/"
-    },
-    {
-      "timestamp": "20220217232300",
-      "url": "https://www.abc4.com/weather/closings/"
-    },
-    {
-      "timestamp": "20220324051611",
-      "url": "https://www.abc4.com/weather/closings/"
-    },
-    {
-      "timestamp": "20220325050516",
-      "url": "https://www.abc4.com/weather/closings/"
-    },
-    {
-      "timestamp": "20220326081451",
-      "url": "https://www.abc4.com/weather/closings/"
-    },
-    {
-      "timestamp": "20220327064431",
-      "url": "https://www.abc4.com/weather/closings/"
-    },
-    {
-      "timestamp": "20220328040342",
-      "url": "https://www.abc4.com/weather/closings/"
-    },
-    {
-      "timestamp": "20220331021341",
-      "url": "https://www.abc4.com/weather/closings/"
-    },
-    {
-      "timestamp": "20221113041600",
-      "url": "https://www.abc4.com/weather/closings/"
-    },
-    {
-      "timestamp": "20230328083952",
-      "url": "https://www.abc4.com/weather/closings/"
-    },
-    {
-      "timestamp": "20231108061400",
-      "url": "https://www.abc4.com/weather/closings/"
-    },
-    {
-      "timestamp": "20231115025809",
-      "url": "https://www.abc4.com/weather/closings/"
-    },
-    {
-      "timestamp": "20231206073807",
-      "url": "https://www.abc4.com/weather/closings/"
-    },
-    {
-      "timestamp": "20231206094819",
-      "url": "https://www.abc4.com/weather/closings/"
-    },
-    {
-      "timestamp": "20231209023449",
-      "url": "https://www.abc4.com/weather/closings/"
-    },
-    {
-      "timestamp": "20231212220559",
-      "url": "https://www.abc4.com/weather/closings/"
-    },
-    {
-      "timestamp": "20231213071610",
-      "url": "https://www.abc4.com/weather/closings/"
-    },
-    {
-      "timestamp": "20231215093827",
-      "url": "https://www.abc4.com/weather/closings/"
-    },
-    {
-      "timestamp": "20231216100928",
-      "url": "https://www.abc4.com/weather/closings/"
-    },
-    {
-      "timestamp": "20231220032438",
-      "url": "https://www.abc4.com/weather/closings/"
-    },
-    {
-      "timestamp": "20231230192531",
-      "url": "https://www.abc4.com/weather/closings/"
-    },
-    {
-      "timestamp": "20240107015051",
-      "url": "https://www.abc4.com/weather/closings/"
-    },
-    {
-      "timestamp": "20240122150542",
-      "url": "https://www.abc4.com/weather/closings/"
-    },
-    {
-      "timestamp": "20240124002717",
-      "url": "https://www.abc4.com/weather/closings/"
-    },
-    {
-      "timestamp": "20240127201848",
-      "url": "https://www.abc4.com/weather/closings/"
-    },
-    {
-      "timestamp": "20240204063910",
-      "url": "https://www.abc4.com/weather/closings/"
-    },
-    {
-      "timestamp": "20240211074807",
-      "url": "https://www.abc4.com/weather/closings/"
-    },
-    {
-      "timestamp": "20240228083737",
-      "url": "https://www.abc4.com/weather/closings/"
-    },
-    {
-      "timestamp": "20240309183854",
-      "url": "https://www.abc4.com/weather/closings/"
-    },
-    {
-      "timestamp": "20240316071652",
-      "url": "https://www.abc4.com/weather/closings/"
-    },
-    {
-      "timestamp": "20240316183030",
-      "url": "https://www.abc4.com/weather/closings/"
-    },
-    {
-      "timestamp": "20240323071428",
-      "url": "https://www.abc4.com/weather/closings/"
-    },
-    {
-      "timestamp": "20240324081544",
-      "url": "https://www.abc4.com/weather/closings/"
-    },
-    {
-      "timestamp": "20240325075313",
-      "url": "https://www.abc4.com/weather/closings/"
-    },
-    {
-      "timestamp": "20240326085001",
-      "url": "https://www.abc4.com/weather/closings/"
-    },
-    {
-      "timestamp": "20240326200559",
-      "url": "https://www.abc4.com/weather/closings/"
-    },
-    {
-      "timestamp": "20240327114112",
-      "url": "https://www.abc4.com/weather/closings/"
-    },
-    {
-      "timestamp": "20240329014157",
-      "url": "https://www.abc4.com/weather/closings/"
-    },
-    {
-      "timestamp": "20240329234003",
-      "url": "https://www.abc4.com/weather/closings/"
-    },
-    {
-      "timestamp": "20240331002037",
-      "url": "https://www.abc4.com/weather/closings/"
-    },
-    {
-      "timestamp": "20240331174724",
-      "url": "https://www.abc4.com/weather/closings/"
-    },
-    {
-      "timestamp": "20241106002750",
-      "url": "https://www.abc4.com/weather/closings/"
-    },
-    {
-      "timestamp": "20241107065938",
-      "url": "https://www.abc4.com/weather/closings/"
-    },
-    {
-      "timestamp": "20241109084758",
-      "url": "https://www.abc4.com/weather/closings/"
-    },
-    {
-      "timestamp": "20241113045408",
-      "url": "https://www.abc4.com/weather/closings/"
-    },
-    {
-      "timestamp": "20241120114228",
-      "url": "https://www.abc4.com/weather/closings/"
-    },
-    {
-      "timestamp": "20241123200330",
-      "url": "https://www.abc4.com/weather/closings/"
-    },
-    {
-      "timestamp": "20241208075459",
-      "url": "https://www.abc4.com/weather/closings/"
-    },
-    {
-      "timestamp": "20241211193643",
-      "url": "https://www.abc4.com/weather/closings/"
-    },
-    {
-      "timestamp": "20241225043213",
-      "url": "https://www.abc4.com/weather/closings/"
-    },
-    {
-      "timestamp": "20250108022340",
-      "url": "https://www.abc4.com/weather/closings/"
-    },
-    {
-      "timestamp": "20250115041750",
-      "url": "https://www.abc4.com/weather/closings/"
-    },
-    {
-      "timestamp": "20250205120726",
-      "url": "https://www.abc4.com/weather/closings/"
-    },
-    {
-      "timestamp": "20250303230356",
-      "url": "https://www.louisianafirstnews.com/weather/closings/"
-    },
-    {
-      "timestamp": "20190723222554",
-      "url": "https://www.kgun9.com/weather/closings-and-delays"
-    },
-    {
-      "timestamp": "20210729100723",
-      "url": "https://www.kgun9.com/weather/closings-and-delays"
-    },
-    {
-      "timestamp": "20250905221028",
-      "url": "https://www.kgun9.com/weather/closings-and-delays"
-    },
-    {
-      "timestamp": "20220817142121",
-      "url": "https://www.kpax.com/school-closings-delays"
-    },
-    {
-      "timestamp": "20250427042656",
-      "url": "https://www.kpax.com/school-closings-delays"
-    },
-    {
-      "timestamp": "20250907055932",
-      "url": "https://www.kpax.com/school-closings-delays"
-    },
-    {
-      "timestamp": "20210128001140",
-      "url": "https://www.ksby.com/weather/school-closings-delays?_renderer=json"
-    },
-    {
-      "timestamp": "20260218142952",
-      "url": "https://www.ksby.com/weather/school-closings-delays"
-    },
-    {
-      "timestamp": "20240404004452",
-      "url": "https://www.ksby.com/weather/school-closings-delays?_renderer=json"
-    },
-    {
-      "timestamp": "20200408215805",
-      "url": "https://www.ksby.com/weather/school-closings-delays?_renderer=json"
-    },
-    {
-      "timestamp": "20240208002015",
-      "url": "https://www.ksby.com/weather/school-closings-delays?_renderer=json"
-    },
-    {
-      "timestamp": "20240306065943",
-      "url": "https://www.ksby.com/weather/school-closings-delays?_renderer=json"
-    },
-    {
-      "timestamp": "20240307020441",
-      "url": "https://www.ksby.com/weather/school-closings-delays?_renderer=json"
-    },
-    {
-      "timestamp": "20210801141923",
-      "url": "https://www.ktnv.com/weather/closings-and-delays"
-    },
-    {
-      "timestamp": "20220521031443",
-      "url": "https://www.ktnv.com/weather/closings-and-delays"
-    },
-    {
-      "timestamp": "20220328170547",
-      "url": "https://www.12news.com/closings"
-    },
-    {
-      "timestamp": "20230213134854",
-      "url": "https://www.12news.com/closings"
-    },
-    {
-      "timestamp": "20220304141612",
-      "url": "https://www.12news.com/closings"
-    },
-    {
-      "timestamp": "20170824212445",
-      "url": "http://www.kvue.com/closings"
-    },
-    {
-      "timestamp": "20170206154325",
-      "url": "http://www.abc10.com/closings"
-    },
-    {
-      "timestamp": "20171103063354",
-      "url": "http://www.abc10.com/closings"
-    },
-    {
-      "timestamp": "20171115095653",
-      "url": "http://www.abc10.com/closings"
-    },
-    {
-      "timestamp": "20171116051814",
-      "url": "http://www.abc10.com/closings"
-    },
-    {
-      "timestamp": "20180118112519",
-      "url": "http://www.abc10.com/closings"
-    },
-    {
-      "timestamp": "20180124132840",
-      "url": "http://www.abc10.com/closings"
-    },
-    {
-      "timestamp": "20211214160134",
-      "url": "https://www.abc10.com/closings"
-    },
-    {
-      "timestamp": "20220410225452",
-      "url": "https://www.abc10.com/closings"
-    },
-    {
-      "timestamp": "20221228162033",
-      "url": "https://www.abc10.com/closings"
-    },
-    {
-      "timestamp": "20170612023815",
-      "url": "http://www.abc10.com/closings"
-    },
-    {
-      "timestamp": "20171127102701",
-      "url": "http://www.abc10.com/closings"
-    },
-    {
-      "timestamp": "20171220053009",
-      "url": "http://www.abc10.com/closings"
-    },
-    {
-      "timestamp": "20180122134249",
-      "url": "http://www.abc10.com/closings"
-    },
-    {
-      "timestamp": "20190321185948",
-      "url": "https://www.abc10.com/closings"
-    },
-    {
-      "timestamp": "20190929164745",
-      "url": "https://www.abc10.com/closings"
-    },
-    {
-      "timestamp": "20211018091118",
-      "url": "https://www.abc10.com/closings"
-    },
-    {
-      "timestamp": "20211109130808",
-      "url": "https://www.abc10.com/closings"
-    },
-    {
-      "timestamp": "20230322163322",
-      "url": "https://www.abc10.com/closings"
-    },
-    {
-      "timestamp": "20170920234758",
-      "url": "http://www.abc10.com/closings"
-    },
-    {
-      "timestamp": "20220328030442",
-      "url": "https://www.abc10.com/closings"
-    },
-    {
-      "timestamp": "20240226050606",
-      "url": "https://www.abc10.com/closings"
+      "timestamp": "20241006163440",
+      "url": "https://www.pcsb.org/cms/Tools/OnScreenAlerts/UserControls/OnScreenAlertDialogListWrapper.aspx?OnScreenAlertCookie=&SiteID=4&_=1728232002030"
     }
   ]
 }
