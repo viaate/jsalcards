@@ -99,7 +99,7 @@ describe('the chance section', () => {
       node.textContent.replace(/[\t\n\r ]+/gu, ' ').trim(),
     );
 
-  it('leads with the chance, then the evening, the chart, the sum and the delay, all open', () => {
+  it('leads with the chance and the delay, then the evening, the chart and the sum, all open', () => {
     vi.useFakeTimers({ now: A_NOW });
     const section = show(chance(true));
     // The panel's own status and outlook give way to it.
@@ -142,10 +142,13 @@ describe('the chance section', () => {
     ]);
 
     expect(text(section, '.why-title')).toEqual(['How we got 64%']);
-    expect(text(section, '.sum > li .num')).toEqual(['30', '+16', '+9', '+7', '+5', '−3', '64']);
-    expect(text(section, '.is-total')).toEqual(['64% Chance of no school Tuesday']);
-    expect(section.querySelectorAll('.record li')).toHaveLength(5);
-    expect(section.querySelectorAll('.record .glyph.is-delayed')).toHaveLength(1);
+    expect(text(section, '.sum > li .num')).toEqual(['30', '+16', '+9', '+7', '+5', '−3']);
+    // The sum adds up to the headline, which it does not repeat; the record is in its sentence.
+    expect(section.querySelector('.is-total')).toBeNull();
+    expect(section.querySelector('.record')).toBeNull();
+    expect(text(section, '.is-reason')[0]).toBe(
+      '+16 A bigger storm than most, 6 to 9 inches overnight. It closed 4 of the last 5 times it got 6 inches or more.',
+    );
     // Nothing folds away, and no words lead in bold.
     expect(section.querySelectorAll('details, [aria-expanded]')).toHaveLength(0);
     expect(section.querySelectorAll('strong, b')).toHaveLength(0);
@@ -174,11 +177,8 @@ describe('the chance section', () => {
     expect(text(section, 'figcaption')).toEqual([chanceCopy.coldTonight]);
     expect(section.querySelectorAll('.col.is-below')).toHaveLength(11);
     expect(text(section, '.end')).toEqual([`-8${NBSP}F`]);
-    expect(text(section, '.is-start .record li')).toEqual([
-      `${chanceCopy.open} Open, Jan 10, 2024`,
-      `${chanceCopy.closed} Closed, Jan 7, 2025`,
-      `${chanceCopy.open} Open, Jan 13, 2025`,
-      `${chanceCopy.open} Open, Feb 19, 2025`,
+    expect(text(section, '.is-start')).toEqual([
+      '25% After a snow day, Shawnee Mission stays closed the next day about 1 time in 4.',
     ]);
   });
 

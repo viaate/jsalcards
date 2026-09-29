@@ -5,7 +5,6 @@
   import { copy } from '../copy';
   import { chanceFormat } from '../copy-chance';
   import ChanceChart from './ChanceChart.svelte';
-  import ChanceRecord from './ChanceRecord.svelte';
 
   interface Props {
     chance: ChanceView;
@@ -122,32 +121,17 @@
   {#if chance.why !== null}
     <div class="block why">
       <h3 class="why-title">{chance.why.title}</h3>
-      <p class="key">{chance.why.key}</p>
       <ol class="rows sum">
         <li class="row is-start">
           <span class="label"><span class="num">{chance.why.base.number}</span>%</span>
-          <div>
-            <p>{chance.why.base.lead}{chance.why.base.rest}</p>
-            {#if chance.why.base.record !== null}
-              <ChanceRecord days={chance.why.base.record} />
-            {/if}
-          </div>
+          <p>{chance.why.base.text}</p>
         </li>
         {#each chance.why.lines as line (line.key)}
           <li class="row is-reason">
             <span class="label"><span class="num">{line.points}</span></span>
-            <div>
-              <p>{line.lead}{line.rest}</p>
-              {#if line.record !== null}
-                <ChanceRecord days={line.record} />
-              {/if}
-            </div>
+            <p>{line.text}</p>
           </li>
         {/each}
-        <li class="row is-total">
-          <span class="label"><span class="num">{chance.why.total.number}</span>%</span>
-          <p>{chance.why.total.text}</p>
-        </li>
       </ol>
     </div>
   {/if}
@@ -281,14 +265,10 @@
     white-space: nowrap;
   }
 
-  /* How the chance adds up: open, in sentences, right under the chart. */
+  /* How the chance adds up: open, a short sentence a reason, right under the chart. */
   .why-title {
+    margin-bottom: var(--row);
     font: var(--type-strong);
     color: var(--text-1);
-  }
-
-  .key {
-    margin-bottom: var(--row);
-    color: var(--text-2);
   }
 </style>

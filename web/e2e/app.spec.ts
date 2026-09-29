@@ -1839,26 +1839,18 @@ test.describe('with data staged', () => {
       for (const bar of bars) expect(overlaps(box, bar)).toBe(false);
     }
 
-    // How it adds up, always open: the base, each reason's points, the total, and they add up.
+    // How it adds up, always open: the base and each reason's points, adding up to the headline.
     await expect(section.locator('.why-title')).toHaveText(chanceFormat.howWeGot(0.64));
     const rows = section.locator('.sum > li');
-    await expect(rows).toHaveCount(7);
-    await expect(rows.nth(1)).toContainText(
+    await expect(rows).toHaveCount(6);
+    await expect(rows.nth(1)).toHaveText(
       '+16 A bigger storm than most, 6 to 9 inches overnight. It closed 4 of the last 5 times it got 6 inches or more.',
     );
-    await expect(rows.nth(1).locator('.record li')).toHaveCount(5);
-    await expect(rows.nth(2)).toHaveText(
-      '+9 Blue Valley and Olathe, next door, have already canceled.',
-    );
-    await expect(section.locator('.is-total')).toHaveText(
-      `64% ${chanceFormat.chanceOn('2026-01-13')}`,
-    );
+    await expect(rows.nth(2)).toHaveText('+9 Blue Valley and Olathe, next door, canceled.');
     const numbers = (await section.locator('.sum .num').allTextContents()).map((text) =>
       Number(text.replace('−', '-')),
     );
-    const total = numbers.at(-1);
-    expect(numbers.slice(0, -1).reduce((sum, n) => sum + n, 0)).toBe(total);
-    expect(total).toBe(64);
+    expect(numbers.reduce((sum, n) => sum + n, 0)).toBe(64);
     await expect(section.locator('details, [aria-expanded="false"]')).toHaveCount(0);
     await expect(section.locator('.delay')).toHaveText(chanceFormat.delayInstead(0.18));
 
@@ -1904,7 +1896,7 @@ test.describe('with data staged', () => {
     // Up to full height, then down to the sum: every part of the section inside the sheet.
     await sheet.locator('.grip').tap();
     await expect(sheet).toHaveAttribute('data-detent', 'full');
-    for (const part of ['.moments', '.chart', '.why', '.is-total', '.delay']) {
+    for (const part of ['.delay', '.moments', '.chart', '.why']) {
       const node = section.locator(part);
       await node.scrollIntoViewIfNeeded();
       const box = await node.boundingBox();
@@ -1920,9 +1912,6 @@ test.describe('with data staged', () => {
     expect(
       await sheet.locator('.body').evaluate((body) => body.scrollWidth <= body.clientWidth),
     ).toBe(true);
-    await expect(section.locator('.is-total')).toHaveText(
-      `64% ${chanceFormat.chanceOn('2026-01-13')}`,
-    );
     expect(problems).toEqual([]);
     await context.close();
   });
@@ -1966,10 +1955,10 @@ test.describe('with data staged', () => {
     await expect(chart.locator('figcaption')).toHaveText(chanceCopy.coldTonight);
     await expect(chart.locator('.col.is-below')).toHaveCount(11);
     await expect(chart.locator('.end')).toHaveText(chanceFormat.degrees(-8));
-    await expect(section.locator('.is-start .record li')).toHaveCount(4);
-    await expect(section.locator('.is-total')).toHaveText(
-      `22% ${chanceFormat.chanceOn('2026-01-13')}`,
+    const numbers = (await section.locator('.sum .num').allTextContents()).map((text) =>
+      Number(text.replace('−', '-')),
     );
+    expect(numbers.reduce((sum, n) => sum + n, 0)).toBe(22);
     await expect(section.locator('.delay')).toHaveText(chanceFormat.delayInstead(0.31));
     // The rest of the panel is as it was: the district, and no chance card of the old kind.
     await expect(panel.locator('.fact dd').first()).toHaveText('Kansas City 33');

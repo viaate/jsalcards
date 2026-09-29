@@ -44,8 +44,6 @@ export const chanceCopy = /* @__PURE__ */ deepFreeze({
   noSchool: 'Chance of no school',
   /** Before the chance: "How we got 64%". */
   howWeGot: 'How we got',
-  key: 'Each reason adds or takes away points.',
-  start: 'Where we start:',
   /** The chart's titles. */
   snowTitle: 'Snow on the ground, hour by hour',
   coldTonight: 'How cold it will feel tonight',
@@ -54,14 +52,6 @@ export const chanceCopy = /* @__PURE__ */ deepFreeze({
   now: 'Now',
   /** Beside the chart's last bar: "Buses 7 AM". */
   buses: 'Buses',
-  /** A day in a district's record, by what it did. */
-  open: 'Open',
-  closed: 'Closed',
-  delayed: 'Delayed',
-  remote: 'Remote',
-  earlyDismissal: 'Early dismissal',
-  /** For a screen reader: the record under a reason. */
-  record: 'The district’s record',
 });
 
 const NBSP = '\u00a0';
@@ -83,12 +73,6 @@ const ALERT_PLURALS = {
 } as const;
 
 export type AlertKind = keyof typeof ALERT_PLURALS;
-
-/** A sentence in two parts: the bold words that lead it, then the rest, which starts with a space. */
-export interface Said {
-  readonly lead: string;
-  readonly rest: string;
-}
 
 /** A status a district posted, as the chance section words it. */
 export type PostedKey = StatusKey;
@@ -406,8 +390,8 @@ function names(list: readonly string[]): string {
   return `${list.slice(0, 2).join(', ')} and ${String(list.length - 2)} more`;
 }
 
-/** Where the sum starts: "Where we start:" and the district's own rate, as a count. */
-function baseReason(input: BaseInput, district: string): Said {
+/** Where the sum starts: the district's own rate, as a count. */
+function baseReason(input: BaseInput, district: string): string {
   const { points: percent } = input;
   if (!Number.isInteger(percent) || percent < 0 || percent > 100) {
     throw new RangeError(`copy: a base is 0 to 100 percent, not ${String(percent)}`);
@@ -416,146 +400,98 @@ function baseReason(input: BaseInput, district: string): Said {
   const share = extreme === null ? shareOf(percent) : null;
   const rate = (noun: string): string =>
     share === null ? '' : `about ${String(share.some)} ${noun}in ${String(share.of)}`;
-  let rest: string;
   switch (input.kind) {
     case 'alert': {
       const alerts = ALERT_PLURALS[checkKey(ALERT_PLURALS, input.alert, 'alert')];
-      rest =
-        extreme === null
-          ? `${district} cancels for ${rate('')} ${alerts}.`
-          : `${district} ${extreme} cancels for ${alerts}.`;
-      break;
+      return extreme === null
+        ? `${district} cancels for ${rate('')} ${alerts}.`
+        : `${district} ${extreme} cancels for ${alerts}.`;
     }
     case 'day_after':
-      rest =
-        extreme === null
-          ? `after a snow day, ${district} stays closed the next day ${rate(share?.some === 1 ? 'time ' : 'times ')}.`
-          : `after a snow day, ${district} ${extreme} stays closed the next day.`;
-      break;
+      return extreme === null
+        ? `After a snow day, ${district} stays closed the next day ${rate(share?.some === 1 ? 'time ' : 'times ')}.`
+        : `After a snow day, ${district} ${extreme} stays closed the next day.`;
     case 'similar_days':
-      rest =
-        extreme === null
-          ? `on days like this, ${district} closes ${rate(share?.some === 1 ? 'time ' : 'times ')}.`
-          : `on days like this, ${district} ${extreme} closes.`;
-      break;
+      return extreme === null
+        ? `On days like this, ${district} closes ${rate(share?.some === 1 ? 'time ' : 'times ')}.`
+        : `On days like this, ${district} ${extreme} closes.`;
   }
-  return { lead: chanceCopy.start, rest: ` ${rest}` };
 }
 
-/** The relation of the heaviest snow to the buses, as the end of its sentence. */
-function timingRest(start: Date, end: Date, buses: Date | null, timeZone: string): string {
-  const span = hourSpan(start, end, timeZone);
-  if (buses === null) return ` falls from ${span}.`;
+/** The heaviest snow, and when it falls against the buses: "Heaviest snow 2 to 5 AM, before the buses." */
+function timing(start: Date, end: Date, buses: Date | null, timeZone: string): string {
+  const span = `Heaviest snow ${hourSpan(start, end, timeZone)}`;
+  if (buses === null) return `${span}.`;
   const b = buses.getTime();
-  if (start.getTime() > b) return ` falls from ${span}, after the buses are out.`;
-  if (end.getTime() > b) return ` falls from ${span}, while the buses are out.`;
-  if (b - end.getTime() <= 3 * HOUR_MS) return ` falls from ${span}, just before the buses go out.`;
-  return ` falls from ${span}, well before the buses go out.`;
+  if (start.getTime() > b) return `${span}, after the buses are out.`;
+  if (end.getTime() > b) return `${span}, while the buses are out.`;
+  if (b - end.getTime() <= 3 * HOUR_MS) return `${span}, before the buses.`;
+  return `${span}, well before the buses.`;
 }
 
 /**
- * One reason, as a sentence with its bold lead: "A bigger storm than most," and
- * " 6 to 9 inches overnight. It closed 4 of the last 5 times it got 6 inches or more."
- * `district` is the district's short name; `now` and `timeZone` word the times.
+ * One reason, as one short sentence: "Blue Valley and Olathe, next door,
+ * canceled." `district` is the district's short name; `now` and `timeZone`
+ * word the times.
  */
-function reason(input: ReasonInput, district: string, now: Date, timeZone: string): Said {
+function reason(input: ReasonInput, district: string, now: Date, timeZone: string): string {
   points(input.points);
   switch (input.kind) {
     case 'snow_total': {
       const cited = input.record === null ? '' : ` ${recordSentence(input.record, 'It')}`;
-      return {
-        lead: input.points > 0 ? 'A bigger storm than most,' : 'A smaller storm than most,',
-        rest: ` ${inchWords(input.low, input.high)}${input.overnight ? ' overnight' : ''}.${cited}`,
-      };
+      const storm = input.points > 0 ? 'A bigger storm than most' : 'A smaller storm than most';
+      return `${storm}, ${inchWords(input.low, input.high)}${input.overnight ? ' overnight' : ''}.${cited}`;
     }
     case 'record':
-      return { lead: `${district}’s record:`, rest: ` ${recordSentence(input.record, 'it')}` };
+      return recordSentence(input.record, district);
     case 'neighbors': {
       const { count, status } = input;
       if (!Number.isInteger(count) || count < 1) {
         throw new RangeError(`copy: ${String(count)} districts next door`);
       }
-      const verb = input.names === null ? count === 1 : input.names.length === 1;
-      const has = verb ? 'has' : 'have';
       const done = {
-        closed: 'already canceled',
-        delayed: 'already delayed the start',
-        remote: 'already gone remote',
-        earlyDismissal: 'already called an early dismissal',
+        closed: 'canceled',
+        delayed: 'delayed the start',
+        remote: 'went remote',
+        earlyDismissal: 'called an early dismissal',
       }[checkKey(copy.status, status, 'status')];
       if (input.names === null || input.names.length === 0) {
         return count === 1
-          ? { lead: 'A district next door', rest: ` has ${done}.` }
-          : { lead: `${String(count)} districts next door`, rest: ` have ${done}.` };
+          ? `A district next door ${done}.`
+          : `${String(count)} districts next door ${done}.`;
       }
-      return { lead: `${names(input.names)},`, rest: ` next door, ${has} ${done}.` };
+      return `${names(input.names)}, next door, ${done}.`;
     }
     case 'timing':
       if (input.end.getTime() <= input.start.getTime()) {
         throw new RangeError('copy: the heaviest snow ends before it starts');
       }
-      return {
-        lead: 'The heaviest snow',
-        rest: timingRest(input.start, input.end, input.buses, timeZone),
-      };
+      return timing(input.start, input.end, input.buses, timeZone);
     case 'wind_chill':
-      return {
-        lead: 'The wind',
-        rest: ` will make it feel like ${degrees(input.feelsLike)} at the bus stop.`,
-      };
+      return `Wind makes it feel like ${degrees(input.feelsLike)} at the bus stop.`;
     case 'cold':
-      return {
-        lead: `It will feel like ${degrees(input.feelsLike)}`,
-        rest: ` at the bus stop on ${weekday(input.day)} morning.`,
-      };
+      return `Feels like ${degrees(input.feelsLike)} at the bus stop ${weekday(input.day)} morning.`;
     case 'snow_stops': {
       const at = shortTime(input.at, timeZone);
       if (input.at.getTime() <= now.getTime()) {
         return dayOf(input.at, timeZone) < input.day
-          ? {
-              lead: `The snow stopped around ${at},`,
-              rest: ' so the plows have all day to clear the roads.',
-            }
-          : {
-              lead: `The snow stopped around ${at},`,
-              rest: ' which gives the plows a head start.',
-            };
+          ? `Snow stopped around ${at}, a full day for the plows.`
+          : `Snow stopped around ${at}, a head start for the plows.`;
       }
       if (input.buses !== null && input.at.getTime() > input.buses.getTime()) {
-        return { lead: `The snow keeps falling until ${at},`, rest: ' after the buses go out.' };
+        return `Snow until ${at}, after the buses go out.`;
       }
-      return {
-        lead: `The snow should stop by ${at},`,
-        rest: ' which gives the plows a head start.',
-      };
+      return `Snow ends by ${at}, a head start for the plows.`;
     }
-    case 'sun': {
+    case 'sun':
       return localHour(now, timeZone) < 15
-        ? { lead: 'Sun this afternoon', rest: ' will help the salt melt the ice.' }
-        : { lead: 'Sun earlier today', rest: ' helped the salt melt the ice.' };
-    }
+        ? 'Sun this afternoon helps melt the ice.'
+        : 'Sun earlier today helped melt the ice.';
     case 'icy_roads':
-      return {
-        lead: 'Some side streets could stay icy',
-        rest: ` after ${inchWords(input.inches, input.inches)} of snow.`,
-      };
+      return `Side streets could stay icy after ${inchWords(input.inches, input.inches)}.`;
     case 'ice':
-      return {
-        lead: 'Freezing rain',
-        rest: ` could leave ${inchWords(input.inches, input.inches)} of ice on the roads.`,
-      };
+      return `Freezing rain could leave ${inchWords(input.inches, input.inches)} of ice.`;
   }
-}
-
-/** A day in a district's record, by what it did: "Closed", "Open". */
-function recordOutcome(status: StatusKey | 'open'): string {
-  return chanceCopy[checkKey(chanceCopy, status, 'outcome') as 'open'];
-}
-
-/** A day in the record for a screen reader: "Closed, Jan 9, 2024, 8 inches". */
-function recordDay(status: StatusKey | 'open', localDate: string, snow: number | null): string {
-  const said = `${recordOutcome(status)}, ${format.dayWithYear(localDate)}`;
-  return snow === null ? said : `${said}, ${inchWords(snow, snow)}`;
 }
 
 export const chanceFormat = /* @__PURE__ */ deepFreeze({
@@ -580,8 +516,6 @@ export const chanceFormat = /* @__PURE__ */ deepFreeze({
   shareOf,
   baseReason,
   reason,
-  recordOutcome,
-  recordDay,
 });
 
 export type ChanceFormat = typeof chanceFormat;

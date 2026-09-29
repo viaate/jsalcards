@@ -9,9 +9,10 @@
  *    this district usually announces, with a live countdown;
  * 3. the night hour by hour, drawn to scale (the chart's numbers are worked
  *    out here, so they are tested);
- * 4. how the chance adds up: the base, then each reason's points, then the
- *    total. It shows only when every part can be said and the parts add up to
- *    the headline exactly; a sum that does not is never shown;
+ * 4. how the chance adds up: the base, then each reason's points, each in a
+ *    short sentence, the district's record in the sentence it proves. It
+ *    shows only when every part can be said and the parts add up to the
+ *    headline exactly; a sum that does not is never shown;
  * 5. the chance of a delayed start instead.
  *
  * Every word comes from src/copy.ts and src/copy-chance.ts. A part the files
@@ -113,36 +114,20 @@ export interface ChartView {
   readonly end: string;
 }
 
-export interface RecordDayView {
-  readonly key: string;
-  readonly tone: StatusKey | 'open';
-  /** "8 in", or what the district did ("Open"). */
-  readonly label: string;
-  /** For a screen reader: "Closed, Jan 9, 2024, 8 inches". */
-  readonly spoken: string;
-}
-
 export interface WhyLineView {
   readonly key: string;
   /** "+16", "−3". */
   readonly points: string;
-  readonly lead: string;
-  readonly rest: string;
-  readonly record: readonly RecordDayView[] | null;
+  /** "Blue Valley and Olathe, next door, already canceled." */
+  readonly text: string;
 }
 
 export interface WhyView {
   /** "How we got 64%". */
   readonly title: string;
-  readonly key: string;
-  readonly base: {
-    readonly number: string;
-    readonly lead: string;
-    readonly rest: string;
-    readonly record: readonly RecordDayView[] | null;
-  };
+  /** Where the sum starts: "30", and the district's own rate in a sentence. */
+  readonly base: { readonly number: string; readonly text: string };
   readonly lines: readonly WhyLineView[];
-  readonly total: { readonly number: string; readonly text: string };
 }
 
 export interface ChanceView {
@@ -539,21 +524,6 @@ export function recordCount(record: RecordDetail | null): RecordCount | null {
   return { closed, days: record.days.length, inches };
 }
 
-/** The record as the map's own marks, oldest first. */
-export function recordDays(record: RecordDetail): RecordDayView[] {
-  return record.days.map((past) => {
-    const tone: StatusKey | 'open' =
-      past.status === null ? 'open' : (STATUS_KEYS[past.status] ?? 'closed');
-    return {
-      key: past.day,
-      tone,
-      label:
-        past.inches === null ? chanceFormat.recordOutcome(tone) : chanceFormat.inches(past.inches),
-      spoken: chanceFormat.recordDay(tone, past.day, past.inches),
-    };
-  });
-}
-
 /** A reason as copy.ts words it: its numbers, and what its sentence needs from the rest. */
 function reasonInput(
   reason: ReasonDetail,
@@ -619,38 +589,22 @@ export function whyView(input: {
   const parts = [why.base.points, ...why.reasons.map((reason) => reason.points)];
   if (!parts.every((part) => Number.isInteger(part))) return null;
   if (parts.reduce((sum, part) => sum + part, 0) !== percent) return null;
-  const record = detail.record;
-  const shown = record === null ? null : recordDays(record);
   try {
     const base: BaseInput = why.base;
-    const start = chanceFormat.baseReason(base, district);
     const lines: WhyLineView[] = [];
     for (const reason of why.reasons) {
       const said = reasonInput(reason, detail, day, names);
       if (said === null) return null;
-      const { lead, rest } = chanceFormat.reason(said, district, now, timeZone);
-      const under =
-        record !== null && record.proves === reason.kind && recordCount(record) !== null
-          ? shown
-          : null;
       lines.push({
         key: reason.kind,
         points: chanceFormat.points(reason.points),
-        lead,
-        rest,
-        record: under,
+        text: chanceFormat.reason(said, district, now, timeZone),
       });
     }
     return {
       title: chanceFormat.howWeGot(chance),
-      key: chanceCopy.key,
-      base: {
-        number: String(why.base.points),
-        ...start,
-        record: record?.proves === 'base' ? shown : null,
-      },
+      base: { number: String(why.base.points), text: chanceFormat.baseReason(base, district) },
       lines,
-      total: { number: chanceFormat.chanceNumber(chance), text: chanceFormat.chanceOn(day) },
     };
   } catch {
     // A number the words refuse: no sum rather than a wrong one.

@@ -544,9 +544,8 @@ describe('format', () => {
     /** Monday Jan 12, 2026, 9:05 PM in Kansas City. */
     const evening = at('2026-01-13T03:05:00Z');
     const morning = at('2026-01-13T12:20:00Z');
-    const said = (text: { lead: string; rest: string }): string => `${text.lead}${text.rest}`;
     const reason = (input: ReasonInput, now = evening, zone = kc): string =>
-      said(chanceFormat.reason(input, 'Riverside', now, zone));
+      chanceFormat.reason(input, 'Riverside', now, zone);
     const record = { closed: 4, days: 5, inches: 6 };
 
     it('heads the section with the chance and its day', () => {
@@ -635,30 +634,30 @@ describe('format', () => {
         expect(Math.abs(some / of - percent / 100)).toBeLessThanOrEqual(0.02);
       }
       expect(() => chanceFormat.shareOf(0)).toThrow(RangeError);
-      const base = (input: BaseInput): string => said(chanceFormat.baseReason(input, 'Riverside'));
+      const base = (input: BaseInput): string => chanceFormat.baseReason(input, 'Riverside');
       expect(base({ kind: 'alert', points: 30, alert: 'winter_storm_warning' })).toBe(
-        'Where we start: Riverside cancels for about 3 in 10 winter storm warnings.',
+        'Riverside cancels for about 3 in 10 winter storm warnings.',
       );
       expect(base({ kind: 'alert', points: 50, alert: 'ice_storm_warning' })).toBe(
-        'Where we start: Riverside cancels for about 1 in 2 ice storm warnings.',
+        'Riverside cancels for about 1 in 2 ice storm warnings.',
       );
       expect(base({ kind: 'alert', points: 0, alert: 'winter_weather_advisory' })).toBe(
-        'Where we start: Riverside almost never cancels for winter weather advisories.',
+        'Riverside almost never cancels for winter weather advisories.',
       );
       expect(base({ kind: 'alert', points: 100, alert: 'blizzard_warning' })).toBe(
-        'Where we start: Riverside almost always cancels for blizzard warnings.',
+        'Riverside almost always cancels for blizzard warnings.',
       );
       expect(base({ kind: 'day_after', points: 25 })).toBe(
-        'Where we start: after a snow day, Riverside stays closed the next day about 1 time in 4.',
+        'After a snow day, Riverside stays closed the next day about 1 time in 4.',
       );
       expect(base({ kind: 'day_after', points: 60 })).toBe(
-        'Where we start: after a snow day, Riverside stays closed the next day about 3 times in 5.',
+        'After a snow day, Riverside stays closed the next day about 3 times in 5.',
       );
       expect(base({ kind: 'similar_days', points: 20 })).toBe(
-        'Where we start: on days like this, Riverside closes about 1 time in 5.',
+        'On days like this, Riverside closes about 1 time in 5.',
       );
       expect(base({ kind: 'similar_days', points: 0 })).toBe(
-        'Where we start: on days like this, Riverside almost never closes.',
+        'On days like this, Riverside almost never closes.',
       );
       expect(() =>
         chanceFormat.baseReason({ kind: 'alert', points: 30, alert: 'fog' as never }, 'Riverside'),
@@ -688,77 +687,73 @@ describe('format', () => {
         'A bigger storm than most, 2 to 3 inches overnight. It closed the last time it got 2 inches or more.',
       );
       expect(reason({ kind: 'record', points: 4, record })).toBe(
-        'Riverside’s record: it closed 4 of the last 5 times it got 6 inches or more.',
+        'Riverside closed 4 of the last 5 times it got 6 inches or more.',
       );
       expect(
         reason({ kind: 'record', points: -4, record: { closed: 0, days: 4, inches: 3 } }),
-      ).toBe('Riverside’s record: it closed none of the last 4 times it got 3 inches or more.');
+      ).toBe('Riverside closed none of the last 4 times it got 3 inches or more.');
       const next = (names: string[] | null, count: number, status: StatusKey): string =>
         reason({ kind: 'neighbors', points: 9, names, count, status });
       expect(next(['Blue Valley', 'Olathe'], 2, 'closed')).toBe(
-        'Blue Valley and Olathe, next door, have already canceled.',
+        'Blue Valley and Olathe, next door, canceled.',
       );
-      expect(next(['Olathe'], 1, 'delayed')).toBe(
-        'Olathe, next door, has already delayed the start.',
-      );
+      expect(next(['Olathe'], 1, 'delayed')).toBe('Olathe, next door, delayed the start.');
       expect(next(['Blue Valley', 'Olathe', 'De Soto'], 3, 'closed')).toBe(
-        'Blue Valley, Olathe and De Soto, next door, have already canceled.',
+        'Blue Valley, Olathe and De Soto, next door, canceled.',
       );
       expect(next(['A1', 'B2', 'C3', 'D4', 'E5'], 5, 'remote')).toBe(
-        'A1, B2 and 3 more, next door, have already gone remote.',
+        'A1, B2 and 3 more, next door, went remote.',
       );
       expect(next(null, 1, 'earlyDismissal')).toBe(
-        'A district next door has already called an early dismissal.',
+        'A district next door called an early dismissal.',
       );
-      expect(next(null, 3, 'closed')).toBe('3 districts next door have already canceled.');
+      expect(next(null, 3, 'closed')).toBe('3 districts next door canceled.');
       const timing = (start: string, end: string, when: Date | null = buses): string =>
         reason({ kind: 'timing', points: 7, start: at(start), end: at(end), buses: when });
       expect(timing('2026-01-13T08:00:00Z', '2026-01-13T11:00:00Z')).toBe(
-        `The heaviest snow falls from 2 to 5${NBSP}AM, just before the buses go out.`,
+        `Heaviest snow 2 to 5${NBSP}AM, before the buses.`,
       );
       expect(timing('2026-01-13T12:00:00Z', '2026-01-13T15:00:00Z')).toBe(
-        `The heaviest snow falls from 6 to 9${NBSP}AM, while the buses are out.`,
+        `Heaviest snow 6 to 9${NBSP}AM, while the buses are out.`,
       );
       expect(timing('2026-01-13T03:00:00Z', '2026-01-13T07:00:00Z')).toBe(
-        `The heaviest snow falls from 9${NBSP}PM to 1${NBSP}AM, well before the buses go out.`,
+        `Heaviest snow 9${NBSP}PM to 1${NBSP}AM, well before the buses.`,
       );
       expect(timing('2026-01-13T16:00:00Z', '2026-01-13T20:00:00Z')).toBe(
-        `The heaviest snow falls from 10${NBSP}AM to 2${NBSP}PM, after the buses are out.`,
+        `Heaviest snow 10${NBSP}AM to 2${NBSP}PM, after the buses are out.`,
       );
       expect(timing('2026-01-13T08:00:00Z', '2026-01-13T11:00:00Z', null)).toBe(
-        `The heaviest snow falls from 2 to 5${NBSP}AM.`,
+        `Heaviest snow 2 to 5${NBSP}AM.`,
       );
       expect(reason({ kind: 'wind_chill', points: 5, feelsLike: -4 })).toBe(
-        `The wind will make it feel like -4${NBSP}F at the bus stop.`,
+        `Wind makes it feel like -4${NBSP}F at the bus stop.`,
       );
       expect(reason({ kind: 'cold', points: 6, feelsLike: -8, day: '2026-01-14' })).toBe(
-        `It will feel like -8${NBSP}F at the bus stop on Wednesday morning.`,
+        `Feels like -8${NBSP}F at the bus stop Wednesday morning.`,
       );
       const stops = (then: string, now = evening, day = '2026-01-13'): string =>
         reason({ kind: 'snow_stops', points: -3, at: at(then), buses, day }, now);
       expect(stops('2026-01-13T13:00:00Z')).toBe(
-        `The snow should stop by 7${NBSP}AM, which gives the plows a head start.`,
+        `Snow ends by 7${NBSP}AM, a head start for the plows.`,
       );
-      expect(stops('2026-01-13T15:00:00Z')).toBe(
-        `The snow keeps falling until 9${NBSP}AM, after the buses go out.`,
-      );
+      expect(stops('2026-01-13T15:00:00Z')).toBe(`Snow until 9${NBSP}AM, after the buses go out.`);
       expect(stops('2026-01-13T12:00:00Z', morning, '2026-01-14')).toBe(
-        `The snow stopped around 6${NBSP}AM, so the plows have all day to clear the roads.`,
+        `Snow stopped around 6${NBSP}AM, a full day for the plows.`,
       );
       expect(stops('2026-01-13T09:00:00Z', morning)).toBe(
-        `The snow stopped around 3${NBSP}AM, which gives the plows a head start.`,
+        `Snow stopped around 3${NBSP}AM, a head start for the plows.`,
       );
       expect(reason({ kind: 'sun', points: -5 }, morning)).toBe(
-        'Sun this afternoon will help the salt melt the ice.',
+        'Sun this afternoon helps melt the ice.',
       );
       expect(reason({ kind: 'sun', points: -5 }, evening)).toBe(
-        'Sun earlier today helped the salt melt the ice.',
+        'Sun earlier today helped melt the ice.',
       );
       expect(reason({ kind: 'icy_roads', points: 4, inches: 8 })).toBe(
-        'Some side streets could stay icy after 8 inches of snow.',
+        'Side streets could stay icy after 8 inches.',
       );
       expect(reason({ kind: 'ice', points: 9, inches: 0.2 })).toBe(
-        'Freezing rain could leave 0.2 inches of ice on the roads.',
+        'Freezing rain could leave 0.2 inches of ice.',
       );
       // Numbers the sentences cannot hold.
       expect(() => reason({ kind: 'sun', points: 0 })).toThrow(RangeError);
@@ -767,15 +762,6 @@ describe('format', () => {
         reason({ kind: 'record', points: 3, record: { closed: 6, days: 5, inches: 6 } }),
       ).toThrow(RangeError);
       expect(() => timing('2026-01-13T11:00:00Z', '2026-01-13T08:00:00Z')).toThrow(RangeError);
-    });
-
-    it('names each day of a district’s record', () => {
-      expect(chanceFormat.recordOutcome('open')).toBe(chanceCopy.open);
-      expect(chanceFormat.recordOutcome('earlyDismissal')).toBe(chanceCopy.earlyDismissal);
-      expect(chanceFormat.recordDay('closed', '2024-01-09', 8)).toBe(
-        'Closed, Jan 9, 2024, 8 inches',
-      );
-      expect(chanceFormat.recordDay('open', '2025-01-13', null)).toBe('Open, Jan 13, 2025');
     });
 
     it('follows the house style, with the words around a district’s name', () => {
@@ -809,14 +795,12 @@ describe('format', () => {
         outputs.push(chanceFormat.chanceOn('2026-01-13'), chanceFormat.howWeGot(chance));
         outputs.push(chanceFormat.delayInstead(chance));
         outputs.push(
-          said(
-            chanceFormat.baseReason(
-              { kind: 'alert', points: percent, alert: 'extreme_cold_warning' },
-              'the district',
-            ),
+          chanceFormat.baseReason(
+            { kind: 'alert', points: percent, alert: 'extreme_cold_warning' },
+            'Riverside',
           ),
-          said(chanceFormat.baseReason({ kind: 'day_after', points: percent }, 'the district')),
-          said(chanceFormat.baseReason({ kind: 'similar_days', points: percent }, 'the district')),
+          chanceFormat.baseReason({ kind: 'day_after', points: percent }, 'the district'),
+          chanceFormat.baseReason({ kind: 'similar_days', points: percent }, 'the district'),
         );
       }
       for (const status of ['closed', 'delayed', 'remote', 'earlyDismissal'] as const) {
@@ -851,12 +835,6 @@ describe('format', () => {
         outputs.push(reason({ kind: 'cold', points: 2, feelsLike: degrees, day: '2026-01-15' }));
       }
       for (const points of [-100, -9, -1, 1, 9, 100]) outputs.push(chanceFormat.points(points));
-      for (const status of ['open', 'closed', 'delayed', 'remote', 'earlyDismissal'] as const) {
-        outputs.push(
-          chanceFormat.recordDay(status, '2025-02-05', 6),
-          chanceFormat.recordOutcome(status),
-        );
-      }
       expect(allProblems(outputs)).toEqual([]);
     });
   });

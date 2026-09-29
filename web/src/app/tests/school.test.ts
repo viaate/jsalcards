@@ -614,13 +614,13 @@ describe('the chance section in the panel', () => {
       'District 2900003 canceled Tuesday',
       'Maries County R-II usually announces',
     ]);
-    expect(named?.why?.lines.map((line) => `${line.points} ${line.lead}${line.rest}`)).toEqual([
-      '+15 District 2900002 and District 2900003, next door, have already canceled.',
+    expect(named?.why?.lines.map((line) => `${line.points} ${line.text}`)).toEqual([
+      '+15 District 2900002 and District 2900003, next door, canceled.',
     ]);
     // Before the directory came, the same sum, by how many.
     const first = views.find((view) => (view?.chance ?? null) !== null)?.chance;
     expect(first?.moments.map((moment) => moment.mark)).toEqual(['next']);
-    expect(first?.why?.lines[0]?.lead).toBe('2 districts next door');
+    expect(first?.why?.lines[0]?.text).toBe('2 districts next door canceled.');
     expect(directory).toHaveBeenCalledTimes(1);
     expect(directory).toHaveBeenCalledWith(stamp);
     stop();

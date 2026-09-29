@@ -67,9 +67,8 @@ function nextMorning(overrides: Partial<ChanceInput> = {}): ChanceInput {
 function lines(why: WhyView | null): string[] {
   if (why === null) return [];
   return [
-    `${why.base.number}% ${why.base.lead}${why.base.rest}`,
-    ...why.lines.map((line) => `${line.points} ${line.lead}${line.rest}`),
-    `${why.total.number}% ${why.total.text}`,
+    `${why.base.number}% ${why.base.text}`,
+    ...why.lines.map((line) => `${line.points} ${line.text}`),
   ];
 }
 
@@ -99,29 +98,16 @@ describe('the chance section, the night before', () => {
     expect(chanceFormat.countdown(at('2026-01-13T11:30:00Z'), A_NOW, ZONE)).toBe('in 8h 25m');
   });
 
-  it('adds up to the headline, a sentence a reason, with the record under the reason it proves', () => {
+  it('adds up to the headline, a short sentence a reason, the record in the one it proves', () => {
     expect(lines(view?.why ?? null)).toEqual([
-      '30% Where we start: Shawnee Mission cancels for about 3 in 10 winter storm warnings.',
+      '30% Shawnee Mission cancels for about 3 in 10 winter storm warnings.',
       '+16 A bigger storm than most, 6 to 9 inches overnight. It closed 4 of the last 5 times it got 6 inches or more.',
-      '+9 Blue Valley and Olathe, next door, have already canceled.',
-      `+7 The heaviest snow falls from 2 to 5${NBSP}AM, just before the buses go out.`,
-      `+5 The wind will make it feel like -4${NBSP}F at the bus stop.`,
-      `${MINUS}3 The snow should stop by 7${NBSP}AM, which gives the plows a head start.`,
-      '64% Chance of no school Tuesday',
+      '+9 Blue Valley and Olathe, next door, canceled.',
+      `+7 Heaviest snow 2 to 5${NBSP}AM, before the buses.`,
+      `+5 Wind makes it feel like -4${NBSP}F at the bus stop.`,
+      `${MINUS}3 Snow ends by 7${NBSP}AM, a head start for the plows.`,
     ]);
     expect(view?.why?.title).toBe('How we got 64%');
-    expect(view?.why?.key).toBe(chanceCopy.key);
-    const storms = view?.why?.lines[0]?.record;
-    expect(storms?.map((day) => [day.tone, day.label])).toEqual([
-      ['closed', `8${NBSP}in`],
-      ['closed', `10${NBSP}in`],
-      ['closed', `6${NBSP}in`],
-      ['delayed', `6${NBSP}in`],
-      ['closed', `7${NBSP}in`],
-    ]);
-    expect(storms?.[3]?.spoken).toBe('Delayed, Feb 5, 2025, 6 inches');
-    expect(view?.why?.base.record).toBeNull();
-    expect(view?.why?.lines.slice(1).every((line) => line.record === null)).toBe(true);
   });
 
   it('draws the snow on the ground to 9 inches, with the times, the buses and the range', () => {
@@ -179,20 +165,13 @@ describe('the chance section, the next morning', () => {
     );
   });
 
-  it('adds up from the day after a snow day, with the record under the base', () => {
+  it('adds up from the day after a snow day', () => {
     expect(lines(view?.why ?? null)).toEqual([
-      '25% Where we start: after a snow day, Shawnee Mission stays closed the next day about 1 time in 4.',
-      `${MINUS}8 The snow stopped around 6${NBSP}AM, so the plows have all day to clear the roads.`,
-      `+6 It will feel like -8${NBSP}F at the bus stop on Wednesday morning.`,
-      `${MINUS}5 Sun this afternoon will help the salt melt the ice.`,
-      '+4 Some side streets could stay icy after 8 inches of snow.',
-      '22% Chance of no school Wednesday',
-    ]);
-    expect(view?.why?.base.record?.map((day) => [day.tone, day.label])).toEqual([
-      ['open', chanceCopy.open],
-      ['closed', chanceCopy.closed],
-      ['open', chanceCopy.open],
-      ['open', chanceCopy.open],
+      '25% After a snow day, Shawnee Mission stays closed the next day about 1 time in 4.',
+      `${MINUS}8 Snow stopped around 6${NBSP}AM, a full day for the plows.`,
+      `+6 Feels like -8${NBSP}F at the bus stop Wednesday morning.`,
+      `${MINUS}5 Sun this afternoon helps melt the ice.`,
+      '+4 Side streets could stay icy after 8 inches.',
     ]);
   });
 
@@ -304,8 +283,7 @@ describe('what the section leaves out', () => {
     // A base alone, when it is the chance.
     const alone: WhyDetail = { base: { kind: 'similar_days', points: 20 }, reasons: [] };
     expect(lines(why({ ...A_DETAIL, why: alone }, 0.2))).toEqual([
-      '20% Where we start: on days like this, Shawnee Mission closes about 1 time in 5.',
-      '20% Chance of no school Tuesday',
+      '20% On days like this, Shawnee Mission closes about 1 time in 5.',
     ]);
   });
 
@@ -330,15 +308,11 @@ describe('what the section leaves out', () => {
     });
     expect(lines(counted).slice(1, 3)).toEqual([
       '+12 A bigger storm than most, 6 to 9 inches overnight.',
-      '+4 Shawnee Mission’s record: it closed 4 of the last 5 times it got 6 inches or more.',
+      '+4 Shawnee Mission closed 4 of the last 5 times it got 6 inches or more.',
     ]);
-    expect(counted?.lines[1]?.record).toHaveLength(5);
     // The directory not read (yet): the districts next door by how many.
     const unnamed = whyView({ detail: A_DETAIL, chance: 0.64, names: null, ...args });
-    expect(unnamed?.lines[1]).toMatchObject({
-      lead: '2 districts next door',
-      rest: ' have already canceled.',
-    });
+    expect(unnamed?.lines[1]?.text).toBe('2 districts next door canceled.');
   });
 });
 
