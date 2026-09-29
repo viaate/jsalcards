@@ -3,7 +3,7 @@
  * src/copy.ts that loads with the school panel rather than with the page, so
  * the first paint carries none of it. The same rules hold here as there: every
  * word the section shows is written in this file or in copy.ts (its fixed words
- * are copy.chance), in the house style, and `npm run lint:copy` reads both as
+ * are chanceCopy), in the house style, and `npm run lint:copy` reads both as
  * the site's copy (scripts/check-copy.mjs COPY_MODULES).
  *
  * The predictions file sends kinds and numbers, never words
@@ -11,7 +11,17 @@
  * from them. A time is the viewer's wall clock, as every time on the site is.
  */
 
-import { clockwork, copy, format } from './copy.ts';
+import {
+  checkInstant,
+  checkKey,
+  clockText,
+  copy,
+  dateTimeFormat,
+  format,
+  localDay,
+  parseLocalDate,
+  part,
+} from './copy.ts';
 import type { StatusKey } from './copy.ts';
 
 /** Recursively freezes an object graph so no string can be changed at runtime. */
@@ -25,7 +35,40 @@ function deepFreeze<T>(value: T): T {
   return value;
 }
 
+/**
+ * The section's fixed words. Its sentences, which carry live values, are the
+ * functions of chanceFormat below.
+ */
+export const chanceCopy = /* @__PURE__ */ deepFreeze({
+  /** Before the weekday: "Chance of no school Tuesday". */
+  noSchool: 'Chance of no school',
+  /** Before the chance: "How we got 64%". */
+  howWeGot: 'How we got',
+  key: 'Each reason adds or takes away points.',
+  start: 'Where we start:',
+  /** The chart's titles. */
+  snowTitle: 'Snow on the ground, hour by hour',
+  coldTonight: 'How cold it will feel tonight',
+  coldTitle: 'How cold it will feel, hour by hour',
+  /** Under the chart's first hour, when that hour is this one. */
+  now: 'Now',
+  /** The chart's two moments: "Usually announces 5:30 AM", "Buses 7 AM". */
+  usuallyAnnounces: 'Usually announces',
+  buses: 'Buses',
+  /** Words beside the lit bars: "Heaviest snow 2 to 5 AM". */
+  heaviest: 'Heaviest snow',
+  /** A day in a district's record, by what it did. */
+  open: 'Open',
+  closed: 'Closed',
+  delayed: 'Delayed',
+  remote: 'Remote',
+  earlyDismissal: 'Early dismissal',
+  /** For a screen reader: the record under a reason. */
+  record: 'The district’s record',
+});
+
 const NBSP = '\u00a0';
+let weekdayFormat: Intl.DateTimeFormat | undefined;
 const MS_PER_DAY = 86_400_000;
 
 const HOUR_MS = 3_600_000;
@@ -130,20 +173,19 @@ export interface MovedInput {
  * the chance section's chart uses it to choose which hours to name.
  */
 export function localHour(instant: Date, timeZone: string): number {
-  const parts = clockwork
-    .dateTimeFormat('clock', timeZone)
-    .formatToParts(clockwork.checkInstant(instant));
-  return Number(clockwork.part(parts, 'hour')) % 24;
+  const parts = dateTimeFormat('clock', timeZone).formatToParts(checkInstant(instant));
+  return Number(part(parts, 'hour')) % 24;
 }
 
 /** A calendar day (YYYY-MM-DD) as its weekday: "Tuesday". */
 function weekday(localDate: string): string {
-  return clockwork.dateTimeFormat('weekday', 'UTC').format(clockwork.parseLocalDate(localDate));
+  weekdayFormat ??= new Intl.DateTimeFormat('en-US', { weekday: 'long', timeZone: 'UTC' });
+  return weekdayFormat.format(parseLocalDate(localDate));
 }
 
 /** "Chance of no school Tuesday", for a calendar day. */
 function chanceOn(localDate: string): string {
-  return `${copy.chance.noSchool} ${weekday(localDate)}`;
+  return `${chanceCopy.noSchool} ${weekday(localDate)}`;
 }
 
 /** The headline number without its sign: "64", or "<1" and ">99" at the ends, as format.chance() says. */
@@ -153,7 +195,7 @@ function chanceNumber(probability: number): string {
 
 /** "How we got 64%". */
 function howWeGot(probability: number): string {
-  return `${copy.chance.howWeGot} ${format.chance(probability)}`;
+  return `${chanceCopy.howWeGot} ${format.chance(probability)}`;
 }
 
 /** Whole percentage points with their sign: "+16", "−3". */
@@ -166,12 +208,10 @@ function points(n: number): string {
 
 /** A time of day, to the minute only where it is not on the hour: "5 PM", "5:30 AM". */
 function shortTime(instant: Date, timeZone: string): string {
-  const parts = clockwork
-    .dateTimeFormat('clock', timeZone)
-    .formatToParts(clockwork.checkInstant(instant));
-  const hour24 = Number(clockwork.part(parts, 'hour')) % 24;
-  const minute = Number(clockwork.part(parts, 'minute'));
-  if (minute !== 0) return clockwork.clockText(hour24, minute);
+  const parts = dateTimeFormat('clock', timeZone).formatToParts(checkInstant(instant));
+  const hour24 = Number(part(parts, 'hour')) % 24;
+  const minute = Number(part(parts, 'minute'));
+  if (minute !== 0) return clockText(hour24, minute);
   const hour = hour24 % 12 === 0 ? 12 : hour24 % 12;
   return `${String(hour)}${NBSP}${hour24 < 12 ? 'AM' : 'PM'}`;
 }
@@ -187,7 +227,7 @@ function hourSpan(start: Date, end: Date, timeZone: string): string {
 
 /** The local calendar day of an instant (YYYY-MM-DD). */
 function dayOf(instant: Date, timeZone: string): string {
-  return clockwork.localDay(instant, timeZone);
+  return localDay(instant, timeZone);
 }
 
 /**
@@ -199,8 +239,8 @@ function dayOf(instant: Date, timeZone: string): string {
 function moved(input: MovedInput): string | null {
   const { previous, current, at, now, timeZone } = input;
   const days = Math.round(
-    (clockwork.parseLocalDate(dayOf(now, timeZone)).getTime() -
-      clockwork.parseLocalDate(dayOf(at, timeZone)).getTime()) /
+    (parseLocalDate(dayOf(now, timeZone)).getTime() -
+      parseLocalDate(dayOf(at, timeZone)).getTime()) /
       MS_PER_DAY,
   );
   if (days < 0 || days > 6 || at.getTime() > now.getTime()) return null;
@@ -226,9 +266,7 @@ function moved(input: MovedInput): string | null {
  */
 function countdown(at: Date, now: Date, timeZone: string): string | null {
   // Whole minutes still to go, rounded up: 30 seconds before is "in 1m".
-  const minutes = Math.ceil(
-    (clockwork.checkInstant(at).getTime() - clockwork.checkInstant(now).getTime()) / MINUTE_MS,
-  );
+  const minutes = Math.ceil((checkInstant(at).getTime() - checkInstant(now).getTime()) / MINUTE_MS);
   if (minutes <= 0) return null;
   const hours = Math.floor(minutes / 60);
   const rest = minutes % 60;
@@ -243,16 +281,16 @@ function countdown(at: Date, now: Date, timeZone: string): string | null {
 
 /** A moment on the section's timeline: its time within the last day, else its day: "8:41 PM", "Mon, Jan 12". */
 function momentTime(instant: Date, now: Date, timeZone: string): string {
-  const ago = clockwork.checkInstant(now).getTime() - clockwork.checkInstant(instant).getTime();
+  const ago = checkInstant(now).getTime() - checkInstant(instant).getTime();
   return ago < 24 * HOUR_MS
     ? format.time(instant, timeZone)
-    : format.day(clockwork.localDay(instant, timeZone));
+    : format.day(localDay(instant, timeZone));
 }
 
 /** What a district next door posted for a day: "Blue Valley canceled Tuesday". */
 function neighborPosted(name: string, status: PostedKey, localDate: string): string {
   const on = weekday(localDate);
-  switch (clockwork.checkKey(copy.status, status, 'status')) {
+  switch (checkKey(copy.status, status, 'status')) {
     case 'closed':
       return `${name} canceled ${on}`;
     case 'delayed':
@@ -300,16 +338,16 @@ function degrees(value: number): string {
 
 /** The chart's moments: "Usually announces 5:30 AM", "Buses 7 AM". */
 function announcesFlag(instant: Date, timeZone: string): string {
-  return `${copy.chance.usuallyAnnounces} ${shortTime(instant, timeZone)}`;
+  return `${chanceCopy.usuallyAnnounces} ${shortTime(instant, timeZone)}`;
 }
 
 function busesFlag(instant: Date, timeZone: string): string {
-  return `${copy.chance.buses} ${shortTime(instant, timeZone)}`;
+  return `${chanceCopy.buses} ${shortTime(instant, timeZone)}`;
 }
 
 /** Beside the lit bars: "Heaviest snow 2 to 5 AM". */
 function heaviest(start: Date, end: Date, timeZone: string): string {
-  return `${copy.chance.heaviest} ${hourSpan(start, end, timeZone)}`;
+  return `${chanceCopy.heaviest} ${hourSpan(start, end, timeZone)}`;
 }
 
 /** The chart in a sentence, for a screen reader. */
@@ -393,7 +431,7 @@ function baseReason(input: BaseInput, district: string): Said {
   let rest: string;
   switch (input.kind) {
     case 'alert': {
-      const alerts = ALERT_PLURALS[clockwork.checkKey(ALERT_PLURALS, input.alert, 'alert')];
+      const alerts = ALERT_PLURALS[checkKey(ALERT_PLURALS, input.alert, 'alert')];
       rest =
         extreme === null
           ? `${district} cancels for ${rate('')} ${alerts}.`
@@ -413,7 +451,7 @@ function baseReason(input: BaseInput, district: string): Said {
           : `on days like this, ${district} ${extreme} closes.`;
       break;
   }
-  return { lead: copy.chance.start, rest: ` ${rest}` };
+  return { lead: chanceCopy.start, rest: ` ${rest}` };
 }
 
 /** The relation of the heaviest snow to the buses, as the end of its sentence. */
@@ -456,7 +494,7 @@ function reason(input: ReasonInput, district: string, now: Date, timeZone: strin
         delayed: 'already delayed the start',
         remote: 'already gone remote',
         earlyDismissal: 'already called an early dismissal',
-      }[clockwork.checkKey(copy.status, status, 'status')];
+      }[checkKey(copy.status, status, 'status')];
       if (input.names === null || input.names.length === 0) {
         return count === 1
           ? { lead: 'A district next door', rest: ` has ${done}.` }
@@ -523,7 +561,7 @@ function reason(input: ReasonInput, district: string, now: Date, timeZone: strin
 
 /** A day in a district's record, by what it did: "Closed", "Open". */
 function recordOutcome(status: StatusKey | 'open'): string {
-  return copy.chance[clockwork.checkKey(copy.chance, status, 'outcome') as 'open'];
+  return chanceCopy[checkKey(chanceCopy, status, 'outcome') as 'open'];
 }
 
 /** A day in the record for a screen reader: "Closed, Jan 9, 2024, 8 inches". */

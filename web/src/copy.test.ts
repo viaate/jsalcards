@@ -6,7 +6,7 @@ import { afterAll, describe, expect, it } from 'vitest';
 
 import { copy, format, mapLocale, REASON_KEYS, STATUS_KEYS } from './copy';
 import type { AlertLevelKey, HazardKey, StatusKey } from './copy';
-import { chanceFormat } from './copy-chance';
+import { chanceCopy, chanceFormat } from './copy-chance';
 import type { BaseInput, ReasonInput } from './copy-chance';
 
 // The house-style rules and the lint live in scripts/check-copy.mjs, a plain
@@ -551,6 +551,8 @@ describe('format', () => {
 
     it('heads the section with the chance and its day', () => {
       expect(Object.isFrozen(chanceFormat)).toBe(true);
+      expect(Object.isFrozen(chanceCopy)).toBe(true);
+      expect(allProblems(copyLeaves(chanceCopy).map(([, text]) => text))).toEqual([]);
       expect(chanceFormat.weekday('2026-01-13')).toBe('Tuesday');
       expect(chanceFormat.chanceOn('2026-01-14')).toBe('Chance of no school Wednesday');
       expect(chanceFormat.chanceNumber(0.64)).toBe('64');
@@ -774,8 +776,8 @@ describe('format', () => {
     });
 
     it('names each day of a district’s record', () => {
-      expect(chanceFormat.recordOutcome('open')).toBe(copy.chance.open);
-      expect(chanceFormat.recordOutcome('earlyDismissal')).toBe(copy.chance.earlyDismissal);
+      expect(chanceFormat.recordOutcome('open')).toBe(chanceCopy.open);
+      expect(chanceFormat.recordOutcome('earlyDismissal')).toBe(chanceCopy.earlyDismissal);
       expect(chanceFormat.recordDay('closed', '2024-01-09', 8)).toBe(
         'Closed, Jan 9, 2024, 8 inches',
       );
@@ -2120,7 +2122,8 @@ ${aliases}
   it('passes this project', async () => {
     const { findings, scanned } = await lintProject({ root: WEB_ROOT });
     expect(findings).toEqual([]);
-    expect(scanned.strings).toBe(strings.length);
+    // copy.ts's strings, and the chance section's fixed words (src/copy-chance.ts).
+    expect(scanned.strings).toBe(strings.length + copyLeaves(chanceCopy).length);
     expect(scanned.svelte).toBeGreaterThan(0);
   }, 60_000);
 });

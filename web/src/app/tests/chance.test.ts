@@ -1,7 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { copy } from '../../copy';
-import { chanceFormat } from '../../copy-chance';
+import { chanceCopy, chanceFormat } from '../../copy-chance';
 import type { ForecastDetail, WhyDetail } from '../../data/forecast-detail';
 import type { Outlook } from '../../data/school-day';
 import {
@@ -12,13 +11,12 @@ import {
   chartView,
   headlineDay,
   neighborPosts,
-  placeFlags,
-  placeLit,
   shortDistrictName,
   timeGap,
   whyView,
 } from '../chance';
 import type { ClosingsFile } from '../../types/generated';
+import { placeFlags, placeLit } from '../../ui/chart-layout';
 import type { ChanceInput, WhyView } from '../chance';
 import {
   A_CLOSINGS,
@@ -113,7 +111,7 @@ describe('the chance section, the night before', () => {
       '64% Chance of no school Tuesday',
     ]);
     expect(view?.why?.title).toBe('How we got 64%');
-    expect(view?.why?.key).toBe(copy.chance.key);
+    expect(view?.why?.key).toBe(chanceCopy.key);
     const storms = view?.why?.lines[0]?.record;
     expect(storms?.map((day) => [day.tone, day.label])).toEqual([
       ['closed', `8${NBSP}in`],
@@ -129,7 +127,7 @@ describe('the chance section, the night before', () => {
 
   it('draws the snow on the ground to 9 inches, with the times, the two moments and the range', () => {
     const chart = view?.chart;
-    expect(chart?.title).toBe(copy.chance.snowTitle);
+    expect(chart?.title).toBe(chanceCopy.snowTitle);
     expect(chart?.ticks.map((tick) => [tick.label, tick.bottom])).toEqual([
       ['0', 0],
       [`3${NBSP}in`, 40],
@@ -150,7 +148,7 @@ describe('the chance section, the night before', () => {
     expect(chart?.bars[2]?.height).toBeCloseTo(2.667, 3);
     expect(chart?.bars[0]?.height).toBe(0);
     expect(chart?.times.map((time) => [time.at, time.label, time.sub])).toEqual([
-      [0, `9${NBSP}PM`, copy.chance.now],
+      [0, `9${NBSP}PM`, chanceCopy.now],
       [2, `11${NBSP}PM`, null],
       [5, `2${NBSP}AM`, null],
       [8, `5${NBSP}AM`, null],
@@ -160,14 +158,14 @@ describe('the chance section, the night before', () => {
       {
         key: 'announces',
         at: 8.5,
-        label: `${copy.chance.usuallyAnnounces} 5:30${NBSP}AM`,
+        label: `${chanceCopy.usuallyAnnounces} 5:30${NBSP}AM`,
         prefer: 'left',
         downTo: 0,
       },
       {
         key: 'buses',
         at: 10,
-        label: `${copy.chance.buses} 7${NBSP}AM`,
+        label: `${chanceCopy.buses} 7${NBSP}AM`,
         prefer: 'right',
         downTo: 123,
       },
@@ -175,7 +173,7 @@ describe('the chance section, the night before', () => {
     expect(chart?.range).toEqual({ bottom: 80, height: 40 });
     expect(chart?.end).toEqual({ label: `6 to 9${NBSP}in`, bottom: 100 });
     expect(chart?.lit).toMatchObject({
-      label: `${copy.chance.heaviest} 2 to 5${NBSP}AM`,
+      label: `${chanceCopy.heaviest} 2 to 5${NBSP}AM`,
       first: 6,
       last: 8,
     });
@@ -216,16 +214,16 @@ describe('the chance section, the next morning', () => {
       '22% Chance of no school Wednesday',
     ]);
     expect(view?.why?.base.record?.map((day) => [day.tone, day.label])).toEqual([
-      ['open', copy.chance.open],
-      ['closed', copy.chance.closed],
-      ['open', copy.chance.open],
-      ['open', copy.chance.open],
+      ['open', chanceCopy.open],
+      ['closed', chanceCopy.closed],
+      ['open', chanceCopy.open],
+      ['open', chanceCopy.open],
     ]);
   });
 
   it('draws how cold it will feel tonight, hanging below 0 F, the bus hour lit', () => {
     const chart = view?.chart;
-    expect(chart?.title).toBe(copy.chance.coldTonight);
+    expect(chart?.title).toBe(chanceCopy.coldTonight);
     expect(chart?.ticks.map((tick) => [tick.label, tick.bottom])).toEqual([
       [`-10${NBSP}F`, 0],
       [`-5${NBSP}F`, 40],
@@ -525,12 +523,12 @@ describe('the chart', () => {
   it('starts from this hour: the hours gone by are not the night ahead', () => {
     const later = chartView(A_DETAIL, at('2026-01-13T05:30:00Z'), ZONE);
     expect(later?.bars).toHaveLength(9);
-    expect(later?.times[0]).toEqual({ at: 0, label: `11${NBSP}PM`, sub: copy.chance.now });
+    expect(later?.times[0]).toEqual({ at: 0, label: `11${NBSP}PM`, sub: chanceCopy.now });
     expect(later?.flags.map((flag) => flag.at)).toEqual([6.5, 8]);
     expect(later?.lit).toMatchObject({
       first: 4,
       last: 6,
-      label: `${copy.chance.heaviest} 2 to 5${NBSP}AM`,
+      label: `${chanceCopy.heaviest} 2 to 5${NBSP}AM`,
     });
     // Two hours left draw two bars; the bus hour alone is no chart.
     expect(chartView(A_DETAIL, at('2026-01-13T12:30:00Z'), ZONE)?.bars).toHaveLength(2);
@@ -543,8 +541,8 @@ describe('the chart', () => {
       ZONE,
     );
     expect(evening?.flags.map((flag) => flag.key)).toEqual(['buses']);
-    expect(chartView(B_DETAIL, B_NOW, 'America/Los_Angeles')?.title).toBe(copy.chance.coldTonight);
-    expect(chartView(B_DETAIL, B_NOW, 'Europe/Berlin')?.title).toBe(copy.chance.coldTitle);
+    expect(chartView(B_DETAIL, B_NOW, 'America/Los_Angeles')?.title).toBe(chanceCopy.coldTonight);
+    expect(chartView(B_DETAIL, B_NOW, 'Europe/Berlin')?.title).toBe(chanceCopy.coldTitle);
   });
 
   it('puts the moments’ words on their own sides, else the other, else a second row', () => {

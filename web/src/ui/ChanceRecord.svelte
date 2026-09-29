@@ -1,6 +1,6 @@
 <script lang="ts">
   import type { RecordDayView } from '../app/chance';
-  import { copy } from '../copy';
+  import { chanceCopy } from '../copy-chance';
 
   interface Props {
     days: readonly RecordDayView[];
@@ -22,7 +22,7 @@
   The district's own record under the reason it proves (ui/ChanceSection.svelte):
   its past days like this one, oldest first, in the map's own marks.
 -->
-<ul class="record" aria-label={copy.chance.record}>
+<ul class="record" aria-label={chanceCopy.record}>
   {#each days as past (past.key)}
     <li>
       <span class="glyph {GLYPHS[past.tone]}" aria-hidden="true"></span>

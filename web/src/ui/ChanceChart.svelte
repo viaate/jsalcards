@@ -1,6 +1,8 @@
 <script lang="ts">
-  import { placeFlags, placeLit } from '../app/chance';
+  import type { Attachment } from 'svelte/attachments';
+
   import type { ChartView } from '../app/chance';
+  import { placeFlags, placeLit } from './chart-layout';
 
   interface Props {
     chart: ChartView;
@@ -20,6 +22,36 @@
   let widths = $state<Record<string, number>>({});
   let litWidth = $state(0);
   let litHeight = $state(0);
+
+  /**
+   * Reads the plot's width and its words' sizes once laid out, again for new
+   * words, and again whenever the plot's width changes (a phone turned on its
+   * side). A ResizeObserver of its own, where the page has one.
+   */
+  function measure(words: ChartView): Attachment<HTMLElement> {
+    // Keyed on the chart: new words are measured afresh.
+    const flags = words.flags.length;
+    return (node) => {
+      const read = (): void => {
+        plotWidth = node.clientWidth;
+        const next: Record<string, number> = {};
+        for (const flag of [...node.querySelectorAll<HTMLElement>('.flag')].slice(0, flags)) {
+          next[flag.dataset.key ?? ''] = flag.offsetWidth;
+        }
+        widths = next;
+        const lit = node.querySelector<HTMLElement>('.lit-label');
+        litWidth = lit?.offsetWidth ?? 0;
+        litHeight = lit?.offsetHeight ?? 0;
+      };
+      read();
+      if (typeof ResizeObserver !== 'function') return;
+      const observer = new ResizeObserver(read);
+      observer.observe(node);
+      return () => {
+        observer.disconnect();
+      };
+    };
+  }
 
   const count = $derived(chart.bars.length);
 
@@ -94,7 +126,7 @@
       {/each}
     </div>
 
-    <div class="over" style:height="{top + chart.plot}px" bind:clientWidth={plotWidth}>
+    <div class="over" style:height="{top + chart.plot}px" {@attach measure(chart)}>
       {#each chart.flags as flag, i (flag.key)}
         {@const at = placed?.[i] ?? null}
         <span class="guide" style:left="{across(flag.at)}px" style:bottom="{flag.downTo}px"></span>
@@ -103,7 +135,7 @@
           class:is-placed={at !== null}
           style:left={at === null ? `${String(across(flag.at))}px` : `${String(at.left)}px`}
           style:top="{(at?.row ?? 0) * FLAG_ROW}px"
-          bind:offsetWidth={widths[flag.key]}>{flag.label}</span
+          data-key={flag.key}>{flag.label}</span
         >
       {/each}
 
@@ -121,9 +153,7 @@
           class="lit-label"
           class:is-placed={lit !== null}
           style:left="{lit?.left ?? 0}px"
-          style:bottom="{lit?.bottom ?? 0}px"
-          bind:offsetWidth={litWidth}
-          bind:offsetHeight={litHeight}>{chart.lit.label}</span
+          style:bottom="{lit?.bottom ?? 0}px">{chart.lit.label}</span
         >
       {/if}
 

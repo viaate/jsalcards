@@ -79,7 +79,8 @@ const WEB_ROOT = path.resolve(HERE, '..');
  * later with the code that shows it, so the page's first script carries none
  * of it. Each is read as copy.ts is: never scanned for literal text, and what
  * it exports is copy. The first is copy.ts itself, whose `copy` tree holds the
- * fixed strings.
+ * fixed strings; a later one's fixed strings are each export named …Copy
+ * (src/copy-chance.ts chanceCopy), held to the same house style.
  */
 export const COPY_MODULES = ['src/copy.ts', 'src/copy-chance.ts'];
 
@@ -1368,18 +1369,28 @@ class Project {
     const loaded = await import(pathToFileURL(copyFile).href);
     if (!isFields(loaded)) return;
     const exports = /** @type {Record<string, unknown>} */ ({ ...loaded });
-    // The copy modules that load later: their exports are copy too, under their own names.
-    for (const later of this.copyFiles.filter((file) => file !== copyFile && existsSync(file))) {
+    /** @type {Array<[file: string, key: string, text: string]>} */
+    const later = [];
+    // The copy modules that load later: their exports are copy too, under their own names,
+    // and each …Copy tree among them holds fixed strings, as copy.ts's `copy` does.
+    for (const file of this.copyFiles.filter((each) => each !== copyFile && existsSync(each))) {
       /** @type {unknown} */
-      const more = await import(pathToFileURL(later).href);
+      const more = await import(pathToFileURL(file).href);
       if (!isFields(more)) continue;
       for (const [name, value] of Object.entries(more)) {
         if (!Object.hasOwn(exports, name)) exports[name] = value;
+        if (name.endsWith('Copy')) {
+          for (const [key, text] of copyLeaves(value, name)) later.push([file, key, text]);
+        }
       }
     }
     this.copyRuntime = {
       exports,
-      leaves: new Set(copyLeaves(exports.copy).map(([, text]) => text)),
+      leaves: new Set([
+        ...copyLeaves(exports.copy).map(([, text]) => text),
+        ...later.map(([, , text]) => text),
+      ]),
+      later,
     };
   }
 
@@ -1688,7 +1699,7 @@ async function loadParse5() {
  *   An error, and where it is caught; or, `made`, where it is made (`new Error(…)`).
  * @typedef {{ t: 'foreign' }} ForeignValue A value from a package, whose code the lint does not read.
  * @typedef {TextValue | CodeValue | CaughtValue | CopyValue} StringValue What a place can show as text.
- * @typedef {{ exports: Record<string, unknown>, leaves: Set<string> }} CopyRuntime
+ * @typedef {{ exports: Record<string, unknown>, leaves: Set<string>, later: Array<[file: string, key: string, text: string]> }} CopyRuntime
  * @typedef {{ t: 'object', node: Node | undefined, entries: () => Entry[] }} ObjectValue
  * @typedef {{ key: string | undefined, name: StringValue | undefined, value: Thunk }} Entry An undefined key can be any key; `name` is the key as text.
  * @typedef {{ t: 'array', node: Node | undefined, exact: boolean, items: () => Thunk[] }} ArrayValue `exact` when positions line up with indexes.
@@ -5820,6 +5831,17 @@ export async function lintProject({ root: given = WEB_ROOT, dist } = {}) {
       for (const problem of problems(text)) {
         findings.push({
           file: 'src/copy.ts',
+          line: 1,
+          column: 1,
+          message: `${problem} in ${key}: ${quote(text)}`,
+        });
+      }
+    }
+    for (const [file, key, text] of project.copyRuntime?.later ?? []) {
+      scanned.strings += 1;
+      for (const problem of problems(text)) {
+        findings.push({
+          file: relative(file),
           line: 1,
           column: 1,
           message: `${problem} in ${key}: ${quote(text)}`,

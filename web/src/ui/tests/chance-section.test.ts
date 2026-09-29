@@ -15,6 +15,7 @@ import {
   ZONE,
 } from '../../app/tests/chance-fixtures';
 import { copy } from '../../copy';
+import { chanceCopy } from '../../copy-chance';
 import DetailPanel from '../DetailPanel.svelte';
 
 const NBSP = ' ';
@@ -120,17 +121,17 @@ describe('the chance section', () => {
     flushSync();
     expect(text(section, '.m-count')).toEqual(['in 8h 24m']);
 
-    expect(text(section, 'figcaption')).toEqual([copy.chance.snowTitle]);
+    expect(text(section, 'figcaption')).toEqual([chanceCopy.snowTitle]);
     expect(section.querySelectorAll('.col')).toHaveLength(11);
     expect(section.querySelectorAll('.col.is-lit')).toHaveLength(3);
     expect(text(section, '.flag')).toEqual([
-      `${copy.chance.usuallyAnnounces} 5:30${NBSP}AM`,
-      `${copy.chance.buses} 7${NBSP}AM`,
+      `${chanceCopy.usuallyAnnounces} 5:30${NBSP}AM`,
+      `${chanceCopy.buses} 7${NBSP}AM`,
     ]);
     expect(text(section, '.end')).toEqual([`6 to 9${NBSP}in`]);
     expect(section.querySelectorAll('.range')).toHaveLength(1);
     expect(text(section, '.time')).toEqual([
-      `9${NBSP}PM ${copy.chance.now}`,
+      `9${NBSP}PM ${chanceCopy.now}`,
       `11${NBSP}PM`,
       `2${NBSP}AM`,
       `5${NBSP}AM`,
@@ -168,14 +169,14 @@ describe('the chance section', () => {
       `6:00${NBSP}AM Snow stopped, 8 inches in all`,
       `5:30${NBSP}AM Shawnee Mission usually announces Wednesday, in 23h 10m`,
     ]);
-    expect(text(section, 'figcaption')).toEqual([copy.chance.coldTonight]);
+    expect(text(section, 'figcaption')).toEqual([chanceCopy.coldTonight]);
     expect(section.querySelectorAll('.col.is-below')).toHaveLength(11);
     expect(text(section, '.end')).toEqual([`-8${NBSP}F`]);
     expect(text(section, '.is-start .record li')).toEqual([
-      `${copy.chance.open} Open, Jan 10, 2024`,
-      `${copy.chance.closed} Closed, Jan 7, 2025`,
-      `${copy.chance.open} Open, Jan 13, 2025`,
-      `${copy.chance.open} Open, Feb 19, 2025`,
+      `${chanceCopy.open} Open, Jan 10, 2024`,
+      `${chanceCopy.closed} Closed, Jan 7, 2025`,
+      `${chanceCopy.open} Open, Jan 13, 2025`,
+      `${chanceCopy.open} Open, Feb 19, 2025`,
     ]);
   });
 

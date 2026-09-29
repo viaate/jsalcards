@@ -3,7 +3,7 @@
 
   import type { ChanceView } from '../app/chance';
   import { copy } from '../copy';
-  import { chanceFormat } from '../copy-chance';
+  import { chanceCopy, chanceFormat } from '../copy-chance';
   import ChanceChart from './ChanceChart.svelte';
   import ChanceRecord from './ChanceRecord.svelte';
 
@@ -77,7 +77,7 @@
     <div class="hero-text">
       <p class="meaning" id="chance-meaning">
         <span class="sr-only">{chance.number}%</span>
-        {copy.chance.noSchool} <br />{chanceFormat.weekday(chance.day)}
+        {chanceCopy.noSchool} <br />{chanceFormat.weekday(chance.day)}
       </p>
       {#if chance.moved !== null}
         <p class="change is-{chance.moved.direction}">

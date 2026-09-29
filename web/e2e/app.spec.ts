@@ -47,7 +47,7 @@ import { build, preview } from 'vite';
 import type { PreviewServer } from 'vite';
 
 import { STATUS_KEYS, copy, format } from '../src/copy';
-import { chanceFormat } from '../src/copy-chance';
+import { chanceCopy, chanceFormat } from '../src/copy-chance';
 import { COPIED_MS } from '../src/ui/share';
 
 const WEB = fileURLToPath(new URL('..', import.meta.url));
@@ -1809,7 +1809,7 @@ test.describe('with data staged', () => {
 
     // The chart: a bar an hour, the heaviest lit, the two moments, the range at the bus hour.
     const chart = section.locator('.chart');
-    await expect(chart.locator('figcaption')).toHaveText(copy.chance.snowTitle);
+    await expect(chart.locator('figcaption')).toHaveText(chanceCopy.snowTitle);
     await expect(chart.locator('.col')).toHaveCount(11);
     await expect(chart.locator('.col.is-lit')).toHaveCount(3);
     await expect(chart.locator('.flag')).toHaveText([
@@ -1973,7 +1973,7 @@ test.describe('with data staged', () => {
       `${format.time(new Date('2026-01-13T11:30:00Z'), ZONE)} Kansas City 33 usually announces in 8h 25m`,
     ]);
     const chart = section.locator('.chart');
-    await expect(chart.locator('figcaption')).toHaveText(copy.chance.coldTonight);
+    await expect(chart.locator('figcaption')).toHaveText(chanceCopy.coldTonight);
     await expect(chart.locator('.col.is-below')).toHaveCount(11);
     await expect(chart.locator('.end')).toHaveText(chanceFormat.degrees(-8));
     await expect(section.locator('.is-start .record li')).toHaveCount(4);

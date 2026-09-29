@@ -206,42 +206,6 @@ export const copy = deepFreeze({
     forecast: 'In the forecast',
   },
 
-  /**
-   * The school panel's chance section: the chance of no school as its headline,
-   * the evening's early signals, the night hour by hour, and how the chance adds
-   * up. Its sentences, which carry live values, are the `format` functions below
-   * (format.reason and the rest); these are its fixed words.
-   */
-  chance: {
-    /** Before the weekday: "Chance of no school Tuesday". */
-    noSchool: 'Chance of no school',
-    /** Before the chance: "How we got 64%". */
-    howWeGot: 'How we got',
-    key: 'Each reason adds or takes away points.',
-    start: 'Where we start:',
-    /** The chart's titles. */
-    snowTitle: 'Snow on the ground, hour by hour',
-    coldTonight: 'How cold it will feel tonight',
-    coldTitle: 'How cold it will feel, hour by hour',
-    /** Under the chart's first hour, when that hour is this one. */
-    now: 'Now',
-    /** The chart's two moments: "Usually announces 5:30 AM", "Buses 7 AM". */
-    usuallyAnnounces: 'Usually announces',
-    buses: 'Buses',
-    /** Words beside the lit bars: "Heaviest snow 2 to 5 AM". */
-    heaviest: 'Heaviest snow',
-    /** A day in a district's record, by what it did. */
-    open: 'Open',
-    closed: 'Closed',
-    delayed: 'Delayed',
-    remote: 'Remote',
-    earlyDismissal: 'Early dismissal',
-    /** For a screen reader: the record under a reason, and which way the chance moved. */
-    record: 'The district’s record',
-    up: 'Up',
-    down: 'Down',
-  },
-
   pin: {
     mySchool: 'My school',
     pinned: 'Pinned as my school',
@@ -387,7 +351,7 @@ let numberFormat: Intl.NumberFormat | undefined;
 let speedFormat: Intl.NumberFormat | undefined;
 const dateTimeFormats = new Map<string, Intl.DateTimeFormat>();
 
-type DateStyle = 'clock' | 'day' | 'monthDay' | 'dayYear' | 'ymd' | 'weekday';
+type DateStyle = 'clock' | 'day' | 'monthDay' | 'dayYear' | 'ymd';
 
 const DATE_STYLES: Readonly<Record<DateStyle, Intl.DateTimeFormatOptions>> = {
   clock: { hour: 'numeric', minute: '2-digit', hourCycle: 'h23' },
@@ -395,7 +359,6 @@ const DATE_STYLES: Readonly<Record<DateStyle, Intl.DateTimeFormatOptions>> = {
   monthDay: { month: 'short', day: 'numeric' },
   dayYear: { month: 'short', day: 'numeric', year: 'numeric' },
   ymd: { year: 'numeric', month: '2-digit', day: '2-digit' },
-  weekday: { weekday: 'long' },
 };
 
 /** One cached Intl formatter per style and time zone; an unknown zone throws RangeError. */
@@ -748,20 +711,6 @@ function alertName(hazard: HazardKey, level: AlertLevelKey): string {
   return `${name} ${kind.toLocaleLowerCase(LOCALE)}`;
 }
 
-/**
- * The date and clock workings the chance section's sentences share with these
- * (src/copy-chance.ts, which loads with the school panel): not words of their own.
- */
-export const clockwork = /* @__PURE__ */ deepFreeze({
-  dateTimeFormat,
-  part,
-  checkInstant,
-  checkKey,
-  parseLocalDate,
-  localDay,
-  clockText,
-});
-
 export const format = /* @__PURE__ */ deepFreeze({
   number,
   count,
@@ -795,3 +744,9 @@ export const format = /* @__PURE__ */ deepFreeze({
 });
 
 export type Format = typeof format;
+
+/**
+ * The date and clock workings the chance section's sentences share with these
+ * (src/copy-chance.ts, which loads with the school panel): not words of their own.
+ */
+export { checkInstant, checkKey, clockText, dateTimeFormat, localDay, parseLocalDate, part };
