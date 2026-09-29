@@ -34,9 +34,9 @@
  *     the middle dot may be written in place.
  *   - Strings from copy.ts are the only text that gets through, read from
  *     copy.ts as it runs: the strings of its `copy` tree and what its
- *     formatters return. Its keys (`Object.keys(copy.status)`), its other
- *     strings (STATUS_KEYS) and copy cut or recased by a method are reported
- *     where they show. So are a caught error's words (`error.message`, {:catch},
+ *     formatters return, imported as the page starts or later (`import()`).
+ *     Its keys (`Object.keys(copy.status)`), its other strings (STATUS_KEYS)
+ *     and copy cut or recased by a method are reported where they show. So are a caught error's words (`error.message`, {:catch},
  *     `.catch()`, <svelte:boundary>, error listeners), dates written out by
  *     JavaScript or worded by Intl (month and day names, relative times, units),
  *     and the browser's own labels (a submit button without a value, <details>
@@ -1374,14 +1374,18 @@ class Project {
     const exports = /** @type {Record<string, unknown>} */ ({ ...loaded });
     /** @type {Array<[file: string, key: string, text: string]>} */
     const later = [];
-    // The copy modules that load later: their exports are copy too, under their own names,
-    // and each …Copy tree among them holds fixed strings, as copy.ts's `copy` does.
+    /** @type {Array<[file: string, name: string]>} */
+    const clashes = [];
+    // The copy modules that load later: their exports are copy too, under their own names, and
+    // each …Copy tree among them holds fixed strings, as copy.ts's `copy` does. A name already
+    // taken would make one of the two unreadable here: it is reported instead.
     for (const file of this.copyFiles.filter((each) => each !== copyFile && existsSync(each))) {
       /** @type {unknown} */
       const more = await import(pathToFileURL(file).href);
       if (!isFields(more)) continue;
       for (const [name, value] of Object.entries(more)) {
-        if (!Object.hasOwn(exports, name)) exports[name] = value;
+        if (Object.hasOwn(exports, name)) clashes.push([file, name]);
+        else exports[name] = value;
         if (name.endsWith('Copy')) {
           for (const [key, text] of copyLeaves(value, name)) later.push([file, key, text]);
         }
@@ -1394,6 +1398,7 @@ class Project {
         ...later.map(([, , text]) => text),
       ]),
       later,
+      clashes,
     };
   }
 
@@ -1702,7 +1707,7 @@ async function loadParse5() {
  *   An error, and where it is caught; or, `made`, where it is made (`new Error(…)`).
  * @typedef {{ t: 'foreign' }} ForeignValue A value from a package, whose code the lint does not read.
  * @typedef {TextValue | CodeValue | CaughtValue | CopyValue} StringValue What a place can show as text.
- * @typedef {{ exports: Record<string, unknown>, leaves: Set<string>, later: Array<[file: string, key: string, text: string]> }} CopyRuntime
+ * @typedef {{ exports: Record<string, unknown>, leaves: Set<string>, later: Array<[file: string, key: string, text: string]>, clashes: Array<[file: string, name: string]> }} CopyRuntime
  * @typedef {{ t: 'object', node: Node | undefined, entries: () => Entry[] }} ObjectValue
  * @typedef {{ key: string | undefined, name: StringValue | undefined, value: Thunk }} Entry An undefined key can be any key; `name` is the key as text.
  * @typedef {{ t: 'array', node: Node | undefined, exact: boolean, items: () => Thunk[] }} ArrayValue `exact` when positions line up with indexes.
@@ -2266,6 +2271,8 @@ class Flow {
       }
       case 'AwaitExpression':
         return this.evaluate(nodeAt(node, 'argument'), env);
+      case 'ImportExpression':
+        return this.dynamicImport(node);
       case 'ArrayExpression':
         return [this.arrayLiteral(node, env)];
       case 'ObjectExpression':
@@ -2920,6 +2927,21 @@ class Flow {
     if (Project.isPackage(source)) return [FOREIGN];
     const target = this.project.resolve(module, source);
     return target === undefined ? [] : this.exported(target, name);
+  }
+
+  /**
+   * What `import()` settles to (a promise is read as its value): a copy
+   * module's exports as they run, as `import * as` would bring them in, so
+   * copy loaded later is held to the same rules wherever it goes. What other
+   * modules export later is not followed.
+   * @param {Node} node
+   * @returns {Value[]}
+   */
+  dynamicImport(node) {
+    const source = stringAt(unwrap(nodeAt(node, 'source')), 'value');
+    const module = this.project.moduleOf(node);
+    if (source === undefined || module === undefined) return [];
+    return this.project.importsCopy(module, source) ? [this.copyExport('*')] : [];
   }
 
   /**
@@ -5929,6 +5951,14 @@ export async function lintProject({ root: given = WEB_ROOT, dist } = {}) {
   if (existsSync(project.copyFile)) {
     await project.loadCopy();
     copyTree = project.copyRuntime?.exports.copy;
+    for (const [file, name] of project.copyRuntime?.clashes ?? []) {
+      findings.push({
+        file: relative(file),
+        line: 1,
+        column: 1,
+        message: `export ${name} is also an export of an earlier copy module; name it apart`,
+      });
+    }
     for (const [key, text] of copyLeaves(copyTree)) {
       scanned.strings += 1;
       for (const problem of problems(text)) {

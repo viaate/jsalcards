@@ -1458,6 +1458,70 @@ export const format = {
     );
   });
 
+  it('follows a copy module loaded with import(), through Promise.all, then and assignments', async () => {
+    const later = `import { copy } from './copy.ts';
+export const format = {
+  number: (n: number): string => String(n),
+  closed: (): string => copy.status.closed,
+};
+`;
+    // As App.svelte might take the formatters: a promise of the module among others, a later
+    // assignment to state, a then, and an await.
+    const key = `<script lang="ts">
+  let { count }: { count: number } = $props();
+  let format = $state.raw<{ number: (n: number) => string } | null>(null);
+  void Promise.all([Promise.resolve(1), import('./copy-format')]).then(([, formatters]) => {
+    format = formatters.format;
+  });
+  const closed = import('./copy-format').then((module) => module.format.closed());
+  async function words(): Promise<string> {
+    const { format: loaded } = await import('./copy-format');
+    return loaded.closed();
+  }
+</script>
+{#if format !== null}
+  <p class="upper">{format.number(count).toUpperCase()}</p>
+  <p class="cut">{format.number(count).slice(0, 1)}</p>
+  <p class="keys">{Object.keys(format).join()}</p>
+{/if}
+{#await closed then text}<b>{text}</b>{/await}
+{#await words() then text}<i>{text}</i>{/await}
+`;
+    await expectFindings(
+      {
+        'src/copy.ts': `export const copy = { status: { closed: 'Closed' } };
+`,
+        'src/copy-format.ts': later,
+        'src/Key.svelte': key,
+      },
+      [
+        ['src/Key.svelte', '<p class="upper">', 'copy.ts text put through toUpperCase() in <p>'],
+        ['src/Key.svelte', '<p class="cut">', 'copy.ts text put through slice() in <p>'],
+        ['src/Key.svelte', '<p class="keys">', 'the copy.ts key "number" in <p>'],
+        ['src/Key.svelte', '<p class="keys">', 'the copy.ts key "closed" in <p>'],
+      ],
+    );
+  });
+
+  it('reports an export of a later copy module named like one of copy.ts', async () => {
+    await expectFindings(
+      {
+        'src/copy.ts': `export const copy = { status: { closed: 'Closed' } };
+export const format = { closed: (): string => copy.status.closed };
+`,
+        'src/copy-format.ts': `export const format = { open: (): string => 'Open' };
+`,
+      },
+      [
+        [
+          'src/copy-format.ts',
+          'export const format',
+          'export format is also an export of an earlier copy module',
+        ],
+      ],
+    );
+  });
+
   it('finds literal text in components, DOM writes, index.html and manifests', async () => {
     const bad = `<script lang="ts">
   import { copy } from './copy';
