@@ -102,20 +102,26 @@ describe('the chance section', () => {
   it('leads with the chance, then the evening, the chart, the sum and the delay, all open', () => {
     vi.useFakeTimers({ now: A_NOW });
     const section = show(chance(true));
-    // The old cards give way to it.
-    expect(document.querySelector('.card.status')).toBeNull();
+    // The panel's own status and outlook give way to it.
+    expect(document.querySelector('aside.detail .body > .status')).toBeNull();
     expect(document.querySelector('.outlook')).toBeNull();
     expect(section.querySelector('.status')).toBeNull();
     expect(text(section, '.number')).toEqual(['64%']);
     expect(text(section, '.meaning')).toEqual(['64% Chance of no school Tuesday']);
     expect(text(section, '.change')).toEqual([`Up from 41% at 5${NBSP}PM`]);
     expect(section.querySelectorAll('.change svg')).toHaveLength(1);
+    expect(text(section, '.delay')).toEqual(['18% chance of a delayed start instead']);
     expect(text(section, '.moment')).toEqual([
       `8:41${NBSP}PM Blue Valley canceled Tuesday`,
       `8:52${NBSP}PM Olathe canceled Tuesday`,
       `5:30${NBSP}AM Shawnee Mission usually announces in 8h 25m`,
     ]);
-    expect(section.querySelectorAll('.moment .glyph.is-closed')).toHaveLength(2);
+    // Each on the panel's two columns: the time, then the words.
+    expect(text(section, '.moment .label')).toEqual([
+      `8:41${NBSP}PM`,
+      `8:52${NBSP}PM`,
+      `5:30${NBSP}AM`,
+    ]);
     // The countdown keeps time.
     vi.advanceTimersByTime(61_000);
     flushSync();
@@ -124,14 +130,11 @@ describe('the chance section', () => {
     expect(text(section, 'figcaption')).toEqual([chanceCopy.snowTitle]);
     expect(section.querySelectorAll('.col')).toHaveLength(11);
     expect(section.querySelectorAll('.col.is-lit')).toHaveLength(3);
-    expect(text(section, '.flag')).toEqual([
-      `${chanceCopy.usuallyAnnounces} 5:30${NBSP}AM`,
-      `${chanceCopy.buses} 7${NBSP}AM`,
-    ]);
+    expect(text(section, '.flag')).toEqual([`${chanceCopy.buses} 7${NBSP}AM`]);
     expect(text(section, '.end')).toEqual([`6 to 9${NBSP}in`]);
     expect(section.querySelectorAll('.range')).toHaveLength(1);
     expect(text(section, '.time')).toEqual([
-      `9${NBSP}PM ${chanceCopy.now}`,
+      chanceCopy.now,
       `11${NBSP}PM`,
       `2${NBSP}AM`,
       `5${NBSP}AM`,
@@ -143,10 +146,9 @@ describe('the chance section', () => {
     expect(text(section, '.is-total')).toEqual(['64% Chance of no school Tuesday']);
     expect(section.querySelectorAll('.record li')).toHaveLength(5);
     expect(section.querySelectorAll('.record .glyph.is-delayed')).toHaveLength(1);
-    // Nothing folds away.
+    // Nothing folds away, and no words lead in bold.
     expect(section.querySelectorAll('details, [aria-expanded]')).toHaveLength(0);
-    expect(text(section, '.delay')).toEqual(['18% chance of a delayed start instead']);
-    expect(section.querySelectorAll('.delay .glyph.is-delayed')).toHaveLength(1);
+    expect(section.querySelectorAll('strong, b')).toHaveLength(0);
   });
 
   it('the next morning, says the decided status first, then the next day’s chance', () => {

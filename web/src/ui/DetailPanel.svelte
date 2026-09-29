@@ -201,46 +201,46 @@
       <!-- A chance to give: the section says the status, then the chance (ChanceSection.svelte). -->
       <ChanceSection chance={view.chance} />
     {:else if view.status.length > 0}
-      <section class="card status" aria-label={copy.detail.status}>
+      <section class="block status" aria-label={copy.detail.status}>
         {#each view.status as line, n (n)}
           <div class="line">
-            <span class="glyph {GLYPHS[line.tone]}" aria-hidden="true"></span>
-            <div class="line-text">
-              <p class="headline">{line.headline}</p>
-              {#if line.detail !== null}
-                <p class="line-detail">{line.detail}</p>
-              {/if}
-              {#if line.note !== null}
-                <p class="line-note">{line.note}</p>
-              {/if}
-            </div>
+            <p class="headline">
+              {line.headline}<span class="glyph {GLYPHS[line.tone]}" aria-hidden="true"></span>
+            </p>
+            {#if line.detail !== null}
+              <p class="line-detail">{line.detail}</p>
+            {/if}
+            {#if line.note !== null}
+              <p class="line-note">{line.note}</p>
+            {/if}
           </div>
         {/each}
       </section>
     {/if}
 
     {#if view.chance === null && view.outlook !== null}
-      <section class="card outlook" aria-labelledby="detail-outlook">
-        <h3 class="card-title" id="detail-outlook">{copy.predictions.title}</h3>
-        <div class="days">
+      <section class="block outlook" aria-labelledby="detail-outlook">
+        <h3 class="heading" id="detail-outlook">{copy.predictions.title}</h3>
+        <div class="rows">
           {#each view.outlook as day (day.label)}
-            <div class="day">
-              <p class="day-label">{day.label}</p>
-              {#if day.chance !== null}
-                <p class="chance">{day.chance}</p>
-                <p class="day-line">{day.line}</p>
-                <span class="meter" aria-hidden="true">
-                  <span class="meter-fill" style:transform="scaleX({day.share ?? 0})"></span>
-                </span>
-                {#if day.delay !== null}
-                  <p class="day-more">{day.delay}</p>
+            <div class="row day">
+              <p class="label day-label">{day.label}</p>
+              <div>
+                {#if day.chance !== null}
+                  <p class="day-line"><span class="chance">{day.chance}</span> {day.line}</p>
+                  <span class="meter" aria-hidden="true">
+                    <span class="meter-fill" style:transform="scaleX({day.share ?? 0})"></span>
+                  </span>
+                  {#if day.delay !== null}
+                    <p class="day-more">{day.delay}</p>
+                  {/if}
+                  {#if day.reasons !== null}
+                    <p class="day-more">{day.reasons}</p>
+                  {/if}
+                {:else}
+                  <p class="day-line">{day.line}</p>
                 {/if}
-                {#if day.reasons !== null}
-                  <p class="day-more">{day.reasons}</p>
-                {/if}
-              {:else}
-                <p class="day-line is-plain">{day.line}</p>
-              {/if}
+              </div>
             </div>
           {/each}
         </div>
@@ -248,10 +248,10 @@
     {/if}
 
     {#if view.facts.length > 0}
-      <dl class="facts">
+      <dl class="block rows facts">
         {#each view.facts as fact (fact.label)}
-          <div class="fact">
-            <dt>{fact.label}</dt>
+          <div class="row fact">
+            <dt class="label">{fact.label}</dt>
             <dd>
               {#if fact.href !== null}
                 <a href={fact.href}>{fact.lines.join(' ')}</a>
@@ -267,24 +267,25 @@
     {/if}
 
     {#if view.nearby.length > 0}
-      <section class="nearby" aria-labelledby="detail-nearby">
-        <h3 class="card-title" id="detail-nearby">{copy.detail.nearby}</h3>
+      <section class="block nearby" aria-labelledby="detail-nearby">
+        <h3 class="heading" id="detail-nearby">{copy.detail.nearby}</h3>
         <ul class="near-list">
           {#each view.nearby as school (school.id)}
             <li>
               <button
-                class="near"
+                class="row near"
                 type="button"
                 onclick={() => {
                   onnearby(school);
                 }}
               >
-                <span
-                  class="near-dot {school.tone === null ? '' : `glyph ${GLYPHS[school.tone]}`}"
-                  aria-hidden="true"
-                ></span>
-                <span class="near-name">{school.name}</span>
-                <span class="near-distance">{school.distance}</span>
+                <span class="label near-distance">{school.distance}</span>
+                <span class="near-text">
+                  <span class="near-name">{school.name}</span>
+                  {#if school.tone !== null}
+                    <span class="glyph {GLYPHS[school.tone]}" aria-hidden="true"></span>
+                  {/if}
+                </span>
               </button>
             </li>
           {/each}
@@ -299,8 +300,27 @@
     Beside the map, under the wordmark, clear of the legend at the foot of the
     screen: a solid card like the search results (no backdrop blur over the
     moving WebGL map). What does not fit scrolls inside it.
+
+    The panel's one type scale and one grid, for the chance section too
+    (ChanceSection.svelte, ChanceChart.svelte): the chance's number, then
+    three sizes (title, body, small) in two weights, and one gray. Every list
+    is a row of two columns, a fixed one at the left for times, points and
+    labels, and one for the words; sections part at one hairline, 24px each
+    side, and everything starts at the left.
   */
   .detail {
+    --type-number: 600 60px / 60px var(--font-sans);
+    --type-title: 600 20px / 26px var(--font-sans);
+    --type-strong: 600 15px / 22px var(--font-sans);
+    --type-body: 400 15px / 22px var(--font-sans);
+    --type-small: 400 13px / 18px var(--font-sans);
+    /* The rows' first column, and the room after it. */
+    --column: 64px;
+    --gutter: 16px;
+    /* Between rows, and each side of the hairline between sections. */
+    --row: 16px;
+    --section: 24px;
+
     position: absolute;
     top: calc(var(--inset-top) + var(--edge) + var(--bar-height) + 16px);
     left: calc(var(--inset-left) + var(--edge));
@@ -313,6 +333,8 @@
         var(--control-height) - 16px
     );
     overflow: hidden;
+    font: var(--type-body);
+    color: var(--text-1);
     background: var(--surface-1);
     border: 1px solid var(--border-2);
     border-radius: 18px;
@@ -345,13 +367,51 @@
     display: flex;
     flex: 1 1 auto;
     flex-direction: column;
-    gap: 16px;
     min-height: 0;
     padding: 20px;
     overflow-y: auto;
     overscroll-behavior: contain;
     scrollbar-width: thin;
     scrollbar-color: var(--border-2) transparent;
+  }
+
+  p,
+  h3 {
+    margin: 0;
+  }
+
+  /* A section: under one hairline, the same room each side of it. */
+  .block {
+    margin: var(--section) 0 0;
+    padding-top: var(--section);
+    border-top: 1px solid var(--border-1);
+  }
+
+  .heading {
+    margin-bottom: var(--row);
+    font: var(--type-strong);
+    color: var(--text-1);
+  }
+
+  /* A list: rows of the two columns, the first in gray. */
+  .rows {
+    display: flex;
+    flex-direction: column;
+    gap: var(--row);
+  }
+
+  .row {
+    display: grid;
+    grid-template-columns: var(--column) minmax(0, 1fr);
+    column-gap: var(--gutter);
+    align-items: start;
+    /* No word left alone on a last line. */
+    text-wrap: pretty;
+  }
+
+  .label {
+    color: var(--text-2);
+    font-variant-numeric: tabular-nums;
   }
 
   /* The sheet's grip: a phone's alone. */
@@ -366,53 +426,36 @@
     }
   }
 
-  /* What the school is, on a chip over its name, the one heading; then where it is, quietly. */
+  /* What the school is, then its name, the one heading, then where it is. */
   .head {
     position: relative;
     padding-right: 40px;
   }
 
-  /* A small solid chip, bright on the panel: the first thing read. */
   .kind {
-    width: fit-content;
-    max-width: 100%;
-    margin: 0 0 10px;
-    padding: 3px 8px;
-    font-size: 12px;
-    font-weight: 600;
-    line-height: 16px;
-    letter-spacing: 0.01em;
-    color: var(--text-1);
-    background: var(--border-2);
-    border-radius: 6px;
+    margin-bottom: 4px;
+    font: var(--type-small);
+    color: var(--text-2);
   }
 
   .name {
     margin: 0;
-    font-size: 22px;
-    font-weight: 600;
-    line-height: 27px;
-    letter-spacing: -0.02em;
+    font: var(--type-title);
+    letter-spacing: -0.01em;
     color: var(--text-1);
     text-wrap: balance;
     overflow-wrap: break-word;
   }
 
-  /* A campus on a line of its own, a step down, as the map's label sets it. */
+  /* A campus on a line of its own, in gray. */
   .campus {
     display: block;
-    margin-top: 2px;
-    font-size: 16px;
-    font-weight: 500;
-    line-height: 21px;
-    letter-spacing: -0.01em;
+    font: var(--type-body);
     color: var(--text-2);
   }
 
   .place {
-    margin: 8px 0 0;
-    font-size: 13px;
-    line-height: 18px;
+    font: var(--type-body);
     color: var(--text-2);
   }
 
@@ -427,18 +470,15 @@
     padding: 0;
     color: var(--text-2);
     cursor: pointer;
-    background: var(--surface-2);
-    border: 1px solid var(--border-2);
+    background: transparent;
+    border: 0;
     border-radius: 50%;
-    transition:
-      color 120ms linear,
-      border-color 120ms linear;
+    transition: color 120ms linear;
   }
 
   .close:hover,
   .close:focus-visible {
     color: var(--text-1);
-    border-color: var(--text-3);
   }
 
   .close:focus-visible,
@@ -449,47 +489,42 @@
   }
 
   .close svg {
-    width: 14px;
-    height: 14px;
+    width: 16px;
+    height: 16px;
     fill: none;
     stroke: currentColor;
     stroke-width: 1.5;
     stroke-linecap: round;
   }
 
-  /* Pin and share, side by side under the name. */
+  /* Pin and share under the name: words with their marks, from the left, no boxes. */
   .actions {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 8px;
+    display: flex;
+    gap: 24px;
+    /* The words a row under the place, in the button's taller target. */
+    margin: calc(var(--row) - 5px) 0 -5px;
   }
 
   .action {
     display: flex;
     gap: 8px;
     align-items: center;
-    justify-content: center;
     min-width: 0;
-    height: 36px;
-    padding: 0 12px;
-    font: inherit;
-    font-size: 13px;
-    font-weight: 500;
-    line-height: 16px;
+    height: 32px;
+    padding: 0;
+    font: var(--type-body);
     color: var(--text-1);
+    text-align: left;
     white-space: nowrap;
     cursor: pointer;
-    background: var(--surface-2);
-    border: 1px solid var(--border-2);
-    border-radius: 18px;
-    transition:
-      background-color 120ms linear,
-      border-color 120ms linear;
+    background: transparent;
+    border: 0;
+    border-radius: 4px;
+    transition: color 120ms linear;
   }
 
   .action:hover {
-    background: var(--border-1);
-    border-color: var(--text-3);
+    color: var(--text-2);
   }
 
   .action svg {
@@ -507,127 +542,43 @@
     fill: currentColor;
   }
 
-  /* A card within the panel: the day's status, and the chance of a closure. */
-  .card {
-    margin: 0;
-    padding: 14px 16px;
-    background: var(--surface-2);
-    border: 1px solid var(--border-1);
-    border-radius: 12px;
-  }
-
-  .card-title {
-    margin: 0;
-    font-size: 12px;
-    font-weight: 500;
-    line-height: 16px;
-    letter-spacing: 0.01em;
-    color: var(--text-2);
-  }
-
+  /* The day's status, when there is no chance to give: its line first, then the details. */
   .status {
     display: flex;
     flex-direction: column;
-    gap: 12px;
+    gap: var(--row);
   }
 
-  .line {
-    display: grid;
-    grid-template-columns: 12px minmax(0, 1fr);
-    column-gap: 12px;
-    align-items: start;
-  }
-
-  /* The legend's glyphs, a step larger, beside the line they key. */
-  .line .glyph {
-    width: 11px;
-    height: 11px;
-    margin-top: 6px;
-  }
-
-  .line .glyph.is-remote {
-    width: 9px;
-    height: 9px;
-    margin: 7px 0 0 1px;
+  .headline {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+    font: var(--type-title);
+    letter-spacing: -0.01em;
+    color: var(--text-1);
   }
 
   .glyph.is-open {
     box-shadow: inset 0 0 0 1.5px var(--text-2);
   }
 
-  .headline {
-    margin: 0;
-    font-size: 17px;
-    font-weight: 600;
-    line-height: 23px;
-    letter-spacing: -0.01em;
-    color: var(--text-1);
-  }
-
-  .line-detail {
-    margin: 2px 0 0;
-    font-size: 14px;
-    line-height: 20px;
-    color: var(--text-1);
-  }
-
   .line-note {
-    margin: 2px 0 0;
-    font-size: 13px;
-    line-height: 18px;
     color: var(--text-2);
   }
 
-  .days {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 16px;
-    margin-top: 10px;
-  }
-
-  /* A day alone (the other decided, or not in the file) takes the card's width. */
-  .day:only-child {
-    grid-column: 1 / -1;
-  }
-
-  .day-label {
-    margin: 0;
-    font-size: 13px;
-    font-weight: 500;
-    line-height: 18px;
-    color: var(--text-1);
-  }
-
+  /* The chance of a closure, when the chance section has none to give: a row a day. */
   .chance {
-    margin: 4px 0 0;
-    font-size: 28px;
     font-weight: 600;
-    line-height: 32px;
-    letter-spacing: -0.03em;
-    color: var(--text-1);
-  }
-
-  .day-line {
-    margin: 0;
-    font-size: 12px;
-    line-height: 16px;
-    color: var(--text-2);
-  }
-
-  .day-line.is-plain {
-    margin-top: 4px;
-    font-size: 13px;
-    line-height: 18px;
   }
 
   /* The chance as a share of a hairline track (not .bar: that is the page's top strip). */
   .meter {
     display: block;
-    height: 3px;
-    margin: 10px 0 8px;
+    height: 2px;
+    margin: 8px 0;
     overflow: hidden;
     background: var(--border-2);
-    border-radius: 2px;
+    border-radius: 1px;
   }
 
   .meter-fill {
@@ -639,37 +590,12 @@
   }
 
   .day-more {
-    margin: 2px 0 0;
-    font-size: 12px;
-    line-height: 16px;
     color: var(--text-2);
   }
 
-  /* What the directory says about the school: a label and its value, on a hairline grid. */
+  /* What the directory says about the school: a label and its value, a row each. */
   .facts {
-    display: flex;
-    flex-direction: column;
-    margin: 0;
-    border-top: 1px solid var(--border-1);
-  }
-
-  .fact {
-    display: grid;
-    grid-template-columns: 76px minmax(0, 1fr);
-    column-gap: 12px;
-    padding: 10px 0;
-    border-bottom: 1px solid var(--border-1);
-  }
-
-  .fact:last-child {
-    padding-bottom: 0;
-    border-bottom: 0;
-  }
-
-  .fact dt {
-    font-size: 13px;
-    line-height: 19px;
-    color: var(--text-2);
+    margin-bottom: 0;
   }
 
   .fact dd {
@@ -677,9 +603,6 @@
     flex-direction: column;
     min-width: 0;
     margin: 0;
-    font-size: 13px;
-    line-height: 19px;
-    color: var(--text-1);
     overflow-wrap: break-word;
   }
 
@@ -691,40 +614,37 @@
 
   .facts a:hover {
     text-decoration: underline;
-    text-decoration-color: var(--text-3);
+    text-decoration-color: var(--text-2);
     text-underline-offset: 3px;
   }
 
-  /* The schools nearest this one, each a row that opens it: a dot as the map draws it, its name, how far. */
-  .nearby {
-    margin: 0;
-    padding-top: 14px;
-    border-top: 1px solid var(--border-1);
-  }
-
+  /* The schools nearest this one, each a row that opens it: how far, its name, its status. */
   .near-list {
-    margin: 6px -8px 0;
+    margin: 0;
     padding: 0;
     list-style: none;
   }
 
+  /* The rows' own gap is inside each button, so the whole of it opens the school. */
   .near {
-    display: grid;
-    grid-template-columns: 8px minmax(0, 1fr) auto;
-    column-gap: 12px;
-    align-items: center;
-    width: 100%;
-    min-height: 34px;
-    padding: 6px 8px;
-    font: inherit;
-    font-size: 13px;
-    line-height: 18px;
+    width: calc(100% + 16px);
+    margin: 0 -8px;
+    padding: calc(var(--row) / 2) 8px;
+    font: var(--type-body);
     color: var(--text-1);
     text-align: left;
     cursor: pointer;
     background: transparent;
     border: 0;
     border-radius: 8px;
+  }
+
+  li:first-child > .near {
+    margin-top: calc(var(--row) / -2);
+  }
+
+  li:last-child > .near {
+    margin-bottom: calc(var(--row) / -2);
   }
 
   .near:hover,
@@ -737,19 +657,15 @@
     box-shadow: inset 0 0 0 1px var(--text-3);
   }
 
-  /* A school with no status today: a plain dot, as the map draws it. */
-  .near-dot:not(.glyph) {
-    width: 6px;
-    height: 6px;
-    margin-left: 1px;
-    background: var(--text-2);
-    border-radius: 50%;
+  .near-distance {
+    white-space: nowrap;
   }
 
-  /* A school with a status today: the legend's glyph for it. */
-  .near-dot.glyph.is-remote {
-    width: 7px;
-    height: 7px;
+  .near-text {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+    min-width: 0;
   }
 
   .near-name {
@@ -758,16 +674,17 @@
     white-space: nowrap;
   }
 
-  .near-distance {
-    color: var(--text-2);
-    white-space: nowrap;
+  /* A school with a status today: the legend's glyph for it, after its name. */
+  .near .glyph.is-remote {
+    width: 7px;
+    height: 7px;
   }
 
   /* Until the school's record is read: the shape of what is coming, without words. */
   .skeleton {
     display: flex;
     flex-direction: column;
-    gap: 10px;
+    gap: 8px;
   }
 
   .bone {
@@ -777,20 +694,20 @@
     border-radius: 6px;
   }
 
-  /* The chip's size, so the name below it does not move when the words come. */
+  /* The kind's size, so the name below it does not move when the words come. */
   .bone.is-short,
   .bone.is-kind {
     width: 30%;
-    height: 22px;
+    height: 18px;
   }
 
   .bone.is-kind {
-    margin-bottom: 10px;
+    margin-bottom: 4px;
   }
 
   .bone.is-title {
     width: 80%;
-    height: 22px;
+    height: 26px;
   }
 
   .bone.is-line {
@@ -927,24 +844,14 @@
       touch-action: none;
     }
 
-    .name {
-      font-size: 24px;
-      line-height: 29px;
-    }
-
-    .campus {
-      font-size: 17px;
-      line-height: 22px;
-    }
-
-    .place {
-      font-size: 14px;
-      line-height: 19px;
-    }
-
-    /* The answer first, a thumb's reach under the name; the buttons after it. */
+    /* The answer first, a thumb's reach under the name; the buttons after it, a section of their own. */
     .actions {
       order: 1;
+      margin-top: var(--section);
+      /* The words 24px under the hairline, in the button's taller target. */
+      padding-top: calc(var(--section) - 11px);
+      margin-bottom: -11px;
+      border-top: 1px solid var(--border-1);
     }
 
     .facts,
@@ -954,26 +861,13 @@
 
     .action {
       height: 44px;
-      font-size: 14px;
-      border-radius: 22px;
-    }
-
-    .near {
-      min-height: 44px;
-      font-size: 14px;
-    }
-
-    .fact dt,
-    .fact dd {
-      font-size: 14px;
-      line-height: 20px;
     }
 
     /* A phone number to tap: the whole row's height, not just its line. */
     .facts a {
       display: block;
-      margin: -10px 0;
-      padding: 10px 0;
+      margin: calc(var(--row) / -2) 0;
+      padding: calc(var(--row) / 2) 0;
     }
 
     .close {

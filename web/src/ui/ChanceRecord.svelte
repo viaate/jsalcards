@@ -36,18 +36,17 @@
   .record {
     display: flex;
     flex-wrap: wrap;
-    gap: 6px 16px;
-    margin: 8px 0 2px;
+    gap: 0 16px;
+    margin: 8px 0 0;
     padding: 0;
     list-style: none;
   }
 
   .record li {
     display: flex;
-    gap: 6px;
+    gap: 8px;
     align-items: center;
-    font-size: 13px;
-    line-height: 18px;
+    font: var(--type-small);
     color: var(--text-2);
     font-variant-numeric: tabular-nums;
   }

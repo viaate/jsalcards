@@ -1805,21 +1805,18 @@ test.describe('with data staged', () => {
       `${format.time(new Date('2026-01-13T02:52:00Z'), ZONE)} Olathe canceled Tuesday`,
       `${format.time(new Date('2026-01-13T11:30:00Z'), ZONE)} Shawnee Mission usually announces in 8h 25m`,
     ]);
-    await expect(section.locator('.moment .glyph.is-closed')).toHaveCount(2);
 
-    // The chart: a bar an hour, the heaviest lit, the two moments, the range at the bus hour.
+    // The chart: a bar an hour, the heaviest lit, the buses and the range at their hour.
     const chart = section.locator('.chart');
     await expect(chart.locator('figcaption')).toHaveText(chanceCopy.snowTitle);
     await expect(chart.locator('.col')).toHaveCount(11);
     await expect(chart.locator('.col.is-lit')).toHaveCount(3);
     await expect(chart.locator('.flag')).toHaveText([
-      chanceFormat.announcesFlag(new Date('2026-01-13T11:30:00Z'), ZONE),
       chanceFormat.busesFlag(new Date('2026-01-13T13:00:00Z'), ZONE),
     ]);
     await expect(chart.locator('.end')).toHaveText(chanceFormat.inches(6, 9));
     await expect(chart.locator('.range')).toHaveCount(1);
-    await expect(chart.locator('.lit-label')).toBeVisible();
-    // Laid out, no words meet: the moments', the times', and the lit hours' with the bars.
+    // Laid out, no words meet, none meets a bar, and all are in the panel.
     const boxes = async (selector: string) =>
       (await chart.locator(selector).evaluateAll((nodes) =>
         nodes.map((node) => {
@@ -1829,13 +1826,7 @@ test.describe('with data staged', () => {
       )) as { x: number; y: number; width: number; height: number }[];
     const panelBox = await panel.boundingBox();
     if (panelBox === null) throw new Error('no panel');
-    const words = [
-      ...(await boxes('.flag')),
-      ...(await boxes('.time')),
-      ...(await boxes('.lit-label')),
-      ...(await boxes('.end')),
-      ...(await boxes('.rule-label')),
-    ];
+    const words = [...(await boxes('.flag')), ...(await boxes('.time')), ...(await boxes('.end'))];
     words.forEach((box, i) => {
       words.slice(i + 1).forEach((other, j) => {
         expect(overlaps(box, other), `words ${String(i)} and ${String(i + 1 + j)}`).toBe(false);
@@ -1844,7 +1835,7 @@ test.describe('with data staged', () => {
       expect(box.x + box.width).toBeLessThanOrEqual(panelBox.x + panelBox.width);
     });
     const bars = await boxes('.col');
-    for (const box of await boxes('.lit-label')) {
+    for (const box of words) {
       for (const bar of bars) expect(overlaps(box, bar)).toBe(false);
     }
 
@@ -1870,7 +1861,6 @@ test.describe('with data staged', () => {
     expect(total).toBe(64);
     await expect(section.locator('details, [aria-expanded="false"]')).toHaveCount(0);
     await expect(section.locator('.delay')).toHaveText(chanceFormat.delayInstead(0.18));
-    await expect(section.locator('.delay .glyph.is-delayed')).toHaveCount(1);
 
     // Wider beside the map on a wide screen, so the chart is bigger: 460 px, 420 px, then 368.
     expect(panelBox.width).toBeCloseTo(460, 0);

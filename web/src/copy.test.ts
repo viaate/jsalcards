@@ -599,7 +599,7 @@ describe('format', () => {
       expect(chanceFormat.momentTime(at('2026-01-12T03:04:00Z'), evening, kc)).toBe('Sun, Jan 11');
     });
 
-    it('words the chart: its scale, its times and its moments', () => {
+    it('words the chart: its values, its times and the buses', () => {
       const span = (from: string, to: string): string =>
         chanceFormat.hourSpan(at(from), at(to), kc);
       expect(chanceFormat.inches(7.5)).toBe(`7.5${NBSP}in`);
@@ -615,13 +615,7 @@ describe('format', () => {
         `11${NBSP}PM to 2${NBSP}AM`,
       );
       expect(span('2026-01-13T08:30:00Z', '2026-01-13T11:00:00Z')).toBe(`2:30 to 5${NBSP}AM`);
-      expect(chanceFormat.announcesFlag(at('2026-01-13T11:30:00Z'), kc)).toBe(
-        `Usually announces 5:30${NBSP}AM`,
-      );
       expect(chanceFormat.busesFlag(at('2026-01-13T13:00:00Z'), kc)).toBe(`Buses 7${NBSP}AM`);
-      expect(
-        chanceFormat.heaviest(at('2026-01-13T08:00:00Z'), at('2026-01-13T11:00:00Z'), kc),
-      ).toBe(`Heaviest snow 2 to 5${NBSP}AM`);
       expect(chanceFormat.chartSummary('wind_chill', at('2026-01-14T13:00:00Z'), -8, -8, kc)).toBe(
         `At 7${NBSP}AM, when the buses run, it will feel like -8${NBSP}F.`,
       );
@@ -792,9 +786,8 @@ describe('format', () => {
           const countdown = chanceFormat.countdown(then, evening, zone);
           outputs.push(
             chanceFormat.shortTime(then, zone),
-            chanceFormat.announcesFlag(then, zone),
             chanceFormat.busesFlag(then, zone),
-            chanceFormat.heaviest(evening, then, zone),
+            chanceFormat.hourSpan(evening, then, zone),
             chanceFormat.momentTime(then, morning, zone),
             chanceFormat.chartSummary('snow_total', then, 2, 5, zone),
             countdown === null

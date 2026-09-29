@@ -50,13 +50,10 @@ export const chanceCopy = /* @__PURE__ */ deepFreeze({
   snowTitle: 'Snow on the ground, hour by hour',
   coldTonight: 'How cold it will feel tonight',
   coldTitle: 'How cold it will feel, hour by hour',
-  /** Under the chart's first hour, when that hour is this one. */
+  /** The chart's first hour, when that hour is this one. */
   now: 'Now',
-  /** The chart's two moments: "Usually announces 5:30 AM", "Buses 7 AM". */
-  usuallyAnnounces: 'Usually announces',
+  /** Beside the chart's last bar: "Buses 7 AM". */
   buses: 'Buses',
-  /** Words beside the lit bars: "Heaviest snow 2 to 5 AM". */
-  heaviest: 'Heaviest snow',
   /** A day in a district's record, by what it did. */
   open: 'Open',
   closed: 'Closed',
@@ -326,7 +323,7 @@ function inchWords(low: number, high: number): string {
   return low === high ? `${tenths(high)} ${unit}` : `${tenths(low)} to ${tenths(high)} ${unit}`;
 }
 
-/** Snow on the chart: "7.5 in", "6 to 9 in"; the scale's own 0 is "0". */
+/** Snow on the chart: "7.5 in", "6 to 9 in". */
 function inches(low: number, high: number = low): string {
   return low === high ? `${tenths(high)}${NBSP}in` : `${tenths(low)} to ${tenths(high)}${NBSP}in`;
 }
@@ -336,18 +333,9 @@ function degrees(value: number): string {
   return `${String(Math.round(value) === 0 ? 0 : Math.round(value))}${NBSP}F`;
 }
 
-/** The chart's moments: "Usually announces 5:30 AM", "Buses 7 AM". */
-function announcesFlag(instant: Date, timeZone: string): string {
-  return `${chanceCopy.usuallyAnnounces} ${shortTime(instant, timeZone)}`;
-}
-
+/** Beside the chart's last bar: "Buses 7 AM". */
 function busesFlag(instant: Date, timeZone: string): string {
   return `${chanceCopy.buses} ${shortTime(instant, timeZone)}`;
-}
-
-/** Beside the lit bars: "Heaviest snow 2 to 5 AM". */
-function heaviest(start: Date, end: Date, timeZone: string): string {
-  return `${chanceCopy.heaviest} ${hourSpan(start, end, timeZone)}`;
 }
 
 /** The chart in a sentence, for a screen reader. */
@@ -586,9 +574,7 @@ export const chanceFormat = /* @__PURE__ */ deepFreeze({
   weatherEvent,
   inches,
   degrees,
-  announcesFlag,
   busesFlag,
-  heaviest,
   chartSummary,
   delayInstead,
   shareOf,

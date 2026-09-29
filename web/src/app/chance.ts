@@ -8,7 +8,7 @@
  *    mapped to districts through the directory), each with its time; then when
  *    this district usually announces, with a live countdown;
  * 3. the night hour by hour, drawn to scale (the chart's numbers are worked
- *    out here, where its words go in ui/chart-layout.ts, so both are tested);
+ *    out here, so they are tested);
  * 4. how the chance adds up: the base, then each reason's points, then the
  *    total. It shows only when every part can be said and the parts add up to
  *    the headline exactly; a sum that does not is never shown;
@@ -79,14 +79,6 @@ export interface MomentView {
   readonly at: Date | null;
 }
 
-/** A light rule across the chart at a round value. */
-export interface TickView {
-  readonly value: number;
-  /** Pixels above the plot's foot. */
-  readonly bottom: number;
-  readonly label: string;
-}
-
 /** One hour's bar, in pixels above the plot's foot. */
 export interface BarView {
   readonly bottom: number;
@@ -96,24 +88,10 @@ export interface BarView {
   readonly below: boolean;
 }
 
-/** A time along the chart's foot, under the bar at `at`. */
+/** A time along the chart's foot, under the bar at `at`: "11 PM", or "Now" under this hour. */
 export interface TimeView {
   readonly at: number;
   readonly label: string;
-  /** "Now", under the first hour when it is this one; else null. */
-  readonly sub: string | null;
-}
-
-/** A moment marked on the chart by a thin line, its words above the plot. */
-export interface FlagView {
-  readonly key: 'announces' | 'buses';
-  /** Where, in bars from the first bar's middle (8.5 is halfway between the 9th and 10th). */
-  readonly at: number;
-  readonly label: string;
-  /** The side of the line its words take when there is room. */
-  readonly prefer: 'left' | 'right';
-  /** Where the line stops, in pixels above the plot's foot. */
-  readonly downTo: number;
 }
 
 export interface ChartView {
@@ -123,24 +101,16 @@ export interface ChartView {
   readonly summary: string;
   /** The plot's height in pixels. */
   readonly plot: number;
-  readonly ticks: readonly TickView[];
+  /** The zero rule, in pixels above the plot's foot. */
+  readonly zero: number;
   readonly bars: readonly BarView[];
   readonly times: readonly TimeView[];
-  readonly flags: readonly FlagView[];
+  /** When the buses run, beside the last bar: "Buses 7 AM". */
+  readonly buses: string;
   /** The bus hour's low-to-high range, on the last bar; null without one. */
   readonly range: { readonly bottom: number; readonly height: number } | null;
-  /** The words beside the last bar, centered this many pixels above the foot. */
-  readonly end: { readonly label: string; readonly bottom: number };
-  /** The lit hours' words: "Heaviest snow 2 to 5 AM", to the left of bar `first`. */
-  readonly lit: {
-    readonly label: string;
-    readonly first: number;
-    readonly last: number;
-    /** The tallest bar top at or left of the first lit bar, in pixels. */
-    readonly floor: number;
-    /** The tallest lit bar's top, in pixels. */
-    readonly top: number;
-  } | null;
+  /** The bus hour's value, or its range, beside the last bar: "6 to 9 in". */
+  readonly end: string;
 }
 
 export interface RecordDayView {
@@ -450,8 +420,8 @@ export function timeGap(count: number): number {
 }
 
 /**
- * The times at the chart's foot, by bar: the first (now) and the last (the
- * buses) always; then where the heaviest snow starts and ends, when the snow
+ * The times at the chart's foot, by bar: the first ("Now", when it is this
+ * hour) and the last (the buses) always; then where the heaviest snow starts and ends, when the snow
  * starts, and every third hour, each only where it keeps clear of those placed.
  */
 export function chartTimes(input: {
@@ -486,19 +456,18 @@ export function chartTimes(input: {
     .sort((a, b) => a - b)
     .map((at) => ({
       at,
-      label: chanceFormat.shortTime(hourOf(at), timeZone),
-      sub: at === 0 && isNow ? chanceCopy.now : null,
+      label: at === 0 && isNow ? chanceCopy.now : chanceFormat.shortTime(hourOf(at), timeZone),
     }));
 }
 
 /**
  * The night hour by hour, from this hour to the bus hour: bars on a scale,
- * the lit hours, the times at its foot, the two moments a family plans
- * around, and the bus hour's value (or range) beside the last bar. Null when
- * there is no series, or fewer than two of its hours are still to come.
+ * the lit hours, the times at its foot, and beside the last bar when the
+ * buses run and the value (or range) then. Null when there is no series, or
+ * fewer than two of its hours are still to come.
  */
 export function chartView(detail: ForecastDetail, now: Date, timeZone: string): ChartView | null {
-  const { hours, busesAt, announcesAt } = detail;
+  const { hours, busesAt } = detail;
   if (hours === null || busesAt === null) return null;
   // From this hour on: the hours gone by are not the night ahead.
   const gone = Math.max(0, Math.floor((now.getTime() - hours.start.getTime()) / HOUR_MS));
@@ -517,12 +486,12 @@ export function chartView(detail: ForecastDetail, now: Date, timeZone: string): 
     hours.heavy === null || hours.heavy.last - gone < 0
       ? null
       : { first: Math.max(0, hours.heavy.first - gone), last: hours.heavy.last - gone };
+  // Each bar exactly its value: a trace is a sliver, no snow is no bar.
   const bars = values.map((value, i): BarView => {
     const end = y(value);
-    const height = Math.abs(end - zero);
     return {
       bottom: Math.min(zero, end),
-      height: value !== 0 && height < 2 ? 2 : height,
+      height: Math.abs(end - zero),
       lit:
         hours.kind === 'snow_total'
           ? heavy !== null && i >= heavy.first && i <= heavy.last
@@ -531,30 +500,6 @@ export function chartView(detail: ForecastDetail, now: Date, timeZone: string): 
     };
   });
   const snow = hours.kind === 'snow_total';
-  const unit = (value: number): string =>
-    snow ? (value === 0 ? '0' : chanceFormat.inches(value)) : chanceFormat.degrees(value);
-  const position = (instant: Date): number => (instant.getTime() - start.getTime()) / HOUR_MS;
-  const flags: FlagView[] = [];
-  if (announcesAt !== null) {
-    const at = position(announcesAt);
-    if (at >= -0.5 && at <= count - 0.5) {
-      flags.push({
-        key: 'announces',
-        at,
-        label: chanceFormat.announcesFlag(announcesAt, timeZone),
-        prefer: 'left',
-        downTo: 0,
-      });
-    }
-  }
-  const busAt = position(busesAt);
-  flags.push({
-    key: 'buses',
-    at: busAt,
-    label: chanceFormat.busesFlag(busesAt, timeZone),
-    prefer: 'right',
-    downTo: (snow ? y(hours.range?.high ?? last) : zero) + 3,
-  });
   const evening = localHour(start, timeZone) >= 17;
   return {
     kind: hours.kind,
@@ -567,33 +512,20 @@ export function chartView(detail: ForecastDetail, now: Date, timeZone: string): 
       timeZone,
     ),
     plot,
-    ticks: scale.ticks.map((value) => ({ value, bottom: y(value), label: unit(value) })),
+    zero,
     bars,
     times: chartTimes({ count, start, values, kind: hours.kind, heavy, now, timeZone }),
-    flags,
+    buses: chanceFormat.busesFlag(busesAt, timeZone),
     range:
       hours.range === null
         ? null
         : { bottom: y(hours.range.low), height: y(hours.range.high) - y(hours.range.low) },
-    end: {
-      label:
-        hours.range === null ? unit(last) : chanceFormat.inches(hours.range.low, hours.range.high),
-      bottom: y(last),
-    },
-    lit:
-      heavy === null || hours.heavy === null
-        ? null
-        : {
-            label: chanceFormat.heaviest(
-              new Date(hours.start.getTime() + (hours.heavy.first - 1) * HOUR_MS),
-              new Date(hours.start.getTime() + hours.heavy.last * HOUR_MS),
-              timeZone,
-            ),
-            first: heavy.first,
-            last: heavy.last,
-            floor: Math.max(...values.slice(0, heavy.first + 1).map((value) => y(value))),
-            top: Math.max(...values.slice(heavy.first, heavy.last + 1).map((value) => y(value))),
-          },
+    end:
+      hours.range !== null
+        ? chanceFormat.inches(hours.range.low, hours.range.high)
+        : snow
+          ? chanceFormat.inches(last)
+          : chanceFormat.degrees(last),
   };
 }
 

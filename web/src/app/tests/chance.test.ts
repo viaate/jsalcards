@@ -16,7 +16,6 @@ import {
   whyView,
 } from '../chance';
 import type { ClosingsFile } from '../../types/generated';
-import { placeFlags, placeLit } from '../../ui/chart-layout';
 import type { ChanceInput, WhyView } from '../chance';
 import {
   A_CLOSINGS,
@@ -125,16 +124,12 @@ describe('the chance section, the night before', () => {
     expect(view?.why?.lines.slice(1).every((line) => line.record === null)).toBe(true);
   });
 
-  it('draws the snow on the ground to 9 inches, with the times, the two moments and the range', () => {
+  it('draws the snow on the ground to 9 inches, with the times, the buses and the range', () => {
     const chart = view?.chart;
     expect(chart?.title).toBe(chanceCopy.snowTitle);
-    expect(chart?.ticks.map((tick) => [tick.label, tick.bottom])).toEqual([
-      ['0', 0],
-      [`3${NBSP}in`, 40],
-      [`6${NBSP}in`, 80],
-      [`9${NBSP}in`, 120],
-    ]);
+    // A scale to 9 inches in three steps; its one line is the zero at the foot.
     expect(chart?.plot).toBe(120);
+    expect(chart?.zero).toBe(0);
     expect(chart?.bars.map((bar) => bar.lit)).toEqual([
       ...Array<boolean>(6).fill(false),
       true,
@@ -144,39 +139,19 @@ describe('the chance section, the night before', () => {
       false,
     ]);
     expect(chart?.bars[10]?.height).toBeCloseTo(100, 6);
-    // A trace of snow shows; no snow is no bar.
+    // Each bar exactly its value: a trace of snow is a sliver, no snow is no bar.
     expect(chart?.bars[2]?.height).toBeCloseTo(2.667, 3);
     expect(chart?.bars[0]?.height).toBe(0);
-    expect(chart?.times.map((time) => [time.at, time.label, time.sub])).toEqual([
-      [0, `9${NBSP}PM`, chanceCopy.now],
-      [2, `11${NBSP}PM`, null],
-      [5, `2${NBSP}AM`, null],
-      [8, `5${NBSP}AM`, null],
-      [10, `7${NBSP}AM`, null],
+    expect(chart?.times.map((time) => [time.at, time.label])).toEqual([
+      [0, chanceCopy.now],
+      [2, `11${NBSP}PM`],
+      [5, `2${NBSP}AM`],
+      [8, `5${NBSP}AM`],
+      [10, `7${NBSP}AM`],
     ]);
-    expect(chart?.flags).toEqual([
-      {
-        key: 'announces',
-        at: 8.5,
-        label: `${chanceCopy.usuallyAnnounces} 5:30${NBSP}AM`,
-        prefer: 'left',
-        downTo: 0,
-      },
-      {
-        key: 'buses',
-        at: 10,
-        label: `${chanceCopy.buses} 7${NBSP}AM`,
-        prefer: 'right',
-        downTo: 123,
-      },
-    ]);
+    expect(chart?.buses).toBe(`${chanceCopy.buses} 7${NBSP}AM`);
     expect(chart?.range).toEqual({ bottom: 80, height: 40 });
-    expect(chart?.end).toEqual({ label: `6 to 9${NBSP}in`, bottom: 100 });
-    expect(chart?.lit).toMatchObject({
-      label: `${chanceCopy.heaviest} 2 to 5${NBSP}AM`,
-      first: 6,
-      last: 8,
-    });
+    expect(chart?.end).toBe(`6 to 9${NBSP}in`);
     expect(chart?.summary).toBe(
       `By 7${NBSP}AM, when the buses run, 6 to 9 inches of snow should be on the ground.`,
     );
@@ -224,26 +199,23 @@ describe('the chance section, the next morning', () => {
   it('draws how cold it will feel tonight, hanging below 0 F, the bus hour lit', () => {
     const chart = view?.chart;
     expect(chart?.title).toBe(chanceCopy.coldTonight);
-    expect(chart?.ticks.map((tick) => [tick.label, tick.bottom])).toEqual([
-      [`-10${NBSP}F`, 0],
-      [`-5${NBSP}F`, 40],
-      [`0${NBSP}F`, 80],
-    ]);
+    // From -10 F up to 0 F: the zero rule is at the top, and the bars hang from it.
+    expect(chart?.plot).toBe(80);
+    expect(chart?.zero).toBe(80);
     expect(chart?.bars.map((bar) => bar.below)).toEqual(Array<boolean>(11).fill(true));
     expect(chart?.bars.map((bar) => bar.lit)).toEqual([...Array<boolean>(10).fill(false), true]);
     // The last bar hangs from the zero rule down to -8 F.
     expect(chart?.bars[10]).toMatchObject({ bottom: 16, height: 64 });
-    expect(chart?.end).toEqual({ label: `-8${NBSP}F`, bottom: 16 });
+    expect(chart?.end).toBe(`-8${NBSP}F`);
     expect(chart?.range).toBeNull();
-    expect(chart?.lit).toBeNull();
-    // The night is still to come: no "Now" under its first hour.
-    expect(chart?.times.map((time) => [time.label, time.sub])).toEqual([
-      [`9${NBSP}PM`, null],
-      [`12${NBSP}AM`, null],
-      [`3${NBSP}AM`, null],
-      [`7${NBSP}AM`, null],
+    // The night is still to come: no "Now" for its first hour.
+    expect(chart?.times.map((time) => time.label)).toEqual([
+      `9${NBSP}PM`,
+      `12${NBSP}AM`,
+      `3${NBSP}AM`,
+      `7${NBSP}AM`,
     ]);
-    expect(chart?.flags.find((flag) => flag.key === 'buses')?.downTo).toBe(83);
+    expect(chart?.buses).toBe(`${chanceCopy.buses} 7${NBSP}AM`);
   });
 });
 
@@ -523,101 +495,24 @@ describe('the chart', () => {
   it('starts from this hour: the hours gone by are not the night ahead', () => {
     const later = chartView(A_DETAIL, at('2026-01-13T05:30:00Z'), ZONE);
     expect(later?.bars).toHaveLength(9);
-    expect(later?.times[0]).toEqual({ at: 0, label: `11${NBSP}PM`, sub: chanceCopy.now });
-    expect(later?.flags.map((flag) => flag.at)).toEqual([6.5, 8]);
-    expect(later?.lit).toMatchObject({
-      first: 4,
-      last: 6,
-      label: `${chanceCopy.heaviest} 2 to 5${NBSP}AM`,
-    });
+    expect(later?.times[0]).toEqual({ at: 0, label: chanceCopy.now });
+    expect(later?.bars.map((bar) => bar.lit)).toEqual([
+      false,
+      false,
+      false,
+      false,
+      true,
+      true,
+      true,
+      false,
+      false,
+    ]);
     // Two hours left draw two bars; the bus hour alone is no chart.
     expect(chartView(A_DETAIL, at('2026-01-13T12:30:00Z'), ZONE)?.bars).toHaveLength(2);
     expect(chartView(A_DETAIL, at('2026-01-13T13:30:00Z'), ZONE)).toBeNull();
     expect(chartView({ ...A_DETAIL, hours: null }, A_NOW, ZONE)).toBeNull();
-    // An announcement outside the night drawn has no line.
-    const evening = chartView(
-      { ...A_DETAIL, announcesAt: at('2026-01-13T01:30:00Z') },
-      A_NOW,
-      ZONE,
-    );
-    expect(evening?.flags.map((flag) => flag.key)).toEqual(['buses']);
     expect(chartView(B_DETAIL, B_NOW, 'America/Los_Angeles')?.title).toBe(chanceCopy.coldTonight);
     expect(chartView(B_DETAIL, B_NOW, 'Europe/Berlin')?.title).toBe(chanceCopy.coldTitle);
-  });
-
-  it('puts the moments’ words on their own sides, else the other, else a second row', () => {
-    // The mock's night: the announcement's words left of its line, the buses' right of theirs.
-    expect(
-      placeFlags(
-        [
-          { x: 250, width: 150, prefer: 'left' },
-          { x: 290, width: 66, prefer: 'right' },
-        ],
-        -34,
-        386,
-      ),
-    ).toEqual([
-      { left: 94, row: 0 },
-      { left: 296, row: 0 },
-    ]);
-    // No room on the left early in the night: its words go right of the line.
-    expect(placeFlags([{ x: 20, width: 150, prefer: 'left' }], -34, 386)).toEqual([
-      { left: 26, row: 0 },
-    ]);
-    // Two lines close together, with room on neither side of the first for both: a second row.
-    const crowded = placeFlags(
-      [
-        { x: 300, width: 150, prefer: 'left' },
-        { x: 250, width: 120, prefer: 'right' },
-      ],
-      -34,
-      386,
-    );
-    expect(crowded).toEqual([
-      { left: 144, row: 0 },
-      { left: 256, row: 1 },
-    ]);
-    // Words wider than any room stay inside the chart.
-    const wide = placeFlags([{ x: 100, width: 500, prefer: 'left' }], -34, 386);
-    expect(wide[0]?.left).toBe(-34);
-    // Whatever the widths, nothing meets and nothing leaves the chart.
-    for (let a = 0; a < 320; a += 16) {
-      for (let b = a; b < 320; b += 16) {
-        const boxes = placeFlags(
-          [
-            { x: a, width: 150, prefer: 'left' },
-            { x: b, width: 70, prefer: 'right' },
-          ],
-          -34,
-          386,
-        );
-        const [first, second] = boxes;
-        if (first === undefined || second === undefined) throw new Error('unplaced');
-        expect(first.left).toBeGreaterThanOrEqual(-34);
-        expect(second.left + 70).toBeLessThanOrEqual(386);
-        if (first.row === second.row) {
-          expect(first.left + 150 <= second.left || second.left + 70 <= first.left).toBe(true);
-        }
-      }
-    }
-  });
-
-  it('puts the lit hours’ words beside them, else above them, else nowhere', () => {
-    const base = {
-      width: 140,
-      height: 14,
-      floor: 44,
-      runTop: 84,
-      plot: 120,
-      minLeft: 0,
-      maxRight: 386,
-    };
-    expect(placeLit({ ...base, runLeft: 180 })).toEqual({ left: 38, bottom: 50 });
-    // The heaviest hours early in the night: above them.
-    expect(placeLit({ ...base, runLeft: 40 })).toEqual({ left: 40, bottom: 90 });
-    // Nowhere they fit: left out, and the bars stay lit.
-    expect(placeLit({ ...base, runLeft: 40, runTop: 110 })).toBeNull();
-    expect(placeLit({ ...base, runLeft: 300, floor: 110 })).toBeNull();
   });
 });
 
