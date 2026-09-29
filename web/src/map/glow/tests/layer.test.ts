@@ -86,12 +86,13 @@ describe('GlowLayer', () => {
     });
   });
 
-  it('draws a smaller screen’s bloom reaching no farther across the country than a desktop’s', () => {
+  it('draws a smaller screen’s bloom and blend reaching no farther across the country than a desktop’s', () => {
     /**
-     * The bloom levels the layer lays out for a frame: a map `cssWidth` x
-     * `cssHeight` CSS px at `ratio` device px per CSS px, at `zoom`, as their
-     * energy-weighted RMS spread over the world's width. Each level spreads
-     * light about as far as its texels are wide.
+     * The bloom levels and the blend the layer lays out for a frame: a map
+     * `cssWidth` x `cssHeight` CSS px at `ratio` device px per CSS px, at
+     * `zoom`, as their energy-weighted RMS spread over the world's width. Each
+     * level spreads light about as far as its texels are wide, a blurred blend
+     * as far as its own standard deviation.
      */
     function drawnShare(
       zoom: number,
@@ -106,7 +107,12 @@ describe('GlowLayer', () => {
         beginFrame(
           gl: unknown,
           res: unknown,
-        ): { bloomWeights: readonly number[]; targetPxPerCss: number };
+        ): {
+          bloomWeights: readonly number[];
+          targetPxPerCss: number;
+          blur: { weight: number } | null;
+          style: { blendSigmaPx: number };
+        };
       };
       internals.map = { getCanvas: () => ({ clientWidth: cssWidth }), getZoom: () => zoom };
       const frame = internals.beginFrame(
@@ -120,6 +126,10 @@ describe('GlowLayer', () => {
         energy += weight;
         moment += weight * texelPx * texelPx;
       });
+      if (frame.blur !== null) {
+        energy += frame.blur.weight;
+        moment += frame.blur.weight * frame.style.blendSigmaPx ** 2;
+      }
       return Math.sqrt(moment / energy) / (512 * 2 ** zoom);
     }
     const screens = [

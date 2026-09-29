@@ -10,7 +10,8 @@
  * - Bloom: a 2x downsample chain of the light target and a tent-filtered
  *   upsample chain that adds each scale back with its weight. The first
  *   downsample eases light past a knee, so no stack of points, however tall,
- *   blooms without bound.
+ *   blooms without bound. Nationally one level is also blurred into the
+ *   blend, a smooth field that stands in for the cores.
  * - Composite: a full-screen triangle that turns per-status light into linear
  *   RGB, tone maps it and screens it onto the map.
  * - Glyph: crisp per-status SDF shapes drawn at full resolution from zoom 11.
@@ -22,6 +23,7 @@
  */
 import { STATUS_COUNT } from './color';
 import {
+  BLEND_LIFT_GLSL,
   BLOOM_SOURCE_GLSL,
   CORE_EDGE_D2,
   FALLBACK_FINE_GAIN,
@@ -209,6 +211,49 @@ void main() {
 }
 `;
 
+/**
+ * One axis of the blend's Gaussian blur, on a bloom level of the same size as
+ * the target, scaled by u_scale. Taps are taken in pairs, each pair one
+ * bilinear fetch between two texels weighted to match both. The second pass
+ * lifts the blend on a phone where there is no other light around it
+ * (BLEND_LIFT in curves.ts).
+ */
+export const BLUR_FRAG = /* glsl */ `#version 300 es
+precision highp float;
+uniform sampler2D u_source;
+// One source texel along the blur's axis, in uv.
+uniform vec2 u_step;
+uniform float u_sigma;
+uniform int u_radius;
+uniform float u_scale;
+// 0 but for the second pass on a phone, and how far around it looks, in uv.
+uniform float u_lift;
+uniform vec2 u_liftReach;
+in vec2 v_uv;
+out vec4 fragColor;
+${BLEND_LIFT_GLSL}
+void main() {
+  float k = -0.5 / (u_sigma * u_sigma);
+  vec4 sum = texture(u_source, v_uv);
+  float total = 1.0;
+  for (int i = 1; i <= u_radius; i += 2) {
+    float a = exp(k * float(i * i));
+    float b = i < u_radius ? exp(k * float((i + 1) * (i + 1))) : 0.0;
+    float w = a + b;
+    vec2 offset = u_step * ((float(i) * a + float(i + 1) * b) / w);
+    sum += w * (texture(u_source, v_uv + offset) + texture(u_source, v_uv - offset));
+    total += 2.0 * w;
+  }
+  vec4 blend = sum * (u_scale / total);
+  if (u_lift > 0.0) {
+    vec4 around = vec4(0.0);
+    for (int i = 0; i < 8; i++) around += texture(u_source, v_uv + u_liftReach * GLOW_LIFT_RING[i]);
+    blend = glow_blend_lift(blend, around * u_scale, u_lift);
+  }
+  fragColor = blend;
+}
+`;
+
 export const COMPOSITE_FRAG = /* glsl */ `#version 300 es
 precision highp float;
 
@@ -218,6 +263,10 @@ uniform sampler2D u_bloom;
 // The 8-bit fallback's fine light target; unused on the float path.
 uniform sampler2D u_lightFine;
 uniform float u_bloomScale;
+// Share of the core light shown sharp. The float path keeps whole cores in
+// the light target, since the bloom is made from them; nationally it shows
+// none, and the blend carries their light instead. 1 for the fallback.
+uniform float u_coreShare;
 uniform vec2 u_bloomTexel;
 // The light target has a guard band around the map; this picks the map's part.
 uniform vec2 u_uvScale;
@@ -226,6 +275,10 @@ uniform float u_exposure;
 // 0 for a half-float light target. Otherwise the 8-bit fallback's alpha, to
 // turn its optical-depth encoding back into light.
 uniform float u_decode;
+// The fallback's lift on a phone, where its halos carry the blend, and how
+// far around it looks, in uv; 0 on the float path, which lifts the blend itself.
+uniform float u_lift;
+uniform vec2 u_liftReach;
 // Linear-light tokens for closed, delayed, remote, early dismissal.
 uniform vec3 u_tokens[4];
 
@@ -233,6 +286,7 @@ in vec2 v_uv;
 out vec4 fragColor;
 ${TONEMAP_GLSL}
 ${FALLBACK_GLSL}
+${BLEND_LIFT_GLSL}
 // Interleaved gradient noise (Jimenez 2014): cheap, even dither that breaks
 // up 8-bit banding in the faint outer glow.
 float glow_dither(vec2 p) {
@@ -242,7 +296,19 @@ float glow_dither(vec2 p) {
 void main() {
   vec2 uv = u_uvOffset + v_uv * u_uvScale;
   vec4 light = texture(u_light, uv);
-  if (u_decode > 0.0) light = glow_fallback_decode(light, texture(u_lightFine, uv), u_decode);
+  if (u_decode > 0.0) {
+    light = glow_fallback_decode(light, texture(u_lightFine, uv), u_decode);
+    if (u_lift > 0.0) {
+      // The light around, from the coarse target: none around a lone school.
+      vec4 around = vec4(0.0);
+      for (int i = 0; i < 8; i++) {
+        vec4 c = texture(u_light, uv + u_liftReach * GLOW_LIFT_RING[i]);
+        around -= log(max(vec4(1.0) - c, vec4(GLOW_FALLBACK_MIN_TRANSMITTANCE)));
+      }
+      light = glow_blend_lift(light, around / u_decode, u_lift);
+    }
+  }
+  light *= u_coreShare;
   if (u_bloomScale > 0.0) {
     // Four bilinear taps half a texel off each diagonal: a 3x3 tent upsample.
     vec2 h = 0.5 * u_bloomTexel;

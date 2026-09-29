@@ -13,6 +13,11 @@
  *    below zoom 4, see glowSizeScale) at a cost that does not depend on the
  *    number of points. Light past a knee feeds the bloom at a falling rate,
  *    so its size has a bound.
+ *    Nationally the composite shows none of the cores: the blend, one bloom
+ *    level blurred to a smooth Gaussian, carries their light instead, so the
+ *    points read as one field rather than a scatter of specks. On a phone
+ *    the blend of a school with no other light around it is lifted, so a
+ *    lone school still shows (BLEND_LIFT).
  *    The light target has one pixel per CSS pixel by default: full resolution
  *    on a 1x screen, reduced on high-density screens where it reads the same.
  * 2. render, composite: a full-screen pass turns the per-status light into
@@ -24,9 +29,9 @@
  * Without float render targets the light is gathered in two 8-bit targets
  * at once, a coarse one for dense cores and a fine one for faint halos:
  * points are added in optical depth with screen blending and a zoom-scaled
- * alpha, each carrying most of the bloom in its own halo since there is no
- * bloom pass, and the same composite decodes and tone maps them. The
- * fallback's glow is a little tighter than the float path's; see
+ * alpha, each carrying most of the bloom, and the blend, in its own halo
+ * since there is no bloom pass, and the same composite decodes and tone maps
+ * them. The fallback's glow is a little tighter than the float path's; see
  * FALLBACK_ALPHA_STOPS in curves.ts.
  *
  * Points pulse in once from their bornAt. The layer clock is re-based on
@@ -51,15 +56,17 @@ import type {
 
 import { statusLinearUniform, statusSrgbUniform } from './color';
 import {
+  type BlendBlur,
   FALLBACK_ALPHA_STOPS,
   type GlowFrameStyle,
   type HaloShape,
   PULSE_SECONDS,
-  bloomLevels,
+  bloomPlan,
   fallbackHalo,
   glowStyleAtZoom,
   interpolateStops,
   kernelUniforms,
+  liftReachPx,
 } from './curves';
 import {
   DUST_ATTRIB,
@@ -98,6 +105,7 @@ import {
 } from './pack';
 import {
   ATTRIB,
+  BLUR_FRAG,
   COMPOSITE_FRAG,
   DIAMOND_SCALE,
   DOWNSAMPLE_FRAG,
@@ -186,6 +194,7 @@ interface GpuResources {
   readonly light: Program;
   readonly down: Program;
   readonly up: Program;
+  readonly blur: Program;
   readonly composite: Program;
   readonly glyph: Program;
   readonly buffer: WebGLBuffer;
@@ -202,6 +211,8 @@ interface GpuResources {
   readonly maxViewport: readonly [number, number];
   /** levels[0] is the light target; the rest are bloom levels, each half the last. */
   levels: LightTarget[];
+  /** The blend's first blur pass, the size of the level it blurs; made when first needed. */
+  blurTarget: LightTarget | null;
   timer: GpuTimer | null;
 }
 
@@ -231,6 +242,8 @@ interface FrameState {
   readonly mapShare: readonly [number, number];
   /** Bloom levels drawn this frame, and each one's weight. */
   readonly bloomWeights: readonly number[];
+  /** The blend's blur, or null when there is no blend or it needs none. */
+  readonly blur: BlendBlur | null;
   /** The 8-bit fallback's per-point alpha; 0 on the float path. */
   readonly fallbackAlpha: number;
 }
@@ -645,7 +658,8 @@ export class GlowLayer implements CustomLayerInterface {
     const w0 = Math.max(1, Math.ceil((cssW + 2 * GUARD_CSS_PX) * targetPxPerCss));
     const h0 = Math.max(1, Math.ceil((cssH + 2 * GUARD_CSS_PX) * targetPxPerCss));
 
-    const bloomWeights = res.float ? bloomLevels(style, targetPxPerCss, Math.min(w0, h0)) : [];
+    const plan = res.float ? bloomPlan(style, targetPxPerCss, Math.min(w0, h0)) : null;
+    const bloomWeights = plan?.weights ?? [];
     const frame: FrameState = {
       style,
       zoom,
@@ -657,6 +671,7 @@ export class GlowLayer implements CustomLayerInterface {
       targetSize: [w0, h0],
       mapShare: [(cssW * targetPxPerCss) / w0, (cssH * targetPxPerCss) / h0],
       bloomWeights,
+      blur: plan?.blur ?? null,
       fallbackAlpha: res.float ? 0 : interpolateStops(FALLBACK_ALPHA_STOPS, zoom),
     };
     this.frame = frame;
@@ -714,8 +729,9 @@ export class GlowLayer implements CustomLayerInterface {
     frame: FrameState,
     targetPxPerCss: number,
     halo: HaloShape | undefined,
+    coreShare: number,
   ): number {
-    const kernel = kernelUniforms(frame.style, targetPxPerCss, halo);
+    const kernel = kernelUniforms(frame.style, targetPxPerCss, halo, coreShare);
     gl.uniform1f(uniform(program, 'u_radius'), kernel.radius);
     gl.uniform1f(uniform(program, 'u_coreFalloff'), kernel.coreFalloff);
     gl.uniform1f(uniform(program, 'u_coreWeight'), kernel.coreWeight);
@@ -770,6 +786,16 @@ export class GlowLayer implements CustomLayerInterface {
       if (target === null) return false;
       res.levels.push(target);
     }
+    const blurred = frame.blur === null ? undefined : res.levels[frame.blur.level];
+    const spare = res.blurTarget;
+    if (
+      blurred !== undefined &&
+      (spare?.width !== blurred.width || spare.height !== blurred.height)
+    ) {
+      if (spare !== null) deleteLightTarget(gl, spare);
+      res.blurTarget = createLightTarget(gl, blurred.width, blurred.height, res.format);
+      if (res.blurTarget === null) return false;
+    }
     return true;
   }
 
@@ -805,7 +831,9 @@ export class GlowLayer implements CustomLayerInterface {
     this.setPointUniforms(gl, program, args, frame, frame.mapShare, res.maxPointSize);
     // The fallback has no bloom, so each point carries most of the bloom's light in its own halo.
     const halo = res.float ? undefined : fallbackHalo(frame.style, frame.zoom);
-    this.setKernelUniforms(gl, program, frame, frame.targetPxPerCss, halo);
+    // The float path's bloom is made from whole cores; the fallback draws only the share shown.
+    const coreShare = res.float ? 1 : frame.style.coreShare;
+    this.setKernelUniforms(gl, program, frame, frame.targetPxPerCss, halo, coreShare);
     gl.uniform1f(uniform(program, 'u_gain'), frame.style.gain);
     gl.uniform1f(uniform(program, 'u_encode'), frame.fallbackAlpha);
     gl.bindVertexArray(res.vaoAll);
@@ -817,6 +845,10 @@ export class GlowLayer implements CustomLayerInterface {
    * 1: each step tent-upsamples the coarser level onto the finer one, which
    * the blend first scales by its own weight. Level 1 ends up holding every
    * weighted scale of bloom; the composite adds it to the core light.
+   *
+   * Where the blend needs a blur, its level is blurred across into a spare
+   * target once the chain is down, then vertically back onto the level with
+   * the blend's weight once the coarser levels are in.
    */
   private drawBloom(gl: WebGL2RenderingContext, res: GpuResources, frame: FrameState): void {
     const weights = frame.bloomWeights;
@@ -842,6 +874,13 @@ export class GlowLayer implements CustomLayerInterface {
     }
     if (weights.length < 2) return;
 
+    const blur = frame.blur;
+    const blurred = blur === null ? undefined : res.levels[blur.level];
+    const across = res.blurTarget;
+    if (blur !== null && blurred !== undefined && across !== null) {
+      this.drawBlur(gl, res, blur, blurred, across, [1 / blurred.width, 0], 1);
+    }
+
     gl.enable(gl.BLEND);
     gl.blendEquation(gl.FUNC_ADD);
     gl.blendFunc(gl.ONE, gl.CONSTANT_COLOR);
@@ -860,7 +899,47 @@ export class GlowLayer implements CustomLayerInterface {
       gl.uniform2f(uniform(up, 'u_texel'), 1 / source.width, 1 / source.height);
       gl.uniform1f(uniform(up, 'u_scale'), i === weights.length ? (weights[i - 1] ?? 0) : 1);
       gl.drawArrays(gl.TRIANGLES, 0, 3);
+      if (blur !== null && across !== null && i - 1 === blur.level) {
+        gl.blendFunc(gl.ONE, gl.ONE);
+        this.drawBlur(gl, res, blur, across, target, [0, 1 / across.height], blur.weight, frame);
+        gl.useProgram(up.program);
+        gl.blendFunc(gl.ONE, gl.CONSTANT_COLOR);
+      }
     }
+  }
+
+  /**
+   * One axis of the blend's blur from `source` into `target`, scaled by
+   * `scale`; with `lifted`, the second pass, lifted on a phone where there is
+   * no other light around.
+   */
+  private drawBlur(
+    gl: WebGL2RenderingContext,
+    res: GpuResources,
+    blur: BlendBlur,
+    source: LightTarget,
+    target: LightTarget,
+    step: readonly [number, number],
+    scale: number,
+    lifted: FrameState | null = null,
+  ): void {
+    const program = res.blur;
+    gl.useProgram(program.program);
+    gl.uniform1i(uniform(program, 'u_source'), 0);
+    gl.uniform2f(uniform(program, 'u_step'), step[0], step[1]);
+    gl.uniform1f(uniform(program, 'u_sigma'), blur.sigmaTexels);
+    gl.uniform1i(uniform(program, 'u_radius'), blur.radius);
+    gl.uniform1f(uniform(program, 'u_scale'), scale);
+    const lift = lifted?.style.blendLift ?? 0;
+    gl.uniform1f(uniform(program, 'u_lift'), lift);
+    // In the blurred level's texels, each 2^level light-target pixels across.
+    const reach =
+      lifted === null ? 0 : (liftReachPx(lifted.style) * lifted.targetPxPerCss) / 2 ** blur.level;
+    gl.uniform2f(uniform(program, 'u_liftReach'), reach / source.width, reach / source.height);
+    gl.bindFramebuffer(gl.FRAMEBUFFER, target.framebuffer);
+    gl.viewport(0, 0, target.width, target.height);
+    gl.bindTexture(gl.TEXTURE_2D, source.texture);
+    gl.drawArrays(gl.TRIANGLES, 0, 3);
   }
 
   private drawComposite(gl: WebGL2RenderingContext, res: GpuResources, frame: FrameState): void {
@@ -882,6 +961,8 @@ export class GlowLayer implements CustomLayerInterface {
     // With one level nothing upsampled onto it, so its own weight still applies.
     const bloomScale = bloom === undefined ? 0 : levels === 1 ? (frame.bloomWeights[0] ?? 0) : 1;
     gl.uniform1f(uniform(program, 'u_bloomScale'), bloomScale);
+    // The float path shows only the sharp share of the cores; the fallback drew only that share.
+    gl.uniform1f(uniform(program, 'u_coreShare'), res.float ? frame.style.coreShare : 1);
     const texel = bloom ?? light;
     gl.uniform2f(uniform(program, 'u_bloomTexel'), 1 / texel.width, 1 / texel.height);
     const [sx, sy] = frame.mapShare;
@@ -889,6 +970,11 @@ export class GlowLayer implements CustomLayerInterface {
     gl.uniform2f(uniform(program, 'u_uvOffset'), (1 - sx) / 2, (1 - sy) / 2);
     gl.uniform1f(uniform(program, 'u_exposure'), EXPOSURE);
     gl.uniform1f(uniform(program, 'u_decode'), frame.fallbackAlpha);
+    // The float path lifts the blend in its own blur; the fallback lifts its halos here.
+    const lift = res.float ? 0 : frame.style.blendLift;
+    gl.uniform1f(uniform(program, 'u_lift'), lift);
+    const reach = liftReachPx(frame.style) * frame.targetPxPerCss;
+    gl.uniform2f(uniform(program, 'u_liftReach'), reach / light.width, reach / light.height);
     gl.uniform3fv(uniform(program, 'u_tokens'), this.linearTokens);
     // Screen: light adds to the map but never pushes a channel past full.
     gl.blendFuncSeparate(gl.ONE, gl.ONE_MINUS_SRC_COLOR, gl.ZERO, gl.ONE);
@@ -1065,6 +1151,7 @@ export class GlowLayer implements CustomLayerInterface {
     const light = createProgram(gl, LIGHT_VERT, LIGHT_FRAG, 'glow light');
     const down = createProgram(gl, FULLSCREEN_VERT, DOWNSAMPLE_FRAG, 'glow downsample');
     const up = createProgram(gl, FULLSCREEN_VERT, UPSAMPLE_FRAG, 'glow upsample');
+    const blur = createProgram(gl, FULLSCREEN_VERT, BLUR_FRAG, 'glow blur');
     const composite = createProgram(gl, FULLSCREEN_VERT, COMPOSITE_FRAG, 'glow composite');
     const glyph = createProgram(gl, GLYPH_VERT, GLYPH_FRAG, 'glow glyph');
     const timerExt =
@@ -1077,6 +1164,7 @@ export class GlowLayer implements CustomLayerInterface {
       light,
       down,
       up,
+      blur,
       composite,
       glyph,
       buffer: gl.createBuffer(),
@@ -1088,12 +1176,13 @@ export class GlowLayer implements CustomLayerInterface {
       maxPointSize: pointRange?.[1] ?? 64,
       maxViewport: [viewportDims?.[0] ?? 4096, viewportDims?.[1] ?? 4096],
       levels: [],
+      blurTarget: null,
       timer: timerExt === null ? null : new GpuTimer(gl, timerExt),
     };
   }
 
   private deleteResources(gl: WebGL2RenderingContext, res: GpuResources): void {
-    for (const program of [res.light, res.down, res.up, res.composite, res.glyph]) {
+    for (const program of [res.light, res.down, res.up, res.blur, res.composite, res.glyph]) {
       gl.deleteProgram(program.program);
     }
     gl.deleteBuffer(res.buffer);
@@ -1102,6 +1191,8 @@ export class GlowLayer implements CustomLayerInterface {
     gl.deleteVertexArray(res.vaoEmpty);
     for (const level of res.levels) deleteLightTarget(gl, level);
     res.levels = [];
+    if (res.blurTarget !== null) deleteLightTarget(gl, res.blurTarget);
+    res.blurTarget = null;
     res.timer?.dispose();
   }
 

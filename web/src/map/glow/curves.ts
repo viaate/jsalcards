@@ -5,12 +5,20 @@
  * Each point is a small bright core. Around it, light spreads at several
  * scales at once, like city lights seen through air:
  *
- * - Zoom 4 to 6, a desktop's national view: wide bloom out to about 64 px, so
- *   a metro merges into one glow and a lone town is a speck with a faint halo.
- *   Below zoom 4, where smaller screens open on the whole country, the glow
- *   shrinks with the map (glowSizeScale), so the country looks as on a
- *   desktop.
- * - From zoom 6 the wide scales fade out and the glow tightens.
+ * - Zoom 4 to 6, a desktop's national view: no core is shown. Its light, and
+ *   the bloom's finest, is carried by the blend instead, one smooth Gaussian
+ *   some 10 to 15 km wide, so the points read as one field, a dim wash where
+ *   schools are few and bright where they are many, like a night photo from
+ *   orbit at low resolution. Wide bloom out to about 64 px merges a metro
+ *   into one glow.
+ * - Below zoom 4, where screens smaller than a desktop's open on the whole
+ *   country, the glow shrinks with the map (glowSizeScale), so the country
+ *   looks as on a desktop: the bloom reaches 32 px at zoom 3, 16 px at 2.
+ *   Only the blend stops shrinking, at 3 px, so the points still read as one
+ *   field on a phone, where the blend of a lone school is lifted so it shows
+ *   above the state lines (BLEND_LIFT).
+ * - From zoom 6 the cores come back, each school resolving by zoom 8, and the
+ *   wide scales fade out as the glow tightens.
  * - From zoom 11 each school is a crisp per-status glyph with a small halo
  *   drawn around it (not under it, so a ring stays a ring).
  *
@@ -118,14 +126,200 @@ export const BLOOM_WEIGHT_STOPS: readonly (readonly [zoom: number, weights: read
     [11, [0, 0, 0, 0, 0]],
   ];
 
-/** Bloom weights for each entry of {@link BLOOM_SCALES_PX} at `zoom`. */
-export function bloomWeights(zoom: number): number[] {
+/**
+ * Share of the fine light shown where it is: each point's core, and the
+ * bloom's scales no wider than the blend. None nationally, where cores a few
+ * pixels apart read as a scatter of specks rather than as light; all of it
+ * from zoom 8, where each school stands on its own.
+ */
+export const CORE_SHARE_STOPS: ZoomStops = [
+  [6, 0],
+  [8, 1],
+];
+
+/**
+ * Standard deviation of the blend, CSS px: the fine light that is not shown
+ * where it is, spread as one smooth Gaussian. About 15 km at zoom 4 and 10 km
+ * at zoom 6, wide enough to merge neighboring rural schools into one field
+ * and well inside the bloom's own reach, so the light stays over the schools
+ * that make it. Below zoom 4 it shrinks with the map, to no less than
+ * {@link BLEND_MIN_SIGMA_PX}.
+ */
+export const BLEND_SIGMA_STOPS: ZoomStops = [
+  [4.5, 4],
+  [5, 7],
+  [6, 11],
+];
+
+/**
+ * Least standard deviation of the blend, CSS px. Below zoom 4 the blend
+ * shrinks with the map as the bloom does, so a small laptop's national view
+ * is a desktop's made smaller. Much under this a point's blend reads as a dot
+ * again, so a tablet's and a phone's national views hold it here: some 40 km
+ * across the country on a phone, where a desktop's 4 px are 15 km, still
+ * well inside the bloom's reach, which shrinks all the way.
+ */
+export const BLEND_MIN_SIGMA_PX = 3;
+
+/**
+ * Most that the blend of a lone school is lifted on a phone, over its own
+ * light. Held at {@link BLEND_MIN_SIGMA_PX} while the map shrinks, a lone
+ * school's blend keeps only the share of its light that falls with the square
+ * root of the map's width, spread over a phone's 3 px: at a phone's widest
+ * zoom 33 of 255 where a desktop's is 49, under half the state lines a phone
+ * draws brighter (77). So below a tablet's zoom the blend is lifted where
+ * there is no other light {@link BLEND_LIFT_REACH} blend widths around it. A
+ * lone school, or a few far from others, shows above the lines; a field of
+ * schools, and the light at the edge of a band of them, have light that close
+ * and keep theirs.
+ */
+export const BLEND_LIFT = 8;
+
+/**
+ * How far around the blend the lift looks for other light, in standard
+ * deviations of the blend: past a lone school's own blend, and as far as the
+ * 8-bit fallback's halo reaches (15 px on a phone).
+ */
+export const BLEND_LIFT_REACH = 5;
+
+/**
+ * Light that far around, per light-target pixel of all statuses, at which
+ * the lift has fallen to 1/e of its most: a tenth of a sparse field's, with
+ * schools 60 km apart on a phone.
+ */
+export const BLEND_LIFT_KNEE = 0.005;
+
+/**
+ * {@link BLEND_LIFT}'s share by {@link glowSizeScale}: all of it on a phone's
+ * national and widest views (a factor up to 0.3), none from a factor of 0.6
+ * (zoom 3.26), so a tablet's view is nearly a desktop's and a laptop's is not
+ * touched.
+ */
+export const BLEND_LIFT_SCALES: readonly [full: number, none: number] = [0.3, 0.6];
+
+/** How far around the blend its lift looks for other light, CSS px; see {@link BLEND_LIFT_REACH}. */
+export function liftReachPx(style: GlowFrameStyle): number {
+  return BLEND_LIFT_REACH * style.blendSigmaPx;
+}
+
+/** The lift on a lone school's blend for a glow shrunk by `sizeScale`; see {@link BLEND_LIFT}. */
+export function blendLiftAtScale(sizeScale: number): number {
+  const [full, none] = BLEND_LIFT_SCALES;
+  return BLEND_LIFT * smoothstep(none, full, sizeScale);
+}
+
+/**
+ * Factor on the blend where the light {@link BLEND_LIFT_REACH} blend widths
+ * around it averages `context` (all statuses summed), with lift `lift`. JS
+ * mirror of the shader.
+ */
+export function blendLiftFactor(context: number, lift: number): number {
+  return 1 + lift * Math.exp(-context / BLEND_LIFT_KNEE);
+}
+
+/**
+ * GLSL for {@link blendLiftFactor}: `light` lifted by `lift` where `around`,
+ * the sum of eight samples of light that far around it, is dark.
+ */
+export const BLEND_LIFT_GLSL = /* glsl */ `
+const float GLOW_BLEND_LIFT_KNEE = ${String(BLEND_LIFT_KNEE)};
+vec4 glow_blend_lift(vec4 light, vec4 around, float lift) {
+  float context = (around.r + around.g + around.b + around.a) / 8.0;
+  return light * (1.0 + lift * exp(-context / GLOW_BLEND_LIFT_KNEE));
+}
+// Eight directions, for the samples around.
+const vec2 GLOW_LIFT_RING[8] = vec2[8](
+  vec2(1.0, 0.0), vec2(0.70710678, 0.70710678), vec2(0.0, 1.0), vec2(-0.70710678, 0.70710678),
+  vec2(-1.0, 0.0), vec2(-0.70710678, -0.70710678), vec2(0.0, -1.0), vec2(0.70710678, -0.70710678)
+);
+`;
+
+/**
+ * The bloom level the blend is made from, CSS px a texel. A blend no wider
+ * than this is that level as it is; a wider one is that level blurred, once
+ * across and once down, so it stays round and smooth where a coarser level
+ * would show its texels. A narrower one, below zoom 4, is the next finer
+ * level blurred.
+ */
+export const BLEND_LEVEL_PX = 4;
+
+/** Bloom weights for each entry of {@link BLOOM_SCALES_PX} at `zoom`, before the blend. */
+function ownBloomWeights(zoom: number): number[] {
   return BLOOM_SCALES_PX.map((_, i) =>
     interpolateStops(
       BLOOM_WEIGHT_STOPS.map(([z, weights]) => [z, weights[i] ?? 0] as const),
       zoom,
     ),
   );
+}
+
+/**
+ * Share of a bloom scale that joins a blend of standard deviation `sigmaPx`:
+ * all of a scale no wider than the blend, none of one √2 times wider, and in
+ * between by log2 of the ratio, so nothing jumps as the blend widens.
+ */
+export function blendShareOfScale(scalePx: number, sigmaPx: number): number {
+  return Math.min(Math.max(1 - 2 * Math.log2(scalePx / sigmaPx), 0), 1);
+}
+
+/**
+ * The bloom and the blend at `zoom`, with the glow shrunk by `sizeScale`
+ * ({@link glowSizeScale}); see {@link GlowFrameStyle}. The bloom's weights
+ * are cut by it and its scales shrink by it, so more of them fall inside the
+ * blend on a small screen. The cores' light in the blend is cut only by the
+ * gain, as the cores' own light is.
+ */
+function bloomAndBlend(
+  zoom: number,
+  sizeScale: number,
+): { bloom: number[]; blend: number; blendSigmaPx: number } {
+  // Relative to the cores, whose light already falls with the square root (glowSizeScale).
+  const bloom = ownBloomWeights(zoom).map((weight) => weight * sizeScale * Math.sqrt(sizeScale));
+  const blendSigmaPx = Math.max(
+    interpolateStops(BLEND_SIGMA_STOPS, zoom) * sizeScale,
+    BLEND_MIN_SIGMA_PX,
+  );
+  const moved = 1 - interpolateStops(CORE_SHARE_STOPS, zoom);
+  if (!(moved > 0)) return { bloom, blend: 0, blendSigmaPx };
+  // The cores' light that is not shown, and the same share of the fine scales'.
+  let blend = moved;
+  bloom.forEach((weight, i) => {
+    const scalePx = (BLOOM_SCALES_PX[i] ?? 0) * sizeScale;
+    const share = moved * blendShareOfScale(scalePx, blendSigmaPx);
+    blend += weight * share;
+    bloom[i] = weight * (1 - share);
+  });
+  return { bloom, blend, blendSigmaPx };
+}
+
+/**
+ * Bloom weights for each entry of {@link BLOOM_SCALES_PX} at `zoom`, less the
+ * light the blend carries, and cut by {@link glowSizeScale} below zoom 4.
+ */
+export function bloomWeights(zoom: number): number[] {
+  return bloomAndBlend(zoom, glowSizeScale(zoom)).bloom;
+}
+
+/** How the layer makes the blend on a light target of `targetPxPerCssPx`. */
+export interface BlendPlan {
+  /** The bloom level it is made from and added back into, 1 the first below the light target. */
+  readonly level: number;
+  /** Standard deviation of its blur in that level's texels, 0 for none. */
+  readonly sigmaTexels: number;
+  /** Blur taps on each side of the center. */
+  readonly radius: number;
+}
+
+export function blendPlan(style: GlowFrameStyle, targetPxPerCssPx: number): BlendPlan {
+  let level = Math.max(1, Math.round(Math.log2(BLEND_LEVEL_PX * targetPxPerCssPx)));
+  if (style.blendSigmaPx < BLEND_LEVEL_PX) {
+    // Shrunk below zoom 4: the finest level that is no wider than the blend.
+    while (level > 1 && 2 ** level / targetPxPerCssPx > style.blendSigmaPx) level--;
+  }
+  const scalePx = 2 ** level / targetPxPerCssPx;
+  // The level already spreads a point over about its own scale; the blur adds the rest.
+  const sigmaTexels = Math.sqrt(Math.max(style.blendSigmaPx ** 2 - scalePx ** 2, 0)) / scalePx;
+  return { level, sigmaTexels, radius: Math.ceil(3 * sigmaTexels) };
 }
 
 /** Coarsest bloom level, CSS px per texel. */
@@ -179,6 +373,51 @@ export function bloomLevels(
     weights.pop();
   }
   return weights;
+}
+
+/** The blend's blur in one frame, and the light it adds back into its level. */
+export interface BlendBlur extends BlendPlan {
+  readonly weight: number;
+}
+
+/** What the layer draws for the bloom and the blend in one frame. */
+export interface BloomPlan {
+  /**
+   * Weight of each bloom level drawn, level 1 first, whose texels are
+   * 2 / targetPxPerCssPx CSS px and each level's twice the last. A blend
+   * that needs no blur is in its level's weight.
+   */
+  readonly weights: readonly number[];
+  /** The blend's blur, or null when there is no blend or it needs none. */
+  readonly blur: BlendBlur | null;
+}
+
+/**
+ * What the layer draws for the bloom and the blend on a light target of
+ * `targetPxPerCssPx` whose smaller side is `sizePx` target px: the bloom's
+ * levels ({@link bloomLevels}) and the blend, added into its level where it
+ * needs no blur, or blurred there.
+ */
+export function bloomPlan(
+  style: GlowFrameStyle,
+  targetPxPerCssPx: number,
+  sizePx: number,
+): BloomPlan {
+  const weights = bloomLevels(style, targetPxPerCssPx, sizePx);
+  if (!(style.blend > 0)) return { weights, blur: null };
+  const plan = blendPlan(style, targetPxPerCssPx);
+  if (plan.radius > 0 && plan.level < weights.length) {
+    // Blurred, then added into its level on the way up, which needs a coarser level above it.
+    return { weights, blur: { ...plan, weight: style.blend } };
+  }
+  // A blend that needs no blur, or has no room for one, is its level as it is, if there is room.
+  let size = sizePx;
+  for (let level = 1; level <= plan.level; level++) size = Math.ceil(size / 2);
+  if (size >= 2) {
+    while (weights.length < plan.level) weights.push(0);
+    weights[plan.level - 1] = (weights[plan.level - 1] ?? 0) + style.blend;
+  }
+  return { weights, blur: null };
 }
 
 /**
@@ -258,34 +497,47 @@ export const FALLBACK_BLOOM_SIGMA_SHARE = 0.26;
 
 /**
  * Fallback halo radius, CSS px. Wider than the float path's own halo from
- * zoom 7 to 10, where the bloom still reaches past it and few points are on
- * screen; the same from zoom 11, where there is no bloom to stand in for.
- * Nationally, where every point is on screen, it stays at 20 px to hold the
- * per-frame fill down.
+ * zoom 5 to 10, where the blend and the bloom still reach past it and fewer
+ * points are on screen; the same from zoom 11, where there is no bloom to
+ * stand in for. Nationally, where every point is on screen, it stays at
+ * 20 px to hold the per-frame fill down.
  */
 export const FALLBACK_HALO_RADIUS_STOPS: ZoomStops = [
   [3, 20],
-  [6, 20],
+  [4.5, 20],
+  [6, 36],
   [7.5, 30],
   [9.5, 26],
   [11, 12],
 ];
 
-/** The fallback's per-point halo at a zoom: its own halo plus the folded bloom. */
+/**
+ * The fallback's per-point halo at a zoom: its own halo, the folded bloom
+ * and the blend. The blend is the point's own fine light, so all of it goes
+ * in, at its own spread as far as the halo's radius allows. Below zoom 4 the
+ * halo shrinks as the blend does, with the map until the blend stops at
+ * {@link BLEND_MIN_SIGMA_PX}, so it holds the blend as on a desktop.
+ */
 export function fallbackHalo(style: GlowFrameStyle, zoom: number): HaloShape {
   const folded = style.bloom.reduce((sum, w, i) => sum + w * (FALLBACK_BLOOM_FOLD[i] ?? 0), 0);
-  const energy = style.haloEnergy + folded;
-  if (!(folded > 0)) {
+  const spread = folded + style.blend;
+  const energy = style.haloEnergy + spread;
+  if (!(spread > 0)) {
     return { energy, sigmaShare: HALO_SIGMA_SHARE, radiusPx: style.haloRadiusPx };
   }
+  const shrink = style.blendSigmaPx / interpolateStops(BLEND_SIGMA_STOPS, zoom);
+  const radiusPx = Math.max(
+    style.haloRadiusPx,
+    interpolateStops(FALLBACK_HALO_RADIUS_STOPS, zoom) * shrink,
+  );
   return {
     energy,
     sigmaShare:
-      (style.haloEnergy * HALO_SIGMA_SHARE + folded * FALLBACK_BLOOM_SIGMA_SHARE) / energy,
-    radiusPx: Math.max(
-      style.haloRadiusPx,
-      interpolateStops(FALLBACK_HALO_RADIUS_STOPS, zoom) * style.sizeScale,
-    ),
+      (style.haloEnergy * HALO_SIGMA_SHARE +
+        folded * FALLBACK_BLOOM_SIGMA_SHARE +
+        style.blend * (style.blendSigmaPx / radiusPx)) /
+      energy,
+    radiusPx,
   };
 }
 
@@ -338,16 +590,16 @@ vec4 glow_fallback_decode(vec4 coarse, vec4 fine, float alpha) {
 
 /**
  * Roughly how far from a lone point its glow reaches, CSS px: the
- * energy-weighted RMS spread of core, own halo and bloom. The curve the
- * zoom-behavior tests pin down: wide nationally, tightening from zoom 6, a
- * small halo from zoom 11.
+ * energy-weighted RMS spread of core, own halo, bloom and blend. The curve
+ * the zoom-behavior tests pin down: wide nationally, tightening from zoom 6,
+ * a small halo from zoom 11.
  */
 export function glowReachPx(zoom: number): number {
   const style = glowStyleAtZoom(zoom);
   const core = style.coreSigmaPx;
   const haloSigma = HALO_SIGMA_SHARE * style.haloRadiusPx;
-  let energy = 1;
-  let moment = core * core;
+  let energy = style.coreShare;
+  let moment = style.coreShare * core * core;
   energy += style.haloEnergy;
   moment += style.haloEnergy * haloSigma * haloSigma;
   style.bloom.forEach((weight, i) => {
@@ -355,6 +607,8 @@ export function glowReachPx(zoom: number): number {
     energy += weight;
     moment += weight * scale * scale;
   });
+  energy += style.blend;
+  moment += style.blend * style.blendSigmaPx * style.blendSigmaPx;
   return 2 * Math.sqrt(moment / energy);
 }
 
@@ -404,7 +658,9 @@ export const FULL_SIZE_ZOOM = 4;
  * square root, so a lone school stays well above the grey of the state lines
  * even at a small phone's widest zoom. The price is a band of schools, its
  * light packed closer, brighter than on a desktop: on a phone's national view
- * about twice as much of it reaches the tone map's pale top. The factor meets
+ * about twice as much of it reaches the tone map's pale top. Nationally the
+ * blend carries the cores' light; it shrinks with the map too, but not below
+ * {@link BLEND_MIN_SIGMA_PX}, where it would read as dots. The factor meets
  * 1 at FULL_SIZE_ZOOM without easing in: a smooth join would reach farther
  * than a desktop just below it, where small laptops open.
  */
@@ -418,17 +674,24 @@ export function glowSizeScale(zoom: number): number {
 export interface GlowFrameStyle {
   /**
    * {@link glowSizeScale}, 1 from zoom 4 up. The halo radius here is scaled
-   * by it already, the gain by its square root and the bloom weights by its
-   * 1.5th power; the bloom scales take it where the layer reads them
-   * (bloomLevels).
+   * by it already, the gain and the blend by its square root and the bloom
+   * weights by its 1.5th power; the bloom scales take it where the layer
+   * reads them (bloomLevels).
    */
   readonly sizeScale: number;
   readonly coreSigmaPx: number;
+  /** Share of the fine light shown where it is; see {@link CORE_SHARE_STOPS}. */
+  readonly coreShare: number;
   readonly gain: number;
   readonly haloRadiusPx: number;
   readonly haloEnergy: number;
-  /** Weights for {@link BLOOM_SCALES_PX}. */
+  /** Weights for {@link BLOOM_SCALES_PX}, less the light the blend carries. */
   readonly bloom: readonly number[];
+  /** Light in the blend relative to the cores, and its standard deviation, CSS px. */
+  readonly blend: number;
+  readonly blendSigmaPx: number;
+  /** Lift on the blend's faint light on a phone, 0 from a tablet's zoom up; see {@link BLEND_LIFT}. */
+  readonly blendLift: number;
   readonly glyphOpacity: number;
   readonly glyphRadiusPx: number;
   readonly openRadiusPx: number;
@@ -439,11 +702,12 @@ export function glowStyleAtZoom(zoom: number): GlowFrameStyle {
   return {
     sizeScale,
     coreSigmaPx: interpolateStops(CORE_SIGMA_STOPS, zoom),
+    coreShare: interpolateStops(CORE_SHARE_STOPS, zoom),
     gain: interpolateStops(GAIN_STOPS, zoom) * Math.sqrt(sizeScale),
     haloRadiusPx: interpolateStops(HALO_RADIUS_STOPS, zoom) * sizeScale,
     haloEnergy: interpolateStops(HALO_ENERGY_STOPS, zoom),
-    // Relative to the core, whose light already falls with the square root.
-    bloom: bloomWeights(zoom).map((weight) => weight * sizeScale * Math.sqrt(sizeScale)),
+    ...bloomAndBlend(zoom, sizeScale),
+    blendLift: blendLiftAtScale(sizeScale),
     glyphOpacity: smoothstep(GLYPH_FADE_START, GLYPH_FADE_END, zoom),
     glyphRadiusPx: interpolateStops(GLYPH_RADIUS_STOPS, zoom),
     openRadiusPx: interpolateStops(OPEN_RADIUS_STOPS, zoom),
@@ -492,6 +756,11 @@ const CORE_REACH_SIGMAS = 3;
  */
 export const CORE_EDGE_D2 = 0.5625;
 
+/**
+ * `coreShare` is the share of the core drawn. The float path draws all of it,
+ * since its bloom is made from the light target, and its composite shows
+ * only `style.coreShare`; the fallback, with no bloom, draws that share itself.
+ */
 export function kernelUniforms(
   style: GlowFrameStyle,
   targetPxPerCssPx: number,
@@ -500,6 +769,7 @@ export function kernelUniforms(
     sigmaShare: HALO_SIGMA_SHARE,
     radiusPx: style.haloRadiusPx,
   },
+  coreShare = 1,
 ): KernelUniforms {
   const haloEnergy = halo.energy;
   const sigma = style.coreSigmaPx * targetPxPerCssPx;
@@ -516,7 +786,7 @@ export function kernelUniforms(
     radius,
     coreFalloff: (radius * radius) / (2 * sigmaEff2),
     // The glyph takes the core's place, so a ring's center stays dark.
-    coreWeight: ((sigma * sigma) / sigmaEff2) * (1 - style.glyphOpacity),
+    coreWeight: ((sigma * sigma) / sigmaEff2) * (1 - style.glyphOpacity) * coreShare,
     haloFalloff: (radius * radius) / (2 * haloSigma * haloSigma),
     // Core light is 2 pi sigma^2; the windowed halo's is haloWeight * pi * R^2 * I(falloff).
     haloWeight:
