@@ -8,10 +8,13 @@ import {
   APPLE_TOUCH_ICON,
   CACHE_LIMITS,
   CACHE_NAMES,
+  RETIRED_CACHES,
+  RETIRE_FILE,
   isRangeRequest,
   onlyTiles,
   pwaHead,
   pwaOptions,
+  retireCachesScript,
   routePatterns,
   workboxOptions,
 } from '../config';
@@ -98,21 +101,84 @@ describe('workboxOptions', () => {
     expect(byCache(CACHE_NAMES.tiles)?.options?.plugins).toEqual([onlyTiles]);
     const keep = async (response: Response): Promise<boolean> =>
       (await onlyTiles.cacheWillUpdate({ response })) !== null;
-    const tile = new Response(new Uint8Array([0x1a, 0]), {
-      headers: { 'content-type': 'application/vnd.mapbox-vector-tile' },
-    });
-    expect(await keep(tile)).toBe(true);
+    const tile = (): Response =>
+      new Response(new Uint8Array([0x1a, 0]), {
+        headers: { 'content-type': 'application/vnd.mapbox-vector-tile' },
+      });
+    expect(await keep(tile())).toBe(true);
+    // An empty tile: nothing there, and nothing to ask for again.
+    expect(await keep(new Response(new Uint8Array(0)))).toBe(true);
     expect(await keep(new Response('<html>', { headers: { 'content-type': 'text/html' } }))).toBe(
       false,
     );
+    // Not text by its type, and still no tile: a filter's page, or a challenge's.
+    for (const type of ['application/vnd.mapbox-vector-tile', 'application/octet-stream']) {
+      const page = new Response('<!doctype html><title>Blocked</title>', {
+        headers: { 'content-type': type },
+      });
+      expect(await keep(page)).toBe(false);
+    }
     expect(await keep(new Response('busy', { status: 503 }))).toBe(false);
+    // What it keeps can still be read by the map: it reads a copy.
+    const kept = await onlyTiles.cacheWillUpdate({ response: tile() });
+    expect(new Uint8Array((await kept?.arrayBuffer()) ?? new ArrayBuffer(0))).toEqual(
+      new Uint8Array([0x1a, 0]),
+    );
     // Written into sw.js as source text: it refers to nothing outside itself.
     const rebuilt = runInNewContext(`(${onlyTiles.cacheWillUpdate.toString()})`, {
       Promise,
+      Uint8Array,
     }) as typeof onlyTiles.cacheWillUpdate;
     const page = new Response('<html>', { headers: { 'content-type': 'text/html' } });
     expect(await rebuilt({ response: page })).toBeNull();
-    expect(await rebuilt({ response: tile.clone() })).not.toBeNull();
+    expect(await rebuilt({ response: tile() })).not.toBeNull();
+  });
+
+  it('answers a request asking to go past the cache from the network, not the cache', async () => {
+    const cached = new Response(new Uint8Array([0x1a, 0]));
+    const use = (cache: RequestCache): Promise<Response | null> =>
+      onlyTiles.cachedResponseWillBeUsed({
+        request: new Request('https://tiles.openfreemap.org/planet/x/7/32/45.pbf', { cache }),
+        cachedResponse: cached,
+      });
+    expect(await use('default')).toBe(cached);
+    expect(await use('reload')).toBeNull();
+    const rebuilt = runInNewContext(`(${onlyTiles.cachedResponseWillBeUsed.toString()})`, {
+      Promise,
+    }) as typeof onlyTiles.cachedResponseWillBeUsed;
+    expect(
+      await rebuilt({
+        request: new Request('https://tiles.openfreemap.org/planet/x/7/32/45.pbf', {
+          cache: 'reload',
+        }),
+        cachedResponse: cached,
+      }),
+    ).toBeNull();
+  });
+
+  it('deletes the tile cache an earlier build kept, as its worker takes over', async () => {
+    expect(RETIRED_CACHES).toContain('snowlight-tiles-v1');
+    expect(Object.values(CACHE_NAMES)).not.toContain('snowlight-tiles-v1');
+    expect(workboxOptions('/').importScripts).toEqual([RETIRE_FILE]);
+    const listeners: ((event: { waitUntil(done: Promise<unknown>): void }) => void)[] = [];
+    const deleted: string[] = [];
+    runInNewContext(retireCachesScript(), {
+      self: {
+        addEventListener: (_type: string, listener: (typeof listeners)[number]) =>
+          listeners.push(listener),
+      },
+      caches: {
+        delete: (name: string) => {
+          deleted.push(name);
+          return Promise.resolve(true);
+        },
+      },
+      Promise,
+    });
+    const waits: Promise<unknown>[] = [];
+    for (const listener of listeners) listener({ waitUntil: (done) => waits.push(done) });
+    await Promise.all(waits);
+    expect(deleted).toEqual([...RETIRED_CACHES]);
   });
 
   it('caches only successful responses, never opaque ones or parts of files', () => {

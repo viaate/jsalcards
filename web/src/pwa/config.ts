@@ -10,11 +10,19 @@
  *   copy into the cache, and the page told when it differs.
  * - The school directory, the search index and finished storm replays change
  *   rarely; they are cache-first and expire after a week.
- * - OpenFreeMap tiles (zoom 7 and up) keep a small cache of recent tiles.
+ * - OpenFreeMap tiles (zoom 7 and up) keep a small cache of recent tiles: only
+ *   answers that are tiles (onlyTiles), and never for a request that asks to
+ *   go past the cache. A cache an earlier build kept and this one does not is
+ *   deleted as this build's worker takes over (RETIRED_CACHES).
  * - Files read in byte ranges (the school vector tiles, *.pmtiles) are never
  *   cached, and any request for part of a file goes to the network as it is:
  *   a cache holds whole files, and a whole file is the wrong answer to a
  *   range request.
+ * - The US mask (geo/us-mask.<hash>.pmtiles) is a .pmtiles file too, but read
+ *   whole, once, by the page, when someone heads for the streets
+ *   (src/map/basemap/mask/feed.ts): not precached, so a visit that never
+ *   leaves the national view never downloads it, and in no route, so it goes
+ *   to the network (and the browser's cache) as it is.
  *
  * The manifest is a static file, public/manifest.webmanifest, written with the
  * icons by scripts/build-icons.mjs from src/copy.ts. Its URLs are relative to
@@ -42,7 +50,7 @@ export const CACHE_NAMES = Object.freeze({
   staticData: 'snowlight-static-data-v1',
   assets: 'snowlight-assets-v1',
   tileJson: 'snowlight-tilejson-v1',
-  tiles: 'snowlight-tiles-v1',
+  tiles: 'snowlight-tiles-v2',
 });
 
 const DAY_SECONDS = 86_400;
@@ -62,6 +70,26 @@ export const CACHE_LIMITS = Object.freeze({
   tileJson: { maxEntries: 2, maxAgeSeconds: 7 * DAY_SECONDS },
   tiles: { maxEntries: 32, maxAgeSeconds: 7 * DAY_SECONDS },
 });
+
+/**
+ * Caches earlier builds kept that this one does not use: deleted as this
+ * build's worker takes over (retireCachesScript). snowlight-tiles-v1 kept any
+ * 200 that was not text, so a network's block page sent as a tile could stay
+ * in it for a week.
+ */
+export const RETIRED_CACHES: readonly string[] = Object.freeze(['snowlight-tiles-v1']);
+
+/** The script the worker imports that deletes RETIRED_CACHES (pwaHead writes it). */
+export const RETIRE_FILE = 'sw-retire.js';
+
+/** The source of RETIRE_FILE: on the worker's activate, it deletes `names`. */
+export function retireCachesScript(names: readonly string[] = RETIRED_CACHES): string {
+  return `// Deletes the caches earlier builds kept that this one does not (src/pwa/config.ts).
+self.addEventListener('activate', (event) => {
+  event.waitUntil(Promise.all(${JSON.stringify(names)}.map((name) => caches.delete(name))));
+});
+`;
+}
 
 /** How long the TileJSON may take before its cached copy is used instead. */
 export const TILEJSON_TIMEOUT_SECONDS = 4;
@@ -159,19 +187,31 @@ export const isRangeRequest = ({ request }: { request: Request }): boolean =>
   request.headers.has('range');
 
 /**
- * Keeps nothing but tiles in the tile cache. An answer that is text (a
- * network's block page, a challenge sent with a 200) goes on to the map, which
- * refuses it and asks again (openfreemap.ts), but it is never kept, to be
- * served for that tile from then on. Workbox writes this plugin into sw.js as
- * source text, so it must stay self-contained.
+ * Keeps nothing but tiles in the tile cache: a 200 whose body is a vector
+ * tile, empty or starting with its layers (field 3, length-delimited: 0x1a;
+ * OpenFreeMap's tiles, as the browser unzips them, all do). An answer that
+ * is not (a network's block page or challenge sent with a 200, whatever its
+ * type) goes on to the map, which refuses it and asks again past the cache
+ * (openfreemap.ts), but it is never kept, to be served for that tile from
+ * then on. A request that asks to go past the cache (cache: 'reload') gets
+ * the network's answer, whatever the cache holds. Workbox writes this plugin
+ * into sw.js as source text, so it must stay self-contained.
  */
 export const onlyTiles = {
-  cacheWillUpdate: ({ response }: { response: Response }): Promise<Response | null> =>
-    Promise.resolve(
-      response.status === 200 && !/^\s*text\//i.test(response.headers.get('content-type') ?? '')
-        ? response
-        : null,
-    ),
+  cacheWillUpdate: async ({ response }: { response: Response }): Promise<Response | null> => {
+    if (response.status !== 200) return null;
+    if (/^\s*text\//i.test(response.headers.get('content-type') ?? '')) return null;
+    const bytes = new Uint8Array(await response.clone().arrayBuffer());
+    return bytes.length === 0 || bytes[0] === 0x1a ? response : null;
+  },
+  cachedResponseWillBeUsed: ({
+    request,
+    cachedResponse,
+  }: {
+    request: Request;
+    cachedResponse?: Response;
+  }): Promise<Response | null> =>
+    Promise.resolve(request.cache === 'reload' ? null : (cachedResponse ?? null)),
 };
 
 /** The routes the worker tries, in order, for a request that is not a navigation. */
@@ -226,6 +266,8 @@ export function workboxOptions(base: string): WorkboxOptions {
     sourcemap: false,
     inlineWorkboxRuntime: true,
     disableDevLogs: true,
+    // Deletes the caches earlier builds kept (RETIRED_CACHES), as this worker takes over.
+    importScripts: [RETIRE_FILE],
     cleanupOutdatedCaches: true,
     // The first worker takes the open page at once, so this visit's data is cached for offline.
     clientsClaim: true,
@@ -295,7 +337,8 @@ export function workboxOptions(base: string): WorkboxOptions {
 /**
  * Adds to index.html, under the site base: the manifest link, the home-screen
  * icon iOS reads (it ignores manifest icons), and a black iOS status bar for
- * the installed app.
+ * the installed app; and writes the script the worker imports to delete
+ * retired caches (RETIRE_FILE).
  */
 export function pwaHead(): Plugin {
   let base = '/';
@@ -303,6 +346,9 @@ export function pwaHead(): Plugin {
     name: 'snowlight:pwa-head',
     configResolved(config) {
       base = normalizeBase(config.base);
+    },
+    generateBundle() {
+      this.emitFile({ type: 'asset', fileName: RETIRE_FILE, source: retireCachesScript() });
     },
     transformIndexHtml(): HtmlTagDescriptor[] {
       return [
