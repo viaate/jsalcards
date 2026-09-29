@@ -13,6 +13,8 @@
  * directory, is not read at all: nothing is shown from it.
  */
 
+import { showsSchool, showsStatus } from '../state/filter';
+import type { MapFilter } from '../state/filter';
 import { parseInstant } from '../state/instant';
 import { Status } from '../types/generated';
 import type { ClosingsDay, ClosingsFile, LocalDate, SchoolId } from '../types/generated';
@@ -150,9 +152,11 @@ export interface LitSchools {
   readonly lngLat: Float64Array;
   /** One status code per school: 0 closed, 1 delayed, 2 remote, 3 early dismissal. */
   readonly status: Uint8Array;
+  /** Each school's kind flags in the directory (0x01 private), for the menu's filter. */
+  readonly kinds: Uint8Array;
   /** When each school first lit, as performance.now() ms; NaN for no pulse. Absent on a first load. */
   readonly bornAt?: Float64Array;
-  /** The school positions lit, to tell which are new next time. */
+  /** The school positions lit, in row order, to tell which are new next time. */
   readonly schools: ReadonlySet<number>;
   /** Each school's id, and its name as the directory writes it. */
   readonly ids: readonly SchoolId[];
@@ -162,6 +166,7 @@ export interface LitSchools {
 export const NOTHING_LIT: LitSchools = Object.freeze({
   lngLat: new Float64Array(0),
   status: new Uint8Array(0),
+  kinds: new Uint8Array(0),
   schools: new Set<number>(),
   ids: [],
   names: [],
@@ -196,6 +201,7 @@ export function lightSchools(
   if ((rows.schools[count - 1] ?? 0) >= directory.count) return NOTHING_LIT;
 
   const lngLat = new Float64Array(count * 2);
+  const kinds = new Uint8Array(count);
   const bornAt = options.previous === null ? undefined : new Float64Array(count);
   const schools = new Set<number>();
   const ids: SchoolId[] = [];
@@ -207,13 +213,53 @@ export function lightSchools(
     names.push(directory.meta.names[school] ?? '');
     lngLat[i * 2] = directory.lngLat[school * 2] ?? 0;
     lngLat[i * 2 + 1] = directory.lngLat[school * 2 + 1] ?? 0;
+    kinds[i] = directory.kind[school] ?? 0;
     if (bornAt !== undefined) {
       bornAt[i] = options.previous?.has(school) === true ? Number.NaN : options.bornMs;
     }
   }
   return bornAt === undefined
-    ? { lngLat, status: rows.statuses, schools, ids, names }
-    : { lngLat, status: rows.statuses, bornAt, schools, ids, names };
+    ? { lngLat, status: rows.statuses, kinds, schools, ids, names }
+    : { lngLat, status: rows.statuses, kinds, bornAt, schools, ids, names };
+}
+
+/**
+ * The lit schools the menu's filter keeps on the map: those in a status it
+ * shows, at a school of a kind it shows. With `pulse` false none pulses in,
+ * as when the filter changes and lights come back that were lit before.
+ */
+export function filterLit(lit: LitSchools, filter: MapFilter, pulse: boolean): LitSchools {
+  const keep: number[] = [];
+  const count = lit.status.length;
+  for (let i = 0; i < count; i++) {
+    if (showsStatus(filter, lit.status[i] ?? 0) && showsSchool(filter, lit.kinds[i] ?? 0)) {
+      keep.push(i);
+    }
+  }
+  const bornAt = pulse ? lit.bornAt : undefined;
+  if (keep.length === count && bornAt === lit.bornAt) return lit;
+  const lngLat = new Float64Array(keep.length * 2);
+  const status = new Uint8Array(keep.length);
+  const kinds = new Uint8Array(keep.length);
+  const born = bornAt === undefined ? undefined : new Float64Array(keep.length);
+  const all = [...lit.schools];
+  const schools = new Set<number>();
+  const ids: SchoolId[] = [];
+  const names: string[] = [];
+  keep.forEach((row, n) => {
+    lngLat[n * 2] = lit.lngLat[row * 2] ?? 0;
+    lngLat[n * 2 + 1] = lit.lngLat[row * 2 + 1] ?? 0;
+    status[n] = lit.status[row] ?? 0;
+    kinds[n] = lit.kinds[row] ?? 0;
+    if (born !== undefined) born[n] = bornAt?.[row] ?? Number.NaN;
+    const school = all[row];
+    if (school !== undefined) schools.add(school);
+    ids.push(lit.ids[row] ?? '');
+    names.push(lit.names[row] ?? '');
+  });
+  return born === undefined
+    ? { lngLat, status, kinds, schools, ids, names }
+    : { lngLat, status, kinds, bornAt: born, schools, ids, names };
 }
 
 /** How many schools the map lights in each status, by status code (closed … early dismissal). */
@@ -230,6 +276,23 @@ export function countStatuses(lit: LitSchools): StatusCounts | null {
   for (const status of lit.status) {
     if (status < counts.length) counts[status as Status] += 1;
   }
+  return counts;
+}
+
+/**
+ * How many of the lit schools of the kinds the menu's filter shows have each
+ * status, whichever status it shows: the menu offers each status with its
+ * count. Null when none is lit, as countStatuses; all nought when the schools
+ * lit are all of a kind it hides.
+ */
+export function countShown(lit: LitSchools, filter: MapFilter): StatusCounts | null {
+  if (lit.status.length === 0) return null;
+  const counts: [number, number, number, number] = [0, 0, 0, 0];
+  lit.status.forEach((status, row) => {
+    if (status < counts.length && showsSchool(filter, lit.kinds[row] ?? 0)) {
+      counts[status as Status] += 1;
+    }
+  });
   return counts;
 }
 

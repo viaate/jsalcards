@@ -35,6 +35,8 @@ export interface Points {
   readonly lngLat: Float64Array;
   /** Each school's position in meta.json districts, or -1 for none. */
   readonly district: Int32Array;
+  /** Each school's kind flags: 0x01 private, 0x02 charter, 0x04 exclusively virtual. */
+  readonly kind: Uint8Array;
 }
 
 export interface Directory extends Points {
@@ -98,6 +100,7 @@ export function parsePoints(bytes: ArrayBuffer, meta: SchoolDirectoryMeta): Poin
 
   const lngLat = new Float64Array(count * 2);
   const district = new Int32Array(count);
+  const kind = new Uint8Array(count);
   for (let i = 0, at = HEADER_BYTES; i < count; i++, at += RECORD_BYTES) {
     const lon = view.getInt32(at, true) * MICRODEGREES;
     const lat = view.getInt32(at + 4, true) * MICRODEGREES;
@@ -107,8 +110,9 @@ export function parsePoints(bytes: ArrayBuffer, meta: SchoolDirectoryMeta): Poin
     lngLat[i * 2] = lon;
     lngLat[i * 2 + 1] = lat;
     district[i] = index === NO_DISTRICT ? -1 : index;
+    kind[i] = view.getUint8(at + 12);
   }
-  return { lngLat, district };
+  return { lngLat, district, kind };
 }
 
 /** Positions by id, built on first use: a lookup table for 100,000 ids takes a moment. */
@@ -126,6 +130,7 @@ export function createDirectory(meta: SchoolDirectoryMeta, points: Points): Dire
     count: meta.count,
     lngLat: points.lngLat,
     district: points.district,
+    kind: points.kind,
     schoolIndex: lookup(meta.ids),
     districtIndex: lookup(meta.districts.ids),
   };

@@ -71,6 +71,7 @@ function lit(...schools: number[]): LitSchools {
   return {
     lngLat: new Float64Array(schools.flatMap(() => [-94.593, 39.036])),
     status: new Uint8Array(schools.length),
+    kinds: new Uint8Array(schools.length),
     schools: new Set(schools),
     ids: schools.map((school) => `29000000000${String(school)}`),
     names: schools.map((school) => `School ${String(school)}`),

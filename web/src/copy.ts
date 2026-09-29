@@ -53,10 +53,14 @@ export const copy = deepFreeze({
     copied: 'Link copied',
   },
 
-  /** The About text, shown as one paragraph: what the site does, then how to use it. */
+  /**
+   * The menu's About, in two lines: what the site is, then how to read its
+   * lights. It never names the site (the wordmark above it does) and never
+   * says how to search (the field above it does).
+   */
   about: {
-    what: 'Snowlight maps schools that are closed, delayed, remote, or dismissing early for weather today.',
-    how: 'Search a school, city, or ZIP to see its status and the chance of a weather closure today and tomorrow.',
+    what: 'Live school closings and delays for weather.',
+    glow: 'The brighter the glow, the more schools.',
   },
 
   search: {
@@ -241,8 +245,17 @@ export const copy = deepFreeze({
 
   menu: {
     label: 'Menu',
-    open: 'Open menu',
-    close: 'Close menu',
+    /** The first group: which of today's lights the map shows, all four statuses or one. */
+    today: 'Today',
+    all: 'All',
+    /** The second: which schools the map shows. */
+    kinds: 'Schools',
+    public: 'Public',
+    private: 'Private',
+    /** What the map holds, on the About page: every school in the directory, and their districts. */
+    onMap: 'On the map',
+    schools: 'Schools',
+    districts: 'Districts',
   },
 
   /** Season stats: counts of school days, from stats/season.json. */
@@ -254,17 +267,13 @@ export const copy = deepFreeze({
     remote: 'Remote days',
     earlyDismissals: 'Early dismissals',
     busiestDay: 'Busiest day',
-    byDay: 'By day',
-    byState: 'By state',
   },
 
   /** Track record: how past chances compared with what schools did. */
   trackRecord: {
     chanceGiven: 'Chance given',
-    happened: 'How often it happened',
-    noSchool: 'No school',
-    delay: 'Delayed start',
-    daysScored: 'Days scored',
+    /** Over the table: each row is a chance of no school given, each cell how many of those days had none. */
+    caption: 'Days with no school',
     /** Keyed by lead_days: 0 given that morning, 1 the day before, 2 two days before. */
     lead: {
       sameMorning: 'Same morning',

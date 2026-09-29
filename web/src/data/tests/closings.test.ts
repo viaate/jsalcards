@@ -1,9 +1,13 @@
 import { describe, expect, it } from 'vitest';
 
+import { SHOW_ALL, withKind, withStatus } from '../../state/filter';
+import { Status } from '../../types/generated';
 import {
   NOTHING_LIT,
+  countShown,
   countStatuses,
   decodeDay,
+  filterLit,
   lightSchools,
   parseClosings,
   sameCounts,
@@ -17,7 +21,7 @@ const SCHOOLS: TestSchool[] = [
   { id: '010000500870', name: 'First', lon: -86.8, lat: 33.5, district: 0 },
   { id: '010000500871', name: 'Second', lon: -86.6, lat: 33.7, district: 0 },
   { id: '290000000001', name: 'Third', lon: -94.5, lat: 39.1, district: 1 },
-  { id: 'A1902690', name: 'Fourth', lon: -94.593001, lat: 39.03606, district: -1 },
+  { id: 'A1902690', name: 'Fourth', lon: -94.593001, lat: 39.03606, district: -1, kind: 1 },
 ];
 const META = testMeta(SCHOOLS, ['0100005', '2900001']);
 const POINTS = parsePoints(testPoints(SCHOOLS, 2), META);
@@ -95,6 +99,8 @@ describe('the schools lit today', () => {
       -86.8, 33.5, -94.5, 39.1, -94.593001, 39.03606,
     ]);
     expect([...lit.schools]).toEqual([0, 2, 3]);
+    // Each with its kind flags: the last is a private school.
+    expect([...lit.kinds]).toEqual([0, 0, 1]);
     // Which school each light is, for a tap on it.
     expect(lit.ids).toEqual(['010000500870', '290000000001', 'A1902690']);
     expect(lit.names).toEqual(['First', 'Third', 'Fourth']);
@@ -175,5 +181,51 @@ describe('the counts the legend gives', () => {
     expect(sameCounts(null, null)).toBe(true);
     expect(sameCounts(null, [0, 0, 0, 0])).toBe(false);
     expect(sameCounts([0, 0, 0, 0], null)).toBe(false);
+  });
+});
+
+describe('the lit schools the menu keeps on the map', () => {
+  const lit = lightSchools(FILE, DIRECTORY, { now: NOON, previous: new Set([0]), bornMs: 42 });
+
+  it('are all of them, as they are, while it shows everything', () => {
+    expect(filterLit(lit, SHOW_ALL, true)).toBe(lit);
+    // After a change of filter they light again without a pulse.
+    const again = filterLit(lit, SHOW_ALL, false);
+    expect(again.bornAt).toBeUndefined();
+    expect([...again.schools]).toEqual([0, 2, 3]);
+    expect(filterLit(NOTHING_LIT, SHOW_ALL, false)).toBe(NOTHING_LIT);
+  });
+
+  it('are those in the one status it shows, each where it was and pulsing as it would', () => {
+    const delayed = filterLit(lit, withStatus(SHOW_ALL, Status.delayed), true);
+    expect([...delayed.status]).toEqual([1]);
+    expect([...delayed.schools]).toEqual([2]);
+    expect([...delayed.kinds]).toEqual([0]);
+    expect([...delayed.lngLat].map((value) => Math.round(value * 10) / 10)).toEqual([-94.5, 39.1]);
+    expect(delayed.bornAt === undefined ? null : [...delayed.bornAt]).toEqual([42]);
+    const remote = filterLit(lit, withStatus(SHOW_ALL, Status.remote), true);
+    expect([...remote.schools]).toEqual([]);
+    expect(remote.status).toHaveLength(0);
+  });
+
+  it('are those of the kinds it shows', () => {
+    const publicOnly = filterLit(lit, withKind(SHOW_ALL, 'private', false), false);
+    expect([...publicOnly.schools]).toEqual([0, 2]);
+    expect([...publicOnly.status]).toEqual([0, 1]);
+    expect(publicOnly.bornAt).toBeUndefined();
+    const privateOnly = filterLit(lit, withKind(SHOW_ALL, 'public', false), false);
+    expect([...privateOnly.schools]).toEqual([3]);
+    expect([...privateOnly.status]).toEqual([3]);
+    const neither = withKind(withKind(SHOW_ALL, 'public', false), 'private', false);
+    expect([...filterLit(lit, neither, false).schools]).toEqual([]);
+  });
+
+  it('are counted by status whichever status it shows, of the kinds it shows', () => {
+    expect(countShown(lit, SHOW_ALL)).toEqual([1, 1, 0, 1]);
+    expect(countShown(lit, withStatus(SHOW_ALL, Status.closed))).toEqual([1, 1, 0, 1]);
+    expect(countShown(lit, withKind(SHOW_ALL, 'private', false))).toEqual([1, 1, 0, 0]);
+    expect(countShown(lit, withKind(SHOW_ALL, 'public', false))).toEqual([0, 0, 0, 1]);
+    // None lit, none counted.
+    expect(countShown(NOTHING_LIT, withKind(SHOW_ALL, 'public', false))).toBeNull();
   });
 });

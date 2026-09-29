@@ -130,15 +130,29 @@ describe('copy', () => {
     expect(copy.share.description).toBe(copy.meta.description);
   });
 
-  it('says what the site does and how to use it in two sentences, nothing else', () => {
-    expect(Object.keys(copy.about)).toEqual(['what', 'how']);
+  it('says what the site is and how to read its lights in two short lines', () => {
+    expect(Object.keys(copy.about)).toEqual(['what', 'glow']);
     for (const sentence of Object.values(copy.about)) {
       expect(sentence.split(/(?<=[.?])\s+/u)).toHaveLength(1);
       expect(sentence).toMatch(/^\p{Lu}[^.?]*\.$/u);
-      expect(sentence.length).toBeLessThanOrEqual(120);
+      expect(sentence.length).toBeLessThanOrEqual(60);
+      // The wordmark over the menu names the site, and the field over it says how to search.
+      expect(sentence).not.toContain(copy.appName);
+      expect(sentence).not.toMatch(/search/iu);
     }
-    expect(copy.about.what).toMatch(/^Snowlight maps /u);
-    expect(copy.about.how).toMatch(/^Search /u);
+  });
+
+  it('names the menu’s parts, what they set and what they count', () => {
+    expect(copy.menu.label).toBe('Menu');
+    expect([copy.menu.today, copy.menu.all]).toEqual(['Today', 'All']);
+    expect([copy.menu.kinds, copy.menu.public, copy.menu.private]).toEqual([
+      'Schools',
+      'Public',
+      'Private',
+    ]);
+    expect(copy.menu.onMap).toBe('On the map');
+    expect([copy.menu.schools, copy.menu.districts]).toEqual(['Schools', 'Districts']);
+    expect(copy.trackRecord.caption).toBe('Days with no school');
   });
 
   it.each(strings)('%s follows the house style', (_key, text) => {

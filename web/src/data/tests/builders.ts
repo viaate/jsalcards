@@ -11,6 +11,8 @@ export interface TestSchool {
   readonly lat: number;
   /** Position in the districts list, or -1. */
   readonly district: number;
+  /** Kind flags (0x01 private); 0, a public school, when not given. */
+  readonly kind?: number;
 }
 
 export const GENERATED_ON = '2026-01-05';
@@ -44,7 +46,7 @@ export function testPoints(schools: readonly TestSchool[], districtCount: number
     view.setInt32(at, Math.round(school.lon * 1e6), true);
     view.setInt32(at + 4, Math.round(school.lat * 1e6), true);
     view.setUint32(at + 8, school.district < 0 ? 0xffffffff : school.district, true);
-    view.setUint8(at + 12, 0);
+    view.setUint8(at + 12, school.kind ?? 0);
   });
   return bytes;
 }

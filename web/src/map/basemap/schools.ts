@@ -40,6 +40,7 @@ import type {
   VectorSourceSpecification,
 } from 'maplibre-gl';
 
+import type { MapFilter } from '../../state/filter';
 import { MAP_FONTS } from './fonts';
 import { BASEMAP_IDS, SCHOOLS_TILE_LAYER, SCHOOL_LIT_STATE, SCHOOL_TILES_PROTOCOL } from './ids';
 
@@ -268,6 +269,42 @@ const RING_RADIUS: readonly (readonly [zoom: number, px: number])[] = [
 /** The filter that picks the school with this id, or none for null. */
 export function selectedSchoolFilter(id: string | null): FilterSpecification {
   return ['==', ['get', 'id'], id ?? ''];
+}
+
+/**
+ * The school layers the menu's choice of kinds applies to: the dots, their
+ * light, the names and the space each dot keeps. The open school's ring is
+ * not among them.
+ */
+export const SCHOOL_KIND_LAYERS: readonly string[] = Object.freeze([
+  BASEMAP_IDS.schoolDots,
+  BASEMAP_IDS.schoolLight,
+  BASEMAP_IDS.schoolNames,
+  BASEMAP_IDS.schoolSpace,
+]);
+
+/** A private school's feature: its kind flags (the tiles' `kind`) have 0x01 set. */
+const PRIVATE_SCHOOL: ExpressionSpecification = [
+  '==',
+  ['%', ['to-number', ['get', 'kind'], 0], 2],
+  1,
+];
+
+/**
+ * The filter that keeps the schools of the kinds the menu shows, and the
+ * school whose panel is open whatever its kind; none, every school as the
+ * style has it, when it shows both.
+ */
+export function schoolKindFilter(
+  kinds: Pick<MapFilter, 'public' | 'private'>,
+  selected: string | null,
+): FilterSpecification | null {
+  if (kinds.public && kinds.private) return null;
+  const keep: ExpressionSpecification[] = [];
+  if (kinds.public) keep.push(['!', PRIVATE_SCHOOL]);
+  if (kinds.private) keep.push(PRIVATE_SCHOOL);
+  if (selected !== null) keep.push(['==', ['get', 'id'], selected]);
+  return keep.length === 0 ? false : ['any', ...keep];
 }
 
 /**

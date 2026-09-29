@@ -9,12 +9,14 @@
 
 import { DATA_FILES } from 'virtual:snowlight/data-files';
 
-import type { StatusCounts } from '../data/closings';
+import type { LitSchools, StatusCounts } from '../data/closings';
 import type { DirectorySource } from '../data/directory';
 import { DATA_PATHS, createDataFiles, dataRootFor } from '../data/files';
 import type { DataFiles } from '../data/files';
 import type { MapView } from '../map/basemap/bounds';
 import type { Glow } from '../map/glow-mount';
+import { SHOW_ALL, sameFilter } from '../state/filter';
+import type { MapFilter } from '../state/filter';
 import type { Selection } from '../state/url';
 import { PUBLISHED_PATHS } from '../types/generated';
 import type { UtcInstant } from '../types/generated';
@@ -84,38 +86,63 @@ export async function locate(
 export interface LiveGlowListeners {
   /** The generated_at of the file shown (null when none is), for the update time. */
   readonly onShown?: (generatedAt: UtcInstant | null) => void;
-  /** How many schools are lit in each status (null while none is), for the legend. */
+  /**
+   * How many schools are lit in each status, of the kinds the menu's filter
+   * shows (null while none is lit), for the legend and the menu.
+   */
   readonly onCounts?: (counts: StatusCounts | null) => void;
 }
+
+/** The live glow, running. */
+export interface LiveGlow {
+  /** Shows the lit schools this filter keeps, at once and without a pulse, and counts them. */
+  filter(filter: MapFilter): void;
+  stop(): void;
+}
+
+const NOT_LIVE: LiveGlow = Object.freeze({ filter: () => undefined, stop: () => undefined });
 
 /**
  * Lights today's affected schools on the glow, and keeps them current: a
  * build without live/closings.json never asks for it, and nothing glows.
- * Returns the function that stops it.
+ * The menu's filter (`filter`, and later changes to it) picks which of them
+ * light; the counts are of the schools of the kinds it shows.
  */
 export async function startLiveGlow(
   data: AppData,
   glow: Promise<Glow | null>,
   { onShown, onCounts }: LiveGlowListeners = {},
-): Promise<() => void> {
-  if (!data.files.has(PUBLISHED_PATHS.closings)) return () => undefined;
-  const [{ closingsUrl, startLive }, { onDataUpdate }] = await Promise.all([
-    import('../data/live'),
-    import('../pwa/data'),
-  ]);
+  filter: MapFilter = SHOW_ALL,
+): Promise<LiveGlow> {
+  if (!data.files.has(PUBLISHED_PATHS.closings)) return NOT_LIVE;
+  const [{ closingsUrl, startLive }, { onDataUpdate }, { countShown, filterLit, sameCounts }] =
+    await Promise.all([import('../data/live'), import('../pwa/data'), import('../data/closings')]);
+  let shown = filter;
+  /** The schools lit last, before the filter; null until the first. */
+  let lit: LitSchools | null = null;
+  let counted: StatusCounts | null = null;
+  const count = (): void => {
+    const next = lit === null ? null : countShown(lit, shown);
+    if (sameCounts(next, counted)) return;
+    counted = next;
+    onCounts?.(next);
+  };
+  const light = (next: LitSchools, pulse: boolean): void => {
+    const picked = filterLit(next, shown, pulse);
+    void glow.then((layer) => {
+      layer?.light(picked);
+    });
+  };
   const live = startLive({
     files: data.files,
     directory: async (stamp) => (await (await data.directories())?.get(stamp)) ?? null,
-    onLight: (lit) => {
-      void glow.then((layer) => {
-        layer?.light(lit);
-      });
+    onLight: (next) => {
+      lit = next;
+      light(next, true);
+      count();
     },
     onShown: (generatedAt) => {
       onShown?.(generatedAt);
-    },
-    onCounts: (counts) => {
-      onCounts?.(counts);
     },
   });
   const url = closingsUrl(data.files);
@@ -123,8 +150,17 @@ export async function startLiveGlow(
   const stopUpdates = onDataUpdate((updated) => {
     if (updated === url) void live.refresh();
   });
-  return () => {
-    live.stop();
-    stopUpdates();
+  return {
+    filter(next) {
+      if (sameFilter(next, shown)) return;
+      shown = next;
+      if (lit === null) return;
+      light(lit, false);
+      count();
+    },
+    stop() {
+      live.stop();
+      stopUpdates();
+    },
   };
 }

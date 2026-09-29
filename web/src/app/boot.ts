@@ -24,8 +24,10 @@ import type { Glow } from '../map/glow-mount';
 import { keepClicks } from '../map/kept-clicks';
 import type { SchoolHit, SchoolTaps } from '../map/school-taps';
 import type { SearchHit } from '../search';
-import { createPinStore } from '../state/pin';
-import type { PinStore } from '../state/pin';
+import { SHOW_ALL } from '../state/filter';
+import type { MapFilter } from '../state/filter';
+import { createPinStore } from '../state/pin-store';
+import type { PinStore } from '../state/pin-store';
 import type { Selection } from '../state/url';
 import type { UrlStore } from '../state/url-store';
 import type { SchoolId, UtcInstant } from '../types/generated';
@@ -33,11 +35,13 @@ import type { StatusCounts } from '../data/closings';
 import type { DetailsSource } from '../data/details';
 import { DATA_PATHS } from '../data/files';
 import { createAppData, locate, startLiveGlow } from './data';
-import type { AppData, Target } from './data';
+import type { AppData, LiveGlow, Target } from './data';
 import { clearOfPanel, openArea } from './frame';
 import type { Screen } from './frame';
 import { createSearchController, nearView, searchOptions } from './search';
 import type { SearchController, SearchOption } from './search';
+import type { MenuView } from './menu';
+import type { Menu } from '../ui/menu-host';
 import type { SchoolHint, SchoolView, WatchOptions } from './school';
 import { startServiceWorker } from './service-worker';
 import { selectionForHit, startupSelection, viewForHit } from './startup';
@@ -47,6 +51,8 @@ export type { StatusCounts } from '../data/closings';
 export type { SchoolHit } from '../map/school-taps';
 export type { Target } from './data';
 export type { SearchOption } from './search';
+export type { MenuView } from './menu';
+export type { MapFilter } from '../state/filter';
 export type { NearbyView, SchoolHint, SchoolView } from './school';
 
 export interface BootOptions {
@@ -83,7 +89,10 @@ export interface BootOptions {
   readonly onResults: (options: readonly SearchOption[] | null) => void;
   /** The generated_at of the live file the map shows, for the update time; null when none is. */
   readonly onUpdated?: (generatedAt: UtcInstant | null) => void;
-  /** How many schools the map lights in each status, for the legend; null while none is lit. */
+  /**
+   * How many schools the map lights in each status, of the kinds the menu's
+   * filter shows, for the legend and the menu; null while none is lit.
+   */
   readonly onCounts?: (counts: StatusCounts | null) => void;
   /**
    * A school clicked or tapped on the map, its dot, its name or its light:
@@ -122,6 +131,23 @@ export interface Services {
   ): () => void;
   /** The pinned school ("My school"). */
   readonly pins: PinStore;
+  /**
+   * What the menu shows beside About (app/menu.ts), read once, the first
+   * time the menu opens; a part whose file this build does not ship, or that
+   * cannot be read, is left out.
+   */
+  menu(): Promise<MenuView>;
+  /**
+   * Opens the menu under the search field from its button, or closes it; its
+   * code loads with the first press (ui/menu-host.ts). `counts` gives how many
+   * schools the map lights in each status, for its rows.
+   */
+  toggleMenu(button: HTMLElement, counts: () => StatusCounts | null): void;
+  /**
+   * Shows only what the menu's filter keeps: the lit schools of its status
+   * and kinds on the glow, the school dots and names of its kinds on the map.
+   */
+  filter(filter: MapFilter): void;
 }
 
 /** A view, as it shows a place clear of what the page puts over the map for what it opens. */
@@ -168,30 +194,44 @@ export function boot(options: BootOptions): Services {
     return nearView(basemap.view, container.clientWidth, container.clientHeight);
   };
   const glow = options.glow;
-  let stopLive: () => void = () => undefined;
+  let live: LiveGlow | null = null;
+  /** The menu's filter, kept for the live glow while it starts: everything, as every visit opens. */
+  let filter: MapFilter = SHOW_ALL;
   void glow.then(async (layer) => {
     if (layer === null || aborted()) return;
-    stopLive = await startLiveGlow(data, glow, {
-      onShown: (generatedAt) => {
-        if (!aborted()) options.onUpdated?.(generatedAt);
+    const started = await startLiveGlow(
+      data,
+      glow,
+      {
+        onShown: (generatedAt) => {
+          if (!aborted()) options.onUpdated?.(generatedAt);
+        },
+        // Once the page's face has loaded, so the counts are set in the face they keep. One
+        // promise, so counts heard later are passed on later.
+        onCounts: (counts) => {
+          void document.fonts.ready.then(() => {
+            if (!aborted()) options.onCounts?.(counts);
+          });
+        },
       },
-      // Once the page's face has loaded, so the counts are set in the face they keep. One
-      // promise, so counts heard later are passed on later.
-      onCounts: (counts) => {
-        void document.fonts.ready.then(() => {
-          if (!aborted()) options.onCounts?.(counts);
-        });
-      },
-    });
-    if (aborted()) stopLive();
+      filter,
+    );
+    live = started;
+    // A change made while it started.
+    started.filter(filter);
+    if (aborted()) started.stop();
   });
 
   // Once the map is on screen: installing the worker would otherwise run alongside its start.
   void startServiceWorker(warmUrls, options.map);
 
+  /** The menu, started the first time its button is pressed (ui/menu-host.ts). */
+  let menuHost: Promise<Menu | null> | null = null;
+
   signal.addEventListener('abort', () => {
+    void menuHost?.then((menu) => menu?.destroy());
     taps?.stop();
-    stopLive();
+    live?.stop();
     search.destroy();
     pins.destroy();
     void glow.then((layer) => {
@@ -212,6 +252,8 @@ export function boot(options: BootOptions): Services {
     return schoolCode;
   };
 
+  /** The menu's view, read the first time the menu opens. */
+  let menuView: Promise<MenuView> | null = null;
   // Clicks on schools, from the moment the map takes input. Until their code is in (it loads
   // on the first click, or once the map is on screen) each is kept, and handed on only if the
   // map has not moved since (map/kept-clicks.ts). A lit school is found in the glow's own data,
@@ -270,9 +312,46 @@ export function boot(options: BootOptions): Services {
       .catch(() => undefined);
   }
 
-  return {
+  const services: Services = {
     searchable: data.files.has(DATA_PATHS.searchIndex),
     pins,
+    filter(next) {
+      filter = next;
+      live?.filter(next);
+      // The dots and names, on the map as soon as it takes input (it keeps them for layers to come).
+      void (options.mapCreated ?? options.map).then((map) => map?.showSchools(next));
+    },
+    toggleMenu(button, counts) {
+      menuHost ??= import('../ui/menu-host').then(
+        ({ startMenu }) =>
+          startMenu({
+            button,
+            read: () => services.menu(),
+            show: (next) => {
+              services.filter(next);
+            },
+            map: () => basemap,
+            counts,
+          }),
+        () => null,
+      );
+      void menuHost.then((menu) => {
+        // Its code could not load: the next press tries again.
+        if (menu === null) menuHost = null;
+        else menu.toggle();
+      });
+    },
+    menu() {
+      if (menuView === null) {
+        const reading = import('./menu').then(({ readMenu }) => readMenu(data.files));
+        menuView = reading;
+        // Its code could not load (offline, a deploy in flight): About alone, and the next open tries again.
+        reading.catch(() => {
+          if (menuView === reading) menuView = null;
+        });
+      }
+      return menuView.catch(() => ({ season: null, record: null, map: null }));
+    },
     watchSchool(id, hint, onView) {
       let stop: (() => void) | null = null;
       let stopped = false;
@@ -311,6 +390,7 @@ export function boot(options: BootOptions): Services {
       options.show({ view });
     },
   };
+  return services;
 }
 
 /** A selection the app opened by itself (a link or the pin): go to it once it is placed. */

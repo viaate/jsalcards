@@ -134,18 +134,19 @@
   }
 
   /*
-    Beside the search field, the line keeps to the room right of it (the
-    strip's width less the wordmark, the gaps and the widest field), and never
-    less than the room the strip keeps for it. Longer than that room (a narrow
-    window, offline, a file from another day), it wraps to two balanced lines,
-    both inside the strip, rather than run under the field.
+    Beside the search field and the menu's button after it, the line keeps to
+    the room right of them (the strip's width less the wordmark, the gaps, the
+    widest field and the button), and never less than the room the strip keeps
+    for it. Longer than that room (a narrow window, offline, a file from
+    another day), it wraps to two balanced lines, both inside the strip,
+    rather than run under the field or the button.
   */
   @media (min-width: 720px) {
     .updated {
       max-width: max(
         var(--side-width),
         100vw - var(--inset-left) - var(--inset-right) - 2 * var(--edge) - var(--brand-width) - 2 *
-          var(--brand-gap) - var(--field-width)
+          var(--brand-gap) - var(--field-width) - var(--menu-room)
       );
       white-space: normal;
       text-align: right;
@@ -156,11 +157,29 @@
     }
   }
 
-  /* On a phone the line sits across from the wordmark, over the search field's right end. */
+  /*
+    On a phone the line sits across from the wordmark, just before the menu's
+    button at the right end of that line, its words 12px clear of it. Longer
+    than the room between the two (offline, a file from another day), it wraps
+    to two balanced lines there rather than run into the wordmark.
+  */
   @media (max-width: 719px) {
     .updated {
+      right: calc(var(--inset-right) + var(--edge) + var(--menu-size) + 8px);
+      max-width: calc(
+        100vw - var(--inset-left) - var(--inset-right) - 2 * var(--edge) - var(--menu-size) - 8px -
+          var(--phone-brand-room)
+      );
       height: var(--brand-line);
       padding: 0 4px 0 0;
+      white-space: normal;
+      text-align: right;
+      /* The wordmark as a phone sets it, and the gap kept after it. */
+      --phone-brand-room: 124px;
+    }
+
+    time {
+      text-wrap: balance;
     }
   }
 

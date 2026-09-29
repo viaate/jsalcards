@@ -19,7 +19,7 @@ const SCHOOLS: TestSchool[] = [
   { id: '010000500870', name: 'First', lon: -86.8, lat: 33.5, district: 0 },
   { id: '010000500871', name: 'Second', lon: -86.6, lat: 33.7, district: 0 },
   { id: '290000000001', name: 'Third', lon: -94.5, lat: 39.1, district: 1 },
-  { id: 'A1902690', name: 'Fourth', lon: -94.593001, lat: 39.03606, district: -1 },
+  { id: 'A1902690', name: 'Fourth', lon: -94.593001, lat: 39.03606, district: -1, kind: 1 },
 ];
 const DISTRICTS = ['0100005', '2900001'];
 
@@ -54,6 +54,10 @@ describe('points.bin', () => {
     expect(found.lngLat[6]).toBeCloseTo(-94.593001, 6);
     expect(found.lngLat[7]).toBeCloseTo(39.03606, 6);
     expect([...found.district]).toEqual([0, 0, 1, -1]);
+  });
+
+  it("keeps each school's kind flags: the last one here is private", () => {
+    expect([...directory().kind]).toEqual([0, 0, 0, 1]);
   });
 
   it('refuses bytes that are not the same directory', () => {

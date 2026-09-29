@@ -137,7 +137,7 @@
   const GLYPHS = ['is-closed', 'is-delayed', 'is-remote', 'is-early-dismissal'] as const;
 
   /** The page's controls over the map, which its labels keep clear of (the results list aside). */
-  const CONTROLS = '.wordmark, .search, .updated, .legend, .locate, .detail';
+  const CONTROLS = '.wordmark, .search, .menu-button, .updated, .legend, .locate, .detail, .menu';
 
   /**
    * Loads MapLibre after the first paint and hands the view over from the
@@ -384,6 +384,19 @@
 
   function closeSchool(): void {
     urls?.select(null);
+  }
+
+  /**
+   * Opens or closes the menu, which the app's services keep: what it shows and
+   * what it has the map show (ui/menu-host.ts).
+   */
+  function toggleMenu(event: MouseEvent): void {
+    // The search results give way to it.
+    focused = false;
+    const button = event.currentTarget as HTMLElement;
+    void services.then((app) => {
+      app?.toggleMenu(button, () => counts);
+    });
   }
 
   function togglePin(): void {
@@ -685,6 +698,20 @@
         </button>
       {/if}
     </form>
+    <!--
+      The menu: what the map shows today and which schools, the season so far, the track record
+      and About. Its two lines cross while it is open, and a dot on it says the map shows less
+      than everything.
+    -->
+    <button
+      class="menu-button"
+      type="button"
+      aria-label={copy.menu.label}
+      aria-expanded="false"
+      onclick={toggleMenu}
+    >
+      <span class="menu-lines" aria-hidden="true"></span>
+    </button>
     {#if Results !== null && expanded}
       <Results
         id={LIST_ID}

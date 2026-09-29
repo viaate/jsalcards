@@ -1,7 +1,8 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
-import { PIN_KEY, createPinStore, decodePin, encodePin, readPin, writePin } from '../pin';
+import { PIN_KEY, decodePin, encodePin, readPin } from '../pin';
 import type { PinHost } from '../pin';
+import { createPinStore, writePin } from '../pin-store';
 
 const SCHOOL = '010000500870';
 const PRIVATE = 'A9106011';

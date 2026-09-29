@@ -711,6 +711,20 @@ test.describe('first paint, before any script', () => {
       expect(field.x + field.width, where).toBe(viewport.width - 16);
       expect(field.height, where).toBeGreaterThanOrEqual(48);
 
+      // The menu's button across from the wordmark, on its line at the right edge, clear of the field.
+      const menu = await box(page, 'button.menu-button');
+      await expect(page.locator('button.menu-button')).toHaveAttribute(
+        'aria-label',
+        copy.menu.label,
+      );
+      expect(menu.width, where).toBe(36);
+      expect(menu.height, where).toBe(36);
+      expect(viewport.width - (menu.x + menu.width), where).toBe(16);
+      expect(Math.abs(menu.y + menu.height / 2 - (name.y + name.height / 2)), where).toBeLessThan(
+        1,
+      );
+      expect(menu.y + menu.height, where).toBeLessThanOrEqual(field.y - 4);
+
       // The key sits at the foot of the screen, clear of the attribution's corner: one line
       // where it fits, two tidy lines of two on the narrowest phones.
       const legend = await box(page, 'ul.legend');
@@ -788,17 +802,28 @@ test.describe('first paint, before any script', () => {
 
         // The field starts where the name's slot and the gap after it end, whatever the face
         // (so a font swap never moves it), and narrows before the 180px kept at the right for
-        // the update time does. The name sits clear of it, on its line.
+        // the update time does, as it does for the menu's button after it (10px on, 44px wide,
+        // 12px clear of the time). The name sits clear of it, on its line.
         const name = await box(page, 'h1.wordmark');
         const field = await box(page, '.search');
         expect(name.x, where).toBe(20);
         expect(field.x, where).toBe(20 + 84 + 20);
-        expect(field.width, where).toBe(Math.min(400, viewport.width - 40 - 84 - 40 - 180));
+        expect(field.width, where).toBe(
+          Math.min(400, viewport.width - 40 - 84 - 20 - (10 + 44 + 12) - 180),
+        );
         expect(name.x + name.width, where).toBeLessThanOrEqual(field.x - 8);
         expect(
           Math.abs(name.y + name.height / 2 - (field.y + field.height / 2)),
           where,
         ).toBeLessThan(1);
+        // The menu's button just after the field, as tall as it and level with it.
+        const menu = await box(page, 'button.menu-button');
+        expect(menu.x, where).toBe(field.x + field.width + 10);
+        expect([menu.y, menu.width, menu.height], where).toEqual([
+          field.y,
+          field.height,
+          field.height,
+        ]);
         await context.close();
       }
     }
@@ -1074,7 +1099,8 @@ test.describe('handover to the WebGL map', () => {
     expect(entry).toBeDefined();
     const entryJs = await (await request.get(entry ?? '')).text();
     // MapLibre alone is about 800 kB. The entry is the shell, Svelte and the copy module,
-    // whose formatters (the update time's among them) come with it wherever they are used.
+    // whose formatters (the update time's among them) come with it wherever they are used. The
+    // menu's button is in it; the menu itself, and what it reads, load with the first press.
     expect(entryJs.length).toBeLessThan(75_000);
     expect(entryJs).not.toMatch(/maplibregl-/);
 

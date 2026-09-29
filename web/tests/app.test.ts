@@ -1,5 +1,5 @@
 import { flushSync, mount, unmount } from 'svelte';
-import { afterEach, describe, expect, it } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 
 import App from '../src/App.svelte';
 import { STATUS_KEYS, copy } from '../src/copy';
@@ -149,6 +149,120 @@ describe('App', () => {
       Reflect.deleteProperty(navigator, 'geolocation');
     }
   });
+
+  it(
+    'opens the menu from its button beside the field, and Escape or a press elsewhere closes it',
+    {
+      timeout: 30_000,
+    },
+    async () => {
+      const target = document.createElement('div');
+      document.body.append(target);
+      app = mount(App, { target });
+      flushSync();
+
+      const stage = target.querySelector<HTMLElement>('main.stage');
+      const button = target.querySelector<HTMLButtonElement>('header.bar button.menu-button');
+      if (button === null || stage === null) throw new Error('no menu button');
+      expect(button.getAttribute('aria-label')).toBe(copy.menu.label);
+      expect(button.getAttribute('aria-expanded')).toBe('false');
+      expect(button.hasAttribute('aria-controls')).toBe(false);
+      expect(button.textContent.trim()).toBe('');
+      // Just after the search field in the top strip.
+      expect(button.previousElementSibling?.classList.contains('search')).toBe(true);
+      /** Waits until the page says so, as the menu's code and the app's services come in. */
+      const until = async (check: () => boolean): Promise<void> => {
+        await vi.waitFor(
+          () => {
+            flushSync();
+            if (!check()) throw new Error('not yet');
+          },
+          { timeout: 20_000, interval: 20 },
+        );
+      };
+      const panel = (): HTMLElement | null => target.querySelector<HTMLElement>('aside.menu');
+
+      // Pressed, it opens the menu, which takes focus once it shows: what the map shows, and About.
+      button.focus();
+      button.click();
+      await until(() => panel() !== null);
+      const menu = panel();
+      if (menu === null) throw new Error('no menu');
+      expect(button.getAttribute('aria-expanded')).toBe('true');
+      expect(button.getAttribute('aria-controls')).toBe(menu.id);
+      expect(document.activeElement).toBe(menu);
+      expect([...menu.querySelectorAll('h2')].map((heading) => heading.textContent)).toEqual([
+        copy.menu.today,
+        copy.menu.kinds,
+      ]);
+      expect(menu.querySelector('.item.is-on .name')?.textContent).toBe(copy.menu.all);
+
+      // One status shown: the stage says which, for the key to step back from the others, and
+      // that the map shows less than everything, for the dot on the button; all four again, and
+      // it is as it was.
+      expect(stage.hasAttribute('data-status')).toBe(false);
+      expect(stage.hasAttribute('data-filtered')).toBe(false);
+      menu.querySelectorAll<HTMLInputElement>('input[type="radio"]')[1]?.click();
+      flushSync();
+      expect(menu.querySelector('.item.is-on .name')?.textContent).toBe(copy.status.closed);
+      expect(stage.dataset.status).toBe('0');
+      expect(stage.hasAttribute('data-filtered')).toBe(true);
+      menu.querySelectorAll<HTMLInputElement>('input[type="radio"]')[0]?.click();
+      flushSync();
+      expect(stage.hasAttribute('data-status')).toBe(false);
+      expect(stage.hasAttribute('data-filtered')).toBe(false);
+      // A kind of school hidden is a filter too.
+      menu.querySelectorAll<HTMLInputElement>('input[type="checkbox"]')[1]?.click();
+      flushSync();
+      expect(stage.hasAttribute('data-filtered')).toBe(true);
+      expect(stage.hasAttribute('data-status')).toBe(false);
+      menu.querySelectorAll<HTMLInputElement>('input[type="checkbox"]')[1]?.click();
+      flushSync();
+      expect(stage.hasAttribute('data-filtered')).toBe(false);
+
+      // Escape closes it, and the keyboard goes back to the button.
+      const escape = new KeyboardEvent('keydown', {
+        key: 'Escape',
+        bubbles: true,
+        cancelable: true,
+      });
+      menu.dispatchEvent(escape);
+      flushSync();
+      expect(escape.defaultPrevented).toBe(true);
+      expect(panel()).toBeNull();
+      expect(button.getAttribute('aria-expanded')).toBe('false');
+      expect(button.hasAttribute('aria-controls')).toBe(false);
+      expect(document.activeElement).toBe(button);
+
+      // Open again, a press on the map closes it and moves no focus.
+      button.click();
+      await until(() => panel() !== null);
+      target
+        .querySelector('.map')
+        ?.dispatchEvent(new PointerEvent('pointerdown', { bubbles: true }));
+      flushSync();
+      expect(panel()).toBeNull();
+
+      // The button toggles it, and going to search closes it.
+      button.click();
+      await until(() => panel() !== null);
+      button.click();
+      await until(() => panel() === null);
+      button.click();
+      await until(() => panel() !== null);
+      target.querySelector<HTMLInputElement>('input.search-input')?.focus();
+      flushSync();
+      expect(panel()).toBeNull();
+      expect(button.getAttribute('aria-expanded')).toBe('false');
+
+      // Back or Forward (a school opening or closing) closes it too.
+      button.click();
+      await until(() => panel() !== null);
+      window.dispatchEvent(new PopStateEvent('popstate'));
+      flushSync();
+      expect(panel()).toBeNull();
+    },
+  );
 
   it('shows no update time until a live file is shown', () => {
     const target = document.createElement('div');

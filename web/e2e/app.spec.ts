@@ -14,7 +14,8 @@
  *   school directory gives them. Its directory holds those two schools as the
  *   pipeline wrote them. Its closings file is SYNTHETIC: no real closings exist
  *   in September, so the two statuses are made up for this test and live only
- *   in the temporary folder while it runs.
+ *   in the temporary folder while it runs. So are its season stats and track
+ *   record, for the menu: the pipeline publishes neither yet.
  *
  * Runs once, under the desktop project; tests set their own viewports.
  * WebGL here is SwiftShader, whose frames are slow, and a page's first flight
@@ -38,7 +39,7 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 import { devices, expect, test } from '@playwright/test';
-import type { Page } from '@playwright/test';
+import type { Locator, Page } from '@playwright/test';
 import { build, preview } from 'vite';
 import type { PreviewServer } from 'vite';
 
@@ -290,6 +291,106 @@ test.describe('with no data shipped', () => {
     ).toEqual([]);
     expect(problems).toEqual([]);
     await context.close();
+  });
+
+  test('the menu opens from its button beside the field: what the map shows and About, asking nothing of data/', async ({
+    browser,
+  }) => {
+    for (const viewport of [
+      { width: 1440, height: 900 },
+      { width: 390, height: 844 },
+    ]) {
+      const where = `${String(viewport.width)}x${String(viewport.height)}`;
+      const context = await browser.newContext({ viewport });
+      const page = await context.newPage();
+      const { problems, requests } = watch(page);
+      await page.goto('/');
+      await waitForMap(page);
+      const button = page.getByRole('button', { name: copy.menu.label, exact: true });
+      await expect(button).toHaveAttribute('aria-expanded', 'false');
+
+      await button.click();
+      const menu = page.locator('aside.menu');
+      await expect(menu).toBeVisible();
+      await expect(button).toHaveAttribute('aria-expanded', 'true');
+      await expect(button).toHaveAttribute('aria-controls', (await menu.getAttribute('id')) ?? '');
+      await expect(menu).toBeFocused();
+      await expect(menu).toHaveAttribute('aria-label', copy.menu.label);
+      // Today's statuses and the kinds of school, then About: all four statuses in use on the
+      // pill, nothing counted, and nothing says there is nothing.
+      await expect(menu.locator('h2')).toHaveText([copy.menu.today, copy.menu.kinds]);
+      await expect(menu.locator('.item .name')).toHaveText([
+        copy.menu.all,
+        ...STATUS_KEYS.map((key) => copy.status[key]),
+        copy.menu.public,
+        copy.menu.private,
+        copy.nav.about,
+      ]);
+      await expect(menu.locator('.item.is-on .name')).toHaveText([copy.menu.all]);
+      await expect(menu.getByRole('radio', { name: copy.menu.all })).toBeChecked();
+      await expect(menu.getByRole('checkbox', { name: copy.menu.public })).toBeChecked();
+      await expect(menu.getByRole('checkbox', { name: copy.menu.private })).toBeChecked();
+      await expect(menu.locator('.value:not(:empty)')).toHaveCount(0);
+      expect(await menu.textContent()).not.toMatch(/not enough|no data/iu);
+      await expectMenuGrid(menu, viewport.width >= 720 ? 40 : 44, where);
+
+      // Under the field and lined up with it (at a desktop's size its left edge on the field's),
+      // clear of the key at the foot of the screen, and nothing on it moved.
+      const field = await page.locator('.search').boundingBox();
+      const panel = await menu.boundingBox();
+      const legend = await page.locator('ul.legend').boundingBox();
+      if (field === null || panel === null || legend === null) throw new Error('no box');
+      expect(panel.y, where).toBe(field.y + field.height + 8);
+      if (viewport.width >= 720) {
+        expect(panel.x, where).toBe(field.x);
+        expect(panel.x, where).toBe(124);
+        expect(panel.width, where).toBeLessThan(field.width);
+        expect(panel.y + panel.height, where).toBeLessThan(legend.y);
+      } else {
+        expect(panel.x, where).toBe(field.x);
+        expect(panel.width, where).toBe(field.width);
+      }
+      expect(await layoutShifts(page), where).toEqual([]);
+
+      // About opens its page: what the site is and how to read its lights, nothing counted, and
+      // the way back, which goes back to the list and to About's row.
+      await menu.getByRole('button', { name: copy.nav.about }).click();
+      const back = menu.getByRole('button', { name: copy.detail.back, exact: true });
+      await expect(back).toBeFocused();
+      await expect(menu.locator('.lead')).toHaveText(copy.about.what);
+      await expect(menu.locator('.text')).toHaveText([copy.about.glow]);
+      await expect(menu.locator('dl, table')).toHaveCount(0);
+      await back.click();
+      await expect(menu.getByRole('button', { name: copy.nav.about })).toBeFocused();
+
+      // One status chosen: its row takes the pill, the key steps back from the others, and the
+      // button says the map shows less than everything; all four again, and it is as it was.
+      await menu.locator('label.item', { hasText: copy.status.closed }).click();
+      await expect(menu.locator('.item.is-on .name')).toHaveText([copy.status.closed]);
+      await expect.poll(() => keyMarks(page)).toEqual([1, 0.4, 0.4, 0.4]);
+      await expect.poll(() => filteredDot(page)).toBe(true);
+      await menu.locator('label.item', { hasText: copy.menu.all }).click();
+      await expect.poll(() => keyMarks(page)).toEqual([1, 1, 1, 1]);
+      await expect.poll(() => filteredDot(page)).toBe(false);
+
+      // Escape closes it and gives the keyboard back to the button.
+      await page.keyboard.press('Escape');
+      await expect(menu).toHaveCount(0);
+      await expect(button).toHaveAttribute('aria-expanded', 'false');
+      await expect(button).toBeFocused();
+
+      // A press on the map closes it too, and it opens again on its list.
+      await button.click();
+      await expect(menu).toBeVisible();
+      await expect(menu.locator('h2')).toHaveText([copy.menu.today, copy.menu.kinds]);
+      await page.mouse.click(viewport.width - 60, viewport.height - 150);
+      await expect(menu).toHaveCount(0);
+
+      await page.waitForTimeout(500);
+      expect(requests.filter((url) => new URL(url).pathname.includes('/data/'))).toEqual([]);
+      expect(problems).toEqual([]);
+      await context.close();
+    }
   });
 
   test('search takes text and shows nothing, says nothing, and loads no index', async ({
@@ -601,6 +702,44 @@ function syntheticClosings(): string {
   });
 }
 
+/** SYNTHETIC: a made-up season for the menu, for this test only, adding up as the pipeline's must. */
+function syntheticSeason(): string {
+  return JSON.stringify({
+    schema_version: 1,
+    generated_at: '2026-01-12T12:42:00Z',
+    season: '2025-2026',
+    through: '2026-01-12',
+    days: [
+      ['2026-01-05', 1, 0, 0, 0],
+      ['2026-01-12', 1, 1, 0, 0],
+    ],
+    states: [['MO', 2, 1, 0, 0]],
+    schools: 2,
+    districts: 1,
+  });
+}
+
+/** SYNTHETIC: a made-up track record for the menu, for this test only. */
+function syntheticTrackRecord(): string {
+  const calibration = (given: number, happened: number) => ({
+    forecasts: given,
+    outcomes: happened,
+    bins: Array.from({ length: 10 }, (_, n) => [
+      n * 10,
+      n * 10 + 10,
+      n === 8 ? given : 0,
+      n === 8 ? happened : 0,
+    ]),
+  });
+  return JSON.stringify({
+    schema_version: 1,
+    generated_at: '2026-01-12T12:42:00Z',
+    first_day: '2026-01-05',
+    last_day: '2026-01-12',
+    leads: [{ lead_days: 1, no_school: calibration(4, 3), delay: calibration(0, 0) }],
+  });
+}
+
 async function freePort(): Promise<number> {
   return new Promise((resolve, reject) => {
     const server = createServer();
@@ -613,6 +752,123 @@ async function freePort(): Promise<number> {
       });
     });
   });
+}
+
+/** How brightly the key at the foot of the screen draws each status's mark, in code order. */
+async function keyMarks(page: Page): Promise<number[]> {
+  return page
+    .locator('ul.legend .glyph')
+    .evaluateAll((marks) => marks.map((mark) => Number(getComputedStyle(mark).opacity)));
+}
+
+/** Whether the menu's button carries its dot: the map shows less than everything. */
+async function filteredDot(page: Page): Promise<boolean> {
+  return page
+    .locator('button.menu-button')
+    .evaluate((button) => getComputedStyle(button, '::before').content !== 'none');
+}
+
+/** Where the menu's rows put things, in px from the panel's left edge, each as the distinct values found. */
+interface MenuGrid {
+  /** Each row's height. */
+  heights: number[];
+  /** Each row's 16px icon: its left edge, width and height. */
+  icons: number[];
+  iconSizes: string[];
+  /** Where each row's name starts, and each line and label on a page. */
+  names: number[];
+  /** Where each row's count, arrow or value ends. */
+  ends: number[];
+  /** Where each heading's words start. */
+  headings: number[];
+  /** The pill around the row in use: its corner radius against its height, and whether it is filled. */
+  pills: string[];
+}
+
+async function menuGrid(menu: Locator): Promise<MenuGrid> {
+  return menu.evaluate((panel) => {
+    const origin = panel.getBoundingClientRect().left;
+    const at = (value: number): number => Math.round((value - origin) * 2) / 2;
+    const words = (element: Element): DOMRect | null => {
+      const range = document.createRange();
+      range.selectNodeContents(element);
+      const rect = range.getBoundingClientRect();
+      return rect.width > 0 ? rect : null;
+    };
+    const distinct = <T>(values: T[]): T[] => [...new Set(values)];
+    const rows = [...panel.querySelectorAll('.item, .row')];
+    const icons = rows
+      .map((row) => row.querySelector('.icon'))
+      .filter((icon) => icon !== null)
+      .map((icon) => icon.getBoundingClientRect());
+    const names = [
+      ...panel.querySelectorAll(
+        '.item .name, .line, dt, .record tbody th, .record thead th:first-child',
+      ),
+    ]
+      .map((element) => {
+        // A label on a page starts after the mark in its icon column.
+        const text = element.matches('dt') ? element.lastChild : element;
+        if (text === null) return null;
+        const range = document.createRange();
+        range.selectNodeContents(text);
+        if (text.nodeType === Node.TEXT_NODE) {
+          const content = text.textContent ?? '';
+          range.setStart(text, content.length - content.trimStart().length);
+        }
+        const rect = range.getBoundingClientRect();
+        return rect.width > 0 ? rect.left : null;
+      })
+      .filter((left) => left !== null);
+    const ends = [...panel.querySelectorAll('.value, .more, dd, .record td:last-child')]
+      .map((element) =>
+        element.matches('.more') ? element.getBoundingClientRect() : words(element),
+      )
+      .filter((rect) => rect !== null)
+      .map((rect) => at(rect.right));
+    const pills = [...panel.querySelectorAll('.item.is-on')].map((row) => {
+      const style = getComputedStyle(row);
+      return `${style.borderTopLeftRadius} of ${String(row.getBoundingClientRect().height)}, ${style.backgroundColor}`;
+    });
+    return {
+      heights: distinct(
+        rows.filter((row) => row.matches('.item')).map((row) => row.getBoundingClientRect().height),
+      ),
+      icons: distinct(icons.map((rect) => at(rect.left))),
+      iconSizes: distinct(icons.map((rect) => `${String(rect.width)}x${String(rect.height)}`)),
+      names: distinct(names.map(at)),
+      ends: distinct(ends),
+      headings: distinct(
+        [...panel.querySelectorAll('h2.label')]
+          .map(words)
+          .filter((rect) => rect !== null)
+          .map((rect) => at(rect.left)),
+      ),
+      pills,
+    };
+  });
+}
+
+/**
+ * The menu's one grid: every row the same height, its 16px icon in one column and its name in
+ * one column 28px after it, the headings' words over the icons, and every count, arrow or value
+ * ending at one right edge; the row in use on a filled pill as round as the row is tall.
+ */
+async function expectMenuGrid(menu: Locator, row: number, where: string): Promise<void> {
+  const grid = await menuGrid(menu);
+  expect(grid.heights, where).toEqual([row]);
+  expect(grid.iconSizes, where).toEqual(['16x16']);
+  expect(grid.icons, where).toHaveLength(1);
+  const [icon = 0] = grid.icons;
+  expect(grid.names, where).toEqual([icon + 28]);
+  expect(grid.headings, where).toEqual([icon]);
+  expect(grid.ends, where).toHaveLength(1);
+  expect(grid.pills.length, where).toBeLessThanOrEqual(1);
+  for (const pill of grid.pills) {
+    expect(pill, where).toMatch(
+      new RegExp(`^${String(row / 2)}px of ${String(row)}, rgb\\(42, 42, 42\\)$`, 'u'),
+    );
+  }
 }
 
 test.describe('with data staged', () => {
@@ -646,6 +902,9 @@ test.describe('with data staged', () => {
     writeFileSync(path.join(data, 'schools/meta.json'), directoryMeta());
     writeFileSync(path.join(data, 'schools/points.bin'), directoryPoints());
     writeFileSync(path.join(data, 'live/closings.json'), syntheticClosings());
+    mkdirSync(path.join(data, 'stats'), { recursive: true });
+    writeFileSync(path.join(data, 'stats/season.json'), syntheticSeason());
+    writeFileSync(path.join(data, 'track-record.json'), syntheticTrackRecord());
     mkdirSync(path.join(data, 'schools/details'), { recursive: true });
     const details = directoryDetails();
     writeFileSync(path.join(data, 'schools/details/index.json'), details.index);
@@ -687,8 +946,198 @@ test.describe('with data staged', () => {
       'schools/meta.json',
       'schools/points.bin',
       'search-index.bin',
+      'stats/season.json',
+      'track-record.json',
     ]);
     expect(statSync(path.join(root, 'site', 'data', 'search-index.bin')).size).toBeGreaterThan(0);
+  });
+
+  test('the menu counts today’s schools, and opens the season, the track record and About from their files', async ({
+    browser,
+  }) => {
+    const context = await browser.newContext({ viewport: { width: 1440, height: 900 } });
+    const page = await context.newPage();
+    await page.clock.setFixedTime(SYNTHETIC_NOW);
+    const { problems, requests } = watch(page);
+    await page.goto(site);
+    await waitForMap(page);
+    await expect.poll(async () => (await glowStats(page)).glowCount, { timeout: 30_000 }).toBe(2);
+    await page.getByRole('button', { name: copy.menu.label, exact: true }).click();
+    const menu = page.locator('aside.menu');
+    await expect(menu).toBeVisible();
+    await expect(menu.locator('h2')).toHaveText([copy.menu.today, copy.menu.kinds]);
+    // Today's schools as the live file lights them: one closed, one delayed.
+    const counted = async (): Promise<string[][]> =>
+      menu
+        .locator('.item')
+        .evaluateAll((found) =>
+          found.map((item) =>
+            [item.querySelector('.name'), item.querySelector('.value')].map(
+              (cell) => cell?.textContent.trim() ?? '',
+            ),
+          ),
+        );
+    expect(await counted()).toEqual([
+      [copy.menu.all, format.number(2)],
+      [copy.status.closed, format.number(1)],
+      [copy.status.delayed, format.number(1)],
+      [copy.status.remote, ''],
+      [copy.status.earlyDismissal, ''],
+      [copy.menu.public, ''],
+      [copy.menu.private, ''],
+      [copy.nav.seasonStats, ''],
+      [copy.nav.trackRecord, ''],
+      [copy.nav.about, ''],
+    ]);
+    await expectMenuGrid(menu, 40, 'list');
+    const panel = await menu.boundingBox();
+    if (panel === null) throw new Error('no box');
+    const list = await menuGrid(menu);
+
+    /** The rows of the page open: each label and its value (a table's cells in order). */
+    const rows = async (): Promise<string[][]> =>
+      menu
+        .locator('.row, tr')
+        .evaluateAll((found) =>
+          found.map((row) =>
+            [...row.children].map((cell) => cell.textContent.replace(/\s+/gu, ' ').trim()),
+          ),
+        );
+    const back = menu.getByRole('button', { name: copy.detail.back, exact: true });
+
+    // The season as its file counts it: two schools, one district, three school-days.
+    await menu.getByRole('button', { name: copy.nav.seasonStats }).click();
+    await expect(back).toBeFocused();
+    await expect(menu.locator('.title')).toHaveText(copy.nav.seasonStats);
+    await expect(menu.locator('.note')).toHaveText([
+      `${format.season('2025-2026')} · ${format.through('2026-01-12')}`,
+    ]);
+    expect(await rows()).toEqual([
+      [copy.season.schoolsAffected, '2'],
+      [copy.season.districtsAffected, '1'],
+      [copy.season.closures, '2'],
+      [copy.season.delays, '1'],
+      [copy.season.busiestDay, `${format.day('2026-01-12')} · ${format.schools(2)}`],
+    ]);
+    // On the list's grid: the labels in its text column, the values ending where its counts do.
+    const season = await menuGrid(menu);
+    expect(season.names).toEqual(list.names);
+    expect(season.ends).toEqual(list.ends);
+    await back.click();
+    await expect(menu.getByRole('button', { name: copy.nav.seasonStats })).toBeFocused();
+
+    // The track record: of the 4 days given 80–90% the day before, 3 had no school.
+    await menu.getByRole('button', { name: copy.nav.trackRecord }).click();
+    await expect(menu.locator('.title')).toHaveText(copy.nav.trackRecord);
+    await expect(menu.locator('.note')).toHaveText([format.span('2026-01-05', '2026-01-12')]);
+    await expect(menu.locator('caption')).toHaveText(copy.trackRecord.caption);
+    expect(await rows()).toEqual([
+      [copy.trackRecord.chanceGiven, format.lead(1)],
+      [format.percentRange(80, 90), format.outOf(3, 4)],
+    ]);
+    const record = await menuGrid(menu);
+    expect(record.names).toEqual(list.names);
+    expect(record.ends).toEqual(list.ends);
+    await back.click();
+
+    // About: what the site is, then what the map holds: the directory's two schools and one district.
+    await menu.getByRole('button', { name: copy.nav.about }).click();
+    await expect(menu.locator('.lead')).toHaveText(copy.about.what);
+    await expect(menu.locator('.note')).toHaveText([copy.menu.onMap]);
+    expect(await rows()).toEqual([
+      [copy.menu.schools, '2'],
+      [copy.menu.districts, '1'],
+    ]);
+    const about = await menuGrid(menu);
+    expect(about.names).toEqual(list.names);
+    expect(about.ends).toEqual(list.ends);
+
+    for (const file of ['stats/season.json', 'track-record.json', 'schools/details/index.json']) {
+      expect(
+        requests.some((url) => url.endsWith(`/data/${file}`)),
+        file,
+      ).toBe(true);
+    }
+    // Every page in the same place, no wider, and nothing on the page moved as it opened.
+    const after = await menu.boundingBox();
+    expect([after?.x, after?.y, after?.width]).toEqual([panel.x, panel.y, panel.width]);
+    expect(await layoutShifts(page)).toEqual([]);
+    expect(problems).toEqual([]);
+    await context.close();
+  });
+
+  test('the menu shows one status or all four, and public schools, private ones or both', async ({
+    browser,
+  }) => {
+    const context = await browser.newContext({ viewport: { width: 1440, height: 900 } });
+    const page = await context.newPage();
+    await page.clock.setFixedTime(SYNTHETIC_NOW);
+    const { problems } = watch(page);
+    await page.goto(site);
+    await waitForMap(page);
+    const lit = async (): Promise<number> => (await glowStats(page)).glowCount;
+    await expect.poll(lit, { timeout: 30_000 }).toBe(2);
+    const button = page.getByRole('button', { name: copy.menu.label, exact: true });
+    await button.click();
+    const menu = page.locator('aside.menu');
+    await expect(menu).toBeVisible();
+    const legend = page.locator('ul.legend');
+    /** Presses a kind's row, as a person does, and checks its box took the press. */
+    const toggle = async (name: string, shown: boolean): Promise<void> => {
+      await menu.locator('label.item', { hasText: name }).click();
+      const box = menu.getByRole('checkbox', { name });
+      await (shown ? expect(box).toBeChecked() : expect(box).not.toBeChecked());
+    };
+
+    // Closed alone: Border Star lights, Pembroke Hill (delayed) does not; the key steps back
+    // from the other statuses, and the counts stay, so each status says what it would show.
+    await menu.locator('label.item', { hasText: copy.status.closed }).click();
+    await expect.poll(lit).toBe(1);
+    await expect(menu.getByRole('radio', { name: copy.status.closed })).toBeChecked();
+    await expect(menu.locator('.item.is-on .name')).toHaveText([copy.status.closed]);
+    await expect(page.locator('main.stage')).toHaveAttribute('data-status', '0');
+    // Remote and early dismissal have none today, and step back as they did.
+    await expect.poll(() => keyMarks(page)).toEqual([1, 0.4, 0.4, 0.4]);
+    await expect(legend.locator('li')).toHaveText([
+      `${copy.status.closed} ${format.number(1)}`,
+      `${copy.status.delayed} ${format.number(1)}`,
+      copy.status.remote,
+      copy.status.earlyDismissal,
+    ]);
+    await expect.poll(() => filteredDot(page)).toBe(true);
+    // The keyboard moves the choice along, as a radio group's arrows do.
+    await page.keyboard.press('ArrowDown');
+    await expect(menu.getByRole('radio', { name: copy.status.delayed })).toBeChecked();
+    await expect.poll(lit).toBe(1);
+    await menu.locator('label.item', { hasText: copy.menu.all }).click();
+    await expect.poll(lit).toBe(2);
+    await expect(page.locator('main.stage')).not.toHaveAttribute('data-status');
+    await expect.poll(() => keyMarks(page)).toEqual([1, 1, 0.4, 0.4]);
+
+    // Public schools alone: Pembroke Hill is private, so only Border Star lights; the counts are
+    // of public schools. (This build has no school tiles: e2e/real-data.spec.ts checks the dots.)
+    await toggle(copy.menu.private, false);
+    await expect.poll(lit).toBe(1);
+    await expect(legend.locator('.count')).toHaveText([format.number(1)]);
+    await expect(menu.locator('.item').first().locator('.value')).toHaveText(format.number(1));
+    await expect.poll(() => filteredDot(page)).toBe(true);
+    // Private alone: Pembroke Hill.
+    await toggle(copy.menu.public, false);
+    await toggle(copy.menu.private, true);
+    await expect.poll(lit).toBe(1);
+    await expect(legend.locator('li')).toHaveText([
+      copy.status.closed,
+      `${copy.status.delayed} ${format.number(1)}`,
+      copy.status.remote,
+      copy.status.earlyDismissal,
+    ]);
+    // Both again: everything, as it opened.
+    await toggle(copy.menu.public, true);
+    await expect.poll(lit).toBe(2);
+    await expect.poll(() => filteredDot(page)).toBe(false);
+    await expect(legend.locator('.count')).toHaveText([format.number(1), format.number(1)]);
+    expect(problems).toEqual([]);
+    await context.close();
   });
 
   test('search loads the index on first focus, lists results, and a pick takes the map there', async ({
@@ -1170,11 +1619,14 @@ test.describe('with data staged', () => {
       await expect(updated.locator('.dot')).toHaveCount(1);
 
       // On the search field's line at the right edge; on a phone, across from the wordmark,
-      // over the field's right end.
+      // just before the menu's button at the end of that line.
       const line = await updated.boundingBox();
       const field = await page.locator('.search').boundingBox();
       const name = await page.locator('h1.wordmark').boundingBox();
-      if (line === null || field === null || name === null) throw new Error('no box');
+      const button = await page.locator('button.menu-button').boundingBox();
+      if (line === null || field === null || name === null || button === null) {
+        throw new Error('no box');
+      }
       if (viewport.width >= 720) {
         expect(Math.abs(line.y + line.height / 2 - (field.y + field.height / 2))).toBeLessThan(1);
         expect(Math.abs(viewport.width - 20 - (line.x + line.width))).toBeLessThan(3);
@@ -1182,8 +1634,8 @@ test.describe('with data staged', () => {
       } else {
         expect(Math.abs(line.y + line.height / 2 - (name.y + name.height / 2))).toBeLessThan(1);
         expect(line.y + line.height).toBeLessThanOrEqual(field.y);
-        expect(line.x + line.width).toBeLessThanOrEqual(field.x + field.width);
-        expect(field.x + field.width - (line.x + line.width)).toBeLessThan(8);
+        expect(line.x + line.width).toBeLessThanOrEqual(button.x - 8);
+        expect(button.x - (line.x + line.width)).toBeLessThan(12);
         expect(line.x).toBeGreaterThan(name.x + name.width + 24);
       }
 
@@ -1224,24 +1676,40 @@ test.describe('with data staged', () => {
     // The next day, so the line names the file's day; offline too, it runs longest.
     const nextDay = new Date('2026-01-13T15:00:00Z');
 
-    /** The line's words right of the field and clear of it, inside the strip, ending at its edge. */
+    /**
+     * The line's words right of the field and of the menu's button just after it, clear of both,
+     * inside the strip, ending at its edge.
+     */
     async function besideField(page: Page, width: number, where: string): Promise<void> {
       const field = await page.locator('.search').boundingBox();
-      if (field === null) throw new Error('no field');
+      const button = await page.locator('button.menu-button').boundingBox();
+      const name = await page.locator('h1.wordmark').boundingBox();
+      if (field === null || button === null || name === null) throw new Error('no field');
       const words = await page.locator('.updated time').evaluate((time) => {
         const range = document.createRange();
         range.selectNodeContents(time);
         const { left, right, top, bottom } = range.getBoundingClientRect();
         return { left, right, top, bottom, clipped: time.scrollWidth > time.clientWidth };
       });
-      expect(words.left, where).toBeGreaterThanOrEqual(field.x + field.width + 12);
+      expect(words.clipped, where).toBe(false);
+      if (width < 720) {
+        // A phone: between the wordmark and the menu's button on their line, over the field.
+        expect(words.left, where).toBeGreaterThanOrEqual(name.x + name.width + 12);
+        expect(words.right, where).toBeLessThanOrEqual(button.x - 8);
+        expect(words.top, where).toBeGreaterThanOrEqual(0);
+        expect(words.bottom, where).toBeLessThanOrEqual(field.y);
+        return;
+      }
+      expect(button.x, where).toBeGreaterThanOrEqual(field.x + field.width + 8);
+      expect(words.left, where).toBeGreaterThanOrEqual(button.x + button.width + 12);
       expect(Math.abs(width - 20 - words.right), where).toBeLessThan(4);
       expect(words.top, where).toBeGreaterThanOrEqual(field.y);
       expect(words.bottom, where).toBeLessThanOrEqual(field.y + field.height);
-      expect(words.clipped, where).toBe(false);
     }
 
     for (const viewport of [
+      { width: 320, height: 568 },
+      { width: 390, height: 844 },
       { width: 720, height: 900 },
       { width: 800, height: 900 },
       { width: 1024, height: 768 },

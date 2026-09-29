@@ -19,6 +19,7 @@ import { workerCount } from './workers';
 import { CONTROL_CLEARANCE, keepLabelsClear } from './clearance';
 import { cityNamesOf, namesCutByEdges, stateNamesCutByEdges, textMeasure } from './home-names';
 import { addMapFonts } from './fonts';
+import type { MapFilter } from '../../state/filter';
 import type { MapLibre } from './maplibre';
 import type { WorkerUrls } from './maplibre-worker';
 import {
@@ -53,7 +54,13 @@ import { maskFeed as createMaskFeed } from './mask/feed';
 import { flightTileLimit, flightTiles, slowLink } from './prefetch';
 import { insideUs } from './us-inside';
 import { afterNextFrame, LIVE_CLASS, markStep, whenGpuIdle, yieldToMain } from './reveal';
-import { SCHOOL_SPACE_IMAGE, schoolSpaceImage, selectedSchoolFilter } from './schools';
+import {
+  SCHOOL_KIND_LAYERS,
+  SCHOOL_SPACE_IMAGE,
+  schoolKindFilter,
+  schoolSpaceImage,
+  selectedSchoolFilter,
+} from './schools';
 import { STATE_AREAS_UNTIL, keptNames, nameBox, parseStateAreas, stateSpots } from './state-areas';
 import type { ScreenRect, SetName, StateArea } from './state-areas';
 import {
@@ -196,6 +203,11 @@ export interface Basemap {
   showNear(place: Place): boolean;
   /** Rings the school with this id (its panel is open), or none with null. */
   selectSchool(id: string | null): void;
+  /**
+   * Shows the dots and names of the schools of these kinds (the menu's
+   * filter), and the open school's whatever its kind.
+   */
+  showSchools(kinds: Pick<MapFilter, 'public' | 'private'>): void;
   /** Moves to the nearest view the limits allow, or to the home view with null. */
   goTo(view: MapView | null): void;
   /** Glides to the nearest view the limits allow; jumps when reduced motion is preferred. */
@@ -647,9 +659,24 @@ export async function createBasemap({
     return true;
   }
   /** Sets a layer's filter, on the map or on the layer still to go on. */
-  function setFilter(id: string, filter: FilterSpecification): void {
-    if (!changePending(id, (layer) => ({ ...layer, filter }) as LayerSpecification)) {
-      map.setFilter(id, filter, NOT_CHECKED);
+  function setFilter(id: string, filter: FilterSpecification | null): void {
+    const changed = changePending(id, (layer) => {
+      const next: Record<string, unknown> = { ...layer };
+      // None: the layer as the style had it, with no filter.
+      if (filter === null) delete next.filter;
+      else next.filter = filter;
+      return next as unknown as LayerSpecification;
+    });
+    if (!changed) map.setFilter(id, filter, NOT_CHECKED);
+  }
+  /** The kinds of school the menu shows, and the school whose panel is open. */
+  let schoolKinds: Pick<MapFilter, 'public' | 'private'> = { public: true, private: true };
+  let selectedSchool: string | null = null;
+  /** Shows the schools of those kinds, and the open one, on every school layer this build has. */
+  function filterSchoolKinds(): void {
+    const filter = schoolKindFilter(schoolKinds, selectedSchool);
+    for (const id of SCHOOL_KIND_LAYERS) {
+      if (staged.order.includes(id)) setFilter(id, filter);
     }
   }
   /** Sets one of a layer's layout properties, on the map or on the layer still to go on. */
@@ -1727,6 +1754,14 @@ export async function createBasemap({
       if (staged.order.includes(BASEMAP_IDS.schoolSelected)) {
         setFilter(BASEMAP_IDS.schoolSelected, selectedSchoolFilter(id));
       }
+      selectedSchool = id;
+      // The open school shows whatever its kind.
+      if (!schoolKinds.public || !schoolKinds.private) filterSchoolKinds();
+    },
+    showSchools(kinds) {
+      if (kinds.public === schoolKinds.public && kinds.private === schoolKinds.private) return;
+      schoolKinds = { public: kinds.public, private: kinds.private };
+      filterSchoolKinds();
     },
     showHome,
     showNear,

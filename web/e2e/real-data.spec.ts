@@ -538,6 +538,143 @@ test('at the national view nothing under data/ is read, nothing glows and no sch
   await context.close();
 });
 
+test('the menu counts every school and district on the map, and nothing the pipeline has not published', async ({
+  browser,
+}) => {
+  const meta = JSON.parse(readFileSync(path.join(SITE_DATA, 'schools/meta.json'), 'utf8')) as {
+    count: number;
+    districts: { ids: string[] };
+  };
+  const context = await browser.newContext({ viewport: { width: 1440, height: 900 } });
+  const page = await context.newPage();
+  const { problems, requests } = watch(page);
+  await page.goto(site);
+  await settle(page);
+  await page.getByRole('button', { name: copy.menu.label, exact: true }).click();
+  const menu = page.locator('aside.menu');
+  await expect(menu).toBeVisible();
+  // What the map shows today and which schools, then a season or a track record, only once the
+  // pipeline publishes one, and About.
+  const published = (file: string): boolean => existsSync(path.join(SITE_DATA, file));
+  await expect(menu.locator('h2')).toHaveText([copy.menu.today, copy.menu.kinds]);
+  await expect(menu.locator('button.item .name')).toHaveText([
+    ...(published('stats/season.json') ? [copy.nav.seasonStats] : []),
+    ...(published('track-record.json') ? [copy.nav.trackRecord] : []),
+    copy.nav.about,
+  ]);
+  // Nothing lit in September: no status gives a count.
+  if (!published('live/closings.json')) {
+    await expect(menu.locator('.value:not(:empty)')).toHaveCount(0);
+  }
+  // Under the search field, its left edge on the field's.
+  const field = await page.locator('.search').boundingBox();
+  const panel = await menu.boundingBox();
+  if (field === null || panel === null) throw new Error('no box');
+  expect([panel.x, panel.y]).toEqual([field.x, field.y + field.height + 8]);
+
+  // About counts the directory as the pipeline wrote it, on the list's grid: each label where
+  // the list's names start, each value ending where its arrows do, level with its label.
+  const edges = await menu.evaluate((found) => {
+    const left = (element: Element | null): number =>
+      Math.round(element?.getBoundingClientRect().left ?? -1);
+    const right = (element: Element | null): number =>
+      Math.round(element?.getBoundingClientRect().right ?? -1);
+    return {
+      name: left(found.querySelector('.item .name')),
+      end: right(found.querySelector('.item .more')),
+    };
+  });
+  await menu.getByRole('button', { name: copy.nav.about }).click();
+  await expect(menu.locator('.note')).toHaveText([copy.menu.onMap]);
+  const rows = await menu.locator('.row').evaluateAll((found) =>
+    found.map((row) => {
+      const words = (cell: Element | null): DOMRect => {
+        const range = document.createRange();
+        if (cell !== null) range.selectNodeContents(cell);
+        return range.getBoundingClientRect();
+      };
+      const label = row.querySelector('dt');
+      const value = row.querySelector('dd');
+      const text = label?.lastChild ?? null;
+      const range = document.createRange();
+      if (text !== null) {
+        const content = text.textContent ?? '';
+        range.selectNodeContents(text);
+        range.setStart(text, content.length - content.trimStart().length);
+      }
+      const start = range.getBoundingClientRect();
+      const end = words(value);
+      return {
+        cells: [label?.textContent.trim() ?? '', value?.textContent.trim() ?? ''],
+        left: Math.round(start.left),
+        right: Math.round(end.right),
+        level: Math.round(end.top - start.top),
+      };
+    }),
+  );
+  expect(rows.map((row) => row.cells)).toEqual([
+    [copy.menu.schools, meta.count.toLocaleString('en-US')],
+    [copy.menu.districts, meta.districts.ids.length.toLocaleString('en-US')],
+  ]);
+  for (const row of rows) {
+    expect([row.left, row.right, row.level]).toEqual([edges.name, edges.end, 0]);
+  }
+  // The directory's small index is all it reads for them (once more through the service worker,
+  // which keeps a copy of what the page read before it took over).
+  const read = requests
+    .map((request) => new URL(request.url).pathname)
+    .filter((pathname) => pathname.includes('/data/'));
+  expect(read.length).toBeGreaterThan(0);
+  for (const pathname of read) {
+    expect(pathname).toMatch(/\/data\/schools\/details\/index\.[0-9a-f]{10}\.json$/);
+  }
+  expect(problems).toEqual([]);
+  await context.close();
+});
+
+test('the menu shows the dots and names of public schools, private ones or both', async ({
+  browser,
+}) => {
+  const context = await browser.newContext({ viewport: { width: 1440, height: 900 } });
+  const page = await context.newPage();
+  const { problems } = watch(page);
+  await page.goto(site);
+  await settle(page);
+  // The map takes the school layers on a little after its first frames.
+  await page.waitForFunction(
+    () => window.snowlightMap?.getLayer('school-dots') !== undefined,
+    null,
+    {
+      timeout: 30_000,
+    },
+  );
+  const layers = ['school-dots', 'school-light', 'school-names', 'school-space'];
+  const filters = (): Promise<unknown[]> =>
+    page.evaluate(
+      (ids) => ids.map((id) => window.snowlightMap?.getFilter(id) ?? null),
+      [...layers, 'school-selected'],
+    );
+  const [, , , , ring] = await filters();
+  await page.getByRole('button', { name: copy.menu.label, exact: true }).click();
+  const menu = page.locator('aside.menu');
+  const toggle = async (name: string): Promise<void> => {
+    await menu.locator('label.item', { hasText: name }).click();
+  };
+  // A private school's tiles carry kind flags with 0x01 set (pipeline/snowlight/directory/tiles.py).
+  const privateSchool = ['==', ['%', ['to-number', ['get', 'kind'], 0], 2], 1];
+  await toggle(copy.menu.private);
+  await expect.poll(filters).toEqual([...layers.map(() => ['any', ['!', privateSchool]]), ring]);
+  await toggle(copy.menu.public);
+  await expect.poll(filters).toEqual([...layers.map(() => false), ring]);
+  await toggle(copy.menu.private);
+  await expect.poll(filters).toEqual([...layers.map(() => ['any', privateSchool]), ring]);
+  // Both again: every school, as the map opened.
+  await toggle(copy.menu.public);
+  await expect.poll(filters).toEqual([...layers.map(() => null), ring]);
+  expect(problems).toEqual([]);
+  await context.close();
+});
+
 test('searching “pembroke” lists Pembroke Hill, and choosing it goes there', async ({
   browser,
 }) => {
