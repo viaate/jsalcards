@@ -4,8 +4,10 @@ import { createDirectory, parsePoints } from '../../data/directory';
 import type { DirectorySource } from '../../data/directory';
 import { createDataFiles } from '../../data/files';
 import { testMeta, testPoints } from '../../data/tests/builders';
+import { DETAILS_INDEX_PATH } from '../../data/details-format';
 import type { Basemap } from '../../map/basemap';
 import type { Glow } from '../../map/glow-mount';
+import type { SchoolTapOptions } from '../../map/school-taps';
 import type { SearchHit } from '../../search';
 import { PIN_KEY, encodePin } from '../../state/pin';
 import { createUrlStore } from '../../state/url-store';
@@ -16,6 +18,18 @@ import '../school';
 import type { BootOptions } from '../boot';
 import type { AppData, Target } from '../data';
 import { ZOOM } from '../startup';
+
+/**
+ * The taps on the map, as boot wires them (map/school-taps.ts has its own
+ * tests): what they are attached with, and the clicks handed to them.
+ */
+const taps = vi.hoisted(() => ({ attach: vi.fn(), click: vi.fn(), stop: vi.fn() }));
+vi.mock('../../map/school-taps', () => ({
+  attachSchoolTaps: (...args: unknown[]) => {
+    taps.attach(...args);
+    return { click: taps.click, stop: taps.stop };
+  },
+}));
 
 /** How long a test waits for code loaded on demand, on a busy machine. */
 const WAIT = { timeout: 4_000 };
@@ -373,17 +387,27 @@ describe('the glow', () => {
 });
 
 describe('a school clicked on the map', () => {
-  /** A map on screen that keeps its listeners by type, and boots with it once it is up. */
-  function withTaps(onSchool?: BootOptions['onSchool']) {
+  /** A map on screen that keeps its listeners by type and flies where it is told, up when told. */
+  function withTaps(
+    onSchool?: BootOptions['onSchool'],
+    extra: Partial<BootOptions> = {},
+    early: object | null = null,
+  ) {
     const listeners = new Map<string, unknown>();
+    const flights: unknown[] = [];
+    const inner = {
+      on: (type: string, listener: (event: object) => void) => {
+        listeners.set(type, listener);
+        // A click on the map before the taps' code is in, heard as soon as it is listened for.
+        if (type === 'click' && early !== null) listener(early);
+      },
+      off: (type: string) => listeners.delete(type),
+    };
     const map = {
       moved: false,
       ready: new Promise<void>(() => undefined),
-      map: {
-        getCanvasContainer: () => document.createElement('div'),
-        on: (type: string, listener: unknown) => listeners.set(type, listener),
-        off: (type: string) => listeners.delete(type),
-      },
+      map: inner,
+      flyTo: (view: unknown) => flights.push(view),
     } as unknown as Basemap;
     let mapUp: (map: Basemap) => void = () => undefined;
     const controller = new AbortController();
@@ -399,9 +423,12 @@ describe('a school clicked on the map', () => {
       onResults: () => undefined,
       data: NO_DATA,
       ...(onSchool === undefined ? {} : { onSchool }),
+      ...extra,
     });
     return {
       listeners,
+      flights,
+      inner,
       controller,
       mapUp: () => {
         mapUp(map);
@@ -409,18 +436,83 @@ describe('a school clicked on the map', () => {
     };
   }
 
+  beforeEach(() => {
+    taps.attach.mockClear();
+    taps.click.mockClear();
+    taps.stop.mockClear();
+  });
+
   it('is listened for once the map is on screen, and no longer once the page goes', async () => {
     const onSchool = vi.fn();
-    const { listeners, controller, mapUp } = withTaps(onSchool);
+    const { inner, controller, mapUp } = withTaps(onSchool);
     await settle();
-    expect(listeners.size).toBe(0);
+    expect(taps.attach).not.toHaveBeenCalled();
     mapUp();
     await vi.waitFor(() => {
-      expect(listeners.has('click')).toBe(true);
+      expect(taps.attach).toHaveBeenCalledOnce();
     }, WAIT);
-    expect(onSchool).not.toHaveBeenCalled();
+    const [map, options] = (taps.attach.mock.calls[0] ?? []) as unknown[];
+    expect(map).toBe(inner);
+    expect(options).toMatchObject({ onSchool });
+    expect(taps.stop).not.toHaveBeenCalled();
     controller.abort();
-    expect(listeners.size).toBe(0);
+    expect(taps.stop).toHaveBeenCalledOnce();
+  });
+
+  it('zooms the map in as its own flights go, for a tap on several schools', async () => {
+    const { flights, controller, mapUp } = withTaps(vi.fn());
+    mapUp();
+    await vi.waitFor(() => {
+      expect(taps.attach).toHaveBeenCalledOnce();
+    }, WAIT);
+    const options = taps.attach.mock.calls[0]?.[1] as SchoolTapOptions;
+    const view = { lat: 39.03, lon: -94.59, zoom: 11 };
+    options.onZoom(view);
+    expect(flights).toEqual([view]);
+    controller.abort();
+  });
+
+  it('hands on a finger’s tap waiting to open a school, and reads its record meanwhile', async () => {
+    const fetchSpy = vi
+      .spyOn(globalThis, 'fetch')
+      .mockResolvedValue(new Response('{}', { status: 404 }));
+    const pending: unknown[] = [];
+    const { controller, mapUp } = withTaps(vi.fn(), {
+      onSchoolPending: (school) => pending.push(school?.id ?? null),
+      data: {
+        files: createDataFiles([DETAILS_INDEX_PATH], ROOT),
+        directories: () => Promise.resolve(null),
+      },
+    });
+    mapUp();
+    await vi.waitFor(() => {
+      expect(taps.attach).toHaveBeenCalledOnce();
+    }, WAIT);
+    const options = taps.attach.mock.calls[0]?.[1] as SchoolTapOptions;
+    const school = { id: PEMBROKE_HILL, name: 'Pembroke Hill', lon: -94.593001, lat: 39.03606 };
+    options.onPending?.(school);
+    options.onPending?.(null);
+    expect(pending).toEqual([PEMBROKE_HILL, null]);
+    // Its record's shard index, on its way before the tap opens anything.
+    await vi.waitFor(() => {
+      expect(
+        fetchSpy.mock.calls.map(([url]) => (url instanceof Request ? url.url : String(url))),
+      ).toContain(`${ROOT}${DETAILS_INDEX_PATH}`);
+    }, WAIT);
+    fetchSpy.mockRestore();
+    controller.abort();
+  });
+
+  it('keeps a click that comes before its code is in, and hands it on', async () => {
+    const click = { point: { x: 10, y: 20 } };
+    const { listeners, controller, mapUp } = withTaps(vi.fn(), {}, click);
+    mapUp();
+    await vi.waitFor(() => {
+      expect(taps.click).toHaveBeenCalledWith(click);
+    }, WAIT);
+    // Kept no longer: the taps listen for themselves.
+    expect(listeners.has('click')).toBe(false);
+    controller.abort();
   });
 
   it('is not listened for by a page that opens nothing from the map', async () => {
@@ -428,6 +520,7 @@ describe('a school clicked on the map', () => {
     mapUp();
     await settle();
     expect(listeners.size).toBe(0);
+    expect(taps.attach).not.toHaveBeenCalled();
     controller.abort();
   });
 });

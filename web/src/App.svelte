@@ -330,19 +330,23 @@
         if (!cancelled) schoolView = view;
       });
     });
-    if (untrack(() => Detail) === null) {
-      import('./ui/DetailPanel.svelte').then(
-        (module) => {
-          Detail = module.default;
-        },
-        () => undefined,
-      );
-    }
+    loadDetail();
     return () => {
       cancelled = true;
       stop();
     };
   });
+
+  /** Loads the panel's code, the first time a school opens or is about to. */
+  function loadDetail(): void {
+    if (untrack(() => Detail) !== null) return;
+    import('./ui/DetailPanel.svelte').then(
+      (module) => {
+        Detail = module.default;
+      },
+      () => undefined,
+    );
+  }
 
   /** A school the page opens itself, from the nearby list or the map, as a search result. */
   function schoolHit(school: Pick<NearbyView, 'id' | 'name' | 'lat' | 'lon'>): SearchOption['hit'] {
@@ -374,6 +378,16 @@
     focusOpened(school.id);
     inputElement?.blur();
     go(schoolHit(school), school.name, '');
+  }
+
+  /**
+   * A finger's tap on a school, waiting to be sure it is no double tap: its
+   * ring on the map at once, and its panel's code on its way. Null once it
+   * turns out to be one: the ring goes back to the school open, if any.
+   */
+  function showTapped(school: SchoolHit | null): void {
+    basemap?.selectSchool(school?.id ?? schoolId);
+    if (school !== null) loadDetail();
   }
 
   // The panel comes or goes over the map: its labels keep clear of it.
@@ -602,6 +616,7 @@
           onUpdated,
           onCounts,
           onSchool: openTapped,
+          onSchoolPending: showTapped,
         });
       })
       .catch(() => null);

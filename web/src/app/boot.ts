@@ -12,15 +12,18 @@
  * - the school a pick or a link opens: its detail panel's view (app/school.ts,
  *   loaded when a school is first opened), and the pin;
  * - a school clicked or tapped on the map, once it is on screen
- *   (map/school-taps.ts), handed to the page to open as a pick of it.
+ *   (map/school-taps.ts), handed to the page to open as a pick of it, and a
+ *   tap on several schools, which zooms the map in toward them.
  *
  * A build that ships no data requests nothing under data/: the glow stays
  * dark, search shows nothing and no selection moves the map.
  */
 
+import type { MapMouseEvent } from 'maplibre-gl';
+
 import type { Basemap, MapView } from '../map/basemap';
 import type { Glow } from '../map/glow-mount';
-import type { SchoolHit } from '../map/school-taps';
+import type { SchoolHit, SchoolTaps } from '../map/school-taps';
 import type { SearchHit } from '../search';
 import { createPinStore } from '../state/pin';
 import type { PinStore } from '../state/pin';
@@ -73,6 +76,12 @@ export interface BootOptions {
    * the page opens it as a pick of it would. Without it, a click opens nothing.
    */
   readonly onSchool?: (school: SchoolHit) => void;
+  /**
+   * A finger's tap on a school, waiting to be sure it is no double tap: the
+   * page shows it picked and starts loading its panel. Null once it turns out
+   * to be one: the page shows what it did before.
+   */
+  readonly onSchoolPending?: (school: SchoolHit | null) => void;
   /** Data files to read, for tests; defaults to the ones this build ships. */
   readonly data?: AppData;
 }
@@ -163,23 +172,8 @@ export function boot(options: BootOptions): Services {
   // Once the map is on screen: installing the worker would otherwise run alongside its start.
   void startServiceWorker(warmUrls, options.map);
 
-  // Clicks on schools, once the map is on screen too; their code loads then. A lit school is
-  // found in the glow's own data, read as each click comes.
-  let stopTaps: () => void = () => undefined;
-  const onSchool = options.onSchool;
-  if (onSchool !== undefined) {
-    void Promise.all([options.map, glow])
-      .then(async ([map, layer]) => {
-        if (map === undefined || aborted()) return;
-        const { attachSchoolTaps } = await import('../map/school-taps');
-        if (aborted()) return;
-        stopTaps = attachSchoolTaps(map.map, { lit: () => layer?.lit ?? null, onSchool });
-      })
-      .catch(() => undefined);
-  }
-
   signal.addEventListener('abort', () => {
-    stopTaps();
+    taps?.stop();
     stopLive();
     search.destroy();
     pins.destroy();
@@ -200,6 +194,47 @@ export function boot(options: BootOptions): Services {
     }));
     return schoolCode;
   };
+
+  // Clicks on schools, once the map is on screen too; their code loads then, and a click that
+  // comes before it is kept for it. A lit school is found in the glow's own data, read as each
+  // click comes. A tap on several schools zooms in as the map's own flights go; a finger's tap on
+  // one, while it waits to be sure it is no double tap, starts reading the school's record.
+  let taps: SchoolTaps | null = null;
+  const onSchool = options.onSchool;
+  if (onSchool !== undefined) {
+    void Promise.all([options.map, glow])
+      .then(async ([map, layer]) => {
+        if (map === undefined || aborted()) return;
+        const early: MapMouseEvent[] = [];
+        const keep = (event: MapMouseEvent): void => {
+          early.push(event);
+        };
+        map.map.on('click', keep);
+        try {
+          const { attachSchoolTaps } = await import('../map/school-taps');
+          if (aborted()) return;
+          taps = attachSchoolTaps(map.map, {
+            lit: () => layer?.lit ?? null,
+            onSchool,
+            onZoom: (view) => {
+              map.flyTo(view);
+            },
+            onPending: (school) => {
+              if (school !== null) {
+                void loadSchoolCode()
+                  .then(({ source }) => source.get(school.id))
+                  .catch(() => undefined);
+              }
+              options.onSchoolPending?.(school);
+            },
+          });
+          for (const event of early) taps.click(event);
+        } finally {
+          map.map.off('click', keep);
+        }
+      })
+      .catch(() => undefined);
+  }
 
   return {
     searchable: data.files.has(DATA_PATHS.searchIndex),

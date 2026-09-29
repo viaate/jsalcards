@@ -267,6 +267,34 @@ async function nearestOtherSchool(page: Page, x: number, y: number): Promise<num
   );
 }
 
+/**
+ * A point on the map well clear of every school MapLibre drew, dot or name, and of the page's
+ * controls: where a click means no school.
+ */
+async function clearSpot(page: Page): Promise<{ x: number; y: number }> {
+  return page.evaluate(
+    ({ layers }) => {
+      const map = window.snowlightMap;
+      if (map === undefined) throw new Error('no map');
+      const box = map.getContainer().getBoundingClientRect();
+      const marks = map.queryRenderedFeatures({ layers }).map((feature) => {
+        const [lon, lat] = (feature.geometry as { coordinates: [number, number] }).coordinates;
+        return map.project([lon, lat]);
+      });
+      // Right of where a panel opens, under the search strip, clear of the corners' controls.
+      for (let y = 200; y <= box.height - 200; y += 20) {
+        for (let x = 600; x <= box.width - 120; x += 20) {
+          if (marks.every((at) => Math.hypot(at.x - x, at.y - y) > 80)) {
+            return { x: box.left + x, y: box.top + y };
+          }
+        }
+      }
+      throw new Error('no spot clear of every school');
+    },
+    { layers: [BASEMAP_IDS.schoolDots, BASEMAP_IDS.schoolNames] },
+  );
+}
+
 async function mapView(page: Page): Promise<{ lat: number; lon: number; zoom: number }> {
   return page.evaluate(() => {
     const map = window.snowlightMap;
@@ -1198,7 +1226,7 @@ const HAND_S = 0.07;
 /** Pembroke Hill among its neighbours at zoom 14, its dot drawn and its name beside it. */
 const AT_PEMBROKE_HILL = `${String(PEMBROKE_HILL.lat)},${String(PEMBROKE_HILL.lon)},14`;
 
-test('a school’s dot takes a click and opens as a search pick does; a drag or a double click opens nothing', async ({
+test('a school’s dot takes a click and opens as a search pick does; a drag opens nothing, a double click opens it once', async ({
   browser,
 }) => {
   test.setTimeout(300_000);
@@ -1244,27 +1272,48 @@ test('a school’s dot takes a click and opens as a search pick does; a drag or 
   await page.mouse.up();
   await openedNothing();
 
-  // A double click on the dot zooms the map in a level, and opens nothing.
-  await settle(page);
-  dot = await schoolOnScreen(page);
   const mouse = await context.newCDPSession(page);
-  const presses = ['mousePressed', 'mouseReleased', 'mousePressed', 'mouseReleased'] as const;
-  const clickedAt = Date.now() / 1000 - 1;
-  await Promise.all(
-    presses.map((type, i) =>
-      mouse.send('Input.dispatchMouseEvent', {
-        type,
-        x: dot.x,
-        y: dot.y,
-        button: 'left',
-        buttons: type === 'mousePressed' ? 1 : 0,
-        clickCount: i < 2 ? 1 : 2,
-        timestamp: clickedAt + i * HAND_S,
-      }),
-    ),
-  );
+  /** A double click, its presses and releases a hand's time apart, stamped so the page hears it. */
+  const doubleClick = async (at: { x: number; y: number }): Promise<void> => {
+    const presses = ['mousePressed', 'mouseReleased', 'mousePressed', 'mouseReleased'] as const;
+    const clickedAt = Date.now() / 1000 - 1;
+    await Promise.all(
+      presses.map((type, i) =>
+        mouse.send('Input.dispatchMouseEvent', {
+          type,
+          x: at.x,
+          y: at.y,
+          button: 'left',
+          buttons: type === 'mousePressed' ? 1 : 0,
+          clickCount: i < 2 ? 1 : 2,
+          timestamp: clickedAt + i * HAND_S,
+        }),
+      ),
+    );
+  };
+
+  // A double click where no school is: the map zooms in a level, and nothing opens.
+  await settle(page);
+  const clear = await clearSpot(page);
+  await doubleClick(clear);
   await expect.poll(async () => (await mapView(page)).zoom, { timeout: 30_000 }).toBeCloseTo(15, 1);
   await openedNothing();
+
+  // A double click on the dot opens its school, once: the first click opens it at once, and the
+  // second keeps the pick's flight going rather than zooming about the dot. It lands the school
+  // beside its panel, as a pick does, one step on.
+  await page.goto(`${site}?at=${AT_PEMBROKE_HILL}`);
+  await settle(page);
+  dot = await schoolOnScreen(page);
+  const unopened = new URL(page.url()).searchParams.get('at');
+  await doubleClick(dot);
+  await expect(panel.locator('h2')).toHaveText('The Pembroke Hill SchoolWornall Campus', {
+    timeout: 30_000,
+  });
+  await expectLandedBesidePanel(page);
+  await page.goBack();
+  await expect(panel).toHaveCount(0);
+  expect(new URL(page.url()).searchParams.get('at')).toBe(unopened);
 
   // A click on the dot, from zoom 14: the school's panel, its address and the pick's camera.
   await page.goto(`${site}?at=${AT_PEMBROKE_HILL}`);
@@ -1287,8 +1336,7 @@ test('a school’s dot takes a click and opens as a search pick does; a drag or 
   ).toEqual(['==', ['get', 'id'], PEMBROKE_HILL.id]);
 
   // A click where no school is leaves the panel open.
-  const empty = { x: 1300, y: 160 };
-  expect(await nearestOtherSchool(page, empty.x, empty.y)).toBeGreaterThan(40);
+  const empty = await clearSpot(page);
   await page.mouse.click(empty.x, empty.y);
   await page.waitForTimeout(1500);
   await expect(panel.locator('h2')).toHaveText('The Pembroke Hill SchoolWornall Campus');
@@ -1403,13 +1451,14 @@ test('on a phone a tap a little off a dot opens it; a drag, a pinch or a double 
     .poll(async () => (await mapView(page)).zoom, { timeout: 30_000 })
     .toBeLessThan(zoom - 0.5);
   await openedNothing();
-  // A tap 11 px off the dot, past a mouse's reach and within a finger's: the school's sheet, its
-  // address, and the school in the middle of the map above the sheet, as a pick puts it. In real
-  // time: the double tap below holds the page's clock, which would stretch this flight.
+  // A tap 14 px from the dot's center, about 9 px from its edge, past a mouse's reach and within
+  // a finger's: once no second tap follows, the school's sheet, its address, and the school in
+  // the middle of the map above the sheet, as a pick puts it. In real time: the double tap below
+  // holds the page's clock, which would stretch this flight.
   await page.goto(`${site}?at=${AT_PEMBROKE_HILL}`);
   await settle(page);
   dot = await schoolOnScreen(page);
-  const offDot = { x: dot.x + 9, y: dot.y + 7 };
+  const offDot = { x: dot.x + 11, y: dot.y + 9 };
   expect(await nearestOtherSchool(page, offDot.x, offDot.y)).toBeGreaterThan(40);
   await page.touchscreen.tap(offDot.x, offDot.y);
   await expect(sheet.locator('h2')).toHaveText('The Pembroke Hill SchoolWornall Campus', {
@@ -1474,6 +1523,64 @@ test('on a phone a tap a little off a dot opens it; a drag, a pinch or a double 
   await page.clock.resume();
   await expect.poll(async () => (await mapView(page)).zoom, { timeout: 30_000 }).toBeCloseTo(15, 1);
   await openedNothing();
+  expect(problems).toEqual([]);
+  await context.close();
+});
+
+test('dots only fading in take no click: from the zoom they are drawn at, a click finds them', async ({
+  browser,
+}) => {
+  const context = await browser.newContext({ viewport: { width: 1440, height: 900 } });
+  const page = await context.newPage();
+  const { problems } = watch(page);
+  const panel = page.locator('aside.detail');
+  /** A dot MapLibre drew near the middle of the map, clear of every other: where it is. */
+  const aDot = (): Promise<{ x: number; y: number }> =>
+    page.evaluate(
+      ({ layers }) => {
+        const map = window.snowlightMap;
+        if (map === undefined) throw new Error('no map');
+        const box = map.getContainer().getBoundingClientRect();
+        const dots = map.queryRenderedFeatures({ layers }).map((feature) => {
+          const [lon, lat] = (feature.geometry as { coordinates: [number, number] }).coordinates;
+          return map.project([lon, lat]);
+        });
+        const alone = dots.filter((dot) =>
+          dots.every((other) => other === dot || Math.hypot(other.x - dot.x, other.y - dot.y) > 40),
+        );
+        const middle = { x: box.width / 2 + 200, y: box.height / 2 };
+        alone.sort(
+          (a, b) =>
+            Math.hypot(a.x - middle.x, a.y - middle.y) - Math.hypot(b.x - middle.x, b.y - middle.y),
+        );
+        const dot = alone[0];
+        if (dot === undefined) throw new Error('no dot alone');
+        return { x: box.left + dot.x, y: box.top + dot.y };
+      },
+      { layers: [BASEMAP_IDS.schoolDots] },
+    );
+
+  // Kansas at zoom 9.02, the dots barely begun to fade in (schools.ts: from zoom 9, drawn from
+  // 9.5). MapLibre finds them there, but they are all but unseen: a click on one is a click on
+  // the map, and the cursor stays the map's.
+  await page.goto(`${site}?at=39.2,-95.9,9.02`);
+  await settle(page);
+  const faint = await aDot();
+  await page.mouse.move(faint.x, faint.y);
+  await page.waitForTimeout(500);
+  expect(await mapCursor(page)).toBe('grab');
+  await page.mouse.click(faint.x, faint.y);
+  await page.waitForTimeout(1500);
+  await expect(panel).toHaveCount(0);
+  expect(new URL(page.url()).searchParams.get('school')).toBeNull();
+  expect((await mapView(page)).zoom).toBeCloseTo(9.02, 2);
+
+  // At zoom 9.5 they are drawn, and a dot takes the pointer.
+  await page.goto(`${site}?at=39.2,-95.9,9.5`);
+  await settle(page);
+  const drawnDot = await aDot();
+  await page.mouse.move(drawnDot.x, drawnDot.y);
+  await expect.poll(() => mapCursor(page)).toBe('pointer');
   expect(problems).toEqual([]);
   await context.close();
 });

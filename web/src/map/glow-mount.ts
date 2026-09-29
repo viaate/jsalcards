@@ -17,8 +17,19 @@ import type { Map as MapLibreMap } from 'maplibre-gl';
 import type { LitSchools } from '../data/closings';
 import { BASEMAP_IDS, SCHOOLS_TILE_LAYER, SCHOOL_LIT_STATE } from './basemap/ids';
 import { GlowLayer } from './glow';
+import { glowStyleAtZoom } from './glow/curves';
 
 export const GLOW_LAYER_ID = BASEMAP_IDS.glow;
+
+/**
+ * How far a lit school's light reaches as a mark at a zoom, in CSS pixels,
+ * for a click on it (school-taps.ts): its glyph once glyphs are drawn, else
+ * its bright core, most of whose light is within two standard deviations.
+ */
+export function litRadius(zoom: number): number {
+  const style = glowStyleAtZoom(zoom);
+  return style.glyphOpacity >= 0.5 ? style.glyphRadiusPx : 2 * style.coreSigmaPx;
+}
 
 export interface Glow {
   /** Shows these schools, replacing the ones shown before. */

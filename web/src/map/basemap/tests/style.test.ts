@@ -39,6 +39,9 @@ import {
   SCHOOL_SPACE_SIZE,
   SCHOOL_TILES_MAX_ZOOM,
   SCHOOL_TILES_MIN_ZOOM,
+  schoolDotOpacity,
+  schoolDotRadius,
+  schoolNameOpacity,
   schoolSpaceImage,
   selectedSchoolFilter,
 } from '../schools';
@@ -1061,6 +1064,33 @@ describe('schools', () => {
       expect(num(BASEMAP_IDS.schoolDots, 'paint', 'circle-stroke-opacity', zoom)).toBe(1);
     }
     expect(num(BASEMAP_IDS.schoolNames, 'paint', 'text-opacity', 13)).toBe(1);
+  });
+
+  it('say how they draw a dot and a name at each zoom, as the layers draw them', () => {
+    // What a click on a school reads (map/school-taps.ts): the layers' own curves.
+    const { schoolDots, schoolNames } = BASEMAP_IDS;
+    for (let zoom = SCHOOL_TILES_MIN_ZOOM; zoom <= 16; zoom += 0.125) {
+      const where = String(zoom);
+      expect(schoolDotOpacity(zoom), where).toBeCloseTo(
+        num(schoolDots, 'paint', 'circle-opacity', zoom),
+        9,
+      );
+      expect(schoolDotRadius(zoom), where).toBeCloseTo(
+        num(schoolDots, 'paint', 'circle-radius', zoom) +
+          num(schoolDots, 'paint', 'circle-stroke-width', zoom),
+        9,
+      );
+      if (zoom >= (schoolLayer(schoolNames).minzoom ?? 0)) {
+        expect(schoolNameOpacity(zoom), where).toBeCloseTo(
+          num(schoolNames, 'paint', 'text-opacity', zoom),
+          9,
+        );
+      } else {
+        expect(schoolNameOpacity(zoom), where).toBe(0);
+      }
+    }
+    // Nothing below the layers' own zooms.
+    expect(schoolDotOpacity((schoolLayer(schoolDots).minzoom ?? 0) - 0.01)).toBe(0);
   });
 
   it('put a campus written after a spaced dash on a second, dimmer line', () => {

@@ -162,7 +162,7 @@ const LIT: ExpressionSpecification = ['boolean', ['feature-state', SCHOOL_LIT_ST
 
 /** An opacity by zoom, as [zoom, opacity] stops, and none for a school the glow lights. */
 function unlessLit(
-  ...stops: (readonly [zoom: number, opacity: number])[]
+  ...stops: readonly (readonly [zoom: number, opacity: number])[]
 ): ExpressionSpecification {
   return [
     'interpolate',
@@ -172,6 +172,34 @@ function unlessLit(
   ] as unknown as ExpressionSpecification;
 }
 
+/** A dot's opacity by zoom: fading in over SCHOOL_DOT_FADE, fully drawn from SCHOOL_DOTS_FROM. */
+const DOT_OPACITY: readonly (readonly [zoom: number, opacity: number])[] = [
+  [SCHOOL_DOTS_FROM - SCHOOL_DOT_FADE, 0],
+  [SCHOOL_DOTS_FROM, 1],
+];
+/** A name's opacity by zoom: fading in over SCHOOL_FADE, fully drawn from SCHOOL_NAMES_FROM. */
+const NAME_OPACITY: readonly (readonly [zoom: number, opacity: number])[] = [
+  [SCHOOL_NAMES_FROM - SCHOOL_FADE, 0],
+  [SCHOOL_NAMES_FROM, 1],
+];
+
+/**
+ * How the school layers draw an unlit school at a zoom, from the same curves
+ * as the layers themselves, for what reads the map by what it shows (a click
+ * on a school, map/school-taps.ts): how opaque its dot and its name are
+ * (none before the layer's zoom), and its dot's radius on the screen, ring
+ * and all, in CSS pixels.
+ */
+export function schoolDotOpacity(zoom: number): number {
+  return zoom < (DOT_OPACITY[0]?.[0] ?? 0) ? 0 : at(DOT_OPACITY, zoom);
+}
+export function schoolNameOpacity(zoom: number): number {
+  return zoom < (NAME_OPACITY[0]?.[0] ?? 0) ? 0 : at(NAME_OPACITY, zoom);
+}
+export function schoolDotRadius(zoom: number): number {
+  return at(DOT_RADIUS, zoom) + at(DOT_RING, zoom);
+}
+
 /**
  * A dot at every school, white, each ringed in the ground color. Big and
  * bright enough across a metro to pick out every school in a city at a
@@ -179,7 +207,7 @@ function unlessLit(
  * glow's, and a school it lights has no dot of its own.
  */
 export function schoolDotLayer(colors: SchoolColors): CircleLayerSpecification {
-  const fadeIn = unlessLit([SCHOOL_DOTS_FROM - SCHOOL_DOT_FADE, 0], [SCHOOL_DOTS_FROM, 1]);
+  const fadeIn = unlessLit(...DOT_OPACITY);
   return {
     id: BASEMAP_IDS.schoolDots,
     type: 'circle',
@@ -360,7 +388,7 @@ export function schoolNameLayer(colors: SchoolColors): SymbolLayerSpecification 
     },
     paint: {
       'text-color': colors.name,
-      'text-opacity': byZoom(SCHOOL_NAMES_FROM - SCHOOL_FADE, 0, SCHOOL_NAMES_FROM, 1),
+      'text-opacity': byZoom(...NAME_OPACITY.flat()),
       'text-halo-color': colors.ground,
       'text-halo-width': 1.5,
       'text-halo-blur': 0.5,

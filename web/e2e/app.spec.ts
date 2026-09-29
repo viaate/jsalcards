@@ -50,6 +50,8 @@ const GLOW_LAYER = 'snowlight-glow';
 const FIRST_LABEL_LAYER = 'ofm-label-neighbourhood';
 const PEMBROKE_HILL = 'A1902690';
 const BORDER_STAR = { lon: -94.592692, lat: 39.013304 };
+/** Where Pembroke Hill is, as the directory has it. */
+const PEMBROKE_HILL_PLACE = { lon: -94.593001, lat: 39.03606 };
 const PIN_KEY = 'snowlight:pin';
 /** Chrome's own lines about SwiftShader, not the page's. */
 const GPU_DRIVER_NOISE =
@@ -1333,7 +1335,7 @@ test.describe('with data staged', () => {
     await context.close();
   });
 
-  test('a lit school takes a click at the national view, and opens as a search pick of it does', async ({
+  test('a click on two lights at the national view zooms in toward them; one alone opens as a search pick does', async ({
     browser,
   }) => {
     // Two first flights into streets, one a page (FIRST_FLIGHT_MS).
@@ -1390,7 +1392,8 @@ test.describe('with data staged', () => {
     const picked = await landing();
 
     // Clicked on the national view, where the two schools' lights are under a pixel apart: a
-    // click a few pixels under Border Star's means it, the nearer of the two.
+    // click a few pixels under Border Star's could mean either, so it opens neither. The map
+    // zooms in toward them instead, to where they stand apart.
     await page.goto(site);
     await waitForMap(page);
     await expect.poll(async () => (await glowStats(page)).glowCount, { timeout: 30_000 }).toBe(2);
@@ -1403,8 +1406,24 @@ test.describe('with data staged', () => {
     await page.mouse.move(click.x + 60, click.y);
     await expect.poll(cursor).toBe('grab');
     await page.mouse.click(click.x, click.y);
-    // The same panel, the same address and the same camera as the pick. SwiftShader draws the
-    // map on the main thread, which keeps the page busy for seconds after it loads.
+    await expect
+      .poll(async () => (await mapView(page)).zoom, { timeout: FIRST_FLIGHT_MS })
+      .toBeGreaterThan(10.9);
+    await settleMap(page);
+    expect((await mapView(page)).zoom).toBeLessThan(11.01);
+    await expect(panel).toHaveCount(0);
+    expect(new URL(page.url()).searchParams.get('school')).toBeNull();
+    // Both on the screen, tens of pixels apart now, around where the click was.
+    const star = await onScreen(page, BORDER_STAR);
+    const hill = await onScreen(page, PEMBROKE_HILL_PLACE);
+    expect(Math.hypot(star.x - hill.x, star.y - hill.y)).toBeGreaterThan(30);
+    for (const place of [star, hill]) {
+      expect(Math.hypot(place.x - light.x, place.y - light.y)).toBeLessThan(60);
+    }
+
+    // There, a click on Border Star's light means it: the same panel, the same address and the
+    // same camera as the pick.
+    await page.mouse.click(Math.round(star.x), Math.round(star.y));
     await expect(panel.locator('h2')).toHaveText('Border Star Montessori', { timeout: 30_000 });
     await expect(panel.locator('.status .headline')).toHaveText([copy.statusLine.closed.today]);
     expect(new URL(page.url()).searchParams.get('school')).toBe('291640000557');
@@ -1423,10 +1442,14 @@ test.describe('with data staged', () => {
     await page.waitForTimeout(1000);
     await expect(panel.locator('h2')).toHaveText('Border Star Montessori');
     expect(new URL(page.url()).searchParams.get('school')).toBe('291640000557');
-    // The click was a step of its own: Back returns to the national view.
+    // The click was a step of its own: Back returns to where the zoom toward the two had come.
     await page.goBack();
     await expect(panel).toHaveCount(0);
-    expect(new URL(page.url()).search).toBe('');
+    expect(new URL(page.url()).searchParams.get('school')).toBeNull();
+    expect(Number((new URL(page.url()).searchParams.get('at') ?? '').split(',')[2])).toBeCloseTo(
+      11,
+      1,
+    );
     expect(problems).toEqual([]);
     await context.close();
   });

@@ -1,29 +1,42 @@
 /**
- * A school opens from the map itself: a click or a tap on its dot, its name,
- * or its light opens it as a pick of it in search would (app/boot.ts hands it
- * to the page, which takes the pick's own path).
+ * A school opens from the map itself: a click or a tap on its mark opens it
+ * as a pick of it in search would (app/boot.ts hands it to the page, which
+ * takes the pick's own path).
  *
- * The pointer means the school nearest it among those within a hit radius of
- * it: HIT_RADIUS.mouse for a mouse or a pen, HIT_RADIUS.touch for a finger,
- * as the pointer that pressed says. Where a name is under the pointer, that
- * school is meant; a name only beside it counts as the edge of the radius.
- * Dots and names are what MapLibre drew (the school layers, basemap/ids.ts),
- * from zoom 11. A school lit today is found from the glow's own data, where it
- * is and which school it is (glow-mount.ts), so its light takes a tap at every
- * zoom, the national view's small lights too.
+ * A school's marks are what the map shows of it, while it shows them: its dot
+ * and its name, each once it is drawn at the map's zoom (basemap/schools.ts
+ * says from which zoom, and how big), and the glow's light of a school lit
+ * today, at every zoom, found from the glow's own data (glow-mount.ts). A mark
+ * is in reach of the pointer within a hit radius of its edge: HIT_RADIUS.mouse
+ * for a mouse or a pen, HIT_RADIUS.touch for a finger, as the pointer that
+ * pressed says. A name is in reach only under the pointer.
  *
- * Only a click opens a school: MapLibre fires none for a drag or a pinch. A
- * click waits OPEN_AFTER_MS for a second one, and the two of a double click
- * or a double tap open nothing, so the map zooms in and nothing fights it; a
- * press, a hand moving the map or a wheel in that time also cancels it, as
- * events' own times tell, so a busy page that hears a tap's click after the
- * next touch opens nothing either. Where the second click of a slow double
- * click comes after the school has opened, the map's zoom gives way to the
- * pick's flight.
+ * A tap opens a school only where it means one: the one mark under the
+ * pointer, or else the one mark in reach. Where it could mean several (a
+ * metro's lights at the national view, a cluster of dots), it opens none: the
+ * map zooms in toward them instead, around the middle of them, as far as
+ * keeps them all on the screen, to DRILL_ZOOM at most and by DRILL_STEP
+ * levels at least, so tap by tap it comes down to one school under the
+ * finger. Schools no zoom tells apart (one campus, one place) open the
+ * nearest.
  *
- * With a mouse, the cursor is a pointer over a school that would open, looked
- * for once an animation frame at most while the mouse moves. A click on no
- * school does nothing: a panel open stays open.
+ * Only a click acts: MapLibre fires none for a drag or a pinch. A mouse's or
+ * a pen's click acts at once. MapLibre stops a flight at any gesture it
+ * takes, a press to drag the map as much as a double click's zoom: after a
+ * tap acts, the map's double click zoom is held off for DOUBLE_TAP_MS, and the
+ * second press of a double click takes no drag, so the flight goes on. A
+ * finger's tap waits
+ * TAP_WAIT_MS for a second tap, as a double tap zooms the map instead, while
+ * the school it would open shows as picked and its panel starts to load
+ * (onPending); at the map's closest zoom, where a double tap zooms no
+ * further, it acts at once. A press, a hand moving the map or a wheel in that
+ * time lets the tap go, as events' own times tell, so a busy page that hears
+ * a tap's click after the next touch acts on nothing either.
+ *
+ * With a mouse, the cursor is a pointer over a mark a click would act on,
+ * looked for once an animation frame at most while the mouse moves, and
+ * again when the map comes to rest or the glow lights other schools under a
+ * still mouse. A click on no school does nothing: a panel open stays open.
  */
 import type { Map as MapLibreMap, MapMouseEvent, MapTouchEvent, PointLike } from 'maplibre-gl';
 
@@ -33,14 +46,23 @@ import type { LitSchools } from '../data/closings';
 import { displayName } from '../text/names';
 import { stateOfId } from '../text/school-names';
 import type { SchoolId } from '../types/generated';
-import { BASEMAP_IDS } from './basemap/ids';
-import { mercatorXFromLng, mercatorYFromLat } from './glow/mercator';
+// From the modules that draw the marks, loaded before this one (their own chunks, not copies).
+import { schoolDotOpacity, schoolDotRadius, schoolNameOpacity } from './basemap';
+import type { MapView } from './basemap';
+import { BASEMAP_IDS, SCHOOL_LIT_STATE } from './basemap/ids';
+import { litRadius } from './glow-mount';
+import {
+  latFromMercatorY,
+  lngFromMercatorX,
+  mercatorXFromLng,
+  mercatorYFromLat,
+} from './glow/mercator';
 
-/** How far from a school the pointer may be and still mean it, in CSS pixels. */
+/** How far from a mark's edge the pointer may be and still reach it, in CSS pixels. */
 export const HIT_RADIUS = Object.freeze({ mouse: 6, touch: 16 });
 
-/** How long a click on a school waits for a second click before the school opens, in milliseconds. */
-export const OPEN_AFTER_MS = 300;
+/** How long a finger's tap waits for a second tap before it acts, in milliseconds. */
+export const TAP_WAIT_MS = 250;
 
 /**
  * A click this soon after the one before it, and this near it, is the second
@@ -50,22 +72,55 @@ export const OPEN_AFTER_MS = 300;
 export const DOUBLE_TAP_MS = 500;
 export const DOUBLE_TAP_PX = 30;
 
+/** A mark takes clicks from this opacity: half drawn, fading in. */
+export const SHOWN_OPACITY = 0.5;
+
+/**
+ * A tap that could mean several schools zooms in toward them: to this zoom at
+ * most, where a metro's schools stand apart, and by this many levels at least.
+ */
+export const DRILL_ZOOM = 11;
+export const DRILL_STEP = 2;
+/** Room kept between the schools it zooms toward and the edge of the map, in CSS pixels. */
+export const DRILL_MARGIN = 48;
+/** Schools this close at the map's closest zoom, in CSS pixels, are at one place. */
+const ONE_PLACE_PX = 2;
+/** A zoom in by less than this many levels tells nothing apart. */
+const LEAST_DRILL = 0.5;
+
 /** MapLibre's own class for a pointer over the map, which index.html styles as a pointer. */
 export const POINTER_CLASS = 'maplibregl-track-pointer';
 
 /** MapLibre's world size at zoom 0, in CSS pixels. */
 const TILE = 512;
 
-/** A school the pointer may mean. */
+/** A school a tap opens. */
 export interface SchoolHit {
   readonly id: SchoolId;
   /** Its name as the map shows it. */
   readonly name: string;
   readonly lon: number;
   readonly lat: number;
-  /** How far it is from the pointer, in CSS pixels. */
-  readonly distance: number;
 }
+
+/** A school's mark in reach of the pointer. */
+export interface MarkHit {
+  readonly id: SchoolId;
+  readonly lon: number;
+  readonly lat: number;
+  /** Where its center is from the pointer, in CSS pixels. */
+  readonly dx: number;
+  readonly dy: number;
+  /** How far the pointer is from the mark's edge, in CSS pixels: 0 with the mark under it. */
+  readonly distance: number;
+  /** Its name as the map shows it, worked out for the school a tap opens. */
+  name(): string;
+}
+
+/** What a tap does: open a school, or zoom in toward several. */
+export type TapAction =
+  | { readonly kind: 'open'; readonly school: SchoolHit }
+  | { readonly kind: 'zoom'; readonly view: MapView };
 
 /** The glow's lit schools, as far as finding them goes. */
 export type LitSpots = Pick<LitSchools, 'lngLat' | 'ids' | 'names'>;
@@ -73,16 +128,6 @@ export type LitSpots = Pick<LitSchools, 'lngLat' | 'ids' | 'names'>;
 /** The hit radius for a pointer of this type (PointerEvent.pointerType): a finger's, or a mouse's. */
 export function hitRadius(pointerType: string): number {
   return pointerType === 'touch' ? HIT_RADIUS.touch : HIT_RADIUS.mouse;
-}
-
-/** The school nearest the pointer among those within `radius` of it, or null for none. */
-export function nearestSchool(hits: Iterable<SchoolHit>, radius: number): SchoolHit | null {
-  let best: SchoolHit | null = null;
-  for (const hit of hits) {
-    if (!(hit.distance <= radius)) continue;
-    if (best === null || hit.distance < best.distance) best = hit;
-  }
-  return best;
 }
 
 /** A lit school's name as the map shows it (school-tiles.ts shows the tiles' the same way). */
@@ -108,49 +153,50 @@ function mercator(lit: LitSpots): Float64Array {
 }
 
 /**
- * The lit school nearest the pointer within `radius` CSS pixels of it, from
- * the glow's data, or null: `at` is the pointer in Web Mercator units, and
- * `scale` the CSS pixels to one unit (the world's size at the map's zoom). The
- * map is never tilted or turned, so a distance in Mercator is one on the
- * screen. Only the one found is named: a metro's lights at the national view
- * are hundreds within a finger's reach.
+ * The lit schools whose light is within `radius` CSS pixels of the pointer,
+ * from the glow's data: `at` is the pointer in Web Mercator units, `scale`
+ * the CSS pixels to one unit (the world's size at the map's zoom) and `mark`
+ * the light's own radius. The map is never tilted or turned, so a distance in
+ * Mercator is one on the screen.
  */
-export function nearestLit(
+export function litInReach(
   lit: LitSpots,
   at: { readonly x: number; readonly y: number },
   scale: number,
   radius: number,
-): SchoolHit | null {
+  mark: number,
+): MarkHit[] {
   const points = mercator(lit);
-  const reach = radius / scale;
-  let nearest = -1;
-  let best = Infinity;
+  const reach = (radius + mark) / scale;
+  const hits: MarkHit[] = [];
   for (let i = 0; i < lit.ids.length; i++) {
-    const dx = (points[i * 2] ?? Number.NaN) - at.x;
-    const dy = (points[i * 2 + 1] ?? Number.NaN) - at.y;
-    if (!(Math.abs(dx) <= reach && Math.abs(dy) <= reach)) continue;
-    const distance = Math.hypot(dx, dy) * scale;
-    if (distance <= radius && distance < best) {
-      nearest = i;
-      best = distance;
-    }
+    const x = points[i * 2] ?? Number.NaN;
+    const y = points[i * 2 + 1] ?? Number.NaN;
+    if (!(Math.abs(x - at.x) <= reach && Math.abs(y - at.y) <= reach)) continue;
+    const dx = (x - at.x) * scale;
+    const dy = (y - at.y) * scale;
+    const distance = Math.max(0, Math.hypot(dx, dy) - mark);
+    const id = lit.ids[i];
+    if (id === undefined || !(distance <= radius)) continue;
+    const written = lit.names[i] ?? '';
+    hits.push({
+      id,
+      lon: lit.lngLat[i * 2] ?? 0,
+      lat: lit.lngLat[i * 2 + 1] ?? 0,
+      dx,
+      dy,
+      distance,
+      name: () => shownName(id, written),
+    });
   }
-  const id = lit.ids[nearest];
-  if (id === undefined) return null;
-  return {
-    id,
-    name: shownName(id, lit.names[nearest] ?? ''),
-    lon: lit.lngLat[nearest * 2] ?? 0,
-    lat: lit.lngLat[nearest * 2 + 1] ?? 0,
-    distance: best,
-  };
+  return hits;
 }
 
-/** A school a feature of the school layers is (schools.ts reads the same properties), or null. */
+/** A feature of the school layers as a school (schools.ts reads the same properties), or null. */
 function featureSchool(feature: {
   readonly properties: Record<string, unknown>;
   readonly geometry: unknown;
-}): Omit<SchoolHit, 'distance'> | null {
+}): { id: SchoolId; name: string; lon: number; lat: number } | null {
   const { id, name } = feature.properties;
   const geometry = feature.geometry as { type?: unknown; coordinates?: unknown };
   if (typeof id !== 'string' || geometry.type !== 'Point') return null;
@@ -159,46 +205,153 @@ function featureSchool(feature: {
   return { id, name: typeof name === 'string' ? name : '', lon, lat };
 }
 
-/** The school the pointer at `point` (CSS pixels on the map) means, within `radius`, or null. */
-export function schoolAt(
+/**
+ * Every school with a mark in reach of the pointer at `point` (CSS pixels on
+ * the map), each once, by its nearest mark: its dot and its name as the map
+ * draws them now, and its light when the glow lights it.
+ */
+export function schoolsInReach(
   map: MapLibreMap,
   point: { readonly x: number; readonly y: number },
   radius: number,
   lit: LitSpots | null,
-): SchoolHit | null {
-  const hits: SchoolHit[] = [];
+): MarkHit[] {
+  const zoom = map.getZoom();
+  const found = new Map<SchoolId, MarkHit>();
+  const add = (hit: MarkHit): void => {
+    const known = found.get(hit.id);
+    if (known === undefined || hit.distance < known.distance) found.set(hit.id, hit);
+  };
   const { schoolDots, schoolNames } = BASEMAP_IDS;
-  const layers = [schoolDots, schoolNames].filter((id) => map.getLayer(id) !== undefined);
-  if (layers.length > 0) {
+  const drawn = (id: string, opacity: number): boolean =>
+    opacity >= SHOWN_OPACITY && map.getLayer(id) !== undefined;
+  if (drawn(schoolDots, schoolDotOpacity(zoom))) {
+    const mark = schoolDotRadius(zoom);
     const box: [PointLike, PointLike] = [
-      [point.x - radius, point.y - radius],
-      [point.x + radius, point.y + radius],
+      [point.x - radius - mark, point.y - radius - mark],
+      [point.x + radius + mark, point.y + radius + mark],
     ];
-    /** The schools whose names are under the pointer itself, asked for once a name is near. */
-    let named: Set<SchoolId> | null = null;
-    for (const feature of map.queryRenderedFeatures(box, { layers })) {
+    for (const feature of map.queryRenderedFeatures(box, { layers: [schoolDots] })) {
+      // A school the glow lights shows its light, not its dot.
+      if (feature.state[SCHOOL_LIT_STATE] === true) continue;
       const school = featureSchool(feature);
       if (school === null) continue;
-      if (feature.layer.id === schoolNames) {
-        named ??= new Set(
-          map
-            .queryRenderedFeatures([point.x, point.y], { layers: [schoolNames] })
-            .flatMap((under) => featureSchool(under)?.id ?? []),
-        );
-        hits.push({ ...school, distance: named.has(school.id) ? 0 : radius });
-        continue;
-      }
       const at = map.project([school.lon, school.lat]);
-      hits.push({ ...school, distance: Math.hypot(at.x - point.x, at.y - point.y) });
+      const dx = at.x - point.x;
+      const dy = at.y - point.y;
+      const distance = Math.max(0, Math.hypot(dx, dy) - mark);
+      if (distance <= radius) add({ ...school, dx, dy, distance, name: () => school.name });
+    }
+  }
+  if (drawn(schoolNames, schoolNameOpacity(zoom))) {
+    for (const feature of map.queryRenderedFeatures([point.x, point.y], {
+      layers: [schoolNames],
+    })) {
+      const school = featureSchool(feature);
+      if (school === null) continue;
+      const at = map.project([school.lon, school.lat]);
+      add({
+        ...school,
+        dx: at.x - point.x,
+        dy: at.y - point.y,
+        distance: 0,
+        name: () => school.name,
+      });
     }
   }
   if (lit !== null && lit.ids.length > 0) {
     const { lng, lat } = map.unproject([point.x, point.y]);
     const at = { x: mercatorXFromLng(lng), y: mercatorYFromLat(lat) };
-    const hit = nearestLit(lit, at, TILE * 2 ** map.getZoom(), radius);
-    if (hit !== null) hits.push(hit);
+    for (const hit of litInReach(lit, at, TILE * 2 ** zoom, radius, litRadius(zoom))) add(hit);
   }
-  return nearestSchool(hits, radius);
+  return [...found.values()];
+}
+
+/** The marks a tap could mean: those under the pointer, or else all in reach. */
+function candidates(marks: readonly MarkHit[]): readonly MarkHit[] {
+  const under = marks.filter((mark) => mark.distance <= 0);
+  return under.length > 0 ? under : marks;
+}
+
+/** The one school a tap on these marks means, or null: none in reach, or several. */
+export function meantSchool(marks: readonly MarkHit[]): MarkHit | null {
+  const pool = candidates(marks);
+  return pool.length === 1 ? (pool[0] ?? null) : null;
+}
+
+/**
+ * Where a tap at `point` on several schools zooms to: in around the middle of
+ * them, which stays where it is on the screen, as far as keeps them all
+ * DRILL_MARGIN inside the map, to DRILL_ZOOM at most and by DRILL_STEP levels
+ * at least, no closer than the map goes. Null where no zoom tells them apart:
+ * they are at one place, or the map is as close as it goes.
+ */
+export function drillView(
+  map: MapLibreMap,
+  point: { readonly x: number; readonly y: number },
+  pool: readonly MarkHit[],
+): MapView | null {
+  const zoom = map.getZoom();
+  const closest = map.getMaxZoom();
+  const xs = pool.map((mark) => mark.dx);
+  const ys = pool.map((mark) => mark.dy);
+  const [left, right, top, bottom] = [
+    Math.min(...xs),
+    Math.max(...xs),
+    Math.min(...ys),
+    Math.max(...ys),
+  ];
+  if (!(Math.hypot(right - left, bottom - top) * 2 ** (closest - zoom) >= ONE_PLACE_PX)) {
+    return null;
+  }
+  // The middle of them, on the screen.
+  const middle = { x: point.x + (left + right) / 2, y: point.y + (top + bottom) / 2 };
+  const { clientWidth: width, clientHeight: height } = map.getContainer();
+  // How many times further apart they can be and all stay on the map, around their middle.
+  const half = { x: (right - left) / 2, y: (bottom - top) / 2 };
+  const room = Math.min(
+    half.x > 0 ? (Math.min(middle.x, width - middle.x) - DRILL_MARGIN) / half.x : Infinity,
+    half.y > 0 ? (Math.min(middle.y, height - middle.y) - DRILL_MARGIN) / half.y : Infinity,
+  );
+  const fit = zoom + Math.log2(Math.max(room, 0));
+  const target = Math.min(closest, Math.max(Math.min(fit, DRILL_ZOOM), zoom + DRILL_STEP));
+  if (target - zoom < LEAST_DRILL) return null;
+  const { lng, lat } = map.unproject([middle.x, middle.y]);
+  const scale = TILE * 2 ** target;
+  const x = mercatorXFromLng(lng) - (middle.x - width / 2) / scale;
+  const y = mercatorYFromLat(lat) - (middle.y - height / 2) / scale;
+  return { lat: latFromMercatorY(y), lon: lngFromMercatorX(x), zoom: target };
+}
+
+function opens(mark: MarkHit): TapAction {
+  return {
+    kind: 'open',
+    school: { id: mark.id, name: mark.name(), lon: mark.lon, lat: mark.lat },
+  };
+}
+
+/** What a tap at `point` does with this hit radius, or null for nothing: no school in reach. */
+export function tapAction(
+  map: MapLibreMap,
+  point: { readonly x: number; readonly y: number },
+  radius: number,
+  lit: LitSpots | null,
+): TapAction | null {
+  const marks = schoolsInReach(map, point, radius, lit);
+  if (marks.length === 0) return null;
+  const pool = candidates(marks);
+  const one = meantSchool(marks);
+  if (one !== null) return opens(one);
+  const view = drillView(map, point, pool);
+  if (view !== null) return { kind: 'zoom', view };
+  // Nothing tells them apart: the nearest, the nearest center among marks under the pointer.
+  const nearest = pool.reduce((best, mark) =>
+    mark.distance < best.distance ||
+    (mark.distance === best.distance && Math.hypot(mark.dx, mark.dy) < Math.hypot(best.dx, best.dy))
+      ? mark
+      : best,
+  );
+  return opens(nearest);
 }
 
 export interface SchoolTapOptions {
@@ -206,6 +359,20 @@ export interface SchoolTapOptions {
   readonly lit: () => LitSpots | null;
   /** A school was clicked or tapped: open it. */
   readonly onSchool: (school: SchoolHit) => void;
+  /** A tap could mean several schools: zoom in toward them. */
+  readonly onZoom: (view: MapView) => void;
+  /**
+   * A finger's tap on a school, waiting to be sure it is no double tap: show
+   * it picked, and start loading its panel. Null once it turns out to be one.
+   */
+  readonly onPending?: (school: SchoolHit | null) => void;
+}
+
+/** The taps on the map: stopped when the page goes. */
+export interface SchoolTaps {
+  /** Takes a click heard before the taps were attached (app/boot.ts keeps them). */
+  click(event: MapMouseEvent): void;
+  stop(): void;
 }
 
 /** A click, as the next one is measured against. */
@@ -213,30 +380,37 @@ interface Click {
   readonly time: number;
   readonly x: number;
   readonly y: number;
-  /** Whether it opened a school. */
-  opened: boolean;
+  /** Whether it opened a school or zoomed the map. */
+  acted: boolean;
 }
 
-/**
- * Opens the school a click or a tap on the map means, and shows a pointer
- * over one with a mouse. Returns the function that stops it.
- */
-export function attachSchoolTaps(map: MapLibreMap, options: SchoolTapOptions): () => void {
+/** Opens the school a click or a tap on the map means, and shows a pointer over one with a mouse. */
+export function attachSchoolTaps(map: MapLibreMap, options: SchoolTapOptions): SchoolTaps {
   const container = map.getCanvasContainer();
   /** The type of the pointer that last pressed on the map. */
   let pointerType = 'mouse';
   let last: Click | null = null;
-  let pending: number | undefined;
+  let pending: ReturnType<typeof setTimeout> | undefined;
+  /** The school a waiting tap shows as picked, if any. */
+  let shown: SchoolHit | null = null;
   /** True while two fingers or more are on the map. */
   let pinching = false;
   /** When the map was last pressed, moved by hand or turned by a wheel, as an event's timeStamp. */
   let touched = -Infinity;
+  /** While the map's double click zoom is held off after a tap acted: when it comes back. */
+  let zoomBack: ReturnType<typeof setTimeout> | undefined;
+  /** While a press takes no drag: when the map's drag comes back. */
+  let dragBack: ReturnType<typeof setTimeout> | undefined;
 
+  /** A waiting tap acts on nothing; the school it showed as picked is shown so no longer. */
   const cancel = (): void => {
-    window.clearTimeout(pending);
+    clearTimeout(pending);
     pending = undefined;
+    if (shown === null) return;
+    shown = null;
+    options.onPending?.(null);
   };
-  /** A press, a hand moving the map or a wheel: a click waiting to open a school opens none. */
+  /** A press, a hand moving the map or a wheel: a tap waiting to act acts on nothing. */
   const interrupt = (event: { readonly originalEvent?: Event | undefined }): void => {
     // A move without an event is the map's own (a flight).
     const time = event.originalEvent?.timeStamp;
@@ -251,49 +425,82 @@ export function attachSchoolTaps(map: MapLibreMap, options: SchoolTapOptions): (
     time - click.time < DOUBLE_TAP_MS &&
     Math.hypot(x - click.x, y - click.y) < DOUBLE_TAP_PX;
 
+  /** The map's double click zoom back, if it is held off. */
+  const giveZoomBack = (): void => {
+    if (zoomBack === undefined) return;
+    clearTimeout(zoomBack);
+    zoomBack = undefined;
+    map.doubleClickZoom.enable();
+  };
+  /** The map's drag back, if a press took none. */
+  const giveDragBack = (): void => {
+    if (dragBack === undefined) return;
+    clearTimeout(dragBack);
+    dragBack = undefined;
+    map.dragPan.enable();
+  };
+  /**
+   * A press on the map: a tap waiting to act lets go. The second press of a
+   * double click whose first acted takes no drag, which would stop the flight
+   * the first set off; the map's drag is back once MapLibre has had the press.
+   */
+  const onMouseDown = (event: MapMouseEvent): void => {
+    const { originalEvent, point } = event;
+    const second =
+      originalEvent.detail > 1 || secondOf(last, originalEvent.timeStamp, point.x, point.y);
+    if (second && last?.acted === true && map.dragPan.isEnabled()) {
+      map.dragPan.disable();
+      dragBack = setTimeout(giveDragBack, 0);
+    }
+    interrupt(event);
+  };
+  const act = (action: TapAction): void => {
+    // A second click or tap coming now is the second of a double: it leaves the flight be.
+    if (zoomBack !== undefined || map.doubleClickZoom.isEnabled()) {
+      clearTimeout(zoomBack);
+      map.doubleClickZoom.disable();
+      zoomBack = setTimeout(giveZoomBack, DOUBLE_TAP_MS);
+    }
+    if (last !== null) last.acted = true;
+    if (action.kind === 'open') options.onSchool(action.school);
+    else options.onZoom(action.view);
+  };
   const onPointerDown = (event: PointerEvent): void => {
     pointerType = event.pointerType;
   };
   const onClick = (event: MapMouseEvent): void => {
     const { originalEvent, point } = event;
     const time = originalEvent.timeStamp;
-    // The second click of a double click, or a third: the map zooms, and nothing opens.
+    // The second click of a double click, or a third: the first has acted, or the map zooms.
     if (originalEvent.detail > 1 || secondOf(last, time, point.x, point.y)) return;
     // Nor while fingers pinch, or for a click older than a press after it (a busy page's).
     if (pinching || touched > time) return;
-    const click: Click = { time, x: point.x, y: point.y, opened: false };
-    last = click;
+    last = { time, x: point.x, y: point.y, acted: false };
     cancel();
     const type =
-      'pointerType' in originalEvent && typeof originalEvent.pointerType === 'string'
+      ('pointerType' in originalEvent && typeof originalEvent.pointerType === 'string'
         ? originalEvent.pointerType
-        : '';
-    const school = schoolAt(map, point, hitRadius(type || pointerType), options.lit());
-    if (school === null) return;
-    pending = window.setTimeout(() => {
-      pending = undefined;
-      click.opened = true;
-      options.onSchool(school);
-    }, OPEN_AFTER_MS);
-  };
-  // The second click of a double click whose first already opened a school: the pick's flight goes on.
-  const onDoubleClick = (event: MapMouseEvent): void => {
-    const { originalEvent, point } = event;
-    if (last?.opened === true && secondOf(last, originalEvent.timeStamp, point.x, point.y)) {
-      event.preventDefault();
+        : '') || pointerType;
+    const action = tapAction(map, point, hitRadius(type), options.lit());
+    if (action === null) return;
+    // A mouse or a pen acts at once, and so does a finger where a double tap zooms no further.
+    if (type !== 'touch' || map.getZoom() >= map.getMaxZoom()) {
+      act(action);
+      return;
     }
+    if (action.kind === 'open') {
+      shown = action.school;
+      options.onPending?.(shown);
+    }
+    pending = setTimeout(() => {
+      pending = undefined;
+      shown = null;
+      act(action);
+    }, TAP_WAIT_MS);
   };
   const onTouchStart = (event: MapTouchEvent): void => {
     interrupt(event);
-    const { originalEvent, point } = event;
-    if (originalEvent.touches.length > 1) {
-      pinching = true;
-      return;
-    }
-    // The same for a double tap.
-    if (last?.opened === true && secondOf(last, originalEvent.timeStamp, point.x, point.y)) {
-      event.preventDefault();
-    }
+    if (event.originalEvent.touches.length > 1) pinching = true;
   };
   const onTouchEnd = (event: MapTouchEvent): void => {
     if (event.originalEvent.touches.length === 0) pinching = false;
@@ -303,6 +510,8 @@ export function attachSchoolTaps(map: MapLibreMap, options: SchoolTapOptions): (
   let hover: { x: number; y: number } | null = null;
   let frame: number | undefined;
   let pointing = false;
+  /** The lit schools the cursor was last looked for among. */
+  let seen: LitSpots | null = null;
   const point = (on: boolean): void => {
     if (on === pointing) return;
     pointing = on;
@@ -310,7 +519,8 @@ export function attachSchoolTaps(map: MapLibreMap, options: SchoolTapOptions): (
   };
   const lookUnderMouse = (): void => {
     frame = undefined;
-    point(hover !== null && schoolAt(map, hover, HIT_RADIUS.mouse, options.lit()) !== null);
+    seen = options.lit();
+    point(hover !== null && schoolsInReach(map, hover, HIT_RADIUS.mouse, seen).length > 0);
   };
   const lookSoon = (): void => {
     frame ??= requestAnimationFrame(lookUnderMouse);
@@ -333,11 +543,14 @@ export function attachSchoolTaps(map: MapLibreMap, options: SchoolTapOptions): (
   const onMoveEnd = (): void => {
     if (hover !== null) lookSoon();
   };
+  // The glow lit other schools under a still mouse, and drew them.
+  const onRender = (): void => {
+    if (hover !== null && options.lit() !== seen) lookSoon();
+  };
 
   container.addEventListener('pointerdown', onPointerDown, { passive: true });
   map.on('click', onClick);
-  map.on('dblclick', onDoubleClick);
-  map.on('mousedown', interrupt);
+  map.on('mousedown', onMouseDown);
   map.on('touchstart', onTouchStart);
   map.on('touchend', onTouchEnd);
   map.on('touchcancel', onTouchEnd);
@@ -346,21 +559,27 @@ export function attachSchoolTaps(map: MapLibreMap, options: SchoolTapOptions): (
   map.on('mousemove', onMouseMove);
   map.on('mouseout', onMouseOut);
   map.on('moveend', onMoveEnd);
-  return () => {
-    cancel();
-    if (frame !== undefined) cancelAnimationFrame(frame);
-    point(false);
-    container.removeEventListener('pointerdown', onPointerDown);
-    map.off('click', onClick);
-    map.off('dblclick', onDoubleClick);
-    map.off('mousedown', interrupt);
-    map.off('touchstart', onTouchStart);
-    map.off('touchend', onTouchEnd);
-    map.off('touchcancel', onTouchEnd);
-    map.off('movestart', interrupt);
-    map.off('wheel', interrupt);
-    map.off('mousemove', onMouseMove);
-    map.off('mouseout', onMouseOut);
-    map.off('moveend', onMoveEnd);
+  map.on('render', onRender);
+  return {
+    click: onClick,
+    stop() {
+      cancel();
+      giveZoomBack();
+      giveDragBack();
+      if (frame !== undefined) cancelAnimationFrame(frame);
+      point(false);
+      container.removeEventListener('pointerdown', onPointerDown);
+      map.off('click', onClick);
+      map.off('mousedown', onMouseDown);
+      map.off('touchstart', onTouchStart);
+      map.off('touchend', onTouchEnd);
+      map.off('touchcancel', onTouchEnd);
+      map.off('movestart', interrupt);
+      map.off('wheel', interrupt);
+      map.off('mousemove', onMouseMove);
+      map.off('mouseout', onMouseOut);
+      map.off('moveend', onMoveEnd);
+      map.off('render', onRender);
+    },
   };
 }
