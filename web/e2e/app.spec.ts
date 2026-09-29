@@ -826,13 +826,17 @@ async function menuGrid(menu: Locator): Promise<MenuGrid> {
       )
       .filter((rect) => rect !== null)
       .map((rect) => at(rect.right));
+    // Layout can land a row a hair off a whole pixel (40.000015 on CI's GPU-less Chromium).
+    const px = (value: number): number => Math.round(value * 100) / 100;
     const pills = [...panel.querySelectorAll('.item.is-on')].map((row) => {
       const style = getComputedStyle(row);
-      return `${style.borderTopLeftRadius} of ${String(row.getBoundingClientRect().height)}, ${style.backgroundColor}`;
+      return `${style.borderTopLeftRadius} of ${String(px(row.getBoundingClientRect().height))}, ${style.backgroundColor}`;
     });
     return {
       heights: distinct(
-        rows.filter((row) => row.matches('.item')).map((row) => row.getBoundingClientRect().height),
+        rows
+          .filter((row) => row.matches('.item'))
+          .map((row) => px(row.getBoundingClientRect().height)),
       ),
       icons: distinct(icons.map((rect) => at(rect.left))),
       iconSizes: distinct(icons.map((rect) => `${String(rect.width)}x${String(rect.height)}`)),
