@@ -67,6 +67,8 @@ const PIN_KEY = 'snowlight:pin';
 /** Chrome's own lines about SwiftShader, not the page's. */
 const GPU_DRIVER_NOISE =
   /GL Driver Message|GPU stall due to ReadPixels|Automatic fallback to software WebGL/;
+/** Playwright's own line when a test blocks the service worker, not the page's. */
+const BLOCKED_WORKER = 'Service Worker registration blocked by Playwright';
 
 /** Words that would give away made-up data in a build. */
 const SYNTHETIC_MARKERS = /synthetic|lorem ipsum|sample data|placeholder data|dummy data|fixture/i;
@@ -88,8 +90,13 @@ function watch(page: Page): Watch {
   const requests: string[] = [];
   page.on('console', (message) => {
     const type = message.type();
-    if ((type === 'error' || type === 'warning') && !GPU_DRIVER_NOISE.test(message.text())) {
-      problems.push(`console.${type}: ${message.text()}`);
+    const text = message.text();
+    if (
+      (type === 'error' || type === 'warning') &&
+      !GPU_DRIVER_NOISE.test(text) &&
+      text !== BLOCKED_WORKER
+    ) {
+      problems.push(`console.${type}: ${text}`);
     }
   });
   page.on('pageerror', (error) => problems.push(`pageerror: ${error.message}`));
