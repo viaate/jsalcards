@@ -5,10 +5,10 @@
  * registerSchoolTiles there, so a school tile loads in the worker that parses
  * it: its bytes are read from the archive with a range request (past the
  * browser's cache, checked, and tried again when wrong: mask/pmtiles.ts
- * httpRangeReader), unzipped, and each school's name is put in the form the page shows
- * (src/text/names.ts: "THE PEMBROKE HILL SCHOOL - WORNALL CAMPUS" is drawn
- * as "The Pembroke Hill School - Wornall Campus"). Nothing else in the tile
- * changes.
+ * httpRangeReader), unzipped, and each school's name is put in the form the
+ * page shows (src/text/names.ts: "THE PEMBROKE HILL SCHOOL - WORNALL CAMPUS"
+ * is drawn as "The Pembroke Hill School - Wornall Campus"). Nothing else in
+ * the tile changes.
  *
  * The style names the archive in each tile's URL
  * ("snowlight-schools://https://.../schools.<hash>.pmtiles/{z}/{x}/{y}"), so a

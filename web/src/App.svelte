@@ -274,6 +274,7 @@
 
   function onFocus(): void {
     focused = true;
+    basemap?.searchStarted();
     // Coming back to the field shows its results again, even ones Escape hid.
     dismissed = false;
     void services.then((app) => {
@@ -590,6 +591,11 @@
           }),
           listId: LIST_ID,
           onResults: (next) => {
+            // A search showing places is on its way to one, most likely the first: what the map's
+            // streets there need comes while the person chooses. Not sooner: until its index is
+            // in, the search needs the link.
+            const first = next?.[0]?.hit;
+            if (first !== undefined) basemap?.prepareStreets({ lat: first.lat, lon: first.lon });
             options = next;
             active = next !== null && next.length > 0 ? 0 : -1;
           },

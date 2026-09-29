@@ -9,6 +9,7 @@ import { compileHints } from './tools/compile-hints.ts';
 import { dataFiles } from './tools/data-files.ts';
 import { htmlCopy } from './tools/html-copy.ts';
 import { maplibreUrl } from './tools/maplibre-url.ts';
+import { usMask } from './tools/us-mask.ts';
 import { schoolNames } from './tools/school-names.ts';
 
 const isVitest = process.env.VITEST !== undefined;
@@ -40,6 +41,9 @@ export default defineConfig({
     schoolNames(DATA_DIR, { ship: shipData }),
     // Where MapLibre's page module is built to, for the map to ask for it ahead of running it.
     maplibreUrl(),
+    // The US mask under a name that never changes too, for a page from an older build, and the
+    // tiles wholly inside the US, which need no mask.
+    usMask(),
     // The code the page runs as it starts, compiled as it downloads, off the main thread.
     compileHints(EAGER_CHUNKS),
     // Service worker and manifest links; the page registers the worker after load (src/pwa).

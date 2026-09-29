@@ -30,6 +30,43 @@ const TILE_SIZE = 512;
 /** At most this many tiles for one flight: a large screen at street zoom and the steps above it. */
 export const MAX_FLIGHT_TILES = 48;
 
+/**
+ * At most this many on a slow link, for its stop and for where it ends: the
+ * tiles it needs first come sooner for the others not sharing the link.
+ */
+export const SLOW_LINK_FLIGHT_TILES = 24;
+
+/** What the browser says of its link, where it says (the Network Information API). */
+export interface LinkInfo {
+  readonly saveData?: boolean;
+  readonly effectiveType?: string;
+  /** Megabits a second, as the browser estimates them. */
+  readonly downlink?: number;
+}
+
+/** The link this page is on, where the browser says. */
+function pageLink(): LinkInfo | undefined {
+  return (globalThis.navigator as { connection?: LinkInfo } | undefined)?.connection;
+}
+
+/** Whether the browser says the link is slow: data saving on, less than 4G, or under 5 Mbit/s. */
+export function slowLink(link: LinkInfo | undefined = pageLink()): boolean {
+  return (
+    link !== undefined &&
+    (link.saveData === true ||
+      (link.effectiveType !== undefined && link.effectiveType !== '4g') ||
+      (link.downlink !== undefined && link.downlink > 0 && link.downlink < 5))
+  );
+}
+
+/**
+ * How many tiles a flight asks for ahead, for its stop and for where it
+ * ends: MAX_FLIGHT_TILES, or SLOW_LINK_FLIGHT_TILES on a slow link (slowLink).
+ */
+export function flightTileLimit(link: LinkInfo | undefined = pageLink()): number {
+  return slowLink(link) ? SLOW_LINK_FLIGHT_TILES : MAX_FLIGHT_TILES;
+}
+
 /** Tile columns (or rows) from `lo` to `hi` world units at zoom `z`, inside the world. */
 function span(lo: number, hi: number, z: number): number[] {
   const count = 2 ** z;

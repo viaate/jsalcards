@@ -199,32 +199,18 @@ describe('the street tile protocol', () => {
     return { x, y, px: Math.round((mx - x) * EXTENT), py: Math.round((my - y) * EXTENT) };
   }
 
-  it('answers tiles outside the US with nothing, without asking for them once the mask is in', async () => {
+  it('answers tiles outside the US with nothing, without asking for them', async () => {
     serveArchive();
-    const street = { data: copyBuffer(STREET), cacheControl: null, expires: null };
-    const signals: AbortSignal[] = [];
-    const loadTile = vi.fn((url: string, signal: AbortSignal) => {
-      expect(url).toMatch(/^openfreemap:/);
-      signals.push(signal);
-      return Promise.resolve(street);
-    });
+    const loadTile = vi.fn();
     const load = streetTileLoader(MASK_URL, loadTile);
     // Toronto, at street zoom.
-    const toronto = locate(-79.38, 43.65, 14);
-    const url = `openfreemap://planet/14/${String(toronto.x)}/${String(toronto.y)}`;
-    // Before the mask is in, the tile is asked for alongside it, and given up once it says outside.
-    const first = await load({ url }, new AbortController());
-    expect((first.data as ArrayBuffer).byteLength).toBe(0);
-    expect(loadTile).toHaveBeenCalledTimes(1);
-    expect(signals[0]?.aborted).toBe(true);
-    // Once it is in, a tile outside the US is never asked for.
-    const next = locate(-79.4, 43.7, 14);
-    const second = await load(
-      { url: `openfreemap://planet/14/${String(next.x)}/${String(next.y)}` },
+    const { x, y } = locate(-79.38, 43.65, 14);
+    const response = await load(
+      { url: `openfreemap://planet/14/${String(x)}/${String(y)}` },
       new AbortController(),
     );
-    expect((second.data as ArrayBuffer).byteLength).toBe(0);
-    expect(loadTile).toHaveBeenCalledTimes(1);
+    expect((response.data as ArrayBuffer).byteLength).toBe(0);
+    expect(loadTile).not.toHaveBeenCalled();
   });
 
   it('passes tiles inside the US through untouched', async () => {

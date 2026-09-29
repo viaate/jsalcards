@@ -51,13 +51,21 @@ export interface WorkerUrls {
   readonly schoolTiles: string;
   /** The US mask archive. */
   readonly mask: string;
+  /** The channel the page sends the mask on (mask/feed.ts); without one, each worker fetches it. */
+  readonly maskChannel?: string;
 }
 
 /**
  * The worker module's source: importing its shared module from its chunk,
  * and registering the street and school tile protocols at the end.
  */
-export function workerSource({ shared, streetTiles, schoolTiles, mask }: WorkerUrls): string {
+export function workerSource({
+  shared,
+  streetTiles,
+  schoolTiles,
+  mask,
+  maskChannel,
+}: WorkerUrls): string {
   let imports = 0;
   const code = source.replace(SHARED_IMPORT, (_match, from: string) => {
     imports += 1;
@@ -81,7 +89,9 @@ export function workerSource({ shared, streetTiles, schoolTiles, mask }: WorkerU
   return `${kept.replace(SOURCE_MAP_COMMENT, '\n')}
 import { registerStreetTiles as snowlightRegisterStreetTiles } from ${JSON.stringify(streetTiles)};
 import { registerSchoolTiles as snowlightRegisterSchoolTiles } from ${JSON.stringify(schoolTiles)};
-snowlightRegisterStreetTiles(self, ${JSON.stringify(mask)});
+snowlightRegisterStreetTiles(self, ${[mask, maskChannel]
+    .flatMap((argument) => (argument === undefined ? [] : [JSON.stringify(argument)]))
+    .join(', ')});
 snowlightRegisterSchoolTiles(self);
 `;
 }

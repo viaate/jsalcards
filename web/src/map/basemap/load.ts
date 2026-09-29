@@ -20,11 +20,12 @@
  *   worker reads them from the browser's cache once the map asks for them,
  *   so it does not wait on the network then.
  *
- * The US mask archive itself is fetched whole, once the map needs street
- * tiles (zoom 7 and up): by the page as the first flight into the streets
- * sets off, and by each worker, from the browser's cache, as it cuts its
- * first street tile (street-tiles.ts). The school tiles, when this build
- * ships them, are read by the workers a range at a time from zoom 9.
+ * The US mask archive itself is fetched whole, by the page, once someone is
+ * on their way to streets near a border or a coast (index.ts prepareStreets),
+ * and sent to the workers on a channel of this page's own (mask/feed.ts):
+ * streets wholly inside the US need none (us-inside.ts). The school tiles,
+ * when this build ships them, are read by the workers a range at a time from
+ * zoom 9.
  *
  * This module is small and ships in the entry chunk; the map code does not.
  */
@@ -35,6 +36,7 @@ import { yieldToMain } from './reveal';
 import type { UsLinesData } from './style';
 import { US_LINES_FILE, US_NAMES_FILE, US_STATES_FILE } from './us-geo';
 import { US_MASK_FILE } from './us-mask';
+import { US_MASK_ALIAS } from './us-mask-alias';
 
 export interface BasemapFactory {
   /** Creates the map: everything it needs is already here. */
@@ -113,11 +115,18 @@ export async function loadBasemap(): Promise<BasemapFactory> {
   const maplibre = await import('./maplibre');
   await yieldToMain();
   const [[basemap, worker], [streetTiles, schoolTiles, usNames]] = await Promise.all([code, rest]);
+  // The page sends the mask to its workers on a channel of its own: another tab's are not asked.
+  const mask = {
+    url: publicUrl(US_MASK_FILE),
+    fallbackUrl: publicUrl(US_MASK_ALIAS),
+    channel: `snowlight-mask-${Math.random().toString(36).slice(2)}`,
+  };
   const workerUrl = worker.workerUrl({
     shared: shared.SHARED_URL,
     streetTiles: streetTiles.STREET_TILES_URL,
     schoolTiles: schoolTiles.SCHOOL_TILES_URL,
-    mask: publicUrl(US_MASK_FILE),
+    mask: mask.url,
+    maskChannel: mask.channel,
   });
   basemap.startWorkers(maplibre, workerUrl);
   await yieldToMain();
@@ -134,7 +143,7 @@ export async function loadBasemap(): Promise<BasemapFactory> {
         usLinesUrls: { lines: publicUrl(US_LINES_FILE), names: publicUrl(US_NAMES_FILE) },
         schools,
         stateAreas: publicUrl(US_STATES_FILE),
-        mask: publicUrl(US_MASK_FILE),
+        mask,
       }),
   };
 }

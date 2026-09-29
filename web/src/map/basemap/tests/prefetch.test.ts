@@ -9,7 +9,13 @@ import { describe, expect, it } from 'vitest';
 import { mercatorXFromLng, mercatorYFromLat } from '../../glow/mercator';
 import { FLIGHT_LEAD, FLIGHT_STOP_ZOOM, flightZooms } from '../flight';
 import { OPENFREEMAP_MAX_ZOOM, OPENFREEMAP_MIN_ZOOM } from '../openfreemap';
-import { MAX_FLIGHT_TILES, flightTiles } from '../prefetch';
+import {
+  MAX_FLIGHT_TILES,
+  SLOW_LINK_FLIGHT_TILES,
+  flightTileLimit,
+  flightTiles,
+  slowLink,
+} from '../prefetch';
 import type { TileId } from '../prefetch';
 
 const DESKTOP = { width: 1440, height: 900 };
@@ -113,6 +119,18 @@ describe('the tiles fetched ahead of a flight', () => {
     expect(atStop[0]).toEqual(tileAt(PEMBROKE.lat, PEMBROKE.lon, 12));
     const atEnd = flightTiles(PEMBROKE, DESKTOP, 12);
     expect([...new Set(atEnd.map(([z]) => z))]).toEqual([14]);
+  });
+
+  it('keep to fewer on a link the browser says is slow', () => {
+    expect(flightTileLimit(undefined)).toBe(MAX_FLIGHT_TILES);
+    expect(flightTileLimit({ effectiveType: '4g', downlink: 10 })).toBe(MAX_FLIGHT_TILES);
+    expect(flightTileLimit({ effectiveType: '4g', downlink: 1.6 })).toBe(SLOW_LINK_FLIGHT_TILES);
+    expect(flightTileLimit({ effectiveType: '3g' })).toBe(SLOW_LINK_FLIGHT_TILES);
+    expect(flightTileLimit({ saveData: true, effectiveType: '4g' })).toBe(SLOW_LINK_FLIGHT_TILES);
+    expect(SLOW_LINK_FLIGHT_TILES).toBeLessThan(MAX_FLIGHT_TILES);
+    // As Chrome reports a link held to 1.6 Mbit/s: 4G by its type, slow by its speed.
+    expect(slowLink({ effectiveType: '4g', downlink: 1.65 })).toBe(true);
+    expect(slowLink({ effectiveType: '4g', downlink: 10 })).toBe(false);
   });
 
   it('ask for nothing below zoom 7, nor below it on the way', () => {

@@ -3,7 +3,8 @@
  * and Windsor) and with Mexico (San Diego and Tijuana), MapLibre has no road
  * or name on the foreign side to draw, place or query, and the US side keeps
  * its roads. The mask the street tiles are cut with is read from the site,
- * only once street tiles are needed (zoom 7 and up).
+ * whole and once, only once street tiles are needed (zoom 7 and up), never
+ * on a plain visit.
  *
  * The checks read what MapLibre drew (queryRenderedFeatures) through the
  * handle the page sets under automation, window.snowlightMap. Street tiles
@@ -155,12 +156,32 @@ test('below zoom 7 the mask is not asked for', async ({ page }) => {
   expect(problems).toEqual([]);
 });
 
+test('a plain visit, at the national view, never asks for the mask', async ({ page }) => {
+  const problems = watch(page);
+  const masks: string[] = [];
+  page.on('request', (request) => {
+    if (/\/geo\/us-mask\b/.test(new URL(request.url()).pathname)) masks.push(request.url());
+  });
+  await page.goto('/');
+  await page.waitForFunction(
+    () => {
+      const map = window.snowlightMap;
+      return map !== undefined && map.loaded() && map.areTilesLoaded() && !map.isMoving();
+    },
+    null,
+    { timeout: 90_000, polling: 250 },
+  );
+  await page.waitForTimeout(2_000);
+  expect(masks).toEqual([]);
+  expect(problems).toEqual([]);
+});
+
 test('Detroit keeps its roads and names; Windsor across the river has none', async ({ page }) => {
   const problems = watch(page);
-  const ranges: string[] = [];
+  const masks: { url: string; range: string | null }[] = [];
   page.on('request', (request) => {
-    if (MASK_FILE.test(new URL(request.url()).pathname)) {
-      ranges.push(request.headers().range ?? 'whole file');
+    if (/\/geo\/us-mask\b/.test(new URL(request.url()).pathname)) {
+      masks.push({ url: request.url(), range: request.headers().range ?? null });
     }
   });
   await openView(page, 42.32, -83.05, 13);
@@ -178,9 +199,10 @@ test('Detroit keeps its roads and names; Windsor across the river has none', asy
   const names = await namesOnScreen(page);
   expect(names).toContain('Detroit');
   expect(names).not.toContain('Windsor');
-  // The mask came from the site, a range at a time.
-  expect(ranges.length).toBeGreaterThan(0);
-  expect(ranges.every((range) => /^bytes=\d+-\d+$/.test(range))).toBe(true);
+  // The mask came from the site once, whole: a range of it can come back as a range of its gzip.
+  expect(masks).toHaveLength(1);
+  expect(masks[0]?.url).toMatch(MASK_FILE);
+  expect(masks[0]?.range).toBeNull();
   expect(problems).toEqual([]);
 });
 

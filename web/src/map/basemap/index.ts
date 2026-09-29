@@ -3,7 +3,9 @@ import type {
   GeoJSONSource,
   LayerSpecification,
   Map as MapLibreMap,
+  MapMouseEvent,
   MapMovementEvent,
+  MapTouchEvent,
   TransformConstrainFunction,
 } from 'maplibre-gl';
 import { DATA_FILES } from 'virtual:snowlight/data-files';
@@ -20,6 +22,7 @@ import { addMapFonts } from './fonts';
 import type { MapLibre } from './maplibre';
 import {
   OPENFREEMAP_ATTRIBUTION,
+  OPENFREEMAP_MAX_ZOOM,
   OPENFREEMAP_MIN_ZOOM,
   prefetchOpenFreeMapTiles,
 } from './openfreemap';
@@ -45,7 +48,9 @@ import {
 import type { HoldVerdict, LoadedTile } from './flight';
 import { failedTiles, healTiles, styleOf } from './heal';
 import { heldFrame } from './held-frame';
-import { flightTiles } from './prefetch';
+import { maskFeed as createMaskFeed } from './mask/feed';
+import { flightTileLimit, flightTiles, slowLink } from './prefetch';
+import { insideUs } from './us-inside';
 import { afterNextFrame, LIVE_CLASS, markStep, whenGpuIdle, yieldToMain } from './reveal';
 import { SCHOOL_SPACE_IMAGE, schoolSpaceImage, selectedSchoolFilter } from './schools';
 import { STATE_AREAS_UNTIL, keptNames, nameBox, parseStateAreas, stateSpots } from './state-areas';
@@ -137,11 +142,14 @@ export interface BasemapResources {
   /** The states' shapes a phone names the states in view by (state-areas.ts), fetched when first needed. */
   stateAreas?: string;
   /**
-   * The US mask archive the street tiles are cut by (street-tiles.ts): asked
-   * for, whole, as the first flight into streets sets off, so the workers find
-   * it in the browser's cache when they need it.
+   * The US mask archive the street tiles are cut by (street-tiles.ts): its
+   * URL, the URL of the copy under a name that never changes, and the channel
+   * the page sends it to the workers on (mask/feed.ts). Fetched once street
+   * tiles near a border or a coast are needed, or about to be
+   * (prepareStreets): never on a plain visit, nor for streets wholly inside
+   * the US.
    */
-  mask?: string;
+  mask?: { readonly url: string; readonly fallbackUrl: string; readonly channel: string };
 }
 
 export interface Basemap {
@@ -190,6 +198,21 @@ export interface Basemap {
   goTo(view: MapView | null): void;
   /** Glides to the nearest view the limits allow; jumps when reduced motion is preferred. */
   flyTo(view: MapView): void;
+  /**
+   * Someone is on their way to the streets at `place` (their search is
+   * showing it, or they pressed on a school there), or somewhere: asks for
+   * what the street tiles there need before any can be drawn, the US mask,
+   * unless a flight there would ask for none but tiles wholly inside the US
+   * (us-inside.ts), which need none.
+   */
+  prepareStreets(place?: Place): void;
+  /**
+   * Someone has started a search: on a link the browser does not call slow,
+   * the mask comes now, whatever they pick; on a slow one it waits for the
+   * search to show where they are going (prepareStreets), so as not to slow
+   * the search.
+   */
+  searchStarted(): void;
   /** Glides to show [west, south, east, north] inside the frame, no closer than `maxZoom`. */
   fitBounds(
     bounds: readonly [number, number, number, number],
@@ -215,7 +238,10 @@ const FALLBACK_SIZE: Size = { width: 400, height: 300 };
  */
 const HELD_IN_FLIGHT = [BASEMAP_IDS.openFreeMapSource, BASEMAP_IDS.schoolsSource] as const;
 
-/** How long past its own duration a glide may hold them, in milliseconds, whatever becomes of it. */
+/**
+ * How long past its own duration a glide may hold them, in milliseconds,
+ * whatever becomes of it.
+ */
 const GLIDE_HOLD_SLACK_MS = 2000;
 
 const NO_PADDING: Insets = { top: 0, right: 0, bottom: 0, left: 0 };
@@ -379,7 +405,7 @@ export async function createBasemap({
   usLinesUrls,
   schools,
   stateAreas: stateAreasUrl,
-  mask: maskUrl,
+  mask,
 }: BasemapOptions & BasemapResources): Promise<Basemap> {
   configure(maplibre, workerUrl);
   addMapFonts();
@@ -682,7 +708,10 @@ export async function createBasemap({
   let tilesHeld = false;
   /** Lets them go after a while, whatever becomes of the glide that held them. */
   let tilesHeldTimer: number | undefined;
-  /** Asks for the tiles the view needs again: the glide stopped, the flight is over, or someone has the map. */
+  /**
+   * Asks for the tiles the view needs again: the glide stopped, the flight is
+   * over, or someone has the map.
+   */
   const releaseTileRequests = (): void => {
     window.clearTimeout(tilesHeldTimer);
     if (!tilesHeld) return;
@@ -712,8 +741,25 @@ export async function createBasemap({
   };
   /** Street and school tiles that fail are asked for again until they come (heal.ts). */
   const stopHealing = healTiles(map, [BASEMAP_IDS.openFreeMapSource, BASEMAP_IDS.schoolsSource]);
-  /** Whether the mask has been asked for ahead of the workers (flyTo). */
-  let maskAsked = maskUrl === undefined;
+  /** The US mask: fetched once, on the way to the streets, sent to the workers (mask/feed.ts). */
+  const maskFeed =
+    mask === undefined
+      ? null
+      : createMaskFeed(mask.url, mask.channel, { fallbackUrl: mask.fallbackUrl });
+  /** Resolves once the mask is in: at once in a build that feeds the workers none. */
+  const maskIn = (): Promise<void> => maskFeed?.loaded ?? Promise.resolve();
+  /** Whether street tiles need the mask: some are not wholly inside the US (us-inside.ts). */
+  const needMask = (tiles: readonly (readonly [number, number, number])[]): boolean =>
+    tiles.some(([z, x, y]) => !insideUs(z, x, y));
+  const prepareStreets = (place?: Place): void => {
+    // A flight there stops over it at the street tiles' first zoom: every tile it asks for is
+    // under the ones covering the screen then. All wholly inside the US, it needs no mask.
+    if (place !== undefined) {
+      const over = flightTiles({ ...place, zoom: FLIGHT_STOP_ZOOM }, size(), FLIGHT_STOP_ZOOM);
+      if (!needMask(over)) return;
+    }
+    maskFeed?.start('high');
+  };
   let moved = false;
   let national = start === null;
   /** Whether the map opens on the national view, the one the inline still draws. */
@@ -1138,7 +1184,7 @@ export async function createBasemap({
   };
   /** The closest the camera may be now, with the street tiles on screen. */
   const ceiling = (): number => flightCeiling(coarsestStreetTiles(), FLIGHT_STOP_ZOOM);
-  /** Checks the wait in progress (holdUntil) again at once, if there is one: for a flight told to hurry. */
+  /** Checks the wait in progress (holdUntil) again at once, if any: for a flight told to hurry. */
   let checkHold: (() => void) | null = null;
   /**
    * Resolves true once `ready` holds, checked as tiles come in and frames are
@@ -1264,7 +1310,7 @@ export async function createBasemap({
   interface FlightPace {
     hurried: boolean;
   }
-  /** Each leg of a flight (a camera move it starts) is numbered: MapLibre's moveend says which ended. */
+  /** Each leg of a flight (a camera move it starts) is numbered: moveend says which one ended. */
   let legs = 0;
   /**
    * Starts a camera move as a leg of a flight: `then` runs once it ends,
@@ -1436,20 +1482,31 @@ export async function createBasemap({
                 ? Math.max(FLIGHT_STOP_ZOOM, allowed.zoom - FLIGHT_LEAD)
                 : FLIGHT_STOP_ZOOM,
           };
-    // The tiles it stops at and ends on, and the ones it passes on the way, asked for before it starts.
+    // The tiles it stops at and ends on, asked for before it gets there: those wholly inside the
+    // US at once, the rest once the mask is in (no such tile draws before it, and on a slow link
+    // they would only slow it down). A flight with any of the rest asks for the mask as it goes.
     const paceFrom = Math.floor(stop?.zoom ?? zoom);
-    void prefetchOpenFreeMapTiles([
-      ...(stop === null ? [] : flightTiles(stop, size(), paceFrom)),
-      ...flightTiles(allowed, size(), paceFrom),
-    ]);
-    // The first flight into streets asks for the mask the workers cut them by, whole, as it sets off.
-    if (intoStreets && !maskAsked && maskUrl !== undefined) {
-      maskAsked = true;
-      fetch(maskUrl)
-        .then((response) => response.arrayBuffer())
-        .catch(() => {
-          maskAsked = false;
-        });
+    const slow = slowLink();
+    const limit = flightTileLimit();
+    const ahead = [
+      ...(stop === null ? [] : flightTiles(stop, size(), paceFrom).slice(0, limit)),
+      ...flightTiles(allowed, size(), paceFrom).slice(0, limit),
+    ];
+    if (needMask(ahead)) prepareStreets();
+    // The ones it ends on go at once, beside the rest in their order, so they are never last in
+    // line; on a slow link, in their turn, the first the flight draws coming first.
+    const top = Math.min(Math.floor(allowed.zoom), OPENFREEMAP_MAX_ZOOM);
+    const queues = slow
+      ? [ahead]
+      : [ahead.filter(([z]) => z === top), ahead.filter(([z]) => z !== top)];
+    for (const tiles of queues) {
+      const whole = tiles.filter(([z, x, y]) => insideUs(z, x, y));
+      const cut = tiles.filter(([z, x, y]) => !insideUs(z, x, y));
+      void prefetchOpenFreeMapTiles(whole).then(async () => {
+        if (cut.length === 0) return;
+        await maskIn();
+        await prefetchOpenFreeMapTiles(cut);
+      });
     }
     const flight = ++flights;
     const hand = handMoves;
@@ -1467,7 +1524,7 @@ export async function createBasemap({
       stopped = false;
       map.cancelPendingTileRequestsWhileZooming = true;
     };
-    // Past its deadline a flight waits for nothing; past its last call it is put where it was going.
+    // Past its deadline a flight waits for nothing; past its last call, it is put where it goes.
     window.clearTimeout(deadline);
     const watch = (ms: number, last: boolean): void => {
       deadline = window.setTimeout(() => {
@@ -1488,7 +1545,7 @@ export async function createBasemap({
       }, ms);
     };
     watch(FLIGHT_DEADLINE_MS, false);
-    /** On in from wherever the leg before left it: straight in to the destination, paced by the tiles. */
+    /** On in from where the leg before left it: straight in to the destination, paced by tiles. */
     const goIn = (): void => {
       if (!current() || at(allowed)) {
         land();
@@ -1563,6 +1620,13 @@ export async function createBasemap({
   // A wheel or trackpad zoom often starts without an event on movestart; its wheel event says who moved it.
   map.on('wheel', onUserMove);
   map.on('resize', onResize);
+  // Someone pressing on a school is on their way to it: what its streets need comes meanwhile.
+  const schoolMarks = [BASEMAP_IDS.schoolDots, BASEMAP_IDS.schoolLight, BASEMAP_IDS.schoolNames];
+  const onSchoolPress = (event: MapMouseEvent | MapTouchEvent): void => {
+    prepareStreets({ lat: event.lngLat.lat, lon: event.lngLat.lng });
+  };
+  map.on('mousedown', schoolMarks, onSchoolPress);
+  map.on('touchstart', schoolMarks, onSchoolPress);
 
   // Street and school tiles fail on a bad network, and are asked for again (heal.ts): say so once
   // for each, quietly.
@@ -1621,6 +1685,10 @@ export async function createBasemap({
     goTo,
     flyTo,
     fitBounds,
+    prepareStreets,
+    searchStarted() {
+      if (!slowLink()) prepareStreets();
+    },
     destroy() {
       // A flight on its way goes no further.
       cancelFlight();
@@ -1628,6 +1696,7 @@ export async function createBasemap({
       window.clearTimeout(stateNamesTimer);
       stopHealing();
       releaseTileRequests();
+      maskFeed?.destroy();
       clearance.destroy();
       stopWarming();
       if (window.snowlightMap === map) delete window.snowlightMap;

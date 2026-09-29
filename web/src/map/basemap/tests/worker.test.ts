@@ -47,6 +47,14 @@ describe('the MapLibre worker source', () => {
     );
   });
 
+  it('hands the street tiles the channel the page sends the mask on, when it has one', () => {
+    const fed = workerSource({ ...URLS, maskChannel: 'snowlight-mask-test' });
+    expect(fed).toContain(
+      `snowlightRegisterStreetTiles(self, ${JSON.stringify(URLS.mask)}, "snowlight-mask-test");`,
+    );
+    expect(source).toContain(`snowlightRegisterStreetTiles(self, ${JSON.stringify(URLS.mask)});`);
+  });
+
   it('registers the school tile protocol after MapLibre sets up the worker', () => {
     const setUp = source.indexOf('self.worker=new');
     const register = source.indexOf('snowlightRegisterSchoolTiles(self);');

@@ -7,7 +7,9 @@
  * someone moving the map, or picking another school, mid-flight. Each test
  * checks where the map ends (the school's view: its center and zoom) and that
  * the street tiles there are drawn, as soon as they can arrive, with nobody
- * touching the page.
+ * touching the page. The mask is needed only near a border or a coast: its
+ * tests pick a school on the sea, in Miami; Pembroke Hill, in Kansas City,
+ * needs none.
  *
  * The site is built with the pipeline's real outputs, as real-data.spec.ts
  * builds it, and the street tiles are OpenFreeMap's own, each fetched once
@@ -65,6 +67,13 @@ const PEMBROKE_HILL: School = {
   query: 'The Pembroke Hill School - Wornall Campus',
   name: /Pembroke Hill School - Wornall Campus/,
   view: [39.03663, -94.59716, 15],
+};
+/** On the sea: its street tiles are cut by the US mask, and wait for it. */
+const LENORA_BRAYNON_SMITH: School = {
+  id: '120039000368',
+  query: 'Lenora Braynon Smith',
+  name: /Lenora Braynon Smith/i,
+  view: [25.81872, -80.22126, 15],
 };
 const SHAWNEE_MISSION_EAST: School = {
   id: '201164001574',
@@ -481,15 +490,15 @@ async function fulfillFromGzip(route: Route, zipped: Buffer, range: string): Pro
   });
 }
 
-test('the US mask served as GitHub Pages’ CDN serves it once it holds its gzip: the flight ends at the school, streets drawn', async ({
+test('the mask as the CDN serves it from its gzip: at the school, streets drawn', async ({
   browser,
 }) => {
   const { context, page, errors } = await newPage(browser);
   await tileNetwork(context);
   const zipped = gzipSync(readFileSync(path.join(WEB, 'public', US_MASK_FILE)));
   const asked = { whole: 0, ranges: 0 };
-  // The whole file comes as its gzip, and a range of it as that range of the gzip, both marked gzip.
-  // (A routed answer reaches the page as it is sent: nothing unzips either.)
+  // The whole file comes as its gzip, and a range of it as that range of the gzip, both marked
+  // gzip. A routed answer reaches the page as it is sent: nothing unzips either.
   await context.route(US_MASK, async (route) => {
     const range = route.request().headers().range;
     if (range === undefined) {
@@ -505,16 +514,16 @@ test('the US mask served as GitHub Pages’ CDN serves it once it holds its gzip
     await fulfillFromGzip(route, zipped, range);
   });
   await open(page);
-  await pick(page, PEMBROKE_HILL);
-  await expectAtSchool(page, PEMBROKE_HILL);
-  // Read whole, never in ranges: nothing a server or cache holds of it can come back wrong.
+  await pick(page, LENORA_BRAYNON_SMITH);
+  await expectAtSchool(page, LENORA_BRAYNON_SMITH);
+  // Read whole, once, never in ranges: nothing a server or cache holds of it can come back wrong.
   expect(asked.ranges).toBe(0);
-  expect(asked.whole).toBeGreaterThan(0);
+  expect(asked.whole).toBe(1);
   expect(errors).toEqual([]);
   await context.close();
 });
 
-test('the US mask in the browser’s own cache as a gzip, as the owner’s browser held it: the flight ends at the school, streets drawn', async ({
+test('the mask’s gzip in the browser’s cache, as the owner’s was: streets at the school', async ({
   browser,
 }) => {
   // No routes here: a route turns the browser's cache off, and this is about what the cache holds.
@@ -530,8 +539,8 @@ test('the US mask in the browser’s own cache as a gzip, as the owner’s brows
       return (await response.arrayBuffer()).byteLength;
     }, US_MASK_FILE);
     expect(cached).toBe(statSync(path.join(WEB, 'public', US_MASK_FILE)).size);
-    await pick(page, PEMBROKE_HILL);
-    await expectAtSchool(page, PEMBROKE_HILL);
+    await pick(page, LENORA_BRAYNON_SMITH);
+    await expectAtSchool(page, LENORA_BRAYNON_SMITH);
     expect(errors).toEqual([]);
     await context.close();
   } finally {
@@ -539,7 +548,48 @@ test('the US mask in the browser’s own cache as a gzip, as the owner’s brows
   }
 });
 
-test('school tiles read back wrong, then right: the school’s dot is drawn once they are, untouched', async ({
+test('the mask out of reach for a while, then back: its streets come soon, untouched', async ({
+  browser,
+}) => {
+  const { context, page, errors } = await newPage(browser);
+  await tileNetwork(context);
+  let blocked = true;
+  let asked = 0;
+  await context.route(US_MASK, async (route) => {
+    asked++;
+    if (blocked) await route.abort('connectionrefused');
+    else await route.fallback();
+  });
+  await open(page);
+  await pick(page, LENORA_BRAYNON_SMITH);
+  // At the school, its streets waiting on the mask.
+  await expectAtSchool(page, LENORA_BRAYNON_SMITH, { streets: false, timeout: 60_000 });
+  await page.waitForTimeout(30_000);
+  expect(asked).toBeGreaterThan(1);
+  blocked = false;
+  const back = Date.now();
+  await expectAtSchool(page, LENORA_BRAYNON_SMITH, { timeout: 60_000 });
+  // Asked for again no more than about ten seconds apart, and at once as tiles wait on it.
+  expect(Date.now() - back).toBeLessThan(20_000);
+  expect(errors).toEqual([]);
+  await context.close();
+});
+
+test('a school wholly inside the US needs no mask: streets drawn with none coming', async ({
+  browser,
+}) => {
+  const { context, page, errors } = await newPage(browser);
+  await tileNetwork(context);
+  // The mask may be asked for (a search on a fast link asks for it ahead), but it never comes.
+  await context.route(US_MASK, () => new Promise<void>(() => undefined));
+  await open(page);
+  await pick(page, PEMBROKE_HILL);
+  await expectAtSchool(page, PEMBROKE_HILL);
+  expect(errors).toEqual([]);
+  await context.close();
+});
+
+test('school tiles read back wrong, then right: the school’s dot comes, untouched', async ({
   browser,
 }) => {
   const { context, page, errors } = await newPage(browser);
@@ -571,7 +621,7 @@ test('school tiles read back wrong, then right: the school’s dot is drawn once
   await context.close();
 });
 
-test('the tile host out of reach for a while: the flight ends at the school, and its streets come once it is back, untouched', async ({
+test('the tile host out of reach, then back: at the school, streets come untouched', async ({
   browser,
 }) => {
   const { context, page, errors } = await newPage(browser);
@@ -582,7 +632,8 @@ test('the tile host out of reach for a while: the flight ends at the school, and
   // At the school, at street zoom, without its streets: none can be had.
   const there = await expectAtSchool(page, PEMBROKE_HILL, { streets: false, timeout: 60_000 });
   expect(there.streets).toBe(false);
-  // The page keeps asking, without anyone touching it; the moment the host answers, the streets come.
+  // The page keeps asking, without anyone touching it; the moment the host answers, the
+  // streets come.
   const asked = (): number => [...network.attempts.values()].reduce((sum, n) => sum + n, 0);
   const before = asked();
   await expect.poll(asked, { timeout: 40_000 }).toBeGreaterThan(before);
@@ -592,13 +643,13 @@ test('the tile host out of reach for a while: the flight ends at the school, and
   await context.close();
 });
 
-test('a slow network whose proxy cuts what it cannot answer in time: the flight ends at the school, streets drawn', async ({
+test('a slow link whose proxy cuts what it cannot answer in time: streets at the school', async ({
   browser,
 }) => {
   const { context, page, errors } = await newPage(browser);
-  // A school's slow link, shared: one tile at a time at 200 KB a second, behind a proxy that answers
-  // a 504 to any request it cannot answer within 8 seconds of it being made. Queued behind others, a
-  // request is cut; the link then goes on to the next.
+  // A school's slow link, shared: one tile at a time at 200 KB a second, behind a proxy that
+  // answers a 504 to any request it cannot answer within 8 seconds of it being made. Queued
+  // behind others, a request is cut; the link then goes on to the next.
   const RATE = 200_000;
   const BUDGET_MS = 8000;
   let linkFree = 0;
@@ -634,8 +685,8 @@ test('a second pick mid-flight: the map ends at the second school, streets drawn
   browser,
 }) => {
   const { context, page, errors } = await newPage(browser);
-  // The first two requests for each tile (the page's ahead of the flight, and the map's) fail, as on
-  // a network that drops some.
+  // The first two requests for each tile (the page's ahead of the flight, and the map's) fail,
+  // as on a network that drops some.
   await tileNetwork(context, async (route, url, attempt) => {
     if (!isTile(url) || attempt > 2) return false;
     await route.abort('connectionreset');
@@ -652,7 +703,7 @@ test('a second pick mid-flight: the map ends at the second school, streets drawn
   await context.close();
 });
 
-test('street tiles failing again and again before they answer: the flight still ends at the school, streets drawn', async ({
+test('street tiles failing again and again before they answer: streets at the school', async ({
   browser,
 }) => {
   const { context, page, errors } = await newPage(browser);
@@ -681,7 +732,7 @@ test('street tiles failing again and again before they answer: the flight still 
   await context.close();
 });
 
-test('street tiles that never answer at first: the flight still ends at the school, streets drawn', async ({
+test('street tiles that never answer at first: at the school, streets drawn', async ({
   browser,
 }) => {
   const { context, page, errors } = await newPage(browser);
@@ -716,7 +767,7 @@ test('with no GPU, drawn in software: the flight ends at the school, streets dra
   }
 });
 
-test('someone scrolling mid-flight has the map, at rest where they left it; a pick after goes to the school', async ({
+test('someone scrolling mid-flight has the map where they left it; a pick after lands', async ({
   browser,
 }) => {
   const { context, page, errors } = await newPage(browser);

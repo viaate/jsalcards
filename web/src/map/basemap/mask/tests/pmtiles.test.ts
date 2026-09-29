@@ -251,7 +251,7 @@ describe('the US mask, fetched whole', () => {
     Promise.resolve(new Uint8Array(gunzipSync(data)));
   const noWait = (): Promise<void> => Promise.resolve();
 
-  it('is asked for once, without a Range, when first read, and read from memory after', async () => {
+  it('is asked for once, without a Range, when first read; read from memory after', async () => {
     const asked: Asked[] = [];
     const read = wholeFileReader('https://site.test/geo/us-mask.pmtiles', {
       fetch: gzipServer(archive, asked),
@@ -404,7 +404,7 @@ describe('an archive read in byte ranges, as the school tiles are', () => {
     expect(await read(10, 20)).toEqual(archive.slice(10, 30));
   });
 
-  it('asks again for a range of a compressed copy, one from elsewhere in the file, or one cut short', async () => {
+  it('asks again for a range of a gzip copy, of elsewhere in the file, or cut short', async () => {
     const good = plainServer(archive);
     const wrong: (() => Response)[] = [
       () =>
