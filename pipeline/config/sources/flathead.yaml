@@ -1,0 +1,76 @@
+# Station registry for one platform. Loaded with every other file in this folder
+# by snowlight.sources.stations.registry; see its docstring for the fields.
+# `snowlight stations robots --update` rewrites the robots blocks in place.
+platform:
+  id: flathead
+  name: 'Flathead County (Montana) Superintendent of Schools: school closures'
+  operator: Flathead County, Montana, Office of the County Superintendent of Schools
+  adapter: flathead
+  poll_minutes: 10
+  terms:
+    automated_access: permitted
+    summary: 'flatheadcounty.gov publishes no terms of use: its footer links a privacy policy only (read
+      2026-09-27), which limits what the county collects from visitors and says nothing about reading
+      the site. The closures page is public county information.'
+    evidence:
+    - url: https://flatheadcounty.gov/about-flathead-county/privacy-policy
+      read_at: '2026-09-27T11:21:26Z'
+      sha256: ebe8ab45f081c7d35e9a63cbe2e245bd78f48a3396e0e2cf9530e5cde9e328df
+      excerpt:
+      - We respect your privacy and we do not automatically collect any information from visitors for
+        any purpose other than web traffic statistics.
+    permission: null
+    owner_decision: null
+  notes: 'Found for piece s4d on 2026-09-27 while scouting Montana''s gap counties: the county superintendent''s
+    page lists every public and private school in Flathead County (Kalispell, Whitefish, Columbia Falls,
+    Bigfork and the rural districts) with its status, and says the county''s 23 districts report closures
+    and bus-route changes to the superintendent, who relays them to Bee Broadcasting and KOFI. Seen populated
+    live on 2026-09-27 (West Valley Closed, ''No running water'') and in archived captures of the 2025-26
+    winter''s storm days. The site warns that its old domain (flathead.mt.gov) will be deactivated. Proof
+    (piece s4d, 2026-09-28): this is a status board, listing every school or system with its status every
+    day, so a read proves it only when a row''s status is other than open (Closed, Early Dismissal, Remote,
+    a delay); an all-open read does not (notices.gate_proofs, reported in coverage.json''s district_notice_gate).'
+  shared_paths: []
+stations:
+- id: flathead-county
+  platform: flathead
+  call_sign: FLATHEAD
+  name: Flathead County Superintendent of Schools (flatheadcounty.gov)
+  market: Kalispell (Flathead County, MT)
+  dma: Missoula, MT DMA
+  states: [MT]
+  counties:
+    basis: observed
+    source: 'The list''s own rows (flathead-county): the Flathead County Superintendent of Schools lists
+      the county''s public and private schools (35 on 2026-09-27, the county''s 23 districts), all in
+      Flathead County (30029), one county of the market ''Missoula, MT DMA''; it covers no other county.'
+    fips: ['30029']
+  page_url: https://flatheadcounty.gov/department-directory/schools/emergency-school-closures
+  data_url: null
+  export_url: null
+  archive_urls:
+  - https://flatheadcounty.gov/department-directory/schools/emergency-school-closures
+  - https://www.flatheadcounty.gov/department-directory/schools/emergency-school-closures
+  - https://flathead.mt.gov/department-directory/schools/emergency-school-closures
+  poll_minutes: null
+  status: active
+  evidence: 'First-hand check for piece s4d, 2026-09-27. Live read of https://flatheadcounty.gov/department-directory/schools/emergency-school-closures
+    2026-09-27T11:26:03Z: HTTP 200, 65132 bytes (no Last-Modified); flathead-closure-tables, populated,
+    35 rows (27 public, 8 private); ''Last Updated September 25, 26  8:11 AM''; West Valley ''Closed'',
+    comment ''No running water''. Wayback (run 36317448357): nine captures from 2025-04-27 to 2026-08-15,
+    every one populated; the older card layout (to 2026-04-12) includes ''UPDATED INFORMATION FOR Wednesday,
+    December 17th, 2025'' (five schools Closed, Deer Park ''2 hour delayed start due to power'') and ''Friday,
+    March 13th, 2026'' (five Closed). The same page on the county''s old domain, flathead.mt.gov, has
+    40 captures from 2022-10-02 to 2025-08-15 (run 36323496096), all populated, including ''Friday, February
+    9th, 2024'' (four Closed).'
+  list_files: []
+  page_check: null
+  robots:
+  - url: https://flatheadcounty.gov/department-directory/schools/emergency-school-closures
+    checked_at: '2026-09-27T14:31:56Z'
+    state: parsed
+    allowed: true
+    rule: no rule matches
+    crawl_delay: null
+    disallowed_agents: []
+    sha256: 4c1cbc0b3293cebcb8eaeab93c282ea5ec039728d99ef8761824d64773172874

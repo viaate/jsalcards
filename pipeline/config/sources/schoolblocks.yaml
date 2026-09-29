@@ -1,0 +1,498 @@
+# Station registry for one platform. Loaded with every other file in this folder
+# by snowlight.sources.stations.registry; see its docstring for the fields.
+# `snowlight stations robots --update` rewrites the robots blocks in place.
+platform:
+  id: schoolblocks
+  name: 'SchoolBlocks school district sites: the organization''s alerts in the homepage''s payload'
+  operator: SchoolBlocks (the site builder); each site's school district (the content)
+  adapter: schoolblocks
+  poll_minutes: 30
+  terms:
+    automated_access: permitted
+    summary: 'The district sites are public school districts'' own websites; their footers link only SchoolBlocks''
+      privacy policy (read 2026-09-28), which says nothing on reading the sites with software, and every
+      site''s robots.txt reads ''Allow: /''.'
+    evidence:
+    - url: https://www.schoolblocks.com/privacy.html
+      read_at: '2026-09-28T10:46:32Z'
+      sha256: 7f974fd9701221c01847806e2fcdec7c3dbda3f9e70a630c42aa5b98aa94e1bf
+      excerpt:
+      - Your privacy is important to us. Learn how SchoolBlocks collects, uses, and protects your personal
+        information.
+    permission: null
+    owner_decision: null
+  notes: 'Found for piece s4d while scouting the gap states'' district sites (round 2: Browning in Montana,
+    Uinta #1 and Sublette #1 in Wyoming, Salmon and North Gem in Idaho; round 3: Grace in Idaho and Alice,
+    Industrial and Skidmore-Tynan in Texas). The homepage is a Next.js page rendered on the server; its
+    React Server Components payload (self.__next_f.push) carries the district''s organization record,
+    whose alerts list the site''s notification component shows over the page (overlay) or across it (banner).
+    Every list read in round 2 was empty, so the adapter waited; on 2026-09-28 Grace School District #148''s
+    held one alert, {id, message, type: ''overlay''}: ''Grace School District will be closed from September
+    11-October 4 for potato harvest break.'' Because the payload is in the page as served, archived captures
+    of the homepage can prove a district. A district-level source: each counts only its own district''s
+    schools (leaids). Proof: a district''s general alert channel, so a read proves it only when a row
+    announced a closing, a delay, an early dismissal, a remote day, cancelled classes, or weather or an
+    emergency for the district (notices.gate_proofs). Round 4 (piece s4d, 2026-09-28): the district sites
+    of the Mobile - Pensacola market''s uncovered counties (Mobile, Baldwin, Escambia, Clarke, Washington,
+    Conecuh and Monroe in Alabama; Santa Rosa in Florida), found by reading the website the NCES CCD 2024-25
+    LEA directory lists for each of their districts: 1 more SchoolBlocks sites there. Round 4, second
+    batch (2026-09-28): the district sites of the other gap counties no working list reached (the Glendive,
+    Alpena and Zanesville markets, the Mississippi Delta and coast, the Chico - Redding and Palm Springs
+    markets and Del Norte), found the same way: 2 more SchoolBlocks sites there.'
+  shared_paths: []
+stations:
+- id: schoolblocks-browning-mt
+  platform: schoolblocks
+  call_sign: BPS
+  name: Browning Elem / Browning H S (district organization alerts)
+  market: Browning (Glacier County, MT)
+  dma: null
+  states: [MT]
+  counties:
+    basis: district
+    source: 'NCES CCD 2024-25 school directory (pipeline/out/internal/directory/schools.parquet): the
+      counties of the 8 schools of schoolblocks-browning-mt''s districts, Browning Elem and Browning H
+      S (LEAIDs 3005140, 3005190). The LEAIDs are the ones the NCES CCD 2024-25 LEA directory (https://nces.ed.gov/ccd/Data/zip/ccd_lea_029_2425_w_1a_073025.zip,
+      SHA-256 2745169e4bc7cd53…, read 2026-09-27) lists with this website (bps.k12.mt.us).'
+    fips: ['30035']
+  page_url: https://www.bps.k12.mt.us/en-US
+  data_url: null
+  export_url: null
+  archive_urls:
+  - https://www.bps.k12.mt.us/en-US
+  poll_minutes: null
+  status: active
+  evidence: 'First-hand check for piece s4d (round 3, second pass), 2026-09-28. Live read of https://www.bps.k12.mt.us/en-US
+    2026-09-28T10:45:10Z: HTTP 200, 299,088 bytes (title ''Home - Browning Public Schools''); schoolblocks-org-alerts,
+    empty, 0 row(s): an empty alerts list. Found in round 2''s scouting of the gap counties'' district
+    sites; built once Grace School District #148''s live homepage showed a populated alerts list (2026-09-28).'
+  list_files: []
+  page_check: null
+  robots:
+  - url: https://www.bps.k12.mt.us/en-US
+    checked_at: '2026-09-28T10:48:40Z'
+    state: parsed
+    allowed: true
+    rule: 'Allow: /'
+    crawl_delay: null
+    disallowed_agents: []
+    sha256: 572d138b0290364fd0ccc18ba73d849bcc419a4c53896fc9607cb198a924ff9a
+  leaids: ['3005140', '3005190']
+- id: schoolblocks-uinta-1-wy
+  platform: schoolblocks
+  call_sign: UCSD1
+  name: 'Uinta County School District #1 (district organization alerts)'
+  market: Evanston (Uinta County, WY)
+  dma: null
+  states: [WY]
+  counties:
+    basis: district
+    source: 'NCES CCD 2024-25 school directory (pipeline/out/internal/directory/schools.parquet): the
+      counties of the 8 schools of schoolblocks-uinta-1-wy''s district, Uinta County School District #1
+      (LEAID 5602760). The LEAID is the one the NCES CCD 2024-25 LEA directory (https://nces.ed.gov/ccd/Data/zip/ccd_lea_029_2425_w_1a_073025.zip,
+      SHA-256 2745169e4bc7cd53…, read 2026-09-27) lists with this website (uinta1.com).'
+    fips: ['56041']
+  page_url: https://www.uinta1.com/
+  data_url: null
+  export_url: null
+  archive_urls:
+  - https://www.uinta1.com/
+  poll_minutes: null
+  status: active
+  evidence: 'First-hand check for piece s4d (round 3, second pass), 2026-09-28. Live read of https://www.uinta1.com/
+    2026-09-28T10:45:14Z: HTTP 200, 341,469 bytes (title ''Home - Uinta County School District #1'');
+    schoolblocks-org-alerts, empty, 0 row(s): an empty alerts list. Found in round 2''s scouting of the
+    gap counties'' district sites; built once Grace School District #148''s live homepage showed a populated
+    alerts list (2026-09-28).'
+  list_files: []
+  page_check: null
+  robots:
+  - url: https://www.uinta1.com/
+    checked_at: '2026-09-28T10:48:45Z'
+    state: parsed
+    allowed: true
+    rule: 'Allow: /'
+    crawl_delay: null
+    disallowed_agents: []
+    sha256: 572d138b0290364fd0ccc18ba73d849bcc419a4c53896fc9607cb198a924ff9a
+  leaids: ['5602760']
+- id: schoolblocks-sublette-1-wy
+  platform: schoolblocks
+  call_sign: SCSD1
+  name: 'Sublette County School District #1 (district organization alerts)'
+  market: Pinedale (Sublette County, WY)
+  dma: null
+  states: [WY]
+  counties:
+    basis: district
+    source: 'NCES CCD 2024-25 school directory (pipeline/out/internal/directory/schools.parquet): the
+      counties of the 5 schools of schoolblocks-sublette-1-wy''s district, Sublette County School District
+      #1 (LEAID 5604860). The LEAID is the one the NCES CCD 2024-25 LEA directory (https://nces.ed.gov/ccd/Data/zip/ccd_lea_029_2425_w_1a_073025.zip,
+      SHA-256 2745169e4bc7cd53…, read 2026-09-27) lists with this website (sub1.org).'
+    fips: ['56035']
+  page_url: https://www.sub1.org/
+  data_url: null
+  export_url: null
+  archive_urls:
+  - https://www.sub1.org/
+  poll_minutes: null
+  status: active
+  evidence: 'First-hand check for piece s4d (round 3, second pass), 2026-09-28. Live read of https://www.sub1.org/
+    2026-09-28T10:45:14Z: HTTP 200, 249,118 bytes (title ''Home - Sublette County School District #1'');
+    schoolblocks-org-alerts, empty, 0 row(s): an empty alerts list. Found in round 2''s scouting of the
+    gap counties'' district sites; built once Grace School District #148''s live homepage showed a populated
+    alerts list (2026-09-28).'
+  list_files: []
+  page_check: null
+  robots:
+  - url: https://www.sub1.org/
+    checked_at: '2026-09-28T10:48:45Z'
+    state: parsed
+    allowed: true
+    rule: 'Allow: /'
+    crawl_delay: null
+    disallowed_agents: []
+    sha256: 572d138b0290364fd0ccc18ba73d849bcc419a4c53896fc9607cb198a924ff9a
+  leaids: ['5604860']
+- id: schoolblocks-salmon-id
+  platform: schoolblocks
+  call_sign: SSD291
+  name: Salmon District (district organization alerts)
+  market: Salmon (Lemhi County, ID)
+  dma: null
+  states: [ID]
+  counties:
+    basis: district
+    source: 'NCES CCD 2024-25 school directory (pipeline/out/internal/directory/schools.parquet): the
+      counties of the 4 schools of schoolblocks-salmon-id''s district, Salmon District (LEAID 1602850).
+      The NCES CCD 2024-25 LEA directory lists no website for Idaho''s districts; the LEAID is the district
+      the homepage names (its title: ''Home - Salmon School District'').'
+    fips: ['16059']
+  page_url: https://www.salmon291.org/en-US
+  data_url: null
+  export_url: null
+  archive_urls:
+  - https://www.salmon291.org/en-US
+  poll_minutes: null
+  status: active
+  evidence: 'First-hand check for piece s4d (round 3, second pass), 2026-09-28. Live read of https://www.salmon291.org/en-US
+    2026-09-28T10:45:42Z: HTTP 200, 192,337 bytes (title ''Home - Salmon School District''); schoolblocks-org-alerts,
+    empty, 0 row(s): an empty alerts list. Found in round 2''s scouting of the gap counties'' district
+    sites; built once Grace School District #148''s live homepage showed a populated alerts list (2026-09-28).'
+  list_files: []
+  page_check: null
+  robots:
+  - url: https://www.salmon291.org/en-US
+    checked_at: '2026-09-28T10:48:43Z'
+    state: parsed
+    allowed: true
+    rule: 'Allow: /'
+    crawl_delay: null
+    disallowed_agents: []
+    sha256: 572d138b0290364fd0ccc18ba73d849bcc419a4c53896fc9607cb198a924ff9a
+  leaids: ['1602850']
+- id: schoolblocks-north-gem-id
+  platform: schoolblocks
+  call_sign: NGSD149
+  name: North Gem District (district organization alerts)
+  market: Bancroft (Caribou County, ID)
+  dma: null
+  states: [ID]
+  counties:
+    basis: district
+    source: 'NCES CCD 2024-25 school directory (pipeline/out/internal/directory/schools.parquet): the
+      counties of the 3 schools of schoolblocks-north-gem-id''s district, North Gem District (LEAID 1602430).
+      The NCES CCD 2024-25 LEA directory lists no website for Idaho''s districts; the LEAID is the district
+      the homepage names (its title: ''Home - North Gem School District'').'
+    fips: ['16029']
+  page_url: https://www.sd149.com/en-US
+  data_url: null
+  export_url: null
+  archive_urls:
+  - https://www.sd149.com/en-US
+  poll_minutes: null
+  status: active
+  evidence: 'First-hand check for piece s4d (round 3, second pass), 2026-09-28. Live read of https://www.sd149.com/en-US
+    2026-09-28T10:45:10Z: HTTP 200, 261,770 bytes (title ''Home - North Gem School District''); schoolblocks-org-alerts,
+    empty, 0 row(s): an empty alerts list. Found in round 2''s scouting of the gap counties'' district
+    sites; built once Grace School District #148''s live homepage showed a populated alerts list (2026-09-28).'
+  list_files: []
+  page_check: null
+  robots:
+  - url: https://www.sd149.com/en-US
+    checked_at: '2026-09-28T10:48:42Z'
+    state: parsed
+    allowed: true
+    rule: 'Allow: /'
+    crawl_delay: null
+    disallowed_agents: []
+    sha256: 572d138b0290364fd0ccc18ba73d849bcc419a4c53896fc9607cb198a924ff9a
+  leaids: ['1602430']
+- id: schoolblocks-grace-id
+  platform: schoolblocks
+  call_sign: GSD148
+  name: Grace Joint District (district organization alerts)
+  market: Grace (Caribou County, ID)
+  dma: null
+  states: [ID]
+  counties:
+    basis: district
+    source: 'NCES CCD 2024-25 school directory (pipeline/out/internal/directory/schools.parquet): the
+      counties of the 2 schools of schoolblocks-grace-id''s district, Grace Joint District (LEAID 1601290).
+      The NCES CCD 2024-25 LEA directory lists no website for Idaho''s districts; the LEAID is the district
+      the homepage names (its title: ''Home - Grace School District #148'').'
+    fips: ['16029']
+  page_url: https://www.sd148.org/en-US
+  data_url: null
+  export_url: null
+  archive_urls:
+  - https://www.sd148.org/en-US
+  poll_minutes: null
+  status: active
+  evidence: 'First-hand check for piece s4d (round 3, second pass), 2026-09-28. Live read of https://www.sd148.org/en-US
+    2026-09-28T10:45:50Z: HTTP 200, 231,822 bytes (title ''Home - Grace School District #148''); schoolblocks-org-alerts,
+    populated, 1 row(s): ''Grace School District will be closed from September 11-October 4 for potato
+    harvest break. We will return to school on October 5. Emails and'' (overlay). Found in round 3''s
+    scouting of the gap counties'' district sites; built once Grace School District #148''s live homepage
+    showed a populated alerts list (2026-09-28).'
+  list_files: []
+  page_check: null
+  robots:
+  - url: https://www.sd148.org/en-US
+    checked_at: '2026-09-28T10:48:41Z'
+    state: parsed
+    allowed: true
+    rule: 'Allow: /'
+    crawl_delay: null
+    disallowed_agents: []
+    sha256: 572d138b0290364fd0ccc18ba73d849bcc419a4c53896fc9607cb198a924ff9a
+  leaids: ['1601290']
+- id: schoolblocks-alice-tx
+  platform: schoolblocks
+  call_sign: AISD
+  name: Alice ISD (district organization alerts)
+  market: Alice (Jim Wells County, TX)
+  dma: null
+  states: [TX]
+  counties:
+    basis: district
+    source: 'NCES CCD 2024-25 school directory (pipeline/out/internal/directory/schools.parquet): the
+      counties of the 6 schools of schoolblocks-alice-tx''s district, Alice ISD (LEAID 4807800). The LEAID
+      is the one the NCES CCD 2024-25 LEA directory (https://nces.ed.gov/ccd/Data/zip/ccd_lea_029_2425_w_1a_073025.zip,
+      SHA-256 2745169e4bc7cd53…, read 2026-09-27) lists with this website (aliceisd.net).'
+    fips: ['48249']
+  page_url: https://www.aliceisd.net/en-US
+  data_url: null
+  export_url: null
+  archive_urls:
+  - https://www.aliceisd.net/en-US
+  poll_minutes: null
+  status: active
+  evidence: 'First-hand check for piece s4d (round 3, second pass), 2026-09-28. Live read of https://www.aliceisd.net/en-US
+    2026-09-28T10:45:50Z: HTTP 200, 222,946 bytes (title ''Home - Alice Independent School District'');
+    schoolblocks-org-alerts, empty, 0 row(s): an empty alerts list. Found in round 3''s scouting of the
+    gap counties'' district sites; built once Grace School District #148''s live homepage showed a populated
+    alerts list (2026-09-28).'
+  list_files: []
+  page_check: null
+  robots:
+  - url: https://www.aliceisd.net/en-US
+    checked_at: '2026-09-28T10:48:39Z'
+    state: parsed
+    allowed: true
+    rule: 'Allow: /'
+    crawl_delay: null
+    disallowed_agents: []
+    sha256: 572d138b0290364fd0ccc18ba73d849bcc419a4c53896fc9607cb198a924ff9a
+  leaids: ['4807800']
+- id: schoolblocks-skidmore-tynan-tx
+  platform: schoolblocks
+  call_sign: STISD
+  name: Skidmore-Tynan ISD (district organization alerts)
+  market: Skidmore (Bee County, TX)
+  dma: null
+  states: [TX]
+  counties:
+    basis: district
+    source: 'NCES CCD 2024-25 school directory (pipeline/out/internal/directory/schools.parquet): the
+      counties of the 3 schools of schoolblocks-skidmore-tynan-tx''s district, Skidmore-Tynan ISD (LEAID
+      4840410). The LEAID is the one the NCES CCD 2024-25 LEA directory (https://nces.ed.gov/ccd/Data/zip/ccd_lea_029_2425_w_1a_073025.zip,
+      SHA-256 2745169e4bc7cd53…, read 2026-09-27) lists with this website (stbobcats.net).'
+    fips: ['48025']
+  page_url: https://www.stbobcats.net/en-US
+  data_url: null
+  export_url: null
+  archive_urls:
+  - https://www.stbobcats.net/en-US
+  poll_minutes: null
+  status: active
+  evidence: 'First-hand check for piece s4d (round 3, second pass), 2026-09-28. Live read of https://www.stbobcats.net/en-US
+    2026-09-28T10:45:50Z: HTTP 200, 292,631 bytes (title ''Home - Skidmore-Tynan Independent School District'');
+    schoolblocks-org-alerts, empty, 0 row(s): an empty alerts list. Found in round 3''s scouting of the
+    gap counties'' district sites; built once Grace School District #148''s live homepage showed a populated
+    alerts list (2026-09-28).'
+  list_files: []
+  page_check: null
+  robots:
+  - url: https://www.stbobcats.net/en-US
+    checked_at: '2026-09-28T10:48:44Z'
+    state: parsed
+    allowed: true
+    rule: 'Allow: /'
+    crawl_delay: null
+    disallowed_agents: []
+    sha256: 572d138b0290364fd0ccc18ba73d849bcc419a4c53896fc9607cb198a924ff9a
+  leaids: ['4840410']
+- id: schoolblocks-industrial-tx
+  platform: schoolblocks
+  call_sign: IISD
+  name: Industrial ISD (district organization alerts)
+  market: Vanderbilt, TX (schools in Jackson and Victoria counties)
+  dma: null
+  states: [TX]
+  counties:
+    basis: district
+    source: 'NCES CCD 2024-25 school directory (pipeline/out/internal/directory/schools.parquet): the
+      counties of the 4 schools of schoolblocks-industrial-tx''s district, Industrial ISD (LEAID 4824150).
+      The LEAID is the one the NCES CCD 2024-25 LEA directory (https://nces.ed.gov/ccd/Data/zip/ccd_lea_029_2425_w_1a_073025.zip,
+      SHA-256 2745169e4bc7cd53…, read 2026-09-27) lists with this website (industrialisd.org).'
+    fips: ['48239', '48469']
+  page_url: https://www.industrialisd.org/en-US
+  data_url: null
+  export_url: null
+  archive_urls:
+  - https://www.industrialisd.org/en-US
+  poll_minutes: null
+  status: active
+  evidence: 'First-hand check for piece s4d (round 3, second pass), 2026-09-28. Live read of https://www.industrialisd.org/en-US
+    2026-09-28T10:45:50Z: HTTP 200, 248,833 bytes (title ''Home - Industrial Independent School District'');
+    schoolblocks-org-alerts, empty, 0 row(s): an empty alerts list. Found in round 3''s scouting of the
+    gap counties'' district sites; built once Grace School District #148''s live homepage showed a populated
+    alerts list (2026-09-28).'
+  list_files: []
+  page_check: null
+  robots:
+  - url: https://www.industrialisd.org/en-US
+    checked_at: '2026-09-28T10:48:42Z'
+    state: parsed
+    allowed: true
+    rule: 'Allow: /'
+    crawl_delay: null
+    disallowed_agents: []
+    sha256: 572d138b0290364fd0ccc18ba73d849bcc419a4c53896fc9607cb198a924ff9a
+  leaids: ['4824150']
+- id: schoolblocks-monroe-al
+  platform: schoolblocks
+  call_sign: MCBOE
+  name: Monroe County Schools (district organization alerts)
+  market: Monroeville (Monroe County, AL; Mobile-Pensacola market)
+  dma: null
+  states: [AL]
+  counties:
+    basis: district
+    source: 'NCES CCD 2024-25 school directory (pipeline/out/internal/directory/schools.parquet): the
+      counties of the 9 schools of schoolblocks-monroe-al''s district, Monroe County Schools (LEAID 0102400).
+      The LEAID is the one the NCES CCD 2024-25 LEA directory (https://nces.ed.gov/ccd/Data/zip/ccd_lea_029_2425_w_1a_073025.zip,
+      SHA-256 2745169e4bc7cd53…, read 2026-09-27) lists with this website (www.monroe.k12.al.us).'
+    fips: [01099]
+  page_url: https://www.monroe.k12.al.us/en-US
+  data_url: null
+  export_url: null
+  archive_urls:
+  - https://www.monroe.k12.al.us/en-US
+  poll_minutes: null
+  status: active
+  evidence: 'First-hand check for piece s4d (round 4), 2026-09-28. Live read of https://www.monroe.k12.al.us/en-US
+    2026-09-28T14:29:06Z: HTTP 200, 260,104 bytes; schoolblocks-org-alerts, empty, 0 row(s): an empty
+    alerts list. The homepage''s title: ''Home - Monroe County Board of Education''. Found by reading
+    the website the NCES LEA directory lists for each district with schools in the Mobile - Pensacola
+    market''s uncovered counties (Mobile, Baldwin, Escambia, Clarke, Washington, Conecuh and Monroe in
+    Alabama; Santa Rosa in Florida).'
+  list_files: []
+  page_check: null
+  robots:
+  - url: https://www.monroe.k12.al.us/en-US
+    checked_at: '2026-09-28T14:34:11Z'
+    state: parsed
+    allowed: true
+    rule: 'Allow: /'
+    crawl_delay: null
+    disallowed_agents: []
+    sha256: 572d138b0290364fd0ccc18ba73d849bcc419a4c53896fc9607cb198a924ff9a
+  leaids: ['0102400']
+- id: schoolblocks-bay-waveland-ms
+  platform: schoolblocks
+  call_sign: BWSD
+  name: Bay Waveland School District (district organization alerts)
+  market: Bay St Louis (Hancock County, MS)
+  dma: null
+  states: [MS]
+  counties:
+    basis: district
+    source: 'NCES CCD 2024-25 school directory (pipeline/out/internal/directory/schools.parquet): the
+      counties of the 4 schools of schoolblocks-bay-waveland-ms''s district, Bay Waveland School District
+      (LEAID 2800570). The LEAID is the one the NCES CCD 2024-25 LEA directory (https://nces.ed.gov/ccd/Data/zip/ccd_lea_029_2425_w_1a_073025.zip,
+      SHA-256 2745169e4bc7cd53…, read 2026-09-27) lists with this website (bwsd.org).'
+    fips: ['28045']
+  page_url: https://www.bwsd.org/en-US
+  data_url: null
+  export_url: null
+  archive_urls:
+  - https://www.bwsd.org/en-US
+  poll_minutes: null
+  status: active
+  evidence: 'First-hand check for piece s4d (round 4), 2026-09-28. Live read of https://www.bwsd.org/en-US
+    2026-09-28T15:15:21Z: HTTP 200, 306,859 bytes; schoolblocks-org-alerts, empty, 0 row(s): an empty
+    alerts list. The homepage''s title: ''Home - Bay St Louis Waveland School District''. Found by reading
+    the website the NCES LEA directory lists for each district with schools in the Greenwood - Greenville
+    market and the Mississippi coast''s uncovered counties, which no working list reached.'
+  list_files: []
+  page_check: null
+  robots:
+  - url: https://www.bwsd.org/en-US
+    checked_at: '2026-09-28T15:22:22Z'
+    state: parsed
+    allowed: true
+    rule: 'Allow: /'
+    crawl_delay: null
+    disallowed_agents: []
+    sha256: 572d138b0290364fd0ccc18ba73d849bcc419a4c53896fc9607cb198a924ff9a
+  leaids: ['2800570']
+- id: schoolblocks-val-verde-ca
+  platform: schoolblocks
+  call_sign: VALVERDE
+  name: Val Verde Unified (district organization alerts)
+  market: Perris (Riverside County, CA)
+  dma: null
+  states: [CA]
+  counties:
+    basis: district
+    source: 'NCES CCD 2024-25 school directory (pipeline/out/internal/directory/schools.parquet): the
+      counties of the 22 schools of schoolblocks-val-verde-ca''s district, Val Verde Unified (LEAID 0691135).
+      The LEAID is the one the NCES CCD 2024-25 LEA directory (https://nces.ed.gov/ccd/Data/zip/ccd_lea_029_2425_w_1a_073025.zip,
+      SHA-256 2745169e4bc7cd53…, read 2026-09-27) lists with this website (valverde.edu).'
+    fips: ['06065']
+  page_url: https://www.valverde.edu/en-US
+  data_url: null
+  export_url: null
+  archive_urls:
+  - https://www.valverde.edu/en-US
+  poll_minutes: null
+  status: active
+  evidence: 'First-hand check for piece s4d (round 4), 2026-09-28. Live read of https://www.valverde.edu/en-US
+    2026-09-28T15:17:37Z: HTTP 200, 385,584 bytes; schoolblocks-org-alerts, empty, 0 row(s): an empty
+    alerts list. The homepage''s title: ''Home - Val Verde Unified School District''. Found by reading
+    the website the NCES LEA directory lists for each district with schools in the Chico - Redding and
+    Palm Springs markets and Del Norte and Humboldt counties, which no working list reached.'
+  list_files: []
+  page_check: null
+  robots:
+  - url: https://www.valverde.edu/en-US
+    checked_at: '2026-09-28T15:22:23Z'
+    state: parsed
+    allowed: true
+    rule: 'Allow: /'
+    crawl_delay: null
+    disallowed_agents: []
+    sha256: 572d138b0290364fd0ccc18ba73d849bcc419a4c53896fc9607cb198a924ff9a
+  leaids: [0691135]

@@ -1,0 +1,85 @@
+# Station registry for one platform. Loaded with every other file in this folder
+# by snowlight.sources.stations.registry; see its docstring for the fields.
+# `snowlight stations robots --update` rewrites the robots blocks in place.
+platform:
+  id: dadeschools
+  name: 'Miami-Dade County Public Schools: the district''s public alerts file'
+  operator: Miami-Dade County Public Schools (its own site and API)
+  adapter: dadeschools
+  poll_minutes: 15
+  terms:
+    automated_access: permitted
+    summary: dadeschools.net publishes no terms of use for readers (read 2026-09-27; a search found none).
+      The M-DCPS Acceptable Use Policy on the same API host governs users of the district's own network
+      (staff, students, parents, vendors), not public readers of its website; nothing forbids reading
+      the public alerts file with software.
+    evidence:
+    - url: https://mainapi.dadeschools.net/resources/Shared/Policies/
+      read_at: '2026-09-27T23:21:54Z'
+      sha256: d26f091e96404d4b8856988f40d5cc004d793086607bab32df014d72fb1841cd
+      excerpt:
+      - Users are defined as anyone authorized by administration to use the Network. This includes, but
+        is not limited to, staff, students,parents, vendors, contractors, and volunteers.
+    permission: null
+    owner_decision: null
+  notes: 'Found for piece s4d (round 2, 2026-09-27): the district homepage, an Angular app, reads its
+    urgent notices from https://mainapi.dadeschools.net/api/v1/alerts/ (API_1_ALERTS in its main bundle)
+    and draws the items whose ''visible'' is true. On 2026-09-27 the file held three hidden items (Hurricane
+    Elsa of 2021, a 2020 meal notice, a 2022 mask notice); the archived capture of 2024-10-09 14:41 UTC
+    (archive-captures run 36341776194) holds, visible, ''Hurricane Milton: All M-DCPS schools, as well
+    as Region and District offices will be CLOSED on Wednesday, October 9 and Thursday, October 10.''
+    The district also runs a storm microsite, storms.dadeschools.net (announcement pages, not read). A
+    district-level source: it counts only the district''s own schools (leaids). Proof (piece s4d, 2026-09-28):
+    a district''s general alert channel, so a read proves it only when a row announced a closing, a delay,
+    an early dismissal, a remote day, cancelled classes, or weather or an emergency for the district;
+    hiring, board, election, enrollment and calendar notices do not (notices.gate_proofs, reported in
+    coverage.json''s district_notice_gate).'
+  shared_paths: []
+stations:
+- id: dadeschools-miami-dade-fl
+  platform: dadeschools
+  call_sign: MDCPS
+  name: Miami-Dade County Public Schools (district alerts file)
+  market: Miami (Miami-Dade County, FL)
+  dma: null
+  states: [FL]
+  counties:
+    basis: district
+    source: 'NCES CCD 2024-25 school directory (pipeline/out/internal/directory/schools.parquet): the
+      counties of the 526 schools of dadeschools-miami-dade-fl''s district, MIAMI-DADE (LEAID 1200390).
+      The NCES CCD 2024-25 LEA directory lists dadeschools.net for the district.'
+    fips: ['12086']
+  page_url: https://www.dadeschools.net/
+  data_url: https://mainapi.dadeschools.net/api/v1/alerts/
+  export_url: null
+  archive_urls:
+  - https://mainapi.dadeschools.net/api/v1/alerts/
+  - https://www.dadeschools.net/
+  - https://mainapi.dadeschools.net/api/v1/alerts
+  poll_minutes: null
+  status: active
+  evidence: 'First-hand check for piece s4d, 2026-09-27. Live read of https://mainapi.dadeschools.net/api/v1/alerts/
+    2026-09-27T23:21:08Z: HTTP 200, 2,670 bytes (application/json); dadeschools-alerts, empty, 0 row(s):
+    three items, all hidden. The homepage https://www.dadeschools.net/ loads it (its main bundle''s API_1_ALERTS)
+    and draws the visible items. Archived capture 2024-10-09 14:41 UTC (run 36341776194): one visible
+    item, the Hurricane Milton closure.'
+  list_files: []
+  page_check: null
+  robots:
+  - url: https://www.dadeschools.net/
+    checked_at: '2026-09-27T23:22:38Z'
+    state: parsed
+    allowed: true
+    rule: no rule matches
+    crawl_delay: null
+    disallowed_agents: []
+    sha256: 190e176d0dbaa04eea50f1e8510c07a95f980e1070b69d820ca9fa8d3fceaa25
+  - url: https://mainapi.dadeschools.net/api/v1/alerts/
+    checked_at: '2026-09-27T23:22:39Z'
+    state: unavailable
+    allowed: true
+    rule: 'robots.txt unavailable (4xx): unrestricted'
+    crawl_delay: null
+    disallowed_agents: []
+    sha256: null
+  leaids: ['1200390']

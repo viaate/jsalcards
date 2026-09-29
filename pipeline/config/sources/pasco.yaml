@@ -1,0 +1,75 @@
+# Station registry for one platform. Loaded with every other file in this folder
+# by snowlight.sources.stations.registry; see its docstring for the fields.
+# `snowlight stations robots --update` rewrites the robots blocks in place.
+platform:
+  id: pasco
+  name: 'Pasco County Schools (Florida): the homepage emergency banner'
+  operator: District School Board of Pasco County (its own site)
+  adapter: pasco
+  poll_minutes: 15
+  terms:
+    automated_access: permitted
+    summary: The district's 'Full Website Disclaimer' (read 2026-09-27) disclaims warranty, asks that
+      copyrighted works be used appropriately and says nothing against reading the site with software;
+      no terms of use beyond it.
+    evidence:
+    - url: https://www.pasco.k12.fl.us/comm/page/full_website_disclaimer
+      read_at: '2026-09-27T23:12:51Z'
+      sha256: f66719dfaa75449d9d613264aac5502a02b6ea766af6e589272be7dc28e6b5f4
+      excerpt:
+      - Although the District School Board of Pasco County does not warrant information found on this
+        World Wide Web server to be accurate, authoritative or factual, every attempt is made by Board
+        contributors to validate the source.
+    permission: null
+    owner_decision: null
+  notes: 'Found for piece s4d (round 2, 2026-09-27) while scouting Florida''s county districts: Pasco''s
+    own site puts its urgent notice in a banner at the top of the homepage (the slot the page marks ''<!--
+    Red emergency banner -->''), empty on 2026-09-27. Archived captures show it filled on storm days:
+    2024-10-09 and 2024-10-10 (Milton: ''All Schools and District Offices will now be closed to the public,
+    and all events and activities will be cancelled through Friday, October 11, 2024.''), 2024-09-26 (Helene)
+    and, in the page''s 2022 form, 2022-10-03 (after Ian). A district-level source: it counts only Pasco''s
+    own schools (leaids). Proof (piece s4d, 2026-09-28): a district''s general alert channel, so a read
+    proves it only when a row announced a closing, a delay, an early dismissal, a remote day, cancelled
+    classes, or weather or an emergency for the district; hiring, board, election, enrollment and calendar
+    notices do not (notices.gate_proofs, reported in coverage.json''s district_notice_gate).'
+  shared_paths: []
+stations:
+- id: pasco-county-fl
+  platform: pasco
+  call_sign: PCS
+  name: Pasco County Schools (district homepage emergency banner)
+  market: Land O' Lakes (Pasco County, FL; Tampa market)
+  dma: null
+  states: [FL]
+  counties:
+    basis: district
+    source: 'NCES CCD 2024-25 school directory (pipeline/out/internal/directory/schools.parquet): the
+      counties of the 106 schools of pasco-county-fl''s district, PASCO (LEAID 1201530). The NCES CCD
+      2024-25 LEA directory lists www.pasco.k12.fl.us for the district.'
+    fips: ['12101']
+  page_url: https://www.pasco.k12.fl.us/
+  data_url: null
+  export_url: null
+  archive_urls:
+  - https://www.pasco.k12.fl.us/
+  - http://www.pasco.k12.fl.us/
+  - https://pasco.k12.fl.us/
+  poll_minutes: null
+  status: active
+  evidence: 'First-hand check for piece s4d, 2026-09-27. Live read of https://www.pasco.k12.fl.us/ 2026-09-27T23:11:32Z:
+    HTTP 200, 54,267 bytes; pasco-emergency-banner, empty, 0 row(s): the banner slot with its stylesheet
+    and no banner. Title ''Pasco County Schools''. Archived captures of the same page (archive-captures
+    run 36341776194) hold the banner filled on 2024-09-26, 2024-10-09 and 2024-10-10, and the 2022 form
+    on 2022-10-03.'
+  list_files: []
+  page_check: null
+  robots:
+  - url: https://www.pasco.k12.fl.us/
+    checked_at: '2026-09-27T23:13:14Z'
+    state: unavailable
+    allowed: true
+    rule: 'robots.txt unavailable (4xx): unrestricted'
+    crawl_delay: null
+    disallowed_agents: []
+    sha256: null
+  leaids: ['1201530']

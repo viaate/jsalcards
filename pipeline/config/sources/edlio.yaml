@@ -1,0 +1,855 @@
+# Station registry for one platform. Loaded with every other file in this folder
+# by snowlight.sources.stations.registry; see its docstring for the fields.
+# `snowlight stations robots --update` rewrites the robots blocks in place.
+platform:
+  id: edlio
+  name: 'Edlio school district sites: the homepage alert'
+  operator: Edlio, LLC (the CMS); each site's school district (the content)
+  adapter: edlio
+  poll_minutes: 30
+  terms:
+    automated_access: permitted
+    summary: 'The district sites are public school districts'' own websites. Their footers link a ''Terms
+      of Use'' page: Edinburg CISD''s (read 2026-09-28) holds its title and no text; nothing on the sites
+      forbids reading them with software, and robots.txt allows every homepage polled (or is absent, which
+      leaves it unrestricted).'
+    evidence:
+    - url: https://www.ecisd.us/apps/pages/index.jsp?uREC_ID=2124647&type=d&pREC_ID=2155577
+      read_at: '2026-09-28T09:31:36Z'
+      sha256: 8e7142941f856ac15b10d36af365cb129384ade68a56685975b79556b7234583
+      excerpt:
+      - Terms of Use – Web Policies – Edinburg Consolidated Independent School District
+    permission: null
+    owner_decision: null
+  notes: 'Found for piece s4d while scouting the gap states'' district sites (round 2: Natrona County,
+    Sublette #9, Hot Springs #1 and Weston #1 in Wyoming, Soda Springs in Idaho, Livingston in Montana;
+    round 3: eleven South Texas districts). An Edlio district marks a news story or page as its homepage
+    alert, and the homepage carries it, rendered on the server, as a dialog (article#homepage_news_alert_modal)
+    the page opens on load; when none is up the page has no such element, so a quiet day''s page gave
+    no hint of it. Round 3''s archived captures showed it: Mission CISD''s homepage of 2025-01-21 11:10
+    UTC (the January 2025 snow) carried ''Weather Advisory: No School - Jan 21, 2025 / Delayed Start -
+    Jan 22, 2025''; on 2026-09-28 Sublette #9''s live homepage carried ''School Picture Days''. Because
+    the alert is in the page as served, archived captures of the homepage can prove a district. A district-level
+    source: each counts only its own district''s schools (leaids). Proof: a district''s general alert
+    channel, so a read proves it only when a row announced a closing, a delay, an early dismissal, a remote
+    day, cancelled classes, or weather or an emergency for the district (notices.gate_proofs). Round 4,
+    second batch (2026-09-28): the district sites of the other gap counties no working list reached (the
+    Glendive, Alpena and Zanesville markets, the Mississippi Delta and coast, the Chico - Redding and
+    Palm Springs markets and Del Norte), found the same way: 3 more Edlio sites there.'
+  shared_paths: []
+stations:
+- id: edlio-natrona-wy
+  platform: edlio
+  call_sign: NCSD
+  name: 'Natrona County School District #1 (district homepage alert)'
+  market: Casper (Natrona County, WY)
+  dma: null
+  states: [WY]
+  counties:
+    basis: district
+    source: 'NCES CCD 2024-25 school directory (pipeline/out/internal/directory/schools.parquet): the
+      counties of the 27 schools of edlio-natrona-wy''s district, Natrona County School District #1 (LEAID
+      5604510). The LEAID is the one the NCES CCD 2024-25 LEA directory (https://nces.ed.gov/ccd/Data/zip/ccd_lea_029_2425_w_1a_073025.zip,
+      SHA-256 2745169e4bc7cd53…, read 2026-09-27) lists with this website (natronaschools.org).'
+    fips: ['56025']
+  page_url: https://www.natronaschools.org/
+  data_url: null
+  export_url: null
+  archive_urls:
+  - https://www.natronaschools.org/
+  poll_minutes: null
+  status: active
+  evidence: 'First-hand check for piece s4d (round 3), 2026-09-28. Live read of https://www.natronaschools.org/
+    2026-09-28T09:31:14Z: HTTP 200, 69,628 bytes, generator ''Edlio CMS''; edlio-homepage-alert, empty,
+    0 row(s): no homepage alert. The homepage''s title: ''Natrona County School District 1''. Found by
+    reading the website the NCES LEA directory lists for each district of the gap counties (round 2 for
+    Wyoming, Idaho and Montana, round 3 for South Texas); built once an archived capture showed how an
+    Edlio homepage carries its alert (Mission CISD, 2025-01-21).'
+  list_files: []
+  page_check: null
+  robots:
+  - url: https://www.natronaschools.org/
+    checked_at: '2026-09-28T09:36:02Z'
+    state: unavailable
+    allowed: true
+    rule: 'robots.txt unavailable (4xx): unrestricted'
+    crawl_delay: null
+    disallowed_agents: []
+    sha256: null
+  leaids: ['5604510']
+- id: edlio-sublette-9-wy
+  platform: edlio
+  call_sign: SCSD9
+  name: 'Sublette County School District #9 (district homepage alert)'
+  market: Big Piney, WY (schools in Sublette and Lincoln counties)
+  dma: null
+  states: [WY]
+  counties:
+    basis: district
+    source: 'NCES CCD 2024-25 school directory (pipeline/out/internal/directory/schools.parquet): the
+      counties of the 4 schools of edlio-sublette-9-wy''s district, Sublette County School District #9
+      (LEAID 5601260). The LEAID is the one the NCES CCD 2024-25 LEA directory (https://nces.ed.gov/ccd/Data/zip/ccd_lea_029_2425_w_1a_073025.zip,
+      SHA-256 2745169e4bc7cd53…, read 2026-09-27) lists with this website (sublette9.org).'
+    fips: ['56023', '56035']
+  page_url: https://www.sublette9.org/
+  data_url: null
+  export_url: null
+  archive_urls:
+  - https://www.sublette9.org/
+  poll_minutes: null
+  status: active
+  evidence: 'First-hand check for piece s4d (round 3), 2026-09-28. Live read of https://www.sublette9.org/
+    2026-09-28T09:31:14Z: HTTP 200, 105,293 bytes, generator ''Edlio CMS''; edlio-homepage-alert, populated,
+    1 row(s): ''School Picture Days'': ''Information About School Picture Days''. The homepage''s title:
+    ''Sublette Co School District 9''. Found by reading the website the NCES LEA directory lists for each
+    district of the gap counties (round 2 for Wyoming, Idaho and Montana, round 3 for South Texas); built
+    once an archived capture showed how an Edlio homepage carries its alert (Mission CISD, 2025-01-21).'
+  list_files: []
+  page_check: null
+  robots:
+  - url: https://www.sublette9.org/
+    checked_at: '2026-09-28T09:36:05Z'
+    state: unavailable
+    allowed: true
+    rule: 'robots.txt unavailable (4xx): unrestricted'
+    crawl_delay: null
+    disallowed_agents: []
+    sha256: null
+  leaids: ['5601260']
+- id: edlio-hot-springs-1-wy
+  platform: edlio
+  call_sign: HSCSD1
+  name: 'Hot Springs County School District #1 (district homepage alert)'
+  market: Thermopolis (Hot Springs County, WY)
+  dma: null
+  states: [WY]
+  counties:
+    basis: district
+    source: 'NCES CCD 2024-25 school directory (pipeline/out/internal/directory/schools.parquet): the
+      counties of the 3 schools of edlio-hot-springs-1-wy''s district, Hot Springs County School District
+      #1 (LEAID 5603310). The LEAID is the one the NCES CCD 2024-25 LEA directory (https://nces.ed.gov/ccd/Data/zip/ccd_lea_029_2425_w_1a_073025.zip,
+      SHA-256 2745169e4bc7cd53…, read 2026-09-27) lists with this website (hotsprings1.org).'
+    fips: ['56017']
+  page_url: https://www.hotsprings1.org/
+  data_url: null
+  export_url: null
+  archive_urls:
+  - https://www.hotsprings1.org/
+  poll_minutes: null
+  status: active
+  evidence: 'First-hand check for piece s4d (round 3), 2026-09-28. Live read of https://www.hotsprings1.org/
+    2026-09-28T09:31:16Z: HTTP 200, 54,760 bytes, generator ''Edlio CMS''; edlio-homepage-alert, empty,
+    0 row(s): no homepage alert. The homepage''s title: ''Hot Springs County School District #1''. Found
+    by reading the website the NCES LEA directory lists for each district of the gap counties (round 2
+    for Wyoming, Idaho and Montana, round 3 for South Texas); built once an archived capture showed how
+    an Edlio homepage carries its alert (Mission CISD, 2025-01-21).'
+  list_files: []
+  page_check: null
+  robots:
+  - url: https://www.hotsprings1.org/
+    checked_at: '2026-09-28T09:35:58Z'
+    state: unavailable
+    allowed: true
+    rule: 'robots.txt unavailable (4xx): unrestricted'
+    crawl_delay: null
+    disallowed_agents: []
+    sha256: null
+  leaids: ['5603310']
+- id: edlio-weston-1-wy
+  platform: edlio
+  call_sign: WCSD1
+  name: 'Weston County School District #1 (district homepage alert)'
+  market: Newcastle (Weston County, WY)
+  dma: null
+  states: [WY]
+  counties:
+    basis: district
+    source: 'NCES CCD 2024-25 school directory (pipeline/out/internal/directory/schools.parquet): the
+      counties of the 4 schools of edlio-weston-1-wy''s district, Weston County School District #1 (LEAID
+      5604830). The LEAID is the one the NCES CCD 2024-25 LEA directory (https://nces.ed.gov/ccd/Data/zip/ccd_lea_029_2425_w_1a_073025.zip,
+      SHA-256 2745169e4bc7cd53…, read 2026-09-27) lists with this website (wcsd1.org).'
+    fips: ['56045']
+  page_url: https://www.wcsd1.org/
+  data_url: null
+  export_url: null
+  archive_urls:
+  - https://www.wcsd1.org/
+  poll_minutes: null
+  status: active
+  evidence: 'First-hand check for piece s4d (round 3), 2026-09-28. Live read of https://www.wcsd1.org/
+    2026-09-28T09:31:13Z: HTTP 200, 62,287 bytes, generator ''Edlio CMS''; edlio-homepage-alert, empty,
+    0 row(s): no homepage alert. The homepage''s title: ''Weston Co School District 1''. Found by reading
+    the website the NCES LEA directory lists for each district of the gap counties (round 2 for Wyoming,
+    Idaho and Montana, round 3 for South Texas); built once an archived capture showed how an Edlio homepage
+    carries its alert (Mission CISD, 2025-01-21).'
+  list_files: []
+  page_check: null
+  robots:
+  - url: https://www.wcsd1.org/
+    checked_at: '2026-09-28T09:36:07Z'
+    state: unavailable
+    allowed: true
+    rule: 'robots.txt unavailable (4xx): unrestricted'
+    crawl_delay: null
+    disallowed_agents: []
+    sha256: null
+  leaids: ['5604830']
+- id: edlio-soda-springs-id
+  platform: edlio
+  call_sign: SSJSD
+  name: Soda Springs Joint District (district homepage alert)
+  market: Soda Springs (Caribou County, ID)
+  dma: null
+  states: [ID]
+  counties:
+    basis: district
+    source: 'NCES CCD 2024-25 school directory (pipeline/out/internal/directory/schools.parquet): the
+      counties of the 4 schools of edlio-soda-springs-id''s district, Soda Springs Joint District (LEAID
+      1603000). The NCES CCD 2024-25 LEA directory lists no website for Idaho''s districts; the LEAID
+      is the district the homepage names (its title: ''Soda Springs Joint School District #150'').'
+    fips: ['16029']
+  page_url: https://www.sodaschools.org/
+  data_url: null
+  export_url: null
+  archive_urls:
+  - https://www.sodaschools.org/
+  poll_minutes: null
+  status: active
+  evidence: 'First-hand check for piece s4d (round 3), 2026-09-28. Live read of https://www.sodaschools.org/
+    2026-09-28T09:31:14Z: HTTP 200, 50,508 bytes, generator ''Edlio CMS''; edlio-homepage-alert, empty,
+    0 row(s): no homepage alert. The homepage''s title: ''Soda Springs Joint School District #150''. Found
+    by reading the website the NCES LEA directory lists for each district of the gap counties (round 2
+    for Wyoming, Idaho and Montana, round 3 for South Texas); built once an archived capture showed how
+    an Edlio homepage carries its alert (Mission CISD, 2025-01-21).'
+  list_files: []
+  page_check: null
+  robots:
+  - url: https://www.sodaschools.org/
+    checked_at: '2026-09-28T09:36:05Z'
+    state: unavailable
+    allowed: true
+    rule: 'robots.txt unavailable (4xx): unrestricted'
+    crawl_delay: null
+    disallowed_agents: []
+    sha256: null
+  leaids: ['1603000']
+- id: edlio-livingston-mt
+  platform: edlio
+  call_sign: LPS
+  name: Livingston Elem / Park H S (district homepage alert)
+  market: Livingston (Park County, MT)
+  dma: null
+  states: [MT]
+  counties:
+    basis: district
+    source: 'NCES CCD 2024-25 school directory (pipeline/out/internal/directory/schools.parquet): the
+      counties of the 4 schools of edlio-livingston-mt''s districts, Livingston Elem and Park H S (LEAIDs
+      3016880, 3020100). The LEAIDs are the ones the NCES CCD 2024-25 LEA directory (https://nces.ed.gov/ccd/Data/zip/ccd_lea_029_2425_w_1a_073025.zip,
+      SHA-256 2745169e4bc7cd53…, read 2026-09-27) lists with this website (livingston.k12.mt.us).'
+    fips: ['30067']
+  page_url: https://www.livingston.k12.mt.us/
+  data_url: null
+  export_url: null
+  archive_urls:
+  - https://www.livingston.k12.mt.us/
+  poll_minutes: null
+  status: active
+  evidence: 'First-hand check for piece s4d (round 3), 2026-09-28. Live read of https://www.livingston.k12.mt.us/
+    2026-09-28T09:31:14Z: HTTP 200, 47,671 bytes, generator ''Edlio CMS''; edlio-homepage-alert, empty,
+    0 row(s): no homepage alert. The homepage''s title: ''Livingston Public Schools''. Found by reading
+    the website the NCES LEA directory lists for each district of the gap counties (round 2 for Wyoming,
+    Idaho and Montana, round 3 for South Texas); built once an archived capture showed how an Edlio homepage
+    carries its alert (Mission CISD, 2025-01-21).'
+  list_files: []
+  page_check: null
+  robots:
+  - url: https://www.livingston.k12.mt.us/
+    checked_at: '2026-09-28T09:36:00Z'
+    state: unavailable
+    allowed: true
+    rule: 'robots.txt unavailable (4xx): unrestricted'
+    crawl_delay: null
+    disallowed_agents: []
+    sha256: null
+  leaids: ['3016880', '3020100']
+- id: edlio-edinburg-tx
+  platform: edlio
+  call_sign: ECISD
+  name: Edinburg CISD (district homepage alert)
+  market: Edinburg (Hidalgo County, TX)
+  dma: null
+  states: [TX]
+  counties:
+    basis: district
+    source: 'NCES CCD 2024-25 school directory (pipeline/out/internal/directory/schools.parquet): the
+      counties of the 45 schools of edlio-edinburg-tx''s district, Edinburg CISD (LEAID 4818180). The
+      LEAID is the one the NCES CCD 2024-25 LEA directory (https://nces.ed.gov/ccd/Data/zip/ccd_lea_029_2425_w_1a_073025.zip,
+      SHA-256 2745169e4bc7cd53…, read 2026-09-27) lists with this website (ecisd.us).'
+    fips: ['48215']
+  page_url: https://www.ecisd.us/
+  data_url: null
+  export_url: null
+  archive_urls:
+  - https://www.ecisd.us/
+  poll_minutes: null
+  status: active
+  evidence: 'First-hand check for piece s4d (round 3), 2026-09-28. Live read of https://www.ecisd.us/
+    2026-09-28T09:31:26Z: HTTP 200, 51,215 bytes, generator ''Edlio CMS''; edlio-homepage-alert, empty,
+    0 row(s): no homepage alert. The homepage''s title: ''Edinburg Consolidated Independent School District''.
+    Found by reading the website the NCES LEA directory lists for each district of the gap counties (round
+    2 for Wyoming, Idaho and Montana, round 3 for South Texas); built once an archived capture showed
+    how an Edlio homepage carries its alert (Mission CISD, 2025-01-21).'
+  list_files: []
+  page_check: null
+  robots:
+  - url: https://www.ecisd.us/
+    checked_at: '2026-09-28T09:35:57Z'
+    state: parsed
+    allowed: true
+    rule: no rule matches
+    crawl_delay: 5.0
+    disallowed_agents: []
+    sha256: 024d653679641a3aed282bacbe82c161b3262bc109ed683e3f15e67f9c816d6d
+  leaids: ['4818180']
+- id: edlio-mission-tx
+  platform: edlio
+  call_sign: MCISD
+  name: Mission CISD (district homepage alert)
+  market: Mission (Hidalgo County, TX)
+  dma: null
+  states: [TX]
+  counties:
+    basis: district
+    source: 'NCES CCD 2024-25 school directory (pipeline/out/internal/directory/schools.parquet): the
+      counties of the 21 schools of edlio-mission-tx''s district, Mission CISD (LEAID 4831040). The LEAID
+      is the one the NCES CCD 2024-25 LEA directory (https://nces.ed.gov/ccd/Data/zip/ccd_lea_029_2425_w_1a_073025.zip,
+      SHA-256 2745169e4bc7cd53…, read 2026-09-27) lists with this website (mcisd.net).'
+    fips: ['48215']
+  page_url: https://www.mcisd.net/
+  data_url: null
+  export_url: null
+  archive_urls:
+  - https://www.mcisd.net/
+  poll_minutes: null
+  status: active
+  evidence: 'First-hand check for piece s4d (round 3), 2026-09-28. Live read of https://www.mcisd.net/
+    2026-09-28T09:31:25Z: HTTP 200, 143,194 bytes, generator ''Edlio CMS''; edlio-homepage-alert, empty,
+    0 row(s): no homepage alert. The homepage''s title: ''Mission Consolidated Independent School District''.
+    Found by reading the website the NCES LEA directory lists for each district of the gap counties (round
+    2 for Wyoming, Idaho and Montana, round 3 for South Texas); built once an archived capture showed
+    how an Edlio homepage carries its alert (Mission CISD, 2025-01-21).'
+  list_files: []
+  page_check: null
+  robots:
+  - url: https://www.mcisd.net/
+    checked_at: '2026-09-28T09:36:01Z'
+    state: parsed
+    allowed: true
+    rule: no rule matches
+    crawl_delay: 5.0
+    disallowed_agents: []
+    sha256: 024d653679641a3aed282bacbe82c161b3262bc109ed683e3f15e67f9c816d6d
+  leaids: ['4831040']
+- id: edlio-los-fresnos-tx
+  platform: edlio
+  call_sign: LFCISD
+  name: Los Fresnos CISD (district homepage alert)
+  market: Los Fresnos (Cameron County, TX)
+  dma: null
+  states: [TX]
+  counties:
+    basis: district
+    source: 'NCES CCD 2024-25 school directory (pipeline/out/internal/directory/schools.parquet): the
+      counties of the 14 schools of edlio-los-fresnos-tx''s district, Los Fresnos CISD (LEAID 4828290).
+      The LEAID is the one the NCES CCD 2024-25 LEA directory (https://nces.ed.gov/ccd/Data/zip/ccd_lea_029_2425_w_1a_073025.zip,
+      SHA-256 2745169e4bc7cd53…, read 2026-09-27) lists with this website (lfcisd.net).'
+    fips: ['48061']
+  page_url: https://www.lfcisd.net/
+  data_url: null
+  export_url: null
+  archive_urls:
+  - https://www.lfcisd.net/
+  poll_minutes: null
+  status: active
+  evidence: 'First-hand check for piece s4d (round 3), 2026-09-28. Live read of https://www.lfcisd.net/
+    2026-09-28T09:31:26Z: HTTP 200, 737,055 bytes, generator ''Edlio CMS''; edlio-homepage-alert, empty,
+    0 row(s): no homepage alert. The homepage''s title: ''Los Fresnos Consolidated Independent School
+    District''. Found by reading the website the NCES LEA directory lists for each district of the gap
+    counties (round 2 for Wyoming, Idaho and Montana, round 3 for South Texas); built once an archived
+    capture showed how an Edlio homepage carries its alert (Mission CISD, 2025-01-21).'
+  list_files: []
+  page_check: null
+  robots:
+  - url: https://www.lfcisd.net/
+    checked_at: '2026-09-28T09:36:01Z'
+    state: unavailable
+    allowed: true
+    rule: 'robots.txt unavailable (4xx): unrestricted'
+    crawl_delay: null
+    disallowed_agents: []
+    sha256: null
+  leaids: ['4828290']
+- id: edlio-kingsville-tx
+  platform: edlio
+  call_sign: KISD
+  name: Kingsville ISD (district homepage alert)
+  market: Kingsville (Kleberg County, TX)
+  dma: null
+  states: [TX]
+  counties:
+    basis: district
+    source: 'NCES CCD 2024-25 school directory (pipeline/out/internal/directory/schools.parquet): the
+      counties of the 5 schools of edlio-kingsville-tx''s district, Kingsville ISD (LEAID 4825680). The
+      LEAID is the one the NCES CCD 2024-25 LEA directory (https://nces.ed.gov/ccd/Data/zip/ccd_lea_029_2425_w_1a_073025.zip,
+      SHA-256 2745169e4bc7cd53…, read 2026-09-27) lists with this website (kingsvilleisd.com).'
+    fips: ['48273']
+  page_url: https://www.kingsvilleisd.com/
+  data_url: null
+  export_url: null
+  archive_urls:
+  - https://www.kingsvilleisd.com/
+  poll_minutes: null
+  status: active
+  evidence: 'First-hand check for piece s4d (round 3), 2026-09-28. Live read of https://www.kingsvilleisd.com/
+    2026-09-28T09:31:26Z: HTTP 200, 78,042 bytes, generator ''Edlio CMS''; edlio-homepage-alert, empty,
+    0 row(s): no homepage alert. The homepage''s title: ''Kingsville Independent School District''. Found
+    by reading the website the NCES LEA directory lists for each district of the gap counties (round 2
+    for Wyoming, Idaho and Montana, round 3 for South Texas); built once an archived capture showed how
+    an Edlio homepage carries its alert (Mission CISD, 2025-01-21).'
+  list_files: []
+  page_check: null
+  robots:
+  - url: https://www.kingsvilleisd.com/
+    checked_at: '2026-09-28T09:36:00Z'
+    state: parsed
+    allowed: true
+    rule: no rule matches
+    crawl_delay: 5.0
+    disallowed_agents: []
+    sha256: 024d653679641a3aed282bacbe82c161b3262bc109ed683e3f15e67f9c816d6d
+  leaids: ['4825680']
+- id: edlio-robstown-tx
+  platform: edlio
+  call_sign: RISD
+  name: Robstown ISD (district homepage alert)
+  market: Robstown (Nueces County, TX)
+  dma: null
+  states: [TX]
+  counties:
+    basis: district
+    source: 'NCES CCD 2024-25 school directory (pipeline/out/internal/directory/schools.parquet): the
+      counties of the 5 schools of edlio-robstown-tx''s district, Robstown ISD (LEAID 4837440). The LEAID
+      is the one the NCES CCD 2024-25 LEA directory (https://nces.ed.gov/ccd/Data/zip/ccd_lea_029_2425_w_1a_073025.zip,
+      SHA-256 2745169e4bc7cd53…, read 2026-09-27) lists with this website (robstownisd.org).'
+    fips: ['48355']
+  page_url: https://www.robstownisd.org/
+  data_url: null
+  export_url: null
+  archive_urls:
+  - https://www.robstownisd.org/
+  poll_minutes: null
+  status: active
+  evidence: 'First-hand check for piece s4d (round 3), 2026-09-28. Live read of https://www.robstownisd.org/
+    2026-09-28T09:31:26Z: HTTP 200, 74,900 bytes, generator ''Edlio CMS''; edlio-homepage-alert, empty,
+    0 row(s): no homepage alert. The homepage''s title: ''Robstown Independent School District''. Found
+    by reading the website the NCES LEA directory lists for each district of the gap counties (round 2
+    for Wyoming, Idaho and Montana, round 3 for South Texas); built once an archived capture showed how
+    an Edlio homepage carries its alert (Mission CISD, 2025-01-21).'
+  list_files: []
+  page_check: null
+  robots:
+  - url: https://www.robstownisd.org/
+    checked_at: '2026-09-28T09:36:03Z'
+    state: parsed
+    allowed: true
+    rule: no rule matches
+    crawl_delay: 5.0
+    disallowed_agents: []
+    sha256: 024d653679641a3aed282bacbe82c161b3262bc109ed683e3f15e67f9c816d6d
+  leaids: ['4837440']
+- id: edlio-rockport-fulton-tx
+  platform: edlio
+  call_sign: RFISD
+  name: Rockport-Fulton ISD (district homepage alert)
+  market: Rockport (Aransas County, TX)
+  dma: null
+  states: [TX]
+  counties:
+    basis: district
+    source: 'NCES CCD 2024-25 school directory (pipeline/out/internal/directory/schools.parquet): the
+      counties of the 4 schools of edlio-rockport-fulton-tx''s district, Rockport-Fulton ISD (LEAID 4808550).
+      The LEAID is the one the NCES CCD 2024-25 LEA directory (https://nces.ed.gov/ccd/Data/zip/ccd_lea_029_2425_w_1a_073025.zip,
+      SHA-256 2745169e4bc7cd53…, read 2026-09-27) lists with this website (rfisd.us).'
+    fips: ['48007']
+  page_url: https://www.rfisd.us/
+  data_url: null
+  export_url: null
+  archive_urls:
+  - https://www.rfisd.us/
+  poll_minutes: null
+  status: active
+  evidence: 'First-hand check for piece s4d (round 3), 2026-09-28. Live read of https://www.rfisd.us/
+    2026-09-28T09:31:26Z: HTTP 200, 79,568 bytes, generator ''Edlio CMS''; edlio-homepage-alert, empty,
+    0 row(s): no homepage alert. The homepage''s title: ''Rockport-Fulton ISD''. Found by reading the
+    website the NCES LEA directory lists for each district of the gap counties (round 2 for Wyoming, Idaho
+    and Montana, round 3 for South Texas); built once an archived capture showed how an Edlio homepage
+    carries its alert (Mission CISD, 2025-01-21).'
+  list_files: []
+  page_check: null
+  robots:
+  - url: https://www.rfisd.us/
+    checked_at: '2026-09-28T09:36:03Z'
+    state: unavailable
+    allowed: true
+    rule: 'robots.txt unavailable (4xx): unrestricted'
+    crawl_delay: null
+    disallowed_agents: []
+    sha256: null
+  leaids: ['4808550']
+- id: edlio-orange-grove-tx
+  platform: edlio
+  call_sign: OGISD
+  name: Orange Grove ISD (district homepage alert)
+  market: Orange Grove (Jim Wells County, TX)
+  dma: null
+  states: [TX]
+  counties:
+    basis: district
+    source: 'NCES CCD 2024-25 school directory (pipeline/out/internal/directory/schools.parquet): the
+      counties of the 4 schools of edlio-orange-grove-tx''s district, Orange Grove ISD (LEAID 4833720).
+      The LEAID is the one the NCES CCD 2024-25 LEA directory (https://nces.ed.gov/ccd/Data/zip/ccd_lea_029_2425_w_1a_073025.zip,
+      SHA-256 2745169e4bc7cd53…, read 2026-09-27) lists with this website (ogisd.net).'
+    fips: ['48249']
+  page_url: https://www.ogisd.net/
+  data_url: null
+  export_url: null
+  archive_urls:
+  - https://www.ogisd.net/
+  poll_minutes: null
+  status: active
+  evidence: 'First-hand check for piece s4d (round 3), 2026-09-28. Live read of https://www.ogisd.net/
+    2026-09-28T09:31:36Z: HTTP 200, 78,828 bytes, generator ''Edlio CMS''; edlio-homepage-alert, empty,
+    0 row(s): no homepage alert. The homepage''s title: ''Orange Grove Independent School District''.
+    Found by reading the website the NCES LEA directory lists for each district of the gap counties (round
+    2 for Wyoming, Idaho and Montana, round 3 for South Texas); built once an archived capture showed
+    how an Edlio homepage carries its alert (Mission CISD, 2025-01-21).'
+  list_files: []
+  page_check: null
+  robots:
+  - url: https://www.ogisd.net/
+    checked_at: '2026-09-28T09:36:02Z'
+    state: parsed
+    allowed: true
+    rule: no rule matches
+    crawl_delay: 5.0
+    disallowed_agents: []
+    sha256: 024d653679641a3aed282bacbe82c161b3262bc109ed683e3f15e67f9c816d6d
+  leaids: ['4833720']
+- id: edlio-hidalgo-tx
+  platform: edlio
+  call_sign: HISD
+  name: Hidalgo ISD (district homepage alert)
+  market: Hidalgo (Hidalgo County, TX)
+  dma: null
+  states: [TX]
+  counties:
+    basis: district
+    source: 'NCES CCD 2024-25 school directory (pipeline/out/internal/directory/schools.parquet): the
+      counties of the 6 schools of edlio-hidalgo-tx''s district, Hidalgo ISD (LEAID 4823100). The LEAID
+      is the one the NCES CCD 2024-25 LEA directory (https://nces.ed.gov/ccd/Data/zip/ccd_lea_029_2425_w_1a_073025.zip,
+      SHA-256 2745169e4bc7cd53…, read 2026-09-27) lists with this website (hidalgo-isd.org).'
+    fips: ['48215']
+  page_url: https://www.hidalgo-isd.org/
+  data_url: null
+  export_url: null
+  archive_urls:
+  - https://www.hidalgo-isd.org/
+  poll_minutes: null
+  status: active
+  evidence: 'First-hand check for piece s4d (round 3), 2026-09-28. Live read of https://www.hidalgo-isd.org/
+    2026-09-28T09:31:36Z: HTTP 200, 57,215 bytes, generator ''Edlio CMS''; edlio-homepage-alert, empty,
+    0 row(s): no homepage alert. The homepage''s title: ''Hidalgo Independent School District''. Found
+    by reading the website the NCES LEA directory lists for each district of the gap counties (round 2
+    for Wyoming, Idaho and Montana, round 3 for South Texas); built once an archived capture showed how
+    an Edlio homepage carries its alert (Mission CISD, 2025-01-21).'
+  list_files: []
+  page_check: null
+  robots:
+  - url: https://www.hidalgo-isd.org/
+    checked_at: '2026-09-28T09:35:58Z'
+    state: unavailable
+    allowed: true
+    rule: 'robots.txt unavailable (4xx): unrestricted'
+    crawl_delay: null
+    disallowed_agents: []
+    sha256: null
+  leaids: ['4823100']
+- id: edlio-jim-hogg-county-tx
+  platform: edlio
+  call_sign: JHCISD
+  name: Jim Hogg County ISD (district homepage alert)
+  market: Hebbronville (Jim Hogg County, TX)
+  dma: null
+  states: [TX]
+  counties:
+    basis: district
+    source: 'NCES CCD 2024-25 school directory (pipeline/out/internal/directory/schools.parquet): the
+      counties of the 3 schools of edlio-jim-hogg-county-tx''s district, Jim Hogg County ISD (LEAID 4824750).
+      The LEAID is the one the NCES CCD 2024-25 LEA directory (https://nces.ed.gov/ccd/Data/zip/ccd_lea_029_2425_w_1a_073025.zip,
+      SHA-256 2745169e4bc7cd53…, read 2026-09-27) lists with this website (jhcisdpk12.org).'
+    fips: ['48247']
+  page_url: https://www.jhcisdpk12.org/
+  data_url: null
+  export_url: null
+  archive_urls:
+  - https://www.jhcisdpk12.org/
+  poll_minutes: null
+  status: active
+  evidence: 'First-hand check for piece s4d (round 3), 2026-09-28. Live read of https://www.jhcisdpk12.org/
+    2026-09-28T09:31:36Z: HTTP 200, 70,702 bytes, generator ''Edlio CMS''; edlio-homepage-alert, empty,
+    0 row(s): no homepage alert. The homepage''s title: ''Jim Hogg Co Ind Sch District''. Found by reading
+    the website the NCES LEA directory lists for each district of the gap counties (round 2 for Wyoming,
+    Idaho and Montana, round 3 for South Texas); built once an archived capture showed how an Edlio homepage
+    carries its alert (Mission CISD, 2025-01-21).'
+  list_files: []
+  page_check: null
+  robots:
+  - url: https://www.jhcisdpk12.org/
+    checked_at: '2026-09-28T09:35:59Z'
+    state: unavailable
+    allowed: true
+    rule: 'robots.txt unavailable (4xx): unrestricted'
+    crawl_delay: null
+    disallowed_agents: []
+    sha256: null
+  leaids: ['4824750']
+- id: edlio-santa-gertrudis-tx
+  platform: edlio
+  call_sign: SGISD
+  name: Santa Gertrudis ISD (district homepage alert)
+  market: Kingsville (Kleberg County, TX)
+  dma: null
+  states: [TX]
+  counties:
+    basis: district
+    source: 'NCES CCD 2024-25 school directory (pipeline/out/internal/directory/schools.parquet): the
+      counties of the 2 schools of edlio-santa-gertrudis-tx''s district, Santa Gertrudis ISD (LEAID 4839300).
+      The LEAID is the one the NCES CCD 2024-25 LEA directory (https://nces.ed.gov/ccd/Data/zip/ccd_lea_029_2425_w_1a_073025.zip,
+      SHA-256 2745169e4bc7cd53…, read 2026-09-27) lists with this website (sgisd.net).'
+    fips: ['48273']
+  page_url: https://www.sgisd.net/
+  data_url: null
+  export_url: null
+  archive_urls:
+  - https://www.sgisd.net/
+  poll_minutes: null
+  status: active
+  evidence: 'First-hand check for piece s4d (round 3), 2026-09-28. Live read of https://www.sgisd.net/
+    2026-09-28T09:31:36Z: HTTP 200, 57,917 bytes, generator ''Edlio CMS''; edlio-homepage-alert, empty,
+    0 row(s): no homepage alert. The homepage''s title: ''Santa Gertrudis ISD SGISD''. Found by reading
+    the website the NCES LEA directory lists for each district of the gap counties (round 2 for Wyoming,
+    Idaho and Montana, round 3 for South Texas); built once an archived capture showed how an Edlio homepage
+    carries its alert (Mission CISD, 2025-01-21).'
+  list_files: []
+  page_check: null
+  robots:
+  - url: https://www.sgisd.net/
+    checked_at: '2026-09-28T09:36:04Z'
+    state: parsed
+    allowed: true
+    rule: no rule matches
+    crawl_delay: 5.0
+    disallowed_agents: []
+    sha256: 024d653679641a3aed282bacbe82c161b3262bc109ed683e3f15e67f9c816d6d
+  leaids: ['4839300']
+- id: edlio-valere-tx
+  platform: edlio
+  call_sign: VALERE
+  name: Valere Public Schools (district homepage alert)
+  market: Austin, TX (schools in Travis, Cameron and Nueces counties)
+  dma: null
+  states: [TX]
+  counties:
+    basis: district
+    source: 'NCES CCD 2024-25 school directory (pipeline/out/internal/directory/schools.parquet): the
+      counties of the 4 schools of edlio-valere-tx''s district, Valere Public Schools (LEAID 4801414).
+      The LEAID is the one the NCES CCD 2024-25 LEA directory (https://nces.ed.gov/ccd/Data/zip/ccd_lea_029_2425_w_1a_073025.zip,
+      SHA-256 2745169e4bc7cd53…, read 2026-09-27) lists with this website (promesapublicschools.org).'
+    fips: ['48061', '48355', '48453']
+  page_url: https://www.promesapublicschools.org/
+  data_url: null
+  export_url: null
+  archive_urls:
+  - https://www.promesapublicschools.org/
+  poll_minutes: null
+  status: active
+  evidence: 'First-hand check for piece s4d (round 3), 2026-09-28. Live read of https://www.promesapublicschools.org/
+    2026-09-28T09:31:36Z: HTTP 200, 29,620 bytes, generator ''Edlio CMS''; edlio-homepage-alert, empty,
+    0 row(s): no homepage alert. The homepage''s title: ''Promesa Public Schools''. Found by reading the
+    website the NCES LEA directory lists for each district of the gap counties (round 2 for Wyoming, Idaho
+    and Montana, round 3 for South Texas); built once an archived capture showed how an Edlio homepage
+    carries its alert (Mission CISD, 2025-01-21).'
+  list_files: []
+  page_check: null
+  robots:
+  - url: https://www.promesapublicschools.org/
+    checked_at: '2026-09-28T09:36:06Z'
+    state: unavailable
+    allowed: true
+    rule: 'robots.txt unavailable (4xx): unrestricted'
+    crawl_delay: null
+    disallowed_agents: []
+    sha256: null
+  leaids: ['4801414']
+- id: edlio-washakie-2-wy
+  platform: edlio
+  call_sign: WCSD2
+  name: 'Washakie County School District #2 (district homepage alert)'
+  market: Ten Sleep (Washakie County, WY)
+  dma: null
+  states: [WY]
+  counties:
+    basis: district
+    source: 'NCES CCD 2024-25 school directory (pipeline/out/internal/directory/schools.parquet): the
+      counties of the 1 schools of edlio-washakie-2-wy''s district, Washakie County School District #2
+      (LEAID 5605820). The LEAID is the one the NCES CCD 2024-25 LEA directory (https://nces.ed.gov/ccd/Data/zip/ccd_lea_029_2425_w_1a_073025.zip,
+      SHA-256 2745169e4bc7cd53…, read 2026-09-27) lists with this website (wsh2.k12.wy.us).'
+    fips: ['56043']
+  page_url: https://www.wsh2.k12.wy.us/
+  data_url: null
+  export_url: null
+  archive_urls:
+  - https://www.wsh2.k12.wy.us/
+  poll_minutes: null
+  status: active
+  evidence: 'First-hand check for piece s4d (round 3, second pass), 2026-09-28. Live read of https://www.wsh2.k12.wy.us/
+    2026-09-28T10:28:41Z: HTTP 200, 49,844 bytes (title ''Washakie County School District #2''); edlio-homepage-alert,
+    empty, 0 row(s): nothing up. Found while checking the districts of Idaho''s and Wyoming''s uncovered
+    counties that earlier rounds had not scouted.'
+  list_files: []
+  page_check: null
+  robots:
+  - url: https://www.wsh2.k12.wy.us/
+    checked_at: '2026-09-28T10:43:09Z'
+    state: parsed
+    allowed: true
+    rule: no rule matches
+    crawl_delay: 5.0
+    disallowed_agents: []
+    sha256: 024d653679641a3aed282bacbe82c161b3262bc109ed683e3f15e67f9c816d6d
+  leaids: ['5605820']
+- id: edlio-lake-elsinore-ca
+  platform: edlio
+  call_sign: LEUSD
+  name: Lake Elsinore Unified (district homepage alert)
+  market: Lake Elsinore (Riverside County, CA)
+  dma: null
+  states: [CA]
+  counties:
+    basis: district
+    source: 'NCES CCD 2024-25 school directory (pipeline/out/internal/directory/schools.parquet): the
+      counties of the 24 schools of edlio-lake-elsinore-ca''s district, Lake Elsinore Unified (LEAID 0600027).
+      The LEAID is the one the NCES CCD 2024-25 LEA directory (https://nces.ed.gov/ccd/Data/zip/ccd_lea_029_2425_w_1a_073025.zip,
+      SHA-256 2745169e4bc7cd53…, read 2026-09-27) lists with this website (leusd.k12.ca.us).'
+    fips: ['06065']
+  page_url: https://www.leusd.k12.ca.us/
+  data_url: null
+  export_url: null
+  archive_urls:
+  - https://www.leusd.k12.ca.us/
+  poll_minutes: null
+  status: active
+  evidence: 'First-hand check for piece s4d (round 4), 2026-09-28. Live read of https://www.leusd.k12.ca.us/
+    2026-09-28T15:16:01Z: HTTP 200, 95,360 bytes; edlio-homepage-alert, populated, 1 row(s): ''We''re
+    excited to share that a new LEUSD website is on the way. Our goal is to make it easier for students,
+    families, staff, and community me''. The homepage''s title: ''LEUSD''. Found by reading the website
+    the NCES LEA directory lists for each district with schools in the Chico - Redding and Palm Springs
+    markets and Del Norte and Humboldt counties, which no working list reached.'
+  list_files: []
+  page_check: null
+  robots:
+  - url: https://www.leusd.k12.ca.us/
+    checked_at: '2026-09-28T15:22:11Z'
+    state: parsed
+    allowed: true
+    rule: no rule matches
+    crawl_delay: 5.0
+    disallowed_agents: []
+    sha256: 024d653679641a3aed282bacbe82c161b3262bc109ed683e3f15e67f9c816d6d
+  leaids: ['0600027']
+- id: edlio-san-jacinto-ca
+  platform: edlio
+  call_sign: SJUSD
+  name: San Jacinto Unified (district homepage alert)
+  market: San Jacinto (Riverside County, CA)
+  dma: null
+  states: [CA]
+  counties:
+    basis: district
+    source: 'NCES CCD 2024-25 school directory (pipeline/out/internal/directory/schools.parquet): the
+      counties of the 15 schools of edlio-san-jacinto-ca''s district, San Jacinto Unified (LEAID 0634440).
+      The LEAID is the one the NCES CCD 2024-25 LEA directory (https://nces.ed.gov/ccd/Data/zip/ccd_lea_029_2425_w_1a_073025.zip,
+      SHA-256 2745169e4bc7cd53…, read 2026-09-27) lists with this website (sanjacinto.k12.ca.us).'
+    fips: ['06065']
+  page_url: https://www.sanjacinto.k12.ca.us/
+  data_url: null
+  export_url: null
+  archive_urls:
+  - https://www.sanjacinto.k12.ca.us/
+  poll_minutes: null
+  status: active
+  evidence: 'First-hand check for piece s4d (round 4), 2026-09-28. Live read of https://www.sanjacinto.k12.ca.us/
+    2026-09-28T15:18:04Z: HTTP 200, 96,107 bytes; edlio-homepage-alert, empty, 0 row(s): no alert. The
+    homepage''s title: ''San Jacinto Unified School District''. Found by reading the website the NCES
+    LEA directory lists for each district with schools in the Chico - Redding and Palm Springs markets
+    and Del Norte and Humboldt counties, which no working list reached.'
+  list_files: []
+  page_check: null
+  robots:
+  - url: https://www.sanjacinto.k12.ca.us/
+    checked_at: '2026-09-28T15:22:12Z'
+    state: parsed
+    allowed: true
+    rule: no rule matches
+    crawl_delay: 5.0
+    disallowed_agents: []
+    sha256: 024d653679641a3aed282bacbe82c161b3262bc109ed683e3f15e67f9c816d6d
+  leaids: ['0634440']
+- id: edlio-beaumont-ca
+  platform: edlio
+  call_sign: BUSD
+  name: Beaumont Unified (district homepage alert)
+  market: Beaumont (Riverside County, CA)
+  dma: null
+  states: [CA]
+  counties:
+    basis: district
+    source: 'NCES CCD 2024-25 school directory (pipeline/out/internal/directory/schools.parquet): the
+      counties of the 14 schools of edlio-beaumont-ca''s district, Beaumont Unified (LEAID 0604290). The
+      LEAID is the one the NCES CCD 2024-25 LEA directory (https://nces.ed.gov/ccd/Data/zip/ccd_lea_029_2425_w_1a_073025.zip,
+      SHA-256 2745169e4bc7cd53…, read 2026-09-27) lists with this website (beaumontusd.us).'
+    fips: ['06065']
+  page_url: https://www.beaumontusd.us/
+  data_url: null
+  export_url: null
+  archive_urls:
+  - https://www.beaumontusd.us/
+  poll_minutes: null
+  status: active
+  evidence: 'First-hand check for piece s4d (round 4), 2026-09-28. Live read of https://www.beaumontusd.us/
+    2026-09-28T15:18:15Z: HTTP 200, 81,904 bytes; edlio-homepage-alert, empty, 0 row(s): no alert. The
+    homepage''s title: ''Beaumont Unified School District''. Found by reading the website the NCES LEA
+    directory lists for each district with schools in the Chico - Redding and Palm Springs markets and
+    Del Norte and Humboldt counties, which no working list reached.'
+  list_files: []
+  page_check: null
+  robots:
+  - url: https://www.beaumontusd.us/
+    checked_at: '2026-09-28T15:22:11Z'
+    state: parsed
+    allowed: true
+    rule: no rule matches
+    crawl_delay: 5.0
+    disallowed_agents: []
+    sha256: 024d653679641a3aed282bacbe82c161b3262bc109ed683e3f15e67f9c816d6d
+  leaids: [0604290]

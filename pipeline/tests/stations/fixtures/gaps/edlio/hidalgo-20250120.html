@@ -1,0 +1,88 @@
+<!DOCTYPE html><html><head><title>Hidalgo Independent School District</title><meta name="generator" content="Edlio CMS"></head><body><script>
+				'use strict';
+
+				// in case there are other version of jquery being imported with this
+				// version, we will use no conflict and IIFE to avoid global name space
+				var jq183 = jQuery.noConflict(true);
+
+				(function(jq183) {
+
+					jq183(document).ready(function() {
+						var alertKeyStartConstant = 'doNotShowAlert';
+
+						var alertArticleKey =
+							alertKeyStartConstant + '_' +
+							'2020021_' +
+							'2025/01/23 16:45:00';
+
+						var alertExpirationDate = new Date('2025/01/23 16:45:00');
+
+						// manually check for the alert expire time, if the alert expire
+						// after now, we remove this item from local storage from user
+						for (var key in localStorage) {
+							// we only remove key when this key starts with the constant
+							if (key.indexOf(alertKeyStartConstant) === 0) {
+								var alertExpireAt = new Date(key.split("_")[2]);
+
+								if (alertExpireAt.getTime() < new Date()) {
+									window.localStorage.removeItem(key);
+								}
+							}
+						}
+
+						// show alert modal to user
+						if (!window.localStorage.getItem(alertArticleKey)) {
+							jq183.magnificPopup.open({
+								items: {
+									src: '#homepage_news_alert_modal',
+									type: 'inline',
+									showCloseBtn: false,
+									closeBtnInside: false
+								}
+							});
+						}
+
+						// when user click on `don't show again`, we store this answer
+						// in the localStorage
+						jq183('#dont-show-again').click( function() {
+							window.localStorage.setItem(alertArticleKey, true);
+						});
+					});
+
+				})(jq183);
+			</script><article id="homepage_news_alert_modal" class="mfp-hide cf  horizontal-image " itemscope="" itemtype="http://schema.org/Article">
+				<div id="modal-container" class=" homepage-horizontal-display ">
+                  <button class="mfp-close" aria-label="Close">×</button>
+
+                  <div id="image-content" class="image-content">
+                              <img class="featured-image" src="https://3.files.edl.io/86df/25/01/18/222922-bd7a1c65-ea2d-4184-8123-c3b72644ee3f.jpg" alt="Image of Weather Alert">
+                  </div>
+
+                  <div id="article-content" class="article-content">
+                      <header class="cf">
+                          <h2 class="title" itemprop="name headline">
+                              Delayed Start at Hidalgo ISD
+                          </h2>
+                      </header>
+
+
+                          <div class="summary cf">
+                              <p>
+                                  Click on the link for more information regarding the delayed start coming up this week; January 21-23, 2025.
+                              </p>
+                          </div>
+
+
+						<div class="buttons cf">
+							
+							<div class="read-more">
+		<a href="/apps/news/article/2020021" class="button-text button">
+									Read full story
+								</a>
+							</div>
+						</div>
+                  </div>
+
+                      <a id="dont-show-again" class=" horizontal-display-bottom-link " href="">Don't show again</a>
+              </div>
+    </article></body></html>

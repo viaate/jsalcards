@@ -1,0 +1,2026 @@
+# Station registry for one platform. Loaded with every other file in this folder
+# by snowlight.sources.stations.registry; see its docstring for the fields.
+# `snowlight stations robots --update` rewrites the robots blocks in place.
+platform:
+  id: smartsites
+  name: 'ParentSquare Smart Sites school district sites: pop-up alerts'
+  operator: ParentSquare, Inc. (Smart Sites, formerly Gabbart Communications' SchoolSites); each site's
+    school district (the content)
+  adapter: smartsites
+  poll_minutes: 15
+  terms:
+    automated_access: forbidden
+    summary: The district sites publish no terms of their own. ParentSquare's Terms of Use (read 2026-09-27),
+      written for users of its Subscription Services, say a user may not copy, reproduce or share text
+      on a public or password-protected ParentSquare page without the owner's written consent; recorded
+      here as forbidding. Snowlight reads only each district's public pop-up alerts file, under the project
+      owner's decision below.
+    evidence:
+    - url: https://www.parentsquare.com/terms/
+      read_at: '2026-09-27T15:46:48Z'
+      sha256: 6230b2e2f14d6369342a2f7c2eb1b2cd522efd1a078b81aa92b297ddc2956f65
+      excerpt:
+      - Copy, reproduce, or otherwise share any text, photos, videos, images, contacts, or any other information
+        on a public or password-protected ParentSquare page, without prior express written consent of
+        the owner and in any way that violates anybody’s rights.
+    permission: null
+    owner_decision:
+      decided_by: the project owner (Snowlight)
+      decided_on: '2026-09-25'
+      reference: 'Stated in the build instructions for the station adapters (piece s4d, round 2): "Terms
+        of use that forbid automated access do not exclude a station: the project owner decided on 2026-09-25
+        to read them for this non-commercial project, so record each station''s terms internally in the
+        registry and read it anyway." Relayed to the pipeline''s builder by the project''s build workflow;
+        to revoke it, remove this block and live polling of this platform stops.'
+      scope: 'Live reads of each district''s public /api/popup-alerts file for Snowlight, a non-commercial
+        project. Unchanged by it: the User-Agent names the repository, only the alerts file is requested
+        (no crawling), requests are paced per host (any Crawl-delay is a floor) with retries and backoff,
+        and an active block (a 403, a bot challenge) is never worked around.'
+  notes: 'Found for piece s4d on 2026-09-27 while scouting Florida''s county school districts: Orange,
+    Osceola, Seminole, Leon, Hernando, Citrus, Charlotte, Jackson, Flagler and Sumter run ParentSquare
+    Smart Sites (the pages load cdn.smartsites.parentsquare.com and answer x-gabbart-ecs), as do Bonneville
+    Joint District 93 (Idaho Falls), Shelley (ID) and Belgrade (MT). Each page''s PopUpAlertsComponent
+    script reads the site''s /api/popup-alerts (a JSON list of the district''s active urgent alerts, checked
+    against a schema in the script) and shows them in a dialog; the poller reads that file. The rows name
+    no school: each source is district-level (leaids), counting only its own district''s schools. A second
+    search the same day (the website the NCES CCD 2024-25 LEA directory lists for each unbuilt district
+    of Montana''s and Wyoming''s gap counties) found three more: Laramie County School District #1 (Cheyenne)
+    and Lincoln County School District #1 (Kemmerer) in Wyoming, and Libby (MT); and two more Florida
+    county districts (Calhoun, Hamilton) and Sugar-Salem #322 (ID), found by a search; 19 sites in all.
+    Proof (piece s4d, 2026-09-28): a district''s general alert channel, so a read proves it only when
+    a row announced a closing, a delay, an early dismissal, a remote day, cancelled classes, or weather
+    or an emergency for the district; hiring, board, election, enrollment and calendar notices do not
+    (notices.gate_proofs, reported in coverage.json''s district_notice_gate). Round 3 (piece s4d, 2026-09-28):
+    the district sites of South Texas'' uncovered counties (Hidalgo, Nueces, Cameron, Victoria, Webb,
+    El Paso, San Patricio and the smaller ones around them), found by reading the website the NCES CCD
+    2024-25 LEA directory lists for each of their districts: 17 more Smart Sites there. Round 4 (piece
+    s4d, 2026-09-28): the district sites of the Mobile - Pensacola market''s uncovered counties (Mobile,
+    Baldwin, Escambia, Clarke, Washington, Conecuh and Monroe in Alabama; Santa Rosa in Florida), found
+    by reading the website the NCES CCD 2024-25 LEA directory lists for each of their districts: 1 more
+    Smart Sites there. Round 4, second batch (2026-09-28): the district sites of the other gap counties
+    no working list reached (the Glendive, Alpena and Zanesville markets, the Mississippi Delta and coast,
+    the Chico - Redding and Palm Springs markets and Del Norte), found the same way: 4 more Smart Sites
+    there.'
+  shared_paths: []
+stations:
+- id: smartsites-orange-fl
+  platform: smartsites
+  call_sign: OCPS
+  name: Orange County Public Schools (district site pop-up alerts)
+  market: Orlando (Orange County, FL)
+  dma: null
+  states: [FL]
+  counties:
+    basis: district
+    source: 'NCES CCD 2024-25 school directory (pipeline/out/internal/directory/schools.parquet): the
+      counties of the 273 schools of smartsites-orange-fl''s district, ORANGE (LEAID 1201440).'
+    fips: ['12095']
+  page_url: https://www.ocps.net/
+  data_url: https://www.ocps.net/api/popup-alerts
+  export_url: null
+  archive_urls:
+  - https://www.ocps.net/api/popup-alerts
+  - https://www.ocps.net/
+  poll_minutes: null
+  status: active
+  evidence: 'First-hand check for piece s4d, 2026-09-27. Live read of https://www.ocps.net/api/popup-alerts
+    2026-09-27T15:44:41Z: HTTP 200, 32 bytes (application/json); smartsites-popup-alerts, empty, 0 row(s):
+    no alert. The homepage https://www.ocps.net/ loads its pop-up alerts from that file (its PopUpAlertsComponent
+    script).'
+  list_files: []
+  page_check: null
+  robots:
+  - url: https://www.ocps.net/
+    checked_at: '2026-09-27T15:47:47Z'
+    state: parsed
+    allowed: true
+    rule: no rule matches
+    crawl_delay: 5.0
+    disallowed_agents: [ahrefsbot, baiduspider, blexbot, mj12bot, semrushbot, yandex]
+    sha256: e8e9fa92b86ef4f758ad1b7a87171b599635d1b16fa1e28fd355b81a183e9c96
+  - url: https://www.ocps.net/api/popup-alerts
+    checked_at: '2026-09-27T15:47:47Z'
+    state: parsed
+    allowed: true
+    rule: no rule matches
+    crawl_delay: 5.0
+    disallowed_agents: [ahrefsbot, baiduspider, blexbot, mj12bot, semrushbot, yandex]
+    sha256: e8e9fa92b86ef4f758ad1b7a87171b599635d1b16fa1e28fd355b81a183e9c96
+  leaids: ['1201440']
+- id: smartsites-osceola-fl
+  platform: smartsites
+  call_sign: SDOC
+  name: School District of Osceola County (district site pop-up alerts)
+  market: Kissimmee (Osceola County, FL; Orlando market)
+  dma: null
+  states: [FL]
+  counties:
+    basis: district
+    source: 'NCES CCD 2024-25 school directory (pipeline/out/internal/directory/schools.parquet): the
+      counties of the 85 schools of smartsites-osceola-fl''s district, OSCEOLA (LEAID 1201470).'
+    fips: ['12031', '12097']
+  page_url: https://www.osceolaschools.net/
+  data_url: https://www.osceolaschools.net/api/popup-alerts
+  export_url: null
+  archive_urls:
+  - https://www.osceolaschools.net/api/popup-alerts
+  - https://www.osceolaschools.net/
+  poll_minutes: null
+  status: active
+  evidence: 'First-hand check for piece s4d, 2026-09-27. Live read of https://www.osceolaschools.net/api/popup-alerts
+    2026-09-27T15:44:46Z: HTTP 200, 32 bytes (application/json); smartsites-popup-alerts, empty, 0 row(s):
+    no alert. The homepage https://www.osceolaschools.net/ loads its pop-up alerts from that file (its
+    PopUpAlertsComponent script).'
+  list_files: []
+  page_check: null
+  robots:
+  - url: https://www.osceolaschools.net/
+    checked_at: '2026-09-27T15:47:47Z'
+    state: parsed
+    allowed: true
+    rule: no rule matches
+    crawl_delay: 5.0
+    disallowed_agents: [ahrefsbot, baiduspider, blexbot, mj12bot, semrushbot, yandex]
+    sha256: e8e9fa92b86ef4f758ad1b7a87171b599635d1b16fa1e28fd355b81a183e9c96
+  - url: https://www.osceolaschools.net/api/popup-alerts
+    checked_at: '2026-09-27T15:47:47Z'
+    state: parsed
+    allowed: true
+    rule: no rule matches
+    crawl_delay: 5.0
+    disallowed_agents: [ahrefsbot, baiduspider, blexbot, mj12bot, semrushbot, yandex]
+    sha256: e8e9fa92b86ef4f758ad1b7a87171b599635d1b16fa1e28fd355b81a183e9c96
+  leaids: ['1201470']
+- id: smartsites-seminole-fl
+  platform: smartsites
+  call_sign: SCPS
+  name: Seminole County Public Schools (district site pop-up alerts)
+  market: Sanford (Seminole County, FL; Orlando market)
+  dma: null
+  states: [FL]
+  counties:
+    basis: district
+    source: 'NCES CCD 2024-25 school directory (pipeline/out/internal/directory/schools.parquet): the
+      counties of the 74 schools of smartsites-seminole-fl''s district, SEMINOLE (LEAID 1201710).'
+    fips: ['12117']
+  page_url: https://www.scps.k12.fl.us/
+  data_url: https://www.scps.k12.fl.us/api/popup-alerts
+  export_url: null
+  archive_urls:
+  - https://www.scps.k12.fl.us/api/popup-alerts
+  - https://www.scps.k12.fl.us/
+  poll_minutes: null
+  status: active
+  evidence: 'First-hand check for piece s4d, 2026-09-27. Live read of https://www.scps.k12.fl.us/api/popup-alerts
+    2026-09-27T15:44:51Z: HTTP 200, 32 bytes (application/json); smartsites-popup-alerts, empty, 0 row(s):
+    no alert. The homepage https://www.scps.k12.fl.us/ loads its pop-up alerts from that file (its PopUpAlertsComponent
+    script).'
+  list_files: []
+  page_check: null
+  robots:
+  - url: https://www.scps.k12.fl.us/
+    checked_at: '2026-09-27T15:47:48Z'
+    state: parsed
+    allowed: true
+    rule: no rule matches
+    crawl_delay: 5.0
+    disallowed_agents: [ahrefsbot, baiduspider, blexbot, mj12bot, semrushbot, yandex]
+    sha256: e8e9fa92b86ef4f758ad1b7a87171b599635d1b16fa1e28fd355b81a183e9c96
+  - url: https://www.scps.k12.fl.us/api/popup-alerts
+    checked_at: '2026-09-27T15:47:48Z'
+    state: parsed
+    allowed: true
+    rule: no rule matches
+    crawl_delay: 5.0
+    disallowed_agents: [ahrefsbot, baiduspider, blexbot, mj12bot, semrushbot, yandex]
+    sha256: e8e9fa92b86ef4f758ad1b7a87171b599635d1b16fa1e28fd355b81a183e9c96
+  leaids: ['1201710']
+- id: smartsites-leon-fl
+  platform: smartsites
+  call_sign: LCS
+  name: Leon County Schools (district site pop-up alerts)
+  market: Tallahassee (Leon County, FL)
+  dma: null
+  states: [FL]
+  counties:
+    basis: district
+    source: 'NCES CCD 2024-25 school directory (pipeline/out/internal/directory/schools.parquet): the
+      counties of the 54 schools of smartsites-leon-fl''s district, LEON (LEAID 1201110).'
+    fips: ['12073']
+  page_url: https://www.leonschools.net/
+  data_url: https://www.leonschools.net/api/popup-alerts
+  export_url: null
+  archive_urls:
+  - https://www.leonschools.net/api/popup-alerts
+  - https://www.leonschools.net/
+  poll_minutes: null
+  status: active
+  evidence: 'First-hand check for piece s4d, 2026-09-27. Live read of https://www.leonschools.net/api/popup-alerts
+    2026-09-27T15:44:56Z: HTTP 200, 32 bytes (application/json); smartsites-popup-alerts, empty, 0 row(s):
+    no alert. The homepage https://www.leonschools.net/ loads its pop-up alerts from that file (its PopUpAlertsComponent
+    script).'
+  list_files: []
+  page_check: null
+  robots:
+  - url: https://www.leonschools.net/
+    checked_at: '2026-09-27T15:47:46Z'
+    state: parsed
+    allowed: true
+    rule: no rule matches
+    crawl_delay: 5.0
+    disallowed_agents: [ahrefsbot, baiduspider, blexbot, mj12bot, semrushbot, yandex]
+    sha256: e8e9fa92b86ef4f758ad1b7a87171b599635d1b16fa1e28fd355b81a183e9c96
+  - url: https://www.leonschools.net/api/popup-alerts
+    checked_at: '2026-09-27T15:47:46Z'
+    state: parsed
+    allowed: true
+    rule: no rule matches
+    crawl_delay: 5.0
+    disallowed_agents: [ahrefsbot, baiduspider, blexbot, mj12bot, semrushbot, yandex]
+    sha256: e8e9fa92b86ef4f758ad1b7a87171b599635d1b16fa1e28fd355b81a183e9c96
+  leaids: ['1201110']
+- id: smartsites-hernando-fl
+  platform: smartsites
+  call_sign: HCS
+  name: Hernando County School District (district site pop-up alerts)
+  market: Hernando County, FL (Tampa market)
+  dma: null
+  states: [FL]
+  counties:
+    basis: district
+    source: 'NCES CCD 2024-25 school directory (pipeline/out/internal/directory/schools.parquet): the
+      counties of the 32 schools of smartsites-hernando-fl''s district, HERNANDO (LEAID 1200810).'
+    fips: ['12053', '12069']
+  page_url: https://www.hernandoschools.org/
+  data_url: https://www.hernandoschools.org/api/popup-alerts
+  export_url: null
+  archive_urls:
+  - https://www.hernandoschools.org/api/popup-alerts
+  - https://www.hernandoschools.org/
+  poll_minutes: null
+  status: active
+  evidence: 'First-hand check for piece s4d, 2026-09-27. Live read of https://www.hernandoschools.org/api/popup-alerts
+    2026-09-27T15:45:32Z: HTTP 200, 32 bytes (application/json); smartsites-popup-alerts, empty, 0 row(s):
+    no alert. The homepage https://www.hernandoschools.org/ loads its pop-up alerts from that file (its
+    PopUpAlertsComponent script).'
+  list_files: []
+  page_check: null
+  robots:
+  - url: https://www.hernandoschools.org/
+    checked_at: '2026-09-27T15:47:45Z'
+    state: parsed
+    allowed: true
+    rule: no rule matches
+    crawl_delay: 5.0
+    disallowed_agents: [ahrefsbot, baiduspider, blexbot, mj12bot, semrushbot, yandex]
+    sha256: e8e9fa92b86ef4f758ad1b7a87171b599635d1b16fa1e28fd355b81a183e9c96
+  - url: https://www.hernandoschools.org/api/popup-alerts
+    checked_at: '2026-09-27T15:47:45Z'
+    state: parsed
+    allowed: true
+    rule: no rule matches
+    crawl_delay: 5.0
+    disallowed_agents: [ahrefsbot, baiduspider, blexbot, mj12bot, semrushbot, yandex]
+    sha256: e8e9fa92b86ef4f758ad1b7a87171b599635d1b16fa1e28fd355b81a183e9c96
+  leaids: ['1200810']
+- id: smartsites-citrus-fl
+  platform: smartsites
+  call_sign: CCSD
+  name: Citrus County School District (district site pop-up alerts)
+  market: Citrus County, FL (Tampa market)
+  dma: null
+  states: [FL]
+  counties:
+    basis: district
+    source: 'NCES CCD 2024-25 school directory (pipeline/out/internal/directory/schools.parquet): the
+      counties of the 26 schools of smartsites-citrus-fl''s district, CITRUS (LEAID 1200270).'
+    fips: ['12017']
+  page_url: https://www.citrusschools.org/
+  data_url: https://www.citrusschools.org/api/popup-alerts
+  export_url: null
+  archive_urls:
+  - https://www.citrusschools.org/api/popup-alerts
+  - https://www.citrusschools.org/
+  poll_minutes: null
+  status: active
+  evidence: 'First-hand check for piece s4d, 2026-09-27. Live read of https://www.citrusschools.org/api/popup-alerts
+    2026-09-27T15:45:22Z: HTTP 200, 32 bytes (application/json); smartsites-popup-alerts, empty, 0 row(s):
+    no alert. The homepage https://www.citrusschools.org/ loads its pop-up alerts from that file (its
+    PopUpAlertsComponent script).'
+  list_files: []
+  page_check: null
+  robots:
+  - url: https://www.citrusschools.org/
+    checked_at: '2026-09-27T15:47:45Z'
+    state: parsed
+    allowed: true
+    rule: no rule matches
+    crawl_delay: 5.0
+    disallowed_agents: [ahrefsbot, baiduspider, blexbot, mj12bot, semrushbot, yandex]
+    sha256: e8e9fa92b86ef4f758ad1b7a87171b599635d1b16fa1e28fd355b81a183e9c96
+  - url: https://www.citrusschools.org/api/popup-alerts
+    checked_at: '2026-09-27T15:47:45Z'
+    state: parsed
+    allowed: true
+    rule: no rule matches
+    crawl_delay: 5.0
+    disallowed_agents: [ahrefsbot, baiduspider, blexbot, mj12bot, semrushbot, yandex]
+    sha256: e8e9fa92b86ef4f758ad1b7a87171b599635d1b16fa1e28fd355b81a183e9c96
+  leaids: ['1200270']
+- id: smartsites-charlotte-fl
+  platform: smartsites
+  call_sign: CCPS
+  name: Charlotte County Public Schools (district site pop-up alerts)
+  market: Charlotte County, FL (Fort Myers market)
+  dma: null
+  states: [FL]
+  counties:
+    basis: district
+    source: 'NCES CCD 2024-25 school directory (pipeline/out/internal/directory/schools.parquet): the
+      counties of the 24 schools of smartsites-charlotte-fl''s district, CHARLOTTE (LEAID 1200240).'
+    fips: ['12015']
+  page_url: https://www.yourcharlotteschools.net/
+  data_url: https://www.yourcharlotteschools.net/api/popup-alerts
+  export_url: null
+  archive_urls:
+  - https://www.yourcharlotteschools.net/api/popup-alerts
+  - https://www.yourcharlotteschools.net/
+  poll_minutes: null
+  status: active
+  evidence: 'First-hand check for piece s4d, 2026-09-27. Live read of https://www.yourcharlotteschools.net/api/popup-alerts
+    2026-09-27T15:45:11Z: HTTP 200, 32 bytes (application/json); smartsites-popup-alerts, empty, 0 row(s):
+    no alert. The homepage https://www.yourcharlotteschools.net/ loads its pop-up alerts from that file
+    (its PopUpAlertsComponent script).'
+  list_files: []
+  page_check: null
+  robots:
+  - url: https://www.yourcharlotteschools.net/
+    checked_at: '2026-09-27T15:47:43Z'
+    state: parsed
+    allowed: true
+    rule: no rule matches
+    crawl_delay: 5.0
+    disallowed_agents: [ahrefsbot, baiduspider, blexbot, mj12bot, semrushbot, yandex]
+    sha256: e8e9fa92b86ef4f758ad1b7a87171b599635d1b16fa1e28fd355b81a183e9c96
+  - url: https://www.yourcharlotteschools.net/api/popup-alerts
+    checked_at: '2026-09-27T15:47:43Z'
+    state: parsed
+    allowed: true
+    rule: no rule matches
+    crawl_delay: 5.0
+    disallowed_agents: [ahrefsbot, baiduspider, blexbot, mj12bot, semrushbot, yandex]
+    sha256: e8e9fa92b86ef4f758ad1b7a87171b599635d1b16fa1e28fd355b81a183e9c96
+  leaids: ['1200240']
+- id: smartsites-jackson-fl
+  platform: smartsites
+  call_sign: JCSB
+  name: Jackson County School Board (district site pop-up alerts)
+  market: Marianna (Jackson County, FL; Panama City-Dothan markets)
+  dma: null
+  states: [FL]
+  counties:
+    basis: district
+    source: 'NCES CCD 2024-25 school directory (pipeline/out/internal/directory/schools.parquet): the
+      counties of the 20 schools of smartsites-jackson-fl''s district, JACKSON (LEAID 1200960).'
+    fips: ['12063']
+  page_url: https://www.jcsb.org/
+  data_url: https://www.jcsb.org/api/popup-alerts
+  export_url: null
+  archive_urls:
+  - https://www.jcsb.org/api/popup-alerts
+  - https://www.jcsb.org/
+  poll_minutes: null
+  status: active
+  evidence: 'First-hand check for piece s4d, 2026-09-27. Live read of https://www.jcsb.org/api/popup-alerts
+    2026-09-27T15:45:42Z: HTTP 200, 32 bytes (application/json); smartsites-popup-alerts, empty, 0 row(s):
+    no alert. The homepage https://www.jcsb.org/ loads its pop-up alerts from that file (its PopUpAlertsComponent
+    script).'
+  list_files: []
+  page_check: null
+  robots:
+  - url: https://www.jcsb.org/
+    checked_at: '2026-09-27T15:47:46Z'
+    state: parsed
+    allowed: true
+    rule: no rule matches
+    crawl_delay: 5.0
+    disallowed_agents: [ahrefsbot, baiduspider, blexbot, mj12bot, semrushbot, yandex]
+    sha256: e8e9fa92b86ef4f758ad1b7a87171b599635d1b16fa1e28fd355b81a183e9c96
+  - url: https://www.jcsb.org/api/popup-alerts
+    checked_at: '2026-09-27T15:47:46Z'
+    state: parsed
+    allowed: true
+    rule: no rule matches
+    crawl_delay: 5.0
+    disallowed_agents: [ahrefsbot, baiduspider, blexbot, mj12bot, semrushbot, yandex]
+    sha256: e8e9fa92b86ef4f758ad1b7a87171b599635d1b16fa1e28fd355b81a183e9c96
+  leaids: ['1200960']
+- id: smartsites-flagler-fl
+  platform: smartsites
+  call_sign: FCS
+  name: Flagler Schools (district site pop-up alerts)
+  market: Flagler County, FL (Orlando market)
+  dma: null
+  states: [FL]
+  counties:
+    basis: district
+    source: 'NCES CCD 2024-25 school directory (pipeline/out/internal/directory/schools.parquet): the
+      counties of the 13 schools of smartsites-flagler-fl''s district, FLAGLER (LEAID 1200540).'
+    fips: ['12035']
+  page_url: https://www.flaglerschools.com/
+  data_url: https://www.flaglerschools.com/api/popup-alerts
+  export_url: null
+  archive_urls:
+  - https://www.flaglerschools.com/api/popup-alerts
+  - https://www.flaglerschools.com/
+  poll_minutes: null
+  status: active
+  evidence: 'First-hand check for piece s4d, 2026-09-27. Live read of https://www.flaglerschools.com/api/popup-alerts
+    2026-09-27T15:45:27Z: HTTP 200, 32 bytes (application/json); smartsites-popup-alerts, empty, 0 row(s):
+    no alert. The homepage https://www.flaglerschools.com/ loads its pop-up alerts from that file (its
+    PopUpAlertsComponent script).'
+  list_files: []
+  page_check: null
+  robots:
+  - url: https://www.flaglerschools.com/
+    checked_at: '2026-09-27T15:47:45Z'
+    state: parsed
+    allowed: true
+    rule: no rule matches
+    crawl_delay: 5.0
+    disallowed_agents: [ahrefsbot, baiduspider, blexbot, mj12bot, semrushbot, yandex]
+    sha256: e8e9fa92b86ef4f758ad1b7a87171b599635d1b16fa1e28fd355b81a183e9c96
+  - url: https://www.flaglerschools.com/api/popup-alerts
+    checked_at: '2026-09-27T15:47:45Z'
+    state: parsed
+    allowed: true
+    rule: no rule matches
+    crawl_delay: 5.0
+    disallowed_agents: [ahrefsbot, baiduspider, blexbot, mj12bot, semrushbot, yandex]
+    sha256: e8e9fa92b86ef4f758ad1b7a87171b599635d1b16fa1e28fd355b81a183e9c96
+  leaids: ['1200540']
+- id: smartsites-sumter-fl
+  platform: smartsites
+  call_sign: SCSD
+  name: Sumter District Schools (district site pop-up alerts)
+  market: Sumter County, FL (Orlando-Tampa markets)
+  dma: null
+  states: [FL]
+  counties:
+    basis: district
+    source: 'NCES CCD 2024-25 school directory (pipeline/out/internal/directory/schools.parquet): the
+      counties of the 14 schools of smartsites-sumter-fl''s district, SUMTER (LEAID 1201800).'
+    fips: ['12119']
+  page_url: https://www.sumter.k12.fl.us/
+  data_url: https://www.sumter.k12.fl.us/api/popup-alerts
+  export_url: null
+  archive_urls:
+  - https://www.sumter.k12.fl.us/api/popup-alerts
+  - https://www.sumter.k12.fl.us/
+  poll_minutes: null
+  status: active
+  evidence: 'First-hand check for piece s4d, 2026-09-27. Live read of https://www.sumter.k12.fl.us/api/popup-alerts
+    2026-09-27T15:45:37Z: HTTP 200, 32 bytes (application/json); smartsites-popup-alerts, empty, 0 row(s):
+    no alert. The homepage https://www.sumter.k12.fl.us/ loads its pop-up alerts from that file (its PopUpAlertsComponent
+    script).'
+  list_files: []
+  page_check: null
+  robots:
+  - url: https://www.sumter.k12.fl.us/
+    checked_at: '2026-09-27T15:47:48Z'
+    state: parsed
+    allowed: true
+    rule: no rule matches
+    crawl_delay: 5.0
+    disallowed_agents: [ahrefsbot, baiduspider, blexbot, mj12bot, semrushbot, yandex]
+    sha256: e8e9fa92b86ef4f758ad1b7a87171b599635d1b16fa1e28fd355b81a183e9c96
+  - url: https://www.sumter.k12.fl.us/api/popup-alerts
+    checked_at: '2026-09-27T15:47:48Z'
+    state: parsed
+    allowed: true
+    rule: no rule matches
+    crawl_delay: 5.0
+    disallowed_agents: [ahrefsbot, baiduspider, blexbot, mj12bot, semrushbot, yandex]
+    sha256: e8e9fa92b86ef4f758ad1b7a87171b599635d1b16fa1e28fd355b81a183e9c96
+  leaids: ['1201800']
+- id: smartsites-bonneville-id
+  platform: smartsites
+  call_sign: D93
+  name: Bonneville Joint School District No. 93 (district site pop-up alerts)
+  market: Idaho Falls (Bonneville County, ID)
+  dma: null
+  states: [ID]
+  counties:
+    basis: district
+    source: 'NCES CCD 2024-25 school directory (pipeline/out/internal/directory/schools.parquet): the
+      counties of the 26 schools of smartsites-bonneville-id''s district, BONNEVILLE JOINT DISTRICT (LEAID
+      1600930).'
+    fips: ['16019']
+  page_url: https://www.d93schools.org/
+  data_url: https://www.d93schools.org/api/popup-alerts
+  export_url: null
+  archive_urls:
+  - https://www.d93schools.org/api/popup-alerts
+  - https://www.d93schools.org/
+  poll_minutes: null
+  status: active
+  evidence: 'First-hand check for piece s4d, 2026-09-27. Live read of https://www.d93schools.org/api/popup-alerts
+    2026-09-27T15:45:01Z: HTTP 200, 32 bytes (application/json); smartsites-popup-alerts, empty, 0 row(s):
+    no alert. The homepage https://www.d93schools.org/ loads its pop-up alerts from that file (its PopUpAlertsComponent
+    script).'
+  list_files: []
+  page_check: null
+  robots:
+  - url: https://www.d93schools.org/
+    checked_at: '2026-09-27T15:47:43Z'
+    state: parsed
+    allowed: true
+    rule: no rule matches
+    crawl_delay: 5.0
+    disallowed_agents: [ahrefsbot, baiduspider, blexbot, mj12bot, semrushbot, yandex]
+    sha256: e8e9fa92b86ef4f758ad1b7a87171b599635d1b16fa1e28fd355b81a183e9c96
+  - url: https://www.d93schools.org/api/popup-alerts
+    checked_at: '2026-09-27T15:47:43Z'
+    state: parsed
+    allowed: true
+    rule: no rule matches
+    crawl_delay: 5.0
+    disallowed_agents: [ahrefsbot, baiduspider, blexbot, mj12bot, semrushbot, yandex]
+    sha256: e8e9fa92b86ef4f758ad1b7a87171b599635d1b16fa1e28fd355b81a183e9c96
+  leaids: ['1600930']
+- id: smartsites-shelley-id
+  platform: smartsites
+  call_sign: SJSD60
+  name: 'Shelley Joint School District #60 (district site pop-up alerts)'
+  market: Shelley (Bingham County, ID; Idaho Falls-Pocatello market)
+  dma: null
+  states: [ID]
+  counties:
+    basis: district
+    source: 'NCES CCD 2024-25 school directory (pipeline/out/internal/directory/schools.parquet): the
+      counties of the 7 schools of smartsites-shelley-id''s district, SHELLEY JOINT DISTRICT (LEAID 1602910).'
+    fips: ['16011']
+  page_url: https://www.shelleyschools.org/
+  data_url: https://www.shelleyschools.org/api/popup-alerts
+  export_url: null
+  archive_urls:
+  - https://www.shelleyschools.org/api/popup-alerts
+  - https://www.shelleyschools.org/
+  poll_minutes: null
+  status: active
+  evidence: 'First-hand check for piece s4d, 2026-09-27. Live read of https://www.shelleyschools.org/api/popup-alerts
+    2026-09-27T17:27:04Z: HTTP 200, 32 bytes (application/json); smartsites-popup-alerts, empty, 0 row(s):
+    no alert. The homepage https://www.shelleyschools.org/ loads its pop-up alerts from that file (its
+    PopUpAlertsComponent script).'
+  list_files: []
+  page_check: null
+  robots:
+  - url: https://www.shelleyschools.org/
+    checked_at: '2026-09-27T17:27:25Z'
+    state: parsed
+    allowed: true
+    rule: no rule matches
+    crawl_delay: 5.0
+    disallowed_agents: [ahrefsbot, baiduspider, blexbot, mj12bot, semrushbot, yandex]
+    sha256: e8e9fa92b86ef4f758ad1b7a87171b599635d1b16fa1e28fd355b81a183e9c96
+  - url: https://www.shelleyschools.org/api/popup-alerts
+    checked_at: '2026-09-27T17:27:25Z'
+    state: parsed
+    allowed: true
+    rule: no rule matches
+    crawl_delay: 5.0
+    disallowed_agents: [ahrefsbot, baiduspider, blexbot, mj12bot, semrushbot, yandex]
+    sha256: e8e9fa92b86ef4f758ad1b7a87171b599635d1b16fa1e28fd355b81a183e9c96
+  leaids: ['1602910']
+- id: smartsites-belgrade-mt
+  platform: smartsites
+  call_sign: BSD44
+  name: Belgrade School District (district site pop-up alerts)
+  market: Belgrade (Gallatin County, MT; Butte-Bozeman market)
+  dma: null
+  states: [MT]
+  counties:
+    basis: district
+    source: 'NCES CCD 2024-25 school directory (pipeline/out/internal/directory/schools.parquet): the
+      counties of the 5 schools of smartsites-belgrade-mt''s districts, Belgrade Elem and Belgrade H S
+      (LEAIDs 3003290, 3003330).'
+    fips: ['30031']
+  page_url: https://www.bsd44.org/
+  data_url: https://www.bsd44.org/api/popup-alerts
+  export_url: null
+  archive_urls:
+  - https://www.bsd44.org/api/popup-alerts
+  - https://www.bsd44.org/
+  poll_minutes: null
+  status: active
+  evidence: 'First-hand check for piece s4d, 2026-09-27. Live read of https://www.bsd44.org/api/popup-alerts
+    2026-09-27T15:45:06Z: HTTP 200, 740 bytes (application/json); smartsites-popup-alerts, populated,
+    1 row(s): ''Attention: Parents/Guardians of Special Education Students Born in 1999 & 2000''. The
+    homepage https://www.bsd44.org/ loads its pop-up alerts from that file (its PopUpAlertsComponent script).'
+  list_files: []
+  page_check: null
+  robots:
+  - url: https://www.bsd44.org/
+    checked_at: '2026-09-27T15:47:42Z'
+    state: parsed
+    allowed: true
+    rule: no rule matches
+    crawl_delay: 5.0
+    disallowed_agents: [ahrefsbot, baiduspider, blexbot, mj12bot, semrushbot, yandex]
+    sha256: e8e9fa92b86ef4f758ad1b7a87171b599635d1b16fa1e28fd355b81a183e9c96
+  - url: https://www.bsd44.org/api/popup-alerts
+    checked_at: '2026-09-27T15:47:42Z'
+    state: parsed
+    allowed: true
+    rule: no rule matches
+    crawl_delay: 5.0
+    disallowed_agents: [ahrefsbot, baiduspider, blexbot, mj12bot, semrushbot, yandex]
+    sha256: e8e9fa92b86ef4f758ad1b7a87171b599635d1b16fa1e28fd355b81a183e9c96
+  leaids: ['3003290', '3003330']
+- id: smartsites-laramie-1-wy
+  platform: smartsites
+  call_sign: LARAMIE1
+  name: 'Laramie County School District #1 (district pop-up alerts)'
+  market: Cheyenne (Laramie County, WY)
+  dma: null
+  states: [WY]
+  counties:
+    basis: district
+    source: 'NCES CCD 2024-25 school directory (pipeline/out/internal/directory/schools.parquet): the
+      counties of the 39 schools of smartsites-laramie-1-wy''s district, Laramie County School District
+      #1 (LEAID 5601980). The LEAIDs are those the NCES CCD 2024-25 LEA directory (https://nces.ed.gov/ccd/Data/zip/ccd_lea_029_2425_w_1a_073025.zip,
+      SHA-256 2745169e4bc7cd53…, read 2026-09-27) lists with this website (laramie1.org).'
+    fips: ['56021']
+  page_url: https://www.laramie1.org/
+  data_url: https://www.laramie1.org/api/popup-alerts
+  export_url: null
+  archive_urls:
+  - https://www.laramie1.org/api/popup-alerts
+  - https://www.laramie1.org/
+  poll_minutes: null
+  status: active
+  evidence: 'First-hand check for piece s4d, 2026-09-27. The homepage https://www.laramie1.org/ (its PopUpAlertsComponent
+    script) loads its pop-up alerts from https://www.laramie1.org/api/popup-alerts. Live read 2026-09-27T19:24:42Z:
+    HTTP 200, 32 bytes; smartsites-popup-alerts, empty, 0 row(s): no alert. The homepage''s title: ''Laramie
+    County School District 1''. Found through the website the NCES CCD 2024-25 LEA directory lists for
+    the district.'
+  list_files: []
+  page_check: null
+  robots:
+  - url: https://www.laramie1.org/
+    checked_at: '2026-09-27T19:53:40Z'
+    state: parsed
+    allowed: true
+    rule: no rule matches
+    crawl_delay: 5.0
+    disallowed_agents: [ahrefsbot, baiduspider, blexbot, mj12bot, semrushbot, yandex]
+    sha256: e8e9fa92b86ef4f758ad1b7a87171b599635d1b16fa1e28fd355b81a183e9c96
+  - url: https://www.laramie1.org/api/popup-alerts
+    checked_at: '2026-09-27T19:53:40Z'
+    state: parsed
+    allowed: true
+    rule: no rule matches
+    crawl_delay: 5.0
+    disallowed_agents: [ahrefsbot, baiduspider, blexbot, mj12bot, semrushbot, yandex]
+    sha256: e8e9fa92b86ef4f758ad1b7a87171b599635d1b16fa1e28fd355b81a183e9c96
+  leaids: ['5601980']
+- id: smartsites-libby-mt
+  platform: smartsites
+  call_sign: LIBBYSCH
+  name: Libby K-12 Schools (district pop-up alerts)
+  market: Libby (Lincoln County, MT)
+  dma: null
+  states: [MT]
+  counties:
+    basis: district
+    source: 'NCES CCD 2024-25 school directory (pipeline/out/internal/directory/schools.parquet): the
+      counties of the 3 schools of smartsites-libby-mt''s district, Libby K-12 Schools (LEAID 3016530).
+      The LEAIDs are those the NCES CCD 2024-25 LEA directory (https://nces.ed.gov/ccd/Data/zip/ccd_lea_029_2425_w_1a_073025.zip,
+      SHA-256 2745169e4bc7cd53…, read 2026-09-27) lists with this website (libbyschools.org).'
+    fips: ['30053']
+  page_url: https://www.libbyschools.org/
+  data_url: https://www.libbyschools.org/api/popup-alerts
+  export_url: null
+  archive_urls:
+  - https://www.libbyschools.org/api/popup-alerts
+  - https://www.libbyschools.org/
+  poll_minutes: null
+  status: active
+  evidence: 'First-hand check for piece s4d, 2026-09-27. The homepage https://www.libbyschools.org/ (its
+    PopUpAlertsComponent script) loads its pop-up alerts from https://www.libbyschools.org/api/popup-alerts.
+    Live read 2026-09-27T19:35:51Z: HTTP 200, 32 bytes; smartsites-popup-alerts, empty, 0 row(s): no alert.
+    The homepage''s title: ''Libby Public Schools - Home''. Found through the website the NCES CCD 2024-25
+    LEA directory lists for the district.'
+  list_files: []
+  page_check: null
+  robots:
+  - url: https://www.libbyschools.org/
+    checked_at: '2026-09-27T19:53:40Z'
+    state: parsed
+    allowed: true
+    rule: no rule matches
+    crawl_delay: 5.0
+    disallowed_agents: [ahrefsbot, baiduspider, blexbot, mj12bot, semrushbot, yandex]
+    sha256: e8e9fa92b86ef4f758ad1b7a87171b599635d1b16fa1e28fd355b81a183e9c96
+  - url: https://www.libbyschools.org/api/popup-alerts
+    checked_at: '2026-09-27T19:53:40Z'
+    state: parsed
+    allowed: true
+    rule: no rule matches
+    crawl_delay: 5.0
+    disallowed_agents: [ahrefsbot, baiduspider, blexbot, mj12bot, semrushbot, yandex]
+    sha256: e8e9fa92b86ef4f758ad1b7a87171b599635d1b16fa1e28fd355b81a183e9c96
+  leaids: ['3016530']
+- id: smartsites-lincoln-1-wy
+  platform: smartsites
+  call_sign: RANGERS1
+  name: 'Lincoln County School District #1 (district pop-up alerts)'
+  market: Diamondville (Lincoln County, WY)
+  dma: null
+  states: [WY]
+  counties:
+    basis: district
+    source: 'NCES CCD 2024-25 school directory (pipeline/out/internal/directory/schools.parquet): the
+      counties of the 3 schools of smartsites-lincoln-1-wy''s district, Lincoln County School District
+      #1 (LEAID 5604030). The LEAIDs are those the NCES CCD 2024-25 LEA directory (https://nces.ed.gov/ccd/Data/zip/ccd_lea_029_2425_w_1a_073025.zip,
+      SHA-256 2745169e4bc7cd53…, read 2026-09-27) lists with this website (rangers1.net).'
+    fips: ['56023']
+  page_url: https://www.rangers1.net/
+  data_url: https://www.rangers1.net/api/popup-alerts
+  export_url: null
+  archive_urls:
+  - https://www.rangers1.net/api/popup-alerts
+  - https://www.rangers1.net/
+  poll_minutes: null
+  status: active
+  evidence: 'First-hand check for piece s4d, 2026-09-27. The homepage https://www.rangers1.net/ (its PopUpAlertsComponent
+    script) loads its pop-up alerts from https://www.rangers1.net/api/popup-alerts. Live read 2026-09-27T19:50:32Z:
+    HTTP 200, 32 bytes; smartsites-popup-alerts, empty, 0 row(s): no alert. The homepage''s title: ''Lincoln
+    County School District #1 - Home''. Found through the website the NCES CCD 2024-25 LEA directory lists
+    for the district.'
+  list_files: []
+  page_check: null
+  robots:
+  - url: https://www.rangers1.net/
+    checked_at: '2026-09-27T19:53:40Z'
+    state: parsed
+    allowed: true
+    rule: no rule matches
+    crawl_delay: 5.0
+    disallowed_agents: [ahrefsbot, baiduspider, blexbot, mj12bot, semrushbot, yandex]
+    sha256: e8e9fa92b86ef4f758ad1b7a87171b599635d1b16fa1e28fd355b81a183e9c96
+  - url: https://www.rangers1.net/api/popup-alerts
+    checked_at: '2026-09-27T19:53:40Z'
+    state: parsed
+    allowed: true
+    rule: no rule matches
+    crawl_delay: 5.0
+    disallowed_agents: [ahrefsbot, baiduspider, blexbot, mj12bot, semrushbot, yandex]
+    sha256: e8e9fa92b86ef4f758ad1b7a87171b599635d1b16fa1e28fd355b81a183e9c96
+  leaids: ['5604030']
+- id: smartsites-calhoun-fl
+  platform: smartsites
+  call_sign: CCSD
+  name: Calhoun County School District (Florida) (district pop-up alerts)
+  market: Blountstown (Calhoun County, FL)
+  dma: null
+  states: [FL]
+  counties:
+    basis: district
+    source: 'NCES CCD 2024-25 school directory (pipeline/out/internal/directory/schools.parquet): the
+      counties of the 6 schools of smartsites-calhoun-fl''s district, CALHOUN (LEAID 1200210). The LEAIDs
+      are those the NCES CCD 2024-25 LEA directory (https://nces.ed.gov/ccd/Data/zip/ccd_lea_029_2425_w_1a_073025.zip,
+      SHA-256 2745169e4bc7cd53…, read 2026-09-27) lists with this website (calhounflschools.org).'
+    fips: ['12013']
+  page_url: https://www.calhounflschools.org/
+  data_url: https://www.calhounflschools.org/api/popup-alerts
+  export_url: null
+  archive_urls:
+  - https://www.calhounflschools.org/api/popup-alerts
+  - https://www.calhounflschools.org/
+  poll_minutes: null
+  status: active
+  evidence: 'First-hand check for piece s4d, 2026-09-27. The homepage https://www.calhounflschools.org/
+    (its PopUpAlertsComponent script) loads its pop-up alerts from https://www.calhounflschools.org/api/popup-alerts.
+    Live read 2026-09-27T20:18:57Z: HTTP 200, 32 bytes; smartsites-popup-alerts, empty, 0 row(s): no alert.
+    The homepage''s title: ''Calhoun County School District Florida''. Found through the website the NCES
+    CCD 2024-25 LEA directory lists for the district.'
+  list_files: []
+  page_check: null
+  robots:
+  - url: https://www.calhounflschools.org/
+    checked_at: '2026-09-27T20:20:21Z'
+    state: parsed
+    allowed: true
+    rule: no rule matches
+    crawl_delay: 5.0
+    disallowed_agents: [ahrefsbot, baiduspider, blexbot, mj12bot, semrushbot, yandex]
+    sha256: e8e9fa92b86ef4f758ad1b7a87171b599635d1b16fa1e28fd355b81a183e9c96
+  - url: https://www.calhounflschools.org/api/popup-alerts
+    checked_at: '2026-09-27T20:20:21Z'
+    state: parsed
+    allowed: true
+    rule: no rule matches
+    crawl_delay: 5.0
+    disallowed_agents: [ahrefsbot, baiduspider, blexbot, mj12bot, semrushbot, yandex]
+    sha256: e8e9fa92b86ef4f758ad1b7a87171b599635d1b16fa1e28fd355b81a183e9c96
+  leaids: ['1200210']
+- id: smartsites-hamilton-fl
+  platform: smartsites
+  call_sign: HCS
+  name: Hamilton County School District (Florida) (district pop-up alerts)
+  market: Jasper (Hamilton County, FL)
+  dma: null
+  states: [FL]
+  counties:
+    basis: district
+    source: 'NCES CCD 2024-25 school directory (pipeline/out/internal/directory/schools.parquet): the
+      counties of the 5 schools of smartsites-hamilton-fl''s district, HAMILTON (LEAID 1200720). The LEAIDs
+      are those the NCES CCD 2024-25 LEA directory (https://nces.ed.gov/ccd/Data/zip/ccd_lea_029_2425_w_1a_073025.zip,
+      SHA-256 2745169e4bc7cd53…, read 2026-09-27) lists with this website (hamiltonfl.com).'
+    fips: ['12047']
+  page_url: https://www.hamiltonfl.com/
+  data_url: https://www.hamiltonfl.com/api/popup-alerts
+  export_url: null
+  archive_urls:
+  - https://www.hamiltonfl.com/api/popup-alerts
+  - https://www.hamiltonfl.com/
+  poll_minutes: null
+  status: active
+  evidence: 'First-hand check for piece s4d, 2026-09-27. The homepage https://www.hamiltonfl.com/ (its
+    PopUpAlertsComponent script) loads its pop-up alerts from https://www.hamiltonfl.com/api/popup-alerts.
+    Live read 2026-09-27T20:19:02Z: HTTP 200, 32 bytes; smartsites-popup-alerts, empty, 0 row(s): no alert.
+    The homepage''s title: ''Hamilton County School District - Home''. Found through the website the NCES
+    CCD 2024-25 LEA directory lists for the district.'
+  list_files: []
+  page_check: null
+  robots:
+  - url: https://www.hamiltonfl.com/
+    checked_at: '2026-09-27T20:20:22Z'
+    state: parsed
+    allowed: true
+    rule: no rule matches
+    crawl_delay: 5.0
+    disallowed_agents: [ahrefsbot, baiduspider, blexbot, mj12bot, semrushbot, yandex]
+    sha256: e8e9fa92b86ef4f758ad1b7a87171b599635d1b16fa1e28fd355b81a183e9c96
+  - url: https://www.hamiltonfl.com/api/popup-alerts
+    checked_at: '2026-09-27T20:20:22Z'
+    state: parsed
+    allowed: true
+    rule: no rule matches
+    crawl_delay: 5.0
+    disallowed_agents: [ahrefsbot, baiduspider, blexbot, mj12bot, semrushbot, yandex]
+    sha256: e8e9fa92b86ef4f758ad1b7a87171b599635d1b16fa1e28fd355b81a183e9c96
+  leaids: ['1200720']
+- id: smartsites-sugar-salem-id
+  platform: smartsites
+  call_sign: SSSD322
+  name: 'Sugar-Salem School District #322 (district pop-up alerts)'
+  market: Sugar City (Madison County, ID)
+  dma: null
+  states: [ID]
+  counties:
+    basis: district
+    source: 'NCES CCD 2024-25 school directory (pipeline/out/internal/directory/schools.parquet): the
+      counties of the 6 schools of smartsites-sugar-salem-id''s district, SUGAR-SALEM JOINT DISTRICT (LEAID
+      1603090). Idaho''s LEA records in the NCES CCD 2024-25 LEA directory list no website; the district
+      was matched by its name, SUGAR-SALEM JOINT DISTRICT, to the site''s own name.'
+    fips: ['16065']
+  page_url: https://www.sugarsalem.org/
+  data_url: https://www.sugarsalem.org/api/popup-alerts
+  export_url: null
+  archive_urls:
+  - https://www.sugarsalem.org/api/popup-alerts
+  - https://www.sugarsalem.org/
+  poll_minutes: null
+  status: active
+  evidence: 'First-hand check for piece s4d, 2026-09-27. The homepage https://www.sugarsalem.org/ (its
+    PopUpAlertsComponent script) loads its pop-up alerts from https://www.sugarsalem.org/api/popup-alerts.
+    Live read 2026-09-27T20:49:09Z: HTTP 200, 32 bytes; smartsites-popup-alerts, empty, 0 row(s): no alert.
+    The homepage''s title: ''Sugar Salem School District #322 - Home''. Found by a web search for the
+    district''s site (Idaho''s records in the NCES LEA directory list no website).'
+  list_files: []
+  page_check: null
+  robots:
+  - url: https://www.sugarsalem.org/
+    checked_at: '2026-09-27T20:50:35Z'
+    state: parsed
+    allowed: true
+    rule: no rule matches
+    crawl_delay: 5.0
+    disallowed_agents: [ahrefsbot, baiduspider, blexbot, mj12bot, semrushbot, yandex]
+    sha256: e8e9fa92b86ef4f758ad1b7a87171b599635d1b16fa1e28fd355b81a183e9c96
+  - url: https://www.sugarsalem.org/api/popup-alerts
+    checked_at: '2026-09-27T20:50:35Z'
+    state: parsed
+    allowed: true
+    rule: no rule matches
+    crawl_delay: 5.0
+    disallowed_agents: [ahrefsbot, baiduspider, blexbot, mj12bot, semrushbot, yandex]
+    sha256: e8e9fa92b86ef4f758ad1b7a87171b599635d1b16fa1e28fd355b81a183e9c96
+  leaids: ['1603090']
+- id: smartsites-united-tx
+  platform: smartsites
+  call_sign: UISD
+  name: United ISD (district pop-up alerts)
+  market: Laredo (Webb County, TX)
+  dma: null
+  states: [TX]
+  counties:
+    basis: district
+    source: 'NCES CCD 2024-25 school directory (pipeline/out/internal/directory/schools.parquet): the
+      counties of the 51 schools of smartsites-united-tx''s district, United ISD (LEAID 4843650). The
+      LEAID is the one the NCES CCD 2024-25 LEA directory (https://nces.ed.gov/ccd/Data/zip/ccd_lea_029_2425_w_1a_073025.zip,
+      SHA-256 2745169e4bc7cd53…, read 2026-09-27) lists with this website (uisd.net).'
+    fips: ['48479']
+  page_url: https://www.uisd.net/
+  data_url: https://www.uisd.net/api/popup-alerts
+  export_url: null
+  archive_urls:
+  - https://www.uisd.net/api/popup-alerts
+  - https://www.uisd.net/
+  poll_minutes: null
+  status: active
+  evidence: 'First-hand check for piece s4d (round 3), 2026-09-28. The homepage https://www.uisd.net/
+    (its PopUpAlertsComponent script) loads its pop-up alerts from https://www.uisd.net/api/popup-alerts.
+    Live read 2026-09-28T02:02:37Z: HTTP 200, 32 bytes; smartsites-popup-alerts, empty, 0 row(s): no alert.
+    The homepage''s title: ''United ISD - Home''. Found by reading the website the NCES LEA directory
+    lists for each district with schools in South Texas'' uncovered counties (Hidalgo, Nueces, Cameron,
+    Victoria, Webb, El Paso, San Patricio and the smaller ones around them).'
+  list_files: []
+  page_check: null
+  robots:
+  - url: https://www.uisd.net/
+    checked_at: '2026-09-28T02:20:32Z'
+    state: parsed
+    allowed: true
+    rule: no rule matches
+    crawl_delay: 5.0
+    disallowed_agents: [ahrefsbot, baiduspider, blexbot, mj12bot, semrushbot, yandex]
+    sha256: e8e9fa92b86ef4f758ad1b7a87171b599635d1b16fa1e28fd355b81a183e9c96
+  - url: https://www.uisd.net/api/popup-alerts
+    checked_at: '2026-09-28T02:20:32Z'
+    state: parsed
+    allowed: true
+    rule: no rule matches
+    crawl_delay: 5.0
+    disallowed_agents: [ahrefsbot, baiduspider, blexbot, mj12bot, semrushbot, yandex]
+    sha256: e8e9fa92b86ef4f758ad1b7a87171b599635d1b16fa1e28fd355b81a183e9c96
+  leaids: ['4843650']
+- id: smartsites-la-joya-tx
+  platform: smartsites
+  call_sign: LJISD
+  name: La Joya ISD (district pop-up alerts)
+  market: La Joya (Hidalgo County, TX)
+  dma: null
+  states: [TX]
+  counties:
+    basis: district
+    source: 'NCES CCD 2024-25 school directory (pipeline/out/internal/directory/schools.parquet): the
+      counties of the 36 schools of smartsites-la-joya-tx''s district, La Joya ISD (LEAID 4826130). The
+      LEAID is the one the NCES CCD 2024-25 LEA directory (https://nces.ed.gov/ccd/Data/zip/ccd_lea_029_2425_w_1a_073025.zip,
+      SHA-256 2745169e4bc7cd53…, read 2026-09-27) lists with this website (lajoyaisd.com).'
+    fips: ['48215']
+  page_url: https://www.lajoyaisd.com/
+  data_url: https://www.lajoyaisd.com/api/popup-alerts
+  export_url: null
+  archive_urls:
+  - https://www.lajoyaisd.com/api/popup-alerts
+  - https://www.lajoyaisd.com/
+  poll_minutes: null
+  status: active
+  evidence: 'First-hand check for piece s4d (round 3), 2026-09-28. The homepage https://www.lajoyaisd.com/
+    (its PopUpAlertsComponent script) loads its pop-up alerts from https://www.lajoyaisd.com/api/popup-alerts.
+    Live read 2026-09-28T02:02:42Z: HTTP 200, 32 bytes; smartsites-popup-alerts, empty, 0 row(s): no alert.
+    The homepage''s title: ''La Joya Independent School District - Home''. Found by reading the website
+    the NCES LEA directory lists for each district with schools in South Texas'' uncovered counties (Hidalgo,
+    Nueces, Cameron, Victoria, Webb, El Paso, San Patricio and the smaller ones around them).'
+  list_files: []
+  page_check: null
+  robots:
+  - url: https://www.lajoyaisd.com/
+    checked_at: '2026-09-28T02:20:28Z'
+    state: parsed
+    allowed: true
+    rule: no rule matches
+    crawl_delay: 5.0
+    disallowed_agents: [ahrefsbot, baiduspider, blexbot, mj12bot, semrushbot, yandex]
+    sha256: e8e9fa92b86ef4f758ad1b7a87171b599635d1b16fa1e28fd355b81a183e9c96
+  - url: https://www.lajoyaisd.com/api/popup-alerts
+    checked_at: '2026-09-28T02:20:28Z'
+    state: parsed
+    allowed: true
+    rule: no rule matches
+    crawl_delay: 5.0
+    disallowed_agents: [ahrefsbot, baiduspider, blexbot, mj12bot, semrushbot, yandex]
+    sha256: e8e9fa92b86ef4f758ad1b7a87171b599635d1b16fa1e28fd355b81a183e9c96
+  leaids: ['4826130']
+- id: smartsites-harlingen-tx
+  platform: smartsites
+  call_sign: HCISD
+  name: Harlingen CISD (district pop-up alerts)
+  market: Harlingen (Cameron County, TX)
+  dma: null
+  states: [TX]
+  counties:
+    basis: district
+    source: 'NCES CCD 2024-25 school directory (pipeline/out/internal/directory/schools.parquet): the
+      counties of the 30 schools of smartsites-harlingen-tx''s district, Harlingen CISD (LEAID 4822530).
+      The LEAID is the one the NCES CCD 2024-25 LEA directory (https://nces.ed.gov/ccd/Data/zip/ccd_lea_029_2425_w_1a_073025.zip,
+      SHA-256 2745169e4bc7cd53…, read 2026-09-27) lists with this website (hcisd.org).'
+    fips: ['48061']
+  page_url: https://www.hcisd.org/
+  data_url: https://www.hcisd.org/api/popup-alerts
+  export_url: null
+  archive_urls:
+  - https://www.hcisd.org/api/popup-alerts
+  - https://www.hcisd.org/
+  poll_minutes: null
+  status: active
+  evidence: 'First-hand check for piece s4d (round 3), 2026-09-28. The homepage https://www.hcisd.org/
+    (its PopUpAlertsComponent script) loads its pop-up alerts from https://www.hcisd.org/api/popup-alerts.
+    Live read 2026-09-28T02:02:47Z: HTTP 200, 32 bytes; smartsites-popup-alerts, empty, 0 row(s): no alert.
+    The homepage''s title: ''Harlingen CISD - Home''. Found by reading the website the NCES LEA directory
+    lists for each district with schools in South Texas'' uncovered counties (Hidalgo, Nueces, Cameron,
+    Victoria, Webb, El Paso, San Patricio and the smaller ones around them).'
+  list_files: []
+  page_check: null
+  robots:
+  - url: https://www.hcisd.org/
+    checked_at: '2026-09-28T02:20:27Z'
+    state: parsed
+    allowed: true
+    rule: no rule matches
+    crawl_delay: 5.0
+    disallowed_agents: [ahrefsbot, baiduspider, blexbot, mj12bot, semrushbot, yandex]
+    sha256: e8e9fa92b86ef4f758ad1b7a87171b599635d1b16fa1e28fd355b81a183e9c96
+  - url: https://www.hcisd.org/api/popup-alerts
+    checked_at: '2026-09-28T02:20:27Z'
+    state: parsed
+    allowed: true
+    rule: no rule matches
+    crawl_delay: 5.0
+    disallowed_agents: [ahrefsbot, baiduspider, blexbot, mj12bot, semrushbot, yandex]
+    sha256: e8e9fa92b86ef4f758ad1b7a87171b599635d1b16fa1e28fd355b81a183e9c96
+  leaids: ['4822530']
+- id: smartsites-roma-tx
+  platform: smartsites
+  call_sign: ROMAISD
+  name: Roma ISD (district pop-up alerts)
+  market: Roma (Starr County, TX)
+  dma: null
+  states: [TX]
+  counties:
+    basis: district
+    source: 'NCES CCD 2024-25 school directory (pipeline/out/internal/directory/schools.parquet): the
+      counties of the 10 schools of smartsites-roma-tx''s district, Roma ISD (LEAID 4837740). The LEAID
+      is the one the NCES CCD 2024-25 LEA directory (https://nces.ed.gov/ccd/Data/zip/ccd_lea_029_2425_w_1a_073025.zip,
+      SHA-256 2745169e4bc7cd53…, read 2026-09-27) lists with this website (romaisd.com).'
+    fips: ['48427']
+  page_url: https://www.romaisd.com/
+  data_url: https://www.romaisd.com/api/popup-alerts
+  export_url: null
+  archive_urls:
+  - https://www.romaisd.com/api/popup-alerts
+  - https://www.romaisd.com/
+  poll_minutes: null
+  status: active
+  evidence: 'First-hand check for piece s4d (round 3), 2026-09-28. The homepage https://www.romaisd.com/
+    (its PopUpAlertsComponent script) loads its pop-up alerts from https://www.romaisd.com/api/popup-alerts.
+    Live read 2026-09-28T02:15:06Z: HTTP 200, 32 bytes; smartsites-popup-alerts, empty, 0 row(s): no alert.
+    The homepage''s title: ''Roma Independent School District - Home''. Found by reading the website the
+    NCES LEA directory lists for each district with schools in South Texas'' uncovered counties (Hidalgo,
+    Nueces, Cameron, Victoria, Webb, El Paso, San Patricio and the smaller ones around them).'
+  list_files: []
+  page_check: null
+  robots:
+  - url: https://www.romaisd.com/
+    checked_at: '2026-09-28T02:20:30Z'
+    state: parsed
+    allowed: true
+    rule: no rule matches
+    crawl_delay: 5.0
+    disallowed_agents: [ahrefsbot, baiduspider, blexbot, mj12bot, semrushbot, yandex]
+    sha256: e8e9fa92b86ef4f758ad1b7a87171b599635d1b16fa1e28fd355b81a183e9c96
+  - url: https://www.romaisd.com/api/popup-alerts
+    checked_at: '2026-09-28T02:20:30Z'
+    state: parsed
+    allowed: true
+    rule: no rule matches
+    crawl_delay: 5.0
+    disallowed_agents: [ahrefsbot, baiduspider, blexbot, mj12bot, semrushbot, yandex]
+    sha256: e8e9fa92b86ef4f758ad1b7a87171b599635d1b16fa1e28fd355b81a183e9c96
+  leaids: ['4837740']
+- id: smartsites-beeville-tx
+  platform: smartsites
+  call_sign: BEEVIISD
+  name: Beeville ISD (district pop-up alerts)
+  market: Beeville (Bee County, TX)
+  dma: null
+  states: [TX]
+  counties:
+    basis: district
+    source: 'NCES CCD 2024-25 school directory (pipeline/out/internal/directory/schools.parquet): the
+      counties of the 5 schools of smartsites-beeville-tx''s district, Beeville ISD (LEAID 4809720). The
+      LEAID is the one the NCES CCD 2024-25 LEA directory (https://nces.ed.gov/ccd/Data/zip/ccd_lea_029_2425_w_1a_073025.zip,
+      SHA-256 2745169e4bc7cd53…, read 2026-09-27) lists with this website (beevilleisd.net).'
+    fips: ['48025']
+  page_url: https://www.beevilleisd.net/
+  data_url: https://www.beevilleisd.net/api/popup-alerts
+  export_url: null
+  archive_urls:
+  - https://www.beevilleisd.net/api/popup-alerts
+  - https://www.beevilleisd.net/
+  poll_minutes: null
+  status: active
+  evidence: 'First-hand check for piece s4d (round 3), 2026-09-28. The homepage https://www.beevilleisd.net/
+    (its PopUpAlertsComponent script) loads its pop-up alerts from https://www.beevilleisd.net/api/popup-alerts.
+    Live read 2026-09-28T02:02:58Z: HTTP 200, 32 bytes; smartsites-popup-alerts, empty, 0 row(s): no alert.
+    The homepage''s title: ''Beeville Independent School District - HOME''. Found by reading the website
+    the NCES LEA directory lists for each district with schools in South Texas'' uncovered counties (Hidalgo,
+    Nueces, Cameron, Victoria, Webb, El Paso, San Patricio and the smaller ones around them).'
+  list_files: []
+  page_check: null
+  robots:
+  - url: https://www.beevilleisd.net/
+    checked_at: '2026-09-28T02:20:26Z'
+    state: parsed
+    allowed: true
+    rule: no rule matches
+    crawl_delay: 5.0
+    disallowed_agents: [ahrefsbot, baiduspider, blexbot, mj12bot, semrushbot, yandex]
+    sha256: e8e9fa92b86ef4f758ad1b7a87171b599635d1b16fa1e28fd355b81a183e9c96
+  - url: https://www.beevilleisd.net/api/popup-alerts
+    checked_at: '2026-09-28T02:20:26Z'
+    state: parsed
+    allowed: true
+    rule: no rule matches
+    crawl_delay: 5.0
+    disallowed_agents: [ahrefsbot, baiduspider, blexbot, mj12bot, semrushbot, yandex]
+    sha256: e8e9fa92b86ef4f758ad1b7a87171b599635d1b16fa1e28fd355b81a183e9c96
+  leaids: ['4809720']
+- id: smartsites-tuloso-midway-tx
+  platform: smartsites
+  call_sign: TMISD
+  name: Tuloso-Midway ISD (district pop-up alerts)
+  market: Corpus Christi (Nueces County, TX)
+  dma: null
+  states: [TX]
+  counties:
+    basis: district
+    source: 'NCES CCD 2024-25 school directory (pipeline/out/internal/directory/schools.parquet): the
+      counties of the 5 schools of smartsites-tuloso-midway-tx''s district, Tuloso-Midway ISD (LEAID 4843350).
+      The LEAID is the one the NCES CCD 2024-25 LEA directory (https://nces.ed.gov/ccd/Data/zip/ccd_lea_029_2425_w_1a_073025.zip,
+      SHA-256 2745169e4bc7cd53…, read 2026-09-27) lists with this website (tmisd.us).'
+    fips: ['48355']
+  page_url: https://www.tmisd.us/
+  data_url: https://www.tmisd.us/api/popup-alerts
+  export_url: null
+  archive_urls:
+  - https://www.tmisd.us/api/popup-alerts
+  - https://www.tmisd.us/
+  poll_minutes: null
+  status: active
+  evidence: 'First-hand check for piece s4d (round 3), 2026-09-28. The homepage https://www.tmisd.us/
+    (its PopUpAlertsComponent script) loads its pop-up alerts from https://www.tmisd.us/api/popup-alerts.
+    Live read 2026-09-28T02:15:06Z: HTTP 200, 1,001 bytes; smartsites-popup-alerts, populated, 1 row(s):
+    ''Notice of Public Meeting and Opportunity for Public Testimony Regarding Senate Bill 12 Compliance
+    Ce''. The homepage''s title: ''Tuloso-Midway Independent School District - Home''. Found by reading
+    the website the NCES LEA directory lists for each district with schools in South Texas'' uncovered
+    counties (Hidalgo, Nueces, Cameron, Victoria, Webb, El Paso, San Patricio and the smaller ones around
+    them).'
+  list_files: []
+  page_check: null
+  robots:
+  - url: https://www.tmisd.us/
+    checked_at: '2026-09-28T02:20:32Z'
+    state: parsed
+    allowed: true
+    rule: no rule matches
+    crawl_delay: 5.0
+    disallowed_agents: [ahrefsbot, baiduspider, blexbot, mj12bot, semrushbot, yandex]
+    sha256: e8e9fa92b86ef4f758ad1b7a87171b599635d1b16fa1e28fd355b81a183e9c96
+  - url: https://www.tmisd.us/api/popup-alerts
+    checked_at: '2026-09-28T02:20:32Z'
+    state: parsed
+    allowed: true
+    rule: no rule matches
+    crawl_delay: 5.0
+    disallowed_agents: [ahrefsbot, baiduspider, blexbot, mj12bot, semrushbot, yandex]
+    sha256: e8e9fa92b86ef4f758ad1b7a87171b599635d1b16fa1e28fd355b81a183e9c96
+  leaids: ['4843350']
+- id: smartsites-sinton-tx
+  platform: smartsites
+  call_sign: SINTOISD
+  name: Sinton ISD (district pop-up alerts)
+  market: Sinton (San Patricio County, TX)
+  dma: null
+  states: [TX]
+  counties:
+    basis: district
+    source: 'NCES CCD 2024-25 school directory (pipeline/out/internal/directory/schools.parquet): the
+      counties of the 5 schools of smartsites-sinton-tx''s district, Sinton ISD (LEAID 4840350). The LEAID
+      is the one the NCES CCD 2024-25 LEA directory (https://nces.ed.gov/ccd/Data/zip/ccd_lea_029_2425_w_1a_073025.zip,
+      SHA-256 2745169e4bc7cd53…, read 2026-09-27) lists with this website (sintonisd.net).'
+    fips: ['48409']
+  page_url: https://www.sintonisd.net/
+  data_url: https://www.sintonisd.net/api/popup-alerts
+  export_url: null
+  archive_urls:
+  - https://www.sintonisd.net/api/popup-alerts
+  - https://www.sintonisd.net/
+  poll_minutes: null
+  status: active
+  evidence: 'First-hand check for piece s4d (round 3), 2026-09-28. The homepage https://www.sintonisd.net/
+    (its PopUpAlertsComponent script) loads its pop-up alerts from https://www.sintonisd.net/api/popup-alerts.
+    Live read 2026-09-28T02:15:05Z: HTTP 200, 32 bytes; smartsites-popup-alerts, empty, 0 row(s): no alert.
+    The homepage''s title: ''Sinton ISD Home''. Found by reading the website the NCES LEA directory lists
+    for each district with schools in South Texas'' uncovered counties (Hidalgo, Nueces, Cameron, Victoria,
+    Webb, El Paso, San Patricio and the smaller ones around them).'
+  list_files: []
+  page_check: null
+  robots:
+  - url: https://www.sintonisd.net/
+    checked_at: '2026-09-28T02:20:31Z'
+    state: parsed
+    allowed: true
+    rule: no rule matches
+    crawl_delay: 5.0
+    disallowed_agents: [ahrefsbot, baiduspider, blexbot, mj12bot, semrushbot, yandex]
+    sha256: e8e9fa92b86ef4f758ad1b7a87171b599635d1b16fa1e28fd355b81a183e9c96
+  - url: https://www.sintonisd.net/api/popup-alerts
+    checked_at: '2026-09-28T02:20:31Z'
+    state: parsed
+    allowed: true
+    rule: no rule matches
+    crawl_delay: 5.0
+    disallowed_agents: [ahrefsbot, baiduspider, blexbot, mj12bot, semrushbot, yandex]
+    sha256: e8e9fa92b86ef4f758ad1b7a87171b599635d1b16fa1e28fd355b81a183e9c96
+  leaids: ['4840350']
+- id: smartsites-zapata-county-tx
+  platform: smartsites
+  call_sign: ZCISD
+  name: Zapata County ISD (district pop-up alerts)
+  market: Zapata (Zapata County, TX)
+  dma: null
+  states: [TX]
+  counties:
+    basis: district
+    source: 'NCES CCD 2024-25 school directory (pipeline/out/internal/directory/schools.parquet): the
+      counties of the 6 schools of smartsites-zapata-county-tx''s district, Zapata County ISD (LEAID 4846710).
+      The LEAID is the one the NCES CCD 2024-25 LEA directory (https://nces.ed.gov/ccd/Data/zip/ccd_lea_029_2425_w_1a_073025.zip,
+      SHA-256 2745169e4bc7cd53…, read 2026-09-27) lists with this website (zcisd.org).'
+    fips: ['48505']
+  page_url: https://www.zcisd.org/
+  data_url: https://www.zcisd.org/api/popup-alerts
+  export_url: null
+  archive_urls:
+  - https://www.zcisd.org/api/popup-alerts
+  - https://www.zcisd.org/
+  poll_minutes: null
+  status: active
+  evidence: 'First-hand check for piece s4d (round 3), 2026-09-28. The homepage https://www.zcisd.org/
+    (its PopUpAlertsComponent script) loads its pop-up alerts from https://www.zcisd.org/api/popup-alerts.
+    Live read 2026-09-28T02:15:12Z: HTTP 200, 32 bytes; smartsites-popup-alerts, empty, 0 row(s): no alert.
+    The homepage''s title: ''Zapata County ISD - Home''. Found by reading the website the NCES LEA directory
+    lists for each district with schools in South Texas'' uncovered counties (Hidalgo, Nueces, Cameron,
+    Victoria, Webb, El Paso, San Patricio and the smaller ones around them).'
+  list_files: []
+  page_check: null
+  robots:
+  - url: https://www.zcisd.org/
+    checked_at: '2026-09-28T02:20:32Z'
+    state: parsed
+    allowed: true
+    rule: no rule matches
+    crawl_delay: 5.0
+    disallowed_agents: [ahrefsbot, baiduspider, blexbot, mj12bot, semrushbot, yandex]
+    sha256: e8e9fa92b86ef4f758ad1b7a87171b599635d1b16fa1e28fd355b81a183e9c96
+  - url: https://www.zcisd.org/api/popup-alerts
+    checked_at: '2026-09-28T02:20:32Z'
+    state: parsed
+    allowed: true
+    rule: no rule matches
+    crawl_delay: 5.0
+    disallowed_agents: [ahrefsbot, baiduspider, blexbot, mj12bot, semrushbot, yandex]
+    sha256: e8e9fa92b86ef4f758ad1b7a87171b599635d1b16fa1e28fd355b81a183e9c96
+  leaids: ['4846710']
+- id: smartsites-premont-tx
+  platform: smartsites
+  call_sign: PREMOISD
+  name: Premont ISD (district pop-up alerts)
+  market: Premont (Jim Wells County, TX)
+  dma: null
+  states: [TX]
+  counties:
+    basis: district
+    source: 'NCES CCD 2024-25 school directory (pipeline/out/internal/directory/schools.parquet): the
+      counties of the 3 schools of smartsites-premont-tx''s district, Premont ISD (LEAID 4835760). The
+      LEAID is the one the NCES CCD 2024-25 LEA directory (https://nces.ed.gov/ccd/Data/zip/ccd_lea_029_2425_w_1a_073025.zip,
+      SHA-256 2745169e4bc7cd53…, read 2026-09-27) lists with this website (premontisd.net).'
+    fips: ['48249']
+  page_url: https://www.premontisd.net/
+  data_url: https://www.premontisd.net/api/popup-alerts
+  export_url: null
+  archive_urls:
+  - https://www.premontisd.net/api/popup-alerts
+  - https://www.premontisd.net/
+  poll_minutes: null
+  status: active
+  evidence: 'First-hand check for piece s4d (round 3), 2026-09-28. The homepage https://www.premontisd.net/
+    (its PopUpAlertsComponent script) loads its pop-up alerts from https://www.premontisd.net/api/popup-alerts.
+    Live read 2026-09-28T02:15:19Z: HTTP 200, 32 bytes; smartsites-popup-alerts, empty, 0 row(s): no alert.
+    The homepage''s title: ''Premont ISD - HOME''. Found by reading the website the NCES LEA directory
+    lists for each district with schools in South Texas'' uncovered counties (Hidalgo, Nueces, Cameron,
+    Victoria, Webb, El Paso, San Patricio and the smaller ones around them).'
+  list_files: []
+  page_check: null
+  robots:
+  - url: https://www.premontisd.net/
+    checked_at: '2026-09-28T02:20:29Z'
+    state: parsed
+    allowed: true
+    rule: no rule matches
+    crawl_delay: 5.0
+    disallowed_agents: [ahrefsbot, baiduspider, blexbot, mj12bot, semrushbot, yandex]
+    sha256: e8e9fa92b86ef4f758ad1b7a87171b599635d1b16fa1e28fd355b81a183e9c96
+  - url: https://www.premontisd.net/api/popup-alerts
+    checked_at: '2026-09-28T02:20:29Z'
+    state: parsed
+    allowed: true
+    rule: no rule matches
+    crawl_delay: 5.0
+    disallowed_agents: [ahrefsbot, baiduspider, blexbot, mj12bot, semrushbot, yandex]
+    sha256: e8e9fa92b86ef4f758ad1b7a87171b599635d1b16fa1e28fd355b81a183e9c96
+  leaids: ['4835760']
+- id: smartsites-port-aransas-tx
+  platform: smartsites
+  call_sign: PAISD
+  name: Port Aransas ISD (district pop-up alerts)
+  market: Port Aransas (Nueces County, TX)
+  dma: null
+  states: [TX]
+  counties:
+    basis: district
+    source: 'NCES CCD 2024-25 school directory (pipeline/out/internal/directory/schools.parquet): the
+      counties of the 3 schools of smartsites-port-aransas-tx''s district, Port Aransas ISD (LEAID 4835370).
+      The LEAID is the one the NCES CCD 2024-25 LEA directory (https://nces.ed.gov/ccd/Data/zip/ccd_lea_029_2425_w_1a_073025.zip,
+      SHA-256 2745169e4bc7cd53…, read 2026-09-27) lists with this website (paisd.net).'
+    fips: ['48355']
+  page_url: https://www.paisd.net/
+  data_url: https://www.paisd.net/api/popup-alerts
+  export_url: null
+  archive_urls:
+  - https://www.paisd.net/api/popup-alerts
+  - https://www.paisd.net/
+  poll_minutes: null
+  status: active
+  evidence: 'First-hand check for piece s4d (round 3), 2026-09-28. The homepage https://www.paisd.net/
+    (its PopUpAlertsComponent script) loads its pop-up alerts from https://www.paisd.net/api/popup-alerts.
+    Live read 2026-09-28T02:15:20Z: HTTP 200, 32 bytes; smartsites-popup-alerts, empty, 0 row(s): no alert.
+    The homepage''s title: ''Port Aransas ISD - Home''. Found by reading the website the NCES LEA directory
+    lists for each district with schools in South Texas'' uncovered counties (Hidalgo, Nueces, Cameron,
+    Victoria, Webb, El Paso, San Patricio and the smaller ones around them).'
+  list_files: []
+  page_check: null
+  robots:
+  - url: https://www.paisd.net/
+    checked_at: '2026-09-28T02:20:29Z'
+    state: parsed
+    allowed: true
+    rule: no rule matches
+    crawl_delay: 5.0
+    disallowed_agents: [ahrefsbot, baiduspider, blexbot, mj12bot, semrushbot, yandex]
+    sha256: e8e9fa92b86ef4f758ad1b7a87171b599635d1b16fa1e28fd355b81a183e9c96
+  - url: https://www.paisd.net/api/popup-alerts
+    checked_at: '2026-09-28T02:20:29Z'
+    state: parsed
+    allowed: true
+    rule: no rule matches
+    crawl_delay: 5.0
+    disallowed_agents: [ahrefsbot, baiduspider, blexbot, mj12bot, semrushbot, yandex]
+    sha256: e8e9fa92b86ef4f758ad1b7a87171b599635d1b16fa1e28fd355b81a183e9c96
+  leaids: ['4835370']
+- id: smartsites-pettus-tx
+  platform: smartsites
+  call_sign: PETTUISD
+  name: Pettus ISD (district pop-up alerts)
+  market: Pettus (Bee County, TX)
+  dma: null
+  states: [TX]
+  counties:
+    basis: district
+    source: 'NCES CCD 2024-25 school directory (pipeline/out/internal/directory/schools.parquet): the
+      counties of the 2 schools of smartsites-pettus-tx''s district, Pettus ISD (LEAID 4834770). The LEAID
+      is the one the NCES CCD 2024-25 LEA directory (https://nces.ed.gov/ccd/Data/zip/ccd_lea_029_2425_w_1a_073025.zip,
+      SHA-256 2745169e4bc7cd53…, read 2026-09-27) lists with this website (pettusisd.com).'
+    fips: ['48025']
+  page_url: https://www.pettusisd.org/
+  data_url: https://www.pettusisd.org/api/popup-alerts
+  export_url: null
+  archive_urls:
+  - https://www.pettusisd.org/api/popup-alerts
+  - https://www.pettusisd.org/
+  poll_minutes: null
+  status: active
+  evidence: 'First-hand check for piece s4d (round 3), 2026-09-28. The homepage https://www.pettusisd.org/
+    (its PopUpAlertsComponent script) loads its pop-up alerts from https://www.pettusisd.org/api/popup-alerts.
+    Live read 2026-09-28T02:15:25Z: HTTP 200, 32 bytes; smartsites-popup-alerts, empty, 0 row(s): no alert.
+    The homepage''s title: ''Pettus ISD - Home''. Found by reading the website the NCES LEA directory
+    lists for each district with schools in South Texas'' uncovered counties (Hidalgo, Nueces, Cameron,
+    Victoria, Webb, El Paso, San Patricio and the smaller ones around them).'
+  list_files: []
+  page_check: null
+  robots:
+  - url: https://www.pettusisd.org/
+    checked_at: '2026-09-28T02:20:29Z'
+    state: parsed
+    allowed: true
+    rule: no rule matches
+    crawl_delay: 5.0
+    disallowed_agents: [ahrefsbot, baiduspider, blexbot, mj12bot, semrushbot, yandex]
+    sha256: e8e9fa92b86ef4f758ad1b7a87171b599635d1b16fa1e28fd355b81a183e9c96
+  - url: https://www.pettusisd.org/api/popup-alerts
+    checked_at: '2026-09-28T02:20:29Z'
+    state: parsed
+    allowed: true
+    rule: no rule matches
+    crawl_delay: 5.0
+    disallowed_agents: [ahrefsbot, baiduspider, blexbot, mj12bot, semrushbot, yandex]
+    sha256: e8e9fa92b86ef4f758ad1b7a87171b599635d1b16fa1e28fd355b81a183e9c96
+  leaids: ['4834770']
+- id: smartsites-ricardo-tx
+  platform: smartsites
+  call_sign: RICARISD
+  name: Ricardo ISD (district pop-up alerts)
+  market: Kingsville (Kleberg County, TX)
+  dma: null
+  states: [TX]
+  counties:
+    basis: district
+    source: 'NCES CCD 2024-25 school directory (pipeline/out/internal/directory/schools.parquet): the
+      counties of the 2 schools of smartsites-ricardo-tx''s district, Ricardo ISD (LEAID 4836930). The
+      LEAID is the one the NCES CCD 2024-25 LEA directory (https://nces.ed.gov/ccd/Data/zip/ccd_lea_029_2425_w_1a_073025.zip,
+      SHA-256 2745169e4bc7cd53…, read 2026-09-27) lists with this website (ricardoisd.us).'
+    fips: ['48273']
+  page_url: https://www.ricardoisd.us/
+  data_url: https://www.ricardoisd.us/api/popup-alerts
+  export_url: null
+  archive_urls:
+  - https://www.ricardoisd.us/api/popup-alerts
+  - https://www.ricardoisd.us/
+  poll_minutes: null
+  status: active
+  evidence: 'First-hand check for piece s4d (round 3), 2026-09-28. The homepage https://www.ricardoisd.us/
+    (its PopUpAlertsComponent script) loads its pop-up alerts from https://www.ricardoisd.us/api/popup-alerts.
+    Live read 2026-09-28T02:15:28Z: HTTP 200, 32 bytes; smartsites-popup-alerts, empty, 0 row(s): no alert.
+    The homepage''s title: ''Ricardo ISD - Home''. Found by reading the website the NCES LEA directory
+    lists for each district with schools in South Texas'' uncovered counties (Hidalgo, Nueces, Cameron,
+    Victoria, Webb, El Paso, San Patricio and the smaller ones around them).'
+  list_files: []
+  page_check: null
+  robots:
+  - url: https://www.ricardoisd.us/
+    checked_at: '2026-09-28T02:20:29Z'
+    state: parsed
+    allowed: true
+    rule: no rule matches
+    crawl_delay: 5.0
+    disallowed_agents: [ahrefsbot, baiduspider, blexbot, mj12bot, semrushbot, yandex]
+    sha256: e8e9fa92b86ef4f758ad1b7a87171b599635d1b16fa1e28fd355b81a183e9c96
+  - url: https://www.ricardoisd.us/api/popup-alerts
+    checked_at: '2026-09-28T02:20:29Z'
+    state: parsed
+    allowed: true
+    rule: no rule matches
+    crawl_delay: 5.0
+    disallowed_agents: [ahrefsbot, baiduspider, blexbot, mj12bot, semrushbot, yandex]
+    sha256: e8e9fa92b86ef4f758ad1b7a87171b599635d1b16fa1e28fd355b81a183e9c96
+  leaids: ['4836930']
+- id: smartsites-san-perlita-tx
+  platform: smartsites
+  call_sign: SPISD
+  name: San Perlita ISD (district pop-up alerts)
+  market: San Perlita (Willacy County, TX)
+  dma: null
+  states: [TX]
+  counties:
+    basis: district
+    source: 'NCES CCD 2024-25 school directory (pipeline/out/internal/directory/schools.parquet): the
+      counties of the 3 schools of smartsites-san-perlita-tx''s district, San Perlita ISD (LEAID 4839000).
+      The LEAID is the one the NCES CCD 2024-25 LEA directory (https://nces.ed.gov/ccd/Data/zip/ccd_lea_029_2425_w_1a_073025.zip,
+      SHA-256 2745169e4bc7cd53…, read 2026-09-27) lists with this website (spisd.org).'
+    fips: ['48489']
+  page_url: https://www.spisd.org/
+  data_url: https://www.spisd.org/api/popup-alerts
+  export_url: null
+  archive_urls:
+  - https://www.spisd.org/api/popup-alerts
+  - https://www.spisd.org/
+  poll_minutes: null
+  status: active
+  evidence: 'First-hand check for piece s4d (round 3), 2026-09-28. The homepage https://www.spisd.org/
+    (its PopUpAlertsComponent script) loads its pop-up alerts from https://www.spisd.org/api/popup-alerts.
+    Live read 2026-09-28T02:15:31Z: HTTP 200, 32 bytes; smartsites-popup-alerts, empty, 0 row(s): no alert.
+    The homepage''s title: ''San Perlita ISD - Home''. Found by reading the website the NCES LEA directory
+    lists for each district with schools in South Texas'' uncovered counties (Hidalgo, Nueces, Cameron,
+    Victoria, Webb, El Paso, San Patricio and the smaller ones around them).'
+  list_files: []
+  page_check: null
+  robots:
+  - url: https://www.spisd.org/
+    checked_at: '2026-09-28T02:20:30Z'
+    state: parsed
+    allowed: true
+    rule: no rule matches
+    crawl_delay: 5.0
+    disallowed_agents: [ahrefsbot, baiduspider, blexbot, mj12bot, semrushbot, yandex]
+    sha256: e8e9fa92b86ef4f758ad1b7a87171b599635d1b16fa1e28fd355b81a183e9c96
+  - url: https://www.spisd.org/api/popup-alerts
+    checked_at: '2026-09-28T02:20:30Z'
+    state: parsed
+    allowed: true
+    rule: no rule matches
+    crawl_delay: 5.0
+    disallowed_agents: [ahrefsbot, baiduspider, blexbot, mj12bot, semrushbot, yandex]
+    sha256: e8e9fa92b86ef4f758ad1b7a87171b599635d1b16fa1e28fd355b81a183e9c96
+  leaids: ['4839000']
+- id: smartsites-webb-tx
+  platform: smartsites
+  call_sign: WEBBCISD
+  name: Webb CISD (district pop-up alerts)
+  market: Bruni (Webb County, TX)
+  dma: null
+  states: [TX]
+  counties:
+    basis: district
+    source: 'NCES CCD 2024-25 school directory (pipeline/out/internal/directory/schools.parquet): the
+      counties of the 3 schools of smartsites-webb-tx''s district, Webb CISD (LEAID 4844810). The LEAID
+      is the one the NCES CCD 2024-25 LEA directory (https://nces.ed.gov/ccd/Data/zip/ccd_lea_029_2425_w_1a_073025.zip,
+      SHA-256 2745169e4bc7cd53…, read 2026-09-27) lists with this website (webbcisd.org).'
+    fips: ['48479']
+  page_url: https://www.webbcisd.org/
+  data_url: https://www.webbcisd.org/api/popup-alerts
+  export_url: null
+  archive_urls:
+  - https://www.webbcisd.org/api/popup-alerts
+  - https://www.webbcisd.org/
+  poll_minutes: null
+  status: active
+  evidence: 'First-hand check for piece s4d (round 3), 2026-09-28. The homepage https://www.webbcisd.org/
+    (its PopUpAlertsComponent script) loads its pop-up alerts from https://www.webbcisd.org/api/popup-alerts.
+    Live read 2026-09-28T02:15:40Z: HTTP 200, 32 bytes; smartsites-popup-alerts, empty, 0 row(s): no alert.
+    The homepage''s title: ''Webb CISD - Home''. Found by reading the website the NCES LEA directory lists
+    for each district with schools in South Texas'' uncovered counties (Hidalgo, Nueces, Cameron, Victoria,
+    Webb, El Paso, San Patricio and the smaller ones around them).'
+  list_files: []
+  page_check: null
+  robots:
+  - url: https://www.webbcisd.org/
+    checked_at: '2026-09-28T02:20:32Z'
+    state: parsed
+    allowed: true
+    rule: no rule matches
+    crawl_delay: 5.0
+    disallowed_agents: [ahrefsbot, baiduspider, blexbot, mj12bot, semrushbot, yandex]
+    sha256: e8e9fa92b86ef4f758ad1b7a87171b599635d1b16fa1e28fd355b81a183e9c96
+  - url: https://www.webbcisd.org/api/popup-alerts
+    checked_at: '2026-09-28T02:20:32Z'
+    state: parsed
+    allowed: true
+    rule: no rule matches
+    crawl_delay: 5.0
+    disallowed_agents: [ahrefsbot, baiduspider, blexbot, mj12bot, semrushbot, yandex]
+    sha256: e8e9fa92b86ef4f758ad1b7a87171b599635d1b16fa1e28fd355b81a183e9c96
+  leaids: ['4844810']
+- id: smartsites-culberson-allamoore-tx
+  platform: smartsites
+  call_sign: CCAISD
+  name: Culberson County-Allamoore ISD (district pop-up alerts)
+  market: Van Horn (Culberson County, TX)
+  dma: null
+  states: [TX]
+  counties:
+    basis: district
+    source: 'NCES CCD 2024-25 school directory (pipeline/out/internal/directory/schools.parquet): the
+      counties of the 1 schools of smartsites-culberson-allamoore-tx''s district, Culberson County-Allamoore
+      ISD (LEAID 4815990). The LEAID is the one the NCES CCD 2024-25 LEA directory (https://nces.ed.gov/ccd/Data/zip/ccd_lea_029_2425_w_1a_073025.zip,
+      SHA-256 2745169e4bc7cd53…, read 2026-09-27) lists with this website (ccaisd.net).'
+    fips: ['48109']
+  page_url: https://www.ccaisd.net/
+  data_url: https://www.ccaisd.net/api/popup-alerts
+  export_url: null
+  archive_urls:
+  - https://www.ccaisd.net/api/popup-alerts
+  - https://www.ccaisd.net/
+  poll_minutes: null
+  status: active
+  evidence: 'First-hand check for piece s4d (round 3), 2026-09-28. The homepage https://www.ccaisd.net/
+    (its PopUpAlertsComponent script) loads its pop-up alerts from https://www.ccaisd.net/api/popup-alerts.
+    Live read 2026-09-28T02:15:43Z: HTTP 200, 32 bytes; smartsites-popup-alerts, empty, 0 row(s): no alert.
+    The homepage''s title: ''Culberson County-Allamoore ISD - Home''. Found by reading the website the
+    NCES LEA directory lists for each district with schools in South Texas'' uncovered counties (Hidalgo,
+    Nueces, Cameron, Victoria, Webb, El Paso, San Patricio and the smaller ones around them).'
+  list_files: []
+  page_check: null
+  robots:
+  - url: https://www.ccaisd.net/
+    checked_at: '2026-09-28T02:20:27Z'
+    state: parsed
+    allowed: true
+    rule: no rule matches
+    crawl_delay: 5.0
+    disallowed_agents: [ahrefsbot, baiduspider, blexbot, mj12bot, semrushbot, yandex]
+    sha256: e8e9fa92b86ef4f758ad1b7a87171b599635d1b16fa1e28fd355b81a183e9c96
+  - url: https://www.ccaisd.net/api/popup-alerts
+    checked_at: '2026-09-28T02:20:27Z'
+    state: parsed
+    allowed: true
+    rule: no rule matches
+    crawl_delay: 5.0
+    disallowed_agents: [ahrefsbot, baiduspider, blexbot, mj12bot, semrushbot, yandex]
+    sha256: e8e9fa92b86ef4f758ad1b7a87171b599635d1b16fa1e28fd355b81a183e9c96
+  leaids: ['4815990']
+- id: smartsites-pawnee-tx
+  platform: smartsites
+  call_sign: PAWNEISD
+  name: Pawnee ISD (district pop-up alerts)
+  market: Pawnee (Bee County, TX)
+  dma: null
+  states: [TX]
+  counties:
+    basis: district
+    source: 'NCES CCD 2024-25 school directory (pipeline/out/internal/directory/schools.parquet): the
+      counties of the 1 schools of smartsites-pawnee-tx''s district, Pawnee ISD (LEAID 4834410). The LEAID
+      is the one the NCES CCD 2024-25 LEA directory (https://nces.ed.gov/ccd/Data/zip/ccd_lea_029_2425_w_1a_073025.zip,
+      SHA-256 2745169e4bc7cd53…, read 2026-09-27) lists with this website (pawneeisd.net).'
+    fips: ['48025']
+  page_url: https://www.pawneeisd.net/
+  data_url: https://www.pawneeisd.net/api/popup-alerts
+  export_url: null
+  archive_urls:
+  - https://www.pawneeisd.net/api/popup-alerts
+  - https://www.pawneeisd.net/
+  poll_minutes: null
+  status: active
+  evidence: 'First-hand check for piece s4d (round 3), 2026-09-28. The homepage https://www.pawneeisd.net/
+    (its PopUpAlertsComponent script) loads its pop-up alerts from https://www.pawneeisd.net/api/popup-alerts.
+    Live read 2026-09-28T02:15:47Z: HTTP 200, 32 bytes; smartsites-popup-alerts, empty, 0 row(s): no alert.
+    The homepage''s title: ''Pawnee Independent School District - Home''. Found by reading the website
+    the NCES LEA directory lists for each district with schools in South Texas'' uncovered counties (Hidalgo,
+    Nueces, Cameron, Victoria, Webb, El Paso, San Patricio and the smaller ones around them).'
+  list_files: []
+  page_check: null
+  robots:
+  - url: https://www.pawneeisd.net/
+    checked_at: '2026-09-28T02:20:28Z'
+    state: parsed
+    allowed: true
+    rule: no rule matches
+    crawl_delay: 5.0
+    disallowed_agents: [ahrefsbot, baiduspider, blexbot, mj12bot, semrushbot, yandex]
+    sha256: e8e9fa92b86ef4f758ad1b7a87171b599635d1b16fa1e28fd355b81a183e9c96
+  - url: https://www.pawneeisd.net/api/popup-alerts
+    checked_at: '2026-09-28T02:20:28Z'
+    state: parsed
+    allowed: true
+    rule: no rule matches
+    crawl_delay: 5.0
+    disallowed_agents: [ahrefsbot, baiduspider, blexbot, mj12bot, semrushbot, yandex]
+    sha256: e8e9fa92b86ef4f758ad1b7a87171b599635d1b16fa1e28fd355b81a183e9c96
+  leaids: ['4834410']
+- id: smartsites-kenedy-county-tx
+  platform: smartsites
+  call_sign: KWCSD
+  name: Kenedy County Wide CSD (district pop-up alerts)
+  market: Sarita (Kenedy County, TX)
+  dma: null
+  states: [TX]
+  counties:
+    basis: district
+    source: 'NCES CCD 2024-25 school directory (pipeline/out/internal/directory/schools.parquet): the
+      counties of the 1 schools of smartsites-kenedy-county-tx''s district, Kenedy County Wide CSD (LEAID
+      4825410). The LEAID is the one the NCES CCD 2024-25 LEA directory (https://nces.ed.gov/ccd/Data/zip/ccd_lea_029_2425_w_1a_073025.zip,
+      SHA-256 2745169e4bc7cd53…, read 2026-09-27) lists with this website (saritaschool.net).'
+    fips: ['48261']
+  page_url: https://www.saritaschool.net/
+  data_url: https://www.saritaschool.net/api/popup-alerts
+  export_url: null
+  archive_urls:
+  - https://www.saritaschool.net/api/popup-alerts
+  - https://www.saritaschool.net/
+  poll_minutes: null
+  status: active
+  evidence: 'First-hand check for piece s4d (round 3), 2026-09-28. The homepage https://www.saritaschool.net/
+    (its PopUpAlertsComponent script) loads its pop-up alerts from https://www.saritaschool.net/api/popup-alerts.
+    Live read 2026-09-28T02:15:54Z: HTTP 200, 32 bytes; smartsites-popup-alerts, empty, 0 row(s): no alert.
+    The homepage''s title: ''Kenedy County-Wide Common School District - Home''. Found by reading the
+    website the NCES LEA directory lists for each district with schools in South Texas'' uncovered counties
+    (Hidalgo, Nueces, Cameron, Victoria, Webb, El Paso, San Patricio and the smaller ones around them).'
+  list_files: []
+  page_check: null
+  robots:
+  - url: https://www.saritaschool.net/
+    checked_at: '2026-09-28T02:20:27Z'
+    state: parsed
+    allowed: true
+    rule: no rule matches
+    crawl_delay: 5.0
+    disallowed_agents: [ahrefsbot, baiduspider, blexbot, mj12bot, semrushbot, yandex]
+    sha256: e8e9fa92b86ef4f758ad1b7a87171b599635d1b16fa1e28fd355b81a183e9c96
+  - url: https://www.saritaschool.net/api/popup-alerts
+    checked_at: '2026-09-28T02:20:27Z'
+    state: parsed
+    allowed: true
+    rule: no rule matches
+    crawl_delay: 5.0
+    disallowed_agents: [ahrefsbot, baiduspider, blexbot, mj12bot, semrushbot, yandex]
+    sha256: e8e9fa92b86ef4f758ad1b7a87171b599635d1b16fa1e28fd355b81a183e9c96
+  leaids: ['4825410']
+- id: smartsites-fremont-38-wy
+  platform: smartsites
+  call_sign: FCSD38
+  name: 'Fremont County School District #38 (district pop-up alerts)'
+  market: Arapahoe (Fremont County, WY)
+  dma: null
+  states: [WY]
+  counties:
+    basis: district
+    source: 'NCES CCD 2024-25 school directory (pipeline/out/internal/directory/schools.parquet): the
+      counties of the 2 schools of smartsites-fremont-38-wy''s district, Fremont County School District
+      #38 (LEAID 5600960). The LEAID is the one the NCES CCD 2024-25 LEA directory (https://nces.ed.gov/ccd/Data/zip/ccd_lea_029_2425_w_1a_073025.zip,
+      SHA-256 2745169e4bc7cd53…, read 2026-09-27) lists with this website (arapahoeschools.com).'
+    fips: ['56013']
+  page_url: https://www.arapahoeschools.com/
+  data_url: https://www.arapahoeschools.com/api/popup-alerts
+  export_url: null
+  archive_urls:
+  - https://www.arapahoeschools.com/api/popup-alerts
+  - https://www.arapahoeschools.com/
+  poll_minutes: null
+  status: active
+  evidence: 'First-hand check for piece s4d (round 3, second pass), 2026-09-28. The homepage https://www.arapahoeschools.com/
+    (read 2026-09-28T10:28:40Z, title ''Fremont County School District #38 - Home'') loads its alerts
+    from https://www.arapahoeschools.com/api/popup-alerts. Live read 2026-09-28T10:35:40Z: HTTP 200, 32
+    bytes; smartsites-popup-alerts, empty, 0 row(s): nothing up. Found while checking the districts of
+    Idaho''s and Wyoming''s uncovered counties that earlier rounds had not scouted.'
+  list_files: []
+  page_check: null
+  robots:
+  - url: https://www.arapahoeschools.com/
+    checked_at: '2026-09-28T10:43:11Z'
+    state: parsed
+    allowed: true
+    rule: no rule matches
+    crawl_delay: 5.0
+    disallowed_agents: [ahrefsbot, baiduspider, blexbot, mj12bot, semrushbot, yandex]
+    sha256: e8e9fa92b86ef4f758ad1b7a87171b599635d1b16fa1e28fd355b81a183e9c96
+  - url: https://www.arapahoeschools.com/api/popup-alerts
+    checked_at: '2026-09-28T10:43:11Z'
+    state: parsed
+    allowed: true
+    rule: no rule matches
+    crawl_delay: 5.0
+    disallowed_agents: [ahrefsbot, baiduspider, blexbot, mj12bot, semrushbot, yandex]
+    sha256: e8e9fa92b86ef4f758ad1b7a87171b599635d1b16fa1e28fd355b81a183e9c96
+  leaids: ['5600960']
+- id: smartsites-orange-beach-al
+  platform: smartsites
+  call_sign: OBCS
+  name: Orange Beach City Schools (district pop-up alerts)
+  market: Orange Beach (Baldwin County, AL; Mobile-Pensacola market)
+  dma: null
+  states: [AL]
+  counties:
+    basis: district
+    source: 'NCES CCD 2024-25 school directory (pipeline/out/internal/directory/schools.parquet): the
+      counties of the 2 schools of smartsites-orange-beach-al''s district, Orange Beach City Schools (LEAID
+      0103581). The LEAID is the one the NCES CCD 2024-25 LEA directory (https://nces.ed.gov/ccd/Data/zip/ccd_lea_029_2425_w_1a_073025.zip,
+      SHA-256 2745169e4bc7cd53…, read 2026-09-27) lists with this website (orangebeachboe.org).'
+    fips: ['01003']
+  page_url: https://orangebeachboe.org/
+  data_url: https://orangebeachboe.org/api/popup-alerts
+  export_url: null
+  archive_urls:
+  - https://orangebeachboe.org/api/popup-alerts
+  - https://orangebeachboe.org/
+  poll_minutes: null
+  status: active
+  evidence: 'First-hand check for piece s4d (round 4), 2026-09-28. The homepage https://orangebeachboe.org/
+    (its PopUpAlertsComponent script) loads its pop-up alerts from https://orangebeachboe.org/api/popup-alerts.
+    Live read 2026-09-28T14:31:44Z: HTTP 200, 32 bytes; smartsites-popup-alerts, empty, 0 row(s): no alert.
+    The homepage''s title: ''Orange Beach City Schools - Home''. Found by reading the website the NCES
+    LEA directory lists for each district with schools in the Mobile - Pensacola market''s uncovered counties
+    (Mobile, Baldwin, Escambia, Clarke, Washington, Conecuh and Monroe in Alabama; Santa Rosa in Florida).'
+  list_files: []
+  page_check: null
+  robots:
+  - url: https://orangebeachboe.org/
+    checked_at: '2026-09-28T14:34:12Z'
+    state: parsed
+    allowed: true
+    rule: no rule matches
+    crawl_delay: 5.0
+    disallowed_agents: [ahrefsbot, baiduspider, blexbot, mj12bot, semrushbot, yandex]
+    sha256: e8e9fa92b86ef4f758ad1b7a87171b599635d1b16fa1e28fd355b81a183e9c96
+  - url: https://orangebeachboe.org/api/popup-alerts
+    checked_at: '2026-09-28T14:34:12Z'
+    state: parsed
+    allowed: true
+    rule: no rule matches
+    crawl_delay: 5.0
+    disallowed_agents: [ahrefsbot, baiduspider, blexbot, mj12bot, semrushbot, yandex]
+    sha256: e8e9fa92b86ef4f758ad1b7a87171b599635d1b16fa1e28fd355b81a183e9c96
+  leaids: [0103581]
+- id: smartsites-east-muskingum-oh
+  platform: smartsites
+  call_sign: EMLSD
+  name: East Muskingum Local (district pop-up alerts)
+  market: New Concord (Muskingum County, OH)
+  dma: null
+  states: [OH]
+  counties:
+    basis: district
+    source: 'NCES CCD 2024-25 school directory (pipeline/out/internal/directory/schools.parquet): the
+      counties of the 5 schools of smartsites-east-muskingum-oh''s district, East Muskingum Local (LEAID
+      3904883). The LEAID is the one the NCES CCD 2024-25 LEA directory (https://nces.ed.gov/ccd/Data/zip/ccd_lea_029_2425_w_1a_073025.zip,
+      SHA-256 2745169e4bc7cd53…, read 2026-09-27) lists with this website (east-muskingum.k12.oh.us).'
+    fips: ['39119']
+  page_url: https://www.eastmschools.org/
+  data_url: https://www.eastmschools.org/api/popup-alerts
+  export_url: null
+  archive_urls:
+  - https://www.eastmschools.org/api/popup-alerts
+  - https://www.eastmschools.org/
+  poll_minutes: null
+  status: active
+  evidence: 'First-hand check for piece s4d (round 4), 2026-09-28. The homepage https://www.eastmschools.org/
+    (its PopUpAlertsComponent script) loads its pop-up alerts from https://www.eastmschools.org/api/popup-alerts.
+    Live read 2026-09-28T15:19:31Z: HTTP 200, 32 bytes; smartsites-popup-alerts, empty, 0 row(s): no alert.
+    The homepage''s title: ''East Muskingum Local Schools - Home''. Found by reading the website the NCES
+    LEA directory lists for each district with schools in the Zanesville market (Muskingum County), which
+    no working list reached.'
+  list_files: []
+  page_check: null
+  robots:
+  - url: https://www.eastmschools.org/
+    checked_at: '2026-09-28T15:22:25Z'
+    state: parsed
+    allowed: true
+    rule: no rule matches
+    crawl_delay: 5.0
+    disallowed_agents: [ahrefsbot, baiduspider, blexbot, mj12bot, semrushbot, yandex]
+    sha256: e8e9fa92b86ef4f758ad1b7a87171b599635d1b16fa1e28fd355b81a183e9c96
+  - url: https://www.eastmschools.org/api/popup-alerts
+    checked_at: '2026-09-28T15:22:25Z'
+    state: parsed
+    allowed: true
+    rule: no rule matches
+    crawl_delay: 5.0
+    disallowed_agents: [ahrefsbot, baiduspider, blexbot, mj12bot, semrushbot, yandex]
+    sha256: e8e9fa92b86ef4f758ad1b7a87171b599635d1b16fa1e28fd355b81a183e9c96
+  leaids: ['3904883']
+- id: smartsites-hancock-ms
+  platform: smartsites
+  call_sign: HCSD
+  name: Hancock School District (district pop-up alerts)
+  market: Kiln (Hancock County, MS)
+  dma: null
+  states: [MS]
+  counties:
+    basis: district
+    source: 'NCES CCD 2024-25 school directory (pipeline/out/internal/directory/schools.parquet): the
+      counties of the 7 schools of smartsites-hancock-ms''s district, Hancock School District (LEAID 2801740).
+      The LEAID is the one the NCES CCD 2024-25 LEA directory (https://nces.ed.gov/ccd/Data/zip/ccd_lea_029_2425_w_1a_073025.zip,
+      SHA-256 2745169e4bc7cd53…, read 2026-09-27) lists with this website (hancockschools.net).'
+    fips: ['28045']
+  page_url: https://www.hancockschools.net/
+  data_url: https://www.hancockschools.net/api/popup-alerts
+  export_url: null
+  archive_urls:
+  - https://www.hancockschools.net/api/popup-alerts
+  - https://www.hancockschools.net/
+  poll_minutes: null
+  status: active
+  evidence: 'First-hand check for piece s4d (round 4), 2026-09-28. The homepage https://www.hancockschools.net/
+    (its PopUpAlertsComponent script) loads its pop-up alerts from https://www.hancockschools.net/api/popup-alerts.
+    Live read 2026-09-28T15:19:41Z: HTTP 200, 32 bytes; smartsites-popup-alerts, empty, 0 row(s): no alert.
+    The homepage''s title: ''Hancock County School District - Home''. Found by reading the website the
+    NCES LEA directory lists for each district with schools in the Greenwood - Greenville market and the
+    Mississippi coast''s uncovered counties, which no working list reached.'
+  list_files: []
+  page_check: null
+  robots:
+  - url: https://www.hancockschools.net/
+    checked_at: '2026-09-28T15:22:25Z'
+    state: parsed
+    allowed: true
+    rule: no rule matches
+    crawl_delay: 5.0
+    disallowed_agents: [ahrefsbot, baiduspider, blexbot, mj12bot, semrushbot, yandex]
+    sha256: e8e9fa92b86ef4f758ad1b7a87171b599635d1b16fa1e28fd355b81a183e9c96
+  - url: https://www.hancockschools.net/api/popup-alerts
+    checked_at: '2026-09-28T15:22:25Z'
+    state: parsed
+    allowed: true
+    rule: no rule matches
+    crawl_delay: 5.0
+    disallowed_agents: [ahrefsbot, baiduspider, blexbot, mj12bot, semrushbot, yandex]
+    sha256: e8e9fa92b86ef4f758ad1b7a87171b599635d1b16fa1e28fd355b81a183e9c96
+  leaids: ['2801740']
+- id: smartsites-alvord-ca
+  platform: smartsites
+  call_sign: AUSD
+  name: Alvord Unified (district pop-up alerts)
+  market: Corona (Riverside County, CA)
+  dma: null
+  states: [CA]
+  counties:
+    basis: district
+    source: 'NCES CCD 2024-25 school directory (pipeline/out/internal/directory/schools.parquet): the
+      counties of the 26 schools of smartsites-alvord-ca''s district, Alvord Unified (LEAID 0602430).
+      The LEAID is the one the NCES CCD 2024-25 LEA directory (https://nces.ed.gov/ccd/Data/zip/ccd_lea_029_2425_w_1a_073025.zip,
+      SHA-256 2745169e4bc7cd53…, read 2026-09-27) lists with this website (alvordschools.org).'
+    fips: ['06065']
+  page_url: https://www.alvordschools.org/
+  data_url: https://www.alvordschools.org/api/popup-alerts
+  export_url: null
+  archive_urls:
+  - https://www.alvordschools.org/api/popup-alerts
+  - https://www.alvordschools.org/
+  poll_minutes: null
+  status: active
+  evidence: 'First-hand check for piece s4d (round 4), 2026-09-28. The homepage https://www.alvordschools.org/
+    (its PopUpAlertsComponent script) loads its pop-up alerts from https://www.alvordschools.org/api/popup-alerts.
+    Live read 2026-09-28T15:20:17Z: HTTP 200, 32 bytes; smartsites-popup-alerts, empty, 0 row(s): no alert.
+    The homepage''s title: ''Alvord Unified School District - Home''. Found by reading the website the
+    NCES LEA directory lists for each district with schools in the Chico - Redding and Palm Springs markets
+    and Del Norte and Humboldt counties, which no working list reached.'
+  list_files: []
+  page_check: null
+  robots:
+  - url: https://www.alvordschools.org/
+    checked_at: '2026-09-28T15:22:24Z'
+    state: parsed
+    allowed: true
+    rule: no rule matches
+    crawl_delay: 5.0
+    disallowed_agents: [ahrefsbot, baiduspider, blexbot, mj12bot, semrushbot, yandex]
+    sha256: e8e9fa92b86ef4f758ad1b7a87171b599635d1b16fa1e28fd355b81a183e9c96
+  - url: https://www.alvordschools.org/api/popup-alerts
+    checked_at: '2026-09-28T15:22:24Z'
+    state: parsed
+    allowed: true
+    rule: no rule matches
+    crawl_delay: 5.0
+    disallowed_agents: [ahrefsbot, baiduspider, blexbot, mj12bot, semrushbot, yandex]
+    sha256: e8e9fa92b86ef4f758ad1b7a87171b599635d1b16fa1e28fd355b81a183e9c96
+  leaids: ['0602430']
+- id: smartsites-coachella-valley-ca
+  platform: smartsites
+  call_sign: CVUSD
+  name: Coachella Valley Unified (district pop-up alerts)
+  market: Thermal, CA (schools in Riverside and Imperial counties)
+  dma: null
+  states: [CA]
+  counties:
+    basis: district
+    source: 'NCES CCD 2024-25 school directory (pipeline/out/internal/directory/schools.parquet): the
+      counties of the 21 schools of smartsites-coachella-valley-ca''s district, Coachella Valley Unified
+      (LEAID 0609070). The LEAID is the one the NCES CCD 2024-25 LEA directory (https://nces.ed.gov/ccd/Data/zip/ccd_lea_029_2425_w_1a_073025.zip,
+      SHA-256 2745169e4bc7cd53…, read 2026-09-27) lists with this website (cvusd.us).'
+    fips: ['06025', '06065']
+  page_url: https://www.cvusd.us/
+  data_url: https://www.cvusd.us/api/popup-alerts
+  export_url: null
+  archive_urls:
+  - https://www.cvusd.us/api/popup-alerts
+  - https://www.cvusd.us/
+  poll_minutes: null
+  status: active
+  evidence: 'First-hand check for piece s4d (round 4), 2026-09-28. The homepage https://www.cvusd.us/
+    (its PopUpAlertsComponent script) loads its pop-up alerts from https://www.cvusd.us/api/popup-alerts.
+    Live read 2026-09-28T15:20:32Z: HTTP 200, 536 bytes; smartsites-popup-alerts, populated, 1 row(s):
+    ''MealViewer To Go App''. The homepage''s title: ''Coachella Valley USD - Home''. Found by reading
+    the website the NCES LEA directory lists for each district with schools in the Chico - Redding and
+    Palm Springs markets and Del Norte and Humboldt counties, which no working list reached.'
+  list_files: []
+  page_check: null
+  robots:
+  - url: https://www.cvusd.us/
+    checked_at: '2026-09-28T15:22:24Z'
+    state: parsed
+    allowed: true
+    rule: no rule matches
+    crawl_delay: 5.0
+    disallowed_agents: [ahrefsbot, baiduspider, blexbot, mj12bot, semrushbot, yandex]
+    sha256: e8e9fa92b86ef4f758ad1b7a87171b599635d1b16fa1e28fd355b81a183e9c96
+  - url: https://www.cvusd.us/api/popup-alerts
+    checked_at: '2026-09-28T15:22:24Z'
+    state: parsed
+    allowed: true
+    rule: no rule matches
+    crawl_delay: 5.0
+    disallowed_agents: [ahrefsbot, baiduspider, blexbot, mj12bot, semrushbot, yandex]
+    sha256: e8e9fa92b86ef4f758ad1b7a87171b599635d1b16fa1e28fd355b81a183e9c96
+  leaids: [0609070]

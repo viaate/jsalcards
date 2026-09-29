@@ -1,0 +1,103 @@
+# Station registry for one platform. Loaded with every other file in this folder
+# by snowlight.sources.stations.registry; see its docstring for the fields.
+# `snowlight stations robots --update` rewrites the robots blocks in place.
+platform:
+  id: npg
+  name: News-Press & Gazette stations' closings files (KQ2, St. Joseph)
+  operator: News-Press & Gazette Co. (KQTV, KQ2)
+  adapter: npg
+  poll_minutes: 10
+  terms:
+    automated_access: forbidden
+    summary: 'KQ2''s Terms of Service (linked from the closings page''s footer; NPG''s, dated 2026-02-10
+      in its address), read 2026-09-28: ''You will not manipulate this Website by any means, including
+      but not limited to the use of bots, botnets, automated scripts, or other automated or electronic
+      means'', and use only for private, non-commercial purposes. The project owner decided on 2026-09-25
+      to read closings lists anyway for this non-commercial project (owner_decision below); the terms
+      stay recorded here. ftp2.kq2.com has no robots.txt (404: unrestricted).'
+    evidence:
+    - url: https://www.kq2.com/about-us/2026/02/10/terms-of-service/
+      read_at: '2026-09-28T14:59:20Z'
+      sha256: 88c26a18f12783ac1da5127dfe72aecd8c39c9ae9d5ceb945b5805c9c2a03467
+      excerpt:
+      - You will not manipulate this Website by any means, including but not limited to the use of bots,
+        botnets, automated scripts, or other automated or electronic means.
+      - You will use this Website only for private, non-commercial purposes.
+    permission: null
+    owner_decision:
+      decided_by: the project owner (Snowlight)
+      decided_on: '2026-09-25'
+      reference: 'Stated in the build instructions for the station adapters (piece s4d, round 4): "Terms
+        of use that forbid automated access do not exclude a station: the project owner decided on 2026-09-25
+        to read them for this non-commercial project, so record each station''s terms internally in the
+        registry and read it anyway." Relayed to the pipeline''s builder by the project''s build workflow;
+        to revoke it, remove this block and live polling of this platform stops.'
+      scope: 'Live reads of KQ2''s public closings list (the station page and the file it frames) for
+        Snowlight, a non-commercial project, although the terms above forbid automated means. robots.txt
+        is read and its verdict recorded for every URL requested. Unchanged by it: the User-Agent names
+        the repository (never a browser string), only the closings page or file is requested (no crawling),
+        requests are paced per host with conditional requests and backoff on 429 and 5xx answers, and
+        a station that blocks the project (a 403, or a bot challenge) is not worked around.'
+  notes: 'Found for piece s4d in round 4 (2026-09-28) while checking the St. Joseph, MO - KS market, which
+    no registered source reached (Buchanan, Nodaway, Andrew, DeKalb, Holt and Worth counties in Missouri,
+    Doniphan in Kansas: 101.5 uncovered closure-weighted schools in Missouri). KQ2''s homepage links ''Closings
+    and Delays'' (https://www.kq2.com/weather/closings/), which frames https://ftp2.kq2.com/closings.html,
+    a NewsTicker-family export its closings system writes (schools post through schoolclosings.org''s
+    KNPN login). News-Press & Gazette''s other stations were checked the same day: ftp2.<site> does not
+    resolve for KIFI, KESQ, KION, KVIA, KRDO, KTVZ, KEYT or KMIZ, and their /weather/closings/ pages answer
+    404 (KMIZ''s abc17news.com keeps a news category instead). The live poller reads the ftp2 file.'
+  shared_paths: []
+stations:
+- id: npg-kqtv
+  platform: npg
+  call_sign: KQTV
+  name: KQ2 (kq2.com)
+  market: St. Joseph, MO
+  dma: St. Joseph, MO - KS DMA
+  states: [KS, MO]
+  counties:
+    basis: dma
+    source: 'DMA county list: alex-patton/US-TVDMA-BY-COUNTY usa-tvdma-county.csv at commit 7f254b8c1843c62ec976a71c40d366d45f6f29cd
+      (sha256 2e2cd00265a8d704...), names resolved to FIPS with the Census 2025 county Gazetteer; Connecticut
+      via the Census county-to-town crosswalk (snowlight.sources.stations.dma); market ''St. Joseph, MO
+      - KS DMA'''
+    fips: ['20043', '29003', '29021', '29063', '29087', '29147', '29227']
+  page_url: https://www.kq2.com/weather/closings/
+  data_url: https://ftp2.kq2.com/closings.html
+  export_url: null
+  archive_urls:
+  - https://ftp2.kq2.com/closings.html
+  - https://www.kq2.com/weather/closings/
+  - http://ftp2.kq2.com/closings.html
+  poll_minutes: null
+  status: active
+  evidence: 'First-hand check for piece s4d (round 4), 2026-09-28. The homepage https://www.kq2.com/ (read
+    2026-09-28T14:49:39Z, HTTP 200, 407,774 bytes) links ''Closings and Delays''. Live read of https://www.kq2.com/weather/closings/
+    2026-09-28T14:50:03Z: HTTP 200, 355,912 bytes; npg-closings-page, deferred, framing https://ftp2.kq2.com/closings.html.
+    Live read of https://ftp2.kq2.com/closings.html 2026-09-28T14:50:34Z: HTTP 200, 626 bytes, Last-Modified
+    Tue, 22 Sep 2026 15:10:03 GMT; npg-no-closings, empty: ''UPDATED TUESDAY, SEP 22 AT 10:10 AM'', ''No
+    currently active closings or delays to report.'' Written this season (not stale). Archived captures
+    (archive-captures runs 36445058527 and 36470567011): the file of 2020-04-08 13:45 UTC holds 63 postings
+    (churches, businesses and organizations in the pandemic), that of 2021-01-28 14:03 UTC one school''s
+    delay (''NORTH DAVIESS R-III'', ''Classes delayed 2 hours''), those of 2021-10-27 and 2023-12-08 one
+    and two postings (newsticker-html, populated): the list is proven; its other captures (2019-2024)
+    hold the same empty sentence. Counties: the St. Joseph DMA.'
+  list_files: []
+  page_check: null
+  robots:
+  - url: https://www.kq2.com/weather/closings/
+    checked_at: '2026-09-28T19:38:20Z'
+    state: parsed
+    allowed: true
+    rule: no rule matches
+    crawl_delay: null
+    disallowed_agents: []
+    sha256: fff85806aa5f2cad9fb17eaf184cd654d76d8d6839f5b06c8a0b63d5cc7dbe17
+  - url: https://ftp2.kq2.com/closings.html
+    checked_at: '2026-09-28T19:38:21Z'
+    state: unavailable
+    allowed: true
+    rule: 'robots.txt unavailable (4xx): unrestricted'
+    crawl_delay: null
+    disallowed_agents: []
+    sha256: null

@@ -1,0 +1,452 @@
+# Station registry for one platform. Loaded with every other file in this folder
+# by snowlight.sources.stations.registry; see its docstring for the fields.
+# `snowlight stations robots --update` rewrites the robots blocks in place.
+platform:
+  id: cowles
+  name: Cowles Montana Media school closures ticker (KULR-8 and NonStop Local Montana)
+  operator: Cowles Montana Media Company (KULR, KFBB/KHBB, KTMF, KWYB)
+  adapter: cowles
+  poll_minutes: 10
+  terms:
+    automated_access: permitted
+    summary: The terms of both Cowles sites (the TownNews BLOX template at https://www.montanarightnow.com/site/terms.html
+      and https://www.kulr8.com/site/terms.html, read 2026-09-27) limit the material to 'private, non-commercial
+      use' and forbid bots that scrape or copy content 'to train an LLM or other artificial intelligence'.
+      They have no clause against automated reading as such. Snowlight is non-commercial and reads only
+      the closures ticker, to show each school's status; nothing read is used to train a model. The ticker
+      itself is a public-read S3 object with no terms of its own.
+    evidence:
+    - url: https://www.montanarightnow.com/site/terms.html
+      read_at: '2026-09-27T11:21:22Z'
+      sha256: 45fdac38a93474867cb32871ff2b508922ea48fccc38f8fb3f290c6653e6c577
+      excerpt:
+      - The material on the Web site is provided for private, non-commercial use only.
+      - Without limiting the generality of the foregoing you agree that you will not use or cause any
+        bot or other automated function to scrape or “memorize” or copy any of the Website content to
+        train an LLM or other artificial intelligence.
+    - url: https://www.kulr8.com/site/terms.html
+      read_at: '2026-09-27T11:24:39Z'
+      sha256: e37a200e8c94ed4c829fd9e4ef175ab1122a7206ec92315f61e90a540921612f
+      excerpt:
+      - The material on the Web site is provided for private, non-commercial use only.
+      - Without limiting the generality of the foregoing you agree that you will not use or cause any
+        bot or other automated function to scrape or “memorize” or copy any of the Website content to
+        train an LLM or other artificial intelligence.
+    permission: null
+    owner_decision: null
+  notes: 'Found for piece s4d (the gap states) on 2026-09-27: Montana had no working source (9% of its
+    schools covered, the largest gap in the closure-weighted ranking). KULR-8''s ''Montana School Closures''
+    page (https://www.kulr8.com/schoolclosures/) and NonStop Local Montana''s ''School Closures Around
+    Montana'' page (https://www.montanarightnow.com/schoolclosures/, the site of KFBB/KHBB Great Falls-Helena,
+    KTMF Missoula and KWYB Butte-Bozeman; kfbb.com and abcfoxmontana.com redirect there) both frame one
+    file the company''s ticker system writes to S3, https://company-wide-tickers.s3.us-west-2.amazonaws.com/KULR_School_Results/closings.html.
+    The live poller reads the file. One station per call sign, each counting its own market''s counties
+    (the list is the closings page of every one of them); all five read the same file. NBC Montana (KECI,
+    KCFW, KTVM, also Cowles) shows no closings list (nbcmontana.com, checked 2026-09-26 and 2026-09-27).
+    The ticker''s rows name no county, so the county lists rest on the stations'' markets. The ticker
+    is in use: NonStop Local Montana''s article ''Montana School Closures for March 12, 2026'' (https://www.montanarightnow.com/montana-school-closures-for-march-12-2026/article_e17217db-8084-456c-b3f5-f2bbe77bded5.html,
+    published 2026-03-11T17:38-06:00; archived 20260313115733 in the listing of run 36315417698; read
+    live 2026-09-27T15:38:40Z, sha256 1f399b70f147390f...) says ''The following schools have reported
+    they will be closed or delayed on March 12, 2026:'' over an iframe of this same S3 file. That frames
+    the ticker on a storm day, but it is not proof of a populated list: the article holds no rows of its
+    own and the S3 file itself has no archived capture, so the five stations stay unproven until a live
+    read (or a capture) shows a row.'
+  shared_paths: []
+stations:
+- id: cowles-kulr
+  platform: cowles
+  call_sign: KULR
+  name: KULR-8 (kulr8.com)
+  market: Billings
+  dma: Billings, MT - ID DMA
+  states: [MT, WY]
+  counties:
+    basis: dma
+    source: 'DMA county list: alex-patton/US-TVDMA-BY-COUNTY usa-tvdma-county.csv at commit 7f254b8c1843c62ec976a71c40d366d45f6f29cd
+      (sha256 2e2cd00265a8d704...), names resolved to FIPS with the Census 2025 county Gazetteer; Connecticut
+      via the Census county-to-town crosswalk (snowlight.sources.stations.dma); market ''Billings, MT
+      - ID DMA'''
+    fips: ['30003', '30009', '30017', '30033', '30037', '30059', '30065', '30067', '30069', '30075', '30087',
+      '30095', '30097', '30103', '30107', '30111', '56003', '56029']
+  page_url: https://www.kulr8.com/schoolclosures/
+  data_url: https://company-wide-tickers.s3.us-west-2.amazonaws.com/KULR_School_Results/closings.html
+  export_url: null
+  archive_urls:
+  - https://www.kulr8.com/schoolclosures/
+  - https://company-wide-tickers.s3.us-west-2.amazonaws.com/KULR_School_Results/closings.html
+  poll_minutes: null
+  status: active
+  evidence: 'First-hand check for piece s4d, 2026-09-27. Live read of https://www.kulr8.com/schoolclosures/
+    2026-09-27T11:25:52Z: HTTP 200, 252287 bytes; the page ''Montana School Closures'' frames the ticker
+    (cowles-page, deferred). Live read of https://company-wide-tickers.s3.us-west-2.amazonaws.com/KULR_School_Results/closings.html
+    2026-09-27T11:25:46Z: HTTP 200, 229 bytes, Last-Modified Thu, 16 Apr 2026 15:18:17 GMT; closings-grid,
+    empty (''Closings Last Updated at 9:13am on 4/16/2026'', ''No Closings have been reported at this
+    time'').'
+  list_files:
+  - url: https://company-wide-tickers.s3.us-west-2.amazonaws.com/KULR_School_Results/closings.html
+    loaded_by: frame
+    seen: 'The station''s closures page (https://www.kulr8.com/schoolclosures/) frames it: <iframe src="https://company-wide-tickers.s3.us-west-2.amazonaws.com/KULR_School_Results/closings.html">
+      (live read 2026-09-27).'
+  page_check: null
+  robots:
+  - url: https://www.kulr8.com/schoolclosures/
+    checked_at: '2026-09-27T14:31:55Z'
+    state: parsed
+    allowed: true
+    rule: no rule matches
+    crawl_delay: null
+    disallowed_agents:
+    - ai2bot
+    - ai2bot-dolma
+    - anthropic-ai
+    - applebot-extended
+    - bytespider
+    - ccbot
+    - chatgpt-user
+    - claudebot
+    - cohere-ai
+    - diffbot
+    - facebookbot
+    - friendlycrawler
+    - google-extended
+    - gptbot
+    - iaskspider/2.0
+    - icc-crawler
+    - imagesiftbot
+    - img2dataset
+    - meta-externalagent
+    - omgili
+    - omgilibot
+    - perplexitybot
+    - petalbot
+    - scrapy
+    - timpibot
+    - velenpublicwebcrawler
+    - webzio-extended
+    - youbot
+    sha256: 2bc4117c6ee49b8e412292b9856cf7c8f8726c38aa6f9c62358212c962a3bd4c
+  - url: https://company-wide-tickers.s3.us-west-2.amazonaws.com/KULR_School_Results/closings.html
+    checked_at: '2026-09-27T14:31:55Z'
+    state: unavailable
+    allowed: true
+    rule: 'robots.txt unavailable (4xx): unrestricted'
+    crawl_delay: null
+    disallowed_agents: []
+    sha256: null
+- id: cowles-kfbb
+  platform: cowles
+  call_sign: KFBB
+  name: KFBB (NonStop Local Montana, montanarightnow.com)
+  market: Great Falls
+  dma: Great Falls, MT DMA
+  states: [MT]
+  counties:
+    basis: dma
+    source: 'DMA county list: alex-patton/US-TVDMA-BY-COUNTY usa-tvdma-county.csv at commit 7f254b8c1843c62ec976a71c40d366d45f6f29cd
+      (sha256 2e2cd00265a8d704...), names resolved to FIPS with the Census 2025 county Gazetteer; Connecticut
+      via the Census county-to-town crosswalk (snowlight.sources.stations.dma); market ''Great Falls,
+      MT DMA'''
+    fips: ['30005', '30013', '30015', '30027', '30035', '30041', '30045', '30051', '30071', '30073', '30099',
+      '30101', '30105']
+  page_url: https://www.montanarightnow.com/schoolclosures/
+  data_url: https://company-wide-tickers.s3.us-west-2.amazonaws.com/KULR_School_Results/closings.html
+  export_url: null
+  archive_urls:
+  - https://www.montanarightnow.com/schoolclosures/
+  - https://company-wide-tickers.s3.us-west-2.amazonaws.com/KULR_School_Results/closings.html
+  poll_minutes: null
+  status: active
+  evidence: 'First-hand check for piece s4d, 2026-09-27. https://www.kfbb.com/ redirects to https://www.montanarightnow.com/great-falls/.
+    Live read of https://www.montanarightnow.com/schoolclosures/ 2026-09-27T11:25:57Z: HTTP 200, 219754
+    bytes; the page ''School Closures Around Montana'' frames the ticker (cowles-page, deferred). Live
+    read of https://company-wide-tickers.s3.us-west-2.amazonaws.com/KULR_School_Results/closings.html
+    2026-09-27T11:25:46Z: HTTP 200, 229 bytes, Last-Modified Thu, 16 Apr 2026 15:18:17 GMT; closings-grid,
+    empty (''Closings Last Updated at 9:13am on 4/16/2026'', ''No Closings have been reported at this
+    time'').'
+  list_files:
+  - url: https://company-wide-tickers.s3.us-west-2.amazonaws.com/KULR_School_Results/closings.html
+    loaded_by: frame
+    seen: 'The station''s closures page (https://www.montanarightnow.com/schoolclosures/) frames it: <iframe
+      src="https://company-wide-tickers.s3.us-west-2.amazonaws.com/KULR_School_Results/closings.html">
+      (live read 2026-09-27).'
+  page_check: null
+  robots:
+  - url: https://www.montanarightnow.com/schoolclosures/
+    checked_at: '2026-09-27T14:31:54Z'
+    state: parsed
+    allowed: true
+    rule: no rule matches
+    crawl_delay: null
+    disallowed_agents:
+    - ai2bot
+    - ai2bot-dolma
+    - anthropic-ai
+    - applebot-extended
+    - bytespider
+    - ccbot
+    - chatgpt-user
+    - claudebot
+    - cohere-ai
+    - diffbot
+    - facebookbot
+    - friendlycrawler
+    - google-extended
+    - gptbot
+    - iaskspider/2.0
+    - icc-crawler
+    - imagesiftbot
+    - img2dataset
+    - meta-externalagent
+    - omgili
+    - omgilibot
+    - petalbot
+    - scrapy
+    - timpibot
+    - velenpublicwebcrawler
+    - webzio-extended
+    - youbot
+    sha256: f7a57fa4cf69c69ef8be0a0082512b85d1016d475b63ef258f2204ce5d2bd4d5
+  - url: https://company-wide-tickers.s3.us-west-2.amazonaws.com/KULR_School_Results/closings.html
+    checked_at: '2026-09-27T14:31:55Z'
+    state: unavailable
+    allowed: true
+    rule: 'robots.txt unavailable (4xx): unrestricted'
+    crawl_delay: null
+    disallowed_agents: []
+    sha256: null
+- id: cowles-khbb
+  platform: cowles
+  call_sign: KHBB-LD
+  name: KHBB (NonStop Local Montana, montanarightnow.com)
+  market: Helena
+  dma: Helena, MT DMA
+  states: [MT]
+  counties:
+    basis: dma
+    source: 'DMA county list: alex-patton/US-TVDMA-BY-COUNTY usa-tvdma-county.csv at commit 7f254b8c1843c62ec976a71c40d366d45f6f29cd
+      (sha256 2e2cd00265a8d704...), names resolved to FIPS with the Census 2025 county Gazetteer; Connecticut
+      via the Census county-to-town crosswalk (snowlight.sources.stations.dma); market ''Helena, MT DMA'''
+    fips: ['30049']
+  page_url: https://www.montanarightnow.com/schoolclosures/
+  data_url: https://company-wide-tickers.s3.us-west-2.amazonaws.com/KULR_School_Results/closings.html
+  export_url: null
+  archive_urls:
+  - https://www.montanarightnow.com/schoolclosures/
+  - https://company-wide-tickers.s3.us-west-2.amazonaws.com/KULR_School_Results/closings.html
+  poll_minutes: null
+  status: active
+  evidence: 'First-hand check for piece s4d, 2026-09-27. KHBB is KFBB''s Helena station on the same site
+    (montanarightnow.com lists its KFBB/KHBB EEO reports). Live read of https://www.montanarightnow.com/schoolclosures/
+    2026-09-27T11:25:57Z: HTTP 200, 219754 bytes; frames the ticker (cowles-page, deferred). Live read
+    of https://company-wide-tickers.s3.us-west-2.amazonaws.com/KULR_School_Results/closings.html 2026-09-27T11:25:46Z:
+    HTTP 200, 229 bytes, Last-Modified Thu, 16 Apr 2026 15:18:17 GMT; closings-grid, empty (''Closings
+    Last Updated at 9:13am on 4/16/2026'', ''No Closings have been reported at this time'').'
+  list_files:
+  - url: https://company-wide-tickers.s3.us-west-2.amazonaws.com/KULR_School_Results/closings.html
+    loaded_by: frame
+    seen: 'The station''s closures page (https://www.montanarightnow.com/schoolclosures/) frames it: <iframe
+      src="https://company-wide-tickers.s3.us-west-2.amazonaws.com/KULR_School_Results/closings.html">
+      (live read 2026-09-27).'
+  page_check: null
+  robots:
+  - url: https://www.montanarightnow.com/schoolclosures/
+    checked_at: '2026-09-27T14:31:55Z'
+    state: parsed
+    allowed: true
+    rule: no rule matches
+    crawl_delay: null
+    disallowed_agents:
+    - ai2bot
+    - ai2bot-dolma
+    - anthropic-ai
+    - applebot-extended
+    - bytespider
+    - ccbot
+    - chatgpt-user
+    - claudebot
+    - cohere-ai
+    - diffbot
+    - facebookbot
+    - friendlycrawler
+    - google-extended
+    - gptbot
+    - iaskspider/2.0
+    - icc-crawler
+    - imagesiftbot
+    - img2dataset
+    - meta-externalagent
+    - omgili
+    - omgilibot
+    - petalbot
+    - scrapy
+    - timpibot
+    - velenpublicwebcrawler
+    - webzio-extended
+    - youbot
+    sha256: f7a57fa4cf69c69ef8be0a0082512b85d1016d475b63ef258f2204ce5d2bd4d5
+  - url: https://company-wide-tickers.s3.us-west-2.amazonaws.com/KULR_School_Results/closings.html
+    checked_at: '2026-09-27T14:31:55Z'
+    state: unavailable
+    allowed: true
+    rule: 'robots.txt unavailable (4xx): unrestricted'
+    crawl_delay: null
+    disallowed_agents: []
+    sha256: null
+- id: cowles-ktmf
+  platform: cowles
+  call_sign: KTMF
+  name: KTMF (NonStop Local Montana, montanarightnow.com)
+  market: Missoula
+  dma: Missoula, MT DMA
+  states: [MT]
+  counties:
+    basis: dma
+    source: 'DMA county list: alex-patton/US-TVDMA-BY-COUNTY usa-tvdma-county.csv at commit 7f254b8c1843c62ec976a71c40d366d45f6f29cd
+      (sha256 2e2cd00265a8d704...), names resolved to FIPS with the Census 2025 county Gazetteer; Connecticut
+      via the Census county-to-town crosswalk (snowlight.sources.stations.dma); market ''Missoula, MT
+      DMA'''
+    fips: ['30029', '30039', '30047', '30061', '30063', '30081', '30089']
+  page_url: https://www.montanarightnow.com/schoolclosures/
+  data_url: https://company-wide-tickers.s3.us-west-2.amazonaws.com/KULR_School_Results/closings.html
+  export_url: null
+  archive_urls:
+  - https://www.montanarightnow.com/schoolclosures/
+  - https://company-wide-tickers.s3.us-west-2.amazonaws.com/KULR_School_Results/closings.html
+  poll_minutes: null
+  status: active
+  evidence: 'First-hand check for piece s4d, 2026-09-27. https://www.abcfoxmontana.com/ redirects to https://www.montanarightnow.com/;
+    the site carries KTMF''s public file and EEO reports and its stream (cowles-ktmf). Live read of https://www.montanarightnow.com/schoolclosures/
+    2026-09-27T11:25:57Z: HTTP 200, 219754 bytes; frames the ticker (cowles-page, deferred). Live read
+    of https://company-wide-tickers.s3.us-west-2.amazonaws.com/KULR_School_Results/closings.html 2026-09-27T11:25:46Z:
+    HTTP 200, 229 bytes, Last-Modified Thu, 16 Apr 2026 15:18:17 GMT; closings-grid, empty (''Closings
+    Last Updated at 9:13am on 4/16/2026'', ''No Closings have been reported at this time'').'
+  list_files:
+  - url: https://company-wide-tickers.s3.us-west-2.amazonaws.com/KULR_School_Results/closings.html
+    loaded_by: frame
+    seen: 'The station''s closures page (https://www.montanarightnow.com/schoolclosures/) frames it: <iframe
+      src="https://company-wide-tickers.s3.us-west-2.amazonaws.com/KULR_School_Results/closings.html">
+      (live read 2026-09-27).'
+  page_check: null
+  robots:
+  - url: https://www.montanarightnow.com/schoolclosures/
+    checked_at: '2026-09-27T14:31:55Z'
+    state: parsed
+    allowed: true
+    rule: no rule matches
+    crawl_delay: null
+    disallowed_agents:
+    - ai2bot
+    - ai2bot-dolma
+    - anthropic-ai
+    - applebot-extended
+    - bytespider
+    - ccbot
+    - chatgpt-user
+    - claudebot
+    - cohere-ai
+    - diffbot
+    - facebookbot
+    - friendlycrawler
+    - google-extended
+    - gptbot
+    - iaskspider/2.0
+    - icc-crawler
+    - imagesiftbot
+    - img2dataset
+    - meta-externalagent
+    - omgili
+    - omgilibot
+    - petalbot
+    - scrapy
+    - timpibot
+    - velenpublicwebcrawler
+    - webzio-extended
+    - youbot
+    sha256: f7a57fa4cf69c69ef8be0a0082512b85d1016d475b63ef258f2204ce5d2bd4d5
+  - url: https://company-wide-tickers.s3.us-west-2.amazonaws.com/KULR_School_Results/closings.html
+    checked_at: '2026-09-27T14:31:55Z'
+    state: unavailable
+    allowed: true
+    rule: 'robots.txt unavailable (4xx): unrestricted'
+    crawl_delay: null
+    disallowed_agents: []
+    sha256: null
+- id: cowles-kwyb
+  platform: cowles
+  call_sign: KWYB
+  name: KWYB (NonStop Local Montana, montanarightnow.com)
+  market: Butte - Bozeman
+  dma: Butte - Bozeman, MT DMA
+  states: [MT]
+  counties:
+    basis: dma
+    source: 'DMA county list: alex-patton/US-TVDMA-BY-COUNTY usa-tvdma-county.csv at commit 7f254b8c1843c62ec976a71c40d366d45f6f29cd
+      (sha256 2e2cd00265a8d704...), names resolved to FIPS with the Census 2025 county Gazetteer; Connecticut
+      via the Census county-to-town crosswalk (snowlight.sources.stations.dma); market ''Butte - Bozeman,
+      MT DMA'''
+    fips: ['30001', '30007', '30023', '30031', '30043', '30057', '30077', '30093']
+  page_url: https://www.montanarightnow.com/schoolclosures/
+  data_url: https://company-wide-tickers.s3.us-west-2.amazonaws.com/KULR_School_Results/closings.html
+  export_url: null
+  archive_urls:
+  - https://www.montanarightnow.com/schoolclosures/
+  - https://company-wide-tickers.s3.us-west-2.amazonaws.com/KULR_School_Results/closings.html
+  poll_minutes: null
+  status: active
+  evidence: 'First-hand check for piece s4d, 2026-09-27. montanarightnow.com carries KWYB''s public file
+    and EEO reports. Live read of https://www.montanarightnow.com/schoolclosures/ 2026-09-27T11:25:57Z:
+    HTTP 200, 219754 bytes; frames the ticker (cowles-page, deferred). Live read of https://company-wide-tickers.s3.us-west-2.amazonaws.com/KULR_School_Results/closings.html
+    2026-09-27T11:25:46Z: HTTP 200, 229 bytes, Last-Modified Thu, 16 Apr 2026 15:18:17 GMT; closings-grid,
+    empty (''Closings Last Updated at 9:13am on 4/16/2026'', ''No Closings have been reported at this
+    time'').'
+  list_files:
+  - url: https://company-wide-tickers.s3.us-west-2.amazonaws.com/KULR_School_Results/closings.html
+    loaded_by: frame
+    seen: 'The station''s closures page (https://www.montanarightnow.com/schoolclosures/) frames it: <iframe
+      src="https://company-wide-tickers.s3.us-west-2.amazonaws.com/KULR_School_Results/closings.html">
+      (live read 2026-09-27).'
+  page_check: null
+  robots:
+  - url: https://www.montanarightnow.com/schoolclosures/
+    checked_at: '2026-09-27T14:31:55Z'
+    state: parsed
+    allowed: true
+    rule: no rule matches
+    crawl_delay: null
+    disallowed_agents:
+    - ai2bot
+    - ai2bot-dolma
+    - anthropic-ai
+    - applebot-extended
+    - bytespider
+    - ccbot
+    - chatgpt-user
+    - claudebot
+    - cohere-ai
+    - diffbot
+    - facebookbot
+    - friendlycrawler
+    - google-extended
+    - gptbot
+    - iaskspider/2.0
+    - icc-crawler
+    - imagesiftbot
+    - img2dataset
+    - meta-externalagent
+    - omgili
+    - omgilibot
+    - petalbot
+    - scrapy
+    - timpibot
+    - velenpublicwebcrawler
+    - webzio-extended
+    - youbot
+    sha256: f7a57fa4cf69c69ef8be0a0082512b85d1016d475b63ef258f2204ce5d2bd4d5
+  - url: https://company-wide-tickers.s3.us-west-2.amazonaws.com/KULR_School_Results/closings.html
+    checked_at: '2026-09-27T14:31:55Z'
+    state: unavailable
+    allowed: true
+    rule: 'robots.txt unavailable (4xx): unrestricted'
+    crawl_delay: null
+    disallowed_agents: []
+    sha256: null

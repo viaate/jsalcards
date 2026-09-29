@@ -1,0 +1,117 @@
+# Station registry for one platform. Loaded with every other file in this folder
+# by snowlight.sources.stations.registry; see its docstring for the fields.
+# `snowlight stations robots --update` rewrites the robots blocks in place.
+platform:
+  id: alsde
+  name: 'Alabama State Department of Education: school closures and delays'
+  operator: Alabama State Department of Education (ALSDE)
+  adapter: alsde
+  poll_minutes: 15
+  terms:
+    automated_access: permitted
+    summary: 'The ALSDE''s Terms of Use (linked from the Weather Closure List page''s footer), read 2026-09-28:
+      the site is ''a state government computer system, provided as a public service. The general public
+      may use this system to review and retrieve publicly-available government information.'' It forbids
+      reproducing or distributing the Department''s materials (images) without permission and uploading
+      or changing information; nothing about reading with software. The site publishes nothing it copies:
+      it reads each report''s school and status. schoolnotification.alsde.edu has no robots.txt (404:
+      unrestricted).'
+    evidence:
+    - url: https://www.alabamaachieves.org/terms-of-use/
+      read_at: '2026-09-28T14:44:56Z'
+      sha256: 61a58020007b2579560171230005c74f1c57f03c783dc9298fd519fdc75349a0
+      excerpt:
+      - This is a state government computer system, provided as a public service. The general public may
+        use this system to review and retrieve publicly-available government information.
+      - Reproduction and distribution of any of these materials without written permission of the Department
+        is prohibited.
+      - (no clause on robots, spiders, scraping, crawling or automated access was found in the page's
+        text)
+    permission: null
+    owner_decision: null
+  notes: 'Found for piece s4d in round 4 (2026-09-28) while scouting the Mobile - Pensacola market''s
+    uncovered counties: the ALSDE homepage (https://www.alabamaachieves.org/, read 2026-09-28T14:41:17Z)
+    links ''Weather Closure List'' (https://www.alabamaachieves.org/weather-closure-list/), which frames
+    the statewide ''School Closures/Delays'' list at https://schoolnotification.alsde.edu/SchoolClosuresPublic.aspx
+    (an ASP.NET page; its DevExpress grid is rendered on the server with every report it shows). Alabama''s
+    public school systems report their closings, delays and early dismissals there (the columns Date,
+    System, School(s), Type of Closure, Opening or Closing Time, Reason, activities cancelled, Superintendent
+    Comments, Modified). The list names public school systems and their schools, not private schools,
+    so the station is a district-level source (leaids) counting only the systems it has been seen to name
+    (a real basis: the systems in its own lists), city, county and charter systems alike; archived captures
+    (runs 36445058527 and 36470567011) show 98 systems over five school years, never Mobile County, which
+    is left to its own site. A closings list, not a status board: any report proves it.'
+  shared_paths: []
+stations:
+- id: alsde-statewide
+  platform: alsde
+  call_sign: ALSDE
+  name: Alabama School Closures/Delays (ALSDE, schoolnotification.alsde.edu)
+  market: Alabama (statewide list; the school systems seen posting to it)
+  dma: null
+  states: [AL]
+  counties:
+    basis: district
+    source: 'NCES CCD 2024-25 school directory (pipeline/out/internal/directory/schools.parquet): the
+      counties of the 841 schools of alsde-statewide''s 98 Alabama school systems: the systems the list
+      has been seen to name, in its live read of 2026-09-28 and its 6 archived captures read so far (20220605025523,
+      20230830121910, 20240921160402, 20250121172646, 20250603172615, 20260517021514; archive-captures
+      runs 36445058527 and 36470567011), each name matched exactly to the district of that name in the
+      NCES CCD 2024-25 LEA directory (https://nces.ed.gov/ccd/Data/zip/ccd_lea_029_2425_w_1a_073025.zip,
+      SHA-256 2745169e4bc7cd53…). A system never seen on the list is not counted: Mobile County, closed
+      for the January 2025 snow, is on no capture read. (Baldwin County''s closings of 2025-01-21 to 2025-01-24
+      are on the capture of 2025-06-03, though not on that of 2025-01-21 17:26 UTC: systems post or complete
+      their reports during the day.)'
+    fips: ['01001', '01003', '01005', '01007', 01009, '01011', '01013', '01015', '01017', 01019, '01021',
+      '01023', '01025', '01027', 01029, '01031', '01033', '01035', '01037', 01039, '01041', '01043', '01045',
+      '01047', 01049, '01051', '01053', '01055', '01057', 01059, '01061', '01065', '01067', 01069, '01071',
+      '01073', '01075', '01077', 01081, 01085, 01089, 01091, 01093, 01095, 01097, 01099, '01101', '01105',
+      '01107', 01109, '01111', '01113', '01115', '01117', 01119, '01121', '01123', '01125', '01127', '01133']
+  page_url: https://www.alabamaachieves.org/weather-closure-list/
+  data_url: https://schoolnotification.alsde.edu/SchoolClosuresPublic.aspx
+  export_url: null
+  archive_urls:
+  - https://schoolnotification.alsde.edu/SchoolClosuresPublic.aspx
+  - https://www.alabamaachieves.org/weather-closure-list/
+  poll_minutes: null
+  status: active
+  evidence: 'First-hand check for piece s4d (round 4), 2026-09-28. Live read of https://www.alabamaachieves.org/weather-closure-list/
+    2026-09-28T14:41:42Z: HTTP 200, 2,161,716 bytes: the page frames https://schoolnotification.alsde.edu/SchoolClosuresPublic.aspx
+    in an iframe (''Weather Closure List''). Live read of https://schoolnotification.alsde.edu/SchoolClosuresPublic.aspx
+    2026-09-28T14:42:02Z: HTTP 200, 47,742 bytes; alsde-closures-grid, populated, 8 row(s) (one per school
+    named) from 4 reports: Pike County 9/25/2026: Early Dismissal 1:00 PM (2 schools); Perry County 9/16/2026:
+    Closed (2 schools); Tallapoosa County 9/14/2026: Closed (1 school); Perry County 8/24/2026: Closed
+    (3 schools). Seen populated live, so the list proves itself. Archived captures of the list (archive-captures
+    runs 36445058527 and 36470567011, read 2026-09-28): 2022-06-05 02:55 UTC, 176 rows; 2023-08-30 12:19
+    UTC, 20 rows; 2024-09-21 16:04 UTC, 29 rows; 2025-01-21 17:26 UTC, 180 rows; 2025-06-03 17:26 UTC,
+    387 rows; 2026-05-17 02:15 UTC, 147 rows (alsde-closures-grid, populated; the snowstorm''s capture
+    of 2025-01-21 holds 116 reports of 54 systems).'
+  list_files: []
+  page_check: null
+  robots:
+  - url: https://www.alabamaachieves.org/weather-closure-list/
+    checked_at: '2026-09-28T19:37:22Z'
+    state: parsed
+    allowed: true
+    rule: no rule matches
+    crawl_delay: null
+    disallowed_agents: []
+    sha256: b56a1cfe920844ab481505bb1deaf369696349c25fe597946f50a5603e9753ea
+  - url: https://schoolnotification.alsde.edu/SchoolClosuresPublic.aspx
+    checked_at: '2026-09-28T19:37:22Z'
+    state: unavailable
+    allowed: true
+    rule: 'robots.txt unavailable (4xx): unrestricted'
+    crawl_delay: null
+    disallowed_agents: []
+    sha256: null
+  leaids: ['0100006', '0100007', '0100011', '0100012', '0100013', '0100030', 0100090, '0100100', 0100180,
+    0100185, 0100189, 0100194, 0100195, 0100199, '0100201', '0100204', '0100207', '0100210', '0100240',
+    '0100270', '0100300', '0100360', '0100420', 0100480, '0100510', '0100600', '0100630', '0100660', 0100690,
+    '0100720', '0100750', 0100780, 0100840, 0100870, 0100900, 0100930, 0100960, 0100990, '0101050', '0101110',
+    '0101140', '0101230', 0101290, '0101320', '0101350', 0101380, '0101410', '0101470', '0101530', '0101560',
+    '0101620', '0101640', '0101660', 0101690, '0101710', '0101720', '0101740', 0101800, 0101830, 0101860,
+    0101890, 0101950, 0101980, '0102010', '0102070', '0102160', '0102220', '0102250', '0102310', '0102350',
+    '0102400', '0102520', '0102550', '0102635', '0102640', '0102650', '0102670', '0102730', 0102790, 0102820,
+    0102880, 0102910, 0102940, 0102970, '0103000', 0103090, '0103120', '0103150', 0103180, '0103210',
+    '0103270', '0103300', '0103360', '0103420', '0103450', '0103540', 0103581, 0103582]

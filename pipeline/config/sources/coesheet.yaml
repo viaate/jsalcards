@@ -1,0 +1,143 @@
+# Station registry for one platform. Loaded with every other file in this folder
+# by snowlight.sources.stations.registry; see its docstring for the fields.
+# `snowlight stations robots --update` rewrites the robots blocks in place.
+platform:
+  id: coesheet
+  name: 'County offices of education: published school closure sheets'
+  operator: County offices of education in California (Shasta, Trinity), on Google Sheets
+  adapter: coesheet
+  poll_minutes: 15
+  terms:
+    automated_access: permitted
+    summary: 'The sheet is published to the web on Google Sheets. Google''s Terms of Service (read 2026-09-27)
+      bar ''using automated means to access content from any of our services in violation of the machine-readable
+      instructions on our web pages (for example, robots.txt files ...)''; docs.google.com''s robots.txt
+      allows /spreadsheet (Crawl-delay 1), and the live poller reads only docs.google.com pages (the widget
+      view and the tab page it loads). The sheet''s CSV output, read once on 2026-09-27 as a check, redirects
+      to a googleusercontent.com host whose robots.txt answered 404 to one request and ''Disallow: /''
+      to another; it is not polled. The county offices'' sites link no terms of use (Shasta: a privacy
+      policy only; Trinity: no terms or privacy link).'
+    evidence:
+    - url: https://policies.google.com/terms?hl=en-US
+      read_at: '2026-09-27T11:47:26Z'
+      sha256: c733e2ff4f22c7f5712a119f473fc2a6b3aecd1de75e1d2263a3032d03551570
+      excerpt:
+      - using automated means to access content from any of our services in violation of the machine-readable
+        instructions on our web pages (for example, robots.txt files that disallow crawling, training,
+        or other activities)
+    - url: https://www.shastacoe.org/privacy-policy
+      read_at: '2026-09-27T11:49:30Z'
+      sha256: 9194d06cf6278edd69226e0e23fdfcc374bacbb5102dffbe9038bb58b19f51e1
+      excerpt:
+      - We do not collect any personal information unless you voluntarily provide it by sending us e-mail,
+        participating in a survey, or completing an on-line form.
+    permission: null
+    owner_decision: null
+  notes: 'Found for piece s4d on 2026-09-27 while scouting California''s gap counties (Shasta County,
+    in the Chico-Redding market, had no working source). The county office''s page frames a Google Sheet
+    that district superintendents and charter school leaders update, listing every school in the county
+    with its status. The live poller reads the county office''s page and follows what a browser loads:
+    the frame (the sheet''s widget view, drawn in script) and the tab page the widget''s script names
+    (/pubhtml/sheet?headers=false&gid=..., a table the server writes). A new sheet for a new school year
+    is picked up from the page. Trinity County''s office (tcoek12.org, also Finalsite) embeds a sheet
+    of the same design with widget=false, so its framed view is itself the server-written table. Proof
+    (piece s4d, 2026-09-28): this is a status board, listing every school or system with its status every
+    day, so a read proves it only when a row''s status is other than open (Closed, Early Dismissal, Remote,
+    a delay); an all-open read does not (notices.gate_proofs, reported in coverage.json''s district_notice_gate).'
+  shared_paths: []
+stations:
+- id: coesheet-shasta
+  platform: coesheet
+  call_sign: SHASTA
+  name: 'Shasta County Office of Education: School Closure Information'
+  market: Redding (Shasta County, CA)
+  dma: Chico - Redding, CA DMA
+  states: [CA]
+  counties:
+    basis: observed
+    source: 'The list''s own rows (coesheet-shasta): the sheet is ''SHASTA COUNTY SCHOOLS'', every district
+      and school of Shasta County (06089; 95 rows on 2026-09-27, with the county office''s own programs),
+      one county of the market ''Chico - Redding, CA DMA''. One row is a Trinity County Office of Education
+      charter; Trinity County is not counted.'
+    fips: [06089]
+  page_url: https://www.shastacoe.org/office-of-education/school-closures
+  data_url: null
+  export_url: null
+  archive_urls:
+  - https://www.shastacoe.org/office-of-education/school-closures
+  - https://docs.google.com/spreadsheets/d/e/2PACX-1vRt_q35uHlnknDJQ9VW3PzAu5a8qJdFvqA6gBrKOcLHp1Wx0toWwCFmDDqBh6ak38JSB0nC_Om6VOA_/pubhtml?gid=541890420&single=true&widget=true&headers=false
+  - https://docs.google.com/spreadsheets/d/e/2PACX-1vRt_q35uHlnknDJQ9VW3PzAu5a8qJdFvqA6gBrKOcLHp1Wx0toWwCFmDDqBh6ak38JSB0nC_Om6VOA_/pubhtml/sheet?headers=false&gid=541890420
+  - https://docs.google.com/spreadsheets/d/e/2PACX-1vRt_q35uHlnknDJQ9VW3PzAu5a8qJdFvqA6gBrKOcLHp1Wx0toWwCFmDDqBh6ak38JSB0nC_Om6VOA_/pub?gid=541890420&single=true&output=csv
+  poll_minutes: null
+  status: active
+  evidence: 'First-hand check for piece s4d, 2026-09-27. Live read of https://www.shastacoe.org/office-of-education/school-closures
+    2026-09-27T11:48:54Z: HTTP 200, 47213 bytes; ''Shasta County School Closure Information'', frames
+    https://docs.google.com/spreadsheets/d/e/2PACX-1vRt_q35uHlnknDJQ9VW3PzAu5a8qJdFvqA6gBrKOcLHp1Wx0toWwCFmDDqBh6ak38JSB0nC_Om6VOA_/pubhtml?gid=541890420&single=true&widget=true&headers=false
+    (coesheet-page, deferred); the widget view names its tab page https://docs.google.com/spreadsheets/d/e/2PACX-1vRt_q35uHlnknDJQ9VW3PzAu5a8qJdFvqA6gBrKOcLHp1Wx0toWwCFmDDqBh6ak38JSB0nC_Om6VOA_/pubhtml/sheet?headers=false&gid=541890420
+    (coesheet-widget, deferred), a server-written table (shasta-closure-sheet, populated, 95 rows: ''School
+    Closures 2026-27''; Black Butte Elementary and Black Butte Jr. High ''Closing at 12:45'', updated
+    9/10 9:45). The sheet''s CSV output https://docs.google.com/spreadsheets/d/e/2PACX-1vRt_q35uHlnknDJQ9VW3PzAu5a8qJdFvqA6gBrKOcLHp1Wx0toWwCFmDDqBh6ak38JSB0nC_Om6VOA_/pub?gid=541890420&single=true&output=csv
+    (read 2026-09-27T11:49:05Z, 4942 bytes) holds the same 95 rows.'
+  list_files:
+  - url: https://docs.google.com/spreadsheets/d/e/2PACX-1vRt_q35uHlnknDJQ9VW3PzAu5a8qJdFvqA6gBrKOcLHp1Wx0toWwCFmDDqBh6ak38JSB0nC_Om6VOA_/pubhtml?gid=541890420&single=true&widget=true&headers=false
+    loaded_by: frame
+    seen: The county office's page frames it (live read 2026-09-27).
+  - url: https://docs.google.com/spreadsheets/d/e/2PACX-1vRt_q35uHlnknDJQ9VW3PzAu5a8qJdFvqA6gBrKOcLHp1Wx0toWwCFmDDqBh6ak38JSB0nC_Om6VOA_/pubhtml/sheet?headers=false&gid=541890420
+    loaded_by: script
+    seen: The widget view's script names it as the tab's pageUrl and loads it (live read 2026-09-27).
+  - url: https://docs.google.com/spreadsheets/d/e/2PACX-1vRt_q35uHlnknDJQ9VW3PzAu5a8qJdFvqA6gBrKOcLHp1Wx0toWwCFmDDqBh6ak38JSB0nC_Om6VOA_/pub?gid=541890420&single=true&output=csv
+    loaded_by: unseen
+    seen: 'Not loaded by the page: the same publication''s CSV output (Google''s publish-to-web format),
+      read once on 2026-09-27; it held the same 95 rows as the tab page.'
+  page_check: null
+  robots:
+  - url: https://www.shastacoe.org/office-of-education/school-closures
+    checked_at: '2026-09-27T14:31:53Z'
+    state: parsed
+    allowed: true
+    rule: no rule matches
+    crawl_delay: 5.0
+    disallowed_agents: [008, sistrix, sitebot, tweetmemebot, twiceler]
+    sha256: 5fb88880edfeb8b89dc4b528ff42e759a80a14fea1c94f2ad18186d8a4265127
+- id: coesheet-trinity
+  platform: coesheet
+  call_sign: TRINITY
+  name: 'Trinity County Office of Education: School Closure Information'
+  market: Weaverville (Trinity County, CA)
+  dma: Chico - Redding, CA DMA
+  states: [CA]
+  counties:
+    basis: observed
+    source: 'The list''s own rows (coesheet-trinity): the sheet is ''TRINITY COUNTY SCHOOLS'', the county''s
+      nine districts and the county office''s programs (17 schools on 2026-09-27), all in Trinity County
+      (06105), one county of the market ''Chico - Redding, CA DMA''.'
+    fips: ['06105']
+  page_url: https://www.tcoek12.org/school-districts/school-closure-information
+  data_url: null
+  export_url: null
+  archive_urls:
+  - https://www.tcoek12.org/school-districts/school-closure-information
+  - https://docs.google.com/spreadsheets/d/e/2PACX-1vRzrIeQ579iJDJCzp_oD9jDkAFAsjdNUHS-qY1Xe-_-kRRHyLaUS0av9-eoKHphpMPKr4HUVpEMTUiX/pubhtml?gid=0&single=true&widget=false&headers=false
+  poll_minutes: null
+  status: active
+  evidence: 'First-hand check for piece s4d, 2026-09-27. Live read of https://www.tcoek12.org/school-districts/school-closure-information
+    2026-09-27T12:01:19Z: HTTP 200, 59599 bytes; ''School Closure Information'' (''This spreadsheet is
+    updated by the individual school administrative offices''; ''an approximate 5 minute delay''), embeds
+    https://docs.google.com/spreadsheets/d/e/2PACX-1vRzrIeQ579iJDJCzp_oD9jDkAFAsjdNUHS-qY1Xe-_-kRRHyLaUS0av9-eoKHphpMPKr4HUVpEMTUiX/pubhtml?gid=0&single=true&widget=false&headers=false
+    (coesheet-page, deferred). Live read of the sheet 2026-09-27T12:01:25Z: HTTP 200, 63924 bytes; coesheet-table,
+    populated, 17 rows, every school ''Open'', updated 01/05/2026 8:47-8:48 AM; the sheet says ''2025-2026
+    SCHOOL YEAR''.'
+  list_files:
+  - url: https://docs.google.com/spreadsheets/d/e/2PACX-1vRzrIeQ579iJDJCzp_oD9jDkAFAsjdNUHS-qY1Xe-_-kRRHyLaUS0av9-eoKHphpMPKr4HUVpEMTUiX/pubhtml?gid=0&single=true&widget=false&headers=false
+    loaded_by: frame
+    seen: The county office's page embeds it (<embed src=... type="text/html">, live read 2026-09-27).
+  page_check: null
+  robots:
+  - url: https://www.tcoek12.org/school-districts/school-closure-information
+    checked_at: '2026-09-27T14:31:54Z'
+    state: parsed
+    allowed: true
+    rule: no rule matches
+    crawl_delay: 5.0
+    disallowed_agents: [008, sistrix, sitebot, tweetmemebot, twiceler]
+    sha256: f3a932684baf58849f73d947baf4105d899cacd6d277895076cd8132820b5cdc

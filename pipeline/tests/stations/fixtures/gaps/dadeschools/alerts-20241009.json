@@ -1,0 +1,73 @@
+{
+  "items": [
+    {
+      "id": 0,
+      "clients": [
+        "Mobile",
+        "Web"
+      ],
+      "type": "Danger",
+      "visible": true,
+      "imgSrc": "https://mainapi.dadeschools.net/resources/dadeschools/Alerts/images/red-hurricane-alert.png",
+      "imgAlt": "hurricane Symbol",
+      "title": "Hurricane Milton",
+      "body": "All M-DCPS schools, as well as Region and District offices will be CLOSED on Wednesday, October 9 and Thursday, October 10.",
+      "innerHTML": "<div class=\"alert-wording\"><p>All M-DCPS schools, as well as Region and District offices will be CLOSED on Wednesday, October 9 and Thursday, October 10.</div>",
+      "link": ""
+    },
+    {
+      "id": 1,
+      "clients": [
+        "Web"
+      ],
+      "type": "Info",
+      "visible": false,
+      "imgSrc": "https://mainapi.dadeschools.net/resources/dadeschools/Alerts/images/blue-icon-information.png",
+      "imgAlt": "Information Symbol",
+      "title": "Holiday Meal Distributions",
+      "body": "Due to the Thanksgiving holiday and recess, student meal distributions for next week will take place Monday, November 23 and Tuesday, November 24, from 4-5:30 p.m. There will be no meal distributions on Thursday, November 26, 2020.",
+      "innerHTML": "<div class=\"alert-wording\"><p>Due to the Thanksgiving holiday and recess, student meal distributions for next week will take place Monday, November 23 and Tuesday, November 24, from 4-5:30 p.m. There will be no meal distributions on Thursday, November 26, 2020.</p></div>",
+      "link": null
+    },
+    {
+      "id": 2,
+      "clients": [],
+      "type": "Warning",
+      "visible": false,
+      "imgSrc": "https://mainapi.dadeschools.net/resources/dadeschools/Alerts/images/yellow-icon-warning.png",
+      "imgAlt": "Warning Symbol",
+      "title": "Facial Coverings",
+      "body": "Effective Monday, February 14, 2022, the use of facial coverings by adults will no longer be mandatory in District facilities. While not required, mask usage will continue to be encouraged for all students, employees, volunteers, contractors, and visitors.",
+      "innerHTML": "<div class=\"alert-wording\"><p>Effective Monday, February 14, 2022, the use of facial coverings by adults will no longer be mandatory in District facilities. While not required, mask usage will continue to be encouraged for all students, employees, volunteers, contractors, and visitors.</p></div>",
+      "link": null
+    },
+    {
+      "id": 3,
+      "clients": [
+        "Mobile"
+      ],
+      "type": "Info",
+      "visible": false,
+      "imgSrc": null,
+      "imgAlt": null,
+      "title": "Pardon our Dust",
+      "body": "We are in the process of AB testing with the 'Apps' icons. Please disregard any color/text changes that look out of place. Thank you for your continued support in testing the new DSMobile.",
+      "innerHTML": null,
+      "link": null
+    },
+    {
+      "id": 4,
+      "clients": [
+        "Web"
+      ],
+      "type": "Warning",
+      "visible": false,
+      "imgSrc": null,
+      "imgAlt": null,
+      "title": "Technical Difficulties",
+      "body": "We're currently experiencing an issue with the applications and we're working to resolve the issue as soon as possible.",
+      "innerHTML": null,
+      "link": null
+    }
+  ]
+}

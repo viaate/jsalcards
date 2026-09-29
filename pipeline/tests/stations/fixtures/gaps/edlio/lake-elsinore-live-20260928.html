@@ -1,0 +1,83 @@
+<!DOCTYPE html><html><head><title>LEUSD</title><meta name="generator" content="Edlio CMS"></head><body><script>
+				'use strict';
+
+				(function($) {
+					$(document).ready(function() {
+						var alertKeyStartConstant = 'doNotShowAlert';
+
+						var alertArticleKey =
+							alertKeyStartConstant + '_' +
+							'2221450_' +
+							'2026/09/30 14:20:00';
+
+						var alertExpirationDate = new Date('2026/09/30 14:20:00');
+
+						// manually check for the alert expire time, if the alert expire
+						// after now, we remove this item from local storage from user
+						for (var key in localStorage) {
+							// we only remove key when this key starts with the constant
+							if (key.indexOf(alertKeyStartConstant) === 0) {
+								var alertExpireAt = new Date(key.split("_")[2]);
+
+								if (alertExpireAt.getTime() < new Date()) {
+									window.localStorage.removeItem(key);
+								}
+							}
+						}
+
+						// show alert modal to user
+						if (!window.localStorage.getItem(alertArticleKey)) {
+							$.magnificPopup.open({
+								items: {
+									src: '#homepage_news_alert_modal',
+									type: 'inline',
+									showCloseBtn: false,
+									closeBtnInside: false
+								}
+							});
+						}
+
+						// when user click on `don't show again`, we store this answer
+						// in the localStorage
+						$('#dont-show-again').click( function() {
+							window.localStorage.setItem(alertArticleKey, true);
+						});
+					});
+
+				})(jq37);
+			</script><article id="homepage_news_alert_modal" class="mfp-hide cf " itemscope="" itemtype="http://schema.org/Article">
+				<div id="modal-container" class=" homepage-vertical-display ">
+                  <button class="mfp-close" aria-label="Close">×</button>
+
+                  <div id="image-content" class="image-content">
+                              <img class="featured-image" src="https://3.files.edl.io/0c0c/26/08/18/212700-2742a9b1-a516-43fb-895e-21739854cab5.png" alt="Making Waves NEW Website coming soon">
+                  </div>
+
+                  <div id="article-content" class="article-content">
+                      <header class="cf">
+                          <h2 class="title" itemprop="name headline">
+                              Making Waves: A New LEUSD Website Is Coming Soon
+                          </h2>
+                      </header>
+
+
+                          <div class="summary cf">
+                              <p>
+                                  We're excited to share that a new LEUSD website is on the way. Our goal is to make it easier for students, families, staff, and community members to find information and stay connected.
+                              </p>
+                          </div>
+
+
+						<div class="buttons cf">
+							
+							<div class="read-more">
+		<a href="/apps/news/article/2221450" class="button-text button">
+									Learn More
+								</a>
+							</div>
+						</div>
+                  </div>
+
+                      <a id="dont-show-again" class="" href="">Don't show again</a>
+              </div>
+    </article></body></html>

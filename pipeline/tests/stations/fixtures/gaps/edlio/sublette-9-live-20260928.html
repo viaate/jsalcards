@@ -1,0 +1,83 @@
+<!DOCTYPE html><html><head><title>Sublette Co School District 9</title><meta name="generator" content="Edlio CMS"></head><body><script>
+				'use strict';
+
+				(function($) {
+					$(document).ready(function() {
+						var alertKeyStartConstant = 'doNotShowAlert';
+
+						var alertArticleKey =
+							alertKeyStartConstant + '_' +
+							'2234874_' +
+							'2026/10/09 15:00:00';
+
+						var alertExpirationDate = new Date('2026/10/09 15:00:00');
+
+						// manually check for the alert expire time, if the alert expire
+						// after now, we remove this item from local storage from user
+						for (var key in localStorage) {
+							// we only remove key when this key starts with the constant
+							if (key.indexOf(alertKeyStartConstant) === 0) {
+								var alertExpireAt = new Date(key.split("_")[2]);
+
+								if (alertExpireAt.getTime() < new Date()) {
+									window.localStorage.removeItem(key);
+								}
+							}
+						}
+
+						// show alert modal to user
+						if (!window.localStorage.getItem(alertArticleKey)) {
+							$.magnificPopup.open({
+								items: {
+									src: '#homepage_news_alert_modal',
+									type: 'inline',
+									showCloseBtn: false,
+									closeBtnInside: false
+								}
+							});
+						}
+
+						// when user click on `don't show again`, we store this answer
+						// in the localStorage
+						$('#dont-show-again').click( function() {
+							window.localStorage.setItem(alertArticleKey, true);
+						});
+					});
+
+				})(jq37);
+			</script><article id="homepage_news_alert_modal" class="mfp-hide cf  horizontal-image " itemscope="" itemtype="http://schema.org/Article">
+				<div id="modal-container" class=" homepage-horizontal-display ">
+                  <button class="mfp-close" aria-label="Close">×</button>
+
+                  <div id="image-content" class="image-content">
+                              <img class="featured-image" src="https://3.files.edl.io/1020/26/09/22/183451-35876f1a-a049-4444-abf7-d80c98d87211.jpg" alt="2026 Sublette 9 Picture Days Schedule">
+                  </div>
+
+                  <div id="article-content" class="article-content">
+                      <header class="cf">
+                          <h2 class="title" itemprop="name headline">
+                              School Picture Days
+                          </h2>
+                      </header>
+
+
+                          <div class="summary cf">
+                              <p>
+                                  Information About School Picture Days
+                              </p>
+                          </div>
+
+
+						<div class="buttons cf">
+							
+							<div class="read-more">
+		<a href="https://www.sublette9.org/apps/pages/index.jsp?uREC_ID=4450827&amp;type=d&amp;pREC_ID=2773773" class="button-text button">
+									School Picture Days
+								</a>
+							</div>
+						</div>
+                  </div>
+
+                      <a id="dont-show-again" class=" horizontal-display-bottom-link " href="">Don't show again</a>
+              </div>
+    </article></body></html>

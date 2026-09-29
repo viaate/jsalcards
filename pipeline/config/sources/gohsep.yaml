@@ -1,0 +1,106 @@
+# Station registry for one platform. Loaded with every other file in this folder
+# by snowlight.sources.stations.registry; see its docstring for the fields.
+# `snowlight stations robots --update` rewrites the robots blocks in place.
+platform:
+  id: gohsep
+  name: 'Louisiana GOHSEP: parish school system closures'
+  operator: Governor's Office of Homeland Security and Emergency Preparedness (GOHSEP), State of Louisiana
+  adapter: gohsep
+  poll_minutes: 15
+  terms:
+    automated_access: permitted
+    summary: GOHSEP's website terms (read 2026-09-27) make its information available as a public service,
+      let anyone view, copy or distribute it for personal or informational use if it is not modified,
+      and say nothing against reading it with software. The layer is public on ArcGIS Online (no license
+      or access note on the item).
+    evidence:
+    - url: https://gohsep.la.gov/terms/
+      read_at: '2026-09-27T15:19:14Z'
+      sha256: c92485d40582a5025cdda99f6a4b92c3acb65e05880b832ef3353f50d6607119
+      excerpt:
+      - Anyone may view, copy or distribute information found within these web pages (not including the
+        design or layout of the pages) for personal or informational use without owing an obligation to
+        the Agency if the documents are not modified in any respect, and unless otherwise stated on the
+        particular materials or information to which a restriction on free use applies.
+    permission: null
+    owner_decision: null
+  notes: 'Found for piece s4d (round 1 lead, built in round 2 on 2026-09-27): GOHSEP''s standing public
+    ArcGIS layer Parish_School_Closures_Public_View_Layer (item e9ca4b01702d4bf3bce39f93f32b0a06, owner
+    Andy.Venuto_GOHSEP, created 2025-05-19) holds each of the 64 parish school systems'' STATUS (Open,
+    Closed, Planned Closure, Virtual Classes, Early Dismissal, Delayed Start) per CLOSURE_DATE, and is
+    drawn by the ''Parish Emergency School Closures Dashboard'' (item 183276b0c4814b9cb1048b116c91f236,
+    modified 2026-09-01: ''This dashboard displays the school system closures for Incident 26-020 - Tropical
+    Storm Edouard'') through the web map ''Parish School Closures Public Map'' (930ce0655ab24e188fc11d2c378243f2).
+    Before May 2025 GOHSEP made one layer per incident (24-004 Severe Weather, 24-006 Winter Weather,
+    24-008, 24-014, 24-015, 24-018 and 24-019 Heavy Rainfall, 24-033 TC Francine, 25-007 Winter Weather).
+    The list names school systems, not schools: a district-level source (leaids), counting only the parish
+    school systems'' schools, not the city systems (Monroe, Bogalusa, Baker, Zachary, Central), charter
+    school districts or private schools in the same parishes. Proof (piece s4d, 2026-09-28): this is a
+    status board, listing every school or system with its status every day, so a read proves it only when
+    a row''s status is other than open (Closed, Early Dismissal, Remote, a delay); an all-open read does
+    not (notices.gate_proofs, reported in coverage.json''s district_notice_gate).'
+  shared_paths: []
+stations:
+- id: gohsep-parish-schools
+  platform: gohsep
+  call_sign: GOHSEP
+  name: Louisiana GOHSEP Parish School Closures (standing layer)
+  market: Louisiana (statewide, the 64 parish school systems)
+  dma: null
+  states: [LA]
+  counties:
+    basis: district
+    source: 'NCES CCD 2024-25 school directory (pipeline/out/internal/directory/schools.parquet): the
+      parishes of the schools of gohsep-parish-schools''s 64 parish school systems (each GOHSEP parish
+      GEOID matched to the one directory district in that parish named ''<parish> Parish''); 1,137 schools,
+      one system per parish.'
+    fips: ['22001', '22003', '22005', '22007', '22009', '22011', '22013', '22015', '22017', '22019', '22021',
+      '22023', '22025', '22027', '22029', '22031', '22033', '22035', '22037', '22039', '22041', '22043',
+      '22045', '22047', '22049', '22051', '22053', '22055', '22057', '22059', '22061', '22063', '22065',
+      '22067', '22069', '22071', '22073', '22075', '22077', '22079', '22081', '22083', '22085', '22087',
+      '22089', '22091', '22093', '22095', '22097', '22099', '22101', '22103', '22105', '22107', '22109',
+      '22111', '22113', '22115', '22117', '22119', '22121', '22123', '22125', '22127']
+  page_url: https://www.arcgis.com/apps/dashboards/183276b0c4814b9cb1048b116c91f236
+  data_url: https://services1.arcgis.com/fXHQyq63u0UsTeSM/arcgis/rest/services/Parish_School_Closures_Public_View_Layer/FeatureServer/0/query?where=1%3D1&outFields=OBJECTID%2CGEOID%2CNAME%2CDATE_GROUP%2CCLOSURE_DATE%2CSTATUS&returnGeometry=false&orderByFields=GEOID%2CDATE_GROUP&f=json
+  export_url: null
+  archive_urls:
+  - https://www.arcgis.com/apps/dashboards/183276b0c4814b9cb1048b116c91f236
+  - https://services1.arcgis.com/fXHQyq63u0UsTeSM/arcgis/rest/services/Parish_School_Closures_Public_View_Layer/FeatureServer/0/query?where=1%3D1&outFields=OBJECTID%2CGEOID%2CNAME%2CDATE_GROUP%2CCLOSURE_DATE%2CSTATUS&returnGeometry=false&orderByFields=GEOID%2CDATE_GROUP&f=json
+  - https://services1.arcgis.com/fXHQyq63u0UsTeSM/arcgis/rest/services/Parish_School_Closures_Public_View_Layer/FeatureServer/0/query
+  poll_minutes: null
+  status: active
+  evidence: 'First-hand check for piece s4d, 2026-09-27. Live read of the layer''s query endpoint 2026-09-27T15:20Z
+    (also 14:52Z): HTTP 200, 82,872 bytes, Last-Modified Mon, 31 Aug 2026 22:36:08 GMT (the layer''s dataLastEditDate
+    2026-08-31T22:36:08Z); gohsep-feature-query, populated, 640 rows: the 64 parishes over ten date groups,
+    627 ''Open'', 11 ''Closed'' (Cameron on 2026-09-01; Ascension, Jefferson, Pointe Coupee, St. Bernard,
+    St. Mary, St. Tammany, Washington, West Baton Rouge, West Feliciana on 2026-06-18, West Carroll on
+    2026-06-17), East Feliciana ''Early Dismissal'' 2026-06-17 and ''Planned Closure'' 2026-06-18. The
+    dashboard page (the page_url) is a script application that loads the layer through its web map; the
+    poller reads the layer.'
+  list_files: []
+  page_check: null
+  robots:
+  - url: https://www.arcgis.com/apps/dashboards/183276b0c4814b9cb1048b116c91f236
+    checked_at: '2026-09-27T15:30:44Z'
+    state: parsed
+    allowed: true
+    rule: no rule matches
+    crawl_delay: null
+    disallowed_agents: []
+    sha256: d9da31493f06281ceebc4eaff54a0ba0cd4bc00f01217e6dbec7f084b263730d
+  - url: https://services1.arcgis.com/fXHQyq63u0UsTeSM/arcgis/rest/services/Parish_School_Closures_Public_View_Layer/FeatureServer/0/query?where=1%3D1&outFields=OBJECTID%2CGEOID%2CNAME%2CDATE_GROUP%2CCLOSURE_DATE%2CSTATUS&returnGeometry=false&orderByFields=GEOID%2CDATE_GROUP&f=json
+    checked_at: '2026-09-27T15:30:44Z'
+    state: unavailable
+    allowed: true
+    rule: 'robots.txt unavailable (4xx): unrestricted'
+    crawl_delay: null
+    disallowed_agents: []
+    sha256: null
+  leaids: ['2200030', '2200060', '2200090', '2200120', '2200150', '2200180', '2200210', '2200270', '2200300',
+    '2200330', '2200360', '2200390', '2200420', '2200450', '2200480', '2200510', '2200540', '2200570',
+    '2200600', '2200630', '2200660', '2200690', '2200720', '2200750', '2200780', '2200810', '2200840',
+    '2200870', '2200900', '2200960', '2200990', '2201020', '2201050', '2201110', '2201140', '2201170',
+    '2201200', '2201230', '2201260', '2201290', '2201320', '2201350', '2201380', '2201410', '2201440',
+    '2201470', '2201500', '2201530', '2201560', '2201590', '2201620', '2201650', '2201680', '2201710',
+    '2201740', '2201770', '2201800', '2201830', '2201860', '2201890', '2201920', '2201950', '2201980',
+    '2202010']

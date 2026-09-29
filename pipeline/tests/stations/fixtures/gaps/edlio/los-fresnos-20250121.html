@@ -1,0 +1,73 @@
+<!DOCTYPE html><html><head><title>Los Fresnos Consolidated Independent School District</title><meta name="generator" content="Edlio CMS"></head><body><script>
+				'use strict';
+
+				// in case there are other version of jquery being imported with this
+				// version, we will use no conflict and IIFE to avoid global name space
+				var jq183 = jQuery.noConflict(true);
+
+				(function(jq183) {
+
+					jq183(document).ready(function() {
+						var alertKeyStartConstant = 'doNotShowAlert';
+
+						var alertArticleKey =
+							alertKeyStartConstant + '_' +
+							'2020287_' +
+							'2025/01/23 08:00:00';
+
+						var alertExpirationDate = new Date('2025/01/23 08:00:00');
+
+						// manually check for the alert expire time, if the alert expire
+						// after now, we remove this item from local storage from user
+						for (var key in localStorage) {
+							// we only remove key when this key starts with the constant
+							if (key.indexOf(alertKeyStartConstant) === 0) {
+								var alertExpireAt = new Date(key.split("_")[2]);
+
+								if (alertExpireAt.getTime() < new Date()) {
+									window.localStorage.removeItem(key);
+								}
+							}
+						}
+
+						// show alert modal to user
+						if (!window.localStorage.getItem(alertArticleKey)) {
+							jq183.magnificPopup.open({
+								items: {
+									src: '#homepage_news_alert_modal',
+									type: 'inline',
+									showCloseBtn: false,
+									closeBtnInside: false
+								}
+							});
+						}
+
+						// when user click on `don't show again`, we store this answer
+						// in the localStorage
+						jq183('#dont-show-again').click( function() {
+							window.localStorage.setItem(alertArticleKey, true);
+						});
+					});
+
+				})(jq183);
+			</script><article id="homepage_news_alert_modal" class="mfp-hide cf " itemscope="" itemtype="http://schema.org/Article">
+				<div id="modal-container" class=" homepage-vertical-display ">
+                  <button class="mfp-close" aria-label="Close">×</button>
+
+                  <div id="image-content" class="image-content">
+                              <img class="featured-image" src="https://3.files.edl.io/e945/25/01/20/170726-5c84debf-d0bd-4238-8812-fb63f2844e18.png" alt="Weather Notice Jan 20">
+                  </div>
+
+                  <div id="article-content" class="article-content">
+                      <header class="cf">
+                          <h2 class="title" itemprop="name headline">
+                              Weather Notice - Monday, January, 20
+                          </h2>
+                      </header>
+
+
+                  </div>
+
+                      <a id="dont-show-again" class="" href="">Don't show again</a>
+              </div>
+    </article></body></html>

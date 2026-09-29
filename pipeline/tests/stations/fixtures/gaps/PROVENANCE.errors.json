@@ -1,0 +1,46 @@
+[
+  {
+    "file": "errors/apptegy-twin-falls-20240327.html",
+    "source_id": "apptegy-twin-falls-id",
+    "adapter": "apptegy",
+    "url": "https://www.tfsd.org/",
+    "captured_at": "2024-03-27T09:51:24Z",
+    "archive_url": "https://web.archive.org/web/20240327095124id_/https://www.tfsd.org/",
+    "sha256": "0bb0f1a6d2912e1059718cb1da723cc00635e7711b1aac3bbeaa22edcedcd0fb",
+    "bytes": 23502,
+    "reason": "Twin Falls' homepage before its move to Apptegy (the archive's nearest capture to 2024-01-09 is of 2024-03-27): a WordPress (Divi) page with no Nuxt state and no announcements region; refused, not read as empty."
+  },
+  {
+    "file": "errors/finalsite-palm-beach-page-pops-20250105.txt",
+    "source_id": "finalsite-palm-beach-fl",
+    "adapter": "finalsite",
+    "url": "https://www.palmbeachschools.org/fs/pages/2/page-pops",
+    "captured_at": "2025-01-05T14:44:07Z",
+    "archive_url": "https://web.archive.org/web/20250105144407id_/https://www.palmbeachschools.org/fs/pages/2/page-pops",
+    "sha256": "4e07408562bedb8b60ce05c1decfe3ad16b72230967de01f640b7e4729b49fce",
+    "bytes": 1,
+    "reason": "The archive's capture of the page-pops address nearest Milton (2025-01-05) is the single character '3', neither the fragment nor its empty answer; refused, not read as empty."
+  },
+  {
+    "file": "errors/finalsite-san-benito-home-20250121.html",
+    "source_id": "finalsite-san-benito-tx",
+    "adapter": "finalsite",
+    "url": "https://www.sbcisd.net/",
+    "captured_at": "2025-01-21T22:13:17Z",
+    "archive_url": "https://web.archive.org/web/20250121221317id_/https://www.sbcisd.net/",
+    "sha256": "d2f9fdb96e104d75747af3a248f84ff8b82ef5b62650741fa5b15389f9e6f24b",
+    "bytes": 60216,
+    "reason": "San Benito CISD's homepage of 2025-01-21, before the district moved to Finalsite: an Edlio page (no body data-pageid, no fsLiveMode class, no Web Community Manager announcements). Not a Finalsite page: refused, never read as an empty list."
+  },
+  {
+    "file": "errors/nonstop-section-20201124.html",
+    "source_id": "cowles-kfbb",
+    "adapter": "cowles",
+    "url": "https://www.montanarightnow.com/schoolclosures/",
+    "captured_at": "2020-11-24T01:32:59Z",
+    "archive_url": "https://web.archive.org/web/20201124013259id_/https://www.montanarightnow.com/schoolclosures/",
+    "sha256": "e3d04217738deb9ef11968ab5e14f8b75dba1c522399feb05bcde27a3a8c5a02",
+    "bytes": 136457,
+    "reason": "The /schoolclosures/ page before it framed the ticker: a BLOX section of article cards (section-schoolclosures), not a list of schools."
+  }
+]

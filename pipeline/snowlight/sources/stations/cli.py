@@ -47,6 +47,7 @@ from snowlight.sources.stations import (
     dma,
     fetch,
     fixtures,
+    notices,
     observed,
     pagecheck,
     proof,
@@ -429,7 +430,9 @@ def run_robots(args: argparse.Namespace) -> int:
             if wanted is not None and station.id not in wanted:
                 continue
             found = []
-            for url in dict.fromkeys(u for u in (station.page_url, station.data_url) if u):
+            # A station polled at its page reads the files its page check saw it load too.
+            loads = station.page_check.loads if station.page_check and not station.data_url else ()
+            for url in dict.fromkeys(u for u in (station.page_url, station.data_url, *loads) if u):
                 robots = client.robots_for(url)
                 allowed, rule = robots.decide(url, client.user_agent)
                 check = RobotsCheck.model_validate(
@@ -675,7 +678,18 @@ def run_coverage(args: argparse.Namespace) -> int:
                 archive_health=args.archive_health,
                 fixtures=args.fixtures,
             )
+            # A district's alert channel is proven only by a row announcing a closing,
+            # a status board only by a status other than open.
+            gate = notices.gate_proofs(
+                evidence.proofs,
+                registry,
+                live_rows=[args.live_reads.with_name("rows.jsonl")],
+                archive_rows=[args.archive_reads.with_name("rows.jsonl")],
+                fixtures=args.fixtures,
+            )
             proof.add_proven(result, registry, schools, states, evidence, weights=weights)
+            result["district_notice_gate"] = gate
+            notices.annotate_unproven(result, gate)
         shapes = None if args.no_png else coverage.county_shapes(references["shapes"])
         meta = coverage.CoverageMeta(now, health_at, args.directory, _provenance(references))
         paths = coverage.write_coverage(args.out_dir, result, meta, shapes)

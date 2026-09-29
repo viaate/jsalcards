@@ -15,7 +15,10 @@ For each station in the registry (in id order):
    2026-09-26 to read closings pages and files regardless.
 3. The body goes to the platform's adapter. A body in no known shape is an
    error, never an empty list. A page that holds no list but names the file it
-   loads (a frame, a script's data file) is followed to that file.
+   loads (a frame, a script's data file) is followed to that file. A station
+   polled at its page whose browser check (``page_check``) recorded the files the
+   page loads must be led to one of them; a page that names another file, or
+   none, is an error (:func:`page_check_mismatch`).
 4. A list file whose ``Last-Modified`` is older than the start of the last winter
    (:func:`~snowlight.sources.stations.model.stale_before`) is ``stale``: its rows
    are not kept and the source does not count as working, since nothing has been
@@ -230,6 +233,38 @@ def _resource(url: str) -> tuple[str, str]:
     return (parts.hostname or "").lower().removeprefix("www."), parts.path.rstrip("/")
 
 
+def page_check_mismatch(station: Station, targets: Sequence[str]) -> str | None:
+    """Why a live read of a station's checked page does not lead to its checked list, or None.
+
+    Applies to a station polled at its page (it registers no ``data_url``) whose
+    ``page_check`` records the files that page loads (``loads``): the page read
+    first must name one of those files, and is followed to it (``targets`` are the
+    URLs it names, :func:`follow_targets`). A page that holds a list of its own,
+    names no file, or names another one (a page ID that changed, a list moved
+    elsewhere) is an error until the page is checked again, never read as the
+    station's list: a file address can answer for anything (a Finalsite page-pops
+    address answers an empty 200 for any page ID). Stations polled at a data file,
+    and stations without such a check, are not affected.
+    """
+    check = station.page_check
+    if station.data_url is not None or check is None or not check.loads:
+        return None
+    checked = {_resource(url) for url in check.loads}
+    if targets and _resource(targets[0]) in checked:
+        return None
+    seen = ", ".join(check.loads)
+    when = iso_utc(check.checked_at)
+    if not targets:
+        return (
+            f"the page names no list file to follow; its browser check of {when} saw it load "
+            f"{seen}. Not read until the page is checked again"
+        )
+    return (
+        f"the page now loads {targets[0]}, not {seen} (its browser check of {when}). "
+        "Not read until the page is checked again"
+    )
+
+
 @dataclass(frozen=True, slots=True)
 class _LiveRead:
     """One live body and what the adapter read from it."""
@@ -355,7 +390,9 @@ def read_station(
     export it loads, :attr:`Station.export`) is followed to that file, up to
     :data:`MAX_FOLLOW_DEPTH` files deep, through the same polite client
     (robots.txt, pacing, conditional requests); the read describes the list file
-    and names the pages in ``via``.
+    and names the pages in ``via``. A station polled at a page its ``page_check``
+    records must be led by that page to a file the check saw it load
+    (:func:`page_check_mismatch`); otherwise the read is an error.
     robots.txt's verdicts on every URL requested go into the health record. A list
     file last modified before the last winter began is ``stale`` (see the module
     docstring): its rows are not kept.
@@ -375,6 +412,25 @@ def read_station(
     while read is not None:
         seen = (*seen, *_robots_records(read.fetched))
         targets = follow_targets(read.url, read.listing, station)
+        mismatch = None if chain else page_check_mismatch(station, targets)
+        if mismatch is not None:
+            result.health.append(
+                _health(
+                    station,
+                    read.url,
+                    read.fetched.fetched_at,
+                    status=HealthStatus.ERROR,
+                    http_status=read.fetched.status,
+                    not_modified=read.fetched.not_modified,
+                    sha256=read.fetched.sha256,
+                    bytes=len(read.fetched.body),
+                    reason=_clip(
+                        f"{mismatch} ({read.listing.variant}, {read.listing.state.value})"
+                    ),
+                    robots=seen,
+                )
+            )
+            return result
         if not targets or len(chain) >= MAX_FOLLOW_DEPTH:
             break
         chain.append((read.url, read.fetched, read.listing, targets[0]))

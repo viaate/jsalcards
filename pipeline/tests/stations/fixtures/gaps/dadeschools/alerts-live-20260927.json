@@ -1,0 +1,47 @@
+{
+  "items": [
+    {
+      "id": 3,
+      "clients": [
+        "Web",
+        "Mobile"
+      ],
+      "type": "danger",
+      "visible": false,
+      "imgSrc": "https://mainapi.dadeschools.net/resources/dadeschools/Alerts/images/red-hurricane-alert.png",
+      "imgAlt": "hurricane Symbol",
+      "title": "Hurricane Elsa",
+      "body": "Miami-Dade County Public Schools continues to monitor Hurricane Elsa and its potential impact to South Florida. Any changes to District operations will be communicated.",
+      "innerHTML": "<div class=\\\"alert-wording\\\"><p><b>Miami-Dade County Public Schools continues to monitor Hurricane Elsa and its potential impact to South Florida. Any changes to District operations will be communicated.</b></p></div>",
+      "link": "https://storms.dadeschools.net/#!/rightColumn/3248"
+    },
+    {
+      "id": 4,
+      "clients": [
+        "Web"
+      ],
+      "type": "info",
+      "visible": false,
+      "imgSrc": "https://mainapi.dadeschools.net/resources/dadeschools/Alerts/images/blue-icon-information.png",
+      "imgAlt": "Information Symbol",
+      "title": "Holiday Meal Distributions",
+      "body": "Due to the Thanksgiving holiday and recess, student meal distributions for next week will take place Monday, November 23 and Tuesday, November 24, from 4-5:30 p.m. There will be no meal distributions on Thursday, November 26, 2020.",
+      "innerHTML": "<div class=\\\"alert-wording\\\"><p>Due to the Thanksgiving holiday and recess, student meal distributions for next week will take place Monday, November 23 and Tuesday, November 24, from 4-5:30 p.m. There will be no meal distributions on Thursday, November 26, 2020.</p></div>",
+      "link": ""
+    },
+    {
+      "id": 5,
+      "clients": [
+        "Mobile"
+      ],
+      "type": "warning",
+      "visible": false,
+      "imgSrc": "https://mainapi.dadeschools.net/resources/dadeschools/Alerts/images/yellow-icon-warning.png",
+      "imgAlt": "Warning Symbol",
+      "title": "Facial Coverings",
+      "body": "Effective Monday, February 14, 2022, the use of facial coverings by adults will no longer be mandatory in District facilities. While not required, mask usage will continue to be encouraged for all students, employees, volunteers, contractors, and visitors.",
+      "innerHTML": "<div class=\"alert-wording\"><p>Effective Monday, February 14, 2022, the use of facial coverings by adults will no longer be mandatory in District facilities. While not required, mask usage will continue to be encouraged for all students, employees, volunteers, contractors, and visitors.</p></div>",
+      "link": ""
+    }
+  ]
+}
