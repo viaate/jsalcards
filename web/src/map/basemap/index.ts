@@ -20,6 +20,7 @@ import { CONTROL_CLEARANCE, keepLabelsClear } from './clearance';
 import { cityNamesOf, namesCutByEdges, stateNamesCutByEdges, textMeasure } from './home-names';
 import { addMapFonts } from './fonts';
 import type { MapLibre } from './maplibre';
+import type { WorkerUrls } from './maplibre-worker';
 import {
   OPENFREEMAP_ATTRIBUTION,
   OPENFREEMAP_MAX_ZOOM,
@@ -83,6 +84,8 @@ import {
 } from './style';
 import type { BasemapLook, UsLinesData } from './style';
 import { STATE_NAME_SIZE, US_BOUNDS } from './us-geo';
+import { US_MASK_FILE } from './us-mask';
+import { US_MASK_ALIAS } from './us-mask-alias';
 
 export { BASEMAP_IDS } from './style';
 export { FLIGHT_STOP_ZOOM } from './flight';
@@ -142,14 +145,13 @@ export interface BasemapResources {
   /** The states' shapes a phone names the states in view by (state-areas.ts), fetched when first needed. */
   stateAreas?: string;
   /**
-   * The US mask archive the street tiles are cut by (street-tiles.ts): its
-   * URL, the URL of the copy under a name that never changes, and the channel
-   * the page sends it to the workers on (mask/feed.ts). Fetched once street
+   * The US mask archive the street tiles are cut by (street-tiles.ts), as
+   * this page reads it; pageMask() unless told otherwise. Fetched once street
    * tiles near a border or a coast are needed, or about to be
    * (prepareStreets): never on a plain visit, nor for streets wholly inside
    * the US.
    */
-  mask?: { readonly url: string; readonly fallbackUrl: string; readonly channel: string };
+  mask?: PageMask;
 }
 
 export interface Basemap {
@@ -199,20 +201,13 @@ export interface Basemap {
   /** Glides to the nearest view the limits allow; jumps when reduced motion is preferred. */
   flyTo(view: MapView): void;
   /**
-   * Someone is on their way to the streets at `place` (their search is
-   * showing it, or they pressed on a school there), or somewhere: asks for
-   * what the street tiles there need before any can be drawn, the US mask,
-   * unless a flight there would ask for none but tiles wholly inside the US
-   * (us-inside.ts), which need none.
+   * Someone is probably on their way to the streets at `place` (their search
+   * shows it first, or they pressed on a school there): asks for what the
+   * street tiles there need before any can be drawn, the US mask, unless a
+   * flight there would ask for none but tiles wholly inside the US
+   * (us-inside.ts), which need none. With no place, nothing.
    */
   prepareStreets(place?: Place): void;
-  /**
-   * Someone has started a search: on a link the browser does not call slow,
-   * the mask comes now, whatever they pick; on a slow one it waits for the
-   * search to show where they are going (prepareStreets), so as not to slow
-   * the search.
-   */
-  searchStarted(): void;
   /** Glides to show [west, south, east, north] inside the frame, no closer than `maxZoom`. */
   fitBounds(
     bounds: readonly [number, number, number, number],
@@ -301,12 +296,55 @@ function configure(maplibre: MapLibre, workerUrl: string): void {
 }
 
 /**
- * Starts MapLibre's workers ahead of the map, so they load MapLibre's shared
- * module while the map is being created rather than after.
+ * The US mask as this page reads it (mask/feed.ts): its URL, the URL of its
+ * copy under a name that never changes, and the channel the page sends it to
+ * its workers on, this page's own, so another tab's workers are not asked.
  */
-export function startWorkers(maplibre: MapLibre, workerUrl: string): void {
-  configure(maplibre, workerUrl);
+export interface PageMask {
+  readonly url: string;
+  readonly fallbackUrl: string;
+  readonly channel: string;
+}
+
+let thisPageMask: PageMask | undefined;
+
+/** This page's mask: made once, for its workers and its map alike. */
+export function pageMask(): PageMask {
+  const file = (path: string): string =>
+    new URL(`${import.meta.env.BASE_URL}${path}`, document.baseURI).href;
+  thisPageMask ??= {
+    url: file(US_MASK_FILE),
+    fallbackUrl: file(US_MASK_ALIAS),
+    channel: `snowlight-mask-${Math.random().toString(36).slice(2)}`,
+  };
+  return thisPageMask;
+}
+
+/**
+ * Starts MapLibre's workers ahead of the map, so they load MapLibre's shared
+ * module while the map is being created rather than after: from the worker
+ * source `workerUrl` makes of the chunks the workers import (MapLibre's
+ * shared module, the street and the school tiles), and this page's mask.
+ * Returns the worker's URL.
+ */
+export function startWorkers(
+  maplibre: MapLibre,
+  workerUrl: (sources: WorkerUrls) => string,
+  shared: { readonly SHARED_URL: string },
+  streetTiles: { readonly STREET_TILES_URL: string },
+  schoolTiles: { readonly SCHOOL_TILES_URL: string },
+): string {
+  const { url: mask, channel: maskChannel } = pageMask();
+  const worker = workerUrl({
+    shared: shared.SHARED_URL,
+    streetTiles: streetTiles.STREET_TILES_URL,
+    schoolTiles: schoolTiles.SCHOOL_TILES_URL,
+    mask,
+    maskChannel,
+  });
+  configure(maplibre, worker);
   maplibre.prewarm();
+  return worker;
 }
 
 /** The school tiles' archive this build ships, as an absolute URL, or null when it ships none. */
@@ -405,7 +443,7 @@ export async function createBasemap({
   usLinesUrls,
   schools,
   stateAreas: stateAreasUrl,
-  mask,
+  mask = pageMask(),
 }: BasemapOptions & BasemapResources): Promise<Basemap> {
   configure(maplibre, workerUrl);
   addMapFonts();
@@ -742,23 +780,16 @@ export async function createBasemap({
   /** Street and school tiles that fail are asked for again until they come (heal.ts). */
   const stopHealing = healTiles(map, [BASEMAP_IDS.openFreeMapSource, BASEMAP_IDS.schoolsSource]);
   /** The US mask: fetched once, on the way to the streets, sent to the workers (mask/feed.ts). */
-  const maskFeed =
-    mask === undefined
-      ? null
-      : createMaskFeed(mask.url, mask.channel, { fallbackUrl: mask.fallbackUrl });
-  /** Resolves once the mask is in: at once in a build that feeds the workers none. */
-  const maskIn = (): Promise<void> => maskFeed?.loaded ?? Promise.resolve();
+  const maskFeed = createMaskFeed(mask.url, mask.channel, { fallbackUrl: mask.fallbackUrl });
   /** Whether street tiles need the mask: some are not wholly inside the US (us-inside.ts). */
   const needMask = (tiles: readonly (readonly [number, number, number])[]): boolean =>
     tiles.some(([z, x, y]) => !insideUs(z, x, y));
   const prepareStreets = (place?: Place): void => {
+    if (place === undefined) return;
     // A flight there stops over it at the street tiles' first zoom: every tile it asks for is
     // under the ones covering the screen then. All wholly inside the US, it needs no mask.
-    if (place !== undefined) {
-      const over = flightTiles({ ...place, zoom: FLIGHT_STOP_ZOOM }, size(), FLIGHT_STOP_ZOOM);
-      if (!needMask(over)) return;
-    }
-    maskFeed?.start('high');
+    const over = flightTiles({ ...place, zoom: FLIGHT_STOP_ZOOM }, size(), FLIGHT_STOP_ZOOM);
+    if (needMask(over)) maskFeed.start();
   };
   let moved = false;
   let national = start === null;
@@ -1492,7 +1523,7 @@ export async function createBasemap({
       ...(stop === null ? [] : flightTiles(stop, size(), paceFrom).slice(0, limit)),
       ...flightTiles(allowed, size(), paceFrom).slice(0, limit),
     ];
-    if (needMask(ahead)) prepareStreets();
+    if (needMask(ahead)) maskFeed.start();
     // The ones it ends on go at once, beside the rest in their order, so they are never last in
     // line; on a slow link, in their turn, the first the flight draws coming first.
     const top = Math.min(Math.floor(allowed.zoom), OPENFREEMAP_MAX_ZOOM);
@@ -1503,9 +1534,8 @@ export async function createBasemap({
       const whole = tiles.filter(([z, x, y]) => insideUs(z, x, y));
       const cut = tiles.filter(([z, x, y]) => !insideUs(z, x, y));
       void prefetchOpenFreeMapTiles(whole).then(async () => {
-        if (cut.length === 0) return;
-        await maskIn();
-        await prefetchOpenFreeMapTiles(cut);
+        // Those the mask says are wholly outside the US are never asked for.
+        if (cut.length > 0) await prefetchOpenFreeMapTiles(await maskFeed.inUs(cut));
       });
     }
     const flight = ++flights;
@@ -1686,9 +1716,6 @@ export async function createBasemap({
     flyTo,
     fitBounds,
     prepareStreets,
-    searchStarted() {
-      if (!slowLink()) prepareStreets();
-    },
     destroy() {
       // A flight on its way goes no further.
       cancelFlight();
@@ -1696,7 +1723,7 @@ export async function createBasemap({
       window.clearTimeout(stateNamesTimer);
       stopHealing();
       releaseTileRequests();
-      maskFeed?.destroy();
+      maskFeed.destroy();
       clearance.destroy();
       stopWarming();
       if (window.snowlightMap === map) delete window.snowlightMap;

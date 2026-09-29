@@ -67,7 +67,7 @@ export function streetTileLoader(
     if (match === null) throw new Error(`Street tiles: unexpected request ${request.url}`);
     const [z, x, y] = match.slice(1).map(Number) as [number, number, number];
     const { signal } = abortController;
-    if (inside(z, x, y)) return loadTile(request.url, signal);
+    if (source.insideListHolds && inside(z, x, y)) return loadTile(request.url, signal);
     source.nudge();
     const cutBy = await tileMask(reader, z, x, y);
     if (signal.aborted) throw aborted(signal);

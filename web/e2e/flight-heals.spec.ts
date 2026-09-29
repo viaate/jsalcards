@@ -580,11 +580,17 @@ test('a school wholly inside the US needs no mask: streets drawn with none comin
 }) => {
   const { context, page, errors } = await newPage(browser);
   await tileNetwork(context);
-  // The mask may be asked for (a search on a fast link asks for it ahead), but it never comes.
-  await context.route(US_MASK, () => new Promise<void>(() => undefined));
+  // Were the mask asked for, it would never come.
+  let asked = 0;
+  await context.route(US_MASK, () => {
+    asked++;
+    return new Promise<void>(() => undefined);
+  });
   await open(page);
   await pick(page, PEMBROKE_HILL);
   await expectAtSchool(page, PEMBROKE_HILL);
+  // Nor is it asked for: not by the search, the flight or the map.
+  expect(asked).toBe(0);
   expect(errors).toEqual([]);
   await context.close();
 });

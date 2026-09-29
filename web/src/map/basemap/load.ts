@@ -35,8 +35,6 @@ import type { Basemap, BasemapOptions } from './index';
 import { yieldToMain } from './reveal';
 import type { UsLinesData } from './style';
 import { US_LINES_FILE, US_NAMES_FILE, US_STATES_FILE } from './us-geo';
-import { US_MASK_FILE } from './us-mask';
-import { US_MASK_ALIAS } from './us-mask-alias';
 
 export interface BasemapFactory {
   /** Creates the map: everything it needs is already here. */
@@ -115,20 +113,13 @@ export async function loadBasemap(): Promise<BasemapFactory> {
   const maplibre = await import('./maplibre');
   await yieldToMain();
   const [[basemap, worker], [streetTiles, schoolTiles, usNames]] = await Promise.all([code, rest]);
-  // The page sends the mask to its workers on a channel of its own: another tab's are not asked.
-  const mask = {
-    url: publicUrl(US_MASK_FILE),
-    fallbackUrl: publicUrl(US_MASK_ALIAS),
-    channel: `snowlight-mask-${Math.random().toString(36).slice(2)}`,
-  };
-  const workerUrl = worker.workerUrl({
-    shared: shared.SHARED_URL,
-    streetTiles: streetTiles.STREET_TILES_URL,
-    schoolTiles: schoolTiles.SCHOOL_TILES_URL,
-    mask: mask.url,
-    maskChannel: mask.channel,
-  });
-  basemap.startWorkers(maplibre, workerUrl);
+  const workerUrl = basemap.startWorkers(
+    maplibre,
+    worker.workerUrl,
+    shared,
+    streetTiles,
+    schoolTiles,
+  );
   await yieldToMain();
   const schools = basemap.schoolTilesArchive();
   return {
@@ -143,7 +134,6 @@ export async function loadBasemap(): Promise<BasemapFactory> {
         usLinesUrls: { lines: publicUrl(US_LINES_FILE), names: publicUrl(US_NAMES_FILE) },
         schools,
         stateAreas: publicUrl(US_STATES_FILE),
-        mask,
       }),
   };
 }

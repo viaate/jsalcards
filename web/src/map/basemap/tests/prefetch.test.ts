@@ -121,8 +121,9 @@ describe('the tiles fetched ahead of a flight', () => {
     expect([...new Set(atEnd.map(([z]) => z))]).toEqual([14]);
   });
 
-  it('keep to fewer on a link the browser says is slow', () => {
-    expect(flightTileLimit(undefined)).toBe(MAX_FLIGHT_TILES);
+  it('keep to fewer on a link the browser says is slow, or says nothing of', () => {
+    // A browser that says nothing of its link: taken for one that may be slow.
+    expect(flightTileLimit(undefined)).toBe(SLOW_LINK_FLIGHT_TILES);
     expect(flightTileLimit({ effectiveType: '4g', downlink: 10 })).toBe(MAX_FLIGHT_TILES);
     expect(flightTileLimit({ effectiveType: '4g', downlink: 1.6 })).toBe(SLOW_LINK_FLIGHT_TILES);
     expect(flightTileLimit({ effectiveType: '3g' })).toBe(SLOW_LINK_FLIGHT_TILES);

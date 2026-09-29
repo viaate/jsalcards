@@ -38,6 +38,7 @@ function mask(kind: 'inside' | 'outside') {
     nudge: () => {
       nudges++;
     },
+    insideListHolds: true,
   };
   return {
     reader,
@@ -94,6 +95,18 @@ describe('a street tile', () => {
     expect((await serve(request(7, 30, 48), new AbortController())).data).toBe(TILE);
     expect(asked.map((one) => one.url)).toEqual(['openfreemap://planet/7/30/48']);
     expect(nudges()).toBe(0);
+  });
+
+  it('wholly inside the US waits for the mask when it came from the fallback copy', async () => {
+    const { reader, source, ready } = mask('inside');
+    const { asked, load } = loader();
+    const serve = streetTileLoader({ ...source, insideListHolds: false }, load, reader, () => true);
+    const tile = serve(request(7, 30, 48), new AbortController());
+    await flush();
+    expect(asked).toEqual([]);
+    ready();
+    await tile;
+    expect(asked).toHaveLength(1);
   });
 
   it('outside the US is never asked for', async () => {

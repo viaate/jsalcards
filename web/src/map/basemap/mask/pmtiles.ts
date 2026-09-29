@@ -608,8 +608,6 @@ const isGzip = (bytes: Uint8Array): boolean => bytes[0] === 0x1f && bytes[1] ===
 
 /** How a whole file is asked for, besides how a reader over HTTP fetches, waits and unzips. */
 export interface WholeFileOptions extends HttpReaderOptions {
-  /** How urgent the first try is (Fetch Priority): 'low' lets what the page needs now go first. */
-  readonly priority?: RequestPriority;
   /**
    * Where to ask instead once the file's own URL answers 404: a copy under a
    * name that does not change (a page from an older build asks for a file
@@ -639,12 +637,7 @@ export async function loadWholeArchive(
     if (attempt > 0) await wait(backoffDelay(WHOLE_FILE_BACKOFF, attempt - 1, options.random));
     try {
       // After a wrong answer, from the server: the cache may hold part of the file, or its gzip.
-      const init: RequestInit =
-        attempt === 0
-          ? options.priority === undefined
-            ? {}
-            : { priority: options.priority }
-          : { cache: 'reload' };
+      const init: RequestInit = attempt === 0 ? {} : { cache: 'reload' };
       const answer = await fetchBytes(from, READ_STALL_MS, undefined, init, get);
       if (answer.response.status === 404 && options.fallbackUrl !== undefined) {
         from = options.fallbackUrl;

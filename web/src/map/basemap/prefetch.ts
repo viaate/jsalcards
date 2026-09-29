@@ -49,19 +49,24 @@ function pageLink(): LinkInfo | undefined {
   return (globalThis.navigator as { connection?: LinkInfo } | undefined)?.connection;
 }
 
-/** Whether the browser says the link is slow: data saving on, less than 4G, or under 5 Mbit/s. */
+/**
+ * Whether the link may be slow: the browser says so (data saving on, less
+ * than 4G, or under 5 Mbit/s), or says nothing of it (Safari and Firefox
+ * have no Network Information API).
+ */
 export function slowLink(link: LinkInfo | undefined = pageLink()): boolean {
   return (
-    link !== undefined &&
-    (link.saveData === true ||
-      (link.effectiveType !== undefined && link.effectiveType !== '4g') ||
-      (link.downlink !== undefined && link.downlink > 0 && link.downlink < 5))
+    link === undefined ||
+    link.saveData === true ||
+    (link.effectiveType !== undefined && link.effectiveType !== '4g') ||
+    (link.downlink !== undefined && link.downlink > 0 && link.downlink < 5)
   );
 }
 
 /**
  * How many tiles a flight asks for ahead, for its stop and for where it
- * ends: MAX_FLIGHT_TILES, or SLOW_LINK_FLIGHT_TILES on a slow link (slowLink).
+ * ends: MAX_FLIGHT_TILES, or SLOW_LINK_FLIGHT_TILES on a link that may be
+ * slow (slowLink).
  */
 export function flightTileLimit(link: LinkInfo | undefined = pageLink()): number {
   return slowLink(link) ? SLOW_LINK_FLIGHT_TILES : MAX_FLIGHT_TILES;

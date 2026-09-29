@@ -5,37 +5,49 @@
  * and cannot be drawn before it is in; one wholly inside the US (us-inside.ts)
  * needs none. So the mask is asked for as soon as someone shows they are
  * going to streets that need it, and not otherwise, never on a plain visit:
- * when they start a search on a link the browser does not call slow; on a
- * slow one, when the search shows such a place first (once its index is in:
- * until then the search needs the link more); when they press on a school
- * there; or when a flight or the map itself first needs such tiles
- * (index.ts, App.svelte).
- * It is fetched whole (pmtiles.ts loadWholeArchive), once, and each worker is
- * sent a copy over a channel of this page's own (maskFeed); a worker asks on
- * it when it needs the mask, and again with each tile it is asked for while
- * it waits, which wakes a retry that is waiting (at most once every
- * NUDGE_GAP_MS), as does the browser coming back online.
+ * when their search shows such a place first (once its index is in: until
+ * then the search needs the link), when they press on a school there, or
+ * when a flight or the map itself first needs such tiles (index.ts,
+ * App.svelte). It is fetched whole (pmtiles.ts loadWholeArchive), once, and
+ * each worker is sent a copy over a channel of this page's own (maskFeed); a
+ * worker asks on it when it needs the mask, and again with each tile it is
+ * asked for while it waits, which wakes a retry that is waiting (at most once
+ * every NUDGE_GAP_MS), as does the browser coming back online.
  *
  * A worker with no such channel fetches the mask itself (ownMaskSource). A
  * page from an older build asks for a mask file the site no longer has: the
  * mask is also published under a name that never changes (US_MASK_ALIAS),
- * asked for once the file's own name answers 404. Used on the page and in
- * the workers: it must not touch the DOM beyond the global scope's events.
+ * asked for once the file's own name answers 404. That copy may be a newer
+ * mask than the page's list of the tiles wholly inside the US was made from,
+ * so a worker given it trusts that list no more (MaskSource insideListHolds).
+ * Used on the page and in the workers: it must not touch the DOM beyond the
+ * global scope's events.
  */
 import { Alarm } from '../retry';
-import { loadWholeArchive, memoryReader } from './pmtiles';
+import { ArchiveReader, loadWholeArchive, memoryReader } from './pmtiles';
 import type { RangeReader, WholeFileOptions } from './pmtiles';
+import { tileMask } from './source';
 
 /** What the page and its workers say about the mask on the page's channel. */
 export type MaskMessage =
   | { readonly type: 'need' }
-  | { readonly type: 'mask'; readonly url: string; readonly bytes: Uint8Array };
+  | {
+      readonly type: 'mask';
+      readonly url: string;
+      readonly bytes: Uint8Array;
+      /** Whether it came from its own URL, not the copy under the name that never changes. */
+      readonly own: boolean;
+    };
 
 function isMaskMessage(data: unknown): data is MaskMessage {
   if (typeof data !== 'object' || data === null) return false;
-  const { type, url, bytes } = data as Record<string, unknown>;
+  const { type, url, bytes, own } = data as Record<string, unknown>;
   return (
-    type === 'need' || (type === 'mask' && typeof url === 'string' && bytes instanceof Uint8Array)
+    type === 'need' ||
+    (type === 'mask' &&
+      typeof url === 'string' &&
+      bytes instanceof Uint8Array &&
+      typeof own === 'boolean')
   );
 }
 
@@ -52,19 +64,26 @@ interface Online {
   removeEventListener(type: 'online', listener: () => void): void;
 }
 
+/** The mask, once in, and whether it came from its own URL. */
+interface Loaded {
+  readonly bytes: Uint8Array;
+  readonly own: boolean;
+}
+
 /** A load of the whole mask that a nudge, or the network coming back, wakes as it waits. */
 function wakeableLoad(
   url: string,
   options: WholeFileOptions,
 ): {
-  readonly file: () => Promise<Uint8Array>;
+  readonly file: () => Promise<Loaded>;
   readonly nudge: () => void;
   readonly stop: () => void;
 } {
   const alarm = new Alarm();
   const get = options.fetch ?? ((input: string, init: RequestInit) => fetch(input, init));
   let lastTry = Number.NEGATIVE_INFINITY;
-  let file: Promise<Uint8Array> | undefined;
+  let lastUrl = url;
+  let file: Promise<Loaded> | undefined;
   let done = false;
   const scope = globalThis as unknown as Partial<Online>;
   const online = (): void => {
@@ -80,13 +99,14 @@ function wakeableLoad(
         ...options,
         fetch: (input, init) => {
           lastTry = Date.now();
+          lastUrl = input;
           return get(input, init);
         },
         sleep: (ms) => alarm.sleep(ms),
       }).then((bytes) => {
         done = true;
         stop();
-        return bytes;
+        return { bytes, own: lastUrl === url };
       });
       return file;
     },
@@ -97,18 +117,19 @@ function wakeableLoad(
   };
 }
 
+/** A tile: zoom, column, row. */
+type Tile = readonly [z: number, x: number, y: number];
+
 /** The page's side: the mask, fetched once, for its workers. */
 export interface MaskFeed {
-  /**
-   * Asks for the mask, if it has not been asked for yet: `priority` is the
-   * first request's (a search asks with 'low', so the search index goes
-   * first; a flight, a link or a worker with 'high').
-   */
-  start(priority?: RequestPriority): void;
+  /** Asks for the mask, if it has not been asked for yet. */
+  start(): void;
   /** Whether the mask has been asked for. */
   readonly started: boolean;
   /** Resolves once the mask is in, and has gone to the workers. */
   readonly loaded: Promise<void>;
+  /** Once the mask is in: `tiles` but those it says are wholly outside the US. */
+  inUs<T extends Tile>(tiles: readonly T[]): Promise<T[]>;
   /** Stops answering the workers and waking the retry. */
   destroy(): void;
 }
@@ -120,20 +141,27 @@ export interface MaskFeed {
  */
 export function maskFeed(url: string, channel: string, options: WholeFileOptions = {}): MaskFeed {
   const port = typeof BroadcastChannel === 'undefined' ? null : new BroadcastChannel(channel);
-  let bytes: Uint8Array | null = null;
+  let mask: Loaded | null = null;
   let load: ReturnType<typeof wakeableLoad> | null = null;
   let markLoaded: () => void = () => undefined;
   const loaded = new Promise<void>((resolve) => {
     markLoaded = resolve;
   });
+  const reader = new ArchiveReader(
+    memoryReader(url, async () => {
+      await loaded;
+      return mask?.bytes ?? new Uint8Array(0);
+    }),
+  );
   const send = (): void => {
-    if (bytes !== null) port?.postMessage({ type: 'mask', url, bytes } satisfies MaskMessage);
+    if (mask === null) return;
+    port?.postMessage({ type: 'mask', url, ...mask } satisfies MaskMessage);
   };
-  const start = (priority?: RequestPriority): void => {
+  const start = (): void => {
     if (load !== null) return;
-    load = wakeableLoad(url, { ...options, ...(priority === undefined ? {} : { priority }) });
+    load = wakeableLoad(url, options);
     void load.file().then((file) => {
-      bytes = file;
+      mask = file;
       send();
       markLoaded();
     });
@@ -141,11 +169,11 @@ export function maskFeed(url: string, channel: string, options: WholeFileOptions
   if (port !== null) {
     port.onmessage = (event: MessageEvent) => {
       if (!isMaskMessage(event.data) || event.data.type !== 'need') return;
-      if (bytes !== null) {
+      if (mask !== null) {
         send();
         return;
       }
-      start('high');
+      start();
       load?.nudge();
     };
   }
@@ -155,6 +183,10 @@ export function maskFeed(url: string, channel: string, options: WholeFileOptions
       return load !== null;
     },
     loaded,
+    inUs: async (tiles) => {
+      const kinds = await Promise.all(tiles.map(([z, x, y]) => tileMask(reader, z, x, y)));
+      return tiles.filter((_tile, i) => kinds[i]?.kind !== 'outside');
+    },
     destroy: () => {
       port?.close();
       load?.stop();
@@ -167,12 +199,30 @@ export interface MaskSource {
   readonly reader: RangeReader;
   /** A tile is waiting on the mask: asks for it again, which wakes a retry that is waiting. */
   nudge(): void;
+  /**
+   * Whether the list of the tiles wholly inside the US (us-inside.ts) goes
+   * with this mask: until a copy under the name that never changes comes in
+   * its place, which may be a newer mask than the list.
+   */
+  readonly insideListHolds: boolean;
 }
 
 /** The mask at `url`, fetched by this worker itself: for a worker the page does not feed. */
 export function ownMaskSource(url: string, options: WholeFileOptions = {}): MaskSource {
   const load = wakeableLoad(url, options);
-  return { reader: memoryReader(url, load.file), nudge: load.nudge };
+  let holds = true;
+  const file = async (): Promise<Uint8Array> => {
+    const { bytes, own } = await load.file();
+    holds = own;
+    return bytes;
+  };
+  return {
+    reader: memoryReader(url, file),
+    nudge: load.nudge,
+    get insideListHolds() {
+      return holds;
+    },
+  };
 }
 
 /**
@@ -188,6 +238,7 @@ export function pageMaskSource(
   if (typeof BroadcastChannel === 'undefined') return ownMaskSource(url, options);
   const port = new BroadcastChannel(channel);
   let bytes: Uint8Array | null = null;
+  let holds = true;
   let arrive: (file: Uint8Array) => void = () => undefined;
   const arrived = new Promise<Uint8Array>((resolve) => {
     arrive = resolve;
@@ -197,6 +248,7 @@ export function pageMaskSource(
     if (!isMaskMessage(message) || message.type !== 'mask' || message.url !== url) return;
     if (bytes !== null) return;
     bytes = message.bytes;
+    holds = message.own;
     port.close();
     arrive(bytes);
   };
@@ -209,5 +261,8 @@ export function pageMaskSource(
       return arrived;
     }),
     nudge: ask,
+    get insideListHolds() {
+      return holds;
+    },
   };
 }

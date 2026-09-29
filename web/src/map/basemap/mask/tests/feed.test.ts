@@ -10,6 +10,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 
 import { NUDGE_GAP_MS, maskFeed, ownMaskSource, pageMaskSource } from '../feed';
 import { ArchiveReader, WHOLE_FILE_BACKOFF, writeArchive } from '../pmtiles';
+import { INSIDE_TILE } from '../pyramid';
 
 const URL_NOW = 'https://site.test/geo/us-mask.0123456789.pmtiles';
 const ALIAS = 'https://site.test/geo/us-mask.pmtiles';
@@ -64,10 +65,9 @@ describe('the mask, fed to the workers by the page', () => {
     await deliver();
     expect(asked).toEqual([]);
     expect(feed.started).toBe(false);
-    feed.start('low');
+    feed.start();
     await feed.loaded;
     expect(asked).toHaveLength(1);
-    expect(asked[0]?.init.priority).toBe('low');
     expect(asked[0]?.init.headers).toBeUndefined();
   });
 
@@ -119,6 +119,58 @@ describe('the mask, fed to the workers by the page', () => {
     feed.start();
     await feed.loaded;
     expect(asked.map(({ url }) => url)).toEqual([URL_NOW, ALIAS]);
+  });
+
+  it('from its unchanging name, tells the workers the inside list may not go with it', async () => {
+    const name = channelName();
+    const answers = (own: boolean) =>
+      network(
+        own
+          ? [() => new Response(ARCHIVE.slice())]
+          : [() => new Response('gone', { status: 404 }), () => new Response(ARCHIVE.slice())],
+      );
+    for (const own of [true, false]) {
+      const { fetch } = answers(own);
+      const feed = maskFeed(URL_NOW, `${name}-${String(own)}`, {
+        fetch,
+        gunzip: unzip,
+        fallbackUrl: ALIAS,
+        sleep: () => Promise.resolve(),
+      });
+      stops.push(() => {
+        feed.destroy();
+      });
+      const worker = pageMaskSource(URL_NOW, `${name}-${String(own)}`);
+      expect(worker.insideListHolds).toBe(true);
+      await new ArchiveReader(worker.reader).tile(7, 30, 45);
+      expect(worker.insideListHolds).toBe(own);
+    }
+  });
+
+  it('says which tiles are wholly outside the US, once it is in', async () => {
+    const mask = writeArchive([{ z: 7, x: 30, y: 45, bytes: INSIDE_TILE }], {
+      metadata: { name: 'test' },
+      bounds: [-125, 24, -66, 50],
+      center: [-98, 39, 7],
+      gzip: (bytes: Uint8Array) => gzipSync(bytes),
+    });
+    const { fetch } = network([() => new Response(mask.slice())]);
+    const feed = maskFeed(URL_NOW, channelName(), { fetch, gunzip: unzip });
+    stops.push(() => {
+      feed.destroy();
+    });
+    feed.start();
+    // The archive holds 7/30/45 only: every other first-zoom tile is outside.
+    const tiles = [
+      [7, 30, 45],
+      [7, 31, 45],
+      [9, 121, 181],
+      [9, 125, 181],
+    ] as const;
+    expect(await feed.inUs(tiles)).toEqual([
+      [7, 30, 45],
+      [9, 121, 181],
+    ]);
   });
 });
 
