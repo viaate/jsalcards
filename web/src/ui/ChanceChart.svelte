@@ -1,4 +1,5 @@
 <script lang="ts">
+  import type { Attachment } from 'svelte/attachments';
   import type { ChartView } from '../app/chance';
   import { announcesRoom, placeLabels } from './chart-labels';
 
@@ -18,6 +19,24 @@
   let busesHeight = $state(0);
   let announcesWidth = $state(0);
   let announcesHeight = $state(0);
+
+  /**
+   * Hands `report` the element, now and each time its size changes, as `bind:clientWidth` and
+   * its kin would: with an observer of the chart's own, since the shared one those bindings use
+   * would load with the page's first script.
+   */
+  function sized(report: (node: HTMLElement) => void): Attachment<HTMLElement> {
+    return (node) => {
+      const observer = new ResizeObserver(() => {
+        report(node);
+      });
+      observer.observe(node, { box: 'border-box' });
+      report(node);
+      return () => {
+        observer.disconnect();
+      };
+    };
+  }
 
   /** A bar's left edge across the plot, as a share of it. */
   function across(at: number): string {
@@ -58,13 +77,20 @@
   <figcaption class="title">{chart.title}</figcaption>
   <p class="sr-only">{chart.summary}</p>
 
-  <div class="drawing" bind:clientWidth={width}>
+  <div
+    class="drawing"
+    {@attach sized((node) => {
+      width = node.clientWidth;
+    })}
+  >
     <div class="head" style:height="{placed.height}px">
       {#if answer?.mark === 'buses'}
         <p
           class="words is-buses"
-          bind:offsetWidth={busesWidth}
-          bind:offsetHeight={busesHeight}
+          {@attach sized((node) => {
+            busesWidth = node.offsetWidth;
+            busesHeight = node.offsetHeight;
+          })}
           style:left="{placed.buses.left}px"
           style:top="{placed.buses.top}px"
         >
@@ -74,8 +100,10 @@
       {#if announcement?.mark === 'announces' && placed.announces !== null}
         <p
           class="words is-announces"
-          bind:offsetWidth={announcesWidth}
-          bind:offsetHeight={announcesHeight}
+          {@attach sized((node) => {
+            announcesWidth = node.offsetWidth;
+            announcesHeight = node.offsetHeight;
+          })}
           style:max-width={width > 0 ? `${String(announcesRoom(busesAt))}px` : null}
           style:left="{placed.announces.left}px"
           style:top="{placed.announces.top}px"
