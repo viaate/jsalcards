@@ -7,7 +7,9 @@
 import { describe, expect, it } from 'vitest';
 
 import {
+  FLIGHT_DEADLINE_MS,
   FLIGHT_HOLD_MS,
+  FLIGHT_LAST_CALL_MS,
   FLIGHT_LEAD,
   FLIGHT_MS_PER_ZOOM,
   FLIGHT_STOP_ZOOM,
@@ -15,6 +17,7 @@ import {
   coverPoints,
   flightCeiling,
   flightEasing,
+  holdVerdict,
   pacedProgress,
   progressAt,
   streetTileZoom,
@@ -118,5 +121,40 @@ describe('a flight paced by the street tiles', () => {
     expect(8 * FLIGHT_MS_PER_ZOOM).toBeLessThanOrEqual(4000);
     // A wait for tiles longer than a slow phone's is given up.
     expect(FLIGHT_HOLD_MS).toBeGreaterThanOrEqual(5000);
+  });
+});
+
+describe('a flight waiting for street tiles', () => {
+  const at = { zoom: 7, ceiling: 7, failed: false, waited: 0 };
+
+  it('glides on once closer tiles are drawn', () => {
+    expect(holdVerdict({ ...at, ceiling: 10 })).toBe('glide');
+    // Even with some of them failed, or late: the tiles on screen allow it.
+    expect(holdVerdict({ ...at, ceiling: 10, failed: true, waited: FLIGHT_HOLD_MS })).toBe('glide');
+  });
+
+  it('waits while they are coming', () => {
+    expect(holdVerdict(at)).toBe('wait');
+    expect(holdVerdict({ ...at, waited: FLIGHT_HOLD_MS - 1 })).toBe('wait');
+  });
+
+  it('goes on without them once they failed: it never waits for nothing', () => {
+    // At the stop with every street tile failed (the US mask read wrong, the tile host turning
+    // the page away): the flight that sat at zoom 7 for good now goes on in.
+    expect(holdVerdict({ ...at, failed: true })).toBe('go-on');
+  });
+
+  it('goes on without them once its waits add up to FLIGHT_HOLD_MS: it never waits without end', () => {
+    expect(holdVerdict({ ...at, waited: FLIGHT_HOLD_MS })).toBe('go-on');
+    expect(holdVerdict({ ...at, zoom: 10, ceiling: 10, waited: Number.POSITIVE_INFINITY })).toBe(
+      'go-on',
+    );
+    expect(holdVerdict({ ...at, waited: Number.NaN })).toBe('go-on');
+  });
+
+  it('is past its deadline well after a slow flight would have arrived, and put there after', () => {
+    // The stop, every wait, and a glide in from the stop, with room to spare.
+    expect(FLIGHT_DEADLINE_MS).toBeGreaterThan(3000 + FLIGHT_HOLD_MS + 8 * FLIGHT_MS_PER_ZOOM);
+    expect(FLIGHT_LAST_CALL_MS).toBeGreaterThan(FLIGHT_DEADLINE_MS + 8 * FLIGHT_MS_PER_ZOOM);
   });
 });

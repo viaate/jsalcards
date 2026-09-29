@@ -158,6 +158,22 @@ export function routePatterns(base: string): RoutePatterns {
 export const isRangeRequest = ({ request }: { request: Request }): boolean =>
   request.headers.has('range');
 
+/**
+ * Keeps nothing but tiles in the tile cache. An answer that is text (a
+ * network's block page, a challenge sent with a 200) goes on to the map, which
+ * refuses it and asks again (openfreemap.ts), but it is never kept, to be
+ * served for that tile from then on. Workbox writes this plugin into sw.js as
+ * source text, so it must stay self-contained.
+ */
+export const onlyTiles = {
+  cacheWillUpdate: ({ response }: { response: Response }): Promise<Response | null> =>
+    Promise.resolve(
+      response.status === 200 && !/^\s*text\//i.test(response.headers.get('content-type') ?? '')
+        ? response
+        : null,
+    ),
+};
+
 /** The routes the worker tries, in order, for a request that is not a navigation. */
 export type RouteName = 'range' | Exclude<keyof RoutePatterns, 'navigation'>;
 
@@ -269,6 +285,7 @@ export function workboxOptions(base: string): WorkboxOptions {
           cacheName: CACHE_NAMES.tiles,
           expiration: { ...CACHE_LIMITS.tiles, purgeOnQuotaError: true },
           cacheableResponse: { statuses: [200] },
+          plugins: [onlyTiles],
         },
       },
     ],

@@ -1,9 +1,8 @@
 // @vitest-environment node
 /**
  * The street tiles fetched ahead of a flight: the ones the view it ends on is
- * drawn from, and the levels below it the flight draws scaled up on the way in
- * where the tiles lag, and nothing outside the continental US's box or below
- * zoom 7.
+ * drawn from, and the ones covering the screen where it stops on the way in,
+ * and nothing outside the continental US's box or below zoom 7.
  */
 import { describe, expect, it } from 'vitest';
 
@@ -62,6 +61,26 @@ describe('the tiles fetched ahead of a flight', () => {
     // Pembroke Hill's own zoom-10 tile, which the map draws long before the street tiles are in.
     expect(tiles[0]).toEqual(tileAt(PEMBROKE.lat, PEMBROKE.lon, 10));
     expect(new Set(tiles.map((tile) => tile.join('/'))).size).toBe(tiles.length);
+  });
+
+  it('cover the screen where the flight stops on the way, as it waits there for them', () => {
+    const tiles = flightTiles(PEMBROKE, DESKTOP);
+    // The camera stops at zoom 10: 1440 x 900 there is 2.8 by 1.8 zoom-10 tiles, all of them asked
+    // for, corners too; at zoom 15.2, the view itself is a corner of one or two.
+    const at10 = tiles.filter(([z]) => z === 10);
+    expect(at10.length).toBeGreaterThanOrEqual(6);
+    const world = 512 * 2 ** 10;
+    const cx = mercatorXFromLng(PEMBROKE.lon);
+    const cy = mercatorYFromLat(PEMBROKE.lat);
+    for (const [dx, dy] of [
+      [-1, -1],
+      [1, 1],
+    ] as const) {
+      const x = Math.floor((cx + (dx * DESKTOP.width) / 2 / world) * 2 ** 10);
+      const y = Math.floor((cy + (dy * DESKTOP.height) / 2 / world) * 2 ** 10);
+      expect(at10).toContainEqual([10, x, y]);
+    }
+    expect(tiles.filter(([z]) => z === 14).length).toBeLessThanOrEqual(4);
   });
 
   it('keep to a handful, and to what a phone screen shows', () => {

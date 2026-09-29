@@ -9,6 +9,7 @@ import {
   CACHE_LIMITS,
   CACHE_NAMES,
   isRangeRequest,
+  onlyTiles,
   pwaHead,
   pwaOptions,
   routePatterns,
@@ -91,6 +92,27 @@ describe('workboxOptions', () => {
       purgeOnQuotaError: true,
     });
     expect(byCache(CACHE_NAMES.tileJson)?.handler).toBe('NetworkFirst');
+  });
+
+  it('keeps nothing but tiles in the tile cache: never a block page sent as a 200', async () => {
+    expect(byCache(CACHE_NAMES.tiles)?.options?.plugins).toEqual([onlyTiles]);
+    const keep = async (response: Response): Promise<boolean> =>
+      (await onlyTiles.cacheWillUpdate({ response })) !== null;
+    const tile = new Response(new Uint8Array([0x1a, 0]), {
+      headers: { 'content-type': 'application/vnd.mapbox-vector-tile' },
+    });
+    expect(await keep(tile)).toBe(true);
+    expect(await keep(new Response('<html>', { headers: { 'content-type': 'text/html' } }))).toBe(
+      false,
+    );
+    expect(await keep(new Response('busy', { status: 503 }))).toBe(false);
+    // Written into sw.js as source text: it refers to nothing outside itself.
+    const rebuilt = runInNewContext(`(${onlyTiles.cacheWillUpdate.toString()})`, {
+      Promise,
+    }) as typeof onlyTiles.cacheWillUpdate;
+    const page = new Response('<html>', { headers: { 'content-type': 'text/html' } });
+    expect(await rebuilt({ response: page })).toBeNull();
+    expect(await rebuilt({ response: tile.clone() })).not.toBeNull();
   });
 
   it('caches only successful responses, never opaque ones or parts of files', () => {

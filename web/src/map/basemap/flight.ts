@@ -13,9 +13,15 @@
  * FLIGHT_LEAD zoom levels past the coarsest street tiles the map draws across
  * the screen (streetTileZoom), and not past its stop while some part of the
  * screen has none yet. Where they keep up, the flight is one smooth glide;
- * where they lag, it waits for them, drawn, and glides on. A wait that
- * outlasts FLIGHT_HOLD_MS, or tiles that fail, end the pacing: the flight
- * goes on without them.
+ * where they lag, it waits for them, drawn, and glides on. Waits that add up
+ * to FLIGHT_HOLD_MS, or tiles that fail, end the pacing: the flight goes on
+ * without them, and they are drawn as they come (heal.ts). Whatever happens
+ * on the way, a flight nobody interrupts ends where it was going.
+ *
+ * Nor does a glide ask for the tiles of each zoom it passes (index.ts holds
+ * them): it passes them on the tiles it has, and asks for the screen's tiles
+ * where it stops, FLIGHT_LEAD levels apart (flightZooms), and where it ends,
+ * the only street tiles a pick needs (prefetch.ts asks for them ahead).
  */
 
 import { OPENFREEMAP_MIN_ZOOM } from './openfreemap';
@@ -29,8 +35,45 @@ export const FLIGHT_STOP_ZOOM = OPENFREEMAP_MIN_ZOOM;
 /** Zoom levels past the coarsest street tiles on screen a flight may be: tiles drawn at most 8 times their size. */
 export const FLIGHT_LEAD = 3;
 
-/** The longest a flight waits for street tiles still loading, in milliseconds, before going on without them. */
+/**
+ * The longest a flight waits for street tiles, in milliseconds, all its waits
+ * together, before going on without them.
+ */
 export const FLIGHT_HOLD_MS = 8000;
+
+/**
+ * How long after it sets off a flight still short of its destination stops
+ * waiting for anything, in milliseconds (not counting time the page is
+ * hidden): it goes straight on in.
+ */
+export const FLIGHT_DEADLINE_MS = 15_000;
+
+/** And how long after it sets off it is simply put there, if it is somehow still not. */
+export const FLIGHT_LAST_CALL_MS = 20_000;
+
+/** What a flight waiting on the way in for street tiles does next (holdVerdict). */
+export type HoldVerdict = 'glide' | 'go-on' | 'wait';
+
+/**
+ * What a flight at `zoom`, with the street tiles on screen allowing it as far
+ * as `ceiling` (flightCeiling), does next: glides on, paced, once closer
+ * tiles are drawn; goes on without pacing once the tiles it waits for failed
+ * (the page asks for them again and draws them as they come, heal.ts) or it
+ * has waited FLIGHT_HOLD_MS in all; else waits. Never a wait with nothing to
+ * wait for, and never a wait without end.
+ */
+export function holdVerdict(state: {
+  readonly ceiling: number;
+  readonly zoom: number;
+  /** The street tiles in view all settled, some of them failed. */
+  readonly failed: boolean;
+  /** Milliseconds the flight has waited so far, all its waits together. */
+  readonly waited: number;
+}): HoldVerdict {
+  if (state.ceiling > state.zoom + 1e-3) return 'glide';
+  if (state.failed || !(state.waited < FLIGHT_HOLD_MS)) return 'go-on';
+  return 'wait';
+}
 
 /** How long the last leg takes per zoom level, in milliseconds: 3.2 s from the stop to a school. */
 export const FLIGHT_MS_PER_ZOOM = 400;

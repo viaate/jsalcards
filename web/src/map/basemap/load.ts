@@ -20,9 +20,11 @@
  *   worker reads them from the browser's cache once the map asks for them,
  *   so it does not wait on the network then.
  *
- * The US mask archive itself is read by the workers, a range at a time, only
- * once the map needs street tiles (zoom 7 and up); the school tiles, when
- * this build ships them, likewise from zoom 9.
+ * The US mask archive itself is fetched whole, once the map needs street
+ * tiles (zoom 7 and up): by the page as the first flight into the streets
+ * sets off, and by each worker, from the browser's cache, as it cuts its
+ * first street tile (street-tiles.ts). The school tiles, when this build
+ * ships them, are read by the workers a range at a time from zoom 9.
  *
  * This module is small and ships in the entry chunk; the map code does not.
  */
@@ -132,6 +134,7 @@ export async function loadBasemap(): Promise<BasemapFactory> {
         usLinesUrls: { lines: publicUrl(US_LINES_FILE), names: publicUrl(US_NAMES_FILE) },
         schools,
         stateAreas: publicUrl(US_STATES_FILE),
+        mask: publicUrl(US_MASK_FILE),
       }),
   };
 }

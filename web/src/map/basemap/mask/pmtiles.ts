@@ -9,7 +9,17 @@
  * stored once, and kept once read). The school tiles
  * (pipeline/snowlight/directory/tiles.py) are gzipped too; the reader
  * unzips them, and keeps none of them: MapLibre keeps the tiles it shows.
+ *
+ * Where the ranges come from: the mask, under 1 MB, is fetched whole once
+ * and read from memory (wholeFileReader); the school tiles, tens of MB, are
+ * read over HTTP a range at a time (httpRangeReader), each range checked.
+ * GitHub Pages' CDN gzips these files for a client that accepts it and then
+ * applies a Range to the gzip, and a browser cache holding a whole gzip copy
+ * answers ranges from it: a range read taken on trust can come back as
+ * bytes of a compressed copy, for as long as the cached copy lives.
  */
+import { backoffDelay, fetchBytes, sleep } from '../retry';
+import type { Backoff, Fetch } from '../retry';
 import { Reader, Writer } from './protobuf';
 
 export const HEADER_BYTES = 127;
@@ -464,18 +474,172 @@ export class ArchiveReader {
   }
 }
 
-/** Reads byte ranges of a file over HTTP, taking a whole-file answer too. */
-export function httpRangeReader(url: string): RangeReader {
-  return async (offset, length) => {
-    const response = await fetch(url, {
-      headers: { Range: `bytes=${String(offset)}-${String(offset + length - 1)}` },
-    });
-    if (!response.ok) throw new Error(`${url}: HTTP ${String(response.status)}`);
-    const bytes = new Uint8Array(await response.arrayBuffer());
-    // A server that ignores Range sends the whole file.
-    if (response.status === 200 && bytes.length > length) {
-      return bytes.slice(offset, offset + length);
+/** How a reader over HTTP fetches, waits and unzips: the platform's own, or a test's. */
+export interface HttpReaderOptions {
+  readonly fetch?: Fetch;
+  readonly sleep?: (ms: number) => Promise<void>;
+  readonly random?: () => number;
+  readonly gunzip?: Gunzip;
+}
+
+const platformFetch: Fetch = (url, init) => fetch(url, init);
+
+/**
+ * How long a read over HTTP may go with none of its answer arriving, in
+ * milliseconds, before it is given up on and made again: a request a network
+ * holds without an answer would otherwise hold its tile, or every street
+ * tile, for good. An answer that keeps coming, however slowly, is waited for.
+ */
+export const READ_STALL_MS = 12_000;
+
+/** Tries at a byte range before the read fails (and the tile with it, which the page asks for again). */
+export const RANGE_TRIES = 3;
+/** Waits between them, in milliseconds. */
+export const RANGE_BACKOFF: Backoff = [300, 1200];
+
+/** The parts of a Content-Range header: `bytes first-last/size`, the size perhaps unknown. */
+function contentRange(value: string | null): { first: number; last: number; size: number | null } {
+  const match = /^\s*bytes\s+(\d+)-(\d+)\/(\d+|\*)\s*$/i.exec(value ?? '');
+  if (match === null) return { first: -1, last: -1, size: null };
+  const [, first = '', last = '', size = '*'] = match;
+  return { first: Number(first), last: Number(last), size: size === '*' ? null : Number(size) };
+}
+
+/**
+ * One read of `length` bytes at `offset`, checked: a 206 must hold exactly
+ * those bytes of the file as it is (not of a compressed copy of it: a server
+ * may apply a range to the gzip it sends, and a cache may answer a range from
+ * a whole copy it holds compressed), or a 200 the whole file, cut here.
+ */
+async function readRangeOnce(
+  url: string,
+  offset: number,
+  length: number,
+  get: Fetch,
+): Promise<Uint8Array> {
+  const last = offset + length - 1;
+  const { response, bytes } = await fetchBytes(
+    url,
+    READ_STALL_MS,
+    undefined,
+    {
+      headers: { Range: `bytes=${String(offset)}-${String(last)}` },
+      // Past the browser's cache both ways: whatever it holds of this file cannot answer a range.
+      cache: 'no-store',
+    },
+    get,
+  );
+  if (!response.ok) throw new Error(`${url}: HTTP ${String(response.status)}`);
+  if (response.status === 206) {
+    const encoding = response.headers.get('content-encoding');
+    if (encoding !== null && encoding.trim().toLowerCase() !== 'identity') {
+      throw new Error(`${url}: bytes ${String(offset)}-${String(last)} of its ${encoding} copy`);
+    }
+    const range = contentRange(response.headers.get('content-range'));
+    const whole = range.size !== null && range.last === range.size - 1;
+    if (
+      range.first !== offset ||
+      range.last > last ||
+      bytes.length !== range.last - range.first + 1 ||
+      (range.last < last && !whole)
+    ) {
+      throw new Error(
+        `${url}: asked for bytes ${String(offset)}-${String(last)}, got ${String(bytes.length)} as "${response.headers.get('content-range') ?? ''}"`,
+      );
     }
     return bytes;
+  }
+  // A server that ignores Range sends the whole file (unzipped by the browser, if it sent it zipped).
+  if (bytes.length <= offset) {
+    throw new Error(
+      `${url}: ${String(bytes.length)} bytes, asked for bytes from ${String(offset)}`,
+    );
+  }
+  return bytes.slice(offset, offset + length);
+}
+
+/**
+ * Reads byte ranges of a file over HTTP, taking a whole-file answer too.
+ * Each read goes past the browser's cache, is checked (readRangeOnce), and is
+ * tried RANGE_TRIES times before it fails.
+ */
+export function httpRangeReader(url: string, options: HttpReaderOptions = {}): RangeReader {
+  const get = options.fetch ?? platformFetch;
+  const wait = options.sleep ?? ((ms: number) => sleep(ms));
+  return async (offset, length) => {
+    let failure: unknown;
+    for (let attempt = 0; attempt < RANGE_TRIES; attempt++) {
+      if (attempt > 0) await wait(backoffDelay(RANGE_BACKOFF, attempt - 1, options.random));
+      try {
+        return await readRangeOnce(url, offset, length, get);
+      } catch (error) {
+        failure = error;
+      }
+    }
+    throw failure;
+  };
+}
+
+/** Waits between tries at a whole file, in milliseconds: it is tried until it comes. */
+export const WHOLE_FILE_BACKOFF: Backoff = [500, 1000, 2000, 4000, 8000, 15_000, 30_000];
+
+/**
+ * Checks that `bytes` is a whole PMTiles archive: its header, and every byte
+ * the header says it has. A cut-short copy, or the gzip of one, is not.
+ */
+export function checkWholeArchive(bytes: Uint8Array): void {
+  const header = decodeHeader(bytes);
+  const end = Math.max(
+    header.rootOffset + header.rootLength,
+    header.metadataOffset + header.metadataLength,
+    header.leafOffset + header.leafLength,
+    header.tileDataOffset + header.tileDataLength,
+  );
+  if (bytes.length < end) {
+    throw new Error(`pmtiles: ${String(bytes.length)} bytes of ${String(end)}`);
+  }
+}
+
+/** Whether bytes start as a gzip stream does. */
+const isGzip = (bytes: Uint8Array): boolean => bytes[0] === 0x1f && bytes[1] === 0x8b;
+
+/**
+ * Reads byte ranges of a small archive fetched whole, once, and kept: the US
+ * mask. Nothing is asked of the network until the first read. The file is
+ * asked for without a Range, so no server or cache can answer with part of a
+ * compressed copy (the browser unzips a whole one; a gzip handed over still
+ * zipped is unzipped here), and checked (checkWholeArchive) before it is
+ * used; anything else, or a request that stalls (READ_STALL_MS), is asked
+ * for again, past the browser's cache, with growing waits, until the whole
+ * file comes. Reads wait for it meanwhile.
+ */
+export function wholeFileReader(url: string, options: HttpReaderOptions = {}): RangeReader {
+  const get = options.fetch ?? platformFetch;
+  const wait = options.sleep ?? ((ms: number) => sleep(ms));
+  const gunzip = options.gunzip ?? gunzipWithStreams;
+  let file: Promise<Uint8Array> | undefined;
+  const load = async (): Promise<Uint8Array> => {
+    for (let attempt = 0; ; attempt++) {
+      if (attempt > 0) await wait(backoffDelay(WHOLE_FILE_BACKOFF, attempt - 1, options.random));
+      try {
+        // After a wrong answer, from the server: the cache may hold part of the file, or its gzip.
+        const init: RequestInit = attempt === 0 ? {} : { cache: 'reload' };
+        const answer = await fetchBytes(url, READ_STALL_MS, undefined, init, get);
+        if (!answer.response.ok) throw new Error(`${url}: HTTP ${String(answer.response.status)}`);
+        const bytes = isGzip(answer.bytes) ? await gunzip(answer.bytes) : answer.bytes;
+        checkWholeArchive(bytes);
+        return bytes;
+      } catch (error) {
+        if (attempt === 0) console.warn(`Snowlight: ${url} came back wrong; asking again`, error);
+      }
+    }
+  };
+  return async (offset, length) => {
+    file ??= load();
+    const bytes = await file;
+    if (offset >= bytes.length) {
+      throw new Error(`${url}: no bytes at ${String(offset)} of ${String(bytes.length)}`);
+    }
+    return bytes.subarray(offset, offset + length);
   };
 }

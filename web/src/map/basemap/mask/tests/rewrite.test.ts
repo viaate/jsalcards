@@ -174,15 +174,16 @@ describe('the street tile protocol', () => {
     vi.unstubAllGlobals();
   });
 
-  /** Serves the archive by range, as the site does. */
+  /** Serves the archive, whole or by range, as the site does. */
   function serveArchive(): string[] {
     const requested: string[] = [];
     vi.stubGlobal('fetch', (url: string, init?: RequestInit) => {
-      requested.push(url);
-      if (url !== MASK_URL) return Promise.resolve(new Response(null, { status: 404 }));
       const range = /bytes=(\d+)-(\d+)/.exec(new Headers(init?.headers).get('range') ?? '');
-      const start = Number(range?.[1] ?? 0);
-      const end = Number(range?.[2] ?? archive.length - 1);
+      requested.push(range === null ? url : `${url} ${range[0]}`);
+      if (url !== MASK_URL) return Promise.resolve(new Response(null, { status: 404 }));
+      if (range === null) return Promise.resolve(new Response(new Uint8Array(archive)));
+      const start = Number(range[1] ?? 0);
+      const end = Number(range[2] ?? archive.length - 1);
       return Promise.resolve(new Response(archive.subarray(start, end + 1), { status: 206 }));
     });
     return requested;
@@ -198,18 +199,32 @@ describe('the street tile protocol', () => {
     return { x, y, px: Math.round((mx - x) * EXTENT), py: Math.round((my - y) * EXTENT) };
   }
 
-  it('answers tiles outside the US with nothing, without asking for them', async () => {
+  it('answers tiles outside the US with nothing, without asking for them once the mask is in', async () => {
     serveArchive();
-    const loadTile = vi.fn();
+    const street = { data: copyBuffer(STREET), cacheControl: null, expires: null };
+    const signals: AbortSignal[] = [];
+    const loadTile = vi.fn((url: string, signal: AbortSignal) => {
+      expect(url).toMatch(/^openfreemap:/);
+      signals.push(signal);
+      return Promise.resolve(street);
+    });
     const load = streetTileLoader(MASK_URL, loadTile);
     // Toronto, at street zoom.
-    const { x, y } = locate(-79.38, 43.65, 14);
-    const response = await load(
-      { url: `openfreemap://planet/14/${String(x)}/${String(y)}` },
+    const toronto = locate(-79.38, 43.65, 14);
+    const url = `openfreemap://planet/14/${String(toronto.x)}/${String(toronto.y)}`;
+    // Before the mask is in, the tile is asked for alongside it, and given up once it says outside.
+    const first = await load({ url }, new AbortController());
+    expect((first.data as ArrayBuffer).byteLength).toBe(0);
+    expect(loadTile).toHaveBeenCalledTimes(1);
+    expect(signals[0]?.aborted).toBe(true);
+    // Once it is in, a tile outside the US is never asked for.
+    const next = locate(-79.4, 43.7, 14);
+    const second = await load(
+      { url: `openfreemap://planet/14/${String(next.x)}/${String(next.y)}` },
       new AbortController(),
     );
-    expect((response.data as ArrayBuffer).byteLength).toBe(0);
-    expect(loadTile).not.toHaveBeenCalled();
+    expect((second.data as ArrayBuffer).byteLength).toBe(0);
+    expect(loadTile).toHaveBeenCalledTimes(1);
   });
 
   it('passes tiles inside the US through untouched', async () => {
@@ -247,8 +262,8 @@ describe('the street tile protocol', () => {
     expect(cut.place?.map((f) => f.name)).toEqual(['Detroit']);
     expect(cut[MASK_LAYER]).toHaveLength(1);
     expect(cut[BORDER_LAYER]?.length).toBe(1);
-    // Only the mask archive was fetched, by range.
-    expect(new Set(requested)).toEqual(new Set([MASK_URL]));
+    // Only the mask archive was fetched, once and whole: a range of it can come from a gzip copy.
+    expect(requested).toEqual([MASK_URL]);
   });
 
   it('keeps the mask tile layers MapLibre draws inside the tile box', () => {

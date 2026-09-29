@@ -7,11 +7,12 @@
  * until the last tiles arrive.
  *
  * The tiles are the ones covering the screen at the view's own tile zoom,
- * and at the zoom levels below it the flight draws on its way in where the
- * tiles lag (flight.ts flightZooms), which the map draws, scaled up, until
- * the closer ones are in. Plain math on Web Mercator tile numbers, as
- * MapLibre counts them: 512 px tiles, a view at zoom 13.2 drawn from zoom 13
- * tiles.
+ * and the ones covering it at each zoom the flight stops at on its way in
+ * (flight.ts flightZooms): a flight asks for street tiles only where it stops
+ * (index.ts), and goes on once they cover the screen, drawing them scaled up
+ * until the closer ones are in. These are the only street tiles a flight
+ * asks for. Plain math on Web Mercator tile numbers, as MapLibre counts
+ * them: 512 px tiles, a view at zoom 13.2 drawn from zoom 13 tiles.
  */
 import { mercatorXFromLng, mercatorYFromLat } from '../glow/mercator';
 import type { MapView } from './bounds';
@@ -27,7 +28,7 @@ export type TileId = readonly [z: number, x: number, y: number];
 const TILE_SIZE = 512;
 
 /** At most this many tiles for one flight: a large screen at street zoom and the steps above it. */
-export const MAX_FLIGHT_TILES = 24;
+export const MAX_FLIGHT_TILES = 48;
 
 /** Tile columns (or rows) from `lo` to `hi` world units at zoom `z`, inside the world. */
 function span(lo: number, hi: number, z: number): number[] {
@@ -40,25 +41,20 @@ function span(lo: number, hi: number, z: number): number[] {
 }
 
 /**
- * The street tiles covering a screen of `size` at `view`, at its tile zoom
- * and the zooms a flight paced from zoom `from` draws on its way there
- * (flightZooms), from
- * OpenFreeMap's first zoom up: the furthest zoom first, since the flight
- * passes it first and it covers the most with the fewest tiles, and within a
- * zoom, the middle of the screen first. Only tiles
- * that reach the continental US's box: the rest would be cut away whole
- * (street-tiles.ts). None below OpenFreeMap's first zoom, where nothing is
- * fetched at all.
+ * The street tiles a flight to `view` on a screen of `size`, paced from tiles
+ * of zoom `from`, asks for: the ones covering the screen at the view, at its
+ * tile zoom, and at each zoom it stops at on the way (flightZooms), with the
+ * camera there, from OpenFreeMap's first zoom up: the furthest zoom first,
+ * since the flight passes it first, and within a zoom, the middle of the
+ * screen first. Only tiles that reach the continental US's box: the rest
+ * would be cut away whole (street-tiles.ts). None below OpenFreeMap's first
+ * zoom, where nothing is fetched at all.
  */
 export function flightTiles(view: MapView, size: Size, from: number = FLIGHT_STOP_ZOOM): TileId[] {
   const top = Math.min(Math.floor(view.zoom), OPENFREEMAP_MAX_ZOOM);
   if (top < OPENFREEMAP_MIN_ZOOM) return [];
   const cx = mercatorXFromLng(view.lon);
   const cy = mercatorYFromLat(view.lat);
-  // Half the screen in world units at the view's zoom.
-  const world = TILE_SIZE * 2 ** view.zoom;
-  const halfX = size.width / 2 / world;
-  const halfY = size.height / 2 / world;
   const [west, south, east, north] = US_BOUNDS;
   const usX = [mercatorXFromLng(west), mercatorXFromLng(east)] as const;
   const usY = [mercatorYFromLat(north), mercatorYFromLat(south)] as const;
@@ -67,6 +63,10 @@ export function flightTiles(view: MapView, size: Size, from: number = FLIGHT_STO
   for (const z of flightZooms(top, from)) {
     if (z < OPENFREEMAP_MIN_ZOOM || seen.has(z)) continue;
     seen.add(z);
+    // Half the screen in world units, with the camera where it stops at this zoom, or at the view.
+    const world = TILE_SIZE * 2 ** (z === top ? view.zoom : z);
+    const halfX = size.width / 2 / world;
+    const halfY = size.height / 2 / world;
     const count = 2 ** z;
     const zoomTiles: { tile: TileId; away: number }[] = [];
     for (const x of span(Math.max(cx - halfX, usX[0]), Math.min(cx + halfX, usX[1]), z)) {

@@ -28,18 +28,22 @@ import type { MapView } from './bounds';
 import { constrainView, viewLimits } from './limits';
 import type { Insets, Place, Size, ViewLimits } from './limits';
 import {
+  FLIGHT_DEADLINE_MS,
   FLIGHT_HOLD_MS,
+  FLIGHT_LAST_CALL_MS,
   FLIGHT_LEAD,
   FLIGHT_MS_PER_ZOOM,
   FLIGHT_STOP_ZOOM,
   coverPoints,
   flightCeiling,
   flightEasing,
+  holdVerdict,
   pacedProgress,
   progressAt,
   streetTileZoom,
 } from './flight';
-import type { LoadedTile } from './flight';
+import type { HoldVerdict, LoadedTile } from './flight';
+import { failedTiles, healTiles, styleOf } from './heal';
 import { heldFrame } from './held-frame';
 import { flightTiles } from './prefetch';
 import { afterNextFrame, LIVE_CLASS, markStep, whenGpuIdle, yieldToMain } from './reveal';
@@ -132,6 +136,12 @@ export interface BasemapResources {
   schools: string | null;
   /** The states' shapes a phone names the states in view by (state-areas.ts), fetched when first needed. */
   stateAreas?: string;
+  /**
+   * The US mask archive the street tiles are cut by (street-tiles.ts): asked
+   * for, whole, as the first flight into streets sets off, so the workers find
+   * it in the browser's cache when they need it.
+   */
+  mask?: string;
 }
 
 export interface Basemap {
@@ -197,6 +207,16 @@ export const ON_SCREEN_MARGIN = 0.125;
 
 /** MapLibre's size for a container that has none yet. */
 const FALLBACK_SIZE: Size = { width: 400, height: 300 };
+
+/**
+ * The sources a flight asks for tiles of only where it stops and where it
+ * ends, not at each zoom it passes on the way: the street tiles and the
+ * school tiles, which come over the network.
+ */
+const HELD_IN_FLIGHT = [BASEMAP_IDS.openFreeMapSource, BASEMAP_IDS.schoolsSource] as const;
+
+/** How long past its own duration a glide may hold them, in milliseconds, whatever becomes of it. */
+const GLIDE_HOLD_SLACK_MS = 2000;
 
 const NO_PADDING: Insets = { top: 0, right: 0, bottom: 0, left: 0 };
 
@@ -359,6 +379,7 @@ export async function createBasemap({
   usLinesUrls,
   schools,
   stateAreas: stateAreasUrl,
+  mask: maskUrl,
 }: BasemapOptions & BasemapResources): Promise<Basemap> {
   configure(maplibre, workerUrl);
   addMapFonts();
@@ -640,19 +661,59 @@ export async function createBasemap({
    * glide, it goes in no further ahead of the street tiles on screen than
    * they can be drawn (flight.ts). No frame on the way is an empty black
    * screen.
+   *
+   * A flight ends where it was going unless someone moves the map or sends
+   * it somewhere else: each leg of it (the flight to the stop, each glide)
+   * ends in the next leg or at the destination, whatever ended it, and past
+   * FLIGHT_DEADLINE_MS it waits for nothing (FLIGHT_LAST_CALL_MS: it is put
+   * there).
    */
   let flights = 0;
   /** Moves someone made by hand, counted: a flight they interrupt goes no further. */
   let handMoves = 0;
   /** A flight is on its way, short of where it is going (Basemap flightStopped). */
   let stopped = false;
+  /** The flight's watch on its deadlines (flyTo), cleared as it lands or gives way. */
+  let deadline: number | undefined;
+  /**
+   * Whether the street and school tiles are held: asked for only where a
+   * flight stops, not at every zoom a glide passes on its way (zoomIn).
+   */
+  let tilesHeld = false;
+  /** Lets them go after a while, whatever becomes of the glide that held them. */
+  let tilesHeldTimer: number | undefined;
+  /** Asks for the tiles the view needs again: the glide stopped, the flight is over, or someone has the map. */
+  const releaseTileRequests = (): void => {
+    window.clearTimeout(tilesHeldTimer);
+    if (!tilesHeld) return;
+    tilesHeld = false;
+    for (const id of HELD_IN_FLIGHT) styleOf(map)?.tileManagers[id]?.resume();
+  };
+  /**
+   * Holds new street and school tile requests while a glide moves (MapLibre
+   * pauses the sources), for at most `ms`.
+   */
+  const holdTileRequests = (ms: number): void => {
+    const managers = styleOf(map)?.tileManagers;
+    if (managers === undefined) return;
+    tilesHeld = true;
+    for (const id of HELD_IN_FLIGHT) managers[id]?.pause();
+    window.clearTimeout(tilesHeldTimer);
+    tilesHeldTimer = window.setTimeout(releaseTileRequests, ms);
+  };
   /** Ends a flight on its way, where it is: the map is going somewhere else. */
   const cancelFlight = (): void => {
     flights++;
+    window.clearTimeout(deadline);
+    releaseTileRequests();
     held.release(false);
     stopped = false;
     map.cancelPendingTileRequestsWhileZooming = true;
   };
+  /** Street and school tiles that fail are asked for again until they come (heal.ts). */
+  const stopHealing = healTiles(map, [BASEMAP_IDS.openFreeMapSource, BASEMAP_IDS.schoolsSource]);
+  /** Whether the mask has been asked for ahead of the workers (flyTo). */
+  let maskAsked = maskUrl === undefined;
   let moved = false;
   let national = start === null;
   /** Whether the map opens on the national view, the one the inline still draws. */
@@ -986,6 +1047,8 @@ export async function createBasemap({
     held.release(false);
     moved = true;
     handMoves++;
+    window.clearTimeout(deadline);
+    releaseTileRequests();
     stopped = false;
     national = false;
     hideNames(NONE_HIDDEN);
@@ -1032,15 +1095,26 @@ export async function createBasemap({
     needAllLayers();
     map.jumpTo({ center: [allowed.lon, allowed.lat], zoom: allowed.zoom });
   }
-  /** Whether a source's tiles for the view are all in (or failed), as of the last frame drawn. */
+  /**
+   * Whether a source's tiles for the view are all in (or failed), as of the
+   * last frame drawn; not while the map has no such source yet (its layers
+   * come in turns), which MapLibre would report as an error.
+   */
   const sourceIn = (id: string): boolean => {
+    if (styleOf(map)?.tileManagers[id] === undefined) return false;
     try {
       return map.isSourceLoaded(id);
     } catch {
       return true;
     }
   };
-  const streetTilesIn = (): boolean => sourceIn(BASEMAP_IDS.openFreeMapSource);
+  /**
+   * Whether the street tiles in view have all come in or failed, and some
+   * failed: nothing more is coming for now (heal.ts asks for them again).
+   */
+  const streetTilesFailed = (): boolean =>
+    failedTiles(map, BASEMAP_IDS.openFreeMapSource).length > 0 &&
+    sourceIn(BASEMAP_IDS.openFreeMapSource);
   /**
    * The zoom of the coarsest street tiles the map draws across the screen, or
    * null while some part of it has none (flight.ts streetTileZoom).
@@ -1064,11 +1138,13 @@ export async function createBasemap({
   };
   /** The closest the camera may be now, with the street tiles on screen. */
   const ceiling = (): number => flightCeiling(coarsestStreetTiles(), FLIGHT_STOP_ZOOM);
+  /** Checks the wait in progress (holdUntil) again at once, if there is one: for a flight told to hurry. */
+  let checkHold: (() => void) | null = null;
   /**
    * Resolves true once `ready` holds, checked as tiles come in and frames are
-   * drawn, or false after FLIGHT_HOLD_MS.
+   * drawn, or false after `ms`.
    */
-  const holdUntil = (ready: () => boolean): Promise<boolean> =>
+  const holdUntil = (ready: () => boolean, ms: number = FLIGHT_HOLD_MS): Promise<boolean> =>
     new Promise((resolve) => {
       if (ready()) {
         resolve(true);
@@ -1077,19 +1153,35 @@ export async function createBasemap({
       const done = (result: boolean): void => {
         window.clearTimeout(timer);
         map.off('sourcedata', check);
+        map.off('error', check);
         map.off('render', check);
         map.off('idle', check);
+        if (checkHold === check) checkHold = null;
         resolve(result);
       };
+      /** Checking, once at a time: what it asks of the map may fire an event it listens for. */
+      let checking = false;
       const check = (): void => {
-        if (ready()) done(true);
+        if (checking) return;
+        checking = true;
+        try {
+          if (ready()) done(true);
+        } finally {
+          checking = false;
+        }
       };
-      const timer = window.setTimeout(() => {
-        done(false);
-      }, FLIGHT_HOLD_MS);
+      const timer = window.setTimeout(
+        () => {
+          done(false);
+        },
+        Math.max(0, ms),
+      );
       map.on('sourcedata', check);
+      // A tile that fails is no data event, and draws no frame.
+      map.on('error', check);
       map.on('render', check);
       map.on('idle', check);
+      checkHold = check;
     });
   /** Whether MapLibre jumps instead of flying: the viewer prefers reduced motion. */
   const reducedMotion = (): boolean =>
@@ -1168,64 +1260,151 @@ export async function createBasemap({
     const dy = (mercatorYFromLat(here.lat) - mercatorYFromLat(view.lat)) * world;
     return Math.abs(dx) <= width / 2 && Math.abs(dy) <= height / 2;
   };
+  /** How a flight on its way goes on: told to hurry past its deadline, it waits for no tile. */
+  interface FlightPace {
+    hurried: boolean;
+  }
+  /** Each leg of a flight (a camera move it starts) is numbered: MapLibre's moveend says which ended. */
+  let legs = 0;
+  /**
+   * Starts a camera move as a leg of a flight: `then` runs once it ends,
+   * however it ends (arrived, stopped by the flight, or cut short by another
+   * move). MapLibre's moveend carries the data the move was started with, so
+   * no other move's end is taken for this one's. A glide taking `glideMs`
+   * asks for no street or school tiles on its way: the zooms it passes, it
+   * passes on tiles already drawn (flight.ts), and the tiles it stops at are
+   * asked for as it stops (or once its time is well past, whatever became of
+   * it).
+   */
+  function leg(
+    move: (data: { snowlightLeg: number }) => void,
+    then: () => void,
+    glideMs?: number,
+  ): void {
+    const data = { snowlightLeg: ++legs };
+    const ended = (event: MapMovementEvent & { snowlightLeg?: number }): void => {
+      if (event.snowlightLeg !== data.snowlightLeg) return;
+      map.off('moveend', ended);
+      if (glideMs !== undefined) releaseTileRequests();
+      then();
+    };
+    map.on('moveend', ended);
+    if (glideMs !== undefined) holdTileRequests(glideMs + GLIDE_HOLD_SLACK_MS);
+    move(data);
+  }
+  /** Whether the map is at `view`, as a flight there leaves it. */
+  const at = (view: MapView): boolean => {
+    const center = map.getCenter();
+    return (
+      Math.abs(map.getZoom() - view.zoom) < 1e-3 &&
+      Math.abs(center.lat - view.lat) < 1e-6 &&
+      Math.abs(center.lng - view.lon) < 1e-6
+    );
+  };
   /**
    * The last leg of a flight into streets, from its stop (or from streets on
    * screen) straight in to `target`: a glide that goes no closer than the
    * street tiles on screen allow (flight.ts), waits there for closer ones,
-   * and glides on. `then` runs once it arrives, or once something else moves
-   * the map.
+   * and glides on; once the tiles fail, or the waits add up to
+   * FLIGHT_HOLD_MS, it glides straight in. `then` runs once it arrives, or
+   * once someone moves the map or another flight takes over. A glide cut
+   * short by anything else goes on from where it is.
    */
-  function zoomIn(target: MapView, current: () => boolean, then: () => void): void {
-    /** Paced until a wait outlasts FLIGHT_HOLD_MS: then the flight goes on without the tiles. */
+  function zoomIn(
+    target: MapView,
+    current: () => boolean,
+    then: () => void,
+    pace: FlightPace,
+  ): void {
+    /** Paced until the tiles fail or the waits run out: then the flight goes on without them. */
     let paced = true;
-    // Nothing to wait for once no street tile is loading: the rest failed.
-    const clear = (): boolean => !paced || ceiling() > map.getZoom() + 1e-3 || streetTilesIn();
+    /** Milliseconds waited for tiles so far, all the waits together. */
+    let waited = 0;
     const glide = (): void => {
-      void holdUntil(clear).then((cleared) => {
+      if (!current()) {
+        then();
+        return;
+      }
+      const since = performance.now();
+      const verdict = (): HoldVerdict => {
+        if (!paced || pace.hurried) return 'go-on';
+        try {
+          return holdVerdict({
+            ceiling: ceiling(),
+            zoom: map.getZoom(),
+            failed: streetTilesFailed(),
+            waited: waited + performance.now() - since,
+          });
+        } catch {
+          // The map could not say what it has drawn: no pacing, rather than no end.
+          return 'go-on';
+        }
+      };
+      void holdUntil(() => verdict() !== 'wait', FLIGHT_HOLD_MS - waited).then(() => {
+        waited += performance.now() - since;
         if (!current()) {
           then();
           return;
         }
-        if (!cleared) paced = false;
+        if (verdict() !== 'glide') paced = false;
         if (reducedMotion()) {
           // MapLibre jumps: straight there.
           stopped = false;
-          map.once('moveend', then);
-          map.jumpTo({ center: [target.lon, target.lat], zoom: target.zoom });
+          leg(
+            (data) => map.jumpTo({ center: [target.lon, target.lat], zoom: target.zoom }, data),
+            then,
+          );
           return;
         }
         const from = map.getZoom();
+        const duration = Math.max(1, target.zoom - from) * FLIGHT_MS_PER_ZOOM;
         let shown = 0;
-        /** Why the glide ended: it arrived, or it reached the tiles' limit; anything else is someone else's move. */
-        let ended: 'arrived' | 'held' | null = null;
+        let arrived = false;
         let over = false;
-        map.once('moveend', () => {
-          over = true;
-          if (ended === 'held' && current()) glide();
-          else then();
-        });
-        map.easeTo({
-          center: [target.lon, target.lat],
-          zoom: target.zoom,
-          duration: Math.max(1, target.zoom - from) * FLIGHT_MS_PER_ZOOM,
-          essential: true,
-          easing: (t) => {
-            const limit = paced && current() ? progressAt(from, target.zoom, ceiling()) : 1;
-            shown = pacedProgress(shown, flightEasing(t), limit);
-            if (shown >= 1) {
-              ended = 'arrived';
-              // Arrived: the address takes this view as the flight ends.
-              stopped = false;
-            } else if ((shown >= limit || t >= 1) && ended === null) {
-              // As far as the tiles allow: end the glide once this frame is drawn, and wait.
-              ended = 'held';
-              queueMicrotask(() => {
-                if (!over) map.stop();
-              });
-            }
-            return shown;
+        let holding = false;
+        leg(
+          (data) =>
+            map.easeTo(
+              {
+                center: [target.lon, target.lat],
+                zoom: target.zoom,
+                duration,
+                essential: true,
+                easing: (t) => {
+                  let limit = 1;
+                  if (paced && !pace.hurried && current()) {
+                    try {
+                      limit = progressAt(from, target.zoom, ceiling());
+                    } catch {
+                      paced = false;
+                    }
+                  }
+                  shown = pacedProgress(shown, flightEasing(t), limit);
+                  if (shown >= 1) {
+                    arrived = true;
+                    // Arrived: the address takes this view as the flight ends.
+                    stopped = false;
+                  } else if ((shown >= limit || t >= 1) && !holding) {
+                    // As far as the tiles allow: end the glide once this frame is drawn, and wait.
+                    holding = true;
+                    queueMicrotask(() => {
+                      if (!over) map.stop();
+                    });
+                  }
+                  return shown;
+                },
+              },
+              data,
+            ),
+          () => {
+            over = true;
+            // Held short of the tiles, or cut short by something other than a person or another
+            // flight: on in, from here.
+            if (current() && !arrived) glide();
+            else then();
           },
-        });
+          duration,
+        );
       });
     };
     glide();
@@ -1263,9 +1442,19 @@ export async function createBasemap({
       ...(stop === null ? [] : flightTiles(stop, size(), paceFrom)),
       ...flightTiles(allowed, size(), paceFrom),
     ]);
+    // The first flight into streets asks for the mask the workers cut them by, whole, as it sets off.
+    if (intoStreets && !maskAsked && maskUrl !== undefined) {
+      maskAsked = true;
+      fetch(maskUrl)
+        .then((response) => response.arrayBuffer())
+        .catch(() => {
+          maskAsked = false;
+        });
+    }
     const flight = ++flights;
     const hand = handMoves;
     const current = (): boolean => flight === flights && hand === handMoves;
+    const pace: FlightPace = { hurried: false };
     // An earlier flight stops here, before this one listens for its own end.
     map.stop();
     held.release(false);
@@ -1273,30 +1462,57 @@ export async function createBasemap({
     map.cancelPendingTileRequestsWhileZooming = false;
     const land = (): void => {
       if (flight !== flights) return;
+      window.clearTimeout(deadline);
+      releaseTileRequests();
       stopped = false;
       map.cancelPendingTileRequestsWhileZooming = true;
     };
+    // Past its deadline a flight waits for nothing; past its last call it is put where it was going.
+    window.clearTimeout(deadline);
+    const watch = (ms: number, last: boolean): void => {
+      deadline = window.setTimeout(() => {
+        if (!current()) return;
+        // Time the page is hidden, and the camera still, is not the flight's.
+        if (document.visibilityState === 'hidden') {
+          watch(1000, last);
+          return;
+        }
+        if (!last) {
+          pace.hurried = true;
+          checkHold?.();
+          watch(FLIGHT_LAST_CALL_MS - FLIGHT_DEADLINE_MS, true);
+          return;
+        }
+        cancelFlight();
+        map.jumpTo({ center: [allowed.lon, allowed.lat], zoom: allowed.zoom });
+      }, ms);
+    };
+    watch(FLIGHT_DEADLINE_MS, false);
+    /** On in from wherever the leg before left it: straight in to the destination, paced by the tiles. */
     const goIn = (): void => {
-      if (!current() || stop === null) {
+      if (!current() || at(allowed)) {
         land();
         return;
       }
-      zoomIn(allowed, current, land);
+      zoomIn(allowed, current, land, pace);
     };
     // Short of where it is going, the address keeps where it was: it takes the view it arrives at.
     stopped = stop !== null || from === 'glide';
     if (from === 'glide') {
-      zoomIn(allowed, current, land);
+      zoomIn(allowed, current, land, pace);
       return;
     }
     if (from === 'cut') {
       cutTo(stop ?? allowed, current, goIn);
       return;
     }
-    // Not essential: MapLibre jumps instead when the viewer prefers reduced motion.
-    map.once('moveend', goIn);
     const view = stop ?? allowed;
-    map.flyTo({ center: [view.lon, view.lat], zoom: view.zoom, essential: false });
+    // Not essential: MapLibre jumps instead when the viewer prefers reduced motion.
+    leg(
+      (data) =>
+        map.flyTo({ center: [view.lon, view.lat], zoom: view.zoom, essential: false }, data),
+      goIn,
+    );
   }
   function fitBounds(
     box: readonly [number, number, number, number],
@@ -1348,13 +1564,21 @@ export async function createBasemap({
   map.on('wheel', onUserMove);
   map.on('resize', onResize);
 
-  // Tile errors from OpenFreeMap are expected when offline; say so once, quietly.
-  let warnedTiles = false;
+  // Street and school tiles fail on a bad network, and are asked for again (heal.ts): say so once
+  // for each, quietly.
+  const warned = new Set<string>();
+  const tileNames: Readonly<Record<string, string>> = {
+    [BASEMAP_IDS.openFreeMapSource]: 'street tiles',
+    [BASEMAP_IDS.schoolsSource]: 'school tiles',
+  };
   map.on('error', (event) => {
     const sourceId = (event as { sourceId?: unknown }).sourceId;
-    if (sourceId === BASEMAP_IDS.openFreeMapSource) {
-      if (!warnedTiles) console.warn('Snowlight: street tiles unavailable', event.error.message);
-      warnedTiles = true;
+    const tiles = typeof sourceId === 'string' ? tileNames[sourceId] : undefined;
+    if (typeof sourceId === 'string' && tiles !== undefined) {
+      if (!warned.has(sourceId)) {
+        console.warn(`Snowlight: ${tiles} unavailable for now`, event.error.message);
+      }
+      warned.add(sourceId);
       return;
     }
     console.error(event.error);
@@ -1402,6 +1626,8 @@ export async function createBasemap({
       cancelFlight();
       window.clearTimeout(revealTimer);
       window.clearTimeout(stateNamesTimer);
+      stopHealing();
+      releaseTileRequests();
       clearance.destroy();
       stopWarming();
       if (window.snowlightMap === map) delete window.snowlightMap;
