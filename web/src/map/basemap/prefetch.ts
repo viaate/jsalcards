@@ -13,6 +13,11 @@
  * until the closer ones are in. These are the only street tiles a flight
  * asks for. Plain math on Web Mercator tile numbers, as MapLibre counts
  * them: 512 px tiles, a view at zoom 13.2 drawn from zoom 13 tiles.
+ *
+ * Before any flight, the tiles where one would stop (stopTiles) tell whether
+ * the streets there need the US mask, for a school pressed on or a place a
+ * search keeps first (firstPlace), so it can come while the person chooses
+ * (index.ts prepareStreets).
  */
 import { mercatorXFromLng, mercatorYFromLat } from '../glow/mercator';
 import type { MapView } from './bounds';
@@ -121,4 +126,59 @@ export function flightTiles(view: MapView, size: Size, from: number = FLIGHT_STO
     tiles.push(...zoomTiles.map(({ tile }) => tile));
   }
   return tiles.slice(0, MAX_FLIGHT_TILES);
+}
+
+/**
+ * The street tiles covering a screen of `size` over `view` at the street
+ * tiles' first zoom, where a flight there from further out stops
+ * (FLIGHT_STOP_ZOOM): every street tile a flight to `view` asks for is under
+ * one of them. None for a view short of the streets: a flight there asks for
+ * no street tiles at all.
+ */
+export function stopTiles(view: MapView, size: Size): TileId[] {
+  if (Math.floor(view.zoom) < OPENFREEMAP_MIN_ZOOM) return [];
+  return flightTiles({ ...view, zoom: FLIGHT_STOP_ZOOM }, size, FLIGHT_STOP_ZOOM);
+}
+
+/** A search's first place, waited on until it stays first (firstPlace). */
+export interface FirstPlace {
+  /** The place the search shows first now, or null for none: a new one's wait starts over. */
+  show(view: MapView | null): void;
+  /**
+   * The map is going somewhere: a wait still running ends, never heard of,
+   * and its place is not waited on again while the search keeps it first.
+   */
+  cancel(): void;
+}
+
+/**
+ * Hands `settled` the place a search shows first once it has stayed first for
+ * `ms`: results that keep it first leave its wait running, however often they
+ * come, so a place shown on the way to another as someone types is never
+ * handed on, and one they stop at is, typing on or not.
+ */
+export function firstPlace(ms: number, settled: (view: MapView) => void): FirstPlace {
+  let first: MapView | null = null;
+  let timer: ReturnType<typeof setTimeout> | undefined;
+  const cancel = (): void => {
+    clearTimeout(timer);
+  };
+  return {
+    show(view) {
+      const same =
+        view !== null &&
+        first !== null &&
+        view.lat === first.lat &&
+        view.lon === first.lon &&
+        view.zoom === first.zoom;
+      if (same) return;
+      cancel();
+      first = view;
+      if (view === null) return;
+      timer = setTimeout(() => {
+        settled(view);
+      }, ms);
+    },
+    cancel,
+  };
 }

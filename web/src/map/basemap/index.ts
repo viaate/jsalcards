@@ -51,7 +51,7 @@ import type { HoldVerdict, LoadedTile } from './flight';
 import { failedTiles, healTiles, styleOf } from './heal';
 import { heldFrame } from './held-frame';
 import { maskFeed as createMaskFeed } from './mask/feed';
-import { flightTileLimit, flightTiles, slowLink } from './prefetch';
+import { firstPlace, flightTileLimit, flightTiles, slowLink, stopTiles } from './prefetch';
 import { insideUs } from './us-inside';
 import { afterNextFrame, LIVE_CLASS, markStep, whenGpuIdle, yieldToMain } from './reveal';
 import {
@@ -213,15 +213,21 @@ export interface Basemap {
   /** Glides to the nearest view the limits allow; jumps when reduced motion is preferred. */
   flyTo(view: MapView): void;
   /**
-   * Someone's search shows `place` first, or nothing (no `place`): once it
-   * has stayed first for RESULT_SETTLE_MS (not for each letter typed) with
-   * the map sent nowhere meanwhile, they are probably on their way to its
-   * streets, and what the street tiles there need before any can be drawn
-   * comes, the US mask, unless a flight there would ask for none but tiles
-   * wholly inside the US (us-inside.ts), which need none. Pressing on a
-   * school asks the same, at once.
+   * Someone's search shows first a place a pick of it flies to `view`, or
+   * nothing (no `view`): once it has stayed first for RESULT_SETTLE_MS (its
+   * wait going on as results that keep it first come, and starting over only
+   * when another place is first) with the map sent nowhere meanwhile, they
+   * are probably on their way there, and what its streets need comes
+   * (streetsAhead).
    */
-  prepareStreets(place?: Place): void;
+  prepareStreets(view?: MapView): void;
+  /**
+   * Someone is on their way to `view` now (a press on a school): if a flight
+   * there ends in the streets, what the street tiles there need before any
+   * can be drawn comes, the US mask, unless the flight would ask for none
+   * but tiles wholly inside the US (us-inside.ts), which need none.
+   */
+  streetsAhead(view: MapView): void;
   /** Glides to show [west, south, east, north] inside the frame, no closer than `maxZoom`. */
   fitBounds(
     bounds: readonly [number, number, number, number],
@@ -820,17 +826,16 @@ export async function createBasemap({
   /** Whether street tiles need the mask: some are not wholly inside the US (us-inside.ts). */
   const needMask = (tiles: readonly (readonly [number, number, number])[]): boolean =>
     tiles.some(([z, x, y]) => !insideUs(z, x, y));
-  /** Someone is on their way to the streets at `place`: the mask comes now, if they need it. */
-  const streetsAhead = (place: Place): void => {
-    // A flight there stops over it at the street tiles' first zoom: every tile it asks for is
-    // under the ones covering the screen then. All wholly inside the US, it needs no mask.
-    const over = flightTiles({ ...place, zoom: FLIGHT_STOP_ZOOM }, size(), FLIGHT_STOP_ZOOM);
-    if (needMask(over)) maskFeed.start();
+  /** Someone is on their way to `view`: the mask comes now, if a flight there needs it. */
+  const streetsAhead = (view: MapView): void => {
+    // Every street tile a flight there asks for is under the ones where it would stop, none for
+    // a flight short of the streets. All wholly inside the US, it needs no mask.
+    if (needMask(stopTiles(constrainView(limits, view), size()))) maskFeed.start();
   };
-  let resultTimer = 0;
-  const prepareStreets = (place?: Place): void => {
-    window.clearTimeout(resultTimer);
-    if (place !== undefined) resultTimer = window.setTimeout(streetsAhead, RESULT_SETTLE_MS, place);
+  /** A search's first place, once it has stayed first (prepareStreets). */
+  const firstShown = firstPlace(RESULT_SETTLE_MS, streetsAhead);
+  const prepareStreets = (view?: MapView): void => {
+    firstShown.show(view ?? null);
   };
   let moved = false;
   let national = start === null;
@@ -1203,7 +1208,7 @@ export async function createBasemap({
   }
   function goTo(target: MapView | null): void {
     // Where the map goes now says where they are going, not what their search shows first.
-    window.clearTimeout(resultTimer);
+    firstShown.cancel();
     if (target === null) {
       showHome();
       return;
@@ -1531,7 +1536,7 @@ export async function createBasemap({
   }
   function flyTo(target: MapView): void {
     // Where the map goes now says where they are going, not what their search shows first.
-    window.clearTimeout(resultTimer);
+    firstShown.cancel();
     national = false;
     hideNames(NONE_HIDDEN);
     const allowed = constrainView(limits, target);
@@ -1696,9 +1701,11 @@ export async function createBasemap({
   map.on('wheel', onUserMove);
   map.on('resize', onResize);
   // Someone pressing on a school is on their way to it: what its streets need comes meanwhile.
+  // A lit school's light, drawn by the glow, is pressed on through its taps (map/school-taps.ts).
   const schoolMarks = [BASEMAP_IDS.schoolDots, BASEMAP_IDS.schoolLight, BASEMAP_IDS.schoolNames];
   const onSchoolPress = (event: MapMouseEvent | MapTouchEvent): void => {
-    streetsAhead({ lat: event.lngLat.lat, lon: event.lngLat.lng });
+    // A school opens in its streets.
+    streetsAhead({ lat: event.lngLat.lat, lon: event.lngLat.lng, zoom: MAX_ZOOM });
   };
   map.on('mousedown', schoolMarks, onSchoolPress);
   map.on('touchstart', schoolMarks, onSchoolPress);
@@ -1769,12 +1776,13 @@ export async function createBasemap({
     flyTo,
     fitBounds,
     prepareStreets,
+    streetsAhead,
     destroy() {
       // A flight on its way goes no further.
       cancelFlight();
       window.clearTimeout(revealTimer);
       window.clearTimeout(stateNamesTimer);
-      window.clearTimeout(resultTimer);
+      firstShown.cancel();
       stopHealing();
       releaseTileRequests();
       maskFeed.destroy();

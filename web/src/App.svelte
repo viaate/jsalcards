@@ -603,8 +603,6 @@
           }),
           listId: LIST_ID,
           onResults: (next) => {
-            // What the streets at the first place shown need comes while the person chooses.
-            basemap?.prepareStreets(next?.[0]?.hit);
             options = next;
             active = next !== null && next.length > 0 ? 0 : -1;
           },

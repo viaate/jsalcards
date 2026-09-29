@@ -20,8 +20,10 @@
  * least, so tap by tap it comes down to one school under the finger. Schools
  * no zoom tells apart (one campus, one place) open the nearest.
  *
- * Only a click acts: MapLibre fires none for a drag or a pinch. A mouse's or
- * a pen's click acts at once. MapLibre stops a flight at any gesture it
+ * Only a click acts: MapLibre fires none for a drag or a pinch. A press
+ * where a tap would open a school, its light included, says so at once
+ * (onPress), so what its streets need can come before the click. A mouse's
+ * or a pen's click acts at once. MapLibre stops a flight at any gesture it
  * takes, a press to drag the map as much as a double click's zoom. So for
  * DOUBLE_TAP_MS after a tap acts, the map's double click zoom is held off
  * and the second press of a double click takes no drag, and a press that
@@ -395,6 +397,11 @@ export interface SchoolTapOptions {
    * to where it was going.
    */
   readonly onResume?: () => void;
+  /**
+   * A press where a tap would open a school, before any click: what its
+   * streets need can start coming.
+   */
+  readonly onPress?: (school: SchoolHit) => void;
   /** The part of the map a school's panel leaves in view; the whole map by default. */
   readonly area?: () => MapArea;
 }
@@ -451,6 +458,16 @@ export function attachSchoolTaps(map: MapLibreMap, options: SchoolTapOptions): S
     touched = Math.max(touched, time);
     cancel();
   };
+  /** The type of the pointer behind an event: its own, else the last to press on the map. */
+  const typeOf = (event: Event): string =>
+    ('pointerType' in event && typeof event.pointerType === 'string' ? event.pointerType : '') ||
+    pointerType;
+  /** A press where a tap would open a school: onPress hears of it. */
+  const pressed = (point: { readonly x: number; readonly y: number }, type: string): void => {
+    if (options.onPress === undefined) return;
+    const action = tapAction(map, point, hitRadius(type), options.lit());
+    if (action?.kind === 'open') options.onPress(action.school);
+  };
   /** Whether a press or a click at this time and place is the second of a double click on `click`. */
   const secondOf = (click: Click | null, time: number, x: number, y: number): boolean =>
     click !== null &&
@@ -491,6 +508,7 @@ export function attachSchoolTaps(map: MapLibreMap, options: SchoolTapOptions): S
       stopped = holding && map.isMoving();
     }
     interrupt(event);
+    pressed(point, typeOf(originalEvent));
   };
   const act = (action: TapAction): void => {
     // A second click or tap coming now is the second of a double: it leaves the flight be.
@@ -516,10 +534,7 @@ export function attachSchoolTaps(map: MapLibreMap, options: SchoolTapOptions): S
     if (pinching || touched > time) return false;
     last = { time, x: point.x, y: point.y, acted: false };
     cancel();
-    const type =
-      ('pointerType' in originalEvent && typeof originalEvent.pointerType === 'string'
-        ? originalEvent.pointerType
-        : '') || pointerType;
+    const type = typeOf(originalEvent);
     const action = tapAction(map, point, hitRadius(type), options.lit(), options.area?.());
     if (action === null) return false;
     // A mouse or a pen acts at once, and so does a finger where a double tap zooms no further.
@@ -548,6 +563,7 @@ export function attachSchoolTaps(map: MapLibreMap, options: SchoolTapOptions): S
   const onTouchStart = (event: MapTouchEvent): void => {
     interrupt(event);
     if (event.originalEvent.touches.length > 1) pinching = true;
+    else pressed(event.point, 'touch');
   };
   const onTouchEnd = (event: MapTouchEvent): void => {
     if (event.originalEvent.touches.length === 0) pinching = false;

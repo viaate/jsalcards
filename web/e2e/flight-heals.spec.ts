@@ -464,6 +464,23 @@ async function expectAtSchool(
   return state;
 }
 
+/**
+ * Keeps the map's `idle` from everything listening for it from now on: MapLibre fires it only
+ * with every source loaded and nothing left to draw, which a busy machine may not see for a
+ * long while, and nothing that heals the map may wait on it.
+ */
+async function withoutIdle(page: Page): Promise<void> {
+  await page.evaluate(() => {
+    const map = window.snowlightMap;
+    if (map === undefined) throw new Error('no map');
+    type Fire = (event: string | { readonly type: string }, properties?: object) => typeof map;
+    const fire = map.fire.bind(map) as Fire;
+    const quiet: Fire = (event, properties) =>
+      (typeof event === 'string' ? event : event.type) === 'idle' ? map : fire(event, properties);
+    map.fire = quiet as typeof map.fire;
+  });
+}
+
 /** Whether the school's dot is drawn on the map. */
 async function dotDrawn(page: Page, school: School): Promise<boolean> {
   return page.evaluate(
@@ -575,6 +592,30 @@ test('the mask out of reach for a while, then back: its streets come soon, untou
   await context.close();
 });
 
+test('a search that keeps a school by the sea first has the mask come before any pick', async ({
+  browser,
+}) => {
+  const { context, page, errors } = await newPage(browser);
+  await tileNetwork(context);
+  let asked = 0;
+  await context.route(US_MASK, async (route) => {
+    asked++;
+    await route.fallback();
+  });
+  await open(page);
+  const input = page.locator('input.search-input');
+  await input.click();
+  await input.pressSequentially(LENORA_BRAYNON_SMITH.query, { delay: 10 });
+  await expect(page.locator('[role="option"]').first()).toContainText(LENORA_BRAYNON_SMITH.name, {
+    timeout: 30_000,
+  });
+  // Nobody picks it: what its streets need comes all the same, once, the map where it was.
+  await expect.poll(() => asked, { timeout: 20_000 }).toBe(1);
+  expect((await mapState(page)).zoom).toBeLessThan(5);
+  expect(errors).toEqual([]);
+  await context.close();
+});
+
 test('a school wholly inside the US needs no mask: streets drawn with none coming', async ({
   browser,
 }) => {
@@ -642,9 +683,12 @@ test('the tile host out of reach, then back: streets come, at once for someone l
   const asked = (): number => [...network.attempts.values()].reduce((sum, n) => sum + n, 0);
   const before = asked();
   await expect.poll(asked, { timeout: 40_000 }).toBeGreaterThan(before);
+  // A busy machine's map may not come to rest for a long while: nothing here waits on it.
+  await withoutIdle(page);
   network.blocked = false;
   // The host is back, and someone comes back to the tab: the streets come within seconds, whatever
-  // round the page was in (at rest, it asks once a minute at most).
+  // round the page was in (at rest, it asks once a minute at most): the tile it asks for first
+  // comes, and the rest follow it at once.
   await page.evaluate(() => document.dispatchEvent(new Event('visibilitychange')));
   await expectAtSchool(page, PEMBROKE_HILL, { timeout: 20_000 });
   expect(errors).toEqual([]);

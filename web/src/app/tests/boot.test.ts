@@ -419,6 +419,7 @@ describe('a school clicked on the map', () => {
   function withTaps(onSchool?: BootOptions['onSchool'], extra: Partial<BootOptions> = {}) {
     const listeners = new Map<string, (event: object) => void>();
     const flights: unknown[] = [];
+    const ahead: unknown[] = [];
     const shown: Target[] = [];
     const inner = {
       center: { lng: -94.6, lat: 39 },
@@ -437,6 +438,7 @@ describe('a school clicked on the map', () => {
       ready: new Promise<void>(() => undefined),
       map: inner,
       flyTo: (view: unknown) => flights.push(view),
+      streetsAhead: (view: unknown) => ahead.push(view),
       selectSchool: (id: string | null) => rings.push(id),
     } as unknown as Basemap;
     let created: (map: Basemap) => void = () => undefined;
@@ -475,6 +477,7 @@ describe('a school clicked on the map', () => {
     return {
       listeners,
       flights,
+      ahead,
       rings,
       shown,
       inner,
@@ -601,6 +604,17 @@ describe('a school clicked on the map', () => {
       ).toContain(`${ROOT}${DETAILS_INDEX_PATH}`);
     }, WAIT);
     fetchSpy.mockRestore();
+    controller.abort();
+  });
+
+  it('has what a pressed school’s streets need come before its click, as a pick flies there', async () => {
+    const { ahead, controller, created, up } = withTaps(vi.fn());
+    created();
+    up();
+    const options = await attached();
+    const school = { id: PEMBROKE_HILL, name: 'Pembroke Hill', lon: -94.593001, lat: 39.03606 };
+    options.onPress?.(school);
+    expect(ahead).toEqual([{ lat: 39.03606, lon: -94.593001, zoom: ZOOM.school }]);
     controller.abort();
   });
 

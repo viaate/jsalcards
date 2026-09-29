@@ -163,10 +163,19 @@ export function boot(options: BootOptions): Services {
   const data = options.data ?? createAppData();
   const pins = createPinStore();
   const warmUrls: string[] = [];
+  /** The map from the moment it takes input. */
+  let created: Basemap | undefined;
+  void (options.mapCreated ?? options.map).then((map) => {
+    created = map;
+  });
   const search: SearchController = createSearchController({
     indexUrl: data.files.url(DATA_PATHS.searchIndex),
     onResults: (results) => {
-      options.onResults(results === null ? null : searchOptions(results, options.listId));
+      const shown = results === null ? null : searchOptions(results, options.listId);
+      // What the streets a pick of the first place shown flies to need comes while they choose.
+      const first = shown?.[0]?.hit;
+      created?.prepareStreets(first === undefined ? undefined : viewForHit(first));
+      options.onResults(shown);
     },
     onIndexLoaded: (url) => {
       warmUrls.push(url);
@@ -293,6 +302,10 @@ export function boot(options: BootOptions): Services {
           },
           onResume: () => {
             if (flight !== null) map.flyTo(flight);
+          },
+          // Pressed on, its light too: what its streets need comes before the click.
+          onPress: (school) => {
+            map.streetsAhead(viewForHit({ kind: 'school', lat: school.lat, lon: school.lon }));
           },
           // Shown picked at once, its ring on the map, its panel's code and record on their way;
           // the ring back on the school open, if any, when the tap turns out to be a double tap.

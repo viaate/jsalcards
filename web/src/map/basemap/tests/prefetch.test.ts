@@ -2,9 +2,11 @@
 /**
  * The street tiles fetched ahead of a flight: the ones the view it ends on is
  * drawn from, and the ones covering the screen where it stops on the way in,
- * and nothing outside the continental US's box or below zoom 7.
+ * and nothing outside the continental US's box or below zoom 7. And before
+ * any flight, where one would stop, and a search's first place once it stays
+ * first.
  */
-import { describe, expect, it } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { mercatorXFromLng, mercatorYFromLat } from '../../glow/mercator';
 import { FLIGHT_LEAD, FLIGHT_STOP_ZOOM, flightZooms } from '../flight';
@@ -12,11 +14,14 @@ import { OPENFREEMAP_MAX_ZOOM, OPENFREEMAP_MIN_ZOOM } from '../openfreemap';
 import {
   MAX_FLIGHT_TILES,
   SLOW_LINK_FLIGHT_TILES,
+  firstPlace,
   flightTileLimit,
   flightTiles,
   slowLink,
+  stopTiles,
 } from '../prefetch';
 import type { TileId } from '../prefetch';
+import { insideUs } from '../us-inside';
 
 const DESKTOP = { width: 1440, height: 900 };
 const PHONE = { width: 412, height: 915 };
@@ -146,5 +151,89 @@ describe('the tiles fetched ahead of a flight', () => {
     const tiles = flightTiles({ lat: 44.9, lon: -66.2, zoom: 12 }, DESKTOP);
     const east = mercatorXFromLng(-66.95);
     for (const [z, x] of tiles) expect(x / 2 ** z).toBeLessThanOrEqual(east);
+  });
+});
+
+describe('the tiles where a flight would stop', () => {
+  /** Lenora Braynon Smith, in Miami, on the sea: its streets are cut by the US mask. */
+  const MIAMI = { lat: 25.81872, lon: -80.22126, zoom: 15 };
+
+  it('are those covering the screen at the stop, over every tile the flight asks for', () => {
+    const stop = stopTiles(PEMBROKE, DESKTOP);
+    expect(stop.length).toBeGreaterThan(0);
+    expect(stop.every(([z]) => z === FLIGHT_STOP_ZOOM)).toBe(true);
+    const held = new Set(stop.map((tile) => tile.join('/')));
+    for (const [z, x, y] of flightTiles(PEMBROKE, DESKTOP)) {
+      const up = 2 ** (z - FLIGHT_STOP_ZOOM);
+      expect(held).toContain(
+        `${String(FLIGHT_STOP_ZOOM)}/${String(Math.floor(x / up))}/${String(Math.floor(y / up))}`,
+      );
+    }
+  });
+
+  it('tell streets wholly inside the US from streets by the sea', () => {
+    const inside = ([z, x, y]: TileId): boolean => insideUs(z, x, y);
+    expect(stopTiles(PEMBROKE, DESKTOP).every(inside)).toBe(true);
+    expect(stopTiles(MIAMI, DESKTOP).every(inside)).toBe(false);
+  });
+
+  it('are none for a view short of the streets: a state seen whole asks for no street tiles', () => {
+    // Maine, or Miami far out: a flight there ends above the street tiles' first zoom.
+    expect(stopTiles({ lat: 45.3, lon: -69.2, zoom: 6 }, DESKTOP)).toEqual([]);
+    expect(stopTiles({ ...MIAMI, zoom: OPENFREEMAP_MIN_ZOOM - 0.01 }, DESKTOP)).toEqual([]);
+    expect(stopTiles({ ...MIAMI, zoom: OPENFREEMAP_MIN_ZOOM }, DESKTOP).length).toBeGreaterThan(0);
+  });
+});
+
+describe('a search’s first place', () => {
+  const HILL = { lat: 39.0362, lon: -94.593, zoom: 15 };
+  const BEACH = { lat: 25.79, lon: -80.13, zoom: 11 };
+  let heard: unknown[];
+  let first: ReturnType<typeof firstPlace>;
+
+  beforeEach(() => {
+    vi.useFakeTimers();
+    heard = [];
+    first = firstPlace(500, (view) => heard.push(view));
+  });
+
+  afterEach(() => {
+    vi.useRealTimers();
+  });
+
+  it('is heard of once it has stayed first, however often results keep it first', () => {
+    // Someone typing on, a letter every 100 ms, the same place first all the while.
+    for (let letter = 0; letter < 20; letter++) {
+      first.show({ ...HILL });
+      vi.advanceTimersByTime(100);
+    }
+    expect(heard).toEqual([HILL]);
+  });
+
+  it('waits afresh for another place first, and is never heard of while none is', () => {
+    first.show(BEACH);
+    vi.advanceTimersByTime(400);
+    first.show(HILL);
+    vi.advanceTimersByTime(499);
+    expect(heard).toEqual([]);
+    vi.advanceTimersByTime(1);
+    expect(heard).toEqual([HILL]);
+    first.show(BEACH);
+    vi.advanceTimersByTime(400);
+    first.show(null);
+    vi.advanceTimersByTime(1000);
+    expect(heard).toEqual([HILL]);
+  });
+
+  it('is not heard of once the map goes somewhere, nor waited on again while still first', () => {
+    first.show(BEACH);
+    vi.advanceTimersByTime(400);
+    first.cancel();
+    first.show(BEACH);
+    vi.advanceTimersByTime(1000);
+    expect(heard).toEqual([]);
+    first.show(HILL);
+    vi.advanceTimersByTime(500);
+    expect(heard).toEqual([HILL]);
   });
 });

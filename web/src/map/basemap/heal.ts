@@ -17,9 +17,10 @@
  * What a round costs the host: the first asks again for every failed tile,
  * each tried once by a worker that has seen the host fail (openfreemap.ts);
  * while the source keeps failing, each round after asks for one of them
- * only, and once it comes, the rest follow in the next round. So a host that
- * turns the page away is asked about once a minute, per tab, for as long as
- * it does.
+ * only (a probe), and once a tile of the source comes while a probe is out,
+ * the rest are asked for at once, each once, with nothing waiting on the map
+ * coming to rest. So a host that turns the page away is asked about once a
+ * minute, per tab, for as long as it does.
  */
 import type { ErrorEvent, Map as MapLibreMap, MapSourceDataEvent } from 'maplibre-gl';
 
@@ -77,16 +78,20 @@ export function failedTiles(map: MapLibreMap, source: string): string[] {
 export function healTiles(map: MapLibreMap, sources: readonly string[]): () => void {
   const rounds = new Map(sources.map((source) => [source, new HealRounds()]));
   const timers = new Map<string, number>();
+  /** The sources with a probe out: one of their failed tiles asked for, the rest waiting on it. */
+  const probes = new Set<string>();
   /**
    * Drops the source's failed tiles, or one of them while the source keeps
-   * failing: the next frame asks for them as new tiles.
+   * failing (a probe): the next frame asks for them as new tiles.
    */
   const retry = (source: string): void => {
     timers.delete(source);
     const ids = failedTiles(map, source);
     const tiles = styleOf(map)?.tileManagers[source];
+    probes.delete(source);
     if (tiles === undefined || ids.length === 0) return;
-    const probing = (rounds.get(source)?.count ?? 0) > 1;
+    const probing = (rounds.get(source)?.count ?? 0) > 1 && ids.length > 1;
+    if (probing) probes.add(source);
     for (const id of probing ? ids.slice(0, 1) : ids) tiles._removeTile(id);
     map._update(true);
   };
@@ -109,9 +114,17 @@ export function healTiles(map: MapLibreMap, sources: readonly string[]): () => v
     const sourceId = (event as { sourceId?: unknown }).sourceId;
     if (typeof sourceId === 'string' && rounds.has(sourceId)) schedule(sourceId);
   };
+  /**
+   * A tile came: the source's next failure waits the shortest again. With a
+   * probe out, the host answers again: the tiles waiting on the probe are
+   * asked for now, in a round of their own that drops every failed tile.
+   */
   const onData = (event: MapSourceDataEvent): void => {
-    if (event.tile === undefined || !rounds.has(event.sourceId)) return;
-    if ((event.tile as { state?: unknown }).state === 'loaded') rounds.get(event.sourceId)?.reset();
+    const source = event.sourceId;
+    if (event.tile === undefined || !rounds.has(source)) return;
+    if ((event.tile as { state?: unknown }).state !== 'loaded') return;
+    rounds.get(source)?.reset();
+    if (probes.delete(source)) schedule(source, true);
   };
   /** At rest, any tile still failed is asked for again in its turn. */
   const onIdle = (): void => {

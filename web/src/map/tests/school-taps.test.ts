@@ -844,6 +844,68 @@ describe('a click on the map', () => {
   });
 });
 
+describe('a press on the map', () => {
+  let map: FakeMap;
+  let spots: LitSpots | null;
+  let pressed: string[];
+  let taps: SchoolTaps;
+  const press = (point: { x: number; y: number }, pointerType = 'mouse') => {
+    map.fire('mousedown', { point, originalEvent: { timeStamp: 0, detail: 1, pointerType } });
+  };
+  const touch = (point: { x: number; y: number }, fingers = 1) => {
+    const touches = Array.from({ length: fingers }, () => ({}));
+    map.fire('touchstart', { point, originalEvent: { timeStamp: 0, touches } });
+  };
+
+  beforeEach(() => {
+    fakeFrames();
+    // The national view: no dots drawn, a lit school's light alone.
+    map = new FakeMap();
+    map.zoom = 4;
+    map.layers = new Set();
+    spots = lit([BORDER_STAR]);
+    pressed = [];
+    taps = attachSchoolTaps(map.map, {
+      lit: () => spots,
+      onSchool: () => undefined,
+      onZoom: () => undefined,
+      onPress: (school) => pressed.push(school.id),
+    });
+  });
+
+  afterEach(() => {
+    taps.stop();
+    realFrames();
+  });
+
+  it('where a tap opens a school, by its light alone, says so before any click', () => {
+    press(beside(map, BORDER_STAR, 0, 4));
+    expect(pressed).toEqual([BORDER_STAR.id]);
+    // As far as its pointer reaches: a finger further than a mouse.
+    const off = beside(map, BORDER_STAR, 0, litRadius(map.zoom) + HIT_RADIUS.mouse + 4);
+    press(off);
+    expect(pressed).toHaveLength(1);
+    touch(off);
+    expect(pressed).toEqual([BORDER_STAR.id, BORDER_STAR.id]);
+    // A school's dot, drawn up close, as well.
+    map.zoom = 14;
+    map.layers = new Set([BASEMAP_IDS.schoolDots]);
+    map.drawn = [{ ...PEMBROKE_HILL, name: 'Pembroke Hill' }];
+    press(beside(map, PEMBROKE_HILL, 1, 1));
+    expect(pressed).toEqual([BORDER_STAR.id, BORDER_STAR.id, PEMBROKE_HILL.id]);
+  });
+
+  it('where a tap opens none, as on nothing, on several, or under two fingers, says nothing', () => {
+    press(beside(map, BORDER_STAR, 0, 40));
+    touch(beside(map, BORDER_STAR, 0, 0), 2);
+    spots = lit([PEMBROKE_HILL, BORDER_STAR]);
+    press(beside(map, BORDER_STAR, 0, 3));
+    spots = null;
+    press(beside(map, BORDER_STAR, 0, 0));
+    expect(pressed).toEqual([]);
+  });
+});
+
 describe('the cursor', () => {
   let map: FakeMap;
   let looks: number;

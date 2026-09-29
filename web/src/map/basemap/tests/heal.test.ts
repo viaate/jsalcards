@@ -121,7 +121,7 @@ describe('failed tiles', () => {
     expect(removed.at(-1)).toBe('streets/d');
   });
 
-  it('while they keep failing, are asked for one a round, and all once that one comes', () => {
+  it('while they keep failing, are asked for one a round, and all at once when that one comes', () => {
     const streets: Tiles = new Map([
       ['a', { state: 'errored' }],
       ['b', { state: 'errored' }],
@@ -143,11 +143,65 @@ describe('failed tiles', () => {
     failAgain('a');
     vi.advanceTimersByTime(HEAL_BACKOFF[2] ?? 0);
     expect(removed.slice(4)).toEqual(['streets/b']);
-    // That one came: the next round asks for the rest, soonest.
+    // That one came: the rest are asked for now, without the map ever coming to rest.
     fire('sourcedata', { sourceId: 'streets', tile: { state: 'loaded' } });
-    fire('idle');
-    vi.advanceTimersByTime(HEAL_BACKOFF[0] ?? 0);
+    vi.advanceTimersByTime(0);
     expect(removed.slice(5).sort()).toEqual(['streets/a', 'streets/c']);
+  });
+
+  it('once a probe comes, are asked for once at once, then in rounds from the shortest wait', () => {
+    const streets: Tiles = new Map([
+      ['a', { state: 'errored' }],
+      ['b', { state: 'errored' }],
+      ['c', { state: 'errored' }],
+    ]);
+    const { map, fire, removed, updates } = fakeMap({ streets });
+    healTiles(map, ['streets']);
+    const failAgain = (...ids: string[]): void => {
+      for (const id of ids) streets.set(id, { state: 'errored' });
+      fire('error', { sourceId: 'streets' });
+    };
+    const loaded = (id: string): void => {
+      streets.set(id, { state: 'loaded' });
+      fire('sourcedata', { sourceId: 'streets', tile: { state: 'loaded' } });
+    };
+    fire('error', { sourceId: 'streets' });
+    vi.advanceTimersByTime(HEAL_BACKOFF[0] ?? 0);
+    failAgain('a', 'b', 'c');
+    vi.advanceTimersByTime(HEAL_BACKOFF[1] ?? 0);
+    // A probe of one, out.
+    expect(removed).toEqual(['streets/a', 'streets/b', 'streets/c', 'streets/a']);
+    loaded('a');
+    vi.advanceTimersByTime(0);
+    expect(removed.slice(4).sort()).toEqual(['streets/b', 'streets/c']);
+    expect(updates()).toBe(3);
+    // More tiles come: nothing more is asked for at once, however many.
+    for (const id of ['d', 'e', 'f']) loaded(id);
+    vi.advanceTimersByTime(0);
+    expect(removed).toHaveLength(6);
+    expect(updates()).toBe(3);
+    // The two failed again: asked for after the shortest wait, both, in one round.
+    failAgain('b', 'c');
+    vi.advanceTimersByTime((HEAL_BACKOFF[0] ?? 0) - 1);
+    expect(removed).toHaveLength(6);
+    vi.advanceTimersByTime(1);
+    expect(removed.slice(6).sort()).toEqual(['streets/b', 'streets/c']);
+    expect(updates()).toBe(4);
+  });
+
+  it('are not asked for sooner when a tile comes with no probe out', () => {
+    const streets: Tiles = new Map([
+      ['a', { state: 'errored' }],
+      ['b', { state: 'errored' }],
+    ]);
+    const { map, fire, removed } = fakeMap({ streets });
+    healTiles(map, ['streets']);
+    fire('error', { sourceId: 'streets' });
+    fire('sourcedata', { sourceId: 'streets', tile: { state: 'loaded' } });
+    vi.advanceTimersByTime(0);
+    expect(removed).toEqual([]);
+    vi.advanceTimersByTime(HEAL_BACKOFF[0] ?? 0);
+    expect(removed).toEqual(['streets/a', 'streets/b']);
   });
 
   it('are asked for once a round, however many fail in it', () => {
