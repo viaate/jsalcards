@@ -5,6 +5,9 @@
  * Each point is a small bright core. Around it, light spreads at several
  * scales at once, like city lights seen through air:
  *
+ * - Below zoom 4, where screens smaller than a desktop's open on the whole
+ *   country, the glow shrinks with the map (glowSizeScale), so the country
+ *   looks as on a desktop.
  * - Zoom 3 to 6, the national view: wide bloom out to about 64 px, so a metro
  *   merges into one glow and a lone town is a speck with a faint halo.
  * - From zoom 6 the wide scales fade out and the glow tightens.
@@ -127,16 +130,35 @@ export function bloomWeights(zoom: number): number[] {
 
 /**
  * Weight for a bloom level whose texels are `scalePx` CSS px, interpolated in
- * log2 scale between the entries of {@link BLOOM_SCALES_PX}. Levels finer
- * than the first scale or coarser than the last get nothing, so the look does
- * not depend on the light target's resolution.
+ * log2 scale between the entries of {@link BLOOM_SCALES_PX} and falling to
+ * nothing one octave past the first and the last. Levels an octave apart
+ * then share out every scale's weight whatever size their texels are, and
+ * levels a full octave finer than the first scale or coarser than the last
+ * get nothing, so the look does not depend on the light target's resolution.
  */
 export function bloomWeightAtScale(weights: readonly number[], scalePx: number): number {
   const position = Math.log2(scalePx / (BLOOM_SCALES_PX[0] ?? 1));
-  if (position < -1e-6 || position > weights.length - 1 + 1e-6) return 0;
-  const lo = Math.floor(position + 1e-6);
-  const t = Math.max(0, position - lo);
+  if (!(position > -1 && position < weights.length)) return 0;
+  const lo = Math.floor(position);
+  const t = position - lo;
   return (weights[lo] ?? 0) * (1 - t) + (weights[lo + 1] ?? 0) * t;
+}
+
+/**
+ * Weights for `count` bloom levels whose texels are `firstPx` CSS px, twice
+ * that and so on, with the bloom scales shrunk by the style's
+ * {@link GlowFrameStyle.sizeScale}. Scales that shrink past the first level
+ * (a phone's national view) add their light to it, so none is lost.
+ */
+export function bloomLevelWeights(style: GlowFrameStyle, firstPx: number, count: number): number[] {
+  const scaled = (px: number): number => bloomWeightAtScale(style.bloom, px / style.sizeScale);
+  const weights = Array.from({ length: count }, (_, i) => scaled(firstPx * 2 ** i));
+  let finer = 0;
+  for (let px = firstPx / 2; px / style.sizeScale > (BLOOM_SCALES_PX[0] ?? 1) / 2; px /= 2) {
+    finer += scaled(px);
+  }
+  if (count > 0) weights[0] = (weights[0] ?? 0) + finer;
+  return weights;
 }
 
 /**
@@ -240,7 +262,10 @@ export function fallbackHalo(style: GlowFrameStyle, zoom: number): HaloShape {
     energy,
     sigmaShare:
       (style.haloEnergy * HALO_SIGMA_SHARE + folded * FALLBACK_BLOOM_SIGMA_SHARE) / energy,
-    radiusPx: Math.max(style.haloRadiusPx, interpolateStops(FALLBACK_HALO_RADIUS_STOPS, zoom)),
+    radiusPx: Math.max(
+      style.haloRadiusPx,
+      interpolateStops(FALLBACK_HALO_RADIUS_STOPS, zoom) * style.sizeScale,
+    ),
   };
 }
 
@@ -306,7 +331,7 @@ export function glowReachPx(zoom: number): number {
   energy += style.haloEnergy;
   moment += style.haloEnergy * haloSigma * haloSigma;
   style.bloom.forEach((weight, i) => {
-    const scale = BLOOM_SCALES_PX[i] ?? 0;
+    const scale = (BLOOM_SCALES_PX[i] ?? 0) * style.sizeScale;
     energy += weight;
     moment += weight * scale * scale;
   });
@@ -333,10 +358,48 @@ export const OPEN_RADIUS_STOPS: ZoomStops = [
 export const GLYPH_FADE_START = 10.5;
 export const GLYPH_FADE_END = 11;
 
+// --- small screens -----------------------------------------------------------------
+
+/**
+ * About the zoom of a desktop's national view. From it up the glow is the
+ * stops' own; below it the glow shrinks with the map (glowSizeScale).
+ */
+export const FULL_SIZE_ZOOM = 4;
+
+/**
+ * Factor on the glow's reach and light below FULL_SIZE_ZOOM, where screens
+ * smaller than a desktop's open on the whole country: a small laptop at about
+ * zoom 3.7, a tablet at 3.1, a phone at 2.1.
+ *
+ * With every size in CSS pixels, the bloom on a phone's national view would
+ * reach four times as far across the country as on a desktop's, and each
+ * school's light would pile into a sixteenth of the area: a storm's band would
+ * lay a pale haze over half the country. So below FULL_SIZE_ZOOM the factor
+ * shrinks with the map itself, as a desktop's national view would shrink to
+ * fit. The halo and bloom scales shrink by it, and each point's light and the
+ * bloom's weights are cut by it, so the bloom's light per point falls with the
+ * map's area: on every screen it reaches as far across the country, and lays
+ * as much light on it. The core keeps its size, about the smallest the
+ * CSS-pixel light target draws without showing its pixels, and its light
+ * falls only with the map's width, so a lone school still shows and a band of
+ * schools stays bright. The factor meets 1 at FULL_SIZE_ZOOM without easing
+ * in: a smooth join would reach farther than a desktop just below it, where
+ * small laptops open.
+ */
+export function glowSizeScale(zoom: number): number {
+  return zoom < FULL_SIZE_ZOOM ? 2 ** (zoom - FULL_SIZE_ZOOM) : 1;
+}
+
 // --- one frame ---------------------------------------------------------------------
 
 /** Everything the layer needs for one frame at a given zoom. */
 export interface GlowFrameStyle {
+  /**
+   * {@link glowSizeScale}, 1 from zoom 4 up. The gain, halo radius and bloom
+   * weights here have it already; the bloom scales take it where the layer
+   * reads them (bloomLevelWeights).
+   */
+  readonly sizeScale: number;
   readonly coreSigmaPx: number;
   readonly gain: number;
   readonly haloRadiusPx: number;
@@ -349,12 +412,14 @@ export interface GlowFrameStyle {
 }
 
 export function glowStyleAtZoom(zoom: number): GlowFrameStyle {
+  const sizeScale = glowSizeScale(zoom);
   return {
+    sizeScale,
     coreSigmaPx: interpolateStops(CORE_SIGMA_STOPS, zoom),
-    gain: interpolateStops(GAIN_STOPS, zoom),
-    haloRadiusPx: interpolateStops(HALO_RADIUS_STOPS, zoom),
+    gain: interpolateStops(GAIN_STOPS, zoom) * sizeScale,
+    haloRadiusPx: interpolateStops(HALO_RADIUS_STOPS, zoom) * sizeScale,
     haloEnergy: interpolateStops(HALO_ENERGY_STOPS, zoom),
-    bloom: bloomWeights(zoom),
+    bloom: bloomWeights(zoom).map((weight) => weight * sizeScale),
     glyphOpacity: smoothstep(GLYPH_FADE_START, GLYPH_FADE_END, zoom),
     glyphRadiusPx: interpolateStops(GLYPH_RADIUS_STOPS, zoom),
     openRadiusPx: interpolateStops(OPEN_RADIUS_STOPS, zoom),

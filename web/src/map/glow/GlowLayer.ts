@@ -9,9 +9,10 @@
  *    guard band around the map so light from just off screen still blooms
  *    into view.
  *    Bloom: the target is halved a few times and added back up with a
- *    per-scale weight, which spreads each point's light over 4 to 64 px at a
- *    cost that does not depend on the number of points. Light past a knee
- *    feeds the bloom at a falling rate, so its size has a bound.
+ *    per-scale weight, which spreads each point's light over 4 to 64 px (less
+ *    below zoom 4, see glowSizeScale) at a cost that does not depend on the
+ *    number of points. Light past a knee feeds the bloom at a falling rate,
+ *    so its size has a bound.
  *    The light target has one pixel per CSS pixel by default: full resolution
  *    on a 1x screen, reduced on high-density screens where it reads the same.
  * 2. render, composite: a full-screen pass turns the per-status light into
@@ -44,7 +45,7 @@ import {
   type GlowFrameStyle,
   type HaloShape,
   PULSE_SECONDS,
-  bloomWeightAtScale,
+  bloomLevelWeights,
   fallbackHalo,
   glowStyleAtZoom,
   interpolateStops,
@@ -463,12 +464,14 @@ export class GlowLayer implements CustomLayerInterface {
     const bloomWeights: number[] = [];
     if (res.float) {
       let size = Math.min(w0, h0);
+      let levels = 0;
       for (let level = 1; ; level++) {
         const scale = 2 ** level / targetPxPerCss;
         size = Math.ceil(size / 2);
         if (scale > MAX_BLOOM_SCALE_PX * 1.01 || size < 2) break;
-        bloomWeights.push(bloomWeightAtScale(style.bloom, scale));
+        levels = level;
       }
+      bloomWeights.push(...bloomLevelWeights(style, 2 / targetPxPerCss, levels));
       // Drop trailing levels that add nothing.
       while (
         bloomWeights.length > 0 &&
