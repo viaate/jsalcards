@@ -156,6 +156,11 @@ class FakeMap {
   /** The map's own double click and double tap zoom, and its drag. */
   readonly doubleClickZoom = toggle();
   readonly dragPan = toggle();
+  /** Whether the map is on its way somewhere (a flight). */
+  moving = false;
+  isMoving(): boolean {
+    return this.moving;
+  }
   project([lon, lat]: [number, number]): { x: number; y: number } {
     return {
       x: (mercatorXFromLng(lon) - this.center.x) * this.scale + this.width / 2,
@@ -484,51 +489,70 @@ describe('a drawn school', () => {
 describe('a tap on several schools', () => {
   const map = new FakeMap();
   const tap = { x: 400, y: 300 };
+  /** The whole 800 by 600 map. */
+  const whole = { left: 0, top: 0, right: 800, bottom: 600 };
+  /** What a panel beside the map leaves of it, under a search strip 64 px high. */
+  const open = { left: 388, top: 64, right: 800, bottom: 600 };
 
-  it('zooms in around the middle of them, as far as keeps them on the map, to DRILL_ZOOM at most', () => {
+  it('zooms in as far as keeps them in the area, to DRILL_ZOOM at most', () => {
     map.zoom = 5;
     // Four pixels apart: room to spread 176 times, past DRILL_ZOOM, so as far as DRILL_ZOOM.
     const close = [mark('a', 1, -2, 0), mark('b', 1, 2, 0)];
-    expect(drillView(map.map, tap, close)?.zoom).toBe(DRILL_ZOOM);
-    // Far apart, they would leave the map past a smaller zoom in: no further than that.
+    expect(drillView(map.map, tap, close, whole)?.zoom).toBe(DRILL_ZOOM);
+    // Far apart, they would leave the area past a smaller zoom in: no further than that.
     const wide = [mark('a', 1, -60, 0), mark('b', 1, 60, 0)];
     const room = (map.width / 2 - DRILL_MARGIN) / 60;
     expect(5 + Math.log2(room)).toBeGreaterThan(5 + DRILL_STEP);
-    expect(drillView(map.map, tap, wide)?.zoom).toBeCloseTo(5 + Math.log2(room), 6);
+    expect(drillView(map.map, tap, wide, whole)?.zoom).toBeCloseTo(5 + Math.log2(room), 6);
+    // Where the panel leaves less of the map, less far.
+    const middling = [mark('a', 1, -30, 0), mark('b', 1, 30, 0)];
+    const inWhole = (map.width / 2 - DRILL_MARGIN) / 30;
+    const inOpen = ((open.right - open.left) / 2 - DRILL_MARGIN) / 30;
+    expect(5 + Math.log2(inOpen)).toBeGreaterThan(5 + DRILL_STEP);
+    expect(drillView(map.map, tap, middling, whole)?.zoom).toBeCloseTo(5 + Math.log2(inWhole), 6);
+    expect(drillView(map.map, tap, middling, open)?.zoom).toBeCloseTo(5 + Math.log2(inOpen), 6);
     // The tap a little off to one side of them changes nothing: their middle is what counts.
     const aside = { x: tap.x - 5, y: tap.y + 3 };
     const shifted = [mark('a', 1, -55, -3), mark('b', 1, 65, -3)];
-    expect(drillView(map.map, aside, shifted)?.zoom).toBeCloseTo(5 + Math.log2(room), 6);
+    expect(drillView(map.map, aside, shifted, whole)?.zoom).toBeCloseTo(5 + Math.log2(room), 6);
   });
 
   it('zooms in by DRILL_STEP at least, and no closer than the map goes', () => {
     map.zoom = 12;
     const close = [mark('a', 1, -3, 0), mark('b', 1, 3, 0)];
-    expect(drillView(map.map, tap, close)?.zoom).toBe(12 + DRILL_STEP);
-    // Near the map's edge the fit leaves no room: still DRILL_STEP.
-    const edge = { x: DRILL_MARGIN / 2, y: 300 };
-    expect(drillView(map.map, edge, [mark('a', 1, -10, 0), mark('b', 1, 10, 0)])?.zoom).toBe(
-      12 + DRILL_STEP,
-    );
+    expect(drillView(map.map, tap, close, whole)?.zoom).toBe(12 + DRILL_STEP);
+    // Spread wider than the area: still DRILL_STEP.
+    const wide = [mark('a', 1, -300, 0), mark('b', 1, 300, 0)];
+    expect(drillView(map.map, tap, wide, open)?.zoom).toBe(12 + DRILL_STEP);
     map.zoom = 15;
-    expect(drillView(map.map, tap, close)?.zoom).toBe(16);
+    expect(drillView(map.map, tap, close, whole)?.zoom).toBe(16);
     map.zoom = 16;
-    expect(drillView(map.map, tap, close)).toBeNull();
+    expect(drillView(map.map, tap, close, whole)).toBeNull();
   });
 
-  it('keeps the middle of them where it is on the screen', () => {
+  it('puts the middle of them in the middle of the area, clear of a panel and the search strip', () => {
     map.zoom = 6;
     const off = { x: 250, y: 420 };
-    // Their middle: 4 px right of the tap and 2 px under it.
+    // Their middle: 4 px right of the tap and 2 px under it, under where a panel would be.
     const middle = { x: off.x + 4, y: off.y + 2 };
     const under = map.unproject([middle.x, middle.y]);
-    const view = drillView(map.map, off, [mark('a', 1, 2, 3), mark('b', 1, 6, 1)]);
+    const marks = [mark('a', 1, 2, 3), mark('b', 1, 6, 1)];
+    const view = drillView(map.map, off, marks, open);
     if (view === null) throw new Error('no zoom');
     const scale = 512 * 2 ** view.zoom;
     const x = (mercatorXFromLng(under.lng) - mercatorXFromLng(view.lon)) * scale + map.width / 2;
     const y = (mercatorYFromLat(under.lat) - mercatorYFromLat(view.lat)) * scale + map.height / 2;
-    expect(x).toBeCloseTo(middle.x, 6);
-    expect(y).toBeCloseTo(middle.y, 6);
+    expect(x).toBeCloseTo((open.left + open.right) / 2, 6);
+    expect(y).toBeCloseTo((open.top + open.bottom) / 2, 6);
+    // And each of them inside it, DRILL_MARGIN in.
+    for (const { dx, dy } of marks) {
+      const spread = 2 ** (view.zoom - map.zoom);
+      const at = { x: x + (dx - 4) * spread, y: y + (dy - 2) * spread };
+      expect(at.x).toBeGreaterThanOrEqual(open.left + DRILL_MARGIN - 1e-6);
+      expect(at.x).toBeLessThanOrEqual(open.right - DRILL_MARGIN + 1e-6);
+      expect(at.y).toBeGreaterThanOrEqual(open.top + DRILL_MARGIN - 1e-6);
+      expect(at.y).toBeLessThanOrEqual(open.bottom - DRILL_MARGIN + 1e-6);
+    }
   });
 });
 
@@ -625,12 +649,53 @@ describe('a click on the map', () => {
     expect(drags).toEqual([true, false]);
     vi.advanceTimersByTime(0);
     expect(map.dragPan.isEnabled()).toBe(true);
+    vi.advanceTimersByTime(DOUBLE_TAP_MS);
     // A press on its own, long after, is the map's: a drag.
     click(beside(map, PEMBROKE_HILL, 60, 0), 2000);
     expect(drags).toEqual([true, false, true]);
     // A double click on no school acted on nothing: its second press drags as ever.
     click(beside(map, PEMBROKE_HILL, 60, 0), 150, 'mouse', 2);
     expect(drags).toEqual([true, false, true, true]);
+  });
+
+  it('after a press elsewhere stopped the flight a click set off, flies on, unless it moved the map', () => {
+    const resumed: number[] = [];
+    taps.stop();
+    taps = attachSchoolTaps(map.map, {
+      lit: () => null,
+      onSchool: (school: SchoolHit) => actions.push(`open ${school.id}`),
+      onZoom: (view) => actions.push(`zoom ${String(view.zoom)}`),
+      onResume: () => resumed.push(now),
+    });
+    const at = beside(map, PEMBROKE_HILL, 0, 0);
+    const elsewhere = beside(map, PEMBROKE_HILL, 200, 80);
+    click(at);
+    map.moving = true;
+    // A double click elsewhere as the flight sets off: its first press stops the flight
+    // (MapLibre's drag), its click has it fly on; its second press takes no drag.
+    const drags: boolean[] = [];
+    map.on('mousedown', () => drags.push(map.dragPan.isEnabled()));
+    click(elsewhere, 200);
+    expect(resumed).toHaveLength(1);
+    click(elsewhere, 100, 'mouse', 2);
+    expect(drags).toEqual([true, false]);
+    expect(resumed).toHaveLength(1);
+    expect(actions).toEqual([`open ${PEMBROKE_HILL.id}`]);
+    // A press that turns into a drag has no click: the map is the hand's.
+    vi.advanceTimersByTime(0);
+    click(at, 2000);
+    map.fire('mousedown', {
+      point: elsewhere,
+      originalEvent: { timeStamp: now + 100, detail: 1, buttons: 1 },
+    });
+    expect(resumed).toHaveLength(1);
+    // Past the hold, or with the map at rest, a click elsewhere is only a click.
+    vi.advanceTimersByTime(DOUBLE_TAP_MS);
+    click(elsewhere, 1000);
+    map.moving = false;
+    click(at, 1000);
+    click(elsewhere, 100);
+    expect(resumed).toHaveLength(1);
   });
 
   it('leaves the map’s double click zoom as it found it', () => {

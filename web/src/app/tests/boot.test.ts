@@ -387,21 +387,25 @@ describe('the glow', () => {
 });
 
 describe('a school clicked on the map', () => {
-  /** A map on screen that keeps its listeners by type and flies where it is told, up when told. */
-  function withTaps(
-    onSchool?: BootOptions['onSchool'],
-    extra: Partial<BootOptions> = {},
-    early: object | null = null,
-  ) {
-    const listeners = new Map<string, unknown>();
+  /**
+   * A map that keeps its listeners by type and flies where it is told: taking
+   * input when told (created), and on screen when told (up). Its view is a
+   * center, one degree to 100 pixels.
+   */
+  function withTaps(onSchool?: BootOptions['onSchool'], extra: Partial<BootOptions> = {}) {
+    const listeners = new Map<string, (event: object) => void>();
     const flights: unknown[] = [];
+    const shown: Target[] = [];
     const inner = {
-      on: (type: string, listener: (event: object) => void) => {
-        listeners.set(type, listener);
-        // A click on the map before the taps' code is in, heard as soon as it is listened for.
-        if (type === 'click' && early !== null) listener(early);
-      },
+      center: { lng: -94.6, lat: 39 },
+      on: (type: string, listener: (event: object) => void) => listeners.set(type, listener),
       off: (type: string) => listeners.delete(type),
+      getCenter: () => inner.center,
+      getZoom: () => 14,
+      project: ([lng, lat]: [number, number]) => ({
+        x: 400 + (lng - inner.center.lng) * 100,
+        y: 300 - (lat - inner.center.lat) * 100,
+      }),
     };
     const map = {
       moved: false,
@@ -409,31 +413,62 @@ describe('a school clicked on the map', () => {
       map: inner,
       flyTo: (view: unknown) => flights.push(view),
     } as unknown as Basemap;
-    let mapUp: (map: Basemap) => void = () => undefined;
+    let created: (map: Basemap) => void = () => undefined;
+    let up: (map: Basemap) => void = () => undefined;
     const controller = new AbortController();
-    boot({
+    const services = boot({
       links: createUrlStore({ host: new FakeTab('https://snow.test/') }),
       map: new Promise((resolve) => {
-        mapUp = resolve;
+        up = resolve;
+      }),
+      mapCreated: new Promise((resolve) => {
+        created = resolve;
       }),
       glow: Promise.resolve({ light: vi.fn(), lit: null, remove: vi.fn() }),
       signal: controller.signal,
-      show: () => undefined,
+      show: (target) => shown.push(target),
       listId: 'list',
       onResults: () => undefined,
       data: NO_DATA,
       ...(onSchool === undefined ? {} : { onSchool }),
       ...extra,
     });
+    /** A click on the map at a point on the screen, as MapLibre fires it. */
+    const click = (x: number, y: number) => {
+      const originalEvent = { type: 'click', x, y };
+      listeners.get('click')?.({
+        point: { x, y },
+        lngLat: {
+          lng: inner.center.lng + (x - 400) / 100,
+          lat: inner.center.lat - (y - 300) / 100,
+        },
+        originalEvent,
+      });
+      return originalEvent;
+    };
     return {
       listeners,
       flights,
+      shown,
       inner,
+      services,
       controller,
-      mapUp: () => {
-        mapUp(map);
+      click,
+      created: () => {
+        created(map);
+      },
+      up: () => {
+        up(map);
       },
     };
+  }
+
+  /** The options the taps were attached with. */
+  async function attached(): Promise<SchoolTapOptions> {
+    await vi.waitFor(() => {
+      expect(taps.attach).toHaveBeenCalledOnce();
+    }, WAIT);
+    return taps.attach.mock.calls[0]?.[1] as SchoolTapOptions;
   }
 
   beforeEach(() => {
@@ -442,33 +477,85 @@ describe('a school clicked on the map', () => {
     taps.stop.mockClear();
   });
 
-  it('is listened for once the map is on screen, and no longer once the page goes', async () => {
+  it('loads its code once the map is on screen, and stops listening once the page goes', async () => {
     const onSchool = vi.fn();
-    const { inner, controller, mapUp } = withTaps(onSchool);
+    const { inner, controller, created, up } = withTaps(onSchool);
+    created();
     await settle();
     expect(taps.attach).not.toHaveBeenCalled();
-    mapUp();
-    await vi.waitFor(() => {
-      expect(taps.attach).toHaveBeenCalledOnce();
-    }, WAIT);
-    const [map, options] = (taps.attach.mock.calls[0] ?? []) as unknown[];
-    expect(map).toBe(inner);
+    up();
+    const options = await attached();
+    expect(taps.attach.mock.calls[0]?.[0]).toBe(inner);
     expect(options).toMatchObject({ onSchool });
     expect(taps.stop).not.toHaveBeenCalled();
     controller.abort();
     expect(taps.stop).toHaveBeenCalledOnce();
   });
 
-  it('zooms the map in as its own flights go, for a tap on several schools', async () => {
-    const { flights, controller, mapUp } = withTaps(vi.fn());
-    mapUp();
+  it('keeps clicks from the moment the map takes input, loads its code on the first, and hands it on', async () => {
+    const { listeners, controller, created, click } = withTaps(vi.fn());
+    created();
+    await settle();
+    // The map is not on screen yet: a click on it loads the code all the same.
+    const original = click(450, 250);
+    await attached();
     await vi.waitFor(() => {
-      expect(taps.attach).toHaveBeenCalledOnce();
+      expect(taps.click).toHaveBeenCalledOnce();
     }, WAIT);
-    const options = taps.attach.mock.calls[0]?.[1] as SchoolTapOptions;
+    expect(taps.click).toHaveBeenCalledWith({ point: { x: 450, y: 250 }, originalEvent: original });
+    // Kept no longer: the taps listen for themselves.
+    expect(listeners.has('click')).toBe(false);
+    controller.abort();
+  });
+
+  it('drops a kept click once the map has moved since: its point is another place now', async () => {
+    const { inner, controller, created, click } = withTaps(vi.fn());
+    created();
+    await settle();
+    click(450, 250);
+    // A hand drags the map before the code is in.
+    inner.center = { lng: inner.center.lng + 0.5, lat: inner.center.lat };
+    await attached();
+    await settle();
+    expect(taps.click).not.toHaveBeenCalled();
+    controller.abort();
+  });
+
+  it('zooms the map in as its own flights go, and has a flight stopped short fly on', async () => {
+    const { flights, services, shown, controller, created, up } = withTaps(vi.fn());
+    created();
+    up();
+    const options = await attached();
     const view = { lat: 39.03, lon: -94.59, zoom: 11 };
     options.onZoom(view);
     expect(flights).toEqual([view]);
+    options.onResume?.();
+    expect(flights).toEqual([view, view]);
+    // A pick's flight, too: the one it set off, framed as it was.
+    services.pick({
+      kind: 'school',
+      id: PEMBROKE_HILL,
+      name: 'Pembroke Hill',
+      sub: '',
+      state: 'MO',
+      lat: 39.03606,
+      lon: -94.593001,
+      match: 'exact',
+      highlight: [],
+    });
+    const picked = shown.at(-1);
+    options.onResume?.();
+    expect(picked).toBeDefined();
+    expect(flights.at(-1)).toEqual((picked as { view: unknown }).view);
+    controller.abort();
+  });
+
+  it('fits a zoom toward several schools into the area the page leaves in view', async () => {
+    const area = () => ({ left: 388, top: 64, right: 1440, bottom: 900 });
+    const { controller, created, up } = withTaps(vi.fn(), { area });
+    created();
+    up();
+    expect((await attached()).area).toBe(area);
     controller.abort();
   });
 
@@ -477,18 +564,16 @@ describe('a school clicked on the map', () => {
       .spyOn(globalThis, 'fetch')
       .mockResolvedValue(new Response('{}', { status: 404 }));
     const pending: unknown[] = [];
-    const { controller, mapUp } = withTaps(vi.fn(), {
+    const { controller, created, up } = withTaps(vi.fn(), {
       onSchoolPending: (school) => pending.push(school?.id ?? null),
       data: {
         files: createDataFiles([DETAILS_INDEX_PATH], ROOT),
         directories: () => Promise.resolve(null),
       },
     });
-    mapUp();
-    await vi.waitFor(() => {
-      expect(taps.attach).toHaveBeenCalledOnce();
-    }, WAIT);
-    const options = taps.attach.mock.calls[0]?.[1] as SchoolTapOptions;
+    created();
+    up();
+    const options = await attached();
     const school = { id: PEMBROKE_HILL, name: 'Pembroke Hill', lon: -94.593001, lat: 39.03606 };
     options.onPending?.(school);
     options.onPending?.(null);
@@ -503,21 +588,10 @@ describe('a school clicked on the map', () => {
     controller.abort();
   });
 
-  it('keeps a click that comes before its code is in, and hands it on', async () => {
-    const click = { point: { x: 10, y: 20 } };
-    const { listeners, controller, mapUp } = withTaps(vi.fn(), {}, click);
-    mapUp();
-    await vi.waitFor(() => {
-      expect(taps.click).toHaveBeenCalledWith(click);
-    }, WAIT);
-    // Kept no longer: the taps listen for themselves.
-    expect(listeners.has('click')).toBe(false);
-    controller.abort();
-  });
-
   it('is not listened for by a page that opens nothing from the map', async () => {
-    const { listeners, controller, mapUp } = withTaps();
-    mapUp();
+    const { listeners, controller, created, up } = withTaps();
+    created();
+    up();
     await settle();
     expect(listeners.size).toBe(0);
     expect(taps.attach).not.toHaveBeenCalled();

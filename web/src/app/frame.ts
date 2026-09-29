@@ -26,16 +26,34 @@ export interface Screen {
   readonly top: number;
 }
 
+/** A part of the screen, in CSS pixels from its top left corner. */
+export interface Area {
+  readonly left: number;
+  readonly top: number;
+  readonly right: number;
+  readonly bottom: number;
+}
+
+/**
+ * The part of the map a school's panel leaves in view, below the search
+ * strip: right of the panel beside the map, above the sheet on a phone (at
+ * the height it opens to). A pick puts its school in the middle of it, and a
+ * tap on several schools zooms them into it (map/school-taps.ts).
+ */
+export function openArea(screen: Screen): Area {
+  const { width, height, top } = screen;
+  return width < PHONE_WIDTH
+    ? { left: 0, top, right: width, bottom: height - Math.round(height * OPEN_SHARE) }
+    : { left: PANEL_EDGE + PANEL_WIDTH, top, right: width, bottom: height };
+}
+
 /** The view that shows `view`'s middle in the middle of the map the panel leaves in view. */
 export function clearOfPanel(view: MapView, screen: Screen): MapView {
-  const { width, height, top } = screen;
-  const covered =
-    width < PHONE_WIDTH
-      ? { left: 0, bottom: Math.round(height * OPEN_SHARE) }
-      : { left: PANEL_EDGE + PANEL_WIDTH, bottom: 0 };
+  const { width, height } = screen;
+  const area = openArea(screen);
   // Where the place goes, from the screen's middle, in pixels.
-  const dx = covered.left / 2;
-  const dy = (top + height - covered.bottom) / 2 - height / 2;
+  const dx = (area.left + area.right) / 2 - width / 2;
+  const dy = (area.top + area.bottom) / 2 - height / 2;
   const scale = TILE * 2 ** view.zoom;
   const x = ((view.lon + 180) / 360) * scale - dx;
   const sin = Math.sin((view.lat * Math.PI) / 180);

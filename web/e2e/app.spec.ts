@@ -50,6 +50,8 @@ const GLOW_LAYER = 'snowlight-glow';
 const FIRST_LABEL_LAYER = 'ofm-label-neighbourhood';
 const PEMBROKE_HILL = 'A1902690';
 const BORDER_STAR = { lon: -94.592692, lat: 39.013304 };
+/** Where the school panel beside the map ends: its gap from the screen's edge and its width (app/frame.ts). */
+const PANEL_RIGHT = 20 + 368;
 /** Where Pembroke Hill is, as the directory has it. */
 const PEMBROKE_HILL_PLACE = { lon: -94.593001, lat: 39.03606 };
 const PIN_KEY = 'snowlight:pin';
@@ -1413,12 +1415,18 @@ test.describe('with data staged', () => {
     expect((await mapView(page)).zoom).toBeLessThan(11.01);
     await expect(panel).toHaveCount(0);
     expect(new URL(page.url()).searchParams.get('school')).toBeNull();
-    // Both on the screen, tens of pixels apart now, around where the click was.
+    // Both tens of pixels apart now, around the middle of the part of the map a school's panel
+    // leaves in view, as a pick frames its school: right of the panel, under the search strip.
     const star = await onScreen(page, BORDER_STAR);
     const hill = await onScreen(page, PEMBROKE_HILL_PLACE);
     expect(Math.hypot(star.x - hill.x, star.y - hill.y)).toBeGreaterThan(30);
+    const strip = await page.locator('.bar').evaluate((bar) => bar.getBoundingClientRect().bottom);
+    const open = { left: PANEL_RIGHT, top: strip, right: 1440, bottom: 900 };
+    const middle = { x: (open.left + open.right) / 2, y: (open.top + open.bottom) / 2 };
     for (const place of [star, hill]) {
-      expect(Math.hypot(place.x - light.x, place.y - light.y)).toBeLessThan(60);
+      expect(place.x).toBeGreaterThan(open.left);
+      expect(place.y).toBeGreaterThan(open.top);
+      expect(Math.hypot(place.x - middle.x, place.y - middle.y)).toBeLessThan(60);
     }
 
     // There, a click on Border Star's light means it: the same panel, the same address and the

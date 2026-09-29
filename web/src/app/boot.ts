@@ -19,10 +19,9 @@
  * dark, search shows nothing and no selection moves the map.
  */
 
-import type { MapMouseEvent } from 'maplibre-gl';
-
 import type { Basemap, MapView } from '../map/basemap';
 import type { Glow } from '../map/glow-mount';
+import { keepClicks } from '../map/kept-clicks';
 import type { SchoolHit, SchoolTaps } from '../map/school-taps';
 import type { SearchHit } from '../search';
 import { createPinStore } from '../state/pin';
@@ -35,13 +34,15 @@ import type { DetailsSource } from '../data/details';
 import { DATA_PATHS } from '../data/files';
 import { createAppData, locate, startLiveGlow } from './data';
 import type { AppData, Target } from './data';
+import type { Area } from './frame';
 import { createSearchController, nearView, searchOptions } from './search';
 import type { SearchController, SearchOption } from './search';
 import type { SchoolHint, SchoolView, WatchOptions } from './school';
 import { startServiceWorker } from './service-worker';
 import { selectionForHit, startupSelection, viewForHit } from './startup';
 
-export { clearOfPanel } from './frame';
+export { clearOfPanel, openArea } from './frame';
+export type { Area } from './frame';
 export type { StatusCounts } from '../data/closings';
 export type { SchoolHit } from '../map/school-taps';
 export type { Target } from './data';
@@ -52,6 +53,11 @@ export interface BootOptions {
   readonly links: UrlStore;
   /** The map once its first frame is up; undefined when it cannot start. */
   readonly map: Promise<Basemap | undefined>;
+  /**
+   * The same map as soon as it takes input, before its first frame is up:
+   * clicks on schools are kept from then. The map's first frame by default.
+   */
+  readonly mapCreated?: Promise<Basemap | undefined>;
   /** The glow layer on that map; null when the map or the layer cannot start. */
   readonly glow: Promise<Glow | null>;
   /** Aborted when the app goes away. */
@@ -82,6 +88,11 @@ export interface BootOptions {
    * to be one: the page shows what it did before.
    */
   readonly onSchoolPending?: (school: SchoolHit | null) => void;
+  /**
+   * The part of the map a school's panel leaves in view (frame.ts openArea):
+   * a tap on several schools zooms them into it. The whole map by default.
+   */
+  readonly area?: () => Area;
   /** Data files to read, for tests; defaults to the ones this build ships. */
   readonly data?: AppData;
 }
@@ -195,43 +206,59 @@ export function boot(options: BootOptions): Services {
     return schoolCode;
   };
 
-  // Clicks on schools, once the map is on screen too; their code loads then, and a click that
-  // comes before it is kept for it. A lit school is found in the glow's own data, read as each
-  // click comes. A tap on several schools zooms in as the map's own flights go; a finger's tap on
-  // one, while it waits to be sure it is no double tap, starts reading the school's record.
+  // Clicks on schools, from the moment the map takes input. Until their code is in (it loads
+  // on the first click, or once the map is on screen) each is kept, and handed on only if the
+  // map has not moved since (map/kept-clicks.ts). A lit school is found in the glow's own data,
+  // read as each click comes. A tap on several schools zooms in as the map's own flights go; a
+  // finger's tap on one, while it waits to be sure it is no double tap, starts reading the
+  // school's record.
   let taps: SchoolTaps | null = null;
+  /** Where the last flight a pick or a tap set off was going: for a flight stopped short. */
+  let flight: MapView | null = null;
   const onSchool = options.onSchool;
   if (onSchool !== undefined) {
-    void Promise.all([options.map, glow])
-      .then(async ([map, layer]) => {
+    let layer: Glow | null = null;
+    void glow.then((mounted) => {
+      layer = mounted;
+    });
+    void (options.mapCreated ?? options.map)
+      .then(async (map) => {
         if (map === undefined || aborted()) return;
-        const early: MapMouseEvent[] = [];
-        const keep = (event: MapMouseEvent): void => {
-          early.push(event);
-        };
-        map.map.on('click', keep);
-        try {
-          const { attachSchoolTaps } = await import('../map/school-taps');
-          if (aborted()) return;
-          taps = attachSchoolTaps(map.map, {
-            lit: () => layer?.lit ?? null,
-            onSchool,
-            onZoom: (view) => {
-              map.flyTo(view);
-            },
-            onPending: (school) => {
-              if (school !== null) {
-                void loadSchoolCode()
-                  .then(({ source }) => source.get(school.id))
-                  .catch(() => undefined);
-              }
-              options.onSchoolPending?.(school);
-            },
-          });
-          for (const event of early) taps.click(event);
-        } finally {
-          map.map.off('click', keep);
-        }
+        const kept = keepClicks(map.map);
+        const code = Promise.race([options.map, kept.heard]).then(
+          () => import('../map/school-taps'),
+        );
+        // Kept no longer once the code is in, or cannot be had.
+        const clicks = await code.then(
+          () => kept.stop(),
+          (error: unknown) => {
+            kept.stop();
+            throw error;
+          },
+        );
+        const { attachSchoolTaps } = await code;
+        if (aborted()) return;
+        taps = attachSchoolTaps(map.map, {
+          lit: () => layer?.lit ?? null,
+          onSchool,
+          onZoom: (view) => {
+            flight = view;
+            map.flyTo(view);
+          },
+          onResume: () => {
+            if (flight !== null) map.flyTo(flight);
+          },
+          onPending: (school) => {
+            if (school !== null) {
+              void loadSchoolCode()
+                .then(({ source }) => source.get(school.id))
+                .catch(() => undefined);
+            }
+            options.onSchoolPending?.(school);
+          },
+          ...(options.area === undefined ? {} : { area: options.area }),
+        });
+        for (const click of clicks) taps.click(click);
       })
       .catch(() => undefined);
   }
@@ -274,6 +301,7 @@ export function boot(options: BootOptions): Services {
         view = viewForHit(hit);
         links.navigate({ selection: null, view });
       }
+      flight = view;
       options.show({ view });
     },
   };

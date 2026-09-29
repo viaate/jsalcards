@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 
 import { OPEN_SHARE } from '../../ui/sheet-geometry';
-import { PANEL_EDGE, PANEL_WIDTH, clearOfPanel } from '../frame';
+import { PANEL_EDGE, PANEL_WIDTH, clearOfPanel, openArea } from '../frame';
 
 /** Pembroke Hill, on its streets. */
 const SCHOOL = { lat: 39.03606, lon: -94.593001, zoom: 15 };
@@ -58,5 +58,37 @@ describe('clearOfPanel', () => {
     });
     expect(phone.x).toBeCloseTo(719 / 2, 6);
     expect(wide.x).toBeGreaterThan(720 / 2);
+  });
+});
+
+describe('openArea', () => {
+  it('is the map right of the panel and under the search strip beside the map', () => {
+    expect(openArea({ width: 1440, height: 900, top: 64 })).toEqual({
+      left: PANEL_EDGE + PANEL_WIDTH,
+      top: 64,
+      right: 1440,
+      bottom: 900,
+    });
+  });
+
+  it('is the map between the search strip and the open sheet on a phone', () => {
+    expect(openArea({ width: 390, height: 844, top: 104 })).toEqual({
+      left: 0,
+      top: 104,
+      right: 390,
+      bottom: 844 - Math.round(844 * OPEN_SHARE),
+    });
+  });
+
+  it('has in its middle what clearOfPanel puts there', () => {
+    for (const screen of [
+      { width: 1440, height: 900, top: 64 },
+      { width: 390, height: 844, top: 104 },
+    ]) {
+      const area = openArea(screen);
+      const at = onScreen(clearOfPanel(SCHOOL, screen), screen);
+      expect(at.x).toBeCloseTo((area.left + area.right) / 2, 6);
+      expect(at.y).toBeCloseTo((area.top + area.bottom) / 2, 6);
+    }
   });
 });

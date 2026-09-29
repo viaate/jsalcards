@@ -151,9 +151,14 @@
    * they have already let the site know where they are (app/nearby.ts), read
    * while MapLibre loads. The glow layer's code loads alongside MapLibre's,
    * and the layer goes on with the map's style, so it never makes the map
-   * draw its first frames again.
+   * draw its first frames again. `onCreated` hears the map as soon as it
+   * takes input, before its first frame is up.
    */
-  async function startMap(signal: AbortSignal, links: UrlStore): Promise<MapParts | undefined> {
+  async function startMap(
+    signal: AbortSignal,
+    links: UrlStore,
+    onCreated: (map: Basemap) => void,
+  ): Promise<MapParts | undefined> {
     // A function, so each check reads the signal afresh after an await.
     const aborted = (): boolean => signal.aborted;
     await afterFirstPaint();
@@ -202,6 +207,8 @@
         map.destroy();
         return;
       }
+      // The map takes input from here: clicks on schools are kept for their code (app/boot.ts).
+      onCreated(map);
       try {
         glow = glowCode?.mountGlow(map.map) ?? null;
       } catch {
@@ -586,28 +593,39 @@
       }
       pickedName = null;
     });
-    const started = startMap(controller.signal, links);
+    let created: (map: Basemap | undefined) => void = () => undefined;
+    const mapCreated = new Promise<Basemap | undefined>((resolve) => {
+      created = resolve;
+    });
+    const started = startMap(controller.signal, links, created);
+    // A map that never came up: nothing was created either (a promise keeps its first value).
+    void started.then((parts) => {
+      created(parts?.basemap);
+    });
     const map = started.then((parts) => parts?.basemap);
     const glow = started.then((parts) => parts?.glow ?? null);
     services = afterFirstPaint()
       .then(() => import('./app/boot'))
-      .then(({ boot, clearOfPanel }) => {
+      .then(({ boot, clearOfPanel, openArea }) => {
         if (controller.signal.aborted) return null;
+        /** The screen, and the foot of the search strip over the map. */
+        const screen = () => ({
+          width: window.innerWidth,
+          height: window.innerHeight,
+          top: headerElement?.getBoundingClientRect().bottom ?? 0,
+        });
         return boot({
           links,
           map,
+          mapCreated,
           glow,
           signal: controller.signal,
           show,
           // A school opens its panel: the map puts it in the middle of what the panel leaves in view.
           frame: (view, opened) =>
-            opened?.kind === 'school'
-              ? clearOfPanel(view, {
-                  width: window.innerWidth,
-                  height: window.innerHeight,
-                  top: headerElement?.getBoundingClientRect().bottom ?? 0,
-                })
-              : view,
+            opened?.kind === 'school' ? clearOfPanel(view, screen()) : view,
+          // A tap on several schools zooms them into it too.
+          area: () => openArea(screen()),
           listId: LIST_ID,
           onResults: (next) => {
             options = next;

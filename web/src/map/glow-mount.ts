@@ -25,6 +25,11 @@ export const GLOW_LAYER_ID = BASEMAP_IDS.glow;
  * How far a lit school's light reaches as a mark at a zoom, in CSS pixels,
  * for a click on it (school-taps.ts): its glyph once glyphs are drawn, else
  * its bright core, most of whose light is within two standard deviations.
+ *
+ * Still to do: once the far-out glow blends lone lights into a smooth glow
+ * (G1), a lone light reads about 14 to 22 px across at zooms 4.5 to 6. This
+ * must then follow the blend's spread there (4 to 11 px), or such a light
+ * takes clicks only about 8 px out from its center.
  */
 export function litRadius(zoom: number): number {
   const style = glowStyleAtZoom(zoom);

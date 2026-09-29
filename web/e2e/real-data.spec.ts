@@ -269,11 +269,15 @@ async function nearestOtherSchool(page: Page, x: number, y: number): Promise<num
 
 /**
  * A point on the map well clear of every school MapLibre drew, dot or name, and of the page's
- * controls: where a click means no school.
+ * controls: where a click means no school. With `shift`, one from which a drag by that much
+ * ends on the map too, clear of its controls.
  */
-async function clearSpot(page: Page): Promise<{ x: number; y: number }> {
+async function clearSpot(
+  page: Page,
+  shift: { x: number; y: number } = { x: 0, y: 0 },
+): Promise<{ x: number; y: number }> {
   return page.evaluate(
-    ({ layers }) => {
+    ({ layers, shift }) => {
       const map = window.snowlightMap;
       if (map === undefined) throw new Error('no map');
       const box = map.getContainer().getBoundingClientRect();
@@ -282,16 +286,21 @@ async function clearSpot(page: Page): Promise<{ x: number; y: number }> {
         return map.project([lon, lat]);
       });
       // Right of where a panel opens, under the search strip, clear of the corners' controls.
+      const inside = (x: number, y: number): boolean =>
+        x >= 600 && x <= box.width - 120 && y >= 200 && y <= box.height - 200;
       for (let y = 200; y <= box.height - 200; y += 20) {
         for (let x = 600; x <= box.width - 120; x += 20) {
-          if (marks.every((at) => Math.hypot(at.x - x, at.y - y) > 80)) {
+          if (
+            inside(x + shift.x, y + shift.y) &&
+            marks.every((at) => Math.hypot(at.x - x, at.y - y) > 80)
+          ) {
             return { x: box.left + x, y: box.top + y };
           }
         }
       }
       throw new Error('no spot clear of every school');
     },
-    { layers: [BASEMAP_IDS.schoolDots, BASEMAP_IDS.schoolNames] },
+    { layers: [BASEMAP_IDS.schoolDots, BASEMAP_IDS.schoolNames], shift },
   );
 }
 
@@ -1306,6 +1315,10 @@ test('a school’s dot takes a click and opens as a search pick does; a drag ope
   await settle(page);
   dot = await schoolOnScreen(page);
   const unopened = new URL(page.url()).searchParams.get('at');
+  // Once the taps' code is in, as the cursor says: a double click before it zooms the map, which
+  // drops the click kept for it.
+  await page.mouse.move(dot.x, dot.y);
+  await expect.poll(() => mapCursor(page)).toBe('pointer');
   await doubleClick(dot);
   await expect(panel.locator('h2')).toHaveText('The Pembroke Hill SchoolWornall Campus', {
     timeout: 30_000,
@@ -1524,6 +1537,110 @@ test('on a phone a tap a little off a dot opens it; a drag, a pinch or a double 
   await expect.poll(async () => (await mapView(page)).zoom, { timeout: 30_000 }).toBeCloseTo(15, 1);
   await openedNothing();
   expect(problems).toEqual([]);
+  await context.close();
+});
+
+test('a click heard before the taps’ code is in opens the school clicked, and none once the map moved', async ({
+  browser,
+}) => {
+  test.setTimeout(240_000);
+  // No service worker: it would serve the taps' code from its cache, past the hold below.
+  const context = await browser.newContext({
+    viewport: { width: 1440, height: 900 },
+    serviceWorkers: 'block',
+  });
+  const page = await context.newPage();
+  const { problems } = watch(page);
+  const panel = page.locator('aside.detail');
+  // The taps' code held back: the next page's download of it, until it is let go.
+  const TAPS_CODE = /\/assets\/school-taps-[^/]+\.js$/;
+  let next: { asked: () => void; gate: Promise<void> } | null = null;
+  const held = (): { asked: Promise<void>; letGo: () => void } => {
+    let asked: () => void = () => undefined;
+    let letGo: () => void = () => undefined;
+    const heard = new Promise<void>((resolve) => {
+      asked = resolve;
+    });
+    const gate = new Promise<void>((resolve) => {
+      letGo = resolve;
+    });
+    next = { asked, gate };
+    return { asked: heard, letGo };
+  };
+  await page.route(TAPS_CODE, async (route) => {
+    const hold = next;
+    next = null;
+    if (hold !== null) {
+      hold.asked();
+      await hold.gate;
+    }
+    await route.continue();
+  });
+
+  // On a map that has not moved since, the click opens the school it fell on.
+  let code = held();
+  await page.goto(`${site}?at=${AT_PEMBROKE_HILL}`);
+  await settle(page);
+  await code.asked;
+  let dot = await schoolOnScreen(page);
+  await page.mouse.click(dot.x + 1, dot.y + 1);
+  await page.waitForTimeout(1000);
+  await expect(panel).toHaveCount(0);
+  code.letGo();
+  await expect(panel.locator('h2')).toHaveText('The Pembroke Hill SchoolWornall Campus', {
+    timeout: 30_000,
+  });
+  expect(new URL(page.url()).searchParams.get('school')).toBe(PEMBROKE_HILL.id);
+
+  // Clicked on Pembroke Hill's dot, and the map dragged until St Teresa's Academy is where the
+  // click fell: that point is another school now, and the click opens nothing.
+  code = held();
+  await page.goto(`${site}?at=${AT_PEMBROKE_HILL}`);
+  await settle(page);
+  await code.asked;
+  dot = await schoolOnScreen(page);
+  const clicked = { x: dot.x + 1, y: dot.y + 1 };
+  await page.mouse.click(clicked.x, clicked.y);
+  const teresa = await page.evaluate(
+    ({ layers }) => {
+      const map = window.snowlightMap;
+      if (map === undefined) throw new Error('no map');
+      const box = map.getContainer().getBoundingClientRect();
+      const found = map
+        .queryRenderedFeatures({ layers })
+        .find((feature) => String(feature.properties.name).startsWith('St Teresa'));
+      if (found === undefined) throw new Error('no St Teresa’s Academy on the map');
+      const [lon, lat] = (found.geometry as { coordinates: [number, number] }).coordinates;
+      const at = map.project([lon, lat]);
+      return { id: String(found.properties.id), lon, lat, x: box.left + at.x, y: box.top + at.y };
+    },
+    { layers: [BASEMAP_IDS.schoolDots] },
+  );
+  // Dragged from a point clear of every school, the whole drag on the map.
+  const drag = { x: clicked.x - teresa.x, y: clicked.y - teresa.y };
+  const grab = await clearSpot(page, drag);
+  await page.mouse.move(grab.x, grab.y);
+  await page.mouse.down();
+  await page.mouse.move(grab.x + drag.x, grab.y + drag.y, { steps: 12 });
+  await page.mouse.up();
+  await settle(page);
+  const moved = await page.evaluate(({ lon, lat }) => {
+    const map = window.snowlightMap;
+    if (map === undefined) throw new Error('no map');
+    const box = map.getContainer().getBoundingClientRect();
+    const at = map.project([lon, lat]);
+    return { x: box.left + at.x, y: box.top + at.y };
+  }, teresa);
+  expect(Math.hypot(moved.x - clicked.x, moved.y - clicked.y)).toBeLessThan(4);
+  code.letGo();
+  await page.waitForTimeout(2000);
+  await expect(panel).toHaveCount(0);
+  expect(new URL(page.url()).searchParams.get('school')).toBeNull();
+  // The taps are in: over St Teresa's Academy now, the cursor says a click would open it.
+  await page.mouse.move(clicked.x, clicked.y);
+  await expect.poll(() => mapCursor(page)).toBe('pointer');
+  // Playwright says so when it blocks the service worker; nothing else is said.
+  expect(problems.filter((problem) => !problem.includes('Service Worker'))).toEqual([]);
   await context.close();
 });
 
