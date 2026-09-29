@@ -1,278 +1,1097 @@
 {
   "cdx": [
     {
-      "url": "www.pcschools.us/cms/Tools/OnScreenAlerts/*",
-      "from": "20160101",
+      "url": "www.atisd.net/",
+      "from": "20170101",
+      "to": "20260930",
+      "filter": [
+        "statuscode:200"
+      ],
+      "collapse": "timestamp:10"
+    },
+    {
+      "url": "www.dellcityisd.net/",
+      "from": "20170101",
+      "to": "20260930",
+      "filter": [
+        "statuscode:200"
+      ],
+      "collapse": "timestamp:10"
+    },
+    {
+      "url": "www.durhamunified.org/",
+      "from": "20170101",
+      "to": "20260930",
+      "filter": [
+        "statuscode:200"
+      ],
+      "collapse": "timestamp:10"
+    },
+    {
+      "url": "www.wyomingindianschools.com/",
+      "from": "20170101",
+      "to": "20260930",
+      "filter": [
+        "statuscode:200"
+      ],
+      "collapse": "timestamp:10"
+    },
+    {
+      "url": "www.shoshonischools.org/",
+      "from": "20170101",
+      "to": "20260930",
+      "filter": [
+        "statuscode:200"
+      ],
+      "collapse": "timestamp:10"
+    },
+    {
+      "url": "www.gilchristschools.org/",
+      "from": "20170101",
+      "to": "20260930",
+      "filter": [
+        "statuscode:200"
+      ],
+      "collapse": "timestamp:10"
+    },
+    {
+      "url": "www.gladesedu.org/",
+      "from": "20170101",
+      "to": "20260930",
+      "filter": [
+        "statuscode:200"
+      ],
+      "collapse": "timestamp:10"
+    },
+    {
+      "url": "www.hardee.k12.fl.us/",
+      "from": "20170101",
+      "to": "20260930",
+      "filter": [
+        "statuscode:200"
+      ],
+      "collapse": "timestamp:10"
+    },
+    {
+      "url": "www.hemetusd.org/",
+      "from": "20170101",
+      "to": "20260930",
+      "filter": [
+        "statuscode:200"
+      ],
+      "collapse": "timestamp:10"
+    },
+    {
+      "url": "www.hmps.net/",
+      "from": "20170101",
+      "to": "20260930",
+      "filter": [
+        "statuscode:200"
+      ],
+      "collapse": "timestamp:10"
+    },
+    {
+      "url": "www.hustonacademy.com/",
+      "from": "20170101",
+      "to": "20260930",
+      "filter": [
+        "statuscode:200"
+      ],
+      "collapse": "timestamp:10"
+    },
+    {
+      "url": "www.lavillaisd.org/",
+      "from": "20170101",
+      "to": "20260930",
+      "filter": [
+        "statuscode:200"
+      ],
+      "collapse": "timestamp:10"
+    },
+    {
+      "url": "www.lasaraisd.net/",
+      "from": "20170101",
+      "to": "20260930",
+      "filter": [
+        "statuscode:200"
+      ],
+      "collapse": "timestamp:10"
+    },
+    {
+      "url": "www.lyfordcisd.net/",
+      "from": "20170101",
+      "to": "20260930",
+      "filter": [
+        "statuscode:200"
+      ],
+      "collapse": "timestamp:10"
+    },
+    {
+      "url": "www.montealtoisd.org/",
+      "from": "20170101",
+      "to": "20260930",
+      "filter": [
+        "statuscode:200"
+      ],
+      "collapse": "timestamp:10"
+    },
+    {
+      "url": "www.ocesd.net/",
+      "from": "20170101",
+      "to": "20260930",
+      "filter": [
+        "statuscode:200"
+      ],
+      "collapse": "timestamp:10"
+    },
+    {
+      "url": "www.rivieraisd.us/",
+      "from": "20170101",
+      "to": "20260930",
+      "filter": [
+        "statuscode:200"
+      ],
+      "collapse": "timestamp:10"
+    },
+    {
+      "url": "www.leadoreschool.org/",
+      "from": "20170101",
+      "to": "20260930",
+      "filter": [
+        "statuscode:200"
+      ],
+      "collapse": "timestamp:10"
+    },
+    {
+      "url": "www.taftisd.net/",
+      "from": "20170101",
+      "to": "20260930",
+      "filter": [
+        "statuscode:200"
+      ],
+      "collapse": "timestamp:10"
+    },
+    {
+      "url": "www.trisd.org/",
+      "from": "20170101",
+      "to": "20260930",
+      "filter": [
+        "statuscode:200"
+      ],
+      "collapse": "timestamp:10"
+    },
+    {
+      "url": "www.tisd.us/",
+      "from": "20170101",
+      "to": "20260930",
+      "filter": [
+        "statuscode:200"
+      ],
+      "collapse": "timestamp:10"
+    },
+    {
+      "url": "www.uintah.net/",
+      "from": "20170101",
+      "to": "20260930",
+      "filter": [
+        "statuscode:200"
+      ],
+      "collapse": "timestamp:10"
+    },
+    {
+      "url": "www.vviewisd.net/",
+      "from": "20170101",
+      "to": "20260930",
+      "filter": [
+        "statuscode:200"
+      ],
+      "collapse": "timestamp:10"
+    },
+    {
+      "url": "www.beaumontusd.us/",
+      "from": "20170101",
+      "to": "20260930",
+      "filter": [
+        "statuscode:200"
+      ],
+      "collapse": "timestamp:10"
+    },
+    {
+      "url": "www.leusd.k12.ca.us/",
+      "from": "20170101",
+      "to": "20260930",
+      "filter": [
+        "statuscode:200"
+      ],
+      "collapse": "timestamp:10"
+    },
+    {
+      "url": "www.sanjacinto.k12.ca.us/",
+      "from": "20170101",
+      "to": "20260930",
+      "filter": [
+        "statuscode:200"
+      ],
+      "collapse": "timestamp:10"
+    },
+    {
+      "url": "www.promesapublicschools.org/",
+      "from": "20170101",
+      "to": "20260930",
+      "filter": [
+        "statuscode:200"
+      ],
+      "collapse": "timestamp:10"
+    },
+    {
+      "url": "www.wsh2.k12.wy.us/",
+      "from": "20170101",
+      "to": "20260930",
+      "filter": [
+        "statuscode:200"
+      ],
+      "collapse": "timestamp:10"
+    },
+    {
+      "url": "www.adisd.net/",
+      "from": "20170101",
+      "to": "20260930",
+      "filter": [
+        "statuscode:200"
+      ],
+      "collapse": "timestamp:10"
+    },
+    {
+      "url": "www.bakerk12.org/",
+      "from": "20170101",
+      "to": "20260930",
+      "filter": [
+        "statuscode:200"
+      ],
+      "collapse": "timestamp:10"
+    },
+    {
+      "url": "www.banqueteisd.net/",
+      "from": "20170101",
+      "to": "20260930",
+      "filter": [
+        "statuscode:200"
+      ],
+      "collapse": "timestamp:10"
+    },
+    {
+      "url": "www.benavidesisd.net/",
+      "from": "20170101",
+      "to": "20260930",
+      "filter": [
+        "statuscode:200"
+      ],
+      "collapse": "timestamp:10"
+    },
+    {
+      "url": "www.bishopcisd.net/",
+      "from": "20170101",
+      "to": "20260930",
+      "filter": [
+        "statuscode:200"
+      ],
+      "collapse": "timestamp:10"
+    },
+    {
+      "url": "www.bradfordschools.org/",
+      "from": "20170101",
+      "to": "20260930",
+      "filter": [
+        "statuscode:200"
+      ],
+      "collapse": "timestamp:10"
+    },
+    {
+      "url": "www.bcisd.us/",
+      "from": "20170101",
+      "to": "20260930",
+      "filter": [
+        "statuscode:200"
+      ],
+      "collapse": "timestamp:10"
+    },
+    {
+      "url": "www.canutillo-isd.org/",
+      "from": "20170101",
+      "to": "20260930",
+      "filter": [
+        "statuscode:200"
+      ],
+      "collapse": "timestamp:10"
+    },
+    {
+      "url": "www.d181.k12.id.us/",
+      "from": "20170101",
+      "to": "20260930",
+      "filter": [
+        "statuscode:200"
+      ],
+      "collapse": "timestamp:10"
+    },
+    {
+      "url": "www.clarkcountyschools161.org/",
+      "from": "20170101",
+      "to": "20260930",
+      "filter": [
+        "statuscode:200"
+      ],
+      "collapse": "timestamp:10"
+    },
+    {
+      "url": "www.cleveland.k12.ms.us/",
+      "from": "20170101",
+      "to": "20260930",
+      "filter": [
+        "statuscode:200"
+      ],
+      "collapse": "timestamp:10"
+    },
+    {
+      "url": "www.clintweb.net/",
+      "from": "20170101",
+      "to": "20260930",
+      "filter": [
+        "statuscode:200"
+      ],
+      "collapse": "timestamp:10"
+    },
+    {
+      "url": "www.dnusd.org/",
+      "from": "20170101",
+      "to": "20260930",
+      "filter": [
+        "statuscode:200"
+      ],
+      "collapse": "timestamp:10"
+    },
+    {
+      "url": "www.desotoschools.com/",
+      "from": "20170101",
+      "to": "20260930",
+      "filter": [
+        "statuscode:200"
+      ],
+      "collapse": "timestamp:10"
+    },
+    {
+      "url": "www.driscollisd.us/",
+      "from": "20170101",
+      "to": "20260930",
+      "filter": [
+        "statuscode:200"
+      ],
+      "collapse": "timestamp:10"
+    },
+    {
+      "url": "www.elacharterschool.com/",
+      "from": "20170101",
+      "to": "20260930",
+      "filter": [
+        "statuscode:200"
+      ],
+      "collapse": "timestamp:10"
+    },
+    {
+      "url": "www.fabensisd.net/",
+      "from": "20170101",
+      "to": "20260930",
+      "filter": [
+        "statuscode:200"
+      ],
+      "collapse": "timestamp:10"
+    },
+    {
+      "url": "www.franklincountyschools.org/",
+      "from": "20170101",
+      "to": "20260930",
+      "filter": [
+        "statuscode:200"
+      ],
+      "collapse": "timestamp:10"
+    },
+    {
+      "url": "www.fhisd.net/",
+      "from": "20170101",
+      "to": "20260930",
+      "filter": [
+        "statuscode:200"
+      ],
+      "collapse": "timestamp:10"
+    },
+    {
+      "url": "www.grenadak12.com/",
+      "from": "20170101",
+      "to": "20260930",
+      "filter": [
+        "statuscode:200"
+      ],
+      "collapse": "timestamp:10"
+    },
+    {
+      "url": "www.harmonytx.org/schools/south-texas",
+      "from": "20170101",
+      "to": "20260930",
+      "filter": [
+        "statuscode:200"
+      ],
+      "collapse": "timestamp:10"
+    },
+    {
+      "url": "www.hendry-schools.org/",
+      "from": "20170101",
+      "to": "20260930",
+      "filter": [
+        "statuscode:200"
+      ],
+      "collapse": "timestamp:10"
+    },
+    {
+      "url": "www.hollandalesd.org/",
+      "from": "20170101",
+      "to": "20260930",
+      "filter": [
+        "statuscode:200"
+      ],
+      "collapse": "timestamp:10"
+    },
+    {
+      "url": "www.kerrvilleisd.net/",
+      "from": "20170101",
+      "to": "20260930",
+      "filter": [
+        "statuscode:200"
+      ],
+      "collapse": "timestamp:10"
+    },
+    {
+      "url": "www.londonisd.net/",
+      "from": "20170101",
+      "to": "20260930",
+      "filter": [
+        "statuscode:200"
+      ],
+      "collapse": "timestamp:10"
+    },
+    {
+      "url": "www.mathisisd.org/",
+      "from": "20170101",
+      "to": "20260930",
+      "filter": [
+        "statuscode:200"
+      ],
+      "collapse": "timestamp:10"
+    },
+    {
+      "url": "www.mvusd.net/",
+      "from": "20170101",
+      "to": "20260930",
+      "filter": [
+        "statuscode:200"
+      ],
+      "collapse": "timestamp:10"
+    },
+    {
+      "url": "www.murrieta.k12.ca.us/",
+      "from": "20170101",
+      "to": "20260930",
+      "filter": [
+        "statuscode:200"
+      ],
+      "collapse": "timestamp:10"
+    },
+    {
+      "url": "www.nurseryisd.org/",
+      "from": "20170101",
+      "to": "20260930",
+      "filter": [
+        "statuscode:200"
+      ],
+      "collapse": "timestamp:10"
+    },
+    {
+      "url": "www.ouhsd.org/",
+      "from": "20170101",
+      "to": "20260930",
+      "filter": [
+        "statuscode:200"
+      ],
+      "collapse": "timestamp:10"
+    },
+    {
+      "url": "www.psusd.us/",
+      "from": "20170101",
+      "to": "20260930",
+      "filter": [
+        "statuscode:200"
+      ],
+      "collapse": "timestamp:10"
+    },
+    {
+      "url": "www.ramirezcsd.net/",
+      "from": "20170101",
+      "to": "20260930",
+      "filter": [
+        "statuscode:200"
+      ],
+      "collapse": "timestamp:10"
+    },
+    {
+      "url": "www.raymondvilleisd.org/",
+      "from": "20170101",
+      "to": "20260930",
+      "filter": [
+        "statuscode:200"
+      ],
+      "collapse": "timestamp:10"
+    },
+    {
+      "url": "www.riversideunified.org/",
+      "from": "20170101",
+      "to": "20260930",
+      "filter": [
+        "statuscode:200"
+      ],
+      "collapse": "timestamp:10"
+    },
+    {
+      "url": "www.rmaschools.org/",
+      "from": "20170101",
+      "to": "20260930",
+      "filter": [
+        "statuscode:200"
+      ],
+      "collapse": "timestamp:10"
+    },
+    {
+      "url": "www.ryss.org/",
+      "from": "20170101",
+      "to": "20260930",
+      "filter": [
+        "statuscode:200"
+      ],
+      "collapse": "timestamp:10"
+    },
+    {
+      "url": "www.seisd.net/",
+      "from": "20170101",
+      "to": "20260930",
+      "filter": [
+        "statuscode:200"
+      ],
+      "collapse": "timestamp:10"
+    },
+    {
+      "url": "www.srtx.org/",
+      "from": "20170101",
+      "to": "20260930",
+      "filter": [
+        "statuscode:200"
+      ],
+      "collapse": "timestamp:10"
+    },
+    {
+      "url": "www.sierrablancaisd.net/",
+      "from": "20170101",
+      "to": "20260930",
+      "filter": [
+        "statuscode:200"
+      ],
+      "collapse": "timestamp:10"
+    },
+    {
+      "url": "www.stisd.net/",
+      "from": "20170101",
+      "to": "20260930",
+      "filter": [
+        "statuscode:200"
+      ],
+      "collapse": "timestamp:10"
+    },
+    {
+      "url": "www.tvusd.k12.ca.us/",
+      "from": "20170101",
+      "to": "20260930",
+      "filter": [
+        "statuscode:200"
+      ],
+      "collapse": "timestamp:10"
+    },
+    {
+      "url": "www.wisd.net/",
+      "from": "20170101",
+      "to": "20260930",
+      "filter": [
+        "statuscode:200"
+      ],
+      "collapse": "timestamp:10"
+    },
+    {
+      "url": "www.aliceisd.net/en-US",
+      "from": "20170101",
+      "to": "20260930",
+      "filter": [
+        "statuscode:200"
+      ],
+      "collapse": "timestamp:10"
+    },
+    {
+      "url": "www.bwsd.org/en-US",
+      "from": "20170101",
+      "to": "20260930",
+      "filter": [
+        "statuscode:200"
+      ],
+      "collapse": "timestamp:10"
+    },
+    {
+      "url": "www.sd148.org/en-US",
+      "from": "20170101",
+      "to": "20260930",
+      "filter": [
+        "statuscode:200"
+      ],
+      "collapse": "timestamp:10"
+    },
+    {
+      "url": "www.industrialisd.org/en-US",
+      "from": "20170101",
+      "to": "20260930",
+      "filter": [
+        "statuscode:200"
+      ],
+      "collapse": "timestamp:10"
+    },
+    {
+      "url": "www.stbobcats.net/en-US",
+      "from": "20170101",
+      "to": "20260930",
+      "filter": [
+        "statuscode:200"
+      ],
+      "collapse": "timestamp:10"
+    },
+    {
+      "url": "www.valverde.edu/en-US",
+      "from": "20170101",
+      "to": "20260930",
+      "filter": [
+        "statuscode:200"
+      ],
+      "collapse": "timestamp:10"
+    },
+    {
+      "url": "www.kxxv.com/weather/school-closings-delays",
+      "from": "20170101",
+      "to": "20260930",
+      "filter": [
+        "statuscode:200"
+      ],
+      "collapse": "timestamp:10"
+    },
+    {
+      "url": "www.alvordschools.org/",
+      "from": "20170101",
+      "to": "20260930",
+      "filter": [
+        "statuscode:200"
+      ],
+      "collapse": "timestamp:10"
+    },
+    {
+      "url": "www.alvordschools.org/api/popup-alerts",
+      "from": "20170101",
+      "to": "20260930",
+      "filter": [
+        "statuscode:200"
+      ],
+      "collapse": "timestamp:10"
+    },
+    {
+      "url": "www.beevilleisd.net/",
+      "from": "20170101",
+      "to": "20260930",
+      "filter": [
+        "statuscode:200"
+      ],
+      "collapse": "timestamp:10"
+    },
+    {
+      "url": "www.beevilleisd.net/api/popup-alerts",
+      "from": "20170101",
+      "to": "20260930",
+      "filter": [
+        "statuscode:200"
+      ],
+      "collapse": "timestamp:10"
+    },
+    {
+      "url": "www.calhounflschools.org/",
+      "from": "20170101",
+      "to": "20260930",
+      "filter": [
+        "statuscode:200"
+      ],
+      "collapse": "timestamp:10"
+    },
+    {
+      "url": "www.calhounflschools.org/api/popup-alerts",
+      "from": "20170101",
+      "to": "20260930",
+      "filter": [
+        "statuscode:200"
+      ],
+      "collapse": "timestamp:10"
+    },
+    {
+      "url": "www.cvusd.us/",
+      "from": "20170101",
+      "to": "20260930",
+      "filter": [
+        "statuscode:200"
+      ],
+      "collapse": "timestamp:10"
+    },
+    {
+      "url": "www.cvusd.us/api/popup-alerts",
+      "from": "20170101",
+      "to": "20260930",
+      "filter": [
+        "statuscode:200"
+      ],
+      "collapse": "timestamp:10"
+    },
+    {
+      "url": "www.ccaisd.net/",
+      "from": "20170101",
+      "to": "20260930",
+      "filter": [
+        "statuscode:200"
+      ],
+      "collapse": "timestamp:10"
+    },
+    {
+      "url": "www.ccaisd.net/api/popup-alerts",
+      "from": "20170101",
+      "to": "20260930",
+      "filter": [
+        "statuscode:200"
+      ],
+      "collapse": "timestamp:10"
+    },
+    {
+      "url": "www.arapahoeschools.com/",
+      "from": "20170101",
+      "to": "20260930",
+      "filter": [
+        "statuscode:200"
+      ],
+      "collapse": "timestamp:10"
+    },
+    {
+      "url": "www.arapahoeschools.com/api/popup-alerts",
+      "from": "20170101",
+      "to": "20260930",
+      "filter": [
+        "statuscode:200"
+      ],
+      "collapse": "timestamp:10"
+    },
+    {
+      "url": "www.hamiltonfl.com/",
+      "from": "20170101",
+      "to": "20260930",
+      "filter": [
+        "statuscode:200"
+      ],
+      "collapse": "timestamp:10"
+    },
+    {
+      "url": "www.hamiltonfl.com/api/popup-alerts",
+      "from": "20170101",
+      "to": "20260930",
+      "filter": [
+        "statuscode:200"
+      ],
+      "collapse": "timestamp:10"
+    },
+    {
+      "url": "www.hancockschools.net/",
+      "from": "20170101",
+      "to": "20260930",
+      "filter": [
+        "statuscode:200"
+      ],
+      "collapse": "timestamp:10"
+    },
+    {
+      "url": "www.hancockschools.net/api/popup-alerts",
+      "from": "20170101",
+      "to": "20260930",
+      "filter": [
+        "statuscode:200"
+      ],
+      "collapse": "timestamp:10"
+    },
+    {
+      "url": "www.saritaschool.net/",
+      "from": "20170101",
+      "to": "20260930",
+      "filter": [
+        "statuscode:200"
+      ],
+      "collapse": "timestamp:10"
+    },
+    {
+      "url": "www.saritaschool.net/api/popup-alerts",
+      "from": "20170101",
+      "to": "20260930",
+      "filter": [
+        "statuscode:200"
+      ],
+      "collapse": "timestamp:10"
+    },
+    {
+      "url": "www.libbyschools.org/",
+      "from": "20170101",
+      "to": "20260930",
+      "filter": [
+        "statuscode:200"
+      ],
+      "collapse": "timestamp:10"
+    },
+    {
+      "url": "www.libbyschools.org/api/popup-alerts",
+      "from": "20170101",
+      "to": "20260930",
+      "filter": [
+        "statuscode:200"
+      ],
+      "collapse": "timestamp:10"
+    },
+    {
+      "url": "www.pawneeisd.net/",
+      "from": "20170101",
+      "to": "20260930",
+      "filter": [
+        "statuscode:200"
+      ],
+      "collapse": "timestamp:10"
+    },
+    {
+      "url": "www.pawneeisd.net/api/popup-alerts",
+      "from": "20170101",
+      "to": "20260930",
+      "filter": [
+        "statuscode:200"
+      ],
+      "collapse": "timestamp:10"
+    },
+    {
+      "url": "www.pettusisd.org/",
+      "from": "20170101",
+      "to": "20260930",
+      "filter": [
+        "statuscode:200"
+      ],
+      "collapse": "timestamp:10"
+    },
+    {
+      "url": "www.pettusisd.org/api/popup-alerts",
+      "from": "20170101",
+      "to": "20260930",
+      "filter": [
+        "statuscode:200"
+      ],
+      "collapse": "timestamp:10"
+    },
+    {
+      "url": "www.paisd.net/",
+      "from": "20170101",
+      "to": "20260930",
+      "filter": [
+        "statuscode:200"
+      ],
+      "collapse": "timestamp:10"
+    },
+    {
+      "url": "www.paisd.net/api/popup-alerts",
+      "from": "20170101",
+      "to": "20260930",
+      "filter": [
+        "statuscode:200"
+      ],
+      "collapse": "timestamp:10"
+    },
+    {
+      "url": "www.premontisd.net/",
+      "from": "20170101",
+      "to": "20260930",
+      "filter": [
+        "statuscode:200"
+      ],
+      "collapse": "timestamp:10"
+    },
+    {
+      "url": "www.premontisd.net/api/popup-alerts",
+      "from": "20170101",
+      "to": "20260930",
+      "filter": [
+        "statuscode:200"
+      ],
+      "collapse": "timestamp:10"
+    },
+    {
+      "url": "www.ricardoisd.us/",
+      "from": "20170101",
+      "to": "20260930",
+      "filter": [
+        "statuscode:200"
+      ],
+      "collapse": "timestamp:10"
+    },
+    {
+      "url": "www.ricardoisd.us/api/popup-alerts",
+      "from": "20170101",
+      "to": "20260930",
+      "filter": [
+        "statuscode:200"
+      ],
+      "collapse": "timestamp:10"
+    },
+    {
+      "url": "www.spisd.org/",
+      "from": "20170101",
+      "to": "20260930",
+      "filter": [
+        "statuscode:200"
+      ],
+      "collapse": "timestamp:10"
+    },
+    {
+      "url": "www.spisd.org/api/popup-alerts",
+      "from": "20170101",
+      "to": "20260930",
+      "filter": [
+        "statuscode:200"
+      ],
+      "collapse": "timestamp:10"
+    },
+    {
+      "url": "www.webbcisd.org/",
+      "from": "20170101",
+      "to": "20260930",
+      "filter": [
+        "statuscode:200"
+      ],
+      "collapse": "timestamp:10"
+    },
+    {
+      "url": "www.webbcisd.org/api/popup-alerts",
+      "from": "20170101",
+      "to": "20260930",
+      "filter": [
+        "statuscode:200"
+      ],
+      "collapse": "timestamp:10"
+    },
+    {
+      "url": "www.davis.k12.ut.us/fs/pages/*",
+      "from": "20180101",
       "to": "20260930",
       "filter": [
         "statuscode:200"
       ]
     },
     {
-      "url": "www.ccsdut.org/cms/Tools/OnScreenAlerts/*",
-      "from": "20160101",
+      "url": "www.ogdensd.org/fs/pages/*",
+      "from": "20180101",
       "to": "20260930",
       "filter": [
         "statuscode:200"
       ]
     },
     {
-      "url": "www.judsonisd.org/cms/Tools/OnScreenAlerts/*",
-      "from": "20160101",
-      "to": "20260930",
-      "filter": [
-        "statuscode:200"
-      ]
+      "url": "www.wtsp.com/closings",
+      "from": "20140101",
+      "to": "20260930"
     },
     {
-      "url": "www.harlandale.net/cms/Tools/OnScreenAlerts/*",
-      "from": "20160101",
-      "to": "20260930",
-      "filter": [
-        "statuscode:200"
-      ]
+      "url": "wtsp.com/weather/closings*",
+      "from": "20140101",
+      "to": "20260930"
     },
     {
-      "url": "www.hsd3.org/cms/Tools/OnScreenAlerts/*",
-      "from": "20160101",
-      "to": "20260930",
-      "filter": [
-        "statuscode:200"
-      ]
+      "url": "www.firstcoastnews.com/closings",
+      "from": "20140101",
+      "to": "20260930"
     },
     {
-      "url": "www.blueponyk12.com/cms/Tools/OnScreenAlerts/*",
-      "from": "20160101",
-      "to": "20260930",
-      "filter": [
-        "statuscode:200"
-      ]
-    },
-    {
-      "url": "www.hellgate.k12.mt.us/cms/Tools/OnScreenAlerts/*",
-      "from": "20160101",
-      "to": "20260930",
-      "filter": [
-        "statuscode:200"
-      ]
-    },
-    {
-      "url": "www.hobson.k12.mt.us/cms/Tools/OnScreenAlerts/*",
-      "from": "20160101",
-      "to": "20260930",
-      "filter": [
-        "statuscode:200"
-      ]
-    },
-    {
-      "url": "www.sumter.k12.fl.us/cms/Tools/OnScreenAlerts/*",
-      "from": "20160101",
-      "to": "20260930",
-      "filter": [
-        "statuscode:200"
-      ]
-    },
-    {
-      "url": "www.donnaisd.net/cms/Tools/OnScreenAlerts/*",
-      "from": "20160101",
-      "to": "20260930",
-      "filter": [
-        "statuscode:200"
-      ]
-    },
-    {
-      "url": "www.hcisd.org/cms/Tools/OnScreenAlerts/*",
-      "from": "20160101",
-      "to": "20260930",
-      "filter": [
-        "statuscode:200"
-      ]
-    },
-    {
-      "url": "www.wcbek12.org/cms/Tools/OnScreenAlerts/*",
-      "from": "20160101",
-      "to": "20260930",
-      "filter": [
-        "statuscode:200"
-      ]
-    },
-    {
-      "url": "www.episd.org/cms/Tools/OnScreenAlerts/*",
-      "from": "20160101",
-      "to": "20260930",
-      "filter": [
-        "statuscode:200"
-      ]
+      "url": "firstcoastnews.com/weather/closings*",
+      "from": "20140101",
+      "to": "20260930"
     }
   ],
   "snapshots": [
     {
-      "timestamp": "20231230195943",
-      "url": "https://www.hillsboroughschools.org/"
+      "timestamp": "20230807182339",
+      "url": "https://www.judsonisd.org/"
     },
     {
-      "timestamp": "20231230194042",
-      "url": "https://www.hillsboroughschools.org/cms/Tools/OnScreenAlerts/UserControls/OnScreenAlertDialogListWrapper.aspx?OnScreenAlertCookie=&SiteID=4&_=1703931969248"
+      "timestamp": "20230807171802",
+      "url": "https://www.judsonisd.org/cms/Tools/OnScreenAlerts/UserControls/OnScreenAlertDialogListWrapper.aspx?OnScreenAlertCookie=&SiteID=4&_=1691428681880"
     },
     {
-      "timestamp": "20230106223714",
-      "url": "https://www.hillsboroughschools.org/"
+      "timestamp": "20210801231051",
+      "url": "https://www.harlandale.net/"
     },
     {
-      "timestamp": "20230106180700",
-      "url": "https://www.hillsboroughschools.org/cms/Tools/OnScreenAlerts/UserControls/OnScreenAlertDialogListWrapper.aspx?OnScreenAlertCookie=&SiteID=4&_=1668077923308"
+      "timestamp": "20210801232004",
+      "url": "https://www.harlandale.net/cms/Tools/OnScreenAlerts/UserControls/OnScreenAlertDialogListWrapper.aspx?OnScreenAlertCookie=&SiteID=4&_=1627859986869"
     },
     {
-      "timestamp": "20220930163909",
-      "url": "https://www.hillsboroughschools.org/"
+      "timestamp": "20220508110231",
+      "url": "https://www.harlandale.net/"
     },
     {
-      "timestamp": "20220930174753",
-      "url": "https://www.hillsboroughschools.org/cms/Tools/OnScreenAlerts/UserControls/OnScreenAlertDialogListWrapper.aspx?OnScreenAlertCookie=&SiteID=4&_=1664555949145"
+      "timestamp": "20220508090416",
+      "url": "https://www.harlandale.net/cms/Tools/OnScreenAlerts/UserControls/OnScreenAlertDialogListWrapper.aspx?OnScreenAlertCookie=&SiteID=4&_=1651878160607"
     },
     {
-      "timestamp": "20220928001729",
-      "url": "https://www.browardschools.com/cms/Tools/OnScreenAlerts/UserControls/OnScreenAlertDialogListWrapper.aspx?OnScreenAlertCookie=&SiteID=4&_=1627683547399"
+      "timestamp": "20211109000846",
+      "url": "https://www.hobson.k12.mt.us/"
     },
     {
-      "timestamp": "20240924211726",
-      "url": "https://www.browardschools.com/"
+      "timestamp": "20211109030146",
+      "url": "https://www.hobson.k12.mt.us/cms/Tools/OnScreenAlerts/UserControls/OnScreenAlertDialogListWrapper.aspx?OnScreenAlertCookie=&SiteID=4&_=1636426885854"
     },
     {
-      "timestamp": "20240924193716",
-      "url": "https://www.browardschools.com/cms/Tools/OnScreenAlerts/UserControls/OnScreenAlertDialogListWrapper.aspx?OnScreenAlertCookie=&SiteID=4&_=1656538413086"
+      "timestamp": "20220902010920",
+      "url": "https://www.hobson.k12.mt.us/"
     },
     {
-      "timestamp": "20241008221855",
-      "url": "https://www.browardschools.com/cms/Tools/OnScreenAlerts/UserControls/OnScreenAlertDialogListWrapper.aspx?OnScreenAlertCookie=&SiteID=4&_=1627683544364"
+      "timestamp": "20220902011331",
+      "url": "https://www.hobson.k12.mt.us/cms/Tools/OnScreenAlerts/UserControls/OnScreenAlertDialogListWrapper.aspx?OnScreenAlertCookie=&SiteID=4&_=1662081211326"
     },
     {
-      "timestamp": "20240615220214",
-      "url": "https://www.browardschools.com/"
+      "timestamp": "20210325051601",
+      "url": "https://www.hsd3.org/"
     },
     {
-      "timestamp": "20240616024820",
-      "url": "https://www.browardschools.com/cms/Tools/OnScreenAlerts/UserControls/OnScreenAlertDialogListWrapper.aspx?OnScreenAlertCookie=&SiteID=4&_=1627683545400"
+      "timestamp": "20210325050352",
+      "url": "https://www.hsd3.org/cms/Tools/OnScreenAlerts/UserControls/OnScreenAlertDialogListWrapper.aspx?OnScreenAlertCookie="
     },
     {
-      "timestamp": "20240614211554",
-      "url": "https://www.browardschools.com/"
+      "timestamp": "20211230050323",
+      "url": "https://www.hsd3.org/"
     },
     {
-      "timestamp": "20240615015742",
-      "url": "https://www.browardschools.com/cms/Tools/OnScreenAlerts/UserControls/OnScreenAlertDialogListWrapper.aspx?OnScreenAlertCookie=&SiteID=4&_=1627683544886"
-    },
-    {
-      "timestamp": "20210908004504",
-      "url": "https://www.browardschools.com/"
-    },
-    {
-      "timestamp": "20210907211206",
-      "url": "https://www.browardschools.com/cms/Tools/OnScreenAlerts/UserControls/OnScreenAlertDialogListWrapper.aspx?OnScreenAlertCookie=&SiteID=4&_=1614638729871"
-    },
-    {
-      "timestamp": "20231116034005",
-      "url": "https://www.browardschools.com/"
-    },
-    {
-      "timestamp": "20231116034442",
-      "url": "https://www.browardschools.com/cms/Tools/OnScreenAlerts/UserControls/OnScreenAlertDialogListWrapper.aspx?OnScreenAlertCookie=&SiteID=4&_=1700106006176"
-    },
-    {
-      "timestamp": "20221110061237",
-      "url": "https://www.browardschools.com/"
-    },
-    {
-      "timestamp": "20221110033451",
-      "url": "https://www.browardschools.com/cms/Tools/OnScreenAlerts/UserControls/OnScreenAlertDialogListWrapper.aspx?OnScreenAlertCookie=&SiteID=4&_=1591325488780"
-    },
-    {
-      "timestamp": "20230413102621",
-      "url": "https://www.browardschools.com/"
-    },
-    {
-      "timestamp": "20230413131101",
-      "url": "https://www.browardschools.com/cms/Tools/OnScreenAlerts/UserControls/OnScreenAlertDialogListWrapper.aspx?OnScreenAlertCookie=&SiteID=4&_=1681257400406"
-    },
-    {
-      "timestamp": "20231116215057",
-      "url": "https://www.browardschools.com/"
-    },
-    {
-      "timestamp": "20231116185455",
-      "url": "https://www.browardschools.com/cms/Tools/OnScreenAlerts/UserControls/OnScreenAlertDialogListWrapper.aspx?OnScreenAlertCookie=&SiteID=4&_=1627683549608"
-    },
-    {
-      "timestamp": "20201111014733",
-      "url": "https://www.browardschools.com/"
-    },
-    {
-      "timestamp": "20201110223653",
-      "url": "https://www.browardschools.com/cms/Tools/OnScreenAlerts/UserControls/OnScreenAlertDialogListWrapper.aspx?OnScreenAlertCookie=&SiteID=4&_=1604969298407"
-    },
-    {
-      "timestamp": "20230414033003",
-      "url": "https://www.browardschools.com/"
-    },
-    {
-      "timestamp": "20230414033006",
-      "url": "https://www.browardschools.com/cms/Tools/OnScreenAlerts/UserControls/OnScreenAlertDialogListWrapper.aspx?OnScreenAlertCookie=&SiteID=4&_=1681443004095"
-    },
-    {
-      "timestamp": "20240927002513",
-      "url": "https://www.browardschools.com/"
-    },
-    {
-      "timestamp": "20240927004516",
-      "url": "https://www.browardschools.com/cms/Tools/OnScreenAlerts/UserControls/OnScreenAlertDialogListWrapper.aspx?OnScreenAlertCookie=&SiteID=4&_=1627683549783"
-    },
-    {
-      "timestamp": "20240529235410",
-      "url": "https://www.browardschools.com/"
-    },
-    {
-      "timestamp": "20240529194227",
-      "url": "https://www.browardschools.com/cms/Tools/OnScreenAlerts/UserControls/OnScreenAlertDialogListWrapper.aspx?OnScreenAlertCookie=&SiteID=4&_=1716933755432"
-    },
-    {
-      "timestamp": "20241008091114",
-      "url": "https://www.pcsb.org/"
-    },
-    {
-      "timestamp": "20241008135017",
-      "url": "https://www.pcsb.org/cms/Tools/OnScreenAlerts/UserControls/OnScreenAlertDialogListWrapper.aspx?OnScreenAlertCookie=&SiteID=4&_=1728395414600"
-    },
-    {
-      "timestamp": "20230830155124",
-      "url": "https://www.pcsb.org/cms/Tools/OnScreenAlerts/UserControls/OnScreenAlertDialogListWrapper.aspx?OnScreenAlertCookie=&SiteID=4&_=1693410024765"
-    },
-    {
-      "timestamp": "20230828111620",
-      "url": "https://www.pcsb.org/"
-    },
-    {
-      "timestamp": "20230828161235",
-      "url": "https://www.pcsb.org/cms/Tools/OnScreenAlerts/UserControls/OnScreenAlertDialogListWrapper.aspx?OnScreenAlertCookie=&SiteID=4&_=1584534237618"
-    },
-    {
-      "timestamp": "20221110151356",
-      "url": "https://www.pcsb.org/cms/Tools/OnScreenAlerts/UserControls/OnScreenAlertDialogListWrapper.aspx?OnScreenAlertCookie=&SiteID=4&_=1668093232967"
-    },
-    {
-      "timestamp": "20240929181900",
-      "url": "https://www.pcsb.org/"
-    },
-    {
-      "timestamp": "20240929222527",
-      "url": "https://www.pcsb.org/cms/Tools/OnScreenAlerts/UserControls/OnScreenAlertDialogListWrapper.aspx?OnScreenAlertCookie=&SiteID=4&_=1727406321333"
-    },
-    {
-      "timestamp": "20241006193710",
-      "url": "https://www.pcsb.org/"
-    },
-    {
-      "timestamp": "20241006163440",
-      "url": "https://www.pcsb.org/cms/Tools/OnScreenAlerts/UserControls/OnScreenAlertDialogListWrapper.aspx?OnScreenAlertCookie=&SiteID=4&_=1728232002030"
+      "timestamp": "20211230045744",
+      "url": "https://www.hsd3.org/cms/Tools/OnScreenAlerts/UserControls/OnScreenAlertDialogListWrapper.aspx?OnScreenAlertCookie="
     }
   ]
 }
