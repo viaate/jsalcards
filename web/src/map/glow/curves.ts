@@ -235,6 +235,20 @@ const vec2 GLOW_LIFT_RING[8] = vec2[8](
 `;
 
 /**
+ * Share of the blend's light kept on the bloom's finest scale (4 px) as a
+ * soft point, by zoom. Regionally, where the blend is 7 to 11 px wide, a
+ * school far from others would otherwise be a wide soft disc, like a photo
+ * out of focus; a quiet soft point on the blend's wash reads as a light.
+ * None nationally, where the blend is itself 4 px.
+ */
+export const POINT_SHARE_STOPS: ZoomStops = [
+  [4.5, 0],
+  [5.2, 0.22],
+  [6, 0.22],
+  [7, 0],
+];
+
+/**
  * The bloom level the blend is made from, CSS px a texel. A blend no wider
  * than this is that level as it is; a wider one is that level blurred, once
  * across and once down, so it stays round and smooth where a coarser level
@@ -289,6 +303,10 @@ function bloomAndBlend(
     blend += weight * share;
     bloom[i] = weight * (1 - share);
   });
+  // Regionally some of it stays a soft point on the finest scale.
+  const point = blend * interpolateStops(POINT_SHARE_STOPS, zoom);
+  bloom[0] = (bloom[0] ?? 0) + point;
+  blend -= point;
   return { bloom, blend, blendSigmaPx };
 }
 

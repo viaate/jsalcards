@@ -28,6 +28,7 @@ import {
   GLYPH_FADE_END,
   GLYPH_FADE_START,
   MIN_BLOOM_WEIGHT,
+  POINT_SHARE_STOPS,
   PULSE_SECONDS,
   blendLiftFactor,
   blendPlan,
@@ -410,7 +411,10 @@ describe('national blend', () => {
     for (const zoom of [2.12, 3, 4, 5, 5.6, 6]) {
       const spacing = Math.max(4, Math.round(15 / kmPerPx(zoom)));
       const [min, max] = gridRange(zoom, spacing);
-      expect((max - min) / max).toBeLessThan(0.05);
+      // Regionally each school keeps a quiet soft point on the field (POINT_SHARE_STOPS): at
+      // zoom 6, a step before the cores come back, schools 16 px apart ripple it by 15%.
+      const ripple = 0.05 + 0.6 * interpolateStops(POINT_SHARE_STOPS, zoom);
+      expect((max - min) / max).toBeLessThan(ripple);
     }
     // Where the cores show, the same schools are points in a darker field.
     const [min, max] = gridRange(9, Math.round(15 / kmPerPx(9)));
