@@ -7,12 +7,16 @@
  *   dropped, so they are neither drawn nor placed: a name in Windsor never
  *   pushes a name in Detroit aside.
  * - Lines (roads, street names, rivers, boundaries) are cut where they cross
- *   the border, and only their US parts kept.
+ *   the border, and only their US parts kept; one whose US part rounds down
+ *   to a single point is dropped, as nothing of it could be drawn.
  * - Areas (water, parks, buildings) wholly outside the US are dropped; those
  *   the border crosses stay whole, and the mask, drawn over them, hides
  *   their part outside.
  * - The border line is drawn on land, lakes and rivers, and stops at the
  *   coast, as the sea boundaries were never drawn.
+ *
+ * No feature goes out without geometry (mvt.ts encodeGeometry): MapLibre's
+ * worker fails a tile holding one, and the tile is never drawn.
  */
 import { BORDER_LAYER, MASK_BOX, MASK_LAYER } from './format';
 import { MaskIndex, clipRing } from './geometry';
@@ -85,6 +89,7 @@ function maskFeature(feature: Feature, index: MaskIndex): Uint8Array | null {
     }
   }
   if (!changed) return feature.raw;
+  // Pieces a few centimetres long round to a single point: with only those left, it is dropped.
   return kept.length === 0 ? null : feature.withParts(kept);
 }
 

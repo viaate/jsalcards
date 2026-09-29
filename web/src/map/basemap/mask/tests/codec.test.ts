@@ -147,15 +147,46 @@ describe('vector tiles', () => {
     const [layer] = decodeTile(propertiesLayer());
     const line = layer?.features[1];
     if (layer === undefined || line === undefined) throw new Error('no line');
-    const tile = encodeTile([
-      { fields: layer.fields, features: [line.withParts([[1, 2, 3, 4, 9, 9]])] },
-    ]);
+    const changed = line.withParts([[1, 2, 3, 4, 9, 9]]);
+    if (changed === null) throw new Error('no geometry written');
+    const tile = encodeTile([{ fields: layer.fields, features: [changed] }]);
     const [read] = decodeTile(tile);
     const feature = read?.features[0];
     if (read === undefined || feature === undefined) throw new Error('no feature');
     expect(fields(feature.raw)).toMatchObject({ id: 8, type: LINE, tags: [0, 1, 1, 2] });
     expect(stringProperty(read, feature, 'name')).toBe('Lake Erie');
     expect(feature.parts()).toEqual([[1, 2, 3, 4, 9, 9]]);
+  });
+
+  it('writes no feature with nothing left of its geometry: MapLibre fails a tile holding one', () => {
+    const [layer] = decodeTile(propertiesLayer());
+    const line = layer?.features[1];
+    if (layer === undefined || line === undefined) throw new Error('no line');
+    // A line whose every part is one point, repeated or alone.
+    expect(line.withParts([[5, 5, 5, 5], [7, 7], []])).toBeNull();
+    expect(line.withParts([])).toBeNull();
+    // Beside a part with two points, those are left out, and the rest written.
+    const kept = line.withParts([
+      [5, 5, 5, 5],
+      [1, 2, 3, 4],
+    ]);
+    if (kept === null) throw new Error('nothing written');
+    const [read] = decodeTile(encodeTile([{ fields: layer.fields, features: [kept] }]));
+    expect(read?.features[0]?.parts()).toEqual([[1, 2, 3, 4]]);
+    // New layers leave out such features: a ring of two points, a line of one.
+    const tile = encodeTile([
+      newLayer('us_mask', [
+        { type: POLYGON, parts: [[10, 10, 11, 11, 10, 10]] },
+        { type: POLYGON, parts: [[0, 0, 8, 0, 8, 8]] },
+      ]),
+      newLayer('us_border', [{ type: LINE, parts: [[3, 3, 3, 3]] }]),
+    ]);
+    expect(
+      decodeTile(tile).map((found) => [found.name, found.features.map((f) => f.parts())]),
+    ).toEqual([
+      ['us_mask', [[[0, 0, 8, 0, 8, 8]]]],
+      ['us_border', []],
+    ]);
   });
 
   it('writes new layers with an extent, a version and features of their own', () => {

@@ -91,11 +91,16 @@ export class Feature {
     return writer.finish();
   }
 
-  /** The feature message with the same id, properties and type, and this geometry. */
-  withParts(parts: Parts): Uint8Array {
+  /**
+   * The feature message with the same id, properties and type, and this
+   * geometry; null when none of it is left to write (encodeGeometry).
+   */
+  withParts(parts: Parts): Uint8Array | null {
+    const geometry = encodeGeometry(this.type, parts);
+    if (geometry.length === 0) return null;
     const writer = new Writer();
     for (const field of this.others) writer.raw(field);
-    writer.packed(FEATURE_GEOMETRY, encodeGeometry(this.type, parts));
+    writer.packed(FEATURE_GEOMETRY, geometry);
     return writer.finish();
   }
 }
@@ -222,14 +227,14 @@ export function newLayer(
   ];
   return {
     fields,
-    features: features
-      .filter((feature) => feature.parts.length > 0)
-      .map((feature) =>
-        new Writer()
-          .uint(FEATURE_TYPE, feature.type)
-          .packed(FEATURE_GEOMETRY, encodeGeometry(feature.type, feature.parts))
-          .finish(),
-      ),
+    // Only features with some geometry left to write (encodeGeometry).
+    features: features.flatMap((feature) => {
+      const geometry = encodeGeometry(feature.type, feature.parts);
+      if (geometry.length === 0) return [];
+      return [
+        new Writer().uint(FEATURE_TYPE, feature.type).packed(FEATURE_GEOMETRY, geometry).finish(),
+      ];
+    }),
   };
 }
 
@@ -268,7 +273,12 @@ export function decodeGeometry(ints: readonly number[]): Parts {
 
 /**
  * Geometry commands for parts. Repeated points are dropped; a line needs two
- * points and a ring three, or the part is left out.
+ * points and a ring three, or the part is left out. Parts cut out of a line or
+ * a ring and rounded to whole tile units can come down to a single point
+ * (a road's last few centimetres past the border): with every part left out,
+ * there are no commands at all, and a feature with none must not be written
+ * (Feature.withParts, newLayer): MapLibre's worker fails the whole tile on
+ * it, and the tile is never drawn.
  */
 export function encodeGeometry(type: number, parts: Parts): number[] {
   const out: number[] = [];

@@ -166,6 +166,66 @@ describe('a street tile the border crosses', () => {
   });
 });
 
+describe('a street tile the border only grazes', () => {
+  // The mask's edge between whole tile units, as a mask tile scaled up from a lower zoom has it:
+  // outside the US north of y = 2000.6, the border a few tenths of a unit long.
+  const EDGE = 2000.6;
+  const RING = [-128, -128, 4224, -128, 4224, EDGE, -128, EDGE];
+  const GRAZED: TileMask = {
+    kind: 'mixed',
+    rings: [ringArea(RING) > 0 ? RING : reverseRing(RING)],
+    border: [[1000.2, EDGE, 1000.4, EDGE]],
+  };
+  // Each ends a hair past the edge, inside the US: its US part rounds to one point.
+  const street = tile(
+    layer('transportation', [
+      { id: 40, type: LINE, parts: [[500, 1000, 500, 2001]], name: 'Last Metre' },
+      { id: 41, type: LINE, parts: [[100, 3000, 3000, 3500]], name: 'Home Road' },
+      {
+        id: 42,
+        type: LINE,
+        parts: [
+          [700, 1000, 700, 2001],
+          [800, 3000, 900, 3000],
+        ],
+        name: 'Two Parts',
+      },
+    ]),
+    layer('transportation_name', [
+      { id: 50, type: LINE, parts: [[1500, 1000, 1500, 2001]], name: 'Last Metre' },
+      { id: 51, type: LINE, parts: [[1500, 2500, 1600, 3000]], name: 'Home Road' },
+    ]),
+    layer('place', [{ id: 60, type: POINT, parts: [[1200, 2001]], name: 'Riverside' }]),
+  );
+  const cut = read(maskStreetTile(street, GRAZED));
+
+  it('drops a line whose US part rounds to a single point, and keeps the rest', () => {
+    expect(cut.transportation?.map((f) => [f.name, f.parts])).toEqual([
+      ['Home Road', [[100, 3000, 3000, 3500]]],
+      ['Two Parts', [[800, 3000, 900, 3000]]],
+    ]);
+    expect(cut.transportation_name?.map((f) => f.name)).toEqual(['Home Road']);
+    expect(cut.place?.map((f) => f.name)).toEqual(['Riverside']);
+  });
+
+  it('writes no feature without geometry: no border that rounds to a point, no sliver of mask', () => {
+    expect(cut[BORDER_LAYER]).toEqual([]);
+    const sliver = read(
+      maskStreetTile(street, {
+        kind: 'mixed',
+        rings: [[10.1, 10.1, 10.3, 10.1, 10.3, 10.3]],
+        border: [[10.1, 10.1, 10.3, 10.3]],
+      }),
+    );
+    expect(sliver[MASK_LAYER]).toEqual([]);
+    expect(sliver[BORDER_LAYER]).toEqual([]);
+    expect(sliver.transportation).toHaveLength(3);
+    for (const [name, features] of [...Object.entries(cut), ...Object.entries(sliver)]) {
+      for (const feature of features) expect(feature.parts.length, name).toBeGreaterThan(0);
+    }
+  });
+});
+
 describe('the street tile protocol', () => {
   const archive = readFileSync(resolve(import.meta.dirname, '../../../../../public', US_MASK_FILE));
   const MASK_URL = 'https://snowlight.test/geo/us-mask.pmtiles';
