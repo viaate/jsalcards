@@ -302,7 +302,7 @@
    * list or the map: the field shows its name, the list closes, and it opens
    * as a step of its own, the map going there (Services.pick).
    */
-  function go(hit: SearchOption['hit'], name: string, sub: string): void {
+  function go(hit: Parameters<Services['pick']>[0], name: string, sub: string): void {
     query = name;
     pickedName = name;
     options = null;
@@ -337,64 +337,33 @@
         if (!cancelled) schoolView = view;
       });
     });
-    loadDetail();
+    if (untrack(() => Detail) === null) {
+      import('./ui/DetailPanel.svelte').then(
+        (module) => {
+          Detail = module.default;
+        },
+        () => undefined,
+      );
+    }
     return () => {
       cancelled = true;
       stop();
     };
   });
 
-  /** Loads the panel's code, the first time a school opens or is about to. */
-  function loadDetail(): void {
-    if (untrack(() => Detail) !== null) return;
-    import('./ui/DetailPanel.svelte').then(
-      (module) => {
-        Detail = module.default;
-      },
-      () => undefined,
-    );
-  }
-
-  /** A school the page opens itself, from the nearby list or the map, as a search result. */
-  function schoolHit(school: Pick<NearbyView, 'id' | 'name' | 'lat' | 'lon'>): SearchOption['hit'] {
-    const { id, name, lat, lon } = school;
-    return {
-      kind: 'school',
-      id,
-      name,
-      sub: '',
-      state: '',
-      lat,
-      lon,
-      match: 'exact',
-      highlight: [],
-    };
-  }
-
-  /** Opens a school from the nearby list, as a pick of it would. */
-  function openNearby(school: NearbyView): void {
-    go(schoolHit(school), school.name, '');
+  /** Opens a school from the nearby list (or the map), as a pick of it would. */
+  function openNearby(school: Pick<NearbyView, 'id' | 'name' | 'lat' | 'lon'>): void {
+    go({ ...school, kind: 'school' }, school.name, '');
   }
 
   /**
    * Opens a school clicked or tapped on the map, its dot, its name or its
    * light, as a pick of it would: the same step, the same camera, the same
-   * panel, and the focus on it.
+   * panel, and the focus on it (the click has taken it from the search field).
    */
   function openTapped(school: SchoolHit): void {
     focusOpened(school.id);
-    inputElement?.blur();
-    go(schoolHit(school), school.name, '');
-  }
-
-  /**
-   * A finger's tap on a school, waiting to be sure it is no double tap: its
-   * ring on the map at once, and its panel's code on its way. Null once it
-   * turns out to be one: the ring goes back to the school open, if any.
-   */
-  function showTapped(school: SchoolHit | null): void {
-    basemap?.selectSchool(school?.id ?? schoolId);
-    if (school !== null) loadDetail();
+    openNearby(school);
   }
 
   // The panel comes or goes over the map: its labels keep clear of it.
@@ -593,27 +562,18 @@
       }
       pickedName = null;
     });
-    let created: (map: Basemap | undefined) => void = () => undefined;
-    const mapCreated = new Promise<Basemap | undefined>((resolve) => {
+    // The map as soon as it takes input; never, for a map that does not come up.
+    let created: (map: Basemap) => void = () => undefined;
+    const mapCreated = new Promise<Basemap>((resolve) => {
       created = resolve;
     });
     const started = startMap(controller.signal, links, created);
-    // A map that never came up: nothing was created either (a promise keeps its first value).
-    void started.then((parts) => {
-      created(parts?.basemap);
-    });
     const map = started.then((parts) => parts?.basemap);
     const glow = started.then((parts) => parts?.glow ?? null);
     services = afterFirstPaint()
       .then(() => import('./app/boot'))
-      .then(({ boot, clearOfPanel, openArea }) => {
+      .then(({ boot }) => {
         if (controller.signal.aborted) return null;
-        /** The screen, and the foot of the search strip over the map. */
-        const screen = () => ({
-          width: window.innerWidth,
-          height: window.innerHeight,
-          top: headerElement?.getBoundingClientRect().bottom ?? 0,
-        });
         return boot({
           links,
           map,
@@ -621,11 +581,13 @@
           glow,
           signal: controller.signal,
           show,
-          // A school opens its panel: the map puts it in the middle of what the panel leaves in view.
-          frame: (view, opened) =>
-            opened?.kind === 'school' ? clearOfPanel(view, screen()) : view,
-          // A tap on several schools zooms them into it too.
-          area: () => openArea(screen()),
+          // A school opens its panel: the map puts it in the middle of what the panel leaves in
+          // view, and a tap on several schools zooms them into it.
+          screen: () => ({
+            width: window.innerWidth,
+            height: window.innerHeight,
+            top: headerElement?.getBoundingClientRect().bottom ?? 0,
+          }),
           listId: LIST_ID,
           onResults: (next) => {
             options = next;
@@ -634,7 +596,6 @@
           onUpdated,
           onCounts,
           onSchool: openTapped,
-          onSchoolPending: showTapped,
         });
       })
       .catch(() => null);

@@ -17,7 +17,8 @@ import { boot } from '../boot';
 import '../school';
 import type { BootOptions } from '../boot';
 import type { AppData, Target } from '../data';
-import { ZOOM } from '../startup';
+import { clearOfPanel, openArea } from '../frame';
+import { ZOOM, viewForHit } from '../startup';
 
 /**
  * The taps on the map, as boot wires them (map/school-taps.ts has its own
@@ -284,6 +285,29 @@ describe('search', () => {
     controller.abort();
   });
 
+  it('on a screen, frames a picked school clear of its panel, and a city as it is', () => {
+    const tab = new FakeTab('https://snow.test/');
+    const shown: Target[] = [];
+    const screen = { width: 1440, height: 900, top: 64 };
+    const controller = new AbortController();
+    const services = boot({
+      links: createUrlStore({ host: tab }),
+      map: Promise.resolve(undefined),
+      glow: Promise.resolve(null),
+      signal: controller.signal,
+      show: (target) => shown.push(target),
+      screen: () => screen,
+      listId: 'list',
+      onResults: () => undefined,
+      data: NO_DATA,
+    });
+    services.pick(SCHOOL_HIT);
+    expect(shown[0]).toEqual({ view: clearOfPanel(viewForHit(SCHOOL_HIT), screen) });
+    services.pick(CITY_HIT);
+    expect(shown[1]).toEqual({ view: viewForHit(CITY_HIT) });
+    controller.abort();
+  });
+
   it('reads a school for its panel, and says there is none without its record', async () => {
     const { services, controller } = start('https://snow.test/', NO_DATA);
     const views: unknown[] = [];
@@ -407,11 +431,13 @@ describe('a school clicked on the map', () => {
         y: 300 - (lat - inner.center.lat) * 100,
       }),
     };
+    const rings: (string | null)[] = [];
     const map = {
       moved: false,
       ready: new Promise<void>(() => undefined),
       map: inner,
       flyTo: (view: unknown) => flights.push(view),
+      selectSchool: (id: string | null) => rings.push(id),
     } as unknown as Basemap;
     let created: (map: Basemap) => void = () => undefined;
     let up: (map: Basemap) => void = () => undefined;
@@ -449,6 +475,7 @@ describe('a school clicked on the map', () => {
     return {
       listeners,
       flights,
+      rings,
       shown,
       inner,
       services,
@@ -532,17 +559,7 @@ describe('a school clicked on the map', () => {
     options.onResume?.();
     expect(flights).toEqual([view, view]);
     // A pick's flight, too: the one it set off, framed as it was.
-    services.pick({
-      kind: 'school',
-      id: PEMBROKE_HILL,
-      name: 'Pembroke Hill',
-      sub: '',
-      state: 'MO',
-      lat: 39.03606,
-      lon: -94.593001,
-      match: 'exact',
-      highlight: [],
-    });
+    services.pick({ kind: 'school', id: PEMBROKE_HILL, lat: 39.03606, lon: -94.593001 });
     const picked = shown.at(-1);
     options.onResume?.();
     expect(picked).toBeDefined();
@@ -550,22 +567,20 @@ describe('a school clicked on the map', () => {
     controller.abort();
   });
 
-  it('fits a zoom toward several schools into the area the page leaves in view', async () => {
-    const area = () => ({ left: 388, top: 64, right: 1440, bottom: 900 });
-    const { controller, created, up } = withTaps(vi.fn(), { area });
+  it('fits a zoom toward several schools into what a school’s panel leaves of the screen', async () => {
+    const screen = { width: 1440, height: 900, top: 64 };
+    const { controller, created, up } = withTaps(vi.fn(), { screen: () => screen });
     created();
     up();
-    expect((await attached()).area).toBe(area);
+    expect((await attached()).area?.()).toEqual(openArea(screen));
     controller.abort();
   });
 
-  it('hands on a finger’s tap waiting to open a school, and reads its record meanwhile', async () => {
+  it('shows a finger’s tap waiting to open a school picked, and reads its record meanwhile', async () => {
     const fetchSpy = vi
       .spyOn(globalThis, 'fetch')
       .mockResolvedValue(new Response('{}', { status: 404 }));
-    const pending: unknown[] = [];
-    const { controller, created, up } = withTaps(vi.fn(), {
-      onSchoolPending: (school) => pending.push(school?.id ?? null),
+    const { rings, controller, created, up } = withTaps(vi.fn(), {
       data: {
         files: createDataFiles([DETAILS_INDEX_PATH], ROOT),
         directories: () => Promise.resolve(null),
@@ -575,9 +590,10 @@ describe('a school clicked on the map', () => {
     up();
     const options = await attached();
     const school = { id: PEMBROKE_HILL, name: 'Pembroke Hill', lon: -94.593001, lat: 39.03606 };
+    // Its ring at once; no school is open, so none once the tap turns out to be a double tap.
     options.onPending?.(school);
     options.onPending?.(null);
-    expect(pending).toEqual([PEMBROKE_HILL, null]);
+    expect(rings).toEqual([PEMBROKE_HILL, null]);
     // Its record's shard index, on its way before the tap opens anything.
     await vi.waitFor(() => {
       expect(
@@ -585,6 +601,20 @@ describe('a school clicked on the map', () => {
       ).toContain(`${ROOT}${DETAILS_INDEX_PATH}`);
     }, WAIT);
     fetchSpy.mockRestore();
+    controller.abort();
+  });
+
+  it('puts the ring back on the school open when a waiting tap turns out to be a double tap', async () => {
+    const { rings, controller, created, up } = withTaps(vi.fn(), {
+      links: createUrlStore({ host: new FakeTab(`https://snow.test/?school=${PEMBROKE_HILL}`) }),
+    });
+    created();
+    up();
+    const options = await attached();
+    const other = { id: '290000000001', name: 'Next Door', lon: -94.59, lat: 39.03 };
+    options.onPending?.(other);
+    options.onPending?.(null);
+    expect(rings).toEqual([other.id, PEMBROKE_HILL]);
     controller.abort();
   });
 

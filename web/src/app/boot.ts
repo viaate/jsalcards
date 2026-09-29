@@ -34,15 +34,15 @@ import type { DetailsSource } from '../data/details';
 import { DATA_PATHS } from '../data/files';
 import { createAppData, locate, startLiveGlow } from './data';
 import type { AppData, Target } from './data';
-import type { Area } from './frame';
+import { clearOfPanel, openArea } from './frame';
+import type { Screen } from './frame';
 import { createSearchController, nearView, searchOptions } from './search';
 import type { SearchController, SearchOption } from './search';
 import type { SchoolHint, SchoolView, WatchOptions } from './school';
 import { startServiceWorker } from './service-worker';
 import { selectionForHit, startupSelection, viewForHit } from './startup';
 
-export { clearOfPanel, openArea } from './frame';
-export type { Area } from './frame';
+export type { Screen } from './frame';
 export type { StatusCounts } from '../data/closings';
 export type { SchoolHit } from '../map/school-taps';
 export type { Target } from './data';
@@ -65,10 +65,18 @@ export interface BootOptions {
   /** Moves the map to a place (the shell keeps it for later if the map is not up yet). */
   readonly show: (target: Target) => void;
   /**
-   * The view that shows a place clear of what the page puts over the map for
-   * what it opens (a school's panel); the view as it is by default.
+   * The screen, and the foot of the search strip over the map (frame.ts): a
+   * school a pick or a link opens is framed clear of its panel on it, and a
+   * tap on several schools zooms them into what the panel leaves in view.
    */
-  readonly frame?: (view: MapView, selection: Selection | null) => MapView;
+  readonly screen?: () => Screen;
+  /**
+   * The view that shows a place clear of what the page puts over the map for
+   * what it opens (a school's panel), for tests; by default a school is
+   * framed clear of its panel on `screen`, and any other place, or any place
+   * without one, is shown as it is.
+   */
+  readonly frame?: Frame;
   /** The results list's element id; options are numbered under it. */
   readonly listId: string;
   /** The newest text's results as options, or null to show nothing. */
@@ -82,17 +90,6 @@ export interface BootOptions {
    * the page opens it as a pick of it would. Without it, a click opens nothing.
    */
   readonly onSchool?: (school: SchoolHit) => void;
-  /**
-   * A finger's tap on a school, waiting to be sure it is no double tap: the
-   * page shows it picked and starts loading its panel. Null once it turns out
-   * to be one: the page shows what it did before.
-   */
-  readonly onSchoolPending?: (school: SchoolHit | null) => void;
-  /**
-   * The part of the map a school's panel leaves in view (frame.ts openArea):
-   * a tap on several schools zooms them into it. The whole map by default.
-   */
-  readonly area?: () => Area;
   /** Data files to read, for tests; defaults to the ones this build ships. */
   readonly data?: AppData;
 }
@@ -110,8 +107,9 @@ export interface Services {
   /**
    * Opens what a result names and moves the map to it, as one new history
    * entry (a city's holds its view alone), so Back returns to the place before.
+   * Of a result, only what it is and where it is counts.
    */
-  pick(hit: SearchHit): void;
+  pick(hit: Pick<SearchHit, 'kind' | 'id' | 'lat' | 'lon'>): void;
   /**
    * Reads a school for its detail panel and keeps its view current:
    * `onView` hears each new view, and null when there is no such school.
@@ -126,8 +124,16 @@ export interface Services {
   readonly pins: PinStore;
 }
 
+/** A view, as it shows a place clear of what the page puts over the map for what it opens. */
+type Frame = (view: MapView, selection: Selection | null) => MapView;
+
 export function boot(options: BootOptions): Services {
-  const { links, signal } = options;
+  const { links, signal, screen } = options;
+  const frame: Frame | undefined =
+    options.frame ??
+    (screen === undefined
+      ? undefined
+      : (view, selection) => (selection?.kind === 'school' ? clearOfPanel(view, screen()) : view));
   const data = options.data ?? createAppData();
   const pins = createPinStore();
   const warmUrls: string[] = [];
@@ -146,7 +152,7 @@ export function boot(options: BootOptions): Services {
   if (opening !== null && links.state.selection === null) links.select(opening, { replace: true });
   const selection = links.state.selection;
   if (selection !== null && links.state.view === null) {
-    void goToSelection(data, selection, search, options);
+    void goToSelection(data, selection, search, options, frame);
   }
 
   // A function, so each check reads the signal afresh after an await.
@@ -209,9 +215,7 @@ export function boot(options: BootOptions): Services {
   // Clicks on schools, from the moment the map takes input. Until their code is in (it loads
   // on the first click, or once the map is on screen) each is kept, and handed on only if the
   // map has not moved since (map/kept-clicks.ts). A lit school is found in the glow's own data,
-  // read as each click comes. A tap on several schools zooms in as the map's own flights go; a
-  // finger's tap on one, while it waits to be sure it is no double tap, starts reading the
-  // school's record.
+  // read as each click comes. A tap on several schools zooms in as the map's own flights go.
   let taps: SchoolTaps | null = null;
   /** Where the last flight a pick or a tap set off was going: for a flight stopped short. */
   let flight: MapView | null = null;
@@ -248,15 +252,18 @@ export function boot(options: BootOptions): Services {
           onResume: () => {
             if (flight !== null) map.flyTo(flight);
           },
+          // Shown picked at once, its ring on the map, its panel's code and record on their way;
+          // the ring back on the school open, if any, when the tap turns out to be a double tap.
           onPending: (school) => {
-            if (school !== null) {
-              void loadSchoolCode()
-                .then(({ source }) => source.get(school.id))
-                .catch(() => undefined);
-            }
-            options.onSchoolPending?.(school);
+            const open = links.state.selection;
+            map.selectSchool(school?.id ?? (open?.kind === 'school' ? open.id : null));
+            if (school === null) return;
+            import('../ui/DetailPanel.svelte').catch(() => undefined);
+            void loadSchoolCode()
+              .then(({ source }) => source.get(school.id))
+              .catch(() => undefined);
           },
-          ...(options.area === undefined ? {} : { area: options.area }),
+          ...(screen === undefined ? {} : { area: () => openArea(screen()) }),
         });
         for (const click of clicks) taps.click(click);
       })
@@ -292,8 +299,7 @@ export function boot(options: BootOptions): Services {
     pick(hit) {
       // Every pick is a step of its own, a city too: Back returns to the place before.
       const selection = selectionForHit(hit);
-      const frame = options.frame ?? ((view: MapView) => view);
-      let view = frame(viewForHit(hit), selection);
+      let view = frame?.(viewForHit(hit), selection) ?? viewForHit(hit);
       try {
         links.navigate({ selection, view });
       } catch {
@@ -313,12 +319,12 @@ async function goToSelection(
   selection: Selection,
   search: SearchController,
   options: BootOptions,
+  frame: Frame | undefined,
 ): Promise<void> {
   const [target, map] = await Promise.all([locate(data, selection, search), options.map]);
   // Someone moved the map meanwhile, or opened something else: leave it.
   if (target === null || map === undefined || map.moved || options.signal.aborted) return;
   if (options.links.state.selection !== selection) return;
-  const frame = options.frame;
   options.show(
     'view' in target && frame !== undefined ? { view: frame(target.view, selection) } : target,
   );
