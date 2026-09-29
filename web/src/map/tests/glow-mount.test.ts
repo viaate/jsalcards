@@ -72,6 +72,8 @@ function lit(...schools: number[]): LitSchools {
     lngLat: new Float64Array(schools.flatMap(() => [-94.593, 39.036])),
     status: new Uint8Array(schools.length),
     schools: new Set(schools),
+    ids: schools.map((school) => `29000000000${String(school)}`),
+    names: schools.map((school) => `School ${String(school)}`),
   };
 }
 
@@ -110,6 +112,22 @@ describe('the glow on the map', () => {
     map.calls = [];
     glow.light(NOTHING_LIT);
     expect(map.calls).toEqual([]);
+  });
+
+  it('keeps the schools it shows, for a tap on their light to find', () => {
+    const map = new FakeMap();
+    map.load();
+    const glow = mount(map);
+    expect(glow.lit).toBeNull();
+    const first = lit(1, 5);
+    glow.light(first);
+    expect(glow.lit).toBe(first);
+    const next = lit(9);
+    glow.light(next);
+    expect(glow.lit).toBe(next);
+    expect(glow.lit?.ids).toEqual(['290000000009']);
+    glow.light(NOTHING_LIT);
+    expect(glow.lit).toBe(NOTHING_LIT);
   });
 
   it('marks nothing on a map without the school tiles', () => {
