@@ -81,9 +81,9 @@ describe('rounds of asking again', () => {
     expect(rounds.next(() => 0.5)).toBe(HEAL_BACKOFF[0]);
   });
 
-  it('never wait so long that a tile the network lets through is kept from the map for long', () => {
-    // Give or take a quarter (backoffDelay): at most 12.5 s from the network's return to a new try.
-    expect(Math.max(...HEAL_BACKOFF) * 1.25).toBeLessThanOrEqual(12_500);
+  it('grow to a minute apart while the host keeps failing, no longer', () => {
+    expect(HEAL_BACKOFF.at(-1)).toBe(60_000);
+    expect([...HEAL_BACKOFF].sort((a, b) => a - b)).toEqual([...HEAL_BACKOFF]);
   });
 });
 
@@ -119,6 +119,35 @@ describe('failed tiles', () => {
     fire('error', { sourceId: 'streets' });
     vi.advanceTimersByTime(HEAL_BACKOFF[0] ?? 0);
     expect(removed.at(-1)).toBe('streets/d');
+  });
+
+  it('while they keep failing, are asked for one a round, and all once that one comes', () => {
+    const streets: Tiles = new Map([
+      ['a', { state: 'errored' }],
+      ['b', { state: 'errored' }],
+      ['c', { state: 'errored' }],
+    ]);
+    const { map, fire, removed } = fakeMap({ streets });
+    healTiles(map, ['streets']);
+    const failAgain = (...ids: string[]): void => {
+      for (const id of ids) streets.set(id, { state: 'errored' });
+      fire('error', { sourceId: 'streets' });
+    };
+    fire('error', { sourceId: 'streets' });
+    vi.advanceTimersByTime(HEAL_BACKOFF[0] ?? 0);
+    expect(removed).toEqual(['streets/a', 'streets/b', 'streets/c']);
+    // All failed again: from now on each round asks for one of them.
+    failAgain('a', 'b', 'c');
+    vi.advanceTimersByTime(HEAL_BACKOFF[1] ?? 0);
+    expect(removed.slice(3)).toEqual(['streets/a']);
+    failAgain('a');
+    vi.advanceTimersByTime(HEAL_BACKOFF[2] ?? 0);
+    expect(removed.slice(4)).toEqual(['streets/b']);
+    // That one came: the next round asks for the rest, soonest.
+    fire('sourcedata', { sourceId: 'streets', tile: { state: 'loaded' } });
+    fire('idle');
+    vi.advanceTimersByTime(HEAL_BACKOFF[0] ?? 0);
+    expect(removed.slice(5).sort()).toEqual(['streets/a', 'streets/c']);
   });
 
   it('are asked for once a round, however many fail in it', () => {

@@ -64,7 +64,7 @@ async function settle<T>(promise: Promise<T>): Promise<T> {
     state.done = true;
   });
   watched.catch(() => undefined);
-  for (let step = 0; step < 400 && !state.done; step++) await vi.advanceTimersByTimeAsync(500);
+  for (let step = 0; step < 1000 && !state.done; step++) await vi.advanceTimersByTimeAsync(500);
   return watched;
 }
 
@@ -111,7 +111,7 @@ describe('a street tile', () => {
     expect(tileCalls(calls)).toHaveLength(TILE_TRIES);
   });
 
-  it('is never taken from a page that is not a tile, and is asked for past the cache after one', async () => {
+  it('is never taken from a page that is not a tile; asked for past the cache after', async () => {
     const { loadOpenFreeMapTile } = await fresh();
     const calls = network([
       () =>
@@ -170,6 +170,37 @@ describe('a street tile', () => {
     expect(waited).toBeLessThan(MAX_RETRY_AFTER_MS + 5000);
   });
 
+  it('honors a Retry-After of minutes, a free host asking for them', async () => {
+    const { loadOpenFreeMapTile } = await fresh();
+    const calls = network([
+      () => new Response('slow down', { status: 429, headers: { 'retry-after': '120' } }),
+      tile,
+    ]);
+    await settle(
+      loadOpenFreeMapTile('openfreemap://planet/10/242/391', new AbortController().signal),
+    );
+    const [first, second] = tileCalls(calls);
+    expect((second?.at ?? 0) - (first?.at ?? 0)).toBeGreaterThanOrEqual(120_000);
+  });
+
+  it('is tried once while the host keeps failing, TILE_TRIES times once one comes', async () => {
+    const { loadOpenFreeMapTile, TILE_TRIES } = await fresh();
+    let answer: () => Response = () => new Response('busy', { status: 503 });
+    const calls = network([() => answer()]);
+    const load = (): Promise<unknown> =>
+      settle(loadOpenFreeMapTile('openfreemap://planet/10/242/391', new AbortController().signal));
+    await expect(load()).rejects.toThrow(/HTTP 503/);
+    expect(tileCalls(calls)).toHaveLength(TILE_TRIES);
+    await expect(load()).rejects.toThrow(/HTTP 503/);
+    expect(tileCalls(calls)).toHaveLength(TILE_TRIES + 1);
+    answer = tile;
+    await load();
+    expect(tileCalls(calls)).toHaveLength(TILE_TRIES + 2);
+    answer = () => new Response('busy', { status: 503 });
+    await expect(load()).rejects.toThrow(/HTTP 503/);
+    expect(tileCalls(calls)).toHaveLength(2 * TILE_TRIES + 2);
+  });
+
   it('that MapLibre no longer wants is not asked for again', async () => {
     const { loadOpenFreeMapTile } = await fresh();
     const calls = network([() => new Response('busy', { status: 503 })]);
@@ -184,7 +215,7 @@ describe('a street tile', () => {
 });
 
 describe('the TileJSON', () => {
-  it('that fails is asked for once by every tile asking in the moment, and again after', async () => {
+  it('that fails is asked for once by the tiles asking in the moment; again after', async () => {
     const { loadOpenFreeMapTile, TEMPLATE_RETRY_MS } = await fresh();
     const lookups: number[] = [];
     vi.stubGlobal('fetch', (url: string): Promise<Response> => {

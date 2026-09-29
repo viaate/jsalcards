@@ -6,7 +6,7 @@
  * page: it must not touch the DOM.
  */
 
-/** Waits before each new try, in milliseconds: the first before the second try, the last repeated. */
+/** Waits before each new try, in milliseconds: the first before the second, the last repeated. */
 export type Backoff = readonly number[];
 
 /**
@@ -46,8 +46,39 @@ export function sleep(ms: number, signal?: AbortSignal): Promise<void> {
   });
 }
 
-/** The longest wait an answer's Retry-After is honored for, in milliseconds. */
-export const MAX_RETRY_AFTER_MS = 60_000;
+/**
+ * A wait that can be cut short: retries sleep on it, and news that the
+ * network may be back (the browser coming online, the map asking again)
+ * rings it, so the next try is made at once instead of at the end of a long
+ * wait.
+ */
+export class Alarm {
+  private readonly waiting = new Set<() => void>();
+
+  /** Resolves after `ms`, or as soon as the alarm rings. */
+  sleep(ms: number): Promise<void> {
+    return new Promise((resolve) => {
+      const done = (): void => {
+        clearTimeout(timer);
+        this.waiting.delete(done);
+        resolve();
+      };
+      const timer = setTimeout(done, Math.max(0, ms));
+      this.waiting.add(done);
+    });
+  }
+
+  /** Ends every wait now. */
+  ring(): void {
+    for (const done of [...this.waiting]) done();
+  }
+}
+
+/**
+ * The longest wait an answer's Retry-After is honored for, in milliseconds:
+ * OpenFreeMap is a free community host, and a client asked to wait waits.
+ */
+export const MAX_RETRY_AFTER_MS = 5 * 60_000;
 
 /**
  * How long a 429 or 503 answer asks the client to wait (its Retry-After, in
@@ -63,7 +94,7 @@ export function retryAfterMs(response: Response, now = Date.now()): number | nul
   return Math.min(MAX_RETRY_AFTER_MS, Math.max(0, seconds));
 }
 
-/** A request that went this long without any of its answer arriving: given up on, to be tried again. */
+/** A request that went this long with none of its answer arriving: given up on, and made again. */
 export class StalledError extends Error {
   constructor(url: string, ms: number) {
     super(`${url}: no answer for ${String(Math.round(ms / 1000))} s`);

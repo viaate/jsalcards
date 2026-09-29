@@ -40,7 +40,10 @@ export const OPENFREEMAP_ATTRIBUTION = [
 
 const TILE_PATH = /\/(\d+)\/(\d+)\/(\d+)$/;
 
-/** Tries at a street tile within one load; after them the tile fails, and the page asks for it again (heal.ts). */
+/**
+ * Tries at a street tile within one load; after them the tile fails, and the
+ * page asks for it again (heal.ts).
+ */
 export const TILE_TRIES = 3;
 /** Waits between those tries, in milliseconds. */
 export const TILE_BACKOFF: Backoff = [400, 1600];
@@ -145,12 +148,43 @@ export function tileUrl(templateUrl: string, requestUrl: string): string {
 }
 
 /**
+ * Tiles asked for ahead at once, at most: the rest wait their turn, in the
+ * order given, so the first a flight needs come first on a slow link rather
+ * than all of them together, late.
+ */
+export const PREFETCH_AT_ONCE = 6;
+
+/** Asks for one tile ahead, reading it to the end; given up on if it stalls or takes too long. */
+async function prefetchTile(url: string): Promise<void> {
+  // Given up on with no answer in TILE_STALL_MS, or none whole in PREFETCH_LIMIT_MS.
+  const controller = new AbortController();
+  let timer = setTimeout(() => {
+    controller.abort();
+  }, TILE_STALL_MS);
+  try {
+    const response = await fetch(url, { signal: controller.signal });
+    noteRetryAfter(response);
+    clearTimeout(timer);
+    timer = setTimeout(() => {
+      controller.abort();
+    }, PREFETCH_LIMIT_MS);
+    // Read to the end, by the browser rather than on the page's thread: only a whole response is
+    // kept.
+    await response.arrayBuffer();
+  } catch {
+    // The worker asks for it again.
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
+/**
  * Asks OpenFreeMap for tiles ahead of the map, so the browser has them when a
  * worker asks (street-tiles.ts): the TileJSON and the tiles are cacheable, and
  * the page and its workers share one cache, so no tile goes over the network
- * twice. Nothing is read from them here, and a tile that fails is simply
- * asked for again by the worker. While OpenFreeMap asks the page to wait,
- * nothing is asked for ahead.
+ * twice. PREFETCH_AT_ONCE at a time, in the order given. Nothing is read from
+ * them here, and a tile that fails is simply asked for again by the worker.
+ * While OpenFreeMap asks the page to wait, nothing is asked for ahead.
  */
 export async function prefetchOpenFreeMapTiles(
   tiles: readonly (readonly [z: number, x: number, y: number])[],
@@ -162,34 +196,14 @@ export async function prefetchOpenFreeMapTiles(
   } catch {
     return;
   }
-  await Promise.all(
-    tiles.map(async ([z, x, y]) => {
-      if (resumeAt > Date.now()) return;
-      // Given up on with no answer in TILE_STALL_MS, or none whole in PREFETCH_LIMIT_MS.
-      const controller = new AbortController();
-      let timer = setTimeout(() => {
-        controller.abort();
-      }, TILE_STALL_MS);
-      try {
-        const response = await fetch(
-          tileUrl(templateUrl, `/${String(z)}/${String(x)}/${String(y)}`),
-          { signal: controller.signal },
-        );
-        noteRetryAfter(response);
-        clearTimeout(timer);
-        timer = setTimeout(() => {
-          controller.abort();
-        }, PREFETCH_LIMIT_MS);
-        // Read to the end, by the browser rather than on the page's thread: only a whole
-        // response is kept.
-        await response.arrayBuffer();
-      } catch {
-        // The worker asks for it again.
-      } finally {
-        clearTimeout(timer);
-      }
-    }),
-  );
+  let next = 0;
+  const lane = async (): Promise<void> => {
+    while (next < tiles.length && resumeAt <= Date.now()) {
+      const [z, x, y] = tiles[next++] ?? [0, 0, 0];
+      await prefetchTile(tileUrl(templateUrl, `/${String(z)}/${String(x)}/${String(y)}`));
+    }
+  };
+  await Promise.all(Array.from({ length: Math.min(PREFETCH_AT_ONCE, tiles.length) }, lane));
 }
 
 /** One try at a tile: its answer, if it is one. `fresh` goes past the browser's cache. */
@@ -222,11 +236,20 @@ async function tryTile(
 }
 
 /**
+ * Whether OpenFreeMap is failing this worker's tiles: set when a tile fails
+ * every try, cleared as soon as one comes. While it is, a tile is tried once:
+ * the page asks again for the tiles that fail, in rounds that grow apart
+ * (heal.ts), and a round costs the host no more than a request a tile.
+ */
+let failing = false;
+
+/**
  * The tile the style names `openfreemap://planet/z/x/y`, from the current
- * tile set. It is tried TILE_TRIES times, with a wait between tries (longer
- * when an answer asks for one); a request that stalls is given up on and made
- * again, and an answer that is not a tile is never taken for one: the try
- * after it goes past the browser's cache, which may hold it.
+ * tile set. It is tried TILE_TRIES times (once while the host is failing),
+ * with a wait between tries (longer when an answer asks for one); a request
+ * that stalls is given up on and made again, and an answer that is not a
+ * tile is never taken for one: the try after it goes past the browser's
+ * cache, which may hold it.
  */
 export async function loadOpenFreeMapTile(
   requestUrl: string,
@@ -234,15 +257,19 @@ export async function loadOpenFreeMapTile(
 ): Promise<GetResourceResponse<ArrayBuffer>> {
   let failure: unknown;
   let fresh = false;
-  for (let attempt = 0; attempt < TILE_TRIES; attempt++) {
+  const tries = failing ? 1 : TILE_TRIES;
+  for (let attempt = 0; attempt < tries; attempt++) {
     if (attempt > 0) await sleep(backoffDelay(TILE_BACKOFF, attempt - 1), signal);
     try {
-      return await tryTile(requestUrl, signal, fresh);
+      const tile = await tryTile(requestUrl, signal, fresh);
+      failing = false;
+      return tile;
     } catch (error) {
       if (signal.aborted) throw error;
       failure = error;
       fresh = error instanceof NotATileError;
     }
   }
+  failing = true;
   throw failure;
 }

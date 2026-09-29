@@ -11,6 +11,13 @@
  * at once. So a failed tile comes as soon as the network lets it, and is
  * drawn the moment it does, with nobody moving the map or loading the page
  * again.
+ *
+ * What a round costs the host: the first asks again for every failed tile,
+ * each tried once by a worker that has seen the host fail (openfreemap.ts);
+ * while the source keeps failing, each round after asks for one of them
+ * only, and once it comes, the rest follow in the next round. So a host that
+ * turns the page away is asked about once a minute, per tab, for as long as
+ * it does.
  */
 import type { ErrorEvent, Map as MapLibreMap, MapSourceDataEvent } from 'maplibre-gl';
 
@@ -19,12 +26,11 @@ import type { Backoff } from './retry';
 
 /**
  * Waits before each round of asking again for a source's failed tiles, in
- * milliseconds: the last repeats, so a tile comes at most that long after
- * the network lets it. While a host turns every request away, a round costs
- * a request or two (openfreemap.ts shares a failed lookup); one that asks the
- * page to wait (a Retry-After) is waited out besides.
+ * milliseconds, the last repeated while the source keeps failing. An answer
+ * asking the page to wait longer (a Retry-After) is waited out besides
+ * (openfreemap.ts).
  */
-export const HEAL_BACKOFF: Backoff = [1000, 2000, 4000, 8000, 10_000];
+export const HEAL_BACKOFF: Backoff = [1000, 2000, 4000, 8000, 15_000, 30_000, 60_000];
 
 /** One source's rounds: how long to wait before the next, starting over once a tile comes. */
 export class HealRounds {
@@ -66,13 +72,17 @@ export function failedTiles(map: MapLibreMap, source: string): string[] {
 export function healTiles(map: MapLibreMap, sources: readonly string[]): () => void {
   const rounds = new Map(sources.map((source) => [source, new HealRounds()]));
   const timers = new Map<string, number>();
-  /** Drops the source's failed tiles: the next frame asks for them as new tiles. */
+  /**
+   * Drops the source's failed tiles, or one of them while the source keeps
+   * failing: the next frame asks for them as new tiles.
+   */
   const retry = (source: string): void => {
     timers.delete(source);
     const ids = failedTiles(map, source);
     const tiles = styleOf(map)?.tileManagers[source];
     if (tiles === undefined || ids.length === 0) return;
-    for (const id of ids) tiles._removeTile(id);
+    const probing = (rounds.get(source)?.count ?? 0) > 1;
+    for (const id of probing ? ids.slice(0, 1) : ids) tiles._removeTile(id);
     map._update(true);
   };
   /** Asks again after the source's next wait, or at once; a round already waiting stays. */
