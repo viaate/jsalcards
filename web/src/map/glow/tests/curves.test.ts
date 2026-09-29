@@ -26,7 +26,6 @@ import {
   PULSE_SECONDS,
   bloomLevels,
   bloomSourceScale,
-  bloomWeightAtScale,
   bloomWeights,
   fallbackDecode,
   fallbackEncode,
@@ -90,17 +89,24 @@ describe('zoom curves', () => {
   });
 
   it('reads bloom weights by CSS-pixel scale, independent of target resolution', () => {
-    const weights = bloomWeights(5);
-    BLOOM_SCALES_PX.forEach((scale, i) => {
-      expect(bloomWeightAtScale(weights, scale)).toBeCloseTo(weights[i] ?? 0, 12);
-    });
-    expect(bloomWeightAtScale(weights, 2)).toBe(0);
-    expect(bloomWeightAtScale(weights, 128)).toBe(0);
-    const between = bloomWeightAtScale(weights, Math.SQRT2 * 8);
-    expect(between).toBeCloseTo(((weights[1] ?? 0) + (weights[2] ?? 0)) / 2, 12);
+    const style = glowStyleAtZoom(5);
+    for (const targetPxPerCss of [0.5, 1, 2, 4]) {
+      bloomLevels(style, targetPxPerCss, 4000).forEach((weight, i) => {
+        const scale = BLOOM_SCALES_PX.indexOf(2 ** (i + 1) / targetPxPerCss);
+        expect(weight).toBe(scale < 0 ? 0 : style.bloom[scale]);
+      });
+    }
+    // A scale between two levels is shared out so that together they keep its mean square spread.
+    const eight = { ...style, bloom: [0, 1, 0, 0, 0] };
+    const targetPxPerCss = Math.SQRT1_2;
+    const levels = bloomLevels(eight, targetPxPerCss, 4000);
+    const texelPx = (i: number): number => 2 ** (i + 1) / targetPxPerCss;
+    expect(levels.reduce((a, b) => a + b, 0)).toBeCloseTo(1, 12);
+    expect(levels.reduce((sum, w, i) => sum + w * texelPx(i) ** 2, 0)).toBeCloseTo(64, 9);
+    expect(levels.filter((w) => w > 0)).toHaveLength(2);
   });
 
-  it('draws the full-size bloom from zoom 4 up as it always has, at any light-target resolution', () => {
+  it('draws the full-size bloom from zoom 4 up as it always has, on light targets of whole powers of two', () => {
     /** The layer's bloom levels as 0cacc6a laid them out (GlowLayer.beginFrame then). */
     function levelsBefore(
       bloom: readonly number[],
@@ -125,27 +131,29 @@ describe('zoom curves', () => {
       while (weights.length > 0 && (weights[weights.length - 1] ?? 0) < 1e-3) weights.pop();
       return weights;
     }
-    // Browser zoomed out (0.8), 1x and high-density screens, and a light target too small for them all.
-    for (const targetPxPerCss of [0.5, 0.8, 1, 1.25, 2]) {
-      for (const sizePx of [1000, 40]) {
-        for (let zoom = FULL_SIZE_ZOOM; zoom <= 12; zoom += 1 / 4) {
-          const style = glowStyleAtZoom(zoom);
-          expect(bloomLevels(style, targetPxPerCss, sizePx)).toEqual(
-            levelsBefore(bloomWeights(zoom), targetPxPerCss, sizePx),
-          );
-        }
+    // Half, one, two and four light pixels per CSS pixel.
+    for (const targetPxPerCss of [0.5, 1, 2, 4]) {
+      for (let zoom = FULL_SIZE_ZOOM; zoom <= 12; zoom += 1 / 4) {
+        const style = glowStyleAtZoom(zoom);
+        expect(bloomLevels(style, targetPxPerCss, 1000)).toEqual(
+          levelsBefore(bloomWeights(zoom), targetPxPerCss, 1000),
+        );
       }
     }
   });
 
-  it('keeps all of the shrunk bloom’s light in the levels it draws, at any light-target resolution', () => {
-    for (const targetPxPerCss of [0.5, 0.8, 1, 2]) {
-      for (const zoom of [1.51, 1.7, 2.12, 2.6, 3.14, 3.81, 3.99]) {
+  it('keeps all of the bloom’s light in the levels it draws, at any light-target resolution', () => {
+    // A browser zoomed out gives light targets between powers of two.
+    for (const targetPxPerCss of [0.5, 0.67, 0.8, 0.9, 1, 1.25, 2]) {
+      for (const zoom of [1.51, 1.7, 2.12, 2.6, 3.14, 3.81, 3.99, 4, 4.03, 6, 9]) {
         const style = glowStyleAtZoom(zoom);
         const total = style.bloom.reduce((a, b) => a + b, 0);
-        const drawn = bloomLevels(style, targetPxPerCss, 1000).reduce((a, b) => a + b, 0);
-        // Only trailing levels too faint to draw are left out.
-        expect(Math.abs(drawn - total)).toBeLessThan(2 * MIN_BLOOM_WEIGHT);
+        // A light target with room for every level, and one too small for the coarsest.
+        for (const sizePx of [1000, 40]) {
+          const drawn = bloomLevels(style, targetPxPerCss, sizePx).reduce((a, b) => a + b, 0);
+          // Only trailing levels too faint to draw are left out.
+          expect(Math.abs(drawn - total)).toBeLessThan(2 * MIN_BLOOM_WEIGHT);
+        }
       }
     }
   });
@@ -232,6 +240,9 @@ describe('small screens', () => {
         expect(ratio).toBeGreaterThan(0.9);
         expect(ratio).toBeLessThan(1.15);
       }
+    }
+    // A browser zoomed out gives light targets between powers of two.
+    for (const t of [0.8, 0.9, 1, 2]) {
       const below = bloomLevels(glowStyleAtZoom(FULL_SIZE_ZOOM - 1e-9), t, 2000);
       const at = bloomLevels(glowStyleAtZoom(FULL_SIZE_ZOOM), t, 2000);
       expect(below).toHaveLength(at.length);
@@ -274,7 +285,9 @@ describe('small screens', () => {
     for (const zoom of SMALL_SCREENS) {
       expect(glowStyleAtZoom(zoom).coreSigmaPx).toBe(interpolateStops(CORE_SIGMA_STOPS, zoom));
       expect(peak(zoom)).toBeGreaterThan(0.5 * peak(DESKTOP));
-      // A fifth brighter than the state lines around it, at least.
+      // A fifth brighter than the state lines around it, at least, for a point on a light
+      // pixel. One between light pixels peaks a little lower: on screen, a 320 px phone's
+      // widest zoom showed lone schools at 91, 1.18 times the state lines' 77.
       expect(peak(zoom)).toBeGreaterThan(1.2 * PHONE_STATE_LINE);
     }
   });

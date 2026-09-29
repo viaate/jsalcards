@@ -128,20 +128,6 @@ export function bloomWeights(zoom: number): number[] {
   );
 }
 
-/**
- * Weight for a bloom level whose texels are `scalePx` CSS px, interpolated in
- * log2 scale between the entries of {@link BLOOM_SCALES_PX}. Levels finer
- * than the first scale or coarser than the last get nothing, so the look does
- * not depend on the light target's resolution.
- */
-export function bloomWeightAtScale(weights: readonly number[], scalePx: number): number {
-  const position = Math.log2(scalePx / (BLOOM_SCALES_PX[0] ?? 1));
-  if (position < -1e-6 || position > weights.length - 1 + 1e-6) return 0;
-  const lo = Math.floor(position + 1e-6);
-  const t = Math.max(0, position - lo);
-  return (weights[lo] ?? 0) * (1 - t) + (weights[lo + 1] ?? 0) * t;
-}
-
 /** Coarsest bloom level, CSS px per texel. */
 export const MAX_BLOOM_SCALE_PX = 64;
 
@@ -154,15 +140,14 @@ export const MIN_BLOOM_WEIGHT = 1e-3;
  * or as far as a light target whose smaller side is `sizePx` target px has
  * room for. Trailing levels that add nothing are left out.
  *
- * At full size each level takes the weight at its own scale
- * (bloomWeightAtScale). Shrunk (glowSizeScale), the bloom's scales fall
- * between the levels: each scale's weight is shared out between the two
- * levels either side of it so that together they spread it as far as the
- * scale would, and a scale finer than the first level or coarser than the
- * last goes to that level, so the bloom keeps all of its light and its reach
- * shrinks with the map. At a light-target resolution that is not a power of
- * two (a browser zoomed out), full-size levels fall between the scales and
- * draw a little less light than the bloom holds, as they always have.
+ * A scale that lands on a level, as every full-size one does on a light
+ * target of one or two pixels per CSS pixel, goes to that level. One that
+ * falls between two levels, shrunk (glowSizeScale) or on a light target
+ * between powers of two (a browser zoomed out), is shared out between them so
+ * that together they spread it as far as the scale would. A scale finer than
+ * the first level or coarser than the last goes to that level. So the bloom
+ * keeps all of its light and its reach at any zoom and resolution, and the
+ * look does not depend on the light target's resolution.
  */
 export function bloomLevels(
   style: GlowFrameStyle,
@@ -177,23 +162,19 @@ export function bloomLevels(
     if (scale > MAX_BLOOM_SCALE_PX * 1.01 || size < 2) break;
     scales.push(scale);
   }
-  let weights: number[];
-  if (style.sizeScale === 1 || scales.length === 0) {
-    weights = scales.map((scale) => bloomWeightAtScale(style.bloom, scale));
-  } else {
-    weights = scales.map(() => 0);
-    const first = scales[0] ?? 1;
-    const last = scales.length - 1;
-    style.bloom.forEach((weight, i) => {
-      const at = Math.log2(((BLOOM_SCALES_PX[i] ?? 0) * style.sizeScale) / first);
-      const lo = Math.min(Math.max(Math.floor(at), 0), last);
-      // The coarser level's share, twice as wide, that keeps the scale's mean square spread.
-      const t = Math.min(Math.max((4 ** (at - lo) - 1) / 3, 0), 1);
-      const hi = Math.min(lo + 1, last);
-      weights[lo] = (weights[lo] ?? 0) + weight * (1 - t);
-      weights[hi] = (weights[hi] ?? 0) + weight * t;
-    });
-  }
+  const first = scales[0];
+  if (first === undefined) return [];
+  const weights = scales.map(() => 0);
+  const last = scales.length - 1;
+  style.bloom.forEach((weight, i) => {
+    const at = Math.log2(((BLOOM_SCALES_PX[i] ?? 0) * style.sizeScale) / first);
+    const lo = Math.min(Math.max(Math.floor(at), 0), last);
+    // The coarser level's share, twice as wide, that keeps the scale's mean square spread.
+    const t = Math.min(Math.max((4 ** (at - lo) - 1) / 3, 0), 1);
+    const hi = Math.min(lo + 1, last);
+    weights[lo] = (weights[lo] ?? 0) + weight * (1 - t);
+    weights[hi] = (weights[hi] ?? 0) + weight * t;
+  });
   while (weights.length > 0 && (weights[weights.length - 1] ?? 0) < MIN_BLOOM_WEIGHT) {
     weights.pop();
   }
@@ -421,10 +402,11 @@ export const FULL_SIZE_ZOOM = 4;
  * core keeps its size, about the smallest the CSS-pixel light target draws
  * without showing its pixels, and its light falls only with the factor's
  * square root, so a lone school stays well above the grey of the state lines
- * even at a small phone's widest zoom, while a band of schools, its light
- * packed closer, stays bright without blowing out. The factor meets 1 at
- * FULL_SIZE_ZOOM without easing in: a smooth join would reach farther than a
- * desktop just below it, where small laptops open.
+ * even at a small phone's widest zoom. The price is a band of schools, its
+ * light packed closer, brighter than on a desktop: on a phone's national view
+ * about twice as much of it reaches the tone map's pale top. The factor meets
+ * 1 at FULL_SIZE_ZOOM without easing in: a smooth join would reach farther
+ * than a desktop just below it, where small laptops open.
  */
 export function glowSizeScale(zoom: number): number {
   return zoom < FULL_SIZE_ZOOM ? 2 ** (zoom - FULL_SIZE_ZOOM) : 1;
@@ -435,9 +417,10 @@ export function glowSizeScale(zoom: number): number {
 /** Everything the layer needs for one frame at a given zoom. */
 export interface GlowFrameStyle {
   /**
-   * {@link glowSizeScale}, 1 from zoom 4 up. The gain, halo radius and bloom
-   * weights here have it already; the bloom scales take it where the layer
-   * reads them (bloomLevels).
+   * {@link glowSizeScale}, 1 from zoom 4 up. The halo radius here is scaled
+   * by it already, the gain by its square root and the bloom weights by its
+   * 1.5th power; the bloom scales take it where the layer reads them
+   * (bloomLevels).
    */
   readonly sizeScale: number;
   readonly coreSigmaPx: number;
