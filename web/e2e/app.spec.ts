@@ -312,6 +312,7 @@ test.describe('with no data shipped', () => {
       await button.click();
       const menu = page.locator('aside.menu');
       await expect(menu).toBeVisible();
+      await arrived(menu);
       await expect(button).toHaveAttribute('aria-expanded', 'true');
       await expect(button).toHaveAttribute('aria-controls', (await menu.getAttribute('id')) ?? '');
       await expect(menu).toBeFocused();
@@ -826,7 +827,8 @@ async function menuGrid(menu: Locator): Promise<MenuGrid> {
       )
       .filter((rect) => rect !== null)
       .map((rect) => at(rect.right));
-    // Layout can land a row a hair off a whole pixel (40.000015 on CI's GPU-less Chromium).
+    // Layout can land a size a hair off a whole pixel on CI's GPU-less Chromium (a row of
+    // 40.000015, an icon 15.999985 tall).
     const px = (value: number): number => Math.round(value * 100) / 100;
     const pills = [...panel.querySelectorAll('.item.is-on')].map((row) => {
       const style = getComputedStyle(row);
@@ -839,7 +841,9 @@ async function menuGrid(menu: Locator): Promise<MenuGrid> {
           .map((row) => px(row.getBoundingClientRect().height)),
       ),
       icons: distinct(icons.map((rect) => at(rect.left))),
-      iconSizes: distinct(icons.map((rect) => `${String(rect.width)}x${String(rect.height)}`)),
+      iconSizes: distinct(
+        icons.map((rect) => `${String(px(rect.width))}x${String(px(rect.height))}`),
+      ),
       names: distinct(names.map(at)),
       ends: distinct(ends),
       headings: distinct(
@@ -850,6 +854,13 @@ async function menuGrid(menu: Locator): Promise<MenuGrid> {
       ),
       pills,
     };
+  });
+}
+
+/** Waits out the menu's arrival (it slides 4px down as it fades in), so its box is where it rests. */
+async function arrived(menu: Locator): Promise<void> {
+  await menu.evaluate(async (panel) => {
+    await Promise.all(panel.getAnimations().map((animation) => animation.finished));
   });
 }
 
@@ -969,6 +980,7 @@ test.describe('with data staged', () => {
     await page.getByRole('button', { name: copy.menu.label, exact: true }).click();
     const menu = page.locator('aside.menu');
     await expect(menu).toBeVisible();
+    await arrived(menu);
     await expect(menu.locator('h2')).toHaveText([copy.menu.today, copy.menu.kinds]);
     // Today's schools as the live file lights them: one closed, one delayed.
     const counted = async (): Promise<string[][]> =>
