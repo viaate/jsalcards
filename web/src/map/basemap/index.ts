@@ -201,11 +201,13 @@ export interface Basemap {
   /** Glides to the nearest view the limits allow; jumps when reduced motion is preferred. */
   flyTo(view: MapView): void;
   /**
-   * Someone is probably on their way to the streets at `place` (their search
-   * shows it first, or they pressed on a school there): asks for what the
-   * street tiles there need before any can be drawn, the US mask, unless a
-   * flight there would ask for none but tiles wholly inside the US
-   * (us-inside.ts), which need none. With no place, nothing.
+   * Someone's search shows `place` first, or nothing (no `place`): once it
+   * has stayed first for RESULT_SETTLE_MS (not for each letter typed) with
+   * the map sent nowhere meanwhile, they are probably on their way to its
+   * streets, and what the street tiles there need before any can be drawn
+   * comes, the US mask, unless a flight there would ask for none but tiles
+   * wholly inside the US (us-inside.ts), which need none. Pressing on a
+   * school asks the same, at once.
    */
   prepareStreets(place?: Place): void;
   /** Glides to show [west, south, east, north] inside the frame, no closer than `maxZoom`. */
@@ -380,6 +382,13 @@ const NONE_HIDDEN: HiddenNames = Object.freeze({ cities: [], states: [] });
  * milliseconds; they catch up exactly when it ends.
  */
 const STATE_NAMES_REFRESH_MS = 120;
+
+/**
+ * How long, in milliseconds, a search's first place stays first before the
+ * streets there are prepared for (prepareStreets): long enough that a place
+ * shown on the way to another, as someone types, asks for nothing.
+ */
+const RESULT_SETTLE_MS = 500;
 
 /** Whether two lists of names are the same, in the same order. */
 function sameNames(a: readonly string[], b: readonly string[]): boolean {
@@ -784,12 +793,17 @@ export async function createBasemap({
   /** Whether street tiles need the mask: some are not wholly inside the US (us-inside.ts). */
   const needMask = (tiles: readonly (readonly [number, number, number])[]): boolean =>
     tiles.some(([z, x, y]) => !insideUs(z, x, y));
-  const prepareStreets = (place?: Place): void => {
-    if (place === undefined) return;
+  /** Someone is on their way to the streets at `place`: the mask comes now, if they need it. */
+  const streetsAhead = (place: Place): void => {
     // A flight there stops over it at the street tiles' first zoom: every tile it asks for is
     // under the ones covering the screen then. All wholly inside the US, it needs no mask.
     const over = flightTiles({ ...place, zoom: FLIGHT_STOP_ZOOM }, size(), FLIGHT_STOP_ZOOM);
     if (needMask(over)) maskFeed.start();
+  };
+  let resultTimer = 0;
+  const prepareStreets = (place?: Place): void => {
+    window.clearTimeout(resultTimer);
+    if (place !== undefined) resultTimer = window.setTimeout(streetsAhead, RESULT_SETTLE_MS, place);
   };
   let moved = false;
   let national = start === null;
@@ -1161,6 +1175,8 @@ export async function createBasemap({
     return true;
   }
   function goTo(target: MapView | null): void {
+    // Where the map goes now says where they are going, not what their search shows first.
+    window.clearTimeout(resultTimer);
     if (target === null) {
       showHome();
       return;
@@ -1487,6 +1503,8 @@ export async function createBasemap({
     glide();
   }
   function flyTo(target: MapView): void {
+    // Where the map goes now says where they are going, not what their search shows first.
+    window.clearTimeout(resultTimer);
     national = false;
     hideNames(NONE_HIDDEN);
     const allowed = constrainView(limits, target);
@@ -1653,7 +1671,7 @@ export async function createBasemap({
   // Someone pressing on a school is on their way to it: what its streets need comes meanwhile.
   const schoolMarks = [BASEMAP_IDS.schoolDots, BASEMAP_IDS.schoolLight, BASEMAP_IDS.schoolNames];
   const onSchoolPress = (event: MapMouseEvent | MapTouchEvent): void => {
-    prepareStreets({ lat: event.lngLat.lat, lon: event.lngLat.lng });
+    streetsAhead({ lat: event.lngLat.lat, lon: event.lngLat.lng });
   };
   map.on('mousedown', schoolMarks, onSchoolPress);
   map.on('touchstart', schoolMarks, onSchoolPress);
@@ -1721,6 +1739,7 @@ export async function createBasemap({
       cancelFlight();
       window.clearTimeout(revealTimer);
       window.clearTimeout(stateNamesTimer);
+      window.clearTimeout(resultTimer);
       stopHealing();
       releaseTileRequests();
       maskFeed.destroy();

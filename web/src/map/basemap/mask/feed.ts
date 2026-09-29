@@ -5,8 +5,8 @@
  * and cannot be drawn before it is in; one wholly inside the US (us-inside.ts)
  * needs none. So the mask is asked for as soon as someone shows they are
  * going to streets that need it, and not otherwise, never on a plain visit:
- * when their search shows such a place first (once its index is in: until
- * then the search needs the link), when they press on a school there, or
+ * when their search keeps such a place first for a moment (not each place
+ * shown as they type), when they press on a school there, or
  * when a flight or the map itself first needs such tiles (index.ts,
  * App.svelte). It is fetched whole (pmtiles.ts loadWholeArchive), once, and
  * each worker is sent a copy over a channel of this page's own (maskFeed); a
