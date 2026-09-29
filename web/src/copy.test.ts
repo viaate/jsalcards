@@ -2125,5 +2125,7 @@ ${aliases}
     // copy.ts's strings, and the chance section's fixed words (src/copy-chance.ts).
     expect(scanned.strings).toBe(strings.length + copyLeaves(chanceCopy).length);
     expect(scanned.svelte).toBeGreaterThan(0);
-  }, 60_000);
+    // The whole site read as one program: about 40 s of one core before the chance section,
+    // 50 s with it (its view model and components), and longer on a machine that is busy.
+  }, 120_000);
 });
