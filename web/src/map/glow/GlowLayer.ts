@@ -45,7 +45,7 @@ import {
   type GlowFrameStyle,
   type HaloShape,
   PULSE_SECONDS,
-  bloomLevelWeights,
+  bloomLevels,
   fallbackHalo,
   glowStyleAtZoom,
   interpolateStops,
@@ -147,12 +147,6 @@ const DEFAULT_LIGHT_RESOLUTION = 1;
 
 /** Guard band around the map in the light target, CSS px: about the widest bloom's reach. */
 const GUARD_CSS_PX = 48;
-
-/** Coarsest bloom level, CSS px per texel. */
-const MAX_BLOOM_SCALE_PX = 64;
-
-/** Bloom levels with less weight than this are not drawn. */
-const MIN_BLOOM_WEIGHT = 1e-3;
 
 interface GpuResources {
   readonly light: Program;
@@ -461,25 +455,7 @@ export class GlowLayer implements CustomLayerInterface {
     const w0 = Math.max(1, Math.ceil((cssW + 2 * GUARD_CSS_PX) * targetPxPerCss));
     const h0 = Math.max(1, Math.ceil((cssH + 2 * GUARD_CSS_PX) * targetPxPerCss));
 
-    const bloomWeights: number[] = [];
-    if (res.float) {
-      let size = Math.min(w0, h0);
-      let levels = 0;
-      for (let level = 1; ; level++) {
-        const scale = 2 ** level / targetPxPerCss;
-        size = Math.ceil(size / 2);
-        if (scale > MAX_BLOOM_SCALE_PX * 1.01 || size < 2) break;
-        levels = level;
-      }
-      bloomWeights.push(...bloomLevelWeights(style, 2 / targetPxPerCss, levels));
-      // Drop trailing levels that add nothing.
-      while (
-        bloomWeights.length > 0 &&
-        (bloomWeights[bloomWeights.length - 1] ?? 0) < MIN_BLOOM_WEIGHT
-      ) {
-        bloomWeights.pop();
-      }
-    }
+    const bloomWeights = res.float ? bloomLevels(style, targetPxPerCss, Math.min(w0, h0)) : [];
     const frame: FrameState = {
       style,
       zoom,

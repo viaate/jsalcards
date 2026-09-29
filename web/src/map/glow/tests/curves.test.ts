@@ -22,8 +22,9 @@ import {
   HALO_SIGMA_SHARE,
   GLYPH_FADE_END,
   GLYPH_FADE_START,
+  MIN_BLOOM_WEIGHT,
   PULSE_SECONDS,
-  bloomLevelWeights,
+  bloomLevels,
   bloomSourceScale,
   bloomWeightAtScale,
   bloomWeights,
@@ -31,7 +32,6 @@ import {
   fallbackEncode,
   fallbackHalo,
   glowReachPx,
-  glowSizeScale,
   glowStyleAtZoom,
   interpolateStops,
   kernelAt,
@@ -98,19 +98,54 @@ describe('zoom curves', () => {
     expect(bloomWeightAtScale(weights, 128)).toBe(0);
     const between = bloomWeightAtScale(weights, Math.SQRT2 * 8);
     expect(between).toBeCloseTo(((weights[1] ?? 0) + (weights[2] ?? 0)) / 2, 12);
-    // Half an octave past either end, half the end scale's weight.
-    expect(bloomWeightAtScale(weights, Math.SQRT2 * 2)).toBeCloseTo((weights[0] ?? 0) / 2, 12);
-    expect(bloomWeightAtScale(weights, Math.SQRT2 * 64)).toBeCloseTo((weights[4] ?? 0) / 2, 12);
   });
 
-  it('gives bloom levels an octave apart all of the bloom, however its scales shrink', () => {
-    for (const zoom of [1.8, 2.2, 2.6, 3, 5]) {
-      const style = glowStyleAtZoom(zoom);
-      const total = style.bloom.reduce((a, b) => a + b, 0);
-      // Light targets at 2, 1 and 0.5 target px per CSS px, levels out to 64 CSS px.
-      for (const firstPx of [1, 2, 4]) {
-        const levels = bloomLevelWeights(style, firstPx, Math.log2(64 / firstPx) + 1);
-        expect(levels.reduce((a, b) => a + b, 0)).toBeCloseTo(total, 12);
+  it('draws the full-size bloom from zoom 4 up as it always has, at any light-target resolution', () => {
+    /** The layer's bloom levels as 0cacc6a laid them out (GlowLayer.beginFrame then). */
+    function levelsBefore(
+      bloom: readonly number[],
+      targetPxPerCss: number,
+      sizePx: number,
+    ): number[] {
+      const weights: number[] = [];
+      let size = sizePx;
+      for (let level = 1; ; level++) {
+        const scale = 2 ** level / targetPxPerCss;
+        size = Math.ceil(size / 2);
+        if (scale > 64 * 1.01 || size < 2) break;
+        const position = Math.log2(scale / 4);
+        if (position < -1e-6 || position > bloom.length - 1 + 1e-6) {
+          weights.push(0);
+          continue;
+        }
+        const lo = Math.floor(position + 1e-6);
+        const t = Math.max(0, position - lo);
+        weights.push((bloom[lo] ?? 0) * (1 - t) + (bloom[lo + 1] ?? 0) * t);
+      }
+      while (weights.length > 0 && (weights[weights.length - 1] ?? 0) < 1e-3) weights.pop();
+      return weights;
+    }
+    // Browser zoomed out (0.8), 1x and high-density screens, and a light target too small for them all.
+    for (const targetPxPerCss of [0.5, 0.8, 1, 1.25, 2]) {
+      for (const sizePx of [1000, 40]) {
+        for (let zoom = FULL_SIZE_ZOOM; zoom <= 12; zoom += 1 / 4) {
+          const style = glowStyleAtZoom(zoom);
+          expect(bloomLevels(style, targetPxPerCss, sizePx)).toEqual(
+            levelsBefore(bloomWeights(zoom), targetPxPerCss, sizePx),
+          );
+        }
+      }
+    }
+  });
+
+  it('keeps all of the shrunk bloom’s light in the levels it draws, at any light-target resolution', () => {
+    for (const targetPxPerCss of [0.5, 0.8, 1, 2]) {
+      for (const zoom of [1.51, 1.7, 2.12, 2.6, 3.14, 3.81, 3.99]) {
+        const style = glowStyleAtZoom(zoom);
+        const total = style.bloom.reduce((a, b) => a + b, 0);
+        const drawn = bloomLevels(style, targetPxPerCss, 1000).reduce((a, b) => a + b, 0);
+        // Only trailing levels too faint to draw are left out.
+        expect(Math.abs(drawn - total)).toBeLessThan(2 * MIN_BLOOM_WEIGHT);
       }
     }
   });
@@ -130,22 +165,28 @@ describe('small screens', () => {
   /** A 1440 x 900 desktop's national view. */
   const DESKTOP = 4.03;
   /**
-   * National views of a 390 px phone, an 820 x 1180 tablet, and 1280 x 720
-   * and 1366 x 768 laptops.
+   * National views of 320 x 640 and 390 x 844 phones, an 820 x 1180 tablet,
+   * and 1280 x 720 and 1366 x 768 laptops.
    */
-  const NATIONAL_VIEWS = [2.12, 3.14, 3.7, 3.81];
-  /** Those, and the widest zooms of phones from 320 px wide up and of a 1440 x 900 desktop. */
-  const SMALL_SCREENS = [...NATIONAL_VIEWS, 1.8, 2, 2.2, 3.73];
+  const NATIONAL_VIEWS = [1.81, 2.12, 3.14, 3.7, 3.81];
+  /** The widest zooms of 320, 360 and 390 px phones and of a 1440 x 900 desktop. */
+  const WIDEST = [1.51, 1.7, 1.82, 3.73];
+  const SMALL_SCREENS = [...NATIONAL_VIEWS, ...WIDEST];
+  /** A phone's state lines, --line-state in index.html, 0..255. */
+  const PHONE_STATE_LINE = 0x4d;
 
-  /** Energy-weighted RMS spread of the bloom alone, CSS px. */
-  function bloomReachPx(zoom: number): number {
-    const style = glowStyleAtZoom(zoom);
+  /**
+   * Energy-weighted RMS spread of the bloom levels the layer draws, each at
+   * its texel size, CSS px, for a light target of `targetPxPerCss`.
+   */
+  function drawnBloomPx(zoom: number, targetPxPerCss: number): number {
+    const levels = bloomLevels(glowStyleAtZoom(zoom), targetPxPerCss, 2000);
     let energy = 0;
     let moment = 0;
-    style.bloom.forEach((weight, i) => {
-      const scale = (BLOOM_SCALES_PX[i] ?? 0) * style.sizeScale;
+    levels.forEach((weight, i) => {
+      const texelPx = 2 ** (i + 1) / targetPxPerCss;
       energy += weight;
-      moment += weight * scale * scale;
+      moment += weight * texelPx * texelPx;
     });
     return Math.sqrt(moment / energy);
   }
@@ -154,30 +195,54 @@ describe('small screens', () => {
   function bloomLight(zoom: number): number {
     const style = glowStyleAtZoom(zoom);
     const core = style.gain * 2 * Math.PI * style.coreSigmaPx ** 2;
-    return (core * style.bloom.reduce((a, b) => a + b, 0)) / worldPx(zoom) ** 2;
+    const drawn = bloomLevels(style, 1, 2000).reduce((a, b) => a + b, 0);
+    return (core * drawn) / worldPx(zoom) ** 2;
   }
 
   /** The 8-bit fallback's halo radius, which carries its bloom, CSS px. */
   const fallbackRadiusPx = (zoom: number): number =>
     fallbackHalo(glowStyleAtZoom(zoom), zoom).radiusPx;
 
+  const share = (reachPx: number, zoom: number): number => reachPx / worldPx(zoom);
+
   it('keeps the glow reaching no farther across the country than at a desktop national view', () => {
-    const share = (reach: (z: number) => number, z: number): number => reach(z) / worldPx(z);
     for (const zoom of SMALL_SCREENS) {
-      expect(share(bloomReachPx, zoom)).toBeLessThan(share(bloomReachPx, DESKTOP) * 1.1);
-      expect(share(glowReachPx, zoom)).toBeLessThan(share(glowReachPx, DESKTOP) * 1.1);
-      expect(share(fallbackRadiusPx, zoom)).toBeLessThan(share(fallbackRadiusPx, DESKTOP) * 1.1);
+      // Levels an octave apart share each shrunk scale out, which widens it a little.
+      for (const t of [1, 2]) {
+        expect(share(drawnBloomPx(zoom, t), zoom)).toBeLessThan(
+          share(drawnBloomPx(DESKTOP, t), DESKTOP) * 1.15,
+        );
+      }
+      expect(share(glowReachPx(zoom), zoom)).toBeLessThan(
+        share(glowReachPx(DESKTOP), DESKTOP) * 1.1,
+      );
+      expect(share(fallbackRadiusPx(zoom), zoom)).toBeLessThan(
+        share(fallbackRadiusPx(DESKTOP), DESKTOP) * 1.1,
+      );
       // Nor laying more bloom light on any part of it.
       expect(bloomLight(zoom)).toBeLessThan(bloomLight(DESKTOP) * 1.1);
     }
   });
 
-  it('shrinks the glow with the map below zoom 4, and meets its own size there', () => {
-    for (let zoom = 1; zoom < FULL_SIZE_ZOOM; zoom += 1 / 64) {
-      expect(glowSizeScale(zoom)).toBeCloseTo(2 ** (zoom - FULL_SIZE_ZOOM), 12);
+  it('keeps the drawn bloom’s reach across the country at every zoom below 4, and meets zoom 4 without a jump', () => {
+    for (const t of [1, 2]) {
+      const desktop = share(drawnBloomPx(DESKTOP, t), DESKTOP);
+      for (let zoom = 1.5; zoom < FULL_SIZE_ZOOM; zoom += 1 / 16) {
+        const ratio = share(drawnBloomPx(zoom, t), zoom) / desktop;
+        expect(ratio).toBeGreaterThan(0.9);
+        expect(ratio).toBeLessThan(1.15);
+      }
+      const below = bloomLevels(glowStyleAtZoom(FULL_SIZE_ZOOM - 1e-9), t, 2000);
+      const at = bloomLevels(glowStyleAtZoom(FULL_SIZE_ZOOM), t, 2000);
+      expect(below).toHaveLength(at.length);
+      below.forEach((weight, i) => {
+        expect(weight).toBeCloseTo(at[i] ?? 0, 6);
+      });
     }
-    expect(glowSizeScale(FULL_SIZE_ZOOM - 1e-9)).toBeCloseTo(1, 6);
-    expect(glowSizeScale(FULL_SIZE_ZOOM)).toBe(1);
+    expect(glowStyleAtZoom(FULL_SIZE_ZOOM - 1e-9).gain).toBeCloseTo(
+      glowStyleAtZoom(FULL_SIZE_ZOOM).gain,
+      6,
+    );
   });
 
   it('leaves every value from zoom 4 up as the stops give it', () => {
@@ -189,8 +254,6 @@ describe('small screens', () => {
       expect(style.haloRadiusPx).toBe(interpolateStops(HALO_RADIUS_STOPS, zoom));
       expect(style.haloEnergy).toBe(interpolateStops(HALO_ENERGY_STOPS, zoom));
       expect(style.bloom).toEqual(bloomWeights(zoom));
-      // The layer's levels at one light pixel per CSS pixel, 2 to 64 px texels: one per scale.
-      expect(bloomLevelWeights(style, 2, 6)).toEqual([0, ...style.bloom]);
       const fallback = fallbackHalo(style, zoom);
       if (style.bloom.some((w) => w > 0)) {
         expect(fallback.radiusPx).toBe(
@@ -200,17 +263,19 @@ describe('small screens', () => {
     }
   });
 
-  it('keeps a lone school in view at a small screen national view', () => {
-    // Its brightest pixel as displayed, 0..255, on a light target of one pixel per CSS pixel.
+  it('keeps a lone school well in view on small screens, even at their widest zoom', () => {
+    // Its core's brightest pixel as displayed, 0..255, on a light target of one pixel per CSS pixel.
     const tokens = STATUS_HEX.slice(0, 4).map(hexToLinear);
     const peak = (zoom: number): number => {
       const style = glowStyleAtZoom(zoom);
       const light = style.gain * kernelUniforms(style, 1).coreWeight;
       return Math.max(...toneMap(statusLight([light, 0, 0, 0], tokens)).map(linearToSrgb)) * 255;
     };
-    for (const zoom of NATIONAL_VIEWS) {
+    for (const zoom of SMALL_SCREENS) {
       expect(glowStyleAtZoom(zoom).coreSigmaPx).toBe(interpolateStops(CORE_SIGMA_STOPS, zoom));
       expect(peak(zoom)).toBeGreaterThan(0.5 * peak(DESKTOP));
+      // A fifth brighter than the state lines around it, at least.
+      expect(peak(zoom)).toBeGreaterThan(1.2 * PHONE_STATE_LINE);
     }
   });
 });
