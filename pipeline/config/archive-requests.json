@@ -1,645 +1,1000 @@
 {
   "cdx": [
     {
-      "url": "www.hillsboroughschools.org/cms/Tools/OnScreenAlerts/*",
-      "from": "20160101",
+      "url": "www.alpineschools.org/",
+      "from": "20190101",
       "to": "20260930",
       "filter": [
         "statuscode:200"
-      ]
+      ],
+      "collapse": "timestamp:10"
     },
     {
-      "url": "dcps.duvalschools.org/cms/Tools/OnScreenAlerts/*",
-      "from": "20160101",
+      "url": "www.davis.k12.ut.us/",
+      "from": "20190101",
       "to": "20260930",
       "filter": [
         "statuscode:200"
-      ]
+      ],
+      "collapse": "timestamp:10"
     },
     {
-      "url": "www.browardschools.com/cms/Tools/OnScreenAlerts/*",
-      "from": "20160101",
+      "url": "www.wsd.net/",
+      "from": "20190101",
       "to": "20260930",
       "filter": [
         "statuscode:200"
-      ]
+      ],
+      "collapse": "timestamp:10"
     },
     {
-      "url": "www.pcsb.org/cms/Tools/OnScreenAlerts/*",
-      "from": "20160101",
+      "url": "www.nebo.edu/",
+      "from": "20190101",
       "to": "20260930",
       "filter": [
         "statuscode:200"
-      ]
+      ],
+      "collapse": "timestamp:10"
     },
     {
-      "url": "www.bcbe.org/cms/Tools/OnScreenAlerts/*",
-      "from": "20160101",
+      "url": "www.ogdensd.org/",
+      "from": "20190101",
       "to": "20260930",
       "filter": [
         "statuscode:200"
-      ]
+      ],
+      "collapse": "timestamp:10"
     },
     {
-      "url": "www.sbac.edu/cms/Tools/OnScreenAlerts/*",
-      "from": "20160101",
+      "url": "www.besd.net/",
+      "from": "20190101",
       "to": "20260930",
       "filter": [
         "statuscode:200"
-      ]
+      ],
+      "collapse": "timestamp:10"
     },
     {
-      "url": "www.escambiaschools.org/cms/Tools/OnScreenAlerts/*",
-      "from": "20160101",
+      "url": "www.irondistrict.org/",
+      "from": "20190101",
       "to": "20260930",
       "filter": [
         "statuscode:200"
-      ]
+      ],
+      "collapse": "timestamp:10"
     },
     {
-      "url": "www.nassau.k12.fl.us/cms/Tools/OnScreenAlerts/*",
-      "from": "20160101",
+      "url": "www.uintah.net/",
+      "from": "20190101",
       "to": "20260930",
       "filter": [
         "statuscode:200"
-      ]
+      ],
+      "collapse": "timestamp:10"
     },
     {
-      "url": "www.collierschools.com/cms/Tools/OnScreenAlerts/*",
-      "from": "20160101",
+      "url": "www.sjsd.org/",
+      "from": "20190101",
       "to": "20260930",
       "filter": [
         "statuscode:200"
-      ]
+      ],
+      "collapse": "timestamp:10"
     },
     {
-      "url": "www.yourcharlotteschools.net/cms/Tools/OnScreenAlerts/*",
-      "from": "20160101",
+      "url": "www.carbonschools.org/",
+      "from": "20190101",
       "to": "20260930",
       "filter": [
         "statuscode:200"
-      ]
+      ],
+      "collapse": "timestamp:10"
     },
     {
-      "url": "www.chickasawschools.com/cms/Tools/OnScreenAlerts/*",
-      "from": "20160101",
+      "url": "www.juabsd.org/",
+      "from": "20190101",
       "to": "20260930",
       "filter": [
         "statuscode:200"
-      ]
+      ],
+      "collapse": "timestamp:10"
     },
     {
-      "url": "www.sisd.net/cms/Tools/OnScreenAlerts/*",
-      "from": "20160101",
+      "url": "www.ccsdut.org/",
+      "from": "20190101",
       "to": "20260930",
       "filter": [
         "statuscode:200"
-      ]
+      ],
+      "collapse": "timestamp:10"
     },
     {
-      "url": "s3.us-west-2.amazonaws.com/company-wide-tickers/*",
-      "from": "20180101",
+      "url": "www.tooeleschools.org/",
+      "from": "20190101",
+      "to": "20260930",
+      "filter": [
+        "statuscode:200"
+      ],
+      "collapse": "timestamp:10"
+    },
+    {
+      "url": "www.pcschools.us/",
+      "from": "20190101",
+      "to": "20260930",
+      "filter": [
+        "statuscode:200"
+      ],
+      "collapse": "timestamp:10"
+    },
+    {
+      "url": "www.slcschools.org/",
+      "from": "20190101",
+      "to": "20260930",
+      "filter": [
+        "statuscode:200"
+      ],
+      "collapse": "timestamp:10"
+    },
+    {
+      "url": "www.slcschools.org/api/popup-alerts",
+      "from": "20190101",
       "to": "20260930"
     },
     {
-      "url": "company-wide-tickers.s3.amazonaws.com/*",
-      "from": "20180101",
+      "url": "www.murrayschools.org/",
+      "from": "20190101",
+      "to": "20260930",
+      "filter": [
+        "statuscode:200"
+      ],
+      "collapse": "timestamp:10"
+    },
+    {
+      "url": "www.murrayschools.org/api/popup-alerts",
+      "from": "20190101",
       "to": "20260930"
     },
     {
-      "url": "s3.amazonaws.com/company-wide-tickers/*",
-      "from": "20180101",
+      "url": "www.loganschools.org/",
+      "from": "20190101",
+      "to": "20260930",
+      "filter": [
+        "statuscode:200"
+      ],
+      "collapse": "timestamp:10"
+    },
+    {
+      "url": "www.loganschools.org/api/popup-alerts",
+      "from": "20190101",
       "to": "20260930"
+    },
+    {
+      "url": "www.saisd.net/",
+      "from": "20190101",
+      "to": "20260930",
+      "filter": [
+        "statuscode:200"
+      ],
+      "collapse": "timestamp:10"
+    },
+    {
+      "url": "www.judsonisd.org/",
+      "from": "20190101",
+      "to": "20260930",
+      "filter": [
+        "statuscode:200"
+      ],
+      "collapse": "timestamp:10"
+    },
+    {
+      "url": "www.harlandale.net/",
+      "from": "20190101",
+      "to": "20260930",
+      "filter": [
+        "statuscode:200"
+      ],
+      "collapse": "timestamp:10"
+    },
+    {
+      "url": "www.eisd.net/",
+      "from": "20190101",
+      "to": "20260930",
+      "filter": [
+        "statuscode:200"
+      ],
+      "collapse": "timestamp:10"
+    },
+    {
+      "url": "www.scucisd.org/",
+      "from": "20190101",
+      "to": "20260930",
+      "filter": [
+        "statuscode:200"
+      ],
+      "collapse": "timestamp:10"
+    },
+    {
+      "url": "www.ahisd.net/",
+      "from": "20190101",
+      "to": "20260930",
+      "filter": [
+        "statuscode:200"
+      ],
+      "collapse": "timestamp:10"
+    },
+    {
+      "url": "www.comalisd.org/",
+      "from": "20190101",
+      "to": "20260930",
+      "filter": [
+        "statuscode:200"
+      ],
+      "collapse": "timestamp:10"
+    },
+    {
+      "url": "www.swisd.net/",
+      "from": "20190101",
+      "to": "20260930",
+      "filter": [
+        "statuscode:200"
+      ],
+      "collapse": "timestamp:10"
+    },
+    {
+      "url": "www.mvisd.com/",
+      "from": "20190101",
+      "to": "20260930",
+      "filter": [
+        "statuscode:200"
+      ],
+      "collapse": "timestamp:10"
+    },
+    {
+      "url": "www.ecisd.net/",
+      "from": "20190101",
+      "to": "20260930",
+      "filter": [
+        "statuscode:200"
+      ],
+      "collapse": "timestamp:10"
+    },
+    {
+      "url": "www.southsanisd.net/",
+      "from": "20190101",
+      "to": "20260930",
+      "filter": [
+        "statuscode:200"
+      ],
+      "collapse": "timestamp:10"
+    },
+    {
+      "url": "www.kerrvilleisd.net/",
+      "from": "20190101",
+      "to": "20260930",
+      "filter": [
+        "statuscode:200"
+      ],
+      "collapse": "timestamp:10"
+    },
+    {
+      "url": "www.boerneisd.net/",
+      "from": "20190101",
+      "to": "20260930",
+      "filter": [
+        "statuscode:200"
+      ],
+      "collapse": "timestamp:10"
+    },
+    {
+      "url": "www.boerneisd.net/api/popup-alerts",
+      "from": "20190101",
+      "to": "20260930"
+    },
+    {
+      "url": "www.nisd.net/",
+      "from": "20190101",
+      "to": "20260930",
+      "filter": [
+        "statuscode:200"
+      ],
+      "collapse": "timestamp:10"
+    },
+    {
+      "url": "www.neisd.net/",
+      "from": "20190101",
+      "to": "20260930",
+      "filter": [
+        "statuscode:200"
+      ],
+      "collapse": "timestamp:10"
+    },
+    {
+      "url": "content.erienewsnow.com/data/*",
+      "from": "20150101",
+      "to": "20260930"
+    },
+    {
+      "url": "erienewsnow.com/weather/closings*",
+      "from": "20150101",
+      "to": "20260930",
+      "filter": [
+        "statuscode:200"
+      ],
+      "collapse": "timestamp:8"
+    },
+    {
+      "url": "www.eriesd.org/",
+      "from": "20190101",
+      "to": "20260930",
+      "filter": [
+        "statuscode:200"
+      ],
+      "collapse": "timestamp:10"
+    },
+    {
+      "url": "www.wcsdpa.org/",
+      "from": "20190101",
+      "to": "20260930",
+      "filter": [
+        "statuscode:200"
+      ],
+      "collapse": "timestamp:10"
+    },
+    {
+      "url": "www.nwsd.org/",
+      "from": "20190101",
+      "to": "20260930",
+      "filter": [
+        "statuscode:200"
+      ],
+      "collapse": "timestamp:10"
+    },
+    {
+      "url": "www.ucasd.org/",
+      "from": "20190101",
+      "to": "20260930",
+      "filter": [
+        "statuscode:200"
+      ],
+      "collapse": "timestamp:10"
+    },
+    {
+      "url": "www.fairviewschools.org/",
+      "from": "20190101",
+      "to": "20260930",
+      "filter": [
+        "statuscode:200"
+      ],
+      "collapse": "timestamp:10"
+    },
+    {
+      "url": "www.mtsd.org/",
+      "from": "20190101",
+      "to": "20260930",
+      "filter": [
+        "statuscode:200"
+      ],
+      "collapse": "timestamp:10"
+    },
+    {
+      "url": "www.mtsd.org/api/popup-alerts",
+      "from": "20190101",
+      "to": "20260930"
+    },
+    {
+      "url": "www.wattsburg.org/",
+      "from": "20190101",
+      "to": "20260930",
+      "filter": [
+        "statuscode:200"
+      ],
+      "collapse": "timestamp:10"
+    },
+    {
+      "url": "www.wattsburg.org/api/popup-alerts",
+      "from": "20190101",
+      "to": "20260930"
+    },
+    {
+      "url": "www.nesd1.org/",
+      "from": "20190101",
+      "to": "20260930",
+      "filter": [
+        "statuscode:200"
+      ],
+      "collapse": "timestamp:10"
+    },
+    {
+      "url": "www.nesd1.org/api/popup-alerts",
+      "from": "20190101",
+      "to": "20260930"
+    },
+    {
+      "url": "www.conneautsd.org/",
+      "from": "20190101",
+      "to": "20260930",
+      "filter": [
+        "statuscode:200"
+      ],
+      "collapse": "timestamp:10"
     }
   ],
   "snapshots": [
     {
-      "timestamp": "20240108053415",
-      "url": "https://www.ktiv.com/weather/closings/"
+      "timestamp": "20230131175250",
+      "url": "https://spectrumlocalnews.com/tx/san-antonio/weather/closings"
     },
     {
-      "timestamp": "20231225050736",
-      "url": "https://www.ktiv.com/weather/closings/"
+      "timestamp": "20251111233523",
+      "url": "https://spectrumlocalnews.com/tx/san-antonio/weather/closings"
     },
     {
-      "timestamp": "20240117200152",
-      "url": "https://www.ktiv.com/weather/closings/"
+      "timestamp": "20180318185109",
+      "url": "http://spectrumlocalnews.com/tx/san-antonio/weather/closings"
     },
     {
-      "timestamp": "20211215031510",
-      "url": "https://www.ktiv.com/weather/closings/"
+      "timestamp": "20200330055947",
+      "url": "https://spectrumlocalnews.com/tx/san-antonio/weather/closings"
     },
     {
-      "timestamp": "20211208155418",
-      "url": "https://www.ktiv.com/weather/closings/"
+      "timestamp": "20220928143922",
+      "url": "https://www.ocps.net/"
     },
     {
-      "timestamp": "20211110170417",
-      "url": "https://www.ktiv.com/weather/closings/"
+      "timestamp": "20241008001703",
+      "url": "https://www.ocps.net/"
     },
     {
-      "timestamp": "20211110175109",
-      "url": "https://webpubcontent.gray.tv/ktiv/newsticker/closings.html"
+      "timestamp": "20241010063218",
+      "url": "https://www.ocps.net/"
     },
     {
-      "timestamp": "20220621040820",
-      "url": "https://webpubcontent.gray.tv/ktiv/newsticker/closings.html"
+      "timestamp": "20230828180602",
+      "url": "https://www.ocps.net/"
     },
     {
-      "timestamp": "20221012014032",
-      "url": "https://webpubcontent.gray.tv/ktiv/newsticker/closings.html"
+      "timestamp": "20221108193924",
+      "url": "https://www.ocps.net/"
     },
     {
-      "timestamp": "20221022132203",
-      "url": "https://webpubcontent.gray.tv/ktiv/newsticker/closings.html"
+      "timestamp": "20221108062549",
+      "url": "https://www.ocps.net/"
     },
     {
-      "timestamp": "20250416125630",
-      "url": "https://webpubcontent.gray.tv/ktiv/newsticker/closings.html"
+      "timestamp": "20221110105345",
+      "url": "https://www.ocps.net/"
     },
     {
-      "timestamp": "20260312034229",
-      "url": "https://www.ktiv.com/weather/closings/"
+      "timestamp": "20220929092351",
+      "url": "https://www.ocps.net/"
     },
     {
-      "timestamp": "20240314052258",
-      "url": "https://www.abc4.com/weather/closings/"
+      "timestamp": "20210829223626",
+      "url": "https://www.wtva.com/weather/closings/?c=0.5169620394992659"
     },
     {
-      "timestamp": "20240117021728",
-      "url": "https://www.abc4.com/weather/closings/"
+      "timestamp": "20251224164202",
+      "url": "https://kmph.com/weather/closings?_rsc=1iskt"
     },
     {
-      "timestamp": "20240208110740",
-      "url": "https://www.abc4.com/weather/closings/"
+      "timestamp": "20251224031437",
+      "url": "https://kmph.com/weather/closings?_rsc=1iskt"
     },
     {
-      "timestamp": "20240506101228",
-      "url": "https://www.abc4.com/weather/closings/"
+      "timestamp": "20250204131509",
+      "url": "https://kmph.com/weather/closings"
     },
     {
-      "timestamp": "20240118040149",
-      "url": "https://www.abc4.com/weather/closings/"
+      "timestamp": "20250206110808",
+      "url": "https://kmph.com/weather/closings"
     },
     {
-      "timestamp": "20240315061049",
-      "url": "https://www.abc4.com/weather/closings/"
+      "timestamp": "20240301064902",
+      "url": "https://kmph.com/weather/closings"
     },
     {
-      "timestamp": "20230404191310",
-      "url": "https://www.abc4.com/weather/closings/"
+      "timestamp": "20230321065756",
+      "url": "https://kmph.com/weather/closings"
     },
     {
-      "timestamp": "20240313132943",
-      "url": "https://www.abc4.com/weather/closings/"
+      "timestamp": "20260211122713",
+      "url": "https://kmph.com/weather/closings?_rsc=1iskt"
     },
     {
-      "timestamp": "20211019050812",
-      "url": "https://www.abc4.com/weather/closings/"
+      "timestamp": "20250401025617",
+      "url": "https://kmph.com/weather/closings"
     },
     {
-      "timestamp": "20240426023646",
-      "url": "https://www.abc4.com/weather/closings/"
+      "timestamp": "20240912081456",
+      "url": "https://www.mcpss.com/"
     },
     {
-      "timestamp": "20240404220126",
-      "url": "https://www.abc4.com/weather/closings/"
+      "timestamp": "20260125220635",
+      "url": "https://www.mcpss.com/"
     },
     {
-      "timestamp": "20240414193534",
-      "url": "https://www.abc4.com/weather/closings/"
+      "timestamp": "20220121113046",
+      "url": "https://www.mcpss.com/"
     },
     {
-      "timestamp": "20211214082500",
-      "url": "https://www.abc4.com/weather/closings/"
+      "timestamp": "20260102172623",
+      "url": "https://www.mcpss.com/"
     },
     {
-      "timestamp": "20250101033125",
-      "url": "https://www.abc4.com/weather/closings/"
+      "timestamp": "20260101203313",
+      "url": "https://www.mcpss.com/"
     },
     {
-      "timestamp": "20241017142028",
-      "url": "https://www.abc4.com/weather/closings/"
+      "timestamp": "20251105152418",
+      "url": "https://www.mcpss.com/"
     },
     {
-      "timestamp": "20221106222708",
-      "url": "https://www.abc4.com/weather/closings/"
+      "timestamp": "20260119074424",
+      "url": "https://www.mcpss.com/"
     },
     {
-      "timestamp": "20250121034035",
-      "url": "https://www.abc4.com/weather/closings/"
+      "timestamp": "20260121185649",
+      "url": "https://www.mcpss.com/"
     },
     {
-      "timestamp": "20240102221906",
-      "url": "https://www.abc4.com/weather/closings/"
+      "timestamp": "20240405072048",
+      "url": "https://www.cbs8.com/closings"
     },
     {
-      "timestamp": "20241029202557",
-      "url": "https://www.abc4.com/weather/closings/"
+      "timestamp": "20210330044127",
+      "url": "https://www.cbs8.com/closings"
     },
     {
-      "timestamp": "20240103231736",
-      "url": "https://www.abc4.com/weather/closings/"
+      "timestamp": "20201127235552",
+      "url": "https://www.cbs8.com/closings"
     },
     {
-      "timestamp": "20231129025520",
-      "url": "https://www.abc4.com/weather/closings/"
+      "timestamp": "20201118235904",
+      "url": "https://www.cbs8.com/closings"
     },
     {
-      "timestamp": "20220324231050",
-      "url": "https://www.abc4.com/weather/closings/"
+      "timestamp": "20260312232738",
+      "url": "https://www.corvallisschools.org/"
     },
     {
-      "timestamp": "20220306224753",
-      "url": "https://www.abc4.com/weather/closings/"
+      "timestamp": "20250203015943",
+      "url": "https://www.corvallisschools.org/"
     },
     {
-      "timestamp": "20241204193730",
-      "url": "https://www.yourerie.com/weather/closings/"
+      "timestamp": "20221103180334",
+      "url": "https://www.corvallisschools.org/"
     },
     {
-      "timestamp": "20210216125954",
-      "url": "https://www.yourerie.com/weather/closings/"
+      "timestamp": "20260217092924",
+      "url": "https://www.corvallisschools.org/"
     },
     {
-      "timestamp": "20201201005158",
-      "url": "https://www.yourerie.com/weather/closings/"
+      "timestamp": "20250103084155",
+      "url": "https://www.corvallisschools.org/"
     },
     {
-      "timestamp": "20250115072726",
-      "url": "https://www.yourerie.com/weather/closings/"
+      "timestamp": "20250316170035",
+      "url": "https://www.corvallisschools.org/"
     },
     {
-      "timestamp": "20221116205347",
-      "url": "https://www.yourerie.com/weather/closings/"
+      "timestamp": "20250124012116",
+      "url": "https://www.corvallisschools.org/"
     },
     {
-      "timestamp": "20201102081423",
-      "url": "https://www.yourerie.com/weather/closings/"
+      "timestamp": "20241104213935",
+      "url": "https://www.corvallisschools.org/"
     },
     {
-      "timestamp": "20231101003901",
-      "url": "https://www.yourerie.com/weather/closings/"
+      "timestamp": "20240523065556",
+      "url": "https://www.centerville.k12.mt.us/"
     },
     {
-      "timestamp": "20241212042816",
-      "url": "https://www.yourerie.com/weather/closings/"
+      "timestamp": "20250303015657",
+      "url": "https://www.centerville.k12.mt.us/"
     },
     {
-      "timestamp": "20250212024123",
-      "url": "https://www.yourerie.com/weather/closings/"
+      "timestamp": "20250116193920",
+      "url": "https://www.centerville.k12.mt.us/"
     },
     {
-      "timestamp": "20250108033856",
-      "url": "https://www.yourerie.com/weather/closings/"
+      "timestamp": "20210419095735",
+      "url": "https://www.centerville.k12.mt.us/"
     },
     {
-      "timestamp": "20221215103703",
-      "url": "https://www.yourerie.com/weather/closings/"
+      "timestamp": "20250323013039",
+      "url": "https://www.centerville.k12.mt.us/"
     },
     {
-      "timestamp": "20220111042023",
-      "url": "https://www.yourerie.com/weather/closings/"
+      "timestamp": "20260518083920",
+      "url": "https://www.ccsd1.org/"
     },
     {
-      "timestamp": "20220225110108",
-      "url": "https://www.yourerie.com/weather/closings/"
+      "timestamp": "20250417101702",
+      "url": "https://www.ccsd1.org/"
     },
     {
-      "timestamp": "20230125213255",
-      "url": "https://www.yourerie.com/weather/closings/"
+      "timestamp": "20260219122500",
+      "url": "https://www.ccsd1.org/"
     },
     {
-      "timestamp": "20230113123819",
-      "url": "https://www.yourerie.com/weather/closings/"
+      "timestamp": "20260505122603",
+      "url": "https://www.ccsd1.org/"
     },
     {
-      "timestamp": "20221201065957",
-      "url": "https://www.yourerie.com/weather/closings/"
+      "timestamp": "20260417002442",
+      "url": "https://www.ccsd1.org/"
     },
     {
-      "timestamp": "20240110070235",
-      "url": "https://www.yourerie.com/weather/closings/"
+      "timestamp": "20260403122737",
+      "url": "https://www.ccsd1.org/"
     },
     {
-      "timestamp": "20250128224728",
-      "url": "https://www.yourerie.com/weather/closings/"
+      "timestamp": "20230118152516",
+      "url": "https://www.ccsd1.org/"
     },
     {
-      "timestamp": "20240320070753",
-      "url": "https://www.yourerie.com/weather/closings/"
+      "timestamp": "20210509173810",
+      "url": "https://www.ccsd1.org/"
     },
     {
-      "timestamp": "20241121010523",
-      "url": "https://www.yourerie.com/weather/closings/"
+      "timestamp": "20191213103849",
+      "url": "http://www.sd215.net/"
     },
     {
-      "timestamp": "20220417204433",
-      "url": "https://www.yourerie.com/weather/closings/"
+      "timestamp": "20240115025909",
+      "url": "https://www.sd215.net/"
     },
     {
-      "timestamp": "20220328091432",
-      "url": "https://www.yourerie.com/weather/closings/"
+      "timestamp": "20230131001016",
+      "url": "https://www.sd215.net/"
     },
     {
-      "timestamp": "20200107200146",
-      "url": "https://www.yourerie.com/weather/closings/"
+      "timestamp": "20221221204832",
+      "url": "https://www.sd215.net/"
     },
     {
-      "timestamp": "20220321213906",
-      "url": "https://www.yourerie.com/weather/closings/"
+      "timestamp": "20181212035136",
+      "url": "http://www.sd215.net/"
     },
     {
-      "timestamp": "20241219091210",
-      "url": "https://www.yourerie.com/weather/closings/"
+      "timestamp": "20200129162517",
+      "url": "http://www.sd215.net:80/"
     },
     {
-      "timestamp": "20210321133447",
-      "url": "https://www.yourerie.com/weather/closings/"
+      "timestamp": "20161230091725",
+      "url": "http://www.sd215.net/"
     },
     {
-      "timestamp": "20210329161148",
-      "url": "https://www.yourerie.com/weather/closings/"
+      "timestamp": "20230327163813",
+      "url": "https://www.sd215.net/"
     },
     {
-      "timestamp": "20210222171644",
-      "url": "https://www.yourerie.com/weather/closings/"
+      "timestamp": "20230227120142",
+      "url": "https://www.cassiaschools.org/"
     },
     {
-      "timestamp": "20230224123454",
-      "url": "https://www.yourerie.com/weather/closings/"
+      "timestamp": "20221108021721",
+      "url": "https://www.cassiaschools.org/"
     },
     {
-      "timestamp": "20220117024014",
-      "url": "https://www.mytwintiers.com/weather/closings/?ipid=promo-link-block1"
+      "timestamp": "20250223123022",
+      "url": "https://www.cassiaschools.org/"
     },
     {
-      "timestamp": "20210201164844",
-      "url": "https://www.mytwintiers.com/weather/closings/?utm_campaign=socialflow&utm_medium=referral&utm_source=t.co"
+      "timestamp": "20250323021114",
+      "url": "https://www.cassiaschools.org/"
     },
     {
-      "timestamp": "20230314141247",
-      "url": "https://www.mytwintiers.com/weather/closings/"
+      "timestamp": "20250328154008",
+      "url": "https://www.cassiaschools.org/"
     },
     {
-      "timestamp": "20230119071804",
-      "url": "https://www.mytwintiers.com/weather/closings/"
+      "timestamp": "20250328000536",
+      "url": "https://www.cassiaschools.org/"
     },
     {
-      "timestamp": "20230117055220",
-      "url": "https://www.mytwintiers.com/weather/closings/"
+      "timestamp": "20250303015655",
+      "url": "https://www.cassiaschools.org/"
     },
     {
-      "timestamp": "20200206000504",
-      "url": "https://www.mytwintiers.com/weather/closings/"
+      "timestamp": "20250323054351",
+      "url": "https://www.cassiaschools.org/"
     },
     {
-      "timestamp": "20200416174629",
-      "url": "https://www.mytwintiers.com/weather/closings/"
+      "timestamp": "20251211172027",
+      "url": "https://www.beltschool.com/"
     },
     {
-      "timestamp": "20150209124703",
-      "url": "http://www.mytwintiers.com/weather/closings"
+      "timestamp": "20250102173245",
+      "url": "https://www.beltschool.com/"
     },
     {
-      "timestamp": "20200310205232",
-      "url": "https://www.mytwintiers.com/weather/closings/"
+      "timestamp": "20250303015128",
+      "url": "https://www.beltschool.com/"
     },
     {
-      "timestamp": "20210120012310",
-      "url": "https://www.mytwintiers.com/weather/closings/"
+      "timestamp": "20230321132423",
+      "url": "https://www.beltschool.com/"
     },
     {
-      "timestamp": "20240117045607",
-      "url": "https://www.mytwintiers.com/weather/closings/"
+      "timestamp": "20250323053937",
+      "url": "https://www.beltschool.com/"
     },
     {
-      "timestamp": "20220316210313",
-      "url": "https://www.mytwintiers.com/weather/closings/?ipid=promo-link-block1"
+      "timestamp": "20230322153942",
+      "url": "https://www.uinta1.com/"
     },
     {
-      "timestamp": "20210312103512",
-      "url": "https://www.mytwintiers.com/weather/closings/?utm_campaign=socialflow&utm_medium=referral&utm_source=t.co"
+      "timestamp": "20221109122618",
+      "url": "https://www.uinta1.com/"
     },
     {
-      "timestamp": "20240103025302",
-      "url": "https://www.mytwintiers.com/weather/closings/"
+      "timestamp": "20260209202551",
+      "url": "https://www.uinta1.com/"
     },
     {
-      "timestamp": "20240327121750",
-      "url": "https://www.mytwintiers.com/weather/closings/"
+      "timestamp": "20220327074055",
+      "url": "https://www.uinta1.com/"
     },
     {
-      "timestamp": "20230328014000",
-      "url": "https://www.mytwintiers.com/weather/closings/"
+      "timestamp": "20230208113007",
+      "url": "https://santarosaschools.org/"
     },
     {
-      "timestamp": "20240313110236",
-      "url": "https://www.mytwintiers.com/weather/closings/"
+      "timestamp": "20221129190453",
+      "url": "https://santarosaschools.org/"
     },
     {
-      "timestamp": "20240314041940",
-      "url": "https://www.westernslopenow.com/weather/closings/"
+      "timestamp": "20230331094456",
+      "url": "https://www.santarosaschools.org/"
     },
     {
-      "timestamp": "20240226135648",
-      "url": "https://www.westernslopenow.com/weather/closings/"
+      "timestamp": "20230327210329",
+      "url": "https://santarosaschools.org/"
     },
     {
-      "timestamp": "20240112023449",
-      "url": "https://www.westernslopenow.com/weather/closings/"
+      "timestamp": "20250310144859",
+      "url": "https://santarosaschools.org/"
     },
     {
-      "timestamp": "20250331193056",
-      "url": "https://www.westernslopenow.com/weather/closings/"
+      "timestamp": "20230222130000",
+      "url": "https://www.alpineschools.org/"
     },
     {
-      "timestamp": "20240313084806",
-      "url": "https://www.westernslopenow.com/weather/closings/"
+      "timestamp": "20230223130000",
+      "url": "https://www.alpineschools.org/"
     },
     {
-      "timestamp": "20250129030514",
-      "url": "https://www.westernslopenow.com/weather/closings/"
+      "timestamp": "20230222130000",
+      "url": "https://www.davis.k12.ut.us/"
     },
     {
-      "timestamp": "20241103224851",
-      "url": "https://www.westernslopenow.com/weather/closings/"
+      "timestamp": "20230223130000",
+      "url": "https://www.davis.k12.ut.us/"
     },
     {
-      "timestamp": "20241106032426",
-      "url": "https://www.westernslopenow.com/weather/closings/"
+      "timestamp": "20230222130000",
+      "url": "https://www.wsd.net/"
     },
     {
-      "timestamp": "20241030024358",
-      "url": "https://www.westernslopenow.com/weather/closings/"
+      "timestamp": "20230223130000",
+      "url": "https://www.wsd.net/"
     },
     {
-      "timestamp": "20240328222642",
-      "url": "https://www.westernslopenow.com/weather/closings/"
+      "timestamp": "20230222130000",
+      "url": "https://www.nebo.edu/"
     },
     {
-      "timestamp": "20240321030627",
-      "url": "https://www.westernslopenow.com/weather/closings/"
+      "timestamp": "20230223130000",
+      "url": "https://www.nebo.edu/"
     },
     {
-      "timestamp": "20240228173025",
-      "url": "https://www.westernslopenow.com/weather/closings/"
+      "timestamp": "20230222130000",
+      "url": "https://www.ogdensd.org/"
     },
     {
-      "timestamp": "20240326192113",
-      "url": "https://www.westernslopenow.com/weather/closings/"
+      "timestamp": "20230223130000",
+      "url": "https://www.ogdensd.org/"
     },
     {
-      "timestamp": "20240201150441",
-      "url": "https://www.yourcentralvalley.com/weather/closings/"
+      "timestamp": "20230222130000",
+      "url": "https://www.besd.net/"
     },
     {
-      "timestamp": "20240328222046",
-      "url": "https://www.yourcentralvalley.com/weather/closings/"
+      "timestamp": "20230223130000",
+      "url": "https://www.besd.net/"
     },
     {
-      "timestamp": "20240208130326",
-      "url": "https://www.yourcentralvalley.com/weather/closings/"
+      "timestamp": "20230222130000",
+      "url": "https://www.irondistrict.org/"
     },
     {
-      "timestamp": "20240110001340",
-      "url": "https://www.yourcentralvalley.com/weather/closings/"
+      "timestamp": "20230223130000",
+      "url": "https://www.irondistrict.org/"
     },
     {
-      "timestamp": "20240918082135",
-      "url": "https://www.yourcentralvalley.com/weather/closings/"
+      "timestamp": "20230222130000",
+      "url": "https://www.sjsd.org/"
     },
     {
-      "timestamp": "20240403203948",
-      "url": "https://www.yourcentralvalley.com/weather/closings/"
+      "timestamp": "20230223130000",
+      "url": "https://www.sjsd.org/"
     },
     {
-      "timestamp": "20240405041931",
-      "url": "https://www.yourcentralvalley.com/weather/closings/"
+      "timestamp": "20230222130000",
+      "url": "https://www.carbonschools.org/"
     },
     {
-      "timestamp": "20241211222408",
-      "url": "https://www.yourcentralvalley.com/weather/closings/"
+      "timestamp": "20230223130000",
+      "url": "https://www.carbonschools.org/"
     },
     {
-      "timestamp": "20250101080714",
-      "url": "https://www.yourcentralvalley.com/weather/closings/"
+      "timestamp": "20230222130000",
+      "url": "https://www.juabsd.org/"
     },
     {
-      "timestamp": "20241224220620",
-      "url": "https://www.yourcentralvalley.com/weather/closings/"
+      "timestamp": "20230223130000",
+      "url": "https://www.juabsd.org/"
     },
     {
-      "timestamp": "20250101101047",
-      "url": "https://www.yourcentralvalley.com/weather/closings/"
+      "timestamp": "20230222130000",
+      "url": "https://www.ccsdut.org/"
     },
     {
-      "timestamp": "20180101122909",
-      "url": "http://www.kens5.com/closings"
+      "timestamp": "20230223130000",
+      "url": "https://www.ccsdut.org/"
     },
     {
-      "timestamp": "20170824115852",
-      "url": "http://www.kens5.com/closings"
+      "timestamp": "20230222130000",
+      "url": "https://www.tooeleschools.org/"
     },
     {
-      "timestamp": "20200922030216",
-      "url": "https://www.kens5.com/closings"
+      "timestamp": "20230223130000",
+      "url": "https://www.tooeleschools.org/"
     },
     {
-      "timestamp": "20170827192436",
-      "url": "http://www.kens5.com/closings"
+      "timestamp": "20230222130000",
+      "url": "https://www.pcschools.us/"
     },
     {
-      "timestamp": "20170828042941",
-      "url": "http://www.kens5.com/closings"
+      "timestamp": "20230223130000",
+      "url": "https://www.pcschools.us/"
     },
     {
-      "timestamp": "20201119000926",
-      "url": "https://www.kens5.com/closings"
+      "timestamp": "20230222130000",
+      "url": "https://www.slcschools.org/"
     },
     {
-      "timestamp": "20201111020019",
-      "url": "https://www.kens5.com/closings"
+      "timestamp": "20230223130000",
+      "url": "https://www.slcschools.org/"
     },
     {
-      "timestamp": "20201110235452",
-      "url": "https://www.kens5.com/closings"
+      "timestamp": "20230222130000",
+      "url": "https://www.murrayschools.org/"
     },
     {
-      "timestamp": "20200108040800",
-      "url": "https://www.kens5.com/closings"
+      "timestamp": "20230223130000",
+      "url": "https://www.murrayschools.org/"
     },
     {
-      "timestamp": "20170830052111",
-      "url": "http://www.12newsnow.com/closings"
+      "timestamp": "20230222130000",
+      "url": "https://www.loganschools.org/"
     },
     {
-      "timestamp": "20200922040740",
-      "url": "https://www.12newsnow.com/closings"
+      "timestamp": "20230223130000",
+      "url": "https://www.loganschools.org/"
     },
     {
-      "timestamp": "20170829121948",
-      "url": "http://www.12newsnow.com/closings"
+      "timestamp": "20210216150000",
+      "url": "https://www.saisd.net/"
     },
     {
-      "timestamp": "20260126001512",
-      "url": "https://amb-feeds.s3.amazonaws.com/WTVA_closings.json?_=1769386512444"
+      "timestamp": "20230201150000",
+      "url": "https://www.saisd.net/"
     },
     {
-      "timestamp": "20250108202058",
-      "url": "https://amb-feeds.s3.amazonaws.com/WTVA_closings.json?_=1736367657428"
+      "timestamp": "20240116150000",
+      "url": "https://www.saisd.net/"
     },
     {
-      "timestamp": "20230202125035",
-      "url": "https://amb-feeds.s3.amazonaws.com/WTVA_closings.json?_=1675342227651"
+      "timestamp": "20250121150000",
+      "url": "https://www.saisd.net/"
     },
     {
-      "timestamp": "20240117202041",
-      "url": "https://amb-feeds.s3.amazonaws.com/WTVA_closings.json?_=1705522839138"
+      "timestamp": "20210216150000",
+      "url": "https://www.judsonisd.org/"
     },
     {
-      "timestamp": "20220211195501",
-      "url": "https://www.wtva.com/weather/closings/"
+      "timestamp": "20230201150000",
+      "url": "https://www.judsonisd.org/"
     },
     {
-      "timestamp": "20220328034452",
-      "url": "https://www.wtva.com/weather/closings/"
+      "timestamp": "20240116150000",
+      "url": "https://www.judsonisd.org/"
     },
     {
-      "timestamp": "20191208154358",
-      "url": "https://ftp2.wtva.com/All_Active.html"
+      "timestamp": "20250121150000",
+      "url": "https://www.judsonisd.org/"
     },
     {
-      "timestamp": "20260309175726",
-      "url": "https://www.kyoutv.com/weather/closings/"
+      "timestamp": "20210216150000",
+      "url": "https://www.harlandale.net/"
     },
     {
-      "timestamp": "20250826161638",
-      "url": "https://www.louisianafirstnews.com/weather/closings/"
+      "timestamp": "20230201150000",
+      "url": "https://www.harlandale.net/"
     },
     {
-      "timestamp": "20250303230356",
-      "url": "https://www.louisianafirstnews.com/weather/closings/"
+      "timestamp": "20240116150000",
+      "url": "https://www.harlandale.net/"
     },
     {
-      "timestamp": "20250328231648",
-      "url": "https://www.louisianafirstnews.com/weather/closings/"
+      "timestamp": "20250121150000",
+      "url": "https://www.harlandale.net/"
     },
     {
-      "timestamp": "20250520013553",
-      "url": "https://www.fox13now.com/weather/closings"
+      "timestamp": "20210216150000",
+      "url": "https://www.eisd.net/"
     },
     {
-      "timestamp": "20250916112920",
-      "url": "https://www.fox13now.com/weather/closings"
+      "timestamp": "20230201150000",
+      "url": "https://www.eisd.net/"
     },
     {
-      "timestamp": "20251007001821",
-      "url": "https://www.fox13now.com/weather/closings"
+      "timestamp": "20240116150000",
+      "url": "https://www.eisd.net/"
     },
     {
-      "timestamp": "20260509175940",
-      "url": "https://www.fox13now.com/weather/closings"
+      "timestamp": "20250121150000",
+      "url": "https://www.eisd.net/"
+    },
+    {
+      "timestamp": "20210216150000",
+      "url": "https://www.comalisd.org/"
+    },
+    {
+      "timestamp": "20230201150000",
+      "url": "https://www.comalisd.org/"
+    },
+    {
+      "timestamp": "20240116150000",
+      "url": "https://www.comalisd.org/"
+    },
+    {
+      "timestamp": "20250121150000",
+      "url": "https://www.comalisd.org/"
+    },
+    {
+      "timestamp": "20210216150000",
+      "url": "https://www.swisd.net/"
+    },
+    {
+      "timestamp": "20230201150000",
+      "url": "https://www.swisd.net/"
+    },
+    {
+      "timestamp": "20240116150000",
+      "url": "https://www.swisd.net/"
+    },
+    {
+      "timestamp": "20250121150000",
+      "url": "https://www.swisd.net/"
+    },
+    {
+      "timestamp": "20210216150000",
+      "url": "https://www.nisd.net/"
+    },
+    {
+      "timestamp": "20250121150000",
+      "url": "https://www.nisd.net/"
+    },
+    {
+      "timestamp": "20210216150000",
+      "url": "https://www.neisd.net/"
+    },
+    {
+      "timestamp": "20250121150000",
+      "url": "https://www.neisd.net/"
     }
   ]
 }
