@@ -1163,8 +1163,9 @@ async function showSchool(page: Page, id: string | null): Promise<void> {
 
 /**
  * The chance chart as laid out: every bar 3 px wide or more; the times at its foot inside the
- * plot, none meeting another; the key's rows inside the panel, none cut off, none meeting another
- * or a time; and nothing in the panel scrolling sideways.
+ * plot, none meeting another; the dashed lines' words over the plot inside it, none meeting
+ * another, a bar, the range or a time; the key's rows inside the panel, none cut off, none
+ * meeting another or a time; and nothing in the panel scrolling sideways.
  */
 async function expectChartFits(page: Page, label: string): Promise<void> {
   const layout = await page.locator('aside.detail').evaluate((panel) => {
@@ -1179,7 +1180,9 @@ async function expectChartFits(page: Page, label: string): Promise<void> {
       panel: box(panel),
       plot: plot === null ? null : box(plot),
       bars: [...(chart?.querySelectorAll('.col') ?? [])].map(box),
+      ranges: [...(chart?.querySelectorAll('.range') ?? [])].map(box),
       times: [...(chart?.querySelectorAll('.time') ?? [])].map(box),
+      words: [...(chart?.querySelectorAll('.words') ?? [])].map(box),
       rows: [...(chart?.querySelectorAll('.key .row') ?? [])].map((row) => ({
         ...box(row),
         cut: row.scrollWidth > row.clientWidth,
@@ -1187,10 +1190,28 @@ async function expectChartFits(page: Page, label: string): Promise<void> {
       scrolls: body.scrollWidth > body.clientWidth,
     };
   });
-  const { panel, plot, bars, times, rows } = layout;
+  const { panel, plot, bars, ranges, times, words, rows } = layout;
   if (plot === null) throw new Error(`${label}: no chart`);
   expect(bars.length, label).toBeGreaterThan(1);
   for (const bar of bars) expect(bar.width, `${label}: a bar`).toBeGreaterThanOrEqual(3);
+  // The answer, and the announcement's words where it falls in the night drawn.
+  expect(words.length, label).toBeGreaterThan(0);
+  words.forEach((word, i) => {
+    expect(word.x, `${label}: words ${String(i)}`).toBeGreaterThanOrEqual(plot.x - 0.5);
+    expect(word.x + word.width, `${label}: words ${String(i)}`).toBeLessThanOrEqual(
+      plot.x + plot.width + 0.5,
+    );
+    for (const mark of [...bars, ...ranges, ...times]) {
+      expect(overlaps(word, mark), `${label}: words ${String(i)} and a bar, range or time`).toBe(
+        false,
+      );
+    }
+    words.slice(i + 1).forEach((other, j) => {
+      expect(overlaps(word, other), `${label}: words ${String(i)}, ${String(i + 1 + j)}`).toBe(
+        false,
+      );
+    });
+  });
   times.forEach((time, i) => {
     expect(time.x, `${label}: time ${String(i)}`).toBeGreaterThanOrEqual(plot.x - 0.5);
     expect(time.x + time.width, `${label}: time ${String(i)}`).toBeLessThanOrEqual(
@@ -1202,7 +1223,6 @@ async function expectChartFits(page: Page, label: string): Promise<void> {
       );
     });
   });
-  expect(rows.length, label).toBeGreaterThan(0);
   rows.forEach((row, i) => {
     expect(row.cut, `${label}: key row ${String(i)} cut off`).toBe(false);
     expect(row.x, `${label}: key row ${String(i)}`).toBeGreaterThanOrEqual(panel.x);
@@ -2031,8 +2051,8 @@ test.describe('with data staged', () => {
       `${format.time(new Date('2026-01-13T11:30:00Z'), ZONE)} Shawnee Mission usually announces in 8h 25m`,
     ]);
 
-    // The chart: a bar an hour, the heaviest lit, the buses and the range at their hour, and
-    // under it the key, a row a mark, in time order, the bus hour's last.
+    // The chart: a bar an hour, the heaviest lit, the buses and the range at their hour; over
+    // it the two dashed lines' words, the answer first, and under it the lit bars' key row.
     const chart = section.locator('.chart');
     const zones = { school: ZONE, viewer: ZONE };
     await expect(chart.locator('figcaption')).toHaveText(chanceCopy.snowTitle);
@@ -2045,17 +2065,19 @@ test.describe('with data staged', () => {
       new Date('2026-01-13T13:00:00Z'),
       zones,
     );
+    await expect(chart.locator('.words')).toHaveText([
+      `${buses.value}${buses.rest}`,
+      chanceFormat.announcesKey(new Date('2026-01-13T11:30:00Z'), zones),
+    ]);
+    await expect(chart.locator('.words .value')).toHaveText(chanceFormat.inches(6, 9));
     await expect(chart.locator('.key .row')).toHaveText([
       chanceFormat.heaviestKey(
         new Date('2026-01-13T08:00:00Z'),
         new Date('2026-01-13T11:00:00Z'),
         zones,
       ),
-      chanceFormat.announcesKey(new Date('2026-01-13T11:30:00Z'), zones),
-      `${buses.value}${buses.rest}`,
     ]);
-    await expect(chart.locator('.key .value')).toHaveText(chanceFormat.inches(6, 9));
-    // Laid out, no words meet, none meets a bar, and all are in the panel.
+    // Laid out, no words meet, none meets a bar or the range, and all are in the panel.
     const boxes = async (selector: string) =>
       (await chart.locator(selector).evaluateAll((nodes) =>
         nodes.map((node) => {
@@ -2065,7 +2087,11 @@ test.describe('with data staged', () => {
       )) as { x: number; y: number; width: number; height: number }[];
     const panelBox = await panel.boundingBox();
     if (panelBox === null) throw new Error('no panel');
-    const words = [...(await boxes('.time')), ...(await boxes('.key .row'))];
+    const words = [
+      ...(await boxes('.time')),
+      ...(await boxes('.words')),
+      ...(await boxes('.key .row')),
+    ];
     words.forEach((box, i) => {
       words.slice(i + 1).forEach((other, j) => {
         expect(overlaps(box, other), `words ${String(i)} and ${String(i + 1 + j)}`).toBe(false);
@@ -2073,7 +2099,7 @@ test.describe('with data staged', () => {
       expect(box.x).toBeGreaterThanOrEqual(panelBox.x);
       expect(box.x + box.width).toBeLessThanOrEqual(panelBox.x + panelBox.width);
     });
-    const bars = await boxes('.col');
+    const bars = await boxes('.col, .range');
     for (const box of words) {
       for (const bar of bars) expect(overlaps(box, bar)).toBe(false);
     }
@@ -2193,7 +2219,8 @@ test.describe('with data staged', () => {
     const chart = section.locator('.chart');
     await expect(chart.locator('figcaption')).toHaveText(chanceCopy.coldTonight);
     await expect(chart.locator('.col.is-below')).toHaveCount(11);
-    await expect(chart.locator('.key .value')).toHaveText(chanceFormat.degrees(-8));
+    await expect(chart.locator('.words .value')).toHaveText(chanceFormat.degrees(-8));
+    await expect(chart.locator('.key')).toHaveCount(0);
     const numbers = (await section.locator('.sum .num').allTextContents()).map((text) =>
       Number(text.replace('−', '-')),
     );
@@ -2250,10 +2277,14 @@ test.describe('with data staged', () => {
             : shape.kind === 'snow_total'
               ? chanceFormat.inches(last)
               : chanceFormat.degrees(last);
-        await expect(chart.locator('.key .value'), shape.name).toHaveText(value, {
+        await expect(chart.locator('.words .value'), shape.name).toHaveText(value, {
           timeout: 60_000,
         });
         await expect(chart.locator('.col'), shape.name).toHaveCount(shape.bars);
+        // The heaviest hours' key row on a snowy night; none on a cold one.
+        await expect(chart.locator('.key .row'), shape.name).toHaveCount(
+          shape.heavy === null ? 0 : 1,
+        );
         for (const width of widths) {
           await page.setViewportSize({ width, height });
           const panelWidth = phone ? width : 460;

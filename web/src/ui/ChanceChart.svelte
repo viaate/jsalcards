@@ -1,5 +1,6 @@
 <script lang="ts">
   import type { ChartView } from '../app/chance';
+  import { announcesRoom, placeLabels } from './chart-labels';
 
   interface Props {
     chart: ChartView;
@@ -8,6 +9,15 @@
   let { chart }: Props = $props();
 
   const count = $derived(chart.bars.length);
+  const answer = $derived(chart.key.find((row) => row.mark === 'buses'));
+  const announcement = $derived(chart.key.find((row) => row.mark === 'announces'));
+  const heavy = $derived(chart.key.filter((row) => row.mark === 'heavy'));
+
+  let width = $state(0);
+  let busesWidth = $state(0);
+  let busesHeight = $state(0);
+  let announcesWidth = $state(0);
+  let announcesHeight = $state(0);
 
   /** A bar's left edge across the plot, as a share of it. */
   function across(at: number): string {
@@ -18,6 +28,20 @@
   function middle(at: number): string {
     return `${String(((at + 0.3) / count) * 100)}%`;
   }
+
+  const busesAt = $derived(((count - 1 + 0.3) / count) * width);
+  const placed = $derived(
+    placeLabels({
+      width,
+      busesAt,
+      announcesAt: chart.announces === null ? null : ((chart.announces + 0.3) / count) * width,
+      buses: { width: busesWidth, height: busesHeight },
+      announces:
+        announcement === undefined || chart.announces === null
+          ? null
+          : { width: announcesWidth, height: announcesHeight },
+    }),
+  );
 </script>
 
 <!--
@@ -25,39 +49,79 @@
   a long night) on a real scale (the snow on the ground since the storm
   began, rising through the night; or how cold it will feel, hanging below
   0 F), the heaviest hours lit, the usual announcement's dashed line, and the
-  bus hour's, with its range. The plot carries marks only, and the hours
-  under it; a key under the chart says each mark, a row each on the panel's
-  two columns, its mark drawn small in the first. Nothing written can meet.
+  bus hour's, with its range. The two dashed lines' words sit over the plot,
+  each where its own line rises to meet it, by one rule at any width
+  (chart-labels.ts); the lit bars' words are the key under the chart, a row
+  on the panel's two columns, the bar drawn small in the first.
 -->
 <figure class="chart">
   <figcaption class="title">{chart.title}</figcaption>
   <p class="sr-only">{chart.summary}</p>
 
-  <div class="plot" style:height="{chart.plot}px" style:--bars={count} aria-hidden="true">
-    <span class="rule" style:bottom="{chart.zero}px"></span>
-    {#each chart.bars as bar, i (i)}
-      <span
-        class="col"
-        class:is-lit={bar.lit}
-        class:is-below={bar.below}
-        style:left={across(i)}
-        style:bottom="{bar.bottom}px"
-        style:height="{bar.height}px"
-      ></span>
-    {/each}
+  <div class="drawing" bind:clientWidth={width}>
+    <div class="head" style:height="{placed.height}px">
+      {#if answer?.mark === 'buses'}
+        <p
+          class="words is-buses"
+          bind:offsetWidth={busesWidth}
+          bind:offsetHeight={busesHeight}
+          style:left="{placed.buses.left}px"
+          style:top="{placed.buses.top}px"
+        >
+          <span class="value">{answer.value}</span>{answer.rest}
+        </p>
+      {/if}
+      {#if announcement?.mark === 'announces' && placed.announces !== null}
+        <p
+          class="words is-announces"
+          bind:offsetWidth={announcesWidth}
+          bind:offsetHeight={announcesHeight}
+          style:max-width={width > 0 ? `${String(announcesRoom(busesAt))}px` : null}
+          style:left="{placed.announces.left}px"
+          style:top="{placed.announces.top}px"
+        >
+          {announcement.text}
+        </p>
+      {/if}
+    </div>
+
+    <div class="plot" style:height="{chart.plot}px" style:--bars={count} aria-hidden="true">
+      <span class="rule" style:bottom="{chart.zero}px"></span>
+      {#each chart.bars as bar, i (i)}
+        <span
+          class="col"
+          class:is-lit={bar.lit}
+          class:is-below={bar.below}
+          style:left={across(i)}
+          style:bottom="{bar.bottom}px"
+          style:height="{bar.height}px"
+        ></span>
+      {/each}
+      {#if chart.range !== null}
+        <span
+          class="range"
+          style:left={middle(count - 1)}
+          style:bottom="{chart.range.bottom}px"
+          style:height="{chart.range.height}px"
+        ></span>
+      {/if}
+    </div>
+
     {#if chart.announces !== null}
-      <span class="line is-announces" style:left={middle(chart.announces)}></span>
-    {/if}
-    <span class="line is-buses" style:left={middle(count - 1)} style:bottom="{chart.busTop}px"
-    ></span>
-    {#if chart.range !== null}
       <span
-        class="range"
-        style:left={middle(count - 1)}
-        style:bottom="{chart.range.bottom}px"
-        style:height="{chart.range.height}px"
+        class="line is-announces"
+        aria-hidden="true"
+        style:left={middle(chart.announces)}
+        style:top="{placed.announcesLine ?? 0}px"
       ></span>
     {/if}
+    <span
+      class="line is-buses"
+      aria-hidden="true"
+      style:left={middle(count - 1)}
+      style:top="{placed.busesLine}px"
+      style:bottom="{chart.busTop}px"
+    ></span>
   </div>
 
   <div class="times" aria-hidden="true">
@@ -68,30 +132,21 @@
     {/each}
   </div>
 
-  <ul class="key">
-    {#each chart.key as row (row.mark)}
-      <li class="row">
-        <span
-          class="sample is-{row.mark === 'buses'
-            ? row.glyph
-            : row.mark === 'heavy'
-              ? 'bar'
-              : 'line'}"
-          aria-hidden="true"
-        ></span>
-        {#if row.mark === 'buses'}
-          <span><span class="value">{row.value}</span>{row.rest}</span>
-        {:else}
-          <span>{row.text}</span>
-        {/if}
-      </li>
-    {/each}
-  </ul>
+  {#if heavy.length > 0}
+    <ul class="key">
+      {#each heavy as row (row.mark)}
+        <li class="row">
+          <span class="sample is-bar" aria-hidden="true"></span>
+          {#if row.mark === 'heavy'}<span>{row.text}</span>{/if}
+        </li>
+      {/each}
+    </ul>
+  {/if}
 </figure>
 
 <style>
   .chart {
-    /* Room above the tallest bar, where the dashed lines start. */
+    /* Room above the tallest bar, where the dashed lines rise to their words. */
     --head: 16px;
 
     margin: 0;
@@ -101,6 +156,28 @@
     margin: 0 0 var(--row);
     font: var(--type-strong);
     color: var(--text-1);
+  }
+
+  .drawing {
+    position: relative;
+  }
+
+  .head {
+    position: relative;
+  }
+
+  /* A dashed line's words: at most the plot's width, wrapping only past it. */
+  .words {
+    position: absolute;
+    width: max-content;
+    max-width: 100%;
+    margin: 0;
+    font: var(--type-body);
+    color: var(--text-1);
+  }
+
+  .value {
+    font-weight: 600;
   }
 
   .plot {
@@ -135,10 +212,9 @@
     background: var(--text-1);
   }
 
-  /* A moment's dashed line, from above the bars: the announcement's down to the foot. */
+  /* A moment's dashed line, from just under its words: the announcement's down to the foot. */
   .line {
     position: absolute;
-    top: 0;
     bottom: 0;
     width: 0;
     margin-left: -0.5px;
@@ -190,7 +266,7 @@
     right: 0;
   }
 
-  /* The key: the panel's two columns, the mark drawn small where a list's times go. */
+  /* The key: the panel's two columns, the lit bar drawn small where a list's times go. */
   .key {
     display: flex;
     flex-direction: column;
@@ -210,10 +286,6 @@
     text-wrap: pretty;
   }
 
-  .value {
-    font-weight: 600;
-  }
-
   .sample {
     position: relative;
     display: block;
@@ -222,39 +294,9 @@
     margin-top: 5px;
   }
 
-  .sample.is-line {
-    width: 0;
-    margin-left: 5px;
-    border-left: 1px dashed var(--text-2);
-  }
-
   .sample.is-bar {
     width: 8px;
     background: var(--text-1);
     border-radius: 2px 2px 0 0;
-  }
-
-  .sample.is-range {
-    width: 0;
-    margin-left: 5px;
-    border-left: 1.5px solid var(--text-1);
-  }
-
-  .sample.is-range::before,
-  .sample.is-range::after {
-    position: absolute;
-    left: -5.75px;
-    width: 10px;
-    height: 0;
-    content: '';
-    border-top: 1.5px solid var(--text-1);
-  }
-
-  .sample.is-range::before {
-    top: 0;
-  }
-
-  .sample.is-range::after {
-    bottom: -1.5px;
   }
 </style>

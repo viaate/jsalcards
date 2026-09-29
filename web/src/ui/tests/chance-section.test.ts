@@ -141,20 +141,23 @@ describe('the chance section', () => {
       `2${NBSP}AM`,
       `7${NBSP}AM`,
     ]);
-    // Its key, a row a mark on the panel's two columns, the answer last, its value first.
-    expect(text(section, '.key li')).toEqual([
-      `${chanceCopy.heaviest} 2 to 5${NBSP}AM`,
-      `${chanceCopy.usuallyAnnounces} 5:30${NBSP}AM`,
-      `6 to 9${NBSP}in when buses run at 7${NBSP}AM`,
+    // Over the plot, the two dashed lines' words, the answer first, its value first; for a
+    // screen reader too, after the chart in a sentence.
+    expect(text(section, '.chart .sr-only')).toEqual([
+      `By 7${NBSP}AM, when the buses run, the forecast has 6 to 9 inches of snow on the ground.`,
     ]);
-    expect(text(section, '.key .value')).toEqual([`6 to 9${NBSP}in`]);
+    expect(text(section, '.words')).toEqual([
+      `6 to 9${NBSP}in when buses run at 7${NBSP}AM`,
+      `${chanceCopy.usuallyAnnounces} 5:30${NBSP}AM`,
+    ]);
+    expect(text(section, '.words.is-buses .value')).toEqual([`6 to 9${NBSP}in`]);
+    expect(section.querySelector('.head')?.getAttribute('aria-hidden')).toBeNull();
+    // Under it the key, one row on the panel's two columns: the lit bar, drawn small.
+    expect(text(section, '.key li')).toEqual([`${chanceCopy.heaviest} 2 to 5${NBSP}AM`]);
     expect([...section.querySelectorAll('.key .sample')].map((sample) => sample.className)).toEqual(
-      [
-        expect.stringContaining('is-bar'),
-        expect.stringContaining('is-line'),
-        expect.stringContaining('is-range'),
-      ],
+      [expect.stringContaining('is-bar')],
     );
+    expect(section.querySelector('.key .sample')?.getAttribute('aria-hidden')).toBe('true');
 
     expect(text(section, '.why-title')).toEqual(['How we got 64%']);
     expect(text(section, '.sum > li .num')).toEqual(['30', '+16', '+9', '+7', '+5', '−3']);
@@ -191,7 +194,9 @@ describe('the chance section', () => {
     ]);
     expect(text(section, 'figcaption')).toEqual([chanceCopy.coldTonight]);
     expect(section.querySelectorAll('.col.is-below')).toHaveLength(11);
-    expect(text(section, '.key .value')).toEqual([`${MINUS}8${NBSP}F`]);
+    expect(text(section, '.words.is-buses .value')).toEqual([`${MINUS}8${NBSP}F`]);
+    // No lit hours to name on a cold night: no key.
+    expect(section.querySelector('.key')).toBeNull();
     expect(text(section, '.is-start')).toEqual([
       '25% After a snow day, Shawnee Mission stays closed the next day 1 time in 4.',
     ]);
