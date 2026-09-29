@@ -125,6 +125,7 @@ export function nightOutlook(detail: ForecastDetail = A_DETAIL): Outlook {
       detail,
     },
     neighbors: [1, 2],
+    timeZone: ZONE,
   };
 }
 
@@ -141,6 +142,7 @@ export const B_OUTLOOK: Outlook = {
     detail: B_DETAIL,
   },
   neighbors: [1, 2],
+  timeZone: ZONE,
 };
 
 /**

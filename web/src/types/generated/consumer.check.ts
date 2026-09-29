@@ -196,7 +196,6 @@ export function chanceOfNoSchool(day: DayForecast): number | null {
     case 'forecast':
       return day.p_no_school;
     case 'no_threat':
-    case 'not_enough_data':
       return null;
   }
 }

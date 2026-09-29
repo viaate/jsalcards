@@ -13,6 +13,7 @@
   "districts": [
     {
       "district": 0,
+      "time_zone": "America/Chicago",
       "neighbors": [
         1
       ],
@@ -224,6 +225,7 @@
     },
     {
       "district": 1,
+      "time_zone": "America/Chicago",
       "neighbors": [
         0
       ],
@@ -232,7 +234,27 @@
           "state": "no_threat"
         },
         {
-          "state": "not_enough_data"
+          "state": "forecast",
+          "p_no_school": 0.2,
+          "p_delay": 0.15,
+          "reasons": [
+            0
+          ],
+          "previous": null,
+          "announces_at": null,
+          "buses_at": null,
+          "hours": null,
+          "why": {
+            "base": {
+              "kind": "pooled",
+              "scope": "nearby",
+              "points": 20,
+              "alert": null
+            },
+            "reasons": []
+          },
+          "record": null,
+          "events": []
         }
       ]
     }

@@ -41,6 +41,7 @@
         "mapping": {
           "alert": "#/$defs/AlertBase",
           "day_after": "#/$defs/DayAfterBase",
+          "pooled": "#/$defs/PooledBase",
           "similar_days": "#/$defs/SimilarDaysBase"
         },
         "propertyName": "kind"
@@ -54,12 +55,21 @@
         },
         {
           "$ref": "#/$defs/SimilarDaysBase"
+        },
+        {
+          "$ref": "#/$defs/PooledBase"
         }
       ]
     },
+    "ChanceOfNoSchool": {
+      "description": "A chance of no school, from 0.01 to 0.99 in hundredths: never a certainty, so how it adds up always has whole points to show.",
+      "maximum": 0.99,
+      "minimum": 0.01,
+      "type": "number"
+    },
     "ColdReason": {
       "additionalProperties": false,
-      "description": "It will feel like ``feels_like`` at the bus stop that morning.",
+      "description": "It feels like ``feels_like`` at the bus stop that morning: it only adds points.",
       "properties": {
         "feels_like": {
           "$ref": "#/$defs/Fahrenheit"
@@ -110,8 +120,7 @@
       "discriminator": {
         "mapping": {
           "forecast": "#/$defs/Forecast",
-          "no_threat": "#/$defs/NoThreat",
-          "not_enough_data": "#/$defs/NotEnoughData"
+          "no_threat": "#/$defs/NoThreat"
         },
         "propertyName": "state"
       },
@@ -121,9 +130,6 @@
         },
         {
           "$ref": "#/$defs/NoThreat"
-        },
-        {
-          "$ref": "#/$defs/NotEnoughData"
         }
       ]
     },
@@ -169,10 +175,14 @@
           },
           "maxItems": 12,
           "type": "array"
+        },
+        "time_zone": {
+          "$ref": "#/$defs/TimeZoneName"
         }
       },
       "required": [
         "district",
+        "time_zone",
         "neighbors",
         "days"
       ],
@@ -204,7 +214,7 @@
               "type": "null"
             }
           ],
-          "description": "When the district usually posts its decision for this day."
+          "description": "When the district usually posts its decision for this day: that day or the evening before, in the district's time zone, and before buses_at."
         },
         "buses_at": {
           "anyOf": [
@@ -215,7 +225,7 @@
               "type": "null"
             }
           ],
-          "description": "When the district's first buses usually run that day."
+          "description": "When the district's first buses usually run that day: on the day, in the district's time zone."
         },
         "events": {
           "items": {
@@ -238,7 +248,7 @@
           "$ref": "#/$defs/Probability"
         },
         "p_no_school": {
-          "$ref": "#/$defs/Probability"
+          "$ref": "#/$defs/ChanceOfNoSchool"
         },
         "previous": {
           "anyOf": [
@@ -273,14 +283,8 @@
           "type": "string"
         },
         "why": {
-          "anyOf": [
-            {
-              "$ref": "#/$defs/Why"
-            },
-            {
-              "type": "null"
-            }
-          ]
+          "$ref": "#/$defs/Why",
+          "description": "How the chance adds up: always given with a forecast."
         }
       },
       "required": [
@@ -323,7 +327,7 @@
     },
     "Hours": {
       "additionalProperties": false,
-      "description": "One weather measure, an hour at a time from ``start`` to the bus hour, for the chart.\n\n``snow_total``: the snow on the ground, as the running total since ``start``, in\ninches; ``low`` and ``high`` bound the total at the bus hour; ``heavy`` marks the\nhours the snow falls fastest (value i is the total at the end of hour i, so the\nheaviest snow falls from ``start`` + (first - 1) hours to ``start`` + last hours).\n``wind_chill``: how cold it will feel each hour, in degrees F; no range, no heavy hours.",
+      "description": "One weather measure, an hour at a time from ``start`` to the bus hour, for the chart.\n\n``snow_total``: the snow on the ground since the storm began, in inches, at each\nhour (snow that fell before ``start`` included, so the first value may be above 0);\n``low`` and ``high`` bound it at the bus hour; ``heavy`` marks the hours the snow\nfalls fastest (value i is the snow on the ground at ``start`` + i hours, so the\nheaviest snow falls from ``start`` + (first - 1) hours to ``start`` + last hours).\n``wind_chill``: how cold it will feel each hour, in degrees F; no range, no heavy hours.",
       "properties": {
         "heavy": {
           "anyOf": [
@@ -367,7 +371,7 @@
           "description": "The first value's hour, on the hour."
         },
         "values": {
-          "description": "One value an hour, in tenths: inches of snow, or degrees F.",
+          "description": "One value an hour, in tenths: inches of snow on the ground since the storm began, or degrees F.",
           "items": {
             "maximum": 130.0,
             "minimum": -80.0,
@@ -391,7 +395,7 @@
     },
     "IceReason": {
       "additionalProperties": false,
-      "description": "Freezing rain could leave ``inches`` of ice on the roads.",
+      "description": "Freezing rain leaves ``inches`` of ice on the roads: it only adds points.",
       "properties": {
         "inches": {
           "$ref": "#/$defs/Inches"
@@ -414,7 +418,7 @@
     },
     "IcyRoadsReason": {
       "additionalProperties": false,
-      "description": "Side streets could stay icy after ``inches`` of snow.",
+      "description": "Side streets stay icy after ``inches`` of snow: it only adds points.",
       "properties": {
         "inches": {
           "$ref": "#/$defs/Inches"
@@ -449,7 +453,7 @@
     },
     "NeighborsReason": {
       "additionalProperties": false,
-      "description": "Districts next door (the entry's ``neighbors``) that already posted ``status``.",
+      "description": "Districts next door (the entry's ``neighbors``) that already posted ``status``.\n\nA closing or a remote day next door only ever adds points.",
       "properties": {
         "districts": {
           "items": {
@@ -492,21 +496,6 @@
         "state"
       ],
       "title": "NoThreat",
-      "type": "object"
-    },
-    "NotEnoughData": {
-      "additionalProperties": false,
-      "description": "The district's history is too short to give a chance.",
-      "properties": {
-        "state": {
-          "const": "not_enough_data",
-          "type": "string"
-        }
-      },
-      "required": [
-        "state"
-      ],
-      "title": "NotEnoughData",
       "type": "object"
     },
     "PastDay": {
@@ -597,6 +586,46 @@
       "minimum": -100,
       "type": "integer"
     },
+    "PooledBase": {
+      "additionalProperties": false,
+      "description": "For a district with too short a history of its own: the districts around it.\n\nThe districts of ``scope`` (``nearby``: within the neighbor distance; or the\ndistrict's county, state or weather region) close for about ``points`` in 100 days\nlike this, or in 100 of ``alert`` when one is given.",
+      "properties": {
+        "alert": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/AlertKind"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "kind": {
+          "const": "pooled",
+          "type": "string"
+        },
+        "points": {
+          "$ref": "#/$defs/Percent"
+        },
+        "scope": {
+          "enum": [
+            "nearby",
+            "county",
+            "state",
+            "region"
+          ],
+          "type": "string"
+        }
+      },
+      "required": [
+        "kind",
+        "scope",
+        "points",
+        "alert"
+      ],
+      "title": "PooledBase",
+      "type": "object"
+    },
     "PreviousChance": {
       "additionalProperties": false,
       "description": "The chance of no school the run before this one gave the same district and day.",
@@ -606,7 +635,7 @@
           "description": "When that run was made."
         },
         "p_no_school": {
-          "$ref": "#/$defs/Probability"
+          "$ref": "#/$defs/ChanceOfNoSchool"
         }
       },
       "required": [
@@ -784,7 +813,7 @@
     },
     "SnowStopsReason": {
       "additionalProperties": false,
-      "description": "The snow stops (or stopped) at ``at``, before the plows' work.",
+      "description": "The snow stops (or stopped) at ``at``: before the buses, it only takes points away.",
       "properties": {
         "at": {
           "$ref": "#/$defs/UtcInstant"
@@ -855,7 +884,7 @@
     },
     "SunReason": {
       "additionalProperties": false,
-      "description": "Sun the afternoon before helps melt the ice.",
+      "description": "Sun the afternoon before helps melt the ice: it only takes points away.",
       "properties": {
         "kind": {
           "const": "sun",
@@ -871,6 +900,11 @@
       ],
       "title": "SunReason",
       "type": "object"
+    },
+    "TimeZoneName": {
+      "description": "An IANA time zone: every local day and wall-clock time of the district.",
+      "pattern": "^[A-Z][A-Za-z_]+(/[A-Z][A-Za-z0-9_+-]+)+$",
+      "type": "string"
     },
     "TimingReason": {
       "additionalProperties": false,
@@ -947,7 +981,7 @@
     },
     "WindChillReason": {
       "additionalProperties": false,
-      "description": "The wind will make it feel like ``feels_like`` at the bus stop.",
+      "description": "The wind makes it feel like ``feels_like`` at the bus stop: it only adds points.",
       "properties": {
         "feels_like": {
           "$ref": "#/$defs/Fahrenheit"

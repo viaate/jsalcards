@@ -8,21 +8,17 @@
  *
  * The predictions file sends kinds and numbers, never words
  * (pipeline/snowlight/schemas/predictions.py): each sentence here is written
- * from them. A time is the viewer's wall clock, as every time on the site is.
+ * from them, and a forecast is said as the forecast's claim ("The forecast has
+ * the snow ending by 6 AM"), never hedged. Every time is the school's wall
+ * clock, in its district's time zone, with the zone's short name after it where
+ * the viewer's clock differs ("7 AM CT"): one zone in every sentence.
  */
 
-import {
-  checkInstant,
-  checkKey,
-  clockText,
-  copy,
-  dateTimeFormat,
-  format,
-  localDay,
-  parseLocalDate,
-  part,
-} from './copy.ts';
+import { copy, format } from './copy.ts';
 import type { StatusKey } from './copy.ts';
+
+const { checkInstant, checkKey, clockText, dateTimeFormat, localDay, parseLocalDate, part } =
+  format;
 
 /** Recursively freezes an object graph so no string can be changed at runtime. */
 function deepFreeze<T>(value: T): T {
@@ -50,18 +46,22 @@ export const chanceCopy = /* @__PURE__ */ deepFreeze({
   coldTitle: 'How cold it will feel, hour by hour',
   /** The chart's first hour, when that hour is this one. */
   now: 'Now',
-  /** Beside the chart's last bar: "Buses 7 AM". */
-  buses: 'Buses',
+  /** The chart's key: "Usually announces 5:30 AM", "Heaviest snow 2 to 5 AM". */
+  usuallyAnnounces: 'Usually announces',
+  heaviest: 'Heaviest snow',
 });
 
-const NBSP = '\u00a0';
+const NBSP = ' ';
 let weekdayFormat: Intl.DateTimeFormat | undefined;
 const MS_PER_DAY = 86_400_000;
 
 const HOUR_MS = 3_600_000;
 const MINUTE_MS = 60_000;
-/** A true minus, so a take-away lines up with the pluses: "−3". */
-const MINUS = '\u2212';
+/** A true minus, the one on the site, so a take-away and a cold both line up: "−3", "−8 F". */
+const MINUS = '−';
+/** A share within this much of the chance, relatively, is "about" it. */
+const SHARE_TOLERANCE = 0.05;
+const SHARE_WHOLES = [2, 3, 4, 5, 10, 20, 25, 50];
 
 /** The weather alerts a district's base chance is counted over, as a plural noun. */
 const ALERT_PLURALS = {
@@ -74,14 +74,37 @@ const ALERT_PLURALS = {
 
 export type AlertKind = keyof typeof ALERT_PLURALS;
 
+/** The districts a pooled base counts, as the start of its sentence, around the district's name. */
+const POOLS = {
+  nearby: (district: string) => `Districts near ${district}`,
+  county: (district: string) => `Districts in ${district}’s county`,
+  state: (district: string) => `Districts in ${district}’s state`,
+  region: (district: string) => `Districts in ${district}’s region`,
+} as const;
+
 /** A status a district posted, as the chance section words it. */
 export type PostedKey = StatusKey;
+
+/**
+ * Where the section's times are said: the school's time zone, and the
+ * viewer's, for the school's zone name after a time when their clocks differ.
+ */
+export interface Zones {
+  readonly school: string;
+  readonly viewer: string;
+}
 
 /** The base of the sum: where the chance starts for a district. */
 export type BaseInput =
   | { readonly kind: 'alert'; readonly points: number; readonly alert: AlertKind }
   | { readonly kind: 'day_after'; readonly points: number }
-  | { readonly kind: 'similar_days'; readonly points: number };
+  | { readonly kind: 'similar_days'; readonly points: number }
+  | {
+      readonly kind: 'pooled';
+      readonly points: number;
+      readonly scope: keyof typeof POOLS;
+      readonly alert: AlertKind | null;
+    };
 
 /** The district's record in storms like this, counted, for the sentence that cites it. */
 export interface RecordCount {
@@ -93,7 +116,7 @@ export interface RecordCount {
   readonly inches: number;
 }
 
-/** One reason and what it needs to be said. Times are instants; the viewer's zone words them. */
+/** One reason and what it needs to be said. Times are instants; the school's zone words them. */
 export type ReasonInput =
   | {
       readonly kind: 'snow_total';
@@ -146,7 +169,7 @@ export interface MovedInput {
   readonly current: number;
   readonly at: Date;
   readonly now: Date;
-  readonly timeZone: string;
+  readonly zones: Zones;
 }
 
 /**
@@ -197,13 +220,55 @@ function shortTime(instant: Date, timeZone: string): string {
   return `${String(hour)}${NBSP}${hour24 < 12 ? 'AM' : 'PM'}`;
 }
 
-/** Hours from one time to another: "2 to 5 AM", "11 PM to 2 AM", "2:30 to 5 AM". */
-function hourSpan(start: Date, end: Date, timeZone: string): string {
-  const from = shortTime(start, timeZone);
-  const to = shortTime(end, timeZone);
+const zoneNames = new Map<string, string>();
+
+/** A time zone's short name: "CT", "ET"; "MST" where it keeps one time all year. */
+function zoneName(timeZone: string, at: Date): string {
+  let name = zoneNames.get(timeZone);
+  if (name === undefined) {
+    let parts: Intl.DateTimeFormatPart[];
+    try {
+      parts = new Intl.DateTimeFormat('en-US', {
+        timeZone,
+        timeZoneName: 'shortGeneric',
+      }).formatToParts(at);
+    } catch {
+      parts = new Intl.DateTimeFormat('en-US', { timeZone, timeZoneName: 'short' }).formatToParts(
+        at,
+      );
+    }
+    name = part(parts, 'timeZoneName');
+    zoneNames.set(timeZone, name);
+  }
+  return name;
+}
+
+/**
+ * After a school's time, its zone's short name where the viewer's clock
+ * reads otherwise at that moment (" CT"); nothing where the clocks agree.
+ */
+function zoneAfter(at: Date, zones: Zones): string {
+  const { school, viewer } = zones;
+  if (school === viewer) return '';
+  const same =
+    shortTime(at, school) === shortTime(at, viewer) &&
+    localDay(at, school) === localDay(at, viewer);
+  return same ? '' : `${NBSP}${zoneName(school, at)}`;
+}
+
+/** A school's time, with its zone where the viewer's differs: "7 AM", "7 AM CT". */
+function clock(instant: Date, zones: Zones): string {
+  return `${shortTime(instant, zones.school)}${zoneAfter(instant, zones)}`;
+}
+
+/** Hours from one time to another: "2 to 5 AM", "11 PM to 2 AM", "2:30 to 5 AM CT". */
+function hourSpan(start: Date, end: Date, zones: Zones): string {
+  const from = shortTime(start, zones.school);
+  const to = shortTime(end, zones.school);
   const half = (text: string): string => text.slice(-2);
   const bare = (text: string): string => text.slice(0, -3);
-  return half(from) === half(to) ? `${bare(from)} to ${to}` : `${from} to ${to}`;
+  const span = half(from) === half(to) ? `${bare(from)} to ${to}` : `${from} to ${to}`;
+  return `${span}${zoneAfter(end, zones)}`;
 }
 
 /** The local calendar day of an instant (YYYY-MM-DD). */
@@ -218,22 +283,22 @@ function dayOf(instant: Date, timeZone: string): string {
  * days old, which says nothing about tonight.
  */
 function moved(input: MovedInput): string | null {
-  const { previous, current, at, now, timeZone } = input;
+  const { previous, current, at, now, zones } = input;
+  const zone = zones.school;
   const days = Math.round(
-    (parseLocalDate(dayOf(now, timeZone)).getTime() -
-      parseLocalDate(dayOf(at, timeZone)).getTime()) /
+    (parseLocalDate(dayOf(now, zone)).getTime() - parseLocalDate(dayOf(at, zone)).getTime()) /
       MS_PER_DAY,
   );
   if (days < 0 || days > 6 || at.getTime() > now.getTime()) return null;
-  const hour = localHour(at, timeZone);
+  const hour = localHour(at, zone);
   const when =
     days === 0
-      ? `at ${shortTime(at, timeZone)}`
+      ? `at ${clock(at, zones)}`
       : days === 1
         ? hour >= 17
           ? 'last night'
           : 'yesterday'
-        : `on ${weekday(dayOf(at, timeZone))}`;
+        : `on ${weekday(dayOf(at, zone))}`;
   const before = Math.round(previous * 100);
   const after = Math.round(current * 100);
   if (before === after) return `Same as ${when}`;
@@ -261,11 +326,11 @@ function countdown(at: Date, now: Date, timeZone: string): string | null {
 }
 
 /** A moment on the section's timeline: its time within the last day, else its day: "8:41 PM", "Mon, Jan 12". */
-function momentTime(instant: Date, now: Date, timeZone: string): string {
+function momentTime(instant: Date, now: Date, zones: Zones): string {
   const ago = checkInstant(now).getTime() - checkInstant(instant).getTime();
   return ago < 24 * HOUR_MS
-    ? format.time(instant, timeZone)
-    : format.day(localDay(instant, timeZone));
+    ? `${format.time(instant, zones.school)}${zoneAfter(instant, zones)}`
+    : format.day(localDay(instant, zones.school));
 }
 
 /** What a district next door posted for a day: "Blue Valley canceled Tuesday". */
@@ -312,14 +377,28 @@ function inches(low: number, high: number = low): string {
   return low === high ? `${tenths(high)}${NBSP}in` : `${tenths(low)} to ${tenths(high)}${NBSP}in`;
 }
 
-/** How cold it feels: "-8 F", "12 F". */
+/** How cold it feels, with the site's one minus sign: "−8 F", "12 F". */
 function degrees(value: number): string {
-  return `${String(Math.round(value) === 0 ? 0 : Math.round(value))}${NBSP}F`;
+  const whole = Math.round(value);
+  return `${whole < 0 ? MINUS : ''}${String(Math.abs(whole))}${NBSP}F`;
 }
 
-/** Beside the chart's last bar: "Buses 7 AM". */
-function busesFlag(instant: Date, timeZone: string): string {
-  return `${chanceCopy.buses} ${shortTime(instant, timeZone)}`;
+/** The chart's key: "Usually announces 5:30 AM". */
+function announcesKey(instant: Date, zones: Zones): string {
+  return `${chanceCopy.usuallyAnnounces} ${clock(instant, zones)}`;
+}
+
+/** The chart's key: "Heaviest snow 2 to 5 AM". */
+function heaviestKey(start: Date, end: Date, zones: Zones): string {
+  return `${chanceCopy.heaviest} ${hourSpan(start, end, zones)}`;
+}
+
+/**
+ * The chart's answer, in two parts, the value first: "6 to 9 in" and
+ * " when buses run at 7 AM".
+ */
+function busesKey(value: string, buses: Date, zones: Zones): { value: string; rest: string } {
+  return { value, rest: ` when buses run at ${clock(buses, zones)}` };
 }
 
 /** The chart in a sentence, for a screen reader. */
@@ -328,12 +407,12 @@ function chartSummary(
   buses: Date,
   low: number,
   high: number,
-  timeZone: string,
+  zones: Zones,
 ): string {
-  const at = shortTime(buses, timeZone);
+  const at = clock(buses, zones);
   return kind === 'snow_total'
-    ? `By ${at}, when the buses run, ${inchWords(low, high)} of snow should be on the ground.`
-    : `At ${at}, when the buses run, it will feel like ${degrees(high)}.`;
+    ? `By ${at}, when the buses run, the forecast has ${inchWords(low, high)} of snow on the ground.`
+    : `At ${at}, when the buses run, the forecast has it feeling like ${degrees(high)}.`;
 }
 
 /** The delayed start, as one plain line: "18% chance of a delayed start instead". */
@@ -342,20 +421,23 @@ function delayInstead(probability: number): string {
 }
 
 /**
- * A share as a count a 12-year-old reads at a glance: "3 in 10", "1 in 4",
- * "13 in 20". The simplest fraction within 2 points of it.
+ * A share as a count a 12-year-old reads at a glance: exactly where a small
+ * count is exact ("3 in 10" for 30%, "16 in 25" for 64%); "about" one within
+ * 5% of it ("about 1 in 3" for 33%); else out of 100 ("3 in 100").
  */
-function shareOf(percent: number): { some: number; of: number } {
+function shareOf(percent: number): { some: number; of: number; exact: boolean } {
   if (!Number.isInteger(percent) || percent < 1 || percent > 99) {
     throw new RangeError(`copy: a share is 1 to 99 percent, not ${String(percent)}`);
   }
-  for (const whole of [2, 3, 4, 5, 10, 20, 25, 50]) {
-    const some = Math.round((percent / 100) * whole);
-    if (some >= 1 && some < whole && Math.abs(some / whole - percent / 100) <= 0.02) {
-      return { some, of: whole };
-    }
-  }
-  return { some: percent, of: 100 };
+  const counts = SHARE_WHOLES.map((of) => ({ some: Math.round((percent * of) / 100), of })).filter(
+    ({ some, of }) => some >= 1 && some < of,
+  );
+  const exact = counts.find(({ some, of }) => some * 100 === percent * of);
+  if (exact !== undefined) return { ...exact, exact: true };
+  const near = counts.find(
+    ({ some, of }) => Math.abs((some * 100) / of - percent) / percent <= SHARE_TOLERANCE,
+  );
+  return near === undefined ? { some: percent, of: 100, exact: true } : { ...near, exact: false };
 }
 
 /** The district's record, counted: "It closed 4 of the last 5 times it got 6 inches or more." */
@@ -390,7 +472,7 @@ function names(list: readonly string[]): string {
   return `${list.slice(0, 2).join(', ')} and ${String(list.length - 2)} more`;
 }
 
-/** Where the sum starts: the district's own rate, as a count. */
+/** Where the sum starts: the district's own rate, or its neighbors', as a count. */
 function baseReason(input: BaseInput, district: string): string {
   const { points: percent } = input;
   if (!Number.isInteger(percent) || percent < 0 || percent > 100) {
@@ -399,7 +481,10 @@ function baseReason(input: BaseInput, district: string): string {
   const extreme = percent === 0 ? 'almost never' : percent === 100 ? 'almost always' : null;
   const share = extreme === null ? shareOf(percent) : null;
   const rate = (noun: string): string =>
-    share === null ? '' : `about ${String(share.some)} ${noun}in ${String(share.of)}`;
+    share === null
+      ? ''
+      : `${share.exact ? '' : 'about '}${String(share.some)} ${noun}in ${String(share.of)}`;
+  const times = rate(share?.some === 1 ? 'time ' : 'times ');
   switch (input.kind) {
     case 'alert': {
       const alerts = ALERT_PLURALS[checkKey(ALERT_PLURALS, input.alert, 'alert')];
@@ -409,38 +494,51 @@ function baseReason(input: BaseInput, district: string): string {
     }
     case 'day_after':
       return extreme === null
-        ? `After a snow day, ${district} stays closed the next day ${rate(share?.some === 1 ? 'time ' : 'times ')}.`
+        ? `After a snow day, ${district} stays closed the next day ${times}.`
         : `After a snow day, ${district} ${extreme} stays closed the next day.`;
     case 'similar_days':
       return extreme === null
-        ? `On days like this, ${district} closes ${rate(share?.some === 1 ? 'time ' : 'times ')}.`
+        ? `On days like this, ${district} closes ${times}.`
         : `On days like this, ${district} ${extreme} closes.`;
+    case 'pooled': {
+      const who = POOLS[checkKey(POOLS, input.scope, 'pool')](district);
+      if (input.alert !== null) {
+        const alerts = ALERT_PLURALS[checkKey(ALERT_PLURALS, input.alert, 'alert')];
+        return extreme === null
+          ? `${who} close for ${rate('')} ${alerts}.`
+          : `${who} ${extreme} close for ${alerts}.`;
+      }
+      return extreme === null
+        ? `${who} close ${times} on days like this.`
+        : `${who} ${extreme} close on days like this.`;
+    }
   }
 }
 
-/** The heaviest snow, and when it falls against the buses: "Heaviest snow 2 to 5 AM, before the buses." */
-function timing(start: Date, end: Date, buses: Date | null, timeZone: string): string {
-  const span = `Heaviest snow ${hourSpan(start, end, timeZone)}`;
-  if (buses === null) return `${span}.`;
+/** When the heaviest snow falls against the buses, as the end of its sentence. */
+function timingRest(start: Date, end: Date, buses: Date | null): string {
+  if (buses === null) return '.';
   const b = buses.getTime();
-  if (start.getTime() > b) return `${span}, after the buses are out.`;
-  if (end.getTime() > b) return `${span}, while the buses are out.`;
-  if (b - end.getTime() <= 3 * HOUR_MS) return `${span}, before the buses.`;
-  return `${span}, well before the buses.`;
+  if (start.getTime() > b) return ', after the buses are out.';
+  if (end.getTime() > b) return ', while the buses are out.';
+  if (b - end.getTime() <= 3 * HOUR_MS) return ', just before the buses.';
+  return ', well before the buses.';
 }
 
 /**
  * One reason, as one short sentence: "Blue Valley and Olathe, next door,
- * canceled." `district` is the district's short name; `now` and `timeZone`
- * word the times.
+ * canceled."; a forecast as the forecast's claim. `district` is the
+ * district's short name; `now` and `zones` word the times.
  */
-function reason(input: ReasonInput, district: string, now: Date, timeZone: string): string {
+function reason(input: ReasonInput, district: string, now: Date, zones: Zones): string {
   points(input.points);
+  const zone = zones.school;
   switch (input.kind) {
     case 'snow_total': {
       const cited = input.record === null ? '' : ` ${recordSentence(input.record, 'It')}`;
-      const storm = input.points > 0 ? 'A bigger storm than most' : 'A smaller storm than most';
-      return `${storm}, ${inchWords(input.low, input.high)}${input.overnight ? ' overnight' : ''}.${cited}`;
+      const than = input.points > 0 ? 'more' : 'less';
+      const when = input.overnight ? ' overnight' : '';
+      return `The forecast has ${inchWords(input.low, input.high)}${when}, ${than} than most storms.${cited}`;
     }
     case 'record':
       return recordSentence(input.record, district);
@@ -466,31 +564,35 @@ function reason(input: ReasonInput, district: string, now: Date, timeZone: strin
       if (input.end.getTime() <= input.start.getTime()) {
         throw new RangeError('copy: the heaviest snow ends before it starts');
       }
-      return timing(input.start, input.end, input.buses, timeZone);
+      return `The forecast has the heaviest snow ${hourSpan(input.start, input.end, zones)}${timingRest(input.start, input.end, input.buses)}`;
     case 'wind_chill':
-      return `Wind makes it feel like ${degrees(input.feelsLike)} at the bus stop.`;
+      return `The forecast has a wind chill of ${degrees(input.feelsLike)} at the bus stop.`;
     case 'cold':
-      return `Feels like ${degrees(input.feelsLike)} at the bus stop ${weekday(input.day)} morning.`;
+      return `The forecast has it feeling like ${degrees(input.feelsLike)} at the bus stop ${weekday(input.day)} morning.`;
     case 'snow_stops': {
-      const at = shortTime(input.at, timeZone);
+      const at = clock(input.at, zones);
+      const buses = input.buses?.getTime() ?? null;
       if (input.at.getTime() <= now.getTime()) {
-        return dayOf(input.at, timeZone) < input.day
-          ? `Snow stopped around ${at}, a full day for the plows.`
-          : `Snow stopped around ${at}, a head start for the plows.`;
+        return dayOf(input.at, zone) < input.day
+          ? `The snow stopped at ${at}, a full day for the plows.`
+          : `The snow stopped at ${at}, a head start for the plows.`;
       }
-      if (input.buses !== null && input.at.getTime() > input.buses.getTime()) {
-        return `Snow until ${at}, after the buses go out.`;
+      if (buses !== null && input.at.getTime() > buses) {
+        return `The forecast has snow until ${at}, after the buses go out.`;
       }
-      return `Snow ends by ${at}, a head start for the plows.`;
+      if (buses !== null && input.at.getTime() === buses) {
+        return `The forecast has the snow ending at ${at}, as the buses go out.`;
+      }
+      return `The forecast has the snow ending by ${at}, a head start for the plows.`;
     }
     case 'sun':
-      return localHour(now, timeZone) < 15
-        ? 'Sun this afternoon helps melt the ice.'
+      return localHour(now, zone) < 15
+        ? 'The forecast has sun this afternoon to help melt the ice.'
         : 'Sun earlier today helped melt the ice.';
     case 'icy_roads':
-      return `Side streets could stay icy after ${inchWords(input.inches, input.inches)}.`;
+      return `Side streets stay icy after ${inchWords(input.inches, input.inches)} of snow.`;
     case 'ice':
-      return `Freezing rain could leave ${inchWords(input.inches, input.inches)} of ice.`;
+      return `The forecast has freezing rain leaving ${inchWords(input.inches, input.inches)} of ice.`;
   }
 }
 
@@ -501,6 +603,7 @@ export const chanceFormat = /* @__PURE__ */ deepFreeze({
   howWeGot,
   points,
   shortTime,
+  clock,
   hourSpan,
   moved,
   countdown,
@@ -510,7 +613,9 @@ export const chanceFormat = /* @__PURE__ */ deepFreeze({
   weatherEvent,
   inches,
   degrees,
-  busesFlag,
+  announcesKey,
+  heaviestKey,
+  busesKey,
   chartSummary,
   delayInstead,
   shareOf,

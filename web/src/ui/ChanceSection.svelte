@@ -3,7 +3,6 @@
 
   import type { ChanceView } from '../app/chance';
   import { copy } from '../copy';
-  import { chanceFormat } from '../copy-chance';
   import ChanceChart from './ChanceChart.svelte';
 
   interface Props {
@@ -34,11 +33,7 @@
 
   /** "in 8h 25m", or null once the moment has come. */
   function countdown(at: Date): string | null {
-    try {
-      return chanceFormat.countdown(at, new Date(now), chance.timeZone);
-    } catch {
-      return null;
-    }
+    return chance.countdown(at, new Date(now));
   }
 </script>
 

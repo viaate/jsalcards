@@ -18,7 +18,8 @@ import { copy } from '../../copy';
 import { chanceCopy } from '../../copy-chance';
 import DetailPanel from '../DetailPanel.svelte';
 
-const NBSP = ' ';
+const NBSP = '\u00a0';
+const MINUS = '\u2212';
 
 function chance(night: boolean): ChanceView {
   const view = chanceView({
@@ -44,7 +45,6 @@ function schoolView(section: ChanceView): SchoolView {
     kind: `${copy.detail.publicSchool} · 9–12`,
     place: 'Prairie Village, KS · Johnson County',
     status: section.status,
-    outlook: null,
     chance: section,
     facts: [],
     nearby: [],
@@ -130,16 +130,31 @@ describe('the chance section', () => {
     expect(text(section, 'figcaption')).toEqual([chanceCopy.snowTitle]);
     expect(section.querySelectorAll('.col')).toHaveLength(11);
     expect(section.querySelectorAll('.col.is-lit')).toHaveLength(3);
-    expect(text(section, '.flag')).toEqual([`${chanceCopy.buses} 7${NBSP}AM`]);
-    expect(text(section, '.end')).toEqual([`6 to 9${NBSP}in`]);
+    // The plot carries marks only: the lit bars, the two dashed lines, the range.
+    expect(section.querySelectorAll('.line.is-announces')).toHaveLength(1);
+    expect(section.querySelectorAll('.line.is-buses')).toHaveLength(1);
     expect(section.querySelectorAll('.range')).toHaveLength(1);
+    expect(text(section, '.plot')).toEqual(['']);
     expect(text(section, '.time')).toEqual([
       chanceCopy.now,
       `11${NBSP}PM`,
       `2${NBSP}AM`,
-      `5${NBSP}AM`,
       `7${NBSP}AM`,
     ]);
+    // Its key, a row a mark on the panel's two columns, the answer last, its value first.
+    expect(text(section, '.key li')).toEqual([
+      `${chanceCopy.heaviest} 2 to 5${NBSP}AM`,
+      `${chanceCopy.usuallyAnnounces} 5:30${NBSP}AM`,
+      `6 to 9${NBSP}in when buses run at 7${NBSP}AM`,
+    ]);
+    expect(text(section, '.key .value')).toEqual([`6 to 9${NBSP}in`]);
+    expect([...section.querySelectorAll('.key .sample')].map((sample) => sample.className)).toEqual(
+      [
+        expect.stringContaining('is-bar'),
+        expect.stringContaining('is-line'),
+        expect.stringContaining('is-range'),
+      ],
+    );
 
     expect(text(section, '.why-title')).toEqual(['How we got 64%']);
     expect(text(section, '.sum > li .num')).toEqual(['30', '+16', '+9', '+7', '+5', '−3']);
@@ -147,7 +162,7 @@ describe('the chance section', () => {
     expect(section.querySelector('.is-total')).toBeNull();
     expect(section.querySelector('.record')).toBeNull();
     expect(text(section, '.is-reason')[0]).toBe(
-      '+16 A bigger storm than most, 6 to 9 inches overnight. It closed 4 of the last 5 times it got 6 inches or more.',
+      '+16 The forecast has 6 to 9 inches overnight, more than most storms. It closed 4 of the last 5 times it got 6 inches or more.',
     );
     // Nothing folds away, and no words lead in bold.
     expect(section.querySelectorAll('details, [aria-expanded]')).toHaveLength(0);
@@ -176,9 +191,9 @@ describe('the chance section', () => {
     ]);
     expect(text(section, 'figcaption')).toEqual([chanceCopy.coldTonight]);
     expect(section.querySelectorAll('.col.is-below')).toHaveLength(11);
-    expect(text(section, '.end')).toEqual([`-8${NBSP}F`]);
+    expect(text(section, '.key .value')).toEqual([`${MINUS}8${NBSP}F`]);
     expect(text(section, '.is-start')).toEqual([
-      '25% After a snow day, Shawnee Mission stays closed the next day about 1 time in 4.',
+      '25% After a snow day, Shawnee Mission stays closed the next day 1 time in 4.',
     ]);
   });
 

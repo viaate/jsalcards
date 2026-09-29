@@ -218,35 +218,6 @@
       </section>
     {/if}
 
-    {#if view.chance === null && view.outlook !== null}
-      <section class="block outlook" aria-labelledby="detail-outlook">
-        <h3 class="heading" id="detail-outlook">{copy.predictions.title}</h3>
-        <div class="rows">
-          {#each view.outlook as day (day.label)}
-            <div class="row day">
-              <p class="label day-label">{day.label}</p>
-              <div>
-                {#if day.chance !== null}
-                  <p class="day-line"><span class="chance">{day.chance}</span> {day.line}</p>
-                  <span class="meter" aria-hidden="true">
-                    <span class="meter-fill" style:transform="scaleX({day.share ?? 0})"></span>
-                  </span>
-                  {#if day.delay !== null}
-                    <p class="day-more">{day.delay}</p>
-                  {/if}
-                  {#if day.reasons !== null}
-                    <p class="day-more">{day.reasons}</p>
-                  {/if}
-                {:else}
-                  <p class="day-line">{day.line}</p>
-                {/if}
-              </div>
-            </div>
-          {/each}
-        </div>
-      </section>
-    {/if}
-
     {#if view.facts.length > 0}
       <dl class="block rows facts">
         {#each view.facts as fact (fact.label)}
@@ -566,33 +537,6 @@
     color: var(--text-2);
   }
 
-  /* The chance of a closure, when the chance section has none to give: a row a day. */
-  .chance {
-    font-weight: 600;
-  }
-
-  /* The chance as a share of a hairline track (not .bar: that is the page's top strip). */
-  .meter {
-    display: block;
-    height: 2px;
-    margin: 8px 0;
-    overflow: hidden;
-    background: var(--border-2);
-    border-radius: 1px;
-  }
-
-  .meter-fill {
-    display: block;
-    height: 100%;
-    background: var(--text-1);
-    border-radius: inherit;
-    transform-origin: left center;
-  }
-
-  .day-more {
-    color: var(--text-2);
-  }
-
   /* What the directory says about the school: a label and its value, a row each. */
   .facts {
     margin-bottom: 0;
@@ -838,19 +782,46 @@
       touch-action: pan-y;
     }
 
+    /*
+      A phone's own header: what the school is on a chip, its name a step
+      larger (the title on a phone), then where it is; and after the answer,
+      the two buttons as pills. The chip, the pills and the close button are
+      one family: the same fill, border and round ends.
+    */
+    .detail {
+      --type-title: 600 24px / 29px var(--font-sans);
+    }
+
     /* The name drags the sheet even at full height. */
     .head {
       padding-right: 48px;
       touch-action: none;
     }
 
+    .kind {
+      width: fit-content;
+      max-width: 100%;
+      margin-bottom: 8px;
+      padding: 3px 10px;
+      font-weight: 600;
+      color: var(--text-1);
+      background: var(--surface-2);
+      border: 1px solid var(--border-2);
+      border-radius: 999px;
+    }
+
+    .place {
+      margin-top: 4px;
+    }
+
     /* The answer first, a thumb's reach under the name; the buttons after it, a section of their own. */
     .actions {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
       order: 1;
-      margin-top: var(--section);
-      /* The words 24px under the hairline, in the button's taller target. */
-      padding-top: calc(var(--section) - 11px);
-      margin-bottom: -11px;
+      margin: var(--section) 0 0;
+      padding-top: var(--section);
       border-top: 1px solid var(--border-1);
     }
 
@@ -860,7 +831,21 @@
     }
 
     .action {
+      justify-content: center;
       height: 44px;
+      padding: 0 16px;
+      background: var(--surface-2);
+      border: 1px solid var(--border-2);
+      border-radius: 999px;
+      transition:
+        background-color 120ms linear,
+        border-color 120ms linear;
+    }
+
+    .action:hover {
+      color: var(--text-1);
+      background: var(--border-1);
+      border-color: var(--text-3);
     }
 
     /* A phone number to tap: the whole row's height, not just its line. */
@@ -875,6 +860,8 @@
       right: -4px;
       width: 40px;
       height: 40px;
+      background: var(--surface-2);
+      border: 1px solid var(--border-2);
     }
 
     /* A thumb's target around the button. */

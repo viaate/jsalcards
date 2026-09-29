@@ -26,13 +26,14 @@ const STAMP = { generated_on: META.generated_on, schools: 4, districts: 1 };
 /** Noon in Alabama, 18:00 UTC on Jan 12: the same day everywhere in the contiguous US. */
 const NOON = new Date('2026-01-12T18:00:00Z');
 const GENERATED = '2026-01-12T17:40:00Z';
-/** A forecast's chance section parts, all left out. */
+const ZONE = 'America/Chicago';
+/** A forecast's chance section parts, all left out but how its 34% adds up. */
 const NO_PARTS = {
   previous: null,
   announces_at: null,
   buses_at: null,
   hours: null,
-  why: null,
+  why: { base: { kind: 'similar_days', points: 34 }, reasons: [] },
   record: null,
   events: [],
 } as const;
@@ -90,6 +91,7 @@ describe('reading covered.json and predictions', () => {
       districts: [
         {
           district: 0,
+          time_zone: ZONE,
           neighbors: [],
           days: [
             { state: 'forecast', p_no_school: 0.34, p_delay: 0.12, reasons: [0, 1], ...NO_PARTS },
@@ -99,14 +101,34 @@ describe('reading covered.json and predictions', () => {
       ],
     };
     expect(parsePredictions(file)).toEqual(file);
+    // Each district in a time zone this browser knows.
+    const zoned = (time_zone: unknown) => ({
+      ...file,
+      districts: file.districts.map((entry) => ({ ...entry, time_zone })),
+    });
+    expect(parsePredictions(zoned('Mars/Olympus_Mons'))).toBeNull();
+    expect(parsePredictions(zoned(undefined))).toBeNull();
+    // A certainty, or a day with no number: never in the file.
+    const day = (value: unknown) => ({
+      ...file,
+      districts: [{ ...file.districts[0], days: [value, { state: 'no_threat' }] }],
+    });
+    expect(
+      parsePredictions(day({ state: 'forecast', p_no_school: 1, p_delay: 0, reasons: [0] })),
+    ).toBeNull();
+    expect(parsePredictions(day({ state: 'not_enough_data' }))).toBeNull();
     expect(parsePredictions({ ...file, days: ['2026-01-12', '2026-01-14'] })).toBeNull();
     expect(
       parsePredictions({
         ...file,
-        districts: [{ district: 0, days: [{ state: 'forecast', p_no_school: 1.2 }, file] }],
+        districts: [
+          { district: 0, time_zone: ZONE, days: [{ state: 'forecast', p_no_school: 1.2 }, file] },
+        ],
       }),
     ).toBeNull();
-    expect(parsePredictions({ ...file, districts: [{ district: 0, days: [] }] })).toBeNull();
+    expect(
+      parsePredictions({ ...file, districts: [{ district: 0, time_zone: ZONE, days: [] }] }),
+    ).toBeNull();
     expect(nextDay('2026-02-28')).toBe('2026-03-01');
     expect(nextDay('2028-02-28')).toBe('2028-02-29');
   });
@@ -166,6 +188,24 @@ describe('a school’s status', () => {
     expect(status(3, null)).toEqual(NO_STATUS);
   });
 
+  it('reads the school’s own today in its time zone, overnight too', () => {
+    // 11 PM Monday in Kansas City: the country is not on one day, but the school is.
+    const overnight = new Date('2026-01-13T05:00:00Z');
+    const at = (timeZone: string | null) =>
+      schoolStatus({
+        school: 1,
+        directory: STAMP,
+        closings,
+        covered: null,
+        now: overnight,
+        timeZone,
+      });
+    expect(at(null)).toEqual(NO_STATUS);
+    expect(at(ZONE)).toMatchObject({ today: null, tomorrow: { status: 1 } });
+    // Midnight has come in New York: its today is Tuesday.
+    expect(at('America/New_York')).toMatchObject({ today: { status: 1 }, tomorrow: null });
+  });
+
   it('says nothing overnight, without a file, or from another directory’s file', () => {
     const overnight = new Date('2026-01-13T05:00:00Z');
     expect(
@@ -195,16 +235,12 @@ describe('a school’s outlook', () => {
     districts: [
       {
         district: 0,
+        time_zone: ZONE,
         neighbors: [],
         days: [
           { state: 'forecast', p_no_school: 0.34, p_delay: 0.12, reasons: [0], ...NO_PARTS },
           { state: 'no_threat' },
         ],
-      },
-      {
-        district: 1,
-        neighbors: [],
-        days: [{ state: 'not_enough_data' }, { state: 'not_enough_data' }],
       },
     ],
   };
@@ -218,33 +254,38 @@ describe('a school’s outlook', () => {
         delay: 0.12,
         reasons: [0],
         day: '2026-01-12',
-        detail: NO_DETAIL,
+        detail: { ...NO_DETAIL, why: { base: { kind: 'similar_days', points: 34 }, reasons: [] } },
       },
       tomorrow: { state: 'no_threat' },
       neighbors: [],
+      timeZone: ZONE,
     });
     // The file's last day is today: tomorrow has none.
     expect(schoolOutlook({ ...input, now: new Date('2026-01-13T18:00:00Z') })).toEqual({
       today: { state: 'no_threat' },
       tomorrow: null,
       neighbors: [],
+      timeZone: ZONE,
     });
   });
 
-  it('says there is not enough data where no history gives a chance', () => {
-    expect(schoolOutlook({ ...input, shipped: false, predictions: null })).toBe('not_enough_data');
-    expect(schoolOutlook({ ...input, district: null })).toBe('not_enough_data');
-    expect(schoolOutlook({ ...input, district: 1 })).toBe('not_enough_data');
-    expect(schoolOutlook({ ...input, district: 7 })).toBe('not_enough_data');
+  it('keeps to the district’s own today, however late it is in the east', () => {
+    // 11 PM Monday in Kansas City, past midnight in New York.
+    const late = schoolOutlook({ ...input, now: new Date('2026-01-13T05:00:00Z') });
+    expect(late?.today).toMatchObject({ state: 'forecast', day: '2026-01-12' });
+    expect(late?.tomorrow).toEqual({ state: 'no_threat' });
   });
 
-  it('leaves the outlook out where the files cannot say for now', () => {
-    // Shipped but not read, from another directory, stale, or overnight.
+  it('says nothing where there is no forecast for the school, or the files cannot say', () => {
+    // Not shipped, no district, a district the file has no entry for.
+    expect(schoolOutlook({ ...input, shipped: false, predictions: null })).toBeNull();
+    expect(schoolOutlook({ ...input, district: null })).toBeNull();
+    expect(schoolOutlook({ ...input, district: 7 })).toBeNull();
+    // Shipped but not read, from another directory, or stale.
     expect(schoolOutlook({ ...input, predictions: null })).toBeNull();
     expect(
       schoolOutlook({ ...input, directory: { ...STAMP, generated_on: '2026-01-06' } }),
     ).toBeNull();
     expect(schoolOutlook({ ...input, now: new Date('2026-01-15T18:00:00Z') })).toBeNull();
-    expect(schoolOutlook({ ...input, now: new Date('2026-01-13T05:00:00Z') })).toBeNull();
   });
 });

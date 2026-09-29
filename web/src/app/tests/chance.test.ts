@@ -1,18 +1,22 @@
 import { describe, expect, it } from 'vitest';
 
 import { chanceCopy, chanceFormat } from '../../copy-chance';
+import type { Zones } from '../../copy-chance';
 import type { ForecastDetail, WhyDetail } from '../../data/forecast-detail';
 import type { Outlook } from '../../data/school-day';
 import {
+  MAX_BARS,
   MAX_NEIGHBOR_MOMENTS,
+  NARROWEST_PLOT_PX,
+  atLocalHour,
   chanceView,
   chartScale,
   chartTimes,
   chartView,
   headlineDay,
+  hoursPerBar,
   neighborPosts,
   shortDistrictName,
-  timeGap,
   whyView,
 } from '../chance';
 import type { ClosingsFile } from '../../types/generated';
@@ -34,9 +38,11 @@ import {
   nightOutlook,
 } from './chance-fixtures';
 
-const NBSP = ' ';
-const MINUS = '−';
+const NBSP = '\u00a0';
+const MINUS = '\u2212';
 const at = (iso: string): Date => new Date(iso);
+/** The school's clock, read where the school is. */
+const HERE: Zones = { school: ZONE, viewer: ZONE };
 
 function nightBefore(overrides: Partial<ChanceInput> = {}): ChanceInput {
   return {
@@ -83,8 +89,11 @@ describe('the chance section, the night before', () => {
       meaning: 'Chance of no school Tuesday',
       moved: { direction: 'up', text: `Up from 41% at 5${NBSP}PM` },
       delay: '18% chance of a delayed start instead',
-      timeZone: ZONE,
     });
+    // The countdown in the school's own time zone, the weekday its own once half a day away.
+    expect(view?.countdown(at('2026-01-13T11:30:00Z'), A_NOW)).toBe('in 8h 25m');
+    expect(view?.countdown(at('2026-01-14T11:30:00Z'), A_NOW)).toBe('Wednesday, in 32h 25m');
+    expect(view?.countdown(at('2026-01-13T11:30:00Z'), at('2026-01-13T11:30:00Z'))).toBeNull();
   });
 
   it('lists the districts next door that already canceled, then when this one usually announces', () => {
@@ -98,24 +107,26 @@ describe('the chance section, the night before', () => {
     expect(chanceFormat.countdown(at('2026-01-13T11:30:00Z'), A_NOW, ZONE)).toBe('in 8h 25m');
   });
 
-  it('adds up to the headline, a short sentence a reason, the record in the one it proves', () => {
+  it('adds up to the headline, a short sentence a reason, each forecast as the forecast’s claim', () => {
     expect(lines(view?.why ?? null)).toEqual([
-      '30% Shawnee Mission cancels for about 3 in 10 winter storm warnings.',
-      '+16 A bigger storm than most, 6 to 9 inches overnight. It closed 4 of the last 5 times it got 6 inches or more.',
+      '30% Shawnee Mission cancels for 3 in 10 winter storm warnings.',
+      '+16 The forecast has 6 to 9 inches overnight, more than most storms. It closed 4 of the last 5 times it got 6 inches or more.',
       '+9 Blue Valley and Olathe, next door, canceled.',
-      `+7 Heaviest snow 2 to 5${NBSP}AM, before the buses.`,
-      `+5 Wind makes it feel like -4${NBSP}F at the bus stop.`,
-      `${MINUS}3 Snow ends by 7${NBSP}AM, a head start for the plows.`,
+      `+7 The forecast has the heaviest snow 2 to 5${NBSP}AM, just before the buses.`,
+      `+5 The forecast has a wind chill of ${MINUS}4${NBSP}F at the bus stop.`,
+      // The snow ends as the buses go out: no head start.
+      `${MINUS}3 The forecast has the snow ending at 7${NBSP}AM, as the buses go out.`,
     ]);
     expect(view?.why?.title).toBe('How we got 64%');
   });
 
-  it('draws the snow on the ground to 9 inches, with the times, the buses and the range', () => {
+  it('draws the snow on the ground to 9 inches, its marks, and the key to them', () => {
     const chart = view?.chart;
     expect(chart?.title).toBe(chanceCopy.snowTitle);
-    // A scale to 9 inches in three steps; its one line is the zero at the foot.
+    // A scale to 9 inches in three steps; its one rule is the zero at the foot.
     expect(chart?.plot).toBe(120);
     expect(chart?.zero).toBe(0);
+    expect(chart?.step).toBe(1);
     expect(chart?.bars.map((bar) => bar.lit)).toEqual([
       ...Array<boolean>(6).fill(false),
       true,
@@ -128,18 +139,28 @@ describe('the chance section, the night before', () => {
     // Each bar exactly its value: a trace of snow is a sliver, no snow is no bar.
     expect(chart?.bars[2]?.height).toBeCloseTo(2.667, 3);
     expect(chart?.bars[0]?.height).toBe(0);
-    expect(chart?.times.map((time) => [time.at, time.label])).toEqual([
-      [0, chanceCopy.now],
-      [2, `11${NBSP}PM`],
-      [5, `2${NBSP}AM`],
-      [8, `5${NBSP}AM`],
-      [10, `7${NBSP}AM`],
+    expect(chart?.times).toEqual([
+      { at: 0, label: chanceCopy.now, end: false },
+      { at: 2, label: `11${NBSP}PM`, end: false },
+      { at: 5, label: `2${NBSP}AM`, end: false },
+      { at: 10, label: `7${NBSP}AM`, end: true },
     ]);
-    expect(chart?.buses).toBe(`${chanceCopy.buses} 7${NBSP}AM`);
+    // The announcement at 5:30 AM, halfway between the 5 and 6 AM bars.
+    expect(chart?.announces).toBe(8.5);
     expect(chart?.range).toEqual({ bottom: 80, height: 40 });
-    expect(chart?.end).toBe(`6 to 9${NBSP}in`);
+    expect(chart?.busTop).toBe(120);
+    expect(chart?.key).toEqual([
+      { mark: 'heavy', text: `${chanceCopy.heaviest} 2 to 5${NBSP}AM` },
+      { mark: 'announces', text: `${chanceCopy.usuallyAnnounces} 5:30${NBSP}AM` },
+      {
+        mark: 'buses',
+        value: `6 to 9${NBSP}in`,
+        rest: ` when buses run at 7${NBSP}AM`,
+        glyph: 'range',
+      },
+    ]);
     expect(chart?.summary).toBe(
-      `By 7${NBSP}AM, when the buses run, 6 to 9 inches of snow should be on the ground.`,
+      `By 7${NBSP}AM, when the buses run, the forecast has 6 to 9 inches of snow on the ground.`,
     );
   });
 });
@@ -167,11 +188,11 @@ describe('the chance section, the next morning', () => {
 
   it('adds up from the day after a snow day', () => {
     expect(lines(view?.why ?? null)).toEqual([
-      '25% After a snow day, Shawnee Mission stays closed the next day about 1 time in 4.',
-      `${MINUS}8 Snow stopped around 6${NBSP}AM, a full day for the plows.`,
-      `+6 Feels like -8${NBSP}F at the bus stop Wednesday morning.`,
-      `${MINUS}5 Sun this afternoon helps melt the ice.`,
-      '+4 Side streets could stay icy after 8 inches.',
+      '25% After a snow day, Shawnee Mission stays closed the next day 1 time in 4.',
+      `${MINUS}8 The snow stopped at 6${NBSP}AM, a full day for the plows.`,
+      `+6 The forecast has it feeling like ${MINUS}8${NBSP}F at the bus stop Wednesday morning.`,
+      `${MINUS}5 The forecast has sun this afternoon to help melt the ice.`,
+      '+4 Side streets stay icy after 8 inches of snow.',
     ]);
   });
 
@@ -185,8 +206,8 @@ describe('the chance section, the next morning', () => {
     expect(chart?.bars.map((bar) => bar.lit)).toEqual([...Array<boolean>(10).fill(false), true]);
     // The last bar hangs from the zero rule down to -8 F.
     expect(chart?.bars[10]).toMatchObject({ bottom: 16, height: 64 });
-    expect(chart?.end).toBe(`-8${NBSP}F`);
     expect(chart?.range).toBeNull();
+    expect(chart?.busTop).toBe(80);
     // The night is still to come: no "Now" for its first hour.
     expect(chart?.times.map((time) => time.label)).toEqual([
       `9${NBSP}PM`,
@@ -194,16 +215,67 @@ describe('the chance section, the next morning', () => {
       `3${NBSP}AM`,
       `7${NBSP}AM`,
     ]);
-    expect(chart?.buses).toBe(`${chanceCopy.buses} 7${NBSP}AM`);
+    expect(chart?.key).toEqual([
+      { mark: 'announces', text: `${chanceCopy.usuallyAnnounces} 5:30${NBSP}AM` },
+      {
+        mark: 'buses',
+        value: `${MINUS}8${NBSP}F`,
+        rest: ` when buses run at 7${NBSP}AM`,
+        glyph: 'bar',
+      },
+    ]);
+  });
+});
+
+describe('the school’s own clock', () => {
+  const east = chanceView(nightBefore({ timeZone: 'America/New_York' }));
+
+  it('says every time where the school is, with its zone where the viewer’s clock differs', () => {
+    expect(east?.moved?.text).toBe(`Up from 41% at 5${NBSP}PM${NBSP}CT`);
+    expect(east?.moments.map((moment) => moment.time)).toEqual([
+      `8:41${NBSP}PM${NBSP}CT`,
+      `8:52${NBSP}PM${NBSP}CT`,
+      `5:30${NBSP}AM${NBSP}CT`,
+    ]);
+    expect(east?.chart?.key).toEqual([
+      { mark: 'heavy', text: `${chanceCopy.heaviest} 2 to 5${NBSP}AM${NBSP}CT` },
+      { mark: 'announces', text: `${chanceCopy.usuallyAnnounces} 5:30${NBSP}AM${NBSP}CT` },
+      {
+        mark: 'buses',
+        value: `6 to 9${NBSP}in`,
+        rest: ` when buses run at 7${NBSP}AM${NBSP}CT`,
+        glyph: 'range',
+      },
+    ]);
+    // The hours under the chart are the school's too; its zone is said beside the key.
+    expect(east?.chart?.times.at(-1)?.label).toBe(`7${NBSP}AM`);
+    expect(lines(east?.why ?? null)[3]).toBe(
+      `+7 The forecast has the heaviest snow 2 to 5${NBSP}AM${NBSP}CT, just before the buses.`,
+    );
+    // A viewer on the school's clock, in another zone of the same offset, sees no zone.
+    const same = chanceView(nightBefore({ timeZone: 'America/Menominee' }));
+    expect(same?.moved?.text).toBe(`Up from 41% at 5${NBSP}PM`);
+  });
+
+  it('finds an hour of a day on the school’s own clock, across a change of clocks too', () => {
+    expect(atLocalHour('2026-01-13', 9, ZONE).toISOString()).toBe('2026-01-13T15:00:00.000Z');
+    expect(atLocalHour('2026-07-13', 9, ZONE).toISOString()).toBe('2026-07-13T14:00:00.000Z');
+    expect(atLocalHour('2026-03-08', 9, ZONE).toISOString()).toBe('2026-03-08T14:00:00.000Z');
+    expect(atLocalHour('2026-01-13', 9, 'America/Los_Angeles').toISOString()).toBe(
+      '2026-01-13T17:00:00.000Z',
+    );
   });
 });
 
 describe('what the section leaves out', () => {
   it('has no section without a forecast for a day that is not decided', () => {
     expect(chanceView(nightBefore({ outlook: null }))).toBeNull();
-    expect(chanceView(nightBefore({ outlook: 'not_enough_data' }))).toBeNull();
     expect(chanceView(nightBefore({ decided: { today: false, tomorrow: true } }))).toBeNull();
-    const quiet: Outlook = { today: { state: 'no_threat' }, tomorrow: { state: 'no_threat' } };
+    const quiet: Outlook = {
+      today: { state: 'no_threat' },
+      tomorrow: { state: 'no_threat' },
+      timeZone: ZONE,
+    };
     expect(chanceView(nightBefore({ outlook: quiet }))).toBeNull();
     // Both days decided the next morning: nothing left to give a chance for.
     expect(chanceView(nextMorning({ decided: { today: true, tomorrow: true } }))).toBeNull();
@@ -223,6 +295,7 @@ describe('what the section leaves out', () => {
         detail: { ...A_DETAIL, busesAt: at('2026-01-13T13:00:00Z') },
       },
       tomorrow: null,
+      timeZone: ZONE,
     };
     expect(
       headlineDay(underWay, { today: false, tomorrow: false }, at('2026-01-13T14:59:00Z')),
@@ -232,12 +305,35 @@ describe('what the section leaves out', () => {
     ).toBeNull();
   });
 
+  it('without its bus time, takes a day as under way from 9 AM on the school’s clock', () => {
+    const bare: Outlook = {
+      today: { state: 'forecast', noSchool: 0.5, delay: 0, reasons: [0], day: '2026-01-12' },
+      tomorrow: null,
+      timeZone: ZONE,
+    };
+    const decided = { today: false, tomorrow: false };
+    // 8:59 and 9:00 AM in Kansas City.
+    expect(headlineDay(bare, decided, at('2026-01-12T14:59:00Z'))).not.toBeNull();
+    expect(headlineDay(bare, decided, at('2026-01-12T15:00:00Z'))).toBeNull();
+    // The same moment is 7 AM in Los Angeles: a school there is not under way yet.
+    expect(
+      headlineDay(
+        { ...bare, timeZone: 'America/Los_Angeles' },
+        decided,
+        at('2026-01-12T15:00:00Z'),
+      ),
+    ).not.toBeNull();
+  });
+
   it('shows the headline alone when the forecast gives nothing else', () => {
     const bare: Outlook = {
       today: { state: 'forecast', noSchool: 0.5, delay: 0, reasons: [0], day: '2026-01-12' },
       tomorrow: null,
+      timeZone: ZONE,
     };
-    expect(chanceView(nightBefore({ outlook: bare, now: at('2026-01-12T12:00:00Z') }))).toEqual({
+    const view = chanceView(nightBefore({ outlook: bare, now: at('2026-01-12T12:00:00Z') }));
+    expect(view?.countdown).toBeTypeOf('function');
+    expect(view).toEqual({
       status: [],
       day: '2026-01-12',
       number: '50',
@@ -247,7 +343,7 @@ describe('what the section leaves out', () => {
       chart: null,
       why: null,
       delay: null,
-      timeZone: ZONE,
+      countdown: view?.countdown,
     });
   });
 
@@ -260,7 +356,7 @@ describe('what the section leaves out', () => {
     expect(view?.moments).toHaveLength(3);
     const args = { day: '2026-01-13', district: 'Shawnee Mission', names: NAMES, now: A_NOW };
     const why = (detail: ForecastDetail, chance = 0.64): WhyView | null =>
-      whyView({ detail, chance, timeZone: ZONE, ...args });
+      whyView({ detail, chance, zones: HERE, ...args });
     expect(why(A_DETAIL)).not.toBeNull();
     // One point off either way.
     expect(why(A_DETAIL, 0.63)).toBeNull();
@@ -275,20 +371,37 @@ describe('what the section leaves out', () => {
     expect(why({ ...A_DETAIL, why: halves })).toBeNull();
     // Nothing to explain.
     expect(why({ ...A_DETAIL, why: null })).toBeNull();
-    // A sum to 0 or 100 would claim a certainty the headline does not ("<1%", ">99%").
+    // The file never gives a certainty; a sum to 0 or 100 would claim one.
     const none: WhyDetail = { base: { kind: 'similar_days', points: 0 }, reasons: [] };
     expect(why({ ...A_DETAIL, why: none }, 0)).toBeNull();
     const all: WhyDetail = { base: { kind: 'similar_days', points: 100 }, reasons: [] };
     expect(why({ ...A_DETAIL, why: all }, 1)).toBeNull();
+    // At 1% and 99% the sum still shows.
+    const low: WhyDetail = { base: { kind: 'similar_days', points: 1 }, reasons: [] };
+    expect(lines(why({ ...A_DETAIL, why: low }, 0.01))).toEqual([
+      '1% On days like this, Shawnee Mission closes 1 time in 100.',
+    ]);
+    const high: WhyDetail = { base: { kind: 'similar_days', points: 99 }, reasons: [] };
+    expect(lines(why({ ...A_DETAIL, why: high }, 0.99))).toEqual([
+      '99% On days like this, Shawnee Mission closes 99 times in 100.',
+    ]);
     // A base alone, when it is the chance.
     const alone: WhyDetail = { base: { kind: 'similar_days', points: 20 }, reasons: [] };
     expect(lines(why({ ...A_DETAIL, why: alone }, 0.2))).toEqual([
-      '20% On days like this, Shawnee Mission closes about 1 time in 5.',
+      '20% On days like this, Shawnee Mission closes 1 time in 5.',
+    ]);
+    // A district with too short a history of its own: the districts around it.
+    const pooled: WhyDetail = {
+      base: { kind: 'pooled', points: 33, scope: 'nearby', alert: null },
+      reasons: [],
+    };
+    expect(lines(why({ ...A_DETAIL, why: pooled }, 0.33))).toEqual([
+      '33% Districts near Shawnee Mission close about 1 time in 3 on days like this.',
     ]);
   });
 
   it('leaves the sum out when a reason cannot be said, and says what it can', () => {
-    const args = { day: '2026-01-13', district: 'Shawnee Mission', now: A_NOW, timeZone: ZONE };
+    const args = { day: '2026-01-13', district: 'Shawnee Mission', now: A_NOW, zones: HERE };
     // A record reason with no record to count.
     const counting: WhyDetail = {
       base: A_WHY.base,
@@ -307,7 +420,7 @@ describe('what the section leaves out', () => {
       ...args,
     });
     expect(lines(counted).slice(1, 3)).toEqual([
-      '+12 A bigger storm than most, 6 to 9 inches overnight.',
+      '+12 The forecast has 6 to 9 inches overnight, more than most storms.',
       '+4 Shawnee Mission closed 4 of the last 5 times it got 6 inches or more.',
     ]);
     // The directory not read (yet): the districts next door by how many.
@@ -379,11 +492,27 @@ describe('the timeline', () => {
     expect(posts).toHaveLength(MAX_NEIGHBOR_MOMENTS);
   });
 
-  it('drops the usual announcement once it is long past', () => {
+  it('keeps the usual announcement in time order, no longer "next" once it has passed', () => {
     const late = chanceView(nightBefore({ now: at('2026-01-13T14:31:00Z') }));
     expect(late?.moments.map((moment) => moment.mark)).toEqual(['closed', 'closed']);
-    const soon = chanceView(nightBefore({ now: at('2026-01-13T14:29:00Z') }));
-    expect(soon?.moments.at(-1)?.mark).toBe('next');
+    const past = chanceView(nightBefore({ now: at('2026-01-13T14:29:00Z') }));
+    expect(past?.moments.map((moment) => [moment.mark, moment.at])).toEqual([
+      ['closed', null],
+      ['closed', null],
+      ['event', null],
+    ]);
+    // An announcement the evening before, before the districts next door posted.
+    const early = chanceView(
+      nightBefore({
+        outlook: nightOutlook({ ...A_DETAIL, announcesAt: at('2026-01-13T02:30:00Z') }),
+      }),
+    );
+    expect(early?.moments.map((moment) => moment.text)).toEqual([
+      'Shawnee Mission usually announces',
+      'Blue Valley canceled Tuesday',
+      'Olathe canceled Tuesday',
+    ]);
+    expect(early?.moments[0]?.mark).toBe('event');
   });
 });
 
@@ -403,7 +532,7 @@ describe('the countdown', () => {
     expect(chanceFormat.countdown(announce, at('2026-01-13T12:00:00Z'), ZONE)).toBeNull();
   });
 
-  it('runs across midnight, and names the day where the viewer is', () => {
+  it('runs across midnight, and names the day where the school is', () => {
     // 11:50 PM to 12:10 AM, Central.
     expect(
       chanceFormat.countdown(at('2026-01-13T06:10:00Z'), at('2026-01-13T05:50:00Z'), ZONE),
@@ -441,35 +570,73 @@ describe('the chart', () => {
     expect(chartScale('wind_chill', [-80, 60], null).ticks).toEqual([-100, 0, 100]);
   });
 
-  it('keeps the times at its foot apart, however many hours it has', () => {
-    expect(timeGap(11)).toBe(2);
-    expect(timeGap(6)).toBe(1);
-    expect(timeGap(24)).toBe(4);
-    expect(timeGap(36)).toBe(6);
-    for (const count of [2, 5, 11, 17, 24, 36]) {
+  it('keeps the times at its foot apart on the narrowest plot, however many bars it has', () => {
+    for (const count of [2, 5, 11, 17, MAX_BARS]) {
+      const instants = Array.from(
+        { length: count },
+        (_, i) => new Date(Date.parse('2026-01-13T03:00:00Z') + i * 3_600_000),
+      );
       const times = chartTimes({
-        count,
-        start: at('2026-01-13T03:00:00Z'),
-        values: Array.from({ length: count }, (_, i) => i / 2),
-        kind: 'snow_total',
+        instants,
+        step: 1,
         heavy: count > 4 ? { first: 3, last: 4 } : null,
-        now: at('2026-01-13T03:10:00Z'),
+        snowStarts: 1,
+        isNow: true,
         timeZone: ZONE,
       });
-      expect(times[0]?.at).toBe(0);
-      expect(times.at(-1)?.at).toBe(count - 1);
-      for (let i = 1; i < times.length; i++) {
-        expect((times[i]?.at ?? 0) - (times[i - 1]?.at ?? 0)).toBeGreaterThanOrEqual(
-          timeGap(count),
-        );
+      expect(times[0]).toMatchObject({ at: 0, label: chanceCopy.now });
+      expect(times.at(-1)).toMatchObject({ at: count - 1, end: true });
+      // Each time's words, 40 px at most, from its bar's left edge; the last ends at the plot's.
+      const slot = NARROWEST_PLOT_PX / count;
+      const boxes = times.map((time) =>
+        time.end
+          ? [NARROWEST_PLOT_PX - 40, NARROWEST_PLOT_PX]
+          : [time.at * slot, time.at * slot + 40],
+      );
+      for (let i = 1; i < boxes.length; i++) {
+        expect((boxes[i]?.[0] ?? 0) - (boxes[i - 1]?.[1] ?? 0)).toBeGreaterThanOrEqual(8);
       }
     }
   });
 
+  it('draws a long night with a bar for every 2 or 3 hours, each a readable width', () => {
+    expect([1, 18, 19, 36].map(hoursPerBar)).toEqual([1, 1, 2, 2]);
+    // A storm across 30 hours, from 3 PM Monday to 9 PM Tuesday, heaviest 2 to 5 AM.
+    const values = Array.from({ length: 30 }, (_, i) => Math.round(i * 3) / 10);
+    const detail: ForecastDetail = {
+      ...A_DETAIL,
+      announcesAt: at('2026-01-13T11:30:00Z'),
+      busesAt: at('2026-01-14T02:00:00Z'),
+      hours: {
+        kind: 'snow_total',
+        start: at('2026-01-12T21:00:00Z'),
+        values,
+        range: { low: 8, high: 10 },
+        heavy: { first: 12, last: 14 },
+      },
+    };
+    const chart = chartView(detail, at('2026-01-12T21:10:00Z'), HERE);
+    expect(chart?.step).toBe(2);
+    expect(chart?.bars).toHaveLength(15);
+    // Each bar at least 16 px of the narrowest plot, its bar 60% of that.
+    expect((NARROWEST_PLOT_PX / (chart?.bars.length ?? 1)) * 0.6).toBeGreaterThanOrEqual(3);
+    // Back from the bus hour, every second hour: the last bar is the bus hour's value.
+    // On a scale to 12 inches, three steps of 4.
+    expect(chart?.bars.at(-1)?.height).toBeCloseTo((8.7 / 12) * 120, 6);
+    // Lit where the heaviest snow falls in the hours a bar stands for.
+    expect(chart?.bars.map((bar) => bar.lit)).toEqual(
+      Array.from({ length: 15 }, (_, bar) => bar === 6 || bar === 7),
+    );
+    // The first hour drawn is 4 PM, an hour after the series starts: no "Now" there.
+    expect(chart?.times[0]).toEqual({ at: 0, label: `4${NBSP}PM`, end: false });
+    // The announcement at 5:30 AM: 14.5 hours into the series, 13.5 past the first bar's hour.
+    expect(chart?.announces).toBe(6.75);
+  });
+
   it('starts from this hour: the hours gone by are not the night ahead', () => {
-    const later = chartView(A_DETAIL, at('2026-01-13T05:30:00Z'), ZONE);
+    const later = chartView(A_DETAIL, at('2026-01-13T05:30:00Z'), HERE);
     expect(later?.bars).toHaveLength(9);
-    expect(later?.times[0]).toEqual({ at: 0, label: chanceCopy.now });
+    expect(later?.times[0]).toEqual({ at: 0, label: chanceCopy.now, end: false });
     expect(later?.bars.map((bar) => bar.lit)).toEqual([
       false,
       false,
@@ -482,11 +649,17 @@ describe('the chart', () => {
       false,
     ]);
     // Two hours left draw two bars; the bus hour alone is no chart.
-    expect(chartView(A_DETAIL, at('2026-01-13T12:30:00Z'), ZONE)?.bars).toHaveLength(2);
-    expect(chartView(A_DETAIL, at('2026-01-13T13:30:00Z'), ZONE)).toBeNull();
-    expect(chartView({ ...A_DETAIL, hours: null }, A_NOW, ZONE)).toBeNull();
-    expect(chartView(B_DETAIL, B_NOW, 'America/Los_Angeles')?.title).toBe(chanceCopy.coldTonight);
-    expect(chartView(B_DETAIL, B_NOW, 'Europe/Berlin')?.title).toBe(chanceCopy.coldTitle);
+    expect(chartView(A_DETAIL, at('2026-01-13T12:30:00Z'), HERE)?.bars).toHaveLength(2);
+    expect(chartView(A_DETAIL, at('2026-01-13T13:30:00Z'), HERE)).toBeNull();
+    expect(chartView({ ...A_DETAIL, hours: null }, A_NOW, HERE)).toBeNull();
+    // An announcement outside the night drawn has no line, and no row in the key.
+    const before = chartView({ ...A_DETAIL, announcesAt: at('2026-01-13T01:30:00Z') }, A_NOW, HERE);
+    expect(before?.announces).toBeNull();
+    expect(before?.key.map((row) => row.mark)).toEqual(['heavy', 'buses']);
+    const west = { school: 'America/Los_Angeles', viewer: 'America/Los_Angeles' };
+    expect(chartView(B_DETAIL, B_NOW, west)?.title).toBe(chanceCopy.coldTonight);
+    const berlin = { school: 'Europe/Berlin', viewer: 'Europe/Berlin' };
+    expect(chartView(B_DETAIL, B_NOW, berlin)?.title).toBe(chanceCopy.coldTitle);
   });
 });
 

@@ -11,12 +11,13 @@
  *
  * `schoolView` turns what is known into the panel's lines, every word from
  * src/copy.ts or the directory itself. A status line shows only where the
- * live files state one (or confirm the school open today); a chance only
- * where the district's history gives one, and nothing where it does not or
- * the files cannot say for now. A day's chance never shows beside a status
- * the school decided for that day (closed, delayed, remote, early
- * dismissal): the fact beats the forecast. "Open today" is no decision, only
- * that no closing is posted yet, and the chance stays beside it.
+ * live files state one (or confirm the school open today), on the school's
+ * own today (its district's time zone, from the predictions file); a chance
+ * only where the district has a forecast for a day not yet under way, and
+ * nothing where the files cannot say for now. A day's chance never shows
+ * beside a status the school decided for that day (closed, delayed, remote,
+ * early dismissal): the fact beats the forecast. "Open today" is no decision,
+ * only that no closing is posted yet, and the chance stays beside it.
  */
 
 import { DISTRICT_NAME_FIXES, SCHOOL_NAME_FIXES } from 'virtual:snowlight/school-names';
@@ -37,7 +38,7 @@ import {
   schoolOutlook,
   schoolStatus,
 } from '../data/school-day';
-import type { DayOutlook, Outlook, SchoolStatus, StatusRow } from '../data/school-day';
+import type { Outlook, SchoolStatus, StatusRow } from '../data/school-day';
 import type { Directory } from '../data/directory';
 import { casedName, displayName } from '../text/names';
 import { stateOfId } from '../text/school-names';
@@ -71,22 +72,6 @@ export interface StatusLineView {
   readonly detail: string | null;
   /** "Winter storm · Posted 5:12 AM", or null. */
   readonly note: string | null;
-}
-
-/** One day of the outlook. */
-export interface DayView {
-  /** "Today", "Tomorrow". */
-  readonly label: string;
-  /** The chance of no school ("34%"), or null for a day with no chance to give. */
-  readonly chance: string | null;
-  /** What the chance is of, or the day's one line ("No weather threat in the forecast"). */
-  readonly line: string;
-  /** "Delayed start 12%", or null. */
-  readonly delay: string | null;
-  /** The forecast weather, "Ice · Extreme cold", or null. */
-  readonly reasons: string | null;
-  /** The chance as a share from 0 to 1, for its bar; null without one. */
-  readonly share: number | null;
 }
 
 /** A school near this one, as the panel lists it. */
@@ -125,15 +110,9 @@ export interface SchoolView {
   /** The status block's lines, today first; empty when the files state nothing. */
   readonly status: readonly StatusLineView[];
   /**
-   * The days of the outlook, but for a day with no history to give a chance
-   * and a day whose status is decided; null to leave the chance card out.
-   * Shown only without a chance section (a day with no weather threat).
-   */
-  readonly outlook: readonly DayView[] | null;
-  /**
    * The chance section (app/chance.ts): the chance of no school for the first
-   * day not decided, with the status lines above it; null when there is no
-   * chance to give, and the panel shows the status and outlook cards instead.
+   * day not decided or under way, with the status lines above it; null when
+   * there is no chance to give, and the panel shows the status lines alone.
    */
   readonly chance: ChanceView | null;
   readonly facts: readonly FactView[];
@@ -220,53 +199,6 @@ function statusLines(status: SchoolStatus, now: Date, timeZone: string): StatusL
   }
   if (status.tomorrow !== null) lines.push(statusLine(status.tomorrow, 'tomorrow', now, timeZone));
   return lines;
-}
-
-/** One day of the outlook; null for a day with no history to give a chance, which is left out. */
-function dayView(label: string, day: DayOutlook): DayView | null {
-  switch (day.state) {
-    case 'forecast': {
-      const reasons = day.reasons.map(reasonName).filter((name): name is string => name !== null);
-      return {
-        label,
-        chance: format.chance(day.noSchool),
-        line: copy.predictions.noSchool,
-        delay: `${copy.predictions.delay} ${format.chance(day.delay)}`,
-        reasons: reasons.length > 0 ? reasons.join(DOT) : null,
-        share: day.noSchool,
-      };
-    }
-    case 'no_threat':
-      return {
-        label,
-        chance: null,
-        line: copy.empty.noThreat,
-        delay: null,
-        reasons: null,
-        share: null,
-      };
-    case 'not_enough_data':
-      return null;
-  }
-}
-
-/**
- * The outlook's days, but for a day whose status is decided (the fact beats
- * the forecast) and a day with no history to give a chance. With no day
- * left, or no history at all, no outlook: the panel has no chance card.
- */
-function outlookView(
-  outlook: Outlook,
-  decided: { readonly today: boolean; readonly tomorrow: boolean },
-): SchoolView['outlook'] {
-  if (outlook === null || outlook === 'not_enough_data') return null;
-  const days = [
-    decided.today ? null : dayView(copy.days.today, outlook.today),
-    outlook.tomorrow === null || decided.tomorrow
-      ? null
-      : dayView(copy.days.tomorrow, outlook.tomorrow),
-  ].filter((day): day is DayView => day !== null);
-  return days.length > 0 ? days : null;
 }
 
 function factsOf(record: SchoolRecord): FactView[] {
@@ -395,7 +327,6 @@ export function schoolView(input: ViewInput): SchoolView | null {
       kind: null,
       place: hint.sub === '' ? null : hint.sub,
       status: [],
-      outlook: null,
       chance: null,
       facts: [],
       nearby: [],
@@ -425,7 +356,6 @@ export function schoolView(input: ViewInput): SchoolView | null {
     kind: kindOf(record),
     place: place.length > 0 ? place.join(DOT) : null,
     status,
-    outlook: outlookView(input.outlook, decided),
     // A private school has no district, and no district forecast: no chance section.
     chance:
       record.district === null
@@ -454,7 +384,6 @@ function loadingView(id: SchoolId): SchoolView {
     kind: null,
     place: null,
     status: [],
-    outlook: null,
     chance: null,
     facts: [],
     nearby: [],
@@ -511,16 +440,6 @@ export function watchSchool(options: WatchOptions): () => void {
   const show = (): void => {
     if (stopped) return;
     const at = now();
-    const status =
-      record === null
-        ? NO_STATUS
-        : schoolStatus({
-            school: record.index,
-            directory: record.directory,
-            closings: live.closings,
-            covered: live.covered,
-            now: at,
-          });
     const outlook =
       record === null
         ? null
@@ -530,6 +449,18 @@ export function watchSchool(options: WatchOptions): () => void {
             shipped: files.has(PUBLISHED_PATHS.predictions),
             predictions: live.predictions,
             now: at,
+          });
+    // The school's own today: its district's time zone, where the predictions file gives it.
+    const status =
+      record === null
+        ? NO_STATUS
+        : schoolStatus({
+            school: record.index,
+            directory: record.directory,
+            closings: live.closings,
+            covered: live.covered,
+            now: at,
+            timeZone: outlook?.timeZone ?? null,
           });
     const view = schoolView({
       id,
@@ -546,8 +477,7 @@ export function watchSchool(options: WatchOptions): () => void {
     onView(view);
     // A chance for a district with neighbors: their names, and their schools' districts, come
     // from the directory, read once (the glow has most often read it already).
-    const neighbors =
-      outlook !== null && outlook !== 'not_enough_data' ? (outlook.neighbors ?? []) : [];
+    const neighbors = outlook?.neighbors ?? [];
     const stamp = live.closings?.directory ?? live.predictions?.directory ?? null;
     if (
       !askedNames &&

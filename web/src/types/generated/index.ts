@@ -379,9 +379,17 @@ export type AlertKind =
   | 'extreme_cold_warning';
 
 /** Where the chance starts, before any reason. */
-export type Base = AlertBase | DayAfterBase | SimilarDaysBase;
+export type Base = AlertBase | DayAfterBase | SimilarDaysBase | PooledBase;
 
-/** It will feel like ``feels_like`` at the bus stop that morning. */
+/**
+ * A chance of no school, from 0.01 to 0.99 in hundredths: never a certainty, so how it adds up
+ * always has whole points to show.
+ * @minimum 0.01
+ * @maximum 0.99
+ */
+export type ChanceOfNoSchool = number;
+
+/** It feels like ``feels_like`` at the bus stop that morning: it only adds points. */
 export interface ColdReason {
   readonly kind: 'cold';
   readonly points: Points;
@@ -395,11 +403,12 @@ export interface DayAfterBase {
 }
 
 /** One district's outlook for one day. */
-export type DayForecast = Forecast | NoThreat | NotEnoughData;
+export type DayForecast = Forecast | NoThreat;
 
 /** One district's outlook for each day in the file's days. */
 export interface DistrictForecast {
   readonly district: DistrictIndex;
+  readonly time_zone: TimeZoneName;
   /**
    * The districts next door, nearest first: every other district with a school within 10 miles of
    * one of this district's schools.
@@ -425,17 +434,23 @@ export type Fahrenheit = number;
 /** Weather that has closed or delayed these schools before is forecast that day. */
 export interface Forecast {
   readonly state: 'forecast';
-  readonly p_no_school: Probability;
+  readonly p_no_school: ChanceOfNoSchool;
   readonly p_delay: Probability;
   /** The forecast weather, most important first. */
   readonly reasons: readonly Reason[];
   readonly previous: PreviousChance | null;
-  /** When the district usually posts its decision for this day. */
+  /**
+   * When the district usually posts its decision for this day: that day or the evening before, in
+   * the district's time zone, and before buses_at.
+   */
   readonly announces_at: UtcInstant | null;
-  /** When the district's first buses usually run that day. */
+  /**
+   * When the district's first buses usually run that day: on the day, in the district's time zone.
+   */
   readonly buses_at: UtcInstant | null;
   readonly hours: Hours | null;
-  readonly why: Why | null;
+  /** How the chance adds up: always given with a forecast. */
+  readonly why: Why;
   readonly record: PastRecord | null;
   readonly events: readonly WeatherEvent[];
 }
@@ -449,9 +464,10 @@ export interface HourSpan {
 /**
  * One weather measure, an hour at a time from ``start`` to the bus hour, for the chart.
  *
- * ``snow_total``: the snow on the ground, as the running total since ``start``, in
- * inches; ``low`` and ``high`` bound the total at the bus hour; ``heavy`` marks the
- * hours the snow falls fastest (value i is the total at the end of hour i, so the
+ * ``snow_total``: the snow on the ground since the storm began, in inches, at each
+ * hour (snow that fell before ``start`` included, so the first value may be above 0);
+ * ``low`` and ``high`` bound it at the bus hour; ``heavy`` marks the hours the snow
+ * falls fastest (value i is the snow on the ground at ``start`` + i hours, so the
  * heaviest snow falls from ``start`` + (first - 1) hours to ``start`` + last hours).
  * ``wind_chill``: how cold it will feel each hour, in degrees F; no range, no heavy hours.
  */
@@ -459,21 +475,23 @@ export interface Hours {
   readonly kind: 'snow_total' | 'wind_chill';
   /** The first value's hour, on the hour. */
   readonly start: UtcInstant;
-  /** One value an hour, in tenths: inches of snow, or degrees F. */
+  /**
+   * One value an hour, in tenths: inches of snow on the ground since the storm began, or degrees F.
+   */
   readonly values: readonly number[];
   readonly low: Inches | null;
   readonly high: Inches | null;
   readonly heavy: HourSpan | null;
 }
 
-/** Freezing rain could leave ``inches`` of ice on the roads. */
+/** Freezing rain leaves ``inches`` of ice on the roads: it only adds points. */
 export interface IceReason {
   readonly kind: 'ice';
   readonly points: Points;
   readonly inches: Inches;
 }
 
-/** Side streets could stay icy after ``inches`` of snow. */
+/** Side streets stay icy after ``inches`` of snow: it only adds points. */
 export interface IcyRoadsReason {
   readonly kind: 'icy_roads';
   readonly points: Points;
@@ -487,7 +505,11 @@ export interface IcyRoadsReason {
  */
 export type Inches = number;
 
-/** Districts next door (the entry's ``neighbors``) that already posted ``status``. */
+/**
+ * Districts next door (the entry's ``neighbors``) that already posted ``status``.
+ *
+ * A closing or a remote day next door only ever adds points.
+ */
 export interface NeighborsReason {
   readonly kind: 'neighbors';
   readonly points: Points;
@@ -498,11 +520,6 @@ export interface NeighborsReason {
 /** No weather that has closed or delayed these schools before is forecast that day. */
 export interface NoThreat {
   readonly state: 'no_threat';
-}
-
-/** The district's history is too short to give a chance. */
-export interface NotEnoughData {
-  readonly state: 'not_enough_data';
 }
 
 /** One day in the district's record: its snow and what the district did. */
@@ -533,9 +550,23 @@ export interface PastRecord {
  */
 export type Points = number;
 
+/**
+ * For a district with too short a history of its own: the districts around it.
+ *
+ * The districts of ``scope`` (``nearby``: within the neighbor distance; or the
+ * district's county, state or weather region) close for about ``points`` in 100 days
+ * like this, or in 100 of ``alert`` when one is given.
+ */
+export interface PooledBase {
+  readonly kind: 'pooled';
+  readonly scope: 'nearby' | 'county' | 'state' | 'region';
+  readonly points: Percent;
+  readonly alert: AlertKind | null;
+}
+
 /** The chance of no school the run before this one gave the same district and day. */
 export interface PreviousChance {
-  readonly p_no_school: Probability;
+  readonly p_no_school: ChanceOfNoSchool;
   /** When that run was made. */
   readonly at: UtcInstant;
 }
@@ -585,7 +616,7 @@ export interface SnowStopped {
   readonly inches: Inches;
 }
 
-/** The snow stops (or stopped) at ``at``, before the plows' work. */
+/** The snow stops (or stopped) at ``at``: before the buses, it only takes points away. */
 export interface SnowStopsReason {
   readonly kind: 'snow_stops';
   readonly points: Points;
@@ -601,11 +632,17 @@ export interface SnowTotalReason {
   readonly overnight: boolean;
 }
 
-/** Sun the afternoon before helps melt the ice. */
+/** Sun the afternoon before helps melt the ice: it only takes points away. */
 export interface SunReason {
   readonly kind: 'sun';
   readonly points: Points;
 }
+
+/**
+ * An IANA time zone: every local day and wall-clock time of the district.
+ * @pattern ^[A-Z][A-Za-z_]+(/[A-Z][A-Za-z0-9_+-]+)+$
+ */
+export type TimeZoneName = string;
 
 /** When the heaviest snow falls, against when the buses run. */
 export interface TimingReason {
@@ -624,7 +661,7 @@ export interface Why {
   readonly reasons: readonly ReasonPoints[];
 }
 
-/** The wind will make it feel like ``feels_like`` at the bus stop. */
+/** The wind makes it feel like ``feels_like`` at the bus stop: it only adds points. */
 export interface WindChillReason {
   readonly kind: 'wind_chill';
   readonly points: Points;

@@ -56,8 +56,8 @@ from snowlight.schemas.live import (
 from snowlight.schemas.predictions import (
     DistrictForecast,
     Forecast,
-    NotEnoughData,
     NoThreat,
+    PooledBase,
     PredictionsFile,
 )
 from snowlight.schemas.registry import PUBLISHED_FILES, PublishedFile
@@ -83,7 +83,7 @@ __all__ = [
     "InternalModel",
     "LeadRecord",
     "NoThreat",
-    "NotEnoughData",
+    "PooledBase",
     "PredictionsFile",
     "PublishedContentError",
     "PublishedFile",

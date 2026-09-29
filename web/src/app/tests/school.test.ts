@@ -4,7 +4,7 @@ import { copy, format } from '../../copy';
 import type { DetailsSource, SchoolRecord } from '../../data/details';
 import { createDataFiles } from '../../data/files';
 import { NO_STATUS } from '../../data/school-day';
-import type { DayOutlook, StatusRow } from '../../data/school-day';
+import type { DayOutlook, SchoolStatus, StatusRow } from '../../data/school-day';
 import { createDirectory, parsePoints } from '../../data/directory';
 import {
   jsonResponse,
@@ -76,7 +76,7 @@ function input(overrides: Partial<ViewInput> = {}): ViewInput {
     record: PRIVATE,
     settled: true,
     status: NO_STATUS,
-    outlook: 'not_enough_data',
+    outlook: null,
     now: NOON,
     timeZone: 'America/Chicago',
     ...overrides,
@@ -93,8 +93,8 @@ describe('schoolView', () => {
       kind: `${copy.detail.privateSchool} · PK–12`,
       place: 'Kansas City, MO · Jackson County',
       status: [],
-      // No history gives a chance: no chance card at all.
-      outlook: null,
+      // A private school has no district, and no district forecast: no chance at all.
+      chance: null,
       loading: false,
     });
     expect(view?.facts).toEqual([
@@ -186,7 +186,6 @@ describe('schoolView', () => {
       kind: null,
       place: 'Kansas City, MO',
       status: [],
-      outlook: null,
       chance: null,
       facts: [],
       nearby: [],
@@ -238,138 +237,12 @@ describe('schoolView', () => {
     ]);
   });
 
-  it('gives each day’s chance where the district has one, and one line where it does not', () => {
-    const view = schoolView(
-      input({
-        outlook: {
-          today: { state: 'forecast', noSchool: 0.34, delay: 0.12, reasons: [0, 2] },
-          tomorrow: { state: 'no_threat' },
-        },
-      }),
-    );
-    expect(view?.outlook).toEqual([
-      {
-        label: copy.days.today,
-        chance: '34%',
-        line: copy.predictions.noSchool,
-        delay: `${copy.predictions.delay} 12%`,
-        reasons: `${copy.reason.winterStorm} · ${copy.reason.extremeCold}`,
-        share: 0.34,
-      },
-      {
-        label: copy.days.tomorrow,
-        chance: null,
-        line: copy.empty.noThreat,
-        delay: null,
-        reasons: null,
-        share: null,
-      },
-    ]);
-    expect(schoolView(input({ outlook: null }))?.outlook).toBeNull();
-  });
-
-  it('leaves out a day with no history to give a chance, and the card with no day left', () => {
-    const forecast: DayOutlook = { state: 'forecast', noSchool: 0.34, delay: 0.12, reasons: [] };
-    const none: DayOutlook = { state: 'not_enough_data' };
-    expect(
-      schoolView(input({ outlook: { today: forecast, tomorrow: none } }))?.outlook?.map((day) => [
-        day.label,
-        day.chance,
-      ]),
-    ).toEqual([[copy.days.today, '34%']]);
-    expect(
-      schoolView(input({ outlook: { today: none, tomorrow: forecast } }))?.outlook?.map((day) => [
-        day.label,
-        day.chance,
-      ]),
-    ).toEqual([[copy.days.tomorrow, '34%']]);
-    expect(schoolView(input({ outlook: { today: none, tomorrow: none } }))?.outlook).toBeNull();
-    expect(schoolView(input({ outlook: { today: none, tomorrow: null } }))?.outlook).toBeNull();
-    expect(schoolView(input({ outlook: 'not_enough_data' }))?.outlook).toBeNull();
-  });
-
-  it('leaves a day’s chance out beside that day’s status: the fact beats the forecast', () => {
+  it('shows no chance card of its own, whatever the outlook: the chance is the section’s', () => {
     const today: DayOutlook = { state: 'forecast', noSchool: 0.97, delay: 0.02, reasons: [0] };
     const tomorrow: DayOutlook = { state: 'forecast', noSchool: 0.4, delay: 0.2, reasons: [] };
-    const closed: StatusRow = {
-      status: 0,
-      reason: 0,
-      announcedAt: null,
-      shiftMinutes: null,
-      clockMinute: null,
-    };
-    const view = schoolView(
-      input({ status: { today: closed, tomorrow: null }, outlook: { today, tomorrow } }),
-    );
-    expect(view?.status.map((line) => line.headline)).toEqual([copy.statusLine.closed.today]);
-    expect(view?.outlook).toEqual([
-      {
-        label: copy.days.tomorrow,
-        chance: '40%',
-        line: copy.predictions.noSchool,
-        delay: `${copy.predictions.delay} 20%`,
-        reasons: null,
-        share: 0.4,
-      },
-    ]);
-    // "Open today" decides nothing: no closing is posted yet, and on a storm morning the chance
-    // is what warns. It stays, beside the open line.
-    const open = schoolView(
-      input({ status: { today: 'open', tomorrow: null }, outlook: { today, tomorrow } }),
-    );
-    expect(open?.status.map((line) => line.headline)).toEqual([copy.open.today]);
-    expect(open?.outlook).toMatchObject([
-      { label: copy.days.today, chance: '97%' },
-      { label: copy.days.tomorrow, chance: '40%' },
-    ]);
-    // A file that stops at today leaves no chance to give: no outlook at all.
-    expect(
-      schoolView(
-        input({ status: { today: closed, tomorrow: null }, outlook: { today, tomorrow: null } }),
-      )?.outlook,
-    ).toBeNull();
-    // Tomorrow's status known, as a district that announced it the night before: today's alone.
-    expect(
-      schoolView(input({ status: { today: null, tomorrow: closed }, outlook: { today, tomorrow } }))
-        ?.outlook,
-    ).toEqual([
-      {
-        label: copy.days.today,
-        chance: '97%',
-        line: copy.predictions.noSchool,
-        delay: `${copy.predictions.delay} 2%`,
-        reasons: copy.reason.winterStorm,
-        share: 0.97,
-      },
-    ]);
-    // Both days decided: no day left to give a chance for, and no card.
-    expect(
-      schoolView(
-        input({ status: { today: closed, tomorrow: closed }, outlook: { today, tomorrow } }),
-      )?.outlook,
-    ).toBeNull();
-    // Open today and closed tomorrow: today's chance alone.
-    expect(
-      schoolView(
-        input({ status: { today: 'open', tomorrow: closed }, outlook: { today, tomorrow } }),
-      )?.outlook,
-    ).toMatchObject([{ label: copy.days.today, chance: '97%' }]);
-    // A status the formatters refuse shows no line: today's chance stays.
-    expect(
-      schoolView(
-        input({
-          status: {
-            today: { ...closed, announcedAt: new Date('2026-01-12T11:12:00Z') },
-            tomorrow: null,
-          },
-          outlook: { today, tomorrow },
-          timeZone: 'Not/A_Zone',
-        }),
-      ),
-    ).toMatchObject({
-      status: [],
-      outlook: [{ label: copy.days.today }, { label: copy.days.tomorrow }],
-    });
+    const view = schoolView(input({ outlook: { today, tomorrow, timeZone: 'America/Chicago' } }));
+    expect(view).not.toHaveProperty('outlook');
+    expect(view?.chance).toBeNull();
   });
 });
 
@@ -410,8 +283,8 @@ describe('watchSchool', () => {
       name: 'The Test Hill School',
       loading: false,
       status: [{ tone: 'closed', headline: copy.statusLine.closed.today }],
-      // The build ships no predictions: no history gives a chance, and there is no chance card.
-      outlook: null,
+      // The build ships no predictions: no chance to give.
+      chance: null,
     });
     expect(fetchImpl).toHaveBeenCalledTimes(1);
     stop();
@@ -515,6 +388,7 @@ describe('the chance section in the panel', () => {
     districts: [
       {
         district: 0,
+        time_zone: 'America/Chicago',
         neighbors: [1, 2],
         days: [
           { state: 'no_threat' },
@@ -558,6 +432,7 @@ describe('the chance section in the panel', () => {
         reasons: [0 as const],
         day: '2026-01-13',
       },
+      timeZone: 'America/Chicago',
     };
     const view = schoolView(input({ id: record.id, record, outlook, now: evening }));
     expect(view?.chance).toMatchObject({
@@ -566,8 +441,42 @@ describe('the chance section in the panel', () => {
       delay: '20% chance of a delayed start instead',
     });
     expect(schoolView(input({ outlook, now: evening }))?.chance).toBeNull();
-    // With no chance to give, the panel keeps its status and outlook cards instead.
+    // With no chance to give, the panel shows the status lines alone.
     expect(schoolView(input({ id: record.id, record, now: evening }))?.chance).toBeNull();
+  });
+
+  it('leaves a day’s chance out beside that day’s status: the fact beats the forecast', () => {
+    const today: DayOutlook = {
+      state: 'forecast',
+      noSchool: 0.97,
+      delay: 0.02,
+      reasons: [0],
+      day: '2026-01-12',
+    };
+    const tomorrow: DayOutlook = {
+      state: 'forecast',
+      noSchool: 0.4,
+      delay: 0.2,
+      reasons: [],
+      day: '2026-01-13',
+    };
+    const outlook = { today, tomorrow, timeZone: 'America/Chicago' };
+    const closed: StatusRow = {
+      status: 0,
+      reason: 0,
+      announcedAt: null,
+      shiftMinutes: null,
+      clockMinute: null,
+    };
+    const morning = new Date('2026-01-12T12:00:00Z');
+    const view = (status: SchoolStatus) =>
+      schoolView(input({ id: record.id, record, status, outlook, now: morning }));
+    // Closed today: tomorrow's chance.
+    expect(view({ today: closed, tomorrow: null })?.chance?.day).toBe('2026-01-13');
+    // "Open today" decides nothing: today's chance stays beside the open line.
+    expect(view({ today: 'open', tomorrow: null })?.chance?.day).toBe('2026-01-12');
+    // Both days decided: no chance to give.
+    expect(view({ today: closed, tomorrow: closed })?.chance).toBeNull();
   });
 
   it('reads the districts next door through the directory, once, and names them when it comes', async () => {

@@ -32,7 +32,14 @@ function morning(): Json {
   return districts[0]?.days[1] ?? {};
 }
 
-const read = (value: Json, day = '2027-01-12') => forecastDetail(value, day, 2, GENERATED);
+const read = (value: Json, day = '2027-01-12', neighbors: number[] = [1]) =>
+  forecastDetail(value, {
+    day,
+    districts: 2,
+    generatedAt: GENERATED,
+    neighbors,
+    timeZone: 'America/Chicago',
+  });
 
 describe('a forecast’s chance section parts', () => {
   it('reads every part of what the pipeline writes', () => {
@@ -99,6 +106,7 @@ describe('a forecast’s chance section parts', () => {
   it('leaves out only the part that is not what the schema says', () => {
     const cases: [string, (forecast: Json) => void, keyof typeof NO_DETAIL][] = [
       ['a chance over 1', (f) => ((f.previous as Json).p_no_school = 1.2), 'previous'],
+      ['a certainty', (f) => ((f.previous as Json).p_no_school = 1), 'previous'],
       [
         'a run after this one',
         (f) => ((f.previous as Json).at = '2027-01-12T11:00:00Z'),
@@ -157,6 +165,38 @@ describe('a forecast’s chance section parts', () => {
         'why',
       ],
       ['a neighbor not in the directory', (f) => ((reasons(f)[1] as Json).districts = [7]), 'why'],
+      // Each kind's points on the side its weather pushes.
+      [
+        'districts next door closing that take away',
+        (f) => {
+          reasonPoints(f, 1, -9);
+        },
+        'why',
+      ],
+      [
+        'a wind chill that takes away',
+        (f) => {
+          reasonPoints(f, 3, -5);
+        },
+        'why',
+      ],
+      // Across parts: the timing on the chart's heaviest hours.
+      [
+        'a timing off the heaviest hours',
+        (f) => ((reasons(f)[2] as Json).start = '2027-01-12T07:00:00Z'),
+        'why',
+      ],
+      // The district's times on the day, in its own time zone, the announcement first.
+      [
+        'an announcement two evenings before',
+        (f) => (f.announces_at = '2027-01-11T02:00:00Z'),
+        'announcesAt',
+      ],
+      [
+        'an announcement after the buses',
+        (f) => (f.announces_at = '2027-01-12T13:30:00Z'),
+        'announcesAt',
+      ],
       [
         'a timing that ends first',
         (f) => ((reasons(f)[2] as Json).end = '2027-01-12T07:00:00Z'),
@@ -194,6 +234,41 @@ describe('a forecast’s chance section parts', () => {
     }
   });
 
+  it('refuses a sum whose parts disagree with the rest of the forecast', () => {
+    // The districts in the reason are not among the district's neighbors.
+    expect(read(night(), '2027-01-12', []).why).toBeNull();
+    expect(read(night(), '2027-01-12', [1]).why).not.toBeNull();
+    // The next morning: sun only takes away; snow that stopped before the buses only takes away.
+    const sunny = morning();
+    reasonPoints(sunny, 2, 5);
+    expect(read(sunny, '2027-01-13').why).toBeNull();
+    const stopped = morning();
+    reasonPoints(stopped, 0, 8);
+    expect(read(stopped, '2027-01-13').why).toBeNull();
+    expect(read(morning(), '2027-01-13').why).not.toBeNull();
+    // Buses on another day than the day forecast: no bus time, and no chart that runs to it.
+    const tomorrow = night();
+    tomorrow.buses_at = '2027-01-13T13:00:00Z';
+    expect(read(tomorrow)).toMatchObject({ busesAt: null, hours: null });
+    // The evening before, in the district's own time, is its day before.
+    const evening = night();
+    evening.announces_at = '2027-01-12T02:00:00Z';
+    expect(read(evening).announcesAt).toEqual(at('2027-01-12T02:00:00Z'));
+  });
+
+  it('reads a base pooled from the districts around a district with a short history', () => {
+    const pooled = night();
+    (pooled.why as Json).base = { kind: 'pooled', scope: 'county', points: 30, alert: null };
+    expect(read(pooled).why?.base).toEqual({
+      kind: 'pooled',
+      scope: 'county',
+      points: 30,
+      alert: null,
+    });
+    ((pooled.why as Json).base as Json).scope = 'planet';
+    expect(read(pooled).why).toBeNull();
+  });
+
   it('keeps only the weather that already happened, in time order', () => {
     const forecast = night();
     forecast.events = [
@@ -219,6 +294,14 @@ describe('a forecast’s chance section parts', () => {
 
 function reasons(forecast: Json): unknown[] {
   return (forecast.why as { reasons: unknown[] }).reasons;
+}
+
+/** Sets a reason's points, and the base's so the sum still makes the chance. */
+function reasonPoints(forecast: Json, index: number, points: number): void {
+  const reason = reasons(forecast)[index] as Json;
+  const base = (forecast.why as Json).base as Json;
+  base.points = (base.points as number) + (reason.points as number) - points;
+  reason.points = points;
 }
 
 function days(forecast: Json): unknown[] {

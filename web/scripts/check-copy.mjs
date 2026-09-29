@@ -144,7 +144,9 @@ export const PROPER_NOUNS = new Set([
   'ZIP',
   'AM',
   'PM',
-  // Degrees Fahrenheit: "-8 F".
+  // A school's time zone after its time, where the viewer's differs: "7 AM CT".
+  ...['ET', 'CT', 'MT', 'MST', 'PT', 'AKT', 'HST'],
+  // Degrees Fahrenheit: "−8 F".
   'F',
   'K-12',
   'I',
@@ -1884,6 +1886,96 @@ const MAP_LOOKUPS = new Set([
   'to-color',
 ]);
 
+/** Lists up to this long are made distinct pair by pair; longer ones by key. */
+const PAIRWISE_MAX = 16;
+
+/**
+ * The node a value was read from, when it is not plain data: undefined for
+ * a value that is neither.
+ * @param {Value} value
+ * @returns {unknown}
+ */
+function nodeOf(value) {
+  return value.t === 'component'
+    ? value.module
+    : value.t === 'copy'
+      ? value.value
+      : 'node' in value
+        ? value.node
+        : undefined;
+}
+
+/**
+ * Whether a string, number, boolean, null or undefined of copy.ts: data told
+ * apart by its value, as plainKey tells it.
+ * @param {unknown} inner
+ * @returns {boolean}
+ */
+function isPlainCopy(inner) {
+  return (
+    typeof inner === 'string' ||
+    typeof inner === 'number' ||
+    typeof inner === 'boolean' ||
+    inner === null ||
+    inner === undefined
+  );
+}
+
+/**
+ * Whether two values are one for `distinct`: the same plain key, or the same
+ * node read in the same call. Neither: never the same, as with plainKey.
+ * @param {Value} a
+ * @param {Value} b
+ * @returns {boolean}
+ */
+function sameValue(a, b) {
+  if (a.t !== b.t) return false;
+  switch (a.t) {
+    case 'text': {
+      const other = /** @type {TextValue} */ (b);
+      return (
+        a.offset === other.offset &&
+        a.text === other.text &&
+        (a.loose === true) === (other.loose === true) &&
+        a.module.file === other.module.file
+      );
+    }
+    case 'code': {
+      const other = /** @type {CodeValue} */ (b);
+      return a.what === other.what && a.text === other.text;
+    }
+    case 'caught': {
+      const other = /** @type {CaughtValue} */ (b);
+      return (
+        a.offset === other.offset &&
+        (a.made === true) === (other.made === true) &&
+        a.module.file === other.module.file
+      );
+    }
+    case 'foreign':
+      return true;
+    case 'instance':
+      return a.name === /** @type {InstanceValue} */ (b).name;
+    case 'copy': {
+      const x = a.value;
+      const y = /** @type {CopyValue} */ (b).value;
+      const plainX = isPlainCopy(x);
+      if (plainX !== isPlainCopy(y)) return false;
+      if (!plainX) return x === y;
+      if (typeof x === 'string' || typeof y === 'string') return x === y;
+      return String(x) === String(y);
+    }
+    default: {
+      const node = nodeOf(a);
+      return (
+        node !== undefined &&
+        node === nodeOf(b) &&
+        ('env' in a ? a.env : undefined) === ('env' in b ? b.env : undefined)
+      );
+    }
+  }
+}
+
 /**
  * Values without repeats: the same literal, or the same object read in the
  * same call, once. Without this, `b = a + a; c = b + b; …` doubles at each step.
@@ -1891,7 +1983,24 @@ const MAP_LOOKUPS = new Set([
  * @returns {Value[]}
  */
 function distinct(values) {
-  if (values.length < 2) return values;
+  const count = values.length;
+  if (count < 2) return values;
+  if (count <= PAIRWISE_MAX) {
+    // Most lists are this short (tens of millions of them, on this project):
+    // each value against those before it, with no key strings built or hashed.
+    /** @type {Value[] | undefined} */
+    let kept;
+    for (let i = 1; i < count; i += 1) {
+      const value = /** @type {Value} */ (values[i]);
+      let repeat = false;
+      for (let j = 0; j < i && !repeat; j += 1) {
+        repeat = sameValue(/** @type {Value} */ (values[j]), value);
+      }
+      if (repeat) kept ??= values.slice(0, i);
+      else kept?.push(value);
+    }
+    return kept ?? values.slice();
+  }
   /** @type {Set<string>} */
   const texts = new Set();
   /** @type {Map<unknown, Set<Env | undefined>>} */
@@ -1903,14 +2012,7 @@ function distinct(values) {
       texts.add(key);
       return true;
     }
-    const node =
-      value.t === 'component'
-        ? value.module
-        : value.t === 'copy'
-          ? value.value
-          : 'node' in value
-            ? value.node
-            : undefined;
+    const node = nodeOf(value);
     if (node === undefined) return true;
     const env = 'env' in value ? value.env : undefined;
     let envs = nodes.get(node);

@@ -198,14 +198,6 @@ export const copy = deepFreeze({
     less: 'Show less',
   },
 
-  /** The chance of a weather closure. "No weather threat" is in `empty`. */
-  predictions: {
-    title: 'Chance of a weather closure',
-    noSchool: 'No school',
-    delay: 'Delayed start',
-    forecast: 'In the forecast',
-  },
-
   pin: {
     mySchool: 'My school',
     pinned: 'Pinned as my school',
@@ -741,12 +733,15 @@ export const format = /* @__PURE__ */ deepFreeze({
   replayMoment,
   speed,
   alert: alertName,
+  // The date and clock workings the chance section's sentences share with these
+  // (src/copy-chance.ts, which loads with the school panel): not words of their own.
+  checkInstant,
+  checkKey,
+  clockText,
+  dateTimeFormat,
+  localDay,
+  parseLocalDate,
+  part,
 });
 
 export type Format = typeof format;
-
-/**
- * The date and clock workings the chance section's sentences share with these
- * (src/copy-chance.ts, which loads with the school panel): not words of their own.
- */
-export { checkInstant, checkKey, clockText, dateTimeFormat, localDay, parseLocalDate, part };

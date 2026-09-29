@@ -13,7 +13,6 @@ const VIEW: SchoolView = {
   kind: `${copy.detail.privateSchool} · PK–12`,
   place: 'Kansas City, MO · Jackson County',
   status: [],
-  outlook: null,
   chance: null,
   facts: [
     { label: copy.detail.students, lines: ['1,174'], href: null },
@@ -70,10 +69,9 @@ describe('DetailPanel', () => {
     expect(panel.querySelector('.fact a')?.getAttribute('href')).toBe('tel:+18165550100');
   });
 
-  it('has no chance card and no status where there is no chance to give and no day stated', () => {
+  it('has no chance and no status where there is no chance to give and no day stated', () => {
     const { panel } = show(VIEW);
-    expect(panel.querySelector('.outlook')).toBeNull();
-    expect(panel.textContent).not.toContain(copy.predictions.title);
+    expect(panel.querySelector('.outlook, .chance')).toBeNull();
     expect(panel.querySelector('.status')).toBeNull();
     for (const line of Object.values(copy.statusLine)) {
       expect(panel.textContent).not.toContain(line.today);
@@ -102,41 +100,6 @@ describe('DetailPanel', () => {
     expect(lines[0]?.querySelector('.glyph')?.classList.contains('is-early-dismissal')).toBe(true);
     expect(lines[1]?.querySelector('.glyph')?.classList.contains('is-closed')).toBe(true);
     expect(lines[0]?.querySelector('.line-detail')?.textContent).toBe('Dismissal at 12:30 PM');
-  });
-
-  it('shows each day’s chance with its bar', () => {
-    const { panel } = show({
-      ...VIEW,
-      outlook: [
-        {
-          label: copy.days.today,
-          chance: '34%',
-          line: copy.predictions.noSchool,
-          delay: `${copy.predictions.delay} 12%`,
-          reasons: copy.reason.ice,
-          share: 0.34,
-        },
-        {
-          label: copy.days.tomorrow,
-          chance: null,
-          line: copy.empty.noThreat,
-          delay: null,
-          reasons: null,
-          share: null,
-        },
-      ],
-    });
-    const days = [...panel.querySelectorAll('.day')];
-    expect(days.map((day) => day.querySelector('.day-label')?.textContent)).toEqual([
-      copy.days.today,
-      copy.days.tomorrow,
-    ]);
-    expect(days[0]?.querySelector('.chance')?.textContent).toBe('34%');
-    expect(days[0]?.querySelector<HTMLElement>('.meter-fill')?.style.transform).toBe(
-      'scaleX(0.34)',
-    );
-    expect(days[1]?.querySelector('.day-line')?.textContent).toBe(copy.empty.noThreat);
-    expect(days[1]?.querySelector('.meter')).toBeNull();
   });
 
   it('lists the nearest schools, each with its status glyph where it has one, and opens them', () => {
@@ -255,7 +218,6 @@ describe('DetailPanel', () => {
       place: null,
       campus: null,
       facts: [],
-      outlook: null,
       loading: true,
     });
     expect(panel.getAttribute('aria-busy')).toBe('true');

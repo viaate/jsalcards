@@ -433,10 +433,14 @@ def test_alert_vocabularies_are_closed(field: str, bad: str) -> None:
 def test_forecast_states_are_discriminated() -> None:
     document = _parse(PredictionsFile, example("predictions"))
     states = [day.state for entry in document.districts for day in entry.days]
-    assert states == ["forecast", "forecast", "no_threat", "not_enough_data"]
+    assert states == ["forecast", "forecast", "no_threat", "forecast"]
     value = example("predictions")
     value["districts"][1]["days"][0] = {"state": "maybe"}
     _refused(PredictionsFile, value, "state")
+    # The site always gives a number: there is no "not enough data".
+    value = example("predictions")
+    value["districts"][1]["days"][0] = {"state": "not_enough_data"}
+    _refused(PredictionsFile, value, "does not match any")
     value = example("predictions")
     value["districts"][1]["days"][0] = {"state": "no_threat", "p_no_school": 0.0}
     _refused(PredictionsFile, value, "Extra inputs")
@@ -448,6 +452,9 @@ def test_forecast_states_are_discriminated() -> None:
         ({"p_no_school": 0.8, "p_delay": 0.3}, "sum is over 1"),
         ({"p_no_school": 0.625}, "hundredths"),
         ({"p_no_school": 1.2}, "less than or equal"),
+        # Never a certainty either way, so the sum always has whole points to show.
+        ({"p_no_school": 1.0}, "less than or equal to 0.99"),
+        ({"p_no_school": 0.0}, "greater than or equal to 0.01"),
         ({"reasons": []}, "at least 1"),
         ({"reasons": [0, 0]}, "must not repeat"),
         ({"reasons": [9]}, "reasons"),
@@ -474,6 +481,43 @@ def test_prediction_days_and_districts_line_up() -> None:
     value = example("predictions")
     value["districts"][1]["district"] = 2
     _refused(PredictionsFile, value, "not in the directory")
+
+
+@pytest.mark.parametrize(
+    ("zone", "match"),
+    [
+        ("Mars/Olympus_Mons", "not an IANA time zone"),
+        ("central", "pattern"),
+        ("", "pattern"),
+    ],
+)
+def test_each_district_has_its_own_time_zone(zone: str, match: str) -> None:
+    document = _parse(PredictionsFile, example("predictions"))
+    assert [entry.time_zone for entry in document.districts] == ["America/Chicago"] * 2
+    value = example("predictions")
+    value["districts"][0]["time_zone"] = zone
+    _refused(PredictionsFile, value, match)
+    value = example("predictions")
+    del value["districts"][0]["time_zone"]
+    _refused(PredictionsFile, value, "missing")
+
+
+def test_the_district_announces_and_its_buses_run_on_the_day_forecast() -> None:
+    # 7 AM Central on the day the buses run; 5:30 AM the same day, or the evening before.
+    value = example("predictions")
+    _night(value)["buses_at"] = "2027-01-13T13:00:00Z"
+    _night(value)["hours"] = None
+    _refused(PredictionsFile, value, "the buses run on another day")
+    value = example("predictions")
+    _night(value)["announces_at"] = "2027-01-11T02:00:00Z"
+    _refused(PredictionsFile, value, "announces on another day")
+    value = example("predictions")
+    _night(value)["announces_at"] = "2027-01-12T13:00:00Z"
+    _refused(PredictionsFile, value, "announces before its buses run")
+    # The evening before, in the district's own time: 8 PM Central is 02:00 UTC the next day.
+    value = example("predictions")
+    _night(value)["announces_at"] = "2027-01-12T02:00:00Z"
+    _parse(PredictionsFile, value)
 
 
 # What the school panel's chance section is drawn from --------------------------------
@@ -526,6 +570,9 @@ def test_the_chance_section_reads_back_as_kinds_and_numbers() -> None:
         (lambda d: d.update(p_no_school=0.63), "adds up to 62, not the chance of 63"),
         (lambda d: d["why"]["base"].update(points=101), "less than or equal to 100"),
         (lambda d: d["why"]["reasons"][1].update(points=0), "at least one point"),
+        # Each kind pushes one way: districts next door that closed never take points away.
+        (lambda d: d["why"]["reasons"][1].update(points=-9), "never take any away"),
+        (lambda d: d["why"]["reasons"][3].update(points=-5), "wind_chill adds points"),
         (lambda d: d["why"]["reasons"][0].update(points=7.5), "points"),
         (lambda d: d["why"]["reasons"].append(dict(d["why"]["reasons"][3])), "comes once"),
         # Only kinds and numbers: no sentence, and no kind the site has no words for.
@@ -592,6 +639,31 @@ def test_the_night_before_is_checked(change: Any, match: str) -> None:
         ),
         (lambda d: d["why"]["reasons"][1].update(feels_like=-81), "greater than or equal to -80"),
         (lambda d: d["why"]["base"].update(kind="alert"), "alert"),
+        # The sun only takes away, ice and cold only add, and the snow that stopped before
+        # the buses only takes away.
+        (
+            lambda d: (d["why"]["reasons"][2].update(points=5), d["why"]["base"].update(points=15)),
+            "sun takes points away",
+        ),
+        (
+            lambda d: (
+                d["why"]["reasons"][3].update(points=-4),
+                d["why"]["base"].update(points=33),
+            ),
+            "icy_roads adds points",
+        ),
+        (
+            lambda d: (
+                d["why"]["reasons"][1].update(points=-6),
+                d["why"]["base"].update(points=37),
+            ),
+            "cold adds points",
+        ),
+        (
+            lambda d: (d["why"]["reasons"][0].update(points=8), d["why"]["base"].update(points=9)),
+            "snow_stops before the buses takes points away",
+        ),
+        (lambda d: d["why"]["base"].update(kind="pooled"), "scope"),
     ],
 )
 def test_the_next_morning_is_checked(change: Any, match: str) -> None:
@@ -615,19 +687,39 @@ def test_a_record_reason_counts_the_record_under_it() -> None:
     assert forecast.record.proves == "record"
 
 
-def test_each_part_of_the_section_can_be_left_out() -> None:
+def test_each_part_of_the_section_can_be_left_out_but_how_it_adds_up() -> None:
     value = example("predictions")
     night = _night(value)
-    for key in ("previous", "announces_at", "buses_at", "hours", "why", "record"):
+    for key in ("previous", "announces_at", "buses_at", "hours", "record"):
         night[key] = None
     night["events"] = []
     document = _parse(PredictionsFile, value)
     forecast = document.districts[0].days[0]
     assert isinstance(forecast, Forecast)
-    assert (forecast.why, forecast.hours, forecast.record) == (None, None, None)
+    assert (forecast.hours, forecast.record) == (None, None)
+    assert forecast.why.total() == 62
     # Each key is still stated, as null: nothing is left to a default.
-    del night["why"]
+    del night["previous"]
     _refused(PredictionsFile, value, "missing")
+    # A forecast always says how it adds up.
+    value = example("predictions")
+    _night(value)["why"] = None
+    _refused(PredictionsFile, value, "why")
+
+
+def test_a_short_history_starts_from_the_districts_around_it() -> None:
+    document = _parse(PredictionsFile, example("predictions"))
+    pooled = document.districts[1].days[1]
+    assert isinstance(pooled, Forecast)
+    assert pooled.why.base.kind == "pooled"
+    assert pooled.why.total() == 20
+    value = example("predictions")
+    value["districts"][1]["days"][1]["why"]["base"].update(
+        scope="county", alert="winter_storm_warning"
+    )
+    _parse(PredictionsFile, value)
+    value["districts"][1]["days"][1]["why"]["base"]["scope"] = "planet"
+    _refused(PredictionsFile, value, "scope")
 
 
 def test_neighbors_are_other_districts_in_the_directory_and_back_the_reason() -> None:

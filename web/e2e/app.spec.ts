@@ -900,6 +900,7 @@ function syntheticPredictions(): string {
     districts: [
       {
         district: 1,
+        time_zone: ZONE,
         neighbors: [2, 0],
         days: [
           nothing,
@@ -951,6 +952,7 @@ function syntheticPredictions(): string {
       },
       {
         district: 3,
+        time_zone: ZONE,
         neighbors: [],
         days: [
           nothing,
@@ -995,6 +997,225 @@ function syntheticPredictions(): string {
       },
     ],
   });
+}
+
+/** SYNTHETIC: that Monday at 1:05 AM in Kansas City, a day and a half before Tuesday's buses. */
+const SHAPE_NOW = new Date('2026-01-12T07:05:00Z');
+const SHAPE_BUSES = '2026-01-13T13:00:00Z';
+
+/** SYNTHETIC: a night for the chart to draw, and how many bars it takes. */
+interface NightShape {
+  readonly name: string;
+  readonly kind: 'snow_total' | 'wind_chill';
+  readonly start: string;
+  readonly values: readonly number[];
+  readonly range: readonly [number, number] | null;
+  readonly heavy: { readonly first: number; readonly last: number } | null;
+  readonly announces: string;
+  readonly bars: number;
+}
+
+/**
+ * Snow on the ground since the storm began, hour by hour, in tenths, up to `total`: three times
+ * as fast in the heaviest hours (value i is the snow at the end of the hour before it).
+ */
+function snowNight(
+  length: number,
+  heavy: { first: number; last: number } | null,
+  total: number,
+): number[] {
+  const weights = Array.from({ length }, (_, i): number =>
+    i === 0 ? 0 : heavy !== null && i >= heavy.first && i <= heavy.last ? 3 : 1,
+  );
+  const sum = weights.reduce((a, b) => a + b, 0);
+  let running = 0;
+  return weights.map((weight) => {
+    running += weight;
+    return Math.round((running / sum) * total * 10) / 10;
+  });
+}
+
+/** The nights the chart's words must fit around: long and short, the heaviest early, late and at the end. */
+const NIGHT_SHAPES: readonly NightShape[] = [
+  {
+    name: 'thirty hours, two to a bar, the heaviest early, the announcement after it',
+    kind: 'snow_total',
+    start: '2026-01-12T07:00:00Z',
+    values: snowNight(31, { first: 3, last: 8 }, 12.3),
+    range: [10.5, 14.5],
+    heavy: { first: 3, last: 8 },
+    announces: '2026-01-13T11:30:00Z',
+    bars: 16,
+  },
+  {
+    name: 'the heaviest at the bus hour, the announcement inside it',
+    kind: 'snow_total',
+    start: '2026-01-13T01:00:00Z',
+    values: snowNight(13, { first: 10, last: 12 }, 12.3),
+    range: [10.5, 14.5],
+    heavy: { first: 10, last: 12 },
+    announces: '2026-01-13T11:30:00Z',
+    bars: 13,
+  },
+  {
+    name: 'eighteen bars, the announcement the evening before, ahead of the heaviest',
+    kind: 'snow_total',
+    start: '2026-01-12T20:00:00Z',
+    values: snowNight(18, { first: 12, last: 15 }, 8.8),
+    range: [7.5, 10.5],
+    heavy: { first: 12, last: 15 },
+    announces: '2026-01-13T02:00:00Z',
+    bars: 18,
+  },
+  {
+    name: 'twenty hours, two to a bar, the heaviest at the start, no range',
+    kind: 'snow_total',
+    start: '2026-01-12T18:00:00Z',
+    values: snowNight(20, { first: 1, last: 4 }, 0.8),
+    range: null,
+    heavy: { first: 1, last: 4 },
+    announces: '2026-01-13T11:30:00Z',
+    bars: 10,
+  },
+  {
+    name: 'thirty hours of cold',
+    kind: 'wind_chill',
+    start: '2026-01-12T07:00:00Z',
+    values: Array.from({ length: 31 }, (_, i) => -2 - Math.round(i * 0.8)),
+    range: null,
+    heavy: null,
+    announces: '2026-01-13T11:30:00Z',
+    bars: 16,
+  },
+];
+
+/**
+ * SYNTHETIC: Shawnee Mission's (district 1) chance for Tuesday, 64%, with the night `shape`
+ * draws; Monday has no threat.
+ */
+function shapedPredictions(shape: NightShape): string {
+  const snow = shape.kind === 'snow_total';
+  const last = shape.values.at(-1) ?? 0;
+  return JSON.stringify({
+    schema_version: 1,
+    generated_at: '2026-01-12T07:00:00Z',
+    directory: STAMP,
+    days: ['2026-01-12', '2026-01-13'],
+    districts: [
+      {
+        district: 1,
+        time_zone: ZONE,
+        neighbors: [2, 0],
+        days: [
+          { state: 'no_threat' },
+          {
+            state: 'forecast',
+            p_no_school: 0.64,
+            p_delay: 0.18,
+            reasons: [0],
+            previous: null,
+            announces_at: shape.announces,
+            buses_at: SHAPE_BUSES,
+            hours: {
+              kind: shape.kind,
+              start: shape.start,
+              values: shape.values,
+              low: shape.range?.[0] ?? null,
+              high: shape.range?.[1] ?? null,
+              heavy: shape.heavy,
+            },
+            why: {
+              base: { kind: 'alert', points: 50, alert: 'winter_storm_warning' },
+              reasons: [
+                snow
+                  ? {
+                      kind: 'snow_total',
+                      points: 14,
+                      low: shape.range?.[0] ?? last,
+                      high: shape.range?.[1] ?? last,
+                      overnight: true,
+                    }
+                  : { kind: 'wind_chill', points: 14, feels_like: last },
+              ],
+            },
+            record: null,
+            events: [],
+          },
+        ],
+      },
+    ],
+  });
+}
+
+/** Opens a school, or closes it, as the back button would: the address, then popstate. */
+async function showSchool(page: Page, id: string | null): Promise<void> {
+  await page.evaluate((school) => {
+    const url = new URL(location.href);
+    if (school === null) url.searchParams.delete('school');
+    else url.searchParams.set('school', school);
+    history.pushState(null, '', url);
+    dispatchEvent(new PopStateEvent('popstate'));
+  }, id);
+}
+
+/**
+ * The chance chart as laid out: every bar 3 px wide or more; the times at its foot inside the
+ * plot, none meeting another; the key's rows inside the panel, none cut off, none meeting another
+ * or a time; and nothing in the panel scrolling sideways.
+ */
+async function expectChartFits(page: Page, label: string): Promise<void> {
+  const layout = await page.locator('aside.detail').evaluate((panel) => {
+    const box = (node: Element) => {
+      const { x, y, width, height } = node.getBoundingClientRect();
+      return { x, y, width, height };
+    };
+    const chart = panel.querySelector('.chance .chart');
+    const plot = chart?.querySelector('.plot') ?? null;
+    const body = panel.querySelector('.body') ?? panel;
+    return {
+      panel: box(panel),
+      plot: plot === null ? null : box(plot),
+      bars: [...(chart?.querySelectorAll('.col') ?? [])].map(box),
+      times: [...(chart?.querySelectorAll('.time') ?? [])].map(box),
+      rows: [...(chart?.querySelectorAll('.key .row') ?? [])].map((row) => ({
+        ...box(row),
+        cut: row.scrollWidth > row.clientWidth,
+      })),
+      scrolls: body.scrollWidth > body.clientWidth,
+    };
+  });
+  const { panel, plot, bars, times, rows } = layout;
+  if (plot === null) throw new Error(`${label}: no chart`);
+  expect(bars.length, label).toBeGreaterThan(1);
+  for (const bar of bars) expect(bar.width, `${label}: a bar`).toBeGreaterThanOrEqual(3);
+  times.forEach((time, i) => {
+    expect(time.x, `${label}: time ${String(i)}`).toBeGreaterThanOrEqual(plot.x - 0.5);
+    expect(time.x + time.width, `${label}: time ${String(i)}`).toBeLessThanOrEqual(
+      plot.x + plot.width + 0.5,
+    );
+    times.slice(i + 1).forEach((other, j) => {
+      expect(overlaps(time, other), `${label}: times ${String(i)}, ${String(i + 1 + j)}`).toBe(
+        false,
+      );
+    });
+  });
+  expect(rows.length, label).toBeGreaterThan(0);
+  rows.forEach((row, i) => {
+    expect(row.cut, `${label}: key row ${String(i)} cut off`).toBe(false);
+    expect(row.x, `${label}: key row ${String(i)}`).toBeGreaterThanOrEqual(panel.x);
+    expect(row.x + row.width, `${label}: key row ${String(i)}`).toBeLessThanOrEqual(
+      panel.x + panel.width,
+    );
+    for (const time of times) {
+      expect(overlaps(row, time), `${label}: key row ${String(i)} and a time`).toBe(false);
+    }
+    rows.slice(i + 1).forEach((other, j) => {
+      expect(overlaps(row, other), `${label}: key rows ${String(i)}, ${String(i + 1 + j)}`).toBe(
+        false,
+      );
+    });
+  });
+  expect(layout.scrolls, `${label}: the panel scrolls sideways`).toBe(false);
 }
 
 /** Whether two boxes on the page overlap. */
@@ -1793,7 +2014,7 @@ test.describe('with data staged', () => {
         current: 0.64,
         at: new Date('2026-01-12T23:00:00Z'),
         now: EVENING,
-        timeZone: ZONE,
+        zones: { school: ZONE, viewer: ZONE },
       }) ?? '',
     );
     // No status is posted for this school yet: none above the chance.
@@ -1806,16 +2027,30 @@ test.describe('with data staged', () => {
       `${format.time(new Date('2026-01-13T11:30:00Z'), ZONE)} Shawnee Mission usually announces in 8h 25m`,
     ]);
 
-    // The chart: a bar an hour, the heaviest lit, the buses and the range at their hour.
+    // The chart: a bar an hour, the heaviest lit, the buses and the range at their hour, and
+    // under it the key, a row a mark, in time order, the bus hour's last.
     const chart = section.locator('.chart');
+    const zones = { school: ZONE, viewer: ZONE };
     await expect(chart.locator('figcaption')).toHaveText(chanceCopy.snowTitle);
     await expect(chart.locator('.col')).toHaveCount(11);
     await expect(chart.locator('.col.is-lit')).toHaveCount(3);
-    await expect(chart.locator('.flag')).toHaveText([
-      chanceFormat.busesFlag(new Date('2026-01-13T13:00:00Z'), ZONE),
-    ]);
-    await expect(chart.locator('.end')).toHaveText(chanceFormat.inches(6, 9));
     await expect(chart.locator('.range')).toHaveCount(1);
+    await expect(chart.locator('.line')).toHaveCount(2);
+    const buses = chanceFormat.busesKey(
+      chanceFormat.inches(6, 9),
+      new Date('2026-01-13T13:00:00Z'),
+      zones,
+    );
+    await expect(chart.locator('.key .row')).toHaveText([
+      chanceFormat.heaviestKey(
+        new Date('2026-01-13T08:00:00Z'),
+        new Date('2026-01-13T11:00:00Z'),
+        zones,
+      ),
+      chanceFormat.announcesKey(new Date('2026-01-13T11:30:00Z'), zones),
+      `${buses.value}${buses.rest}`,
+    ]);
+    await expect(chart.locator('.key .value')).toHaveText(chanceFormat.inches(6, 9));
     // Laid out, no words meet, none meets a bar, and all are in the panel.
     const boxes = async (selector: string) =>
       (await chart.locator(selector).evaluateAll((nodes) =>
@@ -1826,7 +2061,7 @@ test.describe('with data staged', () => {
       )) as { x: number; y: number; width: number; height: number }[];
     const panelBox = await panel.boundingBox();
     if (panelBox === null) throw new Error('no panel');
-    const words = [...(await boxes('.flag')), ...(await boxes('.time')), ...(await boxes('.end'))];
+    const words = [...(await boxes('.time')), ...(await boxes('.key .row'))];
     words.forEach((box, i) => {
       words.slice(i + 1).forEach((other, j) => {
         expect(overlaps(box, other), `words ${String(i)} and ${String(i + 1 + j)}`).toBe(false);
@@ -1844,7 +2079,7 @@ test.describe('with data staged', () => {
     const rows = section.locator('.sum > li');
     await expect(rows).toHaveCount(6);
     await expect(rows.nth(1)).toHaveText(
-      '+16 A bigger storm than most, 6 to 9 inches overnight. It closed 4 of the last 5 times it got 6 inches or more.',
+      '+16 The forecast has 6 to 9 inches overnight, more than most storms. It closed 4 of the last 5 times it got 6 inches or more.',
     );
     await expect(rows.nth(2)).toHaveText('+9 Blue Valley and Olathe, next door, canceled.');
     const numbers = (await section.locator('.sum .num').allTextContents()).map((text) =>
@@ -1907,7 +2142,7 @@ test.describe('with data staged', () => {
       expect(box.y + box.height, part).toBeLessThanOrEqual(844);
     }
     // The chart's words stay in the sheet too, and nothing scrolls sideways.
-    const end = await section.locator('.chart .end').boundingBox();
+    const end = await section.locator('.chart .time.is-end').boundingBox();
     expect((end?.x ?? 0) + (end?.width ?? 0)).toBeLessThanOrEqual(390);
     expect(
       await sheet.locator('.body').evaluate((body) => body.scrollWidth <= body.clientWidth),
@@ -1944,7 +2179,7 @@ test.describe('with data staged', () => {
         current: 0.22,
         at: new Date('2026-01-12T15:00:00Z'),
         now: EVENING,
-        timeZone: ZONE,
+        zones: { school: ZONE, viewer: ZONE },
       }) ?? '',
     );
     await expect(section.locator('.moment')).toHaveText([
@@ -1954,7 +2189,7 @@ test.describe('with data staged', () => {
     const chart = section.locator('.chart');
     await expect(chart.locator('figcaption')).toHaveText(chanceCopy.coldTonight);
     await expect(chart.locator('.col.is-below')).toHaveCount(11);
-    await expect(chart.locator('.end')).toHaveText(chanceFormat.degrees(-8));
+    await expect(chart.locator('.key .value')).toHaveText(chanceFormat.degrees(-8));
     const numbers = (await section.locator('.sum .num').allTextContents()).map((text) =>
       Number(text.replace('−', '-')),
     );
@@ -1965,6 +2200,72 @@ test.describe('with data staged', () => {
     await expect(panel.locator('.outlook')).toHaveCount(0);
     expect(problems).toEqual([]);
     await context.close();
+  });
+
+  test('the chance chart at 320, 390 and 460 px: for nights long and short, its words fit and none meet', async ({
+    browser,
+  }) => {
+    // Two first flights into streets, and five nights at each width.
+    test.setTimeout(480_000);
+    const layouts = [
+      { phone: true, widths: [320, 390] },
+      // The panel beside the map on a wide screen: 460 px.
+      { phone: false, widths: [1440] },
+    ];
+    for (const { phone, widths } of layouts) {
+      const height = phone ? 844 : 900;
+      const context = await browser.newContext({
+        viewport: { width: widths[0] ?? 390, height },
+        ...(phone ? { deviceScaleFactor: 2, isMobile: true, hasTouch: true } : {}),
+        timezoneId: ZONE,
+        serviceWorkers: 'block',
+      });
+      const page = await context.newPage();
+      await fixDate(page, SHAPE_NOW);
+      const { problems } = watch(page);
+      let body = '';
+      await page.route('**/data/predictions/latest.json*', (route) =>
+        route.fulfill({ contentType: 'application/json', body }),
+      );
+      const panel = page.locator('aside.detail');
+      const chart = panel.locator('.chance .chart');
+      for (const [i, shape] of NIGHT_SHAPES.entries()) {
+        body = shapedPredictions(shape);
+        await page.setViewportSize({ width: widths[0] ?? 390, height });
+        if (i === 0) {
+          await page.goto(`${site}?school=${SHAWNEE_MISSION_EAST}`);
+        } else {
+          await showSchool(page, null);
+          await expect(panel).toHaveCount(0);
+          await showSchool(page, SHAWNEE_MISSION_EAST);
+        }
+        const last = shape.values.at(-1) ?? 0;
+        const value =
+          shape.range !== null
+            ? chanceFormat.inches(shape.range[0], shape.range[1])
+            : shape.kind === 'snow_total'
+              ? chanceFormat.inches(last)
+              : chanceFormat.degrees(last);
+        await expect(chart.locator('.key .value'), shape.name).toHaveText(value, {
+          timeout: 60_000,
+        });
+        await expect(chart.locator('.col'), shape.name).toHaveCount(shape.bars);
+        for (const width of widths) {
+          await page.setViewportSize({ width, height });
+          const panelWidth = phone ? width : 460;
+          await expect
+            .poll(async () => (await panel.boundingBox())?.width)
+            .toBeCloseTo(panelWidth, 0);
+          await expectChartFits(page, `${shape.name}, ${String(panelWidth)} px`);
+        }
+      }
+      // With workers blocked (so each night comes from the route), the app says so once it
+      // tries to register its own; nothing else.
+      expect(
+        problems.filter((line) => !line.includes('Service Worker registration blocked')),
+      ).toEqual([]);
+      await context.close();
+    }
   });
 
   test('on a phone a school opens in a sheet half up, over the map with the school in the middle of what it leaves, and the sheet drags', async ({

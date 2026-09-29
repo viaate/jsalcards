@@ -2,21 +2,22 @@
  * What a school's detail panel says about today and tomorrow, worked out
  * from the live files, and nothing that they do not say:
  *
- * - its status: a row of live/closings.json on the day that is today
- *   everywhere in the contiguous US (closings.ts todayEverywhere), and on the
- *   day after; "open" only where live/covered.json says its closings were
- *   checked that same day, and it has no row;
+ * - its status: a row of live/closings.json on the school's today, and on
+ *   the day after; "open" only where live/covered.json says its closings were
+ *   checked that same day, and it has no row. Its today is the calendar day
+ *   in its district's time zone, where the predictions file gives one, else
+ *   the day that is today everywhere in the contiguous US (closings.ts
+ *   todayEverywhere, the glow's rule);
  * - its outlook: the chance of no school and of a delayed start today and
- *   tomorrow from predictions/latest.json, by its district, when the file
- *   has a forecast for it; "not enough data" when there is no history to
- *   give one (no file, no district, a district the file does not know or
- *   marks so).
+ *   tomorrow, in the district's own time zone, from predictions/latest.json,
+ *   by its district, when the file has an entry for it; none otherwise.
  *
- * A file for another directory, a stale file, or the overnight hours when
- * "today" is not one day across the country give nothing rather than
+ * A file for another directory, a stale file, or a school without its own
+ * today (the overnight hours, without a time zone) give nothing rather than
  * anything that could be false.
  */
 
+import { format } from '../copy';
 import { parseInstant } from '../state/instant';
 import { Status } from '../types/generated';
 import type {
@@ -42,6 +43,29 @@ function isIndex(value: unknown): value is number {
 
 function isProbability(value: unknown): value is number {
   return typeof value === 'number' && Number.isFinite(value) && value >= 0 && value <= 1;
+}
+
+/** A chance of no school: never a certainty (0.01 to 0.99), so its sum always shows. */
+function isChance(value: unknown): value is number {
+  return isProbability(value) && value >= 0.01 && value <= 0.99;
+}
+
+const zones = new Map<string, boolean>();
+
+/** An IANA time zone this browser knows: "America/Chicago". */
+export function isTimeZone(value: unknown): value is string {
+  if (typeof value !== 'string' || value === '') return false;
+  let known = zones.get(value);
+  if (known === undefined) {
+    try {
+      new Intl.DateTimeFormat('en-US', { timeZone: value });
+      known = true;
+    } catch {
+      known = false;
+    }
+    zones.set(value, known);
+  }
+  return known;
 }
 
 function parseStamp(value: unknown): DirectoryStamp | null {
@@ -101,11 +125,10 @@ function parseForecast(value: unknown): boolean {
   const day = value as Record<string, unknown>;
   switch (day.state) {
     case 'no_threat':
-    case 'not_enough_data':
       return true;
     case 'forecast':
       return (
-        isProbability(day.p_no_school) &&
+        isChance(day.p_no_school) &&
         isProbability(day.p_delay) &&
         Array.isArray(day.reasons) &&
         day.reasons.every(
@@ -138,10 +161,11 @@ export function parsePredictions(value: unknown): PredictionsFile | null {
   }
   for (const entry of districts as unknown[]) {
     if (typeof entry !== 'object' || entry === null) return null;
-    const { district, days: forecasts } = entry as Record<string, unknown>;
+    const { district, time_zone: zone, days: forecasts } = entry as Record<string, unknown>;
     if (!isIndex(district) || !Array.isArray(forecasts) || forecasts.length !== days.length) {
       return null;
     }
+    if (!isTimeZone(zone)) return null;
     if (!forecasts.every(parseForecast)) return null;
   }
   return value as PredictionsFile;
@@ -216,12 +240,28 @@ export interface StatusInput {
   readonly closings: ClosingsFile | null;
   readonly covered: CoveredFile | null;
   readonly now: Date;
+  /** Its district's time zone, where the predictions file gives one: its own today. */
+  readonly timeZone?: string | null;
+}
+
+/**
+ * The school's today at a moment: the calendar day in its time zone, or
+ * without one the day that is today everywhere (null overnight).
+ */
+export function schoolToday(now: Date, timeZone: string | null): LocalDate | null {
+  if (timeZone === null) return todayEverywhere(now);
+  try {
+    return format.localDay(now, timeZone);
+  } catch {
+    return null;
+  }
 }
 
 /** What the live files say about a school today and tomorrow. */
 export function schoolStatus(input: StatusInput): SchoolStatus {
   const { school, directory, closings, covered, now } = input;
-  const today = todayEverywhere(now);
+  const zone = input.timeZone ?? null;
+  const today = schoolToday(now, zone);
   if (today === null || closings === null || !sameStamp(closings.directory, directory)) {
     return NO_STATUS;
   }
@@ -234,7 +274,7 @@ export function schoolStatus(input: StatusInput): SchoolStatus {
     checked !== null &&
     covered.generated_at === closings.generated_at &&
     sameStamp(covered.directory, directory) &&
-    todayEverywhere(checked) === today &&
+    schoolToday(checked, zone) === today &&
     checked.getTime() <= now.getTime() &&
     covers(covered, school);
   return { today: open ? 'open' : null, tomorrow };
@@ -251,24 +291,21 @@ export type DayOutlook =
       readonly day?: LocalDate;
       readonly detail?: ForecastDetail;
     }
-  | { readonly state: 'no_threat' }
-  | { readonly state: 'not_enough_data' };
+  | { readonly state: 'no_threat' };
 
 /**
- * The outlook the panel shows: today and tomorrow (tomorrow null when the
- * file stops at today), "not_enough_data" when no history gives a chance, or
- * null when the files cannot say for now (a stale or unreadable file, the
- * overnight hours). `neighbors` are the districts next door, as the file lists
- * them.
+ * The outlook the panel shows: today and tomorrow in the district's own time
+ * zone (tomorrow null when the file stops at today), or null when the files
+ * say nothing for this school (no file, no district, no entry for it, a
+ * stale or unreadable file). `neighbors` are the districts next door, as the
+ * file lists them; `timeZone` is the district's.
  */
-export type Outlook =
-  | {
-      readonly today: DayOutlook;
-      readonly tomorrow: DayOutlook | null;
-      readonly neighbors?: readonly number[];
-    }
-  | 'not_enough_data'
-  | null;
+export type Outlook = {
+  readonly today: DayOutlook;
+  readonly tomorrow: DayOutlook | null;
+  readonly neighbors?: readonly number[];
+  readonly timeZone: string;
+} | null;
 
 export interface OutlookInput {
   /** The school's district position, or null for a school outside a district. */
@@ -285,6 +322,7 @@ function dayOutlook(
   value: PredictionsFile['districts'][number]['days'][number],
   day: LocalDate,
   file: PredictionsFile,
+  context: { readonly neighbors: readonly number[]; readonly timeZone: string },
 ): DayOutlook {
   switch (value.state) {
     case 'forecast':
@@ -294,44 +332,43 @@ function dayOutlook(
         delay: value.p_delay,
         reasons: value.reasons,
         day,
-        detail: forecastDetail(
-          value,
+        detail: forecastDetail(value, {
           day,
-          file.directory.districts,
-          parseInstant(file.generated_at) ?? new Date(0),
-        ),
+          districts: file.directory.districts,
+          generatedAt: parseInstant(file.generated_at) ?? new Date(0),
+          ...context,
+        }),
       };
     case 'no_threat':
       return { state: 'no_threat' };
-    case 'not_enough_data':
-      return { state: 'not_enough_data' };
   }
 }
 
 export function schoolOutlook(input: OutlookInput): Outlook {
   const { district, directory, shipped, predictions, now } = input;
-  if (!shipped || district === null) return 'not_enough_data';
+  if (!shipped || district === null) return null;
   if (predictions === null || !sameStamp(predictions.directory, directory)) return null;
   const entry = predictions.districts.find((item) => item.district === district);
-  if (entry === undefined) return 'not_enough_data';
-  const today = todayEverywhere(now);
+  if (entry === undefined) return null;
+  // The district's own today: its evening is still today, however late it is in the east.
+  const timeZone = entry.time_zone;
+  const today = schoolToday(now, timeZone);
   const at = today === null ? -1 : predictions.days.indexOf(today);
   const first = entry.days[at];
   if (first === undefined) return null;
   const second = entry.days[at + 1];
   const firstDay = predictions.days[at] ?? '';
   const secondDay = predictions.days[at + 1] ?? nextDay(firstDay);
-  const outlook = {
-    today: dayOutlook(first, firstDay, predictions),
-    tomorrow: second === undefined ? null : dayOutlook(second, secondDay, predictions),
-    neighbors: neighborsOf(
-      (entry as { readonly neighbors?: unknown }).neighbors,
-      district,
-      predictions.directory.districts,
-    ),
-  };
-  const known = [outlook.today, outlook.tomorrow].some(
-    (day) => day !== null && day.state !== 'not_enough_data',
+  const neighbors = neighborsOf(
+    (entry as { readonly neighbors?: unknown }).neighbors,
+    district,
+    predictions.directory.districts,
   );
-  return known ? outlook : 'not_enough_data';
+  const context = { neighbors, timeZone };
+  return {
+    today: dayOutlook(first, firstDay, predictions, context),
+    tomorrow: second === undefined ? null : dayOutlook(second, secondDay, predictions, context),
+    neighbors,
+    timeZone,
+  };
 }

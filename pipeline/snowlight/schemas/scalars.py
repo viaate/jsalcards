@@ -185,6 +185,19 @@ type Probability = Annotated[
     AfterValidator(_hundredths),
 ]
 
+type ChanceOfNoSchool = Annotated[
+    float,
+    Field(
+        ge=0.01,
+        le=0.99,
+        description=(
+            "A chance of no school, from 0.01 to 0.99 in hundredths: never a certainty, "
+            "so how it adds up always has whole points to show."
+        ),
+    ),
+    AfterValidator(_hundredths),
+]
+
 type MinuteOfDay = Annotated[
     int,
     Field(
