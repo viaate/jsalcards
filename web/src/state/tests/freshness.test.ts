@@ -4,7 +4,7 @@ import { fileURLToPath } from 'node:url';
 
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
-import { format } from '../../copy';
+import { format } from '../../copy-format';
 import {
   LIVE_FRESH_MS,
   createConnectivity,

@@ -19,7 +19,8 @@
  * filled in, and no part says it has nothing to show.
  */
 
-import { STATUS_KEYS, copy, format } from '../copy';
+import { STATUS_KEYS, copy } from '../copy';
+import { format } from '../copy-format';
 import type { StatusKey } from '../copy';
 import { DETAILS_INDEX_PATH } from '../data/details-format';
 import { parseShardIndex } from '../data/details';

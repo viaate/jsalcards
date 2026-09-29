@@ -2,7 +2,8 @@
   import { onMount, tick } from 'svelte';
 
   import type { MenuSection, MenuView, RecordTable } from '../app/menu';
-  import { STATUS_KEYS, copy, format } from '../copy';
+  import { STATUS_KEYS, copy } from '../copy';
+  import { format } from '../copy-format';
   import type { StatusKey } from '../copy';
   import type { StatusCounts } from '../data/closings';
   import { SCHOOL_KINDS, withKind, withStatus } from '../state/filter';

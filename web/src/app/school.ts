@@ -23,7 +23,8 @@
 import { ALIKE_DISTRICTS } from 'virtual:snowlight/district-names';
 import { DISTRICT_NAME_FIXES, SCHOOL_NAME_FIXES } from 'virtual:snowlight/school-names';
 
-import { REASON_KEYS, STATUS_KEYS, copy, format } from '../copy';
+import { REASON_KEYS, STATUS_KEYS, copy } from '../copy';
+import { format } from '../copy-format';
 import type { StatusKey } from '../copy';
 import { parseClosings } from '../data/closings';
 import { createDetailsSource } from '../data/details';

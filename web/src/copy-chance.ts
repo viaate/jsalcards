@@ -14,7 +14,8 @@
  * the viewer's clock differs ("7 AM CT"): one zone in every sentence.
  */
 
-import { copy, format } from './copy.ts';
+import { copy } from './copy.ts';
+import { format } from './copy-format.ts';
 import type { StatusKey } from './copy.ts';
 import { STATES } from './search/states.ts';
 

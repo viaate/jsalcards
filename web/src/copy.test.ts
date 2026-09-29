@@ -4,10 +4,11 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { afterAll, describe, expect, it } from 'vitest';
 
-import { copy, format, mapLocale, REASON_KEYS, STATUS_KEYS } from './copy';
+import { copy, mapLocale, REASON_KEYS, shellFormat, STATUS_KEYS } from './copy';
 import type { AlertLevelKey, HazardKey, StatusKey } from './copy';
 import { chanceCopy, chanceFormat } from './copy-chance';
 import type { BaseInput, ReasonInput, Zones } from './copy-chance';
+import { format } from './copy-format';
 
 // The house-style rules and the lint live in scripts/check-copy.mjs, a plain
 // Node module; this is the slice of it the tests use.
@@ -99,6 +100,9 @@ describe('copy', () => {
 
   it('keeps the formatters and MapLibre labels frozen too', () => {
     expect(Object.isFrozen(format)).toBe(true);
+    expect(Object.isFrozen(shellFormat)).toBe(true);
+    // The shell's one formatter, for the key's counts, is the one the rest use.
+    expect(shellFormat.number).toBe(format.number);
     expect(Object.isFrozen(mapLocale)).toBe(true);
     expect(Object.isFrozen(STATUS_KEYS)).toBe(true);
     expect(Object.isFrozen(REASON_KEYS)).toBe(true);
@@ -1426,6 +1430,31 @@ export const chanceFormat = {
 `,
       },
       [['src/words.ts', 'canceled`', 'literal text "canceled" in <p> at src/Moment.svelte']],
+    );
+  });
+
+  it('reads the formatters’ module as part of copy.ts, and no other module like it', async () => {
+    await expectFindings(
+      {
+        'src/copy.ts': `export const copy = { status: { closed: 'Closed' } };
+`,
+        'src/copy-format.ts': `import { copy } from './copy.ts';
+export const format = {
+  closedAt: (name: string): string => \`\${name} \${copy.status.closed}\`,
+};
+`,
+        'src/words.ts': `export const words = { closed: (name: string): string => \`\${name} closed\` };
+`,
+        'src/Moment.svelte': `<script lang="ts">
+  import { format } from './copy-format';
+  import { words } from './words';
+  let { name }: { name: string } = $props();
+</script>
+<p>{format.closedAt(name)}</p>
+<p>{words.closed(name)}</p>
+`,
+      },
+      [['src/words.ts', 'closed`', 'literal text "closed" in <p> at src/Moment.svelte']],
     );
   });
 

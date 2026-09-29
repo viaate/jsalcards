@@ -9,16 +9,6 @@
 /** Class on the map container once the canvas may be composited. */
 export const LIVE_CLASS = 'is-live';
 
-/**
- * Steps of the map's start, recorded as User Timing marks ("snowlight:" plus
- * the step) so the handover can be timed in DevTools, Lighthouse and tests.
- */
-export type MapStep = 'map-loaded' | 'map-created' | 'map-load' | 'map-live' | 'map-takeover';
-
-export function markStep(step: MapStep): void {
-  if (typeof performance.mark === 'function') performance.mark(`snowlight:${step}`);
-}
-
 const POLL_MS = 16;
 
 /**
@@ -53,14 +43,5 @@ export function afterNextFrame(): Promise<void> {
     requestAnimationFrame(() => {
       setTimeout(resolve, 0);
     });
-  });
-}
-
-/** Yields to the event loop so the next piece of work starts a fresh task. */
-export function yieldToMain(): Promise<void> {
-  const scheduler = (globalThis as { scheduler?: { yield?: () => Promise<void> } }).scheduler;
-  if (typeof scheduler?.yield === 'function') return scheduler.yield();
-  return new Promise((resolve) => {
-    setTimeout(resolve, 0);
   });
 }

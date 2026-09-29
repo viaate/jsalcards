@@ -1,7 +1,7 @@
 import { flushSync, mount, unmount } from 'svelte';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
-import { format } from '../../copy';
+import { format } from '../../copy-format';
 import { LIVE_FRESH_MS } from '../../state/freshness';
 import UpdateTime from '../UpdateTime.svelte';
 

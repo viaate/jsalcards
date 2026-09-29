@@ -26,7 +26,8 @@
  * do not give is left out, and nothing is filled in.
  */
 
-import { STATUS_KEYS, format } from '../copy';
+import { STATUS_KEYS } from '../copy';
+import { format } from '../copy-format';
 import type { StatusKey } from '../copy';
 import { chanceCopy, chanceFormat, localHour } from '../copy-chance';
 import type { BaseInput, ReasonInput, RecordCount, Zones } from '../copy-chance';

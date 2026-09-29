@@ -46,8 +46,9 @@ import type { Locator, Page } from '@playwright/test';
 import { build, preview } from 'vite';
 import type { PreviewServer } from 'vite';
 
-import { STATUS_KEYS, copy, format } from '../src/copy';
+import { STATUS_KEYS, copy } from '../src/copy';
 import { chanceCopy, chanceFormat } from '../src/copy-chance';
+import { format } from '../src/copy-format';
 import { COPIED_MS } from '../src/ui/share';
 
 const WEB = fileURLToPath(new URL('..', import.meta.url));
@@ -2747,6 +2748,40 @@ test.describe('with data staged', () => {
     await expect(next.locator('ul.legend li.is-none')).toHaveCount(0);
     expect(nextWatch.problems).toEqual([]);
     await later.close();
+    await context.close();
+  });
+
+  test('with the formatters’ code refused, the map, its lights, the key’s counts and search still work', async ({
+    browser,
+  }) => {
+    // The formatters (src/copy-format.ts) load with what words with them: the menu, the panel,
+    // the update time. The page's first script and the app's services need none of them.
+    const context = await browser.newContext({
+      viewport: { width: 1440, height: 900 },
+      serviceWorkers: 'block',
+    });
+    const page = await context.newPage();
+    await page.clock.setFixedTime(SYNTHETIC_NOW);
+    const refused: string[] = [];
+    await page.route(/\/assets\/copy-format-[\w-]+\.js$/, async (route) => {
+      refused.push(route.request().url());
+      await route.abort();
+    });
+    await page.goto(site);
+    await waitForMap(page);
+    await expect.poll(async () => (await glowStats(page)).glowCount, { timeout: 30_000 }).toBe(2);
+    // The key's counts are set with the page's own formatter (copy.ts shellFormat).
+    await expect(page.locator('ul.legend .count')).toHaveText([format.number(1), format.number(1)]);
+    // The update time asked for the formatters, and was refused them.
+    await expect.poll(() => refused.length).toBeGreaterThan(0);
+    await expect(page.locator('.updated')).toHaveCount(0);
+
+    const input = page.locator('input.search-input');
+    await input.click();
+    await input.pressSequentially('kansas city', { delay: 20 });
+    const options = page.locator('[role="option"]');
+    await expect(options).toHaveCount(2);
+    await expect(options.nth(0)).toContainText('Kansas City');
     await context.close();
   });
 

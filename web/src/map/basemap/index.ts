@@ -53,7 +53,8 @@ import { heldFrame } from './held-frame';
 import { maskFeed as createMaskFeed } from './mask/feed';
 import { firstPlace, flightTileLimit, flightTiles, slowLink, stopTiles } from './prefetch';
 import { insideUs } from './us-inside';
-import { afterNextFrame, LIVE_CLASS, markStep, whenGpuIdle, yieldToMain } from './reveal';
+import { afterNextFrame, LIVE_CLASS, whenGpuIdle } from './reveal';
+import { markStep, yieldToMain } from './steps';
 import {
   SCHOOL_KIND_LAYERS,
   SCHOOL_SPACE_IMAGE,

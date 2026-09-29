@@ -16,7 +16,7 @@
  * number and its sum meet.
  */
 
-import { format } from '../copy';
+import { format } from '../copy-format';
 import { parseInstant } from '../state/instant';
 import type { AlertKind, LocalDate, Status } from '../types/generated';
 

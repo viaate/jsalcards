@@ -4,7 +4,7 @@
     "target": "ES2023",
     "lib": ["ES2023", "DOM", "DOM.Iterable"],
     "types": ["node"],
-    // The specs load site modules (src/copy-chance.ts), which import by their .ts names.
+    // The specs load site modules (src/copy-format.ts, src/copy-chance.ts), which import by their .ts names.
     "allowImportingTsExtensions": true
   },
   "include": ["playwright.config.ts", "e2e/**/*.ts"]

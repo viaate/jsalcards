@@ -6,7 +6,7 @@
  * live, and whether the line needs a date because the file is from another day.
  */
 
-import { format } from '../copy';
+import { format } from '../copy-format';
 import type { UtcInstant } from '../types/generated';
 import { parseInstant } from './instant';
 

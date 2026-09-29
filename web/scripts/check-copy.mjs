@@ -5,10 +5,11 @@
  *
  * Every customer-facing string lives in src/copy.ts and follows one house style:
  * short, plain, confident, sentence case, with no banned word, exclamation
- * mark, emoji or em dash. (The school panel's chance section words its
- * sentences in src/copy-chance.ts, which loads with the panel rather than with
- * the page; COPY_MODULES reads it as part of copy.ts.) This file holds those
- * rules once, for two callers:
+ * mark, emoji or em dash. (Its formatters are in src/copy-format.ts, and the
+ * school panel's chance section words its sentences in src/copy-chance.ts:
+ * both load with the code that shows them rather than with the page, and
+ * COPY_MODULES reads them as part of copy.ts.) This file holds those rules
+ * once, for two callers:
  *
  * - `problems(text)` checks one string. src/copy.test.ts runs it over every
  *   string in copy.ts and over the formatters' output.
@@ -82,7 +83,7 @@ const WEB_ROOT = path.resolve(HERE, '..');
  * fixed strings; a later one's fixed strings are each export named …Copy
  * (src/copy-chance.ts chanceCopy), held to the same house style.
  */
-export const COPY_MODULES = ['src/copy.ts', 'src/copy-chance.ts'];
+export const COPY_MODULES = ['src/copy.ts', 'src/copy-format.ts', 'src/copy-chance.ts'];
 
 // House style --------------------------------------------------------------------------
 
@@ -1525,8 +1526,8 @@ class Project {
   }
 
   /**
-   * The module an import names, or undefined for a package, copy.ts (whose
-   * strings are the ones allowed) or anything that is not code or text.
+   * The module an import names, or undefined for a package, a copy module
+   * (whose strings are the ones allowed) or anything that is not code or text.
    * @param {Module} from
    * @param {string} source
    * @returns {Module | undefined}
@@ -1588,7 +1589,7 @@ class Project {
   }
 
   /**
-   * Whether an import names copy.ts itself.
+   * Whether an import names copy.ts itself, or a copy module that loads later.
    * @param {Module} from
    * @param {string} source
    */
@@ -1816,7 +1817,7 @@ const DATE_TEXT = /** @type {CodeValue} */ ({
   t: 'code',
   text: '',
   what: 'a date written out by JavaScript, in English words,',
-  fix: 'format it with a formatter of copy.ts',
+  fix: 'format it with a formatter of copy-format.ts',
 });
 /** Replacement patterns of String.prototype.replace, which insert what was matched. */
 const REPLACEMENT_PATTERN = /\$(?:\$|&|`|'|\d{1,2}|<[^>]*>)/gu;
@@ -5212,7 +5213,7 @@ class Flow {
     this.findings.push({
       file: module.file,
       ...module.at(numberAt(node, 'start') ?? 0),
-      message: `${what} writes words outside copy.ts; add a formatter to copy.ts and use it`,
+      message: `${what} writes words outside copy.ts and copy-format.ts; add a formatter to copy-format.ts and use it`,
     });
   }
 

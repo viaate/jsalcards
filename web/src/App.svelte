@@ -14,11 +14,11 @@
     Target,
   } from './app/boot';
   import { grantedPlace, opensNearby } from './app/nearby';
-  import { STATUS_KEYS, copy, format } from './copy';
+  import { STATUS_KEYS, copy, shellFormat } from './copy';
   import type { Basemap, Place } from './map/basemap';
   import { loadBasemap } from './map/basemap/load';
   import type { Glow } from './map/glow-mount';
-  import { markStep, yieldToMain } from './map/basemap/reveal';
+  import { markStep, yieldToMain } from './map/basemap/steps';
   import { afterFirstPaint } from './shell/paint';
   import { retireStill } from './shell/still';
   import { pinnedSchool } from './state/pin';
@@ -734,7 +734,7 @@
         {@const count = counts?.[code]}
         <li class:is-none={count === 0}>
           <span class="glyph {GLYPHS[code]}" aria-hidden="true"></span>{copy.status[key]}
-          {#if count}<span class="count">{format.number(count)}</span>{/if}
+          {#if count}<span class="count">{shellFormat.number(count)}</span>{/if}
         </li>
       {/each}
     </ul>

@@ -10,7 +10,8 @@
  */
 import type { Map as MapLibreMap } from 'maplibre-gl';
 
-import { whenGpuIdle, yieldToMain } from './reveal';
+import { whenGpuIdle } from './reveal';
+import { yieldToMain } from './steps';
 
 /**
  * The context MapLibre asks for (maplibre-gl 6.11 Map._setupPainter: its

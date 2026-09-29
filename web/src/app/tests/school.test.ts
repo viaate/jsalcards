@@ -1,6 +1,7 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
-import { copy, format } from '../../copy';
+import { copy } from '../../copy';
+import { format } from '../../copy-format';
 import type { DetailsSource, SchoolRecord } from '../../data/details';
 import { createDataFiles } from '../../data/files';
 import { NO_STATUS } from '../../data/school-day';

@@ -19,7 +19,7 @@
  * anything that could be false.
  */
 
-import { format } from '../copy';
+import { format } from '../copy-format';
 import { parseInstant } from '../state/instant';
 import { Status } from '../types/generated';
 import type {

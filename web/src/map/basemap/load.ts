@@ -32,7 +32,7 @@
 import MAPLIBRE_URL from 'virtual:snowlight/maplibre-url';
 
 import type { Basemap, BasemapOptions } from './index';
-import { yieldToMain } from './reveal';
+import { yieldToMain } from './steps';
 import type { UsLinesData } from './style';
 import { US_LINES_FILE, US_NAMES_FILE, US_STATES_FILE } from './us-geo';
 

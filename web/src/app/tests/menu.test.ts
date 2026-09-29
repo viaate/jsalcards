@@ -1,6 +1,7 @@
 import { describe, expect, it, vi } from 'vitest';
 
-import { copy, format } from '../../copy';
+import { copy } from '../../copy';
+import { format } from '../../copy-format';
 import { createDataFiles } from '../../data/files';
 import type { Calibration, SeasonStats, TrackRecord } from '../../types/generated';
 import { mapSection, readMenu, recordTable, seasonSection } from '../menu';

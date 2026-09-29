@@ -2,7 +2,8 @@ import { flushSync, mount, unmount } from 'svelte';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
 import type { MenuView } from '../../app/menu';
-import { STATUS_KEYS, copy, format } from '../../copy';
+import { STATUS_KEYS, copy } from '../../copy';
+import { format } from '../../copy-format';
 import type { StatusCounts } from '../../data/closings';
 import { SHOW_ALL, withKind, withStatus } from '../../state/filter';
 import type { MapFilter } from '../../state/filter';

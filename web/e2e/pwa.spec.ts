@@ -40,7 +40,8 @@ import { chromium, expect, test } from '@playwright/test';
 import type { BrowserContext, Page } from '@playwright/test';
 import { build } from 'vite';
 
-import { copy, format } from '../src/copy';
+import { copy } from '../src/copy';
+import { format } from '../src/copy-format';
 import { CACHE_NAMES, MANIFEST_FILE, SW_FILE } from '../src/pwa/config';
 
 const WEB = fileURLToPath(new URL('..', import.meta.url));
