@@ -663,7 +663,8 @@ export function recordCount(record: RecordDetail | null): RecordCount | null {
   const inches = record?.inches ?? null;
   if (record === null || inches === null) return null;
   const closed = record.days.filter((past) => past.status === 0 || past.status === 2).length;
-  return { closed, days: record.days.length, inches };
+  const remote = record.days.filter((past) => past.status === 2).length;
+  return { closed, remote, days: record.days.length, inches };
 }
 
 /** A reason as copy.ts words it: its numbers, and what its sentence needs from the rest. */
@@ -698,11 +699,11 @@ function reasonInput(
     case 'timing':
       return { ...reason, buses: detail.busesAt };
     case 'cold':
+    case 'sun':
       return { ...reason, day };
     case 'snow_stops':
       return { ...reason, buses: detail.busesAt, day };
     case 'wind_chill':
-    case 'sun':
     case 'icy_roads':
     case 'ice':
       return reason;

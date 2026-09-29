@@ -548,7 +548,7 @@ describe('format', () => {
     const morning = at('2026-01-13T12:20:00Z');
     const reason = (input: ReasonInput, now = evening, zones = here): string =>
       chanceFormat.reason(input, 'Riverside', now, zones);
-    const record = { closed: 4, days: 5, inches: 6 };
+    const record = { closed: 4, remote: 0, days: 5, inches: 6 };
 
     it('heads the section with the chance and its day', () => {
       expect(Object.isFrozen(chanceFormat)).toBe(true);
@@ -730,21 +730,32 @@ describe('format', () => {
         'The forecast has 6 to 9 inches overnight, more than most storms. It closed 4 of the last 5 times it got 6 inches or more.',
       );
       expect(snow(-4, 1, 1, false, null)).toBe('The forecast has 1 inch, less than most storms.');
-      expect(snow(8, 4, 6, false, { closed: 3, days: 3, inches: 4 })).toBe(
+      expect(snow(8, 4, 6, false, { closed: 3, remote: 0, days: 3, inches: 4 })).toBe(
         'The forecast has 4 to 6 inches, more than most storms. It closed each of the last 3 times it got 4 inches or more.',
       );
-      expect(snow(-6, 2, 3, true, { closed: 0, days: 1, inches: 2 })).toBe(
+      expect(snow(-6, 2, 3, true, { closed: 0, remote: 0, days: 1, inches: 2 })).toBe(
         'The forecast has 2 to 3 inches overnight, less than most storms. It stayed open the last time it got 2 inches or more.',
       );
-      expect(snow(6, 2, 3, true, { closed: 1, days: 1, inches: 2 })).toBe(
+      expect(snow(6, 2, 3, true, { closed: 1, remote: 0, days: 1, inches: 2 })).toBe(
         'The forecast has 2 to 3 inches overnight, more than most storms. It closed the last time it got 2 inches or more.',
       );
       expect(reason({ kind: 'record', points: 4, record })).toBe(
         'Riverside closed 4 of the last 5 times it got 6 inches or more.',
       );
       expect(
-        reason({ kind: 'record', points: -4, record: { closed: 0, days: 4, inches: 3 } }),
+        reason({
+          kind: 'record',
+          points: -4,
+          record: { closed: 0, remote: 0, days: 4, inches: 3 },
+        }),
       ).toBe('Riverside closed none of the last 4 times it got 3 inches or more.');
+      // A remote day is not a closing.
+      expect(
+        reason({ kind: 'record', points: 4, record: { closed: 4, remote: 1, days: 5, inches: 6 } }),
+      ).toBe('Riverside closed or went remote 4 of the last 5 times it got 6 inches or more.');
+      expect(
+        reason({ kind: 'record', points: 4, record: { closed: 4, remote: 4, days: 5, inches: 6 } }),
+      ).toBe('Riverside went remote 4 of the last 5 times it got 6 inches or more.');
       const next = (names: string[] | null, count: number, status: StatusKey): string =>
         reason({ kind: 'neighbors', points: 9, names, count, status });
       expect(next(['Blue Valley', 'Olathe'], 2, 'closed')).toBe(
@@ -807,11 +818,18 @@ describe('format', () => {
       expect(stops('2026-01-13T05:30:00Z', morning, '2026-01-13', east)).toBe(
         `The snow stopped at 11:30${NBSP}PM${NBSP}CT, a full day for the plows.`,
       );
-      expect(reason({ kind: 'sun', points: -5 }, morning)).toBe(
+      expect(reason({ kind: 'sun', points: -5, day: '2026-01-14' }, morning)).toBe(
         'The forecast has sun this afternoon to help melt the ice.',
       );
-      expect(reason({ kind: 'sun', points: -5 }, evening)).toBe(
+      expect(reason({ kind: 'sun', points: -5, day: '2026-01-13' }, evening)).toBe(
         'Sun earlier today helped melt the ice.',
+      );
+      // The afternoon before the day the chance is for: yesterday's, once that day has begun.
+      expect(reason({ kind: 'sun', points: -5, day: '2026-01-13' }, morning)).toBe(
+        'Sun yesterday afternoon helped melt the ice.',
+      );
+      expect(reason({ kind: 'sun', points: -5, day: '2026-01-14' }, evening)).toBe(
+        'The forecast has sun Tuesday afternoon to help melt the ice.',
       );
       expect(reason({ kind: 'icy_roads', points: 4, inches: 8 })).toBe(
         'Side streets stay icy after 8 inches of snow.',
@@ -820,10 +838,10 @@ describe('format', () => {
         'The forecast has freezing rain leaving 0.2 inches of ice.',
       );
       // Numbers the sentences cannot hold.
-      expect(() => reason({ kind: 'sun', points: 0 })).toThrow(RangeError);
+      expect(() => reason({ kind: 'sun', points: 0, day: '2026-01-14' })).toThrow(RangeError);
       expect(() => next(null, 0, 'closed')).toThrow(RangeError);
       expect(() =>
-        reason({ kind: 'record', points: 3, record: { closed: 6, days: 5, inches: 6 } }),
+        reason({ kind: 'record', points: 3, record: { closed: 6, remote: 0, days: 5, inches: 6 } }),
       ).toThrow(RangeError);
       expect(() => timing('2026-01-13T11:00:00Z', '2026-01-13T08:00:00Z')).toThrow(RangeError);
     });

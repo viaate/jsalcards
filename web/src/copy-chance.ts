@@ -110,6 +110,8 @@ export type BaseInput =
 export interface RecordCount {
   /** Days with no school (closed or remote). */
   readonly closed: number;
+  /** Of those, the days the district went remote. */
+  readonly remote: number;
   /** Days counted. */
   readonly days: number;
   /** The least snow of a storm counted. */
@@ -159,7 +161,12 @@ export type ReasonInput =
       /** The day the chance is for (YYYY-MM-DD). */
       readonly day: string;
     }
-  | { readonly kind: 'sun'; readonly points: number }
+  | {
+      readonly kind: 'sun';
+      readonly points: number;
+      /** The day the chance is for (YYYY-MM-DD): the sun is the afternoon before it. */
+      readonly day: string;
+    }
   | { readonly kind: 'icy_roads'; readonly points: number; readonly inches: number }
   | { readonly kind: 'ice'; readonly points: number; readonly inches: number };
 
@@ -442,14 +449,24 @@ function shareOf(percent: number): { some: number; of: number; exact: boolean } 
 
 /** The district's record, counted: "It closed 4 of the last 5 times it got 6 inches or more." */
 function recordSentence(record: RecordCount, subject: string): string {
-  const { closed, days, inches: least } = record;
-  if (!Number.isInteger(days) || days < 1 || !Number.isInteger(closed) || closed > days) {
+  const { closed, remote, days, inches: least } = record;
+  if (
+    !Number.isInteger(days) ||
+    days < 1 ||
+    !Number.isInteger(closed) ||
+    closed > days ||
+    !Number.isInteger(remote) ||
+    remote < 0 ||
+    remote > closed
+  ) {
     throw new RangeError(`copy: ${String(closed)} of ${String(days)} is not a record`);
   }
   const storms = `it got ${inchWords(least, least)} or more`;
+  // What it did on those days, and no more: a remote day is not a closing.
+  const did = remote === 0 ? 'closed' : remote === closed ? 'went remote' : 'closed or went remote';
   if (days === 1) {
     return closed === 1
-      ? `${subject} closed the last time ${storms}.`
+      ? `${subject} ${did} the last time ${storms}.`
       : `${subject} stayed open the last time ${storms}.`;
   }
   const count =
@@ -458,7 +475,7 @@ function recordSentence(record: RecordCount, subject: string): string {
       : closed === 0
         ? `none of the last ${String(days)}`
         : `${String(closed)} of the last ${String(days)}`;
-  return `${subject} closed ${count} times ${storms}.`;
+  return `${subject} ${did} ${count} times ${storms}.`;
 }
 
 /** "Blue Valley and Olathe", "A, B and C", "A, B and 2 more". */
@@ -585,10 +602,23 @@ function reason(input: ReasonInput, district: string, now: Date, zones: Zones): 
       }
       return `The forecast has the snow ending by ${at}, a head start for the plows.`;
     }
-    case 'sun':
+    case 'sun': {
+      // The afternoon before the day the chance is for: this afternoon the evening before, but
+      // yesterday's once that day has begun.
+      const before = dayOf(new Date(parseLocalDate(input.day).getTime() - MS_PER_DAY), 'UTC');
+      const today = dayOf(now, zone);
+      if (today < before) {
+        return `The forecast has sun ${weekday(before)} afternoon to help melt the ice.`;
+      }
+      if (today > before) {
+        return today === input.day
+          ? 'Sun yesterday afternoon helped melt the ice.'
+          : `Sun ${weekday(before)} afternoon helped melt the ice.`;
+      }
       return localHour(now, zone) < 15
         ? 'The forecast has sun this afternoon to help melt the ice.'
         : 'Sun earlier today helped melt the ice.';
+    }
     case 'icy_roads':
       return `Side streets stay icy after ${inchWords(input.inches, input.inches)} of snow.`;
     case 'ice':
