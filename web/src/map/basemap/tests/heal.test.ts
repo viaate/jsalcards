@@ -5,7 +5,7 @@
 import type { Map as MapLibreMap } from 'maplibre-gl';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
-import { HEAL_BACKOFF, HealRounds, failedTiles, healTiles } from '../heal';
+import { HEAL_BACKOFF, HealRounds, PROBE_GAP_MS, failedTiles, healTiles } from '../heal';
 
 /** A tile manager's tiles, by id: their states. */
 type Tiles = Map<string, { state: string }>;
@@ -176,6 +176,51 @@ describe('failed tiles', () => {
     window.dispatchEvent(new Event('online'));
     vi.advanceTimersByTime(0);
     expect(removed).toEqual(['streets/a']);
+  });
+
+  it('are asked for at once, one while failing, when someone touches the map or looks', () => {
+    const streets: Tiles = new Map([
+      ['a', { state: 'errored' }],
+      ['b', { state: 'errored' }],
+    ]);
+    const { map, fire, removed } = fakeMap({ streets });
+    healTiles(map, ['streets']);
+    const failAgain = (): void => {
+      for (const id of ['a', 'b']) streets.set(id, { state: 'errored' });
+      fire('error', { sourceId: 'streets' });
+    };
+    // Two rounds failed: the rounds are a probe of one tile each, now far apart.
+    fire('error', { sourceId: 'streets' });
+    vi.advanceTimersByTime(HEAL_BACKOFF[0] ?? 0);
+    failAgain();
+    vi.advanceTimersByTime(HEAL_BACKOFF[1] ?? 0);
+    failAgain();
+    const before = removed.length;
+    // A hand on the map: a probe now, not at the end of the round.
+    fire('mousedown', {});
+    vi.advanceTimersByTime(0);
+    expect(removed.slice(before)).toHaveLength(1);
+    // Not again at once for every touch.
+    failAgain();
+    fire('movestart', { originalEvent: {} });
+    fire('wheel', {});
+    vi.advanceTimersByTime(0);
+    expect(removed).toHaveLength(before + 1);
+    // The page shown again, a while later: another.
+    vi.advanceTimersByTime(PROBE_GAP_MS);
+    const later = removed.length;
+    document.dispatchEvent(new Event('visibilitychange'));
+    vi.advanceTimersByTime(0);
+    expect(removed.length).toBe(later + 1);
+  });
+
+  it('are not asked for at once by a move nobody made', () => {
+    const streets: Tiles = new Map([['a', { state: 'errored' }]]);
+    const { map, fire, removed } = fakeMap({ streets });
+    healTiles(map, ['streets']);
+    fire('movestart', {});
+    vi.advanceTimersByTime(0);
+    expect(removed).toEqual([]);
   });
 
   it('of other sources are left to the map', () => {

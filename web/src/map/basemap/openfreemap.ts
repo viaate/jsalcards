@@ -249,7 +249,7 @@ let failing = false;
  * with a wait between tries (longer when an answer asks for one); a request
  * that stalls is given up on and made again, and an answer that is not a
  * tile is never taken for one: the try after it goes past the browser's
- * cache, which may hold it.
+ * cache, which may hold it, even while the host is failing.
  */
 export async function loadOpenFreeMapTile(
   requestUrl: string,
@@ -257,7 +257,7 @@ export async function loadOpenFreeMapTile(
 ): Promise<GetResourceResponse<ArrayBuffer>> {
   let failure: unknown;
   let fresh = false;
-  const tries = failing ? 1 : TILE_TRIES;
+  let tries = failing ? 1 : TILE_TRIES;
   for (let attempt = 0; attempt < tries; attempt++) {
     if (attempt > 0) await sleep(backoffDelay(TILE_BACKOFF, attempt - 1), signal);
     try {
@@ -267,6 +267,8 @@ export async function loadOpenFreeMapTile(
     } catch (error) {
       if (signal.aborted) throw error;
       failure = error;
+      // A page taken for a tile may be the browser's cached copy of one: asked again past it.
+      if (error instanceof NotATileError && !fresh) tries = Math.max(tries, attempt + 2);
       fresh = error instanceof NotATileError;
     }
   }

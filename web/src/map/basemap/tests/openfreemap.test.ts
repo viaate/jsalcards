@@ -201,6 +201,28 @@ describe('a street tile', () => {
     expect(tileCalls(calls)).toHaveLength(2 * TILE_TRIES + 2);
   });
 
+  it('while the host fails, is asked for past the cache after a page that is no tile', async () => {
+    const { loadOpenFreeMapTile } = await fresh();
+    const page = (): Response =>
+      new Response('<!doctype html><title>Blocked</title>', {
+        headers: { 'content-type': 'text/html' },
+      });
+    let answer: () => Response = () => new Response('busy', { status: 503 });
+    const calls = network([() => answer()]);
+    const load = (): Promise<unknown> =>
+      settle(loadOpenFreeMapTile('openfreemap://planet/10/242/391', new AbortController().signal));
+    await expect(load()).rejects.toThrow(/HTTP 503/);
+    const before = tileCalls(calls).length;
+    // Failing: one try a tile, but a block page, perhaps cached, gets one more past the cache.
+    answer = page;
+    await expect(load()).rejects.toThrow(/not a tile/);
+    expect(
+      tileCalls(calls)
+        .slice(before)
+        .map((call) => call.cache),
+    ).toEqual([undefined, 'reload']);
+  });
+
   it('that MapLibre no longer wants is not asked for again', async () => {
     const { loadOpenFreeMapTile } = await fresh();
     const calls = network([() => new Response('busy', { status: 503 })]);

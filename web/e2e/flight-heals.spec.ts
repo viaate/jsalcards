@@ -621,7 +621,7 @@ test('school tiles read back wrong, then right: the school’s dot comes, untouc
   await context.close();
 });
 
-test('the tile host out of reach, then back: at the school, streets come untouched', async ({
+test('the tile host out of reach, then back: streets come, at once for someone looking', async ({
   browser,
 }) => {
   const { context, page, errors } = await newPage(browser);
@@ -632,13 +632,15 @@ test('the tile host out of reach, then back: at the school, streets come untouch
   // At the school, at street zoom, without its streets: none can be had.
   const there = await expectAtSchool(page, PEMBROKE_HILL, { streets: false, timeout: 60_000 });
   expect(there.streets).toBe(false);
-  // The page keeps asking, without anyone touching it; the moment the host answers, the
-  // streets come.
+  // The page keeps asking, without anyone touching it, a round at a time.
   const asked = (): number => [...network.attempts.values()].reduce((sum, n) => sum + n, 0);
   const before = asked();
   await expect.poll(asked, { timeout: 40_000 }).toBeGreaterThan(before);
   network.blocked = false;
-  await expectAtSchool(page, PEMBROKE_HILL, { timeout: 60_000 });
+  // The host is back, and someone comes back to the tab: the streets come within seconds, whatever
+  // round the page was in (at rest, it asks once a minute at most).
+  await page.evaluate(() => document.dispatchEvent(new Event('visibilitychange')));
+  await expectAtSchool(page, PEMBROKE_HILL, { timeout: 20_000 });
   expect(errors).toEqual([]);
   await context.close();
 });

@@ -7,10 +7,12 @@
  * Here the page drops a source's failed tiles after a wait, and the map's next
  * frame asks for them afresh, as tiles it has never had; the wait grows each
  * round the source fails (HEAL_BACKOFF), and starts over once one of its
- * tiles comes. The network coming back, or the page being shown again, asks
- * at once. So a failed tile comes as soon as the network lets it, and is
- * drawn the moment it does, with nobody moving the map or loading the page
- * again.
+ * tiles comes. The network coming back asks for them all at once; someone
+ * looking (the page shown again, or a hand on the map: a move, a zoom, a
+ * tap) asks at once for one (PROBE_GAP_MS apart at most), and for the rest
+ * as soon as it comes. So a failed tile comes as soon as the network lets it,
+ * and is drawn the moment it does, with nobody moving the map or loading the
+ * page again, and within seconds for someone who is looking.
  *
  * What a round costs the host: the first asks again for every failed tile,
  * each tried once by a worker that has seen the host fail (openfreemap.ts);
@@ -31,6 +33,9 @@ import type { Backoff } from './retry';
  * (openfreemap.ts).
  */
 export const HEAL_BACKOFF: Backoff = [1000, 2000, 4000, 8000, 15_000, 30_000, 60_000];
+
+/** The least time between two rounds that someone looking asks for at once, in milliseconds. */
+export const PROBE_GAP_MS = 5000;
 
 /** One source's rounds: how long to wait before the next, starting over once a tile comes. */
 export class HealRounds {
@@ -112,25 +117,49 @@ export function healTiles(map: MapLibreMap, sources: readonly string[]): () => v
   const onIdle = (): void => {
     for (const source of sources) if (failedTiles(map, source).length > 0) schedule(source);
   };
-  /** The network is back, or the page shown again: every failed tile is asked for now. */
-  const now = (): void => {
-    if (document.visibilityState === 'hidden') return;
+  /** The network is back: every failed tile is asked for now. */
+  const online = (): void => {
     for (const source of sources) {
       rounds.get(source)?.reset();
       if (failedTiles(map, source).length > 0) schedule(source, true);
     }
   };
+  /** When someone looking last asked for a round at once. */
+  let lastLook = Number.NEGATIVE_INFINITY;
+  /**
+   * Someone is looking (the page shown again, a hand on the map): the next
+   * round now, a probe of one tile while the source keeps failing, its rounds
+   * going on as they were.
+   */
+  const look = (): void => {
+    if (document.visibilityState === 'hidden' || Date.now() - lastLook < PROBE_GAP_MS) return;
+    lastLook = Date.now();
+    for (const source of sources) {
+      if (failedTiles(map, source).length > 0) schedule(source, true);
+    }
+  };
+  const onMoveStart = (event: { originalEvent?: unknown }): void => {
+    if (event.originalEvent !== undefined) look();
+  };
   map.on('error', onError);
   map.on('sourcedata', onData);
   map.on('idle', onIdle);
-  window.addEventListener('online', now);
-  document.addEventListener('visibilitychange', now);
+  map.on('movestart', onMoveStart);
+  map.on('mousedown', look);
+  map.on('touchstart', look);
+  map.on('wheel', look);
+  window.addEventListener('online', online);
+  document.addEventListener('visibilitychange', look);
   return () => {
     map.off('error', onError);
     map.off('sourcedata', onData);
     map.off('idle', onIdle);
-    window.removeEventListener('online', now);
-    document.removeEventListener('visibilitychange', now);
+    map.off('movestart', onMoveStart);
+    map.off('mousedown', look);
+    map.off('touchstart', look);
+    map.off('wheel', look);
+    window.removeEventListener('online', online);
+    document.removeEventListener('visibilitychange', look);
     for (const timer of timers.values()) window.clearTimeout(timer);
     timers.clear();
   };
