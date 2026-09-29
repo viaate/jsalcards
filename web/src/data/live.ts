@@ -14,12 +14,23 @@
  * the update time: a file is shown once it has been read against its
  * directory, or when it has no schools today. A file whose directory cannot be
  * had shows nothing, so no time is given for it either.
+ *
+ * `onCounts` hears how many schools are lit in each status, for the legend:
+ * counted from the schools lit, so a count is only ever given for lights the
+ * map shows, and none while nothing is lit.
  */
 
 import { PUBLISHED_PATHS } from '../types/generated';
 import type { ClosingsFile, DirectoryStamp, UtcInstant } from '../types/generated';
-import { NOTHING_LIT, lightSchools, parseClosings, todayEverywhere } from './closings';
-import type { LitSchools } from './closings';
+import {
+  NOTHING_LIT,
+  countStatuses,
+  lightSchools,
+  parseClosings,
+  sameCounts,
+  todayEverywhere,
+} from './closings';
+import type { LitSchools, StatusCounts } from './closings';
 import type { Directory } from './directory';
 import { fetchJson } from './files';
 import type { DataFiles, Fetch } from './files';
@@ -39,6 +50,11 @@ export interface LiveOptions {
   readonly onLight: (lit: LitSchools) => void;
   /** Called with the shown file's generated_at whenever it changes; null when none is shown. */
   readonly onShown?: (generatedAt: UtcInstant | null) => void;
+  /**
+   * Called with how many schools are lit in each status whenever that
+   * changes; null while none is lit (no file, none today, or overnight).
+   */
+  readonly onCounts?: (counts: StatusCounts | null) => void;
   readonly fetch?: Fetch;
   readonly now?: () => Date;
   /** performance.now(), the glow layer's clock. */
@@ -80,11 +96,19 @@ export function startLive(options: LiveOptions): Live {
   let lastRead = -Infinity;
   /** The generated_at last passed to onShown. */
   let shownAt: UtcInstant | null = null;
+  /** The counts last passed to onCounts. */
+  let shownCounts: StatusCounts | null = null;
 
   const report = (generatedAt: UtcInstant | null): void => {
     if (generatedAt === shownAt) return;
     shownAt = generatedAt;
     options.onShown?.(generatedAt);
+  };
+
+  const reportCounts = (counts: StatusCounts | null): void => {
+    if (sameCounts(counts, shownCounts)) return;
+    shownCounts = counts;
+    options.onCounts?.(counts);
   };
 
   const relight = async (file: ClosingsFile): Promise<void> => {
@@ -106,6 +130,8 @@ export function startLive(options: LiveOptions): Live {
     if (stopped) return;
     shownKey = key;
     report(shown ? file.generated_at : null);
+    // Counted from the schools lit, so the counts are always the map's own.
+    reportCounts(countStatuses(next));
     // Nothing lit before and nothing now: the layer has nothing to change.
     if (lit === null && next.schools.size === 0) return;
     lit = next.schools;

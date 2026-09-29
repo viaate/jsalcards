@@ -9,6 +9,7 @@
 
 import { DATA_FILES } from 'virtual:snowlight/data-files';
 
+import type { StatusCounts } from '../data/closings';
 import type { DirectorySource } from '../data/directory';
 import { DATA_PATHS, createDataFiles, dataRootFor } from '../data/files';
 import type { DataFiles } from '../data/files';
@@ -79,16 +80,23 @@ export async function locate(
   return bounds === null ? null : { bounds, maxZoom: ZOOM.districtMax };
 }
 
+/** What the live glow tells the page about the file it shows. */
+export interface LiveGlowListeners {
+  /** The generated_at of the file shown (null when none is), for the update time. */
+  readonly onShown?: (generatedAt: UtcInstant | null) => void;
+  /** How many schools are lit in each status (null while none is), for the legend. */
+  readonly onCounts?: (counts: StatusCounts | null) => void;
+}
+
 /**
  * Lights today's affected schools on the glow, and keeps them current: a
  * build without live/closings.json never asks for it, and nothing glows.
- * `onShown` hears the generated_at of the file shown (null when none is), for
- * the update time. Returns the function that stops it.
+ * Returns the function that stops it.
  */
 export async function startLiveGlow(
   data: AppData,
   glow: Promise<Glow | null>,
-  onShown?: (generatedAt: UtcInstant | null) => void,
+  { onShown, onCounts }: LiveGlowListeners = {},
 ): Promise<() => void> {
   if (!data.files.has(PUBLISHED_PATHS.closings)) return () => undefined;
   const [{ closingsUrl, startLive }, { onDataUpdate }] = await Promise.all([
@@ -105,6 +113,9 @@ export async function startLiveGlow(
     },
     onShown: (generatedAt) => {
       onShown?.(generatedAt);
+    },
+    onCounts: (counts) => {
+      onCounts?.(counts);
     },
   });
   const url = closingsUrl(data.files);

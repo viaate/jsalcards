@@ -5,8 +5,9 @@
  * - the pinned school, opened on a plain visit (src/state/pin.ts);
  * - a linked or pinned selection, placed on the map once the data allows;
  * - search: the index loads on the first focus of the search field;
- * - today's schools lit on the glow layer (App.svelte puts it on the map), and
- *   the time of the live file they come from, for the update time;
+ * - today's schools lit on the glow layer (App.svelte puts it on the map), the
+ *   time of the live file they come from, for the update time, and how many
+ *   are lit in each status, for the legend;
  * - the service worker, registered once the map is on screen;
  * - the school a pick or a link opens: its detail panel's view (app/school.ts,
  *   loaded when a school is first opened), and the pin.
@@ -23,6 +24,7 @@ import type { PinStore } from '../state/pin';
 import type { Selection } from '../state/url';
 import type { UrlStore } from '../state/url-store';
 import type { SchoolId, UtcInstant } from '../types/generated';
+import type { StatusCounts } from '../data/closings';
 import type { DetailsSource } from '../data/details';
 import { DATA_PATHS } from '../data/files';
 import { createAppData, locate, startLiveGlow } from './data';
@@ -34,6 +36,7 @@ import { startServiceWorker } from './service-worker';
 import { selectionForHit, startupSelection, viewForHit } from './startup';
 
 export { clearOfPanel } from './frame';
+export type { StatusCounts } from '../data/closings';
 export type { Target } from './data';
 export type { SearchOption } from './search';
 export type { NearbyView, SchoolHint, SchoolView } from './school';
@@ -59,6 +62,8 @@ export interface BootOptions {
   readonly onResults: (options: readonly SearchOption[] | null) => void;
   /** The generated_at of the live file the map shows, for the update time; null when none is. */
   readonly onUpdated?: (generatedAt: UtcInstant | null) => void;
+  /** How many schools the map lights in each status, for the legend; null while none is lit. */
+  readonly onCounts?: (counts: StatusCounts | null) => void;
   /** Data files to read, for tests; defaults to the ones this build ships. */
   readonly data?: AppData;
 }
@@ -131,8 +136,17 @@ export function boot(options: BootOptions): Services {
   let stopLive: () => void = () => undefined;
   void glow.then(async (layer) => {
     if (layer === null || aborted()) return;
-    stopLive = await startLiveGlow(data, glow, (generatedAt) => {
-      if (!aborted()) options.onUpdated?.(generatedAt);
+    stopLive = await startLiveGlow(data, glow, {
+      onShown: (generatedAt) => {
+        if (!aborted()) options.onUpdated?.(generatedAt);
+      },
+      // Once the page's face has loaded, so the counts are set in the face they keep. One
+      // promise, so counts heard later are passed on later.
+      onCounts: (counts) => {
+        void document.fonts.ready.then(() => {
+          if (!aborted()) options.onCounts?.(counts);
+        });
+      },
     });
     if (aborted()) stopLive();
   });

@@ -1,6 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
-import type { LitSchools } from '../closings';
+import type { LitSchools, StatusCounts } from '../closings';
 import { createDirectory, parsePoints } from '../directory';
 import type { Directory } from '../directory';
 import { createDataFiles } from '../files';
@@ -40,6 +40,7 @@ function setup(answer: () => Promise<Response>, shipped = ['live/closings.json']
   const directory = vi.fn(() => Promise.resolve<Directory | null>(DIRECTORY));
   const lights: LitSchools[] = [];
   const shown: (string | null)[] = [];
+  const counts: (StatusCounts | null)[] = [];
   const host = fakeHost();
   let now = NOON;
   const live = startLive({
@@ -47,6 +48,7 @@ function setup(answer: () => Promise<Response>, shipped = ['live/closings.json']
     directory,
     onLight: (lit) => lights.push(lit),
     onShown: (generatedAt) => shown.push(generatedAt),
+    onCounts: (next) => counts.push(next),
     fetch: fetchImpl,
     now: () => now,
     clock: () => 1000,
@@ -58,6 +60,7 @@ function setup(answer: () => Promise<Response>, shipped = ['live/closings.json']
     directory,
     lights,
     shown,
+    counts,
     host,
     setNow: (next: Date) => {
       now = next;
@@ -95,10 +98,11 @@ describe('a missing or broken file', () => {
       () => Promise.reject(new TypeError('Failed to fetch')),
       () => Promise.resolve(jsonResponse({ schema_version: 1 })),
     ]) {
-      const { live, lights, directory, shown } = setup(answer);
+      const { live, lights, directory, shown, counts } = setup(answer);
       await live.refresh();
       expect(lights).toEqual([]);
       expect(shown).toEqual([]);
+      expect(counts).toEqual([]);
       expect(directory).not.toHaveBeenCalled();
       expect(live.closings).toBeNull();
       live.stop();
@@ -210,11 +214,52 @@ describe('a file with schools today', () => {
 
   it('gives the time of a file with no schools today', async () => {
     const quiet = testClosings('2026-01-12T12:42:00Z', META, []);
-    const { live, lights, shown, directory } = setup(() => Promise.resolve(jsonResponse(quiet)));
+    const { live, lights, shown, directory, counts } = setup(() =>
+      Promise.resolve(jsonResponse(quiet)),
+    );
     await live.refresh();
     expect(lights).toEqual([]);
     expect(directory).not.toHaveBeenCalled();
     expect(shown).toEqual(['2026-01-12T12:42:00Z']);
+    // No school is lit, so the legend is given no count.
+    expect(counts).toEqual([]);
+    live.stop();
+  });
+
+  it('counts the schools it lights in each status, once for each change', async () => {
+    let current: unknown = file;
+    const { live, counts, setNow, directory } = setup(() => Promise.resolve(jsonResponse(current)));
+    await live.refresh();
+    expect(counts).toEqual([[1, 1, 0, 0]]);
+    // The same counts from a newer file say nothing new.
+    current = testClosings('2026-01-12T12:50:00Z', META, file.days);
+    await vi.advanceTimersByTimeAsync(LIVE_POLL_MS);
+    expect(counts).toEqual([[1, 1, 0, 0]]);
+    // A school goes remote.
+    current = testClosings('2026-01-12T12:57:00Z', META, [
+      testDay('2026-01-12', [
+        [0, 0],
+        [1, 2],
+        [2, 1],
+      ]),
+    ]);
+    await vi.advanceTimersByTimeAsync(LIVE_POLL_MS);
+    expect(counts).toEqual([
+      [1, 1, 0, 0],
+      [1, 1, 1, 0],
+    ]);
+    // Overnight nothing is lit, and no count is given.
+    setNow(new Date('2026-01-13T05:00:00Z'));
+    await vi.advanceTimersByTimeAsync(LIVE_POLL_MS);
+    expect(counts.at(-1)).toBeNull();
+    // Back in the day, a file whose directory cannot be had lights nothing, and counts nothing.
+    setNow(NOON);
+    await vi.advanceTimersByTimeAsync(LIVE_POLL_MS);
+    expect(counts.at(-1)).toEqual([1, 1, 1, 0]);
+    current = testClosings('2026-01-12T13:12:00Z', META, file.days);
+    directory.mockResolvedValue(null);
+    await vi.advanceTimersByTimeAsync(LIVE_POLL_MS);
+    expect(counts.at(-1)).toBeNull();
     live.stop();
   });
 });

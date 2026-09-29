@@ -42,7 +42,7 @@ import type { Page } from '@playwright/test';
 import { build, preview } from 'vite';
 import type { PreviewServer } from 'vite';
 
-import { copy, format } from '../src/copy';
+import { STATUS_KEYS, copy, format } from '../src/copy';
 import { COPIED_MS } from '../src/ui/share';
 
 const WEB = fileURLToPath(new URL('..', import.meta.url));
@@ -125,6 +125,36 @@ interface GlowStats {
   glowCount: number;
   frames: number;
   mode: string;
+}
+
+/** Every layout shift the page has had, by the text of what moved: none is ever expected. */
+async function layoutShifts(page: Page): Promise<string[]> {
+  return page.evaluate(
+    () =>
+      new Promise<string[]>((resolve) => {
+        const done = (shifts: string[]): void => {
+          observer.disconnect();
+          resolve(shifts);
+        };
+        const observer = new PerformanceObserver((list) => {
+          done(
+            list.getEntries().map((entry) => {
+              const { value, sources } = entry as unknown as {
+                value: number;
+                sources: { node?: Node | null }[];
+              };
+              const moved = sources.map((source) => source.node?.textContent?.trim() ?? '?');
+              return `${String(value)} ${moved.join(' | ')}`;
+            }),
+          );
+        });
+        // Buffered: the shifts so far come at once, and with none nothing comes.
+        observer.observe({ type: 'layout-shift', buffered: true });
+        setTimeout(() => {
+          done([]);
+        }, 500);
+      }),
+  );
 }
 
 /** The glow layer's own numbers, once it is on the map. */
@@ -1231,6 +1261,22 @@ test.describe('with data staged', () => {
     await expect.poll(async () => (await glowStats(page)).mode).toBe('float');
     const closings = requests.filter((url) => url.endsWith('/data/live/closings.json'));
     expect(closings.length).toBeGreaterThanOrEqual(1);
+
+    // The legend counts the schools lit in each status, and dims a status with none; nothing
+    // on the page moves as the counts come.
+    const legend = page.locator('ul.legend');
+    await expect(legend.locator('li')).toHaveText([
+      `${copy.status.closed} ${format.number(1)}`,
+      `${copy.status.delayed} ${format.number(1)}`,
+      copy.status.remote,
+      copy.status.earlyDismissal,
+    ]);
+    await expect(legend.locator('li.is-none')).toHaveText([
+      copy.status.remote,
+      copy.status.earlyDismissal,
+    ]);
+    await expect(legend.locator('.count')).toHaveText([format.number(1), format.number(1)]);
+    expect(await layoutShifts(page)).toEqual([]);
     expect(problems).toEqual([]);
 
     // The day after, the same file lights nothing.
@@ -1245,6 +1291,12 @@ test.describe('with data staged', () => {
       .not.toEqual([]);
     await next.waitForTimeout(2000);
     expect((await glowStats(next)).glowCount).toBe(0);
+    // Nothing lit, nothing counted: the legend is the key alone.
+    await expect(next.locator('ul.legend li')).toHaveText(
+      STATUS_KEYS.map((key) => copy.status[key]),
+    );
+    await expect(next.locator('ul.legend .count')).toHaveCount(0);
+    await expect(next.locator('ul.legend li.is-none')).toHaveCount(0);
     expect(nextWatch.problems).toEqual([]);
     await later.close();
     await context.close();

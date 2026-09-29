@@ -9,10 +9,11 @@
     SchoolView,
     SearchOption,
     Services,
+    StatusCounts,
     Target,
   } from './app/boot';
   import { grantedPlace, opensNearby } from './app/nearby';
-  import { copy } from './copy';
+  import { STATUS_KEYS, copy, format } from './copy';
   import type { Basemap, Place } from './map/basemap';
   import { loadBasemap } from './map/basemap/load';
   import type { Glow } from './map/glow-mount';
@@ -85,6 +86,8 @@
   let updatedAt = $state<UtcInstant | null>(null);
   /** The update time, loaded with the first live file shown. */
   let UpdateTime = $state<Component<UpdateTimeProps> | null>(null);
+  /** How many schools the map lights in each status, by status code; null while none is lit. */
+  let counts = $state<StatusCounts | null>(null);
   /** The name the field shows for the last pick, until the text changes. */
   let pickedName: string | null = null;
   /** True while the phone is asked where it is. */
@@ -128,6 +131,9 @@
     basemap: Basemap;
     glow: Glow | null;
   }
+
+  /** Each status's mark in the key, by status code (index.html draws them as the map does). */
+  const GLYPHS = ['is-closed', 'is-delayed', 'is-remote', 'is-early-dismissal'] as const;
 
   /** The page's controls over the map, which its labels keep clear of (the results list aside). */
   const CONTROLS = '.wordmark, .search, .updated, .legend, .locate, .detail';
@@ -471,6 +477,12 @@
     if (UpdateTime !== null && updatedAt !== null) basemap?.controlsChanged();
   });
 
+  /** The lit schools are counted: the key shows the counts, and the map's labels keep clear of it. */
+  function onCounts(next: StatusCounts | null): void {
+    counts = next;
+    basemap?.controlsChanged();
+  }
+
   /** A live file is shown, or none is: the update time follows it. */
   function onUpdated(generatedAt: UtcInstant | null): void {
     updatedAt = generatedAt;
@@ -559,6 +571,7 @@
             active = next !== null && next.length > 0 ? 0 : -1;
           },
           onUpdated,
+          onCounts,
         });
       })
       .catch(() => null);
@@ -658,14 +671,23 @@
       />
     {/if}
   </header>
-  <ul class="legend" aria-label={copy.legend.label}>
-    <li><span class="glyph is-closed" aria-hidden="true"></span>{copy.status.closed}</li>
-    <li><span class="glyph is-delayed" aria-hidden="true"></span>{copy.status.delayed}</li>
-    <li><span class="glyph is-remote" aria-hidden="true"></span>{copy.status.remote}</li>
-    <li>
-      <span class="glyph is-early-dismissal" aria-hidden="true"></span>{copy.status.earlyDismissal}
-    </li>
-  </ul>
+  <!--
+    The key to the map's four lights, each mark as the map draws it. Once the
+    live file lights schools, each status gives how many the map shows, and a
+    status with none dims. New counts draw a new key rather than widen the old
+    one's words, so no word on the page is ever seen to move (a layout shift).
+  -->
+  {#key counts}
+    <ul class="legend" aria-label={copy.legend.label}>
+      {#each STATUS_KEYS as key, code (key)}
+        {@const count = counts?.[code]}
+        <li class:is-none={count === 0}>
+          <span class="glyph {GLYPHS[code]}" aria-hidden="true"></span>{copy.status[key]}
+          {#if count}<span class="count">{format.number(count)}</span>{/if}
+        </li>
+      {/each}
+    </ul>
+  {/key}
   <button
     class="locate"
     class:is-locating={locating}

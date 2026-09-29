@@ -527,37 +527,82 @@
       }
 
       /*
+        A soft veil along the foot of the screen, as under the top strip: on
+        the black ground it is not there at all, and over the streets it keeps
+        the key's words clear without a chip around them. Low enough to leave
+        the country's lines at the national view as they are.
+      */
+      .stage::after {
+        position: absolute;
+        inset: auto 0 0;
+        z-index: 1;
+        height: calc(var(--inset-bottom) + var(--edge) + var(--control-height) + 12px);
+        pointer-events: none;
+        content: '';
+        background: linear-gradient(
+          rgb(0 0 0 / 0),
+          rgb(0 0 0 / 0.1) 20%,
+          rgb(0 0 0 / 0.28) 45%,
+          rgb(0 0 0 / 0.5) 75%,
+          rgb(0 0 0 / 0.64)
+        );
+      }
+
+      /*
         The key to the map's four lights, in the bottom corner across from the
-        attribution: each status in its own color and shape, as the map draws
-        it, on a solid chip like the attribution button's, so no street or
-        school shows through it. The map's labels keep clear of it.
+        attribution, level with the wordmark above it: each status in its own
+        color and shape, as the map draws it, set on the map itself like the
+        update time, with no chip around it. The map's labels keep clear of it.
+        Once the live file lights schools, each status gives how many the map
+        shows (App.svelte), and a status with none dims.
       */
       .legend {
         position: absolute;
         bottom: calc(var(--inset-bottom) + var(--edge));
         left: calc(var(--inset-left) + var(--edge));
-        z-index: 1;
+        z-index: 2;
         /*
           One line, never wrapped: a line that wrapped in the fallback face and
           came back to one in Geist would move the key as the font loads.
         */
         display: flex;
         flex-wrap: nowrap;
-        gap: 6px 8px;
+        gap: 8px var(--legend-gap);
         align-items: center;
         min-height: var(--control-height);
         margin: 0;
-        padding: 5px 11px 5px 9px;
-        font-size: 12px;
-        font-weight: 450;
+        padding: 0;
+        font-size: var(--legend-font);
+        font-weight: 500;
         line-height: 16px;
         color: var(--text-2);
         white-space: nowrap;
         list-style: none;
         pointer-events: none;
-        background: var(--surface-2);
-        border: 1px solid var(--border-2);
+        text-shadow:
+          0 0 2px #000,
+          0 0 8px #000;
+        /* The space between the keys, and between each mark and its word. */
+        --legend-gap: 20px;
+        --legend-font: 12px;
+        --key-gap: 7px;
+      }
+
+      /*
+        A soft shadow under the key, with no edge to it: nothing on the black
+        ground, and over the streets it dims what runs under the words (a
+        school's light, a street), so no light on the map is taken for a mark
+        of the key.
+      */
+      .legend::before {
+        position: absolute;
+        inset: 0 -8px;
+        z-index: -1;
+        pointer-events: none;
+        content: '';
+        background: rgb(0 0 0 / 0.72);
         border-radius: calc(var(--control-height) / 2);
+        box-shadow: 0 0 16px 8px rgb(0 0 0 / 0.72);
       }
 
       /*
@@ -626,48 +671,111 @@
         }
       }
 
-      /* The smaller phones: the key a touch smaller, so it still fits one line. */
-      @media (max-width: 389px) {
+      /* A phone: the keys closer, so the four fit one line beside the attribution. */
+      @media (max-width: 719px) {
         .legend {
-          font-size: 11.5px;
+          --legend-gap: 14px;
+          --key-gap: 6px;
         }
       }
 
-      /* The narrowest phones: two lines of two, whatever the face. */
+      /* The smaller phones: the key a touch smaller, so it still fits one line. */
+      @media (max-width: 389px) {
+        .legend {
+          --legend-gap: 12px;
+          --legend-font: 11.5px;
+        }
+      }
+
+      /*
+        The narrowest phones: two lines of two, whatever the face, the lower
+        line level with the attribution button across from it.
+      */
       @media (max-width: 374px) {
         .legend {
           display: grid;
           grid-template-columns: auto auto;
           justify-content: start;
+          padding-bottom: calc((var(--control-height) - 16px) / 2);
         }
       }
 
       .legend li {
         display: flex;
         flex: none;
-        gap: 5px;
+        gap: var(--key-gap);
         align-items: center;
       }
 
       /*
         Each of the first three keys keeps a slot as wide as it is set in
-        Geist: its glyph and gap, its word in ems, and 2px to 3px for screens
-        that round each letter to whole pixels. Every key then starts at the same
+        Geist: its glyph and gap, its word in ems, and 2px for screens that
+        round each letter to whole pixels. Every key then starts at the same
         place in the fallback face and in Geist, so the key never moves as the
         font loads (e2e/shell.spec.ts); a wider fallback runs a little into
-        the gap after it until then. With the 8px gap, the keys stand 10px
-        apart, as the gap alone set them before.
+        the gap after it until then. Counts come only once the face has
+        loaded, so a key with its count takes the width it is set in.
       */
       .legend li:nth-child(1) {
-        width: calc(15px + 3.22em);
+        width: calc(10px + var(--key-gap) + 3.26em);
       }
 
       .legend li:nth-child(2) {
-        width: calc(15px + 3.76em);
+        width: calc(10px + var(--key-gap) + 3.81em);
       }
 
       .legend li:nth-child(3) {
-        width: calc(15px + 3.6em);
+        width: calc(10px + var(--key-gap) + 3.64em);
+      }
+
+      .legend:has(.count) li {
+        width: auto;
+      }
+
+      /* How many schools the map shows in each status: the brightest words in the key. */
+      .legend .count {
+        color: var(--text-1);
+        animation: count-in 320ms ease-out both;
+      }
+
+      @keyframes count-in {
+        from {
+          opacity: 0;
+        }
+      }
+
+      /*
+        A status no school has today: no count, and its mark steps back. Its
+        word keeps the key's gray, clear to read against the ground.
+      */
+      .legend li.is-none .glyph {
+        opacity: 0.4;
+      }
+
+      /*
+        A phone: with their counts, the keys in two lines of two, the lower
+        line level with the attribution button across from it.
+      */
+      @media (max-width: 719px) {
+        .legend:has(.count) {
+          display: grid;
+          grid-template-columns: auto auto;
+          gap: 8px 20px;
+          justify-content: start;
+          padding-bottom: calc((var(--control-height) - 16px) / 2);
+        }
+      }
+
+      /* The smaller phones: the two columns closer, so the longest counts keep clear of the corner. */
+      @media (max-width: 389px) {
+        .legend:has(.count) {
+          column-gap: 16px;
+        }
+      }
+
+      /* The diamond is a pixel narrower than the dots: centered in a dot's width, its word lines up. */
+      .legend .glyph.is-remote {
+        margin: 0 0.5px;
       }
 
       .glyph {
@@ -824,6 +932,11 @@
 
       /* Attribution: a small glass button that opens to one line of credits. */
 
+      /*
+        Closed, a hairline ring on the map, as bare as the key across from it;
+        open, a solid chip under its line of credits (no backdrop blur over the
+        moving WebGL map, which makes some GPUs flicker).
+      */
       .maplibregl-ctrl.maplibregl-ctrl-attrib {
         position: relative;
         min-width: 28px;
@@ -831,10 +944,21 @@
         min-height: 28px;
         padding: 0;
         color: var(--text-2);
-        /* Solid: a backdrop blur over the moving WebGL map makes some GPUs flicker. */
-        background: rgb(17 17 17);
+        /* Black on the black ground, and over the streets a soft shadow like the key's. */
+        background: rgb(0 0 0 / 0.72);
         border: 1px solid var(--border-2);
         border-radius: 14px;
+        box-shadow: 0 0 12px 4px rgb(0 0 0 / 0.6);
+        transition: border-color 120ms linear;
+      }
+
+      .maplibregl-ctrl.maplibregl-ctrl-attrib:hover,
+      .maplibregl-ctrl.maplibregl-ctrl-attrib.maplibregl-compact-show {
+        border-color: var(--text-3);
+      }
+
+      .maplibregl-ctrl.maplibregl-ctrl-attrib.maplibregl-compact-show {
+        background: rgb(17 17 17);
       }
 
       .maplibregl-attrib-empty {
@@ -913,8 +1037,13 @@
         .search,
         .search-icon,
         .search-key,
-        .locate {
+        .locate,
+        .maplibregl-ctrl.maplibregl-ctrl-attrib {
           transition: none;
+        }
+
+        .legend .count {
+          animation: none;
         }
 
         .locate.is-locating svg {

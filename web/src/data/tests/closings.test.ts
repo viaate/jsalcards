@@ -1,6 +1,14 @@
 import { describe, expect, it } from 'vitest';
 
-import { NOTHING_LIT, decodeDay, lightSchools, parseClosings, todayEverywhere } from '../closings';
+import {
+  NOTHING_LIT,
+  countStatuses,
+  decodeDay,
+  lightSchools,
+  parseClosings,
+  sameCounts,
+  todayEverywhere,
+} from '../closings';
 import { createDirectory, parsePoints } from '../directory';
 import { testClosings, testDay, testMeta, testPoints } from './builders';
 import type { TestSchool } from './builders';
@@ -125,5 +133,44 @@ describe('the schools lit today', () => {
     expect(lightSchools(FILE, DIRECTORY, { now: yesterday, previous: null, bornMs: 0 })).toBe(
       NOTHING_LIT,
     );
+  });
+});
+
+describe('the counts the legend gives', () => {
+  it('count the schools lit today in each status, in code order', () => {
+    const lit = lightSchools(FILE, DIRECTORY, { now: NOON, previous: null, bornMs: 5 });
+    // Rows today: one closed, one delayed, one dismissing early; none remote.
+    expect(countStatuses(lit)).toEqual([1, 1, 0, 1]);
+    const tomorrow = lightSchools(FILE, DIRECTORY, {
+      now: new Date('2026-01-13T15:00:00Z'),
+      previous: null,
+      bornMs: 5,
+    });
+    expect(countStatuses(tomorrow)).toEqual([1, 0, 0, 0]);
+  });
+
+  it('are none while nothing is lit, so no count is given for lights the map does not show', () => {
+    expect(countStatuses(NOTHING_LIT)).toBeNull();
+    const overnight = new Date('2026-01-13T05:00:00Z');
+    expect(
+      countStatuses(lightSchools(FILE, DIRECTORY, { now: overnight, previous: null, bornMs: 0 })),
+    ).toBeNull();
+    const otherDirectory = {
+      ...FILE,
+      directory: { ...FILE.directory, generated_on: '2026-02-01' },
+    };
+    expect(
+      countStatuses(
+        lightSchools(otherDirectory, DIRECTORY, { now: NOON, previous: null, bornMs: 0 }),
+      ),
+    ).toBeNull();
+  });
+
+  it('are told apart by what they say', () => {
+    expect(sameCounts([1, 2, 0, 3], [1, 2, 0, 3])).toBe(true);
+    expect(sameCounts([1, 2, 0, 3], [1, 2, 0, 4])).toBe(false);
+    expect(sameCounts(null, null)).toBe(true);
+    expect(sameCounts(null, [0, 0, 0, 0])).toBe(false);
+    expect(sameCounts([0, 0, 0, 0], null)).toBe(false);
   });
 });

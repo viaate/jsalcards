@@ -203,3 +203,26 @@ export function lightSchools(
     ? { lngLat, status: rows.statuses, schools }
     : { lngLat, status: rows.statuses, bornAt, schools };
 }
+
+/** How many schools the map lights in each status, by status code (closed … early dismissal). */
+export type StatusCounts = readonly [number, number, number, number];
+
+/**
+ * How many of the lit schools have each status: the schools the map shows,
+ * counted, and nothing else. Null when none is lit, so no count is given
+ * where the map shows nothing.
+ */
+export function countStatuses(lit: LitSchools): StatusCounts | null {
+  if (lit.status.length === 0) return null;
+  const counts: [number, number, number, number] = [0, 0, 0, 0];
+  for (const status of lit.status) {
+    if (status < counts.length) counts[status as Status] += 1;
+  }
+  return counts;
+}
+
+/** Whether two sets of counts say the same. */
+export function sameCounts(a: StatusCounts | null, b: StatusCounts | null): boolean {
+  if (a === null || b === null) return a === b;
+  return a.every((n, code) => n === b[code]);
+}
