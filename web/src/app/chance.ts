@@ -7,15 +7,15 @@
  *    door that already posted a status for that day (live/closings.json rows,
  *    mapped to districts through the directory), each with its time; then when
  *    this district usually announces, with a live countdown;
- * 3. the night hour by hour, drawn to scale (the chart's numbers and where its
- *    words go are worked out here, so they can be tested);
+ * 3. the night hour by hour, drawn to scale (the chart's numbers are worked
+ *    out here, where its words go in ui/chart-layout.ts, so both are tested);
  * 4. how the chance adds up: the base, then each reason's points, then the
  *    total. It shows only when every part can be said and the parts add up to
  *    the headline exactly; a sum that does not is never shown;
  * 5. the chance of a delayed start instead.
  *
- * Every word comes from src/copy.ts. A part the files do not give is left out,
- * and nothing is filled in.
+ * Every word comes from src/copy.ts and src/copy-chance.ts. A part the files
+ * do not give is left out, and nothing is filled in.
  */
 
 import { STATUS_KEYS, format } from '../copy';
