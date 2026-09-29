@@ -7,7 +7,8 @@
  * - search: the index loads on the first focus of the search field;
  * - today's schools lit on the glow layer (App.svelte puts it on the map), the
  *   time of the live file they come from, for the update time, and how many
- *   are lit in each status, for the legend;
+ *   are lit in each status, for the legend; and every school as dust on it,
+ *   read the first time the map shows the dust;
  * - the service worker, registered once the map is on screen;
  * - the school a pick or a link opens: its detail panel's view (app/school.ts,
  *   loaded when a school is first opened), and the pin;
@@ -24,7 +25,7 @@ import type { Glow } from '../map/glow-mount';
 import { keepClicks } from '../map/kept-clicks';
 import type { SchoolHit, SchoolTaps } from '../map/school-taps';
 import type { SearchHit } from '../search';
-import { SHOW_ALL } from '../state/filter';
+import { SHOW_ALL, showsSchool } from '../state/filter';
 import type { MapFilter } from '../state/filter';
 import { createPinStore } from '../state/pin-store';
 import type { PinStore } from '../state/pin-store';
@@ -34,7 +35,7 @@ import type { SchoolId, UtcInstant } from '../types/generated';
 import type { StatusCounts } from '../data/closings';
 import type { DetailsSource } from '../data/details';
 import { DATA_PATHS } from '../data/files';
-import { createAppData, locate, startLiveGlow } from './data';
+import { createAppData, dustSource, locate, startLiveGlow } from './data';
 import type { AppData, LiveGlow, Target } from './data';
 import { clearOfPanel, mapInView } from './frame';
 import type { Screen } from './frame';
@@ -109,7 +110,7 @@ export interface BootOptions {
    */
   readonly onCounts?: (counts: StatusCounts | null) => void;
   /**
-   * A school clicked or tapped on the map, its dot, its name or its light:
+   * A school clicked or tapped on the map, its dot, its dust, its name or its light:
    * the page opens it as a pick of it would. Without it, a click opens nothing.
    */
   readonly onSchool?: (school: SchoolHit) => void;
@@ -159,9 +160,15 @@ export interface Services {
   toggleMenu(button: HTMLElement, counts: () => StatusCounts | null): void;
   /**
    * Shows only what the menu's filter keeps: the lit schools of its status
-   * and kinds on the glow, the school dots and names of its kinds on the map.
+   * and kinds on the glow, the school dots, dust and names of its kinds on
+   * the map.
    */
   filter(filter: MapFilter): void;
+}
+
+/** Whether a school with these kind flags shows under this filter, for the glow's dust. */
+function kindsShown(filter: MapFilter): (flags: number) => boolean {
+  return (flags) => showsSchool(filter, flags);
 }
 
 /** A view, as it shows a place clear of what the page puts over the map for what it opens. */
@@ -232,6 +239,10 @@ export function boot(options: BootOptions): Services {
   let filter: MapFilter = SHOW_ALL;
   void glow.then(async (layer) => {
     if (layer === null || aborted()) return;
+    // Every school as dust further out, read from the directory once the map shows it, of the
+    // kinds the menu shows.
+    layer.dust(dustSource(data));
+    layer.showSchools(kindsShown(filter));
     const started = await startLiveGlow(
       data,
       glow,
@@ -291,8 +302,8 @@ export function boot(options: BootOptions): Services {
   let menuView: Promise<MenuView> | null = null;
   // Clicks on schools, from the moment the map takes input. Until their code is in (it loads
   // on the first click, or once the map is on screen) each is kept, and handed on only if the
-  // map has not moved since (map/kept-clicks.ts). A lit school is found in the glow's own data,
-  // read as each click comes. A tap on several schools zooms in as the map's own flights go.
+  // map has not moved since (map/kept-clicks.ts). A lit school, and a school drawn as dust, is
+  // found in the glow's own data, read as each click comes. A tap on several schools zooms in as the map's own flights go.
   let taps: SchoolTaps | null = null;
   /** Where the last flight a pick or a tap set off was going: for a flight stopped short. */
   let flight: MapView | null = null;
@@ -321,6 +332,7 @@ export function boot(options: BootOptions): Services {
         if (aborted()) return;
         taps = attachSchoolTaps(map.map, {
           lit: () => layer?.lit ?? null,
+          dust: () => layer?.specks ?? null,
           onSchool,
           onZoom: (view) => {
             flight = view;
@@ -357,6 +369,8 @@ export function boot(options: BootOptions): Services {
     filter(next) {
       filter = next;
       live?.filter(next);
+      // The dust too, as the dots.
+      void glow.then((layer) => layer?.showSchools(kindsShown(next)));
       // The dots and names, on the map as soon as it takes input (it keeps them for layers to come).
       void (options.mapCreated ?? options.map).then((map) => map?.showSchools(next));
     },

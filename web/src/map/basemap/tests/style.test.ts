@@ -20,6 +20,14 @@ import type {
 } from '@maplibre/maplibre-gl-style-spec';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
+import {
+  SCHOOL_DOT_OPACITY,
+  SCHOOL_DOT_RADIUS,
+  SCHOOL_DOT_SOFTNESS,
+  SCHOOL_DUST_FROM,
+  SCHOOL_DUST_UNTIL,
+  dotAt,
+} from '../dots';
 import { MAP_FONT_FILES, MAP_FONTS, addMapFonts } from '../fonts';
 import { BASEMAP_IDS } from '../ids';
 import { BORDER_LAYER, MASK_LAYER } from '../mask/format';
@@ -28,8 +36,8 @@ import { SCHOOLS_TILE_LAYER, SCHOOL_LIT_STATE, SCHOOL_TILES_PROTOCOL } from '../
 import { NEARBY_ZOOM } from '../limits';
 import {
   SCHOOL_DOTS_FROM,
-  SCHOOL_DOT_FADE,
   SCHOOL_FADE,
+  SCHOOL_LIGHT_FROM,
   SCHOOL_LIGHT_OPACITY,
   SCHOOL_LIGHT_UNTIL,
   SCHOOL_NAMES_FROM,
@@ -1042,9 +1050,9 @@ describe('schools', () => {
       minzoom: SCHOOL_TILES_MIN_ZOOM,
       maxzoom: SCHOOL_TILES_MAX_ZOOM,
     });
-    // The tileset holds zooms 9 to 14: the dots fade in from the first of them.
+    // The tileset holds zooms 9 to 14: the dots are drawn from the first of them, the glow
+    // layer's dust further out (dots.ts).
     expect(SCHOOL_TILES_MIN_ZOOM).toBe(9);
-    expect(SCHOOL_DOTS_FROM - SCHOOL_DOT_FADE).toBe(SCHOOL_TILES_MIN_ZOOM);
     for (const id of [BASEMAP_IDS.schoolDots, BASEMAP_IDS.schoolNames, BASEMAP_IDS.schoolLight]) {
       expect(schoolLayer(id)).toMatchObject({
         source: BASEMAP_IDS.schoolsSource,
@@ -1058,7 +1066,10 @@ describe('schools', () => {
     // Each fully drawn at its zoom, fading in before it.
     expect(schoolLayer(BASEMAP_IDS.schoolDots).minzoom).toBe(SCHOOL_TILES_MIN_ZOOM);
     expect(schoolLayer(BASEMAP_IDS.schoolNames).minzoom).toBe(13 - SCHOOL_FADE);
-    expect(num(BASEMAP_IDS.schoolDots, 'paint', 'circle-opacity', SCHOOL_TILES_MIN_ZOOM)).toBe(0);
+    // Dimmed as the dust is at the first zoom the tiles hold, whole across a metro.
+    expect(num(BASEMAP_IDS.schoolDots, 'paint', 'circle-opacity', SCHOOL_TILES_MIN_ZOOM)).toBe(
+      dotAt(SCHOOL_DOT_OPACITY, SCHOOL_TILES_MIN_ZOOM),
+    );
     for (const zoom of [SCHOOL_DOTS_FROM, NEARBY_ZOOM, 11, 13, 16]) {
       expect(num(BASEMAP_IDS.schoolDots, 'paint', 'circle-opacity', zoom), String(zoom)).toBe(1);
       expect(num(BASEMAP_IDS.schoolDots, 'paint', 'circle-stroke-opacity', zoom)).toBe(1);
@@ -1091,6 +1102,28 @@ describe('schools', () => {
     }
     // Nothing below the layers' own zooms.
     expect(schoolDotOpacity((schoolLayer(schoolDots).minzoom ?? 0) - 0.01)).toBe(0);
+  });
+
+  it('dim and shrink as the dust does, so it takes over from them further out unseen', () => {
+    // One curve for the tiles' dots and the glow layer's dust (dots.ts), wherever the tiles hold.
+    for (const zoom of [9, 9.25, SCHOOL_DOTS_FROM, 9.75, 10, 11, 13, 15, 17]) {
+      const where = String(zoom);
+      expect(num(BASEMAP_IDS.schoolDots, 'paint', 'circle-radius', zoom), where).toBeCloseTo(
+        dotAt(SCHOOL_DOT_RADIUS, zoom),
+        6,
+      );
+      expect(num(BASEMAP_IDS.schoolDots, 'paint', 'circle-opacity', zoom), where).toBeCloseTo(
+        dotAt(SCHOOL_DOT_OPACITY, zoom),
+        6,
+      );
+    }
+    // The dust draws on over them until a zoom past the tiles' first, time for the tiles to come
+    // in, edged there as MapLibre edges them; and only as far out as there are no tiles, not the
+    // national view.
+    expect(SCHOOL_DUST_UNTIL).toBeGreaterThanOrEqual(SCHOOL_TILES_MIN_ZOOM + 1);
+    expect(SCHOOL_DUST_UNTIL).toBeLessThanOrEqual(NEARBY_ZOOM);
+    expect(dotAt(SCHOOL_DOT_SOFTNESS, SCHOOL_TILES_MIN_ZOOM)).toBe(0);
+    expect(SCHOOL_DUST_FROM).toBeLessThan(SCHOOL_TILES_MIN_ZOOM);
   });
 
   it('put a campus written after a spaced dash on a second, dimmer line', () => {
@@ -1149,7 +1182,7 @@ describe('schools', () => {
       [BASEMAP_IDS.schoolLight, 'circle-opacity'],
     ];
     for (const [id, name] of drawn) {
-      for (const zoom of [SCHOOL_DOTS_FROM, 10.2, 11, 12, 13, 15, 17]) {
+      for (const zoom of [9.2, SCHOOL_DOTS_FROM, 10.2, 11, 12, 13, 15, 17]) {
         if (zoom > (schoolLayer(id).maxzoom ?? 24)) continue;
         const where = `${id} ${name} ${String(zoom)}`;
         expect(opacity(id, name, zoom, true), where).toBe(0);
@@ -1291,20 +1324,33 @@ describe('schools', () => {
       BASEMAP_IDS.ofmVillageLabel,
     ] as const;
     for (const id of places) {
-      for (const zoom of [SCHOOL_DOTS_FROM, 10.2, 11, 12, SCHOOL_NAMES_FROM - SCHOOL_FADE]) {
+      // From the zoom the street tiles name places at, over the dust, to the school names' zoom.
+      for (const zoom of [
+        7,
+        8,
+        9,
+        SCHOOL_DOTS_FROM,
+        10.2,
+        11,
+        12,
+        SCHOOL_NAMES_FROM - SCHOOL_FADE,
+      ]) {
         const where = `${id} ${String(zoom)}`;
         expect(halo(WITH_SCHOOLS, id, 'text-halo-width', zoom), where).toBe(METRO_PLACE_HALO);
         expect(halo(WITH_SCHOOLS, id, 'text-halo-color', zoom)).toEqual(
           halo(STYLE, id, 'text-halo-color', zoom),
         );
-        // Wide enough to cover a dot and its ring between two letters.
+        // Wide enough to cover a dot and its ring, or a speck of dust, between two letters.
         const dot =
-          num(BASEMAP_IDS.schoolDots, 'paint', 'circle-radius', zoom) +
-          num(BASEMAP_IDS.schoolDots, 'paint', 'circle-stroke-width', zoom);
+          zoom < SCHOOL_TILES_MIN_ZOOM
+            ? dotAt(SCHOOL_DOT_RADIUS, zoom) + 1
+            : num(BASEMAP_IDS.schoolDots, 'paint', 'circle-radius', zoom) +
+              num(BASEMAP_IDS.schoolDots, 'paint', 'circle-stroke-width', zoom);
         expect(2 * METRO_PLACE_HALO, where).toBeGreaterThan(dot);
       }
-      // The street tiles' own halo further out, up close, and without the schools.
-      for (const zoom of [7, 8, SCHOOL_TILES_MIN_ZOOM, SCHOOL_NAMES_FROM, 15]) {
+      expect(OPENFREEMAP_MIN_ZOOM).toBe(7);
+      // The street tiles' own halo up close, and without the schools.
+      for (const zoom of [SCHOOL_NAMES_FROM, 15]) {
         const plain = halo(STYLE, id, 'text-halo-width', zoom);
         expect(plain).toBe(num(BASEMAP_IDS.ofmStreetLabel, 'paint', 'text-halo-width', zoom));
         expect(halo(WITH_SCHOOLS, id, 'text-halo-width', zoom), `${id} ${String(zoom)}`).toBe(
@@ -1364,7 +1410,14 @@ describe('schools', () => {
     expect(
       num(BASEMAP_IDS.schoolLight, 'paint', 'circle-opacity', SCHOOL_NAMES_FROM - SCHOOL_FADE),
     ).toBe(0);
-    for (const zoom of [SCHOOL_DOTS_FROM, 10.2, 11, SCHOOL_LIGHT_UNTIL]) {
+    // Fading in as the dots dim into the dust further out, all of it from a metro's zoom.
+    expect(SCHOOL_LIGHT_FROM).toBe(NEARBY_ZOOM);
+    const fading = [9.25, 9.5, 9.75].map((z) =>
+      num(BASEMAP_IDS.schoolLight, 'paint', 'circle-opacity', z),
+    );
+    expect(fading).toEqual([...fading].sort((a, b) => a - b));
+    expect(Math.max(...fading)).toBeLessThan(SCHOOL_LIGHT_OPACITY);
+    for (const zoom of [SCHOOL_LIGHT_FROM, 10.2, 11, SCHOOL_LIGHT_UNTIL]) {
       const where = String(zoom);
       expect(hex(rgb(BASEMAP_IDS.schoolLight, 'circle-color', zoom))).toBe(COLORS.labelBright);
       // Soft: a lone school is a point of light, and only a crowd of them a glow.

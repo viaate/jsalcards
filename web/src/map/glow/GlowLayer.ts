@@ -32,6 +32,14 @@
  * Points pulse in once from their bornAt. The layer clock is re-based on
  * every setData and a bornAt later than now is moved back to now, so the
  * layer asks for frames for at most one pulse after each setData.
+ *
+ * With a dust style, the layer also draws every school it is given with
+ * setDust as a faint speck (dust.ts), in render before the composite, so the
+ * glow's light is screened over it; a school flagged with hideDust (one the
+ * glow lights) gives way to its light, and filterDust leaves out the kinds of
+ * school the page hides. dustNear finds the specks drawn near a point, for a
+ * tap on one. The dust has its own small program,
+ * compiled the first time it is drawn, and draws nothing outside its zooms.
  */
 import type {
   CustomLayerInterface,
@@ -51,6 +59,19 @@ import {
   interpolateStops,
   kernelUniforms,
 } from './curves';
+import {
+  DUST_ATTRIB,
+  DUST_FRAG,
+  DUST_HIDDEN_Y,
+  DUST_VERT,
+  type DustGrid,
+  type DustStyle,
+  dustAtZoom,
+  dustGrid,
+  dustRuns,
+  dustSlotsNear,
+  dustSpriteSize,
+} from './dust';
 import {
   type LightFormat,
   type LightTarget,
@@ -103,6 +124,8 @@ export interface GlowLayerOptions {
   readonly reducedMotion?: boolean;
   /** Time the layer's GPU work with EXT_disjoint_timer_query_webgl2 when available. */
   readonly gpuTiming?: boolean;
+  /** How to draw the schools given to setDust; without it, none are drawn. */
+  readonly dust?: DustStyle;
 }
 
 /**
@@ -133,6 +156,15 @@ export interface GlowLayerStats {
   readonly dropped: number;
   /** Rows of the last setData whose bornAt was later than now; they pulsed in at once. */
   readonly bornClamped: number;
+  /** Schools held as dust, and how many of them are left out: lit, or of a kind not shown. */
+  readonly dust: number;
+  readonly dustHidden: number;
+  /**
+   * Whether the last frame drew the dust, and how many specks it drew: the
+   * runs of its grid in view, the ones the glow lights (drawn off the world) too.
+   */
+  readonly dustDrawn: boolean;
+  readonly dustInView: number;
 }
 
 /** Accumulated light multiplier ahead of the tone map. */
@@ -169,6 +201,16 @@ interface GpuResources {
   /** levels[0] is the light target; the rest are bloom levels, each half the last. */
   levels: LightTarget[];
   timer: GpuTimer | null;
+}
+
+/** The dust's program and buffer, made the first time it is drawn. */
+interface DustResources {
+  readonly program: Program;
+  readonly positions: WebGLBuffer;
+  readonly vao: WebGLVertexArrayObject;
+  readonly maxPointSize: number;
+  /** Schools in the buffer; 0 until the positions are uploaded. */
+  count: number;
 }
 
 interface FrameState {
@@ -298,6 +340,26 @@ export class GlowLayer implements CustomLayerInterface {
   private restoreBeforeId: string | undefined;
   private restoreMap: MapLibreMap | null = null;
 
+  /** Every school's position for the dust (dust.ts), in its grid's order. */
+  private dust: DustGrid | null = null;
+  /** Each school's kind flags, in the grid's order. */
+  private dustKinds: Uint8Array | null = null;
+  /** One flag per school in the grid's order: 1 for a school the glow lights. */
+  private dustLit: Uint8Array | null = null;
+  private dustLitSet: ReadonlySet<number> = new Set();
+  /** Which kinds of school show as dust, by their kind flags. */
+  private dustShows: (kind: number) => boolean = () => true;
+  /** The positions the GPU draws: the grid's, with each speck left out moved off the world. */
+  private dustDrawnAt: Float32Array | null = null;
+  private dustLeftOut = 0;
+  private dustRes: DustResources | null = null;
+  /** Set when the GPU could not run the dust: the lights go on without it. */
+  private dustFailed = false;
+  /** Whether dustDrawnAt changed since it was last uploaded. */
+  private dustStale = false;
+  private dustDrawn = false;
+  private dustInView = 0;
+
   private frames = 0;
   private cpuMs = 0;
   private lastCpuMs = 0;
@@ -322,6 +384,98 @@ export class GlowLayer implements CustomLayerInterface {
     this.map?.triggerRepaint();
   }
 
+  /**
+   * Every school to draw as dust, as longitude, latitude pairs in degrees,
+   * with each one's kind flags for filterDust (none: every school shows), or
+   * null for none. The schools hideDust names are places in this list.
+   */
+  setDust(lngLat: Float32Array | Float64Array | null, kinds?: Uint8Array): void {
+    const grid = lngLat === null ? null : dustGrid(lngLat);
+    this.dust = grid;
+    this.dustKinds = null;
+    this.dustLit = null;
+    this.dustDrawnAt = null;
+    this.dustLeftOut = 0;
+    if (grid !== null) {
+      const count = grid.order.length;
+      this.dustKinds = new Uint8Array(count);
+      this.dustLit = new Uint8Array(count);
+      for (let slot = 0; slot < count; slot++) {
+        this.dustKinds[slot] = kinds?.[grid.order[slot] ?? 0] ?? 0;
+      }
+      for (const school of this.dustLitSet) {
+        const slot = grid.slotOf[school];
+        if (slot !== undefined) this.dustLit[slot] = 1;
+      }
+      this.dustDrawnAt = grid.positions.slice();
+      this.placeAllDust();
+    }
+    this.dustStale = true;
+    this.map?.triggerRepaint();
+  }
+
+  /** Leaves these schools (places in setDust's list) out of the dust, and no others. */
+  hideDust(schools: ReadonlySet<number>): void {
+    const before = this.dustLitSet;
+    this.dustLitSet = schools;
+    const grid = this.dust;
+    const lit = this.dustLit;
+    if (grid === null || lit === null) return;
+    const mark = (school: number, flag: 0 | 1): void => {
+      const slot = grid.slotOf[school];
+      if (slot === undefined || lit[slot] === flag) return;
+      lit[slot] = flag;
+      this.placeDust(slot);
+    };
+    for (const school of before) if (!schools.has(school)) mark(school, 0);
+    for (const school of schools) mark(school, 1);
+    this.map?.triggerRepaint();
+  }
+
+  /** Shows as dust only the schools whose kind flags `shows` keeps (the page's filter). */
+  filterDust(shows: (kind: number) => boolean): void {
+    this.dustShows = shows;
+    if (this.placeAllDust()) this.map?.triggerRepaint();
+  }
+
+  /**
+   * The schools whose specks are drawn within `reach` Web Mercator units of
+   * (x, y) each way, by their places in setDust's list: lit ones and those of
+   * a kind not shown left out.
+   */
+  dustNear(x: number, y: number, reach: number): number[] {
+    const grid = this.dust;
+    if (grid === null) return [];
+    return dustSlotsNear(grid, x, y, reach)
+      .filter((slot) => this.dustShown(slot))
+      .map((slot) => grid.order[slot] ?? 0);
+  }
+
+  private dustShown(slot: number): boolean {
+    return this.dustLit?.[slot] !== 1 && this.dustShows(this.dustKinds?.[slot] ?? 0);
+  }
+
+  /** Draws this slot's speck where it is, or off the world if it is left out; true if that changed. */
+  private placeDust(slot: number): boolean {
+    const grid = this.dust;
+    const drawnAt = this.dustDrawnAt;
+    if (grid === null || drawnAt === null) return false;
+    const y = this.dustShown(slot) ? (grid.positions[slot * 2 + 1] ?? 0) : DUST_HIDDEN_Y;
+    const was = drawnAt[slot * 2 + 1];
+    if (was === y) return false;
+    drawnAt[slot * 2 + 1] = y;
+    this.dustLeftOut += y === DUST_HIDDEN_Y ? 1 : was === DUST_HIDDEN_Y ? -1 : 0;
+    this.dustStale = true;
+    return true;
+  }
+
+  private placeAllDust(): boolean {
+    let changed = false;
+    const count = this.dust?.order.length ?? 0;
+    for (let slot = 0; slot < count; slot++) changed = this.placeDust(slot) || changed;
+    return changed;
+  }
+
   /** The clock `bornAt` uses: `performance.now()` milliseconds. */
   now(): number {
     return performance.now();
@@ -343,6 +497,10 @@ export class GlowLayer implements CustomLayerInterface {
       glowCount: this.packed?.glowCount ?? 0,
       dropped: this.packed?.dropped ?? 0,
       bornClamped: this.packed?.bornClamped ?? 0,
+      dust: this.dust === null ? 0 : this.dust.slotOf.length,
+      dustHidden: this.dustLeftOut,
+      dustDrawn: this.dustDrawn,
+      dustInView: this.dustInView,
     };
   }
 
@@ -352,6 +510,7 @@ export class GlowLayer implements CustomLayerInterface {
     this.contextLost = false;
     this.restoreMap = null;
     this.failed = false;
+    this.dustFailed = false;
     this.cssWidthFor = -1;
     this.res = null;
     // Shaders and buffers wait for the first frame with points to draw (ensureResources).
@@ -364,6 +523,8 @@ export class GlowLayer implements CustomLayerInterface {
   onRemove(map: MapLibreMap, gl: WebGL2RenderingContext): void {
     if (this.res !== null) this.deleteResources(gl, this.res);
     this.res = null;
+    if (this.dustRes !== null) this.deleteDust(gl, this.dustRes);
+    this.dustRes = null;
     this.gl = null;
     this.frame = null;
     map.getCanvasContainer().removeEventListener('webglcontextlost', this.handleContextLost, true);
@@ -397,6 +558,8 @@ export class GlowLayer implements CustomLayerInterface {
 
   render(gl: WebGL2RenderingContext, args: CustomRenderMethodInput): void {
     const started = performance.now();
+    // Under the glow's light, which the composite screens over it.
+    this.dustDrawn = this.drawDust(gl, args);
     const res = this.res;
     const packed = this.packed;
     const frame = this.frame;
@@ -492,6 +655,19 @@ export class GlowLayer implements CustomLayerInterface {
     ndcScale: readonly [number, number],
     maxPointSize: number,
   ): void {
+    this.loadMatrix(gl, program, args);
+    gl.uniform2f(uniform(program, 'u_ndcScale'), ndcScale[0], ndcScale[1]);
+    gl.uniform1f(uniform(program, 'u_maxPointSize'), maxPointSize);
+    gl.uniform1f(uniform(program, 'u_now'), frame.now);
+    gl.uniform1f(uniform(program, 'u_motion'), this.reducedMotion() ? 0 : 1);
+  }
+
+  /** Loads u_matrix and u_origin (see setPointUniforms). */
+  private loadMatrix(
+    gl: WebGL2RenderingContext,
+    program: Program,
+    args: CustomRenderMethodInput,
+  ): void {
     const m = args.defaultProjectionData.mainMatrix;
     const center = this.map?.getCenter();
     const ox = Math.fround(center === undefined ? 0.5 : mercatorXFromLng(center.lng));
@@ -503,10 +679,6 @@ export class GlowLayer implements CustomLayerInterface {
     }
     gl.uniformMatrix4fv(uniform(program, 'u_matrix'), false, out);
     gl.uniform2f(uniform(program, 'u_origin'), ox, oy);
-    gl.uniform2f(uniform(program, 'u_ndcScale'), ndcScale[0], ndcScale[1]);
-    gl.uniform1f(uniform(program, 'u_maxPointSize'), maxPointSize);
-    gl.uniform1f(uniform(program, 'u_now'), frame.now);
-    gl.uniform1f(uniform(program, 'u_motion'), this.reducedMotion() ? 0 : 1);
   }
 
   private setKernelUniforms(
@@ -732,6 +904,111 @@ export class GlowLayer implements CustomLayerInterface {
     }
   }
 
+  /**
+   * Every school's speck, where the zoom has dust: straight onto the map,
+   * keeping the brighter of speck and map at each pixel. Returns whether it
+   * drew.
+   */
+  private drawDust(gl: WebGL2RenderingContext, args: CustomRenderMethodInput): boolean {
+    this.dustInView = 0;
+    const style = this.options.dust;
+    const map = this.map;
+    const grid = this.dust;
+    if (style === undefined || map === null || grid === null || this.dustFailed) return false;
+    if (args.shaderData.variantName !== 'mercator') return false;
+    const dust = dustAtZoom(style, map.getZoom());
+    if (dust === null) return false;
+    // Only the rows of cells in view (the map is never turned or tilted, so its bounds are its view).
+    const bounds = map.getBounds();
+    const runs = dustRuns(
+      grid.cellStart,
+      mercatorXFromLng(bounds.getWest()),
+      mercatorYFromLat(bounds.getNorth()),
+      mercatorXFromLng(bounds.getEast()),
+      mercatorYFromLat(bounds.getSouth()),
+    );
+    if (runs.length === 0) return false;
+    const res = this.ensureDust(gl);
+    if (res === null || res.count === 0) return false;
+
+    const width = gl.drawingBufferWidth;
+    const clientWidth = map.getCanvas().clientWidth;
+    const ratio = clientWidth > 0 ? width / clientWidth : 1;
+    const radius = dust.radius * ratio;
+    const size = Math.min(dustSpriteSize(radius), res.maxPointSize);
+    const program = res.program;
+    gl.viewport(0, 0, width, gl.drawingBufferHeight);
+    gl.disable(gl.DEPTH_TEST);
+    gl.disable(gl.STENCIL_TEST);
+    gl.disable(gl.CULL_FACE);
+    gl.disable(gl.SCISSOR_TEST);
+    gl.colorMask(true, true, true, true);
+    gl.enable(gl.BLEND);
+    // The brighter of speck and map: specks never add up, and a dot drawn twice is the same dot.
+    gl.blendEquation(gl.MAX);
+    gl.useProgram(program.program);
+    this.loadMatrix(gl, program, args);
+    gl.uniform1f(uniform(program, 'u_size'), size);
+    gl.uniform1f(uniform(program, 'u_radius'), radius);
+    gl.uniform1f(uniform(program, 'u_softness'), dust.softness);
+    const [r, g, b] = style.color;
+    const a = dust.opacity;
+    gl.uniform4f(uniform(program, 'u_color'), r * a, g * a, b * a, a);
+    gl.bindVertexArray(res.vao);
+    for (const [first, count] of runs) {
+      gl.drawArrays(gl.POINTS, first, count);
+      this.dustInView += count;
+    }
+    gl.bindVertexArray(null);
+    gl.blendEquation(gl.FUNC_ADD);
+    return true;
+  }
+
+  /** The dust's program and buffer, made once, and filled again when the positions change. */
+  private ensureDust(gl: WebGL2RenderingContext): DustResources | null {
+    if (this.dustRes === null) {
+      try {
+        const pointRange = gl.getParameter(gl.ALIASED_POINT_SIZE_RANGE) as Float32Array | null;
+        const res: DustResources = {
+          program: createProgram(gl, DUST_VERT, DUST_FRAG, 'glow dust'),
+          positions: gl.createBuffer(),
+          vao: gl.createVertexArray(),
+          maxPointSize: pointRange?.[1] ?? 64,
+          count: 0,
+        };
+        gl.bindVertexArray(res.vao);
+        gl.bindBuffer(gl.ARRAY_BUFFER, res.positions);
+        gl.enableVertexAttribArray(DUST_ATTRIB.position);
+        gl.vertexAttribPointer(DUST_ATTRIB.position, 2, gl.FLOAT, false, 0, 0);
+        gl.bindVertexArray(null);
+        gl.bindBuffer(gl.ARRAY_BUFFER, null);
+        this.dustRes = res;
+      } catch (error) {
+        this.dustFailed = true;
+        console.error(error);
+        return null;
+      }
+      this.dustStale = true;
+    }
+    const res = this.dustRes;
+    if (this.dustStale) {
+      const positions = this.dustDrawnAt ?? new Float32Array(0);
+      gl.bindVertexArray(null);
+      gl.bindBuffer(gl.ARRAY_BUFFER, res.positions);
+      gl.bufferData(gl.ARRAY_BUFFER, positions, gl.STATIC_DRAW);
+      gl.bindBuffer(gl.ARRAY_BUFFER, null);
+      res.count = positions.length / 2;
+      this.dustStale = false;
+    }
+    return res;
+  }
+
+  private deleteDust(gl: WebGL2RenderingContext, res: DustResources): void {
+    gl.deleteProgram(res.program.program);
+    gl.deleteBuffer(res.positions);
+    gl.deleteVertexArray(res.vao);
+  }
+
   // --- resources ---------------------------------------------------------
 
   /**
@@ -847,6 +1124,7 @@ export class GlowLayer implements CustomLayerInterface {
     this.restoreBeforeId = layerAfter(map, this.id);
     // Everything on the GPU died with the context; nothing to delete.
     this.res = null;
+    this.dustRes = null;
     this.gl = null;
     try {
       map.removeLayer(this.id);

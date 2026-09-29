@@ -15,10 +15,10 @@ import {
   schoolSelectedLayer,
   schoolSource,
   schoolSpaceLayer,
-  SCHOOL_DOT_FADE,
   SCHOOL_DOTS_FROM,
   SCHOOL_FADE,
   SCHOOL_NAMES_FROM,
+  SCHOOL_TILES_MIN_ZOOM,
 } from './schools';
 import { STATE_AREAS_UNTIL } from './state-areas';
 import {
@@ -683,7 +683,7 @@ function tierTone(tier: RoadTier, zoom: number): string {
  */
 export const METRO_ROAD_TONE = 0.72;
 const METRO_ROADS: readonly Stop[] = [
-  [SCHOOL_DOTS_FROM - SCHOOL_DOT_FADE, 1],
+  [SCHOOL_TILES_MIN_ZOOM, 1],
   [SCHOOL_DOTS_FROM, METRO_ROAD_TONE],
   [12, METRO_ROAD_TONE],
   [SCHOOL_NAMES_FROM, 1],
@@ -693,11 +693,12 @@ const METRO_ROADS: readonly Stop[] = [
 const LABEL_HALO = 1.4;
 const LABEL_HALO_BLUR = 0.4;
 /**
- * Across a metro, a place's name knocks out the schools' dots under it
- * whole, with a wider, softer halo than elsewhere (METRO_PLACE_HALO): no
- * part of a dot shows between its letters or at their edge, where it would
- * read as a mark on the name. From the zoom the schools' names come in at,
- * each dot keeps its own space and no name crosses one (schools.ts).
+ * Wherever the schools are dots or dust, a place's name knocks them out
+ * under it whole, with a wider, softer halo than elsewhere
+ * (METRO_PLACE_HALO): no part of a dot shows between its letters or at their
+ * edge, where it would read as a mark on the name. From the zoom the
+ * schools' names come in at, each dot keeps its own space and no name
+ * crosses one (schools.ts).
  */
 export const METRO_PLACE_HALO = 2.4;
 const METRO_PLACE_HALO_BLUR = 0.8;
@@ -712,10 +713,6 @@ function placeHalo(
       'interpolate',
       ['linear'],
       ['zoom'],
-      SCHOOL_DOTS_FROM - SCHOOL_DOT_FADE,
-      plain,
-      SCHOOL_DOTS_FROM,
-      wide,
       SCHOOL_NAMES_FROM - SCHOOL_FADE,
       wide,
       SCHOOL_NAMES_FROM,
@@ -987,9 +984,10 @@ export function splitUsLines(
  * line along its edge. Labels are drawn by MapLibre from the Geist faces in
  * fonts.ts, so the style names no glyph server, and it draws no icons, so it
  * names no sprite either. Highway numbers are left off the map. With the
- * school tiles, every school is drawn across a metro, from zoom 9.5, and
- * named from zoom 13 (schools.ts), over school grounds drawn a step off the
- * ground.
+ * school tiles, every school is drawn from zoom 9, whole across a metro from
+ * zoom 9.5, and named from zoom 13 (schools.ts), over school grounds drawn a
+ * step off the ground; further out the glow layer draws them as dust
+ * (dots.ts).
  *
  * Across a metro the hierarchy runs, brightest first: the schools' dots;
  * city and town names, each clear of the dots under it (METRO_PLACE_HALO);
@@ -1019,7 +1017,7 @@ export function buildBasemapStyle({
     'text-halo-width': LABEL_HALO,
     'text-halo-blur': LABEL_HALO_BLUR,
   } as const;
-  // Town and city names knock out the dots under them across a metro, where there are dots.
+  // Town and city names knock out the dots and dust under them, where there are schools drawn.
   const placeNameHalo = { ...halo, ...placeHalo(metro) };
   const layers: LayerSpecification[] = [
     {

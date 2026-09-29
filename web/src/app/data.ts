@@ -14,7 +14,7 @@ import type { DirectorySource } from '../data/directory';
 import { DATA_PATHS, createDataFiles, dataRootFor } from '../data/files';
 import type { DataFiles } from '../data/files';
 import type { MapView } from '../map/basemap/bounds';
-import type { Glow } from '../map/glow-mount';
+import type { DustSource, Glow } from '../map/glow-mount';
 import { SHOW_ALL, sameFilter } from '../state/filter';
 import type { MapFilter } from '../state/filter';
 import type { Selection } from '../state/url';
@@ -101,6 +101,21 @@ export interface LiveGlow {
 }
 
 const NOT_LIVE: LiveGlow = Object.freeze({ filter: () => undefined, stop: () => undefined });
+
+/**
+ * The glow's dust, from the directory this build ships: where every school
+ * is and its kind (points.bin alone), then who each is (the whole
+ * directory), for a tap on a speck. Each null when it ships none.
+ */
+export function dustSource(data: AppData): DustSource {
+  return {
+    positions: async () => (await (await data.directories())?.positions()) ?? null,
+    names: async () => {
+      const meta = (await (await data.directories())?.get())?.meta;
+      return meta === undefined ? null : { ids: meta.ids, names: meta.names };
+    },
+  };
+}
 
 /**
  * Lights today's affected schools on the glow, and keeps them current: a

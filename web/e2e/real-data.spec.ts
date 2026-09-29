@@ -524,10 +524,11 @@ test('at the national view nothing under data/ is read, nothing glows and no sch
   );
   const glow = await page.evaluate((id) => {
     const layer = window.snowlightMap?.getLayer(id) as unknown as
-      { implementation: { stats: { count: number; glowCount: number } } } | undefined;
+      { implementation: { stats: { count: number; glowCount: number; dust: number } } } | undefined;
     return layer?.implementation.stats;
   }, GLOW_LAYER);
-  expect(glow).toMatchObject({ count: 0, glowCount: 0 });
+  // No school as dust either: the national view shows only what schools say today.
+  expect(glow).toMatchObject({ count: 0, glowCount: 0, dust: 0 });
   // The legend names the statuses as a key; nothing else on the page names one.
   await expect(page.locator('ul.legend li')).toHaveText(Object.values(copy.status));
   const text = await page.evaluate(() => {
@@ -1184,6 +1185,28 @@ test('every school in view is a dot across a metro, and named from zoom 13, neve
   await settle(page);
   expect(await drawn(page, BASEMAP_IDS.schoolDots)).toEqual([]);
   expect(tileRequests()).toBe(0);
+  // Across the region every school is dust instead, drawn by the glow layer from the directory's
+  // own positions (points.bin).
+  await page.waitForFunction(
+    (id) => {
+      const layer = window.snowlightMap?.getLayer(id) as unknown as
+        { implementation: { stats: { dust: number; dustDrawn: boolean } } } | undefined;
+      const stats = layer?.implementation.stats;
+      return stats !== undefined && stats.dust > 0 && stats.dustDrawn;
+    },
+    GLOW_LAYER,
+    { timeout: 30_000 },
+  );
+  const dust = await page.evaluate((id) => {
+    const layer = window.snowlightMap?.getLayer(id) as unknown as {
+      implementation: { stats: { dust: number; dustInView: number } };
+    };
+    return layer.implementation.stats;
+  }, GLOW_LAYER);
+  expect(dust.dust).toBe(directory().length);
+  expect(dust.dustInView).toBeGreaterThan(500);
+  const read = requests.map((request) => new URL(request.url).pathname);
+  expect(read.some((file) => file.includes('/data/schools/points.'))).toBe(true);
 
   // Across the metro, every school the directory puts in view has its dot, and its light, and
   // none its name yet.

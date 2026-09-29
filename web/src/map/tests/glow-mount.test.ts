@@ -1,19 +1,38 @@
+// @vitest-environment node
+import { readFileSync } from 'node:fs';
+
 import type { Map as MapLibreMap } from 'maplibre-gl';
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 
 import { NOTHING_LIT } from '../../data/closings';
 import type { LitSchools } from '../../data/closings';
+import {
+  SCHOOL_DOT_OPACITY,
+  SCHOOL_DOT_RADIUS,
+  SCHOOL_DUST_FROM,
+  SCHOOL_DUST_UNTIL,
+} from '../basemap/dots';
 import { BASEMAP_IDS, SCHOOLS_TILE_LAYER, SCHOOL_LIT_STATE } from '../basemap/ids';
-import { mountGlow } from '../glow-mount';
+import type { GlowLayer } from '../glow';
+import { DOT_COLOR, dustStyle, mountGlow, showsDust, srgbChannels } from '../glow-mount';
+import type { DustSource } from '../glow-mount';
+import { SHOW_ALL, showsSchool } from '../../state/filter';
+import { mercatorXFromLng, mercatorYFromLat } from '../glow/mercator';
 
 type Call = readonly [what: 'set' | 'remove', id: string | number | undefined, value?: unknown];
 
-/** Enough of a map for the glow: a style that loads when told, and the feature states set on it. */
+/**
+ * Enough of a map for the glow: a style that loads when told, a zoom that moves when told, the
+ * layer put on it and the feature states set on it.
+ */
 class FakeMap {
   loaded = false;
   hasSchools: boolean;
   calls: Call[] = [];
+  zoom = 4;
+  layer: GlowLayer | null = null;
   private onLoad: (() => void)[] = [];
+  private onZoom: (() => void)[] = [];
 
   constructor({ hasSchools = true } = {}) {
     this.hasSchools = hasSchools;
@@ -24,14 +43,31 @@ class FakeMap {
     for (const listener of this.onLoad.splice(0)) listener();
   }
 
+  zoomTo(zoom: number): void {
+    this.zoom = zoom;
+    for (const listener of [...this.onZoom]) listener();
+  }
+
+  /** Whether anything still listens to the zoom. */
+  get watchingZoom(): boolean {
+    return this.onZoom.length > 0;
+  }
+
   isStyleLoaded(): boolean {
     return this.loaded;
+  }
+  getZoom(): number {
+    return this.zoom;
   }
   once(_event: string, listener: () => void): void {
     this.onLoad.push(listener);
   }
-  off(): void {
-    this.onLoad = [];
+  on(event: string, listener: () => void): void {
+    if (event === 'zoom') this.onZoom.push(listener);
+  }
+  off(event: string, listener: () => void): void {
+    if (event === 'zoom') this.onZoom = this.onZoom.filter((l) => l !== listener);
+    else this.onLoad = this.onLoad.filter((l) => l !== listener);
   }
   getSource(id: string): object | undefined {
     return this.loaded && this.hasSchools && id === BASEMAP_IDS.schoolsSource ? {} : undefined;
@@ -42,8 +78,9 @@ class FakeMap {
   getLayersOrder(): string[] {
     return [];
   }
-  addLayer(): void {
+  addLayer(layer: GlowLayer): void {
     // The glow draws nothing without a GL context.
+    this.layer = layer;
   }
   triggerRepaint(): void {
     // Nothing to draw.
@@ -138,5 +175,168 @@ describe('the glow on the map', () => {
     glow.light(lit(1, 5));
     glow.light(lit(2));
     expect(map.calls).toEqual([]);
+  });
+});
+
+/** Every promise callback so far run. */
+async function settle(): Promise<void> {
+  await new Promise((resolve) => setTimeout(resolve, 0));
+}
+
+describe('the dust', () => {
+  // Kansas City, beside it (private), and Boston.
+  const positions = {
+    lngLat: new Float64Array([-94.6, 39.1, -94.5, 39.0, -71.1, 42.4]),
+    kind: new Uint8Array([0, 1, 0]),
+  };
+  const names = { ids: ['a', 'b', 'c'], names: ['A', 'B', 'C'] };
+  /** A source of the dust that says how often it was read. */
+  function source(read: Partial<DustSource> = {}) {
+    return {
+      positions: vi.fn(read.positions ?? (() => Promise.resolve(positions))),
+      names: vi.fn(read.names ?? (() => Promise.resolve(names))),
+    };
+  }
+
+  it('reads every school only once the map is at a zoom that shows it, and only once', async () => {
+    const map = new FakeMap();
+    map.load();
+    const glow = mount(map);
+    const read = source();
+    glow.dust(read);
+    // The national view: nothing read.
+    await settle();
+    expect(read.positions).not.toHaveBeenCalled();
+    map.zoomTo(SCHOOL_DUST_FROM);
+    expect(read.positions).not.toHaveBeenCalled();
+    // Zoomed in to where the dust shows: read, and on the layer; then who each school is.
+    map.zoomTo(6);
+    expect(read.positions).toHaveBeenCalledOnce();
+    expect(map.watchingZoom).toBe(false);
+    await settle();
+    expect(map.layer?.stats.dust).toBe(3);
+    expect(read.names).toHaveBeenCalledOnce();
+    map.zoomTo(7);
+    glow.dust(read);
+    expect(read.positions).toHaveBeenCalledOnce();
+  });
+
+  it('reads it at once on a map that opens where it shows, and never where the tiles draw alone', () => {
+    const inMetro = new FakeMap();
+    inMetro.zoom = 12;
+    const read = source();
+    mount(inMetro).dust(read);
+    expect(read.positions).not.toHaveBeenCalled();
+    const inState = new FakeMap();
+    inState.zoom = 6.5;
+    mount(inState).dust(read);
+    expect(read.positions).toHaveBeenCalledOnce();
+    expect(showsDust(SCHOOL_DUST_UNTIL)).toBe(false);
+    expect(showsDust(SCHOOL_DUST_UNTIL - 0.01)).toBe(true);
+  });
+
+  it('leaves each school the glow lights out of the dust, before the dust is in or after', async () => {
+    const map = new FakeMap();
+    map.load();
+    const glow = mount(map);
+    glow.light(lit(0));
+    glow.dust(source());
+    map.zoomTo(8);
+    await settle();
+    expect(map.layer?.stats).toMatchObject({ dust: 3, dustHidden: 1 });
+    glow.light(lit(1, 2));
+    expect(map.layer?.stats.dustHidden).toBe(2);
+    glow.light(NOTHING_LIT);
+    expect(map.layer?.stats.dustHidden).toBe(0);
+  });
+
+  it('shows the kinds of school the menu shows, before the dust is in or after', async () => {
+    const map = new FakeMap();
+    map.load();
+    const glow = mount(map);
+    glow.showSchools((flags) => showsSchool({ ...SHOW_ALL, private: false }, flags));
+    glow.dust(source());
+    map.zoomTo(8);
+    await settle();
+    expect(map.layer?.stats.dustHidden).toBe(1);
+    glow.showSchools((flags) => showsSchool({ ...SHOW_ALL, public: false }, flags));
+    expect(map.layer?.stats.dustHidden).toBe(2);
+    glow.showSchools((flags) => showsSchool(SHOW_ALL, flags));
+    expect(map.layer?.stats.dustHidden).toBe(0);
+  });
+
+  it('finds the schools drawn near a point once their names are in, as a tap reads them', async () => {
+    const map = new FakeMap();
+    map.load();
+    const glow = mount(map);
+    expect(glow.specks).toBeNull();
+    glow.dust(source());
+    map.zoomTo(8);
+    await settle();
+    const specks = glow.specks;
+    expect(specks).toMatchObject({ ids: names.ids, names: names.names });
+    expect(specks?.lngLat).toBe(positions.lngLat);
+    const nearKansasCity = (): number[] =>
+      [...(specks?.near(mercatorXFromLng(-94.55), mercatorYFromLat(39.05), 0.001) ?? [])].sort();
+    expect(nearKansasCity()).toEqual([0, 1]);
+    // Not a school the glow lights, nor one of a kind the menu hides.
+    glow.light(lit(0));
+    expect(nearKansasCity()).toEqual([1]);
+    glow.showSchools((flags) => showsSchool({ ...SHOW_ALL, private: false }, flags));
+    expect(nearKansasCity()).toEqual([]);
+  });
+
+  it('is drawn, and takes no taps, while the names cannot be had or do not match', async () => {
+    for (const read of [
+      source({ names: () => Promise.resolve(null) }),
+      source({ names: () => Promise.reject(new Error('offline')) }),
+      source({ names: () => Promise.resolve({ ids: ['a'], names: ['A'] }) }),
+    ]) {
+      const map = new FakeMap();
+      map.load();
+      map.zoom = 7;
+      const glow = mount(map);
+      glow.dust(read);
+      await settle();
+      expect(map.layer?.stats.dust).toBe(3);
+      expect(glow.specks).toBeNull();
+    }
+  });
+
+  it('shows nothing when there is no directory, or reading it fails, and nothing once removed', async () => {
+    const map = new FakeMap();
+    map.load();
+    map.zoom = 7;
+    mount(map).dust(source({ positions: () => Promise.resolve(null) }));
+    const failing = new FakeMap();
+    failing.load();
+    failing.zoom = 7;
+    mount(failing).dust(source({ positions: () => Promise.reject(new Error('offline')) }));
+    const gone = new FakeMap();
+    gone.load();
+    const glow = mount(gone);
+    glow.dust(source());
+    glow.remove();
+    gone.zoomTo(7);
+    await settle();
+    expect(map.layer?.stats.dust).toBe(0);
+    expect(failing.layer?.stats.dust).toBe(0);
+    expect(gone.layer?.stats.dust).toBe(0);
+    expect(glow.specks).toBeNull();
+  });
+
+  it('draws with the dots’ own curves, in their white', () => {
+    const style = dustStyle();
+    expect(style).toMatchObject({
+      from: SCHOOL_DUST_FROM,
+      until: SCHOOL_DUST_UNTIL,
+      radius: SCHOOL_DOT_RADIUS,
+      opacity: SCHOOL_DOT_OPACITY,
+    });
+    expect(style.color.map((c) => Math.round(c * 255))).toEqual([0xf5, 0xf5, 0xf5]);
+    expect(srgbChannels('rgb(1, 2, 3)')).toBeNull();
+    // The white the basemap draws the dots in: the page's --text-1.
+    const css = readFileSync(new URL('../../styles/global.css', import.meta.url), 'utf8');
+    expect(css).toContain(`--text-1: ${DOT_COLOR};`);
   });
 });

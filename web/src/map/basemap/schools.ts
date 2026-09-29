@@ -2,14 +2,18 @@
  * Every school in the directory on the map, from schools.pmtiles (the
  * pipeline's directory build; its workers serve it, school-tiles.ts):
  *
- * - from a metro's zoom (SCHOOL_DOTS_FROM), a dot at each school, under the
- *   glow and every label, so every school in a city is seen at once and each
- *   can be found on its street whatever it says today: white, the brightest
- *   mark on the map, each ringed in the ground so it stands clear of the
- *   streets under it and of the dot beside it;
+ * - from the first zoom the tiles hold, a dot at each school, under the glow
+ *   and every label, so every school in a city is seen at once and each can
+ *   be found on its street whatever it says today: white, the brightest mark
+ *   on the map from a metro's zoom (SCHOOL_DOTS_FROM), each ringed in the
+ *   ground so it stands clear of the streets under it and of the dot beside
+ *   it. Its size and brightness follow one curve with the dust the glow layer
+ *   draws further out (dots.ts), so zooming out, each dot shrinks and dims
+ *   into the dust with no step between them;
  * - across a metro, a soft light around each dot, the way a town's lights
- *   read from orbit: where schools crowd, their light gathers. It is gone by
- *   the zoom names come in at, where each school's name takes its place;
+ *   read from orbit: where schools crowd, their light gathers. It fades as
+ *   the dots dim into the dust further out, and is gone by the zoom names
+ *   come in at, where each school's name takes its place;
  * - from zoom 13, each school's name beside its dot in white, the brightest
  *   text on the map, placed before every other label so no street or place
  *   name covers it, and never over another name: where names would collide,
@@ -41,23 +45,25 @@ import type {
 } from 'maplibre-gl';
 
 import type { MapFilter } from '../../state/filter';
+import { type DotStops, SCHOOL_DOT_OPACITY, SCHOOL_DOT_RADIUS, dotAt } from './dots';
 import { MAP_FONTS } from './fonts';
 import { BASEMAP_IDS, SCHOOLS_TILE_LAYER, SCHOOL_LIT_STATE, SCHOOL_TILES_PROTOCOL } from './ids';
 
+export { SCHOOL_DOTS_FROM } from './dots';
+
 /**
  * Zoom levels the tileset holds (pipeline/snowlight/directory/tiles.py: 9 to
- * 14, every school at each); deeper tiles are overzoomed.
+ * 14, every school at each); deeper tiles are overzoomed. Further out, the
+ * glow layer draws each school's dot as dust (dots.ts).
  */
 export const SCHOOL_TILES_MIN_ZOOM = 9;
 export const SCHOOL_TILES_MAX_ZOOM = 14;
 /**
- * Dots, fully drawn from this zoom: a metro's whole area on a laptop's
- * screen, and wider. The dots fade in over SCHOOL_DOT_FADE before it, from
- * the first zoom the tileset holds.
+ * The light around each dot: all of it from a metro's whole area on a
+ * laptop's screen until SCHOOL_LIGHT_UNTIL, fading in from the first zoom the
+ * tileset holds, and gone by the zoom names come in at.
  */
-export const SCHOOL_DOTS_FROM = 9.5;
-export const SCHOOL_DOT_FADE = 0.5;
-/** The light around each dot: all of it until this zoom, gone by the zoom names come in at. */
+export const SCHOOL_LIGHT_FROM = 10;
 export const SCHOOL_LIGHT_UNTIL = 12;
 /** Names, fully drawn from this zoom. */
 export const SCHOOL_NAMES_FROM = 13;
@@ -69,19 +75,12 @@ export const SCHOOL_NAME_PADDING = 5;
 const CAMPUS_MARK = ' - ';
 
 /**
- * A dot's radius and its ring's width in CSS pixels, by zoom: a point of
- * light across a metro, where a city's schools stand a few pixels apart,
- * growing to a mark beside a name up close.
+ * A dot's radius (dots.ts, from the first zoom the tiles hold) and its ring's
+ * width in CSS pixels, by zoom: a point of light across a metro, where a
+ * city's schools stand a few pixels apart, growing to a mark beside a name
+ * up close.
  */
-const DOT_RADIUS: readonly (readonly [zoom: number, px: number])[] = [
-  [9, 1.7],
-  [10, 2.4],
-  [11, 2.7],
-  [12, 2.9],
-  [13, 3.1],
-  [15, 4.5],
-  [17, 6],
-];
+const DOT_RADIUS = fromTiles(SCHOOL_DOT_RADIUS);
 const DOT_RING: readonly (readonly [zoom: number, px: number])[] = [
   [9, 0.8],
   [11, 1],
@@ -129,8 +128,8 @@ export function schoolTilesTemplate(archiveUrl: string): string {
 
 /**
  * The source. Its tiles are read only where a school layer is drawn, from
- * the dots' fade at zoom 9, the first zoom the tileset holds, so nothing is
- * read further out.
+ * zoom 9, the first zoom the tileset holds, so nothing is read further out:
+ * there the dots are the glow layer's dust.
  */
 export function schoolSource(archiveUrl: string): VectorSourceSpecification {
   return {
@@ -145,17 +144,10 @@ function byZoom(...stops: (number | string)[]): ExpressionSpecification {
   return ['interpolate', ['linear'], ['zoom'], ...stops] as unknown as ExpressionSpecification;
 }
 
-/** MapLibre's linear interpolation between stops, at `zoom`. */
-function at(stops: readonly (readonly [number, number])[], zoom: number): number {
-  const first = stops[0];
-  if (first === undefined) return 0;
-  if (zoom <= first[0]) return first[1];
-  for (let i = 1; i < stops.length; i++) {
-    const [z0, v0] = stops[i - 1] ?? first;
-    const [z1, v1] = stops[i] ?? first;
-    if (zoom <= z1) return v0 + ((v1 - v0) * (zoom - z0)) / (z1 - z0);
-  }
-  return stops[stops.length - 1]?.[1] ?? 0;
+/** A dots.ts curve from the first zoom the tiles hold: its value there, then its later stops. */
+function fromTiles(stops: DotStops): DotStops {
+  const from = SCHOOL_TILES_MIN_ZOOM;
+  return [[from, dotAt(stops, from)], ...stops.filter(([zoom]) => zoom > from)];
 }
 
 /** Whether the glow lights this school today (glow-mount.ts). */
@@ -173,11 +165,11 @@ function unlessLit(
   ] as unknown as ExpressionSpecification;
 }
 
-/** A dot's opacity by zoom: fading in over SCHOOL_DOT_FADE, fully drawn from SCHOOL_DOTS_FROM. */
-const DOT_OPACITY: readonly (readonly [zoom: number, opacity: number])[] = [
-  [SCHOOL_DOTS_FROM - SCHOOL_DOT_FADE, 0],
-  [SCHOOL_DOTS_FROM, 1],
-];
+/**
+ * A dot's opacity by zoom (dots.ts, from the first zoom the tiles hold):
+ * dimmed as the dust is there, whole from SCHOOL_DOTS_FROM.
+ */
+const DOT_OPACITY = fromTiles(SCHOOL_DOT_OPACITY);
 /** A name's opacity by zoom: fading in over SCHOOL_FADE, fully drawn from SCHOOL_NAMES_FROM. */
 const NAME_OPACITY: readonly (readonly [zoom: number, opacity: number])[] = [
   [SCHOOL_NAMES_FROM - SCHOOL_FADE, 0],
@@ -192,48 +184,51 @@ const NAME_OPACITY: readonly (readonly [zoom: number, opacity: number])[] = [
  * and all, in CSS pixels.
  */
 export function schoolDotOpacity(zoom: number): number {
-  return zoom < (DOT_OPACITY[0]?.[0] ?? 0) ? 0 : at(DOT_OPACITY, zoom);
+  return zoom < (DOT_OPACITY[0]?.[0] ?? 0) ? 0 : dotAt(DOT_OPACITY, zoom);
 }
 export function schoolNameOpacity(zoom: number): number {
-  return zoom < (NAME_OPACITY[0]?.[0] ?? 0) ? 0 : at(NAME_OPACITY, zoom);
+  return zoom < (NAME_OPACITY[0]?.[0] ?? 0) ? 0 : dotAt(NAME_OPACITY, zoom);
 }
 export function schoolDotRadius(zoom: number): number {
-  return at(DOT_RADIUS, zoom) + at(DOT_RING, zoom);
+  return dotAt(DOT_RADIUS, zoom) + dotAt(DOT_RING, zoom);
 }
 
 /**
  * A dot at every school, white, each ringed in the ground color. Big and
  * bright enough across a metro to pick out every school in a city at a
  * glance, and never a status color: what a school is doing today is the
- * glow's, and a school it lights has no dot of its own.
+ * glow's, and a school it lights has no dot of its own. Further out it dims
+ * as the dust the glow layer draws does (dots.ts), and the dust takes over
+ * from it where the tiles hold nothing.
  */
 export function schoolDotLayer(colors: SchoolColors): CircleLayerSpecification {
-  const fadeIn = unlessLit(...DOT_OPACITY);
+  const opacity = unlessLit(...DOT_OPACITY);
   return {
     id: BASEMAP_IDS.schoolDots,
     type: 'circle',
     source: BASEMAP_IDS.schoolsSource,
     'source-layer': SCHOOLS_TILE_LAYER,
-    minzoom: SCHOOL_DOTS_FROM - SCHOOL_DOT_FADE,
+    minzoom: SCHOOL_TILES_MIN_ZOOM,
     paint: {
       'circle-radius': byZoom(...DOT_RADIUS.flat()),
       'circle-color': colors.name,
-      'circle-opacity': fadeIn,
+      'circle-opacity': opacity,
       'circle-stroke-color': colors.ground,
       'circle-stroke-width': byZoom(...DOT_RING.flat()),
-      'circle-stroke-opacity': fadeIn,
+      'circle-stroke-opacity': opacity,
       'circle-pitch-alignment': 'map',
     },
   };
 }
 
 /**
- * The light around each dot across a metro (SCHOOL_LIGHT_UNTIL), under the
- * dots, fading in with them and out before the names come in; none around a
- * school the glow lights.
+ * The light around each dot across a metro (SCHOOL_LIGHT_FROM to
+ * SCHOOL_LIGHT_UNTIL), under the dots: fading as they dim into the dust
+ * further out, gone by the first zoom the tiles hold, and gone again before
+ * the names come in; none around a school the glow lights.
  */
 export function schoolLightLayer(colors: SchoolColors): CircleLayerSpecification {
-  const from = SCHOOL_DOTS_FROM - SCHOOL_DOT_FADE;
+  const from = SCHOOL_TILES_MIN_ZOOM;
   return {
     id: BASEMAP_IDS.schoolLight,
     type: 'circle',
@@ -246,7 +241,7 @@ export function schoolLightLayer(colors: SchoolColors): CircleLayerSpecification
       'circle-color': colors.name,
       'circle-opacity': unlessLit(
         [from, 0],
-        [SCHOOL_DOTS_FROM, SCHOOL_LIGHT_OPACITY],
+        [SCHOOL_LIGHT_FROM, SCHOOL_LIGHT_OPACITY],
         [SCHOOL_LIGHT_UNTIL, SCHOOL_LIGHT_OPACITY],
         [SCHOOL_NAMES_FROM - SCHOOL_FADE, 0],
       ),
@@ -318,7 +313,7 @@ export function schoolSelectedLayer(colors: SchoolColors): CircleLayerSpecificat
     type: 'circle',
     source: BASEMAP_IDS.schoolsSource,
     'source-layer': SCHOOLS_TILE_LAYER,
-    minzoom: SCHOOL_DOTS_FROM - SCHOOL_DOT_FADE,
+    minzoom: SCHOOL_TILES_MIN_ZOOM,
     filter: selectedSchoolFilter(null),
     paint: {
       'circle-radius': byZoom(...RING_RADIUS.flat()),
@@ -444,7 +439,8 @@ export function schoolSpaceLayer(): SymbolLayerSpecification {
     .sort((a, b) => a - b);
   const size = zooms.flatMap((z) => [
     z,
-    Math.round(((2 * (at(DOT_RADIUS, z) + at(DOT_RING, z))) / SCHOOL_SPACE_SIZE) * 1000) / 1000,
+    Math.round(((2 * (dotAt(DOT_RADIUS, z) + dotAt(DOT_RING, z))) / SCHOOL_SPACE_SIZE) * 1000) /
+      1000,
   ]);
   return {
     id: BASEMAP_IDS.schoolSpace,

@@ -3,7 +3,7 @@
  * A school opened from the map: which schools a click or a tap reaches (a
  * mark's edge within a mouse's or a finger's reach, while the mark is drawn;
  * a name under the pointer; a lit school from the glow's own data at any
- * zoom), what it does with them (opens the one it means, or zooms in toward
+ * zoom; a speck of dust from the glow's own data further out), what it does with them (opens the one it means, or zooms in toward
  * several), and when (a mouse's click at once, a finger's tap once no second
  * tap follows; never a double tap, a pinch or a hand moving the map).
  */
@@ -12,13 +12,19 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { BASEMAP_IDS, SCHOOL_LIT_STATE } from '../basemap/ids';
 import {
+  SCHOOL_DOT_RADIUS,
+  SCHOOL_DUST_TAPS_FROM,
+  SCHOOL_DUST_UNTIL,
+  dotAt,
+} from '../basemap/dots';
+import {
   SCHOOL_DOTS_FROM,
-  SCHOOL_DOT_FADE,
   SCHOOL_NAMES_FROM,
+  SCHOOL_TILES_MIN_ZOOM,
   schoolDotOpacity,
   schoolDotRadius,
 } from '../basemap/schools';
-import { litRadius } from '../glow-mount';
+import { dustRadius, litRadius } from '../glow-mount';
 import {
   latFromMercatorY,
   lngFromMercatorX,
@@ -36,13 +42,21 @@ import {
   TAP_WAIT_MS,
   attachSchoolTaps,
   drillView,
+  dustInReach,
   hitRadius,
   litInReach,
   meantSchool,
   schoolsInReach,
   tapAction,
 } from '../school-taps';
-import type { LitSpots, MarkHit, SchoolHit, SchoolTaps, TapAction } from '../school-taps';
+import type {
+  DustSpots,
+  LitSpots,
+  MarkHit,
+  SchoolHit,
+  SchoolTaps,
+  TapAction,
+} from '../school-taps';
 
 const PEMBROKE_HILL = { id: 'A1902690', lon: -94.593001, lat: 39.03606 };
 const BORDER_STAR = { id: '291640000557', lon: -94.592692, lat: 39.013304 };
@@ -228,6 +242,28 @@ function lit(
     lngLat: new Float64Array(schools.flatMap((school) => [school.lon, school.lat])),
     ids: schools.map((school) => school.id),
     names: names ?? schools.map((school) => school.id),
+  };
+}
+
+/**
+ * The glow's dust of these schools, as glow-mount.ts gives it: every one
+ * drawn, found in a box around a point.
+ */
+function dust(
+  schools: readonly { id: string; lon: number; lat: number }[],
+  names?: string[],
+): DustSpots {
+  return {
+    lngLat: new Float64Array(schools.flatMap((school) => [school.lon, school.lat])),
+    ids: schools.map((school) => school.id),
+    names: names ?? schools.map((school) => school.id),
+    near: (x, y, reach) =>
+      schools.flatMap((school, i) =>
+        Math.abs(mercatorXFromLng(school.lon) - x) <= reach &&
+        Math.abs(mercatorYFromLat(school.lat) - y) <= reach
+          ? [i]
+          : [],
+      ),
   };
 }
 
@@ -467,11 +503,14 @@ describe('a drawn school', () => {
     map.drawn = [{ ...PEMBROKE_HILL, name: 'Pembroke Hill' }];
     map.layers = new Set([BASEMAP_IDS.schoolDots]);
     const on = (): { x: number; y: number } => beside(map, PEMBROKE_HILL, 0, 0);
-    // Fading in: unseen at first, half drawn on, then taking taps.
-    const from = SCHOOL_DOTS_FROM - SCHOOL_DOT_FADE;
-    map.zoom = from + 0.02;
-    expect(schoolDotOpacity(map.zoom)).toBeLessThan(SHOWN_OPACITY);
+    // None below the tiles' first zoom, where the dust stands for the dots; from it, dimmed as the
+    // dust is there and taking taps, and whole across a metro.
+    map.zoom = SCHOOL_TILES_MIN_ZOOM - 0.02;
+    expect(schoolDotOpacity(map.zoom)).toBe(0);
     expect(tapAction(map.map, on(), HIT_RADIUS.touch, null)).toBeNull();
+    map.zoom = SCHOOL_TILES_MIN_ZOOM;
+    expect(schoolDotOpacity(map.zoom)).toBeGreaterThanOrEqual(SHOWN_OPACITY);
+    expect(opened(tapAction(map.map, on(), HIT_RADIUS.touch, null))).toBe(PEMBROKE_HILL.id);
     map.zoom = SCHOOL_DOTS_FROM;
     expect(opened(tapAction(map.map, on(), HIT_RADIUS.touch, null))).toBe(PEMBROKE_HILL.id);
     // Names take taps once drawn too, and a map without the school layers takes none.
@@ -493,6 +532,92 @@ describe('a drawn school', () => {
     map.drawn = [{ ...PEMBROKE_HILL, name: 'Pembroke Hill' }, eastOf(map, '290000000003', 20)];
     const tap = beside(map, PEMBROKE_HILL, 8, 0);
     expect(opened(tapAction(map.map, tap, HIT_RADIUS.touch, null))).toBe(PEMBROKE_HILL.id);
+  });
+});
+
+describe('a school drawn as dust', () => {
+  const map = new FakeMap();
+  beforeEach(() => {
+    map.zoom = 7;
+    map.drawn = [];
+    map.layers = new Set([BASEMAP_IDS.schoolDots, BASEMAP_IDS.schoolNames]);
+  });
+
+  it('is found from the glow’s dust, by its speck’s edge, named as the map names it', () => {
+    const specks = dust([PEMBROKE_HILL], ['THE PEMBROKE HILL SCHOOL - WORNALL CAMPUS']);
+    const pointer = (x: number, y: number) => {
+      const at = map.unproject([map.width / 2 + x, map.height / 2 + y]);
+      return { x: mercatorXFromLng(at.lng), y: mercatorYFromLat(at.lat) };
+    };
+    // 5 px from its center, the speck 1 px across: 4 px from its edge.
+    const [hit, ...others] = dustInReach(specks, pointer(3, -4), map.scale, HIT_RADIUS.mouse, 1);
+    expect(others).toEqual([]);
+    expect(hit).toMatchObject({ id: PEMBROKE_HILL.id, lon: PEMBROKE_HILL.lon });
+    expect(hit?.distance).toBeCloseTo(4, 6);
+    expect(hit?.name()).toBe('The Pembroke Hill School - Wornall Campus');
+    expect(dustInReach(specks, pointer(9, 0), map.scale, HIT_RADIUS.mouse, 1)).toEqual([]);
+    expect(dustInReach(specks, pointer(9, 0), map.scale, HIT_RADIUS.touch, 1)).toHaveLength(1);
+  });
+
+  it('alone in reach opens at once, as its dot would; far from any, nothing', () => {
+    const specks = dust([PEMBROKE_HILL]);
+    const tap = (dx: number, radius: number) =>
+      tapAction(map.map, beside(map, PEMBROKE_HILL, dx, 0), radius, null, undefined, specks);
+    expect(opened(tap(2, HIT_RADIUS.mouse))).toBe(PEMBROKE_HILL.id);
+    expect(opened(tap(12, HIT_RADIUS.touch))).toBe(PEMBROKE_HILL.id);
+    expect(tap(12, HIT_RADIUS.mouse)).toBeNull();
+    // With no dust, nothing is there.
+    expect(tapAction(map.map, beside(map, PEMBROKE_HILL, 2, 0), HIT_RADIUS.touch, null)).toBeNull();
+  });
+
+  it('beside another in a finger’s reach opens neither: the map zooms in toward both', () => {
+    // Pembroke Hill and Border Star, 2.5 km apart: about 5 px at zoom 7.
+    const specks = dust([PEMBROKE_HILL, BORDER_STAR]);
+    const between = beside(map, PEMBROKE_HILL, 0, 2);
+    const action = tapAction(map.map, between, HIT_RADIUS.touch, null, undefined, specks);
+    if (action?.kind !== 'zoom') throw new Error(`opened: ${JSON.stringify(action)}`);
+    expect(action.view.zoom).toBeGreaterThanOrEqual(7 + DRILL_STEP);
+    expect(action.view.zoom).toBeLessThanOrEqual(DRILL_ZOOM);
+    // With a mouse right on one, that one.
+    const on = beside(map, BORDER_STAR, 0, 0);
+    expect(opened(tapAction(map.map, on, HIT_RADIUS.mouse, null, undefined, specks))).toBe(
+      BORDER_STAR.id,
+    );
+  });
+
+  it('takes taps from the dust half faded in, until the dots draw alone', () => {
+    const specks = dust([PEMBROKE_HILL]);
+    const tap = () =>
+      tapAction(
+        map.map,
+        beside(map, PEMBROKE_HILL, 0, 0),
+        HIT_RADIUS.touch,
+        null,
+        undefined,
+        specks,
+      );
+    map.zoom = SCHOOL_DUST_TAPS_FROM - 0.05;
+    expect(dustRadius(map.zoom)).toBeNull();
+    expect(tap()).toBeNull();
+    map.zoom = SCHOOL_DUST_TAPS_FROM;
+    expect(dustRadius(map.zoom)).toBeCloseTo(dotAt(SCHOOL_DOT_RADIUS, map.zoom), 9);
+    expect(opened(tap())).toBe(PEMBROKE_HILL.id);
+    // From where the dots draw alone, the dust takes none: a map without its dots, nothing.
+    map.layers = new Set();
+    map.zoom = SCHOOL_DUST_UNTIL;
+    expect(dustRadius(map.zoom)).toBeNull();
+    expect(tap()).toBeNull();
+  });
+
+  it('and its dot, where both are drawn, are one school', () => {
+    map.zoom = 9.5;
+    map.drawn = [{ ...PEMBROKE_HILL, name: 'Pembroke Hill' }];
+    const specks = dust([PEMBROKE_HILL]);
+    const marks = schoolsInReach(map.map, beside(map, PEMBROKE_HILL, 1, 0), 16, null, specks);
+    expect(marks.map((hit) => hit.id)).toEqual([PEMBROKE_HILL.id]);
+    expect(
+      opened(tapAction(map.map, beside(map, PEMBROKE_HILL, 1, 0), 16, null, undefined, specks)),
+    ).toBe(PEMBROKE_HILL.id);
   });
 });
 
@@ -620,6 +745,22 @@ describe('a click on the map', () => {
   it('with a pen acts at once too', () => {
     click(beside(map, PEMBROKE_HILL, 1, 1), 1000, 'pen');
     expect(actions).toEqual([`open ${PEMBROKE_HILL.id}`]);
+  });
+
+  it('on a speck of dust opens its school as on a dot, and on several zooms in', () => {
+    taps.stop();
+    // The two about 10 px apart: a mouse reaches one, a finger both.
+    map.zoom = 8;
+    taps = attachSchoolTaps(map.map, {
+      lit: () => null,
+      dust: () => dust([PEMBROKE_HILL, BORDER_STAR]),
+      onSchool: (school: SchoolHit) => actions.push(`open ${school.id}`),
+      onZoom: () => actions.push('zoom'),
+    });
+    click(beside(map, BORDER_STAR, 0, 1));
+    click(beside(map, PEMBROKE_HILL, 0, 2), 1000, 'touch');
+    vi.advanceTimersByTime(TAP_WAIT_MS);
+    expect(actions).toEqual([`open ${BORDER_STAR.id}`, 'zoom']);
   });
 
   it('on no school does nothing', () => {

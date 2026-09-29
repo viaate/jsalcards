@@ -6,9 +6,10 @@ import { createDataFiles } from '../../data/files';
 import { testMeta, testPoints } from '../../data/tests/builders';
 import { DETAILS_INDEX_PATH } from '../../data/details-format';
 import type { Basemap } from '../../map/basemap';
-import type { Glow } from '../../map/glow-mount';
+import type { DustSource, Glow } from '../../map/glow-mount';
 import type { SchoolTapOptions } from '../../map/school-taps';
 import type { SearchHit } from '../../search';
+import { SHOW_ALL } from '../../state/filter';
 import { PIN_KEY, encodePin } from '../../state/pin';
 import { createUrlStore } from '../../state/url-store';
 import type { UrlStoreHost } from '../../state/url-store';
@@ -96,10 +97,25 @@ function withDirectory(): AppData {
   const points = parsePoints(testPoints(schools, 1), meta);
   if (points === null) throw new Error('points did not parse');
   const directory = createDirectory(meta, points);
-  const source: DirectorySource = { get: () => Promise.resolve(directory) };
+  const source: DirectorySource = {
+    get: () => Promise.resolve(directory),
+    positions: () => Promise.resolve({ lngLat: points.lngLat, kind: points.kind }),
+  };
   return {
     files: createDataFiles(['schools/meta.json', 'schools/points.bin'], ROOT),
     directories: () => Promise.resolve(source),
+  };
+}
+
+/** A glow layer that draws nothing, and hears what it is told. */
+function fakeGlow() {
+  return {
+    light: vi.fn(),
+    lit: null,
+    dust: vi.fn<(source: DustSource) => void>(),
+    showSchools: vi.fn<(shows: (flags: number) => boolean) => void>(),
+    specks: null,
+    remove: vi.fn(),
   };
 }
 
@@ -122,7 +138,11 @@ function start(
   const shown: Target[] = [];
   const results: unknown[] = [];
   // A map that is up but never finishes its first frame, and no glow layer on it.
-  const map = { moved, ready: new Promise<void>(() => undefined) } as unknown as Basemap;
+  const map = {
+    moved,
+    ready: new Promise<void>(() => undefined),
+    showSchools: () => undefined,
+  } as unknown as Basemap;
   const options: BootOptions = {
     links,
     map: Promise.resolve(map),
@@ -455,7 +475,7 @@ describe('search', () => {
 describe('the glow', () => {
   it('stays dark, and nothing is fetched, when no live file is shipped', async () => {
     const fetchSpy = vi.spyOn(globalThis, 'fetch');
-    const glow = { light: vi.fn(), lit: null, remove: vi.fn() };
+    const glow = fakeGlow();
     const { controller } = start('https://snow.test/', withDirectory(), false, glow);
     await settle();
     expect(glow.light).not.toHaveBeenCalled();
@@ -464,6 +484,55 @@ describe('the glow', () => {
     await settle();
     expect(glow.remove).toHaveBeenCalledOnce();
     fetchSpy.mockRestore();
+  });
+
+  it('is given every school for its dust, read from the directory only when it asks', async () => {
+    const fetchSpy = vi.spyOn(globalThis, 'fetch');
+    const glow = fakeGlow();
+    const { controller } = start('https://snow.test/', withDirectory(), false, glow);
+    await settle();
+    expect(glow.dust).toHaveBeenCalledOnce();
+    const [source] = glow.dust.mock.calls[0] as [DustSource];
+    const positions = await source.positions();
+    expect(Array.from(positions?.lngLat ?? [])).toEqual([-86.8, 33.5, -94.593001, 39.03606]);
+    expect(positions?.kind).toHaveLength(2);
+    // Then who each school is, for a tap on its speck.
+    expect(await source.names()).toEqual({
+      ids: ['010000500870', PEMBROKE_HILL],
+      names: ['First', 'Second'],
+    });
+    expect(fetchSpy).not.toHaveBeenCalled();
+    controller.abort();
+    fetchSpy.mockRestore();
+  });
+
+  it('has no dust where the build ships no directory', async () => {
+    const glow = fakeGlow();
+    const { controller } = start('https://snow.test/', NO_DATA, false, glow);
+    await settle();
+    const [source] = glow.dust.mock.calls[0] as [DustSource];
+    expect(await source.positions()).toBeNull();
+    expect(await source.names()).toBeNull();
+    controller.abort();
+  });
+
+  it('shows the dust of the kinds the menu shows, as it opens and as it changes', async () => {
+    const glow = fakeGlow();
+    const { controller, services } = start('https://snow.test/', withDirectory(), false, glow);
+    /** Whether the dust shows a public school and a private one (kind flag 0x01), as told last. */
+    const shown = (): boolean[] => {
+      const [shows] = glow.showSchools.mock.lastCall as [(flags: number) => boolean];
+      return [shows(0), shows(1)];
+    };
+    await settle();
+    expect(shown()).toEqual([true, true]);
+    services.filter({ ...SHOW_ALL, public: false });
+    await settle();
+    expect(shown()).toEqual([false, true]);
+    services.filter({ ...SHOW_ALL, private: false });
+    await settle();
+    expect(shown()).toEqual([true, false]);
+    controller.abort();
   });
 });
 
@@ -509,7 +578,7 @@ describe('a school clicked on the map', () => {
       mapCreated: new Promise((resolve) => {
         created = resolve;
       }),
-      glow: Promise.resolve({ light: vi.fn(), lit: null, remove: vi.fn() }),
+      glow: Promise.resolve(fakeGlow()),
       signal: controller.signal,
       show: (target) => shown.push(target),
       listId: 'list',

@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 
 import { GlowLayer, GlowStatus } from '..';
+import { mercatorXFromLng, mercatorYFromLat } from '../mercator';
 
 describe('GlowLayer', () => {
   it('is a 2D MapLibre custom layer', () => {
@@ -84,6 +85,43 @@ describe('GlowLayer', () => {
         expect(drawnShare(zoom, size, ratio, lightResolution)).toBeLessThan(desktop * 1.15);
       }
     }
+  });
+
+  it('holds every school as dust, leaving out the ones the glow lights and the kinds not shown', () => {
+    const layer = new GlowLayer();
+    // Lit before the dust is in: left out as soon as it is.
+    layer.hideDust(new Set([1, 7]));
+    expect(layer.stats).toMatchObject({ dust: 0, dustHidden: 0, dustDrawn: false });
+    // Kansas City, beside it, Boston; the second private.
+    layer.setDust(
+      new Float64Array([-94.6, 39.1, -94.5, 39.0, -71.1, 42.4]),
+      new Uint8Array([0, 1, 2]),
+    );
+    // School 7 is not in the list: nothing to leave out for it.
+    expect(layer.stats).toMatchObject({ dust: 3, dustHidden: 1 });
+    layer.hideDust(new Set([0, 2]));
+    expect(layer.stats.dustHidden).toBe(2);
+    layer.hideDust(new Set());
+    expect(layer.stats.dustHidden).toBe(0);
+    // Found near a point by their places in the list, as drawn.
+    const near = (): number[] =>
+      [...layer.dustNear(mercatorXFromLng(-94.55), mercatorYFromLat(39.05), 0.001)].sort();
+    expect(near()).toEqual([0, 1]);
+    // Public schools only: the private one is left out, drawn and found no longer.
+    layer.filterDust((kind) => (kind & 1) === 0);
+    expect(layer.stats.dustHidden).toBe(1);
+    expect(near()).toEqual([0]);
+    layer.hideDust(new Set([0]));
+    expect(near()).toEqual([]);
+    expect(layer.stats.dustHidden).toBe(2);
+    layer.filterDust(() => true);
+    layer.hideDust(new Set());
+    expect(near()).toEqual([0, 1]);
+    // Holding dust draws nothing and counts no glowing points.
+    expect(layer.stats).toMatchObject({ count: 0, glowCount: 0, mode: 'none' });
+    layer.setDust(null);
+    expect(layer.stats.dust).toBe(0);
+    expect(layer.dustNear(0.5, 0.5, 1)).toEqual([]);
   });
 
   it('counts born times later than now, as from a skewed clock or epoch milliseconds', () => {

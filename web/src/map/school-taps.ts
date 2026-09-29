@@ -5,8 +5,9 @@
  *
  * A school's marks are what the map shows of it, while it shows them: its dot
  * and its name, each once it is drawn at the map's zoom (basemap/schools.ts
- * says from which zoom, and how big), and the glow's light of a school lit
- * today, at every zoom, found from the glow's own data (glow-mount.ts). A mark
+ * says from which zoom, and how big), its speck of dust further out, and the
+ * glow's light of a school lit today, at every zoom, the light and the dust
+ * found from the glow's own data (glow-mount.ts). A mark
  * is in reach of the pointer within a hit radius of its edge: HIT_RADIUS.mouse
  * for a mouse or a pen, HIT_RADIUS.touch for a finger, as the pointer that
  * pressed says. A name is in reach only under the pointer.
@@ -55,7 +56,8 @@ import type { SchoolId } from '../types/generated';
 import { schoolDotOpacity, schoolDotRadius, schoolNameOpacity } from './basemap';
 import type { MapView } from './basemap';
 import { BASEMAP_IDS, SCHOOL_LIT_STATE } from './basemap/ids';
-import { litRadius } from './glow-mount';
+import { dustRadius, litRadius } from './glow-mount';
+import type { DustSpots } from './glow-mount';
 import type { HeardClick } from './kept-clicks';
 import {
   latFromMercatorY,
@@ -139,6 +141,9 @@ export type TapAction =
 /** The glow's lit schools, as far as finding them goes. */
 export type LitSpots = Pick<LitSchools, 'lngLat' | 'ids' | 'names'>;
 
+/** The dust, as far as finding its schools goes (glow-mount.ts). */
+export type { DustSpots } from './glow-mount';
+
 /** The hit radius for a pointer of this type (PointerEvent.pointerType): a finger's, or a mouse's. */
 export function hitRadius(pointerType: string): number {
   return pointerType === 'touch' ? HIT_RADIUS.touch : HIT_RADIUS.mouse;
@@ -206,6 +211,33 @@ export function litInReach(
   return hits;
 }
 
+/**
+ * The schools drawn as dust whose speck is within `radius` CSS pixels of the
+ * pointer, as litInReach finds the lights: `mark` is a speck's own radius.
+ * A speck left out (a school lit, or of a kind the menu hides) is not found.
+ */
+export function dustInReach(
+  dust: DustSpots,
+  at: { readonly x: number; readonly y: number },
+  scale: number,
+  radius: number,
+  mark: number,
+): MarkHit[] {
+  const hits: MarkHit[] = [];
+  for (const school of dust.near(at.x, at.y, (radius + mark) / scale)) {
+    const lon = dust.lngLat[school * 2] ?? Number.NaN;
+    const lat = dust.lngLat[school * 2 + 1] ?? Number.NaN;
+    const dx = (mercatorXFromLng(lon) - at.x) * scale;
+    const dy = (mercatorYFromLat(lat) - at.y) * scale;
+    const distance = Math.max(0, Math.hypot(dx, dy) - mark);
+    const id = dust.ids[school];
+    if (id === undefined || !(distance <= radius)) continue;
+    const written = dust.names[school] ?? '';
+    hits.push({ id, lon, lat, dx, dy, distance, name: () => shownName(id, written) });
+  }
+  return hits;
+}
+
 /** A feature of the school layers as a school (schools.ts reads the same properties), or null. */
 function featureSchool(feature: {
   readonly properties: Record<string, unknown>;
@@ -222,13 +254,15 @@ function featureSchool(feature: {
 /**
  * Every school with a mark in reach of the pointer at `point` (CSS pixels on
  * the map), each once, by its nearest mark: its dot and its name as the map
- * draws them now, and its light when the glow lights it.
+ * draws them now, its speck where the glow draws dust, and its light when the
+ * glow lights it.
  */
 export function schoolsInReach(
   map: MapLibreMap,
   point: { readonly x: number; readonly y: number },
   radius: number,
   lit: LitSpots | null,
+  dust: DustSpots | null = null,
 ): MarkHit[] {
   const zoom = map.getZoom();
   const found = new Map<SchoolId, MarkHit>();
@@ -273,10 +307,16 @@ export function schoolsInReach(
       });
     }
   }
-  if (lit !== null && lit.ids.length > 0) {
+  const speck = dust === null ? null : dustRadius(zoom);
+  if ((lit !== null && lit.ids.length > 0) || speck !== null) {
     const { lng, lat } = map.unproject([point.x, point.y]);
     const at = { x: mercatorXFromLng(lng), y: mercatorYFromLat(lat) };
-    for (const hit of litInReach(lit, at, TILE * 2 ** zoom, radius, litRadius(zoom))) add(hit);
+    const scale = TILE * 2 ** zoom;
+    if (lit !== null)
+      for (const hit of litInReach(lit, at, scale, radius, litRadius(zoom))) add(hit);
+    if (dust !== null && speck !== null) {
+      for (const hit of dustInReach(dust, at, scale, radius, speck)) add(hit);
+    }
   }
   return [...found.values()];
 }
@@ -363,8 +403,9 @@ export function tapAction(
   radius: number,
   lit: LitSpots | null,
   area: MapArea = wholeMap(map),
+  dust: DustSpots | null = null,
 ): TapAction | null {
-  const marks = schoolsInReach(map, point, radius, lit);
+  const marks = schoolsInReach(map, point, radius, lit, dust);
   if (marks.length === 0) return null;
   const pool = candidates(marks);
   const one = meantSchool(marks);
@@ -384,6 +425,8 @@ export function tapAction(
 export interface SchoolTapOptions {
   /** The schools the glow lights now, or null for none. */
   readonly lit: () => LitSpots | null;
+  /** The schools the glow draws as dust, or null for none (as without it). */
+  readonly dust?: () => DustSpots | null;
   /** A school was clicked or tapped: open it. */
   readonly onSchool: (school: SchoolHit) => void;
   /** A tap could mean several schools: zoom in toward them. */
@@ -463,10 +506,11 @@ export function attachSchoolTaps(map: MapLibreMap, options: SchoolTapOptions): S
   const typeOf = (event: Event): string =>
     ('pointerType' in event && typeof event.pointerType === 'string' ? event.pointerType : '') ||
     pointerType;
+  const dust = (): DustSpots | null => options.dust?.() ?? null;
   /** A press where a tap would open a school: onPress hears of it. */
   const pressed = (point: { readonly x: number; readonly y: number }, type: string): void => {
     if (options.onPress === undefined) return;
-    const action = tapAction(map, point, hitRadius(type), options.lit());
+    const action = tapAction(map, point, hitRadius(type), options.lit(), undefined, dust());
     if (action?.kind === 'open') options.onPress(action.school);
   };
   /** Whether a press or a click at this time and place is the second of a double click on `click`. */
@@ -536,7 +580,7 @@ export function attachSchoolTaps(map: MapLibreMap, options: SchoolTapOptions): S
     last = { time, x: point.x, y: point.y, acted: false };
     cancel();
     const type = typeOf(originalEvent);
-    const action = tapAction(map, point, hitRadius(type), options.lit(), options.area?.());
+    const action = tapAction(map, point, hitRadius(type), options.lit(), options.area?.(), dust());
     if (action === null) return false;
     // A mouse or a pen acts at once, and so does a finger where a double tap zooms no further.
     if (type !== 'touch' || map.getZoom() >= map.getMaxZoom()) {
@@ -574,8 +618,9 @@ export function attachSchoolTaps(map: MapLibreMap, options: SchoolTapOptions): S
   let hover: { x: number; y: number } | null = null;
   let frame: number | undefined;
   let pointing = false;
-  /** The lit schools the cursor was last looked for among. */
+  /** The lit schools and the dust the cursor was last looked for among. */
   let seen: LitSpots | null = null;
+  let seenDust: DustSpots | null = null;
   const point = (on: boolean): void => {
     if (on === pointing) return;
     pointing = on;
@@ -584,7 +629,10 @@ export function attachSchoolTaps(map: MapLibreMap, options: SchoolTapOptions): S
   const lookUnderMouse = (): void => {
     frame = undefined;
     seen = options.lit();
-    point(hover !== null && schoolsInReach(map, hover, HIT_RADIUS.mouse, seen).length > 0);
+    seenDust = dust();
+    point(
+      hover !== null && schoolsInReach(map, hover, HIT_RADIUS.mouse, seen, seenDust).length > 0,
+    );
   };
   const lookSoon = (): void => {
     frame ??= requestAnimationFrame(lookUnderMouse);
@@ -607,9 +655,9 @@ export function attachSchoolTaps(map: MapLibreMap, options: SchoolTapOptions): S
   const onMoveEnd = (): void => {
     if (hover !== null) lookSoon();
   };
-  // The glow lit other schools under a still mouse, and drew them.
+  // The glow lit other schools under a still mouse, and drew them, or its dust came in.
   const onRender = (): void => {
-    if (hover !== null && options.lit() !== seen) lookSoon();
+    if (hover !== null && (options.lit() !== seen || dust() !== seenDust)) lookSoon();
   };
 
   container.addEventListener('pointerdown', onPointerDown, { passive: true });

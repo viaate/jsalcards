@@ -81,8 +81,10 @@ export function parseMeta(value: unknown): SchoolDirectoryMeta | null {
   return value as SchoolDirectoryMeta;
 }
 
-/** points.bin for `meta`; null when it is not one, or not the same directory's. */
-export function parsePoints(bytes: ArrayBuffer, meta: SchoolDirectoryMeta): Points | null {
+/** points.bin's header, when `bytes` is a whole points file: its view and counts. */
+function pointsHeader(
+  bytes: ArrayBuffer,
+): { view: DataView; count: number; districts: number } | null {
   if (bytes.byteLength < HEADER_BYTES) return null;
   const view = new DataView(bytes);
   const magic = String.fromCharCode(
@@ -94,9 +96,16 @@ export function parsePoints(bytes: ArrayBuffer, meta: SchoolDirectoryMeta): Poin
   if (magic !== MAGIC || view.getUint16(4, true) !== FORMAT_VERSION) return null;
   if (view.getUint16(6, true) !== RECORD_BYTES) return null;
   const count = view.getUint32(8, true);
-  const districts = view.getUint32(12, true);
-  if (count !== meta.count || districts !== meta.districts.ids.length) return null;
   if (bytes.byteLength !== HEADER_BYTES + RECORD_BYTES * count) return null;
+  return { view, count, districts: view.getUint32(12, true) };
+}
+
+/** points.bin for `meta`; null when it is not one, or not the same directory's. */
+export function parsePoints(bytes: ArrayBuffer, meta: SchoolDirectoryMeta): Points | null {
+  const header = pointsHeader(bytes);
+  if (header === null) return null;
+  const { view, count, districts } = header;
+  if (count !== meta.count || districts !== meta.districts.ids.length) return null;
 
   const lngLat = new Float64Array(count * 2);
   const district = new Int32Array(count);
@@ -113,6 +122,31 @@ export function parsePoints(bytes: ArrayBuffer, meta: SchoolDirectoryMeta): Poin
     kind[i] = view.getUint8(at + 12);
   }
   return { lngLat, district, kind };
+}
+
+/** Where every school is and its kind flags, in directory order: all the map's dust needs. */
+export type Positions = Pick<Points, 'lngLat' | 'kind'>;
+
+/**
+ * Where every school is and what kind it is, from points.bin alone, for a
+ * reader that needs no names (the map's dust). Null when it is not a points
+ * file.
+ */
+export function parsePositions(bytes: ArrayBuffer): Positions | null {
+  const header = pointsHeader(bytes);
+  if (header === null) return null;
+  const { view, count } = header;
+  const lngLat = new Float64Array(count * 2);
+  const kind = new Uint8Array(count);
+  for (let i = 0, at = HEADER_BYTES; i < count; i++, at += RECORD_BYTES) {
+    const lon = view.getInt32(at, true) * MICRODEGREES;
+    const lat = view.getInt32(at + 4, true) * MICRODEGREES;
+    if (Math.abs(lon) > 180 || Math.abs(lat) > 90) return null;
+    lngLat[i * 2] = lon;
+    lngLat[i * 2 + 1] = lat;
+    kind[i] = view.getUint8(at + 12);
+  }
+  return { lngLat, kind };
 }
 
 /** Positions by id, built on first use: a lookup table for 100,000 ids takes a moment. */
@@ -144,11 +178,13 @@ export async function loadDirectory(
   files: DataFiles,
   init: RequestInit = {},
   fetchImpl?: Fetch,
+  /** points.bin, when it is already on its way. */
+  pointBytes?: Promise<ArrayBuffer | null>,
 ): Promise<Directory | null> {
   if (!files.has(PUBLISHED_PATHS.schoolDirectory) || !files.has(DATA_PATHS.points)) return null;
   const [rawMeta, bytes] = await Promise.all([
     fetchJson(files, PUBLISHED_PATHS.schoolDirectory, init, fetchImpl),
-    fetchBytes(files, DATA_PATHS.points, init, fetchImpl),
+    pointBytes ?? fetchBytes(files, DATA_PATHS.points, init, fetchImpl),
   ]);
   const meta = parseMeta(rawMeta);
   if (meta === null || bytes === null) return null;
@@ -207,6 +243,12 @@ export interface DirectorySource {
    * cached files are dropped and loaded again, once. Null when there is none.
    */
   get(stamp?: DirectoryStamp): Promise<Directory | null>;
+  /**
+   * Where every school is, from points.bin alone (parsePositions): the same
+   * download the directory reads, so reading both fetches it once. Null when
+   * the build ships no directory or the file cannot be read.
+   */
+  positions(): Promise<Positions | null>;
 }
 
 export interface DirectorySourceOptions {
@@ -220,9 +262,15 @@ export function directorySource(
   options: DirectorySourceOptions = {},
 ): DirectorySource {
   let loading: Promise<Directory | null> | null = null;
+  let points: Promise<ArrayBuffer | null> | null = null;
   let reloaded = false;
+  const shipped = files.has(PUBLISHED_PATHS.schoolDirectory) && files.has(DATA_PATHS.points);
+  const pointBytes = (): Promise<ArrayBuffer | null> =>
+    (points ??= fetchBytes(files, DATA_PATHS.points, {}, options.fetch).catch(() => null));
   const load = (): Promise<Directory | null> =>
-    loadDirectory(files, {}, options.fetch).catch(() => null);
+    shipped
+      ? loadDirectory(files, {}, options.fetch, pointBytes()).catch(() => null)
+      : Promise.resolve(null);
   return {
     async get(stamp) {
       loading ??= load();
@@ -238,9 +286,17 @@ export function directorySource(
       loading = options
         .evict(urls)
         .catch(() => undefined)
-        .then(load);
+        .then(() => {
+          points = null;
+          return load();
+        });
       const fresh = await loading;
       return fresh !== null && sameDirectory(fresh, stamp) ? fresh : null;
+    },
+    async positions() {
+      if (!shipped) return null;
+      const bytes = await pointBytes();
+      return bytes === null ? null : parsePositions(bytes);
     },
   };
 }
