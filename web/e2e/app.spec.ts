@@ -55,8 +55,11 @@ const GLOW_LAYER = 'snowlight-glow';
 const FIRST_LABEL_LAYER = 'ofm-label-neighbourhood';
 const PEMBROKE_HILL = 'A1902690';
 const BORDER_STAR = { lon: -94.592692, lat: 39.013304 };
-/** Where the school panel beside the map ends: its gap from the screen's edge and its width (app/frame.ts). */
-const PANEL_RIGHT = 20 + 368;
+/**
+ * Where the school panel beside the map ends on a 1440 px screen: its gap from the screen's
+ * edge and its width there (app/frame.ts PANEL_WIDTHS).
+ */
+const PANEL_RIGHT = 20 + 460;
 /** Where Pembroke Hill is, as the directory has it. */
 const PEMBROKE_HILL_PLACE = { lon: -94.593001, lat: 39.03606 };
 const SHAWNEE_MISSION_EAST = '201164001574';
@@ -1544,13 +1547,14 @@ test.describe('with data staged', () => {
     expect(record.ends).toEqual(list.ends);
     await back.click();
 
-    // About: what the site is, then what the map holds: the directory's two schools and one district.
+    // About: what the site is, then what the map holds: the directory's five schools (Border Star
+    // and Pembroke Hill, and the three the chance section needs) in four districts.
     await menu.getByRole('button', { name: copy.nav.about }).click();
     await expect(menu.locator('.lead')).toHaveText(copy.about.what);
     await expect(menu.locator('.note')).toHaveText([copy.menu.onMap]);
     expect(await rows()).toEqual([
-      [copy.menu.schools, '2'],
-      [copy.menu.districts, '1'],
+      [copy.menu.schools, '5'],
+      [copy.menu.districts, '4'],
     ]);
     const about = await menuGrid(menu);
     expect(about.names).toEqual(list.names);
