@@ -3,15 +3,15 @@
 /**
  * The copy lint: `npm run lint:copy`, also part of `npm test`.
  *
- * Every customer-facing string lives in src/copy.ts and follows one house style:
- * short, plain, confident, sentence case, with no banned word, exclamation
- * mark, emoji or em dash. (Its formatters are in src/copy-format.ts, kept out
- * of the page's first script; COPY_MODULES reads it as part of copy.ts.) This
- * file holds those rules once, for two callers:
+ * Every customer-facing string lives in the copy modules (COPY_MODULES:
+ * src/copy.ts, and the parts of it kept out of the page's first script, such
+ * as its formatters in src/copy-format.ts) and follows one house style: short,
+ * plain, confident, sentence case, with no banned word, exclamation mark,
+ * emoji or em dash. This file holds those rules once, for two callers:
  *
  * - `problems(text)` checks one string. src/copy.test.ts runs it over every
  *   string in copy.ts and over the formatters' output.
- * - `lintProject({ root })` checks everything around copy.ts:
+ * - `lintProject({ root })` checks everything around the copy modules:
  *   - No literal text reaches the page from src/. The components and page
  *     scripts are read as one program, and every string literal is followed
  *     wherever it can go: through constants and later assignments, objects,
@@ -30,8 +30,8 @@
  *     append, dataset, …), dialogs, notifications, the share sheet, the
  *     clipboard, speech, map popups and map labels. Only a few symbols such as
  *     the middle dot may be written in place.
- *   - Strings from copy.ts are the only text that gets through, read from
- *     copy.ts as it runs: the strings of its `copy` tree and what its
+ *   - Strings from the copy modules are the only text that gets through, read
+ *     from them as they run: the strings of copy.ts's `copy` tree and what the
  *     formatters return, imported as the page starts or later (`import()`).
  *     Its keys (`Object.keys(copy.status)`), its other strings (STATUS_KEYS)
  *     and copy cut or recased by a method are reported where they show. So are a caught error's words (`error.message`, {:catch},
