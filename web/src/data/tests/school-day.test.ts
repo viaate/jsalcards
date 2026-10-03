@@ -4,6 +4,7 @@ import type { ClosingsDay, CoveredFile, PredictionsFile } from '../../types/gene
 import { NO_DETAIL } from '../forecast-detail';
 import {
   NO_STATUS,
+  PREDICTIONS_AHEAD_MS,
   PREDICTIONS_FRESH_MS,
   covers,
   nextDay,
@@ -308,8 +309,13 @@ describe('a school’s outlook', () => {
     expect(after(PREDICTIONS_FRESH_MS + 1)).toBeNull();
     // The same day still, and the file still the last one read: stale is stale.
     expect(after(5 * 3_600_000)).toBeNull();
-    // A clock here that runs a few minutes behind the pipeline's still reads it.
+    // A clock here that runs a few minutes behind the pipeline's still reads it; a file stamped
+    // further ahead is a clock gone wrong, which would never go stale: no chance from it.
     expect(after(-5 * 60_000)?.today).toMatchObject({ state: 'forecast' });
+    expect(PREDICTIONS_AHEAD_MS).toBe(15 * 60_000);
+    expect(after(-PREDICTIONS_AHEAD_MS)?.today).toMatchObject({ state: 'forecast' });
+    expect(after(-PREDICTIONS_AHEAD_MS - 1)).toBeNull();
+    expect(after(-24 * 3_600_000)).toBeNull();
     expect(
       schoolOutlook({ ...input, predictions: { ...predictions, generated_at: 'noon' } }),
     ).toBeNull();
