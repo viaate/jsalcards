@@ -43,8 +43,6 @@ const HOUR_MS = 3_600_000;
 const MINUTE_MS = 60_000;
 /** At most this many districts next door on the timeline, the first to post first. */
 export const MAX_NEIGHBOR_MOMENTS = 4;
-/** A day whose buses ran this long ago is under way: its chance is no headline. */
-const UNDER_WAY_MS = 2 * HOUR_MS;
 /** Without its bus time, a day is under way from this hour, the school's own clock. */
 export const UNDER_WAY_HOUR = 9;
 /** The usual announcement stays on the timeline this long after its time. */
@@ -231,12 +229,13 @@ export function atLocalHour(day: LocalDate, hour: number, timeZone: string): Dat
 }
 
 /**
- * Whether a day is under way: two hours after its buses run, or without its
- * bus time, from 9 AM on the school's own clock.
+ * Whether a day is under way: once its buses have run (with no closing
+ * posted, the children are at school), or without its bus time, from 9 AM on
+ * the school's own clock.
  */
 function underWay(day: Forecast & { readonly day: LocalDate }, now: Date, timeZone: string) {
   const buses = day.detail?.busesAt ?? null;
-  if (buses !== null) return now.getTime() - buses.getTime() > UNDER_WAY_MS;
+  if (buses !== null) return now >= buses;
   try {
     return now >= atLocalHour(day.day, UNDER_WAY_HOUR, timeZone);
   } catch {

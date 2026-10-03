@@ -281,28 +281,32 @@ describe('what the section leaves out', () => {
     expect(chanceView(nextMorning({ decided: { today: true, tomorrow: true } }))).toBeNull();
   });
 
-  it('takes today’s chance before tomorrow’s, but not once its buses have long run', () => {
+  it('takes today’s chance before tomorrow’s, but not once its buses have run', () => {
     expect(headlineDay(B_OUTLOOK, { today: false, tomorrow: false }, B_NOW)?.day).toBe(
       '2026-01-13',
     );
-    const underWay: Outlook = {
-      today: {
-        state: 'forecast',
-        noSchool: 0.5,
-        delay: 0.1,
-        reasons: [0],
-        day: '2026-01-13',
-        detail: { ...A_DETAIL, busesAt: at('2026-01-13T13:00:00Z') },
-      },
-      tomorrow: null,
-      timeZone: ZONE,
-    };
+    const today = {
+      state: 'forecast',
+      noSchool: 0.5,
+      delay: 0.1,
+      reasons: [0],
+      day: '2026-01-13',
+      detail: { ...A_DETAIL, busesAt: at('2026-01-13T13:00:00Z') },
+    } as const;
+    const open = { today: false, tomorrow: false };
+    const alone: Outlook = { today, tomorrow: null, timeZone: ZONE };
+    // 6:59 AM in Kansas City, buses at 7: still the morning's chance.
+    expect(headlineDay(alone, open, at('2026-01-13T12:59:00Z'))?.day).toBe('2026-01-13');
+    // 7 AM with no closing posted: the children are at school; no chance for today.
+    expect(headlineDay(alone, open, at('2026-01-13T13:00:00Z'))).toBeNull();
+    expect(chanceView(nightBefore({ outlook: alone, now: at('2026-01-13T13:30:00Z') }))).toBeNull();
+    // The next school day's, where the file gives one.
+    if (B_OUTLOOK === null) throw new Error('no outlook');
+    const next: Outlook = { ...B_OUTLOOK, today };
+    expect(headlineDay(next, open, at('2026-01-13T13:00:00Z'))?.day).toBe('2026-01-14');
     expect(
-      headlineDay(underWay, { today: false, tomorrow: false }, at('2026-01-13T14:59:00Z')),
-    ).not.toBeNull();
-    expect(
-      headlineDay(underWay, { today: false, tomorrow: false }, at('2026-01-13T15:01:00Z')),
-    ).toBeNull();
+      chanceView(nightBefore({ outlook: next, now: at('2026-01-13T14:30:00Z') }))?.meaning,
+    ).toBe('Chance of no school Wednesday');
   });
 
   it('without its bus time, takes a day as under way from 9 AM on the school’s clock', () => {
@@ -493,9 +497,14 @@ describe('the timeline', () => {
   });
 
   it('keeps the usual announcement in time order, no longer "next" once it has passed', () => {
-    const late = chanceView(nightBefore({ now: at('2026-01-13T14:31:00Z') }));
+    // Three hours after it, off the timeline.
+    const late = chanceView(
+      nightBefore({
+        outlook: nightOutlook({ ...A_DETAIL, announcesAt: at('2026-01-12T23:30:00Z') }),
+      }),
+    );
     expect(late?.moments.map((moment) => moment.mark)).toEqual(['closed', 'closed']);
-    const past = chanceView(nightBefore({ now: at('2026-01-13T14:29:00Z') }));
+    const past = chanceView(nightBefore({ now: at('2026-01-13T12:05:00Z') }));
     expect(past?.moments.map((moment) => [moment.mark, moment.at])).toEqual([
       ['closed', null],
       ['closed', null],
