@@ -1190,6 +1190,13 @@ async function expectChartFits(page: Page, label: string): Promise<void> {
       ranges: [...(chart?.querySelectorAll('.range') ?? [])].map(box),
       times: [...(chart?.querySelectorAll('.time') ?? [])].map(box),
       words: [...(chart?.querySelectorAll('.words') ?? [])].map(box),
+      // Each dashed line, and the words that are not its own.
+      lines: [...(chart?.querySelectorAll('.line') ?? [])].map((line) => ({
+        ...box(line),
+        others: [...(chart?.querySelectorAll('.words') ?? [])]
+          .filter((words) => !line.classList.contains(words.classList[1] ?? ''))
+          .map(box),
+      })),
       rows: [...(chart?.querySelectorAll('.key .row') ?? [])].map((row) => ({
         ...box(row),
         cut: row.scrollWidth > row.clientWidth,
@@ -1197,7 +1204,13 @@ async function expectChartFits(page: Page, label: string): Promise<void> {
       scrolls: body.scrollWidth > body.clientWidth,
     };
   });
-  const { panel, plot, bars, ranges, times, words, rows } = layout;
+  const { panel, plot, bars, ranges, times, words, rows, lines } = layout;
+  // A dashed line runs clear of the other line's words.
+  lines.forEach((line, i) => {
+    for (const other of line.others) {
+      expect(overlaps(line, other), `${label}: line ${String(i)} and other words`).toBe(false);
+    }
+  });
   if (plot === null) throw new Error(`${label}: no chart`);
   expect(bars.length, label).toBeGreaterThan(1);
   for (const bar of bars) expect(bar.width, `${label}: a bar`).toBeGreaterThanOrEqual(3);
@@ -2064,7 +2077,8 @@ test.describe('with data staged', () => {
     const zones = { school: ZONE, viewer: ZONE };
     await expect(chart.locator('figcaption')).toHaveText(chanceCopy.snowTitle);
     await expect(chart.locator('.col')).toHaveCount(11);
-    await expect(chart.locator('.col.is-lit')).toHaveCount(3);
+    // Lit from 2 to 5 AM, as the key and the time under the first lit bar say.
+    await expect(chart.locator('.col.is-lit')).toHaveCount(4);
     await expect(chart.locator('.range')).toHaveCount(1);
     await expect(chart.locator('.line')).toHaveCount(2);
     const buses = chanceFormat.busesKey(
@@ -2243,19 +2257,21 @@ test.describe('with data staged', () => {
   test('the chance chart at 320, 390 and 460 px: for nights long and short, its words fit and none meet', async ({
     browser,
   }) => {
-    // Two first flights into streets, and five nights at each width.
-    test.setTimeout(480_000);
+    // Three first flights into streets, and five nights at each width.
+    test.setTimeout(720_000);
     const layouts = [
-      { phone: true, widths: [320, 390] },
+      { phone: true, widths: [320, 390], viewer: ZONE },
       // The panel beside the map on a wide screen: 460 px.
-      { phone: false, widths: [1440] },
+      { phone: false, widths: [1440], viewer: ZONE },
+      // A viewer in New York: every time the school's, with "CT" after it, at the narrowest.
+      { phone: true, widths: [320], viewer: 'America/New_York' },
     ];
-    for (const { phone, widths } of layouts) {
+    for (const { phone, widths, viewer } of layouts) {
       const height = phone ? 844 : 900;
       const context = await browser.newContext({
         viewport: { width: widths[0] ?? 390, height },
         ...(phone ? { deviceScaleFactor: 2, isMobile: true, hasTouch: true } : {}),
-        timezoneId: ZONE,
+        timezoneId: viewer,
         serviceWorkers: 'block',
       });
       const page = await context.newPage();
@@ -2292,13 +2308,16 @@ test.describe('with data staged', () => {
         await expect(chart.locator('.key .row'), shape.name).toHaveCount(
           shape.heavy === null ? 0 : 1,
         );
+        if (viewer !== ZONE) {
+          await expect(chart.locator('.time.is-end'), shape.name).toHaveText(/\sCT$/u);
+        }
         for (const width of widths) {
           await page.setViewportSize({ width, height });
           const panelWidth = phone ? width : 460;
           await expect
             .poll(async () => (await panel.boundingBox())?.width)
             .toBeCloseTo(panelWidth, 0);
-          await expectChartFits(page, `${shape.name}, ${String(panelWidth)} px`);
+          await expectChartFits(page, `${shape.name}, ${String(panelWidth)} px, ${viewer}`);
         }
       }
       // With workers blocked (so each night comes from the route), the app says so once it

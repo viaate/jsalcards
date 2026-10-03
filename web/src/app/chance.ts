@@ -126,7 +126,10 @@ export interface ChartView {
   readonly step: number;
   readonly bars: readonly BarView[];
   readonly times: readonly TimeView[];
-  /** The usual announcement's dashed line, in bars from the first bar's left edge; or null. */
+  /**
+   * The usual announcement's dashed line, at its time: in bars from the first
+   * bar's left edge, where its hour starts; or null.
+   */
   readonly announces: number | null;
   /** Where the bus hour's dashed line stops, in pixels above the plot's foot. */
   readonly busTop: number;
@@ -454,7 +457,9 @@ export const MAX_BARS = 18;
  * (13 px Geist, "12 AM"), with TIME_GAP_PX between two of them.
  */
 export const NARROWEST_PLOT_PX = 288;
-const TIME_LABEL_PX = 40;
+export const TIME_LABEL_PX = 40;
+/** What the school's zone adds to a time where the viewer's clock differs: " CT", " AKT". */
+export const ZONE_LABEL_PX = 30;
 const TIME_GAP_PX = 8;
 const SNOW_STEPS = [0.5, 1, 2, 3, 4, 5, 6, 8, 10, 12, 15, 20, 25, 30, 40, 50];
 const COLD_STEPS = [5, 10, 20, 25, 40, 50];
@@ -513,33 +518,40 @@ export function hoursPerBar(hours: number): number {
 
 /**
  * The times at the chart's foot, by bar: the first ("Now", when it is this
- * hour) and the last (the buses) always; then where the heaviest snow starts
- * and ends, when the snow starts, and every third hour (or sixth, or ninth, a
- * bar standing for more), each only where its words keep clear of those placed
- * on the narrowest plot. Each starts at its bar's left edge; the last ends
- * where the plot does.
+ * hour) and the last (the buses) always; then `marks` (where the heaviest
+ * snow starts and ends, when the snow starts), and every third hour (or
+ * sixth, or ninth, a bar standing for more), each only where its words keep
+ * clear of those placed on the narrowest plot. Each is the school's time,
+ * with its zone where the viewer's clock differs, as the chart's words are;
+ * each starts at its bar's left edge, and the last ends where the plot does.
  */
 export function chartTimes(input: {
   readonly instants: readonly Date[];
   readonly step: number;
-  readonly heavy: { readonly first: number; readonly last: number } | null;
-  readonly snowStarts: number;
+  readonly marks: readonly number[];
   readonly isNow: boolean;
-  readonly timeZone: string;
+  readonly zones: Zones;
 }): TimeView[] {
-  const { instants, step, heavy, snowStarts, isNow, timeZone } = input;
+  const { instants, step, marks, isNow, zones } = input;
   const count = instants.length;
   const last = count - 1;
   const slot = NARROWEST_PLOT_PX / count;
+  const label = (at: number): string =>
+    at === 0 && isNow ? chanceCopy.now : chanceFormat.clock(instants[at] ?? new Date(NaN), zones);
+  const wide = (at: number): number =>
+    label(at) === chanceFormat.shortTime(instants[at] ?? new Date(NaN), zones.school) ||
+    label(at) === chanceCopy.now
+      ? TIME_LABEL_PX
+      : TIME_LABEL_PX + ZONE_LABEL_PX;
   const box = (at: number): [number, number] =>
     at === last
-      ? [NARROWEST_PLOT_PX - TIME_LABEL_PX, NARROWEST_PLOT_PX]
-      : [at * slot, at * slot + TIME_LABEL_PX];
-  const wanted: number[] = [0, last];
-  if (heavy !== null) wanted.push(heavy.first - 1, heavy.last);
-  if (snowStarts > 0) wanted.push(snowStarts);
+      ? [NARROWEST_PLOT_PX - wide(at), NARROWEST_PLOT_PX]
+      : [at * slot, at * slot + wide(at)];
+  const wanted: number[] = [0, last, ...marks];
   instants.forEach((instant, at) => {
-    if (at > 0 && at < last && localHour(instant, timeZone) % (3 * step) === 0) wanted.push(at);
+    if (at > 0 && at < last && localHour(instant, zones.school) % (3 * step) === 0) {
+      wanted.push(at);
+    }
   });
   const placed: number[] = [];
   for (const at of wanted) {
@@ -551,16 +563,7 @@ export function chartTimes(input: {
     });
     if (clear) placed.push(at);
   }
-  return placed
-    .sort((a, b) => a - b)
-    .map((at) => ({
-      at,
-      label:
-        at === 0 && isNow
-          ? chanceCopy.now
-          : chanceFormat.shortTime(instants[at] ?? new Date(NaN), timeZone),
-      end: at === last,
-    }));
+  return placed.sort((a, b) => a - b).map((at) => ({ at, label: label(at), end: at === last }));
 }
 
 /**
@@ -591,17 +594,21 @@ export function chartView(detail: ForecastDetail, now: Date, zones: Zones): Char
     ((Math.min(scale.max, Math.max(scale.min, value)) - scale.min) / (scale.max - scale.min)) *
     plot;
   const zero = y(0);
-  const heavy =
-    hours.heavy === null || hours.heavy.last - gone < 0
-      ? null
-      : { first: Math.max(0, hours.heavy.first - gone), last: hours.heavy.last - gone };
   const snow = hours.kind === 'snow_total';
-  // A bar is lit where the heaviest snow falls in the hours it stands for.
+  const instants = values.map((_, at) => new Date(start.getTime() + hourOf(at) * HOUR_MS));
+  // The heaviest snow, from the hour it starts to the hour it ends, as its key says it.
+  const heavy =
+    snow && hours.heavy !== null
+      ? {
+          from: new Date(hours.start.getTime() + (hours.heavy.first - 1) * HOUR_MS),
+          to: new Date(hours.start.getTime() + hours.heavy.last * HOUR_MS),
+        }
+      : null;
+  // Lit from the heaviest snow's start to its end, as the times under the bars read.
   const lit = (at: number): boolean => {
     if (!snow) return at === count - 1;
-    if (heavy === null) return false;
-    const from = at === 0 ? 0 : hourOf(at - 1) + 1;
-    return Math.max(from, heavy.first) <= Math.min(hourOf(at), heavy.last);
+    const instant = instants[at];
+    return heavy !== null && instant !== undefined && instant >= heavy.from && instant <= heavy.to;
   };
   // Each bar exactly its value: a trace is a sliver, no snow is no bar.
   const bars = values.map((value, at): BarView => {
@@ -614,16 +621,20 @@ export function chartView(detail: ForecastDetail, now: Date, zones: Zones): Char
     };
   });
   const litBars = bars.map((bar, at) => (bar.lit ? at : -1)).filter((at) => at >= 0);
-  const instants = values.map((_, at) => new Date(start.getTime() + hourOf(at) * HOUR_MS));
   const firstSnow = snow ? values.findIndex((value) => value > 0) : -1;
+  // The heaviest snow's start and end under the lit bars, where a bar is at that very hour.
+  const marks: number[] = [];
+  const [firstLit, lastLit] = [litBars[0], litBars.at(-1)];
+  if (heavy !== null && firstLit !== undefined && lastLit !== undefined) {
+    if (instants[firstLit]?.getTime() === heavy.from.getTime()) marks.push(firstLit);
+    if (instants[lastLit]?.getTime() === heavy.to.getTime()) marks.push(lastLit);
+  }
   const times = chartTimes({
     instants,
     step,
-    heavy:
-      snow && litBars.length > 0 ? { first: litBars[0] ?? 0, last: litBars.at(-1) ?? 0 } : null,
-    snowStarts: firstSnow,
+    marks: firstSnow > 0 ? [...marks, firstSnow] : marks,
     isNow: hourOf(0) === 0 && now >= start && now.getTime() < start.getTime() + HOUR_MS,
-    timeZone: zone,
+    zones,
   });
   // The announcement's line, where it falls within the night drawn.
   let announces: number | null = null;
@@ -632,12 +643,10 @@ export function chartView(detail: ForecastDetail, now: Date, zones: Zones): Char
     if (bar >= 0 && bar <= count - 1) announces = bar;
   }
   const key: { at: number; row: KeyRowView }[] = [];
-  if (snow && hours.heavy !== null && litBars.length > 0) {
-    const from = new Date(hours.start.getTime() + (hours.heavy.first - 1) * HOUR_MS);
-    const to = new Date(hours.start.getTime() + hours.heavy.last * HOUR_MS);
+  if (heavy !== null && litBars.length > 0) {
     key.push({
-      at: from.getTime(),
-      row: { mark: 'heavy', text: chanceFormat.heaviestKey(from, to, zones) },
+      at: heavy.from.getTime(),
+      row: { mark: 'heavy', text: chanceFormat.heaviestKey(heavy.from, heavy.to, zones) },
     });
   }
   if (announcesAt !== null && announces !== null) {

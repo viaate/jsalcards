@@ -53,7 +53,8 @@
     placeLabels({
       width,
       busesAt,
-      announcesAt: chart.announces === null ? null : ((chart.announces + 0.3) / count) * width,
+      // At its time: where its hour's bar starts, and on through the hour.
+      announcesAt: chart.announces === null ? null : (chart.announces / count) * width,
       buses: { width: busesWidth, height: busesHeight },
       announces:
         announcement === undefined || chart.announces === null
@@ -139,7 +140,7 @@
       <span
         class="line is-announces"
         aria-hidden="true"
-        style:left={middle(chart.announces)}
+        style:left={across(chart.announces)}
         style:top="{placed.announcesLine ?? 0}px"
       ></span>
     {/if}

@@ -129,7 +129,8 @@ describe('the chance section', () => {
 
     expect(text(section, 'figcaption')).toEqual([chanceCopy.snowTitle]);
     expect(section.querySelectorAll('.col')).toHaveLength(11);
-    expect(section.querySelectorAll('.col.is-lit')).toHaveLength(3);
+    // Lit from 2 to 5 AM, as the key says, the first lit bar over "2 AM".
+    expect(section.querySelectorAll('.col.is-lit')).toHaveLength(4);
     // The plot carries marks only: the lit bars, the two dashed lines, the range.
     expect(section.querySelectorAll('.line.is-announces')).toHaveLength(1);
     expect(section.querySelectorAll('.line.is-buses')).toHaveLength(1);

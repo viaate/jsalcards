@@ -8,6 +8,8 @@ import {
   MAX_BARS,
   MAX_NEIGHBOR_MOMENTS,
   NARROWEST_PLOT_PX,
+  TIME_LABEL_PX,
+  ZONE_LABEL_PX,
   atLocalHour,
   chanceView,
   chartScale,
@@ -127,8 +129,10 @@ describe('the chance section, the night before', () => {
     expect(chart?.plot).toBe(120);
     expect(chart?.zero).toBe(0);
     expect(chart?.step).toBe(1);
+    // Lit from 2 to 5 AM, as the key and the time under the first lit bar say.
     expect(chart?.bars.map((bar) => bar.lit)).toEqual([
-      ...Array<boolean>(6).fill(false),
+      ...Array<boolean>(5).fill(false),
+      true,
       true,
       true,
       true,
@@ -247,10 +251,15 @@ describe('the school’s own clock', () => {
         glyph: 'range',
       },
     ]);
-    // The hours under the chart are the school's too; its zone is said beside the key.
-    expect(east?.chart?.times.at(-1)?.label).toBe(`7${NBSP}AM`);
-    expect(lines(east?.why ?? null)[3]).toBe(
-      `+7 The forecast has the heaviest snow 2 to 5${NBSP}AM${NBSP}CT, just before the buses.`,
+    // The hours under the chart are the school's too, with its zone, as the chart's words.
+    expect(east?.chart?.times.map((time) => time.label)).toEqual([
+      chanceCopy.now,
+      `11${NBSP}PM${NBSP}CT`,
+      `2${NBSP}AM${NBSP}CT`,
+      `7${NBSP}AM${NBSP}CT`,
+    ]);
+    expect(lines(east?.why ?? null)[5]).toBe(
+      `${MINUS}3 The forecast has the snow ending at 7${NBSP}AM${NBSP}CT, as the buses go out.`,
     );
     // A viewer on the school's clock, in another zone of the same offset, sees no zone.
     const same = chanceView(nightBefore({ timeZone: 'America/Menominee' }));
@@ -580,7 +589,10 @@ describe('the chart', () => {
   });
 
   it('keeps the times at its foot apart on the narrowest plot, however many bars it has', () => {
-    for (const count of [2, 5, 11, 17, MAX_BARS]) {
+    const viewers = [ZONE, 'America/New_York'];
+    for (const [count, viewer] of [2, 5, 11, 17, MAX_BARS].flatMap((n) =>
+      viewers.map((zone) => [n, zone] as const),
+    )) {
       const instants = Array.from(
         { length: count },
         (_, i) => new Date(Date.parse('2026-01-13T03:00:00Z') + i * 3_600_000),
@@ -588,19 +600,24 @@ describe('the chart', () => {
       const times = chartTimes({
         instants,
         step: 1,
-        heavy: count > 4 ? { first: 3, last: 4 } : null,
-        snowStarts: 1,
+        marks: count > 4 ? [3, 4, 1] : [1],
         isNow: true,
-        timeZone: ZONE,
+        zones: { school: ZONE, viewer },
       });
       expect(times[0]).toMatchObject({ at: 0, label: chanceCopy.now });
       expect(times.at(-1)).toMatchObject({ at: count - 1, end: true });
-      // Each time's words, 40 px at most, from its bar's left edge; the last ends at the plot's.
+      // A viewer elsewhere reads the school's zone after every time, as on the chart's words.
+      const zoned = viewer !== ZONE;
+      for (const time of times.slice(1)) expect(time.label.endsWith(`${NBSP}CT`)).toBe(zoned);
+      // Each time's words, 40 px at most (70 with the zone), from its bar's left edge; the last
+      // ends at the plot's.
       const slot = NARROWEST_PLOT_PX / count;
+      const width = (time: { at: number }) =>
+        time.at === 0 || !zoned ? TIME_LABEL_PX : TIME_LABEL_PX + ZONE_LABEL_PX;
       const boxes = times.map((time) =>
         time.end
-          ? [NARROWEST_PLOT_PX - 40, NARROWEST_PLOT_PX]
-          : [time.at * slot, time.at * slot + 40],
+          ? [NARROWEST_PLOT_PX - width(time), NARROWEST_PLOT_PX]
+          : [time.at * slot, time.at * slot + width(time)],
       );
       for (let i = 1; i < boxes.length; i++) {
         expect((boxes[i]?.[0] ?? 0) - (boxes[i - 1]?.[1] ?? 0)).toBeGreaterThanOrEqual(8);
@@ -632,10 +649,18 @@ describe('the chart', () => {
     // Back from the bus hour, every second hour: the last bar is the bus hour's value.
     // On a scale to 12 inches, three steps of 4.
     expect(chart?.bars.at(-1)?.height).toBeCloseTo((8.7 / 12) * 120, 6);
-    // Lit where the heaviest snow falls in the hours a bar stands for.
+    // Lit from the heaviest snow's start to its end: the 2 AM and 4 AM bars, and the time
+    // under the first lit bar is the key's first.
     expect(chart?.bars.map((bar) => bar.lit)).toEqual(
-      Array.from({ length: 15 }, (_, bar) => bar === 6 || bar === 7),
+      Array.from({ length: 15 }, (_, bar) => bar === 5 || bar === 6),
     );
+    expect(chart?.key[0]).toEqual({
+      mark: 'heavy',
+      text: `${chanceCopy.heaviest} 2 to 5${NBSP}AM`,
+    });
+    expect(chart?.times.find((time) => time.at === 5)?.label).toBe(`2${NBSP}AM`);
+    // The 4 AM bar is not the key's 5 AM: no time under it.
+    expect(chart?.times.find((time) => time.at === 6)).toBeUndefined();
     // The first hour drawn is 4 PM, an hour after the series starts: no "Now" there.
     expect(chart?.times[0]).toEqual({ at: 0, label: `4${NBSP}PM`, end: false });
     // The announcement at 5:30 AM: 14.5 hours into the series, 13.5 past the first bar's hour.
@@ -650,13 +675,24 @@ describe('the chart', () => {
       false,
       false,
       false,
-      false,
+      true,
       true,
       true,
       true,
       false,
       false,
     ]);
+    // In the heaviest hours already: lit from now, the key still the whole of them.
+    const during = chartView(A_DETAIL, at('2026-01-13T09:10:00Z'), HERE);
+    expect(during?.bars.map((bar) => bar.lit)).toEqual([true, true, true, false, false]);
+    expect(during?.key[0]).toEqual({
+      mark: 'heavy',
+      text: `${chanceCopy.heaviest} 2 to 5${NBSP}AM`,
+    });
+    // After them: no lit bars, and no key row.
+    const after = chartView(A_DETAIL, at('2026-01-13T12:10:00Z'), HERE);
+    expect(after?.bars.some((bar) => bar.lit)).toBe(false);
+    expect(after?.key.map((row) => row.mark)).toEqual(['buses']);
     // Two hours left draw two bars; the bus hour alone is no chart.
     expect(chartView(A_DETAIL, at('2026-01-13T12:30:00Z'), HERE)?.bars).toHaveLength(2);
     expect(chartView(A_DETAIL, at('2026-01-13T13:30:00Z'), HERE)).toBeNull();
