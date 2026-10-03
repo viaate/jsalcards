@@ -8,6 +8,9 @@
  * - `virtual:snowlight/url-store-url`, the address store
  *   (src/state/late-url-store.ts), asked for again under a new address after
  *   a failed download, as a browser keeps a module that failed for good.
+ * - `virtual:snowlight/copy-format-url`, the formatters (src/copy-format.ts),
+ *   which the page asks for ahead of the menu, the panel and the update time
+ *   that run them (App.svelte).
  *
  * The build names a chunk after its content: the module holds a marker that
  * each chunk carrying it has replaced, as the chunks are written, by the
@@ -21,6 +24,7 @@ import type { Plugin } from 'vite';
 
 export const MAPLIBRE_URL_MODULE = 'virtual:snowlight/maplibre-url';
 export const URL_STORE_URL_MODULE = 'virtual:snowlight/url-store-url';
+export const COPY_FORMAT_URL_MODULE = 'virtual:snowlight/copy-format-url';
 
 /** The URL of the chunk built from `source` (from the web root), as the module `id`. */
 export function chunkUrl(id: string, source: string): Plugin {
@@ -50,9 +54,11 @@ export function chunkUrl(id: string, source: string): Plugin {
     renderChunk(code, chunk, _options, meta) {
       if (!code.includes(marker)) return null;
       const module = path.join(root, source);
-      const target = Object.values(meta.chunks).find(
-        (candidate) => candidate.facadeModuleId === module,
-      );
+      const chunks = Object.values(meta.chunks);
+      // The chunk built from it, or else the one it is shared in (the formatters').
+      const target =
+        chunks.find((candidate) => candidate.facadeModuleId === module) ??
+        chunks.find((candidate) => candidate.moduleIds.includes(module));
       if (target === undefined) {
         throw new Error(`snowlight:${name}-url: no chunk is built from ${source}`);
       }
@@ -71,4 +77,9 @@ export function maplibreUrl(): Plugin {
 /** The address store, as the site imports it (src/state/url-store.ts). */
 export function urlStoreUrl(): Plugin {
   return chunkUrl(URL_STORE_URL_MODULE, 'src/state/url-store.ts');
+}
+
+/** The formatters, as the site imports them (src/copy-format.ts). */
+export function copyFormatUrl(): Plugin {
+  return chunkUrl(COPY_FORMAT_URL_MODULE, 'src/copy-format.ts');
 }

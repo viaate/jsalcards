@@ -2,6 +2,7 @@
   import { onMount, untrack } from 'svelte';
   import type { Component } from 'svelte';
   import type { Attachment } from 'svelte/attachments';
+  import COPY_FORMAT_URL from 'virtual:snowlight/copy-format-url';
 
   import type {
     NearbyView,
@@ -16,7 +17,7 @@
   import { grantedPlace, opensNearby } from './app/nearby';
   import { STATUS_KEYS, copy, shellFormat } from './copy';
   import type { Basemap, Place } from './map/basemap';
-  import { loadBasemap } from './map/basemap/load';
+  import { loadBasemap, preloadModule } from './map/basemap/load';
   import type { Glow } from './map/glow-mount';
   import { markStep, yieldToMain } from './map/basemap/steps';
   import { afterFirstPaint } from './shell/paint';
@@ -575,6 +576,10 @@
     const painted = afterFirstPaint();
     const links = lateUrlStore({ after: painted });
     urls = links;
+    // The formatters the menu, the panel and the update time word with: never the last to arrive.
+    void painted.then(() => {
+      preloadModule(COPY_FORMAT_URL);
+    });
     // Back and Forward leave the last pick: the field no longer names what the map shows.
     const stopFollowing = links.subscribe((_state, origin) => {
       if (origin !== 'history' || pickedName === null) return;

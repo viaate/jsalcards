@@ -8,7 +8,7 @@ import { DATA_DIR, pwaHead, pwaOptions } from './src/pwa/config.ts';
 import { compileHints } from './tools/compile-hints.ts';
 import { dataFiles } from './tools/data-files.ts';
 import { htmlCopy } from './tools/html-copy.ts';
-import { maplibreUrl, urlStoreUrl } from './tools/chunk-url.ts';
+import { copyFormatUrl, maplibreUrl, urlStoreUrl } from './tools/chunk-url.ts';
 import { usMask } from './tools/us-mask.ts';
 import { schoolNames } from './tools/school-names.ts';
 
@@ -43,6 +43,8 @@ export default defineConfig({
     maplibreUrl(),
     // Where the address store is built to, for a page to ask for it again after a failed download.
     urlStoreUrl(),
+    // Where the formatters are built to, for the page to ask for them as it starts.
+    copyFormatUrl(),
     // The US mask under a name that never changes too, for a page from an older build, and the
     // tiles wholly inside the US, which need no mask.
     usMask(),

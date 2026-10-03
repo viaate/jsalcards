@@ -3,8 +3,10 @@ import path from 'node:path';
 import { describe, expect, it } from 'vitest';
 
 import {
+  COPY_FORMAT_URL_MODULE,
   MAPLIBRE_URL_MODULE,
   URL_STORE_URL_MODULE,
+  copyFormatUrl,
   maplibreUrl,
   urlStoreUrl,
 } from '../tools/chunk-url';
@@ -91,5 +93,31 @@ describe('the URL of the address store', () => {
     const { id, load } = plugin('serve', urlStoreUrl(), URL_STORE_URL_MODULE);
     expect(load(id)).toContain('"src/state/url-store.ts"');
     expect(plugin('serve', urlStoreUrl(), MAPLIBRE_URL_MODULE).id).toBe(null);
+  });
+});
+
+describe('the URL of the formatters', () => {
+  it('is the chunk they are shared in, when no chunk is built from them alone', () => {
+    const { id, load, renderChunk } = plugin('build', copyFormatUrl(), COPY_FORMAT_URL_MODULE);
+    const rendered = renderChunk(
+      load(id),
+      { fileName: 'assets/index-!~{001}~.js' },
+      {},
+      {
+        chunks: {
+          'assets/index-!~{001}~.js': {
+            fileName: 'assets/index-!~{001}~.js',
+            facadeModuleId: path.join('/site', 'src/main.ts'),
+            moduleIds: [path.join('/site', 'src/main.ts'), path.join('/site', 'src/copy.ts')],
+          },
+          'assets/copy-format-!~{004}~.js': {
+            fileName: 'assets/copy-format-!~{004}~.js',
+            facadeModuleId: null,
+            moduleIds: [path.join('/site', 'src/copy-format.ts')],
+          },
+        },
+      },
+    ) as { code: string };
+    expect(rendered.code).toContain('const chunk = "./copy-format-!~{004}~.js";');
   });
 });
