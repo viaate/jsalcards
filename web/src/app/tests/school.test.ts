@@ -523,8 +523,9 @@ describe('the chance section in the panel', () => {
       'District 2900003 canceled Tuesday',
       'Maries County R-II usually announces',
     ]);
+    // The timeline names them, so the sum only names the reason.
     expect(named?.why?.lines.map((line) => `${line.points} ${line.text}`)).toEqual([
-      '+15 District 2900002 and District 2900003, next door, canceled.',
+      '+15 Districts next door canceled.',
     ]);
     // Before the directory came, the same sum, by how many.
     const first = views.find((view) => (view?.chance ?? null) !== null)?.chance;

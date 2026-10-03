@@ -636,6 +636,20 @@ describe('format', () => {
       expect(span('2026-01-13T08:00:00Z', '2026-01-13T11:00:00Z', east)).toBe(
         `2 to 5${NBSP}AM${NBSP}CT`,
       );
+      // On the chart, counting down while it is to come, unbroken; no weekday on one night.
+      expect(chanceFormat.announcesKey(at('2026-01-13T11:30:00Z'), here, evening)).toBe(
+        `Usually announces 5:30${NBSP}AM, in${NBSP}8h${NBSP}25m`,
+      );
+      expect(chanceFormat.announcesKey(at('2026-01-14T11:30:00Z'), east, evening)).toBe(
+        `Usually announces 5:30${NBSP}AM${NBSP}CT, in${NBSP}32h${NBSP}25m`,
+      );
+      expect(chanceFormat.announcesKey(at('2026-01-13T03:50:00Z'), here, evening)).toBe(
+        `Usually announces 9:50${NBSP}PM, in${NBSP}45m`,
+      );
+      expect(
+        chanceFormat.announcesKey(at('2026-01-13T11:30:00Z'), here, at('2026-01-13T11:30:00Z')),
+      ).toBe(`Usually announces 5:30${NBSP}AM`);
+      expect(chanceFormat.district('300')).toBe('District 300');
       expect(chanceFormat.announcesKey(at('2026-01-13T11:30:00Z'), here)).toBe(
         `Usually announces 5:30${NBSP}AM`,
       );
@@ -847,6 +861,90 @@ describe('format', () => {
       expect(reason({ kind: 'sun', points: -5, day: '2026-01-14' }, evening)).toBe(
         'The forecast has sun Tuesday afternoon to help melt the ice.',
       );
+      // What the chart or the timeline already says, the sum only names.
+      expect(
+        reason({
+          kind: 'snow_total',
+          points: 16,
+          low: 6,
+          high: 9,
+          overnight: true,
+          record,
+          said: true,
+        }),
+      ).toBe(
+        'More snow than most storms. It closed 4 of the last 5 times it got 6 inches or more.',
+      );
+      expect(
+        reason({
+          kind: 'snow_total',
+          points: -4,
+          low: 1,
+          high: 1,
+          overnight: false,
+          record: null,
+          said: true,
+        }),
+      ).toBe('Less snow than most storms.');
+      expect(
+        reason({
+          kind: 'neighbors',
+          points: 9,
+          names: ['Olathe'],
+          count: 1,
+          status: 'closed',
+          said: true,
+        }),
+      ).toBe('A district next door canceled.');
+      expect(
+        reason({
+          kind: 'neighbors',
+          points: 9,
+          names: null,
+          count: 3,
+          status: 'remote',
+          said: true,
+        }),
+      ).toBe('Districts next door went remote.');
+      const named = (start: string, end: string): string =>
+        reason({ kind: 'timing', points: 7, start: at(start), end: at(end), buses, said: true });
+      expect(named('2026-01-13T08:00:00Z', '2026-01-13T11:00:00Z')).toBe(
+        'Heaviest snow just before the buses.',
+      );
+      expect(named('2026-01-13T12:00:00Z', '2026-01-13T15:00:00Z')).toBe(
+        'Heaviest snow while the buses are out.',
+      );
+      expect(named('2026-01-13T03:00:00Z', '2026-01-13T07:00:00Z')).toBe(
+        'Heaviest snow well before the buses.',
+      );
+      expect(named('2026-01-13T16:00:00Z', '2026-01-13T20:00:00Z')).toBe(
+        'Heaviest snow after the buses are out.',
+      );
+      // Without the buses there is nothing to set the hours against: they stay.
+      expect(
+        reason({
+          kind: 'timing',
+          points: 7,
+          start: at('2026-01-13T08:00:00Z'),
+          end: at('2026-01-13T11:00:00Z'),
+          buses: null,
+          said: true,
+        }),
+      ).toBe(`The forecast has the heaviest snow 2 to 5${NBSP}AM.`);
+      expect(reason({ kind: 'wind_chill', points: 5, feelsLike: -4, said: true })).toBe(
+        'Wind chill at the bus stop.',
+      );
+      expect(
+        reason({ kind: 'cold', points: 6, feelsLike: -8, day: '2026-01-14', said: true }),
+      ).toBe('Cold at the bus stop Wednesday morning.');
+      const stopped = (then: string, day: string): string =>
+        reason({ kind: 'snow_stops', points: -3, at: at(then), buses, day, said: true }, morning);
+      expect(stopped('2026-01-13T12:00:00Z', '2026-01-14')).toBe(
+        'The snow stopped, a full day for the plows.',
+      );
+      expect(stopped('2026-01-13T09:00:00Z', '2026-01-13')).toBe(
+        'The snow stopped, a head start for the plows.',
+      );
       expect(reason({ kind: 'icy_roads', points: 4, inches: 8 })).toBe(
         'Side streets stay icy after 8 inches of snow.',
       );
@@ -886,6 +984,7 @@ describe('format', () => {
               ? 'Riverside usually announces'
               : `Riverside usually announces ${countdown}`,
           );
+          outputs.push(chanceFormat.announcesKey(then, zones, morning));
           const moved = chanceFormat.moved({
             previous: 0.3,
             current: 0.2,
@@ -927,6 +1026,10 @@ describe('format', () => {
           reason({ kind: 'neighbors', points: 2, names: ['Riverside'], count: 1, status }),
         );
         outputs.push(reason({ kind: 'neighbors', points: 2, names: null, count: 4, status }));
+        outputs.push(
+          reason({ kind: 'neighbors', points: 2, names: null, count: 4, status, said: true }),
+          reason({ kind: 'neighbors', points: 2, names: null, count: 1, status, said: true }),
+        );
       }
       for (let tenths = 0; tenths <= 240; tenths += 5) {
         const inches = tenths / 10;
@@ -951,7 +1054,12 @@ describe('format', () => {
         outputs.push(chanceFormat.degrees(degrees));
         outputs.push(reason({ kind: 'wind_chill', points: 2, feelsLike: degrees }));
         outputs.push(reason({ kind: 'cold', points: 2, feelsLike: degrees, day: '2026-01-15' }));
+        outputs.push(
+          reason({ kind: 'wind_chill', points: 2, feelsLike: degrees, said: true }),
+          reason({ kind: 'cold', points: 2, feelsLike: degrees, day: '2026-01-15', said: true }),
+        );
       }
+      outputs.push(chanceFormat.district('300'));
       for (const points of [-100, -9, -1, 1, 9, 100]) outputs.push(chanceFormat.points(points));
       expect(allProblems(outputs)).toEqual([]);
       // No hedge in any of it: a forecast is the forecast's claim.

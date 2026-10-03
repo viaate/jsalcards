@@ -144,6 +144,8 @@ export type ReasonInput =
       readonly overnight: boolean;
       /** The record the sentence cites, or null to leave that sentence out. */
       readonly record: RecordCount | null;
+      /** The chart already says how much: the sentence names the reason alone. */
+      readonly said?: boolean;
     }
   | { readonly kind: 'record'; readonly points: number; readonly record: RecordCount }
   | {
@@ -153,6 +155,8 @@ export type ReasonInput =
       readonly names: readonly string[] | null;
       readonly count: number;
       readonly status: PostedKey;
+      /** The timeline already lists who: the sentence names the reason alone. */
+      readonly said?: boolean;
     }
   | {
       readonly kind: 'timing';
@@ -160,14 +164,24 @@ export type ReasonInput =
       readonly start: Date;
       readonly end: Date;
       readonly buses: Date | null;
+      /** The chart's key already says the hours. */
+      readonly said?: boolean;
     }
-  | { readonly kind: 'wind_chill'; readonly points: number; readonly feelsLike: number }
+  | {
+      readonly kind: 'wind_chill';
+      readonly points: number;
+      readonly feelsLike: number;
+      /** The chart already says how cold. */
+      readonly said?: boolean;
+    }
   | {
       readonly kind: 'cold';
       readonly points: number;
       readonly feelsLike: number;
       /** The day it is for (YYYY-MM-DD). */
       readonly day: string;
+      /** The chart already says how cold. */
+      readonly said?: boolean;
     }
   | {
       readonly kind: 'snow_stops';
@@ -176,6 +190,8 @@ export type ReasonInput =
       readonly buses: Date | null;
       /** The day the chance is for (YYYY-MM-DD). */
       readonly day: string;
+      /** The timeline already says when it stopped. */
+      readonly said?: boolean;
     }
   | {
       readonly kind: 'sun';
@@ -334,18 +350,26 @@ function moved(input: MovedInput): string | null {
  * "Wednesday, in 23h 10m". Null once the moment has come.
  */
 function countdown(at: Date, now: Date, timeZone: string): string | null {
-  // Whole minutes still to go, rounded up: 30 seconds before is "in 1m".
+  const left = until(at, now);
+  if (left === null) return null;
+  const span = left.text.replaceAll(NBSP, ' ');
+  return left.minutes >= 12 * 60 ? `${weekday(dayOf(at, timeZone))}, in ${span}` : `in ${span}`;
+}
+
+/** How long until a moment, unbroken: "8h 25m", "45m", "8h"; null once it has come. */
+function until(at: Date, now: Date): { text: string; minutes: number } | null {
+  // Whole minutes still to go, rounded up: 30 seconds before is "1m".
   const minutes = Math.ceil((checkInstant(at).getTime() - checkInstant(now).getTime()) / MINUTE_MS);
   if (minutes <= 0) return null;
   const hours = Math.floor(minutes / 60);
   const rest = minutes % 60;
-  const span =
+  const text =
     hours === 0
       ? `${String(rest)}m`
       : rest === 0
         ? `${String(hours)}h`
-        : `${String(hours)}h ${String(rest)}m`;
-  return minutes >= 12 * 60 ? `${weekday(dayOf(at, timeZone))}, in ${span}` : `in ${span}`;
+        : `${String(hours)}h${NBSP}${String(rest)}m`;
+  return { text, minutes };
 }
 
 /** A moment on the section's timeline: its time within the last day, else its day: "8:41 PM", "Mon, Jan 12". */
@@ -411,9 +435,15 @@ function degrees(value: number): string {
   return `${whole < 0 ? MINUS : ''}${String(Math.abs(whole))}${NBSP}F`;
 }
 
-/** The chart's key: "Usually announces 5:30 AM". */
-function announcesKey(instant: Date, zones: Zones): string {
-  return `${chanceCopy.usuallyAnnounces} ${clock(instant, zones)}`;
+/**
+ * The chart's words at the usual announcement's line: "Usually announces
+ * 5:30 AM", and while it is still to come, how long until it: "Usually
+ * announces 5:30 AM, in 8h 25m". The chart is one night, so no weekday.
+ */
+function announcesKey(instant: Date, zones: Zones, now: Date | null = null): string {
+  const key = `${chanceCopy.usuallyAnnounces} ${clock(instant, zones)}`;
+  const left = now === null ? null : until(instant, now);
+  return left === null ? key : `${key}, in${NBSP}${left.text}`;
 }
 
 /** The chart's key: "Heaviest snow 2 to 5 AM". */
@@ -555,14 +585,13 @@ function baseReason(input: BaseInput, district: string): string {
   }
 }
 
-/** When the heaviest snow falls against the buses, as the end of its sentence. */
-function timingRest(start: Date, end: Date, buses: Date | null): string {
-  if (buses === null) return '.';
+/** When the heaviest snow falls against the buses: "just before the buses". */
+function timingRest(start: Date, end: Date, buses: Date): string {
   const b = buses.getTime();
-  if (start.getTime() > b) return ', after the buses are out.';
-  if (end.getTime() > b) return ', while the buses are out.';
-  if (b - end.getTime() <= 3 * HOUR_MS) return ', just before the buses.';
-  return ', well before the buses.';
+  if (start.getTime() > b) return 'after the buses are out';
+  if (end.getTime() > b) return 'while the buses are out';
+  if (b - end.getTime() <= 3 * HOUR_MS) return 'just before the buses';
+  return 'well before the buses';
 }
 
 /**
@@ -577,6 +606,9 @@ function reason(input: ReasonInput, district: string, now: Date, zones: Zones): 
     case 'snow_total': {
       const cited = input.record === null ? '' : ` ${recordSentence(input.record, 'It')}`;
       const than = input.points > 0 ? 'more' : 'less';
+      if (input.said === true) {
+        return `${than === 'more' ? 'More' : 'Less'} snow than most storms.${cited}`;
+      }
       const when = input.overnight ? ' overnight' : '';
       return `The forecast has ${inchWords(input.low, input.high)}${when}, ${than} than most storms.${cited}`;
     }
@@ -593,6 +625,9 @@ function reason(input: ReasonInput, district: string, now: Date, zones: Zones): 
         remote: 'went remote',
         earlyDismissal: 'called an early dismissal',
       }[checkKey(copy.status, status, 'status')];
+      if (input.said === true) {
+        return count === 1 ? `A district next door ${done}.` : `Districts next door ${done}.`;
+      }
       if (input.names === null || input.names.length === 0) {
         return count === 1
           ? `A district next door ${done}.`
@@ -600,20 +635,36 @@ function reason(input: ReasonInput, district: string, now: Date, zones: Zones): 
       }
       return `${names(input.names)}, next door, ${done}.`;
     }
-    case 'timing':
+    case 'timing': {
       if (input.end.getTime() <= input.start.getTime()) {
         throw new RangeError('copy: the heaviest snow ends before it starts');
       }
-      return `The forecast has the heaviest snow ${hourSpan(input.start, input.end, zones)}${timingRest(input.start, input.end, input.buses)}`;
+      const span = hourSpan(input.start, input.end, zones);
+      if (input.buses === null) return `The forecast has the heaviest snow ${span}.`;
+      const rest = timingRest(input.start, input.end, input.buses);
+      return input.said === true
+        ? `${chanceCopy.heaviest} ${rest}.`
+        : `The forecast has the heaviest snow ${span}, ${rest}.`;
+    }
     case 'wind_chill':
-      return `The forecast has a wind chill of ${degrees(input.feelsLike)} at the bus stop.`;
+      return input.said === true
+        ? 'Wind chill at the bus stop.'
+        : `The forecast has a wind chill of ${degrees(input.feelsLike)} at the bus stop.`;
     case 'cold':
-      return `The forecast has it feeling like ${degrees(input.feelsLike)} at the bus stop ${weekday(input.day)} morning.`;
+      return input.said === true
+        ? `Cold at the bus stop ${weekday(input.day)} morning.`
+        : `The forecast has it feeling like ${degrees(input.feelsLike)} at the bus stop ${weekday(input.day)} morning.`;
     case 'snow_stops': {
       const at = clock(input.at, zones);
       const buses = input.buses?.getTime() ?? null;
       if (input.at.getTime() <= now.getTime()) {
-        return dayOf(input.at, zone) < input.day
+        const full = dayOf(input.at, zone) < input.day;
+        if (input.said === true) {
+          return full
+            ? 'The snow stopped, a full day for the plows.'
+            : 'The snow stopped, a head start for the plows.';
+        }
+        return full
           ? `The snow stopped at ${at}, a full day for the plows.`
           : `The snow stopped at ${at}, a head start for the plows.`;
       }

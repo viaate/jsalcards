@@ -20,7 +20,7 @@
     open: 'is-open',
   } as const;
 
-  /** The clock, a few times a minute, for the countdown to the usual announcement. */
+  /** The clock, a few times a minute, for the countdowns to the usual announcement. */
   let now = $state(Date.now());
   onMount(() => {
     const timer = setInterval(() => {
@@ -40,10 +40,11 @@
 <!--
   The chance section (app/chance.ts): the school's status lines, decided
   first; then the chance of no school as the headline, what moved it and the
-  chance of a delayed start instead; the evening's early signals and when the
-  district usually announces; the night hour by hour; and how the chance adds
-  up, always open. On the panel's own scale and grid (DetailPanel.svelte):
-  each part a section under one hairline, every list two columns.
+  chance of a delayed start instead; the evening's early signals (and when the
+  district usually announces, where the chart does not say it); the night hour
+  by hour; and how the chance adds up, always open. On the panel's own scale
+  and grid (DetailPanel.svelte): each part a section under one hairline, every
+  list two columns.
 -->
 
 <section class="chance" aria-labelledby="chance-meaning">
@@ -109,7 +110,7 @@
 
   {#if chance.chart !== null}
     <div class="block">
-      <ChanceChart chart={chance.chart} />
+      <ChanceChart chart={chance.chart} announces={chance.announces(new Date(now))} />
     </div>
   {/if}
 

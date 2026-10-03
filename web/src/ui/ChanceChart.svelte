@@ -5,9 +5,11 @@
 
   interface Props {
     chart: ChartView;
+    /** The words at the announcement's line, with their live countdown (ChanceView.announces). */
+    announces: string | null;
   }
 
-  let { chart }: Props = $props();
+  let { chart, announces }: Props = $props();
 
   const count = $derived(chart.bars.length);
   const answer = $derived(chart.key.find((row) => row.mark === 'buses'));
@@ -71,8 +73,10 @@
   0 F), the heaviest hours lit, the usual announcement's dashed line, and the
   bus hour's, with its range. The two dashed lines' words sit over the plot,
   each where its own line rises to meet it, by one rule at any width
-  (chart-labels.ts); the lit bars' words are the key under the chart, a row
-  on the panel's two columns, the bar drawn small in the first.
+  (chart-labels.ts), the announcement's with its live countdown; the lit
+  bars' words are the key under the chart, a row on the panel's two columns,
+  the bar drawn small in the first. The announcement's line is at its time,
+  the bus hour's through the bar it answers for.
 -->
 <figure class="chart">
   <figcaption class="title">{chart.title}</figcaption>
@@ -109,7 +113,7 @@
           style:left="{placed.announces.left}px"
           style:top="{placed.announces.top}px"
         >
-          {announcement.text}
+          {announces ?? announcement.text}
         </p>
       {/if}
     </div>
@@ -166,7 +170,7 @@
       {#each heavy as row (row.mark)}
         <li class="row">
           <span class="sample is-bar" aria-hidden="true"></span>
-          {#if row.mark === 'heavy'}<span>{row.text}</span>{/if}
+          <span>{row.text}</span>
         </li>
       {/each}
     </ul>

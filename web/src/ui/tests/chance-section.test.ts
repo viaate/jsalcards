@@ -111,21 +111,13 @@ describe('the chance section', () => {
     expect(text(section, '.change')).toEqual([`Up from 41% at 5${NBSP}PM`]);
     expect(section.querySelectorAll('.change svg')).toHaveLength(1);
     expect(text(section, '.delay')).toEqual(['18% chance of a delayed start instead']);
+    // The districts next door; when this one announces is the chart's to say.
     expect(text(section, '.moment')).toEqual([
       `8:41${NBSP}PM Blue Valley canceled Tuesday`,
       `8:52${NBSP}PM Olathe canceled Tuesday`,
-      `5:30${NBSP}AM Shawnee Mission usually announces in 8h 25m`,
     ]);
     // Each on the panel's two columns: the time, then the words.
-    expect(text(section, '.moment .label')).toEqual([
-      `8:41${NBSP}PM`,
-      `8:52${NBSP}PM`,
-      `5:30${NBSP}AM`,
-    ]);
-    // The countdown keeps time.
-    vi.advanceTimersByTime(61_000);
-    flushSync();
-    expect(text(section, '.m-count')).toEqual(['in 8h 24m']);
+    expect(text(section, '.moment .label')).toEqual([`8:41${NBSP}PM`, `8:52${NBSP}PM`]);
 
     expect(text(section, 'figcaption')).toEqual([chanceCopy.snowTitle]);
     expect(section.querySelectorAll('.col')).toHaveLength(11);
@@ -149,8 +141,17 @@ describe('the chance section', () => {
     ]);
     expect(text(section, '.words')).toEqual([
       `6 to 9${NBSP}in when buses run at 7${NBSP}AM`,
-      `${chanceCopy.usuallyAnnounces} 5:30${NBSP}AM`,
+      `${chanceCopy.usuallyAnnounces} 5:30${NBSP}AM, in${NBSP}8h${NBSP}25m`,
     ]);
+    // Its countdown keeps time.
+    vi.advanceTimersByTime(61_000);
+    flushSync();
+    expect(text(section, '.words.is-announces')).toEqual([
+      `${chanceCopy.usuallyAnnounces} 5:30${NBSP}AM, in${NBSP}8h${NBSP}24m`,
+    ]);
+    // Its dashed line at 5:30 AM: halfway through the 5 AM bar's hour, the 9th of 11.
+    const line = section.querySelector<HTMLElement>('.line.is-announces');
+    expect(Number.parseFloat(line?.style.left ?? '')).toBeCloseTo((8.5 / 11) * 100, 6);
     expect(text(section, '.words.is-buses .value')).toEqual([`6 to 9${NBSP}in`]);
     expect(section.querySelector('.head')?.getAttribute('aria-hidden')).toBeNull();
     // Under it the key, one row on the panel's two columns: the lit bar, drawn small.
@@ -165,9 +166,12 @@ describe('the chance section', () => {
     // The sum adds up to the headline, which it does not repeat; the record is in its sentence.
     expect(section.querySelector('.is-total')).toBeNull();
     expect(section.querySelector('.record')).toBeNull();
-    expect(text(section, '.is-reason')[0]).toBe(
-      '+16 The forecast has 6 to 9 inches overnight, more than most storms. It closed 4 of the last 5 times it got 6 inches or more.',
-    );
+    // Each reason names itself; the chart and the timeline hold their numbers.
+    expect(text(section, '.is-reason').slice(0, 3)).toEqual([
+      '+16 More snow than most storms. It closed 4 of the last 5 times it got 6 inches or more.',
+      '+9 Districts next door canceled.',
+      '+7 Heaviest snow just before the buses.',
+    ]);
     // Nothing folds away, and no words lead in bold.
     expect(section.querySelectorAll('details, [aria-expanded]')).toHaveLength(0);
     expect(section.querySelectorAll('strong, b')).toHaveLength(0);
@@ -189,9 +193,9 @@ describe('the chance section', () => {
     ).toBe(true);
     expect(text(section, '.number')).toEqual(['22%']);
     expect(text(section, '.change')).toEqual(['Down from 30% last night']);
-    expect(text(section, '.moment')).toEqual([
-      `6:00${NBSP}AM Snow stopped, 8 inches in all`,
-      `5:30${NBSP}AM Shawnee Mission usually announces Wednesday, in 23h 10m`,
+    expect(text(section, '.moment')).toEqual([`6:00${NBSP}AM Snow stopped, 8 inches in all`]);
+    expect(text(section, '.words.is-announces')).toEqual([
+      `${chanceCopy.usuallyAnnounces} 5:30${NBSP}AM, in${NBSP}23h${NBSP}10m`,
     ]);
     expect(text(section, 'figcaption')).toEqual([chanceCopy.coldTonight]);
     expect(section.querySelectorAll('.col.is-below')).toHaveLength(11);
@@ -201,6 +205,32 @@ describe('the chance section', () => {
     expect(text(section, '.is-start')).toEqual([
       '25% After a snow day, Shawnee Mission stays closed the next day 1 time in 4.',
     ]);
+  });
+
+  it('without the chart, says when the district usually announces on the timeline, counting down', () => {
+    vi.useFakeTimers({ now: A_NOW });
+    const section = show({
+      ...chance(true),
+      chart: null,
+      announces: () => null,
+      moments: [
+        ...chance(true).moments,
+        {
+          key: 'announces',
+          time: `5:30${NBSP}AM`,
+          text: 'Shawnee Mission usually announces',
+          mark: 'next',
+          at: new Date('2026-01-13T11:30:00Z'),
+        },
+      ],
+    });
+    expect(section.querySelector('.chart')).toBeNull();
+    expect(text(section, '.moment').at(-1)).toBe(
+      `5:30${NBSP}AM Shawnee Mission usually announces in 8h 25m`,
+    );
+    vi.advanceTimersByTime(61_000);
+    flushSync();
+    expect(text(section, '.m-count')).toEqual(['in 8h 24m']);
   });
 
   it('shows only what is consistent: no sum, no chart, no timeline where the file gives none', () => {

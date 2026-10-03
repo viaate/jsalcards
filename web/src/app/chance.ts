@@ -6,8 +6,9 @@
  *    the run before, and the chance of a delayed start instead;
  * 2. the early signals: weather that already happened, and the districts next
  *    door that already posted a status for that day (live/closings.json rows,
- *    mapped to districts through the directory), each with its time, and when
- *    this district usually announces, with a live countdown, all in time order;
+ *    mapped to districts through the directory), each with its time, all in
+ *    time order; and when this district usually announces, with a live
+ *    countdown, where the chart does not say it;
  * 3. the night hour by hour, drawn to scale, a bar an hour (or two or three,
  *    so every bar stays a readable width), its marks and their key (the
  *    chart's numbers are worked out here, so they are tested);
@@ -15,6 +16,9 @@
  *    short sentence, the district's record in the sentence it proves. It
  *    shows only when every part can be said and the parts add up to the
  *    headline exactly; a sum that does not is never shown.
+ *
+ * Nothing is said twice: a number the chart or the timeline gives is left
+ * out of the reason it belongs to, which then only names it.
  *
  * Every time is the school's wall clock, in its district's time zone, with
  * the zone's short name where the viewer's differs (copy-chance.ts Zones).
@@ -102,7 +106,13 @@ export interface TimeView {
 
 /** One row of the chart's key: its mark, drawn small, and what the mark is. */
 export type KeyRowView =
-  | { readonly mark: 'announces' | 'heavy'; readonly text: string }
+  | { readonly mark: 'heavy'; readonly text: string }
+  | {
+      readonly mark: 'announces';
+      /** "Usually announces 5:30 AM": ChanceView.announces adds the live countdown. */
+      readonly text: string;
+      readonly at: Date;
+    }
   | {
       readonly mark: 'buses';
       /** The value at the bus hour, said first: "6 to 9 in". */
@@ -176,6 +186,11 @@ export interface ChanceView {
    * the chance section's words.
    */
   readonly countdown: (at: Date, now: Date) => string | null;
+  /**
+   * The chart's words at the usual announcement's line, as the clock reads
+   * `now`: "Usually announces 5:30 AM, in 8h 25m"; null without that line.
+   */
+  readonly announces: (now: Date) => string | null;
 }
 
 export interface ChanceInput {
@@ -377,9 +392,10 @@ export function neighborPosts(
 }
 
 /**
- * The timeline, in time order: what happened, who posted, and when this
- * district usually announces, which counts down while it is still to come
- * and takes its place among what happened once it has passed.
+ * The timeline, in time order: what happened, who posted, and (unless the
+ * chart says it: `announces` false) when this district usually announces,
+ * which counts down while it is still to come and takes its place among what
+ * happened once it has passed.
  */
 export function momentsOf(
   detail: ForecastDetail,
@@ -390,6 +406,7 @@ export function momentsOf(
     readonly district: string;
     readonly now: Date;
     readonly zones: Zones;
+    readonly announces: boolean;
   },
 ): MomentView[] {
   const { day, district, now, zones } = input;
@@ -426,7 +443,7 @@ export function momentsOf(
     });
   }
   const at = detail.announcesAt;
-  if (at !== null && now.getTime() - at.getTime() <= ANNOUNCE_GRACE_MS) {
+  if (input.announces && at !== null && now.getTime() - at.getTime() <= ANNOUNCE_GRACE_MS) {
     const ahead = at > now;
     moments.push({
       at,
@@ -652,7 +669,11 @@ export function chartView(detail: ForecastDetail, now: Date, zones: Zones): Char
   if (announcesAt !== null && announces !== null) {
     key.push({
       at: announcesAt.getTime(),
-      row: { mark: 'announces', text: chanceFormat.announcesKey(announcesAt, zones) },
+      row: {
+        mark: 'announces',
+        text: chanceFormat.announcesKey(announcesAt, zones),
+        at: announcesAt,
+      },
     });
   }
   key.sort((a, b) => a.at - b.at);
@@ -707,18 +728,49 @@ export function recordCount(record: RecordDetail | null): RecordCount | null {
   return { closed, remote, days: record.days.length, inches };
 }
 
+/** What the chart and the timeline already say, which the sum's reasons then only name. */
+export interface Said {
+  /** The chart's answer at the bus hour: how much snow, low to high; or how cold it feels. */
+  readonly snow: { readonly low: number; readonly high: number } | null;
+  readonly cold: number | null;
+  /** The chart's key says the heaviest snow's hours. */
+  readonly heavy: boolean;
+  /** The districts next door the timeline lists. */
+  readonly neighbors: readonly number[];
+  /** When the snow stopped, where the timeline says so. */
+  readonly stopped: readonly Date[];
+}
+
+export const NOTHING_SAID: Said = Object.freeze({
+  snow: null,
+  cold: null,
+  heavy: false,
+  neighbors: [],
+  stopped: [],
+});
+
+/** Two measures the same as the section words them: in tenths. */
+function same(a: number, b: number): boolean {
+  return Math.round(a * 10) === Math.round(b * 10);
+}
+
 /** A reason as copy.ts words it: its numbers, and what its sentence needs from the rest. */
 function reasonInput(
   reason: ReasonDetail,
   detail: ForecastDetail,
   day: LocalDate,
   names: Names | null,
+  said: Said,
 ): ReasonInput | null {
   switch (reason.kind) {
     case 'snow_total':
       return {
         ...reason,
         record: detail.record?.proves === 'snow_total' ? recordCount(detail.record) : null,
+        said:
+          said.snow !== null &&
+          same(said.snow.low, reason.low) &&
+          same(said.snow.high, reason.high),
       };
     case 'record': {
       const count = detail.record?.proves === 'record' ? recordCount(detail.record) : null;
@@ -734,16 +786,31 @@ function reasonInput(
         names: found.every((name): name is string => name !== null) ? found : null,
         count: reason.districts.length,
         status,
+        said: reason.districts.some((district) => said.neighbors.includes(district)),
       };
     }
     case 'timing':
-      return { ...reason, buses: detail.busesAt };
+      return { ...reason, buses: detail.busesAt, said: said.heavy };
+    case 'wind_chill':
+      return {
+        ...reason,
+        said: said.cold !== null && Math.round(said.cold) === Math.round(reason.feelsLike),
+      };
     case 'cold':
+      return {
+        ...reason,
+        day,
+        said: said.cold !== null && Math.round(said.cold) === Math.round(reason.feelsLike),
+      };
     case 'sun':
       return { ...reason, day };
     case 'snow_stops':
-      return { ...reason, buses: detail.busesAt, day };
-    case 'wind_chill':
+      return {
+        ...reason,
+        buses: detail.busesAt,
+        day,
+        said: said.stopped.some((at) => at.getTime() === reason.at.getTime()),
+      };
     case 'icy_roads':
     case 'ice':
       return reason;
@@ -754,7 +821,8 @@ function reasonInput(
  * How the chance adds up, or null. Null unless the base and every reason's
  * points add up to the headline exactly and every reason can be said. The
  * file never gives a certainty (0.01 to 0.99), so the sum always has whole
- * points to show, 1% and 99% too.
+ * points to show, 1% and 99% too. A reason whose numbers the chart or the
+ * timeline gives (`said`) only names itself.
  */
 export function whyView(input: {
   readonly detail: ForecastDetail;
@@ -764,8 +832,10 @@ export function whyView(input: {
   readonly names: Names | null;
   readonly now: Date;
   readonly zones: Zones;
+  readonly said?: Said;
 }): WhyView | null {
   const { detail, chance, day, district, names, now, zones } = input;
+  const said = input.said ?? NOTHING_SAID;
   const why = detail.why;
   const percent = Math.round(chance * 100);
   if (why === null || percent < 1 || percent > 99) return null;
@@ -776,12 +846,12 @@ export function whyView(input: {
     const base: BaseInput = why.base;
     const lines: WhyLineView[] = [];
     for (const reason of why.reasons) {
-      const said = reasonInput(reason, detail, day, names);
-      if (said === null) return null;
+      const words = reasonInput(reason, detail, day, names, said);
+      if (words === null) return null;
       lines.push({
         key: reason.kind,
         points: chanceFormat.points(reason.points),
-        text: chanceFormat.reason(said, district, now, zones),
+        text: chanceFormat.reason(words, district, now, zones),
       });
     }
     return {
@@ -812,8 +882,6 @@ export function chanceView(input: ChanceInput): ChanceView | null {
   const zones: Zones = { school: outlook.timeZone, viewer: timeZone };
   const detail = forecast.detail ?? NO_DETAIL;
   const neighbors = outlook.neighbors ?? [];
-  let moments: MomentView[];
-  let chart: ChartView | null;
   let number: string;
   let meaning: string;
   try {
@@ -822,21 +890,44 @@ export function chanceView(input: ChanceInput): ChanceView | null {
   } catch {
     return null;
   }
-  try {
-    moments = momentsOf(detail, neighborPosts(closings, day, neighbors, names, now), names, {
-      day,
-      district,
-      now,
-      zones,
-    });
-  } catch {
-    moments = [];
-  }
+  let chart: ChartView | null;
   try {
     chart = chartView(detail, now, zones);
   } catch {
     chart = null;
   }
+  // The usual announcement is said once: on the chart where it falls in the night drawn.
+  const announcement = chart?.key.find((row) => row.mark === 'announces');
+  let moments: MomentView[];
+  let listed: number[] = [];
+  let stopped: Date[] = [];
+  try {
+    const posts = neighborPosts(closings, day, neighbors, names, now);
+    moments = momentsOf(detail, posts, names, {
+      day,
+      district,
+      now,
+      zones,
+      announces: announcement === undefined,
+    });
+    listed = posts.map((post) => post.district).filter((at) => (names?.name(at) ?? null) !== null);
+    stopped = detail.events.flatMap((event) =>
+      event.kind === 'snow_stopped' && event.at <= now ? [event.at] : [],
+    );
+  } catch {
+    moments = [];
+  }
+  const answer = detail.hours?.values.at(-1) ?? null;
+  const said: Said = {
+    snow:
+      chart?.kind === 'snow_total' && answer !== null
+        ? (detail.hours?.range ?? { low: answer, high: answer })
+        : null,
+    cold: chart?.kind === 'wind_chill' ? answer : null,
+    heavy: chart?.key.some((row) => row.mark === 'heavy') ?? false,
+    neighbors: listed,
+    stopped,
+  };
   const moved = movedView(noSchool, detail.previous, now, zones);
   let delay: string | null = null;
   if (Math.round(forecast.delay * 100) >= 1) {
@@ -854,13 +945,21 @@ export function chanceView(input: ChanceInput): ChanceView | null {
     moved,
     moments,
     chart,
-    why: whyView({ detail, chance: noSchool, day, district, names, now, zones }),
+    why: whyView({ detail, chance: noSchool, day, district, names, now, zones, said }),
     delay,
     countdown: (at, clock) => {
       try {
         return chanceFormat.countdown(at, clock, outlook.timeZone);
       } catch {
         return null;
+      }
+    },
+    announces: (clock) => {
+      if (announcement?.mark !== 'announces') return null;
+      try {
+        return chanceFormat.announcesKey(announcement.at, zones, clock);
+      } catch {
+        return announcement.text;
       }
     },
   };

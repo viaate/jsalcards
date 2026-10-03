@@ -1261,6 +1261,18 @@ async function expectChartFits(page: Page, label: string): Promise<void> {
   expect(layout.scrolls, `${label}: the panel scrolls sideways`).toBe(false);
 }
 
+/** The words a part of the page shows, as one line; what only a screen reader reads left out. */
+async function shownText(part: Locator): Promise<string> {
+  return part.evaluate((root) => {
+    const words: string[] = [];
+    const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT);
+    for (let node = walker.nextNode(); node !== null; node = walker.nextNode()) {
+      if (node.parentElement?.closest('.sr-only') === null) words.push(node.textContent ?? '');
+    }
+    return words.join(' ').replace(/\s+/gu, ' ');
+  });
+}
+
 /** Whether two boxes on the page overlap. */
 function overlaps(
   a: { x: number; y: number; width: number; height: number },
@@ -2064,11 +2076,11 @@ test.describe('with data staged', () => {
     // No status is posted for this school yet: none above the chance.
     await expect(section.locator('.status')).toHaveCount(0);
 
-    // The districts next door that canceled, from the live file, then when this one announces.
+    // The districts next door that canceled, from the live file; when this one announces is
+    // the chart's to say.
     await expect(section.locator('.moment')).toHaveText([
       `${format.time(new Date('2026-01-13T02:41:00Z'), ZONE)} Blue Valley canceled Tuesday`,
       `${format.time(new Date('2026-01-13T02:52:00Z'), ZONE)} Olathe canceled Tuesday`,
-      `${format.time(new Date('2026-01-13T11:30:00Z'), ZONE)} Shawnee Mission usually announces in 8h 25m`,
     ]);
 
     // The chart: a bar an hour, the heaviest lit, the buses and the range at their hour; over
@@ -2088,7 +2100,7 @@ test.describe('with data staged', () => {
     );
     await expect(chart.locator('.words')).toHaveText([
       `${buses.value}${buses.rest}`,
-      chanceFormat.announcesKey(new Date('2026-01-13T11:30:00Z'), zones),
+      chanceFormat.announcesKey(new Date('2026-01-13T11:30:00Z'), zones, EVENING),
     ]);
     await expect(chart.locator('.words .value')).toHaveText(chanceFormat.inches(6, 9));
     await expect(chart.locator('.key .row')).toHaveText([
@@ -2129,10 +2141,17 @@ test.describe('with data staged', () => {
     await expect(section.locator('.why-title')).toHaveText(chanceFormat.howWeGot(0.64));
     const rows = section.locator('.sum > li');
     await expect(rows).toHaveCount(6);
+    // Each reason names itself: its numbers are the chart's, and who canceled is the timeline's.
     await expect(rows.nth(1)).toHaveText(
-      '+16 The forecast has 6 to 9 inches overnight, more than most storms. It closed 4 of the last 5 times it got 6 inches or more.',
+      '+16 More snow than most storms. It closed 4 of the last 5 times it got 6 inches or more.',
     );
-    await expect(rows.nth(2)).toHaveText('+9 Blue Valley and Olathe, next door, canceled.');
+    await expect(rows.nth(2)).toHaveText('+9 Districts next door canceled.');
+    await expect(rows.nth(3)).toHaveText('+7 Heaviest snow just before the buses.');
+    // Nothing said twice in the section as it shows.
+    const shown = await shownText(section);
+    for (const fact of ['6 to 9', '2 to 5', '5:30', 'Blue Valley', 'Olathe', 'announces']) {
+      expect(shown.split(fact).length - 1, fact).toBe(1);
+    }
     const numbers = (await section.locator('.sum .num').allTextContents()).map((text) =>
       Number(text.replace('−', '-')),
     );
@@ -2235,8 +2254,21 @@ test.describe('with data staged', () => {
     );
     await expect(section.locator('.moment')).toHaveText([
       `${format.time(new Date('2026-01-12T12:00:00Z'), ZONE)} Snow stopped, 8 inches in all`,
-      `${format.time(new Date('2026-01-13T11:30:00Z'), ZONE)} Kansas City 33 usually announces in 8h 25m`,
     ]);
+    await expect(section.locator('.chart .words.is-announces')).toHaveText(
+      chanceFormat.announcesKey(
+        new Date('2026-01-13T11:30:00Z'),
+        { school: ZONE, viewer: ZONE },
+        EVENING,
+      ),
+    );
+    // How cold, and when the snow stopped, are the chart's and the timeline's.
+    await expect(section.locator('.sum > li').nth(1)).toHaveText(
+      '−8 The snow stopped, a full day for the plows.',
+    );
+    await expect(section.locator('.sum > li').nth(2)).toHaveText(
+      '+6 Cold at the bus stop Tuesday morning.',
+    );
     const chart = section.locator('.chart');
     await expect(chart.locator('figcaption')).toHaveText(chanceCopy.coldTonight);
     await expect(chart.locator('.col.is-below')).toHaveCount(11);
