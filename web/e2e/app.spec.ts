@@ -2089,8 +2089,8 @@ test.describe('with data staged', () => {
     const zones = { school: ZONE, viewer: ZONE };
     await expect(chart.locator('figcaption')).toHaveText(chanceCopy.snowTitle);
     await expect(chart.locator('.col')).toHaveCount(11);
-    // Lit from 2 to 5 AM, as the key and the time under the first lit bar say.
-    await expect(chart.locator('.col.is-lit')).toHaveCount(4);
+    // The heaviest snow, 2 to 5 AM, is the 3, 4 and 5 AM bars' growth: three lit.
+    await expect(chart.locator('.col.is-lit')).toHaveCount(3);
     await expect(chart.locator('.range')).toHaveCount(1);
     await expect(chart.locator('.line')).toHaveCount(2);
     const buses = chanceFormat.busesKey(

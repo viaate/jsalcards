@@ -536,9 +536,10 @@ export function hoursPerBar(hours: number): number {
 /**
  * The times at the chart's foot, by bar: the first ("Now", when it is this
  * hour) and the last (the buses) always; then `marks` (where the heaviest
- * snow starts and ends, when the snow starts), and every third hour (or
+ * snow ends, when the snow starts), and every third hour (or
  * sixth, or ninth, a bar standing for more), each only where its words keep
- * clear of those placed on the narrowest plot. Each is the school's time,
+ * clear of those placed on the narrowest plot, and none under a `quiet` bar,
+ * whose time the key's hours would seem to contradict. Each is the school's time,
  * with its zone where the viewer's clock differs, as the chart's words are;
  * each starts at its bar's left edge, and the last ends where the plot does.
  */
@@ -546,10 +547,12 @@ export function chartTimes(input: {
   readonly instants: readonly Date[];
   readonly step: number;
   readonly marks: readonly number[];
+  readonly quiet?: readonly number[];
   readonly isNow: boolean;
   readonly zones: Zones;
 }): TimeView[] {
   const { instants, step, marks, isNow, zones } = input;
+  const quiet = input.quiet ?? [];
   const count = instants.length;
   const last = count - 1;
   const slot = NARROWEST_PLOT_PX / count;
@@ -573,6 +576,7 @@ export function chartTimes(input: {
   const placed: number[] = [];
   for (const at of wanted) {
     if (at < 0 || at >= count || placed.includes(at)) continue;
+    if (at > 0 && at < last && quiet.includes(at)) continue;
     const [left, right] = box(at);
     const clear = placed.every((other) => {
       const [l, r] = box(other);
@@ -613,19 +617,22 @@ export function chartView(detail: ForecastDetail, now: Date, zones: Zones): Char
   const zero = y(0);
   const snow = hours.kind === 'snow_total';
   const instants = values.map((_, at) => new Date(start.getTime() + hourOf(at) * HOUR_MS));
-  // The heaviest snow, from the hour it starts to the hour it ends, as its key says it.
+  // Value i grew in the hour before it, so the heaviest snow falls from first - 1 to last.
   const heavy =
     snow && hours.heavy !== null
       ? {
+          first: hours.heavy.first - gone,
+          last: hours.heavy.last - gone,
           from: new Date(hours.start.getTime() + (hours.heavy.first - 1) * HOUR_MS),
           to: new Date(hours.start.getTime() + hours.heavy.last * HOUR_MS),
         }
       : null;
-  // Lit from the heaviest snow's start to its end, as the times under the bars read.
+  // A bar is lit where its own hours of snowfall are among the heaviest.
   const lit = (at: number): boolean => {
     if (!snow) return at === count - 1;
-    const instant = instants[at];
-    return heavy !== null && instant !== undefined && instant >= heavy.from && instant <= heavy.to;
+    if (heavy === null) return false;
+    const from = at === 0 ? 0 : hourOf(at - 1) + 1;
+    return Math.max(from, heavy.first) <= Math.min(hourOf(at), heavy.last);
   };
   // Each bar exactly its value: a trace is a sliver, no snow is no bar.
   const bars = values.map((value, at): BarView => {
@@ -639,17 +646,26 @@ export function chartView(detail: ForecastDetail, now: Date, zones: Zones): Char
   });
   const litBars = bars.map((bar, at) => (bar.lit ? at : -1)).filter((at) => at >= 0);
   const firstSnow = snow ? values.findIndex((value) => value > 0) : -1;
-  // The heaviest snow's start and end under the lit bars, where a bar is at that very hour.
+  // The heaviest snow's end under the last lit bar, where that bar is at its very hour. No
+  // other time under a lit bar, nor under the gray bar at its start: the key says those hours.
   const marks: number[] = [];
-  const [firstLit, lastLit] = [litBars[0], litBars.at(-1)];
-  if (heavy !== null && firstLit !== undefined && lastLit !== undefined) {
-    if (instants[firstLit]?.getTime() === heavy.from.getTime()) marks.push(firstLit);
-    if (instants[lastLit]?.getTime() === heavy.to.getTime()) marks.push(lastLit);
+  const lastLit = litBars.at(-1);
+  if (
+    heavy !== null &&
+    lastLit !== undefined &&
+    instants[lastLit]?.getTime() === heavy.to.getTime()
+  ) {
+    marks.push(lastLit);
+  }
+  const quiet = litBars.filter((at) => snow && !marks.includes(at));
+  if (heavy !== null && litBars.length > 0) {
+    quiet.push(instants.findIndex((instant) => instant.getTime() === heavy.from.getTime()));
   }
   const times = chartTimes({
     instants,
     step,
     marks: firstSnow > 0 ? [...marks, firstSnow] : marks,
+    quiet,
     isNow: hourOf(0) === 0 && now >= start && now.getTime() < start.getTime() + HOUR_MS,
     zones,
   });

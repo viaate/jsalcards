@@ -121,19 +121,14 @@ describe('the chance section', () => {
 
     expect(text(section, 'figcaption')).toEqual([chanceCopy.snowTitle]);
     expect(section.querySelectorAll('.col')).toHaveLength(11);
-    // Lit from 2 to 5 AM, as the key says, the first lit bar over "2 AM".
-    expect(section.querySelectorAll('.col.is-lit')).toHaveLength(4);
+    // The heaviest snow, 2 to 5 AM, is the 3, 4 and 5 AM bars' growth.
+    expect(section.querySelectorAll('.col.is-lit')).toHaveLength(3);
     // The plot carries marks only: the lit bars, the two dashed lines, the range.
     expect(section.querySelectorAll('.line.is-announces')).toHaveLength(1);
     expect(section.querySelectorAll('.line.is-buses')).toHaveLength(1);
     expect(section.querySelectorAll('.range')).toHaveLength(1);
     expect(text(section, '.plot')).toEqual(['']);
-    expect(text(section, '.time')).toEqual([
-      chanceCopy.now,
-      `11${NBSP}PM`,
-      `2${NBSP}AM`,
-      `7${NBSP}AM`,
-    ]);
+    expect(text(section, '.time')).toEqual([chanceCopy.now, `11${NBSP}PM`, `7${NBSP}AM`]);
     // Over the plot, the two dashed lines' words, the answer first, its value first; for a
     // screen reader too, after the chart in a sentence.
     expect(text(section, '.chart .sr-only')).toEqual([

@@ -152,10 +152,10 @@ describe('the chance section, the night before', () => {
     expect(chart?.plot).toBe(120);
     expect(chart?.zero).toBe(0);
     expect(chart?.step).toBe(1);
-    // Lit from 2 to 5 AM, as the key and the time under the first lit bar say.
+    // The heaviest snow, 2 to 5 AM, is the 3, 4 and 5 AM bars' growth: those three are lit, and
+    // the 2 AM bar, the snow on the ground as it starts, is not.
     expect(chart?.bars.map((bar) => bar.lit)).toEqual([
-      ...Array<boolean>(5).fill(false),
-      true,
+      ...Array<boolean>(6).fill(false),
       true,
       true,
       true,
@@ -166,10 +166,11 @@ describe('the chance section, the night before', () => {
     // Each bar exactly its value: a trace of snow is a sliver, no snow is no bar.
     expect(chart?.bars[2]?.height).toBeCloseTo(2.667, 3);
     expect(chart?.bars[0]?.height).toBe(0);
+    // No time under the gray 2 AM bar or the first lit ones, which the key's "2 to 5 AM" would
+    // seem to contradict; the 5 AM end would meet the bus hour's 7 AM on the narrowest plot.
     expect(chart?.times).toEqual([
       { at: 0, label: chanceCopy.now, end: false },
       { at: 2, label: `11${NBSP}PM`, end: false },
-      { at: 5, label: `2${NBSP}AM`, end: false },
       { at: 10, label: `7${NBSP}AM`, end: true },
     ]);
     // The announcement at 5:30 AM, halfway between the 5 and 6 AM bars.
@@ -293,7 +294,6 @@ describe('the school’s own clock', () => {
     expect(east?.chart?.times.map((time) => time.label)).toEqual([
       chanceCopy.now,
       `11${NBSP}PM${NBSP}CT`,
-      `2${NBSP}AM${NBSP}CT`,
       `7${NBSP}AM${NBSP}CT`,
     ]);
     expect(lines(east?.why ?? null)[5]).toBe(
@@ -740,6 +740,43 @@ describe('the chart', () => {
     }
   });
 
+  it('lights only the heaviest snow’s own hours, and puts its end, never its start, under them', () => {
+    // Heaviest 11 PM to 2 AM: the 12, 1 and 2 AM bars grew in those hours; the 11 PM bar did not.
+    const early: ForecastDetail = {
+      ...A_DETAIL,
+      hours: A_DETAIL.hours === null ? null : { ...A_DETAIL.hours, heavy: { first: 3, last: 5 } },
+    };
+    const chart = chartView(early, A_NOW, HERE);
+    expect(chart?.bars.flatMap((bar, i) => (bar.lit ? [i] : []))).toEqual([3, 4, 5]);
+    expect(chart?.key[0]).toEqual({
+      mark: 'heavy',
+      text: `${chanceCopy.heaviest} 11${NBSP}PM to 2${NBSP}AM`,
+    });
+    // 2 AM under the last lit bar; nothing under the gray 11 PM bar where it starts, though the
+    // snow starts there too, and nothing under the 12 AM bar, though it is a third hour.
+    expect(chart?.times).toEqual([
+      { at: 0, label: chanceCopy.now, end: false },
+      { at: 5, label: `2${NBSP}AM`, end: false },
+      { at: 10, label: `7${NBSP}AM`, end: true },
+    ]);
+    // A quiet bar never takes a time, but the first and the last always do.
+    const instants = Array.from(
+      { length: 11 },
+      (_, i) => new Date(Date.parse('2026-01-13T03:00:00Z') + i * 3_600_000),
+    );
+    const times = chartTimes({
+      instants,
+      step: 1,
+      marks: [3],
+      quiet: [0, 3, 10],
+      isNow: true,
+      zones: HERE,
+    });
+    expect(times.map((time) => time.at)).toEqual([0, 6, 10]);
+    const loud = chartTimes({ instants, step: 1, marks: [3], isNow: true, zones: HERE });
+    expect(loud.map((time) => time.at)).toEqual([0, 3, 6, 10]);
+  });
+
   it('draws a long night with a bar for every 2 or 3 hours, each a readable width', () => {
     expect([1, 18, 19, 36].map(hoursPerBar)).toEqual([1, 1, 2, 2]);
     // A storm across 30 hours, from 3 PM Monday to 9 PM Tuesday, heaviest 2 to 5 AM.
@@ -764,18 +801,18 @@ describe('the chart', () => {
     // Back from the bus hour, every second hour: the last bar is the bus hour's value.
     // On a scale to 12 inches, three steps of 4.
     expect(chart?.bars.at(-1)?.height).toBeCloseTo((8.7 / 12) * 120, 6);
-    // Lit from the heaviest snow's start to its end: the 2 AM and 4 AM bars, and the time
-    // under the first lit bar is the key's first.
+    // Lit where a bar's own two hours of snowfall meet the heaviest, 2 to 5 AM: the 4 AM bar
+    // (2 to 4 AM) and the 6 AM bar (4 to 6 AM); not the 2 AM bar, whose snow fell before.
     expect(chart?.bars.map((bar) => bar.lit)).toEqual(
-      Array.from({ length: 15 }, (_, bar) => bar === 5 || bar === 6),
+      Array.from({ length: 15 }, (_, bar) => bar === 6 || bar === 7),
     );
     expect(chart?.key[0]).toEqual({
       mark: 'heavy',
       text: `${chanceCopy.heaviest} 2 to 5${NBSP}AM`,
     });
-    expect(chart?.times.find((time) => time.at === 5)?.label).toBe(`2${NBSP}AM`);
-    // The 4 AM bar is not the key's 5 AM: no time under it.
-    expect(chart?.times.find((time) => time.at === 6)).toBeUndefined();
+    // No time at the gray 2 AM bar; the last lit bar is not the key's 5 AM, so no mark there.
+    expect(chart?.times.find((time) => time.at === 5)).toBeUndefined();
+    expect(chart?.times.find((time) => time.label.startsWith('5'))).toBeUndefined();
     // The first hour drawn is 4 PM, an hour after the series starts: no "Now" there.
     expect(chart?.times[0]).toEqual({ at: 0, label: `4${NBSP}PM`, end: false });
     // The announcement at 5:30 AM: 14.5 hours into the series, 13.5 past the first bar's hour.
@@ -790,7 +827,7 @@ describe('the chart', () => {
       false,
       false,
       false,
-      true,
+      false,
       true,
       true,
       true,
