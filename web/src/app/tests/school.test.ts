@@ -521,7 +521,7 @@ describe('the chance section in the panel', () => {
     expect(named?.moments.map((moment) => moment.text)).toEqual([
       'District 2900002 canceled Tuesday',
       'District 2900003 canceled Tuesday',
-      'Maries County R-II usually announces',
+      'Maries County usually announces',
     ]);
     // The timeline names them, so the sum only names the reason.
     expect(named?.why?.lines.map((line) => `${line.points} ${line.text}`)).toEqual([

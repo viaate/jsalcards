@@ -7,6 +7,10 @@ const KIND_WORDS = [
   'community high',
   'township high',
   'regional high',
+  'regional vocational',
+  'regional',
+  'geographic',
+  'k-12',
   'unified union',
   'union free',
   'exempted village',
@@ -43,8 +47,12 @@ const KIND_NOUNS = [
   'schools',
   'district',
   'dist',
+  's/d',
+  'cted',
   'cusd',
   'cud',
+  'sud',
+  'ed',
   'ccsd',
   'chsd',
   'cuhsd',
@@ -58,6 +66,7 @@ const KIND_NOUNS = [
   'chd',
   'msd',
   'usd',
+  'ud',
   'isd',
   'cisd',
   'ufsd',
@@ -67,6 +76,8 @@ const KIND_NOUNS = [
 /** What can end a district's name with no noun after it: "Union High", "Unified". */
 const KIND_ENDINGS = [
   '(?:joint\\s+)?union\\s+high\\s+school',
+  'regional vocational technical',
+  'community city',
   'joint union high',
   'joint union elementary',
   'union high',
@@ -81,19 +92,28 @@ const KIND_ENDINGS = [
   'local',
   'area',
   'joint',
+  'regional',
+  'k-12',
 ].join('|');
 /** A name's last kind: "Community Unit School District", "Union High", "ISD". */
-const KIND = new RegExp(
-  `(?:^|\\s+)(?:(?:${KIND_WORDS})\\s+)*(?:${KIND_NOUNS}|${KIND_ENDINGS})$`,
-  'i',
-);
-/** A district's number: "204", "No. 196", "#1", "Re-1J", "127-5", "6-J", "R- 5", "10Jt-R". */
-const NUMBER_TEXT = '(?:[a-z]{1,2}-?\\s?)?\\d+[a-z]{0,2}(?:-[a-z\\d]{1,2})*';
+function kindOf(words: string): RegExp {
+  return new RegExp(`(?:^|\\s+)(?:(?:${words})\\s+)*(?:${KIND_NOUNS}|${KIND_ENDINGS})$`, 'i');
+}
+const KIND = kindOf(KIND_WORDS);
+/** New York's central school districts: "Dolgeville Central School District"; elsewhere "Central" is a name. */
+const KIND_NY = kindOf(`central high|central|${KIND_WORDS}`);
+/** What New York adds after a district's kind: "(Marcus Whitman)", "at Delhi"; elsewhere a county that tells two apart. */
+const ALIAS_NY = new RegExp(`(?<=\\b(?:${KIND_NOUNS}))\\s+(?:\\([^)]*\\)|at\\s+.+)$`, 'i');
+/** A district's number: "204", "No. 196", "#1", "Re-1J", "127-5", "6-J", "R- 5", "10Jt-R", "R-IV". */
+const NUMBER_TEXT =
+  '(?:(?:[a-z]{1,2}-?\\s?)?\\d+[a-z]{0,2}|[a-z]{1,2}-\\s?[ivxl]+)(?:-[a-z\\d]{1,2})*';
 /** A district's number after its kind, and "Jt." (joint) after it. */
 const NUMBER = new RegExp(
   `\\s+(?:re:\\s*)?(?:no?\\.?\\s*|#\\s*)?(${NUMBER_TEXT})(?:\\s+jt\\.?)?$`,
   'i',
 );
+/** A number of digits alone after its kind, read first: "Massac UD 1", never "UD 1". */
+const DIGITS = /\s+(?:no?\.?\s*|#\s*)?(\d+[a-z]{0,2}(?:-[a-z\d]{1,2})*)(?:\s+jt\.?)?$/i;
 /** A name that leads with its kind and number, then its place: "School District No. Re-2 Brush". */
 const LEADING = new RegExp(
   `^(?:(?:${KIND_WORDS})\\s+)*(?:school district|district)\\s+(?:no?\\.?\\s*|#\\s*)?(${NUMBER_TEXT})(?:\\s+(.+))?$`,
@@ -112,49 +132,95 @@ const KIND_ONLY = new RegExp(
   'i',
 );
 
-/** `words` null for a name of nothing but its kind and number (CUSD 300); `whole` keeps the kind. */
+/**
+ * `words` null for a name of nothing but its kind and number (CUSD 300); `whole` keeps the kind,
+ * `named` all of it but its last noun ("Franklin Regional"), where that still names a place.
+ */
 export interface DistrictName {
   readonly words: string | null;
   readonly number: string | null;
   readonly whole: string;
+  readonly named: string;
 }
 
 /** A word that names no place alone: "Central Local" stays whole, never "Central". */
 const PLACELESS =
-  /^(?:north|south|east|west|northern|southern|eastern|western|northeast|northwest|southeast|southwest|central|united|union|valley|county|city|community)$/i;
+  /^(?:north|south|east|west|northern|southern|eastern|western|northeast|northwest|southeast|southwest|central|united|union|valley|county|city|community|region)$/i;
+/** A name's kind noun at its end, alone: "Valley Central School District" to "Valley Central". */
+const NOUN_END = new RegExp(`\\s+(?:public\\s+)?(?:${KIND_NOUNS})$`, 'i');
+/** A kind noun anywhere: "Custer County School District Consolidate 1" is no place and number. */
+const NOUN_ANY = new RegExp(`\\b(?:${KIND_NOUNS})\\b`, 'i');
+/** Maine's kinds, said with their numbers: "RSU 16" is a name, never "RSU". */
+const UNIT_KINDS = /^(?:rsu|msad|sad|sau|aos|boces)$/i;
+
+/** The whole name but its last noun, where that still names a place: "Valley Central". */
+function namedOf(whole: string): string {
+  const named = whole.replace(NOUN_END, '');
+  return PLACELESS.test(named) || KIND_ONLY.test(named) ? whole : named;
+}
 
 /** Its words and number; the whole name where its words alone would say no place. */
 function parts(words: string | null, number: string | null, whole: string): DistrictName {
+  const named = namedOf(whole);
   if (words === null || words.replace(/[^a-z]/gi, '').length < 3 || KIND_ONLY.test(words)) {
-    return { words: number === null ? whole : null, number, whole };
+    // Its number's district only where it says it is one: "CUSD 300", never "Community R-VI".
+    const district = number !== null && NOUN_ANY.test(whole);
+    return { words: district ? null : whole, number: district ? number : null, whole, named };
   }
-  if (!PLACELESS.test(words)) return { words, number, whole };
-  return { words: number === null ? whole : `${words} ${number}`, number: null, whole };
+  if (!PLACELESS.test(words)) return { words, number, whole, named };
+  if (number !== null) return { words: `${words} ${number}`, number: null, whole, named };
+  return { words: named, number: null, whole, named };
+}
+
+/** Words a number can follow with no kind between: a place's, never a kind's or another number's. */
+function numbered(words: string): boolean {
+  const trimmed = words.trim();
+  return (
+    trimmed.replace(/[^a-z]/gi, '').length >= 3 &&
+    !/\d/.test(trimmed) &&
+    !/\b(?:school|academy|charter|center)$/i.test(trimmed) &&
+    !NOUN_ANY.test(trimmed) &&
+    !UNIT_KINDS.test(trimmed) &&
+    !KIND_ONLY.test(trimmed)
+  );
 }
 
 /** A district's name apart: "Indian Prairie" and "204" for Indian Prairie CUSD 204. */
-export function districtName(shown: string): DistrictName {
+export function districtName(shown: string, state: string | null = null): DistrictName {
   let name = shown
     .replace(STATE_ID, '')
     // A name run into its kind: "GreeleySchool District No. 6".
     .replace(/([a-z])(School District)/g, '$1 $2');
   const county = COUNTY.exec(name)?.[1] ?? null;
-  name = name.replace(COUNTY_TAIL, '').trim();
+  name = name.replace(COUNTY_TAIL, '');
+  if (state === 'NY') name = name.replace(ALIAS_NY, '');
+  name = name.trim();
   const whole = name;
   const leading = LEADING.exec(name);
   if (leading !== null) return parts(leading[2]?.trim() ?? county, leading[1] ?? null, whole);
+  const kind = state === 'NY' ? KIND_NY : KIND;
   let number: string | null = null;
-  const numbered = NUMBER.exec(name);
-  if (numbered !== null && KIND.test(name.slice(0, numbered.index))) {
-    number = numbered[1] ?? null;
-    name = name.slice(0, numbered.index);
+  for (const after of [DIGITS.exec(name), NUMBER.exec(name)]) {
+    if (after !== null && kind.test(name.slice(0, after.index))) {
+      number = after[1] ?? null;
+      name = name.slice(0, after.index);
+      break;
+    }
   }
   let cut = false;
-  for (let kind = KIND.exec(name); kind !== null; kind = KIND.exec(name)) {
-    name = name.slice(0, kind.index);
+  for (let found = kind.exec(name); found !== null; found = kind.exec(name)) {
+    name = name.slice(0, found.index);
     cut = true;
   }
-  return cut ? parts(name.trim(), number, whole) : { words: whole, number: null, whole };
+  // A number with no kind at all: "Blue Springs R-IV", "Kansas City 33".
+  const bare = cut ? null : NUMBER.exec(name);
+  if (bare !== null && numbered(name.slice(0, bare.index))) {
+    number = bare[1] ?? null;
+    name = name.slice(0, bare.index);
+    cut = true;
+  }
+  if (!cut) return { words: whole, number: null, whole, named: whole };
+  return parts(name.trim().replace(/\s*(?:[-:,&]|\band)$/i, ''), number, whole);
 }
 
 /** Districts whose words another district of the state shares (Hinsdale 86, Hinsdale 181): they keep their numbers. */
@@ -167,7 +233,7 @@ export function alikeDistricts(
 ): string[] {
   const byName = new Map<string, string[]>();
   for (const { id, state, shown } of districts) {
-    const { words } = districtName(shown);
+    const { words } = districtName(shown, state);
     if (words === null) continue;
     const key = `${state ?? ''}\n${words.toLowerCase()}`;
     const ids = byName.get(key);

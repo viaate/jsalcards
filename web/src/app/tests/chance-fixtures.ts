@@ -10,7 +10,7 @@
  *    headline, with how cold it will feel through the night.
  */
 import { copy } from '../../copy';
-import type { Names, StatusLine } from '../chance';
+import type { NameOf, Names, StatusLine } from '../chance';
 import type { ForecastDetail, RecordDetail, WhyDetail } from '../../data/forecast-detail';
 import type { Outlook } from '../../data/school-day';
 import type { ClosingsFile, DirectoryStamp } from '../../types/generated';
@@ -25,8 +25,13 @@ const SCHOOL_DISTRICTS = [0, 0, 1, 1, 2, 3];
 export const NAMES: Names = {
   stamp: STAMP,
   districtOf: (school) => SCHOOL_DISTRICTS[school] ?? -1,
-  name: (district) => DISTRICT_NAMES[district] ?? null,
+  naming: (district) => {
+    const shown = DISTRICT_NAMES[district];
+    return shown === undefined ? null : { shown, state: 'KS', alike: false };
+  },
 };
+/** The districts by their names, as the section says them. */
+export const NAME_OF: NameOf = (district) => DISTRICT_NAMES[district] ?? null;
 
 const at = (iso: string): Date => new Date(iso);
 

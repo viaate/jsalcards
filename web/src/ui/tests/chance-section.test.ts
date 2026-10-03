@@ -27,6 +27,7 @@ function chance(night: boolean): ChanceView {
     decided: { today: !night, tomorrow: false },
     status: night ? [] : [CLOSED_TODAY],
     district: 'Shawnee Mission',
+    state: 'KS',
     closings: night ? A_CLOSINGS : null,
     names: NAMES,
     now: night ? A_NOW : B_NOW,

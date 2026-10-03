@@ -53,7 +53,7 @@ import type {
   SchoolId,
 } from '../types/generated';
 import { chanceView, shortDistrictName } from './chance';
-import type { ChanceView, Names } from './chance';
+import type { ChanceView, DistrictNaming, Names } from './chance';
 
 /** What a search pick already knows about a school: its shown name and its town. */
 export interface SchoolHint {
@@ -239,13 +239,21 @@ function factsOf(record: SchoolRecord): FactView[] {
 
 let alike: ReadonlySet<string> | null = null;
 
-/** A district's name as the panel shows it, then short, as a family says it: "Shawnee Mission". */
-function districtShortName(id: string, name: string): string {
+/** How the panel names a district: whole as it shows it, its state, and whether another reads the same. */
+function districtNaming(id: string, name: string): DistrictNaming {
   alike ??= new Set(ALIKE_DISTRICTS);
-  return shortDistrictName(
-    displayName(name, { state: stateOfId(id), district: true }, DISTRICT_NAME_FIXES[id] ?? {}),
-    alike.has(id),
-  );
+  const state = stateOfId(id);
+  return {
+    shown: displayName(name, { state, district: true }, DISTRICT_NAME_FIXES[id] ?? {}),
+    state,
+    alike: alike.has(id),
+  };
+}
+
+/** The school's own district for the chance section: its short name, as a family says it, and its state. */
+function ownDistrict(id: string, name: string): { district: string; state: string | null } {
+  const { shown, state, alike: same } = districtNaming(id, name);
+  return { district: shortDistrictName(shown, same, state), state };
 }
 
 /** The directory's district names and each school's district, for the chance section. */
@@ -256,20 +264,20 @@ export function namesOf(directory: Directory): Names {
     schools: directory.count,
     districts: ids.length,
   };
-  const short = new Map<number, string | null>();
+  const named = new Map<number, DistrictNaming | null>();
   return {
     stamp,
     districtOf: (school) => directory.district[school] ?? -1,
-    name: (district) => {
-      if (!short.has(district)) {
+    naming: (district) => {
+      if (!named.has(district)) {
         const id = ids[district];
         const name = names[district];
-        short.set(
+        named.set(
           district,
-          id === undefined || name === undefined ? null : districtShortName(id, name),
+          id === undefined || name === undefined ? null : districtNaming(id, name),
         );
       }
-      return short.get(district) ?? null;
+      return named.get(district) ?? null;
     },
   };
 }
@@ -369,7 +377,7 @@ export function schoolView(input: ViewInput): SchoolView | null {
             outlook: input.outlook,
             decided,
             status,
-            district: districtShortName(record.district.id, record.district.name),
+            ...ownDistrict(record.district.id, record.district.name),
             closings: input.closings ?? null,
             names: input.names ?? null,
             now,

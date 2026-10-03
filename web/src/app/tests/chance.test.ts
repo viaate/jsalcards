@@ -19,10 +19,11 @@ import {
   hoursPerBar,
   neighborPosts,
   shortDistrictName,
+  toldApart,
   whyView,
 } from '../chance';
 import type { ClosingsFile } from '../../types/generated';
-import type { ChanceInput, WhyView } from '../chance';
+import type { ChanceInput, DistrictNaming, Names, WhyView } from '../chance';
 import {
   A_CLOSINGS,
   A_DETAIL,
@@ -35,6 +36,7 @@ import {
   B_OUTLOOK,
   CLOSED_TODAY,
   NAMES,
+  NAME_OF,
   STAMP,
   ZONE,
   nightOutlook,
@@ -52,6 +54,7 @@ function nightBefore(overrides: Partial<ChanceInput> = {}): ChanceInput {
     decided: { today: false, tomorrow: false },
     status: [],
     district: 'Shawnee Mission',
+    state: 'KS',
     closings: A_CLOSINGS,
     names: NAMES,
     now: A_NOW,
@@ -426,7 +429,7 @@ describe('what the section leaves out', () => {
     expect(view?.number).toBe('64');
     expect(view?.chart).not.toBeNull();
     expect(view?.moments).toHaveLength(2);
-    const args = { day: '2026-01-13', district: 'Shawnee Mission', names: NAMES, now: A_NOW };
+    const args = { day: '2026-01-13', district: 'Shawnee Mission', nameOf: NAME_OF, now: A_NOW };
     const why = (detail: ForecastDetail, chance = 0.64): WhyView | null =>
       whyView({ detail, chance, zones: HERE, ...args });
     expect(why(A_DETAIL)).not.toBeNull();
@@ -484,11 +487,11 @@ describe('what the section leaves out', () => {
       ],
     };
     const record = { ...A_DETAIL, why: counting };
-    expect(whyView({ detail: record, chance: 0.64, names: NAMES, ...args })).toBeNull();
+    expect(whyView({ detail: record, chance: 0.64, nameOf: NAME_OF, ...args })).toBeNull();
     const counted = whyView({
       detail: { ...record, record: { ...A_RECORD, proves: 'record' } },
       chance: 0.64,
-      names: NAMES,
+      nameOf: NAME_OF,
       ...args,
     });
     expect(lines(counted).slice(1, 3)).toEqual([
@@ -496,7 +499,7 @@ describe('what the section leaves out', () => {
       '+4 Shawnee Mission closed 4 of the last 5 times it got 6 inches or more.',
     ]);
     // The directory not read (yet): the districts next door by how many.
-    const unnamed = whyView({ detail: A_DETAIL, chance: 0.64, names: null, ...args });
+    const unnamed = whyView({ detail: A_DETAIL, chance: 0.64, nameOf: () => null, ...args });
     expect(unnamed?.lines[1]?.text).toBe('2 districts next door canceled.');
   });
 });
@@ -913,11 +916,20 @@ describe('district names', () => {
     expect(shortDistrictName('Lee County Schools')).toBe('Lee County');
     expect(shortDistrictName('Kansas City 33 School District')).toBe('Kansas City 33');
     expect(shortDistrictName('Center Joint Unified School District')).toBe('Center');
-    expect(shortDistrictName('Hickman Mills C-1')).toBe('Hickman Mills C-1');
     expect(shortDistrictName('Independence School District')).toBe('Independence');
     expect(shortDistrictName('Katy ISD')).toBe('Katy');
     expect(shortDistrictName('Public Schools')).toBe('Public Schools');
-    expect(shortDistrictName('Wheaton R-III')).toBe('Wheaton R-III');
+    // Missouri's numbers, kept only where another district of the state reads the same.
+    expect(shortDistrictName('Hickman Mills C-1')).toBe('Hickman Mills');
+    expect(shortDistrictName('Wheaton R-III')).toBe('Wheaton');
+    expect(shortDistrictName('Blue Springs R-IV', false, 'MO')).toBe('Blue Springs');
+    expect(shortDistrictName("Lee's Summit R-VII", false, 'MO')).toBe("Lee's Summit");
+    expect(shortDistrictName('North Kansas City 74', false, 'MO')).toBe('North Kansas City');
+    expect(shortDistrictName('Kansas City 33', false, 'MO')).toBe('Kansas City');
+    expect(shortDistrictName('Grandview C-4', true, 'MO')).toBe('Grandview C-4');
+    // New York's central school districts, and Montana's K-12 schools.
+    expect(shortDistrictName('Dolgeville Central School District', false, 'NY')).toBe('Dolgeville');
+    expect(shortDistrictName('Baker K-12 Schools', false, 'MT')).toBe('Baker');
     expect(shortDistrictName('Rocklin Unified')).toBe('Rocklin');
     expect(shortDistrictName('Flagstaff Unified District (4192)')).toBe('Flagstaff');
     expect(shortDistrictName('School District No. 1 in the county of Denver and State')).toBe(
@@ -946,8 +958,12 @@ describe('district names', () => {
     );
     expect(shortDistrictName('Corning Union High', true)).toBe('Corning Union High');
     expect(shortDistrictName('Yuma Union High School District (4507)', true)).toBe(
-      'Yuma Union High School District',
+      'Yuma Union High',
     );
+    expect(shortDistrictName('Franklin Regional School District', true, 'PA')).toBe(
+      'Franklin Regional',
+    );
+    expect(shortDistrictName('Midway ISD', true, 'TX')).toBe('Midway ISD');
     // A name that is nothing but its kind and its number: the number's district.
     expect(shortDistrictName('Community Unit School District 300')).toBe('District 300');
     expect(shortDistrictName('Cusd 300')).toBe('District 300');
@@ -972,5 +988,110 @@ describe('district names', () => {
         );
       }
     }
+    // Where no other district of the state reads the same, nothing of its kind.
+    for (const [name, state] of [
+      ['Beaver River Central School District', 'NY'],
+      ['Bellmore-Merrick Central High School District', 'NY'],
+      ['Ennis K-12 Schools', 'MT'],
+      ['Monomoy Regional School District', 'MA'],
+      ['Gila County Regional School District (87600)', 'AZ'],
+      ['Springboro Community City', 'OH'],
+    ] as const) {
+      expect(shortDistrictName(name, false, state)).not.toMatch(
+        /(?:Community|Central|High|K-12|Regional|City)$/,
+      );
+    }
+  });
+});
+
+describe('districts next door, told apart', () => {
+  const naming = (shown: string, state: string, alike = false): DistrictNaming => ({
+    shown,
+    state,
+    alike,
+  });
+  /** The names said for `next`, the districts next door, where the school's own is `own`. */
+  function told(own: DistrictNaming, next: readonly DistrictNaming[]): (string | null)[] {
+    const names: Names = { ...NAMES, naming: (district) => next[district] ?? null };
+    const mine = shortDistrictName(own.shown, own.alike, own.state);
+    const nameOf = toldApart(names, mine, own.state, [...next.keys()]);
+    return [...next.keys()].map(nameOf);
+  }
+
+  it('says the state of one in another state that reads as the school’s own district or as another', () => {
+    // Driggs, Idaho, and Jackson, Wyoming, 3 miles apart across the state line.
+    const idaho = naming('Teton County District', 'ID');
+    const wyoming = naming('Teton County School District #1', 'WY');
+    expect(told(idaho, [wyoming, naming('Fremont County Joint District', 'ID')])).toEqual([
+      'Teton County in Wyoming',
+      'Fremont County',
+    ]);
+    expect(told(wyoming, [idaho])).toEqual(['Teton County in Idaho']);
+    // Texarkana, Texas and Arkansas, next door to a third district: only the one away says it.
+    expect(
+      told(naming('Liberty-Eylau ISD', 'TX'), [
+        naming('Texarkana ISD', 'TX'),
+        naming('Texarkana School District', 'AR'),
+      ]),
+    ).toEqual(['Texarkana', 'Texarkana in Arkansas']);
+    expect(told(naming('Texhoma', 'OK'), [naming('Texhoma ISD', 'TX')])).toEqual([
+      'Texhoma in Texas',
+    ]);
+    // Kansas City, Kansas, next door to Kansas City, Missouri.
+    expect(told(naming('Kansas City', 'KS'), [naming('Kansas City 33', 'MO')])).toEqual([
+      'Kansas City in Missouri',
+    ]);
+  });
+
+  it('says more of the name of one in the same state, its state’s id last', () => {
+    // Arizona's charter districts, whose names differ only by the state's id.
+    const basis = (id: string): DistrictNaming =>
+      naming(`BASIS Charter Schools Inc. (${id})`, 'AZ', true);
+    expect(told(basis('6361'), [basis('81078'), basis('90508')])).toEqual([
+      'BASIS Charter Schools Inc. (81078)',
+      'BASIS Charter Schools Inc. (90508)',
+    ]);
+    expect(
+      told(naming('Mesa Unified District (4235)', 'AZ'), [basis('81078'), basis('90508')]),
+    ).toEqual(['BASIS Charter Schools Inc. (81078)', 'BASIS Charter Schools Inc. (90508)']);
+    // Its number, where the build did not find the two alike.
+    expect(
+      told(naming('Hinsdale Township HSD 86', 'IL'), [naming('Hinsdale CCSD 181', 'IL')]),
+    ).toEqual(['Hinsdale 181']);
+    // Already told apart: as they are.
+    expect(
+      told(naming('Hinsdale Township HSD 86', 'IL', true), [
+        naming('Hinsdale CCSD 181', 'IL', true),
+      ]),
+    ).toEqual(['Hinsdale 181']);
+    // A name nothing tells from the school's own district: not said.
+    expect(told(naming('Midway ISD', 'TX', true), [naming('Midway ISD', 'TX', true)])).toEqual([
+      null,
+    ]);
+  });
+
+  it('never names one as the school’s own district or another, in the timeline or the sum', () => {
+    // A Driggs family: Teton County, Wyoming, canceled; so did Olathe.
+    const names: Names = {
+      ...NAMES,
+      naming: (district) =>
+        [
+          naming('Teton County District', 'ID'),
+          naming('Teton County School District #1', 'WY'),
+          naming('Olathe', 'KS'),
+        ][district] ?? null,
+    };
+    const view = chanceView(
+      nightBefore({ district: 'Teton County', state: 'ID', names, closings: null }),
+    );
+    expect(view?.why?.base.text).toMatch(/^Teton County /);
+    expect(view?.why?.lines[1]?.text).toBe(
+      'Teton County in Wyoming and Olathe, next door, canceled.',
+    );
+    const listed = chanceView(nightBefore({ district: 'Teton County', state: 'ID', names }));
+    expect(listed?.moments.map((moment) => moment.text)).toEqual([
+      'Teton County in Wyoming canceled Tuesday',
+      'Olathe canceled Tuesday',
+    ]);
   });
 });

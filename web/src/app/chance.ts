@@ -61,15 +61,27 @@ export interface StatusLine {
   readonly note: string | null;
 }
 
+/** How the directory names a district, for its short name and for telling it from another. */
+export interface DistrictNaming {
+  /** As the panel shows it whole: "Teton County School District #1". */
+  readonly shown: string;
+  readonly state: string | null;
+  /** Another district of its state reads the same, so it keeps its number. */
+  readonly alike: boolean;
+}
+
 /** District names and which district each school is in, from the directory. */
 export interface Names {
   /** The directory these positions are in: a closings file for another is not read with it. */
   readonly stamp: DirectoryStamp;
   /** A school's district position, or -1. */
   districtOf(school: number): number;
-  /** A district's short name ("Blue Valley"), or null. */
-  name(district: number): string | null;
+  /** How the directory names a district, or null. */
+  naming(district: number): DistrictNaming | null;
 }
+
+/** A district next door as the section names it ("Blue Valley"), or null where it is not named. */
+export type NameOf = (district: number) => string | null;
 
 export interface MovedView {
   readonly direction: 'up' | 'down' | 'same';
@@ -197,6 +209,8 @@ export interface ChanceInput {
   readonly status: readonly StatusLine[];
   /** The school's district, by its short name ("Shawnee Mission"). */
   readonly district: string;
+  /** The district's state ("KS"): a district next door in another says its own. */
+  readonly state: string | null;
   readonly closings: ClosingsFile | null;
   /** The directory's names, once read; null before (the neighbors wait for it). */
   readonly names: Names | null;
@@ -210,11 +224,103 @@ type Forecast = Extract<DayOutlook, { state: 'forecast' }>;
 // Names ---------------------------------------------------------------------------------
 
 /** A district's name as a family says it ("Indian Prairie"), its number kept where `alike`. */
-export function shortDistrictName(shown: string, alike = false): string {
-  const { words, number, whole } = districtName(shown);
+export function shortDistrictName(
+  shown: string,
+  alike = false,
+  state: string | null = null,
+): string {
+  const { words, number, whole, named } = districtName(shown, state);
   if (words === null) return number === null ? whole : chanceFormat.district(number);
   if (!alike) return words;
-  return number === null ? whole : `${words} ${number}`;
+  if (number !== null) return `${words} ${number}`;
+  // Its kind's words, where they are what tells it from the other: "Franklin Regional".
+  return named.toLowerCase() === words.toLowerCase() ? whole : named;
+}
+
+/** A district's names, each saying more: "Teton County", "Teton County 1", then whole, then with the state's id. */
+function longerNames({ shown, state, alike }: DistrictNaming): string[] {
+  const { words, number, whole, named } = districtName(shown, state);
+  const forms = [
+    shortDistrictName(shown, alike, state),
+    words !== null && number !== null ? `${words} ${number}` : null,
+    named,
+    whole,
+    shown,
+  ];
+  const longer: string[] = [];
+  for (const form of forms) {
+    // Each says more than the last: "Midway" never follows "Midway ISD".
+    if (form !== null && form.length > (longer.at(-1)?.length ?? 0)) longer.push(form);
+  }
+  return longer;
+}
+
+/**
+ * The districts next door as the section names them, never as the school's own district
+ * (`own`, in `state`) or one another: where two read the same, one in another state
+ * says it, and two in one state say more of their names, the state's id last. One
+ * that still reads as another is not named.
+ */
+export function toldApart(
+  names: Names | null,
+  own: string,
+  state: string | null,
+  districts: readonly number[],
+): NameOf {
+  if (names === null) return () => null;
+  const ids = [...new Set(districts)];
+  const namings = ids.map((district) => names.naming(district));
+  const forms = namings.map((naming) => (naming === null ? [] : longerNames(naming)));
+  const level = ids.map(() => 0);
+  const away = ids.map(() => false);
+  const say = (i: number): string | null => {
+    const form = forms[i]?.[level[i] ?? 0] ?? null;
+    const where = namings[i]?.state ?? null;
+    if (form === null || away[i] !== true || where === null) return form;
+    try {
+      return chanceFormat.inState(form, where);
+    } catch {
+      // A state the words do not know: not named, rather than named as another.
+      return null;
+    }
+  };
+  const mine = own.toLowerCase();
+  /** The states of what reads as district i: the school's own district, then the others. */
+  const rivals = (said: readonly (string | null)[], i: number): (string | null)[] => {
+    const key = said[i];
+    if (key === null || key === undefined) return [];
+    return [
+      ...(key === mine ? [state] : []),
+      ...said.flatMap((other, j) => (j !== i && other === key ? [namings[j]?.state ?? null] : [])),
+    ];
+  };
+  for (let changed = true; changed;) {
+    changed = false;
+    const said = ids.map((_, i) => say(i)?.toLowerCase() ?? null);
+    ids.forEach((_, i) => {
+      const states = rivals(said, i);
+      const where = namings[i]?.state ?? null;
+      if (states.length === 0) return;
+      if (
+        away[i] === false &&
+        where !== null &&
+        where !== state &&
+        states.some((s) => s !== where)
+      ) {
+        away[i] = true;
+        changed = true;
+      }
+      if (states.includes(where) && (level[i] ?? 0) < (forms[i]?.length ?? 0) - 1) {
+        level[i] = (level[i] ?? 0) + 1;
+        changed = true;
+      }
+    });
+  }
+  const said = ids.map((_, i) => say(i)?.toLowerCase() ?? null);
+  const told = new Map(
+    ids.map((district, i) => [district, rivals(said, i).length === 0 ? say(i) : null]),
+  );
+  return (district) => told.get(district) ?? null;
 }
 
 // The headline ----------------------------------------------------------------------------
@@ -353,7 +459,7 @@ export function neighborPosts(
 export function momentsOf(
   detail: ForecastDetail,
   posts: readonly Posted[],
-  names: Names | null,
+  nameOf: NameOf,
   input: {
     readonly day: LocalDate;
     readonly district: string;
@@ -382,7 +488,7 @@ export function momentsOf(
     });
   }
   for (const post of posts) {
-    const name = names?.name(post.district) ?? null;
+    const name = nameOf(post.district);
     if (name === null) continue;
     moments.push({
       at: post.at,
@@ -731,7 +837,7 @@ function reasonInput(
   reason: ReasonDetail,
   detail: ForecastDetail,
   day: LocalDate,
-  names: Names | null,
+  nameOf: NameOf,
   said: Said,
 ): ReasonInput | null {
   switch (reason.kind) {
@@ -749,7 +855,7 @@ function reasonInput(
       return count === null ? null : { kind: 'record', points: reason.points, record: count };
     }
     case 'neighbors': {
-      const found = reason.districts.map((district) => names?.name(district) ?? null);
+      const found = reason.districts.map(nameOf);
       const status = STATUS_KEYS[reason.status];
       if (status === undefined) return null;
       return {
@@ -805,12 +911,12 @@ export function whyView(input: {
   readonly chance: number;
   readonly day: LocalDate;
   readonly district: string;
-  readonly names: Names | null;
+  readonly nameOf: NameOf;
   readonly now: Date;
   readonly zones: Zones;
   readonly said?: Said;
 }): WhyView | null {
-  const { detail, chance, day, district, names, now, zones } = input;
+  const { detail, chance, day, district, nameOf, now, zones } = input;
   const said = input.said ?? NOTHING_SAID;
   const why = detail.why;
   const percent = Math.round(chance * 100);
@@ -822,7 +928,7 @@ export function whyView(input: {
     const base: BaseInput = why.base;
     const lines: WhyLineView[] = [];
     for (const reason of why.reasons) {
-      const words = reasonInput(reason, detail, day, names, said);
+      const words = reasonInput(reason, detail, day, nameOf, said);
       if (words === null) return null;
       lines.push({
         key: reason.kind,
@@ -850,7 +956,7 @@ export function whyView(input: {
  * itself is known.
  */
 export function chanceView(input: ChanceInput): ChanceView | null {
-  const { outlook, decided, status, district, closings, names, now, timeZone } = input;
+  const { outlook, decided, status, district, state, closings, names, now, timeZone } = input;
   if (outlook === null) return null;
   const forecast = headlineDay(outlook, decided, now);
   if (forecast === null) return null;
@@ -858,6 +964,11 @@ export function chanceView(input: ChanceInput): ChanceView | null {
   const zones: Zones = { school: outlook.timeZone, viewer: timeZone };
   const detail = forecast.detail ?? NO_DETAIL;
   const neighbors = outlook.neighbors ?? [];
+  const reasons = detail.why?.reasons ?? [];
+  const nameOf = toldApart(names, district, state, [
+    ...neighbors,
+    ...reasons.flatMap((reason) => (reason.kind === 'neighbors' ? reason.districts : [])),
+  ]);
   let number: string;
   let meaning: string;
   try {
@@ -879,14 +990,14 @@ export function chanceView(input: ChanceInput): ChanceView | null {
   let stopped: Date[] = [];
   try {
     const posts = neighborPosts(closings, day, neighbors, names, now);
-    moments = momentsOf(detail, posts, names, {
+    moments = momentsOf(detail, posts, nameOf, {
       day,
       district,
       now,
       zones,
       announces: announcement === undefined,
     });
-    listed = posts.filter((post) => (names?.name(post.district) ?? null) !== null);
+    listed = posts.filter((post) => nameOf(post.district) !== null);
     stopped = detail.events.flatMap((event) =>
       event.kind === 'snow_stopped' && event.at <= now ? [event.at] : [],
     );
@@ -922,7 +1033,7 @@ export function chanceView(input: ChanceInput): ChanceView | null {
     moved,
     moments,
     chart,
-    why: whyView({ detail, chance: noSchool, day, district, names, now, zones, said }),
+    why: whyView({ detail, chance: noSchool, day, district, nameOf, now, zones, said }),
     delay,
     countdown: (at, clock) => {
       try {

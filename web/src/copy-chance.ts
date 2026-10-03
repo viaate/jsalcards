@@ -16,6 +16,7 @@
 
 import { copy, format } from './copy.ts';
 import type { StatusKey } from './copy.ts';
+import { STATES } from './search/states.ts';
 
 const { checkInstant, checkKey, clockText, dateTimeFormat, localDay, parseLocalDate, part } =
   format;
@@ -398,6 +399,13 @@ function neighborPosted(name: string, status: PostedKey, localDate: string): str
   }
 }
 
+/** A district next door in another state, by its state: "Teton County in Wyoming". */
+function inState(name: string, state: string): string {
+  const named = STATES.find(([code]) => code === state)?.[1];
+  if (named === undefined) throw new RangeError(`copy: no state ${state}`);
+  return `${name} in ${named}`;
+}
+
 /** A district known by its number alone: "District 300". */
 function district(number: string): string {
   return `District ${number}`;
@@ -714,6 +722,7 @@ export const chanceFormat = /* @__PURE__ */ deepFreeze({
   countdown,
   momentTime,
   neighborPosted,
+  inState,
   district,
   usuallyAnnounces,
   weatherEvent,
