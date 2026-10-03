@@ -489,12 +489,12 @@ export function hoursPerBar(hours: number): number {
 /**
  * The times at the chart's foot, by bar: the first ("Now", when it is this
  * hour) and the last (the buses) always; then `marks` (where the heaviest
- * snow ends, when the snow starts), and every third hour (or
- * sixth, or ninth, a bar standing for more), each only where its words keep
- * clear of those placed on the narrowest plot, and none under a `quiet` bar.
- * Each is the school's time,
- * with its zone where the viewer's clock differs, as the chart's words are;
- * each starts at its bar's left edge, and the last ends where the plot does.
+ * snow ends, when the snow starts), and every third hour (or sixth, or
+ * ninth, a bar standing for more), each only where its words keep clear of
+ * those placed on the narrowest plot, and none under a `quiet` bar. Each is
+ * the school's time, with its zone where the viewer's clock differs, as the
+ * chart's words are; each starts at its bar's left edge, and the last ends
+ * where the plot does.
  */
 export function chartTimes(input: {
   readonly instants: readonly Date[];

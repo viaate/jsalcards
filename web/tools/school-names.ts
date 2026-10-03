@@ -121,6 +121,7 @@ export function schoolNames(dataDir: string, options: SchoolNamesOptions = {}): 
     name: 'snowlight:school-names',
     configResolved(config) {
       dir = config.publicDir === '' ? '' : path.join(config.publicDir, dataDir);
+      staged = null;
     },
     resolveId(id) {
       if (id === SCHOOL_NAMES_MODULE) return RESOLVED_ID;
