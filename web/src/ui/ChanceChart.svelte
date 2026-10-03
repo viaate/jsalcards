@@ -112,8 +112,9 @@
           style:max-width={width > 0 ? `${String(announcesRoom(busesAt))}px` : null}
           style:left="{placed.announces.left}px"
           style:top="{placed.announces.top}px"
+          data-room={announces === null ? null : announcement.widest}
         >
-          {announces ?? announcement.text}
+          <span class="live">{announces ?? announcement.text}</span>
         </p>
       {/if}
     </div>
@@ -211,6 +212,22 @@
 
   .value {
     font-weight: 600;
+  }
+
+  /* The countdown keeps the room of its longest form, so the chart never jumps as it shortens. */
+  .words.is-announces {
+    display: grid;
+    font-variant-numeric: tabular-nums;
+  }
+
+  .live,
+  .words.is-announces::after {
+    grid-area: 1 / 1;
+  }
+
+  .words.is-announces::after {
+    visibility: hidden;
+    content: attr(data-room);
   }
 
   .plot {

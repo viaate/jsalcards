@@ -1261,13 +1261,16 @@ async function expectChartFits(page: Page, label: string): Promise<void> {
   expect(layout.scrolls, `${label}: the panel scrolls sideways`).toBe(false);
 }
 
-/** The words a part of the page shows, as one line; what only a screen reader reads left out. */
+/** The words a part of the page shows, as one line; what only a screen reader reads, or none, left out. */
 async function shownText(part: Locator): Promise<string> {
   return part.evaluate((root) => {
     const words: string[] = [];
     const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT);
     for (let node = walker.nextNode(); node !== null; node = walker.nextNode()) {
-      if (node.parentElement?.closest('.sr-only') === null) words.push(node.textContent ?? '');
+      const parent = node.parentElement;
+      if (parent?.closest('.sr-only') !== null) continue;
+      if (getComputedStyle(parent).visibility === 'hidden') continue;
+      words.push(node.textContent ?? '');
     }
     return words.join(' ').replace(/\s+/gu, ' ');
   });
@@ -2166,6 +2169,58 @@ test.describe('with data staged', () => {
     await page.setViewportSize({ width: 900, height: 900 });
     await expect.poll(async () => (await panel.boundingBox())?.width).toBeCloseTo(368, 0);
     expect(problems).toEqual([]);
+    await context.close();
+  });
+
+  test('the chance section for a viewer in New York: each time the school’s, its zone under it, clear of its words, at 1440 and 320 px', async ({
+    browser,
+  }) => {
+    // A first flight into streets (FIRST_FLIGHT_MS).
+    test.setTimeout(240_000);
+    const context = await browser.newContext({
+      viewport: { width: 1440, height: 900 },
+      timezoneId: 'America/New_York',
+      serviceWorkers: 'block',
+    });
+    const page = await context.newPage();
+    await fixDate(page, EVENING);
+    const { problems } = watch(page);
+    await page.route('**/data/live/closings.json*', (route) =>
+      route.fulfill({ contentType: 'application/json', body: syntheticEveningClosings() }),
+    );
+    await page.goto(`${site}?school=${SHAWNEE_MISSION_EAST}`);
+    const panel = page.locator('aside.detail');
+    const section = panel.locator('.chance');
+    await expect(section.locator('.number')).toHaveText('64%', { timeout: 60_000 });
+    await expect(section.locator('.moment .label')).toHaveText([
+      /^8:41\sPM CT$/u,
+      /^8:52\sPM CT$/u,
+    ]);
+    for (const width of [1440, 320]) {
+      await page.setViewportSize({ width, height: width === 1440 ? 900 : 844 });
+      // The time's own words, however they wrap, end before the moment's words start.
+      const rows = await section.locator('.moment').evaluateAll((nodes) =>
+        nodes.map((node) => {
+          const extent = (part: Element | undefined) => {
+            const range = document.createRange();
+            if (part !== undefined) range.selectNodeContents(part);
+            const { x, y, width, height } = range.getBoundingClientRect();
+            return { x, y, width, height };
+          };
+          return { time: extent(node.children[0]), words: extent(node.children[1]) };
+        }),
+      );
+      expect(rows).toHaveLength(2);
+      for (const [i, { time, words }] of rows.entries()) {
+        const label = `${String(width)} px, moment ${String(i)}`;
+        expect(time.width, label).toBeGreaterThan(0);
+        expect(overlaps(time, words), label).toBe(false);
+        expect(time.x + time.width, label).toBeLessThanOrEqual(words.x);
+      }
+    }
+    expect(
+      problems.filter((line) => !line.includes('Service Worker registration blocked')),
+    ).toEqual([]);
     await context.close();
   });
 

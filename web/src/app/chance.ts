@@ -113,6 +113,8 @@ export type KeyRowView =
       /** "Usually announces 5:30 AM": ChanceView.announces adds the live countdown. */
       readonly text: string;
       readonly at: Date;
+      /** With the longest countdown this night drawn can show: the room the words keep. */
+      readonly widest: string;
     }
   | {
       readonly mark: 'buses';
@@ -137,10 +139,7 @@ export interface ChartView {
   readonly step: number;
   readonly bars: readonly BarView[];
   readonly times: readonly TimeView[];
-  /**
-   * The usual announcement's dashed line, at its time: in bars from the first
-   * bar's left edge, where its hour starts; or null.
-   */
+  /** The usual announcement's dashed line, at its time, in bars from the first bar's left edge. */
   readonly announces: number | null;
   /** Where the bus hour's dashed line stops, in pixels above the plot's foot. */
   readonly busTop: number;
@@ -187,10 +186,7 @@ export interface ChanceView {
    * the chance section's words.
    */
   readonly countdown: (at: Date, now: Date) => string | null;
-  /**
-   * The chart's words at the usual announcement's line, as the clock reads
-   * `now`: "Usually announces 5:30 AM, in 8h 25m"; null without that line.
-   */
+  /** The chart's words at the announcement's line as the clock reads `now`, or null without one. */
   readonly announces: (now: Date) => string | null;
 }
 
@@ -213,14 +209,7 @@ type Forecast = Extract<DayOutlook, { state: 'forecast' }>;
 
 // Names ---------------------------------------------------------------------------------
 
-/**
- * A district's name, short, as a family says it: "Shawnee Mission" for
- * Shawnee Mission Public Schools, "Indian Prairie" for Indian Prairie CUSD
- * 204; with its number where another district of its state would read the
- * same (`alike`): "Hinsdale 86". One that is nothing but its kind and number
- * is the number's district ("District 300" for CUSD 300); one that says no
- * kind stays whole.
- */
+/** A district's name as a family says it ("Indian Prairie"), its number kept where `alike`. */
 export function shortDistrictName(shown: string, alike = false): string {
   const { words, number, whole } = districtName(shown);
   if (words === null) return number === null ? whole : chanceFormat.district(number);
@@ -246,11 +235,7 @@ export function atLocalHour(day: LocalDate, hour: number, timeZone: string): Dat
   return new Date(at);
 }
 
-/**
- * Whether a day is under way: once its buses have run (with no closing
- * posted, the children are at school), or without its bus time, from 9 AM on
- * the school's own clock.
- */
+/** Under way once its buses have run, the children at school; without a bus time, from 9 AM. */
 function underWay(day: Forecast & { readonly day: LocalDate }, now: Date, timeZone: string) {
   const buses = day.detail?.busesAt ?? null;
   if (buses !== null) return now >= buses;
@@ -506,8 +491,8 @@ export function hoursPerBar(hours: number): number {
  * hour) and the last (the buses) always; then `marks` (where the heaviest
  * snow ends, when the snow starts), and every third hour (or
  * sixth, or ninth, a bar standing for more), each only where its words keep
- * clear of those placed on the narrowest plot, and none under a `quiet` bar,
- * whose time the key's hours would seem to contradict. Each is the school's time,
+ * clear of those placed on the narrowest plot, and none under a `quiet` bar.
+ * Each is the school's time,
  * with its zone where the viewer's clock differs, as the chart's words are;
  * each starts at its bar's left edge, and the last ends where the plot does.
  */
@@ -614,8 +599,7 @@ export function chartView(detail: ForecastDetail, now: Date, zones: Zones): Char
   });
   const litBars = bars.map((bar, at) => (bar.lit ? at : -1)).filter((at) => at >= 0);
   const firstSnow = snow ? values.findIndex((value) => value > 0) : -1;
-  // The heaviest snow's end under the last lit bar, where that bar is at its very hour. No
-  // other time under a lit bar, nor under the gray bar at its start: the key says those hours.
+  // Only the heaviest snow's end gets a time; any other under it would contradict the key.
   const marks: number[] = [];
   const lastLit = litBars.at(-1);
   if (
@@ -657,6 +641,7 @@ export function chartView(detail: ForecastDetail, now: Date, zones: Zones): Char
         mark: 'announces',
         text: chanceFormat.announcesKey(announcesAt, zones),
         at: announcesAt,
+        widest: chanceFormat.announcesWidest(announcesAt, zones, now < start ? now : start),
       },
     });
   }
@@ -719,10 +704,12 @@ export interface Said {
   readonly cold: number | null;
   /** The chart's key says the heaviest snow's hours. */
   readonly heavy: boolean;
-  /** The districts next door the timeline lists. */
-  readonly neighbors: readonly number[];
+  /** The districts next door the timeline lists, each with what it posted. */
+  readonly neighbors: readonly { readonly district: number; readonly status: StatusKey }[];
   /** When the snow stopped, where the timeline says so. */
   readonly stopped: readonly Date[];
+  /** The chart's answer says the bus hour. */
+  readonly buses: boolean;
 }
 
 export const NOTHING_SAID: Said = Object.freeze({
@@ -731,6 +718,7 @@ export const NOTHING_SAID: Said = Object.freeze({
   heavy: false,
   neighbors: [],
   stopped: [],
+  buses: false,
 });
 
 /** Two measures the same as the section words them: in tenths. */
@@ -770,7 +758,10 @@ function reasonInput(
         names: found.every((name): name is string => name !== null) ? found : null,
         count: reason.districts.length,
         status,
-        said: reason.districts.some((district) => said.neighbors.includes(district)),
+        // Only where the timeline lists every one of them, as having done what the reason says.
+        said: reason.districts.every((district) =>
+          said.neighbors.some((listed) => listed.district === district && listed.status === status),
+        ),
       };
     }
     case 'timing':
@@ -794,6 +785,7 @@ function reasonInput(
         buses: detail.busesAt,
         day,
         said: said.stopped.some((at) => at.getTime() === reason.at.getTime()),
+        busesSaid: said.buses,
       };
     case 'icy_roads':
     case 'ice':
@@ -883,7 +875,7 @@ export function chanceView(input: ChanceInput): ChanceView | null {
   // The usual announcement is said once: on the chart where it falls in the night drawn.
   const announcement = chart?.key.find((row) => row.mark === 'announces');
   let moments: MomentView[];
-  let listed: number[] = [];
+  let listed: Said['neighbors'] = [];
   let stopped: Date[] = [];
   try {
     const posts = neighborPosts(closings, day, neighbors, names, now);
@@ -894,7 +886,7 @@ export function chanceView(input: ChanceInput): ChanceView | null {
       zones,
       announces: announcement === undefined,
     });
-    listed = posts.map((post) => post.district).filter((at) => (names?.name(at) ?? null) !== null);
+    listed = posts.filter((post) => (names?.name(post.district) ?? null) !== null);
     stopped = detail.events.flatMap((event) =>
       event.kind === 'snow_stopped' && event.at <= now ? [event.at] : [],
     );
@@ -911,6 +903,7 @@ export function chanceView(input: ChanceInput): ChanceView | null {
     heavy: chart?.key.some((row) => row.mark === 'heavy') ?? false,
     neighbors: listed,
     stopped,
+    buses: chart !== null,
   };
   const moved = movedView(noSchool, detail.previous, now, zones);
   let delay: string | null = null;

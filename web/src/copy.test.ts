@@ -606,8 +606,9 @@ describe('format', () => {
       expect(chanceFormat.momentTime(at('2026-01-13T02:41:00Z'), evening, here)).toBe(
         `8:41${NBSP}PM`,
       );
+      // The zone after a plain space, to take its own line under the time in the narrow column.
       expect(chanceFormat.momentTime(at('2026-01-13T02:41:00Z'), evening, east)).toBe(
-        `8:41${NBSP}PM${NBSP}CT`,
+        `8:41${NBSP}PM CT`,
       );
       expect(chanceFormat.momentTime(at('2026-01-12T03:04:00Z'), evening, here)).toBe(
         'Sun, Jan 11',
@@ -830,10 +831,24 @@ describe('format', () => {
       expect(stops('2026-01-13T11:00:00Z')).toBe(
         `The forecast has the snow ending by 5${NBSP}AM, a head start for the plows.`,
       );
-      // Ending as the buses go out is no head start.
+      // Ending as the buses go out is no head start; the bus hour is left to the chart that says it.
       expect(stops('2026-01-13T13:00:00Z')).toBe(
         `The forecast has the snow ending at 7${NBSP}AM, as the buses go out.`,
       );
+      expect(
+        reason(
+          {
+            kind: 'snow_stops',
+            points: -3,
+            at: at('2026-01-13T13:00:00Z'),
+            buses,
+            day: '2026-01-13',
+            busesSaid: true,
+          },
+          evening,
+          here,
+        ),
+      ).toBe('The forecast has the snow ending as the buses go out.');
       expect(stops('2026-01-13T15:00:00Z')).toBe(
         `The forecast has snow until 9${NBSP}AM, after the buses go out.`,
       );

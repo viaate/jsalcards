@@ -127,8 +127,8 @@ describe('the chance section, the night before', () => {
       // The hours are the chart's key.
       '+7 Heaviest snow just before the buses.',
       `+5 The forecast has a wind chill of ${MINUS}4${NBSP}F at the bus stop.`,
-      // The snow ends as the buses go out: no head start.
-      `${MINUS}3 The forecast has the snow ending at 7${NBSP}AM, as the buses go out.`,
+      // The snow ends as the buses go out, whose hour is the chart's: no head start.
+      `${MINUS}3 The forecast has the snow ending as the buses go out.`,
     ]);
     expect(view?.why?.title).toBe('How we got 64%');
   });
@@ -140,7 +140,14 @@ describe('the chance section, the night before', () => {
         []),
       ...lines(view?.why ?? null),
     ].join(' | ');
-    for (const fact of [`5:30${NBSP}AM`, `2 to 5${NBSP}AM`, '6 to 9', 'Blue Valley', 'Olathe']) {
+    for (const fact of [
+      `5:30${NBSP}AM`,
+      `2 to 5${NBSP}AM`,
+      `7${NBSP}AM`,
+      '6 to 9',
+      'Blue Valley',
+      'Olathe',
+    ]) {
       expect(said.split(fact).length - 1, fact).toBe(1);
     }
   });
@@ -183,6 +190,8 @@ describe('the chance section, the night before', () => {
         mark: 'announces',
         text: `${chanceCopy.usuallyAnnounces} 5:30${NBSP}AM`,
         at: at('2026-01-13T11:30:00Z'),
+        // From the hour the chart starts, 9 PM: the longest countdown it shows, its room.
+        widest: `${chanceCopy.usuallyAnnounces} 5:30${NBSP}AM, in${NBSP}8h${NBSP}59m`,
       },
       {
         mark: 'buses',
@@ -253,6 +262,8 @@ describe('the chance section, the next morning', () => {
         mark: 'announces',
         text: `${chanceCopy.usuallyAnnounces} 5:30${NBSP}AM`,
         at: at('2026-01-14T11:30:00Z'),
+        // A day ahead of the night drawn: the countdown from now is the longest.
+        widest: `${chanceCopy.usuallyAnnounces} 5:30${NBSP}AM, in${NBSP}23h${NBSP}59m`,
       },
       {
         mark: 'buses',
@@ -270,8 +281,8 @@ describe('the school’s own clock', () => {
   it('says every time where the school is, with its zone where the viewer’s clock differs', () => {
     expect(east?.moved?.text).toBe(`Up from 41% at 5${NBSP}PM${NBSP}CT`);
     expect(east?.moments.map((moment) => moment.time)).toEqual([
-      `8:41${NBSP}PM${NBSP}CT`,
-      `8:52${NBSP}PM${NBSP}CT`,
+      `8:41${NBSP}PM CT`,
+      `8:52${NBSP}PM CT`,
     ]);
     expect(east?.announces(A_NOW)).toBe(
       `${chanceCopy.usuallyAnnounces} 5:30${NBSP}AM${NBSP}CT, in${NBSP}8h${NBSP}25m`,
@@ -282,6 +293,7 @@ describe('the school’s own clock', () => {
         mark: 'announces',
         text: `${chanceCopy.usuallyAnnounces} 5:30${NBSP}AM${NBSP}CT`,
         at: at('2026-01-13T11:30:00Z'),
+        widest: `${chanceCopy.usuallyAnnounces} 5:30${NBSP}AM${NBSP}CT, in${NBSP}8h${NBSP}59m`,
       },
       {
         mark: 'buses',
@@ -296,7 +308,15 @@ describe('the school’s own clock', () => {
       `11${NBSP}PM${NBSP}CT`,
       `7${NBSP}AM${NBSP}CT`,
     ]);
-    expect(lines(east?.why ?? null)[5]).toBe(
+    // With no chart to say the bus hour, the sum says it, in the school's time.
+    const bare = chanceView(
+      nightBefore({
+        timeZone: 'America/New_York',
+        outlook: nightOutlook({ ...A_DETAIL, hours: null }),
+      }),
+    );
+    expect(bare?.chart).toBeNull();
+    expect(lines(bare?.why ?? null)[5]).toBe(
       `${MINUS}3 The forecast has the snow ending at 7${NBSP}AM${NBSP}CT, as the buses go out.`,
     );
     // A viewer on the school's clock, in another zone of the same offset, sees no zone.
@@ -619,14 +639,27 @@ describe('the timeline', () => {
     const unlisted = chanceView(nightBefore({ closings: null }));
     expect(unlisted?.moments).toEqual([]);
     expect(unlisted?.why?.lines[1]?.text).toBe('Blue Valley and Olathe, next door, canceled.');
-    // One of them on the timeline: the timeline names it.
+    // Only one of them on the timeline: the sum still names both, or Blue Valley would go unsaid.
     const one: ClosingsFile = {
       ...A_CLOSINGS,
       days: A_CLOSINGS.days.map((group) => ({ ...group, announced: [null, null, 8, null] })),
     };
-    expect(chanceView(nightBefore({ closings: one }))?.why?.lines[1]?.text).toBe(
-      'Districts next door canceled.',
-    );
+    const partly = chanceView(nightBefore({ closings: one }));
+    expect(partly?.moments.map((moment) => moment.text)).toEqual(['Olathe canceled Tuesday']);
+    expect(partly?.why?.lines[1]?.text).toBe('Blue Valley and Olathe, next door, canceled.');
+    // Both on it, but having gone remote rather than canceled: the sum says what it counts.
+    const remote: ClosingsFile = {
+      ...A_CLOSINGS,
+      days: A_CLOSINGS.days.map((group) => ({ ...group, statuses: [2, 2, 2, 2] })),
+    };
+    const other = chanceView(nightBefore({ closings: remote }));
+    expect(other?.moments.map((moment) => moment.text)).toEqual([
+      'Blue Valley is remote Tuesday',
+      'Olathe is remote Tuesday',
+    ]);
+    expect(other?.why?.lines[1]?.text).toBe('Blue Valley and Olathe, next door, canceled.');
+    // Both on it, canceled: the timeline names them, the sum only the reason.
+    expect(chanceView(nightBefore())?.why?.lines[1]?.text).toBe('Districts next door canceled.');
     // How cold it feels at the bus hour is not the reason's: both are said.
     const colder: ForecastDetail = {
       ...B_DETAIL,
@@ -736,6 +769,20 @@ describe('the chart', () => {
       );
       for (let i = 1; i < boxes.length; i++) {
         expect((boxes[i]?.[0] ?? 0) - (boxes[i - 1]?.[1] ?? 0)).toBeGreaterThanOrEqual(8);
+      }
+    }
+  });
+
+  it('keeps the room of the announcement’s longest countdown, so its words never rewrap', () => {
+    for (let minutes = 0; minutes < 8 * 60 + 25; minutes += 7) {
+      const now = new Date(A_NOW.getTime() + minutes * 60_000);
+      const view = chanceView(nightBefore({ now }));
+      const row = view?.chart?.key.find((item) => item.mark === 'announces');
+      if (row?.mark !== 'announces') throw new Error('no announcement on the chart');
+      // Until the next view, five minutes on, and past it: never longer than the room kept.
+      for (const later of [0, 5, 59]) {
+        const words = view?.announces(new Date(now.getTime() + later * 60_000)) ?? '';
+        expect(words.length).toBeLessThanOrEqual(row.widest.length);
       }
     }
   });

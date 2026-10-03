@@ -192,6 +192,8 @@ export type ReasonInput =
       readonly day: string;
       /** The timeline already says when it stopped. */
       readonly said?: boolean;
+      /** The chart already says the bus hour. */
+      readonly busesSaid?: boolean;
     }
   | {
       readonly kind: 'sun';
@@ -375,8 +377,9 @@ function until(at: Date, now: Date): { text: string; minutes: number } | null {
 /** A moment on the section's timeline: its time within the last day, else its day: "8:41 PM", "Mon, Jan 12". */
 function momentTime(instant: Date, now: Date, zones: Zones): string {
   const ago = checkInstant(now).getTime() - checkInstant(instant).getTime();
+  // A plain space before the zone: in the timeline's narrow first column it takes a line of its own.
   return ago < 24 * HOUR_MS
-    ? `${format.time(instant, zones.school)}${zoneAfter(instant, zones)}`
+    ? `${format.time(instant, zones.school)}${zoneAfter(instant, zones).replace(NBSP, ' ')}`
     : format.day(localDay(instant, zones.school));
 }
 
@@ -435,15 +438,20 @@ function degrees(value: number): string {
   return `${whole < 0 ? MINUS : ''}${String(Math.abs(whole))}${NBSP}F`;
 }
 
-/**
- * The chart's words at the usual announcement's line: "Usually announces
- * 5:30 AM", and while it is still to come, how long until it: "Usually
- * announces 5:30 AM, in 8h 25m". The chart is one night, so no weekday.
- */
+/** "Usually announces 5:30 AM", then ", in 8h 25m" while to come; one night, so no weekday. */
 function announcesKey(instant: Date, zones: Zones, now: Date | null = null): string {
   const key = `${chanceCopy.usuallyAnnounces} ${clock(instant, zones)}`;
   const left = now === null ? null : until(instant, now);
   return left === null ? key : `${key}, in${NBSP}${left.text}`;
+}
+
+/** The announcement's words with the longest countdown from `from` on, for the room they keep. */
+function announcesWidest(instant: Date, zones: Zones, from: Date): string {
+  const key = `${chanceCopy.usuallyAnnounces} ${clock(instant, zones)}`;
+  const left = until(instant, from);
+  if (left === null) return key;
+  const hours = Math.floor(left.minutes / 60);
+  return `${key}, in${NBSP}${hours === 0 ? '' : `${String(hours)}h${NBSP}`}59m`;
 }
 
 /** The chart's key: "Heaviest snow 2 to 5 AM". */
@@ -478,12 +486,7 @@ function delayInstead(probability: number): string {
   return `${format.chance(probability)} chance of a delayed start instead`;
 }
 
-/**
- * A share as a count a 12-year-old reads at a glance, true to the whole
- * percent: "3 in 10" for 30%, "1 in 3" for 33%, "1 in 14" for 7%, "19 in 20"
- * for 95%; else the most such a share it is sure to be more than: "more than
- * 3 in 5" for 64% (which is at least 63.5%).
- */
+/** A share read at a glance, true to the whole percent ("3 in 10"), else "more than 3 in 5". */
 function shareOf(percent: number): { some: number; of: number; more: boolean } {
   if (!Number.isInteger(percent) || percent < 1 || percent > 99) {
     throw new RangeError(`copy: a share is 1 to 99 percent, not ${String(percent)}`);
@@ -672,7 +675,9 @@ function reason(input: ReasonInput, district: string, now: Date, zones: Zones): 
         return `The forecast has snow until ${at}, after the buses go out.`;
       }
       if (buses !== null && input.at.getTime() === buses) {
-        return `The forecast has the snow ending at ${at}, as the buses go out.`;
+        return input.busesSaid === true
+          ? 'The forecast has the snow ending as the buses go out.'
+          : `The forecast has the snow ending at ${at}, as the buses go out.`;
       }
       return `The forecast has the snow ending by ${at}, a head start for the plows.`;
     }
@@ -719,6 +724,7 @@ export const chanceFormat = /* @__PURE__ */ deepFreeze({
   inches,
   degrees,
   announcesKey,
+  announcesWidest,
   heaviestKey,
   busesKey,
   chartSummary,
