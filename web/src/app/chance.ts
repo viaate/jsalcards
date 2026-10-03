@@ -113,7 +113,7 @@ export type KeyRowView =
       /** "Usually announces 5:30 AM": ChanceView.announces adds the live countdown. */
       readonly text: string;
       readonly at: Date;
-      /** With the longest countdown this night drawn can show: the room the words keep. */
+      /** As wide as the words with any countdown: the room they keep all night. */
       readonly widest: string;
     }
   | {
@@ -641,7 +641,7 @@ export function chartView(detail: ForecastDetail, now: Date, zones: Zones): Char
         mark: 'announces',
         text: chanceFormat.announcesKey(announcesAt, zones),
         at: announcesAt,
-        widest: chanceFormat.announcesWidest(announcesAt, zones, now < start ? now : start),
+        widest: chanceFormat.announcesWidest(announcesAt, zones),
       },
     });
   }

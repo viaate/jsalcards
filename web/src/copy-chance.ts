@@ -445,13 +445,9 @@ function announcesKey(instant: Date, zones: Zones, now: Date | null = null): str
   return left === null ? key : `${key}, in${NBSP}${left.text}`;
 }
 
-/** The announcement's words with the longest countdown from `from` on, for the room they keep. */
-function announcesWidest(instant: Date, zones: Zones, from: Date): string {
-  const key = `${chanceCopy.usuallyAnnounces} ${clock(instant, zones)}`;
-  const left = until(instant, from);
-  if (left === null) return key;
-  const hours = Math.floor(left.minutes / 60);
-  return `${key}, in${NBSP}${hours === 0 ? '' : `${String(hours)}h${NBSP}`}59m`;
+/** The announcement's words as wide as any countdown on a night of at most 36 hours makes them. */
+function announcesWidest(instant: Date, zones: Zones): string {
+  return `${chanceCopy.usuallyAnnounces} ${clock(instant, zones)}, in${NBSP}99h${NBSP}59m`;
 }
 
 /** The chart's key: "Heaviest snow 2 to 5 AM". */

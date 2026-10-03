@@ -146,7 +146,7 @@ describe('the chance section', () => {
     ]);
     // The words keep the room of the longest countdown the night shows, hidden behind them.
     expect(section.querySelector('.words.is-announces')?.getAttribute('data-room')).toBe(
-      `${chanceCopy.usuallyAnnounces} 5:30${NBSP}AM, in${NBSP}8h${NBSP}59m`,
+      `${chanceCopy.usuallyAnnounces} 5:30${NBSP}AM, in${NBSP}99h${NBSP}59m`,
     );
     // Its dashed line at 5:30 AM: halfway through the 5 AM bar's hour, the 9th of 11.
     const line = section.querySelector<HTMLElement>('.line.is-announces');

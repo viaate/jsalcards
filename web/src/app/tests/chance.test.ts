@@ -190,8 +190,8 @@ describe('the chance section, the night before', () => {
         mark: 'announces',
         text: `${chanceCopy.usuallyAnnounces} 5:30${NBSP}AM`,
         at: at('2026-01-13T11:30:00Z'),
-        // From the hour the chart starts, 9 PM: the longest countdown it shows, its room.
-        widest: `${chanceCopy.usuallyAnnounces} 5:30${NBSP}AM, in${NBSP}8h${NBSP}59m`,
+        // The room the words keep: as wide as any countdown makes them.
+        widest: `${chanceCopy.usuallyAnnounces} 5:30${NBSP}AM, in${NBSP}99h${NBSP}59m`,
       },
       {
         mark: 'buses',
@@ -262,8 +262,7 @@ describe('the chance section, the next morning', () => {
         mark: 'announces',
         text: `${chanceCopy.usuallyAnnounces} 5:30${NBSP}AM`,
         at: at('2026-01-14T11:30:00Z'),
-        // A day ahead of the night drawn: the countdown from now is the longest.
-        widest: `${chanceCopy.usuallyAnnounces} 5:30${NBSP}AM, in${NBSP}23h${NBSP}59m`,
+        widest: `${chanceCopy.usuallyAnnounces} 5:30${NBSP}AM, in${NBSP}99h${NBSP}59m`,
       },
       {
         mark: 'buses',
@@ -293,7 +292,7 @@ describe('the school’s own clock', () => {
         mark: 'announces',
         text: `${chanceCopy.usuallyAnnounces} 5:30${NBSP}AM${NBSP}CT`,
         at: at('2026-01-13T11:30:00Z'),
-        widest: `${chanceCopy.usuallyAnnounces} 5:30${NBSP}AM${NBSP}CT, in${NBSP}8h${NBSP}59m`,
+        widest: `${chanceCopy.usuallyAnnounces} 5:30${NBSP}AM${NBSP}CT, in${NBSP}99h${NBSP}59m`,
       },
       {
         mark: 'buses',
