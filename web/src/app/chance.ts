@@ -401,18 +401,22 @@ export function movedView(
 
 // The timeline ----------------------------------------------------------------------------
 
-/** One district next door that posted a status for the day: its first post. */
+/** One district next door that holds a status for the day, since all its schools have. */
 interface Posted {
   readonly district: number;
   readonly status: StatusKey;
   readonly at: Date;
 }
 
-/** How a district stands for a day: the one status all its schools hold, at its first post by now. */
+/** How a district stands for a day: the one status all its schools hold, and since when. */
 export interface Standing {
   readonly district: number;
   /** Null where its schools differ, or only some of them are listed. */
   readonly status: StatusKey | null;
+  /**
+   * When the last of its schools posted that status, by now. Null without a
+   * status, or where one of its schools gives no time or posts after now.
+   */
   readonly at: Date | null;
 }
 
@@ -421,7 +425,8 @@ export interface Standing {
  * closings rows of that day, through the directory's district of each school.
  * A district holds a status only when every school the directory gives it is
  * listed with it, as the pipeline lists a post for the whole district, so a
- * district is never named with a status some of its schools do not hold.
+ * district is never named with a status some of its schools do not hold, nor
+ * timed before the last of them held it.
  */
 export function standings(
   closings: ClosingsFile | null,
@@ -457,16 +462,16 @@ export function standings(
     }
     seen.listed++;
     if (seen.status !== status) seen.status = null;
-    if (at !== null && (seen.at === null || at < seen.at)) seen.at = at;
+    // A school with no time by now may be the last to have posted, so the district has none.
+    seen.at = seen.at === null || at === null ? null : at > seen.at ? at : seen.at;
   });
-  return [...found].map(([district, { status, at, listed }]) => ({
-    district,
-    status: listed === names.schools(district) ? status : null,
-    at,
-  }));
+  return [...found].map(([district, { status, at, listed }]) => {
+    const held = listed === names.schools(district) ? status : null;
+    return { district, status: held, at: held === null ? null : at };
+  });
 }
 
-/** The districts next door that stand as one for `day` and posted by `now`, the first to post first. */
+/** The districts next door that stand as one for `day` by `now`, the first to stand first. */
 export function neighborPosts(stood: readonly Standing[], neighbors: readonly number[]): Posted[] {
   const next = new Set(neighbors);
   return stood

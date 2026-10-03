@@ -152,8 +152,8 @@ export const B_OUTLOOK: Outlook = {
 };
 
 /**
- * The evening's live file at 9:00 PM: Blue Valley's two schools canceled Tuesday at 8:41 PM
- * (one of them posted again later), Olathe's at 8:52 PM, De Soto (not next door) at 8:30 PM.
+ * The evening's live file at 9:00 PM: Blue Valley's two schools canceled Tuesday at 8:35 and
+ * 8:41 PM, so Blue Valley at 8:41 PM, Olathe's at 8:52 PM, De Soto (not next door) at 8:30 PM.
  */
 export const A_CLOSINGS: ClosingsFile = {
   schema_version: 1,
@@ -164,7 +164,7 @@ export const A_CLOSINGS: ClosingsFile = {
       day: '2026-01-13',
       gaps: [2, 0, 0, 0],
       statuses: [0, 0, 0, 0],
-      announced: [19, 5, 8, 30],
+      announced: [25, 19, 8, 30],
       reasons: [0, 0, 0, 0],
       shifts: [],
       clocks: [],

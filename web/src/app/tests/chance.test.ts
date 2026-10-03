@@ -527,7 +527,7 @@ describe('what the section leaves out', () => {
 });
 
 describe('the timeline', () => {
-  it('takes each district next door once, at its first post, earliest first', () => {
+  it('takes each district next door once, from when its last school posted, earliest first', () => {
     expect(
       postsOf(A_CLOSINGS, '2026-01-13', [1, 2], NAMES, A_NOW).map((post) => [
         post.district,
@@ -562,31 +562,36 @@ describe('the timeline', () => {
     ).toHaveLength(1);
   });
 
-  it('names a district only with the status every one of its schools holds', () => {
-    /** Blue Valley's two schools (8:41 and 8:55 PM) as given, Olathe closed at 8:52 PM. */
-    const blueValley = (statuses: Status[], announced: (number | null)[]): ClosingsFile => {
-      const shifted = statuses.filter((status) => status === 1 || status === 3).length;
-      return {
-        ...A_CLOSINGS,
-        days: [
-          {
-            day: '2026-01-13',
-            gaps: [2, 0, 0],
-            statuses: [...statuses, 0],
-            announced: [...announced, 8],
-            reasons: [0, 0, 0],
-            shifts: Array<null>(shifted).fill(null),
-            clocks: Array<null>(shifted).fill(null),
-          },
-        ],
-      };
+  /** Blue Valley's two schools as given, minutes before the 9:00 PM file; Olathe closed at 8:52 PM. */
+  const blueValley = (statuses: Status[], announced: (number | null)[]): ClosingsFile => {
+    const shifted = statuses.filter((status) => status === 1 || status === 3).length;
+    return {
+      ...A_CLOSINGS,
+      days: [
+        {
+          day: '2026-01-13',
+          gaps: [2, 0, 0],
+          statuses: [...statuses, 0],
+          announced: [...announced, 8],
+          reasons: [0, 0, 0],
+          shifts: Array<null>(shifted).fill(null),
+          clocks: Array<null>(shifted).fill(null),
+        },
+      ],
     };
-    const timeline = (closings: ClosingsFile): string[] =>
-      chanceView(nightBefore({ closings }))?.moments.map((moment) => moment.text) ?? [];
+  };
+  const timeline = (closings: ClosingsFile): string[] =>
+    chanceView(nightBefore({ closings }))?.moments.map((moment) => moment.text) ?? [];
+  const timedTimeline = (closings: ClosingsFile, now = A_NOW): string[] =>
+    chanceView(nightBefore({ closings, now }))?.moments.map(
+      (moment) => `${moment.time} ${moment.text}`,
+    ) ?? [];
+
+  it('names a district only with the status every one of its schools holds', () => {
     // Delayed, then closed: neither is Blue Valley's, so it is left out.
     const delayedThenClosed = blueValley([1, 0], [19, 5]);
     expect(standings(delayedThenClosed, '2026-01-13', [1, 2], NAMES, A_NOW)).toEqual([
-      { district: 1, status: null, at: at('2026-01-13T02:41:00Z') },
+      { district: 1, status: null, at: null },
       { district: 2, status: 'closed', at: at('2026-01-13T02:52:00Z') },
     ]);
     expect(timeline(delayedThenClosed)).toEqual(['Olathe canceled Tuesday']);
@@ -596,10 +601,10 @@ describe('the timeline', () => {
     expect(timeline(blueValley([1, 0], [19, 19]))).toEqual(['Olathe canceled Tuesday']);
     // One of them listed without a time: its status still counts.
     expect(timeline(blueValley([0, 1], [19, null]))).toEqual(['Olathe canceled Tuesday']);
-    // Both delayed: the district starts late, at its first post.
-    expect(timeline(blueValley([1, 1], [5, 19]))).toEqual([
-      'Blue Valley starts late Tuesday',
-      'Olathe canceled Tuesday',
+    // Both delayed: the district starts late from when the later of them posted, 8:55 PM.
+    expect(timedTimeline(blueValley([1, 1], [5, 19]))).toEqual([
+      `8:52${NBSP}PM Olathe canceled Tuesday`,
+      `8:55${NBSP}PM Blue Valley starts late Tuesday`,
     ]);
     // Only one of Blue Valley's schools listed: not the district's status either.
     const one: ClosingsFile = {
@@ -627,6 +632,44 @@ describe('the timeline', () => {
     );
     expect(chanceView(nightBefore({ closings: one }))?.why?.lines[1]?.text).toBe(
       'Districts next door posted.',
+    );
+  });
+
+  it('times a district from when the last of its schools posted by now, else leaves it off', () => {
+    // One school canceled at 6:00 PM, the other at 8:55 PM: the district canceled at 8:55 PM.
+    const early = blueValley([0, 0], [180, 5]);
+    expect(standings(early, '2026-01-13', [1, 2], NAMES, A_NOW)[0]).toEqual({
+      district: 1,
+      status: 'closed',
+      at: at('2026-01-13T02:55:00Z'),
+    });
+    expect(timedTimeline(early)).toEqual([
+      `8:52${NBSP}PM Olathe canceled Tuesday`,
+      `8:55${NBSP}PM Blue Valley canceled Tuesday`,
+    ]);
+    // A clock behind the file's: one school posted at 8:58 PM, after now, so the district
+    // does not stand yet, though its other school posted at 8:30 PM.
+    const late = blueValley([0, 0], [30, 2]);
+    const behind = at('2026-01-13T02:56:00Z');
+    expect(standings(late, '2026-01-13', [1, 2], NAMES, behind)).toEqual([
+      { district: 1, status: 'closed', at: null },
+      { district: 2, status: 'closed', at: at('2026-01-13T02:52:00Z') },
+    ]);
+    expect(timedTimeline(late, behind)).toEqual([`8:52${NBSP}PM Olathe canceled Tuesday`]);
+    expect(standings(late, '2026-01-13', [1, 2], NAMES, at('2026-01-13T02:58:00Z'))[0]?.at).toEqual(
+      at('2026-01-13T02:58:00Z'),
+    );
+    // One school listed without a time may have posted last: the district has no time to show,
+    // and the sum names it instead.
+    const untimed = blueValley([0, 0], [19, null]);
+    expect(standings(untimed, '2026-01-13', [1, 2], NAMES, A_NOW)[0]).toEqual({
+      district: 1,
+      status: 'closed',
+      at: null,
+    });
+    expect(timedTimeline(untimed)).toEqual([`8:52${NBSP}PM Olathe canceled Tuesday`]);
+    expect(chanceView(nightBefore({ closings: untimed }))?.why?.lines[1]?.text).toBe(
+      'Blue Valley and Olathe, next door, canceled.',
     );
   });
 
