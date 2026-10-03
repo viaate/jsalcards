@@ -158,6 +158,8 @@ export type ReasonInput =
       readonly status: PostedKey;
       /** The timeline already lists who: the sentence names the reason alone. */
       readonly said?: boolean;
+      /** The timeline has one of them posting otherwise: what they did goes unsaid, never said two ways. */
+      readonly otherwise?: boolean;
     }
   | {
       readonly kind: 'timing';
@@ -632,6 +634,11 @@ function reason(input: ReasonInput, district: string, now: Date, zones: Zones): 
         remote: 'went remote',
         earlyDismissal: 'called an early dismissal',
       }[checkKey(copy.status, status, 'status')];
+      if (input.otherwise === true) {
+        return count === 1
+          ? 'What a district next door posted.'
+          : 'What districts next door posted.';
+      }
       if (input.said === true) {
         return count === 1 ? `A district next door ${done}.` : `Districts next door ${done}.`;
       }

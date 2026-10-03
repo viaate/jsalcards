@@ -884,6 +884,9 @@ function reasonInput(
         said: reason.districts.every((district) =>
           said.neighbors.some((listed) => listed.district === district && listed.status === status),
         ),
+        otherwise: reason.districts.some((district) =>
+          said.neighbors.some((listed) => listed.district === district && listed.status !== status),
+        ),
       };
     }
     case 'timing':

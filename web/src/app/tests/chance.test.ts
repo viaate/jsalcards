@@ -662,7 +662,8 @@ describe('the timeline', () => {
     const partly = chanceView(nightBefore({ closings: one }));
     expect(partly?.moments.map((moment) => moment.text)).toEqual(['Olathe canceled Tuesday']);
     expect(partly?.why?.lines[1]?.text).toBe('Blue Valley and Olathe, next door, canceled.');
-    // Both on it, but having gone remote rather than canceled: the sum says what it counts.
+    // Both on it, but having gone remote rather than canceled: the sum leaves out what they
+    // did, rather than say it two ways.
     const remote: ClosingsFile = {
       ...A_CLOSINGS,
       days: A_CLOSINGS.days.map((group) => ({ ...group, statuses: [2, 2, 2, 2] })),
@@ -672,7 +673,19 @@ describe('the timeline', () => {
       'Blue Valley is remote Tuesday',
       'Olathe is remote Tuesday',
     ]);
-    expect(other?.why?.lines[1]?.text).toBe('Blue Valley and Olathe, next door, canceled.');
+    expect(other?.why?.lines[1]?.text).toBe('What districts next door posted.');
+    // One of them gone remote, the other not listed: still not said two ways.
+    const mixed: ClosingsFile = {
+      ...A_CLOSINGS,
+      days: A_CLOSINGS.days.map((group) => ({
+        ...group,
+        statuses: [2, 2, 2, 2],
+        announced: [null, null, 8, null],
+      })),
+    };
+    expect(chanceView(nightBefore({ closings: mixed }))?.why?.lines[1]?.text).toBe(
+      'What districts next door posted.',
+    );
     // Both on it, canceled: the timeline names them, the sum only the reason.
     expect(chanceView(nightBefore())?.why?.lines[1]?.text).toBe('Districts next door canceled.');
     // How cold it feels at the bus hour is not the reason's: both are said.
