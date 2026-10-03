@@ -1,111 +1,1504 @@
 {
- "cdx": [
-  {
-   "url": "www.leeschools.net/",
-   "from": "20170101",
-   "to": "20260930",
-   "filter": [
-    "statuscode:200"
-   ],
-   "collapse": "timestamp:10",
-   "station": "(not built: SharpSchool homepage of Lee Public Schools, FL)",
-   "why": "no working source covers Lee County's district schools; its SharpSchool homepage posts alerts by script today (a POST the archive keeps no answer to), so this lists its captures to learn whether earlier forms of the page carried the alert in the HTML"
-  },
-  {
-   "url": "www.marionschools.net/",
-   "from": "20170101",
-   "to": "20260930",
-   "filter": [
-    "statuscode:200"
-   ],
-   "collapse": "timestamp:10",
-   "station": "(not built: SharpSchool homepage of Marion Public Schools, FL)",
-   "why": "no working source covers Marion County's district schools; its SharpSchool homepage posts alerts by script today (a POST the archive keeps no answer to), so this lists its captures to learn whether earlier forms of the page carried the alert in the HTML"
-  },
-  {
-   "url": "www.polkschoolsfl.com/",
-   "from": "20170101",
-   "to": "20260930",
-   "filter": [
-    "statuscode:200"
-   ],
-   "collapse": "timestamp:10",
-   "station": "(not built: SharpSchool homepage of Polk Public Schools, FL)",
-   "why": "no working source covers Polk County's district schools; its SharpSchool homepage posts alerts by script today (a POST the archive keeps no answer to), so this lists its captures to learn whether earlier forms of the page carried the alert in the HTML"
-  }
- ],
  "snapshots": [
   {
-   "timestamp": "20220927140000",
-   "url": "https://www.leeschools.net/",
-   "station": "(not built: SharpSchool homepage of Lee County Public Schools, FL)",
-   "why": "Hurricane Ian (late September 2022), when the district's schools were closed: the nearest capture, to see whether the page itself carried the closure alert"
+   "timestamp": "20260329002851",
+   "url": "https://www.davis.k12.ut.us/",
+   "station": "apptegy-davis-ut",
+   "why": "largest captures of its winter (157661 bytes, 90.82 x the winter's median of 1736)"
   },
   {
-   "timestamp": "20221003140000",
-   "url": "https://www.leeschools.net/",
-   "station": "(not built: SharpSchool homepage of Lee County Public Schools, FL)",
-   "why": "after Hurricane Ian (October 2022), when the district's schools were closed: the nearest capture, to see whether the page itself carried the closure alert"
+   "timestamp": "20260328034125",
+   "url": "https://www.davis.k12.ut.us/",
+   "station": "apptegy-davis-ut",
+   "why": "largest captures of its winter (157660 bytes, 90.82 x the winter's median of 1736)"
   },
   {
-   "timestamp": "20221010140000",
-   "url": "https://www.leeschools.net/",
-   "station": "(not built: SharpSchool homepage of Lee County Public Schools, FL)",
-   "why": "after Hurricane Ian (October 2022), when the district's schools were closed: the nearest capture, to see whether the page itself carried the closure alert"
+   "timestamp": "20260330002459",
+   "url": "https://www.davis.k12.ut.us/",
+   "station": "apptegy-davis-ut",
+   "why": "largest captures of its winter (157652 bytes, 90.81 x the winter's median of 1736)"
   },
   {
-   "timestamp": "20230830140000",
-   "url": "https://www.leeschools.net/",
-   "station": "(not built: SharpSchool homepage of Lee County Public Schools, FL)",
-   "why": "Hurricane Idalia (30 August 2023), when the district's schools were closed: the nearest capture, to see whether the page itself carried the closure alert"
+   "timestamp": "20260330122659",
+   "url": "https://www.davis.k12.ut.us/",
+   "station": "apptegy-davis-ut",
+   "why": "largest captures of its winter (157652 bytes, 90.81 x the winter's median of 1736)"
   },
   {
-   "timestamp": "20241008140000",
-   "url": "https://www.leeschools.net/",
-   "station": "(not built: SharpSchool homepage of Lee County Public Schools, FL)",
-   "why": "Hurricane Milton (9-10 October 2024), when the district's schools were closed: the nearest capture, to see whether the page itself carried the closure alert"
+   "timestamp": "20260328122510",
+   "url": "https://www.davis.k12.ut.us/",
+   "station": "apptegy-davis-ut",
+   "why": "largest captures of its winter (157650 bytes, 90.81 x the winter's median of 1736)"
   },
   {
-   "timestamp": "20241010140000",
-   "url": "https://www.leeschools.net/",
-   "station": "(not built: SharpSchool homepage of Lee County Public Schools, FL)",
-   "why": "Hurricane Milton (9-10 October 2024), when the district's schools were closed: the nearest capture, to see whether the page itself carried the closure alert"
+   "timestamp": "20260331002713",
+   "url": "https://www.davis.k12.ut.us/",
+   "station": "apptegy-davis-ut",
+   "why": "largest captures of its winter (157649 bytes, 90.81 x the winter's median of 1736)"
   },
   {
-   "timestamp": "20220928140000",
-   "url": "https://www.marionschools.net/",
-   "station": "(not built: SharpSchool homepage of Marion County Public Schools, FL)",
-   "why": "Hurricane Ian (late September 2022), when the district's schools were closed: the nearest capture, to see whether the page itself carried the closure alert"
+   "timestamp": "20260329204848",
+   "url": "https://www.davis.k12.ut.us/",
+   "station": "apptegy-davis-ut",
+   "why": "largest captures of its winter (157641 bytes, 90.81 x the winter's median of 1736)"
   },
   {
-   "timestamp": "20230830140000",
-   "url": "https://www.marionschools.net/",
-   "station": "(not built: SharpSchool homepage of Marion County Public Schools, FL)",
-   "why": "Hurricane Idalia (30 August 2023), when the district's schools were closed: the nearest capture, to see whether the page itself carried the closure alert"
+   "timestamp": "20260327005801",
+   "url": "https://www.davis.k12.ut.us/",
+   "station": "apptegy-davis-ut",
+   "why": "largest captures of its winter (157635 bytes, 90.80 x the winter's median of 1736)"
   },
   {
-   "timestamp": "20241009140000",
-   "url": "https://www.marionschools.net/",
-   "station": "(not built: SharpSchool homepage of Marion County Public Schools, FL)",
-   "why": "Hurricane Milton (9-10 October 2024), when the district's schools were closed: the nearest capture, to see whether the page itself carried the closure alert"
+   "timestamp": "20260327122724",
+   "url": "https://www.davis.k12.ut.us/",
+   "station": "apptegy-davis-ut",
+   "why": "largest captures of its winter (157634 bytes, 90.80 x the winter's median of 1736)"
   },
   {
-   "timestamp": "20220928140000",
-   "url": "https://www.polkschoolsfl.com/",
-   "station": "(not built: SharpSchool homepage of Polk County Public Schools, FL)",
-   "why": "Hurricane Ian (late September 2022), when the district's schools were closed: the nearest capture, to see whether the page itself carried the closure alert"
+   "timestamp": "20260325202219",
+   "url": "https://www.davis.k12.ut.us/",
+   "station": "apptegy-davis-ut",
+   "why": "largest captures of its winter (157629 bytes, 90.80 x the winter's median of 1736)"
   },
   {
-   "timestamp": "20241009140000",
-   "url": "https://www.polkschoolsfl.com/",
-   "station": "(not built: SharpSchool homepage of Polk County Public Schools, FL)",
-   "why": "Hurricane Milton (9-10 October 2024), when the district's schools were closed: the nearest capture, to see whether the page itself carried the closure alert"
+   "timestamp": "20260326032349",
+   "url": "https://www.davis.k12.ut.us/",
+   "station": "apptegy-davis-ut",
+   "why": "largest captures of its winter (157618 bytes, 90.79 x the winter's median of 1736)"
   },
   {
-   "timestamp": "20241010140000",
-   "url": "https://www.polkschoolsfl.com/",
-   "station": "(not built: SharpSchool homepage of Polk County Public Schools, FL)",
-   "why": "Hurricane Milton (9-10 October 2024), when the district's schools were closed: the nearest capture, to see whether the page itself carried the closure alert"
+   "timestamp": "20260326223116",
+   "url": "https://www.davis.k12.ut.us/",
+   "station": "apptegy-davis-ut",
+   "why": "largest captures of its winter (157618 bytes, 90.79 x the winter's median of 1736)"
+  },
+  {
+   "timestamp": "20260322002937",
+   "url": "https://www.davis.k12.ut.us/",
+   "station": "apptegy-davis-ut",
+   "why": "largest captures of its winter (157611 bytes, 90.79 x the winter's median of 1736)"
+  },
+  {
+   "timestamp": "20260325002938",
+   "url": "https://www.davis.k12.ut.us/",
+   "station": "apptegy-davis-ut",
+   "why": "largest captures of its winter (157608 bytes, 90.79 x the winter's median of 1736)"
+  },
+  {
+   "timestamp": "20260322122559",
+   "url": "https://www.davis.k12.ut.us/",
+   "station": "apptegy-davis-ut",
+   "why": "largest captures of its winter (157606 bytes, 90.79 x the winter's median of 1736)"
+  },
+  {
+   "timestamp": "20260325201621",
+   "url": "https://www.alpineschools.org/",
+   "station": "apptegy-alpine-ut",
+   "why": "largest captures of its winter (162876 bytes, 94.37 x the winter's median of 1726)"
+  },
+  {
+   "timestamp": "20260323061736",
+   "url": "https://www.alpineschools.org/",
+   "station": "apptegy-alpine-ut",
+   "why": "largest captures of its winter (162875 bytes, 94.37 x the winter's median of 1726)"
+  },
+  {
+   "timestamp": "20230828180633",
+   "url": "https://polkschoolsfl.com/",
+   "station": "sharpschool-polk-fl",
+   "why": "storm day 2023-08-29 (market score 0.50)"
+  },
+  {
+   "timestamp": "20221110072858",
+   "url": "https://polkschoolsfl.com/",
+   "station": "sharpschool-polk-fl",
+   "why": "storm day 2022-11-10 (market score 0.50)"
+  },
+  {
+   "timestamp": "20221109110826",
+   "url": "https://polkschoolsfl.com/",
+   "station": "sharpschool-polk-fl",
+   "why": "storm day 2022-11-09 (market score 0.50)"
+  },
+  {
+   "timestamp": "20250304114728",
+   "url": "https://www.slcschools.org/",
+   "station": "smartsites-salt-lake-city-ut",
+   "why": "storm day 2025-03-04 (market score 0.25)"
+  },
+  {
+   "timestamp": "20250216210902",
+   "url": "https://www.slcschools.org/",
+   "station": "smartsites-salt-lake-city-ut",
+   "why": "storm day 2025-02-17 (market score 0.25)"
+  },
+  {
+   "timestamp": "20240426062654",
+   "url": "https://www.slcschools.org/",
+   "station": "smartsites-salt-lake-city-ut",
+   "why": "storm day 2024-04-26 (market score 0.25)"
+  },
+  {
+   "timestamp": "20251222095848",
+   "url": "https://www.bsd7.org/",
+   "station": "finalsite-bozeman-mt",
+   "why": "storm day 2025-12-22 (market score 1.00)"
+  },
+  {
+   "timestamp": "20251217095843",
+   "url": "https://www.bsd7.org/",
+   "station": "finalsite-bozeman-mt",
+   "why": "storm day 2025-12-17 (market score 1.00)"
+  },
+  {
+   "timestamp": "20251217215902",
+   "url": "https://www.bsd7.org/",
+   "station": "finalsite-bozeman-mt",
+   "why": "storm day 2025-12-18 (market score 1.00)"
+  },
+  {
+   "timestamp": "20251219000147",
+   "url": "https://www.bsd7.org/",
+   "station": "finalsite-bozeman-mt",
+   "why": "storm day 2025-12-19 (market score 1.00)"
+  },
+  {
+   "timestamp": "20251209215818",
+   "url": "https://www.bsd7.org/",
+   "station": "finalsite-bozeman-mt",
+   "why": "storm day 2025-12-10 (market score 1.00)"
+  },
+  {
+   "timestamp": "20251123215917",
+   "url": "https://www.bsd7.org/",
+   "station": "finalsite-bozeman-mt",
+   "why": "storm day 2025-11-24 (market score 0.25)"
+  },
+  {
+   "timestamp": "20251126095844",
+   "url": "https://www.bsd7.org/",
+   "station": "finalsite-bozeman-mt",
+   "why": "storm day 2025-11-26 (market score 0.25)"
+  },
+  {
+   "timestamp": "20251128022124",
+   "url": "https://www.bsd7.org/",
+   "station": "finalsite-bozeman-mt",
+   "why": "storm day 2025-11-28 (market score 0.25)"
+  },
+  {
+   "timestamp": "20251202152853",
+   "url": "https://www.bsd7.org/",
+   "station": "finalsite-bozeman-mt",
+   "why": "storm day 2025-12-02 (market score 0.25)"
+  },
+  {
+   "timestamp": "20260421220320",
+   "url": "https://www.bsd7.org/",
+   "station": "finalsite-bozeman-mt",
+   "why": "storm day 2026-04-22 (market score 0.25)"
+  },
+  {
+   "timestamp": "20260218135517",
+   "url": "https://www.bsd7.org/",
+   "station": "finalsite-bozeman-mt",
+   "why": "storm day 2026-02-18 (market score 0.25)"
+  },
+  {
+   "timestamp": "20260216220055",
+   "url": "https://www.bsd7.org/",
+   "station": "finalsite-bozeman-mt",
+   "why": "storm day 2026-02-17 (market score 0.25)"
+  },
+  {
+   "timestamp": "20260312100100",
+   "url": "https://www.bsd7.org/",
+   "station": "finalsite-bozeman-mt",
+   "why": "storm day 2026-03-12 (market score 0.25)"
+  },
+  {
+   "timestamp": "20260208220051",
+   "url": "https://www.bsd7.org/",
+   "station": "finalsite-bozeman-mt",
+   "why": "storm day 2026-02-09 (market score 0.25)"
+  },
+  {
+   "timestamp": "20260105040753",
+   "url": "https://www.bsd7.org/",
+   "station": "finalsite-bozeman-mt",
+   "why": "storm day 2026-01-05 (market score 0.25)"
+  },
+  {
+   "timestamp": "20220202200004",
+   "url": "https://www.saisd.net/",
+   "station": "apptegy-san-antonio-tx",
+   "why": "storm day 2022-02-03 (market score 0.25)"
+  },
+  {
+   "timestamp": "20220119220054",
+   "url": "https://www.saisd.net/",
+   "station": "apptegy-san-antonio-tx",
+   "why": "storm day 2022-01-20 (market score 0.25)"
+  },
+  {
+   "timestamp": "20260401221626",
+   "url": "https://www.d93schools.org/",
+   "station": "smartsites-bonneville-id",
+   "why": "storm day 2026-04-02 (market score 0.25)"
+  },
+  {
+   "timestamp": "20260304221948",
+   "url": "https://www.d93schools.org/",
+   "station": "smartsites-bonneville-id",
+   "why": "storm day 2026-03-05 (market score 0.25)"
+  },
+  {
+   "timestamp": "20260224091647",
+   "url": "https://www.d93schools.org/",
+   "station": "smartsites-bonneville-id",
+   "why": "storm day 2026-02-24 (market score 0.25)"
+  },
+  {
+   "timestamp": "20220105200948",
+   "url": "https://www.sd25.us/",
+   "station": "finalsite-pocatello-id",
+   "why": "storm day 2022-01-06 (market score 0.25)"
+  },
+  {
+   "timestamp": "20220105080955",
+   "url": "http://www.sd25.us/",
+   "station": "finalsite-pocatello-id",
+   "why": "storm day 2022-01-05 (market score 0.25)"
+  },
+  {
+   "timestamp": "20220103201004",
+   "url": "https://www.sd25.us/",
+   "station": "finalsite-pocatello-id",
+   "why": "storm day 2022-01-04 (market score 0.25)"
+  },
+  {
+   "timestamp": "20260225035620",
+   "url": "https://www.ccsdut.org/",
+   "station": "finalsite-cache-ut",
+   "why": "storm day 2026-02-25 (market score 0.25)"
+  },
+  {
+   "timestamp": "20260224143518",
+   "url": "https://www.ccsdut.org/",
+   "station": "finalsite-cache-ut",
+   "why": "storm day 2026-02-24 (market score 0.25)"
+  },
+  {
+   "timestamp": "20260218143623",
+   "url": "https://www.ccsdut.org/",
+   "station": "finalsite-cache-ut",
+   "why": "storm day 2026-02-18 (market score 1.00)"
+  },
+  {
+   "timestamp": "20240301014303",
+   "url": "https://www.ogdensd.org/",
+   "station": "apptegy-ogden-ut",
+   "why": "storm day 2024-03-01 (market score 1.00)"
+  },
+  {
+   "timestamp": "20240117002335",
+   "url": "https://www.ogdensd.org/",
+   "station": "apptegy-ogden-ut",
+   "why": "storm day 2024-01-17 (market score 1.00)"
+  },
+  {
+   "timestamp": "20230331001949",
+   "url": "https://www.ogdensd.org/",
+   "station": "apptegy-ogden-ut",
+   "why": "storm day 2023-03-31 (market score 1.00)"
+  },
+  {
+   "timestamp": "20260403114544",
+   "url": "https://www.tcsd.org/",
+   "station": "finalsite-teton-wy",
+   "why": "storm day 2026-04-03 (market score 1.00)"
+  },
+  {
+   "timestamp": "20260402114136",
+   "url": "https://www.tcsd.org/",
+   "station": "finalsite-teton-wy",
+   "why": "storm day 2026-04-02 (market score 1.00)"
+  },
+  {
+   "timestamp": "20260311234137",
+   "url": "https://www.tcsd.org/",
+   "station": "finalsite-teton-wy",
+   "why": "storm day 2026-03-12 (market score 0.25)"
+  },
+  {
+   "timestamp": "20260402031719",
+   "url": "https://www.ifschools.org/",
+   "station": "finalsite-idaho-falls-id",
+   "why": "storm day 2026-04-02 (market score 0.25)"
+  },
+  {
+   "timestamp": "20260305031234",
+   "url": "https://www.ifschools.org/",
+   "station": "finalsite-idaho-falls-id",
+   "why": "storm day 2026-03-05 (market score 0.25)"
+  },
+  {
+   "timestamp": "20260225031529",
+   "url": "https://www.ifschools.org/",
+   "station": "finalsite-idaho-falls-id",
+   "why": "storm day 2026-02-25 (market score 0.25)"
+  },
+  {
+   "timestamp": "20250318015142",
+   "url": "https://www.tooeleschools.org/",
+   "station": "finalsite-tooele-ut",
+   "why": "storm day 2025-03-18 (market score 0.25)"
+  },
+  {
+   "timestamp": "20250307001538",
+   "url": "https://www.tooeleschools.org/",
+   "station": "finalsite-tooele-ut",
+   "why": "storm day 2025-03-07 (market score 0.25)"
+  },
+  {
+   "timestamp": "20250219234917",
+   "url": "https://www.tooeleschools.org/",
+   "station": "finalsite-tooele-ut",
+   "why": "storm day 2025-02-20 (market score 0.25)"
+  },
+  {
+   "timestamp": "20230323233854",
+   "url": "https://www.besd.net/",
+   "station": "apptegy-box-elder-ut",
+   "why": "storm day 2023-03-24 (market score 1.00)"
+  },
+  {
+   "timestamp": "20230319172309",
+   "url": "https://www.besd.net/",
+   "station": "apptegy-box-elder-ut",
+   "why": "storm day 2023-03-20 (market score 1.00)"
+  },
+  {
+   "timestamp": "20230315065527",
+   "url": "https://www.besd.net/",
+   "station": "apptegy-box-elder-ut",
+   "why": "storm day 2023-03-15 (market score 1.00)"
+  },
+  {
+   "timestamp": "20260217012250",
+   "url": "https://www.besd.net/",
+   "station": "apptegy-box-elder-ut",
+   "why": "storm day 2026-02-17 (market score 1.00)"
+  },
+  {
+   "timestamp": "20241226111206",
+   "url": "https://www.besd.net/",
+   "station": "apptegy-box-elder-ut",
+   "why": "storm day 2024-12-26 (market score 1.00)"
+  },
+  {
+   "timestamp": "20240115220149",
+   "url": "https://www.besd.net/",
+   "station": "apptegy-box-elder-ut",
+   "why": "storm day 2024-01-16 (market score 0.50)"
+  },
+  {
+   "timestamp": "20240404221446",
+   "url": "https://www.besd.net/",
+   "station": "apptegy-box-elder-ut",
+   "why": "storm day 2024-04-05 (market score 0.25)"
+  },
+  {
+   "timestamp": "20240312104325",
+   "url": "https://www.besd.net/",
+   "station": "apptegy-box-elder-ut",
+   "why": "storm day 2024-03-12 (market score 0.25)"
+  },
+  {
+   "timestamp": "20240220073320",
+   "url": "https://www.besd.net/",
+   "station": "apptegy-box-elder-ut",
+   "why": "storm day 2024-02-20 (market score 0.25)"
+  },
+  {
+   "timestamp": "20240215211746",
+   "url": "https://www.besd.net/",
+   "station": "apptegy-box-elder-ut",
+   "why": "storm day 2024-02-16 (market score 0.25)"
+  },
+  {
+   "timestamp": "20240215093442",
+   "url": "https://www.besd.net/",
+   "station": "apptegy-box-elder-ut",
+   "why": "storm day 2024-02-15 (market score 0.25)"
+  },
+  {
+   "timestamp": "20240201093320",
+   "url": "https://www.besd.net/",
+   "station": "apptegy-box-elder-ut",
+   "why": "storm day 2024-02-01 (market score 0.25)"
+  },
+  {
+   "timestamp": "20240125154135",
+   "url": "https://www.besd.net/",
+   "station": "apptegy-box-elder-ut",
+   "why": "storm day 2024-01-25 (market score 0.25)"
+  },
+  {
+   "timestamp": "20241029051420",
+   "url": "https://www.besd.net/",
+   "station": "apptegy-box-elder-ut",
+   "why": "storm day 2024-10-29 (market score 0.25)"
+  },
+  {
+   "timestamp": "20231026073220",
+   "url": "https://www.besd.net/",
+   "station": "apptegy-box-elder-ut",
+   "why": "storm day 2023-10-26 (market score 0.25)"
+  },
+  {
+   "timestamp": "20250306054237",
+   "url": "https://www.blaineschools.org/",
+   "station": "finalsite-blaine-id",
+   "why": "storm day 2025-03-06 (market score 0.25)"
+  },
+  {
+   "timestamp": "20260104174641",
+   "url": "https://www.blaineschools.org/",
+   "station": "finalsite-blaine-id",
+   "why": "storm day 2026-01-05 (market score 0.25)"
+  },
+  {
+   "timestamp": "20260106215842",
+   "url": "https://www.blaineschools.org/",
+   "station": "finalsite-blaine-id",
+   "why": "storm day 2026-01-07 (market score 0.25)"
+  },
+  {
+   "timestamp": "20260106095836",
+   "url": "https://www.blaineschools.org/",
+   "station": "finalsite-blaine-id",
+   "why": "storm day 2026-01-06 (market score 0.25)"
+  },
+  {
+   "timestamp": "20260216220014",
+   "url": "https://www.blaineschools.org/",
+   "station": "finalsite-blaine-id",
+   "why": "storm day 2026-02-17 (market score 0.25)"
+  },
+  {
+   "timestamp": "20260225095930",
+   "url": "https://www.blaineschools.org/",
+   "station": "finalsite-blaine-id",
+   "why": "storm day 2026-02-25 (market score 0.25)"
+  },
+  {
+   "timestamp": "20260224095933",
+   "url": "https://www.blaineschools.org/",
+   "station": "finalsite-blaine-id",
+   "why": "storm day 2026-02-24 (market score 0.25)"
+  },
+  {
+   "timestamp": "20260414215918",
+   "url": "https://www.blaineschools.org/",
+   "station": "finalsite-blaine-id",
+   "why": "storm day 2026-04-15 (market score 0.25)"
+  },
+  {
+   "timestamp": "20260422095904",
+   "url": "https://www.blaineschools.org/",
+   "station": "finalsite-blaine-id",
+   "why": "storm day 2026-04-22 (market score 0.25)"
+  },
+  {
+   "timestamp": "20260415232000",
+   "url": "https://www.blaineschools.org/",
+   "station": "finalsite-blaine-id",
+   "why": "storm day 2026-04-16 (market score 0.25)"
+  },
+  {
+   "timestamp": "20260402100351",
+   "url": "https://www.blaineschools.org/",
+   "station": "finalsite-blaine-id",
+   "why": "storm day 2026-04-02 (market score 0.25)"
+  },
+  {
+   "timestamp": "20251115072303",
+   "url": "https://www.blaineschools.org/",
+   "station": "finalsite-blaine-id",
+   "why": "largest captures of its winter (91967 bytes, 5.84 x the winter's median of 15757)"
+  },
+  {
+   "timestamp": "20251207100309",
+   "url": "https://www.blaineschools.org/",
+   "station": "finalsite-blaine-id",
+   "why": "largest captures of its winter (87120 bytes, 5.53 x the winter's median of 15757)"
+  },
+  {
+   "timestamp": "20251212160803",
+   "url": "https://www.blaineschools.org/",
+   "station": "finalsite-blaine-id",
+   "why": "largest captures of its winter (79015 bytes, 5.01 x the winter's median of 15757)"
+  },
+  {
+   "timestamp": "20251212170014",
+   "url": "https://www.blaineschools.org/",
+   "station": "finalsite-blaine-id",
+   "why": "largest captures of its winter (79011 bytes, 5.01 x the winter's median of 15757)"
+  },
+  {
+   "timestamp": "20260321180453",
+   "url": "https://www.oneclay.net/",
+   "station": "apptegy-clay-fl",
+   "why": "largest captures of its winter (188525 bytes, 109.42 x the winter's median of 1723)"
+  },
+  {
+   "timestamp": "20260324125116",
+   "url": "https://www.oneclay.net/",
+   "station": "apptegy-clay-fl",
+   "why": "largest captures of its winter (188229 bytes, 109.24 x the winter's median of 1723)"
+  },
+  {
+   "timestamp": "20260324081322",
+   "url": "https://www.oneclay.net/",
+   "station": "apptegy-clay-fl",
+   "why": "largest captures of its winter (188220 bytes, 109.24 x the winter's median of 1723)"
+  },
+  {
+   "timestamp": "20260323191522",
+   "url": "https://www.oneclay.net/",
+   "station": "apptegy-clay-fl",
+   "why": "largest captures of its winter (188213 bytes, 109.24 x the winter's median of 1723)"
+  },
+  {
+   "timestamp": "20260325035331",
+   "url": "https://www.oneclay.net/",
+   "station": "apptegy-clay-fl",
+   "why": "largest captures of its winter (188207 bytes, 109.23 x the winter's median of 1723)"
+  },
+  {
+   "timestamp": "20260329180352",
+   "url": "https://www.oneclay.net/",
+   "station": "apptegy-clay-fl",
+   "why": "largest captures of its winter (188205 bytes, 109.23 x the winter's median of 1723)"
+  },
+  {
+   "timestamp": "20260325190636",
+   "url": "https://www.oneclay.net/",
+   "station": "apptegy-clay-fl",
+   "why": "largest captures of its winter (188202 bytes, 109.23 x the winter's median of 1723)"
+  },
+  {
+   "timestamp": "20260328060713",
+   "url": "https://www.oneclay.net/",
+   "station": "apptegy-clay-fl",
+   "why": "largest captures of its winter (188201 bytes, 109.23 x the winter's median of 1723)"
+  },
+  {
+   "timestamp": "20260326180336",
+   "url": "https://www.oneclay.net/",
+   "station": "apptegy-clay-fl",
+   "why": "largest captures of its winter (188197 bytes, 109.23 x the winter's median of 1723)"
+  },
+  {
+   "timestamp": "20260326060407",
+   "url": "https://www.oneclay.net/",
+   "station": "apptegy-clay-fl",
+   "why": "largest captures of its winter (188194 bytes, 109.22 x the winter's median of 1723)"
+  },
+  {
+   "timestamp": "20260327180219",
+   "url": "https://www.oneclay.net/",
+   "station": "apptegy-clay-fl",
+   "why": "largest captures of its winter (188194 bytes, 109.22 x the winter's median of 1723)"
+  },
+  {
+   "timestamp": "20260330060704",
+   "url": "https://www.oneclay.net/",
+   "station": "apptegy-clay-fl",
+   "why": "largest captures of its winter (188192 bytes, 109.22 x the winter's median of 1723)"
+  },
+  {
+   "timestamp": "20260324180237",
+   "url": "https://www.oneclay.net/",
+   "station": "apptegy-clay-fl",
+   "why": "largest captures of its winter (188188 bytes, 109.22 x the winter's median of 1723)"
+  },
+  {
+   "timestamp": "20260330180903",
+   "url": "https://www.oneclay.net/",
+   "station": "apptegy-clay-fl",
+   "why": "largest captures of its winter (188185 bytes, 109.22 x the winter's median of 1723)"
+  },
+  {
+   "timestamp": "20250328231313",
+   "url": "https://www.oneclay.net/",
+   "station": "apptegy-clay-fl",
+   "why": "largest captures of its winter (295671 bytes, 1.29 x the winter's median of 229701)"
+  },
+  {
+   "timestamp": "20260403010029",
+   "url": "https://www.ehpsmt.gov/",
+   "station": "finalsite-east-helena-mt",
+   "why": "storm day 2026-04-03 (market score 1.00)"
+  },
+  {
+   "timestamp": "20260402034529",
+   "url": "https://www.ehpsmt.gov/",
+   "station": "finalsite-east-helena-mt",
+   "why": "storm day 2026-04-02 (market score 1.00)"
+  },
+  {
+   "timestamp": "20260316010636",
+   "url": "https://www.ehpsmt.gov/",
+   "station": "finalsite-east-helena-mt",
+   "why": "storm day 2026-03-16 (market score 0.25)"
+  },
+  {
+   "timestamp": "20260329131618",
+   "url": "https://www.irondistrict.org/",
+   "station": "apptegy-iron-ut",
+   "why": "largest captures of its winter (150278 bytes, 87.12 x the winter's median of 1725)"
+  },
+  {
+   "timestamp": "20260328173802",
+   "url": "https://www.irondistrict.org/",
+   "station": "apptegy-iron-ut",
+   "why": "largest captures of its winter (150274 bytes, 87.12 x the winter's median of 1725)"
+  },
+  {
+   "timestamp": "20260330173807",
+   "url": "https://www.irondistrict.org/",
+   "station": "apptegy-iron-ut",
+   "why": "largest captures of its winter (150273 bytes, 87.11 x the winter's median of 1725)"
+  },
+  {
+   "timestamp": "20260326174336",
+   "url": "https://www.irondistrict.org/",
+   "station": "apptegy-iron-ut",
+   "why": "largest captures of its winter (150267 bytes, 87.11 x the winter's median of 1725)"
+  },
+  {
+   "timestamp": "20260324173742",
+   "url": "https://www.irondistrict.org/",
+   "station": "apptegy-iron-ut",
+   "why": "largest captures of its winter (150177 bytes, 87.06 x the winter's median of 1725)"
+  },
+  {
+   "timestamp": "20250329051527",
+   "url": "https://www.irondistrict.org/",
+   "station": "apptegy-iron-ut",
+   "why": "largest captures of its winter (239815 bytes, 1.27 x the winter's median of 188139)"
+  },
+  {
+   "timestamp": "20250227063341",
+   "url": "https://www.irondistrict.org/",
+   "station": "apptegy-iron-ut",
+   "why": "largest captures of its winter (236588 bytes, 1.26 x the winter's median of 188139)"
+  },
+  {
+   "timestamp": "20250227090643",
+   "url": "https://www.irondistrict.org/",
+   "station": "apptegy-iron-ut",
+   "why": "largest captures of its winter (236386 bytes, 1.26 x the winter's median of 188139)"
+  },
+  {
+   "timestamp": "20241118232001",
+   "url": "https://www.irondistrict.org/",
+   "station": "apptegy-iron-ut",
+   "why": "largest captures of its winter (212369 bytes, 1.13 x the winter's median of 188139)"
+  },
+  {
+   "timestamp": "20230323192308",
+   "url": "https://www.irondistrict.org/",
+   "station": "apptegy-iron-ut",
+   "why": "largest captures of its winter (97732 bytes, 1.11 x the winter's median of 88416)"
+  },
+  {
+   "timestamp": "20230318053647",
+   "url": "https://www.irondistrict.org/",
+   "station": "apptegy-iron-ut",
+   "why": "largest captures of its winter (96916 bytes, 1.10 x the winter's median of 88416)"
+  },
+  {
+   "timestamp": "20250120235157",
+   "url": "https://www.judsonisd.org/",
+   "station": "apptegy-judson-tx",
+   "why": "storm day 2025-01-21 (market score 1.00)"
+  },
+  {
+   "timestamp": "20240114222148",
+   "url": "https://www.judsonisd.org/",
+   "station": "apptegy-judson-tx",
+   "why": "storm day 2024-01-15 (market score 1.00)"
+  },
+  {
+   "timestamp": "20230202100537",
+   "url": "https://www.judsonisd.org/",
+   "station": "apptegy-judson-tx",
+   "why": "storm day 2023-02-02 (market score 0.25)"
+  },
+  {
+   "timestamp": "20250318114548",
+   "url": "https://www.pcschools.us/",
+   "station": "finalsite-park-city-ut",
+   "why": "storm day 2025-03-18 (market score 1.00)"
+  },
+  {
+   "timestamp": "20250313013126",
+   "url": "https://www.pcschools.us/",
+   "station": "finalsite-park-city-ut",
+   "why": "storm day 2025-03-13 (market score 1.00)"
+  },
+  {
+   "timestamp": "20250314060122",
+   "url": "https://www.pcschools.us/",
+   "station": "finalsite-park-city-ut",
+   "why": "storm day 2025-03-14 (market score 1.00)"
+  },
+  {
+   "timestamp": "20240301045857",
+   "url": "https://www.pcschools.us/",
+   "station": "finalsite-park-city-ut",
+   "why": "storm day 2024-03-01 (market score 1.00)"
+  },
+  {
+   "timestamp": "20240506224159",
+   "url": "https://www.pcschools.us/",
+   "station": "finalsite-park-city-ut",
+   "why": "storm day 2024-05-07 (market score 1.00)"
+  },
+  {
+   "timestamp": "20230306095822",
+   "url": "https://www.pcschools.us/",
+   "station": "finalsite-park-city-ut",
+   "why": "storm day 2023-03-06 (market score 0.25)"
+  },
+  {
+   "timestamp": "20230224120032",
+   "url": "https://www.pcschools.us/",
+   "station": "finalsite-park-city-ut",
+   "why": "storm day 2023-02-24 (market score 0.25)"
+  },
+  {
+   "timestamp": "20260105084453",
+   "url": "https://www.pcschools.us/",
+   "station": "finalsite-park-city-ut",
+   "why": "storm day 2026-01-05 (market score 0.25)"
+  },
+  {
+   "timestamp": "20260518085800",
+   "url": "https://www.pcschools.us/",
+   "station": "finalsite-park-city-ut",
+   "why": "storm day 2026-05-18 (market score 0.25)"
+  },
+  {
+   "timestamp": "20260225123307",
+   "url": "https://www.pcschools.us/",
+   "station": "finalsite-park-city-ut",
+   "why": "storm day 2026-02-25 (market score 0.25)"
+  },
+  {
+   "timestamp": "20250303031621",
+   "url": "https://www.pcschools.us/",
+   "station": "finalsite-park-city-ut",
+   "why": "storm day 2025-03-03 (market score 0.25)"
+  },
+  {
+   "timestamp": "20250218022410",
+   "url": "https://www.pcschools.us/",
+   "station": "finalsite-park-city-ut",
+   "why": "storm day 2025-02-18 (market score 0.25)"
+  },
+  {
+   "timestamp": "20251027121141",
+   "url": "https://www.pcschools.us/",
+   "station": "finalsite-park-city-ut",
+   "why": "storm day 2025-10-27 (market score 0.25)"
+  },
+  {
+   "timestamp": "20260211231751",
+   "url": "https://www.pcschools.us/",
+   "station": "finalsite-park-city-ut",
+   "why": "storm day 2026-02-12 (market score 0.25)"
+  },
+  {
+   "timestamp": "20260211112030",
+   "url": "https://www.pcschools.us/",
+   "station": "finalsite-park-city-ut",
+   "why": "storm day 2026-02-11 (market score 0.25)"
+  },
+  {
+   "timestamp": "20260120015626",
+   "url": "https://www.msd321.com/",
+   "station": "apptegy-madison-id",
+   "why": "largest captures of its winter (212297 bytes, 124.08 x the winter's median of 1711)"
+  },
+  {
+   "timestamp": "20251110002807",
+   "url": "https://www.msd321.com/",
+   "station": "apptegy-madison-id",
+   "why": "largest captures of its winter (211744 bytes, 123.75 x the winter's median of 1711)"
+  },
+  {
+   "timestamp": "20241103213015",
+   "url": "https://www.msd321.com/",
+   "station": "apptegy-madison-id",
+   "why": "largest captures of its winter (178035 bytes, 112.89 x the winter's median of 1577)"
+  },
+  {
+   "timestamp": "20241203120324",
+   "url": "https://www.msd321.com/",
+   "station": "apptegy-madison-id",
+   "why": "largest captures of its winter (173040 bytes, 109.73 x the winter's median of 1577)"
+  },
+  {
+   "timestamp": "20260331130231",
+   "url": "https://www.msd321.com/",
+   "station": "apptegy-madison-id",
+   "why": "largest captures of its winter (155476 bytes, 90.87 x the winter's median of 1711)"
+  },
+  {
+   "timestamp": "20260329175656",
+   "url": "https://www.msd321.com/",
+   "station": "apptegy-madison-id",
+   "why": "largest captures of its winter (155473 bytes, 90.87 x the winter's median of 1711)"
+  },
+  {
+   "timestamp": "20260325221517",
+   "url": "https://www.msd321.com/",
+   "station": "apptegy-madison-id",
+   "why": "largest captures of its winter (155466 bytes, 90.86 x the winter's median of 1711)"
+  },
+  {
+   "timestamp": "20260326101144",
+   "url": "https://www.msd321.com/",
+   "station": "apptegy-madison-id",
+   "why": "largest captures of its winter (155466 bytes, 90.86 x the winter's median of 1711)"
+  },
+  {
+   "timestamp": "20260330101143",
+   "url": "https://www.msd321.com/",
+   "station": "apptegy-madison-id",
+   "why": "largest captures of its winter (155466 bytes, 90.86 x the winter's median of 1711)"
+  },
+  {
+   "timestamp": "20260327221218",
+   "url": "https://www.msd321.com/",
+   "station": "apptegy-madison-id",
+   "why": "largest captures of its winter (155459 bytes, 90.86 x the winter's median of 1711)"
+  },
+  {
+   "timestamp": "20260328101114",
+   "url": "https://www.msd321.com/",
+   "station": "apptegy-madison-id",
+   "why": "largest captures of its winter (155457 bytes, 90.86 x the winter's median of 1711)"
+  },
+  {
+   "timestamp": "20260322101132",
+   "url": "https://www.msd321.com/",
+   "station": "apptegy-madison-id",
+   "why": "largest captures of its winter (155385 bytes, 90.82 x the winter's median of 1711)"
+  },
+  {
+   "timestamp": "20260321165152",
+   "url": "https://www.msd321.com/",
+   "station": "apptegy-madison-id",
+   "why": "largest captures of its winter (155384 bytes, 90.81 x the winter's median of 1711)"
+  },
+  {
+   "timestamp": "20260324221442",
+   "url": "https://www.msd321.com/",
+   "station": "apptegy-madison-id",
+   "why": "largest captures of its winter (155368 bytes, 90.81 x the winter's median of 1711)"
+  },
+  {
+   "timestamp": "20260324101421",
+   "url": "https://www.msd321.com/",
+   "station": "apptegy-madison-id",
+   "why": "largest captures of its winter (155362 bytes, 90.80 x the winter's median of 1711)"
+  },
+  {
+   "timestamp": "20250102161220",
+   "url": "https://www.lewistown.k12.mt.us/",
+   "station": "finalsite-lewistown-mt",
+   "why": "storm day 2025-01-03 (market score 1.00)"
+  },
+  {
+   "timestamp": "20241209011607",
+   "url": "https://www.lewistown.k12.mt.us/",
+   "station": "finalsite-lewistown-mt",
+   "why": "storm day 2024-12-09 (market score 0.25)"
+  },
+  {
+   "timestamp": "20240502152028",
+   "url": "https://www.lewistown.k12.mt.us/",
+   "station": "finalsite-lewistown-mt",
+   "why": "storm day 2024-05-02 (market score 0.25)"
+  },
+  {
+   "timestamp": "20260302192900",
+   "url": "https://www.sweetwater1.org/",
+   "station": "finalsite-sweetwater-1-wy",
+   "why": "storm day 2026-03-03 (market score 0.25)"
+  },
+  {
+   "timestamp": "20260219114757",
+   "url": "https://www.sweetwater1.org/",
+   "station": "finalsite-sweetwater-1-wy",
+   "why": "storm day 2026-02-19 (market score 0.25)"
+  },
+  {
+   "timestamp": "20250417173920",
+   "url": "https://www.sweetwater1.org/",
+   "station": "finalsite-sweetwater-1-wy",
+   "why": "storm day 2025-04-18 (market score 1.00)"
+  },
+  {
+   "timestamp": "20260224191741",
+   "url": "https://murrayschools.org/",
+   "station": "smartsites-murray-ut",
+   "why": "storm day 2026-02-25 (market score 0.25)"
+  },
+  {
+   "timestamp": "20260223230504",
+   "url": "https://www.murrayschools.org/",
+   "station": "smartsites-murray-ut",
+   "why": "storm day 2026-02-24 (market score 0.25)"
+  },
+  {
+   "timestamp": "20260218075527",
+   "url": "https://www.murrayschools.org/",
+   "station": "smartsites-murray-ut",
+   "why": "storm day 2026-02-18 (market score 1.00)"
+  },
+  {
+   "timestamp": "20250321042020",
+   "url": "https://www.ftsd.org/",
+   "station": "apptegy-frenchtown-mt",
+   "why": "largest captures of its winter (258332 bytes, 163.92 x the winter's median of 1576)"
+  },
+  {
+   "timestamp": "20250303004642",
+   "url": "https://www.ftsd.org/",
+   "station": "apptegy-frenchtown-mt",
+   "why": "largest captures of its winter (212937 bytes, 135.11 x the winter's median of 1576)"
+  },
+  {
+   "timestamp": "20250210012328",
+   "url": "https://www.ftsd.org/",
+   "station": "apptegy-frenchtown-mt",
+   "why": "largest captures of its winter (201741 bytes, 128.01 x the winter's median of 1576)"
+  },
+  {
+   "timestamp": "20241230201323",
+   "url": "https://www.ftsd.org/",
+   "station": "apptegy-frenchtown-mt",
+   "why": "largest captures of its winter (199980 bytes, 126.89 x the winter's median of 1576)"
+  },
+  {
+   "timestamp": "20260116040433",
+   "url": "https://www.ftsd.org/",
+   "station": "apptegy-frenchtown-mt",
+   "why": "largest captures of its winter (215937 bytes, 126.13 x the winter's median of 1712)"
+  },
+  {
+   "timestamp": "20241202173847",
+   "url": "https://www.ftsd.org/",
+   "station": "apptegy-frenchtown-mt",
+   "why": "largest captures of its winter (188965 bytes, 119.90 x the winter's median of 1576)"
+  },
+  {
+   "timestamp": "20260309035838",
+   "url": "https://www.ftsd.org/",
+   "station": "apptegy-frenchtown-mt",
+   "why": "largest captures of its winter (204154 bytes, 119.25 x the winter's median of 1712)"
+  },
+  {
+   "timestamp": "20241207204807",
+   "url": "https://www.ftsd.org/",
+   "station": "apptegy-frenchtown-mt",
+   "why": "largest captures of its winter (146091 bytes, 92.70 x the winter's median of 1576)"
+  },
+  {
+   "timestamp": "20241209214709",
+   "url": "https://www.ftsd.org/",
+   "station": "apptegy-frenchtown-mt",
+   "why": "largest captures of its winter (146088 bytes, 92.70 x the winter's median of 1576)"
+  },
+  {
+   "timestamp": "20241205095945",
+   "url": "https://www.ftsd.org/",
+   "station": "apptegy-frenchtown-mt",
+   "why": "largest captures of its winter (146085 bytes, 92.69 x the winter's median of 1576)"
+  },
+  {
+   "timestamp": "20241203131708",
+   "url": "https://www.ftsd.org/",
+   "station": "apptegy-frenchtown-mt",
+   "why": "largest captures of its winter (146019 bytes, 92.65 x the winter's median of 1576)"
+  },
+  {
+   "timestamp": "20260321235449",
+   "url": "https://www.ftsd.org/",
+   "station": "apptegy-frenchtown-mt",
+   "why": "largest captures of its winter (154691 bytes, 90.36 x the winter's median of 1712)"
+  },
+  {
+   "timestamp": "20260323003525",
+   "url": "https://www.ftsd.org/",
+   "station": "apptegy-frenchtown-mt",
+   "why": "largest captures of its winter (154684 bytes, 90.35 x the winter's median of 1712)"
+  },
+  {
+   "timestamp": "20260325102802",
+   "url": "https://www.ftsd.org/",
+   "station": "apptegy-frenchtown-mt",
+   "why": "largest captures of its winter (154500 bytes, 90.25 x the winter's median of 1712)"
+  },
+  {
+   "timestamp": "20260324120656",
+   "url": "https://www.ftsd.org/",
+   "station": "apptegy-frenchtown-mt",
+   "why": "largest captures of its winter (154482 bytes, 90.23 x the winter's median of 1712)"
+  },
+  {
+   "timestamp": "20260129084109",
+   "url": "https://www.tfsd.org/",
+   "station": "apptegy-twin-falls-id",
+   "why": "largest captures of its winter (248472 bytes, 1.10 x the winter's median of 226271)"
+  },
+  {
+   "timestamp": "20250319234155",
+   "url": "https://www.tfsd.org/",
+   "station": "apptegy-twin-falls-id",
+   "why": "largest captures of its winter (263188 bytes, 1.31 x the winter's median of 200505)"
+  },
+  {
+   "timestamp": "20250302160616",
+   "url": "https://www.tfsd.org/",
+   "station": "apptegy-twin-falls-id",
+   "why": "largest captures of its winter (258635 bytes, 1.29 x the winter's median of 200505)"
+  },
+  {
+   "timestamp": "20260331233821",
+   "url": "https://www.indianriverschools.org/",
+   "station": "apptegy-indian-river-fl",
+   "why": "largest captures of its winter (163727 bytes, 94.64 x the winter's median of 1730)"
+  },
+  {
+   "timestamp": "20260331162557",
+   "url": "https://www.indianriverschools.org/",
+   "station": "apptegy-indian-river-fl",
+   "why": "largest captures of its winter (163725 bytes, 94.64 x the winter's median of 1730)"
+  },
+  {
+   "timestamp": "20260331042547",
+   "url": "https://www.indianriverschools.org/",
+   "station": "apptegy-indian-river-fl",
+   "why": "largest captures of its winter (163724 bytes, 94.64 x the winter's median of 1730)"
+  },
+  {
+   "timestamp": "20260224171458",
+   "url": "https://www.loganschools.org/",
+   "station": "smartsites-logan-ut",
+   "why": "storm day 2026-02-25 (market score 0.25)"
+  },
+  {
+   "timestamp": "20260224094426",
+   "url": "https://www.loganschools.org/",
+   "station": "smartsites-logan-ut",
+   "why": "storm day 2026-02-24 (market score 0.25)"
+  },
+  {
+   "timestamp": "20260218093334",
+   "url": "https://www.loganschools.org/",
+   "station": "smartsites-logan-ut",
+   "why": "storm day 2026-02-18 (market score 1.00)"
+  },
+  {
+   "timestamp": "20260315234603",
+   "url": "https://www.thompsonfalls.net/",
+   "station": "finalsite-thompson-falls-mt",
+   "why": "storm day 2026-03-16 (market score 0.25)"
+  },
+  {
+   "timestamp": "20260312234358",
+   "url": "https://www.thompsonfalls.net/",
+   "station": "finalsite-thompson-falls-mt",
+   "why": "storm day 2026-03-13 (market score 1.00)"
+  },
+  {
+   "timestamp": "20260311234216",
+   "url": "https://www.thompsonfalls.net/",
+   "station": "finalsite-thompson-falls-mt",
+   "why": "storm day 2026-03-12 (market score 1.00)"
+  },
+  {
+   "timestamp": "20260216022718",
+   "url": "https://www.blueponyk12.com/",
+   "station": "finalsite-havre-mt",
+   "why": "largest captures of its winter (16528 bytes, 1.26 x the winter's median of 13068)"
+  },
+  {
+   "timestamp": "20260122040033",
+   "url": "https://www.blueponyk12.com/",
+   "station": "finalsite-havre-mt",
+   "why": "largest captures of its winter (16117 bytes, 1.23 x the winter's median of 13068)"
+  },
+  {
+   "timestamp": "20241102172530",
+   "url": "https://www.blueponyk12.com/",
+   "station": "finalsite-havre-mt",
+   "why": "largest captures of its winter (18078 bytes, 1.20 x the winter's median of 15105)"
+  },
+  {
+   "timestamp": "20250313014640",
+   "url": "https://www.blueponyk12.com/",
+   "station": "finalsite-havre-mt",
+   "why": "largest captures of its winter (16806 bytes, 1.11 x the winter's median of 15105)"
+  },
+  {
+   "timestamp": "20250321230648",
+   "url": "https://www.blueponyk12.com/",
+   "station": "finalsite-havre-mt",
+   "why": "largest captures of its winter (16793 bytes, 1.11 x the winter's median of 15105)"
+  },
+  {
+   "timestamp": "20250324183025",
+   "url": "https://www.blueponyk12.com/",
+   "station": "finalsite-havre-mt",
+   "why": "largest captures of its winter (16771 bytes, 1.11 x the winter's median of 15105)"
+  },
+  {
+   "timestamp": "20260321092514",
+   "url": "https://www.blueponyk12.com/",
+   "station": "finalsite-havre-mt",
+   "why": "largest captures of its winter (14138 bytes, 1.08 x the winter's median of 13068)"
+  },
+  {
+   "timestamp": "20250402165621",
+   "url": "https://www.sjsd.org/",
+   "station": "apptegy-san-juan-ut",
+   "why": "storm day 2025-04-03 (market score 0.25)"
+  },
+  {
+   "timestamp": "20250313031550",
+   "url": "https://www.sjsd.org/",
+   "station": "apptegy-san-juan-ut",
+   "why": "storm day 2025-03-13 (market score 0.25)"
+  },
+  {
+   "timestamp": "20260217172303",
+   "url": "https://www.sjsd.org/",
+   "station": "apptegy-san-juan-ut",
+   "why": "storm day 2026-02-18 (market score 0.25)"
+  },
+  {
+   "timestamp": "20250418001336",
+   "url": "https://www.sjsd.org/",
+   "station": "apptegy-san-juan-ut",
+   "why": "storm day 2025-04-18 (market score 0.25)"
+  },
+  {
+   "timestamp": "20260123100823",
+   "url": "https://www.sjsd.org/",
+   "station": "apptegy-san-juan-ut",
+   "why": "storm day 2026-01-23 (market score 0.25)"
+  },
+  {
+   "timestamp": "20251122195958",
+   "url": "https://www.sjsd.org/",
+   "station": "apptegy-san-juan-ut",
+   "why": "largest captures of its winter (314873 bytes, 182.75 x the winter's median of 1723)"
+  },
+  {
+   "timestamp": "20260314224136",
+   "url": "https://www.sjsd.org/",
+   "station": "apptegy-san-juan-ut",
+   "why": "largest captures of its winter (299432 bytes, 173.79 x the winter's median of 1723)"
+  },
+  {
+   "timestamp": "20260313205036",
+   "url": "https://www.sjsd.org/",
+   "station": "apptegy-san-juan-ut",
+   "why": "largest captures of its winter (299429 bytes, 173.78 x the winter's median of 1723)"
+  },
+  {
+   "timestamp": "20251108091758",
+   "url": "https://www.sjsd.org/",
+   "station": "apptegy-san-juan-ut",
+   "why": "largest captures of its winter (299227 bytes, 173.67 x the winter's median of 1723)"
+  },
+  {
+   "timestamp": "20260124142116",
+   "url": "https://www.sjsd.org/",
+   "station": "apptegy-san-juan-ut",
+   "why": "largest captures of its winter (299147 bytes, 173.62 x the winter's median of 1723)"
+  },
+  {
+   "timestamp": "20260208204826",
+   "url": "https://www.sjsd.org/",
+   "station": "apptegy-san-juan-ut",
+   "why": "largest captures of its winter (298847 bytes, 173.45 x the winter's median of 1723)"
+  },
+  {
+   "timestamp": "20251210232134",
+   "url": "https://www.sjsd.org/",
+   "station": "apptegy-san-juan-ut",
+   "why": "largest captures of its winter (298424 bytes, 173.20 x the winter's median of 1723)"
+  },
+  {
+   "timestamp": "20251216130255",
+   "url": "https://www.sjsd.org/",
+   "station": "apptegy-san-juan-ut",
+   "why": "largest captures of its winter (296926 bytes, 172.33 x the winter's median of 1723)"
+  },
+  {
+   "timestamp": "20251208051624",
+   "url": "https://www.sjsd.org/",
+   "station": "apptegy-san-juan-ut",
+   "why": "largest captures of its winter (296408 bytes, 172.03 x the winter's median of 1723)"
+  },
+  {
+   "timestamp": "20260322085741",
+   "url": "https://www.sjsd.org/",
+   "station": "apptegy-san-juan-ut",
+   "why": "largest captures of its winter (203259 bytes, 117.97 x the winter's median of 1723)"
+  },
+  {
+   "timestamp": "20250218230705",
+   "url": "https://www.hellgate.k12.mt.us/",
+   "station": "finalsite-hellgate-mt",
+   "why": "storm day 2025-02-19 (market score 0.25)"
+  },
+  {
+   "timestamp": "20250102162222",
+   "url": "https://www.hellgate.k12.mt.us/",
+   "station": "finalsite-hellgate-mt",
+   "why": "storm day 2025-01-03 (market score 0.25)"
+  },
+  {
+   "timestamp": "20250214130208",
+   "url": "https://www.minidokaschools.org/",
+   "station": "apptegy-minidoka-id",
+   "why": "storm day 2025-02-14 (market score 1.00)"
+  },
+  {
+   "timestamp": "20250131014139",
+   "url": "https://www.minidokaschools.org/",
+   "station": "apptegy-minidoka-id",
+   "why": "storm day 2025-01-31 (market score 0.25)"
+  },
+  {
+   "timestamp": "20250211231950",
+   "url": "https://www.minidokaschools.org/",
+   "station": "apptegy-minidoka-id",
+   "why": "largest captures of its winter (240452 bytes, 151.75 x the winter's median of 1584)"
+  },
+  {
+   "timestamp": "20250321160153",
+   "url": "https://www.minidokaschools.org/",
+   "station": "apptegy-minidoka-id",
+   "why": "largest captures of its winter (236025 bytes, 148.96 x the winter's median of 1584)"
+  },
+  {
+   "timestamp": "20250330121254",
+   "url": "https://www.minidokaschools.org/",
+   "station": "apptegy-minidoka-id",
+   "why": "largest captures of its winter (236000 bytes, 148.94 x the winter's median of 1584)"
+  },
+  {
+   "timestamp": "20250331161834",
+   "url": "https://www.minidokaschools.org/",
+   "station": "apptegy-minidoka-id",
+   "why": "largest captures of its winter (235963 bytes, 148.92 x the winter's median of 1584)"
+  },
+  {
+   "timestamp": "20250216132521",
+   "url": "https://www.minidokaschools.org/",
+   "station": "apptegy-minidoka-id",
+   "why": "largest captures of its winter (234858 bytes, 148.22 x the winter's median of 1584)"
+  },
+  {
+   "timestamp": "20250301165257",
+   "url": "https://www.minidokaschools.org/",
+   "station": "apptegy-minidoka-id",
+   "why": "largest captures of its winter (234653 bytes, 148.09 x the winter's median of 1584)"
+  },
+  {
+   "timestamp": "20260319033402",
+   "url": "https://www.minidokaschools.org/",
+   "station": "apptegy-minidoka-id",
+   "why": "largest captures of its winter (219190 bytes, 127.51 x the winter's median of 1719)"
+  },
+  {
+   "timestamp": "20241228223356",
+   "url": "https://www.minidokaschools.org/",
+   "station": "apptegy-minidoka-id",
+   "why": "largest captures of its winter (193513 bytes, 122.13 x the winter's median of 1584)"
+  },
+  {
+   "timestamp": "20241217041605",
+   "url": "https://www.minidokaschools.org/",
+   "station": "apptegy-minidoka-id",
+   "why": "largest captures of its winter (192273 bytes, 121.35 x the winter's median of 1584)"
+  },
+  {
+   "timestamp": "20241216114714",
+   "url": "https://www.minidokaschools.org/",
+   "station": "apptegy-minidoka-id",
+   "why": "largest captures of its winter (192266 bytes, 121.34 x the winter's median of 1584)"
+  },
+  {
+   "timestamp": "20251211190324",
+   "url": "https://www.minidokaschools.org/",
+   "station": "apptegy-minidoka-id",
+   "why": "largest captures of its winter (200449 bytes, 116.61 x the winter's median of 1719)"
+  },
+  {
+   "timestamp": "20251209114705",
+   "url": "https://www.minidokaschools.org/",
+   "station": "apptegy-minidoka-id",
+   "why": "largest captures of its winter (200311 bytes, 116.53 x the winter's median of 1719)"
+  },
+  {
+   "timestamp": "20260315212017",
+   "url": "https://www.minidokaschools.org/",
+   "station": "apptegy-minidoka-id",
+   "why": "largest captures of its winter (200305 bytes, 116.52 x the winter's median of 1719)"
+  },
+  {
+   "timestamp": "20250417161950",
+   "url": "https://www.livingston.k12.mt.us/",
+   "station": "edlio-livingston-mt",
+   "why": "storm day 2025-04-18 (market score 1.00)"
+  },
+  {
+   "timestamp": "20260306145833",
+   "url": "https://www.livingston.k12.mt.us/",
+   "station": "edlio-livingston-mt",
+   "why": "storm day 2026-03-06 (market score 1.00)"
+  },
+  {
+   "timestamp": "20250102162231",
+   "url": "https://www.livingston.k12.mt.us/",
+   "station": "edlio-livingston-mt",
+   "why": "storm day 2025-01-03 (market score 1.00)"
+  },
+  {
+   "timestamp": "20240912191620",
+   "url": "https://www.livingston.k12.mt.us/",
+   "station": "edlio-livingston-mt",
+   "why": "storm day 2024-09-13 (market score 0.25)"
+  },
+  {
+   "timestamp": "20250206132014",
+   "url": "https://www.livingston.k12.mt.us/",
+   "station": "edlio-livingston-mt",
+   "why": "storm day 2025-02-06 (market score 0.25)"
+  },
+  {
+   "timestamp": "20250320061606",
+   "url": "https://www.livingston.k12.mt.us/",
+   "station": "edlio-livingston-mt",
+   "why": "largest captures of its winter (15899 bytes, 1.21 x the winter's median of 13158)"
+  },
+  {
+   "timestamp": "20250308153747",
+   "url": "https://www.livingston.k12.mt.us/",
+   "station": "edlio-livingston-mt",
+   "why": "largest captures of its winter (15890 bytes, 1.21 x the winter's median of 13158)"
+  },
+  {
+   "timestamp": "20240115214545",
+   "url": "https://www.bisd.us/",
+   "station": "apptegy-brownsville-tx",
+   "why": "storm day 2024-01-16 (market score 0.50)"
+  },
+  {
+   "timestamp": "20230822061542",
+   "url": "https://www.bisd.us/",
+   "station": "apptegy-brownsville-tx",
+   "why": "storm day 2023-08-22 (market score 0.50)"
+  },
+  {
+   "timestamp": "20180117113612",
+   "url": "http://www.bisd.us:80/",
+   "station": "apptegy-brownsville-tx",
+   "why": "storm day 2018-01-17 (market score 0.50)"
+  },
+  {
+   "timestamp": "20250121181445",
+   "url": "https://www.nassau.k12.fl.us/",
+   "station": "apptegy-nassau-fl",
+   "why": "storm day 2025-01-22 (market score 1.00)"
+  },
+  {
+   "timestamp": "20250219114814",
+   "url": "https://www.nassau.k12.fl.us/",
+   "station": "apptegy-nassau-fl",
+   "why": "largest captures of its winter (91766 bytes, 1.30 x the winter's median of 70852)"
+  },
+  {
+   "timestamp": "20260225110925",
+   "url": "https://www.nassau.k12.fl.us/",
+   "station": "apptegy-nassau-fl",
+   "why": "largest captures of its winter (282124 bytes, 1.29 x the winter's median of 218038)"
+  },
+  {
+   "timestamp": "20250312150323",
+   "url": "https://www.nassau.k12.fl.us/",
+   "station": "apptegy-nassau-fl",
+   "why": "largest captures of its winter (91604 bytes, 1.29 x the winter's median of 70852)"
+  },
+  {
+   "timestamp": "20251217155836",
+   "url": "https://www.nassau.k12.fl.us/",
+   "station": "apptegy-nassau-fl",
+   "why": "largest captures of its winter (277808 bytes, 1.27 x the winter's median of 218038)"
+  },
+  {
+   "timestamp": "20250319025103",
+   "url": "https://www.nassau.k12.fl.us/",
+   "station": "apptegy-nassau-fl",
+   "why": "largest captures of its winter (86442 bytes, 1.22 x the winter's median of 70852)"
+  },
+  {
+   "timestamp": "20241207030457",
+   "url": "https://www.nassau.k12.fl.us/",
+   "station": "apptegy-nassau-fl",
+   "why": "largest captures of its winter (86103 bytes, 1.22 x the winter's median of 70852)"
+  },
+  {
+   "timestamp": "20241107221233",
+   "url": "https://www.nassau.k12.fl.us/",
+   "station": "apptegy-nassau-fl",
+   "why": "largest captures of its winter (85987 bytes, 1.21 x the winter's median of 70852)"
+  },
+  {
+   "timestamp": "20250210045735",
+   "url": "https://www.nassau.k12.fl.us/",
+   "station": "apptegy-nassau-fl",
+   "why": "largest captures of its winter (85877 bytes, 1.21 x the winter's median of 70852)"
+  },
+  {
+   "timestamp": "20241213134548",
+   "url": "https://www.nassau.k12.fl.us/",
+   "station": "apptegy-nassau-fl",
+   "why": "largest captures of its winter (85735 bytes, 1.21 x the winter's median of 70852)"
+  },
+  {
+   "timestamp": "20241120101208",
+   "url": "https://www.nassau.k12.fl.us/",
+   "station": "apptegy-nassau-fl",
+   "why": "largest captures of its winter (85034 bytes, 1.20 x the winter's median of 70852)"
+  },
+  {
+   "timestamp": "20260115152652",
+   "url": "https://www.nassau.k12.fl.us/",
+   "station": "apptegy-nassau-fl",
+   "why": "largest captures of its winter (258385 bytes, 1.19 x the winter's median of 218038)"
   }
  ]
 }
