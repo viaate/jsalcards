@@ -2113,6 +2113,13 @@ test.describe('with data staged', () => {
         zones,
       ),
     ]);
+    // The 460 px panel has room for the heaviest snow's end, 5 AM, under its last lit bar.
+    await expect(chart.locator('.time')).toHaveText([
+      chanceCopy.now,
+      ...['2026-01-13T05:00:00Z', '2026-01-13T11:00:00Z', '2026-01-13T13:00:00Z'].map((iso) =>
+        chanceFormat.clock(new Date(iso), zones),
+      ),
+    ]);
     // Laid out, no words meet, none meets a bar or the range, and all are in the panel.
     const boxes = async (selector: string) =>
       (await chart.locator(selector).evaluateAll((nodes) =>
