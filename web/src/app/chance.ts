@@ -258,12 +258,7 @@ function longerNames({ shown, state, alike }: DistrictNaming): string[] {
   return longer;
 }
 
-/**
- * The districts next door as the section names them, never as the school's own district
- * (`own`, in `state`) or one another: where two read the same, one in another state
- * says it, and two in one state say more of their names, the state's id last. One
- * that still reads as another is not named.
- */
+/** Districts next door named apart from the school's own and one another: by state, then by more of the name, else not at all. */
 export function toldApart(
   names: Names | null,
   own: string,
