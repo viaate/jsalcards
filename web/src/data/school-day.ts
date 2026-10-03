@@ -10,7 +10,8 @@
  *   todayEverywhere, the glow's rule);
  * - its outlook: the chance of no school and of a delayed start today and
  *   tomorrow, in the district's own time zone, from predictions/latest.json,
- *   by its district, when the file has an entry for it; none otherwise.
+ *   by its district, when the file has an entry for it and is no older than
+ *   PREDICTIONS_FRESH_MS; none otherwise.
  *
  * A file for another directory, a stale file, or a school without its own
  * today (the overnight hours, without a time zone) give nothing rather than
@@ -36,6 +37,16 @@ const LOCAL_DATE = /^\d{4}-\d{2}-\d{2}$/;
 const MAX_INDEX = 4_294_967_294;
 const REASON_COUNT = 8;
 const DAY_MS = 86_400_000;
+
+/**
+ * How long after its generated_at the predictions file still gives a chance.
+ * The pipeline predicts on every live pass: every 5 minutes on a storm's
+ * evening and morning, about every 30 minutes otherwise (the S8 cadence). A
+ * file older than three of the slowest passes means the passes have stopped,
+ * and its chance, shown with no time beside it, would pass for tonight's: it
+ * gives none. The panel reads the file again every LIVE_POLL_MS.
+ */
+export const PREDICTIONS_FRESH_MS = 90 * 60_000;
 
 function isIndex(value: unknown): value is number {
   return typeof value === 'number' && Number.isInteger(value) && value >= 0 && value <= MAX_INDEX;
@@ -348,6 +359,11 @@ export function schoolOutlook(input: OutlookInput): Outlook {
   const { district, directory, shipped, predictions, now } = input;
   if (!shipped || district === null) return null;
   if (predictions === null || !sameStamp(predictions.directory, directory)) return null;
+  const generated = parseInstant(predictions.generated_at);
+  // A file from the future is a clock here that runs behind, not a stale file.
+  if (generated === null || now.getTime() - generated.getTime() > PREDICTIONS_FRESH_MS) {
+    return null;
+  }
   const entry = predictions.districts.find((item) => item.district === district);
   if (entry === undefined) return null;
   // The district's own today: its evening is still today, however late it is in the east.

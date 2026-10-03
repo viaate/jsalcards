@@ -4,6 +4,7 @@ import type { ClosingsDay, CoveredFile, PredictionsFile } from '../../types/gene
 import { NO_DETAIL } from '../forecast-detail';
 import {
   NO_STATUS,
+  PREDICTIONS_FRESH_MS,
   covers,
   nextDay,
   parseCovered,
@@ -245,6 +246,15 @@ describe('a school’s outlook', () => {
     ],
   };
   const input = { district: 0, directory: STAMP, shipped: true, predictions, now: NOON };
+  /** The file as a pass 20 minutes before `now` writes it. */
+  const madeBefore = (now: Date) => ({
+    ...input,
+    predictions: {
+      ...predictions,
+      generated_at: new Date(now.getTime() - 20 * 60_000).toISOString().replace('.000', ''),
+    },
+    now,
+  });
 
   it('gives today’s and tomorrow’s chances from the district’s forecast', () => {
     expect(schoolOutlook(input)).toEqual({
@@ -261,7 +271,7 @@ describe('a school’s outlook', () => {
       timeZone: ZONE,
     });
     // The file's last day is today: tomorrow has none.
-    expect(schoolOutlook({ ...input, now: new Date('2026-01-13T18:00:00Z') })).toEqual({
+    expect(schoolOutlook(madeBefore(new Date('2026-01-13T18:00:00Z')))).toEqual({
       today: { state: 'no_threat' },
       tomorrow: null,
       neighbors: [],
@@ -271,7 +281,7 @@ describe('a school’s outlook', () => {
 
   it('keeps to the district’s own today, however late it is in the east', () => {
     // 11 PM Monday in Kansas City, past midnight in New York.
-    const late = schoolOutlook({ ...input, now: new Date('2026-01-13T05:00:00Z') });
+    const late = schoolOutlook(madeBefore(new Date('2026-01-13T05:00:00Z')));
     expect(late?.today).toMatchObject({ state: 'forecast', day: '2026-01-12' });
     expect(late?.tomorrow).toEqual({ state: 'no_threat' });
   });
@@ -286,6 +296,22 @@ describe('a school’s outlook', () => {
     expect(
       schoolOutlook({ ...input, directory: { ...STAMP, generated_on: '2026-01-06' } }),
     ).toBeNull();
-    expect(schoolOutlook({ ...input, now: new Date('2026-01-15T18:00:00Z') })).toBeNull();
+    expect(schoolOutlook(madeBefore(new Date('2026-01-15T18:00:00Z')))).toBeNull();
+  });
+
+  it('gives no chance from a file the passes have stopped writing, never an old one', () => {
+    // Made at 11:40 AM in Kansas City: still read 90 minutes on, three of the slowest passes.
+    const made = Date.parse(GENERATED);
+    const after = (ms: number) => schoolOutlook({ ...input, now: new Date(made + ms) });
+    expect(PREDICTIONS_FRESH_MS).toBe(90 * 60_000);
+    expect(after(PREDICTIONS_FRESH_MS)?.today).toMatchObject({ state: 'forecast', noSchool: 0.34 });
+    expect(after(PREDICTIONS_FRESH_MS + 1)).toBeNull();
+    // The same day still, and the file still the last one read: stale is stale.
+    expect(after(5 * 3_600_000)).toBeNull();
+    // A clock here that runs a few minutes behind the pipeline's still reads it.
+    expect(after(-5 * 60_000)?.today).toMatchObject({ state: 'forecast' });
+    expect(
+      schoolOutlook({ ...input, predictions: { ...predictions, generated_at: 'noon' } }),
+    ).toBeNull();
   });
 });

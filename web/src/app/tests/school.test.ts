@@ -535,4 +535,39 @@ describe('the chance section in the panel', () => {
     stop();
     fetchImpl.mockRestore();
   });
+
+  it('gives no chance from a predictions file the passes stopped writing', async () => {
+    const files = createDataFiles(
+      ['live/closings.json', 'predictions/latest.json', 'schools/details/index.0123456789.json'],
+      ROOT,
+    );
+    const fetchImpl = vi.spyOn(globalThis, 'fetch').mockImplementation((request) => {
+      const url = request instanceof Request ? request.url : request.toString();
+      return Promise.resolve(jsonResponse(url.includes('predictions') ? predictions : closings));
+    });
+    const watch = async (now: Date): Promise<SchoolView | null> => {
+      const views: (SchoolView | null)[] = [];
+      const stop = watchSchool({
+        files,
+        details: { get: vi.fn(() => Promise.resolve(record)) },
+        id: record.id,
+        hint: null,
+        onView: (view) => views.push(view),
+        now: () => now,
+        timeZone: () => 'America/Chicago',
+      });
+      await vi.waitFor(() => {
+        expect(views.at(-1)?.loading).toBe(false);
+        expect(fetchImpl).toHaveBeenCalled();
+      }, WAIT);
+      await new Promise((resolve) => setTimeout(resolve, 0));
+      stop();
+      return views.at(-1) ?? null;
+    };
+    // Made at 9 PM: read at 10:30 PM, its chance; at 10:31 PM, none, never the old one.
+    expect((await watch(new Date('2026-01-13T04:30:00Z')))?.chance?.number).toBe('45');
+    fetchImpl.mockClear();
+    expect((await watch(new Date('2026-01-13T04:31:00Z')))?.chance).toBeNull();
+    fetchImpl.mockRestore();
+  });
 });
