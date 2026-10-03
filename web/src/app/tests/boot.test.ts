@@ -113,6 +113,7 @@ function start(
   moved = false,
   glow: Glow | null = null,
   frame?: BootOptions['frame'],
+  addressOpens?: Promise<boolean>,
 ) {
   const tab = new FakeTab(url);
   const links = createUrlStore({ host: tab });
@@ -131,6 +132,7 @@ function start(
     onResults: (next) => results.push(next),
     data,
     ...(frame === undefined ? {} : { frame }),
+    ...(addressOpens === undefined ? {} : { addressOpens }),
   };
   const services = boot(options);
   return { tab, links, controller, shown, results, services };
@@ -182,6 +184,37 @@ describe('at startup', () => {
     await settle();
     expect(moved.shown).toEqual([]);
     moved.controller.abort();
+  });
+
+  it('with the address read late, opens the pinned school once it opens, and nothing when it took the app’s', async () => {
+    localStorage.setItem(PIN_KEY, encodePin(PEMBROKE_HILL));
+    let read: (opens: boolean) => void = () => undefined;
+    const reading = new Promise<boolean>((resolve) => {
+      read = resolve;
+    });
+    const late = start('https://snow.test/', withDirectory(), false, null, undefined, reading);
+    await settle();
+    expect(late.links.state.selection).toBeNull();
+    expect(late.shown).toEqual([]);
+    read(true);
+    await settle();
+    expect(late.links.state.selection).toEqual({ kind: 'school', id: PEMBROKE_HILL });
+    expect(late.tab.pushes).toBe(0);
+    expect(late.shown).toEqual([{ view: { lon: -94.593001, lat: 39.03606, zoom: ZOOM.school } }]);
+    late.controller.abort();
+
+    const taken = start(
+      'https://snow.test/',
+      withDirectory(),
+      false,
+      null,
+      undefined,
+      Promise.resolve(false),
+    );
+    await settle();
+    expect(taken.links.state.selection).toBeNull();
+    expect(taken.shown).toEqual([]);
+    taken.controller.abort();
   });
 
   it('with no data shipped, a linked school stays linked and the map stays put', async () => {

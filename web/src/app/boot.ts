@@ -57,6 +57,13 @@ export type { NearbyView, SchoolHint, SchoolView } from './school';
 
 export interface BootOptions {
   readonly links: UrlStore;
+  /**
+   * Settles once the address is read, when its store's code came after the
+   * app started (state/late-url-store.ts): true when it opens as a link would.
+   * What the app opens with, the link or the pinned school, waits for it. By
+   * default the address is read already.
+   */
+  readonly addressOpens?: Promise<boolean>;
   /** The map once its first frame is up; undefined when it cannot start. */
   readonly map: Promise<Basemap | undefined>;
   /**
@@ -183,11 +190,21 @@ export function boot(options: BootOptions): Services {
   });
 
   // A link opens as sent; a plain visit opens the pinned school, without a history entry.
-  const opening = startupSelection(links.state, pins.school);
-  if (opening !== null && links.state.selection === null) links.select(opening, { replace: true });
-  const selection = links.state.selection;
-  if (selection !== null && links.state.view === null) {
-    void goToSelection(data, selection, search, options, frame);
+  const open = (): void => {
+    const opening = startupSelection(links.state, pins.school);
+    if (opening !== null && links.state.selection === null) {
+      links.select(opening, { replace: true });
+    }
+    const selection = links.state.selection;
+    if (selection !== null && links.state.view === null) {
+      void goToSelection(data, selection, search, options, frame);
+    }
+  };
+  if (options.addressOpens === undefined) open();
+  else {
+    void options.addressOpens.then((opens) => {
+      if (opens && !signal.aborted) open();
+    });
   }
 
   // A function, so each check reads the signal afresh after an await.

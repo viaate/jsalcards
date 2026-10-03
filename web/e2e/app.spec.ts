@@ -2785,6 +2785,75 @@ test.describe('with data staged', () => {
     await context.close();
   });
 
+  test('with the address store’s code refused, the map, its lights, the menu, search and a pick still work, and the address stays', async ({
+    browser,
+  }) => {
+    // The address store (src/state/url-store.ts) loads after the page's first script. Without it
+    // the app starts as on a plain visit, keeps what it opens in memory and asks for it again.
+    const context = await browser.newContext({
+      viewport: { width: 1440, height: 900 },
+      serviceWorkers: 'block',
+    });
+    const page = await context.newPage();
+    await page.clock.setFixedTime(SYNTHETIC_NOW);
+    const refused: string[] = [];
+    await page.route(/\/assets\/url-store-[\w-]+\.js(?:\?|$)/, async (route) => {
+      refused.push(route.request().url());
+      await route.abort();
+    });
+    const link = `${site}?at=39.05,-94.6,12`;
+    await page.goto(link);
+    await waitForMap(page);
+    await expect.poll(async () => (await glowStats(page)).glowCount, { timeout: 30_000 }).toBe(2);
+    await expect(page.locator('ul.legend .count')).toHaveText([format.number(1), format.number(1)]);
+
+    const menuButton = page.getByRole('button', { name: copy.menu.label, exact: true });
+    await menuButton.click();
+    const menu = page.locator('aside.menu');
+    await expect(menu).toBeVisible();
+    await arrived(menu);
+    await menuButton.click();
+    await expect(menu).toBeHidden();
+
+    const input = page.locator('input.search-input');
+    await input.click();
+    await input.pressSequentially('pembroke', { delay: 20 });
+    await page.locator('[role="option"]').first().click();
+    const panel = page.locator('aside.detail');
+    await expect(panel.locator('h2')).toHaveText('The Pembroke Hill SchoolWornall Campus');
+
+    // Asked for again, under a new address each time; the address bar left as the link was.
+    await expect.poll(() => refused.length, { timeout: 10_000 }).toBeGreaterThan(1);
+    expect(new Set(refused).size).toBe(refused.length);
+    expect(page.url()).toBe(link);
+    await context.close();
+  });
+
+  test('with the address store’s code refused once, a link opens as a later try brings it', async ({
+    browser,
+  }) => {
+    const context = await browser.newContext({
+      viewport: { width: 1440, height: 900 },
+      serviceWorkers: 'block',
+    });
+    const page = await context.newPage();
+    await page.clock.setFixedTime(SYNTHETIC_NOW);
+    const tries: string[] = [];
+    await page.route(/\/assets\/url-store-[\w-]+\.js(?:\?|$)/, async (route) => {
+      tries.push(route.request().url());
+      if (tries.length === 1) await route.abort();
+      else await route.continue();
+    });
+    await page.goto(`${site}?school=291640000557`);
+    await waitForMap(page);
+    await expect(page.locator('aside.detail h2')).toHaveText('Border Star Montessori');
+    await expectMapNear(page, 39.013304, -94.592692, 15);
+    await expect.poll(() => new URL(page.url()).searchParams.get('at')).not.toBeNull();
+    expect(new URL(page.url()).searchParams.get('school')).toBe('291640000557');
+    expect(tries).toHaveLength(2);
+    await context.close();
+  });
+
   test('a click on two lights at the national view zooms in toward them; one alone opens as a search pick does', async ({
     browser,
   }) => {

@@ -37,6 +37,8 @@ export type StateOrigin =
   | 'initial'
   /** Back or Forward. */
   | 'history'
+  /** The address the page opened with, read after the app started without it (late-url-store.ts). */
+  | 'address'
   /** A call to select or setView. */
   | 'app';
 

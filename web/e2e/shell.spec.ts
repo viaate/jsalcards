@@ -1099,9 +1099,9 @@ test.describe('handover to the WebGL map', () => {
     expect(entry).toBeDefined();
     const entryJs = await (await request.get(entry ?? '')).text();
     // MapLibre alone is about 800 kB. The entry is the shell, Svelte and the copy module's fixed
-    // words, with the one formatter the key's counts need; the rest (src/copy-format.ts) load
-    // with what shows them. The menu's button is in it; the menu itself, and what it reads, load
-    // with the first press.
+    // words, with the one formatter the key's counts need; the rest (src/copy-format.ts) and the
+    // address store (src/state/url-store.ts) come in chunks of their own after the first paint.
+    // The menu's button is in it; the menu itself, and what it reads, load with the first press.
     expect(entryJs.length).toBeLessThan(75_000);
     expect(entryJs).not.toMatch(/maplibregl-/);
 

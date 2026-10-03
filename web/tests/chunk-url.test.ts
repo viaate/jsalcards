@@ -2,20 +2,24 @@ import path from 'node:path';
 
 import { describe, expect, it } from 'vitest';
 
-import { MAPLIBRE_URL_MODULE, maplibreUrl } from '../tools/maplibre-url';
+import {
+  MAPLIBRE_URL_MODULE,
+  URL_STORE_URL_MODULE,
+  maplibreUrl,
+  urlStoreUrl,
+} from '../tools/chunk-url';
 
 type Hook = (...args: unknown[]) => unknown;
 
 /** The plugin as the bundler drives it: resolved config, then its hooks by name. */
-function plugin(command: 'build' | 'serve', root = '/site') {
-  const made = maplibreUrl();
+function plugin(command: 'build' | 'serve', made = maplibreUrl(), module = MAPLIBRE_URL_MODULE) {
   const hook = (name: keyof typeof made): Hook => {
     const value = made[name] as unknown;
     if (typeof value !== 'function') throw new Error(`no ${name} hook`);
     return (...args) => (value as Hook).apply({}, args);
   };
-  hook('configResolved')({ root, command });
-  const id = hook('resolveId')(MAPLIBRE_URL_MODULE);
+  hook('configResolved')({ root: '/site', command });
+  const id = hook('resolveId')(module);
   return { id: id as string, load: hook('load'), renderChunk: hook('renderChunk') };
 }
 
@@ -55,5 +59,37 @@ describe('the URL of MapLibre’s page module', () => {
     const { id, load } = plugin('serve');
     expect(load(id)).toContain('"src/map/basemap/maplibre.ts"');
     expect(load('something else')).toBe(null);
+  });
+});
+
+describe('the URL of the address store', () => {
+  const STORE = path.join('/site', 'src/state/url-store.ts');
+
+  it('is the chunk built from it, and only its own marker is replaced', () => {
+    const { id, load, renderChunk } = plugin('build', urlStoreUrl(), URL_STORE_URL_MODULE);
+    const maplibre = plugin('build');
+    const code = `${load(id) as string}${maplibre.load(maplibre.id) as string}`;
+    const rendered = renderChunk(
+      code,
+      { fileName: 'assets/index-!~{001}~.js' },
+      {},
+      {
+        chunks: {
+          'assets/index-!~{001}~.js': { fileName: 'assets/index-!~{001}~.js' },
+          'assets/url-store-!~{003}~.js': {
+            fileName: 'assets/url-store-!~{003}~.js',
+            facadeModuleId: STORE,
+          },
+        },
+      },
+    ) as { code: string };
+    expect(rendered.code).toContain('const chunk = "./url-store-!~{003}~.js";');
+    expect(rendered.code).toContain('const chunk = "__SNOWLIGHT_MAPLIBRE_CHUNK__";');
+  });
+
+  it('is the source file’s own path on the dev server', () => {
+    const { id, load } = plugin('serve', urlStoreUrl(), URL_STORE_URL_MODULE);
+    expect(load(id)).toContain('"src/state/url-store.ts"');
+    expect(plugin('serve', urlStoreUrl(), MAPLIBRE_URL_MODULE).id).toBe(null);
   });
 });

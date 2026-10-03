@@ -21,9 +21,9 @@
   import { markStep, yieldToMain } from './map/basemap/steps';
   import { afterFirstPaint } from './shell/paint';
   import { retireStill } from './shell/still';
+  import { lateUrlStore } from './state/late-url-store';
+  import type { LateUrlStore } from './state/late-url-store';
   import { pinnedSchool } from './state/pin';
-  import { createUrlStore } from './state/url-store';
-  import type { UrlStore } from './state/url-store';
   import type { Selection } from './state/url';
   import type { SchoolId, UtcInstant } from './types/generated';
   import { COPIED_MS } from './ui/share';
@@ -109,8 +109,8 @@
   let pickedHint: SchoolHint | null = null;
   /** Whether the panel takes focus when it shows: after a pick, not for a link or the pin. */
   let focusPanel = false;
-  /** The address store, once the app has started. */
-  let urls: UrlStore | undefined;
+  /** The address store from mount on; its code comes after the page's first script. */
+  let urls: LateUrlStore | undefined;
 
   const schoolId = $derived(selection?.kind === 'school' ? selection.id : null);
 
@@ -156,7 +156,7 @@
    */
   async function startMap(
     signal: AbortSignal,
-    links: UrlStore,
+    links: LateUrlStore,
     onCreated: (map: Basemap) => void,
   ): Promise<MapParts | undefined> {
     // A function, so each check reads the signal afresh after an await.
@@ -182,8 +182,14 @@
       loading.catch(() => undefined);
       // Reading the pin opens the site's storage, a wait of its own: once the downloads are going.
       await yieldToMain();
+      // Created only once the first try for the address store has settled: a link's view first.
+      await links.tried;
+      // An unread address may hold a link: the map opens on the country then, not their area.
       const linked =
-        links.state.view !== null || links.state.selection !== null || pinnedSchool() !== null;
+        !links.read ||
+        links.state.view !== null ||
+        links.state.selection !== null ||
+        pinnedSchool() !== null;
       const [[factory, glowCode], near] = await Promise.all([
         loading,
         linked || !opensNearby(frame) ? null : grantedPlace(),
@@ -235,9 +241,10 @@
 
   /**
    * Keeps the address bar on the view the map shows (none at the national
-   * view), and moves the map when Back or Forward brings back another view.
+   * view), and moves the map when Back or Forward brings back another view,
+   * or to a link's view read only after the map opened without it.
    */
-  function followLinks(map: Basemap, links: UrlStore, signal: AbortSignal): void {
+  function followLinks(map: Basemap, links: LateUrlStore, signal: AbortSignal): void {
     const record = (): void => {
       // A flight waiting at its stop is on its way: the address keeps where it is going.
       if (map.flightStopped) return;
@@ -247,7 +254,7 @@
     record();
     map.map.on('moveend', record);
     const stop = links.subscribe((state, origin) => {
-      if (origin === 'history') map.goTo(state.view);
+      if (origin === 'history' || origin === 'address') map.goTo(state.view);
     });
     signal.addEventListener('abort', stop);
   }
@@ -414,7 +421,7 @@
    * one for a thumb, else the link copied, and said so on the button.
    */
   function shareSchool(): void {
-    if (urls === undefined || schoolView === null) return;
+    if (urls?.read !== true || schoolView === null) return;
     const url = urls.shareUrl();
     const title = schoolView.name;
     const touch = window.matchMedia('(pointer: coarse)').matches;
@@ -564,7 +571,9 @@
 
   onMount(() => {
     const controller = new AbortController();
-    const links = createUrlStore();
+    // Asked for once the page has painted, with the map's code and the services, never before.
+    const painted = afterFirstPaint();
+    const links = lateUrlStore({ after: painted });
     urls = links;
     // Back and Forward leave the last pick: the field no longer names what the map shows.
     const stopFollowing = links.subscribe((_state, origin) => {
@@ -584,11 +593,12 @@
     const map = started.then((parts) => parts?.basemap);
     const glow = started.then((parts) => parts?.glow ?? null);
     services = afterFirstPaint()
-      .then(() => import('./app/boot'))
-      .then(({ boot }) => {
+      .then(() => Promise.all([import('./app/boot'), links.tried]))
+      .then(([{ boot }]) => {
         if (controller.signal.aborted) return null;
         return boot({
           links,
+          ...(links.read ? {} : { addressOpens: links.opens }),
           map,
           mapCreated,
           glow,
