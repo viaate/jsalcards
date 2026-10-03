@@ -1495,10 +1495,10 @@ export const format = {
         'src/Key.svelte': key,
       },
       [
-        ['src/Key.svelte', '<p class="upper">', 'copy.ts text put through toUpperCase() in <p>'],
-        ['src/Key.svelte', '<p class="cut">', 'copy.ts text put through slice() in <p>'],
-        ['src/Key.svelte', '<p class="keys">', 'the copy.ts key "number" in <p>'],
-        ['src/Key.svelte', '<p class="keys">', 'the copy.ts key "closed" in <p>'],
+        ['src/Key.svelte', '<p class="upper">', 'copy text put through toUpperCase() in <p>'],
+        ['src/Key.svelte', '<p class="cut">', 'copy text put through slice() in <p>'],
+        ['src/Key.svelte', '<p class="keys">', 'the copy key "number" in <p>'],
+        ['src/Key.svelte', '<p class="keys">', 'the copy key "closed" in <p>'],
       ],
     );
   });
@@ -1516,7 +1516,7 @@ export const format = { closed: (): string => copy.status.closed };
         [
           'src/copy-format.ts',
           'export const format',
-          'export format is also an export of an earlier copy module',
+          'export format is also an export of src/copy.ts; rename one of them',
         ],
       ],
     );
@@ -1886,16 +1886,16 @@ export const failure = new Deeper('Search could not start');
           "an error's text (made at src/Made.svelte:3) in <p>",
         ],
         // Keys and codes of copy.ts name text; they are not text.
-        ['src/Keys.svelte', '<li class="key">', 'the copy.ts key "closed" in <li>'],
-        ['src/Keys.svelte', '<li class="key">', 'the copy.ts key "delayed" in <li>'],
-        ['src/Keys.svelte', '<li class="code">', 'the copy.ts code "closed" in <li>'],
-        ['src/Keys.svelte', '<li class="code">', 'the copy.ts code "delayed" in <li>'],
-        ['src/Keys.svelte', '<p class="names">', 'the copy.ts key "closed" in <p>'],
-        ['src/Keys.svelte', '<p class="names">', 'the copy.ts key "delayed" in <p>'],
+        ['src/Keys.svelte', '<li class="key">', 'the copy key "closed" in <li>'],
+        ['src/Keys.svelte', '<li class="key">', 'the copy key "delayed" in <li>'],
+        ['src/Keys.svelte', '<li class="code">', 'the copy code "closed" in <li>'],
+        ['src/Keys.svelte', '<li class="code">', 'the copy code "delayed" in <li>'],
+        ['src/Keys.svelte', '<p class="names">', 'the copy key "closed" in <p>'],
+        ['src/Keys.svelte', '<p class="names">', 'the copy key "delayed" in <p>'],
         // Copy put through a method that changes it is no longer the copy.
-        ['src/Keys.svelte', '<p class="upper">', 'copy.ts text "Closed" put through toUpperCase()'],
-        ['src/Keys.svelte', '<p class="cut">', 'copy.ts text put through slice() in <p>'],
-        ['src/Keys.svelte', '<p class="cut">', 'copy.ts text "Search" cut by an index'],
+        ['src/Keys.svelte', '<p class="upper">', 'copy text "Closed" put through toUpperCase()'],
+        ['src/Keys.svelte', '<p class="cut">', 'copy text put through slice() in <p>'],
+        ['src/Keys.svelte', '<p class="cut">', 'copy text "Search" cut by an index'],
       ],
     );
   }, 30_000);
@@ -1983,12 +1983,20 @@ export const failure = new Deeper('Search could not start');
         ],
         ['src/Places.svelte', "'Meta words'", '"Meta words" written to .content'],
         ['src/Places.svelte', '<p class="now">', 'a date written out by JavaScript'],
-        ['src/Places.svelte', 'toDateString', 'toDateString() writes words outside copy.ts'],
-        ['src/Places.svelte', "style: 'unit'", 'Intl.NumberFormat writes words outside copy.ts'],
+        [
+          'src/Places.svelte',
+          'toDateString',
+          'toDateString() writes words outside the copy modules',
+        ],
+        [
+          'src/Places.svelte',
+          "style: 'unit'",
+          'Intl.NumberFormat writes words outside the copy modules',
+        ],
         [
           'src/Places.svelte',
           "compactDisplay: 'long'",
-          'toLocaleString() writes words outside copy.ts',
+          'toLocaleString() writes words outside the copy modules',
         ],
         [
           'src/Places.svelte',
@@ -2282,13 +2290,17 @@ export function run(el: HTMLElement, map: { setLayoutProperty(a: string, b: stri
       [
         'src/Acts.svelte',
         'toLocaleDateString',
-        'toLocaleDateString() writes words outside copy.ts',
+        'toLocaleDateString() writes words outside the copy modules',
       ],
-      ['src/Acts.svelte', "month: 'long'", 'Intl.DateTimeFormat writes words outside copy.ts'],
+      [
+        'src/Acts.svelte',
+        "month: 'long'",
+        'Intl.DateTimeFormat writes words outside the copy modules',
+      ],
       [
         'src/Acts.svelte',
         'RelativeTimeFormat',
-        'Intl.RelativeTimeFormat writes words outside copy.ts',
+        'Intl.RelativeTimeFormat writes words outside the copy modules',
       ],
     ]);
   }, 30_000);

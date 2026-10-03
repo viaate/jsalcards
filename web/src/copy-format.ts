@@ -1,8 +1,9 @@
 /**
  * The formatters: the strings that carry a live value (counts, times, delays,
- * chances), the part of src/copy.ts that loads with the code that shows them
- * rather than with the page, so the page's first script carries only the one
- * its shell needs (copy.ts shellFormat, the key's counts).
+ * chances), the part of src/copy.ts kept out of the page's first script: the
+ * page asks for it once it has painted, and it runs with the code that shows
+ * it. The first script carries only the one its shell needs (copy.ts
+ * shellFormat, the key's counts).
  * Their phrasing lives here, so no component composes words. The same rules
  * hold here as in copy.ts, and `npm run lint:copy` reads both as the site's
  * copy (scripts/check-copy.mjs COPY_MODULES); src/copy.test.ts runs the house

@@ -5,11 +5,9 @@
  *
  * Every customer-facing string lives in src/copy.ts and follows one house style:
  * short, plain, confident, sentence case, with no banned word, exclamation
- * mark, emoji or em dash. (Its formatters are in src/copy-format.ts, and the
- * school panel's chance section words its sentences in src/copy-chance.ts:
- * both load with the code that shows them rather than with the page, and
- * COPY_MODULES reads them as part of copy.ts.) This file holds those rules
- * once, for two callers:
+ * mark, emoji or em dash. (Its formatters are in src/copy-format.ts, kept out
+ * of the page's first script; COPY_MODULES reads it as part of copy.ts.) This
+ * file holds those rules once, for two callers:
  *
  * - `problems(text)` checks one string. src/copy.test.ts runs it over every
  *   string in copy.ts and over the formatters' output.
@@ -1374,7 +1372,9 @@ class Project {
     const exports = /** @type {Record<string, unknown>} */ ({ ...loaded });
     /** @type {Array<[file: string, key: string, text: string]>} */
     const later = [];
-    /** @type {Array<[file: string, name: string]>} */
+    /** Which copy module each export comes from. */
+    const owners = new Map(Object.keys(exports).map((name) => [name, copyFile]));
+    /** @type {Array<[file: string, name: string, owner: string]>} */
     const clashes = [];
     // The copy modules that load later: their exports are copy too, under their own names, and
     // each …Copy tree among them holds fixed strings, as copy.ts's `copy` does. A name already
@@ -1384,8 +1384,13 @@ class Project {
       const more = await import(pathToFileURL(file).href);
       if (!isFields(more)) continue;
       for (const [name, value] of Object.entries(more)) {
-        if (Object.hasOwn(exports, name)) clashes.push([file, name]);
-        else exports[name] = value;
+        const owner = owners.get(name);
+        if (owner !== undefined) {
+          clashes.push([file, name, owner]);
+        } else {
+          exports[name] = value;
+          owners.set(name, file);
+        }
         if (name.endsWith('Copy')) {
           for (const [key, text] of copyLeaves(value, name)) later.push([file, key, text]);
         }
@@ -1707,7 +1712,7 @@ async function loadParse5() {
  *   An error, and where it is caught; or, `made`, where it is made (`new Error(…)`).
  * @typedef {{ t: 'foreign' }} ForeignValue A value from a package, whose code the lint does not read.
  * @typedef {TextValue | CodeValue | CaughtValue | CopyValue} StringValue What a place can show as text.
- * @typedef {{ exports: Record<string, unknown>, leaves: Set<string>, later: Array<[file: string, key: string, text: string]>, clashes: Array<[file: string, name: string]> }} CopyRuntime
+ * @typedef {{ exports: Record<string, unknown>, leaves: Set<string>, later: Array<[file: string, key: string, text: string]>, clashes: Array<[file: string, name: string, owner: string]> }} CopyRuntime
  * @typedef {{ t: 'object', node: Node | undefined, entries: () => Entry[] }} ObjectValue
  * @typedef {{ key: string | undefined, name: StringValue | undefined, value: Thunk }} Entry An undefined key can be any key; `name` is the key as text.
  * @typedef {{ t: 'array', node: Node | undefined, exact: boolean, items: () => Thunk[] }} ArrayValue `exact` when positions line up with indexes.
@@ -2063,7 +2068,7 @@ function copyProperty(value, keys) {
     // `copy.status.closed[0]` shows one letter of it.
     const cut = keys === undefined || keys.some((key) => /^\d+$/u.test(key));
     return cut
-      ? [code(inner, 'copy.ts text %s cut by an index', 'put the text as it shows in copy.ts')]
+      ? [code(inner, 'copy text %s cut by an index', 'put the text as it shows in its copy module')]
       : [];
   }
   if (typeof inner !== 'object' || inner === null) return [];
@@ -2089,7 +2094,7 @@ function copyEntries(value) {
     key,
     name: Array.isArray(inner)
       ? undefined
-      : code(key, 'the copy.ts key %s', 'show the string it names, not its key'),
+      : code(key, 'the copy key %s', 'show the string it names, not its key'),
     value: () => [copyValue(record[key])],
   }));
 }
@@ -2472,7 +2477,7 @@ class Flow {
     if (typeof inner === 'string') {
       return runtime === undefined || runtime.leaves.has(inner)
         ? [value]
-        : [code(inner, 'the copy.ts code %s', 'show a string of the copy tree, not a code')];
+        : [code(inner, 'the copy code %s', 'show a string of the copy tree, not a code')];
     }
     if (Array.isArray(inner) && depth < 6) {
       return inner.flatMap((item) => this.copyStrings(copyValue(item), depth + 1));
@@ -3497,9 +3502,9 @@ class Flow {
     const changed = code(
       typeof inner === 'string' ? inner : '',
       typeof inner === 'string'
-        ? `copy.ts text %s put through ${method}()`
-        : `copy.ts text put through ${method}()`,
-      'put the text as it shows in copy.ts',
+        ? `copy text %s put through ${method}()`
+        : `copy text put through ${method}()`,
+      'put the text as it shows in its copy module',
     );
     return method === 'split' ? [this.list(() => [() => [changed]])] : [changed];
   }
@@ -3791,7 +3796,7 @@ class Flow {
     let foreign = false;
     for (const value of values) {
       if (value.t === 'function') found.push(...this.callFunction(value, site.args, site.more));
-      // A formatter of copy.ts returns copy.
+      // A formatter of the copy modules returns copy.
       else if (
         value.t === 'copy' &&
         (typeof value.value === 'function' || value.value === COPY_OPAQUE)
@@ -5235,7 +5240,7 @@ class Flow {
     this.findings.push({
       file: module.file,
       ...module.at(numberAt(node, 'start') ?? 0),
-      message: `${what} writes words outside copy.ts and copy-format.ts; add a formatter to copy-format.ts and use it`,
+      message: `${what} writes words outside the copy modules; add a formatter to copy-format.ts and use it`,
     });
   }
 
@@ -5951,12 +5956,12 @@ export async function lintProject({ root: given = WEB_ROOT, dist } = {}) {
   if (existsSync(project.copyFile)) {
     await project.loadCopy();
     copyTree = project.copyRuntime?.exports.copy;
-    for (const [file, name] of project.copyRuntime?.clashes ?? []) {
+    for (const [file, name, owner] of project.copyRuntime?.clashes ?? []) {
       findings.push({
         file: relative(file),
         line: 1,
         column: 1,
-        message: `export ${name} is also an export of an earlier copy module; name it apart`,
+        message: `export ${name} is also an export of ${relative(owner)}; rename one of them`,
       });
     }
     for (const [key, text] of copyLeaves(copyTree)) {

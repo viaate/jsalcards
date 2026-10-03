@@ -7,7 +7,7 @@ Live preview of the work in progress: https://viaate.github.io/jsalcards/ (rebui
 ```text
 .
 ├── web/                  Svelte 5 + TypeScript + Vite static site for GitHub Pages
-│   ├── src/              App code; every UI string lives in src/copy.ts (its formatters in src/copy-format.ts)
+│   ├── src/              App code; every UI string lives in the copy modules, src/copy*.ts
 │   ├── public/           Static files served as-is; npm run stage puts the pipeline's outputs in public/data/
 │   ├── tests/            Vitest unit and component tests (module tests sit in src/**/tests)
 │   ├── e2e/              Playwright smoke tests against the production build

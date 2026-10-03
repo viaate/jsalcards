@@ -3,11 +3,11 @@
  * formatters' own module (src/copy-format.ts), and nowhere else.
  *
  * - `copy` holds the fixed strings, grouped by where they appear.
- * - `format` (copy-format.ts, which loads with the code that shows it, not
- *   with the page) builds the strings that carry a live value: counts, times,
- *   delays, chances. Its phrasing lives there too, so no component composes words.
- *   The page's shell needs one of them before the rest load, the key's counts:
- *   `shellFormat`, here.
+ * - `format` (copy-format.ts, kept out of the page's first script and run
+ *   with the code that shows it) builds the strings that carry a live value:
+ *   counts, times, delays, chances. Its phrasing lives there too, so no
+ *   component composes words. The page's shell needs one of them before the
+ *   rest load, the key's counts: `shellFormat`, here.
  * - `mapLocale` gives MapLibre's own control labels the same voice.
  *
  * House style: short, plain, confident, sentence case. No exclamation marks,
