@@ -306,6 +306,16 @@ describe('a lit school', () => {
     expect(litRadius(4)).toBeLessThan(litRadius(14));
   });
 
+  it('at zooms 4.5 to 6 takes a mouse’s click about 8 px from its center, a finger’s about 18', () => {
+    // The numbers glow-mount.ts gives for litRadius there.
+    for (const zoom of [4.5, 5, 5.5, 6]) {
+      expect(litRadius(zoom)).toBeGreaterThan(1.8);
+      expect(litRadius(zoom)).toBeLessThanOrEqual(2);
+      expect(litRadius(zoom) + HIT_RADIUS.mouse).toBeCloseTo(8, 0);
+      expect(litRadius(zoom) + HIT_RADIUS.touch).toBeCloseTo(18, 0);
+    }
+  });
+
   it('two lights under a pixel apart at the national view: a tap zooms in toward them', () => {
     const national = new FakeMap();
     national.zoom = 4;
