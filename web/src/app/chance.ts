@@ -5,9 +5,9 @@
  *    decided or under way in the school's own time zone, what moved it since
  *    the run before, and the chance of a delayed start instead;
  * 2. the early signals: weather that already happened, and the districts next
- *    door that already posted a status for that day (live/closings.json rows,
- *    mapped to districts through the directory), each with its time, all in
- *    time order; and when this district usually announces, with a live
+ *    door whose schools all posted one status for that day (live/closings.json
+ *    rows, mapped to districts through the directory), each with its time, all
+ *    in time order; and when this district usually announces, with a live
  *    countdown, where the chart does not say it;
  * 3. the night hour by hour, drawn to scale, a bar an hour (or two or three,
  *    so every bar stays a readable width), its marks and their key (the
@@ -76,6 +76,8 @@ export interface Names {
   readonly stamp: DirectoryStamp;
   /** A school's district position, or -1. */
   districtOf(school: number): number;
+  /** How many schools the directory gives a district. */
+  schools(district: number): number;
   /** How the directory names a district, or null. */
   naming(district: number): DistrictNaming | null;
 }
@@ -406,19 +408,29 @@ interface Posted {
   readonly at: Date;
 }
 
+/** How a district stands for a day: the one status all its schools hold, at its first post by now. */
+export interface Standing {
+  readonly district: number;
+  /** Null where its schools differ, or only some of them are listed. */
+  readonly status: StatusKey | null;
+  readonly at: Date | null;
+}
+
 /**
- * The districts next door that posted a status for `day`, each once, at its
- * first post with a time, in the order they posted: from the closings rows of
- * that day, through the directory's district of each school.
+ * How each of `districts` with a school listed for `day` stands, from the
+ * closings rows of that day, through the directory's district of each school.
+ * A district holds a status only when every school the directory gives it is
+ * listed with it, as the pipeline lists a post for the whole district, so a
+ * district is never named with a status some of its schools do not hold.
  */
-export function neighborPosts(
+export function standings(
   closings: ClosingsFile | null,
   day: LocalDate,
-  neighbors: readonly number[],
+  districts: readonly number[],
   names: Names | null,
   now: Date,
-): Posted[] {
-  if (closings === null || names === null || neighbors.length === 0) return [];
+): Standing[] {
+  if (closings === null || names === null || districts.length === 0) return [];
   const { stamp } = names;
   const same =
     closings.directory.generated_on === stamp.generated_on &&
@@ -427,23 +439,40 @@ export function neighborPosts(
   const group = closings.days.find((item) => item.day === day);
   const generated = parseInstant(closings.generated_at);
   if (!same || group === undefined || generated === null) return [];
-  const wanted = new Set(neighbors);
+  const wanted = new Set(districts);
   const rows = decodeDay(group);
-  const first = new Map<number, Posted>();
+  const found = new Map<number, { status: StatusKey | null; at: Date | null; listed: number }>();
   const minute = Math.floor(generated.getTime() / MINUTE_MS);
   rows.schools.forEach((school, i) => {
-    const ago = group.announced[i] ?? null;
-    const code = rows.statuses[i];
-    if (ago === null || code === undefined) return;
     const district = names.districtOf(school);
     if (!wanted.has(district)) return;
-    const at = new Date((minute - ago) * MINUTE_MS);
-    const status = STATUS_KEYS[code];
-    if (status === undefined || at > now) return;
-    const seen = first.get(district);
-    if (seen === undefined || at < seen.at) first.set(district, { district, status, at });
+    const ago = group.announced[i] ?? null;
+    const status = STATUS_KEYS[rows.statuses[i] ?? -1] ?? null;
+    const posted = ago === null ? null : new Date((minute - ago) * MINUTE_MS);
+    const at = posted !== null && posted <= now ? posted : null;
+    const seen = found.get(district);
+    if (seen === undefined) {
+      found.set(district, { status, at, listed: 1 });
+      return;
+    }
+    seen.listed++;
+    if (seen.status !== status) seen.status = null;
+    if (at !== null && (seen.at === null || at < seen.at)) seen.at = at;
   });
-  return [...first.values()]
+  return [...found].map(([district, { status, at, listed }]) => ({
+    district,
+    status: listed === names.schools(district) ? status : null,
+    at,
+  }));
+}
+
+/** The districts next door that stand as one for `day` and posted by `now`, the first to post first. */
+export function neighborPosts(stood: readonly Standing[], neighbors: readonly number[]): Posted[] {
+  const next = new Set(neighbors);
+  return stood
+    .flatMap(({ district, status, at }) =>
+      status !== null && at !== null && next.has(district) ? [{ district, status, at }] : [],
+    )
     .sort((a, b) => a.at.getTime() - b.at.getTime() || a.district - b.district)
     .slice(0, MAX_NEIGHBOR_MOMENTS);
 }
@@ -823,6 +852,8 @@ export interface Said {
   readonly heavy: boolean;
   /** The districts next door the timeline lists, each with what it posted. */
   readonly neighbors: readonly { readonly district: number; readonly status: StatusKey }[];
+  /** How the districts with a school listed stand, the live file's word on each. */
+  readonly stood: readonly Standing[];
   /** When the snow stopped, where the timeline says so. */
   readonly stopped: readonly Date[];
   /** The chart's answer says the bus hour. */
@@ -834,6 +865,7 @@ export const NOTHING_SAID: Said = Object.freeze({
   cold: null,
   heavy: false,
   neighbors: [],
+  stood: [],
   stopped: [],
   buses: false,
 });
@@ -880,7 +912,7 @@ function reasonInput(
           said.neighbors.some((listed) => listed.district === district && listed.status === status),
         ),
         otherwise: reason.districts.some((district) =>
-          said.neighbors.some((listed) => listed.district === district && listed.status !== status),
+          said.stood.some((one) => one.district === district && one.status !== status),
         ),
       };
     }
@@ -979,10 +1011,11 @@ export function chanceView(input: ChanceInput): ChanceView | null {
   const detail = forecast.detail ?? NO_DETAIL;
   const neighbors = outlook.neighbors ?? [];
   const reasons = detail.why?.reasons ?? [];
-  const nameOf = toldApart(names, district, state, [
+  const named = [
     ...neighbors,
     ...reasons.flatMap((reason) => (reason.kind === 'neighbors' ? reason.districts : [])),
-  ]);
+  ];
+  const nameOf = toldApart(names, district, state, named);
   let number: string;
   let meaning: string;
   try {
@@ -1001,9 +1034,11 @@ export function chanceView(input: ChanceInput): ChanceView | null {
   const announcement = chart?.key.find((row) => row.mark === 'announces');
   let moments: MomentView[];
   let listed: Said['neighbors'] = [];
+  let stood: Standing[] = [];
   let stopped: Date[] = [];
   try {
-    const posts = neighborPosts(closings, day, neighbors, names, now);
+    stood = standings(closings, day, named, names, now);
+    const posts = neighborPosts(stood, neighbors);
     moments = momentsOf(detail, posts, nameOf, {
       day,
       district,
@@ -1027,6 +1062,7 @@ export function chanceView(input: ChanceInput): ChanceView | null {
     cold: chart?.kind === 'wind_chill' ? answer : null,
     heavy: chart?.key.some((row) => row.mark === 'heavy') ?? false,
     neighbors: listed,
+    stood,
     stopped,
     buses: chart !== null,
   };

@@ -13,7 +13,7 @@ import {
   testMeta,
   testPoints,
 } from '../../data/tests/builders';
-import { schoolView, watchSchool } from '../school';
+import { namesOf, schoolView, watchSchool } from '../school';
 import type { SchoolView, ViewInput } from '../school';
 
 /** How long a test waits for code loaded on demand, on a busy machine. */
@@ -535,6 +535,20 @@ describe('the chance section in the panel', () => {
     expect(directory).toHaveBeenCalledWith(stamp);
     stop();
     fetchImpl.mockRestore();
+  });
+
+  it('counts the schools the directory gives each district, so a status is the whole district’s', () => {
+    const schools = [
+      { id: '290000199999', name: 'BELLE ELEM.', lon: -94.6, lat: 39, district: 0 },
+      { id: '290000299999', name: 'NEXT DOOR ELEM.', lon: -94.5, lat: 39, district: 1 },
+      { id: '290000499999', name: 'NEXT DOOR HIGH', lon: -94.5, lat: 39, district: 1 },
+      { id: 'A9999999', name: 'PRIVATE ACADEMY', lon: -94.5, lat: 39, district: -1, kind: 1 },
+    ];
+    const four = testMeta(schools, ['2999999', '2900002', '2900003']);
+    const points = parsePoints(testPoints(schools, 3), four);
+    if (points === null) throw new Error('no points');
+    const names = namesOf(createDirectory(four, points));
+    expect([0, 1, 2, 3, -1].map((district) => names.schools(district))).toEqual([1, 2, 0, 0, 0]);
   });
 
   it('gives no chance from a predictions file the passes stopped writing', async () => {

@@ -265,9 +265,19 @@ export function namesOf(directory: Directory): Names {
     districts: ids.length,
   };
   const named = new Map<number, DistrictNaming | null>();
+  let sizes: Uint32Array | null = null;
   return {
     stamp,
     districtOf: (school) => directory.district[school] ?? -1,
+    schools: (district) => {
+      if (sizes === null) {
+        sizes = new Uint32Array(ids.length);
+        for (const d of directory.district) {
+          if (d >= 0 && d < ids.length) sizes[d] = (sizes[d] ?? 0) + 1;
+        }
+      }
+      return sizes[district] ?? 0;
+    },
     naming: (district) => {
       if (!named.has(district)) {
         const id = ids[district];

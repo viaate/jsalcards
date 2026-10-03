@@ -25,6 +25,7 @@ const SCHOOL_DISTRICTS = [0, 0, 1, 1, 2, 3];
 export const NAMES: Names = {
   stamp: STAMP,
   districtOf: (school) => SCHOOL_DISTRICTS[school] ?? -1,
+  schools: (district) => SCHOOL_DISTRICTS.filter((of) => of === district).length,
   naming: (district) => {
     const shown = DISTRICT_NAMES[district];
     return shown === undefined ? null : { shown, state: 'KS', alike: false };
