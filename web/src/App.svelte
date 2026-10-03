@@ -2,7 +2,6 @@
   import { onMount, untrack } from 'svelte';
   import type { Component } from 'svelte';
   import type { Attachment } from 'svelte/attachments';
-  import COPY_FORMAT_URL from 'virtual:snowlight/copy-format-url';
 
   import type {
     NearbyView,
@@ -14,10 +13,11 @@
     StatusCounts,
     Target,
   } from './app/boot';
+  import { lateFormats } from './app/late-formats';
   import { grantedPlace, opensNearby } from './app/nearby';
   import { STATUS_KEYS, copy, shellFormat } from './copy';
   import type { Basemap, Place } from './map/basemap';
-  import { loadBasemap, preloadModule } from './map/basemap/load';
+  import { loadBasemap } from './map/basemap/load';
   import type { Glow } from './map/glow-mount';
   import { markStep, yieldToMain } from './map/basemap/steps';
   import { afterFirstPaint } from './shell/paint';
@@ -114,6 +114,8 @@
   let urls: LateUrlStore | undefined;
   /** Whether a link can be shared: the address store's code is in. */
   let shareable = $state(false);
+  /** Settles once the formatters are in (app/late-formats.ts): the update time's code waits for it. */
+  let formats: Promise<void> = Promise.resolve();
 
   const schoolId = $derived(selection?.kind === 'school' ? selection.id : null);
 
@@ -529,12 +531,14 @@
   function onUpdated(generatedAt: UtcInstant | null): void {
     updatedAt = generatedAt;
     if (generatedAt === null || UpdateTime !== null) return;
-    import('./ui/UpdateTime.svelte').then(
-      (module) => {
-        UpdateTime = module.default;
-      },
-      () => undefined,
-    );
+    formats
+      .then(() => import('./ui/UpdateTime.svelte'))
+      .then(
+        (module) => {
+          UpdateTime = module.default;
+        },
+        () => undefined,
+      );
   }
 
   /**
@@ -582,9 +586,7 @@
       shareable = true;
     });
     // The formatters the menu, the panel and the update time word with: never the last to arrive.
-    void painted.then(() => {
-      preloadModule(COPY_FORMAT_URL);
-    });
+    formats = lateFormats({ after: painted, signal: controller.signal });
     // Back and Forward leave the last pick: the field no longer names what the map shows.
     const stopFollowing = links.subscribe((_state, origin) => {
       if (origin !== 'history' || pickedName === null) return;
@@ -609,6 +611,7 @@
         return boot({
           links,
           ...(links.read ? {} : { addressOpens: links.opens }),
+          formats,
           map,
           mapCreated,
           glow,

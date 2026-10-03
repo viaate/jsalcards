@@ -4,6 +4,9 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 import App from '../src/App.svelte';
 import { STATUS_KEYS, copy } from '../src/copy';
 
+// No server here to fetch the formatters' file from: the menu's code imports them as any module.
+vi.mock('../src/app/late-formats', () => ({ lateFormats: () => Promise.resolve() }));
+
 describe('App', () => {
   let app: ReturnType<typeof mount> | undefined;
 

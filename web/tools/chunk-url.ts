@@ -9,8 +9,9 @@
  *   (src/state/late-url-store.ts), asked for again under a new address after
  *   a failed download, as a browser keeps a module that failed for good.
  * - `virtual:snowlight/copy-format-url`, the formatters (src/copy-format.ts),
- *   which the page asks for ahead of the menu, the panel and the update time
- *   that run them (App.svelte).
+ *   which the page fetches, again after a failed download, before it imports
+ *   them and the menu, the panel and the update time that run them
+ *   (src/app/late-formats.ts).
  *
  * The build names a chunk after its content: the module holds a marker that
  * each chunk carrying it has replaced, as the chunks are written, by the

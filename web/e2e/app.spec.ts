@@ -2754,8 +2754,8 @@ test.describe('with data staged', () => {
   test('with the formatters’ code refused, the map, its lights, the key’s counts and search still work', async ({
     browser,
   }) => {
-    // The formatters (src/copy-format.ts) load with what words with them: the menu, the panel,
-    // the update time. The page's first script and the app's services need none of them.
+    // The formatters (src/copy-format.ts) load after the page's first script, for what words with
+    // them: the menu, the panel, the update time. The first script and the services need none.
     const context = await browser.newContext({
       viewport: { width: 1440, height: 900 },
       serviceWorkers: 'block',
@@ -2772,7 +2772,7 @@ test.describe('with data staged', () => {
     await expect.poll(async () => (await glowStats(page)).glowCount, { timeout: 30_000 }).toBe(2);
     // The key's counts are set with the page's own formatter (copy.ts shellFormat).
     await expect(page.locator('ul.legend .count')).toHaveText([format.number(1), format.number(1)]);
-    // The update time asked for the formatters, and was refused them.
+    // The page asked for the formatters, and was refused them.
     await expect.poll(() => refused.length).toBeGreaterThan(0);
     await expect(page.locator('.updated')).toHaveCount(0);
 
@@ -2826,6 +2826,46 @@ test.describe('with data staged', () => {
     await expect.poll(() => refused.length, { timeout: 10_000 }).toBeGreaterThan(1);
     expect(new Set(refused).size).toBe(refused.length);
     expect(page.url()).toBe(link);
+    await context.close();
+  });
+
+  test('with the formatters’ code refused once, the update time, the menu and a school’s panel still show', async ({
+    browser,
+  }) => {
+    // A browser keeps a module it could not download as failed, with all that imports it, for as
+    // long as the page is open: the page fetches the formatters again before anything imports them.
+    const context = await browser.newContext({
+      viewport: { width: 1440, height: 900 },
+      serviceWorkers: 'block',
+    });
+    const page = await context.newPage();
+    await page.clock.setFixedTime(SYNTHETIC_NOW);
+    const tries: string[] = [];
+    await page.route(/\/assets\/copy-format-[\w-]+\.js$/, async (route) => {
+      tries.push(route.request().url());
+      if (tries.length === 1) await route.abort();
+      else await route.continue();
+    });
+    await page.goto(site);
+    await waitForMap(page);
+    await expect(page.locator('.updated')).toBeVisible({ timeout: 30_000 });
+
+    const menuButton = page.getByRole('button', { name: copy.menu.label, exact: true });
+    await menuButton.click();
+    const menu = page.locator('aside.menu');
+    await expect(menu).toBeVisible();
+    await arrived(menu);
+    await menuButton.click();
+    await expect(menu).toBeHidden();
+
+    const input = page.locator('input.search-input');
+    await input.click();
+    await input.pressSequentially('pembroke', { delay: 20 });
+    await page.locator('[role="option"]').first().click();
+    const panel = page.locator('aside.detail');
+    await expect(panel.locator('h2')).toHaveText('The Pembroke Hill SchoolWornall Campus');
+    await expect(panel.locator('.status .line-detail')).toHaveText(format.delay(120, null) ?? '');
+    expect(tries.length).toBeGreaterThan(1);
     await context.close();
   });
 

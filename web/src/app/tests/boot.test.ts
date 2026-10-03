@@ -113,7 +113,7 @@ function start(
   moved = false,
   glow: Glow | null = null,
   frame?: BootOptions['frame'],
-  addressOpens?: Promise<boolean>,
+  late: Pick<BootOptions, 'addressOpens' | 'formats'> = {},
 ) {
   const tab = new FakeTab(url);
   const links = createUrlStore({ host: tab });
@@ -132,7 +132,7 @@ function start(
     onResults: (next) => results.push(next),
     data,
     ...(frame === undefined ? {} : { frame }),
-    ...(addressOpens === undefined ? {} : { addressOpens }),
+    ...late,
   };
   const services = boot(options);
   return { tab, links, controller, shown, results, services };
@@ -192,7 +192,9 @@ describe('at startup', () => {
     const reading = new Promise<boolean>((resolve) => {
       read = resolve;
     });
-    const late = start('https://snow.test/', withDirectory(), false, null, undefined, reading);
+    const late = start('https://snow.test/', withDirectory(), false, null, undefined, {
+      addressOpens: reading,
+    });
     await settle();
     expect(late.links.state.selection).toBeNull();
     expect(late.shown).toEqual([]);
@@ -203,14 +205,9 @@ describe('at startup', () => {
     expect(late.shown).toEqual([{ view: { lon: -94.593001, lat: 39.03606, zoom: ZOOM.school } }]);
     late.controller.abort();
 
-    const taken = start(
-      'https://snow.test/',
-      withDirectory(),
-      false,
-      null,
-      undefined,
-      Promise.resolve(false),
-    );
+    const taken = start('https://snow.test/', withDirectory(), false, null, undefined, {
+      addressOpens: Promise.resolve(false),
+    });
     await settle();
     expect(taken.links.state.selection).toBeNull();
     expect(taken.shown).toEqual([]);
@@ -359,6 +356,32 @@ describe('search', () => {
       expect(none).toEqual([null]);
     }, WAIT);
     expect(services.pins.school).toBeNull();
+    controller.abort();
+  });
+
+  it('asks for the panel’s and the menu’s code only once the formatters they import are in', async () => {
+    let formatted: () => void = () => undefined;
+    const formats = new Promise<void>((resolve) => {
+      formatted = resolve;
+    });
+    const { services, controller } = start('https://snow.test/', NO_DATA, false, null, undefined, {
+      formats,
+    });
+    const views: unknown[] = [];
+    const hint = { id: PEMBROKE_HILL, name: 'The Pembroke Hill School', sub: 'Kansas City, MO' };
+    services.watchSchool(PEMBROKE_HILL, hint, (view) => views.push(view));
+    let read = false;
+    void services.menu().then(() => {
+      read = true;
+    });
+    await settle();
+    expect(views).toEqual([]);
+    expect(read).toBe(false);
+    formatted();
+    await vi.waitFor(() => {
+      expect(views).toHaveLength(2);
+      expect(read).toBe(true);
+    }, WAIT);
     controller.abort();
   });
 

@@ -43,7 +43,7 @@ export default defineConfig({
     maplibreUrl(),
     // Where the address store is built to, for a page to ask for it again after a failed download.
     urlStoreUrl(),
-    // Where the formatters are built to, for the page to ask for them as it starts.
+    // Where the formatters are built to, for the page to fetch them, again after a failed download.
     copyFormatUrl(),
     // The US mask under a name that never changes too, for a page from an older build, and the
     // tiles wholly inside the US, which need no mask.

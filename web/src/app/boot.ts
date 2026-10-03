@@ -64,6 +64,12 @@ export interface BootOptions {
    * default the address is read already.
    */
   readonly addressOpens?: Promise<boolean>;
+  /**
+   * Settles once the formatters are in (app/late-formats.ts). The menu's and
+   * the panel's code import them, and are asked for only after it. By default
+   * they are in already.
+   */
+  readonly formats?: Promise<unknown>;
   /** The map once its first frame is up; undefined when it cannot start. */
   readonly map: Promise<Basemap | undefined>;
   /**
@@ -161,7 +167,7 @@ export interface Services {
 type Frame = (view: MapView, selection: Selection | null) => MapView;
 
 export function boot(options: BootOptions): Services {
-  const { links, signal, screen } = options;
+  const { links, signal, screen, formats = Promise.resolve() } = options;
   const frame: Frame | undefined =
     options.frame ??
     (screen === undefined
@@ -271,10 +277,12 @@ export function boot(options: BootOptions): Services {
     watch: (watchOptions: WatchOptions) => () => void;
   }> | null = null;
   const loadSchoolCode = (): NonNullable<typeof schoolCode> => {
-    schoolCode ??= import('./school').then((module) => ({
-      watch: module.watchSchool,
-      source: module.createDetailsSource(data.files),
-    }));
+    schoolCode ??= formats
+      .then(() => import('./school'))
+      .then((module) => ({
+        watch: module.watchSchool,
+        source: module.createDetailsSource(data.files),
+      }));
     return schoolCode;
   };
 
@@ -352,19 +360,21 @@ export function boot(options: BootOptions): Services {
       void (options.mapCreated ?? options.map).then((map) => map?.showSchools(next));
     },
     toggleMenu(button, counts) {
-      menuHost ??= import('../ui/menu-host').then(
-        ({ startMenu }) =>
-          startMenu({
-            button,
-            read: () => services.menu(),
-            show: (next) => {
-              services.filter(next);
-            },
-            map: () => basemap,
-            counts,
-          }),
-        () => null,
-      );
+      menuHost ??= formats
+        .then(() => import('../ui/menu-host'))
+        .then(
+          ({ startMenu }) =>
+            startMenu({
+              button,
+              read: () => services.menu(),
+              show: (next) => {
+                services.filter(next);
+              },
+              map: () => basemap,
+              counts,
+            }),
+          () => null,
+        );
       void menuHost.then((menu) => {
         // Its code could not load: the next press tries again.
         if (menu === null) menuHost = null;
@@ -373,7 +383,9 @@ export function boot(options: BootOptions): Services {
     },
     menu() {
       if (menuView === null) {
-        const reading = import('./menu').then(({ readMenu }) => readMenu(data.files));
+        const reading = formats
+          .then(() => import('./menu'))
+          .then(({ readMenu }) => readMenu(data.files));
         menuView = reading;
         // Its code could not load (offline, a deploy in flight): About alone, and the next open tries again.
         reading.catch(() => {
