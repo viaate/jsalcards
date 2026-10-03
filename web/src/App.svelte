@@ -54,7 +54,7 @@
     copied: boolean;
     onclose: () => void;
     onpin: () => void;
-    onshare: () => void;
+    onshare?: (() => void) | undefined;
     onnearby?: (school: NearbyView) => void;
     onsettle?: () => void;
     element?: HTMLElement | undefined;
@@ -112,6 +112,8 @@
   let focusPanel = false;
   /** The address store from mount on; its code comes after the page's first script. */
   let urls: LateUrlStore | undefined;
+  /** Whether a link can be shared: the address store's code is in. */
+  let shareable = $state(false);
 
   const schoolId = $derived(selection?.kind === 'school' ? selection.id : null);
 
@@ -576,6 +578,9 @@
     const painted = afterFirstPaint();
     const links = lateUrlStore({ after: painted });
     urls = links;
+    void links.opens.then(() => {
+      shareable = true;
+    });
     // The formatters the menu, the panel and the update time word with: never the last to arrive.
     void painted.then(() => {
       preloadModule(COPY_FORMAT_URL);
@@ -776,7 +781,7 @@
       {copied}
       onclose={closeSchool}
       onpin={togglePin}
-      onshare={shareSchool}
+      onshare={shareable ? shareSchool : undefined}
       onnearby={openNearby}
       onsettle={() => basemap?.controlsChanged()}
       bind:element={detailElement}

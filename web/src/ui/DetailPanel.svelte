@@ -17,7 +17,8 @@
     copied: boolean;
     onclose: () => void;
     onpin: () => void;
-    onshare: () => void;
+    /** None while the page cannot write a link yet: the panel has no Share then. */
+    onshare?: (() => void) | undefined;
     /** Opens a school from the nearby list. */
     onnearby?: (school: NearbyView) => void;
     /** On a phone, the sheet came to rest at another height: the map's labels make room for it. */
@@ -183,17 +184,19 @@
           </svg>
           {pinned ? copy.pin.mySchool : copy.actions.pin}
         </button>
-        <button class="action" class:is-on={copied} type="button" onclick={onshare}>
-          <svg viewBox="0 0 16 16" aria-hidden="true" focusable="false">
-            {#if copied}
-              <path d="M3.5 8.5l3 3 6-6.5" />
-            {:else}
-              <path d="M8 2.5v7.25M5.25 5.25L8 2.5l2.75 2.75" />
-              <path d="M4.75 7.75h-.5v5.75h7.5V7.75h-.5" />
-            {/if}
-          </svg>
-          {copied ? copy.share.copied : copy.actions.share}
-        </button>
+        {#if onshare !== undefined}
+          <button class="action" class:is-on={copied} type="button" onclick={onshare}>
+            <svg viewBox="0 0 16 16" aria-hidden="true" focusable="false">
+              {#if copied}
+                <path d="M3.5 8.5l3 3 6-6.5" />
+              {:else}
+                <path d="M8 2.5v7.25M5.25 5.25L8 2.5l2.75 2.75" />
+                <path d="M4.75 7.75h-.5v5.75h7.5V7.75h-.5" />
+              {/if}
+            </svg>
+            {copied ? copy.share.copied : copy.actions.share}
+          </button>
+        {/if}
       </div>
     {/if}
 

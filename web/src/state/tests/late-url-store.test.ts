@@ -196,7 +196,7 @@ describe('once its code comes late', () => {
     store.destroy();
   });
 
-  it('takes what the app shows in its place, when the app opened something meanwhile', async () => {
+  it('takes what the app opened meanwhile as one step on from the link, which Back returns to', async () => {
     const { tab, store, heard } = open(`https://snow.test/?school=${SCHOOL}&utm_source=x`, 1);
     await store.tried;
     const picked: UrlState = {
@@ -204,27 +204,139 @@ describe('once its code comes late', () => {
       view: { lat: 39.03, lon: -94.59, zoom: 15 },
     };
     store.navigate(picked);
+    store.setView({ lat: 39.04, lon: -94.6, zoom: 14 });
+    const shown: UrlState = { ...picked, view: { lat: 39.04, lon: -94.6, zoom: 14 } };
     const before = heard.length;
     await vi.advanceTimersByTimeAsync(1_000);
     expect(store.read).toBe(true);
-    expect(store.state).toEqual(picked);
+    expect(store.state).toEqual(shown);
     // Nothing new to hear: the app shows it already.
     expect(heard).toHaveLength(before);
     await expect(store.opens).resolves.toBe(false);
-    expect(tab.urls()).toEqual([`?school=${OTHER}&at=39.03,-94.59,15&utm_source=x`]);
+    expect(tab.urls()).toEqual([
+      `?school=${SCHOOL}&utm_source=x`,
+      `?school=${OTHER}&at=39.04,-94.6,14&utm_source=x`,
+    ]);
+    expect(tab.pushes).toBe(1);
+    tab.back();
+    const linked = { selection: { kind: 'school', id: SCHOOL }, view: null };
+    expect(store.state).toEqual(linked);
+    expect(heard.at(-1)).toEqual([linked, 'history']);
+    store.destroy();
+  });
+
+  it('takes the view the map was moved to in place of the link, when nothing was opened', async () => {
+    const { tab, store } = open(`https://snow.test/?school=${SCHOOL}`, 1);
+    await store.tried;
+    store.setView({ lat: 40, lon: -90, zoom: 6 });
+    await vi.advanceTimersByTimeAsync(1_000);
+    expect(store.state).toEqual({ selection: null, view: { lat: 40, lon: -90, zoom: 6 } });
+    expect(tab.urls()).toEqual(['?at=40,-90,6']);
+    expect(tab.pushes).toBe(0);
+    await expect(store.opens).resolves.toBe(false);
+    store.destroy();
+  });
+
+  it('writes what the app opened in place of the link, not as a step, when it opened it in place', async () => {
+    const { tab, store } = open('https://snow.test/', 1);
+    await store.tried;
+    store.select({ kind: 'school', id: OTHER }, { replace: true });
+    await vi.advanceTimersByTimeAsync(1_000);
+    expect(store.state).toEqual({ selection: { kind: 'school', id: OTHER }, view: null });
+    expect(tab.urls()).toEqual([`?school=${OTHER}`]);
     expect(tab.pushes).toBe(0);
     store.destroy();
   });
 
-  it('takes the view the map was moved to, and drops an id a link cannot carry', async () => {
+  it('drops an id a link cannot carry from the step, and keeps the place', async () => {
     const { tab, store } = open(`https://snow.test/?school=${SCHOOL}`, 1);
     await store.tried;
     store.select({ kind: 'school', id: 'not an id' });
     store.setView({ lat: 40, lon: -90, zoom: 6 });
     await vi.advanceTimersByTimeAsync(1_000);
     expect(store.state).toEqual({ selection: null, view: { lat: 40, lon: -90, zoom: 6 } });
-    expect(tab.urls()).toEqual(['?at=40,-90,6']);
+    expect(tab.urls()).toEqual([`?school=${SCHOOL}`, '?at=40,-90,6']);
     await expect(store.opens).resolves.toBe(false);
+    store.destroy();
+  });
+});
+
+describe('when its code hangs', () => {
+  /** A store whose first try never answers until `answer` is called; later tries per `later`. */
+  function hanging(url: string, later: 'refused' | 'come') {
+    const tab = new FakeTab(url);
+    const tries: number[] = [];
+    let answer: () => void = () => undefined;
+    const module: UrlStoreModule = { createUrlStore: () => createUrlStore({ host: tab }) };
+    const load = (attempt: number): Promise<UrlStoreModule> => {
+      tries.push(attempt);
+      if (attempt === 0) {
+        return new Promise((resolve) => {
+          answer = () => {
+            resolve(module);
+          };
+        });
+      }
+      return later === 'come'
+        ? Promise.resolve(module)
+        : Promise.reject(new TypeError('Failed to fetch dynamically imported module'));
+    };
+    const store = lateUrlStore({ load });
+    const heard: [UrlState, StateOrigin][] = [];
+    store.subscribe((state, origin) => heard.push([state, origin]));
+    return {
+      tab,
+      tries,
+      store,
+      heard,
+      answer: () => {
+        answer();
+      },
+    };
+  }
+
+  it('starts without it at the first try’s deadline, and opens the address once a later try brings it', async () => {
+    const { store, tries, heard } = hanging(`https://snow.test/?school=${SCHOOL}`, 'come');
+    let tried = false;
+    void store.tried.then(() => (tried = true));
+    await vi.advanceTimersByTimeAsync(1_999);
+    expect(tried).toBe(false);
+    await vi.advanceTimersByTimeAsync(1);
+    expect(tried).toBe(true);
+    expect(store.read).toBe(false);
+    expect(store.state).toEqual(EMPTY);
+    await vi.advanceTimersByTimeAsync(1_000);
+    expect(tries).toEqual([0, 1]);
+    expect(store.read).toBe(true);
+    const linked = { selection: { kind: 'school', id: SCHOOL }, view: null };
+    expect(heard).toEqual([
+      [EMPTY, 'initial'],
+      [linked, 'address'],
+    ]);
+    await expect(store.opens).resolves.toBe(true);
+    store.destroy();
+  });
+
+  it('takes the first try when it comes late, before any other has', async () => {
+    const { store, tries, heard, answer } = hanging(
+      `https://snow.test/?school=${SCHOOL}`,
+      'refused',
+    );
+    await vi.advanceTimersByTimeAsync(2_000);
+    await store.tried;
+    expect(store.read).toBe(false);
+    await vi.advanceTimersByTimeAsync(1_000);
+    expect(tries).toEqual([0, 1]);
+    answer();
+    await vi.advanceTimersByTimeAsync(0);
+    expect(store.read).toBe(true);
+    expect(heard.at(-1)).toEqual([
+      { selection: { kind: 'school', id: SCHOOL }, view: null },
+      'address',
+    ]);
+    // Asked for no more.
+    await vi.advanceTimersByTimeAsync(120_000);
+    expect(tries).toEqual([0, 1]);
     store.destroy();
   });
 });

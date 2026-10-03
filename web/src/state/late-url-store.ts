@@ -2,25 +2,27 @@
  * The address store (url-store.ts), with the address parsing it reads and
  * writes with, loads after the page's first script, once the page has first
  * painted, as the map's code and the app's services do. The map and the app's
- * services start once the first try for it has settled (`tried`): with it, as
- * if it had come with the page; without it, as on a plain visit, this
- * stand-in keeping what the app opens in memory and the address as it is,
- * while the code is asked for again. Once it comes, the address opens as a
- * link would (origin "address"), or takes what the app shows when the app has
- * opened something or moved since.
+ * services start once the first try for it has settled (`tried`): its code
+ * came, failed, or has not come within its deadline (app/tries.ts). With it,
+ * they start as if it had come with the page; without it, as on a plain visit,
+ * this stand-in keeping what the app opens in memory and the address as it
+ * is, while the code is asked for again. Once it comes, the address opens as
+ * a link would (origin "address"), or takes what the app shows when the app
+ * has opened something or moved since: one step on from the link after a
+ * pick, as a pick would have been.
  */
 
 import STORE_URL from 'virtual:snowlight/url-store-url';
 
+import { tries } from '../app/tries';
 import type { Selection, UrlState } from './url';
 import type { createUrlStore, StateOrigin, UrlStateListener, UrlStore } from './url-store';
 
-/** The wait before the store's code is asked for again; each later one doubles, up to RETRY_MAX_MS. */
-const RETRY_MS = 1_000;
-const RETRY_MAX_MS = 30_000;
-
 export interface LateUrlStore extends UrlStore {
-  /** Settles once the first try for the store's code has: the address is read by then, unless it failed. */
+  /**
+   * Settles once the first try for the store's code has worked, failed or gone
+   * past its deadline: the address is read by then, unless that try did not work.
+   */
   readonly tried: Promise<void>;
   /** Whether the address is read: the store's code is in. */
   readonly read: boolean;
@@ -66,9 +68,11 @@ export function lateUrlStore(options: LateUrlStoreOptions = {}): LateUrlStore {
   let memory: UrlState = { selection: null, view: null };
   /** Whether the app opened or closed anything, or moved the map, while the address was unread. */
   let changed = false;
+  /** Whether that was a step of its own, a pick or a tap, which writes a history entry. */
+  let stepped = false;
   let started = false;
   let destroyed = false;
-  let timer: ReturnType<typeof setTimeout> | undefined;
+  let stopTries: () => void = () => undefined;
   let settle: (opens: boolean) => void = () => undefined;
   const opens = new Promise<boolean>((resolve) => {
     settle = resolve;
@@ -80,17 +84,25 @@ export function lateUrlStore(options: LateUrlStoreOptions = {}): LateUrlStore {
 
   const connect = (next: UrlStore): void => {
     store = next;
-    if (changed) {
+    if (!changed) {
+      notify(next.state, started ? 'address' : 'initial');
+    } else {
+      // After a pick, one step on from the link, so Back returns to it, as on a link that was read.
+      const write = (state: UrlState): void => {
+        if (stepped) {
+          next.navigate(state);
+        } else {
+          next.select(state.selection, { replace: true });
+          next.setView(state.view);
+        }
+      };
       try {
-        next.select(memory.selection, { replace: true });
+        write(memory);
       } catch {
         // An id a link cannot carry: the address keeps the place alone.
-        next.select(null, { replace: true });
+        write({ selection: null, view: memory.view });
       }
-      next.setView(memory.view);
       next.flush();
-    } else {
-      notify(next.state, started ? 'address' : 'initial');
     }
     next.subscribe((state, origin) => {
       if (origin !== 'initial') notify(state, origin);
@@ -98,21 +110,16 @@ export function lateUrlStore(options: LateUrlStoreOptions = {}): LateUrlStore {
     settle(!changed);
   };
 
-  const attempt = (count: number, wait: number): Promise<void> =>
-    load(count).then(
-      ({ createUrlStore }) => {
-        if (!destroyed) connect(createUrlStore());
-      },
-      () => {
-        if (destroyed) return;
-        timer = setTimeout(() => {
-          void attempt(count + 1, Math.min(wait * 2, RETRY_MAX_MS));
-        }, wait);
-      },
-    );
-
   const tried = after
-    .then(() => attempt(0, RETRY_MS))
+    .then(() => {
+      if (destroyed) return;
+      const attempts = tries(load);
+      stopTries = attempts.stop;
+      void attempts.won.then(({ createUrlStore }) => {
+        if (!destroyed) connect(createUrlStore());
+      });
+      return attempts.first;
+    })
     .then(() => {
       started = true;
     });
@@ -144,12 +151,17 @@ export function lateUrlStore(options: LateUrlStoreOptions = {}): LateUrlStore {
       if (store !== null) {
         store.select(selection, options);
       } else if (!sameSelection(memory.selection, selection)) {
+        stepped ||= selection !== null && options?.replace !== true;
         keep({ ...memory, selection }, true);
       }
     },
     navigate(next) {
-      if (store !== null) store.navigate(next);
-      else keep(next, true);
+      if (store !== null) {
+        store.navigate(next);
+      } else {
+        stepped = true;
+        keep(next, true);
+      }
     },
     setView(view) {
       if (store !== null) store.setView(view);
@@ -165,7 +177,7 @@ export function lateUrlStore(options: LateUrlStoreOptions = {}): LateUrlStore {
     },
     destroy() {
       destroyed = true;
-      clearTimeout(timer);
+      stopTries();
       listeners.clear();
       store?.destroy();
     },

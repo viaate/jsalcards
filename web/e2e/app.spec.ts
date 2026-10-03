@@ -42,7 +42,7 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 import { devices, expect, test } from '@playwright/test';
-import type { Locator, Page } from '@playwright/test';
+import type { Locator, Page, Route } from '@playwright/test';
 import { build, preview } from 'vite';
 import type { PreviewServer } from 'vite';
 
@@ -2825,6 +2825,88 @@ test.describe('with data staged', () => {
     // Asked for again, under a new address each time; the address bar left as the link was.
     await expect.poll(() => refused.length, { timeout: 10_000 }).toBeGreaterThan(1);
     expect(new Set(refused).size).toBe(refused.length);
+    expect(page.url()).toBe(link);
+    await context.close();
+  });
+
+  test('with the address store’s code never answered, the map, its lights, the menu and search start, and a pick opens with no Share', async ({
+    browser,
+  }) => {
+    // A download that hangs rather than fails: the first try's deadline starts the app without it.
+    const context = await browser.newContext({
+      viewport: { width: 1440, height: 900 },
+      serviceWorkers: 'block',
+    });
+    const page = await context.newPage();
+    await page.clock.setFixedTime(SYNTHETIC_NOW);
+    const held: Route[] = [];
+    await page.route(/\/assets\/url-store-[\w-]+\.js(?:\?|$)/, (route) => {
+      held.push(route);
+    });
+    const link = `${site}?school=291640000557`;
+    await page.goto(link);
+    await waitForMap(page);
+    await expect.poll(async () => (await glowStats(page)).glowCount, { timeout: 30_000 }).toBe(2);
+    await expect(page.locator('ul.legend .count')).toHaveText([format.number(1), format.number(1)]);
+
+    const menuButton = page.getByRole('button', { name: copy.menu.label, exact: true });
+    await menuButton.click();
+    const menu = page.locator('aside.menu');
+    await expect(menu).toBeVisible();
+    await arrived(menu);
+    await menuButton.click();
+    await expect(menu).toBeHidden();
+
+    const input = page.locator('input.search-input');
+    await input.click();
+    await input.pressSequentially('pembroke', { delay: 20 });
+    await page.locator('[role="option"]').first().click();
+    const panel = page.locator('aside.detail');
+    await expect(panel.locator('h2')).toHaveText('The Pembroke Hill SchoolWornall Campus');
+    // Only the store's code writes a link: Pin alone until it comes.
+    await expect(panel.locator('.action')).toHaveText([copy.actions.pin]);
+
+    // Asked for again past the hung try, under a new address; the address bar left as the link was.
+    await expect.poll(() => held.length, { timeout: 10_000 }).toBeGreaterThan(1);
+    expect(new Set(held.map((route) => route.request().url())).size).toBe(held.length);
+    expect(page.url()).toBe(link);
+    await context.close();
+  });
+
+  test('with the address store’s code past its deadline, a pick made meanwhile is one step on from the link, which Back returns to', async ({
+    browser,
+  }) => {
+    const context = await browser.newContext({
+      viewport: { width: 1440, height: 900 },
+      serviceWorkers: 'block',
+    });
+    const page = await context.newPage();
+    await page.clock.setFixedTime(SYNTHETIC_NOW);
+    const held: Route[] = [];
+    let answered = false;
+    await page.route(/\/assets\/url-store-[\w-]+\.js(?:\?|$)/, async (route) => {
+      if (answered) await route.continue();
+      else held.push(route);
+    });
+    const link = `${site}?school=291640000557`;
+    await page.goto(link);
+    await waitForMap(page);
+    const input = page.locator('input.search-input');
+    await input.click();
+    await input.pressSequentially('pembroke', { delay: 20 });
+    await page.locator('[role="option"]').first().click();
+    const panel = page.locator('aside.detail');
+    await expect(panel.locator('h2')).toHaveText('The Pembroke Hill SchoolWornall Campus');
+    expect(page.url()).toBe(link);
+
+    answered = true;
+    await Promise.all(held.map((route) => route.continue()));
+    await expect.poll(() => new URL(page.url()).searchParams.get('school')).toBe(PEMBROKE_HILL);
+    await expect(panel.locator('.action')).toHaveText([copy.actions.pin, copy.actions.share]);
+    await expect(panel.locator('h2')).toHaveText('The Pembroke Hill SchoolWornall Campus');
+
+    await page.goBack();
+    await expect(panel.locator('h2')).toHaveText('Border Star Montessori');
     expect(page.url()).toBe(link);
     await context.close();
   });
