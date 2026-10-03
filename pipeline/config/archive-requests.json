@@ -1,1097 +1,1600 @@
 {
-  "cdx": [
-    {
-      "url": "www.atisd.net/",
-      "from": "20170101",
-      "to": "20260930",
-      "filter": [
-        "statuscode:200"
-      ],
-      "collapse": "timestamp:10"
-    },
-    {
-      "url": "www.dellcityisd.net/",
-      "from": "20170101",
-      "to": "20260930",
-      "filter": [
-        "statuscode:200"
-      ],
-      "collapse": "timestamp:10"
-    },
-    {
-      "url": "www.durhamunified.org/",
-      "from": "20170101",
-      "to": "20260930",
-      "filter": [
-        "statuscode:200"
-      ],
-      "collapse": "timestamp:10"
-    },
-    {
-      "url": "www.wyomingindianschools.com/",
-      "from": "20170101",
-      "to": "20260930",
-      "filter": [
-        "statuscode:200"
-      ],
-      "collapse": "timestamp:10"
-    },
-    {
-      "url": "www.shoshonischools.org/",
-      "from": "20170101",
-      "to": "20260930",
-      "filter": [
-        "statuscode:200"
-      ],
-      "collapse": "timestamp:10"
-    },
-    {
-      "url": "www.gilchristschools.org/",
-      "from": "20170101",
-      "to": "20260930",
-      "filter": [
-        "statuscode:200"
-      ],
-      "collapse": "timestamp:10"
-    },
-    {
-      "url": "www.gladesedu.org/",
-      "from": "20170101",
-      "to": "20260930",
-      "filter": [
-        "statuscode:200"
-      ],
-      "collapse": "timestamp:10"
-    },
-    {
-      "url": "www.hardee.k12.fl.us/",
-      "from": "20170101",
-      "to": "20260930",
-      "filter": [
-        "statuscode:200"
-      ],
-      "collapse": "timestamp:10"
-    },
-    {
-      "url": "www.hemetusd.org/",
-      "from": "20170101",
-      "to": "20260930",
-      "filter": [
-        "statuscode:200"
-      ],
-      "collapse": "timestamp:10"
-    },
-    {
-      "url": "www.hmps.net/",
-      "from": "20170101",
-      "to": "20260930",
-      "filter": [
-        "statuscode:200"
-      ],
-      "collapse": "timestamp:10"
-    },
-    {
-      "url": "www.hustonacademy.com/",
-      "from": "20170101",
-      "to": "20260930",
-      "filter": [
-        "statuscode:200"
-      ],
-      "collapse": "timestamp:10"
-    },
-    {
-      "url": "www.lavillaisd.org/",
-      "from": "20170101",
-      "to": "20260930",
-      "filter": [
-        "statuscode:200"
-      ],
-      "collapse": "timestamp:10"
-    },
-    {
-      "url": "www.lasaraisd.net/",
-      "from": "20170101",
-      "to": "20260930",
-      "filter": [
-        "statuscode:200"
-      ],
-      "collapse": "timestamp:10"
-    },
-    {
-      "url": "www.lyfordcisd.net/",
-      "from": "20170101",
-      "to": "20260930",
-      "filter": [
-        "statuscode:200"
-      ],
-      "collapse": "timestamp:10"
-    },
-    {
-      "url": "www.montealtoisd.org/",
-      "from": "20170101",
-      "to": "20260930",
-      "filter": [
-        "statuscode:200"
-      ],
-      "collapse": "timestamp:10"
-    },
-    {
-      "url": "www.ocesd.net/",
-      "from": "20170101",
-      "to": "20260930",
-      "filter": [
-        "statuscode:200"
-      ],
-      "collapse": "timestamp:10"
-    },
-    {
-      "url": "www.rivieraisd.us/",
-      "from": "20170101",
-      "to": "20260930",
-      "filter": [
-        "statuscode:200"
-      ],
-      "collapse": "timestamp:10"
-    },
-    {
-      "url": "www.leadoreschool.org/",
-      "from": "20170101",
-      "to": "20260930",
-      "filter": [
-        "statuscode:200"
-      ],
-      "collapse": "timestamp:10"
-    },
-    {
-      "url": "www.taftisd.net/",
-      "from": "20170101",
-      "to": "20260930",
-      "filter": [
-        "statuscode:200"
-      ],
-      "collapse": "timestamp:10"
-    },
-    {
-      "url": "www.trisd.org/",
-      "from": "20170101",
-      "to": "20260930",
-      "filter": [
-        "statuscode:200"
-      ],
-      "collapse": "timestamp:10"
-    },
-    {
-      "url": "www.tisd.us/",
-      "from": "20170101",
-      "to": "20260930",
-      "filter": [
-        "statuscode:200"
-      ],
-      "collapse": "timestamp:10"
-    },
-    {
-      "url": "www.uintah.net/",
-      "from": "20170101",
-      "to": "20260930",
-      "filter": [
-        "statuscode:200"
-      ],
-      "collapse": "timestamp:10"
-    },
-    {
-      "url": "www.vviewisd.net/",
-      "from": "20170101",
-      "to": "20260930",
-      "filter": [
-        "statuscode:200"
-      ],
-      "collapse": "timestamp:10"
-    },
-    {
-      "url": "www.beaumontusd.us/",
-      "from": "20170101",
-      "to": "20260930",
-      "filter": [
-        "statuscode:200"
-      ],
-      "collapse": "timestamp:10"
-    },
-    {
-      "url": "www.leusd.k12.ca.us/",
-      "from": "20170101",
-      "to": "20260930",
-      "filter": [
-        "statuscode:200"
-      ],
-      "collapse": "timestamp:10"
-    },
-    {
-      "url": "www.sanjacinto.k12.ca.us/",
-      "from": "20170101",
-      "to": "20260930",
-      "filter": [
-        "statuscode:200"
-      ],
-      "collapse": "timestamp:10"
-    },
-    {
-      "url": "www.promesapublicschools.org/",
-      "from": "20170101",
-      "to": "20260930",
-      "filter": [
-        "statuscode:200"
-      ],
-      "collapse": "timestamp:10"
-    },
-    {
-      "url": "www.wsh2.k12.wy.us/",
-      "from": "20170101",
-      "to": "20260930",
-      "filter": [
-        "statuscode:200"
-      ],
-      "collapse": "timestamp:10"
-    },
-    {
-      "url": "www.adisd.net/",
-      "from": "20170101",
-      "to": "20260930",
-      "filter": [
-        "statuscode:200"
-      ],
-      "collapse": "timestamp:10"
-    },
-    {
-      "url": "www.bakerk12.org/",
-      "from": "20170101",
-      "to": "20260930",
-      "filter": [
-        "statuscode:200"
-      ],
-      "collapse": "timestamp:10"
-    },
-    {
-      "url": "www.banqueteisd.net/",
-      "from": "20170101",
-      "to": "20260930",
-      "filter": [
-        "statuscode:200"
-      ],
-      "collapse": "timestamp:10"
-    },
-    {
-      "url": "www.benavidesisd.net/",
-      "from": "20170101",
-      "to": "20260930",
-      "filter": [
-        "statuscode:200"
-      ],
-      "collapse": "timestamp:10"
-    },
-    {
-      "url": "www.bishopcisd.net/",
-      "from": "20170101",
-      "to": "20260930",
-      "filter": [
-        "statuscode:200"
-      ],
-      "collapse": "timestamp:10"
-    },
-    {
-      "url": "www.bradfordschools.org/",
-      "from": "20170101",
-      "to": "20260930",
-      "filter": [
-        "statuscode:200"
-      ],
-      "collapse": "timestamp:10"
-    },
-    {
-      "url": "www.bcisd.us/",
-      "from": "20170101",
-      "to": "20260930",
-      "filter": [
-        "statuscode:200"
-      ],
-      "collapse": "timestamp:10"
-    },
-    {
-      "url": "www.canutillo-isd.org/",
-      "from": "20170101",
-      "to": "20260930",
-      "filter": [
-        "statuscode:200"
-      ],
-      "collapse": "timestamp:10"
-    },
-    {
-      "url": "www.d181.k12.id.us/",
-      "from": "20170101",
-      "to": "20260930",
-      "filter": [
-        "statuscode:200"
-      ],
-      "collapse": "timestamp:10"
-    },
-    {
-      "url": "www.clarkcountyschools161.org/",
-      "from": "20170101",
-      "to": "20260930",
-      "filter": [
-        "statuscode:200"
-      ],
-      "collapse": "timestamp:10"
-    },
-    {
-      "url": "www.cleveland.k12.ms.us/",
-      "from": "20170101",
-      "to": "20260930",
-      "filter": [
-        "statuscode:200"
-      ],
-      "collapse": "timestamp:10"
-    },
-    {
-      "url": "www.clintweb.net/",
-      "from": "20170101",
-      "to": "20260930",
-      "filter": [
-        "statuscode:200"
-      ],
-      "collapse": "timestamp:10"
-    },
-    {
-      "url": "www.dnusd.org/",
-      "from": "20170101",
-      "to": "20260930",
-      "filter": [
-        "statuscode:200"
-      ],
-      "collapse": "timestamp:10"
-    },
-    {
-      "url": "www.desotoschools.com/",
-      "from": "20170101",
-      "to": "20260930",
-      "filter": [
-        "statuscode:200"
-      ],
-      "collapse": "timestamp:10"
-    },
-    {
-      "url": "www.driscollisd.us/",
-      "from": "20170101",
-      "to": "20260930",
-      "filter": [
-        "statuscode:200"
-      ],
-      "collapse": "timestamp:10"
-    },
-    {
-      "url": "www.elacharterschool.com/",
-      "from": "20170101",
-      "to": "20260930",
-      "filter": [
-        "statuscode:200"
-      ],
-      "collapse": "timestamp:10"
-    },
-    {
-      "url": "www.fabensisd.net/",
-      "from": "20170101",
-      "to": "20260930",
-      "filter": [
-        "statuscode:200"
-      ],
-      "collapse": "timestamp:10"
-    },
-    {
-      "url": "www.franklincountyschools.org/",
-      "from": "20170101",
-      "to": "20260930",
-      "filter": [
-        "statuscode:200"
-      ],
-      "collapse": "timestamp:10"
-    },
-    {
-      "url": "www.fhisd.net/",
-      "from": "20170101",
-      "to": "20260930",
-      "filter": [
-        "statuscode:200"
-      ],
-      "collapse": "timestamp:10"
-    },
-    {
-      "url": "www.grenadak12.com/",
-      "from": "20170101",
-      "to": "20260930",
-      "filter": [
-        "statuscode:200"
-      ],
-      "collapse": "timestamp:10"
-    },
-    {
-      "url": "www.harmonytx.org/schools/south-texas",
-      "from": "20170101",
-      "to": "20260930",
-      "filter": [
-        "statuscode:200"
-      ],
-      "collapse": "timestamp:10"
-    },
-    {
-      "url": "www.hendry-schools.org/",
-      "from": "20170101",
-      "to": "20260930",
-      "filter": [
-        "statuscode:200"
-      ],
-      "collapse": "timestamp:10"
-    },
-    {
-      "url": "www.hollandalesd.org/",
-      "from": "20170101",
-      "to": "20260930",
-      "filter": [
-        "statuscode:200"
-      ],
-      "collapse": "timestamp:10"
-    },
-    {
-      "url": "www.kerrvilleisd.net/",
-      "from": "20170101",
-      "to": "20260930",
-      "filter": [
-        "statuscode:200"
-      ],
-      "collapse": "timestamp:10"
-    },
-    {
-      "url": "www.londonisd.net/",
-      "from": "20170101",
-      "to": "20260930",
-      "filter": [
-        "statuscode:200"
-      ],
-      "collapse": "timestamp:10"
-    },
-    {
-      "url": "www.mathisisd.org/",
-      "from": "20170101",
-      "to": "20260930",
-      "filter": [
-        "statuscode:200"
-      ],
-      "collapse": "timestamp:10"
-    },
-    {
-      "url": "www.mvusd.net/",
-      "from": "20170101",
-      "to": "20260930",
-      "filter": [
-        "statuscode:200"
-      ],
-      "collapse": "timestamp:10"
-    },
-    {
-      "url": "www.murrieta.k12.ca.us/",
-      "from": "20170101",
-      "to": "20260930",
-      "filter": [
-        "statuscode:200"
-      ],
-      "collapse": "timestamp:10"
-    },
-    {
-      "url": "www.nurseryisd.org/",
-      "from": "20170101",
-      "to": "20260930",
-      "filter": [
-        "statuscode:200"
-      ],
-      "collapse": "timestamp:10"
-    },
-    {
-      "url": "www.ouhsd.org/",
-      "from": "20170101",
-      "to": "20260930",
-      "filter": [
-        "statuscode:200"
-      ],
-      "collapse": "timestamp:10"
-    },
-    {
-      "url": "www.psusd.us/",
-      "from": "20170101",
-      "to": "20260930",
-      "filter": [
-        "statuscode:200"
-      ],
-      "collapse": "timestamp:10"
-    },
-    {
-      "url": "www.ramirezcsd.net/",
-      "from": "20170101",
-      "to": "20260930",
-      "filter": [
-        "statuscode:200"
-      ],
-      "collapse": "timestamp:10"
-    },
-    {
-      "url": "www.raymondvilleisd.org/",
-      "from": "20170101",
-      "to": "20260930",
-      "filter": [
-        "statuscode:200"
-      ],
-      "collapse": "timestamp:10"
-    },
-    {
-      "url": "www.riversideunified.org/",
-      "from": "20170101",
-      "to": "20260930",
-      "filter": [
-        "statuscode:200"
-      ],
-      "collapse": "timestamp:10"
-    },
-    {
-      "url": "www.rmaschools.org/",
-      "from": "20170101",
-      "to": "20260930",
-      "filter": [
-        "statuscode:200"
-      ],
-      "collapse": "timestamp:10"
-    },
-    {
-      "url": "www.ryss.org/",
-      "from": "20170101",
-      "to": "20260930",
-      "filter": [
-        "statuscode:200"
-      ],
-      "collapse": "timestamp:10"
-    },
-    {
-      "url": "www.seisd.net/",
-      "from": "20170101",
-      "to": "20260930",
-      "filter": [
-        "statuscode:200"
-      ],
-      "collapse": "timestamp:10"
-    },
-    {
-      "url": "www.srtx.org/",
-      "from": "20170101",
-      "to": "20260930",
-      "filter": [
-        "statuscode:200"
-      ],
-      "collapse": "timestamp:10"
-    },
-    {
-      "url": "www.sierrablancaisd.net/",
-      "from": "20170101",
-      "to": "20260930",
-      "filter": [
-        "statuscode:200"
-      ],
-      "collapse": "timestamp:10"
-    },
-    {
-      "url": "www.stisd.net/",
-      "from": "20170101",
-      "to": "20260930",
-      "filter": [
-        "statuscode:200"
-      ],
-      "collapse": "timestamp:10"
-    },
-    {
-      "url": "www.tvusd.k12.ca.us/",
-      "from": "20170101",
-      "to": "20260930",
-      "filter": [
-        "statuscode:200"
-      ],
-      "collapse": "timestamp:10"
-    },
-    {
-      "url": "www.wisd.net/",
-      "from": "20170101",
-      "to": "20260930",
-      "filter": [
-        "statuscode:200"
-      ],
-      "collapse": "timestamp:10"
-    },
-    {
-      "url": "www.aliceisd.net/en-US",
-      "from": "20170101",
-      "to": "20260930",
-      "filter": [
-        "statuscode:200"
-      ],
-      "collapse": "timestamp:10"
-    },
-    {
-      "url": "www.bwsd.org/en-US",
-      "from": "20170101",
-      "to": "20260930",
-      "filter": [
-        "statuscode:200"
-      ],
-      "collapse": "timestamp:10"
-    },
-    {
-      "url": "www.sd148.org/en-US",
-      "from": "20170101",
-      "to": "20260930",
-      "filter": [
-        "statuscode:200"
-      ],
-      "collapse": "timestamp:10"
-    },
-    {
-      "url": "www.industrialisd.org/en-US",
-      "from": "20170101",
-      "to": "20260930",
-      "filter": [
-        "statuscode:200"
-      ],
-      "collapse": "timestamp:10"
-    },
-    {
-      "url": "www.stbobcats.net/en-US",
-      "from": "20170101",
-      "to": "20260930",
-      "filter": [
-        "statuscode:200"
-      ],
-      "collapse": "timestamp:10"
-    },
-    {
-      "url": "www.valverde.edu/en-US",
-      "from": "20170101",
-      "to": "20260930",
-      "filter": [
-        "statuscode:200"
-      ],
-      "collapse": "timestamp:10"
-    },
-    {
-      "url": "www.kxxv.com/weather/school-closings-delays",
-      "from": "20170101",
-      "to": "20260930",
-      "filter": [
-        "statuscode:200"
-      ],
-      "collapse": "timestamp:10"
-    },
-    {
-      "url": "www.alvordschools.org/",
-      "from": "20170101",
-      "to": "20260930",
-      "filter": [
-        "statuscode:200"
-      ],
-      "collapse": "timestamp:10"
-    },
-    {
-      "url": "www.alvordschools.org/api/popup-alerts",
-      "from": "20170101",
-      "to": "20260930",
-      "filter": [
-        "statuscode:200"
-      ],
-      "collapse": "timestamp:10"
-    },
-    {
-      "url": "www.beevilleisd.net/",
-      "from": "20170101",
-      "to": "20260930",
-      "filter": [
-        "statuscode:200"
-      ],
-      "collapse": "timestamp:10"
-    },
-    {
-      "url": "www.beevilleisd.net/api/popup-alerts",
-      "from": "20170101",
-      "to": "20260930",
-      "filter": [
-        "statuscode:200"
-      ],
-      "collapse": "timestamp:10"
-    },
-    {
-      "url": "www.calhounflschools.org/",
-      "from": "20170101",
-      "to": "20260930",
-      "filter": [
-        "statuscode:200"
-      ],
-      "collapse": "timestamp:10"
-    },
-    {
-      "url": "www.calhounflschools.org/api/popup-alerts",
-      "from": "20170101",
-      "to": "20260930",
-      "filter": [
-        "statuscode:200"
-      ],
-      "collapse": "timestamp:10"
-    },
-    {
-      "url": "www.cvusd.us/",
-      "from": "20170101",
-      "to": "20260930",
-      "filter": [
-        "statuscode:200"
-      ],
-      "collapse": "timestamp:10"
-    },
-    {
-      "url": "www.cvusd.us/api/popup-alerts",
-      "from": "20170101",
-      "to": "20260930",
-      "filter": [
-        "statuscode:200"
-      ],
-      "collapse": "timestamp:10"
-    },
-    {
-      "url": "www.ccaisd.net/",
-      "from": "20170101",
-      "to": "20260930",
-      "filter": [
-        "statuscode:200"
-      ],
-      "collapse": "timestamp:10"
-    },
-    {
-      "url": "www.ccaisd.net/api/popup-alerts",
-      "from": "20170101",
-      "to": "20260930",
-      "filter": [
-        "statuscode:200"
-      ],
-      "collapse": "timestamp:10"
-    },
-    {
-      "url": "www.arapahoeschools.com/",
-      "from": "20170101",
-      "to": "20260930",
-      "filter": [
-        "statuscode:200"
-      ],
-      "collapse": "timestamp:10"
-    },
-    {
-      "url": "www.arapahoeschools.com/api/popup-alerts",
-      "from": "20170101",
-      "to": "20260930",
-      "filter": [
-        "statuscode:200"
-      ],
-      "collapse": "timestamp:10"
-    },
-    {
-      "url": "www.hamiltonfl.com/",
-      "from": "20170101",
-      "to": "20260930",
-      "filter": [
-        "statuscode:200"
-      ],
-      "collapse": "timestamp:10"
-    },
-    {
-      "url": "www.hamiltonfl.com/api/popup-alerts",
-      "from": "20170101",
-      "to": "20260930",
-      "filter": [
-        "statuscode:200"
-      ],
-      "collapse": "timestamp:10"
-    },
-    {
-      "url": "www.hancockschools.net/",
-      "from": "20170101",
-      "to": "20260930",
-      "filter": [
-        "statuscode:200"
-      ],
-      "collapse": "timestamp:10"
-    },
-    {
-      "url": "www.hancockschools.net/api/popup-alerts",
-      "from": "20170101",
-      "to": "20260930",
-      "filter": [
-        "statuscode:200"
-      ],
-      "collapse": "timestamp:10"
-    },
-    {
-      "url": "www.saritaschool.net/",
-      "from": "20170101",
-      "to": "20260930",
-      "filter": [
-        "statuscode:200"
-      ],
-      "collapse": "timestamp:10"
-    },
-    {
-      "url": "www.saritaschool.net/api/popup-alerts",
-      "from": "20170101",
-      "to": "20260930",
-      "filter": [
-        "statuscode:200"
-      ],
-      "collapse": "timestamp:10"
-    },
-    {
-      "url": "www.libbyschools.org/",
-      "from": "20170101",
-      "to": "20260930",
-      "filter": [
-        "statuscode:200"
-      ],
-      "collapse": "timestamp:10"
-    },
-    {
-      "url": "www.libbyschools.org/api/popup-alerts",
-      "from": "20170101",
-      "to": "20260930",
-      "filter": [
-        "statuscode:200"
-      ],
-      "collapse": "timestamp:10"
-    },
-    {
-      "url": "www.pawneeisd.net/",
-      "from": "20170101",
-      "to": "20260930",
-      "filter": [
-        "statuscode:200"
-      ],
-      "collapse": "timestamp:10"
-    },
-    {
-      "url": "www.pawneeisd.net/api/popup-alerts",
-      "from": "20170101",
-      "to": "20260930",
-      "filter": [
-        "statuscode:200"
-      ],
-      "collapse": "timestamp:10"
-    },
-    {
-      "url": "www.pettusisd.org/",
-      "from": "20170101",
-      "to": "20260930",
-      "filter": [
-        "statuscode:200"
-      ],
-      "collapse": "timestamp:10"
-    },
-    {
-      "url": "www.pettusisd.org/api/popup-alerts",
-      "from": "20170101",
-      "to": "20260930",
-      "filter": [
-        "statuscode:200"
-      ],
-      "collapse": "timestamp:10"
-    },
-    {
-      "url": "www.paisd.net/",
-      "from": "20170101",
-      "to": "20260930",
-      "filter": [
-        "statuscode:200"
-      ],
-      "collapse": "timestamp:10"
-    },
-    {
-      "url": "www.paisd.net/api/popup-alerts",
-      "from": "20170101",
-      "to": "20260930",
-      "filter": [
-        "statuscode:200"
-      ],
-      "collapse": "timestamp:10"
-    },
-    {
-      "url": "www.premontisd.net/",
-      "from": "20170101",
-      "to": "20260930",
-      "filter": [
-        "statuscode:200"
-      ],
-      "collapse": "timestamp:10"
-    },
-    {
-      "url": "www.premontisd.net/api/popup-alerts",
-      "from": "20170101",
-      "to": "20260930",
-      "filter": [
-        "statuscode:200"
-      ],
-      "collapse": "timestamp:10"
-    },
-    {
-      "url": "www.ricardoisd.us/",
-      "from": "20170101",
-      "to": "20260930",
-      "filter": [
-        "statuscode:200"
-      ],
-      "collapse": "timestamp:10"
-    },
-    {
-      "url": "www.ricardoisd.us/api/popup-alerts",
-      "from": "20170101",
-      "to": "20260930",
-      "filter": [
-        "statuscode:200"
-      ],
-      "collapse": "timestamp:10"
-    },
-    {
-      "url": "www.spisd.org/",
-      "from": "20170101",
-      "to": "20260930",
-      "filter": [
-        "statuscode:200"
-      ],
-      "collapse": "timestamp:10"
-    },
-    {
-      "url": "www.spisd.org/api/popup-alerts",
-      "from": "20170101",
-      "to": "20260930",
-      "filter": [
-        "statuscode:200"
-      ],
-      "collapse": "timestamp:10"
-    },
-    {
-      "url": "www.webbcisd.org/",
-      "from": "20170101",
-      "to": "20260930",
-      "filter": [
-        "statuscode:200"
-      ],
-      "collapse": "timestamp:10"
-    },
-    {
-      "url": "www.webbcisd.org/api/popup-alerts",
-      "from": "20170101",
-      "to": "20260930",
-      "filter": [
-        "statuscode:200"
-      ],
-      "collapse": "timestamp:10"
-    },
-    {
-      "url": "www.davis.k12.ut.us/fs/pages/*",
-      "from": "20180101",
-      "to": "20260930",
-      "filter": [
-        "statuscode:200"
-      ]
-    },
-    {
-      "url": "www.ogdensd.org/fs/pages/*",
-      "from": "20180101",
-      "to": "20260930",
-      "filter": [
-        "statuscode:200"
-      ]
-    },
-    {
-      "url": "www.wtsp.com/closings",
-      "from": "20140101",
-      "to": "20260930"
-    },
-    {
-      "url": "wtsp.com/weather/closings*",
-      "from": "20140101",
-      "to": "20260930"
-    },
-    {
-      "url": "www.firstcoastnews.com/closings",
-      "from": "20140101",
-      "to": "20260930"
-    },
-    {
-      "url": "firstcoastnews.com/weather/closings*",
-      "from": "20140101",
-      "to": "20260930"
-    }
-  ],
-  "snapshots": [
-    {
-      "timestamp": "20230807182339",
-      "url": "https://www.judsonisd.org/"
-    },
-    {
-      "timestamp": "20230807171802",
-      "url": "https://www.judsonisd.org/cms/Tools/OnScreenAlerts/UserControls/OnScreenAlertDialogListWrapper.aspx?OnScreenAlertCookie=&SiteID=4&_=1691428681880"
-    },
-    {
-      "timestamp": "20210801231051",
-      "url": "https://www.harlandale.net/"
-    },
-    {
-      "timestamp": "20210801232004",
-      "url": "https://www.harlandale.net/cms/Tools/OnScreenAlerts/UserControls/OnScreenAlertDialogListWrapper.aspx?OnScreenAlertCookie=&SiteID=4&_=1627859986869"
-    },
-    {
-      "timestamp": "20220508110231",
-      "url": "https://www.harlandale.net/"
-    },
-    {
-      "timestamp": "20220508090416",
-      "url": "https://www.harlandale.net/cms/Tools/OnScreenAlerts/UserControls/OnScreenAlertDialogListWrapper.aspx?OnScreenAlertCookie=&SiteID=4&_=1651878160607"
-    },
-    {
-      "timestamp": "20211109000846",
-      "url": "https://www.hobson.k12.mt.us/"
-    },
-    {
-      "timestamp": "20211109030146",
-      "url": "https://www.hobson.k12.mt.us/cms/Tools/OnScreenAlerts/UserControls/OnScreenAlertDialogListWrapper.aspx?OnScreenAlertCookie=&SiteID=4&_=1636426885854"
-    },
-    {
-      "timestamp": "20220902010920",
-      "url": "https://www.hobson.k12.mt.us/"
-    },
-    {
-      "timestamp": "20220902011331",
-      "url": "https://www.hobson.k12.mt.us/cms/Tools/OnScreenAlerts/UserControls/OnScreenAlertDialogListWrapper.aspx?OnScreenAlertCookie=&SiteID=4&_=1662081211326"
-    },
-    {
-      "timestamp": "20210325051601",
-      "url": "https://www.hsd3.org/"
-    },
-    {
-      "timestamp": "20210325050352",
-      "url": "https://www.hsd3.org/cms/Tools/OnScreenAlerts/UserControls/OnScreenAlertDialogListWrapper.aspx?OnScreenAlertCookie="
-    },
-    {
-      "timestamp": "20211230050323",
-      "url": "https://www.hsd3.org/"
-    },
-    {
-      "timestamp": "20211230045744",
-      "url": "https://www.hsd3.org/cms/Tools/OnScreenAlerts/UserControls/OnScreenAlertDialogListWrapper.aspx?OnScreenAlertCookie="
-    }
-  ]
+ "cdx": [
+  {
+   "url": "www.gilchristschools.org/",
+   "from": "20170101",
+   "to": "20260930",
+   "filter": [
+    "statuscode:200"
+   ],
+   "collapse": "timestamp:10"
+  },
+  {
+   "url": "www.gladesedu.org/",
+   "from": "20170101",
+   "to": "20260930",
+   "filter": [
+    "statuscode:200"
+   ],
+   "collapse": "timestamp:10"
+  },
+  {
+   "url": "www.hardee.k12.fl.us/",
+   "from": "20170101",
+   "to": "20260930",
+   "filter": [
+    "statuscode:200"
+   ],
+   "collapse": "timestamp:10"
+  },
+  {
+   "url": "www.hemetusd.org/",
+   "from": "20170101",
+   "to": "20260930",
+   "filter": [
+    "statuscode:200"
+   ],
+   "collapse": "timestamp:10"
+  },
+  {
+   "url": "www.lyfordcisd.net/",
+   "from": "20170101",
+   "to": "20260930",
+   "filter": [
+    "statuscode:200"
+   ],
+   "collapse": "timestamp:10"
+  },
+  {
+   "url": "www.montealtoisd.org/",
+   "from": "20170101",
+   "to": "20260930",
+   "filter": [
+    "statuscode:200"
+   ],
+   "collapse": "timestamp:10"
+  },
+  {
+   "url": "www.ocesd.net/",
+   "from": "20170101",
+   "to": "20260930",
+   "filter": [
+    "statuscode:200"
+   ],
+   "collapse": "timestamp:10"
+  },
+  {
+   "url": "www.trisd.org/",
+   "from": "20170101",
+   "to": "20260930",
+   "filter": [
+    "statuscode:200"
+   ],
+   "collapse": "timestamp:10"
+  },
+  {
+   "url": "www.uintah.net/",
+   "from": "20170101",
+   "to": "20260930",
+   "filter": [
+    "statuscode:200"
+   ],
+   "collapse": "timestamp:10"
+  },
+  {
+   "url": "www.bradfordschools.org/",
+   "from": "20170101",
+   "to": "20260930",
+   "filter": [
+    "statuscode:200"
+   ],
+   "collapse": "timestamp:10"
+  },
+  {
+   "url": "www.d181.k12.id.us/",
+   "from": "20170101",
+   "to": "20260930",
+   "filter": [
+    "statuscode:200"
+   ],
+   "collapse": "timestamp:10"
+  },
+  {
+   "url": "www.riversideunified.org/",
+   "from": "20170101",
+   "to": "20260930",
+   "filter": [
+    "statuscode:200"
+   ],
+   "collapse": "timestamp:10"
+  },
+  {
+   "url": "www.ryss.org/",
+   "from": "20170101",
+   "to": "20260930",
+   "filter": [
+    "statuscode:200"
+   ],
+   "collapse": "timestamp:10"
+  },
+  {
+   "url": "www.sierrablancaisd.net/",
+   "from": "20170101",
+   "to": "20260930",
+   "filter": [
+    "statuscode:200"
+   ],
+   "collapse": "timestamp:10"
+  },
+  {
+   "url": "www.beevilleisd.net/",
+   "from": "20170101",
+   "to": "20260930",
+   "filter": [
+    "statuscode:200"
+   ],
+   "collapse": "timestamp:10"
+  },
+  {
+   "url": "www.cvusd.us/api/popup-alerts",
+   "from": "20170101",
+   "to": "20260930",
+   "filter": [
+    "statuscode:200"
+   ],
+   "collapse": "timestamp:10"
+  },
+  {
+   "url": "www.arapahoeschools.com/api/popup-alerts",
+   "from": "20170101",
+   "to": "20260930",
+   "filter": [
+    "statuscode:200"
+   ],
+   "collapse": "timestamp:10"
+  },
+  {
+   "url": "www.ricardoisd.us/",
+   "from": "20170101",
+   "to": "20260930",
+   "filter": [
+    "statuscode:200"
+   ],
+   "collapse": "timestamp:10"
+  },
+  {
+   "url": "www.wtsp.com/closings",
+   "from": "20140101",
+   "to": "20260930"
+  },
+  {
+   "url": "www.firstcoastnews.com/closings",
+   "from": "20140101",
+   "to": "20260930"
+  }
+ ],
+ "snapshots": [
+  {
+   "timestamp": "20230222130000",
+   "url": "https://www.uintah.net/",
+   "station": "apptegy-uintah-ut",
+   "why": "Wednesday 22 February 2023, the Wasatch Front snowstorm: FOX 13's typed list (captured 2023-02-22 07:23 and 2023-02-26 22:06 UTC) names this district's remote day, delay or advisory"
+  },
+  {
+   "timestamp": "20230223130000",
+   "url": "https://www.uintah.net/",
+   "station": "apptegy-uintah-ut",
+   "why": "Thursday 23 February 2023, the storm's second day (FOX 13's list names Tooele, Jordan, Granite, Murray and Canyons)"
+  },
+  {
+   "timestamp": "20221213130000",
+   "url": "https://www.uintah.net/",
+   "station": "apptegy-uintah-ut",
+   "why": "Tuesday 13 December 2022: FOX 13's typed list (captured 2022-12-13 03:08 UTC) says all Uintah School District schools will delay opening two hours"
+  },
+  {
+   "timestamp": "20210216150000",
+   "url": "https://www.scucisd.org/",
+   "station": "apptegy-scuc-tx",
+   "why": "the February 2021 freeze (San Antonio districts closed 15-19 February)"
+  },
+  {
+   "timestamp": "20230201150000",
+   "url": "https://www.scucisd.org/",
+   "station": "apptegy-scuc-tx",
+   "why": "the ice storm of 30 January - 2 February 2023"
+  },
+  {
+   "timestamp": "20240116150000",
+   "url": "https://www.scucisd.org/",
+   "station": "apptegy-scuc-tx",
+   "why": "the hard freeze of 16 January 2024"
+  },
+  {
+   "timestamp": "20250121150000",
+   "url": "https://www.scucisd.org/",
+   "station": "apptegy-scuc-tx",
+   "why": "the snow and ice of 21 January 2025"
+  },
+  {
+   "timestamp": "20210216150000",
+   "url": "https://www.ahisd.net/",
+   "station": "apptegy-alamo-heights-tx",
+   "why": "the February 2021 freeze (San Antonio districts closed 15-19 February)"
+  },
+  {
+   "timestamp": "20230201150000",
+   "url": "https://www.ahisd.net/",
+   "station": "apptegy-alamo-heights-tx",
+   "why": "the ice storm of 30 January - 2 February 2023"
+  },
+  {
+   "timestamp": "20240116150000",
+   "url": "https://www.ahisd.net/",
+   "station": "apptegy-alamo-heights-tx",
+   "why": "the hard freeze of 16 January 2024"
+  },
+  {
+   "timestamp": "20250121150000",
+   "url": "https://www.ahisd.net/",
+   "station": "apptegy-alamo-heights-tx",
+   "why": "the snow and ice of 21 January 2025"
+  },
+  {
+   "timestamp": "20210216150000",
+   "url": "https://www.mvisd.com/",
+   "station": "edlio-medina-valley-tx",
+   "why": "the February 2021 freeze (San Antonio districts closed 15-19 February)"
+  },
+  {
+   "timestamp": "20230201150000",
+   "url": "https://www.mvisd.com/",
+   "station": "edlio-medina-valley-tx",
+   "why": "the ice storm of 30 January - 2 February 2023"
+  },
+  {
+   "timestamp": "20240116150000",
+   "url": "https://www.mvisd.com/",
+   "station": "edlio-medina-valley-tx",
+   "why": "the hard freeze of 16 January 2024"
+  },
+  {
+   "timestamp": "20250121150000",
+   "url": "https://www.mvisd.com/",
+   "station": "edlio-medina-valley-tx",
+   "why": "the snow and ice of 21 January 2025"
+  },
+  {
+   "timestamp": "20210216150000",
+   "url": "https://www.ecisd.net/",
+   "station": "finalsite-east-central-tx",
+   "why": "the February 2021 freeze (San Antonio districts closed 15-19 February)"
+  },
+  {
+   "timestamp": "20230201150000",
+   "url": "https://www.ecisd.net/",
+   "station": "finalsite-east-central-tx",
+   "why": "the ice storm of 30 January - 2 February 2023"
+  },
+  {
+   "timestamp": "20240116150000",
+   "url": "https://www.ecisd.net/",
+   "station": "finalsite-east-central-tx",
+   "why": "the hard freeze of 16 January 2024"
+  },
+  {
+   "timestamp": "20250121150000",
+   "url": "https://www.ecisd.net/",
+   "station": "finalsite-east-central-tx",
+   "why": "the snow and ice of 21 January 2025"
+  },
+  {
+   "timestamp": "20210216150000",
+   "url": "https://www.southsanisd.net/",
+   "station": "finalsite-south-san-antonio-tx",
+   "why": "the February 2021 freeze (San Antonio districts closed 15-19 February)"
+  },
+  {
+   "timestamp": "20230201150000",
+   "url": "https://www.southsanisd.net/",
+   "station": "finalsite-south-san-antonio-tx",
+   "why": "the ice storm of 30 January - 2 February 2023"
+  },
+  {
+   "timestamp": "20240116150000",
+   "url": "https://www.southsanisd.net/",
+   "station": "finalsite-south-san-antonio-tx",
+   "why": "the hard freeze of 16 January 2024"
+  },
+  {
+   "timestamp": "20250121150000",
+   "url": "https://www.southsanisd.net/",
+   "station": "finalsite-south-san-antonio-tx",
+   "why": "the snow and ice of 21 January 2025"
+  },
+  {
+   "timestamp": "20210216150000",
+   "url": "https://www.kerrvilleisd.net/",
+   "station": "finalsite-kerrville-tx",
+   "why": "the February 2021 freeze (San Antonio districts closed 15-19 February)"
+  },
+  {
+   "timestamp": "20230201150000",
+   "url": "https://www.kerrvilleisd.net/",
+   "station": "finalsite-kerrville-tx",
+   "why": "the ice storm of 30 January - 2 February 2023"
+  },
+  {
+   "timestamp": "20240116150000",
+   "url": "https://www.kerrvilleisd.net/",
+   "station": "finalsite-kerrville-tx",
+   "why": "the hard freeze of 16 January 2024"
+  },
+  {
+   "timestamp": "20250121150000",
+   "url": "https://www.kerrvilleisd.net/",
+   "station": "finalsite-kerrville-tx",
+   "why": "the snow and ice of 21 January 2025"
+  },
+  {
+   "timestamp": "20210216150000",
+   "url": "https://www.boerneisd.net/",
+   "station": "smartsites-boerne-tx",
+   "why": "the February 2021 freeze (San Antonio districts closed 15-19 February)"
+  },
+  {
+   "timestamp": "20230201150000",
+   "url": "https://www.boerneisd.net/",
+   "station": "smartsites-boerne-tx",
+   "why": "the ice storm of 30 January - 2 February 2023"
+  },
+  {
+   "timestamp": "20240116150000",
+   "url": "https://www.boerneisd.net/",
+   "station": "smartsites-boerne-tx",
+   "why": "the hard freeze of 16 January 2024"
+  },
+  {
+   "timestamp": "20250121150000",
+   "url": "https://www.boerneisd.net/",
+   "station": "smartsites-boerne-tx",
+   "why": "the snow and ice of 21 January 2025"
+  },
+  {
+   "timestamp": "20221223120000",
+   "url": "https://www.eriesd.org/",
+   "station": "apptegy-erie-pa",
+   "why": "the Christmas 2022 blizzard (NWS winter warnings over Erie County)"
+  },
+  {
+   "timestamp": "20240119120000",
+   "url": "https://www.eriesd.org/",
+   "station": "apptegy-erie-pa",
+   "why": "Erie storm day 2024-01-19"
+  },
+  {
+   "timestamp": "20241203120000",
+   "url": "https://www.eriesd.org/",
+   "station": "apptegy-erie-pa",
+   "why": "the lake-effect snow of 2-6 December 2024"
+  },
+  {
+   "timestamp": "20221223120000",
+   "url": "https://www.wcsdpa.org/",
+   "station": "apptegy-warren-county-pa",
+   "why": "the Christmas 2022 blizzard (NWS winter warnings over Erie County)"
+  },
+  {
+   "timestamp": "20240119120000",
+   "url": "https://www.wcsdpa.org/",
+   "station": "apptegy-warren-county-pa",
+   "why": "Erie storm day 2024-01-19"
+  },
+  {
+   "timestamp": "20241203120000",
+   "url": "https://www.wcsdpa.org/",
+   "station": "apptegy-warren-county-pa",
+   "why": "the lake-effect snow of 2-6 December 2024"
+  },
+  {
+   "timestamp": "20221223120000",
+   "url": "https://www.nwsd.org/",
+   "station": "apptegy-northwestern-pa",
+   "why": "the Christmas 2022 blizzard (NWS winter warnings over Erie County)"
+  },
+  {
+   "timestamp": "20240119120000",
+   "url": "https://www.nwsd.org/",
+   "station": "apptegy-northwestern-pa",
+   "why": "Erie storm day 2024-01-19"
+  },
+  {
+   "timestamp": "20241203120000",
+   "url": "https://www.nwsd.org/",
+   "station": "apptegy-northwestern-pa",
+   "why": "the lake-effect snow of 2-6 December 2024"
+  },
+  {
+   "timestamp": "20221223120000",
+   "url": "https://www.ucasd.org/",
+   "station": "apptegy-union-city-pa",
+   "why": "the Christmas 2022 blizzard (NWS winter warnings over Erie County)"
+  },
+  {
+   "timestamp": "20240119120000",
+   "url": "https://www.ucasd.org/",
+   "station": "apptegy-union-city-pa",
+   "why": "Erie storm day 2024-01-19"
+  },
+  {
+   "timestamp": "20241203120000",
+   "url": "https://www.ucasd.org/",
+   "station": "apptegy-union-city-pa",
+   "why": "the lake-effect snow of 2-6 December 2024"
+  },
+  {
+   "timestamp": "20221223120000",
+   "url": "https://www.fairviewschools.org/",
+   "station": "apptegy-fairview-pa",
+   "why": "the Christmas 2022 blizzard (NWS winter warnings over Erie County)"
+  },
+  {
+   "timestamp": "20240119120000",
+   "url": "https://www.fairviewschools.org/",
+   "station": "apptegy-fairview-pa",
+   "why": "Erie storm day 2024-01-19"
+  },
+  {
+   "timestamp": "20241203120000",
+   "url": "https://www.fairviewschools.org/",
+   "station": "apptegy-fairview-pa",
+   "why": "the lake-effect snow of 2-6 December 2024"
+  },
+  {
+   "timestamp": "20231025080847",
+   "url": "https://www.abc4.com/weather/closings/",
+   "station": "nexstar-ktvx",
+   "why": "storm day 2023-10-25 (market score 0.03)"
+  },
+  {
+   "timestamp": "20240509104457",
+   "url": "https://www.abc4.com/weather/closings/",
+   "station": "nexstar-ktvx",
+   "why": "storm day 2024-05-09 (market score 0.03)"
+  },
+  {
+   "timestamp": "20240507161709",
+   "url": "https://www.abc4.com/weather/closings/",
+   "station": "nexstar-ktvx",
+   "why": "storm day 2024-05-08 (market score 0.03)"
+  },
+  {
+   "timestamp": "20211018065519",
+   "url": "https://www.abc4.com/weather/closings/",
+   "station": "nexstar-ktvx",
+   "why": "storm day 2021-10-18 (market score 0.01)"
+  },
+  {
+   "timestamp": "20240521062953",
+   "url": "https://www.abc4.com/weather/closings/",
+   "station": "nexstar-ktvx",
+   "why": "storm day 2024-05-21 (market score 0.01)"
+  },
+  {
+   "timestamp": "20240523073628",
+   "url": "https://www.abc4.com/weather/closings/",
+   "station": "nexstar-ktvx",
+   "why": "storm day 2024-05-23 (market score 0.01)"
+  },
+  {
+   "timestamp": "20240503123140",
+   "url": "https://www.abc4.com/weather/closings/",
+   "station": "nexstar-ktvx",
+   "why": "storm day 2024-05-03 (market score 0.01)"
+  },
+  {
+   "timestamp": "20240417090303",
+   "url": "https://www.abc4.com/weather/closings/",
+   "station": "nexstar-ktvx",
+   "why": "storm day 2024-04-17 (market score 0.01)"
+  },
+  {
+   "timestamp": "20170828013210",
+   "url": "http://www.kens5.com:80/closings",
+   "station": "tegna-kens",
+   "why": "storm day 2017-08-28 (market score 0.04)"
+  },
+  {
+   "timestamp": "20230223150140",
+   "url": "https://www.nbclosangeles.com/weather/school-closings/",
+   "station": "nbc-owned-knbc",
+   "why": "storm day 2023-02-23 (market score 0.80)"
+  },
+  {
+   "timestamp": "20230329113405",
+   "url": "https://www.nbclosangeles.com/weather/school-closings/",
+   "station": "nbc-owned-knbc",
+   "why": "storm day 2023-03-29 (market score 0.65)"
+  },
+  {
+   "timestamp": "20210311042644",
+   "url": "https://www.nbclosangeles.com/weather/school-closings/",
+   "station": "nbc-owned-knbc",
+   "why": "storm day 2021-03-11 (market score 0.65)"
+  },
+  {
+   "timestamp": "20250127123815",
+   "url": "https://www.nbclosangeles.com/weather/school-closings/",
+   "station": "nbc-owned-knbc",
+   "why": "storm day 2025-01-27 (market score 0.45)"
+  },
+  {
+   "timestamp": "20250207080250",
+   "url": "https://www.nbclosangeles.com/weather/school-closings/",
+   "station": "nbc-owned-knbc",
+   "why": "storm day 2025-02-07 (market score 0.20)"
+  },
+  {
+   "timestamp": "20250204103636",
+   "url": "https://www.nbclosangeles.com/weather/school-closings/",
+   "station": "nbc-owned-knbc",
+   "why": "storm day 2025-02-04 (market score 0.20)"
+  },
+  {
+   "timestamp": "20250205191058",
+   "url": "https://www.nbclosangeles.com/weather/school-closings/",
+   "station": "nbc-owned-knbc",
+   "why": "storm day 2025-02-06 (market score 0.20)"
+  },
+  {
+   "timestamp": "20241124201707",
+   "url": "https://www.nbclosangeles.com/weather/school-closings/",
+   "station": "nbc-owned-knbc",
+   "why": "storm day 2024-11-25 (market score 0.20)"
+  },
+  {
+   "timestamp": "20250205091211",
+   "url": "https://www.nbclosangeles.com/weather/school-closings/",
+   "station": "nbc-owned-knbc",
+   "why": "storm day 2025-02-05 (market score 0.20)"
+  },
+  {
+   "timestamp": "20230104060606",
+   "url": "https://www.nbclosangeles.com/weather/school-closings/",
+   "station": "nbc-owned-knbc",
+   "why": "storm day 2023-01-04 (market score 0.20)"
+  },
+  {
+   "timestamp": "20250214024342",
+   "url": "https://www.nbclosangeles.com/weather/school-closings/",
+   "station": "nbc-owned-knbc",
+   "why": "storm day 2025-02-14 (market score 0.05)"
+  },
+  {
+   "timestamp": "20240404101406",
+   "url": "https://www.nbclosangeles.com/weather/school-closings/",
+   "station": "nbc-owned-knbc",
+   "why": "storm day 2024-04-04 (market score 0.05)"
+  },
+  {
+   "timestamp": "20240104145326",
+   "url": "https://www.nbclosangeles.com/weather/school-closings/",
+   "station": "nbc-owned-knbc",
+   "why": "storm day 2024-01-04 (market score 0.05)"
+  },
+  {
+   "timestamp": "20200311005251",
+   "url": "https://www.nbclosangeles.com/weather/school-closings/",
+   "station": "nbc-owned-knbc",
+   "why": "largest captures of its winter (20553 bytes, 1.41 x the winter's median of 14620)"
+  },
+  {
+   "timestamp": "20201228192621",
+   "url": "https://www.nbclosangeles.com/weather/school-closings/",
+   "station": "nbc-owned-knbc",
+   "why": "largest captures of its winter (22556 bytes, 1.41 x the winter's median of 16050)"
+  },
+  {
+   "timestamp": "20220114174556",
+   "url": "https://www.nbclosangeles.com/weather/school-closings/",
+   "station": "nbc-owned-knbc",
+   "why": "largest captures of its winter (21495 bytes, 1.37 x the winter's median of 15734)"
+  },
+  {
+   "timestamp": "20221104225316",
+   "url": "https://www.nbclosangeles.com/weather/school-closings/",
+   "station": "nbc-owned-knbc",
+   "why": "largest captures of its winter (63595 bytes, 1.34 x the winter's median of 47537)"
+  },
+  {
+   "timestamp": "20200309233840",
+   "url": "https://www.nbclosangeles.com/weather/school-closings/",
+   "station": "nbc-owned-knbc",
+   "why": "largest captures of its winter (19091 bytes, 1.31 x the winter's median of 14620)"
+  },
+  {
+   "timestamp": "20201203230819",
+   "url": "https://www.nbclosangeles.com/weather/school-closings/",
+   "station": "nbc-owned-knbc",
+   "why": "largest captures of its winter (20567 bytes, 1.28 x the winter's median of 16050)"
+  },
+  {
+   "timestamp": "20231213031735",
+   "url": "https://www.nbclosangeles.com/weather/school-closings/",
+   "station": "nbc-owned-knbc",
+   "why": "largest captures of its winter (54330 bytes, 1.27 x the winter's median of 42936)"
+  },
+  {
+   "timestamp": "20221118161834",
+   "url": "https://www.nbclosangeles.com/weather/school-closings/",
+   "station": "nbc-owned-knbc",
+   "why": "largest captures of its winter (60145 bytes, 1.27 x the winter's median of 47537)"
+  },
+  {
+   "timestamp": "20201108235656",
+   "url": "https://www.nbclosangeles.com/weather/school-closings/",
+   "station": "nbc-owned-knbc",
+   "why": "largest captures of its winter (20294 bytes, 1.26 x the winter's median of 16050)"
+  },
+  {
+   "timestamp": "20221115133048",
+   "url": "https://www.nbclosangeles.com/weather/school-closings/",
+   "station": "nbc-owned-knbc",
+   "why": "largest captures of its winter (59902 bytes, 1.26 x the winter's median of 47537)"
+  },
+  {
+   "timestamp": "20221125161031",
+   "url": "https://www.nbclosangeles.com/weather/school-closings/",
+   "station": "nbc-owned-knbc",
+   "why": "largest captures of its winter (59847 bytes, 1.26 x the winter's median of 47537)"
+  },
+  {
+   "timestamp": "20221123021901",
+   "url": "https://www.nbclosangeles.com/weather/school-closings/",
+   "station": "nbc-owned-knbc",
+   "why": "largest captures of its winter (59662 bytes, 1.26 x the winter's median of 47537)"
+  },
+  {
+   "timestamp": "20201204071418",
+   "url": "https://www.nbclosangeles.com/weather/school-closings/",
+   "station": "nbc-owned-knbc",
+   "why": "largest captures of its winter (20092 bytes, 1.25 x the winter's median of 16050)"
+  },
+  {
+   "timestamp": "20221109183721",
+   "url": "https://www.nbclosangeles.com/weather/school-closings/",
+   "station": "nbc-owned-knbc",
+   "why": "largest captures of its winter (59205 bytes, 1.25 x the winter's median of 47537)"
+  },
+  {
+   "timestamp": "20201204033405",
+   "url": "https://www.nbclosangeles.com/weather/school-closings/",
+   "station": "nbc-owned-knbc",
+   "why": "largest captures of its winter (19970 bytes, 1.24 x the winter's median of 16050)"
+  },
+  {
+   "timestamp": "20241106012048",
+   "url": "https://www.nbclosangeles.com/weather/school-closings/",
+   "station": "nbc-owned-knbc",
+   "why": "largest captures of its winter (67812 bytes, 1.24 x the winter's median of 54518)"
+  },
+  {
+   "timestamp": "20231113114526",
+   "url": "https://www.nbclosangeles.com/weather/school-closings/",
+   "station": "nbc-owned-knbc",
+   "why": "largest captures of its winter (53363 bytes, 1.24 x the winter's median of 42936)"
+  },
+  {
+   "timestamp": "20231130073739",
+   "url": "https://www.nbclosangeles.com/weather/school-closings/",
+   "station": "nbc-owned-knbc",
+   "why": "largest captures of its winter (53348 bytes, 1.24 x the winter's median of 42936)"
+  },
+  {
+   "timestamp": "20241223021317",
+   "url": "https://www.nbclosangeles.com/weather/school-closings/",
+   "station": "nbc-owned-knbc",
+   "why": "largest captures of its winter (67639 bytes, 1.24 x the winter's median of 54518)"
+  },
+  {
+   "timestamp": "20241224194554",
+   "url": "https://www.nbclosangeles.com/weather/school-closings/",
+   "station": "nbc-owned-knbc",
+   "why": "largest captures of its winter (67471 bytes, 1.24 x the winter's median of 54518)"
+  },
+  {
+   "timestamp": "20250203133657",
+   "url": "https://www.nbclosangeles.com/weather/school-closings/",
+   "station": "nbc-owned-knbc",
+   "why": "largest captures of its winter (67278 bytes, 1.23 x the winter's median of 54518)"
+  },
+  {
+   "timestamp": "20221104121919",
+   "url": "https://www.nbclosangeles.com/weather/school-closings/",
+   "station": "nbc-owned-knbc",
+   "why": "largest captures of its winter (58484 bytes, 1.23 x the winter's median of 47537)"
+  },
+  {
+   "timestamp": "20221129163044",
+   "url": "https://www.nbclosangeles.com/weather/school-closings/",
+   "station": "nbc-owned-knbc",
+   "why": "largest captures of its winter (58383 bytes, 1.23 x the winter's median of 47537)"
+  },
+  {
+   "timestamp": "20221129132645",
+   "url": "https://www.nbclosangeles.com/weather/school-closings/",
+   "station": "nbc-owned-knbc",
+   "why": "largest captures of its winter (58368 bytes, 1.23 x the winter's median of 47537)"
+  },
+  {
+   "timestamp": "20221203111146",
+   "url": "https://www.nbclosangeles.com/weather/school-closings/",
+   "station": "nbc-owned-knbc",
+   "why": "largest captures of its winter (58361 bytes, 1.23 x the winter's median of 47537)"
+  },
+  {
+   "timestamp": "20221202181841",
+   "url": "https://www.nbclosangeles.com/weather/school-closings/",
+   "station": "nbc-owned-knbc",
+   "why": "largest captures of its winter (58348 bytes, 1.23 x the winter's median of 47537)"
+  },
+  {
+   "timestamp": "20210116205023",
+   "url": "https://www.nbclosangeles.com/weather/school-closings/",
+   "station": "nbc-owned-knbc",
+   "why": "largest captures of its winter (19680 bytes, 1.23 x the winter's median of 16050)"
+  },
+  {
+   "timestamp": "20201107091754",
+   "url": "https://www.nbcmiami.com/weather/school-closings/",
+   "station": "nbc-owned-wtvj",
+   "why": "largest captures of its winter (23152 bytes, 1.49 x the winter's median of 15505)"
+  },
+  {
+   "timestamp": "20200321173611",
+   "url": "https://www.nbcmiami.com/weather/school-closings/",
+   "station": "nbc-owned-wtvj",
+   "why": "largest captures of its winter (18047 bytes, 1.29 x the winter's median of 13961)"
+  },
+  {
+   "timestamp": "20240320154319",
+   "url": "https://www.nbcmiami.com/weather/school-closings/",
+   "station": "nbc-owned-wtvj",
+   "why": "largest captures of its winter (55405 bytes, 1.28 x the winter's median of 43232)"
+  },
+  {
+   "timestamp": "20240312144045",
+   "url": "https://www.nbcmiami.com/weather/school-closings/",
+   "station": "nbc-owned-wtvj",
+   "why": "largest captures of its winter (54935 bytes, 1.27 x the winter's median of 43232)"
+  },
+  {
+   "timestamp": "20240112013515",
+   "url": "https://www.nbcmiami.com/weather/school-closings/",
+   "station": "nbc-owned-wtvj",
+   "why": "largest captures of its winter (54779 bytes, 1.27 x the winter's median of 43232)"
+  },
+  {
+   "timestamp": "20240227173240",
+   "url": "https://www.nbcmiami.com/weather/school-closings/",
+   "station": "nbc-owned-wtvj",
+   "why": "largest captures of its winter (54714 bytes, 1.27 x the winter's median of 43232)"
+  },
+  {
+   "timestamp": "20240120023034",
+   "url": "https://www.nbcmiami.com/weather/school-closings/",
+   "station": "nbc-owned-wtvj",
+   "why": "largest captures of its winter (54455 bytes, 1.26 x the winter's median of 43232)"
+  },
+  {
+   "timestamp": "20200319154718",
+   "url": "https://www.nbcmiami.com/weather/school-closings/",
+   "station": "nbc-owned-wtvj",
+   "why": "largest captures of its winter (17572 bytes, 1.26 x the winter's median of 13961)"
+  },
+  {
+   "timestamp": "20231127134300",
+   "url": "https://www.nbcmiami.com/weather/school-closings/",
+   "station": "nbc-owned-wtvj",
+   "why": "largest captures of its winter (54385 bytes, 1.26 x the winter's median of 43232)"
+  },
+  {
+   "timestamp": "20240226015307",
+   "url": "https://www.nbcmiami.com/weather/school-closings/",
+   "station": "nbc-owned-wtvj",
+   "why": "largest captures of its winter (54359 bytes, 1.26 x the winter's median of 43232)"
+  },
+  {
+   "timestamp": "20240219003622",
+   "url": "https://www.nbcmiami.com/weather/school-closings/",
+   "station": "nbc-owned-wtvj",
+   "why": "largest captures of its winter (54358 bytes, 1.26 x the winter's median of 43232)"
+  },
+  {
+   "timestamp": "20240113025643",
+   "url": "https://www.nbcmiami.com/weather/school-closings/",
+   "station": "nbc-owned-wtvj",
+   "why": "largest captures of its winter (54293 bytes, 1.26 x the winter's median of 43232)"
+  },
+  {
+   "timestamp": "20240229135040",
+   "url": "https://www.nbcmiami.com/weather/school-closings/",
+   "station": "nbc-owned-wtvj",
+   "why": "largest captures of its winter (54242 bytes, 1.25 x the winter's median of 43232)"
+  },
+  {
+   "timestamp": "20240227030737",
+   "url": "https://www.nbcmiami.com/weather/school-closings/",
+   "station": "nbc-owned-wtvj",
+   "why": "largest captures of its winter (54235 bytes, 1.25 x the winter's median of 43232)"
+  },
+  {
+   "timestamp": "20240119032629",
+   "url": "https://www.nbcmiami.com/weather/school-closings/",
+   "station": "nbc-owned-wtvj",
+   "why": "largest captures of its winter (54177 bytes, 1.25 x the winter's median of 43232)"
+  },
+  {
+   "timestamp": "20231108124221",
+   "url": "https://www.nbcmiami.com/weather/school-closings/",
+   "station": "nbc-owned-wtvj",
+   "why": "largest captures of its winter (54014 bytes, 1.25 x the winter's median of 43232)"
+  },
+  {
+   "timestamp": "20241118061343",
+   "url": "https://www.nbcmiami.com/weather/school-closings/",
+   "station": "nbc-owned-wtvj",
+   "why": "largest captures of its winter (65710 bytes, 1.22 x the winter's median of 53734)"
+  },
+  {
+   "timestamp": "20241117172633",
+   "url": "https://www.nbcmiami.com/weather/school-closings/",
+   "station": "nbc-owned-wtvj",
+   "why": "largest captures of its winter (65606 bytes, 1.22 x the winter's median of 53734)"
+  },
+  {
+   "timestamp": "20201201231322",
+   "url": "https://www.nbcmiami.com/weather/school-closings/",
+   "station": "nbc-owned-wtvj",
+   "why": "largest captures of its winter (18896 bytes, 1.22 x the winter's median of 15505)"
+  },
+  {
+   "timestamp": "20250121060621",
+   "url": "https://www.nbcmiami.com/weather/school-closings/",
+   "station": "nbc-owned-wtvj",
+   "why": "largest captures of its winter (65398 bytes, 1.22 x the winter's median of 53734)"
+  },
+  {
+   "timestamp": "20250121024203",
+   "url": "https://www.nbcmiami.com/weather/school-closings/",
+   "station": "nbc-owned-wtvj",
+   "why": "largest captures of its winter (65326 bytes, 1.22 x the winter's median of 53734)"
+  },
+  {
+   "timestamp": "20241227102643",
+   "url": "https://www.nbcmiami.com/weather/school-closings/",
+   "station": "nbc-owned-wtvj",
+   "why": "largest captures of its winter (65272 bytes, 1.21 x the winter's median of 53734)"
+  },
+  {
+   "timestamp": "20241122120334",
+   "url": "https://www.nbcmiami.com/weather/school-closings/",
+   "station": "nbc-owned-wtvj",
+   "why": "largest captures of its winter (64869 bytes, 1.21 x the winter's median of 53734)"
+  },
+  {
+   "timestamp": "20250123192403",
+   "url": "https://www.nbcmiami.com/weather/school-closings/",
+   "station": "nbc-owned-wtvj",
+   "why": "largest captures of its winter (64748 bytes, 1.20 x the winter's median of 53734)"
+  },
+  {
+   "timestamp": "20241125021542",
+   "url": "https://www.nbcmiami.com/weather/school-closings/",
+   "station": "nbc-owned-wtvj",
+   "why": "largest captures of its winter (64374 bytes, 1.20 x the winter's median of 53734)"
+  },
+  {
+   "timestamp": "20250226185615",
+   "url": "https://www.nbcmiami.com/weather/school-closings/",
+   "station": "nbc-owned-wtvj",
+   "why": "largest captures of its winter (64292 bytes, 1.20 x the winter's median of 53734)"
+  },
+  {
+   "timestamp": "20250205083706",
+   "url": "https://www.nbcmiami.com/weather/school-closings/",
+   "station": "nbc-owned-wtvj",
+   "why": "largest captures of its winter (64251 bytes, 1.20 x the winter's median of 53734)"
+  },
+  {
+   "timestamp": "20250225052232",
+   "url": "https://www.nbcmiami.com/weather/school-closings/",
+   "station": "nbc-owned-wtvj",
+   "why": "largest captures of its winter (64224 bytes, 1.20 x the winter's median of 53734)"
+  },
+  {
+   "timestamp": "20250128181817",
+   "url": "https://www.nbcmiami.com/weather/school-closings/",
+   "station": "nbc-owned-wtvj",
+   "why": "largest captures of its winter (64183 bytes, 1.19 x the winter's median of 53734)"
+  },
+  {
+   "timestamp": "20250201154857",
+   "url": "https://www.nbcmiami.com/weather/school-closings/",
+   "station": "nbc-owned-wtvj",
+   "why": "largest captures of its winter (64091 bytes, 1.19 x the winter's median of 53734)"
+  },
+  {
+   "timestamp": "20201113020147",
+   "url": "https://www.nbcmiami.com/weather/school-closings/",
+   "station": "nbc-owned-wtvj",
+   "why": "largest captures of its winter (18360 bytes, 1.18 x the winter's median of 15505)"
+  },
+  {
+   "timestamp": "20250213191017",
+   "url": "https://www.nbcmiami.com/weather/school-closings/",
+   "station": "nbc-owned-wtvj",
+   "why": "largest captures of its winter (63271 bytes, 1.18 x the winter's median of 53734)"
+  },
+  {
+   "timestamp": "20250130082419",
+   "url": "https://www.nbcmiami.com/weather/school-closings/",
+   "station": "nbc-owned-wtvj",
+   "why": "largest captures of its winter (62783 bytes, 1.17 x the winter's median of 53734)"
+  },
+  {
+   "timestamp": "20201112014412",
+   "url": "https://www.nbcmiami.com/weather/school-closings/",
+   "station": "nbc-owned-wtvj",
+   "why": "largest captures of its winter (17886 bytes, 1.15 x the winter's median of 15505)"
+  },
+  {
+   "timestamp": "20221112045638",
+   "url": "https://www.nbcmiami.com/weather/school-closings/",
+   "station": "nbc-owned-wtvj",
+   "why": "largest captures of its winter (60147 bytes, 1.14 x the winter's median of 52800)"
+  },
+  {
+   "timestamp": "20221105075343",
+   "url": "https://www.nbcmiami.com/weather/school-closings/",
+   "station": "nbc-owned-wtvj",
+   "why": "largest captures of its winter (59773 bytes, 1.13 x the winter's median of 52800)"
+  },
+  {
+   "timestamp": "20221125163216",
+   "url": "https://www.nbcmiami.com/weather/school-closings/",
+   "station": "nbc-owned-wtvj",
+   "why": "largest captures of its winter (59377 bytes, 1.12 x the winter's median of 52800)"
+  },
+  {
+   "timestamp": "20221124062839",
+   "url": "https://www.nbcmiami.com/weather/school-closings/",
+   "station": "nbc-owned-wtvj",
+   "why": "largest captures of its winter (59165 bytes, 1.12 x the winter's median of 52800)"
+  },
+  {
+   "timestamp": "20221204082940",
+   "url": "https://www.nbcmiami.com/weather/school-closings/",
+   "station": "nbc-owned-wtvj",
+   "why": "largest captures of its winter (58971 bytes, 1.12 x the winter's median of 52800)"
+  },
+  {
+   "timestamp": "20221102150452",
+   "url": "https://www.nbcmiami.com/weather/school-closings/",
+   "station": "nbc-owned-wtvj",
+   "why": "largest captures of its winter (58966 bytes, 1.12 x the winter's median of 52800)"
+  },
+  {
+   "timestamp": "20230226183814",
+   "url": "https://www.nbcbayarea.com/weather/school-closings/",
+   "station": "nbc-owned-kntv",
+   "why": "storm day 2023-02-27 (market score 0.30)"
+  },
+  {
+   "timestamp": "20240301001120",
+   "url": "https://www.nbcbayarea.com/weather/school-closings/",
+   "station": "nbc-owned-kntv",
+   "why": "storm day 2024-03-01 (market score 0.18)"
+  },
+  {
+   "timestamp": "20210126074409",
+   "url": "https://www.nbcbayarea.com/weather/school-closings/",
+   "station": "nbc-owned-kntv",
+   "why": "storm day 2021-01-26 (market score 0.18)"
+  },
+  {
+   "timestamp": "20211224102915",
+   "url": "https://www.nbcbayarea.com/weather/school-closings/",
+   "station": "nbc-owned-kntv",
+   "why": "storm day 2021-12-24 (market score 0.18)"
+  },
+  {
+   "timestamp": "20211227043739",
+   "url": "https://www.nbcbayarea.com/weather/school-closings/",
+   "station": "nbc-owned-kntv",
+   "why": "storm day 2021-12-27 (market score 0.18)"
+  },
+  {
+   "timestamp": "20230307054436",
+   "url": "https://www.nbcbayarea.com/weather/school-closings/",
+   "station": "nbc-owned-kntv",
+   "why": "storm day 2023-03-07 (market score 0.05)"
+  },
+  {
+   "timestamp": "20230221035745",
+   "url": "https://www.nbcbayarea.com/weather/school-closings/",
+   "station": "nbc-owned-kntv",
+   "why": "storm day 2023-02-21 (market score 0.05)"
+  },
+  {
+   "timestamp": "20230102121708",
+   "url": "https://www.nbcbayarea.com/weather/school-closings/",
+   "station": "nbc-owned-kntv",
+   "why": "storm day 2023-01-02 (market score 0.05)"
+  },
+  {
+   "timestamp": "20240404115525",
+   "url": "https://www.nbcbayarea.com/weather/school-closings/",
+   "station": "nbc-owned-kntv",
+   "why": "storm day 2024-04-04 (market score 0.05)"
+  },
+  {
+   "timestamp": "20230329155212",
+   "url": "https://www.nbcbayarea.com/weather/school-closings/",
+   "station": "nbc-owned-kntv",
+   "why": "storm day 2023-03-29 (market score 0.05)"
+  },
+  {
+   "timestamp": "20230328090322",
+   "url": "https://www.nbcbayarea.com/weather/school-closings/",
+   "station": "nbc-owned-kntv",
+   "why": "storm day 2023-03-28 (market score 0.05)"
+  },
+  {
+   "timestamp": "20230306120826",
+   "url": "https://www.nbcbayarea.com/weather/school-closings/",
+   "station": "nbc-owned-kntv",
+   "why": "storm day 2023-03-06 (market score 0.05)"
+  },
+  {
+   "timestamp": "20210128022236",
+   "url": "https://www.nbcbayarea.com/weather/school-closings/",
+   "station": "nbc-owned-kntv",
+   "why": "storm day 2021-01-28 (market score 0.05)"
+  },
+  {
+   "timestamp": "20210310041256",
+   "url": "https://www.nbcbayarea.com/weather/school-closings/",
+   "station": "nbc-owned-kntv",
+   "why": "storm day 2021-03-10 (market score 0.05)"
+  },
+  {
+   "timestamp": "20210307201522",
+   "url": "https://www.nbcbayarea.com/weather/school-closings/",
+   "station": "nbc-owned-kntv",
+   "why": "storm day 2021-03-08 (market score 0.05)"
+  },
+  {
+   "timestamp": "20211214231618",
+   "url": "https://www.nbcbayarea.com/weather/school-closings/",
+   "station": "nbc-owned-kntv",
+   "why": "storm day 2021-12-15 (market score 0.05)"
+  },
+  {
+   "timestamp": "20210308205301",
+   "url": "https://www.nbcbayarea.com/weather/school-closings/",
+   "station": "nbc-owned-kntv",
+   "why": "storm day 2021-03-09 (market score 0.05)"
+  },
+  {
+   "timestamp": "20210314220954",
+   "url": "https://www.nbcbayarea.com/weather/school-closings/",
+   "station": "nbc-owned-kntv",
+   "why": "storm day 2021-03-15 (market score 0.05)"
+  },
+  {
+   "timestamp": "20211227195538",
+   "url": "https://www.nbcbayarea.com/weather/school-closings/",
+   "station": "nbc-owned-kntv",
+   "why": "storm day 2021-12-28 (market score 0.05)"
+  },
+  {
+   "timestamp": "20221201021616",
+   "url": "https://www.nbcbayarea.com/weather/school-closings/",
+   "station": "nbc-owned-kntv",
+   "why": "storm day 2022-12-01 (market score 0.02)"
+  },
+  {
+   "timestamp": "20220413132712",
+   "url": "https://www.nbcbayarea.com/weather/school-closings/",
+   "station": "nbc-owned-kntv",
+   "why": "storm day 2022-04-13 (market score 0.02)"
+  },
+  {
+   "timestamp": "20210117141841",
+   "url": "https://www.nbcbayarea.com/weather/school-closings/",
+   "station": "nbc-owned-kntv",
+   "why": "largest captures of its winter (22497 bytes, 1.48 x the winter's median of 15176)"
+  },
+  {
+   "timestamp": "20150223093315",
+   "url": "http://www.nbcbayarea.com:80/weather/school-closings/",
+   "station": "nbc-owned-kntv",
+   "why": "largest captures of its winter (22172 bytes, 1.46 x the winter's median of 15189)"
+  },
+  {
+   "timestamp": "20220224193353",
+   "url": "https://www.nbcbayarea.com/weather/school-closings/",
+   "station": "nbc-owned-kntv",
+   "why": "largest captures of its winter (21170 bytes, 1.43 x the winter's median of 14851)"
+  },
+  {
+   "timestamp": "20210119032206",
+   "url": "https://www.nbcbayarea.com/weather/school-closings/",
+   "station": "nbc-owned-kntv",
+   "why": "largest captures of its winter (21574 bytes, 1.42 x the winter's median of 15176)"
+  },
+  {
+   "timestamp": "20221210195523",
+   "url": "https://www.nbcbayarea.com/weather/school-closings/",
+   "station": "nbc-owned-kntv",
+   "why": "largest captures of its winter (73381 bytes, 1.41 x the winter's median of 51882)"
+  },
+  {
+   "timestamp": "20211213084931",
+   "url": "https://www.nbcbayarea.com/weather/school-closings/",
+   "station": "nbc-owned-kntv",
+   "why": "largest captures of its winter (20844 bytes, 1.40 x the winter's median of 14851)"
+  },
+  {
+   "timestamp": "20221210095427",
+   "url": "https://www.nbcbayarea.com/weather/school-closings/",
+   "station": "nbc-owned-kntv",
+   "why": "largest captures of its winter (72207 bytes, 1.39 x the winter's median of 51882)"
+  },
+  {
+   "timestamp": "20211204092248",
+   "url": "https://www.nbcbayarea.com/weather/school-closings/",
+   "station": "nbc-owned-kntv",
+   "why": "largest captures of its winter (20632 bytes, 1.39 x the winter's median of 14851)"
+  },
+  {
+   "timestamp": "20220226005957",
+   "url": "https://www.nbcbayarea.com/weather/school-closings/",
+   "station": "nbc-owned-kntv",
+   "why": "largest captures of its winter (20480 bytes, 1.38 x the winter's median of 14851)"
+  },
+  {
+   "timestamp": "20221211222745",
+   "url": "https://www.nbcbayarea.com/weather/school-closings/",
+   "station": "nbc-owned-kntv",
+   "why": "largest captures of its winter (71153 bytes, 1.37 x the winter's median of 51882)"
+  },
+  {
+   "timestamp": "20220121082522",
+   "url": "https://www.nbcbayarea.com/weather/school-closings/",
+   "station": "nbc-owned-kntv",
+   "why": "largest captures of its winter (20348 bytes, 1.37 x the winter's median of 14851)"
+  },
+  {
+   "timestamp": "20220124200939",
+   "url": "https://www.nbcbayarea.com/weather/school-closings/",
+   "station": "nbc-owned-kntv",
+   "why": "largest captures of its winter (20292 bytes, 1.37 x the winter's median of 14851)"
+  },
+  {
+   "timestamp": "20220309233354",
+   "url": "https://www.nbcbayarea.com/weather/school-closings/",
+   "station": "nbc-owned-kntv",
+   "why": "largest captures of its winter (20129 bytes, 1.36 x the winter's median of 14851)"
+  },
+  {
+   "timestamp": "20211204025603",
+   "url": "https://www.nbcbayarea.com/weather/school-closings/",
+   "station": "nbc-owned-kntv",
+   "why": "largest captures of its winter (20096 bytes, 1.35 x the winter's median of 14851)"
+  },
+  {
+   "timestamp": "20220311160212",
+   "url": "https://www.nbcbayarea.com/weather/school-closings/",
+   "station": "nbc-owned-kntv",
+   "why": "largest captures of its winter (20021 bytes, 1.35 x the winter's median of 14851)"
+  },
+  {
+   "timestamp": "20220122072433",
+   "url": "https://www.nbcbayarea.com/weather/school-closings/",
+   "station": "nbc-owned-kntv",
+   "why": "largest captures of its winter (19902 bytes, 1.34 x the winter's median of 14851)"
+  },
+  {
+   "timestamp": "20220113004211",
+   "url": "https://www.nbcbayarea.com/weather/school-closings/",
+   "station": "nbc-owned-kntv",
+   "why": "largest captures of its winter (19890 bytes, 1.34 x the winter's median of 14851)"
+  },
+  {
+   "timestamp": "20211204002709",
+   "url": "https://www.nbcbayarea.com/weather/school-closings/",
+   "station": "nbc-owned-kntv",
+   "why": "largest captures of its winter (19878 bytes, 1.34 x the winter's median of 14851)"
+  },
+  {
+   "timestamp": "20220322202230",
+   "url": "https://www.nbcbayarea.com/weather/school-closings/",
+   "station": "nbc-owned-kntv",
+   "why": "largest captures of its winter (19863 bytes, 1.34 x the winter's median of 14851)"
+  },
+  {
+   "timestamp": "20241101230441",
+   "url": "https://www.yourcentralvalley.com/weather/closings/",
+   "station": "nexstar-ksee",
+   "why": "largest captures of its winter (73468 bytes, 1.17 x the winter's median of 63041)"
+  },
+  {
+   "timestamp": "20241121012031",
+   "url": "https://www.yourcentralvalley.com/weather/closings/",
+   "station": "nexstar-ksee",
+   "why": "largest captures of its winter (73237 bytes, 1.16 x the winter's median of 63041)"
+  },
+  {
+   "timestamp": "20210227103038",
+   "url": "https://www.yourcentralvalley.com/weather/closings/",
+   "station": "nexstar-ksee",
+   "why": "largest captures of its winter (41051 bytes, 1.12 x the winter's median of 36604)"
+  },
+  {
+   "timestamp": "20210221081636",
+   "url": "https://www.yourcentralvalley.com/weather/closings/",
+   "station": "nexstar-ksee",
+   "why": "largest captures of its winter (40973 bytes, 1.12 x the winter's median of 36604)"
+  },
+  {
+   "timestamp": "20231115153406",
+   "url": "https://www.yourcentralvalley.com/weather/closings/",
+   "station": "nexstar-ksee",
+   "why": "largest captures of its winter (75739 bytes, 1.09 x the winter's median of 69332)"
+  },
+  {
+   "timestamp": "20231108065816",
+   "url": "https://www.yourcentralvalley.com/weather/closings/",
+   "station": "nexstar-ksee",
+   "why": "largest captures of its winter (75736 bytes, 1.09 x the winter's median of 69332)"
+  },
+  {
+   "timestamp": "20231101081616",
+   "url": "https://www.yourcentralvalley.com/weather/closings/",
+   "station": "nexstar-ksee",
+   "why": "largest captures of its winter (75647 bytes, 1.09 x the winter's median of 69332)"
+  },
+  {
+   "timestamp": "20251221214700",
+   "url": "https://kmph.com/weather/closings",
+   "station": "sinclair-kmph",
+   "why": "storm day 2025-12-22 (market score 0.33)"
+  },
+  {
+   "timestamp": "20251118080113",
+   "url": "https://kmph.com/weather/closings?_rsc=1iskt",
+   "station": "sinclair-kmph",
+   "why": "storm day 2025-11-18 (market score 0.17)"
+  },
+  {
+   "timestamp": "20241212032530",
+   "url": "https://kmph.com/weather/closings",
+   "station": "sinclair-kmph",
+   "why": "storm day 2024-12-12 (market score 0.17)"
+  },
+  {
+   "timestamp": "20200322230335",
+   "url": "https://kmph.com/weather/closings",
+   "station": "sinclair-kmph",
+   "why": "storm day 2020-03-23 (market score 0.17)"
+  },
+  {
+   "timestamp": "20191213020844",
+   "url": "https://kmph.com/weather/closings",
+   "station": "sinclair-kmph",
+   "why": "storm day 2019-12-13 (market score 0.12)"
+  },
+  {
+   "timestamp": "20241226215338",
+   "url": "https://kmph.com/weather/closings",
+   "station": "sinclair-kmph",
+   "why": "storm day 2024-12-27 (market score 0.12)"
+  },
+  {
+   "timestamp": "20191221022911",
+   "url": "https://kmph.com/weather/closings",
+   "station": "sinclair-kmph",
+   "why": "largest captures of its winter (128555 bytes, 2.87 x the winter's median of 44868)"
+  },
+  {
+   "timestamp": "20221110002956",
+   "url": "https://kmph.com/weather/closings",
+   "station": "sinclair-kmph",
+   "why": "largest captures of its winter (57172 bytes, 1.56 x the winter's median of 36747)"
+  },
+  {
+   "timestamp": "20220223135034",
+   "url": "https://www.nbcsandiego.com/weather/school-closings/",
+   "station": "nbc-owned-knsd",
+   "why": "storm day 2022-02-23 (market score 1.00)"
+  },
+  {
+   "timestamp": "20200409125358",
+   "url": "https://www.nbcsandiego.com/weather/school-closings/",
+   "station": "nbc-owned-knsd",
+   "why": "storm day 2020-04-09 (market score 0.25)"
+  },
+  {
+   "timestamp": "20200225174732",
+   "url": "https://www.nbcsandiego.com/weather/school-closings/",
+   "station": "nbc-owned-knsd",
+   "why": "largest captures of its winter (20179 bytes, 1.37 x the winter's median of 14762)"
+  },
+  {
+   "timestamp": "20211230092642",
+   "url": "https://www.nbcsandiego.com/weather/school-closings/",
+   "station": "nbc-owned-knsd",
+   "why": "largest captures of its winter (21661 bytes, 1.36 x the winter's median of 15948)"
+  },
+  {
+   "timestamp": "20200316104938",
+   "url": "https://www.nbcsandiego.com/weather/school-closings/",
+   "station": "nbc-owned-knsd",
+   "why": "largest captures of its winter (19341 bytes, 1.31 x the winter's median of 14762)"
+  },
+  {
+   "timestamp": "20220224070259",
+   "url": "https://www.nbcsandiego.com/weather/school-closings/",
+   "station": "nbc-owned-knsd",
+   "why": "largest captures of its winter (20840 bytes, 1.31 x the winter's median of 15948)"
+  },
+  {
+   "timestamp": "20211218055845",
+   "url": "https://www.nbcsandiego.com/weather/school-closings/",
+   "station": "nbc-owned-knsd",
+   "why": "largest captures of its winter (20654 bytes, 1.30 x the winter's median of 15948)"
+  },
+  {
+   "timestamp": "20211204160034",
+   "url": "https://www.nbcsandiego.com/weather/school-closings/",
+   "station": "nbc-owned-knsd",
+   "why": "largest captures of its winter (20601 bytes, 1.29 x the winter's median of 15948)"
+  },
+  {
+   "timestamp": "20220319143807",
+   "url": "https://www.nbcsandiego.com/weather/school-closings/",
+   "station": "nbc-owned-knsd",
+   "why": "largest captures of its winter (20325 bytes, 1.27 x the winter's median of 15948)"
+  },
+  {
+   "timestamp": "20240225114001",
+   "url": "https://www.nbcsandiego.com/weather/school-closings/",
+   "station": "nbc-owned-knsd",
+   "why": "largest captures of its winter (54784 bytes, 1.27 x the winter's median of 43274)"
+  },
+  {
+   "timestamp": "20211127034300",
+   "url": "https://www.nbcsandiego.com/weather/school-closings/",
+   "station": "nbc-owned-knsd",
+   "why": "largest captures of its winter (20176 bytes, 1.27 x the winter's median of 15948)"
+  },
+  {
+   "timestamp": "20201203201943",
+   "url": "https://www.nbcsandiego.com/weather/school-closings/",
+   "station": "nbc-owned-knsd",
+   "why": "largest captures of its winter (20841 bytes, 1.26 x the winter's median of 16531)"
+  },
+  {
+   "timestamp": "20210119163218",
+   "url": "https://www.nbcsandiego.com/weather/school-closings/",
+   "station": "nbc-owned-knsd",
+   "why": "largest captures of its winter (20566 bytes, 1.24 x the winter's median of 16531)"
+  },
+  {
+   "timestamp": "20220118044511",
+   "url": "https://www.nbcsandiego.com/weather/school-closings/",
+   "station": "nbc-owned-knsd",
+   "why": "largest captures of its winter (19726 bytes, 1.24 x the winter's median of 15948)"
+  },
+  {
+   "timestamp": "20200131214156",
+   "url": "https://www.nbcsandiego.com/weather/school-closings/",
+   "station": "nbc-owned-knsd",
+   "why": "largest captures of its winter (18257 bytes, 1.24 x the winter's median of 14762)"
+  },
+  {
+   "timestamp": "20200308035213",
+   "url": "https://www.nbcsandiego.com/weather/school-closings/",
+   "station": "nbc-owned-knsd",
+   "why": "largest captures of its winter (18156 bytes, 1.23 x the winter's median of 14762)"
+  },
+  {
+   "timestamp": "20221104215137",
+   "url": "https://www.nbcsandiego.com/weather/school-closings/",
+   "station": "nbc-owned-knsd",
+   "why": "largest captures of its winter (63855 bytes, 1.23 x the winter's median of 51934)"
+  },
+  {
+   "timestamp": "20210119201748",
+   "url": "https://www.nbcsandiego.com/weather/school-closings/",
+   "station": "nbc-owned-knsd",
+   "why": "largest captures of its winter (20290 bytes, 1.23 x the winter's median of 16531)"
+  },
+  {
+   "timestamp": "20241229010352",
+   "url": "https://www.nbcsandiego.com/weather/school-closings/",
+   "station": "nbc-owned-knsd",
+   "why": "largest captures of its winter (65548 bytes, 1.23 x the winter's median of 53475)"
+  },
+  {
+   "timestamp": "20250211095802",
+   "url": "https://www.nbcsandiego.com/weather/school-closings/",
+   "station": "nbc-owned-knsd",
+   "why": "largest captures of its winter (65305 bytes, 1.22 x the winter's median of 53475)"
+  },
+  {
+   "timestamp": "20241227035442",
+   "url": "https://www.nbcsandiego.com/weather/school-closings/",
+   "station": "nbc-owned-knsd",
+   "why": "largest captures of its winter (65300 bytes, 1.22 x the winter's median of 53475)"
+  },
+  {
+   "timestamp": "20250226185640",
+   "url": "https://www.nbcsandiego.com/weather/school-closings/",
+   "station": "nbc-owned-knsd",
+   "why": "largest captures of its winter (65266 bytes, 1.22 x the winter's median of 53475)"
+  },
+  {
+   "timestamp": "20221202081959",
+   "url": "https://www.nbcsandiego.com/weather/school-closings/",
+   "station": "nbc-owned-knsd",
+   "why": "largest captures of its winter (63307 bytes, 1.22 x the winter's median of 51934)"
+  },
+  {
+   "timestamp": "20200330143436",
+   "url": "https://www.nbcsandiego.com/weather/school-closings/",
+   "station": "nbc-owned-knsd",
+   "why": "largest captures of its winter (17965 bytes, 1.22 x the winter's median of 14762)"
+  },
+  {
+   "timestamp": "20201120200233",
+   "url": "https://www.nbcsandiego.com/weather/school-closings/",
+   "station": "nbc-owned-knsd",
+   "why": "largest captures of its winter (20115 bytes, 1.22 x the winter's median of 16531)"
+  },
+  {
+   "timestamp": "20250203072126",
+   "url": "https://www.nbcsandiego.com/weather/school-closings/",
+   "station": "nbc-owned-knsd",
+   "why": "largest captures of its winter (64846 bytes, 1.21 x the winter's median of 53475)"
+  },
+  {
+   "timestamp": "20250116092214",
+   "url": "https://www.nbcsandiego.com/weather/school-closings/",
+   "station": "nbc-owned-knsd",
+   "why": "largest captures of its winter (64834 bytes, 1.21 x the winter's median of 53475)"
+  },
+  {
+   "timestamp": "20211221022723",
+   "url": "https://www.nbcsandiego.com/weather/school-closings/",
+   "station": "nbc-owned-knsd",
+   "why": "largest captures of its winter (19311 bytes, 1.21 x the winter's median of 15948)"
+  },
+  {
+   "timestamp": "20241230182002",
+   "url": "https://www.nbcsandiego.com/weather/school-closings/",
+   "station": "nbc-owned-knsd",
+   "why": "largest captures of its winter (64728 bytes, 1.21 x the winter's median of 53475)"
+  },
+  {
+   "timestamp": "20201218190445",
+   "url": "https://www.nbcsandiego.com/weather/school-closings/",
+   "station": "nbc-owned-knsd",
+   "why": "largest captures of its winter (20006 bytes, 1.21 x the winter's median of 16531)"
+  },
+  {
+   "timestamp": "20241104010820",
+   "url": "https://www.nbcsandiego.com/weather/school-closings/",
+   "station": "nbc-owned-knsd",
+   "why": "largest captures of its winter (64438 bytes, 1.21 x the winter's median of 53475)"
+  },
+  {
+   "timestamp": "20241101012412",
+   "url": "https://www.nbcsandiego.com/weather/school-closings/",
+   "station": "nbc-owned-knsd",
+   "why": "largest captures of its winter (64384 bytes, 1.20 x the winter's median of 53475)"
+  },
+  {
+   "timestamp": "20210118061055",
+   "url": "https://www.nbcsandiego.com/weather/school-closings/",
+   "station": "nbc-owned-knsd",
+   "why": "largest captures of its winter (19883 bytes, 1.20 x the winter's median of 16531)"
+  },
+  {
+   "timestamp": "20241125163125",
+   "url": "https://www.nbcsandiego.com/weather/school-closings/",
+   "station": "nbc-owned-knsd",
+   "why": "largest captures of its winter (64281 bytes, 1.20 x the winter's median of 53475)"
+  },
+  {
+   "timestamp": "20241107170747",
+   "url": "https://www.nbcsandiego.com/weather/school-closings/",
+   "station": "nbc-owned-knsd",
+   "why": "largest captures of its winter (64017 bytes, 1.20 x the winter's median of 53475)"
+  },
+  {
+   "timestamp": "20201226091924",
+   "url": "https://www.nbcsandiego.com/weather/school-closings/",
+   "station": "nbc-owned-knsd",
+   "why": "largest captures of its winter (19660 bytes, 1.19 x the winter's median of 16531)"
+  },
+  {
+   "timestamp": "20200321061933",
+   "url": "https://www.nbcsandiego.com/weather/school-closings/",
+   "station": "nbc-owned-knsd",
+   "why": "largest captures of its winter (17498 bytes, 1.19 x the winter's median of 14762)"
+  },
+  {
+   "timestamp": "20210118012427",
+   "url": "https://www.nbcsandiego.com/weather/school-closings/",
+   "station": "nbc-owned-knsd",
+   "why": "largest captures of its winter (19317 bytes, 1.17 x the winter's median of 16531)"
+  },
+  {
+   "timestamp": "20220115132915",
+   "url": "https://www.nbcsandiego.com/weather/school-closings/",
+   "station": "nbc-owned-knsd",
+   "why": "largest captures of its winter (18493 bytes, 1.16 x the winter's median of 15948)"
+  },
+  {
+   "timestamp": "20200229234542",
+   "url": "https://www.nbcsandiego.com/weather/school-closings/",
+   "station": "nbc-owned-knsd",
+   "why": "largest captures of its winter (16906 bytes, 1.15 x the winter's median of 14762)"
+  },
+  {
+   "timestamp": "20240117032232",
+   "url": "https://www.westernslopenow.com/weather/closings/",
+   "station": "nexstar-krex",
+   "why": "storm day 2024-01-17 (market score 0.08)"
+  },
+  {
+   "timestamp": "20240331230930",
+   "url": "https://www.westernslopenow.com/weather/closings/",
+   "station": "nexstar-krex",
+   "why": "largest captures of its winter (75937 bytes, 1.17 x the winter's median of 65143)"
+  },
+  {
+   "timestamp": "20241225114442",
+   "url": "https://www.westernslopenow.com/weather/closings/",
+   "station": "nexstar-krex",
+   "why": "largest captures of its winter (77933 bytes, 1.16 x the winter's median of 66917)"
+  },
+  {
+   "timestamp": "20250205043824",
+   "url": "https://www.westernslopenow.com/weather/closings/",
+   "station": "nexstar-krex",
+   "why": "largest captures of its winter (77871 bytes, 1.16 x the winter's median of 66917)"
+  },
+  {
+   "timestamp": "20240121002857",
+   "url": "https://www.westernslopenow.com/weather/closings/",
+   "station": "nexstar-krex",
+   "why": "largest captures of its winter (72503 bytes, 1.11 x the winter's median of 65143)"
+  },
+  {
+   "timestamp": "20240214005534",
+   "url": "https://www.westernslopenow.com/weather/closings/",
+   "station": "nexstar-krex",
+   "why": "largest captures of its winter (71760 bytes, 1.10 x the winter's median of 65143)"
+  },
+  {
+   "timestamp": "20240131112706",
+   "url": "https://www.westernslopenow.com/weather/closings/",
+   "station": "nexstar-krex",
+   "why": "largest captures of its winter (71688 bytes, 1.10 x the winter's median of 65143)"
+  }
+ ]
 }
