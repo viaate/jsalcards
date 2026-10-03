@@ -194,20 +194,52 @@ type Forecast = Extract<DayOutlook, { state: 'forecast' }>;
 
 // Names ---------------------------------------------------------------------------------
 
-/** Words a district's name ends with that only say it is a district. */
-const DISTRICT_WORDS =
-  /\s+(?:(?:unified|independent|consolidated|community|area|public|local|exempted village|joint)\s+)*(?:school\s+district|schools?|school\s+corporation|district|usd|isd|cisd|sd)(?:\s+(?:no\.?\s*)?\d+[a-z]?)?$/i;
-/** What is left of a name that was all such words. */
-const GENERIC = /^(?:unified|independent|consolidated|community|area|public|local|joint)$/i;
+/** Words before a district's kind that only say what kind of district it is. */
+const KIND_WORDS =
+  'community unit|community consolidated|community high|township high|regional high|unified union|union free|exempted village|reorganized|unified|independent|consolidated|community|area|public|local|joint';
+/** What a district is called as a district: "School District", "CUSD". */
+const KIND_NOUNS =
+  'school district|school dist|school corp(?:oration)?|schl corp|school system|schools?|district|dist|cusd|ccsd|chsd|cuhsd|hsd|esd|usd|isd|cisd|ufsd|csd|sd';
+/** A name's last kind: "Community Unit School District", "Union Free", "ISD". */
+const KIND = new RegExp(
+  `(?:^|\\s+)(?:(?:${KIND_WORDS})\\s+)*(?:${KIND_NOUNS}|union free|exempted village)$`,
+  'i',
+);
+/** A district's number after its kind: "204", "No. 196", "#1", "Re-1J". */
+const NUMBER = /\s+(?:no\.?\s*|#\s*)?([a-z]{0,2}-?\d+[a-z]?)$/i;
+/** A name with nothing left but kinds. */
+const KIND_ONLY = new RegExp(
+  `^(?:(?:${KIND_WORDS}|${KIND_NOUNS}|township|regional|high|elementary|unit|union)(?:\\s+|$))+$`,
+  'i',
+);
 
 /**
- * A district's name, short, as a family says it: "Shawnee Mission" for Shawnee
- * Mission Public Schools, "Lee County" for Lee County Schools. A name that is
- * all such words, or would be cut to less than 3 letters, stays whole.
+ * A district's name, short, as a family says it: "Shawnee Mission" for
+ * Shawnee Mission Public Schools, "Lee County" for Lee County Schools,
+ * "Indian Prairie 204" for Indian Prairie CUSD 204 (its number, which tells
+ * it from the district next door, stays). A name that is nothing but its kind
+ * and number is the number's district ("District 300" for CUSD 300); one with
+ * no number stays whole, as does one that says no kind.
  */
 export function shortDistrictName(shown: string): string {
-  const short = shown.replace(DISTRICT_WORDS, '').trim();
-  return short.length >= 3 && !GENERIC.test(short) ? short : shown;
+  let name = shown;
+  let number: string | null = null;
+  const numbered = NUMBER.exec(name);
+  if (numbered !== null && KIND.test(name.slice(0, numbered.index))) {
+    number = numbered[1] ?? null;
+    name = name.slice(0, numbered.index);
+  }
+  let cut = false;
+  for (let kind = KIND.exec(name); kind !== null; kind = KIND.exec(name)) {
+    name = name.slice(0, kind.index);
+    cut = true;
+  }
+  name = name.trim();
+  if (!cut) return shown;
+  if (name.replace(/[^a-z]/gi, '').length < 3 || KIND_ONLY.test(name)) {
+    return number === null ? shown : chanceFormat.district(number);
+  }
+  return number === null ? name : `${name} ${number}`;
 }
 
 // The headline ----------------------------------------------------------------------------

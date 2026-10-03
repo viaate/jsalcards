@@ -683,6 +683,42 @@ describe('district names', () => {
     expect(shortDistrictName('Independence School District')).toBe('Independence');
     expect(shortDistrictName('Katy ISD')).toBe('Katy');
     expect(shortDistrictName('Public Schools')).toBe('Public Schools');
-    expect(shortDistrictName('Gardner CCSD 72C')).toBe('Gardner CCSD 72C');
+    expect(shortDistrictName('Wheaton R-III')).toBe('Wheaton R-III');
+    expect(shortDistrictName('Rocklin Unified')).toBe('Rocklin Unified');
+  });
+
+  it('never leaves a kind of district for its name, and keeps the number that tells two apart', () => {
+    // The whole of the kind goes, not its last words: never "Indian Prairie Community Unit".
+    expect(shortDistrictName('Indian Prairie Community Unit School District 204')).toBe(
+      'Indian Prairie 204',
+    );
+    expect(shortDistrictName('Indian Prairie CUSD 204')).toBe('Indian Prairie 204');
+    expect(shortDistrictName('Gardner CCSD 72C')).toBe('Gardner 72C');
+    expect(shortDistrictName('Hinsdale Township High School District 86')).toBe('Hinsdale 86');
+    expect(shortDistrictName('Hinsdale CCSD 181')).toBe('Hinsdale 181');
+    expect(shortDistrictName('Weld County School District No. Re-4')).toBe('Weld County Re-4');
+    expect(shortDistrictName('Converse County School District #1')).toBe('Converse County 1');
+    expect(shortDistrictName('Amityville Union Free School District')).toBe('Amityville');
+    expect(shortDistrictName('Ada Exempted Village')).toBe('Ada');
+    expect(shortDistrictName('Harwood Unified Union School District #60')).toBe('Harwood 60');
+    expect(shortDistrictName('Anderson Community School Corp')).toBe('Anderson');
+    // A name that is nothing but its kind and its number: the number's district.
+    expect(shortDistrictName('Community Unit School District 300')).toBe('District 300');
+    expect(shortDistrictName('Cusd 300')).toBe('District 300');
+    expect(shortDistrictName('Township High School District 211')).toBe('District 211');
+    expect(shortDistrictName('Township HSD 214')).toBe('District 214');
+    expect(shortDistrictName('Community Unit School District No 196')).toBe('District 196');
+    // Without a number, a name that is nothing but its kind stays whole.
+    expect(shortDistrictName('Community Unit School District')).toBe(
+      'Community Unit School District',
+    );
+    for (const name of [
+      'Indian Prairie Community Unit School District 204',
+      'Township High School District 211',
+      'Community Unit School District 300',
+      'Rich Township HSD 227',
+    ]) {
+      expect(shortDistrictName(name)).not.toMatch(/(?:Community|Unit|Township High)$/);
+    }
   });
 });

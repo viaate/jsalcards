@@ -355,6 +355,11 @@ function neighborPosted(name: string, status: PostedKey, localDate: string): str
   }
 }
 
+/** A district known by its number alone: "District 300". */
+function district(number: string): string {
+  return `District ${number}`;
+}
+
 /** "Shawnee Mission usually announces". */
 function usuallyAnnounces(name: string): string {
   return `${name} usually announces`;
@@ -639,6 +644,7 @@ export const chanceFormat = /* @__PURE__ */ deepFreeze({
   countdown,
   momentTime,
   neighborPosted,
+  district,
   usuallyAnnounces,
   weatherEvent,
   inches,
