@@ -59,27 +59,30 @@ interface School {
   readonly id: string;
   readonly query: string;
   readonly name: RegExp;
-  /** Where a pick of it ends in the owner's window: framed beside its panel, at street zoom. */
+  /**
+   * Where a pick of it ends in the owner's window: framed beside its panel (460 px wide there,
+   * app/frame.ts PANEL_WIDTHS), at street zoom.
+   */
   readonly view: readonly [lat: number, lon: number, zoom: number];
 }
 const PEMBROKE_HILL: School = {
   id: 'A1902690',
   query: 'The Pembroke Hill School - Wornall Campus',
   name: /Pembroke Hill School - Wornall Campus/,
-  view: [39.03663, -94.59716, 15],
+  view: [39.03663, -94.59815, 15],
 };
 /** On the sea: its street tiles are cut by the US mask, and wait for it. */
 const LENORA_BRAYNON_SMITH: School = {
   id: '120039000368',
   query: 'Lenora Braynon Smith',
   name: /Lenora Braynon Smith/i,
-  view: [25.81872, -80.22126, 15],
+  view: [25.81872, -80.22225, 15],
 };
 const SHAWNEE_MISSION_EAST: School = {
   id: '201164001574',
   query: 'Shawnee Mission East',
   name: /Shawnee Mission East High/,
-  view: [38.99222, -94.63616, 15],
+  view: [38.99222, -94.63715, 15],
 };
 
 const staged = [
