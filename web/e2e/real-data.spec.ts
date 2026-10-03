@@ -568,7 +568,10 @@ test('the menu counts every school and district on the map, and nothing the pipe
   if (!published('live/closings.json')) {
     await expect(menu.locator('.value:not(:empty)')).toHaveCount(0);
   }
-  // Under the search field, its left edge on the field's.
+  // Under the search field, its left edge on the field's, once it has slid into place.
+  await menu.evaluate(async (node) => {
+    await Promise.all(node.getAnimations().map((animation) => animation.finished));
+  });
   const field = await page.locator('.search').boundingBox();
   const panel = await menu.boundingBox();
   if (field === null || panel === null) throw new Error('no box');
