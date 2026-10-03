@@ -36,7 +36,7 @@ import type { DetailsSource } from '../data/details';
 import { DATA_PATHS } from '../data/files';
 import { createAppData, locate, startLiveGlow } from './data';
 import type { AppData, LiveGlow, Target } from './data';
-import { clearOfPanel, openArea } from './frame';
+import { clearOfPanel, mapInView } from './frame';
 import type { Screen } from './frame';
 import { createSearchController, nearView, searchOptions } from './search';
 import type { SearchController, SearchOption } from './search';
@@ -84,9 +84,10 @@ export interface BootOptions {
   /** Moves the map to a place (the shell keeps it for later if the map is not up yet). */
   readonly show: (target: Target) => void;
   /**
-   * The screen, and the foot of the search strip over the map (frame.ts): a
-   * school a pick or a link opens is framed clear of its panel on it, and a
-   * tap on several schools zooms them into what the panel leaves in view.
+   * The screen, the foot of the search strip over the map and the panel shown
+   * over it (frame.ts): a school a pick or a link opens is framed clear of its
+   * panel on it, and a tap on several schools zooms them into the map the
+   * panel shown, if any, leaves in view.
    */
   readonly screen?: () => Screen;
   /**
@@ -343,7 +344,7 @@ export function boot(options: BootOptions): Services {
               .then(({ source }) => source.get(school.id))
               .catch(() => undefined);
           },
-          ...(screen === undefined ? {} : { area: () => openArea(screen()) }),
+          ...(screen === undefined ? {} : { area: () => mapInView(screen()) }),
         });
         for (const click of clicks) taps.click(click);
       })

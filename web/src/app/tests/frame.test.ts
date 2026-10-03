@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 
 import { OPEN_SHARE } from '../../ui/sheet-geometry';
-import { PANEL_EDGE, PANEL_WIDTH, clearOfPanel, openArea, panelWidth } from '../frame';
+import { PANEL_EDGE, PANEL_WIDTH, clearOfPanel, mapInView, openArea, panelWidth } from '../frame';
 
 /** Pembroke Hill, on its streets. */
 const SCHOOL = { lat: 39.03606, lon: -94.593001, zoom: 15 };
@@ -100,5 +100,61 @@ describe('openArea', () => {
       expect(at.x).toBeCloseTo((area.left + area.right) / 2, 6);
       expect(at.y).toBeCloseTo((area.top + area.bottom) / 2, 6);
     }
+  });
+});
+
+describe('mapInView', () => {
+  /** A box on the screen, as getBoundingClientRect gives it. */
+  const box = (left: number, top: number, right: number, bottom: number) => ({
+    left,
+    top,
+    right,
+    bottom,
+  });
+  const desktop = { width: 1440, height: 900, top: 64 };
+  const phone = { width: 390, height: 844, top: 104 };
+
+  it('is the whole map under the search strip while no panel shows, on any screen', () => {
+    expect(mapInView(desktop)).toEqual(box(0, 64, 1440, 900));
+    expect(mapInView({ ...phone, panel: undefined })).toEqual(box(0, 104, 390, 844));
+  });
+
+  it('is the map right of a panel beside the map, wherever it ends', () => {
+    // As a pick frames its school; wider; shorter, all the same.
+    const right = PANEL_EDGE + panelWidth(desktop.width);
+    const school = box(PANEL_EDGE, 84, right, 880);
+    expect(mapInView({ ...desktop, panel: school })).toEqual(openArea(desktop));
+    expect(mapInView({ ...desktop, panel: box(PANEL_EDGE, 84, 552, 880) })).toEqual(
+      box(552, 64, 1440, 900),
+    );
+    expect(mapInView({ ...desktop, panel: box(PANEL_EDGE, 84, right, 200) })).toEqual(
+      openArea(desktop),
+    );
+  });
+
+  it('is the map above a phone’s sheet, as far up as the sheet is', () => {
+    // Open, as it opens: what a pick frames its school in.
+    const opens = 844 - Math.round(844 * OPEN_SHARE);
+    expect(mapInView({ ...phone, panel: box(0, opens, 390, 844 + 300) })).toEqual(openArea(phone));
+    // Down to its name alone, and up to just under the strip.
+    expect(mapInView({ ...phone, panel: box(0, 744, 390, 1500) })).toEqual(box(0, 104, 390, 744));
+    expect(mapInView({ ...phone, panel: box(0, 116, 390, 900) })).toEqual(box(0, 104, 390, 116));
+    // Over the strip as it glides, it leaves no map in view, never less.
+    expect(mapInView({ ...phone, panel: box(0, 90, 390, 900) })).toEqual(box(0, 104, 390, 104));
+  });
+
+  it('takes a phone for a screen under 720 pixels wide', () => {
+    expect(mapInView({ width: 719, height: 800, top: 100, panel: box(0, 400, 719, 1200) })).toEqual(
+      box(0, 100, 719, 400),
+    );
+    expect(mapInView({ width: 720, height: 800, top: 100, panel: box(20, 120, 388, 780) })).toEqual(
+      box(388, 100, 720, 800),
+    );
+  });
+
+  it('takes a panel with no box, or gone off the foot of the screen, for none', () => {
+    expect(mapInView({ ...desktop, panel: box(0, 0, 0, 0) })).toEqual(mapInView(desktop));
+    expect(mapInView({ ...phone, panel: box(0, 0, 0, 0) })).toEqual(mapInView(phone));
+    expect(mapInView({ ...phone, panel: box(0, 900, 390, 1700) })).toEqual(mapInView(phone));
   });
 });

@@ -14,11 +14,12 @@
  * A tap opens a school only where it means one: the one mark under the
  * pointer, or else the one mark in reach. Where it could mean several (a
  * metro's lights at the national view, a cluster of dots), it opens none: the
- * map zooms in toward them instead, into the part of the map a school's panel
- * leaves in view, as a pick frames its school (app/frame.ts openArea), as far
- * as keeps them all in it, to DRILL_ZOOM at most and by DRILL_STEP levels at
- * least, so tap by tap it comes down to one school under the finger. Schools
- * no zoom tells apart (one campus, one place) open the nearest.
+ * map zooms in toward them instead, into the part of the map in view, clear
+ * of the panel or the sheet shown over it, if any (app/frame.ts mapInView),
+ * as far as keeps them all in it, to DRILL_ZOOM at most and by DRILL_STEP
+ * levels at least, so tap by tap it comes down to one school under the
+ * finger. Schools no zoom tells apart (one campus, one place) open the
+ * nearest.
  *
  * Only a click acts: MapLibre fires none for a drag or a pinch. A press
  * where a tap would open a school, its light included, says so at once
@@ -294,7 +295,7 @@ export function meantSchool(marks: readonly MarkHit[]): MarkHit | null {
 
 /**
  * Where a tap at `point` on several schools zooms to: the middle of them in
- * the middle of `area` (the part of the map a school's panel leaves in view),
+ * the middle of `area` (the part of the map in view, clear of any panel),
  * as far in as keeps them all DRILL_MARGIN inside it, to DRILL_ZOOM at most
  * and by DRILL_STEP levels at least, no closer than the map goes. Null where
  * no zoom tells them apart: they are at one place, or the map is as close as
@@ -402,7 +403,7 @@ export interface SchoolTapOptions {
    * streets need can start coming.
    */
   readonly onPress?: (school: SchoolHit) => void;
-  /** The part of the map a school's panel leaves in view; the whole map by default. */
+  /** The part of the map in view as a tap comes, clear of any panel; the whole map by default. */
   readonly area?: () => MapArea;
 }
 

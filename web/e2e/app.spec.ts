@@ -56,11 +56,6 @@ const GLOW_LAYER = 'snowlight-glow';
 const FIRST_LABEL_LAYER = 'ofm-label-neighbourhood';
 const PEMBROKE_HILL = 'A1902690';
 const BORDER_STAR = { lon: -94.592692, lat: 39.013304 };
-/**
- * Where the school panel beside the map ends on a 1440 px screen: its gap from the screen's
- * edge and its width there (app/frame.ts PANEL_WIDTHS).
- */
-const PANEL_RIGHT = 20 + 460;
 /** Where Pembroke Hill is, as the directory has it. */
 const PEMBROKE_HILL_PLACE = { lon: -94.593001, lat: 39.03606 };
 const SHAWNEE_MISSION_EAST = '201164001574';
@@ -1457,11 +1452,46 @@ async function menuGrid(menu: Locator): Promise<MenuGrid> {
   });
 }
 
-/** Waits out the menu's arrival (it slides 4px down as it fades in), so its box is where it rests. */
+/**
+ * Waits out a panel's arrival (the menu slides 4px down as it fades in, a phone's sheet glides to
+ * its height), so its box is where it rests.
+ */
 async function arrived(menu: Locator): Promise<void> {
   await menu.evaluate(async (panel) => {
     await Promise.all(panel.getAnimations().map((animation) => animation.finished));
   });
+}
+
+/** A part of the screen, in CSS pixels. */
+interface Box {
+  readonly left: number;
+  readonly top: number;
+  readonly right: number;
+  readonly bottom: number;
+}
+
+/**
+ * Resolves once a tap's zoom toward Border Star and Pembroke Hill has landed, and checks it framed
+ * them in `area`, as a tap that could mean either does (school-taps.ts drillView): at zoom 11, tens
+ * of pixels apart, both inside it, and the middle of them in its middle.
+ */
+async function zoomedInto(page: Page, area: Box): Promise<void> {
+  await expect
+    .poll(async () => (await mapView(page)).zoom, { timeout: FIRST_FLIGHT_MS })
+    .toBeGreaterThan(10.9);
+  await settleMap(page);
+  expect((await mapView(page)).zoom).toBeLessThan(11.01);
+  const star = await onScreen(page, BORDER_STAR);
+  const hill = await onScreen(page, PEMBROKE_HILL_PLACE);
+  expect(Math.hypot(star.x - hill.x, star.y - hill.y)).toBeGreaterThan(30);
+  for (const place of [star, hill]) {
+    expect(place.x).toBeGreaterThan(area.left);
+    expect(place.x).toBeLessThan(area.right);
+    expect(place.y).toBeGreaterThan(area.top);
+    expect(place.y).toBeLessThan(area.bottom);
+  }
+  expect(Math.abs((star.x + hill.x) / 2 - (area.left + area.right) / 2)).toBeLessThan(3);
+  expect(Math.abs((star.y + hill.y) / 2 - (area.top + area.bottom) / 2)).toBeLessThan(3);
 }
 
 /**
@@ -3146,26 +3176,12 @@ test.describe('with data staged', () => {
     await page.mouse.move(click.x + 60, click.y);
     await expect.poll(cursor).toBe('grab');
     await page.mouse.click(click.x, click.y);
-    await expect
-      .poll(async () => (await mapView(page)).zoom, { timeout: FIRST_FLIGHT_MS })
-      .toBeGreaterThan(10.9);
-    await settleMap(page);
-    expect((await mapView(page)).zoom).toBeLessThan(11.01);
+    // No panel is open: into the middle of all the map under the search strip.
+    const strip = await page.locator('.bar').evaluate((bar) => bar.getBoundingClientRect().bottom);
+    await zoomedInto(page, { left: 0, top: strip, right: 1440, bottom: 900 });
     await expect(panel).toHaveCount(0);
     expect(new URL(page.url()).searchParams.get('school')).toBeNull();
-    // Both tens of pixels apart now, around the middle of the part of the map a school's panel
-    // leaves in view, as a pick frames its school: right of the panel, under the search strip.
     const star = await onScreen(page, BORDER_STAR);
-    const hill = await onScreen(page, PEMBROKE_HILL_PLACE);
-    expect(Math.hypot(star.x - hill.x, star.y - hill.y)).toBeGreaterThan(30);
-    const strip = await page.locator('.bar').evaluate((bar) => bar.getBoundingClientRect().bottom);
-    const open = { left: PANEL_RIGHT, top: strip, right: 1440, bottom: 900 };
-    const middle = { x: (open.left + open.right) / 2, y: (open.top + open.bottom) / 2 };
-    for (const place of [star, hill]) {
-      expect(place.x).toBeGreaterThan(open.left);
-      expect(place.y).toBeGreaterThan(open.top);
-      expect(Math.hypot(place.x - middle.x, place.y - middle.y)).toBeLessThan(60);
-    }
 
     // There, a click on Border Star's light means it: the same panel, the same address and the
     // same camera as the pick.
@@ -3196,6 +3212,67 @@ test.describe('with data staged', () => {
       11,
       1,
     );
+    expect(problems).toEqual([]);
+    await context.close();
+  });
+
+  test('a click on two lights zooms them into the map right of a school’s panel, and the menu open gives way to the panel at the press', async ({
+    browser,
+  }) => {
+    // Two flights into streets, the first a page's first (FIRST_FLIGHT_MS).
+    test.setTimeout(240_000);
+    const context = await browser.newContext({
+      viewport: { width: 1440, height: 900 },
+      timezoneId: 'America/Chicago',
+    });
+    const page = await context.newPage();
+    await fixDate(page, SYNTHETIC_NOW);
+    const { problems } = watch(page);
+    const panel = page.locator('aside.detail');
+    const menu = page.locator('aside.menu');
+    /** Clicks a few pixels under Border Star's light, where either school's could be meant. */
+    const clickLights = async (): Promise<void> => {
+      const light = await onScreen(page, BORDER_STAR);
+      await page.mouse.click(Math.round(light.x), Math.round(light.y) + 3);
+    };
+    /** The map right of `aside`, under the search strip. */
+    const rightOf = async (aside: Locator): Promise<Box> => {
+      const strip = await page
+        .locator('.bar')
+        .evaluate((bar) => bar.getBoundingClientRect().bottom);
+      const right = await aside.evaluate((element) => element.getBoundingClientRect().right);
+      return { left: right, top: strip, right: 1440, bottom: 900 };
+    };
+
+    // A school open in its panel, over a view far out: the two zoom into the map right of it, and
+    // the panel stays open.
+    await page.goto(`${site}?school=${PEMBROKE_HILL}&at=37,-94.59,4`);
+    await waitForMap(page);
+    await expect(panel.locator('h2')).toHaveText('The Pembroke Hill SchoolWornall Campus');
+    await arrived(panel);
+    await expect.poll(async () => (await glowStats(page)).glowCount, { timeout: 30_000 }).toBe(2);
+    const besidePanel = await rightOf(panel);
+    await clickLights();
+    await zoomedInto(page, besidePanel);
+    await expect(panel.locator('h2')).toHaveText('The Pembroke Hill SchoolWornall Campus');
+    expect(new URL(page.url()).searchParams.get('school')).toBe(PEMBROKE_HILL);
+
+    // The menu open in the school's place, ending tens of pixels from where the panel ends: the
+    // press on the map closes it (MenuPanel.svelte), so the two zoom into the map right of the
+    // school's panel, back.
+    await page.evaluate(() => {
+      window.snowlightMap?.jumpTo({ center: [-94.59, 37], zoom: 4 });
+    });
+    await settleMap(page);
+    await page.getByRole('button', { name: copy.menu.label, exact: true }).click();
+    await expect(menu).toBeVisible();
+    await arrived(menu);
+    await expect(panel).toBeHidden();
+    expect(Math.abs((await rightOf(menu)).left - besidePanel.left)).toBeGreaterThan(20);
+    await clickLights();
+    await expect(menu).toHaveCount(0);
+    await expect(panel).toBeVisible();
+    await zoomedInto(page, besidePanel);
     expect(problems).toEqual([]);
     await context.close();
   });

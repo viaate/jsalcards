@@ -17,7 +17,8 @@ import { boot } from '../boot';
 import '../school';
 import type { BootOptions } from '../boot';
 import type { AppData, Target } from '../data';
-import { clearOfPanel, openArea } from '../frame';
+import type { Screen } from '../frame';
+import { PANEL_EDGE, clearOfPanel, openArea, panelWidth } from '../frame';
 import { ZOOM, viewForHit } from '../startup';
 
 /**
@@ -626,12 +627,27 @@ describe('a school clicked on the map', () => {
     controller.abort();
   });
 
-  it('fits a zoom toward several schools into what a school’s panel leaves of the screen', async () => {
-    const screen = { width: 1440, height: 900, top: 64 };
+  it('fits a zoom toward several schools into the map in view: clear of a panel only while one shows', async () => {
+    let screen: Screen = { width: 1440, height: 900, top: 64 };
     const { controller, created, up } = withTaps(vi.fn(), { screen: () => screen });
     created();
     up();
-    expect((await attached()).area?.()).toEqual(openArea(screen));
+    const { area } = await attached();
+    expect(area?.()).toEqual({ left: 0, top: 64, right: 1440, bottom: 900 });
+    // Read as each tap comes: a school's panel beside the map, as a pick frames its school, then
+    // a phone's sheet down to its name.
+    screen = {
+      ...screen,
+      panel: { left: PANEL_EDGE, top: 84, right: PANEL_EDGE + panelWidth(1440), bottom: 880 },
+    };
+    expect(area?.()).toEqual(openArea(screen));
+    screen = {
+      width: 390,
+      height: 844,
+      top: 104,
+      panel: { left: 0, top: 744, right: 390, bottom: 1500 },
+    };
+    expect(area?.()).toEqual({ left: 0, top: 104, right: 390, bottom: 744 });
     controller.abort();
   });
 

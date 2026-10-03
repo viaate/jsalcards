@@ -640,11 +640,12 @@
           signal: controller.signal,
           show,
           // A school opens its panel: the map puts it in the middle of what the panel leaves in
-          // view, and a tap on several schools zooms them into it.
+          // view. A tap on several schools zooms them into what the panel, if open, leaves.
           screen: () => ({
             width: window.innerWidth,
             height: window.innerHeight,
             top: headerElement?.getBoundingClientRect().bottom ?? 0,
+            panel: detailElement?.getBoundingClientRect(),
           }),
           listId: LIST_ID,
           onResults: (next) => {
