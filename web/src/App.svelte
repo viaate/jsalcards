@@ -393,7 +393,8 @@
   /**
    * Opens a school clicked or tapped on the map, its dot, its name or its
    * light, as a pick of it would: the same step, the same camera, the same
-   * panel, and the focus on it (the click has taken it from the search field).
+   * panel, and the focus on it (any click on the map takes it from the search
+   * field).
    */
   function openTapped(school: SchoolHit): void {
     focusOpened(school.id);
@@ -617,6 +618,10 @@
         runSearch('');
       }
       pickedName = null;
+    });
+    // iOS moves no focus for a tap on the map, so its keyboard would stay up over it.
+    mapElement?.addEventListener('click', () => inputElement?.blur(), {
+      signal: controller.signal,
     });
     // The map as soon as it takes input; never, for a map that does not come up.
     let created: (map: Basemap) => void = () => undefined;

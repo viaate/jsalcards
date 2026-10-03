@@ -3276,4 +3276,113 @@ test.describe('with data staged', () => {
     expect(problems).toEqual([]);
     await context.close();
   });
+
+  test('on a phone a tap on the map takes the focus from the search field, and a tap on two lights zooms them into the map the sheet leaves', async ({
+    browser,
+  }) => {
+    // Three flights into streets, the first a page's first (FIRST_FLIGHT_MS).
+    test.setTimeout(240_000);
+    const context = await browser.newContext({
+      ...devices['Pixel 7'],
+      timezoneId: 'America/Chicago',
+    });
+    const page = await context.newPage();
+    // Its calendar alone: the flights and the tap's wait for a second tap run in real time.
+    await fixDate(page, SYNTHETIC_NOW);
+    // As on iOS, where a tap on the map moves no focus, so the keyboard stays: the press's own
+    // focus change is held off.
+    await page.addInitScript(() => {
+      document.addEventListener(
+        'mousedown',
+        (event) => {
+          if (event.target instanceof Element && event.target.closest('.map') !== null) {
+            event.preventDefault();
+          }
+        },
+        { capture: true },
+      );
+    });
+    const { problems } = watch(page);
+    const input = page.locator('input.search-input');
+    const sheet = page.locator('aside.detail');
+    const { width, height } = page.viewportSize() ?? { width: 0, height: 0 };
+    const touch = await context.newCDPSession(page);
+    /** A finger put down at (x, from), moved to (x, to) over `ms`, and lifted. */
+    const drag = async (x: number, from: number, to: number, ms: number): Promise<void> => {
+      await touch.send('Input.dispatchTouchEvent', {
+        type: 'touchStart',
+        touchPoints: [{ x, y: from }],
+      });
+      const steps = Math.max(2, Math.round(ms / 16));
+      for (let step = 1; step <= steps; step++) {
+        await touch.send('Input.dispatchTouchEvent', {
+          type: 'touchMove',
+          touchPoints: [{ x, y: from + ((to - from) * step) / steps }],
+        });
+        await page.waitForTimeout(16);
+      }
+      await touch.send('Input.dispatchTouchEvent', { type: 'touchEnd', touchPoints: [] });
+    };
+    const sheetTop = async (): Promise<number> => (await sheet.boundingBox())?.y ?? Number.NaN;
+    /** Taps a few pixels under Border Star's light, where either school's could be meant. */
+    const tapLights = async (): Promise<void> => {
+      const light = await onScreen(page, BORDER_STAR);
+      await page.touchscreen.tap(Math.round(light.x), Math.round(light.y) + 3);
+    };
+
+    // The national view, nothing open, the field focused: a tap where no school is takes the
+    // focus from it, and so does a tap on the two lights, which zooms them into the middle of all
+    // the map under the search strip.
+    await page.goto(site);
+    await waitForMap(page);
+    await expect.poll(async () => (await glowStats(page)).glowCount, { timeout: 30_000 }).toBe(2);
+    const strip = await page.locator('.bar').evaluate((bar) => bar.getBoundingClientRect().bottom);
+    const national = await mapView(page);
+    await input.tap();
+    await expect(input).toBeFocused();
+    await page.touchscreen.tap(Math.round(width / 4), Math.round(strip + 80));
+    await expect(input).not.toBeFocused();
+    expect(await mapView(page)).toEqual(national);
+    await input.tap();
+    await expect(input).toBeFocused();
+    await tapLights();
+    await expect(input).not.toBeFocused();
+    await zoomedInto(page, { left: 0, top: strip, right: width, bottom: height });
+    await expect(sheet).toHaveCount(0);
+
+    // A school open in its sheet, half up, over a view far out: the two zoom into the map above
+    // the sheet, which stays open.
+    await page.goto(`${site}?school=${PEMBROKE_HILL}&at=33.5,-94.59,4`);
+    await waitForMap(page);
+    await expect(sheet.locator('h2')).toHaveText('The Pembroke Hill SchoolWornall Campus');
+    await expect(sheet).toHaveAttribute('data-detent', 'open');
+    const opensAt = height - Math.round(height / 2);
+    await expect.poll(sheetTop).toBeCloseTo(opensAt, 0);
+    await arrived(sheet);
+    await expect.poll(async () => (await glowStats(page)).glowCount, { timeout: 30_000 }).toBe(2);
+    expect((await onScreen(page, BORDER_STAR)).y).toBeLessThan(opensAt - 40);
+    await input.tap();
+    await expect(input).toBeFocused();
+    await tapLights();
+    await expect(input).not.toBeFocused();
+    await zoomedInto(page, { left: 0, top: strip, right: width, bottom: await sheetTop() });
+    await expect(sheet.locator('h2')).toHaveText('The Pembroke Hill SchoolWornall Campus');
+    expect(new URL(page.url()).searchParams.get('school')).toBe(PEMBROKE_HILL);
+
+    // Down to its name alone, the sheet leaves more of the map: the two zoom into that.
+    await drag(width / 2, opensAt + 12, height - 200, 400);
+    await expect(sheet).toHaveAttribute('data-detent', 'peek');
+    await expect.poll(sheetTop).toBeGreaterThan(height - 260);
+    await arrived(sheet);
+    const peekTop = await sheetTop();
+    await page.evaluate(() => {
+      window.snowlightMap?.jumpTo({ center: [-94.59, 36], zoom: 4 });
+    });
+    await settleMap(page);
+    await tapLights();
+    await zoomedInto(page, { left: 0, top: strip, right: width, bottom: peekTop });
+    expect(await sheetTop()).toBeCloseTo(peekTop, 0);
+    expect(problems).toEqual([]);
+    await context.close();
+  });
 });
