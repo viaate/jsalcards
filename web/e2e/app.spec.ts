@@ -2969,7 +2969,8 @@ test.describe('with data staged', () => {
     await page.goto(`${site}?school=291640000557`);
     await waitForMap(page);
     await expect(page.locator('aside.detail h2')).toHaveText('Border Star Montessori');
-    await expectMapNear(page, 39.013304, -94.592692, 15);
+    // The page's first flight into streets, from the country the map opened on without the link.
+    await expectMapNear(page, 39.013304, -94.592692, 15, FIRST_FLIGHT_MS);
     await expect.poll(() => new URL(page.url()).searchParams.get('at')).not.toBeNull();
     expect(new URL(page.url()).searchParams.get('school')).toBe('291640000557');
     expect(tries).toHaveLength(2);
