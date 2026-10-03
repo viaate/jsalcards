@@ -400,7 +400,7 @@ describe('what the section leaves out', () => {
       reasons: [],
     };
     expect(lines(why({ ...A_DETAIL, why: pooled }, 0.33))).toEqual([
-      '33% Districts near Shawnee Mission close about 1 time in 3 on days like this.',
+      '33% Districts near Shawnee Mission close 1 time in 3 on days like this.',
     ]);
   });
 

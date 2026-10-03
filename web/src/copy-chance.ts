@@ -59,9 +59,25 @@ const HOUR_MS = 3_600_000;
 const MINUTE_MS = 60_000;
 /** A true minus, the one on the site, so a take-away and a cold both line up: "−3", "−8 F". */
 const MINUS = '−';
-/** A share within this much of the chance, relatively, is "about" it. */
-const SHARE_TOLERANCE = 0.05;
-const SHARE_WHOLES = [2, 3, 4, 5, 10, 20, 25, 50];
+/** The shares a rate is said as, besides "1 in N", the easiest to read first. */
+const SHARES: readonly (readonly [some: number, of: number])[] = [
+  [1, 2],
+  [1, 3],
+  [2, 3],
+  [1, 4],
+  [3, 4],
+  [1, 5],
+  [2, 5],
+  [3, 5],
+  [4, 5],
+  [1, 10],
+  [3, 10],
+  [7, 10],
+  [9, 10],
+  [19, 20],
+  [49, 50],
+  [99, 100],
+];
 
 /** The weather alerts a district's base chance is counted over, as a plural noun. */
 const ALERT_PLURALS = {
@@ -433,23 +449,25 @@ function delayInstead(probability: number): string {
 }
 
 /**
- * A share as a count a 12-year-old reads at a glance: exactly where a small
- * count is exact ("3 in 10" for 30%, "16 in 25" for 64%); "about" one within
- * 5% of it ("about 1 in 3" for 33%); else out of 100 ("3 in 100").
+ * A share as a count a 12-year-old reads at a glance, true to the whole
+ * percent: "3 in 10" for 30%, "1 in 3" for 33%, "1 in 14" for 7%, "19 in 20"
+ * for 95%; else the most such a share it is sure to be more than: "more than
+ * 3 in 5" for 64% (which is at least 63.5%).
  */
-function shareOf(percent: number): { some: number; of: number; exact: boolean } {
+function shareOf(percent: number): { some: number; of: number; more: boolean } {
   if (!Number.isInteger(percent) || percent < 1 || percent > 99) {
     throw new RangeError(`copy: a share is 1 to 99 percent, not ${String(percent)}`);
   }
-  const counts = SHARE_WHOLES.map((of) => ({ some: Math.round((percent * of) / 100), of })).filter(
-    ({ some, of }) => some >= 1 && some < of,
-  );
-  const exact = counts.find(({ some, of }) => some * 100 === percent * of);
-  if (exact !== undefined) return { ...exact, exact: true };
-  const near = counts.find(
-    ({ some, of }) => Math.abs((some * 100) / of - percent) / percent <= SHARE_TOLERANCE,
-  );
-  return near === undefined ? { some: percent, of: 100, exact: true } : { ...near, exact: false };
+  const one = Math.round(100 / percent);
+  const shares = [...SHARES, [1, one] as const];
+  const exact = shares.find(([some, of]) => Math.round((some * 100) / of) === percent);
+  if (exact !== undefined) return { some: exact[0], of: exact[1], more: false };
+  let below: readonly [number, number] = [1, 100];
+  for (const share of [...SHARES, ...Array.from({ length: 99 }, (_, n) => [1, n + 2] as const)]) {
+    const [some, of] = share;
+    if ((some * 100) / of <= percent - 0.5 && some / of > below[0] / below[1]) below = share;
+  }
+  return { some: below[0], of: below[1], more: true };
 }
 
 /** The district's record, counted: "It closed 4 of the last 5 times it got 6 inches or more." */
@@ -505,7 +523,7 @@ function baseReason(input: BaseInput, district: string): string {
   const rate = (noun: string): string =>
     share === null
       ? ''
-      : `${share.exact ? '' : 'about '}${String(share.some)} ${noun}in ${String(share.of)}`;
+      : `${share.more ? 'more than ' : ''}${String(share.some)} ${noun}in ${String(share.of)}`;
   const times = rate(share?.some === 1 ? 'time ' : 'times ');
   switch (input.kind) {
     case 'alert': {

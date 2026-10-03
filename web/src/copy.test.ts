@@ -655,23 +655,33 @@ describe('format', () => {
     });
 
     it('starts the sum from the district’s own rate, or its neighbors’, as a count', () => {
-      // Exactly, where a small count is exact.
-      expect(chanceFormat.shareOf(30)).toEqual({ some: 3, of: 10, exact: true });
-      expect(chanceFormat.shareOf(25)).toEqual({ some: 1, of: 4, exact: true });
-      expect(chanceFormat.shareOf(64)).toEqual({ some: 16, of: 25, exact: true });
-      expect(chanceFormat.shareOf(1)).toEqual({ some: 1, of: 100, exact: true });
-      // "About" one within 5% of it.
-      expect(chanceFormat.shareOf(33)).toEqual({ some: 1, of: 3, exact: false });
-      expect(chanceFormat.shareOf(71)).toEqual({ some: 7, of: 10, exact: false });
-      expect(chanceFormat.shareOf(97)).toEqual({ some: 19, of: 20, exact: false });
-      // Else out of 100.
-      expect(chanceFormat.shareOf(3)).toEqual({ some: 3, of: 100, exact: true });
-      expect(chanceFormat.shareOf(99)).toEqual({ some: 99, of: 100, exact: true });
+      // A count read at a glance, true to the whole percent.
+      expect(chanceFormat.shareOf(30)).toEqual({ some: 3, of: 10, more: false });
+      expect(chanceFormat.shareOf(25)).toEqual({ some: 1, of: 4, more: false });
+      expect(chanceFormat.shareOf(33)).toEqual({ some: 1, of: 3, more: false });
+      expect(chanceFormat.shareOf(67)).toEqual({ some: 2, of: 3, more: false });
+      expect(chanceFormat.shareOf(1)).toEqual({ some: 1, of: 100, more: false });
+      expect(chanceFormat.shareOf(3)).toEqual({ some: 1, of: 33, more: false });
+      expect(chanceFormat.shareOf(7)).toEqual({ some: 1, of: 14, more: false });
+      expect(chanceFormat.shareOf(95)).toEqual({ some: 19, of: 20, more: false });
+      expect(chanceFormat.shareOf(99)).toEqual({ some: 99, of: 100, more: false });
+      // Else the most such a count it is sure to be more than: never "about", never "16 in 25".
+      expect(chanceFormat.shareOf(64)).toEqual({ some: 3, of: 5, more: true });
+      expect(chanceFormat.shareOf(45)).toEqual({ some: 2, of: 5, more: true });
+      expect(chanceFormat.shareOf(12)).toEqual({ some: 1, of: 9, more: true });
+      expect(chanceFormat.shareOf(97)).toEqual({ some: 19, of: 20, more: true });
+      const glance = new Set(['1/2', '1/3', '2/3', '1/4', '3/4', '2/5', '3/5', '4/5', '3/10']);
+      for (const share of ['7/10', '9/10', '19/20', '49/50', '99/100']) glance.add(share);
       for (let percent = 1; percent <= 99; percent++) {
-        const { some, of, exact } = chanceFormat.shareOf(percent);
-        const off = Math.abs((some * 100) / of - percent) / percent;
-        expect(exact ? off : 0).toBe(0);
-        expect(off).toBeLessThanOrEqual(0.05);
+        const { some, of, more } = chanceFormat.shareOf(percent);
+        const share = (some * 100) / of;
+        // Said exactly, it rounds to the percent; said as "more than", the percent is surely more.
+        if (more) expect(share, String(percent)).toBeLessThanOrEqual(percent - 0.5);
+        else expect(Math.round(share), String(percent)).toBe(percent);
+        // A glance: one in so many, or a few in at most ten, or near all.
+        expect(some === 1 || glance.has(`${String(some)}/${String(of)}`), String(percent)).toBe(
+          true,
+        );
       }
       expect(() => chanceFormat.shareOf(0)).toThrow(RangeError);
       const base = (input: BaseInput): string => chanceFormat.baseReason(input, 'Riverside');
@@ -679,7 +689,13 @@ describe('format', () => {
         'Riverside cancels for 3 in 10 winter storm warnings.',
       );
       expect(base({ kind: 'alert', points: 33, alert: 'ice_storm_warning' })).toBe(
-        'Riverside cancels for about 1 in 3 ice storm warnings.',
+        'Riverside cancels for 1 in 3 ice storm warnings.',
+      );
+      expect(base({ kind: 'alert', points: 64, alert: 'winter_storm_warning' })).toBe(
+        'Riverside cancels for more than 3 in 5 winter storm warnings.',
+      );
+      expect(base({ kind: 'similar_days', points: 12 })).toBe(
+        'On days like this, Riverside closes more than 1 time in 9.',
       );
       expect(base({ kind: 'alert', points: 0, alert: 'winter_weather_advisory' })).toBe(
         'Riverside almost never cancels for winter weather advisories.',
@@ -707,7 +723,7 @@ describe('format', () => {
         base({ kind: 'pooled', points: 30, scope: 'county', alert: 'winter_storm_warning' }),
       ).toBe('Districts in Riverside’s county close for 3 in 10 winter storm warnings.');
       expect(base({ kind: 'pooled', points: 3, scope: 'state', alert: null })).toBe(
-        'Districts in Riverside’s state close 3 times in 100 on days like this.',
+        'Districts in Riverside’s state close 1 time in 33 on days like this.',
       );
       expect(base({ kind: 'pooled', points: 0, scope: 'region', alert: null })).toBe(
         'Districts in Riverside’s region almost never close on days like this.',
@@ -939,9 +955,9 @@ describe('format', () => {
       for (const points of [-100, -9, -1, 1, 9, 100]) outputs.push(chanceFormat.points(points));
       expect(allProblems(outputs)).toEqual([]);
       // No hedge in any of it: a forecast is the forecast's claim.
-      expect(outputs.filter((text) => /\b(should|could|around|might|may)\b/u.test(text))).toEqual(
-        [],
-      );
+      expect(
+        outputs.filter((text) => /\b(should|could|around|about|might|may)\b/u.test(text)),
+      ).toEqual([]);
       // One minus sign.
       expect(outputs.filter((text) => /(^|\s)-\d/u.test(text))).toEqual([]);
     });
