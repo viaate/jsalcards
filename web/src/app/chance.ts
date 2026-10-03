@@ -150,7 +150,10 @@ export interface ChartView {
   /** Hours a bar stands for: 1, or 2 or 3 on a long night. */
   readonly step: number;
   readonly bars: readonly BarView[];
+  /** The times at the foot of the narrowest plot. */
   readonly times: readonly TimeView[];
+  /** Where a wider plot has room for more: its times, from the widest plot down. */
+  readonly wider: readonly { readonly plot: number; readonly times: readonly TimeView[] }[];
   /** The usual announcement's dashed line, at its time, in bars from the first bar's left edge. */
   readonly announces: number | null;
   /** Where the bus hour's dashed line stops, in pixels above the plot's foot. */
@@ -533,6 +536,8 @@ export const MAX_BARS = 18;
  * (13 px Geist, "12 AM"), with TIME_GAP_PX between two of them.
  */
 export const NARROWEST_PLOT_PX = 288;
+/** The plots on a 390 px phone and in the 460 px panel, each with room for more times. */
+export const WIDER_PLOTS_PX = [358, 428];
 export const TIME_LABEL_PX = 40;
 /** What the school's zone adds to a time where the viewer's clock differs: " CT", " AKT". */
 export const ZONE_LABEL_PX = 30;
@@ -597,10 +602,10 @@ export function hoursPerBar(hours: number): number {
  * hour) and the last (the buses) always; then `marks` (where the heaviest
  * snow ends, when the snow starts), and every third hour (or sixth, or
  * ninth, a bar standing for more), each only where its words keep clear of
- * those placed on the narrowest plot, and none under a `quiet` bar. Each is
- * the school's time, with its zone where the viewer's clock differs, as the
- * chart's words are; each starts at its bar's left edge, and the last ends
- * where the plot does.
+ * those placed on the plot (the narrowest, unless `plot` says), and none
+ * under a `quiet` bar. Each is the school's time, with its zone where the
+ * viewer's clock differs, as the chart's words are; each starts at its bar's
+ * left edge, and the last ends where the plot does.
  */
 export function chartTimes(input: {
   readonly instants: readonly Date[];
@@ -609,12 +614,15 @@ export function chartTimes(input: {
   readonly quiet?: readonly number[];
   readonly isNow: boolean;
   readonly zones: Zones;
+  /** The plot's width, in pixels: the narrowest's when not given. */
+  readonly plot?: number;
 }): TimeView[] {
   const { instants, step, marks, isNow, zones } = input;
   const quiet = input.quiet ?? [];
+  const plot = input.plot ?? NARROWEST_PLOT_PX;
   const count = instants.length;
   const last = count - 1;
-  const slot = NARROWEST_PLOT_PX / count;
+  const slot = plot / count;
   const label = (at: number): string =>
     at === 0 && isNow ? chanceCopy.now : chanceFormat.clock(instants[at] ?? new Date(NaN), zones);
   const wide = (at: number): number =>
@@ -623,9 +631,7 @@ export function chartTimes(input: {
       ? TIME_LABEL_PX
       : TIME_LABEL_PX + ZONE_LABEL_PX;
   const box = (at: number): [number, number] =>
-    at === last
-      ? [NARROWEST_PLOT_PX - wide(at), NARROWEST_PLOT_PX]
-      : [at * slot, at * slot + wide(at)];
+    at === last ? [plot - wide(at), plot] : [at * slot, at * slot + wide(at)];
   const wanted: number[] = [0, last, ...marks];
   instants.forEach((instant, at) => {
     if (at > 0 && at < last && localHour(instant, zones.school) % (3 * step) === 0) {
@@ -719,14 +725,23 @@ export function chartView(detail: ForecastDetail, now: Date, zones: Zones): Char
   if (heavy !== null && litBars.length > 0) {
     quiet.push(instants.findIndex((instant) => instant.getTime() === heavy.from.getTime()));
   }
-  const times = chartTimes({
-    instants,
-    step,
-    marks: firstSnow > 0 ? [...marks, firstSnow] : marks,
-    quiet,
-    isNow: hourOf(0) === 0 && now >= start && now.getTime() < start.getTime() + HOUR_MS,
-    zones,
-  });
+  const timesAt = (plotPx: number): TimeView[] =>
+    chartTimes({
+      instants,
+      step,
+      marks: firstSnow > 0 ? [...marks, firstSnow] : marks,
+      quiet,
+      isNow: hourOf(0) === 0 && now >= start && now.getTime() < start.getTime() + HOUR_MS,
+      zones,
+      plot: plotPx,
+    });
+  const times = timesAt(NARROWEST_PLOT_PX);
+  const wider: { plot: number; times: TimeView[] }[] = [];
+  for (const plotPx of WIDER_PLOTS_PX) {
+    const more = timesAt(plotPx);
+    if (more.length > (wider[0]?.times ?? times).length)
+      wider.unshift({ plot: plotPx, times: more });
+  }
   // The announcement's line, where it falls within the night drawn.
   let announces: number | null = null;
   if (announcesAt !== null) {
@@ -775,6 +790,7 @@ export function chartView(detail: ForecastDetail, now: Date, zones: Zones): Char
     step,
     bars,
     times,
+    wider,
     announces,
     busTop: hours.range !== null ? y(hours.range.high) : Math.max(y(last), zero),
     range:

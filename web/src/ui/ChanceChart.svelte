@@ -12,6 +12,7 @@
   let { chart, announces }: Props = $props();
 
   const count = $derived(chart.bars.length);
+  const times = $derived(chart.wider.find((tier) => width >= tier.plot)?.times ?? chart.times);
   const answer = $derived(chart.key.find((row) => row.mark === 'buses'));
   const announcement = $derived(chart.key.find((row) => row.mark === 'announces'));
   const heavy = $derived(chart.key.filter((row) => row.mark === 'heavy'));
@@ -45,7 +46,7 @@
     return `${String((at / count) * 100)}%`;
   }
 
-  /** The middle of a bar (60% of its hour's width, from the left), for a line through it. */
+  /** The middle of a bar (60% of its hour's width), for the bus hour's line: it marks a bar, not an instant. */
   function middle(at: number): string {
     return `${String(((at + 0.3) / count) * 100)}%`;
   }
@@ -159,7 +160,7 @@
   </div>
 
   <div class="times" aria-hidden="true">
-    {#each chart.times as time (time.at)}
+    {#each times as time (time.at)}
       <span class="time" class:is-end={time.end} style:left={time.end ? null : across(time.at)}
         >{time.label}</span
       >

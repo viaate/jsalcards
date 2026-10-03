@@ -9,6 +9,7 @@ import {
   MAX_NEIGHBOR_MOMENTS,
   NARROWEST_PLOT_PX,
   TIME_LABEL_PX,
+  WIDER_PLOTS_PX,
   ZONE_LABEL_PX,
   atLocalHour,
   chanceView,
@@ -182,6 +183,18 @@ describe('the chance section, the night before', () => {
       { at: 0, label: chanceCopy.now, end: false },
       { at: 2, label: `11${NBSP}PM`, end: false },
       { at: 10, label: `7${NBSP}AM`, end: true },
+    ]);
+    // From a 390 px phone's plot up, the 5 AM end has room, under the last lit bar.
+    expect(chart?.wider).toEqual([
+      {
+        plot: WIDER_PLOTS_PX[0],
+        times: [
+          { at: 0, label: chanceCopy.now, end: false },
+          { at: 2, label: `11${NBSP}PM`, end: false },
+          { at: 8, label: `5${NBSP}AM`, end: false },
+          { at: 10, label: `7${NBSP}AM`, end: true },
+        ],
+      },
     ]);
     // The announcement at 5:30 AM, halfway between the 5 and 6 AM bars.
     expect(chart?.announces).toBe(8.5);
@@ -738,10 +751,12 @@ describe('the chart', () => {
     expect(chartScale('wind_chill', [-80, 60], null).ticks).toEqual([-100, 0, 100]);
   });
 
-  it('keeps the times at its foot apart on the narrowest plot, however many bars it has', () => {
+  it('keeps the times at its foot apart on each plot, however many bars it has', () => {
     const viewers = [ZONE, 'America/New_York'];
-    for (const [count, viewer] of [2, 5, 11, 17, MAX_BARS].flatMap((n) =>
-      viewers.map((zone) => [n, zone] as const),
+    for (const [count, viewer, plot] of [2, 5, 11, 17, MAX_BARS].flatMap((n) =>
+      viewers.flatMap((zone) =>
+        [NARROWEST_PLOT_PX, ...WIDER_PLOTS_PX].map((px) => [n, zone, px] as const),
+      ),
     )) {
       const instants = Array.from(
         { length: count },
@@ -753,6 +768,7 @@ describe('the chart', () => {
         marks: count > 4 ? [3, 4, 1] : [1],
         isNow: true,
         zones: { school: ZONE, viewer },
+        plot,
       });
       expect(times[0]).toMatchObject({ at: 0, label: chanceCopy.now });
       expect(times.at(-1)).toMatchObject({ at: count - 1, end: true });
@@ -761,13 +777,11 @@ describe('the chart', () => {
       for (const time of times.slice(1)) expect(time.label.endsWith(`${NBSP}CT`)).toBe(zoned);
       // Each time's words, 40 px at most (70 with the zone), from its bar's left edge; the last
       // ends at the plot's.
-      const slot = NARROWEST_PLOT_PX / count;
+      const slot = plot / count;
       const width = (time: { at: number }) =>
         time.at === 0 || !zoned ? TIME_LABEL_PX : TIME_LABEL_PX + ZONE_LABEL_PX;
       const boxes = times.map((time) =>
-        time.end
-          ? [NARROWEST_PLOT_PX - width(time), NARROWEST_PLOT_PX]
-          : [time.at * slot, time.at * slot + width(time)],
+        time.end ? [plot - width(time), plot] : [time.at * slot, time.at * slot + width(time)],
       );
       for (let i = 1; i < boxes.length; i++) {
         expect((boxes[i]?.[0] ?? 0) - (boxes[i - 1]?.[1] ?? 0)).toBeGreaterThanOrEqual(8);
