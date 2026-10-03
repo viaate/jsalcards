@@ -4,7 +4,13 @@ import path from 'node:path';
 
 import { afterEach, describe, expect, it } from 'vitest';
 
-import { directoryNames, schoolNamesModule, stagedNameFixes } from '../tools/school-names';
+import {
+  alikeDistrictIds,
+  directoryNames,
+  districtNamesModule,
+  schoolNamesModule,
+  stagedNameFixes,
+} from '../tools/school-names';
 
 let folder = '';
 
@@ -56,5 +62,32 @@ describe('the school names a build ships', () => {
     expect(directoryNames(META, points([0], 1))).toBeNull();
     expect(directoryNames({ ids: [] }, points([], 0))).toBeNull();
     expect(directoryNames(META, points([0, 5], 1))?.districtOf).toEqual(Int32Array.from([0, -1]));
+  });
+
+  it('list the districts a state names alike, which keep their numbers, as the page shows them', () => {
+    const directory = directoryNames(
+      {
+        ids: [],
+        names: [],
+        districts: {
+          ids: ['1719050', '1719080', '1720340', '2004230', '0803360'],
+          names: [
+            'Hinsdale CCSD 181',
+            'Hinsdale Township HSD 86',
+            'Indian Prairie CUSD 204',
+            'BLUE VALLEY',
+            'School District No. 1 in the county of Denver and State',
+          ],
+        },
+      },
+      points([], 5),
+    );
+    if (directory === null) throw new Error('no directory');
+    const alike = alikeDistrictIds(directory, { schools: {}, districts: {} });
+    expect(alike).toEqual(['1719050', '1719080']);
+    expect(districtNamesModule(alike)).toBe(
+      'export const ALIKE_DISTRICTS = Object.freeze(["1719050","1719080"]);\n',
+    );
+    expect(districtNamesModule([])).toBe('export const ALIKE_DISTRICTS = Object.freeze([]);\n');
   });
 });

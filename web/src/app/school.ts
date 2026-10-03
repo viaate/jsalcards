@@ -20,6 +20,7 @@
  * only that no closing is posted yet, and the chance stays beside it.
  */
 
+import { ALIKE_DISTRICTS } from 'virtual:snowlight/district-names';
 import { DISTRICT_NAME_FIXES, SCHOOL_NAME_FIXES } from 'virtual:snowlight/school-names';
 
 import { REASON_KEYS, STATUS_KEYS, copy, format } from '../copy';
@@ -236,10 +237,14 @@ function factsOf(record: SchoolRecord): FactView[] {
   return facts;
 }
 
+let alike: ReadonlySet<string> | null = null;
+
 /** A district's name as the panel shows it, then short, as a family says it: "Shawnee Mission". */
 function districtShortName(id: string, name: string): string {
+  alike ??= new Set(ALIKE_DISTRICTS);
   return shortDistrictName(
     displayName(name, { state: stateOfId(id), district: true }, DISTRICT_NAME_FIXES[id] ?? {}),
+    alike.has(id),
   );
 }
 

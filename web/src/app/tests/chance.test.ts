@@ -872,24 +872,36 @@ describe('district names', () => {
     expect(shortDistrictName('Katy ISD')).toBe('Katy');
     expect(shortDistrictName('Public Schools')).toBe('Public Schools');
     expect(shortDistrictName('Wheaton R-III')).toBe('Wheaton R-III');
-    expect(shortDistrictName('Rocklin Unified')).toBe('Rocklin Unified');
+    expect(shortDistrictName('Rocklin Unified')).toBe('Rocklin');
+    expect(shortDistrictName('Flagstaff Unified District (4192)')).toBe('Flagstaff');
+    expect(shortDistrictName('School District No. 1 in the county of Denver and State')).toBe(
+      'Denver',
+    );
   });
 
-  it('never leaves a kind of district for its name, and keeps the number that tells two apart', () => {
+  it('never leaves a kind of district for its name, and gives its number only where needed', () => {
     // The whole of the kind goes, not its last words: never "Indian Prairie Community Unit".
     expect(shortDistrictName('Indian Prairie Community Unit School District 204')).toBe(
-      'Indian Prairie 204',
+      'Indian Prairie',
     );
-    expect(shortDistrictName('Indian Prairie CUSD 204')).toBe('Indian Prairie 204');
-    expect(shortDistrictName('Gardner CCSD 72C')).toBe('Gardner 72C');
-    expect(shortDistrictName('Hinsdale Township High School District 86')).toBe('Hinsdale 86');
-    expect(shortDistrictName('Hinsdale CCSD 181')).toBe('Hinsdale 181');
-    expect(shortDistrictName('Weld County School District No. Re-4')).toBe('Weld County Re-4');
-    expect(shortDistrictName('Converse County School District #1')).toBe('Converse County 1');
+    expect(shortDistrictName('Indian Prairie CUSD 204')).toBe('Indian Prairie');
+    expect(shortDistrictName('Joliet PSD 86')).toBe('Joliet');
+    expect(shortDistrictName('Woodlawn Unit School District 209')).toBe('Woodlawn');
+    expect(shortDistrictName('Acalanes Union High')).toBe('Acalanes');
     expect(shortDistrictName('Amityville Union Free School District')).toBe('Amityville');
     expect(shortDistrictName('Ada Exempted Village')).toBe('Ada');
-    expect(shortDistrictName('Harwood Unified Union School District #60')).toBe('Harwood 60');
+    expect(shortDistrictName('Harwood Unified Union School District #60')).toBe('Harwood');
     expect(shortDistrictName('Anderson Community School Corp')).toBe('Anderson');
+    // Where another district of the state says the same words: its number, or its whole name.
+    expect(shortDistrictName('Hinsdale Township HSD 86', true)).toBe('Hinsdale 86');
+    expect(shortDistrictName('Hinsdale CCSD 181', true)).toBe('Hinsdale 181');
+    expect(shortDistrictName('Weld County School District No. Re-4', true)).toBe(
+      'Weld County Re-4',
+    );
+    expect(shortDistrictName('Corning Union High', true)).toBe('Corning Union High');
+    expect(shortDistrictName('Yuma Union High School District (4507)', true)).toBe(
+      'Yuma Union High School District',
+    );
     // A name that is nothing but its kind and its number: the number's district.
     expect(shortDistrictName('Community Unit School District 300')).toBe('District 300');
     expect(shortDistrictName('Cusd 300')).toBe('District 300');
@@ -905,8 +917,14 @@ describe('district names', () => {
       'Township High School District 211',
       'Community Unit School District 300',
       'Rich Township HSD 227',
+      'Bluford Unit School District 318',
+      'Lake Region Union High School District #24',
     ]) {
-      expect(shortDistrictName(name)).not.toMatch(/(?:Community|Unit|Township High)$/);
+      for (const alike of [false, true]) {
+        expect(shortDistrictName(name, alike)).not.toMatch(
+          /(?:Community|Unit|Union High|Township High|High|CUSD|HSD|PSD)(?: \S+)?$/,
+        );
+      }
     }
   });
 });

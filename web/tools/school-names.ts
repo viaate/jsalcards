@@ -14,12 +14,17 @@ import path from 'node:path';
 import type { Plugin } from 'vite';
 
 import { plainPath } from '../src/data/paths.ts';
-import { nameFixes } from '../src/text/school-names.ts';
+import { alikeDistricts } from '../src/text/district-names.ts';
+import { displayName } from '../src/text/names.ts';
+import { nameFixes, stateOfId } from '../src/text/school-names.ts';
 import type { DirectoryNames, NameFixes } from '../src/text/school-names.ts';
 import { listDataFiles } from './data-files.ts';
 
 export const SCHOOL_NAMES_MODULE = 'virtual:snowlight/school-names';
 const RESOLVED_ID = `\0${SCHOOL_NAMES_MODULE}`;
+/** The districts whose short names keep their numbers (src/text/district-names.ts), for the panel. */
+export const DISTRICT_NAMES_MODULE = 'virtual:snowlight/district-names';
+const RESOLVED_DISTRICTS_ID = `\0${DISTRICT_NAMES_MODULE}`;
 
 const META = 'schools/meta.json';
 const POINTS = 'schools/points.bin';
@@ -60,16 +65,38 @@ export function schoolNamesModule(fixes: NameFixes): string {
   ].join('\n');
 }
 
-/** The fixes for the directory staged in `dir` (public/data/), or none. */
-export function stagedNameFixes(dir: string): NameFixes {
+/** The district module's source. */
+export function districtNamesModule(alike: readonly string[]): string {
+  return `export const ALIKE_DISTRICTS = Object.freeze(${JSON.stringify(alike)});\n`;
+}
+
+/** The directory's districts whose names, as the page shows them, another of the state shares. */
+export function alikeDistrictIds(directory: DirectoryNames, fixes: NameFixes): string[] {
+  const { ids, names } = directory.districts;
+  return alikeDistricts(
+    ids.map((id, i) => {
+      const state = stateOfId(id);
+      const shown = displayName(names[i] ?? '', { state, district: true }, fixes.districts[id]);
+      return { id, state, shown };
+    }),
+  );
+}
+
+/** The directory staged in `dir` (public/data/), or null. */
+function stagedNames(dir: string): DirectoryNames | null {
   const files = listDataFiles(dir);
   const meta = files.find((file) => plainPath(file) === META);
   const points = files.find((file) => plainPath(file) === POINTS);
-  if (meta === undefined || points === undefined) return NONE;
-  const names = directoryNames(
+  if (meta === undefined || points === undefined) return null;
+  return directoryNames(
     JSON.parse(readFileSync(path.join(dir, meta), 'utf8')) as unknown,
     readFileSync(path.join(dir, points)),
   );
+}
+
+/** The fixes for the directory staged in `dir` (public/data/), or none. */
+export function stagedNameFixes(dir: string): NameFixes {
+  const names = stagedNames(dir);
   return names === null ? NONE : nameFixes(names);
 }
 
@@ -82,25 +109,37 @@ export interface SchoolNamesOptions {
 export function schoolNames(dataDir: string, options: SchoolNamesOptions = {}): Plugin {
   const ship = options.ship ?? true;
   let dir = '';
+  let staged: { fixes: NameFixes; alike: string[] } | null = null;
+  const read = (): { fixes: NameFixes; alike: string[] } => {
+    if (staged !== null) return staged;
+    const names = dir === '' || !ship ? null : stagedNames(dir);
+    const fixes = names === null ? NONE : nameFixes(names);
+    staged = { fixes, alike: names === null ? [] : alikeDistrictIds(names, fixes) };
+    return staged;
+  };
   return {
     name: 'snowlight:school-names',
     configResolved(config) {
       dir = config.publicDir === '' ? '' : path.join(config.publicDir, dataDir);
     },
     resolveId(id) {
-      return id === SCHOOL_NAMES_MODULE ? RESOLVED_ID : null;
+      if (id === SCHOOL_NAMES_MODULE) return RESOLVED_ID;
+      return id === DISTRICT_NAMES_MODULE ? RESOLVED_DISTRICTS_ID : null;
     },
     load(id) {
-      if (id !== RESOLVED_ID) return null;
-      return schoolNamesModule(dir === '' || !ship ? NONE : stagedNameFixes(dir));
+      if (id === RESOLVED_ID) return schoolNamesModule(read().fixes);
+      return id === RESOLVED_DISTRICTS_ID ? districtNamesModule(read().alike) : null;
     },
     configureServer(server) {
       if (dir === '') return;
       // Staging a directory while the dev server runs: work the fixes out again for it.
       const onChange = (file: string): void => {
         if (!path.resolve(file).startsWith(path.resolve(dir) + path.sep)) return;
-        const module = server.moduleGraph.getModuleById(RESOLVED_ID);
-        if (module !== undefined) server.moduleGraph.invalidateModule(module);
+        staged = null;
+        for (const resolved of [RESOLVED_ID, RESOLVED_DISTRICTS_ID]) {
+          const module = server.moduleGraph.getModuleById(resolved);
+          if (module !== undefined) server.moduleGraph.invalidateModule(module);
+        }
       };
       server.watcher.on('add', onChange);
       server.watcher.on('unlink', onChange);
