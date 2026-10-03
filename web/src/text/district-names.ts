@@ -124,6 +124,13 @@ const COUNTY_TAIL =
   /(?<=\d[a-z\d-]*(?:\s+jt\.?)?)\s+(?:in|of)\s+(?:the\s+)?co(?:u(?:n(?:ty?|ties)?)?)?\b.*$/i;
 /** The county a Colorado name says, in its capitalized words: "Denver", "El Paso". */
 const COUNTY = /\bcount(?:y|ies)\s+of\s+([A-Z][a-z]+(?:\s+[A-Z][a-z]+)?)/;
+/** Michigan's "School District of the City of", its place cut off after it. */
+const CITY_TAIL = /\s+of\s+the\s+city\s+of$/i;
+const KIND_WORD = new RegExp(`\\b(?:${KIND_WORDS})\\b`, 'i');
+/** What joins words of a name, never ends one: "Arts and", "Academy -". */
+const JOINER = /\s*(?:[-:,&]|\band)$/i;
+/** A word that cannot end a name: "Superintendent of". */
+const DANGLING = /\s(?:of|for|at|in|to|on|by|with)$/i;
 /** Arizona's id after a name: " (4192)". */
 const STATE_ID = /\s*\(\d+\)$/;
 /** A name with nothing left but kinds. */
@@ -192,7 +199,7 @@ export function districtName(shown: string, state: string | null = null): Distri
     // A name run into its kind: "GreeleySchool District No. 6".
     .replace(/([a-z])(School District)/g, '$1 $2');
   const county = COUNTY.exec(name)?.[1] ?? null;
-  name = name.replace(COUNTY_TAIL, '');
+  name = name.replace(COUNTY_TAIL, '').replace(CITY_TAIL, '');
   if (state === 'NY') name = name.replace(ALIAS_NY, '');
   name = name.trim();
   const whole = name;
@@ -220,7 +227,14 @@ export function districtName(shown: string, state: string | null = null): Distri
     cut = true;
   }
   if (!cut) return { words: whole, number: null, whole, named: whole };
-  return parts(name.trim().replace(/\s*(?:[-:,&]|\band)$/i, ''), number, whole);
+  const left = name.trim().replace(/\s+the$/i, '');
+  // Kind words after a joiner were the name's own: "Arts and Community District", "- Middle District".
+  if ((JOINER.test(left) && KIND_WORD.test(whole.slice(name.length))) || DANGLING.test(left)) {
+    const named = namedOf(whole);
+    const kept = JOINER.test(named) || DANGLING.test(named) ? whole : named;
+    return { words: kept, number: null, whole, named: kept };
+  }
+  return parts(left.replace(JOINER, ''), number, whole);
 }
 
 /** Districts whose words another district of the state shares (Hinsdale 86, Hinsdale 181): they keep their numbers. */

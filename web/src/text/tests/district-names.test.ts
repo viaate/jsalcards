@@ -210,6 +210,30 @@ describe('a district’s name', () => {
     });
   });
 
+  it('never ends on a word that joins or leads into more of the name', () => {
+    // A kind's words after "and" or a dash were the name's own.
+    expect(words('Interdistrict School for Arts and Community District', 'CT')).toBe(
+      'Interdistrict School for Arts and Community',
+    );
+    expect(words('Oxford Preparatory Academy - Middle District', 'CA')).toBe(
+      'Oxford Preparatory Academy - Middle',
+    );
+    // Only a noun or a number after them: those go.
+    expect(words('Penta Career Center - District', 'OH')).toBe('Penta Career Center');
+    expect(districtName('NYC Special Schools - District 75', 'NY')).toMatchObject({
+      words: 'NYC Special Schools',
+      number: '75',
+    });
+    // "Of" leads into what the cut took: whole.
+    expect(words('Madera County Superintendent of Schools', 'CA')).toBe(
+      'Madera County Superintendent of Schools',
+    );
+    // Michigan's city districts, their place cut off after "of the City of".
+    expect(words('Flint School District of the City of', 'MI')).toBe('Flint');
+    expect(words('Harper Woods The School District of the City of', 'MI')).toBe('Harper Woods');
+    expect(words('Muskegon Public Schools of the City of', 'MI')).toBe('Muskegon');
+  });
+
   it('keeps the kind’s words where they are what tells two apart', () => {
     expect(districtName('Franklin Regional School District', 'PA').named).toBe('Franklin Regional');
     expect(districtName('Franklin Area School District', 'PA').named).toBe('Franklin Area');
