@@ -432,6 +432,38 @@ describe('national blend', () => {
     expect(street(0) / street(4)).toBeGreaterThan(10);
   }, 60_000);
 
+  it('shows grain where a town’s schools pile up inside a field, and none for a lone school or a lone town', () => {
+    // A 2x laptop's national view, points in light-target px.
+    const t = 2;
+    const style = glowStyleAtZoom(4.03);
+    const grain = (points: [number, number][]): number => {
+      const shown = compositeLight(points, style, SIZE, t);
+      const soft = compositeLight(points, { ...style, denseShare: 0 }, SIZE, t);
+      let most = 0;
+      shown.forEach((light, i) => {
+        most = Math.max(most, displayed(light) - displayed(soft[i] ?? 0));
+      });
+      return most;
+    };
+    const town = (x: number, y: number): [number, number][] => [
+      [x, y],
+      [x + t, y],
+    ];
+    const field: [number, number][] = [];
+    const spacing = (15 / kmPerPx(4.03)) * t;
+    for (let y = 16.6; y <= 240; y += spacing) {
+      for (let x = 16.3; x <= 240; x += spacing) field.push([x, y]);
+    }
+    const middle = 16 + spacing * Math.floor(112 / spacing) + spacing / 2;
+    expect(grain([[128.3, 128.6]])).toBeLessThan(0.5);
+    expect(grain(town(128.3, 128.6))).toBeLessThan(0.5);
+    // A field of schools 15 km apart, as on the plains, and one more school in it.
+    expect(grain(field)).toBeLessThan(0.5);
+    expect(grain([...field, [middle + 0.3, middle + 0.6]])).toBeLessThan(0.5);
+    // Two schools a CSS px (4 km) apart, as a town’s elementary and high school.
+    expect(grain([...field, ...town(middle + 0.3, middle + 0.6)])).toBeGreaterThan(30);
+  }, 60_000);
+
   it('shows a lone school regionally as a crisp small light over a soft wash, sharper on a sharper screen', () => {
     for (const zoom of [5.5, 6, 7]) {
       const sharp = lonePoint(zoom, 2);

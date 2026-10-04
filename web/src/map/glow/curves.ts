@@ -154,8 +154,8 @@ export const DENSE_SHARE_STOPS: ZoomStops = [
   [5.5, 0],
 ];
 
-/** Core light at a pixel, in lone-core peaks, over which the dense share comes in: two or three cores overlapping. */
-export const DENSE_GATE: readonly [from: number, full: number] = [1.5, 3];
+/** Core light at a pixel, in lone-core peaks, over which the dense share comes in: from a town's second school. */
+export const DENSE_GATE: readonly [from: number, full: number] = [1, 2];
 
 /** Light around a pixel, in lone-blend peaks as shown, over which the dense share comes in: inside a field only. */
 export const DENSE_FIELD: readonly [from: number, full: number] = [2, 5];
