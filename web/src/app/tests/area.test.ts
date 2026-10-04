@@ -213,9 +213,9 @@ describe('the area panel’s view', () => {
     expect(chance.meaning).toBe('Chance of no school Tuesday');
     expect(chance.day).toBe('2026-01-13');
     expect(chance.why.map(({ number, text }) => `${number} ${text}`)).toEqual([
-      '64% Kansas City 33 decides for 2 of the 7 schools here.',
-      '31% Center 58 decides for 1 of the 7 schools here.',
-      '100% Kansas City 33 canceled Tuesday at 1 of the 7 schools here.',
+      '64% Kansas City 33 decides for 2 schools here.',
+      '31% Center 58 decides for 1 school here.',
+      '100% Kansas City 33 canceled Tuesday at 1 school here.',
       '100% Delta Academy canceled Tuesday.',
     ]);
     // Epsilon says nothing and is outside a district; Shawnee Mission has no threat.
@@ -234,7 +234,7 @@ describe('the area panel’s view', () => {
     const chance = areaView(input({ area: one }))?.chance;
     expect(chance?.number).toBe('64');
     expect(chance?.why.map(({ text }) => text)).toEqual([
-      'Kansas City 33 decides for all 2 schools here.',
+      'Kansas City 33 decides for both schools here.',
     ]);
     expect(chance?.left).toBeNull();
     expect(chance?.chart?.key.some((row) => row.mark === 'announces')).toBe(true);

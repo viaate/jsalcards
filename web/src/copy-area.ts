@@ -87,21 +87,26 @@ function statusCount(status: StatusKey, n: number): string {
   return `${count(n)} ${COUNT_WORDS[checkKey(copy.status, status, 'status')]}`;
 }
 
-/** "9 of the 14 schools here", "all 14 schools here", "the 1 school here". */
+/**
+ * "9 schools here", "all 14 schools here", "both schools here", "the 1 school here": how many of
+ * the area's schools a row speaks for. The area's own count is said once,
+ * by the list and by what the chance leaves out, not on every row.
+ */
 function ofHere(n: number, of: number): string {
   if (n < 1 || n > of) throw new RangeError(`copy: ${String(n)} of ${String(of)} schools`);
-  if (n === of) return of === 1 ? 'the 1 school here' : `all ${count(of)} schools here`;
-  return `${count(n)} of the ${count(of)} ${of === 1 ? 'school' : 'schools'} here`;
+  if (n === of && of <= 2) return of === 1 ? 'the 1 school here' : 'both schools here';
+  if (n === of) return `all ${count(of)} schools here`;
+  return `${count(n)} ${n === 1 ? 'school' : 'schools'} here`;
 }
 
-/** A district and the schools it decides for: "Kansas City 33 decides for 9 of the 14 schools here." */
+/** A district and the schools it decides for: "Kansas City 33 decides for 9 schools here." */
 function decides(name: string, n: number, of: number): string {
   return `${name} decides for ${ofHere(n, of)}.`;
 }
 
 /**
  * What a district already posted for the day, at how many of the area's
- * schools: "Kansas City 33 canceled Tuesday at 9 of the 14 schools here."
+ * schools: "Kansas City 33 canceled Tuesday at 9 schools here."
  */
 function districtPosted(
   name: string,

@@ -569,8 +569,10 @@ describe('format', () => {
       expect(areaFormat.statusCount('remote', 2)).toBe('2 remote');
       expect(areaFormat.statusCount('earlyDismissal', 3)).toBe('3 dismissing early');
       expect(areaFormat.statusCount('closed', 1284)).toBe('1,284 closed');
-      expect(areaFormat.decides('Riverside', 9, 14)).toBe(
-        'Riverside decides for 9 of the 14 schools here.',
+      expect(areaFormat.decides('Riverside', 9, 14)).toBe('Riverside decides for 9 schools here.');
+      expect(areaFormat.decides('Riverside', 1, 14)).toBe('Riverside decides for 1 school here.');
+      expect(areaFormat.decides('Riverside', 2, 2)).toBe(
+        'Riverside decides for both schools here.',
       );
       expect(areaFormat.decides('Riverside', 14, 14)).toBe(
         'Riverside decides for all 14 schools here.',
@@ -582,10 +584,10 @@ describe('format', () => {
       expect(() => areaFormat.decides('Riverside', 15, 14)).toThrow(RangeError);
       const day = '2026-01-13';
       expect(areaFormat.districtPosted('Riverside', 'closed', 9, 14, day)).toBe(
-        'Riverside canceled Tuesday at 9 of the 14 schools here.',
+        'Riverside canceled Tuesday at 9 schools here.',
       );
       expect(areaFormat.districtPosted('Riverside', 'remote', 2, 2, day)).toBe(
-        'Riverside is remote Tuesday at all 2 schools here.',
+        'Riverside is remote Tuesday at both schools here.',
       );
       expect(areaFormat.schoolPosted('Riverside', 'delayed', day)).toBe(
         'Riverside starts late Tuesday.',

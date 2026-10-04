@@ -111,7 +111,7 @@ describe('AreaPanel', () => {
         number: '64',
         meaning: 'Chance of no school Tuesday',
         why: [
-          { key: 'a', number: '64%', text: 'Test Village decides for 1 of the 3 schools here.' },
+          { key: 'a', number: '64%', text: 'Test Village decides for 1 school here.' },
         ],
         left: '2 of the 3 schools here have no chance given for Tuesday and are left out.',
         chart: null,
@@ -123,7 +123,7 @@ describe('AreaPanel', () => {
       '64% Chance of no school Tuesday',
     );
     expect(panel.querySelector('.why .row')?.textContent.replace(/\s+/gu, ' ').trim()).toBe(
-      '64% Test Village decides for 1 of the 3 schools here.',
+      '64% Test Village decides for 1 school here.',
     );
     expect(panel.querySelector('.left')?.textContent).toMatch(/^2 of the 3 schools/u);
     expect(panel.querySelector('.tally .label')?.textContent).toBe(copy.days.today);

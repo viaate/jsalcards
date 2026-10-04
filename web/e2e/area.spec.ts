@@ -796,7 +796,7 @@ test('with a predictions file, the chance is the students’ average over the co
   // Who decides, most students first: Kansas City 33 closed both its schools here, so 100%.
   await expect(panel.locator('.why .row .label')).toHaveText(['100%', '40%', '55%']);
   await expect(panel.locator('.why .row p').first()).toHaveText(
-    'Kansas City 33 canceled Monday at 2 of the 6 schools here.',
+    'Kansas City 33 canceled Monday at 2 schools here.',
   );
   // Genesis has no threat today: no chance is given for it, and the panel says it is left out.
   await expect(panel.locator('.left')).toHaveText(
