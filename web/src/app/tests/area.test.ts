@@ -14,7 +14,7 @@ import type { AreaRecord, AreaSource } from '../../data/areas';
 import type { DetailsSource, SchoolRecord } from '../../data/details';
 import { createDataFiles } from '../../data/files';
 import type { ClosingsFile, DirectoryStamp, PredictionsFile } from '../../types/generated';
-import { areaView, watchArea } from '../area';
+import { areaBounds, areaView, watchArea } from '../area';
 import type { AreaInput } from '../area';
 
 const ZONE = 'America/Chicago';
@@ -197,8 +197,9 @@ describe('the area panel’s view', () => {
     expect(view.nearHeading).toBe('2 more within 2 miles');
     expect(view.near.map((row) => row.id)).toEqual(['291640000006', '201164000007']);
     expect(view.noneNear).toBeNull();
-    expect(view.bounds).toEqual([-94.62, 39.04, -94.59, 39.06]);
     expect(view.loading).toBe(false);
+    // The map takes in the ZIP code's point and every school of its area.
+    expect(areaBounds(AREA)).toEqual([-94.62, 39.04, -94.59, 39.06]);
   });
 
   it('heads the chance with the students’ average over the counted schools, closed as 100%', () => {
@@ -219,7 +220,7 @@ describe('the area panel’s view', () => {
     ]);
     // Epsilon says nothing and is outside a district; Shawnee Mission has no threat.
     expect(chance.left).toBe(
-      '2 of the 7 schools here have no chance given for Tuesday, so the chance leaves them out.',
+      '2 of the 7 schools here have no chance given for Tuesday and are left out.',
     );
     // The night ahead, as Kansas City 33 has it; its usual announcement is its own, so left off.
     expect(chance.chart?.kind).toBe('snow_total');
@@ -255,19 +256,19 @@ describe('the area panel’s view', () => {
     expect(areaView(input({ now: new Date('2026-01-13T13:30:00Z') }))?.chance).toBeNull();
   });
 
-  it('gives no chance while a school the file names cannot be read, and leaves it off the list', () => {
-    const records = new Map(RECORDS);
+  it('keeps the list’s shape, and gives no chance, until every school the file names is read', () => {
+    const records = new Map<string, SchoolRecord | null>(RECORDS);
     records.set('291640000002', null);
     const view = areaView(input({ records }));
-    expect(view?.chance).toBeNull();
-    expect(view?.own.map((row) => row.id)).not.toContain('291640000002');
+    expect(view).toMatchObject({ loading: true, chance: null, own: [], near: [], heading: '' });
+    expect(view?.place).toBe('Kansas City, MO');
     // A record from another directory is not the school the file names.
     const stale = new Map(RECORDS);
     stale.set('291640000001', {
       ...SCHOOLS[0],
       directory: { ...STAMP, schools: 8 },
     } as SchoolRecord);
-    expect(areaView(input({ records: stale }))?.chance).toBeNull();
+    expect(areaView(input({ records: stale }))?.loading).toBe(true);
   });
 
   it('lights each school with today’s status, and counts them over the list', () => {
@@ -325,7 +326,9 @@ describe('the area panel’s view', () => {
     const empty = areaView(input({ area: { ...sparse, own: [], near: [] } }));
     expect(empty?.heading).toBe('No schools in 64111');
     expect(empty?.noneNear).toBe('None within 2 miles');
-    expect(empty?.bounds).toEqual([-94.594, 39.057, -94.594, 39.057]);
+    expect(areaBounds({ ...sparse, own: [], near: [] })).toEqual([
+      -94.594, 39.057, -94.594, 39.057,
+    ]);
   });
 
   it('shows the ZIP code and what search knew while it reads, and nothing for a ZIP code with no area', () => {

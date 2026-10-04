@@ -595,10 +595,10 @@ describe('format', () => {
       expect(areaFormat.postedShare('delayed')).toBe('0%');
       expect(areaFormat.postedShare('earlyDismissal')).toBe('0%');
       expect(areaFormat.notCounted(3, 14, day)).toBe(
-        '3 of the 14 schools here have no chance given for Tuesday, so the chance leaves them out.',
+        '3 of the 14 schools here have no chance given for Tuesday and are left out.',
       );
       expect(areaFormat.notCounted(1, 6, day)).toBe(
-        '1 of the 6 schools here has no chance given for Tuesday, so the chance leaves it out.',
+        '1 of the 6 schools here has no chance given for Tuesday and is left out.',
       );
       const outputs: string[] = [];
       for (const status of STATUS_KEYS) {

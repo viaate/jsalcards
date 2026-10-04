@@ -41,6 +41,8 @@ import type { Zones } from '../copy-chance';
 import { format } from '../copy-format';
 import { AREA_MIN_SCHOOLS, AREA_NEAR_MILES } from '../data/areas-format';
 import type { AreaRecord, AreaSchoolEntry, AreaSource } from '../data/areas';
+
+export { createAreaSource } from '../data/areas';
 import type { DetailsSource, SchoolRecord } from '../data/details';
 import type { DataFiles } from '../data/files';
 import { LIVE_POLL_MS } from '../data/live';
@@ -125,8 +127,6 @@ export interface AreaView {
   readonly near: readonly AreaSchoolView[];
   /** "No others within 2 miles", where the ZIP code has few schools and none are near. */
   readonly noneNear: string | null;
-  /** [west, south, east, north] around its schools and its point; null until it is read. */
-  readonly bounds: readonly [number, number, number, number] | null;
   /** True until the area and its schools are read. */
   readonly loading: boolean;
 }
@@ -390,30 +390,44 @@ export function areaChance(
   };
 }
 
+/** "Kansas City, MO" where most of its own schools say so, else its states: "Missouri". */
+function placeOf(area: AreaRecord, own: readonly Member[]): string | null {
+  return (
+    townOfMost(own.map(({ record }) => record)) ??
+    (area.states.length > 0 ? areaFormat.states(area.states) : null)
+  );
+}
+
+/** [west, south, east, north] around a ZIP code's point and every school of its area: where the map looks. */
+export function areaBounds(area: AreaRecord): [number, number, number, number] {
+  const places = [area, ...area.own, ...area.near];
+  const lons = places.map(({ lon }) => lon);
+  const lats = places.map(({ lat }) => lat);
+  return [Math.min(...lons), Math.min(...lats), Math.max(...lons), Math.max(...lats)];
+}
+
 /** The panel's view, or null when there is no area for this ZIP code. */
 export function areaView(input: AreaInput): AreaView | null {
   const { zip, hint, area, records, settled, live, now } = input;
   const label = areaFormat.label(zip);
   const back = areaFormat.backTo(zip);
-  if (area === null || records === null) {
-    if (settled && area === null) return null;
-    return {
-      zip,
-      place: hint?.zip === zip && hint.sub !== '' ? hint.sub : null,
-      label,
-      back,
-      chance: null,
-      counts: [],
-      heading: '',
-      own: [],
-      nearHeading: null,
-      near: [],
-      noneNear: null,
-      bounds: null,
-      loading: true,
-    };
-  }
-  // A school is listed by the record the file names, from the same directory: else not at all.
+  const reading: AreaView = {
+    zip,
+    place: hint?.zip === zip && hint.sub !== '' ? hint.sub : null,
+    label,
+    back,
+    chance: null,
+    counts: [],
+    heading: '',
+    own: [],
+    nearHeading: null,
+    near: [],
+    noneNear: null,
+    loading: true,
+  };
+  if (area === null || records === null) return settled && area === null ? null : reading;
+  // A school is listed by the record the file names, from the same directory. Until every one
+  // is read, the list keeps its shape: a list short of one would count the area wrong.
   const read = (entry: AreaSchoolEntry, own: boolean): Member[] => {
     const record = records.get(entry.id) ?? null;
     return record !== null &&
@@ -425,6 +439,9 @@ export function areaView(input: AreaInput): AreaView | null {
   const own = area.own.flatMap((entry) => read(entry, true));
   const near = area.near.flatMap((entry) => read(entry, false));
   const members = [...own, ...near];
+  if (members.length !== area.own.length + area.near.length) {
+    return { ...reading, place: placeOf(area, own) };
+  }
   const tones = members.map(({ record }) => todayTone(record, live, now));
   const rows = members.map((member, i) => rowView(member, tones[i] ?? null));
 
@@ -433,18 +450,11 @@ export function areaView(input: AreaInput): AreaView | null {
     const n = tones.filter((tone) => tone === status).length;
     if (n > 0) counts.push({ status, text: areaFormat.statusCount(status, n) });
   }
-  // Every school the file names must be read for the chance to stand for the area.
-  const whole = members.length === area.own.length + area.near.length;
-  const chance = whole ? areaChance(members, input) : null;
-
-  const lons = [area.lon, ...members.map(({ entry }) => entry.lon)];
-  const lats = [area.lat, ...members.map(({ entry }) => entry.lat)];
+  const chance = areaChance(members, input);
   const few = area.own.length < AREA_MIN_SCHOOLS;
   return {
     zip,
-    place:
-      townOfMost(own.map(({ record }) => record)) ??
-      (area.states.length > 0 ? areaFormat.states(area.states) : null),
+    place: placeOf(area, own),
     label,
     back,
     chance,
@@ -456,7 +466,6 @@ export function areaView(input: AreaInput): AreaView | null {
     near: rows.slice(own.length),
     noneNear:
       few && area.near.length === 0 ? areaFormat.noneNear(own.length, AREA_NEAR_MILES) : null,
-    bounds: [Math.min(...lons), Math.min(...lats), Math.max(...lons), Math.max(...lats)],
     loading: false,
   };
 }
@@ -515,22 +524,31 @@ export function watchArea(options: WatchAreaOptions): () => void {
     return () => undefined;
   }
   show();
+  /** Reads the area's schools not read yet: all of them at first, then any a read missed. */
+  const readSchools = async (): Promise<void> => {
+    if (area === null) return;
+    const missing = [...area.own, ...area.near].filter(
+      ({ id }) => (records?.get(id) ?? null) === null,
+    );
+    const read = await Promise.all(missing.map(({ id }) => details.get(id).catch(() => null)));
+    records = new Map([
+      ...(records ?? []),
+      ...missing.map(({ id }, i) => [id, read[i] ?? null] as const),
+    ]);
+  };
   const reading = areas
     .get(zip)
     .catch(() => null)
     .then(async (found) => {
       area = found;
-      if (found === null) return;
-      const entries = [...found.own, ...found.near];
-      const read = await Promise.all(entries.map(({ id }) => details.get(id).catch(() => null)));
-      records = new Map(entries.map(({ id }, i) => [id, read[i] ?? null]));
+      await readSchools();
     });
   void Promise.all([reading, readLive()]).then(() => {
     settled = true;
     show();
   });
   const timer = setInterval(() => {
-    void readLive().then(show);
+    void Promise.all([readLive(), settled ? readSchools() : null]).then(show);
   }, options.pollMs ?? LIVE_POLL_MS);
 
   return () => {

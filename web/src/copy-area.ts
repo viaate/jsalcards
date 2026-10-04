@@ -130,12 +130,13 @@ function postedShare(status: StatusKey): string {
   }
 }
 
-/** The schools the area's chance leaves out: "3 of the 14 schools here have no chance given for Tuesday." */
+/** The schools the area's chance leaves out: "3 of the 14 schools here have no chance given for Tuesday and are left out." */
 function notCounted(n: number, of: number, localDate: string): string {
   const on = chanceFormat.weekday(localDate);
   if (n < 1 || n > of) throw new RangeError(`copy: ${String(n)} of ${String(of)} schools`);
   const verb = n === 1 ? 'has' : 'have';
-  return `${count(n)} of the ${count(of)} ${of === 1 ? 'school' : 'schools'} here ${verb} no chance given for ${on}, so the chance leaves ${n === 1 ? 'it' : 'them'} out.`;
+  const left = n === 1 ? 'is left out' : 'are left out';
+  return `${count(n)} of the ${count(of)} ${of === 1 ? 'school' : 'schools'} here ${verb} no chance given for ${on} and ${left}.`;
 }
 
 export const areaFormat = /* @__PURE__ */ deepFreeze({
