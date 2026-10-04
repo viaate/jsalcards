@@ -76,7 +76,11 @@ async function put(
     }
     // A copy sent no earlier is kept as it is: the worker's own, or an earlier read's that came
     // back first. One sent later than it replaces it. (A cache-first file is the same file
-    // under its name whichever copy it is, so it goes in as it downloads.)
+    // under its name whichever copy it is, so it goes in as it downloads.) The worker can still
+    // put a newer live file between this look and the put, which then puts this older one over
+    // it. The next read of that file through the worker gets the older copy, with its own time,
+    // and the worker's revalidation puts the newer one back and tells the page (data.ts
+    // onDataUpdate), which reads it again.
     const held = await cache.match(url);
     if (held !== undefined && !(sentAt(file) > sentAt(held))) {
       discard(file);
