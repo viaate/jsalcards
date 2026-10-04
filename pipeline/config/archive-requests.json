@@ -1,1504 +1,1504 @@
 {
  "snapshots": [
   {
-   "timestamp": "20240923143952",
-   "url": "http://www.calhounflschools.org/",
-   "station": "smartsites-calhoun-fl",
-   "why": "2024-09-23: within 2 days of one of its closure days"
-  },
-  {
-   "timestamp": "20240923044931",
-   "url": "http://www.calhounflschools.org/",
-   "station": "smartsites-calhoun-fl",
-   "why": "2024-09-23: within 2 days of one of its closure days"
-  },
-  {
-   "timestamp": "20240924143727",
-   "url": "http://www.calhounflschools.org/",
-   "station": "smartsites-calhoun-fl",
-   "why": "2024-09-24: within 2 days of one of its closure days"
-  },
-  {
-   "timestamp": "20250221110839",
-   "url": "https://www.hollandalesd.org/",
-   "station": "finalsite-hollandale-ms",
-   "why": "2025-02-21: within 2 days of one of its closure days"
-  },
-  {
-   "timestamp": "20250220113955",
-   "url": "https://www.hollandalesd.org/",
-   "station": "finalsite-hollandale-ms",
-   "why": "2025-02-20: within 2 days of one of its closure days"
-  },
-  {
-   "timestamp": "20250220233757",
-   "url": "https://www.hollandalesd.org/",
-   "station": "finalsite-hollandale-ms",
-   "why": "2025-02-21: within 2 days of one of its closure days"
-  },
-  {
-   "timestamp": "20260124022654",
-   "url": "https://www.robstownisd.org/",
-   "station": "edlio-robstown-tx",
-   "why": "2026-01-24: within 2 days of one of its closure days"
-  },
-  {
-   "timestamp": "20260124113503",
-   "url": "https://www.robstownisd.org/",
-   "station": "edlio-robstown-tx",
-   "why": "2026-01-24: within 2 days of one of its closure days"
-  },
-  {
-   "timestamp": "20260124183810",
-   "url": "https://www.robstownisd.org/",
-   "station": "edlio-robstown-tx",
-   "why": "2026-01-25: within 2 days of one of its closure days"
-  },
-  {
-   "timestamp": "20240403134055",
-   "url": "https://www.tvusd.k12.ca.us/",
-   "station": "finalsite-temecula-valley-ca",
-   "why": "2024-04-03: within 2 days of one of its closure days"
-  },
-  {
-   "timestamp": "20241116022226",
-   "url": "https://www.tvusd.k12.ca.us/",
-   "station": "finalsite-temecula-valley-ca",
-   "why": "2024-11-16: within 2 days of one of its closure days"
-  },
-  {
-   "timestamp": "20241116013634",
-   "url": "https://www.tvusd.k12.ca.us/",
-   "station": "finalsite-temecula-valley-ca",
-   "why": "2024-11-16: within 2 days of one of its closure days"
-  },
-  {
-   "timestamp": "20210913162901",
-   "url": "https://sintonisd.net/",
-   "station": "smartsites-sinton-tx",
-   "why": "2021-09-14: within 2 days of one of its closure days"
-  },
-  {
-   "timestamp": "20250303010721",
-   "url": "https://www.ocesd.net/",
-   "station": "apptegy-oroville-ca",
-   "why": "2025-03-03: within 2 days of one of its closure days"
-  },
-  {
-   "timestamp": "20260221045604",
-   "url": "https://www.ocesd.net/",
-   "station": "apptegy-oroville-ca",
-   "why": "2026-02-21: within 2 days of one of its closure days"
-  },
-  {
-   "timestamp": "20241123145340",
-   "url": "https://www.ocesd.net/",
-   "station": "apptegy-oroville-ca",
-   "why": "2024-11-23: within 2 days of one of its closure days"
-  },
-  {
-   "timestamp": "20220327110342",
-   "url": "https://www.hemetusd.org/",
-   "station": "apptegy-hemet-ca",
-   "why": "2022-03-27: within 2 days of one of its closure days"
-  },
-  {
-   "timestamp": "20220326110316",
-   "url": "https://www.hemetusd.org/",
-   "station": "apptegy-hemet-ca",
-   "why": "2022-03-26: within 2 days of one of its closure days"
-  },
-  {
-   "timestamp": "20220325230451",
-   "url": "https://www.hemetusd.org/",
-   "station": "apptegy-hemet-ca",
-   "why": "2022-03-26: within 2 days of one of its closure days"
-  },
-  {
-   "timestamp": "20250222044845",
-   "url": "https://www.bcisd.us/",
-   "station": "finalsite-brooks-county-tx",
-   "why": "2025-02-22: within 2 days of one of its closure days"
-  },
-  {
-   "timestamp": "20250223124923",
-   "url": "https://www.bcisd.us/",
-   "station": "finalsite-brooks-county-tx",
-   "why": "2025-02-23: within 2 days of one of its closure days"
-  },
-  {
-   "timestamp": "20170124210318",
-   "url": "https://www.psusd.us/",
-   "station": "finalsite-palm-springs-ca",
-   "why": "2017-01-25: within 2 days of one of its closure days"
-  },
-  {
-   "timestamp": "20170114050102",
-   "url": "http://www.psusd.us/",
-   "station": "finalsite-palm-springs-ca",
-   "why": "2017-01-14: within 2 days of one of its closure days"
-  },
-  {
-   "timestamp": "20170114044953",
-   "url": "http://www.psusd.us/",
-   "station": "finalsite-palm-springs-ca",
-   "why": "2017-01-14: within 2 days of one of its closure days"
-  },
-  {
-   "timestamp": "20250219223614",
-   "url": "https://www.zcisd.org/",
-   "station": "smartsites-zapata-county-tx",
-   "why": "2025-02-20: within 2 days of one of its closure days"
-  },
-  {
-   "timestamp": "20250123061747",
-   "url": "https://www.zcisd.org/",
-   "station": "smartsites-zapata-county-tx",
-   "why": "2025-01-23: within 2 days of one of its closure days"
-  },
-  {
-   "timestamp": "20191019130218",
-   "url": "https://www.gsboe.org/",
-   "station": "finalsite-gulf-shores-al",
-   "why": "2019-10-19: within 2 days of one of its closure days"
-  },
-  {
-   "timestamp": "20200920125824",
-   "url": "http://refugioisd.net/",
-   "station": "apptegy-refugio-tx",
-   "why": "2020-09-20: within 2 days of one of its closure days"
-  },
-  {
-   "timestamp": "20220123091421",
-   "url": "https://www.vviewisd.net/",
-   "station": "apptegy-valley-view-tx",
-   "why": "2022-01-23: within 2 days of one of its closure days"
-  },
-  {
-   "timestamp": "20240403134053",
-   "url": "https://www.murrieta.k12.ca.us/",
-   "station": "finalsite-murrieta-valley-ca",
-   "why": "2024-04-03: within 2 days of one of its closure days"
-  },
-  {
-   "timestamp": "20250316130936",
-   "url": "https://www.murrieta.k12.ca.us//",
-   "station": "finalsite-murrieta-valley-ca",
-   "why": "2025-03-16: within 2 days of one of its closure days"
-  },
-  {
-   "timestamp": "20250315233645",
-   "url": "https://www.murrieta.k12.ca.us//",
-   "station": "finalsite-murrieta-valley-ca",
-   "why": "2025-03-16: within 2 days of one of its closure days"
-  },
-  {
-   "timestamp": "20240114095034",
-   "url": "https://www.rivieraisd.us/",
-   "station": "apptegy-riviera-tx",
-   "why": "2024-01-14: within 2 days of one of its closure days"
-  },
-  {
-   "timestamp": "20240119133418",
-   "url": "https://www.rivieraisd.us/",
-   "station": "apptegy-riviera-tx",
-   "why": "2024-01-19: within 2 days of one of its closure days"
-  },
-  {
-   "timestamp": "20240119070457",
-   "url": "https://www.rivieraisd.us/",
-   "station": "apptegy-riviera-tx",
-   "why": "2024-01-19: within 2 days of one of its closure days"
-  },
-  {
-   "timestamp": "20180117113659",
-   "url": "http://www.taftisd.net:80/",
-   "station": "apptegy-taft-tx",
-   "why": "2018-01-17: within 2 days of one of its closure days"
-  },
-  {
-   "timestamp": "20180115080608",
-   "url": "http://www.taftisd.net:80/",
-   "station": "apptegy-taft-tx",
-   "why": "2018-01-15: within 2 days of one of its closure days"
-  },
-  {
-   "timestamp": "20170827031222",
-   "url": "http://taftisd.net:80/",
-   "station": "apptegy-taft-tx",
-   "why": "2017-08-27: within 2 days of one of its closure days"
-  },
-  {
-   "timestamp": "20221202193950",
-   "url": "https://www.ouhsd.org/",
-   "station": "finalsite-oroville-high-ca",
-   "why": "2022-12-03: within 2 days of one of its closure days"
-  },
-  {
-   "timestamp": "20221206232505",
-   "url": "https://www.ouhsd.org/",
-   "station": "finalsite-oroville-high-ca",
-   "why": "2022-12-07: within 2 days of one of its closure days"
-  },
-  {
-   "timestamp": "20201105033316",
-   "url": "https://www.ouhsd.org/",
-   "station": "finalsite-oroville-high-ca",
-   "why": "2020-11-05: within 2 days of one of its closure days"
-  },
-  {
-   "timestamp": "20221221131748",
-   "url": "https://www.paisd.net/",
-   "station": "smartsites-port-aransas-tx",
-   "why": "2022-12-21: within 2 days of one of its closure days"
-  },
-  {
-   "timestamp": "20221221183916",
-   "url": "https://www.paisd.net/",
-   "station": "smartsites-port-aransas-tx",
-   "why": "2022-12-22: within 2 days of one of its closure days"
-  },
-  {
-   "timestamp": "20170822154135",
-   "url": "http://www.paisd.net:80/",
-   "station": "smartsites-port-aransas-tx",
-   "why": "2017-08-22: within 2 days of one of its closure days"
-  },
-  {
-   "timestamp": "20170826093854",
-   "url": "http://www.premontisd.net:80/",
-   "station": "smartsites-premont-tx",
-   "why": "2017-08-26: within 2 days of one of its closure days"
-  },
-  {
-   "timestamp": "20250303020204",
-   "url": "https://www.durhamunified.org/",
-   "station": "apptegy-durham-ca",
-   "why": "2025-03-03: within 2 days of one of its closure days"
-  },
-  {
-   "timestamp": "20250216040135",
-   "url": "https://www.durhamunified.org/",
-   "station": "apptegy-durham-ca",
-   "why": "2025-02-16: within 2 days of one of its closure days"
-  },
-  {
-   "timestamp": "20250205004316",
-   "url": "https://www.durhamunified.org/",
-   "station": "apptegy-durham-ca",
-   "why": "2025-02-05: within 2 days of one of its closure days"
-  },
-  {
-   "timestamp": "20220120030909",
-   "url": "https://www.brewtoncityschools.org/",
-   "station": "apptegy-brewton-al",
-   "why": "2022-01-20: within 2 days of one of its closure days"
-  },
-  {
-   "timestamp": "20220119192636",
-   "url": "https://www.brewtoncityschools.org/",
-   "station": "apptegy-brewton-al",
-   "why": "2022-01-20: within 2 days of one of its closure days"
-  },
-  {
-   "timestamp": "20220122021138",
-   "url": "https://www.brewtoncityschools.org/",
-   "station": "apptegy-brewton-al",
-   "why": "2022-01-22: within 2 days of one of its closure days"
-  },
-  {
-   "timestamp": "20250123054643",
-   "url": "https://www.spisd.org/",
-   "station": "smartsites-san-perlita-tx",
-   "why": "2025-01-23: within 2 days of one of its closure days"
-  },
-  {
-   "timestamp": "20240909043200",
-   "url": "https://spisd.org/",
-   "station": "smartsites-san-perlita-tx",
-   "why": "2024-09-09: within 2 days of one of its closure days"
-  },
-  {
-   "timestamp": "20250119023044",
-   "url": "https://spisd.org/",
-   "station": "smartsites-san-perlita-tx",
-   "why": "2025-01-19: within 2 days of one of its closure days"
-  },
-  {
-   "timestamp": "20250118211228",
-   "url": "https://webbcisd.org/",
-   "station": "smartsites-webb-tx",
-   "why": "2025-01-19: within 2 days of one of its closure days"
-  },
-  {
-   "timestamp": "20250122182918",
-   "url": "https://www.industrialisd.org/en-US",
-   "station": "schoolblocks-industrial-tx",
-   "why": "2025-01-23: within 2 days of one of its closure days"
-  },
-  {
-   "timestamp": "20260130042506",
-   "url": "https://www.industrialisd.org/en-US",
-   "station": "schoolblocks-industrial-tx",
-   "why": "2026-01-30: within 2 days of one of its closure days"
-  },
-  {
-   "timestamp": "20260129042316",
-   "url": "https://www.industrialisd.org/en-US",
-   "station": "schoolblocks-industrial-tx",
-   "why": "2026-01-29: within 2 days of one of its closure days"
-  },
-  {
-   "timestamp": "20221127054616",
-   "url": "https://www.rmaschools.org/",
-   "station": "finalsite-rma-tx",
-   "why": "2022-11-27: within 2 days of one of its closure days"
-  },
-  {
-   "timestamp": "20230205115134",
-   "url": "https://www.rmaschools.org:443/",
-   "station": "finalsite-rma-tx",
-   "why": "2023-02-05: within 2 days of one of its closure days"
-  },
-  {
-   "timestamp": "20221127063126",
-   "url": "https://www.rmaschools.org:443/",
-   "station": "finalsite-rma-tx",
-   "why": "2022-11-27: within 2 days of one of its closure days"
-  },
-  {
-   "timestamp": "20221222070509",
-   "url": "https://www.saritaschool.net/",
-   "station": "smartsites-kenedy-county-tx",
-   "why": "2022-12-22: within 2 days of one of its closure days"
-  },
-  {
-   "timestamp": "20221221061746",
-   "url": "https://www.saritaschool.net/",
-   "station": "smartsites-kenedy-county-tx",
-   "why": "2022-12-21: within 2 days of one of its closure days"
-  },
-  {
-   "timestamp": "20241128093443",
-   "url": "https://www.wsd.net/",
-   "station": "apptegy-weber-ut",
-   "why": "2024-11-28: within 2 days of one of its closure days"
-  },
-  {
-   "timestamp": "20260213075345",
-   "url": "https://www.wsd.net/",
-   "station": "apptegy-weber-ut",
-   "why": "2026-02-13: within 2 days of one of its closure days"
-  },
-  {
-   "timestamp": "20260307122147",
-   "url": "https://www.wsd.net/",
-   "station": "apptegy-weber-ut",
-   "why": "2026-03-07: within 2 days of one of its closure days"
-  },
-  {
-   "timestamp": "20250316100050",
-   "url": "https://www.wsd.net/",
-   "station": "apptegy-weber-ut",
-   "why": "2025-03-16: within 2 days of one of its closure days"
-  },
-  {
-   "timestamp": "20241229212952",
-   "url": "https://www.wsd.net/",
-   "station": "apptegy-weber-ut",
-   "why": "2024-12-30: within 2 days of one of its closure days"
-  },
-  {
-   "timestamp": "20260403015159",
-   "url": "https://www.wsd.net/",
-   "station": "apptegy-weber-ut",
-   "why": "2026-04-03: within 2 days of one of its closure days"
-  },
-  {
-   "timestamp": "20260404014417",
-   "url": "https://www.wsd.net/",
-   "station": "apptegy-weber-ut",
-   "why": "2026-04-04: within 2 days of one of its closure days"
-  },
-  {
-   "timestamp": "20260331014941",
-   "url": "https://www.wsd.net/",
-   "station": "apptegy-weber-ut",
-   "why": "2026-03-31: within 2 days of one of its closure days"
-  },
-  {
-   "timestamp": "20260331134551",
-   "url": "https://www.wsd.net/",
-   "station": "apptegy-weber-ut",
-   "why": "2026-03-31: within 2 days of one of its closure days"
-  },
-  {
-   "timestamp": "20260401134551",
-   "url": "https://www.wsd.net/",
-   "station": "apptegy-weber-ut",
-   "why": "2026-04-01: within 2 days of one of its closure days"
-  },
-  {
-   "timestamp": "20241030202833",
-   "url": "http://wsd.net/",
-   "station": "apptegy-weber-ut",
-   "why": "2024-10-31: within 2 days of one of its closure days"
-  },
-  {
-   "timestamp": "20241031015436",
-   "url": "http://wsd.net/",
-   "station": "apptegy-weber-ut",
-   "why": "2024-10-31: within 2 days of one of its closure days"
-  },
-  {
-   "timestamp": "20241030020806",
-   "url": "http://wsd.net/",
-   "station": "apptegy-weber-ut",
-   "why": "2024-10-30: within 2 days of one of its closure days"
-  },
-  {
-   "timestamp": "20241224192124",
-   "url": "https://www.wsd.net/",
-   "station": "apptegy-weber-ut",
-   "why": "2024-12-25: within 2 days of one of its closure days"
-  },
-  {
-   "timestamp": "20221130025342",
-   "url": "https://www.nbcbayarea.com/weather/school-closings/",
-   "station": "nbc-owned-kntv",
-   "why": "2022-11-30: within 2 days of one of its closure days"
-  },
-  {
-   "timestamp": "20221130035540",
-   "url": "https://www.nbcbayarea.com/weather/school-closings/",
-   "station": "nbc-owned-kntv",
-   "why": "2022-11-30: within 2 days of one of its closure days"
-  },
-  {
-   "timestamp": "20221203150643",
-   "url": "https://www.nbcbayarea.com/weather/school-closings/",
-   "station": "nbc-owned-kntv",
-   "why": "2022-12-03: within 2 days of one of its closure days"
-  },
-  {
-   "timestamp": "20221130125050",
-   "url": "https://www.nbcbayarea.com/weather/school-closings/",
-   "station": "nbc-owned-kntv",
-   "why": "2022-11-30: within 2 days of one of its closure days"
-  },
-  {
-   "timestamp": "20221130091218",
-   "url": "https://www.nbcbayarea.com/weather/school-closings/",
-   "station": "nbc-owned-kntv",
-   "why": "2022-11-30: within 2 days of one of its closure days"
-  },
-  {
-   "timestamp": "20220415040604",
-   "url": "https://www.nbcbayarea.com/weather/school-closings/",
-   "station": "nbc-owned-kntv",
-   "why": "2022-04-15: within 2 days of one of its closure days"
-  },
-  {
-   "timestamp": "20230228205407",
-   "url": "https://www.nbcbayarea.com/weather/school-closings/",
-   "station": "nbc-owned-kntv",
-   "why": "2023-03-01: within 2 days of one of its closure days"
-  },
-  {
-   "timestamp": "20230309073816",
-   "url": "https://www.nbcbayarea.com/weather/school-closings/",
-   "station": "nbc-owned-kntv",
-   "why": "2023-03-09: within 2 days of one of its closure days"
-  },
-  {
-   "timestamp": "20230330075759",
-   "url": "https://www.nbcbayarea.com/weather/school-closings/",
-   "station": "nbc-owned-kntv",
-   "why": "2023-03-30: within 2 days of one of its closure days"
-  },
-  {
-   "timestamp": "20230327151156",
-   "url": "https://www.nbcbayarea.com/weather/school-closings/",
-   "station": "nbc-owned-kntv",
-   "why": "2023-03-27: within 2 days of one of its closure days"
-  },
-  {
-   "timestamp": "20230225075546",
-   "url": "https://www.nbcbayarea.com/weather/school-closings/",
-   "station": "nbc-owned-kntv",
-   "why": "2023-02-25: within 2 days of one of its closure days"
-  },
-  {
-   "timestamp": "20230326080155",
-   "url": "https://www.nbcbayarea.com/weather/school-closings/",
-   "station": "nbc-owned-kntv",
-   "why": "2023-03-26: within 2 days of one of its closure days"
-  },
-  {
-   "timestamp": "20230225145248",
-   "url": "https://www.nbcbayarea.com/weather/school-closings/",
-   "station": "nbc-owned-kntv",
-   "why": "2023-02-25: within 2 days of one of its closure days"
-  },
-  {
-   "timestamp": "20230225191116",
-   "url": "https://www.nbcbayarea.com/weather/school-closings/",
-   "station": "nbc-owned-kntv",
-   "why": "2023-02-26: within 2 days of one of its closure days"
-  },
-  {
-   "timestamp": "20230103140039",
-   "url": "https://www.nbcbayarea.com/weather/school-closings/",
-   "station": "nbc-owned-kntv",
-   "why": "2023-01-03: within 2 days of one of its closure days"
-  },
-  {
-   "timestamp": "20230304112425",
-   "url": "https://www.nbcbayarea.com/weather/school-closings/",
-   "station": "nbc-owned-kntv",
-   "why": "2023-03-04: within 2 days of one of its closure days"
-  },
-  {
-   "timestamp": "20220410200812",
-   "url": "https://www.nbcbayarea.com/weather/school-closings/",
-   "station": "nbc-owned-kntv",
-   "why": "2022-04-11: within 2 days of one of its closure days"
-  },
-  {
-   "timestamp": "20220411232609",
-   "url": "https://www.nbcbayarea.com/weather/school-closings/",
-   "station": "nbc-owned-kntv",
-   "why": "2022-04-12: within 2 days of one of its closure days"
-  },
-  {
-   "timestamp": "20220412013726",
-   "url": "https://www.nbcbayarea.com/weather/school-closings/",
-   "station": "nbc-owned-kntv",
-   "why": "2022-04-12: within 2 days of one of its closure days"
-  },
-  {
-   "timestamp": "20220411011355",
-   "url": "https://www.nbcbayarea.com/weather/school-closings/",
-   "station": "nbc-owned-kntv",
-   "why": "2022-04-11: within 2 days of one of its closure days"
-  },
-  {
-   "timestamp": "20220411211515",
-   "url": "https://www.nbcbayarea.com/weather/school-closings/",
-   "station": "nbc-owned-kntv",
-   "why": "2022-04-12: within 2 days of one of its closure days"
-  },
-  {
-   "timestamp": "20220413230832",
-   "url": "https://www.nbcbayarea.com/weather/school-closings/",
-   "station": "nbc-owned-kntv",
-   "why": "2022-04-14: within 2 days of one of its closure days"
-  },
-  {
-   "timestamp": "20220414173029",
-   "url": "https://www.nbcbayarea.com/weather/school-closings/",
-   "station": "nbc-owned-kntv",
-   "why": "2022-04-15: within 2 days of one of its closure days"
-  },
-  {
-   "timestamp": "20220414210429",
-   "url": "https://www.nbcbayarea.com/weather/school-closings/",
-   "station": "nbc-owned-kntv",
-   "why": "2022-04-15: within 2 days of one of its closure days"
-  },
-  {
-   "timestamp": "20220412111747",
-   "url": "https://www.nbcbayarea.com/weather/school-closings/",
-   "station": "nbc-owned-kntv",
-   "why": "2022-04-12: within 2 days of one of its closure days"
-  },
-  {
-   "timestamp": "20220414033724",
-   "url": "https://www.nbcbayarea.com/weather/school-closings/",
-   "station": "nbc-owned-kntv",
-   "why": "2022-04-14: within 2 days of one of its closure days"
-  },
-  {
-   "timestamp": "20220415125321",
-   "url": "https://www.nbcbayarea.com/weather/school-closings/",
-   "station": "nbc-owned-kntv",
-   "why": "2022-04-15: within 2 days of one of its closure days"
-  },
-  {
-   "timestamp": "20220414105502",
-   "url": "https://www.nbcbayarea.com/weather/school-closings/",
-   "station": "nbc-owned-kntv",
-   "why": "2022-04-14: within 2 days of one of its closure days"
-  },
-  {
-   "timestamp": "20221231171619",
-   "url": "https://www.nbcbayarea.com/weather/school-closings/",
-   "station": "nbc-owned-kntv",
-   "why": "2023-01-01: within 2 days of one of its closure days"
-  },
-  {
-   "timestamp": "20221231184304",
-   "url": "https://www.nbcbayarea.com/weather/school-closings/",
-   "station": "nbc-owned-kntv",
-   "why": "2023-01-01: within 2 days of one of its closure days"
-  },
-  {
-   "timestamp": "20221231135935",
-   "url": "https://www.nbcbayarea.com/weather/school-closings/",
-   "station": "nbc-owned-kntv",
-   "why": "2022-12-31: within 2 days of one of its closure days"
-  },
-  {
-   "timestamp": "20230310091359",
-   "url": "https://www.nbcbayarea.com/weather/school-closings/",
-   "station": "nbc-owned-kntv",
-   "why": "2023-03-10: within 2 days of one of its closure days"
-  },
-  {
-   "timestamp": "20230308161342",
-   "url": "https://www.nbcbayarea.com/weather/school-closings/",
-   "station": "nbc-owned-kntv",
-   "why": "2023-03-09: within 2 days of one of its closure days"
-  },
-  {
-   "timestamp": "20230103214113",
-   "url": "https://www.nbcbayarea.com/weather/school-closings/",
-   "station": "nbc-owned-kntv",
-   "why": "2023-01-04: within 2 days of one of its closure days"
-  },
-  {
-   "timestamp": "20221230234638",
-   "url": "https://www.nbcbayarea.com/weather/school-closings/",
-   "station": "nbc-owned-kntv",
-   "why": "2022-12-31: within 2 days of one of its closure days"
-  },
-  {
-   "timestamp": "20221230171230",
-   "url": "https://www.nbcbayarea.com/weather/school-closings/",
-   "station": "nbc-owned-kntv",
-   "why": "2022-12-31: within 2 days of one of its closure days"
-  },
-  {
-   "timestamp": "20221230175847",
-   "url": "https://www.nbcbayarea.com/weather/school-closings/",
-   "station": "nbc-owned-kntv",
-   "why": "2022-12-31: within 2 days of one of its closure days"
-  },
-  {
-   "timestamp": "20230301021345",
-   "url": "https://www.nbcbayarea.com/weather/school-closings/",
-   "station": "nbc-owned-kntv",
-   "why": "2023-03-01: within 2 days of one of its closure days"
-  },
-  {
-   "timestamp": "20230225200303",
-   "url": "https://www.nbcbayarea.com/weather/school-closings/",
-   "station": "nbc-owned-kntv",
-   "why": "2023-02-26: within 2 days of one of its closure days"
-  },
-  {
-   "timestamp": "20230220124944",
-   "url": "https://www.nbcbayarea.com/weather/school-closings/",
-   "station": "nbc-owned-kntv",
-   "why": "2023-02-20: within 2 days of one of its closure days"
-  },
-  {
-   "timestamp": "20230331064926",
-   "url": "https://www.nbcbayarea.com/weather/school-closings/",
-   "station": "nbc-owned-kntv",
-   "why": "2023-03-31: within 2 days of one of its closure days"
-  },
-  {
-   "timestamp": "20230331090211",
-   "url": "https://www.nbcbayarea.com/weather/school-closings/",
-   "station": "nbc-owned-kntv",
-   "why": "2023-03-31: within 2 days of one of its closure days"
-  },
-  {
-   "timestamp": "20230304095847",
-   "url": "https://www.nbcbayarea.com/weather/school-closings/",
-   "station": "nbc-owned-kntv",
-   "why": "2023-03-04: within 2 days of one of its closure days"
-  },
-  {
-   "timestamp": "20230305060037",
-   "url": "https://www.nbcbayarea.com/weather/school-closings/",
-   "station": "nbc-owned-kntv",
-   "why": "2023-03-05: within 2 days of one of its closure days"
-  },
-  {
-   "timestamp": "20230219181137",
-   "url": "https://www.nbcbayarea.com/weather/school-closings/",
-   "station": "nbc-owned-kntv",
-   "why": "2023-02-20: within 2 days of one of its closure days"
-  },
-  {
-   "timestamp": "20230102200112",
-   "url": "https://www.nbcbayarea.com/weather/school-closings/",
-   "station": "nbc-owned-kntv",
-   "why": "2023-01-03: within 2 days of one of its closure days"
-  },
-  {
-   "timestamp": "20230102173101",
-   "url": "https://www.nbcbayarea.com/weather/school-closings/",
-   "station": "nbc-owned-kntv",
-   "why": "2023-01-03: within 2 days of one of its closure days"
-  },
-  {
-   "timestamp": "20170111224522",
-   "url": "http://www.nbcbayarea.com:80/weather/school-closings/",
-   "station": "nbc-owned-kntv",
-   "why": "2017-01-12: within 2 days of one of its closure days"
-  },
-  {
-   "timestamp": "20211225224704",
-   "url": "https://www.nbcbayarea.com/weather/school-closings/",
-   "station": "nbc-owned-kntv",
-   "why": "2021-12-26: within 2 days of one of its closure days"
-  },
-  {
-   "timestamp": "20211217055124",
-   "url": "https://www.nbcbayarea.com/weather/school-closings/",
-   "station": "nbc-owned-kntv",
-   "why": "2021-12-17: within 2 days of one of its closure days"
-  },
-  {
-   "timestamp": "20211216221412",
-   "url": "https://www.nbcbayarea.com/weather/school-closings/",
-   "station": "nbc-owned-kntv",
-   "why": "2021-12-17: within 2 days of one of its closure days"
-  },
-  {
-   "timestamp": "20211228225114",
-   "url": "https://www.nbcbayarea.com/weather/school-closings/",
-   "station": "nbc-owned-kntv",
-   "why": "2021-12-29: within 2 days of one of its closure days"
-  },
-  {
-   "timestamp": "20210125043653",
-   "url": "https://www.nbcbayarea.com/weather/school-closings/",
-   "station": "nbc-owned-kntv",
-   "why": "2021-01-25: within 2 days of one of its closure days"
-  },
-  {
-   "timestamp": "20211229011220",
-   "url": "https://www.nbcbayarea.com/weather/school-closings/",
-   "station": "nbc-owned-kntv",
-   "why": "2021-12-29: within 2 days of one of its closure days"
-  },
-  {
-   "timestamp": "20211213220155",
-   "url": "https://www.nbcbayarea.com/weather/school-closings/",
-   "station": "nbc-owned-kntv",
-   "why": "2021-12-14: within 2 days of one of its closure days"
-  },
-  {
-   "timestamp": "20211213212146",
-   "url": "https://www.nbcbayarea.com/weather/school-closings/",
-   "station": "nbc-owned-kntv",
-   "why": "2021-12-14: within 2 days of one of its closure days"
-  },
-  {
-   "timestamp": "20211216065029",
-   "url": "https://www.nbcbayarea.com/weather/school-closings/",
-   "station": "nbc-owned-kntv",
-   "why": "2021-12-16: within 2 days of one of its closure days"
-  },
-  {
-   "timestamp": "20211214112428",
-   "url": "https://www.nbcbayarea.com/weather/school-closings/",
-   "station": "nbc-owned-kntv",
-   "why": "2021-12-14: within 2 days of one of its closure days"
-  },
-  {
-   "timestamp": "20211214084510",
-   "url": "https://www.nbcbayarea.com/weather/school-closings/",
-   "station": "nbc-owned-kntv",
-   "why": "2021-12-14: within 2 days of one of its closure days"
-  },
-  {
-   "timestamp": "20211214084855",
-   "url": "https://www.nbcbayarea.com/weather/school-closings/",
-   "station": "nbc-owned-kntv",
-   "why": "2021-12-14: within 2 days of one of its closure days"
-  },
-  {
-   "timestamp": "20210124030236",
-   "url": "https://www.nbcbayarea.com/weather/school-closings/",
-   "station": "nbc-owned-kntv",
-   "why": "2021-01-24: within 2 days of one of its closure days"
-  },
-  {
-   "timestamp": "20211215201036",
-   "url": "https://www.nbcbayarea.com/weather/school-closings/",
-   "station": "nbc-owned-kntv",
-   "why": "2021-12-16: within 2 days of one of its closure days"
-  },
-  {
-   "timestamp": "20211216052338",
-   "url": "https://www.nbcbayarea.com/weather/school-closings/",
-   "station": "nbc-owned-kntv",
-   "why": "2021-12-16: within 2 days of one of its closure days"
-  },
-  {
-   "timestamp": "20211213074419",
-   "url": "https://www.nbcbayarea.com/weather/school-closings/",
-   "station": "nbc-owned-kntv",
-   "why": "2021-12-13: within 2 days of one of its closure days"
-  },
-  {
-   "timestamp": "20210316022950",
-   "url": "https://www.nbcbayarea.com/weather/school-closings/",
-   "station": "nbc-owned-kntv",
-   "why": "2021-03-16: within 2 days of one of its closure days"
-  },
-  {
-   "timestamp": "20211230022310",
-   "url": "https://www.nbcbayarea.com/weather/school-closings/",
-   "station": "nbc-owned-kntv",
-   "why": "2021-12-30: within 2 days of one of its closure days"
-  },
-  {
-   "timestamp": "20210312030033",
-   "url": "https://www.nbcbayarea.com/weather/school-closings/",
-   "station": "nbc-owned-kntv",
-   "why": "2021-03-12: within 2 days of one of its closure days"
-  },
-  {
-   "timestamp": "20210316145704",
-   "url": "https://www.nbcbayarea.com/weather/school-closings/",
-   "station": "nbc-owned-kntv",
-   "why": "2021-03-16: within 2 days of one of its closure days"
-  },
-  {
-   "timestamp": "20210306134532",
-   "url": "https://www.nbcbayarea.com/weather/school-closings/",
-   "station": "nbc-owned-kntv",
-   "why": "2021-03-06: within 2 days of one of its closure days"
-  },
-  {
-   "timestamp": "20211216181210",
-   "url": "https://www.nbcbayarea.com/weather/school-closings/",
-   "station": "nbc-owned-kntv",
-   "why": "2021-12-17: within 2 days of one of its closure days"
-  },
-  {
-   "timestamp": "20210316042320",
-   "url": "https://www.nbcbayarea.com/weather/school-closings/",
-   "station": "nbc-owned-kntv",
-   "why": "2021-03-16: within 2 days of one of its closure days"
-  },
-  {
-   "timestamp": "20211230002629",
-   "url": "https://www.nbcbayarea.com/weather/school-closings/",
-   "station": "nbc-owned-kntv",
-   "why": "2021-12-30: within 2 days of one of its closure days"
-  },
-  {
-   "timestamp": "20211228220422",
-   "url": "https://www.nbcbayarea.com/weather/school-closings/",
-   "station": "nbc-owned-kntv",
-   "why": "2021-12-29: within 2 days of one of its closure days"
-  },
-  {
-   "timestamp": "20210312094745",
-   "url": "https://www.nbcbayarea.com/weather/school-closings/",
-   "station": "nbc-owned-kntv",
-   "why": "2021-03-12: within 2 days of one of its closure days"
-  },
-  {
-   "timestamp": "20210316232756",
-   "url": "https://www.nbcbayarea.com/weather/school-closings/",
-   "station": "nbc-owned-kntv",
-   "why": "2021-03-17: within 2 days of one of its closure days"
-  },
-  {
-   "timestamp": "20210316214655",
-   "url": "https://www.nbcbayarea.com/weather/school-closings/",
-   "station": "nbc-owned-kntv",
-   "why": "2021-03-17: within 2 days of one of its closure days"
-  },
-  {
-   "timestamp": "20211224215413",
-   "url": "https://www.nbcbayarea.com/weather/school-closings/",
-   "station": "nbc-owned-kntv",
-   "why": "2021-12-25: within 2 days of one of its closure days"
-  },
-  {
-   "timestamp": "20211217065910",
-   "url": "https://www.nbcbayarea.com/weather/school-closings/",
-   "station": "nbc-owned-kntv",
-   "why": "2021-12-17: within 2 days of one of its closure days"
-  },
-  {
-   "timestamp": "20210130155843",
-   "url": "https://www.nbcbayarea.com/weather/school-closings/",
-   "station": "nbc-owned-kntv",
-   "why": "2021-01-30: within 2 days of one of its closure days"
-  },
-  {
-   "timestamp": "20211225031352",
-   "url": "https://www.nbcbayarea.com/weather/school-closings/",
-   "station": "nbc-owned-kntv",
-   "why": "2021-12-25: within 2 days of one of its closure days"
-  },
-  {
-   "timestamp": "20210306085040",
-   "url": "https://www.nbcbayarea.com/weather/school-closings/",
-   "station": "nbc-owned-kntv",
-   "why": "2021-03-06: within 2 days of one of its closure days"
-  },
-  {
-   "timestamp": "20210129035903",
-   "url": "https://www.nbcbayarea.com/weather/school-closings/",
-   "station": "nbc-owned-kntv",
-   "why": "2021-01-29: within 2 days of one of its closure days"
-  },
-  {
-   "timestamp": "20210317060110",
-   "url": "https://www.nbcbayarea.com/weather/school-closings/",
-   "station": "nbc-owned-kntv",
-   "why": "2021-03-17: within 2 days of one of its closure days"
-  },
-  {
-   "timestamp": "20210129044803",
-   "url": "https://www.nbcbayarea.com/weather/school-closings/",
-   "station": "nbc-owned-kntv",
-   "why": "2021-01-29: within 2 days of one of its closure days"
-  },
-  {
-   "timestamp": "20210310232443",
-   "url": "https://www.nbcbayarea.com/weather/school-closings/",
-   "station": "nbc-owned-kntv",
-   "why": "2021-03-11: within 2 days of one of its closure days"
-  },
-  {
-   "timestamp": "20211229091324",
-   "url": "https://www.nbcbayarea.com/weather/school-closings/",
-   "station": "nbc-owned-kntv",
-   "why": "2021-12-29: within 2 days of one of its closure days"
-  },
-  {
-   "timestamp": "20210314025932",
-   "url": "https://www.nbcbayarea.com/weather/school-closings/",
-   "station": "nbc-owned-kntv",
-   "why": "2021-03-14: within 2 days of one of its closure days"
-  },
-  {
-   "timestamp": "20211224220001",
-   "url": "https://www.nbcbayarea.com/weather/school-closings/",
-   "station": "nbc-owned-kntv",
-   "why": "2021-12-25: within 2 days of one of its closure days"
-  },
-  {
-   "timestamp": "20210130040133",
-   "url": "https://www.nbcbayarea.com/weather/school-closings/",
-   "station": "nbc-owned-kntv",
-   "why": "2021-01-30: within 2 days of one of its closure days"
-  },
-  {
-   "timestamp": "20211225011529",
-   "url": "https://www.nbcbayarea.com/weather/school-closings/",
-   "station": "nbc-owned-kntv",
-   "why": "2021-12-25: within 2 days of one of its closure days"
-  },
-  {
-   "timestamp": "20211229085502",
-   "url": "https://www.nbcbayarea.com/weather/school-closings/",
-   "station": "nbc-owned-kntv",
-   "why": "2021-12-29: within 2 days of one of its closure days"
-  },
-  {
-   "timestamp": "20211223100556",
-   "url": "https://www.nbcbayarea.com/weather/school-closings/",
-   "station": "nbc-owned-kntv",
-   "why": "2021-12-23: within 2 days of one of its closure days"
-  },
-  {
-   "timestamp": "20210313160724",
-   "url": "https://www.nbcbayarea.com/weather/school-closings/",
-   "station": "nbc-owned-kntv",
-   "why": "2021-03-14: within 2 days of one of its closure days"
-  },
-  {
-   "timestamp": "20211222201952",
-   "url": "https://www.nbcbayarea.com/weather/school-closings/",
-   "station": "nbc-owned-kntv",
-   "why": "2021-12-23: within 2 days of one of its closure days"
-  },
-  {
-   "timestamp": "20211221225146",
-   "url": "https://www.nbcbayarea.com/weather/school-closings/",
-   "station": "nbc-owned-kntv",
-   "why": "2021-12-22: within 2 days of one of its closure days"
-  },
-  {
-   "timestamp": "20210317065419",
-   "url": "https://www.nbcbayarea.com/weather/school-closings/",
-   "station": "nbc-owned-kntv",
-   "why": "2021-03-17: within 2 days of one of its closure days"
-  },
-  {
-   "timestamp": "20211225143242",
-   "url": "https://www.nbcbayarea.com/weather/school-closings/",
-   "station": "nbc-owned-kntv",
-   "why": "2021-12-25: within 2 days of one of its closure days"
-  },
-  {
-   "timestamp": "20210311051545",
-   "url": "https://www.nbcbayarea.com/weather/school-closings/",
-   "station": "nbc-owned-kntv",
-   "why": "2021-03-11: within 2 days of one of its closure days"
-  },
-  {
-   "timestamp": "20211221194535",
-   "url": "https://www.nbcbayarea.com/weather/school-closings/",
-   "station": "nbc-owned-kntv",
-   "why": "2021-12-22: within 2 days of one of its closure days"
-  },
-  {
-   "timestamp": "20210313101045",
-   "url": "https://www.nbcbayarea.com/weather/school-closings/",
-   "station": "nbc-owned-kntv",
-   "why": "2021-03-13: within 2 days of one of its closure days"
-  },
-  {
-   "timestamp": "20211222082222",
-   "url": "https://www.nbcbayarea.com/weather/school-closings/",
-   "station": "nbc-owned-kntv",
-   "why": "2021-12-22: within 2 days of one of its closure days"
-  },
-  {
-   "timestamp": "20210307070905",
-   "url": "https://www.nbcbayarea.com/weather/school-closings/",
-   "station": "nbc-owned-kntv",
-   "why": "2021-03-07: within 2 days of one of its closure days"
-  },
-  {
-   "timestamp": "20210313063140",
-   "url": "https://www.nbcbayarea.com/weather/school-closings/",
-   "station": "nbc-owned-kntv",
-   "why": "2021-03-13: within 2 days of one of its closure days"
-  },
-  {
-   "timestamp": "20210311083228",
-   "url": "https://www.nbcbayarea.com/weather/school-closings/",
-   "station": "nbc-owned-kntv",
-   "why": "2021-03-11: within 2 days of one of its closure days"
-  },
-  {
-   "timestamp": "20211230064153",
-   "url": "https://www.nbcbayarea.com/weather/school-closings/",
-   "station": "nbc-owned-kntv",
-   "why": "2021-12-30: within 2 days of one of its closure days"
-  },
-  {
-   "timestamp": "20210306150347",
-   "url": "https://www.nbcbayarea.com/weather/school-closings/",
-   "station": "nbc-owned-kntv",
-   "why": "2021-03-06: within 2 days of one of its closure days"
-  },
-  {
-   "timestamp": "20211226043151",
-   "url": "https://www.nbcbayarea.com/weather/school-closings/",
-   "station": "nbc-owned-kntv",
-   "why": "2021-12-26: within 2 days of one of its closure days"
-  },
-  {
-   "timestamp": "20211223114616",
-   "url": "https://www.nbcbayarea.com/weather/school-closings/",
-   "station": "nbc-owned-kntv",
-   "why": "2021-12-23: within 2 days of one of its closure days"
-  },
-  {
-   "timestamp": "20211222074346",
-   "url": "https://www.nbcbayarea.com/weather/school-closings/",
-   "station": "nbc-owned-kntv",
-   "why": "2021-12-22: within 2 days of one of its closure days"
-  },
-  {
-   "timestamp": "20211222132654",
-   "url": "https://www.nbcbayarea.com/weather/school-closings/",
-   "station": "nbc-owned-kntv",
-   "why": "2021-12-22: within 2 days of one of its closure days"
-  },
-  {
-   "timestamp": "20210307065612",
-   "url": "https://www.nbcbayarea.com/weather/school-closings/",
-   "station": "nbc-owned-kntv",
-   "why": "2021-03-07: within 2 days of one of its closure days"
-  },
-  {
-   "timestamp": "20200115053536",
-   "url": "https://www.nbcbayarea.com/weather/school-closings/",
-   "station": "nbc-owned-kntv",
-   "why": "2020-01-15: within 2 days of one of its closure days"
-  },
-  {
-   "timestamp": "20191217055154",
-   "url": "https://www.nbcbayarea.com/weather/school-closings/",
-   "station": "nbc-owned-kntv",
-   "why": "2019-12-17: within 2 days of one of its closure days"
-  },
-  {
-   "timestamp": "20191220063753",
-   "url": "https://www.nbcbayarea.com/weather/school-closings/",
-   "station": "nbc-owned-kntv",
-   "why": "2019-12-20: within 2 days of one of its closure days"
-  },
-  {
-   "timestamp": "20221105083459",
-   "url": "https://www.mcpsmt.org/",
-   "station": "finalsite-missoula-mt",
-   "why": "2022-11-05: within 2 days of one of its closure days"
-  },
-  {
-   "timestamp": "20250329220025",
-   "url": "https://www.mcpsmt.org/",
-   "station": "finalsite-missoula-mt",
-   "why": "2025-03-30: within 2 days of one of its closure days"
-  },
-  {
-   "timestamp": "20250329180326",
-   "url": "https://www.mcpsmt.org/",
-   "station": "finalsite-missoula-mt",
-   "why": "2025-03-30: within 2 days of one of its closure days"
-  },
-  {
-   "timestamp": "20240914131230",
-   "url": "https://www.mcpsmt.org/",
-   "station": "finalsite-missoula-mt",
-   "why": "2024-09-14: within 2 days of one of its closure days"
-  },
-  {
-   "timestamp": "20230401001554",
-   "url": "https://www.mcpsmt.org/",
-   "station": "finalsite-missoula-mt",
-   "why": "2023-04-01: within 2 days of one of its closure days"
-  },
-  {
-   "timestamp": "20221110203018",
-   "url": "https://www.mcpsmt.org/",
-   "station": "finalsite-missoula-mt",
-   "why": "2022-11-11: within 2 days of one of its closure days"
-  },
-  {
-   "timestamp": "20240910030017",
-   "url": "https://www.mcpsmt.org/",
-   "station": "finalsite-missoula-mt",
-   "why": "2024-09-10: within 2 days of one of its closure days"
-  },
-  {
-   "timestamp": "20240911015445",
-   "url": "https://www.mcpsmt.org/",
-   "station": "finalsite-missoula-mt",
-   "why": "2024-09-11: within 2 days of one of its closure days"
-  },
-  {
-   "timestamp": "20240911125423",
-   "url": "https://www.mcpsmt.org/",
-   "station": "finalsite-missoula-mt",
-   "why": "2024-09-11: within 2 days of one of its closure days"
-  },
-  {
-   "timestamp": "20241102172530",
-   "url": "https://www.mcpsmt.org/",
-   "station": "finalsite-missoula-mt",
-   "why": "2024-11-03: within 2 days of one of its closure days"
-  },
-  {
-   "timestamp": "20241230202010",
-   "url": "https://www.mcpsmt.org/",
-   "station": "finalsite-missoula-mt",
-   "why": "2024-12-31: within 2 days of one of its closure days"
-  },
-  {
-   "timestamp": "20240521232903",
-   "url": "https://www.mcpsmt.org/",
-   "station": "finalsite-missoula-mt",
-   "why": "2024-05-22: within 2 days of one of its closure days"
-  },
-  {
-   "timestamp": "20240521112244",
-   "url": "https://www.mcpsmt.org/",
-   "station": "finalsite-missoula-mt",
-   "why": "2024-05-21: within 2 days of one of its closure days"
-  },
-  {
-   "timestamp": "20240522115338",
-   "url": "https://www.mcpsmt.org/",
-   "station": "finalsite-missoula-mt",
-   "why": "2024-05-22: within 2 days of one of its closure days"
-  },
-  {
-   "timestamp": "20240524232412",
-   "url": "https://www.mcpsmt.org/",
-   "station": "finalsite-missoula-mt",
-   "why": "2024-05-25: within 2 days of one of its closure days"
-  },
-  {
-   "timestamp": "20230115151916",
-   "url": "https://www.mcpsmt.org/",
-   "station": "finalsite-missoula-mt",
-   "why": "2023-01-15: within 2 days of one of its closure days"
-  },
-  {
-   "timestamp": "20230326020620",
-   "url": "https://www.mcpsmt.org/",
-   "station": "finalsite-missoula-mt",
-   "why": "2023-03-26: within 2 days of one of its closure days"
-  },
-  {
-   "timestamp": "20221202120325",
-   "url": "https://www.mcpsmt.org/",
-   "station": "finalsite-missoula-mt",
-   "why": "2022-12-02: within 2 days of one of its closure days"
-  },
-  {
-   "timestamp": "20250419145333",
-   "url": "https://www.mcpsmt.org/",
-   "station": "finalsite-missoula-mt",
-   "why": "2025-04-19: within 2 days of one of its closure days"
-  },
-  {
-   "timestamp": "20250418015518",
-   "url": "https://www.mcpsmt.org/",
-   "station": "finalsite-missoula-mt",
-   "why": "2025-04-18: within 2 days of one of its closure days"
-  },
-  {
-   "timestamp": "20240507112218",
-   "url": "https://www.mcpsmt.org/",
-   "station": "finalsite-missoula-mt",
-   "why": "2024-05-07: within 2 days of one of its closure days"
-  },
-  {
-   "timestamp": "20240506232212",
-   "url": "https://www.mcpsmt.org/",
-   "station": "finalsite-missoula-mt",
-   "why": "2024-05-07: within 2 days of one of its closure days"
-  },
-  {
-   "timestamp": "20240506112219",
+   "timestamp": "20240505232153",
    "url": "https://www.mcpsmt.org/",
    "station": "finalsite-missoula-mt",
    "why": "2024-05-06: within 2 days of one of its closure days"
   },
   {
-   "timestamp": "20250226232648",
-   "url": "https://www.mcpsmt.org/",
-   "station": "finalsite-missoula-mt",
-   "why": "2025-02-27: within 2 days of one of its closure days"
-  },
-  {
-   "timestamp": "20250415232130",
-   "url": "https://www.mcpsmt.org/",
-   "station": "finalsite-missoula-mt",
-   "why": "2025-04-16: within 2 days of one of its closure days"
-  },
-  {
-   "timestamp": "20240501093008",
-   "url": "https://www.mcpsmt.org/",
-   "station": "finalsite-missoula-mt",
-   "why": "2024-05-01: within 2 days of one of its closure days"
-  },
-  {
-   "timestamp": "20250225232043",
-   "url": "https://www.mcpsmt.org/",
-   "station": "finalsite-missoula-mt",
-   "why": "2025-02-26: within 2 days of one of its closure days"
-  },
-  {
-   "timestamp": "20250227132148",
-   "url": "https://www.mcpsmt.org/",
-   "station": "finalsite-missoula-mt",
-   "why": "2025-02-27: within 2 days of one of its closure days"
-  },
-  {
-   "timestamp": "20240427112229",
-   "url": "https://www.mcpsmt.org/",
-   "station": "finalsite-missoula-mt",
-   "why": "2024-04-27: within 2 days of one of its closure days"
-  },
-  {
-   "timestamp": "20240430112326",
-   "url": "https://www.mcpsmt.org/",
-   "station": "finalsite-missoula-mt",
-   "why": "2024-04-30: within 2 days of one of its closure days"
-  },
-  {
-   "timestamp": "20250226112118",
-   "url": "https://www.mcpsmt.org/",
-   "station": "finalsite-missoula-mt",
-   "why": "2025-02-26: within 2 days of one of its closure days"
-  },
-  {
-   "timestamp": "20240426232225",
-   "url": "https://www.mcpsmt.org/",
-   "station": "finalsite-missoula-mt",
-   "why": "2024-04-27: within 2 days of one of its closure days"
-  },
-  {
-   "timestamp": "20240428112515",
+   "timestamp": "20240428004159",
    "url": "https://www.mcpsmt.org/",
    "station": "finalsite-missoula-mt",
    "why": "2024-04-28: within 2 days of one of its closure days"
   },
   {
-   "timestamp": "20240508232136",
+   "timestamp": "20240429232212",
+   "url": "https://www.mcpsmt.org/",
+   "station": "finalsite-missoula-mt",
+   "why": "2024-04-30: within 2 days of one of its closure days"
+  },
+  {
+   "timestamp": "20240525112216",
+   "url": "https://www.mcpsmt.org/",
+   "station": "finalsite-missoula-mt",
+   "why": "2024-05-25: within 2 days of one of its closure days"
+  },
+  {
+   "timestamp": "20230110161107",
+   "url": "https://www.mcpsmt.org/",
+   "station": "finalsite-missoula-mt",
+   "why": "2023-01-11: within 2 days of one of its closure days"
+  },
+  {
+   "timestamp": "20240509232208",
+   "url": "https://www.mcpsmt.org/",
+   "station": "finalsite-missoula-mt",
+   "why": "2024-05-10: within 2 days of one of its closure days"
+  },
+  {
+   "timestamp": "20240509112324",
    "url": "https://www.mcpsmt.org/",
    "station": "finalsite-missoula-mt",
    "why": "2024-05-09: within 2 days of one of its closure days"
   },
   {
-   "timestamp": "20250314233352",
+   "timestamp": "20240510112152",
    "url": "https://www.mcpsmt.org/",
    "station": "finalsite-missoula-mt",
-   "why": "2025-03-15: within 2 days of one of its closure days"
+   "why": "2024-05-10: within 2 days of one of its closure days"
   },
   {
-   "timestamp": "20250319114621",
+   "timestamp": "20241115232138",
    "url": "https://www.mcpsmt.org/",
    "station": "finalsite-missoula-mt",
-   "why": "2025-03-19: within 2 days of one of its closure days"
+   "why": "2024-11-16: within 2 days of one of its closure days"
   },
   {
-   "timestamp": "20250222112131",
+   "timestamp": "20241118223802",
    "url": "https://www.mcpsmt.org/",
    "station": "finalsite-missoula-mt",
-   "why": "2025-02-22: within 2 days of one of its closure days"
+   "why": "2024-11-19: within 2 days of one of its closure days"
   },
   {
-   "timestamp": "20250222232106",
+   "timestamp": "20241119112154",
    "url": "https://www.mcpsmt.org/",
    "station": "finalsite-missoula-mt",
-   "why": "2025-02-23: within 2 days of one of its closure days"
+   "why": "2024-11-19: within 2 days of one of its closure days"
   },
   {
-   "timestamp": "20250316124615",
+   "timestamp": "20241119000614",
    "url": "https://www.mcpsmt.org/",
    "station": "finalsite-missoula-mt",
-   "why": "2025-03-16: within 2 days of one of its closure days"
+   "why": "2024-11-19: within 2 days of one of its closure days"
   },
   {
-   "timestamp": "20250221112337",
+   "timestamp": "20241117112057",
    "url": "https://www.mcpsmt.org/",
    "station": "finalsite-missoula-mt",
-   "why": "2025-02-21: within 2 days of one of its closure days"
+   "why": "2024-11-17: within 2 days of one of its closure days"
   },
   {
-   "timestamp": "20250221232158",
+   "timestamp": "20241121232033",
    "url": "https://www.mcpsmt.org/",
    "station": "finalsite-missoula-mt",
-   "why": "2025-02-22: within 2 days of one of its closure days"
+   "why": "2024-11-22: within 2 days of one of its closure days"
   },
   {
-   "timestamp": "20250329232035",
+   "timestamp": "20241116084258",
    "url": "https://www.mcpsmt.org/",
    "station": "finalsite-missoula-mt",
-   "why": "2025-03-30: within 2 days of one of its closure days"
+   "why": "2024-11-16: within 2 days of one of its closure days"
   },
   {
-   "timestamp": "20250223112045",
+   "timestamp": "20241116112047",
    "url": "https://www.mcpsmt.org/",
    "station": "finalsite-missoula-mt",
-   "why": "2025-02-23: within 2 days of one of its closure days"
+   "why": "2024-11-16: within 2 days of one of its closure days"
   },
   {
-   "timestamp": "20250221020241",
+   "timestamp": "20241116232110",
    "url": "https://www.mcpsmt.org/",
    "station": "finalsite-missoula-mt",
-   "why": "2025-02-21: within 2 days of one of its closure days"
+   "why": "2024-11-17: within 2 days of one of its closure days"
   },
   {
-   "timestamp": "20250330181039",
+   "timestamp": "20241123022237",
    "url": "https://www.mcpsmt.org/",
    "station": "finalsite-missoula-mt",
-   "why": "2025-03-31: within 2 days of one of its closure days"
+   "why": "2024-11-23: within 2 days of one of its closure days"
   },
   {
-   "timestamp": "20250330113941",
+   "timestamp": "20240910105606",
    "url": "https://www.mcpsmt.org/",
    "station": "finalsite-missoula-mt",
-   "why": "2025-03-30: within 2 days of one of its closure days"
+   "why": "2024-09-10: within 2 days of one of its closure days"
   },
   {
-   "timestamp": "20250315112314",
+   "timestamp": "20240910112938",
    "url": "https://www.mcpsmt.org/",
    "station": "finalsite-missoula-mt",
-   "why": "2025-03-15: within 2 days of one of its closure days"
+   "why": "2024-09-10: within 2 days of one of its closure days"
   },
   {
-   "timestamp": "20250316031123",
+   "timestamp": "20241123112300",
    "url": "https://www.mcpsmt.org/",
    "station": "finalsite-missoula-mt",
-   "why": "2025-03-16: within 2 days of one of its closure days"
+   "why": "2024-11-23: within 2 days of one of its closure days"
   },
   {
-   "timestamp": "20250315215404",
+   "timestamp": "20250130114932",
    "url": "https://www.mcpsmt.org/",
    "station": "finalsite-missoula-mt",
-   "why": "2025-03-16: within 2 days of one of its closure days"
+   "why": "2025-01-30: within 2 days of one of its closure days"
   },
   {
-   "timestamp": "20250318142739",
+   "timestamp": "20250130032339",
    "url": "https://www.mcpsmt.org/",
    "station": "finalsite-missoula-mt",
-   "why": "2025-03-18: within 2 days of one of its closure days"
+   "why": "2025-01-30: within 2 days of one of its closure days"
   },
   {
-   "timestamp": "20250317232819",
+   "timestamp": "20250215001735",
    "url": "https://www.mcpsmt.org/",
    "station": "finalsite-missoula-mt",
-   "why": "2025-03-18: within 2 days of one of its closure days"
+   "why": "2025-02-15: within 2 days of one of its closure days"
   },
   {
-   "timestamp": "20250318232922",
+   "timestamp": "20250216132216",
    "url": "https://www.mcpsmt.org/",
    "station": "finalsite-missoula-mt",
-   "why": "2025-03-19: within 2 days of one of its closure days"
+   "why": "2025-02-16: within 2 days of one of its closure days"
   },
   {
-   "timestamp": "20250402021138",
+   "timestamp": "20250216021737",
    "url": "https://www.mcpsmt.org/",
    "station": "finalsite-missoula-mt",
-   "why": "2025-04-02: within 2 days of one of its closure days"
+   "why": "2025-02-16: within 2 days of one of its closure days"
   },
   {
-   "timestamp": "20250331001545",
+   "timestamp": "20241215114124",
    "url": "https://www.mcpsmt.org/",
    "station": "finalsite-missoula-mt",
-   "why": "2025-03-31: within 2 days of one of its closure days"
+   "why": "2024-12-15: within 2 days of one of its closure days"
   },
   {
-   "timestamp": "20250330235952",
+   "timestamp": "20250215112518",
    "url": "https://www.mcpsmt.org/",
    "station": "finalsite-missoula-mt",
-   "why": "2025-03-31: within 2 days of one of its closure days"
+   "why": "2025-02-15: within 2 days of one of its closure days"
   },
   {
-   "timestamp": "20250331112400",
+   "timestamp": "20241214112302",
    "url": "https://www.mcpsmt.org/",
    "station": "finalsite-missoula-mt",
-   "why": "2025-03-31: within 2 days of one of its closure days"
+   "why": "2024-12-14: within 2 days of one of its closure days"
   },
   {
-   "timestamp": "20240520232230",
+   "timestamp": "20241214000101",
    "url": "https://www.mcpsmt.org/",
    "station": "finalsite-missoula-mt",
-   "why": "2024-05-21: within 2 days of one of its closure days"
+   "why": "2024-12-14: within 2 days of one of its closure days"
   },
   {
-   "timestamp": "20240524004537",
+   "timestamp": "20241214192329",
    "url": "https://www.mcpsmt.org/",
    "station": "finalsite-missoula-mt",
-   "why": "2024-05-24: within 2 days of one of its closure days"
+   "why": "2024-12-15: within 2 days of one of its closure days"
   },
   {
-   "timestamp": "20240524114925",
+   "timestamp": "20250129125747",
    "url": "https://www.mcpsmt.org/",
    "station": "finalsite-missoula-mt",
-   "why": "2024-05-24: within 2 days of one of its closure days"
+   "why": "2025-01-29: within 2 days of one of its closure days"
+  },
+  {
+   "timestamp": "20250129070449",
+   "url": "https://www.mcpsmt.org/",
+   "station": "finalsite-missoula-mt",
+   "why": "2025-01-29: within 2 days of one of its closure days"
+  },
+  {
+   "timestamp": "20241218234935",
+   "url": "https://www.mcpsmt.org/",
+   "station": "finalsite-missoula-mt",
+   "why": "2024-12-19: within 2 days of one of its closure days"
+  },
+  {
+   "timestamp": "20250129013250",
+   "url": "https://www.mcpsmt.org/",
+   "station": "finalsite-missoula-mt",
+   "why": "2025-01-29: within 2 days of one of its closure days"
+  },
+  {
+   "timestamp": "20241102150336",
+   "url": "https://www.mcpsmt.org/",
+   "station": "finalsite-missoula-mt",
+   "why": "2024-11-02: within 2 days of one of its closure days"
+  },
+  {
+   "timestamp": "20241103125943",
+   "url": "https://www.mcpsmt.org/",
+   "station": "finalsite-missoula-mt",
+   "why": "2024-11-03: within 2 days of one of its closure days"
+  },
+  {
+   "timestamp": "20241106112032",
+   "url": "https://www.mcpsmt.org/",
+   "station": "finalsite-missoula-mt",
+   "why": "2024-11-06: within 2 days of one of its closure days"
+  },
+  {
+   "timestamp": "20240913162404",
+   "url": "https://www.mcpsmt.org/",
+   "station": "finalsite-missoula-mt",
+   "why": "2024-09-14: within 2 days of one of its closure days"
+  },
+  {
+   "timestamp": "20241106163922",
+   "url": "https://www.mcpsmt.org/",
+   "station": "finalsite-missoula-mt",
+   "why": "2024-11-07: within 2 days of one of its closure days"
+  },
+  {
+   "timestamp": "20241107112112",
+   "url": "https://www.mcpsmt.org/",
+   "station": "finalsite-missoula-mt",
+   "why": "2024-11-07: within 2 days of one of its closure days"
+  },
+  {
+   "timestamp": "20241106060022",
+   "url": "https://www.mcpsmt.org/",
+   "station": "finalsite-missoula-mt",
+   "why": "2024-11-06: within 2 days of one of its closure days"
+  },
+  {
+   "timestamp": "20241106232033",
+   "url": "https://www.mcpsmt.org/",
+   "station": "finalsite-missoula-mt",
+   "why": "2024-11-07: within 2 days of one of its closure days"
+  },
+  {
+   "timestamp": "20241102021722",
+   "url": "https://www.mcpsmt.org/",
+   "station": "finalsite-missoula-mt",
+   "why": "2024-11-02: within 2 days of one of its closure days"
+  },
+  {
+   "timestamp": "20241105232539",
+   "url": "https://www.mcpsmt.org/",
+   "station": "finalsite-missoula-mt",
+   "why": "2024-11-06: within 2 days of one of its closure days"
+  },
+  {
+   "timestamp": "20240830115407",
+   "url": "https://www.mcpsmt.org/",
+   "station": "finalsite-missoula-mt",
+   "why": "2024-08-30: within 2 days of one of its closure days"
+  },
+  {
+   "timestamp": "20241220021542",
+   "url": "https://www.mcpsmt.org/",
+   "station": "finalsite-missoula-mt",
+   "why": "2024-12-20: within 2 days of one of its closure days"
+  },
+  {
+   "timestamp": "20241219112038",
+   "url": "https://www.mcpsmt.org/",
+   "station": "finalsite-missoula-mt",
+   "why": "2024-12-19: within 2 days of one of its closure days"
+  },
+  {
+   "timestamp": "20241220112658",
+   "url": "https://www.mcpsmt.org/",
+   "station": "finalsite-missoula-mt",
+   "why": "2024-12-20: within 2 days of one of its closure days"
+  },
+  {
+   "timestamp": "20241228113630",
+   "url": "https://www.mcpsmt.org/",
+   "station": "finalsite-missoula-mt",
+   "why": "2024-12-28: within 2 days of one of its closure days"
+  },
+  {
+   "timestamp": "20241228232923",
+   "url": "https://www.mcpsmt.org/",
+   "station": "finalsite-missoula-mt",
+   "why": "2024-12-29: within 2 days of one of its closure days"
+  },
+  {
+   "timestamp": "20241227232846",
+   "url": "https://www.mcpsmt.org/",
+   "station": "finalsite-missoula-mt",
+   "why": "2024-12-28: within 2 days of one of its closure days"
+  },
+  {
+   "timestamp": "20241223233359",
+   "url": "https://www.mcpsmt.org/",
+   "station": "finalsite-missoula-mt",
+   "why": "2024-12-24: within 2 days of one of its closure days"
+  },
+  {
+   "timestamp": "20241224232519",
+   "url": "https://www.mcpsmt.org/",
+   "station": "finalsite-missoula-mt",
+   "why": "2024-12-25: within 2 days of one of its closure days"
+  },
+  {
+   "timestamp": "20241224113141",
+   "url": "https://www.mcpsmt.org/",
+   "station": "finalsite-missoula-mt",
+   "why": "2024-12-24: within 2 days of one of its closure days"
+  },
+  {
+   "timestamp": "20250103232204",
+   "url": "https://www.mcpsmt.org/",
+   "station": "finalsite-missoula-mt",
+   "why": "2025-01-04: within 2 days of one of its closure days"
+  },
+  {
+   "timestamp": "20240205194535",
+   "url": "https://www.mcpsmt.org/",
+   "station": "finalsite-missoula-mt",
+   "why": "2024-02-06: within 2 days of one of its closure days"
+  },
+  {
+   "timestamp": "20241225120745",
+   "url": "https://www.mcpsmt.org/",
+   "station": "finalsite-missoula-mt",
+   "why": "2024-12-25: within 2 days of one of its closure days"
+  },
+  {
+   "timestamp": "20240914155850",
+   "url": "https://www.mcpsmt.org/",
+   "station": "finalsite-missoula-mt",
+   "why": "2024-09-14: within 2 days of one of its closure days"
+  },
+  {
+   "timestamp": "20240914112522",
+   "url": "https://www.mcpsmt.org/",
+   "station": "finalsite-missoula-mt",
+   "why": "2024-09-14: within 2 days of one of its closure days"
+  },
+  {
+   "timestamp": "20240913231222",
+   "url": "https://www.mcpsmt.org/",
+   "station": "finalsite-missoula-mt",
+   "why": "2024-09-14: within 2 days of one of its closure days"
+  },
+  {
+   "timestamp": "20240914100728",
+   "url": "https://www.mcpsmt.org/",
+   "station": "finalsite-missoula-mt",
+   "why": "2024-09-14: within 2 days of one of its closure days"
+  },
+  {
+   "timestamp": "20250104120951",
+   "url": "https://www.mcpsmt.org/",
+   "station": "finalsite-missoula-mt",
+   "why": "2025-01-04: within 2 days of one of its closure days"
+  },
+  {
+   "timestamp": "20240914022925",
+   "url": "https://www.mcpsmt.org/",
+   "station": "finalsite-missoula-mt",
+   "why": "2024-09-14: within 2 days of one of its closure days"
+  },
+  {
+   "timestamp": "20231103184647",
+   "url": "https://www.mcpsmt.org/",
+   "station": "finalsite-missoula-mt",
+   "why": "2023-11-04: within 2 days of one of its closure days"
+  },
+  {
+   "timestamp": "20250119074443",
+   "url": "https://www.mcpsmt.org/",
+   "station": "finalsite-missoula-mt",
+   "why": "2025-01-19: within 2 days of one of its closure days"
+  },
+  {
+   "timestamp": "20250118000226",
+   "url": "https://www.mcpsmt.org/",
+   "station": "finalsite-missoula-mt",
+   "why": "2025-01-18: within 2 days of one of its closure days"
+  },
+  {
+   "timestamp": "20250119004005",
+   "url": "https://www.mcpsmt.org/",
+   "station": "finalsite-missoula-mt",
+   "why": "2025-01-19: within 2 days of one of its closure days"
+  },
+  {
+   "timestamp": "20250120233816",
+   "url": "https://www.mcpsmt.org/",
+   "station": "finalsite-missoula-mt",
+   "why": "2025-01-21: within 2 days of one of its closure days"
+  },
+  {
+   "timestamp": "20250121232045",
+   "url": "https://www.mcpsmt.org/",
+   "station": "finalsite-missoula-mt",
+   "why": "2025-01-22: within 2 days of one of its closure days"
+  },
+  {
+   "timestamp": "20250115232919",
+   "url": "https://www.mcpsmt.org/",
+   "station": "finalsite-missoula-mt",
+   "why": "2025-01-16: within 2 days of one of its closure days"
+  },
+  {
+   "timestamp": "20250123115123",
+   "url": "https://www.mcpsmt.org/",
+   "station": "finalsite-missoula-mt",
+   "why": "2025-01-23: within 2 days of one of its closure days"
+  },
+  {
+   "timestamp": "20250124232233",
+   "url": "https://www.mcpsmt.org/",
+   "station": "finalsite-missoula-mt",
+   "why": "2025-01-25: within 2 days of one of its closure days"
+  },
+  {
+   "timestamp": "20250123001925",
+   "url": "https://www.mcpsmt.org/",
+   "station": "finalsite-missoula-mt",
+   "why": "2025-01-23: within 2 days of one of its closure days"
+  },
+  {
+   "timestamp": "20250126112701",
+   "url": "https://www.mcpsmt.org/",
+   "station": "finalsite-missoula-mt",
+   "why": "2025-01-26: within 2 days of one of its closure days"
+  },
+  {
+   "timestamp": "20250125112059",
+   "url": "https://www.mcpsmt.org/",
+   "station": "finalsite-missoula-mt",
+   "why": "2025-01-25: within 2 days of one of its closure days"
+  },
+  {
+   "timestamp": "20250125234203",
+   "url": "https://www.mcpsmt.org/",
+   "station": "finalsite-missoula-mt",
+   "why": "2025-01-26: within 2 days of one of its closure days"
+  },
+  {
+   "timestamp": "20240103113004",
+   "url": "https://www.mcpsmt.org/",
+   "station": "finalsite-missoula-mt",
+   "why": "2024-01-03: within 2 days of one of its closure days"
+  },
+  {
+   "timestamp": "20230308024608",
+   "url": "https://www.mcpsmt.org/",
+   "station": "finalsite-missoula-mt",
+   "why": "2023-03-08: within 2 days of one of its closure days"
+  },
+  {
+   "timestamp": "20230404132819",
+   "url": "https://www.mcpsmt.org/",
+   "station": "finalsite-missoula-mt",
+   "why": "2023-04-04: within 2 days of one of its closure days"
+  },
+  {
+   "timestamp": "20220407021005",
+   "url": "https://www.mcpsmt.org/",
+   "station": "finalsite-missoula-mt",
+   "why": "2022-04-07: within 2 days of one of its closure days"
+  },
+  {
+   "timestamp": "20220401200341",
+   "url": "https://www.mcpsmt.org/",
+   "station": "finalsite-missoula-mt",
+   "why": "2022-04-02: within 2 days of one of its closure days"
+  },
+  {
+   "timestamp": "20210417023142",
+   "url": "https://www.mcpsmt.org/",
+   "station": "finalsite-missoula-mt",
+   "why": "2021-04-17: within 2 days of one of its closure days"
+  },
+  {
+   "timestamp": "20210406125416",
+   "url": "https://www.mcpsmt.org/",
+   "station": "finalsite-missoula-mt",
+   "why": "2021-04-06: within 2 days of one of its closure days"
+  },
+  {
+   "timestamp": "20210218040700",
+   "url": "https://www.mcpsmt.org/",
+   "station": "finalsite-missoula-mt",
+   "why": "2021-02-18: within 2 days of one of its closure days"
+  },
+  {
+   "timestamp": "20201124151116",
+   "url": "https://www.mcpsmt.org/",
+   "station": "finalsite-missoula-mt",
+   "why": "2020-11-24: within 2 days of one of its closure days"
+  },
+  {
+   "timestamp": "20200907215412",
+   "url": "https://www.mcpsmt.org/",
+   "station": "finalsite-missoula-mt",
+   "why": "2020-09-08: within 2 days of one of its closure days"
+  },
+  {
+   "timestamp": "20201023235001",
+   "url": "https://www.mcpsmt.org/",
+   "station": "finalsite-missoula-mt",
+   "why": "2020-10-24: within 2 days of one of its closure days"
+  },
+  {
+   "timestamp": "20210327020710",
+   "url": "https://www.mcpsmt.org/",
+   "station": "finalsite-missoula-mt",
+   "why": "2021-03-27: within 2 days of one of its closure days"
+  },
+  {
+   "timestamp": "20191008151223",
+   "url": "https://www.mcpsmt.org/",
+   "station": "finalsite-missoula-mt",
+   "why": "2019-10-08: within 2 days of one of its closure days"
+  },
+  {
+   "timestamp": "20211226135601",
+   "url": "https://www.mcpsmt.org/",
+   "station": "finalsite-missoula-mt",
+   "why": "2021-12-26: within 2 days of one of its closure days"
+  },
+  {
+   "timestamp": "20210202235858",
+   "url": "https://www.mcpsmt.org/",
+   "station": "finalsite-missoula-mt",
+   "why": "2021-02-03: within 2 days of one of its closure days"
+  },
+  {
+   "timestamp": "20220201230410",
+   "url": "https://www.mcpsmt.org/",
+   "station": "finalsite-missoula-mt",
+   "why": "2022-02-02: within 2 days of one of its closure days"
+  },
+  {
+   "timestamp": "20220201200431",
+   "url": "https://www.mcpsmt.org/",
+   "station": "finalsite-missoula-mt",
+   "why": "2022-02-02: within 2 days of one of its closure days"
+  },
+  {
+   "timestamp": "20220101194458",
+   "url": "https://www.mcpsmt.org/",
+   "station": "finalsite-missoula-mt",
+   "why": "2022-01-02: within 2 days of one of its closure days"
+  },
+  {
+   "timestamp": "20210101141945",
+   "url": "https://www.mcpsmt.org/",
+   "station": "finalsite-missoula-mt",
+   "why": "2021-01-01: within 2 days of one of its closure days"
+  },
+  {
+   "timestamp": "20210103044235",
+   "url": "https://www.mcpsmt.org/",
+   "station": "finalsite-missoula-mt",
+   "why": "2021-01-03: within 2 days of one of its closure days"
+  },
+  {
+   "timestamp": "20211008173436",
+   "url": "https://www.mcpsmt.org/",
+   "station": "finalsite-missoula-mt",
+   "why": "2021-10-09: within 2 days of one of its closure days"
+  },
+  {
+   "timestamp": "20211008200826",
+   "url": "https://www.mcpsmt.org/",
+   "station": "finalsite-missoula-mt",
+   "why": "2021-10-09: within 2 days of one of its closure days"
+  },
+  {
+   "timestamp": "20201203120951",
+   "url": "https://www.mcpsmt.org/",
+   "station": "finalsite-missoula-mt",
+   "why": "2020-12-03: within 2 days of one of its closure days"
+  },
+  {
+   "timestamp": "20201014132108",
+   "url": "https://www.mcpsmt.org/",
+   "station": "finalsite-missoula-mt",
+   "why": "2020-10-14: within 2 days of one of its closure days"
+  },
+  {
+   "timestamp": "20200417032205",
+   "url": "https://www.mcpsmt.org/",
+   "station": "finalsite-missoula-mt",
+   "why": "2020-04-17: within 2 days of one of its closure days"
+  },
+  {
+   "timestamp": "20200403063755",
+   "url": "https://www.mcpsmt.org/",
+   "station": "finalsite-missoula-mt",
+   "why": "2020-04-03: within 2 days of one of its closure days"
+  },
+  {
+   "timestamp": "20191210023158",
+   "url": "https://www.mcpsmt.org/",
+   "station": "finalsite-missoula-mt",
+   "why": "2019-12-10: within 2 days of one of its closure days"
+  },
+  {
+   "timestamp": "20191018184828",
+   "url": "https://www.mcpsmt.org/",
+   "station": "finalsite-missoula-mt",
+   "why": "2019-10-19: within 2 days of one of its closure days"
+  },
+  {
+   "timestamp": "20191117115738",
+   "url": "https://www.mcpsmt.org/",
+   "station": "finalsite-missoula-mt",
+   "why": "2019-11-17: within 2 days of one of its closure days"
+  },
+  {
+   "timestamp": "20220414043845",
+   "url": "https://www.mcpsmt.org/",
+   "station": "finalsite-missoula-mt",
+   "why": "2022-04-14: within 2 days of one of its closure days"
+  },
+  {
+   "timestamp": "20220305160555",
+   "url": "https://www.mcpsmt.org/",
+   "station": "finalsite-missoula-mt",
+   "why": "2022-03-06: within 2 days of one of its closure days"
+  },
+  {
+   "timestamp": "20220303015243",
+   "url": "https://www.mcpsmt.org/",
+   "station": "finalsite-missoula-mt",
+   "why": "2022-03-03: within 2 days of one of its closure days"
+  },
+  {
+   "timestamp": "20251011065431",
+   "url": "https://www.mcpsmt.org/",
+   "station": "finalsite-missoula-mt",
+   "why": "2025-10-11: within 2 days of one of its closure days"
+  },
+  {
+   "timestamp": "20251011000642",
+   "url": "https://www.mcpsmt.org/",
+   "station": "finalsite-missoula-mt",
+   "why": "2025-10-11: within 2 days of one of its closure days"
+  },
+  {
+   "timestamp": "20251011105825",
+   "url": "https://www.mcpsmt.org/",
+   "station": "finalsite-missoula-mt",
+   "why": "2025-10-11: within 2 days of one of its closure days"
+  },
+  {
+   "timestamp": "20251010225745",
+   "url": "https://www.mcpsmt.org/",
+   "station": "finalsite-missoula-mt",
+   "why": "2025-10-11: within 2 days of one of its closure days"
+  },
+  {
+   "timestamp": "20251012105812",
+   "url": "https://www.mcpsmt.org/",
+   "station": "finalsite-missoula-mt",
+   "why": "2025-10-12: within 2 days of one of its closure days"
+  },
+  {
+   "timestamp": "20251011225732",
+   "url": "https://www.mcpsmt.org/",
+   "station": "finalsite-missoula-mt",
+   "why": "2025-10-12: within 2 days of one of its closure days"
+  },
+  {
+   "timestamp": "20190103113819",
+   "url": "http://www.d93schools.org:80/",
+   "station": "smartsites-bonneville-id",
+   "why": "2019-01-03: within 2 days of one of its closure days"
+  },
+  {
+   "timestamp": "20250126135516",
+   "url": "https://www.nbcsandiego.com/weather/school-closings/",
+   "station": "nbc-owned-knsd",
+   "why": "2025-01-26: within 2 days of one of its closure days"
+  },
+  {
+   "timestamp": "20250126025016",
+   "url": "https://www.nbcsandiego.com/weather/school-closings/",
+   "station": "nbc-owned-knsd",
+   "why": "2025-01-26: within 2 days of one of its closure days"
+  },
+  {
+   "timestamp": "20250128163336",
+   "url": "https://www.nbcsandiego.com/weather/school-closings/",
+   "station": "nbc-owned-knsd",
+   "why": "2025-01-29: within 2 days of one of its closure days"
+  },
+  {
+   "timestamp": "20250127234521",
+   "url": "https://www.nbcsandiego.com/weather/school-closings/",
+   "station": "nbc-owned-knsd",
+   "why": "2025-01-28: within 2 days of one of its closure days"
+  },
+  {
+   "timestamp": "20250129085628",
+   "url": "https://www.nbcsandiego.com/weather/school-closings/",
+   "station": "nbc-owned-knsd",
+   "why": "2025-01-29: within 2 days of one of its closure days"
+  },
+  {
+   "timestamp": "20230129135637",
+   "url": "https://www.nbcsandiego.com/weather/school-closings/",
+   "station": "nbc-owned-knsd",
+   "why": "2023-01-29: within 2 days of one of its closure days"
+  },
+  {
+   "timestamp": "20240403052110",
+   "url": "https://www.nbcsandiego.com/weather/school-closings/",
+   "station": "nbc-owned-knsd",
+   "why": "2024-04-03: within 2 days of one of its closure days"
+  },
+  {
+   "timestamp": "20230221002232",
+   "url": "https://www.nbcsandiego.com/weather/school-closings/",
+   "station": "nbc-owned-knsd",
+   "why": "2023-02-21: within 2 days of one of its closure days"
+  },
+  {
+   "timestamp": "20230212060507",
+   "url": "https://www.nbcsandiego.com/weather/school-closings/",
+   "station": "nbc-owned-knsd",
+   "why": "2023-02-12: within 2 days of one of its closure days"
+  },
+  {
+   "timestamp": "20230114153640",
+   "url": "https://www.nbcsandiego.com/weather/school-closings/",
+   "station": "nbc-owned-knsd",
+   "why": "2023-01-14: within 2 days of one of its closure days"
+  },
+  {
+   "timestamp": "20230221034355",
+   "url": "https://www.nbcsandiego.com/weather/school-closings/",
+   "station": "nbc-owned-knsd",
+   "why": "2023-02-21: within 2 days of one of its closure days"
+  },
+  {
+   "timestamp": "20230221135353",
+   "url": "https://www.nbcsandiego.com/weather/school-closings/",
+   "station": "nbc-owned-knsd",
+   "why": "2023-02-21: within 2 days of one of its closure days"
+  },
+  {
+   "timestamp": "20230401093514",
+   "url": "https://www.nbcsandiego.com/weather/school-closings/",
+   "station": "nbc-owned-knsd",
+   "why": "2023-04-01: within 2 days of one of its closure days"
+  },
+  {
+   "timestamp": "20230118143837",
+   "url": "https://www.nbcsandiego.com/weather/school-closings/",
+   "station": "nbc-owned-knsd",
+   "why": "2023-01-18: within 2 days of one of its closure days"
+  },
+  {
+   "timestamp": "20200410224717",
+   "url": "https://www.nbcsandiego.com/weather/school-closings/",
+   "station": "nbc-owned-knsd",
+   "why": "2020-04-11: within 2 days of one of its closure days"
+  },
+  {
+   "timestamp": "20200407025653",
+   "url": "https://www.nbcsandiego.com/weather/school-closings/",
+   "station": "nbc-owned-knsd",
+   "why": "2020-04-07: within 2 days of one of its closure days"
+  },
+  {
+   "timestamp": "20200411093706",
+   "url": "https://www.nbcsandiego.com/weather/school-closings/",
+   "station": "nbc-owned-knsd",
+   "why": "2020-04-11: within 2 days of one of its closure days"
+  },
+  {
+   "timestamp": "20210131005432",
+   "url": "https://www.nbcsandiego.com/weather/school-closings/",
+   "station": "nbc-owned-knsd",
+   "why": "2021-01-31: within 2 days of one of its closure days"
+  },
+  {
+   "timestamp": "20200406135717",
+   "url": "https://www.nbcsandiego.com/weather/school-closings/",
+   "station": "nbc-owned-knsd",
+   "why": "2020-04-06: within 2 days of one of its closure days"
+  },
+  {
+   "timestamp": "20210123011609",
+   "url": "https://www.nbcsandiego.com/weather/school-closings/",
+   "station": "nbc-owned-knsd",
+   "why": "2021-01-23: within 2 days of one of its closure days"
+  },
+  {
+   "timestamp": "20210301095049",
+   "url": "https://www.nbcsandiego.com/weather/school-closings/",
+   "station": "nbc-owned-knsd",
+   "why": "2021-03-01: within 2 days of one of its closure days"
+  },
+  {
+   "timestamp": "20210127024023",
+   "url": "https://www.nbcsandiego.com/weather/school-closings/",
+   "station": "nbc-owned-knsd",
+   "why": "2021-01-27: within 2 days of one of its closure days"
+  },
+  {
+   "timestamp": "20211231113319",
+   "url": "https://www.nbcsandiego.com/weather/school-closings/",
+   "station": "nbc-owned-knsd",
+   "why": "2021-12-31: within 2 days of one of its closure days"
+  },
+  {
+   "timestamp": "20210304222124",
+   "url": "https://www.nbcsandiego.com/weather/school-closings/",
+   "station": "nbc-owned-knsd",
+   "why": "2021-03-05: within 2 days of one of its closure days"
+  },
+  {
+   "timestamp": "20200229145520",
+   "url": "https://www.nbcsandiego.com/weather/school-closings/",
+   "station": "nbc-owned-knsd",
+   "why": "2020-02-29: within 2 days of one of its closure days"
+  },
+  {
+   "timestamp": "20210317021730",
+   "url": "https://www.nbcsandiego.com/weather/school-closings/",
+   "station": "nbc-owned-knsd",
+   "why": "2021-03-17: within 2 days of one of its closure days"
+  },
+  {
+   "timestamp": "20200209010539",
+   "url": "https://www.nbcsandiego.com/weather/school-closings/",
+   "station": "nbc-owned-knsd",
+   "why": "2020-02-09: within 2 days of one of its closure days"
+  },
+  {
+   "timestamp": "20210305051824",
+   "url": "https://www.nbcsandiego.com/weather/school-closings/",
+   "station": "nbc-owned-knsd",
+   "why": "2021-03-05: within 2 days of one of its closure days"
+  },
+  {
+   "timestamp": "20210313183718",
+   "url": "https://www.nbcsandiego.com/weather/school-closings/",
+   "station": "nbc-owned-knsd",
+   "why": "2021-03-14: within 2 days of one of its closure days"
+  },
+  {
+   "timestamp": "20211228081956",
+   "url": "https://www.nbcsandiego.com/weather/school-closings/",
+   "station": "nbc-owned-knsd",
+   "why": "2021-12-28: within 2 days of one of its closure days"
+  },
+  {
+   "timestamp": "20200411133401",
+   "url": "https://www.nbcsandiego.com/weather/school-closings/",
+   "station": "nbc-owned-knsd",
+   "why": "2020-04-11: within 2 days of one of its closure days"
+  },
+  {
+   "timestamp": "20200412090234",
+   "url": "https://www.nbcsandiego.com/weather/school-closings/",
+   "station": "nbc-owned-knsd",
+   "why": "2020-04-12: within 2 days of one of its closure days"
+  },
+  {
+   "timestamp": "20210131110851",
+   "url": "https://www.nbcsandiego.com/weather/school-closings/",
+   "station": "nbc-owned-knsd",
+   "why": "2021-01-31: within 2 days of one of its closure days"
+  },
+  {
+   "timestamp": "20200324023711",
+   "url": "https://www.nbcsandiego.com/weather/school-closings/",
+   "station": "nbc-owned-knsd",
+   "why": "2020-03-24: within 2 days of one of its closure days"
+  },
+  {
+   "timestamp": "20200412104410",
+   "url": "https://www.nbcsandiego.com/weather/school-closings/",
+   "station": "nbc-owned-knsd",
+   "why": "2020-04-12: within 2 days of one of its closure days"
+  },
+  {
+   "timestamp": "20211225090842",
+   "url": "https://www.nbcsandiego.com/weather/school-closings/",
+   "station": "nbc-owned-knsd",
+   "why": "2021-12-25: within 2 days of one of its closure days"
+  },
+  {
+   "timestamp": "20200321151027",
+   "url": "https://www.nbcsandiego.com/weather/school-closings/",
+   "station": "nbc-owned-knsd",
+   "why": "2020-03-21: within 2 days of one of its closure days"
+  },
+  {
+   "timestamp": "20200328003239",
+   "url": "https://www.nbcsandiego.com/weather/school-closings/",
+   "station": "nbc-owned-knsd",
+   "why": "2020-03-28: within 2 days of one of its closure days"
+  },
+  {
+   "timestamp": "20211226142120",
+   "url": "https://www.nbcsandiego.com/weather/school-closings/",
+   "station": "nbc-owned-knsd",
+   "why": "2021-12-26: within 2 days of one of its closure days"
+  },
+  {
+   "timestamp": "20191227023010",
+   "url": "https://www.nbcsandiego.com/weather/school-closings/",
+   "station": "nbc-owned-knsd",
+   "why": "2019-12-27: within 2 days of one of its closure days"
+  },
+  {
+   "timestamp": "20200304053232",
+   "url": "https://www.nbcsandiego.com/weather/school-closings/",
+   "station": "nbc-owned-knsd",
+   "why": "2020-03-04: within 2 days of one of its closure days"
+  },
+  {
+   "timestamp": "20210305055520",
+   "url": "https://www.nbcsandiego.com/wp-json/nbc/v1/school-closings",
+   "station": "nbc-owned-knsd",
+   "why": "2021-03-05: within 2 days of one of its closure days"
+  },
+  {
+   "timestamp": "20260403220422",
+   "url": "https://www.besd.net/",
+   "station": "apptegy-box-elder-ut",
+   "why": "2026-04-04: within 2 days of one of its closure days"
+  },
+  {
+   "timestamp": "20260403095756",
+   "url": "https://www.besd.net/",
+   "station": "apptegy-box-elder-ut",
+   "why": "2026-04-03: within 2 days of one of its closure days"
+  },
+  {
+   "timestamp": "20260331100028",
+   "url": "https://www.besd.net/",
+   "station": "apptegy-box-elder-ut",
+   "why": "2026-03-31: within 2 days of one of its closure days"
+  },
+  {
+   "timestamp": "20260330215832",
+   "url": "https://www.besd.net/",
+   "station": "apptegy-box-elder-ut",
+   "why": "2026-03-31: within 2 days of one of its closure days"
+  },
+  {
+   "timestamp": "20240224062530",
+   "url": "https://www.besd.net/",
+   "station": "apptegy-box-elder-ut",
+   "why": "2024-02-24: within 2 days of one of its closure days"
+  },
+  {
+   "timestamp": "20241113082124",
+   "url": "https://www.besd.net/",
+   "station": "apptegy-box-elder-ut",
+   "why": "2024-11-13: within 2 days of one of its closure days"
+  },
+  {
+   "timestamp": "20241113070132",
+   "url": "https://www.besd.net/",
+   "station": "apptegy-box-elder-ut",
+   "why": "2024-11-13: within 2 days of one of its closure days"
+  },
+  {
+   "timestamp": "20241113094132",
+   "url": "https://www.besd.net/",
+   "station": "apptegy-box-elder-ut",
+   "why": "2024-11-13: within 2 days of one of its closure days"
+  },
+  {
+   "timestamp": "20241113163813",
+   "url": "https://www.besd.net/",
+   "station": "apptegy-box-elder-ut",
+   "why": "2024-11-14: within 2 days of one of its closure days"
+  },
+  {
+   "timestamp": "20240403025200",
+   "url": "https://www.besd.net/",
+   "station": "apptegy-box-elder-ut",
+   "why": "2024-04-03: within 2 days of one of its closure days"
+  },
+  {
+   "timestamp": "20240330092853",
+   "url": "https://www.besd.net/",
+   "station": "apptegy-box-elder-ut",
+   "why": "2024-03-30: within 2 days of one of its closure days"
+  },
+  {
+   "timestamp": "20240406193736",
+   "url": "https://www.besd.net/",
+   "station": "apptegy-box-elder-ut",
+   "why": "2024-04-07: within 2 days of one of its closure days"
+  },
+  {
+   "timestamp": "20240406063125",
+   "url": "https://www.besd.net/",
+   "station": "apptegy-box-elder-ut",
+   "why": "2024-04-06: within 2 days of one of its closure days"
+  },
+  {
+   "timestamp": "20240327144535",
+   "url": "https://www.besd.net/",
+   "station": "apptegy-box-elder-ut",
+   "why": "2024-03-27: within 2 days of one of its closure days"
+  },
+  {
+   "timestamp": "20240327064123",
+   "url": "https://www.besd.net/",
+   "station": "apptegy-box-elder-ut",
+   "why": "2024-03-27: within 2 days of one of its closure days"
+  },
+  {
+   "timestamp": "20240310204343",
+   "url": "https://www.besd.net/",
+   "station": "apptegy-box-elder-ut",
+   "why": "2024-03-11: within 2 days of one of its closure days"
+  },
+  {
+   "timestamp": "20240314221421",
+   "url": "https://www.besd.net/",
+   "station": "apptegy-box-elder-ut",
+   "why": "2024-03-15: within 2 days of one of its closure days"
+  },
+  {
+   "timestamp": "20240314033618",
+   "url": "https://www.besd.net/",
+   "station": "apptegy-box-elder-ut",
+   "why": "2024-03-14: within 2 days of one of its closure days"
+  },
+  {
+   "timestamp": "20240313204704",
+   "url": "https://www.besd.net/",
+   "station": "apptegy-box-elder-ut",
+   "why": "2024-03-14: within 2 days of one of its closure days"
+  },
+  {
+   "timestamp": "20240302071035",
+   "url": "https://www.besd.net/",
+   "station": "apptegy-box-elder-ut",
+   "why": "2024-03-02: within 2 days of one of its closure days"
+  },
+  {
+   "timestamp": "20240303103614",
+   "url": "https://www.besd.net/",
+   "station": "apptegy-box-elder-ut",
+   "why": "2024-03-03: within 2 days of one of its closure days"
+  },
+  {
+   "timestamp": "20240229120656",
+   "url": "https://www.besd.net/",
+   "station": "apptegy-box-elder-ut",
+   "why": "2024-02-29: within 2 days of one of its closure days"
+  },
+  {
+   "timestamp": "20240229112841",
+   "url": "https://www.besd.net/",
+   "station": "apptegy-box-elder-ut",
+   "why": "2024-02-29: within 2 days of one of its closure days"
+  },
+  {
+   "timestamp": "20240108035408",
+   "url": "https://www.besd.net/",
+   "station": "apptegy-box-elder-ut",
+   "why": "2024-01-08: within 2 days of one of its closure days"
+  },
+  {
+   "timestamp": "20240106033553",
+   "url": "https://www.besd.net/",
+   "station": "apptegy-box-elder-ut",
+   "why": "2024-01-06: within 2 days of one of its closure days"
+  },
+  {
+   "timestamp": "20240106142232",
+   "url": "https://www.besd.net/",
+   "station": "apptegy-box-elder-ut",
+   "why": "2024-01-06: within 2 days of one of its closure days"
+  },
+  {
+   "timestamp": "20240105224820",
+   "url": "https://www.besd.net/",
+   "station": "apptegy-box-elder-ut",
+   "why": "2024-01-06: within 2 days of one of its closure days"
+  },
+  {
+   "timestamp": "20240106173233",
+   "url": "https://www.besd.net/",
+   "station": "apptegy-box-elder-ut",
+   "why": "2024-01-07: within 2 days of one of its closure days"
+  },
+  {
+   "timestamp": "20240212213409",
+   "url": "https://www.besd.net/",
+   "station": "apptegy-box-elder-ut",
+   "why": "2024-02-13: within 2 days of one of its closure days"
+  },
+  {
+   "timestamp": "20240209051530",
+   "url": "https://www.besd.net/",
+   "station": "apptegy-box-elder-ut",
+   "why": "2024-02-09: within 2 days of one of its closure days"
+  },
+  {
+   "timestamp": "20240206120522",
+   "url": "https://www.besd.net/",
+   "station": "apptegy-box-elder-ut",
+   "why": "2024-02-06: within 2 days of one of its closure days"
+  },
+  {
+   "timestamp": "20240206093331",
+   "url": "https://www.besd.net/",
+   "station": "apptegy-box-elder-ut",
+   "why": "2024-02-06: within 2 days of one of its closure days"
+  },
+  {
+   "timestamp": "20240207184927",
+   "url": "https://www.besd.net/",
+   "station": "apptegy-box-elder-ut",
+   "why": "2024-02-08: within 2 days of one of its closure days"
+  },
+  {
+   "timestamp": "20240208111341",
+   "url": "https://www.besd.net/",
+   "station": "apptegy-box-elder-ut",
+   "why": "2024-02-08: within 2 days of one of its closure days"
+  },
+  {
+   "timestamp": "20240212184918",
+   "url": "https://www.besd.net/",
+   "station": "apptegy-box-elder-ut",
+   "why": "2024-02-13: within 2 days of one of its closure days"
+  },
+  {
+   "timestamp": "20240130193844",
+   "url": "https://www.besd.net/",
+   "station": "apptegy-box-elder-ut",
+   "why": "2024-01-31: within 2 days of one of its closure days"
+  },
+  {
+   "timestamp": "20240126131816",
+   "url": "https://www.besd.net/",
+   "station": "apptegy-box-elder-ut",
+   "why": "2024-01-26: within 2 days of one of its closure days"
+  },
+  {
+   "timestamp": "20240130184222",
+   "url": "https://www.besd.net/",
+   "station": "apptegy-box-elder-ut",
+   "why": "2024-01-31: within 2 days of one of its closure days"
+  },
+  {
+   "timestamp": "20240123171945",
+   "url": "https://www.besd.net/",
+   "station": "apptegy-box-elder-ut",
+   "why": "2024-01-24: within 2 days of one of its closure days"
+  },
+  {
+   "timestamp": "20240123180923",
+   "url": "https://www.besd.net/",
+   "station": "apptegy-box-elder-ut",
+   "why": "2024-01-24: within 2 days of one of its closure days"
+  },
+  {
+   "timestamp": "20240130040936",
+   "url": "https://www.besd.net/",
+   "station": "apptegy-box-elder-ut",
+   "why": "2024-01-30: within 2 days of one of its closure days"
+  },
+  {
+   "timestamp": "20240130093315",
+   "url": "https://www.besd.net/",
+   "station": "apptegy-box-elder-ut",
+   "why": "2024-01-30: within 2 days of one of its closure days"
+  },
+  {
+   "timestamp": "20240126234231",
+   "url": "https://www.besd.net/",
+   "station": "apptegy-box-elder-ut",
+   "why": "2024-01-27: within 2 days of one of its closure days"
+  },
+  {
+   "timestamp": "20240126213523",
+   "url": "https://www.besd.net/",
+   "station": "apptegy-box-elder-ut",
+   "why": "2024-01-27: within 2 days of one of its closure days"
+  },
+  {
+   "timestamp": "20240126114628",
+   "url": "https://www.besd.net/",
+   "station": "apptegy-box-elder-ut",
+   "why": "2024-01-26: within 2 days of one of its closure days"
+  },
+  {
+   "timestamp": "20240123211211",
+   "url": "https://www.besd.net/",
+   "station": "apptegy-box-elder-ut",
+   "why": "2024-01-24: within 2 days of one of its closure days"
+  },
+  {
+   "timestamp": "20240120081305",
+   "url": "https://www.besd.net/",
+   "station": "apptegy-box-elder-ut",
+   "why": "2024-01-20: within 2 days of one of its closure days"
+  },
+  {
+   "timestamp": "20240120075409",
+   "url": "https://www.besd.net/",
+   "station": "apptegy-box-elder-ut",
+   "why": "2024-01-20: within 2 days of one of its closure days"
+  },
+  {
+   "timestamp": "20241027195705",
+   "url": "https://www.besd.net/",
+   "station": "apptegy-box-elder-ut",
+   "why": "2024-10-28: within 2 days of one of its closure days"
+  },
+  {
+   "timestamp": "20241028070227",
+   "url": "https://www.besd.net/",
+   "station": "apptegy-box-elder-ut",
+   "why": "2024-10-28: within 2 days of one of its closure days"
+  },
+  {
+   "timestamp": "20241028155642",
+   "url": "https://www.besd.net/",
+   "station": "apptegy-box-elder-ut",
+   "why": "2024-10-28: within 2 days of one of its closure days"
+  },
+  {
+   "timestamp": "20241026191651",
+   "url": "https://www.besd.net/",
+   "station": "apptegy-box-elder-ut",
+   "why": "2024-10-27: within 2 days of one of its closure days"
+  },
+  {
+   "timestamp": "20241027110753",
+   "url": "https://www.besd.net/",
+   "station": "apptegy-box-elder-ut",
+   "why": "2024-10-27: within 2 days of one of its closure days"
+  },
+  {
+   "timestamp": "20241030055404",
+   "url": "https://www.besd.net/",
+   "station": "apptegy-box-elder-ut",
+   "why": "2024-10-30: within 2 days of one of its closure days"
+  },
+  {
+   "timestamp": "20241030220905",
+   "url": "https://www.besd.net/",
+   "station": "apptegy-box-elder-ut",
+   "why": "2024-10-31: within 2 days of one of its closure days"
+  },
+  {
+   "timestamp": "20231208213400",
+   "url": "https://www.besd.net/",
+   "station": "apptegy-box-elder-ut",
+   "why": "2023-12-09: within 2 days of one of its closure days"
+  },
+  {
+   "timestamp": "20240509114344",
+   "url": "https://www.besd.net/",
+   "station": "apptegy-box-elder-ut",
+   "why": "2024-05-09: within 2 days of one of its closure days"
+  },
+  {
+   "timestamp": "20240509140735",
+   "url": "https://www.besd.net/",
+   "station": "apptegy-box-elder-ut",
+   "why": "2024-05-09: within 2 days of one of its closure days"
+  },
+  {
+   "timestamp": "20231125021854",
+   "url": "https://www.besd.net/",
+   "station": "apptegy-box-elder-ut",
+   "why": "2023-11-25: within 2 days of one of its closure days"
+  },
+  {
+   "timestamp": "20231120210756",
+   "url": "https://www.besd.net/",
+   "station": "apptegy-box-elder-ut",
+   "why": "2023-11-21: within 2 days of one of its closure days"
+  },
+  {
+   "timestamp": "20231120223650",
+   "url": "https://www.besd.net/",
+   "station": "apptegy-box-elder-ut",
+   "why": "2023-11-21: within 2 days of one of its closure days"
+  },
+  {
+   "timestamp": "20231028054129",
+   "url": "https://www.besd.net/",
+   "station": "apptegy-box-elder-ut",
+   "why": "2023-10-28: within 2 days of one of its closure days"
+  },
+  {
+   "timestamp": "20231028144827",
+   "url": "https://www.besd.net/",
+   "station": "apptegy-box-elder-ut",
+   "why": "2023-10-28: within 2 days of one of its closure days"
+  },
+  {
+   "timestamp": "20231028131824",
+   "url": "https://www.besd.net/",
+   "station": "apptegy-box-elder-ut",
+   "why": "2023-10-28: within 2 days of one of its closure days"
+  },
+  {
+   "timestamp": "20231014102305",
+   "url": "https://www.besd.net/",
+   "station": "apptegy-box-elder-ut",
+   "why": "2023-10-14: within 2 days of one of its closure days"
+  },
+  {
+   "timestamp": "20230318072508",
+   "url": "https://www.besd.net/",
+   "station": "apptegy-box-elder-ut",
+   "why": "2023-03-18: within 2 days of one of its closure days"
+  },
+  {
+   "timestamp": "20230419220316",
+   "url": "https://www.besd.net/",
+   "station": "apptegy-box-elder-ut",
+   "why": "2023-04-20: within 2 days of one of its closure days"
+  },
+  {
+   "timestamp": "20230415215213",
+   "url": "https://www.besd.net/",
+   "station": "apptegy-box-elder-ut",
+   "why": "2023-04-16: within 2 days of one of its closure days"
+  },
+  {
+   "timestamp": "20230416095932",
+   "url": "https://www.besd.net/",
+   "station": "apptegy-box-elder-ut",
+   "why": "2023-04-16: within 2 days of one of its closure days"
+  },
+  {
+   "timestamp": "20230420095509",
+   "url": "https://www.besd.net/",
+   "station": "apptegy-box-elder-ut",
+   "why": "2023-04-20: within 2 days of one of its closure days"
+  },
+  {
+   "timestamp": "20230419095536",
+   "url": "https://www.besd.net/",
+   "station": "apptegy-box-elder-ut",
+   "why": "2023-04-19: within 2 days of one of its closure days"
+  },
+  {
+   "timestamp": "20230416220302",
+   "url": "https://www.besd.net/",
+   "station": "apptegy-box-elder-ut",
+   "why": "2023-04-17: within 2 days of one of its closure days"
+  },
+  {
+   "timestamp": "20230407101325",
+   "url": "https://www.besd.net/",
+   "station": "apptegy-box-elder-ut",
+   "why": "2023-04-07: within 2 days of one of its closure days"
+  },
+  {
+   "timestamp": "20230406104006",
+   "url": "https://www.besd.net/",
+   "station": "apptegy-box-elder-ut",
+   "why": "2023-04-06: within 2 days of one of its closure days"
+  },
+  {
+   "timestamp": "20230407001236",
+   "url": "https://www.besd.net/",
+   "station": "apptegy-box-elder-ut",
+   "why": "2023-04-07: within 2 days of one of its closure days"
+  },
+  {
+   "timestamp": "20230328090034",
+   "url": "https://www.besd.net/",
+   "station": "apptegy-box-elder-ut",
+   "why": "2023-03-28: within 2 days of one of its closure days"
+  },
+  {
+   "timestamp": "20230328102512",
+   "url": "https://www.besd.net/",
+   "station": "apptegy-box-elder-ut",
+   "why": "2023-03-28: within 2 days of one of its closure days"
+  },
+  {
+   "timestamp": "20230401211100",
+   "url": "https://www.besd.net/",
+   "station": "apptegy-box-elder-ut",
+   "why": "2023-04-02: within 2 days of one of its closure days"
+  },
+  {
+   "timestamp": "20230328013323",
+   "url": "https://www.besd.net/",
+   "station": "apptegy-box-elder-ut",
+   "why": "2023-03-28: within 2 days of one of its closure days"
+  },
+  {
+   "timestamp": "20230328215559",
+   "url": "https://www.besd.net/",
+   "station": "apptegy-box-elder-ut",
+   "why": "2023-03-29: within 2 days of one of its closure days"
+  },
+  {
+   "timestamp": "20230328041833",
+   "url": "https://www.besd.net/",
+   "station": "apptegy-box-elder-ut",
+   "why": "2023-03-28: within 2 days of one of its closure days"
+  },
+  {
+   "timestamp": "20230324215345",
+   "url": "https://www.besd.net/",
+   "station": "apptegy-box-elder-ut",
+   "why": "2023-03-25: within 2 days of one of its closure days"
+  },
+  {
+   "timestamp": "20230325095439",
+   "url": "https://www.besd.net/",
+   "station": "apptegy-box-elder-ut",
+   "why": "2023-03-25: within 2 days of one of its closure days"
+  },
+  {
+   "timestamp": "20230325215228",
+   "url": "https://www.besd.net/",
+   "station": "apptegy-box-elder-ut",
+   "why": "2023-03-26: within 2 days of one of its closure days"
+  },
+  {
+   "timestamp": "20230325172830",
+   "url": "https://www.besd.net/",
+   "station": "apptegy-box-elder-ut",
+   "why": "2023-03-26: within 2 days of one of its closure days"
+  },
+  {
+   "timestamp": "20230322222806",
+   "url": "https://www.besd.net/",
+   "station": "apptegy-box-elder-ut",
+   "why": "2023-03-23: within 2 days of one of its closure days"
+  },
+  {
+   "timestamp": "20230318195345",
+   "url": "https://www.besd.net/",
+   "station": "apptegy-box-elder-ut",
+   "why": "2023-03-19: within 2 days of one of its closure days"
+  },
+  {
+   "timestamp": "20230321094454",
+   "url": "https://www.besd.net/",
+   "station": "apptegy-box-elder-ut",
+   "why": "2023-03-21: within 2 days of one of its closure days"
+  },
+  {
+   "timestamp": "20230321103104",
+   "url": "https://www.besd.net/",
+   "station": "apptegy-box-elder-ut",
+   "why": "2023-03-21: within 2 days of one of its closure days"
+  },
+  {
+   "timestamp": "20230311150751",
+   "url": "https://www.besd.net/",
+   "station": "apptegy-box-elder-ut",
+   "why": "2023-03-11: within 2 days of one of its closure days"
+  },
+  {
+   "timestamp": "20230316105402",
+   "url": "https://www.besd.net/",
+   "station": "apptegy-box-elder-ut",
+   "why": "2023-03-16: within 2 days of one of its closure days"
+  },
+  {
+   "timestamp": "20230311183202",
+   "url": "https://www.besd.net/",
+   "station": "apptegy-box-elder-ut",
+   "why": "2023-03-12: within 2 days of one of its closure days"
   }
  ]
 }
