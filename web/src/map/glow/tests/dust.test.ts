@@ -67,8 +67,17 @@ describe('dust', () => {
     const cornered = dustCover(Math.SQRT1_2, 0.6, 1);
     expect(centered).toBeGreaterThan(0.8);
     expect(4 * cornered).toBeGreaterThan(centered);
-    // Its sprite has room for its softest edge.
-    expect(dustSpriteSize(0.6) / 2).toBeGreaterThan(0.6 + 1);
+    // Its sprite reaches its edge and no further: no pixel past it takes any of the speck.
+    for (const [radius, softness] of [
+      [0.6, 1],
+      [1.9, 1],
+      [3, 0.5],
+      [3, 0],
+    ] as const) {
+      const half = dustSpriteSize(radius, softness) / 2;
+      expect(dustCover(half, radius, softness)).toBe(0);
+      expect(dustCover(half - 0.01, radius, softness)).toBeGreaterThan(0);
+    }
   });
 
   it('places each school in Web Mercator, sorted into the cells of a grid row by row', () => {

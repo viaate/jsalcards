@@ -58,9 +58,13 @@ export function dustAtZoom(style: DustStyle, zoom: number): DustAtZoom | null {
   return opacity > 0 && radius > 0 ? { radius, opacity, softness } : null;
 }
 
-/** Sprite size, device px, for a speck of `radius` device px: room for its softest edge. */
-export function dustSpriteSize(radius: number): number {
-  return 2 * (radius + 1) + 1;
+/**
+ * Sprite size, device px, for a speck of `radius` device px and its edge's
+ * softness: just room for every pixel it covers, as each fragment costs a
+ * software rasterizer time.
+ */
+export function dustSpriteSize(radius: number, softness: number): number {
+  return 2 * (radius + softness);
 }
 
 /**

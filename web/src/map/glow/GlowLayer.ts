@@ -958,7 +958,7 @@ export class GlowLayer implements CustomLayerInterface {
     const clientWidth = map.getCanvas().clientWidth;
     const ratio = clientWidth > 0 ? width / clientWidth : 1;
     const radius = dust.radius * ratio;
-    const size = Math.min(dustSpriteSize(radius), res.maxPointSize);
+    const size = Math.min(dustSpriteSize(radius, dust.softness), res.maxPointSize);
     const program = res.program;
     gl.viewport(0, 0, width, gl.drawingBufferHeight);
     gl.disable(gl.DEPTH_TEST);
