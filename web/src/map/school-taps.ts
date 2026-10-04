@@ -3,10 +3,10 @@
  * as a pick of it in search would (app/boot.ts hands it to the page, which
  * takes the pick's own path).
  *
- * A school's marks are what the map shows of it, while it shows them: its dot
- * and its name, each once it is drawn at the map's zoom (basemap/schools.ts
- * says from which zoom, and how big), its speck of dust further out, and the
- * glow's light of a school lit today, at every zoom, the light and the dust
+ * A school's marks are what the map shows of it, while it shows them: its dot,
+ * its speck of dust further out and its name, each once it is drawn at the
+ * map's zoom (basemap/schools.ts says from which zoom, and how big), and the
+ * glow's light of a school lit today, at every zoom, the dust and the light
  * found from the glow's own data (glow-mount.ts). A mark
  * is in reach of the pointer within a hit radius of its edge: HIT_RADIUS.mouse
  * for a mouse or a pen, HIT_RADIUS.touch for a finger, as the pointer that
@@ -53,10 +53,16 @@ import { displayName } from '../text/names';
 import { stateOfId } from '../text/school-names';
 import type { SchoolId } from '../types/generated';
 // From the modules that draw the marks, loaded before this one (their own chunks, not copies).
-import { schoolDotOpacity, schoolDotRadius, schoolNameOpacity } from './basemap';
+import {
+  schoolDotOpacity,
+  schoolDotRadius,
+  schoolDustOpacity,
+  schoolDustRadius,
+  schoolNameOpacity,
+} from './basemap';
 import type { MapView } from './basemap';
 import { BASEMAP_IDS, SCHOOL_LIT_STATE } from './basemap/ids';
-import { dustRadius, litRadius } from './glow-mount';
+import { litRadius } from './glow-mount';
 import type { DustSpots } from './glow-mount';
 import type { HeardClick } from './kept-clicks';
 import {
@@ -80,7 +86,7 @@ export const TAP_WAIT_MS = 250;
 export const DOUBLE_TAP_MS = 500;
 export const DOUBLE_TAP_PX = 30;
 
-/** A mark takes clicks from this opacity: half drawn, fading in. */
+/** A mark takes clicks from this opacity: half drawn, as a dot or a speck dims further out. */
 export const SHOWN_OPACITY = 0.5;
 
 /**
@@ -273,6 +279,7 @@ export function schoolsInReach(
   const { schoolDots, schoolNames } = BASEMAP_IDS;
   const drawn = (id: string, opacity: number): boolean =>
     opacity >= SHOWN_OPACITY && map.getLayer(id) !== undefined;
+  const specks = dust !== null && schoolDustOpacity(zoom) >= SHOWN_OPACITY ? dust : null;
   if (drawn(schoolDots, schoolDotOpacity(zoom))) {
     const mark = schoolDotRadius(zoom);
     const box: [PointLike, PointLike] = [
@@ -307,15 +314,14 @@ export function schoolsInReach(
       });
     }
   }
-  const speck = dust === null ? null : dustRadius(zoom);
-  if ((lit !== null && lit.ids.length > 0) || speck !== null) {
+  if ((lit !== null && lit.ids.length > 0) || specks !== null) {
     const { lng, lat } = map.unproject([point.x, point.y]);
     const at = { x: mercatorXFromLng(lng), y: mercatorYFromLat(lat) };
     const scale = TILE * 2 ** zoom;
     if (lit !== null)
       for (const hit of litInReach(lit, at, scale, radius, litRadius(zoom))) add(hit);
-    if (dust !== null && speck !== null) {
-      for (const hit of dustInReach(dust, at, scale, radius, speck)) add(hit);
+    if (specks !== null) {
+      for (const hit of dustInReach(specks, at, scale, radius, schoolDustRadius(zoom))) add(hit);
     }
   }
   return [...found.values()];

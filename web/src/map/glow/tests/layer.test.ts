@@ -1,6 +1,8 @@
-import { describe, expect, it } from 'vitest';
+import type { CustomRenderMethodInput, Map as MapLibreMap } from 'maplibre-gl';
+import { describe, expect, it, vi } from 'vitest';
 
 import { GlowLayer, GlowStatus } from '..';
+import { dustStyle } from '../../glow-mount';
 import { mercatorXFromLng, mercatorYFromLat } from '../mercator';
 
 describe('GlowLayer', () => {
@@ -122,6 +124,41 @@ describe('GlowLayer', () => {
     layer.setDust(null);
     expect(layer.stats.dust).toBe(0);
     expect(layer.dustNear(0.5, 0.5, 1)).toEqual([]);
+  });
+
+  it('finds no speck where the GPU could not run the dust: none is drawn', () => {
+    const layer = new GlowLayer({ dust: dustStyle() });
+    layer.setDust(new Float64Array([-94.6, 39.1]), new Uint8Array([0]));
+    const near = (): number[] =>
+      layer.dustNear(mercatorXFromLng(-94.6), mercatorYFromLat(39.1), 0.001);
+    expect(near()).toEqual([0]);
+    // Across Kansas City at zoom 7, on a GPU that cannot build the dust's program.
+    const map = {
+      getCanvasContainer: () => ({ addEventListener: () => undefined }),
+      on: () => undefined,
+      off: () => undefined,
+      getZoom: () => 7,
+      getBounds: () => ({
+        getWest: () => -96,
+        getEast: () => -93,
+        getNorth: () => 40,
+        getSouth: () => 38,
+      }),
+      triggerRepaint: () => undefined,
+    } as unknown as MapLibreMap;
+    const gl = {
+      getParameter: () => new Float32Array([1, 64]),
+      createShader: () => {
+        throw new Error('no shader');
+      },
+    } as unknown as WebGL2RenderingContext;
+    const error = vi.spyOn(console, 'error').mockImplementation(() => undefined);
+    layer.onAdd(map, gl);
+    layer.render(gl, { shaderData: { variantName: 'mercator' } } as CustomRenderMethodInput);
+    expect(error).toHaveBeenCalledOnce();
+    error.mockRestore();
+    expect(layer.stats.dustDrawn).toBe(false);
+    expect(near()).toEqual([]);
   });
 
   it('counts born times later than now, as from a skewed clock or epoch milliseconds', () => {

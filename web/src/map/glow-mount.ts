@@ -31,9 +31,7 @@ import {
   SCHOOL_DOT_RADIUS,
   SCHOOL_DOT_SOFTNESS,
   SCHOOL_DUST_FROM,
-  SCHOOL_DUST_TAPS_FROM,
   SCHOOL_DUST_UNTIL,
-  dotAt,
 } from './basemap/dots';
 import { BASEMAP_IDS, SCHOOLS_TILE_LAYER, SCHOOL_LIT_STATE } from './basemap/ids';
 import { GlowLayer } from './glow';
@@ -56,17 +54,6 @@ export const GLOW_LAYER_ID = BASEMAP_IDS.glow;
 export function litRadius(zoom: number): number {
   const style = glowStyleAtZoom(zoom);
   return style.glyphOpacity >= 0.5 ? style.glyphRadiusPx : 2 * style.coreSigmaPx;
-}
-
-/**
- * How far a speck of dust reaches as a mark at a zoom, in CSS pixels, for a
- * tap on it (school-taps.ts): its own radius, from the zoom the dust is half
- * faded in (SCHOOL_DUST_TAPS_FROM) until the tiles' dots draw alone; null
- * where no speck takes taps.
- */
-export function dustRadius(zoom: number): number | null {
-  if (!(zoom >= SCHOOL_DUST_TAPS_FROM && zoom < SCHOOL_DUST_UNTIL)) return null;
-  return dotAt(SCHOOL_DOT_RADIUS, zoom);
 }
 
 /**

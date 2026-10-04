@@ -441,11 +441,12 @@ export class GlowLayer implements CustomLayerInterface {
   /**
    * The schools whose specks are drawn within `reach` Web Mercator units of
    * (x, y) each way, by their places in setDust's list: lit ones and those of
-   * a kind not shown left out.
+   * a kind not shown left out, and every one where the GPU could not run the
+   * dust.
    */
   dustNear(x: number, y: number, reach: number): number[] {
     const grid = this.dust;
-    if (grid === null) return [];
+    if (grid === null || this.dustFailed) return [];
     return dustSlotsNear(grid, x, y, reach)
       .filter((slot) => this.dustShown(slot))
       .map((slot) => grid.order[slot] ?? 0);

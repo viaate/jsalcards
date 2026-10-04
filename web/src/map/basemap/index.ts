@@ -98,7 +98,13 @@ import { US_MASK_ALIAS } from './us-mask-alias';
 export { BASEMAP_IDS } from './style';
 export { FLIGHT_STOP_ZOOM } from './flight';
 // How a school's dot and name are drawn at a zoom, for a click on them (map/school-taps.ts).
-export { schoolDotOpacity, schoolDotRadius, schoolNameOpacity } from './schools';
+export {
+  schoolDotOpacity,
+  schoolDotRadius,
+  schoolDustOpacity,
+  schoolDustRadius,
+  schoolNameOpacity,
+} from './schools';
 export { US_BOUNDS } from './us-geo';
 export type { MapView } from './bounds';
 export type { Place, ViewLimits } from './limits';

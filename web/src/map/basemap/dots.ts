@@ -33,11 +33,6 @@ export const SCHOOL_DUST_FROM = 5;
  * in when the map is zoomed in from further out.
  */
 export const SCHOOL_DUST_UNTIL = 10;
-/**
- * A speck takes taps from this zoom (school-taps.ts): the dust half faded in,
- * as a dot takes them from half drawn (SHOWN_OPACITY there).
- */
-export const SCHOOL_DUST_TAPS_FROM = 5.5;
 /** Dots whole from this zoom: a metro's whole area on a laptop's screen, and closer. */
 export const SCHOOL_DOTS_FROM = 9.5;
 

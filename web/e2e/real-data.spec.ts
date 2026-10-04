@@ -1814,45 +1814,80 @@ test('a click heard before the taps’ code is in opens the school clicked, and 
   await context.close();
 });
 
-test('dots only fading in take no click: from the zoom they are drawn at, a click finds them', async ({
+test('specks too faint to be half drawn take no click; from where they are, a click on one opens its school', async ({
   browser,
 }) => {
   const context = await browser.newContext({ viewport: { width: 1440, height: 900 } });
   const page = await context.newPage();
   const { problems } = watch(page);
   const panel = page.locator('aside.detail');
-  /** A dot MapLibre drew near the middle of the map, clear of every other: where it is. */
-  const aDot = (): Promise<{ x: number; y: number }> =>
-    page.evaluate(
-      ({ layers }) => {
+  const schools = directory();
+  /**
+   * Once the glow layer draws the dust, a school whose speck is near the middle of the map,
+   * clear of every other school's: its id, and where it is on the page.
+   */
+  const aSpeck = async (): Promise<{ id: string; x: number; y: number }> => {
+    await page.waitForFunction(
+      (id) => {
+        const layer = window.snowlightMap?.getLayer(id) as unknown as
+          { implementation: { stats: { dust: number; dustDrawn: boolean } } } | undefined;
+        const stats = layer?.implementation.stats;
+        return stats !== undefined && stats.dust > 0 && stats.dustDrawn;
+      },
+      GLOW_LAYER,
+      { timeout: 60_000 },
+    );
+    const view = await page.evaluate(() => {
+      const map = window.snowlightMap;
+      if (map === undefined) throw new Error('no map');
+      const bounds = map.getBounds();
+      return {
+        west: bounds.getWest() - 1,
+        east: bounds.getEast() + 1,
+        south: bounds.getSouth() - 1,
+        north: bounds.getNorth() + 1,
+      };
+    });
+    const near = schools.filter(
+      ({ lon, lat }) => lon > view.west && lon < view.east && lat > view.south && lat < view.north,
+    );
+    return page.evaluate(
+      ({ near }) => {
         const map = window.snowlightMap;
         if (map === undefined) throw new Error('no map');
         const box = map.getContainer().getBoundingClientRect();
-        const dots = map.queryRenderedFeatures({ layers }).map((feature) => {
-          const [lon, lat] = (feature.geometry as { coordinates: [number, number] }).coordinates;
-          return map.project([lon, lat]);
+        const specks = near.map((school) => {
+          const { x, y } = map.project([school.lon, school.lat]);
+          return { id: school.id, x, y };
         });
-        const alone = dots.filter((dot) =>
-          dots.every((other) => other === dot || Math.hypot(other.x - dot.x, other.y - dot.y) > 40),
+        const alone = specks.filter(
+          (speck) =>
+            speck.x > 0 &&
+            speck.x < box.width &&
+            speck.y > 0 &&
+            speck.y < box.height &&
+            specks.every(
+              (other) => other === speck || Math.hypot(other.x - speck.x, other.y - speck.y) > 40,
+            ),
         );
         const middle = { x: box.width / 2 + 200, y: box.height / 2 };
         alone.sort(
           (a, b) =>
             Math.hypot(a.x - middle.x, a.y - middle.y) - Math.hypot(b.x - middle.x, b.y - middle.y),
         );
-        const dot = alone[0];
-        if (dot === undefined) throw new Error('no dot alone');
-        return { x: box.left + dot.x, y: box.top + dot.y };
+        const speck = alone[0];
+        if (speck === undefined) throw new Error('no speck alone');
+        return { id: speck.id, x: box.left + speck.x, y: box.top + speck.y };
       },
-      { layers: [BASEMAP_IDS.schoolDots] },
+      { near },
     );
+  };
 
-  // Kansas at zoom 9.02, the dots barely begun to fade in (schools.ts: from zoom 9, drawn from
-  // 9.5). MapLibre finds them there, but they are all but unseen: a click on one is a click on
-  // the map, and the cursor stays the map's.
-  await page.goto(`${site}?at=39.2,-95.9,9.02`);
+  // Kansas at zoom 7.5: every school a faint speck, under half drawn (dots.ts). A click on one
+  // is a click on the map, and the cursor stays the map's.
+  await page.goto(`${site}?at=39.2,-95.9,7.5`);
   await settle(page);
-  const faint = await aDot();
+  const faint = await aSpeck();
   await page.mouse.move(faint.x, faint.y);
   await page.waitForTimeout(500);
   expect(await mapCursor(page)).toBe('grab');
@@ -1860,14 +1895,20 @@ test('dots only fading in take no click: from the zoom they are drawn at, a clic
   await page.waitForTimeout(1500);
   await expect(panel).toHaveCount(0);
   expect(new URL(page.url()).searchParams.get('school')).toBeNull();
-  expect((await mapView(page)).zoom).toBeCloseTo(9.02, 2);
+  expect((await mapView(page)).zoom).toBeCloseTo(7.5, 2);
 
-  // At zoom 9.5 they are drawn, and a dot takes the pointer.
-  await page.goto(`${site}?at=39.2,-95.9,9.5`);
+  // At zoom 8.2 the specks are more than half drawn: one takes the pointer, and a click on it
+  // opens its school, as a click on its dot does closer in.
+  await page.goto(`${site}?at=39.2,-95.9,8.2`);
   await settle(page);
-  const drawnDot = await aDot();
-  await page.mouse.move(drawnDot.x, drawnDot.y);
+  const speck = await aSpeck();
+  await page.mouse.move(speck.x, speck.y);
   await expect.poll(() => mapCursor(page)).toBe('pointer');
+  await page.mouse.click(speck.x, speck.y);
+  await expect
+    .poll(() => new URL(page.url()).searchParams.get('school'), { timeout: 30_000 })
+    .toBe(speck.id);
+  await expect(panel).toHaveCount(1);
   expect(problems).toEqual([]);
   await context.close();
 });

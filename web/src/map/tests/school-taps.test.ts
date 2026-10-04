@@ -12,8 +12,9 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { BASEMAP_IDS, SCHOOL_LIT_STATE } from '../basemap/ids';
 import {
+  SCHOOL_DOT_OPACITY,
   SCHOOL_DOT_RADIUS,
-  SCHOOL_DUST_TAPS_FROM,
+  SCHOOL_DUST_FROM,
   SCHOOL_DUST_UNTIL,
   dotAt,
 } from '../basemap/dots';
@@ -23,8 +24,11 @@ import {
   SCHOOL_TILES_MIN_ZOOM,
   schoolDotOpacity,
   schoolDotRadius,
+  schoolDustOpacity,
+  schoolDustRadius,
 } from '../basemap/schools';
-import { dustRadius, litRadius } from '../glow-mount';
+import { dustStyle, litRadius } from '../glow-mount';
+import { dustAtZoom } from '../glow/dust';
 import {
   latFromMercatorY,
   lngFromMercatorX,
@@ -538,7 +542,7 @@ describe('a drawn school', () => {
 describe('a school drawn as dust', () => {
   const map = new FakeMap();
   beforeEach(() => {
-    map.zoom = 7;
+    map.zoom = 8;
     map.drawn = [];
     map.layers = new Set([BASEMAP_IDS.schoolDots, BASEMAP_IDS.schoolNames]);
   });
@@ -571,12 +575,12 @@ describe('a school drawn as dust', () => {
   });
 
   it('beside another in a finger’s reach opens neither: the map zooms in toward both', () => {
-    // Pembroke Hill and Border Star, 2.5 km apart: about 5 px at zoom 7.
+    // Pembroke Hill and Border Star, 2.5 km apart: about 10 px at zoom 8.
     const specks = dust([PEMBROKE_HILL, BORDER_STAR]);
     const between = beside(map, PEMBROKE_HILL, 0, 2);
     const action = tapAction(map.map, between, HIT_RADIUS.touch, null, undefined, specks);
     if (action?.kind !== 'zoom') throw new Error(`opened: ${JSON.stringify(action)}`);
-    expect(action.view.zoom).toBeGreaterThanOrEqual(7 + DRILL_STEP);
+    expect(action.view.zoom).toBeGreaterThanOrEqual(8 + DRILL_STEP);
     expect(action.view.zoom).toBeLessThanOrEqual(DRILL_ZOOM);
     // With a mouse right on one, that one.
     const on = beside(map, BORDER_STAR, 0, 0);
@@ -585,28 +589,40 @@ describe('a school drawn as dust', () => {
     );
   });
 
-  it('takes taps from the dust half faded in, until the dots draw alone', () => {
+  it('takes a tap only while its speck is drawn, as schools.ts says the glow draws it', () => {
     const specks = dust([PEMBROKE_HILL]);
+    // A finger 2 px off its edge: in reach wherever the speck takes taps.
     const tap = () =>
       tapAction(
         map.map,
-        beside(map, PEMBROKE_HILL, 0, 0),
+        beside(map, PEMBROKE_HILL, schoolDustRadius(map.zoom) + 2, 0),
         HIT_RADIUS.touch,
         null,
         undefined,
         specks,
       );
-    map.zoom = SCHOOL_DUST_TAPS_FROM - 0.05;
-    expect(dustRadius(map.zoom)).toBeNull();
-    expect(tap()).toBeNull();
-    map.zoom = SCHOOL_DUST_TAPS_FROM;
-    expect(dustRadius(map.zoom)).toBeCloseTo(dotAt(SCHOOL_DOT_RADIUS, map.zoom), 9);
-    expect(opened(tap())).toBe(PEMBROKE_HILL.id);
-    // From where the dots draw alone, the dust takes none: a map without its dots, nothing.
     map.layers = new Set();
-    map.zoom = SCHOOL_DUST_UNTIL;
-    expect(dustRadius(map.zoom)).toBeNull();
+    for (let zoom = SCHOOL_DUST_FROM - 0.5; zoom <= SCHOOL_DUST_UNTIL + 0.5; zoom += 0.01) {
+      map.zoom = zoom;
+      const where = `zoom ${zoom.toFixed(2)}`;
+      // The glow layer's own speck: its opacity and radius are the helpers'.
+      const drawn = dustAtZoom(dustStyle(), zoom);
+      expect(schoolDustOpacity(zoom), where).toBeCloseTo(drawn?.opacity ?? 0, 9);
+      if (drawn !== null) expect(schoolDustRadius(zoom), where).toBeCloseTo(drawn.radius, 9);
+      // A tap finds it exactly where it is at least half drawn, as a dot.
+      expect(tap() !== null, where).toBe((drawn?.opacity ?? 0) >= SHOWN_OPACITY);
+    }
+    // Faint across a state, it takes none; from about zoom 7.9 it does, until the dots draw alone.
+    map.zoom = 7.5;
+    expect(schoolDustOpacity(map.zoom)).toBeGreaterThan(0);
     expect(tap()).toBeNull();
+    map.zoom = 8;
+    expect(opened(tap())).toBe(PEMBROKE_HILL.id);
+    map.zoom = SCHOOL_DUST_UNTIL;
+    expect(schoolDustOpacity(map.zoom)).toBe(0);
+    expect(tap()).toBeNull();
+    expect(schoolDustRadius(8)).toBe(dotAt(SCHOOL_DOT_RADIUS, 8));
+    expect(schoolDustOpacity(8)).toBe(dotAt(SCHOOL_DOT_OPACITY, 8));
   });
 
   it('and its dot, where both are drawn, are one school', () => {

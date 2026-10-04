@@ -45,7 +45,14 @@ import type {
 } from 'maplibre-gl';
 
 import type { MapFilter } from '../../state/filter';
-import { type DotStops, SCHOOL_DOT_OPACITY, SCHOOL_DOT_RADIUS, dotAt } from './dots';
+import {
+  type DotStops,
+  SCHOOL_DOT_OPACITY,
+  SCHOOL_DOT_RADIUS,
+  SCHOOL_DUST_FROM,
+  SCHOOL_DUST_UNTIL,
+  dotAt,
+} from './dots';
 import { MAP_FONTS } from './fonts';
 import { BASEMAP_IDS, SCHOOLS_TILE_LAYER, SCHOOL_LIT_STATE, SCHOOL_TILES_PROTOCOL } from './ids';
 
@@ -191,6 +198,18 @@ export function schoolNameOpacity(zoom: number): number {
 }
 export function schoolDotRadius(zoom: number): number {
   return dotAt(DOT_RADIUS, zoom) + dotAt(DOT_RING, zoom);
+}
+
+/**
+ * How the glow layer draws a school's speck of dust at a zoom (dots.ts), for
+ * the same readers: how opaque it is (none outside the dust's zooms), and its
+ * radius on the screen in CSS pixels.
+ */
+export function schoolDustOpacity(zoom: number): number {
+  return zoom >= SCHOOL_DUST_FROM && zoom < SCHOOL_DUST_UNTIL ? dotAt(SCHOOL_DOT_OPACITY, zoom) : 0;
+}
+export function schoolDustRadius(zoom: number): number {
+  return dotAt(SCHOOL_DOT_RADIUS, zoom);
 }
 
 /**
