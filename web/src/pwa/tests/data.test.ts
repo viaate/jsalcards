@@ -1,8 +1,9 @@
 import { describe, expect, it, vi } from 'vitest';
 
-import { dataRoot, evictStaticData, onDataUpdate, warmDataCache } from '../data';
+import { dataRoot, evictStaticData, onDataUpdate } from '../data';
 import { CACHE_NAMES } from '../config';
-import { FakeWindow } from './fakes';
+import { keepData } from '../keep';
+import { FakeCaches, FakeWindow } from './fakes';
 
 const CLOSINGS = 'https://snow.test/data/live/closings.json';
 
@@ -43,43 +44,6 @@ describe('onDataUpdate', () => {
   });
 });
 
-describe('warmDataCache', () => {
-  it('fetches each data file once and ignores failures', async () => {
-    const win = new FakeWindow({
-      resources: [CLOSINGS, CLOSINGS, 'https://snow.test/favicon.svg'],
-    });
-    win.fetch.mockImplementationOnce(() => Promise.reject(new TypeError('offline')));
-    await expect(warmDataCache('/', ['data/schools/meta.json'], win)).resolves.toBe(2);
-    expect(win.fetch.mock.calls.map(([url]) => url).sort()).toEqual([
-      CLOSINGS,
-      'https://snow.test/data/schools/meta.json',
-    ]);
-  });
-
-  it('never fetches a range-served file whole', async () => {
-    const tiles = 'https://snow.test/data/schools/schools.pmtiles';
-    const win = new FakeWindow({ resources: [CLOSINGS, tiles, `${tiles}?v=2`] });
-    await expect(
-      warmDataCache('/', ['data/schools/schools.pmtiles', '/data/other.pmtiles'], win),
-    ).resolves.toBe(1);
-    expect(win.fetched).toEqual([CLOSINGS]);
-  });
-
-  it('skips what is not a URL', async () => {
-    const win = new FakeWindow({ resources: [CLOSINGS] });
-    await expect(warmDataCache('/', ['https://[bad', 'http://'], win)).resolves.toBe(1);
-    expect(win.fetched).toEqual([CLOSINGS]);
-  });
-
-  it('keeps to the data folder under the base', async () => {
-    const win = new FakeWindow({
-      resources: [CLOSINGS, 'https://snow.test/snowlight/data/live/closings.json'],
-    });
-    await expect(warmDataCache('/snowlight/', [], win)).resolves.toBe(1);
-    expect(win.fetched).toEqual(['https://snow.test/snowlight/data/live/closings.json']);
-  });
-});
-
 describe('evictStaticData', () => {
   class FakeCache {
     readonly deleted: string[] = [];
@@ -115,6 +79,27 @@ describe('evictStaticData', () => {
     expect(cache.deleted).toEqual(['https://snow.test/data/schools/meta.json']);
     await evictStaticData(undefined, win);
     expect(cache.deleted).toHaveLength(3);
+  });
+
+  it('drops a copy on its way into the cache once it is in, so none is put back after', async () => {
+    const caches = new FakeCaches();
+    const win = Object.assign(new FakeWindow(), { caches });
+    const meta = 'https://snow.test/data/schools/meta.json';
+    let send!: () => void;
+    const body = new ReadableStream<Uint8Array>({
+      start(controller) {
+        send = () => {
+          controller.enqueue(new TextEncoder().encode('{}'));
+          controller.close();
+        };
+      },
+    });
+    // The page read the directory before the worker took over; its copy is still being written.
+    const kept = keepData(meta, new Response(body, { status: 200 }), '/', { caches });
+    const evicted = evictStaticData([meta], win);
+    send();
+    await Promise.all([kept, evicted]);
+    expect(await caches.text(CACHE_NAMES.staticData, meta)).toBeUndefined();
   });
 
   it('does nothing before the cache exists or without Cache Storage', async () => {

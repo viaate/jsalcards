@@ -10,6 +10,7 @@
 
 import { DISTRICT_NAME_FIXES, SCHOOL_NAME_FIXES } from 'virtual:snowlight/school-names';
 
+import { readsPastWorker } from '../data/files';
 import type { NearView, RecordKind, SearchClient, SearchHit, SearchResults } from '../search';
 import { casedName, nameLayout, shownRanges } from '../text/names';
 import type { NameFix } from '../text/names';
@@ -23,8 +24,6 @@ export interface SearchControllerOptions {
   readonly indexUrl: string | null;
   /** Called with the newest text's results, or null to show nothing. */
   readonly onResults: (results: SearchResults | null) => void;
-  /** Called once the index has loaded (the page can cache it for offline use). */
-  readonly onIndexLoaded?: (indexUrl: string) => void;
   readonly createClient?: ClientFactory;
   /** Results per group. Default SEARCH_LIMIT. */
   readonly limit?: number;
@@ -43,9 +42,14 @@ export interface SearchController {
   destroy(): void;
 }
 
+/**
+ * A search worker for the index. Before a service worker controls the page, the search worker
+ * keeps the index in that worker's cache as it downloads, as the page does its own reads
+ * (data/files.ts fetchFile), so it is downloaded once.
+ */
 const defaultClient: ClientFactory = async (indexUrl) => {
   const { createSearchClient } = await import('../search');
-  return createSearchClient(indexUrl);
+  return createSearchClient(indexUrl, { keep: readsPastWorker() });
 };
 
 export function createSearchController(options: SearchControllerOptions): SearchController {
@@ -68,15 +72,10 @@ export function createSearchController(options: SearchControllerOptions): Search
           return null;
         }
         client = made;
-        made.ready.then(
-          () => {
-            if (!destroyed) options.onIndexLoaded?.(indexUrl);
-          },
-          () => {
-            unavailable = true;
-            if (!destroyed && latest.trim() !== '') options.onResults(null);
-          },
-        );
+        made.ready.catch(() => {
+          unavailable = true;
+          if (!destroyed && latest.trim() !== '') options.onResults(null);
+        });
         return made;
       },
       () => {

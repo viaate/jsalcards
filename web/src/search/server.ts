@@ -5,6 +5,7 @@
  * index is ready wait in order; a `cancel` drops a waiting query, which is
  * answered with `cancelled`. Every query gets exactly one answer.
  */
+import { keepData } from '../pwa/keep';
 import { loadIndex } from './decode';
 import { DEFAULT_LIMIT, SearchEngine } from './engine';
 import type { IndexInfo, NearView, WorkerRequest, WorkerResponse } from './types';
@@ -23,19 +24,23 @@ export interface LoadedBytes {
   readonly phases: Readonly<Record<string, number>>;
 }
 
-export type IndexFetcher = (url: string) => Promise<LoadedBytes>;
+/** Fetches an index; with `keep`, keeps it in the service worker's cache too (pwa/keep.ts). */
+export type IndexFetcher = (url: string, keep: boolean) => Promise<LoadedBytes>;
 
 /**
  * Fetches an index and inflates it as it downloads. The file is stored
  * gzip-compressed; if a server already undid that (Content-Encoding), the
- * bytes arrive plain and pass through.
+ * bytes arrive plain and pass through. With `keep`, the file as it came is
+ * put into the service worker's cache as it arrives, for a page no worker
+ * controls yet.
  */
-export async function fetchIndex(url: string): Promise<LoadedBytes> {
+export async function fetchIndex(url: string, keep = false): Promise<LoadedBytes> {
   const t0 = performance.now();
   const response = await fetch(url);
   if (!response.ok || !response.body) {
     throw new Error(`index request failed with HTTP ${String(response.status)}`);
   }
+  if (keep) void keepData(url, response.clone());
   const reader = response.body.getReader();
   // Read until the first two bytes are known, to tell gzip from plain.
   const head: Uint8Array<ArrayBuffer>[] = [];
@@ -92,7 +97,7 @@ function isRequest(data: unknown): data is WorkerRequest {
   const m = data as Record<string, unknown>;
   switch (m.type) {
     case 'load':
-      return typeof m.url === 'string';
+      return typeof m.url === 'string' && (m.keep === undefined || typeof m.keep === 'boolean');
     case 'query':
       return (
         typeof m.id === 'number' &&
@@ -129,10 +134,10 @@ export function serve(endpoint: Endpoint, fetcher: IndexFetcher = fetchIndex): v
     }
   };
 
-  const load = async (url: string): Promise<void> => {
+  const load = async (url: string, keep: boolean): Promise<void> => {
     const t0 = performance.now();
     try {
-      const fetched = await fetcher(url);
+      const fetched = await fetcher(url, keep);
       const phases: Record<string, number> = { ...fetched.phases };
       const index = loadIndex(fetched.bytes, phases);
       engine = new SearchEngine(index);
@@ -161,7 +166,7 @@ export function serve(endpoint: Endpoint, fetcher: IndexFetcher = fetchIndex): v
       case 'load':
         if (loading || engine || failed !== null) return;
         loading = true;
-        void load(data.url);
+        void load(data.url, data.keep === true);
         return;
       case 'query': {
         const p = { id: data.id, q: data.q, limit: data.limit || DEFAULT_LIMIT, near: data.near };

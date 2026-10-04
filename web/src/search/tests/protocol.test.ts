@@ -3,6 +3,9 @@ import { gzipSync } from 'node:zlib';
 
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
+import { CACHE_NAMES } from '../../pwa/config';
+import { keepsWritten } from '../../pwa/keep';
+import { FakeCaches } from '../../pwa/tests/fakes';
 import { encodeIndex } from '../encode';
 import { fetchIndex, serve } from '../server';
 import type { IndexFetcher, LoadedBytes } from '../server';
@@ -140,6 +143,7 @@ describe('worker protocol', () => {
     { type: 'query', id: '1', q: 'a', limit: 5 },
     { type: 'query', id: 1, q: 5, limit: 5 },
     { type: 'load' },
+    { type: 'load', url: 'x', keep: 'yes' },
     { type: 'drop-table' },
   ])('ignores the malformed message %j', async (message) => {
     const h = harness(() => Promise.resolve(loaded()));
@@ -147,6 +151,21 @@ describe('worker protocol', () => {
     await h.settle();
     expect(h.received).toEqual([]);
     h.close();
+  });
+
+  it('tells the fetcher whether to keep the index for the service worker', async () => {
+    const fetcher = vi.fn<IndexFetcher>(() => Promise.resolve(loaded()));
+    const h = harness(fetcher);
+    h.send({ type: 'load', url: 'https://snow.test/data/search-index.bin', keep: true });
+    await h.until(1);
+    expect(fetcher).toHaveBeenCalledWith('https://snow.test/data/search-index.bin', true);
+    h.close();
+    const plain = vi.fn<IndexFetcher>(() => Promise.resolve(loaded()));
+    const other = harness(plain);
+    other.send({ type: 'load', url: 'x' });
+    await other.until(1);
+    expect(plain).toHaveBeenCalledWith('x', false);
+    other.close();
   });
 
   it('loads only once', async () => {
@@ -226,6 +245,24 @@ describe('fetchIndex', () => {
     });
     vi.stubGlobal('fetch', () => Promise.resolve(new Response(body)));
     expect((await fetchIndex('test://index')).bytes).toEqual(INDEX);
+  });
+
+  it('with keep, puts the file as it came into the worker’s cache, and inflates it as ever', async () => {
+    const gz = gzipSync(INDEX);
+    const url = 'https://snow.test/data/search-index.bin';
+    const caches = new FakeCaches();
+    vi.stubGlobal('caches', caches);
+    vi.stubGlobal('fetch', () => Promise.resolve(new Response(new Blob([gz]))));
+    expect((await fetchIndex(url, true)).bytes).toEqual(INDEX);
+    await keepsWritten();
+    const held = await (await caches.open(CACHE_NAMES.staticData)).match(url);
+    expect(new Uint8Array((await held?.arrayBuffer()) ?? [])).toEqual(new Uint8Array(gz));
+    // Without keep, as once a worker controls the page and keeps what it fetches itself.
+    const other = new FakeCaches();
+    vi.stubGlobal('caches', other);
+    expect((await fetchIndex(url)).bytes).toEqual(INDEX);
+    await keepsWritten();
+    expect(other.stores.size).toBe(0);
   });
 
   it('fails on an HTTP error', async () => {

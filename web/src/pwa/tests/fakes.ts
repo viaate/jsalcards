@@ -141,3 +141,62 @@ export class FakeWindow extends EventTarget implements RegisterHost {
     this.document.dispatchEvent(new Event('visibilitychange'));
   }
 }
+
+interface Stored {
+  readonly body: ArrayBuffer;
+  readonly status: number;
+  readonly headers: [string, string][];
+}
+
+/**
+ * Cache Storage as the worker's runtime caches use it: whole files by URL. A
+ * put reads the whole body first, and stores nothing when that fails, as a
+ * browser's does; with `failPut` it fails as a full disk does.
+ */
+export class FakeCaches {
+  readonly stores = new Map<string, Map<string, Stored>>();
+  failPut = false;
+
+  has(name: string): Promise<boolean> {
+    return Promise.resolve(this.stores.has(name));
+  }
+
+  open(name: string): Promise<Cache> {
+    let store = this.stores.get(name);
+    if (store === undefined) {
+      store = new Map();
+      this.stores.set(name, store);
+    }
+    const entries = store;
+    const key = (request: RequestInfo | URL): string =>
+      typeof request === 'string' ? request : request instanceof URL ? request.href : request.url;
+    const cache = {
+      match: (request: RequestInfo | URL) => {
+        const held = entries.get(key(request));
+        return Promise.resolve(
+          held === undefined
+            ? undefined
+            : new Response(held.body.slice(0), { status: held.status, headers: held.headers }),
+        );
+      },
+      put: async (request: RequestInfo | URL, response: Response) => {
+        const body = await response.arrayBuffer();
+        if (this.failPut)
+          throw new DOMException('The quota has been exceeded.', 'QuotaExceededError');
+        entries.set(key(request), {
+          body,
+          status: response.status,
+          headers: [...response.headers],
+        });
+      },
+      keys: () => Promise.resolve([...entries.keys()].map((url) => new Request(url))),
+      delete: (request: RequestInfo | URL) => Promise.resolve(entries.delete(key(request))),
+    };
+    return Promise.resolve(cache as unknown as Cache);
+  }
+
+  /** What cache `name` holds for `url`, as text; undefined when it holds nothing. */
+  async text(name: string, url: string): Promise<string | undefined> {
+    return (await (await this.open(name)).match(url))?.text();
+  }
+}

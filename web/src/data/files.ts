@@ -6,6 +6,10 @@
  * server for nothing and logs nothing. Reads that fail anyway (offline, a
  * deploy in flight, a file that does not parse) come back as null, quietly:
  * the page then shows nothing for that file rather than anything false.
+ *
+ * Every data file is fetched with fetchFile, which keeps what it reads before
+ * the service worker takes the page over in the worker's cache, so the worker
+ * never downloads it a second time (pwa/keep.ts).
  */
 
 import { DATA_DIR } from '../pwa/config';
@@ -49,6 +53,39 @@ export function dataRootFor(base: string, pageHref: string): string {
 export type Fetch = (input: string, init?: RequestInit) => Promise<Response>;
 
 /**
+ * Whether a data file read now comes straight from the network, in a build
+ * whose service worker will want it: a production build in a browser with
+ * service workers, before one controls the page.
+ */
+export function readsPastWorker(): boolean {
+  return (
+    import.meta.env.PROD &&
+    'caches' in globalThis &&
+    'serviceWorker' in navigator &&
+    navigator.serviceWorker.controller === null
+  );
+}
+
+/**
+ * Fetches a data file, as `fetch` does. Read before a service worker controls
+ * the page, a whole file is also put into the cache the worker keeps it in as
+ * it arrives (pwa/keep.ts), so the worker, once it takes over, finds it there
+ * instead of downloading it again, and the next visit has it offline.
+ */
+export const fetchFile: Fetch = async (input, init) => {
+  const keep = readsPastWorker();
+  const response = await fetch(input, init);
+  if (keep && response.status === 200) {
+    const copy = response.clone();
+    void import('../pwa/keep').then(
+      ({ keepData }) => keepData(input, copy),
+      () => copy.body?.cancel(),
+    );
+  }
+  return response;
+};
+
+/**
  * Fetches a file this build ships. Null when it does not ship it, the request
  * fails or the answer is not a success. An abort still rejects, so callers
  * that cancel can tell.
@@ -57,7 +94,7 @@ export async function fetchData(
   files: DataFiles,
   path: string,
   init: RequestInit = {},
-  fetchImpl: Fetch = (input, options) => fetch(input, options),
+  fetchImpl: Fetch = fetchFile,
 ): Promise<Response | null> {
   const url = files.url(path);
   if (url === null) return null;

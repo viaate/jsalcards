@@ -10,6 +10,6 @@
 
 export { registerServiceWorker } from './register';
 export type { RegisterHost, RegisterOptions, ServiceWorkerHandle } from './register';
-export { dataRoot, evictStaticData, onDataUpdate, warmDataCache } from './data';
+export { dataRoot, evictStaticData, onDataUpdate } from './data';
 export type { DataCacheHost } from './data';
 export { CACHE_NAMES, DATA_DIR, MANIFEST_FILE, SW_FILE } from './config';

@@ -183,7 +183,6 @@ export function boot(options: BootOptions): Services {
       : (view, selection) => (selection?.kind === 'school' ? clearOfPanel(view, screen()) : view));
   const data = options.data ?? createAppData();
   const pins = createPinStore();
-  const warmUrls: string[] = [];
   /** The map from the moment it takes input. */
   let created: Basemap | undefined;
   void (options.mapCreated ?? options.map).then((map) => {
@@ -197,9 +196,6 @@ export function boot(options: BootOptions): Services {
       const first = shown?.[0]?.hit;
       created?.prepareStreets(first === undefined ? undefined : viewForHit(first));
       options.onResults(shown);
-    },
-    onIndexLoaded: (url) => {
-      warmUrls.push(url);
     },
   });
 
@@ -272,7 +268,7 @@ export function boot(options: BootOptions): Services {
   });
 
   // Once the map is on screen: installing the worker would otherwise run alongside its start.
-  void startServiceWorker(warmUrls, options.map);
+  void startServiceWorker(options.map);
 
   /** The menu, started the first time its button is pressed (ui/menu-host.ts). */
   let menuHost: Promise<Menu | null> | null = null;

@@ -30,17 +30,15 @@ export function afterLoad(): Promise<void> {
 
 /**
  * Registers the worker after load and once `after` settles (the map on
- * screen, or unable to start). `warmUrls` lists data files loaded outside the
- * page (the search index, by its worker); it is read when the first worker
- * takes over, so files added to it until then are cached for offline use too.
+ * screen, or unable to start). Data the page reads before the worker takes
+ * it over is kept for the worker as it is read (data/files.ts fetchFile).
  */
 export function startServiceWorker(
-  warmUrls: readonly string[],
   after: Promise<unknown> = Promise.resolve(),
 ): Promise<ServiceWorkerHandle | null> {
   const handle = Promise.all([afterLoad(), after.catch(() => undefined)])
     .then(() => import('../pwa/register'))
-    .then(({ registerServiceWorker }) => registerServiceWorker({ warmUrls, applyWhenHidden: true }))
+    .then(({ registerServiceWorker }) => registerServiceWorker({ applyWhenHidden: true }))
     .catch(() => null);
   if (navigator.webdriver) window.snowlightServiceWorker = handle;
   return handle;

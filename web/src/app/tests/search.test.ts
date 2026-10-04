@@ -85,20 +85,13 @@ describe('with an index', () => {
   it('loads it on the first warm, once', async () => {
     const { client } = fakeClient();
     const createClient = vi.fn(() => Promise.resolve(client));
-    const onIndexLoaded = vi.fn();
-    const search = createSearchController({
-      indexUrl: INDEX,
-      onResults: vi.fn(),
-      onIndexLoaded,
-      createClient,
-    });
+    const search = createSearchController({ indexUrl: INDEX, onResults: vi.fn(), createClient });
     expect(createClient).not.toHaveBeenCalled();
     search.warm();
     search.warm();
     await settle();
     expect(createClient).toHaveBeenCalledTimes(1);
     expect(createClient).toHaveBeenCalledWith(INDEX);
-    expect(onIndexLoaded).toHaveBeenCalledWith(INDEX);
   });
 
   it('shows only the newest text’s results', async () => {

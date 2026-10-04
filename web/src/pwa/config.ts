@@ -10,6 +10,9 @@
  *   copy into the cache, and the page told when it differs.
  * - The school directory, the search index and finished storm replays change
  *   rarely; they are cache-first and expire after a week.
+ * - A data file the page or its search worker reads before the first worker
+ *   takes the page over goes into the cache its route uses as it is read
+ *   (keep.ts), so the worker never downloads it again.
  * - OpenFreeMap tiles (zoom 7 and up) keep a small cache of recent tiles: only
  *   answers that are tiles (onlyTiles), and never for a request that asks to
  *   go past the cache. A cache an earlier build kept and this one does not is
@@ -114,9 +117,9 @@ const STATIC_DATA = String.raw`(?:schools/|search(?:[-./]|$)|replays/(?!index\.j
 /**
  * Extensions of the files the page reads in byte ranges instead of whole:
  * schools/schools.pmtiles, tens of megabytes that PMTiles reads a few
- * kilobytes at a time with HTTP Range requests. No route caches them and the
- * first-visit warm-up skips them, so the browser always asks the server for
- * just the bytes it needs. A file read this way must be listed here.
+ * kilobytes at a time with HTTP Range requests. No route caches them and a
+ * first visit keeps none of them (keep.ts), so the browser always asks the
+ * server for just the bytes it needs. A file read this way must be listed here.
  */
 export const RANGE_SERVED_EXTENSIONS: readonly string[] = Object.freeze(['pmtiles']);
 

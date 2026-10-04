@@ -15,7 +15,7 @@ import {
   shardOf,
 } from './details-format';
 import type { DetailRow } from './details-format';
-import { fetchJson } from './files';
+import { fetchFile, fetchJson } from './files';
 import type { DataFiles, Fetch } from './files';
 
 /** A school near another, as a row lists it. */
@@ -162,10 +162,7 @@ export interface DetailsSource {
   get(id: SchoolId): Promise<SchoolRecord | null>;
 }
 
-export function createDetailsSource(
-  files: DataFiles,
-  fetchImpl: Fetch = (input, init) => fetch(input, init),
-): DetailsSource {
+export function createDetailsSource(files: DataFiles, fetchImpl: Fetch = fetchFile): DetailsSource {
   let index: Promise<ShardIndex | null> | null = null;
   const shards = new Map<number, Promise<Shard | null>>();
   const readIndex = async (): Promise<ShardIndex | null> => {

@@ -63,6 +63,11 @@ export interface ClientOptions {
    * it off.
    */
   readonly queryTimeoutMs?: number;
+  /**
+   * Keep the index in the service worker's cache as it downloads (pwa/keep.ts): for a page no
+   * worker controls yet, whose reads the worker never sees. Default false.
+   */
+  readonly keep?: boolean;
 }
 
 export const DEFAULT_QUERY_TIMEOUT_MS = 5000;
@@ -313,7 +318,11 @@ export function createSearchClient(url: string | URL, options: ClientOptions = {
     });
 
     try {
-      worker.postMessage({ type: 'load', url: String(url) });
+      worker.postMessage(
+        options.keep === true
+          ? { type: 'load', url: String(url), keep: true }
+          : { type: 'load', url: String(url) },
+      );
     } catch (error) {
       fail('the search worker could not start', error);
     }

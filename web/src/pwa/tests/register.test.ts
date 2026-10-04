@@ -87,63 +87,36 @@ describe('registration', () => {
 });
 
 describe('the first visit', () => {
-  it('caches the data the page loaded before the worker took over', async () => {
-    const { win } = await start(
-      { warmUrls: ['/data/search-index.bin', 'https://elsewhere.example/data/x.json'] },
-      {
-        resources: [
-          'https://snow.test/data/live/closings.json',
-          'https://snow.test/data/schools/meta.json',
-          'https://snow.test/data/live/closings.json',
-          'https://snow.test/assets/index-abc.js',
-          'https://tiles.openfreemap.org/planet',
-          'https://snow.test/other/data/x.json',
-        ],
-      },
-    );
-    expect(win.fetched).toEqual([]);
-    const worker = new FakeWorker();
-    win.container.registration.installing = worker;
-    worker.to('installed');
-    worker.to('activated');
-    win.container.control(worker);
-    await vi.advanceTimersByTimeAsync(0);
-    expect(win.fetched.sort()).toEqual([
-      'https://snow.test/data/live/closings.json',
-      'https://snow.test/data/schools/meta.json',
-      'https://snow.test/data/search-index.bin',
-    ]);
-    expect(win.location.reload).not.toHaveBeenCalled();
-  });
-
-  it('says when that is done, and never fetches the school tiles whole', async () => {
-    const { win, handle } = await start(
-      { warmUrls: ['/data/schools/schools.pmtiles'] },
-      {
-        resources: [
-          'https://snow.test/data/live/closings.json',
-          'https://snow.test/data/schools/schools.pmtiles',
-        ],
-      },
-    );
-    let warmed: number | undefined;
-    void handle?.warmed.then((count) => {
-      warmed = count;
-    });
-    await vi.advanceTimersByTimeAsync(0);
-    expect(warmed).toBeUndefined();
-    const worker = new FakeWorker();
-    worker.state = 'activated';
-    win.container.control(worker);
-    await vi.advanceTimersByTimeAsync(0);
-    expect(warmed).toBe(1);
-    expect(win.fetched).toEqual(['https://snow.test/data/live/closings.json']);
-  });
-
-  it('has nothing to warm when a worker already controls the page', async () => {
-    const { win, handle } = await startControlled();
-    await expect(handle?.warmed).resolves.toBe(0);
-    expect(win.fetched).toEqual([]);
+  it('asks for nothing again when the first worker takes over: the page kept its data as it read it', async () => {
+    const fetch = vi.fn<typeof globalThis.fetch>();
+    vi.stubGlobal('fetch', fetch);
+    try {
+      const { win } = await start(
+        {},
+        {
+          resources: [
+            'https://snow.test/data/live/closings.json',
+            'https://snow.test/data/schools/meta.json',
+            'https://snow.test/data/search-index.bin',
+          ],
+        },
+      );
+      const worker = new FakeWorker();
+      win.container.registration.installing = worker;
+      worker.to('installed');
+      worker.to('activated');
+      win.container.control(worker);
+      await vi.advanceTimersByTimeAsync(1000);
+      expect(fetch).not.toHaveBeenCalled();
+      expect(win.fetch).not.toHaveBeenCalled();
+      expect(win.location.reload).not.toHaveBeenCalled();
+      // The next worker to take over is an update, and reloads the page once it is hidden.
+      win.container.control(new FakeWorker());
+      win.setVisibility('hidden');
+      expect(win.location.reload).toHaveBeenCalledOnce();
+    } finally {
+      vi.unstubAllGlobals();
+    }
   });
 
   it('is not an update, so nothing waits and nothing reloads', async () => {

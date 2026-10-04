@@ -10,8 +10,6 @@
  * the address bar (src/state) brings back the same view and school.
  */
 
-import { warmDataCache } from './data';
-import type { DataCacheHost } from './data';
 import { SKIP_WAITING_MESSAGE, SW_FILE } from './config';
 
 type Container = Pick<
@@ -20,8 +18,8 @@ type Container = Pick<
 >;
 
 /** The parts of `window` registration uses, so tests can hand it a fake. */
-export interface RegisterHost extends DataCacheHost {
-  readonly navigator: DataCacheHost['navigator'] & {
+export interface RegisterHost {
+  readonly navigator: {
     readonly serviceWorker?: Container;
     readonly onLine: boolean;
   };
@@ -29,7 +27,7 @@ export interface RegisterHost extends DataCacheHost {
     Document,
     'readyState' | 'visibilityState' | 'addEventListener' | 'removeEventListener'
   >;
-  readonly location: { readonly href: string; reload(): void };
+  readonly location: { reload(): void };
   addEventListener(type: string, listener: () => void, options?: AddEventListenerOptions): void;
   removeEventListener(type: string, listener: () => void): void;
   setTimeout(handler: () => void, timeout: number): number;
@@ -45,8 +43,6 @@ export interface RegisterOptions {
   enabled?: boolean;
   /** The site base the worker is served from and controls. Defaults to Vite's base. */
   base?: string;
-  /** Data files loaded outside this page (by a web worker) to cache on the first visit. */
-  warmUrls?: readonly string[];
   /** Called once a new version is installed and waiting. */
   onUpdateReady?: () => void;
   /** Switch to a waiting version the next time the tab is hidden. Default false. */
@@ -57,13 +53,6 @@ export interface RegisterOptions {
 
 export interface ServiceWorkerHandle {
   readonly registration: ServiceWorkerRegistration;
-  /**
-   * Resolves once the first worker has taken this page and the data files the
-   * page loaded before it have been requested again through it (see
-   * warmDataCache), to how many were; to 0 at once when a worker already
-   * controlled the page. It stays pending while no worker has taken the page.
-   */
-  readonly warmed: Promise<number>;
   /** True once a new version is installed and waiting. */
   readonly updateReady: boolean;
   /** Switches to the waiting version now and reloads the page. */
@@ -137,12 +126,6 @@ export async function registerServiceWorker(
   }
 
   let controlled = container.controller !== null;
-  let warmedCount: (count: number) => void = () => undefined;
-  const warmed = controlled
-    ? Promise.resolve(0)
-    : new Promise<number>((resolve) => {
-        warmedCount = resolve;
-      });
   let updateReady = false;
   let reloadWhenHidden = false;
   let reloading = false;
@@ -178,11 +161,9 @@ export async function registerServiceWorker(
   };
   const onControllerChange = (): void => {
     if (!controlled) {
-      // The first worker just claimed this page: cache what the page loaded before it.
+      // The first worker just claimed this page. What the page read before it is in its cache
+      // already, kept as it was read (keep.ts), so it never asks for any of it again.
       controlled = true;
-      void warmDataCache(base, options.warmUrls, host).then(warmedCount, () => {
-        warmedCount(0);
-      });
       return;
     }
     // A new version took over (applyUpdate, or another tab switched).
@@ -218,7 +199,6 @@ export async function registerServiceWorker(
 
   return {
     registration,
-    warmed,
     get updateReady() {
       return updateReady;
     },

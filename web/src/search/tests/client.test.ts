@@ -81,6 +81,22 @@ describe('search client', () => {
     close();
   });
 
+  it('asks the worker to keep the index for the service worker when told to', () => {
+    const sent: WorkerRequest[] = [];
+    const worker: WorkerLike = {
+      postMessage(message) {
+        sent.push(message);
+      },
+      addEventListener: () => undefined,
+    };
+    createSearchClient('https://snow.test/data/search-index.bin', { worker, keep: true }).destroy();
+    expect(sent[0]).toEqual({
+      type: 'load',
+      url: 'https://snow.test/data/search-index.bin',
+      keep: true,
+    });
+  });
+
   it('resolves grouped results', async () => {
     const { client, close } = setup();
     const r = await client.search('lancaster pa');

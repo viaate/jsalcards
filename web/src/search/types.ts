@@ -101,7 +101,15 @@ export interface NearView {
 
 /** Page to worker. */
 export type WorkerRequest =
-  | { readonly type: 'load'; readonly url: string }
+  | {
+      readonly type: 'load';
+      readonly url: string;
+      /**
+       * The page reads past any service worker (none controls it yet): keep the index in the
+       * worker's cache as it downloads (pwa/keep.ts), so the worker never downloads it again.
+       */
+      readonly keep?: boolean;
+    }
   | {
       readonly type: 'query';
       readonly id: number;
