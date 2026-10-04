@@ -1,20 +1,26 @@
 /**
  * A CPU mirror of the float path for tests: the light pass, the bloom's
- * downsample and upsample chains, the blend's blur and the composite, on a
- * small square light target at one target pixel per CSS pixel, for points of
- * one status. It samples textures the way the shaders do (bilinear, clamped
- * at the edges), so a test sees the light a viewer would, not an idealized
- * kernel.
+ * downsample and upsample chains, the blend's blur and the composite, the
+ * dense share included, on a small square light target of one target pixel
+ * per CSS pixel unless told otherwise, for points of one status. It samples
+ * textures the way the shaders do (bilinear, clamped at the edges), so a test
+ * sees the light a viewer would, not an idealized kernel.
  */
 import { STATUS_HEX, hexToLinear, linearToSrgb } from '../color';
 import {
+  DENSE_CAP,
+  DENSE_FIELD,
+  DENSE_GATE,
   type GlowFrameStyle,
   blendLiftFactor,
   bloomPlan,
   bloomSourceScale,
+  denseShareAt,
   kernelAt,
   kernelUniforms,
   liftReachPx,
+  loneBlendPeak,
+  smoothstep,
 } from '../curves';
 import { statusLight, toneMap } from '../tonemap';
 
@@ -102,6 +108,7 @@ function blur(
   scale: number,
   lift = 0,
   reach = 0,
+  knee = 1,
 ): Level {
   const { size, data } = source;
   const out = new Float64Array(size * size);
@@ -123,7 +130,8 @@ function blur(
         for (const [dx = 0, dy = 0] of RING)
           around += sample(source, i + 0.5 + reach * dx, j + 0.5 + reach * dy);
       }
-      out[j * size + i] = ((sum * scale) / total) * blendLiftFactor((around * scale) / 8, lift);
+      out[j * size + i] =
+        ((sum * scale) / total) * blendLiftFactor((around * scale) / 8, lift, knee);
     }
   }
   return { size, data: out };
@@ -131,15 +139,17 @@ function blur(
 
 /**
  * The light the composite tone maps at each pixel of a `size` x `size`
- * light target, for points at (x, y) in its pixels, all of one status.
+ * light target of `targetPxPerCss` pixels per CSS pixel, for points at (x, y)
+ * in its pixels, all of one status.
  */
 export function compositeLight(
   points: readonly (readonly [number, number])[],
   style: GlowFrameStyle,
   size: number,
+  targetPxPerCss = 1,
 ): Float64Array {
   // Light pass: every point's sprite, whole cores, added up.
-  const k = kernelUniforms(style, 1);
+  const k = kernelUniforms(style, targetPxPerCss);
   const light: Level = { size, data: new Float64Array(size * size) };
   for (const [px, py] of points) {
     const r = k.radius;
@@ -158,7 +168,7 @@ export function compositeLight(
   }
 
   // Bloom weights per level, and the blend, as GlowLayer picks them.
-  const { weights, blur: blend } = bloomPlan(style, 1, size);
+  const { weights, blur: blend } = bloomPlan(style, targetPxPerCss, size);
 
   // Down the chain; the blend's level blurred across; back up, the blend added into its level.
   const levels: Level[] = [light];
@@ -180,20 +190,44 @@ export function compositeLight(
     for (let t = 0; t < up.length; t++) up[t] = (up[t] ?? 0) + keep * (target.data[t] ?? 0);
     if (across !== undefined && blend !== null && i - 1 === blend.level) {
       const { sigmaTexels, radius, weight } = blend;
-      const reach = liftReachPx(style) / 2 ** blend.level;
-      const down = blur(across, sigmaTexels, radius, false, weight, style.blendLift, reach);
+      const reach = (liftReachPx(style) * targetPxPerCss) / 2 ** blend.level;
+      const lift = style.blendLift;
+      const down = blur(across, sigmaTexels, radius, false, weight, lift, reach, style.liftKnee);
       for (let t = 0; t < up.length; t++) up[t] = (up[t] ?? 0) + (down.data[t] ?? 0);
     }
     levels[i - 1] = { size: target.size, data: up };
   }
 
-  // Composite: the shown share of the cores, plus the bloom.
+  // Composite: the shown share of the cores, the dense share where they pile up, and the bloom.
   const out = new Float64Array(size * size);
   const bloom = weights.length > 0 ? levels[1] : undefined;
   const bloomScale = bloom === undefined ? 0 : weights.length === 1 ? (weights[0] ?? 0) : 1;
   const spread = bloom === undefined ? undefined : upsample(bloom, size, bloomScale);
-  for (let t = 0; t < out.length; t++) {
-    out[t] = style.coreShare * (light.data[t] ?? 0) + (spread?.[t] ?? 0);
+  const corePeak = Math.max(k.coreWeight * style.gain, 1e-6);
+  const blendPeak = Math.max(loneBlendPeak(style), 1e-6);
+  const reach = liftReachPx(style) * targetPxPerCss;
+  const denseShare = denseShareAt(style, targetPxPerCss);
+  for (let j = 0; j < size; j++) {
+    for (let i = 0; i < size; i++) {
+      const t = j * size + i;
+      const core = light.data[t] ?? 0;
+      const here = spread?.[t] ?? 0;
+      let dense = 0;
+      if (denseShare > 0 && bloom !== undefined) {
+        // The composite samples the bloom level itself around, a level of half the light target.
+        let around = 0;
+        for (const [dx = 0, dy = 0] of RING) {
+          around += sample(bloom, (i + 0.5 + reach * dx) / 2, (j + 0.5 + reach * dy) / 2);
+        }
+        const field = (around * bloomScale) / (8 * blendPeak);
+        const share =
+          denseShare *
+          smoothstep(DENSE_GATE[0], DENSE_GATE[1], core / corePeak) *
+          smoothstep(DENSE_FIELD[0], DENSE_FIELD[1], field);
+        dense = Math.min(share * core, DENSE_CAP * here);
+      }
+      out[t] = style.coreShare * core + dense + here;
+    }
   }
   return out;
 }

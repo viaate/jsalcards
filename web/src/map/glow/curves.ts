@@ -5,20 +5,22 @@
  * Each point is a small bright core. Around it, light spreads at several
  * scales at once, like city lights seen through air:
  *
- * - Zoom 4 to 6, a desktop's national view: no core is shown. Its light, and
- *   the bloom's finest, is carried by the blend instead, one smooth Gaussian
- *   some 10 to 15 km wide, so the points read as one field, a dim wash where
- *   schools are few and bright where they are many, like a night photo from
- *   orbit at low resolution. Wide bloom out to about 64 px merges a metro
- *   into one glow.
+ * - Zoom 4 to 4.5, a desktop's national view: no lone core is shown. Its
+ *   light, and the bloom's finest, is carried by the blend instead, one smooth
+ *   Gaussian some 15 km wide, so the points read as one field, a dim wash
+ *   where schools are few and bright where they are many, like a night photo
+ *   from orbit. Inside the field, where cores pile up in a town, a share of
+ *   them shows sharp as fine grain (DENSE_SHARE_STOPS). Wide bloom out to
+ *   about 64 px merges a metro into one glow.
  * - Below zoom 4, where screens smaller than a desktop's open on the whole
  *   country, the glow shrinks with the map (glowSizeScale), so the country
  *   looks as on a desktop: the bloom reaches 32 px at zoom 3, 16 px at 2.
  *   Only the blend stops shrinking, at 3 px, so the points still read as one
  *   field on a phone, where the blend of a lone school is lifted so it shows
  *   above the state lines (BLEND_LIFT).
- * - From zoom 6 the cores come back, each school resolving by zoom 8, and the
- *   wide scales fade out as the glow tightens.
+ * - From zoom 4.5 the cores come back as crisp small lights over the blend's
+ *   wash (CORE_FOCUS_STOPS), each school standing on its own by zoom 8, and
+ *   the wide scales fade out as the glow tightens.
  * - From zoom 11 each school is a crisp per-status glyph with a small halo
  *   drawn around it (not under it, so a ring stays a ring).
  *
@@ -63,6 +65,18 @@ export const CORE_SIGMA_STOPS: ZoomStops = [
   [9, 1.5],
   [11, 1.9],
   [16, 2.3],
+];
+
+/**
+ * Width a core is drawn at, as a share of {@link CORE_SIGMA_STOPS}, keeping its
+ * light. From zoom 5.5 to 8 a town or a school is a crisp small light, where at
+ * its own width it read as a soft dot; from zoom 9 it is drawn as it always was.
+ */
+export const CORE_FOCUS_STOPS: ZoomStops = [
+  [4.5, 1],
+  [5.5, 0.55],
+  [8, 0.55],
+  [9, 1],
 ];
 
 /**
@@ -129,13 +143,61 @@ export const BLOOM_WEIGHT_STOPS: readonly (readonly [zoom: number, weights: read
 /**
  * Share of the fine light shown where it is: each point's core, and the
  * bloom's scales no wider than the blend. None nationally, where cores a few
- * pixels apart read as a scatter of specks rather than as light; all of it
- * from zoom 8, where each school stands on its own.
+ * pixels apart read as a scatter of specks rather than as light (but see
+ * {@link DENSE_SHARE_STOPS}); from zoom 4.5 to 5.5 the cores come in, so a
+ * regional view shows each town and school as a crisp small light over the
+ * blend's field; all of it from zoom 8, where each school stands on its own.
  */
 export const CORE_SHARE_STOPS: ZoomStops = [
-  [6, 0],
+  [4.5, 0],
+  [5.5, 0.4],
+  [6, 0.45],
   [8, 1],
 ];
+
+/**
+ * Share of the cores shown sharp, over the blend, where they pile up:
+ * nationally, where the blend carries every core's light, a metro, a town or
+ * a string of schools along a highway still shows as crisp light, while a
+ * lone school or a field of schools a few pixels apart, whose cores do not
+ * overlap, stays in the blend (no specks). Gone by zoom 5.5, where every core
+ * is shown ({@link CORE_SHARE_STOPS}). The 8-bit fallback, which cannot tell
+ * a pile from a lone core, leaves it out.
+ */
+export const DENSE_SHARE_STOPS: ZoomStops = [
+  [4.5, 0.5],
+  [5.5, 0],
+];
+
+/**
+ * Core light at a pixel, in a lone school's core peaks, from which the dense
+ * share starts to show and at which it is all shown: where two or three
+ * schools' cores overlap.
+ */
+export const DENSE_GATE: readonly [from: number, full: number] = [2, 5];
+
+/**
+ * Bloom light around a pixel ({@link BLEND_LIFT_REACH} blend widths away, the
+ * mean of eight samples, all statuses), in a lone school's blend peaks
+ * ({@link loneBlendPeak}), from which the dense share starts to show and at
+ * which it is all shown: about as many schools within the blend's reach
+ * there. Inside a band of schools 15 km apart that is 6 (a desktop's national
+ * view) to 50 (a phone's); at its sparse edge, schools 60 km apart, 3 at
+ * most; around a town on its own, none. So the edge and a lone town stay
+ * soft, and only the inside of a field of schools shows its piles sharp.
+ */
+export const DENSE_FIELD: readonly [from: number, full: number] = [3, 8];
+
+/** Most light the dense share adds at a pixel, in the bloom's light there: grain, never a speck. */
+export const DENSE_CAP = 0.75;
+
+/**
+ * Light at the middle of a lone school's blend, per light-target pixel: its
+ * core's light spread over the blend. Its core holds gain * 2 pi sigma^2.
+ */
+export function loneBlendPeak(style: GlowFrameStyle): number {
+  return (style.gain * style.blend * style.coreSigmaPx ** 2) / style.blendSigmaPx ** 2;
+}
 
 /**
  * Standard deviation of the blend, CSS px: the fine light that is not shown
@@ -160,6 +222,18 @@ export const BLEND_SIGMA_STOPS: ZoomStops = [
  * well inside the bloom's reach, which shrinks all the way.
  */
 export const BLEND_MIN_SIGMA_PX = 3;
+
+/**
+ * Factor on the blend's light on a phone, where it falls with the map's width,
+ * not only its square root as a core's does: a band lit seven times as densely
+ * as on a desktop showed its dense middle washed out and its sparse edge
+ * bright, so the edge's status read larger than its share. The lift makes up
+ * a lone school's light ({@link blendLiftAtScale}).
+ */
+export function blendCutAtScale(sizeScale: number): number {
+  const [full, none] = BLEND_LIFT_SCALES;
+  return sizeScale ** smoothstep(none, full, sizeScale);
+}
 
 /**
  * Most that the blend of a lone school is lifted on a phone, over its own
@@ -202,19 +276,27 @@ export function liftReachPx(style: GlowFrameStyle): number {
   return BLEND_LIFT_REACH * style.blendSigmaPx;
 }
 
-/** The lift on a lone school's blend for a glow shrunk by `sizeScale`; see {@link BLEND_LIFT}. */
+/**
+ * The lift on a lone school's blend for a glow shrunk by `sizeScale`, over the
+ * blend's cut light; see {@link BLEND_LIFT} and {@link blendCutAtScale}.
+ */
 export function blendLiftAtScale(sizeScale: number): number {
   const [full, none] = BLEND_LIFT_SCALES;
-  return BLEND_LIFT * smoothstep(none, full, sizeScale);
+  return (1 + BLEND_LIFT * smoothstep(none, full, sizeScale)) / blendCutAtScale(sizeScale) - 1;
+}
+
+/** {@link BLEND_LIFT_KNEE} for a glow shrunk by `sizeScale`, in the blend's cut light. */
+export function liftKneeAtScale(sizeScale: number): number {
+  return BLEND_LIFT_KNEE * blendCutAtScale(sizeScale);
 }
 
 /**
  * Factor on the blend where the light {@link BLEND_LIFT_REACH} blend widths
- * around it averages `context` (all statuses summed), with lift `lift`. JS
- * mirror of the shader.
+ * around it averages `context` (all statuses summed), with lift `lift` and
+ * knee `knee`. JS mirror of the shader.
  */
-export function blendLiftFactor(context: number, lift: number): number {
-  return 1 + lift * Math.exp(-context / BLEND_LIFT_KNEE);
+export function blendLiftFactor(context: number, lift: number, knee = BLEND_LIFT_KNEE): number {
+  return 1 + lift * Math.exp(-context / knee);
 }
 
 /**
@@ -222,10 +304,9 @@ export function blendLiftFactor(context: number, lift: number): number {
  * the sum of eight samples of light that far around it, is dark.
  */
 export const BLEND_LIFT_GLSL = /* glsl */ `
-const float GLOW_BLEND_LIFT_KNEE = ${String(BLEND_LIFT_KNEE)};
-vec4 glow_blend_lift(vec4 light, vec4 around, float lift) {
+vec4 glow_blend_lift(vec4 light, vec4 around, float lift, float knee) {
   float context = (around.r + around.g + around.b + around.a) / 8.0;
-  return light * (1.0 + lift * exp(-context / GLOW_BLEND_LIFT_KNEE));
+  return light * (1.0 + lift * exp(-context / knee));
 }
 // Eight directions, for the samples around.
 const vec2 GLOW_LIFT_RING[8] = vec2[8](
@@ -233,20 +314,6 @@ const vec2 GLOW_LIFT_RING[8] = vec2[8](
   vec2(-1.0, 0.0), vec2(-0.70710678, -0.70710678), vec2(0.0, -1.0), vec2(0.70710678, -0.70710678)
 );
 `;
-
-/**
- * Share of the blend's light kept on the bloom's finest scale (4 px) as a
- * soft point, by zoom. Regionally, where the blend is 7 to 11 px wide, a
- * school far from others would otherwise be a wide soft disc, like a photo
- * out of focus; a quiet soft point on the blend's wash reads as a light.
- * None nationally, where the blend is itself 4 px.
- */
-export const POINT_SHARE_STOPS: ZoomStops = [
-  [4.5, 0],
-  [5.2, 0.22],
-  [6, 0.22],
-  [7, 0],
-];
 
 /**
  * The bloom level the blend is made from, CSS px a texel. A blend no wider
@@ -296,17 +363,13 @@ function bloomAndBlend(
   const moved = 1 - interpolateStops(CORE_SHARE_STOPS, zoom);
   if (!(moved > 0)) return { bloom, blend: 0, blendSigmaPx };
   // The cores' light that is not shown, and the same share of the fine scales'.
-  let blend = moved;
+  let blend = moved * blendCutAtScale(sizeScale);
   bloom.forEach((weight, i) => {
     const scalePx = (BLOOM_SCALES_PX[i] ?? 0) * sizeScale;
     const share = moved * blendShareOfScale(scalePx, blendSigmaPx);
     blend += weight * share;
     bloom[i] = weight * (1 - share);
   });
-  // Regionally some of it stays a soft point on the finest scale.
-  const point = blend * interpolateStops(POINT_SHARE_STOPS, zoom);
-  bloom[0] = (bloom[0] ?? 0) + point;
-  blend -= point;
   return { bloom, blend, blendSigmaPx };
 }
 
@@ -698,8 +761,12 @@ export interface GlowFrameStyle {
    */
   readonly sizeScale: number;
   readonly coreSigmaPx: number;
+  /** Width the core is drawn at, as a share of coreSigmaPx; see {@link CORE_FOCUS_STOPS}. */
+  readonly coreFocus: number;
   /** Share of the fine light shown where it is; see {@link CORE_SHARE_STOPS}. */
   readonly coreShare: number;
+  /** Share of the cores shown sharp where they pile up; see {@link DENSE_SHARE_STOPS}. */
+  readonly denseShare: number;
   readonly gain: number;
   readonly haloRadiusPx: number;
   readonly haloEnergy: number;
@@ -710,6 +777,8 @@ export interface GlowFrameStyle {
   readonly blendSigmaPx: number;
   /** Lift on the blend's faint light on a phone, 0 from a tablet's zoom up; see {@link BLEND_LIFT}. */
   readonly blendLift: number;
+  /** The lift's knee in the blend's light; see {@link liftKneeAtScale}. */
+  readonly liftKnee: number;
   readonly glyphOpacity: number;
   readonly glyphRadiusPx: number;
   readonly openRadiusPx: number;
@@ -720,12 +789,16 @@ export function glowStyleAtZoom(zoom: number): GlowFrameStyle {
   return {
     sizeScale,
     coreSigmaPx: interpolateStops(CORE_SIGMA_STOPS, zoom),
+    // On a small screen's national view a pile of cores is a town, as on a desktop's.
+    coreFocus: interpolateStops(CORE_FOCUS_STOPS, zoom) * sizeScale,
     coreShare: interpolateStops(CORE_SHARE_STOPS, zoom),
+    denseShare: interpolateStops(DENSE_SHARE_STOPS, zoom),
     gain: interpolateStops(GAIN_STOPS, zoom) * Math.sqrt(sizeScale),
     haloRadiusPx: interpolateStops(HALO_RADIUS_STOPS, zoom) * sizeScale,
     haloEnergy: interpolateStops(HALO_ENERGY_STOPS, zoom),
     ...bloomAndBlend(zoom, sizeScale),
     blendLift: blendLiftAtScale(sizeScale),
+    liftKnee: liftKneeAtScale(sizeScale),
     glyphOpacity: smoothstep(GLYPH_FADE_START, GLYPH_FADE_END, zoom),
     glyphRadiusPx: interpolateStops(GLYPH_RADIUS_STOPS, zoom),
     openRadiusPx: interpolateStops(OPEN_RADIUS_STOPS, zoom),
@@ -740,17 +813,17 @@ export function glowStyleAtZoom(zoom: number): GlowFrameStyle {
  *   coreWeight * exp(-d^2 * coreFalloff)
  *     + haloWeight * exp(-d^2 * haloFalloff) * (1 - d^2)^2 * hole(d)
  *
- * The core is a Gaussian. To keep a sub-pixel core from shimmering while the
- * map pans, its variance is widened by the footprint of one target pixel and
- * its peak lowered to match, so the light it adds stays the same. The halo is
- * a wider Gaussian windowed to reach zero at the sprite edge; `hole` cuts it
- * away under a glyph.
+ * The core is a Gaussian, drawn at {@link coreDrawnPx} with its light kept.
+ * To keep a sub-pixel core from shimmering while the map pans, its variance is
+ * widened by the footprint of one target pixel and its peak lowered to match,
+ * so the light it adds stays the same. The halo is a wider Gaussian windowed
+ * to reach zero at the sprite edge; `hole` cuts it away under a glyph.
  */
 export interface KernelUniforms {
   /** Sprite radius in target pixels. */
   readonly radius: number;
   readonly coreFalloff: number;
-  /** Core peak relative to an unfiltered core (at most 1). */
+  /** Core peak relative to an unfiltered core at its own width: above 1 drawn narrower. */
   readonly coreWeight: number;
   readonly haloFalloff: number;
   readonly haloWeight: number;
@@ -791,7 +864,8 @@ export function kernelUniforms(
 ): KernelUniforms {
   const haloEnergy = halo.energy;
   const sigma = style.coreSigmaPx * targetPxPerCssPx;
-  const sigmaEff2 = sigma * sigma + FOOTPRINT_VARIANCE;
+  const drawn = coreDrawnPx(style, targetPxPerCssPx);
+  const sigmaEff2 = drawn * drawn + FOOTPRINT_VARIANCE;
   const coreReach = CORE_REACH_SIGMAS * Math.sqrt(sigmaEff2);
   const haloRadius = halo.radiusPx * targetPxPerCssPx;
   const radius = haloEnergy > 0 ? Math.max(haloRadius, coreReach) : coreReach;
@@ -816,6 +890,30 @@ export function kernelUniforms(
         : 0,
     hole,
   };
+}
+
+/** Least width a core is drawn at, target px: narrower, a moving core aliases into the bloom. */
+export const MIN_CORE_DRAWN_PX = 0.7;
+
+/**
+ * Standard deviation a core is drawn at, in pixels of a light target of
+ * `targetPxPerCssPx`: its focused width, but no narrower than
+ * {@link MIN_CORE_DRAWN_PX} unless its own width is.
+ */
+export function coreDrawnPx(style: GlowFrameStyle, targetPxPerCssPx: number): number {
+  const sigma = style.coreSigmaPx * targetPxPerCssPx;
+  return Math.max(sigma * style.coreFocus, Math.min(sigma, MIN_CORE_DRAWN_PX));
+}
+
+/**
+ * {@link GlowFrameStyle.denseShare} on a light target of `targetPxPerCssPx`:
+ * all of it where the cores are drawn as narrow as their focus asks, less
+ * where they are drawn wider, by the area: cores a few pixels apart there
+ * would overlap as if piled in one town, and a whole field would show as grain.
+ */
+export function denseShareAt(style: GlowFrameStyle, targetPxPerCssPx: number): number {
+  const focused = style.coreSigmaPx * targetPxPerCssPx * style.coreFocus;
+  return style.denseShare * Math.min(1, (focused / coreDrawnPx(style, targetPxPerCssPx)) ** 2);
 }
 
 /**

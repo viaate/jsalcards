@@ -11,7 +11,9 @@ import {
   BLOOM_SCALES_PX,
   BLOOM_SOURCE_GLSL,
   BLOOM_WEIGHT_STOPS,
+  BLEND_LIFT_KNEE,
   CORE_EDGE_D2,
+  CORE_FOCUS_STOPS,
   CORE_SIGMA_STOPS,
   FALLBACK_ALPHA_STOPS,
   FALLBACK_BLOOM_FOLD,
@@ -28,8 +30,8 @@ import {
   GLYPH_FADE_END,
   GLYPH_FADE_START,
   MIN_BLOOM_WEIGHT,
-  POINT_SHARE_STOPS,
   PULSE_SECONDS,
+  blendCutAtScale,
   blendLiftFactor,
   blendPlan,
   blendShareOfScale,
@@ -187,10 +189,13 @@ function kmPerPx(zoom: number): number {
 
 const SIZE = 256;
 
-/** Light the composite shows `r` px right of a lone point in the middle of a light target. */
-function lonePoint(zoom: number): (r: number) => number {
-  const light = compositeLight([[128.5, 128.5]], glowStyleAtZoom(zoom), SIZE);
-  return (r) => light[128 * SIZE + 128 + r] ?? 0;
+/**
+ * Light the composite shows `r` CSS px right of a lone point in the middle of a
+ * light target of `t` pixels per CSS pixel.
+ */
+function lonePoint(zoom: number, t = 1): (r: number) => number {
+  const light = compositeLight([[128.5, 128.5]], glowStyleAtZoom(zoom), SIZE, t);
+  return (r) => light[128 * SIZE + 128 + Math.round(r * t)] ?? 0;
 }
 
 /** Farthest distance at which `light` shows above `level` of 255, CSS px. */
@@ -200,13 +205,16 @@ function reachAbove(light: (r: number) => number, level: number): number {
   return reach;
 }
 
-/** Brightest and dimmest displayed value over the middle of a square grid of points. */
-function gridRange(zoom: number, spacing: number): [min: number, max: number] {
+/**
+ * Brightest and dimmest displayed value over the middle of a square grid of
+ * points `spacing` CSS px apart, on a light target of `t` pixels per CSS pixel.
+ */
+function gridRange(zoom: number, spacing: number, t = 1): [min: number, max: number] {
   const points: [number, number][] = [];
-  for (let y = 128 - 72; y <= 128 + 72; y += spacing) {
-    for (let x = 128 - 72; x <= 128 + 72; x += spacing) points.push([x + 0.3, y + 0.6]);
+  for (let y = 128 - 72; y <= 128 + 72; y += spacing * t) {
+    for (let x = 128 - 72; x <= 128 + 72; x += spacing * t) points.push([x + 0.3, y + 0.6]);
   }
-  const light = compositeLight(points, glowStyleAtZoom(zoom), SIZE);
+  const light = compositeLight(points, glowStyleAtZoom(zoom), SIZE, t);
   let min = Infinity;
   let max = 0;
   for (let y = 108; y < 148; y++) {
@@ -355,19 +363,22 @@ const BEFORE_BLEND = [
 ] as const;
 
 describe('national blend', () => {
-  it('shows no core up to zoom 6 and every core from zoom 8, more of them at each step between', () => {
-    for (let zoom = 2; zoom <= 6; zoom += 0.25) {
+  it('shows no lone core up to zoom 4.5 and every core from zoom 8, more of them at each step between', () => {
+    for (let zoom = 2; zoom <= 4.5; zoom += 0.25) {
       const style = glowStyleAtZoom(zoom);
       expect(style.coreShare).toBe(0);
-      expect(style.blend).toBeGreaterThan(1);
+      // The blend carries the cores' light, cut on a phone, and cores that pile up show as grain.
+      expect(style.blend).toBeGreaterThan(blendCutAtScale(style.sizeScale));
+      expect(style.denseShare).toBeGreaterThan(0);
     }
     let previous = 0;
-    for (let zoom = 6.25; zoom < 8; zoom += 0.25) {
+    for (let zoom = 4.75; zoom < 8; zoom += 0.25) {
       const share = glowStyleAtZoom(zoom).coreShare;
       expect(share).toBeGreaterThan(previous);
-      expect(share - previous).toBeLessThan(0.15);
+      expect(share - previous).toBeLessThanOrEqual(0.1 + 1e-12);
       previous = share;
     }
+    for (let zoom = 5.5; zoom <= 22; zoom += 0.25) expect(glowStyleAtZoom(zoom).denseShare).toBe(0);
     for (let zoom = 8; zoom <= 22; zoom += 0.25) {
       const style = glowStyleAtZoom(zoom);
       expect(style.coreShare).toBe(1);
@@ -388,35 +399,61 @@ describe('national blend', () => {
         0,
       );
       const shown = style.coreShare + style.bloom.reduce((a, b) => a + b, 0) + style.blend;
-      // Below zoom 4 the bloom's light is cut by more than the cores' (glowSizeScale).
-      expect(shown).toBeCloseTo(1 + style.sizeScale ** 1.5 * own, 12);
+      // Below zoom 4 the bloom's light is cut by more than the cores' (glowSizeScale), and on a
+      // phone the blend's share of the cores' light as well (blendCutAtScale).
+      const cut = blendCutAtScale(style.sizeScale);
+      const cores = style.coreShare + (1 - style.coreShare) * cut;
+      expect(shown).toBeCloseTo(cores + style.sizeScale ** 1.5 * own, 12);
+      // A lone school, whose blend the phone lifts, keeps all of its light.
+      const lone = style.coreShare + (1 - style.coreShare) * cut * (1 + style.blendLift);
+      expect(lone).toBeGreaterThanOrEqual(1 - 1e-12);
     }
   });
 
   it('turns a lone point at national zoom into soft light that never vanishes', () => {
-    for (const zoom of [2.12, 3, 3.14, 4, 5, 5.6, 6]) {
-      const light = lonePoint(zoom);
-      // No speck: 4 px out the light is still above half its peak, where a core's is 2% of it.
-      // Below zoom 4 the blend shrinks with the map down to 3 px, and the probe with it.
-      const out = Math.min(4, Math.round(glowStyleAtZoom(zoom).blendSigmaPx));
-      expect(light(0) / light(out)).toBeLessThan(1.7);
-      expect(displayed(light(0))).toBeGreaterThan(20);
+    for (const t of [1, 2, 3]) {
+      for (const zoom of [2.12, 3, 3.14, 4, 4.5]) {
+        const light = lonePoint(zoom, t);
+        // No speck: 4 px out the light is still above half its peak, where a core's is 2% of it.
+        // Below zoom 4 the blend shrinks with the map down to 3 px, and the probe with it.
+        const out = Math.min(4, Math.round(glowStyleAtZoom(zoom).blendSigmaPx));
+        expect(light(0) / light(out)).toBeLessThan(1.75);
+        expect(displayed(light(0))).toBeGreaterThan(20);
+      }
     }
     // From zoom 8 a school is a point of its own again.
     const street = lonePoint(9);
     expect(street(0) / street(4)).toBeGreaterThan(10);
-  }, 30_000);
+  }, 60_000);
+
+  it('shows a lone school regionally as a crisp small light over a soft wash, sharper on a sharper screen', () => {
+    for (const zoom of [5.5, 6, 7]) {
+      const sharp = lonePoint(zoom, 2);
+      // A core: 2 px out a fifth of its peak at most, and the wash still lit 4 px out.
+      expect(sharp(2) / sharp(0)).toBeLessThan(0.2);
+      expect(displayed(sharp(4))).toBeGreaterThan(20);
+      // Drawn at the device's resolution the core is narrower than on a target of CSS pixels.
+      const soft = lonePoint(zoom, 1);
+      expect(sharp(1) / sharp(0)).toBeLessThan(0.85 * (soft(1) / soft(0)));
+      expect(displayed(sharp(0))).toBeGreaterThan(displayed(soft(0)));
+    }
+    expect(interpolateStops(CORE_FOCUS_STOPS, 9)).toBe(1);
+  }, 60_000);
 
   it('merges schools about 15 km apart into one even field', () => {
-    for (const zoom of [2.12, 3, 4, 5, 5.6, 6]) {
+    for (const zoom of [2.12, 3, 4, 4.5]) {
       const spacing = Math.max(4, Math.round(15 / kmPerPx(zoom)));
       const [min, max] = gridRange(zoom, spacing);
-      // Regionally each school keeps a quiet soft point on the field (POINT_SHARE_STOPS): at
-      // zoom 6, a step before the cores come back, schools 16 px apart ripple it by 15%.
-      const ripple = 0.05 + 0.6 * interpolateStops(POINT_SHARE_STOPS, zoom);
-      expect((max - min) / max).toBeLessThan(ripple);
+      expect((max - min) / max).toBeLessThan(0.05);
     }
-    // Where the cores show, the same schools are points in a darker field.
+    // Regionally, on a high-density screen, the same schools are points over the blend's wash,
+    // which keeps the gaps lit.
+    for (const zoom of [5.5, 6]) {
+      const [min, max] = gridRange(zoom, Math.round(15 / kmPerPx(zoom)), 2);
+      expect(min / max).toBeLessThan(0.5);
+      expect(min).toBeGreaterThan(30);
+    }
+    // Where the blend is gone, points in a dark field.
     const [min, max] = gridRange(9, Math.round(15 / kmPerPx(9)));
     expect(min / max).toBeLessThan(0.5);
   });
@@ -472,13 +509,15 @@ describe('national blend', () => {
       const k = kernelUniforms(style, 1, fallbackHalo(style, zoom), style.coreShare);
       const fallback = (r: number): number => style.gain * kernelAt(k, r / k.radius);
       const float = lonePoint(zoom);
-      expect(fallback(0) / fallback(4)).toBeLessThan(1.7);
-      expect(displayed(fallback(0))).toBeGreaterThan(0.9 * displayed(float(0)));
-      expect(displayed(fallback(0))).toBeLessThan(1.5 * displayed(float(0)));
+      if (style.coreShare === 0) expect(fallback(0) / fallback(4)).toBeLessThan(1.7);
+      for (const r of [0, 4]) {
+        expect(displayed(fallback(r))).toBeGreaterThan(0.9 * displayed(float(r)));
+        expect(displayed(fallback(r))).toBeLessThan(1.5 * displayed(float(r)));
+      }
     }
   });
 
-  it('leaves zoom 8 and up as it was', () => {
+  it('leaves zoom 9 and up as it was', () => {
     for (let zoom = 8; zoom <= 22; zoom += 0.25) {
       expect(bloomWeights(zoom)).toEqual(
         BLOOM_SCALES_PX.map((_, i) =>
@@ -491,8 +530,12 @@ describe('national blend', () => {
     }
     for (const [zoom, before] of BEFORE_BLEND) {
       const style = glowStyleAtZoom(zoom);
-      const { sizeScale, coreShare, blend, blendSigmaPx, blendLift, ...rest } = style;
-      expect([sizeScale, coreShare, blend, blendLift]).toEqual([1, 1, 0, 0]);
+      const { sizeScale, coreShare, blend, blendSigmaPx, blendLift, liftKnee, ...drawn } = style;
+      const { coreFocus, denseShare, ...rest } = drawn;
+      expect([sizeScale, coreShare, blend, blendLift, coreFocus, denseShare]).toEqual([
+        1, 1, 0, 0, 1, 0,
+      ]);
+      expect(liftKnee).toBe(BLEND_LIFT_KNEE);
       expect(blendSigmaPx).toBeGreaterThan(0);
       expect(rest).toEqual(before.style);
       expect(kernelUniforms(style, 1)).toEqual(before.kernel);
@@ -524,7 +567,8 @@ describe('small screens', () => {
   const STATE_LINE = 0x2a;
 
   /** The bloom's light that the blend took in: all of the blend but the cores' own. */
-  const bloomInBlend = (style: GlowFrameStyle): number => style.blend - (1 - style.coreShare);
+  const bloomInBlend = (style: GlowFrameStyle): number =>
+    style.blend - (1 - style.coreShare) * blendCutAtScale(style.sizeScale);
 
   /**
    * Energy-weighted RMS spread of the bloom levels and the blend the layer
@@ -651,7 +695,7 @@ describe('small screens', () => {
       const k = kernelUniforms(style, 1, fallbackHalo(style, zoom), style.coreShare);
       const light = style.gain * kernelAt(k, 0);
       const around = style.gain * kernelAt(k, liftReachPx(style) / k.radius);
-      const fallback = displayed(light * blendLiftFactor(around, style.blendLift));
+      const fallback = displayed(light * blendLiftFactor(around, style.blendLift, style.liftKnee));
       for (const peak of [displayed(lonePoint(zoom)(0)), fallback]) {
         expect(peak).toBeGreaterThan(0.5 * desktop);
         // A fifth brighter than the state lines around it, at least: a phone's are brighter.
@@ -661,6 +705,37 @@ describe('small screens', () => {
       }
     }
   }, 30_000);
+
+  it('lights a field of schools on a phone about as brightly as on a desktop, so a band’s dense middle keeps its color against its sparse edge', () => {
+    /**
+     * The brightest displayed value over the middle of a field of schools 15 km
+     * apart, on a light target of `t` pixels per CSS pixel.
+     */
+    const field = (zoom: number, t: number): number => {
+      const spacing = (15 / kmPerPx(zoom)) * t;
+      const points: [number, number][] = [];
+      for (let y = 40; y <= 216; y += spacing) {
+        for (let x = 40; x <= 216; x += spacing) points.push([x + 0.3, y + 0.6]);
+      }
+      const light = compositeLight(points, glowStyleAtZoom(zoom), SIZE, t);
+      let max = 0;
+      for (let y = 118; y < 138; y++) {
+        for (let x = 118; x < 138; x++) max = Math.max(max, displayed(light[y * SIZE + x] ?? 0));
+      }
+      return max;
+    };
+    // Without the cut a phone's field was about 1.4 times as bright, near the tone map's top.
+    for (const t of [1, 2]) {
+      const desktop = field(DESKTOP, t);
+      for (const zoom of [1.51, 2.12]) {
+        for (const phone of [t, 3]) expect(field(zoom, phone)).toBeLessThan(1.15 * desktop);
+      }
+    }
+    // The cut is a phone's alone: a tablet's and a laptop's blend keep all of their light.
+    for (let zoom = 3.3; zoom <= 22; zoom += 0.25) {
+      expect(blendCutAtScale(glowStyleAtZoom(zoom).sizeScale)).toBe(1);
+    }
+  }, 60_000);
 
   it('lifts only schools far from others: a field or a band keeps its light and its reach', () => {
     for (const zoom of [1.51, 2.12]) {

@@ -13,13 +13,14 @@
  *    below zoom 4, see glowSizeScale) at a cost that does not depend on the
  *    number of points. Light past a knee feeds the bloom at a falling rate,
  *    so its size has a bound.
- *    Nationally the composite shows none of the cores: the blend, one bloom
- *    level blurred to a smooth Gaussian, carries their light instead, so the
- *    points read as one field rather than a scatter of specks. On a phone
- *    the blend of a school with no other light around it is lifted, so a
- *    lone school still shows (BLEND_LIFT).
- *    The light target has one pixel per CSS pixel by default: full resolution
- *    on a 1x screen, reduced on high-density screens where it reads the same.
+ *    Nationally the composite shows no lone core: the blend, one bloom level
+ *    blurred to a smooth Gaussian, carries their light instead, so the points
+ *    read as one field rather than a scatter of specks, and only where cores
+ *    pile up inside the field does a share of them show sharp, as grain. On a
+ *    phone the blend of a school with no other light around it is lifted, so
+ *    a lone school still shows (BLEND_LIFT).
+ *    The light target has the device's own resolution, up to two pixels per
+ *    CSS pixel, so the light is as sharp as the map under it.
  * 2. render, composite: a full-screen pass turns the per-status light into
  *    linear RGB (overlapping statuses blend, the leading one keeps its hue),
  *    tone maps it (Reinhard on luminance, hue preserving) and screens it onto
@@ -57,16 +58,21 @@ import type {
 import { statusLinearUniform, statusSrgbUniform } from './color';
 import {
   type BlendBlur,
+  DENSE_CAP,
+  DENSE_FIELD,
+  DENSE_GATE,
   FALLBACK_ALPHA_STOPS,
   type GlowFrameStyle,
   type HaloShape,
   PULSE_SECONDS,
   bloomPlan,
+  denseShareAt,
   fallbackHalo,
   glowStyleAtZoom,
   interpolateStops,
   kernelUniforms,
   liftReachPx,
+  loneBlendPeak,
 } from './curves';
 import {
   DUST_ATTRIB,
@@ -123,9 +129,8 @@ export interface GlowLayerOptions {
   readonly id?: string;
   /**
    * Light target resolution in target pixels per CSS pixel, capped at the
-   * device's own. Default 1: soft light at CSS-pixel resolution reads the same
-   * as device resolution on a high-density screen. Glyphs always draw at
-   * device resolution.
+   * device's own. Default: the device's own, up to LIGHT_RESOLUTION_CAP.
+   * Glyphs always draw at device resolution.
    */
   readonly lightResolution?: number;
   /** Force the 8-bit fallback, as on a device without float render targets. */
@@ -181,11 +186,13 @@ export interface GlowLayerStats {
 const EXPOSURE = 1;
 
 /**
- * One light-target pixel per CSS pixel. On a 1x screen that is full
- * resolution; on 2x and 3x screens the target is a quarter or a ninth of the
- * device's pixels, which the bench shows reads the same as device resolution.
+ * Most light-target pixels per CSS pixel. The light target has the device's
+ * own resolution up to this: at one pixel per CSS pixel a 2x or 3x screen
+ * showed the glow a quarter or a ninth as sharp as its map, which reads as
+ * slightly out of focus on a phone. On a 3x phone two read as sharp as three,
+ * at under half the cost.
  */
-const DEFAULT_LIGHT_RESOLUTION = 1;
+const LIGHT_RESOLUTION_CAP = 2;
 
 /** Guard band around the map in the light target, CSS px: about the widest bloom's reach. */
 const GUARD_CSS_PX = 48;
@@ -650,7 +657,7 @@ export class GlowLayer implements CustomLayerInterface {
     const zoom = map?.getZoom() ?? 0;
     const style = glowStyleAtZoom(zoom);
     const targetPxPerCss = Math.min(
-      this.options.lightResolution ?? DEFAULT_LIGHT_RESOLUTION,
+      this.options.lightResolution ?? LIGHT_RESOLUTION_CAP,
       deviceRatio,
     );
     const cssW = width / deviceRatio;
@@ -932,6 +939,7 @@ export class GlowLayer implements CustomLayerInterface {
     gl.uniform1f(uniform(program, 'u_scale'), scale);
     const lift = lifted?.style.blendLift ?? 0;
     gl.uniform1f(uniform(program, 'u_lift'), lift);
+    gl.uniform1f(uniform(program, 'u_liftKnee'), lifted?.style.liftKnee ?? 1);
     // In the blurred level's texels, each 2^level light-target pixels across.
     const reach =
       lifted === null ? 0 : (liftReachPx(lifted.style) * lifted.targetPxPerCss) / 2 ** blur.level;
@@ -963,6 +971,15 @@ export class GlowLayer implements CustomLayerInterface {
     gl.uniform1f(uniform(program, 'u_bloomScale'), bloomScale);
     // The float path shows only the sharp share of the cores; the fallback drew only that share.
     gl.uniform1f(uniform(program, 'u_coreShare'), res.float ? frame.style.coreShare : 1);
+    // Nationally the float path also shows cores where they pile up.
+    const dense = res.float ? denseShareAt(frame.style, frame.targetPxPerCss) : 0;
+    gl.uniform1f(uniform(program, 'u_denseShare'), dense);
+    gl.uniform2f(uniform(program, 'u_denseGate'), DENSE_GATE[0], DENSE_GATE[1]);
+    gl.uniform2f(uniform(program, 'u_denseField'), DENSE_FIELD[0], DENSE_FIELD[1]);
+    const lone = kernelUniforms(frame.style, frame.targetPxPerCss).coreWeight * frame.style.gain;
+    gl.uniform1f(uniform(program, 'u_corePeak'), Math.max(lone, 1e-6));
+    gl.uniform1f(uniform(program, 'u_blendPeak'), Math.max(loneBlendPeak(frame.style), 1e-6));
+    gl.uniform1f(uniform(program, 'u_denseCap'), DENSE_CAP);
     const texel = bloom ?? light;
     gl.uniform2f(uniform(program, 'u_bloomTexel'), 1 / texel.width, 1 / texel.height);
     const [sx, sy] = frame.mapShare;
@@ -973,6 +990,7 @@ export class GlowLayer implements CustomLayerInterface {
     // The float path lifts the blend in its own blur; the fallback lifts its halos here.
     const lift = res.float ? 0 : frame.style.blendLift;
     gl.uniform1f(uniform(program, 'u_lift'), lift);
+    gl.uniform1f(uniform(program, 'u_liftKnee'), frame.style.liftKnee);
     const reach = liftReachPx(frame.style) * frame.targetPxPerCss;
     gl.uniform2f(uniform(program, 'u_liftReach'), reach / light.width, reach / light.height);
     gl.uniform3fv(uniform(program, 'u_tokens'), this.linearTokens);

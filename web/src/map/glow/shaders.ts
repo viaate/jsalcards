@@ -226,8 +226,9 @@ uniform vec2 u_step;
 uniform float u_sigma;
 uniform int u_radius;
 uniform float u_scale;
-// 0 but for the second pass on a phone, and how far around it looks, in uv.
+// 0 but for the second pass on a phone, its knee, and how far around it looks, in uv.
 uniform float u_lift;
+uniform float u_liftKnee;
 uniform vec2 u_liftReach;
 in vec2 v_uv;
 out vec4 fragColor;
@@ -248,7 +249,7 @@ void main() {
   if (u_lift > 0.0) {
     vec4 around = vec4(0.0);
     for (int i = 0; i < 8; i++) around += texture(u_source, v_uv + u_liftReach * GLOW_LIFT_RING[i]);
-    blend = glow_blend_lift(blend, around * u_scale, u_lift);
+    blend = glow_blend_lift(blend, around * u_scale, u_lift, u_liftKnee);
   }
   fragColor = blend;
 }
@@ -267,6 +268,18 @@ uniform float u_bloomScale;
 // the light target, since the bloom is made from them; nationally it shows
 // none, and the blend carries their light instead. 1 for the fallback.
 uniform float u_coreShare;
+// Nationally, a further share of the cores shown where they pile up: where
+// the core light is past u_denseGate.x lone-core peaks (u_corePeak), all of
+// it by u_denseGate.y, and only inside a field of schools, where the bloom
+// u_liftReach around is past u_denseField.x lone-blend peaks (u_blendPeak),
+// all of it by u_denseField.y; never more than u_denseCap times the bloom
+// there, so it reads as grain on the field. 0 for the fallback.
+uniform float u_denseShare;
+uniform vec2 u_denseGate;
+uniform float u_corePeak;
+uniform vec2 u_denseField;
+uniform float u_blendPeak;
+uniform float u_denseCap;
 uniform vec2 u_bloomTexel;
 // The light target has a guard band around the map; this picks the map's part.
 uniform vec2 u_uvScale;
@@ -278,6 +291,7 @@ uniform float u_decode;
 // The fallback's lift on a phone, where its halos carry the blend, and how
 // far around it looks, in uv; 0 on the float path, which lifts the blend itself.
 uniform float u_lift;
+uniform float u_liftKnee;
 uniform vec2 u_liftReach;
 // Linear-light tokens for closed, delayed, remote, early dismissal.
 uniform vec3 u_tokens[4];
@@ -305,19 +319,31 @@ void main() {
         vec4 c = texture(u_light, uv + u_liftReach * GLOW_LIFT_RING[i]);
         around -= log(max(vec4(1.0) - c, vec4(GLOW_FALLBACK_MIN_TRANSMITTANCE)));
       }
-      light = glow_blend_lift(light, around / u_decode, u_lift);
+      light = glow_blend_lift(light, around / u_decode, u_lift, u_liftKnee);
     }
   }
-  light *= u_coreShare;
+  vec4 bloom = vec4(0.0);
   if (u_bloomScale > 0.0) {
     // Four bilinear taps half a texel off each diagonal: a 3x3 tent upsample.
     vec2 h = 0.5 * u_bloomTexel;
-    vec4 bloom = texture(u_bloom, uv + vec2(-h.x, -h.y))
-               + texture(u_bloom, uv + vec2( h.x, -h.y))
-               + texture(u_bloom, uv + vec2(-h.x,  h.y))
-               + texture(u_bloom, uv + vec2( h.x,  h.y));
-    light += bloom * (0.25 * u_bloomScale);
+    bloom = (texture(u_bloom, uv + vec2(-h.x, -h.y))
+           + texture(u_bloom, uv + vec2( h.x, -h.y))
+           + texture(u_bloom, uv + vec2(-h.x,  h.y))
+           + texture(u_bloom, uv + vec2( h.x,  h.y))) * (0.25 * u_bloomScale);
   }
+  vec4 dense = vec4(0.0);
+  float total = light.r + light.g + light.b + light.a;
+  float piled = u_denseShare > 0.0 ? smoothstep(u_denseGate.x, u_denseGate.y, total / u_corePeak) : 0.0;
+  // Most pixels hold no pile: only those look around for the field.
+  if (piled > 0.0) {
+    vec4 around = vec4(0.0);
+    for (int i = 0; i < 8; i++) around += texture(u_bloom, uv + u_liftReach * GLOW_LIFT_RING[i]);
+    float field = (around.r + around.g + around.b + around.a) * u_bloomScale / (8.0 * u_blendPeak);
+    float share = u_denseShare * piled * smoothstep(u_denseField.x, u_denseField.y, field);
+    float cap = u_denseCap * (bloom.r + bloom.g + bloom.b + bloom.a);
+    dense = light * min(share, cap / max(total, 1e-6));
+  }
+  light = light * u_coreShare + dense + bloom;
   vec3 rgb = glow_status_light(light, u_tokens) * u_exposure;
   vec3 c = glow_linear_to_srgb(glow_tonemap(rgb));
   if (max(c.r, max(c.g, c.b)) <= 0.0) discard;

@@ -628,11 +628,10 @@ test('a pile of points on one spot blooms no wider than a smaller pile', async (
   expect(problems).toEqual([]);
 });
 
-test('on a 2x screen the CSS-pixel light target reads the same as device resolution', async ({
+test('on a 2x screen the light target has the device’s resolution by default', async ({
   browser,
   baseURL,
 }) => {
-  // Default: one light pixel per CSS pixel, a quarter of the device pixels at 2x.
   const context = await browser.newContext({
     viewport: { width: 1440, height: 900 },
     deviceScaleFactor: 2,
@@ -641,21 +640,26 @@ test('on a 2x screen the CSS-pixel light target reads the same as device resolut
   const problems = watchProblems(page, baseURL);
   await installApiHelper(page);
   const shots: Buffer[] = [];
-  for (const res of [1, 2]) {
-    const info = await openBench(page, `?count=${String(SYNTHETIC_POINTS)}&res=${String(res)}`);
+  for (const res of ['', '&res=2', '&res=1']) {
+    const info = await openBench(page, `?count=${String(SYNTHETIC_POINTS)}${res}`);
     expect(info.devicePixelRatio).toBe(2);
     await view(page, CONUS_CENTER, CONUS_ZOOM);
-    shots.push(await page.screenshot({ path: resolve(OUT, `conus-2x-res${String(res)}.png`) }));
+    shots.push(
+      await page.screenshot({ path: resolve(OUT, `conus-2x${res.replace('&', '-')}.png`) }),
+    );
   }
   await context.close();
-  const [reduced, device] = shots;
-  if (reduced === undefined || device === undefined) throw new Error('missing screenshots');
+  const [byDefault, device, reduced] = shots;
+  if (byDefault === undefined || device === undefined || reduced === undefined) {
+    throw new Error('missing screenshots');
+  }
+  const same = await compareImages(byDefault, device);
   const diff = await compareImages(reduced, device);
   report('lightResolution', {
-    compared: 'device pixel ratio 2: 1 light px per CSS px (default) vs 2 (device resolution)',
+    compared: 'device pixel ratio 2: 2 light px per CSS px (default) vs 1',
     ...diff,
   });
-  expect(diff.psnrDb).toBeGreaterThan(40);
+  expect(same.psnrDb).toBeGreaterThan(60);
   expect(problems).toEqual([]);
 });
 
@@ -718,10 +722,10 @@ test('resizing the map and changing its pixel ratio reallocate the light target'
     },
     restored: { target: [back.targetWidth, back.targetHeight], pixelRatio: back.layerPixelRatio },
   });
-  // Guard band of 48 CSS px a side at one light pixel per CSS pixel.
+  // Guard band of 48 CSS px a side, at the device's resolution.
   expect([resized.targetWidth, resized.targetHeight]).toEqual([1096, 796]);
   expect(dense.layerPixelRatio).toBe(2);
-  expect([dense.targetWidth, dense.targetHeight]).toEqual([1096, 796]);
+  expect([dense.targetWidth, dense.targetHeight]).toEqual([2192, 1592]);
   expect([back.targetWidth, back.targetHeight]).toEqual([first.targetWidth, first.targetHeight]);
   expect(back.layerPixelRatio).toBe(1);
   expect(resizedShot.litShare).toBeGreaterThan(0.2);

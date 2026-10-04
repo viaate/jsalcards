@@ -90,9 +90,10 @@ describe('GlowLayer', () => {
     /**
      * The bloom levels and the blend the layer lays out for a frame: a map
      * `cssWidth` x `cssHeight` CSS px at `ratio` device px per CSS px, at
-     * `zoom`, as their energy-weighted RMS spread over the world's width. Each
-     * level spreads light about as far as its texels are wide, a blurred blend
-     * as far as its own standard deviation.
+     * `zoom`, as their energy-weighted RMS spread over the world's width, for a
+     * lone school, whose blend a phone lifts. Each level spreads light about as
+     * far as its texels are wide, a blurred blend as far as its own standard
+     * deviation.
      */
     function drawnShare(
       zoom: number,
@@ -111,7 +112,7 @@ describe('GlowLayer', () => {
           bloomWeights: readonly number[];
           targetPxPerCss: number;
           blur: { weight: number } | null;
-          style: { blendSigmaPx: number };
+          style: { blendSigmaPx: number; blendLift: number };
         };
       };
       internals.map = { getCanvas: () => ({ clientWidth: cssWidth }), getZoom: () => zoom };
@@ -127,8 +128,9 @@ describe('GlowLayer', () => {
         moment += weight * texelPx * texelPx;
       });
       if (frame.blur !== null) {
-        energy += frame.blur.weight;
-        moment += frame.blur.weight * frame.style.blendSigmaPx ** 2;
+        const blend = frame.blur.weight * (1 + frame.style.blendLift);
+        energy += blend;
+        moment += blend * frame.style.blendSigmaPx ** 2;
       }
       return Math.sqrt(moment / energy) / (512 * 2 ** zoom);
     }
@@ -140,8 +142,8 @@ describe('GlowLayer', () => {
       [1.82, [390, 844], 3],
       [3.14, [820, 1180], 2],
     ] as const;
-    // Light targets of one and two pixels per CSS pixel.
-    for (const lightResolution of [undefined, 2]) {
+    // Light targets of the device's own resolution, and of one and two pixels per CSS pixel.
+    for (const lightResolution of [undefined, 1, 2]) {
       const desktop = drawnShare(4.03, [1440, 900], 2, lightResolution);
       for (const [zoom, size, ratio] of screens) {
         expect(drawnShare(zoom, size, ratio, lightResolution)).toBeLessThan(desktop * 1.15);
