@@ -7,11 +7,12 @@
  * Two things are added to those copies only, never to the build:
  *
  * - a harness script inlined into index.html that fetches live/closings.json
- *   the way the live poller does (cache: 'no-cache'), computes the update line
- *   from the file's generated_at with src/state's updateLine(), and reads the
- *   school tiles the way the map does. The app registers the service worker
- *   itself, after load (src/app/service-worker.ts); the harness only picks up
- *   the handle the app exposes to tests;
+ *   the way the live poller does (src/data/files.ts fetchFile, cache:
+ *   'no-cache', which keeps what it reads before the worker takes over in the
+ *   worker's cache), computes the update line from the file's generated_at
+ *   with src/state's updateLine(), and reads the school tiles the way the map
+ *   does. The app registers the service worker itself, after load
+ *   (src/app/service-worker.ts);
  * - synthetic data files, built below and named SYNTHETIC_*. They hold no
  *   schools, only the envelope and a fixed generated_at, or (for the school
  *   tile file) a byte pattern, and exist only in the test server's memory
@@ -95,10 +96,11 @@ function syntheticDirectory(generatedOn: string): string {
 function harness(base: string): string {
   return `
 import { FetchSource } from '${WEB}node_modules/pmtiles/dist/esm/index.js';
+import { fetchFile } from '${WEB}src/data/files.ts';
 import { onDataUpdate } from '${WEB}src/pwa/index.ts';
 import { updateLine } from '${WEB}src/state/freshness.ts';
 
-const e2e = { updates: [], line: null, generatedAt: null, handle: null };
+const e2e = { updates: [], line: null, generatedAt: null };
 window.__e2e = e2e;
 onDataUpdate((url) => e2e.updates.push(url));
 
@@ -134,7 +136,8 @@ e2e.firstTiles = e2e.readTiles(0, ${String(HEADER_BYTES)}).then((result) => ({
 }));
 
 async function loadClosings() {
-  const response = await fetch(${JSON.stringify(`${base}${CLOSINGS}`)}, { cache: 'no-cache' });
+  const url = new URL(${JSON.stringify(`${base}${CLOSINGS}`)}, location.href).href;
+  const response = await fetchFile(url, { cache: 'no-cache' });
   const file = await response.json();
   e2e.generatedAt = file.generated_at;
   e2e.line = updateLine({
@@ -147,17 +150,6 @@ async function loadClosings() {
 }
 e2e.loadClosings = loadClosings;
 void loadClosings();
-// The app registers the worker after load and hands tests its handle.
-const appWorker = new Promise((resolve) => {
-  const check = () => {
-    if (window.snowlightServiceWorker !== undefined) resolve(window.snowlightServiceWorker);
-    else setTimeout(check, 20);
-  };
-  check();
-});
-void appWorker.then((handle) => {
-  e2e.handle = handle;
-});
 `;
 }
 
@@ -182,7 +174,6 @@ interface Harness {
   updates: string[];
   line: string | null;
   generatedAt: string | null;
-  handle: { warmed: Promise<number> } | null;
   firstTiles: Promise<TileRead>;
   loadClosings(): Promise<void>;
   readTiles(offset: number, length: number): Promise<TileRead>;
@@ -458,6 +449,8 @@ async function buildSite(base: string): Promise<void> {
   await build({
     configFile: false,
     root: folder,
+    // The app's base, so the harness's data reads are kept for the worker that serves it.
+    base,
     logLevel: 'warn',
     build: {
       outDir: harnessOut,
@@ -473,7 +466,8 @@ async function buildSite(base: string): Promise<void> {
   );
   writeFileSync(
     index,
-    readFileSync(index, 'utf8').replace('</body>', `<script>${script}</script></body>`),
+    // A function, so a `$&` or `$'` in the script is taken as it is, not as a replacement pattern.
+    readFileSync(index, 'utf8').replace('</body>', () => `<script>${script}</script></body>`),
   );
   builds.set(base, siteRoot);
 }
@@ -511,16 +505,28 @@ async function openSite(
   return { site, page };
 }
 
+/** Whether the worker's cache `cacheName` holds `url`. */
+async function cached(page: Page, cacheName: string, url: string): Promise<boolean> {
+  return page.evaluate(
+    async ([name, target]) => (await (await caches.open(name)).match(target)) !== undefined,
+    [cacheName, url] as const,
+  );
+}
+
+/**
+ * Waits until the worker's cache `cacheName` holds `url`. (page.waitForFunction takes the
+ * promise an async function returns as a true answer, so this polls instead.)
+ */
+async function waitForCached(page: Page, cacheName: string, url: string): Promise<void> {
+  await expect.poll(() => cached(page, cacheName, url), { timeout: 30_000 }).toBe(true);
+}
+
 /** Waits until the worker controls the page and live/closings.json is in its cache. */
 async function waitForOfflineReady(page: Page, site: Site): Promise<void> {
   await page.waitForFunction(() => navigator.serviceWorker.controller !== null, undefined, {
     timeout: 30_000,
   });
-  await page.waitForFunction(
-    async ([cacheName, url]) => (await (await caches.open(cacheName)).match(url)) !== undefined,
-    [CACHE_NAMES.data, site.url(CLOSINGS)] as const,
-    { timeout: 30_000 },
-  );
+  await waitForCached(page, CACHE_NAMES.data, site.url(CLOSINGS));
 }
 
 async function fetchJson(page: Page, url: string): Promise<Record<string, unknown>> {
@@ -692,7 +698,7 @@ test('offline, a second visit gets the shell and the last data with its own time
   const pageErrors: string[] = [];
   page.on('pageerror', (error) => pageErrors.push(error.message));
   try {
-    // The first visit fetched the data before the worker existed; it was cached when the worker took over.
+    // The first visit fetched the data before the worker existed, and kept it for it as it did.
     await waitForOfflineReady(page, site);
     await expectOfflineShell(page, site, context);
 
@@ -743,11 +749,7 @@ test('the school directory is cache-first until it is evicted', async ({ browser
     await waitForOfflineReady(page, site);
     expect((await fetchJson(page, site.url(DIRECTORY))).generated_on).toBe('2026-01-01');
     // The worker answers first and stores its copy just after: wait for the copy.
-    await page.waitForFunction(
-      async ([cacheName, url]) => (await (await caches.open(cacheName)).match(url)) !== undefined,
-      [CACHE_NAMES.staticData, site.url(DIRECTORY)] as const,
-      { timeout: 30_000 },
-    );
+    await waitForCached(page, CACHE_NAMES.staticData, site.url(DIRECTORY));
     const before = site.hits(DIRECTORY);
     site.put(DIRECTORY, syntheticDirectory('2026-09-01'));
     expect((await fetchJson(page, site.url(DIRECTORY))).generated_on).toBe('2026-01-01');
@@ -855,11 +857,10 @@ for (const base of [ROOT_BASE, PROJECT_BASE]) {
         { path: `${base}${TILES}`, range: `bytes=0-${String(HEADER_BYTES - 1)}`, status: 206 },
       ]);
 
-      // The worker takes over and caches what the page loaded before it.
+      // The worker takes over, and finds in its cache the live file the page read before it,
+      // kept as it was read: the server was asked for it once.
       await waitForOfflineReady(page, site);
-      await page.waitForFunction(() => (window.__e2e?.handle ?? null) !== null);
-      const warmed = await page.evaluate(() => window.__e2e?.handle?.warmed);
-      expect(warmed).toBeGreaterThan(0);
+      expect(site.hits(CLOSINGS)).toBe(1);
 
       // The same read, now with the worker in control, as PMTiles makes it.
       expect(await page.evaluate((n) => window.__e2e?.readTiles(0, n), HEADER_BYTES)).toEqual({
@@ -897,10 +898,7 @@ for (const base of [ROOT_BASE, PROJECT_BASE]) {
 
       // A range of a file the worker holds whole is a range too, never the whole cached file.
       expect((await fetchJson(page, site.url(DIRECTORY))).generated_on).toBe('2026-01-01');
-      await page.waitForFunction(
-        async ([cacheName, url]) => (await (await caches.open(cacheName)).match(url)) !== undefined,
-        [CACHE_NAMES.staticData, site.url(DIRECTORY)] as const,
-      );
+      await waitForCached(page, CACHE_NAMES.staticData, site.url(DIRECTORY));
       const directory = Buffer.from(syntheticDirectory('2026-01-01'));
       expect(
         await page.evaluate(([url]) => window.__e2e?.rangeFetch(url, 'bytes=0-9'), [
