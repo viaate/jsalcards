@@ -1,1504 +1,1126 @@
 {
  "snapshots": [
   {
-   "timestamp": "20230225193000",
-   "url": "https://www.ocesd.net/",
-   "station": "apptegy-oroville-ca",
-   "why": "2023-02-26: within 2 days of one of its closure days"
-  },
-  {
-   "timestamp": "20230301170521",
-   "url": "https://www.ocesd.net/",
-   "station": "apptegy-oroville-ca",
-   "why": "2023-03-02: within 2 days of one of its closure days"
-  },
-  {
-   "timestamp": "20230220155258",
-   "url": "https://www.ocesd.net/",
-   "station": "apptegy-oroville-ca",
-   "why": "2023-02-20: within 2 days of one of its closure days"
-  },
-  {
-   "timestamp": "20230219144848",
-   "url": "https://www.ocesd.net/",
-   "station": "apptegy-oroville-ca",
-   "why": "2023-02-19: within 2 days of one of its closure days"
-  },
-  {
-   "timestamp": "20221227204708",
-   "url": "https://www.ocesd.net/",
-   "station": "apptegy-oroville-ca",
-   "why": "2022-12-28: within 2 days of one of its closure days"
-  },
-  {
-   "timestamp": "20230112075418",
-   "url": "https://www.ocesd.net/",
-   "station": "apptegy-oroville-ca",
-   "why": "2023-01-12: within 2 days of one of its closure days"
-  },
-  {
-   "timestamp": "20230117041254",
-   "url": "https://www.ocesd.net/",
-   "station": "apptegy-oroville-ca",
-   "why": "2023-01-17: within 2 days of one of its closure days"
-  },
-  {
-   "timestamp": "20230102204100",
-   "url": "https://www.ocesd.net/",
-   "station": "apptegy-oroville-ca",
-   "why": "2023-01-03: within 2 days of one of its closure days"
-  },
-  {
-   "timestamp": "20230114094032",
-   "url": "https://www.ocesd.net/",
-   "station": "apptegy-oroville-ca",
-   "why": "2023-01-14: within 2 days of one of its closure days"
-  },
-  {
-   "timestamp": "20221229213236",
-   "url": "https://www.ocesd.net/",
-   "station": "apptegy-oroville-ca",
-   "why": "2022-12-30: within 2 days of one of its closure days"
-  },
-  {
-   "timestamp": "20221231221557",
-   "url": "https://www.ocesd.net/",
-   "station": "apptegy-oroville-ca",
-   "why": "2023-01-01: within 2 days of one of its closure days"
-  },
-  {
-   "timestamp": "20230107000703",
-   "url": "https://www.ocesd.net/",
-   "station": "apptegy-oroville-ca",
-   "why": "2023-01-07: within 2 days of one of its closure days"
-  },
-  {
-   "timestamp": "20221225183707",
-   "url": "https://www.ocesd.net/",
-   "station": "apptegy-oroville-ca",
-   "why": "2022-12-26: within 2 days of one of its closure days"
-  },
-  {
-   "timestamp": "20230115091622",
-   "url": "https://www.ocesd.net/",
-   "station": "apptegy-oroville-ca",
-   "why": "2023-01-15: within 2 days of one of its closure days"
-  },
-  {
-   "timestamp": "20221230222204",
-   "url": "https://www.ocesd.net/",
-   "station": "apptegy-oroville-ca",
-   "why": "2022-12-31: within 2 days of one of its closure days"
-  },
-  {
-   "timestamp": "20221224202318",
-   "url": "https://www.ocesd.net/",
-   "station": "apptegy-oroville-ca",
-   "why": "2022-12-25: within 2 days of one of its closure days"
-  },
-  {
-   "timestamp": "20230105224716",
-   "url": "https://www.ocesd.net/",
-   "station": "apptegy-oroville-ca",
-   "why": "2023-01-06: within 2 days of one of its closure days"
-  },
-  {
-   "timestamp": "20221204102340",
-   "url": "https://www.ocesd.net/",
-   "station": "apptegy-oroville-ca",
-   "why": "2022-12-04: within 2 days of one of its closure days"
-  },
-  {
-   "timestamp": "20221210115305",
-   "url": "https://www.ocesd.net/",
-   "station": "apptegy-oroville-ca",
-   "why": "2022-12-10: within 2 days of one of its closure days"
-  },
-  {
-   "timestamp": "20221203073404",
-   "url": "https://www.ocesd.net/",
-   "station": "apptegy-oroville-ca",
-   "why": "2022-12-03: within 2 days of one of its closure days"
-  },
-  {
-   "timestamp": "20221209103809",
-   "url": "https://www.ocesd.net/",
-   "station": "apptegy-oroville-ca",
-   "why": "2022-12-09: within 2 days of one of its closure days"
-  },
-  {
-   "timestamp": "20221206111115",
-   "url": "https://www.ocesd.net/",
-   "station": "apptegy-oroville-ca",
-   "why": "2022-12-06: within 2 days of one of its closure days"
-  },
-  {
-   "timestamp": "20221207131502",
-   "url": "https://www.ocesd.net/",
-   "station": "apptegy-oroville-ca",
-   "why": "2022-12-07: within 2 days of one of its closure days"
-  },
-  {
-   "timestamp": "20221202065945",
-   "url": "https://www.ocesd.net/",
-   "station": "apptegy-oroville-ca",
-   "why": "2022-12-02: within 2 days of one of its closure days"
-  },
-  {
-   "timestamp": "20221129041241",
-   "url": "https://www.ocesd.net/",
-   "station": "apptegy-oroville-ca",
-   "why": "2022-11-29: within 2 days of one of its closure days"
-  },
-  {
-   "timestamp": "20221130060928",
-   "url": "https://www.ocesd.net/",
-   "station": "apptegy-oroville-ca",
-   "why": "2022-11-30: within 2 days of one of its closure days"
-  },
-  {
-   "timestamp": "20221110233155",
-   "url": "https://www.ocesd.net/",
-   "station": "apptegy-oroville-ca",
-   "why": "2022-11-11: within 2 days of one of its closure days"
-  },
-  {
-   "timestamp": "20221104224153",
-   "url": "https://www.ocesd.net/",
-   "station": "apptegy-oroville-ca",
-   "why": "2022-11-05: within 2 days of one of its closure days"
-  },
-  {
-   "timestamp": "20221109223726",
-   "url": "https://www.ocesd.net/",
-   "station": "apptegy-oroville-ca",
-   "why": "2022-11-10: within 2 days of one of its closure days"
-  },
-  {
-   "timestamp": "20221030182240",
-   "url": "https://www.ocesd.net/",
-   "station": "apptegy-oroville-ca",
-   "why": "2022-10-31: within 2 days of one of its closure days"
-  },
-  {
-   "timestamp": "20221104002006",
-   "url": "https://www.ocesd.net/",
-   "station": "apptegy-oroville-ca",
-   "why": "2022-11-04: within 2 days of one of its closure days"
-  },
-  {
-   "timestamp": "20221029160833",
-   "url": "https://www.ocesd.net/",
-   "station": "apptegy-oroville-ca",
-   "why": "2022-10-30: within 2 days of one of its closure days"
-  },
-  {
-   "timestamp": "20221105213540",
-   "url": "https://www.ocesd.net/",
-   "station": "apptegy-oroville-ca",
-   "why": "2022-11-06: within 2 days of one of its closure days"
-  },
-  {
-   "timestamp": "20221102201114",
-   "url": "https://www.ocesd.net/",
-   "station": "apptegy-oroville-ca",
-   "why": "2022-11-03: within 2 days of one of its closure days"
-  },
-  {
-   "timestamp": "20230311201555",
-   "url": "https://www.ocesd.net/",
-   "station": "apptegy-oroville-ca",
-   "why": "2023-03-12: within 2 days of one of its closure days"
-  },
-  {
-   "timestamp": "20221205234355",
-   "url": "https://www.ocesd.net/",
-   "station": "apptegy-oroville-ca",
-   "why": "2022-12-06: within 2 days of one of its closure days"
-  },
-  {
-   "timestamp": "20221103225556",
-   "url": "https://www.ocesd.net/",
-   "station": "apptegy-oroville-ca",
-   "why": "2022-11-04: within 2 days of one of its closure days"
-  },
-  {
-   "timestamp": "20220412095146",
-   "url": "https://www.ocesd.net/",
-   "station": "apptegy-oroville-ca",
-   "why": "2022-04-12: within 2 days of one of its closure days"
-  },
-  {
-   "timestamp": "20220418122320",
-   "url": "https://www.ocesd.net/",
-   "station": "apptegy-oroville-ca",
-   "why": "2022-04-18: within 2 days of one of its closure days"
-  },
-  {
-   "timestamp": "20220413100955",
-   "url": "https://www.ocesd.net/",
-   "station": "apptegy-oroville-ca",
-   "why": "2022-04-13: within 2 days of one of its closure days"
-  },
-  {
-   "timestamp": "20220410081309",
-   "url": "https://www.ocesd.net/",
-   "station": "apptegy-oroville-ca",
-   "why": "2022-04-10: within 2 days of one of its closure days"
-  },
-  {
-   "timestamp": "20220415104240",
-   "url": "https://www.ocesd.net/",
-   "station": "apptegy-oroville-ca",
-   "why": "2022-04-15: within 2 days of one of its closure days"
-  },
-  {
-   "timestamp": "20220417113727",
-   "url": "https://www.ocesd.net/",
-   "station": "apptegy-oroville-ca",
-   "why": "2022-04-17: within 2 days of one of its closure days"
-  },
-  {
-   "timestamp": "20220416110152",
-   "url": "https://www.ocesd.net/",
-   "station": "apptegy-oroville-ca",
-   "why": "2022-04-16: within 2 days of one of its closure days"
-  },
-  {
-   "timestamp": "20220420135404",
-   "url": "https://www.ocesd.net/",
-   "station": "apptegy-oroville-ca",
-   "why": "2022-04-20: within 2 days of one of its closure days"
-  },
-  {
-   "timestamp": "20220409074916",
-   "url": "https://www.ocesd.net/",
-   "station": "apptegy-oroville-ca",
-   "why": "2022-04-09: within 2 days of one of its closure days"
-  },
-  {
-   "timestamp": "20220422160316",
-   "url": "https://www.ocesd.net/",
-   "station": "apptegy-oroville-ca",
-   "why": "2022-04-23: within 2 days of one of its closure days"
-  },
-  {
-   "timestamp": "20220302132459",
-   "url": "https://www.ocesd.net/",
-   "station": "apptegy-oroville-ca",
-   "why": "2022-03-02: within 2 days of one of its closure days"
-  },
-  {
-   "timestamp": "20220304223958",
-   "url": "https://www.ocesd.net/",
-   "station": "apptegy-oroville-ca",
-   "why": "2022-03-05: within 2 days of one of its closure days"
-  },
-  {
-   "timestamp": "20220303122305",
-   "url": "https://www.ocesd.net/",
-   "station": "apptegy-oroville-ca",
-   "why": "2022-03-03: within 2 days of one of its closure days"
-  },
-  {
-   "timestamp": "20220306004341",
-   "url": "https://www.ocesd.net/",
-   "station": "apptegy-oroville-ca",
-   "why": "2022-03-06: within 2 days of one of its closure days"
-  },
-  {
-   "timestamp": "20220105155904",
-   "url": "https://www.ocesd.net/",
-   "station": "apptegy-oroville-ca",
-   "why": "2022-01-05: within 2 days of one of its closure days"
-  },
-  {
-   "timestamp": "20220109154844",
-   "url": "https://www.ocesd.net/",
-   "station": "apptegy-oroville-ca",
-   "why": "2022-01-09: within 2 days of one of its closure days"
-  },
-  {
-   "timestamp": "20220108145625",
-   "url": "https://www.ocesd.net/",
-   "station": "apptegy-oroville-ca",
-   "why": "2022-01-08: within 2 days of one of its closure days"
-  },
-  {
-   "timestamp": "20220106150217",
-   "url": "https://www.ocesd.net/",
-   "station": "apptegy-oroville-ca",
-   "why": "2022-01-06: within 2 days of one of its closure days"
-  },
-  {
-   "timestamp": "20220107160915",
-   "url": "https://www.ocesd.net/",
-   "station": "apptegy-oroville-ca",
-   "why": "2022-01-08: within 2 days of one of its closure days"
-  },
-  {
-   "timestamp": "20220101144241",
-   "url": "https://www.ocesd.net/",
-   "station": "apptegy-oroville-ca",
-   "why": "2022-01-01: within 2 days of one of its closure days"
-  },
-  {
-   "timestamp": "20211230150136",
-   "url": "https://www.ocesd.net/",
-   "station": "apptegy-oroville-ca",
-   "why": "2021-12-30: within 2 days of one of its closure days"
-  },
-  {
-   "timestamp": "20211231134755",
-   "url": "https://www.ocesd.net/",
-   "station": "apptegy-oroville-ca",
-   "why": "2021-12-31: within 2 days of one of its closure days"
-  },
-  {
-   "timestamp": "20220102153006",
-   "url": "https://www.ocesd.net/",
-   "station": "apptegy-oroville-ca",
-   "why": "2022-01-02: within 2 days of one of its closure days"
-  },
-  {
-   "timestamp": "20211229161411",
-   "url": "https://www.ocesd.net/",
-   "station": "apptegy-oroville-ca",
-   "why": "2021-12-30: within 2 days of one of its closure days"
-  },
-  {
-   "timestamp": "20220224073759",
-   "url": "https://www.ocesd.net/",
-   "station": "apptegy-oroville-ca",
-   "why": "2022-02-24: within 2 days of one of its closure days"
-  },
-  {
-   "timestamp": "20220219235343",
-   "url": "https://www.ocesd.net/",
-   "station": "apptegy-oroville-ca",
-   "why": "2022-02-20: within 2 days of one of its closure days"
-  },
-  {
-   "timestamp": "20220221063854",
-   "url": "https://www.ocesd.net/",
-   "station": "apptegy-oroville-ca",
-   "why": "2022-02-21: within 2 days of one of its closure days"
-  },
-  {
-   "timestamp": "20220223080332",
-   "url": "https://www.ocesd.net/",
-   "station": "apptegy-oroville-ca",
-   "why": "2022-02-23: within 2 days of one of its closure days"
-  },
-  {
-   "timestamp": "20211218121335",
-   "url": "https://www.ocesd.net/",
-   "station": "apptegy-oroville-ca",
-   "why": "2021-12-18: within 2 days of one of its closure days"
-  },
-  {
-   "timestamp": "20211221145243",
-   "url": "https://www.ocesd.net/",
-   "station": "apptegy-oroville-ca",
-   "why": "2021-12-21: within 2 days of one of its closure days"
-  },
-  {
-   "timestamp": "20211225184701",
-   "url": "https://www.ocesd.net/",
-   "station": "apptegy-oroville-ca",
-   "why": "2021-12-26: within 2 days of one of its closure days"
-  },
-  {
-   "timestamp": "20211224174739",
-   "url": "https://www.ocesd.net/",
-   "station": "apptegy-oroville-ca",
-   "why": "2021-12-25: within 2 days of one of its closure days"
-  },
-  {
-   "timestamp": "20211217114017",
-   "url": "https://www.ocesd.net/",
-   "station": "apptegy-oroville-ca",
-   "why": "2021-12-17: within 2 days of one of its closure days"
-  },
-  {
-   "timestamp": "20211220135035",
-   "url": "https://www.ocesd.net/",
-   "station": "apptegy-oroville-ca",
-   "why": "2021-12-20: within 2 days of one of its closure days"
-  },
-  {
-   "timestamp": "20211111042020",
-   "url": "https://www.ocesd.net/",
-   "station": "apptegy-oroville-ca",
-   "why": "2021-11-11: within 2 days of one of its closure days"
-  },
-  {
-   "timestamp": "20211109225425",
-   "url": "https://www.ocesd.net/",
-   "station": "apptegy-oroville-ca",
-   "why": "2021-11-10: within 2 days of one of its closure days"
-  },
-  {
-   "timestamp": "20211024093655",
-   "url": "https://www.ocesd.net/",
-   "station": "apptegy-oroville-ca",
-   "why": "2021-10-24: within 2 days of one of its closure days"
-  },
-  {
-   "timestamp": "20211024045602",
-   "url": "https://www.ocesd.net/",
-   "station": "apptegy-oroville-ca",
-   "why": "2021-10-24: within 2 days of one of its closure days"
-  },
-  {
-   "timestamp": "20211023041838",
-   "url": "https://www.ocesd.net/",
-   "station": "apptegy-oroville-ca",
-   "why": "2021-10-23: within 2 days of one of its closure days"
-  },
-  {
-   "timestamp": "20211106192725",
-   "url": "https://www.ocesd.net/",
-   "station": "apptegy-oroville-ca",
-   "why": "2021-11-07: within 2 days of one of its closure days"
-  },
-  {
-   "timestamp": "20211107204509",
-   "url": "https://www.ocesd.net/",
-   "station": "apptegy-oroville-ca",
-   "why": "2021-11-08: within 2 days of one of its closure days"
-  },
-  {
-   "timestamp": "20211027040033",
-   "url": "https://www.ocesd.net/",
-   "station": "apptegy-oroville-ca",
-   "why": "2021-10-27: within 2 days of one of its closure days"
-  },
-  {
-   "timestamp": "20211019012658",
-   "url": "https://www.ocesd.net/",
-   "station": "apptegy-oroville-ca",
-   "why": "2021-10-19: within 2 days of one of its closure days"
-  },
-  {
-   "timestamp": "20211020023517",
-   "url": "https://www.ocesd.net/",
-   "station": "apptegy-oroville-ca",
-   "why": "2021-10-20: within 2 days of one of its closure days"
-  },
-  {
-   "timestamp": "20211017003542",
-   "url": "https://www.ocesd.net/",
-   "station": "apptegy-oroville-ca",
-   "why": "2021-10-17: within 2 days of one of its closure days"
-  },
-  {
-   "timestamp": "20211015224911",
-   "url": "https://www.ocesd.net/",
-   "station": "apptegy-oroville-ca",
-   "why": "2021-10-16: within 2 days of one of its closure days"
-  },
-  {
-   "timestamp": "20210521095944",
-   "url": "https://www.ocesd.net/",
-   "station": "apptegy-oroville-ca",
-   "why": "2021-05-21: within 2 days of one of its closure days"
-  },
-  {
-   "timestamp": "20210517235915",
-   "url": "https://www.ocesd.net/",
-   "station": "apptegy-oroville-ca",
-   "why": "2021-05-18: within 2 days of one of its closure days"
-  },
-  {
-   "timestamp": "20191215131341",
-   "url": "https://www.ocesd.net/",
-   "station": "apptegy-oroville-ca",
-   "why": "2019-12-15: within 2 days of one of its closure days"
-  },
-  {
-   "timestamp": "20220326230355",
-   "url": "https://www.hemetusd.org/",
-   "station": "apptegy-hemet-ca",
-   "why": "2022-03-27: within 2 days of one of its closure days"
-  },
-  {
-   "timestamp": "20210120034728",
-   "url": "https://www.hemetusd.org/",
-   "station": "apptegy-hemet-ca",
-   "why": "2021-01-20: within 2 days of one of its closure days"
-  },
-  {
-   "timestamp": "20180304012732",
-   "url": "https://www.hemetusd.org/",
-   "station": "apptegy-hemet-ca",
-   "why": "2018-03-04: within 2 days of one of its closure days"
-  },
-  {
-   "timestamp": "20210308193837",
-   "url": "https://www.hemetusd.org/",
-   "station": "apptegy-hemet-ca",
-   "why": "2021-03-09: within 2 days of one of its closure days"
-  },
-  {
-   "timestamp": "20191117234317",
-   "url": "https://www.hemetusd.org/",
-   "station": "apptegy-hemet-ca",
-   "why": "2019-11-18: within 2 days of one of its closure days"
-  },
-  {
-   "timestamp": "20170111044026",
-   "url": "http://www.psusd.us/",
-   "station": "finalsite-palm-springs-ca",
-   "why": "2017-01-11: within 2 days of one of its closure days"
-  },
-  {
-   "timestamp": "20170113032523",
-   "url": "http://www.psusd.us/",
-   "station": "finalsite-palm-springs-ca",
-   "why": "2017-01-13: within 2 days of one of its closure days"
-  },
-  {
-   "timestamp": "20250312004425",
-   "url": "https://www.murrieta.k12.ca.us//",
-   "station": "finalsite-murrieta-valley-ca",
-   "why": "2025-03-12: within 2 days of one of its closure days"
-  },
-  {
-   "timestamp": "20250307234622",
-   "url": "https://www.murrieta.k12.ca.us//",
-   "station": "finalsite-murrieta-valley-ca",
-   "why": "2025-03-08: within 2 days of one of its closure days"
-  },
-  {
-   "timestamp": "20250306170033",
-   "url": "https://www.murrieta.k12.ca.us//",
-   "station": "finalsite-murrieta-valley-ca",
-   "why": "2025-03-07: within 2 days of one of its closure days"
-  },
-  {
-   "timestamp": "20250301010530",
-   "url": "https://www.murrieta.k12.ca.us//",
-   "station": "finalsite-murrieta-valley-ca",
-   "why": "2025-03-01: within 2 days of one of its closure days"
-  },
-  {
-   "timestamp": "20250301133519",
-   "url": "https://www.murrieta.k12.ca.us//",
-   "station": "finalsite-murrieta-valley-ca",
-   "why": "2025-03-01: within 2 days of one of its closure days"
-  },
-  {
-   "timestamp": "20250304114832",
-   "url": "https://www.murrieta.k12.ca.us//",
-   "station": "finalsite-murrieta-valley-ca",
-   "why": "2025-03-04: within 2 days of one of its closure days"
-  },
-  {
-   "timestamp": "20250302122518",
-   "url": "https://www.murrieta.k12.ca.us//",
-   "station": "finalsite-murrieta-valley-ca",
-   "why": "2025-03-02: within 2 days of one of its closure days"
-  },
-  {
-   "timestamp": "20230131134352",
-   "url": "https://www.murrieta.k12.ca.us/",
-   "station": "finalsite-murrieta-valley-ca",
-   "why": "2023-01-31: within 2 days of one of its closure days"
-  },
-  {
-   "timestamp": "20231223182944",
-   "url": "https://www.murrieta.k12.ca.us/",
-   "station": "finalsite-murrieta-valley-ca",
-   "why": "2023-12-24: within 2 days of one of its closure days"
-  },
-  {
-   "timestamp": "20240101203441",
-   "url": "https://www.murrieta.k12.ca.us/",
-   "station": "finalsite-murrieta-valley-ca",
-   "why": "2024-01-02: within 2 days of one of its closure days"
-  },
-  {
-   "timestamp": "20231231202157",
-   "url": "https://www.murrieta.k12.ca.us/",
-   "station": "finalsite-murrieta-valley-ca",
-   "why": "2024-01-01: within 2 days of one of its closure days"
-  },
-  {
-   "timestamp": "20240108170120",
-   "url": "https://www.murrieta.k12.ca.us/",
-   "station": "finalsite-murrieta-valley-ca",
-   "why": "2024-01-09: within 2 days of one of its closure days"
-  },
-  {
-   "timestamp": "20250128000409",
-   "url": "https://www.murrieta.k12.ca.us//",
-   "station": "finalsite-murrieta-valley-ca",
-   "why": "2025-01-28: within 2 days of one of its closure days"
-  },
-  {
-   "timestamp": "20241116112448",
-   "url": "https://www.murrieta.k12.ca.us//",
-   "station": "finalsite-murrieta-valley-ca",
-   "why": "2024-11-16: within 2 days of one of its closure days"
-  },
-  {
-   "timestamp": "20241115232717",
-   "url": "https://www.murrieta.k12.ca.us//",
-   "station": "finalsite-murrieta-valley-ca",
-   "why": "2024-11-16: within 2 days of one of its closure days"
-  },
-  {
-   "timestamp": "20241113232657",
-   "url": "https://www.murrieta.k12.ca.us//",
-   "station": "finalsite-murrieta-valley-ca",
-   "why": "2024-11-14: within 2 days of one of its closure days"
-  },
-  {
-   "timestamp": "20241114104818",
-   "url": "https://www.murrieta.k12.ca.us//",
-   "station": "finalsite-murrieta-valley-ca",
-   "why": "2024-11-14: within 2 days of one of its closure days"
-  },
-  {
-   "timestamp": "20250311023331",
-   "url": "https://www.murrieta.k12.ca.us//",
-   "station": "finalsite-murrieta-valley-ca",
-   "why": "2025-03-11: within 2 days of one of its closure days"
-  },
-  {
-   "timestamp": "20250307113716",
-   "url": "https://www.murrieta.k12.ca.us//",
-   "station": "finalsite-murrieta-valley-ca",
-   "why": "2025-03-07: within 2 days of one of its closure days"
-  },
-  {
-   "timestamp": "20250312120010",
-   "url": "https://www.murrieta.k12.ca.us//",
-   "station": "finalsite-murrieta-valley-ca",
-   "why": "2025-03-12: within 2 days of one of its closure days"
-  },
-  {
-   "timestamp": "20250307001643",
-   "url": "https://www.murrieta.k12.ca.us//",
-   "station": "finalsite-murrieta-valley-ca",
-   "why": "2025-03-07: within 2 days of one of its closure days"
-  },
-  {
-   "timestamp": "20250315024700",
-   "url": "https://www.murrieta.k12.ca.us//",
-   "station": "finalsite-murrieta-valley-ca",
-   "why": "2025-03-15: within 2 days of one of its closure days"
-  },
-  {
-   "timestamp": "20250315165322",
-   "url": "https://www.murrieta.k12.ca.us//",
-   "station": "finalsite-murrieta-valley-ca",
-   "why": "2025-03-16: within 2 days of one of its closure days"
-  },
-  {
-   "timestamp": "20250315084019",
-   "url": "https://www.murrieta.k12.ca.us//",
-   "station": "finalsite-murrieta-valley-ca",
-   "why": "2025-03-15: within 2 days of one of its closure days"
-  },
-  {
-   "timestamp": "20250305135548",
-   "url": "https://www.murrieta.k12.ca.us//",
-   "station": "finalsite-murrieta-valley-ca",
-   "why": "2025-03-05: within 2 days of one of its closure days"
-  },
-  {
-   "timestamp": "20250302002635",
-   "url": "https://www.murrieta.k12.ca.us//",
-   "station": "finalsite-murrieta-valley-ca",
-   "why": "2025-03-02: within 2 days of one of its closure days"
-  },
-  {
-   "timestamp": "20250305115057",
-   "url": "https://www.murrieta.k12.ca.us//",
-   "station": "finalsite-murrieta-valley-ca",
-   "why": "2025-03-05: within 2 days of one of its closure days"
-  },
-  {
-   "timestamp": "20240109110424",
-   "url": "https://www.murrieta.k12.ca.us//",
-   "station": "finalsite-murrieta-valley-ca",
-   "why": "2024-01-09: within 2 days of one of its closure days"
-  },
-  {
-   "timestamp": "20240103233715",
-   "url": "https://www.murrieta.k12.ca.us//",
-   "station": "finalsite-murrieta-valley-ca",
-   "why": "2024-01-04: within 2 days of one of its closure days"
-  },
-  {
-   "timestamp": "20240105051536",
-   "url": "https://www.murrieta.k12.ca.us//",
-   "station": "finalsite-murrieta-valley-ca",
-   "why": "2024-01-05: within 2 days of one of its closure days"
-  },
-  {
-   "timestamp": "20240108182107",
-   "url": "https://www.murrieta.k12.ca.us/",
-   "station": "finalsite-murrieta-valley-ca",
-   "why": "2024-01-09: within 2 days of one of its closure days"
-  },
-  {
-   "timestamp": "20240101125657",
-   "url": "https://www.murrieta.k12.ca.us/",
-   "station": "finalsite-murrieta-valley-ca",
-   "why": "2024-01-01: within 2 days of one of its closure days"
-  },
-  {
-   "timestamp": "20240105100141",
-   "url": "https://www.murrieta.k12.ca.us//",
-   "station": "finalsite-murrieta-valley-ca",
-   "why": "2024-01-05: within 2 days of one of its closure days"
-  },
-  {
-   "timestamp": "20240101232917",
-   "url": "https://www.murrieta.k12.ca.us/",
-   "station": "finalsite-murrieta-valley-ca",
-   "why": "2024-01-02: within 2 days of one of its closure days"
-  },
-  {
-   "timestamp": "20240108230037",
-   "url": "https://www.murrieta.k12.ca.us/",
-   "station": "finalsite-murrieta-valley-ca",
-   "why": "2024-01-09: within 2 days of one of its closure days"
-  },
-  {
-   "timestamp": "20231221111806",
-   "url": "https://www.murrieta.k12.ca.us//",
-   "station": "finalsite-murrieta-valley-ca",
-   "why": "2023-12-21: within 2 days of one of its closure days"
-  },
-  {
-   "timestamp": "20231220084319",
-   "url": "https://www.murrieta.k12.ca.us//",
-   "station": "finalsite-murrieta-valley-ca",
-   "why": "2023-12-20: within 2 days of one of its closure days"
-  },
-  {
-   "timestamp": "20231219230602",
-   "url": "https://www.murrieta.k12.ca.us//",
-   "station": "finalsite-murrieta-valley-ca",
-   "why": "2023-12-20: within 2 days of one of its closure days"
-  },
-  {
-   "timestamp": "20231220105754",
-   "url": "https://www.murrieta.k12.ca.us/",
-   "station": "finalsite-murrieta-valley-ca",
-   "why": "2023-12-20: within 2 days of one of its closure days"
-  },
-  {
-   "timestamp": "20231221032826",
-   "url": "https://www.murrieta.k12.ca.us/",
-   "station": "finalsite-murrieta-valley-ca",
-   "why": "2023-12-21: within 2 days of one of its closure days"
-  },
-  {
-   "timestamp": "20240110110501",
-   "url": "https://www.murrieta.k12.ca.us//",
-   "station": "finalsite-murrieta-valley-ca",
-   "why": "2024-01-10: within 2 days of one of its closure days"
-  },
-  {
-   "timestamp": "20240109232028",
-   "url": "https://www.murrieta.k12.ca.us/",
-   "station": "finalsite-murrieta-valley-ca",
-   "why": "2024-01-10: within 2 days of one of its closure days"
-  },
-  {
-   "timestamp": "20240112110316",
-   "url": "https://www.murrieta.k12.ca.us//",
-   "station": "finalsite-murrieta-valley-ca",
-   "why": "2024-01-12: within 2 days of one of its closure days"
-  },
-  {
-   "timestamp": "20240110070513",
-   "url": "https://www.murrieta.k12.ca.us//",
-   "station": "finalsite-murrieta-valley-ca",
-   "why": "2024-01-10: within 2 days of one of its closure days"
-  },
-  {
-   "timestamp": "20240406105800",
-   "url": "https://www.murrieta.k12.ca.us/",
-   "station": "finalsite-murrieta-valley-ca",
-   "why": "2024-04-06: within 2 days of one of its closure days"
-  },
-  {
-   "timestamp": "20230323060929",
-   "url": "https://www.murrieta.k12.ca.us//",
-   "station": "finalsite-murrieta-valley-ca",
-   "why": "2023-03-23: within 2 days of one of its closure days"
-  },
-  {
-   "timestamp": "20240111211530",
-   "url": "https://www.murrieta.k12.ca.us//",
-   "station": "finalsite-murrieta-valley-ca",
-   "why": "2024-01-12: within 2 days of one of its closure days"
-  },
-  {
-   "timestamp": "20240402161722",
-   "url": "https://www.murrieta.k12.ca.us/",
-   "station": "finalsite-murrieta-valley-ca",
-   "why": "2024-04-03: within 2 days of one of its closure days"
-  },
-  {
-   "timestamp": "20240406182457",
-   "url": "https://www.murrieta.k12.ca.us//",
-   "station": "finalsite-murrieta-valley-ca",
-   "why": "2024-04-07: within 2 days of one of its closure days"
-  },
-  {
-   "timestamp": "20230322200342",
-   "url": "https://www.murrieta.k12.ca.us/",
-   "station": "finalsite-murrieta-valley-ca",
-   "why": "2023-03-23: within 2 days of one of its closure days"
-  },
-  {
-   "timestamp": "20230323161431",
-   "url": "https://www.murrieta.k12.ca.us/",
-   "station": "finalsite-murrieta-valley-ca",
-   "why": "2023-03-24: within 2 days of one of its closure days"
-  },
-  {
-   "timestamp": "20230323114136",
-   "url": "https://www.murrieta.k12.ca.us//",
-   "station": "finalsite-murrieta-valley-ca",
-   "why": "2023-03-23: within 2 days of one of its closure days"
-  },
-  {
-   "timestamp": "20240113105819",
-   "url": "https://www.murrieta.k12.ca.us/",
-   "station": "finalsite-murrieta-valley-ca",
-   "why": "2024-01-13: within 2 days of one of its closure days"
-  },
-  {
-   "timestamp": "20230323201646",
-   "url": "https://www.murrieta.k12.ca.us/",
-   "station": "finalsite-murrieta-valley-ca",
-   "why": "2023-03-24: within 2 days of one of its closure days"
-  },
-  {
-   "timestamp": "20240111230017",
-   "url": "https://www.murrieta.k12.ca.us//",
-   "station": "finalsite-murrieta-valley-ca",
-   "why": "2024-01-12: within 2 days of one of its closure days"
-  },
-  {
-   "timestamp": "20230322235402",
-   "url": "https://www.murrieta.k12.ca.us//",
-   "station": "finalsite-murrieta-valley-ca",
-   "why": "2023-03-23: within 2 days of one of its closure days"
-  },
-  {
-   "timestamp": "20240403004320",
-   "url": "https://www.murrieta.k12.ca.us/",
-   "station": "finalsite-murrieta-valley-ca",
-   "why": "2024-04-03: within 2 days of one of its closure days"
-  },
-  {
-   "timestamp": "20230324074608",
-   "url": "https://www.murrieta.k12.ca.us/",
-   "station": "finalsite-murrieta-valley-ca",
-   "why": "2023-03-24: within 2 days of one of its closure days"
-  },
-  {
-   "timestamp": "20230328151440",
-   "url": "https://www.murrieta.k12.ca.us/",
-   "station": "finalsite-murrieta-valley-ca",
-   "why": "2023-03-28: within 2 days of one of its closure days"
-  },
-  {
-   "timestamp": "20230331144849",
-   "url": "https://www.murrieta.k12.ca.us/",
-   "station": "finalsite-murrieta-valley-ca",
-   "why": "2023-03-31: within 2 days of one of its closure days"
-  },
-  {
-   "timestamp": "20230330164841",
-   "url": "https://www.murrieta.k12.ca.us/",
-   "station": "finalsite-murrieta-valley-ca",
-   "why": "2023-03-31: within 2 days of one of its closure days"
-  },
-  {
-   "timestamp": "20230330174900",
-   "url": "https://www.murrieta.k12.ca.us//",
-   "station": "finalsite-murrieta-valley-ca",
-   "why": "2023-03-31: within 2 days of one of its closure days"
-  },
-  {
-   "timestamp": "20230330230509",
-   "url": "https://www.murrieta.k12.ca.us//",
-   "station": "finalsite-murrieta-valley-ca",
-   "why": "2023-03-31: within 2 days of one of its closure days"
-  },
-  {
-   "timestamp": "20230330213736",
-   "url": "https://www.murrieta.k12.ca.us//",
-   "station": "finalsite-murrieta-valley-ca",
-   "why": "2023-03-31: within 2 days of one of its closure days"
-  },
-  {
-   "timestamp": "20230331195139",
-   "url": "https://www.murrieta.k12.ca.us/",
-   "station": "finalsite-murrieta-valley-ca",
-   "why": "2023-04-01: within 2 days of one of its closure days"
-  },
-  {
-   "timestamp": "20240315234715",
-   "url": "https://www.murrieta.k12.ca.us//",
-   "station": "finalsite-murrieta-valley-ca",
-   "why": "2024-03-16: within 2 days of one of its closure days"
-  },
-  {
-   "timestamp": "20240316105714",
-   "url": "https://www.murrieta.k12.ca.us/",
-   "station": "finalsite-murrieta-valley-ca",
-   "why": "2024-03-16: within 2 days of one of its closure days"
-  },
-  {
-   "timestamp": "20240314105904",
-   "url": "https://www.murrieta.k12.ca.us/",
-   "station": "finalsite-murrieta-valley-ca",
-   "why": "2024-03-14: within 2 days of one of its closure days"
-  },
-  {
-   "timestamp": "20240316042017",
-   "url": "https://www.murrieta.k12.ca.us//",
-   "station": "finalsite-murrieta-valley-ca",
-   "why": "2024-03-16: within 2 days of one of its closure days"
-  },
-  {
-   "timestamp": "20240312233530",
+   "timestamp": "20240313004005",
    "url": "https://www.murrieta.k12.ca.us/",
    "station": "finalsite-murrieta-valley-ca",
    "why": "2024-03-13: within 2 days of one of its closure days"
   },
   {
-   "timestamp": "20240308225806",
+   "timestamp": "20240317124811",
    "url": "https://www.murrieta.k12.ca.us/",
    "station": "finalsite-murrieta-valley-ca",
-   "why": "2024-03-09: within 2 days of one of its closure days"
+   "why": "2024-03-17: within 2 days of one of its closure days"
   },
   {
-   "timestamp": "20240314111244",
-   "url": "https://www.murrieta.k12.ca.us//",
-   "station": "finalsite-murrieta-valley-ca",
-   "why": "2024-03-14: within 2 days of one of its closure days"
-  },
-  {
-   "timestamp": "20240203032651",
-   "url": "https://www.murrieta.k12.ca.us//",
-   "station": "finalsite-murrieta-valley-ca",
-   "why": "2024-02-03: within 2 days of one of its closure days"
-  },
-  {
-   "timestamp": "20240209063137",
-   "url": "https://www.murrieta.k12.ca.us/",
-   "station": "finalsite-murrieta-valley-ca",
-   "why": "2024-02-09: within 2 days of one of its closure days"
-  },
-  {
-   "timestamp": "20240202012247",
-   "url": "https://www.murrieta.k12.ca.us//",
-   "station": "finalsite-murrieta-valley-ca",
-   "why": "2024-02-02: within 2 days of one of its closure days"
-  },
-  {
-   "timestamp": "20240222233731",
-   "url": "https://www.murrieta.k12.ca.us//",
-   "station": "finalsite-murrieta-valley-ca",
-   "why": "2024-02-23: within 2 days of one of its closure days"
-  },
-  {
-   "timestamp": "20240307225745",
-   "url": "https://www.murrieta.k12.ca.us//",
-   "station": "finalsite-murrieta-valley-ca",
-   "why": "2024-03-08: within 2 days of one of its closure days"
-  },
-  {
-   "timestamp": "20240203052325",
-   "url": "https://www.murrieta.k12.ca.us//",
-   "station": "finalsite-murrieta-valley-ca",
-   "why": "2024-02-03: within 2 days of one of its closure days"
-  },
-  {
-   "timestamp": "20240130213028",
-   "url": "https://www.murrieta.k12.ca.us//",
-   "station": "finalsite-murrieta-valley-ca",
-   "why": "2024-01-31: within 2 days of one of its closure days"
-  },
-  {
-   "timestamp": "20240203130114",
-   "url": "https://www.murrieta.k12.ca.us//",
-   "station": "finalsite-murrieta-valley-ca",
-   "why": "2024-02-03: within 2 days of one of its closure days"
-  },
-  {
-   "timestamp": "20240208222757",
-   "url": "https://www.murrieta.k12.ca.us//",
-   "station": "finalsite-murrieta-valley-ca",
-   "why": "2024-02-09: within 2 days of one of its closure days"
-  },
-  {
-   "timestamp": "20240222164657",
-   "url": "https://www.murrieta.k12.ca.us/",
-   "station": "finalsite-murrieta-valley-ca",
-   "why": "2024-02-23: within 2 days of one of its closure days"
-  },
-  {
-   "timestamp": "20240201204244",
-   "url": "https://www.murrieta.k12.ca.us//",
-   "station": "finalsite-murrieta-valley-ca",
-   "why": "2024-02-02: within 2 days of one of its closure days"
-  },
-  {
-   "timestamp": "20240208183002",
-   "url": "https://www.murrieta.k12.ca.us/",
-   "station": "finalsite-murrieta-valley-ca",
-   "why": "2024-02-09: within 2 days of one of its closure days"
-  },
-  {
-   "timestamp": "20240210101304",
-   "url": "https://www.murrieta.k12.ca.us//",
-   "station": "finalsite-murrieta-valley-ca",
-   "why": "2024-02-10: within 2 days of one of its closure days"
-  },
-  {
-   "timestamp": "20240305192611",
-   "url": "https://www.murrieta.k12.ca.us/",
-   "station": "finalsite-murrieta-valley-ca",
-   "why": "2024-03-06: within 2 days of one of its closure days"
-  },
-  {
-   "timestamp": "20240209234039",
-   "url": "https://www.murrieta.k12.ca.us/",
-   "station": "finalsite-murrieta-valley-ca",
-   "why": "2024-02-10: within 2 days of one of its closure days"
-  },
-  {
-   "timestamp": "20240202105929",
-   "url": "https://www.murrieta.k12.ca.us/",
-   "station": "finalsite-murrieta-valley-ca",
-   "why": "2024-02-02: within 2 days of one of its closure days"
-  },
-  {
-   "timestamp": "20240210014542",
-   "url": "https://www.murrieta.k12.ca.us//",
-   "station": "finalsite-murrieta-valley-ca",
-   "why": "2024-02-10: within 2 days of one of its closure days"
-  },
-  {
-   "timestamp": "20240304235541",
-   "url": "https://www.murrieta.k12.ca.us//",
-   "station": "finalsite-murrieta-valley-ca",
-   "why": "2024-03-05: within 2 days of one of its closure days"
-  },
-  {
-   "timestamp": "20240306105808",
-   "url": "https://www.murrieta.k12.ca.us/",
-   "station": "finalsite-murrieta-valley-ca",
-   "why": "2024-03-06: within 2 days of one of its closure days"
-  },
-  {
-   "timestamp": "20240204151200",
-   "url": "https://www.murrieta.k12.ca.us//",
-   "station": "finalsite-murrieta-valley-ca",
-   "why": "2024-02-04: within 2 days of one of its closure days"
-  },
-  {
-   "timestamp": "20240203103209",
-   "url": "https://www.murrieta.k12.ca.us/",
-   "station": "finalsite-murrieta-valley-ca",
-   "why": "2024-02-03: within 2 days of one of its closure days"
-  },
-  {
-   "timestamp": "20240203125826",
-   "url": "https://www.murrieta.k12.ca.us/",
-   "station": "finalsite-murrieta-valley-ca",
-   "why": "2024-02-03: within 2 days of one of its closure days"
-  },
-  {
-   "timestamp": "20240204105801",
-   "url": "https://www.murrieta.k12.ca.us/",
-   "station": "finalsite-murrieta-valley-ca",
-   "why": "2024-02-04: within 2 days of one of its closure days"
-  },
-  {
-   "timestamp": "20240209225812",
-   "url": "https://www.murrieta.k12.ca.us//",
-   "station": "finalsite-murrieta-valley-ca",
-   "why": "2024-02-10: within 2 days of one of its closure days"
-  },
-  {
-   "timestamp": "20240219110342",
-   "url": "https://www.murrieta.k12.ca.us/",
-   "station": "finalsite-murrieta-valley-ca",
-   "why": "2024-02-19: within 2 days of one of its closure days"
-  },
-  {
-   "timestamp": "20240201223501",
-   "url": "https://www.murrieta.k12.ca.us/",
-   "station": "finalsite-murrieta-valley-ca",
-   "why": "2024-02-02: within 2 days of one of its closure days"
-  },
-  {
-   "timestamp": "20240130231451",
-   "url": "https://www.murrieta.k12.ca.us/",
-   "station": "finalsite-murrieta-valley-ca",
-   "why": "2024-01-31: within 2 days of one of its closure days"
-  },
-  {
-   "timestamp": "20240201173722",
-   "url": "https://www.murrieta.k12.ca.us/",
-   "station": "finalsite-murrieta-valley-ca",
-   "why": "2024-02-02: within 2 days of one of its closure days"
-  },
-  {
-   "timestamp": "20240219084117",
-   "url": "https://www.murrieta.k12.ca.us//",
-   "station": "finalsite-murrieta-valley-ca",
-   "why": "2024-02-19: within 2 days of one of its closure days"
-  },
-  {
-   "timestamp": "20240130105756",
-   "url": "https://www.murrieta.k12.ca.us//",
-   "station": "finalsite-murrieta-valley-ca",
-   "why": "2024-01-30: within 2 days of one of its closure days"
-  },
-  {
-   "timestamp": "20240105040634",
-   "url": "https://www.murrieta.k12.ca.us//",
-   "station": "finalsite-murrieta-valley-ca",
-   "why": "2024-01-05: within 2 days of one of its closure days"
-  },
-  {
-   "timestamp": "20240103225827",
-   "url": "https://www.murrieta.k12.ca.us//",
-   "station": "finalsite-murrieta-valley-ca",
-   "why": "2024-01-04: within 2 days of one of its closure days"
-  },
-  {
-   "timestamp": "20240104002856",
-   "url": "https://www.murrieta.k12.ca.us/",
-   "station": "finalsite-murrieta-valley-ca",
-   "why": "2024-01-04: within 2 days of one of its closure days"
-  },
-  {
-   "timestamp": "20240102031843",
-   "url": "https://www.murrieta.k12.ca.us//",
-   "station": "finalsite-murrieta-valley-ca",
-   "why": "2024-01-02: within 2 days of one of its closure days"
-  },
-  {
-   "timestamp": "20240104225751",
-   "url": "https://www.murrieta.k12.ca.us/",
-   "station": "finalsite-murrieta-valley-ca",
-   "why": "2024-01-05: within 2 days of one of its closure days"
-  },
-  {
-   "timestamp": "20240105150053",
-   "url": "https://www.murrieta.k12.ca.us/",
-   "station": "finalsite-murrieta-valley-ca",
-   "why": "2024-01-05: within 2 days of one of its closure days"
-  },
-  {
-   "timestamp": "20231222225750",
-   "url": "https://www.murrieta.k12.ca.us//",
-   "station": "finalsite-murrieta-valley-ca",
-   "why": "2023-12-23: within 2 days of one of its closure days"
-  },
-  {
-   "timestamp": "20231231225745",
-   "url": "https://www.murrieta.k12.ca.us/",
-   "station": "finalsite-murrieta-valley-ca",
-   "why": "2024-01-01: within 2 days of one of its closure days"
-  },
-  {
-   "timestamp": "20240103190334",
-   "url": "https://www.murrieta.k12.ca.us/",
-   "station": "finalsite-murrieta-valley-ca",
-   "why": "2024-01-04: within 2 days of one of its closure days"
-  },
-  {
-   "timestamp": "20240108161027",
-   "url": "https://www.murrieta.k12.ca.us//",
-   "station": "finalsite-murrieta-valley-ca",
-   "why": "2024-01-09: within 2 days of one of its closure days"
-  },
-  {
-   "timestamp": "20240105112248",
-   "url": "https://www.murrieta.k12.ca.us//",
-   "station": "finalsite-murrieta-valley-ca",
-   "why": "2024-01-05: within 2 days of one of its closure days"
-  },
-  {
-   "timestamp": "20240104141240",
-   "url": "https://www.murrieta.k12.ca.us/",
-   "station": "finalsite-murrieta-valley-ca",
-   "why": "2024-01-04: within 2 days of one of its closure days"
-  },
-  {
-   "timestamp": "20240104230247",
-   "url": "https://www.murrieta.k12.ca.us/",
-   "station": "finalsite-murrieta-valley-ca",
-   "why": "2024-01-05: within 2 days of one of its closure days"
-  },
-  {
-   "timestamp": "20230319070048",
-   "url": "https://www.murrieta.k12.ca.us//",
-   "station": "finalsite-murrieta-valley-ca",
-   "why": "2023-03-19: within 2 days of one of its closure days"
-  },
-  {
-   "timestamp": "20231224105744",
-   "url": "https://www.murrieta.k12.ca.us//",
-   "station": "finalsite-murrieta-valley-ca",
-   "why": "2023-12-24: within 2 days of one of its closure days"
-  },
-  {
-   "timestamp": "20230320030457",
-   "url": "https://www.murrieta.k12.ca.us//",
-   "station": "finalsite-murrieta-valley-ca",
-   "why": "2023-03-20: within 2 days of one of its closure days"
-  },
-  {
-   "timestamp": "20230320132354",
-   "url": "https://www.murrieta.k12.ca.us/",
-   "station": "finalsite-murrieta-valley-ca",
-   "why": "2023-03-20: within 2 days of one of its closure days"
-  },
-  {
-   "timestamp": "20231223013231",
-   "url": "https://www.murrieta.k12.ca.us/",
-   "station": "finalsite-murrieta-valley-ca",
-   "why": "2023-12-23: within 2 days of one of its closure days"
-  },
-  {
-   "timestamp": "20231223225803",
-   "url": "https://www.murrieta.k12.ca.us//",
-   "station": "finalsite-murrieta-valley-ca",
-   "why": "2023-12-24: within 2 days of one of its closure days"
-  },
-  {
-   "timestamp": "20230318233236",
-   "url": "https://www.murrieta.k12.ca.us//",
-   "station": "finalsite-murrieta-valley-ca",
-   "why": "2023-03-19: within 2 days of one of its closure days"
-  },
-  {
-   "timestamp": "20230318224216",
-   "url": "https://www.murrieta.k12.ca.us//",
-   "station": "finalsite-murrieta-valley-ca",
-   "why": "2023-03-19: within 2 days of one of its closure days"
-  },
-  {
-   "timestamp": "20230319173315",
-   "url": "https://www.murrieta.k12.ca.us/",
-   "station": "finalsite-murrieta-valley-ca",
-   "why": "2023-03-20: within 2 days of one of its closure days"
-  },
-  {
-   "timestamp": "20230319223512",
-   "url": "https://www.murrieta.k12.ca.us/",
-   "station": "finalsite-murrieta-valley-ca",
-   "why": "2023-03-20: within 2 days of one of its closure days"
-  },
-  {
-   "timestamp": "20230320013806",
-   "url": "https://www.murrieta.k12.ca.us//",
-   "station": "finalsite-murrieta-valley-ca",
-   "why": "2023-03-20: within 2 days of one of its closure days"
-  },
-  {
-   "timestamp": "20231223105744",
-   "url": "https://www.murrieta.k12.ca.us/",
-   "station": "finalsite-murrieta-valley-ca",
-   "why": "2023-12-23: within 2 days of one of its closure days"
-  },
-  {
-   "timestamp": "20230319051519",
-   "url": "https://www.murrieta.k12.ca.us//",
-   "station": "finalsite-murrieta-valley-ca",
-   "why": "2023-03-19: within 2 days of one of its closure days"
-  },
-  {
-   "timestamp": "20230319065208",
-   "url": "https://www.murrieta.k12.ca.us/",
-   "station": "finalsite-murrieta-valley-ca",
-   "why": "2023-03-19: within 2 days of one of its closure days"
-  },
-  {
-   "timestamp": "20230319144044",
-   "url": "https://www.murrieta.k12.ca.us/",
-   "station": "finalsite-murrieta-valley-ca",
-   "why": "2023-03-19: within 2 days of one of its closure days"
-  },
-  {
-   "timestamp": "20230319091642",
-   "url": "https://www.murrieta.k12.ca.us/",
-   "station": "finalsite-murrieta-valley-ca",
-   "why": "2023-03-19: within 2 days of one of its closure days"
-  },
-  {
-   "timestamp": "20230320083342",
-   "url": "https://www.murrieta.k12.ca.us/",
-   "station": "finalsite-murrieta-valley-ca",
-   "why": "2023-03-20: within 2 days of one of its closure days"
-  },
-  {
-   "timestamp": "20231220225802",
-   "url": "https://www.murrieta.k12.ca.us//",
-   "station": "finalsite-murrieta-valley-ca",
-   "why": "2023-12-21: within 2 days of one of its closure days"
-  },
-  {
-   "timestamp": "20231219182324",
-   "url": "https://www.murrieta.k12.ca.us/",
-   "station": "finalsite-murrieta-valley-ca",
-   "why": "2023-12-20: within 2 days of one of its closure days"
-  },
-  {
-   "timestamp": "20231219225943",
-   "url": "https://www.murrieta.k12.ca.us/",
-   "station": "finalsite-murrieta-valley-ca",
-   "why": "2023-12-20: within 2 days of one of its closure days"
-  },
-  {
-   "timestamp": "20231221125243",
-   "url": "https://www.murrieta.k12.ca.us/",
-   "station": "finalsite-murrieta-valley-ca",
-   "why": "2023-12-21: within 2 days of one of its closure days"
-  },
-  {
-   "timestamp": "20240110004355",
-   "url": "https://www.murrieta.k12.ca.us//",
-   "station": "finalsite-murrieta-valley-ca",
-   "why": "2024-01-10: within 2 days of one of its closure days"
-  },
-  {
-   "timestamp": "20240110105937",
-   "url": "https://www.murrieta.k12.ca.us/",
-   "station": "finalsite-murrieta-valley-ca",
-   "why": "2024-01-10: within 2 days of one of its closure days"
-  },
-  {
-   "timestamp": "20240109222958",
-   "url": "https://www.murrieta.k12.ca.us/",
-   "station": "finalsite-murrieta-valley-ca",
-   "why": "2024-01-10: within 2 days of one of its closure days"
-  },
-  {
-   "timestamp": "20240112101904",
-   "url": "https://www.murrieta.k12.ca.us//",
-   "station": "finalsite-murrieta-valley-ca",
-   "why": "2024-01-12: within 2 days of one of its closure days"
-  },
-  {
-   "timestamp": "20240112064526",
-   "url": "https://www.murrieta.k12.ca.us//",
-   "station": "finalsite-murrieta-valley-ca",
-   "why": "2024-01-12: within 2 days of one of its closure days"
-  },
-  {
-   "timestamp": "20240403231353",
-   "url": "https://www.murrieta.k12.ca.us/",
-   "station": "finalsite-murrieta-valley-ca",
-   "why": "2024-04-04: within 2 days of one of its closure days"
-  },
-  {
-   "timestamp": "20240404010607",
-   "url": "https://www.murrieta.k12.ca.us/",
-   "station": "finalsite-murrieta-valley-ca",
-   "why": "2024-04-04: within 2 days of one of its closure days"
-  },
-  {
-   "timestamp": "20240112225908",
-   "url": "https://www.murrieta.k12.ca.us/",
-   "station": "finalsite-murrieta-valley-ca",
-   "why": "2024-01-13: within 2 days of one of its closure days"
-  },
-  {
-   "timestamp": "20240407105440",
-   "url": "https://www.murrieta.k12.ca.us/",
-   "station": "finalsite-murrieta-valley-ca",
-   "why": "2024-04-07: within 2 days of one of its closure days"
-  },
-  {
-   "timestamp": "20240404144209",
-   "url": "https://www.murrieta.k12.ca.us//",
-   "station": "finalsite-murrieta-valley-ca",
-   "why": "2024-04-04: within 2 days of one of its closure days"
-  },
-  {
-   "timestamp": "20240402234335",
-   "url": "https://www.murrieta.k12.ca.us//",
-   "station": "finalsite-murrieta-valley-ca",
-   "why": "2024-04-03: within 2 days of one of its closure days"
-  },
-  {
-   "timestamp": "20240405225458",
-   "url": "https://www.murrieta.k12.ca.us/",
-   "station": "finalsite-murrieta-valley-ca",
-   "why": "2024-04-06: within 2 days of one of its closure days"
-  },
-  {
-   "timestamp": "20241113112421",
-   "url": "https://www.murrieta.k12.ca.us//",
-   "station": "finalsite-murrieta-valley-ca",
-   "why": "2024-11-13: within 2 days of one of its closure days"
-  },
-  {
-   "timestamp": "20241117112417",
-   "url": "https://www.murrieta.k12.ca.us//",
-   "station": "finalsite-murrieta-valley-ca",
-   "why": "2024-11-17: within 2 days of one of its closure days"
-  },
-  {
-   "timestamp": "20241114115319",
-   "url": "https://www.murrieta.k12.ca.us//",
-   "station": "finalsite-murrieta-valley-ca",
-   "why": "2024-11-14: within 2 days of one of its closure days"
-  },
-  {
-   "timestamp": "20241112232440",
-   "url": "https://www.murrieta.k12.ca.us//",
-   "station": "finalsite-murrieta-valley-ca",
-   "why": "2024-11-13: within 2 days of one of its closure days"
-  },
-  {
-   "timestamp": "20240313110716",
-   "url": "https://www.murrieta.k12.ca.us/",
-   "station": "finalsite-murrieta-valley-ca",
-   "why": "2024-03-13: within 2 days of one of its closure days"
-  },
-  {
-   "timestamp": "20240313225830",
-   "url": "https://www.murrieta.k12.ca.us//",
-   "station": "finalsite-murrieta-valley-ca",
-   "why": "2024-03-14: within 2 days of one of its closure days"
-  },
-  {
-   "timestamp": "20240317150417",
+   "timestamp": "20240316225643",
    "url": "https://www.murrieta.k12.ca.us//",
    "station": "finalsite-murrieta-valley-ca",
    "why": "2024-03-17: within 2 days of one of its closure days"
   },
   {
-   "timestamp": "20240309105800",
-   "url": "https://www.murrieta.k12.ca.us//",
-   "station": "finalsite-murrieta-valley-ca",
-   "why": "2024-03-09: within 2 days of one of its closure days"
-  },
-  {
-   "timestamp": "20240315181048",
+   "timestamp": "20240313230459",
    "url": "https://www.murrieta.k12.ca.us/",
    "station": "finalsite-murrieta-valley-ca",
-   "why": "2024-03-16: within 2 days of one of its closure days"
+   "why": "2024-03-14: within 2 days of one of its closure days"
+  },
+  {
+   "timestamp": "20250128233524",
+   "url": "https://www.murrieta.k12.ca.us//",
+   "station": "finalsite-murrieta-valley-ca",
+   "why": "2025-01-29: within 2 days of one of its closure days"
+  },
+  {
+   "timestamp": "20250128114107",
+   "url": "https://www.murrieta.k12.ca.us//",
+   "station": "finalsite-murrieta-valley-ca",
+   "why": "2025-01-28: within 2 days of one of its closure days"
+  },
+  {
+   "timestamp": "20250129121204",
+   "url": "https://www.murrieta.k12.ca.us//",
+   "station": "finalsite-murrieta-valley-ca",
+   "why": "2025-01-29: within 2 days of one of its closure days"
+  },
+  {
+   "timestamp": "20241116232451",
+   "url": "https://www.murrieta.k12.ca.us//",
+   "station": "finalsite-murrieta-valley-ca",
+   "why": "2024-11-17: within 2 days of one of its closure days"
+  },
+  {
+   "timestamp": "20250126112538",
+   "url": "https://www.murrieta.k12.ca.us//",
+   "station": "finalsite-murrieta-valley-ca",
+   "why": "2025-01-26: within 2 days of one of its closure days"
+  },
+  {
+   "timestamp": "20250125234455",
+   "url": "https://www.murrieta.k12.ca.us//",
+   "station": "finalsite-murrieta-valley-ca",
+   "why": "2025-01-26: within 2 days of one of its closure days"
+  },
+  {
+   "timestamp": "20240209074531",
+   "url": "https://www.murrieta.k12.ca.us//",
+   "station": "finalsite-murrieta-valley-ca",
+   "why": "2024-02-09: within 2 days of one of its closure days"
+  },
+  {
+   "timestamp": "20250125112541",
+   "url": "https://www.murrieta.k12.ca.us//",
+   "station": "finalsite-murrieta-valley-ca",
+   "why": "2025-01-25: within 2 days of one of its closure days"
+  },
+  {
+   "timestamp": "20241115162012",
+   "url": "https://www.murrieta.k12.ca.us//",
+   "station": "finalsite-murrieta-valley-ca",
+   "why": "2024-11-16: within 2 days of one of its closure days"
+  },
+  {
+   "timestamp": "20240203062256",
+   "url": "https://www.murrieta.k12.ca.us//",
+   "station": "finalsite-murrieta-valley-ca",
+   "why": "2024-02-03: within 2 days of one of its closure days"
+  },
+  {
+   "timestamp": "20240223150714",
+   "url": "https://www.murrieta.k12.ca.us//",
+   "station": "finalsite-murrieta-valley-ca",
+   "why": "2024-02-23: within 2 days of one of its closure days"
+  },
+  {
+   "timestamp": "20240219002112",
+   "url": "https://www.murrieta.k12.ca.us/",
+   "station": "finalsite-murrieta-valley-ca",
+   "why": "2024-02-19: within 2 days of one of its closure days"
+  },
+  {
+   "timestamp": "20240305225742",
+   "url": "https://www.murrieta.k12.ca.us/",
+   "station": "finalsite-murrieta-valley-ca",
+   "why": "2024-03-06: within 2 days of one of its closure days"
+  },
+  {
+   "timestamp": "20240308105837",
+   "url": "https://www.murrieta.k12.ca.us//",
+   "station": "finalsite-murrieta-valley-ca",
+   "why": "2024-03-08: within 2 days of one of its closure days"
+  },
+  {
+   "timestamp": "20240208210930",
+   "url": "https://www.murrieta.k12.ca.us//",
+   "station": "finalsite-murrieta-valley-ca",
+   "why": "2024-02-09: within 2 days of one of its closure days"
+  },
+  {
+   "timestamp": "20240203230238",
+   "url": "https://www.murrieta.k12.ca.us//",
+   "station": "finalsite-murrieta-valley-ca",
+   "why": "2024-02-04: within 2 days of one of its closure days"
+  },
+  {
+   "timestamp": "20240204074952",
+   "url": "https://www.murrieta.k12.ca.us//",
+   "station": "finalsite-murrieta-valley-ca",
+   "why": "2024-02-04: within 2 days of one of its closure days"
+  },
+  {
+   "timestamp": "20240201231959",
+   "url": "https://www.murrieta.k12.ca.us/",
+   "station": "finalsite-murrieta-valley-ca",
+   "why": "2024-02-02: within 2 days of one of its closure days"
+  },
+  {
+   "timestamp": "20240308075438",
+   "url": "https://www.murrieta.k12.ca.us/",
+   "station": "finalsite-murrieta-valley-ca",
+   "why": "2024-03-08: within 2 days of one of its closure days"
+  },
+  {
+   "timestamp": "20240203042450",
+   "url": "https://www.murrieta.k12.ca.us/",
+   "station": "finalsite-murrieta-valley-ca",
+   "why": "2024-02-03: within 2 days of one of its closure days"
+  },
+  {
+   "timestamp": "20240304225745",
+   "url": "https://www.murrieta.k12.ca.us//",
+   "station": "finalsite-murrieta-valley-ca",
+   "why": "2024-03-05: within 2 days of one of its closure days"
+  },
+  {
+   "timestamp": "20240305105857",
+   "url": "https://www.murrieta.k12.ca.us//",
+   "station": "finalsite-murrieta-valley-ca",
+   "why": "2024-03-05: within 2 days of one of its closure days"
+  },
+  {
+   "timestamp": "20240130225805",
+   "url": "https://www.murrieta.k12.ca.us/",
+   "station": "finalsite-murrieta-valley-ca",
+   "why": "2024-01-31: within 2 days of one of its closure days"
+  },
+  {
+   "timestamp": "20240210025945",
+   "url": "https://www.murrieta.k12.ca.us/",
+   "station": "finalsite-murrieta-valley-ca",
+   "why": "2024-02-10: within 2 days of one of its closure days"
+  },
+  {
+   "timestamp": "20240202064216",
+   "url": "https://www.murrieta.k12.ca.us/",
+   "station": "finalsite-murrieta-valley-ca",
+   "why": "2024-02-02: within 2 days of one of its closure days"
+  },
+  {
+   "timestamp": "20240209105757",
+   "url": "https://www.murrieta.k12.ca.us/",
+   "station": "finalsite-murrieta-valley-ca",
+   "why": "2024-02-09: within 2 days of one of its closure days"
+  },
+  {
+   "timestamp": "20240210144403",
+   "url": "https://www.murrieta.k12.ca.us//",
+   "station": "finalsite-murrieta-valley-ca",
+   "why": "2024-02-10: within 2 days of one of its closure days"
+  },
+  {
+   "timestamp": "20240308110153",
+   "url": "https://www.murrieta.k12.ca.us/",
+   "station": "finalsite-murrieta-valley-ca",
+   "why": "2024-03-08: within 2 days of one of its closure days"
+  },
+  {
+   "timestamp": "20240129225832",
+   "url": "https://www.murrieta.k12.ca.us//",
+   "station": "finalsite-murrieta-valley-ca",
+   "why": "2024-01-30: within 2 days of one of its closure days"
+  },
+  {
+   "timestamp": "20240202001756",
+   "url": "https://www.murrieta.k12.ca.us//",
+   "station": "finalsite-murrieta-valley-ca",
+   "why": "2024-02-02: within 2 days of one of its closure days"
+  },
+  {
+   "timestamp": "20240209191020",
+   "url": "https://www.murrieta.k12.ca.us//",
+   "station": "finalsite-murrieta-valley-ca",
+   "why": "2024-02-10: within 2 days of one of its closure days"
+  },
+  {
+   "timestamp": "20240202152446",
+   "url": "https://www.murrieta.k12.ca.us/",
+   "station": "finalsite-murrieta-valley-ca",
+   "why": "2024-02-02: within 2 days of one of its closure days"
+  },
+  {
+   "timestamp": "20240218105758",
+   "url": "https://www.murrieta.k12.ca.us/",
+   "station": "finalsite-murrieta-valley-ca",
+   "why": "2024-02-18: within 2 days of one of its closure days"
+  },
+  {
+   "timestamp": "20240218232911",
+   "url": "https://www.murrieta.k12.ca.us//",
+   "station": "finalsite-murrieta-valley-ca",
+   "why": "2024-02-19: within 2 days of one of its closure days"
+  },
+  {
+   "timestamp": "20240202192831",
+   "url": "https://www.murrieta.k12.ca.us//",
+   "station": "finalsite-murrieta-valley-ca",
+   "why": "2024-02-03: within 2 days of one of its closure days"
+  },
+  {
+   "timestamp": "20240131020645",
+   "url": "https://www.murrieta.k12.ca.us/",
+   "station": "finalsite-murrieta-valley-ca",
+   "why": "2024-01-31: within 2 days of one of its closure days"
+  },
+  {
+   "timestamp": "20240202094700",
+   "url": "https://www.murrieta.k12.ca.us/",
+   "station": "finalsite-murrieta-valley-ca",
+   "why": "2024-02-02: within 2 days of one of its closure days"
+  },
+  {
+   "timestamp": "20240209142340",
+   "url": "https://www.murrieta.k12.ca.us/",
+   "station": "finalsite-murrieta-valley-ca",
+   "why": "2024-02-09: within 2 days of one of its closure days"
+  },
+  {
+   "timestamp": "20240131100612",
+   "url": "https://www.murrieta.k12.ca.us/",
+   "station": "finalsite-murrieta-valley-ca",
+   "why": "2024-01-31: within 2 days of one of its closure days"
+  },
+  {
+   "timestamp": "20250124233007",
+   "url": "https://www.murrieta.k12.ca.us//",
+   "station": "finalsite-murrieta-valley-ca",
+   "why": "2025-01-25: within 2 days of one of its closure days"
+  },
+  {
+   "timestamp": "20230201001622",
+   "url": "https://www.murrieta.k12.ca.us/",
+   "station": "finalsite-murrieta-valley-ca",
+   "why": "2023-02-01: within 2 days of one of its closure days"
+  },
+  {
+   "timestamp": "20230201035920",
+   "url": "https://www.murrieta.k12.ca.us/",
+   "station": "finalsite-murrieta-valley-ca",
+   "why": "2023-02-01: within 2 days of one of its closure days"
+  },
+  {
+   "timestamp": "20230131000135",
+   "url": "https://www.murrieta.k12.ca.us//",
+   "station": "finalsite-murrieta-valley-ca",
+   "why": "2023-01-31: within 2 days of one of its closure days"
+  },
+  {
+   "timestamp": "20230131232131",
+   "url": "https://www.murrieta.k12.ca.us//",
+   "station": "finalsite-murrieta-valley-ca",
+   "why": "2023-02-01: within 2 days of one of its closure days"
+  },
+  {
+   "timestamp": "20230115110435",
+   "url": "https://www.murrieta.k12.ca.us//",
+   "station": "finalsite-murrieta-valley-ca",
+   "why": "2023-01-15: within 2 days of one of its closure days"
+  },
+  {
+   "timestamp": "20230113230415",
+   "url": "https://www.murrieta.k12.ca.us/",
+   "station": "finalsite-murrieta-valley-ca",
+   "why": "2023-01-14: within 2 days of one of its closure days"
+  },
+  {
+   "timestamp": "20230116230435",
+   "url": "https://www.murrieta.k12.ca.us//",
+   "station": "finalsite-murrieta-valley-ca",
+   "why": "2023-01-17: within 2 days of one of its closure days"
+  },
+  {
+   "timestamp": "20230129120722",
+   "url": "https://www.murrieta.k12.ca.us/",
+   "station": "finalsite-murrieta-valley-ca",
+   "why": "2023-01-29: within 2 days of one of its closure days"
+  },
+  {
+   "timestamp": "20230128111044",
+   "url": "https://www.murrieta.k12.ca.us/",
+   "station": "finalsite-murrieta-valley-ca",
+   "why": "2023-01-28: within 2 days of one of its closure days"
+  },
+  {
+   "timestamp": "20230128043429",
+   "url": "https://www.murrieta.k12.ca.us//",
+   "station": "finalsite-murrieta-valley-ca",
+   "why": "2023-01-28: within 2 days of one of its closure days"
+  },
+  {
+   "timestamp": "20230110230421",
+   "url": "https://www.murrieta.k12.ca.us/",
+   "station": "finalsite-murrieta-valley-ca",
+   "why": "2023-01-11: within 2 days of one of its closure days"
+  },
+  {
+   "timestamp": "20230111110457",
+   "url": "https://www.murrieta.k12.ca.us/",
+   "station": "finalsite-murrieta-valley-ca",
+   "why": "2023-01-11: within 2 days of one of its closure days"
+  },
+  {
+   "timestamp": "20230112110409",
+   "url": "https://www.murrieta.k12.ca.us//",
+   "station": "finalsite-murrieta-valley-ca",
+   "why": "2023-01-12: within 2 days of one of its closure days"
+  },
+  {
+   "timestamp": "20230111230424",
+   "url": "https://www.murrieta.k12.ca.us/",
+   "station": "finalsite-murrieta-valley-ca",
+   "why": "2023-01-12: within 2 days of one of its closure days"
+  },
+  {
+   "timestamp": "20230107230410",
+   "url": "https://www.murrieta.k12.ca.us/",
+   "station": "finalsite-murrieta-valley-ca",
+   "why": "2023-01-08: within 2 days of one of its closure days"
+  },
+  {
+   "timestamp": "20230105230541",
+   "url": "https://www.murrieta.k12.ca.us//",
+   "station": "finalsite-murrieta-valley-ca",
+   "why": "2023-01-06: within 2 days of one of its closure days"
+  },
+  {
+   "timestamp": "20230108110432",
+   "url": "https://www.murrieta.k12.ca.us/",
+   "station": "finalsite-murrieta-valley-ca",
+   "why": "2023-01-08: within 2 days of one of its closure days"
+  },
+  {
+   "timestamp": "20230104110423",
+   "url": "https://www.murrieta.k12.ca.us//",
+   "station": "finalsite-murrieta-valley-ca",
+   "why": "2023-01-04: within 2 days of one of its closure days"
+  },
+  {
+   "timestamp": "20230323012300",
+   "url": "https://www.murrieta.k12.ca.us/",
+   "station": "finalsite-murrieta-valley-ca",
+   "why": "2023-03-23: within 2 days of one of its closure days"
+  },
+  {
+   "timestamp": "20230324001501",
+   "url": "https://www.murrieta.k12.ca.us/",
+   "station": "finalsite-murrieta-valley-ca",
+   "why": "2023-03-24: within 2 days of one of its closure days"
+  },
+  {
+   "timestamp": "20230323190218",
+   "url": "https://www.murrieta.k12.ca.us/",
+   "station": "finalsite-murrieta-valley-ca",
+   "why": "2023-03-24: within 2 days of one of its closure days"
+  },
+  {
+   "timestamp": "20230323233242",
+   "url": "https://www.murrieta.k12.ca.us//",
+   "station": "finalsite-murrieta-valley-ca",
+   "why": "2023-03-24: within 2 days of one of its closure days"
+  },
+  {
+   "timestamp": "20230322171648",
+   "url": "https://www.murrieta.k12.ca.us//",
+   "station": "finalsite-murrieta-valley-ca",
+   "why": "2023-03-23: within 2 days of one of its closure days"
+  },
+  {
+   "timestamp": "20230326230432",
+   "url": "https://www.murrieta.k12.ca.us/",
+   "station": "finalsite-murrieta-valley-ca",
+   "why": "2023-03-27: within 2 days of one of its closure days"
+  },
+  {
+   "timestamp": "20230326181115",
+   "url": "https://www.murrieta.k12.ca.us//",
+   "station": "finalsite-murrieta-valley-ca",
+   "why": "2023-03-27: within 2 days of one of its closure days"
+  },
+  {
+   "timestamp": "20230327165545",
+   "url": "https://www.murrieta.k12.ca.us/",
+   "station": "finalsite-murrieta-valley-ca",
+   "why": "2023-03-28: within 2 days of one of its closure days"
+  },
+  {
+   "timestamp": "20230327110435",
+   "url": "https://www.murrieta.k12.ca.us//",
+   "station": "finalsite-murrieta-valley-ca",
+   "why": "2023-03-27: within 2 days of one of its closure days"
+  },
+  {
+   "timestamp": "20230327230435",
+   "url": "https://www.murrieta.k12.ca.us/",
+   "station": "finalsite-murrieta-valley-ca",
+   "why": "2023-03-28: within 2 days of one of its closure days"
+  },
+  {
+   "timestamp": "20230328110425",
+   "url": "https://www.murrieta.k12.ca.us//",
+   "station": "finalsite-murrieta-valley-ca",
+   "why": "2023-03-28: within 2 days of one of its closure days"
+  },
+  {
+   "timestamp": "20230331092707",
+   "url": "https://www.murrieta.k12.ca.us/",
+   "station": "finalsite-murrieta-valley-ca",
+   "why": "2023-03-31: within 2 days of one of its closure days"
+  },
+  {
+   "timestamp": "20230331110452",
+   "url": "https://www.murrieta.k12.ca.us/",
+   "station": "finalsite-murrieta-valley-ca",
+   "why": "2023-03-31: within 2 days of one of its closure days"
+  },
+  {
+   "timestamp": "20230331003416",
+   "url": "https://www.murrieta.k12.ca.us//",
+   "station": "finalsite-murrieta-valley-ca",
+   "why": "2023-03-31: within 2 days of one of its closure days"
+  },
+  {
+   "timestamp": "20230331230539",
+   "url": "https://www.murrieta.k12.ca.us/",
+   "station": "finalsite-murrieta-valley-ca",
+   "why": "2023-04-01: within 2 days of one of its closure days"
+  },
+  {
+   "timestamp": "20230319211413",
+   "url": "https://www.murrieta.k12.ca.us/",
+   "station": "finalsite-murrieta-valley-ca",
+   "why": "2023-03-20: within 2 days of one of its closure days"
+  },
+  {
+   "timestamp": "20230319101002",
+   "url": "https://www.murrieta.k12.ca.us/",
+   "station": "finalsite-murrieta-valley-ca",
+   "why": "2023-03-19: within 2 days of one of its closure days"
+  },
+  {
+   "timestamp": "20230319185113",
+   "url": "https://www.murrieta.k12.ca.us/",
+   "station": "finalsite-murrieta-valley-ca",
+   "why": "2023-03-20: within 2 days of one of its closure days"
+  },
+  {
+   "timestamp": "20230319193545",
+   "url": "https://www.murrieta.k12.ca.us/",
+   "station": "finalsite-murrieta-valley-ca",
+   "why": "2023-03-20: within 2 days of one of its closure days"
+  },
+  {
+   "timestamp": "20230320074932",
+   "url": "https://www.murrieta.k12.ca.us/",
+   "station": "finalsite-murrieta-valley-ca",
+   "why": "2023-03-20: within 2 days of one of its closure days"
+  },
+  {
+   "timestamp": "20230319000653",
+   "url": "https://www.murrieta.k12.ca.us//",
+   "station": "finalsite-murrieta-valley-ca",
+   "why": "2023-03-19: within 2 days of one of its closure days"
+  },
+  {
+   "timestamp": "20230320021244",
+   "url": "https://www.murrieta.k12.ca.us//",
+   "station": "finalsite-murrieta-valley-ca",
+   "why": "2023-03-20: within 2 days of one of its closure days"
+  },
+  {
+   "timestamp": "20230319131705",
+   "url": "https://www.murrieta.k12.ca.us/",
+   "station": "finalsite-murrieta-valley-ca",
+   "why": "2023-03-19: within 2 days of one of its closure days"
+  },
+  {
+   "timestamp": "20230319032905",
+   "url": "https://www.murrieta.k12.ca.us//",
+   "station": "finalsite-murrieta-valley-ca",
+   "why": "2023-03-19: within 2 days of one of its closure days"
+  },
+  {
+   "timestamp": "20230319202924",
+   "url": "https://www.murrieta.k12.ca.us//",
+   "station": "finalsite-murrieta-valley-ca",
+   "why": "2023-03-20: within 2 days of one of its closure days"
+  },
+  {
+   "timestamp": "20230318212323",
+   "url": "https://www.murrieta.k12.ca.us//",
+   "station": "finalsite-murrieta-valley-ca",
+   "why": "2023-03-19: within 2 days of one of its closure days"
+  },
+  {
+   "timestamp": "20230319082609",
+   "url": "https://www.murrieta.k12.ca.us/",
+   "station": "finalsite-murrieta-valley-ca",
+   "why": "2023-03-19: within 2 days of one of its closure days"
+  },
+  {
+   "timestamp": "20230319112543",
+   "url": "https://www.murrieta.k12.ca.us//",
+   "station": "finalsite-murrieta-valley-ca",
+   "why": "2023-03-19: within 2 days of one of its closure days"
+  },
+  {
+   "timestamp": "20230319120537",
+   "url": "https://www.murrieta.k12.ca.us//",
+   "station": "finalsite-murrieta-valley-ca",
+   "why": "2023-03-19: within 2 days of one of its closure days"
+  },
+  {
+   "timestamp": "20230201062728",
+   "url": "https://www.murrieta.k12.ca.us/",
+   "station": "finalsite-murrieta-valley-ca",
+   "why": "2023-02-01: within 2 days of one of its closure days"
+  },
+  {
+   "timestamp": "20230114230423",
+   "url": "https://www.murrieta.k12.ca.us/",
+   "station": "finalsite-murrieta-valley-ca",
+   "why": "2023-01-15: within 2 days of one of its closure days"
+  },
+  {
+   "timestamp": "20230114110414",
+   "url": "https://www.murrieta.k12.ca.us//",
+   "station": "finalsite-murrieta-valley-ca",
+   "why": "2023-01-14: within 2 days of one of its closure days"
+  },
+  {
+   "timestamp": "20230128230418",
+   "url": "https://www.murrieta.k12.ca.us/",
+   "station": "finalsite-murrieta-valley-ca",
+   "why": "2023-01-29: within 2 days of one of its closure days"
+  },
+  {
+   "timestamp": "20230201095517",
+   "url": "https://www.murrieta.k12.ca.us//",
+   "station": "finalsite-murrieta-valley-ca",
+   "why": "2023-02-01: within 2 days of one of its closure days"
+  },
+  {
+   "timestamp": "20230129113850",
+   "url": "https://www.murrieta.k12.ca.us//",
+   "station": "finalsite-murrieta-valley-ca",
+   "why": "2023-01-29: within 2 days of one of its closure days"
+  },
+  {
+   "timestamp": "20230117114227",
+   "url": "https://www.murrieta.k12.ca.us/",
+   "station": "finalsite-murrieta-valley-ca",
+   "why": "2023-01-17: within 2 days of one of its closure days"
+  },
+  {
+   "timestamp": "20230117230413",
+   "url": "https://www.murrieta.k12.ca.us//",
+   "station": "finalsite-murrieta-valley-ca",
+   "why": "2023-01-18: within 2 days of one of its closure days"
+  },
+  {
+   "timestamp": "20230128053413",
+   "url": "https://www.murrieta.k12.ca.us/",
+   "station": "finalsite-murrieta-valley-ca",
+   "why": "2023-01-28: within 2 days of one of its closure days"
+  },
+  {
+   "timestamp": "20230118110503",
+   "url": "https://www.murrieta.k12.ca.us//",
+   "station": "finalsite-murrieta-valley-ca",
+   "why": "2023-01-18: within 2 days of one of its closure days"
+  },
+  {
+   "timestamp": "20230109110427",
+   "url": "https://www.murrieta.k12.ca.us//",
+   "station": "finalsite-murrieta-valley-ca",
+   "why": "2023-01-09: within 2 days of one of its closure days"
+  },
+  {
+   "timestamp": "20230106230428",
+   "url": "https://www.murrieta.k12.ca.us/",
+   "station": "finalsite-murrieta-valley-ca",
+   "why": "2023-01-07: within 2 days of one of its closure days"
+  },
+  {
+   "timestamp": "20230107110412",
+   "url": "https://www.murrieta.k12.ca.us//",
+   "station": "finalsite-murrieta-valley-ca",
+   "why": "2023-01-07: within 2 days of one of its closure days"
+  },
+  {
+   "timestamp": "20230108230417",
+   "url": "https://www.murrieta.k12.ca.us/",
+   "station": "finalsite-murrieta-valley-ca",
+   "why": "2023-01-09: within 2 days of one of its closure days"
+  },
+  {
+   "timestamp": "20230102230521",
+   "url": "https://www.murrieta.k12.ca.us/",
+   "station": "finalsite-murrieta-valley-ca",
+   "why": "2023-01-03: within 2 days of one of its closure days"
+  },
+  {
+   "timestamp": "20230106110504",
+   "url": "https://www.murrieta.k12.ca.us//",
+   "station": "finalsite-murrieta-valley-ca",
+   "why": "2023-01-06: within 2 days of one of its closure days"
+  },
+  {
+   "timestamp": "20230103230413",
+   "url": "https://www.murrieta.k12.ca.us//",
+   "station": "finalsite-murrieta-valley-ca",
+   "why": "2023-01-04: within 2 days of one of its closure days"
+  },
+  {
+   "timestamp": "20230103111153",
+   "url": "https://www.murrieta.k12.ca.us//",
+   "station": "finalsite-murrieta-valley-ca",
+   "why": "2023-01-03: within 2 days of one of its closure days"
+  },
+  {
+   "timestamp": "20210128052654",
+   "url": "https://www.murrieta.k12.ca.us/",
+   "station": "finalsite-murrieta-valley-ca",
+   "why": "2021-01-28: within 2 days of one of its closure days"
+  },
+  {
+   "timestamp": "20180224223729",
+   "url": "https://www.murrieta.k12.ca.us/",
+   "station": "finalsite-murrieta-valley-ca",
+   "why": "2018-02-25: within 2 days of one of its closure days"
+  },
+  {
+   "timestamp": "20220221183311",
+   "url": "https://www.murrieta.k12.ca.us//",
+   "station": "finalsite-murrieta-valley-ca",
+   "why": "2022-02-22: within 2 days of one of its closure days"
+  },
+  {
+   "timestamp": "20220220183246",
+   "url": "https://www.murrieta.k12.ca.us//",
+   "station": "finalsite-murrieta-valley-ca",
+   "why": "2022-02-21: within 2 days of one of its closure days"
+  },
+  {
+   "timestamp": "20220221072353",
+   "url": "https://www.murrieta.k12.ca.us//",
+   "station": "finalsite-murrieta-valley-ca",
+   "why": "2022-02-21: within 2 days of one of its closure days"
+  },
+  {
+   "timestamp": "20220302212048",
+   "url": "https://www.murrieta.k12.ca.us/",
+   "station": "finalsite-murrieta-valley-ca",
+   "why": "2022-03-03: within 2 days of one of its closure days"
+  },
+  {
+   "timestamp": "20220326182843",
+   "url": "https://www.murrieta.k12.ca.us//",
+   "station": "finalsite-murrieta-valley-ca",
+   "why": "2022-03-27: within 2 days of one of its closure days"
+  },
+  {
+   "timestamp": "20220327062855",
+   "url": "https://www.murrieta.k12.ca.us//",
+   "station": "finalsite-murrieta-valley-ca",
+   "why": "2022-03-27: within 2 days of one of its closure days"
+  },
+  {
+   "timestamp": "20220101063304",
+   "url": "http://www.murrieta.k12.ca.us//",
+   "station": "finalsite-murrieta-valley-ca",
+   "why": "2022-01-01: within 2 days of one of its closure days"
+  },
+  {
+   "timestamp": "20220222084339",
+   "url": "https://www.murrieta.k12.ca.us//",
+   "station": "finalsite-murrieta-valley-ca",
+   "why": "2022-02-22: within 2 days of one of its closure days"
+  },
+  {
+   "timestamp": "20220224070446",
+   "url": "https://www.murrieta.k12.ca.us//",
+   "station": "finalsite-murrieta-valley-ca",
+   "why": "2022-02-24: within 2 days of one of its closure days"
+  },
+  {
+   "timestamp": "20220225010954",
+   "url": "https://www.murrieta.k12.ca.us//",
+   "station": "finalsite-murrieta-valley-ca",
+   "why": "2022-02-25: within 2 days of one of its closure days"
+  },
+  {
+   "timestamp": "20220223195147",
+   "url": "https://www.murrieta.k12.ca.us//",
+   "station": "finalsite-murrieta-valley-ca",
+   "why": "2022-02-24: within 2 days of one of its closure days"
+  },
+  {
+   "timestamp": "20220225063133",
+   "url": "https://www.murrieta.k12.ca.us//",
+   "station": "finalsite-murrieta-valley-ca",
+   "why": "2022-02-25: within 2 days of one of its closure days"
+  },
+  {
+   "timestamp": "20220326062840",
+   "url": "https://www.murrieta.k12.ca.us//",
+   "station": "finalsite-murrieta-valley-ca",
+   "why": "2022-03-26: within 2 days of one of its closure days"
+  },
+  {
+   "timestamp": "20170301122025",
+   "url": "http://www.murrieta.k12.ca.us/",
+   "station": "finalsite-murrieta-valley-ca",
+   "why": "2017-03-01: within 2 days of one of its closure days"
+  },
+  {
+   "timestamp": "20220325182940",
+   "url": "https://www.murrieta.k12.ca.us//",
+   "station": "finalsite-murrieta-valley-ca",
+   "why": "2022-03-26: within 2 days of one of its closure days"
+  },
+  {
+   "timestamp": "20211231183404",
+   "url": "https://www.murrieta.k12.ca.us//",
+   "station": "finalsite-murrieta-valley-ca",
+   "why": "2022-01-01: within 2 days of one of its closure days"
+  },
+  {
+   "timestamp": "20211231063522",
+   "url": "http://www.murrieta.k12.ca.us//",
+   "station": "finalsite-murrieta-valley-ca",
+   "why": "2021-12-31: within 2 days of one of its closure days"
+  },
+  {
+   "timestamp": "20220329182755",
+   "url": "http://www.murrieta.k12.ca.us//",
+   "station": "finalsite-murrieta-valley-ca",
+   "why": "2022-03-30: within 2 days of one of its closure days"
+  },
+  {
+   "timestamp": "20251119173437",
+   "url": "https://www.murrieta.k12.ca.us/",
+   "station": "finalsite-murrieta-valley-ca",
+   "why": "2025-11-20: within 2 days of one of its closure days"
+  },
+  {
+   "timestamp": "20251119053422",
+   "url": "https://www.murrieta.k12.ca.us/",
+   "station": "finalsite-murrieta-valley-ca",
+   "why": "2025-11-19: within 2 days of one of its closure days"
+  },
+  {
+   "timestamp": "20251120090328",
+   "url": "https://www.murrieta.k12.ca.us/",
+   "station": "finalsite-murrieta-valley-ca",
+   "why": "2025-11-20: within 2 days of one of its closure days"
+  },
+  {
+   "timestamp": "20240118141626",
+   "url": "https://www.rivieraisd.us/",
+   "station": "apptegy-riviera-tx",
+   "why": "2024-01-18: within 2 days of one of its closure days"
+  },
+  {
+   "timestamp": "20221221232759",
+   "url": "https://www.rivieraisd.us/",
+   "station": "apptegy-riviera-tx",
+   "why": "2022-12-22: within 2 days of one of its closure days"
+  },
+  {
+   "timestamp": "20221224233034",
+   "url": "https://www.rivieraisd.us/",
+   "station": "apptegy-riviera-tx",
+   "why": "2022-12-25: within 2 days of one of its closure days"
+  },
+  {
+   "timestamp": "20221224112751",
+   "url": "https://www.rivieraisd.us/",
+   "station": "apptegy-riviera-tx",
+   "why": "2022-12-24: within 2 days of one of its closure days"
+  },
+  {
+   "timestamp": "20221221112747",
+   "url": "https://www.rivieraisd.us/",
+   "station": "apptegy-riviera-tx",
+   "why": "2022-12-21: within 2 days of one of its closure days"
+  },
+  {
+   "timestamp": "20221225112752",
+   "url": "https://www.rivieraisd.us/",
+   "station": "apptegy-riviera-tx",
+   "why": "2022-12-25: within 2 days of one of its closure days"
+  },
+  {
+   "timestamp": "20221224031506",
+   "url": "https://www.rivieraisd.us/",
+   "station": "apptegy-riviera-tx",
+   "why": "2022-12-24: within 2 days of one of its closure days"
+  },
+  {
+   "timestamp": "20221224013420",
+   "url": "https://www.rivieraisd.us/",
+   "station": "apptegy-riviera-tx",
+   "why": "2022-12-24: within 2 days of one of its closure days"
+  },
+  {
+   "timestamp": "20221221062512",
+   "url": "https://www.rivieraisd.us/",
+   "station": "apptegy-riviera-tx",
+   "why": "2022-12-21: within 2 days of one of its closure days"
+  },
+  {
+   "timestamp": "20220206110534",
+   "url": "https://www.rivieraisd.us/",
+   "station": "apptegy-riviera-tx",
+   "why": "2022-02-06: within 2 days of one of its closure days"
+  },
+  {
+   "timestamp": "20220203114323",
+   "url": "https://www.taftisd.net/",
+   "station": "apptegy-taft-tx",
+   "why": "2022-02-03: within 2 days of one of its closure days"
+  },
+  {
+   "timestamp": "20190207055452",
+   "url": "https://www.ouhsd.org/",
+   "station": "finalsite-oroville-high-ca",
+   "why": "2019-02-07: within 2 days of one of its closure days"
+  },
+  {
+   "timestamp": "20240324234530",
+   "url": "https://www.ouhsd.org/",
+   "station": "finalsite-oroville-high-ca",
+   "why": "2024-03-25: within 2 days of one of its closure days"
+  },
+  {
+   "timestamp": "20240325020345",
+   "url": "https://www.ouhsd.org/",
+   "station": "finalsite-oroville-high-ca",
+   "why": "2024-03-25: within 2 days of one of its closure days"
+  },
+  {
+   "timestamp": "20241109225241",
+   "url": "https://www.ouhsd.org/",
+   "station": "finalsite-oroville-high-ca",
+   "why": "2024-11-10: within 2 days of one of its closure days"
+  },
+  {
+   "timestamp": "20170613234452",
+   "url": "http://www.ouhsd.org:80/",
+   "station": "finalsite-oroville-high-ca",
+   "why": "2017-06-14: within 2 days of one of its closure days"
+  },
+  {
+   "timestamp": "20170610211335",
+   "url": "http://ouhsd.org/",
+   "station": "finalsite-oroville-high-ca",
+   "why": "2017-06-11: within 2 days of one of its closure days"
+  },
+  {
+   "timestamp": "20250326132734",
+   "url": "https://www.durhamunified.org/",
+   "station": "apptegy-durham-ca",
+   "why": "2025-03-26: within 2 days of one of its closure days"
+  },
+  {
+   "timestamp": "20241214152611",
+   "url": "https://www.durhamunified.org/",
+   "station": "apptegy-durham-ca",
+   "why": "2024-12-14: within 2 days of one of its closure days"
+  },
+  {
+   "timestamp": "20260423152701",
+   "url": "https://www.durhamunified.org/",
+   "station": "apptegy-durham-ca",
+   "why": "2026-04-23: within 2 days of one of its closure days"
+  },
+  {
+   "timestamp": "20260424152407",
+   "url": "https://www.durhamunified.org/",
+   "station": "apptegy-durham-ca",
+   "why": "2026-04-24: within 2 days of one of its closure days"
+  },
+  {
+   "timestamp": "20260423032843",
+   "url": "https://www.durhamunified.org/",
+   "station": "apptegy-durham-ca",
+   "why": "2026-04-23: within 2 days of one of its closure days"
+  },
+  {
+   "timestamp": "20260419032601",
+   "url": "https://www.durhamunified.org/",
+   "station": "apptegy-durham-ca",
+   "why": "2026-04-19: within 2 days of one of its closure days"
+  },
+  {
+   "timestamp": "20260420032424",
+   "url": "https://www.durhamunified.org/",
+   "station": "apptegy-durham-ca",
+   "why": "2026-04-20: within 2 days of one of its closure days"
+  },
+  {
+   "timestamp": "20260419152732",
+   "url": "https://www.durhamunified.org/",
+   "station": "apptegy-durham-ca",
+   "why": "2026-04-19: within 2 days of one of its closure days"
+  },
+  {
+   "timestamp": "20260419221224",
+   "url": "https://www.durhamunified.org/",
+   "station": "apptegy-durham-ca",
+   "why": "2026-04-20: within 2 days of one of its closure days"
+  },
+  {
+   "timestamp": "20250212063458",
+   "url": "https://www.durhamunified.org/",
+   "station": "apptegy-durham-ca",
+   "why": "2025-02-12: within 2 days of one of its closure days"
+  },
+  {
+   "timestamp": "20241116163111",
+   "url": "https://www.durhamunified.org/",
+   "station": "apptegy-durham-ca",
+   "why": "2024-11-17: within 2 days of one of its closure days"
+  },
+  {
+   "timestamp": "20231208014758",
+   "url": "https://www.durhamunified.org/",
+   "station": "apptegy-durham-ca",
+   "why": "2023-12-08: within 2 days of one of its closure days"
+  },
+  {
+   "timestamp": "20230325065435",
+   "url": "https://www.durhamunified.org/",
+   "station": "apptegy-durham-ca",
+   "why": "2023-03-25: within 2 days of one of its closure days"
+  },
+  {
+   "timestamp": "20221203044948",
+   "url": "https://www.durhamunified.org/",
+   "station": "apptegy-durham-ca",
+   "why": "2022-12-03: within 2 days of one of its closure days"
+  },
+  {
+   "timestamp": "20211217222644",
+   "url": "https://durhamunified.org/",
+   "station": "apptegy-durham-ca",
+   "why": "2021-12-18: within 2 days of one of its closure days"
+  },
+  {
+   "timestamp": "20211017063942",
+   "url": "https://durhamunified.org/",
+   "station": "apptegy-durham-ca",
+   "why": "2021-10-17: within 2 days of one of its closure days"
+  },
+  {
+   "timestamp": "20250104185347",
+   "url": "https://www.durhamunified.org/",
+   "station": "apptegy-durham-ca",
+   "why": "2025-01-05: within 2 days of one of its closure days"
+  },
+  {
+   "timestamp": "20220119040035",
+   "url": "https://www.brewtoncityschools.org/",
+   "station": "apptegy-brewton-al",
+   "why": "2022-01-19: within 2 days of one of its closure days"
+  },
+  {
+   "timestamp": "20220122141127",
+   "url": "https://www.brewtoncityschools.org/",
+   "station": "apptegy-brewton-al",
+   "why": "2022-01-22: within 2 days of one of its closure days"
+  },
+  {
+   "timestamp": "20220123021204",
+   "url": "https://www.brewtoncityschools.org/",
+   "station": "apptegy-brewton-al",
+   "why": "2022-01-23: within 2 days of one of its closure days"
+  },
+  {
+   "timestamp": "20220120105920",
+   "url": "https://www.brewtoncityschools.org/",
+   "station": "apptegy-brewton-al",
+   "why": "2022-01-20: within 2 days of one of its closure days"
+  },
+  {
+   "timestamp": "20220121194713",
+   "url": "https://spisd.org/",
+   "station": "smartsites-san-perlita-tx",
+   "why": "2022-01-22: within 2 days of one of its closure days"
+  },
+  {
+   "timestamp": "20220122195914",
+   "url": "https://www.spisd.org/",
+   "station": "smartsites-san-perlita-tx",
+   "why": "2022-01-23: within 2 days of one of its closure days"
+  },
+  {
+   "timestamp": "20260128162937",
+   "url": "https://www.industrialisd.org/en-US",
+   "station": "schoolblocks-industrial-tx",
+   "why": "2026-01-29: within 2 days of one of its closure days"
+  },
+  {
+   "timestamp": "20260129162332",
+   "url": "https://www.industrialisd.org/en-US",
+   "station": "schoolblocks-industrial-tx",
+   "why": "2026-01-30: within 2 days of one of its closure days"
+  },
+  {
+   "timestamp": "20260123192434",
+   "url": "https://www.industrialisd.org/en-US",
+   "station": "schoolblocks-industrial-tx",
+   "why": "2026-01-24: within 2 days of one of its closure days"
+  },
+  {
+   "timestamp": "20260123162517",
+   "url": "https://www.industrialisd.org/en-US",
+   "station": "schoolblocks-industrial-tx",
+   "why": "2026-01-24: within 2 days of one of its closure days"
+  },
+  {
+   "timestamp": "20260124042607",
+   "url": "https://www.industrialisd.org/en-US",
+   "station": "schoolblocks-industrial-tx",
+   "why": "2026-01-24: within 2 days of one of its closure days"
+  },
+  {
+   "timestamp": "20260125015249",
+   "url": "https://www.industrialisd.org/en-US",
+   "station": "schoolblocks-industrial-tx",
+   "why": "2026-01-25: within 2 days of one of its closure days"
+  },
+  {
+   "timestamp": "20260125042334",
+   "url": "https://www.industrialisd.org/en-US",
+   "station": "schoolblocks-industrial-tx",
+   "why": "2026-01-25: within 2 days of one of its closure days"
+  },
+  {
+   "timestamp": "20260109220748",
+   "url": "https://www.industrialisd.org/en-US",
+   "station": "schoolblocks-industrial-tx",
+   "why": "2026-01-10: within 2 days of one of its closure days"
+  },
+  {
+   "timestamp": "20260112024200",
+   "url": "https://www.industrialisd.org/en-US",
+   "station": "schoolblocks-industrial-tx",
+   "why": "2026-01-12: within 2 days of one of its closure days"
+  },
+  {
+   "timestamp": "20260111205047",
+   "url": "https://www.industrialisd.org/en-US",
+   "station": "schoolblocks-industrial-tx",
+   "why": "2026-01-12: within 2 days of one of its closure days"
+  },
+  {
+   "timestamp": "20260109053848",
+   "url": "https://www.industrialisd.org/en-US",
+   "station": "schoolblocks-industrial-tx",
+   "why": "2026-01-09: within 2 days of one of its closure days"
+  },
+  {
+   "timestamp": "20260112162721",
+   "url": "https://www.industrialisd.org/en-US",
+   "station": "schoolblocks-industrial-tx",
+   "why": "2026-01-13: within 2 days of one of its closure days"
+  },
+  {
+   "timestamp": "20260110030658",
+   "url": "https://www.industrialisd.org/en-US",
+   "station": "schoolblocks-industrial-tx",
+   "why": "2026-01-10: within 2 days of one of its closure days"
+  },
+  {
+   "timestamp": "20260113074952",
+   "url": "https://www.industrialisd.org/en-US",
+   "station": "schoolblocks-industrial-tx",
+   "why": "2026-01-13: within 2 days of one of its closure days"
+  },
+  {
+   "timestamp": "20240326061234",
+   "url": "https://www.rmaschools.org/",
+   "station": "finalsite-rma-tx",
+   "why": "2024-03-26: within 2 days of one of its closure days"
   }
  ]
 }
