@@ -1,1504 +1,2043 @@
 {
+ "cdx": [
+  {
+   "url": "wsd.net/",
+   "from": "20170101",
+   "to": "20260930",
+   "filter": [
+    "statuscode:200"
+   ],
+   "collapse": "timestamp:10",
+   "station": "apptegy-weber-ut",
+   "why": "never listed: an address of the source's list (its current page or data file), so its verdict could not be all-read; listed to learn what the archive holds of it"
+  },
+  {
+   "url": "louisianafirstnews.com/wp-json/wp/v2/pages/1530919",
+   "from": "20170101",
+   "to": "20260930",
+   "filter": [
+    "statuscode:200"
+   ],
+   "collapse": "timestamp:10",
+   "station": "nexstar-wgmb",
+   "why": "never listed: an address of the source's list (its current page or data file), so its verdict could not be all-read; listed to learn what the archive holds of it"
+  },
+  {
+   "url": "okaloosaschools.com/",
+   "from": "20170101",
+   "to": "20260930",
+   "filter": [
+    "statuscode:200"
+   ],
+   "collapse": "timestamp:10",
+   "station": "apptegy-okaloosa-fl",
+   "why": "never listed: an address of the source's list (its current page or data file), so its verdict could not be all-read; listed to learn what the archive holds of it"
+  },
+  {
+   "url": "ccisd.us/",
+   "from": "20170101",
+   "to": "20260930",
+   "filter": [
+    "statuscode:200"
+   ],
+   "collapse": "timestamp:10",
+   "station": "apptegy-corpus-christi-tx",
+   "why": "never listed: an address of the source's list (its current page or data file), so its verdict could not be all-read; listed to learn what the archive holds of it"
+  },
+  {
+   "url": "bay.k12.fl.us/",
+   "from": "20170101",
+   "to": "20260930",
+   "filter": [
+    "statuscode:200"
+   ],
+   "collapse": "timestamp:10",
+   "station": "apptegy-bay-fl",
+   "why": "never listed: an address of the source's list (its current page or data file), so its verdict could not be all-read; listed to learn what the archive holds of it"
+  },
+  {
+   "url": "hernandoschools.org/",
+   "from": "20170101",
+   "to": "20260930",
+   "filter": [
+    "statuscode:200"
+   ],
+   "collapse": "timestamp:10",
+   "station": "smartsites-hernando-fl",
+   "why": "never listed: an address of the source's list (its current page or data file), so its verdict could not be all-read; listed to learn what the archive holds of it"
+  },
+  {
+   "url": "sodaschools.org/",
+   "from": "20170101",
+   "to": "20260930",
+   "filter": [
+    "statuscode:200"
+   ],
+   "collapse": "timestamp:10",
+   "station": "edlio-soda-springs-id",
+   "why": "never listed: an address of the source's list (its current page or data file), so its verdict could not be all-read; listed to learn what the archive holds of it"
+  },
+  {
+   "url": "citrusschools.org/",
+   "from": "20170101",
+   "to": "20260930",
+   "filter": [
+    "statuscode:200"
+   ],
+   "collapse": "timestamp:10",
+   "station": "smartsites-citrus-fl",
+   "why": "never listed: an address of the source's list (its current page or data file), so its verdict could not be all-read; listed to learn what the archive holds of it"
+  },
+  {
+   "url": "visd.net/",
+   "from": "20170101",
+   "to": "20260930",
+   "filter": [
+    "statuscode:200"
+   ],
+   "collapse": "timestamp:10",
+   "station": "apptegy-victoria-tx",
+   "why": "never listed: an address of the source's list (its current page or data file), so its verdict could not be all-read; listed to learn what the archive holds of it"
+  },
+  {
+   "url": "jcsd1.us/",
+   "from": "20170101",
+   "to": "20260930",
+   "filter": [
+    "statuscode:200"
+   ],
+   "collapse": "timestamp:10",
+   "station": "apptegy-johnson1-wy",
+   "why": "never listed: an address of the source's list (its current page or data file), so its verdict could not be all-read; listed to learn what the archive holds of it"
+  },
+  {
+   "url": "winifred.k12.mt.us/",
+   "from": "20170101",
+   "to": "20260930",
+   "filter": [
+    "statuscode:200"
+   ],
+   "collapse": "timestamp:10",
+   "station": "apptegy-winifred-mt",
+   "why": "never listed: an address of the source's list (its current page or data file), so its verdict could not be all-read; listed to learn what the archive holds of it"
+  },
+  {
+   "url": "swcsd2.org/",
+   "from": "20170101",
+   "to": "20260930",
+   "filter": [
+    "statuscode:200"
+   ],
+   "collapse": "timestamp:10",
+   "station": "apptegy-sweetwater-2-wy",
+   "why": "never listed: an address of the source's list (its current page or data file), so its verdict could not be all-read; listed to learn what the archive holds of it"
+  },
+  {
+   "url": "chinookschools.org/",
+   "from": "20170101",
+   "to": "20260930",
+   "filter": [
+    "statuscode:200"
+   ],
+   "collapse": "timestamp:10",
+   "station": "apptegy-chinook-mt",
+   "why": "never listed: an address of the source's list (its current page or data file), so its verdict could not be all-read; listed to learn what the archive holds of it"
+  },
+  {
+   "url": "psjaisd.us/",
+   "from": "20170101",
+   "to": "20260930",
+   "filter": [
+    "statuscode:200"
+   ],
+   "collapse": "timestamp:10",
+   "station": "finalsite-psja-tx",
+   "why": "never listed: an address of the source's list (its current page or data file), so its verdict could not be all-read; listed to learn what the archive holds of it"
+  },
+  {
+   "url": "putnamschools.org/",
+   "from": "20170101",
+   "to": "20260930",
+   "filter": [
+    "statuscode:200"
+   ],
+   "collapse": "timestamp:10",
+   "station": "apptegy-putnam-fl",
+   "why": "never listed: an address of the source's list (its current page or data file), so its verdict could not be all-read; listed to learn what the archive holds of it"
+  },
+  {
+   "url": "townsend.k12.mt.us/",
+   "from": "20170101",
+   "to": "20260930",
+   "filter": [
+    "statuscode:200"
+   ],
+   "collapse": "timestamp:10",
+   "station": "apptegy-townsend-mt",
+   "why": "never listed: an address of the source's list (its current page or data file), so its verdict could not be all-read; listed to learn what the archive holds of it"
+  },
+  {
+   "url": "jcsb.org/",
+   "from": "20170101",
+   "to": "20260930",
+   "filter": [
+    "statuscode:200"
+   ],
+   "collapse": "timestamp:10",
+   "station": "smartsites-jackson-fl",
+   "why": "never listed: an address of the source's list (its current page or data file), so its verdict could not be all-read; listed to learn what the archive holds of it"
+  },
+  {
+   "url": "hcisd.org/api/popup-alerts",
+   "from": "20170101",
+   "to": "20260930",
+   "filter": [
+    "statuscode:200"
+   ],
+   "collapse": "timestamp:10",
+   "station": "smartsites-harlingen-tx",
+   "why": "never listed: an address of the source's list (its current page or data file), so its verdict could not be all-read; listed to learn what the archive holds of it"
+  },
+  {
+   "url": "hcisd.org/",
+   "from": "20170101",
+   "to": "20260930",
+   "filter": [
+    "statuscode:200"
+   ],
+   "collapse": "timestamp:10",
+   "station": "smartsites-harlingen-tx",
+   "why": "never listed: an address of the source's list (its current page or data file), so its verdict could not be all-read; listed to learn what the archive holds of it"
+  },
+  {
+   "url": "flaglerschools.com/",
+   "from": "20170101",
+   "to": "20260930",
+   "filter": [
+    "statuscode:200"
+   ],
+   "collapse": "timestamp:10",
+   "station": "smartsites-flagler-fl",
+   "why": "never listed: an address of the source's list (its current page or data file), so its verdict could not be all-read; listed to learn what the archive holds of it"
+  },
+  {
+   "url": "sumter.k12.fl.us/",
+   "from": "20170101",
+   "to": "20260930",
+   "filter": [
+    "statuscode:200"
+   ],
+   "collapse": "timestamp:10",
+   "station": "smartsites-sumter-fl",
+   "why": "never listed: an address of the source's list (its current page or data file), so its verdict could not be all-read; listed to learn what the archive holds of it"
+  },
+  {
+   "url": "mcallenisd.org/",
+   "from": "20170101",
+   "to": "20260930",
+   "filter": [
+    "statuscode:200"
+   ],
+   "collapse": "timestamp:10",
+   "station": "apptegy-mcallen-tx",
+   "why": "never listed: an address of the source's list (its current page or data file), so its verdict could not be all-read; listed to learn what the archive holds of it"
+  },
+  {
+   "url": "wjsd.org/",
+   "from": "20170101",
+   "to": "20260930",
+   "filter": [
+    "statuscode:200"
+   ],
+   "collapse": "timestamp:10",
+   "station": "apptegy-west-jefferson-id",
+   "why": "never listed: an address of the source's list (its current page or data file), so its verdict could not be all-read; listed to learn what the archive holds of it"
+  },
+  {
+   "url": "glendiveschools.com/",
+   "from": "20170101",
+   "to": "20260930",
+   "filter": [
+    "statuscode:200"
+   ],
+   "collapse": "timestamp:10",
+   "station": "apptegy-glendive-mt",
+   "why": "never listed: an address of the source's list (its current page or data file), so its verdict could not be all-read; listed to learn what the archive holds of it"
+  },
+  {
+   "url": "laredoisd.org/",
+   "from": "20170101",
+   "to": "20260930",
+   "filter": [
+    "statuscode:200"
+   ],
+   "collapse": "timestamp:10",
+   "station": "apptegy-laredo-tx",
+   "why": "never listed: an address of the source's list (its current page or data file), so its verdict could not be all-read; listed to learn what the archive holds of it"
+  },
+  {
+   "url": "wsh1.k12.wy.us/",
+   "from": "20170101",
+   "to": "20260930",
+   "filter": [
+    "statuscode:200"
+   ],
+   "collapse": "timestamp:10",
+   "station": "apptegy-washakie-1-wy",
+   "why": "never listed: an address of the source's list (its current page or data file), so its verdict could not be all-read; listed to learn what the archive holds of it"
+  },
+  {
+   "url": "okee.k12.fl.us/",
+   "from": "20170101",
+   "to": "20260930",
+   "filter": [
+    "statuscode:200"
+   ],
+   "collapse": "timestamp:10",
+   "station": "apptegy-okeechobee-fl",
+   "why": "never listed: an address of the source's list (its current page or data file), so its verdict could not be all-read; listed to learn what the archive holds of it"
+  },
+  {
+   "url": "sbcisd.net/",
+   "from": "20170101",
+   "to": "20260930",
+   "filter": [
+    "statuscode:200"
+   ],
+   "collapse": "timestamp:10",
+   "station": "finalsite-san-benito-tx",
+   "why": "never listed: an address of the source's list (its current page or data file), so its verdict could not be all-read; listed to learn what the archive holds of it"
+  },
+  {
+   "url": "plevnacougars.com/",
+   "from": "20170101",
+   "to": "20260930",
+   "filter": [
+    "statuscode:200"
+   ],
+   "collapse": "timestamp:10",
+   "station": "apptegy-plevna-mt",
+   "why": "never listed: an address of the source's list (its current page or data file), so its verdict could not be all-read; listed to learn what the archive holds of it"
+  },
+  {
+   "url": "bighorn1.com/",
+   "from": "20170101",
+   "to": "20260930",
+   "filter": [
+    "statuscode:200"
+   ],
+   "collapse": "timestamp:10",
+   "station": "apptegy-big-horn-1-wy",
+   "why": "never listed: an address of the source's list (its current page or data file), so its verdict could not be all-read; listed to learn what the archive holds of it"
+  },
+  {
+   "url": "episd.org/",
+   "from": "20170101",
+   "to": "20260930",
+   "filter": [
+    "statuscode:200"
+   ],
+   "collapse": "timestamp:10",
+   "station": "apptegy-el-paso-tx",
+   "why": "never listed: an address of the source's list (its current page or data file), so its verdict could not be all-read; listed to learn what the archive holds of it"
+  },
+  {
+   "url": "wisd.us/",
+   "from": "20170101",
+   "to": "20260930",
+   "filter": [
+    "statuscode:200"
+   ],
+   "collapse": "timestamp:10",
+   "station": "finalsite-weslaco-tx",
+   "why": "never listed: an address of the source's list (its current page or data file), so its verdict could not be all-read; listed to learn what the archive holds of it"
+  },
+  {
+   "url": "donnaisd.net/",
+   "from": "20170101",
+   "to": "20260930",
+   "filter": [
+    "statuscode:200"
+   ],
+   "collapse": "timestamp:10",
+   "station": "apptegy-donna-tx",
+   "why": "never listed: an address of the source's list (its current page or data file), so its verdict could not be all-read; listed to learn what the archive holds of it"
+  },
+  {
+   "url": "hotsprings1.org/",
+   "from": "20170101",
+   "to": "20260930",
+   "filter": [
+    "statuscode:200"
+   ],
+   "collapse": "timestamp:10",
+   "station": "edlio-hot-springs-1-wy",
+   "why": "never listed: an address of the source's list (its current page or data file), so its verdict could not be all-read; listed to learn what the archive holds of it"
+  },
+  {
+   "url": "myrgcgisd.org/",
+   "from": "20170101",
+   "to": "20260930",
+   "filter": [
+    "statuscode:200"
+   ],
+   "collapse": "timestamp:10",
+   "station": "apptegy-rio-grande-city-grulla-tx",
+   "why": "never listed: an address of the source's list (its current page or data file), so its verdict could not be all-read; listed to learn what the archive holds of it"
+  },
+  {
+   "url": "sisd.net/",
+   "from": "20170101",
+   "to": "20260930",
+   "filter": [
+    "statuscode:200"
+   ],
+   "collapse": "timestamp:10",
+   "station": "apptegy-socorro-tx",
+   "why": "never listed: an address of the source's list (its current page or data file), so its verdict could not be all-read; listed to learn what the archive holds of it"
+  },
+  {
+   "url": "yisd.net/",
+   "from": "20170101",
+   "to": "20260930",
+   "filter": [
+    "statuscode:200"
+   ],
+   "collapse": "timestamp:10",
+   "station": "apptegy-ysleta-tx",
+   "why": "never listed: an address of the source's list (its current page or data file), so its verdict could not be all-read; listed to learn what the archive holds of it"
+  },
+  {
+   "url": "sharylandisd.org/",
+   "from": "20170101",
+   "to": "20260930",
+   "filter": [
+    "statuscode:200"
+   ],
+   "collapse": "timestamp:10",
+   "station": "finalsite-sharyland-tx",
+   "why": "never listed: an address of the source's list (its current page or data file), so its verdict could not be all-read; listed to learn what the archive holds of it"
+  },
+  {
+   "url": "calallen.org/",
+   "from": "20170101",
+   "to": "20260930",
+   "filter": [
+    "statuscode:200"
+   ],
+   "collapse": "timestamp:10",
+   "station": "finalsite-calallen-tx",
+   "why": "never listed: an address of the source's list (its current page or data file), so its verdict could not be all-read; listed to learn what the archive holds of it"
+  },
+  {
+   "url": "romaisd.com/",
+   "from": "20170101",
+   "to": "20260930",
+   "filter": [
+    "statuscode:200"
+   ],
+   "collapse": "timestamp:10",
+   "station": "smartsites-roma-tx",
+   "why": "never listed: an address of the source's list (its current page or data file), so its verdict could not be all-read; listed to learn what the archive holds of it"
+  },
+  {
+   "url": "kingsvilleisd.com/",
+   "from": "20170101",
+   "to": "20260930",
+   "filter": [
+    "statuscode:200"
+   ],
+   "collapse": "timestamp:10",
+   "station": "edlio-kingsville-tx",
+   "why": "never listed: an address of the source's list (its current page or data file), so its verdict could not be all-read; listed to learn what the archive holds of it"
+  },
+  {
+   "url": "tmisd.us/",
+   "from": "20170101",
+   "to": "20260930",
+   "filter": [
+    "statuscode:200"
+   ],
+   "collapse": "timestamp:10",
+   "station": "smartsites-tuloso-midway-tx",
+   "why": "never listed: an address of the source's list (its current page or data file), so its verdict could not be all-read; listed to learn what the archive holds of it"
+  },
+  {
+   "url": "sintonisd.net/",
+   "from": "20170101",
+   "to": "20260930",
+   "filter": [
+    "statuscode:200"
+   ],
+   "collapse": "timestamp:10",
+   "station": "smartsites-sinton-tx",
+   "why": "never listed: an address of the source's list (its current page or data file), so its verdict could not be all-read; listed to learn what the archive holds of it"
+  },
+  {
+   "url": "robstownisd.org/",
+   "from": "20170101",
+   "to": "20260930",
+   "filter": [
+    "statuscode:200"
+   ],
+   "collapse": "timestamp:10",
+   "station": "edlio-robstown-tx",
+   "why": "never listed: an address of the source's list (its current page or data file), so its verdict could not be all-read; listed to learn what the archive holds of it"
+  },
+  {
+   "url": "dchsglendive.com/",
+   "from": "20170101",
+   "to": "20260930",
+   "filter": [
+    "statuscode:200"
+   ],
+   "collapse": "timestamp:10",
+   "station": "apptegy-dawson-hs-mt",
+   "why": "never listed: an address of the source's list (its current page or data file), so its verdict could not be all-read; listed to learn what the archive holds of it"
+  },
+  {
+   "url": "rfisd.us/",
+   "from": "20170101",
+   "to": "20260930",
+   "filter": [
+    "statuscode:200"
+   ],
+   "collapse": "timestamp:10",
+   "station": "edlio-rockport-fulton-tx",
+   "why": "never listed: an address of the source's list (its current page or data file), so its verdict could not be all-read; listed to learn what the archive holds of it"
+  },
+  {
+   "url": "zcisd.org/",
+   "from": "20170101",
+   "to": "20260930",
+   "filter": [
+    "statuscode:200"
+   ],
+   "collapse": "timestamp:10",
+   "station": "smartsites-zapata-county-tx",
+   "why": "never listed: an address of the source's list (its current page or data file), so its verdict could not be all-read; listed to learn what the archive holds of it"
+  },
+  {
+   "url": "ogisd.net/",
+   "from": "20170101",
+   "to": "20260930",
+   "filter": [
+    "statuscode:200"
+   ],
+   "collapse": "timestamp:10",
+   "station": "edlio-orange-grove-tx",
+   "why": "never listed: an address of the source's list (its current page or data file), so its verdict could not be all-read; listed to learn what the archive holds of it"
+  },
+  {
+   "url": "jhcisdpk12.org/",
+   "from": "20170101",
+   "to": "20260930",
+   "filter": [
+    "statuscode:200"
+   ],
+   "collapse": "timestamp:10",
+   "station": "edlio-jim-hogg-county-tx",
+   "why": "never listed: an address of the source's list (its current page or data file), so its verdict could not be all-read; listed to learn what the archive holds of it"
+  },
+  {
+   "url": "sgisd.net/",
+   "from": "20170101",
+   "to": "20260930",
+   "filter": [
+    "statuscode:200"
+   ],
+   "collapse": "timestamp:10",
+   "station": "edlio-santa-gertrudis-tx",
+   "why": "never listed: an address of the source's list (its current page or data file), so its verdict could not be all-read; listed to learn what the archive holds of it"
+  },
+  {
+   "url": "fpcarsonacademy.org/",
+   "from": "20170101",
+   "to": "20260930",
+   "filter": [
+    "statuscode:200"
+   ],
+   "collapse": "timestamp:10",
+   "station": "finalsite-fpc-vpaa-al",
+   "why": "never listed: an address of the source's list (its current page or data file), so its verdict could not be all-read; listed to learn what the archive holds of it"
+  }
+ ],
  "snapshots": [
   {
-   "timestamp": "20221109144500",
-   "url": "https://www.kgun9.com/weather/school-closings-delays",
-   "station": "scripps-kgun",
-   "why": "an unread capture of the station's old closings address (404 since 2019), read so that every capture of it is read (2022-11-09)"
+   "timestamp": "20190208220047",
+   "url": "https://www.davis.k12.ut.us/",
+   "station": "apptegy-davis-ut",
+   "why": "the February 2019 cold and snow (2019-02-09)"
   },
   {
-   "timestamp": "20170415062055",
-   "url": "http://www.kgun9.com/weather/school-closings-delays",
-   "station": "scripps-kgun",
-   "why": "an unread capture of the station's old closings address (404 since 2019), read so that every capture of it is read (2017-04-15)"
+   "timestamp": "20250122022026",
+   "url": "https://www.davis.k12.ut.us/",
+   "station": "apptegy-davis-ut",
+   "why": "the January 2025 cold (2025-01-22)"
   },
   {
-   "timestamp": "20200414135325",
-   "url": "https://www.ktnv.com/weather/school-closings-delays",
-   "station": "scripps-ktnv",
-   "why": "an unread capture of the station's old closings address (no page there since 2017), read so that every capture of it is read (2020-04-14)"
+   "timestamp": "20191212234041",
+   "url": "https://www.davis.k12.ut.us/",
+   "station": "apptegy-davis-ut",
+   "why": "storm day 2019-12-13 (market score 1.00)"
   },
   {
-   "timestamp": "20200421164541",
-   "url": "https://www.ktnv.com/weather/school-closings-delays",
-   "station": "scripps-ktnv",
-   "why": "an unread capture of the station's old closings address (no page there since 2017), read so that every capture of it is read (2020-04-22)"
+   "timestamp": "20191211223122",
+   "url": "https://www.davis.k12.ut.us/",
+   "station": "apptegy-davis-ut",
+   "why": "storm day 2019-12-12 (market score 1.00)"
   },
   {
-   "timestamp": "20200428130828",
-   "url": "https://www.ktnv.com/weather/school-closings-delays",
-   "station": "scripps-ktnv",
-   "why": "an unread capture of the station's old closings address (no page there since 2017), read so that every capture of it is read (2020-04-28)"
+   "timestamp": "20221108053947",
+   "url": "https://www.davis.k12.ut.us/",
+   "station": "apptegy-davis-ut",
+   "why": "storm day 2022-11-08 (market score 1.00)"
   },
   {
-   "timestamp": "20200519135357",
-   "url": "https://www.ktnv.com/weather/school-closings-delays",
-   "station": "scripps-ktnv",
-   "why": "an unread capture of the station's old closings address (no page there since 2017), read so that every capture of it is read (2020-05-19)"
+   "timestamp": "20221109111028",
+   "url": "https://www.davis.k12.ut.us/",
+   "station": "apptegy-davis-ut",
+   "why": "storm day 2022-11-09 (market score 1.00)"
   },
   {
-   "timestamp": "20200602130945",
-   "url": "https://www.ktnv.com/weather/school-closings-delays",
-   "station": "scripps-ktnv",
-   "why": "an unread capture of the station's old closings address (no page there since 2017), read so that every capture of it is read (2020-06-02)"
+   "timestamp": "20230223214826",
+   "url": "https://www.mcpsmt.org/",
+   "station": "finalsite-missoula-mt",
+   "why": "the Utah snow day of 22 February 2023 (2023-02-24)"
   },
   {
-   "timestamp": "20200609161126",
-   "url": "https://www.ktnv.com/weather/school-closings-delays",
-   "station": "scripps-ktnv",
-   "why": "an unread capture of the station's old closings address (no page there since 2017), read so that every capture of it is read (2020-06-10)"
+   "timestamp": "20190209005148",
+   "url": "https://www.mcpsmt.org/",
+   "station": "finalsite-missoula-mt",
+   "why": "the February 2019 cold and snow (2019-02-09)"
   },
   {
-   "timestamp": "20200616133200",
-   "url": "https://www.ktnv.com/weather/school-closings-delays",
-   "station": "scripps-ktnv",
-   "why": "an unread capture of the station's old closings address (no page there since 2017), read so that every capture of it is read (2020-06-16)"
+   "timestamp": "20210214051838",
+   "url": "https://www.mcpsmt.org/",
+   "station": "finalsite-missoula-mt",
+   "why": "the February 2021 cold wave (2021-02-14)"
   },
   {
-   "timestamp": "20200630130808",
-   "url": "https://www.ktnv.com/weather/school-closings-delays",
-   "station": "scripps-ktnv",
-   "why": "an unread capture of the station's old closings address (no page there since 2017), read so that every capture of it is read (2020-06-30)"
+   "timestamp": "20250118112626",
+   "url": "https://www.mcpsmt.org/",
+   "station": "finalsite-missoula-mt",
+   "why": "the January 2025 cold (2025-01-18)"
   },
   {
-   "timestamp": "20200707130600",
-   "url": "https://www.ktnv.com/weather/school-closings-delays",
-   "station": "scripps-ktnv",
-   "why": "an unread capture of the station's old closings address (no page there since 2017), read so that every capture of it is read (2020-07-07)"
+   "timestamp": "20250119112144",
+   "url": "https://www.mcpsmt.org/",
+   "station": "finalsite-missoula-mt",
+   "why": "the January 2025 cold (2025-01-19)"
   },
   {
-   "timestamp": "20200714132545",
-   "url": "https://www.ktnv.com/weather/school-closings-delays",
-   "station": "scripps-ktnv",
-   "why": "an unread capture of the station's old closings address (no page there since 2017), read so that every capture of it is read (2020-07-14)"
+   "timestamp": "20250120112116",
+   "url": "https://www.mcpsmt.org/",
+   "station": "finalsite-missoula-mt",
+   "why": "the January 2025 cold (2025-01-20)"
   },
   {
-   "timestamp": "20200721131757",
-   "url": "https://www.ktnv.com/weather/school-closings-delays",
-   "station": "scripps-ktnv",
-   "why": "an unread capture of the station's old closings address (no page there since 2017), read so that every capture of it is read (2020-07-21)"
+   "timestamp": "20250121112456",
+   "url": "https://www.mcpsmt.org/",
+   "station": "finalsite-missoula-mt",
+   "why": "the January 2025 cold (2025-01-21)"
   },
   {
-   "timestamp": "20200728132438",
-   "url": "https://www.ktnv.com/weather/school-closings-delays",
-   "station": "scripps-ktnv",
-   "why": "an unread capture of the station's old closings address (no page there since 2017), read so that every capture of it is read (2020-07-28)"
+   "timestamp": "20250122120532",
+   "url": "https://www.mcpsmt.org/",
+   "station": "finalsite-missoula-mt",
+   "why": "the January 2025 cold (2025-01-22)"
   },
   {
-   "timestamp": "20200804141058",
-   "url": "https://www.ktnv.com/weather/school-closings-delays",
-   "station": "scripps-ktnv",
-   "why": "an unread capture of the station's old closings address (no page there since 2017), read so that every capture of it is read (2020-08-04)"
+   "timestamp": "20240523015812",
+   "url": "https://www.mcpsmt.org/",
+   "station": "finalsite-missoula-mt",
+   "why": "storm day 2024-05-23 (market score 1.00)"
   },
   {
-   "timestamp": "20200811133046",
-   "url": "https://www.ktnv.com/weather/school-closings-delays",
-   "station": "scripps-ktnv",
-   "why": "an unread capture of the station's old closings address (no page there since 2017), read so that every capture of it is read (2020-08-11)"
+   "timestamp": "20250131122618",
+   "url": "https://www.mcpsmt.org/",
+   "station": "finalsite-missoula-mt",
+   "why": "storm day 2025-01-31 (market score 1.00)"
   },
   {
-   "timestamp": "20200818130945",
-   "url": "https://www.ktnv.com/weather/school-closings-delays",
-   "station": "scripps-ktnv",
-   "why": "an unread capture of the station's old closings address (no page there since 2017), read so that every capture of it is read (2020-08-18)"
+   "timestamp": "20250216232456",
+   "url": "https://www.mcpsmt.org/",
+   "station": "finalsite-missoula-mt",
+   "why": "storm day 2025-02-17 (market score 1.00)"
   },
   {
-   "timestamp": "20200901135312",
-   "url": "https://www.ktnv.com/weather/school-closings-delays",
-   "station": "scripps-ktnv",
-   "why": "an unread capture of the station's old closings address (no page there since 2017), read so that every capture of it is read (2020-09-01)"
+   "timestamp": "20250218031236",
+   "url": "https://www.mcpsmt.org/",
+   "station": "finalsite-missoula-mt",
+   "why": "storm day 2025-02-18 (market score 1.00)"
   },
   {
-   "timestamp": "20200908135321",
-   "url": "https://www.ktnv.com/weather/school-closings-delays",
-   "station": "scripps-ktnv",
-   "why": "an unread capture of the station's old closings address (no page there since 2017), read so that every capture of it is read (2020-09-08)"
+   "timestamp": "20241104031441",
+   "url": "https://www.mcpsmt.org/",
+   "station": "finalsite-missoula-mt",
+   "why": "storm day 2024-11-04 (market score 1.00)"
   },
   {
-   "timestamp": "20200915132340",
-   "url": "https://www.ktnv.com/weather/school-closings-delays",
-   "station": "scripps-ktnv",
-   "why": "an unread capture of the station's old closings address (no page there since 2017), read so that every capture of it is read (2020-09-15)"
+   "timestamp": "20221201024456",
+   "url": "https://www.mcpsmt.org/",
+   "station": "finalsite-missoula-mt",
+   "why": "storm day 2022-12-01 (market score 1.00)"
   },
   {
-   "timestamp": "20200922131923",
-   "url": "https://www.ktnv.com/weather/school-closings-delays",
-   "station": "scripps-ktnv",
-   "why": "an unread capture of the station's old closings address (no page there since 2017), read so that every capture of it is read (2020-09-22)"
+   "timestamp": "20251205001742",
+   "url": "https://www.mcpsmt.org/",
+   "station": "finalsite-missoula-mt",
+   "why": "storm day 2025-12-05 (market score 1.00)"
   },
   {
-   "timestamp": "20200929133451",
-   "url": "https://www.ktnv.com/weather/school-closings-delays",
-   "station": "scripps-ktnv",
-   "why": "an unread capture of the station's old closings address (no page there since 2017), read so that every capture of it is read (2020-09-29)"
+   "timestamp": "20221219133701",
+   "url": "https://www.bsd7.org/",
+   "station": "finalsite-bozeman-mt",
+   "why": "the December 2022 cold wave in the northern Rockies (2022-12-19)"
   },
   {
-   "timestamp": "20201020132701",
-   "url": "https://www.ktnv.com/weather/school-closings-delays",
-   "station": "scripps-ktnv",
-   "why": "an unread capture of the station's old closings address (no page there since 2017), read so that every capture of it is read (2020-10-20)"
+   "timestamp": "20221220101357",
+   "url": "https://www.bsd7.org/",
+   "station": "finalsite-bozeman-mt",
+   "why": "the December 2022 cold wave in the northern Rockies (2022-12-20)"
   },
   {
-   "timestamp": "20201110132401",
-   "url": "https://www.ktnv.com/weather/school-closings-delays",
-   "station": "scripps-ktnv",
-   "why": "an unread capture of the station's old closings address (no page there since 2017), read so that every capture of it is read (2020-11-10)"
+   "timestamp": "20221221105410",
+   "url": "https://www.bsd7.org/",
+   "station": "finalsite-bozeman-mt",
+   "why": "the December 2022 cold wave in the northern Rockies (2022-12-21)"
   },
   {
-   "timestamp": "20201117132405",
-   "url": "https://www.ktnv.com/weather/school-closings-delays",
-   "station": "scripps-ktnv",
-   "why": "an unread capture of the station's old closings address (no page there since 2017), read so that every capture of it is read (2020-11-17)"
+   "timestamp": "20221221163301",
+   "url": "https://www.bsd7.org/",
+   "station": "finalsite-bozeman-mt",
+   "why": "the December 2022 cold wave in the northern Rockies (2022-12-22)"
   },
   {
-   "timestamp": "20201124131552",
-   "url": "https://www.ktnv.com/weather/school-closings-delays",
-   "station": "scripps-ktnv",
-   "why": "an unread capture of the station's old closings address (no page there since 2017), read so that every capture of it is read (2020-11-24)"
+   "timestamp": "20221222173940",
+   "url": "https://www.bsd7.org/",
+   "station": "finalsite-bozeman-mt",
+   "why": "the December 2022 cold wave in the northern Rockies (2022-12-23)"
   },
   {
-   "timestamp": "20201201131628",
-   "url": "https://www.ktnv.com/weather/school-closings-delays",
-   "station": "scripps-ktnv",
-   "why": "an unread capture of the station's old closings address (no page there since 2017), read so that every capture of it is read (2020-12-01)"
+   "timestamp": "20221223215805",
+   "url": "https://www.bsd7.org/",
+   "station": "finalsite-bozeman-mt",
+   "why": "the December 2022 cold wave in the northern Rockies (2022-12-24)"
   },
   {
-   "timestamp": "20201208132542",
-   "url": "https://www.ktnv.com/weather/school-closings-delays",
-   "station": "scripps-ktnv",
-   "why": "an unread capture of the station's old closings address (no page there since 2017), read so that every capture of it is read (2020-12-08)"
+   "timestamp": "20240112105829",
+   "url": "https://www.bsd7.org/",
+   "station": "finalsite-bozeman-mt",
+   "why": "the January 2024 cold wave in the northern Rockies (2024-01-12)"
   },
   {
-   "timestamp": "20201215131146",
-   "url": "https://www.ktnv.com/weather/school-closings-delays",
-   "station": "scripps-ktnv",
-   "why": "an unread capture of the station's old closings address (no page there since 2017), read so that every capture of it is read (2020-12-15)"
+   "timestamp": "20240115144957",
+   "url": "https://www.bsd7.org/",
+   "station": "finalsite-bozeman-mt",
+   "why": "the January 2024 cold wave in the northern Rockies (2024-01-15)"
   },
   {
-   "timestamp": "20201222130817",
-   "url": "https://www.ktnv.com/weather/school-closings-delays",
-   "station": "scripps-ktnv",
-   "why": "an unread capture of the station's old closings address (no page there since 2017), read so that every capture of it is read (2020-12-22)"
+   "timestamp": "20240116133358",
+   "url": "https://www.bsd7.org/",
+   "station": "finalsite-bozeman-mt",
+   "why": "the January 2024 cold wave in the northern Rockies (2024-01-16)"
   },
   {
-   "timestamp": "20201229131545",
-   "url": "https://www.ktnv.com/weather/school-closings-delays",
-   "station": "scripps-ktnv",
-   "why": "an unread capture of the station's old closings address (no page there since 2017), read so that every capture of it is read (2020-12-29)"
+   "timestamp": "20240117102929",
+   "url": "https://www.bsd7.org/",
+   "station": "finalsite-bozeman-mt",
+   "why": "the January 2024 cold wave in the northern Rockies (2024-01-17)"
   },
   {
-   "timestamp": "20210105135439",
-   "url": "https://www.ktnv.com/weather/school-closings-delays",
-   "station": "scripps-ktnv",
-   "why": "an unread capture of the station's old closings address (no page there since 2017), read so that every capture of it is read (2021-01-05)"
+   "timestamp": "20240118124335",
+   "url": "https://www.bsd7.org/",
+   "station": "finalsite-bozeman-mt",
+   "why": "the January 2024 cold wave in the northern Rockies (2024-01-18)"
   },
   {
-   "timestamp": "20210126133626",
-   "url": "https://www.ktnv.com/weather/school-closings-delays",
-   "station": "scripps-ktnv",
-   "why": "an unread capture of the station's old closings address (no page there since 2017), read so that every capture of it is read (2021-01-26)"
+   "timestamp": "20240118161933",
+   "url": "https://www.bsd7.org/",
+   "station": "finalsite-bozeman-mt",
+   "why": "the January 2024 cold wave in the northern Rockies (2024-01-19)"
   },
   {
-   "timestamp": "20210202134250",
-   "url": "https://www.ktnv.com/weather/school-closings-delays",
-   "station": "scripps-ktnv",
-   "why": "an unread capture of the station's old closings address (no page there since 2017), read so that every capture of it is read (2021-02-02)"
+   "timestamp": "20240111094555",
+   "url": "https://www.bsd7.org/",
+   "station": "finalsite-bozeman-mt",
+   "why": "the January 2024 cold wave in the northern Rockies (2024-01-11)"
   },
   {
-   "timestamp": "20210209131223",
-   "url": "https://www.ktnv.com/weather/school-closings-delays",
-   "station": "scripps-ktnv",
-   "why": "an unread capture of the station's old closings address (no page there since 2017), read so that every capture of it is read (2021-02-09)"
+   "timestamp": "20240112213735",
+   "url": "https://www.bsd7.org/",
+   "station": "finalsite-bozeman-mt",
+   "why": "the January 2024 cold wave in the northern Rockies (2024-01-13)"
   },
   {
-   "timestamp": "20210216135528",
-   "url": "https://www.ktnv.com/weather/school-closings-delays",
-   "station": "scripps-ktnv",
-   "why": "an unread capture of the station's old closings address (no page there since 2017), read so that every capture of it is read (2021-02-16)"
+   "timestamp": "20240113213721",
+   "url": "https://www.bsd7.org/",
+   "station": "finalsite-bozeman-mt",
+   "why": "the January 2024 cold wave in the northern Rockies (2024-01-14)"
   },
   {
-   "timestamp": "20210315164558",
-   "url": "https://www.ktnv.com/weather/school-closings-delays",
-   "station": "scripps-ktnv",
-   "why": "an unread capture of the station's old closings address (no page there since 2017), read so that every capture of it is read (2021-03-16)"
+   "timestamp": "20221219020013",
+   "url": "https://www.ccsdut.org/",
+   "station": "finalsite-cache-ut",
+   "why": "the December 2022 cold wave in the northern Rockies (2022-12-19)"
   },
   {
-   "timestamp": "20200316032929",
-   "url": "https://www.ktnv.com/weather/school-closings-delays",
-   "station": "scripps-ktnv",
-   "why": "an unread capture of the station's old closings address (no page there since 2017), read so that every capture of it is read (2020-03-16)"
+   "timestamp": "20190208220012",
+   "url": "https://www.ccsdut.org/",
+   "station": "finalsite-cache-ut",
+   "why": "the February 2019 cold and snow (2019-02-09)"
   },
   {
-   "timestamp": "20200321022929",
-   "url": "https://www.ktnv.com/weather/school-closings-delays",
-   "station": "scripps-ktnv",
-   "why": "an unread capture of the station's old closings address (no page there since 2017), read so that every capture of it is read (2020-03-21)"
+   "timestamp": "20250121015023",
+   "url": "https://www.ccsdut.org/",
+   "station": "finalsite-cache-ut",
+   "why": "the January 2025 cold (2025-01-21)"
   },
   {
-   "timestamp": "20210515180907",
-   "url": "https://www.ktnv.com/weather/school-closings-delays",
-   "station": "scripps-ktnv",
-   "why": "an unread capture of the station's old closings address (no page there since 2017), read so that every capture of it is read (2021-05-16)"
+   "timestamp": "20220411142839",
+   "url": "https://www.ccsdut.org/",
+   "station": "finalsite-cache-ut",
+   "why": "storm day 2022-04-11 (market score 1.00)"
   },
   {
-   "timestamp": "20210715212747",
-   "url": "https://www.ktnv.com/weather/school-closings-delays",
-   "station": "scripps-ktnv",
-   "why": "an unread capture of the station's old closings address (no page there since 2017), read so that every capture of it is read (2021-07-16)"
+   "timestamp": "20220106023035",
+   "url": "https://www.ccsdut.org/",
+   "station": "finalsite-cache-ut",
+   "why": "storm day 2022-01-06 (market score 1.00)"
   },
   {
-   "timestamp": "20240717051228",
-   "url": "https://www.ktnv.com/weather/school-closings-delays",
-   "station": "scripps-ktnv",
-   "why": "an unread capture of the station's old closings address (no page there since 2017), read so that every capture of it is read (2024-07-17)"
+   "timestamp": "20220105023055",
+   "url": "https://www.ccsdut.org/",
+   "station": "finalsite-cache-ut",
+   "why": "storm day 2022-01-05 (market score 1.00)"
   },
   {
-   "timestamp": "20250730072747",
-   "url": "https://www.ktnv.com/weather/school-closings-delays",
-   "station": "scripps-ktnv",
-   "why": "an unread capture of the station's old closings address (no page there since 2017), read so that every capture of it is read (2025-07-30)"
+   "timestamp": "20251204162050",
+   "url": "https://www.ccsdut.org/",
+   "station": "finalsite-cache-ut",
+   "why": "storm day 2025-12-05 (market score 1.00)"
   },
   {
-   "timestamp": "20220928113305",
-   "url": "https://www.sbac.edu/",
-   "station": "apptegy-alachua-fl",
-   "why": "Hurricane Ian, at the district's former homepage address (2022-09-28)"
+   "timestamp": "20221219020030",
+   "url": "https://www.ogdensd.org/",
+   "station": "apptegy-ogden-ut",
+   "why": "the December 2022 cold wave in the northern Rockies (2022-12-19)"
   },
   {
-   "timestamp": "20220927012914",
-   "url": "https://www.sbac.edu/",
-   "station": "apptegy-alachua-fl",
-   "why": "Hurricane Ian, at the district's former homepage address (2022-09-27)"
+   "timestamp": "20190206131135",
+   "url": "https://www.ogdensd.org/",
+   "station": "apptegy-ogden-ut",
+   "why": "the February 2019 cold and snow (2019-02-06)"
   },
   {
-   "timestamp": "20220927185139",
-   "url": "https://www.sbac.edu",
-   "station": "apptegy-alachua-fl",
-   "why": "Hurricane Ian, at the district's former homepage address (2022-09-28)"
+   "timestamp": "20190208220144",
+   "url": "https://www.ogdensd.org/",
+   "station": "apptegy-ogden-ut",
+   "why": "the February 2019 cold and snow (2019-02-09)"
   },
   {
-   "timestamp": "20220928001109",
-   "url": "https://www.sbac.edu/",
-   "station": "apptegy-alachua-fl",
-   "why": "Hurricane Ian, at the district's former homepage address (2022-09-28)"
+   "timestamp": "20250119193756",
+   "url": "https://www.ogdensd.org/",
+   "station": "apptegy-ogden-ut",
+   "why": "the January 2025 cold (2025-01-20)"
   },
   {
-   "timestamp": "20221108113713",
-   "url": "https://www.sbac.edu/",
-   "station": "apptegy-alachua-fl",
-   "why": "Hurricane Nicole, at the former homepage address (2022-11-08)"
+   "timestamp": "20230331010908",
+   "url": "https://www.ogdensd.org/",
+   "station": "apptegy-ogden-ut",
+   "why": "storm day 2023-03-31 (market score 1.00)"
   },
   {
-   "timestamp": "20221109113710",
-   "url": "https://www.sbac.edu/",
-   "station": "apptegy-alachua-fl",
-   "why": "Hurricane Nicole, at the former homepage address (2022-11-09)"
+   "timestamp": "20250118133436",
+   "url": "https://www.tcsd.org/",
+   "station": "finalsite-teton-wy",
+   "why": "the January 2025 cold (2025-01-18)"
   },
   {
-   "timestamp": "20221110131820",
-   "url": "https://www.sbac.edu/",
-   "station": "apptegy-alachua-fl",
-   "why": "Hurricane Nicole, at the former homepage address (2022-11-10)"
+   "timestamp": "20250119115416",
+   "url": "https://www.tcsd.org/",
+   "station": "finalsite-teton-wy",
+   "why": "the January 2025 cold (2025-01-19)"
   },
   {
-   "timestamp": "20221111113707",
-   "url": "https://www.sbac.edu/",
-   "station": "apptegy-alachua-fl",
-   "why": "Hurricane Nicole, at the former homepage address (2022-11-11)"
+   "timestamp": "20250120114742",
+   "url": "https://www.tcsd.org/",
+   "station": "finalsite-teton-wy",
+   "why": "the January 2025 cold (2025-01-20)"
   },
   {
-   "timestamp": "20221108234822",
-   "url": "https://www.sbac.edu/",
-   "station": "apptegy-alachua-fl",
-   "why": "Hurricane Nicole, at the former homepage address (2022-11-09)"
+   "timestamp": "20250121115558",
+   "url": "https://www.tcsd.org/",
+   "station": "finalsite-teton-wy",
+   "why": "the January 2025 cold (2025-01-21)"
   },
   {
-   "timestamp": "20221110233704",
-   "url": "https://www.sbac.edu/",
-   "station": "apptegy-alachua-fl",
-   "why": "Hurricane Nicole, at the former homepage address (2022-11-11)"
+   "timestamp": "20250122114956",
+   "url": "https://www.tcsd.org/",
+   "station": "finalsite-teton-wy",
+   "why": "the January 2025 cold (2025-01-22)"
   },
   {
-   "timestamp": "20221111234938",
-   "url": "https://www.sbac.edu/",
-   "station": "apptegy-alachua-fl",
-   "why": "Hurricane Nicole, at the former homepage address (2022-11-12)"
+   "timestamp": "20251209035511",
+   "url": "https://www.tcsd.org/",
+   "station": "finalsite-teton-wy",
+   "why": "storm day 2025-12-09 (market score 1.00)"
   },
   {
-   "timestamp": "20230829103718",
-   "url": "https://www.sbac.edu/",
-   "station": "apptegy-alachua-fl",
-   "why": "Hurricane Idalia, at the former homepage address (2023-08-29)"
+   "timestamp": "20240226152257",
+   "url": "https://www.tcsd.org:443/",
+   "station": "finalsite-teton-wy",
+   "why": "storm day 2024-02-26 (market score 1.00)"
   },
   {
-   "timestamp": "20230829113944",
-   "url": "https://www.sbac.edu/",
-   "station": "apptegy-alachua-fl",
-   "why": "Hurricane Idalia, at the former homepage address (2023-08-29)"
+   "timestamp": "20251205000117",
+   "url": "https://www.tcsd.org/",
+   "station": "finalsite-teton-wy",
+   "why": "storm day 2025-12-05 (market score 1.00)"
   },
   {
-   "timestamp": "20240924112358",
-   "url": "https://www.sbac.edu/",
-   "station": "apptegy-alachua-fl",
-   "why": "Hurricane Helene, at the former homepage address (2024-09-24)"
+   "timestamp": "20221220084845",
+   "url": "https://www.ifschools.org/",
+   "station": "finalsite-idaho-falls-id",
+   "why": "the December 2022 cold wave in the northern Rockies (2022-12-20)"
   },
   {
-   "timestamp": "20240924113722",
-   "url": "https://www.sbac.edu/",
-   "station": "apptegy-alachua-fl",
-   "why": "Hurricane Helene, at the former homepage address (2024-09-24)"
+   "timestamp": "20250121112054",
+   "url": "https://www.ifschools.org/",
+   "station": "finalsite-idaho-falls-id",
+   "why": "the January 2025 cold (2025-01-21)"
   },
   {
-   "timestamp": "20240925113657",
-   "url": "https://www.sbac.edu/",
-   "station": "apptegy-alachua-fl",
-   "why": "Hurricane Helene, at the former homepage address (2024-09-25)"
+   "timestamp": "20250119022741",
+   "url": "https://www.ifschools.org/",
+   "station": "finalsite-idaho-falls-id",
+   "why": "the January 2025 cold (2025-01-19)"
   },
   {
-   "timestamp": "20240926121117",
-   "url": "https://www.sbac.edu/",
-   "station": "apptegy-alachua-fl",
-   "why": "Hurricane Helene, at the former homepage address (2024-09-26)"
+   "timestamp": "20240226134125",
+   "url": "https://www.ifschools.org/",
+   "station": "finalsite-idaho-falls-id",
+   "why": "storm day 2024-02-26 (market score 1.00)"
   },
   {
-   "timestamp": "20240927123152",
-   "url": "https://www.sbac.edu/",
-   "station": "apptegy-alachua-fl",
-   "why": "Hurricane Helene, at the former homepage address (2024-09-27)"
+   "timestamp": "20230315060449",
+   "url": "https://www.ifschools.org/",
+   "station": "finalsite-idaho-falls-id",
+   "why": "storm day 2023-03-15 (market score 1.00)"
   },
   {
-   "timestamp": "20240924233719",
-   "url": "https://www.sbac.edu/",
-   "station": "apptegy-alachua-fl",
-   "why": "Hurricane Helene, at the former homepage address (2024-09-25)"
+   "timestamp": "20210127131130",
+   "url": "https://www.ifschools.org/",
+   "station": "finalsite-idaho-falls-id",
+   "why": "storm day 2021-01-27 (market score 1.00)"
   },
   {
-   "timestamp": "20240926234702",
-   "url": "https://www.sbac.edu/",
-   "station": "apptegy-alachua-fl",
-   "why": "Hurricane Helene, at the former homepage address (2024-09-27)"
+   "timestamp": "20250212212032",
+   "url": "https://www.ifschools.org/",
+   "station": "finalsite-idaho-falls-id",
+   "why": "storm day 2025-02-13 (market score 1.00)"
   },
   {
-   "timestamp": "20241007133117",
-   "url": "https://www.sbac.edu/",
-   "station": "apptegy-alachua-fl",
-   "why": "Hurricane Milton, at the former homepage address (2024-10-07)"
+   "timestamp": "20240111113517",
+   "url": "https://www.tooeleschools.org/",
+   "station": "finalsite-tooele-ut",
+   "why": "the January 2024 cold wave in the northern Rockies (2024-01-11)"
   },
   {
-   "timestamp": "20241010024131",
-   "url": "https://www.sbac.edu/",
-   "station": "apptegy-alachua-fl",
-   "why": "Hurricane Milton, at the former homepage address (2024-10-10)"
+   "timestamp": "20240112131428",
+   "url": "https://www.tooeleschools.org/",
+   "station": "finalsite-tooele-ut",
+   "why": "the January 2024 cold wave in the northern Rockies (2024-01-12)"
   },
   {
-   "timestamp": "20221001121129",
-   "url": "https://www.sbac.edu/",
-   "station": "apptegy-alachua-fl",
-   "why": "an unread capture of the district's former homepage address, read so that every capture of it is read (2022-10-01)"
+   "timestamp": "20240113113543",
+   "url": "https://www.tooeleschools.org/",
+   "station": "finalsite-tooele-ut",
+   "why": "the January 2024 cold wave in the northern Rockies (2024-01-13)"
   },
   {
-   "timestamp": "20221002124401",
-   "url": "https://www.sbac.edu/",
-   "station": "apptegy-alachua-fl",
-   "why": "an unread capture of the district's former homepage address, read so that every capture of it is read (2022-10-02)"
+   "timestamp": "20240114113502",
+   "url": "https://www.tooeleschools.org/",
+   "station": "finalsite-tooele-ut",
+   "why": "the January 2024 cold wave in the northern Rockies (2024-01-14)"
   },
   {
-   "timestamp": "20221004134442",
-   "url": "https://www.sbac.edu/",
-   "station": "apptegy-alachua-fl",
-   "why": "an unread capture of the district's former homepage address, read so that every capture of it is read (2022-10-04)"
+   "timestamp": "20240115113612",
+   "url": "https://www.tooeleschools.org/",
+   "station": "finalsite-tooele-ut",
+   "why": "the January 2024 cold wave in the northern Rockies (2024-01-15)"
   },
   {
-   "timestamp": "20221005145921",
-   "url": "https://www.sbac.edu/",
-   "station": "apptegy-alachua-fl",
-   "why": "an unread capture of the district's former homepage address, read so that every capture of it is read (2022-10-05)"
+   "timestamp": "20240116151543",
+   "url": "https://www.tooeleschools.org/",
+   "station": "finalsite-tooele-ut",
+   "why": "the January 2024 cold wave in the northern Rockies (2024-01-16)"
   },
   {
-   "timestamp": "20221006114032",
-   "url": "https://www.sbac.edu/",
-   "station": "apptegy-alachua-fl",
-   "why": "an unread capture of the district's former homepage address, read so that every capture of it is read (2022-10-06)"
+   "timestamp": "20240117121030",
+   "url": "https://www.tooeleschools.org/",
+   "station": "finalsite-tooele-ut",
+   "why": "the January 2024 cold wave in the northern Rockies (2024-01-17)"
   },
   {
-   "timestamp": "20221107113719",
-   "url": "https://www.sbac.edu/",
-   "station": "apptegy-alachua-fl",
-   "why": "an unread capture of the district's former homepage address, read so that every capture of it is read (2022-11-07)"
+   "timestamp": "20240118110153",
+   "url": "https://www.tooeleschools.org/",
+   "station": "finalsite-tooele-ut",
+   "why": "the January 2024 cold wave in the northern Rockies (2024-01-18)"
   },
   {
-   "timestamp": "20240803123704",
-   "url": "https://www.sbac.edu/",
-   "station": "apptegy-alachua-fl",
-   "why": "an unread capture of the district's former homepage address, read so that every capture of it is read (2024-08-03)"
+   "timestamp": "20221219101210",
+   "url": "https://www.besd.net/",
+   "station": "apptegy-box-elder-ut",
+   "why": "the December 2022 cold wave in the northern Rockies (2022-12-19)"
   },
   {
-   "timestamp": "20240803142458",
-   "url": "https://www.sbac.edu",
-   "station": "apptegy-alachua-fl",
-   "why": "an unread capture of the district's former homepage address, read so that every capture of it is read (2024-08-03)"
+   "timestamp": "20221220101059",
+   "url": "https://www.besd.net/",
+   "station": "apptegy-box-elder-ut",
+   "why": "the December 2022 cold wave in the northern Rockies (2022-12-20)"
   },
   {
-   "timestamp": "20240804133332",
-   "url": "https://www.sbac.edu/",
-   "station": "apptegy-alachua-fl",
-   "why": "an unread capture of the district's former homepage address, read so that every capture of it is read (2024-08-04)"
+   "timestamp": "20221223110322",
+   "url": "https://www.besd.net/",
+   "station": "apptegy-box-elder-ut",
+   "why": "the December 2022 cold wave in the northern Rockies (2022-12-23)"
   },
   {
-   "timestamp": "20240805140929",
-   "url": "https://www.sbac.edu/",
-   "station": "apptegy-alachua-fl",
-   "why": "an unread capture of the district's former homepage address, read so that every capture of it is read (2024-08-05)"
+   "timestamp": "20240111213333",
+   "url": "https://www.besd.net/",
+   "station": "apptegy-box-elder-ut",
+   "why": "the January 2024 cold wave in the northern Rockies (2024-01-12)"
   },
   {
-   "timestamp": "20240928172231",
-   "url": "https://www.sbac.edu/",
-   "station": "apptegy-alachua-fl",
-   "why": "an unread capture of the district's former homepage address, read so that every capture of it is read (2024-09-29)"
+   "timestamp": "20240116011641",
+   "url": "https://www.besd.net/",
+   "station": "apptegy-box-elder-ut",
+   "why": "the January 2024 cold wave in the northern Rockies (2024-01-16)"
   },
   {
-   "timestamp": "20240929124837",
-   "url": "https://www.sbac.edu/",
-   "station": "apptegy-alachua-fl",
-   "why": "an unread capture of the district's former homepage address, read so that every capture of it is read (2024-09-29)"
+   "timestamp": "20190208220018",
+   "url": "https://besd.net/",
+   "station": "apptegy-box-elder-ut",
+   "why": "the February 2019 cold and snow (2019-02-09)"
   },
   {
-   "timestamp": "20240930115839",
-   "url": "https://www.sbac.edu/",
-   "station": "apptegy-alachua-fl",
-   "why": "an unread capture of the district's former homepage address, read so that every capture of it is read (2024-09-30)"
+   "timestamp": "20240109133207",
+   "url": "https://www.besd.net/",
+   "station": "apptegy-box-elder-ut",
+   "why": "storm day 2024-01-09 (market score 1.00)"
   },
   {
-   "timestamp": "20221001033201",
-   "url": "https://www.sbac.edu/",
-   "station": "apptegy-alachua-fl",
-   "why": "an unread capture of the district's former homepage address, read so that every capture of it is read (2022-10-01)"
+   "timestamp": "20231130214529",
+   "url": "https://www.besd.net/",
+   "station": "apptegy-box-elder-ut",
+   "why": "storm day 2023-12-01 (market score 1.00)"
   },
   {
-   "timestamp": "20221001033314",
-   "url": "https://www.sbac.edu/",
-   "station": "apptegy-alachua-fl",
-   "why": "an unread capture of the district's former homepage address, read so that every capture of it is read (2022-10-01)"
+   "timestamp": "20190228143217",
+   "url": "https://www.blaineschools.org/",
+   "station": "finalsite-blaine-id",
+   "why": "the February 2019 cold and snow (2019-02-28)"
   },
   {
-   "timestamp": "20221003002019",
-   "url": "https://www.sbac.edu/",
-   "station": "apptegy-alachua-fl",
-   "why": "an unread capture of the district's former homepage address, read so that every capture of it is read (2022-10-03)"
+   "timestamp": "20190207081346",
+   "url": "https://www.blaineschools.org/",
+   "station": "finalsite-blaine-id",
+   "why": "the February 2019 cold and snow (2019-02-07)"
   },
   {
-   "timestamp": "20221004000422",
-   "url": "https://www.sbac.edu/",
-   "station": "apptegy-alachua-fl",
-   "why": "an unread capture of the district's former homepage address, read so that every capture of it is read (2022-10-04)"
+   "timestamp": "20250118110756",
+   "url": "https://www.blaineschools.org/",
+   "station": "finalsite-blaine-id",
+   "why": "the January 2025 cold (2025-01-18)"
   },
   {
-   "timestamp": "20221004075403",
-   "url": "https://www.sbac.edu/",
-   "station": "apptegy-alachua-fl",
-   "why": "an unread capture of the district's former homepage address, read so that every capture of it is read (2022-10-04)"
+   "timestamp": "20250119104308",
+   "url": "https://www.blaineschools.org/",
+   "station": "finalsite-blaine-id",
+   "why": "the January 2025 cold (2025-01-19)"
   },
   {
-   "timestamp": "20221005030217",
-   "url": "https://www.sbac.edu/",
-   "station": "apptegy-alachua-fl",
-   "why": "an unread capture of the district's former homepage address, read so that every capture of it is read (2022-10-05)"
+   "timestamp": "20250120104426",
+   "url": "https://www.blaineschools.org/",
+   "station": "finalsite-blaine-id",
+   "why": "the January 2025 cold (2025-01-20)"
   },
   {
-   "timestamp": "20221006011821",
-   "url": "https://www.sbac.edu/",
-   "station": "apptegy-alachua-fl",
-   "why": "an unread capture of the district's former homepage address, read so that every capture of it is read (2022-10-06)"
+   "timestamp": "20250121111343",
+   "url": "https://www.blaineschools.org/",
+   "station": "finalsite-blaine-id",
+   "why": "the January 2025 cold (2025-01-21)"
   },
   {
-   "timestamp": "20221006082614",
-   "url": "https://www.sbac.edu",
-   "station": "apptegy-alachua-fl",
-   "why": "an unread capture of the district's former homepage address, read so that every capture of it is read (2022-10-06)"
+   "timestamp": "20250122104909",
+   "url": "https://www.blaineschools.org/",
+   "station": "finalsite-blaine-id",
+   "why": "the January 2025 cold (2025-01-22)"
   },
   {
-   "timestamp": "20221006233251",
-   "url": "https://www.sbac.edu/",
-   "station": "apptegy-alachua-fl",
-   "why": "an unread capture of the district's former homepage address, read so that every capture of it is read (2022-10-07)"
+   "timestamp": "20250122224329",
+   "url": "https://www.blaineschools.org/",
+   "station": "finalsite-blaine-id",
+   "why": "the January 2025 cold (2025-01-23)"
   },
   {
-   "timestamp": "20221107001815",
-   "url": "https://www.sbac.edu/",
-   "station": "apptegy-alachua-fl",
-   "why": "an unread capture of the district's former homepage address, read so that every capture of it is read (2022-11-07)"
+   "timestamp": "20251127202449",
+   "url": "https://www.ehpsmt.gov/",
+   "station": "finalsite-east-helena-mt",
+   "why": "storm day 2025-11-28 (market score 1.00)"
   },
   {
-   "timestamp": "20221107233700",
-   "url": "https://www.sbac.edu/",
-   "station": "apptegy-alachua-fl",
-   "why": "an unread capture of the district's former homepage address, read so that every capture of it is read (2022-11-08)"
+   "timestamp": "20250202182034",
+   "url": "https://www.ehpsmt.gov/",
+   "station": "finalsite-east-helena-mt",
+   "why": "storm day 2025-02-03 (market score 1.00)"
   },
   {
-   "timestamp": "20240803073512",
-   "url": "https://www.sbac.edu/",
-   "station": "apptegy-alachua-fl",
-   "why": "an unread capture of the district's former homepage address, read so that every capture of it is read (2024-08-03)"
+   "timestamp": "20260402034529",
+   "url": "https://www.ehpsmt.gov/",
+   "station": "finalsite-east-helena-mt",
+   "why": "storm day 2026-04-02 (market score 1.00)"
   },
   {
-   "timestamp": "20240804041920",
-   "url": "https://www.sbac.edu/",
-   "station": "apptegy-alachua-fl",
-   "why": "an unread capture of the district's former homepage address, read so that every capture of it is read (2024-08-04)"
+   "timestamp": "20260402230814",
+   "url": "https://www.ehpsmt.gov/",
+   "station": "finalsite-east-helena-mt",
+   "why": "storm day 2026-04-03 (market score 1.00)"
   },
   {
-   "timestamp": "20240804055434",
-   "url": "https://www.sbac.edu/",
-   "station": "apptegy-alachua-fl",
-   "why": "an unread capture of the district's former homepage address, read so that every capture of it is read (2024-08-04)"
+   "timestamp": "20221223131308",
+   "url": "https://www.cassiaschools.org/",
+   "station": "apptegy-cassia-id",
+   "why": "the December 2022 cold wave in the northern Rockies (2022-12-23)"
   },
   {
-   "timestamp": "20240805002952",
-   "url": "https://www.sbac.edu/",
-   "station": "apptegy-alachua-fl",
-   "why": "an unread capture of the district's former homepage address, read so that every capture of it is read (2024-08-05)"
+   "timestamp": "20250118170201",
+   "url": "https://www.irondistrict.org/",
+   "station": "apptegy-iron-ut",
+   "why": "the January 2025 cold (2025-01-19)"
   },
   {
-   "timestamp": "20240806233611",
-   "url": "https://www.sbac.edu/",
-   "station": "apptegy-alachua-fl",
-   "why": "an unread capture of the district's former homepage address, read so that every capture of it is read (2024-08-07)"
+   "timestamp": "20230224120019",
+   "url": "https://www.msd321.com/",
+   "station": "apptegy-madison-id",
+   "why": "the Utah snow day of 22 February 2023 (2023-02-24)"
   },
   {
-   "timestamp": "20240807011111",
-   "url": "https://www.sbac.edu/",
-   "station": "apptegy-alachua-fl",
-   "why": "an unread capture of the district's former homepage address, read so that every capture of it is read (2024-08-07)"
+   "timestamp": "20250120012855",
+   "url": "https://www.lewistown.k12.mt.us/",
+   "station": "finalsite-lewistown-mt",
+   "why": "the January 2025 cold (2025-01-20)"
   },
   {
-   "timestamp": "20240807020343",
-   "url": "https://www.sbac.edu/",
-   "station": "apptegy-alachua-fl",
-   "why": "an unread capture of the district's former homepage address, read so that every capture of it is read (2024-08-07)"
+   "timestamp": "20260517192822",
+   "url": "https://www.sweetwater1.org/",
+   "station": "finalsite-sweetwater-1-wy",
+   "why": "storm day 2026-05-18 (market score 1.00)"
   },
   {
-   "timestamp": "20240807194601",
-   "url": "https://www.sbac.edu",
-   "station": "apptegy-alachua-fl",
-   "why": "an unread capture of the district's former homepage address, read so that every capture of it is read (2024-08-08)"
+   "timestamp": "20210210222550",
+   "url": "https://www.uinta1.com/",
+   "station": "schoolblocks-uinta-1-wy",
+   "why": "the February 2021 cold wave (2021-02-11)"
   },
   {
-   "timestamp": "20240929003040",
-   "url": "https://www.sbac.edu/",
-   "station": "apptegy-alachua-fl",
-   "why": "an unread capture of the district's former homepage address, read so that every capture of it is read (2024-09-29)"
+   "timestamp": "20250121190053",
+   "url": "https://www.uinta1.com/",
+   "station": "schoolblocks-uinta-1-wy",
+   "why": "the January 2025 cold (2025-01-22)"
   },
   {
-   "timestamp": "20240930023040",
-   "url": "https://www.sbac.edu/",
-   "station": "apptegy-alachua-fl",
-   "why": "an unread capture of the district's former homepage address, read so that every capture of it is read (2024-09-30)"
+   "timestamp": "20230224120032",
+   "url": "https://www.hsd3.org/",
+   "station": "apptegy-hamilton-mt",
+   "why": "the Utah snow day of 22 February 2023 (2023-02-24)"
   },
   {
-   "timestamp": "20241013205314",
-   "url": "https://www.sbac.edu",
-   "station": "apptegy-alachua-fl",
-   "why": "an unread capture of the district's former homepage address, read so that every capture of it is read (2024-10-14)"
+   "timestamp": "20250121180506",
+   "url": "https://www.anacondaschools.org/",
+   "station": "apptegy-anaconda-mt",
+   "why": "the January 2025 cold (2025-01-22)"
   },
   {
-   "timestamp": "20241014031037",
-   "url": "https://www.sbac.edu",
-   "station": "apptegy-alachua-fl",
-   "why": "an unread capture of the district's former homepage address, read so that every capture of it is read (2024-10-14)"
+   "timestamp": "20250118145158",
+   "url": "https://www.tfsd.org/",
+   "station": "apptegy-twin-falls-id",
+   "why": "the January 2025 cold (2025-01-18)"
   },
   {
-   "timestamp": "20180422174443",
-   "url": "http://spectrumlocalnews.com/tx/san-antonio/weather/closings",
-   "station": "spectrum-san-antonio",
-   "why": "an unread capture of the page, read so that every capture of it is read (2018-04-23)"
+   "timestamp": "20250121055237",
+   "url": "https://www.stregisschool.org/",
+   "station": "apptegy-st-regis-mt",
+   "why": "the January 2025 cold (2025-01-21)"
   },
   {
-   "timestamp": "20180617162001",
-   "url": "http://spectrumlocalnews.com/tx/san-antonio/weather/closings",
-   "station": "spectrum-san-antonio",
-   "why": "an unread capture of the page, read so that every capture of it is read (2018-06-18)"
+   "timestamp": "20190212002715",
+   "url": "https://www.thompsonfalls.net/",
+   "station": "finalsite-thompson-falls-mt",
+   "why": "the February 2019 cold and snow (2019-02-12)"
   },
   {
-   "timestamp": "20180624173121",
-   "url": "http://spectrumlocalnews.com/tx/san-antonio/weather/closings",
-   "station": "spectrum-san-antonio",
-   "why": "an unread capture of the page, read so that every capture of it is read (2018-06-25)"
+   "timestamp": "20250118121631",
+   "url": "https://www.thompsonfalls.net/",
+   "station": "finalsite-thompson-falls-mt",
+   "why": "the January 2025 cold (2025-01-18)"
   },
   {
-   "timestamp": "20180802172359",
-   "url": "http://spectrumlocalnews.com/tx/san-antonio/weather/closings",
-   "station": "spectrum-san-antonio",
-   "why": "an unread capture of the page, read so that every capture of it is read (2018-08-03)"
+   "timestamp": "20250119115359",
+   "url": "https://www.thompsonfalls.net/",
+   "station": "finalsite-thompson-falls-mt",
+   "why": "the January 2025 cold (2025-01-19)"
   },
   {
-   "timestamp": "20180903145807",
-   "url": "http://spectrumlocalnews.com/tx/san-antonio/weather/closings",
-   "station": "spectrum-san-antonio",
-   "why": "an unread capture of the page, read so that every capture of it is read (2018-09-03)"
+   "timestamp": "20250120114850",
+   "url": "https://www.thompsonfalls.net/",
+   "station": "finalsite-thompson-falls-mt",
+   "why": "the January 2025 cold (2025-01-20)"
   },
   {
-   "timestamp": "20181001174815",
-   "url": "http://spectrumlocalnews.com/tx/san-antonio/weather/closings",
-   "station": "spectrum-san-antonio",
-   "why": "an unread capture of the page, read so that every capture of it is read (2018-10-02)"
+   "timestamp": "20250121121646",
+   "url": "https://www.thompsonfalls.net/",
+   "station": "finalsite-thompson-falls-mt",
+   "why": "the January 2025 cold (2025-01-21)"
   },
   {
-   "timestamp": "20181008160936",
-   "url": "http://spectrumlocalnews.com/tx/san-antonio/weather/closings",
-   "station": "spectrum-san-antonio",
-   "why": "an unread capture of the page, read so that every capture of it is read (2018-10-09)"
+   "timestamp": "20250122115530",
+   "url": "https://www.thompsonfalls.net/",
+   "station": "finalsite-thompson-falls-mt",
+   "why": "the January 2025 cold (2025-01-22)"
   },
   {
-   "timestamp": "20181029152718",
-   "url": "http://spectrumlocalnews.com/tx/san-antonio/weather/closings",
-   "station": "spectrum-san-antonio",
-   "why": "an unread capture of the page, read so that every capture of it is read (2018-10-29)"
+   "timestamp": "20250122235313",
+   "url": "https://www.thompsonfalls.net/",
+   "station": "finalsite-thompson-falls-mt",
+   "why": "the January 2025 cold (2025-01-23)"
   },
   {
-   "timestamp": "20181112135243",
-   "url": "http://spectrumlocalnews.com/tx/san-antonio/weather/closings",
-   "station": "spectrum-san-antonio",
-   "why": "an unread capture of the page, read so that every capture of it is read (2018-11-12)"
+   "timestamp": "20250102180011",
+   "url": "https://www.thompsonfalls.net/",
+   "station": "finalsite-thompson-falls-mt",
+   "why": "storm day 2025-01-03 (market score 1.00)"
   },
   {
-   "timestamp": "20181125172244",
-   "url": "http://spectrumlocalnews.com/tx/san-antonio/weather/closings",
-   "station": "spectrum-san-antonio",
-   "why": "an unread capture of the page, read so that every capture of it is read (2018-11-26)"
+   "timestamp": "20210211155443",
+   "url": "https://www.blueponyk12.com/",
+   "station": "finalsite-havre-mt",
+   "why": "the February 2021 cold wave (2021-02-11)"
   },
   {
-   "timestamp": "20181203112058",
-   "url": "http://spectrumlocalnews.com/tx/san-antonio/weather/closings",
-   "station": "spectrum-san-antonio",
-   "why": "an unread capture of the page, read so that every capture of it is read (2018-12-03)"
+   "timestamp": "20250121080604",
+   "url": "https://www.blueponyk12.com/",
+   "station": "finalsite-havre-mt",
+   "why": "the January 2025 cold (2025-01-21)"
   },
   {
-   "timestamp": "20181211114641",
-   "url": "http://spectrumlocalnews.com/tx/san-antonio/weather/closings",
-   "station": "spectrum-san-antonio",
-   "why": "an unread capture of the page, read so that every capture of it is read (2018-12-11)"
+   "timestamp": "20251126175304",
+   "url": "https://www.shelbypublicschools.org/",
+   "station": "apptegy-shelby-mt",
+   "why": "storm day 2025-11-27 (market score 1.00)"
   },
   {
-   "timestamp": "20190820145814",
-   "url": "https://spectrumlocalnews.com/tx/san-antonio/weather/closings",
-   "station": "spectrum-san-antonio",
-   "why": "an unread capture of the page, read so that every capture of it is read (2019-08-20)"
+   "timestamp": "20241104162347",
+   "url": "https://www.shelbypublicschools.org/",
+   "station": "apptegy-shelby-mt",
+   "why": "storm day 2024-11-05 (market score 1.00)"
   },
   {
-   "timestamp": "20191207100813",
-   "url": "https://spectrumlocalnews.com/tx/san-antonio/weather/closings",
-   "station": "spectrum-san-antonio",
-   "why": "an unread capture of the page, read so that every capture of it is read (2019-12-07)"
+   "timestamp": "20250217140347",
+   "url": "https://www.shelbypublicschools.org/",
+   "station": "apptegy-shelby-mt",
+   "why": "storm day 2025-02-17 (market score 1.00)"
   },
   {
-   "timestamp": "20200629165827",
-   "url": "https://spectrumlocalnews.com/tx/san-antonio/weather/closings",
-   "station": "spectrum-san-antonio",
-   "why": "an unread capture of the page, read so that every capture of it is read (2020-06-30)"
+   "timestamp": "20250210014808",
+   "url": "https://www.shelbypublicschools.org/",
+   "station": "apptegy-shelby-mt",
+   "why": "storm day 2025-02-10 (market score 0.50)"
   },
   {
-   "timestamp": "20200915102702",
-   "url": "https://spectrumlocalnews.com/tx/san-antonio/weather/closings",
-   "station": "spectrum-san-antonio",
-   "why": "an unread capture of the page, read so that every capture of it is read (2020-09-15)"
+   "timestamp": "20250118145932",
+   "url": "https://www.minidokaschools.org/",
+   "station": "apptegy-minidoka-id",
+   "why": "the January 2025 cold (2025-01-18)"
   },
   {
-   "timestamp": "20201103171728",
-   "url": "https://spectrumlocalnews.com/tx/san-antonio/weather/closings",
-   "station": "spectrum-san-antonio",
-   "why": "an unread capture of the page, read so that every capture of it is read (2020-11-04)"
+   "timestamp": "20230131142846",
+   "url": "https://www.minidokaschools.org/",
+   "station": "apptegy-minidoka-id",
+   "why": "storm day 2023-01-31 (market score 0.50)"
   },
   {
-   "timestamp": "20201121103656",
-   "url": "https://spectrumlocalnews.com/tx/san-antonio/weather/closings",
-   "station": "spectrum-san-antonio",
-   "why": "an unread capture of the page, read so that every capture of it is read (2020-11-21)"
+   "timestamp": "20250121213734",
+   "url": "https://www.philipsburgschools.org/",
+   "station": "apptegy-philipsburg-mt",
+   "why": "the January 2025 cold (2025-01-22)"
   },
   {
-   "timestamp": "20201121142132",
-   "url": "https://spectrumlocalnews.com/tx/san-antonio/weather/closings",
-   "station": "spectrum-san-antonio",
-   "why": "an unread capture of the page, read so that every capture of it is read (2020-11-21)"
+   "timestamp": "20211010194450",
+   "url": "https://www.livingston.k12.mt.us/",
+   "station": "edlio-livingston-mt",
+   "why": "storm day 2021-10-11 (market score 1.00)"
   },
   {
-   "timestamp": "20210419101808",
-   "url": "https://spectrumlocalnews.com/tx/san-antonio/weather/closings",
-   "station": "spectrum-san-antonio",
-   "why": "an unread capture of the page, read so that every capture of it is read (2021-04-19)"
+   "timestamp": "20210210233958",
+   "url": "https://www.cji.k12.mt.us/",
+   "station": "apptegy-cji-mt",
+   "why": "the February 2021 cold wave (2021-02-11)"
   },
   {
-   "timestamp": "20210430120813",
-   "url": "https://spectrumlocalnews.com/tx/san-antonio/weather/closings",
-   "station": "spectrum-san-antonio",
-   "why": "an unread capture of the page, read so that every capture of it is read (2021-04-30)"
+   "timestamp": "20250119210152",
+   "url": "https://www.cji.k12.mt.us/",
+   "station": "apptegy-cji-mt",
+   "why": "the January 2025 cold (2025-01-20)"
   },
   {
-   "timestamp": "20210615105318",
-   "url": "https://spectrumlocalnews.com/tx/san-antonio/weather/closings",
-   "station": "spectrum-san-antonio",
-   "why": "an unread capture of the page, read so that every capture of it is read (2021-06-15)"
+   "timestamp": "20250122120631",
+   "url": "https://www.park6.org/",
+   "station": "apptegy-park-6-wy",
+   "why": "the January 2025 cold (2025-01-22)"
   },
   {
-   "timestamp": "20220124114010",
-   "url": "https://spectrumlocalnews.com/tx/san-antonio/weather/closings",
-   "station": "spectrum-san-antonio",
-   "why": "an unread capture of the page, read so that every capture of it is read (2022-01-24)"
+   "timestamp": "20251210061422",
+   "url": "https://www.willowcreek.k12.mt.us/",
+   "station": "apptegy-willow-creek-mt",
+   "why": "storm day 2025-12-10 (market score 1.00)"
   },
   {
-   "timestamp": "20220617142954",
-   "url": "https://spectrumlocalnews.com/tx/san-antonio/weather/closings",
-   "station": "spectrum-san-antonio",
-   "why": "an unread capture of the page, read so that every capture of it is read (2022-06-17)"
+   "timestamp": "20250216162446",
+   "url": "https://www.willowcreek.k12.mt.us/",
+   "station": "apptegy-willow-creek-mt",
+   "why": "storm day 2025-02-17 (market score 1.00)"
   },
   {
-   "timestamp": "20220628161859",
-   "url": "https://spectrumlocalnews.com/tx/san-antonio/weather/closings",
-   "station": "spectrum-san-antonio",
-   "why": "an unread capture of the page, read so that every capture of it is read (2022-06-29)"
+   "timestamp": "20221201230632",
+   "url": "https://www.willowcreek.k12.mt.us/",
+   "station": "apptegy-willow-creek-mt",
+   "why": "storm day 2022-12-02 (market score 1.00)"
   },
   {
-   "timestamp": "20221105105204",
-   "url": "https://spectrumlocalnews.com/tx/san-antonio/weather/closings",
-   "station": "spectrum-san-antonio",
-   "why": "an unread capture of the page, read so that every capture of it is read (2022-11-05)"
+   "timestamp": "20230314201439",
+   "url": "https://www.willowcreek.k12.mt.us/",
+   "station": "apptegy-willow-creek-mt",
+   "why": "storm day 2023-03-15 (market score 1.00)"
   },
   {
-   "timestamp": "20221110133707",
-   "url": "https://spectrumlocalnews.com/tx/san-antonio/weather/closings",
-   "station": "spectrum-san-antonio",
-   "why": "an unread capture of the page, read so that every capture of it is read (2022-11-10)"
+   "timestamp": "20190209135927",
+   "url": "http://whitesulphur.k12.mt.us:80/",
+   "station": "apptegy-white-sulphur-springs-mt",
+   "why": "the February 2019 cold and snow (2019-02-09)"
   },
   {
-   "timestamp": "20230404115721",
-   "url": "https://spectrumlocalnews.com/tx/san-antonio/weather/closings",
-   "station": "spectrum-san-antonio",
-   "why": "an unread capture of the page, read so that every capture of it is read (2023-04-04)"
+   "timestamp": "20250401100732",
+   "url": "https://www.whitesulphur.k12.mt.us/",
+   "station": "apptegy-white-sulphur-springs-mt",
+   "why": "storm day 2025-04-01 (market score 1.00)"
   },
   {
-   "timestamp": "20230531171824",
-   "url": "https://spectrumlocalnews.com/tx/san-antonio/weather/closings",
-   "station": "spectrum-san-antonio",
-   "why": "an unread capture of the page, read so that every capture of it is read (2023-06-01)"
+   "timestamp": "20250124120831",
+   "url": "https://www.whitesulphur.k12.mt.us/",
+   "station": "apptegy-white-sulphur-springs-mt",
+   "why": "storm day 2025-01-24 (market score 1.00)"
   },
   {
-   "timestamp": "20230804115625",
-   "url": "https://spectrumlocalnews.com/tx/san-antonio/weather/closings",
-   "station": "spectrum-san-antonio",
-   "why": "an unread capture of the page, read so that every capture of it is read (2023-08-04)"
+   "timestamp": "20240502151757",
+   "url": "https://www.whitesulphur.k12.mt.us/",
+   "station": "apptegy-white-sulphur-springs-mt",
+   "why": "storm day 2024-05-02 (market score 1.00)"
   },
   {
-   "timestamp": "20231204172136",
-   "url": "https://spectrumlocalnews.com/tx/san-antonio/weather/closings",
-   "station": "spectrum-san-antonio",
-   "why": "an unread capture of the page, read so that every capture of it is read (2023-12-05)"
+   "timestamp": "20250202171234",
+   "url": "https://www.tfschools.com/",
+   "station": "apptegy-three-forks-mt",
+   "why": "storm day 2025-02-03 (market score 1.00)"
   },
   {
-   "timestamp": "20240721142317",
-   "url": "https://spectrumlocalnews.com/tx/san-antonio/weather/closings",
-   "station": "spectrum-san-antonio",
-   "why": "an unread capture of the page, read so that every capture of it is read (2024-07-21)"
+   "timestamp": "20251209080328",
+   "url": "https://www.bssd72.org/",
+   "station": "apptegy-big-sky-mt",
+   "why": "storm day 2025-12-09 (market score 1.00)"
   },
   {
-   "timestamp": "20240910151102",
-   "url": "https://spectrumlocalnews.com/tx/san-antonio/weather/closings",
-   "station": "spectrum-san-antonio",
-   "why": "an unread capture of the page, read so that every capture of it is read (2024-09-10)"
+   "timestamp": "20250218125130",
+   "url": "https://www.bssd72.org/",
+   "station": "apptegy-big-sky-mt",
+   "why": "storm day 2025-02-18 (market score 1.00)"
   },
   {
-   "timestamp": "20241013104528",
-   "url": "https://spectrumlocalnews.com/tx/san-antonio/weather/closings",
-   "station": "spectrum-san-antonio",
-   "why": "an unread capture of the page, read so that every capture of it is read (2024-10-13)"
+   "timestamp": "20221201133211",
+   "url": "https://www.bssd72.org/",
+   "station": "apptegy-big-sky-mt",
+   "why": "storm day 2022-12-01 (market score 1.00)"
   },
   {
-   "timestamp": "20250211125702",
-   "url": "https://spectrumlocalnews.com/tx/san-antonio/weather/closings",
-   "station": "spectrum-san-antonio",
-   "why": "an unread capture of the page, read so that every capture of it is read (2025-02-11)"
+   "timestamp": "20230130044808",
+   "url": "https://www.bssd72.org/",
+   "station": "apptegy-big-sky-mt",
+   "why": "storm day 2023-01-30 (market score 0.50)"
   },
   {
-   "timestamp": "20251123170321",
-   "url": "https://spectrumlocalnews.com/tx/san-antonio/weather/closings",
-   "station": "spectrum-san-antonio",
-   "why": "an unread capture of the page, read so that every capture of it is read (2025-11-24)"
+   "timestamp": "20230223214841",
+   "url": "https://www.fremont25.org/",
+   "station": "apptegy-fremont25-wy",
+   "why": "the Utah snow day of 22 February 2023 (2023-02-24)"
   },
   {
-   "timestamp": "20260119144511",
-   "url": "https://spectrumlocalnews.com/tx/san-antonio/weather/closings",
-   "station": "spectrum-san-antonio",
-   "why": "an unread capture of the page, read so that every capture of it is read (2026-01-19)"
+   "timestamp": "20250102105901",
+   "url": "https://www.fremont25.org/",
+   "station": "apptegy-fremont25-wy",
+   "why": "storm day 2025-01-02 (market score 1.00)"
   },
   {
-   "timestamp": "20171008204832",
-   "url": "http://spectrumlocalnews.com:80/tx/san-antonio/weather/closings",
-   "station": "spectrum-san-antonio",
-   "why": "an unread capture of the page, read so that every capture of it is read (2017-10-09)"
+   "timestamp": "20251204230406",
+   "url": "https://sd149.com/en-US",
+   "station": "schoolblocks-north-gem-id",
+   "why": "storm day 2025-12-05 (market score 1.00)"
   },
   {
-   "timestamp": "20171119091956",
-   "url": "http://spectrumlocalnews.com/tx/san-antonio/weather/closings",
-   "station": "spectrum-san-antonio",
-   "why": "an unread capture of the page, read so that every capture of it is read (2017-11-19)"
+   "timestamp": "20260217185642",
+   "url": "https://www.sd149.com/en-US",
+   "station": "schoolblocks-north-gem-id",
+   "why": "storm day 2026-02-18 (market score 1.00)"
   },
   {
-   "timestamp": "20171208230201",
-   "url": "http://spectrumlocalnews.com:80/tx/san-antonio/weather/closings",
-   "station": "spectrum-san-antonio",
-   "why": "an unread capture of the page, read so that every capture of it is read (2017-12-09)"
+   "timestamp": "20260216185554",
+   "url": "https://www.sd149.com/en-US",
+   "station": "schoolblocks-north-gem-id",
+   "why": "storm day 2026-02-17 (market score 1.00)"
   },
   {
-   "timestamp": "20180325191051",
-   "url": "http://spectrumlocalnews.com/tx/san-antonio/weather/closings",
-   "station": "spectrum-san-antonio",
-   "why": "an unread capture of the page, read so that every capture of it is read (2018-03-26)"
+   "timestamp": "20251226065303",
+   "url": "https://www.sd149.com/en-US",
+   "station": "schoolblocks-north-gem-id",
+   "why": "storm day 2025-12-26 (market score 1.00)"
   },
   {
-   "timestamp": "20180402013527",
-   "url": "http://spectrumlocalnews.com/tx/san-antonio/weather/closings",
-   "station": "spectrum-san-antonio",
-   "why": "an unread capture of the page, read so that every capture of it is read (2018-04-02)"
+   "timestamp": "20221219111317",
+   "url": "https://www.mvsd21.org/",
+   "station": "apptegy-marsh-valley-id",
+   "why": "the December 2022 cold wave in the northern Rockies (2022-12-19)"
   },
   {
-   "timestamp": "20180408180756",
-   "url": "http://spectrumlocalnews.com/tx/san-antonio/weather/closings",
-   "station": "spectrum-san-antonio",
-   "why": "an unread capture of the page, read so that every capture of it is read (2018-04-09)"
+   "timestamp": "20221220111309",
+   "url": "https://www.mvsd21.org/",
+   "station": "apptegy-marsh-valley-id",
+   "why": "the December 2022 cold wave in the northern Rockies (2022-12-20)"
   },
   {
-   "timestamp": "20180415182612",
-   "url": "http://spectrumlocalnews.com/tx/san-antonio/weather/closings",
-   "station": "spectrum-san-antonio",
-   "why": "an unread capture of the page, read so that every capture of it is read (2018-04-16)"
+   "timestamp": "20221221110507",
+   "url": "https://www.mvsd21.org/",
+   "station": "apptegy-marsh-valley-id",
+   "why": "the December 2022 cold wave in the northern Rockies (2022-12-21)"
   },
   {
-   "timestamp": "20180429185107",
-   "url": "http://spectrumlocalnews.com/tx/san-antonio/weather/closings",
-   "station": "spectrum-san-antonio",
-   "why": "an unread capture of the page, read so that every capture of it is read (2018-04-30)"
+   "timestamp": "20221222143634",
+   "url": "https://www.mvsd21.org/",
+   "station": "apptegy-marsh-valley-id",
+   "why": "the December 2022 cold wave in the northern Rockies (2022-12-22)"
   },
   {
-   "timestamp": "20180506202831",
-   "url": "http://spectrumlocalnews.com/tx/san-antonio/weather/closings",
-   "station": "spectrum-san-antonio",
-   "why": "an unread capture of the page, read so that every capture of it is read (2018-05-07)"
+   "timestamp": "20221222161158",
+   "url": "https://www.mvsd21.org/",
+   "station": "apptegy-marsh-valley-id",
+   "why": "the December 2022 cold wave in the northern Rockies (2022-12-23)"
   },
   {
-   "timestamp": "20180514020207",
-   "url": "http://spectrumlocalnews.com/tx/san-antonio/weather/closings",
-   "station": "spectrum-san-antonio",
-   "why": "an unread capture of the page, read so that every capture of it is read (2018-05-14)"
+   "timestamp": "20240111105813",
+   "url": "https://www.mvsd21.org/",
+   "station": "apptegy-marsh-valley-id",
+   "why": "the January 2024 cold wave in the northern Rockies (2024-01-11)"
   },
   {
-   "timestamp": "20180521002922",
-   "url": "http://spectrumlocalnews.com/tx/san-antonio/weather/closings",
-   "station": "spectrum-san-antonio",
-   "why": "an unread capture of the page, read so that every capture of it is read (2018-05-21)"
+   "timestamp": "20240112111355",
+   "url": "https://www.mvsd21.org/",
+   "station": "apptegy-marsh-valley-id",
+   "why": "the January 2024 cold wave in the northern Rockies (2024-01-12)"
   },
   {
-   "timestamp": "20180527195954",
-   "url": "http://spectrumlocalnews.com/tx/san-antonio/weather/closings",
-   "station": "spectrum-san-antonio",
-   "why": "an unread capture of the page, read so that every capture of it is read (2018-05-28)"
+   "timestamp": "20240113105855",
+   "url": "https://www.mvsd21.org/",
+   "station": "apptegy-marsh-valley-id",
+   "why": "the January 2024 cold wave in the northern Rockies (2024-01-13)"
   },
   {
-   "timestamp": "20180603212431",
-   "url": "http://spectrumlocalnews.com/tx/san-antonio/weather/closings",
-   "station": "spectrum-san-antonio",
-   "why": "an unread capture of the page, read so that every capture of it is read (2018-06-04)"
+   "timestamp": "20230224120032",
+   "url": "https://www.pcsd1.org/",
+   "station": "apptegy-park-1-wy",
+   "why": "the Utah snow day of 22 February 2023 (2023-02-24)"
   },
   {
-   "timestamp": "20180616225033",
-   "url": "http://spectrumlocalnews.com/tx/san-antonio/weather/closings",
-   "station": "spectrum-san-antonio",
-   "why": "an unread capture of the page, read so that every capture of it is read (2018-06-17)"
+   "timestamp": "20250118142011",
+   "url": "https://www.pcsd1.org/",
+   "station": "apptegy-park-1-wy",
+   "why": "the January 2025 cold (2025-01-18)"
   },
   {
-   "timestamp": "20180623072000",
-   "url": "http://spectrumlocalnews.com/tx/san-antonio/weather/closings",
-   "station": "spectrum-san-antonio",
-   "why": "an unread capture of the page, read so that every capture of it is read (2018-06-23)"
+   "timestamp": "20260403111836",
+   "url": "https://www.pcsd1.org/",
+   "station": "apptegy-park-1-wy",
+   "why": "storm day 2026-04-03 (market score 1.00)"
   },
   {
-   "timestamp": "20180701210903",
-   "url": "http://spectrumlocalnews.com/tx/san-antonio/weather/closings",
-   "station": "spectrum-san-antonio",
-   "why": "an unread capture of the page, read so that every capture of it is read (2018-07-02)"
+   "timestamp": "20260402130625",
+   "url": "https://www.pcsd1.org/",
+   "station": "apptegy-park-1-wy",
+   "why": "storm day 2026-04-02 (market score 1.00)"
   },
   {
-   "timestamp": "20180709183357",
-   "url": "http://spectrumlocalnews.com/tx/san-antonio/weather/closings",
-   "station": "spectrum-san-antonio",
-   "why": "an unread capture of the page, read so that every capture of it is read (2018-07-10)"
+   "timestamp": "20260416111939",
+   "url": "https://www.pcsd1.org/",
+   "station": "apptegy-park-1-wy",
+   "why": "storm day 2026-04-16 (market score 1.00)"
   },
   {
-   "timestamp": "20180722030448",
-   "url": "http://spectrumlocalnews.com/tx/san-antonio/weather/closings",
-   "station": "spectrum-san-antonio",
-   "why": "an unread capture of the page, read so that every capture of it is read (2018-07-22)"
+   "timestamp": "20250317010017",
+   "url": "https://www.pcsd1.org/",
+   "station": "apptegy-park-1-wy",
+   "why": "storm day 2025-03-17 (market score 1.00)"
   },
   {
-   "timestamp": "20180805184545",
-   "url": "http://spectrumlocalnews.com/tx/san-antonio/weather/closings",
-   "station": "spectrum-san-antonio",
-   "why": "an unread capture of the page, read so that every capture of it is read (2018-08-06)"
+   "timestamp": "20221221022311",
+   "url": "https://www.laurel.k12.mt.us/",
+   "station": "finalsite-laurel-mt",
+   "why": "the December 2022 cold wave in the northern Rockies (2022-12-21)"
   },
   {
-   "timestamp": "20180812184205",
-   "url": "http://spectrumlocalnews.com/tx/san-antonio/weather/closings",
-   "station": "spectrum-san-antonio",
-   "why": "an unread capture of the page, read so that every capture of it is read (2018-08-13)"
+   "timestamp": "20190210144149",
+   "url": "http://www.laurel.k12.mt.us:80/",
+   "station": "finalsite-laurel-mt",
+   "why": "the February 2019 cold and snow (2019-02-10)"
   },
   {
-   "timestamp": "20180816035730",
-   "url": "http://spectrumlocalnews.com:80/tx/san-antonio/weather/closings",
-   "station": "spectrum-san-antonio",
-   "why": "an unread capture of the page, read so that every capture of it is read (2018-08-16)"
+   "timestamp": "20250119152745",
+   "url": "https://www.laurel.k12.mt.us/",
+   "station": "finalsite-laurel-mt",
+   "why": "the January 2025 cold (2025-01-19)"
   },
   {
-   "timestamp": "20180819192520",
-   "url": "http://spectrumlocalnews.com/tx/san-antonio/weather/closings",
-   "station": "spectrum-san-antonio",
-   "why": "an unread capture of the page, read so that every capture of it is read (2018-08-20)"
+   "timestamp": "20250121061000",
+   "url": "https://www.laurel.k12.mt.us/",
+   "station": "finalsite-laurel-mt",
+   "why": "the January 2025 cold (2025-01-21)"
   },
   {
-   "timestamp": "20180827185836",
-   "url": "http://spectrumlocalnews.com/tx/san-antonio/weather/closings",
-   "station": "spectrum-san-antonio",
-   "why": "an unread capture of the page, read so that every capture of it is read (2018-08-28)"
+   "timestamp": "20250202161106",
+   "url": "https://www.laurel.k12.mt.us/",
+   "station": "finalsite-laurel-mt",
+   "why": "storm day 2025-02-03 (market score 1.00)"
   },
   {
-   "timestamp": "20180910202722",
-   "url": "http://spectrumlocalnews.com/tx/san-antonio/weather/closings",
-   "station": "spectrum-san-antonio",
-   "why": "an unread capture of the page, read so that every capture of it is read (2018-09-11)"
+   "timestamp": "20251211054315",
+   "url": "https://www.laurel.k12.mt.us/",
+   "station": "finalsite-laurel-mt",
+   "why": "storm day 2025-12-11 (market score 1.00)"
   },
   {
-   "timestamp": "20180915222500",
-   "url": "http://spectrumlocalnews.com:80/tx/san-antonio/weather/closings",
-   "station": "spectrum-san-antonio",
-   "why": "an unread capture of the page, read so that every capture of it is read (2018-09-16)"
+   "timestamp": "20260312190238",
+   "url": "https://www.laurel.k12.mt.us/",
+   "station": "finalsite-laurel-mt",
+   "why": "storm day 2026-03-13 (market score 1.00)"
   },
   {
-   "timestamp": "20180917072023",
-   "url": "http://spectrumlocalnews.com/tx/san-antonio/weather/closings",
-   "station": "spectrum-san-antonio",
-   "why": "an unread capture of the page, read so that every capture of it is read (2018-09-17)"
+   "timestamp": "20251212093832",
+   "url": "https://www.laurel.k12.mt.us/",
+   "station": "finalsite-laurel-mt",
+   "why": "storm day 2025-12-12 (market score 1.00)"
   },
   {
-   "timestamp": "20180925075519",
-   "url": "http://spectrumlocalnews.com/tx/san-antonio/weather/closings",
-   "station": "spectrum-san-antonio",
-   "why": "an unread capture of the page, read so that every capture of it is read (2018-09-25)"
+   "timestamp": "20251216175516",
+   "url": "https://web.stignatiusschools.org/",
+   "station": "apptegy-st-ignatius-mt",
+   "why": "storm day 2025-12-17 (market score 1.00)"
   },
   {
-   "timestamp": "20181015193848",
-   "url": "http://spectrumlocalnews.com/tx/san-antonio/weather/closings",
-   "station": "spectrum-san-antonio",
-   "why": "an unread capture of the page, read so that every capture of it is read (2018-10-16)"
+   "timestamp": "20260312011905",
+   "url": "https://web.stignatiusschools.org/",
+   "station": "apptegy-st-ignatius-mt",
+   "why": "storm day 2026-03-12 (market score 1.00)"
   },
   {
-   "timestamp": "20181016232326",
-   "url": "http://spectrumlocalnews.com:80/tx/san-antonio/weather/closings",
-   "station": "spectrum-san-antonio",
-   "why": "an unread capture of the page, read so that every capture of it is read (2018-10-17)"
+   "timestamp": "20240117081804",
+   "url": "https://www.sub1.org/",
+   "station": "schoolblocks-sublette-1-wy",
+   "why": "the January 2024 cold wave in the northern Rockies (2024-01-17)"
   },
   {
-   "timestamp": "20181023011812",
-   "url": "http://spectrumlocalnews.com/tx/san-antonio/weather/closings",
-   "station": "spectrum-san-antonio",
-   "why": "an unread capture of the page, read so that every capture of it is read (2018-10-23)"
+   "timestamp": "20250122193006",
+   "url": "https://www.sub1.org/",
+   "station": "schoolblocks-sublette-1-wy",
+   "why": "the January 2025 cold (2025-01-23)"
   },
   {
-   "timestamp": "20181105211908",
-   "url": "http://spectrumlocalnews.com/tx/san-antonio/weather/closings",
-   "station": "spectrum-san-antonio",
-   "why": "an unread capture of the page, read so that every capture of it is read (2018-11-06)"
+   "timestamp": "20221202033445",
+   "url": "https://www.sub1.org/",
+   "station": "schoolblocks-sublette-1-wy",
+   "why": "storm day 2022-12-02 (market score 1.00)"
   },
   {
-   "timestamp": "20181116181322",
-   "url": "http://spectrumlocalnews.com:80/tx/san-antonio/weather/closings",
-   "station": "spectrum-san-antonio",
-   "why": "an unread capture of the page, read so that every capture of it is read (2018-11-17)"
+   "timestamp": "20240507170251",
+   "url": "https://www.sub1.org/",
+   "station": "schoolblocks-sublette-1-wy",
+   "why": "storm day 2024-05-08 (market score 1.00)"
   },
   {
-   "timestamp": "20181120013130",
-   "url": "http://spectrumlocalnews.com/tx/san-antonio/weather/closings",
-   "station": "spectrum-san-antonio",
-   "why": "an unread capture of the page, read so that every capture of it is read (2018-11-20)"
+   "timestamp": "20241217043547",
+   "url": "https://www.sub1.org/",
+   "station": "schoolblocks-sublette-1-wy",
+   "why": "storm day 2024-12-17 (market score 1.00)"
   },
   {
-   "timestamp": "20190330221737",
-   "url": "https://spectrumlocalnews.com/tx/san-antonio/weather/closings",
-   "station": "spectrum-san-antonio",
-   "why": "an unread capture of the page, read so that every capture of it is read (2019-03-31)"
+   "timestamp": "20250318043625",
+   "url": "https://www.sub1.org/",
+   "station": "schoolblocks-sublette-1-wy",
+   "why": "storm day 2025-03-18 (market score 1.00)"
   },
   {
-   "timestamp": "20190816091541",
-   "url": "https://spectrumlocalnews.com/tx/san-antonio/weather/closings",
-   "station": "spectrum-san-antonio",
-   "why": "an unread capture of the page, read so that every capture of it is read (2019-08-16)"
+   "timestamp": "20210209095718",
+   "url": "http://twinbridges.k12.mt.us/",
+   "station": "apptegy-twin-bridges-mt",
+   "why": "the February 2021 cold wave (2021-02-09)"
   },
   {
-   "timestamp": "20191020202931",
-   "url": "https://spectrumlocalnews.com/tx/san-antonio/weather/closings",
-   "station": "spectrum-san-antonio",
-   "why": "an unread capture of the page, read so that every capture of it is read (2019-10-21)"
+   "timestamp": "20250120192903",
+   "url": "https://twinbridges.k12.mt.us/",
+   "station": "apptegy-twin-bridges-mt",
+   "why": "the January 2025 cold (2025-01-21)"
   },
   {
-   "timestamp": "20200401213013",
-   "url": "https://spectrumlocalnews.com/tx/san-antonio/weather/closings",
-   "station": "spectrum-san-antonio",
-   "why": "an unread capture of the page, read so that every capture of it is read (2020-04-02)"
+   "timestamp": "20221202093601",
+   "url": "https://www.twinbridges.k12.mt.us/",
+   "station": "apptegy-twin-bridges-mt",
+   "why": "storm day 2022-12-02 (market score 1.00)"
   },
   {
-   "timestamp": "20200408083959",
-   "url": "https://spectrumlocalnews.com/tx/san-antonio/weather/closings",
-   "station": "spectrum-san-antonio",
-   "why": "an unread capture of the page, read so that every capture of it is read (2020-04-08)"
+   "timestamp": "20221202005833",
+   "url": "https://www.ennisschools.org/",
+   "station": "apptegy-ennis-mt",
+   "why": "storm day 2022-12-02 (market score 1.00)"
   },
   {
-   "timestamp": "20200411234520",
-   "url": "https://spectrumlocalnews.com/tx/san-antonio/weather/closings",
-   "station": "spectrum-san-antonio",
-   "why": "an unread capture of the page, read so that every capture of it is read (2020-04-12)"
+   "timestamp": "20251128153534",
+   "url": "https://www.malta.k12.mt.us/",
+   "station": "apptegy-malta-mt",
+   "why": "storm day 2025-11-28 (market score 1.00)"
   },
   {
-   "timestamp": "20200531032655",
-   "url": "https://spectrumlocalnews.com/tx/san-antonio/weather/closings",
-   "station": "spectrum-san-antonio",
-   "why": "an unread capture of the page, read so that every capture of it is read (2020-05-31)"
+   "timestamp": "20230314201806",
+   "url": "https://www.malta.k12.mt.us/",
+   "station": "apptegy-malta-mt",
+   "why": "storm day 2023-03-15 (market score 1.00)"
   },
   {
-   "timestamp": "20200606040220",
-   "url": "https://spectrumlocalnews.com/tx/san-antonio/weather/closings",
-   "station": "spectrum-san-antonio",
-   "why": "an unread capture of the page, read so that every capture of it is read (2020-06-06)"
+   "timestamp": "20250202165614",
+   "url": "https://www.limaschoolmt.org/",
+   "station": "apptegy-lima-mt",
+   "why": "storm day 2025-02-03 (market score 1.00)"
   },
   {
-   "timestamp": "20200811061036",
-   "url": "https://spectrumlocalnews.com/tx/san-antonio/weather/closings",
-   "station": "spectrum-san-antonio",
-   "why": "an unread capture of the page, read so that every capture of it is read (2020-08-11)"
+   "timestamp": "20230127072857",
+   "url": "https://www.limaschoolmt.org/",
+   "station": "apptegy-lima-mt",
+   "why": "storm day 2023-01-27 (market score 1.00)"
   },
   {
-   "timestamp": "20200930003714",
-   "url": "https://spectrumlocalnews.com/tx/san-antonio/weather/closings",
-   "station": "spectrum-san-antonio",
-   "why": "an unread capture of the page, read so that every capture of it is read (2020-09-30)"
+   "timestamp": "20221202003213",
+   "url": "https://www.limaschoolmt.org/",
+   "station": "apptegy-lima-mt",
+   "why": "storm day 2022-12-02 (market score 1.00)"
   },
   {
-   "timestamp": "20201005212734",
-   "url": "https://spectrumlocalnews.com/tx/san-antonio/weather/closings",
-   "station": "spectrum-san-antonio",
-   "why": "an unread capture of the page, read so that every capture of it is read (2020-10-06)"
+   "timestamp": "20230314201235",
+   "url": "https://www.limaschoolmt.org/",
+   "station": "apptegy-lima-mt",
+   "why": "storm day 2023-03-15 (market score 1.00)"
   },
   {
-   "timestamp": "20201012002703",
-   "url": "https://spectrumlocalnews.com/tx/san-antonio/weather/closings",
-   "station": "spectrum-san-antonio",
-   "why": "an unread capture of the page, read so that every capture of it is read (2020-10-12)"
+   "timestamp": "20250417181557",
+   "url": "https://www.converse2.org/",
+   "station": "apptegy-converse2-wy",
+   "why": "storm day 2025-04-18 (market score 1.00)"
   },
   {
-   "timestamp": "20201207045212",
-   "url": "https://spectrumlocalnews.com/tx/san-antonio/weather/closings",
-   "station": "spectrum-san-antonio",
-   "why": "an unread capture of the page, read so that every capture of it is read (2020-12-07)"
+   "timestamp": "20220307183611",
+   "url": "https://www.converse2.org/",
+   "station": "apptegy-converse2-wy",
+   "why": "storm day 2022-03-08 (market score 1.00)"
   },
   {
-   "timestamp": "20201228224418",
-   "url": "https://spectrumlocalnews.com/tx/san-antonio/weather/closings",
-   "station": "spectrum-san-antonio",
-   "why": "an unread capture of the page, read so that every capture of it is read (2020-12-29)"
+   "timestamp": "20220105151649",
+   "url": "https://www.converse2.org/",
+   "station": "apptegy-converse2-wy",
+   "why": "storm day 2022-01-05 (market score 1.00)"
   },
   {
-   "timestamp": "20210114021422",
-   "url": "https://spectrumlocalnews.com/tx/san-antonio/weather/closings",
-   "station": "spectrum-san-antonio",
-   "why": "an unread capture of the page, read so that every capture of it is read (2021-01-14)"
+   "timestamp": "20220222145700",
+   "url": "https://www.converse2.org/",
+   "station": "apptegy-converse2-wy",
+   "why": "storm day 2022-02-22 (market score 0.50)"
   },
   {
-   "timestamp": "20210118051131",
-   "url": "https://spectrumlocalnews.com/tx/san-antonio/weather/closings",
-   "station": "spectrum-san-antonio",
-   "why": "an unread capture of the page, read so that every capture of it is read (2021-01-18)"
+   "timestamp": "20190203104212",
+   "url": "https://www.sublette9.org/",
+   "station": "edlio-sublette-9-wy",
+   "why": "the February 2019 cold and snow (2019-02-03)"
   },
   {
-   "timestamp": "20210202220327",
-   "url": "https://spectrumlocalnews.com/tx/san-antonio/weather/closings",
-   "station": "spectrum-san-antonio",
-   "why": "an unread capture of the page, read so that every capture of it is read (2021-02-03)"
+   "timestamp": "20190205061228",
+   "url": "https://www.sublette9.org/",
+   "station": "edlio-sublette-9-wy",
+   "why": "the February 2019 cold and snow (2019-02-05)"
   },
   {
-   "timestamp": "20210227013955",
-   "url": "https://spectrumlocalnews.com/tx/san-antonio/weather/closings",
-   "station": "spectrum-san-antonio",
-   "why": "an unread capture of the page, read so that every capture of it is read (2021-02-27)"
+   "timestamp": "20250121185748",
+   "url": "https://www.sublette9.org/",
+   "station": "edlio-sublette-9-wy",
+   "why": "the January 2025 cold (2025-01-22)"
   },
   {
-   "timestamp": "20210723095525",
-   "url": "https://spectrumlocalnews.com/tx/san-antonio/weather/closings",
-   "station": "spectrum-san-antonio",
-   "why": "an unread capture of the page, read so that every capture of it is read (2021-07-23)"
+   "timestamp": "20250217002952",
+   "url": "https://www.sublette9.org/",
+   "station": "edlio-sublette-9-wy",
+   "why": "storm day 2025-02-17 (market score 1.00)"
   },
   {
-   "timestamp": "20210926235431",
-   "url": "https://spectrumlocalnews.com/tx/san-antonio/weather/closings",
-   "station": "spectrum-san-antonio",
-   "why": "an unread capture of the page, read so that every capture of it is read (2021-09-27)"
+   "timestamp": "20210204190353",
+   "url": "https://www.sublette9.org/",
+   "station": "edlio-sublette-9-wy",
+   "why": "storm day 2021-02-05 (market score 1.00)"
   },
   {
-   "timestamp": "20210928021513",
-   "url": "https://spectrumlocalnews.com/tx/san-antonio/weather/closings",
-   "station": "spectrum-san-antonio",
-   "why": "an unread capture of the page, read so that every capture of it is read (2021-09-28)"
+   "timestamp": "20170111151704",
+   "url": "http://www.sublette9.org/",
+   "station": "edlio-sublette-9-wy",
+   "why": "storm day 2017-01-11 (market score 1.00)"
   },
   {
-   "timestamp": "20211007062201",
-   "url": "https://spectrumlocalnews.com/tx/san-antonio/weather/closings",
-   "station": "spectrum-san-antonio",
-   "why": "an unread capture of the page, read so that every capture of it is read (2021-10-07)"
+   "timestamp": "20221221132904",
+   "url": "https://www.victor.k12.mt.us/",
+   "station": "apptegy-victor-mt",
+   "why": "the December 2022 cold wave in the northern Rockies (2022-12-21)"
   },
   {
-   "timestamp": "20211028033328",
-   "url": "https://spectrumlocalnews.com/tx/san-antonio/weather/closings",
-   "station": "spectrum-san-antonio",
-   "why": "an unread capture of the page, read so that every capture of it is read (2021-10-28)"
+   "timestamp": "20190221072930",
+   "url": "http://victor.k12.mt.us:80/",
+   "station": "apptegy-victor-mt",
+   "why": "the February 2019 cold and snow (2019-02-21)"
   },
   {
-   "timestamp": "20211110014300",
-   "url": "https://spectrumlocalnews.com/tx/san-antonio/weather/closings",
-   "station": "spectrum-san-antonio",
-   "why": "an unread capture of the page, read so that every capture of it is read (2021-11-10)"
+   "timestamp": "20250118024730",
+   "url": "https://www.victor.k12.mt.us/",
+   "station": "apptegy-victor-mt",
+   "why": "the January 2025 cold (2025-01-18)"
   },
   {
-   "timestamp": "20220412054710",
-   "url": "https://spectrumlocalnews.com/tx/san-antonio/weather/closings",
-   "station": "spectrum-san-antonio",
-   "why": "an unread capture of the page, read so that every capture of it is read (2022-04-12)"
+   "timestamp": "20250203094501",
+   "url": "https://www.victor.k12.mt.us/",
+   "station": "apptegy-victor-mt",
+   "why": "storm day 2025-02-03 (market score 1.00)"
   },
   {
-   "timestamp": "20220706034426",
-   "url": "https://spectrumlocalnews.com/tx/san-antonio/weather/closings",
-   "station": "spectrum-san-antonio",
-   "why": "an unread capture of the page, read so that every capture of it is read (2022-07-06)"
+   "timestamp": "20241208222656",
+   "url": "https://www.geraldine.k12.mt.us/",
+   "station": "apptegy-geraldine-mt",
+   "why": "storm day 2024-12-09 (market score 1.00)"
   },
   {
-   "timestamp": "20220929024003",
-   "url": "https://spectrumlocalnews.com/tx/san-antonio/weather/closings",
-   "station": "spectrum-san-antonio",
-   "why": "an unread capture of the page, read so that every capture of it is read (2022-09-29)"
+   "timestamp": "20250102160954",
+   "url": "https://www.geraldine.k12.mt.us/",
+   "station": "apptegy-geraldine-mt",
+   "why": "storm day 2025-01-03 (market score 1.00)"
   },
   {
-   "timestamp": "20240423023736",
-   "url": "https://spectrumlocalnews.com/tx/san-antonio/weather/closings",
-   "station": "spectrum-san-antonio",
-   "why": "an unread capture of the page, read so that every capture of it is read (2024-04-23)"
+   "timestamp": "20241104182053",
+   "url": "https://www.geraldine.k12.mt.us/",
+   "station": "apptegy-geraldine-mt",
+   "why": "storm day 2024-11-05 (market score 1.00)"
   },
   {
-   "timestamp": "20240609034500",
-   "url": "https://spectrumlocalnews.com/tx/san-antonio/weather/closings",
-   "station": "spectrum-san-antonio",
-   "why": "an unread capture of the page, read so that every capture of it is read (2024-06-09)"
+   "timestamp": "20240502151747",
+   "url": "https://www.geraldine.k12.mt.us/",
+   "station": "apptegy-geraldine-mt",
+   "why": "storm day 2024-05-02 (market score 1.00)"
   },
   {
-   "timestamp": "20240910092723",
-   "url": "https://spectrumlocalnews.com/tx/san-antonio/weather/closings",
-   "station": "spectrum-san-antonio",
-   "why": "an unread capture of the page, read so that every capture of it is read (2024-09-10)"
+   "timestamp": "20250203134727",
+   "url": "https://www.florencecarlton.org/",
+   "station": "apptegy-florence-carlton-mt",
+   "why": "storm day 2025-02-03 (market score 1.00)"
   },
   {
-   "timestamp": "20241104221826",
-   "url": "https://spectrumlocalnews.com/tx/san-antonio/weather/closings",
-   "station": "spectrum-san-antonio",
-   "why": "an unread capture of the page, read so that every capture of it is read (2024-11-05)"
+   "timestamp": "20251205120337",
+   "url": "https://www.florencecarlton.org/",
+   "station": "apptegy-florence-carlton-mt",
+   "why": "storm day 2025-12-05 (market score 1.00)"
   },
   {
-   "timestamp": "20241107023753",
-   "url": "https://spectrumlocalnews.com/tx/san-antonio/weather/closings",
-   "station": "spectrum-san-antonio",
-   "why": "an unread capture of the page, read so that every capture of it is read (2024-11-07)"
+   "timestamp": "20260313021137",
+   "url": "https://www.florencecarlton.org/",
+   "station": "apptegy-florence-carlton-mt",
+   "why": "storm day 2026-03-13 (market score 1.00)"
   },
   {
-   "timestamp": "20250402183541",
-   "url": "https://spectrumlocalnews.com/tx/san-antonio/weather/closings",
-   "station": "spectrum-san-antonio",
-   "why": "an unread capture of the page, read so that every capture of it is read (2025-04-03)"
+   "timestamp": "20221108231758",
+   "url": "https://www.florencecarlton.org/",
+   "station": "apptegy-florence-carlton-mt",
+   "why": "storm day 2022-11-09 (market score 1.00)"
   },
   {
-   "timestamp": "20250604065321",
-   "url": "https://spectrumlocalnews.com/tx/san-antonio/weather/closings",
-   "station": "spectrum-san-antonio",
-   "why": "an unread capture of the page, read so that every capture of it is read (2025-06-04)"
+   "timestamp": "20190214044022",
+   "url": "http://www.darby.k12.mt.us/",
+   "station": "apptegy-darby-mt",
+   "why": "the February 2019 cold and snow (2019-02-14)"
   },
   {
-   "timestamp": "20250614211551",
-   "url": "https://spectrumlocalnews.com/tx/san-antonio/weather/closings",
-   "station": "spectrum-san-antonio",
-   "why": "an unread capture of the page, read so that every capture of it is read (2025-06-15)"
+   "timestamp": "20240522182023",
+   "url": "https://www.darby.k12.mt.us/",
+   "station": "apptegy-darby-mt",
+   "why": "storm day 2024-05-23 (market score 1.00)"
   },
   {
-   "timestamp": "20251022041357",
-   "url": "https://spectrumlocalnews.com/tx/san-antonio/weather/closings",
-   "station": "spectrum-san-antonio",
-   "why": "an unread capture of the page, read so that every capture of it is read (2025-10-22)"
+   "timestamp": "20250118065625",
+   "url": "https://www.bigsandy.k12.mt.us/",
+   "station": "apptegy-big-sandy-mt",
+   "why": "the January 2025 cold (2025-01-18)"
   },
   {
-   "timestamp": "20251026025345",
-   "url": "https://spectrumlocalnews.com/tx/san-antonio/weather/closings",
-   "station": "spectrum-san-antonio",
-   "why": "an unread capture of the page, read so that every capture of it is read (2025-10-26)"
+   "timestamp": "20230314201220",
+   "url": "https://www.bigsandy.k12.mt.us/",
+   "station": "apptegy-big-sandy-mt",
+   "why": "storm day 2023-03-15 (market score 1.00)"
   },
   {
-   "timestamp": "20210222072646",
-   "url": "https://www.kpax.com/weather/school-closings-delays?_renderer=json",
-   "station": "scripps-kpax",
-   "why": "storm day 2021-02-22 (market score 0.46)"
+   "timestamp": "20250210034631",
+   "url": "https://www.bigsandy.k12.mt.us/",
+   "station": "apptegy-big-sandy-mt",
+   "why": "storm day 2025-02-10 (market score 0.50)"
   },
   {
-   "timestamp": "20200313050525",
-   "url": "https://www.kpax.com/weather/school-closings-delays",
-   "station": "scripps-kpax",
-   "why": "storm day 2020-03-13 (market score 0.43)"
+   "timestamp": "20250119204911",
+   "url": "https://www.deerlodgeschools.org/",
+   "station": "apptegy-deer-lodge-mt",
+   "why": "the January 2025 cold (2025-01-20)"
   },
   {
-   "timestamp": "20210212081819",
-   "url": "https://www.kpax.com/weather/school-closings-delays",
-   "station": "scripps-kpax",
-   "why": "storm day 2021-02-12 (market score 0.43)"
+   "timestamp": "20250118113535",
+   "url": "https://www.hlpschools.k12.mt.us/",
+   "station": "apptegy-hays-lodge-pole-mt",
+   "why": "the January 2025 cold (2025-01-18)"
   },
   {
-   "timestamp": "20201020233345",
-   "url": "https://www.kpax.com/weather/school-closings-delays",
-   "station": "scripps-kpax",
-   "why": "storm day 2020-10-21 (market score 0.25)"
+   "timestamp": "20250119151757",
+   "url": "https://www.hlpschools.k12.mt.us/",
+   "station": "apptegy-hays-lodge-pole-mt",
+   "why": "the January 2025 cold (2025-01-19)"
   },
   {
-   "timestamp": "20200217040500",
-   "url": "https://www.kpax.com/weather/school-closings-delays?_renderer=json",
-   "station": "scripps-kpax",
-   "why": "storm day 2020-02-17 (market score 0.25)"
+   "timestamp": "20260424103837",
+   "url": "https://www.hlpschools.k12.mt.us/",
+   "station": "apptegy-hays-lodge-pole-mt",
+   "why": "storm day 2026-04-24 (market score 1.00)"
   },
   {
-   "timestamp": "20200303212703",
-   "url": "https://www.kpax.com/weather/school-closings-delays",
-   "station": "scripps-kpax",
-   "why": "storm day 2020-03-04 (market score 0.25)"
+   "timestamp": "20250213144258",
+   "url": "https://www.hlpschools.k12.mt.us/",
+   "station": "apptegy-hays-lodge-pole-mt",
+   "why": "storm day 2025-02-13 (market score 0.50)"
   },
   {
-   "timestamp": "20210226062807",
-   "url": "https://www.kpax.com/weather/school-closings-delays",
-   "station": "scripps-kpax",
-   "why": "storm day 2021-02-26 (market score 0.25)"
+   "timestamp": "20240229185501",
+   "url": "https://www.sd381.k12.id.us/",
+   "station": "apptegy-american-falls-id",
+   "why": "storm day 2024-03-01 (market score 1.00)"
   },
   {
-   "timestamp": "20201119154303",
-   "url": "https://www.kpax.com/weather/school-closings-delays",
-   "station": "scripps-kpax",
-   "why": "storm day 2020-11-19 (market score 0.25)"
+   "timestamp": "20230130051755",
+   "url": "https://www.sd381.k12.id.us/",
+   "station": "apptegy-american-falls-id",
+   "why": "storm day 2023-01-30 (market score 0.50)"
   },
   {
-   "timestamp": "20210219120452",
-   "url": "https://www.kpax.com/weather/school-closings-delays",
-   "station": "scripps-kpax",
-   "why": "storm day 2021-02-19 (market score 0.25)"
+   "timestamp": "20250119200114",
+   "url": "https://www.harlowton.k12.mt.us/",
+   "station": "apptegy-harlowton-mt",
+   "why": "the January 2025 cold (2025-01-20)"
   },
   {
-   "timestamp": "20201231063204",
-   "url": "https://www.kpax.com/weather/school-closings-delays",
-   "station": "scripps-kpax",
-   "why": "storm day 2020-12-31 (market score 0.21)"
+   "timestamp": "20250513003647",
+   "url": "https://www.harlowton.k12.mt.us/",
+   "station": "apptegy-harlowton-mt",
+   "why": "storm day 2025-05-13 (market score 1.00)"
   },
   {
-   "timestamp": "20200401215611",
-   "url": "https://www.kpax.com/weather/school-closings-delays",
-   "station": "scripps-kpax",
-   "why": "storm day 2020-04-02 (market score 0.18)"
+   "timestamp": "20240425181022",
+   "url": "https://www.harlowton.k12.mt.us/",
+   "station": "apptegy-harlowton-mt",
+   "why": "storm day 2024-04-26 (market score 1.00)"
   },
   {
-   "timestamp": "20201012015911",
-   "url": "https://www.kpax.com/weather/school-closings-delays?_renderer=json",
-   "station": "scripps-kpax",
-   "why": "storm day 2020-10-12 (market score 0.18)"
+   "timestamp": "20240114202802",
+   "url": "https://www.sunburst.k12.mt.us/",
+   "station": "apptegy-sunburst-mt",
+   "why": "the January 2024 cold wave in the northern Rockies (2024-01-15)"
   },
   {
-   "timestamp": "20210208114759",
-   "url": "https://www.kpax.com/weather/school-closings-delays",
-   "station": "scripps-kpax",
-   "why": "storm day 2021-02-08 (market score 0.14)"
+   "timestamp": "20250118154446",
+   "url": "https://www.sunburst.k12.mt.us/",
+   "station": "apptegy-sunburst-mt",
+   "why": "the January 2025 cold (2025-01-18)"
   },
   {
-   "timestamp": "20200330121710",
-   "url": "https://www.kpax.com/weather/school-closings-delays",
-   "station": "scripps-kpax",
-   "why": "storm day 2020-03-30 (market score 0.11)"
+   "timestamp": "20250102172605",
+   "url": "https://www.sunburst.k12.mt.us/",
+   "station": "apptegy-sunburst-mt",
+   "why": "storm day 2025-01-03 (market score 1.00)"
   },
   {
-   "timestamp": "20210104094307",
-   "url": "https://www.kpax.com/weather/school-closings-delays",
-   "station": "scripps-kpax",
-   "why": "storm day 2021-01-04 (market score 0.11)"
+   "timestamp": "20241105023732",
+   "url": "https://www.sunburst.k12.mt.us/",
+   "station": "apptegy-sunburst-mt",
+   "why": "storm day 2024-11-05 (market score 1.00)"
   },
   {
-   "timestamp": "20201116153308",
-   "url": "https://www.kpax.com/weather/school-closings-delays?_renderer=json",
-   "station": "scripps-kpax",
-   "why": "storm day 2020-11-16 (market score 0.07)"
+   "timestamp": "20221102085911",
+   "url": "https://www.sunburst.k12.mt.us/",
+   "station": "apptegy-sunburst-mt",
+   "why": "storm day 2022-11-02 (market score 1.00)"
   },
   {
-   "timestamp": "20200212075536",
-   "url": "https://www.kpax.com/weather/school-closings-delays",
-   "station": "scripps-kpax",
-   "why": "storm day 2020-02-12 (market score 0.07)"
+   "timestamp": "20230314202520",
+   "url": "https://www.sunburst.k12.mt.us/",
+   "station": "apptegy-sunburst-mt",
+   "why": "storm day 2023-03-15 (market score 1.00)"
   },
   {
-   "timestamp": "20200210061316",
-   "url": "https://www.kpax.com/weather/school-closings-delays",
-   "station": "scripps-kpax",
-   "why": "storm day 2020-02-10 (market score 0.07)"
+   "timestamp": "20251217065415",
+   "url": "https://www.fremont6.org/",
+   "station": "apptegy-fremont-6-wy",
+   "why": "storm day 2025-12-17 (market score 1.00)"
   },
   {
-   "timestamp": "20200127044218",
-   "url": "https://www.kpax.com/weather/school-closings-delays",
-   "station": "scripps-kpax",
-   "why": "storm day 2020-01-27 (market score 0.04)"
+   "timestamp": "20241105070135",
+   "url": "https://www.fremont6.org/",
+   "station": "apptegy-fremont-6-wy",
+   "why": "storm day 2024-11-05 (market score 1.00)"
   },
   {
-   "timestamp": "20221110122805",
-   "url": "https://www.kpax.com/weather/school-closings-delays",
-   "station": "scripps-kpax",
-   "why": "a winter capture of the former address (2022-11-10)"
+   "timestamp": "20240226045527",
+   "url": "https://www.fremont6.org/",
+   "station": "apptegy-fremont-6-wy",
+   "why": "storm day 2024-02-26 (market score 1.00)"
   },
   {
-   "timestamp": "20170521152944",
-   "url": "http://www.kens5.com/closings",
-   "station": "tegna-kens",
-   "why": "an unread capture of the list, read so that every capture of it is read (2017-05-21)"
+   "timestamp": "20221219110009",
+   "url": "https://www.landerschools.org/",
+   "station": "apptegy-fremont-1-wy",
+   "why": "the December 2022 cold wave in the northern Rockies (2022-12-19)"
   },
   {
-   "timestamp": "20170620154510",
-   "url": "http://www.kens5.com/closings",
-   "station": "tegna-kens",
-   "why": "an unread capture of the list, read so that every capture of it is read (2017-06-20)"
+   "timestamp": "20240111103754",
+   "url": "https://www.landerschools.org/",
+   "station": "apptegy-fremont-1-wy",
+   "why": "the January 2024 cold wave in the northern Rockies (2024-01-11)"
   },
   {
-   "timestamp": "20170817140740",
-   "url": "http://www.kens5.com/closings",
-   "station": "tegna-kens",
-   "why": "an unread capture of the list, read so that every capture of it is read (2017-08-17)"
+   "timestamp": "20240118223647",
+   "url": "https://www.landerschools.org/",
+   "station": "apptegy-fremont-1-wy",
+   "why": "the January 2024 cold wave in the northern Rockies (2024-01-19)"
   },
   {
-   "timestamp": "20170831165318",
-   "url": "http://www.kens5.com/closings",
-   "station": "tegna-kens",
-   "why": "an unread capture of the list, read so that every capture of it is read (2017-09-01)"
+   "timestamp": "20190209050729",
+   "url": "http://www.landerschools.org:80/",
+   "station": "apptegy-fremont-1-wy",
+   "why": "the February 2019 cold and snow (2019-02-09)"
   },
   {
-   "timestamp": "20170924100059",
-   "url": "http://www.kens5.com/closings",
-   "station": "tegna-kens",
-   "why": "an unread capture of the list, read so that every capture of it is read (2017-09-24)"
+   "timestamp": "20190228183449",
+   "url": "http://www.landerschools.org:80/",
+   "station": "apptegy-fremont-1-wy",
+   "why": "the February 2019 cold and snow (2019-03-01)"
   },
   {
-   "timestamp": "20171005125744",
-   "url": "http://www.kens5.com/closings",
-   "station": "tegna-kens",
-   "why": "an unread capture of the list, read so that every capture of it is read (2017-10-05)"
+   "timestamp": "20250119111944",
+   "url": "https://www.landerschools.org/",
+   "station": "apptegy-fremont-1-wy",
+   "why": "the January 2025 cold (2025-01-19)"
   },
   {
-   "timestamp": "20200526132009",
-   "url": "https://www.kens5.com/closings",
-   "station": "tegna-kens",
-   "why": "an unread capture of the list, read so that every capture of it is read (2020-05-26)"
+   "timestamp": "20251217032728",
+   "url": "https://www.landerschools.org/",
+   "station": "apptegy-fremont-1-wy",
+   "why": "storm day 2025-12-17 (market score 1.00)"
   },
   {
-   "timestamp": "20200624100136",
-   "url": "https://www.kens5.com/closings",
-   "station": "tegna-kens",
-   "why": "an unread capture of the list, read so that every capture of it is read (2020-06-24)"
+   "timestamp": "20260517225235",
+   "url": "https://www.landerschools.org/",
+   "station": "apptegy-fremont-1-wy",
+   "why": "storm day 2026-05-18 (market score 1.00)"
   },
   {
-   "timestamp": "20200710175138",
-   "url": "https://www.kens5.com/closings",
-   "station": "tegna-kens",
-   "why": "an unread capture of the list, read so that every capture of it is read (2020-07-11)"
+   "timestamp": "20240113125103",
+   "url": "https://www.juabsd.org/",
+   "station": "apptegy-juab-ut",
+   "why": "the January 2024 cold wave in the northern Rockies (2024-01-13)"
   },
   {
-   "timestamp": "20200914150023",
-   "url": "https://www.kens5.com/closings",
-   "station": "tegna-kens",
-   "why": "an unread capture of the list, read so that every capture of it is read (2020-09-14)"
+   "timestamp": "20240113165022",
+   "url": "https://www.juabsd.org/",
+   "station": "apptegy-juab-ut",
+   "why": "the January 2024 cold wave in the northern Rockies (2024-01-14)"
   },
   {
-   "timestamp": "20200916152044",
-   "url": "https://www.kens5.com/closings",
-   "station": "tegna-kens",
-   "why": "an unread capture of the list, read so that every capture of it is read (2020-09-16)"
+   "timestamp": "20240115151100",
+   "url": "https://www.juabsd.org/",
+   "station": "apptegy-juab-ut",
+   "why": "the January 2024 cold wave in the northern Rockies (2024-01-15)"
   },
   {
-   "timestamp": "20201001140025",
-   "url": "https://www.kens5.com/closings",
-   "station": "tegna-kens",
-   "why": "an unread capture of the list, read so that every capture of it is read (2020-10-01)"
+   "timestamp": "20240118130600",
+   "url": "https://www.juabsd.org/",
+   "station": "apptegy-juab-ut",
+   "why": "the January 2024 cold wave in the northern Rockies (2024-01-18)"
   },
   {
-   "timestamp": "20201018151601",
-   "url": "https://www.kens5.com/closings",
-   "station": "tegna-kens",
-   "why": "an unread capture of the list, read so that every capture of it is read (2020-10-18)"
+   "timestamp": "20240111223040",
+   "url": "https://www.juabsd.org/",
+   "station": "apptegy-juab-ut",
+   "why": "the January 2024 cold wave in the northern Rockies (2024-01-12)"
   },
   {
-   "timestamp": "20210417100418",
-   "url": "https://www.kens5.com/closings",
-   "station": "tegna-kens",
-   "why": "an unread capture of the list, read so that every capture of it is read (2021-04-17)"
+   "timestamp": "20240115235641",
+   "url": "https://www.juabsd.org/",
+   "station": "apptegy-juab-ut",
+   "why": "the January 2024 cold wave in the northern Rockies (2024-01-16)"
   },
   {
-   "timestamp": "20210826100430",
-   "url": "https://www.kens5.com/closings",
-   "station": "tegna-kens",
-   "why": "an unread capture of the list, read so that every capture of it is read (2021-08-26)"
+   "timestamp": "20240118223140",
+   "url": "https://www.juabsd.org/",
+   "station": "apptegy-juab-ut",
+   "why": "the January 2024 cold wave in the northern Rockies (2024-01-19)"
   },
   {
-   "timestamp": "20210919144518",
-   "url": "https://www.kens5.com/closings",
-   "station": "tegna-kens",
-   "why": "an unread capture of the list, read so that every capture of it is read (2021-09-19)"
+   "timestamp": "20250118120105",
+   "url": "https://www.juabsd.org/",
+   "station": "apptegy-juab-ut",
+   "why": "the January 2025 cold (2025-01-18)"
   },
   {
-   "timestamp": "20210922173601",
-   "url": "https://www.kens5.com/closings",
-   "station": "tegna-kens",
-   "why": "an unread capture of the list, read so that every capture of it is read (2021-09-23)"
+   "timestamp": "20230222150000",
+   "url": "https://www.wsd.net/",
+   "station": "apptegy-weber-ut",
+   "why": "the Utah snow day of 22 February 2023 (the archive serves the nearest capture; the homepage was never listed)"
   },
   {
-   "timestamp": "20210924163843",
-   "url": "https://www.kens5.com/closings",
-   "station": "tegna-kens",
-   "why": "an unread capture of the list, read so that every capture of it is read (2021-09-25)"
-  },
-  {
-   "timestamp": "20211023141640",
-   "url": "https://www.kens5.com/closings",
-   "station": "tegna-kens",
-   "why": "an unread capture of the list, read so that every capture of it is read (2021-10-23)"
-  },
-  {
-   "timestamp": "20211026101734",
-   "url": "https://www.kens5.com/closings",
-   "station": "tegna-kens",
-   "why": "an unread capture of the list, read so that every capture of it is read (2021-10-26)"
-  },
-  {
-   "timestamp": "20220527155110",
-   "url": "https://www.kens5.com/closings",
-   "station": "tegna-kens",
-   "why": "an unread capture of the list, read so that every capture of it is read (2022-05-27)"
-  },
-  {
-   "timestamp": "20220715105343",
-   "url": "https://www.kens5.com/closings",
-   "station": "tegna-kens",
-   "why": "an unread capture of the list, read so that every capture of it is read (2022-07-15)"
+   "timestamp": "20230223020000",
+   "url": "https://www.wsd.net/",
+   "station": "apptegy-weber-ut",
+   "why": "the evening of the Utah snow day of 22 February 2023 (nearest capture)"
   }
  ]
 }
