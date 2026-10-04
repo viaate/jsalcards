@@ -13,14 +13,9 @@
  *    below zoom 4, see glowSizeScale) at a cost that does not depend on the
  *    number of points. Light past a knee feeds the bloom at a falling rate,
  *    so its size has a bound.
- *    Nationally the composite shows no lone core: the blend, one bloom level
- *    blurred to a smooth Gaussian, carries their light instead, so the points
- *    read as one field rather than a scatter of specks, and only where cores
- *    pile up inside the field does a share of them show sharp, as grain.
- *    Below zoom 4 the blend stands on a floor (blendFloor), so every school
- *    shows at least as brightly as a lone one, above the state lines.
- *    The light target has the device's own resolution, up to two pixels per
- *    CSS pixel, so the light is as sharp as the map under it.
+ *    Nationally the blend, one bloom level blurred smooth and floored above
+ *    the state lines (blendFloor), carries the cores' light; the light target
+ *    has the device's own resolution, up to two pixels per CSS pixel.
  * 2. render, composite: a full-screen pass turns the per-status light into
  *    linear RGB (overlapping statuses blend, the leading one keeps its hue),
  *    tone maps it (Reinhard on luminance, hue preserving) and screens it onto
@@ -854,11 +849,8 @@ export class GlowLayer implements CustomLayerInterface {
    * Halves the light target once per bloom level, then walks back up to level
    * 1: each step tent-upsamples the coarser level onto the finer one, which
    * the blend first scales by its own weight. Level 1 ends up holding every
-   * weighted scale of bloom; the composite adds it to the core light.
-   *
-   * Where the blend needs a blur, its level is blurred across into a spare
-   * target once the chain is down, then vertically back onto the level with
-   * the blend's weight once the coarser levels are in.
+   * weighted scale of bloom; the composite adds it to the core light. The
+   * blend's level is blurred across on the way down and back on the way up.
    */
   private drawBloom(gl: WebGL2RenderingContext, res: GpuResources, frame: FrameState): void {
     const weights = frame.bloomWeights;
@@ -927,10 +919,7 @@ export class GlowLayer implements CustomLayerInterface {
     }
   }
 
-  /**
-   * One axis of the blend's blur from `source` into `target`, scaled by
-   * `scale`; with `floored`, the second pass, put on the blend's floor.
-   */
+  /** One axis of the blend's blur, scaled by `scale`; the second, `floored`, on the blend's floor. */
   private drawBlur(
     gl: WebGL2RenderingContext,
     res: GpuResources,

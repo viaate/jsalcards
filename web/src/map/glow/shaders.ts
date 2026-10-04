@@ -211,12 +211,7 @@ void main() {
 }
 `;
 
-/**
- * One axis of the blend's Gaussian blur, on a bloom level of the same size as
- * the target, scaled by u_scale. Taps are taken in pairs, each pair one
- * bilinear fetch between two texels weighted to match both. The second pass
- * puts the blend on its floor below zoom 4 (blendFloor in curves.ts).
- */
+/** One axis of the blend's Gaussian blur, taps in bilinear pairs; the second pass floors it (blendFloor). */
 export const BLUR_FRAG = /* glsl */ `#version 300 es
 precision highp float;
 uniform sampler2D u_source;
@@ -256,9 +251,7 @@ uniform sampler2D u_bloom;
 // The 8-bit fallback's fine light target; unused on the float path.
 uniform sampler2D u_lightFine;
 uniform float u_bloomScale;
-// Share of the core light shown sharp. The float path keeps whole cores in
-// the light target, since the bloom is made from them; nationally it shows
-// none, and the blend carries their light instead. 1 for the fallback.
+// Share of the core light shown sharp: none nationally on the float path, 1 for the fallback.
 uniform float u_coreShare;
 // Nationally, cores shown where they pile up inside a field, as grain (DENSE_* in curves.ts).
 uniform float u_denseShare;

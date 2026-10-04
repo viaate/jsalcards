@@ -136,14 +136,7 @@ export const BLOOM_WEIGHT_STOPS: readonly (readonly [zoom: number, weights: read
     [11, [0, 0, 0, 0, 0]],
   ];
 
-/**
- * Share of the fine light shown where it is: each point's core, and the
- * bloom's scales no wider than the blend. None nationally, where cores a few
- * pixels apart read as a scatter of specks rather than as light (but see
- * {@link DENSE_SHARE_STOPS}); from zoom 4.5 to 5.5 the cores come in, so a
- * regional view shows each town and school as a crisp small light over the
- * blend's field; all of it from zoom 8, where each school stands on its own.
- */
+/** Share of the cores (and bloom no wider than the blend) shown where they are: none nationally, where they read as specks. */
 export const CORE_SHARE_STOPS: ZoomStops = [
   [4.5, 0],
   [5.5, 0.4],
@@ -171,14 +164,7 @@ export function loneBlendPeak(style: GlowFrameStyle): number {
   return (style.gain * style.blend * style.coreSigmaPx ** 2) / style.blendSigmaPx ** 2;
 }
 
-/**
- * Standard deviation of the blend, CSS px: the fine light that is not shown
- * where it is, spread as one smooth Gaussian. About 15 km at zoom 4 and 10 km
- * at zoom 6, wide enough to merge neighboring rural schools into one field
- * and well inside the bloom's own reach, so the light stays over the schools
- * that make it. Below zoom 4 it shrinks with the map, to no less than
- * {@link BLEND_MIN_SIGMA_PX}.
- */
+/** Sigma of the blend, CSS px: about 15 km at zoom 4, wide enough to merge rural neighbors, inside the bloom's reach. */
 export const BLEND_SIGMA_STOPS: ZoomStops = [
   [4.5, 4],
   [5, 7],
@@ -199,10 +185,7 @@ export const BLEND_FLOOR_LIGHT = 0.15;
 /** Sizes (glowSizeScale) at which {@link BLEND_FLOOR_LIGHT} is all and none of a lone school's peak. */
 export const BLEND_LIFT_SCALES: readonly [full: number, none: number] = [0.3, 0.58];
 
-/**
- * Blend light shown for `total`: raised by `gain` up to a lone school's peak (`knee`), never less
- * above it, so no field of schools shows dimmer than a lone one. JS mirror of the shader.
- */
+/** Blend light shown for `total`, raised by `gain` up to a lone school's peak (`knee`) and never less above it. */
 export function blendFloor(total: number, gain: number, knee: number): number {
   if (!(gain > 1) || !(total > 0)) return total;
   const x2 = (total / (FLOOR_ROOM * knee)) ** 2;
@@ -253,22 +236,12 @@ function ownBloomWeights(zoom: number): number[] {
   );
 }
 
-/**
- * Share of a bloom scale that joins a blend of standard deviation `sigmaPx`:
- * all of a scale no wider than the blend, none of one √2 times wider, and in
- * between by log2 of the ratio, so nothing jumps as the blend widens.
- */
+/** Share of a bloom scale the blend takes: all of one no wider, none of one √2 times wider, smoothly between. */
 export function blendShareOfScale(scalePx: number, sigmaPx: number): number {
   return Math.min(Math.max(1 - 2 * Math.log2(scalePx / sigmaPx), 0), 1);
 }
 
-/**
- * The bloom and the blend at `zoom`, with the glow shrunk by `sizeScale`
- * ({@link glowSizeScale}); see {@link GlowFrameStyle}. The bloom's weights
- * are cut by it and its scales shrink by it, so more of them fall inside the
- * blend on a small screen. The cores' light in the blend is cut only by the
- * gain, as the cores' own light is.
- */
+/** The bloom and the blend at `zoom` with the glow shrunk by `sizeScale`; see {@link GlowFrameStyle}. */
 function bloomAndBlend(
   zoom: number,
   sizeScale: number,
@@ -292,10 +265,7 @@ function bloomAndBlend(
   return { bloom, blend, blendSigmaPx };
 }
 
-/**
- * Bloom weights for each entry of {@link BLOOM_SCALES_PX} at `zoom`, less the
- * light the blend carries, and cut by {@link glowSizeScale} below zoom 4.
- */
+/** Bloom weights for each entry of {@link BLOOM_SCALES_PX} at `zoom`, less the light the blend carries. */
 export function bloomWeights(zoom: number): number[] {
   return bloomAndBlend(zoom, glowSizeScale(zoom)).bloom;
 }
@@ -383,22 +353,13 @@ export interface BlendBlur extends BlendPlan {
 
 /** What the layer draws for the bloom and the blend in one frame. */
 export interface BloomPlan {
-  /**
-   * Weight of each bloom level drawn, level 1 first, whose texels are
-   * 2 / targetPxPerCssPx CSS px and each level's twice the last. A blend
-   * that needs no blur is in its level's weight.
-   */
+  /** Weight of each bloom level drawn, level 1 (texels of 2 / targetPxPerCssPx CSS px) first. */
   readonly weights: readonly number[];
   /** The blend's blur, or null when there is no blend or it needs none. */
   readonly blur: BlendBlur | null;
 }
 
-/**
- * What the layer draws for the bloom and the blend on a light target of
- * `targetPxPerCssPx` whose smaller side is `sizePx` target px: the bloom's
- * levels ({@link bloomLevels}) and the blend, added into its level where it
- * needs no blur, or blurred there.
- */
+/** The bloom's levels and the blend on a light target whose smaller side is `sizePx` target px. */
 export function bloomPlan(
   style: GlowFrameStyle,
   targetPxPerCssPx: number,
@@ -512,13 +473,7 @@ export const FALLBACK_HALO_RADIUS_STOPS: ZoomStops = [
   [11, 12],
 ];
 
-/**
- * The fallback's per-point halo at a zoom: its own halo, the folded bloom
- * and the blend. The blend is the point's own fine light, so all of it goes
- * in, at its own spread as far as the halo's radius allows. Below zoom 4 the
- * halo shrinks as the blend does, with the map until the blend stops at
- * {@link BLEND_MIN_SIGMA_PX}, so it holds the blend as on a desktop.
- */
+/** The fallback's per-point halo at a zoom: its own halo, the folded bloom and the blend, shrinking as the blend does. */
 export function fallbackHalo(style: GlowFrameStyle, zoom: number): HaloShape {
   const folded = style.bloom.reduce((sum, w, i) => sum + w * (FALLBACK_BLOOM_FOLD[i] ?? 0), 0);
   const spread = folded + style.blend;
@@ -791,11 +746,7 @@ const CORE_REACH_SIGMAS = 3;
  */
 export const CORE_EDGE_D2 = 0.5625;
 
-/**
- * `coreShare` is the share of the core drawn. The float path draws all of it,
- * since its bloom is made from the light target, and its composite shows
- * only `style.coreShare`; the fallback, with no bloom, draws that share itself.
- */
+/** `coreShare` is the share of the core drawn: all on the float path, whose bloom needs it; the shown share on the fallback. */
 export function kernelUniforms(
   style: GlowFrameStyle,
   targetPxPerCssPx: number,
