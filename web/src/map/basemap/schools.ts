@@ -200,11 +200,7 @@ export function schoolDotRadius(zoom: number): number {
   return dotAt(DOT_RADIUS, zoom) + dotAt(DOT_RING, zoom);
 }
 
-/**
- * How the glow layer draws a school's speck of dust at a zoom (dots.ts), for
- * the same readers: how opaque it is (none outside the dust's zooms), and its
- * radius on the screen in CSS pixels.
- */
+/** The same for a school's speck of dust, which the glow layer draws further out (dots.ts). */
 export function schoolDustOpacity(zoom: number): number {
   return zoom >= SCHOOL_DUST_FROM && zoom < SCHOOL_DUST_UNTIL ? dotAt(SCHOOL_DOT_OPACITY, zoom) : 0;
 }

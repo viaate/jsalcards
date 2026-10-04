@@ -103,10 +103,7 @@ export interface Glow {
    * the menu's filter shows (state/filter.ts showsSchool), as the dots show.
    */
   showSchools(shows: (flags: number) => boolean): void;
-  /**
-   * Shows the school with this id as dust whatever its kind, as the dots
-   * show the school whose panel is open; none with null.
-   */
+  /** Shows this school as dust whatever its kind, as the dots show the open one; null, none. */
   select(id: SchoolId | null): void;
   /** The dust, for a tap on a speck; null until it is drawn. */
   readonly specks: DustSpots | null;

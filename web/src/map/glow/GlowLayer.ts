@@ -350,7 +350,7 @@ export class GlowLayer implements CustomLayerInterface {
   private dustLitSet: ReadonlySet<number> = new Set();
   /** Which kinds of school show as dust, by their kind flags. */
   private dustShows: (kind: number) => boolean = () => true;
-  /** The school shown as dust whatever its kind (a place in setDust's list), and its slot in the grid. */
+  /** The school shown as dust whatever its kind (keepDust), and its slot in the grid. */
   private dustKeptSchool: number | null = null;
   private dustKept = -1;
   /** The positions the GPU draws: the grid's, with each speck left out moved off the world. */
@@ -443,11 +443,7 @@ export class GlowLayer implements CustomLayerInterface {
     if (this.placeAllDust()) this.map?.triggerRepaint();
   }
 
-  /**
-   * Shows this school (a place in setDust's list) as dust whatever its kind,
-   * as the page shows the school whose panel is open, or none with null. A
-   * school the glow lights still gives way to its light.
-   */
+  /** Shows this school as dust whatever its kind (the open school), or none with null. */
   keepDust(school: number | null): void {
     this.dustKeptSchool = school;
     const before = this.dustKept;
