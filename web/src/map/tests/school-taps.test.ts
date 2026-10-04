@@ -341,19 +341,26 @@ describe('a lit school', () => {
     expect(litInReach(lit([]), pointer(0, 0), map.scale, HIT_RADIUS.touch, 2)).toEqual([]);
   });
 
-  it('is its glyph up close and its bright core further out', () => {
+  it('is its glyph up close, its bright core in a city, and its blend’s spread farther out', () => {
     expect(litRadius(14)).toBeGreaterThan(4);
-    expect(litRadius(4)).toBeGreaterThan(1);
-    expect(litRadius(4)).toBeLessThan(litRadius(14));
+    expect(litRadius(9)).toBeGreaterThan(1);
+    expect(litRadius(9)).toBeLessThan(litRadius(14));
+    // Where the blend carries a lone light, two of its standard deviations: 4 px on a phone's
+    // national view and 8 on a desktop's, as far as its light shows; then less as its core comes
+    // in, under 7 px from zoom 5.5, where the wash around a crisp core is too faint to be its mark.
+    expect(litRadius(2.12)).toBeCloseTo(4, 6);
+    expect(litRadius(4)).toBeCloseTo(8, 6);
+    for (let zoom = 2; zoom <= 5; zoom += 0.25) expect(litRadius(zoom)).toBeGreaterThanOrEqual(4);
+    for (let zoom = 5.5; zoom <= 10; zoom += 0.25) expect(litRadius(zoom)).toBeLessThan(7);
+    expect(litRadius(8)).toBeLessThan(3);
   });
 
-  it('at zooms 4.5 to 6 takes a mouse’s click about 8 px from its center, a finger’s about 18', () => {
-    // The numbers glow-mount.ts gives for litRadius there.
+  it('at zooms 4.5 to 6 takes a click across the light it shows, not across its faint wash', () => {
+    // A lone light there shows above 24 of 255 within about 4 to 7 px of its center.
     for (const zoom of [4.5, 5, 5.5, 6]) {
-      expect(litRadius(zoom)).toBeGreaterThan(1.8);
-      expect(litRadius(zoom)).toBeLessThanOrEqual(2);
-      expect(litRadius(zoom) + HIT_RADIUS.mouse).toBeCloseTo(8, 0);
-      expect(litRadius(zoom) + HIT_RADIUS.touch).toBeCloseTo(18, 0);
+      expect(litRadius(zoom)).toBeGreaterThan(6);
+      expect(litRadius(zoom)).toBeLessThan(9.5);
+      expect(litRadius(zoom) + HIT_RADIUS.mouse).toBeLessThan(16);
     }
   });
 
