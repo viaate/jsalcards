@@ -179,16 +179,8 @@ export function compositeLight(
     const keep = weights[i - 2] ?? 0;
     for (let t = 0; t < up.length; t++) up[t] = (up[t] ?? 0) + keep * (target.data[t] ?? 0);
     if (across !== undefined && blend !== null && i - 1 === blend.level) {
-      const { sigmaTexels, radius, weight } = blend;
-      const down = blur(
-        across,
-        sigmaTexels,
-        radius,
-        false,
-        weight,
-        style.floorGain,
-        style.floorKnee,
-      );
+      const { sigmaTexels, radius, weight, floorGain, floorKnee } = blend;
+      const down = blur(across, sigmaTexels, radius, false, weight, floorGain, floorKnee);
       for (let t = 0; t < up.length; t++) up[t] = (up[t] ?? 0) + (down.data[t] ?? 0);
     }
     levels[i - 1] = { size: target.size, data: up };

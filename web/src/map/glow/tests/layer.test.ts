@@ -2,6 +2,7 @@ import type { CustomRenderMethodInput, Map as MapLibreMap } from 'maplibre-gl';
 import { describe, expect, it, vi } from 'vitest';
 
 import { GlowLayer, GlowStatus } from '..';
+import { glowStyleAtZoom } from '../curves';
 import { dustStyle } from '../../glow-mount';
 import { mercatorXFromLng, mercatorYFromLat } from '../mercator';
 
@@ -287,6 +288,37 @@ describe('GlowLayer', () => {
     error.mockRestore();
     expect(layer.stats.dustDrawn).toBe(false);
     expect(near()).toEqual([]);
+  });
+
+  it('lifts a lone school far out over the state lines the map draws, asking for them until it has them', () => {
+    let lines: number | null = null;
+    let asked = 0;
+    const layer = new GlowLayer({
+      lineGray: () => {
+        asked += 1;
+        return lines;
+      },
+    });
+    const internals = layer as unknown as {
+      map: unknown;
+      beginFrame(gl: unknown, res: unknown): { style: { floorGain: number } };
+    };
+    internals.map = { getCanvas: () => ({ clientWidth: 390 }), getZoom: () => 2.12 };
+    const floorGain = (): number =>
+      internals.beginFrame(
+        { drawingBufferWidth: 1170, drawingBufferHeight: 2532 },
+        { float: true, maxTarget: [16384, 16384] },
+      ).style.floorGain;
+    const unknown = floorGain();
+    expect(unknown).toBe(glowStyleAtZoom(2.12).floorGain);
+    lines = 0x4d / 255;
+    const phone = floorGain();
+    expect(phone).toBe(glowStyleAtZoom(2.12, lines).floorGain);
+    expect(phone).toBeGreaterThan(unknown);
+    // Kept once known, as the map keeps its lines' color.
+    lines = 0x2a / 255;
+    expect(floorGain()).toBe(phone);
+    expect(asked).toBe(2);
   });
 
   it('draws the light at the device’s resolution up to two pixels per CSS pixel, and at one on the 8-bit fallback', () => {

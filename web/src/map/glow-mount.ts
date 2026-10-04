@@ -168,8 +168,20 @@ export function showsDust(zoom: number): boolean {
   return zoom > SCHOOL_DUST_FROM && zoom < SCHOOL_DUST_UNTIL;
 }
 
+/** The gray (sRGB, 0..1) of the state lines as the map draws them, or null until it has them. */
+export function stateLineGray(map: MapLibreMap): number | null {
+  if (map.getLayer(BASEMAP_IDS.usStates) === undefined) return null;
+  const color: unknown = map.getPaintProperty(BASEMAP_IDS.usStates, 'line-color');
+  const channels = typeof color === 'string' ? srgbChannels(color) : null;
+  return channels === null ? null : Math.max(...channels);
+}
+
 export function mountGlow(map: MapLibreMap): Glow {
-  const layer = new GlowLayer({ id: GLOW_LAYER_ID, dust: dustStyle() });
+  const layer = new GlowLayer({
+    id: GLOW_LAYER_ID,
+    dust: dustStyle(),
+    lineGray: () => stateLineGray(map),
+  });
   const dots = markLitDots(map);
   let removed = false;
   // A function, so each check reads it afresh after an await.

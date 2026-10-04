@@ -220,7 +220,7 @@ uniform vec2 u_step;
 uniform float u_sigma;
 uniform int u_radius;
 uniform float u_scale;
-// 1 but for the second pass below zoom 4.
+// 1 but for the second pass, until the cores are in.
 uniform float u_floorGain;
 uniform float u_floorKnee;
 in vec2 v_uv;
@@ -269,7 +269,7 @@ uniform float u_exposure;
 // 0 for a half-float light target. Otherwise the 8-bit fallback's alpha, to
 // turn its optical-depth encoding back into light.
 uniform float u_decode;
-// The fallback's floor below zoom 4, where its halos carry the blend; 1 on the float path.
+// The fallback's floor, where its halos carry the blend; 1 on the float path.
 uniform float u_floorGain;
 uniform float u_floorKnee;
 // Linear-light tokens for closed, delayed, remote, early dismissal.

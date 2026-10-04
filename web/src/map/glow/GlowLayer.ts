@@ -137,6 +137,8 @@ export interface GlowLayerOptions {
   readonly gpuTiming?: boolean;
   /** How to draw the schools given to setDust; without it, none are drawn. */
   readonly dust?: DustStyle;
+  /** The state lines' gray (sRGB, 0..1) under the glow, or null until the map has them; asked until known. */
+  readonly lineGray?: () => number | null;
 }
 
 /**
@@ -347,6 +349,7 @@ export class GlowLayer implements CustomLayerInterface {
 
   private cssWidth = 0;
   private cssWidthFor = -1;
+  private lineGray: number | null = null;
   private motionQuery: MediaQueryList | null = null;
   private prefersReducedMotion = false;
 
@@ -647,7 +650,8 @@ export class GlowLayer implements CustomLayerInterface {
     }
     const deviceRatio = this.cssWidth > 0 ? width / this.cssWidth : 1;
     const zoom = map?.getZoom() ?? 0;
-    const style = glowStyleAtZoom(zoom);
+    this.lineGray ??= this.options.lineGray?.() ?? null;
+    const style = glowStyleAtZoom(zoom, this.lineGray ?? undefined);
     const cssW = width / deviceRatio;
     const cssH = height / deviceRatio;
     const [maxW, maxH] = res.maxTarget;
@@ -903,16 +907,7 @@ export class GlowLayer implements CustomLayerInterface {
       gl.drawArrays(gl.TRIANGLES, 0, 3);
       if (blur !== null && across !== null && i - 1 === blur.level) {
         gl.blendFunc(gl.ONE, gl.ONE);
-        this.drawBlur(
-          gl,
-          res,
-          blur,
-          across,
-          target,
-          [0, 1 / across.height],
-          blur.weight,
-          frame.style,
-        );
+        this.drawBlur(gl, res, blur, across, target, [0, 1 / across.height], blur.weight, true);
         gl.useProgram(up.program);
         gl.blendFunc(gl.ONE, gl.CONSTANT_COLOR);
       }
@@ -928,7 +923,7 @@ export class GlowLayer implements CustomLayerInterface {
     target: LightTarget,
     step: readonly [number, number],
     scale: number,
-    floored: GlowFrameStyle | null = null,
+    floored = false,
   ): void {
     const program = res.blur;
     gl.useProgram(program.program);
@@ -937,8 +932,8 @@ export class GlowLayer implements CustomLayerInterface {
     gl.uniform1f(uniform(program, 'u_sigma'), blur.sigmaTexels);
     gl.uniform1i(uniform(program, 'u_radius'), blur.radius);
     gl.uniform1f(uniform(program, 'u_scale'), scale);
-    gl.uniform1f(uniform(program, 'u_floorGain'), floored?.floorGain ?? 1);
-    gl.uniform1f(uniform(program, 'u_floorKnee'), floored?.floorKnee ?? 1);
+    gl.uniform1f(uniform(program, 'u_floorGain'), floored ? blur.floorGain : 1);
+    gl.uniform1f(uniform(program, 'u_floorKnee'), floored ? blur.floorKnee : 1);
     gl.bindFramebuffer(gl.FRAMEBUFFER, target.framebuffer);
     gl.viewport(0, 0, target.width, target.height);
     gl.bindTexture(gl.TEXTURE_2D, source.texture);

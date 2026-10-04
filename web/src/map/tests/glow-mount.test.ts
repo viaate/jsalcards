@@ -14,7 +14,14 @@ import {
 } from '../basemap/dots';
 import { BASEMAP_IDS, SCHOOLS_TILE_LAYER, SCHOOL_LIT_STATE } from '../basemap/ids';
 import type { GlowLayer } from '../glow';
-import { DOT_COLOR, dustStyle, mountGlow, showsDust, srgbChannels } from '../glow-mount';
+import {
+  DOT_COLOR,
+  dustStyle,
+  mountGlow,
+  showsDust,
+  srgbChannels,
+  stateLineGray,
+} from '../glow-mount';
 import type { DustSource } from '../glow-mount';
 import { SHOW_ALL, showsSchool } from '../../state/filter';
 import { mercatorXFromLng, mercatorYFromLat } from '../glow/mercator';
@@ -170,6 +177,22 @@ describe('the glow on the map', () => {
     expect(glow.lit?.ids).toEqual(['290000000009']);
     glow.light(NOTHING_LIT);
     expect(glow.lit).toBe(NOTHING_LIT);
+  });
+
+  it('reads the gray of the state lines from the style, once the map has them', () => {
+    const colors = new Map<string, string>();
+    const map = {
+      getLayer: (id: string) => (colors.has(id) ? {} : undefined),
+      getPaintProperty: (id: string, name: string) => {
+        expect(name).toBe('line-color');
+        return colors.get(id);
+      },
+    } as unknown as MapLibreMap;
+    expect(stateLineGray(map)).toBeNull();
+    colors.set(BASEMAP_IDS.usStates, '#4d4d4d');
+    expect(stateLineGray(map)).toBeCloseTo(0x4d / 255, 12);
+    colors.set(BASEMAP_IDS.usStates, 'rgba(1, 2, 3, 1)');
+    expect(stateLineGray(map)).toBeNull();
   });
 
   it('marks nothing on a map without the school tiles', () => {

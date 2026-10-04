@@ -16,7 +16,8 @@
  *   country, the glow shrinks with the map (glowSizeScale), so the country
  *   looks as on a desktop: the bloom reaches 32 px at zoom 3, 16 px at 2.
  *   Only the blend stops shrinking, at 2 px, so the points still read as one
- *   field on a phone, where it stands on a floor (blendFloor) that keeps every
+ *   field on a phone.
+ * - Until zoom 5.5 the blend stands on a floor (blendFloor) that keeps every
  *   school in view above the state lines.
  * - From zoom 4.5 the cores come back as crisp small lights over the blend's
  *   wash (CORE_FOCUS_STOPS), each school standing on its own by zoom 8, and
@@ -29,6 +30,9 @@
  * light target once per scale, at a cost that does not grow with the number
  * of points.
  */
+
+import { STATUS_HEX, hexToLinear, luminance, srgbToLinear } from './color';
+import { PEAK_LUMINANCE } from './tonemap';
 
 /** A piecewise-linear curve over zoom, as [zoom, value] stops in ascending zoom order. */
 export type ZoomStops = readonly (readonly [zoom: number, value: number])[];
@@ -179,11 +183,20 @@ export function blendCutAtScale(sizeScale: number): number {
   return sizeScale < 1 ? sizeScale ** 1.5 : 1;
 }
 
-/** A lone school's blend peak on a phone, which its own light spread over 2 px would leave under the state lines. */
-export const BLEND_FLOOR_LIGHT = 0.15;
+/** How much brighter than the state lines a lone school shows until its core comes in, as displayed. */
+export const FLOOR_OVER_LINES = 1.3;
 
-/** Sizes (glowSizeScale) at which {@link BLEND_FLOOR_LIGHT} is all and none of a lone school's peak. */
-export const BLEND_LIFT_SCALES: readonly [full: number, none: number] = [0.3, 0.58];
+/** Zooms over which that floor gives way to the cores. */
+export const FLOOR_FADE: readonly [from: number, to: number] = [4.5, 5.5];
+
+/** The state lines' gray (sRGB, 0..1) under the glow unless the layer is told: a desktop's --line-state. */
+export const LINE_GRAY = 0x2a / 255;
+
+/** Light that shows closed's blue at `display` (sRGB, 0..1): the tone map undone on its full channel. */
+export function lightShownAt(display: number): number {
+  const blue = srgbToLinear(display);
+  return blue / (1 - (blue * luminance(hexToLinear(STATUS_HEX[0]))) / PEAK_LUMINANCE);
+}
 
 /** Blend light shown for `total`, raised by `gain` up to a lone school's peak (`knee`) and never less above it. */
 export function blendFloor(total: number, gain: number, knee: number): number {
@@ -346,9 +359,11 @@ export function bloomLevels(
   return weights;
 }
 
-/** The blend's blur in one frame, and the light it adds back into its level. */
+/** The blend's blur in one frame, the light it adds back into its level, and its floor there. */
 export interface BlendBlur extends BlendPlan {
   readonly weight: number;
+  readonly floorGain: number;
+  readonly floorKnee: number;
 }
 
 /** What the layer draws for the bloom and the blend in one frame. */
@@ -368,9 +383,14 @@ export function bloomPlan(
   const weights = bloomLevels(style, targetPxPerCssPx, sizePx);
   if (!(style.blend > 0)) return { weights, blur: null };
   const plan = blendPlan(style, targetPxPerCssPx);
-  if ((plan.radius > 0 || style.floorGain > 1) && plan.level < weights.length) {
+  // A level coarser than the blend spreads a lone school wider and dimmer: its floor lifts it back.
+  const drawnPx = Math.max(style.blendSigmaPx, 2 ** plan.level / targetPxPerCssPx);
+  const spread = (style.blendSigmaPx / drawnPx) ** 2;
+  const gain = style.floorGain / spread;
+  if ((plan.radius > 0 || gain > 1) && plan.level < weights.length) {
     // Blurred or floored, then added into its level on the way up, which needs a coarser level above.
-    return { weights, blur: { ...plan, weight: style.blend } };
+    const floorKnee = style.floorKnee * spread;
+    return { weights, blur: { ...plan, weight: style.blend, floorGain: gain, floorKnee } };
   }
   // A blend that needs no blur, or has no room for one, is its level as it is, if there is room.
   let size = sizePx;
@@ -502,7 +522,8 @@ export function fallbackFloor(style: GlowFrameStyle, zoom: number): { gain: numb
   if (!(style.floorGain > 1)) return { gain: 1, knee: 1 };
   const k = kernelUniforms(style, 1, fallbackHalo(style, zoom), style.coreShare);
   const knee = style.gain * kernelAt(k, 0);
-  return { gain: floorGain(knee, fieldPeak(style)), knee };
+  // Its core's shown share stands on the floor, as on the float path.
+  return { gain: floorGain(knee, fieldPeak(style) + style.gain * k.coreWeight), knee };
 }
 
 /** Smallest transmittance an 8-bit channel is decoded at: half its last step. */
@@ -660,7 +681,7 @@ export interface GlowFrameStyle {
   /** Light in the blend relative to the cores, and its standard deviation, CSS px. */
   readonly blend: number;
   readonly blendSigmaPx: number;
-  /** {@link blendFloor}'s gain on the blend, 1 from zoom 4 up, and its knee, a lone school's blend peak. */
+  /** {@link blendFloor}'s gain on the blend, 1 once the cores are in, and its knee, a lone school's blend peak. */
   readonly floorGain: number;
   readonly floorKnee: number;
   readonly glyphOpacity: number;
@@ -668,7 +689,8 @@ export interface GlowFrameStyle {
   readonly openRadiusPx: number;
 }
 
-export function glowStyleAtZoom(zoom: number): GlowFrameStyle {
+/** The glow's style at `zoom` over state lines of `lineGray` (sRGB, 0..1). */
+export function glowStyleAtZoom(zoom: number, lineGray = LINE_GRAY): GlowFrameStyle {
   const sizeScale = glowSizeScale(zoom);
   const coreShare = interpolateStops(CORE_SHARE_STOPS, zoom);
   const style = {
@@ -689,13 +711,15 @@ export function glowStyleAtZoom(zoom: number): GlowFrameStyle {
     openRadiusPx: interpolateStops(OPEN_RADIUS_STOPS, zoom),
   };
   const knee = loneBlendPeak(style);
-  // A lone school keeps the light the cut takes, and on a phone shows at the floor's light.
+  // A lone school keeps the light the cut takes, and shows above the state lines until its core is in.
   const uncut =
     knee *
     ((style.blend + (1 - coreShare) * (1 - blendCutAtScale(sizeScale))) /
       Math.max(style.blend, 1e-12));
-  const [full, none] = BLEND_LIFT_SCALES;
-  const peak = uncut + Math.max(BLEND_FLOOR_LIGHT - uncut, 0) * smoothstep(none, full, sizeScale);
+  const least =
+    lightShownAt(FLOOR_OVER_LINES * lineGray) *
+    (1 - smoothstep(FLOOR_FADE[0], FLOOR_FADE[1], zoom));
+  const peak = style.blend > 0 ? Math.max(uncut, least) : uncut;
   return { ...style, floorGain: floorGain(knee, peak), floorKnee: knee };
 }
 
