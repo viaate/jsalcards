@@ -104,8 +104,9 @@ const NOT_LIVE: LiveGlow = Object.freeze({ filter: () => undefined, stop: () => 
 
 /**
  * The glow's dust, from the directory this build ships: where every school
- * is and its kind (points.bin alone), then who each is (the whole
- * directory), for a tap on a speck. Each null when it ships none.
+ * is and its kind (points.bin alone), and who each is (the whole directory,
+ * which reads points.bin from the same download), for a tap on a speck.
+ * Each null when it ships none.
  */
 export function dustSource(data: AppData): DustSource {
   return {

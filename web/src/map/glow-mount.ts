@@ -17,8 +17,9 @@
  * directory's own positions: read the first time the map is at a zoom that
  * shows dust, so the national view reads nothing for it. The dust shows the
  * kinds of school the menu shows, as the dots do, and a tap on a speck finds
- * its school as a tap on a dot does (school-taps.ts), once every school's
- * name is in: read from the directory right after the positions.
+ * its school as a tap on a dot does (school-taps.ts). It is drawn only once
+ * every school's name is in too, read from the directory alongside the
+ * positions, so no speck shows that a tap could not open.
  */
 import type { Map as MapLibreMap } from 'maplibre-gl';
 
@@ -81,7 +82,7 @@ export interface SchoolNames {
   readonly names: readonly string[];
 }
 
-/** Where the dust comes from: every school, and then who each is. Null when there are none. */
+/** Where the dust comes from: every school, and who each is. Null when there are none. */
 export interface DustSource {
   positions(): Promise<Positions | null>;
   names(): Promise<SchoolNames | null>;
@@ -106,6 +107,7 @@ export interface Glow {
   /**
    * Shows every school as dust further out than the school tiles reach, from
    * `source`, read once: the first time the map is at a zoom that shows dust.
+   * Drawn once both where each school is and who it is are in.
    */
   dust(source: DustSource): void;
   /**
@@ -113,7 +115,7 @@ export interface Glow {
    * the menu's filter shows (state/filter.ts showsSchool), as the dots show.
    */
   showSchools(shows: (flags: number) => boolean): void;
-  /** The dust, for a tap on a speck; null until every school's name is in. */
+  /** The dust, for a tap on a speck; null until it is drawn. */
   readonly specks: DustSpots | null;
   remove(): void;
 }
@@ -191,13 +193,12 @@ export function mountGlow(map: MapLibreMap): Glow {
     pending = null;
     map.off('zoom', watchZoom);
     void (async () => {
-      const positions = await source.positions().catch(() => null);
-      if (gone() || positions === null) return;
+      const [positions, names] = await Promise.all([
+        source.positions().catch(() => null),
+        source.names().catch(() => null),
+      ]);
+      if (gone() || positions === null || names?.ids.length !== positions.kind.length) return;
       layer.setDust(positions.lngLat, positions.kind);
-      // Then who each school is, for a tap on its speck.
-      const names = await source.names().catch(() => null);
-      const count = positions.kind.length;
-      if (gone() || names?.ids.length !== count) return;
       specks = {
         lngLat: positions.lngLat,
         ids: names.ids,

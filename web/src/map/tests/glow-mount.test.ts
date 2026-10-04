@@ -209,13 +209,14 @@ describe('the dust', () => {
     expect(read.positions).not.toHaveBeenCalled();
     map.zoomTo(SCHOOL_DUST_FROM);
     expect(read.positions).not.toHaveBeenCalled();
-    // Zoomed in to where the dust shows: read, and on the layer; then who each school is.
+    // Zoomed in to where the dust shows: where each school is and who it is, read together, and on
+    // the layer.
     map.zoomTo(6);
     expect(read.positions).toHaveBeenCalledOnce();
+    expect(read.names).toHaveBeenCalledOnce();
     expect(map.watchingZoom).toBe(false);
     await settle();
     expect(map.layer?.stats.dust).toBe(3);
-    expect(read.names).toHaveBeenCalledOnce();
     map.zoomTo(7);
     glow.dust(read);
     expect(read.positions).toHaveBeenCalledOnce();
@@ -286,7 +287,7 @@ describe('the dust', () => {
     expect(nearKansasCity()).toEqual([]);
   });
 
-  it('is drawn, and takes no taps, while the names cannot be had or do not match', async () => {
+  it('is drawn only once who each school is is in: no speck shows that a tap could not open', async () => {
     for (const read of [
       source({ names: () => Promise.resolve(null) }),
       source({ names: () => Promise.reject(new Error('offline')) }),
@@ -298,9 +299,23 @@ describe('the dust', () => {
       const glow = mount(map);
       glow.dust(read);
       await settle();
-      expect(map.layer?.stats.dust).toBe(3);
+      expect(map.layer?.stats.dust).toBe(0);
       expect(glow.specks).toBeNull();
     }
+    // Names that come after the positions: nothing drawn until they do.
+    let named: (value: typeof names) => void = () => undefined;
+    const map = new FakeMap();
+    map.load();
+    map.zoom = 7;
+    const glow = mount(map);
+    glow.dust(source({ names: () => new Promise((resolve) => (named = resolve)) }));
+    await settle();
+    expect(map.layer?.stats.dust).toBe(0);
+    expect(glow.specks).toBeNull();
+    named(names);
+    await settle();
+    expect(map.layer?.stats.dust).toBe(3);
+    expect(glow.specks?.ids).toEqual(names.ids);
   });
 
   it('shows nothing when there is no directory, or reading it fails, and nothing once removed', async () => {
