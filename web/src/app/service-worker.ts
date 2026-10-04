@@ -7,13 +7,6 @@
 
 import type { ServiceWorkerHandle } from '../pwa/register';
 
-declare global {
-  interface Window {
-    /** The registration, for end-to-end tests: set only when navigator.webdriver is true. */
-    snowlightServiceWorker?: Promise<ServiceWorkerHandle | null>;
-  }
-}
-
 /** Resolves after the page's load event. */
 export function afterLoad(): Promise<void> {
   if (document.readyState === 'complete') return Promise.resolve();
@@ -40,6 +33,5 @@ export function startServiceWorker(
     .then(() => import('../pwa/register'))
     .then(({ registerServiceWorker }) => registerServiceWorker({ applyWhenHidden: true }))
     .catch(() => null);
-  if (navigator.webdriver) window.snowlightServiceWorker = handle;
   return handle;
 }
