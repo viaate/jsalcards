@@ -1,16 +1,739 @@
 {
  "snapshots": [
   {
-   "timestamp": "20221108230423",
-   "url": "https://www.flaglerschools.com/",
-   "station": "smartsites-flagler-fl",
-   "why": "storm day 2022-11-09 (market score 0.50)"
+   "timestamp": "20260127153528",
+   "url": "https://www.escambiak12.net/",
+   "station": "apptegy-escambia-al",
+   "why": "storm day 2026-01-27 (market score 0.50)"
   },
   {
-   "timestamp": "20250212075851",
-   "url": "https://www.abc4.com/weather/closings/",
-   "station": "nexstar-ktvx",
-   "why": "an unread capture of its list, read so that every capture of it is read"
+   "timestamp": "20260126153340",
+   "url": "https://www.escambiak12.net/",
+   "station": "apptegy-escambia-al",
+   "why": "storm day 2026-01-26 (market score 0.50)"
+  },
+  {
+   "timestamp": "20260125210742",
+   "url": "https://www.escambiak12.net/",
+   "station": "apptegy-escambia-al",
+   "why": "storm day 2026-01-26 (market score 0.50)"
+  },
+  {
+   "timestamp": "20250323011157",
+   "url": "https://www.thomasvilleschools.org/",
+   "station": "apptegy-thomasville-al",
+   "why": "2025-03-23: one of its largest captures, as no read has seen its list yet"
+  },
+  {
+   "timestamp": "20250216104953",
+   "url": "https://www.thomasvilleschools.org/",
+   "station": "apptegy-thomasville-al",
+   "why": "2025-02-16: one of its largest captures, as no read has seen its list yet"
+  },
+  {
+   "timestamp": "20220301181018",
+   "url": "https://www.sd5.k12.mt.us/",
+   "station": "finalsite-kalispell-mt",
+   "why": "storm day 2022-03-02 (market score 0.25)"
+  },
+  {
+   "timestamp": "20210226043701",
+   "url": "https://www.sd5.k12.mt.us/",
+   "station": "finalsite-kalispell-mt",
+   "why": "storm day 2021-02-26 (market score 0.25)"
+  },
+  {
+   "timestamp": "20200907015711",
+   "url": "https://www.sd5.k12.mt.us/",
+   "station": "finalsite-kalispell-mt",
+   "why": "storm day 2020-09-07 (market score 0.25)"
+  },
+  {
+   "timestamp": "20230118152921",
+   "url": "https://www.laramie2.org/",
+   "station": "finalsite-laramie-2-wy",
+   "why": "storm day 2023-01-18 (market score 1.00)"
+  },
+  {
+   "timestamp": "20230404114006",
+   "url": "https://www.laramie2.org/",
+   "station": "finalsite-laramie-2-wy",
+   "why": "storm day 2023-04-04 (market score 1.00)"
+  },
+  {
+   "timestamp": "20221128173746",
+   "url": "https://www.laramie2.org/",
+   "station": "finalsite-laramie-2-wy",
+   "why": "storm day 2022-11-29 (market score 1.00)"
+  },
+  {
+   "timestamp": "20191017214944",
+   "url": "https://www.satsumaschools.com/",
+   "station": "finalsite-satsuma-al",
+   "why": "storm day 2019-10-18 (market score 0.50)"
+  },
+  {
+   "timestamp": "20241111074240",
+   "url": "http://flashalertspokane.net/closures-cats.html",
+   "station": "flashalert-spokane",
+   "why": "storm day 2024-11-11 (market score 0.01)"
+  },
+  {
+   "timestamp": "20151027132426",
+   "url": "http://flashalertspokane.net/closures-cats.html",
+   "station": "flashalert-spokane",
+   "why": "storm day 2015-10-27 (market score 0.01)"
+  },
+  {
+   "timestamp": "20210216163002",
+   "url": "https://www.ktre.com/weather/closings/",
+   "station": "gray-ktre",
+   "why": "storm day 2021-02-17 (market score 1.00)"
+  },
+  {
+   "timestamp": "20210216171659",
+   "url": "https://www.ktre.com/weather/closings/",
+   "station": "gray-ktre",
+   "why": "storm day 2021-02-17 (market score 1.00)"
+  },
+  {
+   "timestamp": "20251119112859",
+   "url": "https://www.monroe.k12.al.us/en-US",
+   "station": "schoolblocks-monroe-al",
+   "why": "2025-11-19: one of its largest captures, as no read has seen its list yet"
+  },
+  {
+   "timestamp": "20260922005627",
+   "url": "https://www.monroe.k12.al.us/en-US",
+   "station": "schoolblocks-monroe-al",
+   "why": "2026-09-22: one of its largest captures, as no read has seen its list yet"
+  },
+  {
+   "timestamp": "20240925003811",
+   "url": "http://hamiltonfl.com/",
+   "station": "smartsites-hamilton-fl",
+   "why": "storm day 2024-09-25 (market score 1.00)"
+  },
+  {
+   "timestamp": "20240926021628",
+   "url": "http://hamiltonfl.com/",
+   "station": "smartsites-hamilton-fl",
+   "why": "storm day 2024-09-26 (market score 1.00)"
+  },
+  {
+   "timestamp": "20240925123800",
+   "url": "http://hamiltonfl.com/",
+   "station": "smartsites-hamilton-fl",
+   "why": "storm day 2024-09-25 (market score 1.00)"
+  },
+  {
+   "timestamp": "20221213144212",
+   "url": "https://www.laramie1.org/",
+   "station": "smartsites-laramie-1-wy",
+   "why": "storm day 2022-12-13 (market score 1.00)"
+  },
+  {
+   "timestamp": "20230425111146",
+   "url": "https://www.laramie1.org/",
+   "station": "smartsites-laramie-1-wy",
+   "why": "storm day 2023-04-25 (market score 1.00)"
+  },
+  {
+   "timestamp": "20230404044503",
+   "url": "https://www.laramie1.org/",
+   "station": "smartsites-laramie-1-wy",
+   "why": "storm day 2023-04-04 (market score 1.00)"
+  },
+  {
+   "timestamp": "20230127140711",
+   "url": "https://libbyschools.org/",
+   "station": "smartsites-libby-mt",
+   "why": "storm day 2023-01-27 (market score 1.00)"
+  },
+  {
+   "timestamp": "20250102190436",
+   "url": "https://libbyschools.org/",
+   "station": "smartsites-libby-mt",
+   "why": "storm day 2025-01-03 (market score 0.25)"
+  },
+  {
+   "timestamp": "20250102165304",
+   "url": "https://libbyschools.org/",
+   "station": "smartsites-libby-mt",
+   "why": "storm day 2025-01-03 (market score 0.25)"
+  },
+  {
+   "timestamp": "20241218205404",
+   "url": "https://www.orangebeachboe.org/",
+   "station": "smartsites-orange-beach-al",
+   "why": "2024-12-19: one of its largest captures, as no read has seen its list yet"
+  },
+  {
+   "timestamp": "20241223081642",
+   "url": "https://www.orangebeachboe.org/",
+   "station": "smartsites-orange-beach-al",
+   "why": "2024-12-23: one of its largest captures, as no read has seen its list yet"
+  },
+  {
+   "timestamp": "20240729104137",
+   "url": "https://www.orangebeachboe.org/",
+   "station": "smartsites-orange-beach-al",
+   "why": "2024-07-29: one of its largest captures, as no read has seen its list yet"
+  },
+  {
+   "timestamp": "20240125033048",
+   "url": "https://www.12news.com/closings",
+   "station": "tegna-kpnx",
+   "why": "storm day 2024-01-25 (market score 0.03)"
+  },
+  {
+   "timestamp": "20191120011921",
+   "url": "https://www.12news.com/closings",
+   "station": "tegna-kpnx",
+   "why": "storm day 2019-11-20 (market score 0.03)"
+  },
+  {
+   "timestamp": "20180207080534",
+   "url": "http://www.kvue.com/closings",
+   "station": "tegna-kvue",
+   "why": "storm day 2018-02-07 (market score 0.02)"
+  },
+  {
+   "timestamp": "20210215160333",
+   "url": "https://www.newswest9.com/closings",
+   "station": "tegna-kwes",
+   "why": "storm day 2021-02-16 (market score 0.04)"
+  },
+  {
+   "timestamp": "20171116095150",
+   "url": "http://www.abc10.com/closings",
+   "station": "tegna-kxtv",
+   "why": "storm day 2017-11-16 (market score 0.60)"
+  },
+  {
+   "timestamp": "20211215150703",
+   "url": "https://www.abc10.com/closings",
+   "station": "tegna-kxtv",
+   "why": "storm day 2021-12-15 (market score 0.35)"
+  },
+  {
+   "timestamp": "20230323041538",
+   "url": "https://www.abc10.com/closings",
+   "station": "tegna-kxtv",
+   "why": "storm day 2023-03-23 (market score 0.15)"
+  },
+  {
+   "timestamp": "20250109065459",
+   "url": "https://www.rocketcitynow.com/closings",
+   "station": "tegna-wzdx",
+   "why": "2025-01-09: a day a proven list sharing its counties held a row"
+  },
+  {
+   "timestamp": "20260126042239",
+   "url": "https://www.escambiak12.net/",
+   "station": "apptegy-escambia-al",
+   "why": "storm day 2026-01-26 (market score 0.50)"
+  },
+  {
+   "timestamp": "20260127033409",
+   "url": "https://www.escambiak12.net/",
+   "station": "apptegy-escambia-al",
+   "why": "storm day 2026-01-27 (market score 0.50)"
+  },
+  {
+   "timestamp": "20200907003617",
+   "url": "https://www.sd5.k12.mt.us/",
+   "station": "finalsite-kalispell-mt",
+   "why": "storm day 2020-09-07 (market score 0.25)"
+  },
+  {
+   "timestamp": "20201221212451",
+   "url": "https://www.sd5.k12.mt.us/",
+   "station": "finalsite-kalispell-mt",
+   "why": "storm day 2020-12-22 (market score 0.25)"
+  },
+  {
+   "timestamp": "20190102213354",
+   "url": "https://www.sd5.k12.mt.us/",
+   "station": "finalsite-kalispell-mt",
+   "why": "storm day 2019-01-03 (market score 0.25)"
+  },
+  {
+   "timestamp": "20201125080431",
+   "url": "https://www.sd5.k12.mt.us/",
+   "station": "finalsite-kalispell-mt",
+   "why": "storm day 2020-11-25 (market score 0.25)"
+  },
+  {
+   "timestamp": "20220302040917",
+   "url": "https://www.sd5.k12.mt.us/",
+   "station": "finalsite-kalispell-mt",
+   "why": "storm day 2022-03-02 (market score 0.25)"
+  },
+  {
+   "timestamp": "20210323031208",
+   "url": "https://www.sd5.k12.mt.us/",
+   "station": "finalsite-kalispell-mt",
+   "why": "storm day 2021-03-23 (market score 0.25)"
+  },
+  {
+   "timestamp": "20260306135922",
+   "url": "https://www.laramie2.org/",
+   "station": "finalsite-laramie-2-wy",
+   "why": "storm day 2026-03-06 (market score 1.00)"
+  },
+  {
+   "timestamp": "20210419002741",
+   "url": "https://www.laramie2.org/",
+   "station": "finalsite-laramie-2-wy",
+   "why": "storm day 2021-04-19 (market score 1.00)"
+  },
+  {
+   "timestamp": "20240416153223",
+   "url": "https://www.laramie2.org/",
+   "station": "finalsite-laramie-2-wy",
+   "why": "storm day 2024-04-16 (market score 0.25)"
+  },
+  {
+   "timestamp": "20231212022722",
+   "url": "https://www.laramie2.org/",
+   "station": "finalsite-laramie-2-wy",
+   "why": "storm day 2023-12-12 (market score 0.25)"
+  },
+  {
+   "timestamp": "20250211203946",
+   "url": "https://www.laramie2.org/",
+   "station": "finalsite-laramie-2-wy",
+   "why": "storm day 2025-02-12 (market score 0.25)"
+  },
+  {
+   "timestamp": "20240328215236",
+   "url": "https://www.laramie2.org/",
+   "station": "finalsite-laramie-2-wy",
+   "why": "storm day 2024-03-29 (market score 0.25)"
+  },
+  {
+   "timestamp": "20240927071532",
+   "url": "http://hamiltonfl.com/",
+   "station": "smartsites-hamilton-fl",
+   "why": "storm day 2024-09-27 (market score 0.50)"
+  },
+  {
+   "timestamp": "20221110002756",
+   "url": "http://hamiltonfl.com/",
+   "station": "smartsites-hamilton-fl",
+   "why": "storm day 2022-11-10 (market score 0.50)"
+  },
+  {
+   "timestamp": "20221110123525",
+   "url": "http://hamiltonfl.com/",
+   "station": "smartsites-hamilton-fl",
+   "why": "storm day 2022-11-10 (market score 0.50)"
+  },
+  {
+   "timestamp": "20230130104953",
+   "url": "https://www.laramie1.org/",
+   "station": "smartsites-laramie-1-wy",
+   "why": "storm day 2023-01-30 (market score 1.00)"
+  },
+  {
+   "timestamp": "20230118105223",
+   "url": "https://www.laramie1.org/",
+   "station": "smartsites-laramie-1-wy",
+   "why": "storm day 2023-01-18 (market score 1.00)"
+  },
+  {
+   "timestamp": "20230102105007",
+   "url": "https://www.laramie1.org/",
+   "station": "smartsites-laramie-1-wy",
+   "why": "storm day 2023-01-02 (market score 1.00)"
+  },
+  {
+   "timestamp": "20221117110228",
+   "url": "https://www.laramie1.org/",
+   "station": "smartsites-laramie-1-wy",
+   "why": "storm day 2022-11-17 (market score 1.00)"
+  },
+  {
+   "timestamp": "20221130115918",
+   "url": "https://www.laramie1.org/",
+   "station": "smartsites-laramie-1-wy",
+   "why": "storm day 2022-11-30 (market score 1.00)"
+  },
+  {
+   "timestamp": "20221129033926",
+   "url": "https://www.laramie1.org/",
+   "station": "smartsites-laramie-1-wy",
+   "why": "storm day 2022-11-29 (market score 1.00)"
+  },
+  {
+   "timestamp": "20211210025940",
+   "url": "https://www.laramie1.org/",
+   "station": "smartsites-laramie-1-wy",
+   "why": "storm day 2021-12-10 (market score 1.00)"
+  },
+  {
+   "timestamp": "20230403134614",
+   "url": "https://www.laramie1.org/",
+   "station": "smartsites-laramie-1-wy",
+   "why": "storm day 2023-04-03 (market score 1.00)"
+  },
+  {
+   "timestamp": "20240307021752",
+   "url": "https://www.laramie1.org/",
+   "station": "smartsites-laramie-1-wy",
+   "why": "storm day 2024-03-07 (market score 1.00)"
+  },
+  {
+   "timestamp": "20240312224833",
+   "url": "https://www.laramie1.org/",
+   "station": "smartsites-laramie-1-wy",
+   "why": "storm day 2024-03-13 (market score 1.00)"
+  },
+  {
+   "timestamp": "20240115045456",
+   "url": "https://www.laramie1.org/",
+   "station": "smartsites-laramie-1-wy",
+   "why": "storm day 2024-01-15 (market score 1.00)"
+  },
+  {
+   "timestamp": "20240114180517",
+   "url": "https://www.laramie1.org/",
+   "station": "smartsites-laramie-1-wy",
+   "why": "storm day 2024-01-15 (market score 1.00)"
+  },
+  {
+   "timestamp": "20231226103813",
+   "url": "https://www.laramie1.org/",
+   "station": "smartsites-laramie-1-wy",
+   "why": "storm day 2023-12-26 (market score 1.00)"
+  },
+  {
+   "timestamp": "20231124103843",
+   "url": "https://www.laramie1.org/",
+   "station": "smartsites-laramie-1-wy",
+   "why": "storm day 2023-11-24 (market score 1.00)"
+  },
+  {
+   "timestamp": "20231123032245",
+   "url": "https://www.laramie1.org/",
+   "station": "smartsites-laramie-1-wy",
+   "why": "storm day 2023-11-23 (market score 1.00)"
+  },
+  {
+   "timestamp": "20220520141325",
+   "url": "https://www.laramie1.org/",
+   "station": "smartsites-laramie-1-wy",
+   "why": "storm day 2022-05-20 (market score 1.00)"
+  },
+  {
+   "timestamp": "20230223045049",
+   "url": "https://www.laramie1.org/",
+   "station": "smartsites-laramie-1-wy",
+   "why": "storm day 2023-02-23 (market score 0.50)"
+  },
+  {
+   "timestamp": "20221221105010",
+   "url": "https://www.laramie1.org/",
+   "station": "smartsites-laramie-1-wy",
+   "why": "storm day 2022-12-21 (market score 0.50)"
+  },
+  {
+   "timestamp": "20221222020002",
+   "url": "https://www.laramie1.org/",
+   "station": "smartsites-laramie-1-wy",
+   "why": "storm day 2022-12-22 (market score 0.50)"
+  },
+  {
+   "timestamp": "20221223120707",
+   "url": "https://www.laramie1.org/",
+   "station": "smartsites-laramie-1-wy",
+   "why": "storm day 2022-12-23 (market score 0.50)"
+  },
+  {
+   "timestamp": "20240116110301",
+   "url": "https://www.laramie1.org/",
+   "station": "smartsites-laramie-1-wy",
+   "why": "storm day 2024-01-16 (market score 0.50)"
+  },
+  {
+   "timestamp": "20221103110250",
+   "url": "https://www.laramie1.org/",
+   "station": "smartsites-laramie-1-wy",
+   "why": "storm day 2022-11-03 (market score 0.25)"
+  },
+  {
+   "timestamp": "20231212010012",
+   "url": "https://www.laramie1.org/",
+   "station": "smartsites-laramie-1-wy",
+   "why": "storm day 2023-12-12 (market score 0.25)"
+  },
+  {
+   "timestamp": "20230414053745",
+   "url": "https://www.laramie1.org/",
+   "station": "smartsites-laramie-1-wy",
+   "why": "storm day 2023-04-14 (market score 0.25)"
+  },
+  {
+   "timestamp": "20230119105048",
+   "url": "https://www.laramie1.org/",
+   "station": "smartsites-laramie-1-wy",
+   "why": "storm day 2023-01-19 (market score 0.25)"
+  },
+  {
+   "timestamp": "20230104105052",
+   "url": "https://www.laramie1.org/",
+   "station": "smartsites-laramie-1-wy",
+   "why": "storm day 2023-01-04 (market score 0.25)"
+  },
+  {
+   "timestamp": "20230103105030",
+   "url": "https://www.laramie1.org/",
+   "station": "smartsites-laramie-1-wy",
+   "why": "storm day 2023-01-03 (market score 0.25)"
+  },
+  {
+   "timestamp": "20230201065328",
+   "url": "https://www.laramie1.org/",
+   "station": "smartsites-laramie-1-wy",
+   "why": "storm day 2023-02-01 (market score 0.25)"
+  },
+  {
+   "timestamp": "20230131165435",
+   "url": "https://www.laramie1.org/",
+   "station": "smartsites-laramie-1-wy",
+   "why": "storm day 2023-02-01 (market score 0.25)"
+  },
+  {
+   "timestamp": "20230327105019",
+   "url": "https://www.laramie1.org/",
+   "station": "smartsites-laramie-1-wy",
+   "why": "storm day 2023-03-27 (market score 0.25)"
+  },
+  {
+   "timestamp": "20230308051747",
+   "url": "https://www.laramie1.org/",
+   "station": "smartsites-laramie-1-wy",
+   "why": "storm day 2023-03-08 (market score 0.25)"
+  },
+  {
+   "timestamp": "20240112034752",
+   "url": "https://www.laramie1.org/",
+   "station": "smartsites-laramie-1-wy",
+   "why": "storm day 2024-01-12 (market score 0.25)"
+  },
+  {
+   "timestamp": "20240118104352",
+   "url": "https://www.laramie1.org/",
+   "station": "smartsites-laramie-1-wy",
+   "why": "storm day 2024-01-18 (market score 0.25)"
+  },
+  {
+   "timestamp": "20240117112846",
+   "url": "https://www.laramie1.org/",
+   "station": "smartsites-laramie-1-wy",
+   "why": "storm day 2024-01-17 (market score 0.25)"
+  },
+  {
+   "timestamp": "20231227103818",
+   "url": "https://www.laramie1.org/",
+   "station": "smartsites-laramie-1-wy",
+   "why": "storm day 2023-12-27 (market score 0.25)"
+  },
+  {
+   "timestamp": "20250202160852",
+   "url": "https://libbyschools.org/",
+   "station": "smartsites-libby-mt",
+   "why": "storm day 2025-02-03 (market score 0.25)"
+  },
+  {
+   "timestamp": "20240227194729",
+   "url": "https://libbyschools.org/",
+   "station": "smartsites-libby-mt",
+   "why": "storm day 2024-02-28 (market score 0.25)"
+  },
+  {
+   "timestamp": "20220301193859",
+   "url": "https://libbyschools.org/",
+   "station": "smartsites-libby-mt",
+   "why": "storm day 2022-03-02 (market score 0.25)"
+  },
+  {
+   "timestamp": "20221104083431",
+   "url": "https://libbyschools.org/",
+   "station": "smartsites-libby-mt",
+   "why": "storm day 2022-11-04 (market score 0.25)"
+  },
+  {
+   "timestamp": "20221102002359",
+   "url": "https://libbyschools.org/",
+   "station": "smartsites-libby-mt",
+   "why": "storm day 2022-11-02 (market score 0.25)"
+  },
+  {
+   "timestamp": "20190104044535",
+   "url": "http://libbyschools.org/",
+   "station": "smartsites-libby-mt",
+   "why": "storm day 2019-01-04 (market score 0.25)"
+  },
+  {
+   "timestamp": "20190312174549",
+   "url": "http://www.libbyschools.org:80/",
+   "station": "smartsites-libby-mt",
+   "why": "storm day 2019-03-13 (market score 0.25)"
+  },
+  {
+   "timestamp": "20190108211837",
+   "url": "http://www.libbyschools.org:80/",
+   "station": "smartsites-libby-mt",
+   "why": "storm day 2019-01-09 (market score 0.25)"
+  },
+  {
+   "timestamp": "20181223191524",
+   "url": "http://libbyschools.org:80/",
+   "station": "smartsites-libby-mt",
+   "why": "storm day 2018-12-24 (market score 0.25)"
+  },
+  {
+   "timestamp": "20171109065615",
+   "url": "http://libbyschools.org:80/",
+   "station": "smartsites-libby-mt",
+   "why": "storm day 2017-11-09 (market score 0.25)"
+  },
+  {
+   "timestamp": "20211008044727",
+   "url": "https://www.abc10.com/closings",
+   "station": "tegna-kxtv",
+   "why": "storm day 2021-10-08 (market score 0.02)"
+  },
+  {
+   "timestamp": "20211007184746",
+   "url": "https://www.abc10.com/closings",
+   "station": "tegna-kxtv",
+   "why": "storm day 2021-10-08 (market score 0.02)"
+  }
+ ],
+ "cdx": [
+  {
+   "url": "mcsbfl.us/",
+   "from": "20170101",
+   "to": "20260930",
+   "filter": [
+    "statuscode:200"
+   ],
+   "collapse": "timestamp:10",
+   "station": "apptegy-madison-fl",
+   "why": "never listed: an address of the source's list, so no verdict but not-listed could be given; listed to learn what the archive holds of it"
+  },
+  {
+   "url": "medicinelake.k12.mt.us/",
+   "from": "20170101",
+   "to": "20260930",
+   "filter": [
+    "statuscode:200"
+   ],
+   "collapse": "timestamp:10",
+   "station": "apptegy-medicine-lake-mt",
+   "why": "never listed: an address of the source's list, so no verdict but not-listed could be given; listed to learn what the archive holds of it"
+  },
+  {
+   "url": "plentywood.k12.mt.us/",
+   "from": "20170101",
+   "to": "20260930",
+   "filter": [
+    "statuscode:200"
+   ],
+   "collapse": "timestamp:10",
+   "station": "apptegy-plentywood-mt",
+   "why": "never listed: an address of the source's list, so no verdict but not-listed could be given; listed to learn what the archive holds of it"
+  },
+  {
+   "url": "suwannee.k12.fl.us/",
+   "from": "20170101",
+   "to": "20260930",
+   "filter": [
+    "statuscode:200"
+   ],
+   "collapse": "timestamp:10",
+   "station": "apptegy-suwannee-fl",
+   "why": "never listed: an address of the source's list, so no verdict but not-listed could be given; listed to learn what the archive holds of it"
+  },
+  {
+   "url": "wakullaschooldistrict.org/",
+   "from": "20170101",
+   "to": "20260930",
+   "filter": [
+    "statuscode:200"
+   ],
+   "collapse": "timestamp:10",
+   "station": "apptegy-wakulla-fl",
+   "why": "never listed: an address of the source's list, so no verdict but not-listed could be given; listed to learn what the archive holds of it"
+  },
+  {
+   "url": "westbyschool.k12.mt.us/",
+   "from": "20170101",
+   "to": "20260930",
+   "filter": [
+    "statuscode:200"
+   ],
+   "collapse": "timestamp:10",
+   "station": "apptegy-westby-mt",
+   "why": "never listed: an address of the source's list, so no verdict but not-listed could be given; listed to learn what the archive holds of it"
+  },
+  {
+   "url": "wcsd1.org/",
+   "from": "20170101",
+   "to": "20260930",
+   "filter": [
+    "statuscode:200"
+   ],
+   "collapse": "timestamp:10",
+   "station": "edlio-weston-1-wy",
+   "why": "never listed: an address of the source's list, so no verdict but not-listed could be given; listed to learn what the archive holds of it"
+  },
+  {
+   "url": "actionnews5.com/weather/closings",
+   "from": "20170101",
+   "to": "20260930",
+   "filter": [
+    "statuscode:200"
+   ],
+   "collapse": "timestamp:10",
+   "station": "gray-wmc",
+   "why": "never listed: an address of the source's list, so no verdict but not-listed could be given; listed to learn what the archive holds of it"
+  },
+  {
+   "url": "cenlanow.com/wp-json/wp/v2/pages/1559012",
+   "from": "20170101",
+   "to": "20260930",
+   "filter": [
+    "statuscode:200"
+   ],
+   "collapse": "timestamp:10",
+   "station": "nexstar-typed-wntz",
+   "why": "never listed: an address of the source's list, so no verdict but not-listed could be given; listed to learn what the archive holds of it"
+  },
+  {
+   "url": "wjtv.com/weather/closings",
+   "from": "20170101",
+   "to": "20260930",
+   "filter": [
+    "statuscode:200"
+   ],
+   "collapse": "timestamp:10",
+   "station": "nexstar-wjtv",
+   "why": "never listed: an address of the source's list, so no verdict but not-listed could be given; listed to learn what the archive holds of it"
+  },
+  {
+   "url": "wjtv.com/wp-json/wp/v2/pages/1348846",
+   "from": "20170101",
+   "to": "20260930",
+   "filter": [
+    "statuscode:200"
+   ],
+   "collapse": "timestamp:10",
+   "station": "nexstar-wjtv",
+   "why": "never listed: an address of the source's list, so no verdict but not-listed could be given; listed to learn what the archive holds of it"
   }
  ]
 }
