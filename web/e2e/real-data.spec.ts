@@ -501,17 +501,28 @@ test('the build ships the pipeline’s own files, under names that change with t
     expect(file).toMatch(/^schools\/details\/(?:\d+|index)\.[0-9a-f]{10}\.json$/);
     expect(file).toContain(sha256(path.join(data, file)).slice(0, 10));
   }
+  // The schools around each ZIP code the places build lists: an index and a file per 128 of them.
+  const areas = shipped.filter((file) => file.startsWith('schools/areas/'));
+  const zips = readFileSync(path.join(SITE_DATA, 'search/zips.jsonl'), 'utf8')
+    .split('\n')
+    .filter((line) => line.trim() !== '').length;
+  expect(areas).toHaveLength(Math.ceil(zips / 128) + 1);
+  for (const file of areas) {
+    expect(file).toMatch(/^schools\/areas\/(?:\d+|index)\.[0-9a-f]{10}\.json$/);
+    expect(file).toContain(sha256(path.join(data, file)).slice(0, 10));
+  }
   // Everything else the pipeline published, as it wrote it; never its own records or the index inputs.
   const rest = shipped.filter(
     (file) =>
       !/^(schools\/(meta|points|schools)|search-index)\.[0-9a-f]{10}\./.test(file) &&
-      !details.includes(file),
+      !details.includes(file) &&
+      !areas.includes(file),
   );
   for (const file of rest) {
     expect(sha256(path.join(data, file))).toBe(sha256(path.join(SITE_DATA, file)));
   }
   expect(shipped.filter((file) => /internal|\.jsonl$|^search\//.test(file))).toEqual([]);
-  expect(shipped).toHaveLength(rest.length + details.length + 4);
+  expect(shipped).toHaveLength(rest.length + details.length + areas.length + 4);
   expect(index).toMatch(/^search-index\.[0-9a-f]{10}\.bin$/);
 });
 
@@ -865,6 +876,60 @@ test('a link to Pembroke Hill lands as picking it does: its streets, right of th
   expect(Math.abs(link.x - (panelRight + 1440) / 2)).toBeLessThan(3);
   expect(Math.abs(link.y - (64 + 900) / 2)).toBeLessThan(3);
   expect([...problems, ...linkProblems]).toEqual([]);
+  await context.close();
+});
+
+test('Pembroke Hill’s ZIP code, 64112, lists its two schools and the four nearest others within 2 miles', async ({
+  browser,
+}) => {
+  const context = await browser.newContext({ viewport: { width: 1440, height: 900 } });
+  const page = await context.newPage();
+  const { problems } = watch(page);
+  await page.goto(`${site}?zip=64112`);
+  const panel = page.locator('aside.detail');
+  await expect(panel).toHaveAttribute('aria-label', 'Schools around 64112');
+  await expect(panel).toHaveAttribute('aria-busy', 'false', { timeout: 30_000 });
+  await expect(panel.locator('.place')).toHaveText('Kansas City, MO');
+  await expect(panel.locator('.heading')).toHaveText([
+    '2 schools in 64112',
+    '4 more within 2 miles',
+  ]);
+  await expect(panel.locator('button.school .name-text')).toHaveText([
+    PEMBROKE_HILL_NAME,
+    'Visitation Catholic School',
+    "St Teresa's Academy",
+    'Allen Village High School',
+    'Westwood View Elementary',
+    'Allen Village Elementary Academy',
+  ]);
+  // September: no closings and no chances, so the panel says nothing of either.
+  await expect(panel.locator('.number, .why, .counts')).toHaveCount(0);
+  await settle(page);
+  const box = await panel.boundingBox();
+  const right = (box?.x ?? 0) + (box?.width ?? 0);
+  // Every school of the area on the map, right of the panel.
+  const spots = await page.evaluate(
+    (ids) => {
+      const map = window.snowlightMap;
+      if (map === undefined) throw new Error('no map');
+      return ids.map(([lon, lat]) => map.project([lon ?? 0, lat ?? 0]));
+    },
+    [
+      [-94.593001, 39.03606],
+      [-94.588871, 39.03368],
+      [-94.588971, 39.02586],
+      [-94.592616, 39.051364],
+      [-94.615622, 39.038229],
+      [-94.594845, 39.052917],
+    ],
+  );
+  for (const spot of spots) {
+    expect(spot.x).toBeGreaterThan(right);
+    expect(spot.x).toBeLessThan(1440);
+    expect(spot.y).toBeGreaterThan(64);
+    expect(spot.y).toBeLessThan(900);
+  }
+  expect(problems).toEqual([]);
   await context.close();
 });
 
