@@ -421,7 +421,7 @@ describe('national blend', () => {
       for (const zoom of [2.12, 3, 3.14, 4, 4.5]) {
         const light = lonePoint(zoom, t);
         // No speck: 4 px out the light is still above half its peak, where a core's is 2% of it.
-        // Below zoom 4 the blend shrinks with the map down to 3 px, and the probe with it.
+        // Below zoom 4 the blend shrinks with the map, and the probe with it.
         const out = Math.min(4, Math.round(glowStyleAtZoom(zoom).blendSigmaPx));
         expect(light(0) / light(out)).toBeLessThan(1.75);
         expect(displayed(light(0))).toBeGreaterThan(20);

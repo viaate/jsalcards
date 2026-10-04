@@ -15,7 +15,7 @@
  * - Below zoom 4, where screens smaller than a desktop's open on the whole
  *   country, the glow shrinks with the map (glowSizeScale), so the country
  *   looks as on a desktop: the bloom reaches 32 px at zoom 3, 16 px at 2.
- *   Only the blend stops shrinking, at 2 px, so the points still read as one
+ *   Only the blend stops shrinking, at 1.2 px, so the points still read as one
  *   field on a phone.
  * - Until zoom 5.5 the blend stands on a floor (blendFloor) that keeps every
  *   school in view above the state lines.
@@ -176,7 +176,7 @@ export const BLEND_SIGMA_STOPS: ZoomStops = [
 ];
 
 /** Least sigma of the blend, CSS px, which shrinks with the map below zoom 4: narrower reads as a dot. */
-export const BLEND_MIN_SIGMA_PX = 2;
+export const BLEND_MIN_SIGMA_PX = 1.2;
 
 /** Cut on the blend's core light below zoom 4, so a band lights each pixel as on a desktop, not washed out. */
 export function blendCutAtScale(sizeScale: number): number {

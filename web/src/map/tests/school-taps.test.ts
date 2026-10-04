@@ -345,12 +345,12 @@ describe('a lit school', () => {
     expect(litRadius(14)).toBeGreaterThan(4);
     expect(litRadius(9)).toBeGreaterThan(1);
     expect(litRadius(9)).toBeLessThan(litRadius(14));
-    // Where the blend carries a lone light, two of its standard deviations: 4 px on a phone's
+    // Where the blend carries a lone light, two of its standard deviations: 2.4 px on a phone's
     // national view and 8 on a desktop's, as far as its light shows; then less as its core comes
     // in, under 7 px from zoom 5.5, where the wash around a crisp core is too faint to be its mark.
-    expect(litRadius(2.12)).toBeCloseTo(4, 6);
+    expect(litRadius(2.12)).toBeCloseTo(2.4, 6);
     expect(litRadius(4)).toBeCloseTo(8, 6);
-    for (let zoom = 2; zoom <= 5; zoom += 0.25) expect(litRadius(zoom)).toBeGreaterThanOrEqual(4);
+    for (let zoom = 2; zoom <= 5; zoom += 0.25) expect(litRadius(zoom)).toBeGreaterThanOrEqual(2.4);
     for (let zoom = 5.5; zoom <= 10; zoom += 0.25) expect(litRadius(zoom)).toBeLessThan(7);
     expect(litRadius(8)).toBeLessThan(3);
   });
