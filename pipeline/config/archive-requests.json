@@ -1,1504 +1,238 @@
 {
  "snapshots": [
   {
-   "timestamp": "20171001105932",
-   "url": "http://www.nbcmiami.com:80/weather/school-closings/",
-   "station": "nbc-owned-wtvj",
-   "why": "an unread capture of its list, read so that every capture of it is read"
-  },
-  {
-   "timestamp": "20171101125654",
-   "url": "http://www.nbcmiami.com:80/weather/school-closings/",
-   "station": "nbc-owned-wtvj",
-   "why": "an unread capture of its list, read so that every capture of it is read"
-  },
-  {
-   "timestamp": "20191210093153",
-   "url": "https://www.nbcmiami.com/weather/school-closings/",
-   "station": "nbc-owned-wtvj",
-   "why": "an unread capture of its list, read so that every capture of it is read"
-  },
-  {
-   "timestamp": "20191213131456",
-   "url": "https://www.nbcmiami.com/weather/school-closings",
-   "station": "nbc-owned-wtvj",
-   "why": "an unread capture of its list, read so that every capture of it is read"
-  },
-  {
-   "timestamp": "20191214003559",
-   "url": "https://www.nbcmiami.com/weather/school-closings/",
-   "station": "nbc-owned-wtvj",
-   "why": "an unread capture of its list, read so that every capture of it is read"
-  },
-  {
-   "timestamp": "20200131143915",
-   "url": "https://www.nbcmiami.com/weather/school-closings/",
-   "station": "nbc-owned-wtvj",
-   "why": "an unread capture of its list, read so that every capture of it is read"
-  },
-  {
-   "timestamp": "20200218152022",
-   "url": "https://www.nbcmiami.com/weather/school-closings/",
-   "station": "nbc-owned-wtvj",
-   "why": "an unread capture of its list, read so that every capture of it is read"
-  },
-  {
-   "timestamp": "20200308035740",
-   "url": "https://www.nbcmiami.com/weather/school-closings/",
-   "station": "nbc-owned-wtvj",
-   "why": "an unread capture of its list, read so that every capture of it is read"
-  },
-  {
-   "timestamp": "20200315143800",
-   "url": "https://www.nbcmiami.com/weather/school-closings/",
-   "station": "nbc-owned-wtvj",
-   "why": "an unread capture of its list, read so that every capture of it is read"
-  },
-  {
-   "timestamp": "20200324030754",
-   "url": "https://www.nbcmiami.com/weather/school-closings/",
-   "station": "nbc-owned-wtvj",
-   "why": "an unread capture of its list, read so that every capture of it is read"
-  },
-  {
-   "timestamp": "20200326090412",
-   "url": "https://www.nbcmiami.com/weather/school-closings/",
-   "station": "nbc-owned-wtvj",
-   "why": "an unread capture of its list, read so that every capture of it is read"
-  },
-  {
-   "timestamp": "20200328052204",
-   "url": "https://www.nbcmiami.com/weather/school-closings/",
-   "station": "nbc-owned-wtvj",
-   "why": "an unread capture of its list, read so that every capture of it is read"
-  },
-  {
-   "timestamp": "20200331182024",
-   "url": "https://www.nbcmiami.com/weather/school-closings/",
-   "station": "nbc-owned-wtvj",
-   "why": "an unread capture of its list, read so that every capture of it is read"
-  },
-  {
-   "timestamp": "20200408072443",
-   "url": "https://www.nbcmiami.com/weather/school-closings/",
-   "station": "nbc-owned-wtvj",
-   "why": "an unread capture of its list, read so that every capture of it is read"
-  },
-  {
-   "timestamp": "20200409161357",
-   "url": "https://www.nbcmiami.com/weather/school-closings/",
-   "station": "nbc-owned-wtvj",
-   "why": "an unread capture of its list, read so that every capture of it is read"
-  },
-  {
-   "timestamp": "20200410014202",
-   "url": "https://www.nbcmiami.com/weather/school-closings/",
-   "station": "nbc-owned-wtvj",
-   "why": "an unread capture of its list, read so that every capture of it is read"
-  },
-  {
-   "timestamp": "20200410201144",
-   "url": "https://www.nbcmiami.com/weather/school-closings/",
-   "station": "nbc-owned-wtvj",
-   "why": "an unread capture of its list, read so that every capture of it is read"
-  },
-  {
-   "timestamp": "20200410234612",
-   "url": "https://www.nbcmiami.com/weather/school-closings/",
-   "station": "nbc-owned-wtvj",
-   "why": "an unread capture of its list, read so that every capture of it is read"
-  },
-  {
-   "timestamp": "20200411215502",
-   "url": "https://www.nbcmiami.com/weather/school-closings/",
-   "station": "nbc-owned-wtvj",
-   "why": "an unread capture of its list, read so that every capture of it is read"
-  },
-  {
-   "timestamp": "20200411235218",
-   "url": "https://www.nbcmiami.com/weather/school-closings/",
-   "station": "nbc-owned-wtvj",
-   "why": "an unread capture of its list, read so that every capture of it is read"
-  },
-  {
-   "timestamp": "20200413141237",
-   "url": "https://www.nbcmiami.com/weather/school-closings/",
-   "station": "nbc-owned-wtvj",
-   "why": "an unread capture of its list, read so that every capture of it is read"
-  },
-  {
-   "timestamp": "20200414094913",
-   "url": "https://www.nbcmiami.com/weather/school-closings/",
-   "station": "nbc-owned-wtvj",
-   "why": "an unread capture of its list, read so that every capture of it is read"
-  },
-  {
-   "timestamp": "20200418105451",
-   "url": "https://www.nbcmiami.com/weather/school-closings/",
-   "station": "nbc-owned-wtvj",
-   "why": "an unread capture of its list, read so that every capture of it is read"
-  },
-  {
-   "timestamp": "20200421133209",
-   "url": "https://www.nbcmiami.com/weather/school-closings/",
-   "station": "nbc-owned-wtvj",
-   "why": "an unread capture of its list, read so that every capture of it is read"
-  },
-  {
-   "timestamp": "20200422011023",
-   "url": "https://www.nbcmiami.com/weather/school-closings/",
-   "station": "nbc-owned-wtvj",
-   "why": "an unread capture of its list, read so that every capture of it is read"
-  },
-  {
-   "timestamp": "20200425145806",
-   "url": "https://www.nbcmiami.com/weather/school-closings/",
-   "station": "nbc-owned-wtvj",
-   "why": "an unread capture of its list, read so that every capture of it is read"
-  },
-  {
-   "timestamp": "20200429131012",
-   "url": "https://www.nbcmiami.com/weather/school-closings/",
-   "station": "nbc-owned-wtvj",
-   "why": "an unread capture of its list, read so that every capture of it is read"
-  },
-  {
-   "timestamp": "20200502170351",
-   "url": "https://www.nbcmiami.com/weather/school-closings/",
-   "station": "nbc-owned-wtvj",
-   "why": "an unread capture of its list, read so that every capture of it is read"
-  },
-  {
-   "timestamp": "20200505081314",
-   "url": "https://www.nbcmiami.com/weather/school-closings/",
-   "station": "nbc-owned-wtvj",
-   "why": "an unread capture of its list, read so that every capture of it is read"
-  },
-  {
-   "timestamp": "20200512135825",
-   "url": "https://www.nbcmiami.com/weather/school-closings/",
-   "station": "nbc-owned-wtvj",
-   "why": "an unread capture of its list, read so that every capture of it is read"
-  },
-  {
-   "timestamp": "20200525054337",
-   "url": "https://www.nbcmiami.com/weather/school-closings/",
-   "station": "nbc-owned-wtvj",
-   "why": "an unread capture of its list, read so that every capture of it is read"
-  },
-  {
-   "timestamp": "20200603225151",
-   "url": "https://www.nbcmiami.com/weather/school-closings/",
-   "station": "nbc-owned-wtvj",
-   "why": "an unread capture of its list, read so that every capture of it is read"
-  },
-  {
-   "timestamp": "20200606032744",
-   "url": "https://www.nbcmiami.com/weather/school-closings/",
-   "station": "nbc-owned-wtvj",
-   "why": "an unread capture of its list, read so that every capture of it is read"
-  },
-  {
-   "timestamp": "20200607101427",
-   "url": "https://www.nbcmiami.com/weather/school-closings/",
-   "station": "nbc-owned-wtvj",
-   "why": "an unread capture of its list, read so that every capture of it is read"
-  },
-  {
-   "timestamp": "20200609154255",
-   "url": "https://www.nbcmiami.com/weather/school-closings/",
-   "station": "nbc-owned-wtvj",
-   "why": "an unread capture of its list, read so that every capture of it is read"
-  },
-  {
-   "timestamp": "20200613193213",
-   "url": "https://www.nbcmiami.com/weather/school-closings/",
-   "station": "nbc-owned-wtvj",
-   "why": "an unread capture of its list, read so that every capture of it is read"
-  },
-  {
-   "timestamp": "20200614084229",
-   "url": "https://www.nbcmiami.com/weather/school-closings/",
-   "station": "nbc-owned-wtvj",
-   "why": "an unread capture of its list, read so that every capture of it is read"
-  },
-  {
-   "timestamp": "20200617105925",
-   "url": "https://www.nbcmiami.com/weather/school-closings/",
-   "station": "nbc-owned-wtvj",
-   "why": "an unread capture of its list, read so that every capture of it is read"
-  },
-  {
-   "timestamp": "20200623183722",
-   "url": "https://www.nbcmiami.com/weather/school-closings/",
-   "station": "nbc-owned-wtvj",
-   "why": "an unread capture of its list, read so that every capture of it is read"
-  },
-  {
-   "timestamp": "20200625000019",
-   "url": "https://www.nbcmiami.com/weather/school-closings/",
-   "station": "nbc-owned-wtvj",
-   "why": "an unread capture of its list, read so that every capture of it is read"
-  },
-  {
-   "timestamp": "20200625112806",
-   "url": "https://www.nbcmiami.com/weather/school-closings/",
-   "station": "nbc-owned-wtvj",
-   "why": "an unread capture of its list, read so that every capture of it is read"
-  },
-  {
-   "timestamp": "20200629223237",
-   "url": "https://www.nbcmiami.com/weather/school-closings/",
-   "station": "nbc-owned-wtvj",
-   "why": "an unread capture of its list, read so that every capture of it is read"
-  },
-  {
-   "timestamp": "20200630051452",
-   "url": "https://www.nbcmiami.com/weather/school-closings/",
-   "station": "nbc-owned-wtvj",
-   "why": "an unread capture of its list, read so that every capture of it is read"
-  },
-  {
-   "timestamp": "20200630160507",
-   "url": "https://www.nbcmiami.com/weather/school-closings/",
-   "station": "nbc-owned-wtvj",
-   "why": "an unread capture of its list, read so that every capture of it is read"
-  },
-  {
-   "timestamp": "20200630175052",
-   "url": "https://www.nbcmiami.com/weather/school-closings/",
-   "station": "nbc-owned-wtvj",
-   "why": "an unread capture of its list, read so that every capture of it is read"
-  },
-  {
-   "timestamp": "20200630222048",
-   "url": "https://www.nbcmiami.com/weather/school-closings/",
-   "station": "nbc-owned-wtvj",
-   "why": "an unread capture of its list, read so that every capture of it is read"
-  },
-  {
-   "timestamp": "20200702011723",
-   "url": "https://www.nbcmiami.com/weather/school-closings/",
-   "station": "nbc-owned-wtvj",
-   "why": "an unread capture of its list, read so that every capture of it is read"
-  },
-  {
-   "timestamp": "20200703211320",
-   "url": "https://www.nbcmiami.com/weather/school-closings/",
-   "station": "nbc-owned-wtvj",
-   "why": "an unread capture of its list, read so that every capture of it is read"
-  },
-  {
-   "timestamp": "20200705004450",
-   "url": "https://www.nbcmiami.com/weather/school-closings/",
-   "station": "nbc-owned-wtvj",
-   "why": "an unread capture of its list, read so that every capture of it is read"
-  },
-  {
-   "timestamp": "20200706024416",
-   "url": "https://www.nbcmiami.com/weather/school-closings/",
-   "station": "nbc-owned-wtvj",
-   "why": "an unread capture of its list, read so that every capture of it is read"
-  },
-  {
-   "timestamp": "20200706161544",
-   "url": "https://www.nbcmiami.com/weather/school-closings/",
-   "station": "nbc-owned-wtvj",
-   "why": "an unread capture of its list, read so that every capture of it is read"
-  },
-  {
-   "timestamp": "20200709175844",
-   "url": "https://www.nbcmiami.com/weather/school-closings/",
-   "station": "nbc-owned-wtvj",
-   "why": "an unread capture of its list, read so that every capture of it is read"
-  },
-  {
-   "timestamp": "20200710103133",
-   "url": "https://www.nbcmiami.com/weather/school-closings/",
-   "station": "nbc-owned-wtvj",
-   "why": "an unread capture of its list, read so that every capture of it is read"
-  },
-  {
-   "timestamp": "20200710234957",
-   "url": "https://www.nbcmiami.com/weather/school-closings/",
-   "station": "nbc-owned-wtvj",
-   "why": "an unread capture of its list, read so that every capture of it is read"
-  },
-  {
-   "timestamp": "20200713161040",
-   "url": "https://www.nbcmiami.com/weather/school-closings/",
-   "station": "nbc-owned-wtvj",
-   "why": "an unread capture of its list, read so that every capture of it is read"
-  },
-  {
-   "timestamp": "20200714020315",
-   "url": "https://www.nbcmiami.com/weather/school-closings/",
-   "station": "nbc-owned-wtvj",
-   "why": "an unread capture of its list, read so that every capture of it is read"
-  },
-  {
-   "timestamp": "20200717122852",
-   "url": "https://www.nbcmiami.com/weather/school-closings/",
-   "station": "nbc-owned-wtvj",
-   "why": "an unread capture of its list, read so that every capture of it is read"
-  },
-  {
-   "timestamp": "20200727000110",
-   "url": "https://www.nbcmiami.com/weather/school-closings/",
-   "station": "nbc-owned-wtvj",
-   "why": "an unread capture of its list, read so that every capture of it is read"
-  },
-  {
-   "timestamp": "20200805005622",
-   "url": "https://www.nbcmiami.com/weather/school-closings/",
-   "station": "nbc-owned-wtvj",
-   "why": "an unread capture of its list, read so that every capture of it is read"
-  },
-  {
-   "timestamp": "20200806130029",
-   "url": "https://www.nbcmiami.com/weather/school-closings/",
-   "station": "nbc-owned-wtvj",
-   "why": "an unread capture of its list, read so that every capture of it is read"
-  },
-  {
-   "timestamp": "20200808043223",
-   "url": "https://www.nbcmiami.com/weather/school-closings/",
-   "station": "nbc-owned-wtvj",
-   "why": "an unread capture of its list, read so that every capture of it is read"
-  },
-  {
-   "timestamp": "20200811221845",
-   "url": "https://www.nbcmiami.com/weather/school-closings/",
-   "station": "nbc-owned-wtvj",
-   "why": "an unread capture of its list, read so that every capture of it is read"
-  },
-  {
-   "timestamp": "20200819072248",
-   "url": "https://www.nbcmiami.com/weather/school-closings/",
-   "station": "nbc-owned-wtvj",
-   "why": "an unread capture of its list, read so that every capture of it is read"
-  },
-  {
-   "timestamp": "20200826131704",
-   "url": "https://www.nbcmiami.com/weather/school-closings/",
-   "station": "nbc-owned-wtvj",
-   "why": "an unread capture of its list, read so that every capture of it is read"
-  },
-  {
-   "timestamp": "20200905102825",
-   "url": "https://www.nbcmiami.com/weather/school-closings/",
-   "station": "nbc-owned-wtvj",
-   "why": "an unread capture of its list, read so that every capture of it is read"
-  },
-  {
-   "timestamp": "20200909044620",
-   "url": "https://www.nbcmiami.com/weather/school-closings/",
-   "station": "nbc-owned-wtvj",
-   "why": "an unread capture of its list, read so that every capture of it is read"
-  },
-  {
-   "timestamp": "20200918195950",
-   "url": "https://www.nbcmiami.com/weather/school-closings/",
-   "station": "nbc-owned-wtvj",
-   "why": "an unread capture of its list, read so that every capture of it is read"
-  },
-  {
-   "timestamp": "20200922002558",
-   "url": "https://www.nbcmiami.com/weather/school-closings/",
-   "station": "nbc-owned-wtvj",
-   "why": "an unread capture of its list, read so that every capture of it is read"
-  },
-  {
-   "timestamp": "20200922120943",
-   "url": "https://www.nbcmiami.com/weather/school-closings/",
-   "station": "nbc-owned-wtvj",
-   "why": "an unread capture of its list, read so that every capture of it is read"
-  },
-  {
-   "timestamp": "20200925093322",
-   "url": "https://www.nbcmiami.com/weather/school-closings/",
-   "station": "nbc-owned-wtvj",
-   "why": "an unread capture of its list, read so that every capture of it is read"
-  },
-  {
-   "timestamp": "20200930194721",
-   "url": "https://www.nbcmiami.com/weather/school-closings/",
-   "station": "nbc-owned-wtvj",
-   "why": "an unread capture of its list, read so that every capture of it is read"
-  },
-  {
-   "timestamp": "20201001004915",
-   "url": "https://www.nbcmiami.com/weather/school-closings/",
-   "station": "nbc-owned-wtvj",
-   "why": "an unread capture of its list, read so that every capture of it is read"
-  },
-  {
-   "timestamp": "20201025170520",
-   "url": "https://www.nbcmiami.com/weather/school-closings/",
-   "station": "nbc-owned-wtvj",
-   "why": "an unread capture of its list, read so that every capture of it is read"
-  },
-  {
-   "timestamp": "20201114231930",
-   "url": "https://www.nbcmiami.com/weather/school-closings/",
-   "station": "nbc-owned-wtvj",
-   "why": "an unread capture of its list, read so that every capture of it is read"
-  },
-  {
-   "timestamp": "20201119072306",
-   "url": "https://www.nbcmiami.com/weather/school-closings/",
-   "station": "nbc-owned-wtvj",
-   "why": "an unread capture of its list, read so that every capture of it is read"
-  },
-  {
-   "timestamp": "20201122002635",
-   "url": "https://www.nbcmiami.com/weather/school-closings/",
-   "station": "nbc-owned-wtvj",
-   "why": "an unread capture of its list, read so that every capture of it is read"
-  },
-  {
-   "timestamp": "20201122073419",
-   "url": "https://www.nbcmiami.com/weather/school-closings/",
-   "station": "nbc-owned-wtvj",
-   "why": "an unread capture of its list, read so that every capture of it is read"
-  },
-  {
-   "timestamp": "20201122113826",
-   "url": "https://www.nbcmiami.com/weather/school-closings/",
-   "station": "nbc-owned-wtvj",
-   "why": "an unread capture of its list, read so that every capture of it is read"
-  },
-  {
-   "timestamp": "20201122231334",
-   "url": "https://www.nbcmiami.com/weather/school-closings/",
-   "station": "nbc-owned-wtvj",
-   "why": "an unread capture of its list, read so that every capture of it is read"
-  },
-  {
-   "timestamp": "20201126003820",
-   "url": "https://www.nbcmiami.com/weather/school-closings/",
-   "station": "nbc-owned-wtvj",
-   "why": "an unread capture of its list, read so that every capture of it is read"
-  },
-  {
-   "timestamp": "20201128155127",
-   "url": "https://www.nbcmiami.com/weather/school-closings/",
-   "station": "nbc-owned-wtvj",
-   "why": "an unread capture of its list, read so that every capture of it is read"
-  },
-  {
-   "timestamp": "20201201165052",
-   "url": "https://www.nbcmiami.com/weather/school-closings/",
-   "station": "nbc-owned-wtvj",
-   "why": "an unread capture of its list, read so that every capture of it is read"
-  },
-  {
-   "timestamp": "20201202005047",
-   "url": "https://www.nbcmiami.com/weather/school-closings/",
-   "station": "nbc-owned-wtvj",
-   "why": "an unread capture of its list, read so that every capture of it is read"
-  },
-  {
-   "timestamp": "20201202020532",
-   "url": "https://www.nbcmiami.com/weather/school-closings/",
-   "station": "nbc-owned-wtvj",
-   "why": "an unread capture of its list, read so that every capture of it is read"
-  },
-  {
-   "timestamp": "20201203204221",
-   "url": "https://www.nbcmiami.com/weather/school-closings/",
-   "station": "nbc-owned-wtvj",
-   "why": "an unread capture of its list, read so that every capture of it is read"
-  },
-  {
-   "timestamp": "20201203215257",
-   "url": "https://www.nbcmiami.com/weather/school-closings/",
-   "station": "nbc-owned-wtvj",
-   "why": "an unread capture of its list, read so that every capture of it is read"
-  },
-  {
-   "timestamp": "20201203225008",
-   "url": "https://www.nbcmiami.com/weather/school-closings/",
-   "station": "nbc-owned-wtvj",
-   "why": "an unread capture of its list, read so that every capture of it is read"
-  },
-  {
-   "timestamp": "20201204075732",
-   "url": "https://www.nbcmiami.com/weather/school-closings/",
-   "station": "nbc-owned-wtvj",
-   "why": "an unread capture of its list, read so that every capture of it is read"
-  },
-  {
-   "timestamp": "20201206114155",
-   "url": "https://www.nbcmiami.com/weather/school-closings/",
-   "station": "nbc-owned-wtvj",
-   "why": "an unread capture of its list, read so that every capture of it is read"
-  },
-  {
-   "timestamp": "20201206192130",
-   "url": "https://www.nbcmiami.com/weather/school-closings/",
-   "station": "nbc-owned-wtvj",
-   "why": "an unread capture of its list, read so that every capture of it is read"
-  },
-  {
-   "timestamp": "20201210211345",
-   "url": "https://www.nbcmiami.com/weather/school-closings/",
-   "station": "nbc-owned-wtvj",
-   "why": "an unread capture of its list, read so that every capture of it is read"
-  },
-  {
-   "timestamp": "20201212092656",
-   "url": "https://www.nbcmiami.com/weather/school-closings/",
-   "station": "nbc-owned-wtvj",
-   "why": "an unread capture of its list, read so that every capture of it is read"
-  },
-  {
-   "timestamp": "20201212103048",
-   "url": "https://www.nbcmiami.com/weather/school-closings/",
-   "station": "nbc-owned-wtvj",
-   "why": "an unread capture of its list, read so that every capture of it is read"
-  },
-  {
-   "timestamp": "20201213232202",
-   "url": "https://www.nbcmiami.com/weather/school-closings/",
-   "station": "nbc-owned-wtvj",
-   "why": "an unread capture of its list, read so that every capture of it is read"
-  },
-  {
-   "timestamp": "20201214213100",
-   "url": "https://www.nbcmiami.com/weather/school-closings/",
-   "station": "nbc-owned-wtvj",
-   "why": "an unread capture of its list, read so that every capture of it is read"
-  },
-  {
-   "timestamp": "20201218061045",
-   "url": "https://www.nbcmiami.com/weather/school-closings/",
-   "station": "nbc-owned-wtvj",
-   "why": "an unread capture of its list, read so that every capture of it is read"
-  },
-  {
-   "timestamp": "20201220010242",
-   "url": "https://www.nbcmiami.com/weather/school-closings/",
-   "station": "nbc-owned-wtvj",
-   "why": "an unread capture of its list, read so that every capture of it is read"
-  },
-  {
-   "timestamp": "20201226154736",
-   "url": "https://www.nbcmiami.com/weather/school-closings/",
-   "station": "nbc-owned-wtvj",
-   "why": "an unread capture of its list, read so that every capture of it is read"
-  },
-  {
-   "timestamp": "20201231075130",
-   "url": "https://www.nbcmiami.com/weather/school-closings/",
-   "station": "nbc-owned-wtvj",
-   "why": "an unread capture of its list, read so that every capture of it is read"
-  },
-  {
-   "timestamp": "20201231115253",
-   "url": "https://www.nbcmiami.com/weather/school-closings/",
-   "station": "nbc-owned-wtvj",
-   "why": "an unread capture of its list, read so that every capture of it is read"
-  },
-  {
-   "timestamp": "20210102111835",
-   "url": "https://www.nbcmiami.com/weather/school-closings/",
-   "station": "nbc-owned-wtvj",
-   "why": "an unread capture of its list, read so that every capture of it is read"
-  },
-  {
-   "timestamp": "20210105130718",
-   "url": "https://www.nbcmiami.com/weather/school-closings/",
-   "station": "nbc-owned-wtvj",
-   "why": "an unread capture of its list, read so that every capture of it is read"
-  },
-  {
-   "timestamp": "20210108145425",
-   "url": "https://www.nbcmiami.com/weather/school-closings/",
-   "station": "nbc-owned-wtvj",
-   "why": "an unread capture of its list, read so that every capture of it is read"
-  },
-  {
-   "timestamp": "20210110095440",
-   "url": "https://www.nbcmiami.com/weather/school-closings/",
-   "station": "nbc-owned-wtvj",
-   "why": "an unread capture of its list, read so that every capture of it is read"
-  },
-  {
-   "timestamp": "20210115002921",
-   "url": "https://www.nbcmiami.com/weather/school-closings/",
-   "station": "nbc-owned-wtvj",
-   "why": "an unread capture of its list, read so that every capture of it is read"
-  },
-  {
-   "timestamp": "20210117093634",
-   "url": "https://www.nbcmiami.com/weather/school-closings/",
-   "station": "nbc-owned-wtvj",
-   "why": "an unread capture of its list, read so that every capture of it is read"
-  },
-  {
-   "timestamp": "20210123210805",
-   "url": "https://www.nbcmiami.com/weather/school-closings/",
-   "station": "nbc-owned-wtvj",
-   "why": "an unread capture of its list, read so that every capture of it is read"
-  },
-  {
-   "timestamp": "20210124232531",
-   "url": "https://www.nbcmiami.com/weather/school-closings/",
-   "station": "nbc-owned-wtvj",
-   "why": "an unread capture of its list, read so that every capture of it is read"
-  },
-  {
-   "timestamp": "20210125202934",
-   "url": "https://www.nbcmiami.com/weather/school-closings/",
-   "station": "nbc-owned-wtvj",
-   "why": "an unread capture of its list, read so that every capture of it is read"
-  },
-  {
-   "timestamp": "20210202115659",
-   "url": "https://www.nbcmiami.com/weather/school-closings/",
-   "station": "nbc-owned-wtvj",
-   "why": "an unread capture of its list, read so that every capture of it is read"
-  },
-  {
-   "timestamp": "20210209071050",
-   "url": "https://www.nbcmiami.com/weather/school-closings/",
-   "station": "nbc-owned-wtvj",
-   "why": "an unread capture of its list, read so that every capture of it is read"
-  },
-  {
-   "timestamp": "20210218074419",
-   "url": "https://www.nbcmiami.com/weather/school-closings/",
-   "station": "nbc-owned-wtvj",
-   "why": "an unread capture of its list, read so that every capture of it is read"
-  },
-  {
-   "timestamp": "20210220171356",
-   "url": "https://www.nbcmiami.com/weather/school-closings/",
-   "station": "nbc-owned-wtvj",
-   "why": "an unread capture of its list, read so that every capture of it is read"
-  },
-  {
-   "timestamp": "20210225093514",
-   "url": "https://www.nbcmiami.com/weather/school-closings/",
-   "station": "nbc-owned-wtvj",
-   "why": "an unread capture of its list, read so that every capture of it is read"
-  },
-  {
-   "timestamp": "20210302211406",
-   "url": "https://www.nbcmiami.com/weather/school-closings/",
-   "station": "nbc-owned-wtvj",
-   "why": "an unread capture of its list, read so that every capture of it is read"
-  },
-  {
-   "timestamp": "20210303111818",
-   "url": "https://www.nbcmiami.com/weather/school-closings/",
-   "station": "nbc-owned-wtvj",
-   "why": "an unread capture of its list, read so that every capture of it is read"
-  },
-  {
-   "timestamp": "20210305052244",
-   "url": "https://www.nbcmiami.com/weather/school-closings/",
-   "station": "nbc-owned-wtvj",
-   "why": "an unread capture of its list, read so that every capture of it is read"
-  },
-  {
-   "timestamp": "20210306164150",
-   "url": "https://www.nbcmiami.com/weather/school-closings/",
-   "station": "nbc-owned-wtvj",
-   "why": "an unread capture of its list, read so that every capture of it is read"
-  },
-  {
-   "timestamp": "20210308043836",
-   "url": "https://www.nbcmiami.com/weather/school-closings/",
-   "station": "nbc-owned-wtvj",
-   "why": "an unread capture of its list, read so that every capture of it is read"
-  },
-  {
-   "timestamp": "20210310150758",
-   "url": "https://www.nbcmiami.com/weather/school-closings/",
-   "station": "nbc-owned-wtvj",
-   "why": "an unread capture of its list, read so that every capture of it is read"
-  },
-  {
-   "timestamp": "20210311042325",
-   "url": "https://www.nbcmiami.com/weather/school-closings/",
-   "station": "nbc-owned-wtvj",
-   "why": "an unread capture of its list, read so that every capture of it is read"
-  },
-  {
-   "timestamp": "20210311231744",
-   "url": "https://www.nbcmiami.com/weather/school-closings/",
-   "station": "nbc-owned-wtvj",
-   "why": "an unread capture of its list, read so that every capture of it is read"
-  },
-  {
-   "timestamp": "20210326155736",
-   "url": "https://www.nbcmiami.com/weather/school-closings/",
-   "station": "nbc-owned-wtvj",
-   "why": "an unread capture of its list, read so that every capture of it is read"
-  },
-  {
-   "timestamp": "20210329221414",
-   "url": "https://www.nbcmiami.com/weather/school-closings/",
-   "station": "nbc-owned-wtvj",
-   "why": "an unread capture of its list, read so that every capture of it is read"
-  },
-  {
-   "timestamp": "20210401131024",
-   "url": "https://www.nbcmiami.com/weather/school-closings/",
-   "station": "nbc-owned-wtvj",
-   "why": "an unread capture of its list, read so that every capture of it is read"
-  },
-  {
-   "timestamp": "20210413104210",
-   "url": "https://www.nbcmiami.com/weather/school-closings/",
-   "station": "nbc-owned-wtvj",
-   "why": "an unread capture of its list, read so that every capture of it is read"
-  },
-  {
-   "timestamp": "20210416010146",
-   "url": "https://www.nbcmiami.com/weather/school-closings/",
-   "station": "nbc-owned-wtvj",
-   "why": "an unread capture of its list, read so that every capture of it is read"
-  },
-  {
-   "timestamp": "20210417183549",
-   "url": "https://www.nbcmiami.com/weather/school-closings/",
-   "station": "nbc-owned-wtvj",
-   "why": "an unread capture of its list, read so that every capture of it is read"
-  },
-  {
-   "timestamp": "20210418050820",
-   "url": "https://www.nbcmiami.com/weather/school-closings/",
-   "station": "nbc-owned-wtvj",
-   "why": "an unread capture of its list, read so that every capture of it is read"
-  },
-  {
-   "timestamp": "20210427125325",
-   "url": "https://www.nbcmiami.com/weather/school-closings/",
-   "station": "nbc-owned-wtvj",
-   "why": "an unread capture of its list, read so that every capture of it is read"
-  },
-  {
-   "timestamp": "20210428174552",
-   "url": "https://www.nbcmiami.com/weather/school-closings/",
-   "station": "nbc-owned-wtvj",
-   "why": "an unread capture of its list, read so that every capture of it is read"
-  },
-  {
-   "timestamp": "20210503171749",
-   "url": "https://www.nbcmiami.com/weather/school-closings/",
-   "station": "nbc-owned-wtvj",
-   "why": "an unread capture of its list, read so that every capture of it is read"
-  },
-  {
-   "timestamp": "20210601233744",
-   "url": "https://www.nbcmiami.com/weather/school-closings/",
-   "station": "nbc-owned-wtvj",
-   "why": "an unread capture of its list, read so that every capture of it is read"
+   "timestamp": "20250129070449",
+   "url": "https://www.mcpsmt.org/",
+   "station": "finalsite-missoula-mt",
+   "why": "2025-01-29: within 2 days of one of its closure days"
   },
   {
-   "timestamp": "20210602051714",
-   "url": "https://www.nbcmiami.com/weather/school-closings/",
-   "station": "nbc-owned-wtvj",
-   "why": "an unread capture of its list, read so that every capture of it is read"
-  },
-  {
-   "timestamp": "20210603234137",
-   "url": "https://www.nbcmiami.com/weather/school-closings/",
-   "station": "nbc-owned-wtvj",
-   "why": "an unread capture of its list, read so that every capture of it is read"
-  },
-  {
-   "timestamp": "20210606151434",
-   "url": "https://www.nbcmiami.com/weather/school-closings/",
-   "station": "nbc-owned-wtvj",
-   "why": "an unread capture of its list, read so that every capture of it is read"
-  },
-  {
-   "timestamp": "20210620205022",
-   "url": "https://www.nbcmiami.com/weather/school-closings/",
-   "station": "nbc-owned-wtvj",
-   "why": "an unread capture of its list, read so that every capture of it is read"
-  },
-  {
-   "timestamp": "20210626064402",
-   "url": "https://www.nbcmiami.com/weather/school-closings/",
-   "station": "nbc-owned-wtvj",
-   "why": "an unread capture of its list, read so that every capture of it is read"
-  },
-  {
-   "timestamp": "20210627142523",
-   "url": "https://www.nbcmiami.com/weather/school-closings/",
-   "station": "nbc-owned-wtvj",
-   "why": "an unread capture of its list, read so that every capture of it is read"
-  },
-  {
-   "timestamp": "20210705170633",
-   "url": "https://www.nbcmiami.com/weather/school-closings/",
-   "station": "nbc-owned-wtvj",
-   "why": "an unread capture of its list, read so that every capture of it is read"
-  },
-  {
-   "timestamp": "20210707012821",
-   "url": "https://www.nbcmiami.com/weather/school-closings/",
-   "station": "nbc-owned-wtvj",
-   "why": "an unread capture of its list, read so that every capture of it is read"
-  },
-  {
-   "timestamp": "20210707135552",
-   "url": "https://www.nbcmiami.com/weather/school-closings/",
-   "station": "nbc-owned-wtvj",
-   "why": "an unread capture of its list, read so that every capture of it is read"
-  },
-  {
-   "timestamp": "20210708115112",
-   "url": "https://www.nbcmiami.com/weather/school-closings/",
-   "station": "nbc-owned-wtvj",
-   "why": "an unread capture of its list, read so that every capture of it is read"
-  },
-  {
-   "timestamp": "20210709212501",
-   "url": "https://www.nbcmiami.com/weather/school-closings/",
-   "station": "nbc-owned-wtvj",
-   "why": "an unread capture of its list, read so that every capture of it is read"
-  },
-  {
-   "timestamp": "20210715005847",
-   "url": "https://www.nbcmiami.com/weather/school-closings/",
-   "station": "nbc-owned-wtvj",
-   "why": "an unread capture of its list, read so that every capture of it is read"
-  },
-  {
-   "timestamp": "20210715144815",
-   "url": "https://www.nbcmiami.com/weather/school-closings/",
-   "station": "nbc-owned-wtvj",
-   "why": "an unread capture of its list, read so that every capture of it is read"
-  },
-  {
-   "timestamp": "20210723020533",
-   "url": "https://www.nbcmiami.com/weather/school-closings/",
-   "station": "nbc-owned-wtvj",
-   "why": "an unread capture of its list, read so that every capture of it is read"
-  },
-  {
-   "timestamp": "20210731193901",
-   "url": "https://www.nbcmiami.com/weather/school-closings/",
-   "station": "nbc-owned-wtvj",
-   "why": "an unread capture of its list, read so that every capture of it is read"
-  },
-  {
-   "timestamp": "20210801111308",
-   "url": "https://www.nbcmiami.com/weather/school-closings/",
-   "station": "nbc-owned-wtvj",
-   "why": "an unread capture of its list, read so that every capture of it is read"
-  },
-  {
-   "timestamp": "20210801185910",
-   "url": "https://www.nbcmiami.com/weather/school-closings/",
-   "station": "nbc-owned-wtvj",
-   "why": "an unread capture of its list, read so that every capture of it is read"
-  },
-  {
-   "timestamp": "20210802200326",
-   "url": "https://www.nbcmiami.com/weather/school-closings/",
-   "station": "nbc-owned-wtvj",
-   "why": "an unread capture of its list, read so that every capture of it is read"
-  },
-  {
-   "timestamp": "20210804014257",
-   "url": "https://www.nbcmiami.com/weather/school-closings/",
-   "station": "nbc-owned-wtvj",
-   "why": "an unread capture of its list, read so that every capture of it is read"
-  },
-  {
-   "timestamp": "20210807151329",
-   "url": "https://www.nbcmiami.com/weather/school-closings/",
-   "station": "nbc-owned-wtvj",
-   "why": "an unread capture of its list, read so that every capture of it is read"
-  },
-  {
-   "timestamp": "20210812165410",
-   "url": "https://www.nbcmiami.com/weather/school-closings/",
-   "station": "nbc-owned-wtvj",
-   "why": "an unread capture of its list, read so that every capture of it is read"
-  },
-  {
-   "timestamp": "20210816015944",
-   "url": "https://www.nbcmiami.com/weather/school-closings/",
-   "station": "nbc-owned-wtvj",
-   "why": "an unread capture of its list, read so that every capture of it is read"
-  },
-  {
-   "timestamp": "20210816091913",
-   "url": "https://www.nbcmiami.com/weather/school-closings/",
-   "station": "nbc-owned-wtvj",
-   "why": "an unread capture of its list, read so that every capture of it is read"
-  },
-  {
-   "timestamp": "20210903210143",
-   "url": "https://www.nbcmiami.com/weather/school-closings/",
-   "station": "nbc-owned-wtvj",
-   "why": "an unread capture of its list, read so that every capture of it is read"
-  },
-  {
-   "timestamp": "20210918114353",
-   "url": "https://www.nbcmiami.com/weather/school-closings/",
-   "station": "nbc-owned-wtvj",
-   "why": "an unread capture of its list, read so that every capture of it is read"
-  },
-  {
-   "timestamp": "20210918114711",
-   "url": "https://www.nbcmiami.com/weather/school-closings/",
-   "station": "nbc-owned-wtvj",
-   "why": "an unread capture of its list, read so that every capture of it is read"
-  },
-  {
-   "timestamp": "20211001164256",
-   "url": "https://www.nbcmiami.com/weather/school-closings/",
-   "station": "nbc-owned-wtvj",
-   "why": "an unread capture of its list, read so that every capture of it is read"
-  },
-  {
-   "timestamp": "20211009115408",
-   "url": "https://www.nbcmiami.com/weather/school-closings/",
-   "station": "nbc-owned-wtvj",
-   "why": "an unread capture of its list, read so that every capture of it is read"
-  },
-  {
-   "timestamp": "20211009200623",
-   "url": "https://www.nbcmiami.com/weather/school-closings/",
-   "station": "nbc-owned-wtvj",
-   "why": "an unread capture of its list, read so that every capture of it is read"
-  },
-  {
-   "timestamp": "20211011203300",
-   "url": "https://www.nbcmiami.com/weather/school-closings/",
-   "station": "nbc-owned-wtvj",
-   "why": "an unread capture of its list, read so that every capture of it is read"
-  },
-  {
-   "timestamp": "20211017172709",
-   "url": "https://www.nbcmiami.com/weather/school-closings/",
-   "station": "nbc-owned-wtvj",
-   "why": "an unread capture of its list, read so that every capture of it is read"
-  },
-  {
-   "timestamp": "20211023102921",
-   "url": "https://www.nbcmiami.com/weather/school-closings/",
-   "station": "nbc-owned-wtvj",
-   "why": "an unread capture of its list, read so that every capture of it is read"
-  },
-  {
-   "timestamp": "20211027201443",
-   "url": "https://www.nbcmiami.com/weather/school-closings/",
-   "station": "nbc-owned-wtvj",
-   "why": "an unread capture of its list, read so that every capture of it is read"
-  },
-  {
-   "timestamp": "20211031092218",
-   "url": "https://www.nbcmiami.com/weather/school-closings/",
-   "station": "nbc-owned-wtvj",
-   "why": "an unread capture of its list, read so that every capture of it is read"
-  },
-  {
-   "timestamp": "20211106033938",
-   "url": "https://www.nbcmiami.com/weather/school-closings/",
-   "station": "nbc-owned-wtvj",
-   "why": "an unread capture of its list, read so that every capture of it is read"
-  },
-  {
-   "timestamp": "20211113133247",
-   "url": "https://www.nbcmiami.com/weather/school-closings/",
-   "station": "nbc-owned-wtvj",
-   "why": "an unread capture of its list, read so that every capture of it is read"
-  },
-  {
-   "timestamp": "20211121230918",
-   "url": "https://www.nbcmiami.com/weather/school-closings/",
-   "station": "nbc-owned-wtvj",
-   "why": "an unread capture of its list, read so that every capture of it is read"
-  },
-  {
-   "timestamp": "20211126213908",
-   "url": "https://www.nbcmiami.com/weather/school-closings/",
-   "station": "nbc-owned-wtvj",
-   "why": "an unread capture of its list, read so that every capture of it is read"
-  },
-  {
-   "timestamp": "20211128052517",
-   "url": "https://www.nbcmiami.com/weather/school-closings/",
-   "station": "nbc-owned-wtvj",
-   "why": "an unread capture of its list, read so that every capture of it is read"
-  },
-  {
-   "timestamp": "20211203200118",
-   "url": "https://www.nbcmiami.com/weather/school-closings/",
-   "station": "nbc-owned-wtvj",
-   "why": "an unread capture of its list, read so that every capture of it is read"
-  },
-  {
-   "timestamp": "20211203215714",
-   "url": "https://www.nbcmiami.com/weather/school-closings/",
-   "station": "nbc-owned-wtvj",
-   "why": "an unread capture of its list, read so that every capture of it is read"
-  },
-  {
-   "timestamp": "20211205040458",
-   "url": "https://www.nbcmiami.com/weather/school-closings/",
-   "station": "nbc-owned-wtvj",
-   "why": "an unread capture of its list, read so that every capture of it is read"
-  },
-  {
-   "timestamp": "20211205083401",
-   "url": "https://www.nbcmiami.com/weather/school-closings/",
-   "station": "nbc-owned-wtvj",
-   "why": "an unread capture of its list, read so that every capture of it is read"
-  },
-  {
-   "timestamp": "20211227095228",
-   "url": "https://www.nbcmiami.com/weather/school-closings/",
-   "station": "nbc-owned-wtvj",
-   "why": "an unread capture of its list, read so that every capture of it is read"
-  },
-  {
-   "timestamp": "20220119204938",
-   "url": "https://www.nbcmiami.com/weather/school-closings/",
-   "station": "nbc-owned-wtvj",
-   "why": "an unread capture of its list, read so that every capture of it is read"
-  },
-  {
-   "timestamp": "20220128092314",
-   "url": "https://www.nbcmiami.com/weather/school-closings/",
-   "station": "nbc-owned-wtvj",
-   "why": "an unread capture of its list, read so that every capture of it is read"
-  },
-  {
-   "timestamp": "20220131091558",
-   "url": "https://www.nbcmiami.com/weather/school-closings/",
-   "station": "nbc-owned-wtvj",
-   "why": "an unread capture of its list, read so that every capture of it is read"
-  },
-  {
-   "timestamp": "20220209035311",
-   "url": "https://www.nbcmiami.com/weather/school-closings/",
-   "station": "nbc-owned-wtvj",
-   "why": "an unread capture of its list, read so that every capture of it is read"
-  },
-  {
-   "timestamp": "20220212103931",
-   "url": "https://www.nbcmiami.com/weather/school-closings/",
-   "station": "nbc-owned-wtvj",
-   "why": "an unread capture of its list, read so that every capture of it is read"
-  },
-  {
-   "timestamp": "20220220042449",
-   "url": "https://www.nbcmiami.com/weather/school-closings/",
-   "station": "nbc-owned-wtvj",
-   "why": "an unread capture of its list, read so that every capture of it is read"
-  },
-  {
-   "timestamp": "20220302082254",
-   "url": "https://www.nbcmiami.com/weather/school-closings/",
-   "station": "nbc-owned-wtvj",
-   "why": "an unread capture of its list, read so that every capture of it is read"
-  },
-  {
-   "timestamp": "20220306113737",
-   "url": "https://www.nbcmiami.com/weather/school-closings/",
-   "station": "nbc-owned-wtvj",
-   "why": "an unread capture of its list, read so that every capture of it is read"
-  },
-  {
-   "timestamp": "20220314153938",
-   "url": "https://www.nbcmiami.com/weather/school-closings/",
-   "station": "nbc-owned-wtvj",
-   "why": "an unread capture of its list, read so that every capture of it is read"
-  },
-  {
-   "timestamp": "20220327103943",
-   "url": "https://www.nbcmiami.com/weather/school-closings/",
-   "station": "nbc-owned-wtvj",
-   "why": "an unread capture of its list, read so that every capture of it is read"
-  },
-  {
-   "timestamp": "20220329053201",
-   "url": "https://www.nbcmiami.com/weather/school-closings/",
-   "station": "nbc-owned-wtvj",
-   "why": "an unread capture of its list, read so that every capture of it is read"
-  },
-  {
-   "timestamp": "20220331141743",
-   "url": "https://www.nbcmiami.com/weather/school-closings/",
-   "station": "nbc-owned-wtvj",
-   "why": "an unread capture of its list, read so that every capture of it is read"
-  },
-  {
-   "timestamp": "20220331190639",
-   "url": "https://www.nbcmiami.com/weather/school-closings/",
-   "station": "nbc-owned-wtvj",
-   "why": "an unread capture of its list, read so that every capture of it is read"
-  },
-  {
-   "timestamp": "20220401093538",
-   "url": "https://www.nbcmiami.com/weather/school-closings/",
-   "station": "nbc-owned-wtvj",
-   "why": "an unread capture of its list, read so that every capture of it is read"
-  },
-  {
-   "timestamp": "20220403214916",
-   "url": "https://www.nbcmiami.com/weather/school-closings/",
-   "station": "nbc-owned-wtvj",
-   "why": "an unread capture of its list, read so that every capture of it is read"
-  },
-  {
-   "timestamp": "20220405195049",
-   "url": "https://www.nbcmiami.com/weather/school-closings/",
-   "station": "nbc-owned-wtvj",
-   "why": "an unread capture of its list, read so that every capture of it is read"
-  },
-  {
-   "timestamp": "20220406184346",
-   "url": "https://www.nbcmiami.com/weather/school-closings/",
-   "station": "nbc-owned-wtvj",
-   "why": "an unread capture of its list, read so that every capture of it is read"
-  },
-  {
-   "timestamp": "20220409234646",
-   "url": "https://www.nbcmiami.com/weather/school-closings/",
-   "station": "nbc-owned-wtvj",
-   "why": "an unread capture of its list, read so that every capture of it is read"
-  },
-  {
-   "timestamp": "20220414153334",
-   "url": "https://www.nbcmiami.com/weather/school-closings/",
-   "station": "nbc-owned-wtvj",
-   "why": "an unread capture of its list, read so that every capture of it is read"
-  },
-  {
-   "timestamp": "20220416215322",
-   "url": "https://www.nbcmiami.com/weather/school-closings/",
-   "station": "nbc-owned-wtvj",
-   "why": "an unread capture of its list, read so that every capture of it is read"
-  },
-  {
-   "timestamp": "20220417232551",
-   "url": "https://www.nbcmiami.com/weather/school-closings/",
-   "station": "nbc-owned-wtvj",
-   "why": "an unread capture of its list, read so that every capture of it is read"
-  },
-  {
-   "timestamp": "20220424091134",
-   "url": "https://www.nbcmiami.com/weather/school-closings/",
-   "station": "nbc-owned-wtvj",
-   "why": "an unread capture of its list, read so that every capture of it is read"
-  },
-  {
-   "timestamp": "20220507224444",
-   "url": "https://www.nbcmiami.com/weather/school-closings/",
-   "station": "nbc-owned-wtvj",
-   "why": "an unread capture of its list, read so that every capture of it is read"
-  },
-  {
-   "timestamp": "20220514153807",
-   "url": "https://www.nbcmiami.com/weather/school-closings/",
-   "station": "nbc-owned-wtvj",
-   "why": "an unread capture of its list, read so that every capture of it is read"
-  },
-  {
-   "timestamp": "20220523213647",
-   "url": "https://www.nbcmiami.com/weather/school-closings/",
-   "station": "nbc-owned-wtvj",
-   "why": "an unread capture of its list, read so that every capture of it is read"
-  },
-  {
-   "timestamp": "20220529101935",
-   "url": "https://www.nbcmiami.com/weather/school-closings/",
-   "station": "nbc-owned-wtvj",
-   "why": "an unread capture of its list, read so that every capture of it is read"
-  },
-  {
-   "timestamp": "20220605082514",
-   "url": "https://www.nbcmiami.com/weather/school-closings/",
-   "station": "nbc-owned-wtvj",
-   "why": "an unread capture of its list, read so that every capture of it is read"
-  },
-  {
-   "timestamp": "20220606001319",
-   "url": "https://www.nbcmiami.com/weather/school-closings/",
-   "station": "nbc-owned-wtvj",
-   "why": "an unread capture of its list, read so that every capture of it is read"
-  },
-  {
-   "timestamp": "20220606001329",
-   "url": "https://www.nbcmiami.com/weather/school-closings/",
-   "station": "nbc-owned-wtvj",
-   "why": "an unread capture of its list, read so that every capture of it is read"
-  },
-  {
-   "timestamp": "20220606101403",
-   "url": "https://www.nbcmiami.com/weather/school-closings/",
-   "station": "nbc-owned-wtvj",
-   "why": "an unread capture of its list, read so that every capture of it is read"
-  },
-  {
-   "timestamp": "20220613011223",
-   "url": "https://www.nbcmiami.com/weather/school-closings/",
-   "station": "nbc-owned-wtvj",
-   "why": "an unread capture of its list, read so that every capture of it is read"
-  },
-  {
-   "timestamp": "20220614153309",
-   "url": "https://www.nbcmiami.com/weather/school-closings/",
-   "station": "nbc-owned-wtvj",
-   "why": "an unread capture of its list, read so that every capture of it is read"
-  },
-  {
-   "timestamp": "20220619002206",
-   "url": "https://www.nbcmiami.com/weather/school-closings/",
-   "station": "nbc-owned-wtvj",
-   "why": "an unread capture of its list, read so that every capture of it is read"
-  },
-  {
-   "timestamp": "20220621195539",
-   "url": "https://www.nbcmiami.com/weather/school-closings/",
-   "station": "nbc-owned-wtvj",
-   "why": "an unread capture of its list, read so that every capture of it is read"
+   "timestamp": "20220201230410",
+   "url": "https://www.mcpsmt.org/",
+   "station": "finalsite-missoula-mt",
+   "why": "2022-02-02: within 2 days of one of its closure days"
   },
   {
-   "timestamp": "20220626040745",
-   "url": "https://www.nbcmiami.com/weather/school-closings/",
-   "station": "nbc-owned-wtvj",
-   "why": "an unread capture of its list, read so that every capture of it is read"
-  },
-  {
-   "timestamp": "20220704045309",
-   "url": "https://www.nbcmiami.com/weather/school-closings/",
-   "station": "nbc-owned-wtvj",
-   "why": "an unread capture of its list, read so that every capture of it is read"
+   "timestamp": "20230114153640",
+   "url": "https://www.nbcsandiego.com/weather/school-closings/",
+   "station": "nbc-owned-knsd",
+   "why": "2023-01-14: within 2 days of one of its closure days"
   },
   {
-   "timestamp": "20220707124723",
-   "url": "https://www.nbcmiami.com/weather/school-closings/",
-   "station": "nbc-owned-wtvj",
-   "why": "an unread capture of its list, read so that every capture of it is read"
-  },
-  {
-   "timestamp": "20220711063153",
-   "url": "https://www.nbcmiami.com/weather/school-closings/",
-   "station": "nbc-owned-wtvj",
-   "why": "an unread capture of its list, read so that every capture of it is read"
+   "timestamp": "20240224062530",
+   "url": "https://www.besd.net/",
+   "station": "apptegy-box-elder-ut",
+   "why": "2024-02-24: within 2 days of one of its closure days"
   },
   {
-   "timestamp": "20220714154018",
-   "url": "https://www.nbcmiami.com/weather/school-closings/",
-   "station": "nbc-owned-wtvj",
-   "why": "an unread capture of its list, read so that every capture of it is read"
+   "timestamp": "20180102115205",
+   "url": "http://www.oneclay.net:80/",
+   "station": "apptegy-clay-fl",
+   "why": "2018-01-02: within 2 days of one of its closure days"
   },
   {
-   "timestamp": "20220717121238",
-   "url": "https://www.nbcmiami.com/weather/school-closings/",
-   "station": "nbc-owned-wtvj",
-   "why": "an unread capture of its list, read so that every capture of it is read"
+   "timestamp": "20241207000640",
+   "url": "https://www.stanfordmtschool.com/",
+   "station": "apptegy-stanford-mt",
+   "why": "2024-12-07: within 2 days of one of its closure days"
   },
   {
-   "timestamp": "20220718053928",
-   "url": "https://www.nbcmiami.com/weather/school-closings/",
-   "station": "nbc-owned-wtvj",
-   "why": "an unread capture of its list, read so that every capture of it is read"
+   "timestamp": "20250320152313",
+   "url": "https://www.park6.org/",
+   "station": "apptegy-park-6-wy",
+   "why": "2025-03-20: within 2 days of one of its closure days"
   },
   {
-   "timestamp": "20220820195323",
-   "url": "https://www.nbcmiami.com/weather/school-closings/",
-   "station": "nbc-owned-wtvj",
-   "why": "an unread capture of its list, read so that every capture of it is read"
+   "timestamp": "20230401153643",
+   "url": "https://www.mvsd21.org/",
+   "station": "apptegy-marsh-valley-id",
+   "why": "2023-04-01: within 2 days of one of its closure days"
   },
   {
-   "timestamp": "20220902153946",
-   "url": "https://www.nbcmiami.com/weather/school-closings/",
-   "station": "nbc-owned-wtvj",
-   "why": "an unread capture of its list, read so that every capture of it is read"
+   "timestamp": "20221227230509",
+   "url": "https://www.mvsd21.org/",
+   "station": "apptegy-marsh-valley-id",
+   "why": "2022-12-28: within 2 days of one of its closure days"
   },
   {
-   "timestamp": "20220913042810",
-   "url": "https://www.nbcmiami.com/weather/school-closings/",
-   "station": "nbc-owned-wtvj",
-   "why": "an unread capture of its list, read so that every capture of it is read"
+   "timestamp": "20221223040956",
+   "url": "https://www.mvsd21.org/",
+   "station": "apptegy-marsh-valley-id",
+   "why": "2022-12-23: within 2 days of one of its closure days"
   },
   {
-   "timestamp": "20220913073732",
-   "url": "https://www.nbcmiami.com/weather/school-closings/",
-   "station": "nbc-owned-wtvj",
-   "why": "an unread capture of its list, read so that every capture of it is read"
+   "timestamp": "20260420000240",
+   "url": "https://www.sd148.org/en-US",
+   "station": "schoolblocks-grace-id",
+   "why": "2026-04-20: within 2 days of one of its closure days"
   },
   {
-   "timestamp": "20220918090125",
-   "url": "https://www.nbcmiami.com/weather/school-closings/",
-   "station": "nbc-owned-wtvj",
-   "why": "an unread capture of its list, read so that every capture of it is read"
+   "timestamp": "20171208111123",
+   "url": "https://www.sisd.net/",
+   "station": "apptegy-socorro-tx",
+   "why": "2017-12-08: within 2 days of one of its closure days"
   },
   {
-   "timestamp": "20220923121910",
-   "url": "https://www.nbcmiami.com/weather/school-closings/",
-   "station": "nbc-owned-wtvj",
-   "why": "an unread capture of its list, read so that every capture of it is read"
+   "timestamp": "20260123220347",
+   "url": "https://www.calallen.org/",
+   "station": "finalsite-calallen-tx",
+   "why": "2026-01-24: within 2 days of one of its closure days"
   },
   {
-   "timestamp": "20221003192848",
-   "url": "https://www.nbcmiami.com/weather/school-closings/",
-   "station": "nbc-owned-wtvj",
-   "why": "an unread capture of its list, read so that every capture of it is read"
+   "timestamp": "20250123050225",
+   "url": "https://www.atisd.net/",
+   "station": "apptegy-austwell-tivoli-tx",
+   "why": "2025-01-23: within 2 days of one of its closure days"
   },
   {
-   "timestamp": "20221012182329",
-   "url": "https://www.nbcmiami.com/weather/school-closings/",
-   "station": "nbc-owned-wtvj",
+   "timestamp": "20170320212330",
+   "url": "http://www.kens5.com:80/closings",
+   "station": "tegna-kens",
    "why": "an unread capture of its list, read so that every capture of it is read"
   },
   {
-   "timestamp": "20221029023507",
-   "url": "https://www.nbcmiami.com/weather/school-closings/",
-   "station": "nbc-owned-wtvj",
+   "timestamp": "20170610070913",
+   "url": "http://www.kens5.com/closings",
+   "station": "tegna-kens",
    "why": "an unread capture of its list, read so that every capture of it is read"
   },
   {
-   "timestamp": "20221205222548",
-   "url": "https://www.nbcmiami.com/weather/school-closings/",
-   "station": "nbc-owned-wtvj",
-   "why": "an unread capture of its list, read so that every capture of it is read"
+   "timestamp": "20221106231151",
+   "url": "https://www.ogdensd.org/",
+   "station": "apptegy-ogden-ut",
+   "why": "a capture two days or less from one of its closure days (2022-11-07), read because fewer than three captures of its closure days showed its list"
   },
   {
-   "timestamp": "20221216220050",
-   "url": "https://www.nbcmiami.com/weather/school-closings/",
-   "station": "nbc-owned-wtvj",
-   "why": "an unread capture of its list, read so that every capture of it is read"
+   "timestamp": "20230316032112",
+   "url": "https://www.ogdensd.org/",
+   "station": "apptegy-ogden-ut",
+   "why": "a capture two days or less from one of its closure days (2023-03-16), read because fewer than three captures of its closure days showed its list"
   },
   {
-   "timestamp": "20221216223757",
-   "url": "https://www.nbcmiami.com/weather/school-closings/",
-   "station": "nbc-owned-wtvj",
-   "why": "an unread capture of its list, read so that every capture of it is read"
+   "timestamp": "20260127205644",
+   "url": "https://www.franklincountyschools.org/",
+   "station": "finalsite-franklin-fl",
+   "why": "a capture two days or less from one of its closure days (2026-01-28), read because fewer than three captures of its closure days showed its list"
   },
   {
-   "timestamp": "20221219050536",
-   "url": "https://www.nbcmiami.com/weather/school-closings/",
-   "station": "nbc-owned-wtvj",
+   "timestamp": "20201101034320",
+   "url": "https://www.nbclosangeles.com/weather/school-closings/",
+   "station": "nbc-owned-knbc",
    "why": "an unread capture of its list, read so that every capture of it is read"
   },
   {
-   "timestamp": "20221219135030",
-   "url": "https://www.nbcmiami.com/weather/school-closings/",
-   "station": "nbc-owned-wtvj",
+   "timestamp": "20201121074807",
+   "url": "https://www.nbclosangeles.com/weather/school-closings/",
+   "station": "nbc-owned-knbc",
    "why": "an unread capture of its list, read so that every capture of it is read"
   },
   {
-   "timestamp": "20221226104414",
-   "url": "https://www.nbcmiami.com/weather/school-closings/",
-   "station": "nbc-owned-wtvj",
+   "timestamp": "20201129035804",
+   "url": "https://www.nbclosangeles.com/weather/school-closings/",
+   "station": "nbc-owned-knbc",
    "why": "an unread capture of its list, read so that every capture of it is read"
   },
   {
-   "timestamp": "20221227233640",
-   "url": "https://www.nbcmiami.com/weather/school-closings/",
-   "station": "nbc-owned-wtvj",
+   "timestamp": "20210115011732",
+   "url": "https://www.nbclosangeles.com/weather/school-closings/",
+   "station": "nbc-owned-knbc",
    "why": "an unread capture of its list, read so that every capture of it is read"
   },
   {
-   "timestamp": "20221229200540",
-   "url": "https://www.nbcmiami.com/weather/school-closings/",
-   "station": "nbc-owned-wtvj",
+   "timestamp": "20210418210036",
+   "url": "https://www.nbclosangeles.com/weather/school-closings/",
+   "station": "nbc-owned-knbc",
    "why": "an unread capture of its list, read so that every capture of it is read"
   },
   {
-   "timestamp": "20230123115646",
-   "url": "https://www.nbcmiami.com/weather/school-closings/",
-   "station": "nbc-owned-wtvj",
+   "timestamp": "20210430085715",
+   "url": "https://www.nbclosangeles.com/weather/school-closings/",
+   "station": "nbc-owned-knbc",
    "why": "an unread capture of its list, read so that every capture of it is read"
   },
   {
-   "timestamp": "20230130113715",
-   "url": "https://www.nbcmiami.com/weather/school-closings/",
-   "station": "nbc-owned-wtvj",
+   "timestamp": "20210515143243",
+   "url": "https://www.nbclosangeles.com/weather/school-closings/",
+   "station": "nbc-owned-knbc",
    "why": "an unread capture of its list, read so that every capture of it is read"
   },
   {
-   "timestamp": "20230206154653",
-   "url": "https://www.nbcmiami.com/weather/school-closings/",
-   "station": "nbc-owned-wtvj",
+   "timestamp": "20210624201723",
+   "url": "https://www.nbclosangeles.com/weather/school-closings/",
+   "station": "nbc-owned-knbc",
    "why": "an unread capture of its list, read so that every capture of it is read"
   },
   {
-   "timestamp": "20230221025304",
-   "url": "https://www.nbcmiami.com/weather/school-closings/",
-   "station": "nbc-owned-wtvj",
+   "timestamp": "20210705224355",
+   "url": "https://www.nbclosangeles.com/weather/school-closings/",
+   "station": "nbc-owned-knbc",
    "why": "an unread capture of its list, read so that every capture of it is read"
   },
   {
-   "timestamp": "20230222131635",
-   "url": "https://www.nbcmiami.com/weather/school-closings/",
-   "station": "nbc-owned-wtvj",
+   "timestamp": "20210729200858",
+   "url": "https://www.nbclosangeles.com/weather/school-closings/",
+   "station": "nbc-owned-knbc",
    "why": "an unread capture of its list, read so that every capture of it is read"
   },
   {
-   "timestamp": "20230222171201",
-   "url": "https://www.nbcmiami.com/weather/school-closings/",
-   "station": "nbc-owned-wtvj",
+   "timestamp": "20210807164822",
+   "url": "https://www.nbclosangeles.com/weather/school-closings/",
+   "station": "nbc-owned-knbc",
    "why": "an unread capture of its list, read so that every capture of it is read"
   },
   {
-   "timestamp": "20230223134731",
-   "url": "https://www.nbcmiami.com/weather/school-closings/",
-   "station": "nbc-owned-wtvj",
+   "timestamp": "20210810200051",
+   "url": "https://www.nbclosangeles.com/weather/school-closings/",
+   "station": "nbc-owned-knbc",
    "why": "an unread capture of its list, read so that every capture of it is read"
   },
   {
-   "timestamp": "20230223165442",
-   "url": "https://www.nbcmiami.com/weather/school-closings/",
-   "station": "nbc-owned-wtvj",
+   "timestamp": "20210823052647",
+   "url": "https://www.nbclosangeles.com/weather/school-closings/",
+   "station": "nbc-owned-knbc",
    "why": "an unread capture of its list, read so that every capture of it is read"
   },
   {
-   "timestamp": "20230224170245",
-   "url": "https://www.nbcmiami.com/weather/school-closings/",
-   "station": "nbc-owned-wtvj",
+   "timestamp": "20211010183810",
+   "url": "https://www.nbclosangeles.com/weather/school-closings/",
+   "station": "nbc-owned-knbc",
    "why": "an unread capture of its list, read so that every capture of it is read"
   },
   {
-   "timestamp": "20230225163844",
-   "url": "https://www.nbcmiami.com/weather/school-closings/",
-   "station": "nbc-owned-wtvj",
+   "timestamp": "20211107104234",
+   "url": "https://www.nbclosangeles.com/weather/school-closings/",
+   "station": "nbc-owned-knbc",
    "why": "an unread capture of its list, read so that every capture of it is read"
   },
   {
-   "timestamp": "20230226164256",
-   "url": "https://www.nbcmiami.com/weather/school-closings/",
-   "station": "nbc-owned-wtvj",
+   "timestamp": "20260313122959",
+   "url": "https://www.12newsnow.com/closings",
+   "station": "tegna-kbmt",
    "why": "an unread capture of its list, read so that every capture of it is read"
   },
   {
-   "timestamp": "20230301075922",
-   "url": "https://www.nbcmiami.com/weather/school-closings/",
-   "station": "nbc-owned-wtvj",
-   "why": "an unread capture of its list, read so that every capture of it is read"
+   "timestamp": "20250322150651",
+   "url": "https://www.conradschools.org/",
+   "station": "apptegy-conrad-mt",
+   "why": "2025-03-22: within 2 days of one of its closure days"
   },
   {
-   "timestamp": "20230329091022",
-   "url": "https://www.nbcmiami.com/weather/school-closings/",
-   "station": "nbc-owned-wtvj",
-   "why": "an unread capture of its list, read so that every capture of it is read"
+   "timestamp": "20240507063257",
+   "url": "https://www.clarkcountyschools161.org/",
+   "station": "finalsite-clark-county-id",
+   "why": "2024-05-07: within 2 days of one of its closure days"
   },
   {
-   "timestamp": "20230329103912",
-   "url": "https://www.nbcmiami.com/weather/school-closings/",
-   "station": "nbc-owned-wtvj",
-   "why": "an unread capture of its list, read so that every capture of it is read"
+   "timestamp": "20230419220316",
+   "url": "https://www.besd.net/",
+   "station": "apptegy-box-elder-ut",
+   "why": "2023-04-20: within 2 days of one of its closure days"
   },
   {
-   "timestamp": "20230418190958",
-   "url": "https://www.nbcmiami.com/weather/school-closings/",
-   "station": "nbc-owned-wtvj",
-   "why": "an unread capture of its list, read so that every capture of it is read"
+   "timestamp": "20230311183202",
+   "url": "https://www.besd.net/",
+   "station": "apptegy-box-elder-ut",
+   "why": "2023-03-12: within 2 days of one of its closure days"
   }
  ]
 }
