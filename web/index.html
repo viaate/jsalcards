@@ -186,6 +186,8 @@
         position: fixed;
         inset: 0;
         overflow: hidden;
+        /* Clipped, not a scroller: a control focused below the sheet's fold never scrolls the page up. */
+        overflow: clip;
         background: var(--bg);
       }
 

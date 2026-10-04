@@ -2599,6 +2599,48 @@ test.describe('with data staged', () => {
     await context.close();
   });
 
+  test('on a phone a control focused below the sheet’s fold takes the sheet up, and nothing scrolls the page out from under the search field', async ({
+    browser,
+  }) => {
+    const context = await browser.newContext({
+      ...devices['Pixel 7'],
+      timezoneId: 'America/Chicago',
+    });
+    const page = await context.newPage();
+    const { problems } = watch(page);
+    const height = page.viewportSize()?.height ?? 0;
+    const sheet = page.locator('aside.detail');
+    const barTop = (): Promise<number> =>
+      page.locator('.bar').evaluate((bar) => bar.getBoundingClientRect().top);
+    const bottomOf = async (control: Locator): Promise<number> => {
+      const box = await control.boundingBox();
+      return (box?.y ?? Number.POSITIVE_INFINITY) + (box?.height ?? 0);
+    };
+
+    await page.goto(`${site}?school=${PEMBROKE_HILL}`);
+    await expect(sheet).toHaveAttribute('data-detent', 'open');
+    const top = await barTop();
+    // A scroll into view, as a test runner or an assistive tool asks for one, moves nothing.
+    await sheet
+      .locator('.action')
+      .first()
+      .evaluate((pin) => {
+        pin.scrollIntoView({ block: 'center' });
+      });
+    expect(await barTop()).toBe(top);
+
+    // Focus on the last control, as Tab gives it: below the fold until the sheet goes up.
+    const last = sheet.locator('button, a').last();
+    expect(await bottomOf(last)).toBeGreaterThan(height);
+    await last.focus();
+    await expect(sheet).toHaveAttribute('data-detent', 'full');
+    await expect.poll(() => bottomOf(last)).toBeLessThan(height);
+    expect(await barTop()).toBe(top);
+    expect(await page.locator('.stage').evaluate((stage) => stage.scrollTop)).toBe(0);
+    expect(problems).toEqual([]);
+    await context.close();
+  });
+
   test('the update time is the live file’s own time: live while recent, then when it was updated', async ({
     browser,
   }) => {
