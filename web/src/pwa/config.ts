@@ -12,7 +12,9 @@
  *   rarely; they are cache-first and expire after a week.
  * - A data file the page or its search worker reads before the first worker
  *   takes the page over goes into the cache its route uses as it is read
- *   (keep.ts), so the worker never downloads it again.
+ *   (keep.ts), so the worker never downloads it again. The worker's limits
+ *   cover only what it has cached or served itself, so the page drops the
+ *   copies of hashed files its build no longer ships (data.ts dropOldData).
  * - OpenFreeMap tiles (zoom 7 and up) keep a small cache of recent tiles: only
  *   answers that are tiles (onlyTiles), and never for a request that asks to
  *   go past the cache. A cache an earlier build kept and this one does not is

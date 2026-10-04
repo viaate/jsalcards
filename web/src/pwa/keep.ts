@@ -15,6 +15,11 @@
  * takes a file whole or not at all), and the next read of that file, through
  * the worker or not, is kept as any other: no file is ever taken for kept
  * that is not in the cache.
+ *
+ * The worker's limits on its caches (config.ts CACHE_LIMITS) cover only the
+ * copies it has cached or served itself, so a file kept here and not read
+ * through the worker since is outside them. Once a deploy replaces it with a
+ * file under a new name, the page drops it (data.ts dropOldData).
  */
 
 import { CACHE_NAMES, routeFor } from './config';
