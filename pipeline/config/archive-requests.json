@@ -1,1504 +1,1504 @@
 {
  "snapshots": [
   {
-   "timestamp": "20230330185926",
+   "timestamp": "20220106155033",
    "url": "https://www.davis.k12.ut.us/",
    "station": "apptegy-davis-ut",
-   "why": "storm day 2023-03-31 (market score 1.00)"
+   "why": "storm day 2022-01-06 (market score 1.00)"
   },
   {
-   "timestamp": "20230329221800",
-   "url": "https://www.davis.k12.ut.us/",
-   "station": "apptegy-davis-ut",
-   "why": "storm day 2023-03-30 (market score 1.00)"
-  },
-  {
-   "timestamp": "20220105035018",
+   "timestamp": "20220105154937",
    "url": "https://www.davis.k12.ut.us/",
    "station": "apptegy-davis-ut",
    "why": "storm day 2022-01-05 (market score 1.00)"
   },
   {
-   "timestamp": "20211215003725",
+   "timestamp": "20220106035033",
+   "url": "https://www.davis.k12.ut.us/",
+   "station": "apptegy-davis-ut",
+   "why": "storm day 2022-01-06 (market score 1.00)"
+  },
+  {
+   "timestamp": "20241225172502",
+   "url": "https://www.wsd.net/",
+   "station": "apptegy-weber-ut",
+   "why": "storm day 2024-12-26 (market score 1.00)"
+  },
+  {
+   "timestamp": "20221110131807",
+   "url": "https://wsd.net/",
+   "station": "apptegy-weber-ut",
+   "why": "storm day 2022-11-10 (market score 1.00)"
+  },
+  {
+   "timestamp": "20221108080431",
+   "url": "https://wsd.net/",
+   "station": "apptegy-weber-ut",
+   "why": "storm day 2022-11-08 (market score 1.00)"
+  },
+  {
+   "timestamp": "20210309222925",
    "url": "https://www.nbcbayarea.com/weather/school-closings/",
    "station": "nbc-owned-kntv",
-   "why": "storm day 2021-12-15 (market score 0.05)"
+   "why": "storm day 2021-03-10 (market score 0.05)"
   },
   {
-   "timestamp": "20210315034259",
+   "timestamp": "20210309034546",
    "url": "https://www.nbcbayarea.com/weather/school-closings/",
    "station": "nbc-owned-kntv",
-   "why": "storm day 2021-03-15 (market score 0.05)"
+   "why": "storm day 2021-03-09 (market score 0.05)"
   },
   {
-   "timestamp": "20211215081446",
+   "timestamp": "20210309040053",
    "url": "https://www.nbcbayarea.com/weather/school-closings/",
    "station": "nbc-owned-kntv",
-   "why": "storm day 2021-12-15 (market score 0.05)"
+   "why": "storm day 2021-03-09 (market score 0.05)"
   },
   {
-   "timestamp": "20250927040509",
-   "url": "https://docs.google.com/spreadsheets/d/e/2PACX-1vRzrIeQ579iJDJCzp_oD9jDkAFAsjdNUHS-qY1Xe-_-kRRHyLaUS0av9-eoKHphpMPKr4HUVpEMTUiX/pubhtml",
-   "station": "coesheet-trinity",
-   "why": "2025-09-27: an unread capture of an earlier address of its list, the last left (read so that every capture of it is read)"
-  },
-  {
-   "timestamp": "20240213110937",
+   "timestamp": "20250120112116",
    "url": "https://www.mcpsmt.org/",
    "station": "finalsite-missoula-mt",
-   "why": "storm day 2024-02-13 (market score 0.25)"
+   "why": "storm day 2025-01-20 (market score 0.50)"
   },
   {
-   "timestamp": "20231025232409",
+   "timestamp": "20221101230407",
    "url": "https://www.mcpsmt.org/",
    "station": "finalsite-missoula-mt",
-   "why": "storm day 2023-10-26 (market score 0.25)"
+   "why": "storm day 2022-11-02 (market score 0.25)"
   },
   {
-   "timestamp": "20230321144721",
+   "timestamp": "20240911181148",
    "url": "https://www.mcpsmt.org/",
    "station": "finalsite-missoula-mt",
-   "why": "storm day 2023-03-21 (market score 0.25)"
+   "why": "storm day 2024-09-12 (market score 0.25)"
   },
   {
-   "timestamp": "20221108214007",
+   "timestamp": "20210211215032",
    "url": "https://www.slcschools.org/",
    "station": "smartsites-salt-lake-city-ut",
-   "why": "storm day 2022-11-09 (market score 1.00)"
+   "why": "storm day 2021-02-12 (market score 1.00)"
   },
   {
-   "timestamp": "20191212104730",
+   "timestamp": "20230206154443",
    "url": "https://www.slcschools.org/",
    "station": "smartsites-salt-lake-city-ut",
-   "why": "storm day 2019-12-12 (market score 1.00)"
+   "why": "storm day 2023-02-06 (market score 0.25)"
   },
   {
-   "timestamp": "20191212013434",
+   "timestamp": "20221214022535",
    "url": "https://www.slcschools.org/",
    "station": "smartsites-salt-lake-city-ut",
-   "why": "storm day 2019-12-12 (market score 1.00)"
+   "why": "storm day 2022-12-14 (market score 0.25)"
   },
   {
-   "timestamp": "20230314215655",
-   "url": "https://www.bsd7.org/",
-   "station": "finalsite-bozeman-mt",
-   "why": "storm day 2023-03-15 (market score 1.00)"
-  },
-  {
-   "timestamp": "20230314145713",
-   "url": "https://www.bsd7.org/",
-   "station": "finalsite-bozeman-mt",
-   "why": "storm day 2023-03-14 (market score 1.00)"
-  },
-  {
-   "timestamp": "20230315052318",
-   "url": "https://www.bsd7.org/",
-   "station": "finalsite-bozeman-mt",
-   "why": "storm day 2023-03-15 (market score 1.00)"
-  },
-  {
-   "timestamp": "20230314085106",
-   "url": "https://www.d93schools.org/",
-   "station": "smartsites-bonneville-id",
-   "why": "storm day 2023-03-14 (market score 1.00)"
-  },
-  {
-   "timestamp": "20230313192720",
-   "url": "https://www.d93schools.org/",
-   "station": "smartsites-bonneville-id",
-   "why": "storm day 2023-03-14 (market score 1.00)"
-  },
-  {
-   "timestamp": "20230314221329",
+   "timestamp": "20230314212431",
    "url": "https://www.d93schools.org/",
    "station": "smartsites-bonneville-id",
    "why": "storm day 2023-03-15 (market score 1.00)"
   },
   {
-   "timestamp": "20220104143008",
-   "url": "http://www.ccsdut.org/",
-   "station": "finalsite-cache-ut",
-   "why": "storm day 2022-01-04 (market score 0.25)"
+   "timestamp": "20230127101250",
+   "url": "https://www.d93schools.org/",
+   "station": "smartsites-bonneville-id",
+   "why": "storm day 2023-01-27 (market score 1.00)"
   },
   {
-   "timestamp": "20221109102719",
-   "url": "https://www.ifschools.org/",
-   "station": "finalsite-idaho-falls-id",
-   "why": "storm day 2022-11-09 (market score 0.25)"
+   "timestamp": "20221128002130",
+   "url": "https://www.d93schools.org/",
+   "station": "smartsites-bonneville-id",
+   "why": "storm day 2022-11-28 (market score 1.00)"
   },
   {
-   "timestamp": "20221108023715",
-   "url": "https://www.ifschools.org/",
-   "station": "finalsite-idaho-falls-id",
-   "why": "storm day 2022-11-08 (market score 0.25)"
-  },
-  {
-   "timestamp": "20221107215458",
-   "url": "https://www.ifschools.org/",
-   "station": "finalsite-idaho-falls-id",
-   "why": "storm day 2022-11-08 (market score 0.25)"
-  },
-  {
-   "timestamp": "20230331095303",
+   "timestamp": "20230323180533",
    "url": "https://www.besd.net/",
    "station": "apptegy-box-elder-ut",
-   "why": "storm day 2023-03-31 (market score 1.00)"
+   "why": "storm day 2023-03-24 (market score 1.00)"
   },
   {
-   "timestamp": "20230403082534",
+   "timestamp": "20230320080959",
    "url": "https://www.besd.net/",
    "station": "apptegy-box-elder-ut",
-   "why": "storm day 2023-04-03 (market score 1.00)"
+   "why": "storm day 2023-03-20 (market score 1.00)"
   },
   {
-   "timestamp": "20230403181635",
+   "timestamp": "20230320003830",
    "url": "https://www.besd.net/",
    "station": "apptegy-box-elder-ut",
-   "why": "storm day 2023-04-04 (market score 1.00)"
+   "why": "storm day 2023-03-20 (market score 1.00)"
   },
   {
-   "timestamp": "20241121104419",
-   "url": "https://www.blaineschools.org/",
-   "station": "finalsite-blaine-id",
-   "why": "storm day 2024-11-21 (market score 1.00)"
-  },
-  {
-   "timestamp": "20251218095546",
+   "timestamp": "20251217215545",
    "url": "https://www.blaineschools.org/",
    "station": "finalsite-blaine-id",
    "why": "storm day 2025-12-18 (market score 1.00)"
   },
   {
-   "timestamp": "20251218003732",
+   "timestamp": "20251217195009",
    "url": "https://www.blaineschools.org/",
    "station": "finalsite-blaine-id",
    "why": "storm day 2025-12-18 (market score 1.00)"
   },
   {
-   "timestamp": "20260218010836",
-   "url": "https://www.ehpsmt.gov/",
-   "station": "finalsite-east-helena-mt",
-   "why": "storm day 2026-02-18 (market score 0.25)"
+   "timestamp": "20251205110804",
+   "url": "https://www.blaineschools.org/",
+   "station": "finalsite-blaine-id",
+   "why": "storm day 2025-12-05 (market score 0.25)"
   },
   {
-   "timestamp": "20260225010017",
-   "url": "https://www.ehpsmt.gov/",
-   "station": "finalsite-east-helena-mt",
-   "why": "storm day 2026-02-25 (market score 0.25)"
+   "timestamp": "20250121034638",
+   "url": "https://www.okaloosaschools.com/",
+   "station": "apptegy-okaloosa-fl",
+   "why": "storm day 2025-01-21 (market score 1.00)"
   },
   {
-   "timestamp": "20260225130603",
-   "url": "https://www.ehpsmt.gov/",
-   "station": "finalsite-east-helena-mt",
-   "why": "storm day 2026-02-25 (market score 0.25)"
+   "timestamp": "20201028160628",
+   "url": "https://www.okaloosaschools.com/",
+   "station": "apptegy-okaloosa-fl",
+   "why": "storm day 2020-10-29 (market score 0.50)"
   },
   {
-   "timestamp": "20220104231948",
-   "url": "https://www.murrayschools.org/",
-   "station": "smartsites-murray-ut",
-   "why": "storm day 2022-01-05 (market score 1.00)"
+   "timestamp": "20201028182018",
+   "url": "https://www.okaloosaschools.com/",
+   "station": "apptegy-okaloosa-fl",
+   "why": "storm day 2020-10-29 (market score 0.50)"
   },
   {
-   "timestamp": "20221212014732",
-   "url": "https://www.murrayschools.org/",
-   "station": "smartsites-murray-ut",
-   "why": "storm day 2022-12-12 (market score 1.00)"
+   "timestamp": "20200914182031",
+   "url": "http://www.bay.k12.fl.us/",
+   "station": "apptegy-bay-fl",
+   "why": "storm day 2020-09-15 (market score 0.50)"
   },
   {
-   "timestamp": "20221107231349",
+   "timestamp": "20200914212920",
+   "url": "http://www.bay.k12.fl.us/",
+   "station": "apptegy-bay-fl",
+   "why": "storm day 2020-09-15 (market score 0.50)"
+  },
+  {
+   "timestamp": "20221108111334",
    "url": "https://www.murrayschools.org/",
    "station": "smartsites-murray-ut",
    "why": "storm day 2022-11-08 (market score 1.00)"
   },
   {
-   "timestamp": "20220106054623",
-   "url": "https://www.loganschools.org/",
-   "station": "smartsites-logan-ut",
-   "why": "storm day 2022-01-06 (market score 1.00)"
+   "timestamp": "20221109111458",
+   "url": "https://www.murrayschools.org/",
+   "station": "smartsites-murray-ut",
+   "why": "storm day 2022-11-09 (market score 1.00)"
   },
   {
-   "timestamp": "20220104174453",
-   "url": "https://www.loganschools.org/",
-   "station": "smartsites-logan-ut",
-   "why": "storm day 2022-01-05 (market score 1.00)"
+   "timestamp": "20221108233545",
+   "url": "https://www.murrayschools.org/",
+   "station": "smartsites-murray-ut",
+   "why": "storm day 2022-11-09 (market score 1.00)"
   },
   {
-   "timestamp": "20220411053853",
+   "timestamp": "20241007172843",
+   "url": "https://www.hernandoschools.org/",
+   "station": "smartsites-hernando-fl",
+   "why": "storm day 2024-10-08 (market score 1.00)"
+  },
+  {
+   "timestamp": "20240926141428",
+   "url": "https://www.hernandoschools.org/",
+   "station": "smartsites-hernando-fl",
+   "why": "storm day 2024-09-26 (market score 0.75)"
+  },
+  {
+   "timestamp": "20230828173346",
+   "url": "https://www.hernandoschools.org/",
+   "station": "smartsites-hernando-fl",
+   "why": "storm day 2023-08-29 (market score 0.75)"
+  },
+  {
+   "timestamp": "20220410173910",
    "url": "https://www.loganschools.org/",
    "station": "smartsites-logan-ut",
    "why": "storm day 2022-04-11 (market score 1.00)"
   },
   {
-   "timestamp": "20220120053915",
-   "url": "https://www.noxonschools.com/",
-   "station": "apptegy-noxon-mt",
-   "why": "storm day 2022-01-20 (market score 0.25)"
+   "timestamp": "20220411173912",
+   "url": "https://www.loganschools.org/",
+   "station": "smartsites-logan-ut",
+   "why": "storm day 2022-04-12 (market score 1.00)"
   },
   {
-   "timestamp": "20251205122942",
+   "timestamp": "20211231054759",
+   "url": "https://www.loganschools.org/",
+   "station": "smartsites-logan-ut",
+   "why": "storm day 2021-12-31 (market score 0.25)"
+  },
+  {
+   "timestamp": "20191212121027",
+   "url": "https://www.sodaschools.org/",
+   "station": "edlio-soda-springs-id",
+   "why": "storm day 2019-12-12 (market score 1.00)"
+  },
+  {
+   "timestamp": "20230331052247",
+   "url": "https://www.sodaschools.org/",
+   "station": "edlio-soda-springs-id",
+   "why": "storm day 2023-03-31 (market score 1.00)"
+  },
+  {
+   "timestamp": "20260105075626",
+   "url": "https://www.sodaschools.org/",
+   "station": "edlio-soda-springs-id",
+   "why": "storm day 2026-01-05 (market score 1.00)"
+  },
+  {
+   "timestamp": "20241103170020",
    "url": "https://www.thompsonfalls.net/",
    "station": "finalsite-thompson-falls-mt",
-   "why": "storm day 2025-12-05 (market score 1.00)"
+   "why": "storm day 2024-11-04 (market score 1.00)"
   },
   {
-   "timestamp": "20251205073039",
+   "timestamp": "20241105114825",
    "url": "https://www.thompsonfalls.net/",
    "station": "finalsite-thompson-falls-mt",
-   "why": "storm day 2025-12-05 (market score 1.00)"
+   "why": "storm day 2024-11-05 (market score 1.00)"
   },
   {
-   "timestamp": "20250131055924",
+   "timestamp": "20241104000916",
    "url": "https://www.thompsonfalls.net/",
    "station": "finalsite-thompson-falls-mt",
-   "why": "storm day 2025-01-31 (market score 1.00)"
+   "why": "storm day 2024-11-04 (market score 1.00)"
   },
   {
-   "timestamp": "20221101232512",
-   "url": "https://www.philipsburgschools.org/",
-   "station": "apptegy-philipsburg-mt",
-   "why": "storm day 2022-11-02 (market score 0.25)"
+   "timestamp": "20260127011227",
+   "url": "https://www.visd.net/",
+   "station": "apptegy-victoria-tx",
+   "why": "storm day 2026-01-27 (market score 0.50)"
   },
   {
-   "timestamp": "20211108223334",
-   "url": "https://www.tfschools.com/",
-   "station": "apptegy-three-forks-mt",
-   "why": "storm day 2021-11-09 (market score 0.25)"
+   "timestamp": "20260127022047",
+   "url": "https://www.visd.net/",
+   "station": "apptegy-victoria-tx",
+   "why": "storm day 2026-01-27 (market score 0.50)"
   },
   {
-   "timestamp": "20210117224811",
-   "url": "https://www.tfschools.com/",
-   "station": "apptegy-three-forks-mt",
-   "why": "storm day 2021-01-18 (market score 0.25)"
+   "timestamp": "20260127075322",
+   "url": "https://www.visd.net/",
+   "station": "apptegy-victoria-tx",
+   "why": "storm day 2026-01-27 (market score 0.50)"
   },
   {
-   "timestamp": "20190107073646",
-   "url": "http://whitesulphur.k12.mt.us:80/",
-   "station": "apptegy-white-sulphur-springs-mt",
-   "why": "storm day 2019-01-07 (market score 0.25)"
+   "timestamp": "20240520164418",
+   "url": "https://www.jcsd1.us/",
+   "station": "apptegy-johnson1-wy",
+   "why": "storm day 2024-05-21 (market score 1.00)"
   },
   {
-   "timestamp": "20220201123557",
+   "timestamp": "20230220160329",
+   "url": "https://www.jcsd1.us/",
+   "station": "apptegy-johnson1-wy",
+   "why": "storm day 2023-02-21 (market score 1.00)"
+  },
+  {
+   "timestamp": "20180209124435",
+   "url": "http://www.jcsd1.us:80/",
+   "station": "apptegy-johnson1-wy",
+   "why": "storm day 2018-02-09 (market score 1.00)"
+  },
+  {
+   "timestamp": "20221201230632",
    "url": "https://www.willowcreek.k12.mt.us/",
    "station": "apptegy-willow-creek-mt",
-   "why": "storm day 2022-02-01 (market score 0.25)"
+   "why": "storm day 2022-12-02 (market score 1.00)"
   },
   {
-   "timestamp": "20251226092909",
-   "url": "https://www.sd149.com/en-US",
-   "station": "schoolblocks-north-gem-id",
-   "why": "storm day 2025-12-26 (market score 1.00)"
+   "timestamp": "20250202161104",
+   "url": "https://www.winifred.k12.mt.us/",
+   "station": "apptegy-winifred-mt",
+   "why": "storm day 2025-02-03 (market score 1.00)"
   },
   {
-   "timestamp": "20260104212739",
+   "timestamp": "20250102170354",
+   "url": "https://www.winifred.k12.mt.us/",
+   "station": "apptegy-winifred-mt",
+   "why": "storm day 2025-01-03 (market score 1.00)"
+  },
+  {
+   "timestamp": "20230314202527",
+   "url": "https://www.winifred.k12.mt.us/",
+   "station": "apptegy-winifred-mt",
+   "why": "storm day 2023-03-15 (market score 1.00)"
+  },
+  {
+   "timestamp": "20241105011344",
+   "url": "https://chinookschools.org/",
+   "station": "apptegy-chinook-mt",
+   "why": "storm day 2024-11-05 (market score 1.00)"
+  },
+  {
+   "timestamp": "20250216183157",
+   "url": "https://www.chinookschools.org/",
+   "station": "apptegy-chinook-mt",
+   "why": "storm day 2025-02-17 (market score 0.50)"
+  },
+  {
+   "timestamp": "20250213113248",
+   "url": "https://www.chinookschools.org/",
+   "station": "apptegy-chinook-mt",
+   "why": "storm day 2025-02-13 (market score 0.50)"
+  },
+  {
+   "timestamp": "20230403204049",
+   "url": "https://www.swcsd2.org/",
+   "station": "apptegy-sweetwater-2-wy",
+   "why": "storm day 2023-04-04 (market score 1.00)"
+  },
+  {
+   "timestamp": "20170111151710",
+   "url": "http://www.swcsd2.org/",
+   "station": "apptegy-sweetwater-2-wy",
+   "why": "storm day 2017-01-11 (market score 1.00)"
+  },
+  {
+   "timestamp": "20250117045922",
+   "url": "https://www.swcsd2.org/",
+   "station": "apptegy-sweetwater-2-wy",
+   "why": "storm day 2025-01-17 (market score 0.25)"
+  },
+  {
+   "timestamp": "20260105065315",
    "url": "https://www.sd149.com/en-US",
    "station": "schoolblocks-north-gem-id",
    "why": "storm day 2026-01-05 (market score 1.00)"
   },
   {
-   "timestamp": "20260105042412",
+   "timestamp": "20251221160010",
    "url": "https://www.sd149.com/en-US",
    "station": "schoolblocks-north-gem-id",
-   "why": "storm day 2026-01-05 (market score 1.00)"
+   "why": "storm day 2025-12-22 (market score 0.25)"
   },
   {
-   "timestamp": "20240109230651",
-   "url": "https://www.mvsd21.org/",
-   "station": "apptegy-marsh-valley-id",
-   "why": "storm day 2024-01-10 (market score 1.00)"
+   "timestamp": "20251217185145",
+   "url": "https://www.sd149.com/en-US",
+   "station": "schoolblocks-north-gem-id",
+   "why": "storm day 2025-12-18 (market score 0.25)"
   },
   {
-   "timestamp": "20240109111426",
+   "timestamp": "20240108230737",
    "url": "https://www.mvsd21.org/",
    "station": "apptegy-marsh-valley-id",
    "why": "storm day 2024-01-09 (market score 1.00)"
   },
   {
-   "timestamp": "20240110110059",
+   "timestamp": "20221227111609",
    "url": "https://www.mvsd21.org/",
    "station": "apptegy-marsh-valley-id",
-   "why": "storm day 2024-01-10 (market score 1.00)"
+   "why": "storm day 2022-12-27 (market score 1.00)"
   },
   {
-   "timestamp": "20260402030736",
+   "timestamp": "20240301061548",
+   "url": "https://www.mvsd21.org/",
+   "station": "apptegy-marsh-valley-id",
+   "why": "storm day 2024-03-01 (market score 1.00)"
+  },
+  {
+   "timestamp": "20251217231726",
    "url": "https://www.pcsd1.org/",
    "station": "apptegy-park-1-wy",
-   "why": "storm day 2026-04-02 (market score 1.00)"
+   "why": "storm day 2025-12-18 (market score 1.00)"
   },
   {
-   "timestamp": "20170111151718",
-   "url": "http://www.pcsd1.org/",
-   "station": "apptegy-park-1-wy",
-   "why": "storm day 2017-01-11 (market score 1.00)"
-  },
-  {
-   "timestamp": "20251210111932",
+   "timestamp": "20251218111705",
    "url": "https://www.pcsd1.org/",
    "station": "apptegy-park-1-wy",
-   "why": "storm day 2025-12-10 (market score 1.00)"
+   "why": "storm day 2025-12-18 (market score 1.00)"
   },
   {
-   "timestamp": "20250102173234",
-   "url": "https://www.laurel.k12.mt.us/",
-   "station": "finalsite-laurel-mt",
-   "why": "storm day 2025-01-03 (market score 0.25)"
+   "timestamp": "20260224111816",
+   "url": "https://www.pcsd1.org/",
+   "station": "apptegy-park-1-wy",
+   "why": "storm day 2026-02-24 (market score 1.00)"
   },
   {
-   "timestamp": "20260403045815",
-   "url": "https://www.laurel.k12.mt.us/",
-   "station": "finalsite-laurel-mt",
-   "why": "storm day 2026-04-03 (market score 0.25)"
-  },
-  {
-   "timestamp": "20260402165906",
-   "url": "https://www.laurel.k12.mt.us/",
-   "station": "finalsite-laurel-mt",
-   "why": "storm day 2026-04-03 (market score 0.25)"
-  },
-  {
-   "timestamp": "20220412150948",
+   "timestamp": "20250320103328",
    "url": "https://www.sugarsalem.org/",
    "station": "smartsites-sugar-salem-id",
-   "why": "storm day 2022-04-12 (market score 0.25)"
+   "why": "2025-03-20: one of its largest captures, as no read has seen its list yet"
   },
   {
-   "timestamp": "20250220114305",
+   "timestamp": "20250320120838",
+   "url": "https://sugarsalem.org/",
+   "station": "smartsites-sugar-salem-id",
+   "why": "2025-03-20: one of its largest captures, as no read has seen its list yet"
+  },
+  {
+   "timestamp": "20250320130719",
+   "url": "https://sugarsalem.org/",
+   "station": "smartsites-sugar-salem-id",
+   "why": "2025-03-20: one of its largest captures, as no read has seen its list yet"
+  },
+  {
+   "timestamp": "20250219155644",
+   "url": "https://www.scucisd.org/",
+   "station": "apptegy-scuc-tx",
+   "why": "storm day 2025-02-19 (market score 0.50)"
+  },
+  {
+   "timestamp": "20250219223338",
    "url": "https://www.scucisd.org/",
    "station": "apptegy-scuc-tx",
    "why": "storm day 2025-02-20 (market score 0.50)"
   },
   {
-   "timestamp": "20250220150352",
-   "url": "https://www.scucisd.org/",
-   "station": "apptegy-scuc-tx",
-   "why": "storm day 2025-02-20 (market score 0.50)"
-  },
-  {
-   "timestamp": "20250219233729",
-   "url": "https://www.scucisd.org/",
-   "station": "apptegy-scuc-tx",
-   "why": "storm day 2025-02-20 (market score 0.50)"
-  },
-  {
-   "timestamp": "20251209192527",
+   "timestamp": "20250908021800",
    "url": "https://shelleyschools.org/",
    "station": "smartsites-shelley-id",
-   "why": "2025-12-10: one of its largest captures, as no read has seen its list yet"
+   "why": "2025-09-08: one of its largest captures, as no read has seen its list yet"
   },
   {
-   "timestamp": "20251012040932",
-   "url": "https://shelleyschools.org/",
+   "timestamp": "20251207035044",
+   "url": "https://www.shelleyschools.org/",
    "station": "smartsites-shelley-id",
-   "why": "2025-10-12: one of its largest captures, as no read has seen its list yet"
+   "why": "2025-12-07: one of its largest captures, as no read has seen its list yet"
   },
   {
-   "timestamp": "20230321173303",
+   "timestamp": "20201109215740",
    "url": "https://www.sub1.org/",
    "station": "schoolblocks-sublette-1-wy",
-   "why": "storm day 2023-03-22 (market score 0.25)"
+   "why": "storm day 2020-11-10 (market score 0.25)"
   },
   {
-   "timestamp": "20231002233228",
-   "url": "https://www.sub1.org/",
-   "station": "schoolblocks-sublette-1-wy",
-   "why": "storm day 2023-10-03 (market score 0.25)"
-  },
-  {
-   "timestamp": "20190919225356",
-   "url": "https://www.sub1.org/",
-   "station": "schoolblocks-sublette-1-wy",
-   "why": "storm day 2019-09-20 (market score 0.25)"
-  },
-  {
-   "timestamp": "20180111113630",
-   "url": "http://www.ennisschools.org:80/",
-   "station": "apptegy-ennis-mt",
-   "why": "storm day 2018-01-11 (market score 0.25)"
-  },
-  {
-   "timestamp": "20170109082807",
+   "timestamp": "20200906215234",
    "url": "http://www.ennisschools.org/",
    "station": "apptegy-ennis-mt",
-   "why": "storm day 2017-01-09 (market score 0.25)"
-  },
-  {
-   "timestamp": "20210120184136",
-   "url": "https://www.ennisschools.org/",
-   "station": "apptegy-ennis-mt",
-   "why": "storm day 2021-01-21 (market score 0.25)"
-  },
-  {
-   "timestamp": "20250312164755",
-   "url": "https://twinbridges.k12.mt.us/",
-   "station": "apptegy-twin-bridges-mt",
-   "why": "storm day 2025-03-13 (market score 0.25)"
-  },
-  {
-   "timestamp": "20250701051804",
-   "url": "https://salmon291.org/en-US",
-   "station": "schoolblocks-salmon-id",
-   "why": "2025-07-01: one of its largest captures, as no read has seen its list yet"
-  },
-  {
-   "timestamp": "20260307130426",
-   "url": "https://salmon291.org/en-US",
-   "station": "schoolblocks-salmon-id",
-   "why": "2026-03-07: one of its largest captures, as no read has seen its list yet"
-  },
-  {
-   "timestamp": "20260214052859",
-   "url": "https://salmon291.org/en-US",
-   "station": "schoolblocks-salmon-id",
-   "why": "2026-02-14: one of its largest captures, as no read has seen its list yet"
-  },
-  {
-   "timestamp": "20220221145620",
-   "url": "https://www.converse2.org/",
-   "station": "apptegy-converse2-wy",
-   "why": "storm day 2022-02-21 (market score 0.25)"
-  },
-  {
-   "timestamp": "20220216150310",
-   "url": "https://www.converse2.org/",
-   "station": "apptegy-converse2-wy",
-   "why": "storm day 2022-02-16 (market score 0.25)"
-  },
-  {
-   "timestamp": "20220221025700",
-   "url": "https://www.converse2.org/",
-   "station": "apptegy-converse2-wy",
-   "why": "storm day 2022-02-21 (market score 0.25)"
-  },
-  {
-   "timestamp": "20200906234207",
-   "url": "http://www.darby.k12.mt.us/",
-   "station": "apptegy-darby-mt",
    "why": "storm day 2020-09-07 (market score 0.25)"
   },
   {
-   "timestamp": "20191028064810",
-   "url": "http://www.darby.k12.mt.us:80/",
-   "station": "apptegy-darby-mt",
-   "why": "storm day 2019-10-28 (market score 0.25)"
+   "timestamp": "20200907012519",
+   "url": "https://www.ennisschools.org/",
+   "station": "apptegy-ennis-mt",
+   "why": "storm day 2020-09-07 (market score 0.25)"
   },
   {
-   "timestamp": "20191231182702",
-   "url": "http://www.darby.k12.mt.us:80/",
-   "station": "apptegy-darby-mt",
-   "why": "storm day 2020-01-01 (market score 0.25)"
+   "timestamp": "20180411232434",
+   "url": "http://www.ennisschools.org/",
+   "station": "apptegy-ennis-mt",
+   "why": "storm day 2018-04-12 (market score 0.25)"
   },
   {
-   "timestamp": "20221102005233",
-   "url": "https://www.florencecarlton.org/",
-   "station": "apptegy-florence-carlton-mt",
+   "timestamp": "20250121005915",
+   "url": "https://www.psjaisd.us/",
+   "station": "finalsite-psja-tx",
+   "why": "storm day 2025-01-21 (market score 1.00)"
+  },
+  {
+   "timestamp": "20240116123956",
+   "url": "https://www.psjaisd.us/",
+   "station": "finalsite-psja-tx",
+   "why": "storm day 2024-01-16 (market score 0.50)"
+  },
+  {
+   "timestamp": "20260125232122",
+   "url": "https://www.psjaisd.us/",
+   "station": "finalsite-psja-tx",
+   "why": "storm day 2026-01-26 (market score 0.50)"
+  },
+  {
+   "timestamp": "20251207104315",
+   "url": "https://salmon291.org/en-US",
+   "station": "schoolblocks-salmon-id",
+   "why": "2025-12-07: one of its largest captures, as no read has seen its list yet"
+  },
+  {
+   "timestamp": "20250917213055",
+   "url": "https://salmon291.org/en-US",
+   "station": "schoolblocks-salmon-id",
+   "why": "2025-09-18: one of its largest captures, as no read has seen its list yet"
+  },
+  {
+   "timestamp": "20250809093806",
+   "url": "https://salmon291.org/en-US",
+   "station": "schoolblocks-salmon-id",
+   "why": "2025-08-09: one of its largest captures, as no read has seen its list yet"
+  },
+  {
+   "timestamp": "20170910170224",
+   "url": "http://www.putnamschools.org:80/",
+   "station": "apptegy-putnam-fl",
+   "why": "storm day 2017-09-11 (market score 1.00)"
+  },
+  {
+   "timestamp": "20221102000011",
+   "url": "https://www.darby.k12.mt.us/",
+   "station": "apptegy-darby-mt",
    "why": "storm day 2022-11-02 (market score 0.25)"
   },
   {
-   "timestamp": "20221129012929",
-   "url": "https://www.florencecarlton.org/",
-   "station": "apptegy-florence-carlton-mt",
-   "why": "storm day 2022-11-29 (market score 0.25)"
-  },
-  {
-   "timestamp": "20230320194254",
-   "url": "https://www.florencecarlton.org/",
-   "station": "apptegy-florence-carlton-mt",
-   "why": "storm day 2023-03-21 (market score 0.25)"
-  },
-  {
-   "timestamp": "20260814172436",
-   "url": "https://www.geraldine.k12.mt.us/",
-   "station": "apptegy-geraldine-mt",
-   "why": "2026-08-15: one of its largest captures, as no read has seen its list yet"
-  },
-  {
-   "timestamp": "20250322160638",
-   "url": "https://www.geraldine.k12.mt.us/",
-   "station": "apptegy-geraldine-mt",
-   "why": "2025-03-23: one of its largest captures, as no read has seen its list yet"
-  },
-  {
-   "timestamp": "20221101230101",
-   "url": "https://www.victor.k12.mt.us/",
-   "station": "apptegy-victor-mt",
+   "timestamp": "20221101235757",
+   "url": "https://www.darby.k12.mt.us/",
+   "station": "apptegy-darby-mt",
    "why": "storm day 2022-11-02 (market score 0.25)"
   },
   {
-   "timestamp": "20220301212709",
-   "url": "https://www.victor.k12.mt.us/",
-   "station": "apptegy-victor-mt",
+   "timestamp": "20230117141305",
+   "url": "https://www.darby.k12.mt.us/",
+   "station": "apptegy-darby-mt",
+   "why": "storm day 2023-01-17 (market score 0.25)"
+  },
+  {
+   "timestamp": "20220301175157",
+   "url": "https://www.florencecarlton.org/",
+   "station": "apptegy-florence-carlton-mt",
    "why": "storm day 2022-03-02 (market score 0.25)"
   },
   {
-   "timestamp": "20220301184647",
+   "timestamp": "20211208165504",
+   "url": "https://www.florencecarlton.org/",
+   "station": "apptegy-florence-carlton-mt",
+   "why": "storm day 2021-12-09 (market score 0.25)"
+  },
+  {
+   "timestamp": "20211108165900",
+   "url": "https://www.florencecarlton.org/",
+   "station": "apptegy-florence-carlton-mt",
+   "why": "storm day 2021-11-09 (market score 0.25)"
+  },
+  {
+   "timestamp": "20211108191422",
    "url": "https://www.victor.k12.mt.us/",
    "station": "apptegy-victor-mt",
-   "why": "storm day 2022-03-02 (market score 0.25)"
+   "why": "storm day 2021-11-09 (market score 0.25)"
   },
   {
-   "timestamp": "20250320193815",
-   "url": "https://www.sublette9.org/",
-   "station": "edlio-sublette-9-wy",
-   "why": "2025-03-21: one of its largest captures, as no read has seen its list yet"
+   "timestamp": "20211027021341",
+   "url": "https://www.victor.k12.mt.us/",
+   "station": "apptegy-victor-mt",
+   "why": "storm day 2021-10-27 (market score 0.25)"
   },
   {
-   "timestamp": "20250320184242",
-   "url": "https://www.sublette9.org/",
-   "station": "edlio-sublette-9-wy",
-   "why": "2025-03-21: one of its largest captures, as no read has seen its list yet"
+   "timestamp": "20241215234238",
+   "url": "https://www.victor.k12.mt.us/",
+   "station": "apptegy-victor-mt",
+   "why": "storm day 2024-12-16 (market score 0.25)"
   },
   {
-   "timestamp": "20251205000049",
-   "url": "https://www.rangers1.net/",
-   "station": "smartsites-lincoln-1-wy",
-   "why": "storm day 2025-12-05 (market score 1.00)"
-  },
-  {
-   "timestamp": "20251217112251",
+   "timestamp": "20251217002514",
    "url": "https://www.rangers1.net/",
    "station": "smartsites-lincoln-1-wy",
    "why": "storm day 2025-12-17 (market score 1.00)"
   },
   {
-   "timestamp": "20251205115009",
+   "timestamp": "20251218112244",
    "url": "https://www.rangers1.net/",
    "station": "smartsites-lincoln-1-wy",
+   "why": "storm day 2025-12-18 (market score 1.00)"
+  },
+  {
+   "timestamp": "20251209211334",
+   "url": "https://www.rangers1.net/",
+   "station": "smartsites-lincoln-1-wy",
+   "why": "storm day 2025-12-10 (market score 1.00)"
+  },
+  {
+   "timestamp": "20250322172246",
+   "url": "https://www2.highlands.k12.fl.us/",
+   "station": "apptegy-highlands-fl",
+   "why": "2025-03-23: one of its largest captures, as no read has seen its list yet"
+  },
+  {
+   "timestamp": "20251117131029",
+   "url": "https://www.landerschools.org/",
+   "station": "apptegy-fremont-1-wy",
+   "why": "storm day 2025-11-17 (market score 0.25)"
+  },
+  {
+   "timestamp": "20260305233854",
+   "url": "https://www.landerschools.org/",
+   "station": "apptegy-fremont-1-wy",
+   "why": "storm day 2026-03-06 (market score 0.25)"
+  },
+  {
+   "timestamp": "20250513230356",
+   "url": "https://www.landerschools.org/",
+   "station": "apptegy-fremont-1-wy",
+   "why": "storm day 2025-05-14 (market score 0.25)"
+  },
+  {
+   "timestamp": "20230330141442",
+   "url": "https://www.townsend.k12.mt.us/",
+   "station": "apptegy-townsend-mt",
+   "why": "storm day 2023-03-30 (market score 1.00)"
+  },
+  {
+   "timestamp": "20250512175823",
+   "url": "https://www.townsend.k12.mt.us/",
+   "station": "apptegy-townsend-mt",
+   "why": "storm day 2025-05-13 (market score 0.25)"
+  },
+  {
+   "timestamp": "20250121224058",
+   "url": "https://www.townsend.k12.mt.us/",
+   "station": "apptegy-townsend-mt",
+   "why": "storm day 2025-01-22 (market score 0.25)"
+  },
+  {
+   "timestamp": "20250306081134",
+   "url": "https://www.juabsd.org/",
+   "station": "apptegy-juab-ut",
+   "why": "storm day 2025-03-06 (market score 1.00)"
+  },
+  {
+   "timestamp": "20250307112537",
+   "url": "https://www.juabsd.org/",
+   "station": "apptegy-juab-ut",
+   "why": "storm day 2025-03-07 (market score 1.00)"
+  },
+  {
+   "timestamp": "20250313100159",
+   "url": "https://www.juabsd.org/",
+   "station": "apptegy-juab-ut",
+   "why": "storm day 2025-03-13 (market score 1.00)"
+  },
+  {
+   "timestamp": "20230601232640",
+   "url": "https://www.baker.k12.mt.us/",
+   "station": "finalsite-baker-mt",
+   "why": "2023-06-02: one of its largest captures, as no read has seen its list yet"
+  },
+  {
+   "timestamp": "20230326021400",
+   "url": "https://www.baker.k12.mt.us:443/",
+   "station": "finalsite-baker-mt",
+   "why": "2023-03-26: one of its largest captures, as no read has seen its list yet"
+  },
+  {
+   "timestamp": "20230208063818",
+   "url": "https://www.baker.k12.mt.us:443/",
+   "station": "finalsite-baker-mt",
+   "why": "2023-02-08: one of its largest captures, as no read has seen its list yet"
+  },
+  {
+   "timestamp": "20240507063257",
+   "url": "https://www.clarkcountyschools161.org/",
+   "station": "finalsite-clark-county-id",
+   "why": "2024-05-07: one of its largest captures, as no read has seen its list yet"
+  },
+  {
+   "timestamp": "20231202061353",
+   "url": "https://www.clarkcountyschools161.org/",
+   "station": "finalsite-clark-county-id",
+   "why": "2023-12-02: one of its largest captures, as no read has seen its list yet"
+  },
+  {
+   "timestamp": "20230924011303",
+   "url": "https://www.clarkcountyschools161.org/",
+   "station": "finalsite-clark-county-id",
+   "why": "2023-09-24: one of its largest captures, as no read has seen its list yet"
+  },
+  {
+   "timestamp": "20251226065129",
+   "url": "https://www.sd148.org/en-US",
+   "station": "schoolblocks-grace-id",
+   "why": "storm day 2025-12-26 (market score 1.00)"
+  },
+  {
+   "timestamp": "20251205071933",
+   "url": "https://www.sd148.org/en-US",
+   "station": "schoolblocks-grace-id",
    "why": "storm day 2025-12-05 (market score 1.00)"
   },
   {
-   "timestamp": "20250322093407",
-   "url": "https://www2.highlands.k12.fl.us/",
-   "station": "apptegy-highlands-fl",
-   "why": "2025-03-22: one of its largest captures, as no read has seen its list yet"
-  },
-  {
-   "timestamp": "20260422223831",
-   "url": "https://www.hlpschools.k12.mt.us/",
-   "station": "apptegy-hays-lodge-pole-mt",
+   "timestamp": "20260422223731",
+   "url": "https://www.sd148.org/en-US",
+   "station": "schoolblocks-grace-id",
    "why": "storm day 2026-04-23 (market score 0.25)"
   },
   {
-   "timestamp": "20260423103852",
-   "url": "https://www.hlpschools.k12.mt.us/",
-   "station": "apptegy-hays-lodge-pole-mt",
-   "why": "storm day 2026-04-23 (market score 0.25)"
+   "timestamp": "20230828180702",
+   "url": "https://www.sumter.k12.fl.us/",
+   "station": "smartsites-sumter-fl",
+   "why": "storm day 2023-08-29 (market score 1.00)"
   },
   {
-   "timestamp": "20260422175057",
-   "url": "https://www.hlpschools.k12.mt.us/",
-   "station": "apptegy-hays-lodge-pole-mt",
-   "why": "storm day 2026-04-23 (market score 0.25)"
+   "timestamp": "20230216051024",
+   "url": "https://www.wjsd.org/",
+   "station": "apptegy-west-jefferson-id",
+   "why": "storm day 2023-02-16 (market score 0.50)"
   },
   {
-   "timestamp": "20230314202636",
-   "url": "https://www.harlowton.k12.mt.us/",
-   "station": "apptegy-harlowton-mt",
-   "why": "storm day 2023-03-15 (market score 0.25)"
+   "timestamp": "20230214110622",
+   "url": "https://www.wjsd.org/",
+   "station": "apptegy-west-jefferson-id",
+   "why": "storm day 2023-02-14 (market score 0.25)"
   },
   {
-   "timestamp": "20200907010034",
-   "url": "https://www.harlowton.k12.mt.us/",
-   "station": "apptegy-harlowton-mt",
-   "why": "storm day 2020-09-07 (market score 0.25)"
+   "timestamp": "20190227015209",
+   "url": "http://www.wjsd.org:80/?",
+   "station": "apptegy-west-jefferson-id",
+   "why": "storm day 2019-02-27 (market score 0.25)"
   },
   {
-   "timestamp": "20260401225140",
-   "url": "https://www.landerschools.org/",
-   "station": "apptegy-fremont-1-wy",
-   "why": "storm day 2026-04-02 (market score 1.00)"
+   "timestamp": "20250210053342",
+   "url": "https://www.glendiveschools.com/",
+   "station": "apptegy-glendive-mt",
+   "why": "storm day 2025-02-10 (market score 0.50)"
   },
   {
-   "timestamp": "20260416105122",
-   "url": "https://www.landerschools.org/",
-   "station": "apptegy-fremont-1-wy",
-   "why": "storm day 2026-04-16 (market score 1.00)"
+   "timestamp": "20250210063246",
+   "url": "https://www.glendiveschools.com/",
+   "station": "apptegy-glendive-mt",
+   "why": "storm day 2025-02-10 (market score 0.50)"
   },
   {
-   "timestamp": "20260415225057",
-   "url": "https://www.landerschools.org/",
-   "station": "apptegy-fremont-1-wy",
-   "why": "storm day 2026-04-16 (market score 1.00)"
+   "timestamp": "20180101043509",
+   "url": "http://www.glendiveschools.com:80/",
+   "station": "apptegy-glendive-mt",
+   "why": "storm day 2018-01-01 (market score 0.50)"
   },
   {
-   "timestamp": "20250121120515",
-   "url": "https://www.sunburst.k12.mt.us/",
-   "station": "apptegy-sunburst-mt",
-   "why": "storm day 2025-01-21 (market score 0.25)"
+   "timestamp": "20260125225315",
+   "url": "https://www.laredoisd.org/",
+   "station": "apptegy-laredo-tx",
+   "why": "storm day 2026-01-26 (market score 0.50)"
   },
   {
-   "timestamp": "20250122115200",
-   "url": "https://www.sunburst.k12.mt.us/",
-   "station": "apptegy-sunburst-mt",
-   "why": "storm day 2025-01-22 (market score 0.25)"
+   "timestamp": "20260126105141",
+   "url": "https://www.laredoisd.org/",
+   "station": "apptegy-laredo-tx",
+   "why": "storm day 2026-01-26 (market score 0.50)"
   },
   {
-   "timestamp": "20250121234752",
-   "url": "https://www.sunburst.k12.mt.us/",
-   "station": "apptegy-sunburst-mt",
-   "why": "storm day 2025-01-22 (market score 0.25)"
+   "timestamp": "20260904180909",
+   "url": "https://www.okee.k12.fl.us/",
+   "station": "apptegy-okeechobee-fl",
+   "why": "2026-09-05: one of its largest captures, as no read has seen its list yet"
   },
   {
-   "timestamp": "20230405094831",
-   "url": "https://www.juabsd.org/",
-   "station": "apptegy-juab-ut",
-   "why": "storm day 2023-04-05 (market score 1.00)"
+   "timestamp": "20260403024046",
+   "url": "https://www.wsh1.k12.wy.us/",
+   "station": "apptegy-washakie-1-wy",
+   "why": "storm day 2026-04-03 (market score 1.00)"
   },
   {
-   "timestamp": "20230330231236",
-   "url": "https://www.juabsd.org/",
-   "station": "apptegy-juab-ut",
-   "why": "storm day 2023-03-31 (market score 1.00)"
+   "timestamp": "20260403081708",
+   "url": "https://www.wsh1.k12.wy.us/",
+   "station": "apptegy-washakie-1-wy",
+   "why": "storm day 2026-04-03 (market score 1.00)"
   },
   {
-   "timestamp": "20230330162625",
-   "url": "https://www.juabsd.org/",
-   "station": "apptegy-juab-ut",
-   "why": "storm day 2023-03-31 (market score 1.00)"
+   "timestamp": "20260402181651",
+   "url": "https://www.wsh1.k12.wy.us/",
+   "station": "apptegy-washakie-1-wy",
+   "why": "storm day 2026-04-03 (market score 1.00)"
   },
   {
-   "timestamp": "20250202170133",
-   "url": "https://www.baker.k12.mt.us/",
-   "station": "finalsite-baker-mt",
-   "why": "storm day 2025-02-03 (market score 0.25)"
-  },
-  {
-   "timestamp": "20241209141921",
-   "url": "https://www.baker.k12.mt.us/",
-   "station": "finalsite-baker-mt",
-   "why": "storm day 2024-12-09 (market score 0.25)"
-  },
-  {
-   "timestamp": "20251218155855",
-   "url": "https://www.baker.k12.mt.us/",
-   "station": "finalsite-baker-mt",
-   "why": "storm day 2025-12-18 (market score 0.25)"
-  },
-  {
-   "timestamp": "20241104180728",
-   "url": "https://www.clarkcountyschools161.org/",
-   "station": "finalsite-clark-county-id",
-   "why": "storm day 2024-11-05 (market score 0.25)"
-  },
-  {
-   "timestamp": "20260107034756",
-   "url": "https://www.clarkcountyschools161.org/",
-   "station": "finalsite-clark-county-id",
-   "why": "storm day 2026-01-07 (market score 0.25)"
-  },
-  {
-   "timestamp": "20260106040259",
-   "url": "https://www.clarkcountyschools161.org/",
-   "station": "finalsite-clark-county-id",
-   "why": "storm day 2026-01-06 (market score 0.25)"
-  },
-  {
-   "timestamp": "20251226045110",
-   "url": "https://www.sd148.org/en-US",
-   "station": "schoolblocks-grace-id",
-   "why": "storm day 2025-12-26 (market score 1.00)"
-  },
-  {
-   "timestamp": "20251226105941",
-   "url": "https://www.sd148.org/en-US",
-   "station": "schoolblocks-grace-id",
-   "why": "storm day 2025-12-26 (market score 1.00)"
-  },
-  {
-   "timestamp": "20260105065341",
-   "url": "https://www.sd148.org/en-US",
-   "station": "schoolblocks-grace-id",
-   "why": "storm day 2026-01-05 (market score 1.00)"
-  },
-  {
-   "timestamp": "20260127101234",
-   "url": "https://www.cleveland.k12.ms.us/",
-   "station": "finalsite-cleveland-ms",
-   "why": "storm day 2026-01-27 (market score 0.50)"
-  },
-  {
-   "timestamp": "20260126101008",
+   "timestamp": "20260125221252",
    "url": "https://www.cleveland.k12.ms.us/",
    "station": "finalsite-cleveland-ms",
    "why": "storm day 2026-01-26 (market score 0.50)"
   },
   {
-   "timestamp": "20260126221023",
+   "timestamp": "20230130220641",
    "url": "https://www.cleveland.k12.ms.us/",
    "station": "finalsite-cleveland-ms",
-   "why": "storm day 2026-01-27 (market score 0.50)"
+   "why": "storm day 2023-01-31 (market score 0.25)"
   },
   {
-   "timestamp": "20230529022702",
+   "timestamp": "20250219104934",
+   "url": "https://www.cleveland.k12.ms.us/",
+   "station": "finalsite-cleveland-ms",
+   "why": "storm day 2025-02-19 (market score 0.25)"
+  },
+  {
+   "timestamp": "20220120203350",
+   "url": "https://www.sbcisd.net/",
+   "station": "finalsite-san-benito-tx",
+   "why": "storm day 2022-01-21 (market score 1.00)"
+  },
+  {
+   "timestamp": "20260125232905",
+   "url": "https://www.sbcisd.net/",
+   "station": "finalsite-san-benito-tx",
+   "why": "storm day 2026-01-26 (market score 0.50)"
+  },
+  {
+   "timestamp": "20260126112945",
+   "url": "https://www.sbcisd.net/",
+   "station": "finalsite-san-benito-tx",
+   "why": "storm day 2026-01-26 (market score 0.50)"
+  },
+  {
+   "timestamp": "20251210045353",
+   "url": "https://www.plevnacougars.com/",
+   "station": "apptegy-plevna-mt",
+   "why": "storm day 2025-12-10 (market score 0.25)"
+  },
+  {
+   "timestamp": "20250202160152",
+   "url": "https://www.plevnacougars.com/",
+   "station": "apptegy-plevna-mt",
+   "why": "storm day 2025-02-03 (market score 0.25)"
+  },
+  {
+   "timestamp": "20231207161334",
+   "url": "https://www.plevnacougars.com/",
+   "station": "apptegy-plevna-mt",
+   "why": "storm day 2023-12-08 (market score 0.25)"
+  },
+  {
+   "timestamp": "20190702174106",
    "url": "https://www.d181.k12.id.us/",
    "station": "finalsite-challis-id",
-   "why": "2023-05-29: one of its largest captures, as no read has seen its list yet"
+   "why": "2019-07-03: one of its largest captures, as no read has seen its list yet"
   },
   {
-   "timestamp": "20190917192131",
+   "timestamp": "20210301032015",
    "url": "https://www.d181.k12.id.us/",
    "station": "finalsite-challis-id",
-   "why": "2019-09-18: one of its largest captures, as no read has seen its list yet"
+   "why": "2021-03-01: one of its largest captures, as no read has seen its list yet"
   },
   {
-   "timestamp": "20220626004712",
-   "url": "https://www.d181.k12.id.us:443/",
+   "timestamp": "20190102214037",
+   "url": "https://www.d181.k12.id.us/",
    "station": "finalsite-challis-id",
-   "why": "2022-06-26: one of its largest captures, as no read has seen its list yet"
+   "why": "2019-01-03: one of its largest captures, as no read has seen its list yet"
   },
   {
-   "timestamp": "20230201001001",
-   "url": "https://www.hendry-schools.org/",
-   "station": "finalsite-hendry-fl",
-   "why": "2023-02-01: one of its largest captures, as no read has seen its list yet"
-  },
-  {
-   "timestamp": "20230822165235",
-   "url": "https://www.hendry-schools.org/",
-   "station": "finalsite-hendry-fl",
-   "why": "2023-08-23: one of its largest captures, as no read has seen its list yet"
-  },
-  {
-   "timestamp": "20230623172612",
-   "url": "https://www.hendry-schools.org/",
-   "station": "finalsite-hendry-fl",
-   "why": "2023-06-24: one of its largest captures, as no read has seen its list yet"
-  },
-  {
-   "timestamp": "20260403022612",
-   "url": "https://www.wyomingindianschools.com/",
-   "station": "apptegy-fremont-14-wy",
+   "timestamp": "20260403101703",
+   "url": "https://www.bighorn1.com/",
+   "station": "apptegy-big-horn-1-wy",
    "why": "storm day 2026-04-03 (market score 1.00)"
   },
   {
-   "timestamp": "20260402135547",
+   "timestamp": "20260403021618",
+   "url": "https://www.bighorn1.com/",
+   "station": "apptegy-big-horn-1-wy",
+   "why": "storm day 2026-04-03 (market score 1.00)"
+  },
+  {
+   "timestamp": "20260403141657",
+   "url": "https://www.bighorn1.com/",
+   "station": "apptegy-big-horn-1-wy",
+   "why": "storm day 2026-04-03 (market score 1.00)"
+  },
+  {
+   "timestamp": "20250108200256",
+   "url": "https://www.episd.org/",
+   "station": "apptegy-el-paso-tx",
+   "why": "storm day 2025-01-09 (market score 0.25)"
+  },
+  {
+   "timestamp": "20221124223807",
+   "url": "https://www.episd.org/",
+   "station": "apptegy-el-paso-tx",
+   "why": "storm day 2022-11-25 (market score 0.25)"
+  },
+  {
+   "timestamp": "20230131233504",
+   "url": "https://www.episd.org/",
+   "station": "apptegy-el-paso-tx",
+   "why": "storm day 2023-02-01 (market score 0.25)"
+  },
+  {
+   "timestamp": "20220129051355",
+   "url": "https://www.hendry-schools.org/",
+   "station": "finalsite-hendry-fl",
+   "why": "2022-01-29: one of its largest captures, as no read has seen its list yet"
+  },
+  {
+   "timestamp": "20230902004428",
+   "url": "https://www.hendry-schools.org/",
+   "station": "finalsite-hendry-fl",
+   "why": "2023-09-02: one of its largest captures, as no read has seen its list yet"
+  },
+  {
+   "timestamp": "20230607154357",
+   "url": "https://www.hendry-schools.org/",
+   "station": "finalsite-hendry-fl",
+   "why": "2023-06-07: one of its largest captures, as no read has seen its list yet"
+  },
+  {
+   "timestamp": "20240520175807",
    "url": "https://www.wyomingindianschools.com/",
    "station": "apptegy-fremont-14-wy",
-   "why": "storm day 2026-04-02 (market score 1.00)"
+   "why": "storm day 2024-05-21 (market score 1.00)"
   },
   {
-   "timestamp": "20240226081638",
+   "timestamp": "20230324145418",
+   "url": "https://www.wyomingindianschools.com",
+   "station": "apptegy-fremont-14-wy",
+   "why": "storm day 2023-03-24 (market score 1.00)"
+  },
+  {
+   "timestamp": "20230313203839",
    "url": "https://www.wyomingindianschools.com/",
    "station": "apptegy-fremont-14-wy",
-   "why": "storm day 2024-02-26 (market score 1.00)"
+   "why": "storm day 2023-03-14 (market score 1.00)"
   },
   {
-   "timestamp": "20260422150653",
+   "timestamp": "20250518230629",
    "url": "https://www.shoshonischools.org/",
    "station": "apptegy-fremont-24-wy",
-   "why": "storm day 2026-04-22 (market score 0.25)"
+   "why": "storm day 2025-05-19 (market score 0.25)"
   },
   {
-   "timestamp": "20260218062653",
+   "timestamp": "20250117082012",
    "url": "https://www.shoshonischools.org/",
    "station": "apptegy-fremont-24-wy",
-   "why": "storm day 2026-02-18 (market score 0.25)"
+   "why": "storm day 2025-01-17 (market score 0.25)"
   },
   {
-   "timestamp": "20251117011302",
+   "timestamp": "20240523002051",
    "url": "https://www.shoshonischools.org/",
    "station": "apptegy-fremont-24-wy",
-   "why": "storm day 2025-11-17 (market score 0.25)"
+   "why": "storm day 2024-05-23 (market score 0.25)"
   },
   {
-   "timestamp": "20250401005105",
+   "timestamp": "20250804185128",
    "url": "https://www.leadoreschool.org/",
    "station": "apptegy-south-lemhi-id",
-   "why": "2025-04-01: one of its largest captures, as no read has seen its list yet"
+   "why": "2025-08-05: one of its largest captures, as no read has seen its list yet"
   },
   {
-   "timestamp": "20251011064604",
+   "timestamp": "20260519124303",
    "url": "https://www.leadoreschool.org/",
    "station": "apptegy-south-lemhi-id",
-   "why": "2025-10-11: one of its largest captures, as no read has seen its list yet"
+   "why": "2026-05-19: one of its largest captures, as no read has seen its list yet"
   },
   {
-   "timestamp": "20260611034607",
+   "timestamp": "20260210175148",
    "url": "https://www.leadoreschool.org/",
    "station": "apptegy-south-lemhi-id",
-   "why": "2026-06-11: one of its largest captures, as no read has seen its list yet"
+   "why": "2026-02-11: one of its largest captures, as no read has seen its list yet"
   },
   {
-   "timestamp": "20250216092445",
+   "timestamp": "20250121001605",
+   "url": "https://www.wisd.us/",
+   "station": "finalsite-weslaco-tx",
+   "why": "storm day 2025-01-21 (market score 1.00)"
+  },
+  {
+   "timestamp": "20260126115617",
+   "url": "https://www.wisd.us/",
+   "station": "finalsite-weslaco-tx",
+   "why": "storm day 2026-01-26 (market score 0.50)"
+  },
+  {
+   "timestamp": "20260125235647",
+   "url": "https://www.wisd.us/",
+   "station": "finalsite-weslaco-tx",
+   "why": "storm day 2026-01-26 (market score 0.50)"
+  },
+  {
+   "timestamp": "20170111151708",
+   "url": "http://www.hotsprings1.org/",
+   "station": "edlio-hot-springs-1-wy",
+   "why": "storm day 2017-01-11 (market score 1.00)"
+  },
+  {
+   "timestamp": "20170109113954",
+   "url": "http://www.hotsprings1.org/",
+   "station": "edlio-hot-springs-1-wy",
+   "why": "storm day 2017-01-09 (market score 1.00)"
+  },
+  {
+   "timestamp": "20211018205508",
+   "url": "https://www.hotsprings1.org/",
+   "station": "edlio-hot-springs-1-wy",
+   "why": "storm day 2021-10-19 (market score 0.25)"
+  },
+  {
+   "timestamp": "20251115042724",
    "url": "https://www.hardee.k12.fl.us/",
    "station": "apptegy-hardee-fl",
-   "why": "2025-02-16: one of its largest captures, as no read has seen its list yet"
+   "why": "2025-11-15: one of its largest captures, as no read has seen its list yet"
   },
   {
-   "timestamp": "20250303005153",
+   "timestamp": "20260624214806",
    "url": "https://www.hardee.k12.fl.us/",
    "station": "apptegy-hardee-fl",
-   "why": "2025-03-03: one of its largest captures, as no read has seen its list yet"
+   "why": "2026-06-25: one of its largest captures, as no read has seen its list yet"
   },
   {
-   "timestamp": "20250216141209",
+   "timestamp": "20250505043054",
    "url": "https://www.hardee.k12.fl.us/",
    "station": "apptegy-hardee-fl",
-   "why": "2025-02-16: one of its largest captures, as no read has seen its list yet"
+   "why": "2025-05-05: one of its largest captures, as no read has seen its list yet"
   },
   {
-   "timestamp": "20230208145102",
+   "timestamp": "20220511023318",
    "url": "https://www.franklincountyschools.org/",
    "station": "finalsite-franklin-fl",
-   "why": "2023-02-08: one of its largest captures, as no read has seen its list yet"
+   "why": "2022-05-11: one of its largest captures, as no read has seen its list yet"
   },
   {
-   "timestamp": "20230812082951",
+   "timestamp": "20220510173348",
    "url": "https://www.franklincountyschools.org/",
    "station": "finalsite-franklin-fl",
-   "why": "2023-08-12: one of its largest captures, as no read has seen its list yet"
+   "why": "2022-05-11: one of its largest captures, as no read has seen its list yet"
   },
   {
-   "timestamp": "20221129132541",
+   "timestamp": "20220511214325",
    "url": "https://www.franklincountyschools.org/",
    "station": "finalsite-franklin-fl",
-   "why": "2022-11-29: one of its largest captures, as no read has seen its list yet"
+   "why": "2022-05-12: one of its largest captures, as no read has seen its list yet"
   },
   {
-   "timestamp": "20240702145723",
+   "timestamp": "20240131114532",
    "url": "https://www.bakerk12.org/",
    "station": "finalsite-baker-fl",
-   "why": "2024-07-02: one of its largest captures, as no read has seen its list yet"
+   "why": "2024-01-31: one of its largest captures, as no read has seen its list yet"
   },
   {
-   "timestamp": "20240527060533",
+   "timestamp": "20241008052836",
    "url": "https://www.bakerk12.org/",
    "station": "finalsite-baker-fl",
-   "why": "2024-05-27: one of its largest captures, as no read has seen its list yet"
+   "why": "2024-10-08: one of its largest captures, as no read has seen its list yet"
   },
   {
-   "timestamp": "20231206202006",
+   "timestamp": "20240725182712",
    "url": "https://www.bakerk12.org/",
    "station": "finalsite-baker-fl",
-   "why": "2023-12-07: one of its largest captures, as no read has seen its list yet"
+   "why": "2024-07-26: one of its largest captures, as no read has seen its list yet"
   },
   {
-   "timestamp": "20211123175041",
+   "timestamp": "20240227171623",
    "url": "https://www.bradfordschools.org/",
    "station": "finalsite-bradford-fl",
-   "why": "2021-11-24: one of its largest captures, as no read has seen its list yet"
+   "why": "2024-02-28: one of its largest captures, as no read has seen its list yet"
   },
   {
-   "timestamp": "20240515083411",
+   "timestamp": "20240601221938",
    "url": "https://www.bradfordschools.org/",
    "station": "finalsite-bradford-fl",
-   "why": "2024-05-15: one of its largest captures, as no read has seen its list yet"
+   "why": "2024-06-02: one of its largest captures, as no read has seen its list yet"
   },
   {
-   "timestamp": "20240617104424",
+   "timestamp": "20231201033805",
    "url": "https://www.bradfordschools.org/",
    "station": "finalsite-bradford-fl",
-   "why": "2024-06-17: one of its largest captures, as no read has seen its list yet"
+   "why": "2023-12-01: one of its largest captures, as no read has seen its list yet"
   },
   {
-   "timestamp": "20221109110813",
+   "timestamp": "20260126111032",
+   "url": "https://www.myrgcgisd.org/",
+   "station": "apptegy-rio-grande-city-grulla-tx",
+   "why": "storm day 2026-01-26 (market score 0.50)"
+  },
+  {
+   "timestamp": "20260126135220",
+   "url": "https://www.myrgcgisd.org/",
+   "station": "apptegy-rio-grande-city-grulla-tx",
+   "why": "storm day 2026-01-26 (market score 0.50)"
+  },
+  {
+   "timestamp": "20250108083329",
+   "url": "https://www.sisd.net/",
+   "station": "apptegy-socorro-tx",
+   "why": "storm day 2025-01-08 (market score 0.25)"
+  },
+  {
+   "timestamp": "20220329074407",
    "url": "https://www.riversideunified.org/",
    "station": "finalsite-riverside-ca",
-   "why": "storm day 2022-11-09 (market score 1.00)"
+   "why": "storm day 2022-03-29 (market score 1.00)"
   },
   {
-   "timestamp": "20221108075749",
-   "url": "https://www.riversideunified.org/",
-   "station": "finalsite-riverside-ca",
-   "why": "storm day 2022-11-08 (market score 1.00)"
-  },
-  {
-   "timestamp": "20220327180129",
+   "timestamp": "20220327194358",
    "url": "https://www.riversideunified.org/",
    "station": "finalsite-riverside-ca",
    "why": "storm day 2022-03-28 (market score 1.00)"
   },
   {
-   "timestamp": "20240229111932",
+   "timestamp": "20220328194358",
+   "url": "https://www.riversideunified.org/",
+   "station": "finalsite-riverside-ca",
+   "why": "storm day 2022-03-29 (market score 1.00)"
+  },
+  {
+   "timestamp": "20240303171759",
    "url": "https://www.dnusd.org/",
    "station": "finalsite-del-norte-ca",
-   "why": "storm day 2024-02-29 (market score 1.00)"
+   "why": "storm day 2024-03-04 (market score 1.00)"
   },
   {
-   "timestamp": "20240301010703",
+   "timestamp": "20180228225639",
+   "url": "http://dnusd.org:80/",
+   "station": "finalsite-del-norte-ca",
+   "why": "storm day 2018-03-01 (market score 1.00)"
+  },
+  {
+   "timestamp": "20260217234058",
    "url": "https://www.dnusd.org/",
    "station": "finalsite-del-norte-ca",
-   "why": "storm day 2024-03-01 (market score 1.00)"
+   "why": "storm day 2026-02-18 (market score 1.00)"
   },
   {
-   "timestamp": "20240228202619",
-   "url": "https://www.dnusd.org/",
-   "station": "finalsite-del-norte-ca",
-   "why": "storm day 2024-02-29 (market score 1.00)"
-  },
-  {
-   "timestamp": "20241105065001",
+   "timestamp": "20240313004015",
    "url": "https://www.arapahoeschools.com/",
    "station": "smartsites-fremont-38-wy",
-   "why": "storm day 2024-11-05 (market score 1.00)"
+   "why": "storm day 2024-03-13 (market score 1.00)"
   },
   {
-   "timestamp": "20241105014627",
+   "timestamp": "20240312180455",
    "url": "https://www.arapahoeschools.com/",
    "station": "smartsites-fremont-38-wy",
-   "why": "storm day 2024-11-05 (market score 1.00)"
+   "why": "storm day 2024-03-13 (market score 1.00)"
   },
   {
-   "timestamp": "20241106095927",
+   "timestamp": "20240305092912",
    "url": "https://www.arapahoeschools.com/",
    "station": "smartsites-fremont-38-wy",
-   "why": "storm day 2024-11-06 (market score 1.00)"
+   "why": "storm day 2024-03-05 (market score 1.00)"
   },
   {
-   "timestamp": "20260809181210",
+   "timestamp": "20260102021211",
    "url": "https://www.gilchristschools.org/",
    "station": "apptegy-gilchrist-fl",
-   "why": "2026-08-10: one of its largest captures, as no read has seen its list yet"
+   "why": "2026-01-02: one of its largest captures, as no read has seen its list yet"
   },
   {
-   "timestamp": "20260723051118",
+   "timestamp": "20250320001204",
    "url": "https://www.gilchristschools.org/",
    "station": "apptegy-gilchrist-fl",
-   "why": "2026-07-23: one of its largest captures, as no read has seen its list yet"
+   "why": "2025-03-20: one of its largest captures, as no read has seen its list yet"
   },
   {
-   "timestamp": "20251114230650",
+   "timestamp": "20250316135559",
    "url": "https://www.gilchristschools.org/",
    "station": "apptegy-gilchrist-fl",
-   "why": "2025-11-15: one of its largest captures, as no read has seen its list yet"
+   "why": "2025-03-16: one of its largest captures, as no read has seen its list yet"
   },
   {
-   "timestamp": "20210120032857",
-   "url": "https://www.ksby.com/weather/school-closings-delays?_renderer=json",
-   "station": "scripps-ksby",
-   "why": "storm day 2021-01-20 (market score 1.00)"
-  },
-  {
-   "timestamp": "20240911194355",
+   "timestamp": "20240912130659",
    "url": "https://www.hancockschools.net/",
    "station": "smartsites-hancock-ms",
    "why": "storm day 2024-09-12 (market score 0.50)"
   },
   {
-   "timestamp": "20240911233103",
+   "timestamp": "20260127103541",
    "url": "https://www.hancockschools.net/",
    "station": "smartsites-hancock-ms",
-   "why": "storm day 2024-09-12 (market score 0.50)"
+   "why": "storm day 2026-01-27 (market score 0.50)"
   },
   {
-   "timestamp": "20240912121220",
+   "timestamp": "20260125223459",
    "url": "https://www.hancockschools.net/",
    "station": "smartsites-hancock-ms",
-   "why": "storm day 2024-09-12 (market score 0.50)"
+   "why": "storm day 2026-01-26 (market score 0.50)"
   },
   {
-   "timestamp": "20250218234343",
+   "timestamp": "20230201092549",
+   "url": "https://www.yisd.net/",
+   "station": "apptegy-ysleta-tx",
+   "why": "storm day 2023-02-01 (market score 0.25)"
+  },
+  {
+   "timestamp": "20221125135242",
+   "url": "https://www.yisd.net/",
+   "station": "apptegy-ysleta-tx",
+   "why": "storm day 2022-11-25 (market score 0.25)"
+  },
+  {
+   "timestamp": "20221124235803",
+   "url": "https://www.yisd.net/",
+   "station": "apptegy-ysleta-tx",
+   "why": "storm day 2022-11-25 (market score 0.25)"
+  },
+  {
+   "timestamp": "20260416182307",
    "url": "https://www.harmonytx.org/schools/south-texas",
    "station": "finalsite-harmony-south-texas-tx",
-   "why": "storm day 2025-02-19 (market score 0.17)"
+   "why": "2026-04-17: one of its largest captures, as no read has seen its list yet"
   },
   {
-   "timestamp": "20250123104240",
-   "url": "https://www.wcbek12.org/",
-   "station": "finalsite-washington-al",
-   "why": "storm day 2025-01-23 (market score 0.50)"
+   "timestamp": "20260208145129",
+   "url": "https://www.harmonytx.org/schools/south-texas",
+   "station": "finalsite-harmony-south-texas-tx",
+   "why": "2026-02-08: one of its largest captures, as no read has seen its list yet"
   },
   {
-   "timestamp": "20251104202331",
-   "url": "https://www.sharylandisd.org/fs/pages/461/page-pops",
+   "timestamp": "20260210123707",
+   "url": "https://www.harmonytx.org/schools/south-texas",
+   "station": "finalsite-harmony-south-texas-tx",
+   "why": "2026-02-10: one of its largest captures, as no read has seen its list yet"
+  },
+  {
+   "timestamp": "20260125190217",
+   "url": "https://www.sharylandisd.org/",
    "station": "finalsite-sharyland-tx",
-   "why": "2025-11-05: an unread capture of an earlier address of its list, the last left (read so that every capture of it is read)"
+   "why": "storm day 2026-01-26 (market score 0.50)"
   },
   {
-   "timestamp": "20250324144102",
-   "url": "https://www.calallen.org/fs/pages/524/page-pops",
+   "timestamp": "20260126114449",
+   "url": "https://www.sharylandisd.org/",
+   "station": "finalsite-sharyland-tx",
+   "why": "storm day 2026-01-26 (market score 0.50)"
+  },
+  {
+   "timestamp": "20171208112744",
+   "url": "https://www.sharylandisd.org/",
+   "station": "finalsite-sharyland-tx",
+   "why": "storm day 2017-12-08 (market score 0.25)"
+  },
+  {
+   "timestamp": "20260125220204",
+   "url": "https://www.calallen.org/",
    "station": "finalsite-calallen-tx",
-   "why": "2025-03-24: an unread capture of an earlier address of its list, the last left (read so that every capture of it is read)"
+   "why": "storm day 2026-01-26 (market score 0.50)"
   },
   {
-   "timestamp": "20220706062545",
+   "timestamp": "20260126100248",
+   "url": "https://www.calallen.org/",
+   "station": "finalsite-calallen-tx",
+   "why": "storm day 2026-01-26 (market score 0.50)"
+  },
+  {
+   "timestamp": "20220811134654",
    "url": "https://www.chickasawschools.com/",
    "station": "finalsite-chickasaw-al",
-   "why": "2022-07-06: one of its largest captures, as no read has seen its list yet"
+   "why": "2022-08-11: one of its largest captures, as no read has seen its list yet"
   },
   {
-   "timestamp": "20211228194203",
-   "url": "https://www.mvusd.net/",
+   "timestamp": "20240221044235",
+   "url": "https://www.mvusd.net",
    "station": "finalsite-moreno-valley-ca",
-   "why": "storm day 2021-12-29 (market score 1.00)"
+   "why": "storm day 2024-02-21 (market score 0.25)"
   },
   {
-   "timestamp": "20210129143045",
-   "url": "https://www.mvusd.net/",
-   "station": "finalsite-moreno-valley-ca",
-   "why": "storm day 2021-01-29 (market score 1.00)"
-  },
-  {
-   "timestamp": "20190205014213",
-   "url": "https://www.mvusd.net/",
-   "station": "finalsite-moreno-valley-ca",
-   "why": "storm day 2019-02-05 (market score 1.00)"
-  },
-  {
-   "timestamp": "20260125231258",
+   "timestamp": "20231005002721",
    "url": "https://www.aliceisd.net/en-US",
    "station": "schoolblocks-alice-tx",
-   "why": "storm day 2026-01-26 (market score 0.50)"
+   "why": "2023-10-05: one of its largest captures, as no read has seen its list yet"
   },
   {
-   "timestamp": "20260126080232",
+   "timestamp": "20250319135509",
    "url": "https://www.aliceisd.net/en-US",
    "station": "schoolblocks-alice-tx",
-   "why": "storm day 2026-01-26 (market score 0.50)"
+   "why": "2025-03-19: one of its largest captures, as no read has seen its list yet"
   },
   {
-   "timestamp": "20260126110139",
+   "timestamp": "20250430162522",
+   "url": "https://www.aliceisd.net/en-US",
+   "station": "schoolblocks-alice-tx",
+   "why": "2025-05-01: one of its largest captures, as no read has seen its list yet"
+  },
+  {
+   "timestamp": "20250301165307",
    "url": "https://www.misdtx.net/",
    "station": "apptegy-mercedes-tx",
+   "why": "2025-03-02: one of its largest captures, as no read has seen its list yet"
+  },
+  {
+   "timestamp": "20210622212108",
+   "url": "https://www.desotoschools.com/",
+   "station": "finalsite-desoto-fl",
+   "why": "2021-06-23: one of its largest captures, as no read has seen its list yet"
+  },
+  {
+   "timestamp": "20210124195302",
+   "url": "https://www.desotoschools.com/",
+   "station": "finalsite-desoto-fl",
+   "why": "2021-01-25: one of its largest captures, as no read has seen its list yet"
+  },
+  {
+   "timestamp": "20221209204032",
+   "url": "https://www.desotoschools.com/",
+   "station": "finalsite-desoto-fl",
+   "why": "2022-12-10: one of its largest captures, as no read has seen its list yet"
+  },
+  {
+   "timestamp": "20251125103411",
+   "url": "https://beevilleisd.net/",
+   "station": "smartsites-beeville-tx",
+   "why": "2025-11-25: one of its largest captures, as no read has seen its list yet"
+  },
+  {
+   "timestamp": "20250107211755",
+   "url": "https://beevilleisd.net/",
+   "station": "smartsites-beeville-tx",
+   "why": "2025-01-08: one of its largest captures, as no read has seen its list yet"
+  },
+  {
+   "timestamp": "20250105172702",
+   "url": "https://www.beevilleisd.net/",
+   "station": "smartsites-beeville-tx",
+   "why": "2025-01-06: one of its largest captures, as no read has seen its list yet"
+  },
+  {
+   "timestamp": "20260126031133",
+   "url": "https://www.romaisd.com/",
+   "station": "smartsites-roma-tx",
    "why": "storm day 2026-01-26 (market score 0.50)"
   },
   {
-   "timestamp": "20221109202217",
-   "url": "https://www.desotoschools.com/",
-   "station": "finalsite-desoto-fl",
-   "why": "storm day 2022-11-10 (market score 0.50)"
-  },
-  {
-   "timestamp": "20230829143852",
-   "url": "https://www.desotoschools.com/",
-   "station": "finalsite-desoto-fl",
-   "why": "storm day 2023-08-29 (market score 0.50)"
-  },
-  {
-   "timestamp": "20171231195029",
-   "url": "http://www.beevilleisd.net:80/",
-   "station": "smartsites-beeville-tx",
-   "why": "storm day 2018-01-01 (market score 0.25)"
-  },
-  {
-   "timestamp": "20251213105738",
+   "timestamp": "20260211071048",
    "url": "https://www.grenadak12.com/",
    "station": "finalsite-grenada-ms",
-   "why": "2025-12-13: one of its largest captures, as no read has seen its list yet"
+   "why": "2026-02-11: one of its largest captures, as no read has seen its list yet"
   },
   {
-   "timestamp": "20260116191950",
+   "timestamp": "20260611201001",
    "url": "https://www.grenadak12.com/",
    "station": "finalsite-grenada-ms",
-   "why": "2026-01-17: one of its largest captures, as no read has seen its list yet"
+   "why": "2026-06-12: one of its largest captures, as no read has seen its list yet"
   },
   {
-   "timestamp": "20251213040903",
+   "timestamp": "20260410160440",
    "url": "https://www.grenadak12.com/",
    "station": "finalsite-grenada-ms",
-   "why": "2025-12-13: one of its largest captures, as no read has seen its list yet"
+   "why": "2026-04-11: one of its largest captures, as no read has seen its list yet"
   },
   {
-   "timestamp": "20250121023704",
-   "url": "http://www.calhounflschools.org/",
-   "station": "smartsites-calhoun-fl",
-   "why": "storm day 2025-01-21 (market score 1.00)"
-  },
-  {
-   "timestamp": "20250122023545",
+   "timestamp": "20250122144400",
    "url": "http://www.calhounflschools.org/",
    "station": "smartsites-calhoun-fl",
    "why": "storm day 2025-01-22 (market score 1.00)"
   },
   {
-   "timestamp": "20250121145232",
+   "timestamp": "20240926143756",
    "url": "http://www.calhounflschools.org/",
    "station": "smartsites-calhoun-fl",
-   "why": "storm day 2025-01-21 (market score 1.00)"
+   "why": "storm day 2024-09-26 (market score 1.00)"
   },
   {
-   "timestamp": "20241008162642",
+   "timestamp": "20240926043650",
+   "url": "http://www.calhounflschools.org/",
+   "station": "smartsites-calhoun-fl",
+   "why": "storm day 2024-09-26 (market score 1.00)"
+  },
+  {
+   "timestamp": "20230205115917",
    "url": "https://www.gladesedu.org/",
    "station": "apptegy-glades-fl",
-   "why": "storm day 2024-10-09 (market score 0.50)"
+   "why": "2023-02-05: one of its largest captures, as no read has seen its list yet"
   },
   {
-   "timestamp": "20241007230632",
+   "timestamp": "20230206093722",
+   "url": "https://gladesedu.org/",
+   "station": "apptegy-glades-fl",
+   "why": "2023-02-06: one of its largest captures, as no read has seen its list yet"
+  },
+  {
+   "timestamp": "20250321153923",
    "url": "https://www.gladesedu.org/",
    "station": "apptegy-glades-fl",
-   "why": "storm day 2024-10-08 (market score 0.50)"
+   "why": "2025-03-21: one of its largest captures, as no read has seen its list yet"
   },
   {
-   "timestamp": "20250219224109",
+   "timestamp": "20250323015909",
    "url": "https://www.bisd-tx.org/",
    "station": "apptegy-bloomington-tx",
-   "why": "storm day 2025-02-20 (market score 0.50)"
+   "why": "2025-03-23: one of its largest captures, as no read has seen its list yet"
   },
   {
-   "timestamp": "20230201155725",
+   "timestamp": "20250303015150",
+   "url": "https://www.bisd-tx.org/",
+   "station": "apptegy-bloomington-tx",
+   "why": "2025-03-03: one of its largest captures, as no read has seen its list yet"
+  },
+  {
+   "timestamp": "20260416153448",
+   "url": "https://www.bisd-tx.org/",
+   "station": "apptegy-bloomington-tx",
+   "why": "2026-04-16: one of its largest captures, as no read has seen its list yet"
+  },
+  {
+   "timestamp": "20260126151615",
+   "url": "https://www.kingsvilleisd.com/",
+   "station": "edlio-kingsville-tx",
+   "why": "storm day 2026-01-26 (market score 0.50)"
+  },
+  {
+   "timestamp": "20230202051605",
+   "url": "https://www.hollandalesd.org/",
+   "station": "finalsite-hollandale-ms",
+   "why": "storm day 2023-02-02 (market score 1.00)"
+  },
+  {
+   "timestamp": "20230202114648",
+   "url": "https://www.hollandalesd.org/",
+   "station": "finalsite-hollandale-ms",
+   "why": "storm day 2023-02-02 (market score 1.00)"
+  },
+  {
+   "timestamp": "20230201112558",
    "url": "https://www.hollandalesd.org/",
    "station": "finalsite-hollandale-ms",
    "why": "storm day 2023-02-01 (market score 1.00)"
   },
   {
-   "timestamp": "20240114222536",
-   "url": "https://www.hollandalesd.org/",
-   "station": "finalsite-hollandale-ms",
-   "why": "storm day 2024-01-15 (market score 1.00)"
+   "timestamp": "20250207141810",
+   "url": "https://www.dchsglendive.com/",
+   "station": "apptegy-dawson-hs-mt",
+   "why": "storm day 2025-02-07 (market score 0.25)"
   },
   {
-   "timestamp": "20240115102732",
-   "url": "https://www.hollandalesd.org/",
-   "station": "finalsite-hollandale-ms",
-   "why": "storm day 2024-01-15 (market score 1.00)"
-  },
-  {
-   "timestamp": "20230323185638",
+   "timestamp": "20260305095944",
    "url": "https://www.uintah.net/",
    "station": "apptegy-uintah-ut",
-   "why": "storm day 2023-03-24 (market score 0.25)"
+   "why": "storm day 2026-03-05 (market score 0.25)"
   },
   {
-   "timestamp": "20191121011326",
-   "url": "https://www.uintah.net/",
-   "station": "apptegy-uintah-ut",
-   "why": "storm day 2019-11-21 (market score 0.25)"
+   "timestamp": "20260126121610",
+   "url": "https://www.robstownisd.org/",
+   "station": "edlio-robstown-tx",
+   "why": "storm day 2026-01-26 (market score 0.50)"
   },
   {
-   "timestamp": "20170517084913",
-   "url": "http://www.uintah.net:80/",
-   "station": "apptegy-uintah-ut",
-   "why": "storm day 2017-05-17 (market score 0.25)"
+   "timestamp": "20260126041839",
+   "url": "https://www.robstownisd.org/",
+   "station": "edlio-robstown-tx",
+   "why": "storm day 2026-01-26 (market score 0.50)"
   },
   {
-   "timestamp": "20220630012758",
+   "timestamp": "20210918104211",
    "url": "https://www.bishopcisd.net/",
    "station": "finalsite-bishop-tx",
-   "why": "2022-06-30: one of its largest captures, as no read has seen its list yet"
+   "why": "2021-09-18: one of its largest captures, as no read has seen its list yet"
   },
   {
-   "timestamp": "20220117161721",
+   "timestamp": "20211128061551",
    "url": "https://www.bishopcisd.net/",
    "station": "finalsite-bishop-tx",
-   "why": "2022-01-18: one of its largest captures, as no read has seen its list yet"
+   "why": "2021-11-28: one of its largest captures, as no read has seen its list yet"
   },
   {
-   "timestamp": "20210507041007",
+   "timestamp": "20200512080742",
    "url": "https://www.bishopcisd.net/",
    "station": "finalsite-bishop-tx",
-   "why": "2021-05-07: one of its largest captures, as no read has seen its list yet"
+   "why": "2020-05-12: one of its largest captures, as no read has seen its list yet"
   },
   {
-   "timestamp": "20230223144307",
+   "timestamp": "20260217085746",
    "url": "https://www.tvusd.k12.ca.us/",
    "station": "finalsite-temecula-valley-ca",
-   "why": "storm day 2023-02-23 (market score 1.00)"
-  },
-  {
-   "timestamp": "20230321205720",
-   "url": "https://www.tvusd.k12.ca.us",
-   "station": "finalsite-temecula-valley-ca",
-   "why": "storm day 2023-03-22 (market score 1.00)"
-  },
-  {
-   "timestamp": "20240206005509",
-   "url": "https://www.tvusd.k12.ca.us/",
-   "station": "finalsite-temecula-valley-ca",
-   "why": "storm day 2024-02-06 (market score 1.00)"
-  },
-  {
-   "timestamp": "20251012174503",
-   "url": "https://www.ocesd.net/",
-   "station": "apptegy-oroville-ca",
-   "why": "storm day 2025-10-13 (market score 1.00)"
-  },
-  {
-   "timestamp": "20240301111914",
-   "url": "https://www.ocesd.net/",
-   "station": "apptegy-oroville-ca",
-   "why": "storm day 2024-03-01 (market score 1.00)"
-  },
-  {
-   "timestamp": "20240110014456",
-   "url": "https://www.ocesd.net/",
-   "station": "apptegy-oroville-ca",
-   "why": "storm day 2024-01-10 (market score 1.00)"
-  },
-  {
-   "timestamp": "20230321014349",
-   "url": "https://www.hemetusd.org/",
-   "station": "apptegy-hemet-ca",
-   "why": "storm day 2023-03-21 (market score 1.00)"
-  },
-  {
-   "timestamp": "20230320162703",
-   "url": "https://www.hemetusd.org/",
-   "station": "apptegy-hemet-ca",
-   "why": "storm day 2023-03-21 (market score 1.00)"
-  },
-  {
-   "timestamp": "20230321205843",
-   "url": "https://www.hemetusd.org/",
-   "station": "apptegy-hemet-ca",
-   "why": "storm day 2023-03-22 (market score 1.00)"
-  },
-  {
-   "timestamp": "20260513124906",
-   "url": "https://www.bcisd.us/",
-   "station": "finalsite-brooks-county-tx",
-   "why": "2026-05-13: one of its largest captures, as no read has seen its list yet"
-  },
-  {
-   "timestamp": "20260417121021",
-   "url": "https://www.bcisd.us/",
-   "station": "finalsite-brooks-county-tx",
-   "why": "2026-04-17: one of its largest captures, as no read has seen its list yet"
-  },
-  {
-   "timestamp": "20260927042055",
-   "url": "https://www.bcisd.us/",
-   "station": "finalsite-brooks-county-tx",
-   "why": "2026-09-27: one of its largest captures, as no read has seen its list yet"
-  },
-  {
-   "timestamp": "20221108223812",
-   "url": "https://www.psusd.us/",
-   "station": "finalsite-palm-springs-ca",
-   "why": "storm day 2022-11-09 (market score 1.00)"
-  },
-  {
-   "timestamp": "20240205232532",
-   "url": "https://www.psusd.us/",
-   "station": "finalsite-palm-springs-ca",
-   "why": "storm day 2024-02-06 (market score 1.00)"
-  },
-  {
-   "timestamp": "20190205105456",
-   "url": "https://www.psusd.us/",
-   "station": "finalsite-palm-springs-ca",
-   "why": "storm day 2019-02-05 (market score 1.00)"
-  },
-  {
-   "timestamp": "20240205235920",
-   "url": "https://www.alvordschools.org/",
-   "station": "smartsites-alvord-ca",
-   "why": "storm day 2024-02-06 (market score 1.00)"
-  },
-  {
-   "timestamp": "20221108075716",
-   "url": "https://www.alvordschools.org/",
-   "station": "smartsites-alvord-ca",
-   "why": "storm day 2022-11-08 (market score 1.00)"
-  },
-  {
-   "timestamp": "20250306081450",
-   "url": "https://www.alvordschools.org/",
-   "station": "smartsites-alvord-ca",
-   "why": "storm day 2025-03-06 (market score 1.00)"
-  },
-  {
-   "timestamp": "20220120225535",
-   "url": "https://www.eeisd.org/",
-   "station": "apptegy-edcouch-elsa-tx",
-   "why": "storm day 2022-01-21 (market score 1.00)"
-  },
-  {
-   "timestamp": "20250121111817",
-   "url": "https://www.eeisd.org/",
-   "station": "apptegy-edcouch-elsa-tx",
-   "why": "storm day 2025-01-21 (market score 1.00)"
-  },
-  {
-   "timestamp": "20260125222550",
-   "url": "https://www.eeisd.org/",
-   "station": "apptegy-edcouch-elsa-tx",
-   "why": "storm day 2026-01-26 (market score 0.50)"
-  },
-  {
-   "timestamp": "20220121075146",
-   "url": "https://www.bwsd.org/en-US",
-   "station": "schoolblocks-bay-waveland-ms",
-   "why": "storm day 2022-01-21 (market score 0.25)"
-  },
-  {
-   "timestamp": "20260126071230",
-   "url": "https://www.inglesideisd.org/",
-   "station": "apptegy-ingleside-tx",
-   "why": "storm day 2026-01-26 (market score 0.50)"
-  },
-  {
-   "timestamp": "20260125224112",
-   "url": "https://www.inglesideisd.org/",
-   "station": "apptegy-ingleside-tx",
-   "why": "storm day 2026-01-26 (market score 0.50)"
-  },
-  {
-   "timestamp": "20260125225448",
-   "url": "https://www.londonisd.net/",
-   "station": "finalsite-london-tx",
-   "why": "storm day 2026-01-26 (market score 0.50)"
-  },
-  {
-   "timestamp": "20260126105517",
-   "url": "https://www.londonisd.net/",
-   "station": "finalsite-london-tx",
-   "why": "storm day 2026-01-26 (market score 0.50)"
-  },
-  {
-   "timestamp": "20260125225924",
-   "url": "https://www.mathisisd.org/",
-   "station": "finalsite-mathis-tx",
-   "why": "storm day 2026-01-26 (market score 0.50)"
-  },
-  {
-   "timestamp": "20260126105917",
-   "url": "https://www.mathisisd.org/",
-   "station": "finalsite-mathis-tx",
-   "why": "storm day 2026-01-26 (market score 0.50)"
-  },
-  {
-   "timestamp": "20230321020315",
-   "url": "https://www.valverde.edu/en-US",
-   "station": "schoolblocks-val-verde-ca",
-   "why": "storm day 2023-03-21 (market score 1.00)"
-  },
-  {
-   "timestamp": "20260215180252",
-   "url": "https://www.valverde.edu/en-US",
-   "station": "schoolblocks-val-verde-ca",
-   "why": "storm day 2026-02-16 (market score 1.00)"
-  },
-  {
-   "timestamp": "20260217151844",
-   "url": "https://www.valverde.edu/en-US",
-   "station": "schoolblocks-val-verde-ca",
    "why": "storm day 2026-02-17 (market score 1.00)"
   },
   {
-   "timestamp": "20260125222040",
-   "url": "https://www.driscollisd.us/",
-   "station": "finalsite-driscoll-tx",
+   "timestamp": "20260218020022",
+   "url": "https://www.tvusd.k12.ca.us/",
+   "station": "finalsite-temecula-valley-ca",
+   "why": "storm day 2026-02-18 (market score 1.00)"
+  },
+  {
+   "timestamp": "20251120202443",
+   "url": "https://www.tvusd.k12.ca.us/",
+   "station": "finalsite-temecula-valley-ca",
+   "why": "storm day 2025-11-21 (market score 1.00)"
+  },
+  {
+   "timestamp": "20260125233313",
+   "url": "https://www.sintonisd.net/",
+   "station": "smartsites-sinton-tx",
    "why": "storm day 2026-01-26 (market score 0.50)"
   },
   {
-   "timestamp": "20260126102118",
-   "url": "https://www.driscollisd.us/",
-   "station": "finalsite-driscoll-tx",
+   "timestamp": "20260126113430",
+   "url": "https://www.sintonisd.net/",
+   "station": "smartsites-sinton-tx",
    "why": "storm day 2026-01-26 (market score 0.50)"
   },
   {
-   "timestamp": "20170824032448",
-   "url": "http://www.driscollisd.us:80/",
-   "station": "finalsite-driscoll-tx",
-   "why": "storm day 2017-08-24 (market score 0.50)"
-  },
-  {
-   "timestamp": "20260126144957",
-   "url": "https://www.stbobcats.net/en-US",
-   "station": "schoolblocks-skidmore-tynan-tx",
-   "why": "storm day 2026-01-26 (market score 0.50)"
-  },
-  {
-   "timestamp": "20260126113808",
-   "url": "https://www.stbobcats.net/en-US",
-   "station": "schoolblocks-skidmore-tynan-tx",
-   "why": "storm day 2026-01-26 (market score 0.50)"
-  },
-  {
-   "timestamp": "20260126063352",
-   "url": "https://www.refugioisd.net/",
-   "station": "apptegy-refugio-tx",
-   "why": "storm day 2026-01-26 (market score 0.50)"
-  },
-  {
-   "timestamp": "20250126233133",
-   "url": "https://www.murrieta.k12.ca.us//",
-   "station": "finalsite-murrieta-valley-ca",
-   "why": "storm day 2025-01-27 (market score 1.00)"
-  },
-  {
-   "timestamp": "20230322041938",
-   "url": "https://www.murrieta.k12.ca.us/",
-   "station": "finalsite-murrieta-valley-ca",
-   "why": "storm day 2023-03-22 (market score 1.00)"
-  },
-  {
-   "timestamp": "20240404225509",
-   "url": "https://www.murrieta.k12.ca.us//",
-   "station": "finalsite-murrieta-valley-ca",
-   "why": "storm day 2024-04-05 (market score 1.00)"
-  },
-  {
-   "timestamp": "20170825084846",
-   "url": "http://www.raymondvilleisd.org:80/",
-   "station": "finalsite-raymondville-tx",
-   "why": "storm day 2017-08-25 (market score 0.50)"
-  },
-  {
-   "timestamp": "20260126112848",
-   "url": "https://www.raymondvilleisd.org/",
-   "station": "finalsite-raymondville-tx",
-   "why": "storm day 2026-01-26 (market score 0.50)"
-  },
-  {
-   "timestamp": "20260125232210",
-   "url": "https://www.raymondvilleisd.org/",
-   "station": "finalsite-raymondville-tx",
-   "why": "storm day 2026-01-26 (market score 0.50)"
-  },
-  {
-   "timestamp": "20250120233513",
-   "url": "https://www.rivieraisd.us/",
-   "station": "apptegy-riviera-tx",
+   "timestamp": "20250120200546",
+   "url": "https://www.tmisd.us/",
+   "station": "smartsites-tuloso-midway-tx",
    "why": "storm day 2025-01-21 (market score 1.00)"
-  },
-  {
-   "timestamp": "20240116005314",
-   "url": "https://www.rivieraisd.us/",
-   "station": "apptegy-riviera-tx",
-   "why": "storm day 2024-01-16 (market score 0.50)"
-  },
-  {
-   "timestamp": "20240116113436",
-   "url": "https://www.rivieraisd.us/",
-   "station": "apptegy-riviera-tx",
-   "why": "storm day 2024-01-16 (market score 0.50)"
-  },
-  {
-   "timestamp": "20170823165057",
-   "url": "http://www.taftisd.net:80/",
-   "station": "apptegy-taft-tx",
-   "why": "storm day 2017-08-24 (market score 1.00)"
-  },
-  {
-   "timestamp": "20260126114953",
-   "url": "https://www.taftisd.net/",
-   "station": "apptegy-taft-tx",
-   "why": "storm day 2026-01-26 (market score 0.50)"
-  },
-  {
-   "timestamp": "20241107161216",
-   "url": "https://banqueteisd.net/",
-   "station": "finalsite-banquete-tx",
-   "why": "2024-11-08: one of its largest captures, as no read has seen its list yet"
-  },
-  {
-   "timestamp": "20260306201208",
-   "url": "https://www.banqueteisd.net/",
-   "station": "finalsite-banquete-tx",
-   "why": "2026-03-07: one of its largest captures, as no read has seen its list yet"
-  },
-  {
-   "timestamp": "20260314232620",
-   "url": "https://www.banqueteisd.net/",
-   "station": "finalsite-banquete-tx",
-   "why": "2026-03-15: one of its largest captures, as no read has seen its list yet"
-  },
-  {
-   "timestamp": "20230306183956",
-   "url": "https://www.ouhsd.org/",
-   "station": "finalsite-oroville-high-ca",
-   "why": "storm day 2023-03-07 (market score 1.00)"
-  },
-  {
-   "timestamp": "20230329003849",
-   "url": "https://www.ouhsd.org/",
-   "station": "finalsite-oroville-high-ca",
-   "why": "storm day 2023-03-29 (market score 1.00)"
-  },
-  {
-   "timestamp": "20230113005935",
-   "url": "https://www.ouhsd.org/",
-   "station": "finalsite-oroville-high-ca",
-   "why": "storm day 2023-01-13 (market score 1.00)"
   }
  ]
 }
