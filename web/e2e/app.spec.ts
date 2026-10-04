@@ -509,6 +509,62 @@ test.describe('with no data shipped', () => {
     await context.close();
   });
 
+  test('a link the address store reads while the map is being created opens there, and the address keeps it', async ({
+    browser,
+  }) => {
+    // Two pages' first frames of streets (FIRST_FLIGHT_MS).
+    test.setTimeout(240_000);
+    // The store's code is held past its first try's deadline, so the map is created without it,
+    // and let go once MapLibre's code is in, after the map has taken the stand-in's view.
+    for (const [shape, options] of [
+      ['desktop', { viewport: { width: 1440, height: 900 } }],
+      ['phone', devices['Pixel 7']],
+    ] as const) {
+      const context = await browser.newContext({ ...options, serviceWorkers: 'block' });
+      // The map's setup after its creation waits until the store's code has run, so it is read
+      // before the map is up whatever the machine's speed.
+      await context.addInitScript(() => {
+        const scheduler = (globalThis as { scheduler?: { yield?: () => Promise<void> } }).scheduler;
+        const yieldNow = scheduler?.yield?.bind(scheduler);
+        if (scheduler === undefined || yieldNow === undefined) return;
+        let run: (code: Promise<unknown>) => void = () => undefined;
+        const ran = new Promise<unknown>((resolve) => {
+          run = resolve;
+        });
+        new PerformanceObserver((list) => {
+          for (const entry of list.getEntries()) {
+            if (entry.name.includes('/assets/url-store-')) {
+              run(import(entry.name).catch(() => undefined));
+            }
+          }
+        }).observe({ type: 'resource' });
+        scheduler.yield = async () => {
+          if (performance.getEntriesByName('snowlight:map-created').length > 0) await ran;
+          await yieldNow();
+        };
+      });
+      const page = await context.newPage();
+      const held: Route[] = [];
+      let answered = false;
+      await page.route(/\/assets\/url-store-[\w-]+\.js(?:\?|$)/, async (route) => {
+        if (answered) await route.continue();
+        else held.push(route);
+      });
+      await page.goto('/?at=42.33,-83.05,12');
+      await page.waitForFunction(
+        () => performance.getEntriesByName('snowlight:map-loaded').length > 0,
+        null,
+        { polling: 5, timeout: 30_000 },
+      );
+      answered = true;
+      await Promise.all(held.map((route) => route.continue()));
+      await expectMapNear(page, 42.33, -83.05, 12, FIRST_FLIGHT_MS);
+      await waitForMap(page);
+      expect(new URL(page.url()).search, shape).toBe('?at=42.33,-83.05,12');
+      await context.close();
+    }
+  });
+
   test('"/" goes to the search field; its key shows only with a keyboard, and no update time shows', async ({
     browser,
   }) => {

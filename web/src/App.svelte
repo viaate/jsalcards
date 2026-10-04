@@ -16,7 +16,7 @@
   import { lateFormats } from './app/late-formats';
   import { grantedPlace, opensNearby } from './app/nearby';
   import { STATUS_KEYS, copy, shellFormat } from './copy';
-  import type { Basemap, Place } from './map/basemap';
+  import type { Basemap, MapView, Place } from './map/basemap';
   import { loadBasemap } from './map/basemap/load';
   import type { Glow } from './map/glow-mount';
   import { markStep, yieldToMain } from './map/basemap/steps';
@@ -25,7 +25,7 @@
   import { lateUrlStore } from './state/late-url-store';
   import type { LateUrlStore } from './state/late-url-store';
   import { pinnedSchool } from './state/pin';
-  import type { Selection } from './state/url';
+  import type { Selection, UrlState } from './state/url';
   import type { SchoolId, UtcInstant } from './types/generated';
   import { COPIED_MS } from './ui/share';
 
@@ -181,6 +181,8 @@
     };
     let map: Basemap;
     let glow: Glow | null = null;
+    /** Where the address went while the map was being created, if not the view it took. */
+    let missed: MapView | null | undefined;
     try {
       const loading = Promise.all([loadBasemap(), import('./map/glow-mount').catch(() => null)]);
       // Held until it is awaited below: a download that fails at once is not left unhandled.
@@ -203,17 +205,29 @@
       // Evaluating MapLibre and creating the map are each sizable; keep them in separate tasks.
       await yieldToMain();
       if (aborted()) return;
-      map = await factory.create({
-        container,
-        frame,
-        view: links.state.view,
-        near,
-        controls: () => stage?.querySelectorAll(CONTROLS) ?? [],
-        // Off the national view, the still goes as the map first shows, never over it.
-        onReveal: ({ national }) => {
-          if (!national) handOver(false);
-        },
+      const view = links.state.view;
+      // Back, or a link read late, while the map is created with `view`: the map goes there next.
+      const brought: UrlState[] = [];
+      const stopBringing = links.subscribe((state, origin) => {
+        if (origin === 'history' || origin === 'address') brought.push(state);
       });
+      try {
+        map = await factory.create({
+          container,
+          frame,
+          view,
+          near,
+          controls: () => stage?.querySelectorAll(CONTROLS) ?? [],
+          // Off the national view, the still goes as the map first shows, never over it.
+          onReveal: ({ national }) => {
+            if (!national) handOver(false);
+          },
+        });
+      } finally {
+        stopBringing();
+      }
+      const since = brought.at(-1);
+      missed = since === undefined || since.view === view ? undefined : since.view;
       if (aborted()) {
         map.destroy();
         return;
@@ -234,7 +248,7 @@
     });
     basemap = map;
     map.selectSchool(schoolId);
-    followLinks(map, links, signal);
+    followLinks(map, links, signal, missed);
     if (pendingNear !== null) map.showNear(pendingNear);
     if (pendingTarget !== null) show(pendingTarget);
 
@@ -247,14 +261,22 @@
   /**
    * Keeps the address bar on the view the map shows (none at the national
    * view), and moves the map when Back or Forward brings back another view,
-   * or to a link's view read only after the map opened without it.
+   * or to a link's view read only after the map took its view. `missed` is
+   * such a view that came while the map was being created: it goes there
+   * first, rather than write the view it was created with over it.
    */
-  function followLinks(map: Basemap, links: LateUrlStore, signal: AbortSignal): void {
+  function followLinks(
+    map: Basemap,
+    links: LateUrlStore,
+    signal: AbortSignal,
+    missed?: MapView | null,
+  ): void {
     const record = (): void => {
       // A flight waiting at its stop is on its way: the address keeps where it is going.
       if (map.flightStopped) return;
       links.setView(map.national ? null : map.view);
     };
+    if (missed !== undefined) map.goTo(missed);
     // A link outside this screen's limits opened at the nearest allowed view: write that one.
     record();
     map.map.on('moveend', record);
