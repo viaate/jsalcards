@@ -144,6 +144,8 @@ describe('loading', () => {
     expect((await source.get())?.meta.generated_on).toBe(GENERATED_ON);
     const stamp = { generated_on: '2026-02-01', schools: 4, districts: 2 };
     expect((await source.get(stamp))?.meta.generated_on).toBe('2026-02-01');
+    // Read with no stamp, as the glow's dust reads it (app/data.ts dustSource): the fresh copy.
+    expect((await source.get())?.meta.generated_on).toBe('2026-02-01');
     expect(evict).toHaveBeenCalledWith([`${ROOT}schools/meta.json`, `${ROOT}schools/points.bin`]);
     // A stamp naming a directory that never arrives: no second eviction, nothing read with it.
     expect(await source.get({ ...stamp, generated_on: '2026-03-01' })).toBeNull();

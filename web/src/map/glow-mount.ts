@@ -15,8 +15,9 @@
  * Further out than the school tiles reach, the layer draws every school as
  * dust, the same dot dimmed and shrunk (basemap/dots.ts), from the directory:
  * read the first time the map is at a zoom that shows dust, so the national
- * view reads nothing for it. The dust shows the kinds of school the menu
- * shows, and the open school whatever its kind, as the dots do
+ * view reads nothing for it, and followed to the copy the live file's places
+ * point into whenever schools light. The dust shows the kinds of school the
+ * menu shows, and the open school whatever its kind, as the dots do
  * (basemap/schools.ts schoolKindFilter), and a tap on a speck finds its
  * school as a tap on a dot does (school-taps.ts): where each school is and
  * who it is come from the one directory, so no speck shows that a tap could
@@ -73,7 +74,10 @@ export interface DustSchools {
   readonly names: readonly string[];
 }
 
-/** Where the dust comes from: every school, from one directory. Null when there is none. */
+/**
+ * Where the dust comes from: every school, from the directory the page reads
+ * now, the one a lit school's place points into. Null when there is none.
+ */
 export type DustSource = () => Promise<DustSchools | null>;
 
 /** The schools drawn as dust, for a tap on a speck (school-taps.ts). */
@@ -92,7 +96,9 @@ export interface Glow {
   readonly lit: LitSchools | null;
   /**
    * Shows every school as dust further out than the school tiles reach, from
-   * `source`, read once: the first time the map is at a zoom that shows dust.
+   * `source`: read the first time the map is at a zoom that shows dust, then
+   * again each time schools light, and drawn again only if it gives another
+   * directory, so a lit school's place always means the same school in both.
    */
   dust(source: DustSource): void;
   /**
@@ -173,6 +179,9 @@ export function mountGlow(map: MapLibreMap): Glow {
   let dustAsked = false;
   /** Where to read the dust from, until the map first shows it. */
   let pending: DustSource | null = null;
+  /** And from then on, with the reads made so far, the last of which the dust follows. */
+  let followed: DustSource | null = null;
+  let reads = 0;
   let specks: DustSpots | null = null;
   let selected: SchoolId | null = null;
   /** The open school's speck kept, once the dust knows who each school is. */
@@ -180,14 +189,13 @@ export function mountGlow(map: MapLibreMap): Glow {
     const school = selected === null ? -1 : (specks?.ids.indexOf(selected) ?? -1);
     layer.keepDust(school < 0 ? null : school);
   };
-  const watchZoom = (): void => {
-    if (pending === null || !showsDust(map.getZoom())) return;
-    const source = pending;
-    pending = null;
-    map.off('zoom', watchZoom);
+  /** Reads the dust, and draws it unless a later read is on its way or it is the one drawn. */
+  const readDust = (from: DustSource): void => {
+    const read = ++reads;
     void (async () => {
-      const schools = await source().catch(() => null);
-      if (gone() || schools === null) return;
+      const schools = await from().catch(() => null);
+      if (gone() || read !== reads || schools === null) return;
+      if (schools.lngLat === specks?.lngLat) return;
       layer.setDust(schools.lngLat, schools.kind);
       specks = {
         lngLat: schools.lngLat,
@@ -197,6 +205,13 @@ export function mountGlow(map: MapLibreMap): Glow {
       };
       keepSelected();
     })();
+  };
+  const watchZoom = (): void => {
+    if (pending === null || !showsDust(map.getZoom())) return;
+    followed = pending;
+    pending = null;
+    map.off('zoom', watchZoom);
+    readDust(followed);
   };
   const add = (): void => {
     dots.update();
@@ -219,6 +234,9 @@ export function mountGlow(map: MapLibreMap): Glow {
       );
       dots.mark(lit.schools);
       layer.hideDust(lit.schools);
+      // Its places are in the directory read against the live file's stamp, which can replace
+      // an older copy the dust was read from: the dust follows it there.
+      if (followed !== null) readDust(followed);
     },
     dust(source) {
       if (removed || dustAsked) return;

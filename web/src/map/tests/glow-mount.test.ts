@@ -349,6 +349,48 @@ describe('the dust', () => {
     expect(nearKansasCity()).toEqual([]);
   });
 
+  it('follows the directory the schools lit are places in, once it reads the dust', async () => {
+    const map = new FakeMap();
+    map.load();
+    const glow = mount(map);
+    // The copy read first, then the one the live file names: the same schools, Boston first.
+    const fresh = {
+      lngLat: new Float64Array([-71.1, 42.4, -94.6, 39.1, -94.5, 39.0]),
+      kind: new Uint8Array([0, 0, 1]),
+      ids: ['c', 'a', 'b'],
+      names: ['C', 'A', 'B'],
+    };
+    let copy = schools;
+    const read = source(() => Promise.resolve(copy));
+    glow.dust(read);
+    // Lit at the national view: the dust is not read for it.
+    glow.light(lit(0));
+    await settle();
+    expect(read).not.toHaveBeenCalled();
+    map.zoomTo(8);
+    await settle();
+    expect(glow.specks?.ids).toEqual(schools.ids);
+    // Lit again from the same copy: read, not drawn again.
+    if (map.layer === null) throw new Error('No glow layer on the map');
+    const setDust = vi.spyOn(map.layer, 'setDust');
+    glow.light(lit(1));
+    await settle();
+    expect(read).toHaveBeenCalledTimes(2);
+    expect(setDust).not.toHaveBeenCalled();
+    // Lit from the copy the live file names: the dust is that copy, with the school lit left out.
+    copy = fresh;
+    glow.light(lit(0));
+    await settle();
+    expect(setDust).toHaveBeenCalledOnce();
+    expect(glow.specks?.ids).toEqual(fresh.ids);
+    const near = (lon: number, lat: number): number[] => [
+      ...(glow.specks?.near(mercatorXFromLng(lon), mercatorYFromLat(lat), 0.001) ?? []),
+    ];
+    expect(near(-71.1, 42.4)).toEqual([]);
+    expect(near(-94.55, 39.05).sort()).toEqual([1, 2]);
+    expect(map.layer.stats.dustHidden).toBe(1);
+  });
+
   it('is drawn only once the directory is in, where each school is and who it is together', async () => {
     let read: (value: typeof schools) => void = () => undefined;
     const map = new FakeMap();

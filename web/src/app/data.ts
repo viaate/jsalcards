@@ -105,6 +105,9 @@ const NOT_LIVE: LiveGlow = Object.freeze({ filter: () => undefined, stop: () => 
 /**
  * The glow's dust, from the directory this build ships: where every school
  * is, its kind and who it is, for a tap on a speck. Null when it ships none.
+ * Each read gives the copy the page reads now, the one a read against the
+ * live file's stamp put in place of an older one (data/directory.ts), which
+ * the dust follows each time schools light (map/glow-mount.ts).
  */
 export function dustSource(data: AppData): DustSource {
   return async () => {
