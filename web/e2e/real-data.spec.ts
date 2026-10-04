@@ -688,6 +688,11 @@ test('searching “pembroke” lists Pembroke Hill, and choosing it goes there',
   const { problems, requests } = watch(page);
   await page.goto(site);
   await settle(page);
+  // The worker takes the page first: as it does, it asks again for the data the page has loaded
+  // (pwa/data.ts warmDataCache), the index too had it come by then.
+  await page.waitForFunction(() => navigator.serviceWorker.controller !== null, null, {
+    timeout: 30_000,
+  });
   const indexRequests = (): string[] =>
     requests.map((request) => request.url).filter((url) => url.includes('/data/search-index.'));
   expect(indexRequests()).toEqual([]);
