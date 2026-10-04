@@ -1,154 +1,178 @@
 {
  "snapshots": [
   {
-   "timestamp": "20250120112116",
-   "url": "https://www.mcpsmt.org/",
-   "station": "finalsite-missoula-mt",
-   "why": "storm day 2025-01-20 (market score 0.50)"
+   "timestamp": "20220106034853",
+   "url": "https://www.d93schools.org/",
+   "station": "smartsites-bonneville-id",
+   "why": "storm day 2022-01-06 (market score 1.00)"
   },
   {
-   "timestamp": "20210325051601",
-   "url": "https://www.hsd3.org/",
-   "station": "apptegy-hamilton-mt",
-   "why": "storm day 2021-03-25 (market score 0.25)"
+   "timestamp": "20220106051055",
+   "url": "https://www.d93schools.org/",
+   "station": "smartsites-bonneville-id",
+   "why": "storm day 2022-01-06 (market score 1.00)"
   },
   {
-   "timestamp": "20250117045922",
-   "url": "https://www.swcsd2.org/",
-   "station": "apptegy-sweetwater-2-wy",
-   "why": "storm day 2025-01-17 (market score 0.25)"
+   "timestamp": "20220105035553",
+   "url": "https://www.d93schools.org/",
+   "station": "smartsites-bonneville-id",
+   "why": "storm day 2022-01-05 (market score 1.00)"
   },
   {
-   "timestamp": "20240214231028",
-   "url": "https://www.mvsd21.org/",
-   "station": "apptegy-marsh-valley-id",
-   "why": "storm day 2024-02-15 (market score 0.25)"
+   "timestamp": "20220927164450",
+   "url": "https://www.citrusschools.org/",
+   "station": "smartsites-citrus-fl",
+   "why": "storm day 2022-09-28 (market score 0.50)"
   },
   {
-   "timestamp": "20230413085838",
-   "url": "https://www.mvsd21.org/",
-   "station": "apptegy-marsh-valley-id",
-   "why": "storm day 2023-04-13 (market score 0.25)"
+   "timestamp": "20220308015329",
+   "url": "https://www.shelleyschools.org/",
+   "station": "smartsites-shelley-id",
+   "why": "storm day 2022-03-08 (market score 1.00)"
   },
   {
-   "timestamp": "20230320111127",
-   "url": "https://www.mvsd21.org/",
-   "station": "apptegy-marsh-valley-id",
-   "why": "storm day 2023-03-20 (market score 0.25)"
+   "timestamp": "20221108230423",
+   "url": "https://www.flaglerschools.com/",
+   "station": "smartsites-flagler-fl",
+   "why": "storm day 2022-11-09 (market score 0.50)"
   },
   {
-   "timestamp": "20230130110545",
-   "url": "https://www.murrieta.k12.ca.us/",
-   "station": "finalsite-murrieta-valley-ca",
-   "why": "storm day 2023-01-30 (market score 1.00)"
+   "timestamp": "20220105163258",
+   "url": "https://www.d93schools.org/",
+   "station": "smartsites-bonneville-id",
+   "why": "storm day 2022-01-06 (market score 1.00)"
   },
   {
-   "timestamp": "20251120175645",
-   "url": "https://www.murrieta.k12.ca.us/",
-   "station": "finalsite-murrieta-valley-ca",
-   "why": "storm day 2025-11-21 (market score 1.00)"
+   "timestamp": "20220104161720",
+   "url": "https://www.d93schools.org/",
+   "station": "smartsites-bonneville-id",
+   "why": "storm day 2022-01-05 (market score 1.00)"
   },
   {
-   "timestamp": "20240205044125",
-   "url": "https://www.beaumontusd.us/",
-   "station": "edlio-beaumont-ca",
-   "why": "storm day 2024-02-05 (market score 1.00)"
+   "timestamp": "20220308000225",
+   "url": "https://www.d93schools.org/",
+   "station": "smartsites-bonneville-id",
+   "why": "storm day 2022-03-08 (market score 1.00)"
   },
   {
-   "timestamp": "20260126042942",
-   "url": "https://www.industrialisd.org/en-US",
-   "station": "schoolblocks-industrial-tx",
-   "why": "storm day 2026-01-26 (market score 0.50)"
+   "timestamp": "20191211170123",
+   "url": "https://www.d93schools.org/",
+   "station": "smartsites-bonneville-id",
+   "why": "storm day 2019-12-12 (market score 1.00)"
   },
   {
-   "timestamp": "20230320084323",
-   "url": "https://www.mvsd21.org/",
-   "station": "apptegy-marsh-valley-id",
-   "why": "storm day 2023-03-20 (market score 0.25)"
+   "timestamp": "20221117230237",
+   "url": "https://www.d93schools.org/",
+   "station": "smartsites-bonneville-id",
+   "why": "storm day 2022-11-18 (market score 0.50)"
   },
   {
-   "timestamp": "20230320193653",
-   "url": "https://www.mvsd21.org/",
-   "station": "apptegy-marsh-valley-id",
-   "why": "storm day 2023-03-21 (market score 0.25)"
+   "timestamp": "20211228005249",
+   "url": "https://www.d93schools.org/",
+   "station": "smartsites-bonneville-id",
+   "why": "storm day 2021-12-28 (market score 0.50)"
   },
   {
-   "timestamp": "20230320101929",
-   "url": "https://www.mvsd21.org/",
-   "station": "apptegy-marsh-valley-id",
-   "why": "storm day 2023-03-20 (market score 0.25)"
+   "timestamp": "20211228051929",
+   "url": "https://www.d93schools.org/",
+   "station": "smartsites-bonneville-id",
+   "why": "storm day 2021-12-28 (market score 0.50)"
   },
   {
-   "timestamp": "20230320092030",
-   "url": "https://www.mvsd21.org/",
-   "station": "apptegy-marsh-valley-id",
-   "why": "storm day 2023-03-20 (market score 0.25)"
+   "timestamp": "20220222034723",
+   "url": "https://www.d93schools.org/",
+   "station": "smartsites-bonneville-id",
+   "why": "storm day 2022-02-22 (market score 0.50)"
   },
   {
-   "timestamp": "20230321210537",
-   "url": "https://www.mvsd21.org/",
-   "station": "apptegy-marsh-valley-id",
-   "why": "storm day 2023-03-22 (market score 0.25)"
+   "timestamp": "20220223154622",
+   "url": "https://www.d93schools.org/",
+   "station": "smartsites-bonneville-id",
+   "why": "storm day 2022-02-23 (market score 0.50)"
   },
   {
-   "timestamp": "20230412193445",
-   "url": "https://www.mvsd21.org/",
-   "station": "apptegy-marsh-valley-id",
-   "why": "storm day 2023-04-13 (market score 0.25)"
+   "timestamp": "20220221173549",
+   "url": "https://www.d93schools.org/",
+   "station": "smartsites-bonneville-id",
+   "why": "storm day 2022-02-22 (market score 0.50)"
   },
   {
-   "timestamp": "20230320124133",
-   "url": "https://www.mvsd21.org/",
-   "station": "apptegy-marsh-valley-id",
-   "why": "storm day 2023-03-20 (market score 0.25)"
+   "timestamp": "20220411224957",
+   "url": "https://www.d93schools.org/",
+   "station": "smartsites-bonneville-id",
+   "why": "storm day 2022-04-12 (market score 0.25)"
   },
   {
-   "timestamp": "20230320182111",
-   "url": "https://www.mvsd21.org/",
-   "station": "apptegy-marsh-valley-id",
-   "why": "storm day 2023-03-21 (market score 0.25)"
+   "timestamp": "20220410230116",
+   "url": "https://www.d93schools.org/",
+   "station": "smartsites-bonneville-id",
+   "why": "storm day 2022-04-11 (market score 0.25)"
   },
   {
-   "timestamp": "20230320204232",
-   "url": "https://www.mvsd21.org/",
-   "station": "apptegy-marsh-valley-id",
-   "why": "storm day 2023-03-21 (market score 0.25)"
+   "timestamp": "20220411110233",
+   "url": "https://www.d93schools.org/",
+   "station": "smartsites-bonneville-id",
+   "why": "storm day 2022-04-11 (market score 0.25)"
   },
   {
-   "timestamp": "20230321181145",
-   "url": "https://www.mvsd21.org/",
-   "station": "apptegy-marsh-valley-id",
-   "why": "storm day 2023-03-22 (market score 0.25)"
+   "timestamp": "20220403224441",
+   "url": "https://www.d93schools.org/",
+   "station": "smartsites-bonneville-id",
+   "why": "storm day 2022-04-04 (market score 0.25)"
   },
   {
-   "timestamp": "20210826072802",
-   "url": "https://www.abc4.com/weather/closings/",
-   "station": "nexstar-ktvx",
-   "why": "an unread capture of its list, read so that every capture of it is read"
+   "timestamp": "20220404131648",
+   "url": "https://www.d93schools.org/",
+   "station": "smartsites-bonneville-id",
+   "why": "storm day 2022-04-04 (market score 0.25)"
   },
   {
-   "timestamp": "20230509143415",
-   "url": "https://www.abc4.com/weather/closings/",
-   "station": "nexstar-ktvx",
-   "why": "an unread capture of its list, read so that every capture of it is read"
+   "timestamp": "20220107044545",
+   "url": "https://www.d93schools.org/",
+   "station": "smartsites-bonneville-id",
+   "why": "storm day 2022-01-07 (market score 0.25)"
+  },
+  {
+   "timestamp": "20220412104934",
+   "url": "https://www.d93schools.org/",
+   "station": "smartsites-bonneville-id",
+   "why": "storm day 2022-04-12 (market score 0.25)"
+  },
+  {
+   "timestamp": "20211231154822",
+   "url": "https://www.d93schools.org/",
+   "station": "smartsites-bonneville-id",
+   "why": "storm day 2021-12-31 (market score 0.25)"
+  },
+  {
+   "timestamp": "20211231034904",
+   "url": "https://www.d93schools.org/",
+   "station": "smartsites-bonneville-id",
+   "why": "storm day 2021-12-31 (market score 0.25)"
+  },
+  {
+   "timestamp": "20220104034905",
+   "url": "https://www.d93schools.org/",
+   "station": "smartsites-bonneville-id",
+   "why": "storm day 2022-01-04 (market score 0.25)"
+  },
+  {
+   "timestamp": "20220103161149",
+   "url": "https://www.d93schools.org/",
+   "station": "smartsites-bonneville-id",
+   "why": "storm day 2022-01-04 (market score 0.25)"
+  },
+  {
+   "timestamp": "20211227095905",
+   "url": "https://www.d93schools.org/",
+   "station": "smartsites-bonneville-id",
+   "why": "storm day 2021-12-27 (market score 0.25)"
   },
   {
    "timestamp": "20250212075851",
    "url": "https://www.abc4.com/weather/closings/",
    "station": "nexstar-ktvx",
    "why": "an unread capture of its list, read so that every capture of it is read"
-  },
-  {
-   "timestamp": "20200314052524",
-   "url": "https://www.kpax.com/weather/school-closings-delays",
-   "station": "scripps-kpax",
-   "why": "an unread capture of its former closings address (2019-2021), read so that every capture of it is read"
-  },
-  {
-   "timestamp": "20200722032557",
-   "url": "https://www.kpax.com/weather/school-closings-delays?_renderer=json",
-   "station": "scripps-kpax",
-   "why": "an unread capture of its former closings address (2019-2021), read so that every capture of it is read"
   }
  ]
 }
