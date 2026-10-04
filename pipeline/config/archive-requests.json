@@ -1,1504 +1,1504 @@
 {
  "snapshots": [
   {
-   "timestamp": "20210411093557",
-   "url": "https://www.dchsglendive.com/",
-   "station": "apptegy-dawson-hs-mt",
-   "why": "a capture two days or less from one of its closure days (2021-04-11), read because fewer than three captures of its closure days showed its list"
-  },
-  {
-   "timestamp": "20210414221656",
-   "url": "https://www.dchsglendive.com/",
-   "station": "apptegy-dawson-hs-mt",
-   "why": "a capture two days or less from one of its closure days (2021-04-15), read because fewer than three captures of its closure days showed its list"
-  },
-  {
-   "timestamp": "20220119041448",
-   "url": "https://www.dchsglendive.com/",
-   "station": "apptegy-dawson-hs-mt",
-   "why": "a capture two days or less from one of its closure days (2022-01-19), read because fewer than three captures of its closure days showed its list"
-  },
-  {
-   "timestamp": "20231207095232",
-   "url": "https://www.dchsglendive.com/",
-   "station": "apptegy-dawson-hs-mt",
-   "why": "a capture two days or less from one of its closure days (2023-12-07), read because fewer than three captures of its closure days showed its list"
-  },
-  {
-   "timestamp": "20241206194454",
-   "url": "https://www.dchsglendive.com/",
-   "station": "apptegy-dawson-hs-mt",
-   "why": "a capture two days or less from one of its closure days (2024-12-07), read because fewer than three captures of its closure days showed its list"
-  },
-  {
-   "timestamp": "20251216211245",
-   "url": "https://www.dchsglendive.com/",
-   "station": "apptegy-dawson-hs-mt",
-   "why": "a capture two days or less from one of its closure days (2025-12-17), read because fewer than three captures of its closure days showed its list"
-  },
-  {
-   "timestamp": "20201231093058",
-   "url": "https://www.episd.org",
-   "station": "apptegy-el-paso-tx",
-   "why": "a capture two days or less from one of its closure days (2020-12-31), read because fewer than three captures of its closure days showed its list"
-  },
-  {
-   "timestamp": "20220131225436",
-   "url": "https://www.episd.org/",
-   "station": "apptegy-el-paso-tx",
-   "why": "a capture two days or less from one of its closure days (2022-02-01), read because fewer than three captures of its closure days showed its list"
-  },
-  {
-   "timestamp": "20220201105437",
-   "url": "https://www.episd.org/",
-   "station": "apptegy-el-paso-tx",
-   "why": "a capture two days or less from one of its closure days (2022-02-01), read because fewer than three captures of its closure days showed its list"
-  },
-  {
-   "timestamp": "20220202001122",
-   "url": "https://www.episd.org/",
-   "station": "apptegy-el-paso-tx",
-   "why": "a capture two days or less from one of its closure days (2022-02-02), read because fewer than three captures of its closure days showed its list"
-  },
-  {
-   "timestamp": "20220202105421",
-   "url": "https://www.episd.org/",
-   "station": "apptegy-el-paso-tx",
-   "why": "a capture two days or less from one of its closure days (2022-02-02), read because fewer than three captures of its closure days showed its list"
-  },
-  {
-   "timestamp": "20220203234916",
-   "url": "https://www.episd.org/",
-   "station": "apptegy-el-paso-tx",
-   "why": "a capture two days or less from one of its closure days (2022-02-04), read because fewer than three captures of its closure days showed its list"
-  },
-  {
-   "timestamp": "20220204105347",
-   "url": "https://www.episd.org/",
-   "station": "apptegy-el-paso-tx",
-   "why": "a capture two days or less from one of its closure days (2022-02-04), read because fewer than three captures of its closure days showed its list"
-  },
-  {
-   "timestamp": "20220204225404",
-   "url": "https://www.episd.org/",
-   "station": "apptegy-el-paso-tx",
-   "why": "a capture two days or less from one of its closure days (2022-02-05), read because fewer than three captures of its closure days showed its list"
-  },
-  {
-   "timestamp": "20221122223750",
-   "url": "https://www.episd.org/",
-   "station": "apptegy-el-paso-tx",
-   "why": "a capture two days or less from one of its closure days (2022-11-23), read because fewer than three captures of its closure days showed its list"
-  },
-  {
-   "timestamp": "20221123103739",
-   "url": "https://www.episd.org/",
-   "station": "apptegy-el-paso-tx",
-   "why": "a capture two days or less from one of its closure days (2022-11-23), read because fewer than three captures of its closure days showed its list"
-  },
-  {
-   "timestamp": "20221123223903",
-   "url": "https://www.episd.org/",
-   "station": "apptegy-el-paso-tx",
-   "why": "a capture two days or less from one of its closure days (2022-11-24), read because fewer than three captures of its closure days showed its list"
-  },
-  {
-   "timestamp": "20221124103759",
-   "url": "https://www.episd.org/",
-   "station": "apptegy-el-paso-tx",
-   "why": "a capture two days or less from one of its closure days (2022-11-24), read because fewer than three captures of its closure days showed its list"
-  },
-  {
-   "timestamp": "20221127003219",
-   "url": "https://www.episd.org/",
-   "station": "apptegy-el-paso-tx",
-   "why": "a capture two days or less from one of its closure days (2022-11-27), read because fewer than three captures of its closure days showed its list"
-  },
-  {
-   "timestamp": "20221127124126",
-   "url": "https://www.episd.org/",
-   "station": "apptegy-el-paso-tx",
-   "why": "a capture two days or less from one of its closure days (2022-11-27), read because fewer than three captures of its closure days showed its list"
-  },
-  {
-   "timestamp": "20230129225134",
-   "url": "https://www.episd.org/",
-   "station": "apptegy-el-paso-tx",
+   "timestamp": "20230130102422",
+   "url": "https://www.fhisd.net/",
+   "station": "finalsite-ft-hancock-tx",
    "why": "a capture two days or less from one of its closure days (2023-01-30), read because fewer than three captures of its closure days showed its list"
   },
   {
-   "timestamp": "20230130102245",
-   "url": "https://www.episd.org/",
-   "station": "apptegy-el-paso-tx",
-   "why": "a capture two days or less from one of its closure days (2023-01-30), read because fewer than three captures of its closure days showed its list"
-  },
-  {
-   "timestamp": "20230130222317",
-   "url": "https://www.episd.org/",
-   "station": "apptegy-el-paso-tx",
+   "timestamp": "20230130222409",
+   "url": "https://www.fhisd.net/",
+   "station": "finalsite-ft-hancock-tx",
    "why": "a capture two days or less from one of its closure days (2023-01-31), read because fewer than three captures of its closure days showed its list"
   },
   {
-   "timestamp": "20230131130510",
-   "url": "https://www.episd.org/",
-   "station": "apptegy-el-paso-tx",
+   "timestamp": "20230131114218",
+   "url": "https://www.fhisd.net/",
+   "station": "finalsite-ft-hancock-tx",
    "why": "a capture two days or less from one of its closure days (2023-01-31), read because fewer than three captures of its closure days showed its list"
   },
   {
-   "timestamp": "20230201235850",
-   "url": "https://www.episd.org/",
-   "station": "apptegy-el-paso-tx",
+   "timestamp": "20230201222917",
+   "url": "https://www.fhisd.net/",
+   "station": "finalsite-ft-hancock-tx",
    "why": "a capture two days or less from one of its closure days (2023-02-02), read because fewer than three captures of its closure days showed its list"
   },
   {
-   "timestamp": "20230202102245",
-   "url": "https://www.episd.org/",
-   "station": "apptegy-el-paso-tx",
+   "timestamp": "20230202020448",
+   "url": "https://www.fhisd.net:443/",
+   "station": "finalsite-ft-hancock-tx",
    "why": "a capture two days or less from one of its closure days (2023-02-02), read because fewer than three captures of its closure days showed its list"
   },
   {
-   "timestamp": "20230202181421",
-   "url": "https://www.episd.org/",
-   "station": "apptegy-el-paso-tx",
+   "timestamp": "20230202102439",
+   "url": "https://www.fhisd.net/",
+   "station": "finalsite-ft-hancock-tx",
+   "why": "a capture two days or less from one of its closure days (2023-02-02), read because fewer than three captures of its closure days showed its list"
+  },
+  {
+   "timestamp": "20230202181025",
+   "url": "https://www.fhisd.net/",
+   "station": "finalsite-ft-hancock-tx",
    "why": "a capture two days or less from one of its closure days (2023-02-03), read because fewer than three captures of its closure days showed its list"
   },
   {
-   "timestamp": "20230203110126",
-   "url": "https://www.episd.org/",
-   "station": "apptegy-el-paso-tx",
+   "timestamp": "20230203114504",
+   "url": "https://www.fhisd.net/",
+   "station": "finalsite-ft-hancock-tx",
    "why": "a capture two days or less from one of its closure days (2023-02-03), read because fewer than three captures of its closure days showed its list"
   },
   {
-   "timestamp": "20250119183704",
-   "url": "https://www.gilchristschools.org/",
-   "station": "apptegy-gilchrist-fl",
-   "why": "a capture two days or less from one of its closure days (2025-01-20), read because fewer than three captures of its closure days showed its list"
+   "timestamp": "20250111122209",
+   "url": "https://www.fhisd.net/",
+   "station": "finalsite-ft-hancock-tx",
+   "why": "a capture two days or less from one of its closure days (2025-01-11), read because fewer than three captures of its closure days showed its list"
   },
   {
-   "timestamp": "20201024202914",
-   "url": "https://www.hustonacademy.com/",
-   "station": "apptegy-huston-academy-tx",
-   "why": "a capture two days or less from one of its closure days (2020-10-25), read because fewer than three captures of its closure days showed its list"
-  },
-  {
-   "timestamp": "20230129123011",
-   "url": "https://www.hustonacademy.com/",
-   "station": "apptegy-huston-academy-tx",
-   "why": "a capture two days or less from one of its closure days (2023-01-29), read because fewer than three captures of its closure days showed its list"
-  },
-  {
-   "timestamp": "20220119052101",
-   "url": "http://lyfordcisd.net/",
-   "station": "apptegy-lyford-tx",
-   "why": "a capture two days or less from one of its closure days (2022-01-19), read because fewer than three captures of its closure days showed its list"
-  },
-  {
-   "timestamp": "20250118165006",
-   "url": "https://www.lyfordcisd.net/",
-   "station": "apptegy-lyford-tx",
+   "timestamp": "20250118232337",
+   "url": "https://www.fhisd.net/",
+   "station": "finalsite-ft-hancock-tx",
    "why": "a capture two days or less from one of its closure days (2025-01-19), read because fewer than three captures of its closure days showed its list"
   },
   {
-   "timestamp": "20220123154432",
-   "url": "https://www.mcallenisd.org/",
-   "station": "apptegy-mcallen-tx",
-   "why": "a capture two days or less from one of its closure days (2022-01-23), read because fewer than three captures of its closure days showed its list"
+   "timestamp": "20250119105925",
+   "url": "https://www.fhisd.net/",
+   "station": "finalsite-ft-hancock-tx",
+   "why": "a capture two days or less from one of its closure days (2025-01-19), read because fewer than three captures of its closure days showed its list"
   },
   {
-   "timestamp": "20260124230100",
-   "url": "https://www.mcallenisd.org/",
-   "station": "apptegy-mcallen-tx",
-   "why": "a capture two days or less from one of its closure days (2026-01-25), read because fewer than three captures of its closure days showed its list"
-  },
-  {
-   "timestamp": "20220101165016",
-   "url": "https://www.minidokaschools.org/",
-   "station": "apptegy-minidoka-id",
-   "why": "a capture two days or less from one of its closure days (2022-01-02), read because fewer than three captures of its closure days showed its list"
-  },
-  {
-   "timestamp": "20221108212853",
-   "url": "https://www.minidokaschools.org/",
-   "station": "apptegy-minidoka-id",
-   "why": "a capture two days or less from one of its closure days (2022-11-09), read because fewer than three captures of its closure days showed its list"
-  },
-  {
-   "timestamp": "20230128041223",
-   "url": "https://www.minidokaschools.org/",
-   "station": "apptegy-minidoka-id",
-   "why": "a capture two days or less from one of its closure days (2023-01-28), read because fewer than three captures of its closure days showed its list"
-  },
-  {
-   "timestamp": "20230401210929",
-   "url": "https://www.minidokaschools.org/",
-   "station": "apptegy-minidoka-id",
-   "why": "a capture two days or less from one of its closure days (2023-04-02), read because fewer than three captures of its closure days showed its list"
-  },
-  {
-   "timestamp": "20230404203729",
-   "url": "https://www.minidokaschools.org/",
-   "station": "apptegy-minidoka-id",
-   "why": "a capture two days or less from one of its closure days (2023-04-05), read because fewer than three captures of its closure days showed its list"
-  },
-  {
-   "timestamp": "20230405084154",
-   "url": "https://www.minidokaschools.org/",
-   "station": "apptegy-minidoka-id",
-   "why": "a capture two days or less from one of its closure days (2023-04-05), read because fewer than three captures of its closure days showed its list"
-  },
-  {
-   "timestamp": "20231203020446",
-   "url": "https://www.minidokaschools.org/",
-   "station": "apptegy-minidoka-id",
-   "why": "a capture two days or less from one of its closure days (2023-12-03), read because fewer than three captures of its closure days showed its list"
-  },
-  {
-   "timestamp": "20250124232400",
-   "url": "https://www.mcpss.com/",
-   "station": "apptegy-mobile-al",
-   "why": "a capture two days or less from one of its closure days (2025-01-25), read because fewer than three captures of its closure days showed its list"
-  },
-  {
-   "timestamp": "20250125011240",
-   "url": "https://www.mcpss.com/",
-   "station": "apptegy-mobile-al",
-   "why": "a capture two days or less from one of its closure days (2025-01-25), read because fewer than three captures of its closure days showed its list"
-  },
-  {
-   "timestamp": "20250125112055",
-   "url": "https://www.mcpss.com/",
-   "station": "apptegy-mobile-al",
-   "why": "a capture two days or less from one of its closure days (2025-01-25), read because fewer than three captures of its closure days showed its list"
-  },
-  {
-   "timestamp": "20250125125841",
-   "url": "https://www.mcpss.com/",
-   "station": "apptegy-mobile-al",
-   "why": "a capture two days or less from one of its closure days (2025-01-25), read because fewer than three captures of its closure days showed its list"
-  },
-  {
-   "timestamp": "20191211104555",
-   "url": "https://www.ogdensd.org/",
-   "station": "apptegy-ogden-ut",
-   "why": "a capture two days or less from one of its closure days (2019-12-11), read because fewer than three captures of its closure days showed its list"
-  },
-  {
-   "timestamp": "20200103015418",
-   "url": "https://www.ogdensd.org/",
-   "station": "apptegy-ogden-ut",
-   "why": "a capture two days or less from one of its closure days (2020-01-03), read because fewer than three captures of its closure days showed its list"
-  },
-  {
-   "timestamp": "20201218020758",
-   "url": "https://www.ogdensd.org/",
-   "station": "apptegy-ogden-ut",
-   "why": "a capture two days or less from one of its closure days (2020-12-18), read because fewer than three captures of its closure days showed its list"
-  },
-  {
-   "timestamp": "20211020091429",
-   "url": "https://www.ogdensd.org/",
-   "station": "apptegy-ogden-ut",
-   "why": "a capture two days or less from one of its closure days (2021-10-20), read because fewer than three captures of its closure days showed its list"
-  },
-  {
-   "timestamp": "20211027151800",
-   "url": "https://www.ogdensd.org/",
-   "station": "apptegy-ogden-ut",
-   "why": "a capture two days or less from one of its closure days (2021-10-27), read because fewer than three captures of its closure days showed its list"
-  },
-  {
-   "timestamp": "20220102123158",
-   "url": "https://www.ogdensd.org/",
-   "station": "apptegy-ogden-ut",
-   "why": "a capture two days or less from one of its closure days (2022-01-02), read because fewer than three captures of its closure days showed its list"
-  },
-  {
-   "timestamp": "20220527222204",
-   "url": "https://www.ogdensd.org/",
-   "station": "apptegy-ogden-ut",
-   "why": "a capture two days or less from one of its closure days (2022-05-28), read because fewer than three captures of its closure days showed its list"
-  },
-  {
-   "timestamp": "20220529104839",
-   "url": "https://www.ogdensd.org/",
-   "station": "apptegy-ogden-ut",
-   "why": "a capture two days or less from one of its closure days (2022-05-29), read because fewer than three captures of its closure days showed its list"
-  },
-  {
-   "timestamp": "20220531004727",
-   "url": "https://www.ogdensd.org/",
-   "station": "apptegy-ogden-ut",
-   "why": "a capture two days or less from one of its closure days (2022-05-31), read because fewer than three captures of its closure days showed its list"
-  },
-  {
-   "timestamp": "20221106231151",
-   "url": "https://www.ogdensd.org/",
-   "station": "apptegy-ogden-ut",
-   "why": "a capture two days or less from one of its closure days (2022-11-07), read because fewer than three captures of its closure days showed its list"
-  },
-  {
-   "timestamp": "20221107113554",
-   "url": "https://www.ogdensd.org/",
-   "station": "apptegy-ogden-ut",
-   "why": "a capture two days or less from one of its closure days (2022-11-07), read because fewer than three captures of its closure days showed its list"
-  },
-  {
-   "timestamp": "20221206062208",
-   "url": "https://www.ogdensd.org/",
-   "station": "apptegy-ogden-ut",
-   "why": "a capture two days or less from one of its closure days (2022-12-06), read because fewer than three captures of its closure days showed its list"
-  },
-  {
-   "timestamp": "20221215170544",
-   "url": "https://www.ogdensd.org/",
-   "station": "apptegy-ogden-ut",
-   "why": "a capture two days or less from one of its closure days (2022-12-16), read because fewer than three captures of its closure days showed its list"
-  },
-  {
-   "timestamp": "20221217013919",
-   "url": "https://www.ogdensd.org/",
-   "station": "apptegy-ogden-ut",
-   "why": "a capture two days or less from one of its closure days (2022-12-17), read because fewer than three captures of its closure days showed its list"
-  },
-  {
-   "timestamp": "20221218171025",
-   "url": "https://www.ogdensd.org/",
-   "station": "apptegy-ogden-ut",
-   "why": "a capture two days or less from one of its closure days (2022-12-19), read because fewer than three captures of its closure days showed its list"
-  },
-  {
-   "timestamp": "20221225005601",
-   "url": "https://www.ogdensd.org/",
-   "station": "apptegy-ogden-ut",
-   "why": "a capture two days or less from one of its closure days (2022-12-25), read because fewer than three captures of its closure days showed its list"
-  },
-  {
-   "timestamp": "20221225223348",
-   "url": "https://www.ogdensd.org/",
-   "station": "apptegy-ogden-ut",
-   "why": "a capture two days or less from one of its closure days (2022-12-26), read because fewer than three captures of its closure days showed its list"
-  },
-  {
-   "timestamp": "20230203213453",
-   "url": "https://www.ogdensd.org/",
-   "station": "apptegy-ogden-ut",
-   "why": "a capture two days or less from one of its closure days (2023-02-04), read because fewer than three captures of its closure days showed its list"
-  },
-  {
-   "timestamp": "20230316032112",
-   "url": "https://www.ogdensd.org/",
-   "station": "apptegy-ogden-ut",
-   "why": "a capture two days or less from one of its closure days (2023-03-16), read because fewer than three captures of its closure days showed its list"
-  },
-  {
-   "timestamp": "20230318053744",
-   "url": "https://www.ogdensd.org/",
-   "station": "apptegy-ogden-ut",
-   "why": "a capture two days or less from one of its closure days (2023-03-18), read because fewer than three captures of its closure days showed its list"
-  },
-  {
-   "timestamp": "20230419081451",
-   "url": "https://www.ogdensd.org/",
-   "station": "apptegy-ogden-ut",
-   "why": "a capture two days or less from one of its closure days (2023-04-19), read because fewer than three captures of its closure days showed its list"
-  },
-  {
-   "timestamp": "20231023160740",
-   "url": "https://www.ogdensd.org/",
-   "station": "apptegy-ogden-ut",
-   "why": "a capture two days or less from one of its closure days (2023-10-24), read because fewer than three captures of its closure days showed its list"
-  },
-  {
-   "timestamp": "20231206002606",
-   "url": "https://www.ogdensd.org/",
-   "station": "apptegy-ogden-ut",
-   "why": "a capture two days or less from one of its closure days (2023-12-06), read because fewer than three captures of its closure days showed its list"
-  },
-  {
-   "timestamp": "20240221192220",
-   "url": "https://www.ogdensd.org/",
-   "station": "apptegy-ogden-ut",
-   "why": "a capture two days or less from one of its closure days (2024-02-22), read because fewer than three captures of its closure days showed its list"
-  },
-  {
-   "timestamp": "20240228224723",
-   "url": "https://www.ogdensd.org",
-   "station": "apptegy-ogden-ut",
-   "why": "a capture two days or less from one of its closure days (2024-02-29), read because fewer than three captures of its closure days showed its list"
-  },
-  {
-   "timestamp": "20241031132032",
-   "url": "https://www.ogdensd.org/",
-   "station": "apptegy-ogden-ut",
-   "why": "a capture two days or less from one of its closure days (2024-10-31), read because fewer than three captures of its closure days showed its list"
-  },
-  {
-   "timestamp": "20241109185113",
-   "url": "https://www.ogdensd.org/",
-   "station": "apptegy-ogden-ut",
-   "why": "a capture two days or less from one of its closure days (2024-11-10), read because fewer than three captures of its closure days showed its list"
-  },
-  {
-   "timestamp": "20241121144716",
-   "url": "https://www.ogdensd.org/",
-   "station": "apptegy-ogden-ut",
-   "why": "a capture two days or less from one of its closure days (2024-11-21), read because fewer than three captures of its closure days showed its list"
-  },
-  {
-   "timestamp": "20241127235002",
-   "url": "https://www.ogdensd.org/",
-   "station": "apptegy-ogden-ut",
-   "why": "a capture two days or less from one of its closure days (2024-11-28), read because fewer than three captures of its closure days showed its list"
-  },
-  {
-   "timestamp": "20220121191002",
-   "url": "https://www.okaloosaschools.com/",
-   "station": "apptegy-okaloosa-fl",
-   "why": "a capture two days or less from one of its closure days (2022-01-22), read because fewer than three captures of its closure days showed its list"
-  },
-  {
-   "timestamp": "20220122070208",
-   "url": "https://www.okaloosaschools.com/",
-   "station": "apptegy-okaloosa-fl",
-   "why": "a capture two days or less from one of its closure days (2022-01-22), read because fewer than three captures of its closure days showed its list"
-  },
-  {
-   "timestamp": "20220122190137",
-   "url": "https://www.okaloosaschools.com/",
-   "station": "apptegy-okaloosa-fl",
-   "why": "a capture two days or less from one of its closure days (2022-01-23), read because fewer than three captures of its closure days showed its list"
-  },
-  {
-   "timestamp": "20220123070118",
-   "url": "https://www.okaloosaschools.com/",
-   "station": "apptegy-okaloosa-fl",
-   "why": "a capture two days or less from one of its closure days (2022-01-23), read because fewer than three captures of its closure days showed its list"
-  },
-  {
-   "timestamp": "20240928030646",
-   "url": "https://www.okaloosaschools.com/",
-   "station": "apptegy-okaloosa-fl",
-   "why": "a capture two days or less from one of its closure days (2024-09-28), read because fewer than three captures of its closure days showed its list"
-  },
-  {
-   "timestamp": "20220208164042",
-   "url": "https://www.park6.org/",
-   "station": "apptegy-park-6-wy",
-   "why": "a capture two days or less from one of its closure days (2022-02-09), read because fewer than three captures of its closure days showed its list"
-  },
-  {
-   "timestamp": "20220307112022",
-   "url": "https://www.park6.org/",
-   "station": "apptegy-park-6-wy",
-   "why": "a capture two days or less from one of its closure days (2022-03-07), read because fewer than three captures of its closure days showed its list"
-  },
-  {
-   "timestamp": "20220407025430",
-   "url": "https://www.park6.org/",
-   "station": "apptegy-park-6-wy",
-   "why": "a capture two days or less from one of its closure days (2022-04-07), read because fewer than three captures of its closure days showed its list"
-  },
-  {
-   "timestamp": "20230206163729",
-   "url": "https://www.park6.org/",
-   "station": "apptegy-park-6-wy",
-   "why": "a capture two days or less from one of its closure days (2023-02-07), read because fewer than three captures of its closure days showed its list"
-  },
-  {
-   "timestamp": "20240303032031",
-   "url": "https://www.park6.org/",
-   "station": "apptegy-park-6-wy",
-   "why": "a capture two days or less from one of its closure days (2024-03-03), read because fewer than three captures of its closure days showed its list"
-  },
-  {
-   "timestamp": "20240425145410",
-   "url": "https://www.park6.org/",
-   "station": "apptegy-park-6-wy",
-   "why": "a capture two days or less from one of its closure days (2024-04-25), read because fewer than three captures of its closure days showed its list"
-  },
-  {
-   "timestamp": "20241218064554",
-   "url": "https://www.park6.org/",
-   "station": "apptegy-park-6-wy",
-   "why": "a capture two days or less from one of its closure days (2024-12-18), read because fewer than three captures of its closure days showed its list"
-  },
-  {
-   "timestamp": "20250320152313",
-   "url": "https://www.park6.org/",
-   "station": "apptegy-park-6-wy",
-   "why": "a capture two days or less from one of its closure days (2025-03-20), read because fewer than three captures of its closure days showed its list"
-  },
-  {
-   "timestamp": "20250330120926",
-   "url": "https://www.park6.org/",
-   "station": "apptegy-park-6-wy",
-   "why": "a capture two days or less from one of its closure days (2025-03-30), read because fewer than three captures of its closure days showed its list"
-  },
-  {
-   "timestamp": "20250429181851",
-   "url": "https://www.park6.org/",
-   "station": "apptegy-park-6-wy",
-   "why": "a capture two days or less from one of its closure days (2025-04-30), read because fewer than three captures of its closure days showed its list"
-  },
-  {
-   "timestamp": "20251014201538",
-   "url": "https://www.park6.org/",
-   "station": "apptegy-park-6-wy",
-   "why": "a capture two days or less from one of its closure days (2025-10-15), read because fewer than three captures of its closure days showed its list"
-  },
-  {
-   "timestamp": "20251208122303",
-   "url": "https://www.park6.org/",
-   "station": "apptegy-park-6-wy",
-   "why": "a capture two days or less from one of its closure days (2025-12-08), read because fewer than three captures of its closure days showed its list"
-  },
-  {
-   "timestamp": "20260311042428",
-   "url": "https://www.park6.org/",
-   "station": "apptegy-park-6-wy",
-   "why": "a capture two days or less from one of its closure days (2026-03-11), read because fewer than three captures of its closure days showed its list"
-  },
-  {
-   "timestamp": "20260418014210",
-   "url": "https://www.park6.org/",
-   "station": "apptegy-park-6-wy",
-   "why": "a capture two days or less from one of its closure days (2026-04-18), read because fewer than three captures of its closure days showed its list"
-  },
-  {
-   "timestamp": "20250119191544",
-   "url": "https://www.putnamschools.org/",
-   "station": "apptegy-putnam-fl",
+   "timestamp": "20250119230243",
+   "url": "https://www.fhisd.net/",
+   "station": "finalsite-ft-hancock-tx",
    "why": "a capture two days or less from one of its closure days (2025-01-20), read because fewer than three captures of its closure days showed its list"
   },
   {
-   "timestamp": "20250120174655",
-   "url": "https://www.putnamschools.org/",
-   "station": "apptegy-putnam-fl",
-   "why": "a capture two days or less from one of its closure days (2025-01-21), read because fewer than three captures of its closure days showed its list"
+   "timestamp": "20250120105851",
+   "url": "https://www.fhisd.net/",
+   "station": "finalsite-ft-hancock-tx",
+   "why": "a capture two days or less from one of its closure days (2025-01-20), read because fewer than three captures of its closure days showed its list"
   },
   {
-   "timestamp": "20220120012044",
-   "url": "https://www.rhisd.net/",
-   "station": "apptegy-rio-hondo-tx",
-   "why": "a capture two days or less from one of its closure days (2022-01-20), read because fewer than three captures of its closure days showed its list"
-  },
-  {
-   "timestamp": "20171208111123",
-   "url": "https://www.sisd.net/",
-   "station": "apptegy-socorro-tx",
-   "why": "a capture two days or less from one of its closure days (2017-12-08), read because fewer than three captures of its closure days showed its list"
-  },
-  {
-   "timestamp": "20201028081131",
-   "url": "https://www.sisd.net/",
-   "station": "apptegy-socorro-tx",
-   "why": "a capture two days or less from one of its closure days (2020-10-28), read because fewer than three captures of its closure days showed its list"
-  },
-  {
-   "timestamp": "20220201101814",
-   "url": "https://www.sisd.net/",
-   "station": "apptegy-socorro-tx",
-   "why": "a capture two days or less from one of its closure days (2022-02-01), read because fewer than three captures of its closure days showed its list"
-  },
-  {
-   "timestamp": "20220202131404",
-   "url": "https://www.sisd.net/",
-   "station": "apptegy-socorro-tx",
-   "why": "a capture two days or less from one of its closure days (2022-02-02), read because fewer than three captures of its closure days showed its list"
-  },
-  {
-   "timestamp": "20221123235512",
-   "url": "https://www.sisd.net/",
-   "station": "apptegy-socorro-tx",
-   "why": "a capture two days or less from one of its closure days (2022-11-24), read because fewer than three captures of its closure days showed its list"
-  },
-  {
-   "timestamp": "20230130150125",
-   "url": "https://www.sisd.net/",
-   "station": "apptegy-socorro-tx",
-   "why": "a capture two days or less from one of its closure days (2023-01-30), read because fewer than three captures of its closure days showed its list"
-  },
-  {
-   "timestamp": "20250107015213",
-   "url": "https://www.sisd.net/",
-   "station": "apptegy-socorro-tx",
-   "why": "a capture two days or less from one of its closure days (2025-01-07), read because fewer than three captures of its closure days showed its list"
-  },
-  {
-   "timestamp": "20220528235141",
-   "url": "https://www.leadoreschool.org:443/",
-   "station": "apptegy-south-lemhi-id",
-   "why": "a capture two days or less from one of its closure days (2022-05-29), read because fewer than three captures of its closure days showed its list"
-  },
-  {
-   "timestamp": "20230405150647",
-   "url": "https://www.leadoreschool.org/",
-   "station": "apptegy-south-lemhi-id",
-   "why": "a capture two days or less from one of its closure days (2023-04-05), read because fewer than three captures of its closure days showed its list"
-  },
-  {
-   "timestamp": "20240302193956",
-   "url": "https://www.leadoreschool.org/",
-   "station": "apptegy-south-lemhi-id",
-   "why": "a capture two days or less from one of its closure days (2024-03-03), read because fewer than three captures of its closure days showed its list"
-  },
-  {
-   "timestamp": "20241225082558",
-   "url": "https://www.leadoreschool.org/",
-   "station": "apptegy-south-lemhi-id",
-   "why": "a capture two days or less from one of its closure days (2024-12-25), read because fewer than three captures of its closure days showed its list"
-  },
-  {
-   "timestamp": "20250209012143",
-   "url": "https://www.leadoreschool.org/",
-   "station": "apptegy-south-lemhi-id",
-   "why": "a capture two days or less from one of its closure days (2025-02-09), read because fewer than three captures of its closure days showed its list"
-  },
-  {
-   "timestamp": "20250426072514",
-   "url": "https://www.leadoreschool.org/",
-   "station": "apptegy-south-lemhi-id",
-   "why": "a capture two days or less from one of its closure days (2025-04-26), read because fewer than three captures of its closure days showed its list"
-  },
-  {
-   "timestamp": "20250514075330",
-   "url": "https://www.leadoreschool.org/",
-   "station": "apptegy-south-lemhi-id",
-   "why": "a capture two days or less from one of its closure days (2025-05-14), read because fewer than three captures of its closure days showed its list"
-  },
-  {
-   "timestamp": "20210307182736",
-   "url": "https://www.stanfordmtschool.com/",
-   "station": "apptegy-stanford-mt",
-   "why": "a capture two days or less from one of its closure days (2021-03-08), read because fewer than three captures of its closure days showed its list"
-  },
-  {
-   "timestamp": "20210418061207",
-   "url": "https://www.stanfordmtschool.com/",
-   "station": "apptegy-stanford-mt",
-   "why": "a capture two days or less from one of its closure days (2021-04-18), read because fewer than three captures of its closure days showed its list"
-  },
-  {
-   "timestamp": "20210518021342",
-   "url": "https://www.stanfordmtschool.com/",
-   "station": "apptegy-stanford-mt",
-   "why": "a capture two days or less from one of its closure days (2021-05-18), read because fewer than three captures of its closure days showed its list"
-  },
-  {
-   "timestamp": "20220124203341",
-   "url": "https://www.stanfordmtschool.com/",
-   "station": "apptegy-stanford-mt",
-   "why": "a capture two days or less from one of its closure days (2022-01-25), read because fewer than three captures of its closure days showed its list"
-  },
-  {
-   "timestamp": "20230204094315",
-   "url": "https://www.stanfordmtschool.com/",
-   "station": "apptegy-stanford-mt",
-   "why": "a capture two days or less from one of its closure days (2023-02-04), read because fewer than three captures of its closure days showed its list"
-  },
-  {
-   "timestamp": "20240416015809",
-   "url": "https://www.stanfordmtschool.com/",
-   "station": "apptegy-stanford-mt",
-   "why": "a capture two days or less from one of its closure days (2024-04-16), read because fewer than three captures of its closure days showed its list"
-  },
-  {
-   "timestamp": "20241207000640",
-   "url": "https://www.stanfordmtschool.com/",
-   "station": "apptegy-stanford-mt",
-   "why": "a capture two days or less from one of its closure days (2024-12-07), read because fewer than three captures of its closure days showed its list"
-  },
-  {
-   "timestamp": "20241214023833",
-   "url": "https://www.stanfordmtschool.com/",
-   "station": "apptegy-stanford-mt",
-   "why": "a capture two days or less from one of its closure days (2024-12-14), read because fewer than three captures of its closure days showed its list"
-  },
-  {
-   "timestamp": "20250114204003",
-   "url": "https://www.stanfordmtschool.com/",
-   "station": "apptegy-stanford-mt",
-   "why": "a capture two days or less from one of its closure days (2025-01-15), read because fewer than three captures of its closure days showed its list"
-  },
-  {
-   "timestamp": "20250207182623",
-   "url": "https://www.stanfordmtschool.com/",
-   "station": "apptegy-stanford-mt",
-   "why": "a capture two days or less from one of its closure days (2025-02-08), read because fewer than three captures of its closure days showed its list"
-  },
-  {
-   "timestamp": "20250223142235",
-   "url": "https://www.stanfordmtschool.com/",
-   "station": "apptegy-stanford-mt",
-   "why": "a capture two days or less from one of its closure days (2025-02-23), read because fewer than three captures of its closure days showed its list"
-  },
-  {
-   "timestamp": "20260414221500",
-   "url": "https://www.stanfordmtschool.com/",
-   "station": "apptegy-stanford-mt",
-   "why": "a capture two days or less from one of its closure days (2026-04-15), read because fewer than three captures of its closure days showed its list"
-  },
-  {
-   "timestamp": "20190102214901",
-   "url": "https://www.swcsd2.org/",
-   "station": "apptegy-sweetwater-2-wy",
-   "why": "a capture two days or less from one of its closure days (2019-01-03), read because fewer than three captures of its closure days showed its list"
-  },
-  {
-   "timestamp": "20190205140927",
-   "url": "https://www.swcsd2.org/",
-   "station": "apptegy-sweetwater-2-wy",
-   "why": "a capture two days or less from one of its closure days (2019-02-05), read because fewer than three captures of its closure days showed its list"
-  },
-  {
-   "timestamp": "20191118140941",
-   "url": "https://www.swcsd2.org/",
-   "station": "apptegy-sweetwater-2-wy",
-   "why": "a capture two days or less from one of its closure days (2019-11-18), read because fewer than three captures of its closure days showed its list"
-  },
-  {
-   "timestamp": "20200103021540",
-   "url": "https://www.swcsd2.org/",
-   "station": "apptegy-sweetwater-2-wy",
-   "why": "a capture two days or less from one of its closure days (2020-01-03), read because fewer than three captures of its closure days showed its list"
-  },
-  {
-   "timestamp": "20210416173029",
-   "url": "https://www.swcsd2.org/",
-   "station": "apptegy-sweetwater-2-wy",
-   "why": "a capture two days or less from one of its closure days (2021-04-17), read because fewer than three captures of its closure days showed its list"
-  },
-  {
-   "timestamp": "20211016181838",
-   "url": "https://www.swcsd2.org/",
-   "station": "apptegy-sweetwater-2-wy",
-   "why": "a capture two days or less from one of its closure days (2021-10-17), read because fewer than three captures of its closure days showed its list"
-  },
-  {
-   "timestamp": "20220306213320",
-   "url": "https://www.swcsd2.org/",
-   "station": "apptegy-sweetwater-2-wy",
-   "why": "a capture two days or less from one of its closure days (2022-03-07), read because fewer than three captures of its closure days showed its list"
-  },
-  {
-   "timestamp": "20230104135020",
-   "url": "https://www.swcsd2.org/",
-   "station": "apptegy-sweetwater-2-wy",
-   "why": "a capture two days or less from one of its closure days (2023-01-04), read because fewer than three captures of its closure days showed its list"
-  },
-  {
-   "timestamp": "20230202155439",
-   "url": "https://www.swcsd2.org/",
-   "station": "apptegy-sweetwater-2-wy",
-   "why": "a capture two days or less from one of its closure days (2023-02-02), read because fewer than three captures of its closure days showed its list"
-  },
-  {
-   "timestamp": "20230324125647",
-   "url": "https://www.swcsd2.org/",
-   "station": "apptegy-sweetwater-2-wy",
-   "why": "a capture two days or less from one of its closure days (2023-03-24), read because fewer than three captures of its closure days showed its list"
-  },
-  {
-   "timestamp": "20240228130646",
-   "url": "https://www.swcsd2.org/",
-   "station": "apptegy-sweetwater-2-wy",
-   "why": "a capture two days or less from one of its closure days (2024-02-28), read because fewer than three captures of its closure days showed its list"
-  },
-  {
-   "timestamp": "20250211154743",
-   "url": "https://www.swcsd2.org/",
-   "station": "apptegy-sweetwater-2-wy",
-   "why": "a capture two days or less from one of its closure days (2025-02-11), read because fewer than three captures of its closure days showed its list"
-  },
-  {
-   "timestamp": "20250217173337",
-   "url": "https://www.swcsd2.org/",
-   "station": "apptegy-sweetwater-2-wy",
-   "why": "a capture two days or less from one of its closure days (2025-02-18), read because fewer than three captures of its closure days showed its list"
-  },
-  {
-   "timestamp": "20260307090817",
-   "url": "https://www.swcsd2.org/",
-   "station": "apptegy-sweetwater-2-wy",
-   "why": "a capture two days or less from one of its closure days (2026-03-07), read because fewer than three captures of its closure days showed its list"
-  },
-  {
-   "timestamp": "20260516083050",
-   "url": "https://www.swcsd2.org/",
-   "station": "apptegy-sweetwater-2-wy",
-   "why": "a capture two days or less from one of its closure days (2026-05-16), read because fewer than three captures of its closure days showed its list"
-  },
-  {
-   "timestamp": "20250121191431",
-   "url": "https://www.trisd.org/",
-   "station": "apptegy-three-rivers-tx",
+   "timestamp": "20250121225917",
+   "url": "https://www.fhisd.net/",
+   "station": "finalsite-ft-hancock-tx",
    "why": "a capture two days or less from one of its closure days (2025-01-22), read because fewer than three captures of its closure days showed its list"
   },
   {
-   "timestamp": "20250219090559",
-   "url": "https://www.trisd.org/",
-   "station": "apptegy-three-rivers-tx",
-   "why": "a capture two days or less from one of its closure days (2025-02-19), read because fewer than three captures of its closure days showed its list"
+   "timestamp": "20250122110746",
+   "url": "https://www.fhisd.net/",
+   "station": "finalsite-ft-hancock-tx",
+   "why": "a capture two days or less from one of its closure days (2025-01-22), read because fewer than three captures of its closure days showed its list"
   },
   {
-   "timestamp": "20230131063922",
-   "url": "https://www.tisd.us/",
-   "station": "apptegy-tornillo-tx",
-   "why": "a capture two days or less from one of its closure days (2023-01-31), read because fewer than three captures of its closure days showed its list"
-  },
-  {
-   "timestamp": "20230406011057",
-   "url": "https://www.uintah.net/",
-   "station": "apptegy-uintah-ut",
-   "why": "a capture two days or less from one of its closure days (2023-04-06), read because fewer than three captures of its closure days showed its list"
-  },
-  {
-   "timestamp": "20240425081812",
-   "url": "https://www.uintah.net/",
-   "station": "apptegy-uintah-ut",
-   "why": "a capture two days or less from one of its closure days (2024-04-25), read because fewer than three captures of its closure days showed its list"
-  },
-  {
-   "timestamp": "20250215005432",
-   "url": "https://www.uintah.net/",
-   "station": "apptegy-uintah-ut",
-   "why": "a capture two days or less from one of its closure days (2025-02-15), read because fewer than three captures of its closure days showed its list"
-  },
-  {
-   "timestamp": "20250301160532",
-   "url": "https://www.uintah.net/",
-   "station": "apptegy-uintah-ut",
-   "why": "a capture two days or less from one of its closure days (2025-03-02), read because fewer than three captures of its closure days showed its list"
-  },
-  {
-   "timestamp": "20260516144118",
-   "url": "https://www.uintah.net/",
-   "station": "apptegy-uintah-ut",
-   "why": "a capture two days or less from one of its closure days (2026-05-16), read because fewer than three captures of its closure days showed its list"
-  },
-  {
-   "timestamp": "20260519131804",
-   "url": "https://www.uintah.net/",
-   "station": "apptegy-uintah-ut",
-   "why": "a capture two days or less from one of its closure days (2026-05-19), read because fewer than three captures of its closure days showed its list"
-  },
-  {
-   "timestamp": "20221108230635",
-   "url": "https://www.wjsd.org/",
-   "station": "apptegy-west-jefferson-id",
-   "why": "a capture two days or less from one of its closure days (2022-11-09), read because fewer than three captures of its closure days showed its list"
-  },
-  {
-   "timestamp": "20250122230207",
-   "url": "https://www.ecisd.us/",
-   "station": "edlio-edinburg-tx",
+   "timestamp": "20250122231944",
+   "url": "https://www.fhisd.net/",
+   "station": "finalsite-ft-hancock-tx",
    "why": "a capture two days or less from one of its closure days (2025-01-23), read because fewer than three captures of its closure days showed its list"
   },
   {
-   "timestamp": "20260124204500",
-   "url": "https://www.ecisd.us/",
-   "station": "edlio-edinburg-tx",
-   "why": "a capture two days or less from one of its closure days (2026-01-25), read because fewer than three captures of its closure days showed its list"
+   "timestamp": "20250123113751",
+   "url": "https://www.fhisd.net/",
+   "station": "finalsite-ft-hancock-tx",
+   "why": "a capture two days or less from one of its closure days (2025-01-23), read because fewer than three captures of its closure days showed its list"
   },
   {
-   "timestamp": "20260125084301",
-   "url": "https://www.ecisd.us/",
-   "station": "edlio-edinburg-tx",
-   "why": "a capture two days or less from one of its closure days (2026-01-25), read because fewer than three captures of its closure days showed its list"
+   "timestamp": "20210203013405",
+   "url": "https://www.blueponyk12.com/",
+   "station": "finalsite-havre-mt",
+   "why": "a capture two days or less from one of its closure days (2021-02-03), read because fewer than three captures of its closure days showed its list"
   },
   {
-   "timestamp": "20260127084430",
-   "url": "https://www.ecisd.us/",
-   "station": "edlio-edinburg-tx",
-   "why": "a capture two days or less from one of its closure days (2026-01-27), read because fewer than three captures of its closure days showed its list"
+   "timestamp": "20220101191647",
+   "url": "https://www.blueponyk12.com/",
+   "station": "finalsite-havre-mt",
+   "why": "a capture two days or less from one of its closure days (2022-01-02), read because fewer than three captures of its closure days showed its list"
   },
   {
-   "timestamp": "20211019222818",
-   "url": "https://www.hotsprings1.org/",
-   "station": "edlio-hot-springs-1-wy",
-   "why": "a capture two days or less from one of its closure days (2021-10-20), read because fewer than three captures of its closure days showed its list"
+   "timestamp": "20220301183133",
+   "url": "https://www.blueponyk12.com/",
+   "station": "finalsite-havre-mt",
+   "why": "a capture two days or less from one of its closure days (2022-03-02), read because fewer than three captures of its closure days showed its list"
   },
   {
-   "timestamp": "20220311114133",
-   "url": "https://www.hotsprings1.org/",
-   "station": "edlio-hot-springs-1-wy",
-   "why": "a capture two days or less from one of its closure days (2022-03-11), read because fewer than three captures of its closure days showed its list"
+   "timestamp": "20221203024734",
+   "url": "https://www.blueponyk12.com/",
+   "station": "finalsite-havre-mt",
+   "why": "a capture two days or less from one of its closure days (2022-12-03), read because fewer than three captures of its closure days showed its list"
   },
   {
-   "timestamp": "20221204025607",
-   "url": "https://www.hotsprings1.org/",
-   "station": "edlio-hot-springs-1-wy",
+   "timestamp": "20221204145833",
+   "url": "https://www.blueponyk12.com/",
+   "station": "finalsite-havre-mt",
    "why": "a capture two days or less from one of its closure days (2022-12-04), read because fewer than three captures of its closure days showed its list"
   },
   {
-   "timestamp": "20231001095721",
-   "url": "https://www.hotsprings1.org/",
-   "station": "edlio-hot-springs-1-wy",
-   "why": "a capture two days or less from one of its closure days (2023-10-01), read because fewer than three captures of its closure days showed its list"
+   "timestamp": "20220129014158",
+   "url": "https://www.hellgate.k12.mt.us/",
+   "station": "finalsite-hellgate-mt",
+   "why": "a capture two days or less from one of its closure days (2022-01-29), read because fewer than three captures of its closure days showed its list"
   },
   {
-   "timestamp": "20240303033826",
-   "url": "https://www.hotsprings1.org/",
-   "station": "edlio-hot-springs-1-wy",
-   "why": "a capture two days or less from one of its closure days (2024-03-03), read because fewer than three captures of its closure days showed its list"
+   "timestamp": "20220310074650",
+   "url": "https://www.hellgate.k12.mt.us/",
+   "station": "finalsite-hellgate-mt",
+   "why": "a capture two days or less from one of its closure days (2022-03-10), read because fewer than three captures of its closure days showed its list"
   },
   {
-   "timestamp": "20240303150752",
-   "url": "https://www.hotsprings1.org/",
-   "station": "edlio-hot-springs-1-wy",
-   "why": "a capture two days or less from one of its closure days (2024-03-03), read because fewer than three captures of its closure days showed its list"
+   "timestamp": "20221127123147",
+   "url": "https://www.hellgate.k12.mt.us/",
+   "station": "finalsite-hellgate-mt",
+   "why": "a capture two days or less from one of its closure days (2022-11-27), read because fewer than three captures of its closure days showed its list"
   },
   {
-   "timestamp": "20250316103402",
-   "url": "https://www.hotsprings1.org/",
-   "station": "edlio-hot-springs-1-wy",
-   "why": "a capture two days or less from one of its closure days (2025-03-16), read because fewer than three captures of its closure days showed its list"
+   "timestamp": "20230130082640",
+   "url": "https://www.hellgate.k12.mt.us/",
+   "station": "finalsite-hellgate-mt",
+   "why": "a capture two days or less from one of its closure days (2023-01-30), read because fewer than three captures of its closure days showed its list"
   },
   {
-   "timestamp": "20250414213640",
-   "url": "https://www.hotsprings1.org/",
-   "station": "edlio-hot-springs-1-wy",
-   "why": "a capture two days or less from one of its closure days (2025-04-15), read because fewer than three captures of its closure days showed its list"
+   "timestamp": "20240524231522",
+   "url": "https://www.hellgate.k12.mt.us/",
+   "station": "finalsite-hellgate-mt",
+   "why": "a capture two days or less from one of its closure days (2024-05-25), read because fewer than three captures of its closure days showed its list"
   },
   {
-   "timestamp": "20250516145859",
-   "url": "https://www.hotsprings1.org/",
-   "station": "edlio-hot-springs-1-wy",
-   "why": "a capture two days or less from one of its closure days (2025-05-16), read because fewer than three captures of its closure days showed its list"
+   "timestamp": "20241102164431",
+   "url": "https://www.hellgate.k12.mt.us/",
+   "station": "finalsite-hellgate-mt",
+   "why": "a capture two days or less from one of its closure days (2024-11-03), read because fewer than three captures of its closure days showed its list"
   },
   {
-   "timestamp": "20251014112425",
-   "url": "https://www.hotsprings1.org/",
-   "station": "edlio-hot-springs-1-wy",
-   "why": "a capture two days or less from one of its closure days (2025-10-14), read because fewer than three captures of its closure days showed its list"
-  },
-  {
-   "timestamp": "20251208121412",
-   "url": "https://www.hotsprings1.org/",
-   "station": "edlio-hot-springs-1-wy",
-   "why": "a capture two days or less from one of its closure days (2025-12-08), read because fewer than three captures of its closure days showed its list"
-  },
-  {
-   "timestamp": "20260123224757",
-   "url": "https://www.kingsvilleisd.com/",
-   "station": "edlio-kingsville-tx",
-   "why": "a capture two days or less from one of its closure days (2026-01-24), read because fewer than three captures of its closure days showed its list"
-  },
-  {
-   "timestamp": "20260124063118",
-   "url": "https://www.kingsvilleisd.com/",
-   "station": "edlio-kingsville-tx",
-   "why": "a capture two days or less from one of its closure days (2026-01-24), read because fewer than three captures of its closure days showed its list"
-  },
-  {
-   "timestamp": "20260125082918",
-   "url": "https://www.kingsvilleisd.com/",
-   "station": "edlio-kingsville-tx",
-   "why": "a capture two days or less from one of its closure days (2026-01-25), read because fewer than three captures of its closure days showed its list"
-  },
-  {
-   "timestamp": "20260126224753",
-   "url": "https://www.kingsvilleisd.com/",
-   "station": "edlio-kingsville-tx",
-   "why": "a capture two days or less from one of its closure days (2026-01-27), read because fewer than three captures of its closure days showed its list"
-  },
-  {
-   "timestamp": "20260127092531",
-   "url": "https://www.kingsvilleisd.com/",
-   "station": "edlio-kingsville-tx",
-   "why": "a capture two days or less from one of its closure days (2026-01-27), read because fewer than three captures of its closure days showed its list"
-  },
-  {
-   "timestamp": "20260127104904",
-   "url": "https://www.kingsvilleisd.com/",
-   "station": "edlio-kingsville-tx",
-   "why": "a capture two days or less from one of its closure days (2026-01-27), read because fewer than three captures of its closure days showed its list"
-  },
-  {
-   "timestamp": "20260127224808",
-   "url": "https://www.kingsvilleisd.com/",
-   "station": "edlio-kingsville-tx",
-   "why": "a capture two days or less from one of its closure days (2026-01-28), read because fewer than three captures of its closure days showed its list"
-  },
-  {
-   "timestamp": "20260128104703",
-   "url": "https://www.kingsvilleisd.com/",
-   "station": "edlio-kingsville-tx",
-   "why": "a capture two days or less from one of its closure days (2026-01-28), read because fewer than three captures of its closure days showed its list"
-  },
-  {
-   "timestamp": "20220123062437",
-   "url": "https://www.lfcisd.net/",
-   "station": "edlio-los-fresnos-tx",
-   "why": "a capture two days or less from one of its closure days (2022-01-23), read because fewer than three captures of its closure days showed its list"
-  },
-  {
-   "timestamp": "20240908225523",
-   "url": "https://www.lfcisd.net/",
-   "station": "edlio-los-fresnos-tx",
-   "why": "a capture two days or less from one of its closure days (2024-09-09), read because fewer than three captures of its closure days showed its list"
-  },
-  {
-   "timestamp": "20240909054515",
-   "url": "https://www.lfcisd.net/",
-   "station": "edlio-los-fresnos-tx",
-   "why": "a capture two days or less from one of its closure days (2024-09-09), read because fewer than three captures of its closure days showed its list"
-  },
-  {
-   "timestamp": "20240911101504",
-   "url": "https://www.lfcisd.net/",
-   "station": "edlio-los-fresnos-tx",
-   "why": "a capture two days or less from one of its closure days (2024-09-11), read because fewer than three captures of its closure days showed its list"
-  },
-  {
-   "timestamp": "20260124183002",
-   "url": "https://www.rfisd.us/",
-   "station": "edlio-rockport-fulton-tx",
-   "why": "a capture two days or less from one of its closure days (2026-01-25), read because fewer than three captures of its closure days showed its list"
-  },
-  {
-   "timestamp": "20260124222255",
-   "url": "https://www.rfisd.us/",
-   "station": "edlio-rockport-fulton-tx",
-   "why": "a capture two days or less from one of its closure days (2026-01-25), read because fewer than three captures of its closure days showed its list"
-  },
-  {
-   "timestamp": "20260126210532",
-   "url": "https://www.rfisd.us/",
-   "station": "edlio-rockport-fulton-tx",
-   "why": "a capture two days or less from one of its closure days (2026-01-27), read because fewer than three captures of its closure days showed its list"
-  },
-  {
-   "timestamp": "20260126231503",
-   "url": "https://www.rfisd.us/",
-   "station": "edlio-rockport-fulton-tx",
-   "why": "a capture two days or less from one of its closure days (2026-01-27), read because fewer than three captures of its closure days showed its list"
-  },
-  {
-   "timestamp": "20260127095346",
-   "url": "https://www.rfisd.us/",
-   "station": "edlio-rockport-fulton-tx",
-   "why": "a capture two days or less from one of its closure days (2026-01-27), read because fewer than three captures of its closure days showed its list"
-  },
-  {
-   "timestamp": "20260127103955",
-   "url": "https://www.rfisd.us/",
-   "station": "edlio-rockport-fulton-tx",
-   "why": "a capture two days or less from one of its closure days (2026-01-27), read because fewer than three captures of its closure days showed its list"
-  },
-  {
-   "timestamp": "20260127173904",
-   "url": "https://www.rfisd.us/",
-   "station": "edlio-rockport-fulton-tx",
-   "why": "a capture two days or less from one of its closure days (2026-01-28), read because fewer than three captures of its closure days showed its list"
-  },
-  {
-   "timestamp": "20260128013008",
-   "url": "https://www.rfisd.us/",
-   "station": "edlio-rockport-fulton-tx",
-   "why": "a capture two days or less from one of its closure days (2026-01-28), read because fewer than three captures of its closure days showed its list"
-  },
-  {
-   "timestamp": "20260128132948",
-   "url": "https://www.rfisd.us/",
-   "station": "edlio-rockport-fulton-tx",
-   "why": "a capture two days or less from one of its closure days (2026-01-28), read because fewer than three captures of its closure days showed its list"
-  },
-  {
-   "timestamp": "20260128145607",
-   "url": "https://www.rfisd.us/",
-   "station": "edlio-rockport-fulton-tx",
-   "why": "a capture two days or less from one of its closure days (2026-01-28), read because fewer than three captures of its closure days showed its list"
-  },
-  {
-   "timestamp": "20210316104121",
-   "url": "https://www.sanjacinto.k12.ca.us/",
-   "station": "edlio-san-jacinto-ca",
-   "why": "a capture two days or less from one of its closure days (2021-03-16), read because fewer than three captures of its closure days showed its list"
-  },
-  {
-   "timestamp": "20220302190546",
-   "url": "https://www.sanjacinto.k12.ca.us/",
-   "station": "edlio-san-jacinto-ca",
-   "why": "a capture two days or less from one of its closure days (2022-03-03), read because fewer than three captures of its closure days showed its list"
-  },
-  {
-   "timestamp": "20221210204456",
-   "url": "https://www.sanjacinto.k12.ca.us/",
-   "station": "edlio-san-jacinto-ca",
-   "why": "a capture two days or less from one of its closure days (2022-12-11), read because fewer than three captures of its closure days showed its list"
-  },
-  {
-   "timestamp": "20230328054620",
-   "url": "https://www.sanjacinto.k12.ca.us/",
-   "station": "edlio-san-jacinto-ca",
-   "why": "a capture two days or less from one of its closure days (2023-03-28), read because fewer than three captures of its closure days showed its list"
-  },
-  {
-   "timestamp": "20240222211856",
-   "url": "https://www.sanjacinto.k12.ca.us/",
-   "station": "edlio-san-jacinto-ca",
-   "why": "a capture two days or less from one of its closure days (2024-02-23), read because fewer than three captures of its closure days showed its list"
-  },
-  {
-   "timestamp": "20241112193317",
-   "url": "https://www.sanjacinto.k12.ca.us/",
-   "station": "edlio-san-jacinto-ca",
-   "why": "a capture two days or less from one of its closure days (2024-11-13), read because fewer than three captures of its closure days showed its list"
-  },
-  {
-   "timestamp": "20250125034124",
-   "url": "https://www.sanjacinto.k12.ca.us",
-   "station": "edlio-san-jacinto-ca",
-   "why": "a capture two days or less from one of its closure days (2025-01-25), read because fewer than three captures of its closure days showed its list"
-  },
-  {
-   "timestamp": "20260221115554",
-   "url": "https://www.sanjacinto.k12.ca.us/",
-   "station": "edlio-san-jacinto-ca",
-   "why": "a capture two days or less from one of its closure days (2026-02-21), read because fewer than three captures of its closure days showed its list"
-  },
-  {
-   "timestamp": "20220204205654",
-   "url": "http://www.swisd.net/",
-   "station": "edlio-southwest-tx",
-   "why": "a capture two days or less from one of its closure days (2022-02-05), read because fewer than three captures of its closure days showed its list"
-  },
-  {
-   "timestamp": "20220225162607",
-   "url": "https://www.swisd.net/",
-   "station": "edlio-southwest-tx",
-   "why": "a capture two days or less from one of its closure days (2022-02-26), read because fewer than three captures of its closure days showed its list"
-  },
-  {
-   "timestamp": "20251207034558",
-   "url": "https://www.sublette9.org/",
-   "station": "edlio-sublette-9-wy",
-   "why": "a capture two days or less from one of its closure days (2025-12-07), read because fewer than three captures of its closure days showed its list"
-  },
-  {
-   "timestamp": "20251208105254",
-   "url": "https://www.sublette9.org/",
-   "station": "edlio-sublette-9-wy",
-   "why": "a capture two days or less from one of its closure days (2025-12-08), read because fewer than three captures of its closure days showed its list"
-  },
-  {
-   "timestamp": "20251208112821",
-   "url": "https://www.sublette9.org/",
-   "station": "edlio-sublette-9-wy",
-   "why": "a capture two days or less from one of its closure days (2025-12-08), read because fewer than three captures of its closure days showed its list"
-  },
-  {
-   "timestamp": "20180209195250",
-   "url": "https://www.wsh2.k12.wy.us/",
-   "station": "edlio-washakie-2-wy",
-   "why": "a capture two days or less from one of its closure days (2018-02-10), read because fewer than three captures of its closure days showed its list"
-  },
-  {
-   "timestamp": "20191119031619",
-   "url": "https://www.wsh2.k12.wy.us/",
-   "station": "edlio-washakie-2-wy",
-   "why": "a capture two days or less from one of its closure days (2019-11-19), read because fewer than three captures of its closure days showed its list"
-  },
-  {
-   "timestamp": "20201023140504",
-   "url": "https://www.wsh2.k12.wy.us/",
-   "station": "edlio-washakie-2-wy",
-   "why": "a capture two days or less from one of its closure days (2020-10-23), read because fewer than three captures of its closure days showed its list"
-  },
-  {
-   "timestamp": "20210413005405",
-   "url": "https://www.wsh2.k12.wy.us/",
-   "station": "edlio-washakie-2-wy",
-   "why": "a capture two days or less from one of its closure days (2021-04-13), read because fewer than three captures of its closure days showed its list"
-  },
-  {
-   "timestamp": "20220311121353",
-   "url": "https://www.wsh2.k12.wy.us/",
-   "station": "edlio-washakie-2-wy",
-   "why": "a capture two days or less from one of its closure days (2022-03-11), read because fewer than three captures of its closure days showed its list"
-  },
-  {
-   "timestamp": "20240225130435",
-   "url": "https://www.wsh2.k12.wy.us/",
-   "station": "edlio-washakie-2-wy",
-   "why": "a capture two days or less from one of its closure days (2024-02-25), read because fewer than three captures of its closure days showed its list"
-  },
-  {
-   "timestamp": "20250119102608",
-   "url": "https://www.wsh2.k12.wy.us/",
-   "station": "edlio-washakie-2-wy",
-   "why": "a capture two days or less from one of its closure days (2025-01-19), read because fewer than three captures of its closure days showed its list"
-  },
-  {
-   "timestamp": "20251208121840",
-   "url": "https://www.wsh2.k12.wy.us/",
-   "station": "edlio-washakie-2-wy",
-   "why": "a capture two days or less from one of its closure days (2025-12-08), read because fewer than three captures of its closure days showed its list"
-  },
-  {
-   "timestamp": "20250124115233",
-   "url": "https://www.bakerk12.org/",
-   "station": "finalsite-baker-fl",
-   "why": "a capture two days or less from one of its closure days (2025-01-24), read because fewer than three captures of its closure days showed its list"
-  },
-  {
-   "timestamp": "20250122063704",
-   "url": "https://www.bishopcisd.net/",
-   "station": "finalsite-bishop-tx",
-   "why": "a capture two days or less from one of its closure days (2025-01-22), read because fewer than three captures of its closure days showed its list"
-  },
-  {
-   "timestamp": "20240924100533",
-   "url": "https://www.bradfordschools.org/",
-   "station": "finalsite-bradford-fl",
-   "why": "a capture two days or less from one of its closure days (2024-09-24), read because fewer than three captures of its closure days showed its list"
-  },
-  {
-   "timestamp": "20240927194712",
-   "url": "https://www.bradfordschools.org/",
-   "station": "finalsite-bradford-fl",
+   "timestamp": "20240928021138",
+   "url": "https://www.hendry-schools.org/",
+   "station": "finalsite-hendry-fl",
    "why": "a capture two days or less from one of its closure days (2024-09-28), read because fewer than three captures of its closure days showed its list"
   },
   {
-   "timestamp": "20241009221907",
-   "url": "https://www.bradfordschools.org/",
-   "station": "finalsite-bradford-fl",
-   "why": "a capture two days or less from one of its closure days (2024-10-10), read because fewer than three captures of its closure days showed its list"
+   "timestamp": "20220101194622",
+   "url": "https://www.hobson.k12.mt.us/",
+   "station": "finalsite-hobson-mt",
+   "why": "a capture two days or less from one of its closure days (2022-01-02), read because fewer than three captures of its closure days showed its list"
   },
   {
-   "timestamp": "20250122224108",
-   "url": "https://www.bradfordschools.org/",
-   "station": "finalsite-bradford-fl",
-   "why": "a capture two days or less from one of its closure days (2025-01-23), read because fewer than three captures of its closure days showed its list"
+   "timestamp": "20220201182408",
+   "url": "https://www.hobson.k12.mt.us/",
+   "station": "finalsite-hobson-mt",
+   "why": "a capture two days or less from one of its closure days (2022-02-02), read because fewer than three captures of its closure days showed its list"
   },
   {
-   "timestamp": "20250123000544",
-   "url": "https://www.bradfordschools.org/",
-   "station": "finalsite-bradford-fl",
-   "why": "a capture two days or less from one of its closure days (2025-01-23), read because fewer than three captures of its closure days showed its list"
+   "timestamp": "20220301202212",
+   "url": "https://www.hobson.k12.mt.us/",
+   "station": "finalsite-hobson-mt",
+   "why": "a capture two days or less from one of its closure days (2022-03-02), read because fewer than three captures of its closure days showed its list"
   },
   {
-   "timestamp": "20250123040555",
-   "url": "https://www.bradfordschools.org/",
-   "station": "finalsite-bradford-fl",
-   "why": "a capture two days or less from one of its closure days (2025-01-23), read because fewer than three captures of its closure days showed its list"
+   "timestamp": "20220522033226",
+   "url": "https://www.hobson.k12.mt.us/",
+   "station": "finalsite-hobson-mt",
+   "why": "a capture two days or less from one of its closure days (2022-05-22), read because fewer than three captures of its closure days showed its list"
   },
   {
-   "timestamp": "20250123060543",
-   "url": "https://www.bradfordschools.org/",
-   "station": "finalsite-bradford-fl",
-   "why": "a capture two days or less from one of its closure days (2025-01-23), read because fewer than three captures of its closure days showed its list"
+   "timestamp": "20221202000218",
+   "url": "https://www.hobson.k12.mt.us/",
+   "station": "finalsite-hobson-mt",
+   "why": "a capture two days or less from one of its closure days (2022-12-02), read because fewer than three captures of its closure days showed its list"
   },
   {
-   "timestamp": "20250123094612",
-   "url": "https://www.bradfordschools.org/",
-   "station": "finalsite-bradford-fl",
-   "why": "a capture two days or less from one of its closure days (2025-01-23), read because fewer than three captures of its closure days showed its list"
+   "timestamp": "20240227090051",
+   "url": "https://www.hobson.k12.mt.us/",
+   "station": "finalsite-hobson-mt",
+   "why": "a capture two days or less from one of its closure days (2024-02-27), read because fewer than three captures of its closure days showed its list"
   },
   {
-   "timestamp": "20260123220347",
-   "url": "https://www.calallen.org/",
-   "station": "finalsite-calallen-tx",
+   "timestamp": "20240419080230",
+   "url": "https://www.hobson.k12.mt.us/",
+   "station": "finalsite-hobson-mt",
+   "why": "a capture two days or less from one of its closure days (2024-04-19), read because fewer than three captures of its closure days showed its list"
+  },
+  {
+   "timestamp": "20221202000822",
+   "url": "https://www.lewistown.k12.mt.us/",
+   "station": "finalsite-lewistown-mt",
+   "why": "a capture two days or less from one of its closure days (2022-12-02), read because fewer than three captures of its closure days showed its list"
+  },
+  {
+   "timestamp": "20230307141255",
+   "url": "https://www.lewistown.k12.mt.us/",
+   "station": "finalsite-lewistown-mt",
+   "why": "a capture two days or less from one of its closure days (2023-03-07), read because fewer than three captures of its closure days showed its list"
+  },
+  {
+   "timestamp": "20230328012217",
+   "url": "https://www.lewistown.k12.mt.us/",
+   "station": "finalsite-lewistown-mt",
+   "why": "a capture two days or less from one of its closure days (2023-03-28), read because fewer than three captures of its closure days showed its list"
+  },
+  {
+   "timestamp": "20230421030105",
+   "url": "https://www.lewistown.k12.mt.us/",
+   "station": "finalsite-lewistown-mt",
+   "why": "a capture two days or less from one of its closure days (2023-04-21), read because fewer than three captures of its closure days showed its list"
+  },
+  {
+   "timestamp": "20241102164329",
+   "url": "https://www.lewistown.k12.mt.us/",
+   "station": "finalsite-lewistown-mt",
+   "why": "a capture two days or less from one of its closure days (2024-11-03), read because fewer than three captures of its closure days showed its list"
+  },
+  {
+   "timestamp": "20241102171748",
+   "url": "https://www.lewistown.k12.mt.us/",
+   "station": "finalsite-lewistown-mt",
+   "why": "a capture two days or less from one of its closure days (2024-11-03), read because fewer than three captures of its closure days showed its list"
+  },
+  {
+   "timestamp": "20241104071151",
+   "url": "https://www.lewistown.k12.mt.us/",
+   "station": "finalsite-lewistown-mt",
+   "why": "a capture two days or less from one of its closure days (2024-11-04), read because fewer than three captures of its closure days showed its list"
+  },
+  {
+   "timestamp": "20241121133736",
+   "url": "https://www.lewistown.k12.mt.us/",
+   "station": "finalsite-lewistown-mt",
+   "why": "a capture two days or less from one of its closure days (2024-11-21), read because fewer than three captures of its closure days showed its list"
+  },
+  {
+   "timestamp": "20241121142603",
+   "url": "https://www.lewistown.k12.mt.us/",
+   "station": "finalsite-lewistown-mt",
+   "why": "a capture two days or less from one of its closure days (2024-11-21), read because fewer than three captures of its closure days showed its list"
+  },
+  {
+   "timestamp": "20260123225534",
+   "url": "https://www.londonisd.net/",
+   "station": "finalsite-london-tx",
    "why": "a capture two days or less from one of its closure days (2026-01-24), read because fewer than three captures of its closure days showed its list"
   },
   {
-   "timestamp": "20260124051204",
-   "url": "https://www.calallen.org/",
-   "station": "finalsite-calallen-tx",
+   "timestamp": "20260124105850",
+   "url": "https://www.londonisd.net/",
+   "station": "finalsite-london-tx",
    "why": "a capture two days or less from one of its closure days (2026-01-24), read because fewer than three captures of its closure days showed its list"
   },
   {
-   "timestamp": "20260124100234",
-   "url": "https://www.calallen.org/",
-   "station": "finalsite-calallen-tx",
-   "why": "a capture two days or less from one of its closure days (2026-01-24), read because fewer than three captures of its closure days showed its list"
-  },
-  {
-   "timestamp": "20260124182736",
-   "url": "https://www.calallen.org/",
-   "station": "finalsite-calallen-tx",
+   "timestamp": "20260124225500",
+   "url": "https://www.londonisd.net/",
+   "station": "finalsite-london-tx",
    "why": "a capture two days or less from one of its closure days (2026-01-25), read because fewer than three captures of its closure days showed its list"
   },
   {
-   "timestamp": "20260124220207",
-   "url": "https://www.calallen.org/",
-   "station": "finalsite-calallen-tx",
+   "timestamp": "20260125033343",
+   "url": "https://www.londonisd.net/",
+   "station": "finalsite-london-tx",
    "why": "a capture two days or less from one of its closure days (2026-01-25), read because fewer than three captures of its closure days showed its list"
   },
   {
-   "timestamp": "20260125100556",
-   "url": "https://www.calallen.org/",
-   "station": "finalsite-calallen-tx",
+   "timestamp": "20260125105512",
+   "url": "https://www.londonisd.net/",
+   "station": "finalsite-london-tx",
    "why": "a capture two days or less from one of its closure days (2026-01-25), read because fewer than three captures of its closure days showed its list"
   },
   {
-   "timestamp": "20260126220511",
-   "url": "https://www.calallen.org/",
-   "station": "finalsite-calallen-tx",
+   "timestamp": "20260126225559",
+   "url": "https://www.londonisd.net/",
+   "station": "finalsite-london-tx",
    "why": "a capture two days or less from one of its closure days (2026-01-27), read because fewer than three captures of its closure days showed its list"
   },
   {
-   "timestamp": "20260127100523",
-   "url": "https://www.calallen.org/",
-   "station": "finalsite-calallen-tx",
+   "timestamp": "20260127105509",
+   "url": "https://www.londonisd.net/",
+   "station": "finalsite-london-tx",
    "why": "a capture two days or less from one of its closure days (2026-01-27), read because fewer than three captures of its closure days showed its list"
   },
   {
-   "timestamp": "20260127220752",
-   "url": "https://www.calallen.org/",
-   "station": "finalsite-calallen-tx",
+   "timestamp": "20260127225609",
+   "url": "https://www.londonisd.net/",
+   "station": "finalsite-london-tx",
    "why": "a capture two days or less from one of its closure days (2026-01-28), read because fewer than three captures of its closure days showed its list"
   },
   {
-   "timestamp": "20260128100542",
-   "url": "https://www.calallen.org/",
-   "station": "finalsite-calallen-tx",
+   "timestamp": "20260128105548",
+   "url": "https://www.londonisd.net/",
+   "station": "finalsite-london-tx",
    "why": "a capture two days or less from one of its closure days (2026-01-28), read because fewer than three captures of its closure days showed its list"
   },
   {
-   "timestamp": "20220120225338",
-   "url": "https://www.ecisd.net/",
-   "station": "finalsite-east-central-tx",
-   "why": "a capture two days or less from one of its closure days (2022-01-21), read because fewer than three captures of its closure days showed its list"
+   "timestamp": "20171204195010",
+   "url": "http://www.sierrablancaisd.net:80/",
+   "station": "finalsite-sierra-blanca-tx",
+   "why": "a capture two days or less from one of its closure days (2017-12-05), read because fewer than three captures of its closure days showed its list"
   },
   {
-   "timestamp": "20230131155214",
-   "url": "https://www.fabensisd.net/",
-   "station": "finalsite-fabens-tx",
-   "why": "a capture two days or less from one of its closure days (2023-01-31), read because fewer than three captures of its closure days showed its list"
+   "timestamp": "20260123200155",
+   "url": "https://www.aliceisd.net/en-US",
+   "station": "schoolblocks-alice-tx",
+   "why": "a capture two days or less from one of its closure days (2026-01-24), read because fewer than three captures of its closure days showed its list"
   },
   {
-   "timestamp": "20250120075005",
-   "url": "https://www.fabensisd.net/",
-   "station": "finalsite-fabens-tx",
+   "timestamp": "20260124080539",
+   "url": "https://www.aliceisd.net/en-US",
+   "station": "schoolblocks-alice-tx",
+   "why": "a capture two days or less from one of its closure days (2026-01-24), read because fewer than three captures of its closure days showed its list"
+  },
+  {
+   "timestamp": "20260124200355",
+   "url": "https://www.aliceisd.net/en-US",
+   "station": "schoolblocks-alice-tx",
+   "why": "a capture two days or less from one of its closure days (2026-01-25), read because fewer than three captures of its closure days showed its list"
+  },
+  {
+   "timestamp": "20260125080249",
+   "url": "https://www.aliceisd.net/en-US",
+   "station": "schoolblocks-alice-tx",
+   "why": "a capture two days or less from one of its closure days (2026-01-25), read because fewer than three captures of its closure days showed its list"
+  },
+  {
+   "timestamp": "20260126200245",
+   "url": "https://www.aliceisd.net/en-US",
+   "station": "schoolblocks-alice-tx",
+   "why": "a capture two days or less from one of its closure days (2026-01-27), read because fewer than three captures of its closure days showed its list"
+  },
+  {
+   "timestamp": "20260127080404",
+   "url": "https://www.aliceisd.net/en-US",
+   "station": "schoolblocks-alice-tx",
+   "why": "a capture two days or less from one of its closure days (2026-01-27), read because fewer than three captures of its closure days showed its list"
+  },
+  {
+   "timestamp": "20260127200055",
+   "url": "https://www.aliceisd.net/en-US",
+   "station": "schoolblocks-alice-tx",
+   "why": "a capture two days or less from one of its closure days (2026-01-28), read because fewer than three captures of its closure days showed its list"
+  },
+  {
+   "timestamp": "20260128080158",
+   "url": "https://www.aliceisd.net/en-US",
+   "station": "schoolblocks-alice-tx",
+   "why": "a capture two days or less from one of its closure days (2026-01-28), read because fewer than three captures of its closure days showed its list"
+  },
+  {
+   "timestamp": "20240913175024",
+   "url": "https://www.bwsd.org/en-US",
+   "station": "schoolblocks-bay-waveland-ms",
+   "why": "a capture two days or less from one of its closure days (2024-09-14), read because fewer than three captures of its closure days showed its list"
+  },
+  {
+   "timestamp": "20250120030740",
+   "url": "https://www.bwsd.org/en-US",
+   "station": "schoolblocks-bay-waveland-ms",
    "why": "a capture two days or less from one of its closure days (2025-01-20), read because fewer than three captures of its closure days showed its list"
   },
   {
-   "timestamp": "20260124205802",
-   "url": "https://www.franklincountyschools.org/",
-   "station": "finalsite-franklin-fl",
+   "timestamp": "20251208071943",
+   "url": "https://bps.k12.mt.us/en-US",
+   "station": "schoolblocks-browning-mt",
+   "why": "a capture two days or less from one of its closure days (2025-12-08), read because fewer than three captures of its closure days showed its list"
+  },
+  {
+   "timestamp": "20260309181309",
+   "url": "https://bps.k12.mt.us/en-US",
+   "station": "schoolblocks-browning-mt",
+   "why": "a capture two days or less from one of its closure days (2026-03-10), read because fewer than three captures of its closure days showed its list"
+  },
+  {
+   "timestamp": "20260413144921",
+   "url": "https://www.bps.k12.mt.us/en-US",
+   "station": "schoolblocks-browning-mt",
+   "why": "a capture two days or less from one of its closure days (2026-04-13), read because fewer than three captures of its closure days showed its list"
+  },
+  {
+   "timestamp": "20260515164459",
+   "url": "https://www.bps.k12.mt.us/en-US",
+   "station": "schoolblocks-browning-mt",
+   "why": "a capture two days or less from one of its closure days (2026-05-16), read because fewer than three captures of its closure days showed its list"
+  },
+  {
+   "timestamp": "20260123183913",
+   "url": "https://www.stbobcats.net/en-US",
+   "station": "schoolblocks-skidmore-tynan-tx",
+   "why": "a capture two days or less from one of its closure days (2026-01-24), read because fewer than three captures of its closure days showed its list"
+  },
+  {
+   "timestamp": "20260124085024",
+   "url": "https://www.stbobcats.net/en-US",
+   "station": "schoolblocks-skidmore-tynan-tx",
+   "why": "a capture two days or less from one of its closure days (2026-01-24), read because fewer than three captures of its closure days showed its list"
+  },
+  {
+   "timestamp": "20260124113650",
+   "url": "https://www.stbobcats.net/en-US",
+   "station": "schoolblocks-skidmore-tynan-tx",
+   "why": "a capture two days or less from one of its closure days (2026-01-24), read because fewer than three captures of its closure days showed its list"
+  },
+  {
+   "timestamp": "20260124233630",
+   "url": "https://www.stbobcats.net/en-US",
+   "station": "schoolblocks-skidmore-tynan-tx",
    "why": "a capture two days or less from one of its closure days (2026-01-25), read because fewer than three captures of its closure days showed its list"
   },
   {
-   "timestamp": "20260125085745",
-   "url": "https://www.franklincountyschools.org/",
-   "station": "finalsite-franklin-fl",
+   "timestamp": "20260125113658",
+   "url": "https://www.stbobcats.net/en-US",
+   "station": "schoolblocks-skidmore-tynan-tx",
    "why": "a capture two days or less from one of its closure days (2026-01-25), read because fewer than three captures of its closure days showed its list"
   },
   {
-   "timestamp": "20260125210629",
-   "url": "https://www.franklincountyschools.org/",
-   "station": "finalsite-franklin-fl",
-   "why": "a capture two days or less from one of its closure days (2026-01-26), read because fewer than three captures of its closure days showed its list"
+   "timestamp": "20260126233619",
+   "url": "https://www.stbobcats.net/en-US",
+   "station": "schoolblocks-skidmore-tynan-tx",
+   "why": "a capture two days or less from one of its closure days (2026-01-27), read because fewer than three captures of its closure days showed its list"
   },
   {
-   "timestamp": "20260126090332",
-   "url": "https://www.franklincountyschools.org/",
-   "station": "finalsite-franklin-fl",
-   "why": "a capture two days or less from one of its closure days (2026-01-26), read because fewer than three captures of its closure days showed its list"
+   "timestamp": "20260127113612",
+   "url": "https://www.stbobcats.net/en-US",
+   "station": "schoolblocks-skidmore-tynan-tx",
+   "why": "a capture two days or less from one of its closure days (2026-01-27), read because fewer than three captures of its closure days showed its list"
   },
   {
-   "timestamp": "20260127205644",
-   "url": "https://www.franklincountyschools.org/",
-   "station": "finalsite-franklin-fl",
+   "timestamp": "20260127233614",
+   "url": "https://www.stbobcats.net/en-US",
+   "station": "schoolblocks-skidmore-tynan-tx",
    "why": "a capture two days or less from one of its closure days (2026-01-28), read because fewer than three captures of its closure days showed its list"
   },
   {
-   "timestamp": "20260128085808",
-   "url": "https://www.franklincountyschools.org/",
-   "station": "finalsite-franklin-fl",
+   "timestamp": "20260128113634",
+   "url": "https://www.stbobcats.net/en-US",
+   "station": "schoolblocks-skidmore-tynan-tx",
    "why": "a capture two days or less from one of its closure days (2026-01-28), read because fewer than three captures of its closure days showed its list"
   },
   {
-   "timestamp": "20260128205803",
-   "url": "https://www.franklincountyschools.org/",
-   "station": "finalsite-franklin-fl",
-   "why": "a capture two days or less from one of its closure days (2026-01-29), read because fewer than three captures of its closure days showed its list"
+   "timestamp": "20260331205932",
+   "url": "https://www.bsd44.org/",
+   "station": "smartsites-belgrade-mt",
+   "why": "a capture two days or less from one of its closure days (2026-04-01), read because fewer than three captures of its closure days showed its list"
   },
   {
-   "timestamp": "20260129085812",
-   "url": "https://www.franklincountyschools.org/",
-   "station": "finalsite-franklin-fl",
-   "why": "a capture two days or less from one of its closure days (2026-01-29), read because fewer than three captures of its closure days showed its list"
+   "timestamp": "20220121012410",
+   "url": "https://www.boerneisd.net/",
+   "station": "smartsites-boerne-tx",
+   "why": "a capture two days or less from one of its closure days (2022-01-21), read because fewer than three captures of its closure days showed its list"
   },
   {
-   "timestamp": "20201025042248",
-   "url": "http://www.fhisd.net/",
-   "station": "finalsite-ft-hancock-tx",
-   "why": "a capture two days or less from one of its closure days (2020-10-25), read because fewer than three captures of its closure days showed its list"
+   "timestamp": "20220121165129",
+   "url": "https://www.boerneisd.net:443/",
+   "station": "smartsites-boerne-tx",
+   "why": "a capture two days or less from one of its closure days (2022-01-22), read because fewer than three captures of its closure days showed its list"
   },
   {
-   "timestamp": "20201026094719",
-   "url": "http://fhisd.net/",
-   "station": "finalsite-ft-hancock-tx",
-   "why": "a capture two days or less from one of its closure days (2020-10-26), read because fewer than three captures of its closure days showed its list"
+   "timestamp": "20220121170634",
+   "url": "https://www.boerneisd.net/",
+   "station": "smartsites-boerne-tx",
+   "why": "a capture two days or less from one of its closure days (2022-01-22), read because fewer than three captures of its closure days showed its list"
   },
   {
-   "timestamp": "20220131173814",
-   "url": "https://fhisd.net/",
-   "station": "finalsite-ft-hancock-tx",
-   "why": "a capture two days or less from one of its closure days (2022-02-01), read because fewer than three captures of its closure days showed its list"
+   "timestamp": "20220201171243",
+   "url": "https://www.boerneisd.net/",
+   "station": "smartsites-boerne-tx",
+   "why": "a capture two days or less from one of its closure days (2022-02-02), read because fewer than three captures of its closure days showed its list"
   },
   {
-   "timestamp": "20221122223950",
-   "url": "https://www.fhisd.net/",
-   "station": "finalsite-ft-hancock-tx",
-   "why": "a capture two days or less from one of its closure days (2022-11-23), read because fewer than three captures of its closure days showed its list"
+   "timestamp": "20230127192121",
+   "url": "https://www.boerneisd.net/",
+   "station": "smartsites-boerne-tx",
+   "why": "a capture two days or less from one of its closure days (2023-01-28), read because fewer than three captures of its closure days showed its list"
   },
   {
-   "timestamp": "20221123103952",
-   "url": "https://www.fhisd.net/",
-   "station": "finalsite-ft-hancock-tx",
-   "why": "a capture two days or less from one of its closure days (2022-11-23), read because fewer than three captures of its closure days showed its list"
+   "timestamp": "20220119202920",
+   "url": "https://www.romaisd.com/",
+   "station": "smartsites-roma-tx",
+   "why": "a capture two days or less from one of its closure days (2022-01-20), read because fewer than three captures of its closure days showed its list"
   },
   {
-   "timestamp": "20221123224106",
-   "url": "https://www.fhisd.net/",
-   "station": "finalsite-ft-hancock-tx",
-   "why": "a capture two days or less from one of its closure days (2022-11-24), read because fewer than three captures of its closure days showed its list"
+   "timestamp": "20260124012401",
+   "url": "https://www.romaisd.com/",
+   "station": "smartsites-roma-tx",
+   "why": "a capture two days or less from one of its closure days (2026-01-24), read because fewer than three captures of its closure days showed its list"
   },
   {
-   "timestamp": "20221124104125",
-   "url": "https://www.fhisd.net/",
-   "station": "finalsite-ft-hancock-tx",
-   "why": "a capture two days or less from one of its closure days (2022-11-24), read because fewer than three captures of its closure days showed its list"
+   "timestamp": "20260124132146",
+   "url": "https://www.romaisd.com/",
+   "station": "smartsites-roma-tx",
+   "why": "a capture two days or less from one of its closure days (2026-01-24), read because fewer than three captures of its closure days showed its list"
   },
   {
-   "timestamp": "20221125231900",
-   "url": "https://www.fhisd.net/",
-   "station": "finalsite-ft-hancock-tx",
-   "why": "a capture two days or less from one of its closure days (2022-11-26), read because fewer than three captures of its closure days showed its list"
+   "timestamp": "20260125012608",
+   "url": "https://www.romaisd.com/",
+   "station": "smartsites-roma-tx",
+   "why": "a capture two days or less from one of its closure days (2026-01-25), read because fewer than three captures of its closure days showed its list"
   },
   {
-   "timestamp": "20221126232258",
-   "url": "https://www.fhisd.net/",
-   "station": "finalsite-ft-hancock-tx",
-   "why": "a capture two days or less from one of its closure days (2022-11-27), read because fewer than three captures of its closure days showed its list"
+   "timestamp": "20260125132911",
+   "url": "https://www.romaisd.com/",
+   "station": "smartsites-roma-tx",
+   "why": "a capture two days or less from one of its closure days (2026-01-25), read because fewer than three captures of its closure days showed its list"
   },
   {
-   "timestamp": "20221127112824",
-   "url": "https://www.fhisd.net/",
-   "station": "finalsite-ft-hancock-tx",
-   "why": "a capture two days or less from one of its closure days (2022-11-27), read because fewer than three captures of its closure days showed its list"
+   "timestamp": "20260127012256",
+   "url": "https://www.romaisd.com/",
+   "station": "smartsites-roma-tx",
+   "why": "a capture two days or less from one of its closure days (2026-01-27), read because fewer than three captures of its closure days showed its list"
   },
   {
-   "timestamp": "20221127142722",
-   "url": "https://www.fhisd.net/",
-   "station": "finalsite-ft-hancock-tx",
-   "why": "a capture two days or less from one of its closure days (2022-11-27), read because fewer than three captures of its closure days showed its list"
+   "timestamp": "20260127132036",
+   "url": "https://www.romaisd.com/",
+   "station": "smartsites-roma-tx",
+   "why": "a capture two days or less from one of its closure days (2026-01-27), read because fewer than three captures of its closure days showed its list"
   },
   {
-   "timestamp": "20221127155814",
-   "url": "https://www.fhisd.net:443/",
-   "station": "finalsite-ft-hancock-tx",
-   "why": "a capture two days or less from one of its closure days (2022-11-27), read because fewer than three captures of its closure days showed its list"
+   "timestamp": "20260128012123",
+   "url": "https://www.romaisd.com/",
+   "station": "smartsites-roma-tx",
+   "why": "a capture two days or less from one of its closure days (2026-01-28), read because fewer than three captures of its closure days showed its list"
   },
   {
-   "timestamp": "20230130032351",
-   "url": "https://www.fhisd.net/",
-   "station": "finalsite-ft-hancock-tx",
-   "why": "a capture two days or less from one of its closure days (2023-01-30), read because fewer than three captures of its closure days showed its list"
+   "timestamp": "20260128132322",
+   "url": "https://www.romaisd.com/",
+   "station": "smartsites-roma-tx",
+   "why": "a capture two days or less from one of its closure days (2026-01-28), read because fewer than three captures of its closure days showed its list"
+  },
+  {
+   "timestamp": "20260202185348",
+   "url": "https://www.scps.k12.fl.us/",
+   "station": "smartsites-seminole-fl",
+   "why": "a capture two days or less from one of its closure days (2026-02-03), read because fewer than three captures of its closure days showed its list"
+  },
+  {
+   "timestamp": "20260202191357",
+   "url": "https://www.scps.k12.fl.us/",
+   "station": "smartsites-seminole-fl",
+   "why": "a capture two days or less from one of its closure days (2026-02-03), read because fewer than three captures of its closure days showed its list"
+  },
+  {
+   "timestamp": "20260203065424",
+   "url": "https://www.scps.k12.fl.us/",
+   "station": "smartsites-seminole-fl",
+   "why": "a capture two days or less from one of its closure days (2026-02-03), read because fewer than three captures of its closure days showed its list"
+  },
+  {
+   "timestamp": "20260203185410",
+   "url": "https://www.scps.k12.fl.us/",
+   "station": "smartsites-seminole-fl",
+   "why": "a capture two days or less from one of its closure days (2026-02-04), read because fewer than three captures of its closure days showed its list"
+  },
+  {
+   "timestamp": "20260204065400",
+   "url": "https://www.scps.k12.fl.us/",
+   "station": "smartsites-seminole-fl",
+   "why": "a capture two days or less from one of its closure days (2026-02-04), read because fewer than three captures of its closure days showed its list"
+  },
+  {
+   "timestamp": "20191217081759",
+   "url": "https://www.nbclosangeles.com/weather/school-closings/",
+   "station": "nbc-owned-knbc",
+   "why": "an unread capture of its list, read so that every capture of it is read"
+  },
+  {
+   "timestamp": "20191218080321",
+   "url": "https://www.nbclosangeles.com/weather/school-closings/",
+   "station": "nbc-owned-knbc",
+   "why": "an unread capture of its list, read so that every capture of it is read"
+  },
+  {
+   "timestamp": "20191220093705",
+   "url": "https://www.nbclosangeles.com/weather/school-closings/",
+   "station": "nbc-owned-knbc",
+   "why": "an unread capture of its list, read so that every capture of it is read"
+  },
+  {
+   "timestamp": "20191220215658",
+   "url": "https://www.nbclosangeles.com/weather/school-closings/",
+   "station": "nbc-owned-knbc",
+   "why": "an unread capture of its list, read so that every capture of it is read"
+  },
+  {
+   "timestamp": "20200102202635",
+   "url": "https://www.nbclosangeles.com/weather/school-closings/",
+   "station": "nbc-owned-knbc",
+   "why": "an unread capture of its list, read so that every capture of it is read"
+  },
+  {
+   "timestamp": "20200107050225",
+   "url": "https://www.nbclosangeles.com/weather/school-closings/",
+   "station": "nbc-owned-knbc",
+   "why": "an unread capture of its list, read so that every capture of it is read"
+  },
+  {
+   "timestamp": "20200110043402",
+   "url": "https://www.nbclosangeles.com/weather/school-closings/",
+   "station": "nbc-owned-knbc",
+   "why": "an unread capture of its list, read so that every capture of it is read"
+  },
+  {
+   "timestamp": "20200114045748",
+   "url": "https://www.nbclosangeles.com/weather/school-closings/",
+   "station": "nbc-owned-knbc",
+   "why": "an unread capture of its list, read so that every capture of it is read"
+  },
+  {
+   "timestamp": "20200115045417",
+   "url": "https://www.nbclosangeles.com/weather/school-closings/",
+   "station": "nbc-owned-knbc",
+   "why": "an unread capture of its list, read so that every capture of it is read"
+  },
+  {
+   "timestamp": "20200225104700",
+   "url": "https://www.nbclosangeles.com/weather/school-closings/",
+   "station": "nbc-owned-knbc",
+   "why": "an unread capture of its list, read so that every capture of it is read"
+  },
+  {
+   "timestamp": "20200229150908",
+   "url": "https://www.nbclosangeles.com/weather/school-closings/",
+   "station": "nbc-owned-knbc",
+   "why": "an unread capture of its list, read so that every capture of it is read"
+  },
+  {
+   "timestamp": "20200306122326",
+   "url": "https://www.nbclosangeles.com/weather/school-closings/",
+   "station": "nbc-owned-knbc",
+   "why": "an unread capture of its list, read so that every capture of it is read"
+  },
+  {
+   "timestamp": "20200306193815",
+   "url": "https://www.nbclosangeles.com/weather/school-closings/",
+   "station": "nbc-owned-knbc",
+   "why": "an unread capture of its list, read so that every capture of it is read"
+  },
+  {
+   "timestamp": "20200307124635",
+   "url": "https://www.nbclosangeles.com/weather/school-closings/",
+   "station": "nbc-owned-knbc",
+   "why": "an unread capture of its list, read so that every capture of it is read"
+  },
+  {
+   "timestamp": "20200322111312",
+   "url": "https://www.nbclosangeles.com/weather/school-closings/",
+   "station": "nbc-owned-knbc",
+   "why": "an unread capture of its list, read so that every capture of it is read"
+  },
+  {
+   "timestamp": "20200324173332",
+   "url": "https://www.nbclosangeles.com/weather/school-closings/",
+   "station": "nbc-owned-knbc",
+   "why": "an unread capture of its list, read so that every capture of it is read"
+  },
+  {
+   "timestamp": "20200328161300",
+   "url": "https://www.nbclosangeles.com/weather/school-closings/",
+   "station": "nbc-owned-knbc",
+   "why": "an unread capture of its list, read so that every capture of it is read"
+  },
+  {
+   "timestamp": "20200330024119",
+   "url": "https://www.nbclosangeles.com/weather/school-closings/",
+   "station": "nbc-owned-knbc",
+   "why": "an unread capture of its list, read so that every capture of it is read"
+  },
+  {
+   "timestamp": "20200331063516",
+   "url": "https://www.nbclosangeles.com/weather/school-closings/",
+   "station": "nbc-owned-knbc",
+   "why": "an unread capture of its list, read so that every capture of it is read"
+  },
+  {
+   "timestamp": "20200331225416",
+   "url": "https://www.nbclosangeles.com/weather/school-closings/",
+   "station": "nbc-owned-knbc",
+   "why": "an unread capture of its list, read so that every capture of it is read"
+  },
+  {
+   "timestamp": "20200403155521",
+   "url": "https://www.nbclosangeles.com/weather/school-closings/",
+   "station": "nbc-owned-knbc",
+   "why": "an unread capture of its list, read so that every capture of it is read"
+  },
+  {
+   "timestamp": "20200411124047",
+   "url": "https://www.nbclosangeles.com/weather/school-closings/",
+   "station": "nbc-owned-knbc",
+   "why": "an unread capture of its list, read so that every capture of it is read"
+  },
+  {
+   "timestamp": "20200411184509",
+   "url": "https://www.nbclosangeles.com/weather/school-closings/",
+   "station": "nbc-owned-knbc",
+   "why": "an unread capture of its list, read so that every capture of it is read"
+  },
+  {
+   "timestamp": "20200412091224",
+   "url": "https://www.nbclosangeles.com/weather/school-closings/",
+   "station": "nbc-owned-knbc",
+   "why": "an unread capture of its list, read so that every capture of it is read"
+  },
+  {
+   "timestamp": "20200414021332",
+   "url": "https://www.nbclosangeles.com/weather/school-closings/",
+   "station": "nbc-owned-knbc",
+   "why": "an unread capture of its list, read so that every capture of it is read"
+  },
+  {
+   "timestamp": "20200416171516",
+   "url": "https://www.nbclosangeles.com/weather/school-closings/",
+   "station": "nbc-owned-knbc",
+   "why": "an unread capture of its list, read so that every capture of it is read"
+  },
+  {
+   "timestamp": "20200417144001",
+   "url": "https://www.nbclosangeles.com/weather/school-closings/",
+   "station": "nbc-owned-knbc",
+   "why": "an unread capture of its list, read so that every capture of it is read"
+  },
+  {
+   "timestamp": "20200420113650",
+   "url": "https://www.nbclosangeles.com/weather/school-closings/",
+   "station": "nbc-owned-knbc",
+   "why": "an unread capture of its list, read so that every capture of it is read"
+  },
+  {
+   "timestamp": "20200420165655",
+   "url": "https://www.nbclosangeles.com/weather/school-closings/",
+   "station": "nbc-owned-knbc",
+   "why": "an unread capture of its list, read so that every capture of it is read"
+  },
+  {
+   "timestamp": "20200421115716",
+   "url": "https://www.nbclosangeles.com/weather/school-closings/",
+   "station": "nbc-owned-knbc",
+   "why": "an unread capture of its list, read so that every capture of it is read"
+  },
+  {
+   "timestamp": "20200422041319",
+   "url": "https://www.nbclosangeles.com/weather/school-closings/",
+   "station": "nbc-owned-knbc",
+   "why": "an unread capture of its list, read so that every capture of it is read"
+  },
+  {
+   "timestamp": "20200422050101",
+   "url": "https://www.nbclosangeles.com/weather/school-closings/",
+   "station": "nbc-owned-knbc",
+   "why": "an unread capture of its list, read so that every capture of it is read"
+  },
+  {
+   "timestamp": "20200427133214",
+   "url": "https://www.nbclosangeles.com/weather/school-closings/",
+   "station": "nbc-owned-knbc",
+   "why": "an unread capture of its list, read so that every capture of it is read"
+  },
+  {
+   "timestamp": "20200501165819",
+   "url": "https://www.nbclosangeles.com/weather/school-closings/",
+   "station": "nbc-owned-knbc",
+   "why": "an unread capture of its list, read so that every capture of it is read"
+  },
+  {
+   "timestamp": "20200503233439",
+   "url": "https://www.nbclosangeles.com/weather/school-closings/",
+   "station": "nbc-owned-knbc",
+   "why": "an unread capture of its list, read so that every capture of it is read"
+  },
+  {
+   "timestamp": "20200505074540",
+   "url": "https://www.nbclosangeles.com/weather/school-closings/",
+   "station": "nbc-owned-knbc",
+   "why": "an unread capture of its list, read so that every capture of it is read"
+  },
+  {
+   "timestamp": "20200509182100",
+   "url": "https://www.nbclosangeles.com/weather/school-closings/",
+   "station": "nbc-owned-knbc",
+   "why": "an unread capture of its list, read so that every capture of it is read"
+  },
+  {
+   "timestamp": "20200517191105",
+   "url": "https://www.nbclosangeles.com/weather/school-closings/",
+   "station": "nbc-owned-knbc",
+   "why": "an unread capture of its list, read so that every capture of it is read"
+  },
+  {
+   "timestamp": "20200519232535",
+   "url": "https://www.nbclosangeles.com/weather/school-closings/",
+   "station": "nbc-owned-knbc",
+   "why": "an unread capture of its list, read so that every capture of it is read"
+  },
+  {
+   "timestamp": "20200520093615",
+   "url": "https://www.nbclosangeles.com/weather/school-closings/",
+   "station": "nbc-owned-knbc",
+   "why": "an unread capture of its list, read so that every capture of it is read"
+  },
+  {
+   "timestamp": "20200521092854",
+   "url": "https://www.nbclosangeles.com/weather/school-closings/",
+   "station": "nbc-owned-knbc",
+   "why": "an unread capture of its list, read so that every capture of it is read"
+  },
+  {
+   "timestamp": "20200521125504",
+   "url": "https://www.nbclosangeles.com/weather/school-closings/",
+   "station": "nbc-owned-knbc",
+   "why": "an unread capture of its list, read so that every capture of it is read"
+  },
+  {
+   "timestamp": "20200522141151",
+   "url": "https://www.nbclosangeles.com/weather/school-closings/",
+   "station": "nbc-owned-knbc",
+   "why": "an unread capture of its list, read so that every capture of it is read"
+  },
+  {
+   "timestamp": "20200523061146",
+   "url": "https://www.nbclosangeles.com/weather/school-closings/",
+   "station": "nbc-owned-knbc",
+   "why": "an unread capture of its list, read so that every capture of it is read"
+  },
+  {
+   "timestamp": "20200523191312",
+   "url": "https://www.nbclosangeles.com/weather/school-closings/",
+   "station": "nbc-owned-knbc",
+   "why": "an unread capture of its list, read so that every capture of it is read"
+  },
+  {
+   "timestamp": "20200523233541",
+   "url": "https://www.nbclosangeles.com/weather/school-closings/",
+   "station": "nbc-owned-knbc",
+   "why": "an unread capture of its list, read so that every capture of it is read"
+  },
+  {
+   "timestamp": "20200524204029",
+   "url": "https://www.nbclosangeles.com/weather/school-closings/",
+   "station": "nbc-owned-knbc",
+   "why": "an unread capture of its list, read so that every capture of it is read"
+  },
+  {
+   "timestamp": "20200525115145",
+   "url": "https://www.nbclosangeles.com/weather/school-closings/",
+   "station": "nbc-owned-knbc",
+   "why": "an unread capture of its list, read so that every capture of it is read"
+  },
+  {
+   "timestamp": "20200525145114",
+   "url": "https://www.nbclosangeles.com/weather/school-closings/",
+   "station": "nbc-owned-knbc",
+   "why": "an unread capture of its list, read so that every capture of it is read"
+  },
+  {
+   "timestamp": "20200526110151",
+   "url": "https://www.nbclosangeles.com/weather/school-closings/",
+   "station": "nbc-owned-knbc",
+   "why": "an unread capture of its list, read so that every capture of it is read"
+  },
+  {
+   "timestamp": "20200526215305",
+   "url": "https://www.nbclosangeles.com/weather/school-closings/",
+   "station": "nbc-owned-knbc",
+   "why": "an unread capture of its list, read so that every capture of it is read"
+  },
+  {
+   "timestamp": "20200531081006",
+   "url": "https://www.nbclosangeles.com/weather/school-closings/",
+   "station": "nbc-owned-knbc",
+   "why": "an unread capture of its list, read so that every capture of it is read"
+  },
+  {
+   "timestamp": "20200601142847",
+   "url": "https://www.nbclosangeles.com/weather/school-closings/",
+   "station": "nbc-owned-knbc",
+   "why": "an unread capture of its list, read so that every capture of it is read"
+  },
+  {
+   "timestamp": "20200602071131",
+   "url": "https://www.nbclosangeles.com/weather/school-closings/",
+   "station": "nbc-owned-knbc",
+   "why": "an unread capture of its list, read so that every capture of it is read"
+  },
+  {
+   "timestamp": "20200602104935",
+   "url": "https://www.nbclosangeles.com/weather/school-closings/",
+   "station": "nbc-owned-knbc",
+   "why": "an unread capture of its list, read so that every capture of it is read"
+  },
+  {
+   "timestamp": "20200602174740",
+   "url": "https://www.nbclosangeles.com/weather/school-closings/",
+   "station": "nbc-owned-knbc",
+   "why": "an unread capture of its list, read so that every capture of it is read"
+  },
+  {
+   "timestamp": "20200603211915",
+   "url": "https://www.nbclosangeles.com/weather/school-closings/",
+   "station": "nbc-owned-knbc",
+   "why": "an unread capture of its list, read so that every capture of it is read"
+  },
+  {
+   "timestamp": "20200607124634",
+   "url": "https://www.nbclosangeles.com/weather/school-closings/",
+   "station": "nbc-owned-knbc",
+   "why": "an unread capture of its list, read so that every capture of it is read"
+  },
+  {
+   "timestamp": "20200609093856",
+   "url": "https://www.nbclosangeles.com/weather/school-closings/",
+   "station": "nbc-owned-knbc",
+   "why": "an unread capture of its list, read so that every capture of it is read"
+  },
+  {
+   "timestamp": "20200609164540",
+   "url": "https://www.nbclosangeles.com/weather/school-closings/",
+   "station": "nbc-owned-knbc",
+   "why": "an unread capture of its list, read so that every capture of it is read"
+  },
+  {
+   "timestamp": "20200610024849",
+   "url": "https://www.nbclosangeles.com/weather/school-closings/",
+   "station": "nbc-owned-knbc",
+   "why": "an unread capture of its list, read so that every capture of it is read"
+  },
+  {
+   "timestamp": "20200615073020",
+   "url": "https://www.nbclosangeles.com/weather/school-closings/",
+   "station": "nbc-owned-knbc",
+   "why": "an unread capture of its list, read so that every capture of it is read"
+  },
+  {
+   "timestamp": "20200615091440",
+   "url": "https://www.nbclosangeles.com/weather/school-closings/",
+   "station": "nbc-owned-knbc",
+   "why": "an unread capture of its list, read so that every capture of it is read"
+  },
+  {
+   "timestamp": "20200620141611",
+   "url": "https://www.nbclosangeles.com/weather/school-closings/",
+   "station": "nbc-owned-knbc",
+   "why": "an unread capture of its list, read so that every capture of it is read"
+  },
+  {
+   "timestamp": "20200622024931",
+   "url": "https://www.nbclosangeles.com/weather/school-closings/",
+   "station": "nbc-owned-knbc",
+   "why": "an unread capture of its list, read so that every capture of it is read"
+  },
+  {
+   "timestamp": "20200622093401",
+   "url": "https://www.nbclosangeles.com/weather/school-closings/",
+   "station": "nbc-owned-knbc",
+   "why": "an unread capture of its list, read so that every capture of it is read"
+  },
+  {
+   "timestamp": "20200624122943",
+   "url": "https://www.nbclosangeles.com/weather/school-closings/",
+   "station": "nbc-owned-knbc",
+   "why": "an unread capture of its list, read so that every capture of it is read"
+  },
+  {
+   "timestamp": "20200627091527",
+   "url": "https://www.nbclosangeles.com/weather/school-closings/",
+   "station": "nbc-owned-knbc",
+   "why": "an unread capture of its list, read so that every capture of it is read"
+  },
+  {
+   "timestamp": "20200628040202",
+   "url": "https://www.nbclosangeles.com/weather/school-closings/",
+   "station": "nbc-owned-knbc",
+   "why": "an unread capture of its list, read so that every capture of it is read"
+  },
+  {
+   "timestamp": "20200701172917",
+   "url": "https://www.nbclosangeles.com/weather/school-closings/",
+   "station": "nbc-owned-knbc",
+   "why": "an unread capture of its list, read so that every capture of it is read"
+  },
+  {
+   "timestamp": "20200701190958",
+   "url": "https://www.nbclosangeles.com/weather/school-closings/",
+   "station": "nbc-owned-knbc",
+   "why": "an unread capture of its list, read so that every capture of it is read"
+  },
+  {
+   "timestamp": "20200702061413",
+   "url": "https://www.nbclosangeles.com/weather/school-closings/",
+   "station": "nbc-owned-knbc",
+   "why": "an unread capture of its list, read so that every capture of it is read"
+  },
+  {
+   "timestamp": "20200702064902",
+   "url": "https://www.nbclosangeles.com/weather/school-closings/",
+   "station": "nbc-owned-knbc",
+   "why": "an unread capture of its list, read so that every capture of it is read"
+  },
+  {
+   "timestamp": "20200703125141",
+   "url": "https://www.nbclosangeles.com/weather/school-closings/",
+   "station": "nbc-owned-knbc",
+   "why": "an unread capture of its list, read so that every capture of it is read"
+  },
+  {
+   "timestamp": "20200703220653",
+   "url": "https://www.nbclosangeles.com/weather/school-closings/",
+   "station": "nbc-owned-knbc",
+   "why": "an unread capture of its list, read so that every capture of it is read"
+  },
+  {
+   "timestamp": "20200704203726",
+   "url": "https://www.nbclosangeles.com/weather/school-closings/",
+   "station": "nbc-owned-knbc",
+   "why": "an unread capture of its list, read so that every capture of it is read"
+  },
+  {
+   "timestamp": "20200705044227",
+   "url": "https://www.nbclosangeles.com/weather/school-closings/",
+   "station": "nbc-owned-knbc",
+   "why": "an unread capture of its list, read so that every capture of it is read"
+  },
+  {
+   "timestamp": "20200705093125",
+   "url": "https://www.nbclosangeles.com/weather/school-closings/",
+   "station": "nbc-owned-knbc",
+   "why": "an unread capture of its list, read so that every capture of it is read"
+  },
+  {
+   "timestamp": "20200705185840",
+   "url": "https://www.nbclosangeles.com/weather/school-closings/",
+   "station": "nbc-owned-knbc",
+   "why": "an unread capture of its list, read so that every capture of it is read"
+  },
+  {
+   "timestamp": "20200707115155",
+   "url": "https://www.nbclosangeles.com/weather/school-closings/",
+   "station": "nbc-owned-knbc",
+   "why": "an unread capture of its list, read so that every capture of it is read"
+  },
+  {
+   "timestamp": "20200707231301",
+   "url": "https://www.nbclosangeles.com/weather/school-closings/",
+   "station": "nbc-owned-knbc",
+   "why": "an unread capture of its list, read so that every capture of it is read"
+  },
+  {
+   "timestamp": "20200709090914",
+   "url": "https://www.nbclosangeles.com/weather/school-closings/",
+   "station": "nbc-owned-knbc",
+   "why": "an unread capture of its list, read so that every capture of it is read"
+  },
+  {
+   "timestamp": "20200710014419",
+   "url": "https://www.nbclosangeles.com/weather/school-closings/",
+   "station": "nbc-owned-knbc",
+   "why": "an unread capture of its list, read so that every capture of it is read"
+  },
+  {
+   "timestamp": "20200710050953",
+   "url": "https://www.nbclosangeles.com/weather/school-closings/",
+   "station": "nbc-owned-knbc",
+   "why": "an unread capture of its list, read so that every capture of it is read"
+  },
+  {
+   "timestamp": "20200711072207",
+   "url": "https://www.nbclosangeles.com/weather/school-closings/",
+   "station": "nbc-owned-knbc",
+   "why": "an unread capture of its list, read so that every capture of it is read"
+  },
+  {
+   "timestamp": "20200715205217",
+   "url": "https://www.nbclosangeles.com/weather/school-closings/",
+   "station": "nbc-owned-knbc",
+   "why": "an unread capture of its list, read so that every capture of it is read"
+  },
+  {
+   "timestamp": "20200716010929",
+   "url": "https://www.nbclosangeles.com/weather/school-closings/",
+   "station": "nbc-owned-knbc",
+   "why": "an unread capture of its list, read so that every capture of it is read"
+  },
+  {
+   "timestamp": "20200716093324",
+   "url": "https://www.nbclosangeles.com/weather/school-closings/",
+   "station": "nbc-owned-knbc",
+   "why": "an unread capture of its list, read so that every capture of it is read"
+  },
+  {
+   "timestamp": "20200716215220",
+   "url": "https://www.nbclosangeles.com/weather/school-closings/",
+   "station": "nbc-owned-knbc",
+   "why": "an unread capture of its list, read so that every capture of it is read"
+  },
+  {
+   "timestamp": "20200720134823",
+   "url": "https://www.nbclosangeles.com/weather/school-closings/",
+   "station": "nbc-owned-knbc",
+   "why": "an unread capture of its list, read so that every capture of it is read"
+  },
+  {
+   "timestamp": "20200721102811",
+   "url": "https://www.nbclosangeles.com/weather/school-closings/",
+   "station": "nbc-owned-knbc",
+   "why": "an unread capture of its list, read so that every capture of it is read"
+  },
+  {
+   "timestamp": "20200726033506",
+   "url": "https://www.nbclosangeles.com/weather/school-closings/",
+   "station": "nbc-owned-knbc",
+   "why": "an unread capture of its list, read so that every capture of it is read"
+  },
+  {
+   "timestamp": "20200726220452",
+   "url": "https://www.nbclosangeles.com/weather/school-closings/",
+   "station": "nbc-owned-knbc",
+   "why": "an unread capture of its list, read so that every capture of it is read"
+  },
+  {
+   "timestamp": "20200802032435",
+   "url": "https://www.nbclosangeles.com/weather/school-closings/",
+   "station": "nbc-owned-knbc",
+   "why": "an unread capture of its list, read so that every capture of it is read"
+  },
+  {
+   "timestamp": "20200804220711",
+   "url": "https://www.nbclosangeles.com/weather/school-closings/",
+   "station": "nbc-owned-knbc",
+   "why": "an unread capture of its list, read so that every capture of it is read"
+  },
+  {
+   "timestamp": "20200807101100",
+   "url": "https://www.nbclosangeles.com/weather/school-closings/",
+   "station": "nbc-owned-knbc",
+   "why": "an unread capture of its list, read so that every capture of it is read"
+  },
+  {
+   "timestamp": "20200808050902",
+   "url": "https://www.nbclosangeles.com/weather/school-closings/",
+   "station": "nbc-owned-knbc",
+   "why": "an unread capture of its list, read so that every capture of it is read"
+  },
+  {
+   "timestamp": "20200810015720",
+   "url": "https://www.nbclosangeles.com/weather/school-closings/",
+   "station": "nbc-owned-knbc",
+   "why": "an unread capture of its list, read so that every capture of it is read"
+  },
+  {
+   "timestamp": "20200810110517",
+   "url": "https://www.nbclosangeles.com/weather/school-closings/",
+   "station": "nbc-owned-knbc",
+   "why": "an unread capture of its list, read so that every capture of it is read"
+  },
+  {
+   "timestamp": "20200810233239",
+   "url": "https://www.nbclosangeles.com/weather/school-closings/",
+   "station": "nbc-owned-knbc",
+   "why": "an unread capture of its list, read so that every capture of it is read"
+  },
+  {
+   "timestamp": "20200811072106",
+   "url": "https://www.nbclosangeles.com/weather/school-closings/",
+   "station": "nbc-owned-knbc",
+   "why": "an unread capture of its list, read so that every capture of it is read"
+  },
+  {
+   "timestamp": "20200812011703",
+   "url": "https://www.nbclosangeles.com/weather/school-closings/",
+   "station": "nbc-owned-knbc",
+   "why": "an unread capture of its list, read so that every capture of it is read"
+  },
+  {
+   "timestamp": "20200812123957",
+   "url": "https://www.nbclosangeles.com/weather/school-closings/",
+   "station": "nbc-owned-knbc",
+   "why": "an unread capture of its list, read so that every capture of it is read"
+  },
+  {
+   "timestamp": "20200814015343",
+   "url": "https://www.nbclosangeles.com/weather/school-closings/",
+   "station": "nbc-owned-knbc",
+   "why": "an unread capture of its list, read so that every capture of it is read"
+  },
+  {
+   "timestamp": "20200817092212",
+   "url": "https://www.nbclosangeles.com/weather/school-closings/",
+   "station": "nbc-owned-knbc",
+   "why": "an unread capture of its list, read so that every capture of it is read"
+  },
+  {
+   "timestamp": "20200819024012",
+   "url": "https://www.nbclosangeles.com/weather/school-closings/",
+   "station": "nbc-owned-knbc",
+   "why": "an unread capture of its list, read so that every capture of it is read"
+  },
+  {
+   "timestamp": "20200823153635",
+   "url": "https://www.nbclosangeles.com/weather/school-closings/",
+   "station": "nbc-owned-knbc",
+   "why": "an unread capture of its list, read so that every capture of it is read"
+  },
+  {
+   "timestamp": "20200824221106",
+   "url": "https://www.nbclosangeles.com/weather/school-closings/",
+   "station": "nbc-owned-knbc",
+   "why": "an unread capture of its list, read so that every capture of it is read"
+  },
+  {
+   "timestamp": "20200825151905",
+   "url": "https://www.nbclosangeles.com/weather/school-closings/",
+   "station": "nbc-owned-knbc",
+   "why": "an unread capture of its list, read so that every capture of it is read"
+  },
+  {
+   "timestamp": "20200826013435",
+   "url": "https://www.nbclosangeles.com/weather/school-closings/",
+   "station": "nbc-owned-knbc",
+   "why": "an unread capture of its list, read so that every capture of it is read"
+  },
+  {
+   "timestamp": "20200826052919",
+   "url": "https://www.nbclosangeles.com/weather/school-closings/",
+   "station": "nbc-owned-knbc",
+   "why": "an unread capture of its list, read so that every capture of it is read"
+  },
+  {
+   "timestamp": "20200826113859",
+   "url": "https://www.nbclosangeles.com/weather/school-closings/",
+   "station": "nbc-owned-knbc",
+   "why": "an unread capture of its list, read so that every capture of it is read"
+  },
+  {
+   "timestamp": "20200826200313",
+   "url": "https://www.nbclosangeles.com/weather/school-closings/",
+   "station": "nbc-owned-knbc",
+   "why": "an unread capture of its list, read so that every capture of it is read"
+  },
+  {
+   "timestamp": "20200829111406",
+   "url": "https://www.nbclosangeles.com/weather/school-closings/",
+   "station": "nbc-owned-knbc",
+   "why": "an unread capture of its list, read so that every capture of it is read"
+  },
+  {
+   "timestamp": "20200830044431",
+   "url": "https://www.nbclosangeles.com/weather/school-closings/",
+   "station": "nbc-owned-knbc",
+   "why": "an unread capture of its list, read so that every capture of it is read"
+  },
+  {
+   "timestamp": "20200831114723",
+   "url": "https://www.nbclosangeles.com/weather/school-closings/",
+   "station": "nbc-owned-knbc",
+   "why": "an unread capture of its list, read so that every capture of it is read"
+  },
+  {
+   "timestamp": "20200831165336",
+   "url": "https://www.nbclosangeles.com/weather/school-closings/",
+   "station": "nbc-owned-knbc",
+   "why": "an unread capture of its list, read so that every capture of it is read"
+  },
+  {
+   "timestamp": "20200904130425",
+   "url": "https://www.nbclosangeles.com/weather/school-closings/",
+   "station": "nbc-owned-knbc",
+   "why": "an unread capture of its list, read so that every capture of it is read"
+  },
+  {
+   "timestamp": "20200906145825",
+   "url": "https://www.nbclosangeles.com/weather/school-closings/",
+   "station": "nbc-owned-knbc",
+   "why": "an unread capture of its list, read so that every capture of it is read"
+  },
+  {
+   "timestamp": "20200906152418",
+   "url": "https://www.nbclosangeles.com/weather/school-closings/",
+   "station": "nbc-owned-knbc",
+   "why": "an unread capture of its list, read so that every capture of it is read"
+  },
+  {
+   "timestamp": "20200909041047",
+   "url": "https://www.nbclosangeles.com/weather/school-closings/",
+   "station": "nbc-owned-knbc",
+   "why": "an unread capture of its list, read so that every capture of it is read"
+  },
+  {
+   "timestamp": "20200911053544",
+   "url": "https://www.nbclosangeles.com/weather/school-closings/",
+   "station": "nbc-owned-knbc",
+   "why": "an unread capture of its list, read so that every capture of it is read"
+  },
+  {
+   "timestamp": "20200912004501",
+   "url": "https://www.nbclosangeles.com/weather/school-closings/",
+   "station": "nbc-owned-knbc",
+   "why": "an unread capture of its list, read so that every capture of it is read"
+  },
+  {
+   "timestamp": "20200912131950",
+   "url": "https://www.nbclosangeles.com/weather/school-closings/",
+   "station": "nbc-owned-knbc",
+   "why": "an unread capture of its list, read so that every capture of it is read"
+  },
+  {
+   "timestamp": "20200913065316",
+   "url": "https://www.nbclosangeles.com/weather/school-closings/",
+   "station": "nbc-owned-knbc",
+   "why": "an unread capture of its list, read so that every capture of it is read"
+  },
+  {
+   "timestamp": "20200914005059",
+   "url": "https://www.nbclosangeles.com/weather/school-closings/",
+   "station": "nbc-owned-knbc",
+   "why": "an unread capture of its list, read so that every capture of it is read"
+  },
+  {
+   "timestamp": "20200916192149",
+   "url": "https://www.nbclosangeles.com/weather/school-closings/",
+   "station": "nbc-owned-knbc",
+   "why": "an unread capture of its list, read so that every capture of it is read"
+  },
+  {
+   "timestamp": "20200919200529",
+   "url": "https://www.nbclosangeles.com/weather/school-closings/",
+   "station": "nbc-owned-knbc",
+   "why": "an unread capture of its list, read so that every capture of it is read"
+  },
+  {
+   "timestamp": "20200921044702",
+   "url": "https://www.nbclosangeles.com/weather/school-closings/",
+   "station": "nbc-owned-knbc",
+   "why": "an unread capture of its list, read so that every capture of it is read"
+  },
+  {
+   "timestamp": "20200921124259",
+   "url": "https://www.nbclosangeles.com/weather/school-closings/",
+   "station": "nbc-owned-knbc",
+   "why": "an unread capture of its list, read so that every capture of it is read"
+  },
+  {
+   "timestamp": "20200922160328",
+   "url": "https://www.nbclosangeles.com/weather/school-closings/",
+   "station": "nbc-owned-knbc",
+   "why": "an unread capture of its list, read so that every capture of it is read"
+  },
+  {
+   "timestamp": "20200923083549",
+   "url": "https://www.nbclosangeles.com/weather/school-closings/",
+   "station": "nbc-owned-knbc",
+   "why": "an unread capture of its list, read so that every capture of it is read"
+  },
+  {
+   "timestamp": "20200923183313",
+   "url": "https://www.nbclosangeles.com/weather/school-closings/",
+   "station": "nbc-owned-knbc",
+   "why": "an unread capture of its list, read so that every capture of it is read"
+  },
+  {
+   "timestamp": "20200923215555",
+   "url": "https://www.nbclosangeles.com/weather/school-closings/",
+   "station": "nbc-owned-knbc",
+   "why": "an unread capture of its list, read so that every capture of it is read"
+  },
+  {
+   "timestamp": "20200924071149",
+   "url": "https://www.nbclosangeles.com/weather/school-closings/",
+   "station": "nbc-owned-knbc",
+   "why": "an unread capture of its list, read so that every capture of it is read"
+  },
+  {
+   "timestamp": "20200924204050",
+   "url": "https://www.nbclosangeles.com/weather/school-closings/",
+   "station": "nbc-owned-knbc",
+   "why": "an unread capture of its list, read so that every capture of it is read"
+  },
+  {
+   "timestamp": "20200926073218",
+   "url": "https://www.nbclosangeles.com/weather/school-closings/",
+   "station": "nbc-owned-knbc",
+   "why": "an unread capture of its list, read so that every capture of it is read"
+  },
+  {
+   "timestamp": "20200927052244",
+   "url": "https://www.nbclosangeles.com/weather/school-closings/",
+   "station": "nbc-owned-knbc",
+   "why": "an unread capture of its list, read so that every capture of it is read"
+  },
+  {
+   "timestamp": "20200929023941",
+   "url": "https://www.nbclosangeles.com/weather/school-closings/",
+   "station": "nbc-owned-knbc",
+   "why": "an unread capture of its list, read so that every capture of it is read"
+  },
+  {
+   "timestamp": "20200930230107",
+   "url": "https://www.nbclosangeles.com/weather/school-closings/",
+   "station": "nbc-owned-knbc",
+   "why": "an unread capture of its list, read so that every capture of it is read"
+  },
+  {
+   "timestamp": "20201001115729",
+   "url": "https://www.nbclosangeles.com/weather/school-closings/",
+   "station": "nbc-owned-knbc",
+   "why": "an unread capture of its list, read so that every capture of it is read"
+  },
+  {
+   "timestamp": "20201008165054",
+   "url": "https://www.nbclosangeles.com/weather/school-closings/",
+   "station": "nbc-owned-knbc",
+   "why": "an unread capture of its list, read so that every capture of it is read"
+  },
+  {
+   "timestamp": "20201011065924",
+   "url": "https://www.nbclosangeles.com/weather/school-closings/",
+   "station": "nbc-owned-knbc",
+   "why": "an unread capture of its list, read so that every capture of it is read"
+  },
+  {
+   "timestamp": "20201013191214",
+   "url": "https://www.nbclosangeles.com/weather/school-closings/",
+   "station": "nbc-owned-knbc",
+   "why": "an unread capture of its list, read so that every capture of it is read"
+  },
+  {
+   "timestamp": "20201013192922",
+   "url": "https://www.nbclosangeles.com/weather/school-closings/",
+   "station": "nbc-owned-knbc",
+   "why": "an unread capture of its list, read so that every capture of it is read"
+  },
+  {
+   "timestamp": "20201014043716",
+   "url": "https://www.nbclosangeles.com/weather/school-closings/",
+   "station": "nbc-owned-knbc",
+   "why": "an unread capture of its list, read so that every capture of it is read"
+  },
+  {
+   "timestamp": "20201015211139",
+   "url": "https://www.nbclosangeles.com/weather/school-closings/",
+   "station": "nbc-owned-knbc",
+   "why": "an unread capture of its list, read so that every capture of it is read"
+  },
+  {
+   "timestamp": "20201019095914",
+   "url": "https://www.nbclosangeles.com/weather/school-closings/",
+   "station": "nbc-owned-knbc",
+   "why": "an unread capture of its list, read so that every capture of it is read"
+  },
+  {
+   "timestamp": "20201020032901",
+   "url": "https://www.nbclosangeles.com/weather/school-closings/",
+   "station": "nbc-owned-knbc",
+   "why": "an unread capture of its list, read so that every capture of it is read"
+  },
+  {
+   "timestamp": "20201021122559",
+   "url": "https://www.nbclosangeles.com/weather/school-closings/",
+   "station": "nbc-owned-knbc",
+   "why": "an unread capture of its list, read so that every capture of it is read"
+  },
+  {
+   "timestamp": "20201022114944",
+   "url": "https://www.nbclosangeles.com/weather/school-closings/",
+   "station": "nbc-owned-knbc",
+   "why": "an unread capture of its list, read so that every capture of it is read"
+  },
+  {
+   "timestamp": "20201022165122",
+   "url": "https://www.nbclosangeles.com/weather/school-closings/",
+   "station": "nbc-owned-knbc",
+   "why": "an unread capture of its list, read so that every capture of it is read"
   }
  ]
 }
