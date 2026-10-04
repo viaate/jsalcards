@@ -27,6 +27,9 @@
  *   schools/details/<n>.<hash>.json   what the directory says about each school,
  *                                     1,024 schools a file, and index.<hash>.json,
  *                                     where each file starts (src/data/details-format.ts)
+ *   schools/areas/<n>.<hash>.json     the schools around each ZIP code, 128 ZIP codes
+ *                                     a file, and index.<hash>.json, where each file
+ *                                     starts (src/data/areas-format.ts)
  *   search-index.<hash>.bin           built by scripts/build-search-index.mjs from
  *                                     the directory's schools and districts and
  *                                     the places build's cities and ZIP codes
@@ -57,6 +60,12 @@
  * the directory's places: up to four within five miles, virtual schools
  * aside, and a school listed twice at one place (the same name within 50 m)
  * not listed as its own neighbor.
+ *
+ * The schools around each ZIP code the places build lists, for the area
+ * panel: the schools the directory gives that ZIP code, and with fewer than
+ * six of them the nearest others within two miles of its point, as
+ * src/data/areas-format.ts says. A school's ZIP code is the directory's;
+ * nothing is filled in where it gives none.
  *
  * Each also carries its name as the page shows it (src/text/names.ts, with
  * the directory's fixes, src/text/school-names.ts) where that reads with
@@ -119,6 +128,15 @@ const {
   metresBetween,
   phoneDigits,
 } = await import('../src/data/details-format.ts');
+const {
+  AREAS_INDEX_PATH,
+  AREA_MIN_SCHOOLS,
+  AREA_NEAR_METRES,
+  AREA_OWN_METRES,
+  ZIPS_PER_SHARD,
+  areasShardPath,
+  isAreaRow,
+} = await import('../src/data/areas-format.ts');
 
 const WEB = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 
@@ -128,6 +146,8 @@ const POINTS = 'schools/points.bin';
 const TILES = 'schools/schools.pmtiles';
 /** The places build's records, which go into the search index. */
 const SEARCH_INPUTS = ['search/cities.jsonl', 'search/zips.jsonl'];
+/** Its ZIP codes, which the schools around each are staged for. */
+const ZIP_INPUT = 'search/zips.jsonl';
 /** The search index, as the page asks for it. */
 const SEARCH_INDEX = 'search-index.bin';
 /** Under site-data, what staging handles itself rather than copying as written. */
@@ -612,6 +632,154 @@ function detailFiles(meta, points, tables) {
   return files;
 }
 
+/**
+ * The places build's ZIP codes: each code, its point and its states.
+ * @param {string} file
+ * @returns {{ zip: string, lon: number, lat: number, states: string[] }[]}
+ */
+function readZips(file) {
+  const zips = readFileSync(file, 'utf8')
+    .split('\n')
+    .filter((line) => line.trim() !== '')
+    .map((line, n) => {
+      /** @type {Record<string, unknown>} */
+      const row = JSON.parse(line);
+      const { zcta, lon, lat, states } = row;
+      if (
+        typeof zcta !== 'string' ||
+        !/^\d{5}$/.test(zcta) ||
+        typeof lon !== 'number' ||
+        typeof lat !== 'number' ||
+        !Array.isArray(states) ||
+        states.length === 0 ||
+        !states.every((state) => typeof state === 'string' && STATE_INDEX.has(state))
+      ) {
+        throw new StageError(`${ZIP_INPUT}:${String(n + 1)} is not a ZIP code with a place`);
+      }
+      return { zip: zcta, lon, lat, states: /** @type {string[]} */ (states) };
+    });
+  zips.sort((a, b) => (a.zip < b.zip ? -1 : a.zip > b.zip ? 1 : 0));
+  zips.forEach(({ zip }, i) => {
+    if (i > 0 && zips[i - 1]?.zip === zip) throw new StageError(`${ZIP_INPUT}: ${zip} twice`);
+  });
+  return zips;
+}
+
+/**
+ * The area files (src/data/areas-format.ts): the schools around each ZIP
+ * code, ZIPS_PER_SHARD codes a file in order of their codes, and the index of
+ * where each file starts, all stamped with the directory they point into.
+ * @param {Meta} meta
+ * @param {ReturnType<typeof readPoints>} points
+ * @param {ReturnType<typeof readTables>} tables
+ * @param {ReturnType<typeof readZips>} zips
+ * @returns {{ path: string, bytes: Buffer }[]}
+ */
+function areaFiles(meta, points, tables, zips) {
+  const stamp = {
+    generated_on: meta.generated_on,
+    schools: meta.count,
+    districts: meta.districts.ids.length,
+  };
+  const virtual = (/** @type {number} */ i) => ((points.flags[i] ?? 0) & KIND_FLAGS.virtual) !== 0;
+  /** Each ZIP code's schools, and every school by grid cell, virtual schools aside. */
+  /** @type {Map<string, number[]>} */
+  const byZip = new Map();
+  /** @type {Map<string, number[]>} */
+  const cells = new Map();
+  const cellKey = (/** @type {number} */ lon, /** @type {number} */ lat) =>
+    `${String(Math.floor(lon / NEARBY_CELL))},${String(Math.floor(lat / NEARBY_CELL))}`;
+  tables.schools.forEach((row, i) => {
+    if (virtual(i)) return;
+    const zip = zipOrNull(row.zip);
+    if (zip !== null) byZip.set(zip, [...(byZip.get(zip) ?? []), i]);
+    const key = cellKey(points.lon[i] ?? 0, points.lat[i] ?? 0);
+    const cell = cells.get(key);
+    if (cell === undefined) cells.set(key, [i]);
+    else cell.push(i);
+  });
+  /** @param {number} i @param {number} metres */
+  const entry = (i, metres) => [
+    i,
+    meta.ids[i] ?? '',
+    metres,
+    points.lon[i] ?? 0,
+    points.lat[i] ?? 0,
+  ];
+  /** Nearest first, ties by position. */
+  const nearest = (/** @type {{ i: number, metres: number }[]} */ found) =>
+    found.sort((a, b) => a.metres - b.metres || a.i - b.i);
+  const rows = zips.map(({ zip, lon, lat, states }) => {
+    // In whole metres, as written, so the order is the order the file gives.
+    const away = (/** @type {number} */ i) =>
+      Math.round(metresBetween(lon, lat, points.lon[i] ?? 0, points.lat[i] ?? 0));
+    const own = nearest(
+      (byZip.get(zip) ?? [])
+        .map((i) => ({ i, metres: away(i) }))
+        .filter(({ metres }) => metres <= Math.floor(AREA_OWN_METRES)),
+    );
+    /** @type {{ i: number, metres: number }[]} */
+    let near = [];
+    if (own.length < AREA_MIN_SCHOOLS) {
+      const mine = new Set(own.map(({ i }) => i));
+      const [x, y] = [Math.floor(lon / NEARBY_CELL), Math.floor(lat / NEARBY_CELL)];
+      /** @type {{ i: number, metres: number }[]} */
+      const found = [];
+      // A cell is wider than two miles everywhere in the contiguous US: the cells around reach.
+      for (let dx = -1; dx <= 1; dx++) {
+        for (let dy = -1; dy <= 1; dy++) {
+          for (const i of cells.get(`${String(x + dx)},${String(y + dy)}`) ?? []) {
+            if (mine.has(i)) continue;
+            const metres = away(i);
+            if (metres <= Math.floor(AREA_NEAR_METRES)) found.push({ i, metres });
+          }
+        }
+      }
+      near = nearest(found).slice(0, AREA_MIN_SCHOOLS - own.length);
+    }
+    const area = [
+      zip,
+      lon,
+      lat,
+      states,
+      own.map(({ i, metres }) => entry(i, metres)),
+      near.map(({ i, metres }) => entry(i, metres)),
+    ];
+    if (!isAreaRow(area)) throw new StageError(`ZIP code ${zip} has an area the page cannot read`);
+    return area;
+  });
+  const files = [];
+  const firstZips = [];
+  for (let first = 0; first < rows.length; first += ZIPS_PER_SHARD) {
+    firstZips.push(zips[first]?.zip ?? '');
+    files.push({
+      path: areasShardPath(first / ZIPS_PER_SHARD),
+      bytes: Buffer.from(
+        JSON.stringify({
+          schema_version: 1,
+          directory: stamp,
+          first: zips[first]?.zip ?? '',
+          areas: rows.slice(first, first + ZIPS_PER_SHARD),
+        }),
+      ),
+    });
+  }
+  const names = files.map(({ path, bytes }) => basename(hashedPath(path, sha256(bytes))));
+  files.push({
+    path: AREAS_INDEX_PATH,
+    bytes: Buffer.from(
+      JSON.stringify({
+        schema_version: 1,
+        directory: stamp,
+        shards: files.length,
+        first_zips: firstZips,
+        files: names,
+      }),
+    ),
+  });
+  return files;
+}
+
 /** @param {string} file @param {readonly object[]} records */
 function writeJsonLines(file, records) {
   writeFileSync(file, records.map((record) => JSON.stringify(record)).join('\n') + '\n');
@@ -665,6 +833,7 @@ function main() {
     const tables = readTables(args, work);
     const { schoolRecords, districtRecords, merged } = directoryRecords(meta, points, tables);
     const details = detailFiles(meta, points, tables);
+    const areas = areaFiles(meta, points, tables, readZips(join(args.site, ZIP_INPUT)));
     const schoolsFile = join(work, 'schools.jsonl');
     const districtsFile = join(work, 'districts.jsonl');
     writeJsonLines(schoolsFile, schoolRecords);
@@ -700,11 +869,16 @@ function main() {
     putHashed(POINTS, pointsBytes);
     putHashed(TILES, tilesBytes);
     putHashed(SEARCH_INDEX, readFileSync(indexFile));
-    const stagedBefore = staged.length;
-    for (const { path, bytes } of details) putHashed(path, bytes);
-    // One line for the school details: there are over a hundred files.
-    const shardBytes = staged.splice(stagedBefore).reduce((sum, [, size]) => sum + size, 0);
-    staged.push([`schools/details/ (${String(details.length)} files)`, shardBytes]);
+    // One line each for the school details and the areas: there are over a hundred files.
+    for (const [folder, sharded] of /** @type {const} */ ([
+      ['schools/details/', details],
+      ['schools/areas/', areas],
+    ])) {
+      const before = staged.length;
+      for (const { path, bytes } of sharded) putHashed(path, bytes);
+      const bytes = staged.splice(before).reduce((sum, [, size]) => sum + size, 0);
+      staged.push([`${folder} (${String(sharded.length)} files)`, bytes]);
+    }
     for (const path of filesUnder(args.site)) {
       if (HANDLED.has(path) || path.startsWith('search/') || !published(path)) continue;
       mkdirSync(dirname(join(args.to, path)), { recursive: true });

@@ -186,6 +186,33 @@ describe('dropOldData', () => {
     });
   });
 
+  it('keeps the area shards a kept copy of this build’s area index names, beside the detail shards', async () => {
+    const details = `${ROOT}schools/details/index.1111111111.json`;
+    const areas = `${ROOT}schools/areas/index.3333333333.json`;
+    const caches = await holding({
+      [CACHE_NAMES.staticData]: [
+        `${ROOT}schools/details/0.aaaaaaaaaa.json`,
+        `${ROOT}schools/areas/0.aaaaaaaaaa.json`,
+        `${ROOT}schools/areas/1.eeeeeeeeee.json`,
+      ],
+    });
+    const cache = await caches.open(CACHE_NAMES.staticData);
+    await cache.put(details, new Response(JSON.stringify({ files: ['0.aaaaaaaaaa.json'] })));
+    await cache.put(areas, new Response(JSON.stringify({ files: ['0.aaaaaaaaaa.json'] })));
+    const win = Object.assign(new FakeWindow(), { caches });
+    await expect(
+      dropOldData([...SHIPS, 'schools/areas/index.3333333333.json'], '/', win),
+    ).resolves.toBe(1);
+    expect(left(caches)).toEqual({
+      [CACHE_NAMES.staticData]: [
+        `${ROOT}schools/areas/0.aaaaaaaaaa.json`,
+        areas,
+        `${ROOT}schools/details/0.aaaaaaaaaa.json`,
+        details,
+      ],
+    });
+  });
+
   it('drops every hashed shard when no copy of this build’s shard index is kept, or it names none', async () => {
     const shards = [`${ROOT}schools/details/0.aaaaaaaaaa.json`, `${ROOT}schools/details/1.json`];
     const none = await holding({ [CACHE_NAMES.staticData]: shards });

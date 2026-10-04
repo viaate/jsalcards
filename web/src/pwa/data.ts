@@ -16,6 +16,7 @@
  * a deploy leaves behind are dropped here (dropOldData).
  */
 
+import { AREAS_INDEX_PATH } from '../data/areas-format';
 import { DETAILS_INDEX_PATH, SHARD_FILE } from '../data/details-format';
 import { createDataFiles } from '../data/files';
 import { plainPath } from '../data/paths';
@@ -85,8 +86,9 @@ export async function evictStaticData(
 }
 
 /**
- * The detail shards a kept copy of the shard index at `indexUrl` names, as
- * absolute URLs: none when no copy is kept, or it names none.
+ * The shards a kept copy of the shard index at `indexUrl` names (the school
+ * details', or the areas', both named alike), as absolute URLs: none when no
+ * copy is kept, or it names none.
  */
 async function shardsNamed(cache: Cache, indexUrl: string | null): Promise<string[]> {
   if (indexUrl === null) return [];
@@ -105,9 +107,9 @@ async function shardsNamed(cache: Cache, indexUrl: string | null): Promise<strin
  * Drops from the worker's data caches each copy of a file under the data
  * folder of the site at `base` whose name carries a content hash
  * (src/data/paths.ts) and that this build does not ship: neither one of
- * `paths`, the build's list as published, nor a detail shard that a kept copy
- * of this build's shard index names. A deploy that changes the directory, the
- * search index or a shard publishes it under a new name, so this is what
+ * `paths`, the build's list as published, nor a detail or area shard that a
+ * kept copy of this build's index of them names. A deploy that changes the
+ * directory, the search index or a shard publishes it under a new name, so this is what
  * clears out the old one. The worker's own limits (config.ts CACHE_LIMITS)
  * expire only the copies it has cached or served itself, never one the page
  * kept for it before it took the page over, or while none could (keep.ts).
@@ -125,13 +127,17 @@ export async function dropOldData(
     if (storage === undefined) return 0;
     const root = dataRoot(base, host);
     const shipped = new Set(paths.map((path) => new URL(path, root).href));
-    const indexUrl = createDataFiles(paths, root).url(DETAILS_INDEX_PATH);
+    const files = createDataFiles(paths, root);
+    const indexUrls = [files.url(DETAILS_INDEX_PATH), files.url(AREAS_INDEX_PATH)];
     for (const name of [CACHE_NAMES.staticData, CACHE_NAMES.data]) {
       if (!(await storage.has(name))) continue;
       const cache = await storage.open(name);
       // Listed before the shard index is read, so a shard kept meanwhile, after it, stays.
       const held = await cache.keys();
-      const shards = name === CACHE_NAMES.staticData ? await shardsNamed(cache, indexUrl) : [];
+      const shards =
+        name === CACHE_NAMES.staticData
+          ? (await Promise.all(indexUrls.map((url) => shardsNamed(cache, url)))).flat()
+          : [];
       const current = new Set([...shipped, ...shards]);
       for (const { url } of held) {
         const path = url.slice(root.length);

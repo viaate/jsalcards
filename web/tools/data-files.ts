@@ -26,6 +26,7 @@ import path from 'node:path';
 
 import type { Plugin } from 'vite';
 
+import { isAreaShard } from '../src/data/areas-format.ts';
 import { isDetailShard } from '../src/data/details-format.ts';
 import { plainPath } from '../src/data/paths.ts';
 
@@ -99,11 +100,12 @@ export function clashingFiles(files: readonly string[]): string[] {
 
 /**
  * The files the page asks for by name, of those published: all but the
- * school detail shards, hundreds of files the page finds through their
- * index (src/data/details-format.ts), which is listed.
+ * school detail shards and the area shards, hundreds of files the page finds
+ * through their indexes (src/data/details-format.ts, src/data/areas-format.ts),
+ * which are listed.
  */
 export function listedDataFiles(files: readonly string[]): string[] {
-  return files.filter((file) => !isDetailShard(file));
+  return files.filter((file) => !isDetailShard(file) && !isAreaShard(file));
 }
 
 /** The module's source for a list of files. */

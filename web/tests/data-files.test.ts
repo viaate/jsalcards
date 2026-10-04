@@ -45,10 +45,12 @@ describe('the data files a build ships', () => {
     ]);
   });
 
-  it('are listed for the page by name, all but the school detail shards, which their index names', () => {
+  it('are listed for the page by name, all but the detail and area shards, which their indexes name', () => {
     expect(
       listedDataFiles([
         'live/closings.json',
+        'schools/areas/0.0123456789.json',
+        'schools/areas/index.1234512345.json',
         'schools/details/0.0123456789.json',
         'schools/details/461.abcdefabcd.json',
         'schools/details/index.9876543210.json',
@@ -56,6 +58,7 @@ describe('the data files a build ships', () => {
       ]),
     ).toEqual([
       'live/closings.json',
+      'schools/areas/index.1234512345.json',
       'schools/details/index.9876543210.json',
       'schools/meta.b5c6259854.json',
     ]);
