@@ -7,7 +7,6 @@ import {
   loadDirectory,
   parseMeta,
   parsePoints,
-  parsePositions,
   sameDirectory,
   schoolLocation,
 } from '../directory';
@@ -76,29 +75,6 @@ describe('points.bin', () => {
   });
 });
 
-describe('positions alone', () => {
-  it('places every school from points.bin, with its kind, without the names', () => {
-    const positions = parsePositions(testPoints(SCHOOLS, DISTRICTS.length));
-    expect(positions?.lngLat).toHaveLength(8);
-    expect(positions?.lngLat[6]).toBeCloseTo(-94.593001, 6);
-    expect(positions?.lngLat[7]).toBeCloseTo(39.03606, 6);
-    expect(Array.from(positions?.lngLat ?? [])).toEqual(Array.from(directory().lngLat));
-    expect(Array.from(positions?.kind ?? [])).toEqual([0, 0, 0, 1]);
-  });
-
-  it('refuses bytes that are not a whole points file', () => {
-    const bytes = testPoints(SCHOOLS, DISTRICTS.length);
-    expect(parsePositions(bytes.slice(0, 20))).toBeNull();
-    expect(parsePositions(bytes.slice(0, 8))).toBeNull();
-    const wrongMagic = bytes.slice(0);
-    new DataView(wrongMagic).setUint8(0, 0);
-    expect(parsePositions(wrongMagic)).toBeNull();
-    const offTheMap = bytes.slice(0);
-    new DataView(offTheMap).setInt32(16, 200_000_000, true);
-    expect(parsePositions(offTheMap)).toBeNull();
-  });
-});
-
 describe('lookups', () => {
   it('finds schools and districts by id, and says so when there is none', () => {
     const found = directory();
@@ -146,33 +122,6 @@ describe('loading', () => {
     const files = createDataFiles(['schools/meta.json', 'schools/points.bin'], ROOT);
     const loaded = await loadDirectory(files, {}, serve(meta, testPoints(SCHOOLS, 2)));
     expect(loaded?.count).toBe(4);
-  });
-
-  it('reads the positions from the same download as the directory, once', async () => {
-    const files = createDataFiles(['schools/meta.json', 'schools/points.bin'], ROOT);
-    const fetchImpl = serve(testMeta(SCHOOLS, DISTRICTS), testPoints(SCHOOLS, 2));
-    const source = directorySource(files, { fetch: fetchImpl });
-    const positions = await source.positions();
-    expect(positions?.lngLat).toHaveLength(8);
-    // Only points.bin: the names are not needed for where schools are.
-    expect(fetchImpl.mock.calls.map(([url]) => url)).toEqual([`${ROOT}schools/points.bin`]);
-    expect((await source.get())?.count).toBe(4);
-    expect(fetchImpl.mock.calls.map(([url]) => url).sort()).toEqual([
-      `${ROOT}schools/meta.json`,
-      `${ROOT}schools/points.bin`,
-    ]);
-    expect(await source.positions()).toEqual(positions);
-    expect(fetchImpl).toHaveBeenCalledTimes(2);
-  });
-
-  it('has no positions, and asks for nothing, when the build ships no directory', async () => {
-    const fetchImpl = vi.fn<(input: string) => Promise<Response>>();
-    const source = directorySource(createDataFiles(['schools/points.bin'], ROOT), {
-      fetch: fetchImpl,
-    });
-    expect(await source.positions()).toBeNull();
-    expect(await source.get()).toBeNull();
-    expect(fetchImpl).not.toHaveBeenCalled();
   });
 
   it('drops a cached directory older than a file names, once, and loads it again', async () => {

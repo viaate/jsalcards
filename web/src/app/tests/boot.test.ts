@@ -97,10 +97,7 @@ function withDirectory(): AppData {
   const points = parsePoints(testPoints(schools, 1), meta);
   if (points === null) throw new Error('points did not parse');
   const directory = createDirectory(meta, points);
-  const source: DirectorySource = {
-    get: () => Promise.resolve(directory),
-    positions: () => Promise.resolve({ lngLat: points.lngLat, kind: points.kind }),
-  };
+  const source: DirectorySource = { get: () => Promise.resolve(directory) };
   return {
     files: createDataFiles(['schools/meta.json', 'schools/points.bin'], ROOT),
     directories: () => Promise.resolve(source),
@@ -494,14 +491,12 @@ describe('the glow', () => {
     await settle();
     expect(glow.dust).toHaveBeenCalledOnce();
     const [source] = glow.dust.mock.calls[0] as [DustSource];
-    const positions = await source.positions();
-    expect(Array.from(positions?.lngLat ?? [])).toEqual([-86.8, 33.5, -94.593001, 39.03606]);
-    expect(positions?.kind).toHaveLength(2);
-    // Then who each school is, for a tap on its speck.
-    expect(await source.names()).toEqual({
-      ids: ['010000500870', PEMBROKE_HILL],
-      names: ['First', 'Second'],
-    });
+    const schools = await source();
+    expect(Array.from(schools?.lngLat ?? [])).toEqual([-86.8, 33.5, -94.593001, 39.03606]);
+    expect(schools?.kind).toHaveLength(2);
+    // And who each school is, for a tap on its speck, from the same directory.
+    expect(schools?.ids).toEqual(['010000500870', PEMBROKE_HILL]);
+    expect(schools?.names).toEqual(['First', 'Second']);
     expect(fetchSpy).not.toHaveBeenCalled();
     controller.abort();
     fetchSpy.mockRestore();
@@ -512,8 +507,7 @@ describe('the glow', () => {
     const { controller } = start('https://snow.test/', NO_DATA, false, glow);
     await settle();
     const [source] = glow.dust.mock.calls[0] as [DustSource];
-    expect(await source.positions()).toBeNull();
-    expect(await source.names()).toBeNull();
+    expect(await source()).toBeNull();
     controller.abort();
   });
 

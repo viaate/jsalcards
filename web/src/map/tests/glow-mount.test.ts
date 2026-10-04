@@ -185,17 +185,15 @@ async function settle(): Promise<void> {
 
 describe('the dust', () => {
   // Kansas City, beside it (private), and Boston.
-  const positions = {
+  const schools = {
     lngLat: new Float64Array([-94.6, 39.1, -94.5, 39.0, -71.1, 42.4]),
     kind: new Uint8Array([0, 1, 0]),
+    ids: ['a', 'b', 'c'],
+    names: ['A', 'B', 'C'],
   };
-  const names = { ids: ['a', 'b', 'c'], names: ['A', 'B', 'C'] };
   /** A source of the dust that says how often it was read. */
-  function source(read: Partial<DustSource> = {}) {
-    return {
-      positions: vi.fn(read.positions ?? (() => Promise.resolve(positions))),
-      names: vi.fn(read.names ?? (() => Promise.resolve(names))),
-    };
+  function source(read: DustSource = () => Promise.resolve(schools)) {
+    return vi.fn(read);
   }
 
   it('reads every school only once the map is at a zoom that shows it, and only once', async () => {
@@ -206,20 +204,18 @@ describe('the dust', () => {
     glow.dust(read);
     // The national view: nothing read.
     await settle();
-    expect(read.positions).not.toHaveBeenCalled();
+    expect(read).not.toHaveBeenCalled();
     map.zoomTo(SCHOOL_DUST_FROM);
-    expect(read.positions).not.toHaveBeenCalled();
-    // Zoomed in to where the dust shows: where each school is and who it is, read together, and on
-    // the layer.
+    expect(read).not.toHaveBeenCalled();
+    // Zoomed in to where the dust shows: where each school is and who it is, and on the layer.
     map.zoomTo(6);
-    expect(read.positions).toHaveBeenCalledOnce();
-    expect(read.names).toHaveBeenCalledOnce();
+    expect(read).toHaveBeenCalledOnce();
     expect(map.watchingZoom).toBe(false);
     await settle();
     expect(map.layer?.stats.dust).toBe(3);
     map.zoomTo(7);
     glow.dust(read);
-    expect(read.positions).toHaveBeenCalledOnce();
+    expect(read).toHaveBeenCalledOnce();
   });
 
   it('reads it at once on a map that opens where it shows, and never where the tiles draw alone', () => {
@@ -227,11 +223,11 @@ describe('the dust', () => {
     inMetro.zoom = 12;
     const read = source();
     mount(inMetro).dust(read);
-    expect(read.positions).not.toHaveBeenCalled();
+    expect(read).not.toHaveBeenCalled();
     const inState = new FakeMap();
     inState.zoom = 6.5;
     mount(inState).dust(read);
-    expect(read.positions).toHaveBeenCalledOnce();
+    expect(read).toHaveBeenCalledOnce();
     expect(showsDust(SCHOOL_DUST_UNTIL)).toBe(false);
     expect(showsDust(SCHOOL_DUST_UNTIL - 0.01)).toBe(true);
   });
@@ -262,7 +258,7 @@ describe('the dust', () => {
     const today: LitSchools = {
       ...lit(0, 1, 2),
       status: new Uint8Array([0, 1, 0]),
-      kinds: positions.kind,
+      kinds: schools.kind,
     };
     const nearKansasCity = (): number[] =>
       [
@@ -328,7 +324,7 @@ describe('the dust', () => {
     expect(nearKansasCity()).toEqual([0]);
   });
 
-  it('finds the schools drawn near a point once their names are in, as a tap reads them', async () => {
+  it('finds the schools drawn near a point, and who each is, as a tap reads them', async () => {
     const map = new FakeMap();
     map.load();
     const glow = mount(map);
@@ -337,8 +333,8 @@ describe('the dust', () => {
     map.zoomTo(8);
     await settle();
     const specks = glow.specks;
-    expect(specks).toMatchObject({ ids: names.ids, names: names.names });
-    expect(specks?.lngLat).toBe(positions.lngLat);
+    expect(specks).toMatchObject({ ids: schools.ids, names: schools.names });
+    expect(specks?.lngLat).toBe(schools.lngLat);
     const nearKansasCity = (): number[] =>
       [...(specks?.near(mercatorXFromLng(-94.55), mercatorYFromLat(39.05), 0.001) ?? [])].sort();
     expect(nearKansasCity()).toEqual([0, 1]);
@@ -349,46 +345,31 @@ describe('the dust', () => {
     expect(nearKansasCity()).toEqual([]);
   });
 
-  it('is drawn only once who each school is is in: no speck shows that a tap could not open', async () => {
-    for (const read of [
-      source({ names: () => Promise.resolve(null) }),
-      source({ names: () => Promise.reject(new Error('offline')) }),
-      source({ names: () => Promise.resolve({ ids: ['a'], names: ['A'] }) }),
-    ]) {
-      const map = new FakeMap();
-      map.load();
-      map.zoom = 7;
-      const glow = mount(map);
-      glow.dust(read);
-      await settle();
-      expect(map.layer?.stats.dust).toBe(0);
-      expect(glow.specks).toBeNull();
-    }
-    // Names that come after the positions: nothing drawn until they do.
-    let named: (value: typeof names) => void = () => undefined;
+  it('is drawn only once the directory is in, where each school is and who it is together', async () => {
+    let read: (value: typeof schools) => void = () => undefined;
     const map = new FakeMap();
     map.load();
     map.zoom = 7;
     const glow = mount(map);
-    glow.dust(source({ names: () => new Promise((resolve) => (named = resolve)) }));
+    glow.dust(source(() => new Promise((resolve) => (read = resolve))));
     await settle();
     expect(map.layer?.stats.dust).toBe(0);
     expect(glow.specks).toBeNull();
-    named(names);
+    read(schools);
     await settle();
     expect(map.layer?.stats.dust).toBe(3);
-    expect(glow.specks?.ids).toEqual(names.ids);
+    expect(glow.specks?.ids).toEqual(schools.ids);
   });
 
   it('shows nothing when there is no directory, or reading it fails, and nothing once removed', async () => {
     const map = new FakeMap();
     map.load();
     map.zoom = 7;
-    mount(map).dust(source({ positions: () => Promise.resolve(null) }));
+    mount(map).dust(source(() => Promise.resolve(null)));
     const failing = new FakeMap();
     failing.load();
     failing.zoom = 7;
-    mount(failing).dust(source({ positions: () => Promise.reject(new Error('offline')) }));
+    mount(failing).dust(source(() => Promise.reject(new Error('offline'))));
     const gone = new FakeMap();
     gone.load();
     const glow = mount(gone);

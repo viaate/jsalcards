@@ -104,17 +104,18 @@ const NOT_LIVE: LiveGlow = Object.freeze({ filter: () => undefined, stop: () => 
 
 /**
  * The glow's dust, from the directory this build ships: where every school
- * is and its kind (points.bin alone), and who each is (the whole directory,
- * which reads points.bin from the same download), for a tap on a speck.
- * Each null when it ships none.
+ * is, its kind and who it is, for a tap on a speck. Null when it ships none.
  */
 export function dustSource(data: AppData): DustSource {
-  return {
-    positions: async () => (await (await data.directories())?.positions()) ?? null,
-    names: async () => {
-      const meta = (await (await data.directories())?.get())?.meta;
-      return meta === undefined ? null : { ids: meta.ids, names: meta.names };
-    },
+  return async () => {
+    const directory = await (await data.directories())?.get();
+    if (directory === undefined || directory === null) return null;
+    return {
+      lngLat: directory.lngLat,
+      kind: directory.kind,
+      ids: directory.meta.ids,
+      names: directory.meta.names,
+    };
   };
 }
 

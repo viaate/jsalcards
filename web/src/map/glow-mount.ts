@@ -13,19 +13,18 @@
  * its light shows in its status's color alone.
  *
  * Further out than the school tiles reach, the layer draws every school as
- * dust, the same dot dimmed and shrunk (basemap/dots.ts), from the
- * directory's own positions: read the first time the map is at a zoom that
- * shows dust, so the national view reads nothing for it. The dust shows the
- * kinds of school the menu shows, and the open school whatever its kind, as
- * the dots do (basemap/schools.ts schoolKindFilter), and a tap on a speck finds
- * its school as a tap on a dot does (school-taps.ts). It is drawn only once
- * every school's name is in too, read from the directory alongside the
- * positions, so no speck shows that a tap could not open.
+ * dust, the same dot dimmed and shrunk (basemap/dots.ts), from the directory:
+ * read the first time the map is at a zoom that shows dust, so the national
+ * view reads nothing for it. The dust shows the kinds of school the menu
+ * shows, and the open school whatever its kind, as the dots do
+ * (basemap/schools.ts schoolKindFilter), and a tap on a speck finds its
+ * school as a tap on a dot does (school-taps.ts): where each school is and
+ * who it is come from the one directory, so no speck shows that a tap could
+ * not open, or that would open another school.
  */
 import type { Map as MapLibreMap } from 'maplibre-gl';
 
 import type { LitSchools } from '../data/closings';
-import type { Positions } from '../data/directory';
 import type { SchoolId } from '../types/generated';
 import {
   SCHOOL_DOT_OPACITY,
@@ -64,22 +63,21 @@ export function litRadius(zoom: number): number {
  */
 export const DOT_COLOR = '#f5f5f5';
 
-/** Who each school is, in directory order: its id, and its name as the directory writes it. */
-export interface SchoolNames {
+/** Every school as the dust draws it, in directory order: where each is, its kind flags and who it is. */
+export interface DustSchools {
+  /** Longitude and latitude in degrees, interleaved. */
+  readonly lngLat: Float64Array;
+  readonly kind: Uint8Array;
   readonly ids: readonly SchoolId[];
+  /** Each one's name as the directory writes it. */
   readonly names: readonly string[];
 }
 
-/** Where the dust comes from: every school, and who each is. Null when there are none. */
-export interface DustSource {
-  positions(): Promise<Positions | null>;
-  names(): Promise<SchoolNames | null>;
-}
+/** Where the dust comes from: every school, from one directory. Null when there is none. */
+export type DustSource = () => Promise<DustSchools | null>;
 
 /** The schools drawn as dust, for a tap on a speck (school-taps.ts). */
-export interface DustSpots extends SchoolNames {
-  /** Every school's longitude and latitude in degrees, in directory order. */
-  readonly lngLat: Float64Array;
+export interface DustSpots extends Omit<DustSchools, 'kind'> {
   /**
    * The schools whose specks are drawn within `reach` Web Mercator units of
    * (x, y) each way, by their places in the directory.
@@ -95,7 +93,6 @@ export interface Glow {
   /**
    * Shows every school as dust further out than the school tiles reach, from
    * `source`, read once: the first time the map is at a zoom that shows dust.
-   * Drawn once both where each school is and who it is are in.
    */
   dust(source: DustSource): void;
   /**
@@ -189,16 +186,13 @@ export function mountGlow(map: MapLibreMap): Glow {
     pending = null;
     map.off('zoom', watchZoom);
     void (async () => {
-      const [positions, names] = await Promise.all([
-        source.positions().catch(() => null),
-        source.names().catch(() => null),
-      ]);
-      if (gone() || positions === null || names?.ids.length !== positions.kind.length) return;
-      layer.setDust(positions.lngLat, positions.kind);
+      const schools = await source().catch(() => null);
+      if (gone() || schools === null) return;
+      layer.setDust(schools.lngLat, schools.kind);
       specks = {
-        lngLat: positions.lngLat,
-        ids: names.ids,
-        names: names.names,
+        lngLat: schools.lngLat,
+        ids: schools.ids,
+        names: schools.names,
         near: (x, y, reach) => layer.dustNear(x, y, reach),
       };
       keepSelected();
