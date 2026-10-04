@@ -161,7 +161,7 @@ export interface Services {
   /**
    * Shows only what the menu's filter keeps: the lit schools of its status
    * and kinds on the glow, the school dots, dust and names of its kinds on
-   * the map.
+   * the map, and the open school's whatever its kind.
    */
   filter(filter: MapFilter): void;
 }
@@ -243,6 +243,11 @@ export function boot(options: BootOptions): Services {
     // kinds the menu shows.
     layer.dust(dustSource(data));
     layer.showSchools(kindsShown(filter));
+    // And the open school's whatever its kind, as its dot.
+    const stopSelected = links.subscribe(({ selection }) => {
+      layer.select(selection?.kind === 'school' ? selection.id : null);
+    });
+    signal.addEventListener('abort', stopSelected);
     const started = await startLiveGlow(
       data,
       glow,

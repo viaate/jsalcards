@@ -16,7 +16,8 @@
  * dust, the same dot dimmed and shrunk (basemap/dots.ts), from the
  * directory's own positions: read the first time the map is at a zoom that
  * shows dust, so the national view reads nothing for it. The dust shows the
- * kinds of school the menu shows, as the dots do, and a tap on a speck finds
+ * kinds of school the menu shows, and the open school whatever its kind, as
+ * the dots do (basemap/schools.ts schoolKindFilter), and a tap on a speck finds
  * its school as a tap on a dot does (school-taps.ts). It is drawn only once
  * every school's name is in too, read from the directory alongside the
  * positions, so no speck shows that a tap could not open.
@@ -102,6 +103,11 @@ export interface Glow {
    * the menu's filter shows (state/filter.ts showsSchool), as the dots show.
    */
   showSchools(shows: (flags: number) => boolean): void;
+  /**
+   * Shows the school with this id as dust whatever its kind, as the dots
+   * show the school whose panel is open; none with null.
+   */
+  select(id: SchoolId | null): void;
   /** The dust, for a tap on a speck; null until it is drawn. */
   readonly specks: DustSpots | null;
   remove(): void;
@@ -174,6 +180,12 @@ export function mountGlow(map: MapLibreMap): Glow {
   /** Where to read the dust from, until the map first shows it. */
   let pending: DustSource | null = null;
   let specks: DustSpots | null = null;
+  let selected: SchoolId | null = null;
+  /** The open school's speck kept, once the dust knows who each school is. */
+  const keepSelected = (): void => {
+    const school = selected === null ? -1 : (specks?.ids.indexOf(selected) ?? -1);
+    layer.keepDust(school < 0 ? null : school);
+  };
   const watchZoom = (): void => {
     if (pending === null || !showsDust(map.getZoom())) return;
     const source = pending;
@@ -192,6 +204,7 @@ export function mountGlow(map: MapLibreMap): Glow {
         names: names.names,
         near: (x, y, reach) => layer.dustNear(x, y, reach),
       };
+      keepSelected();
     })();
   };
   const add = (): void => {
@@ -225,6 +238,11 @@ export function mountGlow(map: MapLibreMap): Glow {
     },
     showSchools(shows) {
       layer.filterDust(shows);
+    },
+    select(id) {
+      if (id === selected) return;
+      selected = id;
+      keepSelected();
     },
     get lit() {
       return shown;

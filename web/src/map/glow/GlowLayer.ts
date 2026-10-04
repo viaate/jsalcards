@@ -37,8 +37,9 @@
  * setDust as a faint speck (dust.ts), in render before the composite, so the
  * glow's light is screened over it; a school flagged with hideDust (one the
  * glow lights) gives way to its light, and filterDust leaves out the kinds of
- * school the page hides. dustNear finds the specks drawn near a point, for a
- * tap on one. The dust has its own small program,
+ * school the page hides, all but the one keepDust names (the school whose
+ * panel is open). dustNear finds the specks drawn near a point, for a tap on
+ * one. The dust has its own small program,
  * compiled the first time it is drawn, and draws nothing outside its zooms.
  */
 import type {
@@ -349,6 +350,9 @@ export class GlowLayer implements CustomLayerInterface {
   private dustLitSet: ReadonlySet<number> = new Set();
   /** Which kinds of school show as dust, by their kind flags. */
   private dustShows: (kind: number) => boolean = () => true;
+  /** The school shown as dust whatever its kind (a place in setDust's list), and its slot in the grid. */
+  private dustKeptSchool: number | null = null;
+  private dustKept = -1;
   /** The positions the GPU draws: the grid's, with each speck left out moved off the world. */
   private dustDrawnAt: Float32Array | null = null;
   private dustLeftOut = 0;
@@ -407,6 +411,7 @@ export class GlowLayer implements CustomLayerInterface {
         const slot = grid.slotOf[school];
         if (slot !== undefined) this.dustLit[slot] = 1;
       }
+      this.dustKept = this.slotOf(this.dustKeptSchool);
       this.dustDrawnAt = grid.positions.slice();
       this.placeAllDust();
     }
@@ -439,6 +444,26 @@ export class GlowLayer implements CustomLayerInterface {
   }
 
   /**
+   * Shows this school (a place in setDust's list) as dust whatever its kind,
+   * as the page shows the school whose panel is open, or none with null. A
+   * school the glow lights still gives way to its light.
+   */
+  keepDust(school: number | null): void {
+    this.dustKeptSchool = school;
+    const before = this.dustKept;
+    this.dustKept = this.slotOf(school);
+    if (before === this.dustKept) return;
+    let changed = before >= 0 && this.placeDust(before);
+    if (this.dustKept >= 0) changed = this.placeDust(this.dustKept) || changed;
+    if (changed) this.map?.triggerRepaint();
+  }
+
+  /** A school's slot in the dust's grid, or -1 for none. */
+  private slotOf(school: number | null): number {
+    return school === null ? -1 : (this.dust?.slotOf[school] ?? -1);
+  }
+
+  /**
    * The schools whose specks are drawn within `reach` Web Mercator units of
    * (x, y) each way, by their places in setDust's list: lit ones and those of
    * a kind not shown left out, and every one where the GPU could not run the
@@ -453,7 +478,8 @@ export class GlowLayer implements CustomLayerInterface {
   }
 
   private dustShown(slot: number): boolean {
-    return this.dustLit?.[slot] !== 1 && this.dustShows(this.dustKinds?.[slot] ?? 0);
+    if (this.dustLit?.[slot] === 1) return false;
+    return slot === this.dustKept || this.dustShows(this.dustKinds?.[slot] ?? 0);
   }
 
   /** Draws this slot's speck where it is, or off the world if it is left out; true if that changed. */

@@ -266,6 +266,31 @@ describe('the dust', () => {
     expect(map.layer?.stats.dustHidden).toBe(0);
   });
 
+  it('shows the open school whatever its kind, as the dots do, before the dust is in or after', async () => {
+    const map = new FakeMap();
+    map.load();
+    const glow = mount(map);
+    glow.showSchools((flags) => showsSchool({ ...SHOW_ALL, private: false }, flags));
+    glow.select('b');
+    glow.dust(source());
+    map.zoomTo(8);
+    await settle();
+    const nearKansasCity = (): number[] =>
+      [
+        ...(glow.specks?.near(mercatorXFromLng(-94.55), mercatorYFromLat(39.05), 0.001) ?? []),
+      ].sort();
+    expect(map.layer?.stats.dustHidden).toBe(0);
+    expect(nearKansasCity()).toEqual([0, 1]);
+    glow.select(null);
+    expect(map.layer?.stats.dustHidden).toBe(1);
+    expect(nearKansasCity()).toEqual([0]);
+    glow.select('b');
+    expect(nearKansasCity()).toEqual([0, 1]);
+    // A school the directory does not have keeps none.
+    glow.select('z');
+    expect(nearKansasCity()).toEqual([0]);
+  });
+
   it('finds the schools drawn near a point once their names are in, as a tap reads them', async () => {
     const map = new FakeMap();
     map.load();

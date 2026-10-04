@@ -126,6 +126,37 @@ describe('GlowLayer', () => {
     expect(layer.dustNear(0.5, 0.5, 1)).toEqual([]);
   });
 
+  it('keeps the open school as dust whatever its kind, though not over its light', () => {
+    const layer = new GlowLayer();
+    // Kept before the dust is in: kept as soon as it is.
+    layer.keepDust(1);
+    layer.filterDust((kind) => (kind & 1) === 0);
+    layer.setDust(
+      new Float64Array([-94.6, 39.1, -94.5, 39.0, -71.1, 42.4]),
+      new Uint8Array([0, 1, 1]),
+    );
+    const near = (): number[] =>
+      [...layer.dustNear(mercatorXFromLng(-94.55), mercatorYFromLat(39.05), 0.001)].sort();
+    // Public schools only: Boston's private school is left out, the open one beside Kansas City not.
+    expect(layer.stats.dustHidden).toBe(1);
+    expect(near()).toEqual([0, 1]);
+    // Another school open, or none: the one before is left out as its kind is.
+    layer.keepDust(2);
+    expect(layer.stats.dustHidden).toBe(1);
+    expect(near()).toEqual([0]);
+    layer.keepDust(null);
+    expect(layer.stats.dustHidden).toBe(2);
+    // Lit, the open school gives way to its light.
+    layer.keepDust(1);
+    layer.hideDust(new Set([1]));
+    expect(near()).toEqual([0]);
+    layer.hideDust(new Set());
+    expect(near()).toEqual([0, 1]);
+    // A place not in the list keeps nothing.
+    layer.keepDust(7);
+    expect(layer.stats.dustHidden).toBe(2);
+  });
+
   it('finds no speck where the GPU could not run the dust: none is drawn', () => {
     const layer = new GlowLayer({ dust: dustStyle() });
     layer.setDust(new Float64Array([-94.6, 39.1]), new Uint8Array([0]));

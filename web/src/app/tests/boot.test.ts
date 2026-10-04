@@ -114,6 +114,7 @@ function fakeGlow() {
     lit: null,
     dust: vi.fn<(source: DustSource) => void>(),
     showSchools: vi.fn<(shows: (flags: number) => boolean) => void>(),
+    select: vi.fn<(id: string | null) => void>(),
     specks: null,
     remove: vi.fn(),
   };
@@ -533,6 +534,26 @@ describe('the glow', () => {
     await settle();
     expect(shown()).toEqual([true, false]);
     controller.abort();
+  });
+
+  it('shows the open school in the dust whatever its kind, as the address changes', async () => {
+    const glow = fakeGlow();
+    const { controller, links } = start(
+      `https://snow.test/?school=${PEMBROKE_HILL}`,
+      withDirectory(),
+      false,
+      glow,
+    );
+    await settle();
+    expect(glow.select).toHaveBeenLastCalledWith(PEMBROKE_HILL);
+    links.select(null);
+    expect(glow.select).toHaveBeenLastCalledWith(null);
+    links.select({ kind: 'school', id: '010000500870' });
+    expect(glow.select).toHaveBeenLastCalledWith('010000500870');
+    controller.abort();
+    const calls = glow.select.mock.calls.length;
+    links.select(null);
+    expect(glow.select).toHaveBeenCalledTimes(calls);
   });
 });
 
