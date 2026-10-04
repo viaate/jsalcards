@@ -1,1504 +1,1504 @@
 {
  "snapshots": [
   {
-   "timestamp": "20250212075851",
-   "url": "https://www.abc4.com/weather/closings/",
-   "station": "nexstar-ktvx",
-   "why": "an unread capture of its list, read so that every capture of it is read"
+   "timestamp": "20210411093557",
+   "url": "https://www.dchsglendive.com/",
+   "station": "apptegy-dawson-hs-mt",
+   "why": "a capture two days or less from one of its closure days (2021-04-11), read because fewer than three captures of its closure days showed its list"
   },
   {
-   "timestamp": "20210419101808",
-   "url": "https://spectrumlocalnews.com/tx/san-antonio/weather/closings",
-   "station": "spectrum-san-antonio",
-   "why": "an unread capture of its list, read so that every capture of it is read"
+   "timestamp": "20210414221656",
+   "url": "https://www.dchsglendive.com/",
+   "station": "apptegy-dawson-hs-mt",
+   "why": "a capture two days or less from one of its closure days (2021-04-15), read because fewer than three captures of its closure days showed its list"
   },
   {
-   "timestamp": "20251026025345",
-   "url": "https://spectrumlocalnews.com/tx/san-antonio/weather/closings",
-   "station": "spectrum-san-antonio",
-   "why": "an unread capture of its list, read so that every capture of it is read"
+   "timestamp": "20220119041448",
+   "url": "https://www.dchsglendive.com/",
+   "station": "apptegy-dawson-hs-mt",
+   "why": "a capture two days or less from one of its closure days (2022-01-19), read because fewer than three captures of its closure days showed its list"
   },
   {
-   "timestamp": "20160324123356",
-   "url": "http://www.kens5.com:80/closings",
-   "station": "tegna-kens",
-   "why": "an unread capture of its list, read so that every capture of it is read"
+   "timestamp": "20231207095232",
+   "url": "https://www.dchsglendive.com/",
+   "station": "apptegy-dawson-hs-mt",
+   "why": "a capture two days or less from one of its closure days (2023-12-07), read because fewer than three captures of its closure days showed its list"
   },
   {
-   "timestamp": "20160524043232",
-   "url": "http://www.kens5.com:80/closings",
-   "station": "tegna-kens",
-   "why": "an unread capture of its list, read so that every capture of it is read"
+   "timestamp": "20241206194454",
+   "url": "https://www.dchsglendive.com/",
+   "station": "apptegy-dawson-hs-mt",
+   "why": "a capture two days or less from one of its closure days (2024-12-07), read because fewer than three captures of its closure days showed its list"
   },
   {
-   "timestamp": "20160724014115",
-   "url": "http://www.kens5.com:80/closings",
-   "station": "tegna-kens",
-   "why": "an unread capture of its list, read so that every capture of it is read"
-  },
-  {
-   "timestamp": "20160802154639",
-   "url": "http://www.kens5.com/closings",
-   "station": "tegna-kens",
-   "why": "an unread capture of its list, read so that every capture of it is read"
-  },
-  {
-   "timestamp": "20160922162134",
-   "url": "http://www.kens5.com:80/closings",
-   "station": "tegna-kens",
-   "why": "an unread capture of its list, read so that every capture of it is read"
-  },
-  {
-   "timestamp": "20160923170818",
-   "url": "http://www.kens5.com:80/closings",
-   "station": "tegna-kens",
-   "why": "an unread capture of its list, read so that every capture of it is read"
-  },
-  {
-   "timestamp": "20161111224429",
-   "url": "http://www.kens5.com/closings",
-   "station": "tegna-kens",
-   "why": "an unread capture of its list, read so that every capture of it is read"
-  },
-  {
-   "timestamp": "20161119204314",
-   "url": "http://www.kens5.com:80/closings",
-   "station": "tegna-kens",
-   "why": "an unread capture of its list, read so that every capture of it is read"
-  },
-  {
-   "timestamp": "20170119092712",
-   "url": "http://www.kens5.com:80/closings",
-   "station": "tegna-kens",
-   "why": "an unread capture of its list, read so that every capture of it is read"
-  },
-  {
-   "timestamp": "20170128230122",
-   "url": "http://www.kens5.com/closings",
-   "station": "tegna-kens",
-   "why": "an unread capture of its list, read so that every capture of it is read"
-  },
-  {
-   "timestamp": "20170218074204",
-   "url": "http://www.kens5.com/closings",
-   "station": "tegna-kens",
-   "why": "an unread capture of its list, read so that every capture of it is read"
-  },
-  {
-   "timestamp": "20170310183930",
-   "url": "http://www.kens5.com/closings",
-   "station": "tegna-kens",
-   "why": "an unread capture of its list, read so that every capture of it is read"
-  },
-  {
-   "timestamp": "20170320212330",
-   "url": "http://www.kens5.com:80/closings",
-   "station": "tegna-kens",
-   "why": "an unread capture of its list, read so that every capture of it is read"
-  },
-  {
-   "timestamp": "20170321190859",
-   "url": "http://www.kens5.com/closings",
-   "station": "tegna-kens",
-   "why": "an unread capture of its list, read so that every capture of it is read"
-  },
-  {
-   "timestamp": "20170322045244",
-   "url": "http://www.kens5.com/closings",
-   "station": "tegna-kens",
-   "why": "an unread capture of its list, read so that every capture of it is read"
-  },
-  {
-   "timestamp": "20170324232358",
-   "url": "http://www.kens5.com/closings",
-   "station": "tegna-kens",
-   "why": "an unread capture of its list, read so that every capture of it is read"
-  },
-  {
-   "timestamp": "20170331001301",
-   "url": "http://www.kens5.com/closings",
-   "station": "tegna-kens",
-   "why": "an unread capture of its list, read so that every capture of it is read"
-  },
-  {
-   "timestamp": "20170412092057",
-   "url": "http://www.kens5.com/closings",
-   "station": "tegna-kens",
-   "why": "an unread capture of its list, read so that every capture of it is read"
-  },
-  {
-   "timestamp": "20170506005559",
-   "url": "http://www.kens5.com/closings",
-   "station": "tegna-kens",
-   "why": "an unread capture of its list, read so that every capture of it is read"
-  },
-  {
-   "timestamp": "20170507184407",
-   "url": "http://www.kens5.com/closings",
-   "station": "tegna-kens",
-   "why": "an unread capture of its list, read so that every capture of it is read"
-  },
-  {
-   "timestamp": "20170513094708",
-   "url": "http://www.kens5.com/closings",
-   "station": "tegna-kens",
-   "why": "an unread capture of its list, read so that every capture of it is read"
-  },
-  {
-   "timestamp": "20170524031704",
-   "url": "http://www.kens5.com/closings",
-   "station": "tegna-kens",
-   "why": "an unread capture of its list, read so that every capture of it is read"
-  },
-  {
-   "timestamp": "20170526071513",
-   "url": "http://www.kens5.com/closings",
-   "station": "tegna-kens",
-   "why": "an unread capture of its list, read so that every capture of it is read"
-  },
-  {
-   "timestamp": "20170527092940",
-   "url": "http://www.kens5.com/closings",
-   "station": "tegna-kens",
-   "why": "an unread capture of its list, read so that every capture of it is read"
-  },
-  {
-   "timestamp": "20170529094118",
-   "url": "http://www.kens5.com/closings",
-   "station": "tegna-kens",
-   "why": "an unread capture of its list, read so that every capture of it is read"
-  },
-  {
-   "timestamp": "20170605211453",
-   "url": "http://www.kens5.com/closings",
-   "station": "tegna-kens",
-   "why": "an unread capture of its list, read so that every capture of it is read"
-  },
-  {
-   "timestamp": "20170608041144",
-   "url": "http://www.kens5.com/closings",
-   "station": "tegna-kens",
-   "why": "an unread capture of its list, read so that every capture of it is read"
-  },
-  {
-   "timestamp": "20170609074258",
-   "url": "http://www.kens5.com/closings",
-   "station": "tegna-kens",
-   "why": "an unread capture of its list, read so that every capture of it is read"
-  },
-  {
-   "timestamp": "20170609182146",
-   "url": "http://www.kens5.com/closings",
-   "station": "tegna-kens",
-   "why": "an unread capture of its list, read so that every capture of it is read"
-  },
-  {
-   "timestamp": "20170610045843",
-   "url": "http://www.kens5.com/closings",
-   "station": "tegna-kens",
-   "why": "an unread capture of its list, read so that every capture of it is read"
-  },
-  {
-   "timestamp": "20170610070913",
-   "url": "http://www.kens5.com/closings",
-   "station": "tegna-kens",
-   "why": "an unread capture of its list, read so that every capture of it is read"
-  },
-  {
-   "timestamp": "20170613183632",
-   "url": "http://www.kens5.com/closings",
-   "station": "tegna-kens",
-   "why": "an unread capture of its list, read so that every capture of it is read"
-  },
-  {
-   "timestamp": "20170617124920",
-   "url": "http://www.kens5.com/closings",
-   "station": "tegna-kens",
-   "why": "an unread capture of its list, read so that every capture of it is read"
-  },
-  {
-   "timestamp": "20170623010846",
-   "url": "http://www.kens5.com/closings",
-   "station": "tegna-kens",
-   "why": "an unread capture of its list, read so that every capture of it is read"
-  },
-  {
-   "timestamp": "20170625183650",
-   "url": "http://www.kens5.com/closings",
-   "station": "tegna-kens",
-   "why": "an unread capture of its list, read so that every capture of it is read"
-  },
-  {
-   "timestamp": "20170702180313",
-   "url": "http://www.kens5.com/closings",
-   "station": "tegna-kens",
-   "why": "an unread capture of its list, read so that every capture of it is read"
-  },
-  {
-   "timestamp": "20170703185435",
-   "url": "http://www.kens5.com/closings",
-   "station": "tegna-kens",
-   "why": "an unread capture of its list, read so that every capture of it is read"
-  },
-  {
-   "timestamp": "20170709073728",
-   "url": "http://www.kens5.com/closings",
-   "station": "tegna-kens",
-   "why": "an unread capture of its list, read so that every capture of it is read"
-  },
-  {
-   "timestamp": "20170714021401",
-   "url": "http://www.kens5.com/closings",
-   "station": "tegna-kens",
-   "why": "an unread capture of its list, read so that every capture of it is read"
-  },
-  {
-   "timestamp": "20170715084114",
-   "url": "http://www.kens5.com/closings",
-   "station": "tegna-kens",
-   "why": "an unread capture of its list, read so that every capture of it is read"
-  },
-  {
-   "timestamp": "20170716031444",
-   "url": "http://www.kens5.com/closings",
-   "station": "tegna-kens",
-   "why": "an unread capture of its list, read so that every capture of it is read"
-  },
-  {
-   "timestamp": "20170717031354",
-   "url": "http://www.kens5.com/closings",
-   "station": "tegna-kens",
-   "why": "an unread capture of its list, read so that every capture of it is read"
-  },
-  {
-   "timestamp": "20170718193337",
-   "url": "http://www.kens5.com/closings",
-   "station": "tegna-kens",
-   "why": "an unread capture of its list, read so that every capture of it is read"
-  },
-  {
-   "timestamp": "20170719192759",
-   "url": "http://www.kens5.com/closings",
-   "station": "tegna-kens",
-   "why": "an unread capture of its list, read so that every capture of it is read"
-  },
-  {
-   "timestamp": "20170721191849",
-   "url": "http://www.kens5.com:80/closings",
-   "station": "tegna-kens",
-   "why": "an unread capture of its list, read so that every capture of it is read"
-  },
-  {
-   "timestamp": "20170722181658",
-   "url": "http://www.kens5.com/closings",
-   "station": "tegna-kens",
-   "why": "an unread capture of its list, read so that every capture of it is read"
-  },
-  {
-   "timestamp": "20170722235425",
-   "url": "http://www.kens5.com/closings",
-   "station": "tegna-kens",
-   "why": "an unread capture of its list, read so that every capture of it is read"
-  },
-  {
-   "timestamp": "20170723205827",
-   "url": "http://www.kens5.com/closings",
-   "station": "tegna-kens",
-   "why": "an unread capture of its list, read so that every capture of it is read"
-  },
-  {
-   "timestamp": "20170724081428",
-   "url": "http://www.kens5.com/closings",
-   "station": "tegna-kens",
-   "why": "an unread capture of its list, read so that every capture of it is read"
-  },
-  {
-   "timestamp": "20170724203126",
-   "url": "http://www.kens5.com/closings",
-   "station": "tegna-kens",
-   "why": "an unread capture of its list, read so that every capture of it is read"
-  },
-  {
-   "timestamp": "20170724211249",
-   "url": "http://www.kens5.com/closings",
-   "station": "tegna-kens",
-   "why": "an unread capture of its list, read so that every capture of it is read"
-  },
-  {
-   "timestamp": "20170726010810",
-   "url": "http://www.kens5.com/closings",
-   "station": "tegna-kens",
-   "why": "an unread capture of its list, read so that every capture of it is read"
-  },
-  {
-   "timestamp": "20170727003804",
-   "url": "http://www.kens5.com/closings",
-   "station": "tegna-kens",
-   "why": "an unread capture of its list, read so that every capture of it is read"
-  },
-  {
-   "timestamp": "20170728013159",
-   "url": "http://www.kens5.com/closings",
-   "station": "tegna-kens",
-   "why": "an unread capture of its list, read so that every capture of it is read"
-  },
-  {
-   "timestamp": "20170729010640",
-   "url": "http://www.kens5.com/closings",
-   "station": "tegna-kens",
-   "why": "an unread capture of its list, read so that every capture of it is read"
-  },
-  {
-   "timestamp": "20170731072244",
-   "url": "http://www.kens5.com/closings",
-   "station": "tegna-kens",
-   "why": "an unread capture of its list, read so that every capture of it is read"
-  },
-  {
-   "timestamp": "20170804043652",
-   "url": "http://www.kens5.com/closings",
-   "station": "tegna-kens",
-   "why": "an unread capture of its list, read so that every capture of it is read"
-  },
-  {
-   "timestamp": "20170806023344",
-   "url": "http://www.kens5.com/closings",
-   "station": "tegna-kens",
-   "why": "an unread capture of its list, read so that every capture of it is read"
-  },
-  {
-   "timestamp": "20170807034910",
-   "url": "http://www.kens5.com/closings",
-   "station": "tegna-kens",
-   "why": "an unread capture of its list, read so that every capture of it is read"
-  },
-  {
-   "timestamp": "20170808030323",
-   "url": "http://www.kens5.com/closings",
-   "station": "tegna-kens",
-   "why": "an unread capture of its list, read so that every capture of it is read"
-  },
-  {
-   "timestamp": "20170810033553",
-   "url": "http://www.kens5.com/closings",
-   "station": "tegna-kens",
-   "why": "an unread capture of its list, read so that every capture of it is read"
-  },
-  {
-   "timestamp": "20170812081011",
-   "url": "http://www.kens5.com/closings",
-   "station": "tegna-kens",
-   "why": "an unread capture of its list, read so that every capture of it is read"
-  },
-  {
-   "timestamp": "20170813090703",
-   "url": "http://www.kens5.com/closings",
-   "station": "tegna-kens",
-   "why": "an unread capture of its list, read so that every capture of it is read"
-  },
-  {
-   "timestamp": "20170814183024",
-   "url": "http://www.kens5.com/closings",
-   "station": "tegna-kens",
-   "why": "an unread capture of its list, read so that every capture of it is read"
-  },
-  {
-   "timestamp": "20170816015518",
-   "url": "http://www.kens5.com/closings",
-   "station": "tegna-kens",
-   "why": "an unread capture of its list, read so that every capture of it is read"
-  },
-  {
-   "timestamp": "20170818092444",
-   "url": "http://www.kens5.com/closings",
-   "station": "tegna-kens",
-   "why": "an unread capture of its list, read so that every capture of it is read"
-  },
-  {
-   "timestamp": "20170828184916",
-   "url": "http://www.kens5.com/closings",
-   "station": "tegna-kens",
-   "why": "an unread capture of its list, read so that every capture of it is read"
-  },
-  {
-   "timestamp": "20170829231851",
-   "url": "http://www.kens5.com/closings",
-   "station": "tegna-kens",
-   "why": "an unread capture of its list, read so that every capture of it is read"
-  },
-  {
-   "timestamp": "20170830082432",
-   "url": "http://www.kens5.com/closings",
-   "station": "tegna-kens",
-   "why": "an unread capture of its list, read so that every capture of it is read"
-  },
-  {
-   "timestamp": "20170831205458",
-   "url": "http://www.kens5.com/closings",
-   "station": "tegna-kens",
-   "why": "an unread capture of its list, read so that every capture of it is read"
-  },
-  {
-   "timestamp": "20170901194314",
-   "url": "http://www.kens5.com/closings",
-   "station": "tegna-kens",
-   "why": "an unread capture of its list, read so that every capture of it is read"
-  },
-  {
-   "timestamp": "20170902015038",
-   "url": "http://www.kens5.com/closings",
-   "station": "tegna-kens",
-   "why": "an unread capture of its list, read so that every capture of it is read"
-  },
-  {
-   "timestamp": "20170903094138",
-   "url": "http://www.kens5.com/closings",
-   "station": "tegna-kens",
-   "why": "an unread capture of its list, read so that every capture of it is read"
-  },
-  {
-   "timestamp": "20170905045152",
-   "url": "http://www.kens5.com/closings",
-   "station": "tegna-kens",
-   "why": "an unread capture of its list, read so that every capture of it is read"
-  },
-  {
-   "timestamp": "20170905195333",
-   "url": "http://www.kens5.com/closings",
-   "station": "tegna-kens",
-   "why": "an unread capture of its list, read so that every capture of it is read"
-  },
-  {
-   "timestamp": "20170906070322",
-   "url": "http://www.kens5.com/closings",
-   "station": "tegna-kens",
-   "why": "an unread capture of its list, read so that every capture of it is read"
-  },
-  {
-   "timestamp": "20170906084826",
-   "url": "http://www.kens5.com/closings",
-   "station": "tegna-kens",
-   "why": "an unread capture of its list, read so that every capture of it is read"
-  },
-  {
-   "timestamp": "20170908025126",
-   "url": "http://www.kens5.com/closings",
-   "station": "tegna-kens",
-   "why": "an unread capture of its list, read so that every capture of it is read"
-  },
-  {
-   "timestamp": "20170909063356",
-   "url": "http://www.kens5.com/closings",
-   "station": "tegna-kens",
-   "why": "an unread capture of its list, read so that every capture of it is read"
-  },
-  {
-   "timestamp": "20170909065414",
-   "url": "http://www.kens5.com/closings",
-   "station": "tegna-kens",
-   "why": "an unread capture of its list, read so that every capture of it is read"
-  },
-  {
-   "timestamp": "20170910023223",
-   "url": "http://www.kens5.com/closings",
-   "station": "tegna-kens",
-   "why": "an unread capture of its list, read so that every capture of it is read"
-  },
-  {
-   "timestamp": "20170910055742",
-   "url": "http://www.kens5.com/closings",
-   "station": "tegna-kens",
-   "why": "an unread capture of its list, read so that every capture of it is read"
-  },
-  {
-   "timestamp": "20170911064301",
-   "url": "http://www.kens5.com/closings",
-   "station": "tegna-kens",
-   "why": "an unread capture of its list, read so that every capture of it is read"
-  },
-  {
-   "timestamp": "20170912052551",
-   "url": "http://www.kens5.com/closings",
-   "station": "tegna-kens",
-   "why": "an unread capture of its list, read so that every capture of it is read"
-  },
-  {
-   "timestamp": "20170912083044",
-   "url": "http://www.kens5.com/closings",
-   "station": "tegna-kens",
-   "why": "an unread capture of its list, read so that every capture of it is read"
-  },
-  {
-   "timestamp": "20170913074451",
-   "url": "http://www.kens5.com/closings",
-   "station": "tegna-kens",
-   "why": "an unread capture of its list, read so that every capture of it is read"
-  },
-  {
-   "timestamp": "20170913184202",
-   "url": "http://www.kens5.com/closings",
-   "station": "tegna-kens",
-   "why": "an unread capture of its list, read so that every capture of it is read"
-  },
-  {
-   "timestamp": "20170914233949",
-   "url": "http://www.kens5.com/closings",
-   "station": "tegna-kens",
-   "why": "an unread capture of its list, read so that every capture of it is read"
-  },
-  {
-   "timestamp": "20170915063917",
-   "url": "http://www.kens5.com/closings",
-   "station": "tegna-kens",
-   "why": "an unread capture of its list, read so that every capture of it is read"
-  },
-  {
-   "timestamp": "20170916020555",
-   "url": "http://www.kens5.com/closings",
-   "station": "tegna-kens",
-   "why": "an unread capture of its list, read so that every capture of it is read"
-  },
-  {
-   "timestamp": "20170916091653",
-   "url": "http://www.kens5.com/closings",
-   "station": "tegna-kens",
-   "why": "an unread capture of its list, read so that every capture of it is read"
-  },
-  {
-   "timestamp": "20170917000210",
-   "url": "http://www.kens5.com/closings",
-   "station": "tegna-kens",
-   "why": "an unread capture of its list, read so that every capture of it is read"
-  },
-  {
-   "timestamp": "20170917062207",
-   "url": "http://www.kens5.com/closings",
-   "station": "tegna-kens",
-   "why": "an unread capture of its list, read so that every capture of it is read"
-  },
-  {
-   "timestamp": "20170918081804",
-   "url": "http://www.kens5.com/closings",
-   "station": "tegna-kens",
-   "why": "an unread capture of its list, read so that every capture of it is read"
-  },
-  {
-   "timestamp": "20170929075318",
-   "url": "http://www.kens5.com:80/closings",
-   "station": "tegna-kens",
-   "why": "an unread capture of its list, read so that every capture of it is read"
-  },
-  {
-   "timestamp": "20171004065143",
-   "url": "http://www.kens5.com/closings",
-   "station": "tegna-kens",
-   "why": "an unread capture of its list, read so that every capture of it is read"
-  },
-  {
-   "timestamp": "20171005193417",
-   "url": "http://www.kens5.com/closings",
-   "station": "tegna-kens",
-   "why": "an unread capture of its list, read so that every capture of it is read"
-  },
-  {
-   "timestamp": "20171006195836",
-   "url": "http://www.kens5.com/closings",
-   "station": "tegna-kens",
-   "why": "an unread capture of its list, read so that every capture of it is read"
-  },
-  {
-   "timestamp": "20171007190159",
-   "url": "http://www.kens5.com/closings",
-   "station": "tegna-kens",
-   "why": "an unread capture of its list, read so that every capture of it is read"
-  },
-  {
-   "timestamp": "20171008093247",
-   "url": "http://www.kens5.com/closings",
-   "station": "tegna-kens",
-   "why": "an unread capture of its list, read so that every capture of it is read"
-  },
-  {
-   "timestamp": "20171008183122",
-   "url": "http://www.kens5.com/closings",
-   "station": "tegna-kens",
-   "why": "an unread capture of its list, read so that every capture of it is read"
-  },
-  {
-   "timestamp": "20171009202750",
-   "url": "http://www.kens5.com/closings",
-   "station": "tegna-kens",
-   "why": "an unread capture of its list, read so that every capture of it is read"
-  },
-  {
-   "timestamp": "20171011005353",
-   "url": "http://www.kens5.com/closings",
-   "station": "tegna-kens",
-   "why": "an unread capture of its list, read so that every capture of it is read"
-  },
-  {
-   "timestamp": "20171011094237",
-   "url": "http://www.kens5.com/closings",
-   "station": "tegna-kens",
-   "why": "an unread capture of its list, read so that every capture of it is read"
-  },
-  {
-   "timestamp": "20171011204435",
-   "url": "http://www.kens5.com/closings",
-   "station": "tegna-kens",
-   "why": "an unread capture of its list, read so that every capture of it is read"
-  },
-  {
-   "timestamp": "20171013002907",
-   "url": "http://www.kens5.com/closings",
-   "station": "tegna-kens",
-   "why": "an unread capture of its list, read so that every capture of it is read"
-  },
-  {
-   "timestamp": "20171013225709",
-   "url": "http://www.kens5.com/closings",
-   "station": "tegna-kens",
-   "why": "an unread capture of its list, read so that every capture of it is read"
-  },
-  {
-   "timestamp": "20171014222904",
-   "url": "http://www.kens5.com/closings",
-   "station": "tegna-kens",
-   "why": "an unread capture of its list, read so that every capture of it is read"
-  },
-  {
-   "timestamp": "20171015210125",
-   "url": "http://www.kens5.com/closings",
-   "station": "tegna-kens",
-   "why": "an unread capture of its list, read so that every capture of it is read"
-  },
-  {
-   "timestamp": "20171017004257",
-   "url": "http://www.kens5.com/closings",
-   "station": "tegna-kens",
-   "why": "an unread capture of its list, read so that every capture of it is read"
-  },
-  {
-   "timestamp": "20171018004411",
-   "url": "http://www.kens5.com/closings",
-   "station": "tegna-kens",
-   "why": "an unread capture of its list, read so that every capture of it is read"
-  },
-  {
-   "timestamp": "20171018192707",
-   "url": "http://www.kens5.com/closings",
-   "station": "tegna-kens",
-   "why": "an unread capture of its list, read so that every capture of it is read"
-  },
-  {
-   "timestamp": "20171019050731",
-   "url": "http://www.kens5.com/closings",
-   "station": "tegna-kens",
-   "why": "an unread capture of its list, read so that every capture of it is read"
-  },
-  {
-   "timestamp": "20171020045211",
-   "url": "http://www.kens5.com/closings",
-   "station": "tegna-kens",
-   "why": "an unread capture of its list, read so that every capture of it is read"
-  },
-  {
-   "timestamp": "20171021015622",
-   "url": "http://www.kens5.com/closings",
-   "station": "tegna-kens",
-   "why": "an unread capture of its list, read so that every capture of it is read"
-  },
-  {
-   "timestamp": "20171022024917",
-   "url": "http://www.kens5.com/closings",
-   "station": "tegna-kens",
-   "why": "an unread capture of its list, read so that every capture of it is read"
-  },
-  {
-   "timestamp": "20171023043749",
-   "url": "http://www.kens5.com/closings",
-   "station": "tegna-kens",
-   "why": "an unread capture of its list, read so that every capture of it is read"
-  },
-  {
-   "timestamp": "20171026073352",
-   "url": "http://www.kens5.com/closings",
-   "station": "tegna-kens",
-   "why": "an unread capture of its list, read so that every capture of it is read"
-  },
-  {
-   "timestamp": "20171027045119",
-   "url": "http://www.kens5.com/closings",
-   "station": "tegna-kens",
-   "why": "an unread capture of its list, read so that every capture of it is read"
-  },
-  {
-   "timestamp": "20171027075608",
-   "url": "http://www.kens5.com/closings",
-   "station": "tegna-kens",
-   "why": "an unread capture of its list, read so that every capture of it is read"
-  },
-  {
-   "timestamp": "20171028011715",
-   "url": "http://www.kens5.com/closings",
-   "station": "tegna-kens",
-   "why": "an unread capture of its list, read so that every capture of it is read"
-  },
-  {
-   "timestamp": "20171029010111",
-   "url": "http://www.kens5.com/closings",
-   "station": "tegna-kens",
-   "why": "an unread capture of its list, read so that every capture of it is read"
-  },
-  {
-   "timestamp": "20171030033007",
-   "url": "http://www.kens5.com/closings",
-   "station": "tegna-kens",
-   "why": "an unread capture of its list, read so that every capture of it is read"
-  },
-  {
-   "timestamp": "20171031013939",
-   "url": "http://www.kens5.com/closings",
-   "station": "tegna-kens",
-   "why": "an unread capture of its list, read so that every capture of it is read"
-  },
-  {
-   "timestamp": "20171031022145",
-   "url": "http://www.kens5.com:80/closings",
-   "station": "tegna-kens",
-   "why": "an unread capture of its list, read so that every capture of it is read"
-  },
-  {
-   "timestamp": "20171101010427",
-   "url": "http://www.kens5.com/closings",
-   "station": "tegna-kens",
-   "why": "an unread capture of its list, read so that every capture of it is read"
-  },
-  {
-   "timestamp": "20171102021620",
-   "url": "http://www.kens5.com/closings",
-   "station": "tegna-kens",
-   "why": "an unread capture of its list, read so that every capture of it is read"
-  },
-  {
-   "timestamp": "20171103012613",
-   "url": "http://www.kens5.com/closings",
-   "station": "tegna-kens",
-   "why": "an unread capture of its list, read so that every capture of it is read"
-  },
-  {
-   "timestamp": "20171104011050",
-   "url": "http://www.kens5.com/closings",
-   "station": "tegna-kens",
-   "why": "an unread capture of its list, read so that every capture of it is read"
-  },
-  {
-   "timestamp": "20171105011334",
-   "url": "http://www.kens5.com/closings",
-   "station": "tegna-kens",
-   "why": "an unread capture of its list, read so that every capture of it is read"
-  },
-  {
-   "timestamp": "20171105205717",
-   "url": "http://www.kens5.com/closings",
-   "station": "tegna-kens",
-   "why": "an unread capture of its list, read so that every capture of it is read"
-  },
-  {
-   "timestamp": "20171106211925",
-   "url": "http://www.kens5.com/closings",
-   "station": "tegna-kens",
-   "why": "an unread capture of its list, read so that every capture of it is read"
-  },
-  {
-   "timestamp": "20171107180859",
-   "url": "http://www.kens5.com/closings",
-   "station": "tegna-kens",
-   "why": "an unread capture of its list, read so that every capture of it is read"
-  },
-  {
-   "timestamp": "20171107211838",
-   "url": "http://www.kens5.com/closings",
-   "station": "tegna-kens",
-   "why": "an unread capture of its list, read so that every capture of it is read"
-  },
-  {
-   "timestamp": "20171108081059",
-   "url": "http://www.kens5.com/closings",
-   "station": "tegna-kens",
-   "why": "an unread capture of its list, read so that every capture of it is read"
-  },
-  {
-   "timestamp": "20171108212631",
-   "url": "http://www.kens5.com/closings",
-   "station": "tegna-kens",
-   "why": "an unread capture of its list, read so that every capture of it is read"
-  },
-  {
-   "timestamp": "20171109091742",
-   "url": "http://www.kens5.com/closings",
-   "station": "tegna-kens",
-   "why": "an unread capture of its list, read so that every capture of it is read"
-  },
-  {
-   "timestamp": "20171109214213",
-   "url": "http://www.kens5.com/closings",
-   "station": "tegna-kens",
-   "why": "an unread capture of its list, read so that every capture of it is read"
-  },
-  {
-   "timestamp": "20171110214057",
-   "url": "http://www.kens5.com/closings",
-   "station": "tegna-kens",
-   "why": "an unread capture of its list, read so that every capture of it is read"
-  },
-  {
-   "timestamp": "20171112011505",
-   "url": "http://www.kens5.com/closings",
-   "station": "tegna-kens",
-   "why": "an unread capture of its list, read so that every capture of it is read"
-  },
-  {
-   "timestamp": "20171112094352",
-   "url": "http://www.kens5.com/closings",
-   "station": "tegna-kens",
-   "why": "an unread capture of its list, read so that every capture of it is read"
-  },
-  {
-   "timestamp": "20171113011702",
-   "url": "http://www.kens5.com/closings",
-   "station": "tegna-kens",
-   "why": "an unread capture of its list, read so that every capture of it is read"
-  },
-  {
-   "timestamp": "20171114013316",
-   "url": "http://www.kens5.com/closings",
-   "station": "tegna-kens",
-   "why": "an unread capture of its list, read so that every capture of it is read"
-  },
-  {
-   "timestamp": "20171115011421",
-   "url": "http://www.kens5.com/closings",
-   "station": "tegna-kens",
-   "why": "an unread capture of its list, read so that every capture of it is read"
-  },
-  {
-   "timestamp": "20171116083455",
-   "url": "http://www.kens5.com/closings",
-   "station": "tegna-kens",
-   "why": "an unread capture of its list, read so that every capture of it is read"
-  },
-  {
-   "timestamp": "20171117045445",
-   "url": "http://www.kens5.com/closings",
-   "station": "tegna-kens",
-   "why": "an unread capture of its list, read so that every capture of it is read"
-  },
-  {
-   "timestamp": "20171117054834",
-   "url": "http://www.kens5.com/closings",
-   "station": "tegna-kens",
-   "why": "an unread capture of its list, read so that every capture of it is read"
-  },
-  {
-   "timestamp": "20171118180012",
-   "url": "http://www.kens5.com/closings",
-   "station": "tegna-kens",
-   "why": "an unread capture of its list, read so that every capture of it is read"
-  },
-  {
-   "timestamp": "20171121131058",
-   "url": "http://www.kens5.com/closings",
-   "station": "tegna-kens",
-   "why": "an unread capture of its list, read so that every capture of it is read"
-  },
-  {
-   "timestamp": "20171121183652",
-   "url": "http://www.kens5.com/closings",
-   "station": "tegna-kens",
-   "why": "an unread capture of its list, read so that every capture of it is read"
-  },
-  {
-   "timestamp": "20171123064425",
-   "url": "http://www.kens5.com/closings",
-   "station": "tegna-kens",
-   "why": "an unread capture of its list, read so that every capture of it is read"
-  },
-  {
-   "timestamp": "20171128064058",
-   "url": "http://www.kens5.com/closings",
-   "station": "tegna-kens",
-   "why": "an unread capture of its list, read so that every capture of it is read"
-  },
-  {
-   "timestamp": "20171201222415",
-   "url": "http://www.kens5.com:80/closings",
-   "station": "tegna-kens",
-   "why": "an unread capture of its list, read so that every capture of it is read"
-  },
-  {
-   "timestamp": "20171227091224",
-   "url": "http://www.kens5.com/closings",
-   "station": "tegna-kens",
-   "why": "an unread capture of its list, read so that every capture of it is read"
-  },
-  {
-   "timestamp": "20171228072758",
-   "url": "http://www.kens5.com/closings",
-   "station": "tegna-kens",
-   "why": "an unread capture of its list, read so that every capture of it is read"
-  },
-  {
-   "timestamp": "20180103010704",
-   "url": "http://www.kens5.com:80/closings",
-   "station": "tegna-kens",
-   "why": "an unread capture of its list, read so that every capture of it is read"
-  },
-  {
-   "timestamp": "20180126191941",
-   "url": "http://www.kens5.com/closings",
-   "station": "tegna-kens",
-   "why": "an unread capture of its list, read so that every capture of it is read"
-  },
-  {
-   "timestamp": "20180201191633",
-   "url": "http://www.kens5.com/closings",
-   "station": "tegna-kens",
-   "why": "an unread capture of its list, read so that every capture of it is read"
-  },
-  {
-   "timestamp": "20180505013859",
-   "url": "https://www.kens5.com/closings",
-   "station": "tegna-kens",
-   "why": "an unread capture of its list, read so that every capture of it is read"
-  },
-  {
-   "timestamp": "20180614015735",
-   "url": "https://www.kens5.com/closings",
-   "station": "tegna-kens",
-   "why": "an unread capture of its list, read so that every capture of it is read"
-  },
-  {
-   "timestamp": "20190326184101",
-   "url": "https://www.kens5.com/closings",
-   "station": "tegna-kens",
-   "why": "an unread capture of its list, read so that every capture of it is read"
-  },
-  {
-   "timestamp": "20190331050423",
-   "url": "https://www.kens5.com/closings",
-   "station": "tegna-kens",
-   "why": "an unread capture of its list, read so that every capture of it is read"
-  },
-  {
-   "timestamp": "20190723053604",
-   "url": "https://www.kens5.com/closings",
-   "station": "tegna-kens",
-   "why": "an unread capture of its list, read so that every capture of it is read"
-  },
-  {
-   "timestamp": "20190922061926",
-   "url": "https://www.kens5.com/closings",
-   "station": "tegna-kens",
-   "why": "an unread capture of its list, read so that every capture of it is read"
-  },
-  {
-   "timestamp": "20191119083901",
-   "url": "https://www.kens5.com/closings",
-   "station": "tegna-kens",
-   "why": "an unread capture of its list, read so that every capture of it is read"
-  },
-  {
-   "timestamp": "20200327032426",
-   "url": "https://www.kens5.com/closings",
-   "station": "tegna-kens",
-   "why": "an unread capture of its list, read so that every capture of it is read"
-  },
-  {
-   "timestamp": "20200329234522",
-   "url": "https://www.kens5.com/closings",
-   "station": "tegna-kens",
-   "why": "an unread capture of its list, read so that every capture of it is read"
-  },
-  {
-   "timestamp": "20200401210145",
-   "url": "https://www.kens5.com/closings",
-   "station": "tegna-kens",
-   "why": "an unread capture of its list, read so that every capture of it is read"
-  },
-  {
-   "timestamp": "20200522192937",
-   "url": "https://www.kens5.com/closings",
-   "station": "tegna-kens",
-   "why": "an unread capture of its list, read so that every capture of it is read"
-  },
-  {
-   "timestamp": "20200609182030",
-   "url": "https://www.kens5.com/closings",
-   "station": "tegna-kens",
-   "why": "an unread capture of its list, read so that every capture of it is read"
-  },
-  {
-   "timestamp": "20200622053936",
-   "url": "https://www.kens5.com/closings",
-   "station": "tegna-kens",
-   "why": "an unread capture of its list, read so that every capture of it is read"
-  },
-  {
-   "timestamp": "20200728081440",
-   "url": "https://www.kens5.com/closings",
-   "station": "tegna-kens",
-   "why": "an unread capture of its list, read so that every capture of it is read"
-  },
-  {
-   "timestamp": "20200817073821",
-   "url": "https://www.kens5.com/closings",
-   "station": "tegna-kens",
-   "why": "an unread capture of its list, read so that every capture of it is read"
-  },
-  {
-   "timestamp": "20200818060544",
-   "url": "https://www.kens5.com/closings",
-   "station": "tegna-kens",
-   "why": "an unread capture of its list, read so that every capture of it is read"
-  },
-  {
-   "timestamp": "20200818090335",
-   "url": "https://www.kens5.com/closings",
-   "station": "tegna-kens",
-   "why": "an unread capture of its list, read so that every capture of it is read"
-  },
-  {
-   "timestamp": "20200830185620",
-   "url": "https://www.kens5.com/closings",
-   "station": "tegna-kens",
-   "why": "an unread capture of its list, read so that every capture of it is read"
-  },
-  {
-   "timestamp": "20200831051716",
-   "url": "https://www.kens5.com/closings",
-   "station": "tegna-kens",
-   "why": "an unread capture of its list, read so that every capture of it is read"
-  },
-  {
-   "timestamp": "20200919213811",
-   "url": "https://www.kens5.com/closings",
-   "station": "tegna-kens",
-   "why": "an unread capture of its list, read so that every capture of it is read"
-  },
-  {
-   "timestamp": "20201005012952",
-   "url": "https://www.kens5.com/closings",
-   "station": "tegna-kens",
-   "why": "an unread capture of its list, read so that every capture of it is read"
-  },
-  {
-   "timestamp": "20201031030124",
-   "url": "https://www.kens5.com/closings",
-   "station": "tegna-kens",
-   "why": "an unread capture of its list, read so that every capture of it is read"
-  },
-  {
-   "timestamp": "20210416044403",
-   "url": "https://www.kens5.com/closings",
-   "station": "tegna-kens",
-   "why": "an unread capture of its list, read so that every capture of it is read"
-  },
-  {
-   "timestamp": "20210423084056",
-   "url": "https://www.kens5.com/closings",
-   "station": "tegna-kens",
-   "why": "an unread capture of its list, read so that every capture of it is read"
-  },
-  {
-   "timestamp": "20210622021247",
-   "url": "https://www.kens5.com/closings",
-   "station": "tegna-kens",
-   "why": "an unread capture of its list, read so that every capture of it is read"
-  },
-  {
-   "timestamp": "20210727091607",
-   "url": "https://www.kens5.com/closings",
-   "station": "tegna-kens",
-   "why": "an unread capture of its list, read so that every capture of it is read"
-  },
-  {
-   "timestamp": "20210728221455",
-   "url": "https://www.kens5.com/closings",
-   "station": "tegna-kens",
-   "why": "an unread capture of its list, read so that every capture of it is read"
-  },
-  {
-   "timestamp": "20210730012922",
-   "url": "https://www.kens5.com/closings",
-   "station": "tegna-kens",
-   "why": "an unread capture of its list, read so that every capture of it is read"
-  },
-  {
-   "timestamp": "20210812013837",
-   "url": "https://www.kens5.com/closings",
-   "station": "tegna-kens",
-   "why": "an unread capture of its list, read so that every capture of it is read"
-  },
-  {
-   "timestamp": "20210922044009",
-   "url": "https://www.kens5.com/closings",
-   "station": "tegna-kens",
-   "why": "an unread capture of its list, read so that every capture of it is read"
-  },
-  {
-   "timestamp": "20210924191429",
-   "url": "https://www.kens5.com/closings",
-   "station": "tegna-kens",
-   "why": "an unread capture of its list, read so that every capture of it is read"
-  },
-  {
-   "timestamp": "20211006090600",
-   "url": "https://www.kens5.com/closings",
-   "station": "tegna-kens",
-   "why": "an unread capture of its list, read so that every capture of it is read"
-  },
-  {
-   "timestamp": "20220518080431",
-   "url": "https://www.kens5.com/closings",
-   "station": "tegna-kens",
-   "why": "an unread capture of its list, read so that every capture of it is read"
-  },
-  {
-   "timestamp": "20220527032801",
-   "url": "https://www.kens5.com/closings",
-   "station": "tegna-kens",
-   "why": "an unread capture of its list, read so that every capture of it is read"
-  },
-  {
-   "timestamp": "20220527190035",
-   "url": "https://www.kens5.com/closings",
-   "station": "tegna-kens",
-   "why": "an unread capture of its list, read so that every capture of it is read"
-  },
-  {
-   "timestamp": "20220628004823",
-   "url": "https://www.kens5.com/closings",
-   "station": "tegna-kens",
-   "why": "an unread capture of its list, read so that every capture of it is read"
-  },
-  {
-   "timestamp": "20220701211736",
-   "url": "https://www.kens5.com/closings",
-   "station": "tegna-kens",
-   "why": "an unread capture of its list, read so that every capture of it is read"
-  },
-  {
-   "timestamp": "20220715105342",
-   "url": "https://kens5.com/closings",
-   "station": "tegna-kens",
-   "why": "an unread capture of its list, read so that every capture of it is read"
-  },
-  {
-   "timestamp": "20220717213218",
-   "url": "https://www.kens5.com/closings",
-   "station": "tegna-kens",
-   "why": "an unread capture of its list, read so that every capture of it is read"
-  },
-  {
-   "timestamp": "20220808054652",
-   "url": "https://www.kens5.com/closings",
-   "station": "tegna-kens",
-   "why": "an unread capture of its list, read so that every capture of it is read"
-  },
-  {
-   "timestamp": "20220922055445",
-   "url": "https://www.kens5.com/closings",
-   "station": "tegna-kens",
-   "why": "an unread capture of its list, read so that every capture of it is read"
-  },
-  {
-   "timestamp": "20220923170013",
-   "url": "https://www.kens5.com/closings",
-   "station": "tegna-kens",
-   "why": "an unread capture of its list, read so that every capture of it is read"
-  },
-  {
-   "timestamp": "20220926203503",
-   "url": "https://www.kens5.com/closings",
-   "station": "tegna-kens",
-   "why": "an unread capture of its list, read so that every capture of it is read"
-  },
-  {
-   "timestamp": "20220927182619",
-   "url": "https://www.kens5.com/closings",
-   "station": "tegna-kens",
-   "why": "an unread capture of its list, read so that every capture of it is read"
-  },
-  {
-   "timestamp": "20221006005415",
-   "url": "https://www.kens5.com/closings",
-   "station": "tegna-kens",
-   "why": "an unread capture of its list, read so that every capture of it is read"
-  },
-  {
-   "timestamp": "20221013230833",
-   "url": "https://www.kens5.com/closings",
-   "station": "tegna-kens",
-   "why": "an unread capture of its list, read so that every capture of it is read"
-  },
-  {
-   "timestamp": "20230406004434",
-   "url": "https://www.kens5.com/closings",
-   "station": "tegna-kens",
-   "why": "an unread capture of its list, read so that every capture of it is read"
-  },
-  {
-   "timestamp": "20230528233534",
-   "url": "https://www.kens5.com/closings",
-   "station": "tegna-kens",
-   "why": "an unread capture of its list, read so that every capture of it is read"
-  },
-  {
-   "timestamp": "20230606153306",
-   "url": "https://www.kens5.com/closings",
-   "station": "tegna-kens",
-   "why": "an unread capture of its list, read so that every capture of it is read"
-  },
-  {
-   "timestamp": "20230815180254",
-   "url": "https://www.kens5.com/closings",
-   "station": "tegna-kens",
-   "why": "an unread capture of its list, read so that every capture of it is read"
-  },
-  {
-   "timestamp": "20230901233311",
-   "url": "https://www.kens5.com/closings",
-   "station": "tegna-kens",
-   "why": "an unread capture of its list, read so that every capture of it is read"
-  },
-  {
-   "timestamp": "20230922185609",
-   "url": "https://www.kens5.com/closings",
-   "station": "tegna-kens",
-   "why": "an unread capture of its list, read so that every capture of it is read"
-  },
-  {
-   "timestamp": "20240523231359",
-   "url": "https://www.kens5.com/closings",
-   "station": "tegna-kens",
-   "why": "an unread capture of its list, read so that every capture of it is read"
-  },
-  {
-   "timestamp": "20240714214409",
-   "url": "https://www.kens5.com/closings",
-   "station": "tegna-kens",
-   "why": "an unread capture of its list, read so that every capture of it is read"
-  },
-  {
-   "timestamp": "20170826023952",
-   "url": "http://www.atisd.net:80/",
-   "station": "apptegy-austwell-tivoli-tx",
-   "why": "a capture two days or less from one of its closure days (2017-08-26), read because fewer than three captures of its closure days showed its list"
-  },
-  {
-   "timestamp": "20200919100520",
-   "url": "https://www.atisd.net/",
-   "station": "apptegy-austwell-tivoli-tx",
-   "why": "a capture two days or less from one of its closure days (2020-09-19), read because fewer than three captures of its closure days showed its list"
-  },
-  {
-   "timestamp": "20230822190320",
-   "url": "https://www.atisd.net/",
-   "station": "apptegy-austwell-tivoli-tx",
-   "why": "a capture two days or less from one of its closure days (2023-08-23), read because fewer than three captures of its closure days showed its list"
-  },
-  {
-   "timestamp": "20250123050225",
-   "url": "https://www.atisd.net/",
-   "station": "apptegy-austwell-tivoli-tx",
-   "why": "a capture two days or less from one of its closure days (2025-01-23), read because fewer than three captures of its closure days showed its list"
-  },
-  {
-   "timestamp": "20260128193555",
-   "url": "https://www.bisd-tx.org/",
-   "station": "apptegy-bloomington-tx",
-   "why": "a capture two days or less from one of its closure days (2026-01-29), read because fewer than three captures of its closure days showed its list"
-  },
-  {
-   "timestamp": "20220102230129",
-   "url": "https://www.cji.k12.mt.us/",
-   "station": "apptegy-cji-mt",
-   "why": "a capture two days or less from one of its closure days (2022-01-03), read because fewer than three captures of its closure days showed its list"
-  },
-  {
-   "timestamp": "20221203031938",
-   "url": "https://www.cji.k12.mt.us/",
-   "station": "apptegy-cji-mt",
-   "why": "a capture two days or less from one of its closure days (2022-12-03), read because fewer than three captures of its closure days showed its list"
-  },
-  {
-   "timestamp": "20231024035743",
-   "url": "https://www.cji.k12.mt.us/",
-   "station": "apptegy-cji-mt",
-   "why": "a capture two days or less from one of its closure days (2023-10-24), read because fewer than three captures of its closure days showed its list"
-  },
-  {
-   "timestamp": "20240323032923",
-   "url": "https://www.cji.k12.mt.us/",
-   "station": "apptegy-cji-mt",
-   "why": "a capture two days or less from one of its closure days (2024-03-23), read because fewer than three captures of its closure days showed its list"
-  },
-  {
-   "timestamp": "20250208070839",
-   "url": "https://www.cji.k12.mt.us/",
-   "station": "apptegy-cji-mt",
-   "why": "a capture two days or less from one of its closure days (2025-02-08), read because fewer than three captures of its closure days showed its list"
-  },
-  {
-   "timestamp": "20260315115537",
-   "url": "https://www.cji.k12.mt.us/",
-   "station": "apptegy-cji-mt",
-   "why": "a capture two days or less from one of its closure days (2026-03-15), read because fewer than three captures of its closure days showed its list"
-  },
-  {
-   "timestamp": "20170910060734",
-   "url": "http://www.oneclay.net:80/",
-   "station": "apptegy-clay-fl",
-   "why": "a capture two days or less from one of its closure days (2017-09-10), read because fewer than three captures of its closure days showed its list"
-  },
-  {
-   "timestamp": "20180102115205",
-   "url": "http://www.oneclay.net:80/",
-   "station": "apptegy-clay-fl",
-   "why": "a capture two days or less from one of its closure days (2018-01-02), read because fewer than three captures of its closure days showed its list"
-  },
-  {
-   "timestamp": "20250114171403",
-   "url": "https://www.converse2.org/",
-   "station": "apptegy-converse2-wy",
-   "why": "a capture two days or less from one of its closure days (2025-01-15), read because fewer than three captures of its closure days showed its list"
-  },
-  {
-   "timestamp": "20250116142115",
-   "url": "https://www.converse2.org/",
-   "station": "apptegy-converse2-wy",
-   "why": "a capture two days or less from one of its closure days (2025-01-16), read because fewer than three captures of its closure days showed its list"
-  },
-  {
-   "timestamp": "20250219100355",
-   "url": "https://www.converse2.org/",
-   "station": "apptegy-converse2-wy",
-   "why": "a capture two days or less from one of its closure days (2025-02-19), read because fewer than three captures of its closure days showed its list"
-  },
-  {
-   "timestamp": "20250320081013",
-   "url": "https://www.converse2.org/",
-   "station": "apptegy-converse2-wy",
-   "why": "a capture two days or less from one of its closure days (2025-03-20), read because fewer than three captures of its closure days showed its list"
-  },
-  {
-   "timestamp": "20250420024920",
-   "url": "https://www.converse2.org/",
-   "station": "apptegy-converse2-wy",
-   "why": "a capture two days or less from one of its closure days (2025-04-20), read because fewer than three captures of its closure days showed its list"
-  },
-  {
-   "timestamp": "20260308031632",
-   "url": "https://www.converse2.org/",
-   "station": "apptegy-converse2-wy",
-   "why": "a capture two days or less from one of its closure days (2026-03-08), read because fewer than three captures of its closure days showed its list"
-  },
-  {
-   "timestamp": "20260415215605",
-   "url": "https://www.converse2.org/",
-   "station": "apptegy-converse2-wy",
-   "why": "a capture two days or less from one of its closure days (2026-04-16), read because fewer than three captures of its closure days showed its list"
-  },
-  {
-   "timestamp": "20220401184729",
-   "url": "http://www.darby.k12.mt.us/",
-   "station": "apptegy-darby-mt",
-   "why": "a capture two days or less from one of its closure days (2022-04-02), read because fewer than three captures of its closure days showed its list"
-  },
-  {
-   "timestamp": "20220518040134",
-   "url": "https://www.darby.k12.mt.us/",
-   "station": "apptegy-darby-mt",
-   "why": "a capture two days or less from one of its closure days (2022-05-18), read because fewer than three captures of its closure days showed its list"
-  },
-  {
-   "timestamp": "20221201234932",
-   "url": "https://www.darby.k12.mt.us/",
-   "station": "apptegy-darby-mt",
-   "why": "a capture two days or less from one of its closure days (2022-12-02), read because fewer than three captures of its closure days showed its list"
-  },
-  {
-   "timestamp": "20230130084812",
-   "url": "https://www.darby.k12.mt.us/",
-   "station": "apptegy-darby-mt",
-   "why": "a capture two days or less from one of its closure days (2023-01-30), read because fewer than three captures of its closure days showed its list"
-  },
-  {
-   "timestamp": "20230322034717",
-   "url": "https://www.darby.k12.mt.us/",
-   "station": "apptegy-darby-mt",
-   "why": "a capture two days or less from one of its closure days (2023-03-22), read because fewer than three captures of its closure days showed its list"
-  },
-  {
-   "timestamp": "20240225122626",
-   "url": "https://www.darby.k12.mt.us/",
-   "station": "apptegy-darby-mt",
-   "why": "a capture two days or less from one of its closure days (2024-02-25), read because fewer than three captures of its closure days showed its list"
-  },
-  {
-   "timestamp": "20241014213000",
-   "url": "https://www.darby.k12.mt.us/",
-   "station": "apptegy-darby-mt",
-   "why": "a capture two days or less from one of its closure days (2024-10-15), read because fewer than three captures of its closure days showed its list"
-  },
-  {
-   "timestamp": "20241102170759",
-   "url": "https://www.darby.k12.mt.us/",
-   "station": "apptegy-darby-mt",
-   "why": "a capture two days or less from one of its closure days (2024-11-03), read because fewer than three captures of its closure days showed its list"
-  },
-  {
-   "timestamp": "20241117055429",
-   "url": "https://www.darby.k12.mt.us/",
-   "station": "apptegy-darby-mt",
-   "why": "a capture two days or less from one of its closure days (2024-11-17), read because fewer than three captures of its closure days showed its list"
-  },
-  {
-   "timestamp": "20250102152812",
-   "url": "https://www.darby.k12.mt.us/",
-   "station": "apptegy-darby-mt",
-   "why": "a capture two days or less from one of its closure days (2025-01-02), read because fewer than three captures of its closure days showed its list"
-  },
-  {
-   "timestamp": "20250202152653",
-   "url": "https://www.darby.k12.mt.us/",
-   "station": "apptegy-darby-mt",
-   "why": "a capture two days or less from one of its closure days (2025-02-02), read because fewer than three captures of its closure days showed its list"
-  },
-  {
-   "timestamp": "20250418231052",
-   "url": "https://www.darby.k12.mt.us/",
-   "station": "apptegy-darby-mt",
-   "why": "a capture two days or less from one of its closure days (2025-04-19), read because fewer than three captures of its closure days showed its list"
-  },
-  {
-   "timestamp": "20251217040341",
-   "url": "https://www.darby.k12.mt.us/",
-   "station": "apptegy-darby-mt",
+   "timestamp": "20251216211245",
+   "url": "https://www.dchsglendive.com/",
+   "station": "apptegy-dawson-hs-mt",
    "why": "a capture two days or less from one of its closure days (2025-12-17), read because fewer than three captures of its closure days showed its list"
   },
   {
-   "timestamp": "20260314172233",
-   "url": "https://www.darby.k12.mt.us/",
-   "station": "apptegy-darby-mt",
-   "why": "a capture two days or less from one of its closure days (2026-03-15), read because fewer than three captures of its closure days showed its list"
+   "timestamp": "20201231093058",
+   "url": "https://www.episd.org",
+   "station": "apptegy-el-paso-tx",
+   "why": "a capture two days or less from one of its closure days (2020-12-31), read because fewer than three captures of its closure days showed its list"
   },
   {
-   "timestamp": "20260421105846",
-   "url": "https://www.darby.k12.mt.us/",
-   "station": "apptegy-darby-mt",
-   "why": "a capture two days or less from one of its closure days (2026-04-21), read because fewer than three captures of its closure days showed its list"
+   "timestamp": "20220131225436",
+   "url": "https://www.episd.org/",
+   "station": "apptegy-el-paso-tx",
+   "why": "a capture two days or less from one of its closure days (2022-02-01), read because fewer than three captures of its closure days showed its list"
+  },
+  {
+   "timestamp": "20220201105437",
+   "url": "https://www.episd.org/",
+   "station": "apptegy-el-paso-tx",
+   "why": "a capture two days or less from one of its closure days (2022-02-01), read because fewer than three captures of its closure days showed its list"
+  },
+  {
+   "timestamp": "20220202001122",
+   "url": "https://www.episd.org/",
+   "station": "apptegy-el-paso-tx",
+   "why": "a capture two days or less from one of its closure days (2022-02-02), read because fewer than three captures of its closure days showed its list"
+  },
+  {
+   "timestamp": "20220202105421",
+   "url": "https://www.episd.org/",
+   "station": "apptegy-el-paso-tx",
+   "why": "a capture two days or less from one of its closure days (2022-02-02), read because fewer than three captures of its closure days showed its list"
+  },
+  {
+   "timestamp": "20220203234916",
+   "url": "https://www.episd.org/",
+   "station": "apptegy-el-paso-tx",
+   "why": "a capture two days or less from one of its closure days (2022-02-04), read because fewer than three captures of its closure days showed its list"
+  },
+  {
+   "timestamp": "20220204105347",
+   "url": "https://www.episd.org/",
+   "station": "apptegy-el-paso-tx",
+   "why": "a capture two days or less from one of its closure days (2022-02-04), read because fewer than three captures of its closure days showed its list"
+  },
+  {
+   "timestamp": "20220204225404",
+   "url": "https://www.episd.org/",
+   "station": "apptegy-el-paso-tx",
+   "why": "a capture two days or less from one of its closure days (2022-02-05), read because fewer than three captures of its closure days showed its list"
+  },
+  {
+   "timestamp": "20221122223750",
+   "url": "https://www.episd.org/",
+   "station": "apptegy-el-paso-tx",
+   "why": "a capture two days or less from one of its closure days (2022-11-23), read because fewer than three captures of its closure days showed its list"
+  },
+  {
+   "timestamp": "20221123103739",
+   "url": "https://www.episd.org/",
+   "station": "apptegy-el-paso-tx",
+   "why": "a capture two days or less from one of its closure days (2022-11-23), read because fewer than three captures of its closure days showed its list"
+  },
+  {
+   "timestamp": "20221123223903",
+   "url": "https://www.episd.org/",
+   "station": "apptegy-el-paso-tx",
+   "why": "a capture two days or less from one of its closure days (2022-11-24), read because fewer than three captures of its closure days showed its list"
+  },
+  {
+   "timestamp": "20221124103759",
+   "url": "https://www.episd.org/",
+   "station": "apptegy-el-paso-tx",
+   "why": "a capture two days or less from one of its closure days (2022-11-24), read because fewer than three captures of its closure days showed its list"
+  },
+  {
+   "timestamp": "20221127003219",
+   "url": "https://www.episd.org/",
+   "station": "apptegy-el-paso-tx",
+   "why": "a capture two days or less from one of its closure days (2022-11-27), read because fewer than three captures of its closure days showed its list"
+  },
+  {
+   "timestamp": "20221127124126",
+   "url": "https://www.episd.org/",
+   "station": "apptegy-el-paso-tx",
+   "why": "a capture two days or less from one of its closure days (2022-11-27), read because fewer than three captures of its closure days showed its list"
+  },
+  {
+   "timestamp": "20230129225134",
+   "url": "https://www.episd.org/",
+   "station": "apptegy-el-paso-tx",
+   "why": "a capture two days or less from one of its closure days (2023-01-30), read because fewer than three captures of its closure days showed its list"
+  },
+  {
+   "timestamp": "20230130102245",
+   "url": "https://www.episd.org/",
+   "station": "apptegy-el-paso-tx",
+   "why": "a capture two days or less from one of its closure days (2023-01-30), read because fewer than three captures of its closure days showed its list"
+  },
+  {
+   "timestamp": "20230130222317",
+   "url": "https://www.episd.org/",
+   "station": "apptegy-el-paso-tx",
+   "why": "a capture two days or less from one of its closure days (2023-01-31), read because fewer than three captures of its closure days showed its list"
+  },
+  {
+   "timestamp": "20230131130510",
+   "url": "https://www.episd.org/",
+   "station": "apptegy-el-paso-tx",
+   "why": "a capture two days or less from one of its closure days (2023-01-31), read because fewer than three captures of its closure days showed its list"
+  },
+  {
+   "timestamp": "20230201235850",
+   "url": "https://www.episd.org/",
+   "station": "apptegy-el-paso-tx",
+   "why": "a capture two days or less from one of its closure days (2023-02-02), read because fewer than three captures of its closure days showed its list"
+  },
+  {
+   "timestamp": "20230202102245",
+   "url": "https://www.episd.org/",
+   "station": "apptegy-el-paso-tx",
+   "why": "a capture two days or less from one of its closure days (2023-02-02), read because fewer than three captures of its closure days showed its list"
+  },
+  {
+   "timestamp": "20230202181421",
+   "url": "https://www.episd.org/",
+   "station": "apptegy-el-paso-tx",
+   "why": "a capture two days or less from one of its closure days (2023-02-03), read because fewer than three captures of its closure days showed its list"
+  },
+  {
+   "timestamp": "20230203110126",
+   "url": "https://www.episd.org/",
+   "station": "apptegy-el-paso-tx",
+   "why": "a capture two days or less from one of its closure days (2023-02-03), read because fewer than three captures of its closure days showed its list"
+  },
+  {
+   "timestamp": "20250119183704",
+   "url": "https://www.gilchristschools.org/",
+   "station": "apptegy-gilchrist-fl",
+   "why": "a capture two days or less from one of its closure days (2025-01-20), read because fewer than three captures of its closure days showed its list"
+  },
+  {
+   "timestamp": "20201024202914",
+   "url": "https://www.hustonacademy.com/",
+   "station": "apptegy-huston-academy-tx",
+   "why": "a capture two days or less from one of its closure days (2020-10-25), read because fewer than three captures of its closure days showed its list"
+  },
+  {
+   "timestamp": "20230129123011",
+   "url": "https://www.hustonacademy.com/",
+   "station": "apptegy-huston-academy-tx",
+   "why": "a capture two days or less from one of its closure days (2023-01-29), read because fewer than three captures of its closure days showed its list"
+  },
+  {
+   "timestamp": "20220119052101",
+   "url": "http://lyfordcisd.net/",
+   "station": "apptegy-lyford-tx",
+   "why": "a capture two days or less from one of its closure days (2022-01-19), read because fewer than three captures of its closure days showed its list"
+  },
+  {
+   "timestamp": "20250118165006",
+   "url": "https://www.lyfordcisd.net/",
+   "station": "apptegy-lyford-tx",
+   "why": "a capture two days or less from one of its closure days (2025-01-19), read because fewer than three captures of its closure days showed its list"
+  },
+  {
+   "timestamp": "20220123154432",
+   "url": "https://www.mcallenisd.org/",
+   "station": "apptegy-mcallen-tx",
+   "why": "a capture two days or less from one of its closure days (2022-01-23), read because fewer than three captures of its closure days showed its list"
+  },
+  {
+   "timestamp": "20260124230100",
+   "url": "https://www.mcallenisd.org/",
+   "station": "apptegy-mcallen-tx",
+   "why": "a capture two days or less from one of its closure days (2026-01-25), read because fewer than three captures of its closure days showed its list"
+  },
+  {
+   "timestamp": "20220101165016",
+   "url": "https://www.minidokaschools.org/",
+   "station": "apptegy-minidoka-id",
+   "why": "a capture two days or less from one of its closure days (2022-01-02), read because fewer than three captures of its closure days showed its list"
+  },
+  {
+   "timestamp": "20221108212853",
+   "url": "https://www.minidokaschools.org/",
+   "station": "apptegy-minidoka-id",
+   "why": "a capture two days or less from one of its closure days (2022-11-09), read because fewer than three captures of its closure days showed its list"
+  },
+  {
+   "timestamp": "20230128041223",
+   "url": "https://www.minidokaschools.org/",
+   "station": "apptegy-minidoka-id",
+   "why": "a capture two days or less from one of its closure days (2023-01-28), read because fewer than three captures of its closure days showed its list"
+  },
+  {
+   "timestamp": "20230401210929",
+   "url": "https://www.minidokaschools.org/",
+   "station": "apptegy-minidoka-id",
+   "why": "a capture two days or less from one of its closure days (2023-04-02), read because fewer than three captures of its closure days showed its list"
+  },
+  {
+   "timestamp": "20230404203729",
+   "url": "https://www.minidokaschools.org/",
+   "station": "apptegy-minidoka-id",
+   "why": "a capture two days or less from one of its closure days (2023-04-05), read because fewer than three captures of its closure days showed its list"
+  },
+  {
+   "timestamp": "20230405084154",
+   "url": "https://www.minidokaschools.org/",
+   "station": "apptegy-minidoka-id",
+   "why": "a capture two days or less from one of its closure days (2023-04-05), read because fewer than three captures of its closure days showed its list"
+  },
+  {
+   "timestamp": "20231203020446",
+   "url": "https://www.minidokaschools.org/",
+   "station": "apptegy-minidoka-id",
+   "why": "a capture two days or less from one of its closure days (2023-12-03), read because fewer than three captures of its closure days showed its list"
+  },
+  {
+   "timestamp": "20250124232400",
+   "url": "https://www.mcpss.com/",
+   "station": "apptegy-mobile-al",
+   "why": "a capture two days or less from one of its closure days (2025-01-25), read because fewer than three captures of its closure days showed its list"
+  },
+  {
+   "timestamp": "20250125011240",
+   "url": "https://www.mcpss.com/",
+   "station": "apptegy-mobile-al",
+   "why": "a capture two days or less from one of its closure days (2025-01-25), read because fewer than three captures of its closure days showed its list"
+  },
+  {
+   "timestamp": "20250125112055",
+   "url": "https://www.mcpss.com/",
+   "station": "apptegy-mobile-al",
+   "why": "a capture two days or less from one of its closure days (2025-01-25), read because fewer than three captures of its closure days showed its list"
+  },
+  {
+   "timestamp": "20250125125841",
+   "url": "https://www.mcpss.com/",
+   "station": "apptegy-mobile-al",
+   "why": "a capture two days or less from one of its closure days (2025-01-25), read because fewer than three captures of its closure days showed its list"
+  },
+  {
+   "timestamp": "20191211104555",
+   "url": "https://www.ogdensd.org/",
+   "station": "apptegy-ogden-ut",
+   "why": "a capture two days or less from one of its closure days (2019-12-11), read because fewer than three captures of its closure days showed its list"
+  },
+  {
+   "timestamp": "20200103015418",
+   "url": "https://www.ogdensd.org/",
+   "station": "apptegy-ogden-ut",
+   "why": "a capture two days or less from one of its closure days (2020-01-03), read because fewer than three captures of its closure days showed its list"
+  },
+  {
+   "timestamp": "20201218020758",
+   "url": "https://www.ogdensd.org/",
+   "station": "apptegy-ogden-ut",
+   "why": "a capture two days or less from one of its closure days (2020-12-18), read because fewer than three captures of its closure days showed its list"
+  },
+  {
+   "timestamp": "20211020091429",
+   "url": "https://www.ogdensd.org/",
+   "station": "apptegy-ogden-ut",
+   "why": "a capture two days or less from one of its closure days (2021-10-20), read because fewer than three captures of its closure days showed its list"
+  },
+  {
+   "timestamp": "20211027151800",
+   "url": "https://www.ogdensd.org/",
+   "station": "apptegy-ogden-ut",
+   "why": "a capture two days or less from one of its closure days (2021-10-27), read because fewer than three captures of its closure days showed its list"
+  },
+  {
+   "timestamp": "20220102123158",
+   "url": "https://www.ogdensd.org/",
+   "station": "apptegy-ogden-ut",
+   "why": "a capture two days or less from one of its closure days (2022-01-02), read because fewer than three captures of its closure days showed its list"
+  },
+  {
+   "timestamp": "20220527222204",
+   "url": "https://www.ogdensd.org/",
+   "station": "apptegy-ogden-ut",
+   "why": "a capture two days or less from one of its closure days (2022-05-28), read because fewer than three captures of its closure days showed its list"
+  },
+  {
+   "timestamp": "20220529104839",
+   "url": "https://www.ogdensd.org/",
+   "station": "apptegy-ogden-ut",
+   "why": "a capture two days or less from one of its closure days (2022-05-29), read because fewer than three captures of its closure days showed its list"
+  },
+  {
+   "timestamp": "20220531004727",
+   "url": "https://www.ogdensd.org/",
+   "station": "apptegy-ogden-ut",
+   "why": "a capture two days or less from one of its closure days (2022-05-31), read because fewer than three captures of its closure days showed its list"
+  },
+  {
+   "timestamp": "20221106231151",
+   "url": "https://www.ogdensd.org/",
+   "station": "apptegy-ogden-ut",
+   "why": "a capture two days or less from one of its closure days (2022-11-07), read because fewer than three captures of its closure days showed its list"
+  },
+  {
+   "timestamp": "20221107113554",
+   "url": "https://www.ogdensd.org/",
+   "station": "apptegy-ogden-ut",
+   "why": "a capture two days or less from one of its closure days (2022-11-07), read because fewer than three captures of its closure days showed its list"
+  },
+  {
+   "timestamp": "20221206062208",
+   "url": "https://www.ogdensd.org/",
+   "station": "apptegy-ogden-ut",
+   "why": "a capture two days or less from one of its closure days (2022-12-06), read because fewer than three captures of its closure days showed its list"
+  },
+  {
+   "timestamp": "20221215170544",
+   "url": "https://www.ogdensd.org/",
+   "station": "apptegy-ogden-ut",
+   "why": "a capture two days or less from one of its closure days (2022-12-16), read because fewer than three captures of its closure days showed its list"
+  },
+  {
+   "timestamp": "20221217013919",
+   "url": "https://www.ogdensd.org/",
+   "station": "apptegy-ogden-ut",
+   "why": "a capture two days or less from one of its closure days (2022-12-17), read because fewer than three captures of its closure days showed its list"
+  },
+  {
+   "timestamp": "20221218171025",
+   "url": "https://www.ogdensd.org/",
+   "station": "apptegy-ogden-ut",
+   "why": "a capture two days or less from one of its closure days (2022-12-19), read because fewer than three captures of its closure days showed its list"
+  },
+  {
+   "timestamp": "20221225005601",
+   "url": "https://www.ogdensd.org/",
+   "station": "apptegy-ogden-ut",
+   "why": "a capture two days or less from one of its closure days (2022-12-25), read because fewer than three captures of its closure days showed its list"
+  },
+  {
+   "timestamp": "20221225223348",
+   "url": "https://www.ogdensd.org/",
+   "station": "apptegy-ogden-ut",
+   "why": "a capture two days or less from one of its closure days (2022-12-26), read because fewer than three captures of its closure days showed its list"
+  },
+  {
+   "timestamp": "20230203213453",
+   "url": "https://www.ogdensd.org/",
+   "station": "apptegy-ogden-ut",
+   "why": "a capture two days or less from one of its closure days (2023-02-04), read because fewer than three captures of its closure days showed its list"
+  },
+  {
+   "timestamp": "20230316032112",
+   "url": "https://www.ogdensd.org/",
+   "station": "apptegy-ogden-ut",
+   "why": "a capture two days or less from one of its closure days (2023-03-16), read because fewer than three captures of its closure days showed its list"
+  },
+  {
+   "timestamp": "20230318053744",
+   "url": "https://www.ogdensd.org/",
+   "station": "apptegy-ogden-ut",
+   "why": "a capture two days or less from one of its closure days (2023-03-18), read because fewer than three captures of its closure days showed its list"
+  },
+  {
+   "timestamp": "20230419081451",
+   "url": "https://www.ogdensd.org/",
+   "station": "apptegy-ogden-ut",
+   "why": "a capture two days or less from one of its closure days (2023-04-19), read because fewer than three captures of its closure days showed its list"
+  },
+  {
+   "timestamp": "20231023160740",
+   "url": "https://www.ogdensd.org/",
+   "station": "apptegy-ogden-ut",
+   "why": "a capture two days or less from one of its closure days (2023-10-24), read because fewer than three captures of its closure days showed its list"
+  },
+  {
+   "timestamp": "20231206002606",
+   "url": "https://www.ogdensd.org/",
+   "station": "apptegy-ogden-ut",
+   "why": "a capture two days or less from one of its closure days (2023-12-06), read because fewer than three captures of its closure days showed its list"
+  },
+  {
+   "timestamp": "20240221192220",
+   "url": "https://www.ogdensd.org/",
+   "station": "apptegy-ogden-ut",
+   "why": "a capture two days or less from one of its closure days (2024-02-22), read because fewer than three captures of its closure days showed its list"
+  },
+  {
+   "timestamp": "20240228224723",
+   "url": "https://www.ogdensd.org",
+   "station": "apptegy-ogden-ut",
+   "why": "a capture two days or less from one of its closure days (2024-02-29), read because fewer than three captures of its closure days showed its list"
+  },
+  {
+   "timestamp": "20241031132032",
+   "url": "https://www.ogdensd.org/",
+   "station": "apptegy-ogden-ut",
+   "why": "a capture two days or less from one of its closure days (2024-10-31), read because fewer than three captures of its closure days showed its list"
+  },
+  {
+   "timestamp": "20241109185113",
+   "url": "https://www.ogdensd.org/",
+   "station": "apptegy-ogden-ut",
+   "why": "a capture two days or less from one of its closure days (2024-11-10), read because fewer than three captures of its closure days showed its list"
+  },
+  {
+   "timestamp": "20241121144716",
+   "url": "https://www.ogdensd.org/",
+   "station": "apptegy-ogden-ut",
+   "why": "a capture two days or less from one of its closure days (2024-11-21), read because fewer than three captures of its closure days showed its list"
+  },
+  {
+   "timestamp": "20241127235002",
+   "url": "https://www.ogdensd.org/",
+   "station": "apptegy-ogden-ut",
+   "why": "a capture two days or less from one of its closure days (2024-11-28), read because fewer than three captures of its closure days showed its list"
+  },
+  {
+   "timestamp": "20220121191002",
+   "url": "https://www.okaloosaschools.com/",
+   "station": "apptegy-okaloosa-fl",
+   "why": "a capture two days or less from one of its closure days (2022-01-22), read because fewer than three captures of its closure days showed its list"
+  },
+  {
+   "timestamp": "20220122070208",
+   "url": "https://www.okaloosaschools.com/",
+   "station": "apptegy-okaloosa-fl",
+   "why": "a capture two days or less from one of its closure days (2022-01-22), read because fewer than three captures of its closure days showed its list"
+  },
+  {
+   "timestamp": "20220122190137",
+   "url": "https://www.okaloosaschools.com/",
+   "station": "apptegy-okaloosa-fl",
+   "why": "a capture two days or less from one of its closure days (2022-01-23), read because fewer than three captures of its closure days showed its list"
+  },
+  {
+   "timestamp": "20220123070118",
+   "url": "https://www.okaloosaschools.com/",
+   "station": "apptegy-okaloosa-fl",
+   "why": "a capture two days or less from one of its closure days (2022-01-23), read because fewer than three captures of its closure days showed its list"
+  },
+  {
+   "timestamp": "20240928030646",
+   "url": "https://www.okaloosaschools.com/",
+   "station": "apptegy-okaloosa-fl",
+   "why": "a capture two days or less from one of its closure days (2024-09-28), read because fewer than three captures of its closure days showed its list"
+  },
+  {
+   "timestamp": "20220208164042",
+   "url": "https://www.park6.org/",
+   "station": "apptegy-park-6-wy",
+   "why": "a capture two days or less from one of its closure days (2022-02-09), read because fewer than three captures of its closure days showed its list"
+  },
+  {
+   "timestamp": "20220307112022",
+   "url": "https://www.park6.org/",
+   "station": "apptegy-park-6-wy",
+   "why": "a capture two days or less from one of its closure days (2022-03-07), read because fewer than three captures of its closure days showed its list"
+  },
+  {
+   "timestamp": "20220407025430",
+   "url": "https://www.park6.org/",
+   "station": "apptegy-park-6-wy",
+   "why": "a capture two days or less from one of its closure days (2022-04-07), read because fewer than three captures of its closure days showed its list"
+  },
+  {
+   "timestamp": "20230206163729",
+   "url": "https://www.park6.org/",
+   "station": "apptegy-park-6-wy",
+   "why": "a capture two days or less from one of its closure days (2023-02-07), read because fewer than three captures of its closure days showed its list"
+  },
+  {
+   "timestamp": "20240303032031",
+   "url": "https://www.park6.org/",
+   "station": "apptegy-park-6-wy",
+   "why": "a capture two days or less from one of its closure days (2024-03-03), read because fewer than three captures of its closure days showed its list"
+  },
+  {
+   "timestamp": "20240425145410",
+   "url": "https://www.park6.org/",
+   "station": "apptegy-park-6-wy",
+   "why": "a capture two days or less from one of its closure days (2024-04-25), read because fewer than three captures of its closure days showed its list"
+  },
+  {
+   "timestamp": "20241218064554",
+   "url": "https://www.park6.org/",
+   "station": "apptegy-park-6-wy",
+   "why": "a capture two days or less from one of its closure days (2024-12-18), read because fewer than three captures of its closure days showed its list"
+  },
+  {
+   "timestamp": "20250320152313",
+   "url": "https://www.park6.org/",
+   "station": "apptegy-park-6-wy",
+   "why": "a capture two days or less from one of its closure days (2025-03-20), read because fewer than three captures of its closure days showed its list"
+  },
+  {
+   "timestamp": "20250330120926",
+   "url": "https://www.park6.org/",
+   "station": "apptegy-park-6-wy",
+   "why": "a capture two days or less from one of its closure days (2025-03-30), read because fewer than three captures of its closure days showed its list"
+  },
+  {
+   "timestamp": "20250429181851",
+   "url": "https://www.park6.org/",
+   "station": "apptegy-park-6-wy",
+   "why": "a capture two days or less from one of its closure days (2025-04-30), read because fewer than three captures of its closure days showed its list"
+  },
+  {
+   "timestamp": "20251014201538",
+   "url": "https://www.park6.org/",
+   "station": "apptegy-park-6-wy",
+   "why": "a capture two days or less from one of its closure days (2025-10-15), read because fewer than three captures of its closure days showed its list"
+  },
+  {
+   "timestamp": "20251208122303",
+   "url": "https://www.park6.org/",
+   "station": "apptegy-park-6-wy",
+   "why": "a capture two days or less from one of its closure days (2025-12-08), read because fewer than three captures of its closure days showed its list"
+  },
+  {
+   "timestamp": "20260311042428",
+   "url": "https://www.park6.org/",
+   "station": "apptegy-park-6-wy",
+   "why": "a capture two days or less from one of its closure days (2026-03-11), read because fewer than three captures of its closure days showed its list"
+  },
+  {
+   "timestamp": "20260418014210",
+   "url": "https://www.park6.org/",
+   "station": "apptegy-park-6-wy",
+   "why": "a capture two days or less from one of its closure days (2026-04-18), read because fewer than three captures of its closure days showed its list"
+  },
+  {
+   "timestamp": "20250119191544",
+   "url": "https://www.putnamschools.org/",
+   "station": "apptegy-putnam-fl",
+   "why": "a capture two days or less from one of its closure days (2025-01-20), read because fewer than three captures of its closure days showed its list"
+  },
+  {
+   "timestamp": "20250120174655",
+   "url": "https://www.putnamschools.org/",
+   "station": "apptegy-putnam-fl",
+   "why": "a capture two days or less from one of its closure days (2025-01-21), read because fewer than three captures of its closure days showed its list"
+  },
+  {
+   "timestamp": "20220120012044",
+   "url": "https://www.rhisd.net/",
+   "station": "apptegy-rio-hondo-tx",
+   "why": "a capture two days or less from one of its closure days (2022-01-20), read because fewer than three captures of its closure days showed its list"
+  },
+  {
+   "timestamp": "20171208111123",
+   "url": "https://www.sisd.net/",
+   "station": "apptegy-socorro-tx",
+   "why": "a capture two days or less from one of its closure days (2017-12-08), read because fewer than three captures of its closure days showed its list"
+  },
+  {
+   "timestamp": "20201028081131",
+   "url": "https://www.sisd.net/",
+   "station": "apptegy-socorro-tx",
+   "why": "a capture two days or less from one of its closure days (2020-10-28), read because fewer than three captures of its closure days showed its list"
+  },
+  {
+   "timestamp": "20220201101814",
+   "url": "https://www.sisd.net/",
+   "station": "apptegy-socorro-tx",
+   "why": "a capture two days or less from one of its closure days (2022-02-01), read because fewer than three captures of its closure days showed its list"
+  },
+  {
+   "timestamp": "20220202131404",
+   "url": "https://www.sisd.net/",
+   "station": "apptegy-socorro-tx",
+   "why": "a capture two days or less from one of its closure days (2022-02-02), read because fewer than three captures of its closure days showed its list"
+  },
+  {
+   "timestamp": "20221123235512",
+   "url": "https://www.sisd.net/",
+   "station": "apptegy-socorro-tx",
+   "why": "a capture two days or less from one of its closure days (2022-11-24), read because fewer than three captures of its closure days showed its list"
+  },
+  {
+   "timestamp": "20230130150125",
+   "url": "https://www.sisd.net/",
+   "station": "apptegy-socorro-tx",
+   "why": "a capture two days or less from one of its closure days (2023-01-30), read because fewer than three captures of its closure days showed its list"
+  },
+  {
+   "timestamp": "20250107015213",
+   "url": "https://www.sisd.net/",
+   "station": "apptegy-socorro-tx",
+   "why": "a capture two days or less from one of its closure days (2025-01-07), read because fewer than three captures of its closure days showed its list"
+  },
+  {
+   "timestamp": "20220528235141",
+   "url": "https://www.leadoreschool.org:443/",
+   "station": "apptegy-south-lemhi-id",
+   "why": "a capture two days or less from one of its closure days (2022-05-29), read because fewer than three captures of its closure days showed its list"
+  },
+  {
+   "timestamp": "20230405150647",
+   "url": "https://www.leadoreschool.org/",
+   "station": "apptegy-south-lemhi-id",
+   "why": "a capture two days or less from one of its closure days (2023-04-05), read because fewer than three captures of its closure days showed its list"
+  },
+  {
+   "timestamp": "20240302193956",
+   "url": "https://www.leadoreschool.org/",
+   "station": "apptegy-south-lemhi-id",
+   "why": "a capture two days or less from one of its closure days (2024-03-03), read because fewer than three captures of its closure days showed its list"
+  },
+  {
+   "timestamp": "20241225082558",
+   "url": "https://www.leadoreschool.org/",
+   "station": "apptegy-south-lemhi-id",
+   "why": "a capture two days or less from one of its closure days (2024-12-25), read because fewer than three captures of its closure days showed its list"
+  },
+  {
+   "timestamp": "20250209012143",
+   "url": "https://www.leadoreschool.org/",
+   "station": "apptegy-south-lemhi-id",
+   "why": "a capture two days or less from one of its closure days (2025-02-09), read because fewer than three captures of its closure days showed its list"
+  },
+  {
+   "timestamp": "20250426072514",
+   "url": "https://www.leadoreschool.org/",
+   "station": "apptegy-south-lemhi-id",
+   "why": "a capture two days or less from one of its closure days (2025-04-26), read because fewer than three captures of its closure days showed its list"
+  },
+  {
+   "timestamp": "20250514075330",
+   "url": "https://www.leadoreschool.org/",
+   "station": "apptegy-south-lemhi-id",
+   "why": "a capture two days or less from one of its closure days (2025-05-14), read because fewer than three captures of its closure days showed its list"
+  },
+  {
+   "timestamp": "20210307182736",
+   "url": "https://www.stanfordmtschool.com/",
+   "station": "apptegy-stanford-mt",
+   "why": "a capture two days or less from one of its closure days (2021-03-08), read because fewer than three captures of its closure days showed its list"
+  },
+  {
+   "timestamp": "20210418061207",
+   "url": "https://www.stanfordmtschool.com/",
+   "station": "apptegy-stanford-mt",
+   "why": "a capture two days or less from one of its closure days (2021-04-18), read because fewer than three captures of its closure days showed its list"
+  },
+  {
+   "timestamp": "20210518021342",
+   "url": "https://www.stanfordmtschool.com/",
+   "station": "apptegy-stanford-mt",
+   "why": "a capture two days or less from one of its closure days (2021-05-18), read because fewer than three captures of its closure days showed its list"
+  },
+  {
+   "timestamp": "20220124203341",
+   "url": "https://www.stanfordmtschool.com/",
+   "station": "apptegy-stanford-mt",
+   "why": "a capture two days or less from one of its closure days (2022-01-25), read because fewer than three captures of its closure days showed its list"
+  },
+  {
+   "timestamp": "20230204094315",
+   "url": "https://www.stanfordmtschool.com/",
+   "station": "apptegy-stanford-mt",
+   "why": "a capture two days or less from one of its closure days (2023-02-04), read because fewer than three captures of its closure days showed its list"
+  },
+  {
+   "timestamp": "20240416015809",
+   "url": "https://www.stanfordmtschool.com/",
+   "station": "apptegy-stanford-mt",
+   "why": "a capture two days or less from one of its closure days (2024-04-16), read because fewer than three captures of its closure days showed its list"
+  },
+  {
+   "timestamp": "20241207000640",
+   "url": "https://www.stanfordmtschool.com/",
+   "station": "apptegy-stanford-mt",
+   "why": "a capture two days or less from one of its closure days (2024-12-07), read because fewer than three captures of its closure days showed its list"
+  },
+  {
+   "timestamp": "20241214023833",
+   "url": "https://www.stanfordmtschool.com/",
+   "station": "apptegy-stanford-mt",
+   "why": "a capture two days or less from one of its closure days (2024-12-14), read because fewer than three captures of its closure days showed its list"
+  },
+  {
+   "timestamp": "20250114204003",
+   "url": "https://www.stanfordmtschool.com/",
+   "station": "apptegy-stanford-mt",
+   "why": "a capture two days or less from one of its closure days (2025-01-15), read because fewer than three captures of its closure days showed its list"
+  },
+  {
+   "timestamp": "20250207182623",
+   "url": "https://www.stanfordmtschool.com/",
+   "station": "apptegy-stanford-mt",
+   "why": "a capture two days or less from one of its closure days (2025-02-08), read because fewer than three captures of its closure days showed its list"
+  },
+  {
+   "timestamp": "20250223142235",
+   "url": "https://www.stanfordmtschool.com/",
+   "station": "apptegy-stanford-mt",
+   "why": "a capture two days or less from one of its closure days (2025-02-23), read because fewer than three captures of its closure days showed its list"
+  },
+  {
+   "timestamp": "20260414221500",
+   "url": "https://www.stanfordmtschool.com/",
+   "station": "apptegy-stanford-mt",
+   "why": "a capture two days or less from one of its closure days (2026-04-15), read because fewer than three captures of its closure days showed its list"
+  },
+  {
+   "timestamp": "20190102214901",
+   "url": "https://www.swcsd2.org/",
+   "station": "apptegy-sweetwater-2-wy",
+   "why": "a capture two days or less from one of its closure days (2019-01-03), read because fewer than three captures of its closure days showed its list"
+  },
+  {
+   "timestamp": "20190205140927",
+   "url": "https://www.swcsd2.org/",
+   "station": "apptegy-sweetwater-2-wy",
+   "why": "a capture two days or less from one of its closure days (2019-02-05), read because fewer than three captures of its closure days showed its list"
+  },
+  {
+   "timestamp": "20191118140941",
+   "url": "https://www.swcsd2.org/",
+   "station": "apptegy-sweetwater-2-wy",
+   "why": "a capture two days or less from one of its closure days (2019-11-18), read because fewer than three captures of its closure days showed its list"
+  },
+  {
+   "timestamp": "20200103021540",
+   "url": "https://www.swcsd2.org/",
+   "station": "apptegy-sweetwater-2-wy",
+   "why": "a capture two days or less from one of its closure days (2020-01-03), read because fewer than three captures of its closure days showed its list"
+  },
+  {
+   "timestamp": "20210416173029",
+   "url": "https://www.swcsd2.org/",
+   "station": "apptegy-sweetwater-2-wy",
+   "why": "a capture two days or less from one of its closure days (2021-04-17), read because fewer than three captures of its closure days showed its list"
+  },
+  {
+   "timestamp": "20211016181838",
+   "url": "https://www.swcsd2.org/",
+   "station": "apptegy-sweetwater-2-wy",
+   "why": "a capture two days or less from one of its closure days (2021-10-17), read because fewer than three captures of its closure days showed its list"
+  },
+  {
+   "timestamp": "20220306213320",
+   "url": "https://www.swcsd2.org/",
+   "station": "apptegy-sweetwater-2-wy",
+   "why": "a capture two days or less from one of its closure days (2022-03-07), read because fewer than three captures of its closure days showed its list"
+  },
+  {
+   "timestamp": "20230104135020",
+   "url": "https://www.swcsd2.org/",
+   "station": "apptegy-sweetwater-2-wy",
+   "why": "a capture two days or less from one of its closure days (2023-01-04), read because fewer than three captures of its closure days showed its list"
+  },
+  {
+   "timestamp": "20230202155439",
+   "url": "https://www.swcsd2.org/",
+   "station": "apptegy-sweetwater-2-wy",
+   "why": "a capture two days or less from one of its closure days (2023-02-02), read because fewer than three captures of its closure days showed its list"
+  },
+  {
+   "timestamp": "20230324125647",
+   "url": "https://www.swcsd2.org/",
+   "station": "apptegy-sweetwater-2-wy",
+   "why": "a capture two days or less from one of its closure days (2023-03-24), read because fewer than three captures of its closure days showed its list"
+  },
+  {
+   "timestamp": "20240228130646",
+   "url": "https://www.swcsd2.org/",
+   "station": "apptegy-sweetwater-2-wy",
+   "why": "a capture two days or less from one of its closure days (2024-02-28), read because fewer than three captures of its closure days showed its list"
+  },
+  {
+   "timestamp": "20250211154743",
+   "url": "https://www.swcsd2.org/",
+   "station": "apptegy-sweetwater-2-wy",
+   "why": "a capture two days or less from one of its closure days (2025-02-11), read because fewer than three captures of its closure days showed its list"
+  },
+  {
+   "timestamp": "20250217173337",
+   "url": "https://www.swcsd2.org/",
+   "station": "apptegy-sweetwater-2-wy",
+   "why": "a capture two days or less from one of its closure days (2025-02-18), read because fewer than three captures of its closure days showed its list"
+  },
+  {
+   "timestamp": "20260307090817",
+   "url": "https://www.swcsd2.org/",
+   "station": "apptegy-sweetwater-2-wy",
+   "why": "a capture two days or less from one of its closure days (2026-03-07), read because fewer than three captures of its closure days showed its list"
+  },
+  {
+   "timestamp": "20260516083050",
+   "url": "https://www.swcsd2.org/",
+   "station": "apptegy-sweetwater-2-wy",
+   "why": "a capture two days or less from one of its closure days (2026-05-16), read because fewer than three captures of its closure days showed its list"
+  },
+  {
+   "timestamp": "20250121191431",
+   "url": "https://www.trisd.org/",
+   "station": "apptegy-three-rivers-tx",
+   "why": "a capture two days or less from one of its closure days (2025-01-22), read because fewer than three captures of its closure days showed its list"
+  },
+  {
+   "timestamp": "20250219090559",
+   "url": "https://www.trisd.org/",
+   "station": "apptegy-three-rivers-tx",
+   "why": "a capture two days or less from one of its closure days (2025-02-19), read because fewer than three captures of its closure days showed its list"
+  },
+  {
+   "timestamp": "20230131063922",
+   "url": "https://www.tisd.us/",
+   "station": "apptegy-tornillo-tx",
+   "why": "a capture two days or less from one of its closure days (2023-01-31), read because fewer than three captures of its closure days showed its list"
+  },
+  {
+   "timestamp": "20230406011057",
+   "url": "https://www.uintah.net/",
+   "station": "apptegy-uintah-ut",
+   "why": "a capture two days or less from one of its closure days (2023-04-06), read because fewer than three captures of its closure days showed its list"
+  },
+  {
+   "timestamp": "20240425081812",
+   "url": "https://www.uintah.net/",
+   "station": "apptegy-uintah-ut",
+   "why": "a capture two days or less from one of its closure days (2024-04-25), read because fewer than three captures of its closure days showed its list"
+  },
+  {
+   "timestamp": "20250215005432",
+   "url": "https://www.uintah.net/",
+   "station": "apptegy-uintah-ut",
+   "why": "a capture two days or less from one of its closure days (2025-02-15), read because fewer than three captures of its closure days showed its list"
+  },
+  {
+   "timestamp": "20250301160532",
+   "url": "https://www.uintah.net/",
+   "station": "apptegy-uintah-ut",
+   "why": "a capture two days or less from one of its closure days (2025-03-02), read because fewer than three captures of its closure days showed its list"
+  },
+  {
+   "timestamp": "20260516144118",
+   "url": "https://www.uintah.net/",
+   "station": "apptegy-uintah-ut",
+   "why": "a capture two days or less from one of its closure days (2026-05-16), read because fewer than three captures of its closure days showed its list"
+  },
+  {
+   "timestamp": "20260519131804",
+   "url": "https://www.uintah.net/",
+   "station": "apptegy-uintah-ut",
+   "why": "a capture two days or less from one of its closure days (2026-05-19), read because fewer than three captures of its closure days showed its list"
+  },
+  {
+   "timestamp": "20221108230635",
+   "url": "https://www.wjsd.org/",
+   "station": "apptegy-west-jefferson-id",
+   "why": "a capture two days or less from one of its closure days (2022-11-09), read because fewer than three captures of its closure days showed its list"
+  },
+  {
+   "timestamp": "20250122230207",
+   "url": "https://www.ecisd.us/",
+   "station": "edlio-edinburg-tx",
+   "why": "a capture two days or less from one of its closure days (2025-01-23), read because fewer than three captures of its closure days showed its list"
+  },
+  {
+   "timestamp": "20260124204500",
+   "url": "https://www.ecisd.us/",
+   "station": "edlio-edinburg-tx",
+   "why": "a capture two days or less from one of its closure days (2026-01-25), read because fewer than three captures of its closure days showed its list"
+  },
+  {
+   "timestamp": "20260125084301",
+   "url": "https://www.ecisd.us/",
+   "station": "edlio-edinburg-tx",
+   "why": "a capture two days or less from one of its closure days (2026-01-25), read because fewer than three captures of its closure days showed its list"
+  },
+  {
+   "timestamp": "20260127084430",
+   "url": "https://www.ecisd.us/",
+   "station": "edlio-edinburg-tx",
+   "why": "a capture two days or less from one of its closure days (2026-01-27), read because fewer than three captures of its closure days showed its list"
+  },
+  {
+   "timestamp": "20211019222818",
+   "url": "https://www.hotsprings1.org/",
+   "station": "edlio-hot-springs-1-wy",
+   "why": "a capture two days or less from one of its closure days (2021-10-20), read because fewer than three captures of its closure days showed its list"
+  },
+  {
+   "timestamp": "20220311114133",
+   "url": "https://www.hotsprings1.org/",
+   "station": "edlio-hot-springs-1-wy",
+   "why": "a capture two days or less from one of its closure days (2022-03-11), read because fewer than three captures of its closure days showed its list"
+  },
+  {
+   "timestamp": "20221204025607",
+   "url": "https://www.hotsprings1.org/",
+   "station": "edlio-hot-springs-1-wy",
+   "why": "a capture two days or less from one of its closure days (2022-12-04), read because fewer than three captures of its closure days showed its list"
+  },
+  {
+   "timestamp": "20231001095721",
+   "url": "https://www.hotsprings1.org/",
+   "station": "edlio-hot-springs-1-wy",
+   "why": "a capture two days or less from one of its closure days (2023-10-01), read because fewer than three captures of its closure days showed its list"
+  },
+  {
+   "timestamp": "20240303033826",
+   "url": "https://www.hotsprings1.org/",
+   "station": "edlio-hot-springs-1-wy",
+   "why": "a capture two days or less from one of its closure days (2024-03-03), read because fewer than three captures of its closure days showed its list"
+  },
+  {
+   "timestamp": "20240303150752",
+   "url": "https://www.hotsprings1.org/",
+   "station": "edlio-hot-springs-1-wy",
+   "why": "a capture two days or less from one of its closure days (2024-03-03), read because fewer than three captures of its closure days showed its list"
+  },
+  {
+   "timestamp": "20250316103402",
+   "url": "https://www.hotsprings1.org/",
+   "station": "edlio-hot-springs-1-wy",
+   "why": "a capture two days or less from one of its closure days (2025-03-16), read because fewer than three captures of its closure days showed its list"
+  },
+  {
+   "timestamp": "20250414213640",
+   "url": "https://www.hotsprings1.org/",
+   "station": "edlio-hot-springs-1-wy",
+   "why": "a capture two days or less from one of its closure days (2025-04-15), read because fewer than three captures of its closure days showed its list"
+  },
+  {
+   "timestamp": "20250516145859",
+   "url": "https://www.hotsprings1.org/",
+   "station": "edlio-hot-springs-1-wy",
+   "why": "a capture two days or less from one of its closure days (2025-05-16), read because fewer than three captures of its closure days showed its list"
+  },
+  {
+   "timestamp": "20251014112425",
+   "url": "https://www.hotsprings1.org/",
+   "station": "edlio-hot-springs-1-wy",
+   "why": "a capture two days or less from one of its closure days (2025-10-14), read because fewer than three captures of its closure days showed its list"
+  },
+  {
+   "timestamp": "20251208121412",
+   "url": "https://www.hotsprings1.org/",
+   "station": "edlio-hot-springs-1-wy",
+   "why": "a capture two days or less from one of its closure days (2025-12-08), read because fewer than three captures of its closure days showed its list"
+  },
+  {
+   "timestamp": "20260123224757",
+   "url": "https://www.kingsvilleisd.com/",
+   "station": "edlio-kingsville-tx",
+   "why": "a capture two days or less from one of its closure days (2026-01-24), read because fewer than three captures of its closure days showed its list"
+  },
+  {
+   "timestamp": "20260124063118",
+   "url": "https://www.kingsvilleisd.com/",
+   "station": "edlio-kingsville-tx",
+   "why": "a capture two days or less from one of its closure days (2026-01-24), read because fewer than three captures of its closure days showed its list"
+  },
+  {
+   "timestamp": "20260125082918",
+   "url": "https://www.kingsvilleisd.com/",
+   "station": "edlio-kingsville-tx",
+   "why": "a capture two days or less from one of its closure days (2026-01-25), read because fewer than three captures of its closure days showed its list"
+  },
+  {
+   "timestamp": "20260126224753",
+   "url": "https://www.kingsvilleisd.com/",
+   "station": "edlio-kingsville-tx",
+   "why": "a capture two days or less from one of its closure days (2026-01-27), read because fewer than three captures of its closure days showed its list"
+  },
+  {
+   "timestamp": "20260127092531",
+   "url": "https://www.kingsvilleisd.com/",
+   "station": "edlio-kingsville-tx",
+   "why": "a capture two days or less from one of its closure days (2026-01-27), read because fewer than three captures of its closure days showed its list"
+  },
+  {
+   "timestamp": "20260127104904",
+   "url": "https://www.kingsvilleisd.com/",
+   "station": "edlio-kingsville-tx",
+   "why": "a capture two days or less from one of its closure days (2026-01-27), read because fewer than three captures of its closure days showed its list"
+  },
+  {
+   "timestamp": "20260127224808",
+   "url": "https://www.kingsvilleisd.com/",
+   "station": "edlio-kingsville-tx",
+   "why": "a capture two days or less from one of its closure days (2026-01-28), read because fewer than three captures of its closure days showed its list"
+  },
+  {
+   "timestamp": "20260128104703",
+   "url": "https://www.kingsvilleisd.com/",
+   "station": "edlio-kingsville-tx",
+   "why": "a capture two days or less from one of its closure days (2026-01-28), read because fewer than three captures of its closure days showed its list"
+  },
+  {
+   "timestamp": "20220123062437",
+   "url": "https://www.lfcisd.net/",
+   "station": "edlio-los-fresnos-tx",
+   "why": "a capture two days or less from one of its closure days (2022-01-23), read because fewer than three captures of its closure days showed its list"
+  },
+  {
+   "timestamp": "20240908225523",
+   "url": "https://www.lfcisd.net/",
+   "station": "edlio-los-fresnos-tx",
+   "why": "a capture two days or less from one of its closure days (2024-09-09), read because fewer than three captures of its closure days showed its list"
+  },
+  {
+   "timestamp": "20240909054515",
+   "url": "https://www.lfcisd.net/",
+   "station": "edlio-los-fresnos-tx",
+   "why": "a capture two days or less from one of its closure days (2024-09-09), read because fewer than three captures of its closure days showed its list"
+  },
+  {
+   "timestamp": "20240911101504",
+   "url": "https://www.lfcisd.net/",
+   "station": "edlio-los-fresnos-tx",
+   "why": "a capture two days or less from one of its closure days (2024-09-11), read because fewer than three captures of its closure days showed its list"
+  },
+  {
+   "timestamp": "20260124183002",
+   "url": "https://www.rfisd.us/",
+   "station": "edlio-rockport-fulton-tx",
+   "why": "a capture two days or less from one of its closure days (2026-01-25), read because fewer than three captures of its closure days showed its list"
+  },
+  {
+   "timestamp": "20260124222255",
+   "url": "https://www.rfisd.us/",
+   "station": "edlio-rockport-fulton-tx",
+   "why": "a capture two days or less from one of its closure days (2026-01-25), read because fewer than three captures of its closure days showed its list"
+  },
+  {
+   "timestamp": "20260126210532",
+   "url": "https://www.rfisd.us/",
+   "station": "edlio-rockport-fulton-tx",
+   "why": "a capture two days or less from one of its closure days (2026-01-27), read because fewer than three captures of its closure days showed its list"
+  },
+  {
+   "timestamp": "20260126231503",
+   "url": "https://www.rfisd.us/",
+   "station": "edlio-rockport-fulton-tx",
+   "why": "a capture two days or less from one of its closure days (2026-01-27), read because fewer than three captures of its closure days showed its list"
+  },
+  {
+   "timestamp": "20260127095346",
+   "url": "https://www.rfisd.us/",
+   "station": "edlio-rockport-fulton-tx",
+   "why": "a capture two days or less from one of its closure days (2026-01-27), read because fewer than three captures of its closure days showed its list"
+  },
+  {
+   "timestamp": "20260127103955",
+   "url": "https://www.rfisd.us/",
+   "station": "edlio-rockport-fulton-tx",
+   "why": "a capture two days or less from one of its closure days (2026-01-27), read because fewer than three captures of its closure days showed its list"
+  },
+  {
+   "timestamp": "20260127173904",
+   "url": "https://www.rfisd.us/",
+   "station": "edlio-rockport-fulton-tx",
+   "why": "a capture two days or less from one of its closure days (2026-01-28), read because fewer than three captures of its closure days showed its list"
+  },
+  {
+   "timestamp": "20260128013008",
+   "url": "https://www.rfisd.us/",
+   "station": "edlio-rockport-fulton-tx",
+   "why": "a capture two days or less from one of its closure days (2026-01-28), read because fewer than three captures of its closure days showed its list"
+  },
+  {
+   "timestamp": "20260128132948",
+   "url": "https://www.rfisd.us/",
+   "station": "edlio-rockport-fulton-tx",
+   "why": "a capture two days or less from one of its closure days (2026-01-28), read because fewer than three captures of its closure days showed its list"
+  },
+  {
+   "timestamp": "20260128145607",
+   "url": "https://www.rfisd.us/",
+   "station": "edlio-rockport-fulton-tx",
+   "why": "a capture two days or less from one of its closure days (2026-01-28), read because fewer than three captures of its closure days showed its list"
+  },
+  {
+   "timestamp": "20210316104121",
+   "url": "https://www.sanjacinto.k12.ca.us/",
+   "station": "edlio-san-jacinto-ca",
+   "why": "a capture two days or less from one of its closure days (2021-03-16), read because fewer than three captures of its closure days showed its list"
+  },
+  {
+   "timestamp": "20220302190546",
+   "url": "https://www.sanjacinto.k12.ca.us/",
+   "station": "edlio-san-jacinto-ca",
+   "why": "a capture two days or less from one of its closure days (2022-03-03), read because fewer than three captures of its closure days showed its list"
+  },
+  {
+   "timestamp": "20221210204456",
+   "url": "https://www.sanjacinto.k12.ca.us/",
+   "station": "edlio-san-jacinto-ca",
+   "why": "a capture two days or less from one of its closure days (2022-12-11), read because fewer than three captures of its closure days showed its list"
+  },
+  {
+   "timestamp": "20230328054620",
+   "url": "https://www.sanjacinto.k12.ca.us/",
+   "station": "edlio-san-jacinto-ca",
+   "why": "a capture two days or less from one of its closure days (2023-03-28), read because fewer than three captures of its closure days showed its list"
+  },
+  {
+   "timestamp": "20240222211856",
+   "url": "https://www.sanjacinto.k12.ca.us/",
+   "station": "edlio-san-jacinto-ca",
+   "why": "a capture two days or less from one of its closure days (2024-02-23), read because fewer than three captures of its closure days showed its list"
+  },
+  {
+   "timestamp": "20241112193317",
+   "url": "https://www.sanjacinto.k12.ca.us/",
+   "station": "edlio-san-jacinto-ca",
+   "why": "a capture two days or less from one of its closure days (2024-11-13), read because fewer than three captures of its closure days showed its list"
+  },
+  {
+   "timestamp": "20250125034124",
+   "url": "https://www.sanjacinto.k12.ca.us",
+   "station": "edlio-san-jacinto-ca",
+   "why": "a capture two days or less from one of its closure days (2025-01-25), read because fewer than three captures of its closure days showed its list"
+  },
+  {
+   "timestamp": "20260221115554",
+   "url": "https://www.sanjacinto.k12.ca.us/",
+   "station": "edlio-san-jacinto-ca",
+   "why": "a capture two days or less from one of its closure days (2026-02-21), read because fewer than three captures of its closure days showed its list"
+  },
+  {
+   "timestamp": "20220204205654",
+   "url": "http://www.swisd.net/",
+   "station": "edlio-southwest-tx",
+   "why": "a capture two days or less from one of its closure days (2022-02-05), read because fewer than three captures of its closure days showed its list"
+  },
+  {
+   "timestamp": "20220225162607",
+   "url": "https://www.swisd.net/",
+   "station": "edlio-southwest-tx",
+   "why": "a capture two days or less from one of its closure days (2022-02-26), read because fewer than three captures of its closure days showed its list"
+  },
+  {
+   "timestamp": "20251207034558",
+   "url": "https://www.sublette9.org/",
+   "station": "edlio-sublette-9-wy",
+   "why": "a capture two days or less from one of its closure days (2025-12-07), read because fewer than three captures of its closure days showed its list"
+  },
+  {
+   "timestamp": "20251208105254",
+   "url": "https://www.sublette9.org/",
+   "station": "edlio-sublette-9-wy",
+   "why": "a capture two days or less from one of its closure days (2025-12-08), read because fewer than three captures of its closure days showed its list"
+  },
+  {
+   "timestamp": "20251208112821",
+   "url": "https://www.sublette9.org/",
+   "station": "edlio-sublette-9-wy",
+   "why": "a capture two days or less from one of its closure days (2025-12-08), read because fewer than three captures of its closure days showed its list"
+  },
+  {
+   "timestamp": "20180209195250",
+   "url": "https://www.wsh2.k12.wy.us/",
+   "station": "edlio-washakie-2-wy",
+   "why": "a capture two days or less from one of its closure days (2018-02-10), read because fewer than three captures of its closure days showed its list"
+  },
+  {
+   "timestamp": "20191119031619",
+   "url": "https://www.wsh2.k12.wy.us/",
+   "station": "edlio-washakie-2-wy",
+   "why": "a capture two days or less from one of its closure days (2019-11-19), read because fewer than three captures of its closure days showed its list"
+  },
+  {
+   "timestamp": "20201023140504",
+   "url": "https://www.wsh2.k12.wy.us/",
+   "station": "edlio-washakie-2-wy",
+   "why": "a capture two days or less from one of its closure days (2020-10-23), read because fewer than three captures of its closure days showed its list"
+  },
+  {
+   "timestamp": "20210413005405",
+   "url": "https://www.wsh2.k12.wy.us/",
+   "station": "edlio-washakie-2-wy",
+   "why": "a capture two days or less from one of its closure days (2021-04-13), read because fewer than three captures of its closure days showed its list"
+  },
+  {
+   "timestamp": "20220311121353",
+   "url": "https://www.wsh2.k12.wy.us/",
+   "station": "edlio-washakie-2-wy",
+   "why": "a capture two days or less from one of its closure days (2022-03-11), read because fewer than three captures of its closure days showed its list"
+  },
+  {
+   "timestamp": "20240225130435",
+   "url": "https://www.wsh2.k12.wy.us/",
+   "station": "edlio-washakie-2-wy",
+   "why": "a capture two days or less from one of its closure days (2024-02-25), read because fewer than three captures of its closure days showed its list"
+  },
+  {
+   "timestamp": "20250119102608",
+   "url": "https://www.wsh2.k12.wy.us/",
+   "station": "edlio-washakie-2-wy",
+   "why": "a capture two days or less from one of its closure days (2025-01-19), read because fewer than three captures of its closure days showed its list"
+  },
+  {
+   "timestamp": "20251208121840",
+   "url": "https://www.wsh2.k12.wy.us/",
+   "station": "edlio-washakie-2-wy",
+   "why": "a capture two days or less from one of its closure days (2025-12-08), read because fewer than three captures of its closure days showed its list"
+  },
+  {
+   "timestamp": "20250124115233",
+   "url": "https://www.bakerk12.org/",
+   "station": "finalsite-baker-fl",
+   "why": "a capture two days or less from one of its closure days (2025-01-24), read because fewer than three captures of its closure days showed its list"
+  },
+  {
+   "timestamp": "20250122063704",
+   "url": "https://www.bishopcisd.net/",
+   "station": "finalsite-bishop-tx",
+   "why": "a capture two days or less from one of its closure days (2025-01-22), read because fewer than three captures of its closure days showed its list"
+  },
+  {
+   "timestamp": "20240924100533",
+   "url": "https://www.bradfordschools.org/",
+   "station": "finalsite-bradford-fl",
+   "why": "a capture two days or less from one of its closure days (2024-09-24), read because fewer than three captures of its closure days showed its list"
+  },
+  {
+   "timestamp": "20240927194712",
+   "url": "https://www.bradfordschools.org/",
+   "station": "finalsite-bradford-fl",
+   "why": "a capture two days or less from one of its closure days (2024-09-28), read because fewer than three captures of its closure days showed its list"
+  },
+  {
+   "timestamp": "20241009221907",
+   "url": "https://www.bradfordschools.org/",
+   "station": "finalsite-bradford-fl",
+   "why": "a capture two days or less from one of its closure days (2024-10-10), read because fewer than three captures of its closure days showed its list"
+  },
+  {
+   "timestamp": "20250122224108",
+   "url": "https://www.bradfordschools.org/",
+   "station": "finalsite-bradford-fl",
+   "why": "a capture two days or less from one of its closure days (2025-01-23), read because fewer than three captures of its closure days showed its list"
+  },
+  {
+   "timestamp": "20250123000544",
+   "url": "https://www.bradfordschools.org/",
+   "station": "finalsite-bradford-fl",
+   "why": "a capture two days or less from one of its closure days (2025-01-23), read because fewer than three captures of its closure days showed its list"
+  },
+  {
+   "timestamp": "20250123040555",
+   "url": "https://www.bradfordschools.org/",
+   "station": "finalsite-bradford-fl",
+   "why": "a capture two days or less from one of its closure days (2025-01-23), read because fewer than three captures of its closure days showed its list"
+  },
+  {
+   "timestamp": "20250123060543",
+   "url": "https://www.bradfordschools.org/",
+   "station": "finalsite-bradford-fl",
+   "why": "a capture two days or less from one of its closure days (2025-01-23), read because fewer than three captures of its closure days showed its list"
+  },
+  {
+   "timestamp": "20250123094612",
+   "url": "https://www.bradfordschools.org/",
+   "station": "finalsite-bradford-fl",
+   "why": "a capture two days or less from one of its closure days (2025-01-23), read because fewer than three captures of its closure days showed its list"
+  },
+  {
+   "timestamp": "20260123220347",
+   "url": "https://www.calallen.org/",
+   "station": "finalsite-calallen-tx",
+   "why": "a capture two days or less from one of its closure days (2026-01-24), read because fewer than three captures of its closure days showed its list"
+  },
+  {
+   "timestamp": "20260124051204",
+   "url": "https://www.calallen.org/",
+   "station": "finalsite-calallen-tx",
+   "why": "a capture two days or less from one of its closure days (2026-01-24), read because fewer than three captures of its closure days showed its list"
+  },
+  {
+   "timestamp": "20260124100234",
+   "url": "https://www.calallen.org/",
+   "station": "finalsite-calallen-tx",
+   "why": "a capture two days or less from one of its closure days (2026-01-24), read because fewer than three captures of its closure days showed its list"
+  },
+  {
+   "timestamp": "20260124182736",
+   "url": "https://www.calallen.org/",
+   "station": "finalsite-calallen-tx",
+   "why": "a capture two days or less from one of its closure days (2026-01-25), read because fewer than three captures of its closure days showed its list"
+  },
+  {
+   "timestamp": "20260124220207",
+   "url": "https://www.calallen.org/",
+   "station": "finalsite-calallen-tx",
+   "why": "a capture two days or less from one of its closure days (2026-01-25), read because fewer than three captures of its closure days showed its list"
+  },
+  {
+   "timestamp": "20260125100556",
+   "url": "https://www.calallen.org/",
+   "station": "finalsite-calallen-tx",
+   "why": "a capture two days or less from one of its closure days (2026-01-25), read because fewer than three captures of its closure days showed its list"
+  },
+  {
+   "timestamp": "20260126220511",
+   "url": "https://www.calallen.org/",
+   "station": "finalsite-calallen-tx",
+   "why": "a capture two days or less from one of its closure days (2026-01-27), read because fewer than three captures of its closure days showed its list"
+  },
+  {
+   "timestamp": "20260127100523",
+   "url": "https://www.calallen.org/",
+   "station": "finalsite-calallen-tx",
+   "why": "a capture two days or less from one of its closure days (2026-01-27), read because fewer than three captures of its closure days showed its list"
+  },
+  {
+   "timestamp": "20260127220752",
+   "url": "https://www.calallen.org/",
+   "station": "finalsite-calallen-tx",
+   "why": "a capture two days or less from one of its closure days (2026-01-28), read because fewer than three captures of its closure days showed its list"
+  },
+  {
+   "timestamp": "20260128100542",
+   "url": "https://www.calallen.org/",
+   "station": "finalsite-calallen-tx",
+   "why": "a capture two days or less from one of its closure days (2026-01-28), read because fewer than three captures of its closure days showed its list"
+  },
+  {
+   "timestamp": "20220120225338",
+   "url": "https://www.ecisd.net/",
+   "station": "finalsite-east-central-tx",
+   "why": "a capture two days or less from one of its closure days (2022-01-21), read because fewer than three captures of its closure days showed its list"
+  },
+  {
+   "timestamp": "20230131155214",
+   "url": "https://www.fabensisd.net/",
+   "station": "finalsite-fabens-tx",
+   "why": "a capture two days or less from one of its closure days (2023-01-31), read because fewer than three captures of its closure days showed its list"
+  },
+  {
+   "timestamp": "20250120075005",
+   "url": "https://www.fabensisd.net/",
+   "station": "finalsite-fabens-tx",
+   "why": "a capture two days or less from one of its closure days (2025-01-20), read because fewer than three captures of its closure days showed its list"
+  },
+  {
+   "timestamp": "20260124205802",
+   "url": "https://www.franklincountyschools.org/",
+   "station": "finalsite-franklin-fl",
+   "why": "a capture two days or less from one of its closure days (2026-01-25), read because fewer than three captures of its closure days showed its list"
+  },
+  {
+   "timestamp": "20260125085745",
+   "url": "https://www.franklincountyschools.org/",
+   "station": "finalsite-franklin-fl",
+   "why": "a capture two days or less from one of its closure days (2026-01-25), read because fewer than three captures of its closure days showed its list"
+  },
+  {
+   "timestamp": "20260125210629",
+   "url": "https://www.franklincountyschools.org/",
+   "station": "finalsite-franklin-fl",
+   "why": "a capture two days or less from one of its closure days (2026-01-26), read because fewer than three captures of its closure days showed its list"
+  },
+  {
+   "timestamp": "20260126090332",
+   "url": "https://www.franklincountyschools.org/",
+   "station": "finalsite-franklin-fl",
+   "why": "a capture two days or less from one of its closure days (2026-01-26), read because fewer than three captures of its closure days showed its list"
+  },
+  {
+   "timestamp": "20260127205644",
+   "url": "https://www.franklincountyschools.org/",
+   "station": "finalsite-franklin-fl",
+   "why": "a capture two days or less from one of its closure days (2026-01-28), read because fewer than three captures of its closure days showed its list"
+  },
+  {
+   "timestamp": "20260128085808",
+   "url": "https://www.franklincountyschools.org/",
+   "station": "finalsite-franklin-fl",
+   "why": "a capture two days or less from one of its closure days (2026-01-28), read because fewer than three captures of its closure days showed its list"
+  },
+  {
+   "timestamp": "20260128205803",
+   "url": "https://www.franklincountyschools.org/",
+   "station": "finalsite-franklin-fl",
+   "why": "a capture two days or less from one of its closure days (2026-01-29), read because fewer than three captures of its closure days showed its list"
+  },
+  {
+   "timestamp": "20260129085812",
+   "url": "https://www.franklincountyschools.org/",
+   "station": "finalsite-franklin-fl",
+   "why": "a capture two days or less from one of its closure days (2026-01-29), read because fewer than three captures of its closure days showed its list"
+  },
+  {
+   "timestamp": "20201025042248",
+   "url": "http://www.fhisd.net/",
+   "station": "finalsite-ft-hancock-tx",
+   "why": "a capture two days or less from one of its closure days (2020-10-25), read because fewer than three captures of its closure days showed its list"
+  },
+  {
+   "timestamp": "20201026094719",
+   "url": "http://fhisd.net/",
+   "station": "finalsite-ft-hancock-tx",
+   "why": "a capture two days or less from one of its closure days (2020-10-26), read because fewer than three captures of its closure days showed its list"
+  },
+  {
+   "timestamp": "20220131173814",
+   "url": "https://fhisd.net/",
+   "station": "finalsite-ft-hancock-tx",
+   "why": "a capture two days or less from one of its closure days (2022-02-01), read because fewer than three captures of its closure days showed its list"
+  },
+  {
+   "timestamp": "20221122223950",
+   "url": "https://www.fhisd.net/",
+   "station": "finalsite-ft-hancock-tx",
+   "why": "a capture two days or less from one of its closure days (2022-11-23), read because fewer than three captures of its closure days showed its list"
+  },
+  {
+   "timestamp": "20221123103952",
+   "url": "https://www.fhisd.net/",
+   "station": "finalsite-ft-hancock-tx",
+   "why": "a capture two days or less from one of its closure days (2022-11-23), read because fewer than three captures of its closure days showed its list"
+  },
+  {
+   "timestamp": "20221123224106",
+   "url": "https://www.fhisd.net/",
+   "station": "finalsite-ft-hancock-tx",
+   "why": "a capture two days or less from one of its closure days (2022-11-24), read because fewer than three captures of its closure days showed its list"
+  },
+  {
+   "timestamp": "20221124104125",
+   "url": "https://www.fhisd.net/",
+   "station": "finalsite-ft-hancock-tx",
+   "why": "a capture two days or less from one of its closure days (2022-11-24), read because fewer than three captures of its closure days showed its list"
+  },
+  {
+   "timestamp": "20221125231900",
+   "url": "https://www.fhisd.net/",
+   "station": "finalsite-ft-hancock-tx",
+   "why": "a capture two days or less from one of its closure days (2022-11-26), read because fewer than three captures of its closure days showed its list"
+  },
+  {
+   "timestamp": "20221126232258",
+   "url": "https://www.fhisd.net/",
+   "station": "finalsite-ft-hancock-tx",
+   "why": "a capture two days or less from one of its closure days (2022-11-27), read because fewer than three captures of its closure days showed its list"
+  },
+  {
+   "timestamp": "20221127112824",
+   "url": "https://www.fhisd.net/",
+   "station": "finalsite-ft-hancock-tx",
+   "why": "a capture two days or less from one of its closure days (2022-11-27), read because fewer than three captures of its closure days showed its list"
+  },
+  {
+   "timestamp": "20221127142722",
+   "url": "https://www.fhisd.net/",
+   "station": "finalsite-ft-hancock-tx",
+   "why": "a capture two days or less from one of its closure days (2022-11-27), read because fewer than three captures of its closure days showed its list"
+  },
+  {
+   "timestamp": "20221127155814",
+   "url": "https://www.fhisd.net:443/",
+   "station": "finalsite-ft-hancock-tx",
+   "why": "a capture two days or less from one of its closure days (2022-11-27), read because fewer than three captures of its closure days showed its list"
+  },
+  {
+   "timestamp": "20230130032351",
+   "url": "https://www.fhisd.net/",
+   "station": "finalsite-ft-hancock-tx",
+   "why": "a capture two days or less from one of its closure days (2023-01-30), read because fewer than three captures of its closure days showed its list"
   }
  ]
 }
