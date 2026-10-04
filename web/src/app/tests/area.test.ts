@@ -4,7 +4,7 @@
  * these tests.
  *
  * Monday Jan 12, 2026, 9:05 PM in Kansas City. Tuesday: Kansas City 33 gives
- * 64%, Center 31%, Shawnee Mission no threat. One Kansas City school and a
+ * 64%, Center 31%, Shawnee Mission no weather threat. One Kansas City school and a
  * private school canceled Tuesday; another private school says nothing.
  */
 import { describe, expect, it, vi } from 'vitest';
@@ -202,25 +202,27 @@ describe('the area panel’s view', () => {
     expect(areaBounds(AREA)).toEqual([-94.62, 39.04, -94.59, 39.06]);
   });
 
-  it('heads the chance with the students’ average over the counted schools, closed as 100%', () => {
+  it('heads the chance with the students’ average over the counted schools, closed as 100% and no weather threat as 0', () => {
     const chance = areaView(input())?.chance;
     expect(chance).not.toBeNull();
     if (chance === null || chance === undefined) return;
-    // (400 + 600) × 64% + 500 × 31% + 300 × 100% + 200 × 100%, over 2,000 students.
-    const mean = (1000 * 0.64 + 500 * 0.31 + 300 + 200) / 2000;
+    // (400 + 600) × 64% + 500 × 31% + 300 × 100% + 200 × 100% + 250 × 0, over 2,250 students:
+    // Shawnee Mission's school counts, with no weather threat, as no chance at all.
+    const mean = (1000 * 0.64 + 500 * 0.31 + 300 + 200 + 250 * 0) / 2250;
     expect(chance.number).toBe(String(Math.round(mean * 100)));
-    expect(chance.number).toBe('65');
+    expect(chance.number).toBe('58');
     expect(chance.meaning).toBe('Chance of no school Tuesday');
     expect(chance.day).toBe('2026-01-13');
     expect(chance.why.map(({ number, text }) => `${number} ${text}`)).toEqual([
       '64% Kansas City 33 decides for 2 schools here.',
       '31% Center 58 decides for 1 school here.',
       '100% Kansas City 33 canceled Tuesday at 1 school here.',
+      '<1% Shawnee Mission Public Schools has no weather threat Tuesday at 1 school here.',
       '100% Delta Academy canceled Tuesday.',
     ]);
-    // Epsilon says nothing and is outside a district; Shawnee Mission has no threat.
+    // Epsilon says nothing and is outside a district.
     expect(chance.left).toBe(
-      '2 of the 7 schools here have no chance given for Tuesday and are left out.',
+      '1 of the 7 schools here has no chance given for Tuesday and is left out.',
     );
     // The night ahead, as Kansas City 33 has it; its usual announcement is its own, so left off.
     expect(chance.chart?.kind).toBe('snow_total');
@@ -252,6 +254,9 @@ describe('the area panel’s view', () => {
       near: AREA.near.slice(0, 1),
     };
     expect(areaView(input({ area: posted }))?.chance).toBeNull();
+    // No weather threat anywhere in the area: no chance, not even one under 1%.
+    const clear = { ...AREA, own: [], near: AREA.near.slice(1) };
+    expect(areaView(input({ area: clear }))?.chance).toBeNull();
     // Once Tuesday's buses have run, nothing is left to give a chance for.
     expect(areaView(input({ now: new Date('2026-01-13T13:30:00Z') }))?.chance).toBeNull();
   });
@@ -380,7 +385,7 @@ describe('watching an area', () => {
     stop();
     fetchSpy.mockRestore();
     expect(views[0]).toMatchObject({ loading: true, place: 'Missouri' });
-    expect(views.at(-1)?.chance?.number).toBe('65');
+    expect(views.at(-1)?.chance?.number).toBe('58');
     expect(get).toHaveBeenCalledTimes(7);
   });
 

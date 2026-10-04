@@ -118,6 +118,14 @@ function districtPosted(
   return `${chanceFormat.neighborPosted(name, status, localDate)} at ${ofHere(n, of)}.`;
 }
 
+/**
+ * A district whose forecast says no weather threat for the day, at how many
+ * of the area's schools: "Shawnee Mission has no weather threat Tuesday at 3 schools here."
+ */
+function noThreat(name: string, n: number, of: number, localDate: string): string {
+  return `${name} has no weather threat ${chanceFormat.weekday(localDate)} at ${ofHere(n, of)}.`;
+}
+
 /** What a school deciding for itself posted for the day: "Pembroke Hill canceled Tuesday." */
 function schoolPosted(name: string, status: StatusKey, localDate: string): string {
   return `${chanceFormat.neighborPosted(name, status, localDate)}.`;
@@ -154,6 +162,7 @@ export const areaFormat = /* @__PURE__ */ deepFreeze({
   statusCount,
   decides,
   districtPosted,
+  noThreat,
   schoolPosted,
   postedShare,
   notCounted,

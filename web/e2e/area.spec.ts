@@ -596,7 +596,11 @@ async function expectFramed(page: Page, zip: keyof typeof AREAS): Promise<void> 
   }
 }
 
-/** The area's chance as the panel must give it: its students' average, closed or remote as 100%. */
+/**
+ * The area's chance as the panel must give it: its students' average, closed or
+ * remote as 100%, a district with no weather threat as 0, a school with no chance
+ * given left out.
+ */
 function expectedChance(zip: keyof typeof AREAS): number {
   let students = 0;
   let sum = 0;
@@ -610,7 +614,7 @@ function expectedChance(zip: keyof typeof AREAS): number {
           ? 0
           : district === null
             ? null
-            : (CHANCES[district] ?? null);
+            : (CHANCES[district] ?? 0);
     if (chance === null) continue;
     students += school.students;
     sum += school.students * chance;
@@ -783,25 +787,26 @@ test('with no predictions file, as the site is today, there is no chance, no num
   await context.close();
 });
 
-test('with a predictions file, the chance is the students’ average over the counted schools, a closed one 100%', async ({
+test('with a predictions file, the chance is the students’ average over the counted schools, a closed one 100% and one with no weather threat 0', async ({
   browser,
 }) => {
   const { context, page, problems } = await visit(browser, forecast, DESKTOP, '?zip=64130');
   const panel = panelOf(page);
   await expect(panel).toHaveAttribute('aria-busy', 'false', { timeout: 30_000 });
   const expected = expectedChance('64130');
-  expect(expected).toBe(67);
+  expect(expected).toBe(62);
   await expect(panel.locator('.number')).toHaveText(`${String(expected)}%`);
   await expect(panel.locator('.meaning')).toContainText('Chance of no school Monday');
   // Who decides, most students first: Kansas City 33 closed both its schools here, so 100%.
-  await expect(panel.locator('.why .row .label')).toHaveText(['100%', '40%', '55%']);
+  await expect(panel.locator('.why .row .label')).toHaveText(['100%', '40%', '55%', '<1%']);
   await expect(panel.locator('.why .row p').first()).toHaveText(
     'Kansas City 33 canceled Monday at 2 schools here.',
   );
-  // Genesis has no threat today: no chance is given for it, and the panel says it is left out.
-  await expect(panel.locator('.left')).toHaveText(
-    '1 of the 6 schools here has no chance given for Monday and is left out.',
+  // Genesis has no weather threat today: it counts as no chance at all, and none is left out.
+  await expect(panel.locator('.why .row p').last()).toHaveText(
+    /^Genesis School\b.* has no weather threat Monday at 1 school here\.$/u,
   );
+  await expect(panel.locator('.left')).toHaveCount(0);
   await expect(panel.locator('.chart')).toHaveCount(1);
   await expectFramed(page, '64130');
   expect(problems).toEqual([]);

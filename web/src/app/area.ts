@@ -14,6 +14,9 @@
  *   dismissal is school (0);
  * - otherwise its district's chance, where its own panel shows that chance
  *   for that day;
+ * - otherwise, where its district's forecast says no weather threat that
+ *   day, nothing (0): the area's chance is over all its schools, and leaving
+ *   the ones with no threat out would raise it;
  * - otherwise it is not counted, and the panel says how many are not.
  *
  * The area's chance is the average of the counted schools' chances, each
@@ -141,6 +144,7 @@ interface Member {
 /** What one school counts as on the area's day. */
 type Counted =
   | { readonly how: 'forecast'; readonly chance: number }
+  | { readonly how: 'clear'; readonly chance: 0 }
   | { readonly how: 'posted'; readonly status: StatusKey; readonly chance: number };
 
 export interface AreaInput {
@@ -247,7 +251,14 @@ export function areaChance(
     };
     const decided = { today: posted(today ?? '') !== null, tomorrow: status.tomorrow !== null };
     const shown = headlineDay(outlooks[i] ?? null, decided, now);
-    return { posted, shown };
+    // Whether the district's forecast says no weather threat that day.
+    const clear = (day: LocalDate): boolean => {
+      const outlook = outlooks[i] ?? null;
+      if (outlook === null || today === null) return false;
+      const on = day === today ? outlook.today : day === nextDay(today) ? outlook.tomorrow : null;
+      return on?.state === 'no_threat';
+    };
+    return { posted, shown, clear };
   });
   // The first day any school would show a chance for.
   const day = days
@@ -256,12 +267,13 @@ export function areaChance(
     .sort()[0];
   if (day === undefined) return null;
 
-  const counted: (Counted | null)[] = days.map(({ posted, shown }) => {
+  const counted: (Counted | null)[] = days.map(({ posted, shown, clear }) => {
     const row = posted(day);
     if (row !== null) {
       return { how: 'posted', status: statusKey(row.status), chance: noSchool(row.status) ? 1 : 0 };
     }
-    return shown?.day === day ? { how: 'forecast', chance: shown.noSchool } : null;
+    if (shown?.day === day) return { how: 'forecast', chance: shown.noSchool };
+    return clear(day) ? { how: 'clear', chance: 0 } : null;
   });
   let students = 0;
   let sum = 0;
@@ -291,7 +303,7 @@ export function areaChance(
     if (count === null || count === undefined) return;
     const district = record.district;
     const by = district === null ? `school ${record.id}` : `district ${String(district.index)}`;
-    const key = `${by} ${count.how === 'posted' ? count.status : 'forecast'}`;
+    const key = `${by} ${count.how === 'posted' ? count.status : count.how}`;
     const found = deciders.get(key);
     if (found !== undefined) {
       found.schools += 1;
@@ -327,6 +339,13 @@ export function areaChance(
             key: decider.key,
             number: format.chance(count.chance),
             text: areaFormat.decides(decider.name, decider.schools, of),
+          };
+        }
+        if (count.how === 'clear') {
+          return {
+            key: decider.key,
+            number: format.chance(0),
+            text: areaFormat.noThreat(decider.name, decider.schools, of, day),
           };
         }
         return {

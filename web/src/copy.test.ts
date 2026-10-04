@@ -589,6 +589,12 @@ describe('format', () => {
       expect(areaFormat.districtPosted('Riverside', 'remote', 2, 2, day)).toBe(
         'Riverside is remote Tuesday at both schools here.',
       );
+      expect(areaFormat.noThreat('Riverside', 3, 14, day)).toBe(
+        'Riverside has no weather threat Tuesday at 3 schools here.',
+      );
+      expect(areaFormat.noThreat('Riverside', 1, 1, day)).toBe(
+        'Riverside has no weather threat Tuesday at the 1 school here.',
+      );
       expect(areaFormat.schoolPosted('Riverside', 'delayed', day)).toBe(
         'Riverside starts late Tuesday.',
       );
