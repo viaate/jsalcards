@@ -59,14 +59,25 @@ async function put(
 ): Promise<boolean> {
   try {
     const cache = await storage.open(name);
-    // A copy sent no earlier is kept as it is: the worker's own, or an earlier read's of a live
-    // file that came back first. One sent later than it replaces it.
+    let file = response;
+    if (name === CACHE_NAMES.data) {
+      // A live file changes under its name. It is read whole before it is set against what
+      // the cache holds, so a copy the worker put while it downloaded counts too.
+      file = new Response(await response.arrayBuffer(), {
+        status: response.status,
+        statusText: response.statusText,
+        headers: response.headers,
+      });
+    }
+    // A copy sent no earlier is kept as it is: the worker's own, or an earlier read's that came
+    // back first. One sent later than it replaces it. (A cache-first file is the same file
+    // under its name whichever copy it is, so it goes in as it downloads.)
     const held = await cache.match(url);
-    if (held !== undefined && !(sentAt(response) > sentAt(held))) {
-      discard(response);
+    if (held !== undefined && !(sentAt(file) > sentAt(held))) {
+      discard(file);
       return false;
     }
-    await cache.put(url, response);
+    await cache.put(url, file);
     return true;
   } catch {
     discard(response);

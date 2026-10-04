@@ -80,6 +80,27 @@ describe('keepData', () => {
     expect(await caches.text(CACHE_NAMES.data, CLOSINGS)).toBe('newest');
   });
 
+  it('never puts a live file over a copy the worker put while it downloaded', async () => {
+    const caches = new FakeCaches();
+    let send!: () => void;
+    const body = new ReadableStream<Uint8Array>({
+      start(controller) {
+        send = () => {
+          controller.enqueue(new TextEncoder().encode('older'));
+          controller.close();
+        };
+      },
+    });
+    const response = new Response(body, { status: 200, headers: { date: EARLY } });
+    const kept = keepData(CLOSINGS, response, '/', { caches });
+    await new Promise((resolve) => setTimeout(resolve, 10));
+    // The worker took over meanwhile, and a read through it put a copy sent later.
+    await (await caches.open(CACHE_NAMES.data)).put(CLOSINGS, file('newer', LATER));
+    send();
+    await expect(kept).resolves.toBe(false);
+    expect(await caches.text(CACHE_NAMES.data, CLOSINGS)).toBe('newer');
+  });
+
   it('writes the keeps of one file in the order they were asked for', async () => {
     const caches = new FakeCaches();
     const first = keepData(CLOSINGS, file('first', EARLY), '/', { caches });
