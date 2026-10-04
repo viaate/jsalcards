@@ -5,13 +5,21 @@
  * before the worker took over is in the worker's cache once the read is done,
  * so a second visit with no network searches and shows the dust as the first.
  *
+ * A deploy that publishes a new directory and a new index under new names
+ * leaves no copy of the old ones kept, whether a worker took the page over
+ * or none could be registered, and the new ones are downloaded once.
+ *
  * The site is a build with data staged in its public/data/ folder, made here in
  * a temporary folder: a search index built by scripts/build-search-index.mjs
  * from real records (two cities, a ZIP code and two schools, as app.spec.ts
  * has them), a school directory of those two schools and three more near
  * Kansas City as the pipeline's directory has them, and a live closings file
  * that lights nothing. The closings file is SYNTHETIC: an envelope with no
- * days, for this test only.
+ * days, for this test only. The index and the directory are published under
+ * names with a hash of their content in them, as staging names them
+ * (scripts/stage-data.mjs). A second build is the next deploy: the directory
+ * without one of the five schools, and the index without the ZIP code, so
+ * each of the three files has a new name.
  *
  * The server is this spec's own. It counts the requests that reach it for each
  * file. It answers with no-cache and an ETag, as `vite preview` does, so the
@@ -47,24 +55,22 @@ import type { Browser, BrowserContext, Page } from '@playwright/test';
 import { build } from 'vite';
 
 import { format } from '../src/copy-format';
-import { CACHE_NAMES, SW_FILE } from '../src/pwa/config';
+import { hashedPath } from '../src/data/paths';
+import { CACHE_NAMES, SKIP_WAITING_MESSAGE, SW_FILE, routeFor } from '../src/pwa/config';
 
 const WEB = fileURLToPath(new URL('..', import.meta.url));
 const GLOW_LAYER = 'snowlight-glow';
 const GPU_DRIVER_NOISE =
   /GL Driver Message|GPU stall due to ReadPixels|Automatic fallback to software WebGL/;
 
-const INDEX = 'data/search-index.bin';
-const META = 'data/schools/meta.json';
-const POINTS = 'data/schools/points.bin';
 const CLOSINGS = 'data/live/closings.json';
-/** Which of the worker's caches keeps each data file (src/pwa/config.ts). */
-const CACHE_OF: Record<string, string> = {
-  [INDEX]: CACHE_NAMES.staticData,
-  [META]: CACHE_NAMES.staticData,
-  [POINTS]: CACHE_NAMES.staticData,
-  [CLOSINGS]: CACHE_NAMES.data,
-};
+
+/** The worker's cache for a data file (data/...), by its route for it (src/pwa/config.ts). */
+function cacheOf(file: string): string {
+  return routeFor(`https://snow.test/${file}`, '/') === 'staticData'
+    ? CACHE_NAMES.staticData
+    : CACHE_NAMES.data;
+}
 
 /** Search records as the pipeline writes them, the same as app.spec.ts stages. */
 const SEARCH_RECORDS = [
@@ -107,32 +113,32 @@ const DISTRICTS = [
   ['2012000', 'Blue Valley'],
   ['2916400', 'KANSAS CITY 33'],
 ] as const;
-const DIRECTORY_ON = '2026-09-25';
+type School = (typeof SCHOOLS)[number];
 const GENERATED_AT = '2026-01-12T12:42:00Z';
 const ZONE = 'America/Chicago';
 /** Kansas City at zoom 6: past 5, where every school shows as dust. */
 const DUST_VIEW = { center: [-94.6, 39.0] as [number, number], zoom: 6 };
 
-function directoryMeta(): string {
+function directoryMeta(schools: readonly School[], generatedOn: string): string {
   return JSON.stringify({
     schema_version: 1,
-    generated_on: DIRECTORY_ON,
-    count: SCHOOLS.length,
-    ids: SCHOOLS.map((school) => school.id),
-    names: SCHOOLS.map((school) => school.name),
+    generated_on: generatedOn,
+    count: schools.length,
+    ids: schools.map((school) => school.id),
+    names: schools.map((school) => school.name),
     districts: { ids: DISTRICTS.map(([id]) => id), names: DISTRICTS.map(([, name]) => name) },
     school_years: { public: '2024-2025', private: '2023-2024' },
   });
 }
 
-function directoryPoints(): Buffer {
-  const bytes = Buffer.alloc(16 + 13 * SCHOOLS.length);
+function directoryPoints(schools: readonly School[]): Buffer {
+  const bytes = Buffer.alloc(16 + 13 * schools.length);
   bytes.write('SLPT', 0, 'latin1');
   bytes.writeUInt16LE(1, 4);
   bytes.writeUInt16LE(13, 6);
-  bytes.writeUInt32LE(SCHOOLS.length, 8);
+  bytes.writeUInt32LE(schools.length, 8);
   bytes.writeUInt32LE(DISTRICTS.length, 12);
-  SCHOOLS.forEach((school, i) => {
+  schools.forEach((school, i) => {
     const at = 16 + 13 * i;
     bytes.writeInt32LE(Math.round(school.lon * 1e6), at);
     bytes.writeInt32LE(Math.round(school.lat * 1e6), at + 4);
@@ -143,13 +149,52 @@ function directoryPoints(): Buffer {
 }
 
 /** SYNTHETIC: a closings file that lights nothing, for this test only. */
-function syntheticClosings(): string {
+function syntheticClosings(schools: readonly School[], generatedOn: string): string {
   return JSON.stringify({
     schema_version: 1,
     generated_at: GENERATED_AT,
-    directory: { generated_on: DIRECTORY_ON, schools: SCHOOLS.length, districts: DISTRICTS.length },
+    directory: { generated_on: generatedOn, schools: schools.length, districts: DISTRICTS.length },
     days: [],
   });
+}
+
+/** What one deploy publishes. */
+interface DeployData {
+  readonly records: readonly string[];
+  readonly schools: readonly School[];
+  readonly directoryOn: string;
+}
+
+const FIRST_DATA: DeployData = {
+  records: SEARCH_RECORDS,
+  schools: SCHOOLS,
+  directoryOn: '2026-09-25',
+};
+/** The next deploy: a directory without Blue Valley High, an index without the ZIP code. */
+const NEXT_DATA: DeployData = {
+  records: SEARCH_RECORDS.filter((record) => !record.includes('"zcta"')),
+  schools: SCHOOLS.filter((school) => school.name !== 'Blue Valley High'),
+  directoryOn: '2026-10-02',
+};
+
+/** A build of the site, and the names it publishes its hashed data files under. */
+interface Deploy {
+  readonly root: string;
+  readonly index: string;
+  readonly meta: string;
+  readonly points: string;
+  /** Schools in its directory. */
+  readonly schools: number;
+}
+
+/** The files under data/ whose names carry a content hash. */
+function hashedFiles(deploy: Deploy): string[] {
+  return [deploy.index, deploy.meta, deploy.points];
+}
+
+/** Every data file a deploy publishes. */
+function dataFiles(deploy: Deploy): string[] {
+  return [CLOSINGS, ...hashedFiles(deploy)];
 }
 
 // A static host that counts, holds and throttles. -------------------------------------
@@ -201,13 +246,25 @@ class Site {
   private readonly holds: Hold[] = [];
   private server: Server | undefined;
   private lastData = 0;
+  /** Paths answered with a 404, as though not deployed. */
+  private readonly refused = new Set<string>();
   origin = '';
 
   constructor(
-    private readonly root: string,
+    private root: string,
     private readonly cacheControl = 'no-cache',
     private readonly slow: Slow | null = null,
   ) {}
+
+  /** Serves another build from now on, as a deploy does. */
+  deploy(root: string): void {
+    this.root = root;
+  }
+
+  /** Answers `file` with a 404 from now on. */
+  refuse(file: string): void {
+    this.refused.add(`/${file}`);
+  }
 
   url(file = ''): string {
     return `${this.origin}/${file}`;
@@ -290,6 +347,7 @@ class Site {
     let body: Buffer;
     let modified: Date;
     try {
+      if (this.refused.has(urlPath)) throw new Error('refused');
       if (!file.startsWith(this.root) || !statSync(file).isFile()) throw new Error('not a file');
       body = readFileSync(file);
       modified = statSync(file).mtime;
@@ -425,13 +483,13 @@ async function dust(page: Page): Promise<number> {
   }, GLOW_LAYER);
 }
 
-async function expectDust(page: Page): Promise<void> {
-  await expect.poll(() => dust(page), { timeout: 30_000 }).toBe(SCHOOLS.length);
+async function expectDust(page: Page, deploy: Deploy): Promise<void> {
+  await expect.poll(() => dust(page), { timeout: 30_000 }).toBe(deploy.schools);
 }
 
 /** Which of `files` are not in the cache the worker keeps each in. */
 async function notCached(page: Page, site: Site, files: readonly string[]): Promise<string[]> {
-  const wanted = files.map((file) => [file, CACHE_OF[file] ?? '', site.url(file)] as const);
+  const wanted = files.map((file) => [file, cacheOf(file), site.url(file)] as const);
   return page.evaluate(async (entries) => {
     const missing: string[] = [];
     for (const [file, name, url] of entries) {
@@ -450,6 +508,92 @@ async function notCached(page: Page, site: Site, files: readonly string[]): Prom
  */
 async function waitForCached(page: Page, site: Site, files: readonly string[]): Promise<void> {
   await expect.poll(() => notCached(page, site, files), { timeout: 30_000 }).toEqual([]);
+}
+
+/** Every file under data/ the worker's data caches hold, sorted. */
+async function heldData(page: Page, site: Site): Promise<string[]> {
+  const held = await page.evaluate(
+    async (names) => {
+      const urls: string[] = [];
+      for (const name of names) {
+        if (!(await caches.has(name))) continue;
+        for (const request of await (await caches.open(name)).keys()) urls.push(request.url);
+      }
+      return urls;
+    },
+    [CACHE_NAMES.staticData, CACHE_NAMES.data],
+  );
+  return held
+    .filter((url) => url.startsWith(site.url('data/')))
+    .map((url) => url.slice(site.url().length))
+    .sort();
+}
+
+/**
+ * The files under data/ the worker's limits cover in its cache-first cache: those it has
+ * cached or served itself, which Workbox lists in its own database (workbox-expiration).
+ */
+async function tracked(page: Page, site: Site): Promise<string[]> {
+  const urls = await page.evaluate(async (cacheName) => {
+    // Only opened once the worker has made it: opening it first would make it without its store.
+    if (!(await indexedDB.databases()).some((db) => db.name === 'workbox-expiration')) return [];
+    return new Promise<string[]>((resolve, reject) => {
+      const opened = indexedDB.open('workbox-expiration');
+      opened.onerror = () => {
+        reject(new Error(String(opened.error)));
+      };
+      opened.onsuccess = () => {
+        const db = opened.result;
+        const all = db.transaction('cache-entries').objectStore('cache-entries').getAll();
+        all.onerror = () => {
+          db.close();
+          reject(new Error(String(all.error)));
+        };
+        all.onsuccess = () => {
+          db.close();
+          const entries = all.result as { cacheName: string; url: string }[];
+          resolve(entries.filter((entry) => entry.cacheName === cacheName).map((e) => e.url));
+        };
+      };
+    });
+  }, CACHE_NAMES.staticData);
+  return urls
+    .filter((url) => url.startsWith(site.url('data/')))
+    .map((url) => url.slice(site.url().length))
+    .sort();
+}
+
+/** The worker the server now serves installs, as the page's hourly check finds it, and waits. */
+async function installUpdate(page: Page): Promise<void> {
+  await page.evaluate(async () => {
+    await (await navigator.serviceWorker.getRegistration())?.update();
+  });
+  await expect
+    .poll(
+      () =>
+        page.evaluate(
+          async () => ((await navigator.serviceWorker.getRegistration())?.waiting ?? null) !== null,
+        ),
+      { timeout: 60_000 },
+    )
+    .toBe(true);
+}
+
+/** The waiting worker takes over, as it does once the page is hidden (src/pwa/register.ts). */
+async function switchToUpdate(page: Page): Promise<void> {
+  await page.evaluate(async (message) => {
+    (await navigator.serviceWorker.getRegistration())?.waiting?.postMessage(message);
+  }, SKIP_WAITING_MESSAGE);
+  await expect
+    .poll(
+      () =>
+        page.evaluate(async () => {
+          const registration = await navigator.serviceWorker.getRegistration();
+          return registration?.waiting === null && registration.active?.state === 'activated';
+        }),
+      { timeout: 60_000 },
+    )
+    .toBe(true);
 }
 
 /**
@@ -471,6 +615,7 @@ async function expectEachOnce(page: Page, site: Site, files: readonly string[]):
 async function expectOfflineVisit(
   visit: Visit,
   site: Site,
+  deploy: Deploy,
   files: readonly string[],
 ): Promise<void> {
   const { context, page, problems } = visit;
@@ -484,10 +629,10 @@ async function expectOfflineVisit(
     format.offline(new Date(GENERATED_AT), ZONE, new Date()),
     { timeout: 30_000 },
   );
-  if (files.includes(INDEX)) await findPembroke(page);
-  if (files.includes(META)) {
+  if (files.includes(deploy.index)) await findPembroke(page);
+  if (files.includes(deploy.meta)) {
     await zoomPast5(page);
-    await expectDust(page);
+    await expectDust(page, deploy);
   }
   // Nothing failed but the street tiles the results ask for ahead, which come from elsewhere.
   expect(problems.filter((problem) => !problem.includes('tiles.openfreemap.org'))).toEqual([]);
@@ -500,13 +645,17 @@ async function expectReadOnceAndKept(
   files: readonly string[],
 ): Promise<void> {
   await expectEachOnce(visit.page, site, files);
-  await expectOfflineVisit(visit, site, files);
+  await expectOfflineVisit(visit, site, deployed, files);
 }
 
 // Setup ------------------------------------------------------------------------------
 
 let root = '';
-let siteRoot = '';
+const UNBUILT: Deploy = { root: '', index: '', meta: '', points: '', schools: 0 };
+/** The site as a first visit finds it. */
+let deployed = UNBUILT;
+/** The site after the next deploy. */
+let redeployed = UNBUILT;
 
 function filesIn(folder: string, prefix = ''): string[] {
   return readdirSync(path.join(folder, prefix), { withFileTypes: true }).flatMap((entry) =>
@@ -514,40 +663,67 @@ function filesIn(folder: string, prefix = ''): string[] {
   );
 }
 
-test.describe.configure({ mode: 'default', timeout: 120_000 });
+/** Writes `bytes` under `data`, at `file` with a hash of them in its name; the name as served. */
+function publish(data: string, file: string, bytes: Buffer): string {
+  const published = hashedPath(file, createHash('sha256').update(bytes).digest('hex'));
+  mkdirSync(path.dirname(path.join(data, published)), { recursive: true });
+  writeFileSync(path.join(data, published), bytes);
+  return `data/${published}`;
+}
 
-test.beforeAll(async () => {
-  if (test.info().project.name !== 'desktop') return;
-  test.setTimeout(240_000);
-  root = mkdtempSync(path.join(tmpdir(), 'snowlight-first-visit-e2e-'));
-  const publicDir = path.join(root, 'public');
+/** Stages `content` in a public folder of its own and builds the site from it, in `name`. */
+async function buildDeploy(name: string, content: DeployData): Promise<Deploy> {
+  const folder = path.join(root, name);
+  const publicDir = path.join(folder, 'public');
   for (const file of filesIn(path.join(WEB, 'public'))) {
     if (file.startsWith('data/')) continue;
     mkdirSync(path.dirname(path.join(publicDir, file)), { recursive: true });
     writeFileSync(path.join(publicDir, file), readFileSync(path.join(WEB, 'public', file)));
   }
   const data = path.join(publicDir, 'data');
-  mkdirSync(path.join(data, 'schools'), { recursive: true });
   mkdirSync(path.join(data, 'live'), { recursive: true });
-  const records = path.join(root, 'records.jsonl');
-  writeFileSync(records, `${SEARCH_RECORDS.join('\n')}\n`);
-  execFileSync(
-    process.execPath,
-    ['scripts/build-search-index.mjs', '--out', path.join(data, 'search-index.bin'), records],
-    { cwd: WEB, stdio: 'pipe' },
+  const records = path.join(folder, 'records.jsonl');
+  const built = path.join(folder, 'search-index.bin');
+  writeFileSync(records, `${content.records.join('\n')}\n`);
+  execFileSync(process.execPath, ['scripts/build-search-index.mjs', '--out', built, records], {
+    cwd: WEB,
+    stdio: 'pipe',
+  });
+  const deploy: Deploy = {
+    root: path.join(folder, 'site'),
+    index: publish(data, 'search-index.bin', readFileSync(built)),
+    meta: publish(
+      data,
+      'schools/meta.json',
+      Buffer.from(directoryMeta(content.schools, content.directoryOn)),
+    ),
+    points: publish(data, 'schools/points.bin', directoryPoints(content.schools)),
+    schools: content.schools.length,
+  };
+  writeFileSync(
+    path.join(data, 'live/closings.json'),
+    syntheticClosings(content.schools, content.directoryOn),
   );
-  writeFileSync(path.join(data, 'schools/meta.json'), directoryMeta());
-  writeFileSync(path.join(data, 'schools/points.bin'), directoryPoints());
-  writeFileSync(path.join(data, 'live/closings.json'), syntheticClosings());
-  siteRoot = path.join(root, 'site');
   await build({
     root: WEB,
     publicDir,
     // A cache of its own, so this build never races another spec's.
     cacheDir: path.join(root, 'vite-cache'),
     logLevel: 'warn',
-    build: { outDir: siteRoot, emptyOutDir: true },
+    build: { outDir: deploy.root, emptyOutDir: true },
   });
+  return deploy;
+}
+
+test.describe.configure({ mode: 'default', timeout: 120_000 });
+
+test.beforeAll(async () => {
+  if (test.info().project.name !== 'desktop') return;
+  test.setTimeout(360_000);
+  root = mkdtempSync(path.join(tmpdir(), 'snowlight-first-visit-e2e-'));
+  // One after the other: both builds write through the same Vite cache.
+  deployed = await buildDeploy('first', FIRST_DATA);
+  redeployed = await buildDeploy('next', NEXT_DATA);
 });
 
 test.afterAll(() => {
@@ -560,17 +736,23 @@ test.beforeEach(() => {
 
 /** A fresh server for one test, started; stopped when the test ends. */
 async function serve(cacheControl?: string, slow?: Slow): Promise<Site> {
-  const site = new Site(siteRoot, cacheControl, slow ?? null);
+  const site = new Site(deployed.root, cacheControl, slow ?? null);
   await site.start();
   return site;
 }
 
 // Tests ------------------------------------------------------------------------------
 
-test('the build ships the data this spec counts', () => {
-  expect(filesIn(path.join(siteRoot, 'data')).sort()).toEqual(
-    [CLOSINGS, META, POINTS, INDEX].map((file) => file.slice('data/'.length)).sort(),
-  );
+test('each build ships the data this spec counts, the hashed files under names of their own', () => {
+  for (const deploy of [deployed, redeployed]) {
+    expect(filesIn(path.join(deploy.root, 'data')).sort()).toEqual(
+      dataFiles(deploy)
+        .map((file) => file.slice('data/'.length))
+        .sort(),
+    );
+  }
+  const renamed = hashedFiles(redeployed).filter((file) => !hashedFiles(deployed).includes(file));
+  expect(renamed).toEqual(hashedFiles(redeployed));
 });
 
 test('the worker takes over before the search: the index is downloaded once, by the worker', async ({
@@ -582,7 +764,7 @@ test('the worker takes over before the search: the index is downloaded once, by 
     await settle(visit.page);
     await takenOver(visit.page);
     await findPembroke(visit.page);
-    await expectReadOnceAndKept(visit, site, [CLOSINGS, INDEX]);
+    await expectReadOnceAndKept(visit, site, [CLOSINGS, deployed.index]);
   } finally {
     await visit.context.close();
     await site.stop();
@@ -594,7 +776,7 @@ test('the worker takes over while the index downloads: it is downloaded once, an
 }) => {
   const site = await serve();
   const worker = site.hold(SW_FILE);
-  const index = site.hold(INDEX, 'body');
+  const index = site.hold(deployed.index, 'body');
   const visit = await firstVisit(browser, site);
   try {
     await settle(visit.page);
@@ -606,7 +788,7 @@ test('the worker takes over while the index downloads: it is downloaded once, an
     await takenOver(visit.page);
     index.release();
     await findPembroke(visit.page);
-    await expectReadOnceAndKept(visit, site, [CLOSINGS, INDEX]);
+    await expectReadOnceAndKept(visit, site, [CLOSINGS, deployed.index]);
   } finally {
     await visit.context.close();
     await site.stop();
@@ -624,7 +806,7 @@ test('the worker takes over after the search: the index is not downloaded again'
     await findPembroke(visit.page);
     expect(await controlled(visit.page)).toBe(false);
     worker.release();
-    await expectReadOnceAndKept(visit, site, [CLOSINGS, INDEX]);
+    await expectReadOnceAndKept(visit, site, [CLOSINGS, deployed.index]);
   } finally {
     await visit.context.close();
     await site.stop();
@@ -640,10 +822,10 @@ test('the map passes zoom 5 before the worker takes over: the directory is not d
   try {
     await settle(visit.page);
     await zoomPast5(visit.page);
-    await expectDust(visit.page);
+    await expectDust(visit.page, deployed);
     expect(await controlled(visit.page)).toBe(false);
     worker.release();
-    await expectReadOnceAndKept(visit, site, [CLOSINGS, META, POINTS]);
+    await expectReadOnceAndKept(visit, site, [CLOSINGS, deployed.meta, deployed.points]);
   } finally {
     await visit.context.close();
     await site.stop();
@@ -655,7 +837,7 @@ test('the worker takes over while the directory downloads: it is downloaded once
 }) => {
   const site = await serve();
   const worker = site.hold(SW_FILE);
-  const meta = site.hold(META, 'body');
+  const meta = site.hold(deployed.meta, 'body');
   const visit = await firstVisit(browser, site);
   try {
     await settle(visit.page);
@@ -665,8 +847,8 @@ test('the worker takes over while the directory downloads: it is downloaded once
     worker.release();
     await takenOver(visit.page);
     meta.release();
-    await expectDust(visit.page);
-    await expectReadOnceAndKept(visit, site, [CLOSINGS, META, POINTS]);
+    await expectDust(visit.page, deployed);
+    await expectReadOnceAndKept(visit, site, [CLOSINGS, deployed.meta, deployed.points]);
   } finally {
     await visit.context.close();
     await site.stop();
@@ -682,8 +864,8 @@ test('the map passes zoom 5 after the worker takes over: the directory is downlo
     await settle(visit.page);
     await takenOver(visit.page);
     await zoomPast5(visit.page);
-    await expectDust(visit.page);
-    await expectReadOnceAndKept(visit, site, [CLOSINGS, META, POINTS]);
+    await expectDust(visit.page, deployed);
+    await expectReadOnceAndKept(visit, site, [CLOSINGS, deployed.meta, deployed.points]);
   } finally {
     await visit.context.close();
     await site.stop();
@@ -701,8 +883,13 @@ test('on a slow network, searching and zooming in at once, each file is download
     await focusSearch(visit.page);
     await zoomPast5(visit.page);
     await findPembroke(visit.page);
-    await expectDust(visit.page);
-    await expectReadOnceAndKept(visit, site, [CLOSINGS, INDEX, META, POINTS]);
+    await expectDust(visit.page, deployed);
+    await expectReadOnceAndKept(visit, site, [
+      CLOSINGS,
+      deployed.index,
+      deployed.meta,
+      deployed.points,
+    ]);
   } finally {
     await visit.context.close();
     await site.stop();
@@ -714,7 +901,7 @@ test('a download cut off before the worker takes over keeps nothing, and the nex
 }) => {
   const site = await serve();
   const worker = site.hold(SW_FILE);
-  const meta = site.hold(META, 'body');
+  const meta = site.hold(deployed.meta, 'body');
   const visit = await firstVisit(browser, site);
   try {
     await settle(visit.page);
@@ -725,12 +912,14 @@ test('a download cut off before the worker takes over keeps nothing, and the nex
     worker.release();
     await takenOver(visit.page);
     // Where each school is came whole, and is kept; of the names, nothing is, not half a file.
-    await waitForCached(visit.page, site, [CLOSINGS, POINTS]);
+    await waitForCached(visit.page, site, [CLOSINGS, deployed.points]);
     await site.quiet();
-    expect(await notCached(visit.page, site, [META])).toEqual([META]);
-    expect(site.dataHits()).toEqual({ [CLOSINGS]: 1, [META]: 1, [POINTS]: 1 });
+    expect(await notCached(visit.page, site, [deployed.meta])).toEqual([deployed.meta]);
+    expect(site.dataHits()).toEqual({ [CLOSINGS]: 1, [deployed.meta]: 1, [deployed.points]: 1 });
     // No error but the cut-off read's own.
-    expect(visit.problems.splice(0).filter((problem) => !problem.includes(META))).toEqual([]);
+    expect(visit.problems.splice(0).filter((problem) => !problem.includes(deployed.meta))).toEqual(
+      [],
+    );
 
     // The next visit, with the worker in control from the start, asks for the names again,
     // once, and keeps them; where each school is comes from the cache, and the live file is
@@ -738,11 +927,105 @@ test('a download cut off before the worker takes over keeps nothing, and the nex
     await visit.page.goto(site.url());
     await settle(visit.page);
     await zoomPast5(visit.page);
-    await expectDust(visit.page);
-    await waitForCached(visit.page, site, [META]);
+    await expectDust(visit.page, deployed);
+    await waitForCached(visit.page, site, [deployed.meta]);
     await site.quiet();
-    expect(site.dataHits()).toEqual({ [CLOSINGS]: 2, [META]: 2, [POINTS]: 1 });
-    await expectOfflineVisit(visit, site, [CLOSINGS, META, POINTS]);
+    expect(site.dataHits()).toEqual({ [CLOSINGS]: 2, [deployed.meta]: 2, [deployed.points]: 1 });
+    await expectOfflineVisit(visit, site, deployed, [CLOSINGS, deployed.meta, deployed.points]);
+  } finally {
+    await visit.context.close();
+    await site.stop();
+  }
+});
+
+test('after a deploy that renames the index and the directory, each new file is downloaded once and no old copy is kept', async ({
+  browser,
+}) => {
+  const site = await serve();
+  const worker = site.hold(SW_FILE);
+  const visit = await firstVisit(browser, site);
+  const { page } = visit;
+  try {
+    // Everything is read before the worker takes over: kept by the page, never seen by the worker.
+    await settle(page);
+    await findPembroke(page);
+    await zoomPast5(page);
+    await expectDust(page, deployed);
+    worker.release();
+    await expectEachOnce(page, site, dataFiles(deployed));
+
+    // The deploy. The new worker installs and takes over, and the page loads the new build.
+    site.deploy(redeployed.root);
+    await installUpdate(page);
+    await switchToUpdate(page);
+    await page.goto(site.url());
+    await settle(page);
+    await findPembroke(page);
+    await zoomPast5(page);
+    await expectDust(page, redeployed);
+
+    // The new files come from the network once each, through the worker, whose limits cover them;
+    // the copies of the old ones are gone, and nothing else under data/ is kept.
+    await waitForCached(page, site, hashedFiles(redeployed));
+    await expect
+      .poll(() => heldData(page, site), { timeout: 30_000 })
+      .toEqual(dataFiles(redeployed).sort());
+    await expect
+      .poll(() => tracked(page, site), { timeout: 30_000 })
+      .toEqual(hashedFiles(redeployed).sort());
+    await site.quiet();
+    // The live file is asked for on each visit, and again when the worker finds it changed.
+    const { [CLOSINGS]: closings, ...hashed } = site.dataHits();
+    expect(closings).toBeGreaterThanOrEqual(2);
+    expect(hashed).toEqual(
+      Object.fromEntries(
+        [...hashedFiles(deployed), ...hashedFiles(redeployed)].map((file) => [file, 1]),
+      ),
+    );
+    await expectOfflineVisit(visit, site, redeployed, dataFiles(redeployed));
+  } finally {
+    await visit.context.close();
+    await site.stop();
+  }
+});
+
+test('while no worker can be registered, the page keeps what it reads, and a deploy leaves no old copy kept', async ({
+  browser,
+}) => {
+  const site = await serve();
+  site.refuse(SW_FILE);
+  const visit = await firstVisit(browser, site);
+  const { page } = visit;
+  try {
+    await settle(page);
+    await findPembroke(page);
+    await zoomPast5(page);
+    await expectDust(page, deployed);
+    await waitForCached(page, site, dataFiles(deployed));
+
+    site.deploy(redeployed.root);
+    await page.goto(site.url());
+    await settle(page);
+    await findPembroke(page);
+    await zoomPast5(page);
+    await expectDust(page, redeployed);
+    expect(await controlled(page)).toBe(false);
+    await waitForCached(page, site, hashedFiles(redeployed));
+    await expect
+      .poll(() => heldData(page, site), { timeout: 30_000 })
+      .toEqual(dataFiles(redeployed).sort());
+    await site.quiet();
+    expect(site.dataHits()).toEqual(
+      Object.fromEntries([
+        [CLOSINGS, 2],
+        ...[...hashedFiles(deployed), ...hashedFiles(redeployed)].map((file) => [file, 1]),
+      ]),
+    );
+    // No error but the browser's own about the worker's script, refused with a 404.
+    const refusal = '(404) was received when fetching the script';
+    expect(
+      visit.problems.filter((problem) => !problem.includes(SW_FILE) && !problem.includes(refusal)),
+    ).toEqual([]);
   } finally {
     await visit.context.close();
     await site.stop();
