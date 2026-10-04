@@ -6,6 +6,7 @@ import { afterAll, describe, expect, it } from 'vitest';
 
 import { copy, mapLocale, REASON_KEYS, shellFormat, STATUS_KEYS } from './copy';
 import type { AlertLevelKey, HazardKey, StatusKey } from './copy';
+import { areaFormat } from './copy-area';
 import { chanceCopy, chanceFormat } from './copy-chance';
 import type { BaseInput, ReasonInput, Zones } from './copy-chance';
 import { format } from './copy-format';
@@ -539,6 +540,94 @@ describe('format', () => {
       expect(format.lead(1)).toBe(copy.trackRecord.lead.dayBefore);
       expect(format.lead(2)).toBe(copy.trackRecord.lead.twoDaysBefore);
       expect(() => format.lead(3)).toThrow(RangeError);
+    });
+  });
+
+  describe('the area panel', () => {
+    it('names the area, its place and its schools', () => {
+      expect(Object.isFrozen(areaFormat)).toBe(true);
+      expect(areaFormat.label('64112')).toBe('Schools around 64112');
+      expect(areaFormat.backTo('64112')).toBe('Back to 64112');
+      expect(areaFormat.states(['MO'])).toBe('Missouri');
+      expect(areaFormat.states(['OR', 'ID'])).toBe('Oregon, Idaho');
+      expect(() => areaFormat.states([])).toThrow(RangeError);
+      expect(() => areaFormat.states(['XX'])).toThrow(RangeError);
+      expect(areaFormat.schoolsIn(14, '64111')).toBe('14 schools in 64111');
+      expect(areaFormat.schoolsIn(1, '64111')).toBe('1 school in 64111');
+      expect(areaFormat.schoolsIn(0, '64111')).toBe('No schools in 64111');
+      expect(areaFormat.nearOthers(4, 2, 2)).toBe('4 more within 2 miles');
+      expect(areaFormat.nearOthers(1, 5, 2)).toBe('1 more within 2 miles');
+      expect(areaFormat.nearOthers(6, 0, 2)).toBe('6 within 2 miles');
+      expect(() => areaFormat.nearOthers(0, 2, 2)).toThrow(RangeError);
+      expect(areaFormat.noneNear(2, 2)).toBe('No others within 2 miles');
+      expect(areaFormat.noneNear(0, 2)).toBe('None within 2 miles');
+    });
+
+    it('counts today’s statuses, and says who decides for how many schools', () => {
+      expect(areaFormat.statusCount('closed', 9)).toBe('9 closed');
+      expect(areaFormat.statusCount('delayed', 1)).toBe('1 delayed');
+      expect(areaFormat.statusCount('remote', 2)).toBe('2 remote');
+      expect(areaFormat.statusCount('earlyDismissal', 3)).toBe('3 dismissing early');
+      expect(areaFormat.statusCount('closed', 1284)).toBe('1,284 closed');
+      expect(areaFormat.decides('Riverside', 9, 14)).toBe(
+        'Riverside decides for 9 of the 14 schools here.',
+      );
+      expect(areaFormat.decides('Riverside', 14, 14)).toBe(
+        'Riverside decides for all 14 schools here.',
+      );
+      expect(areaFormat.decides('Riverside', 1, 1)).toBe(
+        'Riverside decides for the 1 school here.',
+      );
+      expect(() => areaFormat.decides('Riverside', 0, 14)).toThrow(RangeError);
+      expect(() => areaFormat.decides('Riverside', 15, 14)).toThrow(RangeError);
+      const day = '2026-01-13';
+      expect(areaFormat.districtPosted('Riverside', 'closed', 9, 14, day)).toBe(
+        'Riverside canceled Tuesday at 9 of the 14 schools here.',
+      );
+      expect(areaFormat.districtPosted('Riverside', 'remote', 2, 2, day)).toBe(
+        'Riverside is remote Tuesday at all 2 schools here.',
+      );
+      expect(areaFormat.schoolPosted('Riverside', 'delayed', day)).toBe(
+        'Riverside starts late Tuesday.',
+      );
+      expect(areaFormat.postedShare('closed')).toBe('100%');
+      expect(areaFormat.postedShare('remote')).toBe('100%');
+      expect(areaFormat.postedShare('delayed')).toBe('0%');
+      expect(areaFormat.postedShare('earlyDismissal')).toBe('0%');
+      expect(areaFormat.notCounted(3, 14, day)).toBe(
+        '3 of the 14 schools here have no chance given for Tuesday, so the chance leaves them out.',
+      );
+      expect(areaFormat.notCounted(1, 6, day)).toBe(
+        '1 of the 6 schools here has no chance given for Tuesday, so the chance leaves it out.',
+      );
+      const outputs: string[] = [];
+      for (const status of STATUS_KEYS) {
+        for (const n of [1, 2, 9, 1284]) {
+          outputs.push(areaFormat.statusCount(status, n));
+          outputs.push(areaFormat.districtPosted('Riverside', status, n, 1284, day));
+        }
+        outputs.push(
+          areaFormat.schoolPosted('Riverside', status, day),
+          areaFormat.postedShare(status),
+        );
+      }
+      for (const [n, of] of [
+        [1, 1],
+        [1, 2],
+        [2, 2],
+        [9, 14],
+        [1284, 2000],
+      ] as const) {
+        outputs.push(areaFormat.decides('Riverside', n, of), areaFormat.notCounted(n, of, day));
+      }
+      for (const n of [0, 1, 2, 14]) {
+        outputs.push(areaFormat.schoolsIn(n, '64111'), areaFormat.noneNear(n, 2));
+        if (n > 0) outputs.push(areaFormat.nearOthers(n, 6 - Math.min(n, 6), 2));
+      }
+      outputs.push(areaFormat.label('64112'), areaFormat.backTo('64112'));
+      // A state's name is a name, as a district's is: only its words around it are copy.
+      outputs.push(areaFormat.states(['MO']));
+      expect(allProblems(outputs)).toEqual([]);
     });
   });
 

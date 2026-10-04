@@ -81,7 +81,12 @@ const WEB_ROOT = path.resolve(HERE, '..');
  * fixed strings; a later one's fixed strings are each export named …Copy
  * (src/copy-chance.ts chanceCopy), held to the same house style.
  */
-export const COPY_MODULES = ['src/copy.ts', 'src/copy-format.ts', 'src/copy-chance.ts'];
+export const COPY_MODULES = [
+  'src/copy.ts',
+  'src/copy-format.ts',
+  'src/copy-chance.ts',
+  'src/copy-area.ts',
+];
 
 // House style --------------------------------------------------------------------------
 

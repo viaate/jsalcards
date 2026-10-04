@@ -146,7 +146,7 @@ function splitName(shown: string): { name: string; campus: string | null } {
 }
 
 /** What the school is, and its grades: "Private school · PK–12". */
-function kindOf(record: SchoolRecord): string {
+export function kindOf(record: SchoolRecord): string {
   const kind = record.private
     ? copy.detail.privateSchool
     : record.virtual
@@ -163,7 +163,8 @@ function kindOf(record: SchoolRecord): string {
   }
 }
 
-function townOf(record: SchoolRecord): string | null {
+/** "Kansas City, MO", or null where the directory gives no town. */
+export function townOf(record: SchoolRecord): string | null {
   return record.city === null ? null : `${casedName(record.city)}, ${record.state}`;
 }
 
@@ -203,17 +204,16 @@ function statusLines(status: SchoolStatus, now: Date, timeZone: string): StatusL
   return lines;
 }
 
+/** A district's name as the panel shows it whole: "Shawnee Mission Public Schools". */
+export function districtShown(id: string, name: string): string {
+  return displayName(name, { state: stateOfId(id), district: true }, DISTRICT_NAME_FIXES[id] ?? {});
+}
+
 function factsOf(record: SchoolRecord): FactView[] {
   const facts: FactView[] = [];
   if (record.district !== null) {
     const { id, name } = record.district;
-    facts.push({
-      label: copy.detail.district,
-      lines: [
-        displayName(name, { state: stateOfId(id), district: true }, DISTRICT_NAME_FIXES[id] ?? {}),
-      ],
-      href: null,
-    });
+    facts.push({ label: copy.detail.district, lines: [districtShown(id, name)], href: null });
   }
   if (record.enrollment !== null && record.enrollment > 0) {
     facts.push({
@@ -294,7 +294,7 @@ export function namesOf(directory: Directory): Names {
 }
 
 /** A school's name as the map and search show it. */
-function shownName(id: string, name: string): string {
+export function shownName(id: string, name: string): string {
   return displayName(name, { state: stateOfId(id) }, SCHOOL_NAME_FIXES[id] ?? {});
 }
 
@@ -416,10 +416,29 @@ function loadingView(id: SchoolId): SchoolView {
 }
 
 /** The live files a school's day is read from, as last read. */
-interface LiveFiles {
+export interface LiveFiles {
   closings: ClosingsFile | null;
   covered: CoveredFile | null;
   predictions: PredictionsFile | null;
+}
+
+/** The live files this build ships, read now; each null where it ships none or cannot be read. */
+export async function readLiveFiles(files: DataFiles): Promise<LiveFiles> {
+  const read = async <T>(path: string, parse: (value: unknown) => T | null): Promise<T | null> => {
+    if (!files.has(path)) return null;
+    try {
+      // no-cache: past the HTTP cache to the server (or the worker's revalidation), as live.ts reads.
+      return parse(await fetchJson(files, path, { cache: 'no-cache' }));
+    } catch {
+      return null;
+    }
+  };
+  const [closings, covered, predictions] = await Promise.all([
+    read(PUBLISHED_PATHS.closings, parseClosings),
+    read(PUBLISHED_PATHS.covered, parseCovered),
+    read(PUBLISHED_PATHS.predictions, parsePredictions),
+  ]);
+  return { closings, covered, predictions };
 }
 
 export interface WatchOptions {
@@ -440,7 +459,7 @@ export interface WatchOptions {
   readonly directory?: (stamp: DirectoryStamp) => Promise<Directory | null>;
 }
 
-function viewerTimeZone(): string {
+export function viewerTimeZone(): string {
   try {
     return Intl.DateTimeFormat().resolvedOptions().timeZone;
   } catch {
@@ -523,27 +542,11 @@ export function watchSchool(options: WatchOptions): () => void {
   };
 
   const readLive = async (): Promise<void> => {
-    const read = async <T>(
-      path: string,
-      parse: (value: unknown) => T | null,
-    ): Promise<T | null> => {
-      if (!files.has(path)) return null;
-      try {
-        // no-cache: past the HTTP cache to the server (or the worker's revalidation), as live.ts reads.
-        return parse(await fetchJson(files, path, { cache: 'no-cache' }));
-      } catch {
-        return null;
-      }
-    };
-    const [closings, covered, predictions] = await Promise.all([
-      read(PUBLISHED_PATHS.closings, parseClosings),
-      read(PUBLISHED_PATHS.covered, parseCovered),
-      read(PUBLISHED_PATHS.predictions, parsePredictions),
-    ]);
+    const read = await readLiveFiles(files);
     // A read that fails keeps what was read before: it is still true as of its own time.
-    live.closings = closings ?? live.closings;
-    live.covered = covered ?? live.covered;
-    live.predictions = predictions ?? live.predictions;
+    live.closings = read.closings ?? live.closings;
+    live.covered = read.covered ?? live.covered;
+    live.predictions = read.predictions ?? live.predictions;
   };
 
   // Nothing to read and nothing known: no such school here, and no panel, not even for a moment.
