@@ -45,15 +45,22 @@ function watch(page: Page): string[] {
   return problems;
 }
 
-/** Opens a view from a link and waits until every tile is in and the map is at rest. */
+/** Opens a view from a link and waits until every tile is in and the map is at rest there. */
 async function openView(page: Page, lat: number, lon: number, zoom: number): Promise<void> {
   await page.goto(`/?at=${String(lat)},${String(lon)},${String(zoom)}`);
   await page.waitForFunction(
-    () => {
+    (linked) => {
       const map = window.snowlightMap;
-      return map !== undefined && map.loaded() && map.areTilesLoaded() && !map.isMoving();
+      return (
+        map !== undefined &&
+        // An address store read past its deadline opens the map on the country, then on the link.
+        Math.abs(map.getZoom() - linked) < 1e-6 &&
+        map.loaded() &&
+        map.areTilesLoaded() &&
+        !map.isMoving()
+      );
     },
-    null,
+    zoom,
     { timeout: 90_000, polling: 250 },
   );
   // One more full frame: labels are placed on the frame after their tiles arrive.
