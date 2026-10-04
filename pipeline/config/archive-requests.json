@@ -1,1504 +1,1504 @@
 {
  "snapshots": [
   {
-   "timestamp": "20240919153808",
+   "timestamp": "20210922151039",
+   "url": "https://www.abc4.com/weather/closings/",
+   "station": "nexstar-ktvx",
+   "why": "an unread capture of the list, read so that every capture of it is read (2021-09-22)"
+  },
+  {
+   "timestamp": "20240424173428",
+   "url": "https://www.abc4.com/weather/closings/",
+   "station": "nexstar-ktvx",
+   "why": "an unread capture of the list, read so that every capture of it is read (2024-04-25)"
+  },
+  {
+   "timestamp": "20240426173059",
+   "url": "https://www.abc4.com/weather/closings/",
+   "station": "nexstar-ktvx",
+   "why": "an unread capture of the list, read so that every capture of it is read (2024-04-27)"
+  },
+  {
+   "timestamp": "20240508105757",
+   "url": "https://www.abc4.com/weather/closings/",
+   "station": "nexstar-ktvx",
+   "why": "an unread capture of the list, read so that every capture of it is read (2024-05-08)"
+  },
+  {
+   "timestamp": "20240510125825",
+   "url": "https://www.abc4.com/weather/closings/",
+   "station": "nexstar-ktvx",
+   "why": "an unread capture of the list, read so that every capture of it is read (2024-05-10)"
+  },
+  {
+   "timestamp": "20240513172023",
+   "url": "https://www.abc4.com/weather/closings/",
+   "station": "nexstar-ktvx",
+   "why": "an unread capture of the list, read so that every capture of it is read (2024-05-14)"
+  },
+  {
+   "timestamp": "20240514172423",
+   "url": "https://www.abc4.com/weather/closings/",
+   "station": "nexstar-ktvx",
+   "why": "an unread capture of the list, read so that every capture of it is read (2024-05-15)"
+  },
+  {
+   "timestamp": "20240515173018",
+   "url": "https://www.abc4.com/weather/closings/",
+   "station": "nexstar-ktvx",
+   "why": "an unread capture of the list, read so that every capture of it is read (2024-05-16)"
+  },
+  {
+   "timestamp": "20240517141840",
+   "url": "https://www.abc4.com/weather/closings/",
+   "station": "nexstar-ktvx",
+   "why": "an unread capture of the list, read so that every capture of it is read (2024-05-17)"
+  },
+  {
+   "timestamp": "20240517174021",
+   "url": "https://www.abc4.com/weather/closings/",
+   "station": "nexstar-ktvx",
+   "why": "an unread capture of the list, read so that every capture of it is read (2024-05-18)"
+  },
+  {
+   "timestamp": "20240601102426",
+   "url": "https://www.abc4.com/weather/closings/",
+   "station": "nexstar-ktvx",
+   "why": "an unread capture of the list, read so that every capture of it is read (2024-06-01)"
+  },
+  {
+   "timestamp": "20240602105258",
+   "url": "https://www.abc4.com/weather/closings/",
+   "station": "nexstar-ktvx",
+   "why": "an unread capture of the list, read so that every capture of it is read (2024-06-02)"
+  },
+  {
+   "timestamp": "20240603122900",
+   "url": "https://www.abc4.com/weather/closings/",
+   "station": "nexstar-ktvx",
+   "why": "an unread capture of the list, read so that every capture of it is read (2024-06-03)"
+  },
+  {
+   "timestamp": "20240604121519",
+   "url": "https://www.abc4.com/weather/closings/",
+   "station": "nexstar-ktvx",
+   "why": "an unread capture of the list, read so that every capture of it is read (2024-06-04)"
+  },
+  {
+   "timestamp": "20240605145108",
+   "url": "https://www.abc4.com/weather/closings/",
+   "station": "nexstar-ktvx",
+   "why": "an unread capture of the list, read so that every capture of it is read (2024-06-05)"
+  },
+  {
+   "timestamp": "20240605162912",
+   "url": "https://www.abc4.com/weather/closings/",
+   "station": "nexstar-ktvx",
+   "why": "an unread capture of the list, read so that every capture of it is read (2024-06-06)"
+  },
+  {
+   "timestamp": "20240606160215",
+   "url": "https://www.abc4.com/weather/closings/",
+   "station": "nexstar-ktvx",
+   "why": "an unread capture of the list, read so that every capture of it is read (2024-06-07)"
+  },
+  {
+   "timestamp": "20240610163103",
+   "url": "https://www.abc4.com/weather/closings/",
+   "station": "nexstar-ktvx",
+   "why": "an unread capture of the list, read so that every capture of it is read (2024-06-11)"
+  },
+  {
+   "timestamp": "20240612115424",
+   "url": "https://www.abc4.com/weather/closings/",
+   "station": "nexstar-ktvx",
+   "why": "an unread capture of the list, read so that every capture of it is read (2024-06-12)"
+  },
+  {
+   "timestamp": "20240614145306",
+   "url": "https://www.abc4.com/weather/closings/",
+   "station": "nexstar-ktvx",
+   "why": "an unread capture of the list, read so that every capture of it is read (2024-06-14)"
+  },
+  {
+   "timestamp": "20240615145218",
+   "url": "https://www.abc4.com/weather/closings/",
+   "station": "nexstar-ktvx",
+   "why": "an unread capture of the list, read so that every capture of it is read (2024-06-15)"
+  },
+  {
+   "timestamp": "20240625101124",
+   "url": "https://www.abc4.com/weather/closings/",
+   "station": "nexstar-ktvx",
+   "why": "an unread capture of the list, read so that every capture of it is read (2024-06-25)"
+  },
+  {
+   "timestamp": "20240627105004",
+   "url": "https://www.abc4.com/weather/closings/",
+   "station": "nexstar-ktvx",
+   "why": "an unread capture of the list, read so that every capture of it is read (2024-06-27)"
+  },
+  {
+   "timestamp": "20240628103646",
+   "url": "https://www.abc4.com/weather/closings/",
+   "station": "nexstar-ktvx",
+   "why": "an unread capture of the list, read so that every capture of it is read (2024-06-28)"
+  },
+  {
+   "timestamp": "20240706103449",
+   "url": "https://www.abc4.com/weather/closings/",
+   "station": "nexstar-ktvx",
+   "why": "an unread capture of the list, read so that every capture of it is read (2024-07-06)"
+  },
+  {
+   "timestamp": "20240707123430",
+   "url": "https://www.abc4.com/weather/closings/",
+   "station": "nexstar-ktvx",
+   "why": "an unread capture of the list, read so that every capture of it is read (2024-07-07)"
+  },
+  {
+   "timestamp": "20240710175132",
+   "url": "https://www.abc4.com/weather/closings/",
+   "station": "nexstar-ktvx",
+   "why": "an unread capture of the list, read so that every capture of it is read (2024-07-11)"
+  },
+  {
+   "timestamp": "20240717145616",
+   "url": "https://www.abc4.com/weather/closings/",
+   "station": "nexstar-ktvx",
+   "why": "an unread capture of the list, read so that every capture of it is read (2024-07-17)"
+  },
+  {
+   "timestamp": "20240722105522",
+   "url": "https://www.abc4.com/weather/closings/",
+   "station": "nexstar-ktvx",
+   "why": "an unread capture of the list, read so that every capture of it is read (2024-07-22)"
+  },
+  {
+   "timestamp": "20240723105235",
+   "url": "https://www.abc4.com/weather/closings/",
+   "station": "nexstar-ktvx",
+   "why": "an unread capture of the list, read so that every capture of it is read (2024-07-23)"
+  },
+  {
+   "timestamp": "20240724131643",
+   "url": "https://www.abc4.com/weather/closings/",
+   "station": "nexstar-ktvx",
+   "why": "an unread capture of the list, read so that every capture of it is read (2024-07-24)"
+  },
+  {
+   "timestamp": "20240808101333",
+   "url": "https://www.abc4.com/weather/closings/",
+   "station": "nexstar-ktvx",
+   "why": "an unread capture of the list, read so that every capture of it is read (2024-08-08)"
+  },
+  {
+   "timestamp": "20240809114741",
+   "url": "https://www.abc4.com/weather/closings/",
+   "station": "nexstar-ktvx",
+   "why": "an unread capture of the list, read so that every capture of it is read (2024-08-09)"
+  },
+  {
+   "timestamp": "20240809134127",
+   "url": "https://www.abc4.com/weather/closings/",
+   "station": "nexstar-ktvx",
+   "why": "an unread capture of the list, read so that every capture of it is read (2024-08-09)"
+  },
+  {
+   "timestamp": "20240809162032",
+   "url": "https://www.abc4.com/weather/closings/",
+   "station": "nexstar-ktvx",
+   "why": "an unread capture of the list, read so that every capture of it is read (2024-08-10)"
+  },
+  {
+   "timestamp": "20240810114255",
+   "url": "https://www.abc4.com/weather/closings/",
+   "station": "nexstar-ktvx",
+   "why": "an unread capture of the list, read so that every capture of it is read (2024-08-10)"
+  },
+  {
+   "timestamp": "20240814134242",
+   "url": "https://www.abc4.com/weather/closings/",
+   "station": "nexstar-ktvx",
+   "why": "an unread capture of the list, read so that every capture of it is read (2024-08-14)"
+  },
+  {
+   "timestamp": "20240816160615",
+   "url": "https://www.abc4.com/weather/closings/",
+   "station": "nexstar-ktvx",
+   "why": "an unread capture of the list, read so that every capture of it is read (2024-08-17)"
+  },
+  {
+   "timestamp": "20240818143024",
+   "url": "https://www.abc4.com/weather/closings/",
+   "station": "nexstar-ktvx",
+   "why": "an unread capture of the list, read so that every capture of it is read (2024-08-18)"
+  },
+  {
+   "timestamp": "20240821101611",
+   "url": "https://www.abc4.com/weather/closings/",
+   "station": "nexstar-ktvx",
+   "why": "an unread capture of the list, read so that every capture of it is read (2024-08-21)"
+  },
+  {
+   "timestamp": "20240918113834",
+   "url": "https://www.abc4.com/weather/closings/",
+   "station": "nexstar-ktvx",
+   "why": "an unread capture of the list, read so that every capture of it is read (2024-09-18)"
+  },
+  {
+   "timestamp": "20240925105920",
+   "url": "https://www.abc4.com/weather/closings/",
+   "station": "nexstar-ktvx",
+   "why": "an unread capture of the list, read so that every capture of it is read (2024-09-25)"
+  },
+  {
+   "timestamp": "20240925123134",
+   "url": "https://www.abc4.com/weather/closings/",
+   "station": "nexstar-ktvx",
+   "why": "an unread capture of the list, read so that every capture of it is read (2024-09-25)"
+  },
+  {
+   "timestamp": "20241013143822",
+   "url": "https://www.abc4.com/weather/closings/",
+   "station": "nexstar-ktvx",
+   "why": "an unread capture of the list, read so that every capture of it is read (2024-10-13)"
+  },
+  {
+   "timestamp": "20241023171854",
+   "url": "https://www.abc4.com/weather/closings/",
+   "station": "nexstar-ktvx",
+   "why": "an unread capture of the list, read so that every capture of it is read (2024-10-24)"
+  },
+  {
+   "timestamp": "20241024123541",
+   "url": "https://www.abc4.com/weather/closings/",
+   "station": "nexstar-ktvx",
+   "why": "an unread capture of the list, read so that every capture of it is read (2024-10-24)"
+  },
+  {
+   "timestamp": "20210711080402",
+   "url": "https://www.abc4.com/weather/closings/",
+   "station": "nexstar-ktvx",
+   "why": "an unread capture of the list, read so that every capture of it is read (2021-07-11)"
+  },
+  {
+   "timestamp": "20210806070919",
+   "url": "https://www.abc4.com/weather/closings/",
+   "station": "nexstar-ktvx",
+   "why": "an unread capture of the list, read so that every capture of it is read (2021-08-06)"
+  },
+  {
+   "timestamp": "20210812092432",
+   "url": "https://www.abc4.com/weather/closings/",
+   "station": "nexstar-ktvx",
+   "why": "an unread capture of the list, read so that every capture of it is read (2021-08-12)"
+  },
+  {
+   "timestamp": "20210818064919",
+   "url": "https://www.abc4.com/weather/closings/",
+   "station": "nexstar-ktvx",
+   "why": "an unread capture of the list, read so that every capture of it is read (2021-08-18)"
+  },
+  {
+   "timestamp": "20210820074136",
+   "url": "https://www.abc4.com/weather/closings/",
+   "station": "nexstar-ktvx",
+   "why": "an unread capture of the list, read so that every capture of it is read (2021-08-20)"
+  },
+  {
+   "timestamp": "20210916185246",
+   "url": "https://www.abc4.com/weather/closings/",
+   "station": "nexstar-ktvx",
+   "why": "an unread capture of the list, read so that every capture of it is read (2021-09-17)"
+  },
+  {
+   "timestamp": "20210916220501",
+   "url": "https://www.abc4.com/weather/closings/",
+   "station": "nexstar-ktvx",
+   "why": "an unread capture of the list, read so that every capture of it is read (2021-09-17)"
+  },
+  {
+   "timestamp": "20210917012550",
+   "url": "https://www.abc4.com/weather/closings/",
+   "station": "nexstar-ktvx",
+   "why": "an unread capture of the list, read so that every capture of it is read (2021-09-17)"
+  },
+  {
+   "timestamp": "20210924073718",
+   "url": "https://www.abc4.com/weather/closings/",
+   "station": "nexstar-ktvx",
+   "why": "an unread capture of the list, read so that every capture of it is read (2021-09-24)"
+  },
+  {
+   "timestamp": "20211004093912",
+   "url": "https://www.abc4.com/weather/closings/",
+   "station": "nexstar-ktvx",
+   "why": "an unread capture of the list, read so that every capture of it is read (2021-10-04)"
+  },
+  {
+   "timestamp": "20230428042014",
+   "url": "https://www.abc4.com/weather/closings/",
+   "station": "nexstar-ktvx",
+   "why": "an unread capture of the list, read so that every capture of it is read (2023-04-28)"
+  },
+  {
+   "timestamp": "20230607052956",
+   "url": "https://www.abc4.com/weather/closings/",
+   "station": "nexstar-ktvx",
+   "why": "an unread capture of the list, read so that every capture of it is read (2023-06-07)"
+  },
+  {
+   "timestamp": "20230614010649",
+   "url": "https://www.abc4.com/weather/closings/",
+   "station": "nexstar-ktvx",
+   "why": "an unread capture of the list, read so that every capture of it is read (2023-06-14)"
+  },
+  {
+   "timestamp": "20240403040620",
+   "url": "https://www.abc4.com/weather/closings/",
+   "station": "nexstar-ktvx",
+   "why": "an unread capture of the list, read so that every capture of it is read (2024-04-03)"
+  },
+  {
+   "timestamp": "20240403065821",
+   "url": "https://www.abc4.com/weather/closings/",
+   "station": "nexstar-ktvx",
+   "why": "an unread capture of the list, read so that every capture of it is read (2024-04-03)"
+  },
+  {
+   "timestamp": "20240403204022",
+   "url": "https://www.abc4.com/weather/closings/",
+   "station": "nexstar-ktvx",
+   "why": "an unread capture of the list, read so that every capture of it is read (2024-04-04)"
+  },
+  {
+   "timestamp": "20240406065110",
+   "url": "https://www.abc4.com/weather/closings/",
+   "station": "nexstar-ktvx",
+   "why": "an unread capture of the list, read so that every capture of it is read (2024-04-06)"
+  },
+  {
+   "timestamp": "20240407011730",
+   "url": "https://www.abc4.com/weather/closings/",
+   "station": "nexstar-ktvx",
+   "why": "an unread capture of the list, read so that every capture of it is read (2024-04-07)"
+  },
+  {
+   "timestamp": "20240407055445",
+   "url": "https://www.abc4.com/weather/closings/",
+   "station": "nexstar-ktvx",
+   "why": "an unread capture of the list, read so that every capture of it is read (2024-04-07)"
+  },
+  {
+   "timestamp": "20240408073649",
+   "url": "https://www.abc4.com/weather/closings/",
+   "station": "nexstar-ktvx",
+   "why": "an unread capture of the list, read so that every capture of it is read (2024-04-08)"
+  },
+  {
+   "timestamp": "20240409080522",
+   "url": "https://www.abc4.com/weather/closings/",
+   "station": "nexstar-ktvx",
+   "why": "an unread capture of the list, read so that every capture of it is read (2024-04-09)"
+  },
+  {
+   "timestamp": "20240410044544",
+   "url": "https://www.abc4.com/weather/closings/",
+   "station": "nexstar-ktvx",
+   "why": "an unread capture of the list, read so that every capture of it is read (2024-04-10)"
+  },
+  {
+   "timestamp": "20240412092801",
+   "url": "https://www.abc4.com/weather/closings/",
+   "station": "nexstar-ktvx",
+   "why": "an unread capture of the list, read so that every capture of it is read (2024-04-12)"
+  },
+  {
+   "timestamp": "20240413211405",
+   "url": "https://www.abc4.com/weather/closings/",
+   "station": "nexstar-ktvx",
+   "why": "an unread capture of the list, read so that every capture of it is read (2024-04-14)"
+  },
+  {
+   "timestamp": "20240415200640",
+   "url": "https://www.abc4.com/weather/closings/",
+   "station": "nexstar-ktvx",
+   "why": "an unread capture of the list, read so that every capture of it is read (2024-04-16)"
+  },
+  {
+   "timestamp": "20240418221847",
+   "url": "https://www.abc4.com/weather/closings/",
+   "station": "nexstar-ktvx",
+   "why": "an unread capture of the list, read so that every capture of it is read (2024-04-19)"
+  },
+  {
+   "timestamp": "20240420022439",
+   "url": "https://www.abc4.com/weather/closings/",
+   "station": "nexstar-ktvx",
+   "why": "an unread capture of the list, read so that every capture of it is read (2024-04-20)"
+  },
+  {
+   "timestamp": "20240420032823",
+   "url": "https://www.abc4.com/weather/closings/",
+   "station": "nexstar-ktvx",
+   "why": "an unread capture of the list, read so that every capture of it is read (2024-04-20)"
+  },
+  {
+   "timestamp": "20240421024427",
+   "url": "https://www.abc4.com/weather/closings/",
+   "station": "nexstar-ktvx",
+   "why": "an unread capture of the list, read so that every capture of it is read (2024-04-21)"
+  },
+  {
+   "timestamp": "20240422045323",
+   "url": "https://www.abc4.com/weather/closings/",
+   "station": "nexstar-ktvx",
+   "why": "an unread capture of the list, read so that every capture of it is read (2024-04-22)"
+  },
+  {
+   "timestamp": "20240425004353",
+   "url": "https://www.abc4.com/weather/closings/",
+   "station": "nexstar-ktvx",
+   "why": "an unread capture of the list, read so that every capture of it is read (2024-04-25)"
+  },
+  {
+   "timestamp": "20240428011511",
+   "url": "https://www.abc4.com/weather/closings/",
+   "station": "nexstar-ktvx",
+   "why": "an unread capture of the list, read so that every capture of it is read (2024-04-28)"
+  },
+  {
+   "timestamp": "20240428223018",
+   "url": "https://www.abc4.com/weather/closings/",
+   "station": "nexstar-ktvx",
+   "why": "an unread capture of the list, read so that every capture of it is read (2024-04-29)"
+  },
+  {
+   "timestamp": "20240501080200",
+   "url": "https://www.abc4.com/weather/closings/",
+   "station": "nexstar-ktvx",
+   "why": "an unread capture of the list, read so that every capture of it is read (2024-05-01)"
+  },
+  {
+   "timestamp": "20240502063002",
+   "url": "https://www.abc4.com/weather/closings/",
+   "station": "nexstar-ktvx",
+   "why": "an unread capture of the list, read so that every capture of it is read (2024-05-02)"
+  },
+  {
+   "timestamp": "20240504061532",
+   "url": "https://www.abc4.com/weather/closings/",
+   "station": "nexstar-ktvx",
+   "why": "an unread capture of the list, read so that every capture of it is read (2024-05-04)"
+  },
+  {
+   "timestamp": "20240504211756",
+   "url": "https://www.abc4.com/weather/closings/",
+   "station": "nexstar-ktvx",
+   "why": "an unread capture of the list, read so that every capture of it is read (2024-05-05)"
+  },
+  {
+   "timestamp": "20240507235900",
+   "url": "https://www.abc4.com/weather/closings/",
+   "station": "nexstar-ktvx",
+   "why": "an unread capture of the list, read so that every capture of it is read (2024-05-08)"
+  },
+  {
+   "timestamp": "20240511004522",
+   "url": "https://www.abc4.com/weather/closings/",
+   "station": "nexstar-ktvx",
+   "why": "an unread capture of the list, read so that every capture of it is read (2024-05-11)"
+  },
+  {
+   "timestamp": "20240512013033",
+   "url": "https://www.abc4.com/weather/closings/",
+   "station": "nexstar-ktvx",
+   "why": "an unread capture of the list, read so that every capture of it is read (2024-05-12)"
+  },
+  {
+   "timestamp": "20240513021855",
+   "url": "https://www.abc4.com/weather/closings/",
+   "station": "nexstar-ktvx",
+   "why": "an unread capture of the list, read so that every capture of it is read (2024-05-13)"
+  },
+  {
+   "timestamp": "20240516050642",
+   "url": "https://www.abc4.com/weather/closings/",
+   "station": "nexstar-ktvx",
+   "why": "an unread capture of the list, read so that every capture of it is read (2024-05-16)"
+  },
+  {
+   "timestamp": "20240518062133",
+   "url": "https://www.abc4.com/weather/closings/",
+   "station": "nexstar-ktvx",
+   "why": "an unread capture of the list, read so that every capture of it is read (2024-05-18)"
+  },
+  {
+   "timestamp": "20240519184353",
+   "url": "https://www.abc4.com/weather/closings/",
+   "station": "nexstar-ktvx",
+   "why": "an unread capture of the list, read so that every capture of it is read (2024-05-20)"
+  },
+  {
+   "timestamp": "20240522071343",
+   "url": "https://www.abc4.com/weather/closings/",
+   "station": "nexstar-ktvx",
+   "why": "an unread capture of the list, read so that every capture of it is read (2024-05-22)"
+  },
+  {
+   "timestamp": "20240524082057",
+   "url": "https://www.abc4.com/weather/closings/",
+   "station": "nexstar-ktvx",
+   "why": "an unread capture of the list, read so that every capture of it is read (2024-05-24)"
+  },
+  {
+   "timestamp": "20240525091213",
+   "url": "https://www.abc4.com/weather/closings/",
+   "station": "nexstar-ktvx",
+   "why": "an unread capture of the list, read so that every capture of it is read (2024-05-25)"
+  },
+  {
+   "timestamp": "20240526095243",
+   "url": "https://www.abc4.com/weather/closings/",
+   "station": "nexstar-ktvx",
+   "why": "an unread capture of the list, read so that every capture of it is read (2024-05-26)"
+  },
+  {
+   "timestamp": "20240528033001",
+   "url": "https://www.abc4.com/weather/closings/",
+   "station": "nexstar-ktvx",
+   "why": "an unread capture of the list, read so that every capture of it is read (2024-05-28)"
+  },
+  {
+   "timestamp": "20240529064711",
+   "url": "https://www.abc4.com/weather/closings/",
+   "station": "nexstar-ktvx",
+   "why": "an unread capture of the list, read so that every capture of it is read (2024-05-29)"
+  },
+  {
+   "timestamp": "20240530083443",
+   "url": "https://www.abc4.com/weather/closings/",
+   "station": "nexstar-ktvx",
+   "why": "an unread capture of the list, read so that every capture of it is read (2024-05-30)"
+  },
+  {
+   "timestamp": "20240531095306",
+   "url": "https://www.abc4.com/weather/closings/",
+   "station": "nexstar-ktvx",
+   "why": "an unread capture of the list, read so that every capture of it is read (2024-05-31)"
+  },
+  {
+   "timestamp": "20240602051924",
+   "url": "https://www.abc4.com/weather/closings/",
+   "station": "nexstar-ktvx",
+   "why": "an unread capture of the list, read so that every capture of it is read (2024-06-02)"
+  },
+  {
+   "timestamp": "20240608183853",
+   "url": "https://www.abc4.com/weather/closings/",
+   "station": "nexstar-ktvx",
+   "why": "an unread capture of the list, read so that every capture of it is read (2024-06-09)"
+  },
+  {
+   "timestamp": "20240609021151",
+   "url": "https://www.abc4.com/weather/closings/",
+   "station": "nexstar-ktvx",
+   "why": "an unread capture of the list, read so that every capture of it is read (2024-06-09)"
+  },
+  {
+   "timestamp": "20240611044922",
+   "url": "https://www.abc4.com/weather/closings/",
+   "station": "nexstar-ktvx",
+   "why": "an unread capture of the list, read so that every capture of it is read (2024-06-11)"
+  },
+  {
+   "timestamp": "20240613081128",
+   "url": "https://www.abc4.com/weather/closings/",
+   "station": "nexstar-ktvx",
+   "why": "an unread capture of the list, read so that every capture of it is read (2024-06-13)"
+  },
+  {
+   "timestamp": "20240613081850",
+   "url": "https://www.abc4.com/weather/closings/",
+   "station": "nexstar-ktvx",
+   "why": "an unread capture of the list, read so that every capture of it is read (2024-06-13)"
+  },
+  {
+   "timestamp": "20240616073556",
+   "url": "https://www.abc4.com/weather/closings/",
+   "station": "nexstar-ktvx",
+   "why": "an unread capture of the list, read so that every capture of it is read (2024-06-16)"
+  },
+  {
+   "timestamp": "20240617015051",
+   "url": "https://www.abc4.com/weather/closings/",
+   "station": "nexstar-ktvx",
+   "why": "an unread capture of the list, read so that every capture of it is read (2024-06-17)"
+  },
+  {
+   "timestamp": "20240618220144",
+   "url": "https://www.abc4.com/weather/closings/",
+   "station": "nexstar-ktvx",
+   "why": "an unread capture of the list, read so that every capture of it is read (2024-06-19)"
+  },
+  {
+   "timestamp": "20240619224810",
+   "url": "https://www.abc4.com/weather/closings/",
+   "station": "nexstar-ktvx",
+   "why": "an unread capture of the list, read so that every capture of it is read (2024-06-20)"
+  },
+  {
+   "timestamp": "20240621040537",
+   "url": "https://www.abc4.com/weather/closings/",
+   "station": "nexstar-ktvx",
+   "why": "an unread capture of the list, read so that every capture of it is read (2024-06-21)"
+  },
+  {
+   "timestamp": "20240622042353",
+   "url": "https://www.abc4.com/weather/closings/",
+   "station": "nexstar-ktvx",
+   "why": "an unread capture of the list, read so that every capture of it is read (2024-06-22)"
+  },
+  {
+   "timestamp": "20240623024031",
+   "url": "https://www.abc4.com/weather/closings/",
+   "station": "nexstar-ktvx",
+   "why": "an unread capture of the list, read so that every capture of it is read (2024-06-23)"
+  },
+  {
+   "timestamp": "20240624090324",
+   "url": "https://www.abc4.com/weather/closings/",
+   "station": "nexstar-ktvx",
+   "why": "an unread capture of the list, read so that every capture of it is read (2024-06-24)"
+  },
+  {
+   "timestamp": "20240626042458",
+   "url": "https://www.abc4.com/weather/closings/",
+   "station": "nexstar-ktvx",
+   "why": "an unread capture of the list, read so that every capture of it is read (2024-06-26)"
+  },
+  {
+   "timestamp": "20240629070120",
+   "url": "https://www.abc4.com/weather/closings/",
+   "station": "nexstar-ktvx",
+   "why": "an unread capture of the list, read so that every capture of it is read (2024-06-29)"
+  },
+  {
+   "timestamp": "20240630000919",
+   "url": "https://www.abc4.com/weather/closings/",
+   "station": "nexstar-ktvx",
+   "why": "an unread capture of the list, read so that every capture of it is read (2024-06-30)"
+  },
+  {
+   "timestamp": "20240701010329",
+   "url": "https://www.abc4.com/weather/closings/",
+   "station": "nexstar-ktvx",
+   "why": "an unread capture of the list, read so that every capture of it is read (2024-07-01)"
+  },
+  {
+   "timestamp": "20240702081431",
+   "url": "https://www.abc4.com/weather/closings/",
+   "station": "nexstar-ktvx",
+   "why": "an unread capture of the list, read so that every capture of it is read (2024-07-02)"
+  },
+  {
+   "timestamp": "20240703065508",
+   "url": "https://www.abc4.com/weather/closings/",
+   "station": "nexstar-ktvx",
+   "why": "an unread capture of the list, read so that every capture of it is read (2024-07-03)"
+  },
+  {
+   "timestamp": "20240704085212",
+   "url": "https://www.abc4.com/weather/closings/",
+   "station": "nexstar-ktvx",
+   "why": "an unread capture of the list, read so that every capture of it is read (2024-07-04)"
+  },
+  {
+   "timestamp": "20240705020824",
+   "url": "https://www.abc4.com/weather/closings/",
+   "station": "nexstar-ktvx",
+   "why": "an unread capture of the list, read so that every capture of it is read (2024-07-05)"
+  },
+  {
+   "timestamp": "20240705023933",
+   "url": "https://www.abc4.com/weather/closings/",
+   "station": "nexstar-ktvx",
+   "why": "an unread capture of the list, read so that every capture of it is read (2024-07-05)"
+  },
+  {
+   "timestamp": "20240708015724",
+   "url": "https://www.abc4.com/weather/closings/",
+   "station": "nexstar-ktvx",
+   "why": "an unread capture of the list, read so that every capture of it is read (2024-07-08)"
+  },
+  {
+   "timestamp": "20240708021331",
+   "url": "https://www.abc4.com/weather/closings/",
+   "station": "nexstar-ktvx",
+   "why": "an unread capture of the list, read so that every capture of it is read (2024-07-08)"
+  },
+  {
+   "timestamp": "20240709180910",
+   "url": "https://www.abc4.com/weather/closings/",
+   "station": "nexstar-ktvx",
+   "why": "an unread capture of the list, read so that every capture of it is read (2024-07-10)"
+  },
+  {
+   "timestamp": "20240710195501",
+   "url": "https://www.abc4.com/weather/closings/",
+   "station": "nexstar-ktvx",
+   "why": "an unread capture of the list, read so that every capture of it is read (2024-07-11)"
+  },
+  {
+   "timestamp": "20240711235114",
+   "url": "https://www.abc4.com/weather/closings/",
+   "station": "nexstar-ktvx",
+   "why": "an unread capture of the list, read so that every capture of it is read (2024-07-12)"
+  },
+  {
+   "timestamp": "20240712233822",
+   "url": "https://www.abc4.com/weather/closings/",
+   "station": "nexstar-ktvx",
+   "why": "an unread capture of the list, read so that every capture of it is read (2024-07-13)"
+  },
+  {
+   "timestamp": "20240713075534",
+   "url": "https://www.abc4.com/weather/closings/",
+   "station": "nexstar-ktvx",
+   "why": "an unread capture of the list, read so that every capture of it is read (2024-07-13)"
+  },
+  {
+   "timestamp": "20240715003025",
+   "url": "https://www.abc4.com/weather/closings/",
+   "station": "nexstar-ktvx",
+   "why": "an unread capture of the list, read so that every capture of it is read (2024-07-15)"
+  },
+  {
+   "timestamp": "20240715052322",
+   "url": "https://www.abc4.com/weather/closings/",
+   "station": "nexstar-ktvx",
+   "why": "an unread capture of the list, read so that every capture of it is read (2024-07-15)"
+  },
+  {
+   "timestamp": "20240716065407",
+   "url": "https://www.abc4.com/weather/closings/",
+   "station": "nexstar-ktvx",
+   "why": "an unread capture of the list, read so that every capture of it is read (2024-07-16)"
+  },
+  {
+   "timestamp": "20240717073611",
+   "url": "https://www.abc4.com/weather/closings/",
+   "station": "nexstar-ktvx",
+   "why": "an unread capture of the list, read so that every capture of it is read (2024-07-17)"
+  },
+  {
+   "timestamp": "20240717195921",
+   "url": "https://www.abc4.com/weather/closings/",
+   "station": "nexstar-ktvx",
+   "why": "an unread capture of the list, read so that every capture of it is read (2024-07-18)"
+  },
+  {
+   "timestamp": "20240718081723",
+   "url": "https://www.abc4.com/weather/closings/",
+   "station": "nexstar-ktvx",
+   "why": "an unread capture of the list, read so that every capture of it is read (2024-07-18)"
+  },
+  {
+   "timestamp": "20240720085626",
+   "url": "https://www.abc4.com/weather/closings/",
+   "station": "nexstar-ktvx",
+   "why": "an unread capture of the list, read so that every capture of it is read (2024-07-20)"
+  },
+  {
+   "timestamp": "20240723221820",
+   "url": "https://www.abc4.com/weather/closings/",
+   "station": "nexstar-ktvx",
+   "why": "an unread capture of the list, read so that every capture of it is read (2024-07-24)"
+  },
+  {
+   "timestamp": "20240725022152",
+   "url": "https://www.abc4.com/weather/closings/",
+   "station": "nexstar-ktvx",
+   "why": "an unread capture of the list, read so that every capture of it is read (2024-07-25)"
+  },
+  {
+   "timestamp": "20240726025924",
+   "url": "https://www.abc4.com/weather/closings/",
+   "station": "nexstar-ktvx",
+   "why": "an unread capture of the list, read so that every capture of it is read (2024-07-26)"
+  },
+  {
+   "timestamp": "20240727021848",
+   "url": "https://www.abc4.com/weather/closings/",
+   "station": "nexstar-ktvx",
+   "why": "an unread capture of the list, read so that every capture of it is read (2024-07-27)"
+  },
+  {
+   "timestamp": "20240727203442",
+   "url": "https://www.abc4.com/weather/closings/",
+   "station": "nexstar-ktvx",
+   "why": "an unread capture of the list, read so that every capture of it is read (2024-07-28)"
+  },
+  {
+   "timestamp": "20240728222659",
+   "url": "https://www.abc4.com/weather/closings/",
+   "station": "nexstar-ktvx",
+   "why": "an unread capture of the list, read so that every capture of it is read (2024-07-29)"
+  },
+  {
+   "timestamp": "20240730032217",
+   "url": "https://www.abc4.com/weather/closings/",
+   "station": "nexstar-ktvx",
+   "why": "an unread capture of the list, read so that every capture of it is read (2024-07-30)"
+  },
+  {
+   "timestamp": "20240731012458",
+   "url": "https://www.abc4.com/weather/closings/",
+   "station": "nexstar-ktvx",
+   "why": "an unread capture of the list, read so that every capture of it is read (2024-07-31)"
+  },
+  {
+   "timestamp": "20240731185044",
+   "url": "https://www.abc4.com/weather/closings/",
+   "station": "nexstar-ktvx",
+   "why": "an unread capture of the list, read so that every capture of it is read (2024-08-01)"
+  },
+  {
+   "timestamp": "20240801215909",
+   "url": "https://www.abc4.com/weather/closings/",
+   "station": "nexstar-ktvx",
+   "why": "an unread capture of the list, read so that every capture of it is read (2024-08-02)"
+  },
+  {
+   "timestamp": "20240802224057",
+   "url": "https://www.abc4.com/weather/closings/",
+   "station": "nexstar-ktvx",
+   "why": "an unread capture of the list, read so that every capture of it is read (2024-08-03)"
+  },
+  {
+   "timestamp": "20240804020623",
+   "url": "https://www.abc4.com/weather/closings/",
+   "station": "nexstar-ktvx",
+   "why": "an unread capture of the list, read so that every capture of it is read (2024-08-04)"
+  },
+  {
+   "timestamp": "20240805004731",
+   "url": "https://www.abc4.com/weather/closings/",
+   "station": "nexstar-ktvx",
+   "why": "an unread capture of the list, read so that every capture of it is read (2024-08-05)"
+  },
+  {
+   "timestamp": "20240806003420",
+   "url": "https://www.abc4.com/weather/closings/",
+   "station": "nexstar-ktvx",
+   "why": "an unread capture of the list, read so that every capture of it is read (2024-08-06)"
+  },
+  {
+   "timestamp": "20240807011824",
+   "url": "https://www.abc4.com/weather/closings/",
+   "station": "nexstar-ktvx",
+   "why": "an unread capture of the list, read so that every capture of it is read (2024-08-07)"
+  },
+  {
+   "timestamp": "20240807223939",
+   "url": "https://www.abc4.com/weather/closings/",
+   "station": "nexstar-ktvx",
+   "why": "an unread capture of the list, read so that every capture of it is read (2024-08-08)"
+  },
+  {
+   "timestamp": "20240811202918",
+   "url": "https://www.abc4.com/weather/closings/",
+   "station": "nexstar-ktvx",
+   "why": "an unread capture of the list, read so that every capture of it is read (2024-08-12)"
+  },
+  {
+   "timestamp": "20240814053629",
+   "url": "https://www.abc4.com/weather/closings/",
+   "station": "nexstar-ktvx",
+   "why": "an unread capture of the list, read so that every capture of it is read (2024-08-14)"
+  },
+  {
+   "timestamp": "20240814224833",
+   "url": "https://www.abc4.com/weather/closings/",
+   "station": "nexstar-ktvx",
+   "why": "an unread capture of the list, read so that every capture of it is read (2024-08-15)"
+  },
+  {
+   "timestamp": "20240817060408",
+   "url": "https://www.abc4.com/weather/closings/",
+   "station": "nexstar-ktvx",
+   "why": "an unread capture of the list, read so that every capture of it is read (2024-08-17)"
+  },
+  {
+   "timestamp": "20240819031311",
+   "url": "https://www.abc4.com/weather/closings/",
+   "station": "nexstar-ktvx",
+   "why": "an unread capture of the list, read so that every capture of it is read (2024-08-19)"
+  },
+  {
+   "timestamp": "20240820033859",
+   "url": "https://www.abc4.com/weather/closings/",
+   "station": "nexstar-ktvx",
+   "why": "an unread capture of the list, read so that every capture of it is read (2024-08-20)"
+  },
+  {
+   "timestamp": "20240821194413",
+   "url": "https://www.abc4.com/weather/closings/",
+   "station": "nexstar-ktvx",
+   "why": "an unread capture of the list, read so that every capture of it is read (2024-08-22)"
+  },
+  {
+   "timestamp": "20240823182731",
+   "url": "https://www.abc4.com/weather/closings/",
+   "station": "nexstar-ktvx",
+   "why": "an unread capture of the list, read so that every capture of it is read (2024-08-24)"
+  },
+  {
+   "timestamp": "20240824180027",
+   "url": "https://www.abc4.com/weather/closings/",
+   "station": "nexstar-ktvx",
+   "why": "an unread capture of the list, read so that every capture of it is read (2024-08-25)"
+  },
+  {
+   "timestamp": "20240825224428",
+   "url": "https://www.abc4.com/weather/closings/",
+   "station": "nexstar-ktvx",
+   "why": "an unread capture of the list, read so that every capture of it is read (2024-08-26)"
+  },
+  {
+   "timestamp": "20240827083551",
+   "url": "https://www.abc4.com/weather/closings/",
+   "station": "nexstar-ktvx",
+   "why": "an unread capture of the list, read so that every capture of it is read (2024-08-27)"
+  },
+  {
+   "timestamp": "20240828000349",
+   "url": "https://www.abc4.com/weather/closings/",
+   "station": "nexstar-ktvx",
+   "why": "an unread capture of the list, read so that every capture of it is read (2024-08-28)"
+  },
+  {
+   "timestamp": "20240904020328",
+   "url": "https://www.abc4.com/weather/closings/",
+   "station": "nexstar-ktvx",
+   "why": "an unread capture of the list, read so that every capture of it is read (2024-09-04)"
+  },
+  {
+   "timestamp": "20240911042426",
+   "url": "https://www.abc4.com/weather/closings/",
+   "station": "nexstar-ktvx",
+   "why": "an unread capture of the list, read so that every capture of it is read (2024-09-11)"
+  },
+  {
+   "timestamp": "20240911082848",
+   "url": "https://www.abc4.com/weather/closings/",
+   "station": "nexstar-ktvx",
+   "why": "an unread capture of the list, read so that every capture of it is read (2024-09-11)"
+  },
+  {
+   "timestamp": "20240911095231",
    "url": "https://www.abc4.com/wp-json/wp/v2/pages/1359365",
    "station": "nexstar-ktvx",
-   "why": "a capture of the station's wp-json page record, not read before (2024-09-19)"
+   "why": "an unread capture of the list, read so that every capture of it is read (2024-09-11)"
   },
   {
-   "timestamp": "20240508114126",
+   "timestamp": "20240914015506",
    "url": "https://www.abc4.com/weather/closings/",
    "station": "nexstar-ktvx",
-   "why": "storm day 2024-05-08 (market score 0.03)"
+   "why": "an unread capture of the list, read so that every capture of it is read (2024-09-14)"
   },
   {
-   "timestamp": "20240520194041",
+   "timestamp": "20240918052707",
    "url": "https://www.abc4.com/weather/closings/",
    "station": "nexstar-ktvx",
-   "why": "storm day 2024-05-21 (market score 0.01)"
+   "why": "an unread capture of the list, read so that every capture of it is read (2024-09-18)"
   },
   {
-   "timestamp": "20240503114639",
+   "timestamp": "20240919070642",
    "url": "https://www.abc4.com/weather/closings/",
    "station": "nexstar-ktvx",
-   "why": "storm day 2024-05-03 (market score 0.01)"
+   "why": "an unread capture of the list, read so that every capture of it is read (2024-09-19)"
   },
   {
-   "timestamp": "20210710170215",
+   "timestamp": "20240919081539",
    "url": "https://www.abc4.com/weather/closings/",
    "station": "nexstar-ktvx",
-   "why": "a capture outside winter, read so that every capture of the list is read (2021-07-11)"
+   "why": "an unread capture of the list, read so that every capture of it is read (2024-09-19)"
   },
   {
-   "timestamp": "20210716104717",
+   "timestamp": "20241002233834",
    "url": "https://www.abc4.com/weather/closings/",
    "station": "nexstar-ktvx",
-   "why": "a capture outside winter, read so that every capture of the list is read (2021-07-16)"
+   "why": "an unread capture of the list, read so that every capture of it is read (2024-10-03)"
   },
   {
-   "timestamp": "20210718111557",
+   "timestamp": "20241009201556",
    "url": "https://www.abc4.com/weather/closings/",
    "station": "nexstar-ktvx",
-   "why": "a capture outside winter, read so that every capture of the list is read (2021-07-18)"
+   "why": "an unread capture of the list, read so that every capture of it is read (2024-10-10)"
   },
   {
-   "timestamp": "20210805150411",
+   "timestamp": "20241027053231",
    "url": "https://www.abc4.com/weather/closings/",
    "station": "nexstar-ktvx",
-   "why": "a capture outside winter, read so that every capture of the list is read (2021-08-05)"
+   "why": "an unread capture of the list, read so that every capture of it is read (2024-10-27)"
   },
   {
-   "timestamp": "20210814135250",
-   "url": "https://www.abc4.com/weather/closings/",
-   "station": "nexstar-ktvx",
-   "why": "a capture outside winter, read so that every capture of the list is read (2021-08-14)"
-  },
-  {
-   "timestamp": "20210910102836",
-   "url": "https://www.abc4.com/weather/closings/",
-   "station": "nexstar-ktvx",
-   "why": "a capture outside winter, read so that every capture of the list is read (2021-09-10)"
-  },
-  {
-   "timestamp": "20210917105741",
-   "url": "https://www.abc4.com/weather/closings/",
-   "station": "nexstar-ktvx",
-   "why": "a capture outside winter, read so that every capture of the list is read (2021-09-17)"
-  },
-  {
-   "timestamp": "20210921152650",
-   "url": "https://www.abc4.com/weather/closings/",
-   "station": "nexstar-ktvx",
-   "why": "a capture outside winter, read so that every capture of the list is read (2021-09-21)"
-  },
-  {
-   "timestamp": "20210922101314",
-   "url": "https://www.abc4.com/weather/closings/",
-   "station": "nexstar-ktvx",
-   "why": "a capture outside winter, read so that every capture of the list is read (2021-09-22)"
-  },
-  {
-   "timestamp": "20210928114613",
-   "url": "https://www.abc4.com/weather/closings/",
-   "station": "nexstar-ktvx",
-   "why": "a capture outside winter, read so that every capture of the list is read (2021-09-28)"
-  },
-  {
-   "timestamp": "20211007100715",
-   "url": "https://www.abc4.com/weather/closings/",
-   "station": "nexstar-ktvx",
-   "why": "a capture outside winter, read so that every capture of the list is read (2021-10-07)"
-  },
-  {
-   "timestamp": "20211009103535",
-   "url": "https://www.abc4.com/weather/closings/",
-   "station": "nexstar-ktvx",
-   "why": "a capture outside winter, read so that every capture of the list is read (2021-10-09)"
-  },
-  {
-   "timestamp": "20211028122451",
-   "url": "https://www.abc4.com/weather/closings/",
-   "station": "nexstar-ktvx",
-   "why": "a capture outside winter, read so that every capture of the list is read (2021-10-28)"
-  },
-  {
-   "timestamp": "20211031104651",
-   "url": "https://www.abc4.com/weather/closings/",
-   "station": "nexstar-ktvx",
-   "why": "a capture outside winter, read so that every capture of the list is read (2021-10-31)"
-  },
-  {
-   "timestamp": "20210706225411",
-   "url": "https://www.abc4.com/weather/closings/",
-   "station": "nexstar-ktvx",
-   "why": "a capture outside winter, read so that every capture of the list is read (2021-07-07)"
-  },
-  {
-   "timestamp": "20210712050827",
-   "url": "https://www.abc4.com/weather/closings/",
-   "station": "nexstar-ktvx",
-   "why": "a capture outside winter, read so that every capture of the list is read (2021-07-12)"
-  },
-  {
-   "timestamp": "20210714050238",
-   "url": "https://www.abc4.com/weather/closings/",
-   "station": "nexstar-ktvx",
-   "why": "a capture outside winter, read so that every capture of the list is read (2021-07-14)"
-  },
-  {
-   "timestamp": "20210715083802",
-   "url": "https://www.abc4.com/weather/closings/",
-   "station": "nexstar-ktvx",
-   "why": "a capture outside winter, read so that every capture of the list is read (2021-07-15)"
-  },
-  {
-   "timestamp": "20210719050645",
-   "url": "https://www.abc4.com/weather/closings/",
-   "station": "nexstar-ktvx",
-   "why": "a capture outside winter, read so that every capture of the list is read (2021-07-19)"
-  },
-  {
-   "timestamp": "20210720092616",
-   "url": "https://www.abc4.com/weather/closings/",
-   "station": "nexstar-ktvx",
-   "why": "a capture outside winter, read so that every capture of the list is read (2021-07-20)"
-  },
-  {
-   "timestamp": "20210721051430",
-   "url": "https://www.abc4.com/weather/closings/",
-   "station": "nexstar-ktvx",
-   "why": "a capture outside winter, read so that every capture of the list is read (2021-07-21)"
-  },
-  {
-   "timestamp": "20210722070546",
-   "url": "https://www.abc4.com/weather/closings/",
-   "station": "nexstar-ktvx",
-   "why": "a capture outside winter, read so that every capture of the list is read (2021-07-22)"
-  },
-  {
-   "timestamp": "20210725035437",
-   "url": "https://www.abc4.com/weather/closings/",
-   "station": "nexstar-ktvx",
-   "why": "a capture outside winter, read so that every capture of the list is read (2021-07-25)"
-  },
-  {
-   "timestamp": "20210728092908",
-   "url": "https://www.abc4.com/weather/closings/",
-   "station": "nexstar-ktvx",
-   "why": "a capture outside winter, read so that every capture of the list is read (2021-07-28)"
-  },
-  {
-   "timestamp": "20210729214844",
-   "url": "https://www.abc4.com/weather/closings/",
-   "station": "nexstar-ktvx",
-   "why": "a capture outside winter, read so that every capture of the list is read (2021-07-30)"
-  },
-  {
-   "timestamp": "20210801053403",
-   "url": "https://www.abc4.com/weather/closings/",
-   "station": "nexstar-ktvx",
-   "why": "a capture outside winter, read so that every capture of the list is read (2021-08-01)"
-  },
-  {
-   "timestamp": "20210802073607",
-   "url": "https://www.abc4.com/weather/closings/",
-   "station": "nexstar-ktvx",
-   "why": "a capture outside winter, read so that every capture of the list is read (2021-08-02)"
-  },
-  {
-   "timestamp": "20210804081108",
-   "url": "https://www.abc4.com/weather/closings/",
-   "station": "nexstar-ktvx",
-   "why": "a capture outside winter, read so that every capture of the list is read (2021-08-04)"
-  },
-  {
-   "timestamp": "20210805214337",
-   "url": "https://www.abc4.com/weather/closings/",
-   "station": "nexstar-ktvx",
-   "why": "a capture outside winter, read so that every capture of the list is read (2021-08-06)"
-  },
-  {
-   "timestamp": "20210806220211",
-   "url": "https://www.abc4.com/weather/closings/",
-   "station": "nexstar-ktvx",
-   "why": "a capture outside winter, read so that every capture of the list is read (2021-08-07)"
-  },
-  {
-   "timestamp": "20210809082814",
-   "url": "https://www.abc4.com/weather/closings/",
-   "station": "nexstar-ktvx",
-   "why": "a capture outside winter, read so that every capture of the list is read (2021-08-09)"
-  },
-  {
-   "timestamp": "20210811094609",
-   "url": "https://www.abc4.com/weather/closings/",
-   "station": "nexstar-ktvx",
-   "why": "a capture outside winter, read so that every capture of the list is read (2021-08-11)"
-  },
-  {
-   "timestamp": "20210811230051",
-   "url": "https://www.abc4.com/weather/closings/",
-   "station": "nexstar-ktvx",
-   "why": "a capture outside winter, read so that every capture of the list is read (2021-08-12)"
-  },
-  {
-   "timestamp": "20210812220038",
-   "url": "https://www.abc4.com/weather/closings/",
-   "station": "nexstar-ktvx",
-   "why": "a capture outside winter, read so that every capture of the list is read (2021-08-13)"
-  },
-  {
-   "timestamp": "20210816042920",
-   "url": "https://www.abc4.com/weather/closings/",
-   "station": "nexstar-ktvx",
-   "why": "a capture outside winter, read so that every capture of the list is read (2021-08-16)"
-  },
-  {
-   "timestamp": "20210817194515",
-   "url": "https://www.abc4.com/weather/closings/",
-   "station": "nexstar-ktvx",
-   "why": "a capture outside winter, read so that every capture of the list is read (2021-08-18)"
-  },
-  {
-   "timestamp": "20210819220350",
-   "url": "https://www.abc4.com/weather/closings/",
-   "station": "nexstar-ktvx",
-   "why": "a capture outside winter, read so that every capture of the list is read (2021-08-20)"
-  },
-  {
-   "timestamp": "20210823074451",
-   "url": "https://www.abc4.com/weather/closings/",
-   "station": "nexstar-ktvx",
-   "why": "a capture outside winter, read so that every capture of the list is read (2021-08-23)"
-  },
-  {
-   "timestamp": "20210825054314",
-   "url": "https://www.abc4.com/weather/closings/",
-   "station": "nexstar-ktvx",
-   "why": "a capture outside winter, read so that every capture of the list is read (2021-08-25)"
-  },
-  {
-   "timestamp": "20210826072802",
-   "url": "https://www.abc4.com/weather/closings/",
-   "station": "nexstar-ktvx",
-   "why": "a capture outside winter, read so that every capture of the list is read (2021-08-26)"
-  },
-  {
-   "timestamp": "20210830082634",
-   "url": "https://www.abc4.com/weather/closings/",
-   "station": "nexstar-ktvx",
-   "why": "a capture outside winter, read so that every capture of the list is read (2021-08-30)"
-  },
-  {
-   "timestamp": "20210831064430",
-   "url": "https://www.abc4.com/weather/closings/",
-   "station": "nexstar-ktvx",
-   "why": "a capture outside winter, read so that every capture of the list is read (2021-08-31)"
-  },
-  {
-   "timestamp": "20210904083228",
-   "url": "https://www.abc4.com/weather/closings/",
-   "station": "nexstar-ktvx",
-   "why": "a capture outside winter, read so that every capture of the list is read (2021-09-04)"
-  },
-  {
-   "timestamp": "20210906055044",
-   "url": "https://www.abc4.com/weather/closings/",
-   "station": "nexstar-ktvx",
-   "why": "a capture outside winter, read so that every capture of the list is read (2021-09-06)"
-  },
-  {
-   "timestamp": "20210907044631",
-   "url": "https://www.abc4.com/weather/closings/",
-   "station": "nexstar-ktvx",
-   "why": "a capture outside winter, read so that every capture of the list is read (2021-09-07)"
-  },
-  {
-   "timestamp": "20210913055653",
-   "url": "https://www.abc4.com/weather/closings/",
-   "station": "nexstar-ktvx",
-   "why": "a capture outside winter, read so that every capture of the list is read (2021-09-13)"
-  },
-  {
-   "timestamp": "20210915071135",
-   "url": "https://www.abc4.com/weather/closings/",
-   "station": "nexstar-ktvx",
-   "why": "a capture outside winter, read so that every capture of the list is read (2021-09-15)"
-  },
-  {
-   "timestamp": "20210918090112",
-   "url": "https://www.abc4.com/weather/closings/",
-   "station": "nexstar-ktvx",
-   "why": "a capture outside winter, read so that every capture of the list is read (2021-09-18)"
-  },
-  {
-   "timestamp": "20210919062023",
-   "url": "https://www.abc4.com/weather/closings/",
-   "station": "nexstar-ktvx",
-   "why": "a capture outside winter, read so that every capture of the list is read (2021-09-19)"
-  },
-  {
-   "timestamp": "20210923075720",
-   "url": "https://www.abc4.com/weather/closings/",
-   "station": "nexstar-ktvx",
-   "why": "a capture outside winter, read so that every capture of the list is read (2021-09-23)"
-  },
-  {
-   "timestamp": "20210923223007",
-   "url": "https://www.abc4.com/weather/closings/",
-   "station": "nexstar-ktvx",
-   "why": "a capture outside winter, read so that every capture of the list is read (2021-09-24)"
-  },
-  {
-   "timestamp": "20210925072527",
-   "url": "https://www.abc4.com/weather/closings/",
-   "station": "nexstar-ktvx",
-   "why": "a capture outside winter, read so that every capture of the list is read (2021-09-25)"
-  },
-  {
-   "timestamp": "20210927051315",
-   "url": "https://www.abc4.com/weather/closings/",
-   "station": "nexstar-ktvx",
-   "why": "a capture outside winter, read so that every capture of the list is read (2021-09-27)"
-  },
-  {
-   "timestamp": "20210929072056",
-   "url": "https://www.abc4.com/weather/closings/",
-   "station": "nexstar-ktvx",
-   "why": "a capture outside winter, read so that every capture of the list is read (2021-09-29)"
-  },
-  {
-   "timestamp": "20211003040812",
-   "url": "https://www.abc4.com/weather/closings/",
-   "station": "nexstar-ktvx",
-   "why": "a capture outside winter, read so that every capture of the list is read (2021-10-03)"
-  },
-  {
-   "timestamp": "20211004063850",
-   "url": "https://www.abc4.com/weather/closings/",
-   "station": "nexstar-ktvx",
-   "why": "a capture outside winter, read so that every capture of the list is read (2021-10-04)"
-  },
-  {
-   "timestamp": "20211005062806",
-   "url": "https://www.abc4.com/weather/closings/",
-   "station": "nexstar-ktvx",
-   "why": "a capture outside winter, read so that every capture of the list is read (2021-10-05)"
-  },
-  {
-   "timestamp": "20211006085037",
-   "url": "https://www.abc4.com/weather/closings/",
-   "station": "nexstar-ktvx",
-   "why": "a capture outside winter, read so that every capture of the list is read (2021-10-06)"
-  },
-  {
-   "timestamp": "20211010044735",
-   "url": "https://www.abc4.com/weather/closings/",
-   "station": "nexstar-ktvx",
-   "why": "a capture outside winter, read so that every capture of the list is read (2021-10-10)"
-  },
-  {
-   "timestamp": "20211029091039",
-   "url": "https://www.abc4.com/weather/closings/",
-   "station": "nexstar-ktvx",
-   "why": "a capture outside winter, read so that every capture of the list is read (2021-10-29)"
+   "timestamp": "20170321121541",
+   "url": "http://www.kens5.com/closings",
+   "station": "tegna-kens",
+   "why": "an unread capture of the list, read so that every capture of it is read (2017-03-21)"
   },
   {
-   "timestamp": "20220408152004",
-   "url": "https://www.abc4.com/weather/closings/",
-   "station": "nexstar-ktvx",
-   "why": "a capture outside winter, read so that every capture of the list is read (2022-04-08)"
-  },
-  {
-   "timestamp": "20220501163326",
-   "url": "https://www.abc4.com/weather/closings/",
-   "station": "nexstar-ktvx",
-   "why": "a capture outside winter, read so that every capture of the list is read (2022-05-02)"
+   "timestamp": "20170402114101",
+   "url": "http://www.kens5.com/closings",
+   "station": "tegna-kens",
+   "why": "an unread capture of the list, read so that every capture of it is read (2017-04-02)"
   },
   {
-   "timestamp": "20220604115153",
-   "url": "https://www.abc4.com/weather/closings/",
-   "station": "nexstar-ktvx",
-   "why": "a capture outside winter, read so that every capture of the list is read (2022-06-04)"
+   "timestamp": "20170409130923",
+   "url": "http://www.kens5.com/closings",
+   "station": "tegna-kens",
+   "why": "an unread capture of the list, read so that every capture of it is read (2017-04-09)"
   },
   {
-   "timestamp": "20221009143911",
-   "url": "https://www.abc4.com/weather/closings/",
-   "station": "nexstar-ktvx",
-   "why": "a capture outside winter, read so that every capture of the list is read (2022-10-09)"
+   "timestamp": "20170504120554",
+   "url": "http://www.kens5.com/closings",
+   "station": "tegna-kens",
+   "why": "an unread capture of the list, read so that every capture of it is read (2017-05-04)"
   },
   {
-   "timestamp": "20220406234327",
-   "url": "https://www.abc4.com/weather/closings/",
-   "station": "nexstar-ktvx",
-   "why": "a capture outside winter, read so that every capture of the list is read (2022-04-07)"
+   "timestamp": "20170510162510",
+   "url": "http://www.kens5.com/closings",
+   "station": "tegna-kens",
+   "why": "an unread capture of the list, read so that every capture of it is read (2017-05-11)"
   },
   {
-   "timestamp": "20220428221511",
-   "url": "https://www.abc4.com/weather/closings/",
-   "station": "nexstar-ktvx",
-   "why": "a capture outside winter, read so that every capture of the list is read (2022-04-29)"
+   "timestamp": "20170512124749",
+   "url": "http://www.kens5.com/closings",
+   "station": "tegna-kens",
+   "why": "an unread capture of the list, read so that every capture of it is read (2017-05-12)"
   },
   {
-   "timestamp": "20220527013450",
-   "url": "https://www.abc4.com/weather/closings/",
-   "station": "nexstar-ktvx",
-   "why": "a capture outside winter, read so that every capture of the list is read (2022-05-27)"
+   "timestamp": "20170514133125",
+   "url": "http://www.kens5.com/closings",
+   "station": "tegna-kens",
+   "why": "an unread capture of the list, read so that every capture of it is read (2017-05-14)"
   },
   {
-   "timestamp": "20220605094533",
-   "url": "https://www.abc4.com/weather/closings/",
-   "station": "nexstar-ktvx",
-   "why": "a capture outside winter, read so that every capture of the list is read (2022-06-05)"
+   "timestamp": "20170516121108",
+   "url": "http://www.kens5.com/closings",
+   "station": "tegna-kens",
+   "why": "an unread capture of the list, read so that every capture of it is read (2017-05-16)"
   },
   {
-   "timestamp": "20220702020244",
-   "url": "https://www.abc4.com/weather/closings/",
-   "station": "nexstar-ktvx",
-   "why": "a capture outside winter, read so that every capture of the list is read (2022-07-02)"
+   "timestamp": "20170518133034",
+   "url": "http://www.kens5.com/closings",
+   "station": "tegna-kens",
+   "why": "an unread capture of the list, read so that every capture of it is read (2017-05-18)"
   },
   {
-   "timestamp": "20220706221417",
-   "url": "https://www.abc4.com/weather/closings/",
-   "station": "nexstar-ktvx",
-   "why": "a capture outside winter, read so that every capture of the list is read (2022-07-07)"
+   "timestamp": "20170521110346",
+   "url": "http://www.kens5.com:80/closings",
+   "station": "tegna-kens",
+   "why": "an unread capture of the list, read so that every capture of it is read (2017-05-21)"
   },
   {
-   "timestamp": "20220929224911",
-   "url": "https://www.abc4.com/weather/closings/",
-   "station": "nexstar-ktvx",
-   "why": "a capture outside winter, read so that every capture of the list is read (2022-09-30)"
+   "timestamp": "20170523114854",
+   "url": "http://www.kens5.com/closings",
+   "station": "tegna-kens",
+   "why": "an unread capture of the list, read so that every capture of it is read (2017-05-23)"
   },
   {
-   "timestamp": "20230509143415",
-   "url": "https://www.abc4.com/weather/closings/",
-   "station": "nexstar-ktvx",
-   "why": "a capture outside winter, read so that every capture of the list is read (2023-05-09)"
+   "timestamp": "20170525130813",
+   "url": "http://www.kens5.com/closings",
+   "station": "tegna-kens",
+   "why": "an unread capture of the list, read so that every capture of it is read (2017-05-25)"
   },
   {
-   "timestamp": "20230531123622",
-   "url": "https://www.abc4.com/weather/closings/",
-   "station": "nexstar-ktvx",
-   "why": "a capture outside winter, read so that every capture of the list is read (2023-05-31)"
+   "timestamp": "20170611135027",
+   "url": "http://www.kens5.com/closings",
+   "station": "tegna-kens",
+   "why": "an unread capture of the list, read so that every capture of it is read (2017-06-11)"
   },
   {
-   "timestamp": "20230806110045",
-   "url": "https://www.abc4.com/weather/closings/",
-   "station": "nexstar-ktvx",
-   "why": "a capture outside winter, read so that every capture of the list is read (2023-08-06)"
+   "timestamp": "20170615151250",
+   "url": "http://www.kens5.com/closings",
+   "station": "tegna-kens",
+   "why": "an unread capture of the list, read so that every capture of it is read (2017-06-15)"
   },
   {
-   "timestamp": "20231004104548",
-   "url": "https://www.abc4.com/weather/closings/",
-   "station": "nexstar-ktvx",
-   "why": "a capture outside winter, read so that every capture of the list is read (2023-10-04)"
+   "timestamp": "20170617124920",
+   "url": "http://www.kens5.com/closings",
+   "station": "tegna-kens",
+   "why": "an unread capture of the list, read so that every capture of it is read (2017-06-17)"
   },
   {
-   "timestamp": "20231017112533",
-   "url": "https://www.abc4.com/weather/closings/",
-   "station": "nexstar-ktvx",
-   "why": "a capture outside winter, read so that every capture of the list is read (2023-10-17)"
+   "timestamp": "20170618165744",
+   "url": "http://www.kens5.com/closings",
+   "station": "tegna-kens",
+   "why": "an unread capture of the list, read so that every capture of it is read (2017-06-19)"
   },
   {
-   "timestamp": "20230406213729",
-   "url": "https://www.abc4.com/weather/closings/",
-   "station": "nexstar-ktvx",
-   "why": "a capture outside winter, read so that every capture of the list is read (2023-04-07)"
+   "timestamp": "20170619171318",
+   "url": "http://www.kens5.com/closings",
+   "station": "tegna-kens",
+   "why": "an unread capture of the list, read so that every capture of it is read (2017-06-20)"
   },
   {
-   "timestamp": "20230408184822",
-   "url": "https://www.abc4.com/weather/closings/",
-   "station": "nexstar-ktvx",
-   "why": "a capture outside winter, read so that every capture of the list is read (2023-04-09)"
+   "timestamp": "20170621123325",
+   "url": "http://www.kens5.com/closings",
+   "station": "tegna-kens",
+   "why": "an unread capture of the list, read so that every capture of it is read (2017-06-21)"
   },
   {
-   "timestamp": "20230418221230",
-   "url": "https://www.abc4.com/weather/closings/",
-   "station": "nexstar-ktvx",
-   "why": "a capture outside winter, read so that every capture of the list is read (2023-04-19)"
+   "timestamp": "20170628142938",
+   "url": "http://www.kens5.com/closings",
+   "station": "tegna-kens",
+   "why": "an unread capture of the list, read so that every capture of it is read (2017-06-28)"
   },
   {
-   "timestamp": "20230427200633",
-   "url": "https://www.abc4.com/weather/closings/",
-   "station": "nexstar-ktvx",
-   "why": "a capture outside winter, read so that every capture of the list is read (2023-04-28)"
+   "timestamp": "20170710121753",
+   "url": "http://www.kens5.com/closings",
+   "station": "tegna-kens",
+   "why": "an unread capture of the list, read so that every capture of it is read (2017-07-10)"
   },
   {
-   "timestamp": "20230507070231",
-   "url": "https://www.abc4.com/weather/closings/",
-   "station": "nexstar-ktvx",
-   "why": "a capture outside winter, read so that every capture of the list is read (2023-05-07)"
+   "timestamp": "20170712150902",
+   "url": "http://www.kens5.com/closings",
+   "station": "tegna-kens",
+   "why": "an unread capture of the list, read so that every capture of it is read (2017-07-12)"
   },
   {
-   "timestamp": "20230518074949",
-   "url": "https://www.abc4.com/weather/closings/",
-   "station": "nexstar-ktvx",
-   "why": "a capture outside winter, read so that every capture of the list is read (2023-05-18)"
+   "timestamp": "20170713131117",
+   "url": "http://www.kens5.com/closings",
+   "station": "tegna-kens",
+   "why": "an unread capture of the list, read so that every capture of it is read (2017-07-13)"
   },
   {
-   "timestamp": "20230524010731",
-   "url": "https://www.abc4.com/weather/closings/",
-   "station": "nexstar-ktvx",
-   "why": "a capture outside winter, read so that every capture of the list is read (2023-05-24)"
+   "timestamp": "20170801153503",
+   "url": "http://www.kens5.com/closings",
+   "station": "tegna-kens",
+   "why": "an unread capture of the list, read so that every capture of it is read (2017-08-01)"
   },
   {
-   "timestamp": "20230606202547",
-   "url": "https://www.abc4.com/weather/closings/",
-   "station": "nexstar-ktvx",
-   "why": "a capture outside winter, read so that every capture of the list is read (2023-06-07)"
+   "timestamp": "20170802154352",
+   "url": "http://www.kens5.com/closings",
+   "station": "tegna-kens",
+   "why": "an unread capture of the list, read so that every capture of it is read (2017-08-02)"
   },
   {
-   "timestamp": "20230613224618",
-   "url": "https://www.abc4.com/weather/closings/",
-   "station": "nexstar-ktvx",
-   "why": "a capture outside winter, read so that every capture of the list is read (2023-06-14)"
+   "timestamp": "20170803132332",
+   "url": "http://www.kens5.com/closings",
+   "station": "tegna-kens",
+   "why": "an unread capture of the list, read so that every capture of it is read (2017-08-03)"
   },
   {
-   "timestamp": "20230621023256",
-   "url": "https://www.abc4.com/weather/closings/",
-   "station": "nexstar-ktvx",
-   "why": "a capture outside winter, read so that every capture of the list is read (2023-06-21)"
+   "timestamp": "20170805120116",
+   "url": "http://www.kens5.com/closings",
+   "station": "tegna-kens",
+   "why": "an unread capture of the list, read so that every capture of it is read (2017-08-05)"
   },
   {
-   "timestamp": "20230625000403",
-   "url": "https://www.abc4.com/weather/closings/",
-   "station": "nexstar-ktvx",
-   "why": "a capture outside winter, read so that every capture of the list is read (2023-06-25)"
+   "timestamp": "20170815162027",
+   "url": "http://www.kens5.com/closings",
+   "station": "tegna-kens",
+   "why": "an unread capture of the list, read so that every capture of it is read (2017-08-16)"
   },
   {
-   "timestamp": "20230627223223",
-   "url": "https://www.abc4.com/weather/closings/",
-   "station": "nexstar-ktvx",
-   "why": "a capture outside winter, read so that every capture of the list is read (2023-06-28)"
+   "timestamp": "20170816160056",
+   "url": "http://www.kens5.com/closings",
+   "station": "tegna-kens",
+   "why": "an unread capture of the list, read so that every capture of it is read (2017-08-17)"
   },
   {
-   "timestamp": "20230704190403",
-   "url": "https://www.abc4.com/weather/closings/",
-   "station": "nexstar-ktvx",
-   "why": "a capture outside winter, read so that every capture of the list is read (2023-07-05)"
+   "timestamp": "20170817174314",
+   "url": "http://www.kens5.com/closings",
+   "station": "tegna-kens",
+   "why": "an unread capture of the list, read so that every capture of it is read (2017-08-18)"
   },
   {
-   "timestamp": "20230712014306",
-   "url": "https://www.abc4.com/weather/closings/",
-   "station": "nexstar-ktvx",
-   "why": "a capture outside winter, read so that every capture of the list is read (2023-07-12)"
+   "timestamp": "20170821101841",
+   "url": "http://www.kens5.com/closings",
+   "station": "tegna-kens",
+   "why": "an unread capture of the list, read so that every capture of it is read (2017-08-21)"
   },
   {
-   "timestamp": "20230717185903",
-   "url": "https://www.abc4.com/weather/closings/",
-   "station": "nexstar-ktvx",
-   "why": "a capture outside winter, read so that every capture of the list is read (2023-07-18)"
+   "timestamp": "20170823125749",
+   "url": "http://www.kens5.com/closings",
+   "station": "tegna-kens",
+   "why": "an unread capture of the list, read so that every capture of it is read (2017-08-23)"
   },
   {
-   "timestamp": "20230719073902",
-   "url": "https://www.abc4.com/weather/closings/",
-   "station": "nexstar-ktvx",
-   "why": "a capture outside winter, read so that every capture of the list is read (2023-07-19)"
+   "timestamp": "20170826105932",
+   "url": "http://www.kens5.com/closings",
+   "station": "tegna-kens",
+   "why": "an unread capture of the list, read so that every capture of it is read (2017-08-26)"
   },
   {
-   "timestamp": "20230810004644",
-   "url": "https://www.abc4.com/weather/closings/",
-   "station": "nexstar-ktvx",
-   "why": "a capture outside winter, read so that every capture of the list is read (2023-08-10)"
+   "timestamp": "20170830115241",
+   "url": "http://www.kens5.com/closings",
+   "station": "tegna-kens",
+   "why": "an unread capture of the list, read so that every capture of it is read (2017-08-30)"
   },
   {
-   "timestamp": "20230823073459",
-   "url": "https://www.abc4.com/weather/closings/",
-   "station": "nexstar-ktvx",
-   "why": "a capture outside winter, read so that every capture of the list is read (2023-08-23)"
+   "timestamp": "20170831130739",
+   "url": "http://www.kens5.com/closings",
+   "station": "tegna-kens",
+   "why": "an unread capture of the list, read so that every capture of it is read (2017-08-31)"
   },
   {
-   "timestamp": "20230829193627",
-   "url": "https://www.abc4.com/weather/closings/",
-   "station": "nexstar-ktvx",
-   "why": "a capture outside winter, read so that every capture of the list is read (2023-08-30)"
+   "timestamp": "20170831160037",
+   "url": "http://www.kens5.com/closings",
+   "station": "tegna-kens",
+   "why": "an unread capture of the list, read so that every capture of it is read (2017-09-01)"
   },
   {
-   "timestamp": "20230905195325",
-   "url": "https://www.abc4.com/weather/closings/",
-   "station": "nexstar-ktvx",
-   "why": "a capture outside winter, read so that every capture of the list is read (2023-09-06)"
+   "timestamp": "20170902174752",
+   "url": "http://www.kens5.com/closings",
+   "station": "tegna-kens",
+   "why": "an unread capture of the list, read so that every capture of it is read (2017-09-03)"
   },
   {
-   "timestamp": "20230927021800",
-   "url": "https://www.abc4.com/weather/closings/",
-   "station": "nexstar-ktvx",
-   "why": "a capture outside winter, read so that every capture of the list is read (2023-09-27)"
+   "timestamp": "20170903171147",
+   "url": "http://www.kens5.com/closings",
+   "station": "tegna-kens",
+   "why": "an unread capture of the list, read so that every capture of it is read (2017-09-04)"
   },
   {
-   "timestamp": "20231023180310",
-   "url": "https://www.abc4.com/weather/closings/",
-   "station": "nexstar-ktvx",
-   "why": "a capture outside winter, read so that every capture of the list is read (2023-10-24)"
+   "timestamp": "20170904170801",
+   "url": "http://www.kens5.com/closings",
+   "station": "tegna-kens",
+   "why": "an unread capture of the list, read so that every capture of it is read (2017-09-05)"
   },
   {
-   "timestamp": "20240409100651",
-   "url": "https://www.abc4.com/weather/closings/",
-   "station": "nexstar-ktvx",
-   "why": "a capture outside winter, read so that every capture of the list is read (2024-04-09)"
+   "timestamp": "20170907124337",
+   "url": "http://www.kens5.com/closings",
+   "station": "tegna-kens",
+   "why": "an unread capture of the list, read so that every capture of it is read (2017-09-07)"
   },
   {
-   "timestamp": "20240410100449",
-   "url": "https://www.abc4.com/weather/closings/",
-   "station": "nexstar-ktvx",
-   "why": "a capture outside winter, read so that every capture of the list is read (2024-04-10)"
+   "timestamp": "20170908105513",
+   "url": "http://www.kens5.com/closings",
+   "station": "tegna-kens",
+   "why": "an unread capture of the list, read so that every capture of it is read (2017-09-08)"
   },
   {
-   "timestamp": "20240411104700",
-   "url": "https://www.abc4.com/weather/closings/",
-   "station": "nexstar-ktvx",
-   "why": "a capture outside winter, read so that every capture of the list is read (2024-04-11)"
+   "timestamp": "20170914104225",
+   "url": "http://www.kens5.com/closings",
+   "station": "tegna-kens",
+   "why": "an unread capture of the list, read so that every capture of it is read (2017-09-14)"
   },
   {
-   "timestamp": "20240418170959",
-   "url": "https://www.abc4.com/weather/closings/",
-   "station": "nexstar-ktvx",
-   "why": "a capture outside winter, read so that every capture of the list is read (2024-04-19)"
+   "timestamp": "20170918145440",
+   "url": "http://www.kens5.com/closings",
+   "station": "tegna-kens",
+   "why": "an unread capture of the list, read so that every capture of it is read (2017-09-18)"
   },
   {
-   "timestamp": "20240422142941",
-   "url": "https://www.abc4.com/weather/closings/",
-   "station": "nexstar-ktvx",
-   "why": "a capture outside winter, read so that every capture of the list is read (2024-04-22)"
+   "timestamp": "20170920101050",
+   "url": "http://www.kens5.com/closings",
+   "station": "tegna-kens",
+   "why": "an unread capture of the list, read so that every capture of it is read (2017-09-20)"
   },
   {
-   "timestamp": "20201022213245",
-   "url": "https://www.kpax.com/weather/school-closings-delays",
-   "station": "scripps-kpax",
-   "why": "storm day 2020-10-23 (market score 0.71)"
+   "timestamp": "20170921112857",
+   "url": "http://www.kens5.com/closings",
+   "station": "tegna-kens",
+   "why": "an unread capture of the list, read so that every capture of it is read (2017-09-21)"
   },
   {
-   "timestamp": "20210205054127",
-   "url": "https://www.kpax.com/weather/school-closings-delays",
-   "station": "scripps-kpax",
-   "why": "storm day 2021-02-05 (market score 0.25)"
+   "timestamp": "20170922170227",
+   "url": "http://www.kens5.com/closings",
+   "station": "tegna-kens",
+   "why": "an unread capture of the list, read so that every capture of it is read (2017-09-23)"
   },
   {
-   "timestamp": "20201112235230",
-   "url": "https://www.kpax.com/weather/school-closings-delays?_renderer=json",
-   "station": "scripps-kpax",
-   "why": "storm day 2020-11-13 (market score 0.25)"
+   "timestamp": "20170923163149",
+   "url": "http://www.kens5.com/closings",
+   "station": "tegna-kens",
+   "why": "an unread capture of the list, read so that every capture of it is read (2017-09-24)"
   },
   {
-   "timestamp": "20200330192815",
-   "url": "https://www.kpax.com/weather/school-closings-delays",
-   "station": "scripps-kpax",
-   "why": "storm day 2020-03-31 (market score 0.25)"
+   "timestamp": "20170926173117",
+   "url": "http://www.kens5.com/closings",
+   "station": "tegna-kens",
+   "why": "an unread capture of the list, read so that every capture of it is read (2017-09-27)"
   },
   {
-   "timestamp": "20200117022902",
-   "url": "https://www.kpax.com/weather/school-closings-delays",
-   "station": "scripps-kpax",
-   "why": "storm day 2020-01-17 (market score 0.25)"
+   "timestamp": "20171001154141",
+   "url": "http://www.kens5.com/closings",
+   "station": "tegna-kens",
+   "why": "an unread capture of the list, read so that every capture of it is read (2017-10-01)"
   },
   {
-   "timestamp": "20200205040536",
-   "url": "https://www.kpax.com/weather/school-closings-delays",
-   "station": "scripps-kpax",
-   "why": "storm day 2020-02-05 (market score 0.25)"
+   "timestamp": "20171004174646",
+   "url": "http://www.kens5.com/closings",
+   "station": "tegna-kens",
+   "why": "an unread capture of the list, read so that every capture of it is read (2017-10-05)"
   },
   {
-   "timestamp": "20200128011620",
-   "url": "https://www.kpax.com/weather/school-closings-delays",
-   "station": "scripps-kpax",
-   "why": "storm day 2020-01-28 (market score 0.25)"
+   "timestamp": "20171006135030",
+   "url": "http://www.kens5.com/closings",
+   "station": "tegna-kens",
+   "why": "an unread capture of the list, read so that every capture of it is read (2017-10-06)"
   },
   {
-   "timestamp": "20200107045658",
-   "url": "https://www.kpax.com/weather/school-closings-delays?_renderer=json",
-   "station": "scripps-kpax",
-   "why": "storm day 2020-01-07 (market score 0.25)"
+   "timestamp": "20171007132334",
+   "url": "http://www.kens5.com/closings",
+   "station": "tegna-kens",
+   "why": "an unread capture of the list, read so that every capture of it is read (2017-10-07)"
   },
   {
-   "timestamp": "20210518165235",
-   "url": "https://www.kpax.com/weather/school-closings-delays",
-   "station": "scripps-kpax",
-   "why": "storm day 2021-05-19 (market score 0.18)"
+   "timestamp": "20171010102343",
+   "url": "http://www.kens5.com/closings",
+   "station": "tegna-kens",
+   "why": "an unread capture of the list, read so that every capture of it is read (2017-10-10)"
   },
   {
-   "timestamp": "20210225035929",
-   "url": "https://www.kpax.com/weather/school-closings-delays",
-   "station": "scripps-kpax",
-   "why": "storm day 2021-02-25 (market score 0.18)"
+   "timestamp": "20171014163434",
+   "url": "http://www.kens5.com/closings",
+   "station": "tegna-kens",
+   "why": "an unread capture of the list, read so that every capture of it is read (2017-10-15)"
   },
   {
-   "timestamp": "20201217062628",
-   "url": "https://www.kpax.com/weather/school-closings-delays",
-   "station": "scripps-kpax",
-   "why": "storm day 2020-12-17 (market score 0.18)"
+   "timestamp": "20171019125930",
+   "url": "http://www.kens5.com/closings",
+   "station": "tegna-kens",
+   "why": "an unread capture of the list, read so that every capture of it is read (2017-10-19)"
   },
   {
-   "timestamp": "20201018181708",
-   "url": "https://www.kpax.com/weather/school-closings-delays",
-   "station": "scripps-kpax",
-   "why": "storm day 2020-10-19 (market score 0.18)"
+   "timestamp": "20171023134054",
+   "url": "http://www.kens5.com/closings",
+   "station": "tegna-kens",
+   "why": "an unread capture of the list, read so that every capture of it is read (2017-10-23)"
   },
   {
-   "timestamp": "20200415090151",
-   "url": "https://www.kpax.com/weather/school-closings-delays",
-   "station": "scripps-kpax",
-   "why": "storm day 2020-04-15 (market score 0.18)"
+   "timestamp": "20171024103722",
+   "url": "http://www.kens5.com/closings",
+   "station": "tegna-kens",
+   "why": "an unread capture of the list, read so that every capture of it is read (2017-10-24)"
   },
   {
-   "timestamp": "20200401223957",
-   "url": "https://www.kpax.com/weather/school-closings-delays",
-   "station": "scripps-kpax",
-   "why": "storm day 2020-04-02 (market score 0.18)"
+   "timestamp": "20171104173952",
+   "url": "http://www.kens5.com/closings",
+   "station": "tegna-kens",
+   "why": "an unread capture of the list, read so that every capture of it is read (2017-11-05)"
   },
   {
-   "timestamp": "20191021000942",
-   "url": "https://www.kpax.com/weather/school-closings-delays",
-   "station": "scripps-kpax",
-   "why": "storm day 2019-10-21 (market score 0.18)"
+   "timestamp": "20171105171627",
+   "url": "http://www.kens5.com/closings",
+   "station": "tegna-kens",
+   "why": "an unread capture of the list, read so that every capture of it is read (2017-11-06)"
   },
   {
-   "timestamp": "20200214083720",
-   "url": "https://www.kpax.com/weather/school-closings-delays",
-   "station": "scripps-kpax",
-   "why": "storm day 2020-02-14 (market score 0.18)"
+   "timestamp": "20171110104011",
+   "url": "http://www.kens5.com/closings",
+   "station": "tegna-kens",
+   "why": "an unread capture of the list, read so that every capture of it is read (2017-11-10)"
   },
   {
-   "timestamp": "20201201085511",
-   "url": "https://www.kpax.com/weather/school-closings-delays",
-   "station": "scripps-kpax",
-   "why": "storm day 2020-12-01 (market score 0.14)"
+   "timestamp": "20171111110600",
+   "url": "http://www.kens5.com/closings",
+   "station": "tegna-kens",
+   "why": "an unread capture of the list, read so that every capture of it is read (2017-11-11)"
   },
   {
-   "timestamp": "20210323090349",
-   "url": "https://www.kpax.com/weather/school-closings-delays",
-   "station": "scripps-kpax",
-   "why": "storm day 2021-03-23 (market score 0.11)"
+   "timestamp": "20171116123256",
+   "url": "http://www.kens5.com/closings",
+   "station": "tegna-kens",
+   "why": "an unread capture of the list, read so that every capture of it is read (2017-11-16)"
   },
   {
-   "timestamp": "20200122034909",
-   "url": "https://www.kpax.com/weather/school-closings-delays",
-   "station": "scripps-kpax",
-   "why": "storm day 2020-01-22 (market score 0.11)"
+   "timestamp": "20171118113028",
+   "url": "http://www.kens5.com/closings",
+   "station": "tegna-kens",
+   "why": "an unread capture of the list, read so that every capture of it is read (2017-11-18)"
   },
   {
-   "timestamp": "20201209154516",
-   "url": "https://www.kpax.com/weather/school-closings-delays?_renderer=json",
-   "station": "scripps-kpax",
-   "why": "storm day 2020-12-09 (market score 0.07)"
+   "timestamp": "20171120111923",
+   "url": "http://www.kens5.com/closings",
+   "station": "tegna-kens",
+   "why": "an unread capture of the list, read so that every capture of it is read (2017-11-20)"
   },
   {
-   "timestamp": "20201013200406",
-   "url": "https://www.kpax.com/weather/school-closings-delays?_renderer=json",
-   "station": "scripps-kpax",
-   "why": "storm day 2020-10-14 (market score 0.07)"
+   "timestamp": "20171121131058",
+   "url": "http://www.kens5.com/closings",
+   "station": "tegna-kens",
+   "why": "an unread capture of the list, read so that every capture of it is read (2017-11-21)"
   },
   {
-   "timestamp": "20200311022503",
-   "url": "https://www.kpax.com/weather/school-closings-delays",
-   "station": "scripps-kpax",
-   "why": "storm day 2020-03-11 (market score 0.07)"
+   "timestamp": "20171124102204",
+   "url": "http://www.kens5.com/closings",
+   "station": "tegna-kens",
+   "why": "an unread capture of the list, read so that every capture of it is read (2017-11-24)"
   },
   {
-   "timestamp": "20191203141817",
-   "url": "https://www.kpax.com/weather/school-closings-delays?_renderer=json",
-   "station": "scripps-kpax",
-   "why": "storm day 2019-12-03 (market score 0.07)"
+   "timestamp": "20171125172409",
+   "url": "http://www.kens5.com/closings",
+   "station": "tegna-kens",
+   "why": "an unread capture of the list, read so that every capture of it is read (2017-11-26)"
   },
   {
-   "timestamp": "20220101141135",
-   "url": "https://www.kpax.com/weather/school-closings-delays?_renderer=json",
-   "station": "scripps-kpax",
-   "why": "a revisit record of the former address after the move, to learn what it replays (2022-01-01)"
+   "timestamp": "20171130151606",
+   "url": "http://www.kens5.com/closings",
+   "station": "tegna-kens",
+   "why": "an unread capture of the list, read so that every capture of it is read (2017-11-30)"
   },
   {
-   "timestamp": "20220307152324",
-   "url": "https://www.kpax.com/weather/school-closings-delays",
-   "station": "scripps-kpax",
-   "why": "a revisit record of the former address after the move, to learn what it replays (2022-03-07)"
+   "timestamp": "20171229111601",
+   "url": "http://www.kens5.com/closings",
+   "station": "tegna-kens",
+   "why": "an unread capture of the list, read so that every capture of it is read (2017-12-29)"
   },
   {
-   "timestamp": "20220308175242",
-   "url": "https://www.kpax.com/weather/school-closings-delays?_renderer=json",
-   "station": "scripps-kpax",
-   "why": "a revisit record of the former address after the move, to learn what it replays (2022-03-09)"
+   "timestamp": "20171230131534",
+   "url": "http://www.kens5.com/closings",
+   "station": "tegna-kens",
+   "why": "an unread capture of the list, read so that every capture of it is read (2017-12-30)"
   },
   {
-   "timestamp": "20200216162602",
-   "url": "https://www.kgun9.com/weather/school-closings-delays?_renderer=json",
-   "station": "scripps-kgun",
-   "why": "a revisit record of the old closings address, to learn what it replays (2020-02-17)"
+   "timestamp": "20171231114754",
+   "url": "http://www.kens5.com/closings",
+   "station": "tegna-kens",
+   "why": "an unread capture of the list, read so that every capture of it is read (2017-12-31)"
   },
   {
-   "timestamp": "20200523105530",
-   "url": "https://www.kgun9.com/weather/school-closings-delays?_renderer=json",
-   "station": "scripps-kgun",
-   "why": "a revisit record of the old closings address, to learn what it replays (2020-05-23)"
+   "timestamp": "20180102133249",
+   "url": "http://www.kens5.com/closings",
+   "station": "tegna-kens",
+   "why": "an unread capture of the list, read so that every capture of it is read (2018-01-02)"
   },
   {
-   "timestamp": "20200802150836",
-   "url": "https://www.kgun9.com/weather/school-closings-delays?_renderer=json",
-   "station": "scripps-kgun",
-   "why": "a revisit record of the old closings address, to learn what it replays (2020-08-02)"
+   "timestamp": "20180103114402",
+   "url": "http://www.kens5.com/closings",
+   "station": "tegna-kens",
+   "why": "an unread capture of the list, read so that every capture of it is read (2018-01-03)"
   },
   {
-   "timestamp": "20200324132412",
-   "url": "https://www.ktnv.com/weather/school-closings-delays",
-   "station": "scripps-ktnv",
-   "why": "a revisit record of the old closings address, to learn what it replays (2020-03-24)"
+   "timestamp": "20180104131801",
+   "url": "http://www.kens5.com/closings",
+   "station": "tegna-kens",
+   "why": "an unread capture of the list, read so that every capture of it is read (2018-01-04)"
   },
   {
-   "timestamp": "20200331135938",
-   "url": "https://www.ktnv.com/weather/school-closings-delays",
-   "station": "scripps-ktnv",
-   "why": "a revisit record of the old closings address, to learn what it replays (2020-03-31)"
+   "timestamp": "20180105120418",
+   "url": "http://www.kens5.com/closings",
+   "station": "tegna-kens",
+   "why": "an unread capture of the list, read so that every capture of it is read (2018-01-05)"
   },
   {
-   "timestamp": "20200407132234",
-   "url": "https://www.ktnv.com/weather/school-closings-delays",
-   "station": "scripps-ktnv",
-   "why": "a revisit record of the old closings address, to learn what it replays (2020-04-07)"
+   "timestamp": "20180112155609",
+   "url": "http://www.kens5.com/closings",
+   "station": "tegna-kens",
+   "why": "an unread capture of the list, read so that every capture of it is read (2018-01-12)"
   },
   {
-   "timestamp": "20201118112036",
+   "timestamp": "20200410171815",
    "url": "https://www.kens5.com/closings",
    "station": "tegna-kens",
-   "why": "a winter capture (the page has few) (2020-11-18)"
-  },
-  {
-   "timestamp": "20201115003556",
-   "url": "https://www.kens5.com/closings",
-   "station": "tegna-kens",
-   "why": "a winter capture (the page has few) (2020-11-15)"
-  },
-  {
-   "timestamp": "20201116081234",
-   "url": "https://www.kens5.com/closings",
-   "station": "tegna-kens",
-   "why": "a winter capture (the page has few) (2020-11-16)"
-  },
-  {
-   "timestamp": "20201128211137",
-   "url": "https://www.kens5.com/closings",
-   "station": "tegna-kens",
-   "why": "a winter capture (the page has few) (2020-11-29)"
-  },
-  {
-   "timestamp": "20210317065354",
-   "url": "https://www.kens5.com/closings",
-   "station": "tegna-kens",
-   "why": "a winter capture (the page has few) (2021-03-17)"
-  },
-  {
-   "timestamp": "20210319073255",
-   "url": "https://www.kens5.com/closings",
-   "station": "tegna-kens",
-   "why": "a winter capture (the page has few) (2021-03-19)"
-  },
-  {
-   "timestamp": "20211102170722",
-   "url": "https://www.kens5.com/closings",
-   "station": "tegna-kens",
-   "why": "a winter capture (the page has few) (2021-11-03)"
-  },
-  {
-   "timestamp": "20211101184606",
-   "url": "https://www.kens5.com/closings",
-   "station": "tegna-kens",
-   "why": "a winter capture (the page has few) (2021-11-02)"
-  },
-  {
-   "timestamp": "20211128004023",
-   "url": "https://www.kens5.com/closings",
-   "station": "tegna-kens",
-   "why": "a winter capture (the page has few) (2021-11-28)"
-  },
-  {
-   "timestamp": "20211229214606",
-   "url": "https://www.kens5.com/closings",
-   "station": "tegna-kens",
-   "why": "a winter capture (the page has few) (2021-12-30)"
-  },
-  {
-   "timestamp": "20220123033409",
-   "url": "https://www.kens5.com/closings",
-   "station": "tegna-kens",
-   "why": "a winter capture (the page has few) (2022-01-23)"
-  },
-  {
-   "timestamp": "20221202101855",
-   "url": "https://www.kens5.com/closings",
-   "station": "tegna-kens",
-   "why": "a winter capture (the page has few) (2022-12-02)"
-  },
-  {
-   "timestamp": "20230207152958",
-   "url": "https://www.kens5.com/closings",
-   "station": "tegna-kens",
-   "why": "a winter capture (the page has few) (2023-02-07)"
-  },
-  {
-   "timestamp": "20210220003643",
-   "url": "https://spectrumlocalnews.com/tx/san-antonio/weather/closings",
-   "station": "spectrum-san-antonio",
-   "why": "the February 2021 freeze, when San Antonio's districts closed (2021-02-20)"
-  },
-  {
-   "timestamp": "20250115100350",
-   "url": "https://www.nbclosangeles.com/weather/school-closings/",
-   "station": "nbc-owned-knbc",
-   "why": "the week after the January 2025 fires, when Pasadena-area schools stayed closed (2025-01-15)"
-  },
-  {
-   "timestamp": "20250116174428",
-   "url": "https://www.nbclosangeles.com/weather/school-closings/",
-   "station": "nbc-owned-knbc",
-   "why": "the week after the January 2025 fires, when Pasadena-area schools stayed closed (2025-01-17)"
-  },
-  {
-   "timestamp": "20250116042321",
-   "url": "https://www.nbclosangeles.com/weather/school-closings/",
-   "station": "nbc-owned-knbc",
-   "why": "the week after the January 2025 fires, when Pasadena-area schools stayed closed (2025-01-16)"
-  },
-  {
-   "timestamp": "20230301182413",
-   "url": "https://www.nbclosangeles.com/weather/school-closings/",
-   "station": "nbc-owned-knbc",
-   "why": "the February 2023 blizzard warnings, when San Bernardino mountain schools closed (2023-03-02)"
-  },
-  {
-   "timestamp": "20230111000122",
-   "url": "https://www.nbclosangeles.com/weather/school-closings/",
-   "station": "nbc-owned-knbc",
-   "why": "the January 2023 storms (2023-01-11)"
-  },
-  {
-   "timestamp": "20230113011135",
-   "url": "https://www.nbclosangeles.com/weather/school-closings/",
-   "station": "nbc-owned-knbc",
-   "why": "the January 2023 storms (2023-01-13)"
-  },
-  {
-   "timestamp": "20230116205524",
-   "url": "https://www.nbclosangeles.com/weather/school-closings/",
-   "station": "nbc-owned-knbc",
-   "why": "the January 2023 storms (2023-01-17)"
-  },
-  {
-   "timestamp": "20230118010419",
-   "url": "https://www.nbclosangeles.com/weather/school-closings/",
-   "station": "nbc-owned-knbc",
-   "why": "the January 2023 storms (2023-01-18)"
-  },
-  {
-   "timestamp": "20250207143532",
-   "url": "https://www.nbclosangeles.com/weather/school-closings/",
-   "station": "nbc-owned-knbc",
-   "why": "storm day 2025-02-07 (market score 0.20)"
-  },
-  {
-   "timestamp": "20241125051000",
-   "url": "https://www.nbclosangeles.com/weather/school-closings/",
-   "station": "nbc-owned-knbc",
-   "why": "storm day 2024-11-25 (market score 0.20)"
-  },
-  {
-   "timestamp": "20230116112059",
-   "url": "https://www.nbcbayarea.com/weather/school-closings/",
-   "station": "nbc-owned-kntv",
-   "why": "the January 2023 atmospheric rivers, when Santa Cruz and Monterey schools closed (2023-01-16)"
-  },
-  {
-   "timestamp": "20230108053421",
-   "url": "https://www.nbcbayarea.com/weather/school-closings/",
-   "station": "nbc-owned-kntv",
-   "why": "the January 2023 atmospheric rivers, when Santa Cruz and Monterey schools closed (2023-01-08)"
-  },
-  {
-   "timestamp": "20230108210012",
-   "url": "https://www.nbcbayarea.com/weather/school-closings/",
-   "station": "nbc-owned-kntv",
-   "why": "the January 2023 atmospheric rivers, when Santa Cruz and Monterey schools closed (2023-01-09)"
-  },
-  {
-   "timestamp": "20230111093019",
-   "url": "https://www.nbcbayarea.com/weather/school-closings/",
-   "station": "nbc-owned-kntv",
-   "why": "the January 2023 atmospheric rivers, when Santa Cruz and Monterey schools closed (2023-01-11)"
-  },
-  {
-   "timestamp": "20230112055135",
-   "url": "https://www.nbcbayarea.com/weather/school-closings/",
-   "station": "nbc-owned-kntv",
-   "why": "the January 2023 atmospheric rivers, when Santa Cruz and Monterey schools closed (2023-01-12)"
-  },
-  {
-   "timestamp": "20230113043451",
-   "url": "https://www.nbcbayarea.com/weather/school-closings/",
-   "station": "nbc-owned-kntv",
-   "why": "the January 2023 atmospheric rivers, when Santa Cruz and Monterey schools closed (2023-01-13)"
-  },
-  {
-   "timestamp": "20230114091236",
-   "url": "https://www.nbcbayarea.com/weather/school-closings/",
-   "station": "nbc-owned-kntv",
-   "why": "the January 2023 atmospheric rivers, when Santa Cruz and Monterey schools closed (2023-01-14)"
-  },
-  {
-   "timestamp": "20230114183909",
-   "url": "https://www.nbcbayarea.com/weather/school-closings/",
-   "station": "nbc-owned-kntv",
-   "why": "the January 2023 atmospheric rivers, when Santa Cruz and Monterey schools closed (2023-01-15)"
-  },
-  {
-   "timestamp": "20230117052445",
-   "url": "https://www.nbcbayarea.com/weather/school-closings/",
-   "station": "nbc-owned-kntv",
-   "why": "the January 2023 atmospheric rivers, when Santa Cruz and Monterey schools closed (2023-01-17)"
-  },
-  {
-   "timestamp": "20200818100034",
-   "url": "https://www.nbcbayarea.com/weather/school-closings/",
-   "station": "nbc-owned-kntv",
-   "why": "the August 2020 lightning fires (2020-08-18)"
-  },
-  {
-   "timestamp": "20200822122614",
-   "url": "https://www.nbcbayarea.com/weather/school-closings/",
-   "station": "nbc-owned-kntv",
-   "why": "the August 2020 lightning fires (2020-08-22)"
-  },
-  {
-   "timestamp": "20200823114657",
-   "url": "https://www.nbcbayarea.com/weather/school-closings/",
-   "station": "nbc-owned-kntv",
-   "why": "the August 2020 lightning fires (2020-08-23)"
-  },
-  {
-   "timestamp": "20200823165058",
-   "url": "https://www.nbcbayarea.com/weather/school-closings/",
-   "station": "nbc-owned-kntv",
-   "why": "the August 2020 lightning fires (2020-08-24)"
-  },
-  {
-   "timestamp": "20200824160300",
-   "url": "https://www.nbcbayarea.com/weather/school-closings/",
-   "station": "nbc-owned-kntv",
-   "why": "the August 2020 lightning fires (2020-08-25)"
-  },
-  {
-   "timestamp": "20200818220232",
-   "url": "https://www.nbcbayarea.com/weather/school-closings/",
-   "station": "nbc-owned-kntv",
-   "why": "the August 2020 lightning fires (2020-08-19)"
-  },
-  {
-   "timestamp": "20200820050537",
-   "url": "https://www.nbcbayarea.com/weather/school-closings/",
-   "station": "nbc-owned-kntv",
-   "why": "the August 2020 lightning fires (2020-08-20)"
-  },
-  {
-   "timestamp": "20200821033657",
-   "url": "https://www.nbcbayarea.com/weather/school-closings/",
-   "station": "nbc-owned-kntv",
-   "why": "the August 2020 lightning fires (2020-08-21)"
-  },
-  {
-   "timestamp": "20200826064309",
-   "url": "https://www.nbcbayarea.com/weather/school-closings/",
-   "station": "nbc-owned-kntv",
-   "why": "the August 2020 lightning fires (2020-08-26)"
-  },
-  {
-   "timestamp": "20211025142822",
-   "url": "https://www.nbcbayarea.com/weather/school-closings/",
-   "station": "nbc-owned-kntv",
-   "why": "the October 2021 bomb cyclone (2021-10-25)"
-  },
-  {
-   "timestamp": "20211024035428",
-   "url": "https://www.nbcbayarea.com/weather/school-closings/",
-   "station": "nbc-owned-kntv",
-   "why": "the October 2021 bomb cyclone (2021-10-24)"
-  },
-  {
-   "timestamp": "20211026065414",
-   "url": "https://www.nbcbayarea.com/weather/school-closings/",
-   "station": "nbc-owned-kntv",
-   "why": "the October 2021 bomb cyclone (2021-10-26)"
-  },
-  {
-   "timestamp": "20211026180025",
-   "url": "https://www.nbcbayarea.com/weather/school-closings/",
-   "station": "nbc-owned-kntv",
-   "why": "the October 2021 bomb cyclone (2021-10-27)"
-  },
-  {
-   "timestamp": "20230315115138",
-   "url": "https://www.nbcbayarea.com/weather/school-closings/",
-   "station": "nbc-owned-kntv",
-   "why": "the March 2023 storms (2023-03-15)"
-  },
-  {
-   "timestamp": "20230313060917",
-   "url": "https://www.nbcbayarea.com/weather/school-closings/",
-   "station": "nbc-owned-kntv",
-   "why": "the March 2023 storms (2023-03-13)"
-  },
-  {
-   "timestamp": "20230314073951",
-   "url": "https://www.nbcbayarea.com/weather/school-closings/",
-   "station": "nbc-owned-kntv",
-   "why": "the March 2023 storms (2023-03-14)"
-  },
-  {
-   "timestamp": "20230316042144",
-   "url": "https://www.nbcbayarea.com/weather/school-closings/",
-   "station": "nbc-owned-kntv",
-   "why": "the March 2023 storms (2023-03-16)"
-  },
-  {
-   "timestamp": "20230227103003",
-   "url": "https://www.nbcsandiego.com/weather/school-closings/",
-   "station": "nbc-owned-knsd",
-   "why": "the February 2023 storms (2023-02-27)"
-  },
-  {
-   "timestamp": "20230225094056",
-   "url": "https://www.nbcsandiego.com/weather/school-closings/",
-   "station": "nbc-owned-knsd",
-   "why": "the February 2023 storms (2023-02-25)"
-  },
-  {
-   "timestamp": "20230225191843",
-   "url": "https://www.nbcsandiego.com/weather/school-closings/",
-   "station": "nbc-owned-knsd",
-   "why": "the February 2023 storms (2023-02-26)"
-  },
-  {
-   "timestamp": "20230820040302",
-   "url": "https://www.cbs8.com/closings",
-   "station": "tegna-kfmb",
-   "why": "Hurricane Hilary (2023-08-20)"
-  },
-  {
-   "timestamp": "20230817092032",
-   "url": "https://kmph.com/resources/ftptransfer/kmph/closings/closings.html",
-   "station": "sinclair-kmph",
-   "why": "an unread capture of the station's closings file (2023-08-17)"
-  },
-  {
-   "timestamp": "20240809081636",
-   "url": "https://kmph.com/resources/ftptransfer/kmph/closings/closings.html",
-   "station": "sinclair-kmph",
-   "why": "an unread capture of the station's closings file (2024-08-09)"
-  },
-  {
-   "timestamp": "20241112002643",
-   "url": "https://www.kmph.com/resources/ftptransfer/kmph/closings/closings.html",
-   "station": "sinclair-kmph",
-   "why": "an unread capture of the station's closings file (2024-11-12)"
-  },
-  {
-   "timestamp": "20250622023941",
-   "url": "https://kmph.com/resources/ftptransfer/kmph/closings/closings.html",
-   "station": "sinclair-kmph",
-   "why": "an unread capture of the station's closings file (2025-06-22)"
-  },
-  {
-   "timestamp": "20200904113306",
-   "url": "https://www.nbcmiami.com/weather/school-closings/",
-   "station": "nbc-owned-wtvj",
-   "why": "Hurricane Dorian (2020-09-04)"
-  },
-  {
-   "timestamp": "20200831024202",
-   "url": "https://www.nbcmiami.com/weather/school-closings/",
-   "station": "nbc-owned-wtvj",
-   "why": "Hurricane Dorian (2020-08-31)"
-  },
-  {
-   "timestamp": "20200904225002",
-   "url": "https://www.nbcmiami.com/weather/school-closings/",
-   "station": "nbc-owned-wtvj",
-   "why": "Hurricane Dorian (2020-09-05)"
-  },
-  {
-   "timestamp": "20230830133157",
-   "url": "https://www.nbcmiami.com/weather/school-closings/",
-   "station": "nbc-owned-wtvj",
-   "why": "Hurricane Idalia (2023-08-30)"
-  },
-  {
-   "timestamp": "20230831175637",
-   "url": "https://www.nbcmiami.com/weather/school-closings/",
-   "station": "nbc-owned-wtvj",
-   "why": "Hurricane Idalia (2023-09-01)"
-  },
-  {
-   "timestamp": "20230831081139",
-   "url": "https://www.nbcmiami.com/weather/school-closings/",
-   "station": "nbc-owned-wtvj",
-   "why": "Hurricane Idalia (2023-08-31)"
-  },
-  {
-   "timestamp": "20190920084311",
-   "url": "https://www.12newsnow.com/closings",
-   "station": "tegna-kbmt",
-   "why": "Tropical Storm Imelda, when Beaumont-area districts closed (2019-09-20)"
-  },
-  {
-   "timestamp": "20240708213228",
-   "url": "https://www.12newsnow.com/closings",
-   "station": "tegna-kbmt",
-   "why": "Hurricane Beryl (2024-07-09)"
-  },
-  {
-   "timestamp": "20200106154911",
-   "url": "https://www.kpax.com/weather/school-closings-delays?_renderer=json",
-   "station": "scripps-kpax",
-   "why": "a winter capture of the former address (2020-01-06)"
-  },
-  {
-   "timestamp": "20200309150104",
-   "url": "https://www.kpax.com/weather/school-closings-delays?_renderer=json",
-   "station": "scripps-kpax",
-   "why": "a winter capture of the former address (2020-03-09)"
-  },
-  {
-   "timestamp": "20200320102903",
-   "url": "https://www.kpax.com/weather/school-closings-delays",
-   "station": "scripps-kpax",
-   "why": "a winter capture of the former address (2020-03-20)"
-  },
-  {
-   "timestamp": "20200324141312",
-   "url": "https://www.kpax.com/weather/school-closings-delays",
-   "station": "scripps-kpax",
-   "why": "a winter capture of the former address (2020-03-24)"
-  },
-  {
-   "timestamp": "20200325150029",
-   "url": "https://www.kpax.com/weather/school-closings-delays?_renderer=json",
-   "station": "scripps-kpax",
-   "why": "a winter capture of the former address (2020-03-25)"
-  },
-  {
-   "timestamp": "20200326160656",
-   "url": "https://www.kpax.com/weather/school-closings-delays",
-   "station": "scripps-kpax",
-   "why": "a winter capture of the former address (2020-03-27)"
-  },
-  {
-   "timestamp": "20200327163638",
-   "url": "https://www.kpax.com/weather/school-closings-delays",
-   "station": "scripps-kpax",
-   "why": "a winter capture of the former address (2020-03-28)"
-  },
-  {
-   "timestamp": "20200328174635",
-   "url": "https://www.kpax.com/weather/school-closings-delays?_renderer=json",
-   "station": "scripps-kpax",
-   "why": "a winter capture of the former address (2020-03-29)"
-  },
-  {
-   "timestamp": "20191107040250",
-   "url": "https://www.kpax.com/weather/school-closings-delays?_renderer=json",
-   "station": "scripps-kpax",
-   "why": "a winter capture of the former address (2019-11-07)"
-  },
-  {
-   "timestamp": "20191111020215",
-   "url": "https://www.kpax.com/weather/school-closings-delays",
-   "station": "scripps-kpax",
-   "why": "a winter capture of the former address (2019-11-11)"
-  },
-  {
-   "timestamp": "20191208015924",
-   "url": "https://www.kpax.com/weather/school-closings-delays",
-   "station": "scripps-kpax",
-   "why": "a winter capture of the former address (2019-12-08)"
-  },
-  {
-   "timestamp": "20191211050249",
-   "url": "https://www.kpax.com/weather/school-closings-delays",
-   "station": "scripps-kpax",
-   "why": "a winter capture of the former address (2019-12-11)"
-  },
-  {
-   "timestamp": "20200111055457",
-   "url": "https://www.kpax.com/weather/school-closings-delays?_renderer=json",
-   "station": "scripps-kpax",
-   "why": "a winter capture of the former address (2020-01-11)"
-  },
-  {
-   "timestamp": "20200116034945",
-   "url": "https://www.kpax.com/weather/school-closings-delays",
-   "station": "scripps-kpax",
-   "why": "a winter capture of the former address (2020-01-16)"
-  },
-  {
-   "timestamp": "20200119094832",
-   "url": "https://www.kpax.com/weather/school-closings-delays?_renderer=json",
-   "station": "scripps-kpax",
-   "why": "a winter capture of the former address (2020-01-19)"
-  },
-  {
-   "timestamp": "20200125023200",
-   "url": "https://www.kpax.com/weather/school-closings-delays",
-   "station": "scripps-kpax",
-   "why": "a winter capture of the former address (2020-01-25)"
-  },
-  {
-   "timestamp": "20200129023253",
-   "url": "https://www.kpax.com/weather/school-closings-delays",
-   "station": "scripps-kpax",
-   "why": "a winter capture of the former address (2020-01-29)"
-  },
-  {
-   "timestamp": "20200130031642",
-   "url": "https://www.kpax.com/weather/school-closings-delays",
-   "station": "scripps-kpax",
-   "why": "a winter capture of the former address (2020-01-30)"
-  },
-  {
-   "timestamp": "20200203045600",
-   "url": "https://www.kpax.com/weather/school-closings-delays?_renderer=json",
-   "station": "scripps-kpax",
-   "why": "a winter capture of the former address (2020-02-03)"
-  },
-  {
-   "timestamp": "20200208052214",
-   "url": "https://www.kpax.com/weather/school-closings-delays",
-   "station": "scripps-kpax",
-   "why": "a winter capture of the former address (2020-02-08)"
-  },
-  {
-   "timestamp": "20200211070624",
-   "url": "https://www.kpax.com/weather/school-closings-delays",
-   "station": "scripps-kpax",
-   "why": "a winter capture of the former address (2020-02-11)"
-  },
-  {
-   "timestamp": "20200213081009",
-   "url": "https://www.kpax.com/weather/school-closings-delays",
-   "station": "scripps-kpax",
-   "why": "a winter capture of the former address (2020-02-13)"
-  },
-  {
-   "timestamp": "20200214221600",
-   "url": "https://www.kpax.com/weather/school-closings-delays?_renderer=json",
-   "station": "scripps-kpax",
-   "why": "a winter capture of the former address (2020-02-15)"
-  },
-  {
-   "timestamp": "20200306234524",
-   "url": "https://www.kpax.com/weather/school-closings-delays",
-   "station": "scripps-kpax",
-   "why": "a winter capture of the former address (2020-03-07)"
-  },
-  {
-   "timestamp": "20200310013503",
-   "url": "https://www.kpax.com/weather/school-closings-delays",
-   "station": "scripps-kpax",
-   "why": "a winter capture of the former address (2020-03-10)"
-  },
-  {
-   "timestamp": "20200312030135",
-   "url": "https://www.kpax.com/weather/school-closings-delays",
-   "station": "scripps-kpax",
-   "why": "a winter capture of the former address (2020-03-12)"
-  },
-  {
-   "timestamp": "20200314052524",
-   "url": "https://www.kpax.com/weather/school-closings-delays",
-   "station": "scripps-kpax",
-   "why": "a winter capture of the former address (2020-03-14)"
-  },
-  {
-   "timestamp": "20200315061144",
-   "url": "https://www.kpax.com/weather/school-closings-delays",
-   "station": "scripps-kpax",
-   "why": "a winter capture of the former address (2020-03-15)"
-  },
-  {
-   "timestamp": "20200317071021",
-   "url": "https://www.kpax.com/weather/school-closings-delays",
-   "station": "scripps-kpax",
-   "why": "a winter capture of the former address (2020-03-17)"
-  },
-  {
-   "timestamp": "20200318081632",
-   "url": "https://www.kpax.com/weather/school-closings-delays",
-   "station": "scripps-kpax",
-   "why": "a winter capture of the former address (2020-03-18)"
-  },
-  {
-   "timestamp": "20200320232248",
-   "url": "https://www.kpax.com/weather/school-closings-delays?_renderer=json",
-   "station": "scripps-kpax",
-   "why": "a winter capture of the former address (2020-03-21)"
-  },
-  {
-   "timestamp": "20201103164606",
-   "url": "https://www.kpax.com/weather/school-closings-delays",
-   "station": "scripps-kpax",
-   "why": "a winter capture of the former address (2020-11-04)"
-  },
-  {
-   "timestamp": "20201122162145",
-   "url": "https://www.kpax.com/weather/school-closings-delays",
-   "station": "scripps-kpax",
-   "why": "a winter capture of the former address (2020-11-23)"
-  },
-  {
-   "timestamp": "20201204105157",
-   "url": "https://www.kpax.com/weather/school-closings-delays",
-   "station": "scripps-kpax",
-   "why": "a winter capture of the former address (2020-12-04)"
-  },
-  {
-   "timestamp": "20201206112921",
-   "url": "https://www.kpax.com/weather/school-closings-delays",
-   "station": "scripps-kpax",
-   "why": "a winter capture of the former address (2020-12-06)"
-  },
-  {
-   "timestamp": "20201211170323",
-   "url": "https://www.kpax.com/weather/school-closings-delays?_renderer=json",
-   "station": "scripps-kpax",
-   "why": "a winter capture of the former address (2020-12-12)"
-  },
-  {
-   "timestamp": "20201228153111",
-   "url": "https://www.kpax.com/weather/school-closings-delays",
-   "station": "scripps-kpax",
-   "why": "a winter capture of the former address (2020-12-28)"
-  },
-  {
-   "timestamp": "20210102174958",
-   "url": "https://www.kpax.com/weather/school-closings-delays",
-   "station": "scripps-kpax",
-   "why": "a winter capture of the former address (2021-01-03)"
-  },
-  {
-   "timestamp": "20210116173313",
-   "url": "https://www.kpax.com/weather/school-closings-delays",
-   "station": "scripps-kpax",
-   "why": "a winter capture of the former address (2021-01-17)"
-  },
-  {
-   "timestamp": "20210125163227",
-   "url": "https://www.kpax.com/weather/school-closings-delays",
-   "station": "scripps-kpax",
-   "why": "a winter capture of the former address (2021-01-26)"
-  },
-  {
-   "timestamp": "20210216162848",
-   "url": "https://www.kpax.com/weather/school-closings-delays",
-   "station": "scripps-kpax",
-   "why": "a winter capture of the former address (2021-02-17)"
-  },
-  {
-   "timestamp": "20201102074828",
-   "url": "https://www.kpax.com/weather/school-closings-delays",
-   "station": "scripps-kpax",
-   "why": "a winter capture of the former address (2020-11-02)"
-  },
-  {
-   "timestamp": "20201104221204",
-   "url": "https://www.kpax.com/weather/school-closings-delays",
-   "station": "scripps-kpax",
-   "why": "a winter capture of the former address (2020-11-05)"
-  },
-  {
-   "timestamp": "20201111200224",
-   "url": "https://www.kpax.com/weather/school-closings-delays",
-   "station": "scripps-kpax",
-   "why": "a winter capture of the former address (2020-11-12)"
-  },
-  {
-   "timestamp": "20201115001917",
-   "url": "https://www.kpax.com/weather/school-closings-delays",
-   "station": "scripps-kpax",
-   "why": "a winter capture of the former address (2020-11-15)"
+   "why": "an unread capture of the list, read so that every capture of it is read (2020-04-11)"
   }
  ]
 }
