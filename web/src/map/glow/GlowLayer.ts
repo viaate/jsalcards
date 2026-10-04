@@ -16,9 +16,9 @@
  *    Nationally the composite shows no lone core: the blend, one bloom level
  *    blurred to a smooth Gaussian, carries their light instead, so the points
  *    read as one field rather than a scatter of specks, and only where cores
- *    pile up inside the field does a share of them show sharp, as grain. On a
- *    phone the blend of a school with no other light around it is lifted, so
- *    a lone school still shows (BLEND_LIFT).
+ *    pile up inside the field does a share of them show sharp, as grain.
+ *    Below zoom 4 the blend stands on a floor (blendFloor), so every school
+ *    shows at least as brightly as a lone one, above the state lines.
  *    The light target has the device's own resolution, up to two pixels per
  *    CSS pixel, so the light is as sharp as the map under it.
  * 2. render, composite: a full-screen pass turns the per-status light into
@@ -67,12 +67,13 @@ import {
   PULSE_SECONDS,
   bloomPlan,
   denseShareAt,
+  fallbackFloor,
   fallbackHalo,
+  fieldPeak,
+  fieldReachPx,
   glowStyleAtZoom,
   interpolateStops,
   kernelUniforms,
-  liftReachPx,
-  loneBlendPeak,
 } from './curves';
 import {
   DUST_ATTRIB,
@@ -185,13 +186,7 @@ export interface GlowLayerStats {
 /** Accumulated light multiplier ahead of the tone map. */
 const EXPOSURE = 1;
 
-/**
- * Most light-target pixels per CSS pixel. The light target has the device's
- * own resolution up to this: at one pixel per CSS pixel a 2x or 3x screen
- * showed the glow a quarter or a ninth as sharp as its map, which reads as
- * slightly out of focus on a phone. On a 3x phone two read as sharp as three,
- * at under half the cost.
- */
+/** Most light-target pixels per CSS pixel: on a 3x phone two read as sharp as three, at under half the cost. */
 const LIGHT_RESOLUTION_CAP = 2;
 
 /** Guard band around the map in the light target, CSS px: about the widest bloom's reach. */
@@ -216,6 +211,8 @@ interface GpuResources {
   readonly format: LightFormat;
   readonly maxPointSize: number;
   readonly maxViewport: readonly [number, number];
+  /** Largest light target the GPU can allocate and draw into, px. */
+  readonly maxTarget: readonly [number, number];
   /** levels[0] is the light target; the rest are bloom levels, each half the last. */
   levels: LightTarget[];
   /** The blend's first blur pass, the size of the level it blurs; made when first needed. */
@@ -656,14 +653,20 @@ export class GlowLayer implements CustomLayerInterface {
     const deviceRatio = this.cssWidth > 0 ? width / this.cssWidth : 1;
     const zoom = map?.getZoom() ?? 0;
     const style = glowStyleAtZoom(zoom);
+    const cssW = width / deviceRatio;
+    const cssH = height / deviceRatio;
+    const [maxW, maxH] = res.maxTarget;
     const targetPxPerCss = Math.min(
       this.options.lightResolution ?? LIGHT_RESOLUTION_CAP,
       deviceRatio,
+      // The 8-bit fallback runs on the weakest GPUs, where four times the fill costs the most.
+      res.float ? Infinity : 1,
+      // A target the GPU cannot allocate would leave the glow undrawn.
+      maxW / (cssW + 2 * GUARD_CSS_PX),
+      maxH / (cssH + 2 * GUARD_CSS_PX),
     );
-    const cssW = width / deviceRatio;
-    const cssH = height / deviceRatio;
-    const w0 = Math.max(1, Math.ceil((cssW + 2 * GUARD_CSS_PX) * targetPxPerCss));
-    const h0 = Math.max(1, Math.ceil((cssH + 2 * GUARD_CSS_PX) * targetPxPerCss));
+    const w0 = Math.max(1, Math.min(maxW, Math.ceil((cssW + 2 * GUARD_CSS_PX) * targetPxPerCss)));
+    const h0 = Math.max(1, Math.min(maxH, Math.ceil((cssH + 2 * GUARD_CSS_PX) * targetPxPerCss)));
 
     const plan = res.float ? bloomPlan(style, targetPxPerCss, Math.min(w0, h0)) : null;
     const bloomWeights = plan?.weights ?? [];
@@ -908,7 +911,16 @@ export class GlowLayer implements CustomLayerInterface {
       gl.drawArrays(gl.TRIANGLES, 0, 3);
       if (blur !== null && across !== null && i - 1 === blur.level) {
         gl.blendFunc(gl.ONE, gl.ONE);
-        this.drawBlur(gl, res, blur, across, target, [0, 1 / across.height], blur.weight, frame);
+        this.drawBlur(
+          gl,
+          res,
+          blur,
+          across,
+          target,
+          [0, 1 / across.height],
+          blur.weight,
+          frame.style,
+        );
         gl.useProgram(up.program);
         gl.blendFunc(gl.ONE, gl.CONSTANT_COLOR);
       }
@@ -917,8 +929,7 @@ export class GlowLayer implements CustomLayerInterface {
 
   /**
    * One axis of the blend's blur from `source` into `target`, scaled by
-   * `scale`; with `lifted`, the second pass, lifted on a phone where there is
-   * no other light around.
+   * `scale`; with `floored`, the second pass, put on the blend's floor.
    */
   private drawBlur(
     gl: WebGL2RenderingContext,
@@ -928,7 +939,7 @@ export class GlowLayer implements CustomLayerInterface {
     target: LightTarget,
     step: readonly [number, number],
     scale: number,
-    lifted: FrameState | null = null,
+    floored: GlowFrameStyle | null = null,
   ): void {
     const program = res.blur;
     gl.useProgram(program.program);
@@ -937,13 +948,8 @@ export class GlowLayer implements CustomLayerInterface {
     gl.uniform1f(uniform(program, 'u_sigma'), blur.sigmaTexels);
     gl.uniform1i(uniform(program, 'u_radius'), blur.radius);
     gl.uniform1f(uniform(program, 'u_scale'), scale);
-    const lift = lifted?.style.blendLift ?? 0;
-    gl.uniform1f(uniform(program, 'u_lift'), lift);
-    gl.uniform1f(uniform(program, 'u_liftKnee'), lifted?.style.liftKnee ?? 1);
-    // In the blurred level's texels, each 2^level light-target pixels across.
-    const reach =
-      lifted === null ? 0 : (liftReachPx(lifted.style) * lifted.targetPxPerCss) / 2 ** blur.level;
-    gl.uniform2f(uniform(program, 'u_liftReach'), reach / source.width, reach / source.height);
+    gl.uniform1f(uniform(program, 'u_floorGain'), floored?.floorGain ?? 1);
+    gl.uniform1f(uniform(program, 'u_floorKnee'), floored?.floorKnee ?? 1);
     gl.bindFramebuffer(gl.FRAMEBUFFER, target.framebuffer);
     gl.viewport(0, 0, target.width, target.height);
     gl.bindTexture(gl.TEXTURE_2D, source.texture);
@@ -978,7 +984,9 @@ export class GlowLayer implements CustomLayerInterface {
     gl.uniform2f(uniform(program, 'u_denseField'), DENSE_FIELD[0], DENSE_FIELD[1]);
     const lone = kernelUniforms(frame.style, frame.targetPxPerCss).coreWeight * frame.style.gain;
     gl.uniform1f(uniform(program, 'u_corePeak'), Math.max(lone, 1e-6));
-    gl.uniform1f(uniform(program, 'u_blendPeak'), Math.max(loneBlendPeak(frame.style), 1e-6));
+    gl.uniform1f(uniform(program, 'u_fieldPeak'), Math.max(fieldPeak(frame.style), 1e-6));
+    const reach = fieldReachPx(frame.style) * frame.targetPxPerCss;
+    gl.uniform2f(uniform(program, 'u_fieldReach'), reach / light.width, reach / light.height);
     gl.uniform1f(uniform(program, 'u_denseCap'), DENSE_CAP);
     const texel = bloom ?? light;
     gl.uniform2f(uniform(program, 'u_bloomTexel'), 1 / texel.width, 1 / texel.height);
@@ -987,12 +995,10 @@ export class GlowLayer implements CustomLayerInterface {
     gl.uniform2f(uniform(program, 'u_uvOffset'), (1 - sx) / 2, (1 - sy) / 2);
     gl.uniform1f(uniform(program, 'u_exposure'), EXPOSURE);
     gl.uniform1f(uniform(program, 'u_decode'), frame.fallbackAlpha);
-    // The float path lifts the blend in its own blur; the fallback lifts its halos here.
-    const lift = res.float ? 0 : frame.style.blendLift;
-    gl.uniform1f(uniform(program, 'u_lift'), lift);
-    gl.uniform1f(uniform(program, 'u_liftKnee'), frame.style.liftKnee);
-    const reach = liftReachPx(frame.style) * frame.targetPxPerCss;
-    gl.uniform2f(uniform(program, 'u_liftReach'), reach / light.width, reach / light.height);
+    // The float path floors the blend in its own blur; the fallback floors its halos here.
+    const floor = res.float ? { gain: 1, knee: 1 } : fallbackFloor(frame.style, frame.zoom);
+    gl.uniform1f(uniform(program, 'u_floorGain'), floor.gain);
+    gl.uniform1f(uniform(program, 'u_floorKnee'), floor.knee);
     gl.uniform3fv(uniform(program, 'u_tokens'), this.linearTokens);
     // Screen: light adds to the map but never pushes a channel past full.
     gl.blendFuncSeparate(gl.ONE, gl.ONE_MINUS_SRC_COLOR, gl.ZERO, gl.ONE);
@@ -1178,6 +1184,8 @@ export class GlowLayer implements CustomLayerInterface {
         : null;
     const pointRange = gl.getParameter(gl.ALIASED_POINT_SIZE_RANGE) as Float32Array | null;
     const viewportDims = gl.getParameter(gl.MAX_VIEWPORT_DIMS) as Int32Array | null;
+    const maxViewport: [number, number] = [viewportDims?.[0] ?? 4096, viewportDims?.[1] ?? 4096];
+    const maxTexture = (gl.getParameter(gl.MAX_TEXTURE_SIZE) as number | null) ?? 4096;
     return {
       light,
       down,
@@ -1192,7 +1200,8 @@ export class GlowLayer implements CustomLayerInterface {
       float,
       format,
       maxPointSize: pointRange?.[1] ?? 64,
-      maxViewport: [viewportDims?.[0] ?? 4096, viewportDims?.[1] ?? 4096],
+      maxViewport,
+      maxTarget: [Math.min(maxTexture, maxViewport[0]), Math.min(maxTexture, maxViewport[1])],
       levels: [],
       blurTarget: null,
       timer: timerExt === null ? null : new GpuTimer(gl, timerExt),

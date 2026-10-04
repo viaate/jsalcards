@@ -12,14 +12,14 @@ import {
   DENSE_FIELD,
   DENSE_GATE,
   type GlowFrameStyle,
-  blendLiftFactor,
+  blendFloor,
   bloomPlan,
   bloomSourceScale,
   denseShareAt,
+  fieldPeak,
+  fieldReachPx,
   kernelAt,
   kernelUniforms,
-  liftReachPx,
-  loneBlendPeak,
   smoothstep,
 } from '../curves';
 import { statusLight, toneMap } from '../tonemap';
@@ -90,30 +90,26 @@ function upsample(coarse: Level, size: number, scale: number): Float64Array {
   return data;
 }
 
-/** The eight directions BLEND_LIFT_GLSL looks around in. */
+/** The eight directions GLOW_RING looks around in. */
 const RING = Array.from({ length: 8 }, (_, i) => [
   Math.cos((i * Math.PI) / 4),
   Math.sin((i * Math.PI) / 4),
 ]);
 
-/**
- * BLUR_FRAG along x (`across`) or y, scaled by `scale`, lifted by `lift`
- * where the source `reach` texels around is dark.
- */
+/** BLUR_FRAG along x (`across`) or y, scaled by `scale`, on a floor of `gain` over `knee`. */
 function blur(
   source: Level,
   sigma: number,
   radius: number,
   across: boolean,
   scale: number,
-  lift = 0,
-  reach = 0,
+  gain = 1,
   knee = 1,
 ): Level {
   const { size, data } = source;
   const out = new Float64Array(size * size);
   const weights = Array.from({ length: radius + 1 }, (_, i) =>
-    Math.exp((-0.5 * i * i) / (sigma * sigma)),
+    radius === 0 ? 1 : Math.exp((-0.5 * i * i) / (sigma * sigma)),
   );
   const total = weights.reduce((sum, w, i) => sum + (i === 0 ? w : 2 * w), 0);
   const clamp = (i: number): number => Math.min(Math.max(i, 0), size - 1);
@@ -125,13 +121,7 @@ function blur(
         const y = across ? j : clamp(j + k);
         sum += (weights[Math.abs(k)] ?? 0) * (data[y * size + x] ?? 0);
       }
-      let around = 0;
-      if (lift > 0) {
-        for (const [dx = 0, dy = 0] of RING)
-          around += sample(source, i + 0.5 + reach * dx, j + 0.5 + reach * dy);
-      }
-      out[j * size + i] =
-        ((sum * scale) / total) * blendLiftFactor((around * scale) / 8, lift, knee);
+      out[j * size + i] = blendFloor((sum * scale) / total, gain, knee);
     }
   }
   return { size, data: out };
@@ -190,9 +180,15 @@ export function compositeLight(
     for (let t = 0; t < up.length; t++) up[t] = (up[t] ?? 0) + keep * (target.data[t] ?? 0);
     if (across !== undefined && blend !== null && i - 1 === blend.level) {
       const { sigmaTexels, radius, weight } = blend;
-      const reach = (liftReachPx(style) * targetPxPerCss) / 2 ** blend.level;
-      const lift = style.blendLift;
-      const down = blur(across, sigmaTexels, radius, false, weight, lift, reach, style.liftKnee);
+      const down = blur(
+        across,
+        sigmaTexels,
+        radius,
+        false,
+        weight,
+        style.floorGain,
+        style.floorKnee,
+      );
       for (let t = 0; t < up.length; t++) up[t] = (up[t] ?? 0) + (down.data[t] ?? 0);
     }
     levels[i - 1] = { size: target.size, data: up };
@@ -204,8 +200,8 @@ export function compositeLight(
   const bloomScale = bloom === undefined ? 0 : weights.length === 1 ? (weights[0] ?? 0) : 1;
   const spread = bloom === undefined ? undefined : upsample(bloom, size, bloomScale);
   const corePeak = Math.max(k.coreWeight * style.gain, 1e-6);
-  const blendPeak = Math.max(loneBlendPeak(style), 1e-6);
-  const reach = liftReachPx(style) * targetPxPerCss;
+  const blendPeak = Math.max(fieldPeak(style), 1e-6);
+  const reach = fieldReachPx(style) * targetPxPerCss;
   const denseShare = denseShareAt(style, targetPxPerCss);
   for (let j = 0; j < size; j++) {
     for (let i = 0; i < size; i++) {

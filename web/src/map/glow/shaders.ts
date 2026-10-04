@@ -23,7 +23,7 @@
  */
 import { STATUS_COUNT } from './color';
 import {
-  BLEND_LIFT_GLSL,
+  BLEND_FLOOR_GLSL,
   BLOOM_SOURCE_GLSL,
   CORE_EDGE_D2,
   FALLBACK_FINE_GAIN,
@@ -215,8 +215,7 @@ void main() {
  * One axis of the blend's Gaussian blur, on a bloom level of the same size as
  * the target, scaled by u_scale. Taps are taken in pairs, each pair one
  * bilinear fetch between two texels weighted to match both. The second pass
- * lifts the blend on a phone where there is no other light around it
- * (BLEND_LIFT in curves.ts).
+ * puts the blend on its floor below zoom 4 (blendFloor in curves.ts).
  */
 export const BLUR_FRAG = /* glsl */ `#version 300 es
 precision highp float;
@@ -226,13 +225,12 @@ uniform vec2 u_step;
 uniform float u_sigma;
 uniform int u_radius;
 uniform float u_scale;
-// 0 but for the second pass on a phone, its knee, and how far around it looks, in uv.
-uniform float u_lift;
-uniform float u_liftKnee;
-uniform vec2 u_liftReach;
+// 1 but for the second pass below zoom 4.
+uniform float u_floorGain;
+uniform float u_floorKnee;
 in vec2 v_uv;
 out vec4 fragColor;
-${BLEND_LIFT_GLSL}
+${BLEND_FLOOR_GLSL}
 void main() {
   float k = -0.5 / (u_sigma * u_sigma);
   vec4 sum = texture(u_source, v_uv);
@@ -245,13 +243,7 @@ void main() {
     sum += w * (texture(u_source, v_uv + offset) + texture(u_source, v_uv - offset));
     total += 2.0 * w;
   }
-  vec4 blend = sum * (u_scale / total);
-  if (u_lift > 0.0) {
-    vec4 around = vec4(0.0);
-    for (int i = 0; i < 8; i++) around += texture(u_source, v_uv + u_liftReach * GLOW_LIFT_RING[i]);
-    blend = glow_blend_lift(blend, around * u_scale, u_lift, u_liftKnee);
-  }
-  fragColor = blend;
+  fragColor = glow_blend_floor(sum * (u_scale / total), u_floorGain, u_floorKnee);
 }
 `;
 
@@ -268,17 +260,13 @@ uniform float u_bloomScale;
 // the light target, since the bloom is made from them; nationally it shows
 // none, and the blend carries their light instead. 1 for the fallback.
 uniform float u_coreShare;
-// Nationally, a further share of the cores shown where they pile up: where
-// the core light is past u_denseGate.x lone-core peaks (u_corePeak), all of
-// it by u_denseGate.y, and only inside a field of schools, where the bloom
-// u_liftReach around is past u_denseField.x lone-blend peaks (u_blendPeak),
-// all of it by u_denseField.y; never more than u_denseCap times the bloom
-// there, so it reads as grain on the field. 0 for the fallback.
+// Nationally, cores shown where they pile up inside a field, as grain (DENSE_* in curves.ts).
 uniform float u_denseShare;
 uniform vec2 u_denseGate;
 uniform float u_corePeak;
 uniform vec2 u_denseField;
-uniform float u_blendPeak;
+uniform float u_fieldPeak;
+uniform vec2 u_fieldReach;
 uniform float u_denseCap;
 uniform vec2 u_bloomTexel;
 // The light target has a guard band around the map; this picks the map's part.
@@ -288,11 +276,9 @@ uniform float u_exposure;
 // 0 for a half-float light target. Otherwise the 8-bit fallback's alpha, to
 // turn its optical-depth encoding back into light.
 uniform float u_decode;
-// The fallback's lift on a phone, where its halos carry the blend, and how
-// far around it looks, in uv; 0 on the float path, which lifts the blend itself.
-uniform float u_lift;
-uniform float u_liftKnee;
-uniform vec2 u_liftReach;
+// The fallback's floor below zoom 4, where its halos carry the blend; 1 on the float path.
+uniform float u_floorGain;
+uniform float u_floorKnee;
 // Linear-light tokens for closed, delayed, remote, early dismissal.
 uniform vec3 u_tokens[4];
 
@@ -300,7 +286,7 @@ in vec2 v_uv;
 out vec4 fragColor;
 ${TONEMAP_GLSL}
 ${FALLBACK_GLSL}
-${BLEND_LIFT_GLSL}
+${BLEND_FLOOR_GLSL}
 // Interleaved gradient noise (Jimenez 2014): cheap, even dither that breaks
 // up 8-bit banding in the faint outer glow.
 float glow_dither(vec2 p) {
@@ -311,16 +297,7 @@ void main() {
   vec2 uv = u_uvOffset + v_uv * u_uvScale;
   vec4 light = texture(u_light, uv);
   if (u_decode > 0.0) {
-    light = glow_fallback_decode(light, texture(u_lightFine, uv), u_decode);
-    if (u_lift > 0.0) {
-      // The light around, from the coarse target: none around a lone school.
-      vec4 around = vec4(0.0);
-      for (int i = 0; i < 8; i++) {
-        vec4 c = texture(u_light, uv + u_liftReach * GLOW_LIFT_RING[i]);
-        around -= log(max(vec4(1.0) - c, vec4(GLOW_FALLBACK_MIN_TRANSMITTANCE)));
-      }
-      light = glow_blend_lift(light, around / u_decode, u_lift, u_liftKnee);
-    }
+    light = glow_blend_floor(glow_fallback_decode(light, texture(u_lightFine, uv), u_decode), u_floorGain, u_floorKnee);
   }
   vec4 bloom = vec4(0.0);
   if (u_bloomScale > 0.0) {
@@ -337,8 +314,8 @@ void main() {
   // Most pixels hold no pile: only those look around for the field.
   if (piled > 0.0) {
     vec4 around = vec4(0.0);
-    for (int i = 0; i < 8; i++) around += texture(u_bloom, uv + u_liftReach * GLOW_LIFT_RING[i]);
-    float field = (around.r + around.g + around.b + around.a) * u_bloomScale / (8.0 * u_blendPeak);
+    for (int i = 0; i < 8; i++) around += texture(u_bloom, uv + u_fieldReach * GLOW_RING[i]);
+    float field = (around.r + around.g + around.b + around.a) * u_bloomScale / (8.0 * u_fieldPeak);
     float share = u_denseShare * piled * smoothstep(u_denseField.x, u_denseField.y, field);
     float cap = u_denseCap * (bloom.r + bloom.g + bloom.b + bloom.a);
     dense = light * min(share, cap / max(total, 1e-6));

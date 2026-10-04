@@ -4,14 +4,12 @@ import { STATUS_HEX, hexToLinear, linearToSrgb } from '../color';
 
 import {
   BLEND_LEVEL_PX,
-  BLEND_LIFT,
   BLEND_MIN_SIGMA_PX,
   BLOOM_KNEE,
   BLOOM_LIMIT,
   BLOOM_SCALES_PX,
   BLOOM_SOURCE_GLSL,
   BLOOM_WEIGHT_STOPS,
-  BLEND_LIFT_KNEE,
   CORE_EDGE_D2,
   CORE_FOCUS_STOPS,
   CORE_SIGMA_STOPS,
@@ -32,7 +30,7 @@ import {
   MIN_BLOOM_WEIGHT,
   PULSE_SECONDS,
   blendCutAtScale,
-  blendLiftFactor,
+  blendFloor,
   blendPlan,
   blendShareOfScale,
   bloomLevels,
@@ -41,13 +39,14 @@ import {
   bloomWeights,
   fallbackDecode,
   fallbackEncode,
+  fallbackFloor,
   fallbackHalo,
+  fieldPeak,
   glowReachPx,
   glowStyleAtZoom,
   interpolateStops,
   kernelAt,
   kernelUniforms,
-  liftReachPx,
   pulseAt,
   smoothstep,
   windowedGaussianIntegral,
@@ -399,14 +398,19 @@ describe('national blend', () => {
         0,
       );
       const shown = style.coreShare + style.bloom.reduce((a, b) => a + b, 0) + style.blend;
-      // Below zoom 4 the bloom's light is cut by more than the cores' (glowSizeScale), and on a
-      // phone the blend's share of the cores' light as well (blendCutAtScale).
+      // Below zoom 4 the bloom's light is cut by more than the cores' (glowSizeScale), and the
+      // blend's share of the cores' light as well (blendCutAtScale).
       const cut = blendCutAtScale(style.sizeScale);
       const cores = style.coreShare + (1 - style.coreShare) * cut;
       expect(shown).toBeCloseTo(cores + style.sizeScale ** 1.5 * own, 12);
-      // A lone school, whose blend the phone lifts, keeps all of its light.
-      const lone = style.coreShare + (1 - style.coreShare) * cut * (1 + style.blendLift);
-      expect(lone).toBeGreaterThanOrEqual(1 - 1e-12);
+      // A lone school, whose blend stands on its floor, shows at least all of its light.
+      if (style.blend > 0) {
+        const uncut = style.blend + (1 - style.coreShare) * (1 - cut);
+        // All but 2% of the knee's own light.
+        expect(fieldPeak(style) / style.floorKnee).toBeGreaterThanOrEqual(
+          uncut / style.blend - 0.021,
+        );
+      }
     }
   });
 
@@ -474,14 +478,16 @@ describe('national blend', () => {
   it('adds no pass nationally and blurs a finely sampled level beyond', () => {
     for (let zoom = FULL_SIZE_ZOOM; zoom <= 4.5; zoom += 0.125) {
       expect(blendPlan(glowStyleAtZoom(zoom), 1).radius).toBe(0);
+      expect(bloomPlan(glowStyleAtZoom(zoom), 1, 1000).blur).toBeNull();
     }
-    // Below zoom 4, where the blend shrinks under the 4 px level's own spread: a short blur of
-    // the 2 px level, a quarter of the light target, whatever the point count.
+    // Below zoom 4, where the blend shrinks under the 4 px level's own spread: the 2 px level, a
+    // quarter of the light target, blurred where the blend is wider, and on its floor.
     for (let zoom = 1.5; zoom < FULL_SIZE_ZOOM; zoom += 0.125) {
-      const small = blendPlan(glowStyleAtZoom(zoom), 1);
+      const style = glowStyleAtZoom(zoom);
+      const small = blendPlan(style, 1);
       expect(small.level).toBe(1);
-      expect(small.radius).toBeGreaterThan(0);
       expect(small.radius).toBeLessThanOrEqual(6);
+      expect(bloomPlan(style, 1, 1000).blur).not.toBeNull();
     }
     const plan = blendPlan(glowStyleAtZoom(6), 1);
     expect(2 ** plan.level).toBe(BLEND_LEVEL_PX);
@@ -489,6 +495,30 @@ describe('national blend', () => {
     expect(plan.radius).toBe(Math.ceil(3 * plan.sigmaTexels));
     // The same level in CSS px on a light target of two pixels per CSS px.
     expect(2 ** blendPlan(glowStyleAtZoom(6), 2).level / 2).toBe(BLEND_LEVEL_PX);
+  });
+
+  it('spreads the blend as wide as asked on any light target, between powers of two too', () => {
+    // A level coarser than the blend, as a 150% screen took at zoom 4 to 4.7, drew it wider.
+    for (const t of [0.8, 1, 1.25, 1.5, 1.75, 2]) {
+      for (let zoom = 1.5; zoom <= 6; zoom += 0.25) {
+        const style = glowStyleAtZoom(zoom);
+        const plan = blendPlan(style, t);
+        const texelPx = 2 ** plan.level / t;
+        // The finest level, 2 light-target pixels, is the narrowest there is.
+        expect(texelPx).toBeLessThanOrEqual(Math.max(style.blendSigmaPx, 2 / t) + 1e-9);
+        if (texelPx <= style.blendSigmaPx) {
+          expect(Math.hypot(texelPx, plan.sigmaTexels * texelPx)).toBeCloseTo(
+            style.blendSigmaPx,
+            9,
+          );
+        }
+      }
+    }
+    // And the bloom reaches a level as wide as its widest scale, where it fell a level short.
+    for (const t of [0.8, 1.25, 1.5, 1.75]) {
+      const weights = bloomLevels(glowStyleAtZoom(4), t, 4000);
+      expect(2 ** weights.length / t).toBeGreaterThanOrEqual(64);
+    }
   });
 
   it('takes a bloom scale into the blend gradually as the blend widens', () => {
@@ -530,12 +560,11 @@ describe('national blend', () => {
     }
     for (const [zoom, before] of BEFORE_BLEND) {
       const style = glowStyleAtZoom(zoom);
-      const { sizeScale, coreShare, blend, blendSigmaPx, blendLift, liftKnee, ...drawn } = style;
+      const { sizeScale, coreShare, blend, blendSigmaPx, floorGain, floorKnee, ...drawn } = style;
       const { coreFocus, denseShare, ...rest } = drawn;
-      expect([sizeScale, coreShare, blend, blendLift, coreFocus, denseShare]).toEqual([
-        1, 1, 0, 0, 1, 0,
+      expect([sizeScale, coreShare, blend, floorGain, floorKnee, coreFocus, denseShare]).toEqual([
+        1, 1, 0, 1, 0, 1, 0,
       ]);
-      expect(liftKnee).toBe(BLEND_LIFT_KNEE);
       expect(blendSigmaPx).toBeGreaterThan(0);
       expect(rest).toEqual(before.style);
       expect(kernelUniforms(style, 1)).toEqual(before.kernel);
@@ -573,7 +602,8 @@ describe('small screens', () => {
   /**
    * Energy-weighted RMS spread of the bloom levels and the blend the layer
    * draws (bloomPlan), each level at its texel size and the blend at its own,
-   * CSS px, for a light target of `targetPxPerCss`.
+   * CSS px, for a light target of `targetPxPerCss`. The floor only raises a
+   * lone school's blend where it is, never farther, so it is left out.
    */
   function drawnBloomPx(zoom: number, targetPxPerCss: number): number {
     const style = glowStyleAtZoom(zoom);
@@ -602,6 +632,29 @@ describe('small screens', () => {
 
   const share = (reachPx: number, zoom: number): number => reachPx / worldPx(zoom);
 
+  /**
+   * The brightest displayed value over the middle of a field of schools `km`
+   * apart, or of a lone school for null, on a light target of `t` pixels per
+   * CSS pixel.
+   */
+  function fieldPeakShown(zoom: number, km: number | null, t: number): number {
+    const points: [number, number][] = [];
+    const spacing = km === null ? 0 : (km / kmPerPx(zoom)) * t;
+    if (km === null) points.push([128.3, 128.6]);
+    for (let y = 16; km !== null && y <= 240; y += spacing) {
+      for (let x = 16; x <= 240; x += spacing) points.push([x + 0.3, y + 0.6]);
+    }
+    const light = compositeLight(points, glowStyleAtZoom(zoom), SIZE, t);
+    const box = Math.max(Math.ceil(spacing), 6);
+    let max = 0;
+    for (let y = 128 - box; y < 128 + box; y++) {
+      for (let x = 128 - box; x < 128 + box; x++) {
+        max = Math.max(max, displayed(light[y * SIZE + x] ?? 0));
+      }
+    }
+    return max;
+  }
+
   it('keeps the glow reaching no farther across the country than at a desktop national view', () => {
     for (const zoom of SMALL_SCREENS) {
       // Levels an octave apart share each shrunk scale out, which widens it a little.
@@ -621,8 +674,8 @@ describe('small screens', () => {
   it('keeps the drawn bloom’s reach across the country at every zoom below 4, and meets zoom 4 without a jump', () => {
     for (const t of [1, 2]) {
       const desktop = share(drawnBloomPx(DESKTOP, t), DESKTOP);
-      // Down to where the blend stops shrinking, at 3 px (zoom 3.58): below, it reaches farther.
-      for (let zoom = 3.6; zoom < FULL_SIZE_ZOOM; zoom += 1 / 16) {
+      // Down to where the blend stops shrinking, at 2 px (zoom 3): below, it reaches farther.
+      for (let zoom = 3; zoom < FULL_SIZE_ZOOM; zoom += 1 / 16) {
         const ratio = share(drawnBloomPx(zoom, t), zoom) / desktop;
         expect(ratio).toBeGreaterThan(0.9);
         expect(ratio).toBeLessThan(1.15);
@@ -643,24 +696,24 @@ describe('small screens', () => {
     );
   });
 
-  it('shrinks the blend with the map, but not below 3 px, where points would read as dots', () => {
+  it('shrinks the blend with the map, but not below 2 px, where points would read as dots', () => {
     const desktop = glowStyleAtZoom(DESKTOP);
     const desktopHalo = fallbackHalo(desktop, DESKTOP).radiusPx / desktop.blendSigmaPx;
     for (const zoom of SMALL_SCREENS) {
       const style = glowStyleAtZoom(zoom);
       const sigma = Math.max(desktop.blendSigmaPx * style.sizeScale, BLEND_MIN_SIGMA_PX);
       expect(style.blendSigmaPx).toBeCloseTo(sigma, 12);
-      // As drawn, before a phone's lift: half a lone point's blend within 1.18 sigma of it,
-      // give or take a pixel.
-      const all = compositeLight([[128.5, 128.5]], { ...style, blendLift: 0 }, SIZE);
-      const bloomOnly = compositeLight([[128.5, 128.5]], { ...style, blend: 0 }, SIZE);
+      // As drawn, before its floor, on a light target of two pixels per CSS pixel: half a lone
+      // point's blend within 1.18 sigma of it, give or take half a CSS pixel.
+      const t = 2;
+      const all = compositeLight([[128, 128]], { ...style, floorGain: 1 }, SIZE, t);
+      const bloomOnly = compositeLight([[128, 128]], { ...style, blend: 0 }, SIZE, t);
       const blend = (r: number): number =>
         (all[128 * SIZE + 128 + r] ?? 0) - (bloomOnly[128 * SIZE + 128 + r] ?? 0);
-      const half = Math.round(1.1774 * sigma);
+      const half = Math.round(1.1774 * sigma * t);
       expect(blend(half - 1) / blend(0)).toBeGreaterThan(0.5);
       expect(blend(half + 1) / blend(0)).toBeLessThan(0.5);
-      // The 8-bit fallback's halo, which carries the blend, shrinks with it, not with the map:
-      // on a phone 15 px, where the bloom alone would have it at 5.
+      // The 8-bit fallback's halo, which carries the blend, shrinks with it, not with the map.
       expect(fallbackHalo(style, zoom).radiusPx / style.blendSigmaPx).toBeCloseTo(desktopHalo, 12);
     }
   }, 30_000);
@@ -674,7 +727,8 @@ describe('small screens', () => {
       expect(style.haloRadiusPx).toBe(interpolateStops(HALO_RADIUS_STOPS, zoom));
       expect(style.haloEnergy).toBe(interpolateStops(HALO_ENERGY_STOPS, zoom));
       expect(style.bloom).toEqual(bloomWeights(zoom));
-      expect(style.blendLift).toBe(0);
+      expect(style.floorGain).toBe(1);
+      expect(fallbackFloor(style, zoom).gain).toBe(1);
       const fallback = fallbackHalo(style, zoom);
       if (style.bloom.some((w) => w > 0)) {
         expect(fallback.radiusPx).toBe(
@@ -685,88 +739,89 @@ describe('small screens', () => {
   });
 
   it('keeps a lone school well in view on small screens, even at their widest zoom', () => {
-    // Its brightest pixel as displayed, 0..255, on a light target of one pixel per CSS pixel,
-    // on the float path and the 8-bit fallback: nationally its blend, which carries its core's
-    // light, lifted on a phone where no other light is near.
+    // Its brightest pixel as displayed, 0..255, on the float path and the 8-bit fallback:
+    // nationally its blend, which carries its core's light, on its floor.
     const desktop = displayed(lonePoint(DESKTOP)(0));
     for (const zoom of SMALL_SCREENS) {
       const style = glowStyleAtZoom(zoom);
       expect(style.coreSigmaPx).toBe(interpolateStops(CORE_SIGMA_STOPS, zoom));
       const k = kernelUniforms(style, 1, fallbackHalo(style, zoom), style.coreShare);
-      const light = style.gain * kernelAt(k, 0);
-      const around = style.gain * kernelAt(k, liftReachPx(style) / k.radius);
-      const fallback = displayed(light * blendLiftFactor(around, style.blendLift, style.liftKnee));
-      for (const peak of [displayed(lonePoint(zoom)(0)), fallback]) {
-        expect(peak).toBeGreaterThan(0.5 * desktop);
-        // A fifth brighter than the state lines around it, at least: a phone's are brighter.
-        // One between light pixels peaks a little lower on screen.
-        const line = PHONES.includes(zoom) ? PHONE_STATE_LINE : STATE_LINE;
-        expect(peak).toBeGreaterThan(1.2 * line);
+      const floor = fallbackFloor(style, zoom);
+      const fallback = displayed(blendFloor(style.gain * kernelAt(k, 0), floor.gain, floor.knee));
+      for (const t of [1, 2, 3]) {
+        for (const peak of [displayed(lonePoint(zoom, t)(0)), fallback]) {
+          expect(peak).toBeGreaterThan(0.5 * desktop);
+          // A fifth brighter than the state lines around it, at least: a phone's are brighter.
+          const line = PHONES.includes(zoom) ? PHONE_STATE_LINE : STATE_LINE;
+          expect(peak).toBeGreaterThan(1.2 * line);
+        }
       }
-    }
-  }, 30_000);
-
-  it('lights a field of schools on a phone about as brightly as on a desktop, so a band’s dense middle keeps its color against its sparse edge', () => {
-    /**
-     * The brightest displayed value over the middle of a field of schools 15 km
-     * apart, on a light target of `t` pixels per CSS pixel.
-     */
-    const field = (zoom: number, t: number): number => {
-      const spacing = (15 / kmPerPx(zoom)) * t;
-      const points: [number, number][] = [];
-      for (let y = 40; y <= 216; y += spacing) {
-        for (let x = 40; x <= 216; x += spacing) points.push([x + 0.3, y + 0.6]);
-      }
-      const light = compositeLight(points, glowStyleAtZoom(zoom), SIZE, t);
-      let max = 0;
-      for (let y = 118; y < 138; y++) {
-        for (let x = 118; x < 138; x++) max = Math.max(max, displayed(light[y * SIZE + x] ?? 0));
-      }
-      return max;
-    };
-    // Without the cut a phone's field was about 1.4 times as bright, near the tone map's top.
-    for (const t of [1, 2]) {
-      const desktop = field(DESKTOP, t);
-      for (const zoom of [1.51, 2.12]) {
-        for (const phone of [t, 3]) expect(field(zoom, phone)).toBeLessThan(1.15 * desktop);
-      }
-    }
-    // The cut is a phone's alone: a tablet's and a laptop's blend keep all of their light.
-    for (let zoom = 3.3; zoom <= 22; zoom += 0.25) {
-      expect(blendCutAtScale(glowStyleAtZoom(zoom).sizeScale)).toBe(1);
     }
   }, 60_000);
 
-  it('lifts only schools far from others: a field or a band keeps its light and its reach', () => {
+  it('shows every field of schools on a phone at least as brightly as a lone school, and a denser one never dimmer', () => {
+    // Without the floor a field of schools 60 to 130 km apart showed at a quarter to a third of
+    // a lone school, under a phone's state lines: its closings faded out of view.
     for (const zoom of [1.51, 2.12]) {
+      for (const t of [1, 2, 3]) {
+        const lone = fieldPeakShown(zoom, null, t);
+        let sparser = lone;
+        for (const km of [130, 90, 60, 40, 25]) {
+          const field = fieldPeakShown(zoom, km, t);
+          // Within half a display step.
+          expect(field).toBeGreaterThanOrEqual(lone - 0.5);
+          expect(field).toBeGreaterThanOrEqual(sparser - 0.5);
+          expect(field).toBeGreaterThan(1.2 * PHONE_STATE_LINE);
+          sparser = field;
+        }
+      }
+    }
+  }, 120_000);
+
+  it('lights a field of schools on a small screen as brightly as on a desktop, so a band’s dense middle keeps its color against its sparse edge', () => {
+    // Without the cut a phone's field of schools 15 km apart was near the tone map's top.
+    for (const t of [1, 2]) {
+      const desktop = fieldPeakShown(DESKTOP, 15, t);
+      for (const zoom of [1.51, 2.12, 3.14]) {
+        for (const screen of [t, 3]) {
+          const field = fieldPeakShown(zoom, 15, screen);
+          expect(field).toBeGreaterThan(0.93 * desktop);
+          expect(field).toBeLessThan(1.07 * desktop);
+        }
+      }
+    }
+    for (let zoom = FULL_SIZE_ZOOM; zoom <= 22; zoom += 0.25) {
+      expect(blendCutAtScale(glowStyleAtZoom(zoom).sizeScale)).toBe(1);
+    }
+  }, 120_000);
+
+  it('lights no farther past the last school of a field than its own light or a lone school’s reaches', () => {
+    /** Farthest px right of x = 128, the last column of schools or a lone school, shown at 16 of 255 or more. */
+    const reach = (light: Float64Array): number => {
+      let far = 0;
+      for (let x = 128; x < SIZE; x++)
+        if (displayed(light[128 * SIZE + x] ?? 0) >= 16) far = x - 128;
+      return far;
+    };
+    for (const zoom of [1.51, 2.12, 3.14]) {
       const style = glowStyleAtZoom(zoom);
-      // Schools 15 km and 60 km apart filling the left half of the light target.
+      const lone = reach(compositeLight([[128, 128.5]], style, SIZE));
       for (const km of [15, 60]) {
         const spacing = km / kmPerPx(zoom);
         const points: [number, number][] = [];
         for (let y = 28; y <= 228; y += spacing) {
-          for (let x = 18; x <= 128; x += spacing) points.push([x + 0.3, y + 0.6]);
+          for (let x = 128; x >= 18; x -= spacing) points.push([x, y + 0.5]);
         }
-        const lifted = compositeLight(points, style, SIZE);
-        const plain = compositeLight(points, { ...style, blendLift: 0 }, SIZE);
-        for (let x = 50; x < 90; x += 5) {
-          const at = 128 * SIZE + x;
-          expect(displayed(lifted[at] ?? 0) - displayed(plain[at] ?? 0)).toBeLessThan(1);
-        }
-        // Nor does the light past its last schools reach farther.
-        const edge = (light: Float64Array): number => {
-          let reach = 0;
-          for (let x = 128; x < SIZE; x++)
-            if (displayed(light[128 * SIZE + x] ?? 0) >= 16) reach = x;
-          return reach;
-        };
-        expect(edge(lifted)).toBeLessThanOrEqual(edge(plain) + 1);
+        const floored = reach(compositeLight(points, style, SIZE));
+        const own = reach(compositeLight(points, { ...style, floorGain: 1 }, SIZE));
+        expect(floored).toBeLessThanOrEqual(Math.max(own, lone) + 1);
       }
     }
-    // No lift from a tablet's national view up.
-    for (let zoom = 3.3; zoom <= 22; zoom += 0.25) expect(glowStyleAtZoom(zoom).blendLift).toBe(0);
-    expect(glowStyleAtZoom(3.14).blendLift).toBeLessThan(0.1 * BLEND_LIFT);
-  }, 30_000);
+    expect(glowStyleAtZoom(3.14).floorGain).toBeLessThan(glowStyleAtZoom(2.12).floorGain);
+    for (let zoom = FULL_SIZE_ZOOM; zoom <= 22; zoom += 0.25) {
+      expect(glowStyleAtZoom(zoom).floorGain).toBe(1);
+    }
+  }, 60_000);
 });
 
 describe('per-point kernel', () => {

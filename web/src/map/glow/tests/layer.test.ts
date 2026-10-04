@@ -86,39 +86,50 @@ describe('GlowLayer', () => {
     });
   });
 
+  /** The frame layout is private; it needs no more of the map and the context than this. */
+  function layOut(
+    zoom: number,
+    [cssWidth, cssHeight]: readonly [number, number],
+    ratio: number,
+    options: { lightResolution?: number; float?: boolean; maxTarget?: number } = {},
+  ): {
+    bloomWeights: readonly number[];
+    targetPxPerCss: number;
+    targetSize: readonly [number, number];
+    blur: { weight: number } | null;
+    style: { blendSigmaPx: number };
+  } {
+    const { lightResolution, float = true, maxTarget = 16384 } = options;
+    const layer = new GlowLayer(lightResolution === undefined ? {} : { lightResolution });
+    const internals = layer as unknown as {
+      map: unknown;
+      beginFrame(gl: unknown, res: unknown): ReturnType<typeof layOut>;
+    };
+    internals.map = { getCanvas: () => ({ clientWidth: cssWidth }), getZoom: () => zoom };
+    return internals.beginFrame(
+      { drawingBufferWidth: cssWidth * ratio, drawingBufferHeight: cssHeight * ratio },
+      { float, maxTarget: [maxTarget, maxTarget] },
+    );
+  }
+
   it('draws a smaller screen’s bloom and blend reaching no farther across the country than a desktop’s', () => {
     /**
-     * The bloom levels and the blend the layer lays out for a frame: a map
-     * `cssWidth` x `cssHeight` CSS px at `ratio` device px per CSS px, at
-     * `zoom`, as their energy-weighted RMS spread over the world's width, for a
-     * lone school, whose blend a phone lifts. Each level spreads light about as
-     * far as its texels are wide, a blurred blend as far as its own standard
-     * deviation.
+     * The bloom levels and the blend the layer lays out for a frame, as their
+     * energy-weighted RMS spread over the world's width. Each level spreads
+     * light about as far as its texels are wide, a blurred blend as far as its
+     * own standard deviation.
      */
     function drawnShare(
       zoom: number,
-      [cssWidth, cssHeight]: readonly [number, number],
+      size: readonly [number, number],
       ratio: number,
       lightResolution?: number,
     ): number {
-      const layer = new GlowLayer(lightResolution === undefined ? {} : { lightResolution });
-      // The frame layout is private; it needs no more of the map and the context than this.
-      const internals = layer as unknown as {
-        map: unknown;
-        beginFrame(
-          gl: unknown,
-          res: unknown,
-        ): {
-          bloomWeights: readonly number[];
-          targetPxPerCss: number;
-          blur: { weight: number } | null;
-          style: { blendSigmaPx: number; blendLift: number };
-        };
-      };
-      internals.map = { getCanvas: () => ({ clientWidth: cssWidth }), getZoom: () => zoom };
-      const frame = internals.beginFrame(
-        { drawingBufferWidth: cssWidth * ratio, drawingBufferHeight: cssHeight * ratio },
-        { float: true },
+      const frame = layOut(
+        zoom,
+        size,
+        ratio,
+        lightResolution === undefined ? {} : { lightResolution },
       );
       let energy = 0;
       let moment = 0;
@@ -128,9 +139,8 @@ describe('GlowLayer', () => {
         moment += weight * texelPx * texelPx;
       });
       if (frame.blur !== null) {
-        const blend = frame.blur.weight * (1 + frame.style.blendLift);
-        energy += blend;
-        moment += blend * frame.style.blendSigmaPx ** 2;
+        energy += frame.blur.weight;
+        moment += frame.blur.weight * frame.style.blendSigmaPx ** 2;
       }
       return Math.sqrt(moment / energy) / (512 * 2 ** zoom);
     }
@@ -277,6 +287,23 @@ describe('GlowLayer', () => {
     error.mockRestore();
     expect(layer.stats.dustDrawn).toBe(false);
     expect(near()).toEqual([]);
+  });
+
+  it('draws the light at the device’s resolution up to two pixels per CSS pixel, and at one on the 8-bit fallback', () => {
+    expect(layOut(4, [1440, 900], 2).targetPxPerCss).toBe(2);
+    expect(layOut(2.12, [390, 844], 3).targetPxPerCss).toBe(2);
+    expect(layOut(4, [1280, 720], 1.5).targetPxPerCss).toBe(1.5);
+    // The fallback runs on the weakest GPUs, where twice the resolution is four times the fill.
+    expect(layOut(4, [1440, 900], 2, { float: false }).targetPxPerCss).toBe(1);
+  });
+
+  it('keeps the light target within what the GPU can allocate', () => {
+    // A 2560 CSS px window at 2x would need a 5312 px target, past a 4096 px texture limit.
+    const frame = layOut(4, [2560, 1440], 2, { maxTarget: 4096 });
+    expect(frame.targetSize[0]).toBeLessThanOrEqual(4096);
+    expect(frame.targetSize[1]).toBeLessThanOrEqual(4096);
+    expect(frame.targetPxPerCss).toBeCloseTo(4096 / (2560 + 96), 9);
+    expect(layOut(4, [1440, 900], 2, { maxTarget: 4096 }).targetPxPerCss).toBe(2);
   });
 
   it('counts born times later than now, as from a skewed clock or epoch milliseconds', () => {
