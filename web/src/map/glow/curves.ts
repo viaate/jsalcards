@@ -294,10 +294,8 @@ export interface BlendPlan {
 }
 
 export function blendPlan(style: GlowFrameStyle, targetPxPerCssPx: number): BlendPlan {
-  // Shrunk below zoom 4, a level at least half blurred, so a lone school's peak holds as it moves.
-  const widest =
-    (style.blendSigmaPx < BLEND_LEVEL_PX ? style.blendSigmaPx / Math.SQRT2 : BLEND_LEVEL_PX) *
-    targetPxPerCssPx;
+  // A level at least half blurred, so a lone school's peak holds as it moves and its floor lands.
+  const widest = Math.min(style.blendSigmaPx / Math.SQRT2, BLEND_LEVEL_PX) * targetPxPerCssPx;
   // On a light target between powers of two the next coarser level would be wider than the blend.
   const level = Math.max(1, Math.floor(Math.log2(widest) + 1e-9));
   const scalePx = 2 ** level / targetPxPerCssPx;

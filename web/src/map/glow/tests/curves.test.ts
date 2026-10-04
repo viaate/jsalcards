@@ -469,21 +469,26 @@ describe('national blend', () => {
     for (let zoom = 4; zoom <= 6; zoom += 0.25) {
       expect(glowStyleAtZoom(zoom).blendSigmaPx * kmPerPx(zoom)).toBeLessThan(16);
     }
-    // At zoom 4 a lone school lights no farther than it did with its core shown: one display
-    // step within 25 px (95 km), above 8 of 255 within 10 px (38 km).
+    // At zoom 4 a lone school lights about as far as it did with its core shown: one display
+    // step within 25 px (95 km), above 8 of 255 within 11 px (42 km), a pixel more than before
+    // its floor held it a third over the state lines.
     const light = lonePoint(4);
     expect(reachAbove(light, 1)).toBeLessThanOrEqual(25);
-    expect(reachAbove(light, 8)).toBeLessThanOrEqual(10);
+    expect(reachAbove(light, 8)).toBeLessThanOrEqual(11);
     expect(glowReachPx(4)).toBeLessThan(44);
   });
 
-  it('blurs nothing nationally but floors its level, and blurs a finely sampled level beyond', () => {
-    for (let zoom = FULL_SIZE_ZOOM; zoom <= 4.5; zoom += 0.125) {
-      expect(blendPlan(glowStyleAtZoom(zoom), 1).radius).toBe(0);
-      expect(bloomPlan(glowStyleAtZoom(zoom), 1, 1000).blur).toMatchObject({ level: 2, radius: 0 });
+  it('blurs the blend from a level at least half finer than it, so a lone school’s peak holds as it moves', () => {
+    for (const t of [1, 2]) {
+      for (let zoom = FULL_SIZE_ZOOM; zoom <= 4.5; zoom += 0.125) {
+        const plan = blendPlan(glowStyleAtZoom(zoom), t);
+        expect(2 ** plan.level / t).toBeLessThanOrEqual(4 / Math.SQRT2);
+        expect(plan.radius).toBeGreaterThan(0);
+        expect(bloomPlan(glowStyleAtZoom(zoom), t, 1000).blur).not.toBeNull();
+      }
     }
-    // Below zoom 4, where the blend shrinks under the 4 px level's own spread: the 2 px level, a
-    // quarter of the light target, blurred where the blend is wider, and on its floor.
+    // Below zoom 4, where the blend shrinks: the 2 px level, a quarter of the light target,
+    // blurred where the blend is wider, and on its floor.
     for (let zoom = 1.5; zoom < FULL_SIZE_ZOOM; zoom += 0.125) {
       const style = glowStyleAtZoom(zoom);
       const small = blendPlan(style, 1);
