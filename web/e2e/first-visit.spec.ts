@@ -165,17 +165,22 @@ const TYPES: Record<string, string> = {
   '.woff2': 'font/woff2',
 };
 
-/** A held answer: `reached` once the request has come and been held, `release` lets it go on. */
+/**
+ * A held answer: `reached` once the request has come and been held. `release` lets it go on;
+ * `cut` ends it there, as a dropped connection does.
+ */
 interface Gate {
   readonly reached: Promise<void>;
   release(): void;
+  cut(): void;
 }
 
 interface Hold {
   readonly path: string;
   readonly at: 'headers' | 'body';
   readonly reach: () => void;
-  readonly opened: Promise<void>;
+  /** True once released, false once cut. */
+  readonly opened: Promise<boolean>;
   readonly release: () => void;
 }
 
@@ -217,12 +222,21 @@ class Site {
     const reached = new Promise<void>((resolve) => {
       reach = resolve;
     });
-    let release!: () => void;
-    const opened = new Promise<void>((resolve) => {
-      release = resolve;
+    let open!: (go: boolean) => void;
+    const opened = new Promise<boolean>((resolve) => {
+      open = resolve;
     });
+    const release = (): void => {
+      open(true);
+    };
     this.holds.push({ path: `/${file}`, at, reach, opened, release });
-    return { reached, release };
+    return {
+      reached,
+      release,
+      cut: () => {
+        open(false);
+      },
+    };
   }
 
   /** How many requests for each file under data/ reached the server. */
@@ -287,7 +301,10 @@ class Site {
     const held = at < 0 ? null : (this.holds.splice(at, 1)[0] ?? null);
     if (held?.at === 'headers') {
       held.reach();
-      await held.opened;
+      if (!(await held.opened)) {
+        response.destroy();
+        return;
+      }
     }
     const etag = `"${createHash('sha1').update(body).digest('hex').slice(0, 16)}"`;
     const headers = {
@@ -305,8 +322,8 @@ class Site {
     if (held?.at === 'body') {
       response.write(body.subarray(0, half));
       held.reach();
-      await held.opened;
-      response.end(body.subarray(half));
+      if (await held.opened) response.end(body.subarray(half));
+      else response.destroy();
       return;
     }
     if (isData && this.slow !== null) {
@@ -686,6 +703,46 @@ test('on a slow network, searching and zooming in at once, each file is download
     await findPembroke(visit.page);
     await expectDust(visit.page);
     await expectReadOnceAndKept(visit, site, [CLOSINGS, INDEX, META, POINTS]);
+  } finally {
+    await visit.context.close();
+    await site.stop();
+  }
+});
+
+test('a download cut off before the worker takes over keeps nothing, and the next visit downloads it once and keeps it', async ({
+  browser,
+}) => {
+  const site = await serve();
+  const worker = site.hold(SW_FILE);
+  const meta = site.hold(META, 'body');
+  const visit = await firstVisit(browser, site);
+  try {
+    await settle(visit.page);
+    await zoomPast5(visit.page);
+    // Half the directory's names are in when the connection drops.
+    await meta.reached;
+    meta.cut();
+    worker.release();
+    await takenOver(visit.page);
+    // Where each school is came whole, and is kept; of the names, nothing is, not half a file.
+    await waitForCached(visit.page, site, [CLOSINGS, POINTS]);
+    await site.quiet();
+    expect(await notCached(visit.page, site, [META])).toEqual([META]);
+    expect(site.dataHits()).toEqual({ [CLOSINGS]: 1, [META]: 1, [POINTS]: 1 });
+    // No error but the cut-off read's own.
+    expect(visit.problems.splice(0).filter((problem) => !problem.includes(META))).toEqual([]);
+
+    // The next visit, with the worker in control from the start, asks for the names again,
+    // once, and keeps them; where each school is comes from the cache, and the live file is
+    // asked for again as live files are on every visit.
+    await visit.page.goto(site.url());
+    await settle(visit.page);
+    await zoomPast5(visit.page);
+    await expectDust(visit.page);
+    await waitForCached(visit.page, site, [META]);
+    await site.quiet();
+    expect(site.dataHits()).toEqual({ [CLOSINGS]: 2, [META]: 2, [POINTS]: 1 });
+    await expectOfflineVisit(visit, site, [CLOSINGS, META, POINTS]);
   } finally {
     await visit.context.close();
     await site.stop();
