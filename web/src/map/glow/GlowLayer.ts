@@ -59,6 +59,7 @@ import {
   FALLBACK_ALPHA_STOPS,
   type GlowFrameStyle,
   type HaloShape,
+  LIGHT_RESOLUTION_CAP,
   PULSE_SECONDS,
   bloomPlan,
   denseShareAt,
@@ -183,8 +184,8 @@ export interface GlowLayerStats {
 /** Accumulated light multiplier ahead of the tone map. */
 const EXPOSURE = 1;
 
-/** Most light-target pixels per CSS pixel: on a 3x phone two read as sharp as three, at under half the cost. */
-const LIGHT_RESOLUTION_CAP = 2;
+/** Most pixels in the light target, about a 1440x900 laptop's at 2x: a larger screen draws its glow coarser, in bounded memory. */
+const MAX_LIGHT_TARGET_PX = 3200 * 2000;
 
 /** Guard band around the map in the light target, CSS px: about the widest bloom's reach. */
 const GUARD_CSS_PX = 48;
@@ -651,10 +652,10 @@ export class GlowLayer implements CustomLayerInterface {
     const deviceRatio = this.cssWidth > 0 ? width / this.cssWidth : 1;
     const zoom = map?.getZoom() ?? 0;
     this.lineGray ??= this.options.lineGray?.() ?? null;
-    const style = glowStyleAtZoom(zoom, this.lineGray ?? undefined);
     const cssW = width / deviceRatio;
     const cssH = height / deviceRatio;
     const [maxW, maxH] = res.maxTarget;
+    const guarded = (cssW + 2 * GUARD_CSS_PX) * (cssH + 2 * GUARD_CSS_PX);
     const targetPxPerCss = Math.min(
       this.options.lightResolution ?? LIGHT_RESOLUTION_CAP,
       deviceRatio,
@@ -663,7 +664,9 @@ export class GlowLayer implements CustomLayerInterface {
       // A target the GPU cannot allocate would leave the glow undrawn.
       maxW / (cssW + 2 * GUARD_CSS_PX),
       maxH / (cssH + 2 * GUARD_CSS_PX),
+      Math.sqrt(MAX_LIGHT_TARGET_PX / guarded),
     );
+    const style = glowStyleAtZoom(zoom, this.lineGray ?? undefined, targetPxPerCss);
     const w0 = Math.max(1, Math.min(maxW, Math.ceil((cssW + 2 * GUARD_CSS_PX) * targetPxPerCss)));
     const h0 = Math.max(1, Math.min(maxH, Math.ceil((cssH + 2 * GUARD_CSS_PX) * targetPxPerCss)));
 

@@ -12,6 +12,7 @@ import {
   BLOOM_WEIGHT_STOPS,
   CORE_EDGE_D2,
   CORE_FOCUS_STOPS,
+  CORE_SHARE_STOPS,
   CORE_SIGMA_STOPS,
   FALLBACK_ALPHA_STOPS,
   FALLBACK_BLOOM_FOLD,
@@ -195,7 +196,7 @@ const SIZE = 256;
  * light target of `t` pixels per CSS pixel, over state lines of `lineGray`.
  */
 function lonePoint(zoom: number, t = 1, lineGray?: number): (r: number) => number {
-  const light = compositeLight([[128.5, 128.5]], glowStyleAtZoom(zoom, lineGray), SIZE, t);
+  const light = compositeLight([[128.5, 128.5]], glowStyleAtZoom(zoom, lineGray, t), SIZE, t);
   return (r) => light[128 * SIZE + 128 + Math.round(r * t)] ?? 0;
 }
 
@@ -215,7 +216,7 @@ function gridRange(zoom: number, spacing: number, t = 1): [min: number, max: num
   for (let y = 128 - 72; y <= 128 + 72; y += spacing * t) {
     for (let x = 128 - 72; x <= 128 + 72; x += spacing * t) points.push([x + 0.3, y + 0.6]);
   }
-  const light = compositeLight(points, glowStyleAtZoom(zoom), SIZE, t);
+  const light = compositeLight(points, glowStyleAtZoom(zoom, undefined, t), SIZE, t);
   let min = Infinity;
   let max = 0;
   for (let y = 108; y < 148; y++) {
@@ -376,7 +377,7 @@ describe('national blend', () => {
     for (let zoom = 4.75; zoom < 8; zoom += 0.25) {
       const share = glowStyleAtZoom(zoom).coreShare;
       expect(share).toBeGreaterThan(previous);
-      expect(share - previous).toBeLessThanOrEqual(0.1 + 1e-12);
+      expect(share - previous).toBeLessThanOrEqual(0.1375 + 1e-12);
       previous = share;
     }
     for (let zoom = 5.5; zoom <= 22; zoom += 0.25) expect(glowStyleAtZoom(zoom).denseShare).toBe(0);
@@ -386,6 +387,22 @@ describe('national blend', () => {
       expect(style.blend).toBe(0);
     }
   });
+
+  it('shows a regional light as bright at its center on a coarser light target, until all of its core shows', () => {
+    for (let zoom = 4.75; zoom <= 8; zoom += 0.25) {
+      const shares = glowStyleAtZoom(zoom).coreShare;
+      expect(shares).toBe(interpolateStops(CORE_SHARE_STOPS, zoom));
+      const fine = displayed(lonePoint(zoom, 2)(0));
+      for (const t of [1, 1.5, 1.75]) {
+        const share = glowStyleAtZoom(zoom, undefined, t).coreShare;
+        expect(share).toBeGreaterThanOrEqual(shares);
+        expect(share).toBeLessThanOrEqual(1);
+        const peak = displayed(lonePoint(zoom, t)(0));
+        if (share < 1) expect(Math.abs(peak - fine)).toBeLessThan(3);
+        else expect(peak).toBeLessThan(fine + 3);
+      }
+    }
+  }, 60_000);
 
   it('keeps each point’s light whatever share of it is sharp', () => {
     for (let zoom = 2; zoom <= 12; zoom += 0.125) {
@@ -574,7 +591,8 @@ describe('national blend', () => {
 
   it('carries the blend in the fallback’s halo, as bright and as soft as the float path', () => {
     for (const zoom of [4, 5.6]) {
-      const style = glowStyleAtZoom(zoom);
+      // The fallback draws at one pixel per CSS pixel.
+      const style = glowStyleAtZoom(zoom, undefined, 1);
       const k = kernelUniforms(style, 1, fallbackHalo(style, zoom), style.coreShare);
       const fallback = (r: number): number => style.gain * kernelAt(k, r / k.radius);
       const float = lonePoint(zoom);
@@ -683,7 +701,7 @@ describe('small screens', () => {
     for (let y = 16; km !== null && y <= 240; y += spacing) {
       for (let x = 16; x <= 240; x += spacing) points.push([x + 0.3, y + 0.6]);
     }
-    const light = compositeLight(points, glowStyleAtZoom(zoom, lineGray), SIZE, t);
+    const light = compositeLight(points, glowStyleAtZoom(zoom, lineGray, t), SIZE, t);
     const box = Math.max(Math.ceil(spacing), 6);
     let max = 0;
     for (let y = 128 - box; y < 128 + box; y++) {
@@ -798,7 +816,7 @@ describe('small screens', () => {
       ]),
     ];
     for (const [zoom, line] of views) {
-      const style = glowStyleAtZoom(zoom, line / 255);
+      const style = glowStyleAtZoom(zoom, line / 255, 1);
       expect(style.coreSigmaPx).toBe(interpolateStops(CORE_SIGMA_STOPS, zoom));
       const k = kernelUniforms(style, 1, fallbackHalo(style, zoom), style.coreShare);
       const floor = fallbackFloor(style, zoom);

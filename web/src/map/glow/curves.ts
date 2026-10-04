@@ -5,23 +5,13 @@
  * Each point is a small bright core. Around it, light spreads at several
  * scales at once, like city lights seen through air:
  *
- * - Zoom 4 to 4.5, a desktop's national view: no lone core is shown. Its
- *   light, and the bloom's finest, is carried by the blend instead, one smooth
- *   Gaussian some 15 km wide, so the points read as one field, a dim wash
- *   where schools are few and bright where they are many, like a night photo
- *   from orbit. Inside the field, where cores pile up in a town, a share of
- *   them shows sharp as fine grain (DENSE_SHARE_STOPS). Wide bloom out to
- *   about 64 px merges a metro into one glow.
- * - Below zoom 4, where screens smaller than a desktop's open on the whole
- *   country, the glow shrinks with the map (glowSizeScale), so the country
- *   looks as on a desktop: the bloom reaches 32 px at zoom 3, 16 px at 2.
- *   Only the blend stops shrinking, at 1.2 px, so the points still read as one
- *   field on a phone.
- * - Until zoom 5.5 the blend stands on a floor (blendFloor) that keeps every
- *   school in view above the state lines.
- * - From zoom 4.5 the cores come back as crisp small lights over the blend's
- *   wash (CORE_FOCUS_STOPS), each school standing on its own by zoom 8, and
- *   the wide scales fade out as the glow tightens.
+ * - Zoom 4 to 6, a desktop's national view: wide bloom out to about 64 px, so
+ *   a metro merges into one glow. Up to zoom 4.5 no lone core shows: the
+ *   blend, about 15 km wide on a floor above the state lines, carries the
+ *   cores' light as one field, and cores that pile up in a town show as grain.
+ *   Below zoom 4 the glow shrinks with the map (glowSizeScale).
+ * - From zoom 4.5 the cores come back as crisp small lights, each school on
+ *   its own by zoom 8, and from zoom 6 the wide scales fade out.
  * - From zoom 11 each school is a crisp per-status glyph with a small halo
  *   drawn around it (not under it, so a ring stays a ring).
  *
@@ -140,13 +130,27 @@ export const BLOOM_WEIGHT_STOPS: readonly (readonly [zoom: number, weights: read
     [11, [0, 0, 0, 0, 0]],
   ];
 
-/** Share of the cores (and bloom no wider than the blend) shown where they are: none nationally, where they read as specks. */
+/** Share of the cores (and bloom no wider than the blend) shown where they are on a 2x light target: none nationally, where they read as specks. */
 export const CORE_SHARE_STOPS: ZoomStops = [
   [4.5, 0],
-  [5.5, 0.4],
-  [6, 0.45],
+  [5.5, 0.55],
+  [6, 0.65],
   [8, 1],
 ];
+
+/** Most light-target pixels per CSS pixel, and the target the core share is set for: on a 3x phone two read as sharp as three, at under half the cost. */
+export const LIGHT_RESOLUTION_CAP = 2;
+
+/** Share of the cores shown on a light target of `t` px per CSS px: more on a coarser one, which draws them wider, so each is as bright at its center. */
+export function coreShareOn(zoom: number, t: number): number {
+  const share = interpolateStops(CORE_SHARE_STOPS, zoom);
+  if (!(share > 0) || t === LIGHT_RESOLUTION_CAP) return share;
+  const sigmaPx = interpolateStops(CORE_SIGMA_STOPS, zoom);
+  const focus = interpolateStops(CORE_FOCUS_STOPS, zoom) * glowSizeScale(zoom);
+  const spread = (on: number): number =>
+    (drawnSigma(sigmaPx * on, focus) ** 2 + FOOTPRINT_VARIANCE) / (on * on);
+  return Math.min(1, (share * spread(t)) / spread(LIGHT_RESOLUTION_CAP));
+}
 
 /** Share of the cores shown sharp where they pile up inside a field: national grain, never a lone speck. */
 export const DENSE_SHARE_STOPS: ZoomStops = [
@@ -258,6 +262,7 @@ export function blendShareOfScale(scalePx: number, sigmaPx: number): number {
 function bloomAndBlend(
   zoom: number,
   sizeScale: number,
+  coreShare: number,
 ): { bloom: number[]; blend: number; blendSigmaPx: number } {
   // Relative to the cores, whose light already falls with the square root (glowSizeScale).
   const bloom = ownBloomWeights(zoom).map((weight) => weight * sizeScale * Math.sqrt(sizeScale));
@@ -265,7 +270,7 @@ function bloomAndBlend(
     interpolateStops(BLEND_SIGMA_STOPS, zoom) * sizeScale,
     BLEND_MIN_SIGMA_PX,
   );
-  const moved = 1 - interpolateStops(CORE_SHARE_STOPS, zoom);
+  const moved = 1 - coreShare;
   if (!(moved > 0)) return { bloom, blend: 0, blendSigmaPx };
   // The cores' light that is not shown, and the same share of the fine scales'.
   let blend = moved * blendCutAtScale(sizeScale);
@@ -279,8 +284,8 @@ function bloomAndBlend(
 }
 
 /** Bloom weights for each entry of {@link BLOOM_SCALES_PX} at `zoom`, less the light the blend carries. */
-export function bloomWeights(zoom: number): number[] {
-  return bloomAndBlend(zoom, glowSizeScale(zoom)).bloom;
+export function bloomWeights(zoom: number, t = LIGHT_RESOLUTION_CAP): number[] {
+  return bloomAndBlend(zoom, glowSizeScale(zoom), coreShareOn(zoom, t)).bloom;
 }
 
 /** How the layer makes the blend on a light target of `targetPxPerCssPx`. */
@@ -687,10 +692,14 @@ export interface GlowFrameStyle {
   readonly openRadiusPx: number;
 }
 
-/** The glow's style at `zoom` over state lines of `lineGray` (sRGB, 0..1). */
-export function glowStyleAtZoom(zoom: number, lineGray = LINE_GRAY): GlowFrameStyle {
+/** The glow's style at `zoom` over state lines of `lineGray` (sRGB, 0..1), on a light target of `t` px per CSS px. */
+export function glowStyleAtZoom(
+  zoom: number,
+  lineGray = LINE_GRAY,
+  t = LIGHT_RESOLUTION_CAP,
+): GlowFrameStyle {
   const sizeScale = glowSizeScale(zoom);
-  const coreShare = interpolateStops(CORE_SHARE_STOPS, zoom);
+  const coreShare = coreShareOn(zoom, t);
   const style = {
     sizeScale,
     coreSigmaPx: interpolateStops(CORE_SIGMA_STOPS, zoom),
@@ -701,7 +710,7 @@ export function glowStyleAtZoom(zoom: number, lineGray = LINE_GRAY): GlowFrameSt
     gain: interpolateStops(GAIN_STOPS, zoom) * Math.sqrt(sizeScale),
     haloRadiusPx: interpolateStops(HALO_RADIUS_STOPS, zoom) * sizeScale,
     haloEnergy: interpolateStops(HALO_ENERGY_STOPS, zoom),
-    ...bloomAndBlend(zoom, sizeScale),
+    ...bloomAndBlend(zoom, sizeScale, coreShare),
     floorGain: 1,
     floorKnee: 0,
     glyphOpacity: smoothstep(GLYPH_FADE_START, GLYPH_FADE_END, zoom),
@@ -814,8 +823,11 @@ export const MIN_CORE_DRAWN_PX = 0.7;
 
 /** Sigma a core is drawn at, light-target px: its focused width, no narrower than {@link MIN_CORE_DRAWN_PX}. */
 export function coreDrawnPx(style: GlowFrameStyle, targetPxPerCssPx: number): number {
-  const sigma = style.coreSigmaPx * targetPxPerCssPx;
-  return Math.max(sigma * style.coreFocus, Math.min(sigma, MIN_CORE_DRAWN_PX));
+  return drawnSigma(style.coreSigmaPx * targetPxPerCssPx, style.coreFocus);
+}
+
+function drawnSigma(sigma: number, focus: number): number {
+  return Math.max(sigma * focus, Math.min(sigma, MIN_CORE_DRAWN_PX));
 }
 
 /** The dense share, less where cores are drawn wider than focused: overlapping, a field would read as piled. */

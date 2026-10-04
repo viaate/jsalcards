@@ -356,11 +356,17 @@ describe('a lit school', () => {
   });
 
   it('at zooms 4.5 to 6 takes a click across the light it shows, not across its faint wash', () => {
-    // A lone light there shows above 24 of 255 within about 4 to 7 px of its center.
-    for (const zoom of [4.5, 5, 5.5, 6]) {
+    // A lone light shows above 24 of 255 within about 7 to 9.5 px of its center at zooms 4.5 to 5,
+    // on a light target of one or two pixels per CSS pixel alike…
+    for (const zoom of [4.5, 4.75, 5]) {
       expect(litRadius(zoom)).toBeGreaterThan(6);
       expect(litRadius(zoom)).toBeLessThan(9.5);
       expect(litRadius(zoom) + HIT_RADIUS.mouse).toBeLessThan(16);
+    }
+    // …and within 4.5 px at 5.5 to 6, where its crisp core holds most of its light.
+    for (const zoom of [5.5, 5.75, 6]) {
+      expect(litRadius(zoom)).toBeGreaterThan(2.5);
+      expect(litRadius(zoom)).toBeLessThan(4.5);
     }
   });
 

@@ -98,7 +98,7 @@ describe('GlowLayer', () => {
     targetPxPerCss: number;
     targetSize: readonly [number, number];
     blur: { weight: number } | null;
-    style: { blendSigmaPx: number };
+    style: { blendSigmaPx: number; coreShare: number };
   } {
     const { lightResolution, float = true, maxTarget = 16384 } = options;
     const layer = new GlowLayer(lightResolution === undefined ? {} : { lightResolution });
@@ -330,12 +330,28 @@ describe('GlowLayer', () => {
   });
 
   it('keeps the light target within what the GPU can allocate', () => {
-    // A 2560 CSS px window at 2x would need a 5312 px target, past a 4096 px texture limit.
-    const frame = layOut(4, [2560, 1440], 2, { maxTarget: 4096 });
+    // A 2560 CSS px wide window at 2x would need a 5312 px target, past a 4096 px texture limit.
+    const frame = layOut(4, [2560, 400], 2, { maxTarget: 4096 });
     expect(frame.targetSize[0]).toBeLessThanOrEqual(4096);
-    expect(frame.targetSize[1]).toBeLessThanOrEqual(4096);
     expect(frame.targetPxPerCss).toBeCloseTo(4096 / (2560 + 96), 9);
     expect(layOut(4, [1440, 900], 2, { maxTarget: 4096 }).targetPxPerCss).toBe(2);
+  });
+
+  it('keeps the light target to about a 2x laptop’s pixels, a larger screen drawing it coarser', () => {
+    const laptop = layOut(4, [1440, 900], 2);
+    expect(laptop.targetPxPerCss).toBe(2);
+    for (const size of [
+      [1920, 1080],
+      [2560, 1440],
+    ] as const) {
+      const frame = layOut(6, size, 2);
+      expect(frame.targetPxPerCss).toBeLessThan(2);
+      expect(frame.targetPxPerCss).toBeGreaterThan(1.2);
+      expect(frame.targetSize[0] * frame.targetSize[1]).toBeLessThan(3200 * 2000 * 1.01);
+      // A coarser target shows more of each core, so a lone light is as bright at its center.
+      expect(frame.style.coreShare).toBeGreaterThan(layOut(6, [1440, 900], 2).style.coreShare);
+      expect(frame.style).toEqual(glowStyleAtZoom(6, undefined, frame.targetPxPerCss));
+    }
   });
 
   it('counts born times later than now, as from a skewed clock or epoch milliseconds', () => {
