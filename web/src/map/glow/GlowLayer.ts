@@ -39,8 +39,9 @@
  * glow lights) gives way to its light, and filterDust leaves out the kinds of
  * school the page hides, all but the one keepDust names (the school whose
  * panel is open). dustNear finds the specks drawn near a point, for a tap on
- * one. The dust has its own small program,
- * compiled the first time it is drawn, and draws nothing outside its zooms.
+ * one, and none while the layer is off the map. The dust has its own small
+ * program, compiled the first time it is drawn, and draws nothing outside
+ * its zooms.
  */
 import type {
   CustomLayerInterface,
@@ -462,12 +463,15 @@ export class GlowLayer implements CustomLayerInterface {
   /**
    * The schools whose specks are drawn within `reach` Web Mercator units of
    * (x, y) each way, by their places in setDust's list: lit ones and those of
-   * a kind not shown left out, and every one where the GPU could not run the
-   * dust.
+   * a kind not shown left out, and every one while the layer draws no dust:
+   * without a dust style, off a map, its context lost until it comes back, or
+   * where the GPU could not run the dust.
    */
   dustNear(x: number, y: number, reach: number): number[] {
     const grid = this.dust;
-    if (grid === null || this.dustFailed) return [];
+    if (grid === null || this.options.dust === undefined || this.gl === null || this.dustFailed) {
+      return [];
+    }
     return dustSlotsNear(grid, x, y, reach)
       .filter((slot) => this.dustShown(slot))
       .map((slot) => grid.order[slot] ?? 0);

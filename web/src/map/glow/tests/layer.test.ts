@@ -5,6 +5,56 @@ import { GlowLayer, GlowStatus } from '..';
 import { dustStyle } from '../../glow-mount';
 import { mercatorXFromLng, mercatorYFromLat } from '../mercator';
 
+/**
+ * Enough of a map to put the layer on and take it off, as MapLibre does, with
+ * its context lost and restored. It draws no frame.
+ */
+function fakeMap() {
+  const listeners = new Map<string, (() => void)[]>();
+  const listen = (type: string, listener: () => void): void => {
+    listeners.set(type, [...(listeners.get(type) ?? []), listener]);
+  };
+  const unlisten = (type: string, listener: () => void): void => {
+    listeners.set(
+      type,
+      (listeners.get(type) ?? []).filter((l) => l !== listener),
+    );
+  };
+  const fire = (type: string): void => {
+    for (const listener of listeners.get(type) ?? []) listener();
+  };
+  const gl = {} as WebGL2RenderingContext;
+  let on: GlowLayer | null = null;
+  const map = {
+    getCanvasContainer: () => ({ addEventListener: listen, removeEventListener: unlisten }),
+    on: listen,
+    off: unlisten,
+    getLayer: (id: string) => (on?.id === id ? on : undefined),
+    getLayersOrder: () => (on === null ? [] : [on.id]),
+    addLayer: (layer: GlowLayer) => {
+      on = layer;
+      layer.onAdd(map, gl);
+    },
+    removeLayer: () => {
+      const layer = on;
+      on = null;
+      layer?.onRemove(map, gl);
+    },
+    triggerRepaint: () => undefined,
+  } as unknown as MapLibreMap;
+  return {
+    add: (layer: GlowLayer) => {
+      map.addLayer(layer);
+    },
+    lose: () => {
+      fire('webglcontextlost');
+    },
+    restore: () => {
+      fire('webglcontextrestored');
+    },
+  };
+}
+
 describe('GlowLayer', () => {
   it('is a 2D MapLibre custom layer', () => {
     const layer = new GlowLayer({ id: 'glow' });
@@ -90,7 +140,8 @@ describe('GlowLayer', () => {
   });
 
   it('holds every school as dust, leaving out the ones the glow lights and the kinds not shown', () => {
-    const layer = new GlowLayer();
+    const layer = new GlowLayer({ dust: dustStyle() });
+    fakeMap().add(layer);
     // Lit before the dust is in: left out as soon as it is.
     layer.hideDust(new Set([1, 7]));
     expect(layer.stats).toMatchObject({ dust: 0, dustHidden: 0, dustDrawn: false });
@@ -127,7 +178,8 @@ describe('GlowLayer', () => {
   });
 
   it('keeps the open school as dust whatever its kind, though not over its light', () => {
-    const layer = new GlowLayer();
+    const layer = new GlowLayer({ dust: dustStyle() });
+    fakeMap().add(layer);
     // Kept before the dust is in: kept as soon as it is.
     layer.keepDust(1);
     layer.filterDust((kind) => (kind & 1) === 0);
@@ -157,12 +209,34 @@ describe('GlowLayer', () => {
     expect(layer.stats.dustHidden).toBe(2);
   });
 
+  it('finds no speck while it is off the map, as after a lost context, nor without a dust style', () => {
+    const layer = new GlowLayer({ dust: dustStyle() });
+    const schools = new Float64Array([-94.6, 39.1]);
+    layer.setDust(schools, new Uint8Array([0]));
+    const near = (): number[] =>
+      layer.dustNear(mercatorXFromLng(-94.6), mercatorYFromLat(39.1), 0.001);
+    // Not on a map yet: nothing drawn.
+    expect(near()).toEqual([]);
+    const map = fakeMap();
+    map.add(layer);
+    expect(near()).toEqual([0]);
+    // The context lost: the layer steps off the map and draws nothing until it is back.
+    map.lose();
+    expect(near()).toEqual([]);
+    map.restore();
+    expect(near()).toEqual([0]);
+    // Without a dust style, it draws none.
+    const plain = new GlowLayer();
+    plain.setDust(schools, new Uint8Array([0]));
+    fakeMap().add(plain);
+    expect(plain.dustNear(mercatorXFromLng(-94.6), mercatorYFromLat(39.1), 0.001)).toEqual([]);
+  });
+
   it('finds no speck where the GPU could not run the dust: none is drawn', () => {
     const layer = new GlowLayer({ dust: dustStyle() });
     layer.setDust(new Float64Array([-94.6, 39.1]), new Uint8Array([0]));
     const near = (): number[] =>
       layer.dustNear(mercatorXFromLng(-94.6), mercatorYFromLat(39.1), 0.001);
-    expect(near()).toEqual([0]);
     // Across Kansas City at zoom 7, on a GPU that cannot build the dust's program.
     const map = {
       getCanvasContainer: () => ({ addEventListener: () => undefined }),
@@ -185,6 +259,7 @@ describe('GlowLayer', () => {
     } as unknown as WebGL2RenderingContext;
     const error = vi.spyOn(console, 'error').mockImplementation(() => undefined);
     layer.onAdd(map, gl);
+    expect(near()).toEqual([0]);
     layer.render(gl, { shaderData: { variantName: 'mercator' } } as CustomRenderMethodInput);
     expect(error).toHaveBeenCalledOnce();
     error.mockRestore();

@@ -79,8 +79,12 @@ class FakeMap {
     return [];
   }
   addLayer(layer: GlowLayer): void {
-    // The glow draws nothing without a GL context.
+    // On the map, as MapLibre puts it there, though it draws no frame here.
     this.layer = layer;
+    layer.onAdd(this as unknown as MapLibreMap, {} as WebGL2RenderingContext);
+  }
+  getCanvasContainer(): Pick<HTMLElement, 'addEventListener' | 'removeEventListener'> {
+    return { addEventListener: () => undefined, removeEventListener: () => undefined };
   }
   triggerRepaint(): void {
     // Nothing to draw.
