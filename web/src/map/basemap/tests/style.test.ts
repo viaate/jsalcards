@@ -1312,7 +1312,7 @@ describe('schools', () => {
     }
   });
 
-  it('knock the dots out under a place name across a metro, with a wider halo there only', () => {
+  it('knock the dots and dust out under a place name, with a wider halo there only', () => {
     const halo = (style: StyleSpecification, id: string, name: string, zoom: number): unknown => {
       const found = style.layers.find((l) => l.id === id);
       if (found === undefined) throw new Error(`No layer ${id}`);
@@ -1324,6 +1324,9 @@ describe('schools', () => {
       BASEMAP_IDS.ofmVillageLabel,
     ] as const;
     for (const id of places) {
+      // Drawn from the street tiles' first zoom: the wide halo never reaches the national view.
+      const layer = WITH_SCHOOLS.layers.find((l) => l.id === id);
+      expect(layer?.minzoom ?? 0, id).toBeGreaterThanOrEqual(OPENFREEMAP_MIN_ZOOM);
       // From the zoom the street tiles name places at, over the dust, to the school names' zoom.
       for (const zoom of [
         7,
@@ -1358,6 +1361,13 @@ describe('schools', () => {
         );
       }
       expect(halo(STYLE, id, 'text-halo-width', 10.2)).toBeLessThan(METRO_PLACE_HALO);
+    }
+    // The national view's names keep their own halo, with the schools or without.
+    for (const band of CITY_NAME_BANDS.keys()) {
+      const id = cityNameLayerId(band);
+      for (const zoom of [4, SCHOOL_DUST_FROM, 6.9]) {
+        expect(halo(WITH_SCHOOLS, id, 'text-halo-width', zoom), id).toBe(CITY_NAME_HALO);
+      }
     }
   });
 

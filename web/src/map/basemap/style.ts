@@ -698,7 +698,8 @@ const LABEL_HALO_BLUR = 0.4;
  * (METRO_PLACE_HALO): no part of a dot shows between its letters or at their
  * edge, where it would read as a mark on the name. From the zoom the
  * schools' names come in at, each dot keeps its own space and no name
- * crosses one (schools.ts).
+ * crosses one (schools.ts). The street tiles name places only from zoom 7,
+ * so the national view's names keep their own halo (CITY_NAME_HALO).
  */
 export const METRO_PLACE_HALO = 2.4;
 const METRO_PLACE_HALO_BLUR = 0.8;
