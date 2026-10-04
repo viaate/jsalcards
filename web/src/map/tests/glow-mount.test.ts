@@ -4,7 +4,7 @@ import { readFileSync } from 'node:fs';
 import type { Map as MapLibreMap } from 'maplibre-gl';
 import { describe, expect, it, vi } from 'vitest';
 
-import { NOTHING_LIT } from '../../data/closings';
+import { NOTHING_LIT, filterLit } from '../../data/closings';
 import type { LitSchools } from '../../data/closings';
 import {
   SCHOOL_DOT_OPACITY,
@@ -249,6 +249,43 @@ describe('the dust', () => {
     expect(map.layer?.stats.dustHidden).toBe(2);
     glow.light(NOTHING_LIT);
     expect(map.layer?.stats.dustHidden).toBe(0);
+  });
+
+  it('takes a school lit in a status or of a kind the menu hides back into the dust, as its dot is', async () => {
+    const map = new FakeMap();
+    map.load();
+    const glow = mount(map);
+    glow.dust(source());
+    map.zoomTo(8);
+    await settle();
+    // Kansas City closed, beside it delayed (a private school), and Boston closed.
+    const today: LitSchools = {
+      ...lit(0, 1, 2),
+      status: new Uint8Array([0, 1, 0]),
+      kinds: positions.kind,
+    };
+    const nearKansasCity = (): number[] =>
+      [
+        ...(glow.specks?.near(mercatorXFromLng(-94.55), mercatorYFromLat(39.05), 0.001) ?? []),
+      ].sort();
+    glow.light(filterLit(today, SHOW_ALL, false));
+    expect(map.layer?.stats.dustHidden).toBe(3);
+    expect(nearKansasCity()).toEqual([]);
+    // Closed alone: the delayed school is a dot again, and a speck.
+    const closed = filterLit(today, { ...SHOW_ALL, status: 0 }, false);
+    glow.light(closed);
+    expect(map.calls.at(-1)).toEqual(['remove', 1, SCHOOL_LIT_STATE]);
+    expect(map.layer?.stats.dustHidden).toBe(2);
+    expect(nearKansasCity()).toEqual([1]);
+    // Public schools alone: no light, dot or speck for it.
+    glow.showSchools((flags) => showsSchool({ ...SHOW_ALL, private: false }, flags));
+    glow.light(filterLit(today, { ...SHOW_ALL, private: false }, false));
+    expect(nearKansasCity()).toEqual([]);
+    // Everything again.
+    glow.showSchools((flags) => showsSchool(SHOW_ALL, flags));
+    glow.light(filterLit(today, SHOW_ALL, false));
+    expect(map.layer?.stats.dustHidden).toBe(3);
+    expect(nearKansasCity()).toEqual([]);
   });
 
   it('shows the kinds of school the menu shows, before the dust is in or after', async () => {

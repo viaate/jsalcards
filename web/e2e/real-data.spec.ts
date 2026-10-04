@@ -170,6 +170,14 @@ function directory(): { id: string; lon: number; lat: number }[] {
   }));
 }
 
+/** How many of the directory's schools are private: kind flag 0x01, the 13th byte of each record. */
+function privateSchools(): number {
+  const points = readFileSync(path.join(SITE_DATA, 'schools/points.bin'));
+  let count = 0;
+  for (let at = 16; at + 13 <= points.length; at += 13) count += points.readUInt8(at + 12) & 1;
+  return count;
+}
+
 /** The ids of the schools the directory puts inside the map's view. */
 async function schoolsInView(page: Page): Promise<Set<string>> {
   const bounds = await page.evaluate(() => {
@@ -638,14 +646,26 @@ test('the menu counts every school and district on the map, and nothing the pipe
   await context.close();
 });
 
-test('the menu shows the dots and names of public schools, private ones or both', async ({
+test('the menu shows the dots, dust and names of public schools, private ones or both', async ({
   browser,
 }) => {
   const context = await browser.newContext({ viewport: { width: 1440, height: 900 } });
   const page = await context.newPage();
   const { problems } = watch(page);
-  await page.goto(site);
+  // Across Missouri, where the glow layer draws every school as dust.
+  await page.goto(`${site}?at=39.1,-94.6,7`);
   await settle(page);
+  /** How many schools the dust holds, and how many it leaves out. */
+  const dust = (): Promise<{ dust: number; dustHidden: number } | undefined> =>
+    page.evaluate((id) => {
+      const layer = window.snowlightMap?.getLayer(id) as unknown as
+        { implementation: { stats: { dust: number; dustHidden: number } } } | undefined;
+      const stats = layer?.implementation.stats;
+      return stats === undefined ? undefined : { dust: stats.dust, dustHidden: stats.dustHidden };
+    }, GLOW_LAYER);
+  const all = directory().length;
+  const privates = privateSchools();
+  await expect.poll(dust, { timeout: 60_000 }).toEqual({ dust: all, dustHidden: 0 });
   // The map takes the school layers on a little after its first frames.
   await page.waitForFunction(
     () => window.snowlightMap?.getLayer('school-dots') !== undefined,
@@ -668,15 +688,20 @@ test('the menu shows the dots and names of public schools, private ones or both'
   };
   // A private school's tiles carry kind flags with 0x01 set (pipeline/snowlight/directory/tiles.py).
   const privateSchool = ['==', ['%', ['to-number', ['get', 'kind'], 0], 2], 1];
+  // The dust leaves out the same schools, by the kind flags points.bin carries.
   await toggle(copy.menu.private);
   await expect.poll(filters).toEqual([...layers.map(() => ['any', ['!', privateSchool]]), ring]);
+  await expect.poll(dust).toEqual({ dust: all, dustHidden: privates });
   await toggle(copy.menu.public);
   await expect.poll(filters).toEqual([...layers.map(() => false), ring]);
+  await expect.poll(dust).toEqual({ dust: all, dustHidden: all });
   await toggle(copy.menu.private);
   await expect.poll(filters).toEqual([...layers.map(() => ['any', privateSchool]), ring]);
+  await expect.poll(dust).toEqual({ dust: all, dustHidden: all - privates });
   // Both again: every school, as the map opened.
   await toggle(copy.menu.public);
   await expect.poll(filters).toEqual([...layers.map(() => null), ring]);
+  await expect.poll(dust).toEqual({ dust: all, dustHidden: 0 });
   expect(problems).toEqual([]);
   await context.close();
 });
