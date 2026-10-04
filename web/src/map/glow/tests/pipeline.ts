@@ -4,20 +4,30 @@
  * dense share included, on a small square light target of one target pixel
  * per CSS pixel unless told otherwise, for points of one status. It samples
  * textures the way the shaders do (bilinear, clamped at the edges), so a test
- * sees the light a viewer would, not an idealized kernel.
+ * sees the light a viewer would, not an idealized kernel. The 8-bit
+ * fallback's too, its channels rounded as stored.
  */
 import { STATUS_HEX, hexToLinear, linearToSrgb } from '../color';
 import {
   DENSE_CAP,
   DENSE_FIELD,
   DENSE_GATE,
+  FALLBACK_ALPHA_STOPS,
+  FALLBACK_MIN_TRANSMITTANCE,
   type GlowFrameStyle,
   blendFloor,
   bloomPlan,
   bloomSourceScale,
   denseShareAt,
+  fallbackDecode,
+  fallbackEncode,
+  fallbackFloor,
+  fallbackHalo,
+  fallbackLift,
+  fallbackPeak,
   fieldPeak,
   fieldReachPx,
+  interpolateStops,
   kernelAt,
   kernelUniforms,
   smoothstep,
@@ -215,6 +225,91 @@ export function compositeLight(
         dense = Math.min(share * core, DENSE_CAP * here);
       }
       out[t] = style.coreShare * core + dense + here;
+    }
+  }
+  return out;
+}
+
+/** What the light pass adds at (i, j) of a light target of one pixel per CSS pixel, for `kernel`. */
+function splat(
+  points: readonly (readonly [number, number])[],
+  size: number,
+  radius: number,
+  at: (d: number) => number,
+): Float64Array {
+  const out = new Float64Array(size * size);
+  for (const [px, py] of points) {
+    for (
+      let j = Math.max(0, Math.floor(py - radius));
+      j <= Math.min(size - 1, Math.ceil(py + radius));
+      j++
+    ) {
+      for (
+        let i = Math.max(0, Math.floor(px - radius));
+        i <= Math.min(size - 1, Math.ceil(px + radius));
+        i++
+      ) {
+        const d = Math.hypot(i + 0.5 - px, j + 0.5 - py) / radius;
+        if (d < 1) out[j * size + i] = (out[j * size + i] ?? 0) + at(d);
+      }
+    }
+  }
+  return out;
+}
+
+/** An 8-bit channel's value for `light` written as 1 - exp(-light * alpha), and read back. */
+function byte(light: number, alpha: number): number {
+  const stored = Math.round((1 - Math.exp(-light * alpha)) * 255) / 255;
+  return -Math.log(Math.max(1 - stored, FALLBACK_MIN_TRANSMITTANCE)) / alpha;
+}
+
+/**
+ * The 8-bit fallback's light as its composite tone maps it, for points of one
+ * status at (x, y) on a `size` x `size` light target of one pixel per CSS
+ * pixel: halos and the share of the cores drawn, on their floor, and the
+ * whole cores, kept apart, where they pile up inside a field.
+ */
+export function fallbackCompositeLight(
+  points: readonly (readonly [number, number])[],
+  style: GlowFrameStyle,
+  zoom: number,
+  size: number,
+): Float64Array {
+  const halo = fallbackHalo(style, zoom);
+  const k = kernelUniforms(style, 1, halo, style.coreShare);
+  const alpha = interpolateStops(FALLBACK_ALPHA_STOPS, zoom);
+  const light = splat(points, size, k.radius, (d) => style.gain * kernelAt(k, d)).map((v) =>
+    fallbackDecode(...fallbackEncode(v, alpha), alpha),
+  );
+  // The cores alone, in a lone core's peaks: the kernel's core, whole.
+  const whole = kernelUniforms(style, 1, halo);
+  const unit = { ...whole, coreWeight: 1, haloWeight: 0 };
+  const cores = splat(points, size, whole.radius, (d) => kernelAt(unit, d)).map((v) => byte(v, 1));
+  const floor = fallbackFloor(style, zoom);
+  const corePeak = Math.max(whole.coreWeight * style.gain, 1e-6);
+  const field = Math.max(fallbackPeak(style, zoom), 1e-6);
+  const reach = fieldReachPx(style);
+  const denseShare = denseShareAt(style, 1);
+  const level: Level = { size, data: light };
+  const out = new Float64Array(size * size);
+  for (let j = 0; j < size; j++) {
+    for (let i = 0; i < size; i++) {
+      const t = j * size + i;
+      const here = light[t] ?? 0;
+      const shown = here * fallbackLift(here, floor.gain, floor.knee);
+      let dense = 0;
+      const core = (cores[t] ?? 0) * corePeak;
+      if (denseShare > 0) {
+        let around = 0;
+        for (const [dx = 0, dy = 0] of RING)
+          around += sample(level, i + 0.5 + reach * dx, j + 0.5 + reach * dy);
+        const share =
+          denseShare *
+          smoothstep(DENSE_GATE[0], DENSE_GATE[1], core / corePeak) *
+          smoothstep(DENSE_FIELD[0], DENSE_FIELD[1], around / (8 * field));
+        dense = Math.min(share * core, DENSE_CAP * shown);
+      }
+      out[t] = dense + shown;
     }
   }
   return out;

@@ -27,6 +27,7 @@ import {
   BLOOM_SOURCE_GLSL,
   CORE_EDGE_D2,
   FALLBACK_FINE_GAIN,
+  FALLBACK_FLOOR_GLSL,
   FALLBACK_GLSL,
   PULSE_GLSL,
 } from './curves';
@@ -119,12 +120,15 @@ uniform float u_hole;
 // alpha: light is written as 1 - exp(-light * alpha), screen blended, to a
 // coarse target and to a fine one at a higher alpha.
 uniform float u_encode;
+// The fallback's cores alone, whole, in a lone core's peaks (1 / gain), for its grain; 0 for none.
+uniform float u_coreEncode;
 
 const float CORE_EDGE = ${String(CORE_EDGE_D2)};
 
 in vec4 v_light;
 layout(location = 0) out vec4 fragColor;
 layout(location = 1) out vec4 fragFine;
+layout(location = 2) out vec4 fragCores;
 
 void main() {
   vec2 uv = gl_PointCoord * 2.0 - 1.0;
@@ -132,7 +136,8 @@ void main() {
   if (d2 >= 1.0) discard;
   // The core fades to exactly zero over the sprite's outer quarter, so a lone
   // speck has no visible edge where its sprite ends.
-  float k = u_coreWeight * exp(-d2 * u_coreFalloff) * (1.0 - smoothstep(CORE_EDGE, 1.0, d2));
+  float core = exp(-d2 * u_coreFalloff) * (1.0 - smoothstep(CORE_EDGE, 1.0, d2));
+  float k = u_coreWeight * core;
   if (u_haloWeight > 0.0) {
     float window = 1.0 - d2;
     float halo = u_haloWeight * exp(-d2 * u_haloFalloff) * window * window;
@@ -143,9 +148,11 @@ void main() {
   if (u_encode > 0.0) {
     fragColor = 1.0 - exp(-light * u_encode);
     fragFine = 1.0 - exp(-light * (u_encode * ${FALLBACK_FINE_GAIN.toFixed(1)}));
+    fragCores = 1.0 - exp(-v_light * (core * u_coreEncode));
   } else {
     fragColor = light;
     fragFine = vec4(0.0);
+    fragCores = vec4(0.0);
   }
 }
 `;
@@ -248,10 +255,11 @@ precision highp float;
 // Core light, and the first bloom level holding every weighted scale of bloom.
 uniform sampler2D u_light;
 uniform sampler2D u_bloom;
-// The 8-bit fallback's fine light target; unused on the float path.
+// The 8-bit fallback's fine light target and its cores alone; unused on the float path.
 uniform sampler2D u_lightFine;
+uniform sampler2D u_cores;
 uniform float u_bloomScale;
-// Share of the core light shown sharp: none nationally on the float path, 1 for the fallback.
+// Share of the core light shown sharp: none nationally on the float path; the fallback drew its share.
 uniform float u_coreShare;
 // Nationally, cores shown where they pile up inside a field, as grain (DENSE_* in curves.ts).
 uniform float u_denseShare;
@@ -279,6 +287,7 @@ in vec2 v_uv;
 out vec4 fragColor;
 ${TONEMAP_GLSL}
 ${FALLBACK_GLSL}
+${FALLBACK_FLOOR_GLSL}
 ${BLEND_FLOOR_GLSL}
 // Interleaved gradient noise (Jimenez 2014): cheap, even dither that breaks
 // up 8-bit banding in the faint outer glow.
@@ -286,14 +295,22 @@ float glow_dither(vec2 p) {
   return fract(52.9829189 * fract(dot(p, vec2(0.06711056, 0.00583715))));
 }
 
+// The light spread around a point: the bloom, or the fallback's halos, which carry it.
+vec4 glow_spread(vec2 uv) {
+  if (u_decode > 0.0) return glow_fallback_decode(texture(u_light, uv), texture(u_lightFine, uv), u_decode);
+  return texture(u_bloom, uv) * u_bloomScale;
+}
+
 void main() {
   vec2 uv = u_uvOffset + v_uv * u_uvScale;
   vec4 light = texture(u_light, uv);
-  if (u_decode > 0.0) {
-    light = glow_blend_floor(glow_fallback_decode(light, texture(u_lightFine, uv), u_decode), u_floorGain, u_floorKnee);
-  }
   vec4 bloom = vec4(0.0);
-  if (u_bloomScale > 0.0) {
+  if (u_decode > 0.0) {
+    bloom = glow_fallback_floor(glow_spread(uv), u_floorGain, u_floorKnee);
+    light = u_denseShare > 0.0
+      ? -log(max(vec4(1.0) - texture(u_cores, uv), vec4(GLOW_FALLBACK_MIN_TRANSMITTANCE))) * u_corePeak
+      : vec4(0.0);
+  } else if (u_bloomScale > 0.0) {
     // Four bilinear taps half a texel off each diagonal: a 3x3 tent upsample.
     vec2 h = 0.5 * u_bloomTexel;
     bloom = (texture(u_bloom, uv + vec2(-h.x, -h.y))
@@ -307,8 +324,8 @@ void main() {
   // Most pixels hold no pile: only those look around for the field.
   if (piled > 0.0) {
     vec4 around = vec4(0.0);
-    for (int i = 0; i < 8; i++) around += texture(u_bloom, uv + u_fieldReach * GLOW_RING[i]);
-    float field = (around.r + around.g + around.b + around.a) * u_bloomScale / (8.0 * u_fieldPeak);
+    for (int i = 0; i < 8; i++) around += glow_spread(uv + u_fieldReach * GLOW_RING[i]);
+    float field = (around.r + around.g + around.b + around.a) / (8.0 * u_fieldPeak);
     float share = u_denseShare * piled * smoothstep(u_denseField.x, u_denseField.y, field);
     float cap = u_denseCap * (bloom.r + bloom.g + bloom.b + bloom.a);
     dense = light * min(share, cap / max(total, 1e-6));

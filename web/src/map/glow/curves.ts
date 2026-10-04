@@ -520,13 +520,43 @@ export function fallbackHalo(style: GlowFrameStyle, zoom: number): HaloShape {
   };
 }
 
-/** The 8-bit fallback's {@link blendFloor}, raising a lone school's halo peak to the float path's. */
+/** A lone school's light at its center on the 8-bit fallback, before its floor: its halo and the share of its core drawn. */
+export function fallbackPeak(style: GlowFrameStyle, zoom: number): number {
+  return (
+    style.gain * kernelAt(kernelUniforms(style, 1, fallbackHalo(style, zoom), style.coreShare), 0)
+  );
+}
+
+/** The 8-bit fallback's floor, as a factor on its light: it fades out above the knee at no more than half the light's slope, so a band keeps its shading. */
+export function fallbackLift(total: number, gain: number, knee: number): number {
+  if (!(gain > 1) || !(total > 0)) return 1;
+  const u = total / knee;
+  return 1 + ((gain - 1) / Math.sqrt(Math.sqrt(1 + u ** 4))) * (1 - smoothstep(1, 3 * gain - 2, u));
+}
+
+/** GLSL for {@link fallbackLift}, on the four statuses' light at a pixel. */
+export const FALLBACK_FLOOR_GLSL = /* glsl */ `
+vec4 glow_fallback_floor(vec4 light, float gain, float knee) {
+  float total = light.r + light.g + light.b + light.a;
+  if (gain <= 1.0 || total <= 0.0) return light;
+  float u = total / knee;
+  float u2 = u * u;
+  return light * (1.0 + (gain - 1.0) / sqrt(sqrt(1.0 + u2 * u2)) * (1.0 - smoothstep(1.0, 3.0 * gain - 2.0, u)));
+}
+`;
+
+/** The 8-bit fallback's floor ({@link fallbackLift}): a lone school as bright as on the float path, wherever it falls between the light target's pixels. */
 export function fallbackFloor(style: GlowFrameStyle, zoom: number): { gain: number; knee: number } {
   if (!(style.floorGain > 1)) return { gain: 1, knee: 1 };
   const k = kernelUniforms(style, 1, fallbackHalo(style, zoom), style.coreShare);
-  const knee = style.gain * kernelAt(k, 0);
+  const knee = fallbackPeak(style, zoom);
+  // Its light half a pixel off each axis, as the composite may sample it.
+  const least = style.gain * kernelAt(k, Math.SQRT1_2 / k.radius);
   // Its core's shown share stands on the floor, as on the float path.
-  return { gain: floorGain(knee, fieldPeak(style) + style.gain * k.coreWeight), knee };
+  const peak = fieldPeak(style) + style.gain * k.coreWeight;
+  if (!(peak > least)) return { gain: 1, knee };
+  const shape = 1 / Math.sqrt(Math.sqrt(1 + (least / knee) ** 4));
+  return { gain: 1 + (peak / least - 1) / shape, knee };
 }
 
 /** Smallest transmittance an 8-bit channel is decoded at: half its last step. */

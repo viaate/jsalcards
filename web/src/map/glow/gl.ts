@@ -71,6 +71,8 @@ export interface LightTarget {
   readonly texture: WebGLTexture;
   /** The 8-bit fallback's fine target, drawn to at once as color attachment 1; null for half-float. */
   readonly fine: WebGLTexture | null;
+  /** The 8-bit fallback's cores alone, for its grain, as color attachment 2; null for half-float. */
+  readonly cores: WebGLTexture | null;
   readonly width: number;
   readonly height: number;
 }
@@ -109,7 +111,7 @@ function createColorTexture(
 
 /**
  * An RGBA16F color target with linear filtering and clamped edges, or for the
- * 8-bit fallback a pair of RGBA8 ones (coarse and fine) drawn to at once.
+ * 8-bit fallback three RGBA8 ones (coarse, fine and cores) drawn to at once.
  * Null if the driver refuses it.
  */
 export function createLightTarget(
@@ -121,17 +123,19 @@ export function createLightTarget(
   const half = format === 'half';
   const texture = createColorTexture(gl, half ? gl.RGBA16F : gl.RGBA8, width, height);
   const fine = half ? null : createColorTexture(gl, gl.RGBA8, width, height);
+  const cores = half ? null : createColorTexture(gl, gl.RGBA8, width, height);
   const framebuffer = gl.createFramebuffer();
   gl.bindFramebuffer(gl.FRAMEBUFFER, framebuffer);
   gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, texture, 0);
-  if (fine !== null) {
+  if (fine !== null && cores !== null) {
     gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT1, gl.TEXTURE_2D, fine, 0);
-    gl.drawBuffers([gl.COLOR_ATTACHMENT0, gl.COLOR_ATTACHMENT1]);
+    gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT2, gl.TEXTURE_2D, cores, 0);
+    gl.drawBuffers([gl.COLOR_ATTACHMENT0, gl.COLOR_ATTACHMENT1, gl.COLOR_ATTACHMENT2]);
   }
   const complete = gl.checkFramebufferStatus(gl.FRAMEBUFFER) === gl.FRAMEBUFFER_COMPLETE;
   gl.bindFramebuffer(gl.FRAMEBUFFER, null);
   gl.bindTexture(gl.TEXTURE_2D, null);
-  const target = { framebuffer, texture, fine, width, height };
+  const target = { framebuffer, texture, fine, cores, width, height };
   if (!complete) {
     deleteLightTarget(gl, target);
     return null;
@@ -143,4 +147,5 @@ export function deleteLightTarget(gl: WebGL2RenderingContext, target: LightTarge
   gl.deleteFramebuffer(target.framebuffer);
   gl.deleteTexture(target.texture);
   if (target.fine !== null) gl.deleteTexture(target.fine);
+  if (target.cores !== null) gl.deleteTexture(target.cores);
 }

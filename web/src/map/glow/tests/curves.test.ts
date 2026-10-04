@@ -17,6 +17,7 @@ import {
   FALLBACK_ALPHA_STOPS,
   FALLBACK_BLOOM_FOLD,
   FALLBACK_FINE_GAIN,
+  FALLBACK_FLOOR_GLSL,
   FALLBACK_GLSL,
   FALLBACK_HALO_RADIUS_STOPS,
   FALLBACK_MIN_TRANSMITTANCE,
@@ -32,7 +33,6 @@ import {
   MIN_BLOOM_WEIGHT,
   PULSE_SECONDS,
   blendCutAtScale,
-  blendFloor,
   blendPlan,
   blendShareOfScale,
   bloomLevels,
@@ -43,6 +43,7 @@ import {
   fallbackEncode,
   fallbackFloor,
   fallbackHalo,
+  fallbackLift,
   fieldPeak,
   glowReachPx,
   glowStyleAtZoom,
@@ -55,7 +56,7 @@ import {
 } from '../curves';
 import { statusLight, toneMap } from '../tonemap';
 
-import { compositeLight, displayed } from './pipeline';
+import { compositeLight, displayed, fallbackCompositeLight } from './pipeline';
 
 /** Integral of a radial kernel over the plane, by the midpoint rule, in units of radius^2. */
 function energy(kernel: (d: number) => number): number {
@@ -481,6 +482,50 @@ describe('national blend', () => {
     expect(grain([...field, ...town(middle + 0.3, middle + 0.6)])).toBeGreaterThan(30);
   }, 60_000);
 
+  it('shows the 8-bit fallback’s grain where a town’s schools pile up inside a field, from its own cores', () => {
+    const zoom = 4.03;
+    const style = glowStyleAtZoom(zoom, undefined, 1);
+    const grain = (points: [number, number][]): number => {
+      const shown = fallbackCompositeLight(points, style, zoom, SIZE);
+      const soft = fallbackCompositeLight(points, { ...style, denseShare: 0 }, zoom, SIZE);
+      let most = 0;
+      shown.forEach((light, i) => {
+        most = Math.max(most, displayed(light) - displayed(soft[i] ?? 0));
+      });
+      return most;
+    };
+    const field: [number, number][] = [];
+    const spacing = 15 / kmPerPx(zoom);
+    for (let y = 16.6; y <= 240; y += spacing) {
+      for (let x = 16.3; x <= 240; x += spacing) field.push([x, y]);
+    }
+    const middle = 16 + spacing * Math.floor(112 / spacing) + spacing / 2;
+    const town: [number, number][] = [
+      [middle + 0.3, middle + 0.6],
+      [middle + 1.3, middle + 0.6],
+    ];
+    expect(grain([[128.3, 128.6]])).toBeLessThan(0.5);
+    expect(grain([...field, [middle + 0.3, middle + 0.6]])).toBeLessThan(0.5);
+    expect(grain([...field, ...town])).toBeGreaterThan(30);
+  }, 60_000);
+
+  it('lifts the fallback’s faint light without flattening what is above it', () => {
+    for (const gain of [1.2, 2, 4.5]) {
+      expect(fallbackLift(1e-6, gain, 1)).toBeCloseTo(gain, 6);
+      expect(fallbackLift(3 * gain - 2, gain, 1)).toBe(1);
+      let previous = 0;
+      for (let light = 0.01; light <= 3 * gain; light += 0.01) {
+        const shown = light * fallbackLift(light, gain, 1);
+        // Never flat: at least half the light's own slope, so a band's shading shows through.
+        expect(shown - previous).toBeGreaterThanOrEqual(0.5 * 0.01 - 1e-9);
+        expect(shown).toBeGreaterThanOrEqual(light);
+        previous = shown;
+      }
+    }
+    expect(fallbackLift(0.5, 1, 1)).toBe(1);
+    expect(FALLBACK_FLOOR_GLSL).toContain('3.0 * gain - 2.0');
+  });
+
   it('shows a lone school regionally as a crisp small light over a soft wash, sharper on a sharper screen', () => {
     for (const zoom of [5.5, 6, 7]) {
       const sharp = lonePoint(zoom, 2);
@@ -820,12 +865,13 @@ describe('small screens', () => {
       expect(style.coreSigmaPx).toBe(interpolateStops(CORE_SIGMA_STOPS, zoom));
       const k = kernelUniforms(style, 1, fallbackHalo(style, zoom), style.coreShare);
       const floor = fallbackFloor(style, zoom);
-      const fallback = displayed(blendFloor(style.gain * kernelAt(k, 0), floor.gain, floor.knee));
+      // The fallback's light half a pixel off each axis from the school, as the composite may see it.
+      const off = style.gain * kernelAt(k, Math.SQRT1_2 / k.radius);
+      const fallback = displayed(off * fallbackLift(off, floor.gain, floor.knee));
+      expect(fallback).toBeGreaterThan(1.25 * line);
       for (const t of [1, 1.5, 2, 3]) {
-        for (const peak of [displayed(lonePoint(zoom, t, line / 255)(0)), fallback]) {
-          // A fifth brighter than the state lines around it, at least: a phone's are brighter.
-          expect(peak).toBeGreaterThan(1.2 * line);
-        }
+        // A fifth brighter than the state lines around it, at least: a phone's are brighter.
+        expect(displayed(lonePoint(zoom, t, line / 255)(0))).toBeGreaterThan(1.2 * line);
       }
     }
   }, 120_000);

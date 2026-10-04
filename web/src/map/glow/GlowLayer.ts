@@ -65,6 +65,7 @@ import {
   denseShareAt,
   fallbackFloor,
   fallbackHalo,
+  fallbackPeak,
   fieldPeak,
   fieldReachPx,
   glowStyleAtZoom,
@@ -848,6 +849,9 @@ export class GlowLayer implements CustomLayerInterface {
     this.setKernelUniforms(gl, program, frame, frame.targetPxPerCss, halo, coreShare);
     gl.uniform1f(uniform(program, 'u_gain'), frame.style.gain);
     gl.uniform1f(uniform(program, 'u_encode'), frame.fallbackAlpha);
+    // The fallback keeps its whole cores apart only for its grain.
+    const grain = !res.float && denseShareAt(frame.style, frame.targetPxPerCss) > 0;
+    gl.uniform1f(uniform(program, 'u_coreEncode'), grain ? 1 / frame.style.gain : 0);
     gl.bindVertexArray(res.vaoAll);
     gl.drawArrays(gl.POINTS, 0, packed.glowCount);
   }
@@ -956,22 +960,26 @@ export class GlowLayer implements CustomLayerInterface {
     gl.bindTexture(gl.TEXTURE_2D, (bloom ?? light).texture);
     gl.activeTexture(gl.TEXTURE2);
     gl.bindTexture(gl.TEXTURE_2D, light.fine ?? light.texture);
+    gl.activeTexture(gl.TEXTURE3);
+    gl.bindTexture(gl.TEXTURE_2D, light.cores ?? light.texture);
     gl.uniform1i(uniform(program, 'u_light'), 0);
     gl.uniform1i(uniform(program, 'u_bloom'), 1);
     gl.uniform1i(uniform(program, 'u_lightFine'), 2);
+    gl.uniform1i(uniform(program, 'u_cores'), 3);
     // With one level nothing upsampled onto it, so its own weight still applies.
     const bloomScale = bloom === undefined ? 0 : levels === 1 ? (frame.bloomWeights[0] ?? 0) : 1;
     gl.uniform1f(uniform(program, 'u_bloomScale'), bloomScale);
     // The float path shows only the sharp share of the cores; the fallback drew only that share.
-    gl.uniform1f(uniform(program, 'u_coreShare'), res.float ? frame.style.coreShare : 1);
-    // Nationally the float path also shows cores where they pile up.
-    const dense = res.float ? denseShareAt(frame.style, frame.targetPxPerCss) : 0;
-    gl.uniform1f(uniform(program, 'u_denseShare'), dense);
+    gl.uniform1f(uniform(program, 'u_coreShare'), res.float ? frame.style.coreShare : 0);
+    // Nationally both also show cores where they pile up.
+    gl.uniform1f(uniform(program, 'u_denseShare'), denseShareAt(frame.style, frame.targetPxPerCss));
     gl.uniform2f(uniform(program, 'u_denseGate'), DENSE_GATE[0], DENSE_GATE[1]);
     gl.uniform2f(uniform(program, 'u_denseField'), DENSE_FIELD[0], DENSE_FIELD[1]);
     const lone = kernelUniforms(frame.style, frame.targetPxPerCss).coreWeight * frame.style.gain;
     gl.uniform1f(uniform(program, 'u_corePeak'), Math.max(lone, 1e-6));
-    gl.uniform1f(uniform(program, 'u_fieldPeak'), Math.max(fieldPeak(frame.style), 1e-6));
+    // The field is the bloom around, or the fallback's halos, which carry it.
+    const field = res.float ? fieldPeak(frame.style) : fallbackPeak(frame.style, frame.zoom);
+    gl.uniform1f(uniform(program, 'u_fieldPeak'), Math.max(field, 1e-6));
     const reach = fieldReachPx(frame.style) * frame.targetPxPerCss;
     gl.uniform2f(uniform(program, 'u_fieldReach'), reach / light.width, reach / light.height);
     gl.uniform1f(uniform(program, 'u_denseCap'), DENSE_CAP);
@@ -991,6 +999,8 @@ export class GlowLayer implements CustomLayerInterface {
     gl.blendFuncSeparate(gl.ONE, gl.ONE_MINUS_SRC_COLOR, gl.ZERO, gl.ONE);
     gl.bindVertexArray(res.vaoEmpty);
     gl.drawArrays(gl.TRIANGLES, 0, 3);
+    gl.bindTexture(gl.TEXTURE_2D, null);
+    gl.activeTexture(gl.TEXTURE2);
     gl.bindTexture(gl.TEXTURE_2D, null);
     gl.activeTexture(gl.TEXTURE1);
     gl.bindTexture(gl.TEXTURE_2D, null);
