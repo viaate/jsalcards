@@ -112,7 +112,7 @@
         <span class="bone"></span>
       </div>
     {:else}
-      <h3 class="heading" id="area-schools">{view.heading}</h3>
+      <!-- Over every school listed, the ZIP code's own and any others taken in: above both headings. -->
       {#if view.counts.length > 0}
         <div class="row tally">
           <span class="label" id="area-today">{copy.days.today}</span>
@@ -125,6 +125,7 @@
           </ul>
         </div>
       {/if}
+      <h3 class="heading" id="area-schools">{view.heading}</h3>
       {#each groups as group, n (n)}
         {#if group.heading !== null}
           <h4 class="heading near-heading">{group.heading}</h4>
@@ -256,9 +257,9 @@
     text-wrap: pretty;
   }
 
-  /* Today's statuses over the list, a row of the grid, each with the map's mark for it. */
+  /* Today's statuses over the whole list, a row of the grid, each with the map's mark for it. */
   .tally {
-    margin-bottom: var(--row);
+    margin-bottom: var(--section);
   }
 
   .counts {

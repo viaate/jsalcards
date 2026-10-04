@@ -110,9 +110,7 @@ describe('AreaPanel', () => {
         day: '2026-01-13',
         number: '64',
         meaning: 'Chance of no school Tuesday',
-        why: [
-          { key: 'a', number: '64%', text: 'Test Village decides for 1 school here.' },
-        ],
+        why: [{ key: 'a', number: '64%', text: 'Test Village decides for 1 school here.' }],
         left: '2 of the 3 schools here have no chance given for Tuesday and are left out.',
         chart: null,
         announces: () => null,
@@ -128,6 +126,13 @@ describe('AreaPanel', () => {
     expect(panel.querySelector('.left')?.textContent).toMatch(/^2 of the 3 schools/u);
     expect(panel.querySelector('.tally .label')?.textContent).toBe(copy.days.today);
     expect(panel.querySelector('.counts')?.textContent.trim()).toBe('1 closed');
+    // Over the whole list, so above its first heading rather than under it.
+    const heading = panel.querySelector('#area-schools');
+    expect(heading).not.toBeNull();
+    expect(
+      (panel.querySelector('.tally')?.compareDocumentPosition(heading as Node) ?? 0) &
+        Node.DOCUMENT_POSITION_FOLLOWING,
+    ).toBeTruthy();
   });
 
   it('opens a school from its row, and closes', () => {
