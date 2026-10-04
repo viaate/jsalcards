@@ -1,1504 +1,1504 @@
 {
  "snapshots": [
   {
-   "timestamp": "20241121104419",
-   "url": "https://www.blaineschools.org/",
-   "station": "finalsite-blaine-id",
-   "why": "storm day 2024-11-21 (market score 1.00)"
+   "timestamp": "20250120112116",
+   "url": "https://www.mcpsmt.org/",
+   "station": "finalsite-missoula-mt",
+   "why": "storm day 2025-01-20 (market score 0.50)"
   },
   {
-   "timestamp": "20250303013200",
-   "url": "https://www.winifred.k12.mt.us/",
-   "station": "apptegy-winifred-mt",
-   "why": "storm day 2025-03-03 (market score 0.25)"
+   "timestamp": "20250117045922",
+   "url": "https://www.swcsd2.org/",
+   "station": "apptegy-sweetwater-2-wy",
+   "why": "storm day 2025-01-17 (market score 0.25)"
   },
   {
-   "timestamp": "20251219103313",
-   "url": "https://www.sd149.com/en-US",
-   "station": "schoolblocks-north-gem-id",
-   "why": "storm day 2025-12-19 (market score 0.25)"
-  },
-  {
-   "timestamp": "20260210065532",
-   "url": "https://www.sd148.org/en-US",
-   "station": "schoolblocks-grace-id",
-   "why": "storm day 2026-02-10 (market score 0.25)"
-  },
-  {
-   "timestamp": "20260101065426",
-   "url": "https://www.sd148.org/en-US",
-   "station": "schoolblocks-grace-id",
-   "why": "storm day 2026-01-01 (market score 0.25)"
-  },
-  {
-   "timestamp": "20260107075535",
-   "url": "https://www.sd148.org/en-US",
-   "station": "schoolblocks-grace-id",
-   "why": "storm day 2026-01-07 (market score 0.25)"
-  },
-  {
-   "timestamp": "20260416081134",
-   "url": "https://www.wsh1.k12.wy.us/",
-   "station": "apptegy-washakie-1-wy",
-   "why": "storm day 2026-04-16 (market score 0.25)"
-  },
-  {
-   "timestamp": "20260415201104",
-   "url": "https://www.wsh1.k12.wy.us/",
-   "station": "apptegy-washakie-1-wy",
-   "why": "storm day 2026-04-16 (market score 0.25)"
-  },
-  {
-   "timestamp": "20240312160910",
-   "url": "https://www.wsh1.k12.wy.us/",
-   "station": "apptegy-washakie-1-wy",
-   "why": "storm day 2024-03-13 (market score 0.25)"
-  },
-  {
-   "timestamp": "20260224093456",
-   "url": "https://www.bighorn1.com/",
-   "station": "apptegy-big-horn-1-wy",
-   "why": "storm day 2026-02-24 (market score 0.25)"
-  },
-  {
-   "timestamp": "20260224021913",
-   "url": "https://www.bighorn1.com/",
-   "station": "apptegy-big-horn-1-wy",
-   "why": "storm day 2026-02-24 (market score 0.25)"
-  },
-  {
-   "timestamp": "20251205021939",
-   "url": "https://www.bighorn1.com/",
-   "station": "apptegy-big-horn-1-wy",
-   "why": "storm day 2025-12-05 (market score 0.25)"
-  },
-  {
-   "timestamp": "20260421205429",
-   "url": "https://www.wyomingindianschools.com/",
-   "station": "apptegy-fremont-14-wy",
-   "why": "storm day 2026-04-22 (market score 0.25)"
-  },
-  {
-   "timestamp": "20260423154947",
-   "url": "https://www.wyomingindianschools.com/",
-   "station": "apptegy-fremont-14-wy",
-   "why": "storm day 2026-04-23 (market score 0.25)"
-  },
-  {
-   "timestamp": "20260422154339",
-   "url": "https://www.wyomingindianschools.com/",
-   "station": "apptegy-fremont-14-wy",
-   "why": "storm day 2026-04-22 (market score 0.25)"
-  },
-  {
-   "timestamp": "20230314223345",
-   "url": "https://www.arapahoeschools.com/",
-   "station": "smartsites-fremont-38-wy",
-   "why": "storm day 2023-03-15 (market score 1.00)"
-  },
-  {
-   "timestamp": "20230313204540",
-   "url": "https://www.arapahoeschools.com/",
-   "station": "smartsites-fremont-38-wy",
-   "why": "storm day 2023-03-14 (market score 1.00)"
-  },
-  {
-   "timestamp": "20230314094613",
-   "url": "https://www.arapahoeschools.com/",
-   "station": "smartsites-fremont-38-wy",
-   "why": "storm day 2023-03-14 (market score 1.00)"
-  },
-  {
-   "timestamp": "20241115000024",
-   "url": "https://www.tvusd.k12.ca.us/",
-   "station": "finalsite-temecula-valley-ca",
-   "why": "storm day 2024-11-15 (market score 0.25)"
-  },
-  {
-   "timestamp": "20241115065656",
-   "url": "https://www.tvusd.k12.ca.us/",
-   "station": "finalsite-temecula-valley-ca",
-   "why": "storm day 2024-11-15 (market score 0.25)"
-  },
-  {
-   "timestamp": "20241115115103",
-   "url": "https://www.tvusd.k12.ca.us/",
-   "station": "finalsite-temecula-valley-ca",
-   "why": "storm day 2024-11-15 (market score 0.25)"
-  },
-  {
-   "timestamp": "20230103224045",
+   "timestamp": "20211222155057",
    "url": "https://www.ocesd.net/",
    "station": "apptegy-oroville-ca",
-   "why": "storm day 2023-01-04 (market score 1.00)"
+   "why": "storm day 2021-12-22 (market score 0.25)"
   },
   {
-   "timestamp": "20230108235258",
+   "timestamp": "20211108221953",
    "url": "https://www.ocesd.net/",
    "station": "apptegy-oroville-ca",
-   "why": "storm day 2023-01-09 (market score 1.00)"
+   "why": "storm day 2021-11-09 (market score 0.25)"
   },
   {
-   "timestamp": "20221201065141",
+   "timestamp": "20211018011719",
    "url": "https://www.ocesd.net/",
    "station": "apptegy-oroville-ca",
-   "why": "storm day 2022-12-01 (market score 1.00)"
+   "why": "storm day 2021-10-18 (market score 0.25)"
   },
   {
-   "timestamp": "20250306081450",
-   "url": "https://www.alvordschools.org/",
-   "station": "smartsites-alvord-ca",
-   "why": "storm day 2025-03-06 (market score 1.00)"
-  },
-  {
-   "timestamp": "20260126105517",
-   "url": "https://www.londonisd.net/",
-   "station": "finalsite-london-tx",
-   "why": "storm day 2026-01-26 (market score 0.50)"
-  },
-  {
-   "timestamp": "20240208131107",
-   "url": "https://www.murrieta.k12.ca.us/",
-   "station": "finalsite-murrieta-valley-ca",
-   "why": "storm day 2024-02-08 (market score 1.00)"
-  },
-  {
-   "timestamp": "20240204164101",
+   "timestamp": "20240205081222",
    "url": "https://www.murrieta.k12.ca.us//",
    "station": "finalsite-murrieta-valley-ca",
    "why": "storm day 2024-02-05 (market score 1.00)"
   },
   {
-   "timestamp": "20240206105841",
+   "timestamp": "20240208154752",
    "url": "https://www.murrieta.k12.ca.us/",
    "station": "finalsite-murrieta-valley-ca",
-   "why": "storm day 2024-02-06 (market score 1.00)"
+   "why": "storm day 2024-02-08 (market score 1.00)"
   },
   {
-   "timestamp": "20211227094126",
+   "timestamp": "20240208034236",
+   "url": "https://www.murrieta.k12.ca.us/",
+   "station": "finalsite-murrieta-valley-ca",
+   "why": "storm day 2024-02-08 (market score 1.00)"
+  },
+  {
+   "timestamp": "20220223154556",
    "url": "https://www.cvusd.us/",
    "station": "smartsites-coachella-valley-ca",
-   "why": "storm day 2021-12-27 (market score 0.50)"
+   "why": "storm day 2022-02-23 (market score 0.50)"
   },
   {
-   "timestamp": "20211229151246",
+   "timestamp": "20220329034334",
    "url": "https://www.cvusd.us/",
    "station": "smartsites-coachella-valley-ca",
-   "why": "storm day 2021-12-29 (market score 0.50)"
+   "why": "storm day 2022-03-29 (market score 0.50)"
   },
   {
-   "timestamp": "20211227101038",
+   "timestamp": "20220328160833",
    "url": "https://www.cvusd.us/",
    "station": "smartsites-coachella-valley-ca",
-   "why": "storm day 2021-12-27 (market score 0.50)"
+   "why": "storm day 2022-03-29 (market score 0.50)"
   },
   {
-   "timestamp": "20240117011042",
-   "url": "https://www.paisd.net/",
-   "station": "smartsites-port-aransas-tx",
-   "why": "storm day 2024-01-17 (market score 0.50)"
-  },
-  {
-   "timestamp": "20240116192306",
-   "url": "https://www.paisd.net/",
-   "station": "smartsites-port-aransas-tx",
-   "why": "storm day 2024-01-17 (market score 0.50)"
-  },
-  {
-   "timestamp": "20240114230438",
-   "url": "https://www.paisd.net/",
-   "station": "smartsites-port-aransas-tx",
-   "why": "storm day 2024-01-15 (market score 0.25)"
-  },
-  {
-   "timestamp": "20260618010540",
-   "url": "https://premontisd.net/",
-   "station": "smartsites-premont-tx",
-   "why": "2026-06-18: one of its largest captures, as no read has seen its list yet"
-  },
-  {
-   "timestamp": "20251225152841",
+   "timestamp": "20240304171027",
    "url": "https://www.durhamunified.org/",
    "station": "apptegy-durham-ca",
-   "why": "storm day 2025-12-25 (market score 1.00)"
+   "why": "storm day 2024-03-05 (market score 0.25)"
   },
   {
-   "timestamp": "20260219032432",
+   "timestamp": "20230321014414",
    "url": "https://www.durhamunified.org/",
    "station": "apptegy-durham-ca",
+   "why": "storm day 2023-03-21 (market score 0.25)"
+  },
+  {
+   "timestamp": "20210125105014",
+   "url": "http://durhamunified.org/",
+   "station": "apptegy-durham-ca",
+   "why": "storm day 2021-01-25 (market score 0.25)"
+  },
+  {
+   "timestamp": "20220329150735",
+   "url": "https://www.beaumontusd.us/",
+   "station": "edlio-beaumont-ca",
+   "why": "storm day 2022-03-29 (market score 1.00)"
+  },
+  {
+   "timestamp": "20220329102632",
+   "url": "https://www.beaumontusd.us/",
+   "station": "edlio-beaumont-ca",
+   "why": "storm day 2022-03-29 (market score 1.00)"
+  },
+  {
+   "timestamp": "20260219095904",
+   "url": "https://www.beaumontusd.us/",
+   "station": "edlio-beaumont-ca",
    "why": "storm day 2026-02-19 (market score 1.00)"
   },
   {
-   "timestamp": "20260216032454",
-   "url": "https://www.durhamunified.org/",
-   "station": "apptegy-durham-ca",
-   "why": "storm day 2026-02-16 (market score 1.00)"
-  },
-  {
-   "timestamp": "20251208021041",
-   "url": "https://www.pettusisd.org/",
-   "station": "smartsites-pettus-tx",
-   "why": "2025-12-08: one of its largest captures, as no read has seen its list yet"
-  },
-  {
-   "timestamp": "20251107104449",
-   "url": "https://www.pettusisd.org/",
-   "station": "smartsites-pettus-tx",
-   "why": "2025-11-07: one of its largest captures, as no read has seen its list yet"
-  },
-  {
-   "timestamp": "20250121000009",
-   "url": "https://www.adisd.net/",
-   "station": "finalsite-agua-dulce-tx",
-   "why": "storm day 2025-01-21 (market score 1.00)"
-  },
-  {
-   "timestamp": "20240114212456",
-   "url": "https://www.adisd.net/",
-   "station": "finalsite-agua-dulce-tx",
-   "why": "storm day 2024-01-15 (market score 0.25)"
-  },
-  {
-   "timestamp": "20260510232352",
-   "url": "https://www.ricardoisd.us/",
-   "station": "smartsites-ricardo-tx",
-   "why": "2026-05-11: one of its largest captures, as no read has seen its list yet"
-  },
-  {
-   "timestamp": "20260101233542",
-   "url": "https://www.spisd.org/",
-   "station": "smartsites-san-perlita-tx",
-   "why": "2026-01-02: one of its largest captures, as no read has seen its list yet"
-  },
-  {
-   "timestamp": "20210916022513",
-   "url": "https://www.srtx.org/",
-   "station": "finalsite-santa-rosa-tx",
-   "why": "2021-09-16: one of its largest captures, as no read has seen its list yet"
-  },
-  {
-   "timestamp": "20250615122834",
-   "url": "https://www.promesapublicschools.org/",
-   "station": "edlio-valere-tx",
-   "why": "2025-06-15: one of its largest captures, as no read has seen its list yet"
-  },
-  {
-   "timestamp": "20251014134758",
-   "url": "https://webbcisd.org/",
-   "station": "smartsites-webb-tx",
-   "why": "2025-10-14: one of its largest captures, as no read has seen its list yet"
-  },
-  {
-   "timestamp": "20251013152253",
-   "url": "https://www.webbcisd.org/",
-   "station": "smartsites-webb-tx",
-   "why": "2025-10-13: one of its largest captures, as no read has seen its list yet"
-  },
-  {
-   "timestamp": "20250524122758",
-   "url": "https://www.fpcvpaa.com/",
-   "station": "finalsite-fpc-vpaa-al",
-   "why": "2025-05-24: an unread capture of an earlier address of its list, the last left (read so that every capture of it is read)"
-  },
-  {
-   "timestamp": "20250712113515",
-   "url": "https://www.fpcvpaa.com/",
-   "station": "finalsite-fpc-vpaa-al",
-   "why": "2025-07-12: an unread capture of an earlier address of its list, the last left (read so that every capture of it is read)"
-  },
-  {
-   "timestamp": "20250804183732",
+   "timestamp": "20250804192351",
    "url": "https://www.fpcvpaa.com/",
    "station": "finalsite-fpc-vpaa-al",
    "why": "2025-08-05: an unread capture of an earlier address of its list, the last left (read so that every capture of it is read)"
   },
   {
-   "timestamp": "20230930063233",
-   "url": "https://www.seisd.net/",
-   "station": "finalsite-san-elizario-tx",
-   "why": "2023-09-30: one of its largest captures, as no read has seen its list yet"
+   "timestamp": "20251214101716",
+   "url": "https://www.fpcvpaa.com/",
+   "station": "finalsite-fpc-vpaa-al",
+   "why": "2025-12-14: an unread capture of an earlier address of its list, the last left (read so that every capture of it is read)"
   },
   {
-   "timestamp": "20230923075527",
-   "url": "https://www.seisd.net/",
-   "station": "finalsite-san-elizario-tx",
-   "why": "2023-09-23: one of its largest captures, as no read has seen its list yet"
+   "timestamp": "20260314092302",
+   "url": "https://www.fpcvpaa.com/",
+   "station": "finalsite-fpc-vpaa-al",
+   "why": "2026-03-14: an unread capture of an earlier address of its list, the last left (read so that every capture of it is read)"
   },
   {
-   "timestamp": "20200530140736",
-   "url": "https://www.sierrablancaisd.net/",
-   "station": "finalsite-sierra-blanca-tx",
-   "why": "2020-05-30: one of its largest captures, as no read has seen its list yet"
+   "timestamp": "20240208110308",
+   "url": "https://www.murrieta.k12.ca.us//",
+   "station": "finalsite-murrieta-valley-ca",
+   "why": "storm day 2024-02-08 (market score 1.00)"
   },
   {
-   "timestamp": "20201204143518",
-   "url": "https://www.sierrablancaisd.net/",
-   "station": "finalsite-sierra-blanca-tx",
-   "why": "2020-12-04: one of its largest captures, as no read has seen its list yet"
+   "timestamp": "20240131225825",
+   "url": "https://www.murrieta.k12.ca.us/",
+   "station": "finalsite-murrieta-valley-ca",
+   "why": "storm day 2024-02-01 (market score 1.00)"
   },
   {
-   "timestamp": "20251231185319",
-   "url": "https://www.sd148.org/en-US",
-   "station": "schoolblocks-grace-id",
-   "why": "storm day 2026-01-01 (market score 0.25)"
+   "timestamp": "20240205221054",
+   "url": "https://www.murrieta.k12.ca.us/",
+   "station": "finalsite-murrieta-valley-ca",
+   "why": "storm day 2024-02-06 (market score 1.00)"
   },
   {
-   "timestamp": "20260101185710",
-   "url": "https://www.sd148.org/en-US",
-   "station": "schoolblocks-grace-id",
-   "why": "storm day 2026-01-02 (market score 0.25)"
+   "timestamp": "20240206130216",
+   "url": "https://www.murrieta.k12.ca.us/",
+   "station": "finalsite-murrieta-valley-ca",
+   "why": "storm day 2024-02-06 (market score 1.00)"
   },
   {
-   "timestamp": "20251218064708",
-   "url": "https://www.sd148.org/en-US",
-   "station": "schoolblocks-grace-id",
-   "why": "storm day 2025-12-18 (market score 0.25)"
+   "timestamp": "20230321072106",
+   "url": "https://www.murrieta.k12.ca.us//",
+   "station": "finalsite-murrieta-valley-ca",
+   "why": "storm day 2023-03-21 (market score 1.00)"
   },
   {
-   "timestamp": "20251219065723",
-   "url": "https://www.sd148.org/en-US",
-   "station": "schoolblocks-grace-id",
-   "why": "storm day 2025-12-19 (market score 0.25)"
+   "timestamp": "20230320195528",
+   "url": "https://www.murrieta.k12.ca.us//",
+   "station": "finalsite-murrieta-valley-ca",
+   "why": "storm day 2023-03-21 (market score 1.00)"
   },
   {
-   "timestamp": "20251222065345",
-   "url": "https://www.sd148.org/en-US",
-   "station": "schoolblocks-grace-id",
-   "why": "storm day 2025-12-22 (market score 0.25)"
+   "timestamp": "20240405105440",
+   "url": "https://www.murrieta.k12.ca.us/",
+   "station": "finalsite-murrieta-valley-ca",
+   "why": "storm day 2024-04-05 (market score 1.00)"
   },
   {
-   "timestamp": "20251218234015",
-   "url": "https://www.sd148.org/en-US",
-   "station": "schoolblocks-grace-id",
-   "why": "storm day 2025-12-19 (market score 0.25)"
+   "timestamp": "20240315011628",
+   "url": "https://www.murrieta.k12.ca.us/",
+   "station": "finalsite-murrieta-valley-ca",
+   "why": "storm day 2024-03-15 (market score 1.00)"
   },
   {
-   "timestamp": "20251221190058",
-   "url": "https://www.sd148.org/en-US",
-   "station": "schoolblocks-grace-id",
-   "why": "storm day 2025-12-22 (market score 0.25)"
+   "timestamp": "20240315151207",
+   "url": "https://www.murrieta.k12.ca.us//",
+   "station": "finalsite-murrieta-valley-ca",
+   "why": "storm day 2024-03-15 (market score 1.00)"
   },
   {
-   "timestamp": "20240215233536",
-   "url": "https://www.wsh1.k12.wy.us/",
-   "station": "apptegy-washakie-1-wy",
-   "why": "storm day 2024-02-16 (market score 0.25)"
+   "timestamp": "20250127112610",
+   "url": "https://www.murrieta.k12.ca.us//",
+   "station": "finalsite-murrieta-valley-ca",
+   "why": "storm day 2025-01-27 (market score 1.00)"
   },
   {
-   "timestamp": "20231026073859",
-   "url": "https://www.wsh1.k12.wy.us/",
-   "station": "apptegy-washakie-1-wy",
-   "why": "storm day 2023-10-26 (market score 0.25)"
+   "timestamp": "20240207142621",
+   "url": "https://www.murrieta.k12.ca.us//",
+   "station": "finalsite-murrieta-valley-ca",
+   "why": "storm day 2024-02-07 (market score 1.00)"
   },
   {
-   "timestamp": "20231026065954",
-   "url": "https://www.wsh1.k12.wy.us/",
-   "station": "apptegy-washakie-1-wy",
-   "why": "storm day 2023-10-26 (market score 0.25)"
+   "timestamp": "20240205003146",
+   "url": "https://www.murrieta.k12.ca.us/",
+   "station": "finalsite-murrieta-valley-ca",
+   "why": "storm day 2024-02-05 (market score 1.00)"
   },
   {
-   "timestamp": "20231026081958",
-   "url": "https://www.wsh1.k12.wy.us/",
-   "station": "apptegy-washakie-1-wy",
-   "why": "storm day 2023-10-26 (market score 0.25)"
+   "timestamp": "20240204191922",
+   "url": "https://www.murrieta.k12.ca.us//",
+   "station": "finalsite-murrieta-valley-ca",
+   "why": "storm day 2024-02-05 (market score 1.00)"
   },
   {
-   "timestamp": "20230427153101",
-   "url": "https://www.wsh1.k12.wy.us/",
-   "station": "apptegy-washakie-1-wy",
-   "why": "storm day 2023-04-27 (market score 0.25)"
+   "timestamp": "20240208040615",
+   "url": "https://www.murrieta.k12.ca.us/",
+   "station": "finalsite-murrieta-valley-ca",
+   "why": "storm day 2024-02-08 (market score 1.00)"
   },
   {
-   "timestamp": "20230427110721",
-   "url": "https://www.wsh1.k12.wy.us/",
-   "station": "apptegy-washakie-1-wy",
-   "why": "storm day 2023-04-27 (market score 0.25)"
+   "timestamp": "20240206202345",
+   "url": "https://www.murrieta.k12.ca.us//",
+   "station": "finalsite-murrieta-valley-ca",
+   "why": "storm day 2024-02-07 (market score 1.00)"
   },
   {
-   "timestamp": "20230420120118",
-   "url": "https://www.wsh1.k12.wy.us/",
-   "station": "apptegy-washakie-1-wy",
-   "why": "storm day 2023-04-20 (market score 0.25)"
+   "timestamp": "20240204225840",
+   "url": "https://www.murrieta.k12.ca.us//",
+   "station": "finalsite-murrieta-valley-ca",
+   "why": "storm day 2024-02-05 (market score 1.00)"
   },
   {
-   "timestamp": "20260225091741",
-   "url": "https://www.wsh1.k12.wy.us/",
-   "station": "apptegy-washakie-1-wy",
-   "why": "storm day 2026-02-25 (market score 0.25)"
+   "timestamp": "20240207233245",
+   "url": "https://www.murrieta.k12.ca.us/",
+   "station": "finalsite-murrieta-valley-ca",
+   "why": "storm day 2024-02-08 (market score 1.00)"
   },
   {
-   "timestamp": "20251211200824",
-   "url": "https://www.wsh1.k12.wy.us/",
-   "station": "apptegy-washakie-1-wy",
-   "why": "storm day 2025-12-12 (market score 0.25)"
+   "timestamp": "20240207225814",
+   "url": "https://www.murrieta.k12.ca.us//",
+   "station": "finalsite-murrieta-valley-ca",
+   "why": "storm day 2024-02-08 (market score 1.00)"
   },
   {
-   "timestamp": "20260223161706",
-   "url": "https://www.wsh1.k12.wy.us/",
-   "station": "apptegy-washakie-1-wy",
-   "why": "storm day 2026-02-24 (market score 0.25)"
+   "timestamp": "20240205033307",
+   "url": "https://www.murrieta.k12.ca.us/",
+   "station": "finalsite-murrieta-valley-ca",
+   "why": "storm day 2024-02-05 (market score 1.00)"
   },
   {
-   "timestamp": "20260306081351",
-   "url": "https://www.wsh1.k12.wy.us/",
-   "station": "apptegy-washakie-1-wy",
-   "why": "storm day 2026-03-06 (market score 0.25)"
+   "timestamp": "20240205143956",
+   "url": "https://www.murrieta.k12.ca.us//",
+   "station": "finalsite-murrieta-valley-ca",
+   "why": "storm day 2024-02-05 (market score 1.00)"
   },
   {
-   "timestamp": "20260306000926",
-   "url": "https://www.wsh1.k12.wy.us/",
-   "station": "apptegy-washakie-1-wy",
-   "why": "storm day 2026-03-06 (market score 0.25)"
+   "timestamp": "20240131191547",
+   "url": "https://www.murrieta.k12.ca.us//",
+   "station": "finalsite-murrieta-valley-ca",
+   "why": "storm day 2024-02-01 (market score 1.00)"
   },
   {
-   "timestamp": "20251212061442",
-   "url": "https://www.wsh1.k12.wy.us/",
-   "station": "apptegy-washakie-1-wy",
-   "why": "storm day 2025-12-12 (market score 0.25)"
+   "timestamp": "20240201105807",
+   "url": "https://www.murrieta.k12.ca.us/",
+   "station": "finalsite-murrieta-valley-ca",
+   "why": "storm day 2024-02-01 (market score 1.00)"
   },
   {
-   "timestamp": "20251212101636",
-   "url": "https://www.wsh1.k12.wy.us/",
-   "station": "apptegy-washakie-1-wy",
-   "why": "storm day 2025-12-12 (market score 0.25)"
+   "timestamp": "20240205123733",
+   "url": "https://www.murrieta.k12.ca.us/",
+   "station": "finalsite-murrieta-valley-ca",
+   "why": "storm day 2024-02-05 (market score 1.00)"
   },
   {
-   "timestamp": "20251209080834",
-   "url": "https://www.wsh1.k12.wy.us/",
-   "station": "apptegy-washakie-1-wy",
-   "why": "storm day 2025-12-09 (market score 0.25)"
+   "timestamp": "20240205095449",
+   "url": "https://www.murrieta.k12.ca.us/",
+   "station": "finalsite-murrieta-valley-ca",
+   "why": "storm day 2024-02-05 (market score 1.00)"
   },
   {
-   "timestamp": "20251210080857",
-   "url": "https://www.wsh1.k12.wy.us/",
-   "station": "apptegy-washakie-1-wy",
-   "why": "storm day 2025-12-10 (market score 0.25)"
+   "timestamp": "20240207022935",
+   "url": "https://www.murrieta.k12.ca.us/",
+   "station": "finalsite-murrieta-valley-ca",
+   "why": "storm day 2024-02-07 (market score 1.00)"
   },
   {
-   "timestamp": "20251205084223",
-   "url": "https://www.wsh1.k12.wy.us/",
-   "station": "apptegy-washakie-1-wy",
-   "why": "storm day 2025-12-05 (market score 0.25)"
+   "timestamp": "20240208081404",
+   "url": "https://www.murrieta.k12.ca.us//",
+   "station": "finalsite-murrieta-valley-ca",
+   "why": "storm day 2024-02-08 (market score 1.00)"
   },
   {
-   "timestamp": "20260304201111",
-   "url": "https://www.wsh1.k12.wy.us/",
-   "station": "apptegy-washakie-1-wy",
-   "why": "storm day 2026-03-05 (market score 0.25)"
+   "timestamp": "20230130122230",
+   "url": "https://www.murrieta.k12.ca.us//",
+   "station": "finalsite-murrieta-valley-ca",
+   "why": "storm day 2023-01-30 (market score 1.00)"
   },
   {
-   "timestamp": "20260224201144",
-   "url": "https://www.wsh1.k12.wy.us/",
-   "station": "apptegy-washakie-1-wy",
-   "why": "storm day 2026-02-25 (market score 0.25)"
+   "timestamp": "20230115230421",
+   "url": "https://www.murrieta.k12.ca.us//",
+   "station": "finalsite-murrieta-valley-ca",
+   "why": "storm day 2023-01-16 (market score 1.00)"
   },
   {
-   "timestamp": "20260219081022",
-   "url": "https://www.wsh1.k12.wy.us/",
-   "station": "apptegy-washakie-1-wy",
-   "why": "storm day 2026-02-19 (market score 0.25)"
+   "timestamp": "20230116110737",
+   "url": "https://www.murrieta.k12.ca.us//",
+   "station": "finalsite-murrieta-valley-ca",
+   "why": "storm day 2023-01-16 (market score 1.00)"
   },
   {
-   "timestamp": "20260219013251",
-   "url": "https://www.wsh1.k12.wy.us/",
-   "station": "apptegy-washakie-1-wy",
-   "why": "storm day 2026-02-19 (market score 0.25)"
+   "timestamp": "20230130004927",
+   "url": "https://www.murrieta.k12.ca.us/",
+   "station": "finalsite-murrieta-valley-ca",
+   "why": "storm day 2023-01-30 (market score 1.00)"
   },
   {
-   "timestamp": "20260305043849",
-   "url": "https://www.wsh1.k12.wy.us/",
-   "station": "apptegy-washakie-1-wy",
-   "why": "storm day 2026-03-05 (market score 0.25)"
+   "timestamp": "20230328230853",
+   "url": "https://www.murrieta.k12.ca.us//",
+   "station": "finalsite-murrieta-valley-ca",
+   "why": "storm day 2023-03-29 (market score 1.00)"
   },
   {
-   "timestamp": "20260224234745",
-   "url": "https://www.wsh1.k12.wy.us/",
-   "station": "apptegy-washakie-1-wy",
-   "why": "storm day 2026-02-25 (market score 0.25)"
+   "timestamp": "20230330145053",
+   "url": "https://www.murrieta.k12.ca.us/",
+   "station": "finalsite-murrieta-valley-ca",
+   "why": "storm day 2023-03-30 (market score 1.00)"
   },
   {
-   "timestamp": "20251205063022",
-   "url": "https://www.wsh1.k12.wy.us/",
-   "station": "apptegy-washakie-1-wy",
-   "why": "storm day 2025-12-05 (market score 0.25)"
+   "timestamp": "20230330050225",
+   "url": "https://www.murrieta.k12.ca.us//",
+   "station": "finalsite-murrieta-valley-ca",
+   "why": "storm day 2023-03-30 (market score 1.00)"
   },
   {
-   "timestamp": "20251212084524",
-   "url": "https://www.wsh1.k12.wy.us/",
-   "station": "apptegy-washakie-1-wy",
-   "why": "storm day 2025-12-12 (market score 0.25)"
+   "timestamp": "20230329215826",
+   "url": "https://www.murrieta.k12.ca.us/",
+   "station": "finalsite-murrieta-valley-ca",
+   "why": "storm day 2023-03-30 (market score 1.00)"
   },
   {
-   "timestamp": "20251204203545",
-   "url": "https://www.wsh1.k12.wy.us/",
-   "station": "apptegy-washakie-1-wy",
-   "why": "storm day 2025-12-05 (market score 0.25)"
+   "timestamp": "20230330005309",
+   "url": "https://www.murrieta.k12.ca.us//",
+   "station": "finalsite-murrieta-valley-ca",
+   "why": "storm day 2023-03-30 (market score 1.00)"
   },
   {
-   "timestamp": "20251209202726",
-   "url": "https://www.wsh1.k12.wy.us/",
-   "station": "apptegy-washakie-1-wy",
-   "why": "storm day 2025-12-10 (market score 0.25)"
+   "timestamp": "20230329110501",
+   "url": "https://www.murrieta.k12.ca.us//",
+   "station": "finalsite-murrieta-valley-ca",
+   "why": "storm day 2023-03-29 (market score 1.00)"
   },
   {
-   "timestamp": "20260224053314",
-   "url": "https://www.wsh1.k12.wy.us/",
-   "station": "apptegy-washakie-1-wy",
-   "why": "storm day 2026-02-24 (market score 0.25)"
+   "timestamp": "20230330030513",
+   "url": "https://www.murrieta.k12.ca.us//",
+   "station": "finalsite-murrieta-valley-ca",
+   "why": "storm day 2023-03-30 (market score 1.00)"
   },
   {
-   "timestamp": "20251208200851",
-   "url": "https://www.wsh1.k12.wy.us/",
-   "station": "apptegy-washakie-1-wy",
-   "why": "storm day 2025-12-09 (market score 0.25)"
+   "timestamp": "20230320161644",
+   "url": "https://www.murrieta.k12.ca.us/",
+   "station": "finalsite-murrieta-valley-ca",
+   "why": "storm day 2023-03-21 (market score 1.00)"
   },
   {
-   "timestamp": "20251204221024",
-   "url": "https://www.wsh1.k12.wy.us/",
-   "station": "apptegy-washakie-1-wy",
-   "why": "storm day 2025-12-05 (market score 0.25)"
+   "timestamp": "20230130110545",
+   "url": "https://www.murrieta.k12.ca.us/",
+   "station": "finalsite-murrieta-valley-ca",
+   "why": "storm day 2023-01-30 (market score 1.00)"
   },
   {
-   "timestamp": "20250519020957",
-   "url": "https://www.wsh1.k12.wy.us/",
-   "station": "apptegy-washakie-1-wy",
-   "why": "storm day 2025-05-19 (market score 0.25)"
+   "timestamp": "20230130032216",
+   "url": "https://www.murrieta.k12.ca.us//",
+   "station": "finalsite-murrieta-valley-ca",
+   "why": "storm day 2023-01-30 (market score 1.00)"
   },
   {
-   "timestamp": "20250519120722",
-   "url": "https://www.wsh1.k12.wy.us/",
-   "station": "apptegy-washakie-1-wy",
-   "why": "storm day 2025-05-19 (market score 0.25)"
+   "timestamp": "20220327182850",
+   "url": "https://www.murrieta.k12.ca.us//",
+   "station": "finalsite-murrieta-valley-ca",
+   "why": "storm day 2022-03-28 (market score 1.00)"
   },
   {
-   "timestamp": "20250519043437",
-   "url": "https://www.wsh1.k12.wy.us/",
-   "station": "apptegy-washakie-1-wy",
-   "why": "storm day 2025-05-19 (market score 0.25)"
+   "timestamp": "20210125114535",
+   "url": "https://www.murrieta.k12.ca.us/",
+   "station": "finalsite-murrieta-valley-ca",
+   "why": "storm day 2021-01-25 (market score 1.00)"
   },
   {
-   "timestamp": "20251209141413",
-   "url": "https://www.bighorn1.com/",
-   "station": "apptegy-big-horn-1-wy",
-   "why": "storm day 2025-12-09 (market score 0.25)"
-  },
-  {
-   "timestamp": "20260224141655",
-   "url": "https://www.bighorn1.com/",
-   "station": "apptegy-big-horn-1-wy",
-   "why": "storm day 2026-02-24 (market score 0.25)"
-  },
-  {
-   "timestamp": "20260305141737",
-   "url": "https://www.bighorn1.com/",
-   "station": "apptegy-big-horn-1-wy",
-   "why": "storm day 2026-03-05 (market score 0.25)"
-  },
-  {
-   "timestamp": "20260305080623",
-   "url": "https://www.bighorn1.com/",
-   "station": "apptegy-big-horn-1-wy",
-   "why": "storm day 2026-03-05 (market score 0.25)"
-  },
-  {
-   "timestamp": "20251205141838",
-   "url": "https://www.bighorn1.com/",
-   "station": "apptegy-big-horn-1-wy",
-   "why": "storm day 2025-12-05 (market score 0.25)"
-  },
-  {
-   "timestamp": "20250122011529",
-   "url": "https://www.bighorn1.com/",
-   "station": "apptegy-big-horn-1-wy",
-   "why": "storm day 2025-01-22 (market score 0.25)"
-  },
-  {
-   "timestamp": "20260217190918",
-   "url": "https://www.wyomingindianschools.com/",
-   "station": "apptegy-fremont-14-wy",
-   "why": "storm day 2026-02-18 (market score 0.25)"
-  },
-  {
-   "timestamp": "20260417034518",
-   "url": "https://www.wyomingindianschools.com/",
-   "station": "apptegy-fremont-14-wy",
-   "why": "storm day 2026-04-17 (market score 0.25)"
-  },
-  {
-   "timestamp": "20221102185218",
-   "url": "https://www.wyomingindianschools.com/",
-   "station": "apptegy-fremont-14-wy",
-   "why": "storm day 2022-11-03 (market score 0.25)"
-  },
-  {
-   "timestamp": "20221109122617",
-   "url": "https://www.wyomingindianschools.com/",
-   "station": "apptegy-fremont-14-wy",
-   "why": "storm day 2022-11-09 (market score 0.25)"
-  },
-  {
-   "timestamp": "20230314044927",
-   "url": "https://www.arapahoeschools.com/",
-   "station": "smartsites-fremont-38-wy",
-   "why": "storm day 2023-03-14 (market score 1.00)"
-  },
-  {
-   "timestamp": "20230313214709",
-   "url": "https://www.arapahoeschools.com/",
-   "station": "smartsites-fremont-38-wy",
-   "why": "storm day 2023-03-14 (market score 1.00)"
-  },
-  {
-   "timestamp": "20230314123808",
-   "url": "https://www.arapahoeschools.com/",
-   "station": "smartsites-fremont-38-wy",
-   "why": "storm day 2023-03-14 (market score 1.00)"
-  },
-  {
-   "timestamp": "20230314144125",
-   "url": "https://www.arapahoeschools.com/",
-   "station": "smartsites-fremont-38-wy",
-   "why": "storm day 2023-03-14 (market score 1.00)"
-  },
-  {
-   "timestamp": "20230127094744",
-   "url": "https://www.arapahoeschools.com/",
-   "station": "smartsites-fremont-38-wy",
-   "why": "storm day 2023-01-27 (market score 1.00)"
-  },
-  {
-   "timestamp": "20230126214611",
-   "url": "https://www.arapahoeschools.com/",
-   "station": "smartsites-fremont-38-wy",
-   "why": "storm day 2023-01-27 (market score 1.00)"
-  },
-  {
-   "timestamp": "20221220100631",
-   "url": "https://www.arapahoeschools.com/",
-   "station": "smartsites-fremont-38-wy",
-   "why": "storm day 2022-12-20 (market score 1.00)"
-  },
-  {
-   "timestamp": "20221202040233",
-   "url": "https://www.arapahoeschools.com/",
-   "station": "smartsites-fremont-38-wy",
-   "why": "storm day 2022-12-02 (market score 1.00)"
-  },
-  {
-   "timestamp": "20221221054513",
-   "url": "https://www.arapahoeschools.com/",
-   "station": "smartsites-fremont-38-wy",
-   "why": "storm day 2022-12-21 (market score 1.00)"
-  },
-  {
-   "timestamp": "20221219220536",
-   "url": "https://www.arapahoeschools.com/",
-   "station": "smartsites-fremont-38-wy",
-   "why": "storm day 2022-12-20 (market score 1.00)"
-  },
-  {
-   "timestamp": "20221219214537",
-   "url": "https://www.arapahoeschools.com/",
-   "station": "smartsites-fremont-38-wy",
-   "why": "storm day 2022-12-20 (market score 1.00)"
-  },
-  {
-   "timestamp": "20221220215250",
-   "url": "https://www.arapahoeschools.com/",
-   "station": "smartsites-fremont-38-wy",
-   "why": "storm day 2022-12-21 (market score 1.00)"
-  },
-  {
-   "timestamp": "20221229214647",
-   "url": "https://www.arapahoeschools.com/",
-   "station": "smartsites-fremont-38-wy",
-   "why": "storm day 2022-12-30 (market score 1.00)"
-  },
-  {
-   "timestamp": "20230102094610",
-   "url": "https://www.arapahoeschools.com/",
-   "station": "smartsites-fremont-38-wy",
-   "why": "storm day 2023-01-02 (market score 1.00)"
-  },
-  {
-   "timestamp": "20221226215037",
-   "url": "https://www.arapahoeschools.com/",
-   "station": "smartsites-fremont-38-wy",
-   "why": "storm day 2022-12-27 (market score 1.00)"
-  },
-  {
-   "timestamp": "20221230094612",
-   "url": "https://www.arapahoeschools.com/",
-   "station": "smartsites-fremont-38-wy",
-   "why": "storm day 2022-12-30 (market score 1.00)"
-  },
-  {
-   "timestamp": "20221227094947",
-   "url": "https://www.arapahoeschools.com/",
-   "station": "smartsites-fremont-38-wy",
-   "why": "storm day 2022-12-27 (market score 1.00)"
-  },
-  {
-   "timestamp": "20221221094718",
-   "url": "https://www.arapahoeschools.com/",
-   "station": "smartsites-fremont-38-wy",
-   "why": "storm day 2022-12-21 (market score 1.00)"
-  },
-  {
-   "timestamp": "20230101214643",
-   "url": "https://www.arapahoeschools.com/",
-   "station": "smartsites-fremont-38-wy",
-   "why": "storm day 2023-01-02 (market score 1.00)"
-  },
-  {
-   "timestamp": "20221201035634",
-   "url": "https://www.arapahoeschools.com/",
-   "station": "smartsites-fremont-38-wy",
-   "why": "storm day 2022-12-01 (market score 1.00)"
-  },
-  {
-   "timestamp": "20221201114736",
-   "url": "https://www.arapahoeschools.com/",
-   "station": "smartsites-fremont-38-wy",
-   "why": "storm day 2022-12-01 (market score 1.00)"
-  },
-  {
-   "timestamp": "20221201013420",
-   "url": "https://www.arapahoeschools.com/",
-   "station": "smartsites-fremont-38-wy",
-   "why": "storm day 2022-12-01 (market score 1.00)"
-  },
-  {
-   "timestamp": "20221127221255",
-   "url": "https://www.arapahoeschools.com/",
-   "station": "smartsites-fremont-38-wy",
-   "why": "storm day 2022-11-28 (market score 1.00)"
-  },
-  {
-   "timestamp": "20221128102021",
-   "url": "https://www.arapahoeschools.com/",
-   "station": "smartsites-fremont-38-wy",
-   "why": "storm day 2022-11-28 (market score 1.00)"
-  },
-  {
-   "timestamp": "20221108100742",
-   "url": "https://www.arapahoeschools.com/",
-   "station": "smartsites-fremont-38-wy",
-   "why": "storm day 2022-11-08 (market score 1.00)"
-  },
-  {
-   "timestamp": "20221107220731",
-   "url": "https://www.arapahoeschools.com/",
-   "station": "smartsites-fremont-38-wy",
-   "why": "storm day 2022-11-08 (market score 1.00)"
-  },
-  {
-   "timestamp": "20221106220732",
-   "url": "https://www.arapahoeschools.com/",
-   "station": "smartsites-fremont-38-wy",
-   "why": "storm day 2022-11-07 (market score 1.00)"
-  },
-  {
-   "timestamp": "20221107100719",
-   "url": "https://www.arapahoeschools.com/",
-   "station": "smartsites-fremont-38-wy",
-   "why": "storm day 2022-11-07 (market score 1.00)"
-  },
-  {
-   "timestamp": "20220411222945",
-   "url": "https://www.arapahoeschools.com/",
-   "station": "smartsites-fremont-38-wy",
-   "why": "storm day 2022-04-12 (market score 1.00)"
-  },
-  {
-   "timestamp": "20230130094629",
-   "url": "https://www.arapahoeschools.com/",
-   "station": "smartsites-fremont-38-wy",
-   "why": "storm day 2023-01-30 (market score 0.50)"
-  },
-  {
-   "timestamp": "20230130214613",
-   "url": "https://www.arapahoeschools.com/",
-   "station": "smartsites-fremont-38-wy",
-   "why": "storm day 2023-01-31 (market score 0.50)"
-  },
-  {
-   "timestamp": "20230129220818",
-   "url": "https://www.arapahoeschools.com/",
-   "station": "smartsites-fremont-38-wy",
-   "why": "storm day 2023-01-30 (market score 0.50)"
-  },
-  {
-   "timestamp": "20221222214633",
-   "url": "https://www.arapahoeschools.com/",
-   "station": "smartsites-fremont-38-wy",
-   "why": "storm day 2022-12-23 (market score 0.50)"
-  },
-  {
-   "timestamp": "20221221213752",
-   "url": "https://www.arapahoeschools.com/",
-   "station": "smartsites-fremont-38-wy",
-   "why": "storm day 2022-12-22 (market score 0.50)"
-  },
-  {
-   "timestamp": "20221222041816",
-   "url": "https://www.arapahoeschools.com/",
-   "station": "smartsites-fremont-38-wy",
-   "why": "storm day 2022-12-22 (market score 0.50)"
-  },
-  {
-   "timestamp": "20221222060849",
-   "url": "https://www.arapahoeschools.com/",
-   "station": "smartsites-fremont-38-wy",
-   "why": "storm day 2022-12-22 (market score 0.50)"
-  },
-  {
-   "timestamp": "20221222173606",
-   "url": "https://www.arapahoeschools.com/",
-   "station": "smartsites-fremont-38-wy",
-   "why": "storm day 2022-12-23 (market score 0.50)"
-  },
-  {
-   "timestamp": "20221222094614",
-   "url": "https://www.arapahoeschools.com/",
-   "station": "smartsites-fremont-38-wy",
-   "why": "storm day 2022-12-22 (market score 0.50)"
-  },
-  {
-   "timestamp": "20221222181930",
-   "url": "https://www.arapahoeschools.com/",
-   "station": "smartsites-fremont-38-wy",
-   "why": "storm day 2022-12-23 (market score 0.50)"
-  },
-  {
-   "timestamp": "20221223024009",
-   "url": "https://www.arapahoeschools.com/",
-   "station": "smartsites-fremont-38-wy",
-   "why": "storm day 2022-12-23 (market score 0.50)"
-  },
-  {
-   "timestamp": "20221222012639",
-   "url": "https://www.arapahoeschools.com/",
-   "station": "smartsites-fremont-38-wy",
-   "why": "storm day 2022-12-22 (market score 0.50)"
-  },
-  {
-   "timestamp": "20221223112058",
-   "url": "https://www.arapahoeschools.com/",
-   "station": "smartsites-fremont-38-wy",
-   "why": "storm day 2022-12-23 (market score 0.50)"
-  },
-  {
-   "timestamp": "20230426215123",
-   "url": "https://www.arapahoeschools.com/",
-   "station": "smartsites-fremont-38-wy",
-   "why": "storm day 2023-04-27 (market score 0.25)"
-  },
-  {
-   "timestamp": "20230423214745",
-   "url": "https://www.arapahoeschools.com/",
-   "station": "smartsites-fremont-38-wy",
-   "why": "storm day 2023-04-24 (market score 0.25)"
-  },
-  {
-   "timestamp": "20230427095128",
-   "url": "https://www.arapahoeschools.com/",
-   "station": "smartsites-fremont-38-wy",
-   "why": "storm day 2023-04-27 (market score 0.25)"
-  },
-  {
-   "timestamp": "20230424094623",
-   "url": "https://www.arapahoeschools.com/",
-   "station": "smartsites-fremont-38-wy",
-   "why": "storm day 2023-04-24 (market score 0.25)"
-  },
-  {
-   "timestamp": "20230413114054",
-   "url": "https://www.arapahoeschools.com/",
-   "station": "smartsites-fremont-38-wy",
-   "why": "storm day 2023-04-13 (market score 0.25)"
-  },
-  {
-   "timestamp": "20230413035115",
-   "url": "https://www.arapahoeschools.com/",
-   "station": "smartsites-fremont-38-wy",
-   "why": "storm day 2023-04-13 (market score 0.25)"
-  },
-  {
-   "timestamp": "20230420214639",
-   "url": "https://www.arapahoeschools.com/",
-   "station": "smartsites-fremont-38-wy",
-   "why": "storm day 2023-04-21 (market score 0.25)"
-  },
-  {
-   "timestamp": "20230421094739",
-   "url": "https://www.arapahoeschools.com/",
-   "station": "smartsites-fremont-38-wy",
-   "why": "storm day 2023-04-21 (market score 0.25)"
-  },
-  {
-   "timestamp": "20230419222728",
-   "url": "https://www.arapahoeschools.com/",
-   "station": "smartsites-fremont-38-wy",
-   "why": "storm day 2023-04-20 (market score 0.25)"
-  },
-  {
-   "timestamp": "20230420100613",
-   "url": "https://www.arapahoeschools.com/",
-   "station": "smartsites-fremont-38-wy",
-   "why": "storm day 2023-04-20 (market score 0.25)"
-  },
-  {
-   "timestamp": "20230418101751",
-   "url": "https://www.arapahoeschools.com/",
-   "station": "smartsites-fremont-38-wy",
-   "why": "storm day 2023-04-18 (market score 0.25)"
-  },
-  {
-   "timestamp": "20230420185953",
-   "url": "https://www.arapahoeschools.com/",
-   "station": "smartsites-fremont-38-wy",
-   "why": "storm day 2023-04-21 (market score 0.25)"
-  },
-  {
-   "timestamp": "20230417214640",
-   "url": "https://www.arapahoeschools.com/",
-   "station": "smartsites-fremont-38-wy",
-   "why": "storm day 2023-04-18 (market score 0.25)"
-  },
-  {
-   "timestamp": "20230418015707",
-   "url": "https://www.arapahoeschools.com/",
-   "station": "smartsites-fremont-38-wy",
-   "why": "storm day 2023-04-18 (market score 0.25)"
-  },
-  {
-   "timestamp": "20230330014826",
-   "url": "https://www.arapahoeschools.com/",
-   "station": "smartsites-fremont-38-wy",
-   "why": "storm day 2023-03-30 (market score 0.25)"
-  },
-  {
-   "timestamp": "20230329214703",
-   "url": "https://www.arapahoeschools.com/",
-   "station": "smartsites-fremont-38-wy",
-   "why": "storm day 2023-03-30 (market score 0.25)"
-  },
-  {
-   "timestamp": "20230330094656",
-   "url": "https://www.arapahoeschools.com/",
-   "station": "smartsites-fremont-38-wy",
-   "why": "storm day 2023-03-30 (market score 0.25)"
-  },
-  {
-   "timestamp": "20230319192242",
-   "url": "https://www.arapahoeschools.com/",
-   "station": "smartsites-fremont-38-wy",
-   "why": "storm day 2023-03-20 (market score 0.25)"
-  },
-  {
-   "timestamp": "20230321125344",
-   "url": "https://www.arapahoeschools.com/",
-   "station": "smartsites-fremont-38-wy",
-   "why": "storm day 2023-03-21 (market score 0.25)"
-  },
-  {
-   "timestamp": "20230321174150",
-   "url": "https://www.arapahoeschools.com/",
-   "station": "smartsites-fremont-38-wy",
-   "why": "storm day 2023-03-22 (market score 0.25)"
-  },
-  {
-   "timestamp": "20230319224828",
-   "url": "https://www.arapahoeschools.com/",
-   "station": "smartsites-fremont-38-wy",
-   "why": "storm day 2023-03-20 (market score 0.25)"
-  },
-  {
-   "timestamp": "20230320132939",
-   "url": "https://www.arapahoeschools.com/",
-   "station": "smartsites-fremont-38-wy",
-   "why": "storm day 2023-03-20 (market score 0.25)"
-  },
-  {
-   "timestamp": "20230319175759",
-   "url": "https://www.arapahoeschools.com/",
-   "station": "smartsites-fremont-38-wy",
-   "why": "storm day 2023-03-20 (market score 0.25)"
-  },
-  {
-   "timestamp": "20230320024121",
-   "url": "https://www.arapahoeschools.com/",
-   "station": "smartsites-fremont-38-wy",
-   "why": "storm day 2023-03-20 (market score 0.25)"
-  },
-  {
-   "timestamp": "20230319180338",
-   "url": "https://www.arapahoeschools.com/",
-   "station": "smartsites-fremont-38-wy",
-   "why": "storm day 2023-03-20 (market score 0.25)"
-  },
-  {
-   "timestamp": "20230319165231",
-   "url": "https://www.arapahoeschools.com/",
-   "station": "smartsites-fremont-38-wy",
-   "why": "storm day 2023-03-20 (market score 0.25)"
-  },
-  {
-   "timestamp": "20230319232354",
-   "url": "https://www.arapahoeschools.com/",
-   "station": "smartsites-fremont-38-wy",
-   "why": "storm day 2023-03-20 (market score 0.25)"
-  },
-  {
-   "timestamp": "20230320115256",
-   "url": "https://www.arapahoeschools.com/",
-   "station": "smartsites-fremont-38-wy",
-   "why": "storm day 2023-03-20 (market score 0.25)"
-  },
-  {
-   "timestamp": "20230321151023",
-   "url": "https://www.arapahoeschools.com/",
-   "station": "smartsites-fremont-38-wy",
-   "why": "storm day 2023-03-21 (market score 0.25)"
-  },
-  {
-   "timestamp": "20230320102713",
-   "url": "https://www.arapahoeschools.com/",
-   "station": "smartsites-fremont-38-wy",
-   "why": "storm day 2023-03-20 (market score 0.25)"
-  },
-  {
-   "timestamp": "20230320174104",
-   "url": "https://www.arapahoeschools.com/",
-   "station": "smartsites-fremont-38-wy",
-   "why": "storm day 2023-03-21 (market score 0.25)"
-  },
-  {
-   "timestamp": "20230124214611",
-   "url": "https://www.arapahoeschools.com/",
-   "station": "smartsites-fremont-38-wy",
-   "why": "storm day 2023-01-25 (market score 0.25)"
-  },
-  {
-   "timestamp": "20230109214815",
-   "url": "https://www.arapahoeschools.com/",
-   "station": "smartsites-fremont-38-wy",
-   "why": "storm day 2023-01-10 (market score 0.25)"
-  },
-  {
-   "timestamp": "20230108214841",
-   "url": "https://www.arapahoeschools.com/",
-   "station": "smartsites-fremont-38-wy",
-   "why": "storm day 2023-01-09 (market score 0.25)"
-  },
-  {
-   "timestamp": "20230109094624",
-   "url": "https://www.arapahoeschools.com/",
-   "station": "smartsites-fremont-38-wy",
-   "why": "storm day 2023-01-09 (market score 0.25)"
-  },
-  {
-   "timestamp": "20230115214635",
-   "url": "https://www.arapahoeschools.com/",
-   "station": "smartsites-fremont-38-wy",
-   "why": "storm day 2023-01-16 (market score 0.25)"
-  },
-  {
-   "timestamp": "20230116094625",
-   "url": "https://www.arapahoeschools.com/",
-   "station": "smartsites-fremont-38-wy",
-   "why": "storm day 2023-01-16 (market score 0.25)"
-  },
-  {
-   "timestamp": "20230111094615",
-   "url": "https://www.arapahoeschools.com/",
-   "station": "smartsites-fremont-38-wy",
-   "why": "storm day 2023-01-11 (market score 0.25)"
-  },
-  {
-   "timestamp": "20221212112535",
-   "url": "https://www.arapahoeschools.com/",
-   "station": "smartsites-fremont-38-wy",
-   "why": "storm day 2022-12-12 (market score 0.25)"
-  },
-  {
-   "timestamp": "20221212144904",
-   "url": "https://www.arapahoeschools.com/",
-   "station": "smartsites-fremont-38-wy",
-   "why": "storm day 2022-12-12 (market score 0.25)"
-  },
-  {
-   "timestamp": "20230110214647",
-   "url": "https://www.arapahoeschools.com/",
-   "station": "smartsites-fremont-38-wy",
-   "why": "storm day 2023-01-11 (market score 0.25)"
-  },
-  {
-   "timestamp": "20230110094710",
-   "url": "https://www.arapahoeschools.com/",
-   "station": "smartsites-fremont-38-wy",
-   "why": "storm day 2023-01-10 (market score 0.25)"
-  },
-  {
-   "timestamp": "20221023220904",
-   "url": "https://www.arapahoeschools.com/",
-   "station": "smartsites-fremont-38-wy",
-   "why": "storm day 2022-10-24 (market score 0.25)"
-  },
-  {
-   "timestamp": "20221108221941",
-   "url": "https://www.arapahoeschools.com/",
-   "station": "smartsites-fremont-38-wy",
-   "why": "storm day 2022-11-09 (market score 0.25)"
-  },
-  {
-   "timestamp": "20221024104954",
-   "url": "https://www.arapahoeschools.com/",
-   "station": "smartsites-fremont-38-wy",
-   "why": "storm day 2022-10-24 (market score 0.25)"
-  },
-  {
-   "timestamp": "20221025100755",
-   "url": "https://www.arapahoeschools.com/",
-   "station": "smartsites-fremont-38-wy",
-   "why": "storm day 2022-10-25 (market score 0.25)"
-  },
-  {
-   "timestamp": "20221109100750",
-   "url": "https://www.arapahoeschools.com/",
-   "station": "smartsites-fremont-38-wy",
-   "why": "storm day 2022-11-09 (market score 0.25)"
-  },
-  {
-   "timestamp": "20221101220739",
-   "url": "https://www.arapahoeschools.com/",
-   "station": "smartsites-fremont-38-wy",
-   "why": "storm day 2022-11-02 (market score 0.25)"
-  },
-  {
-   "timestamp": "20221102100800",
-   "url": "https://www.arapahoeschools.com/",
-   "station": "smartsites-fremont-38-wy",
-   "why": "storm day 2022-11-02 (market score 0.25)"
-  },
-  {
-   "timestamp": "20221024220752",
-   "url": "https://www.arapahoeschools.com/",
-   "station": "smartsites-fremont-38-wy",
-   "why": "storm day 2022-10-25 (market score 0.25)"
-  },
-  {
-   "timestamp": "20221102220750",
-   "url": "https://www.arapahoeschools.com/",
-   "station": "smartsites-fremont-38-wy",
-   "why": "storm day 2022-11-03 (market score 0.25)"
-  },
-  {
-   "timestamp": "20221103100724",
-   "url": "https://www.arapahoeschools.com/",
-   "station": "smartsites-fremont-38-wy",
-   "why": "storm day 2022-11-03 (market score 0.25)"
-  },
-  {
-   "timestamp": "20220410222354",
-   "url": "https://www.arapahoeschools.com/",
-   "station": "smartsites-fremont-38-wy",
-   "why": "storm day 2022-04-11 (market score 0.25)"
-  },
-  {
-   "timestamp": "20220413222851",
-   "url": "https://www.arapahoeschools.com/",
-   "station": "smartsites-fremont-38-wy",
-   "why": "storm day 2022-04-14 (market score 0.25)"
-  },
-  {
-   "timestamp": "20220328222401",
-   "url": "https://www.arapahoeschools.com/",
-   "station": "smartsites-fremont-38-wy",
-   "why": "storm day 2022-03-29 (market score 0.25)"
-  },
-  {
-   "timestamp": "20220404222357",
-   "url": "https://www.arapahoeschools.com/",
-   "station": "smartsites-fremont-38-wy",
-   "why": "storm day 2022-04-05 (market score 0.25)"
-  },
-  {
-   "timestamp": "20220404163018",
-   "url": "https://www.arapahoeschools.com/",
-   "station": "smartsites-fremont-38-wy",
-   "why": "storm day 2022-04-05 (market score 0.25)"
-  },
-  {
-   "timestamp": "20220414102414",
-   "url": "https://www.arapahoeschools.com/",
-   "station": "smartsites-fremont-38-wy",
-   "why": "storm day 2022-04-14 (market score 0.25)"
-  },
-  {
-   "timestamp": "20220405102346",
-   "url": "https://www.arapahoeschools.com/",
-   "station": "smartsites-fremont-38-wy",
-   "why": "storm day 2022-04-05 (market score 0.25)"
-  },
-  {
-   "timestamp": "20220403171820",
-   "url": "https://www.arapahoeschools.com/",
-   "station": "smartsites-fremont-38-wy",
-   "why": "storm day 2022-04-04 (market score 0.25)"
-  },
-  {
-   "timestamp": "20220403222317",
-   "url": "https://www.arapahoeschools.com/",
-   "station": "smartsites-fremont-38-wy",
-   "why": "storm day 2022-04-04 (market score 0.25)"
-  },
-  {
-   "timestamp": "20220404021821",
-   "url": "https://www.arapahoeschools.com/",
-   "station": "smartsites-fremont-38-wy",
-   "why": "storm day 2022-04-04 (market score 0.25)"
-  },
-  {
-   "timestamp": "20250314004406",
-   "url": "https://www.tvusd.k12.ca.us/",
-   "station": "finalsite-temecula-valley-ca",
-   "why": "storm day 2025-03-14 (market score 0.25)"
-  },
-  {
-   "timestamp": "20250314140639",
-   "url": "https://www.tvusd.k12.ca.us/",
-   "station": "finalsite-temecula-valley-ca",
-   "why": "storm day 2025-03-14 (market score 0.25)"
-  },
-  {
-   "timestamp": "20250303052109",
-   "url": "https://www.tvusd.k12.ca.us/",
-   "station": "finalsite-temecula-valley-ca",
-   "why": "storm day 2025-03-03 (market score 0.25)"
-  },
-  {
-   "timestamp": "20221107214358",
-   "url": "https://www.ocesd.net/",
-   "station": "apptegy-oroville-ca",
-   "why": "storm day 2022-11-08 (market score 1.00)"
-  },
-  {
-   "timestamp": "20221031174502",
-   "url": "https://www.ocesd.net/",
-   "station": "apptegy-oroville-ca",
-   "why": "storm day 2022-11-01 (market score 1.00)"
-  },
-  {
-   "timestamp": "20221101213647",
-   "url": "https://www.ocesd.net/",
-   "station": "apptegy-oroville-ca",
-   "why": "storm day 2022-11-02 (market score 1.00)"
-  },
-  {
-   "timestamp": "20221107005012",
-   "url": "https://www.ocesd.net/",
-   "station": "apptegy-oroville-ca",
-   "why": "storm day 2022-11-07 (market score 1.00)"
-  },
-  {
-   "timestamp": "20221108230347",
-   "url": "https://www.ocesd.net/",
-   "station": "apptegy-oroville-ca",
-   "why": "storm day 2022-11-09 (market score 1.00)"
-  },
-  {
-   "timestamp": "20230109183108",
-   "url": "https://www.ocesd.net/",
-   "station": "apptegy-oroville-ca",
-   "why": "storm day 2023-01-10 (market score 1.00)"
-  },
-  {
-   "timestamp": "20220421144433",
-   "url": "https://www.ocesd.net/",
-   "station": "apptegy-oroville-ca",
-   "why": "storm day 2022-04-21 (market score 1.00)"
-  },
-  {
-   "timestamp": "20211228173202",
-   "url": "https://www.ocesd.net/",
-   "station": "apptegy-oroville-ca",
+   "timestamp": "20211228233324",
+   "url": "http://www.murrieta.k12.ca.us//",
+   "station": "finalsite-murrieta-valley-ca",
    "why": "storm day 2021-12-29 (market score 1.00)"
   },
   {
-   "timestamp": "20220103141010",
-   "url": "https://www.ocesd.net/",
-   "station": "apptegy-oroville-ca",
-   "why": "storm day 2022-01-03 (market score 1.00)"
+   "timestamp": "20211228211532",
+   "url": "https://www.murrieta.k12.ca.us//",
+   "station": "finalsite-murrieta-valley-ca",
+   "why": "storm day 2021-12-29 (market score 1.00)"
   },
   {
-   "timestamp": "20211223165030",
-   "url": "https://www.ocesd.net/",
-   "station": "apptegy-oroville-ca",
-   "why": "storm day 2021-12-24 (market score 1.00)"
+   "timestamp": "20220329062804",
+   "url": "https://www.murrieta.k12.ca.us//",
+   "station": "finalsite-murrieta-valley-ca",
+   "why": "storm day 2022-03-29 (market score 1.00)"
   },
   {
-   "timestamp": "20211216092117",
-   "url": "https://www.ocesd.net/",
-   "station": "apptegy-oroville-ca",
-   "why": "storm day 2021-12-16 (market score 1.00)"
+   "timestamp": "20220328182953",
+   "url": "https://www.murrieta.k12.ca.us//",
+   "station": "finalsite-murrieta-valley-ca",
+   "why": "storm day 2022-03-29 (market score 1.00)"
   },
   {
-   "timestamp": "20211227184112",
-   "url": "https://www.ocesd.net/",
-   "station": "apptegy-oroville-ca",
-   "why": "storm day 2021-12-28 (market score 1.00)"
+   "timestamp": "20260217054054",
+   "url": "https://www.murrieta.k12.ca.us/",
+   "station": "finalsite-murrieta-valley-ca",
+   "why": "storm day 2026-02-17 (market score 1.00)"
   },
   {
-   "timestamp": "20211226173531",
-   "url": "https://www.ocesd.net/",
-   "station": "apptegy-oroville-ca",
-   "why": "storm day 2021-12-27 (market score 1.00)"
+   "timestamp": "20260216173806",
+   "url": "https://www.murrieta.k12.ca.us/",
+   "station": "finalsite-murrieta-valley-ca",
+   "why": "storm day 2026-02-17 (market score 1.00)"
   },
   {
-   "timestamp": "20211213235933",
-   "url": "https://www.ocesd.net/",
-   "station": "apptegy-oroville-ca",
-   "why": "storm day 2021-12-14 (market score 1.00)"
+   "timestamp": "20260217173656",
+   "url": "https://www.murrieta.k12.ca.us/",
+   "station": "finalsite-murrieta-valley-ca",
+   "why": "storm day 2026-02-18 (market score 1.00)"
   },
   {
-   "timestamp": "20211215014218",
-   "url": "https://www.ocesd.net/",
-   "station": "apptegy-oroville-ca",
-   "why": "storm day 2021-12-15 (market score 1.00)"
+   "timestamp": "20260215174005",
+   "url": "https://www.murrieta.k12.ca.us/",
+   "station": "finalsite-murrieta-valley-ca",
+   "why": "storm day 2026-02-16 (market score 1.00)"
   },
   {
-   "timestamp": "20211025065213",
-   "url": "https://www.ocesd.net/",
-   "station": "apptegy-oroville-ca",
-   "why": "storm day 2021-10-25 (market score 1.00)"
+   "timestamp": "20260215195508",
+   "url": "https://www.murrieta.k12.ca.us/",
+   "station": "finalsite-murrieta-valley-ca",
+   "why": "storm day 2026-02-16 (market score 1.00)"
   },
   {
-   "timestamp": "20250331151733",
-   "url": "https://www.ocesd.net/",
-   "station": "apptegy-oroville-ca",
-   "why": "storm day 2025-03-31 (market score 1.00)"
+   "timestamp": "20260216054010",
+   "url": "https://www.murrieta.k12.ca.us/",
+   "station": "finalsite-murrieta-valley-ca",
+   "why": "storm day 2026-02-16 (market score 1.00)"
   },
   {
-   "timestamp": "20250401090308",
-   "url": "https://www.ocesd.net/",
-   "station": "apptegy-oroville-ca",
-   "why": "storm day 2025-04-01 (market score 1.00)"
+   "timestamp": "20260220011152",
+   "url": "https://www.murrieta.k12.ca.us/",
+   "station": "finalsite-murrieta-valley-ca",
+   "why": "storm day 2026-02-20 (market score 1.00)"
   },
   {
-   "timestamp": "20250401114322",
-   "url": "https://www.ocesd.net/",
-   "station": "apptegy-oroville-ca",
-   "why": "storm day 2025-04-01 (market score 1.00)"
+   "timestamp": "20260220065946",
+   "url": "https://www.murrieta.k12.ca.us/",
+   "station": "finalsite-murrieta-valley-ca",
+   "why": "storm day 2026-02-20 (market score 1.00)"
   },
   {
-   "timestamp": "20250328145243",
-   "url": "https://www.ocesd.net",
-   "station": "apptegy-oroville-ca",
-   "why": "storm day 2025-03-28 (market score 0.25)"
+   "timestamp": "20260218140216",
+   "url": "https://www.murrieta.k12.ca.us/",
+   "station": "finalsite-murrieta-valley-ca",
+   "why": "storm day 2026-02-18 (market score 1.00)"
   },
   {
-   "timestamp": "20250328155829",
-   "url": "https://www.ocesd.net/",
-   "station": "apptegy-oroville-ca",
-   "why": "storm day 2025-03-28 (market score 0.25)"
+   "timestamp": "20260219053955",
+   "url": "https://www.murrieta.k12.ca.us/",
+   "station": "finalsite-murrieta-valley-ca",
+   "why": "storm day 2026-02-19 (market score 1.00)"
   },
   {
-   "timestamp": "20241110214057",
-   "url": "https://www.ocesd.net",
-   "station": "apptegy-oroville-ca",
-   "why": "storm day 2024-11-11 (market score 0.25)"
+   "timestamp": "20251121063352",
+   "url": "https://www.murrieta.k12.ca.us/",
+   "station": "finalsite-murrieta-valley-ca",
+   "why": "storm day 2025-11-21 (market score 1.00)"
   },
   {
-   "timestamp": "20231206233533",
-   "url": "https://www.ocesd.net/",
-   "station": "apptegy-oroville-ca",
-   "why": "storm day 2023-12-07 (market score 0.25)"
+   "timestamp": "20251120175645",
+   "url": "https://www.murrieta.k12.ca.us/",
+   "station": "finalsite-murrieta-valley-ca",
+   "why": "storm day 2025-11-21 (market score 1.00)"
   },
   {
-   "timestamp": "20230407091855",
-   "url": "https://www.ocesd.net/",
-   "station": "apptegy-oroville-ca",
-   "why": "storm day 2023-04-07 (market score 0.25)"
+   "timestamp": "20250303124905",
+   "url": "https://www.murrieta.k12.ca.us//",
+   "station": "finalsite-murrieta-valley-ca",
+   "why": "storm day 2025-03-03 (market score 0.25)"
   },
   {
-   "timestamp": "20230403085525",
-   "url": "https://www.ocesd.net/",
-   "station": "apptegy-oroville-ca",
-   "why": "storm day 2023-04-03 (market score 0.25)"
+   "timestamp": "20240219190414",
+   "url": "https://www.murrieta.k12.ca.us/",
+   "station": "finalsite-murrieta-valley-ca",
+   "why": "storm day 2024-02-20 (market score 0.25)"
   },
   {
-   "timestamp": "20230321121052",
-   "url": "https://www.ocesd.net/",
-   "station": "apptegy-oroville-ca",
-   "why": "storm day 2023-03-21 (market score 0.25)"
+   "timestamp": "20250313182659",
+   "url": "https://www.murrieta.k12.ca.us//",
+   "station": "finalsite-murrieta-valley-ca",
+   "why": "storm day 2025-03-14 (market score 0.25)"
   },
   {
-   "timestamp": "20221228204842",
-   "url": "https://www.ocesd.net/",
-   "station": "apptegy-oroville-ca",
-   "why": "storm day 2022-12-29 (market score 0.25)"
+   "timestamp": "20250313234252",
+   "url": "https://www.murrieta.k12.ca.us//",
+   "station": "finalsite-murrieta-valley-ca",
+   "why": "storm day 2025-03-14 (market score 0.25)"
   },
   {
-   "timestamp": "20230116095904",
-   "url": "https://www.ocesd.net/",
-   "station": "apptegy-oroville-ca",
-   "why": "storm day 2023-01-16 (market score 0.25)"
+   "timestamp": "20250314131251",
+   "url": "https://www.murrieta.k12.ca.us//",
+   "station": "finalsite-murrieta-valley-ca",
+   "why": "storm day 2025-03-14 (market score 0.25)"
   },
   {
-   "timestamp": "20230111024940",
-   "url": "https://www.ocesd.net/",
-   "station": "apptegy-oroville-ca",
-   "why": "storm day 2023-01-11 (market score 0.25)"
+   "timestamp": "20250302234442",
+   "url": "https://www.murrieta.k12.ca.us//",
+   "station": "finalsite-murrieta-valley-ca",
+   "why": "storm day 2025-03-03 (market score 0.25)"
   },
   {
-   "timestamp": "20230101195039",
-   "url": "https://www.ocesd.net/",
-   "station": "apptegy-oroville-ca",
-   "why": "storm day 2023-01-02 (market score 0.25)"
+   "timestamp": "20240102232309",
+   "url": "https://www.murrieta.k12.ca.us//",
+   "station": "finalsite-murrieta-valley-ca",
+   "why": "storm day 2024-01-03 (market score 0.25)"
   },
   {
-   "timestamp": "20221205101431",
-   "url": "https://www.ocesd.net/",
-   "station": "apptegy-oroville-ca",
-   "why": "storm day 2022-12-05 (market score 0.25)"
+   "timestamp": "20240102214704",
+   "url": "https://www.murrieta.k12.ca.us/",
+   "station": "finalsite-murrieta-valley-ca",
+   "why": "storm day 2024-01-03 (market score 0.25)"
   },
   {
-   "timestamp": "20221208113845",
-   "url": "https://www.ocesd.net/",
-   "station": "apptegy-oroville-ca",
-   "why": "storm day 2022-12-08 (market score 0.25)"
+   "timestamp": "20231222032953",
+   "url": "https://www.murrieta.k12.ca.us//",
+   "station": "finalsite-murrieta-valley-ca",
+   "why": "storm day 2023-12-22 (market score 0.25)"
   },
   {
-   "timestamp": "20220419132445",
-   "url": "https://www.ocesd.net/",
-   "station": "apptegy-oroville-ca",
-   "why": "storm day 2022-04-19 (market score 0.25)"
+   "timestamp": "20231222105915",
+   "url": "https://www.murrieta.k12.ca.us/",
+   "station": "finalsite-murrieta-valley-ca",
+   "why": "storm day 2023-12-22 (market score 0.25)"
   },
   {
-   "timestamp": "20220411083748",
-   "url": "https://www.ocesd.net/",
-   "station": "apptegy-oroville-ca",
-   "why": "storm day 2022-04-11 (market score 0.25)"
+   "timestamp": "20240111083252",
+   "url": "https://www.murrieta.k12.ca.us//",
+   "station": "finalsite-murrieta-valley-ca",
+   "why": "storm day 2024-01-11 (market score 0.25)"
   },
   {
-   "timestamp": "20220414104114",
-   "url": "https://www.ocesd.net/",
-   "station": "apptegy-oroville-ca",
-   "why": "storm day 2022-04-14 (market score 0.25)"
+   "timestamp": "20240111090112",
+   "url": "https://www.murrieta.k12.ca.us//",
+   "station": "finalsite-murrieta-valley-ca",
+   "why": "storm day 2024-01-11 (market score 0.25)"
   },
   {
-   "timestamp": "20220104150350",
-   "url": "https://www.ocesd.net/",
-   "station": "apptegy-oroville-ca",
-   "why": "storm day 2022-01-04 (market score 0.25)"
+   "timestamp": "20240111141116",
+   "url": "https://www.murrieta.k12.ca.us/",
+   "station": "finalsite-murrieta-valley-ca",
+   "why": "storm day 2024-01-11 (market score 0.25)"
   },
   {
-   "timestamp": "20220222060931",
-   "url": "https://www.ocesd.net/",
-   "station": "apptegy-oroville-ca",
-   "why": "storm day 2022-02-22 (market score 0.25)"
+   "timestamp": "20240111042024",
+   "url": "https://www.murrieta.k12.ca.us/",
+   "station": "finalsite-murrieta-valley-ca",
+   "why": "storm day 2024-01-11 (market score 0.25)"
+  },
+  {
+   "timestamp": "20240307033330",
+   "url": "https://www.murrieta.k12.ca.us//",
+   "station": "finalsite-murrieta-valley-ca",
+   "why": "storm day 2024-03-07 (market score 0.25)"
+  },
+  {
+   "timestamp": "20240221125249",
+   "url": "https://www.murrieta.k12.ca.us/",
+   "station": "finalsite-murrieta-valley-ca",
+   "why": "storm day 2024-02-21 (market score 0.25)"
+  },
+  {
+   "timestamp": "20240220133313",
+   "url": "https://www.murrieta.k12.ca.us/",
+   "station": "finalsite-murrieta-valley-ca",
+   "why": "storm day 2024-02-20 (market score 0.25)"
+  },
+  {
+   "timestamp": "20231221231449",
+   "url": "https://www.murrieta.k12.ca.us//",
+   "station": "finalsite-murrieta-valley-ca",
+   "why": "storm day 2023-12-22 (market score 0.25)"
+  },
+  {
+   "timestamp": "20240111050024",
+   "url": "https://www.murrieta.k12.ca.us//",
+   "station": "finalsite-murrieta-valley-ca",
+   "why": "storm day 2024-01-11 (market score 0.25)"
+  },
+  {
+   "timestamp": "20240111022707",
+   "url": "https://www.murrieta.k12.ca.us/",
+   "station": "finalsite-murrieta-valley-ca",
+   "why": "storm day 2024-01-11 (market score 0.25)"
+  },
+  {
+   "timestamp": "20240110230148",
+   "url": "https://www.murrieta.k12.ca.us//",
+   "station": "finalsite-murrieta-valley-ca",
+   "why": "storm day 2024-01-11 (market score 0.25)"
+  },
+  {
+   "timestamp": "20240110213215",
+   "url": "https://www.murrieta.k12.ca.us/",
+   "station": "finalsite-murrieta-valley-ca",
+   "why": "storm day 2024-01-11 (market score 0.25)"
+  },
+  {
+   "timestamp": "20240111105814",
+   "url": "https://www.murrieta.k12.ca.us//",
+   "station": "finalsite-murrieta-valley-ca",
+   "why": "storm day 2024-01-11 (market score 0.25)"
+  },
+  {
+   "timestamp": "20241115015731",
+   "url": "https://www.murrieta.k12.ca.us//",
+   "station": "finalsite-murrieta-valley-ca",
+   "why": "storm day 2024-11-15 (market score 0.25)"
+  },
+  {
+   "timestamp": "20241115112453",
+   "url": "https://www.murrieta.k12.ca.us//",
+   "station": "finalsite-murrieta-valley-ca",
+   "why": "storm day 2024-11-15 (market score 0.25)"
+  },
+  {
+   "timestamp": "20241115093916",
+   "url": "https://www.murrieta.k12.ca.us//",
+   "station": "finalsite-murrieta-valley-ca",
+   "why": "storm day 2024-11-15 (market score 0.25)"
+  },
+  {
+   "timestamp": "20240307105906",
+   "url": "https://www.murrieta.k12.ca.us//",
+   "station": "finalsite-murrieta-valley-ca",
+   "why": "storm day 2024-03-07 (market score 0.25)"
+  },
+  {
+   "timestamp": "20240221131602",
+   "url": "https://www.murrieta.k12.ca.us//",
+   "station": "finalsite-murrieta-valley-ca",
+   "why": "storm day 2024-02-21 (market score 0.25)"
+  },
+  {
+   "timestamp": "20240306225757",
+   "url": "https://www.murrieta.k12.ca.us/",
+   "station": "finalsite-murrieta-valley-ca",
+   "why": "storm day 2024-03-07 (market score 0.25)"
+  },
+  {
+   "timestamp": "20240221141103",
+   "url": "https://www.murrieta.k12.ca.us/",
+   "station": "finalsite-murrieta-valley-ca",
+   "why": "storm day 2024-02-21 (market score 0.25)"
+  },
+  {
+   "timestamp": "20240307110819",
+   "url": "https://www.murrieta.k12.ca.us/",
+   "station": "finalsite-murrieta-valley-ca",
+   "why": "storm day 2024-03-07 (market score 0.25)"
+  },
+  {
+   "timestamp": "20240220041834",
+   "url": "https://www.murrieta.k12.ca.us/",
+   "station": "finalsite-murrieta-valley-ca",
+   "why": "storm day 2024-02-20 (market score 0.25)"
+  },
+  {
+   "timestamp": "20230105110456",
+   "url": "https://www.murrieta.k12.ca.us//",
+   "station": "finalsite-murrieta-valley-ca",
+   "why": "storm day 2023-01-05 (market score 0.25)"
+  },
+  {
+   "timestamp": "20230104230417",
+   "url": "https://www.murrieta.k12.ca.us/",
+   "station": "finalsite-murrieta-valley-ca",
+   "why": "storm day 2023-01-05 (market score 0.25)"
+  },
+  {
+   "timestamp": "20230110110421",
+   "url": "https://www.murrieta.k12.ca.us/",
+   "station": "finalsite-murrieta-valley-ca",
+   "why": "storm day 2023-01-10 (market score 0.25)"
+  },
+  {
+   "timestamp": "20230109230447",
+   "url": "https://www.murrieta.k12.ca.us/",
+   "station": "finalsite-murrieta-valley-ca",
+   "why": "storm day 2023-01-10 (market score 0.25)"
+  },
+  {
+   "timestamp": "20200318133644",
+   "url": "https://www.murrieta.k12.ca.us/",
+   "station": "finalsite-murrieta-valley-ca",
+   "why": "storm day 2020-03-18 (market score 0.25)"
+  },
+  {
+   "timestamp": "20200318140001",
+   "url": "https://www.murrieta.k12.ca.us/",
+   "station": "finalsite-murrieta-valley-ca",
+   "why": "storm day 2020-03-18 (market score 0.25)"
+  },
+  {
+   "timestamp": "20200318131703",
+   "url": "https://www.cvusd.us/",
+   "station": "smartsites-coachella-valley-ca",
+   "why": "storm day 2020-03-18 (market score 0.12)"
+  },
+  {
+   "timestamp": "20181129042328",
+   "url": "https://www.cvusd.us/",
+   "station": "smartsites-coachella-valley-ca",
+   "why": "storm day 2018-11-29 (market score 0.12)"
+  },
+  {
+   "timestamp": "20211230154718",
+   "url": "https://www.cvusd.us/",
+   "station": "smartsites-coachella-valley-ca",
+   "why": "storm day 2021-12-30 (market score 0.12)"
+  },
+  {
+   "timestamp": "20191213120853",
+   "url": "http://durhamunified.org:80/",
+   "station": "apptegy-durham-ca",
+   "why": "storm day 2019-12-13 (market score 0.25)"
+  },
+  {
+   "timestamp": "20260215215719",
+   "url": "https://www.beaumontusd.us/",
+   "station": "edlio-beaumont-ca",
+   "why": "storm day 2026-02-16 (market score 1.00)"
+  },
+  {
+   "timestamp": "20260217095636",
+   "url": "https://www.beaumontusd.us/",
+   "station": "edlio-beaumont-ca",
+   "why": "storm day 2026-02-17 (market score 1.00)"
+  },
+  {
+   "timestamp": "20260219043846",
+   "url": "https://www.beaumontusd.us/",
+   "station": "edlio-beaumont-ca",
+   "why": "storm day 2026-02-19 (market score 1.00)"
+  },
+  {
+   "timestamp": "20260217025407",
+   "url": "https://www.beaumontusd.us/",
+   "station": "edlio-beaumont-ca",
+   "why": "storm day 2026-02-17 (market score 1.00)"
+  },
+  {
+   "timestamp": "20260219081348",
+   "url": "https://www.beaumontusd.us/",
+   "station": "edlio-beaumont-ca",
+   "why": "storm day 2026-02-19 (market score 1.00)"
+  },
+  {
+   "timestamp": "20260219160013",
+   "url": "https://www.beaumontusd.us/",
+   "station": "edlio-beaumont-ca",
+   "why": "storm day 2026-02-20 (market score 1.00)"
+  },
+  {
+   "timestamp": "20260216095810",
+   "url": "https://www.beaumontusd.us/",
+   "station": "edlio-beaumont-ca",
+   "why": "storm day 2026-02-16 (market score 1.00)"
+  },
+  {
+   "timestamp": "20260220140209",
+   "url": "https://www.beaumontusd.us/",
+   "station": "edlio-beaumont-ca",
+   "why": "storm day 2026-02-20 (market score 1.00)"
+  },
+  {
+   "timestamp": "20250306114446",
+   "url": "https://www.beaumontusd.us/",
+   "station": "edlio-beaumont-ca",
+   "why": "storm day 2025-03-06 (market score 1.00)"
+  },
+  {
+   "timestamp": "20250313115816",
+   "url": "https://www.beaumontusd.us/",
+   "station": "edlio-beaumont-ca",
+   "why": "storm day 2025-03-13 (market score 1.00)"
+  },
+  {
+   "timestamp": "20250313061827",
+   "url": "https://www.beaumontusd.us/",
+   "station": "edlio-beaumont-ca",
+   "why": "storm day 2025-03-13 (market score 1.00)"
+  },
+  {
+   "timestamp": "20240207162630",
+   "url": "https://www.beaumontusd.us/",
+   "station": "edlio-beaumont-ca",
+   "why": "storm day 2024-02-08 (market score 1.00)"
+  },
+  {
+   "timestamp": "20240207143132",
+   "url": "https://www.beaumontusd.us/",
+   "station": "edlio-beaumont-ca",
+   "why": "storm day 2024-02-07 (market score 1.00)"
+  },
+  {
+   "timestamp": "20240207053845",
+   "url": "https://www.beaumontusd.us/",
+   "station": "edlio-beaumont-ca",
+   "why": "storm day 2024-02-07 (market score 1.00)"
+  },
+  {
+   "timestamp": "20240208121143",
+   "url": "https://www.beaumontusd.us/",
+   "station": "edlio-beaumont-ca",
+   "why": "storm day 2024-02-08 (market score 1.00)"
+  },
+  {
+   "timestamp": "20251120215315",
+   "url": "https://www.beaumontusd.us/",
+   "station": "edlio-beaumont-ca",
+   "why": "storm day 2025-11-21 (market score 1.00)"
+  },
+  {
+   "timestamp": "20251121115856",
+   "url": "https://www.beaumontusd.us/",
+   "station": "edlio-beaumont-ca",
+   "why": "storm day 2025-11-21 (market score 1.00)"
+  },
+  {
+   "timestamp": "20240205213215",
+   "url": "https://www.beaumontusd.us/",
+   "station": "edlio-beaumont-ca",
+   "why": "storm day 2024-02-06 (market score 1.00)"
+  },
+  {
+   "timestamp": "20240206141941",
+   "url": "https://www.beaumontusd.us/",
+   "station": "edlio-beaumont-ca",
+   "why": "storm day 2024-02-06 (market score 1.00)"
+  },
+  {
+   "timestamp": "20250127143134",
+   "url": "https://www.beaumontusd.us/",
+   "station": "edlio-beaumont-ca",
+   "why": "storm day 2025-01-27 (market score 1.00)"
+  },
+  {
+   "timestamp": "20250126224347",
+   "url": "https://www.beaumontusd.us/",
+   "station": "edlio-beaumont-ca",
+   "why": "storm day 2025-01-27 (market score 1.00)"
+  },
+  {
+   "timestamp": "20240201071302",
+   "url": "https://www.beaumontusd.us/",
+   "station": "edlio-beaumont-ca",
+   "why": "storm day 2024-02-01 (market score 1.00)"
+  },
+  {
+   "timestamp": "20240205184743",
+   "url": "https://www.beaumontusd.us/",
+   "station": "edlio-beaumont-ca",
+   "why": "storm day 2024-02-06 (market score 1.00)"
+  },
+  {
+   "timestamp": "20240201035317",
+   "url": "https://www.beaumontusd.us/",
+   "station": "edlio-beaumont-ca",
+   "why": "storm day 2024-02-01 (market score 1.00)"
+  },
+  {
+   "timestamp": "20240205133728",
+   "url": "https://www.beaumontusd.us/",
+   "station": "edlio-beaumont-ca",
+   "why": "storm day 2024-02-05 (market score 1.00)"
+  },
+  {
+   "timestamp": "20240205044125",
+   "url": "https://www.beaumontusd.us/",
+   "station": "edlio-beaumont-ca",
+   "why": "storm day 2024-02-05 (market score 1.00)"
+  },
+  {
+   "timestamp": "20240204213228",
+   "url": "https://www.beaumontusd.us/",
+   "station": "edlio-beaumont-ca",
+   "why": "storm day 2024-02-05 (market score 1.00)"
+  },
+  {
+   "timestamp": "20240405060043",
+   "url": "https://www.beaumontusd.us/",
+   "station": "edlio-beaumont-ca",
+   "why": "storm day 2024-04-05 (market score 1.00)"
+  },
+  {
+   "timestamp": "20240405092801",
+   "url": "https://www.beaumontusd.us/",
+   "station": "edlio-beaumont-ca",
+   "why": "storm day 2024-04-05 (market score 1.00)"
+  },
+  {
+   "timestamp": "20240314234506",
+   "url": "https://www.beaumontusd.us/",
+   "station": "edlio-beaumont-ca",
+   "why": "storm day 2024-03-15 (market score 1.00)"
+  },
+  {
+   "timestamp": "20240315140116",
+   "url": "https://www.beaumontusd.us/",
+   "station": "edlio-beaumont-ca",
+   "why": "storm day 2024-03-15 (market score 1.00)"
+  },
+  {
+   "timestamp": "20240314195830",
+   "url": "https://www.beaumontusd.us/",
+   "station": "edlio-beaumont-ca",
+   "why": "storm day 2024-03-15 (market score 1.00)"
+  },
+  {
+   "timestamp": "20250302232403",
+   "url": "https://www.beaumontusd.us/",
+   "station": "edlio-beaumont-ca",
+   "why": "storm day 2025-03-03 (market score 0.25)"
+  },
+  {
+   "timestamp": "20240221085455",
+   "url": "https://www.beaumontusd.us/",
+   "station": "edlio-beaumont-ca",
+   "why": "storm day 2024-02-21 (market score 0.25)"
+  },
+  {
+   "timestamp": "20240220163804",
+   "url": "https://www.beaumontusd.us/",
+   "station": "edlio-beaumont-ca",
+   "why": "storm day 2024-02-21 (market score 0.25)"
+  },
+  {
+   "timestamp": "20240306213221",
+   "url": "https://www.beaumontusd.us/",
+   "station": "edlio-beaumont-ca",
+   "why": "storm day 2024-03-07 (market score 0.25)"
+  },
+  {
+   "timestamp": "20241115002838",
+   "url": "https://www.beaumontusd.us/",
+   "station": "edlio-beaumont-ca",
+   "why": "storm day 2024-11-15 (market score 0.25)"
+  },
+  {
+   "timestamp": "20240111093228",
+   "url": "https://www.beaumontusd.us/",
+   "station": "edlio-beaumont-ca",
+   "why": "storm day 2024-01-11 (market score 0.25)"
+  },
+  {
+   "timestamp": "20250314114544",
+   "url": "https://www.beaumontusd.us/",
+   "station": "edlio-beaumont-ca",
+   "why": "storm day 2025-03-14 (market score 0.25)"
+  },
+  {
+   "timestamp": "20250314081505",
+   "url": "https://www.beaumontusd.us/",
+   "station": "edlio-beaumont-ca",
+   "why": "storm day 2025-03-14 (market score 0.25)"
+  },
+  {
+   "timestamp": "20250314101812",
+   "url": "https://www.beaumontusd.us/",
+   "station": "edlio-beaumont-ca",
+   "why": "storm day 2025-03-14 (market score 0.25)"
+  },
+  {
+   "timestamp": "20260610211101",
+   "url": "https://www.fpcvpaa.com/",
+   "station": "finalsite-fpc-vpaa-al",
+   "why": "2026-06-11: an unread capture of an earlier address of its list, the last left (read so that every capture of it is read)"
+  },
+  {
+   "timestamp": "20210826072802",
+   "url": "https://www.abc4.com/weather/closings/",
+   "station": "nexstar-ktvx",
+   "why": "an unread capture of its list, read so that every capture of it is read"
+  },
+  {
+   "timestamp": "20230509143415",
+   "url": "https://www.abc4.com/weather/closings/",
+   "station": "nexstar-ktvx",
+   "why": "an unread capture of its list, read so that every capture of it is read"
+  },
+  {
+   "timestamp": "20240814053629",
+   "url": "https://www.abc4.com/weather/closings/",
+   "station": "nexstar-ktvx",
+   "why": "an unread capture of its list, read so that every capture of it is read"
+  },
+  {
+   "timestamp": "20250212075851",
+   "url": "https://www.abc4.com/weather/closings/",
+   "station": "nexstar-ktvx",
+   "why": "an unread capture of its list, read so that every capture of it is read"
+  },
+  {
+   "timestamp": "20190819163636",
+   "url": "https://www.kpax.com/weather/school-closings-delays",
+   "station": "scripps-kpax",
+   "why": "an unread capture of its former closings address (2019-2021), read so that every capture of it is read"
+  },
+  {
+   "timestamp": "20190824130744",
+   "url": "https://www.kpax.com/weather/school-closings-delays",
+   "station": "scripps-kpax",
+   "why": "an unread capture of its former closings address (2019-2021), read so that every capture of it is read"
+  },
+  {
+   "timestamp": "20190915100140",
+   "url": "https://www.kpax.com/weather/school-closings-delays",
+   "station": "scripps-kpax",
+   "why": "an unread capture of its former closings address (2019-2021), read so that every capture of it is read"
+  },
+  {
+   "timestamp": "20190928180745",
+   "url": "https://www.kpax.com/weather/school-closings-delays?_renderer=json",
+   "station": "scripps-kpax",
+   "why": "an unread capture of its former closings address (2019-2021), read so that every capture of it is read"
+  },
+  {
+   "timestamp": "20190928181547",
+   "url": "https://www.kpax.com/weather/school-closings-delays?_renderer=json",
+   "station": "scripps-kpax",
+   "why": "an unread capture of its former closings address (2019-2021), read so that every capture of it is read"
+  },
+  {
+   "timestamp": "20190928181753",
+   "url": "https://www.kpax.com/weather/school-closings-delays?_renderer=json",
+   "station": "scripps-kpax",
+   "why": "an unread capture of its former closings address (2019-2021), read so that every capture of it is read"
+  },
+  {
+   "timestamp": "20190928192127",
+   "url": "https://www.kpax.com/weather/school-closings-delays?_renderer=json",
+   "station": "scripps-kpax",
+   "why": "an unread capture of its former closings address (2019-2021), read so that every capture of it is read"
+  },
+  {
+   "timestamp": "20191030220353",
+   "url": "https://www.kpax.com/weather/school-closings-delays?_renderer=json",
+   "station": "scripps-kpax",
+   "why": "an unread capture of its former closings address (2019-2021), read so that every capture of it is read"
+  },
+  {
+   "timestamp": "20191030225350",
+   "url": "https://www.kpax.com/weather/school-closings-delays?_renderer=json",
+   "station": "scripps-kpax",
+   "why": "an unread capture of its former closings address (2019-2021), read so that every capture of it is read"
+  },
+  {
+   "timestamp": "20200308232130",
+   "url": "https://www.kpax.com/weather/school-closings-delays?_renderer=json",
+   "station": "scripps-kpax",
+   "why": "an unread capture of its former closings address (2019-2021), read so that every capture of it is read"
+  },
+  {
+   "timestamp": "20200308232130",
+   "url": "https://www.kpax.com/weather/school-closings-delays?_renderer=json",
+   "station": "scripps-kpax",
+   "why": "an unread capture of its former closings address (2019-2021), read so that every capture of it is read"
+  },
+  {
+   "timestamp": "20200314052524",
+   "url": "https://www.kpax.com/weather/school-closings-delays",
+   "station": "scripps-kpax",
+   "why": "an unread capture of its former closings address (2019-2021), read so that every capture of it is read"
+  },
+  {
+   "timestamp": "20200325151757",
+   "url": "https://www.kpax.com/weather/school-closings-delays",
+   "station": "scripps-kpax",
+   "why": "an unread capture of its former closings address (2019-2021), read so that every capture of it is read"
+  },
+  {
+   "timestamp": "20200327091046",
+   "url": "https://www.kpax.com/weather/school-closings-delays",
+   "station": "scripps-kpax",
+   "why": "an unread capture of its former closings address (2019-2021), read so that every capture of it is read"
+  },
+  {
+   "timestamp": "20200402230300",
+   "url": "https://www.kpax.com/weather/school-closings-delays",
+   "station": "scripps-kpax",
+   "why": "an unread capture of its former closings address (2019-2021), read so that every capture of it is read"
+  },
+  {
+   "timestamp": "20200403234438",
+   "url": "https://www.kpax.com/weather/school-closings-delays",
+   "station": "scripps-kpax",
+   "why": "an unread capture of its former closings address (2019-2021), read so that every capture of it is read"
+  },
+  {
+   "timestamp": "20200403234438",
+   "url": "https://www.kpax.com/weather/school-closings-delays",
+   "station": "scripps-kpax",
+   "why": "an unread capture of its former closings address (2019-2021), read so that every capture of it is read"
+  },
+  {
+   "timestamp": "20200403234438",
+   "url": "https://www.kpax.com/weather/school-closings-delays",
+   "station": "scripps-kpax",
+   "why": "an unread capture of its former closings address (2019-2021), read so that every capture of it is read"
+  },
+  {
+   "timestamp": "20200407022545",
+   "url": "https://www.kpax.com/weather/school-closings-delays",
+   "station": "scripps-kpax",
+   "why": "an unread capture of its former closings address (2019-2021), read so that every capture of it is read"
+  },
+  {
+   "timestamp": "20200407022545",
+   "url": "https://www.kpax.com/weather/school-closings-delays",
+   "station": "scripps-kpax",
+   "why": "an unread capture of its former closings address (2019-2021), read so that every capture of it is read"
+  },
+  {
+   "timestamp": "20200409042058",
+   "url": "https://www.kpax.com/weather/school-closings-delays",
+   "station": "scripps-kpax",
+   "why": "an unread capture of its former closings address (2019-2021), read so that every capture of it is read"
+  },
+  {
+   "timestamp": "20200410045941",
+   "url": "https://www.kpax.com/weather/school-closings-delays",
+   "station": "scripps-kpax",
+   "why": "an unread capture of its former closings address (2019-2021), read so that every capture of it is read"
+  },
+  {
+   "timestamp": "20200410184332",
+   "url": "https://www.kpax.com/weather/school-closings-delays?_renderer=json",
+   "station": "scripps-kpax",
+   "why": "an unread capture of its former closings address (2019-2021), read so that every capture of it is read"
+  },
+  {
+   "timestamp": "20200410184332",
+   "url": "https://www.kpax.com/weather/school-closings-delays?_renderer=json",
+   "station": "scripps-kpax",
+   "why": "an unread capture of its former closings address (2019-2021), read so that every capture of it is read"
+  },
+  {
+   "timestamp": "20200411004115",
+   "url": "https://www.kpax.com/weather/school-closings-delays",
+   "station": "scripps-kpax",
+   "why": "an unread capture of its former closings address (2019-2021), read so that every capture of it is read"
+  },
+  {
+   "timestamp": "20200411052631",
+   "url": "https://www.kpax.com/weather/school-closings-delays",
+   "station": "scripps-kpax",
+   "why": "an unread capture of its former closings address (2019-2021), read so that every capture of it is read"
+  },
+  {
+   "timestamp": "20200412062018",
+   "url": "https://www.kpax.com/weather/school-closings-delays",
+   "station": "scripps-kpax",
+   "why": "an unread capture of its former closings address (2019-2021), read so that every capture of it is read"
+  },
+  {
+   "timestamp": "20200412062018",
+   "url": "https://www.kpax.com/weather/school-closings-delays",
+   "station": "scripps-kpax",
+   "why": "an unread capture of its former closings address (2019-2021), read so that every capture of it is read"
+  },
+  {
+   "timestamp": "20200414082708",
+   "url": "https://www.kpax.com/weather/school-closings-delays",
+   "station": "scripps-kpax",
+   "why": "an unread capture of its former closings address (2019-2021), read so that every capture of it is read"
+  },
+  {
+   "timestamp": "20200416102006",
+   "url": "https://www.kpax.com/weather/school-closings-delays",
+   "station": "scripps-kpax",
+   "why": "an unread capture of its former closings address (2019-2021), read so that every capture of it is read"
+  },
+  {
+   "timestamp": "20200416214227",
+   "url": "https://www.kpax.com/weather/school-closings-delays?_renderer=json",
+   "station": "scripps-kpax",
+   "why": "an unread capture of its former closings address (2019-2021), read so that every capture of it is read"
+  },
+  {
+   "timestamp": "20200416214242",
+   "url": "https://www.kpax.com/weather/school-closings-delays",
+   "station": "scripps-kpax",
+   "why": "an unread capture of its former closings address (2019-2021), read so that every capture of it is read"
+  },
+  {
+   "timestamp": "20200416214242",
+   "url": "https://www.kpax.com/weather/school-closings-delays?_renderer=json",
+   "station": "scripps-kpax",
+   "why": "an unread capture of its former closings address (2019-2021), read so that every capture of it is read"
+  },
+  {
+   "timestamp": "20200416214243",
+   "url": "https://www.kpax.com/weather/school-closings-delays?_renderer=json",
+   "station": "scripps-kpax",
+   "why": "an unread capture of its former closings address (2019-2021), read so that every capture of it is read"
+  },
+  {
+   "timestamp": "20200416214244",
+   "url": "https://www.kpax.com/weather/school-closings-delays?_renderer=json",
+   "station": "scripps-kpax",
+   "why": "an unread capture of its former closings address (2019-2021), read so that every capture of it is read"
+  },
+  {
+   "timestamp": "20200416214245",
+   "url": "https://www.kpax.com/weather/school-closings-delays?_renderer=json",
+   "station": "scripps-kpax",
+   "why": "an unread capture of its former closings address (2019-2021), read so that every capture of it is read"
+  },
+  {
+   "timestamp": "20200416214246",
+   "url": "https://www.kpax.com/weather/school-closings-delays?_renderer=json",
+   "station": "scripps-kpax",
+   "why": "an unread capture of its former closings address (2019-2021), read so that every capture of it is read"
+  },
+  {
+   "timestamp": "20200416214247",
+   "url": "https://www.kpax.com/weather/school-closings-delays?_renderer=json",
+   "station": "scripps-kpax",
+   "why": "an unread capture of its former closings address (2019-2021), read so that every capture of it is read"
+  },
+  {
+   "timestamp": "20200416214248",
+   "url": "https://www.kpax.com/weather/school-closings-delays?_renderer=json",
+   "station": "scripps-kpax",
+   "why": "an unread capture of its former closings address (2019-2021), read so that every capture of it is read"
+  },
+  {
+   "timestamp": "20200416214249",
+   "url": "https://www.kpax.com/weather/school-closings-delays?_renderer=json",
+   "station": "scripps-kpax",
+   "why": "an unread capture of its former closings address (2019-2021), read so that every capture of it is read"
+  },
+  {
+   "timestamp": "20200417114718",
+   "url": "https://www.kpax.com/weather/school-closings-delays",
+   "station": "scripps-kpax",
+   "why": "an unread capture of its former closings address (2019-2021), read so that every capture of it is read"
+  },
+  {
+   "timestamp": "20200418115558",
+   "url": "https://www.kpax.com/weather/school-closings-delays",
+   "station": "scripps-kpax",
+   "why": "an unread capture of its former closings address (2019-2021), read so that every capture of it is read"
+  },
+  {
+   "timestamp": "20200419132251",
+   "url": "https://www.kpax.com/weather/school-closings-delays",
+   "station": "scripps-kpax",
+   "why": "an unread capture of its former closings address (2019-2021), read so that every capture of it is read"
+  },
+  {
+   "timestamp": "20200420141703",
+   "url": "https://www.kpax.com/weather/school-closings-delays",
+   "station": "scripps-kpax",
+   "why": "an unread capture of its former closings address (2019-2021), read so that every capture of it is read"
+  },
+  {
+   "timestamp": "20200421154216",
+   "url": "https://www.kpax.com/weather/school-closings-delays",
+   "station": "scripps-kpax",
+   "why": "an unread capture of its former closings address (2019-2021), read so that every capture of it is read"
+  },
+  {
+   "timestamp": "20200422154435",
+   "url": "https://www.kpax.com/weather/school-closings-delays",
+   "station": "scripps-kpax",
+   "why": "an unread capture of its former closings address (2019-2021), read so that every capture of it is read"
+  },
+  {
+   "timestamp": "20200421154216",
+   "url": "https://www.kpax.com/weather/school-closings-delays",
+   "station": "scripps-kpax",
+   "why": "an unread capture of its former closings address (2019-2021), read so that every capture of it is read"
+  },
+  {
+   "timestamp": "20200424174727",
+   "url": "https://www.kpax.com/weather/school-closings-delays",
+   "station": "scripps-kpax",
+   "why": "an unread capture of its former closings address (2019-2021), read so that every capture of it is read"
+  },
+  {
+   "timestamp": "20200425184748",
+   "url": "https://www.kpax.com/weather/school-closings-delays",
+   "station": "scripps-kpax",
+   "why": "an unread capture of its former closings address (2019-2021), read so that every capture of it is read"
+  },
+  {
+   "timestamp": "20200425184748",
+   "url": "https://www.kpax.com/weather/school-closings-delays",
+   "station": "scripps-kpax",
+   "why": "an unread capture of its former closings address (2019-2021), read so that every capture of it is read"
+  },
+  {
+   "timestamp": "20200427173728",
+   "url": "https://www.kpax.com/weather/school-closings-delays?_renderer=json",
+   "station": "scripps-kpax",
+   "why": "an unread capture of its former closings address (2019-2021), read so that every capture of it is read"
+  },
+  {
+   "timestamp": "20200522163343",
+   "url": "https://www.kpax.com/weather/school-closings-delays?_renderer=json",
+   "station": "scripps-kpax",
+   "why": "an unread capture of its former closings address (2019-2021), read so that every capture of it is read"
+  },
+  {
+   "timestamp": "20200523092109",
+   "url": "https://www.kpax.com/weather/school-closings-delays?_renderer=json",
+   "station": "scripps-kpax",
+   "why": "an unread capture of its former closings address (2019-2021), read so that every capture of it is read"
+  },
+  {
+   "timestamp": "20200522172156",
+   "url": "https://www.kpax.com/weather/school-closings-delays?_renderer=json",
+   "station": "scripps-kpax",
+   "why": "an unread capture of its former closings address (2019-2021), read so that every capture of it is read"
+  },
+  {
+   "timestamp": "20200522172159",
+   "url": "https://www.kpax.com/weather/school-closings-delays?_renderer=json",
+   "station": "scripps-kpax",
+   "why": "an unread capture of its former closings address (2019-2021), read so that every capture of it is read"
+  },
+  {
+   "timestamp": "20200523092109",
+   "url": "https://www.kpax.com/weather/school-closings-delays?_renderer=json",
+   "station": "scripps-kpax",
+   "why": "an unread capture of its former closings address (2019-2021), read so that every capture of it is read"
+  },
+  {
+   "timestamp": "20200522172201",
+   "url": "https://www.kpax.com/weather/school-closings-delays?_renderer=json",
+   "station": "scripps-kpax",
+   "why": "an unread capture of its former closings address (2019-2021), read so that every capture of it is read"
+  },
+  {
+   "timestamp": "20200522172202",
+   "url": "https://www.kpax.com/weather/school-closings-delays?_renderer=json",
+   "station": "scripps-kpax",
+   "why": "an unread capture of its former closings address (2019-2021), read so that every capture of it is read"
+  },
+  {
+   "timestamp": "20200522172203",
+   "url": "https://www.kpax.com/weather/school-closings-delays?_renderer=json",
+   "station": "scripps-kpax",
+   "why": "an unread capture of its former closings address (2019-2021), read so that every capture of it is read"
+  },
+  {
+   "timestamp": "20200522172206",
+   "url": "https://www.kpax.com/weather/school-closings-delays?_renderer=json",
+   "station": "scripps-kpax",
+   "why": "an unread capture of its former closings address (2019-2021), read so that every capture of it is read"
+  },
+  {
+   "timestamp": "20200522172207",
+   "url": "https://www.kpax.com/weather/school-closings-delays?_renderer=json",
+   "station": "scripps-kpax",
+   "why": "an unread capture of its former closings address (2019-2021), read so that every capture of it is read"
+  },
+  {
+   "timestamp": "20200522172208",
+   "url": "https://www.kpax.com/weather/school-closings-delays?_renderer=json",
+   "station": "scripps-kpax",
+   "why": "an unread capture of its former closings address (2019-2021), read so that every capture of it is read"
+  },
+  {
+   "timestamp": "20200522172211",
+   "url": "https://www.kpax.com/weather/school-closings-delays?_renderer=json",
+   "station": "scripps-kpax",
+   "why": "an unread capture of its former closings address (2019-2021), read so that every capture of it is read"
+  },
+  {
+   "timestamp": "20200522172214",
+   "url": "https://www.kpax.com/weather/school-closings-delays?_renderer=json",
+   "station": "scripps-kpax",
+   "why": "an unread capture of its former closings address (2019-2021), read so that every capture of it is read"
+  },
+  {
+   "timestamp": "20200522172215",
+   "url": "https://www.kpax.com/weather/school-closings-delays?_renderer=json",
+   "station": "scripps-kpax",
+   "why": "an unread capture of its former closings address (2019-2021), read so that every capture of it is read"
+  },
+  {
+   "timestamp": "20200522172216",
+   "url": "https://www.kpax.com/weather/school-closings-delays?_renderer=json",
+   "station": "scripps-kpax",
+   "why": "an unread capture of its former closings address (2019-2021), read so that every capture of it is read"
+  },
+  {
+   "timestamp": "20200522172217",
+   "url": "https://www.kpax.com/weather/school-closings-delays?_renderer=json",
+   "station": "scripps-kpax",
+   "why": "an unread capture of its former closings address (2019-2021), read so that every capture of it is read"
+  },
+  {
+   "timestamp": "20200522172218",
+   "url": "https://www.kpax.com/weather/school-closings-delays",
+   "station": "scripps-kpax",
+   "why": "an unread capture of its former closings address (2019-2021), read so that every capture of it is read"
+  },
+  {
+   "timestamp": "20200523092109",
+   "url": "https://www.kpax.com/weather/school-closings-delays?_renderer=json",
+   "station": "scripps-kpax",
+   "why": "an unread capture of its former closings address (2019-2021), read so that every capture of it is read"
+  },
+  {
+   "timestamp": "20200523092109",
+   "url": "https://www.kpax.com/weather/school-closings-delays?_renderer=json",
+   "station": "scripps-kpax",
+   "why": "an unread capture of its former closings address (2019-2021), read so that every capture of it is read"
+  },
+  {
+   "timestamp": "20200522172221",
+   "url": "https://www.kpax.com/weather/school-closings-delays?_renderer=json",
+   "station": "scripps-kpax",
+   "why": "an unread capture of its former closings address (2019-2021), read so that every capture of it is read"
+  },
+  {
+   "timestamp": "20200522172223",
+   "url": "https://www.kpax.com/weather/school-closings-delays?_renderer=json",
+   "station": "scripps-kpax",
+   "why": "an unread capture of its former closings address (2019-2021), read so that every capture of it is read"
+  },
+  {
+   "timestamp": "20200522172225",
+   "url": "https://www.kpax.com/weather/school-closings-delays?_renderer=json",
+   "station": "scripps-kpax",
+   "why": "an unread capture of its former closings address (2019-2021), read so that every capture of it is read"
+  },
+  {
+   "timestamp": "20200522172226",
+   "url": "https://www.kpax.com/weather/school-closings-delays?_renderer=json",
+   "station": "scripps-kpax",
+   "why": "an unread capture of its former closings address (2019-2021), read so that every capture of it is read"
+  },
+  {
+   "timestamp": "20200522172227",
+   "url": "https://www.kpax.com/weather/school-closings-delays?_renderer=json",
+   "station": "scripps-kpax",
+   "why": "an unread capture of its former closings address (2019-2021), read so that every capture of it is read"
+  },
+  {
+   "timestamp": "20200522172229",
+   "url": "https://www.kpax.com/weather/school-closings-delays?_renderer=json",
+   "station": "scripps-kpax",
+   "why": "an unread capture of its former closings address (2019-2021), read so that every capture of it is read"
+  },
+  {
+   "timestamp": "20200522172232",
+   "url": "https://www.kpax.com/weather/school-closings-delays?_renderer=json",
+   "station": "scripps-kpax",
+   "why": "an unread capture of its former closings address (2019-2021), read so that every capture of it is read"
+  },
+  {
+   "timestamp": "20200522172236",
+   "url": "https://www.kpax.com/weather/school-closings-delays?_renderer=json",
+   "station": "scripps-kpax",
+   "why": "an unread capture of its former closings address (2019-2021), read so that every capture of it is read"
+  },
+  {
+   "timestamp": "20200522172237",
+   "url": "https://www.kpax.com/weather/school-closings-delays?_renderer=json",
+   "station": "scripps-kpax",
+   "why": "an unread capture of its former closings address (2019-2021), read so that every capture of it is read"
+  },
+  {
+   "timestamp": "20200522172238",
+   "url": "https://www.kpax.com/weather/school-closings-delays?_renderer=json",
+   "station": "scripps-kpax",
+   "why": "an unread capture of its former closings address (2019-2021), read so that every capture of it is read"
+  },
+  {
+   "timestamp": "20200522172239",
+   "url": "https://www.kpax.com/weather/school-closings-delays?_renderer=json",
+   "station": "scripps-kpax",
+   "why": "an unread capture of its former closings address (2019-2021), read so that every capture of it is read"
+  },
+  {
+   "timestamp": "20200522172251",
+   "url": "https://www.kpax.com/weather/school-closings-delays?_renderer=json",
+   "station": "scripps-kpax",
+   "why": "an unread capture of its former closings address (2019-2021), read so that every capture of it is read"
+  },
+  {
+   "timestamp": "20200522172304",
+   "url": "https://www.kpax.com/weather/school-closings-delays?_renderer=json",
+   "station": "scripps-kpax",
+   "why": "an unread capture of its former closings address (2019-2021), read so that every capture of it is read"
+  },
+  {
+   "timestamp": "20200522172305",
+   "url": "https://www.kpax.com/weather/school-closings-delays?_renderer=json",
+   "station": "scripps-kpax",
+   "why": "an unread capture of its former closings address (2019-2021), read so that every capture of it is read"
   }
  ]
 }
