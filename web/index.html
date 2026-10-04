@@ -1201,10 +1201,82 @@
           opacity: 0.5;
         }
       }
+
+      #lock {
+        position: fixed;
+        inset: 0;
+        z-index: 2147483647;
+        background: #000;
+        align-items: center;
+        justify-content: center;
+      }
+      #lock:not([hidden]) {
+        display: flex;
+      }
+      #lock input {
+        width: 180px;
+        padding: 12px 16px;
+        border: 1px solid rgb(255 255 255 / 0.2);
+        border-radius: 999px;
+        background: #0d0d0d;
+        color: #fff;
+        font: inherit;
+        font-size: 16px;
+        letter-spacing: 0.3em;
+        text-align: center;
+        outline: none;
+      }
+      #lock input:focus {
+        border-color: rgb(255 255 255 / 0.5);
+      }
+      #lock.is-wrong input {
+        border-color: rgb(255 120 120 / 0.7);
+      }
     </style>
     <script type="module" src="/src/main.ts"></script>
   </head>
   <body>
+    <div id="lock" hidden>
+      <form id="lock-form" autocomplete="off">
+        <input
+          id="lock-input"
+          type="password"
+          inputmode="numeric"
+          placeholder="%copy.lock.password%"
+          aria-label="%copy.lock.password%"
+        />
+      </form>
+    </div>
+    <script>
+      (function () {
+        var host = location.hostname;
+        if (host === 'localhost' || host === '127.0.0.1' || host === '[::1]') return;
+        try {
+          if (localStorage.getItem('sl-lock') === 'MjM4MQ==') return;
+        } catch (e) {}
+        var lock = document.getElementById('lock');
+        var input = document.getElementById('lock-input');
+        lock.hidden = false;
+        input.focus();
+        document.getElementById('lock-form').addEventListener('submit', function (event) {
+          event.preventDefault();
+          if (btoa(input.value) === 'MjM4MQ==') {
+            try {
+              localStorage.setItem('sl-lock', 'MjM4MQ==');
+            } catch (e) {}
+            lock.remove();
+          } else {
+            input.value = '';
+            lock.classList.add('is-wrong');
+          }
+        });
+        input.addEventListener('input', function () {
+          lock.classList.remove('is-wrong');
+          if (btoa(input.value) === 'MjM4MQ==')
+            document.getElementById('lock-form').requestSubmit();
+        });
+      })();
+    </script>
     <div id="app">
       <!--
         The static shell. It paints before any script runs; main.ts swaps in the

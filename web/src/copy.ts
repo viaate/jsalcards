@@ -67,6 +67,9 @@ export const copy = deepFreeze({
     glow: 'The brighter the glow, the more schools.',
   },
 
+  lock: {
+    password: 'Password',
+  },
   search: {
     placeholder: 'Search a school, city, or ZIP',
     label: 'Search schools, cities, and ZIP codes',
