@@ -1,1309 +1,13 @@
 {
  "snapshots": [
   {
-   "timestamp": "20250120112116",
-   "url": "https://www.mcpsmt.org/",
-   "station": "finalsite-missoula-mt",
-   "why": "storm day 2025-01-20 (market score 0.50)"
-  },
-  {
-   "timestamp": "20250117045922",
-   "url": "https://www.swcsd2.org/",
-   "station": "apptegy-sweetwater-2-wy",
-   "why": "storm day 2025-01-17 (market score 0.25)"
-  },
-  {
-   "timestamp": "20211222155057",
-   "url": "https://www.ocesd.net/",
-   "station": "apptegy-oroville-ca",
-   "why": "storm day 2021-12-22 (market score 0.25)"
-  },
-  {
-   "timestamp": "20211108221953",
-   "url": "https://www.ocesd.net/",
-   "station": "apptegy-oroville-ca",
-   "why": "storm day 2021-11-09 (market score 0.25)"
-  },
-  {
-   "timestamp": "20211018011719",
-   "url": "https://www.ocesd.net/",
-   "station": "apptegy-oroville-ca",
-   "why": "storm day 2021-10-18 (market score 0.25)"
-  },
-  {
-   "timestamp": "20240205081222",
-   "url": "https://www.murrieta.k12.ca.us//",
-   "station": "finalsite-murrieta-valley-ca",
-   "why": "storm day 2024-02-05 (market score 1.00)"
-  },
-  {
-   "timestamp": "20240208154752",
-   "url": "https://www.murrieta.k12.ca.us/",
-   "station": "finalsite-murrieta-valley-ca",
-   "why": "storm day 2024-02-08 (market score 1.00)"
-  },
-  {
-   "timestamp": "20240208034236",
-   "url": "https://www.murrieta.k12.ca.us/",
-   "station": "finalsite-murrieta-valley-ca",
-   "why": "storm day 2024-02-08 (market score 1.00)"
-  },
-  {
-   "timestamp": "20220223154556",
-   "url": "https://www.cvusd.us/",
-   "station": "smartsites-coachella-valley-ca",
-   "why": "storm day 2022-02-23 (market score 0.50)"
-  },
-  {
-   "timestamp": "20220329034334",
-   "url": "https://www.cvusd.us/",
-   "station": "smartsites-coachella-valley-ca",
-   "why": "storm day 2022-03-29 (market score 0.50)"
-  },
-  {
-   "timestamp": "20220328160833",
-   "url": "https://www.cvusd.us/",
-   "station": "smartsites-coachella-valley-ca",
-   "why": "storm day 2022-03-29 (market score 0.50)"
-  },
-  {
-   "timestamp": "20240304171027",
-   "url": "https://www.durhamunified.org/",
-   "station": "apptegy-durham-ca",
-   "why": "storm day 2024-03-05 (market score 0.25)"
-  },
-  {
-   "timestamp": "20230321014414",
-   "url": "https://www.durhamunified.org/",
-   "station": "apptegy-durham-ca",
-   "why": "storm day 2023-03-21 (market score 0.25)"
-  },
-  {
-   "timestamp": "20210125105014",
-   "url": "http://durhamunified.org/",
-   "station": "apptegy-durham-ca",
-   "why": "storm day 2021-01-25 (market score 0.25)"
-  },
-  {
-   "timestamp": "20220329150735",
-   "url": "https://www.beaumontusd.us/",
-   "station": "edlio-beaumont-ca",
-   "why": "storm day 2022-03-29 (market score 1.00)"
-  },
-  {
-   "timestamp": "20220329102632",
-   "url": "https://www.beaumontusd.us/",
-   "station": "edlio-beaumont-ca",
-   "why": "storm day 2022-03-29 (market score 1.00)"
-  },
-  {
-   "timestamp": "20260219095904",
-   "url": "https://www.beaumontusd.us/",
-   "station": "edlio-beaumont-ca",
-   "why": "storm day 2026-02-19 (market score 1.00)"
-  },
-  {
-   "timestamp": "20250804192351",
-   "url": "https://www.fpcvpaa.com/",
-   "station": "finalsite-fpc-vpaa-al",
-   "why": "2025-08-05: an unread capture of an earlier address of its list, the last left (read so that every capture of it is read)"
-  },
-  {
-   "timestamp": "20251214101716",
-   "url": "https://www.fpcvpaa.com/",
-   "station": "finalsite-fpc-vpaa-al",
-   "why": "2025-12-14: an unread capture of an earlier address of its list, the last left (read so that every capture of it is read)"
-  },
-  {
-   "timestamp": "20260314092302",
-   "url": "https://www.fpcvpaa.com/",
-   "station": "finalsite-fpc-vpaa-al",
-   "why": "2026-03-14: an unread capture of an earlier address of its list, the last left (read so that every capture of it is read)"
-  },
-  {
-   "timestamp": "20240208110308",
-   "url": "https://www.murrieta.k12.ca.us//",
-   "station": "finalsite-murrieta-valley-ca",
-   "why": "storm day 2024-02-08 (market score 1.00)"
-  },
-  {
-   "timestamp": "20240131225825",
-   "url": "https://www.murrieta.k12.ca.us/",
-   "station": "finalsite-murrieta-valley-ca",
-   "why": "storm day 2024-02-01 (market score 1.00)"
-  },
-  {
-   "timestamp": "20240205221054",
-   "url": "https://www.murrieta.k12.ca.us/",
-   "station": "finalsite-murrieta-valley-ca",
-   "why": "storm day 2024-02-06 (market score 1.00)"
-  },
-  {
-   "timestamp": "20240206130216",
-   "url": "https://www.murrieta.k12.ca.us/",
-   "station": "finalsite-murrieta-valley-ca",
-   "why": "storm day 2024-02-06 (market score 1.00)"
-  },
-  {
-   "timestamp": "20230321072106",
-   "url": "https://www.murrieta.k12.ca.us//",
-   "station": "finalsite-murrieta-valley-ca",
-   "why": "storm day 2023-03-21 (market score 1.00)"
-  },
-  {
-   "timestamp": "20230320195528",
-   "url": "https://www.murrieta.k12.ca.us//",
-   "station": "finalsite-murrieta-valley-ca",
-   "why": "storm day 2023-03-21 (market score 1.00)"
-  },
-  {
-   "timestamp": "20240405105440",
-   "url": "https://www.murrieta.k12.ca.us/",
-   "station": "finalsite-murrieta-valley-ca",
-   "why": "storm day 2024-04-05 (market score 1.00)"
-  },
-  {
-   "timestamp": "20240315011628",
-   "url": "https://www.murrieta.k12.ca.us/",
-   "station": "finalsite-murrieta-valley-ca",
-   "why": "storm day 2024-03-15 (market score 1.00)"
-  },
-  {
-   "timestamp": "20240315151207",
-   "url": "https://www.murrieta.k12.ca.us//",
-   "station": "finalsite-murrieta-valley-ca",
-   "why": "storm day 2024-03-15 (market score 1.00)"
-  },
-  {
-   "timestamp": "20250127112610",
-   "url": "https://www.murrieta.k12.ca.us//",
-   "station": "finalsite-murrieta-valley-ca",
-   "why": "storm day 2025-01-27 (market score 1.00)"
-  },
-  {
-   "timestamp": "20240207142621",
-   "url": "https://www.murrieta.k12.ca.us//",
-   "station": "finalsite-murrieta-valley-ca",
-   "why": "storm day 2024-02-07 (market score 1.00)"
-  },
-  {
-   "timestamp": "20240205003146",
-   "url": "https://www.murrieta.k12.ca.us/",
-   "station": "finalsite-murrieta-valley-ca",
-   "why": "storm day 2024-02-05 (market score 1.00)"
-  },
-  {
-   "timestamp": "20240204191922",
-   "url": "https://www.murrieta.k12.ca.us//",
-   "station": "finalsite-murrieta-valley-ca",
-   "why": "storm day 2024-02-05 (market score 1.00)"
-  },
-  {
-   "timestamp": "20240208040615",
-   "url": "https://www.murrieta.k12.ca.us/",
-   "station": "finalsite-murrieta-valley-ca",
-   "why": "storm day 2024-02-08 (market score 1.00)"
-  },
-  {
-   "timestamp": "20240206202345",
-   "url": "https://www.murrieta.k12.ca.us//",
-   "station": "finalsite-murrieta-valley-ca",
-   "why": "storm day 2024-02-07 (market score 1.00)"
-  },
-  {
-   "timestamp": "20240204225840",
-   "url": "https://www.murrieta.k12.ca.us//",
-   "station": "finalsite-murrieta-valley-ca",
-   "why": "storm day 2024-02-05 (market score 1.00)"
-  },
-  {
-   "timestamp": "20240207233245",
-   "url": "https://www.murrieta.k12.ca.us/",
-   "station": "finalsite-murrieta-valley-ca",
-   "why": "storm day 2024-02-08 (market score 1.00)"
-  },
-  {
-   "timestamp": "20240207225814",
-   "url": "https://www.murrieta.k12.ca.us//",
-   "station": "finalsite-murrieta-valley-ca",
-   "why": "storm day 2024-02-08 (market score 1.00)"
-  },
-  {
-   "timestamp": "20240205033307",
-   "url": "https://www.murrieta.k12.ca.us/",
-   "station": "finalsite-murrieta-valley-ca",
-   "why": "storm day 2024-02-05 (market score 1.00)"
-  },
-  {
-   "timestamp": "20240205143956",
-   "url": "https://www.murrieta.k12.ca.us//",
-   "station": "finalsite-murrieta-valley-ca",
-   "why": "storm day 2024-02-05 (market score 1.00)"
-  },
-  {
-   "timestamp": "20240131191547",
-   "url": "https://www.murrieta.k12.ca.us//",
-   "station": "finalsite-murrieta-valley-ca",
-   "why": "storm day 2024-02-01 (market score 1.00)"
-  },
-  {
-   "timestamp": "20240201105807",
-   "url": "https://www.murrieta.k12.ca.us/",
-   "station": "finalsite-murrieta-valley-ca",
-   "why": "storm day 2024-02-01 (market score 1.00)"
-  },
-  {
-   "timestamp": "20240205123733",
-   "url": "https://www.murrieta.k12.ca.us/",
-   "station": "finalsite-murrieta-valley-ca",
-   "why": "storm day 2024-02-05 (market score 1.00)"
-  },
-  {
-   "timestamp": "20240205095449",
-   "url": "https://www.murrieta.k12.ca.us/",
-   "station": "finalsite-murrieta-valley-ca",
-   "why": "storm day 2024-02-05 (market score 1.00)"
-  },
-  {
-   "timestamp": "20240207022935",
-   "url": "https://www.murrieta.k12.ca.us/",
-   "station": "finalsite-murrieta-valley-ca",
-   "why": "storm day 2024-02-07 (market score 1.00)"
-  },
-  {
-   "timestamp": "20240208081404",
-   "url": "https://www.murrieta.k12.ca.us//",
-   "station": "finalsite-murrieta-valley-ca",
-   "why": "storm day 2024-02-08 (market score 1.00)"
-  },
-  {
-   "timestamp": "20230130122230",
-   "url": "https://www.murrieta.k12.ca.us//",
-   "station": "finalsite-murrieta-valley-ca",
-   "why": "storm day 2023-01-30 (market score 1.00)"
-  },
-  {
-   "timestamp": "20230115230421",
-   "url": "https://www.murrieta.k12.ca.us//",
-   "station": "finalsite-murrieta-valley-ca",
-   "why": "storm day 2023-01-16 (market score 1.00)"
-  },
-  {
-   "timestamp": "20230116110737",
-   "url": "https://www.murrieta.k12.ca.us//",
-   "station": "finalsite-murrieta-valley-ca",
-   "why": "storm day 2023-01-16 (market score 1.00)"
-  },
-  {
-   "timestamp": "20230130004927",
-   "url": "https://www.murrieta.k12.ca.us/",
-   "station": "finalsite-murrieta-valley-ca",
-   "why": "storm day 2023-01-30 (market score 1.00)"
-  },
-  {
-   "timestamp": "20230328230853",
-   "url": "https://www.murrieta.k12.ca.us//",
-   "station": "finalsite-murrieta-valley-ca",
-   "why": "storm day 2023-03-29 (market score 1.00)"
-  },
-  {
-   "timestamp": "20230330145053",
-   "url": "https://www.murrieta.k12.ca.us/",
-   "station": "finalsite-murrieta-valley-ca",
-   "why": "storm day 2023-03-30 (market score 1.00)"
-  },
-  {
-   "timestamp": "20230330050225",
-   "url": "https://www.murrieta.k12.ca.us//",
-   "station": "finalsite-murrieta-valley-ca",
-   "why": "storm day 2023-03-30 (market score 1.00)"
-  },
-  {
-   "timestamp": "20230329215826",
-   "url": "https://www.murrieta.k12.ca.us/",
-   "station": "finalsite-murrieta-valley-ca",
-   "why": "storm day 2023-03-30 (market score 1.00)"
-  },
-  {
-   "timestamp": "20230330005309",
-   "url": "https://www.murrieta.k12.ca.us//",
-   "station": "finalsite-murrieta-valley-ca",
-   "why": "storm day 2023-03-30 (market score 1.00)"
-  },
-  {
-   "timestamp": "20230329110501",
-   "url": "https://www.murrieta.k12.ca.us//",
-   "station": "finalsite-murrieta-valley-ca",
-   "why": "storm day 2023-03-29 (market score 1.00)"
-  },
-  {
-   "timestamp": "20230330030513",
-   "url": "https://www.murrieta.k12.ca.us//",
-   "station": "finalsite-murrieta-valley-ca",
-   "why": "storm day 2023-03-30 (market score 1.00)"
-  },
-  {
-   "timestamp": "20230320161644",
-   "url": "https://www.murrieta.k12.ca.us/",
-   "station": "finalsite-murrieta-valley-ca",
-   "why": "storm day 2023-03-21 (market score 1.00)"
-  },
-  {
-   "timestamp": "20230130110545",
-   "url": "https://www.murrieta.k12.ca.us/",
-   "station": "finalsite-murrieta-valley-ca",
-   "why": "storm day 2023-01-30 (market score 1.00)"
-  },
-  {
-   "timestamp": "20230130032216",
-   "url": "https://www.murrieta.k12.ca.us//",
-   "station": "finalsite-murrieta-valley-ca",
-   "why": "storm day 2023-01-30 (market score 1.00)"
-  },
-  {
-   "timestamp": "20220327182850",
-   "url": "https://www.murrieta.k12.ca.us//",
-   "station": "finalsite-murrieta-valley-ca",
-   "why": "storm day 2022-03-28 (market score 1.00)"
-  },
-  {
-   "timestamp": "20210125114535",
-   "url": "https://www.murrieta.k12.ca.us/",
-   "station": "finalsite-murrieta-valley-ca",
-   "why": "storm day 2021-01-25 (market score 1.00)"
-  },
-  {
-   "timestamp": "20211228233324",
-   "url": "http://www.murrieta.k12.ca.us//",
-   "station": "finalsite-murrieta-valley-ca",
-   "why": "storm day 2021-12-29 (market score 1.00)"
-  },
-  {
-   "timestamp": "20211228211532",
-   "url": "https://www.murrieta.k12.ca.us//",
-   "station": "finalsite-murrieta-valley-ca",
-   "why": "storm day 2021-12-29 (market score 1.00)"
-  },
-  {
-   "timestamp": "20220329062804",
-   "url": "https://www.murrieta.k12.ca.us//",
-   "station": "finalsite-murrieta-valley-ca",
-   "why": "storm day 2022-03-29 (market score 1.00)"
-  },
-  {
-   "timestamp": "20220328182953",
-   "url": "https://www.murrieta.k12.ca.us//",
-   "station": "finalsite-murrieta-valley-ca",
-   "why": "storm day 2022-03-29 (market score 1.00)"
-  },
-  {
-   "timestamp": "20260217054054",
-   "url": "https://www.murrieta.k12.ca.us/",
-   "station": "finalsite-murrieta-valley-ca",
-   "why": "storm day 2026-02-17 (market score 1.00)"
-  },
-  {
-   "timestamp": "20260216173806",
-   "url": "https://www.murrieta.k12.ca.us/",
-   "station": "finalsite-murrieta-valley-ca",
-   "why": "storm day 2026-02-17 (market score 1.00)"
-  },
-  {
-   "timestamp": "20260217173656",
-   "url": "https://www.murrieta.k12.ca.us/",
-   "station": "finalsite-murrieta-valley-ca",
-   "why": "storm day 2026-02-18 (market score 1.00)"
-  },
-  {
-   "timestamp": "20260215174005",
-   "url": "https://www.murrieta.k12.ca.us/",
-   "station": "finalsite-murrieta-valley-ca",
-   "why": "storm day 2026-02-16 (market score 1.00)"
-  },
-  {
-   "timestamp": "20260215195508",
-   "url": "https://www.murrieta.k12.ca.us/",
-   "station": "finalsite-murrieta-valley-ca",
-   "why": "storm day 2026-02-16 (market score 1.00)"
-  },
-  {
-   "timestamp": "20260216054010",
-   "url": "https://www.murrieta.k12.ca.us/",
-   "station": "finalsite-murrieta-valley-ca",
-   "why": "storm day 2026-02-16 (market score 1.00)"
-  },
-  {
-   "timestamp": "20260220011152",
-   "url": "https://www.murrieta.k12.ca.us/",
-   "station": "finalsite-murrieta-valley-ca",
-   "why": "storm day 2026-02-20 (market score 1.00)"
-  },
-  {
-   "timestamp": "20260220065946",
-   "url": "https://www.murrieta.k12.ca.us/",
-   "station": "finalsite-murrieta-valley-ca",
-   "why": "storm day 2026-02-20 (market score 1.00)"
-  },
-  {
-   "timestamp": "20260218140216",
-   "url": "https://www.murrieta.k12.ca.us/",
-   "station": "finalsite-murrieta-valley-ca",
-   "why": "storm day 2026-02-18 (market score 1.00)"
-  },
-  {
-   "timestamp": "20260219053955",
-   "url": "https://www.murrieta.k12.ca.us/",
-   "station": "finalsite-murrieta-valley-ca",
-   "why": "storm day 2026-02-19 (market score 1.00)"
-  },
-  {
-   "timestamp": "20251121063352",
-   "url": "https://www.murrieta.k12.ca.us/",
-   "station": "finalsite-murrieta-valley-ca",
-   "why": "storm day 2025-11-21 (market score 1.00)"
-  },
-  {
-   "timestamp": "20251120175645",
-   "url": "https://www.murrieta.k12.ca.us/",
-   "station": "finalsite-murrieta-valley-ca",
-   "why": "storm day 2025-11-21 (market score 1.00)"
-  },
-  {
-   "timestamp": "20250303124905",
-   "url": "https://www.murrieta.k12.ca.us//",
-   "station": "finalsite-murrieta-valley-ca",
-   "why": "storm day 2025-03-03 (market score 0.25)"
-  },
-  {
-   "timestamp": "20240219190414",
-   "url": "https://www.murrieta.k12.ca.us/",
-   "station": "finalsite-murrieta-valley-ca",
-   "why": "storm day 2024-02-20 (market score 0.25)"
-  },
-  {
-   "timestamp": "20250313182659",
-   "url": "https://www.murrieta.k12.ca.us//",
-   "station": "finalsite-murrieta-valley-ca",
-   "why": "storm day 2025-03-14 (market score 0.25)"
-  },
-  {
-   "timestamp": "20250313234252",
-   "url": "https://www.murrieta.k12.ca.us//",
-   "station": "finalsite-murrieta-valley-ca",
-   "why": "storm day 2025-03-14 (market score 0.25)"
-  },
-  {
-   "timestamp": "20250314131251",
-   "url": "https://www.murrieta.k12.ca.us//",
-   "station": "finalsite-murrieta-valley-ca",
-   "why": "storm day 2025-03-14 (market score 0.25)"
-  },
-  {
-   "timestamp": "20250302234442",
-   "url": "https://www.murrieta.k12.ca.us//",
-   "station": "finalsite-murrieta-valley-ca",
-   "why": "storm day 2025-03-03 (market score 0.25)"
-  },
-  {
-   "timestamp": "20240102232309",
-   "url": "https://www.murrieta.k12.ca.us//",
-   "station": "finalsite-murrieta-valley-ca",
-   "why": "storm day 2024-01-03 (market score 0.25)"
-  },
-  {
-   "timestamp": "20240102214704",
-   "url": "https://www.murrieta.k12.ca.us/",
-   "station": "finalsite-murrieta-valley-ca",
-   "why": "storm day 2024-01-03 (market score 0.25)"
-  },
-  {
-   "timestamp": "20231222032953",
-   "url": "https://www.murrieta.k12.ca.us//",
-   "station": "finalsite-murrieta-valley-ca",
-   "why": "storm day 2023-12-22 (market score 0.25)"
-  },
-  {
-   "timestamp": "20231222105915",
-   "url": "https://www.murrieta.k12.ca.us/",
-   "station": "finalsite-murrieta-valley-ca",
-   "why": "storm day 2023-12-22 (market score 0.25)"
-  },
-  {
-   "timestamp": "20240111083252",
-   "url": "https://www.murrieta.k12.ca.us//",
-   "station": "finalsite-murrieta-valley-ca",
-   "why": "storm day 2024-01-11 (market score 0.25)"
-  },
-  {
-   "timestamp": "20240111090112",
-   "url": "https://www.murrieta.k12.ca.us//",
-   "station": "finalsite-murrieta-valley-ca",
-   "why": "storm day 2024-01-11 (market score 0.25)"
-  },
-  {
-   "timestamp": "20240111141116",
-   "url": "https://www.murrieta.k12.ca.us/",
-   "station": "finalsite-murrieta-valley-ca",
-   "why": "storm day 2024-01-11 (market score 0.25)"
-  },
-  {
-   "timestamp": "20240111042024",
-   "url": "https://www.murrieta.k12.ca.us/",
-   "station": "finalsite-murrieta-valley-ca",
-   "why": "storm day 2024-01-11 (market score 0.25)"
-  },
-  {
-   "timestamp": "20240307033330",
-   "url": "https://www.murrieta.k12.ca.us//",
-   "station": "finalsite-murrieta-valley-ca",
-   "why": "storm day 2024-03-07 (market score 0.25)"
-  },
-  {
-   "timestamp": "20240221125249",
-   "url": "https://www.murrieta.k12.ca.us/",
-   "station": "finalsite-murrieta-valley-ca",
-   "why": "storm day 2024-02-21 (market score 0.25)"
-  },
-  {
-   "timestamp": "20240220133313",
-   "url": "https://www.murrieta.k12.ca.us/",
-   "station": "finalsite-murrieta-valley-ca",
-   "why": "storm day 2024-02-20 (market score 0.25)"
-  },
-  {
-   "timestamp": "20231221231449",
-   "url": "https://www.murrieta.k12.ca.us//",
-   "station": "finalsite-murrieta-valley-ca",
-   "why": "storm day 2023-12-22 (market score 0.25)"
-  },
-  {
-   "timestamp": "20240111050024",
-   "url": "https://www.murrieta.k12.ca.us//",
-   "station": "finalsite-murrieta-valley-ca",
-   "why": "storm day 2024-01-11 (market score 0.25)"
-  },
-  {
-   "timestamp": "20240111022707",
-   "url": "https://www.murrieta.k12.ca.us/",
-   "station": "finalsite-murrieta-valley-ca",
-   "why": "storm day 2024-01-11 (market score 0.25)"
-  },
-  {
-   "timestamp": "20240110230148",
-   "url": "https://www.murrieta.k12.ca.us//",
-   "station": "finalsite-murrieta-valley-ca",
-   "why": "storm day 2024-01-11 (market score 0.25)"
-  },
-  {
-   "timestamp": "20240110213215",
-   "url": "https://www.murrieta.k12.ca.us/",
-   "station": "finalsite-murrieta-valley-ca",
-   "why": "storm day 2024-01-11 (market score 0.25)"
-  },
-  {
-   "timestamp": "20240111105814",
-   "url": "https://www.murrieta.k12.ca.us//",
-   "station": "finalsite-murrieta-valley-ca",
-   "why": "storm day 2024-01-11 (market score 0.25)"
-  },
-  {
-   "timestamp": "20241115015731",
-   "url": "https://www.murrieta.k12.ca.us//",
-   "station": "finalsite-murrieta-valley-ca",
-   "why": "storm day 2024-11-15 (market score 0.25)"
-  },
-  {
-   "timestamp": "20241115112453",
-   "url": "https://www.murrieta.k12.ca.us//",
-   "station": "finalsite-murrieta-valley-ca",
-   "why": "storm day 2024-11-15 (market score 0.25)"
-  },
-  {
-   "timestamp": "20241115093916",
-   "url": "https://www.murrieta.k12.ca.us//",
-   "station": "finalsite-murrieta-valley-ca",
-   "why": "storm day 2024-11-15 (market score 0.25)"
-  },
-  {
-   "timestamp": "20240307105906",
-   "url": "https://www.murrieta.k12.ca.us//",
-   "station": "finalsite-murrieta-valley-ca",
-   "why": "storm day 2024-03-07 (market score 0.25)"
-  },
-  {
-   "timestamp": "20240221131602",
-   "url": "https://www.murrieta.k12.ca.us//",
-   "station": "finalsite-murrieta-valley-ca",
-   "why": "storm day 2024-02-21 (market score 0.25)"
-  },
-  {
-   "timestamp": "20240306225757",
-   "url": "https://www.murrieta.k12.ca.us/",
-   "station": "finalsite-murrieta-valley-ca",
-   "why": "storm day 2024-03-07 (market score 0.25)"
-  },
-  {
-   "timestamp": "20240221141103",
-   "url": "https://www.murrieta.k12.ca.us/",
-   "station": "finalsite-murrieta-valley-ca",
-   "why": "storm day 2024-02-21 (market score 0.25)"
-  },
-  {
-   "timestamp": "20240307110819",
-   "url": "https://www.murrieta.k12.ca.us/",
-   "station": "finalsite-murrieta-valley-ca",
-   "why": "storm day 2024-03-07 (market score 0.25)"
-  },
-  {
-   "timestamp": "20240220041834",
-   "url": "https://www.murrieta.k12.ca.us/",
-   "station": "finalsite-murrieta-valley-ca",
-   "why": "storm day 2024-02-20 (market score 0.25)"
-  },
-  {
-   "timestamp": "20230105110456",
-   "url": "https://www.murrieta.k12.ca.us//",
-   "station": "finalsite-murrieta-valley-ca",
-   "why": "storm day 2023-01-05 (market score 0.25)"
-  },
-  {
-   "timestamp": "20230104230417",
-   "url": "https://www.murrieta.k12.ca.us/",
-   "station": "finalsite-murrieta-valley-ca",
-   "why": "storm day 2023-01-05 (market score 0.25)"
-  },
-  {
-   "timestamp": "20230110110421",
-   "url": "https://www.murrieta.k12.ca.us/",
-   "station": "finalsite-murrieta-valley-ca",
-   "why": "storm day 2023-01-10 (market score 0.25)"
-  },
-  {
-   "timestamp": "20230109230447",
-   "url": "https://www.murrieta.k12.ca.us/",
-   "station": "finalsite-murrieta-valley-ca",
-   "why": "storm day 2023-01-10 (market score 0.25)"
-  },
-  {
-   "timestamp": "20200318133644",
-   "url": "https://www.murrieta.k12.ca.us/",
-   "station": "finalsite-murrieta-valley-ca",
-   "why": "storm day 2020-03-18 (market score 0.25)"
-  },
-  {
-   "timestamp": "20200318140001",
-   "url": "https://www.murrieta.k12.ca.us/",
-   "station": "finalsite-murrieta-valley-ca",
-   "why": "storm day 2020-03-18 (market score 0.25)"
-  },
-  {
-   "timestamp": "20200318131703",
-   "url": "https://www.cvusd.us/",
-   "station": "smartsites-coachella-valley-ca",
-   "why": "storm day 2020-03-18 (market score 0.12)"
-  },
-  {
-   "timestamp": "20181129042328",
-   "url": "https://www.cvusd.us/",
-   "station": "smartsites-coachella-valley-ca",
-   "why": "storm day 2018-11-29 (market score 0.12)"
-  },
-  {
-   "timestamp": "20211230154718",
-   "url": "https://www.cvusd.us/",
-   "station": "smartsites-coachella-valley-ca",
-   "why": "storm day 2021-12-30 (market score 0.12)"
-  },
-  {
-   "timestamp": "20191213120853",
-   "url": "http://durhamunified.org:80/",
-   "station": "apptegy-durham-ca",
-   "why": "storm day 2019-12-13 (market score 0.25)"
-  },
-  {
-   "timestamp": "20260215215719",
-   "url": "https://www.beaumontusd.us/",
-   "station": "edlio-beaumont-ca",
-   "why": "storm day 2026-02-16 (market score 1.00)"
-  },
-  {
-   "timestamp": "20260217095636",
-   "url": "https://www.beaumontusd.us/",
-   "station": "edlio-beaumont-ca",
-   "why": "storm day 2026-02-17 (market score 1.00)"
-  },
-  {
-   "timestamp": "20260219043846",
-   "url": "https://www.beaumontusd.us/",
-   "station": "edlio-beaumont-ca",
-   "why": "storm day 2026-02-19 (market score 1.00)"
-  },
-  {
-   "timestamp": "20260217025407",
-   "url": "https://www.beaumontusd.us/",
-   "station": "edlio-beaumont-ca",
-   "why": "storm day 2026-02-17 (market score 1.00)"
-  },
-  {
-   "timestamp": "20260219081348",
-   "url": "https://www.beaumontusd.us/",
-   "station": "edlio-beaumont-ca",
-   "why": "storm day 2026-02-19 (market score 1.00)"
-  },
-  {
-   "timestamp": "20260219160013",
-   "url": "https://www.beaumontusd.us/",
-   "station": "edlio-beaumont-ca",
-   "why": "storm day 2026-02-20 (market score 1.00)"
-  },
-  {
-   "timestamp": "20260216095810",
-   "url": "https://www.beaumontusd.us/",
-   "station": "edlio-beaumont-ca",
-   "why": "storm day 2026-02-16 (market score 1.00)"
-  },
-  {
-   "timestamp": "20260220140209",
-   "url": "https://www.beaumontusd.us/",
-   "station": "edlio-beaumont-ca",
-   "why": "storm day 2026-02-20 (market score 1.00)"
-  },
-  {
-   "timestamp": "20250306114446",
-   "url": "https://www.beaumontusd.us/",
-   "station": "edlio-beaumont-ca",
-   "why": "storm day 2025-03-06 (market score 1.00)"
-  },
-  {
-   "timestamp": "20250313115816",
-   "url": "https://www.beaumontusd.us/",
-   "station": "edlio-beaumont-ca",
-   "why": "storm day 2025-03-13 (market score 1.00)"
-  },
-  {
-   "timestamp": "20250313061827",
-   "url": "https://www.beaumontusd.us/",
-   "station": "edlio-beaumont-ca",
-   "why": "storm day 2025-03-13 (market score 1.00)"
-  },
-  {
-   "timestamp": "20240207162630",
-   "url": "https://www.beaumontusd.us/",
-   "station": "edlio-beaumont-ca",
-   "why": "storm day 2024-02-08 (market score 1.00)"
-  },
-  {
-   "timestamp": "20240207143132",
-   "url": "https://www.beaumontusd.us/",
-   "station": "edlio-beaumont-ca",
-   "why": "storm day 2024-02-07 (market score 1.00)"
-  },
-  {
-   "timestamp": "20240207053845",
-   "url": "https://www.beaumontusd.us/",
-   "station": "edlio-beaumont-ca",
-   "why": "storm day 2024-02-07 (market score 1.00)"
-  },
-  {
-   "timestamp": "20240208121143",
-   "url": "https://www.beaumontusd.us/",
-   "station": "edlio-beaumont-ca",
-   "why": "storm day 2024-02-08 (market score 1.00)"
-  },
-  {
-   "timestamp": "20251120215315",
-   "url": "https://www.beaumontusd.us/",
-   "station": "edlio-beaumont-ca",
-   "why": "storm day 2025-11-21 (market score 1.00)"
-  },
-  {
-   "timestamp": "20251121115856",
-   "url": "https://www.beaumontusd.us/",
-   "station": "edlio-beaumont-ca",
-   "why": "storm day 2025-11-21 (market score 1.00)"
-  },
-  {
-   "timestamp": "20240205213215",
-   "url": "https://www.beaumontusd.us/",
-   "station": "edlio-beaumont-ca",
-   "why": "storm day 2024-02-06 (market score 1.00)"
-  },
-  {
-   "timestamp": "20240206141941",
-   "url": "https://www.beaumontusd.us/",
-   "station": "edlio-beaumont-ca",
-   "why": "storm day 2024-02-06 (market score 1.00)"
-  },
-  {
-   "timestamp": "20250127143134",
-   "url": "https://www.beaumontusd.us/",
-   "station": "edlio-beaumont-ca",
-   "why": "storm day 2025-01-27 (market score 1.00)"
-  },
-  {
-   "timestamp": "20250126224347",
-   "url": "https://www.beaumontusd.us/",
-   "station": "edlio-beaumont-ca",
-   "why": "storm day 2025-01-27 (market score 1.00)"
-  },
-  {
-   "timestamp": "20240201071302",
-   "url": "https://www.beaumontusd.us/",
-   "station": "edlio-beaumont-ca",
-   "why": "storm day 2024-02-01 (market score 1.00)"
-  },
-  {
-   "timestamp": "20240205184743",
-   "url": "https://www.beaumontusd.us/",
-   "station": "edlio-beaumont-ca",
-   "why": "storm day 2024-02-06 (market score 1.00)"
-  },
-  {
-   "timestamp": "20240201035317",
-   "url": "https://www.beaumontusd.us/",
-   "station": "edlio-beaumont-ca",
-   "why": "storm day 2024-02-01 (market score 1.00)"
-  },
-  {
-   "timestamp": "20240205133728",
-   "url": "https://www.beaumontusd.us/",
-   "station": "edlio-beaumont-ca",
-   "why": "storm day 2024-02-05 (market score 1.00)"
-  },
-  {
-   "timestamp": "20240205044125",
-   "url": "https://www.beaumontusd.us/",
-   "station": "edlio-beaumont-ca",
-   "why": "storm day 2024-02-05 (market score 1.00)"
-  },
-  {
-   "timestamp": "20240204213228",
-   "url": "https://www.beaumontusd.us/",
-   "station": "edlio-beaumont-ca",
-   "why": "storm day 2024-02-05 (market score 1.00)"
-  },
-  {
-   "timestamp": "20240405060043",
-   "url": "https://www.beaumontusd.us/",
-   "station": "edlio-beaumont-ca",
-   "why": "storm day 2024-04-05 (market score 1.00)"
-  },
-  {
-   "timestamp": "20240405092801",
-   "url": "https://www.beaumontusd.us/",
-   "station": "edlio-beaumont-ca",
-   "why": "storm day 2024-04-05 (market score 1.00)"
-  },
-  {
-   "timestamp": "20240314234506",
-   "url": "https://www.beaumontusd.us/",
-   "station": "edlio-beaumont-ca",
-   "why": "storm day 2024-03-15 (market score 1.00)"
-  },
-  {
-   "timestamp": "20240315140116",
-   "url": "https://www.beaumontusd.us/",
-   "station": "edlio-beaumont-ca",
-   "why": "storm day 2024-03-15 (market score 1.00)"
-  },
-  {
-   "timestamp": "20240314195830",
-   "url": "https://www.beaumontusd.us/",
-   "station": "edlio-beaumont-ca",
-   "why": "storm day 2024-03-15 (market score 1.00)"
-  },
-  {
-   "timestamp": "20250302232403",
-   "url": "https://www.beaumontusd.us/",
-   "station": "edlio-beaumont-ca",
-   "why": "storm day 2025-03-03 (market score 0.25)"
-  },
-  {
-   "timestamp": "20240221085455",
-   "url": "https://www.beaumontusd.us/",
-   "station": "edlio-beaumont-ca",
-   "why": "storm day 2024-02-21 (market score 0.25)"
-  },
-  {
-   "timestamp": "20240220163804",
-   "url": "https://www.beaumontusd.us/",
-   "station": "edlio-beaumont-ca",
-   "why": "storm day 2024-02-21 (market score 0.25)"
-  },
-  {
-   "timestamp": "20240306213221",
-   "url": "https://www.beaumontusd.us/",
-   "station": "edlio-beaumont-ca",
-   "why": "storm day 2024-03-07 (market score 0.25)"
-  },
-  {
-   "timestamp": "20241115002838",
-   "url": "https://www.beaumontusd.us/",
-   "station": "edlio-beaumont-ca",
-   "why": "storm day 2024-11-15 (market score 0.25)"
-  },
-  {
-   "timestamp": "20240111093228",
-   "url": "https://www.beaumontusd.us/",
-   "station": "edlio-beaumont-ca",
-   "why": "storm day 2024-01-11 (market score 0.25)"
-  },
-  {
-   "timestamp": "20250314114544",
-   "url": "https://www.beaumontusd.us/",
-   "station": "edlio-beaumont-ca",
-   "why": "storm day 2025-03-14 (market score 0.25)"
-  },
-  {
-   "timestamp": "20250314081505",
-   "url": "https://www.beaumontusd.us/",
-   "station": "edlio-beaumont-ca",
-   "why": "storm day 2025-03-14 (market score 0.25)"
-  },
-  {
-   "timestamp": "20250314101812",
-   "url": "https://www.beaumontusd.us/",
-   "station": "edlio-beaumont-ca",
-   "why": "storm day 2025-03-14 (market score 0.25)"
-  },
-  {
-   "timestamp": "20260610211101",
-   "url": "https://www.fpcvpaa.com/",
-   "station": "finalsite-fpc-vpaa-al",
-   "why": "2026-06-11: an unread capture of an earlier address of its list, the last left (read so that every capture of it is read)"
-  },
-  {
-   "timestamp": "20210826072802",
-   "url": "https://www.abc4.com/weather/closings/",
-   "station": "nexstar-ktvx",
-   "why": "an unread capture of its list, read so that every capture of it is read"
-  },
-  {
-   "timestamp": "20230509143415",
-   "url": "https://www.abc4.com/weather/closings/",
-   "station": "nexstar-ktvx",
-   "why": "an unread capture of its list, read so that every capture of it is read"
-  },
-  {
-   "timestamp": "20240814053629",
-   "url": "https://www.abc4.com/weather/closings/",
-   "station": "nexstar-ktvx",
-   "why": "an unread capture of its list, read so that every capture of it is read"
-  },
-  {
-   "timestamp": "20250212075851",
-   "url": "https://www.abc4.com/weather/closings/",
-   "station": "nexstar-ktvx",
-   "why": "an unread capture of its list, read so that every capture of it is read"
-  },
-  {
-   "timestamp": "20190819163636",
-   "url": "https://www.kpax.com/weather/school-closings-delays",
-   "station": "scripps-kpax",
-   "why": "an unread capture of its former closings address (2019-2021), read so that every capture of it is read"
-  },
-  {
-   "timestamp": "20190824130744",
-   "url": "https://www.kpax.com/weather/school-closings-delays",
-   "station": "scripps-kpax",
-   "why": "an unread capture of its former closings address (2019-2021), read so that every capture of it is read"
-  },
-  {
-   "timestamp": "20190915100140",
-   "url": "https://www.kpax.com/weather/school-closings-delays",
-   "station": "scripps-kpax",
-   "why": "an unread capture of its former closings address (2019-2021), read so that every capture of it is read"
-  },
-  {
-   "timestamp": "20190928180745",
+   "timestamp": "20200522172307",
    "url": "https://www.kpax.com/weather/school-closings-delays?_renderer=json",
    "station": "scripps-kpax",
    "why": "an unread capture of its former closings address (2019-2021), read so that every capture of it is read"
   },
   {
-   "timestamp": "20190928181547",
-   "url": "https://www.kpax.com/weather/school-closings-delays?_renderer=json",
-   "station": "scripps-kpax",
-   "why": "an unread capture of its former closings address (2019-2021), read so that every capture of it is read"
-  },
-  {
-   "timestamp": "20190928181753",
-   "url": "https://www.kpax.com/weather/school-closings-delays?_renderer=json",
-   "station": "scripps-kpax",
-   "why": "an unread capture of its former closings address (2019-2021), read so that every capture of it is read"
-  },
-  {
-   "timestamp": "20190928192127",
-   "url": "https://www.kpax.com/weather/school-closings-delays?_renderer=json",
-   "station": "scripps-kpax",
-   "why": "an unread capture of its former closings address (2019-2021), read so that every capture of it is read"
-  },
-  {
-   "timestamp": "20191030220353",
-   "url": "https://www.kpax.com/weather/school-closings-delays?_renderer=json",
-   "station": "scripps-kpax",
-   "why": "an unread capture of its former closings address (2019-2021), read so that every capture of it is read"
-  },
-  {
-   "timestamp": "20191030225350",
-   "url": "https://www.kpax.com/weather/school-closings-delays?_renderer=json",
-   "station": "scripps-kpax",
-   "why": "an unread capture of its former closings address (2019-2021), read so that every capture of it is read"
-  },
-  {
-   "timestamp": "20200308232130",
-   "url": "https://www.kpax.com/weather/school-closings-delays?_renderer=json",
-   "station": "scripps-kpax",
-   "why": "an unread capture of its former closings address (2019-2021), read so that every capture of it is read"
-  },
-  {
-   "timestamp": "20200308232130",
-   "url": "https://www.kpax.com/weather/school-closings-delays?_renderer=json",
-   "station": "scripps-kpax",
-   "why": "an unread capture of its former closings address (2019-2021), read so that every capture of it is read"
-  },
-  {
-   "timestamp": "20200314052524",
-   "url": "https://www.kpax.com/weather/school-closings-delays",
-   "station": "scripps-kpax",
-   "why": "an unread capture of its former closings address (2019-2021), read so that every capture of it is read"
-  },
-  {
-   "timestamp": "20200325151757",
-   "url": "https://www.kpax.com/weather/school-closings-delays",
-   "station": "scripps-kpax",
-   "why": "an unread capture of its former closings address (2019-2021), read so that every capture of it is read"
-  },
-  {
-   "timestamp": "20200327091046",
-   "url": "https://www.kpax.com/weather/school-closings-delays",
-   "station": "scripps-kpax",
-   "why": "an unread capture of its former closings address (2019-2021), read so that every capture of it is read"
-  },
-  {
-   "timestamp": "20200402230300",
-   "url": "https://www.kpax.com/weather/school-closings-delays",
-   "station": "scripps-kpax",
-   "why": "an unread capture of its former closings address (2019-2021), read so that every capture of it is read"
-  },
-  {
-   "timestamp": "20200403234438",
-   "url": "https://www.kpax.com/weather/school-closings-delays",
-   "station": "scripps-kpax",
-   "why": "an unread capture of its former closings address (2019-2021), read so that every capture of it is read"
-  },
-  {
-   "timestamp": "20200403234438",
-   "url": "https://www.kpax.com/weather/school-closings-delays",
-   "station": "scripps-kpax",
-   "why": "an unread capture of its former closings address (2019-2021), read so that every capture of it is read"
-  },
-  {
-   "timestamp": "20200403234438",
-   "url": "https://www.kpax.com/weather/school-closings-delays",
-   "station": "scripps-kpax",
-   "why": "an unread capture of its former closings address (2019-2021), read so that every capture of it is read"
-  },
-  {
-   "timestamp": "20200407022545",
-   "url": "https://www.kpax.com/weather/school-closings-delays",
-   "station": "scripps-kpax",
-   "why": "an unread capture of its former closings address (2019-2021), read so that every capture of it is read"
-  },
-  {
-   "timestamp": "20200407022545",
-   "url": "https://www.kpax.com/weather/school-closings-delays",
-   "station": "scripps-kpax",
-   "why": "an unread capture of its former closings address (2019-2021), read so that every capture of it is read"
-  },
-  {
-   "timestamp": "20200409042058",
-   "url": "https://www.kpax.com/weather/school-closings-delays",
-   "station": "scripps-kpax",
-   "why": "an unread capture of its former closings address (2019-2021), read so that every capture of it is read"
-  },
-  {
-   "timestamp": "20200410045941",
-   "url": "https://www.kpax.com/weather/school-closings-delays",
-   "station": "scripps-kpax",
-   "why": "an unread capture of its former closings address (2019-2021), read so that every capture of it is read"
-  },
-  {
-   "timestamp": "20200410184332",
-   "url": "https://www.kpax.com/weather/school-closings-delays?_renderer=json",
-   "station": "scripps-kpax",
-   "why": "an unread capture of its former closings address (2019-2021), read so that every capture of it is read"
-  },
-  {
-   "timestamp": "20200410184332",
-   "url": "https://www.kpax.com/weather/school-closings-delays?_renderer=json",
-   "station": "scripps-kpax",
-   "why": "an unread capture of its former closings address (2019-2021), read so that every capture of it is read"
-  },
-  {
-   "timestamp": "20200411004115",
-   "url": "https://www.kpax.com/weather/school-closings-delays",
-   "station": "scripps-kpax",
-   "why": "an unread capture of its former closings address (2019-2021), read so that every capture of it is read"
-  },
-  {
-   "timestamp": "20200411052631",
-   "url": "https://www.kpax.com/weather/school-closings-delays",
-   "station": "scripps-kpax",
-   "why": "an unread capture of its former closings address (2019-2021), read so that every capture of it is read"
-  },
-  {
-   "timestamp": "20200412062018",
-   "url": "https://www.kpax.com/weather/school-closings-delays",
-   "station": "scripps-kpax",
-   "why": "an unread capture of its former closings address (2019-2021), read so that every capture of it is read"
-  },
-  {
-   "timestamp": "20200412062018",
-   "url": "https://www.kpax.com/weather/school-closings-delays",
-   "station": "scripps-kpax",
-   "why": "an unread capture of its former closings address (2019-2021), read so that every capture of it is read"
-  },
-  {
-   "timestamp": "20200414082708",
-   "url": "https://www.kpax.com/weather/school-closings-delays",
-   "station": "scripps-kpax",
-   "why": "an unread capture of its former closings address (2019-2021), read so that every capture of it is read"
-  },
-  {
-   "timestamp": "20200416102006",
-   "url": "https://www.kpax.com/weather/school-closings-delays",
-   "station": "scripps-kpax",
-   "why": "an unread capture of its former closings address (2019-2021), read so that every capture of it is read"
-  },
-  {
-   "timestamp": "20200416214227",
-   "url": "https://www.kpax.com/weather/school-closings-delays?_renderer=json",
-   "station": "scripps-kpax",
-   "why": "an unread capture of its former closings address (2019-2021), read so that every capture of it is read"
-  },
-  {
-   "timestamp": "20200416214242",
-   "url": "https://www.kpax.com/weather/school-closings-delays",
-   "station": "scripps-kpax",
-   "why": "an unread capture of its former closings address (2019-2021), read so that every capture of it is read"
-  },
-  {
-   "timestamp": "20200416214242",
-   "url": "https://www.kpax.com/weather/school-closings-delays?_renderer=json",
-   "station": "scripps-kpax",
-   "why": "an unread capture of its former closings address (2019-2021), read so that every capture of it is read"
-  },
-  {
-   "timestamp": "20200416214243",
-   "url": "https://www.kpax.com/weather/school-closings-delays?_renderer=json",
-   "station": "scripps-kpax",
-   "why": "an unread capture of its former closings address (2019-2021), read so that every capture of it is read"
-  },
-  {
-   "timestamp": "20200416214244",
-   "url": "https://www.kpax.com/weather/school-closings-delays?_renderer=json",
-   "station": "scripps-kpax",
-   "why": "an unread capture of its former closings address (2019-2021), read so that every capture of it is read"
-  },
-  {
-   "timestamp": "20200416214245",
-   "url": "https://www.kpax.com/weather/school-closings-delays?_renderer=json",
-   "station": "scripps-kpax",
-   "why": "an unread capture of its former closings address (2019-2021), read so that every capture of it is read"
-  },
-  {
-   "timestamp": "20200416214246",
-   "url": "https://www.kpax.com/weather/school-closings-delays?_renderer=json",
-   "station": "scripps-kpax",
-   "why": "an unread capture of its former closings address (2019-2021), read so that every capture of it is read"
-  },
-  {
-   "timestamp": "20200416214247",
-   "url": "https://www.kpax.com/weather/school-closings-delays?_renderer=json",
-   "station": "scripps-kpax",
-   "why": "an unread capture of its former closings address (2019-2021), read so that every capture of it is read"
-  },
-  {
-   "timestamp": "20200416214248",
-   "url": "https://www.kpax.com/weather/school-closings-delays?_renderer=json",
-   "station": "scripps-kpax",
-   "why": "an unread capture of its former closings address (2019-2021), read so that every capture of it is read"
-  },
-  {
-   "timestamp": "20200416214249",
-   "url": "https://www.kpax.com/weather/school-closings-delays?_renderer=json",
-   "station": "scripps-kpax",
-   "why": "an unread capture of its former closings address (2019-2021), read so that every capture of it is read"
-  },
-  {
-   "timestamp": "20200417114718",
-   "url": "https://www.kpax.com/weather/school-closings-delays",
-   "station": "scripps-kpax",
-   "why": "an unread capture of its former closings address (2019-2021), read so that every capture of it is read"
-  },
-  {
-   "timestamp": "20200418115558",
-   "url": "https://www.kpax.com/weather/school-closings-delays",
-   "station": "scripps-kpax",
-   "why": "an unread capture of its former closings address (2019-2021), read so that every capture of it is read"
-  },
-  {
-   "timestamp": "20200419132251",
-   "url": "https://www.kpax.com/weather/school-closings-delays",
-   "station": "scripps-kpax",
-   "why": "an unread capture of its former closings address (2019-2021), read so that every capture of it is read"
-  },
-  {
-   "timestamp": "20200420141703",
-   "url": "https://www.kpax.com/weather/school-closings-delays",
-   "station": "scripps-kpax",
-   "why": "an unread capture of its former closings address (2019-2021), read so that every capture of it is read"
-  },
-  {
-   "timestamp": "20200421154216",
-   "url": "https://www.kpax.com/weather/school-closings-delays",
-   "station": "scripps-kpax",
-   "why": "an unread capture of its former closings address (2019-2021), read so that every capture of it is read"
-  },
-  {
-   "timestamp": "20200422154435",
-   "url": "https://www.kpax.com/weather/school-closings-delays",
-   "station": "scripps-kpax",
-   "why": "an unread capture of its former closings address (2019-2021), read so that every capture of it is read"
-  },
-  {
-   "timestamp": "20200421154216",
-   "url": "https://www.kpax.com/weather/school-closings-delays",
-   "station": "scripps-kpax",
-   "why": "an unread capture of its former closings address (2019-2021), read so that every capture of it is read"
-  },
-  {
-   "timestamp": "20200424174727",
-   "url": "https://www.kpax.com/weather/school-closings-delays",
-   "station": "scripps-kpax",
-   "why": "an unread capture of its former closings address (2019-2021), read so that every capture of it is read"
-  },
-  {
-   "timestamp": "20200425184748",
-   "url": "https://www.kpax.com/weather/school-closings-delays",
-   "station": "scripps-kpax",
-   "why": "an unread capture of its former closings address (2019-2021), read so that every capture of it is read"
-  },
-  {
-   "timestamp": "20200425184748",
-   "url": "https://www.kpax.com/weather/school-closings-delays",
-   "station": "scripps-kpax",
-   "why": "an unread capture of its former closings address (2019-2021), read so that every capture of it is read"
-  },
-  {
-   "timestamp": "20200427173728",
-   "url": "https://www.kpax.com/weather/school-closings-delays?_renderer=json",
-   "station": "scripps-kpax",
-   "why": "an unread capture of its former closings address (2019-2021), read so that every capture of it is read"
-  },
-  {
-   "timestamp": "20200522163343",
+   "timestamp": "20200522172309",
    "url": "https://www.kpax.com/weather/school-closings-delays?_renderer=json",
    "station": "scripps-kpax",
    "why": "an unread capture of its former closings address (2019-2021), read so that every capture of it is read"
@@ -1315,92 +19,8 @@
    "why": "an unread capture of its former closings address (2019-2021), read so that every capture of it is read"
   },
   {
-   "timestamp": "20200522172156",
+   "timestamp": "20200522172312",
    "url": "https://www.kpax.com/weather/school-closings-delays?_renderer=json",
-   "station": "scripps-kpax",
-   "why": "an unread capture of its former closings address (2019-2021), read so that every capture of it is read"
-  },
-  {
-   "timestamp": "20200522172159",
-   "url": "https://www.kpax.com/weather/school-closings-delays?_renderer=json",
-   "station": "scripps-kpax",
-   "why": "an unread capture of its former closings address (2019-2021), read so that every capture of it is read"
-  },
-  {
-   "timestamp": "20200523092109",
-   "url": "https://www.kpax.com/weather/school-closings-delays?_renderer=json",
-   "station": "scripps-kpax",
-   "why": "an unread capture of its former closings address (2019-2021), read so that every capture of it is read"
-  },
-  {
-   "timestamp": "20200522172201",
-   "url": "https://www.kpax.com/weather/school-closings-delays?_renderer=json",
-   "station": "scripps-kpax",
-   "why": "an unread capture of its former closings address (2019-2021), read so that every capture of it is read"
-  },
-  {
-   "timestamp": "20200522172202",
-   "url": "https://www.kpax.com/weather/school-closings-delays?_renderer=json",
-   "station": "scripps-kpax",
-   "why": "an unread capture of its former closings address (2019-2021), read so that every capture of it is read"
-  },
-  {
-   "timestamp": "20200522172203",
-   "url": "https://www.kpax.com/weather/school-closings-delays?_renderer=json",
-   "station": "scripps-kpax",
-   "why": "an unread capture of its former closings address (2019-2021), read so that every capture of it is read"
-  },
-  {
-   "timestamp": "20200522172206",
-   "url": "https://www.kpax.com/weather/school-closings-delays?_renderer=json",
-   "station": "scripps-kpax",
-   "why": "an unread capture of its former closings address (2019-2021), read so that every capture of it is read"
-  },
-  {
-   "timestamp": "20200522172207",
-   "url": "https://www.kpax.com/weather/school-closings-delays?_renderer=json",
-   "station": "scripps-kpax",
-   "why": "an unread capture of its former closings address (2019-2021), read so that every capture of it is read"
-  },
-  {
-   "timestamp": "20200522172208",
-   "url": "https://www.kpax.com/weather/school-closings-delays?_renderer=json",
-   "station": "scripps-kpax",
-   "why": "an unread capture of its former closings address (2019-2021), read so that every capture of it is read"
-  },
-  {
-   "timestamp": "20200522172211",
-   "url": "https://www.kpax.com/weather/school-closings-delays?_renderer=json",
-   "station": "scripps-kpax",
-   "why": "an unread capture of its former closings address (2019-2021), read so that every capture of it is read"
-  },
-  {
-   "timestamp": "20200522172214",
-   "url": "https://www.kpax.com/weather/school-closings-delays?_renderer=json",
-   "station": "scripps-kpax",
-   "why": "an unread capture of its former closings address (2019-2021), read so that every capture of it is read"
-  },
-  {
-   "timestamp": "20200522172215",
-   "url": "https://www.kpax.com/weather/school-closings-delays?_renderer=json",
-   "station": "scripps-kpax",
-   "why": "an unread capture of its former closings address (2019-2021), read so that every capture of it is read"
-  },
-  {
-   "timestamp": "20200522172216",
-   "url": "https://www.kpax.com/weather/school-closings-delays?_renderer=json",
-   "station": "scripps-kpax",
-   "why": "an unread capture of its former closings address (2019-2021), read so that every capture of it is read"
-  },
-  {
-   "timestamp": "20200522172217",
-   "url": "https://www.kpax.com/weather/school-closings-delays?_renderer=json",
-   "station": "scripps-kpax",
-   "why": "an unread capture of its former closings address (2019-2021), read so that every capture of it is read"
-  },
-  {
-   "timestamp": "20200522172218",
-   "url": "https://www.kpax.com/weather/school-closings-delays",
    "station": "scripps-kpax",
    "why": "an unread capture of its former closings address (2019-2021), read so that every capture of it is read"
   },
@@ -1417,86 +37,1166 @@
    "why": "an unread capture of its former closings address (2019-2021), read so that every capture of it is read"
   },
   {
-   "timestamp": "20200522172221",
+   "timestamp": "20200523092109",
    "url": "https://www.kpax.com/weather/school-closings-delays?_renderer=json",
    "station": "scripps-kpax",
    "why": "an unread capture of its former closings address (2019-2021), read so that every capture of it is read"
   },
   {
-   "timestamp": "20200522172223",
+   "timestamp": "20200523092109",
    "url": "https://www.kpax.com/weather/school-closings-delays?_renderer=json",
    "station": "scripps-kpax",
    "why": "an unread capture of its former closings address (2019-2021), read so that every capture of it is read"
   },
   {
-   "timestamp": "20200522172225",
+   "timestamp": "20200523092109",
    "url": "https://www.kpax.com/weather/school-closings-delays?_renderer=json",
    "station": "scripps-kpax",
    "why": "an unread capture of its former closings address (2019-2021), read so that every capture of it is read"
   },
   {
-   "timestamp": "20200522172226",
+   "timestamp": "20200523092109",
    "url": "https://www.kpax.com/weather/school-closings-delays?_renderer=json",
    "station": "scripps-kpax",
    "why": "an unread capture of its former closings address (2019-2021), read so that every capture of it is read"
   },
   {
-   "timestamp": "20200522172227",
+   "timestamp": "20200523092109",
    "url": "https://www.kpax.com/weather/school-closings-delays?_renderer=json",
    "station": "scripps-kpax",
    "why": "an unread capture of its former closings address (2019-2021), read so that every capture of it is read"
   },
   {
-   "timestamp": "20200522172229",
+   "timestamp": "20200523091936",
    "url": "https://www.kpax.com/weather/school-closings-delays?_renderer=json",
    "station": "scripps-kpax",
    "why": "an unread capture of its former closings address (2019-2021), read so that every capture of it is read"
   },
   {
-   "timestamp": "20200522172232",
+   "timestamp": "20200523091941",
    "url": "https://www.kpax.com/weather/school-closings-delays?_renderer=json",
    "station": "scripps-kpax",
    "why": "an unread capture of its former closings address (2019-2021), read so that every capture of it is read"
   },
   {
-   "timestamp": "20200522172236",
+   "timestamp": "20200523091945",
    "url": "https://www.kpax.com/weather/school-closings-delays?_renderer=json",
    "station": "scripps-kpax",
    "why": "an unread capture of its former closings address (2019-2021), read so that every capture of it is read"
   },
   {
-   "timestamp": "20200522172237",
+   "timestamp": "20200523091946",
    "url": "https://www.kpax.com/weather/school-closings-delays?_renderer=json",
    "station": "scripps-kpax",
    "why": "an unread capture of its former closings address (2019-2021), read so that every capture of it is read"
   },
   {
-   "timestamp": "20200522172238",
+   "timestamp": "20200523091947",
    "url": "https://www.kpax.com/weather/school-closings-delays?_renderer=json",
    "station": "scripps-kpax",
    "why": "an unread capture of its former closings address (2019-2021), read so that every capture of it is read"
   },
   {
-   "timestamp": "20200522172239",
+   "timestamp": "20200523091948",
    "url": "https://www.kpax.com/weather/school-closings-delays?_renderer=json",
    "station": "scripps-kpax",
    "why": "an unread capture of its former closings address (2019-2021), read so that every capture of it is read"
   },
   {
-   "timestamp": "20200522172251",
+   "timestamp": "20200523092109",
    "url": "https://www.kpax.com/weather/school-closings-delays?_renderer=json",
    "station": "scripps-kpax",
    "why": "an unread capture of its former closings address (2019-2021), read so that every capture of it is read"
   },
   {
-   "timestamp": "20200522172304",
+   "timestamp": "20200523092109",
    "url": "https://www.kpax.com/weather/school-closings-delays?_renderer=json",
    "station": "scripps-kpax",
    "why": "an unread capture of its former closings address (2019-2021), read so that every capture of it is read"
   },
   {
-   "timestamp": "20200522172305",
+   "timestamp": "20200523091952",
    "url": "https://www.kpax.com/weather/school-closings-delays?_renderer=json",
+   "station": "scripps-kpax",
+   "why": "an unread capture of its former closings address (2019-2021), read so that every capture of it is read"
+  },
+  {
+   "timestamp": "20200523091954",
+   "url": "https://www.kpax.com/weather/school-closings-delays?_renderer=json",
+   "station": "scripps-kpax",
+   "why": "an unread capture of its former closings address (2019-2021), read so that every capture of it is read"
+  },
+  {
+   "timestamp": "20200523092109",
+   "url": "https://www.kpax.com/weather/school-closings-delays?_renderer=json",
+   "station": "scripps-kpax",
+   "why": "an unread capture of its former closings address (2019-2021), read so that every capture of it is read"
+  },
+  {
+   "timestamp": "20200523091957",
+   "url": "https://www.kpax.com/weather/school-closings-delays?_renderer=json",
+   "station": "scripps-kpax",
+   "why": "an unread capture of its former closings address (2019-2021), read so that every capture of it is read"
+  },
+  {
+   "timestamp": "20200523091959",
+   "url": "https://www.kpax.com/weather/school-closings-delays?_renderer=json",
+   "station": "scripps-kpax",
+   "why": "an unread capture of its former closings address (2019-2021), read so that every capture of it is read"
+  },
+  {
+   "timestamp": "20200523092000",
+   "url": "https://www.kpax.com/weather/school-closings-delays?_renderer=json",
+   "station": "scripps-kpax",
+   "why": "an unread capture of its former closings address (2019-2021), read so that every capture of it is read"
+  },
+  {
+   "timestamp": "20200523092001",
+   "url": "https://www.kpax.com/weather/school-closings-delays?_renderer=json",
+   "station": "scripps-kpax",
+   "why": "an unread capture of its former closings address (2019-2021), read so that every capture of it is read"
+  },
+  {
+   "timestamp": "20200523092002",
+   "url": "https://www.kpax.com/weather/school-closings-delays?_renderer=json",
+   "station": "scripps-kpax",
+   "why": "an unread capture of its former closings address (2019-2021), read so that every capture of it is read"
+  },
+  {
+   "timestamp": "20200523092003",
+   "url": "https://www.kpax.com/weather/school-closings-delays?_renderer=json",
+   "station": "scripps-kpax",
+   "why": "an unread capture of its former closings address (2019-2021), read so that every capture of it is read"
+  },
+  {
+   "timestamp": "20200523092004",
+   "url": "https://www.kpax.com/weather/school-closings-delays?_renderer=json",
+   "station": "scripps-kpax",
+   "why": "an unread capture of its former closings address (2019-2021), read so that every capture of it is read"
+  },
+  {
+   "timestamp": "20200523092005",
+   "url": "https://www.kpax.com/weather/school-closings-delays?_renderer=json",
+   "station": "scripps-kpax",
+   "why": "an unread capture of its former closings address (2019-2021), read so that every capture of it is read"
+  },
+  {
+   "timestamp": "20200523092006",
+   "url": "https://www.kpax.com/weather/school-closings-delays",
+   "station": "scripps-kpax",
+   "why": "an unread capture of its former closings address (2019-2021), read so that every capture of it is read"
+  },
+  {
+   "timestamp": "20200523092008",
+   "url": "https://www.kpax.com/weather/school-closings-delays?_renderer=json",
+   "station": "scripps-kpax",
+   "why": "an unread capture of its former closings address (2019-2021), read so that every capture of it is read"
+  },
+  {
+   "timestamp": "20200523092009",
+   "url": "https://www.kpax.com/weather/school-closings-delays?_renderer=json",
+   "station": "scripps-kpax",
+   "why": "an unread capture of its former closings address (2019-2021), read so that every capture of it is read"
+  },
+  {
+   "timestamp": "20200523092010",
+   "url": "https://www.kpax.com/weather/school-closings-delays?_renderer=json",
+   "station": "scripps-kpax",
+   "why": "an unread capture of its former closings address (2019-2021), read so that every capture of it is read"
+  },
+  {
+   "timestamp": "20200523092011",
+   "url": "https://www.kpax.com/weather/school-closings-delays?_renderer=json",
+   "station": "scripps-kpax",
+   "why": "an unread capture of its former closings address (2019-2021), read so that every capture of it is read"
+  },
+  {
+   "timestamp": "20200523092014",
+   "url": "https://www.kpax.com/weather/school-closings-delays?_renderer=json",
+   "station": "scripps-kpax",
+   "why": "an unread capture of its former closings address (2019-2021), read so that every capture of it is read"
+  },
+  {
+   "timestamp": "20200523092015",
+   "url": "https://www.kpax.com/weather/school-closings-delays?_renderer=json",
+   "station": "scripps-kpax",
+   "why": "an unread capture of its former closings address (2019-2021), read so that every capture of it is read"
+  },
+  {
+   "timestamp": "20200523092016",
+   "url": "https://www.kpax.com/weather/school-closings-delays?_renderer=json",
+   "station": "scripps-kpax",
+   "why": "an unread capture of its former closings address (2019-2021), read so that every capture of it is read"
+  },
+  {
+   "timestamp": "20200523092018",
+   "url": "https://www.kpax.com/weather/school-closings-delays?_renderer=json",
+   "station": "scripps-kpax",
+   "why": "an unread capture of its former closings address (2019-2021), read so that every capture of it is read"
+  },
+  {
+   "timestamp": "20200523092020",
+   "url": "https://www.kpax.com/weather/school-closings-delays?_renderer=json",
+   "station": "scripps-kpax",
+   "why": "an unread capture of its former closings address (2019-2021), read so that every capture of it is read"
+  },
+  {
+   "timestamp": "20200523092021",
+   "url": "https://www.kpax.com/weather/school-closings-delays?_renderer=json",
+   "station": "scripps-kpax",
+   "why": "an unread capture of its former closings address (2019-2021), read so that every capture of it is read"
+  },
+  {
+   "timestamp": "20200523092026",
+   "url": "https://www.kpax.com/weather/school-closings-delays?_renderer=json",
+   "station": "scripps-kpax",
+   "why": "an unread capture of its former closings address (2019-2021), read so that every capture of it is read"
+  },
+  {
+   "timestamp": "20200523092027",
+   "url": "https://www.kpax.com/weather/school-closings-delays?_renderer=json",
+   "station": "scripps-kpax",
+   "why": "an unread capture of its former closings address (2019-2021), read so that every capture of it is read"
+  },
+  {
+   "timestamp": "20200523092036",
+   "url": "https://www.kpax.com/weather/school-closings-delays?_renderer=json",
+   "station": "scripps-kpax",
+   "why": "an unread capture of its former closings address (2019-2021), read so that every capture of it is read"
+  },
+  {
+   "timestamp": "20200523092038",
+   "url": "https://www.kpax.com/weather/school-closings-delays?_renderer=json",
+   "station": "scripps-kpax",
+   "why": "an unread capture of its former closings address (2019-2021), read so that every capture of it is read"
+  },
+  {
+   "timestamp": "20200523092041",
+   "url": "https://www.kpax.com/weather/school-closings-delays?_renderer=json",
+   "station": "scripps-kpax",
+   "why": "an unread capture of its former closings address (2019-2021), read so that every capture of it is read"
+  },
+  {
+   "timestamp": "20200523092101",
+   "url": "https://www.kpax.com/weather/school-closings-delays?_renderer=json",
+   "station": "scripps-kpax",
+   "why": "an unread capture of its former closings address (2019-2021), read so that every capture of it is read"
+  },
+  {
+   "timestamp": "20200523092105",
+   "url": "https://www.kpax.com/weather/school-closings-delays?_renderer=json",
+   "station": "scripps-kpax",
+   "why": "an unread capture of its former closings address (2019-2021), read so that every capture of it is read"
+  },
+  {
+   "timestamp": "20200523092109",
+   "url": "https://www.kpax.com/weather/school-closings-delays?_renderer=json",
+   "station": "scripps-kpax",
+   "why": "an unread capture of its former closings address (2019-2021), read so that every capture of it is read"
+  },
+  {
+   "timestamp": "20200523182659",
+   "url": "https://www.kpax.com/weather/school-closings-delays",
+   "station": "scripps-kpax",
+   "why": "an unread capture of its former closings address (2019-2021), read so that every capture of it is read"
+  },
+  {
+   "timestamp": "20200523182659",
+   "url": "https://www.kpax.com/weather/school-closings-delays",
+   "station": "scripps-kpax",
+   "why": "an unread capture of its former closings address (2019-2021), read so that every capture of it is read"
+  },
+  {
+   "timestamp": "20200609171739",
+   "url": "https://www.kpax.com/weather/school-closings-delays",
+   "station": "scripps-kpax",
+   "why": "an unread capture of its former closings address (2019-2021), read so that every capture of it is read"
+  },
+  {
+   "timestamp": "20200619074124",
+   "url": "https://www.kpax.com/weather/school-closings-delays",
+   "station": "scripps-kpax",
+   "why": "an unread capture of its former closings address (2019-2021), read so that every capture of it is read"
+  },
+  {
+   "timestamp": "20200630165232",
+   "url": "https://www.kpax.com/weather/school-closings-delays?_renderer=json",
+   "station": "scripps-kpax",
+   "why": "an unread capture of its former closings address (2019-2021), read so that every capture of it is read"
+  },
+  {
+   "timestamp": "20200630165232",
+   "url": "https://www.kpax.com/weather/school-closings-delays?_renderer=json",
+   "station": "scripps-kpax",
+   "why": "an unread capture of its former closings address (2019-2021), read so that every capture of it is read"
+  },
+  {
+   "timestamp": "20200630165232",
+   "url": "https://www.kpax.com/weather/school-closings-delays?_renderer=json",
+   "station": "scripps-kpax",
+   "why": "an unread capture of its former closings address (2019-2021), read so that every capture of it is read"
+  },
+  {
+   "timestamp": "20200630165232",
+   "url": "https://www.kpax.com/weather/school-closings-delays?_renderer=json",
+   "station": "scripps-kpax",
+   "why": "an unread capture of its former closings address (2019-2021), read so that every capture of it is read"
+  },
+  {
+   "timestamp": "20200701033754",
+   "url": "https://www.kpax.com/weather/school-closings-delays",
+   "station": "scripps-kpax",
+   "why": "an unread capture of its former closings address (2019-2021), read so that every capture of it is read"
+  },
+  {
+   "timestamp": "20200630165232",
+   "url": "https://www.kpax.com/weather/school-closings-delays?_renderer=json",
+   "station": "scripps-kpax",
+   "why": "an unread capture of its former closings address (2019-2021), read so that every capture of it is read"
+  },
+  {
+   "timestamp": "20200711090804",
+   "url": "https://www.kpax.com/weather/school-closings-delays?_renderer=json",
+   "station": "scripps-kpax",
+   "why": "an unread capture of its former closings address (2019-2021), read so that every capture of it is read"
+  },
+  {
+   "timestamp": "20200714035741",
+   "url": "https://www.kpax.com/weather/school-closings-delays?_renderer=json",
+   "station": "scripps-kpax",
+   "why": "an unread capture of its former closings address (2019-2021), read so that every capture of it is read"
+  },
+  {
+   "timestamp": "20200714035741",
+   "url": "https://www.kpax.com/weather/school-closings-delays?_renderer=json",
+   "station": "scripps-kpax",
+   "why": "an unread capture of its former closings address (2019-2021), read so that every capture of it is read"
+  },
+  {
+   "timestamp": "20200714035741",
+   "url": "https://www.kpax.com/weather/school-closings-delays?_renderer=json",
+   "station": "scripps-kpax",
+   "why": "an unread capture of its former closings address (2019-2021), read so that every capture of it is read"
+  },
+  {
+   "timestamp": "20200714035741",
+   "url": "https://www.kpax.com/weather/school-closings-delays?_renderer=json",
+   "station": "scripps-kpax",
+   "why": "an unread capture of its former closings address (2019-2021), read so that every capture of it is read"
+  },
+  {
+   "timestamp": "20200714035741",
+   "url": "https://www.kpax.com/weather/school-closings-delays?_renderer=json",
+   "station": "scripps-kpax",
+   "why": "an unread capture of its former closings address (2019-2021), read so that every capture of it is read"
+  },
+  {
+   "timestamp": "20200714035741",
+   "url": "https://www.kpax.com/weather/school-closings-delays?_renderer=json",
+   "station": "scripps-kpax",
+   "why": "an unread capture of its former closings address (2019-2021), read so that every capture of it is read"
+  },
+  {
+   "timestamp": "20200714035741",
+   "url": "https://www.kpax.com/weather/school-closings-delays?_renderer=json",
+   "station": "scripps-kpax",
+   "why": "an unread capture of its former closings address (2019-2021), read so that every capture of it is read"
+  },
+  {
+   "timestamp": "20200714035741",
+   "url": "https://www.kpax.com/weather/school-closings-delays?_renderer=json",
+   "station": "scripps-kpax",
+   "why": "an unread capture of its former closings address (2019-2021), read so that every capture of it is read"
+  },
+  {
+   "timestamp": "20200714035741",
+   "url": "https://www.kpax.com/weather/school-closings-delays?_renderer=json",
+   "station": "scripps-kpax",
+   "why": "an unread capture of its former closings address (2019-2021), read so that every capture of it is read"
+  },
+  {
+   "timestamp": "20200714035741",
+   "url": "https://www.kpax.com/weather/school-closings-delays?_renderer=json",
+   "station": "scripps-kpax",
+   "why": "an unread capture of its former closings address (2019-2021), read so that every capture of it is read"
+  },
+  {
+   "timestamp": "20200714035741",
+   "url": "https://www.kpax.com/weather/school-closings-delays?_renderer=json",
+   "station": "scripps-kpax",
+   "why": "an unread capture of its former closings address (2019-2021), read so that every capture of it is read"
+  },
+  {
+   "timestamp": "20200714035741",
+   "url": "https://www.kpax.com/weather/school-closings-delays?_renderer=json",
+   "station": "scripps-kpax",
+   "why": "an unread capture of its former closings address (2019-2021), read so that every capture of it is read"
+  },
+  {
+   "timestamp": "20200714035741",
+   "url": "https://www.kpax.com/weather/school-closings-delays?_renderer=json",
+   "station": "scripps-kpax",
+   "why": "an unread capture of its former closings address (2019-2021), read so that every capture of it is read"
+  },
+  {
+   "timestamp": "20200714035741",
+   "url": "https://www.kpax.com/weather/school-closings-delays?_renderer=json",
+   "station": "scripps-kpax",
+   "why": "an unread capture of its former closings address (2019-2021), read so that every capture of it is read"
+  },
+  {
+   "timestamp": "20200714035741",
+   "url": "https://www.kpax.com/weather/school-closings-delays?_renderer=json",
+   "station": "scripps-kpax",
+   "why": "an unread capture of its former closings address (2019-2021), read so that every capture of it is read"
+  },
+  {
+   "timestamp": "20200714035741",
+   "url": "https://www.kpax.com/weather/school-closings-delays?_renderer=json",
+   "station": "scripps-kpax",
+   "why": "an unread capture of its former closings address (2019-2021), read so that every capture of it is read"
+  },
+  {
+   "timestamp": "20200714035741",
+   "url": "https://www.kpax.com/weather/school-closings-delays?_renderer=json",
+   "station": "scripps-kpax",
+   "why": "an unread capture of its former closings address (2019-2021), read so that every capture of it is read"
+  },
+  {
+   "timestamp": "20200714035741",
+   "url": "https://www.kpax.com/weather/school-closings-delays?_renderer=json",
+   "station": "scripps-kpax",
+   "why": "an unread capture of its former closings address (2019-2021), read so that every capture of it is read"
+  },
+  {
+   "timestamp": "20200714035741",
+   "url": "https://www.kpax.com/weather/school-closings-delays?_renderer=json",
+   "station": "scripps-kpax",
+   "why": "an unread capture of its former closings address (2019-2021), read so that every capture of it is read"
+  },
+  {
+   "timestamp": "20200714035741",
+   "url": "https://www.kpax.com/weather/school-closings-delays?_renderer=json",
+   "station": "scripps-kpax",
+   "why": "an unread capture of its former closings address (2019-2021), read so that every capture of it is read"
+  },
+  {
+   "timestamp": "20200714035741",
+   "url": "https://www.kpax.com/weather/school-closings-delays?_renderer=json",
+   "station": "scripps-kpax",
+   "why": "an unread capture of its former closings address (2019-2021), read so that every capture of it is read"
+  },
+  {
+   "timestamp": "20200714035741",
+   "url": "https://www.kpax.com/weather/school-closings-delays?_renderer=json",
+   "station": "scripps-kpax",
+   "why": "an unread capture of its former closings address (2019-2021), read so that every capture of it is read"
+  },
+  {
+   "timestamp": "20200714035741",
+   "url": "https://www.kpax.com/weather/school-closings-delays?_renderer=json",
+   "station": "scripps-kpax",
+   "why": "an unread capture of its former closings address (2019-2021), read so that every capture of it is read"
+  },
+  {
+   "timestamp": "20200714035741",
+   "url": "https://www.kpax.com/weather/school-closings-delays?_renderer=json",
+   "station": "scripps-kpax",
+   "why": "an unread capture of its former closings address (2019-2021), read so that every capture of it is read"
+  },
+  {
+   "timestamp": "20200714035741",
+   "url": "https://www.kpax.com/weather/school-closings-delays?_renderer=json",
+   "station": "scripps-kpax",
+   "why": "an unread capture of its former closings address (2019-2021), read so that every capture of it is read"
+  },
+  {
+   "timestamp": "20200714035741",
+   "url": "https://www.kpax.com/weather/school-closings-delays?_renderer=json",
+   "station": "scripps-kpax",
+   "why": "an unread capture of its former closings address (2019-2021), read so that every capture of it is read"
+  },
+  {
+   "timestamp": "20200714035741",
+   "url": "https://www.kpax.com/weather/school-closings-delays?_renderer=json",
+   "station": "scripps-kpax",
+   "why": "an unread capture of its former closings address (2019-2021), read so that every capture of it is read"
+  },
+  {
+   "timestamp": "20200714035741",
+   "url": "https://www.kpax.com/weather/school-closings-delays?_renderer=json",
+   "station": "scripps-kpax",
+   "why": "an unread capture of its former closings address (2019-2021), read so that every capture of it is read"
+  },
+  {
+   "timestamp": "20200714035741",
+   "url": "https://www.kpax.com/weather/school-closings-delays?_renderer=json",
+   "station": "scripps-kpax",
+   "why": "an unread capture of its former closings address (2019-2021), read so that every capture of it is read"
+  },
+  {
+   "timestamp": "20200714035741",
+   "url": "https://www.kpax.com/weather/school-closings-delays?_renderer=json",
+   "station": "scripps-kpax",
+   "why": "an unread capture of its former closings address (2019-2021), read so that every capture of it is read"
+  },
+  {
+   "timestamp": "20200714035741",
+   "url": "https://www.kpax.com/weather/school-closings-delays?_renderer=json",
+   "station": "scripps-kpax",
+   "why": "an unread capture of its former closings address (2019-2021), read so that every capture of it is read"
+  },
+  {
+   "timestamp": "20200714035741",
+   "url": "https://www.kpax.com/weather/school-closings-delays?_renderer=json",
+   "station": "scripps-kpax",
+   "why": "an unread capture of its former closings address (2019-2021), read so that every capture of it is read"
+  },
+  {
+   "timestamp": "20200714035741",
+   "url": "https://www.kpax.com/weather/school-closings-delays?_renderer=json",
+   "station": "scripps-kpax",
+   "why": "an unread capture of its former closings address (2019-2021), read so that every capture of it is read"
+  },
+  {
+   "timestamp": "20200714035741",
+   "url": "https://www.kpax.com/weather/school-closings-delays?_renderer=json",
+   "station": "scripps-kpax",
+   "why": "an unread capture of its former closings address (2019-2021), read so that every capture of it is read"
+  },
+  {
+   "timestamp": "20200711104008",
+   "url": "https://www.kpax.com/weather/school-closings-delays?_renderer=json",
+   "station": "scripps-kpax",
+   "why": "an unread capture of its former closings address (2019-2021), read so that every capture of it is read"
+  },
+  {
+   "timestamp": "20200714035741",
+   "url": "https://www.kpax.com/weather/school-closings-delays?_renderer=json",
+   "station": "scripps-kpax",
+   "why": "an unread capture of its former closings address (2019-2021), read so that every capture of it is read"
+  },
+  {
+   "timestamp": "20200714035741",
+   "url": "https://www.kpax.com/weather/school-closings-delays?_renderer=json",
+   "station": "scripps-kpax",
+   "why": "an unread capture of its former closings address (2019-2021), read so that every capture of it is read"
+  },
+  {
+   "timestamp": "20200711104014",
+   "url": "https://www.kpax.com/weather/school-closings-delays?_renderer=json",
+   "station": "scripps-kpax",
+   "why": "an unread capture of its former closings address (2019-2021), read so that every capture of it is read"
+  },
+  {
+   "timestamp": "20200714035741",
+   "url": "https://www.kpax.com/weather/school-closings-delays?_renderer=json",
+   "station": "scripps-kpax",
+   "why": "an unread capture of its former closings address (2019-2021), read so that every capture of it is read"
+  },
+  {
+   "timestamp": "20200714035741",
+   "url": "https://www.kpax.com/weather/school-closings-delays?_renderer=json",
+   "station": "scripps-kpax",
+   "why": "an unread capture of its former closings address (2019-2021), read so that every capture of it is read"
+  },
+  {
+   "timestamp": "20200711104040",
+   "url": "https://www.kpax.com/weather/school-closings-delays",
+   "station": "scripps-kpax",
+   "why": "an unread capture of its former closings address (2019-2021), read so that every capture of it is read"
+  },
+  {
+   "timestamp": "20200714035741",
+   "url": "https://www.kpax.com/weather/school-closings-delays?_renderer=json",
+   "station": "scripps-kpax",
+   "why": "an unread capture of its former closings address (2019-2021), read so that every capture of it is read"
+  },
+  {
+   "timestamp": "20200720212052",
+   "url": "https://www.kpax.com/weather/school-closings-delays?_renderer=json",
+   "station": "scripps-kpax",
+   "why": "an unread capture of its former closings address (2019-2021), read so that every capture of it is read"
+  },
+  {
+   "timestamp": "20200722032557",
+   "url": "https://www.kpax.com/weather/school-closings-delays?_renderer=json",
+   "station": "scripps-kpax",
+   "why": "an unread capture of its former closings address (2019-2021), read so that every capture of it is read"
+  },
+  {
+   "timestamp": "20200723125418",
+   "url": "https://www.kpax.com/weather/school-closings-delays?_renderer=json",
+   "station": "scripps-kpax",
+   "why": "an unread capture of its former closings address (2019-2021), read so that every capture of it is read"
+  },
+  {
+   "timestamp": "20200723195223",
+   "url": "https://www.kpax.com/weather/school-closings-delays?_renderer=json",
+   "station": "scripps-kpax",
+   "why": "an unread capture of its former closings address (2019-2021), read so that every capture of it is read"
+  },
+  {
+   "timestamp": "20200723203538",
+   "url": "https://www.kpax.com/weather/school-closings-delays?_renderer=json",
+   "station": "scripps-kpax",
+   "why": "an unread capture of its former closings address (2019-2021), read so that every capture of it is read"
+  },
+  {
+   "timestamp": "20200729005659",
+   "url": "https://www.kpax.com/weather/school-closings-delays?_renderer=json",
+   "station": "scripps-kpax",
+   "why": "an unread capture of its former closings address (2019-2021), read so that every capture of it is read"
+  },
+  {
+   "timestamp": "20200730001012",
+   "url": "https://www.kpax.com/weather/school-closings-delays",
+   "station": "scripps-kpax",
+   "why": "an unread capture of its former closings address (2019-2021), read so that every capture of it is read"
+  },
+  {
+   "timestamp": "20200729005659",
+   "url": "https://www.kpax.com/weather/school-closings-delays?_renderer=json",
+   "station": "scripps-kpax",
+   "why": "an unread capture of its former closings address (2019-2021), read so that every capture of it is read"
+  },
+  {
+   "timestamp": "20200729005659",
+   "url": "https://www.kpax.com/weather/school-closings-delays?_renderer=json",
+   "station": "scripps-kpax",
+   "why": "an unread capture of its former closings address (2019-2021), read so that every capture of it is read"
+  },
+  {
+   "timestamp": "20200805213824",
+   "url": "https://www.kpax.com/weather/school-closings-delays?_renderer=json",
+   "station": "scripps-kpax",
+   "why": "an unread capture of its former closings address (2019-2021), read so that every capture of it is read"
+  },
+  {
+   "timestamp": "20200809111617",
+   "url": "https://www.kpax.com/weather/school-closings-delays",
+   "station": "scripps-kpax",
+   "why": "an unread capture of its former closings address (2019-2021), read so that every capture of it is read"
+  },
+  {
+   "timestamp": "20200815194137",
+   "url": "https://www.kpax.com/weather/school-closings-delays?_renderer=json",
+   "station": "scripps-kpax",
+   "why": "an unread capture of its former closings address (2019-2021), read so that every capture of it is read"
+  },
+  {
+   "timestamp": "20200817011051",
+   "url": "https://www.kpax.com/weather/school-closings-delays?_renderer=json",
+   "station": "scripps-kpax",
+   "why": "an unread capture of its former closings address (2019-2021), read so that every capture of it is read"
+  },
+  {
+   "timestamp": "20200817011051",
+   "url": "https://www.kpax.com/weather/school-closings-delays?_renderer=json",
+   "station": "scripps-kpax",
+   "why": "an unread capture of its former closings address (2019-2021), read so that every capture of it is read"
+  },
+  {
+   "timestamp": "20200817011811",
+   "url": "https://www.kpax.com/weather/school-closings-delays",
+   "station": "scripps-kpax",
+   "why": "an unread capture of its former closings address (2019-2021), read so that every capture of it is read"
+  },
+  {
+   "timestamp": "20200821162233",
+   "url": "https://www.kpax.com/weather/school-closings-delays?_renderer=json",
+   "station": "scripps-kpax",
+   "why": "an unread capture of its former closings address (2019-2021), read so that every capture of it is read"
+  },
+  {
+   "timestamp": "20200828173201",
+   "url": "https://www.kpax.com/weather/school-closings-delays?_renderer=json",
+   "station": "scripps-kpax",
+   "why": "an unread capture of its former closings address (2019-2021), read so that every capture of it is read"
+  },
+  {
+   "timestamp": "20200828173201",
+   "url": "https://www.kpax.com/weather/school-closings-delays?_renderer=json",
+   "station": "scripps-kpax",
+   "why": "an unread capture of its former closings address (2019-2021), read so that every capture of it is read"
+  },
+  {
+   "timestamp": "20200828173201",
+   "url": "https://www.kpax.com/weather/school-closings-delays?_renderer=json",
+   "station": "scripps-kpax",
+   "why": "an unread capture of its former closings address (2019-2021), read so that every capture of it is read"
+  },
+  {
+   "timestamp": "20200828173201",
+   "url": "https://www.kpax.com/weather/school-closings-delays?_renderer=json",
+   "station": "scripps-kpax",
+   "why": "an unread capture of its former closings address (2019-2021), read so that every capture of it is read"
+  },
+  {
+   "timestamp": "20200828021348",
+   "url": "https://www.kpax.com/weather/school-closings-delays",
+   "station": "scripps-kpax",
+   "why": "an unread capture of its former closings address (2019-2021), read so that every capture of it is read"
+  },
+  {
+   "timestamp": "20200828173201",
+   "url": "https://www.kpax.com/weather/school-closings-delays?_renderer=json",
+   "station": "scripps-kpax",
+   "why": "an unread capture of its former closings address (2019-2021), read so that every capture of it is read"
+  },
+  {
+   "timestamp": "20200902224019",
+   "url": "https://www.kpax.com/weather/school-closings-delays?_renderer=json",
+   "station": "scripps-kpax",
+   "why": "an unread capture of its former closings address (2019-2021), read so that every capture of it is read"
+  },
+  {
+   "timestamp": "20200902224019",
+   "url": "https://www.kpax.com/weather/school-closings-delays?_renderer=json",
+   "station": "scripps-kpax",
+   "why": "an unread capture of its former closings address (2019-2021), read so that every capture of it is read"
+  },
+  {
+   "timestamp": "20200902231312",
+   "url": "https://www.kpax.com/weather/school-closings-delays",
+   "station": "scripps-kpax",
+   "why": "an unread capture of its former closings address (2019-2021), read so that every capture of it is read"
+  },
+  {
+   "timestamp": "20200904052425",
+   "url": "https://www.kpax.com/weather/school-closings-delays?_renderer=json",
+   "station": "scripps-kpax",
+   "why": "an unread capture of its former closings address (2019-2021), read so that every capture of it is read"
+  },
+  {
+   "timestamp": "20200909220741",
+   "url": "https://www.kpax.com/weather/school-closings-delays?_renderer=json",
+   "station": "scripps-kpax",
+   "why": "an unread capture of its former closings address (2019-2021), read so that every capture of it is read"
+  },
+  {
+   "timestamp": "20200915043049",
+   "url": "https://www.kpax.com/weather/school-closings-delays",
+   "station": "scripps-kpax",
+   "why": "an unread capture of its former closings address (2019-2021), read so that every capture of it is read"
+  },
+  {
+   "timestamp": "20200916231110",
+   "url": "https://www.kpax.com/weather/school-closings-delays",
+   "station": "scripps-kpax",
+   "why": "an unread capture of its former closings address (2019-2021), read so that every capture of it is read"
+  },
+  {
+   "timestamp": "20200922044345",
+   "url": "https://www.kpax.com/weather/school-closings-delays",
+   "station": "scripps-kpax",
+   "why": "an unread capture of its former closings address (2019-2021), read so that every capture of it is read"
+  },
+  {
+   "timestamp": "20200922070835",
+   "url": "https://www.kpax.com/weather/school-closings-delays",
+   "station": "scripps-kpax",
+   "why": "an unread capture of its former closings address (2019-2021), read so that every capture of it is read"
+  },
+  {
+   "timestamp": "20200922175011",
+   "url": "https://www.kpax.com/weather/school-closings-delays",
+   "station": "scripps-kpax",
+   "why": "an unread capture of its former closings address (2019-2021), read so that every capture of it is read"
+  },
+  {
+   "timestamp": "20200923211951",
+   "url": "https://www.kpax.com/weather/school-closings-delays",
+   "station": "scripps-kpax",
+   "why": "an unread capture of its former closings address (2019-2021), read so that every capture of it is read"
+  },
+  {
+   "timestamp": "20200923211951",
+   "url": "https://www.kpax.com/weather/school-closings-delays",
+   "station": "scripps-kpax",
+   "why": "an unread capture of its former closings address (2019-2021), read so that every capture of it is read"
+  },
+  {
+   "timestamp": "20200923211951",
+   "url": "https://www.kpax.com/weather/school-closings-delays",
+   "station": "scripps-kpax",
+   "why": "an unread capture of its former closings address (2019-2021), read so that every capture of it is read"
+  },
+  {
+   "timestamp": "20200923211951",
+   "url": "https://www.kpax.com/weather/school-closings-delays",
+   "station": "scripps-kpax",
+   "why": "an unread capture of its former closings address (2019-2021), read so that every capture of it is read"
+  },
+  {
+   "timestamp": "20200923211951",
+   "url": "https://www.kpax.com/weather/school-closings-delays",
+   "station": "scripps-kpax",
+   "why": "an unread capture of its former closings address (2019-2021), read so that every capture of it is read"
+  },
+  {
+   "timestamp": "20200923211951",
+   "url": "https://www.kpax.com/weather/school-closings-delays",
+   "station": "scripps-kpax",
+   "why": "an unread capture of its former closings address (2019-2021), read so that every capture of it is read"
+  },
+  {
+   "timestamp": "20200923211951",
+   "url": "https://www.kpax.com/weather/school-closings-delays",
+   "station": "scripps-kpax",
+   "why": "an unread capture of its former closings address (2019-2021), read so that every capture of it is read"
+  },
+  {
+   "timestamp": "20200923211951",
+   "url": "https://www.kpax.com/weather/school-closings-delays",
+   "station": "scripps-kpax",
+   "why": "an unread capture of its former closings address (2019-2021), read so that every capture of it is read"
+  },
+  {
+   "timestamp": "20201006073108",
+   "url": "https://www.kpax.com/weather/school-closings-delays",
+   "station": "scripps-kpax",
+   "why": "an unread capture of its former closings address (2019-2021), read so that every capture of it is read"
+  },
+  {
+   "timestamp": "20201007210742",
+   "url": "https://www.kpax.com/weather/school-closings-delays",
+   "station": "scripps-kpax",
+   "why": "an unread capture of its former closings address (2019-2021), read so that every capture of it is read"
+  },
+  {
+   "timestamp": "20201018042422",
+   "url": "https://www.kpax.com/weather/school-closings-delays?_renderer=json",
+   "station": "scripps-kpax",
+   "why": "an unread capture of its former closings address (2019-2021), read so that every capture of it is read"
+  },
+  {
+   "timestamp": "20201020124532",
+   "url": "https://www.kpax.com/weather/school-closings-delays?_renderer=json",
+   "station": "scripps-kpax",
+   "why": "an unread capture of its former closings address (2019-2021), read so that every capture of it is read"
+  },
+  {
+   "timestamp": "20201025223143",
+   "url": "https://www.kpax.com/weather/school-closings-delays",
+   "station": "scripps-kpax",
+   "why": "an unread capture of its former closings address (2019-2021), read so that every capture of it is read"
+  },
+  {
+   "timestamp": "20201025223143",
+   "url": "https://www.kpax.com/weather/school-closings-delays",
+   "station": "scripps-kpax",
+   "why": "an unread capture of its former closings address (2019-2021), read so that every capture of it is read"
+  },
+  {
+   "timestamp": "20201028131605",
+   "url": "https://www.kpax.com/weather/school-closings-delays?_renderer=json",
+   "station": "scripps-kpax",
+   "why": "an unread capture of its former closings address (2019-2021), read so that every capture of it is read"
+  },
+  {
+   "timestamp": "20201028131418",
+   "url": "https://www.kpax.com/weather/school-closings-delays?_renderer=json",
+   "station": "scripps-kpax",
+   "why": "an unread capture of its former closings address (2019-2021), read so that every capture of it is read"
+  },
+  {
+   "timestamp": "20201028131605",
+   "url": "https://www.kpax.com/weather/school-closings-delays?_renderer=json",
+   "station": "scripps-kpax",
+   "why": "an unread capture of its former closings address (2019-2021), read so that every capture of it is read"
+  },
+  {
+   "timestamp": "20201028131605",
+   "url": "https://www.kpax.com/weather/school-closings-delays?_renderer=json",
+   "station": "scripps-kpax",
+   "why": "an unread capture of its former closings address (2019-2021), read so that every capture of it is read"
+  },
+  {
+   "timestamp": "20201025223143",
+   "url": "https://www.kpax.com/weather/school-closings-delays",
+   "station": "scripps-kpax",
+   "why": "an unread capture of its former closings address (2019-2021), read so that every capture of it is read"
+  },
+  {
+   "timestamp": "20201122054029",
+   "url": "https://www.kpax.com/weather/school-closings-delays?_renderer=json",
+   "station": "scripps-kpax",
+   "why": "an unread capture of its former closings address (2019-2021), read so that every capture of it is read"
+  },
+  {
+   "timestamp": "20201127001058",
+   "url": "https://www.kpax.com/weather/school-closings-delays",
+   "station": "scripps-kpax",
+   "why": "an unread capture of its former closings address (2019-2021), read so that every capture of it is read"
+  },
+  {
+   "timestamp": "20201127001058",
+   "url": "https://www.kpax.com/weather/school-closings-delays",
+   "station": "scripps-kpax",
+   "why": "an unread capture of its former closings address (2019-2021), read so that every capture of it is read"
+  },
+  {
+   "timestamp": "20201127001058",
+   "url": "https://www.kpax.com/weather/school-closings-delays",
+   "station": "scripps-kpax",
+   "why": "an unread capture of its former closings address (2019-2021), read so that every capture of it is read"
+  },
+  {
+   "timestamp": "20201127001058",
+   "url": "https://www.kpax.com/weather/school-closings-delays",
+   "station": "scripps-kpax",
+   "why": "an unread capture of its former closings address (2019-2021), read so that every capture of it is read"
+  },
+  {
+   "timestamp": "20201206152332",
+   "url": "https://www.kpax.com/weather/school-closings-delays",
+   "station": "scripps-kpax",
+   "why": "an unread capture of its former closings address (2019-2021), read so that every capture of it is read"
+  },
+  {
+   "timestamp": "20201209215047",
+   "url": "https://www.kpax.com/weather/school-closings-delays?_renderer=json",
+   "station": "scripps-kpax",
+   "why": "an unread capture of its former closings address (2019-2021), read so that every capture of it is read"
+  },
+  {
+   "timestamp": "20201211011711",
+   "url": "https://www.kpax.com/weather/school-closings-delays",
+   "station": "scripps-kpax",
+   "why": "an unread capture of its former closings address (2019-2021), read so that every capture of it is read"
+  },
+  {
+   "timestamp": "20210106062533",
+   "url": "https://www.kpax.com/weather/school-closings-delays?_renderer=json",
+   "station": "scripps-kpax",
+   "why": "an unread capture of its former closings address (2019-2021), read so that every capture of it is read"
+  },
+  {
+   "timestamp": "20210106062533",
+   "url": "https://www.kpax.com/weather/school-closings-delays?_renderer=json",
+   "station": "scripps-kpax",
+   "why": "an unread capture of its former closings address (2019-2021), read so that every capture of it is read"
+  },
+  {
+   "timestamp": "20210106062533",
+   "url": "https://www.kpax.com/weather/school-closings-delays?_renderer=json",
+   "station": "scripps-kpax",
+   "why": "an unread capture of its former closings address (2019-2021), read so that every capture of it is read"
+  },
+  {
+   "timestamp": "20210106062533",
+   "url": "https://www.kpax.com/weather/school-closings-delays?_renderer=json",
+   "station": "scripps-kpax",
+   "why": "an unread capture of its former closings address (2019-2021), read so that every capture of it is read"
+  },
+  {
+   "timestamp": "20210120000849",
+   "url": "https://www.kpax.com/weather/school-closings-delays",
+   "station": "scripps-kpax",
+   "why": "an unread capture of its former closings address (2019-2021), read so that every capture of it is read"
+  },
+  {
+   "timestamp": "20210120223719",
+   "url": "https://www.kpax.com/weather/school-closings-delays",
+   "station": "scripps-kpax",
+   "why": "an unread capture of its former closings address (2019-2021), read so that every capture of it is read"
+  },
+  {
+   "timestamp": "20210106062533",
+   "url": "https://www.kpax.com/weather/school-closings-delays?_renderer=json",
+   "station": "scripps-kpax",
+   "why": "an unread capture of its former closings address (2019-2021), read so that every capture of it is read"
+  },
+  {
+   "timestamp": "20210123023026",
+   "url": "https://www.kpax.com/weather/school-closings-delays",
+   "station": "scripps-kpax",
+   "why": "an unread capture of its former closings address (2019-2021), read so that every capture of it is read"
+  },
+  {
+   "timestamp": "20210124052332",
+   "url": "https://www.kpax.com/weather/school-closings-delays",
+   "station": "scripps-kpax",
+   "why": "an unread capture of its former closings address (2019-2021), read so that every capture of it is read"
+  },
+  {
+   "timestamp": "20210106062533",
+   "url": "https://www.kpax.com/weather/school-closings-delays?_renderer=json",
+   "station": "scripps-kpax",
+   "why": "an unread capture of its former closings address (2019-2021), read so that every capture of it is read"
+  },
+  {
+   "timestamp": "20210106062533",
+   "url": "https://www.kpax.com/weather/school-closings-delays?_renderer=json",
+   "station": "scripps-kpax",
+   "why": "an unread capture of its former closings address (2019-2021), read so that every capture of it is read"
+  },
+  {
+   "timestamp": "20210124052332",
+   "url": "https://www.kpax.com/weather/school-closings-delays",
+   "station": "scripps-kpax",
+   "why": "an unread capture of its former closings address (2019-2021), read so that every capture of it is read"
+  },
+  {
+   "timestamp": "20210106062533",
+   "url": "https://www.kpax.com/weather/school-closings-delays?_renderer=json",
+   "station": "scripps-kpax",
+   "why": "an unread capture of its former closings address (2019-2021), read so that every capture of it is read"
+  },
+  {
+   "timestamp": "20210106062533",
+   "url": "https://www.kpax.com/weather/school-closings-delays?_renderer=json",
+   "station": "scripps-kpax",
+   "why": "an unread capture of its former closings address (2019-2021), read so that every capture of it is read"
+  },
+  {
+   "timestamp": "20210106062533",
+   "url": "https://www.kpax.com/weather/school-closings-delays?_renderer=json",
+   "station": "scripps-kpax",
+   "why": "an unread capture of its former closings address (2019-2021), read so that every capture of it is read"
+  },
+  {
+   "timestamp": "20210106062533",
+   "url": "https://www.kpax.com/weather/school-closings-delays?_renderer=json",
+   "station": "scripps-kpax",
+   "why": "an unread capture of its former closings address (2019-2021), read so that every capture of it is read"
+  },
+  {
+   "timestamp": "20210129215514",
+   "url": "https://www.kpax.com/weather/school-closings-delays",
+   "station": "scripps-kpax",
+   "why": "an unread capture of its former closings address (2019-2021), read so that every capture of it is read"
+  },
+  {
+   "timestamp": "20210130231222",
+   "url": "https://www.kpax.com/weather/school-closings-delays",
+   "station": "scripps-kpax",
+   "why": "an unread capture of its former closings address (2019-2021), read so that every capture of it is read"
+  },
+  {
+   "timestamp": "20210202201836",
+   "url": "https://www.kpax.com/weather/school-closings-delays",
+   "station": "scripps-kpax",
+   "why": "an unread capture of its former closings address (2019-2021), read so that every capture of it is read"
+  },
+  {
+   "timestamp": "20210203222949",
+   "url": "https://www.kpax.com/weather/school-closings-delays",
+   "station": "scripps-kpax",
+   "why": "an unread capture of its former closings address (2019-2021), read so that every capture of it is read"
+  },
+  {
+   "timestamp": "20210319014451",
+   "url": "https://www.kpax.com/weather/school-closings-delays?_renderer=json",
+   "station": "scripps-kpax",
+   "why": "an unread capture of its former closings address (2019-2021), read so that every capture of it is read"
+  },
+  {
+   "timestamp": "20210416113137",
+   "url": "https://www.kpax.com/weather/school-closings-delays?_renderer=json",
+   "station": "scripps-kpax",
+   "why": "an unread capture of its former closings address (2019-2021), read so that every capture of it is read"
+  },
+  {
+   "timestamp": "20210416140050",
+   "url": "https://www.kpax.com/weather/school-closings-delays?_renderer=json",
+   "station": "scripps-kpax",
+   "why": "an unread capture of its former closings address (2019-2021), read so that every capture of it is read"
+  },
+  {
+   "timestamp": "20210424132636",
+   "url": "https://www.kpax.com/weather/school-closings-delays?_renderer=json",
+   "station": "scripps-kpax",
+   "why": "an unread capture of its former closings address (2019-2021), read so that every capture of it is read"
+  },
+  {
+   "timestamp": "20210504015833",
+   "url": "https://www.kpax.com/weather/school-closings-delays?_renderer=json",
+   "station": "scripps-kpax",
+   "why": "an unread capture of its former closings address (2019-2021), read so that every capture of it is read"
+  },
+  {
+   "timestamp": "20210513213350",
+   "url": "https://www.kpax.com/weather/school-closings-delays",
+   "station": "scripps-kpax",
+   "why": "an unread capture of its former closings address (2019-2021), read so that every capture of it is read"
+  },
+  {
+   "timestamp": "20210517091540",
+   "url": "https://www.kpax.com/weather/school-closings-delays",
+   "station": "scripps-kpax",
+   "why": "an unread capture of its former closings address (2019-2021), read so that every capture of it is read"
+  },
+  {
+   "timestamp": "20210517102636",
+   "url": "https://www.kpax.com/weather/school-closings-delays",
+   "station": "scripps-kpax",
+   "why": "an unread capture of its former closings address (2019-2021), read so that every capture of it is read"
+  },
+  {
+   "timestamp": "20210618203619",
+   "url": "https://www.kpax.com/weather/school-closings-delays",
+   "station": "scripps-kpax",
+   "why": "an unread capture of its former closings address (2019-2021), read so that every capture of it is read"
+  },
+  {
+   "timestamp": "20210629053430",
+   "url": "https://www.kpax.com/weather/school-closings-delays",
+   "station": "scripps-kpax",
+   "why": "an unread capture of its former closings address (2019-2021), read so that every capture of it is read"
+  },
+  {
+   "timestamp": "20210803064302",
+   "url": "https://www.kpax.com/weather/school-closings-delays",
+   "station": "scripps-kpax",
+   "why": "an unread capture of its former closings address (2019-2021), read so that every capture of it is read"
+  },
+  {
+   "timestamp": "20210815113532",
+   "url": "https://www.kpax.com/weather/school-closings-delays",
+   "station": "scripps-kpax",
+   "why": "an unread capture of its former closings address (2019-2021), read so that every capture of it is read"
+  },
+  {
+   "timestamp": "20210824120828",
+   "url": "https://www.kpax.com/weather/school-closings-delays?_renderer=json",
+   "station": "scripps-kpax",
+   "why": "an unread capture of its former closings address (2019-2021), read so that every capture of it is read"
+  },
+  {
+   "timestamp": "20210907092221",
+   "url": "https://www.kpax.com/weather/school-closings-delays?_renderer=json",
+   "station": "scripps-kpax",
+   "why": "an unread capture of its former closings address (2019-2021), read so that every capture of it is read"
+  },
+  {
+   "timestamp": "20210907092221",
+   "url": "https://www.kpax.com/weather/school-closings-delays?_renderer=json",
+   "station": "scripps-kpax",
+   "why": "an unread capture of its former closings address (2019-2021), read so that every capture of it is read"
+  },
+  {
+   "timestamp": "20210913194711",
+   "url": "https://www.kpax.com/weather/school-closings-delays?_renderer=json",
+   "station": "scripps-kpax",
+   "why": "an unread capture of its former closings address (2019-2021), read so that every capture of it is read"
+  },
+  {
+   "timestamp": "20210921161828",
+   "url": "https://www.kpax.com/weather/school-closings-delays?_renderer=json",
+   "station": "scripps-kpax",
+   "why": "an unread capture of its former closings address (2019-2021), read so that every capture of it is read"
+  },
+  {
+   "timestamp": "20240409022129",
+   "url": "https://www.kpax.com/weather/school-closings-delays",
+   "station": "scripps-kpax",
+   "why": "an unread capture of its former closings address (2019-2021), read so that every capture of it is read"
+  },
+  {
+   "timestamp": "20240910130051",
+   "url": "https://www.kpax.com/weather/school-closings-delays",
    "station": "scripps-kpax",
    "why": "an unread capture of its former closings address (2019-2021), read so that every capture of it is read"
   }
