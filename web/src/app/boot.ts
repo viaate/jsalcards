@@ -12,6 +12,9 @@
  * - the service worker, registered once the map is on screen;
  * - the school a pick or a link opens: its detail panel's view (app/school.ts,
  *   loaded when a school is first opened), and the pin;
+ * - the ZIP code a pick, a typed ZIP code or a link opens: its area panel's
+ *   view (app/area.ts, loaded when a ZIP code is first opened), the map
+ *   taking in its schools beside the panel;
  * - a school clicked or tapped on the map, once it is on screen
  *   (map/school-taps.ts), handed to the page to open as a pick of it, and a
  *   tap on several schools, which zooms the map in toward them.
@@ -33,19 +36,23 @@ import type { Selection } from '../state/url';
 import type { UrlStore } from '../state/url-store';
 import type { SchoolId, UtcInstant } from '../types/generated';
 import type { StatusCounts } from '../data/closings';
+import { AREAS_INDEX_PATH } from '../data/areas-format';
+import type { AreaSource } from '../data/areas';
 import type { DetailsSource } from '../data/details';
 import { DATA_PATHS } from '../data/files';
 import { createAppData, dustSource, locate, startLiveGlow } from './data';
 import type { AppData, LiveGlow, Target } from './data';
-import { clearOfPanel, mapInView } from './frame';
+import { clearOfPanel, fitClearOfPanel, mapInView } from './frame';
 import type { Screen } from './frame';
 import { createSearchController, nearView, searchOptions } from './search';
 import type { SearchController, SearchOption } from './search';
 import type { MenuView } from './menu';
 import type { Menu } from '../ui/menu-host';
 import type { SchoolHint, SchoolView, WatchOptions } from './school';
+import type { AreaHint, AreaView, WatchAreaOptions } from './area';
+import type { AreaRecord } from '../data/areas';
 import { startServiceWorker } from './service-worker';
-import { selectionForHit, startupSelection, viewForHit } from './startup';
+import { ZOOM, selectionForHit, startupSelection, viewForHit, zipHit } from './startup';
 
 export type { Screen } from './frame';
 export type { StatusCounts } from '../data/closings';
@@ -55,6 +62,7 @@ export type { SearchOption } from './search';
 export type { MenuView } from './menu';
 export type { MapFilter } from '../state/filter';
 export type { NearbyView, SchoolHint, SchoolView } from './school';
+export type { AreaHint, AreaSchoolView, AreaView } from './area';
 
 export interface BootOptions {
   readonly links: UrlStore;
@@ -144,6 +152,19 @@ export interface Services {
     hint: SchoolHint | null,
     onView: (view: SchoolView | null) => void,
   ): () => void;
+  /**
+   * Reads the schools around a ZIP code for its area panel and keeps its view
+   * current: `onView` hears each new view, and null when there is no area for
+   * it (or this build ships none). `hint` is what a search pick already knows.
+   * Returns the function that stops it.
+   */
+  watchArea(
+    zip: string,
+    hint: AreaHint | null,
+    onView: (view: AreaView | null) => void,
+  ): () => void;
+  /** A typed ZIP code's search result, once the index is in; null where search has no such ZIP code. */
+  findZip(zip: string): Promise<SearchOption | null>;
   /** The pinned school ("My school"). */
   readonly pins: PinStore;
   /**
@@ -176,12 +197,23 @@ type Frame = (view: MapView, selection: Selection | null) => MapView;
 
 export function boot(options: BootOptions): Services {
   const { links, signal, screen, formats = Promise.resolve() } = options;
+  const data = options.data ?? createAppData();
+  /** Whether this build ships the schools around each ZIP code: a ZIP code opens a panel then. */
+  const areas = data.files.has(AREAS_INDEX_PATH);
   const frame: Frame | undefined =
     options.frame ??
     (screen === undefined
       ? undefined
-      : (view, selection) => (selection?.kind === 'school' ? clearOfPanel(view, screen()) : view));
-  const data = options.data ?? createAppData();
+      : (view, selection) =>
+          selection?.kind === 'school' || (selection?.kind === 'zip' && areas)
+            ? clearOfPanel(view, screen())
+            : view);
+  /** The view that takes in a box of places beside the panel, where the page has a screen. */
+  const fit =
+    screen === undefined
+      ? undefined
+      : (box: readonly [number, number, number, number]) =>
+          fitClearOfPanel(box, screen(), ZOOM.areaMax);
   const pins = createPinStore();
   /** The map from the moment it takes input. */
   let created: Basemap | undefined;
@@ -199,6 +231,43 @@ export function boot(options: BootOptions): Services {
     },
   });
 
+  /** Where the last flight a pick or a tap set off was going: for a flight stopped short. */
+  let flight: MapView | null = null;
+
+  /** The area panel's code and the areas' reader, loaded when a ZIP code first opens. */
+  let areaCode: Promise<{
+    areas: AreaSource;
+    bounds: (area: AreaRecord) => readonly [number, number, number, number];
+    watch: (watchOptions: WatchAreaOptions) => () => void;
+  }> | null = null;
+  const loadAreaCode = (): NonNullable<typeof areaCode> => {
+    areaCode ??= formats
+      .then(() => import('./area'))
+      .then((module) => ({
+        areas: module.createAreaSource(data.files),
+        bounds: module.areaBounds,
+        watch: module.watchArea,
+      }));
+    return areaCode;
+  };
+  /** Around a ZIP code's point and every school of its area: [west, south, east, north], or null. */
+  const areaBox = async (
+    zip: string,
+  ): Promise<readonly [number, number, number, number] | null> => {
+    const { areas: source, bounds } = await loadAreaCode();
+    const area = await source.get(zip);
+    return area === null ? null : bounds(area);
+  };
+  /** A ZIP code a link opens without a view: the map takes in its schools once they are read. */
+  const goToArea = async (zip: string): Promise<void> => {
+    const [box, map] = await Promise.all([areaBox(zip).catch(() => null), options.map]);
+    const opened = links.state.selection;
+    if (box === null || map === undefined || map.moved || aborted() || fit === undefined) return;
+    if (opened?.kind !== 'zip' || opened.id !== zip) return;
+    flight = fit(box);
+    options.show({ view: flight });
+  };
+
   // A link opens as sent; a plain visit opens the pinned school, without a history entry.
   const open = (): void => {
     const opening = startupSelection(links.state, pins.school);
@@ -206,9 +275,9 @@ export function boot(options: BootOptions): Services {
       links.select(opening, { replace: true });
     }
     const selection = links.state.selection;
-    if (selection !== null && links.state.view === null) {
-      void goToSelection(data, selection, search, options, frame);
-    }
+    if (selection === null || links.state.view !== null) return;
+    if (selection.kind === 'zip' && areas && fit !== undefined) void goToArea(selection.id);
+    else void goToSelection(data, selection, search, options, frame);
   };
   if (options.addressOpens === undefined) open();
   else {
@@ -307,8 +376,6 @@ export function boot(options: BootOptions): Services {
   // found in the glow's own data, read as each click comes. A tap on several schools zooms in as
   // the map's own flights go.
   let taps: SchoolTaps | null = null;
-  /** Where the last flight a pick or a tap set off was going: for a flight stopped short. */
-  let flight: MapView | null = null;
   const onSchool = options.onSchool;
   if (onSchool !== undefined) {
     let layer: Glow | null = null;
@@ -411,6 +478,37 @@ export function boot(options: BootOptions): Services {
       }
       return menuView.catch(() => ({ season: null, record: null, map: null }));
     },
+    watchArea(zip, hint, onView) {
+      let stop: (() => void) | null = null;
+      let stopped = false;
+      Promise.all([loadAreaCode(), loadSchoolCode()]).then(
+        ([{ areas: source, watch }, school]) => {
+          if (stopped || aborted()) return;
+          // The school records' reader the school panel reads with: a row opens what is read.
+          stop = watch({
+            files: data.files,
+            areas: source,
+            details: school.source,
+            zip,
+            hint,
+            onView,
+          });
+        },
+        () => {
+          if (!stopped) onView(null);
+        },
+      );
+      return () => {
+        stopped = true;
+        stop?.();
+      };
+    },
+    async findZip(zip) {
+      const results = await search.lookup(zip);
+      const hit = results === null ? null : zipHit(results.zips, zip);
+      if (results === null || hit === null) return null;
+      return searchOptions(results, options.listId).find((option) => option.hit === hit) ?? null;
+    },
     watchSchool(id, hint, onView) {
       let stop: (() => void) | null = null;
       let stopped = false;
@@ -455,6 +553,27 @@ export function boot(options: BootOptions): Services {
       }
       flight = view;
       options.show({ view });
+      // A ZIP code's schools, once read: the map takes them all in beside its panel, unless
+      // someone has moved it or gone somewhere else since.
+      if (selection?.kind !== 'zip' || !areas || fit === undefined) return;
+      const going = view;
+      // Someone moving the map with their own hands meanwhile keeps it where they put it.
+      let handled = false;
+      const map = created?.map;
+      const onMove = (event: { originalEvent?: unknown }): void => {
+        if (event.originalEvent !== undefined) handled = true;
+      };
+      map?.on('movestart', onMove);
+      void areaBox(selection.id)
+        .then((box) => {
+          const opened = links.state.selection;
+          if (box === null || flight !== going || handled || aborted()) return;
+          if (opened?.kind !== 'zip' || opened.id !== selection.id) return;
+          flight = fit(box);
+          options.show({ view: flight });
+        })
+        .catch(() => undefined)
+        .finally(() => map?.off('movestart', onMove));
     },
   };
   return services;

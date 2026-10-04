@@ -22,6 +22,8 @@ export const ZOOM = Object.freeze({
   district: 11,
   /** A district's schools are fitted, no closer than this. */
   districtMax: 13,
+  /** The schools around a ZIP code are fitted, no closer than this. */
+  areaMax: 14,
 });
 
 /** The selection to open at startup: the link's, else the pinned school on a plain visit. */

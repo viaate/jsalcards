@@ -4,6 +4,9 @@
   import type { Attachment } from 'svelte/attachments';
 
   import type {
+    AreaHint,
+    AreaSchoolView,
+    AreaView,
     NearbyView,
     SchoolHint,
     SchoolHit,
@@ -58,6 +61,15 @@
     onnearby?: (school: NearbyView) => void;
     onsettle?: () => void;
     element?: HTMLElement | undefined;
+    back?: { readonly label: string; readonly onback: () => void } | null;
+  }
+
+  interface AreaProps {
+    view: AreaView;
+    onclose: () => void;
+    onschool: (school: AreaSchoolView) => void;
+    onsettle?: () => void;
+    element?: HTMLElement | undefined;
   }
 
   let { still = null, initialQuery = '' }: Props = $props();
@@ -108,6 +120,14 @@
   let copiedTimer: ReturnType<typeof setTimeout> | undefined;
   /** What the last pick knew about the school it opened, shown until its record is read. */
   let pickedHint: SchoolHint | null = null;
+  /** The open ZIP code's panel, loaded the first time a ZIP code opens. */
+  let Area = $state<Component<AreaProps> | null>(null);
+  /** The open ZIP code's view; null while none is open, or for a ZIP code with no area. */
+  let areaView = $state<AreaView | null>(null);
+  /** What the last pick knew about the ZIP code it opened, shown until its area is read. */
+  let pickedArea: AreaHint | null = null;
+  /** A school a row of an area's list opened, and that area: the school's panel goes back to it. */
+  let cameFrom = $state<{ id: string; zip: string; label: string; pushed: boolean } | null>(null);
   /** Whether the panel takes focus when it shows: after a pick, not for a link or the pin. */
   let focusPanel = false;
   /** The address store from mount on; its code comes after the page's first script. */
@@ -118,6 +138,7 @@
   let formats: Promise<void> = Promise.resolve();
 
   const schoolId = $derived(selection?.kind === 'school' ? selection.id : null);
+  const zipId = $derived(selection?.kind === 'zip' ? selection.id : null);
 
   const expanded = $derived(
     focused && !dismissed && Results !== null && options !== null && query.trim() !== '',
@@ -326,7 +347,7 @@
   }
 
   function pick(option: SearchOption): void {
-    if (option.hit.kind === 'school') focusOpened(option.hit.id);
+    if (option.hit.kind === 'school' || option.hit.kind === 'zip') focusOpened(option.hit.id);
     inputElement?.blur();
     go(option.hit, option.name, option.sub);
   }
@@ -342,17 +363,19 @@
     options = null;
     active = -1;
     if (hit.kind === 'school') pickedHint = { id: hit.id, name, sub };
+    if (hit.kind === 'zip') pickedArea = { zip: hit.id, sub };
     void services.then((app) => {
       app?.pick(hit);
     });
   }
 
   /**
-   * After a pick, a school's panel takes the focus: once it shows, or at once
-   * when it shows this school already.
+   * After a pick, a school's or a ZIP code's panel takes the focus: once it
+   * shows, or at once when it shows that one already.
    */
-  function focusOpened(id: SchoolId): void {
-    if (id === schoolView?.id) detailElement?.focus({ preventScroll: true });
+  function focusOpened(id: string): void {
+    if (id === schoolView?.id || id === areaView?.zip)
+      detailElement?.focus({ preventScroll: true });
     else focusPanel = true;
   }
 
@@ -385,6 +408,60 @@
     };
   });
 
+  // The ZIP code the address holds: its area's view, read and kept current while it is open.
+  $effect(() => {
+    const zip = zipId;
+    areaView = null;
+    if (zip === null) return;
+    let stop: () => void = () => undefined;
+    let cancelled = false;
+    const hint = untrack(() => pickedArea);
+    void services.then((app) => {
+      if (cancelled || app === null) return;
+      stop = app.watchArea(zip, hint?.zip === zip ? hint : null, (view) => {
+        if (!cancelled) areaView = view;
+      });
+    });
+    if (untrack(() => Area) === null) {
+      import('./ui/AreaPanel.svelte').then(
+        (module) => {
+          Area = module.default;
+        },
+        () => undefined,
+      );
+    }
+    return () => {
+      cancelled = true;
+      stop();
+    };
+  });
+
+  // Going anywhere but that school or that area: the school's panel no longer goes back to it.
+  $effect(() => {
+    if (cameFrom !== null && schoolId !== cameFrom.id && zipId !== cameFrom.zip) cameFrom = null;
+  });
+
+  /** Opens a school from an area's list, as a pick of it would: its panel goes back to the area. */
+  function openFromArea(school: AreaSchoolView): void {
+    if (areaView === null) return;
+    cameFrom = {
+      id: school.id,
+      zip: areaView.zip,
+      label: areaView.back,
+      pushed: urls?.read === true,
+    };
+    openTapped(school);
+  }
+
+  /** Back to the area: the step before, where the pick of the school was one; else the area again. */
+  function backToArea(): void {
+    const from = cameFrom;
+    cameFrom = null;
+    if (from === null) return;
+    if (from.pushed && urls?.read === true) history.back();
+    else urls?.select({ kind: 'zip', id: from.zip });
+  }
+
   /** Opens a school from the nearby list (or the map), as a pick of it would. */
   function openNearby(school: Pick<NearbyView, 'id' | 'name' | 'lat' | 'lon'>): void {
     go({ ...school, kind: 'school' }, school.name, '');
@@ -402,7 +479,9 @@
   }
 
   // The panel comes or goes over the map: its labels keep clear of it.
-  const panelShown = $derived(Detail !== null && schoolView !== null);
+  const panelShown = $derived(
+    (Detail !== null && schoolView !== null) || (Area !== null && areaView !== null),
+  );
   let panelWasShown = false;
   $effect(() => {
     if (panelShown === panelWasShown) return;
@@ -417,7 +496,7 @@
     detailElement.focus({ preventScroll: true });
   });
 
-  function closeSchool(): void {
+  function closePanel(): void {
     urls?.select(null);
   }
 
@@ -493,9 +572,20 @@
       }
       case 'Enter': {
         const option = list[Math.max(active, 0)];
-        if (!listed || option === undefined) return;
+        if (listed && option !== undefined) {
+          event.preventDefault();
+          pick(option);
+          return;
+        }
+        // A ZIP code typed whole opens once search finds it, its results shown or not.
+        const zip = query.trim();
+        if (!/^\d{5}$/.test(zip)) return;
         event.preventDefault();
-        pick(option);
+        void services
+          .then((app) => app?.findZip(zip))
+          .then((found) => {
+            if (found !== undefined && found !== null && query.trim() === zip) pick(found);
+          });
         return;
       }
       case 'Escape':
@@ -515,11 +605,11 @@
 
   /** "/" anywhere but in a text field goes to the search field, as on most sites with search. */
   function onShortcut(event: KeyboardEvent): void {
-    // Escape outside the search field closes an open school.
-    if (event.key === 'Escape' && !event.defaultPrevented && schoolView !== null) {
+    // Escape outside the search field closes an open school or ZIP code.
+    if (event.key === 'Escape' && !event.defaultPrevented && (schoolView ?? areaView) !== null) {
       if (event.target instanceof Element && event.target.closest('.search') !== null) return;
       event.preventDefault();
-      closeSchool();
+      closePanel();
       return;
     }
     if (event.key !== '/' || event.defaultPrevented || event.isComposing) return;
@@ -810,10 +900,20 @@
       view={schoolView}
       pinned={pinnedId === schoolView.id}
       {copied}
-      onclose={closeSchool}
+      onclose={closePanel}
       onpin={togglePin}
       onshare={shareable ? shareSchool : undefined}
       onnearby={openNearby}
+      back={cameFrom?.id === schoolView.id ? { label: cameFrom.label, onback: backToArea } : null}
+      onsettle={() => basemap?.controlsChanged()}
+      bind:element={detailElement}
+    />
+  {/if}
+  {#if Area !== null && areaView !== null}
+    <Area
+      view={areaView}
+      onclose={closePanel}
+      onschool={openFromArea}
       onsettle={() => basemap?.controlsChanged()}
       bind:element={detailElement}
     />

@@ -2,7 +2,8 @@
  * Where the map looks to show a school its detail panel has opened for: the
  * school in the middle of the map the panel leaves in view, right of the
  * panel beside the map, above the sheet on a phone (at the height the sheet
- * opens to, ui/sheet-geometry.ts), and below the search strip either way.
+ * opens to, ui/sheet-geometry.ts), and below the search strip either way; and
+ * the schools around a ZIP code, all of them in that part of the map.
  * And the part of the map in view now, which a tap on several schools zooms
  * them into.
  *
@@ -81,18 +82,62 @@ export function mapInView(screen: Screen): Area {
     : { left: Math.min(Math.max(panel.right, 0), width), top, right: width, bottom: height };
 }
 
+/** Where a place lies in the world at zoom 0, in CSS pixels (one 512-pixel tile). */
+function toWorld(lon: number, lat: number): { x: number; y: number } {
+  const sin = Math.sin((lat * Math.PI) / 180);
+  return {
+    x: ((lon + 180) / 360) * TILE,
+    y: (0.5 - Math.log((1 + sin) / (1 - sin)) / (4 * Math.PI)) * TILE,
+  };
+}
+
+/** The place at a point of the world at zoom 0. */
+function fromWorld(x: number, y: number): { lon: number; lat: number } {
+  return {
+    lon: (x / TILE) * 360 - 180,
+    lat: (Math.atan(Math.sinh(Math.PI * (1 - (2 * y) / TILE))) * 180) / Math.PI,
+  };
+}
+
 /** The view that shows `view`'s middle in the middle of the map the panel leaves in view. */
 export function clearOfPanel(view: MapView, screen: Screen): MapView {
   const { width, height } = screen;
   const area = openArea(screen);
-  // Where the place goes, from the screen's middle, in pixels.
-  const dx = (area.left + area.right) / 2 - width / 2;
-  const dy = (area.top + area.bottom) / 2 - height / 2;
-  const scale = TILE * 2 ** view.zoom;
-  const x = ((view.lon + 180) / 360) * scale - dx;
-  const sin = Math.sin((view.lat * Math.PI) / 180);
-  const y = (0.5 - Math.log((1 + sin) / (1 - sin)) / (4 * Math.PI)) * scale - dy;
-  const lon = (x / scale) * 360 - 180;
-  const lat = (Math.atan(Math.sinh(Math.PI * (1 - (2 * y) / scale))) * 180) / Math.PI;
-  return { lat, lon, zoom: view.zoom };
+  // Where the place goes, from the screen's middle, in pixels at zoom 0.
+  const scale = 2 ** view.zoom;
+  const dx = ((area.left + area.right) / 2 - width / 2) / scale;
+  const dy = ((area.top + area.bottom) / 2 - height / 2) / scale;
+  const at = toWorld(view.lon, view.lat);
+  return { ...fromWorld(at.x - dx, at.y - dy), zoom: view.zoom };
+}
+
+/** Room left around the places a view fits, in CSS pixels: their dots and names stay clear of the edges. */
+export const FIT_PADDING = 48;
+
+/**
+ * The view that shows a box, [west, south, east, north], whole in the middle
+ * of the map the panel leaves in view, FIT_PADDING clear of its edges, and
+ * no closer than `maxZoom`: the schools around a ZIP code, beside its panel
+ * or above its sheet.
+ */
+export function fitClearOfPanel(
+  bounds: readonly [number, number, number, number],
+  screen: Screen,
+  maxZoom: number,
+): MapView {
+  const [west, south, east, north] = bounds;
+  const area = openArea(screen);
+  const room = {
+    width: Math.max(1, area.right - area.left - 2 * FIT_PADDING),
+    height: Math.max(1, area.bottom - area.top - 2 * FIT_PADDING),
+  };
+  const corner = toWorld(west, north);
+  const across = toWorld(east, south);
+  const fits = [
+    maxZoom,
+    Math.log2(room.width / (across.x - corner.x)),
+    Math.log2(room.height / (across.y - corner.y)),
+  ];
+  const middle = fromWorld((corner.x + across.x) / 2, (corner.y + across.y) / 2);
+  return clearOfPanel({ ...middle, zoom: Math.min(...fits) }, screen);
 }

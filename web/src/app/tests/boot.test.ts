@@ -16,10 +16,10 @@ import type { UrlStoreHost } from '../../state/url-store';
 import { boot } from '../boot';
 // Loaded here as well as on demand, so a busy machine's first transform does not run out a wait.
 import '../school';
-import type { BootOptions } from '../boot';
+import type { AreaView, BootOptions } from '../boot';
 import type { AppData, Target } from '../data';
 import type { Screen } from '../frame';
-import { PANEL_EDGE, clearOfPanel, openArea, panelWidth } from '../frame';
+import { PANEL_EDGE, clearOfPanel, fitClearOfPanel, openArea, panelWidth } from '../frame';
 import { ZOOM, viewForHit } from '../startup';
 
 /**
@@ -466,6 +466,209 @@ describe('search', () => {
     expect(shown).toHaveLength(1);
     expect(tab.back()).toBe(true);
     expect(links.state.selection).toEqual({ kind: 'zip', id: '64113' });
+    controller.abort();
+  });
+});
+
+describe('a ZIP code', () => {
+  const ZIP_PICK = { kind: 'zip', id: '64112', lat: 39.036004, lon: -94.59525 } as const;
+  /** The schools around 64112, made up for these tests in the area files' shape. */
+  const AREA = [
+    '64112',
+    -94.59525,
+    39.036004,
+    ['MO'],
+    [[1, 'A1902690', 194, -94.593001, 39.03606]],
+    [[0, '290002502748', 1881, -94.58, 39.05]],
+  ];
+  /** Those two schools as the detail files have them, in the directory's order. */
+  const ROWS = [
+    [
+      '290002502748',
+      'ALLEN VILLAGE HIGH SCHOOL',
+      2,
+      0,
+      '2900025',
+      'ALLEN VILLAGE',
+      null,
+      'KANSAS CITY',
+      'MO',
+      '64111',
+      null,
+      '09',
+      '12',
+      130,
+      null,
+      [],
+    ],
+    [
+      'A1902690',
+      'THE PEMBROKE HILL SCHOOL - WORNALL CAMPUS',
+      1,
+      null,
+      null,
+      null,
+      null,
+      'KANSAS CITY',
+      'MO',
+      '64112',
+      null,
+      'PK',
+      '12',
+      1174,
+      null,
+      [],
+    ],
+  ];
+  const BOX = [-94.59525, 39.036004, -94.58, 39.05] as const;
+  const STAMP = { generated_on: '2026-01-05', schools: 2, districts: 1 };
+  const screen = { width: 1440, height: 900, top: 64 };
+
+  function withAreas(): AppData {
+    return {
+      files: createDataFiles(['schools/areas/index.json', DETAILS_INDEX_PATH], ROOT),
+      directories: () => Promise.resolve(null),
+    };
+  }
+
+  /** Answers the area files' index and shard, each at once or when `hold` lets it. */
+  function serveAreas(hold: Promise<void> = Promise.resolve()) {
+    return vi.spyOn(globalThis, 'fetch').mockImplementation(async (input) => {
+      await hold;
+      const url = input instanceof Request ? input.url : input.toString();
+      const index = url.endsWith('index.json');
+      const shard = { schema_version: 1, directory: STAMP, shards: 1, files: ['0.json'] };
+      const body = url.includes('/schools/details/')
+        ? index
+          ? { ...shard, first_ids: ['290002502748'] }
+          : { schema_version: 1, directory: STAMP, first: 0, rows: ROWS }
+        : index
+          ? { ...shard, first_zips: ['64112'] }
+          : { schema_version: 1, directory: STAMP, first: '64112', areas: [AREA] };
+      return new Response(JSON.stringify(body));
+    });
+  }
+
+  function startOnScreen(url: string, data: AppData, map?: Basemap) {
+    const tab = new FakeTab(url);
+    const shown: Target[] = [];
+    const controller = new AbortController();
+    const links = createUrlStore({ host: tab });
+    const services = boot({
+      links,
+      map: Promise.resolve(map),
+      glow: Promise.resolve(null),
+      signal: controller.signal,
+      show: (target) => shown.push(target),
+      screen: () => screen,
+      listId: 'list',
+      onResults: () => undefined,
+      data,
+    });
+    return { services, shown, controller, links, tab };
+  }
+
+  afterEach(() => {
+    vi.restoreAllMocks();
+  });
+
+  it('a pick flies to it clear of its panel, then takes in every school of its area beside it', async () => {
+    serveAreas();
+    const { services, shown, controller, links } = startOnScreen('https://snow.test/', withAreas());
+    services.pick(ZIP_PICK);
+    expect(links.state.selection).toEqual({ kind: 'zip', id: '64112' });
+    expect(shown[0]).toEqual({ view: clearOfPanel(viewForHit(ZIP_PICK), screen) });
+    await vi.waitFor(() => {
+      expect(shown).toHaveLength(2);
+    }, WAIT);
+    expect(shown[1]).toEqual({ view: fitClearOfPanel(BOX, screen, ZOOM.areaMax) });
+    controller.abort();
+  });
+
+  it('keeps the map where someone moved it, or where a later pick sent it, before its area is read', async () => {
+    let release: () => void = () => undefined;
+    serveAreas(
+      new Promise<void>((resolve) => {
+        release = resolve;
+      }),
+    );
+    const handlers = new Map<string, (event: { originalEvent?: unknown }) => void>();
+    const map = {
+      moved: false,
+      ready: new Promise<void>(() => undefined),
+      showSchools: () => undefined,
+      prepareStreets: () => undefined,
+      map: {
+        on: (type: string, handler: (event: { originalEvent?: unknown }) => void) =>
+          handlers.set(type, handler),
+        off: (type: string) => handlers.delete(type),
+      },
+    } as unknown as Basemap;
+    const { services, shown, controller } = startOnScreen('https://snow.test/', withAreas(), map);
+    await settle();
+    services.pick(ZIP_PICK);
+    // A drag, not a flight: the map is theirs.
+    handlers.get('movestart')?.({ originalEvent: new Event('mousedown') });
+    release();
+    await settle();
+    expect(shown).toHaveLength(1);
+    // And once read, it listens no longer.
+    expect(handlers.size).toBe(0);
+    controller.abort();
+  });
+
+  it('a link without a view takes in its area once read; a link with one opens as sent', async () => {
+    serveAreas();
+    const linked = startOnScreen('https://snow.test/?zip=64112', withAreas(), {
+      moved: false,
+    } as unknown as Basemap);
+    await vi.waitFor(() => {
+      expect(linked.shown).toEqual([{ view: fitClearOfPanel(BOX, screen, ZOOM.areaMax) }]);
+    }, WAIT);
+    linked.controller.abort();
+    const sent = startOnScreen('https://snow.test/?zip=64112&at=39,-94.6,11', withAreas(), {
+      moved: false,
+    } as unknown as Basemap);
+    await settle();
+    expect(sent.shown).toEqual([]);
+    sent.controller.abort();
+  });
+
+  it('without area files a ZIP code opens no panel: the map goes to it as it is', async () => {
+    const { services, shown, controller } = startOnScreen('https://snow.test/', NO_DATA);
+    services.pick(ZIP_PICK);
+    expect(shown).toEqual([{ view: viewForHit(ZIP_PICK) }]);
+    const views: unknown[] = [];
+    services.watchArea('64112', null, (view) => views.push(view));
+    await vi.waitFor(() => {
+      expect(views).toEqual([null]);
+    }, WAIT);
+    controller.abort();
+  });
+
+  it('reads its area for the panel, and says there is none for a ZIP code it does not have', async () => {
+    serveAreas();
+    const { services, controller } = startOnScreen('https://snow.test/', withAreas());
+    const views: (AreaView | null)[] = [];
+    const stop = services.watchArea('64112', { zip: '64112', sub: 'Missouri' }, (view) =>
+      views.push(view),
+    );
+    await vi.waitFor(() => {
+      expect(views.at(-1)?.loading).toBe(false);
+    }, WAIT);
+    expect(views[0]).toMatchObject({ zip: '64112', place: 'Missouri', loading: true });
+    expect(views.at(-1)).toMatchObject({
+      place: 'Kansas City, MO',
+      heading: '1 school in 64112',
+      nearHeading: '1 more within 2 miles',
+      chance: null,
+    });
+    stop();
+    const none: (AreaView | null)[] = [];
+    services.watchArea('99999', null, (view) => none.push(view));
+    await vi.waitFor(() => {
+      expect(none.at(-1)).toBeNull();
+    }, WAIT);
     controller.abort();
   });
 });

@@ -1,7 +1,16 @@
 import { describe, expect, it } from 'vitest';
 
 import { OPEN_SHARE } from '../../ui/sheet-geometry';
-import { PANEL_EDGE, PANEL_WIDTH, clearOfPanel, mapInView, openArea, panelWidth } from '../frame';
+import {
+  FIT_PADDING,
+  PANEL_EDGE,
+  PANEL_WIDTH,
+  clearOfPanel,
+  fitClearOfPanel,
+  mapInView,
+  openArea,
+  panelWidth,
+} from '../frame';
 
 /** Pembroke Hill, on its streets. */
 const SCHOOL = { lat: 39.03606, lon: -94.593001, zoom: 15 };
@@ -68,6 +77,72 @@ describe('clearOfPanel', () => {
     });
     expect(phone.x).toBeCloseTo(719 / 2, 6);
     expect(wide.x).toBeGreaterThan(720 / 2);
+  });
+});
+
+describe('fitClearOfPanel', () => {
+  /** Where a place lands on a screen with the map centered on `center`. */
+  const at = (
+    place: { lat: number; lon: number },
+    center: { lat: number; lon: number; zoom: number },
+    screen: { width: number; height: number },
+  ): { x: number; y: number } => {
+    const spot = worldPixels(place.lat, place.lon, center.zoom);
+    const middle = worldPixels(center.lat, center.lon, center.zoom);
+    return {
+      x: screen.width / 2 + spot.x - middle.x,
+      y: screen.height / 2 + spot.y - middle.y,
+    };
+  };
+  /** The schools around 64111, and its point. */
+  const BOUNDS = [-94.6087, 39.0412, -94.5768, 39.0612] as const;
+  const corners = [
+    { lon: BOUNDS[0], lat: BOUNDS[3] },
+    { lon: BOUNDS[2], lat: BOUNDS[1] },
+  ];
+
+  it('fits every school in the map right of the panel, clear of its edges, and touches one side', () => {
+    const screen = { width: 1440, height: 900, top: 64 };
+    const view = fitClearOfPanel(BOUNDS, screen, 16);
+    const area = openArea(screen);
+    const [nw, se] = corners.map((corner) => at(corner, view, screen));
+    if (nw === undefined || se === undefined) throw new Error('no corners');
+    expect(nw.x).toBeGreaterThanOrEqual(area.left + FIT_PADDING - 1e-6);
+    expect(nw.y).toBeGreaterThanOrEqual(area.top + FIT_PADDING - 1e-6);
+    expect(se.x).toBeLessThanOrEqual(area.right - FIT_PADDING + 1e-6);
+    expect(se.y).toBeLessThanOrEqual(area.bottom - FIT_PADDING + 1e-6);
+    // As close as it fits: one way across, it fills the room.
+    const filled = Math.max(
+      (se.x - nw.x) / (area.right - area.left - 2 * FIT_PADDING),
+      (se.y - nw.y) / (area.bottom - area.top - 2 * FIT_PADDING),
+    );
+    expect(filled).toBeCloseTo(1, 6);
+    // In the middle of that room.
+    expect((nw.x + se.x) / 2).toBeCloseTo((area.left + area.right) / 2, 6);
+    expect((nw.y + se.y) / 2).toBeCloseTo((area.top + area.bottom) / 2, 6);
+  });
+
+  it('on a phone, fits them between the search strip and the sheet', () => {
+    const screen = { width: 390, height: 844, top: 112 };
+    const view = fitClearOfPanel(BOUNDS, screen, 16);
+    const sheetTop = screen.height - Math.round(screen.height * OPEN_SHARE);
+    const [nw, se] = corners.map((corner) => at(corner, view, screen));
+    if (nw === undefined || se === undefined) throw new Error('no corners');
+    expect(nw.y).toBeGreaterThanOrEqual(screen.top + FIT_PADDING - 1e-6);
+    expect(se.y).toBeLessThanOrEqual(sheetTop - FIT_PADDING + 1e-6);
+    expect(nw.x).toBeGreaterThanOrEqual(FIT_PADDING - 1e-6);
+    expect(se.x).toBeLessThanOrEqual(screen.width - FIT_PADDING + 1e-6);
+  });
+
+  it('comes no closer than its zoom for one place, or places close together', () => {
+    const screen = { width: 1440, height: 900, top: 64 };
+    const one = fitClearOfPanel([-94.593, 39.036, -94.593, 39.036], screen, 14);
+    expect(one.zoom).toBe(14);
+    const spot = at({ lon: -94.593, lat: 39.036 }, one, screen);
+    const area = openArea(screen);
+    expect(spot.x).toBeCloseTo((area.left + area.right) / 2, 6);
+    expect(spot.y).toBeCloseTo((area.top + area.bottom) / 2, 6);
+    expect(fitClearOfPanel(BOUNDS, screen, 12).zoom).toBe(12);
   });
 });
 

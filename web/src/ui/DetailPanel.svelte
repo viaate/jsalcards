@@ -16,6 +16,8 @@
     onshare?: (() => void) | undefined;
     /** Opens a school from the nearby list. */
     onnearby?: (school: NearbyView) => void;
+    /** Back to the area whose list opened the school ("Back to 64112"), or none. */
+    back?: { readonly label: string; readonly onback: () => void } | null;
     /** On a phone, the sheet came to rest at another height: the map's labels make room for it. */
     onsettle?: () => void;
     /** The panel's element, for the page to focus after a pick. */
@@ -30,6 +32,7 @@
     onpin,
     onshare,
     onnearby = () => undefined,
+    back = null,
     onsettle = () => undefined,
     element = $bindable(),
   }: Props = $props();
@@ -63,6 +66,14 @@
   bind:element
 >
   {#snippet head()}
+    {#if back !== null}
+      <button class="back" type="button" onclick={back.onback}>
+        <svg viewBox="0 0 16 16" aria-hidden="true" focusable="false">
+          <path d="M10 3.5L5.5 8l4.5 4.5" />
+        </svg>
+        {back.label}
+      </button>
+    {/if}
     {#if view.name === ''}
       <div class="skeleton" aria-hidden="true">
         <span class="bone is-short"></span>
@@ -235,6 +246,40 @@
     color: var(--text-2);
   }
 
+  /* Back to the area its list opened the school from: words with their mark, over the rest. */
+  .back {
+    display: flex;
+    gap: 4px;
+    align-items: center;
+    height: 32px;
+    margin: -6px 0 4px;
+    padding: 0;
+    font: var(--type-body);
+    color: var(--text-2);
+    cursor: pointer;
+    background: transparent;
+    border: 0;
+    border-radius: 4px;
+    transition: color 120ms linear;
+  }
+
+  .back:hover {
+    color: var(--text-1);
+  }
+
+  /* The mark's ink at the panel's left edge, where every line starts. */
+  .back svg {
+    flex: none;
+    width: 16px;
+    height: 16px;
+    margin-left: -5px;
+    fill: none;
+    stroke: currentColor;
+    stroke-width: 1.5;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+  }
+
   .name {
     margin: 0;
     font: var(--type-title);
@@ -256,6 +301,7 @@
     color: var(--text-2);
   }
 
+  .back:focus-visible,
   .action:focus-visible,
   .facts a:focus-visible {
     outline: 1px solid var(--text-2);
@@ -519,6 +565,7 @@
   }
 
   @media (prefers-reduced-motion: reduce) {
+    .back,
     .action {
       transition: none;
     }
