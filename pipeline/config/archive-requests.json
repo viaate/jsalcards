@@ -1,1504 +1,1504 @@
 {
  "snapshots": [
   {
-   "timestamp": "20251128000419",
+   "timestamp": "20250207104053",
+   "url": "https://www.nbclosangeles.com/weather/school-closings/",
+   "station": "nbc-owned-knbc",
+   "why": "storm day 2025-02-07 (market score 0.20)"
+  },
+  {
+   "timestamp": "20250217122915",
    "url": "https://www.mcpsmt.org/",
    "station": "finalsite-missoula-mt",
-   "why": "storm day 2025-11-28 (market score 1.00)"
+   "why": "storm day 2025-02-17 (market score 1.00)"
   },
   {
-   "timestamp": "20221221230605",
-   "url": "https://www.mvsd21.org/",
-   "station": "apptegy-marsh-valley-id",
-   "why": "storm day 2022-12-22 (market score 0.50)"
+   "timestamp": "20210325051601",
+   "url": "https://www.hsd3.org/",
+   "station": "apptegy-hamilton-mt",
+   "why": "storm day 2021-03-25 (market score 0.25)"
   },
   {
-   "timestamp": "20221222000428",
-   "url": "https://www.mvsd21.org/",
-   "station": "apptegy-marsh-valley-id",
-   "why": "storm day 2022-12-22 (market score 0.50)"
+   "timestamp": "20260401184702",
+   "url": "https://www.ftsd.org/",
+   "station": "apptegy-frenchtown-mt",
+   "why": "storm day 2026-04-02 (market score 0.25)"
   },
   {
-   "timestamp": "20221221192039",
-   "url": "https://www.mvsd21.org/",
-   "station": "apptegy-marsh-valley-id",
-   "why": "storm day 2022-12-22 (market score 0.50)"
-  },
-  {
-   "timestamp": "20260422111818",
-   "url": "https://www.pcsd1.org/",
-   "station": "apptegy-park-1-wy",
-   "why": "storm day 2026-04-22 (market score 0.25)"
-  },
-  {
-   "timestamp": "20260517231851",
-   "url": "https://www.pcsd1.org/",
-   "station": "apptegy-park-1-wy",
-   "why": "storm day 2026-05-18 (market score 0.25)"
-  },
-  {
-   "timestamp": "20260518111804",
-   "url": "https://www.pcsd1.org/",
-   "station": "apptegy-park-1-wy",
-   "why": "storm day 2026-05-18 (market score 0.25)"
-  },
-  {
-   "timestamp": "20221105091059",
-   "url": "https://www.psjaisd.us/",
-   "station": "finalsite-psja-tx",
-   "why": "2022-11-05: one of its largest captures, as no read has seen its list yet"
-  },
-  {
-   "timestamp": "20251015232259",
-   "url": "https://www.rangers1.net/",
-   "station": "smartsites-lincoln-1-wy",
-   "why": "storm day 2025-10-16 (market score 0.25)"
-  },
-  {
-   "timestamp": "20260417090131",
-   "url": "https://www.landerschools.org/",
-   "station": "apptegy-fremont-1-wy",
-   "why": "storm day 2026-04-17 (market score 0.25)"
-  },
-  {
-   "timestamp": "20260417105149",
-   "url": "https://www.landerschools.org/",
-   "station": "apptegy-fremont-1-wy",
-   "why": "storm day 2026-04-17 (market score 0.25)"
-  },
-  {
-   "timestamp": "20200907014232",
-   "url": "http://www.townsend.k12.mt.us/",
-   "station": "apptegy-townsend-mt",
-   "why": "storm day 2020-09-07 (market score 0.25)"
-  },
-  {
-   "timestamp": "20220119011420",
-   "url": "https://www.townsend.k12.mt.us/",
-   "station": "apptegy-townsend-mt",
-   "why": "storm day 2022-01-19 (market score 0.25)"
-  },
-  {
-   "timestamp": "20200906215235",
-   "url": "http://www.townsend.k12.mt.us/",
-   "station": "apptegy-townsend-mt",
-   "why": "storm day 2020-09-07 (market score 0.25)"
-  },
-  {
-   "timestamp": "20251205024841",
-   "url": "https://www.juabsd.org/",
-   "station": "apptegy-juab-ut",
+   "timestamp": "20251205070807",
+   "url": "https://www.sd149.com/en-US",
+   "station": "schoolblocks-north-gem-id",
    "why": "storm day 2025-12-05 (market score 1.00)"
   },
   {
-   "timestamp": "20260216224602",
-   "url": "https://www.juabsd.org/",
-   "station": "apptegy-juab-ut",
-   "why": "storm day 2026-02-17 (market score 1.00)"
-  },
-  {
-   "timestamp": "20260219210001",
-   "url": "https://www.juabsd.org/",
-   "station": "apptegy-juab-ut",
-   "why": "storm day 2026-02-20 (market score 1.00)"
-  },
-  {
-   "timestamp": "20260402070247",
-   "url": "https://www.sd148.org/en-US",
-   "station": "schoolblocks-grace-id",
-   "why": "storm day 2026-04-02 (market score 0.25)"
-  },
-  {
-   "timestamp": "20260401205707",
-   "url": "https://www.sd148.org/en-US",
-   "station": "schoolblocks-grace-id",
-   "why": "storm day 2026-04-02 (market score 0.25)"
-  },
-  {
-   "timestamp": "20260403143914",
-   "url": "https://www.sd148.org/en-US",
-   "station": "schoolblocks-grace-id",
-   "why": "storm day 2026-04-03 (market score 0.25)"
-  },
-  {
-   "timestamp": "20230404103130",
-   "url": "https://www.wsh1.k12.wy.us/",
-   "station": "apptegy-washakie-1-wy",
-   "why": "storm day 2023-04-04 (market score 1.00)"
-  },
-  {
-   "timestamp": "20240114180559",
-   "url": "https://www.wsh1.k12.wy.us/",
-   "station": "apptegy-washakie-1-wy",
-   "why": "storm day 2024-01-15 (market score 0.50)"
-  },
-  {
-   "timestamp": "20240114223938",
-   "url": "https://www.wsh1.k12.wy.us/",
-   "station": "apptegy-washakie-1-wy",
-   "why": "storm day 2024-01-15 (market score 0.50)"
-  },
-  {
-   "timestamp": "20260416141627",
-   "url": "https://www.bighorn1.com/",
-   "station": "apptegy-big-horn-1-wy",
-   "why": "storm day 2026-04-16 (market score 0.25)"
-  },
-  {
-   "timestamp": "20260416021536",
-   "url": "https://www.bighorn1.com/",
-   "station": "apptegy-big-horn-1-wy",
-   "why": "storm day 2026-04-16 (market score 0.25)"
-  },
-  {
-   "timestamp": "20210204222316",
-   "url": "https://bighorn1.com/",
-   "station": "apptegy-big-horn-1-wy",
-   "why": "storm day 2021-02-05 (market score 0.25)"
-  },
-  {
-   "timestamp": "20260306120447",
-   "url": "https://www.wyomingindianschools.com/",
-   "station": "apptegy-fremont-14-wy",
-   "why": "storm day 2026-03-06 (market score 0.25)"
-  },
-  {
-   "timestamp": "20241223040926",
-   "url": "https://www.wyomingindianschools.com/",
-   "station": "apptegy-fremont-14-wy",
-   "why": "storm day 2024-12-23 (market score 0.25)"
-  },
-  {
-   "timestamp": "20250117152938",
-   "url": "https://www.wyomingindianschools.com",
-   "station": "apptegy-fremont-14-wy",
-   "why": "storm day 2025-01-17 (market score 0.25)"
-  },
-  {
-   "timestamp": "20231026094315",
-   "url": "https://www.arapahoeschools.com/",
-   "station": "smartsites-fremont-38-wy",
-   "why": "storm day 2023-10-26 (market score 1.00)"
-  },
-  {
-   "timestamp": "20230425094807",
-   "url": "https://www.arapahoeschools.com/",
-   "station": "smartsites-fremont-38-wy",
-   "why": "storm day 2023-04-25 (market score 1.00)"
-  },
-  {
-   "timestamp": "20230424214637",
-   "url": "https://www.arapahoeschools.com/",
-   "station": "smartsites-fremont-38-wy",
-   "why": "storm day 2023-04-25 (market score 1.00)"
-  },
-  {
-   "timestamp": "20250219110707",
-   "url": "https://www.hollandalesd.org/",
-   "station": "finalsite-hollandale-ms",
-   "why": "storm day 2025-02-19 (market score 0.25)"
-  },
-  {
-   "timestamp": "20230131124108",
-   "url": "https://www.hollandalesd.org/",
-   "station": "finalsite-hollandale-ms",
-   "why": "storm day 2023-01-31 (market score 0.25)"
-  },
-  {
-   "timestamp": "20251121055939",
-   "url": "https://www.tvusd.k12.ca.us/",
-   "station": "finalsite-temecula-valley-ca",
-   "why": "storm day 2025-11-21 (market score 1.00)"
-  },
-  {
-   "timestamp": "20251121123530",
-   "url": "https://www.tvusd.k12.ca.us/",
-   "station": "finalsite-temecula-valley-ca",
-   "why": "storm day 2025-11-21 (market score 1.00)"
-  },
-  {
-   "timestamp": "20250313131105",
-   "url": "https://www.tvusd.k12.ca.us/",
-   "station": "finalsite-temecula-valley-ca",
-   "why": "storm day 2025-03-13 (market score 1.00)"
-  },
-  {
-   "timestamp": "20260816154043",
-   "url": "https://www.tmisd.us/",
-   "station": "smartsites-tuloso-midway-tx",
-   "why": "2026-08-16: one of its largest captures, as no read has seen its list yet"
-  },
-  {
-   "timestamp": "20230305192807",
-   "url": "https://www.ocesd.net/",
-   "station": "apptegy-oroville-ca",
-   "why": "storm day 2023-03-06 (market score 1.00)"
-  },
-  {
-   "timestamp": "20230307205709",
-   "url": "https://www.ocesd.net/",
-   "station": "apptegy-oroville-ca",
-   "why": "storm day 2023-03-08 (market score 1.00)"
-  },
-  {
-   "timestamp": "20230308215449",
-   "url": "https://www.ocesd.net/",
-   "station": "apptegy-oroville-ca",
-   "why": "storm day 2023-03-09 (market score 1.00)"
-  },
-  {
-   "timestamp": "20200318132148",
-   "url": "https://www.alvordschools.org/",
-   "station": "smartsites-alvord-ca",
-   "why": "storm day 2020-03-18 (market score 0.25)"
-  },
-  {
-   "timestamp": "20231004004007",
-   "url": "https://www.londonisd.net/",
-   "station": "finalsite-london-tx",
-   "why": "2023-10-04: one of its largest captures, as no read has seen its list yet"
-  },
-  {
-   "timestamp": "20231210080248",
-   "url": "https://www.londonisd.net/",
-   "station": "finalsite-london-tx",
-   "why": "2023-12-10: one of its largest captures, as no read has seen its list yet"
-  },
-  {
-   "timestamp": "20170602050815",
-   "url": "http://www.mathisisd.org:80/",
-   "station": "finalsite-mathis-tx",
-   "why": "2017-06-02: one of its largest captures, as no read has seen its list yet"
-  },
-  {
-   "timestamp": "20240315075840",
-   "url": "https://www.murrieta.k12.ca.us//",
-   "station": "finalsite-murrieta-valley-ca",
-   "why": "storm day 2024-03-15 (market score 1.00)"
-  },
-  {
-   "timestamp": "20240206210856",
-   "url": "https://www.murrieta.k12.ca.us//",
-   "station": "finalsite-murrieta-valley-ca",
-   "why": "storm day 2024-02-07 (market score 1.00)"
-  },
-  {
-   "timestamp": "20240208101845",
-   "url": "https://www.murrieta.k12.ca.us//",
-   "station": "finalsite-murrieta-valley-ca",
-   "why": "storm day 2024-02-08 (market score 1.00)"
-  },
-  {
-   "timestamp": "20221223115001",
-   "url": "https://www.rivieraisd.us/",
-   "station": "apptegy-riviera-tx",
-   "why": "storm day 2022-12-23 (market score 0.50)"
-  },
-  {
-   "timestamp": "20221223054203",
-   "url": "https://www.rivieraisd.us/",
-   "station": "apptegy-riviera-tx",
-   "why": "storm day 2022-12-23 (market score 0.50)"
-  },
-  {
-   "timestamp": "20260126112433",
-   "url": "https://www.rivieraisd.us/",
-   "station": "apptegy-riviera-tx",
-   "why": "storm day 2026-01-26 (market score 0.50)"
-  },
-  {
-   "timestamp": "20250306105237",
-   "url": "https://www.ouhsd.org/",
-   "station": "finalsite-oroville-high-ca",
-   "why": "storm day 2025-03-06 (market score 0.25)"
-  },
-  {
-   "timestamp": "20241112164313",
-   "url": "https://www.ouhsd.org/",
-   "station": "finalsite-oroville-high-ca",
-   "why": "storm day 2024-11-13 (market score 0.25)"
-  },
-  {
-   "timestamp": "20260219211442",
-   "url": "https://www.cvusd.us/",
-   "station": "smartsites-coachella-valley-ca",
-   "why": "storm day 2026-02-20 (market score 0.50)"
-  },
-  {
-   "timestamp": "20260219151103",
-   "url": "https://www.cvusd.us/",
-   "station": "smartsites-coachella-valley-ca",
-   "why": "storm day 2026-02-19 (market score 0.50)"
-  },
-  {
-   "timestamp": "20260217031215",
-   "url": "https://www.cvusd.us/",
-   "station": "smartsites-coachella-valley-ca",
-   "why": "storm day 2026-02-17 (market score 0.50)"
-  },
-  {
-   "timestamp": "20260125231557",
-   "url": "https://www.paisd.net/",
-   "station": "smartsites-port-aransas-tx",
-   "why": "storm day 2026-01-26 (market score 0.50)"
-  },
-  {
-   "timestamp": "20260125160600",
-   "url": "https://www.paisd.net/",
-   "station": "smartsites-port-aransas-tx",
-   "why": "storm day 2026-01-26 (market score 0.50)"
-  },
-  {
-   "timestamp": "20260126053401",
-   "url": "https://www.paisd.net/",
-   "station": "smartsites-port-aransas-tx",
-   "why": "storm day 2026-01-26 (market score 0.50)"
-  },
-  {
-   "timestamp": "20250312014403",
-   "url": "https://premontisd.net/",
-   "station": "smartsites-premont-tx",
-   "why": "2025-03-12: one of its largest captures, as no read has seen its list yet"
-  },
-  {
-   "timestamp": "20260302073429",
-   "url": "https://www.premontisd.net/",
-   "station": "smartsites-premont-tx",
-   "why": "2026-03-02: one of its largest captures, as no read has seen its list yet"
-  },
-  {
-   "timestamp": "20240424195736",
-   "url": "https://www.premontisd.net/",
-   "station": "smartsites-premont-tx",
-   "why": "2024-04-25: one of its largest captures, as no read has seen its list yet"
-  },
-  {
-   "timestamp": "20250224033115",
-   "url": "https://www.pi-isd.net/",
-   "station": "apptegy-point-isabel-tx",
-   "why": "2025-02-24: one of its largest captures, as no read has seen its list yet"
-  },
-  {
-   "timestamp": "20260610205833",
-   "url": "https://www.pi-isd.net/",
-   "station": "apptegy-point-isabel-tx",
-   "why": "2026-06-11: one of its largest captures, as no read has seen its list yet"
-  },
-  {
-   "timestamp": "20260422032843",
-   "url": "https://www.durhamunified.org/",
-   "station": "apptegy-durham-ca",
-   "why": "storm day 2026-04-22 (market score 1.00)"
-  },
-  {
-   "timestamp": "20260422054008",
-   "url": "https://www.durhamunified.org/",
-   "station": "apptegy-durham-ca",
-   "why": "storm day 2026-04-22 (market score 1.00)"
-  },
-  {
-   "timestamp": "20260422152311",
-   "url": "https://www.durhamunified.org/",
-   "station": "apptegy-durham-ca",
-   "why": "storm day 2026-04-22 (market score 1.00)"
-  },
-  {
-   "timestamp": "20250323050023",
-   "url": "https://www.rhisd.net/",
-   "station": "apptegy-rio-hondo-tx",
-   "why": "2025-03-23: one of its largest captures, as no read has seen its list yet"
-  },
-  {
-   "timestamp": "20250226172448",
-   "url": "https://www.rhisd.net/",
-   "station": "apptegy-rio-hondo-tx",
-   "why": "2025-02-27: one of its largest captures, as no read has seen its list yet"
-  },
-  {
-   "timestamp": "20260618170554",
-   "url": "https://www.rhisd.net/",
-   "station": "apptegy-rio-hondo-tx",
-   "why": "2026-06-19: one of its largest captures, as no read has seen its list yet"
-  },
-  {
-   "timestamp": "20230330133947",
-   "url": "https://www.beaumontusd.us/",
-   "station": "edlio-beaumont-ca",
-   "why": "storm day 2023-03-30 (market score 1.00)"
-  },
-  {
-   "timestamp": "20230329191631",
-   "url": "https://www.beaumontusd.us/",
-   "station": "edlio-beaumont-ca",
-   "why": "storm day 2023-03-30 (market score 1.00)"
-  },
-  {
-   "timestamp": "20230330023028",
-   "url": "https://www.beaumontusd.us/",
-   "station": "edlio-beaumont-ca",
-   "why": "storm day 2023-03-30 (market score 1.00)"
-  },
-  {
-   "timestamp": "20210514232038",
-   "url": "https://www.sanjacinto.k12.ca.us/",
-   "station": "edlio-san-jacinto-ca",
-   "why": "2021-05-15: one of its largest captures, as no read has seen its list yet"
-  },
-  {
-   "timestamp": "20210624154303",
-   "url": "https://www.sanjacinto.k12.ca.us/",
-   "station": "edlio-san-jacinto-ca",
-   "why": "2021-06-24: one of its largest captures, as no read has seen its list yet"
-  },
-  {
-   "timestamp": "20210708135045",
-   "url": "https://www.sanjacinto.k12.ca.us/",
-   "station": "edlio-san-jacinto-ca",
-   "why": "2021-07-08: one of its largest captures, as no read has seen its list yet"
-  },
-  {
-   "timestamp": "20240327220101",
-   "url": "https://www.wsh2.k12.wy.us/",
-   "station": "edlio-washakie-2-wy",
-   "why": "2024-03-28: one of its largest captures, as no read has seen its list yet"
-  },
-  {
-   "timestamp": "20240920205651",
-   "url": "https://www.wsh2.k12.wy.us/",
-   "station": "edlio-washakie-2-wy",
-   "why": "2024-09-21: one of its largest captures, as no read has seen its list yet"
-  },
-  {
-   "timestamp": "20240724105002",
-   "url": "https://www.wsh2.k12.wy.us/",
-   "station": "edlio-washakie-2-wy",
-   "why": "2024-07-24: one of its largest captures, as no read has seen its list yet"
-  },
-  {
-   "timestamp": "20250920184958",
-   "url": "https://www.pettusisd.org/",
-   "station": "smartsites-pettus-tx",
-   "why": "2025-09-21: one of its largest captures, as no read has seen its list yet"
-  },
-  {
-   "timestamp": "20260530014629",
-   "url": "https://www.pettusisd.org/",
-   "station": "smartsites-pettus-tx",
-   "why": "2026-05-30: one of its largest captures, as no read has seen its list yet"
-  },
-  {
-   "timestamp": "20251006142243",
-   "url": "https://www.pettusisd.org/",
-   "station": "smartsites-pettus-tx",
-   "why": "2025-10-06: one of its largest captures, as no read has seen its list yet"
-  },
-  {
-   "timestamp": "20250323073709",
-   "url": "https://www.atisd.net/",
-   "station": "apptegy-austwell-tivoli-tx",
-   "why": "2025-03-23: one of its largest captures, as no read has seen its list yet"
-  },
-  {
-   "timestamp": "20250323063438",
-   "url": "https://www.atisd.net/",
-   "station": "apptegy-austwell-tivoli-tx",
-   "why": "2025-03-23: one of its largest captures, as no read has seen its list yet"
-  },
-  {
-   "timestamp": "20250224042903",
-   "url": "https://www.atisd.net/",
-   "station": "apptegy-austwell-tivoli-tx",
-   "why": "2025-02-24: one of its largest captures, as no read has seen its list yet"
-  },
-  {
-   "timestamp": "20260127142850",
-   "url": "https://www.brewtoncityschools.org/",
-   "station": "apptegy-brewton-al",
-   "why": "storm day 2026-01-27 (market score 0.50)"
-  },
-  {
-   "timestamp": "20220121023410",
-   "url": "https://www.brewtoncityschools.org/",
-   "station": "apptegy-brewton-al",
-   "why": "storm day 2022-01-21 (market score 0.25)"
-  },
-  {
-   "timestamp": "20220121122345",
-   "url": "https://www.brewtoncityschools.org/",
-   "station": "apptegy-brewton-al",
-   "why": "storm day 2022-01-21 (market score 0.25)"
-  },
-  {
-   "timestamp": "20260614062121",
-   "url": "https://www.sdisd.us/",
-   "station": "apptegy-san-diego-tx",
-   "why": "2026-06-14: one of its largest captures, as no read has seen its list yet"
-  },
-  {
-   "timestamp": "20260211083434",
-   "url": "https://www.sdisd.us/",
-   "station": "apptegy-san-diego-tx",
-   "why": "2026-02-11: one of its largest captures, as no read has seen its list yet"
-  },
-  {
-   "timestamp": "20250411041109",
-   "url": "https://www.trisd.org/",
-   "station": "apptegy-three-rivers-tx",
-   "why": "2025-04-11: one of its largest captures, as no read has seen its list yet"
-  },
-  {
-   "timestamp": "20250409191643",
-   "url": "https://www.trisd.org/",
-   "station": "apptegy-three-rivers-tx",
-   "why": "2025-04-10: one of its largest captures, as no read has seen its list yet"
-  },
-  {
-   "timestamp": "20250320000135",
-   "url": "https://www.trisd.org/",
-   "station": "apptegy-three-rivers-tx",
-   "why": "2025-03-20: one of its largest captures, as no read has seen its list yet"
-  },
-  {
-   "timestamp": "20250812033710",
-   "url": "https://www.jhcisdpk12.org/",
-   "station": "edlio-jim-hogg-county-tx",
-   "why": "2025-08-12: one of its largest captures, as no read has seen its list yet"
-  },
-  {
-   "timestamp": "20250808172457",
-   "url": "https://www.jhcisdpk12.org",
-   "station": "edlio-jim-hogg-county-tx",
-   "why": "2025-08-09: one of its largest captures, as no read has seen its list yet"
-  },
-  {
-   "timestamp": "20250328083803",
-   "url": "https://www.clintweb.net/",
-   "station": "finalsite-clint-tx",
-   "why": "2025-03-28: one of its largest captures, as no read has seen its list yet"
-  },
-  {
-   "timestamp": "20250307183450",
-   "url": "https://www.clintweb.net/",
-   "station": "finalsite-clint-tx",
-   "why": "2025-03-08: one of its largest captures, as no read has seen its list yet"
-  },
-  {
-   "timestamp": "20171022004906",
-   "url": "http://clintweb.net:80/",
-   "station": "finalsite-clint-tx",
-   "why": "2017-10-22: one of its largest captures, as no read has seen its list yet"
-  },
-  {
-   "timestamp": "20260125200904",
-   "url": "https://www.wisd.net/",
-   "station": "finalsite-woodsboro-tx",
-   "why": "storm day 2026-01-26 (market score 0.50)"
-  },
-  {
-   "timestamp": "20180115223609",
-   "url": "http://www.wisd.net:80/",
-   "station": "finalsite-woodsboro-tx",
-   "why": "storm day 2018-01-16 (market score 0.25)"
-  },
-  {
-   "timestamp": "20251011002247",
-   "url": "https://www.lyfordcisd.net/",
-   "station": "apptegy-lyford-tx",
-   "why": "2025-10-11: one of its largest captures, as no read has seen its list yet"
-  },
-  {
-   "timestamp": "20260710134236",
-   "url": "https://www.lyfordcisd.net/",
-   "station": "apptegy-lyford-tx",
-   "why": "2026-07-10: one of its largest captures, as no read has seen its list yet"
-  },
-  {
-   "timestamp": "20260617063846",
-   "url": "https://www.lyfordcisd.net/",
-   "station": "apptegy-lyford-tx",
-   "why": "2026-06-17: one of its largest captures, as no read has seen its list yet"
-  },
-  {
-   "timestamp": "20220204081152",
-   "url": "https://www.sgisd.net/",
-   "station": "edlio-santa-gertrudis-tx",
-   "why": "storm day 2022-02-04 (market score 0.50)"
-  },
-  {
-   "timestamp": "20221223052322",
-   "url": "https://www.adisd.net/",
-   "station": "finalsite-agua-dulce-tx",
-   "why": "storm day 2022-12-23 (market score 0.50)"
-  },
-  {
-   "timestamp": "20221223115024",
-   "url": "https://www.adisd.net/",
-   "station": "finalsite-agua-dulce-tx",
-   "why": "storm day 2022-12-23 (market score 0.50)"
-  },
-  {
-   "timestamp": "20221222210601",
-   "url": "https://www.adisd.net/",
-   "station": "finalsite-agua-dulce-tx",
-   "why": "storm day 2022-12-23 (market score 0.50)"
-  },
-  {
-   "timestamp": "20190722102742",
-   "url": "https://www.ricardoisd.us/",
-   "station": "smartsites-ricardo-tx",
-   "why": "2019-07-22: one of its largest captures, as no read has seen its list yet"
-  },
-  {
-   "timestamp": "20170801234626",
-   "url": "http://www.ricardoisd.us:80/",
-   "station": "smartsites-ricardo-tx",
-   "why": "2017-08-02: one of its largest captures, as no read has seen its list yet"
-  },
-  {
-   "timestamp": "20170504111849",
-   "url": "http://www.ricardoisd.us:80/",
-   "station": "smartsites-ricardo-tx",
-   "why": "2017-05-04: one of its largest captures, as no read has seen its list yet"
-  },
-  {
-   "timestamp": "20260116145017",
-   "url": "https://www.spisd.org/",
-   "station": "smartsites-san-perlita-tx",
-   "why": "2026-01-16: one of its largest captures, as no read has seen its list yet"
-  },
-  {
-   "timestamp": "20260122095204",
-   "url": "https://www.spisd.org/",
-   "station": "smartsites-san-perlita-tx",
-   "why": "2026-01-22: one of its largest captures, as no read has seen its list yet"
-  },
-  {
-   "timestamp": "20260210121045",
-   "url": "https://www.spisd.org/",
-   "station": "smartsites-san-perlita-tx",
-   "why": "2026-02-10: one of its largest captures, as no read has seen its list yet"
-  },
-  {
-   "timestamp": "20250613034337",
-   "url": "https://www.hmps.net/",
-   "station": "apptegy-horizon-montessori-tx",
-   "why": "2025-06-13: one of its largest captures, as no read has seen its list yet"
-  },
-  {
-   "timestamp": "20241127091215",
-   "url": "https://www.hmps.net/",
-   "station": "apptegy-horizon-montessori-tx",
-   "why": "2024-11-27: one of its largest captures, as no read has seen its list yet"
-  },
-  {
-   "timestamp": "20260617192543",
-   "url": "https://www.hmps.net/",
-   "station": "apptegy-horizon-montessori-tx",
-   "why": "2026-06-18: one of its largest captures, as no read has seen its list yet"
-  },
-  {
-   "timestamp": "20220809231636",
-   "url": "https://www.srtx.org/",
-   "station": "finalsite-santa-rosa-tx",
-   "why": "2022-08-10: one of its largest captures, as no read has seen its list yet"
-  },
-  {
-   "timestamp": "20220629123200",
-   "url": "https://www.srtx.org/",
-   "station": "finalsite-santa-rosa-tx",
-   "why": "2022-06-29: one of its largest captures, as no read has seen its list yet"
-  },
-  {
-   "timestamp": "20211203185511",
-   "url": "https://www.srtx.org/",
-   "station": "finalsite-santa-rosa-tx",
-   "why": "2021-12-04: one of its largest captures, as no read has seen its list yet"
-  },
-  {
-   "timestamp": "20260126154406",
-   "url": "https://www.lavillaisd.org/",
-   "station": "apptegy-la-villa-tx",
-   "why": "storm day 2026-01-26 (market score 0.50)"
-  },
-  {
-   "timestamp": "20260813105311",
-   "url": "https://www.montealtoisd.org/",
-   "station": "apptegy-monte-alto-tx",
-   "why": "2026-08-13: one of its largest captures, as no read has seen its list yet"
-  },
-  {
-   "timestamp": "20250221205135",
-   "url": "https://www.montealtoisd.org/",
-   "station": "apptegy-monte-alto-tx",
-   "why": "2025-02-22: one of its largest captures, as no read has seen its list yet"
-  },
-  {
-   "timestamp": "20250920164445",
-   "url": "https://www.montealtoisd.org/",
-   "station": "apptegy-monte-alto-tx",
-   "why": "2025-09-21: one of its largest captures, as no read has seen its list yet"
-  },
-  {
-   "timestamp": "20260626232333",
-   "url": "https://www.promesapublicschools.org/",
-   "station": "edlio-valere-tx",
-   "why": "2026-06-27: one of its largest captures, as no read has seen its list yet"
-  },
-  {
-   "timestamp": "20241108163332",
-   "url": "https://www.promesapublicschools.org/",
-   "station": "edlio-valere-tx",
-   "why": "2024-11-09: one of its largest captures, as no read has seen its list yet"
-  },
-  {
-   "timestamp": "20260421233121",
-   "url": "https://www.promesapublicschools.org/",
-   "station": "edlio-valere-tx",
-   "why": "2026-04-22: one of its largest captures, as no read has seen its list yet"
-  },
-  {
-   "timestamp": "20180828090557",
-   "url": "http://www.benavidesisd.net:80/",
-   "station": "finalsite-benavides-tx",
-   "why": "2018-08-28: one of its largest captures, as no read has seen its list yet"
-  },
-  {
-   "timestamp": "20180722152728",
-   "url": "http://www.benavidesisd.net/",
-   "station": "finalsite-benavides-tx",
-   "why": "2018-07-22: one of its largest captures, as no read has seen its list yet"
-  },
-  {
-   "timestamp": "20180118010936",
-   "url": "http://www.benavidesisd.net:80/",
-   "station": "finalsite-benavides-tx",
-   "why": "2018-01-18: one of its largest captures, as no read has seen its list yet"
-  },
-  {
-   "timestamp": "20230127131204",
-   "url": "https://www.canutillo-isd.org/",
-   "station": "finalsite-canutillo-tx",
-   "why": "2023-01-27: one of its largest captures, as no read has seen its list yet"
-  },
-  {
-   "timestamp": "20221210214534",
-   "url": "https://www.canutillo-isd.org/",
-   "station": "finalsite-canutillo-tx",
-   "why": "2022-12-11: one of its largest captures, as no read has seen its list yet"
-  },
-  {
-   "timestamp": "20221210055121",
-   "url": "https://www.canutillo-isd.org/",
-   "station": "finalsite-canutillo-tx",
-   "why": "2022-12-10: one of its largest captures, as no read has seen its list yet"
-  },
-  {
-   "timestamp": "20251124165901",
-   "url": "https://www.webbcisd.org/",
-   "station": "smartsites-webb-tx",
-   "why": "2025-11-25: one of its largest captures, as no read has seen its list yet"
-  },
-  {
-   "timestamp": "20260207074355",
-   "url": "https://www.webbcisd.org/",
-   "station": "smartsites-webb-tx",
-   "why": "2026-02-07: one of its largest captures, as no read has seen its list yet"
-  },
-  {
-   "timestamp": "20260210201021",
-   "url": "https://www.webbcisd.org/",
-   "station": "smartsites-webb-tx",
-   "why": "2026-02-11: one of its largest captures, as no read has seen its list yet"
-  },
-  {
-   "timestamp": "20260611132245",
-   "url": "https://www.lasaraisd.net/",
-   "station": "apptegy-lasara-tx",
-   "why": "2026-06-11: one of its largest captures, as no read has seen its list yet"
-  },
-  {
-   "timestamp": "20260513005054",
-   "url": "https://www.lasaraisd.net/",
-   "station": "apptegy-lasara-tx",
-   "why": "2026-05-13: one of its largest captures, as no read has seen its list yet"
-  },
-  {
-   "timestamp": "20260420185913",
-   "url": "https://www.lasaraisd.net/",
-   "station": "apptegy-lasara-tx",
-   "why": "2026-04-21: one of its largest captures, as no read has seen its list yet"
-  },
-  {
-   "timestamp": "20231209174725",
-   "url": "https://www.fpcvpaa.com/",
-   "station": "finalsite-fpc-vpaa-al",
-   "why": "2023-12-10: an unread capture of an earlier address of its list, the last left (read so that every capture of it is read)"
-  },
-  {
-   "timestamp": "20240527120506",
-   "url": "https://www.fpcvpaa.com/",
-   "station": "finalsite-fpc-vpaa-al",
-   "why": "2024-05-27: an unread capture of an earlier address of its list, the last left (read so that every capture of it is read)"
-  },
-  {
-   "timestamp": "20240812065200",
-   "url": "https://www.fpcvpaa.com/",
-   "station": "finalsite-fpc-vpaa-al",
-   "why": "2024-08-12: an unread capture of an earlier address of its list, the last left (read so that every capture of it is read)"
-  },
-  {
-   "timestamp": "20260126231136",
-   "url": "https://www.nurseryisd.org/",
-   "station": "finalsite-nursery-tx",
-   "why": "storm day 2026-01-27 (market score 0.50)"
-  },
-  {
-   "timestamp": "20260127111332",
-   "url": "https://www.nurseryisd.org/",
-   "station": "finalsite-nursery-tx",
-   "why": "storm day 2026-01-27 (market score 0.50)"
-  },
-  {
-   "timestamp": "20260126042942",
-   "url": "https://www.industrialisd.org/en-US",
-   "station": "schoolblocks-industrial-tx",
-   "why": "storm day 2026-01-26 (market score 0.50)"
-  },
-  {
-   "timestamp": "20260127162439",
-   "url": "https://www.industrialisd.org/en-US",
-   "station": "schoolblocks-industrial-tx",
-   "why": "2026-01-28: a day a proven list sharing its counties held a row"
-  },
-  {
-   "timestamp": "20260128042401",
-   "url": "https://www.industrialisd.org/en-US",
-   "station": "schoolblocks-industrial-tx",
-   "why": "2026-01-28: a day a proven list sharing its counties held a row"
-  },
-  {
-   "timestamp": "20251229092805",
-   "url": "https://www.ccaisd.net/",
-   "station": "smartsites-culberson-allamoore-tx",
-   "why": "storm day 2025-12-29 (market score 1.00)"
-  },
-  {
-   "timestamp": "20250220094642",
-   "url": "https://www.ccaisd.net/",
-   "station": "smartsites-culberson-allamoore-tx",
-   "why": "storm day 2025-02-20 (market score 0.50)"
-  },
-  {
-   "timestamp": "20260126123020",
-   "url": "https://www.ccaisd.net/",
-   "station": "smartsites-culberson-allamoore-tx",
-   "why": "storm day 2026-01-26 (market score 0.50)"
-  },
-  {
-   "timestamp": "20250906005457",
-   "url": "https://www.hustonacademy.com/",
-   "station": "apptegy-huston-academy-tx",
-   "why": "2025-09-06: one of its largest captures, as no read has seen its list yet"
-  },
-  {
-   "timestamp": "20260512002217",
-   "url": "https://www.hustonacademy.com/",
-   "station": "apptegy-huston-academy-tx",
-   "why": "2026-05-12: one of its largest captures, as no read has seen its list yet"
-  },
-  {
-   "timestamp": "20260208171934",
-   "url": "https://www.hustonacademy.com/",
-   "station": "apptegy-huston-academy-tx",
-   "why": "2026-02-09: one of its largest captures, as no read has seen its list yet"
-  },
-  {
-   "timestamp": "20250218172508",
-   "url": "https://www.rmaschools.org:443/",
-   "station": "finalsite-rma-tx",
-   "why": "storm day 2025-02-19 (market score 0.38)"
-  },
-  {
-   "timestamp": "20230130064331",
-   "url": "https://www.rmaschools.org/",
-   "station": "finalsite-rma-tx",
-   "why": "storm day 2023-01-30 (market score 0.34)"
-  },
-  {
-   "timestamp": "20220311081012",
-   "url": "https://www.rmaschools.org/",
-   "station": "finalsite-rma-tx",
-   "why": "storm day 2022-03-11 (market score 0.09)"
-  },
-  {
-   "timestamp": "20240826020141",
-   "url": "https://www.ryss.org/",
-   "station": "finalsite-ryss-tx",
-   "why": "2024-08-26: one of its largest captures, as no read has seen its list yet"
-  },
-  {
-   "timestamp": "20240715165954",
-   "url": "https://www.ryss.org/",
-   "station": "finalsite-ryss-tx",
-   "why": "2024-07-16: one of its largest captures, as no read has seen its list yet"
-  },
-  {
-   "timestamp": "20240416171115",
-   "url": "https://www.ryss.org/",
-   "station": "finalsite-ryss-tx",
-   "why": "2024-04-17: one of its largest captures, as no read has seen its list yet"
-  },
-  {
-   "timestamp": "20251129142344",
-   "url": "https://www.pawneeisd.net/",
-   "station": "smartsites-pawnee-tx",
-   "why": "2025-11-29: one of its largest captures, as no read has seen its list yet"
-  },
-  {
-   "timestamp": "20250707215247",
-   "url": "https://www.pawneeisd.net/",
-   "station": "smartsites-pawnee-tx",
-   "why": "2025-07-08: one of its largest captures, as no read has seen its list yet"
-  },
-  {
-   "timestamp": "20251018093810",
-   "url": "https://www.pawneeisd.net/",
-   "station": "smartsites-pawnee-tx",
-   "why": "2025-10-18: one of its largest captures, as no read has seen its list yet"
-  },
-  {
-   "timestamp": "20240224022458",
-   "url": "https://www.seisd.net/",
-   "station": "finalsite-san-elizario-tx",
-   "why": "2024-02-24: one of its largest captures, as no read has seen its list yet"
-  },
-  {
-   "timestamp": "20240414080054",
-   "url": "https://www.seisd.net/",
-   "station": "finalsite-san-elizario-tx",
-   "why": "2024-04-14: one of its largest captures, as no read has seen its list yet"
-  },
-  {
-   "timestamp": "20240522051347",
-   "url": "https://www.seisd.net/",
-   "station": "finalsite-san-elizario-tx",
-   "why": "2024-05-22: one of its largest captures, as no read has seen its list yet"
-  },
-  {
-   "timestamp": "20240225021027",
-   "url": "https://www.fabensisd.net/",
-   "station": "finalsite-fabens-tx",
-   "why": "2024-02-25: one of its largest captures, as no read has seen its list yet"
-  },
-  {
-   "timestamp": "20211209031255",
-   "url": "https://www.fabensisd.net/",
-   "station": "finalsite-fabens-tx",
-   "why": "2021-12-09: one of its largest captures, as no read has seen its list yet"
-  },
-  {
-   "timestamp": "20240225203615",
-   "url": "https://www.fabensisd.net/",
-   "station": "finalsite-fabens-tx",
-   "why": "2024-02-26: one of its largest captures, as no read has seen its list yet"
-  },
-  {
-   "timestamp": "20221124223944",
-   "url": "https://www.fhisd.net/",
-   "station": "finalsite-ft-hancock-tx",
-   "why": "storm day 2022-11-25 (market score 0.25)"
-  },
-  {
-   "timestamp": "20221125103924",
-   "url": "https://www.fhisd.net/",
-   "station": "finalsite-ft-hancock-tx",
-   "why": "storm day 2022-11-25 (market score 0.25)"
-  },
-  {
-   "timestamp": "20240526122134",
-   "url": "https://www.ramirezcsd.net/",
-   "station": "finalsite-ramirez-tx",
-   "why": "2024-05-26: one of its largest captures, as no read has seen its list yet"
-  },
-  {
-   "timestamp": "20240418014426",
-   "url": "https://www.ramirezcsd.net/",
-   "station": "finalsite-ramirez-tx",
-   "why": "2024-04-18: one of its largest captures, as no read has seen its list yet"
-  },
-  {
-   "timestamp": "20231205213028",
-   "url": "https://www.ramirezcsd.net/",
-   "station": "finalsite-ramirez-tx",
-   "why": "2023-12-06: one of its largest captures, as no read has seen its list yet"
-  },
-  {
-   "timestamp": "20260126112946",
-   "url": "https://www.saritaschool.net/",
-   "station": "smartsites-kenedy-county-tx",
-   "why": "storm day 2026-01-26 (market score 0.50)"
-  },
-  {
-   "timestamp": "20221223085437",
-   "url": "https://www.saritaschool.net/",
-   "station": "smartsites-kenedy-county-tx",
-   "why": "storm day 2022-12-23 (market score 0.50)"
-  },
-  {
-   "timestamp": "20221223063545",
-   "url": "https://www.saritaschool.net/",
-   "station": "smartsites-kenedy-county-tx",
-   "why": "storm day 2022-12-23 (market score 0.50)"
-  },
-  {
-   "timestamp": "20260315201141",
-   "url": "https://www.tisd.us/",
-   "station": "apptegy-tornillo-tx",
-   "why": "2026-03-16: one of its largest captures, as no read has seen its list yet"
-  },
-  {
-   "timestamp": "20260121032517",
-   "url": "https://www.tisd.us/",
-   "station": "apptegy-tornillo-tx",
-   "why": "2026-01-21: one of its largest captures, as no read has seen its list yet"
-  },
-  {
-   "timestamp": "20260417181221",
-   "url": "https://www.tisd.us/",
-   "station": "apptegy-tornillo-tx",
-   "why": "2026-04-18: one of its largest captures, as no read has seen its list yet"
-  },
-  {
-   "timestamp": "20250524165520",
-   "url": "https://www.elacharterschool.com/",
-   "station": "finalsite-ela-tx",
-   "why": "2025-05-25: one of its largest captures, as no read has seen its list yet"
-  },
-  {
-   "timestamp": "20250113211127",
-   "url": "https://www.elacharterschool.com/",
-   "station": "finalsite-ela-tx",
-   "why": "2025-01-14: one of its largest captures, as no read has seen its list yet"
-  },
-  {
-   "timestamp": "20210621050535",
-   "url": "https://www.elacharterschool.com/",
-   "station": "finalsite-ela-tx",
-   "why": "2021-06-21: one of its largest captures, as no read has seen its list yet"
-  },
-  {
-   "timestamp": "20250713105420",
-   "url": "https://www.dellcityisd.net/",
-   "station": "apptegy-dell-city-tx",
-   "why": "2025-07-13: one of its largest captures, as no read has seen its list yet"
-  },
-  {
-   "timestamp": "20260617065205",
-   "url": "https://www.dellcityisd.net/",
-   "station": "apptegy-dell-city-tx",
-   "why": "2026-06-17: one of its largest captures, as no read has seen its list yet"
-  },
-  {
-   "timestamp": "20250127060028",
-   "url": "https://www.dellcityisd.net/",
-   "station": "apptegy-dell-city-tx",
-   "why": "2025-01-27: one of its largest captures, as no read has seen its list yet"
-  },
-  {
-   "timestamp": "20231209185233",
-   "url": "https://www.sierrablancaisd.net/",
-   "station": "finalsite-sierra-blanca-tx",
-   "why": "2023-12-10: one of its largest captures, as no read has seen its list yet"
-  },
-  {
-   "timestamp": "20231014221642",
-   "url": "https://www.sierrablancaisd.net/",
-   "station": "finalsite-sierra-blanca-tx",
-   "why": "2023-10-15: one of its largest captures, as no read has seen its list yet"
-  },
-  {
-   "timestamp": "20230207022917",
-   "url": "https://www.sierrablancaisd.net/",
-   "station": "finalsite-sierra-blanca-tx",
-   "why": "2023-02-07: one of its largest captures, as no read has seen its list yet"
-  },
-  {
-   "timestamp": "20230131132312",
+   "timestamp": "20221230110500",
    "url": "https://www.mvsd21.org/",
    "station": "apptegy-marsh-valley-id",
-   "why": "storm day 2023-01-31 (market score 0.50)"
+   "why": "storm day 2022-12-30 (market score 0.25)"
   },
   {
-   "timestamp": "20221222012230",
-   "url": "https://www.mvsd21.org/",
-   "station": "apptegy-marsh-valley-id",
-   "why": "storm day 2022-12-22 (market score 0.50)"
-  },
-  {
-   "timestamp": "20250119190512",
-   "url": "https://www.mvsd21.org/",
-   "station": "apptegy-marsh-valley-id",
-   "why": "storm day 2025-01-20 (market score 0.50)"
-  },
-  {
-   "timestamp": "20250121113136",
-   "url": "https://www.mvsd21.org/",
-   "station": "apptegy-marsh-valley-id",
-   "why": "storm day 2025-01-21 (market score 0.50)"
-  },
-  {
-   "timestamp": "20250120112453",
-   "url": "https://www.mvsd21.org/",
-   "station": "apptegy-marsh-valley-id",
-   "why": "storm day 2025-01-20 (market score 0.50)"
-  },
-  {
-   "timestamp": "20250119233113",
-   "url": "https://www.mvsd21.org/",
-   "station": "apptegy-marsh-valley-id",
-   "why": "storm day 2025-01-20 (market score 0.50)"
-  },
-  {
-   "timestamp": "20250121001254",
-   "url": "https://www.mvsd21.org/",
-   "station": "apptegy-marsh-valley-id",
-   "why": "storm day 2025-01-21 (market score 0.50)"
-  },
-  {
-   "timestamp": "20230110230453",
-   "url": "https://www.mvsd21.org/",
-   "station": "apptegy-marsh-valley-id",
-   "why": "storm day 2023-01-11 (market score 0.25)"
-  },
-  {
-   "timestamp": "20231123110753",
-   "url": "https://www.mvsd21.org/",
-   "station": "apptegy-marsh-valley-id",
-   "why": "storm day 2023-11-23 (market score 0.25)"
-  },
-  {
-   "timestamp": "20230308120427",
-   "url": "https://www.mvsd21.org/",
-   "station": "apptegy-marsh-valley-id",
-   "why": "storm day 2023-03-08 (market score 0.25)"
-  },
-  {
-   "timestamp": "20231124000926",
-   "url": "https://www.mvsd21.org/",
-   "station": "apptegy-marsh-valley-id",
-   "why": "storm day 2023-11-24 (market score 0.25)"
-  },
-  {
-   "timestamp": "20230109110446",
-   "url": "https://www.mvsd21.org/",
-   "station": "apptegy-marsh-valley-id",
-   "why": "storm day 2023-01-09 (market score 0.25)"
-  },
-  {
-   "timestamp": "20230308051708",
-   "url": "https://www.mvsd21.org/",
-   "station": "apptegy-marsh-valley-id",
-   "why": "storm day 2023-03-08 (market score 0.25)"
-  },
-  {
-   "timestamp": "20230308134028",
-   "url": "https://www.mvsd21.org/",
-   "station": "apptegy-marsh-valley-id",
-   "why": "storm day 2023-03-08 (market score 0.25)"
-  },
-  {
-   "timestamp": "20240215105840",
-   "url": "https://www.mvsd21.org/",
-   "station": "apptegy-marsh-valley-id",
-   "why": "storm day 2024-02-15 (market score 0.25)"
-  },
-  {
-   "timestamp": "20240214231028",
-   "url": "https://www.mvsd21.org/",
-   "station": "apptegy-marsh-valley-id",
-   "why": "storm day 2024-02-15 (market score 0.25)"
-  },
-  {
-   "timestamp": "20240216125836",
-   "url": "https://www.mvsd21.org/",
-   "station": "apptegy-marsh-valley-id",
-   "why": "storm day 2024-02-16 (market score 0.25)"
-  },
-  {
-   "timestamp": "20240215003533",
-   "url": "https://www.mvsd21.org/",
-   "station": "apptegy-marsh-valley-id",
-   "why": "storm day 2024-02-15 (market score 0.25)"
-  },
-  {
-   "timestamp": "20240215040850",
-   "url": "https://www.mvsd21.org/",
-   "station": "apptegy-marsh-valley-id",
-   "why": "storm day 2024-02-15 (market score 0.25)"
-  },
-  {
-   "timestamp": "20240215225809",
-   "url": "https://www.mvsd21.org/",
-   "station": "apptegy-marsh-valley-id",
-   "why": "storm day 2024-02-16 (market score 0.25)"
-  },
-  {
-   "timestamp": "20240118105758",
-   "url": "https://www.mvsd21.org/",
-   "station": "apptegy-marsh-valley-id",
-   "why": "storm day 2024-01-18 (market score 0.25)"
-  },
-  {
-   "timestamp": "20240118124354",
-   "url": "https://www.mvsd21.org/",
-   "station": "apptegy-marsh-valley-id",
-   "why": "storm day 2024-01-18 (market score 0.25)"
-  },
-  {
-   "timestamp": "20230420230452",
-   "url": "https://www.mvsd21.org/",
-   "station": "apptegy-marsh-valley-id",
-   "why": "storm day 2023-04-21 (market score 0.25)"
-  },
-  {
-   "timestamp": "20240116192900",
-   "url": "https://www.mvsd21.org/",
-   "station": "apptegy-marsh-valley-id",
-   "why": "storm day 2024-01-17 (market score 0.25)"
-  },
-  {
-   "timestamp": "20240117225839",
-   "url": "https://www.mvsd21.org/",
-   "station": "apptegy-marsh-valley-id",
-   "why": "storm day 2024-01-18 (market score 0.25)"
-  },
-  {
-   "timestamp": "20240118112820",
-   "url": "https://www.mvsd21.org/",
-   "station": "apptegy-marsh-valley-id",
-   "why": "storm day 2024-01-18 (market score 0.25)"
-  },
-  {
-   "timestamp": "20230421110509",
-   "url": "https://www.mvsd21.org/",
-   "station": "apptegy-marsh-valley-id",
-   "why": "storm day 2023-04-21 (market score 0.25)"
-  },
-  {
-   "timestamp": "20240306105828",
-   "url": "https://www.mvsd21.org/",
-   "station": "apptegy-marsh-valley-id",
-   "why": "storm day 2024-03-06 (market score 0.25)"
-  },
-  {
-   "timestamp": "20231124105918",
-   "url": "https://www.mvsd21.org/",
-   "station": "apptegy-marsh-valley-id",
-   "why": "storm day 2023-11-24 (market score 0.25)"
-  },
-  {
-   "timestamp": "20230421040424",
-   "url": "https://www.mvsd21.org/",
-   "station": "apptegy-marsh-valley-id",
-   "why": "storm day 2023-04-21 (market score 0.25)"
-  },
-  {
-   "timestamp": "20230111110442",
-   "url": "https://www.mvsd21.org/",
-   "station": "apptegy-marsh-valley-id",
-   "why": "storm day 2023-01-11 (market score 0.25)"
-  },
-  {
-   "timestamp": "20240305225822",
-   "url": "https://www.mvsd21.org/",
-   "station": "apptegy-marsh-valley-id",
-   "why": "storm day 2024-03-06 (market score 0.25)"
-  },
-  {
-   "timestamp": "20230404002518",
+   "timestamp": "20230403195505",
    "url": "https://www.mvsd21.org/",
    "station": "apptegy-marsh-valley-id",
    "why": "storm day 2023-04-04 (market score 0.25)"
   },
   {
-   "timestamp": "20240305212503",
+   "timestamp": "20230105230453",
    "url": "https://www.mvsd21.org/",
    "station": "apptegy-marsh-valley-id",
-   "why": "storm day 2024-03-06 (market score 0.25)"
+   "why": "storm day 2023-01-06 (market score 0.25)"
   },
   {
-   "timestamp": "20230319212924",
+   "timestamp": "20260518102157",
+   "url": "https://www.pcsd1.org/",
+   "station": "apptegy-park-1-wy",
+   "why": "storm day 2026-05-18 (market score 0.25)"
+  },
+  {
+   "timestamp": "20220818013223",
+   "url": "https://www.psjaisd.us/",
+   "station": "finalsite-psja-tx",
+   "why": "2022-08-18: one of its largest captures, as no read has seen its list yet"
+  },
+  {
+   "timestamp": "20191119111620",
+   "url": "https://www.malta.k12.mt.us/",
+   "station": "apptegy-malta-mt",
+   "why": "storm day 2019-11-19 (market score 0.25)"
+  },
+  {
+   "timestamp": "20230330074138",
+   "url": "https://www.bigsandy.k12.mt.us/",
+   "station": "apptegy-big-sandy-mt",
+   "why": "storm day 2023-03-30 (market score 0.25)"
+  },
+  {
+   "timestamp": "20250210060535",
+   "url": "https://www.geraldine.k12.mt.us/",
+   "station": "apptegy-geraldine-mt",
+   "why": "storm day 2025-02-10 (market score 0.50)"
+  },
+  {
+   "timestamp": "20260306152259",
+   "url": "https://www.juabsd.org/",
+   "station": "apptegy-juab-ut",
+   "why": "storm day 2026-03-06 (market score 0.25)"
+  },
+  {
+   "timestamp": "20260401224420",
+   "url": "https://www.juabsd.org/",
+   "station": "apptegy-juab-ut",
+   "why": "storm day 2026-04-02 (market score 0.25)"
+  },
+  {
+   "timestamp": "20250418113739",
+   "url": "https://www.juabsd.org/",
+   "station": "apptegy-juab-ut",
+   "why": "storm day 2025-04-18 (market score 0.25)"
+  },
+  {
+   "timestamp": "20260403065457",
+   "url": "https://www.sd148.org/en-US",
+   "station": "schoolblocks-grace-id",
+   "why": "storm day 2026-04-03 (market score 0.25)"
+  },
+  {
+   "timestamp": "20260402185959",
+   "url": "https://www.sd148.org/en-US",
+   "station": "schoolblocks-grace-id",
+   "why": "storm day 2026-04-03 (market score 0.25)"
+  },
+  {
+   "timestamp": "20260304185553",
+   "url": "https://www.sd148.org/en-US",
+   "station": "schoolblocks-grace-id",
+   "why": "storm day 2026-03-05 (market score 0.25)"
+  },
+  {
+   "timestamp": "20230109161227",
+   "url": "https://www.carbonschools.org/",
+   "station": "apptegy-carbon-ut",
+   "why": "storm day 2023-01-10 (market score 0.25)"
+  },
+  {
+   "timestamp": "20251205031946",
+   "url": "https://www.wsh1.k12.wy.us/",
+   "station": "apptegy-washakie-1-wy",
+   "why": "storm day 2025-12-05 (market score 0.25)"
+  },
+  {
+   "timestamp": "20260422200859",
+   "url": "https://www.wsh1.k12.wy.us/",
+   "station": "apptegy-washakie-1-wy",
+   "why": "storm day 2026-04-23 (market score 0.25)"
+  },
+  {
+   "timestamp": "20260427081148",
+   "url": "https://www.wsh1.k12.wy.us/",
+   "station": "apptegy-washakie-1-wy",
+   "why": "storm day 2026-04-27 (market score 0.25)"
+  },
+  {
+   "timestamp": "20230131230241",
+   "url": "https://www.cleveland.k12.ms.us/",
+   "station": "finalsite-cleveland-ms",
+   "why": "storm day 2023-02-01 (market score 1.00)"
+  },
+  {
+   "timestamp": "20230202101114",
+   "url": "https://www.cleveland.k12.ms.us/",
+   "station": "finalsite-cleveland-ms",
+   "why": "storm day 2023-02-02 (market score 1.00)"
+  },
+  {
+   "timestamp": "20230201225859",
+   "url": "https://www.cleveland.k12.ms.us/",
+   "station": "finalsite-cleveland-ms",
+   "why": "storm day 2023-02-02 (market score 1.00)"
+  },
+  {
+   "timestamp": "20210127220729",
+   "url": "https://www.d181.k12.id.us/",
+   "station": "finalsite-challis-id",
+   "why": "storm day 2021-01-28 (market score 1.00)"
+  },
+  {
+   "timestamp": "20210204184651",
+   "url": "https://www.bighorn1.com/",
+   "station": "apptegy-big-horn-1-wy",
+   "why": "storm day 2021-02-05 (market score 0.25)"
+  },
+  {
+   "timestamp": "20221024062922",
+   "url": "https://www.bighorn1.com/",
+   "station": "apptegy-big-horn-1-wy",
+   "why": "storm day 2022-10-24 (market score 0.25)"
+  },
+  {
+   "timestamp": "20260225084241",
+   "url": "https://www.bighorn1.com/",
+   "station": "apptegy-big-horn-1-wy",
+   "why": "storm day 2026-02-25 (market score 0.25)"
+  },
+  {
+   "timestamp": "20241007230607",
+   "url": "https://www.hendry-schools.org/",
+   "station": "finalsite-hendry-fl",
+   "why": "storm day 2024-10-08 (market score 0.25)"
+  },
+  {
+   "timestamp": "20240927105856",
+   "url": "https://www.hendry-schools.org/",
+   "station": "finalsite-hendry-fl",
+   "why": "storm day 2024-09-27 (market score 0.25)"
+  },
+  {
+   "timestamp": "20251209065426",
+   "url": "https://www.wyomingindianschools.com/",
+   "station": "apptegy-fremont-14-wy",
+   "why": "storm day 2025-12-09 (market score 1.00)"
+  },
+  {
+   "timestamp": "20260415164916",
+   "url": "https://www.wyomingindianschools.com/",
+   "station": "apptegy-fremont-14-wy",
+   "why": "storm day 2026-04-16 (market score 1.00)"
+  },
+  {
+   "timestamp": "20241216122530",
+   "url": "https://www.wyomingindianschools.com/",
+   "station": "apptegy-fremont-14-wy",
+   "why": "storm day 2024-12-16 (market score 1.00)"
+  },
+  {
+   "timestamp": "20260401202102",
+   "url": "https://www.shoshonischools.org/",
+   "station": "apptegy-fremont-24-wy",
+   "why": "storm day 2026-04-02 (market score 1.00)"
+  },
+  {
+   "timestamp": "20191120033527",
+   "url": "https://www.shoshonischools.org/",
+   "station": "apptegy-fremont-24-wy",
+   "why": "storm day 2019-11-20 (market score 1.00)"
+  },
+  {
+   "timestamp": "20191120015948",
+   "url": "https://www.shoshonischools.org/",
+   "station": "apptegy-fremont-24-wy",
+   "why": "storm day 2019-11-20 (market score 1.00)"
+  },
+  {
+   "timestamp": "20250224043113",
+   "url": "https://www.leadoreschool.org/",
+   "station": "apptegy-south-lemhi-id",
+   "why": "storm day 2025-02-24 (market score 0.25)"
+  },
+  {
+   "timestamp": "20221108212721",
+   "url": "https://www.leadoreschool.org/",
+   "station": "apptegy-south-lemhi-id",
+   "why": "storm day 2022-11-09 (market score 0.25)"
+  },
+  {
+   "timestamp": "20241007230729",
+   "url": "https://www.hardee.k12.fl.us/",
+   "station": "apptegy-hardee-fl",
+   "why": "storm day 2024-10-08 (market score 1.00)"
+  },
+  {
+   "timestamp": "20260127085726",
+   "url": "https://www.franklincountyschools.org/",
+   "station": "finalsite-franklin-fl",
+   "why": "storm day 2026-01-27 (market score 0.50)"
+  },
+  {
+   "timestamp": "20260126205948",
+   "url": "https://www.franklincountyschools.org/",
+   "station": "finalsite-franklin-fl",
+   "why": "storm day 2026-01-27 (market score 0.50)"
+  },
+  {
+   "timestamp": "20230404015717",
+   "url": "https://www.arapahoeschools.com/",
+   "station": "smartsites-fremont-38-wy",
+   "why": "storm day 2023-04-04 (market score 1.00)"
+  },
+  {
+   "timestamp": "20230403123242",
+   "url": "https://www.arapahoeschools.com/",
+   "station": "smartsites-fremont-38-wy",
+   "why": "storm day 2023-04-03 (market score 1.00)"
+  },
+  {
+   "timestamp": "20230403184044",
+   "url": "https://www.arapahoeschools.com/",
+   "station": "smartsites-fremont-38-wy",
+   "why": "storm day 2023-04-04 (market score 1.00)"
+  },
+  {
+   "timestamp": "20250312224139",
+   "url": "https://www.tvusd.k12.ca.us/",
+   "station": "finalsite-temecula-valley-ca",
+   "why": "storm day 2025-03-13 (market score 1.00)"
+  },
+  {
+   "timestamp": "20250313033207",
+   "url": "https://www.tvusd.k12.ca.us/",
+   "station": "finalsite-temecula-valley-ca",
+   "why": "storm day 2025-03-13 (market score 1.00)"
+  },
+  {
+   "timestamp": "20250313002953",
+   "url": "https://www.tvusd.k12.ca.us/",
+   "station": "finalsite-temecula-valley-ca",
+   "why": "storm day 2025-03-13 (market score 1.00)"
+  },
+  {
+   "timestamp": "20260208023654",
+   "url": "https://www.tmisd.us/",
+   "station": "smartsites-tuloso-midway-tx",
+   "why": "2026-02-08: one of its largest captures, as no read has seen its list yet"
+  },
+  {
+   "timestamp": "20230222163134",
+   "url": "https://www.ocesd.net/",
+   "station": "apptegy-oroville-ca",
+   "why": "storm day 2023-02-23 (market score 1.00)"
+  },
+  {
+   "timestamp": "20230223175130",
+   "url": "https://www.ocesd.net/",
+   "station": "apptegy-oroville-ca",
+   "why": "storm day 2023-02-24 (market score 1.00)"
+  },
+  {
+   "timestamp": "20230221172340",
+   "url": "https://www.ocesd.net/",
+   "station": "apptegy-oroville-ca",
+   "why": "storm day 2023-02-22 (market score 1.00)"
+  },
+  {
+   "timestamp": "20220524094039",
+   "url": "https://www.londonisd.net/",
+   "station": "finalsite-london-tx",
+   "why": "2022-05-24: one of its largest captures, as no read has seen its list yet"
+  },
+  {
+   "timestamp": "20211208161556",
+   "url": "https://www.londonisd.net/",
+   "station": "finalsite-london-tx",
+   "why": "2021-12-09: one of its largest captures, as no read has seen its list yet"
+  },
+  {
+   "timestamp": "20170820115327",
+   "url": "http://www.mathisisd.org:80/",
+   "station": "finalsite-mathis-tx",
+   "why": "2017-08-20: one of its largest captures, as no read has seen its list yet"
+  },
+  {
+   "timestamp": "20240207095318",
+   "url": "https://www.murrieta.k12.ca.us/",
+   "station": "finalsite-murrieta-valley-ca",
+   "why": "storm day 2024-02-07 (market score 1.00)"
+  },
+  {
+   "timestamp": "20240206003942",
+   "url": "https://www.murrieta.k12.ca.us//",
+   "station": "finalsite-murrieta-valley-ca",
+   "why": "storm day 2024-02-06 (market score 1.00)"
+  },
+  {
+   "timestamp": "20240206225800",
+   "url": "https://www.murrieta.k12.ca.us//",
+   "station": "finalsite-murrieta-valley-ca",
+   "why": "storm day 2024-02-07 (market score 1.00)"
+  },
+  {
+   "timestamp": "20260126092018",
+   "url": "https://www.rivieraisd.us/",
+   "station": "apptegy-riviera-tx",
+   "why": "storm day 2026-01-26 (market score 0.50)"
+  },
+  {
+   "timestamp": "20240115130443",
+   "url": "https://www.rivieraisd.us/",
+   "station": "apptegy-riviera-tx",
+   "why": "storm day 2024-01-15 (market score 0.25)"
+  },
+  {
+   "timestamp": "20260218151442",
+   "url": "https://www.cvusd.us/",
+   "station": "smartsites-coachella-valley-ca",
+   "why": "storm day 2026-02-18 (market score 0.50)"
+  },
+  {
+   "timestamp": "20260218031608",
+   "url": "https://www.cvusd.us/",
+   "station": "smartsites-coachella-valley-ca",
+   "why": "storm day 2026-02-18 (market score 0.50)"
+  },
+  {
+   "timestamp": "20260216031123",
+   "url": "https://www.cvusd.us/",
+   "station": "smartsites-coachella-valley-ca",
+   "why": "storm day 2026-02-16 (market score 0.50)"
+  },
+  {
+   "timestamp": "20260126111704",
+   "url": "https://www.paisd.net/",
+   "station": "smartsites-port-aransas-tx",
+   "why": "storm day 2026-01-26 (market score 0.50)"
+  },
+  {
+   "timestamp": "20240116215216",
+   "url": "https://www.paisd.net/",
+   "station": "smartsites-port-aransas-tx",
+   "why": "storm day 2024-01-17 (market score 0.50)"
+  },
+  {
+   "timestamp": "20221223040658",
+   "url": "https://www.paisd.net/",
+   "station": "smartsites-port-aransas-tx",
+   "why": "storm day 2022-12-23 (market score 0.50)"
+  },
+  {
+   "timestamp": "20250917133820",
+   "url": "https://www.premontisd.net/",
+   "station": "smartsites-premont-tx",
+   "why": "2025-09-17: one of its largest captures, as no read has seen its list yet"
+  },
+  {
+   "timestamp": "20251205230901",
+   "url": "https://premontisd.net/",
+   "station": "smartsites-premont-tx",
+   "why": "2025-12-06: one of its largest captures, as no read has seen its list yet"
+  },
+  {
+   "timestamp": "20250615014058",
+   "url": "https://www.premontisd.net/",
+   "station": "smartsites-premont-tx",
+   "why": "2025-06-15: one of its largest captures, as no read has seen its list yet"
+  },
+  {
+   "timestamp": "20250906092834",
+   "url": "https://www.pi-isd.net/",
+   "station": "apptegy-point-isabel-tx",
+   "why": "2025-09-06: one of its largest captures, as no read has seen its list yet"
+  },
+  {
+   "timestamp": "20251009005255",
+   "url": "https://www.pi-isd.net/",
+   "station": "apptegy-point-isabel-tx",
+   "why": "2025-10-09: one of its largest captures, as no read has seen its list yet"
+  },
+  {
+   "timestamp": "20260421152309",
+   "url": "https://www.durhamunified.org/",
+   "station": "apptegy-durham-ca",
+   "why": "storm day 2026-04-21 (market score 1.00)"
+  },
+  {
+   "timestamp": "20230307170826",
+   "url": "https://www.durhamunified.org/",
+   "station": "apptegy-durham-ca",
+   "why": "storm day 2023-03-08 (market score 1.00)"
+  },
+  {
+   "timestamp": "20190117133707",
+   "url": "http://www.durhamunified.org/",
+   "station": "apptegy-durham-ca",
+   "why": "storm day 2019-01-17 (market score 1.00)"
+  },
+  {
+   "timestamp": "20260617220836",
+   "url": "https://www.rhisd.net/",
+   "station": "apptegy-rio-hondo-tx",
+   "why": "2026-06-18: one of its largest captures, as no read has seen its list yet"
+  },
+  {
+   "timestamp": "20250210011434",
+   "url": "https://www.rhisd.net/",
+   "station": "apptegy-rio-hondo-tx",
+   "why": "2025-02-10: one of its largest captures, as no read has seen its list yet"
+  },
+  {
+   "timestamp": "20250804121010",
+   "url": "https://www.rhisd.net/",
+   "station": "apptegy-rio-hondo-tx",
+   "why": "2025-08-04: one of its largest captures, as no read has seen its list yet"
+  },
+  {
+   "timestamp": "20230329215223",
+   "url": "https://www.beaumontusd.us/",
+   "station": "edlio-beaumont-ca",
+   "why": "storm day 2023-03-30 (market score 1.00)"
+  },
+  {
+   "timestamp": "20230328215707",
+   "url": "https://www.beaumontusd.us/",
+   "station": "edlio-beaumont-ca",
+   "why": "storm day 2023-03-29 (market score 1.00)"
+  },
+  {
+   "timestamp": "20230320161238",
+   "url": "https://www.beaumontusd.us/",
+   "station": "edlio-beaumont-ca",
+   "why": "storm day 2023-03-21 (market score 1.00)"
+  },
+  {
+   "timestamp": "20210726143913",
+   "url": "https://www.sanjacinto.k12.ca.us/",
+   "station": "edlio-san-jacinto-ca",
+   "why": "2021-07-26: one of its largest captures, as no read has seen its list yet"
+  },
+  {
+   "timestamp": "20210728172113",
+   "url": "https://www.sanjacinto.k12.ca.us/",
+   "station": "edlio-san-jacinto-ca",
+   "why": "2021-07-29: one of its largest captures, as no read has seen its list yet"
+  },
+  {
+   "timestamp": "20220122182308",
+   "url": "https://www.sanjacinto.k12.ca.us/",
+   "station": "edlio-san-jacinto-ca",
+   "why": "2022-01-23: one of its largest captures, as no read has seen its list yet"
+  },
+  {
+   "timestamp": "20241119002905",
+   "url": "https://www.wsh2.k12.wy.us/",
+   "station": "edlio-washakie-2-wy",
+   "why": "2024-11-19: one of its largest captures, as no read has seen its list yet"
+  },
+  {
+   "timestamp": "20250317020622",
+   "url": "https://www.wsh2.k12.wy.us/",
+   "station": "edlio-washakie-2-wy",
+   "why": "2025-03-17: one of its largest captures, as no read has seen its list yet"
+  },
+  {
+   "timestamp": "20240526085118",
+   "url": "https://www.wsh2.k12.wy.us/",
+   "station": "edlio-washakie-2-wy",
+   "why": "2024-05-26: one of its largest captures, as no read has seen its list yet"
+  },
+  {
+   "timestamp": "20260208083311",
+   "url": "https://www.pettusisd.org/",
+   "station": "smartsites-pettus-tx",
+   "why": "2026-02-08: one of its largest captures, as no read has seen its list yet"
+  },
+  {
+   "timestamp": "20260207084604",
+   "url": "https://www.pettusisd.org/",
+   "station": "smartsites-pettus-tx",
+   "why": "2026-02-07: one of its largest captures, as no read has seen its list yet"
+  },
+  {
+   "timestamp": "20251014044358",
+   "url": "https://www.pettusisd.org/",
+   "station": "smartsites-pettus-tx",
+   "why": "2025-10-14: one of its largest captures, as no read has seen its list yet"
+  },
+  {
+   "timestamp": "20251130042650",
+   "url": "https://www.atisd.net/",
+   "station": "apptegy-austwell-tivoli-tx",
+   "why": "2025-11-30: one of its largest captures, as no read has seen its list yet"
+  },
+  {
+   "timestamp": "20260616194228",
+   "url": "https://www.atisd.net/",
+   "station": "apptegy-austwell-tivoli-tx",
+   "why": "2026-06-17: one of its largest captures, as no read has seen its list yet"
+  },
+  {
+   "timestamp": "20251012105918",
+   "url": "https://www.atisd.net/",
+   "station": "apptegy-austwell-tivoli-tx",
+   "why": "2025-10-12: one of its largest captures, as no read has seen its list yet"
+  },
+  {
+   "timestamp": "20220121141146",
+   "url": "https://www.brewtoncityschools.org/",
+   "station": "apptegy-brewton-al",
+   "why": "storm day 2022-01-21 (market score 0.25)"
+  },
+  {
+   "timestamp": "20250910040516",
+   "url": "https://www.sdisd.us/",
+   "station": "apptegy-san-diego-tx",
+   "why": "2025-09-10: one of its largest captures, as no read has seen its list yet"
+  },
+  {
+   "timestamp": "20260312163526",
+   "url": "https://www.sdisd.us/",
+   "station": "apptegy-san-diego-tx",
+   "why": "2026-03-13: one of its largest captures, as no read has seen its list yet"
+  },
+  {
+   "timestamp": "20250227190603",
+   "url": "https://www.trisd.org/",
+   "station": "apptegy-three-rivers-tx",
+   "why": "2025-02-28: one of its largest captures, as no read has seen its list yet"
+  },
+  {
+   "timestamp": "20250223115213",
+   "url": "https://www.trisd.org/",
+   "station": "apptegy-three-rivers-tx",
+   "why": "2025-02-23: one of its largest captures, as no read has seen its list yet"
+  },
+  {
+   "timestamp": "20251208010914",
+   "url": "https://www.trisd.org/",
+   "station": "apptegy-three-rivers-tx",
+   "why": "2025-12-08: one of its largest captures, as no read has seen its list yet"
+  },
+  {
+   "timestamp": "20250912003420",
+   "url": "https://www.jhcisdpk12.org",
+   "station": "edlio-jim-hogg-county-tx",
+   "why": "2025-09-12: one of its largest captures, as no read has seen its list yet"
+  },
+  {
+   "timestamp": "20250912010247",
+   "url": "https://www.jhcisdpk12.org/",
+   "station": "edlio-jim-hogg-county-tx",
+   "why": "2025-09-12: one of its largest captures, as no read has seen its list yet"
+  },
+  {
+   "timestamp": "20250321123856",
+   "url": "https://www.clintweb.net/",
+   "station": "finalsite-clint-tx",
+   "why": "2025-03-21: one of its largest captures, as no read has seen its list yet"
+  },
+  {
+   "timestamp": "20250326032805",
+   "url": "https://www.clintweb.net/",
+   "station": "finalsite-clint-tx",
+   "why": "2025-03-26: one of its largest captures, as no read has seen its list yet"
+  },
+  {
+   "timestamp": "20241112100321",
+   "url": "https://www.clintweb.net/",
+   "station": "finalsite-clint-tx",
+   "why": "2024-11-12: one of its largest captures, as no read has seen its list yet"
+  },
+  {
+   "timestamp": "20240822232223",
+   "url": "https://www.wisd.net/",
+   "station": "finalsite-woodsboro-tx",
+   "why": "2024-08-23: one of its largest captures, as no read has seen its list yet"
+  },
+  {
+   "timestamp": "20230606183334",
+   "url": "https://www.wisd.net/",
+   "station": "finalsite-woodsboro-tx",
+   "why": "2023-06-07: one of its largest captures, as no read has seen its list yet"
+  },
+  {
+   "timestamp": "20230903223829",
+   "url": "https://www.wisd.net/",
+   "station": "finalsite-woodsboro-tx",
+   "why": "2023-09-04: one of its largest captures, as no read has seen its list yet"
+  },
+  {
+   "timestamp": "20250810185527",
+   "url": "https://www.lyfordcisd.net/",
+   "station": "apptegy-lyford-tx",
+   "why": "2025-08-11: one of its largest captures, as no read has seen its list yet"
+  },
+  {
+   "timestamp": "20251112013446",
+   "url": "https://www.lyfordcisd.net/",
+   "station": "apptegy-lyford-tx",
+   "why": "2025-11-12: one of its largest captures, as no read has seen its list yet"
+  },
+  {
+   "timestamp": "20260416043457",
+   "url": "https://www.lyfordcisd.net/",
+   "station": "apptegy-lyford-tx",
+   "why": "2026-04-16: one of its largest captures, as no read has seen its list yet"
+  },
+  {
+   "timestamp": "20240115212749",
+   "url": "https://www.adisd.net/",
+   "station": "finalsite-agua-dulce-tx",
+   "why": "storm day 2024-01-16 (market score 0.50)"
+  },
+  {
+   "timestamp": "20260126011133",
+   "url": "https://www.adisd.net/",
+   "station": "finalsite-agua-dulce-tx",
+   "why": "storm day 2026-01-26 (market score 0.50)"
+  },
+  {
+   "timestamp": "20260126080002",
+   "url": "https://www.adisd.net/",
+   "station": "finalsite-agua-dulce-tx",
+   "why": "storm day 2026-01-26 (market score 0.50)"
+  },
+  {
+   "timestamp": "20260613221839",
+   "url": "https://ricardoisd.us/",
+   "station": "smartsites-ricardo-tx",
+   "why": "2026-06-14: one of its largest captures, as no read has seen its list yet"
+  },
+  {
+   "timestamp": "20260612203609",
+   "url": "https://www.ricardoisd.us/",
+   "station": "smartsites-ricardo-tx",
+   "why": "2026-06-13: one of its largest captures, as no read has seen its list yet"
+  },
+  {
+   "timestamp": "20260417192506",
+   "url": "https://ricardoisd.us/",
+   "station": "smartsites-ricardo-tx",
+   "why": "2026-04-18: one of its largest captures, as no read has seen its list yet"
+  },
+  {
+   "timestamp": "20260209073533",
+   "url": "https://www.spisd.org/",
+   "station": "smartsites-san-perlita-tx",
+   "why": "2026-02-09: one of its largest captures, as no read has seen its list yet"
+  },
+  {
+   "timestamp": "20260414205216",
+   "url": "https://www.spisd.org/",
+   "station": "smartsites-san-perlita-tx",
+   "why": "2026-04-15: one of its largest captures, as no read has seen its list yet"
+  },
+  {
+   "timestamp": "20260519091034",
+   "url": "https://www.spisd.org/",
+   "station": "smartsites-san-perlita-tx",
+   "why": "2026-05-19: one of its largest captures, as no read has seen its list yet"
+  },
+  {
+   "timestamp": "20250423011808",
+   "url": "https://www.hmps.net/",
+   "station": "apptegy-horizon-montessori-tx",
+   "why": "2025-04-23: one of its largest captures, as no read has seen its list yet"
+  },
+  {
+   "timestamp": "20251016185150",
+   "url": "https://www.hmps.net/",
+   "station": "apptegy-horizon-montessori-tx",
+   "why": "2025-10-17: one of its largest captures, as no read has seen its list yet"
+  },
+  {
+   "timestamp": "20260517053907",
+   "url": "https://www.hmps.net/",
+   "station": "apptegy-horizon-montessori-tx",
+   "why": "2026-05-17: one of its largest captures, as no read has seen its list yet"
+  },
+  {
+   "timestamp": "20210515104939",
+   "url": "https://www.srtx.org/",
+   "station": "finalsite-santa-rosa-tx",
+   "why": "2021-05-15: one of its largest captures, as no read has seen its list yet"
+  },
+  {
+   "timestamp": "20220517202227",
+   "url": "https://www.srtx.org/",
+   "station": "finalsite-santa-rosa-tx",
+   "why": "2022-05-18: one of its largest captures, as no read has seen its list yet"
+  },
+  {
+   "timestamp": "20211026050105",
+   "url": "https://www.srtx.org/",
+   "station": "finalsite-santa-rosa-tx",
+   "why": "2021-10-26: one of its largest captures, as no read has seen its list yet"
+  },
+  {
+   "timestamp": "20250222082726",
+   "url": "https://www.lavillaisd.org/",
+   "station": "apptegy-la-villa-tx",
+   "why": "2025-02-22: one of its largest captures, as no read has seen its list yet"
+  },
+  {
+   "timestamp": "20250222072305",
+   "url": "https://www.lavillaisd.org/",
+   "station": "apptegy-la-villa-tx",
+   "why": "2025-02-22: one of its largest captures, as no read has seen its list yet"
+  },
+  {
+   "timestamp": "20251126204144",
+   "url": "https://www.lavillaisd.org/",
+   "station": "apptegy-la-villa-tx",
+   "why": "2025-11-27: one of its largest captures, as no read has seen its list yet"
+  },
+  {
+   "timestamp": "20251208082101",
+   "url": "https://www.montealtoisd.org/",
+   "station": "apptegy-monte-alto-tx",
+   "why": "2025-12-08: one of its largest captures, as no read has seen its list yet"
+  },
+  {
+   "timestamp": "20260214164101",
+   "url": "https://www.montealtoisd.org/",
+   "station": "apptegy-monte-alto-tx",
+   "why": "2026-02-15: one of its largest captures, as no read has seen its list yet"
+  },
+  {
+   "timestamp": "20260306055913",
+   "url": "https://www.montealtoisd.org/",
+   "station": "apptegy-monte-alto-tx",
+   "why": "2026-03-06: one of its largest captures, as no read has seen its list yet"
+  },
+  {
+   "timestamp": "20260210121035",
+   "url": "https://www.promesapublicschools.org/",
+   "station": "edlio-valere-tx",
+   "why": "2026-02-10: one of its largest captures, as no read has seen its list yet"
+  },
+  {
+   "timestamp": "20260617135953",
+   "url": "https://www.promesapublicschools.org/",
+   "station": "edlio-valere-tx",
+   "why": "2026-06-17: one of its largest captures, as no read has seen its list yet"
+  },
+  {
+   "timestamp": "20260309033048",
+   "url": "https://www.promesapublicschools.org/",
+   "station": "edlio-valere-tx",
+   "why": "2026-03-09: one of its largest captures, as no read has seen its list yet"
+  },
+  {
+   "timestamp": "20171003165044",
+   "url": "http://www.benavidesisd.net/",
+   "station": "finalsite-benavides-tx",
+   "why": "2017-10-04: one of its largest captures, as no read has seen its list yet"
+  },
+  {
+   "timestamp": "20181201033916",
+   "url": "http://www.benavidesisd.net:80/",
+   "station": "finalsite-benavides-tx",
+   "why": "2018-12-01: one of its largest captures, as no read has seen its list yet"
+  },
+  {
+   "timestamp": "20171015102413",
+   "url": "http://www.benavidesisd.net:80/",
+   "station": "finalsite-benavides-tx",
+   "why": "2017-10-15: one of its largest captures, as no read has seen its list yet"
+  },
+  {
+   "timestamp": "20240416121836",
+   "url": "https://www.canutillo-isd.org/",
+   "station": "finalsite-canutillo-tx",
+   "why": "2024-04-16: one of its largest captures, as no read has seen its list yet"
+  },
+  {
+   "timestamp": "20240418230618",
+   "url": "https://www.canutillo-isd.org/",
+   "station": "finalsite-canutillo-tx",
+   "why": "2024-04-19: one of its largest captures, as no read has seen its list yet"
+  },
+  {
+   "timestamp": "20240219123830",
+   "url": "https://www.canutillo-isd.org/",
+   "station": "finalsite-canutillo-tx",
+   "why": "2024-02-19: one of its largest captures, as no read has seen its list yet"
+  },
+  {
+   "timestamp": "20260210121044",
+   "url": "https://www.webbcisd.org/",
+   "station": "smartsites-webb-tx",
+   "why": "2026-02-10: one of its largest captures, as no read has seen its list yet"
+  },
+  {
+   "timestamp": "20260124054645",
+   "url": "https://www.webbcisd.org/",
+   "station": "smartsites-webb-tx",
+   "why": "2026-01-24: one of its largest captures, as no read has seen its list yet"
+  },
+  {
+   "timestamp": "20260124194752",
+   "url": "https://www.webbcisd.org/",
+   "station": "smartsites-webb-tx",
+   "why": "2026-01-25: one of its largest captures, as no read has seen its list yet"
+  },
+  {
+   "timestamp": "20260317001915",
+   "url": "https://www.lasaraisd.net/",
+   "station": "apptegy-lasara-tx",
+   "why": "2026-03-17: one of its largest captures, as no read has seen its list yet"
+  },
+  {
+   "timestamp": "20260309085801",
+   "url": "https://www.lasaraisd.net/",
+   "station": "apptegy-lasara-tx",
+   "why": "2026-03-09: one of its largest captures, as no read has seen its list yet"
+  },
+  {
+   "timestamp": "20260218060318",
+   "url": "https://www.lasaraisd.net/",
+   "station": "apptegy-lasara-tx",
+   "why": "2026-02-18: one of its largest captures, as no read has seen its list yet"
+  },
+  {
+   "timestamp": "20240901224835",
+   "url": "https://www.fpcvpaa.com/",
+   "station": "finalsite-fpc-vpaa-al",
+   "why": "2024-09-02: an unread capture of an earlier address of its list, the last left (read so that every capture of it is read)"
+  },
+  {
+   "timestamp": "20240915133523",
+   "url": "https://www.fpcvpaa.com/",
+   "station": "finalsite-fpc-vpaa-al",
+   "why": "2024-09-15: an unread capture of an earlier address of its list, the last left (read so that every capture of it is read)"
+  },
+  {
+   "timestamp": "20240921024045",
+   "url": "https://www.fpcvpaa.com/",
+   "station": "finalsite-fpc-vpaa-al",
+   "why": "2024-09-21: an unread capture of an earlier address of its list, the last left (read so that every capture of it is read)"
+  },
+  {
+   "timestamp": "20240715165952",
+   "url": "https://www.nurseryisd.org/",
+   "station": "finalsite-nursery-tx",
+   "why": "2024-07-16: one of its largest captures, as no read has seen its list yet"
+  },
+  {
+   "timestamp": "20240416172343",
+   "url": "https://www.nurseryisd.org/",
+   "station": "finalsite-nursery-tx",
+   "why": "2024-04-17: one of its largest captures, as no read has seen its list yet"
+  },
+  {
+   "timestamp": "20240614083740",
+   "url": "https://www.nurseryisd.org/",
+   "station": "finalsite-nursery-tx",
+   "why": "2024-06-14: one of its largest captures, as no read has seen its list yet"
+  },
+  {
+   "timestamp": "20260111030351",
+   "url": "https://www.industrialisd.org/en-US",
+   "station": "schoolblocks-industrial-tx",
+   "why": "2026-01-11: a day a proven list sharing its counties held a row"
+  },
+  {
+   "timestamp": "20260126023442",
+   "url": "https://www.ccaisd.net/",
+   "station": "smartsites-culberson-allamoore-tx",
+   "why": "storm day 2026-01-26 (market score 0.50)"
+  },
+  {
+   "timestamp": "20260126143728",
+   "url": "https://www.ccaisd.net/",
+   "station": "smartsites-culberson-allamoore-tx",
+   "why": "storm day 2026-01-26 (market score 0.50)"
+  },
+  {
+   "timestamp": "20260118105417",
+   "url": "https://www.hustonacademy.com/",
+   "station": "apptegy-huston-academy-tx",
+   "why": "2026-01-18: one of its largest captures, as no read has seen its list yet"
+  },
+  {
+   "timestamp": "20251214165016",
+   "url": "https://www.hustonacademy.com/",
+   "station": "apptegy-huston-academy-tx",
+   "why": "2025-12-15: one of its largest captures, as no read has seen its list yet"
+  },
+  {
+   "timestamp": "20260411175219",
+   "url": "https://www.hustonacademy.com/",
+   "station": "apptegy-huston-academy-tx",
+   "why": "2026-04-12: one of its largest captures, as no read has seen its list yet"
+  },
+  {
+   "timestamp": "20250329182357",
+   "url": "https://www.rmaschools.org/",
+   "station": "finalsite-rma-tx",
+   "why": "2025-03-30: one of its largest captures, as no read has seen its list yet"
+  },
+  {
+   "timestamp": "20250328193316",
+   "url": "https://www.rmaschools.org/",
+   "station": "finalsite-rma-tx",
+   "why": "2025-03-29: one of its largest captures, as no read has seen its list yet"
+  },
+  {
+   "timestamp": "20240425023553",
+   "url": "https://www.rmaschools.org/",
+   "station": "finalsite-rma-tx",
+   "why": "2024-04-25: one of its largest captures, as no read has seen its list yet"
+  },
+  {
+   "timestamp": "20240329154027",
+   "url": "https://www.ryss.org/",
+   "station": "finalsite-ryss-tx",
+   "why": "2024-03-29: one of its largest captures, as no read has seen its list yet"
+  },
+  {
+   "timestamp": "20221213201617",
+   "url": "https://www.ryss.org/",
+   "station": "finalsite-ryss-tx",
+   "why": "2022-12-14: one of its largest captures, as no read has seen its list yet"
+  },
+  {
+   "timestamp": "20240425150531",
+   "url": "https://www.ryss.org/",
+   "station": "finalsite-ryss-tx",
+   "why": "2024-04-25: one of its largest captures, as no read has seen its list yet"
+  },
+  {
+   "timestamp": "20250621100917",
+   "url": "https://www.pawneeisd.net/",
+   "station": "smartsites-pawnee-tx",
+   "why": "2025-06-21: one of its largest captures, as no read has seen its list yet"
+  },
+  {
+   "timestamp": "20250910070507",
+   "url": "https://www.pawneeisd.net/",
+   "station": "smartsites-pawnee-tx",
+   "why": "2025-09-10: one of its largest captures, as no read has seen its list yet"
+  },
+  {
+   "timestamp": "20241123044552",
+   "url": "https://www.pawneeisd.net/",
+   "station": "smartsites-pawnee-tx",
+   "why": "2024-11-23: one of its largest captures, as no read has seen its list yet"
+  },
+  {
+   "timestamp": "20240619135223",
+   "url": "https://www.seisd.net/",
+   "station": "finalsite-san-elizario-tx",
+   "why": "2024-06-19: one of its largest captures, as no read has seen its list yet"
+  },
+  {
+   "timestamp": "20240303003115",
+   "url": "https://www.seisd.net/",
+   "station": "finalsite-san-elizario-tx",
+   "why": "2024-03-03: one of its largest captures, as no read has seen its list yet"
+  },
+  {
+   "timestamp": "20240303060045",
+   "url": "https://www.seisd.net/",
+   "station": "finalsite-san-elizario-tx",
+   "why": "2024-03-03: one of its largest captures, as no read has seen its list yet"
+  },
+  {
+   "timestamp": "20230511213013",
+   "url": "https://www.fabensisd.net/",
+   "station": "finalsite-fabens-tx",
+   "why": "2023-05-12: one of its largest captures, as no read has seen its list yet"
+  },
+  {
+   "timestamp": "20240222015510",
+   "url": "https://www.fabensisd.net/",
+   "station": "finalsite-fabens-tx",
+   "why": "2024-02-22: one of its largest captures, as no read has seen its list yet"
+  },
+  {
+   "timestamp": "20230320114716",
+   "url": "https://www.fabensisd.net/",
+   "station": "finalsite-fabens-tx",
+   "why": "2023-03-20: one of its largest captures, as no read has seen its list yet"
+  },
+  {
+   "timestamp": "20230423105144",
+   "url": "https://www.fhisd.net/",
+   "station": "finalsite-ft-hancock-tx",
+   "why": "2023-04-23: one of its largest captures, as no read has seen its list yet"
+  },
+  {
+   "timestamp": "20230414021457",
+   "url": "https://www.fhisd.net/",
+   "station": "finalsite-ft-hancock-tx",
+   "why": "2023-04-14: one of its largest captures, as no read has seen its list yet"
+  },
+  {
+   "timestamp": "20230410102749",
+   "url": "https://www.fhisd.net/",
+   "station": "finalsite-ft-hancock-tx",
+   "why": "2023-04-10: one of its largest captures, as no read has seen its list yet"
+  },
+  {
+   "timestamp": "20240301082242",
+   "url": "https://www.ramirezcsd.net/",
+   "station": "finalsite-ramirez-tx",
+   "why": "2024-03-01: one of its largest captures, as no read has seen its list yet"
+  },
+  {
+   "timestamp": "20250418010513",
+   "url": "https://www.ramirezcsd.net/",
+   "station": "finalsite-ramirez-tx",
+   "why": "2025-04-18: one of its largest captures, as no read has seen its list yet"
+  },
+  {
+   "timestamp": "20240615015547",
+   "url": "https://www.ramirezcsd.net/",
+   "station": "finalsite-ramirez-tx",
+   "why": "2024-06-15: one of its largest captures, as no read has seen its list yet"
+  },
+  {
+   "timestamp": "20250325173236",
+   "url": "https://www.saritaschool.net/",
+   "station": "smartsites-kenedy-county-tx",
+   "why": "2025-03-26: one of its largest captures, as no read has seen its list yet"
+  },
+  {
+   "timestamp": "20250602181304",
+   "url": "https://www.saritaschool.net/",
+   "station": "smartsites-kenedy-county-tx",
+   "why": "2025-06-03: one of its largest captures, as no read has seen its list yet"
+  },
+  {
+   "timestamp": "20251128072022",
+   "url": "https://www.saritaschool.net/",
+   "station": "smartsites-kenedy-county-tx",
+   "why": "2025-11-28: one of its largest captures, as no read has seen its list yet"
+  },
+  {
+   "timestamp": "20250902065521",
+   "url": "https://www.tisd.us/",
+   "station": "apptegy-tornillo-tx",
+   "why": "2025-09-02: one of its largest captures, as no read has seen its list yet"
+  },
+  {
+   "timestamp": "20251116060147",
+   "url": "https://www.tisd.us/",
+   "station": "apptegy-tornillo-tx",
+   "why": "2025-11-16: one of its largest captures, as no read has seen its list yet"
+  },
+  {
+   "timestamp": "20260103090241",
+   "url": "https://www.tisd.us/",
+   "station": "apptegy-tornillo-tx",
+   "why": "2026-01-03: one of its largest captures, as no read has seen its list yet"
+  },
+  {
+   "timestamp": "20210306022616",
+   "url": "https://www.elacharterschool.com/",
+   "station": "finalsite-ela-tx",
+   "why": "2021-03-06: one of its largest captures, as no read has seen its list yet"
+  },
+  {
+   "timestamp": "20210509203015",
+   "url": "https://www.elacharterschool.com/",
+   "station": "finalsite-ela-tx",
+   "why": "2021-05-10: one of its largest captures, as no read has seen its list yet"
+  },
+  {
+   "timestamp": "20211022225257",
+   "url": "https://www.elacharterschool.com:443/",
+   "station": "finalsite-ela-tx",
+   "why": "2021-10-23: one of its largest captures, as no read has seen its list yet"
+  },
+  {
+   "timestamp": "20251014033913",
+   "url": "https://www.dellcityisd.net/",
+   "station": "apptegy-dell-city-tx",
+   "why": "2025-10-14: one of its largest captures, as no read has seen its list yet"
+  },
+  {
+   "timestamp": "20260511175410",
+   "url": "https://www.dellcityisd.net/",
+   "station": "apptegy-dell-city-tx",
+   "why": "2026-05-12: one of its largest captures, as no read has seen its list yet"
+  },
+  {
+   "timestamp": "20250907110832",
+   "url": "https://www.dellcityisd.net/",
+   "station": "apptegy-dell-city-tx",
+   "why": "2025-09-07: one of its largest captures, as no read has seen its list yet"
+  },
+  {
+   "timestamp": "20230604050036",
+   "url": "https://www.sierrablancaisd.net/",
+   "station": "finalsite-sierra-blanca-tx",
+   "why": "2023-06-04: one of its largest captures, as no read has seen its list yet"
+  },
+  {
+   "timestamp": "20220929053413",
+   "url": "https://www.sierrablancaisd.net/",
+   "station": "finalsite-sierra-blanca-tx",
+   "why": "2022-09-29: one of its largest captures, as no read has seen its list yet"
+  },
+  {
+   "timestamp": "20220626023719",
+   "url": "https://www.sierrablancaisd.net/",
+   "station": "finalsite-sierra-blanca-tx",
+   "why": "2022-06-26: one of its largest captures, as no read has seen its list yet"
+  },
+  {
+   "timestamp": "20230319175020",
    "url": "https://www.mvsd21.org/",
    "station": "apptegy-marsh-valley-id",
    "why": "storm day 2023-03-20 (market score 0.25)"
   },
   {
-   "timestamp": "20240105031419",
+   "timestamp": "20230110110620",
    "url": "https://www.mvsd21.org/",
    "station": "apptegy-marsh-valley-id",
-   "why": "storm day 2024-01-05 (market score 0.25)"
+   "why": "storm day 2023-01-10 (market score 0.25)"
   },
   {
-   "timestamp": "20230320171550",
+   "timestamp": "20230106110538",
    "url": "https://www.mvsd21.org/",
    "station": "apptegy-marsh-valley-id",
-   "why": "storm day 2023-03-21 (market score 0.25)"
+   "why": "storm day 2023-01-06 (market score 0.25)"
   },
   {
-   "timestamp": "20240105010414",
+   "timestamp": "20230109230433",
    "url": "https://www.mvsd21.org/",
    "station": "apptegy-marsh-valley-id",
-   "why": "storm day 2024-01-05 (market score 0.25)"
+   "why": "storm day 2023-01-10 (market score 0.25)"
   },
   {
-   "timestamp": "20240105041533",
-   "url": "https://www.mvsd21.org/",
-   "station": "apptegy-marsh-valley-id",
-   "why": "storm day 2024-01-05 (market score 0.25)"
-  },
-  {
-   "timestamp": "20230330102036",
-   "url": "https://www.mvsd21.org/",
-   "station": "apptegy-marsh-valley-id",
-   "why": "storm day 2023-03-30 (market score 0.25)"
-  },
-  {
-   "timestamp": "20230413085838",
-   "url": "https://www.mvsd21.org/",
-   "station": "apptegy-marsh-valley-id",
-   "why": "storm day 2023-04-13 (market score 0.25)"
-  },
-  {
-   "timestamp": "20230328232051",
-   "url": "https://www.mvsd21.org/",
-   "station": "apptegy-marsh-valley-id",
-   "why": "storm day 2023-03-29 (market score 0.25)"
-  },
-  {
-   "timestamp": "20240105115937",
-   "url": "https://www.mvsd21.org/",
-   "station": "apptegy-marsh-valley-id",
-   "why": "storm day 2024-01-05 (market score 0.25)"
-  },
-  {
-   "timestamp": "20230330230525",
+   "timestamp": "20230331110631",
    "url": "https://www.mvsd21.org/",
    "station": "apptegy-marsh-valley-id",
    "why": "storm day 2023-03-31 (market score 0.25)"
   },
   {
-   "timestamp": "20230329230446",
+   "timestamp": "20230108230559",
    "url": "https://www.mvsd21.org/",
    "station": "apptegy-marsh-valley-id",
-   "why": "storm day 2023-03-30 (market score 0.25)"
+   "why": "storm day 2023-01-09 (market score 0.25)"
   },
   {
-   "timestamp": "20230319163922",
-   "url": "https://www.mvsd21.org/",
-   "station": "apptegy-marsh-valley-id",
-   "why": "storm day 2023-03-20 (market score 0.25)"
-  },
-  {
-   "timestamp": "20230319184648",
-   "url": "https://www.mvsd21.org/",
-   "station": "apptegy-marsh-valley-id",
-   "why": "storm day 2023-03-20 (market score 0.25)"
-  },
-  {
-   "timestamp": "20231122231941",
-   "url": "https://www.mvsd21.org/",
-   "station": "apptegy-marsh-valley-id",
-   "why": "storm day 2023-11-23 (market score 0.25)"
-  },
-  {
-   "timestamp": "20230330124335",
-   "url": "https://www.mvsd21.org/",
-   "station": "apptegy-marsh-valley-id",
-   "why": "storm day 2023-03-30 (market score 0.25)"
-  },
-  {
-   "timestamp": "20230331103911",
+   "timestamp": "20230331043821",
    "url": "https://www.mvsd21.org/",
    "station": "apptegy-marsh-valley-id",
    "why": "storm day 2023-03-31 (market score 0.25)"
   },
   {
-   "timestamp": "20230402223128",
+   "timestamp": "20240215114240",
    "url": "https://www.mvsd21.org/",
    "station": "apptegy-marsh-valley-id",
-   "why": "storm day 2023-04-03 (market score 0.25)"
+   "why": "storm day 2024-02-15 (market score 0.25)"
   },
   {
-   "timestamp": "20231208110327",
+   "timestamp": "20240116225901",
+   "url": "https://www.mvsd21.org/",
+   "station": "apptegy-marsh-valley-id",
+   "why": "storm day 2024-01-17 (market score 0.25)"
+  },
+  {
+   "timestamp": "20240118134305",
+   "url": "https://www.mvsd21.org/",
+   "station": "apptegy-marsh-valley-id",
+   "why": "storm day 2024-01-18 (market score 0.25)"
+  },
+  {
+   "timestamp": "20240305105904",
+   "url": "https://www.mvsd21.org/",
+   "station": "apptegy-marsh-valley-id",
+   "why": "storm day 2024-03-05 (market score 0.25)"
+  },
+  {
+   "timestamp": "20231201105611",
+   "url": "https://www.mvsd21.org/",
+   "station": "apptegy-marsh-valley-id",
+   "why": "storm day 2023-12-01 (market score 0.25)"
+  },
+  {
+   "timestamp": "20240304160902",
+   "url": "https://www.mvsd21.org/",
+   "station": "apptegy-marsh-valley-id",
+   "why": "storm day 2024-03-05 (market score 0.25)"
+  },
+  {
+   "timestamp": "20231201063707",
+   "url": "https://www.mvsd21.org/",
+   "station": "apptegy-marsh-valley-id",
+   "why": "storm day 2023-12-01 (market score 0.25)"
+  },
+  {
+   "timestamp": "20230320004750",
+   "url": "https://www.mvsd21.org/",
+   "station": "apptegy-marsh-valley-id",
+   "why": "storm day 2023-03-20 (market score 0.25)"
+  },
+  {
+   "timestamp": "20240104225851",
+   "url": "https://www.mvsd21.org/",
+   "station": "apptegy-marsh-valley-id",
+   "why": "storm day 2024-01-05 (market score 0.25)"
+  },
+  {
+   "timestamp": "20240304230124",
+   "url": "https://www.mvsd21.org/",
+   "station": "apptegy-marsh-valley-id",
+   "why": "storm day 2024-03-05 (market score 0.25)"
+  },
+  {
+   "timestamp": "20240105105615",
+   "url": "https://www.mvsd21.org/",
+   "station": "apptegy-marsh-valley-id",
+   "why": "storm day 2024-01-05 (market score 0.25)"
+  },
+  {
+   "timestamp": "20231208040107",
    "url": "https://www.mvsd21.org/",
    "station": "apptegy-marsh-valley-id",
    "why": "storm day 2023-12-08 (market score 0.25)"
   },
   {
-   "timestamp": "20230320111127",
+   "timestamp": "20240105121815",
+   "url": "https://www.mvsd21.org/",
+   "station": "apptegy-marsh-valley-id",
+   "why": "storm day 2024-01-05 (market score 0.25)"
+  },
+  {
+   "timestamp": "20230403050334",
+   "url": "https://www.mvsd21.org/",
+   "station": "apptegy-marsh-valley-id",
+   "why": "storm day 2023-04-03 (market score 0.25)"
+  },
+  {
+   "timestamp": "20230329110457",
+   "url": "https://www.mvsd21.org/",
+   "station": "apptegy-marsh-valley-id",
+   "why": "storm day 2023-03-29 (market score 0.25)"
+  },
+  {
+   "timestamp": "20230404015943",
+   "url": "https://www.mvsd21.org/",
+   "station": "apptegy-marsh-valley-id",
+   "why": "storm day 2023-04-04 (market score 0.25)"
+  },
+  {
+   "timestamp": "20230330135144",
+   "url": "https://www.mvsd21.org/",
+   "station": "apptegy-marsh-valley-id",
+   "why": "storm day 2023-03-30 (market score 0.25)"
+  },
+  {
+   "timestamp": "20230403153033",
+   "url": "https://www.mvsd21.org/",
+   "station": "apptegy-marsh-valley-id",
+   "why": "storm day 2023-04-03 (market score 0.25)"
+  },
+  {
+   "timestamp": "20230330111207",
+   "url": "https://www.mvsd21.org/",
+   "station": "apptegy-marsh-valley-id",
+   "why": "storm day 2023-03-30 (market score 0.25)"
+  },
+  {
+   "timestamp": "20230404135430",
+   "url": "https://www.mvsd21.org/",
+   "station": "apptegy-marsh-valley-id",
+   "why": "storm day 2023-04-04 (market score 0.25)"
+  },
+  {
+   "timestamp": "20230320150409",
    "url": "https://www.mvsd21.org/",
    "station": "apptegy-marsh-valley-id",
    "why": "storm day 2023-03-20 (market score 0.25)"
   },
   {
-   "timestamp": "20230320084323",
-   "url": "https://www.mvsd21.org/",
-   "station": "apptegy-marsh-valley-id",
-   "why": "storm day 2023-03-20 (market score 0.25)"
-  },
-  {
-   "timestamp": "20230320193653",
-   "url": "https://www.mvsd21.org/",
-   "station": "apptegy-marsh-valley-id",
-   "why": "storm day 2023-03-21 (market score 0.25)"
-  },
-  {
-   "timestamp": "20230320101929",
-   "url": "https://www.mvsd21.org/",
-   "station": "apptegy-marsh-valley-id",
-   "why": "storm day 2023-03-20 (market score 0.25)"
-  },
-  {
-   "timestamp": "20230320092030",
-   "url": "https://www.mvsd21.org/",
-   "station": "apptegy-marsh-valley-id",
-   "why": "storm day 2023-03-20 (market score 0.25)"
-  },
-  {
-   "timestamp": "20230321210537",
+   "timestamp": "20230322115406",
    "url": "https://www.mvsd21.org/",
    "station": "apptegy-marsh-valley-id",
    "why": "storm day 2023-03-22 (market score 0.25)"
   },
   {
-   "timestamp": "20230412193445",
+   "timestamp": "20221229230438",
    "url": "https://www.mvsd21.org/",
    "station": "apptegy-marsh-valley-id",
-   "why": "storm day 2023-04-13 (market score 0.25)"
+   "why": "storm day 2022-12-30 (market score 0.25)"
   },
   {
-   "timestamp": "20230320124133",
+   "timestamp": "20231201115304",
    "url": "https://www.mvsd21.org/",
    "station": "apptegy-marsh-valley-id",
-   "why": "storm day 2023-03-20 (market score 0.25)"
+   "why": "storm day 2023-12-01 (market score 0.25)"
   },
   {
-   "timestamp": "20230320182111",
+   "timestamp": "20221202082400",
    "url": "https://www.mvsd21.org/",
    "station": "apptegy-marsh-valley-id",
-   "why": "storm day 2023-03-21 (market score 0.25)"
+   "why": "storm day 2022-12-02 (market score 0.25)"
   },
   {
-   "timestamp": "20230320204232",
+   "timestamp": "20221201011036",
    "url": "https://www.mvsd21.org/",
    "station": "apptegy-marsh-valley-id",
-   "why": "storm day 2023-03-21 (market score 0.25)"
+   "why": "storm day 2022-12-01 (market score 0.25)"
   },
   {
-   "timestamp": "20230321181145",
+   "timestamp": "20221108111406",
    "url": "https://www.mvsd21.org/",
    "station": "apptegy-marsh-valley-id",
-   "why": "storm day 2023-03-22 (market score 0.25)"
+   "why": "storm day 2022-11-08 (market score 0.25)"
+  },
+  {
+   "timestamp": "20221201062646",
+   "url": "https://www.mvsd21.org/",
+   "station": "apptegy-marsh-valley-id",
+   "why": "storm day 2022-12-01 (market score 0.25)"
+  },
+  {
+   "timestamp": "20221212022403",
+   "url": "https://www.mvsd21.org/",
+   "station": "apptegy-marsh-valley-id",
+   "why": "storm day 2022-12-12 (market score 0.25)"
+  },
+  {
+   "timestamp": "20221212133351",
+   "url": "https://www.mvsd21.org/",
+   "station": "apptegy-marsh-valley-id",
+   "why": "storm day 2022-12-12 (market score 0.25)"
+  },
+  {
+   "timestamp": "20220411232327",
+   "url": "https://www.mvsd21.org/",
+   "station": "apptegy-marsh-valley-id",
+   "why": "storm day 2022-04-12 (market score 0.25)"
+  },
+  {
+   "timestamp": "20220412112330",
+   "url": "https://www.mvsd21.org/",
+   "station": "apptegy-marsh-valley-id",
+   "why": "storm day 2022-04-12 (market score 0.25)"
+  },
+  {
+   "timestamp": "20220411112358",
+   "url": "https://www.mvsd21.org/",
+   "station": "apptegy-marsh-valley-id",
+   "why": "storm day 2022-04-11 (market score 0.25)"
+  },
+  {
+   "timestamp": "20220410232318",
+   "url": "https://www.mvsd21.org/",
+   "station": "apptegy-marsh-valley-id",
+   "why": "storm day 2022-04-11 (market score 0.25)"
+  },
+  {
+   "timestamp": "20221202121248",
+   "url": "https://www.mvsd21.org/",
+   "station": "apptegy-marsh-valley-id",
+   "why": "storm day 2022-12-02 (market score 0.25)"
+  },
+  {
+   "timestamp": "20221212004303",
+   "url": "https://www.mvsd21.org/",
+   "station": "apptegy-marsh-valley-id",
+   "why": "storm day 2022-12-12 (market score 0.25)"
+  },
+  {
+   "timestamp": "20220414112320",
+   "url": "https://www.mvsd21.org/",
+   "station": "apptegy-marsh-valley-id",
+   "why": "storm day 2022-04-14 (market score 0.25)"
+  },
+  {
+   "timestamp": "20221107231401",
+   "url": "https://www.mvsd21.org/",
+   "station": "apptegy-marsh-valley-id",
+   "why": "storm day 2022-11-08 (market score 0.25)"
+  },
+  {
+   "timestamp": "20220413232344",
+   "url": "https://www.mvsd21.org/",
+   "station": "apptegy-marsh-valley-id",
+   "why": "storm day 2022-04-14 (market score 0.25)"
+  },
+  {
+   "timestamp": "20220105233028",
+   "url": "https://www.mvsd21.org/",
+   "station": "apptegy-marsh-valley-id",
+   "why": "storm day 2022-01-06 (market score 0.25)"
+  },
+  {
+   "timestamp": "20220105112622",
+   "url": "https://www.mvsd21.org/",
+   "station": "apptegy-marsh-valley-id",
+   "why": "storm day 2022-01-05 (market score 0.25)"
+  },
+  {
+   "timestamp": "20211230232559",
+   "url": "https://www.mvsd21.org/",
+   "station": "apptegy-marsh-valley-id",
+   "why": "storm day 2021-12-31 (market score 0.25)"
+  },
+  {
+   "timestamp": "20220104112532",
+   "url": "https://www.mvsd21.org/",
+   "station": "apptegy-marsh-valley-id",
+   "why": "storm day 2022-01-04 (market score 0.25)"
+  },
+  {
+   "timestamp": "20220103234940",
+   "url": "https://www.mvsd21.org/",
+   "station": "apptegy-marsh-valley-id",
+   "why": "storm day 2022-01-04 (market score 0.25)"
+  },
+  {
+   "timestamp": "20220106112541",
+   "url": "https://www.mvsd21.org/",
+   "station": "apptegy-marsh-valley-id",
+   "why": "storm day 2022-01-06 (market score 0.25)"
+  },
+  {
+   "timestamp": "20211231112632",
+   "url": "https://www.mvsd21.org/",
+   "station": "apptegy-marsh-valley-id",
+   "why": "storm day 2021-12-31 (market score 0.25)"
+  },
+  {
+   "timestamp": "20241217141559",
+   "url": "https://www.mvsd21.org/",
+   "station": "apptegy-marsh-valley-id",
+   "why": "storm day 2024-12-17 (market score 0.25)"
+  },
+  {
+   "timestamp": "20241216233027",
+   "url": "https://www.mvsd21.org/",
+   "station": "apptegy-marsh-valley-id",
+   "why": "storm day 2024-12-17 (market score 0.25)"
+  },
+  {
+   "timestamp": "20250417112124",
+   "url": "https://www.juabsd.org/",
+   "station": "apptegy-juab-ut",
+   "why": "storm day 2025-04-17 (market score 0.25)"
   }
  ]
 }
