@@ -3,9 +3,10 @@
  * A school opened from the map: which schools a click or a tap reaches (a
  * mark's edge within a mouse's or a finger's reach, while the mark is drawn;
  * a name under the pointer; a lit school from the glow's own data at any
- * zoom; a speck of dust from the glow's own data further out), what it does with them (opens the one it means, or zooms in toward
- * several), and when (a mouse's click at once, a finger's tap once no second
- * tap follows; never a double tap, a pinch or a hand moving the map).
+ * zoom; a speck of dust from the glow's own data further out), what it does
+ * with them (opens the one it means, or zooms in toward several), and when (a
+ * mouse's click at once, a finger's tap once no second tap follows; never a
+ * double tap, a pinch or a hand moving the map).
  */
 import type { Map as MapLibreMap } from 'maplibre-gl';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';

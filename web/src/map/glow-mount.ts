@@ -63,7 +63,7 @@ export function litRadius(zoom: number): number {
  */
 export const DOT_COLOR = '#f5f5f5';
 
-/** Every school as the dust draws it, in directory order: where each is, its kind flags and who it is. */
+/** Every school as the dust draws it, in directory order: where each is, its kind and who it is. */
 export interface DustSchools {
   /** Longitude and latitude in degrees, interleaved. */
   readonly lngLat: Float64Array;

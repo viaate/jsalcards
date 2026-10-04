@@ -308,7 +308,8 @@ export function boot(options: BootOptions): Services {
   // Clicks on schools, from the moment the map takes input. Until their code is in (it loads
   // on the first click, or once the map is on screen) each is kept, and handed on only if the
   // map has not moved since (map/kept-clicks.ts). A lit school, and a school drawn as dust, is
-  // found in the glow's own data, read as each click comes. A tap on several schools zooms in as the map's own flights go.
+  // found in the glow's own data, read as each click comes. A tap on several schools zooms in as
+  // the map's own flights go.
   let taps: SchoolTaps | null = null;
   /** Where the last flight a pick or a tap set off was going: for a flight stopped short. */
   let flight: MapView | null = null;
