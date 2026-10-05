@@ -1,76 +1,250 @@
 {
   "snapshots": [
     {
-      "timestamp": "20230313141103",
-      "url": "http://wsd.net/",
-      "station": "apptegy-weber-ut",
-      "why": "2023-03-13: within 2 days of one of its closure days"
+      "timestamp": "20210413005420",
+      "url": "https://www.bighorn1.com/",
+      "station": "apptegy-big-horn-1-wy",
+      "why": "2021-04-13: within 2 days of one of its closure days"
     },
     {
-      "timestamp": "20240119233246",
-      "url": "http://wsd.net/",
-      "station": "apptegy-weber-ut",
-      "why": "2024-01-20: within 2 days of one of its closure days"
+      "timestamp": "20210916115714",
+      "url": "https://bighorn1.com/",
+      "station": "apptegy-big-horn-1-wy",
+      "why": "2021-09-16: within 2 days of one of its closure days"
     },
     {
-      "timestamp": "20240208173959",
-      "url": "http://wsd.net/",
-      "station": "apptegy-weber-ut",
-      "why": "2024-02-09: within 2 days of one of its closure days"
+      "timestamp": "20210307165130",
+      "url": "https://bighorn1.com/",
+      "station": "apptegy-big-horn-1-wy",
+      "why": "2021-03-08: within 2 days of one of its closure days"
     },
     {
-      "timestamp": "20240914080024",
-      "url": "https://www.mcpss.com/",
-      "station": "apptegy-mobile-al",
-      "why": "2024-09-14: within 2 days of one of its closure days"
+      "timestamp": "20240520193059",
+      "url": "https://www.pcsd1.org/",
+      "station": "apptegy-park-1-wy",
+      "why": "storm day 2024-05-21 (market score 0.25)"
     },
     {
-      "timestamp": "20220219030804",
-      "url": "https://www.wsh1.k12.wy.us/",
-      "station": "apptegy-washakie-1-wy",
-      "why": "2022-02-19: within 2 days of one of its closure days"
+      "timestamp": "20241117233117",
+      "url": "https://www.pcsd1.org/",
+      "station": "apptegy-park-1-wy",
+      "why": "storm day 2024-11-18 (market score 0.25)"
     },
     {
-      "timestamp": "20230213142528",
-      "url": "https://www.graniteschools.org/wp-json/wp/v2/en?notification_type=district",
-      "station": "district-homepage-granite-ut",
-      "why": "one capture of each distinct answer of the notifications file it loads (digest QK5VCCVS)"
+      "timestamp": "20241117162601",
+      "url": "https://www.pcsd1.org/",
+      "station": "apptegy-park-1-wy",
+      "why": "storm day 2024-11-18 (market score 0.25)"
+    },
+    {
+      "timestamp": "20210916120547",
+      "url": "https://www.park6.org/",
+      "station": "apptegy-park-6-wy",
+      "why": "2021-09-16: within 2 days of one of its closure days"
+    },
+    {
+      "timestamp": "20210125044216",
+      "url": "https://www.park6.org/",
+      "station": "apptegy-park-6-wy",
+      "why": "2021-01-25: within 2 days of one of its closure days"
+    },
+    {
+      "timestamp": "20170910163547",
+      "url": "http://www.suwannee.k12.fl.us:80/",
+      "station": "apptegy-suwannee-fl",
+      "why": "storm day 2017-09-11 (market score 1.00)"
+    },
+    {
+      "timestamp": "20210126025137",
+      "url": "https://www.bighorn1.com/",
+      "station": "apptegy-big-horn-1-wy",
+      "why": "2021-01-26: within 2 days of one of its closure days"
+    },
+    {
+      "timestamp": "20210125004646",
+      "url": "https://www.bighorn1.com/",
+      "station": "apptegy-big-horn-1-wy",
+      "why": "2021-01-25: within 2 days of one of its closure days"
+    },
+    {
+      "timestamp": "20241029020011",
+      "url": "https://www.pcsd1.org/",
+      "station": "apptegy-park-1-wy",
+      "why": "storm day 2024-10-29 (market score 0.25)"
+    },
+    {
+      "timestamp": "20241029065224",
+      "url": "https://www.pcsd1.org/",
+      "station": "apptegy-park-1-wy",
+      "why": "storm day 2024-10-29 (market score 0.25)"
+    },
+    {
+      "timestamp": "20240521113139",
+      "url": "https://www.pcsd1.org/",
+      "station": "apptegy-park-1-wy",
+      "why": "storm day 2024-05-21 (market score 0.25)"
+    },
+    {
+      "timestamp": "20170516162515",
+      "url": "http://www.pcsd1.org:80/",
+      "station": "apptegy-park-1-wy",
+      "why": "storm day 2017-05-17 (market score 0.25)"
+    },
+    {
+      "timestamp": "20210127091115",
+      "url": "https://www.pcsd1.org/",
+      "station": "apptegy-park-1-wy",
+      "why": "storm day 2021-01-27 (market score 0.25)"
+    },
+    {
+      "timestamp": "20201022141359",
+      "url": "https://www.pcsd1.org/",
+      "station": "apptegy-park-1-wy",
+      "why": "storm day 2020-10-22 (market score 0.25)"
+    },
+    {
+      "timestamp": "20210204185348",
+      "url": "https://www.pcsd1.org/",
+      "station": "apptegy-park-1-wy",
+      "why": "storm day 2021-02-05 (market score 0.25)"
+    },
+    {
+      "timestamp": "20180109122404",
+      "url": "http://www.pcsd1.org:80/",
+      "station": "apptegy-park-1-wy",
+      "why": "storm day 2018-01-09 (market score 0.25)"
+    },
+    {
+      "timestamp": "20180302023247",
+      "url": "http://www.pcsd1.org:80/",
+      "station": "apptegy-park-1-wy",
+      "why": "storm day 2018-03-02 (market score 0.25)"
+    },
+    {
+      "timestamp": "20241117011203",
+      "url": "https://www.pcsd1.org/",
+      "station": "apptegy-park-1-wy",
+      "why": "2024-11-17: within 2 days of one of its closure days"
+    },
+    {
+      "timestamp": "20241117122538",
+      "url": "https://www.pcsd1.org/",
+      "station": "apptegy-park-1-wy",
+      "why": "2024-11-17: within 2 days of one of its closure days"
+    },
+    {
+      "timestamp": "20241116021916",
+      "url": "https://www.pcsd1.org/",
+      "station": "apptegy-park-1-wy",
+      "why": "2024-11-16: within 2 days of one of its closure days"
+    },
+    {
+      "timestamp": "20241117082746",
+      "url": "https://www.pcsd1.org/",
+      "station": "apptegy-park-1-wy",
+      "why": "2024-11-17: within 2 days of one of its closure days"
+    },
+    {
+      "timestamp": "20241117135324",
+      "url": "https://www.pcsd1.org/",
+      "station": "apptegy-park-1-wy",
+      "why": "2024-11-17: within 2 days of one of its closure days"
+    },
+    {
+      "timestamp": "20241116175859",
+      "url": "https://www.pcsd1.org/",
+      "station": "apptegy-park-1-wy",
+      "why": "2024-11-17: within 2 days of one of its closure days"
+    },
+    {
+      "timestamp": "20241101131838",
+      "url": "https://www.pcsd1.org/",
+      "station": "apptegy-park-1-wy",
+      "why": "2024-11-01: within 2 days of one of its closure days"
+    },
+    {
+      "timestamp": "20241031220901",
+      "url": "https://www.pcsd1.org/",
+      "station": "apptegy-park-1-wy",
+      "why": "2024-11-01: within 2 days of one of its closure days"
+    },
+    {
+      "timestamp": "20240327043232",
+      "url": "https://www.pcsd1.org/",
+      "station": "apptegy-park-1-wy",
+      "why": "2024-03-27: within 2 days of one of its closure days"
+    },
+    {
+      "timestamp": "20240325233743",
+      "url": "https://www.pcsd1.org/",
+      "station": "apptegy-park-1-wy",
+      "why": "2024-03-26: within 2 days of one of its closure days"
+    },
+    {
+      "timestamp": "20241031133502",
+      "url": "https://www.pcsd1.org/",
+      "station": "apptegy-park-1-wy",
+      "why": "2024-10-31: within 2 days of one of its closure days"
+    },
+    {
+      "timestamp": "20241028113204",
+      "url": "https://www.pcsd1.org/",
+      "station": "apptegy-park-1-wy",
+      "why": "2024-10-28: within 2 days of one of its closure days"
+    },
+    {
+      "timestamp": "20241027165352",
+      "url": "https://www.pcsd1.org/",
+      "station": "apptegy-park-1-wy",
+      "why": "2024-10-28: within 2 days of one of its closure days"
+    },
+    {
+      "timestamp": "20241027182417",
+      "url": "https://www.pcsd1.org/",
+      "station": "apptegy-park-1-wy",
+      "why": "2024-10-28: within 2 days of one of its closure days"
+    },
+    {
+      "timestamp": "20240504010810",
+      "url": "https://www.pcsd1.org/",
+      "station": "apptegy-park-1-wy",
+      "why": "2024-05-04: within 2 days of one of its closure days"
+    },
+    {
+      "timestamp": "20240504233300",
+      "url": "https://www.pcsd1.org/",
+      "station": "apptegy-park-1-wy",
+      "why": "2024-05-05: within 2 days of one of its closure days"
+    },
+    {
+      "timestamp": "20170919182008",
+      "url": "http://www.pcsd1.org:80/",
+      "station": "apptegy-park-1-wy",
+      "why": "2017-09-20: within 2 days of one of its closure days"
+    },
+    {
+      "timestamp": "20240229140019",
+      "url": "https://www.pcsd1.org/",
+      "station": "apptegy-park-1-wy",
+      "why": "2024-02-29: within 2 days of one of its closure days"
+    },
+    {
+      "timestamp": "20220101212452",
+      "url": "https://www.pcsd1.org/",
+      "station": "apptegy-park-1-wy",
+      "why": "2022-01-02: within 2 days of one of its closure days"
+    },
+    {
+      "timestamp": "20190718084205",
+      "url": "https://www.pcsd1.org/",
+      "station": "apptegy-park-1-wy",
+      "why": "2019-07-18: within 2 days of one of its closure days"
     },
     {
       "timestamp": "20230515193302",
       "url": "https://www.graniteschools.org/wp-json/wp/v2/en?notification_type=district",
       "station": "district-homepage-granite-ut",
-      "why": "one capture of each distinct answer of the notifications file it loads (digest CFYB573F)"
-    },
-    {
-      "timestamp": "20241217151620",
-      "url": "https://www.graniteschools.org/wp-json/wp/v2/en?notification_type=district",
-      "station": "district-homepage-granite-ut",
-      "why": "one capture of each distinct answer of the notifications file it loads (digest EEDOHMAO)"
-    },
-    {
-      "timestamp": "20250925221200",
-      "url": "https://www.graniteschools.org/wp-json/wp/v2/en?notification_type=district",
-      "station": "district-homepage-granite-ut",
-      "why": "one capture of each distinct answer of the notifications file it loads (digest PGNLU6DW)"
-    },
-    {
-      "timestamp": "20230515193419",
-      "url": "https://www.graniteschools.org/wp-json/wp/v2/en?schools=3658,3657&notification_type=school",
-      "station": "district-homepage-granite-ut",
-      "why": "one capture of each distinct answer of the notifications file it loads (digest AYDTYFG2)"
-    },
-    {
-      "timestamp": "20230515202614",
-      "url": "https://www.graniteschools.org/wp-json/wp/v2/en",
-      "station": "district-homepage-granite-ut",
-      "why": "one capture of each distinct answer of the notifications file it loads (digest SZ2DUPXA)"
-    },
-    {
-      "timestamp": "20250904160225",
-      "url": "https://www.graniteschools.org/wp-json/wp/v2/en?schools=3705,3657&notification_type=school",
-      "station": "district-homepage-granite-ut",
-      "why": "one capture of each distinct answer of the notifications file it loads (digest CXRLJFX5)"
+      "why": "one capture of each distinct answer of the notifications file it loads (digest CFYB573F); timed out in run 37315173427"
     }
   ]
 }
