@@ -1,1156 +1,1156 @@
 {
   "snapshots": [
     {
-      "timestamp": "20240111151221",
-      "url": "http://wsd.net/",
-      "station": "apptegy-weber-ut",
-      "why": "2024-01-11: within 2 days of one of its closure days"
+      "timestamp": "20220308081505",
+      "url": "https://www.murrayschools.org/",
+      "station": "smartsites-murray-ut",
+      "why": "storm day 2022-03-08 (market score 1.00)"
     },
     {
-      "timestamp": "20240111033328",
-      "url": "http://wsd.net/",
-      "station": "apptegy-weber-ut",
-      "why": "2024-01-11: within 2 days of one of its closure days"
+      "timestamp": "20220410232329",
+      "url": "https://www.murrayschools.org/",
+      "station": "smartsites-murray-ut",
+      "why": "storm day 2022-04-11 (market score 1.00)"
     },
     {
-      "timestamp": "20240105220755",
-      "url": "http://wsd.net/",
-      "station": "apptegy-weber-ut",
-      "why": "2024-01-06: within 2 days of one of its closure days"
+      "timestamp": "20220411112302",
+      "url": "https://www.murrayschools.org/",
+      "station": "smartsites-murray-ut",
+      "why": "storm day 2022-04-11 (market score 1.00)"
     },
     {
-      "timestamp": "20240107154140",
-      "url": "http://wsd.net/",
-      "station": "apptegy-weber-ut",
-      "why": "2024-01-07: within 2 days of one of its closure days"
+      "timestamp": "20220411232337",
+      "url": "https://www.murrayschools.org/",
+      "station": "smartsites-murray-ut",
+      "why": "storm day 2022-04-12 (market score 1.00)"
     },
     {
-      "timestamp": "20231203131735",
-      "url": "http://wsd.net/",
-      "station": "apptegy-weber-ut",
-      "why": "2023-12-03: within 2 days of one of its closure days"
+      "timestamp": "20220412112326",
+      "url": "https://www.murrayschools.org/",
+      "station": "smartsites-murray-ut",
+      "why": "storm day 2022-04-12 (market score 1.00)"
     },
     {
-      "timestamp": "20231206143012",
-      "url": "http://wsd.net/",
-      "station": "apptegy-weber-ut",
-      "why": "2023-12-06: within 2 days of one of its closure days"
+      "timestamp": "20241226112759",
+      "url": "https://www.murrayschools.org/",
+      "station": "smartsites-murray-ut",
+      "why": "storm day 2024-12-26 (market score 1.00)"
     },
     {
-      "timestamp": "20231205181852",
-      "url": "http://wsd.net/",
-      "station": "apptegy-weber-ut",
-      "why": "2023-12-06: within 2 days of one of its closure days"
+      "timestamp": "20241227121431",
+      "url": "https://www.murrayschools.org/",
+      "station": "smartsites-murray-ut",
+      "why": "storm day 2024-12-27 (market score 1.00)"
     },
     {
-      "timestamp": "20240110190905",
-      "url": "http://wsd.net/",
-      "station": "apptegy-weber-ut",
-      "why": "2024-01-11: within 2 days of one of its closure days"
+      "timestamp": "20241225232632",
+      "url": "https://www.murrayschools.org/",
+      "station": "smartsites-murray-ut",
+      "why": "storm day 2024-12-26 (market score 1.00)"
     },
     {
-      "timestamp": "20231207022700",
-      "url": "http://wsd.net/",
-      "station": "apptegy-weber-ut",
-      "why": "2023-12-07: within 2 days of one of its closure days"
+      "timestamp": "20230129231358",
+      "url": "https://www.murrayschools.org/",
+      "station": "smartsites-murray-ut",
+      "why": "storm day 2023-01-30 (market score 0.50)"
     },
     {
-      "timestamp": "20240103011748",
-      "url": "http://wsd.net/",
-      "station": "apptegy-weber-ut",
-      "why": "2024-01-03: within 2 days of one of its closure days"
+      "timestamp": "20230130110531",
+      "url": "https://www.murrayschools.org/",
+      "station": "smartsites-murray-ut",
+      "why": "storm day 2023-01-30 (market score 0.50)"
     },
     {
-      "timestamp": "20240105202002",
-      "url": "http://wsd.net/",
-      "station": "apptegy-weber-ut",
-      "why": "2024-01-06: within 2 days of one of its closure days"
+      "timestamp": "20260211230544",
+      "url": "https://www.murrayschools.org/",
+      "station": "smartsites-murray-ut",
+      "why": "storm day 2026-02-12 (market score 0.25)"
     },
     {
-      "timestamp": "20240106005950",
-      "url": "http://wsd.net/",
-      "station": "apptegy-weber-ut",
-      "why": "2024-01-06: within 2 days of one of its closure days"
+      "timestamp": "20260210230440",
+      "url": "https://www.murrayschools.org/",
+      "station": "smartsites-murray-ut",
+      "why": "storm day 2026-02-11 (market score 0.25)"
     },
     {
-      "timestamp": "20240106011657",
-      "url": "http://wsd.net/",
-      "station": "apptegy-weber-ut",
-      "why": "2024-01-06: within 2 days of one of its closure days"
+      "timestamp": "20260224160050",
+      "url": "https://www.murrayschools.org/",
+      "station": "smartsites-murray-ut",
+      "why": "storm day 2026-02-25 (market score 0.25)"
     },
     {
-      "timestamp": "20240106023909",
-      "url": "http://wsd.net/",
-      "station": "apptegy-weber-ut",
-      "why": "2024-01-06: within 2 days of one of its closure days"
+      "timestamp": "20260101074325",
+      "url": "https://www.murrayschools.org/",
+      "station": "smartsites-murray-ut",
+      "why": "storm day 2026-01-01 (market score 0.25)"
     },
     {
-      "timestamp": "20240104011846",
-      "url": "http://wsd.net/",
-      "station": "apptegy-weber-ut",
-      "why": "2024-01-04: within 2 days of one of its closure days"
+      "timestamp": "20251225193033",
+      "url": "https://www.murrayschools.org/",
+      "station": "smartsites-murray-ut",
+      "why": "storm day 2025-12-26 (market score 0.25)"
     },
     {
-      "timestamp": "20240509035558",
-      "url": "http://wsd.net/",
-      "station": "apptegy-weber-ut",
-      "why": "2024-05-09: within 2 days of one of its closure days"
+      "timestamp": "20260105111458",
+      "url": "https://www.murrayschools.org/",
+      "station": "smartsites-murray-ut",
+      "why": "storm day 2026-01-05 (market score 0.25)"
     },
     {
-      "timestamp": "20231209131842",
-      "url": "http://wsd.net/",
-      "station": "apptegy-weber-ut",
-      "why": "2023-12-09: within 2 days of one of its closure days"
+      "timestamp": "20251225230251",
+      "url": "https://www.murrayschools.org/",
+      "station": "smartsites-murray-ut",
+      "why": "storm day 2025-12-26 (market score 0.25)"
     },
     {
-      "timestamp": "20240509014637",
-      "url": "http://wsd.net/",
-      "station": "apptegy-weber-ut",
-      "why": "2024-05-09: within 2 days of one of its closure days"
+      "timestamp": "20260102130558",
+      "url": "https://www.murrayschools.org/",
+      "station": "smartsites-murray-ut",
+      "why": "storm day 2026-01-02 (market score 0.25)"
     },
     {
-      "timestamp": "20231210011753",
-      "url": "http://wsd.net/",
-      "station": "apptegy-weber-ut",
-      "why": "2023-12-10: within 2 days of one of its closure days"
+      "timestamp": "20251226123913",
+      "url": "https://www.murrayschools.org/",
+      "station": "smartsites-murray-ut",
+      "why": "storm day 2025-12-26 (market score 0.25)"
     },
     {
-      "timestamp": "20230129011643",
-      "url": "http://wsd.net/",
-      "station": "apptegy-weber-ut",
-      "why": "2023-01-29: within 2 days of one of its closure days"
+      "timestamp": "20260101110414",
+      "url": "https://www.murrayschools.org/",
+      "station": "smartsites-murray-ut",
+      "why": "storm day 2026-01-01 (market score 0.25)"
     },
     {
-      "timestamp": "20230202033332",
-      "url": "http://wsd.net/",
-      "station": "apptegy-weber-ut",
-      "why": "2023-02-02: within 2 days of one of its closure days"
+      "timestamp": "20260224230713",
+      "url": "https://www.murrayschools.org/",
+      "station": "smartsites-murray-ut",
+      "why": "storm day 2026-02-25 (market score 0.25)"
     },
     {
-      "timestamp": "20230126154147",
-      "url": "http://wsd.net/",
-      "station": "apptegy-weber-ut",
-      "why": "2023-01-26: within 2 days of one of its closure days"
+      "timestamp": "20260402011616",
+      "url": "https://www.murrayschools.org/",
+      "station": "smartsites-murray-ut",
+      "why": "storm day 2026-04-02 (market score 0.25)"
     },
     {
-      "timestamp": "20230125011701",
-      "url": "http://wsd.net/",
-      "station": "apptegy-weber-ut",
-      "why": "2023-01-25: within 2 days of one of its closure days"
+      "timestamp": "20260401072136",
+      "url": "https://www.murrayschools.org/",
+      "station": "smartsites-murray-ut",
+      "why": "storm day 2026-04-01 (market score 0.25)"
     },
     {
-      "timestamp": "20230129131730",
-      "url": "http://wsd.net/",
-      "station": "apptegy-weber-ut",
-      "why": "2023-01-29: within 2 days of one of its closure days"
+      "timestamp": "20260402074137",
+      "url": "https://www.murrayschools.org/",
+      "station": "smartsites-murray-ut",
+      "why": "storm day 2026-04-02 (market score 0.25)"
     },
     {
-      "timestamp": "20230201074212",
-      "url": "http://wsd.net/",
-      "station": "apptegy-weber-ut",
-      "why": "2023-02-01: within 2 days of one of its closure days"
+      "timestamp": "20260305201318",
+      "url": "https://www.murrayschools.org/",
+      "station": "smartsites-murray-ut",
+      "why": "storm day 2026-03-06 (market score 0.25)"
     },
     {
-      "timestamp": "20181225131913",
-      "url": "http://wsd.net:80/",
-      "station": "apptegy-weber-ut",
-      "why": "2018-12-25: within 2 days of one of its closure days"
+      "timestamp": "20260305230618",
+      "url": "https://www.murrayschools.org/",
+      "station": "smartsites-murray-ut",
+      "why": "storm day 2026-03-06 (market score 0.25)"
     },
     {
-      "timestamp": "20231209011702",
-      "url": "http://wsd.net/",
-      "station": "apptegy-weber-ut",
-      "why": "2023-12-09: within 2 days of one of its closure days"
+      "timestamp": "20251026190732",
+      "url": "https://www.murrayschools.org/",
+      "station": "smartsites-murray-ut",
+      "why": "storm day 2025-10-27 (market score 0.25)"
     },
     {
-      "timestamp": "20240509134801",
-      "url": "http://wsd.net/",
-      "station": "apptegy-weber-ut",
-      "why": "2024-05-09: within 2 days of one of its closure days"
+      "timestamp": "20250217062704",
+      "url": "https://www.murrayschools.org/",
+      "station": "smartsites-murray-ut",
+      "why": "storm day 2025-02-17 (market score 0.25)"
     },
     {
-      "timestamp": "20230128135641",
-      "url": "http://wsd.net/",
-      "station": "apptegy-weber-ut",
-      "why": "2023-01-28: within 2 days of one of its closure days"
+      "timestamp": "20240104225909",
+      "url": "https://www.murrayschools.org/",
+      "station": "smartsites-murray-ut",
+      "why": "storm day 2024-01-05 (market score 0.25)"
     },
     {
-      "timestamp": "20230126011646",
-      "url": "http://wsd.net/",
-      "station": "apptegy-weber-ut",
-      "why": "2023-01-26: within 2 days of one of its closure days"
+      "timestamp": "20240105105851",
+      "url": "https://www.murrayschools.org/",
+      "station": "smartsites-murray-ut",
+      "why": "storm day 2024-01-05 (market score 0.25)"
     },
     {
-      "timestamp": "20230128042252",
-      "url": "http://wsd.net/",
-      "station": "apptegy-weber-ut",
-      "why": "2023-01-28: within 2 days of one of its closure days"
+      "timestamp": "20240105113619",
+      "url": "https://www.murrayschools.org/",
+      "station": "smartsites-murray-ut",
+      "why": "storm day 2024-01-05 (market score 0.25)"
     },
     {
-      "timestamp": "20230125131706",
-      "url": "http://wsd.net/",
-      "station": "apptegy-weber-ut",
-      "why": "2023-01-25: within 2 days of one of its closure days"
+      "timestamp": "20240105041356",
+      "url": "https://www.murrayschools.org/",
+      "station": "smartsites-murray-ut",
+      "why": "storm day 2024-01-05 (market score 0.25)"
     },
     {
-      "timestamp": "20230201132046",
-      "url": "http://wsd.net/",
-      "station": "apptegy-weber-ut",
-      "why": "2023-02-01: within 2 days of one of its closure days"
+      "timestamp": "20240105062327",
+      "url": "https://www.murrayschools.org/",
+      "station": "smartsites-murray-ut",
+      "why": "storm day 2024-01-05 (market score 0.25)"
     },
     {
-      "timestamp": "20220531100440",
-      "url": "https://wsd.net/",
-      "station": "apptegy-weber-ut",
-      "why": "2022-05-31: within 2 days of one of its closure days"
+      "timestamp": "20240426001940",
+      "url": "https://www.murrayschools.org/",
+      "station": "smartsites-murray-ut",
+      "why": "storm day 2024-04-26 (market score 0.25)"
     },
     {
-      "timestamp": "20220528011528",
-      "url": "http://wsd.net/",
-      "station": "apptegy-weber-ut",
-      "why": "2022-05-28: within 2 days of one of its closure days"
+      "timestamp": "20240426112939",
+      "url": "https://www.murrayschools.org/",
+      "station": "smartsites-murray-ut",
+      "why": "storm day 2024-04-26 (market score 0.25)"
     },
     {
-      "timestamp": "20220529131519",
-      "url": "http://wsd.net/",
-      "station": "apptegy-weber-ut",
-      "why": "2022-05-29: within 2 days of one of its closure days"
+      "timestamp": "20240415114742",
+      "url": "https://www.murrayschools.org/",
+      "station": "smartsites-murray-ut",
+      "why": "storm day 2024-04-15 (market score 0.25)"
     },
     {
-      "timestamp": "20220531131557",
-      "url": "http://wsd.net/",
-      "station": "apptegy-weber-ut",
-      "why": "2022-05-31: within 2 days of one of its closure days"
+      "timestamp": "20240204192052",
+      "url": "https://www.murrayschools.org/",
+      "station": "smartsites-murray-ut",
+      "why": "storm day 2024-02-05 (market score 0.25)"
     },
     {
-      "timestamp": "20220529011534",
-      "url": "http://wsd.net/",
-      "station": "apptegy-weber-ut",
-      "why": "2022-05-29: within 2 days of one of its closure days"
+      "timestamp": "20240204225909",
+      "url": "https://www.murrayschools.org/",
+      "station": "smartsites-murray-ut",
+      "why": "storm day 2024-02-05 (market score 0.25)"
     },
     {
-      "timestamp": "20220601131522",
-      "url": "http://wsd.net/",
-      "station": "apptegy-weber-ut",
-      "why": "2022-06-01: within 2 days of one of its closure days"
+      "timestamp": "20240204205504",
+      "url": "https://www.murrayschools.org/",
+      "station": "smartsites-murray-ut",
+      "why": "storm day 2024-02-05 (market score 0.25)"
     },
     {
-      "timestamp": "20220528131543",
-      "url": "http://wsd.net/",
-      "station": "apptegy-weber-ut",
-      "why": "2022-05-28: within 2 days of one of its closure days"
+      "timestamp": "20240205105823",
+      "url": "https://www.murrayschools.org/",
+      "station": "smartsites-murray-ut",
+      "why": "storm day 2024-02-05 (market score 0.25)"
     },
     {
-      "timestamp": "20220423131547",
-      "url": "http://wsd.net/",
-      "station": "apptegy-weber-ut",
-      "why": "2022-04-23: within 2 days of one of its closure days"
+      "timestamp": "20240215014926",
+      "url": "https://www.murrayschools.org/",
+      "station": "smartsites-murray-ut",
+      "why": "storm day 2024-02-15 (market score 0.25)"
     },
     {
-      "timestamp": "20220424011629",
-      "url": "http://wsd.net/",
-      "station": "apptegy-weber-ut",
-      "why": "2022-04-24: within 2 days of one of its closure days"
+      "timestamp": "20240214231105",
+      "url": "https://www.murrayschools.org/",
+      "station": "smartsites-murray-ut",
+      "why": "storm day 2024-02-15 (market score 0.25)"
     },
     {
-      "timestamp": "20181011171503",
-      "url": "http://kmurphy@wsd.net/",
-      "station": "apptegy-weber-ut",
-      "why": "2018-10-12: within 2 days of one of its closure days"
+      "timestamp": "20240214171424",
+      "url": "https://www.murrayschools.org/",
+      "station": "smartsites-murray-ut",
+      "why": "storm day 2024-02-15 (market score 0.25)"
     },
     {
-      "timestamp": "20220410011824",
-      "url": "http://wsd.net/",
-      "station": "apptegy-weber-ut",
-      "why": "2022-04-10: within 2 days of one of its closure days"
+      "timestamp": "20240215105940",
+      "url": "https://www.murrayschools.org/",
+      "station": "smartsites-murray-ut",
+      "why": "storm day 2024-02-15 (market score 0.25)"
     },
     {
-      "timestamp": "20220409133015",
-      "url": "http://wsd.net/",
-      "station": "apptegy-weber-ut",
-      "why": "2022-04-09: within 2 days of one of its closure days"
+      "timestamp": "20240201193903",
+      "url": "https://www.murrayschools.org/",
+      "station": "smartsites-murray-ut",
+      "why": "storm day 2024-02-02 (market score 0.25)"
     },
     {
-      "timestamp": "20181121072952",
-      "url": "http://wsd.net/",
-      "station": "apptegy-weber-ut",
-      "why": "2018-11-21: within 2 days of one of its closure days"
+      "timestamp": "20240131225808",
+      "url": "https://www.murrayschools.org/",
+      "station": "smartsites-murray-ut",
+      "why": "storm day 2024-02-01 (market score 0.25)"
     },
     {
-      "timestamp": "20220409011923",
-      "url": "http://wsd.net/",
-      "station": "apptegy-weber-ut",
-      "why": "2022-04-09: within 2 days of one of its closure days"
+      "timestamp": "20240215225746",
+      "url": "https://www.murrayschools.org/",
+      "station": "smartsites-murray-ut",
+      "why": "storm day 2024-02-16 (market score 0.25)"
     },
     {
-      "timestamp": "20220424131537",
-      "url": "http://wsd.net/",
-      "station": "apptegy-weber-ut",
-      "why": "2022-04-24: within 2 days of one of its closure days"
+      "timestamp": "20250401004354",
+      "url": "https://www.murrayschools.org/",
+      "station": "smartsites-murray-ut",
+      "why": "storm day 2025-04-01 (market score 0.25)"
     },
     {
-      "timestamp": "20220423011552",
-      "url": "http://wsd.net/",
-      "station": "apptegy-weber-ut",
-      "why": "2022-04-23: within 2 days of one of its closure days"
+      "timestamp": "20240202063024",
+      "url": "https://www.murrayschools.org/",
+      "station": "smartsites-murray-ut",
+      "why": "storm day 2024-02-02 (market score 0.25)"
     },
     {
-      "timestamp": "20220220011817",
-      "url": "http://wsd.net/",
-      "station": "apptegy-weber-ut",
-      "why": "2022-02-20: within 2 days of one of its closure days"
+      "timestamp": "20250401144315",
+      "url": "https://www.murrayschools.org/",
+      "station": "smartsites-murray-ut",
+      "why": "storm day 2025-04-01 (market score 0.25)"
     },
     {
-      "timestamp": "20220219131852",
-      "url": "http://wsd.net/",
-      "station": "apptegy-weber-ut",
-      "why": "2022-02-19: within 2 days of one of its closure days"
+      "timestamp": "20240201105913",
+      "url": "https://www.murrayschools.org/",
+      "station": "smartsites-murray-ut",
+      "why": "storm day 2024-02-01 (market score 0.25)"
     },
     {
-      "timestamp": "20220222131834",
-      "url": "http://wsd.net/",
-      "station": "apptegy-weber-ut",
-      "why": "2022-02-22: within 2 days of one of its closure days"
+      "timestamp": "20250401060400",
+      "url": "https://www.murrayschools.org/",
+      "station": "smartsites-murray-ut",
+      "why": "storm day 2025-04-01 (market score 0.25)"
     },
     {
-      "timestamp": "20220220131836",
-      "url": "http://wsd.net/",
-      "station": "apptegy-weber-ut",
-      "why": "2022-02-20: within 2 days of one of its closure days"
+      "timestamp": "20240124225843",
+      "url": "https://www.murrayschools.org/",
+      "station": "smartsites-murray-ut",
+      "why": "storm day 2024-01-25 (market score 0.25)"
     },
     {
-      "timestamp": "20220225131831",
-      "url": "http://wsd.net/",
-      "station": "apptegy-weber-ut",
-      "why": "2022-02-25: within 2 days of one of its closure days"
+      "timestamp": "20240201185755",
+      "url": "https://www.murrayschools.org/",
+      "station": "smartsites-murray-ut",
+      "why": "storm day 2024-02-02 (market score 0.25)"
     },
     {
-      "timestamp": "20220224011911",
-      "url": "http://wsd.net/",
-      "station": "apptegy-weber-ut",
-      "why": "2022-02-24: within 2 days of one of its closure days"
+      "timestamp": "20240201120538",
+      "url": "https://www.murrayschools.org/",
+      "station": "smartsites-murray-ut",
+      "why": "storm day 2024-02-01 (market score 0.25)"
     },
     {
-      "timestamp": "20220108133348",
-      "url": "http://wsd.net/",
-      "station": "apptegy-weber-ut",
-      "why": "2022-01-08: within 2 days of one of its closure days"
+      "timestamp": "20240125105829",
+      "url": "https://www.murrayschools.org/",
+      "station": "smartsites-murray-ut",
+      "why": "storm day 2024-01-25 (market score 0.25)"
     },
     {
-      "timestamp": "20220222011831",
-      "url": "http://wsd.net/",
-      "station": "apptegy-weber-ut",
-      "why": "2022-02-22: within 2 days of one of its closure days"
+      "timestamp": "20240201225827",
+      "url": "https://www.murrayschools.org/",
+      "station": "smartsites-murray-ut",
+      "why": "storm day 2024-02-02 (market score 0.25)"
     },
     {
-      "timestamp": "20180111163204",
-      "url": "http://kmurphy@wsd.net/",
-      "station": "apptegy-weber-ut",
-      "why": "2018-01-12: within 2 days of one of its closure days"
+      "timestamp": "20240131172851",
+      "url": "https://www.murrayschools.org/",
+      "station": "smartsites-murray-ut",
+      "why": "storm day 2024-02-01 (market score 0.25)"
     },
     {
-      "timestamp": "20220219011856",
-      "url": "http://wsd.net/",
-      "station": "apptegy-weber-ut",
-      "why": "2022-02-19: within 2 days of one of its closure days"
+      "timestamp": "20240201230318",
+      "url": "https://www.murrayschools.org/",
+      "station": "smartsites-murray-ut",
+      "why": "storm day 2024-02-02 (market score 0.25)"
     },
     {
-      "timestamp": "20171219141716",
-      "url": "http://wsd.net:80/",
-      "station": "apptegy-weber-ut",
-      "why": "2017-12-19: within 2 days of one of its closure days"
+      "timestamp": "20240125145447",
+      "url": "https://www.murrayschools.org/",
+      "station": "smartsites-murray-ut",
+      "why": "storm day 2024-01-25 (market score 0.25)"
     },
     {
-      "timestamp": "20220225011831",
-      "url": "http://wsd.net/",
-      "station": "apptegy-weber-ut",
-      "why": "2022-02-25: within 2 days of one of its closure days"
+      "timestamp": "20240125152048",
+      "url": "https://www.murrayschools.org/",
+      "station": "smartsites-murray-ut",
+      "why": "storm day 2024-01-25 (market score 0.25)"
     },
     {
-      "timestamp": "20220108024144",
-      "url": "http://wsd.net/",
-      "station": "apptegy-weber-ut",
-      "why": "2022-01-08: within 2 days of one of its closure days"
+      "timestamp": "20240220042419",
+      "url": "https://www.murrayschools.org/",
+      "station": "smartsites-murray-ut",
+      "why": "storm day 2024-02-20 (market score 0.25)"
     },
     {
-      "timestamp": "20171222234954",
-      "url": "https://wsd.net/",
-      "station": "apptegy-weber-ut",
-      "why": "2017-12-23: within 2 days of one of its closure days"
+      "timestamp": "20240220114626",
+      "url": "https://www.murrayschools.org/",
+      "station": "smartsites-murray-ut",
+      "why": "storm day 2024-02-20 (market score 0.25)"
     },
     {
-      "timestamp": "20220103011916",
-      "url": "http://wsd.net/",
-      "station": "apptegy-weber-ut",
-      "why": "2022-01-03: within 2 days of one of its closure days"
+      "timestamp": "20240221031858",
+      "url": "https://www.murrayschools.org/",
+      "station": "smartsites-murray-ut",
+      "why": "storm day 2024-02-21 (market score 0.25)"
     },
     {
-      "timestamp": "20211229022457",
-      "url": "http://wsd.net/",
-      "station": "apptegy-weber-ut",
-      "why": "2021-12-29: within 2 days of one of its closure days"
+      "timestamp": "20240313035708",
+      "url": "https://www.murrayschools.org/",
+      "station": "smartsites-murray-ut",
+      "why": "storm day 2024-03-13 (market score 0.25)"
     },
     {
-      "timestamp": "20211229132012",
-      "url": "http://wsd.net/",
-      "station": "apptegy-weber-ut",
-      "why": "2021-12-29: within 2 days of one of its closure days"
+      "timestamp": "20240328143835",
+      "url": "https://www.murrayschools.org/",
+      "station": "smartsites-murray-ut",
+      "why": "storm day 2024-03-28 (market score 0.25)"
     },
     {
-      "timestamp": "20220101011938",
-      "url": "http://wsd.net/",
-      "station": "apptegy-weber-ut",
-      "why": "2022-01-01: within 2 days of one of its closure days"
+      "timestamp": "20240328110113",
+      "url": "https://www.murrayschools.org/",
+      "station": "smartsites-murray-ut",
+      "why": "storm day 2024-03-28 (market score 0.25)"
     },
     {
-      "timestamp": "20220103131933",
-      "url": "http://wsd.net/",
-      "station": "apptegy-weber-ut",
-      "why": "2022-01-03: within 2 days of one of its closure days"
+      "timestamp": "20240312001743",
+      "url": "https://www.murrayschools.org/",
+      "station": "smartsites-murray-ut",
+      "why": "storm day 2024-03-12 (market score 0.25)"
     },
     {
-      "timestamp": "20180224082431",
-      "url": "http://wsd.net/",
-      "station": "apptegy-weber-ut",
-      "why": "2018-02-24: within 2 days of one of its closure days"
+      "timestamp": "20240312233226",
+      "url": "https://www.murrayschools.org/",
+      "station": "smartsites-murray-ut",
+      "why": "storm day 2024-03-13 (market score 0.25)"
     },
     {
-      "timestamp": "20180228211814",
-      "url": "http://wsd.net:80/",
-      "station": "apptegy-weber-ut",
-      "why": "2018-03-01: within 2 days of one of its closure days"
+      "timestamp": "20240312144711",
+      "url": "https://www.murrayschools.org/",
+      "station": "smartsites-murray-ut",
+      "why": "storm day 2024-03-12 (market score 0.25)"
     },
     {
-      "timestamp": "20180224033708",
-      "url": "http://wsd.net/",
-      "station": "apptegy-weber-ut",
-      "why": "2018-02-24: within 2 days of one of its closure days"
+      "timestamp": "20240313111059",
+      "url": "https://www.murrayschools.org/",
+      "station": "smartsites-murray-ut",
+      "why": "storm day 2024-03-13 (market score 0.25)"
     },
     {
-      "timestamp": "20170325141338",
-      "url": "http://wsd.net/",
-      "station": "apptegy-weber-ut",
-      "why": "2017-03-25: within 2 days of one of its closure days"
+      "timestamp": "20240404162442",
+      "url": "https://www.murrayschools.org/",
+      "station": "smartsites-murray-ut",
+      "why": "storm day 2024-04-05 (market score 0.25)"
     },
     {
-      "timestamp": "20170324025034",
-      "url": "http://wsd.net/",
-      "station": "apptegy-weber-ut",
-      "why": "2017-03-24: within 2 days of one of its closure days"
+      "timestamp": "20240405105547",
+      "url": "https://www.murrayschools.org/",
+      "station": "smartsites-murray-ut",
+      "why": "storm day 2024-04-05 (market score 0.25)"
     },
     {
-      "timestamp": "20170308135958",
-      "url": "https://wsd.net/",
-      "station": "apptegy-weber-ut",
-      "why": "2017-03-08: within 2 days of one of its closure days"
+      "timestamp": "20240404225455",
+      "url": "https://www.murrayschools.org/",
+      "station": "smartsites-murray-ut",
+      "why": "storm day 2024-04-05 (market score 0.25)"
     },
     {
-      "timestamp": "20170205110107",
-      "url": "https://wsd.net/",
-      "station": "apptegy-weber-ut",
-      "why": "2017-02-05: within 2 days of one of its closure days"
+      "timestamp": "20221205010949",
+      "url": "https://www.murrayschools.org/",
+      "station": "smartsites-murray-ut",
+      "why": "storm day 2022-12-05 (market score 0.25)"
     },
     {
-      "timestamp": "20170210173828",
-      "url": "http://kmurphy@wsd.net/",
-      "station": "apptegy-weber-ut",
-      "why": "2017-02-11: within 2 days of one of its closure days"
+      "timestamp": "20221205062740",
+      "url": "https://www.murrayschools.org/",
+      "station": "smartsites-murray-ut",
+      "why": "storm day 2022-12-05 (market score 0.25)"
     },
     {
-      "timestamp": "20170114002028",
-      "url": "http://kmurphy@wsd.net/",
-      "station": "apptegy-weber-ut",
-      "why": "2017-01-14: within 2 days of one of its closure days"
+      "timestamp": "20221127231514",
+      "url": "https://www.murrayschools.org/",
+      "station": "smartsites-murray-ut",
+      "why": "storm day 2022-11-28 (market score 0.25)"
     },
     {
-      "timestamp": "20231124110016",
+      "timestamp": "20221128111836",
       "url": "https://www.murrayschools.org/",
       "station": "smartsites-murray-ut",
-      "why": "storm day 2023-11-24 (market score 1.00)"
+      "why": "storm day 2022-11-28 (market score 0.25)"
     },
     {
-      "timestamp": "20240109085425",
+      "timestamp": "20221026111421",
       "url": "https://www.murrayschools.org/",
       "station": "smartsites-murray-ut",
-      "why": "storm day 2024-01-09 (market score 1.00)"
+      "why": "storm day 2022-10-26 (market score 0.25)"
     },
     {
-      "timestamp": "20240109111721",
+      "timestamp": "20221025231629",
       "url": "https://www.murrayschools.org/",
       "station": "smartsites-murray-ut",
-      "why": "storm day 2024-01-09 (market score 1.00)"
+      "why": "storm day 2022-10-26 (market score 0.25)"
     },
     {
-      "timestamp": "20231208120444",
+      "timestamp": "20221101231412",
       "url": "https://www.murrayschools.org/",
       "station": "smartsites-murray-ut",
-      "why": "storm day 2023-12-08 (market score 1.00)"
+      "why": "storm day 2022-11-02 (market score 0.25)"
     },
     {
-      "timestamp": "20240108230329",
+      "timestamp": "20221102111419",
       "url": "https://www.murrayschools.org/",
       "station": "smartsites-murray-ut",
-      "why": "storm day 2024-01-09 (market score 1.00)"
+      "why": "storm day 2022-11-02 (market score 0.25)"
     },
     {
-      "timestamp": "20240112054148",
+      "timestamp": "20250220113858",
       "url": "https://www.murrayschools.org/",
       "station": "smartsites-murray-ut",
-      "why": "storm day 2024-01-12 (market score 1.00)"
+      "why": "storm day 2025-02-20 (market score 0.25)"
     },
     {
-      "timestamp": "20240112093041",
+      "timestamp": "20250304054413",
       "url": "https://www.murrayschools.org/",
       "station": "smartsites-murray-ut",
-      "why": "storm day 2024-01-12 (market score 1.00)"
+      "why": "storm day 2025-03-04 (market score 0.25)"
     },
     {
-      "timestamp": "20240112142603",
+      "timestamp": "20250304121112",
       "url": "https://www.murrayschools.org/",
       "station": "smartsites-murray-ut",
-      "why": "storm day 2024-01-12 (market score 1.00)"
+      "why": "storm day 2025-03-04 (market score 0.25)"
     },
     {
-      "timestamp": "20231208001115",
+      "timestamp": "20250303100831",
       "url": "https://www.murrayschools.org/",
       "station": "smartsites-murray-ut",
-      "why": "storm day 2023-12-08 (market score 1.00)"
+      "why": "storm day 2025-03-03 (market score 0.25)"
     },
     {
-      "timestamp": "20231208072846",
+      "timestamp": "20221227001639",
       "url": "https://www.murrayschools.org/",
       "station": "smartsites-murray-ut",
-      "why": "storm day 2023-12-08 (market score 1.00)"
+      "why": "storm day 2022-12-27 (market score 0.25)"
     },
     {
-      "timestamp": "20240506112551",
+      "timestamp": "20221227110917",
       "url": "https://www.murrayschools.org/",
       "station": "smartsites-murray-ut",
-      "why": "storm day 2024-05-06 (market score 1.00)"
+      "why": "storm day 2022-12-27 (market score 0.25)"
     },
     {
-      "timestamp": "20240507071441",
+      "timestamp": "20221227230444",
       "url": "https://www.murrayschools.org/",
       "station": "smartsites-murray-ut",
-      "why": "storm day 2024-05-07 (market score 1.00)"
+      "why": "storm day 2022-12-28 (market score 0.25)"
     },
     {
-      "timestamp": "20240114225849",
+      "timestamp": "20221228110418",
       "url": "https://www.murrayschools.org/",
       "station": "smartsites-murray-ut",
-      "why": "storm day 2024-01-15 (market score 1.00)"
+      "why": "storm day 2022-12-28 (market score 0.25)"
     },
     {
-      "timestamp": "20240506232514",
+      "timestamp": "20230117110445",
       "url": "https://www.murrayschools.org/",
       "station": "smartsites-murray-ut",
-      "why": "storm day 2024-05-07 (market score 1.00)"
+      "why": "storm day 2023-01-17 (market score 0.25)"
     },
     {
-      "timestamp": "20240110000040",
+      "timestamp": "20230116110746",
       "url": "https://www.murrayschools.org/",
       "station": "smartsites-murray-ut",
-      "why": "storm day 2024-01-10 (market score 1.00)"
+      "why": "storm day 2023-01-16 (market score 0.25)"
     },
     {
-      "timestamp": "20231201022115",
+      "timestamp": "20230116230519",
       "url": "https://www.murrayschools.org/",
       "station": "smartsites-murray-ut",
-      "why": "storm day 2023-12-01 (market score 1.00)"
+      "why": "storm day 2023-01-17 (market score 0.25)"
     },
     {
-      "timestamp": "20240110105755",
+      "timestamp": "20220529232133",
       "url": "https://www.murrayschools.org/",
       "station": "smartsites-murray-ut",
-      "why": "storm day 2024-01-10 (market score 1.00)"
+      "why": "storm day 2022-05-30 (market score 0.25)"
     },
     {
-      "timestamp": "20240507112627",
+      "timestamp": "20220530112144",
       "url": "https://www.murrayschools.org/",
       "station": "smartsites-murray-ut",
-      "why": "storm day 2024-05-07 (market score 1.00)"
+      "why": "storm day 2022-05-30 (market score 0.25)"
     },
     {
-      "timestamp": "20240115105947",
+      "timestamp": "20230108230444",
       "url": "https://www.murrayschools.org/",
       "station": "smartsites-murray-ut",
-      "why": "storm day 2024-01-15 (market score 1.00)"
+      "why": "storm day 2023-01-09 (market score 0.25)"
     },
     {
-      "timestamp": "20240111230735",
+      "timestamp": "20230109110447",
       "url": "https://www.murrayschools.org/",
       "station": "smartsites-murray-ut",
-      "why": "storm day 2024-01-12 (market score 1.00)"
+      "why": "storm day 2023-01-09 (market score 0.25)"
     },
     {
-      "timestamp": "20240110080444",
+      "timestamp": "20230115235410",
       "url": "https://www.murrayschools.org/",
       "station": "smartsites-murray-ut",
-      "why": "storm day 2024-01-10 (market score 1.00)"
+      "why": "storm day 2023-01-16 (market score 0.25)"
     },
     {
-      "timestamp": "20240111190236",
+      "timestamp": "20220220232525",
       "url": "https://www.murrayschools.org/",
       "station": "smartsites-murray-ut",
-      "why": "storm day 2024-01-12 (market score 1.00)"
+      "why": "storm day 2022-02-21 (market score 0.25)"
     },
     {
-      "timestamp": "20240505232536",
+      "timestamp": "20220221112540",
       "url": "https://www.murrayschools.org/",
       "station": "smartsites-murray-ut",
-      "why": "storm day 2024-05-06 (market score 1.00)"
+      "why": "storm day 2022-02-21 (market score 0.25)"
     },
     {
-      "timestamp": "20231201083604",
+      "timestamp": "20230126230611",
       "url": "https://www.murrayschools.org/",
       "station": "smartsites-murray-ut",
-      "why": "storm day 2023-12-01 (market score 1.00)"
+      "why": "storm day 2023-01-27 (market score 0.25)"
     },
     {
-      "timestamp": "20240116190532",
+      "timestamp": "20230127110433",
       "url": "https://www.murrayschools.org/",
       "station": "smartsites-murray-ut",
-      "why": "storm day 2024-01-17 (market score 1.00)"
+      "why": "storm day 2023-01-27 (market score 0.25)"
     },
     {
-      "timestamp": "20240117122340",
+      "timestamp": "20220201234952",
       "url": "https://www.murrayschools.org/",
       "station": "smartsites-murray-ut",
-      "why": "storm day 2024-01-17 (market score 1.00)"
+      "why": "storm day 2022-02-02 (market score 0.25)"
     },
     {
-      "timestamp": "20240118141540",
+      "timestamp": "20220202112546",
       "url": "https://www.murrayschools.org/",
       "station": "smartsites-murray-ut",
-      "why": "storm day 2024-01-18 (market score 1.00)"
+      "why": "storm day 2022-02-02 (market score 0.25)"
     },
     {
-      "timestamp": "20240117173600",
+      "timestamp": "20230326230421",
       "url": "https://www.murrayschools.org/",
       "station": "smartsites-murray-ut",
-      "why": "storm day 2024-01-18 (market score 1.00)"
+      "why": "storm day 2023-03-27 (market score 0.25)"
     },
     {
-      "timestamp": "20240118075447",
+      "timestamp": "20230327110415",
       "url": "https://www.murrayschools.org/",
       "station": "smartsites-murray-ut",
-      "why": "storm day 2024-01-18 (market score 1.00)"
+      "why": "storm day 2023-03-27 (market score 0.25)"
     },
     {
-      "timestamp": "20240118155500",
+      "timestamp": "20241112001725",
       "url": "https://www.murrayschools.org/",
       "station": "smartsites-murray-ut",
-      "why": "storm day 2024-01-18 (market score 1.00)"
+      "why": "storm day 2024-11-12 (market score 0.25)"
     },
     {
-      "timestamp": "20240116225743",
+      "timestamp": "20241112115200",
       "url": "https://www.murrayschools.org/",
       "station": "smartsites-murray-ut",
-      "why": "storm day 2024-01-17 (market score 1.00)"
+      "why": "storm day 2024-11-12 (market score 0.25)"
     },
     {
-      "timestamp": "20240118105849",
+      "timestamp": "20241111232426",
       "url": "https://www.murrayschools.org/",
       "station": "smartsites-murray-ut",
-      "why": "storm day 2024-01-18 (market score 1.00)"
+      "why": "storm day 2024-11-12 (market score 0.25)"
     },
     {
-      "timestamp": "20240118113656",
+      "timestamp": "20231026132530",
       "url": "https://www.murrayschools.org/",
       "station": "smartsites-murray-ut",
-      "why": "storm day 2024-01-18 (market score 1.00)"
+      "why": "storm day 2023-10-26 (market score 0.25)"
     },
     {
-      "timestamp": "20240118015431",
+      "timestamp": "20231025230230",
       "url": "https://www.murrayschools.org/",
       "station": "smartsites-murray-ut",
-      "why": "storm day 2024-01-18 (market score 1.00)"
+      "why": "storm day 2023-10-26 (market score 0.25)"
     },
     {
-      "timestamp": "20240205224144",
+      "timestamp": "20241028234721",
       "url": "https://www.murrayschools.org/",
       "station": "smartsites-murray-ut",
-      "why": "storm day 2024-02-06 (market score 1.00)"
+      "why": "storm day 2024-10-29 (market score 0.25)"
     },
     {
-      "timestamp": "20240206194726",
+      "timestamp": "20241029132558",
       "url": "https://www.murrayschools.org/",
       "station": "smartsites-murray-ut",
-      "why": "storm day 2024-02-07 (market score 1.00)"
+      "why": "storm day 2024-10-29 (market score 0.25)"
     },
     {
-      "timestamp": "20240207122026",
+      "timestamp": "20230418135504",
       "url": "https://www.murrayschools.org/",
       "station": "smartsites-murray-ut",
-      "why": "storm day 2024-02-07 (market score 1.00)"
+      "why": "storm day 2023-04-18 (market score 0.25)"
     },
     {
-      "timestamp": "20240206181736",
+      "timestamp": "20230417230451",
       "url": "https://www.murrayschools.org/",
       "station": "smartsites-murray-ut",
-      "why": "storm day 2024-02-07 (market score 1.00)"
+      "why": "storm day 2023-04-18 (market score 0.25)"
     },
     {
-      "timestamp": "20240205180110",
+      "timestamp": "20250217112910",
       "url": "https://www.murrayschools.org/",
       "station": "smartsites-murray-ut",
-      "why": "storm day 2024-02-06 (market score 1.00)"
+      "why": "storm day 2025-02-17 (market score 0.25)"
     },
     {
-      "timestamp": "20240206102845",
+      "timestamp": "20250217003155",
       "url": "https://www.murrayschools.org/",
       "station": "smartsites-murray-ut",
-      "why": "storm day 2024-02-06 (market score 1.00)"
+      "why": "storm day 2025-02-17 (market score 0.25)"
     },
     {
-      "timestamp": "20240206141918",
+      "timestamp": "20250219232500",
       "url": "https://www.murrayschools.org/",
       "station": "smartsites-murray-ut",
-      "why": "storm day 2024-02-06 (market score 1.00)"
+      "why": "storm day 2025-02-20 (market score 0.25)"
     },
     {
-      "timestamp": "20240206151019",
+      "timestamp": "20250218113300",
       "url": "https://www.murrayschools.org/",
       "station": "smartsites-murray-ut",
-      "why": "storm day 2024-02-06 (market score 1.00)"
+      "why": "storm day 2025-02-18 (market score 0.25)"
     },
     {
-      "timestamp": "20240207105837",
+      "timestamp": "20250218042223",
       "url": "https://www.murrayschools.org/",
       "station": "smartsites-murray-ut",
-      "why": "storm day 2024-02-07 (market score 1.00)"
+      "why": "storm day 2025-02-18 (market score 0.25)"
     },
     {
-      "timestamp": "20240207112327",
+      "timestamp": "20260208162751",
       "url": "https://www.murrayschools.org/",
       "station": "smartsites-murray-ut",
-      "why": "storm day 2024-02-07 (market score 1.00)"
+      "why": "2026-02-09: within 2 days of one of its closure days"
     },
     {
-      "timestamp": "20250312161023",
+      "timestamp": "20251206111955",
       "url": "https://www.murrayschools.org/",
       "station": "smartsites-murray-ut",
-      "why": "storm day 2025-03-13 (market score 1.00)"
+      "why": "2025-12-06: within 2 days of one of its closure days"
     },
     {
-      "timestamp": "20250312174157",
+      "timestamp": "20260214003246",
       "url": "https://www.murrayschools.org/",
       "station": "smartsites-murray-ut",
-      "why": "storm day 2025-03-13 (market score 1.00)"
+      "why": "2026-02-14: within 2 days of one of its closure days"
     },
     {
-      "timestamp": "20250313121149",
+      "timestamp": "20260209230500",
       "url": "https://www.murrayschools.org/",
       "station": "smartsites-murray-ut",
-      "why": "storm day 2025-03-13 (market score 1.00)"
+      "why": "2026-02-10: within 2 days of one of its closure days"
     },
     {
-      "timestamp": "20250313011726",
+      "timestamp": "20260210110446",
       "url": "https://www.murrayschools.org/",
       "station": "smartsites-murray-ut",
-      "why": "storm day 2025-03-13 (market score 1.00)"
+      "why": "2026-02-10: within 2 days of one of its closure days"
     },
     {
-      "timestamp": "20250313171005",
+      "timestamp": "20260209110619",
       "url": "https://www.murrayschools.org/",
       "station": "smartsites-murray-ut",
-      "why": "storm day 2025-03-14 (market score 1.00)"
+      "why": "2026-02-09: within 2 days of one of its closure days"
     },
     {
-      "timestamp": "20250318002634",
+      "timestamp": "20260208230514",
       "url": "https://www.murrayschools.org/",
       "station": "smartsites-murray-ut",
-      "why": "storm day 2025-03-18 (market score 1.00)"
+      "why": "2026-02-09: within 2 days of one of its closure days"
     },
     {
-      "timestamp": "20250313025220",
+      "timestamp": "20260219203000",
       "url": "https://www.murrayschools.org/",
       "station": "smartsites-murray-ut",
-      "why": "storm day 2025-03-13 (market score 1.00)"
+      "why": "2026-02-20: within 2 days of one of its closure days"
     },
     {
-      "timestamp": "20250313232027",
+      "timestamp": "20260110110446",
       "url": "https://www.murrayschools.org/",
       "station": "smartsites-murray-ut",
-      "why": "storm day 2025-03-14 (market score 1.00)"
+      "why": "2026-01-10: within 2 days of one of its closure days"
     },
     {
-      "timestamp": "20250314000933",
+      "timestamp": "20260110023330",
       "url": "https://www.murrayschools.org/",
       "station": "smartsites-murray-ut",
-      "why": "storm day 2025-03-14 (market score 1.00)"
+      "why": "2026-01-10: within 2 days of one of its closure days"
     },
     {
-      "timestamp": "20250314124704",
+      "timestamp": "20260108230445",
       "url": "https://www.murrayschools.org/",
       "station": "smartsites-murray-ut",
-      "why": "storm day 2025-03-14 (market score 1.00)"
+      "why": "2026-01-09: within 2 days of one of its closure days"
     },
     {
-      "timestamp": "20240226231608",
+      "timestamp": "20260107110453",
       "url": "https://www.murrayschools.org/",
       "station": "smartsites-murray-ut",
-      "why": "storm day 2024-02-27 (market score 1.00)"
+      "why": "2026-01-07: within 2 days of one of its closure days"
     },
     {
-      "timestamp": "20240229212629",
+      "timestamp": "20260106230502",
       "url": "https://www.murrayschools.org/",
       "station": "smartsites-murray-ut",
-      "why": "storm day 2024-03-01 (market score 1.00)"
+      "why": "2026-01-07: within 2 days of one of its closure days"
     },
     {
-      "timestamp": "20240301124102",
+      "timestamp": "20251226221741",
       "url": "https://www.murrayschools.org/",
       "station": "smartsites-murray-ut",
-      "why": "storm day 2024-03-01 (market score 1.00)"
+      "why": "2025-12-27: within 2 days of one of its closure days"
     },
     {
-      "timestamp": "20240301055628",
+      "timestamp": "20260109140751",
       "url": "https://www.murrayschools.org/",
       "station": "smartsites-murray-ut",
-      "why": "storm day 2024-03-01 (market score 1.00)"
+      "why": "2026-01-09: within 2 days of one of its closure days"
     },
     {
-      "timestamp": "20240301042029",
+      "timestamp": "20251231110411",
       "url": "https://www.murrayschools.org/",
       "station": "smartsites-murray-ut",
-      "why": "storm day 2024-03-01 (market score 1.00)"
+      "why": "2025-12-31: within 2 days of one of its closure days"
     },
     {
-      "timestamp": "20240225234755",
+      "timestamp": "20260102230259",
       "url": "https://www.murrayschools.org/",
       "station": "smartsites-murray-ut",
-      "why": "storm day 2024-02-26 (market score 1.00)"
+      "why": "2026-01-03: within 2 days of one of its closure days"
     },
     {
-      "timestamp": "20221129111542",
+      "timestamp": "20260106110515",
       "url": "https://www.murrayschools.org/",
       "station": "smartsites-murray-ut",
-      "why": "storm day 2022-11-29 (market score 1.00)"
+      "why": "2026-01-06: within 2 days of one of its closure days"
     },
     {
-      "timestamp": "20221129044922",
+      "timestamp": "20260105230602",
       "url": "https://www.murrayschools.org/",
       "station": "smartsites-murray-ut",
-      "why": "storm day 2022-11-29 (market score 1.00)"
+      "why": "2026-01-06: within 2 days of one of its closure days"
     },
     {
-      "timestamp": "20250307114824",
+      "timestamp": "20251227110338",
       "url": "https://www.murrayschools.org/",
       "station": "smartsites-murray-ut",
-      "why": "storm day 2025-03-07 (market score 1.00)"
+      "why": "2025-12-27: within 2 days of one of its closure days"
     },
     {
-      "timestamp": "20250307001536",
+      "timestamp": "20251223230409",
       "url": "https://www.murrayschools.org/",
       "station": "smartsites-murray-ut",
-      "why": "storm day 2025-03-07 (market score 1.00)"
+      "why": "2025-12-24: within 2 days of one of its closure days"
     },
     {
-      "timestamp": "20221230110420",
+      "timestamp": "20251224110237",
       "url": "https://www.murrayschools.org/",
       "station": "smartsites-murray-ut",
-      "why": "storm day 2022-12-30 (market score 1.00)"
+      "why": "2025-12-24: within 2 days of one of its closure days"
     },
     {
-      "timestamp": "20221229230424",
+      "timestamp": "20251230230414",
       "url": "https://www.murrayschools.org/",
       "station": "smartsites-murray-ut",
-      "why": "storm day 2022-12-30 (market score 1.00)"
+      "why": "2025-12-31: within 2 days of one of its closure days"
     },
     {
-      "timestamp": "20221220233233",
+      "timestamp": "20260103111154",
       "url": "https://www.murrayschools.org/",
       "station": "smartsites-murray-ut",
-      "why": "storm day 2022-12-21 (market score 1.00)"
+      "why": "2026-01-03: within 2 days of one of its closure days"
     },
     {
-      "timestamp": "20221221110429",
+      "timestamp": "20251228081350",
       "url": "https://www.murrayschools.org/",
       "station": "smartsites-murray-ut",
-      "why": "storm day 2022-12-21 (market score 1.00)"
+      "why": "2025-12-28: within 2 days of one of its closure days"
     },
     {
-      "timestamp": "20230105230540",
+      "timestamp": "20260103224815",
       "url": "https://www.murrayschools.org/",
       "station": "smartsites-murray-ut",
-      "why": "storm day 2023-01-06 (market score 1.00)"
+      "why": "2026-01-04: within 2 days of one of its closure days"
     },
     {
-      "timestamp": "20230106110414",
+      "timestamp": "20251226230303",
       "url": "https://www.murrayschools.org/",
       "station": "smartsites-murray-ut",
-      "why": "storm day 2023-01-06 (market score 1.00)"
+      "why": "2025-12-27: within 2 days of one of its closure days"
     },
     {
-      "timestamp": "20230109230507",
+      "timestamp": "20260103230618",
       "url": "https://www.murrayschools.org/",
       "station": "smartsites-murray-ut",
-      "why": "storm day 2023-01-10 (market score 1.00)"
+      "why": "2026-01-04: within 2 days of one of its closure days"
     },
     {
-      "timestamp": "20230110110557",
+      "timestamp": "20251230205440",
       "url": "https://www.murrayschools.org/",
       "station": "smartsites-murray-ut",
-      "why": "storm day 2023-01-10 (market score 1.00)"
+      "why": "2025-12-31: within 2 days of one of its closure days"
     },
     {
-      "timestamp": "20230110230447",
+      "timestamp": "20260226094639",
       "url": "https://www.murrayschools.org/",
       "station": "smartsites-murray-ut",
-      "why": "storm day 2023-01-11 (market score 1.00)"
+      "why": "2026-02-26: within 2 days of one of its closure days"
     },
     {
-      "timestamp": "20230111110436",
+      "timestamp": "20251224230317",
       "url": "https://www.murrayschools.org/",
       "station": "smartsites-murray-ut",
-      "why": "storm day 2023-01-11 (market score 1.00)"
+      "why": "2025-12-25: within 2 days of one of its closure days"
     },
     {
-      "timestamp": "20220106112515",
+      "timestamp": "20260104110631",
       "url": "https://www.murrayschools.org/",
       "station": "smartsites-murray-ut",
-      "why": "storm day 2022-01-06 (market score 1.00)"
+      "why": "2026-01-04: within 2 days of one of its closure days"
     },
     {
-      "timestamp": "20220105232556",
+      "timestamp": "20260225230524",
       "url": "https://www.murrayschools.org/",
       "station": "smartsites-murray-ut",
-      "why": "storm day 2022-01-06 (market score 1.00)"
+      "why": "2026-02-26: within 2 days of one of its closure days"
     },
     {
-      "timestamp": "20220105112544",
+      "timestamp": "20260404054826",
       "url": "https://www.murrayschools.org/",
       "station": "smartsites-murray-ut",
-      "why": "storm day 2022-01-05 (market score 1.00)"
+      "why": "2026-04-04: within 2 days of one of its closure days"
     },
     {
-      "timestamp": "20230324021001",
+      "timestamp": "20251206231602",
       "url": "https://www.murrayschools.org/",
       "station": "smartsites-murray-ut",
-      "why": "storm day 2023-03-24 (market score 1.00)"
+      "why": "2025-12-07: within 2 days of one of its closure days"
     },
     {
-      "timestamp": "20230324150408",
+      "timestamp": "20260404062039",
       "url": "https://www.murrayschools.org/",
       "station": "smartsites-murray-ut",
-      "why": "storm day 2023-03-24 (market score 1.00)"
+      "why": "2026-04-04: within 2 days of one of its closure days"
     },
     {
-      "timestamp": "20230320153512",
+      "timestamp": "20251205230417",
       "url": "https://www.murrayschools.org/",
       "station": "smartsites-murray-ut",
-      "why": "storm day 2023-03-20 (market score 1.00)"
+      "why": "2025-12-06: within 2 days of one of its closure days"
     },
     {
-      "timestamp": "20241126022427",
+      "timestamp": "20260404110709",
       "url": "https://www.murrayschools.org/",
       "station": "smartsites-murray-ut",
-      "why": "storm day 2024-11-26 (market score 1.00)"
+      "why": "2026-04-04: within 2 days of one of its closure days"
     },
     {
-      "timestamp": "20230320142820",
+      "timestamp": "20251206084403",
       "url": "https://www.murrayschools.org/",
       "station": "smartsites-murray-ut",
-      "why": "storm day 2023-03-20 (market score 1.00)"
+      "why": "2025-12-06: within 2 days of one of its closure days"
     },
     {
-      "timestamp": "20241127000435",
+      "timestamp": "20251202200200",
       "url": "https://www.murrayschools.org/",
       "station": "smartsites-murray-ut",
-      "why": "storm day 2024-11-27 (market score 1.00)"
+      "why": "2025-12-03: within 2 days of one of its closure days"
     },
     {
-      "timestamp": "20241127133801",
+      "timestamp": "20251203233106",
       "url": "https://www.murrayschools.org/",
       "station": "smartsites-murray-ut",
-      "why": "storm day 2024-11-27 (market score 1.00)"
+      "why": "2025-12-04: within 2 days of one of its closure days"
     },
     {
-      "timestamp": "20230322141534",
+      "timestamp": "20260331094025",
       "url": "https://www.murrayschools.org/",
       "station": "smartsites-murray-ut",
-      "why": "storm day 2023-03-22 (market score 1.00)"
+      "why": "2026-03-31: within 2 days of one of its closure days"
     },
     {
-      "timestamp": "20230314175809",
+      "timestamp": "20260219230442",
       "url": "https://www.murrayschools.org/",
       "station": "smartsites-murray-ut",
-      "why": "storm day 2023-03-15 (market score 1.00)"
+      "why": "2026-02-20: within 2 days of one of its closure days"
     },
     {
-      "timestamp": "20230314195137",
+      "timestamp": "20260403110540",
       "url": "https://www.murrayschools.org/",
       "station": "smartsites-murray-ut",
-      "why": "storm day 2023-03-15 (market score 1.00)"
+      "why": "2026-04-03: within 2 days of one of its closure days"
     },
     {
-      "timestamp": "20230314200230",
+      "timestamp": "20260402230729",
       "url": "https://www.murrayschools.org/",
       "station": "smartsites-murray-ut",
-      "why": "storm day 2023-03-15 (market score 1.00)"
+      "why": "2026-04-03: within 2 days of one of its closure days"
     },
     {
-      "timestamp": "20230320132218",
+      "timestamp": "20260330110441",
       "url": "https://www.murrayschools.org/",
       "station": "smartsites-murray-ut",
-      "why": "storm day 2023-03-20 (market score 1.00)"
+      "why": "2026-03-30: within 2 days of one of its closure days"
     },
     {
-      "timestamp": "20230319171230",
+      "timestamp": "20260220110450",
       "url": "https://www.murrayschools.org/",
       "station": "smartsites-murray-ut",
-      "why": "storm day 2023-03-20 (market score 1.00)"
+      "why": "2026-02-20: within 2 days of one of its closure days"
     },
     {
-      "timestamp": "20230320070038",
+      "timestamp": "20260220153030",
       "url": "https://www.murrayschools.org/",
       "station": "smartsites-murray-ut",
-      "why": "storm day 2023-03-20 (market score 1.00)"
+      "why": "2026-02-20: within 2 days of one of its closure days"
     },
     {
-      "timestamp": "20230320080139",
+      "timestamp": "20260222230454",
       "url": "https://www.murrayschools.org/",
       "station": "smartsites-murray-ut",
-      "why": "storm day 2023-03-20 (market score 1.00)"
+      "why": "2026-02-23: within 2 days of one of its closure days"
     },
     {
-      "timestamp": "20230319195839",
+      "timestamp": "20260222110641",
       "url": "https://www.murrayschools.org/",
       "station": "smartsites-murray-ut",
-      "why": "storm day 2023-03-20 (market score 1.00)"
+      "why": "2026-02-22: within 2 days of one of its closure days"
     },
     {
-      "timestamp": "20230320014506",
+      "timestamp": "20260223110718",
       "url": "https://www.murrayschools.org/",
       "station": "smartsites-murray-ut",
-      "why": "storm day 2023-03-20 (market score 1.00)"
+      "why": "2026-02-23: within 2 days of one of its closure days"
     },
     {
-      "timestamp": "20230320023309",
+      "timestamp": "20260221230509",
       "url": "https://www.murrayschools.org/",
       "station": "smartsites-murray-ut",
-      "why": "storm day 2023-03-20 (market score 1.00)"
+      "why": "2026-02-22: within 2 days of one of its closure days"
     },
     {
-      "timestamp": "20230320125708",
+      "timestamp": "20260221171934",
       "url": "https://www.murrayschools.org/",
       "station": "smartsites-murray-ut",
-      "why": "storm day 2023-03-20 (market score 1.00)"
+      "why": "2026-02-22: within 2 days of one of its closure days"
     },
     {
-      "timestamp": "20230319222038",
+      "timestamp": "20260304063446",
       "url": "https://www.murrayschools.org/",
       "station": "smartsites-murray-ut",
-      "why": "storm day 2023-03-20 (market score 1.00)"
+      "why": "2026-03-04: within 2 days of one of its closure days"
     },
     {
-      "timestamp": "20230320042125",
+      "timestamp": "20260226230604",
       "url": "https://www.murrayschools.org/",
       "station": "smartsites-murray-ut",
-      "why": "storm day 2023-03-20 (market score 1.00)"
+      "why": "2026-02-27: within 2 days of one of its closure days"
     },
     {
-      "timestamp": "20230319210029",
+      "timestamp": "20260227125225",
       "url": "https://www.murrayschools.org/",
       "station": "smartsites-murray-ut",
-      "why": "storm day 2023-03-20 (market score 1.00)"
+      "why": "2026-02-27: within 2 days of one of its closure days"
     },
     {
-      "timestamp": "20230402190447",
+      "timestamp": "20260303110644",
       "url": "https://www.murrayschools.org/",
       "station": "smartsites-murray-ut",
-      "why": "storm day 2023-04-03 (market score 1.00)"
+      "why": "2026-03-03: within 2 days of one of its closure days"
     },
     {
-      "timestamp": "20230314230458",
+      "timestamp": "20260306230443",
       "url": "https://www.murrayschools.org/",
       "station": "smartsites-murray-ut",
-      "why": "storm day 2023-03-15 (market score 1.00)"
+      "why": "2026-03-07: within 2 days of one of its closure days"
     },
     {
-      "timestamp": "20230403103228",
+      "timestamp": "20260308120939",
       "url": "https://www.murrayschools.org/",
       "station": "smartsites-murray-ut",
-      "why": "storm day 2023-04-03 (market score 1.00)"
+      "why": "2026-03-08: within 2 days of one of its closure days"
     },
     {
-      "timestamp": "20230315110456",
+      "timestamp": "20260307110805",
       "url": "https://www.murrayschools.org/",
       "station": "smartsites-murray-ut",
-      "why": "storm day 2023-03-15 (market score 1.00)"
+      "why": "2026-03-07: within 2 days of one of its closure days"
     },
     {
-      "timestamp": "20230331110603",
+      "timestamp": "20260307230628",
       "url": "https://www.murrayschools.org/",
       "station": "smartsites-murray-ut",
-      "why": "storm day 2023-03-31 (market score 1.00)"
+      "why": "2026-03-08: within 2 days of one of its closure days"
     },
     {
-      "timestamp": "20230404002623",
+      "timestamp": "20251025133012",
       "url": "https://www.murrayschools.org/",
       "station": "smartsites-murray-ut",
-      "why": "storm day 2023-04-04 (market score 1.00)"
+      "why": "2025-10-25: within 2 days of one of its closure days"
     },
     {
-      "timestamp": "20230404160344",
+      "timestamp": "20251025140549",
       "url": "https://www.murrayschools.org/",
       "station": "smartsites-murray-ut",
-      "why": "storm day 2023-04-05 (market score 1.00)"
+      "why": "2025-10-25: within 2 days of one of its closure days"
     },
     {
-      "timestamp": "20230404134038",
+      "timestamp": "20251025225308",
       "url": "https://www.murrayschools.org/",
       "station": "smartsites-murray-ut",
-      "why": "storm day 2023-04-04 (market score 1.00)"
+      "why": "2025-10-26: within 2 days of one of its closure days"
     },
     {
-      "timestamp": "20230405140754",
+      "timestamp": "20251025085254",
       "url": "https://www.murrayschools.org/",
       "station": "smartsites-murray-ut",
-      "why": "storm day 2023-04-05 (market score 1.00)"
+      "why": "2025-10-25: within 2 days of one of its closure days"
     },
     {
-      "timestamp": "20230404232115",
+      "timestamp": "20251026015449",
       "url": "https://www.murrayschools.org/",
       "station": "smartsites-murray-ut",
-      "why": "storm day 2023-04-05 (market score 1.00)"
+      "why": "2025-10-26: within 2 days of one of its closure days"
     },
     {
-      "timestamp": "20230329230443",
+      "timestamp": "20251028154354",
       "url": "https://www.murrayschools.org/",
       "station": "smartsites-murray-ut",
-      "why": "storm day 2023-03-30 (market score 1.00)"
+      "why": "2025-10-28: within 2 days of one of its closure days"
     },
     {
-      "timestamp": "20230330154044",
+      "timestamp": "20251029004906",
       "url": "https://www.murrayschools.org/",
       "station": "smartsites-murray-ut",
-      "why": "storm day 2023-03-30 (market score 1.00)"
+      "why": "2025-10-29: within 2 days of one of its closure days"
     },
     {
-      "timestamp": "20230330111014",
+      "timestamp": "20251027174801",
       "url": "https://www.murrayschools.org/",
       "station": "smartsites-murray-ut",
-      "why": "storm day 2023-03-30 (market score 1.00)"
+      "why": "2025-10-28: within 2 days of one of its closure days"
     },
     {
-      "timestamp": "20230330230453",
+      "timestamp": "20251028201759",
       "url": "https://www.murrayschools.org/",
       "station": "smartsites-murray-ut",
-      "why": "storm day 2023-03-31 (market score 1.00)"
+      "why": "2025-10-29: within 2 days of one of its closure days"
     },
     {
-      "timestamp": "20230331034242",
+      "timestamp": "20260212230557",
       "url": "https://www.murrayschools.org/",
       "station": "smartsites-murray-ut",
-      "why": "storm day 2023-03-31 (market score 1.00)"
+      "why": "2026-02-13: within 2 days of one of its closure days"
     },
     {
-      "timestamp": "20230330214812",
+      "timestamp": "20260216135557",
       "url": "https://www.murrayschools.org/",
       "station": "smartsites-murray-ut",
-      "why": "storm day 2023-03-31 (market score 1.00)"
+      "why": "2026-02-16: within 2 days of one of its closure days"
     }
   ]
 }
