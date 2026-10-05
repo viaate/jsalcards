@@ -1,16 +1,166 @@
 {
  "snapshots": [
   {
-   "timestamp": "20240403023311",
-   "url": "https://www.yourcentralvalley.com/weather/closings/",
-   "station": "nexstar-ksee",
-   "why": "2024-04-03: within 2 days of one of its closure days"
+   "timestamp": "20250210032927",
+   "url": "https://www.medicinelake.k12.mt.us/",
+   "station": "apptegy-medicine-lake-mt",
+   "why": "storm day 2025-02-10 (market score 0.50)"
   },
   {
-   "timestamp": "20240414205759",
-   "url": "https://www.fremont6.org/",
-   "station": "apptegy-fremont-6-wy",
-   "why": "2024-04-15: within 2 days of one of its closure days"
+   "timestamp": "20250212015130",
+   "url": "https://www.medicinelake.k12.mt.us/",
+   "station": "apptegy-medicine-lake-mt",
+   "why": "storm day 2025-02-12 (market score 0.50)"
+  },
+  {
+   "timestamp": "20250328012526",
+   "url": "https://www.medicinelake.k12.mt.us/",
+   "station": "apptegy-medicine-lake-mt",
+   "why": "storm day 2025-03-28 (market score 0.25)"
+  },
+  {
+   "timestamp": "20251210121630",
+   "url": "https://www.medicinelake.k12.mt.us/",
+   "station": "apptegy-medicine-lake-mt",
+   "why": "storm day 2025-12-10 (market score 0.25)"
+  },
+  {
+   "timestamp": "20250327174032",
+   "url": "https://www.medicinelake.k12.mt.us/",
+   "station": "apptegy-medicine-lake-mt",
+   "why": "storm day 2025-03-28 (market score 0.25)"
+  },
+  {
+   "timestamp": "20221202043045",
+   "url": "https://www.medicinelake.k12.mt.us/",
+   "station": "apptegy-medicine-lake-mt",
+   "why": "storm day 2022-12-02 (market score 0.25)"
+  },
+  {
+   "timestamp": "20221202014622",
+   "url": "https://www.medicinelake.k12.mt.us/",
+   "station": "apptegy-medicine-lake-mt",
+   "why": "storm day 2022-12-02 (market score 0.25)"
+  },
+  {
+   "timestamp": "20230314201750",
+   "url": "https://www.medicinelake.k12.mt.us/",
+   "station": "apptegy-medicine-lake-mt",
+   "why": "storm day 2023-03-15 (market score 0.25)"
+  },
+  {
+   "timestamp": "20220301175751",
+   "url": "https://www.medicinelake.k12.mt.us/",
+   "station": "apptegy-medicine-lake-mt",
+   "why": "storm day 2022-03-02 (market score 0.25)"
+  },
+  {
+   "timestamp": "20220201200122",
+   "url": "https://www.medicinelake.k12.mt.us/",
+   "station": "apptegy-medicine-lake-mt",
+   "why": "2022-02-02: a day a proven list sharing its counties held a row"
+  },
+  {
+   "timestamp": "20250329160108",
+   "url": "https://www.medicinelake.k12.mt.us/",
+   "station": "apptegy-medicine-lake-mt",
+   "why": "2025-03-30: within 2 days of one of its closure days"
+  },
+  {
+   "timestamp": "20251128204946",
+   "url": "https://www.medicinelake.k12.mt.us/",
+   "station": "apptegy-medicine-lake-mt",
+   "why": "2025-11-29: within 2 days of one of its closure days"
+  },
+  {
+   "timestamp": "20250207213250",
+   "url": "https://www.medicinelake.k12.mt.us/",
+   "station": "apptegy-medicine-lake-mt",
+   "why": "2025-02-08: within 2 days of one of its closure days"
+  },
+  {
+   "timestamp": "20250207051609",
+   "url": "https://www.medicinelake.k12.mt.us/",
+   "station": "apptegy-medicine-lake-mt",
+   "why": "2025-02-07: within 2 days of one of its closure days"
+  },
+  {
+   "timestamp": "20251208132123",
+   "url": "https://www.medicinelake.k12.mt.us/",
+   "station": "apptegy-medicine-lake-mt",
+   "why": "2025-12-08: within 2 days of one of its closure days"
+  },
+  {
+   "timestamp": "20250202155555",
+   "url": "https://www.medicinelake.k12.mt.us/",
+   "station": "apptegy-medicine-lake-mt",
+   "why": "2025-02-02: within 2 days of one of its closure days"
+  },
+  {
+   "timestamp": "20250120202127",
+   "url": "https://www.medicinelake.k12.mt.us/",
+   "station": "apptegy-medicine-lake-mt",
+   "why": "2025-01-21: within 2 days of one of its closure days"
+  },
+  {
+   "timestamp": "20240117120806",
+   "url": "https://www.medicinelake.k12.mt.us/",
+   "station": "apptegy-medicine-lake-mt",
+   "why": "2024-01-17: within 2 days of one of its closure days"
+  },
+  {
+   "timestamp": "20220101200412",
+   "url": "https://www.medicinelake.k12.mt.us/",
+   "station": "apptegy-medicine-lake-mt",
+   "why": "2022-01-02: within 2 days of one of its closure days"
+  },
+  {
+   "timestamp": "20220123034806",
+   "url": "https://www.medicinelake.k12.mt.us/",
+   "station": "apptegy-medicine-lake-mt",
+   "why": "2022-01-23: within 2 days of one of its closure days"
+  },
+  {
+   "timestamp": "20201106220633",
+   "url": "https://www.medicinelake.k12.mt.us/",
+   "station": "apptegy-medicine-lake-mt",
+   "why": "2020-11-07: within 2 days of one of its closure days"
+  },
+  {
+   "timestamp": "20201021012530",
+   "url": "https://www.medicinelake.k12.mt.us/",
+   "station": "apptegy-medicine-lake-mt",
+   "why": "2020-10-21: within 2 days of one of its closure days"
+  },
+  {
+   "timestamp": "20210201161151",
+   "url": "https://www.medicinelake.k12.mt.us/",
+   "station": "apptegy-medicine-lake-mt",
+   "why": "2021-02-02: within 2 days of one of its closure days"
+  },
+  {
+   "timestamp": "20210201150524",
+   "url": "https://www.medicinelake.k12.mt.us/",
+   "station": "apptegy-medicine-lake-mt",
+   "why": "2021-02-01: within 2 days of one of its closure days"
+  },
+  {
+   "timestamp": "20191118043624",
+   "url": "https://www.medicinelake.k12.mt.us/",
+   "station": "apptegy-medicine-lake-mt",
+   "why": "2019-11-18: within 2 days of one of its closure days"
+  },
+  {
+   "timestamp": "20241228001853",
+   "url": "https://www.medicinelake.k12.mt.us/",
+   "station": "apptegy-medicine-lake-mt",
+   "why": "2024-12-28: within 2 days of one of its closure days"
+  },
+  {
+   "timestamp": "20241227235929",
+   "url": "https://www.medicinelake.k12.mt.us/",
+   "station": "apptegy-medicine-lake-mt",
+   "why": "2024-12-28: within 2 days of one of its closure days"
   }
  ]
 }
