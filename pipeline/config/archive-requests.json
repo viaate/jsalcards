@@ -1,1264 +1,1264 @@
 {
   "snapshots": [
     {
-      "timestamp": "20251027145623",
-      "url": "https://www.canyonsdistrict.org/",
-      "station": "district-homepage-canyons-ut",
-      "why": "storm day 2025-10-27 (market score 0.25)"
-    },
-    {
-      "timestamp": "20221204225822",
-      "url": "https://www.canyonsdistrict.org/",
-      "station": "district-homepage-canyons-ut",
-      "why": "storm day 2022-12-05 (market score 0.25)"
-    },
-    {
-      "timestamp": "20220222224037",
-      "url": "https://www.canyonsdistrict.org/",
-      "station": "district-homepage-canyons-ut",
-      "why": "storm day 2022-02-23 (market score 0.25)"
-    },
-    {
-      "timestamp": "20210413195132",
-      "url": "https://www.canyonsdistrict.org/",
-      "station": "district-homepage-canyons-ut",
-      "why": "storm day 2021-04-14 (market score 0.25)"
-    },
-    {
-      "timestamp": "20211019031217",
-      "url": "https://www.canyonsdistrict.org/",
-      "station": "district-homepage-canyons-ut",
-      "why": "storm day 2021-10-19 (market score 0.25)"
-    },
-    {
-      "timestamp": "20220222164445",
-      "url": "https://www.canyonsdistrict.org/",
-      "station": "district-homepage-canyons-ut",
-      "why": "storm day 2022-02-23 (market score 0.25)"
-    },
-    {
-      "timestamp": "20220202095717",
-      "url": "https://www.canyonsdistrict.org/",
-      "station": "district-homepage-canyons-ut",
-      "why": "storm day 2022-02-02 (market score 0.25)"
-    },
-    {
-      "timestamp": "20220202122651",
-      "url": "https://www.canyonsdistrict.org/",
-      "station": "district-homepage-canyons-ut",
-      "why": "storm day 2022-02-02 (market score 0.25)"
-    },
-    {
-      "timestamp": "20220202142139",
-      "url": "https://www.canyonsdistrict.org/",
-      "station": "district-homepage-canyons-ut",
-      "why": "storm day 2022-02-02 (market score 0.25)"
-    },
-    {
-      "timestamp": "20211230124011",
-      "url": "https://www.canyonsdistrict.org/",
-      "station": "district-homepage-canyons-ut",
-      "why": "storm day 2021-12-30 (market score 0.25)"
-    },
-    {
-      "timestamp": "20211231150245",
-      "url": "https://www.canyonsdistrict.org/",
-      "station": "district-homepage-canyons-ut",
-      "why": "storm day 2021-12-31 (market score 0.25)"
-    },
-    {
-      "timestamp": "20220104034356",
-      "url": "https://www.canyonsdistrict.org/",
-      "station": "district-homepage-canyons-ut",
-      "why": "storm day 2022-01-04 (market score 0.25)"
-    },
-    {
-      "timestamp": "20200114032032",
-      "url": "https://www.canyonsdistrict.org/",
-      "station": "district-homepage-canyons-ut",
-      "why": "storm day 2020-01-14 (market score 0.25)"
-    },
-    {
-      "timestamp": "20170922113416",
-      "url": "http://www.canyonsdistrict.org/",
-      "station": "district-homepage-canyons-ut",
-      "why": "storm day 2017-09-22 (market score 0.25)"
-    },
-    {
-      "timestamp": "20181227080930",
-      "url": "http://canyonsdistrict.org:80/",
-      "station": "district-homepage-canyons-ut",
-      "why": "storm day 2018-12-27 (market score 0.25)"
-    },
-    {
-      "timestamp": "20181227090212",
-      "url": "http://www.canyonsdistrict.org:80/",
-      "station": "district-homepage-canyons-ut",
-      "why": "storm day 2018-12-27 (market score 0.25)"
-    },
-    {
-      "timestamp": "20190219193400",
-      "url": "http://www.canyonsdistrict.org:80/",
-      "station": "district-homepage-canyons-ut",
-      "why": "storm day 2019-02-20 (market score 0.25)"
-    },
-    {
-      "timestamp": "20180416163803",
-      "url": "http://canyonsdistrict.org:80/",
-      "station": "district-homepage-canyons-ut",
-      "why": "storm day 2018-04-17 (market score 0.25)"
-    },
-    {
-      "timestamp": "20170124202112",
-      "url": "http://www.canyonsdistrict.org/",
-      "station": "district-homepage-canyons-ut",
-      "why": "storm day 2017-01-25 (market score 0.25)"
-    },
-    {
-      "timestamp": "20190307212335",
-      "url": "http://canyonsdistrict.org:80/",
-      "station": "district-homepage-canyons-ut",
-      "why": "storm day 2019-03-08 (market score 0.25)"
-    },
-    {
-      "timestamp": "20161117013804",
-      "url": "http://canyonsdistrict.org:80/",
-      "station": "district-homepage-canyons-ut",
-      "why": "storm day 2016-11-17 (market score 0.25)"
-    },
-    {
-      "timestamp": "20190307222800",
-      "url": "http://www.canyonsdistrict.org:80/",
-      "station": "district-homepage-canyons-ut",
-      "why": "storm day 2019-03-08 (market score 0.25)"
-    },
-    {
-      "timestamp": "20170922041349",
-      "url": "http://www.canyonsdistrict.org:80/",
-      "station": "district-homepage-canyons-ut",
-      "why": "storm day 2017-09-22 (market score 0.25)"
-    },
-    {
-      "timestamp": "20170516194409",
-      "url": "http://canyonsdistrict.org/",
-      "station": "district-homepage-canyons-ut",
-      "why": "storm day 2017-05-17 (market score 0.25)"
-    },
-    {
-      "timestamp": "20170516194933",
-      "url": "http://canyonsdistrict.org/",
-      "station": "district-homepage-canyons-ut",
-      "why": "storm day 2017-05-17 (market score 0.25)"
-    },
-    {
-      "timestamp": "20170517071431",
-      "url": "http://www.canyonsdistrict.org:80/",
-      "station": "district-homepage-canyons-ut",
-      "why": "storm day 2017-05-17 (market score 0.25)"
-    },
-    {
-      "timestamp": "20160322002705",
-      "url": "http://www.canyonsdistrict.org:80/?",
-      "station": "district-homepage-canyons-ut",
-      "why": "storm day 2016-03-22 (market score 0.25)"
-    },
-    {
-      "timestamp": "20260303171237",
-      "url": "https://www.canyonsdistrict.org/",
-      "station": "district-homepage-canyons-ut",
-      "why": "2026-03-04: within 2 days of one of its closure days"
-    },
-    {
-      "timestamp": "20250219083547",
-      "url": "https://www.canyonsdistrict.org/",
-      "station": "district-homepage-canyons-ut",
-      "why": "2025-02-19: within 2 days of one of its closure days"
-    },
-    {
-      "timestamp": "20251025140351",
-      "url": "https://www.canyonsdistrict.org/",
-      "station": "district-homepage-canyons-ut",
-      "why": "2025-10-25: within 2 days of one of its closure days"
-    },
-    {
-      "timestamp": "20260226170028",
-      "url": "https://www.canyonsdistrict.org/",
-      "station": "district-homepage-canyons-ut",
-      "why": "2026-02-27: within 2 days of one of its closure days"
-    },
-    {
-      "timestamp": "20251026063110",
-      "url": "https://www.canyonsdistrict.org/",
-      "station": "district-homepage-canyons-ut",
-      "why": "2025-10-26: within 2 days of one of its closure days"
-    },
-    {
-      "timestamp": "20260306180306",
-      "url": "https://www.canyonsdistrict.org/",
-      "station": "district-homepage-canyons-ut",
-      "why": "2026-03-07: within 2 days of one of its closure days"
-    },
-    {
-      "timestamp": "20260308143030",
-      "url": "https://www.canyonsdistrict.org/",
-      "station": "district-homepage-canyons-ut",
-      "why": "2026-03-08: within 2 days of one of its closure days"
-    },
-    {
-      "timestamp": "20251025182336",
-      "url": "https://www.canyonsdistrict.org/",
-      "station": "district-homepage-canyons-ut",
-      "why": "2025-10-26: within 2 days of one of its closure days"
-    },
-    {
-      "timestamp": "20260226071817",
-      "url": "https://www.canyonsdistrict.org/",
-      "station": "district-homepage-canyons-ut",
-      "why": "2026-02-26: within 2 days of one of its closure days"
-    },
-    {
-      "timestamp": "20260307022708",
-      "url": "https://www.canyonsdistrict.org/",
-      "station": "district-homepage-canyons-ut",
-      "why": "2026-03-07: within 2 days of one of its closure days"
-    },
-    {
-      "timestamp": "20251026145739",
-      "url": "https://www.canyonsdistrict.org/",
-      "station": "district-homepage-canyons-ut",
-      "why": "2025-10-26: within 2 days of one of its closure days"
-    },
-    {
-      "timestamp": "20260304023308",
-      "url": "https://www.canyonsdistrict.org/",
-      "station": "district-homepage-canyons-ut",
-      "why": "2026-03-04: within 2 days of one of its closure days"
-    },
-    {
-      "timestamp": "20251025160041",
-      "url": "https://www.canyonsdistrict.org/",
-      "station": "district-homepage-canyons-ut",
-      "why": "2025-10-26: within 2 days of one of its closure days"
-    },
-    {
-      "timestamp": "20260223034557",
-      "url": "https://www.canyonsdistrict.org/",
-      "station": "district-homepage-canyons-ut",
-      "why": "2026-02-23: within 2 days of one of its closure days"
-    },
-    {
-      "timestamp": "20260304143324",
-      "url": "https://www.canyonsdistrict.org/",
-      "station": "district-homepage-canyons-ut",
-      "why": "2026-03-04: within 2 days of one of its closure days"
-    },
-    {
-      "timestamp": "20251025065737",
-      "url": "https://www.canyonsdistrict.org/",
-      "station": "district-homepage-canyons-ut",
-      "why": "2025-10-25: within 2 days of one of its closure days"
-    },
-    {
-      "timestamp": "20260222101922",
-      "url": "https://www.canyonsdistrict.org/",
-      "station": "district-homepage-canyons-ut",
-      "why": "2026-02-22: within 2 days of one of its closure days"
-    },
-    {
-      "timestamp": "20260302161851",
-      "url": "https://www.canyonsdistrict.org/",
-      "station": "district-homepage-canyons-ut",
-      "why": "2026-03-03: within 2 days of one of its closure days"
-    },
-    {
-      "timestamp": "20260221224751",
-      "url": "https://www.canyonsdistrict.org/",
-      "station": "district-homepage-canyons-ut",
-      "why": "2026-02-22: within 2 days of one of its closure days"
-    },
-    {
-      "timestamp": "20260221184827",
-      "url": "https://www.canyonsdistrict.org/",
-      "station": "district-homepage-canyons-ut",
-      "why": "2026-02-22: within 2 days of one of its closure days"
-    },
-    {
-      "timestamp": "20260307033823",
-      "url": "https://www.canyonsdistrict.org/",
-      "station": "district-homepage-canyons-ut",
-      "why": "2026-03-07: within 2 days of one of its closure days"
-    },
-    {
-      "timestamp": "20251025030818",
-      "url": "https://www.canyonsdistrict.org/",
-      "station": "district-homepage-canyons-ut",
-      "why": "2025-10-25: within 2 days of one of its closure days"
-    },
-    {
-      "timestamp": "20260303143631",
-      "url": "https://www.canyonsdistrict.org/",
-      "station": "district-homepage-canyons-ut",
-      "why": "2026-03-03: within 2 days of one of its closure days"
-    },
-    {
-      "timestamp": "20260221200904",
-      "url": "https://www.canyonsdistrict.org/",
-      "station": "district-homepage-canyons-ut",
-      "why": "2026-02-22: within 2 days of one of its closure days"
-    },
-    {
-      "timestamp": "20260223133041",
-      "url": "https://www.canyonsdistrict.org/",
-      "station": "district-homepage-canyons-ut",
-      "why": "2026-02-23: within 2 days of one of its closure days"
-    },
-    {
-      "timestamp": "20260302163933",
-      "url": "https://www.canyonsdistrict.org/",
-      "station": "district-homepage-canyons-ut",
-      "why": "2026-03-03: within 2 days of one of its closure days"
-    },
-    {
-      "timestamp": "20260213172122",
-      "url": "https://www.canyonsdistrict.org/",
-      "station": "district-homepage-canyons-ut",
-      "why": "2026-02-14: within 2 days of one of its closure days"
-    },
-    {
-      "timestamp": "20260219033552",
-      "url": "https://www.canyonsdistrict.org/",
-      "station": "district-homepage-canyons-ut",
-      "why": "2026-02-19: within 2 days of one of its closure days"
-    },
-    {
-      "timestamp": "20260213023546",
-      "url": "https://www.canyonsdistrict.org/",
-      "station": "district-homepage-canyons-ut",
-      "why": "2026-02-13: within 2 days of one of its closure days"
-    },
-    {
-      "timestamp": "20260331023421",
-      "url": "https://www.canyonsdistrict.org/",
-      "station": "district-homepage-canyons-ut",
-      "why": "2026-03-31: within 2 days of one of its closure days"
-    },
-    {
-      "timestamp": "20260210024038",
-      "url": "https://www.canyonsdistrict.org/",
-      "station": "district-homepage-canyons-ut",
-      "why": "2026-02-10: within 2 days of one of its closure days"
-    },
-    {
-      "timestamp": "20260404064747",
-      "url": "https://www.canyonsdistrict.org/",
-      "station": "district-homepage-canyons-ut",
-      "why": "2026-04-04: within 2 days of one of its closure days"
-    },
-    {
-      "timestamp": "20260213143357",
-      "url": "https://www.canyonsdistrict.org/",
-      "station": "district-homepage-canyons-ut",
-      "why": "2026-02-13: within 2 days of one of its closure days"
-    },
-    {
-      "timestamp": "20260214074706",
-      "url": "https://www.canyonsdistrict.org/",
-      "station": "district-homepage-canyons-ut",
-      "why": "2026-02-14: within 2 days of one of its closure days"
-    },
-    {
-      "timestamp": "20260213224140",
-      "url": "https://www.canyonsdistrict.org/",
-      "station": "district-homepage-canyons-ut",
-      "why": "2026-02-14: within 2 days of one of its closure days"
-    },
-    {
-      "timestamp": "20260330160012",
-      "url": "https://www.canyonsdistrict.org/",
-      "station": "district-homepage-canyons-ut",
-      "why": "2026-03-31: within 2 days of one of its closure days"
-    },
-    {
-      "timestamp": "20260330023008",
-      "url": "https://www.canyonsdistrict.org/",
-      "station": "district-homepage-canyons-ut",
-      "why": "2026-03-30: within 2 days of one of its closure days"
-    },
-    {
-      "timestamp": "20260330092946",
-      "url": "https://www.canyonsdistrict.org/",
-      "station": "district-homepage-canyons-ut",
-      "why": "2026-03-30: within 2 days of one of its closure days"
-    },
-    {
-      "timestamp": "20260403085308",
-      "url": "https://www.canyonsdistrict.org/",
-      "station": "district-homepage-canyons-ut",
-      "why": "2026-04-03: within 2 days of one of its closure days"
-    },
-    {
-      "timestamp": "20260214143120",
-      "url": "https://www.canyonsdistrict.org/",
-      "station": "district-homepage-canyons-ut",
-      "why": "2026-02-14: within 2 days of one of its closure days"
-    },
-    {
-      "timestamp": "20260220102750",
-      "url": "https://www.canyonsdistrict.org/",
-      "station": "district-homepage-canyons-ut",
-      "why": "2026-02-20: within 2 days of one of its closure days"
-    },
-    {
-      "timestamp": "20260331143455",
-      "url": "https://www.canyonsdistrict.org/",
-      "station": "district-homepage-canyons-ut",
-      "why": "2026-03-31: within 2 days of one of its closure days"
-    },
-    {
-      "timestamp": "20260219143027",
-      "url": "https://www.canyonsdistrict.org/",
-      "station": "district-homepage-canyons-ut",
-      "why": "2026-02-19: within 2 days of one of its closure days"
-    },
-    {
-      "timestamp": "20260216063132",
-      "url": "https://www.canyonsdistrict.org/",
-      "station": "district-homepage-canyons-ut",
-      "why": "2026-02-16: within 2 days of one of its closure days"
-    },
-    {
-      "timestamp": "20260216143237",
-      "url": "https://www.canyonsdistrict.org/",
-      "station": "district-homepage-canyons-ut",
-      "why": "2026-02-16: within 2 days of one of its closure days"
-    },
-    {
-      "timestamp": "20260404023557",
-      "url": "https://www.canyonsdistrict.org/",
-      "station": "district-homepage-canyons-ut",
-      "why": "2026-04-04: within 2 days of one of its closure days"
-    },
-    {
-      "timestamp": "20260403143259",
-      "url": "https://www.canyonsdistrict.org/",
-      "station": "district-homepage-canyons-ut",
-      "why": "2026-04-03: within 2 days of one of its closure days"
-    },
-    {
-      "timestamp": "20260403023849",
-      "url": "https://www.canyonsdistrict.org/",
-      "station": "district-homepage-canyons-ut",
-      "why": "2026-04-03: within 2 days of one of its closure days"
-    },
-    {
-      "timestamp": "20251206023033",
-      "url": "https://www.canyonsdistrict.org/",
-      "station": "district-homepage-canyons-ut",
-      "why": "2025-12-06: within 2 days of one of its closure days"
-    },
-    {
-      "timestamp": "20260107143102",
-      "url": "https://www.canyonsdistrict.org/",
-      "station": "district-homepage-canyons-ut",
-      "why": "2026-01-07: within 2 days of one of its closure days"
-    },
-    {
-      "timestamp": "20260110022843",
-      "url": "https://www.canyonsdistrict.org/",
-      "station": "district-homepage-canyons-ut",
-      "why": "2026-01-10: within 2 days of one of its closure days"
-    },
-    {
-      "timestamp": "20251227142818",
-      "url": "https://www.canyonsdistrict.org/",
-      "station": "district-homepage-canyons-ut",
-      "why": "2025-12-27: within 2 days of one of its closure days"
-    },
-    {
-      "timestamp": "20260106091849",
-      "url": "https://www.canyonsdistrict.org/",
-      "station": "district-homepage-canyons-ut",
-      "why": "2026-01-06: within 2 days of one of its closure days"
-    },
-    {
-      "timestamp": "20260103143309",
-      "url": "https://www.canyonsdistrict.org/",
-      "station": "district-homepage-canyons-ut",
-      "why": "2026-01-03: within 2 days of one of its closure days"
-    },
-    {
-      "timestamp": "20251230024256",
-      "url": "https://www.canyonsdistrict.org/",
-      "station": "district-homepage-canyons-ut",
-      "why": "2025-12-30: within 2 days of one of its closure days"
-    },
-    {
-      "timestamp": "20251224023059",
-      "url": "https://www.canyonsdistrict.org/",
-      "station": "district-homepage-canyons-ut",
-      "why": "2025-12-24: within 2 days of one of its closure days"
-    },
-    {
-      "timestamp": "20251227124122",
-      "url": "https://www.canyonsdistrict.org/",
-      "station": "district-homepage-canyons-ut",
-      "why": "2025-12-27: within 2 days of one of its closure days"
-    },
-    {
-      "timestamp": "20260110002705",
-      "url": "https://www.canyonsdistrict.org/",
-      "station": "district-homepage-canyons-ut",
-      "why": "2026-01-10: within 2 days of one of its closure days"
-    },
-    {
-      "timestamp": "20251230110729",
-      "url": "https://www.canyonsdistrict.org/",
-      "station": "district-homepage-canyons-ut",
-      "why": "2025-12-30: within 2 days of one of its closure days"
-    },
-    {
-      "timestamp": "20260106100119",
-      "url": "https://www.canyonsdistrict.org/",
-      "station": "district-homepage-canyons-ut",
-      "why": "2026-01-06: within 2 days of one of its closure days"
-    },
-    {
-      "timestamp": "20251225143027",
-      "url": "https://www.canyonsdistrict.org/",
-      "station": "district-homepage-canyons-ut",
-      "why": "2025-12-25: within 2 days of one of its closure days"
-    },
-    {
-      "timestamp": "20251228121948",
-      "url": "https://www.canyonsdistrict.org/",
-      "station": "district-homepage-canyons-ut",
-      "why": "2025-12-28: within 2 days of one of its closure days"
-    },
-    {
-      "timestamp": "20260104111748",
-      "url": "https://www.canyonsdistrict.org/",
-      "station": "district-homepage-canyons-ut",
-      "why": "2026-01-04: within 2 days of one of its closure days"
-    },
-    {
-      "timestamp": "20251224142905",
-      "url": "https://www.canyonsdistrict.org/",
-      "station": "district-homepage-canyons-ut",
-      "why": "2025-12-24: within 2 days of one of its closure days"
-    },
-    {
-      "timestamp": "20251228023003",
-      "url": "https://www.canyonsdistrict.org/",
-      "station": "district-homepage-canyons-ut",
-      "why": "2025-12-28: within 2 days of one of its closure days"
-    },
-    {
-      "timestamp": "20260104153721",
-      "url": "https://www.canyonsdistrict.org/",
-      "station": "district-homepage-canyons-ut",
-      "why": "2026-01-04: within 2 days of one of its closure days"
-    },
-    {
-      "timestamp": "20260107055713",
-      "url": "https://www.canyonsdistrict.org/",
-      "station": "district-homepage-canyons-ut",
-      "why": "2026-01-07: within 2 days of one of its closure days"
-    },
-    {
-      "timestamp": "20260104021818",
-      "url": "https://www.canyonsdistrict.org/",
-      "station": "district-homepage-canyons-ut",
-      "why": "2026-01-04: within 2 days of one of its closure days"
-    },
-    {
-      "timestamp": "20251204041532",
-      "url": "https://www.canyonsdistrict.org/",
-      "station": "district-homepage-canyons-ut",
-      "why": "2025-12-04: within 2 days of one of its closure days"
-    },
-    {
-      "timestamp": "20251202204348",
-      "url": "https://www.canyonsdistrict.org/",
-      "station": "district-homepage-canyons-ut",
-      "why": "2025-12-03: within 2 days of one of its closure days"
-    },
-    {
-      "timestamp": "20251028211730",
-      "url": "https://www.canyonsdistrict.org/",
-      "station": "district-homepage-canyons-ut",
-      "why": "2025-10-29: within 2 days of one of its closure days"
-    },
-    {
-      "timestamp": "20240414150853",
-      "url": "https://www.canyonsdistrict.org/",
-      "station": "district-homepage-canyons-ut",
-      "why": "2024-04-14: within 2 days of one of its closure days"
-    },
-    {
-      "timestamp": "20240413093315",
-      "url": "https://www.canyonsdistrict.org/",
-      "station": "district-homepage-canyons-ut",
-      "why": "2024-04-13: within 2 days of one of its closure days"
-    },
-    {
-      "timestamp": "20231023232210",
-      "url": "https://www.canyonsdistrict.org/",
-      "station": "district-homepage-canyons-ut",
-      "why": "2023-10-24: within 2 days of one of its closure days"
-    },
-    {
-      "timestamp": "20230325065711",
-      "url": "https://www.canyonsdistrict.org/",
-      "station": "district-homepage-canyons-ut",
-      "why": "2023-03-25: within 2 days of one of its closure days"
-    },
-    {
-      "timestamp": "20230318053334",
-      "url": "https://www.canyonsdistrict.org/",
-      "station": "district-homepage-canyons-ut",
-      "why": "2023-03-18: within 2 days of one of its closure days"
-    },
-    {
-      "timestamp": "20240402225931",
-      "url": "https://www.canyonsdistrict.org/",
-      "station": "district-homepage-canyons-ut",
-      "why": "2024-04-03: within 2 days of one of its closure days"
-    },
-    {
-      "timestamp": "20221203033415",
-      "url": "https://www.canyonsdistrict.org/",
-      "station": "district-homepage-canyons-ut",
-      "why": "2022-12-03: within 2 days of one of its closure days"
-    },
-    {
-      "timestamp": "20221203033929",
-      "url": "https://www.canyonsdistrict.org/",
-      "station": "district-homepage-canyons-ut",
-      "why": "2022-12-03: within 2 days of one of its closure days"
-    },
-    {
-      "timestamp": "20240508185730",
-      "url": "https://www.canyonsdistrict.org/",
-      "station": "district-homepage-canyons-ut",
-      "why": "2024-05-09: within 2 days of one of its closure days"
-    },
-    {
-      "timestamp": "20230308124759",
-      "url": "https://www.canyonsdistrict.org/",
-      "station": "district-homepage-canyons-ut",
-      "why": "2023-03-08: within 2 days of one of its closure days"
-    },
-    {
-      "timestamp": "20221112022421",
-      "url": "https://www.canyonsdistrict.org/",
-      "station": "district-homepage-canyons-ut",
-      "why": "2022-11-12: within 2 days of one of its closure days"
-    },
-    {
-      "timestamp": "20221112014759",
-      "url": "https://www.canyonsdistrict.org/",
-      "station": "district-homepage-canyons-ut",
-      "why": "2022-11-12: within 2 days of one of its closure days"
-    },
-    {
-      "timestamp": "20210416135420",
-      "url": "https://www.canyonsdistrict.org/",
-      "station": "district-homepage-canyons-ut",
-      "why": "2021-04-16: within 2 days of one of its closure days"
-    },
-    {
-      "timestamp": "20211017010209",
-      "url": "https://www.canyonsdistrict.org/",
-      "station": "district-homepage-canyons-ut",
-      "why": "2021-10-17: within 2 days of one of its closure days"
-    },
-    {
-      "timestamp": "20210123084133",
-      "url": "https://www.canyonsdistrict.org/",
-      "station": "district-homepage-canyons-ut",
-      "why": "2021-01-23: within 2 days of one of its closure days"
-    },
-    {
-      "timestamp": "20220221181933",
-      "url": "https://www.canyonsdistrict.org/",
-      "station": "district-homepage-canyons-ut",
-      "why": "2022-02-22: within 2 days of one of its closure days"
-    },
-    {
-      "timestamp": "20220220061250",
-      "url": "https://www.canyonsdistrict.org/",
-      "station": "district-homepage-canyons-ut",
-      "why": "2022-02-20: within 2 days of one of its closure days"
-    },
-    {
-      "timestamp": "20220222090406",
-      "url": "https://www.canyonsdistrict.org/",
-      "station": "district-homepage-canyons-ut",
-      "why": "2022-02-22: within 2 days of one of its closure days"
-    },
-    {
-      "timestamp": "20220219073412",
-      "url": "https://www.canyonsdistrict.org/",
-      "station": "district-homepage-canyons-ut",
-      "why": "2022-02-19: within 2 days of one of its closure days"
-    },
-    {
-      "timestamp": "20220220054911",
-      "url": "https://www.canyonsdistrict.org/",
-      "station": "district-homepage-canyons-ut",
-      "why": "2022-02-20: within 2 days of one of its closure days"
-    },
-    {
-      "timestamp": "20220224022222",
-      "url": "https://www.canyonsdistrict.org/",
-      "station": "district-homepage-canyons-ut",
-      "why": "2022-02-24: within 2 days of one of its closure days"
-    },
-    {
-      "timestamp": "20220225022150",
-      "url": "https://www.canyonsdistrict.org/",
-      "station": "district-homepage-canyons-ut",
-      "why": "2022-02-25: within 2 days of one of its closure days"
-    },
-    {
-      "timestamp": "20220204142158",
-      "url": "https://www.canyonsdistrict.org/",
-      "station": "district-homepage-canyons-ut",
-      "why": "2022-02-04: within 2 days of one of its closure days"
-    },
-    {
-      "timestamp": "20220103022133",
-      "url": "https://www.canyonsdistrict.org/",
-      "station": "district-homepage-canyons-ut",
-      "why": "2022-01-03: within 2 days of one of its closure days"
-    },
-    {
-      "timestamp": "20220102022642",
-      "url": "https://www.canyonsdistrict.org/",
-      "station": "district-homepage-canyons-ut",
-      "why": "2022-01-02: within 2 days of one of its closure days"
-    },
-    {
-      "timestamp": "20211229004022",
-      "url": "https://www.canyonsdistrict.org/",
-      "station": "district-homepage-canyons-ut",
-      "why": "2021-12-29: within 2 days of one of its closure days"
-    },
-    {
-      "timestamp": "20220103144938",
-      "url": "https://www.canyonsdistrict.org/",
-      "station": "district-homepage-canyons-ut",
-      "why": "2022-01-03: within 2 days of one of its closure days"
-    },
-    {
-      "timestamp": "20220101142937",
-      "url": "https://www.canyonsdistrict.org/",
-      "station": "district-homepage-canyons-ut",
-      "why": "2022-01-01: within 2 days of one of its closure days"
-    },
-    {
-      "timestamp": "20220201015910",
-      "url": "https://www.canyonsdistrict.org/",
-      "station": "district-homepage-canyons-ut",
-      "why": "2022-02-01: within 2 days of one of its closure days"
-    },
-    {
-      "timestamp": "20220106202856",
-      "url": "https://www.canyonsdistrict.org/",
-      "station": "district-homepage-canyons-ut",
-      "why": "2022-01-07: within 2 days of one of its closure days"
-    },
-    {
-      "timestamp": "20220108032203",
-      "url": "https://www.canyonsdistrict.org/",
-      "station": "district-homepage-canyons-ut",
-      "why": "2022-01-08: within 2 days of one of its closure days"
-    },
-    {
-      "timestamp": "20220107042250",
-      "url": "https://www.canyonsdistrict.org/",
-      "station": "district-homepage-canyons-ut",
-      "why": "2022-01-07: within 2 days of one of its closure days"
-    },
-    {
-      "timestamp": "20220107150013",
-      "url": "https://www.canyonsdistrict.org/",
-      "station": "district-homepage-canyons-ut",
-      "why": "2022-01-07: within 2 days of one of its closure days"
-    },
-    {
-      "timestamp": "20201109220738",
-      "url": "https://www.canyonsdistrict.org/",
-      "station": "district-homepage-canyons-ut",
-      "why": "2020-11-10: within 2 days of one of its closure days"
-    },
-    {
-      "timestamp": "20201109221503",
-      "url": "https://www.canyonsdistrict.org/",
-      "station": "district-homepage-canyons-ut",
-      "why": "2020-11-10: within 2 days of one of its closure days"
-    },
-    {
-      "timestamp": "20251205223034",
-      "url": "https://www.canyonsdistrict.org/",
-      "station": "district-homepage-canyons-ut",
-      "why": "2025-12-06: within 2 days of one of its closure days"
-    },
-    {
-      "timestamp": "20191207114825",
-      "url": "https://www.canyonsdistrict.org/",
-      "station": "district-homepage-canyons-ut",
-      "why": "2019-12-07: within 2 days of one of its closure days"
-    },
-    {
-      "timestamp": "20200102191515",
-      "url": "https://www.canyonsdistrict.org/",
-      "station": "district-homepage-canyons-ut",
-      "why": "2020-01-03: within 2 days of one of its closure days"
-    },
-    {
-      "timestamp": "20160921010114",
-      "url": "http://www.canyonsdistrict.org/",
-      "station": "district-homepage-canyons-ut",
-      "why": "2016-09-21: within 2 days of one of its closure days"
-    },
-    {
-      "timestamp": "20161001152239",
-      "url": "http://canyonsdistrict.org/",
-      "station": "district-homepage-canyons-ut",
-      "why": "2016-10-01: within 2 days of one of its closure days"
-    },
-    {
-      "timestamp": "20180224034042",
-      "url": "http://canyonsdistrict.org/",
-      "station": "district-homepage-canyons-ut",
-      "why": "2018-02-24: within 2 days of one of its closure days"
-    },
-    {
-      "timestamp": "20190108131629",
-      "url": "http://www.canyonsdistrict.org:80/",
-      "station": "district-homepage-canyons-ut",
-      "why": "2019-01-08: within 2 days of one of its closure days"
-    },
-    {
-      "timestamp": "20190413082746",
-      "url": "http://www.canyonsdistrict.org:80/",
-      "station": "district-homepage-canyons-ut",
-      "why": "2019-04-13: within 2 days of one of its closure days"
-    },
-    {
-      "timestamp": "20161122004625",
-      "url": "http://www.canyonsdistrict.org/",
-      "station": "district-homepage-canyons-ut",
-      "why": "2016-11-22: within 2 days of one of its closure days"
-    },
-    {
-      "timestamp": "20161002155020",
-      "url": "http://www.canyonsdistrict.org:80/",
-      "station": "district-homepage-canyons-ut",
-      "why": "2016-10-02: within 2 days of one of its closure days"
-    },
-    {
-      "timestamp": "20180111152107",
-      "url": "http://canyonsdistrict.org:80/",
-      "station": "district-homepage-canyons-ut",
-      "why": "2018-01-11: within 2 days of one of its closure days"
-    },
-    {
-      "timestamp": "20180302183322",
-      "url": "http://www.canyonsdistrict.org:80/",
-      "station": "district-homepage-canyons-ut",
-      "why": "2018-03-03: within 2 days of one of its closure days"
-    },
-    {
-      "timestamp": "20180111184053",
-      "url": "http://www.canyonsdistrict.org:80/",
-      "station": "district-homepage-canyons-ut",
-      "why": "2018-01-12: within 2 days of one of its closure days"
-    },
-    {
-      "timestamp": "20180217123708",
-      "url": "http://www.canyonsdistrict.org:80/",
-      "station": "district-homepage-canyons-ut",
-      "why": "2018-02-17: within 2 days of one of its closure days"
-    },
-    {
-      "timestamp": "20180321132647",
-      "url": "http://www.canyonsdistrict.org:80/",
-      "station": "district-homepage-canyons-ut",
-      "why": "2018-03-21: within 2 days of one of its closure days"
-    },
-    {
-      "timestamp": "20161118214051",
-      "url": "http://www.canyonsdistrict.org:80/",
-      "station": "district-homepage-canyons-ut",
-      "why": "2016-11-19: within 2 days of one of its closure days"
-    },
-    {
-      "timestamp": "20161120135537",
-      "url": "http://canyonsdistrict.org:80/",
-      "station": "district-homepage-canyons-ut",
-      "why": "2016-11-20: within 2 days of one of its closure days"
-    },
-    {
-      "timestamp": "20180117210251",
-      "url": "http://www.canyonsdistrict.org:80/",
-      "station": "district-homepage-canyons-ut",
-      "why": "2018-01-18: within 2 days of one of its closure days"
-    },
-    {
-      "timestamp": "20161214001738",
-      "url": "http://www.canyonsdistrict.org/",
-      "station": "district-homepage-canyons-ut",
-      "why": "2016-12-14: within 2 days of one of its closure days"
-    },
-    {
-      "timestamp": "20171223033110",
-      "url": "http://www.canyonsdistrict.org:80/",
-      "station": "district-homepage-canyons-ut",
-      "why": "2017-12-23: within 2 days of one of its closure days"
-    },
-    {
-      "timestamp": "20181124214107",
-      "url": "http://canyonsdistrict.org:80/",
-      "station": "district-homepage-canyons-ut",
-      "why": "2018-11-25: within 2 days of one of its closure days"
-    },
-    {
-      "timestamp": "20180224190137",
-      "url": "http://www.canyonsdistrict.org:80/",
-      "station": "district-homepage-canyons-ut",
-      "why": "2018-02-25: within 2 days of one of its closure days"
-    },
-    {
-      "timestamp": "20170323203115",
-      "url": "http://www.canyonsdistrict.org/",
-      "station": "district-homepage-canyons-ut",
-      "why": "2017-03-24: within 2 days of one of its closure days"
-    },
-    {
-      "timestamp": "20161211082519",
-      "url": "http://www.canyonsdistrict.org/",
-      "station": "district-homepage-canyons-ut",
-      "why": "2016-12-11: within 2 days of one of its closure days"
-    },
-    {
-      "timestamp": "20170323202034",
-      "url": "http://www.canyonsdistrict.org/",
-      "station": "district-homepage-canyons-ut",
-      "why": "2017-03-24: within 2 days of one of its closure days"
-    },
-    {
-      "timestamp": "20170323192956",
-      "url": "http://www.canyonsdistrict.org/",
-      "station": "district-homepage-canyons-ut",
-      "why": "2017-03-24: within 2 days of one of its closure days"
-    },
-    {
-      "timestamp": "20161211035511",
-      "url": "http://www.canyonsdistrict.org/",
-      "station": "district-homepage-canyons-ut",
-      "why": "2016-12-11: within 2 days of one of its closure days"
-    },
-    {
-      "timestamp": "20161118142805",
-      "url": "http://www.canyonsdistrict.org:80/",
-      "station": "district-homepage-canyons-ut",
-      "why": "2016-11-18: within 2 days of one of its closure days"
-    },
-    {
-      "timestamp": "20171119043131",
-      "url": "http://www.canyonsdistrict.org/",
-      "station": "district-homepage-canyons-ut",
-      "why": "2017-11-19: within 2 days of one of its closure days"
-    },
-    {
-      "timestamp": "20181124165339",
-      "url": "http://www.canyonsdistrict.org:80/",
-      "station": "district-homepage-canyons-ut",
-      "why": "2018-11-25: within 2 days of one of its closure days"
-    },
-    {
-      "timestamp": "20161128173840",
-      "url": "http://www.canyonsdistrict.org/",
-      "station": "district-homepage-canyons-ut",
-      "why": "2016-11-29: within 2 days of one of its closure days"
-    },
-    {
-      "timestamp": "20180414182013",
-      "url": "http://www.canyonsdistrict.org:80/",
-      "station": "district-homepage-canyons-ut",
-      "why": "2018-04-15: within 2 days of one of its closure days"
-    },
-    {
-      "timestamp": "20171205194547",
-      "url": "http://canyonsdistrict.org:80/",
-      "station": "district-homepage-canyons-ut",
-      "why": "2017-12-06: within 2 days of one of its closure days"
-    },
-    {
-      "timestamp": "20171205213156",
-      "url": "http://www.canyonsdistrict.org:80/",
-      "station": "district-homepage-canyons-ut",
-      "why": "2017-12-06: within 2 days of one of its closure days"
-    },
-    {
-      "timestamp": "20170304163353",
-      "url": "http://cody.henrichsen@canyonsdistrict.org/",
-      "station": "district-homepage-canyons-ut",
-      "why": "2017-03-05: within 2 days of one of its closure days"
-    },
-    {
-      "timestamp": "20171119115427",
-      "url": "http://www.canyonsdistrict.org:80/",
-      "station": "district-homepage-canyons-ut",
-      "why": "2017-11-19: within 2 days of one of its closure days"
-    },
-    {
-      "timestamp": "20170516043028",
-      "url": "http://canyonsdistrict.org/",
-      "station": "district-homepage-canyons-ut",
-      "why": "2017-05-16: within 2 days of one of its closure days"
-    },
-    {
-      "timestamp": "20170920174851",
-      "url": "http://www.canyonsdistrict.org:80/",
-      "station": "district-homepage-canyons-ut",
-      "why": "2017-09-21: within 2 days of one of its closure days"
-    },
-    {
-      "timestamp": "20171218122219",
-      "url": "http://www.canyonsdistrict.org:80/",
-      "station": "district-homepage-canyons-ut",
-      "why": "2017-12-18: within 2 days of one of its closure days"
-    },
-    {
-      "timestamp": "20160415143100",
-      "url": "http://www.canyonsdistrict.org:80/",
-      "station": "district-homepage-canyons-ut",
-      "why": "2016-04-15: within 2 days of one of its closure days"
-    },
-    {
-      "timestamp": "20160329215457",
-      "url": "http://www.canyonsdistrict.org:80/",
-      "station": "district-homepage-canyons-ut",
-      "why": "2016-03-30: within 2 days of one of its closure days"
-    },
-    {
-      "timestamp": "20160219183723",
-      "url": "http://canyonsdistrict.org/",
-      "station": "district-homepage-canyons-ut",
-      "why": "2016-02-20: within 2 days of one of its closure days"
-    },
-    {
-      "timestamp": "20160115225548",
-      "url": "http://canyonsdistrict.org/",
-      "station": "district-homepage-canyons-ut",
-      "why": "2016-01-16: within 2 days of one of its closure days"
-    },
-    {
-      "timestamp": "20160324044438",
-      "url": "http://www.canyonsdistrict.org/",
-      "station": "district-homepage-canyons-ut",
-      "why": "2016-03-24: within 2 days of one of its closure days"
-    },
-    {
-      "timestamp": "20151118190756",
-      "url": "http://www.canyonsdistrict.org/",
-      "station": "district-homepage-canyons-ut",
-      "why": "2015-11-19: within 2 days of one of its closure days"
-    },
-    {
-      "timestamp": "20151118204710",
-      "url": "http://www.canyonsdistrict.org/",
-      "station": "district-homepage-canyons-ut",
-      "why": "2015-11-19: within 2 days of one of its closure days"
-    },
-    {
-      "timestamp": "20151118203528",
-      "url": "http://www.canyonsdistrict.org/",
-      "station": "district-homepage-canyons-ut",
-      "why": "2015-11-19: within 2 days of one of its closure days"
-    },
-    {
-      "timestamp": "20151118202050",
-      "url": "http://www.canyonsdistrict.org/",
-      "station": "district-homepage-canyons-ut",
-      "why": "2015-11-19: within 2 days of one of its closure days"
-    },
-    {
-      "timestamp": "20151118173336",
-      "url": "http://mailto:todd.bird@canyonsdistrict.org/",
-      "station": "district-homepage-canyons-ut",
-      "why": "2015-11-19: within 2 days of one of its closure days"
-    },
-    {
-      "timestamp": "20160202113820",
-      "url": "http://www.canyonsdistrict.org:80/",
-      "station": "district-homepage-canyons-ut",
-      "why": "2016-02-02: within 2 days of one of its closure days"
-    },
-    {
-      "timestamp": "20160219212636",
-      "url": "http://www.canyonsdistrict.org:80/?",
-      "station": "district-homepage-canyons-ut",
-      "why": "2016-02-20: within 2 days of one of its closure days"
-    },
-    {
-      "timestamp": "20160219230725",
-      "url": "http://www.canyonsdistrict.org:80/",
-      "station": "district-homepage-canyons-ut",
-      "why": "2016-02-20: within 2 days of one of its closure days"
-    },
-    {
-      "timestamp": "20160113045725",
-      "url": "http://www.canyonsdistrict.org/",
-      "station": "district-homepage-canyons-ut",
-      "why": "2016-01-13: within 2 days of one of its closure days"
-    },
-    {
-      "timestamp": "20160112223825",
-      "url": "http://www.canyonsdistrict.org/",
-      "station": "district-homepage-canyons-ut",
-      "why": "2016-01-13: within 2 days of one of its closure days"
-    },
-    {
-      "timestamp": "20160114002440",
-      "url": "http://www.canyonsdistrict.org/",
-      "station": "district-homepage-canyons-ut",
-      "why": "2016-01-14: within 2 days of one of its closure days"
-    },
-    {
-      "timestamp": "20151117060641",
-      "url": "http://www.canyonsdistrict.org:80/",
-      "station": "district-homepage-canyons-ut",
-      "why": "2015-11-17: within 2 days of one of its closure days"
-    },
-    {
-      "timestamp": "20160112184056",
-      "url": "http://www.canyonsdistrict.org:80/",
-      "station": "district-homepage-canyons-ut",
-      "why": "2016-01-13: within 2 days of one of its closure days"
-    },
-    {
-      "timestamp": "20151127004610",
-      "url": "http://www.canyonsdistrict.org:80/",
-      "station": "district-homepage-canyons-ut",
-      "why": "2015-11-27: within 2 days of one of its closure days"
-    },
-    {
-      "timestamp": "20151208230958",
-      "url": "http://www.canyonsdistrict.org/",
-      "station": "district-homepage-canyons-ut",
-      "why": "2015-12-09: within 2 days of one of its closure days"
-    },
-    {
-      "timestamp": "20160321104558",
-      "url": "http://www.canyonsdistrict.org:80/",
-      "station": "district-homepage-canyons-ut",
-      "why": "2016-03-21: within 2 days of one of its closure days"
-    },
-    {
-      "timestamp": "20151216163420",
-      "url": "http://canyonsdistrict.org/",
-      "station": "district-homepage-canyons-ut",
-      "why": "2015-12-17: within 2 days of one of its closure days"
-    },
-    {
-      "timestamp": "20151208133606",
-      "url": "http://canyonsdistrict.org/",
-      "station": "district-homepage-canyons-ut",
-      "why": "2015-12-08: within 2 days of one of its closure days"
-    },
-    {
-      "timestamp": "20151227050904",
-      "url": "http://www.canyonsdistrict.org/",
-      "station": "district-homepage-canyons-ut",
-      "why": "2015-12-27: within 2 days of one of its closure days"
-    },
-    {
-      "timestamp": "20151216164315",
-      "url": "http://www.canyonsdistrict.org/",
-      "station": "district-homepage-canyons-ut",
-      "why": "2015-12-17: within 2 days of one of its closure days"
-    },
-    {
-      "timestamp": "20151220111024",
-      "url": "http://www.canyonsdistrict.org:80/",
-      "station": "district-homepage-canyons-ut",
-      "why": "2015-12-20: within 2 days of one of its closure days"
-    },
-    {
-      "timestamp": "20151109154047",
-      "url": "http://www.canyonsdistrict.org:80/",
-      "station": "district-homepage-canyons-ut",
-      "why": "2015-11-09: within 2 days of one of its closure days"
-    },
-    {
-      "timestamp": "20230111092722",
+      "timestamp": "20240507053757",
       "url": "https://provo.edu/",
       "station": "district-homepage-provo-ut",
-      "why": "storm day 2023-01-11 (market score 1.00)"
+      "why": "storm day 2024-05-07 (market score 1.00)"
     },
     {
-      "timestamp": "20230109221543",
+      "timestamp": "20240507094716",
       "url": "https://provo.edu/",
       "station": "district-homepage-provo-ut",
-      "why": "storm day 2023-01-10 (market score 1.00)"
+      "why": "storm day 2024-05-07 (market score 1.00)"
     },
     {
-      "timestamp": "20230106092640",
+      "timestamp": "20240506101606",
       "url": "https://provo.edu/",
       "station": "district-homepage-provo-ut",
-      "why": "storm day 2023-01-06 (market score 1.00)"
+      "why": "storm day 2024-05-06 (market score 1.00)"
     },
     {
-      "timestamp": "20230105212706",
+      "timestamp": "20240506013132",
       "url": "https://provo.edu/",
       "station": "district-homepage-provo-ut",
-      "why": "storm day 2023-01-06 (market score 1.00)"
+      "why": "storm day 2024-05-06 (market score 1.00)"
     },
     {
-      "timestamp": "20230101212703",
-      "url": "https://provo.edu/",
-      "station": "district-homepage-provo-ut",
-      "why": "storm day 2023-01-02 (market score 1.00)"
-    },
-    {
-      "timestamp": "20230102092706",
-      "url": "https://provo.edu/",
-      "station": "district-homepage-provo-ut",
-      "why": "storm day 2023-01-02 (market score 1.00)"
-    },
-    {
-      "timestamp": "20221229212638",
-      "url": "https://provo.edu/",
-      "station": "district-homepage-provo-ut",
-      "why": "storm day 2022-12-30 (market score 1.00)"
-    },
-    {
-      "timestamp": "20221230092643",
-      "url": "https://provo.edu/",
-      "station": "district-homepage-provo-ut",
-      "why": "storm day 2022-12-30 (market score 1.00)"
-    },
-    {
-      "timestamp": "20240227031236",
+      "timestamp": "20240226201052",
       "url": "https://provo.edu/",
       "station": "district-homepage-provo-ut",
       "why": "storm day 2024-02-27 (market score 1.00)"
     },
     {
-      "timestamp": "20220106114711",
+      "timestamp": "20241126232025",
       "url": "https://provo.edu/",
       "station": "district-homepage-provo-ut",
-      "why": "storm day 2022-01-06 (market score 1.00)"
+      "why": "storm day 2024-11-27 (market score 1.00)"
     },
     {
-      "timestamp": "20220105101610",
+      "timestamp": "20241126005622",
       "url": "https://provo.edu/",
       "station": "district-homepage-provo-ut",
-      "why": "storm day 2022-01-05 (market score 1.00)"
+      "why": "storm day 2024-11-26 (market score 1.00)"
+    },
+    {
+      "timestamp": "20240110154738",
+      "url": "https://provo.edu/",
+      "station": "district-homepage-provo-ut",
+      "why": "storm day 2024-01-10 (market score 1.00)"
+    },
+    {
+      "timestamp": "20250307015627",
+      "url": "https://provo.edu/",
+      "station": "district-homepage-provo-ut",
+      "why": "storm day 2025-03-07 (market score 1.00)"
+    },
+    {
+      "timestamp": "20240111210608",
+      "url": "https://provo.edu/",
+      "station": "district-homepage-provo-ut",
+      "why": "storm day 2024-01-12 (market score 1.00)"
+    },
+    {
+      "timestamp": "20240112080932",
+      "url": "https://provo.edu/",
+      "station": "district-homepage-provo-ut",
+      "why": "storm day 2024-01-12 (market score 1.00)"
+    },
+    {
+      "timestamp": "20240112092124",
+      "url": "https://provo.edu/",
+      "station": "district-homepage-provo-ut",
+      "why": "storm day 2024-01-12 (market score 1.00)"
+    },
+    {
+      "timestamp": "20240112084213",
+      "url": "https://provo.edu/",
+      "station": "district-homepage-provo-ut",
+      "why": "storm day 2024-01-12 (market score 1.00)"
+    },
+    {
+      "timestamp": "20240206193433",
+      "url": "https://provo.edu/",
+      "station": "district-homepage-provo-ut",
+      "why": "storm day 2024-02-07 (market score 1.00)"
+    },
+    {
+      "timestamp": "20240114210608",
+      "url": "https://provo.edu/",
+      "station": "district-homepage-provo-ut",
+      "why": "storm day 2024-01-15 (market score 1.00)"
+    },
+    {
+      "timestamp": "20240206153555",
+      "url": "https://provo.edu/",
+      "station": "district-homepage-provo-ut",
+      "why": "storm day 2024-02-06 (market score 1.00)"
+    },
+    {
+      "timestamp": "20240110122942",
+      "url": "https://provo.edu/",
+      "station": "district-homepage-provo-ut",
+      "why": "storm day 2024-01-10 (market score 1.00)"
+    },
+    {
+      "timestamp": "20240115090620",
+      "url": "https://provo.edu/",
+      "station": "district-homepage-provo-ut",
+      "why": "storm day 2024-01-15 (market score 1.00)"
+    },
+    {
+      "timestamp": "20240207181342",
+      "url": "https://provo.edu/",
+      "station": "district-homepage-provo-ut",
+      "why": "storm day 2024-02-08 (market score 1.00)"
+    },
+    {
+      "timestamp": "20240118052737",
+      "url": "https://provo.edu/",
+      "station": "district-homepage-provo-ut",
+      "why": "storm day 2024-01-18 (market score 1.00)"
+    },
+    {
+      "timestamp": "20240206090742",
+      "url": "https://provo.edu/",
+      "station": "district-homepage-provo-ut",
+      "why": "storm day 2024-02-06 (market score 1.00)"
+    },
+    {
+      "timestamp": "20240118090622",
+      "url": "https://provo.edu/",
+      "station": "district-homepage-provo-ut",
+      "why": "storm day 2024-01-18 (market score 1.00)"
+    },
+    {
+      "timestamp": "20240205224614",
+      "url": "https://provo.edu/",
+      "station": "district-homepage-provo-ut",
+      "why": "storm day 2024-02-06 (market score 1.00)"
+    },
+    {
+      "timestamp": "20240205213450",
+      "url": "https://provo.edu/",
+      "station": "district-homepage-provo-ut",
+      "why": "storm day 2024-02-06 (market score 1.00)"
+    },
+    {
+      "timestamp": "20240117210619",
+      "url": "https://provo.edu/",
+      "station": "district-homepage-provo-ut",
+      "why": "storm day 2024-01-18 (market score 1.00)"
+    },
+    {
+      "timestamp": "20240116210642",
+      "url": "https://provo.edu/",
+      "station": "district-homepage-provo-ut",
+      "why": "storm day 2024-01-17 (market score 1.00)"
+    },
+    {
+      "timestamp": "20240117093410",
+      "url": "https://provo.edu/",
+      "station": "district-homepage-provo-ut",
+      "why": "storm day 2024-01-17 (market score 1.00)"
+    },
+    {
+      "timestamp": "20231207211433",
+      "url": "https://provo.edu/",
+      "station": "district-homepage-provo-ut",
+      "why": "storm day 2023-12-08 (market score 1.00)"
+    },
+    {
+      "timestamp": "20231208101117",
+      "url": "https://provo.edu/",
+      "station": "district-homepage-provo-ut",
+      "why": "storm day 2023-12-08 (market score 1.00)"
+    },
+    {
+      "timestamp": "20240109212056",
+      "url": "https://provo.edu/",
+      "station": "district-homepage-provo-ut",
+      "why": "storm day 2024-01-10 (market score 1.00)"
+    },
+    {
+      "timestamp": "20240109173418",
+      "url": "https://provo.edu/",
+      "station": "district-homepage-provo-ut",
+      "why": "storm day 2024-01-10 (market score 1.00)"
+    },
+    {
+      "timestamp": "20240109052055",
+      "url": "https://provo.edu/",
+      "station": "district-homepage-provo-ut",
+      "why": "storm day 2024-01-09 (market score 1.00)"
+    },
+    {
+      "timestamp": "20240109003902",
+      "url": "https://provo.edu/",
+      "station": "district-homepage-provo-ut",
+      "why": "storm day 2024-01-09 (market score 1.00)"
+    },
+    {
+      "timestamp": "20240108211813",
+      "url": "https://provo.edu/",
+      "station": "district-homepage-provo-ut",
+      "why": "storm day 2024-01-09 (market score 1.00)"
+    },
+    {
+      "timestamp": "20231130222751",
+      "url": "https://provo.edu/",
+      "station": "district-homepage-provo-ut",
+      "why": "storm day 2023-12-01 (market score 1.00)"
+    },
+    {
+      "timestamp": "20250318101431",
+      "url": "https://provo.edu/",
+      "station": "district-homepage-provo-ut",
+      "why": "storm day 2025-03-18 (market score 1.00)"
+    },
+    {
+      "timestamp": "20230404233015",
+      "url": "https://provo.edu/",
+      "station": "district-homepage-provo-ut",
+      "why": "storm day 2023-04-05 (market score 1.00)"
+    },
+    {
+      "timestamp": "20230405064926",
+      "url": "https://provo.edu/",
+      "station": "district-homepage-provo-ut",
+      "why": "storm day 2023-04-05 (market score 1.00)"
+    },
+    {
+      "timestamp": "20230404111209",
+      "url": "https://provo.edu/",
+      "station": "district-homepage-provo-ut",
+      "why": "storm day 2023-04-04 (market score 1.00)"
+    },
+    {
+      "timestamp": "20230405142225",
+      "url": "https://provo.edu/",
+      "station": "district-homepage-provo-ut",
+      "why": "storm day 2023-04-05 (market score 1.00)"
+    },
+    {
+      "timestamp": "20230402203434",
+      "url": "https://provo.edu/",
+      "station": "district-homepage-provo-ut",
+      "why": "storm day 2023-04-03 (market score 1.00)"
+    },
+    {
+      "timestamp": "20230403222456",
+      "url": "https://provo.edu/",
+      "station": "district-homepage-provo-ut",
+      "why": "storm day 2023-04-04 (market score 1.00)"
+    },
+    {
+      "timestamp": "20230315092829",
+      "url": "https://provo.edu/",
+      "station": "district-homepage-provo-ut",
+      "why": "storm day 2023-03-15 (market score 1.00)"
+    },
+    {
+      "timestamp": "20230314212821",
+      "url": "https://provo.edu/",
+      "station": "district-homepage-provo-ut",
+      "why": "storm day 2023-03-15 (market score 1.00)"
+    },
+    {
+      "timestamp": "20230330093343",
+      "url": "https://provo.edu/",
+      "station": "district-homepage-provo-ut",
+      "why": "storm day 2023-03-30 (market score 1.00)"
+    },
+    {
+      "timestamp": "20230330095913",
+      "url": "https://provo.edu/",
+      "station": "district-homepage-provo-ut",
+      "why": "storm day 2023-03-30 (market score 1.00)"
+    },
+    {
+      "timestamp": "20230331005052",
+      "url": "https://provo.edu/",
+      "station": "district-homepage-provo-ut",
+      "why": "storm day 2023-03-31 (market score 1.00)"
+    },
+    {
+      "timestamp": "20230330224018",
+      "url": "https://provo.edu/",
+      "station": "district-homepage-provo-ut",
+      "why": "storm day 2023-03-31 (market score 1.00)"
+    },
+    {
+      "timestamp": "20230315003603",
+      "url": "https://provo.edu/",
+      "station": "district-homepage-provo-ut",
+      "why": "storm day 2023-03-15 (market score 1.00)"
+    },
+    {
+      "timestamp": "20230330212700",
+      "url": "https://provo.edu/",
+      "station": "district-homepage-provo-ut",
+      "why": "storm day 2023-03-31 (market score 1.00)"
+    },
+    {
+      "timestamp": "20230331092717",
+      "url": "https://provo.edu/",
+      "station": "district-homepage-provo-ut",
+      "why": "storm day 2023-03-31 (market score 1.00)"
+    },
+    {
+      "timestamp": "20230319233239",
+      "url": "https://provo.edu/",
+      "station": "district-homepage-provo-ut",
+      "why": "storm day 2023-03-20 (market score 1.00)"
+    },
+    {
+      "timestamp": "20230319171315",
+      "url": "https://provo.edu/",
+      "station": "district-homepage-provo-ut",
+      "why": "storm day 2023-03-20 (market score 1.00)"
+    },
+    {
+      "timestamp": "20230319222938",
+      "url": "https://provo.edu/",
+      "station": "district-homepage-provo-ut",
+      "why": "storm day 2023-03-20 (market score 1.00)"
+    },
+    {
+      "timestamp": "20230319232012",
+      "url": "https://provo.edu/",
+      "station": "district-homepage-provo-ut",
+      "why": "storm day 2023-03-20 (market score 1.00)"
+    },
+    {
+      "timestamp": "20230319191110",
+      "url": "https://provo.edu/",
+      "station": "district-homepage-provo-ut",
+      "why": "storm day 2023-03-20 (market score 1.00)"
+    },
+    {
+      "timestamp": "20230319223148",
+      "url": "https://provo.edu/",
+      "station": "district-homepage-provo-ut",
+      "why": "storm day 2023-03-20 (market score 1.00)"
+    },
+    {
+      "timestamp": "20230319165316",
+      "url": "https://provo.edu/",
+      "station": "district-homepage-provo-ut",
+      "why": "storm day 2023-03-20 (market score 1.00)"
+    },
+    {
+      "timestamp": "20230319165953",
+      "url": "https://provo.edu/",
+      "station": "district-homepage-provo-ut",
+      "why": "storm day 2023-03-20 (market score 1.00)"
+    },
+    {
+      "timestamp": "20230320074304",
+      "url": "https://provo.edu/",
+      "station": "district-homepage-provo-ut",
+      "why": "storm day 2023-03-20 (market score 1.00)"
+    },
+    {
+      "timestamp": "20230320085556",
+      "url": "https://provo.edu/",
+      "station": "district-homepage-provo-ut",
+      "why": "storm day 2023-03-20 (market score 1.00)"
+    },
+    {
+      "timestamp": "20230329224633",
+      "url": "https://provo.edu/",
+      "station": "district-homepage-provo-ut",
+      "why": "storm day 2023-03-30 (market score 1.00)"
+    },
+    {
+      "timestamp": "20230320110537",
+      "url": "https://provo.edu/",
+      "station": "district-homepage-provo-ut",
+      "why": "storm day 2023-03-20 (market score 1.00)"
+    },
+    {
+      "timestamp": "20230320093810",
+      "url": "https://provo.edu/",
+      "station": "district-homepage-provo-ut",
+      "why": "storm day 2023-03-20 (market score 1.00)"
+    },
+    {
+      "timestamp": "20230329212942",
+      "url": "https://provo.edu/",
+      "station": "district-homepage-provo-ut",
+      "why": "storm day 2023-03-30 (market score 1.00)"
+    },
+    {
+      "timestamp": "20230330034141",
+      "url": "https://provo.edu/",
+      "station": "district-homepage-provo-ut",
+      "why": "storm day 2023-03-30 (market score 1.00)"
+    },
+    {
+      "timestamp": "20230320152348",
+      "url": "https://provo.edu/",
+      "station": "district-homepage-provo-ut",
+      "why": "storm day 2023-03-20 (market score 1.00)"
+    },
+    {
+      "timestamp": "20230321192341",
+      "url": "https://provo.edu/",
+      "station": "district-homepage-provo-ut",
+      "why": "storm day 2023-03-22 (market score 1.00)"
+    },
+    {
+      "timestamp": "20230321200445",
+      "url": "https://provo.edu/",
+      "station": "district-homepage-provo-ut",
+      "why": "storm day 2023-03-22 (market score 1.00)"
+    },
+    {
+      "timestamp": "20230324094136",
+      "url": "https://provo.edu/",
+      "station": "district-homepage-provo-ut",
+      "why": "storm day 2023-03-24 (market score 1.00)"
+    },
+    {
+      "timestamp": "20230324110416",
+      "url": "https://provo.edu/",
+      "station": "district-homepage-provo-ut",
+      "why": "storm day 2023-03-24 (market score 1.00)"
+    },
+    {
+      "timestamp": "20260217092616",
+      "url": "https://provo.edu/",
+      "station": "district-homepage-provo-ut",
+      "why": "storm day 2026-02-17 (market score 1.00)"
+    },
+    {
+      "timestamp": "20260216180226",
+      "url": "https://provo.edu/",
+      "station": "district-homepage-provo-ut",
+      "why": "storm day 2026-02-17 (market score 1.00)"
+    },
+    {
+      "timestamp": "20260216194416",
+      "url": "https://provo.edu/",
+      "station": "district-homepage-provo-ut",
+      "why": "storm day 2026-02-17 (market score 1.00)"
+    },
+    {
+      "timestamp": "20251205092642",
+      "url": "https://provo.edu/",
+      "station": "district-homepage-provo-ut",
+      "why": "storm day 2025-12-05 (market score 1.00)"
+    },
+    {
+      "timestamp": "20260218033152",
+      "url": "https://provo.edu/",
+      "station": "district-homepage-provo-ut",
+      "why": "storm day 2026-02-18 (market score 1.00)"
+    },
+    {
+      "timestamp": "20230130092645",
+      "url": "https://provo.edu/",
+      "station": "district-homepage-provo-ut",
+      "why": "storm day 2023-01-30 (market score 0.50)"
+    },
+    {
+      "timestamp": "20230129212712",
+      "url": "https://provo.edu/",
+      "station": "district-homepage-provo-ut",
+      "why": "storm day 2023-01-30 (market score 0.50)"
+    },
+    {
+      "timestamp": "20160922233336",
+      "url": "http://provo.edu:80/",
+      "station": "district-homepage-provo-ut",
+      "why": "storm day 2016-09-23 (market score 0.25)"
+    },
+    {
+      "timestamp": "20170124202731",
+      "url": "http://provo.edu/",
+      "station": "district-homepage-provo-ut",
+      "why": "storm day 2017-01-25 (market score 0.25)"
+    },
+    {
+      "timestamp": "20160202115319",
+      "url": "http://provo.edu/",
+      "station": "district-homepage-provo-ut",
+      "why": "storm day 2016-02-02 (market score 0.25)"
+    },
+    {
+      "timestamp": "20230115212736",
+      "url": "https://provo.edu/",
+      "station": "district-homepage-provo-ut",
+      "why": "storm day 2023-01-16 (market score 0.25)"
+    },
+    {
+      "timestamp": "20230116092814",
+      "url": "https://provo.edu/",
+      "station": "district-homepage-provo-ut",
+      "why": "storm day 2023-01-16 (market score 0.25)"
+    },
+    {
+      "timestamp": "20230116212753",
+      "url": "https://provo.edu/",
+      "station": "district-homepage-provo-ut",
+      "why": "storm day 2023-01-17 (market score 0.25)"
+    },
+    {
+      "timestamp": "20230108212708",
+      "url": "https://provo.edu/",
+      "station": "district-homepage-provo-ut",
+      "why": "storm day 2023-01-09 (market score 0.25)"
+    },
+    {
+      "timestamp": "20230109101653",
+      "url": "https://provo.edu/",
+      "station": "district-homepage-provo-ut",
+      "why": "storm day 2023-01-09 (market score 0.25)"
+    },
+    {
+      "timestamp": "20230127092701",
+      "url": "https://provo.edu/",
+      "station": "district-homepage-provo-ut",
+      "why": "storm day 2023-01-27 (market score 0.25)"
+    },
+    {
+      "timestamp": "20230126212706",
+      "url": "https://provo.edu/",
+      "station": "district-homepage-provo-ut",
+      "why": "storm day 2023-01-27 (market score 0.25)"
+    },
+    {
+      "timestamp": "20211026123744",
+      "url": "https://provo.edu/",
+      "station": "district-homepage-provo-ut",
+      "why": "storm day 2021-10-26 (market score 0.25)"
+    },
+    {
+      "timestamp": "20210413172915",
+      "url": "https://provo.edu/",
+      "station": "district-homepage-provo-ut",
+      "why": "storm day 2021-04-14 (market score 0.25)"
+    },
+    {
+      "timestamp": "20220222042508",
+      "url": "https://provo.edu/",
+      "station": "district-homepage-provo-ut",
+      "why": "storm day 2022-02-22 (market score 0.25)"
+    },
+    {
+      "timestamp": "20220222171408",
+      "url": "https://provo.edu/",
+      "station": "district-homepage-provo-ut",
+      "why": "storm day 2022-02-23 (market score 0.25)"
+    },
+    {
+      "timestamp": "20200318122400",
+      "url": "https://provo.edu/",
+      "station": "district-homepage-provo-ut",
+      "why": "storm day 2020-03-18 (market score 0.25)"
+    },
+    {
+      "timestamp": "20260401002858",
+      "url": "https://provo.edu/",
+      "station": "district-homepage-provo-ut",
+      "why": "storm day 2026-04-01 (market score 0.25)"
+    },
+    {
+      "timestamp": "20220104103759",
+      "url": "https://provo.edu/",
+      "station": "district-homepage-provo-ut",
+      "why": "storm day 2022-01-04 (market score 0.25)"
+    },
+    {
+      "timestamp": "20211231103046",
+      "url": "https://provo.edu/",
+      "station": "district-homepage-provo-ut",
+      "why": "storm day 2021-12-31 (market score 0.25)"
+    },
+    {
+      "timestamp": "20211230221628",
+      "url": "https://provo.edu/",
+      "station": "district-homepage-provo-ut",
+      "why": "storm day 2021-12-31 (market score 0.25)"
+    },
+    {
+      "timestamp": "20240313080936",
+      "url": "https://provo.edu/",
+      "station": "district-homepage-provo-ut",
+      "why": "storm day 2024-03-13 (market score 0.25)"
+    },
+    {
+      "timestamp": "20240312230523",
+      "url": "https://provo.edu/",
+      "station": "district-homepage-provo-ut",
+      "why": "storm day 2024-03-13 (market score 0.25)"
+    },
+    {
+      "timestamp": "20240313084810",
+      "url": "https://provo.edu/",
+      "station": "district-homepage-provo-ut",
+      "why": "storm day 2024-03-13 (market score 0.25)"
+    },
+    {
+      "timestamp": "20240313090720",
+      "url": "https://provo.edu/",
+      "station": "district-homepage-provo-ut",
+      "why": "storm day 2024-03-13 (market score 0.25)"
+    },
+    {
+      "timestamp": "20240312121233",
+      "url": "https://provo.edu/",
+      "station": "district-homepage-provo-ut",
+      "why": "storm day 2024-03-12 (market score 0.25)"
+    },
+    {
+      "timestamp": "20240312092508",
+      "url": "https://provo.edu/",
+      "station": "district-homepage-provo-ut",
+      "why": "storm day 2024-03-12 (market score 0.25)"
+    },
+    {
+      "timestamp": "20240414210602",
+      "url": "https://provo.edu/",
+      "station": "district-homepage-provo-ut",
+      "why": "storm day 2024-04-15 (market score 0.25)"
+    },
+    {
+      "timestamp": "20240328092100",
+      "url": "https://provo.edu/",
+      "station": "district-homepage-provo-ut",
+      "why": "storm day 2024-03-28 (market score 0.25)"
+    },
+    {
+      "timestamp": "20240405085758",
+      "url": "https://provo.edu/",
+      "station": "district-homepage-provo-ut",
+      "why": "storm day 2024-04-05 (market score 0.25)"
+    },
+    {
+      "timestamp": "20240426034747",
+      "url": "https://provo.edu/",
+      "station": "district-homepage-provo-ut",
+      "why": "storm day 2024-04-26 (market score 0.25)"
+    },
+    {
+      "timestamp": "20241111221647",
+      "url": "https://provo.edu/",
+      "station": "district-homepage-provo-ut",
+      "why": "storm day 2024-11-12 (market score 0.25)"
+    },
+    {
+      "timestamp": "20241112052548",
+      "url": "https://provo.edu/",
+      "station": "district-homepage-provo-ut",
+      "why": "storm day 2024-11-12 (market score 0.25)"
+    },
+    {
+      "timestamp": "20241111184411",
+      "url": "https://provo.edu/",
+      "station": "district-homepage-provo-ut",
+      "why": "storm day 2024-11-12 (market score 0.25)"
+    },
+    {
+      "timestamp": "20240220130201",
+      "url": "https://provo.edu/",
+      "station": "district-homepage-provo-ut",
+      "why": "storm day 2024-02-20 (market score 0.25)"
+    },
+    {
+      "timestamp": "20240125090619",
+      "url": "https://provo.edu/",
+      "station": "district-homepage-provo-ut",
+      "why": "storm day 2024-01-25 (market score 0.25)"
+    },
+    {
+      "timestamp": "20240124203637",
+      "url": "https://provo.edu/",
+      "station": "district-homepage-provo-ut",
+      "why": "storm day 2024-01-25 (market score 0.25)"
+    },
+    {
+      "timestamp": "20240124210606",
+      "url": "https://provo.edu/",
+      "station": "district-homepage-provo-ut",
+      "why": "storm day 2024-01-25 (market score 0.25)"
+    },
+    {
+      "timestamp": "20240124224331",
+      "url": "https://provo.edu/",
+      "station": "district-homepage-provo-ut",
+      "why": "storm day 2024-01-25 (market score 0.25)"
+    },
+    {
+      "timestamp": "20231026094418",
+      "url": "https://provo.edu/",
+      "station": "district-homepage-provo-ut",
+      "why": "storm day 2023-10-26 (market score 0.25)"
+    },
+    {
+      "timestamp": "20240105090614",
+      "url": "https://provo.edu/",
+      "station": "district-homepage-provo-ut",
+      "why": "storm day 2024-01-05 (market score 0.25)"
+    },
+    {
+      "timestamp": "20231122233428",
+      "url": "https://provo.edu/",
+      "station": "district-homepage-provo-ut",
+      "why": "storm day 2023-11-23 (market score 0.25)"
+    },
+    {
+      "timestamp": "20231123090824",
+      "url": "https://provo.edu/",
+      "station": "district-homepage-provo-ut",
+      "why": "storm day 2023-11-23 (market score 0.25)"
+    },
+    {
+      "timestamp": "20240201012420",
+      "url": "https://provo.edu/",
+      "station": "district-homepage-provo-ut",
+      "why": "storm day 2024-02-01 (market score 0.25)"
+    },
+    {
+      "timestamp": "20231124004927",
+      "url": "https://provo.edu/",
+      "station": "district-homepage-provo-ut",
+      "why": "storm day 2023-11-24 (market score 0.25)"
+    },
+    {
+      "timestamp": "20231124055643",
+      "url": "https://provo.edu/",
+      "station": "district-homepage-provo-ut",
+      "why": "storm day 2023-11-24 (market score 0.25)"
+    },
+    {
+      "timestamp": "20240201200654",
+      "url": "https://provo.edu/",
+      "station": "district-homepage-provo-ut",
+      "why": "storm day 2024-02-02 (market score 0.25)"
+    },
+    {
+      "timestamp": "20240104213332",
+      "url": "https://provo.edu/",
+      "station": "district-homepage-provo-ut",
+      "why": "storm day 2024-01-05 (market score 0.25)"
+    },
+    {
+      "timestamp": "20240105041822",
+      "url": "https://provo.edu/",
+      "station": "district-homepage-provo-ut",
+      "why": "storm day 2024-01-05 (market score 0.25)"
+    },
+    {
+      "timestamp": "20240105065217",
+      "url": "https://provo.edu/",
+      "station": "district-homepage-provo-ut",
+      "why": "storm day 2024-01-05 (market score 0.25)"
+    },
+    {
+      "timestamp": "20240105045757",
+      "url": "https://provo.edu/",
+      "station": "district-homepage-provo-ut",
+      "why": "storm day 2024-01-05 (market score 0.25)"
+    },
+    {
+      "timestamp": "20240104210602",
+      "url": "https://provo.edu/",
+      "station": "district-homepage-provo-ut",
+      "why": "storm day 2024-01-05 (market score 0.25)"
+    },
+    {
+      "timestamp": "20240201095519",
+      "url": "https://provo.edu/",
+      "station": "district-homepage-provo-ut",
+      "why": "storm day 2024-02-01 (market score 0.25)"
+    },
+    {
+      "timestamp": "20240104235135",
+      "url": "https://provo.edu/",
+      "station": "district-homepage-provo-ut",
+      "why": "storm day 2024-01-05 (market score 0.25)"
+    },
+    {
+      "timestamp": "20240131173406",
+      "url": "https://provo.edu/",
+      "station": "district-homepage-provo-ut",
+      "why": "storm day 2024-02-01 (market score 0.25)"
+    },
+    {
+      "timestamp": "20240215034816",
+      "url": "https://provo.edu/",
+      "station": "district-homepage-provo-ut",
+      "why": "storm day 2024-02-15 (market score 0.25)"
+    },
+    {
+      "timestamp": "20240215090625",
+      "url": "https://provo.edu/",
+      "station": "district-homepage-provo-ut",
+      "why": "storm day 2024-02-15 (market score 0.25)"
+    },
+    {
+      "timestamp": "20240104202940",
+      "url": "https://provo.edu/",
+      "station": "district-homepage-provo-ut",
+      "why": "storm day 2024-01-05 (market score 0.25)"
+    },
+    {
+      "timestamp": "20240131174956",
+      "url": "https://provo.edu/",
+      "station": "district-homepage-provo-ut",
+      "why": "storm day 2024-02-01 (market score 0.25)"
+    },
+    {
+      "timestamp": "20231124090819",
+      "url": "https://provo.edu/",
+      "station": "district-homepage-provo-ut",
+      "why": "storm day 2023-11-24 (market score 0.25)"
+    },
+    {
+      "timestamp": "20240201184113",
+      "url": "https://provo.edu/",
+      "station": "district-homepage-provo-ut",
+      "why": "storm day 2024-02-02 (market score 0.25)"
+    },
+    {
+      "timestamp": "20240105142005",
+      "url": "https://provo.edu/",
+      "station": "district-homepage-provo-ut",
+      "why": "storm day 2024-01-05 (market score 0.25)"
+    },
+    {
+      "timestamp": "20240105153537",
+      "url": "https://provo.edu/",
+      "station": "district-homepage-provo-ut",
+      "why": "storm day 2024-01-05 (market score 0.25)"
+    },
+    {
+      "timestamp": "20240105145740",
+      "url": "https://provo.edu/",
+      "station": "district-homepage-provo-ut",
+      "why": "storm day 2024-01-05 (market score 0.25)"
+    },
+    {
+      "timestamp": "20241028161057",
+      "url": "https://provo.edu/",
+      "station": "district-homepage-provo-ut",
+      "why": "storm day 2024-10-29 (market score 0.25)"
+    },
+    {
+      "timestamp": "20231025211029",
+      "url": "https://provo.edu/",
+      "station": "district-homepage-provo-ut",
+      "why": "storm day 2023-10-26 (market score 0.25)"
+    },
+    {
+      "timestamp": "20250220061714",
+      "url": "https://provo.edu/",
+      "station": "district-homepage-provo-ut",
+      "why": "storm day 2025-02-20 (market score 0.25)"
+    },
+    {
+      "timestamp": "20230305212826",
+      "url": "https://provo.edu/",
+      "station": "district-homepage-provo-ut",
+      "why": "storm day 2023-03-06 (market score 0.25)"
+    },
+    {
+      "timestamp": "20230306032657",
+      "url": "https://provo.edu/",
+      "station": "district-homepage-provo-ut",
+      "why": "storm day 2023-03-06 (market score 0.25)"
+    },
+    {
+      "timestamp": "20230326212925",
+      "url": "https://provo.edu/",
+      "station": "district-homepage-provo-ut",
+      "why": "storm day 2023-03-27 (market score 0.25)"
+    },
+    {
+      "timestamp": "20230327092709",
+      "url": "https://provo.edu/",
+      "station": "district-homepage-provo-ut",
+      "why": "storm day 2023-03-27 (market score 0.25)"
+    },
+    {
+      "timestamp": "20230417212731",
+      "url": "https://provo.edu/",
+      "station": "district-homepage-provo-ut",
+      "why": "storm day 2023-04-18 (market score 0.25)"
+    },
+    {
+      "timestamp": "20230418092826",
+      "url": "https://provo.edu/",
+      "station": "district-homepage-provo-ut",
+      "why": "storm day 2023-04-18 (market score 0.25)"
+    },
+    {
+      "timestamp": "20230418061105",
+      "url": "https://provo.edu/",
+      "station": "district-homepage-provo-ut",
+      "why": "storm day 2023-04-18 (market score 0.25)"
+    },
+    {
+      "timestamp": "20250217111544",
+      "url": "https://provo.edu/",
+      "station": "district-homepage-provo-ut",
+      "why": "storm day 2025-02-17 (market score 0.25)"
+    },
+    {
+      "timestamp": "20250217221823",
+      "url": "https://provo.edu/",
+      "station": "district-homepage-provo-ut",
+      "why": "storm day 2025-02-18 (market score 0.25)"
+    },
+    {
+      "timestamp": "20250218044112",
+      "url": "https://provo.edu/",
+      "station": "district-homepage-provo-ut",
+      "why": "storm day 2025-02-18 (market score 0.25)"
+    },
+    {
+      "timestamp": "20260402040047",
+      "url": "https://provo.edu/",
+      "station": "district-homepage-provo-ut",
+      "why": "storm day 2026-04-02 (market score 0.25)"
+    },
+    {
+      "timestamp": "20260401212650",
+      "url": "https://provo.edu/",
+      "station": "district-homepage-provo-ut",
+      "why": "storm day 2026-04-02 (market score 0.25)"
+    },
+    {
+      "timestamp": "20260331212528",
+      "url": "https://provo.edu/",
+      "station": "district-homepage-provo-ut",
+      "why": "storm day 2026-04-01 (market score 0.25)"
+    },
+    {
+      "timestamp": "20260331232012",
+      "url": "https://provo.edu/",
+      "station": "district-homepage-provo-ut",
+      "why": "storm day 2026-04-01 (market score 0.25)"
+    },
+    {
+      "timestamp": "20260305091303",
+      "url": "https://provo.edu/",
+      "station": "district-homepage-provo-ut",
+      "why": "storm day 2026-03-05 (market score 0.25)"
+    },
+    {
+      "timestamp": "20260306093007",
+      "url": "https://provo.edu/",
+      "station": "district-homepage-provo-ut",
+      "why": "storm day 2026-03-06 (market score 0.25)"
+    },
+    {
+      "timestamp": "20260306051527",
+      "url": "https://provo.edu/",
+      "station": "district-homepage-provo-ut",
+      "why": "storm day 2026-03-06 (market score 0.25)"
+    },
+    {
+      "timestamp": "20260219212528",
+      "url": "https://provo.edu/",
+      "station": "district-homepage-provo-ut",
+      "why": "storm day 2026-02-20 (market score 0.25)"
+    },
+    {
+      "timestamp": "20260212121751",
+      "url": "https://provo.edu/",
+      "station": "district-homepage-provo-ut",
+      "why": "storm day 2026-02-12 (market score 0.25)"
+    },
+    {
+      "timestamp": "20260212092729",
+      "url": "https://provo.edu/",
+      "station": "district-homepage-provo-ut",
+      "why": "storm day 2026-02-12 (market score 0.25)"
+    },
+    {
+      "timestamp": "20260224065603",
+      "url": "https://provo.edu/",
+      "station": "district-homepage-provo-ut",
+      "why": "storm day 2026-02-24 (market score 0.25)"
+    },
+    {
+      "timestamp": "20260224142642",
+      "url": "https://provo.edu/",
+      "station": "district-homepage-provo-ut",
+      "why": "storm day 2026-02-24 (market score 0.25)"
+    },
+    {
+      "timestamp": "20260102010122",
+      "url": "https://provo.edu/",
+      "station": "district-homepage-provo-ut",
+      "why": "storm day 2026-01-02 (market score 0.25)"
+    },
+    {
+      "timestamp": "20251226034508",
+      "url": "https://provo.edu/",
+      "station": "district-homepage-provo-ut",
+      "why": "storm day 2025-12-26 (market score 0.25)"
+    },
+    {
+      "timestamp": "20251231212425",
+      "url": "https://provo.edu/",
+      "station": "district-homepage-provo-ut",
+      "why": "storm day 2026-01-01 (market score 0.25)"
+    },
+    {
+      "timestamp": "20251226101504",
+      "url": "https://provo.edu/",
+      "station": "district-homepage-provo-ut",
+      "why": "storm day 2025-12-26 (market score 0.25)"
+    },
+    {
+      "timestamp": "20251226121802",
+      "url": "https://provo.edu/",
+      "station": "district-homepage-provo-ut",
+      "why": "storm day 2025-12-26 (market score 0.25)"
+    },
+    {
+      "timestamp": "20260101180021",
+      "url": "https://provo.edu/",
+      "station": "district-homepage-provo-ut",
+      "why": "storm day 2026-01-02 (market score 0.25)"
+    },
+    {
+      "timestamp": "20260225004006",
+      "url": "https://provo.edu/",
+      "station": "district-homepage-provo-ut",
+      "why": "storm day 2026-02-25 (market score 0.25)"
+    },
+    {
+      "timestamp": "20260101225207",
+      "url": "https://provo.edu/",
+      "station": "district-homepage-provo-ut",
+      "why": "storm day 2026-01-02 (market score 0.25)"
+    },
+    {
+      "timestamp": "20260105025029",
+      "url": "https://provo.edu/",
+      "station": "district-homepage-provo-ut",
+      "why": "storm day 2026-01-05 (market score 0.25)"
+    },
+    {
+      "timestamp": "20260211002942",
+      "url": "https://provo.edu/",
+      "station": "district-homepage-provo-ut",
+      "why": "storm day 2026-02-11 (market score 0.25)"
+    },
+    {
+      "timestamp": "20260211161459",
+      "url": "https://provo.edu/",
+      "station": "district-homepage-provo-ut",
+      "why": "storm day 2026-02-12 (market score 0.25)"
+    },
+    {
+      "timestamp": "20260210212557",
+      "url": "https://provo.edu/",
+      "station": "district-homepage-provo-ut",
+      "why": "storm day 2026-02-11 (market score 0.25)"
+    },
+    {
+      "timestamp": "20260211212523",
+      "url": "https://provo.edu/",
+      "station": "district-homepage-provo-ut",
+      "why": "storm day 2026-02-12 (market score 0.25)"
+    },
+    {
+      "timestamp": "20251225212506",
+      "url": "https://provo.edu/",
+      "station": "district-homepage-provo-ut",
+      "why": "storm day 2025-12-26 (market score 0.25)"
+    },
+    {
+      "timestamp": "20260107212625",
+      "url": "https://provo.edu/",
+      "station": "district-homepage-provo-ut",
+      "why": "storm day 2026-01-08 (market score 0.25)"
+    },
+    {
+      "timestamp": "20160924052857",
+      "url": "http://provo.edu:80/",
+      "station": "district-homepage-provo-ut",
+      "why": "2016-09-24: within 2 days of one of its closure days"
+    },
+    {
+      "timestamp": "20160921010935",
+      "url": "http://provo.edu/",
+      "station": "district-homepage-provo-ut",
+      "why": "2016-09-21: within 2 days of one of its closure days"
+    },
+    {
+      "timestamp": "20151118173336",
+      "url": "http://mailto:donnan@provo.edu/",
+      "station": "district-homepage-provo-ut",
+      "why": "2015-11-19: within 2 days of one of its closure days"
+    },
+    {
+      "timestamp": "20161214000957",
+      "url": "http://provo.edu/",
+      "station": "district-homepage-provo-ut",
+      "why": "2016-12-14: within 2 days of one of its closure days"
+    },
+    {
+      "timestamp": "20161211083929",
+      "url": "http://provo.edu/",
+      "station": "district-homepage-provo-ut",
+      "why": "2016-12-11: within 2 days of one of its closure days"
+    },
+    {
+      "timestamp": "20161211035703",
+      "url": "http://provo.edu/",
+      "station": "district-homepage-provo-ut",
+      "why": "2016-12-11: within 2 days of one of its closure days"
+    },
+    {
+      "timestamp": "20161122005107",
+      "url": "http://provo.edu/",
+      "station": "district-homepage-provo-ut",
+      "why": "2016-11-22: within 2 days of one of its closure days"
+    },
+    {
+      "timestamp": "20170307150949",
+      "url": "http://provo.edu/",
+      "station": "district-homepage-provo-ut",
+      "why": "2017-03-07: within 2 days of one of its closure days"
+    },
+    {
+      "timestamp": "20161119062930",
+      "url": "http://provo.edu:80/",
+      "station": "district-homepage-provo-ut",
+      "why": "2016-11-19: within 2 days of one of its closure days"
+    },
+    {
+      "timestamp": "20151122110314",
+      "url": "http://provo.edu:80/",
+      "station": "district-homepage-provo-ut",
+      "why": "2015-11-22: within 2 days of one of its closure days"
+    },
+    {
+      "timestamp": "20160203135346",
+      "url": "http://provo.edu:80/",
+      "station": "district-homepage-provo-ut",
+      "why": "2016-02-03: within 2 days of one of its closure days"
+    },
+    {
+      "timestamp": "20160113174023",
+      "url": "http://provo.edu:80/",
+      "station": "district-homepage-provo-ut",
+      "why": "2016-01-14: within 2 days of one of its closure days"
+    },
+    {
+      "timestamp": "20160118172146",
+      "url": "http://provo.edu/",
+      "station": "district-homepage-provo-ut",
+      "why": "2016-01-19: within 2 days of one of its closure days"
+    },
+    {
+      "timestamp": "20160317040700",
+      "url": "http://provo.edu/",
+      "station": "district-homepage-provo-ut",
+      "why": "2016-03-17: within 2 days of one of its closure days"
+    },
+    {
+      "timestamp": "20160412221655",
+      "url": "http://provo.edu:80/",
+      "station": "district-homepage-provo-ut",
+      "why": "2016-04-13: within 2 days of one of its closure days"
+    },
+    {
+      "timestamp": "20160323024454",
+      "url": "http://provo.edu:80/",
+      "station": "district-homepage-provo-ut",
+      "why": "2016-03-23: within 2 days of one of its closure days"
+    },
+    {
+      "timestamp": "20230112221933",
+      "url": "https://provo.edu/",
+      "station": "district-homepage-provo-ut",
+      "why": "2023-01-13: within 2 days of one of its closure days"
+    },
+    {
+      "timestamp": "20230113092700",
+      "url": "https://provo.edu/",
+      "station": "district-homepage-provo-ut",
+      "why": "2023-01-13: within 2 days of one of its closure days"
+    },
+    {
+      "timestamp": "20220528104444",
+      "url": "https://provo.edu/",
+      "station": "district-homepage-provo-ut",
+      "why": "2022-05-28: within 2 days of one of its closure days"
+    },
+    {
+      "timestamp": "20220528001439",
+      "url": "https://provo.edu/",
+      "station": "district-homepage-provo-ut",
+      "why": "2022-05-28: within 2 days of one of its closure days"
+    },
+    {
+      "timestamp": "20230118212818",
+      "url": "https://provo.edu/",
+      "station": "district-homepage-provo-ut",
+      "why": "2023-01-19: within 2 days of one of its closure days"
+    },
+    {
+      "timestamp": "20230119092757",
+      "url": "https://provo.edu/",
+      "station": "district-homepage-provo-ut",
+      "why": "2023-01-19: within 2 days of one of its closure days"
+    },
+    {
+      "timestamp": "20221206074648",
+      "url": "https://provo.edu/",
+      "station": "district-homepage-provo-ut",
+      "why": "2022-12-06: within 2 days of one of its closure days"
+    },
+    {
+      "timestamp": "20230113212935",
+      "url": "https://provo.edu/",
+      "station": "district-homepage-provo-ut",
+      "why": "2023-01-14: within 2 days of one of its closure days"
+    },
+    {
+      "timestamp": "20230115092717",
+      "url": "https://provo.edu/",
+      "station": "district-homepage-provo-ut",
+      "why": "2023-01-15: within 2 days of one of its closure days"
+    },
+    {
+      "timestamp": "20230114092647",
+      "url": "https://provo.edu/",
+      "station": "district-homepage-provo-ut",
+      "why": "2023-01-14: within 2 days of one of its closure days"
+    },
+    {
+      "timestamp": "20230114212708",
+      "url": "https://provo.edu/",
+      "station": "district-homepage-provo-ut",
+      "why": "2023-01-15: within 2 days of one of its closure days"
+    },
+    {
+      "timestamp": "20230111212917",
+      "url": "https://provo.edu/",
+      "station": "district-homepage-provo-ut",
+      "why": "2023-01-12: within 2 days of one of its closure days"
+    },
+    {
+      "timestamp": "20230112092711",
+      "url": "https://provo.edu/",
+      "station": "district-homepage-provo-ut",
+      "why": "2023-01-12: within 2 days of one of its closure days"
+    },
+    {
+      "timestamp": "20230118092800",
+      "url": "https://provo.edu/",
+      "station": "district-homepage-provo-ut",
+      "why": "2023-01-18: within 2 days of one of its closure days"
     }
   ]
 }
