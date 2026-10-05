@@ -671,7 +671,8 @@ export class GlowLayer implements CustomLayerInterface {
       // A target the GPU cannot allocate would leave the glow undrawn.
       maxW / (cssW + 2 * GUARD_CSS_PX),
       maxH / (cssH + 2 * GUARD_CSS_PX),
-      Math.sqrt(MAX_LIGHT_TARGET_PX / guarded),
+      // Never under one per CSS pixel for the cap alone, as the glow was drawn before it.
+      Math.max(Math.min(1, deviceRatio), Math.sqrt(MAX_LIGHT_TARGET_PX / guarded)),
     );
     const style = glowStyleAtZoom(zoom, this.lineGray ?? undefined, targetPxPerCss);
     const w0 = Math.max(1, Math.min(maxW, Math.ceil((cssW + 2 * GUARD_CSS_PX) * targetPxPerCss)));

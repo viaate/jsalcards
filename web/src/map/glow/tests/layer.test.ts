@@ -353,6 +353,11 @@ describe('GlowLayer', () => {
       expect(frame.style.coreShare).toBeGreaterThan(layOut(6, [1440, 900], 2).style.coreShare);
       expect(frame.style).toEqual(glowStyleAtZoom(6, undefined, frame.targetPxPerCss));
     }
+    // Never under one pixel per CSS pixel for the cap alone, as the glow was drawn before it.
+    expect(layOut(9, [3840, 2160], 1).targetPxPerCss).toBe(1);
+    expect(layOut(9, [5120, 1440], 1).targetPxPerCss).toBe(1);
+    expect(layOut(9, [3840, 2160], 2).targetPxPerCss).toBe(1);
+    expect(layOut(4, [3840, 2160], 1, { float: false }).targetPxPerCss).toBe(1);
   });
 
   it('draws zoom 9 and up, and a 1x screen regionally, with no blend, grain or blur to pay for', () => {
