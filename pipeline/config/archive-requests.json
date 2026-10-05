@@ -1,1108 +1,1108 @@
 {
   "snapshots": [
     {
-      "timestamp": "20230102194052",
-      "url": "http://www.sweetwater1.org/",
-      "station": "finalsite-sweetwater-1-wy",
-      "why": "2023-01-03: within 2 days of one of its closure days"
+      "timestamp": "20210120111236",
+      "url": "https://www.jcsd1.us/",
+      "station": "apptegy-johnson1-wy",
+      "why": "2021-01-20: within 2 days of one of its closure days"
     },
     {
-      "timestamp": "20221224194051",
-      "url": "http://www.sweetwater1.org/",
-      "station": "finalsite-sweetwater-1-wy",
-      "why": "2022-12-25: within 2 days of one of its closure days"
-    },
-    {
-      "timestamp": "20221223210252",
-      "url": "http://www.sweetwater1.org/",
-      "station": "finalsite-sweetwater-1-wy",
-      "why": "2022-12-24: within 2 days of one of its closure days"
-    },
-    {
-      "timestamp": "20221205121225",
-      "url": "https://www.conradschools.org/",
-      "station": "apptegy-conrad-mt",
-      "why": "2022-12-05: within 2 days of one of its closure days"
-    },
-    {
-      "timestamp": "20220301192143",
-      "url": "https://www.conradschools.org/",
-      "station": "apptegy-conrad-mt",
-      "why": "2022-03-02: within 2 days of one of its closure days"
-    },
-    {
-      "timestamp": "20220101202324",
-      "url": "https://www.conradschools.org/",
-      "station": "apptegy-conrad-mt",
-      "why": "2022-01-02: within 2 days of one of its closure days"
-    },
-    {
-      "timestamp": "20241102165703",
-      "url": "https://dbps.k12.mt.us/",
-      "station": "apptegy-dutton-brady-mt",
-      "why": "2024-11-03: within 2 days of one of its closure days"
-    },
-    {
-      "timestamp": "20250102151515",
-      "url": "https://dbps.k12.mt.us/",
-      "station": "apptegy-dutton-brady-mt",
-      "why": "2025-01-02: within 2 days of one of its closure days"
-    },
-    {
-      "timestamp": "20240502161819",
-      "url": "https://dbps.k12.mt.us/",
-      "station": "apptegy-dutton-brady-mt",
-      "why": "2024-05-03: within 2 days of one of its closure days"
-    },
-    {
-      "timestamp": "20220101190333",
-      "url": "https://www.noxonschools.com/",
-      "station": "apptegy-noxon-mt",
-      "why": "2022-01-02: within 2 days of one of its closure days"
-    },
-    {
-      "timestamp": "20220202043057",
-      "url": "https://www.noxonschools.com/",
-      "station": "apptegy-noxon-mt",
-      "why": "2022-02-02: within 2 days of one of its closure days"
-    },
-    {
-      "timestamp": "20220201120632",
-      "url": "https://noxonschools.com/",
-      "station": "apptegy-noxon-mt",
-      "why": "2022-02-01: within 2 days of one of its closure days"
-    },
-    {
-      "timestamp": "20241014182202",
-      "url": "https://www.philipsburgschools.org/",
-      "station": "apptegy-philipsburg-mt",
-      "why": "2024-10-15: within 2 days of one of its closure days"
-    },
-    {
-      "timestamp": "20240328163041",
-      "url": "https://www.philipsburgschools.org/",
-      "station": "apptegy-philipsburg-mt",
-      "why": "2024-03-29: within 2 days of one of its closure days"
-    },
-    {
-      "timestamp": "20240224023602",
-      "url": "https://www.philipsburgschools.org/",
-      "station": "apptegy-philipsburg-mt",
-      "why": "2024-02-24: within 2 days of one of its closure days"
-    },
-    {
-      "timestamp": "20191118150359",
+      "timestamp": "20170101094904",
       "url": "http://www.jcsd1.us:80/",
       "station": "apptegy-johnson1-wy",
-      "why": "2019-11-18: within 2 days of one of its closure days"
+      "why": "2017-01-01: within 2 days of one of its closure days"
     },
     {
-      "timestamp": "20180502023703",
+      "timestamp": "20171104011119",
       "url": "http://www.jcsd1.us:80/",
       "station": "apptegy-johnson1-wy",
-      "why": "2018-05-02: within 2 days of one of its closure days"
+      "why": "2017-11-04: within 2 days of one of its closure days"
     },
     {
-      "timestamp": "20200412181818",
-      "url": "http://www.jcsd1.us:80/",
-      "station": "apptegy-johnson1-wy",
-      "why": "2020-04-13: within 2 days of one of its closure days"
+      "timestamp": "20220116192650",
+      "url": "https://www.bssd72.org",
+      "station": "apptegy-big-sky-mt",
+      "why": "2022-01-17: within 2 days of one of its closure days"
     },
     {
-      "timestamp": "20220101122538",
+      "timestamp": "20211111052347",
       "url": "https://www.bssd72.org/",
       "station": "apptegy-big-sky-mt",
-      "why": "2022-01-01: within 2 days of one of its closure days"
+      "why": "2021-11-11: within 2 days of one of its closure days"
     },
     {
-      "timestamp": "20211110081430",
+      "timestamp": "20210126064503",
       "url": "https://www.bssd72.org/",
       "station": "apptegy-big-sky-mt",
-      "why": "2021-11-10: within 2 days of one of its closure days"
+      "why": "2021-01-26: within 2 days of one of its closure days"
     },
     {
-      "timestamp": "20211008174837",
+      "timestamp": "20210201143543",
       "url": "https://www.bssd72.org/",
       "station": "apptegy-big-sky-mt",
-      "why": "2021-10-09: within 2 days of one of its closure days"
+      "why": "2021-02-01: within 2 days of one of its closure days"
     },
     {
-      "timestamp": "20220102161115",
+      "timestamp": "20210417001014",
+      "url": "https://winifred.k12.mt.us/",
+      "station": "apptegy-winifred-mt",
+      "why": "2021-04-17: within 2 days of one of its closure days"
+    },
+    {
+      "timestamp": "20210420185837",
       "url": "https://www.winifred.k12.mt.us/",
       "station": "apptegy-winifred-mt",
+      "why": "2021-04-21: within 2 days of one of its closure days"
+    },
+    {
+      "timestamp": "20210418044540",
+      "url": "https://winifred.k12.mt.us/",
+      "station": "apptegy-winifred-mt",
+      "why": "2021-04-18: within 2 days of one of its closure days"
+    },
+    {
+      "timestamp": "20220101193318",
+      "url": "https://www.winifred.k12.mt.us/",
+      "station": "apptegy-winifred-mt",
+      "why": "2022-01-02: within 2 days of one of its closure days"
+    },
+    {
+      "timestamp": "20201106222105",
+      "url": "https://www.winifred.k12.mt.us/",
+      "station": "apptegy-winifred-mt",
+      "why": "2020-11-07: within 2 days of one of its closure days"
+    },
+    {
+      "timestamp": "20201024034617",
+      "url": "http://chinookschools.org/",
+      "station": "apptegy-chinook-mt",
+      "why": "2020-10-24: within 2 days of one of its closure days"
+    },
+    {
+      "timestamp": "20201020000322",
+      "url": "http://hannumd@chinookschools.org/",
+      "station": "apptegy-chinook-mt",
+      "why": "2020-10-20: within 2 days of one of its closure days"
+    },
+    {
+      "timestamp": "20210415040708",
+      "url": "http://hannumd@chinookschools.org/",
+      "station": "apptegy-chinook-mt",
+      "why": "2021-04-15: within 2 days of one of its closure days"
+    },
+    {
+      "timestamp": "20210415033702",
+      "url": "http://chinookschools.org/",
+      "station": "apptegy-chinook-mt",
+      "why": "2021-04-15: within 2 days of one of its closure days"
+    },
+    {
+      "timestamp": "20201106214823",
+      "url": "http://chinookschools.org/",
+      "station": "apptegy-chinook-mt",
+      "why": "2020-11-07: within 2 days of one of its closure days"
+    },
+    {
+      "timestamp": "20210415192941",
+      "url": "http://chinookschools.org/",
+      "station": "apptegy-chinook-mt",
+      "why": "2021-04-16: within 2 days of one of its closure days"
+    },
+    {
+      "timestamp": "20210416080743",
+      "url": "http://chinookschools.org/",
+      "station": "apptegy-chinook-mt",
+      "why": "2021-04-16: within 2 days of one of its closure days"
+    },
+    {
+      "timestamp": "20190223184923",
+      "url": "http://chinookschools.org/",
+      "station": "apptegy-chinook-mt",
+      "why": "2019-02-24: within 2 days of one of its closure days"
+    },
+    {
+      "timestamp": "20171226223847",
+      "url": "http://chinookschools.org:80/",
+      "station": "apptegy-chinook-mt",
+      "why": "2017-12-27: within 2 days of one of its closure days"
+    },
+    {
+      "timestamp": "20170110173245",
+      "url": "http://www.chinookschools.org/",
+      "station": "apptegy-chinook-mt",
+      "why": "2017-01-11: within 2 days of one of its closure days"
+    },
+    {
+      "timestamp": "20210416170321",
+      "url": "https://www.converse2.org/",
+      "station": "apptegy-converse2-wy",
+      "why": "2021-04-17: within 2 days of one of its closure days"
+    },
+    {
+      "timestamp": "20220103025743",
+      "url": "https://www.converse2.org/",
+      "station": "apptegy-converse2-wy",
       "why": "2022-01-03: within 2 days of one of its closure days"
     },
     {
-      "timestamp": "20220201190114",
-      "url": "https://www.winifred.k12.mt.us/",
-      "station": "apptegy-winifred-mt",
-      "why": "2022-02-02: within 2 days of one of its closure days"
-    },
-    {
-      "timestamp": "20220301202025",
-      "url": "https://www.winifred.k12.mt.us/",
-      "station": "apptegy-winifred-mt",
-      "why": "2022-03-02: within 2 days of one of its closure days"
-    },
-    {
-      "timestamp": "20220102021657",
-      "url": "http://chinookschools.org/",
-      "station": "apptegy-chinook-mt",
-      "why": "2022-01-02: within 2 days of one of its closure days"
-    },
-    {
-      "timestamp": "20210412040133",
-      "url": "http://chinookschools.org/",
-      "station": "apptegy-chinook-mt",
-      "why": "2021-04-12: within 2 days of one of its closure days"
-    },
-    {
-      "timestamp": "20220101195510",
-      "url": "http://chinookschools.org/",
-      "station": "apptegy-chinook-mt",
-      "why": "2022-01-02: within 2 days of one of its closure days"
-    },
-    {
-      "timestamp": "20190119092104",
-      "url": "http://www.fremont25.org:80/",
-      "station": "apptegy-fremont25-wy",
-      "why": "2019-01-19: within 2 days of one of its closure days"
-    },
-    {
-      "timestamp": "20181117035639",
-      "url": "http://www.fremont25.org:80/",
-      "station": "apptegy-fremont25-wy",
-      "why": "2018-11-17: within 2 days of one of its closure days"
-    },
-    {
-      "timestamp": "20180107223410",
-      "url": "http://fremont25.org:80/",
-      "station": "apptegy-fremont25-wy",
-      "why": "2018-01-08: within 2 days of one of its closure days"
-    },
-    {
-      "timestamp": "20191204164416",
-      "url": "http://www.mvsd21.org:80/",
-      "station": "apptegy-marsh-valley-id",
-      "why": "2019-12-05: within 2 days of one of its closure days"
-    },
-    {
-      "timestamp": "20180414071520",
-      "url": "http://www.ennisschools.org/",
-      "station": "apptegy-ennis-mt",
-      "why": "2018-04-14: within 2 days of one of its closure days"
-    },
-    {
-      "timestamp": "20221129211150",
+      "timestamp": "20220104031736",
       "url": "https://www.converse2.org/",
       "station": "apptegy-converse2-wy",
-      "why": "2022-11-30: within 2 days of one of its closure days"
+      "why": "2022-01-04: within 2 days of one of its closure days"
     },
     {
-      "timestamp": "20210413005424",
+      "timestamp": "20220107025655",
       "url": "https://www.converse2.org/",
       "station": "apptegy-converse2-wy",
-      "why": "2021-04-13: within 2 days of one of its closure days"
+      "why": "2022-01-07: within 2 days of one of its closure days"
     },
     {
-      "timestamp": "20230128100152",
+      "timestamp": "20220106145735",
       "url": "https://www.converse2.org/",
       "station": "apptegy-converse2-wy",
-      "why": "2023-01-28: within 2 days of one of its closure days"
+      "why": "2022-01-06: within 2 days of one of its closure days"
     },
     {
-      "timestamp": "20171014092321",
+      "timestamp": "20220103145725",
+      "url": "https://www.converse2.org/",
+      "station": "apptegy-converse2-wy",
+      "why": "2022-01-03: within 2 days of one of its closure days"
+    },
+    {
+      "timestamp": "20220104145741",
+      "url": "https://www.converse2.org/",
+      "station": "apptegy-converse2-wy",
+      "why": "2022-01-04: within 2 days of one of its closure days"
+    },
+    {
+      "timestamp": "20220106025728",
+      "url": "https://www.converse2.org/",
+      "station": "apptegy-converse2-wy",
+      "why": "2022-01-06: within 2 days of one of its closure days"
+    },
+    {
+      "timestamp": "20220107145636",
+      "url": "https://www.converse2.org/",
+      "station": "apptegy-converse2-wy",
+      "why": "2022-01-07: within 2 days of one of its closure days"
+    },
+    {
+      "timestamp": "20180411215150",
+      "url": "http://www.converse2.org/",
+      "station": "apptegy-converse2-wy",
+      "why": "2018-04-12: within 2 days of one of its closure days"
+    },
+    {
+      "timestamp": "20171011081313",
+      "url": "http://www.converse2.org/",
+      "station": "apptegy-converse2-wy",
+      "why": "2017-10-11: within 2 days of one of its closure days"
+    },
+    {
+      "timestamp": "20170520214128",
+      "url": "http://converse2.org/",
+      "station": "apptegy-converse2-wy",
+      "why": "2017-05-21: within 2 days of one of its closure days"
+    },
+    {
+      "timestamp": "20171116001749",
       "url": "http://www.victor.k12.mt.us:80/",
       "station": "apptegy-victor-mt",
-      "why": "2017-10-14: within 2 days of one of its closure days"
+      "why": "2017-11-16: within 2 days of one of its closure days"
     },
     {
-      "timestamp": "20171230203045",
+      "timestamp": "20180313042942",
       "url": "http://www.victor.k12.mt.us:80/",
       "station": "apptegy-victor-mt",
-      "why": "2017-12-31: within 2 days of one of its closure days"
+      "why": "2018-03-13: within 2 days of one of its closure days"
     },
     {
-      "timestamp": "20180210154950",
-      "url": "http://www.victor.k12.mt.us:80/",
-      "station": "apptegy-victor-mt",
-      "why": "2018-02-10: within 2 days of one of its closure days"
-    },
-    {
-      "timestamp": "20240502111649",
-      "url": "https://www.hlpschools.k12.mt.us/",
-      "station": "apptegy-hays-lodge-pole-mt",
-      "why": "storm day 2024-05-02 (market score 0.25)"
-    },
-    {
-      "timestamp": "20240322095620",
+      "timestamp": "20240321163442",
       "url": "https://www.hlpschools.k12.mt.us/",
       "station": "apptegy-hays-lodge-pole-mt",
       "why": "storm day 2024-03-22 (market score 0.25)"
     },
     {
-      "timestamp": "20240321050246",
+      "timestamp": "20240321102228",
       "url": "https://www.hlpschools.k12.mt.us/",
       "station": "apptegy-hays-lodge-pole-mt",
       "why": "storm day 2024-03-21 (market score 0.25)"
     },
     {
-      "timestamp": "20180429180020",
-      "url": "http://www.landerschools.org:80/",
-      "station": "apptegy-fremont-1-wy",
-      "why": "storm day 2018-04-30 (market score 1.00)"
+      "timestamp": "20240320102131",
+      "url": "https://www.hlpschools.k12.mt.us/",
+      "station": "apptegy-hays-lodge-pole-mt",
+      "why": "storm day 2024-03-20 (market score 0.25)"
     },
     {
-      "timestamp": "20180412100131",
-      "url": "http://www.landerschools.org:80/",
-      "station": "apptegy-fremont-1-wy",
-      "why": "storm day 2018-04-12 (market score 1.00)"
+      "timestamp": "20240321121905",
+      "url": "https://www.hlpschools.k12.mt.us/",
+      "station": "apptegy-hays-lodge-pole-mt",
+      "why": "storm day 2024-03-21 (market score 0.25)"
     },
     {
-      "timestamp": "20180402055550",
-      "url": "http://www.landerschools.org:80/",
-      "station": "apptegy-fremont-1-wy",
-      "why": "storm day 2018-04-02 (market score 1.00)"
+      "timestamp": "20240319222609",
+      "url": "https://www.hlpschools.k12.mt.us/",
+      "station": "apptegy-hays-lodge-pole-mt",
+      "why": "storm day 2024-03-20 (market score 0.25)"
     },
     {
-      "timestamp": "20220102022750",
-      "url": "https://www.townsend.k12.mt.us/",
-      "station": "apptegy-townsend-mt",
-      "why": "2022-01-02: within 2 days of one of its closure days"
+      "timestamp": "20210414073428",
+      "url": "https://www.hlpschools.k12.mt.us/",
+      "station": "apptegy-hays-lodge-pole-mt",
+      "why": "storm day 2021-04-14 (market score 0.25)"
     },
     {
-      "timestamp": "20220101235517",
-      "url": "https://www.townsend.k12.mt.us/",
-      "station": "apptegy-townsend-mt",
-      "why": "2022-01-02: within 2 days of one of its closure days"
+      "timestamp": "20180109221249",
+      "url": "http://hlpschools.k12.mt.us/",
+      "station": "apptegy-hays-lodge-pole-mt",
+      "why": "storm day 2018-01-10 (market score 0.25)"
     },
     {
-      "timestamp": "20220102092236",
-      "url": "https://www.townsend.k12.mt.us/",
-      "station": "apptegy-townsend-mt",
-      "why": "2022-01-02: within 2 days of one of its closure days"
+      "timestamp": "20241102164049",
+      "url": "https://www.hlpschools.k12.mt.us/",
+      "station": "apptegy-hays-lodge-pole-mt",
+      "why": "2024-11-03: within 2 days of one of its closure days"
     },
     {
-      "timestamp": "20220412121521",
-      "url": "https://www.wsh1.k12.wy.us/",
-      "station": "apptegy-washakie-1-wy",
-      "why": "storm day 2022-04-12 (market score 1.00)"
+      "timestamp": "20241211080651",
+      "url": "https://www.hlpschools.k12.mt.us/",
+      "station": "apptegy-hays-lodge-pole-mt",
+      "why": "2024-12-11: within 2 days of one of its closure days"
     },
     {
-      "timestamp": "20210419023951",
-      "url": "https://wsh1.k12.wy.us/",
-      "station": "apptegy-washakie-1-wy",
-      "why": "storm day 2021-04-19 (market score 1.00)"
+      "timestamp": "20241211230624",
+      "url": "https://www.hlpschools.k12.mt.us/",
+      "station": "apptegy-hays-lodge-pole-mt",
+      "why": "2024-12-12: within 2 days of one of its closure days"
     },
     {
-      "timestamp": "20221221005006",
-      "url": "https://www.wsh1.k12.wy.us/",
-      "station": "apptegy-washakie-1-wy",
-      "why": "storm day 2022-12-21 (market score 0.50)"
+      "timestamp": "20241123192441",
+      "url": "https://www.hlpschools.k12.mt.us/",
+      "station": "apptegy-hays-lodge-pole-mt",
+      "why": "2024-11-24: within 2 days of one of its closure days"
     },
     {
-      "timestamp": "20191119010956",
-      "url": "https://www.wyomingindianschools.com/",
-      "station": "apptegy-fremont-14-wy",
-      "why": "2019-11-19: within 2 days of one of its closure days"
+      "timestamp": "20241123013426",
+      "url": "https://www.hlpschools.k12.mt.us/",
+      "station": "apptegy-hays-lodge-pole-mt",
+      "why": "2024-11-23: within 2 days of one of its closure days"
     },
     {
-      "timestamp": "20191121061606",
-      "url": "https://www.wyomingindianschools.com/",
-      "station": "apptegy-fremont-14-wy",
-      "why": "2019-11-21: within 2 days of one of its closure days"
+      "timestamp": "20241124114341",
+      "url": "https://www.hlpschools.k12.mt.us/",
+      "station": "apptegy-hays-lodge-pole-mt",
+      "why": "2024-11-24: within 2 days of one of its closure days"
     },
     {
-      "timestamp": "20190126170112",
-      "url": "http://www.shoshonischools.org/",
-      "station": "apptegy-fremont-24-wy",
-      "why": "2019-01-27: within 2 days of one of its closure days"
+      "timestamp": "20241123025624",
+      "url": "https://www.hlpschools.k12.mt.us/",
+      "station": "apptegy-hays-lodge-pole-mt",
+      "why": "2024-11-23: within 2 days of one of its closure days"
     },
     {
-      "timestamp": "20190122210122",
-      "url": "https://leadoreschool.org/",
-      "station": "apptegy-south-lemhi-id",
-      "why": "2019-01-23: within 2 days of one of its closure days"
+      "timestamp": "20241123125914",
+      "url": "https://www.hlpschools.k12.mt.us/",
+      "station": "apptegy-hays-lodge-pole-mt",
+      "why": "2024-11-23: within 2 days of one of its closure days"
     },
     {
-      "timestamp": "20170916193014",
-      "url": "http://leadoreschool.org/",
-      "station": "apptegy-south-lemhi-id",
-      "why": "2017-09-17: within 2 days of one of its closure days"
+      "timestamp": "20241103010829",
+      "url": "https://www.hlpschools.k12.mt.us/",
+      "station": "apptegy-hays-lodge-pole-mt",
+      "why": "2024-11-03: within 2 days of one of its closure days"
     },
     {
-      "timestamp": "20170106230144",
-      "url": "http://www.durhamunified.org:80/",
-      "station": "apptegy-durham-ca",
-      "why": "2017-01-07: within 2 days of one of its closure days"
+      "timestamp": "20241102221547",
+      "url": "https://www.hlpschools.k12.mt.us/",
+      "station": "apptegy-hays-lodge-pole-mt",
+      "why": "2024-11-03: within 2 days of one of its closure days"
     },
     {
-      "timestamp": "20221219222027",
-      "url": "http://www.sweetwater1.org/",
-      "station": "finalsite-sweetwater-1-wy",
-      "why": "2022-12-20: within 2 days of one of its closure days"
+      "timestamp": "20241103071631",
+      "url": "https://www.hlpschools.k12.mt.us/",
+      "station": "apptegy-hays-lodge-pole-mt",
+      "why": "2024-11-03: within 2 days of one of its closure days"
     },
     {
-      "timestamp": "20221219195957",
-      "url": "http://www.sweetwater1.org/",
-      "station": "finalsite-sweetwater-1-wy",
-      "why": "2022-12-20: within 2 days of one of its closure days"
+      "timestamp": "20241103055746",
+      "url": "https://www.hlpschools.k12.mt.us/",
+      "station": "apptegy-hays-lodge-pole-mt",
+      "why": "2024-11-03: within 2 days of one of its closure days"
     },
     {
-      "timestamp": "20221223233324",
-      "url": "http://www.sweetwater1.org/",
-      "station": "finalsite-sweetwater-1-wy",
-      "why": "2022-12-24: within 2 days of one of its closure days"
+      "timestamp": "20241106085354",
+      "url": "https://www.hlpschools.k12.mt.us/",
+      "station": "apptegy-hays-lodge-pole-mt",
+      "why": "2024-11-06: within 2 days of one of its closure days"
     },
     {
-      "timestamp": "20221031200717",
-      "url": "http://www.sweetwater1.org/",
-      "station": "finalsite-sweetwater-1-wy",
-      "why": "2022-11-01: within 2 days of one of its closure days"
+      "timestamp": "20241106143921",
+      "url": "https://www.hlpschools.k12.mt.us/",
+      "station": "apptegy-hays-lodge-pole-mt",
+      "why": "2024-11-06: within 2 days of one of its closure days"
     },
     {
-      "timestamp": "20221211224414",
-      "url": "http://www.sweetwater1.org/",
-      "station": "finalsite-sweetwater-1-wy",
-      "why": "2022-12-12: within 2 days of one of its closure days"
+      "timestamp": "20240502203136",
+      "url": "https://www.hlpschools.k12.mt.us/",
+      "station": "apptegy-hays-lodge-pole-mt",
+      "why": "2024-05-03: within 2 days of one of its closure days"
     },
     {
-      "timestamp": "20221103200559",
-      "url": "http://www.sweetwater1.org/",
-      "station": "finalsite-sweetwater-1-wy",
-      "why": "2022-11-04: within 2 days of one of its closure days"
+      "timestamp": "20240324021846",
+      "url": "https://www.hlpschools.k12.mt.us/",
+      "station": "apptegy-hays-lodge-pole-mt",
+      "why": "2024-03-24: within 2 days of one of its closure days"
     },
     {
-      "timestamp": "20221101200559",
-      "url": "http://www.sweetwater1.org/",
-      "station": "finalsite-sweetwater-1-wy",
-      "why": "2022-11-02: within 2 days of one of its closure days"
+      "timestamp": "20240503110825",
+      "url": "https://www.hlpschools.k12.mt.us/",
+      "station": "apptegy-hays-lodge-pole-mt",
+      "why": "2024-05-03: within 2 days of one of its closure days"
     },
     {
-      "timestamp": "20221104200556",
-      "url": "http://www.sweetwater1.org/",
-      "station": "finalsite-sweetwater-1-wy",
-      "why": "2022-11-05: within 2 days of one of its closure days"
+      "timestamp": "20240504110755",
+      "url": "https://www.hlpschools.k12.mt.us/",
+      "station": "apptegy-hays-lodge-pole-mt",
+      "why": "2024-05-04: within 2 days of one of its closure days"
     },
     {
-      "timestamp": "20230404211308",
-      "url": "http://www.sweetwater1.org/",
-      "station": "finalsite-sweetwater-1-wy",
-      "why": "2023-04-05: within 2 days of one of its closure days"
+      "timestamp": "20240429230719",
+      "url": "https://www.hlpschools.k12.mt.us/",
+      "station": "apptegy-hays-lodge-pole-mt",
+      "why": "2024-04-30: within 2 days of one of its closure days"
     },
     {
-      "timestamp": "20230321020330",
-      "url": "http://www.sweetwater1.org/",
-      "station": "finalsite-sweetwater-1-wy",
-      "why": "2023-03-21: within 2 days of one of its closure days"
+      "timestamp": "20240503162026",
+      "url": "https://www.hlpschools.k12.mt.us/",
+      "station": "apptegy-hays-lodge-pole-mt",
+      "why": "2024-05-04: within 2 days of one of its closure days"
     },
     {
-      "timestamp": "20200414042523",
-      "url": "http://www.sweetwater1.org/",
-      "station": "finalsite-sweetwater-1-wy",
-      "why": "2020-04-14: within 2 days of one of its closure days"
+      "timestamp": "20240501110243",
+      "url": "https://www.hlpschools.k12.mt.us/",
+      "station": "apptegy-hays-lodge-pole-mt",
+      "why": "2024-05-01: within 2 days of one of its closure days"
     },
     {
-      "timestamp": "20200413142415",
-      "url": "http://www.sweetwater1.org/",
-      "station": "finalsite-sweetwater-1-wy",
-      "why": "2020-04-13: within 2 days of one of its closure days"
+      "timestamp": "20240503230756",
+      "url": "https://www.hlpschools.k12.mt.us/",
+      "station": "apptegy-hays-lodge-pole-mt",
+      "why": "2024-05-04: within 2 days of one of its closure days"
     },
     {
-      "timestamp": "20220409174131",
-      "url": "http://www.sweetwater1.org/",
-      "station": "finalsite-sweetwater-1-wy",
-      "why": "2022-04-10: within 2 days of one of its closure days"
+      "timestamp": "20240501133548",
+      "url": "https://www.hlpschools.k12.mt.us/",
+      "station": "apptegy-hays-lodge-pole-mt",
+      "why": "2024-05-01: within 2 days of one of its closure days"
     },
     {
-      "timestamp": "20221223225222",
-      "url": "http://www.sweetwater1.org/",
-      "station": "finalsite-sweetwater-1-wy",
-      "why": "2022-12-24: within 2 days of one of its closure days"
+      "timestamp": "20240501102717",
+      "url": "https://www.hlpschools.k12.mt.us/",
+      "station": "apptegy-hays-lodge-pole-mt",
+      "why": "2024-05-01: within 2 days of one of its closure days"
     },
     {
-      "timestamp": "20220104180442",
-      "url": "http://www.sweetwater1.org/",
-      "station": "finalsite-sweetwater-1-wy",
-      "why": "2022-01-05: within 2 days of one of its closure days"
+      "timestamp": "20240501121134",
+      "url": "https://www.hlpschools.k12.mt.us/",
+      "station": "apptegy-hays-lodge-pole-mt",
+      "why": "2024-05-01: within 2 days of one of its closure days"
     },
     {
-      "timestamp": "20220104173918",
-      "url": "http://www.sweetwater1.org/",
-      "station": "finalsite-sweetwater-1-wy",
-      "why": "2022-01-05: within 2 days of one of its closure days"
+      "timestamp": "20240430110831",
+      "url": "https://www.hlpschools.k12.mt.us/",
+      "station": "apptegy-hays-lodge-pole-mt",
+      "why": "2024-04-30: within 2 days of one of its closure days"
     },
     {
-      "timestamp": "20220104210522",
-      "url": "http://www.sweetwater1.org/",
-      "station": "finalsite-sweetwater-1-wy",
-      "why": "2022-01-05: within 2 days of one of its closure days"
+      "timestamp": "20240429165233",
+      "url": "https://www.hlpschools.k12.mt.us/",
+      "station": "apptegy-hays-lodge-pole-mt",
+      "why": "2024-04-30: within 2 days of one of its closure days"
     },
     {
-      "timestamp": "20220104195326",
-      "url": "http://www.sweetwater1.org/",
-      "station": "finalsite-sweetwater-1-wy",
-      "why": "2022-01-05: within 2 days of one of its closure days"
+      "timestamp": "20240501141801",
+      "url": "https://www.hlpschools.k12.mt.us/",
+      "station": "apptegy-hays-lodge-pole-mt",
+      "why": "2024-05-01: within 2 days of one of its closure days"
     },
     {
-      "timestamp": "20230405141801",
-      "url": "http://www.sweetwater1.org/",
-      "station": "finalsite-sweetwater-1-wy",
-      "why": "2023-04-05: within 2 days of one of its closure days"
+      "timestamp": "20240323050120",
+      "url": "https://www.hlpschools.k12.mt.us/",
+      "station": "apptegy-hays-lodge-pole-mt",
+      "why": "2024-03-23: within 2 days of one of its closure days"
     },
     {
-      "timestamp": "20230405085029",
-      "url": "http://www.sweetwater1.org/",
-      "station": "finalsite-sweetwater-1-wy",
-      "why": "2023-04-05: within 2 days of one of its closure days"
+      "timestamp": "20240323082031",
+      "url": "https://www.hlpschools.k12.mt.us/",
+      "station": "apptegy-hays-lodge-pole-mt",
+      "why": "2024-03-23: within 2 days of one of its closure days"
     },
     {
-      "timestamp": "20221103231951",
-      "url": "http://www.sweetwater1.org/",
-      "station": "finalsite-sweetwater-1-wy",
-      "why": "2022-11-04: within 2 days of one of its closure days"
+      "timestamp": "20240323131135",
+      "url": "https://www.hlpschools.k12.mt.us/",
+      "station": "apptegy-hays-lodge-pole-mt",
+      "why": "2024-03-23: within 2 days of one of its closure days"
     },
     {
-      "timestamp": "20221102002141",
-      "url": "http://www.sweetwater1.org/",
-      "station": "finalsite-sweetwater-1-wy",
-      "why": "2022-11-02: within 2 days of one of its closure days"
+      "timestamp": "20240318102132",
+      "url": "https://www.hlpschools.k12.mt.us/",
+      "station": "apptegy-hays-lodge-pole-mt",
+      "why": "2024-03-18: within 2 days of one of its closure days"
     },
     {
-      "timestamp": "20230331194208",
-      "url": "http://www.sweetwater1.org/",
-      "station": "finalsite-sweetwater-1-wy",
-      "why": "2023-04-01: within 2 days of one of its closure days"
+      "timestamp": "20240322222031",
+      "url": "https://www.hlpschools.k12.mt.us/",
+      "station": "apptegy-hays-lodge-pole-mt",
+      "why": "2024-03-23: within 2 days of one of its closure days"
     },
     {
-      "timestamp": "20230401224100",
-      "url": "http://www.sweetwater1.org/",
-      "station": "finalsite-sweetwater-1-wy",
-      "why": "2023-04-02: within 2 days of one of its closure days"
+      "timestamp": "20240319102106",
+      "url": "https://www.hlpschools.k12.mt.us/",
+      "station": "apptegy-hays-lodge-pole-mt",
+      "why": "2024-03-19: within 2 days of one of its closure days"
     },
     {
-      "timestamp": "20230323094040",
-      "url": "http://www.sweetwater1.org/",
-      "station": "finalsite-sweetwater-1-wy",
-      "why": "2023-03-23: within 2 days of one of its closure days"
+      "timestamp": "20240318032002",
+      "url": "https://hlpschools.k12.mt.us/",
+      "station": "apptegy-hays-lodge-pole-mt",
+      "why": "2024-03-18: within 2 days of one of its closure days"
     },
     {
-      "timestamp": "20230402062228",
-      "url": "http://www.sweetwater1.org/",
-      "station": "finalsite-sweetwater-1-wy",
-      "why": "2023-04-02: within 2 days of one of its closure days"
+      "timestamp": "20240319023422",
+      "url": "https://www.hlpschools.k12.mt.us/",
+      "station": "apptegy-hays-lodge-pole-mt",
+      "why": "2024-03-19: within 2 days of one of its closure days"
     },
     {
-      "timestamp": "20230324080326",
-      "url": "http://www.sweetwater1.org/",
-      "station": "finalsite-sweetwater-1-wy",
-      "why": "2023-03-24: within 2 days of one of its closure days"
+      "timestamp": "20240317225305",
+      "url": "https://www.hlpschools.k12.mt.us/",
+      "station": "apptegy-hays-lodge-pole-mt",
+      "why": "2024-03-18: within 2 days of one of its closure days"
     },
     {
-      "timestamp": "20180328132206",
-      "url": "http://www.sweetwater1.org:80/",
-      "station": "finalsite-sweetwater-1-wy",
-      "why": "2018-03-28: within 2 days of one of its closure days"
+      "timestamp": "20240318122532",
+      "url": "https://www.hlpschools.k12.mt.us/",
+      "station": "apptegy-hays-lodge-pole-mt",
+      "why": "2024-03-18: within 2 days of one of its closure days"
     },
     {
-      "timestamp": "20230321120156",
-      "url": "http://www.sweetwater1.org/",
-      "station": "finalsite-sweetwater-1-wy",
-      "why": "2023-03-21: within 2 days of one of its closure days"
-    },
-    {
-      "timestamp": "20230320185528",
-      "url": "http://www.sweetwater1.org/",
-      "station": "finalsite-sweetwater-1-wy",
-      "why": "2023-03-21: within 2 days of one of its closure days"
-    },
-    {
-      "timestamp": "20230320040908",
-      "url": "http://www.sweetwater1.org/",
-      "station": "finalsite-sweetwater-1-wy",
-      "why": "2023-03-20: within 2 days of one of its closure days"
-    },
-    {
-      "timestamp": "20230308101803",
-      "url": "http://www.sweetwater1.org/",
-      "station": "finalsite-sweetwater-1-wy",
-      "why": "2023-03-08: within 2 days of one of its closure days"
-    },
-    {
-      "timestamp": "20230311185718",
-      "url": "http://www.sweetwater1.org/",
-      "station": "finalsite-sweetwater-1-wy",
-      "why": "2023-03-12: within 2 days of one of its closure days"
-    },
-    {
-      "timestamp": "20230311112654",
-      "url": "http://www.sweetwater1.org/",
-      "station": "finalsite-sweetwater-1-wy",
-      "why": "2023-03-11: within 2 days of one of its closure days"
-    },
-    {
-      "timestamp": "20230312074103",
-      "url": "http://www.sweetwater1.org/",
-      "station": "finalsite-sweetwater-1-wy",
-      "why": "2023-03-12: within 2 days of one of its closure days"
-    },
-    {
-      "timestamp": "20230319165549",
-      "url": "http://www.sweetwater1.org/",
-      "station": "finalsite-sweetwater-1-wy",
-      "why": "2023-03-20: within 2 days of one of its closure days"
-    },
-    {
-      "timestamp": "20230311093600",
-      "url": "http://www.sweetwater1.org/",
-      "station": "finalsite-sweetwater-1-wy",
-      "why": "2023-03-11: within 2 days of one of its closure days"
-    },
-    {
-      "timestamp": "20230311210545",
-      "url": "http://www.sweetwater1.org/",
-      "station": "finalsite-sweetwater-1-wy",
-      "why": "2023-03-12: within 2 days of one of its closure days"
-    },
-    {
-      "timestamp": "20210128091255",
-      "url": "http://www.sweetwater1.org/",
-      "station": "finalsite-sweetwater-1-wy",
-      "why": "2021-01-28: within 2 days of one of its closure days"
-    },
-    {
-      "timestamp": "20200103015224",
-      "url": "http://www.sweetwater1.org/",
-      "station": "finalsite-sweetwater-1-wy",
-      "why": "2020-01-03: within 2 days of one of its closure days"
-    },
-    {
-      "timestamp": "20191231124311",
-      "url": "http://www.sweetwater1.org:80/",
-      "station": "finalsite-sweetwater-1-wy",
-      "why": "2019-12-31: within 2 days of one of its closure days"
-    },
-    {
-      "timestamp": "20220409202643",
-      "url": "http://www.sweetwater1.org/",
-      "station": "finalsite-sweetwater-1-wy",
-      "why": "2022-04-10: within 2 days of one of its closure days"
-    },
-    {
-      "timestamp": "20220410202645",
-      "url": "http://www.sweetwater1.org/",
-      "station": "finalsite-sweetwater-1-wy",
+      "timestamp": "20220411140455",
+      "url": "https://www.hlpschools.k12.mt.us/",
+      "station": "apptegy-hays-lodge-pole-mt",
       "why": "2022-04-11: within 2 days of one of its closure days"
     },
     {
-      "timestamp": "20220411082658",
-      "url": "http://www.sweetwater1.org/",
-      "station": "finalsite-sweetwater-1-wy",
-      "why": "2022-04-11: within 2 days of one of its closure days"
+      "timestamp": "20210415040209",
+      "url": "https://www.hlpschools.k12.mt.us/",
+      "station": "apptegy-hays-lodge-pole-mt",
+      "why": "2021-04-15: within 2 days of one of its closure days"
     },
     {
-      "timestamp": "20191130231841",
-      "url": "http://www.sweetwater1.org:80/",
-      "station": "finalsite-sweetwater-1-wy",
-      "why": "2019-12-01: within 2 days of one of its closure days"
+      "timestamp": "20210416074904",
+      "url": "https://www.hlpschools.k12.mt.us/",
+      "station": "apptegy-hays-lodge-pole-mt",
+      "why": "2021-04-16: within 2 days of one of its closure days"
     },
     {
-      "timestamp": "20220410082708",
-      "url": "http://www.sweetwater1.org/",
-      "station": "finalsite-sweetwater-1-wy",
-      "why": "2022-04-10: within 2 days of one of its closure days"
+      "timestamp": "20210414200429",
+      "url": "https://www.hlpschools.k12.mt.us/",
+      "station": "apptegy-hays-lodge-pole-mt",
+      "why": "2021-04-15: within 2 days of one of its closure days"
     },
     {
-      "timestamp": "20230113074023",
-      "url": "http://www.sweetwater1.org/",
-      "station": "finalsite-sweetwater-1-wy",
-      "why": "2023-01-13: within 2 days of one of its closure days"
+      "timestamp": "20171004055813",
+      "url": "http://www.hlpschools.k12.mt.us:80/",
+      "station": "apptegy-hays-lodge-pole-mt",
+      "why": "2017-10-04: within 2 days of one of its closure days"
     },
     {
-      "timestamp": "20230202074035",
-      "url": "http://www.sweetwater1.org/",
-      "station": "finalsite-sweetwater-1-wy",
-      "why": "2023-02-02: within 2 days of one of its closure days"
+      "timestamp": "20171101001051",
+      "url": "http://www.landerschools.org:80/",
+      "station": "apptegy-fremont-1-wy",
+      "why": "storm day 2017-11-01 (market score 1.00)"
     },
     {
-      "timestamp": "20230131225716",
-      "url": "http://www.sweetwater1.org/",
-      "station": "finalsite-sweetwater-1-wy",
-      "why": "2023-02-01: within 2 days of one of its closure days"
+      "timestamp": "20171117012916",
+      "url": "http://www.landerschools.org:80/",
+      "station": "apptegy-fremont-1-wy",
+      "why": "storm day 2017-11-17 (market score 1.00)"
     },
     {
-      "timestamp": "20230129074453",
-      "url": "http://www.sweetwater1.org/",
-      "station": "finalsite-sweetwater-1-wy",
-      "why": "2023-01-29: within 2 days of one of its closure days"
+      "timestamp": "20190527224358",
+      "url": "http://www.landerschools.org:80/",
+      "station": "apptegy-fremont-1-wy",
+      "why": "storm day 2019-05-28 (market score 1.00)"
     },
     {
-      "timestamp": "20230128041505",
-      "url": "http://www.sweetwater1.org/",
-      "station": "finalsite-sweetwater-1-wy",
-      "why": "2023-01-28: within 2 days of one of its closure days"
+      "timestamp": "20190121020346",
+      "url": "http://www.landerschools.org:80/",
+      "station": "apptegy-fremont-1-wy",
+      "why": "storm day 2019-01-21 (market score 1.00)"
     },
     {
-      "timestamp": "20230128075823",
-      "url": "http://www.sweetwater1.org/",
-      "station": "finalsite-sweetwater-1-wy",
-      "why": "2023-01-28: within 2 days of one of its closure days"
+      "timestamp": "20240417092353",
+      "url": "https://www.landerschools.org/",
+      "station": "apptegy-fremont-1-wy",
+      "why": "storm day 2024-04-17 (market score 1.00)"
     },
     {
-      "timestamp": "20230128194022",
-      "url": "http://www.sweetwater1.org/",
-      "station": "finalsite-sweetwater-1-wy",
-      "why": "2023-01-29: within 2 days of one of its closure days"
+      "timestamp": "20240416192528",
+      "url": "https://www.landerschools.org/",
+      "station": "apptegy-fremont-1-wy",
+      "why": "storm day 2024-04-17 (market score 1.00)"
     },
     {
-      "timestamp": "20240111071453",
-      "url": "http://www.sweetwater1.org/",
-      "station": "finalsite-sweetwater-1-wy",
-      "why": "2024-01-11: within 2 days of one of its closure days"
+      "timestamp": "20230126225046",
+      "url": "https://www.landerschools.org/",
+      "station": "apptegy-fremont-1-wy",
+      "why": "storm day 2023-01-27 (market score 1.00)"
     },
     {
-      "timestamp": "20240112191420",
-      "url": "http://www.sweetwater1.org/",
-      "station": "finalsite-sweetwater-1-wy",
-      "why": "2024-01-13: within 2 days of one of its closure days"
+      "timestamp": "20230127104922",
+      "url": "https://www.landerschools.org/",
+      "station": "apptegy-fremont-1-wy",
+      "why": "storm day 2023-01-27 (market score 1.00)"
     },
     {
-      "timestamp": "20240114071409",
-      "url": "http://www.sweetwater1.org/",
-      "station": "finalsite-sweetwater-1-wy",
-      "why": "2024-01-14: within 2 days of one of its closure days"
+      "timestamp": "20210204184732",
+      "url": "https://www.landerschools.org/",
+      "station": "apptegy-fremont-1-wy",
+      "why": "storm day 2021-02-05 (market score 1.00)"
     },
     {
-      "timestamp": "20240112232835",
-      "url": "http://www.sweetwater1.org/",
-      "station": "finalsite-sweetwater-1-wy",
-      "why": "2024-01-13: within 2 days of one of its closure days"
+      "timestamp": "20220504111226",
+      "url": "https://www.landerschools.org/",
+      "station": "apptegy-fremont-1-wy",
+      "why": "storm day 2022-05-04 (market score 1.00)"
     },
     {
-      "timestamp": "20240114191343",
-      "url": "http://www.sweetwater1.org/",
-      "station": "finalsite-sweetwater-1-wy",
-      "why": "2024-01-15: within 2 days of one of its closure days"
+      "timestamp": "20220503231257",
+      "url": "https://www.landerschools.org/",
+      "station": "apptegy-fremont-1-wy",
+      "why": "storm day 2022-05-04 (market score 1.00)"
     },
     {
-      "timestamp": "20240115191306",
-      "url": "http://www.sweetwater1.org/",
-      "station": "finalsite-sweetwater-1-wy",
-      "why": "2024-01-16: within 2 days of one of its closure days"
+      "timestamp": "20231025103711",
+      "url": "https://www.landerschools.org/",
+      "station": "apptegy-fremont-1-wy",
+      "why": "storm day 2023-10-25 (market score 1.00)"
     },
     {
-      "timestamp": "20240113071258",
-      "url": "http://www.sweetwater1.org/",
-      "station": "finalsite-sweetwater-1-wy",
-      "why": "2024-01-13: within 2 days of one of its closure days"
+      "timestamp": "20231026121513",
+      "url": "https://www.landerschools.org/",
+      "station": "apptegy-fremont-1-wy",
+      "why": "storm day 2023-10-26 (market score 1.00)"
     },
     {
-      "timestamp": "20240113191338",
-      "url": "http://www.sweetwater1.org/",
-      "station": "finalsite-sweetwater-1-wy",
-      "why": "2024-01-14: within 2 days of one of its closure days"
+      "timestamp": "20230324061149",
+      "url": "https://www.landerschools.org/",
+      "station": "apptegy-fremont-1-wy",
+      "why": "storm day 2023-03-24 (market score 1.00)"
     },
     {
-      "timestamp": "20240115071357",
-      "url": "http://www.sweetwater1.org/",
-      "station": "finalsite-sweetwater-1-wy",
-      "why": "2024-01-15: within 2 days of one of its closure days"
+      "timestamp": "20231207225744",
+      "url": "https://www.landerschools.org/",
+      "station": "apptegy-fremont-1-wy",
+      "why": "storm day 2023-12-08 (market score 1.00)"
     },
     {
-      "timestamp": "20220220083315",
-      "url": "http://www.sweetwater1.org/",
-      "station": "finalsite-sweetwater-1-wy",
-      "why": "2022-02-20: within 2 days of one of its closure days"
+      "timestamp": "20231207002156",
+      "url": "https://www.landerschools.org/",
+      "station": "apptegy-fremont-1-wy",
+      "why": "storm day 2023-12-07 (market score 1.00)"
     },
     {
-      "timestamp": "20230112074039",
-      "url": "http://www.sweetwater1.org/",
-      "station": "finalsite-sweetwater-1-wy",
-      "why": "2023-01-12: within 2 days of one of its closure days"
+      "timestamp": "20231024223708",
+      "url": "https://www.landerschools.org/",
+      "station": "apptegy-fremont-1-wy",
+      "why": "storm day 2023-10-25 (market score 1.00)"
     },
     {
-      "timestamp": "20220217084103",
-      "url": "http://www.sweetwater1.org/",
-      "station": "finalsite-sweetwater-1-wy",
-      "why": "2022-02-17: within 2 days of one of its closure days"
+      "timestamp": "20231207110850",
+      "url": "https://www.landerschools.org/",
+      "station": "apptegy-fremont-1-wy",
+      "why": "storm day 2023-12-07 (market score 1.00)"
     },
     {
-      "timestamp": "20220213203400",
-      "url": "http://www.sweetwater1.org/",
-      "station": "finalsite-sweetwater-1-wy",
-      "why": "2022-02-14: within 2 days of one of its closure days"
+      "timestamp": "20231208114401",
+      "url": "https://www.landerschools.org/",
+      "station": "apptegy-fremont-1-wy",
+      "why": "storm day 2023-12-08 (market score 1.00)"
     },
     {
-      "timestamp": "20220218203323",
-      "url": "http://www.sweetwater1.org/",
-      "station": "finalsite-sweetwater-1-wy",
-      "why": "2022-02-19: within 2 days of one of its closure days"
+      "timestamp": "20240508024200",
+      "url": "https://www.landerschools.org/",
+      "station": "apptegy-fremont-1-wy",
+      "why": "storm day 2024-05-08 (market score 1.00)"
     },
     {
-      "timestamp": "20220214083310",
-      "url": "http://www.sweetwater1.org/",
-      "station": "finalsite-sweetwater-1-wy",
-      "why": "2022-02-14: within 2 days of one of its closure days"
+      "timestamp": "20240505231737",
+      "url": "https://www.landerschools.org/",
+      "station": "apptegy-fremont-1-wy",
+      "why": "storm day 2024-05-06 (market score 1.00)"
     },
     {
-      "timestamp": "20240110191302",
-      "url": "http://www.sweetwater1.org/",
-      "station": "finalsite-sweetwater-1-wy",
-      "why": "2024-01-11: within 2 days of one of its closure days"
+      "timestamp": "20240506190134",
+      "url": "https://www.landerschools.org/",
+      "station": "apptegy-fremont-1-wy",
+      "why": "storm day 2024-05-07 (market score 1.00)"
     },
     {
-      "timestamp": "20231121075848",
-      "url": "http://www.sweetwater1.org/",
-      "station": "finalsite-sweetwater-1-wy",
-      "why": "2023-11-21: within 2 days of one of its closure days"
+      "timestamp": "20240508231825",
+      "url": "https://www.landerschools.org/",
+      "station": "apptegy-fremont-1-wy",
+      "why": "storm day 2024-05-09 (market score 1.00)"
     },
     {
-      "timestamp": "20231126071624",
-      "url": "http://www.sweetwater1.org/",
-      "station": "finalsite-sweetwater-1-wy",
-      "why": "2023-11-26: within 2 days of one of its closure days"
+      "timestamp": "20240507111755",
+      "url": "https://www.landerschools.org/",
+      "station": "apptegy-fremont-1-wy",
+      "why": "storm day 2024-05-07 (market score 1.00)"
     },
     {
-      "timestamp": "20231125071438",
-      "url": "http://www.sweetwater1.org/",
-      "station": "finalsite-sweetwater-1-wy",
-      "why": "2023-11-25: within 2 days of one of its closure days"
+      "timestamp": "20230313180344",
+      "url": "https://www.landerschools.org/",
+      "station": "apptegy-fremont-1-wy",
+      "why": "storm day 2023-03-14 (market score 1.00)"
     },
     {
-      "timestamp": "20231125201112",
-      "url": "http://www.sweetwater1.org/",
-      "station": "finalsite-sweetwater-1-wy",
-      "why": "2023-11-26: within 2 days of one of its closure days"
+      "timestamp": "20240214224546",
+      "url": "https://www.landerschools.org/",
+      "station": "apptegy-fremont-1-wy",
+      "why": "storm day 2024-02-15 (market score 1.00)"
     },
     {
-      "timestamp": "20231124193029",
-      "url": "http://www.sweetwater1.org/",
-      "station": "finalsite-sweetwater-1-wy",
-      "why": "2023-11-25: within 2 days of one of its closure days"
+      "timestamp": "20240306140714",
+      "url": "https://www.landerschools.org/",
+      "station": "apptegy-fremont-1-wy",
+      "why": "storm day 2024-03-06 (market score 1.00)"
     },
     {
-      "timestamp": "20240106232445",
-      "url": "http://www.sweetwater1.org/",
-      "station": "finalsite-sweetwater-1-wy",
-      "why": "2024-01-07: within 2 days of one of its closure days"
+      "timestamp": "20240508111738",
+      "url": "https://www.landerschools.org/",
+      "station": "apptegy-fremont-1-wy",
+      "why": "storm day 2024-05-08 (market score 1.00)"
     },
     {
-      "timestamp": "20240107030838",
-      "url": "http://www.sweetwater1.org/",
-      "station": "finalsite-sweetwater-1-wy",
-      "why": "2024-01-07: within 2 days of one of its closure days"
+      "timestamp": "20240509111815",
+      "url": "https://www.landerschools.org/",
+      "station": "apptegy-fremont-1-wy",
+      "why": "storm day 2024-05-09 (market score 1.00)"
     },
     {
-      "timestamp": "20240106225829",
-      "url": "http://www.sweetwater1.org/",
-      "station": "finalsite-sweetwater-1-wy",
-      "why": "2024-01-07: within 2 days of one of its closure days"
+      "timestamp": "20230314055839",
+      "url": "https://www.landerschools.org/",
+      "station": "apptegy-fremont-1-wy",
+      "why": "storm day 2023-03-14 (market score 1.00)"
     },
     {
-      "timestamp": "20240107001634",
-      "url": "http://www.sweetwater1.org/",
-      "station": "finalsite-sweetwater-1-wy",
-      "why": "2024-01-07: within 2 days of one of its closure days"
+      "timestamp": "20230314105035",
+      "url": "https://www.landerschools.org/",
+      "station": "apptegy-fremont-1-wy",
+      "why": "storm day 2023-03-14 (market score 1.00)"
     },
     {
-      "timestamp": "20220414082642",
-      "url": "http://www.sweetwater1.org/",
-      "station": "finalsite-sweetwater-1-wy",
-      "why": "2022-04-14: within 2 days of one of its closure days"
+      "timestamp": "20240507231734",
+      "url": "https://www.landerschools.org/",
+      "station": "apptegy-fremont-1-wy",
+      "why": "storm day 2024-05-08 (market score 1.00)"
     },
     {
-      "timestamp": "20240106191455",
-      "url": "http://www.sweetwater1.org/",
-      "station": "finalsite-sweetwater-1-wy",
-      "why": "2024-01-07: within 2 days of one of its closure days"
+      "timestamp": "20240509122333",
+      "url": "https://www.landerschools.org/",
+      "station": "apptegy-fremont-1-wy",
+      "why": "storm day 2024-05-09 (market score 1.00)"
     },
     {
-      "timestamp": "20240108133116",
-      "url": "http://www.sweetwater1.org/",
-      "station": "finalsite-sweetwater-1-wy",
-      "why": "2024-01-08: within 2 days of one of its closure days"
+      "timestamp": "20230314223726",
+      "url": "https://www.landerschools.org/",
+      "station": "apptegy-fremont-1-wy",
+      "why": "storm day 2023-03-15 (market score 1.00)"
     },
     {
-      "timestamp": "20220413082646",
-      "url": "http://www.sweetwater1.org/",
-      "station": "finalsite-sweetwater-1-wy",
-      "why": "2022-04-13: within 2 days of one of its closure days"
+      "timestamp": "20230314195549",
+      "url": "https://www.landerschools.org/",
+      "station": "apptegy-fremont-1-wy",
+      "why": "storm day 2023-03-15 (market score 1.00)"
     },
     {
-      "timestamp": "20230109194014",
-      "url": "http://www.sweetwater1.org/",
-      "station": "finalsite-sweetwater-1-wy",
-      "why": "2023-01-10: within 2 days of one of its closure days"
+      "timestamp": "20230314234357",
+      "url": "https://www.landerschools.org/",
+      "station": "apptegy-fremont-1-wy",
+      "why": "storm day 2023-03-15 (market score 1.00)"
     },
     {
-      "timestamp": "20231014104636",
-      "url": "http://www.sweetwater1.org/",
-      "station": "finalsite-sweetwater-1-wy",
-      "why": "2023-10-14: within 2 days of one of its closure days"
+      "timestamp": "20240506111709",
+      "url": "https://www.landerschools.org/",
+      "station": "apptegy-fremont-1-wy",
+      "why": "storm day 2024-05-06 (market score 1.00)"
     },
     {
-      "timestamp": "20220108203405",
-      "url": "http://www.sweetwater1.org/",
-      "station": "finalsite-sweetwater-1-wy",
-      "why": "2022-01-09: within 2 days of one of its closure days"
+      "timestamp": "20230313225040",
+      "url": "https://www.landerschools.org/",
+      "station": "apptegy-fremont-1-wy",
+      "why": "storm day 2023-03-14 (market score 1.00)"
     },
     {
-      "timestamp": "20220108085136",
-      "url": "http://www.sweetwater1.org/",
-      "station": "finalsite-sweetwater-1-wy",
-      "why": "2022-01-08: within 2 days of one of its closure days"
+      "timestamp": "20230313232118",
+      "url": "https://www.landerschools.org/",
+      "station": "apptegy-fremont-1-wy",
+      "why": "storm day 2023-03-14 (market score 1.00)"
     },
     {
-      "timestamp": "20220105083624",
-      "url": "http://www.sweetwater1.org/",
-      "station": "finalsite-sweetwater-1-wy",
-      "why": "2022-01-05: within 2 days of one of its closure days"
+      "timestamp": "20230314151208",
+      "url": "https://www.landerschools.org/",
+      "station": "apptegy-fremont-1-wy",
+      "why": "storm day 2023-03-14 (market score 1.00)"
     },
     {
-      "timestamp": "20220107203550",
-      "url": "http://www.sweetwater1.org/",
-      "station": "finalsite-sweetwater-1-wy",
-      "why": "2022-01-08: within 2 days of one of its closure days"
+      "timestamp": "20240506231744",
+      "url": "https://www.landerschools.org/",
+      "station": "apptegy-fremont-1-wy",
+      "why": "storm day 2024-05-07 (market score 1.00)"
     },
     {
-      "timestamp": "20190122005909",
-      "url": "http://www.sweetwater1.org/",
-      "station": "finalsite-sweetwater-1-wy",
-      "why": "2019-01-22: within 2 days of one of its closure days"
+      "timestamp": "20230425105705",
+      "url": "https://www.landerschools.org/",
+      "station": "apptegy-fremont-1-wy",
+      "why": "storm day 2023-04-25 (market score 1.00)"
     },
     {
-      "timestamp": "20220109083454",
-      "url": "http://www.sweetwater1.org/",
-      "station": "finalsite-sweetwater-1-wy",
-      "why": "2022-01-09: within 2 days of one of its closure days"
+      "timestamp": "20230315101522",
+      "url": "https://www.landerschools.org/",
+      "station": "apptegy-fremont-1-wy",
+      "why": "storm day 2023-03-15 (market score 1.00)"
     },
     {
-      "timestamp": "20230110074023",
-      "url": "http://www.sweetwater1.org/",
-      "station": "finalsite-sweetwater-1-wy",
-      "why": "2023-01-10: within 2 days of one of its closure days"
+      "timestamp": "20230403161005",
+      "url": "https://www.landerschools.org/",
+      "station": "apptegy-fremont-1-wy",
+      "why": "storm day 2023-04-04 (market score 1.00)"
     },
     {
-      "timestamp": "20221230194025",
-      "url": "http://www.sweetwater1.org/",
-      "station": "finalsite-sweetwater-1-wy",
-      "why": "2022-12-31: within 2 days of one of its closure days"
+      "timestamp": "20230315021115",
+      "url": "https://www.landerschools.org/",
+      "station": "apptegy-fremont-1-wy",
+      "why": "storm day 2023-03-15 (market score 1.00)"
     },
     {
-      "timestamp": "20230104074049",
-      "url": "http://www.sweetwater1.org/",
-      "station": "finalsite-sweetwater-1-wy",
-      "why": "2023-01-04: within 2 days of one of its closure days"
+      "timestamp": "20240215223645",
+      "url": "https://www.landerschools.org/",
+      "station": "apptegy-fremont-1-wy",
+      "why": "storm day 2024-02-16 (market score 1.00)"
     },
     {
-      "timestamp": "20230103074030",
-      "url": "http://www.sweetwater1.org/",
-      "station": "finalsite-sweetwater-1-wy",
-      "why": "2023-01-03: within 2 days of one of its closure days"
+      "timestamp": "20230424224924",
+      "url": "https://www.landerschools.org/",
+      "station": "apptegy-fremont-1-wy",
+      "why": "storm day 2023-04-25 (market score 1.00)"
     },
     {
-      "timestamp": "20221231194018",
-      "url": "http://www.sweetwater1.org/",
-      "station": "finalsite-sweetwater-1-wy",
-      "why": "2023-01-01: within 2 days of one of its closure days"
+      "timestamp": "20240407223602",
+      "url": "https://www.landerschools.org/",
+      "station": "apptegy-fremont-1-wy",
+      "why": "storm day 2024-04-08 (market score 1.00)"
     },
     {
-      "timestamp": "20221218162736",
-      "url": "http://www.sweetwater1.org/",
-      "station": "finalsite-sweetwater-1-wy",
-      "why": "2022-12-19: within 2 days of one of its closure days"
+      "timestamp": "20240305103637",
+      "url": "https://www.landerschools.org/",
+      "station": "apptegy-fremont-1-wy",
+      "why": "storm day 2024-03-05 (market score 1.00)"
     },
     {
-      "timestamp": "20221225074033",
-      "url": "http://www.sweetwater1.org/",
-      "station": "finalsite-sweetwater-1-wy",
-      "why": "2022-12-25: within 2 days of one of its closure days"
+      "timestamp": "20231123112600",
+      "url": "https://www.landerschools.org/",
+      "station": "apptegy-fremont-1-wy",
+      "why": "storm day 2023-11-23 (market score 1.00)"
     },
     {
-      "timestamp": "20221220071726",
-      "url": "http://www.sweetwater1.org/",
-      "station": "finalsite-sweetwater-1-wy",
-      "why": "2022-12-20: within 2 days of one of its closure days"
+      "timestamp": "20240305223647",
+      "url": "https://www.landerschools.org/",
+      "station": "apptegy-fremont-1-wy",
+      "why": "storm day 2024-03-06 (market score 1.00)"
     },
     {
-      "timestamp": "20230101074057",
-      "url": "http://www.sweetwater1.org/",
-      "station": "finalsite-sweetwater-1-wy",
-      "why": "2023-01-01: within 2 days of one of its closure days"
+      "timestamp": "20231123223806",
+      "url": "https://www.landerschools.org/",
+      "station": "apptegy-fremont-1-wy",
+      "why": "storm day 2023-11-24 (market score 1.00)"
     },
     {
-      "timestamp": "20230109074101",
-      "url": "http://www.sweetwater1.org/",
-      "station": "finalsite-sweetwater-1-wy",
-      "why": "2023-01-09: within 2 days of one of its closure days"
+      "timestamp": "20231124103630",
+      "url": "https://www.landerschools.org/",
+      "station": "apptegy-fremont-1-wy",
+      "why": "storm day 2023-11-24 (market score 1.00)"
     },
     {
-      "timestamp": "20221224074016",
-      "url": "http://www.sweetwater1.org/",
-      "station": "finalsite-sweetwater-1-wy",
-      "why": "2022-12-24: within 2 days of one of its closure days"
+      "timestamp": "20231122211211",
+      "url": "https://www.landerschools.org/",
+      "station": "apptegy-fremont-1-wy",
+      "why": "storm day 2023-11-23 (market score 1.00)"
     },
     {
-      "timestamp": "20221219075956",
-      "url": "http://www.sweetwater1.org/",
-      "station": "finalsite-sweetwater-1-wy",
-      "why": "2022-12-19: within 2 days of one of its closure days"
+      "timestamp": "20240304223640",
+      "url": "https://www.landerschools.org/",
+      "station": "apptegy-fremont-1-wy",
+      "why": "storm day 2024-03-05 (market score 1.00)"
     },
     {
-      "timestamp": "20221219233756",
-      "url": "http://www.sweetwater1.org/",
-      "station": "finalsite-sweetwater-1-wy",
-      "why": "2022-12-20: within 2 days of one of its closure days"
+      "timestamp": "20240408103613",
+      "url": "https://www.landerschools.org/",
+      "station": "apptegy-fremont-1-wy",
+      "why": "storm day 2024-04-08 (market score 1.00)"
     },
     {
-      "timestamp": "20221223194036",
-      "url": "http://www.sweetwater1.org/",
-      "station": "finalsite-sweetwater-1-wy",
-      "why": "2022-12-24: within 2 days of one of its closure days"
+      "timestamp": "20240215103721",
+      "url": "https://www.landerschools.org/",
+      "station": "apptegy-fremont-1-wy",
+      "why": "storm day 2024-02-15 (market score 1.00)"
     },
     {
-      "timestamp": "20221211050936",
-      "url": "http://www.sweetwater1.org/",
-      "station": "finalsite-sweetwater-1-wy",
-      "why": "2022-12-11: within 2 days of one of its closure days"
+      "timestamp": "20230402192635",
+      "url": "https://www.landerschools.org/",
+      "station": "apptegy-fremont-1-wy",
+      "why": "storm day 2023-04-03 (market score 1.00)"
     },
     {
-      "timestamp": "20221211141111",
-      "url": "http://www.sweetwater1.org/",
-      "station": "finalsite-sweetwater-1-wy",
-      "why": "2022-12-11: within 2 days of one of its closure days"
+      "timestamp": "20230402165900",
+      "url": "https://www.landerschools.org/",
+      "station": "apptegy-fremont-1-wy",
+      "why": "storm day 2023-04-03 (market score 1.00)"
     },
     {
-      "timestamp": "20221212095728",
-      "url": "http://www.sweetwater1.org/",
-      "station": "finalsite-sweetwater-1-wy",
-      "why": "2022-12-12: within 2 days of one of its closure days"
+      "timestamp": "20230404061516",
+      "url": "https://www.landerschools.org/",
+      "station": "apptegy-fremont-1-wy",
+      "why": "storm day 2023-04-04 (market score 1.00)"
     },
     {
-      "timestamp": "20221101082607",
-      "url": "http://www.sweetwater1.org/",
-      "station": "finalsite-sweetwater-1-wy",
-      "why": "2022-11-01: within 2 days of one of its closure days"
+      "timestamp": "20230404150037",
+      "url": "https://www.landerschools.org/",
+      "station": "apptegy-fremont-1-wy",
+      "why": "storm day 2023-04-04 (market score 1.00)"
     },
     {
-      "timestamp": "20221104080536",
-      "url": "http://www.sweetwater1.org/",
-      "station": "finalsite-sweetwater-1-wy",
-      "why": "2022-11-04: within 2 days of one of its closure days"
+      "timestamp": "20240520231815",
+      "url": "https://www.landerschools.org/",
+      "station": "apptegy-fremont-1-wy",
+      "why": "storm day 2024-05-21 (market score 1.00)"
     },
     {
-      "timestamp": "20221105080544",
-      "url": "http://www.sweetwater1.org/",
-      "station": "finalsite-sweetwater-1-wy",
-      "why": "2022-11-05: within 2 days of one of its closure days"
+      "timestamp": "20230404045230",
+      "url": "https://www.landerschools.org/",
+      "station": "apptegy-fremont-1-wy",
+      "why": "storm day 2023-04-04 (market score 1.00)"
     },
     {
-      "timestamp": "20221102080514",
-      "url": "http://www.sweetwater1.org/",
-      "station": "finalsite-sweetwater-1-wy",
-      "why": "2022-11-02: within 2 days of one of its closure days"
+      "timestamp": "20231122190953",
+      "url": "https://www.landerschools.org/",
+      "station": "apptegy-fremont-1-wy",
+      "why": "storm day 2023-11-23 (market score 1.00)"
     },
     {
-      "timestamp": "20190102213947",
-      "url": "http://www.sweetwater1.org/",
-      "station": "finalsite-sweetwater-1-wy",
-      "why": "2019-01-03: within 2 days of one of its closure days"
+      "timestamp": "20240306103631",
+      "url": "https://www.landerschools.org/",
+      "station": "apptegy-fremont-1-wy",
+      "why": "storm day 2024-03-06 (market score 1.00)"
     },
     {
-      "timestamp": "20181230042746",
-      "url": "http://www.sweetwater1.org:80/",
-      "station": "finalsite-sweetwater-1-wy",
-      "why": "2018-12-30: within 2 days of one of its closure days"
+      "timestamp": "20240521111825",
+      "url": "https://www.landerschools.org/",
+      "station": "apptegy-fremont-1-wy",
+      "why": "storm day 2024-05-21 (market score 1.00)"
     },
     {
-      "timestamp": "20190503064854",
-      "url": "http://www.sweetwater1.org:80/",
-      "station": "finalsite-sweetwater-1-wy",
-      "why": "2019-05-03: within 2 days of one of its closure days"
+      "timestamp": "20240227002603",
+      "url": "https://www.landerschools.org/",
+      "station": "apptegy-fremont-1-wy",
+      "why": "storm day 2024-02-27 (market score 1.00)"
     },
     {
-      "timestamp": "20220201205821",
-      "url": "https://www.conradschools.org/",
-      "station": "apptegy-conrad-mt",
-      "why": "2022-02-02: within 2 days of one of its closure days"
+      "timestamp": "20240301020433",
+      "url": "https://www.landerschools.org/",
+      "station": "apptegy-fremont-1-wy",
+      "why": "storm day 2024-03-01 (market score 1.00)"
     },
     {
-      "timestamp": "20210401153140",
-      "url": "https://www.conradschools.org/",
-      "station": "apptegy-conrad-mt",
-      "why": "2021-04-01: within 2 days of one of its closure days"
+      "timestamp": "20240301005040",
+      "url": "https://www.landerschools.org/",
+      "station": "apptegy-fremont-1-wy",
+      "why": "storm day 2024-03-01 (market score 1.00)"
     },
     {
-      "timestamp": "20250202152352",
-      "url": "https://dbps.k12.mt.us/",
-      "station": "apptegy-dutton-brady-mt",
-      "why": "2025-02-02: within 2 days of one of its closure days"
+      "timestamp": "20220531111012",
+      "url": "https://www.landerschools.org/",
+      "station": "apptegy-fremont-1-wy",
+      "why": "storm day 2022-05-31 (market score 1.00)"
     },
     {
-      "timestamp": "20210101144614",
-      "url": "https://www.noxonschools.com/",
-      "station": "apptegy-noxon-mt",
-      "why": "2021-01-01: within 2 days of one of its closure days"
+      "timestamp": "20220529231012",
+      "url": "https://www.landerschools.org/",
+      "station": "apptegy-fremont-1-wy",
+      "why": "storm day 2022-05-30 (market score 1.00)"
     },
     {
-      "timestamp": "20231206110055",
-      "url": "https://www.philipsburgschools.org/",
-      "station": "apptegy-philipsburg-mt",
-      "why": "2023-12-06: within 2 days of one of its closure days"
+      "timestamp": "20220530231046",
+      "url": "https://www.landerschools.org/",
+      "station": "apptegy-fremont-1-wy",
+      "why": "storm day 2022-05-31 (market score 1.00)"
     },
     {
-      "timestamp": "20230307214613",
-      "url": "https://www.philipsburgschools.org/",
-      "station": "apptegy-philipsburg-mt",
-      "why": "2023-03-08: within 2 days of one of its closure days"
+      "timestamp": "20220530114810",
+      "url": "https://www.landerschools.org/",
+      "station": "apptegy-fremont-1-wy",
+      "why": "storm day 2022-05-30 (market score 1.00)"
     },
     {
-      "timestamp": "20220101181406",
-      "url": "https://www.philipsburgschools.org/",
-      "station": "apptegy-philipsburg-mt",
-      "why": "2022-01-02: within 2 days of one of its closure days"
+      "timestamp": "20221202150100",
+      "url": "https://www.landerschools.org/",
+      "station": "apptegy-fremont-1-wy",
+      "why": "storm day 2022-12-02 (market score 1.00)"
     },
     {
-      "timestamp": "20221202002248",
-      "url": "https://www.philipsburgschools.org/",
-      "station": "apptegy-philipsburg-mt",
-      "why": "2022-12-02: within 2 days of one of its closure days"
+      "timestamp": "20221202040625",
+      "url": "https://www.landerschools.org/",
+      "station": "apptegy-fremont-1-wy",
+      "why": "storm day 2022-12-02 (market score 1.00)"
     },
     {
-      "timestamp": "20211008160217",
-      "url": "https://www.philipsburgschools.org/",
-      "station": "apptegy-philipsburg-mt",
-      "why": "2021-10-09: within 2 days of one of its closure days"
+      "timestamp": "20221202061931",
+      "url": "https://www.landerschools.org/",
+      "station": "apptegy-fremont-1-wy",
+      "why": "storm day 2022-12-02 (market score 1.00)"
     },
     {
-      "timestamp": "20230322025742",
-      "url": "https://www.philipsburgschools.org/",
-      "station": "apptegy-philipsburg-mt",
-      "why": "2023-03-22: within 2 days of one of its closure days"
+      "timestamp": "20221108110137",
+      "url": "https://www.landerschools.org/",
+      "station": "apptegy-fremont-1-wy",
+      "why": "storm day 2022-11-08 (market score 1.00)"
     },
     {
-      "timestamp": "20230208164744",
-      "url": "https://www.philipsburgschools.org/",
-      "station": "apptegy-philipsburg-mt",
-      "why": "2023-02-09: within 2 days of one of its closure days"
+      "timestamp": "20221106230140",
+      "url": "https://www.landerschools.org/",
+      "station": "apptegy-fremont-1-wy",
+      "why": "storm day 2022-11-07 (market score 1.00)"
     },
     {
-      "timestamp": "20220401204038",
-      "url": "https://www.philipsburgschools.org/",
-      "station": "apptegy-philipsburg-mt",
-      "why": "2022-04-02: within 2 days of one of its closure days"
+      "timestamp": "20240314111425",
+      "url": "https://www.landerschools.org/",
+      "station": "apptegy-fremont-1-wy",
+      "why": "storm day 2024-03-14 (market score 1.00)"
     },
     {
-      "timestamp": "20210305161110",
-      "url": "https://www.philipsburgschools.org/",
-      "station": "apptegy-philipsburg-mt",
-      "why": "2021-03-06: within 2 days of one of its closure days"
+      "timestamp": "20240313103952",
+      "url": "https://www.landerschools.org/",
+      "station": "apptegy-fremont-1-wy",
+      "why": "storm day 2024-03-13 (market score 1.00)"
     },
     {
-      "timestamp": "20210101143006",
-      "url": "https://www.philipsburgschools.org/",
-      "station": "apptegy-philipsburg-mt",
-      "why": "2021-01-01: within 2 days of one of its closure days"
+      "timestamp": "20240313021417",
+      "url": "https://www.landerschools.org/",
+      "station": "apptegy-fremont-1-wy",
+      "why": "storm day 2024-03-13 (market score 1.00)"
+    },
+    {
+      "timestamp": "20221107110141",
+      "url": "https://www.landerschools.org/",
+      "station": "apptegy-fremont-1-wy",
+      "why": "storm day 2022-11-07 (market score 1.00)"
+    },
+    {
+      "timestamp": "20221127230440",
+      "url": "https://www.landerschools.org/",
+      "station": "apptegy-fremont-1-wy",
+      "why": "storm day 2022-11-28 (market score 1.00)"
+    },
+    {
+      "timestamp": "20221128110120",
+      "url": "https://www.landerschools.org/",
+      "station": "apptegy-fremont-1-wy",
+      "why": "storm day 2022-11-28 (market score 1.00)"
+    },
+    {
+      "timestamp": "20230404050307",
+      "url": "https://www.landerschools.org/",
+      "station": "apptegy-fremont-1-wy",
+      "why": "storm day 2023-04-04 (market score 1.00)"
+    },
+    {
+      "timestamp": "20221107230127",
+      "url": "https://www.landerschools.org/",
+      "station": "apptegy-fremont-1-wy",
+      "why": "storm day 2022-11-08 (market score 1.00)"
+    },
+    {
+      "timestamp": "20221201005106",
+      "url": "https://www.landerschools.org/",
+      "station": "apptegy-fremont-1-wy",
+      "why": "storm day 2022-12-01 (market score 1.00)"
+    },
+    {
+      "timestamp": "20230129231431",
+      "url": "https://www.landerschools.org/",
+      "station": "apptegy-fremont-1-wy",
+      "why": "storm day 2023-01-30 (market score 0.50)"
+    },
+    {
+      "timestamp": "20230130225357",
+      "url": "https://www.landerschools.org/",
+      "station": "apptegy-fremont-1-wy",
+      "why": "storm day 2023-01-31 (market score 0.50)"
+    },
+    {
+      "timestamp": "20230130105133",
+      "url": "https://www.landerschools.org/",
+      "station": "apptegy-fremont-1-wy",
+      "why": "storm day 2023-01-30 (market score 0.50)"
+    },
+    {
+      "timestamp": "20230131124203",
+      "url": "https://www.landerschools.org/",
+      "station": "apptegy-fremont-1-wy",
+      "why": "storm day 2023-01-31 (market score 0.50)"
+    },
+    {
+      "timestamp": "20170426054145",
+      "url": "http://www.landerschools.org:80/",
+      "station": "apptegy-fremont-1-wy",
+      "why": "storm day 2017-04-26 (market score 0.25)"
+    },
+    {
+      "timestamp": "20180225222447",
+      "url": "http://www.landerschools.org:80/",
+      "station": "apptegy-fremont-1-wy",
+      "why": "storm day 2018-02-26 (market score 0.25)"
+    },
+    {
+      "timestamp": "20181007202534",
+      "url": "http://www.landerschools.org:80/",
+      "station": "apptegy-fremont-1-wy",
+      "why": "storm day 2018-10-08 (market score 0.25)"
+    },
+    {
+      "timestamp": "20180215012938",
+      "url": "http://www.landerschools.org:80/",
+      "station": "apptegy-fremont-1-wy",
+      "why": "storm day 2018-02-15 (market score 0.25)"
+    },
+    {
+      "timestamp": "20171221033030",
+      "url": "http://www.landerschools.org:80/",
+      "station": "apptegy-fremont-1-wy",
+      "why": "storm day 2017-12-21 (market score 0.25)"
+    },
+    {
+      "timestamp": "20230125104939",
+      "url": "https://www.landerschools.org/",
+      "station": "apptegy-fremont-1-wy",
+      "why": "storm day 2023-01-25 (market score 0.25)"
+    },
+    {
+      "timestamp": "20230124224914",
+      "url": "https://www.landerschools.org/",
+      "station": "apptegy-fremont-1-wy",
+      "why": "storm day 2023-01-25 (market score 0.25)"
     }
   ]
 }
