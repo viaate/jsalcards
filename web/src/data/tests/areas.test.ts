@@ -209,4 +209,28 @@ describe('reading the area files', () => {
     const failing = createAreaSource(files, () => Promise.reject(new Error('offline')));
     expect(await failing.get('64111')).toBeNull();
   });
+
+  it('asks again for a file that could not be read, and keeps what was read', async () => {
+    let offline = 2;
+    const fetchImpl = vi.fn((url: string) => {
+      if (offline > 0 && (url.includes('index') ? offline === 2 : offline === 1)) {
+        offline -= 1;
+        return Promise.reject(new Error('offline'));
+      }
+      return Promise.resolve(jsonResponse(url.includes('index') ? index : shard([FULL, SPARSE])));
+    });
+    const files = createDataFiles(['schools/areas/index.0123456789.json'], ROOT);
+    const source = createAreaSource(files, fetchImpl);
+    // The index fails, then the shard, then both are read, and each once more after that.
+    expect(await source.get('64111')).toBeNull();
+    expect(await source.get('64111')).toBeNull();
+    expect(await source.get('64111')).toMatchObject({ zip: '64111' });
+    expect(await source.get('64112')).toMatchObject({ zip: '64112' });
+    expect(fetchImpl.mock.calls.map(([url]) => url)).toEqual([
+      `${ROOT}schools/areas/index.0123456789.json`,
+      `${ROOT}schools/areas/index.0123456789.json`,
+      `${ROOT}schools/areas/0.abcdefabcd.json`,
+      `${ROOT}schools/areas/0.abcdefabcd.json`,
+    ]);
+  });
 });

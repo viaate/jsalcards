@@ -2,7 +2,7 @@
  * Reads the schools around a ZIP code (areas-format.ts): the shard index
  * once, then the one shard the ZIP code is in. Each file is read once per
  * page; a file that cannot be read, or does not match its format, reads as
- * nothing.
+ * nothing, and is asked for again the next time.
  */
 
 import type { DirectoryStamp } from '../types/generated';
@@ -165,9 +165,13 @@ export function createAreaSource(files: DataFiles, fetchImpl: Fetch = fetchFile)
     shipped,
     async get(zip) {
       if (!shipped || !ZIP.test(zip)) return null;
-      index ??= readIndex();
-      const found = await index;
-      if (found === null) return null;
+      const reading = (index ??= readIndex());
+      const found = await reading;
+      // A file that cannot be read is asked for again next time: the failure can pass.
+      if (found === null) {
+        if (index === reading) index = null;
+        return null;
+      }
       const n = zipShardOf(found.firstZips, zip);
       const name = found.files[n];
       if (name === undefined) return null;
@@ -177,6 +181,7 @@ export function createAreaSource(files: DataFiles, fetchImpl: Fetch = fetchFile)
         shards.set(n, shard);
       }
       const loaded = await shard;
+      if (loaded === null && shards.get(n) === shard) shards.delete(n);
       if (loaded === null || !sameStamp(loaded.directory, found.directory)) return null;
       const row = loaded.areas.find((area) => area[0] === zip);
       return row === undefined ? null : areaOf(row, loaded.directory);

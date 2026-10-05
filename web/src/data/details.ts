@@ -2,7 +2,8 @@
  * Reads what the directory says about one school (details-format.ts): the
  * shard index once, then the one shard the school is in. Each file is read
  * once per page; a file that cannot be read, or does not match its format,
- * reads as nothing, and the panel shows what it has without it.
+ * reads as nothing, and the panel shows what it has without it until it is
+ * asked for again.
  */
 
 import type { DirectoryStamp, SchoolId } from '../types/generated';
@@ -186,9 +187,13 @@ export function createDetailsSource(files: DataFiles, fetchImpl: Fetch = fetchFi
   return {
     async get(id) {
       if (!files.has(DETAILS_INDEX_PATH)) return null;
-      index ??= readIndex();
-      const found = await index;
-      if (found === null) return null;
+      const reading = (index ??= readIndex());
+      const found = await reading;
+      // A file that cannot be read is asked for again next time: the failure can pass.
+      if (found === null) {
+        if (index === reading) index = null;
+        return null;
+      }
       const n = shardOf(found.firstIds, id);
       const name = found.files[n];
       if (name === undefined) return null;
@@ -198,6 +203,7 @@ export function createDetailsSource(files: DataFiles, fetchImpl: Fetch = fetchFi
         shards.set(n, shard);
       }
       const loaded = await shard;
+      if (loaded === null && shards.get(n) === shard) shards.delete(n);
       if (loaded === null || !sameStamp(loaded.directory, found.directory)) return null;
       const at = loaded.rows.findIndex((row) => row[0] === id);
       const row = loaded.rows[at];
