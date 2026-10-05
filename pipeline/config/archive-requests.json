@@ -1,1108 +1,1108 @@
 {
   "snapshots": [
     {
-      "timestamp": "20230426235341",
+      "timestamp": "20231104225116",
       "url": "https://www.landerschools.org/",
       "station": "apptegy-fremont-1-wy",
-      "why": "storm day 2023-04-27 (market score 0.25)"
+      "why": "2023-11-05: within 2 days of one of its closure days"
     },
     {
-      "timestamp": "20230109225000",
+      "timestamp": "20220503111821",
       "url": "https://www.landerschools.org/",
       "station": "apptegy-fremont-1-wy",
-      "why": "storm day 2023-01-10 (market score 0.25)"
+      "why": "2022-05-03: within 2 days of one of its closure days"
     },
     {
-      "timestamp": "20230427105417",
+      "timestamp": "20220505111232",
       "url": "https://www.landerschools.org/",
       "station": "apptegy-fremont-1-wy",
-      "why": "storm day 2023-04-27 (market score 0.25)"
+      "why": "2022-05-05: within 2 days of one of its closure days"
     },
     {
-      "timestamp": "20230110104948",
-      "url": "https://www.landerschools.org/",
-      "station": "apptegy-fremont-1-wy",
-      "why": "storm day 2023-01-10 (market score 0.25)"
-    },
-    {
-      "timestamp": "20221023230235",
-      "url": "https://www.landerschools.org/",
-      "station": "apptegy-fremont-1-wy",
-      "why": "storm day 2022-10-24 (market score 0.25)"
-    },
-    {
-      "timestamp": "20230108225001",
-      "url": "https://www.landerschools.org/",
-      "station": "apptegy-fremont-1-wy",
-      "why": "storm day 2023-01-09 (market score 0.25)"
-    },
-    {
-      "timestamp": "20230109104915",
-      "url": "https://www.landerschools.org/",
-      "station": "apptegy-fremont-1-wy",
-      "why": "storm day 2023-01-09 (market score 0.25)"
-    },
-    {
-      "timestamp": "20221024113506",
-      "url": "https://www.landerschools.org/",
-      "station": "apptegy-fremont-1-wy",
-      "why": "storm day 2022-10-24 (market score 0.25)"
-    },
-    {
-      "timestamp": "20221024230132",
-      "url": "https://www.landerschools.org/",
-      "station": "apptegy-fremont-1-wy",
-      "why": "storm day 2022-10-25 (market score 0.25)"
-    },
-    {
-      "timestamp": "20221025110127",
-      "url": "https://www.landerschools.org/",
-      "station": "apptegy-fremont-1-wy",
-      "why": "storm day 2022-10-25 (market score 0.25)"
-    },
-    {
-      "timestamp": "20240202081412",
-      "url": "https://www.landerschools.org/",
-      "station": "apptegy-fremont-1-wy",
-      "why": "storm day 2024-02-02 (market score 0.25)"
-    },
-    {
-      "timestamp": "20240202144745",
-      "url": "https://www.landerschools.org/",
-      "station": "apptegy-fremont-1-wy",
-      "why": "storm day 2024-02-02 (market score 0.25)"
-    },
-    {
-      "timestamp": "20240202014738",
-      "url": "https://www.landerschools.org/",
-      "station": "apptegy-fremont-1-wy",
-      "why": "storm day 2024-02-02 (market score 0.25)"
-    },
-    {
-      "timestamp": "20240202103656",
-      "url": "https://www.landerschools.org/",
-      "station": "apptegy-fremont-1-wy",
-      "why": "storm day 2024-02-02 (market score 0.25)"
-    },
-    {
-      "timestamp": "20240201223656",
-      "url": "https://www.landerschools.org/",
-      "station": "apptegy-fremont-1-wy",
-      "why": "storm day 2024-02-02 (market score 0.25)"
-    },
-    {
-      "timestamp": "20240503111731",
-      "url": "https://www.landerschools.org/",
-      "station": "apptegy-fremont-1-wy",
-      "why": "storm day 2024-05-03 (market score 0.25)"
-    },
-    {
-      "timestamp": "20240207031045",
-      "url": "https://www.landerschools.org/",
-      "station": "apptegy-fremont-1-wy",
-      "why": "storm day 2024-02-07 (market score 0.25)"
-    },
-    {
-      "timestamp": "20240208103647",
-      "url": "https://www.landerschools.org/",
-      "station": "apptegy-fremont-1-wy",
-      "why": "storm day 2024-02-08 (market score 0.25)"
-    },
-    {
-      "timestamp": "20240204223634",
-      "url": "https://www.landerschools.org/",
-      "station": "apptegy-fremont-1-wy",
-      "why": "storm day 2024-02-05 (market score 0.25)"
-    },
-    {
-      "timestamp": "20231103123758",
-      "url": "https://www.landerschools.org/",
-      "station": "apptegy-fremont-1-wy",
-      "why": "storm day 2023-11-03 (market score 0.25)"
-    },
-    {
-      "timestamp": "20240207010610",
-      "url": "https://www.landerschools.org/",
-      "station": "apptegy-fremont-1-wy",
-      "why": "storm day 2024-02-07 (market score 0.25)"
-    },
-    {
-      "timestamp": "20240207103752",
-      "url": "https://www.landerschools.org/",
-      "station": "apptegy-fremont-1-wy",
-      "why": "storm day 2024-02-07 (market score 0.25)"
-    },
-    {
-      "timestamp": "20240206223649",
-      "url": "https://www.landerschools.org/",
-      "station": "apptegy-fremont-1-wy",
-      "why": "storm day 2024-02-07 (market score 0.25)"
-    },
-    {
-      "timestamp": "20240207124941",
-      "url": "https://www.landerschools.org/",
-      "station": "apptegy-fremont-1-wy",
-      "why": "storm day 2024-02-07 (market score 0.25)"
-    },
-    {
-      "timestamp": "20240206195817",
-      "url": "https://www.landerschools.org/",
-      "station": "apptegy-fremont-1-wy",
-      "why": "storm day 2024-02-07 (market score 0.25)"
-    },
-    {
-      "timestamp": "20240205102315",
-      "url": "https://www.landerschools.org/",
-      "station": "apptegy-fremont-1-wy",
-      "why": "storm day 2024-02-05 (market score 0.25)"
-    },
-    {
-      "timestamp": "20240207223658",
-      "url": "https://www.landerschools.org/",
-      "station": "apptegy-fremont-1-wy",
-      "why": "storm day 2024-02-08 (market score 0.25)"
-    },
-    {
-      "timestamp": "20240204210147",
-      "url": "https://www.landerschools.org/",
-      "station": "apptegy-fremont-1-wy",
-      "why": "storm day 2024-02-05 (market score 0.25)"
-    },
-    {
-      "timestamp": "20240205112531",
-      "url": "https://www.landerschools.org/",
-      "station": "apptegy-fremont-1-wy",
-      "why": "storm day 2024-02-05 (market score 0.25)"
-    },
-    {
-      "timestamp": "20230329224948",
-      "url": "https://www.landerschools.org/",
-      "station": "apptegy-fremont-1-wy",
-      "why": "storm day 2023-03-30 (market score 0.25)"
-    },
-    {
-      "timestamp": "20240213071100",
-      "url": "https://www.landerschools.org/",
-      "station": "apptegy-fremont-1-wy",
-      "why": "storm day 2024-02-13 (market score 0.25)"
-    },
-    {
-      "timestamp": "20240502231904",
-      "url": "https://www.landerschools.org/",
-      "station": "apptegy-fremont-1-wy",
-      "why": "storm day 2024-05-03 (market score 0.25)"
-    },
-    {
-      "timestamp": "20230321063452",
-      "url": "https://www.landerschools.org/",
-      "station": "apptegy-fremont-1-wy",
-      "why": "storm day 2023-03-21 (market score 0.25)"
-    },
-    {
-      "timestamp": "20230320090203",
-      "url": "https://www.landerschools.org/",
-      "station": "apptegy-fremont-1-wy",
-      "why": "storm day 2023-03-20 (market score 0.25)"
-    },
-    {
-      "timestamp": "20230320114007",
-      "url": "https://www.landerschools.org/",
-      "station": "apptegy-fremont-1-wy",
-      "why": "storm day 2023-03-20 (market score 0.25)"
-    },
-    {
-      "timestamp": "20230320130442",
-      "url": "https://www.landerschools.org/",
-      "station": "apptegy-fremont-1-wy",
-      "why": "storm day 2023-03-20 (market score 0.25)"
-    },
-    {
-      "timestamp": "20230319211003",
-      "url": "https://www.landerschools.org/",
-      "station": "apptegy-fremont-1-wy",
-      "why": "storm day 2023-03-20 (market score 0.25)"
-    },
-    {
-      "timestamp": "20230319165125",
-      "url": "https://www.landerschools.org/",
-      "station": "apptegy-fremont-1-wy",
-      "why": "storm day 2023-03-20 (market score 0.25)"
-    },
-    {
-      "timestamp": "20230320170715",
-      "url": "https://www.landerschools.org/",
-      "station": "apptegy-fremont-1-wy",
-      "why": "storm day 2023-03-21 (market score 0.25)"
-    },
-    {
-      "timestamp": "20230321160238",
-      "url": "https://www.landerschools.org/",
-      "station": "apptegy-fremont-1-wy",
-      "why": "storm day 2023-03-22 (market score 0.25)"
-    },
-    {
-      "timestamp": "20230320041618",
-      "url": "https://www.landerschools.org/",
-      "station": "apptegy-fremont-1-wy",
-      "why": "storm day 2023-03-20 (market score 0.25)"
-    },
-    {
-      "timestamp": "20230319234116",
-      "url": "https://www.landerschools.org/",
-      "station": "apptegy-fremont-1-wy",
-      "why": "storm day 2023-03-20 (market score 0.25)"
-    },
-    {
-      "timestamp": "20230320124343",
-      "url": "https://www.landerschools.org/",
-      "station": "apptegy-fremont-1-wy",
-      "why": "storm day 2023-03-20 (market score 0.25)"
-    },
-    {
-      "timestamp": "20240328111917",
-      "url": "https://www.landerschools.org/",
-      "station": "apptegy-fremont-1-wy",
-      "why": "storm day 2024-03-28 (market score 0.25)"
-    },
-    {
-      "timestamp": "20221101230120",
-      "url": "https://www.landerschools.org/",
-      "station": "apptegy-fremont-1-wy",
-      "why": "storm day 2022-11-02 (market score 0.25)"
-    },
-    {
-      "timestamp": "20240328004717",
-      "url": "https://www.landerschools.org/",
-      "station": "apptegy-fremont-1-wy",
-      "why": "storm day 2024-03-28 (market score 0.25)"
-    },
-    {
-      "timestamp": "20230330041159",
-      "url": "https://www.landerschools.org/",
-      "station": "apptegy-fremont-1-wy",
-      "why": "storm day 2023-03-30 (market score 0.25)"
-    },
-    {
-      "timestamp": "20230330061203",
-      "url": "https://www.landerschools.org/",
-      "station": "apptegy-fremont-1-wy",
-      "why": "storm day 2023-03-30 (market score 0.25)"
-    },
-    {
-      "timestamp": "20240523112512",
-      "url": "https://www.landerschools.org/",
-      "station": "apptegy-fremont-1-wy",
-      "why": "storm day 2024-05-23 (market score 0.25)"
-    },
-    {
-      "timestamp": "20230330110326",
-      "url": "https://www.landerschools.org/",
-      "station": "apptegy-fremont-1-wy",
-      "why": "storm day 2023-03-30 (market score 0.25)"
-    },
-    {
-      "timestamp": "20230320182104",
-      "url": "https://www.landerschools.org/",
-      "station": "apptegy-fremont-1-wy",
-      "why": "storm day 2023-03-21 (market score 0.25)"
-    },
-    {
-      "timestamp": "20240523001349",
-      "url": "https://www.landerschools.org/",
-      "station": "apptegy-fremont-1-wy",
-      "why": "storm day 2024-05-23 (market score 0.25)"
-    },
-    {
-      "timestamp": "20230421105000",
-      "url": "https://www.landerschools.org/",
-      "station": "apptegy-fremont-1-wy",
-      "why": "storm day 2023-04-21 (market score 0.25)"
-    },
-    {
-      "timestamp": "20230420105147",
-      "url": "https://www.landerschools.org/",
-      "station": "apptegy-fremont-1-wy",
-      "why": "storm day 2023-04-20 (market score 0.25)"
-    },
-    {
-      "timestamp": "20230421152737",
-      "url": "https://www.landerschools.org/",
-      "station": "apptegy-fremont-1-wy",
-      "why": "storm day 2023-04-21 (market score 0.25)"
-    },
-    {
-      "timestamp": "20230420001731",
-      "url": "https://www.landerschools.org/",
-      "station": "apptegy-fremont-1-wy",
-      "why": "storm day 2023-04-20 (market score 0.25)"
-    },
-    {
-      "timestamp": "20230420224912",
-      "url": "https://www.landerschools.org/",
-      "station": "apptegy-fremont-1-wy",
-      "why": "storm day 2023-04-21 (market score 0.25)"
-    },
-    {
-      "timestamp": "20240426014608",
-      "url": "https://www.landerschools.org/",
-      "station": "apptegy-fremont-1-wy",
-      "why": "storm day 2024-04-26 (market score 0.25)"
-    },
-    {
-      "timestamp": "20230424140833",
-      "url": "https://www.landerschools.org/",
-      "station": "apptegy-fremont-1-wy",
-      "why": "storm day 2023-04-24 (market score 0.25)"
-    },
-    {
-      "timestamp": "20240426112505",
-      "url": "https://www.landerschools.org/",
-      "station": "apptegy-fremont-1-wy",
-      "why": "storm day 2024-04-26 (market score 0.25)"
-    },
-    {
-      "timestamp": "20230111104945",
-      "url": "https://www.landerschools.org/",
-      "station": "apptegy-fremont-1-wy",
-      "why": "storm day 2023-01-11 (market score 0.25)"
-    },
-    {
-      "timestamp": "20240311224038",
-      "url": "https://www.landerschools.org/",
-      "station": "apptegy-fremont-1-wy",
-      "why": "storm day 2024-03-12 (market score 0.25)"
-    },
-    {
-      "timestamp": "20230110224944",
-      "url": "https://www.landerschools.org/",
-      "station": "apptegy-fremont-1-wy",
-      "why": "storm day 2023-01-11 (market score 0.25)"
-    },
-    {
-      "timestamp": "20240312114334",
-      "url": "https://www.landerschools.org/",
-      "station": "apptegy-fremont-1-wy",
-      "why": "storm day 2024-03-12 (market score 0.25)"
-    },
-    {
-      "timestamp": "20230115225004",
-      "url": "https://www.landerschools.org/",
-      "station": "apptegy-fremont-1-wy",
-      "why": "storm day 2023-01-16 (market score 0.25)"
-    },
-    {
-      "timestamp": "20221102110306",
-      "url": "https://www.landerschools.org/",
-      "station": "apptegy-fremont-1-wy",
-      "why": "storm day 2022-11-02 (market score 0.25)"
-    },
-    {
-      "timestamp": "20230418110129",
-      "url": "https://www.landerschools.org/",
-      "station": "apptegy-fremont-1-wy",
-      "why": "storm day 2023-04-18 (market score 0.25)"
-    },
-    {
-      "timestamp": "20230321192605",
-      "url": "https://www.landerschools.org/",
-      "station": "apptegy-fremont-1-wy",
-      "why": "storm day 2023-03-22 (market score 0.25)"
-    },
-    {
-      "timestamp": "20230413133219",
-      "url": "https://www.landerschools.org/",
-      "station": "apptegy-fremont-1-wy",
-      "why": "storm day 2023-04-13 (market score 0.25)"
-    },
-    {
-      "timestamp": "20230413141351",
-      "url": "https://www.landerschools.org/",
-      "station": "apptegy-fremont-1-wy",
-      "why": "storm day 2023-04-13 (market score 0.25)"
-    },
-    {
-      "timestamp": "20221102230117",
-      "url": "https://www.landerschools.org/",
-      "station": "apptegy-fremont-1-wy",
-      "why": "storm day 2022-11-03 (market score 0.25)"
-    },
-    {
-      "timestamp": "20230417225005",
-      "url": "https://www.landerschools.org/",
-      "station": "apptegy-fremont-1-wy",
-      "why": "storm day 2023-04-18 (market score 0.25)"
-    },
-    {
-      "timestamp": "20221103110138",
-      "url": "https://www.landerschools.org/",
-      "station": "apptegy-fremont-1-wy",
-      "why": "storm day 2022-11-03 (market score 0.25)"
-    },
-    {
-      "timestamp": "20221108231548",
-      "url": "https://www.landerschools.org/",
-      "station": "apptegy-fremont-1-wy",
-      "why": "storm day 2022-11-09 (market score 0.25)"
-    },
-    {
-      "timestamp": "20221109110324",
-      "url": "https://www.landerschools.org/",
-      "station": "apptegy-fremont-1-wy",
-      "why": "storm day 2022-11-09 (market score 0.25)"
-    },
-    {
-      "timestamp": "20230116104954",
-      "url": "https://www.landerschools.org/",
-      "station": "apptegy-fremont-1-wy",
-      "why": "storm day 2023-01-16 (market score 0.25)"
-    },
-    {
-      "timestamp": "20250116022308",
-      "url": "https://www.landerschools.org/",
-      "station": "apptegy-fremont-1-wy",
-      "why": "2025-01-16: within 2 days of one of its closure days"
-    },
-    {
-      "timestamp": "20250215121625",
-      "url": "https://www.landerschools.org/",
-      "station": "apptegy-fremont-1-wy",
-      "why": "2025-02-15: within 2 days of one of its closure days"
-    },
-    {
-      "timestamp": "20241103131423",
-      "url": "https://www.landerschools.org/",
-      "station": "apptegy-fremont-1-wy",
-      "why": "2024-11-03: within 2 days of one of its closure days"
-    },
-    {
-      "timestamp": "20241119170450",
-      "url": "https://www.landerschools.org/",
-      "station": "apptegy-fremont-1-wy",
-      "why": "2024-11-20: within 2 days of one of its closure days"
-    },
-    {
-      "timestamp": "20241117094646",
-      "url": "https://www.landerschools.org/",
-      "station": "apptegy-fremont-1-wy",
-      "why": "2024-11-17: within 2 days of one of its closure days"
-    },
-    {
-      "timestamp": "20241124111804",
-      "url": "https://www.landerschools.org/",
-      "station": "apptegy-fremont-1-wy",
-      "why": "2024-11-24: within 2 days of one of its closure days"
-    },
-    {
-      "timestamp": "20241124080147",
-      "url": "https://www.landerschools.org/",
-      "station": "apptegy-fremont-1-wy",
-      "why": "2024-11-24: within 2 days of one of its closure days"
-    },
-    {
-      "timestamp": "20241120070011",
-      "url": "https://www.landerschools.org/",
-      "station": "apptegy-fremont-1-wy",
-      "why": "2024-11-20: within 2 days of one of its closure days"
-    },
-    {
-      "timestamp": "20241125005017",
-      "url": "https://www.landerschools.org/",
-      "station": "apptegy-fremont-1-wy",
-      "why": "2024-11-25: within 2 days of one of its closure days"
-    },
-    {
-      "timestamp": "20241113231628",
-      "url": "https://www.landerschools.org/",
-      "station": "apptegy-fremont-1-wy",
-      "why": "2024-11-14: within 2 days of one of its closure days"
-    },
-    {
-      "timestamp": "20241113161010",
-      "url": "https://www.landerschools.org/",
-      "station": "apptegy-fremont-1-wy",
-      "why": "2024-11-14: within 2 days of one of its closure days"
-    },
-    {
-      "timestamp": "20241114132310",
-      "url": "https://www.landerschools.org/",
-      "station": "apptegy-fremont-1-wy",
-      "why": "2024-11-14: within 2 days of one of its closure days"
-    },
-    {
-      "timestamp": "20241112220825",
-      "url": "https://www.landerschools.org/",
-      "station": "apptegy-fremont-1-wy",
-      "why": "2024-11-13: within 2 days of one of its closure days"
-    },
-    {
-      "timestamp": "20241113050353",
-      "url": "https://www.landerschools.org/",
-      "station": "apptegy-fremont-1-wy",
-      "why": "2024-11-13: within 2 days of one of its closure days"
-    },
-    {
-      "timestamp": "20241112174249",
-      "url": "https://www.landerschools.org/",
-      "station": "apptegy-fremont-1-wy",
-      "why": "2024-11-13: within 2 days of one of its closure days"
-    },
-    {
-      "timestamp": "20241101144453",
-      "url": "https://www.landerschools.org/",
-      "station": "apptegy-fremont-1-wy",
-      "why": "2024-11-01: within 2 days of one of its closure days"
-    },
-    {
-      "timestamp": "20241101134804",
-      "url": "https://www.landerschools.org/",
-      "station": "apptegy-fremont-1-wy",
-      "why": "2024-11-01: within 2 days of one of its closure days"
-    },
-    {
-      "timestamp": "20241101003950",
-      "url": "https://www.landerschools.org/",
-      "station": "apptegy-fremont-1-wy",
-      "why": "2024-11-01: within 2 days of one of its closure days"
-    },
-    {
-      "timestamp": "20241102173156",
-      "url": "https://www.landerschools.org/",
-      "station": "apptegy-fremont-1-wy",
-      "why": "2024-11-03: within 2 days of one of its closure days"
-    },
-    {
-      "timestamp": "20241108100727",
-      "url": "https://www.landerschools.org/",
-      "station": "apptegy-fremont-1-wy",
-      "why": "2024-11-08: within 2 days of one of its closure days"
-    },
-    {
-      "timestamp": "20241107111600",
-      "url": "https://www.landerschools.org/",
-      "station": "apptegy-fremont-1-wy",
-      "why": "2024-11-07: within 2 days of one of its closure days"
-    },
-    {
-      "timestamp": "20241107121258",
-      "url": "https://www.landerschools.org/",
-      "station": "apptegy-fremont-1-wy",
-      "why": "2024-11-07: within 2 days of one of its closure days"
-    },
-    {
-      "timestamp": "20241028000239",
-      "url": "https://www.landerschools.org/",
-      "station": "apptegy-fremont-1-wy",
-      "why": "2024-10-28: within 2 days of one of its closure days"
-    },
-    {
-      "timestamp": "20241030163452",
-      "url": "https://www.landerschools.org/",
-      "station": "apptegy-fremont-1-wy",
-      "why": "2024-10-31: within 2 days of one of its closure days"
-    },
-    {
-      "timestamp": "20241027062840",
-      "url": "https://www.landerschools.org/",
-      "station": "apptegy-fremont-1-wy",
-      "why": "2024-10-27: within 2 days of one of its closure days"
-    },
-    {
-      "timestamp": "20170514194604",
-      "url": "http://www.landerschools.org:80/",
-      "station": "apptegy-fremont-1-wy",
-      "why": "2017-05-15: within 2 days of one of its closure days"
-    },
-    {
-      "timestamp": "20180324052258",
-      "url": "http://www.landerschools.org:80/",
-      "station": "apptegy-fremont-1-wy",
-      "why": "2018-03-24: within 2 days of one of its closure days"
-    },
-    {
-      "timestamp": "20180117052947",
-      "url": "http://www.landerschools.org:80/",
-      "station": "apptegy-fremont-1-wy",
-      "why": "2018-01-17: within 2 days of one of its closure days"
-    },
-    {
-      "timestamp": "20171229224547",
-      "url": "http://www.landerschools.org:80/",
-      "station": "apptegy-fremont-1-wy",
-      "why": "2017-12-30: within 2 days of one of its closure days"
-    },
-    {
-      "timestamp": "20171227202108",
-      "url": "http://www.landerschools.org:80/",
-      "station": "apptegy-fremont-1-wy",
-      "why": "2017-12-28: within 2 days of one of its closure days"
-    },
-    {
-      "timestamp": "20180203231117",
-      "url": "http://www.landerschools.org:80/",
-      "station": "apptegy-fremont-1-wy",
-      "why": "2018-02-04: within 2 days of one of its closure days"
-    },
-    {
-      "timestamp": "20180212070145",
-      "url": "http://www.landerschools.org:80/",
-      "station": "apptegy-fremont-1-wy",
-      "why": "2018-02-12: within 2 days of one of its closure days"
-    },
-    {
-      "timestamp": "20171206024658",
-      "url": "http://www.landerschools.org:80/",
-      "station": "apptegy-fremont-1-wy",
-      "why": "2017-12-06: within 2 days of one of its closure days"
-    },
-    {
-      "timestamp": "20170920155256",
-      "url": "http://www.landerschools.org:80/",
-      "station": "apptegy-fremont-1-wy",
-      "why": "2017-09-20: within 2 days of one of its closure days"
-    },
-    {
-      "timestamp": "20190526220405",
-      "url": "http://www.landerschools.org:80/",
-      "station": "apptegy-fremont-1-wy",
-      "why": "2019-05-27: within 2 days of one of its closure days"
-    },
-    {
-      "timestamp": "20190122054209",
-      "url": "http://www.landerschools.org/",
-      "station": "apptegy-fremont-1-wy",
-      "why": "2019-01-22: within 2 days of one of its closure days"
-    },
-    {
-      "timestamp": "20230422225003",
-      "url": "https://www.landerschools.org/",
-      "station": "apptegy-fremont-1-wy",
-      "why": "2023-04-23: within 2 days of one of its closure days"
-    },
-    {
-      "timestamp": "20230201025520",
-      "url": "https://www.landerschools.org/",
-      "station": "apptegy-fremont-1-wy",
-      "why": "2023-02-01: within 2 days of one of its closure days"
-    },
-    {
-      "timestamp": "20230201173823",
-      "url": "https://www.landerschools.org/",
-      "station": "apptegy-fremont-1-wy",
-      "why": "2023-02-02: within 2 days of one of its closure days"
-    },
-    {
-      "timestamp": "20230401042633",
-      "url": "https://www.landerschools.org/",
-      "station": "apptegy-fremont-1-wy",
-      "why": "2023-04-01: within 2 days of one of its closure days"
-    },
-    {
-      "timestamp": "20230325045241",
-      "url": "https://www.landerschools.org/",
-      "station": "apptegy-fremont-1-wy",
-      "why": "2023-03-25: within 2 days of one of its closure days"
-    },
-    {
-      "timestamp": "20221129180903",
-      "url": "https://www.landerschools.org/",
-      "station": "apptegy-fremont-1-wy",
-      "why": "2022-11-30: within 2 days of one of its closure days"
-    },
-    {
-      "timestamp": "20240210154312",
-      "url": "https://www.landerschools.org/",
-      "station": "apptegy-fremont-1-wy",
-      "why": "2024-02-10: within 2 days of one of its closure days"
-    },
-    {
-      "timestamp": "20240227222310",
-      "url": "https://www.landerschools.org/",
-      "station": "apptegy-fremont-1-wy",
-      "why": "2024-02-28: within 2 days of one of its closure days"
-    },
-    {
-      "timestamp": "20240223204146",
-      "url": "https://www.landerschools.org/",
-      "station": "apptegy-fremont-1-wy",
-      "why": "2024-02-24: within 2 days of one of its closure days"
-    },
-    {
-      "timestamp": "20220407014447",
-      "url": "https://www.landerschools.org/",
-      "station": "apptegy-fremont-1-wy",
-      "why": "2022-04-07: within 2 days of one of its closure days"
-    },
-    {
-      "timestamp": "20230205013201",
-      "url": "https://www.landerschools.org/",
-      "station": "apptegy-fremont-1-wy",
-      "why": "2023-02-05: within 2 days of one of its closure days"
-    },
-    {
-      "timestamp": "20230204104935",
-      "url": "https://www.landerschools.org/",
-      "station": "apptegy-fremont-1-wy",
-      "why": "2023-02-04: within 2 days of one of its closure days"
-    },
-    {
-      "timestamp": "20230203232659",
-      "url": "https://www.landerschools.org/",
-      "station": "apptegy-fremont-1-wy",
-      "why": "2023-02-04: within 2 days of one of its closure days"
-    },
-    {
-      "timestamp": "20230118151924",
-      "url": "https://www.landerschools.org/",
-      "station": "apptegy-fremont-1-wy",
-      "why": "2023-01-18: within 2 days of one of its closure days"
-    },
-    {
-      "timestamp": "20211017063433",
-      "url": "https://www.landerschools.org/",
-      "station": "apptegy-fremont-1-wy",
-      "why": "2021-10-17: within 2 days of one of its closure days"
-    },
-    {
-      "timestamp": "20230126105011",
-      "url": "https://www.landerschools.org/",
-      "station": "apptegy-fremont-1-wy",
-      "why": "2023-01-26: within 2 days of one of its closure days"
-    },
-    {
-      "timestamp": "20230125224929",
-      "url": "https://www.landerschools.org/",
-      "station": "apptegy-fremont-1-wy",
-      "why": "2023-01-26: within 2 days of one of its closure days"
-    },
-    {
-      "timestamp": "20230124105048",
-      "url": "https://www.landerschools.org/",
-      "station": "apptegy-fremont-1-wy",
-      "why": "2023-01-24: within 2 days of one of its closure days"
-    },
-    {
-      "timestamp": "20230123105034",
-      "url": "https://www.landerschools.org/",
-      "station": "apptegy-fremont-1-wy",
-      "why": "2023-01-23: within 2 days of one of its closure days"
-    },
-    {
-      "timestamp": "20230123225009",
-      "url": "https://www.landerschools.org/",
-      "station": "apptegy-fremont-1-wy",
-      "why": "2023-01-24: within 2 days of one of its closure days"
-    },
-    {
-      "timestamp": "20230122224913",
-      "url": "https://www.landerschools.org/",
-      "station": "apptegy-fremont-1-wy",
-      "why": "2023-01-23: within 2 days of one of its closure days"
-    },
-    {
-      "timestamp": "20230201031012",
-      "url": "https://www.landerschools.org/",
-      "station": "apptegy-fremont-1-wy",
-      "why": "2023-02-01: within 2 days of one of its closure days"
-    },
-    {
-      "timestamp": "20230428221948",
-      "url": "https://www.landerschools.org/",
-      "station": "apptegy-fremont-1-wy",
-      "why": "2023-04-29: within 2 days of one of its closure days"
-    },
-    {
-      "timestamp": "20230428152909",
-      "url": "https://www.landerschools.org/",
-      "station": "apptegy-fremont-1-wy",
-      "why": "2023-04-28: within 2 days of one of its closure days"
-    },
-    {
-      "timestamp": "20230201225210",
-      "url": "https://www.landerschools.org/",
-      "station": "apptegy-fremont-1-wy",
-      "why": "2023-02-02: within 2 days of one of its closure days"
-    },
-    {
-      "timestamp": "20230425225538",
-      "url": "https://www.landerschools.org/",
-      "station": "apptegy-fremont-1-wy",
-      "why": "2023-04-26: within 2 days of one of its closure days"
-    },
-    {
-      "timestamp": "20230426105422",
-      "url": "https://www.landerschools.org/",
-      "station": "apptegy-fremont-1-wy",
-      "why": "2023-04-26: within 2 days of one of its closure days"
-    },
-    {
-      "timestamp": "20230201014504",
-      "url": "https://www.landerschools.org/",
-      "station": "apptegy-fremont-1-wy",
-      "why": "2023-02-01: within 2 days of one of its closure days"
-    },
-    {
-      "timestamp": "20230202091326",
-      "url": "https://www.landerschools.org/",
-      "station": "apptegy-fremont-1-wy",
-      "why": "2023-02-02: within 2 days of one of its closure days"
-    },
-    {
-      "timestamp": "20230202104956",
-      "url": "https://www.landerschools.org/",
-      "station": "apptegy-fremont-1-wy",
-      "why": "2023-02-02: within 2 days of one of its closure days"
-    },
-    {
-      "timestamp": "20231101184931",
-      "url": "https://www.landerschools.org/",
-      "station": "apptegy-fremont-1-wy",
-      "why": "2023-11-02: within 2 days of one of its closure days"
-    },
-    {
-      "timestamp": "20210226235241",
-      "url": "https://www.landerschools.org/",
-      "station": "apptegy-fremont-1-wy",
-      "why": "2021-02-27: within 2 days of one of its closure days"
-    },
-    {
-      "timestamp": "20221021230402",
-      "url": "https://www.landerschools.org/",
-      "station": "apptegy-fremont-1-wy",
-      "why": "2022-10-22: within 2 days of one of its closure days"
-    },
-    {
-      "timestamp": "20230129104937",
-      "url": "https://www.landerschools.org/",
-      "station": "apptegy-fremont-1-wy",
-      "why": "2023-01-29: within 2 days of one of its closure days"
-    },
-    {
-      "timestamp": "20221022230120",
-      "url": "https://www.landerschools.org/",
-      "station": "apptegy-fremont-1-wy",
-      "why": "2022-10-23: within 2 days of one of its closure days"
-    },
-    {
-      "timestamp": "20230128105813",
-      "url": "https://www.landerschools.org/",
-      "station": "apptegy-fremont-1-wy",
-      "why": "2023-01-28: within 2 days of one of its closure days"
-    },
-    {
-      "timestamp": "20230128225011",
-      "url": "https://www.landerschools.org/",
-      "station": "apptegy-fremont-1-wy",
-      "why": "2023-01-29: within 2 days of one of its closure days"
-    },
-    {
-      "timestamp": "20230128055905",
-      "url": "https://www.landerschools.org/",
-      "station": "apptegy-fremont-1-wy",
-      "why": "2023-01-28: within 2 days of one of its closure days"
-    },
-    {
-      "timestamp": "20221022110117",
-      "url": "https://www.landerschools.org/",
-      "station": "apptegy-fremont-1-wy",
-      "why": "2022-10-22: within 2 days of one of its closure days"
-    },
-    {
-      "timestamp": "20221023121245",
-      "url": "https://www.landerschools.org/",
-      "station": "apptegy-fremont-1-wy",
-      "why": "2022-10-23: within 2 days of one of its closure days"
-    },
-    {
-      "timestamp": "20221026230146",
-      "url": "https://www.landerschools.org/",
-      "station": "apptegy-fremont-1-wy",
-      "why": "2022-10-27: within 2 days of one of its closure days"
-    },
-    {
-      "timestamp": "20230103105112",
-      "url": "https://www.landerschools.org/",
-      "station": "apptegy-fremont-1-wy",
-      "why": "2023-01-03: within 2 days of one of its closure days"
-    },
-    {
-      "timestamp": "20230107224912",
-      "url": "https://www.landerschools.org/",
-      "station": "apptegy-fremont-1-wy",
-      "why": "2023-01-08: within 2 days of one of its closure days"
-    },
-    {
-      "timestamp": "20221025230235",
-      "url": "https://www.landerschools.org/",
-      "station": "apptegy-fremont-1-wy",
-      "why": "2022-10-26: within 2 days of one of its closure days"
-    },
-    {
-      "timestamp": "20210421015353",
-      "url": "https://www.landerschools.org/",
-      "station": "apptegy-fremont-1-wy",
-      "why": "2021-04-21: within 2 days of one of its closure days"
-    },
-    {
-      "timestamp": "20230108104958",
-      "url": "https://www.landerschools.org/",
-      "station": "apptegy-fremont-1-wy",
-      "why": "2023-01-08: within 2 days of one of its closure days"
-    },
-    {
-      "timestamp": "20221027113755",
-      "url": "https://www.landerschools.org/",
-      "station": "apptegy-fremont-1-wy",
-      "why": "2022-10-27: within 2 days of one of its closure days"
-    },
-    {
-      "timestamp": "20230107104945",
-      "url": "https://www.landerschools.org/",
-      "station": "apptegy-fremont-1-wy",
-      "why": "2023-01-07: within 2 days of one of its closure days"
-    },
-    {
-      "timestamp": "20230106224951",
-      "url": "https://www.landerschools.org/",
-      "station": "apptegy-fremont-1-wy",
-      "why": "2023-01-07: within 2 days of one of its closure days"
-    },
-    {
-      "timestamp": "20221026110123",
-      "url": "https://www.landerschools.org/",
-      "station": "apptegy-fremont-1-wy",
-      "why": "2022-10-26: within 2 days of one of its closure days"
-    },
-    {
-      "timestamp": "20230102224954",
-      "url": "https://www.landerschools.org/",
-      "station": "apptegy-fremont-1-wy",
-      "why": "2023-01-03: within 2 days of one of its closure days"
-    },
-    {
-      "timestamp": "20221210055401",
-      "url": "https://www.landerschools.org/",
-      "station": "apptegy-fremont-1-wy",
-      "why": "2022-12-10: within 2 days of one of its closure days"
-    },
-    {
-      "timestamp": "20221210010907",
-      "url": "https://www.landerschools.org/",
-      "station": "apptegy-fremont-1-wy",
-      "why": "2022-12-10: within 2 days of one of its closure days"
-    },
-    {
-      "timestamp": "20231028145433",
-      "url": "https://www.landerschools.org/",
-      "station": "apptegy-fremont-1-wy",
-      "why": "2023-10-28: within 2 days of one of its closure days"
-    },
-    {
-      "timestamp": "20221210133655",
-      "url": "https://www.landerschools.org/",
-      "station": "apptegy-fremont-1-wy",
-      "why": "2022-12-10: within 2 days of one of its closure days"
-    },
-    {
-      "timestamp": "20230210015752",
-      "url": "https://www.landerschools.org/",
-      "station": "apptegy-fremont-1-wy",
-      "why": "2023-02-10: within 2 days of one of its closure days"
-    },
-    {
-      "timestamp": "20231014000207",
-      "url": "https://www.landerschools.org/",
-      "station": "apptegy-fremont-1-wy",
-      "why": "2023-10-14: within 2 days of one of its closure days"
-    },
-    {
-      "timestamp": "20230209225900",
-      "url": "https://www.landerschools.org/",
-      "station": "apptegy-fremont-1-wy",
-      "why": "2023-02-10: within 2 days of one of its closure days"
-    },
-    {
-      "timestamp": "20240202225423",
-      "url": "https://www.landerschools.org/",
-      "station": "apptegy-fremont-1-wy",
-      "why": "2024-02-03: within 2 days of one of its closure days"
-    },
-    {
-      "timestamp": "20221030230134",
-      "url": "https://www.landerschools.org/",
-      "station": "apptegy-fremont-1-wy",
-      "why": "2022-10-31: within 2 days of one of its closure days"
-    },
-    {
-      "timestamp": "20221031110121",
-      "url": "https://www.landerschools.org/",
-      "station": "apptegy-fremont-1-wy",
-      "why": "2022-10-31: within 2 days of one of its closure days"
-    },
-    {
-      "timestamp": "20221101110615",
-      "url": "https://www.landerschools.org/",
-      "station": "apptegy-fremont-1-wy",
-      "why": "2022-11-01: within 2 days of one of its closure days"
-    },
-    {
-      "timestamp": "20221031230131",
-      "url": "https://www.landerschools.org/",
-      "station": "apptegy-fremont-1-wy",
-      "why": "2022-11-01: within 2 days of one of its closure days"
-    },
-    {
-      "timestamp": "20230103225000",
-      "url": "https://www.landerschools.org/",
-      "station": "apptegy-fremont-1-wy",
-      "why": "2023-01-04: within 2 days of one of its closure days"
-    },
-    {
-      "timestamp": "20231031223844",
-      "url": "https://www.landerschools.org/",
-      "station": "apptegy-fremont-1-wy",
-      "why": "2023-11-01: within 2 days of one of its closure days"
-    },
-    {
-      "timestamp": "20230414130734",
-      "url": "https://www.landerschools.org/",
-      "station": "apptegy-fremont-1-wy",
-      "why": "2023-04-14: within 2 days of one of its closure days"
-    },
-    {
-      "timestamp": "20220506111228",
-      "url": "https://www.landerschools.org/",
-      "station": "apptegy-fremont-1-wy",
-      "why": "2022-05-06: within 2 days of one of its closure days"
-    },
-    {
-      "timestamp": "20220501231238",
-      "url": "https://www.landerschools.org/",
-      "station": "apptegy-fremont-1-wy",
-      "why": "2022-05-02: within 2 days of one of its closure days"
-    },
-    {
-      "timestamp": "20231101140534",
-      "url": "https://www.landerschools.org/",
-      "station": "apptegy-fremont-1-wy",
-      "why": "2023-11-01: within 2 days of one of its closure days"
-    },
-    {
-      "timestamp": "20220505231509",
-      "url": "https://www.landerschools.org/",
-      "station": "apptegy-fremont-1-wy",
-      "why": "2022-05-06: within 2 days of one of its closure days"
-    },
-    {
-      "timestamp": "20231103232536",
+      "timestamp": "20231104104954",
       "url": "https://www.landerschools.org/",
       "station": "apptegy-fremont-1-wy",
       "why": "2023-11-04: within 2 days of one of its closure days"
     },
     {
-      "timestamp": "20220502231253",
+      "timestamp": "20220502132645",
       "url": "https://www.landerschools.org/",
       "station": "apptegy-fremont-1-wy",
-      "why": "2022-05-03: within 2 days of one of its closure days"
+      "why": "2022-05-02: within 2 days of one of its closure days"
+    },
+    {
+      "timestamp": "20240208223735",
+      "url": "https://www.landerschools.org/",
+      "station": "apptegy-fremont-1-wy",
+      "why": "2024-02-09: within 2 days of one of its closure days"
+    },
+    {
+      "timestamp": "20240206115311",
+      "url": "https://www.landerschools.org/",
+      "station": "apptegy-fremont-1-wy",
+      "why": "2024-02-06: within 2 days of one of its closure days"
+    },
+    {
+      "timestamp": "20220504231251",
+      "url": "https://www.landerschools.org/",
+      "station": "apptegy-fremont-1-wy",
+      "why": "2022-05-05: within 2 days of one of its closure days"
+    },
+    {
+      "timestamp": "20240208182955",
+      "url": "https://www.landerschools.org/",
+      "station": "apptegy-fremont-1-wy",
+      "why": "2024-02-09: within 2 days of one of its closure days"
+    },
+    {
+      "timestamp": "20240204141639",
+      "url": "https://www.landerschools.org/",
+      "station": "apptegy-fremont-1-wy",
+      "why": "2024-02-04: within 2 days of one of its closure days"
+    },
+    {
+      "timestamp": "20240205223638",
+      "url": "https://www.landerschools.org/",
+      "station": "apptegy-fremont-1-wy",
+      "why": "2024-02-06: within 2 days of one of its closure days"
+    },
+    {
+      "timestamp": "20240204103628",
+      "url": "https://www.landerschools.org/",
+      "station": "apptegy-fremont-1-wy",
+      "why": "2024-02-04: within 2 days of one of its closure days"
+    },
+    {
+      "timestamp": "20220602110955",
+      "url": "https://www.landerschools.org/",
+      "station": "apptegy-fremont-1-wy",
+      "why": "2022-06-02: within 2 days of one of its closure days"
+    },
+    {
+      "timestamp": "20231027224332",
+      "url": "https://www.landerschools.org/",
+      "station": "apptegy-fremont-1-wy",
+      "why": "2023-10-28: within 2 days of one of its closure days"
+    },
+    {
+      "timestamp": "20240204113801",
+      "url": "https://www.landerschools.org/",
+      "station": "apptegy-fremont-1-wy",
+      "why": "2024-02-04: within 2 days of one of its closure days"
+    },
+    {
+      "timestamp": "20220601231014",
+      "url": "https://www.landerschools.org/",
+      "station": "apptegy-fremont-1-wy",
+      "why": "2022-06-02: within 2 days of one of its closure days"
+    },
+    {
+      "timestamp": "20231027203338",
+      "url": "https://www.landerschools.org/",
+      "station": "apptegy-fremont-1-wy",
+      "why": "2023-10-28: within 2 days of one of its closure days"
+    },
+    {
+      "timestamp": "20240206063723",
+      "url": "https://www.landerschools.org/",
+      "station": "apptegy-fremont-1-wy",
+      "why": "2024-02-06: within 2 days of one of its closure days"
+    },
+    {
+      "timestamp": "20240203011822",
+      "url": "https://www.landerschools.org/",
+      "station": "apptegy-fremont-1-wy",
+      "why": "2024-02-03: within 2 days of one of its closure days"
+    },
+    {
+      "timestamp": "20240203085832",
+      "url": "https://www.landerschools.org/",
+      "station": "apptegy-fremont-1-wy",
+      "why": "2024-02-03: within 2 days of one of its closure days"
+    },
+    {
+      "timestamp": "20240204155042",
+      "url": "https://www.landerschools.org/",
+      "station": "apptegy-fremont-1-wy",
+      "why": "2024-02-04: within 2 days of one of its closure days"
+    },
+    {
+      "timestamp": "20231027115928",
+      "url": "https://www.landerschools.org/",
+      "station": "apptegy-fremont-1-wy",
+      "why": "2023-10-27: within 2 days of one of its closure days"
+    },
+    {
+      "timestamp": "20231023103713",
+      "url": "https://www.landerschools.org/",
+      "station": "apptegy-fremont-1-wy",
+      "why": "2023-10-23: within 2 days of one of its closure days"
+    },
+    {
+      "timestamp": "20240203062655",
+      "url": "https://www.landerschools.org/",
+      "station": "apptegy-fremont-1-wy",
+      "why": "2024-02-03: within 2 days of one of its closure days"
+    },
+    {
+      "timestamp": "20240204005851",
+      "url": "https://www.landerschools.org/",
+      "station": "apptegy-fremont-1-wy",
+      "why": "2024-02-04: within 2 days of one of its closure days"
+    },
+    {
+      "timestamp": "20231206103807",
+      "url": "https://www.landerschools.org/",
+      "station": "apptegy-fremont-1-wy",
+      "why": "2023-12-06: within 2 days of one of its closure days"
+    },
+    {
+      "timestamp": "20240206103739",
+      "url": "https://www.landerschools.org/",
+      "station": "apptegy-fremont-1-wy",
+      "why": "2024-02-06: within 2 days of one of its closure days"
+    },
+    {
+      "timestamp": "20240203171458",
+      "url": "https://www.landerschools.org/",
+      "station": "apptegy-fremont-1-wy",
+      "why": "2024-02-04: within 2 days of one of its closure days"
+    },
+    {
+      "timestamp": "20231022223812",
+      "url": "https://www.landerschools.org/",
+      "station": "apptegy-fremont-1-wy",
+      "why": "2023-10-23: within 2 days of one of its closure days"
+    },
+    {
+      "timestamp": "20240203072717",
+      "url": "https://www.landerschools.org/",
+      "station": "apptegy-fremont-1-wy",
+      "why": "2024-02-03: within 2 days of one of its closure days"
+    },
+    {
+      "timestamp": "20231024110801",
+      "url": "https://www.landerschools.org/",
+      "station": "apptegy-fremont-1-wy",
+      "why": "2023-10-24: within 2 days of one of its closure days"
+    },
+    {
+      "timestamp": "20231208223634",
+      "url": "https://www.landerschools.org/",
+      "station": "apptegy-fremont-1-wy",
+      "why": "2023-12-09: within 2 days of one of its closure days"
+    },
+    {
+      "timestamp": "20240201033927",
+      "url": "https://www.landerschools.org/",
+      "station": "apptegy-fremont-1-wy",
+      "why": "2024-02-01: within 2 days of one of its closure days"
+    },
+    {
+      "timestamp": "20231209223705",
+      "url": "https://www.landerschools.org/",
+      "station": "apptegy-fremont-1-wy",
+      "why": "2023-12-10: within 2 days of one of its closure days"
+    },
+    {
+      "timestamp": "20240205201514",
+      "url": "https://www.landerschools.org/",
+      "station": "apptegy-fremont-1-wy",
+      "why": "2024-02-06: within 2 days of one of its closure days"
+    },
+    {
+      "timestamp": "20231209103959",
+      "url": "https://www.landerschools.org/",
+      "station": "apptegy-fremont-1-wy",
+      "why": "2023-12-09: within 2 days of one of its closure days"
+    },
+    {
+      "timestamp": "20231204223649",
+      "url": "https://www.landerschools.org/",
+      "station": "apptegy-fremont-1-wy",
+      "why": "2023-12-05: within 2 days of one of its closure days"
+    },
+    {
+      "timestamp": "20231205183519",
+      "url": "https://www.landerschools.org/",
+      "station": "apptegy-fremont-1-wy",
+      "why": "2023-12-06: within 2 days of one of its closure days"
+    },
+    {
+      "timestamp": "20231206000337",
+      "url": "https://www.landerschools.org/",
+      "station": "apptegy-fremont-1-wy",
+      "why": "2023-12-06: within 2 days of one of its closure days"
+    },
+    {
+      "timestamp": "20240130223709",
+      "url": "https://www.landerschools.org/",
+      "station": "apptegy-fremont-1-wy",
+      "why": "2024-01-31: within 2 days of one of its closure days"
+    },
+    {
+      "timestamp": "20240201103713",
+      "url": "https://www.landerschools.org/",
+      "station": "apptegy-fremont-1-wy",
+      "why": "2024-02-01: within 2 days of one of its closure days"
+    },
+    {
+      "timestamp": "20230329104931",
+      "url": "https://www.landerschools.org/",
+      "station": "apptegy-fremont-1-wy",
+      "why": "2023-03-29: within 2 days of one of its closure days"
+    },
+    {
+      "timestamp": "20240201041855",
+      "url": "https://www.landerschools.org/",
+      "station": "apptegy-fremont-1-wy",
+      "why": "2024-02-01: within 2 days of one of its closure days"
+    },
+    {
+      "timestamp": "20240210024546",
+      "url": "https://www.landerschools.org/",
+      "station": "apptegy-fremont-1-wy",
+      "why": "2024-02-10: within 2 days of one of its closure days"
+    },
+    {
+      "timestamp": "20240201082928",
+      "url": "https://www.landerschools.org/",
+      "station": "apptegy-fremont-1-wy",
+      "why": "2024-02-01: within 2 days of one of its closure days"
+    },
+    {
+      "timestamp": "20240130195831",
+      "url": "https://www.landerschools.org/",
+      "station": "apptegy-fremont-1-wy",
+      "why": "2024-01-31: within 2 days of one of its closure days"
+    },
+    {
+      "timestamp": "20230328062142",
+      "url": "https://www.landerschools.org/",
+      "station": "apptegy-fremont-1-wy",
+      "why": "2023-03-28: within 2 days of one of its closure days"
+    },
+    {
+      "timestamp": "20240212002330",
+      "url": "https://www.landerschools.org/",
+      "station": "apptegy-fremont-1-wy",
+      "why": "2024-02-12: within 2 days of one of its closure days"
+    },
+    {
+      "timestamp": "20240209060634",
+      "url": "https://www.landerschools.org/",
+      "station": "apptegy-fremont-1-wy",
+      "why": "2024-02-09: within 2 days of one of its closure days"
+    },
+    {
+      "timestamp": "20240209223720",
+      "url": "https://www.landerschools.org/",
+      "station": "apptegy-fremont-1-wy",
+      "why": "2024-02-10: within 2 days of one of its closure days"
+    },
+    {
+      "timestamp": "20240213223808",
+      "url": "https://www.landerschools.org/",
+      "station": "apptegy-fremont-1-wy",
+      "why": "2024-02-14: within 2 days of one of its closure days"
+    },
+    {
+      "timestamp": "20240209200201",
+      "url": "https://www.landerschools.org/",
+      "station": "apptegy-fremont-1-wy",
+      "why": "2024-02-10: within 2 days of one of its closure days"
+    },
+    {
+      "timestamp": "20230322202501",
+      "url": "https://www.landerschools.org/",
+      "station": "apptegy-fremont-1-wy",
+      "why": "2023-03-23: within 2 days of one of its closure days"
+    },
+    {
+      "timestamp": "20240209235342",
+      "url": "https://www.landerschools.org/",
+      "station": "apptegy-fremont-1-wy",
+      "why": "2024-02-10: within 2 days of one of its closure days"
+    },
+    {
+      "timestamp": "20240209104030",
+      "url": "https://www.landerschools.org/",
+      "station": "apptegy-fremont-1-wy",
+      "why": "2024-02-09: within 2 days of one of its closure days"
+    },
+    {
+      "timestamp": "20230328220716",
+      "url": "https://www.landerschools.org/",
+      "station": "apptegy-fremont-1-wy",
+      "why": "2023-03-29: within 2 days of one of its closure days"
+    },
+    {
+      "timestamp": "20240210013924",
+      "url": "https://www.landerschools.org/",
+      "station": "apptegy-fremont-1-wy",
+      "why": "2024-02-10: within 2 days of one of its closure days"
+    },
+    {
+      "timestamp": "20240502112237",
+      "url": "https://www.landerschools.org/",
+      "station": "apptegy-fremont-1-wy",
+      "why": "2024-05-02: within 2 days of one of its closure days"
+    },
+    {
+      "timestamp": "20240501113650",
+      "url": "https://www.landerschools.org/",
+      "station": "apptegy-fremont-1-wy",
+      "why": "2024-05-01: within 2 days of one of its closure days"
+    },
+    {
+      "timestamp": "20240503231746",
+      "url": "https://www.landerschools.org/",
+      "station": "apptegy-fremont-1-wy",
+      "why": "2024-05-04: within 2 days of one of its closure days"
+    },
+    {
+      "timestamp": "20240504231719",
+      "url": "https://www.landerschools.org/",
+      "station": "apptegy-fremont-1-wy",
+      "why": "2024-05-05: within 2 days of one of its closure days"
+    },
+    {
+      "timestamp": "20230325104931",
+      "url": "https://www.landerschools.org/",
+      "station": "apptegy-fremont-1-wy",
+      "why": "2023-03-25: within 2 days of one of its closure days"
+    },
+    {
+      "timestamp": "20240504111723",
+      "url": "https://www.landerschools.org/",
+      "station": "apptegy-fremont-1-wy",
+      "why": "2024-05-04: within 2 days of one of its closure days"
+    },
+    {
+      "timestamp": "20240210100850",
+      "url": "https://www.landerschools.org/",
+      "station": "apptegy-fremont-1-wy",
+      "why": "2024-02-10: within 2 days of one of its closure days"
+    },
+    {
+      "timestamp": "20240214112407",
+      "url": "https://www.landerschools.org/",
+      "station": "apptegy-fremont-1-wy",
+      "why": "2024-02-14: within 2 days of one of its closure days"
+    },
+    {
+      "timestamp": "20230325111809",
+      "url": "https://www.landerschools.org/",
+      "station": "apptegy-fremont-1-wy",
+      "why": "2023-03-25: within 2 days of one of its closure days"
+    },
+    {
+      "timestamp": "20230325224946",
+      "url": "https://www.landerschools.org/",
+      "station": "apptegy-fremont-1-wy",
+      "why": "2023-03-26: within 2 days of one of its closure days"
+    },
+    {
+      "timestamp": "20230325230501",
+      "url": "https://www.landerschools.org/",
+      "station": "apptegy-fremont-1-wy",
+      "why": "2023-03-26: within 2 days of one of its closure days"
+    },
+    {
+      "timestamp": "20240505121559",
+      "url": "https://www.landerschools.org/",
+      "station": "apptegy-fremont-1-wy",
+      "why": "2024-05-05: within 2 days of one of its closure days"
+    },
+    {
+      "timestamp": "20240509231721",
+      "url": "https://www.landerschools.org/",
+      "station": "apptegy-fremont-1-wy",
+      "why": "2024-05-10: within 2 days of one of its closure days"
+    },
+    {
+      "timestamp": "20230327225003",
+      "url": "https://www.landerschools.org/",
+      "station": "apptegy-fremont-1-wy",
+      "why": "2023-03-28: within 2 days of one of its closure days"
+    },
+    {
+      "timestamp": "20240501072737",
+      "url": "https://www.landerschools.org/",
+      "station": "apptegy-fremont-1-wy",
+      "why": "2024-05-01: within 2 days of one of its closure days"
+    },
+    {
+      "timestamp": "20230311185437",
+      "url": "https://www.landerschools.org/",
+      "station": "apptegy-fremont-1-wy",
+      "why": "2023-03-12: within 2 days of one of its closure days"
+    },
+    {
+      "timestamp": "20240212035749",
+      "url": "https://www.landerschools.org/",
+      "station": "apptegy-fremont-1-wy",
+      "why": "2024-02-12: within 2 days of one of its closure days"
+    },
+    {
+      "timestamp": "20230311195612",
+      "url": "https://www.landerschools.org/",
+      "station": "apptegy-fremont-1-wy",
+      "why": "2023-03-12: within 2 days of one of its closure days"
+    },
+    {
+      "timestamp": "20240211103628",
+      "url": "https://www.landerschools.org/",
+      "station": "apptegy-fremont-1-wy",
+      "why": "2024-02-11: within 2 days of one of its closure days"
+    },
+    {
+      "timestamp": "20240501080016",
+      "url": "https://www.landerschools.org/",
+      "station": "apptegy-fremont-1-wy",
+      "why": "2024-05-01: within 2 days of one of its closure days"
+    },
+    {
+      "timestamp": "20230312105332",
+      "url": "https://www.landerschools.org/",
+      "station": "apptegy-fremont-1-wy",
+      "why": "2023-03-12: within 2 days of one of its closure days"
+    },
+    {
+      "timestamp": "20230326105619",
+      "url": "https://www.landerschools.org/",
+      "station": "apptegy-fremont-1-wy",
+      "why": "2023-03-26: within 2 days of one of its closure days"
+    },
+    {
+      "timestamp": "20240210084635",
+      "url": "https://www.landerschools.org/",
+      "station": "apptegy-fremont-1-wy",
+      "why": "2024-02-10: within 2 days of one of its closure days"
+    },
+    {
+      "timestamp": "20230311153919",
+      "url": "https://www.landerschools.org/",
+      "station": "apptegy-fremont-1-wy",
+      "why": "2023-03-11: within 2 days of one of its closure days"
+    },
+    {
+      "timestamp": "20230307233950",
+      "url": "https://www.landerschools.org/",
+      "station": "apptegy-fremont-1-wy",
+      "why": "2023-03-08: within 2 days of one of its closure days"
+    },
+    {
+      "timestamp": "20230313105036",
+      "url": "https://www.landerschools.org/",
+      "station": "apptegy-fremont-1-wy",
+      "why": "2023-03-13: within 2 days of one of its closure days"
+    },
+    {
+      "timestamp": "20240210224017",
+      "url": "https://www.landerschools.org/",
+      "station": "apptegy-fremont-1-wy",
+      "why": "2024-02-11: within 2 days of one of its closure days"
+    },
+    {
+      "timestamp": "20240211061720",
+      "url": "https://www.landerschools.org/",
+      "station": "apptegy-fremont-1-wy",
+      "why": "2024-02-11: within 2 days of one of its closure days"
+    },
+    {
+      "timestamp": "20230311021548",
+      "url": "https://www.landerschools.org/",
+      "station": "apptegy-fremont-1-wy",
+      "why": "2023-03-11: within 2 days of one of its closure days"
+    },
+    {
+      "timestamp": "20230308033553",
+      "url": "https://www.landerschools.org/",
+      "station": "apptegy-fremont-1-wy",
+      "why": "2023-03-08: within 2 days of one of its closure days"
+    },
+    {
+      "timestamp": "20230328105002",
+      "url": "https://www.landerschools.org/",
+      "station": "apptegy-fremont-1-wy",
+      "why": "2023-03-28: within 2 days of one of its closure days"
+    },
+    {
+      "timestamp": "20240212104312",
+      "url": "https://www.landerschools.org/",
+      "station": "apptegy-fremont-1-wy",
+      "why": "2024-02-12: within 2 days of one of its closure days"
+    },
+    {
+      "timestamp": "20230412152522",
+      "url": "https://www.landerschools.org/",
+      "station": "apptegy-fremont-1-wy",
+      "why": "2023-04-12: within 2 days of one of its closure days"
+    },
+    {
+      "timestamp": "20240211223635",
+      "url": "https://www.landerschools.org/",
+      "station": "apptegy-fremont-1-wy",
+      "why": "2024-02-12: within 2 days of one of its closure days"
+    },
+    {
+      "timestamp": "20230311010725",
+      "url": "https://www.landerschools.org/",
+      "station": "apptegy-fremont-1-wy",
+      "why": "2023-03-11: within 2 days of one of its closure days"
+    },
+    {
+      "timestamp": "20240210110654",
+      "url": "https://www.landerschools.org/",
+      "station": "apptegy-fremont-1-wy",
+      "why": "2024-02-10: within 2 days of one of its closure days"
+    },
+    {
+      "timestamp": "20240510231724",
+      "url": "https://www.landerschools.org/",
+      "station": "apptegy-fremont-1-wy",
+      "why": "2024-05-11: within 2 days of one of its closure days"
+    },
+    {
+      "timestamp": "20230319122707",
+      "url": "https://www.landerschools.org/",
+      "station": "apptegy-fremont-1-wy",
+      "why": "2023-03-19: within 2 days of one of its closure days"
+    },
+    {
+      "timestamp": "20240510111705",
+      "url": "https://www.landerschools.org/",
+      "station": "apptegy-fremont-1-wy",
+      "why": "2024-05-10: within 2 days of one of its closure days"
+    },
+    {
+      "timestamp": "20230318214733",
+      "url": "https://www.landerschools.org/",
+      "station": "apptegy-fremont-1-wy",
+      "why": "2023-03-19: within 2 days of one of its closure days"
+    },
+    {
+      "timestamp": "20230319131858",
+      "url": "https://www.landerschools.org/",
+      "station": "apptegy-fremont-1-wy",
+      "why": "2023-03-19: within 2 days of one of its closure days"
+    },
+    {
+      "timestamp": "20230316105013",
+      "url": "https://www.landerschools.org/",
+      "station": "apptegy-fremont-1-wy",
+      "why": "2023-03-16: within 2 days of one of its closure days"
+    },
+    {
+      "timestamp": "20230319143051",
+      "url": "https://www.landerschools.org/",
+      "station": "apptegy-fremont-1-wy",
+      "why": "2023-03-19: within 2 days of one of its closure days"
+    },
+    {
+      "timestamp": "20230319154311",
+      "url": "https://www.landerschools.org/",
+      "station": "apptegy-fremont-1-wy",
+      "why": "2023-03-19: within 2 days of one of its closure days"
+    },
+    {
+      "timestamp": "20230319011556",
+      "url": "https://www.landerschools.org/",
+      "station": "apptegy-fremont-1-wy",
+      "why": "2023-03-19: within 2 days of one of its closure days"
+    },
+    {
+      "timestamp": "20230315191609",
+      "url": "https://www.landerschools.org/",
+      "station": "apptegy-fremont-1-wy",
+      "why": "2023-03-16: within 2 days of one of its closure days"
+    },
+    {
+      "timestamp": "20230316014131",
+      "url": "https://www.landerschools.org/",
+      "station": "apptegy-fremont-1-wy",
+      "why": "2023-03-16: within 2 days of one of its closure days"
+    },
+    {
+      "timestamp": "20230315225007",
+      "url": "https://www.landerschools.org/",
+      "station": "apptegy-fremont-1-wy",
+      "why": "2023-03-16: within 2 days of one of its closure days"
+    },
+    {
+      "timestamp": "20230319095806",
+      "url": "https://www.landerschools.org/",
+      "station": "apptegy-fremont-1-wy",
+      "why": "2023-03-19: within 2 days of one of its closure days"
+    },
+    {
+      "timestamp": "20230319044045",
+      "url": "https://www.landerschools.org/",
+      "station": "apptegy-fremont-1-wy",
+      "why": "2023-03-19: within 2 days of one of its closure days"
+    },
+    {
+      "timestamp": "20230319004625",
+      "url": "https://www.landerschools.org/",
+      "station": "apptegy-fremont-1-wy",
+      "why": "2023-03-19: within 2 days of one of its closure days"
+    },
+    {
+      "timestamp": "20230316120903",
+      "url": "https://www.landerschools.org/",
+      "station": "apptegy-fremont-1-wy",
+      "why": "2023-03-16: within 2 days of one of its closure days"
+    },
+    {
+      "timestamp": "20230316002130",
+      "url": "https://www.landerschools.org/",
+      "station": "apptegy-fremont-1-wy",
+      "why": "2023-03-16: within 2 days of one of its closure days"
+    },
+    {
+      "timestamp": "20240330103631",
+      "url": "https://www.landerschools.org/",
+      "station": "apptegy-fremont-1-wy",
+      "why": "2024-03-30: within 2 days of one of its closure days"
+    },
+    {
+      "timestamp": "20240511120341",
+      "url": "https://www.landerschools.org/",
+      "station": "apptegy-fremont-1-wy",
+      "why": "2024-05-11: within 2 days of one of its closure days"
+    },
+    {
+      "timestamp": "20240327003655",
+      "url": "https://www.landerschools.org/",
+      "station": "apptegy-fremont-1-wy",
+      "why": "2024-03-27: within 2 days of one of its closure days"
+    },
+    {
+      "timestamp": "20231125224238",
+      "url": "https://www.landerschools.org/",
+      "station": "apptegy-fremont-1-wy",
+      "why": "2023-11-26: within 2 days of one of its closure days"
+    },
+    {
+      "timestamp": "20240409103558",
+      "url": "https://www.landerschools.org/",
+      "station": "apptegy-fremont-1-wy",
+      "why": "2024-04-09: within 2 days of one of its closure days"
+    },
+    {
+      "timestamp": "20240406103643",
+      "url": "https://www.landerschools.org/",
+      "station": "apptegy-fremont-1-wy",
+      "why": "2024-04-06: within 2 days of one of its closure days"
+    },
+    {
+      "timestamp": "20240407103554",
+      "url": "https://www.landerschools.org/",
+      "station": "apptegy-fremont-1-wy",
+      "why": "2024-04-07: within 2 days of one of its closure days"
+    },
+    {
+      "timestamp": "20240218013515",
+      "url": "https://www.landerschools.org/",
+      "station": "apptegy-fremont-1-wy",
+      "why": "2024-02-18: within 2 days of one of its closure days"
+    },
+    {
+      "timestamp": "20240309232508",
+      "url": "https://www.landerschools.org/",
+      "station": "apptegy-fremont-1-wy",
+      "why": "2024-03-10: within 2 days of one of its closure days"
+    },
+    {
+      "timestamp": "20240405223615",
+      "url": "https://www.landerschools.org/",
+      "station": "apptegy-fremont-1-wy",
+      "why": "2024-04-06: within 2 days of one of its closure days"
+    },
+    {
+      "timestamp": "20240416145632",
+      "url": "https://www.landerschools.org/",
+      "station": "apptegy-fremont-1-wy",
+      "why": "2024-04-16: within 2 days of one of its closure days"
+    },
+    {
+      "timestamp": "20240329223558",
+      "url": "https://www.landerschools.org/",
+      "station": "apptegy-fremont-1-wy",
+      "why": "2024-03-30: within 2 days of one of its closure days"
+    },
+    {
+      "timestamp": "20240414224854",
+      "url": "https://www.landerschools.org/",
+      "station": "apptegy-fremont-1-wy",
+      "why": "2024-04-15: within 2 days of one of its closure days"
+    },
+    {
+      "timestamp": "20220531230955",
+      "url": "https://www.landerschools.org/",
+      "station": "apptegy-fremont-1-wy",
+      "why": "2022-06-01: within 2 days of one of its closure days"
+    },
+    {
+      "timestamp": "20240218103706",
+      "url": "https://www.landerschools.org/",
+      "station": "apptegy-fremont-1-wy",
+      "why": "2024-02-18: within 2 days of one of its closure days"
+    },
+    {
+      "timestamp": "20240325224635",
+      "url": "https://www.landerschools.org/",
+      "station": "apptegy-fremont-1-wy",
+      "why": "2024-03-26: within 2 days of one of its closure days"
+    },
+    {
+      "timestamp": "20240327105415",
+      "url": "https://www.landerschools.org/",
+      "station": "apptegy-fremont-1-wy",
+      "why": "2024-03-27: within 2 days of one of its closure days"
+    },
+    {
+      "timestamp": "20240419045837",
+      "url": "https://www.landerschools.org/",
+      "station": "apptegy-fremont-1-wy",
+      "why": "2024-04-19: within 2 days of one of its closure days"
+    },
+    {
+      "timestamp": "20240328223658",
+      "url": "https://www.landerschools.org/",
+      "station": "apptegy-fremont-1-wy",
+      "why": "2024-03-29: within 2 days of one of its closure days"
+    },
+    {
+      "timestamp": "20240329103548",
+      "url": "https://www.landerschools.org/",
+      "station": "apptegy-fremont-1-wy",
+      "why": "2024-03-29: within 2 days of one of its closure days"
+    },
+    {
+      "timestamp": "20220601111006",
+      "url": "https://www.landerschools.org/",
+      "station": "apptegy-fremont-1-wy",
+      "why": "2022-06-01: within 2 days of one of its closure days"
+    },
+    {
+      "timestamp": "20240302125307",
+      "url": "https://www.landerschools.org/",
+      "station": "apptegy-fremont-1-wy",
+      "why": "2024-03-02: within 2 days of one of its closure days"
+    },
+    {
+      "timestamp": "20240217223700",
+      "url": "https://www.landerschools.org/",
+      "station": "apptegy-fremont-1-wy",
+      "why": "2024-02-18: within 2 days of one of its closure days"
+    },
+    {
+      "timestamp": "20230402090054",
+      "url": "https://www.landerschools.org/",
+      "station": "apptegy-fremont-1-wy",
+      "why": "2023-04-02: within 2 days of one of its closure days"
+    },
+    {
+      "timestamp": "20240217115830",
+      "url": "https://www.landerschools.org/",
+      "station": "apptegy-fremont-1-wy",
+      "why": "2024-02-17: within 2 days of one of its closure days"
+    },
+    {
+      "timestamp": "20240502003429",
+      "url": "https://www.landerschools.org/",
+      "station": "apptegy-fremont-1-wy",
+      "why": "2024-05-02: within 2 days of one of its closure days"
+    },
+    {
+      "timestamp": "20231120233331",
+      "url": "https://www.landerschools.org/",
+      "station": "apptegy-fremont-1-wy",
+      "why": "2023-11-21: within 2 days of one of its closure days"
+    },
+    {
+      "timestamp": "20231121131805",
+      "url": "https://www.landerschools.org/",
+      "station": "apptegy-fremont-1-wy",
+      "why": "2023-11-21: within 2 days of one of its closure days"
+    },
+    {
+      "timestamp": "20240409225157",
+      "url": "https://www.landerschools.org/",
+      "station": "apptegy-fremont-1-wy",
+      "why": "2024-04-10: within 2 days of one of its closure days"
+    },
+    {
+      "timestamp": "20240419103625",
+      "url": "https://www.landerschools.org/",
+      "station": "apptegy-fremont-1-wy",
+      "why": "2024-04-19: within 2 days of one of its closure days"
+    },
+    {
+      "timestamp": "20240418144832",
+      "url": "https://www.landerschools.org/",
+      "station": "apptegy-fremont-1-wy",
+      "why": "2024-04-18: within 2 days of one of its closure days"
+    },
+    {
+      "timestamp": "20231124223657",
+      "url": "https://www.landerschools.org/",
+      "station": "apptegy-fremont-1-wy",
+      "why": "2023-11-25: within 2 days of one of its closure days"
+    },
+    {
+      "timestamp": "20240304012425",
+      "url": "https://www.landerschools.org/",
+      "station": "apptegy-fremont-1-wy",
+      "why": "2024-03-04: within 2 days of one of its closure days"
+    },
+    {
+      "timestamp": "20231126103718",
+      "url": "https://www.landerschools.org/",
+      "station": "apptegy-fremont-1-wy",
+      "why": "2023-11-26: within 2 days of one of its closure days"
+    },
+    {
+      "timestamp": "20220528231033",
+      "url": "https://www.landerschools.org/",
+      "station": "apptegy-fremont-1-wy",
+      "why": "2022-05-29: within 2 days of one of its closure days"
+    },
+    {
+      "timestamp": "20230331061148",
+      "url": "https://www.landerschools.org/",
+      "station": "apptegy-fremont-1-wy",
+      "why": "2023-03-31: within 2 days of one of its closure days"
+    },
+    {
+      "timestamp": "20230331105001",
+      "url": "https://www.landerschools.org/",
+      "station": "apptegy-fremont-1-wy",
+      "why": "2023-03-31: within 2 days of one of its closure days"
+    },
+    {
+      "timestamp": "20240418103944",
+      "url": "https://www.landerschools.org/",
+      "station": "apptegy-fremont-1-wy",
+      "why": "2024-04-18: within 2 days of one of its closure days"
+    },
+    {
+      "timestamp": "20240302020912",
+      "url": "https://www.landerschools.org/",
+      "station": "apptegy-fremont-1-wy",
+      "why": "2024-03-02: within 2 days of one of its closure days"
+    },
+    {
+      "timestamp": "20230402120519",
+      "url": "https://www.landerschools.org/",
+      "station": "apptegy-fremont-1-wy",
+      "why": "2023-04-02: within 2 days of one of its closure days"
+    },
+    {
+      "timestamp": "20240302063103",
+      "url": "https://www.landerschools.org/",
+      "station": "apptegy-fremont-1-wy",
+      "why": "2024-03-02: within 2 days of one of its closure days"
+    },
+    {
+      "timestamp": "20240416105707",
+      "url": "https://www.landerschools.org/",
+      "station": "apptegy-fremont-1-wy",
+      "why": "2024-04-16: within 2 days of one of its closure days"
+    },
+    {
+      "timestamp": "20230402102400",
+      "url": "https://www.landerschools.org/",
+      "station": "apptegy-fremont-1-wy",
+      "why": "2023-04-02: within 2 days of one of its closure days"
+    },
+    {
+      "timestamp": "20240131151117",
+      "url": "https://www.landerschools.org/",
+      "station": "apptegy-fremont-1-wy",
+      "why": "2024-01-31: within 2 days of one of its closure days"
+    },
+    {
+      "timestamp": "20240303032616",
+      "url": "https://www.landerschools.org/",
+      "station": "apptegy-fremont-1-wy",
+      "why": "2024-03-03: within 2 days of one of its closure days"
+    },
+    {
+      "timestamp": "20230331225009",
+      "url": "https://www.landerschools.org/",
+      "station": "apptegy-fremont-1-wy",
+      "why": "2023-04-01: within 2 days of one of its closure days"
+    },
+    {
+      "timestamp": "20230330224932",
+      "url": "https://www.landerschools.org/",
+      "station": "apptegy-fremont-1-wy",
+      "why": "2023-03-31: within 2 days of one of its closure days"
+    },
+    {
+      "timestamp": "20240131001343",
+      "url": "https://www.landerschools.org/",
+      "station": "apptegy-fremont-1-wy",
+      "why": "2024-01-31: within 2 days of one of its closure days"
+    },
+    {
+      "timestamp": "20240302101130",
+      "url": "https://www.landerschools.org/",
+      "station": "apptegy-fremont-1-wy",
+      "why": "2024-03-02: within 2 days of one of its closure days"
+    },
+    {
+      "timestamp": "20240303082051",
+      "url": "https://www.landerschools.org/",
+      "station": "apptegy-fremont-1-wy",
+      "why": "2024-03-03: within 2 days of one of its closure days"
+    },
+    {
+      "timestamp": "20240303213608",
+      "url": "https://www.landerschools.org/",
+      "station": "apptegy-fremont-1-wy",
+      "why": "2024-03-04: within 2 days of one of its closure days"
+    },
+    {
+      "timestamp": "20240415115735",
+      "url": "https://www.landerschools.org/",
+      "station": "apptegy-fremont-1-wy",
+      "why": "2024-04-15: within 2 days of one of its closure days"
+    },
+    {
+      "timestamp": "20240131103640",
+      "url": "https://www.landerschools.org/",
+      "station": "apptegy-fremont-1-wy",
+      "why": "2024-01-31: within 2 days of one of its closure days"
+    },
+    {
+      "timestamp": "20230313021147",
+      "url": "https://www.landerschools.org/",
+      "station": "apptegy-fremont-1-wy",
+      "why": "2023-03-13: within 2 days of one of its closure days"
+    },
+    {
+      "timestamp": "20220527231027",
+      "url": "https://www.landerschools.org/",
+      "station": "apptegy-fremont-1-wy",
+      "why": "2022-05-28: within 2 days of one of its closure days"
+    },
+    {
+      "timestamp": "20230419112729",
+      "url": "https://www.landerschools.org/",
+      "station": "apptegy-fremont-1-wy",
+      "why": "2023-04-19: within 2 days of one of its closure days"
+    },
+    {
+      "timestamp": "20230402063846",
+      "url": "https://www.landerschools.org/",
+      "station": "apptegy-fremont-1-wy",
+      "why": "2023-04-02: within 2 days of one of its closure days"
+    },
+    {
+      "timestamp": "20231023223632",
+      "url": "https://www.landerschools.org/",
+      "station": "apptegy-fremont-1-wy",
+      "why": "2023-10-24: within 2 days of one of its closure days"
+    },
+    {
+      "timestamp": "20240131223634",
+      "url": "https://www.landerschools.org/",
+      "station": "apptegy-fremont-1-wy",
+      "why": "2024-02-01: within 2 days of one of its closure days"
+    },
+    {
+      "timestamp": "20240522014304",
+      "url": "https://www.landerschools.org/",
+      "station": "apptegy-fremont-1-wy",
+      "why": "2024-05-22: within 2 days of one of its closure days"
+    },
+    {
+      "timestamp": "20230422034844",
+      "url": "https://www.landerschools.org/",
+      "station": "apptegy-fremont-1-wy",
+      "why": "2023-04-22: within 2 days of one of its closure days"
+    },
+    {
+      "timestamp": "20220528111033",
+      "url": "https://www.landerschools.org/",
+      "station": "apptegy-fremont-1-wy",
+      "why": "2022-05-28: within 2 days of one of its closure days"
+    },
+    {
+      "timestamp": "20230423104923",
+      "url": "https://www.landerschools.org/",
+      "station": "apptegy-fremont-1-wy",
+      "why": "2023-04-23: within 2 days of one of its closure days"
+    },
+    {
+      "timestamp": "20240519030057",
+      "url": "https://www.landerschools.org/",
+      "station": "apptegy-fremont-1-wy",
+      "why": "2024-05-19: within 2 days of one of its closure days"
+    },
+    {
+      "timestamp": "20230422174618",
+      "url": "https://www.landerschools.org/",
+      "station": "apptegy-fremont-1-wy",
+      "why": "2023-04-23: within 2 days of one of its closure days"
+    },
+    {
+      "timestamp": "20240424112744",
+      "url": "https://www.landerschools.org/",
+      "station": "apptegy-fremont-1-wy",
+      "why": "2024-04-24: within 2 days of one of its closure days"
+    },
+    {
+      "timestamp": "20230421224932",
+      "url": "https://www.landerschools.org/",
+      "station": "apptegy-fremont-1-wy",
+      "why": "2023-04-22: within 2 days of one of its closure days"
+    },
+    {
+      "timestamp": "20240520132523",
+      "url": "https://www.landerschools.org/",
+      "station": "apptegy-fremont-1-wy",
+      "why": "2024-05-20: within 2 days of one of its closure days"
+    },
+    {
+      "timestamp": "20230422104931",
+      "url": "https://www.landerschools.org/",
+      "station": "apptegy-fremont-1-wy",
+      "why": "2023-04-22: within 2 days of one of its closure days"
+    },
+    {
+      "timestamp": "20240520032502",
+      "url": "https://www.landerschools.org/",
+      "station": "apptegy-fremont-1-wy",
+      "why": "2024-05-20: within 2 days of one of its closure days"
+    },
+    {
+      "timestamp": "20230117224943",
+      "url": "https://www.landerschools.org/",
+      "station": "apptegy-fremont-1-wy",
+      "why": "2023-01-18: within 2 days of one of its closure days"
+    },
+    {
+      "timestamp": "20240522113628",
+      "url": "https://www.landerschools.org/",
+      "station": "apptegy-fremont-1-wy",
+      "why": "2024-05-22: within 2 days of one of its closure days"
+    },
+    {
+      "timestamp": "20240427182230",
+      "url": "https://www.landerschools.org/",
+      "station": "apptegy-fremont-1-wy",
+      "why": "2024-04-28: within 2 days of one of its closure days"
+    },
+    {
+      "timestamp": "20230422192607",
+      "url": "https://www.landerschools.org/",
+      "station": "apptegy-fremont-1-wy",
+      "why": "2023-04-23: within 2 days of one of its closure days"
     }
   ]
 }
