@@ -1,1204 +1,1204 @@
 {
  "snapshots": [
   {
-   "timestamp": "20230329215942",
-   "url": "https://www.slcschools.org",
-   "station": "smartsites-salt-lake-city-ut",
-   "why": "storm day 2023-03-30 (market score 1.00)"
-  },
-  {
-   "timestamp": "20230404221638",
-   "url": "https://www.slcschools.org/",
-   "station": "smartsites-salt-lake-city-ut",
-   "why": "storm day 2023-04-05 (market score 1.00)"
-  },
-  {
-   "timestamp": "20231207160804",
-   "url": "https://www.slcschools.org",
-   "station": "smartsites-salt-lake-city-ut",
-   "why": "storm day 2023-12-08 (market score 1.00)"
-  },
-  {
-   "timestamp": "20201030130651",
+   "timestamp": "20250118030814",
    "url": "https://www.mcpss.com/",
    "station": "apptegy-mobile-al",
-   "why": "2020-10-30: within 2 days of one of its closure days"
+   "why": "2025-01-18: within 2 days of one of its closure days"
   },
   {
-   "timestamp": "20240914072755",
+   "timestamp": "20250119053151",
    "url": "https://www.mcpss.com/",
    "station": "apptegy-mobile-al",
-   "why": "2024-09-14: within 2 days of one of its closure days"
+   "why": "2025-01-19: within 2 days of one of its closure days"
   },
   {
-   "timestamp": "20240909060417",
+   "timestamp": "20240912233844",
+   "url": "https://www.mcpss.com/",
+   "station": "apptegy-mobile-al",
+   "why": "2024-09-13: within 2 days of one of its closure days"
+  },
+  {
+   "timestamp": "20240910094502",
+   "url": "https://www.mcpss.com/",
+   "station": "apptegy-mobile-al",
+   "why": "2024-09-10: within 2 days of one of its closure days"
+  },
+  {
+   "timestamp": "20240910010930",
+   "url": "https://www.mcpss.com/",
+   "station": "apptegy-mobile-al",
+   "why": "2024-09-10: within 2 days of one of its closure days"
+  },
+  {
+   "timestamp": "20240913093335",
+   "url": "https://www.mcpss.com/",
+   "station": "apptegy-mobile-al",
+   "why": "2024-09-13: within 2 days of one of its closure days"
+  },
+  {
+   "timestamp": "20240909015212",
    "url": "https://www.mcpss.com/",
    "station": "apptegy-mobile-al",
    "why": "2024-09-09: within 2 days of one of its closure days"
   },
   {
-   "timestamp": "20190107212823",
-   "url": "http://www.sd25.us/",
-   "station": "finalsite-pocatello-id",
-   "why": "2019-01-08: within 2 days of one of its closure days"
+   "timestamp": "20240909122910",
+   "url": "https://www.mcpss.com/",
+   "station": "apptegy-mobile-al",
+   "why": "2024-09-09: within 2 days of one of its closure days"
   },
   {
-   "timestamp": "20181228124607",
-   "url": "http://www.sd25.us:80/",
-   "station": "finalsite-pocatello-id",
-   "why": "2018-12-28: within 2 days of one of its closure days"
+   "timestamp": "20240908165732",
+   "url": "https://www.mcpss.com/",
+   "station": "apptegy-mobile-al",
+   "why": "2024-09-09: within 2 days of one of its closure days"
   },
   {
-   "timestamp": "20221108075803",
+   "timestamp": "20240914024758",
+   "url": "https://www.mcpss.com/",
+   "station": "apptegy-mobile-al",
+   "why": "2024-09-14: within 2 days of one of its closure days"
+  },
+  {
+   "timestamp": "20240914043541",
+   "url": "https://www.mcpss.com/",
+   "station": "apptegy-mobile-al",
+   "why": "2024-09-14: within 2 days of one of its closure days"
+  },
+  {
+   "timestamp": "20240914144551",
+   "url": "https://www.mcpss.com/",
+   "station": "apptegy-mobile-al",
+   "why": "2024-09-14: within 2 days of one of its closure days"
+  },
+  {
+   "timestamp": "20240914080024",
+   "url": "https://www.mcpss.com/",
+   "station": "apptegy-mobile-al",
+   "why": "2024-09-14: within 2 days of one of its closure days"
+  },
+  {
+   "timestamp": "20250118235805",
+   "url": "https://www.mcpss.com/",
+   "station": "apptegy-mobile-al",
+   "why": "2025-01-19: within 2 days of one of its closure days"
+  },
+  {
+   "timestamp": "20250118124104",
+   "url": "https://www.mcpss.com/",
+   "station": "apptegy-mobile-al",
+   "why": "2025-01-18: within 2 days of one of its closure days"
+  },
+  {
+   "timestamp": "20250119112129",
+   "url": "https://www.mcpss.com/",
+   "station": "apptegy-mobile-al",
+   "why": "2025-01-19: within 2 days of one of its closure days"
+  },
+  {
+   "timestamp": "20250117232951",
+   "url": "https://www.mcpss.com/",
+   "station": "apptegy-mobile-al",
+   "why": "2025-01-18: within 2 days of one of its closure days"
+  },
+  {
+   "timestamp": "20191017100719",
+   "url": "https://www.mcpss.com/",
+   "station": "apptegy-mobile-al",
+   "why": "2019-10-17: within 2 days of one of its closure days"
+  },
+  {
+   "timestamp": "20240114105225",
+   "url": "https://www.mcpss.com/",
+   "station": "apptegy-mobile-al",
+   "why": "2024-01-14: within 2 days of one of its closure days"
+  },
+  {
+   "timestamp": "20240113225243",
+   "url": "https://www.mcpss.com/",
+   "station": "apptegy-mobile-al",
+   "why": "2024-01-14: within 2 days of one of its closure days"
+  },
+  {
+   "timestamp": "20240115105240",
+   "url": "https://www.mcpss.com/",
+   "station": "apptegy-mobile-al",
+   "why": "2024-01-15: within 2 days of one of its closure days"
+  },
+  {
+   "timestamp": "20240114004826",
+   "url": "https://www.mcpss.com/",
+   "station": "apptegy-mobile-al",
+   "why": "2024-01-14: within 2 days of one of its closure days"
+  },
+  {
+   "timestamp": "20240114225223",
+   "url": "https://www.mcpss.com/",
+   "station": "apptegy-mobile-al",
+   "why": "2024-01-15: within 2 days of one of its closure days"
+  },
+  {
+   "timestamp": "20240118105220",
+   "url": "https://www.mcpss.com/",
+   "station": "apptegy-mobile-al",
+   "why": "2024-01-18: within 2 days of one of its closure days"
+  },
+  {
+   "timestamp": "20240118142314",
+   "url": "https://www.mcpss.com/",
+   "station": "apptegy-mobile-al",
+   "why": "2024-01-18: within 2 days of one of its closure days"
+  },
+  {
+   "timestamp": "20240118120756",
+   "url": "https://www.mcpss.com/",
+   "station": "apptegy-mobile-al",
+   "why": "2024-01-18: within 2 days of one of its closure days"
+  },
+  {
+   "timestamp": "20171207032014",
+   "url": "http://www.mcpss.com:80/?",
+   "station": "apptegy-mobile-al",
+   "why": "2017-12-07: within 2 days of one of its closure days"
+  },
+  {
+   "timestamp": "20171210073330",
+   "url": "http://www.mcpss.com:80/",
+   "station": "apptegy-mobile-al",
+   "why": "2017-12-10: within 2 days of one of its closure days"
+  },
+  {
+   "timestamp": "20180114190030",
+   "url": "http://www.mcpss.com:80/",
+   "station": "apptegy-mobile-al",
+   "why": "2018-01-15: within 2 days of one of its closure days"
+  },
+  {
+   "timestamp": "20260131185442",
    "url": "https://www.scps.k12.fl.us/",
    "station": "smartsites-seminole-fl",
-   "why": "storm day 2022-11-08 (market score 0.50)"
+   "why": "2026-02-01: within 2 days of one of its closure days"
   },
   {
-   "timestamp": "20221110131518",
+   "timestamp": "20260201065533",
    "url": "https://www.scps.k12.fl.us/",
    "station": "smartsites-seminole-fl",
-   "why": "storm day 2022-11-10 (market score 0.50)"
+   "why": "2026-02-01: within 2 days of one of its closure days"
   },
   {
-   "timestamp": "20221109110824",
+   "timestamp": "20260131065500",
    "url": "https://www.scps.k12.fl.us/",
    "station": "smartsites-seminole-fl",
-   "why": "storm day 2022-11-09 (market score 0.50)"
+   "why": "2026-01-31: within 2 days of one of its closure days"
   },
   {
-   "timestamp": "20180302105751",
-   "url": "http://www.tcsd.org:80/",
+   "timestamp": "20260130185448",
+   "url": "https://www.scps.k12.fl.us/",
+   "station": "smartsites-seminole-fl",
+   "why": "2026-01-31: within 2 days of one of its closure days"
+  },
+  {
+   "timestamp": "20260130195615",
+   "url": "https://www.scps.k12.fl.us/",
+   "station": "smartsites-seminole-fl",
+   "why": "2026-01-31: within 2 days of one of its closure days"
+  },
+  {
+   "timestamp": "20180224055632",
+   "url": "http://www.tcsd.org/",
    "station": "finalsite-teton-wy",
-   "why": "storm day 2018-03-02 (market score 0.25)"
+   "why": "2018-02-24: within 2 days of one of its closure days"
   },
   {
-   "timestamp": "20171104021240",
-   "url": "http://www.tcsd.org:80/",
-   "station": "finalsite-teton-wy",
-   "why": "2017-11-04: within 2 days of one of its closure days"
-  },
-  {
-   "timestamp": "20180301050037",
-   "url": "http://www.tcsd.org:80/",
-   "station": "finalsite-teton-wy",
-   "why": "2018-03-01: within 2 days of one of its closure days"
-  },
-  {
-   "timestamp": "20250102210601",
+   "timestamp": "20240303085249",
    "url": "https://www.bps.k12.mt.us/en-US",
-   "station": "schoolblocks-browning-mt",
-   "why": "storm day 2025-01-03 (market score 1.00)"
-  },
-  {
-   "timestamp": "20230201114130",
-   "url": "https://bps.k12.mt.us/en-US",
-   "station": "schoolblocks-browning-mt",
-   "why": "2023-02-01: within 2 days of one of its closure days"
-  },
-  {
-   "timestamp": "20240302221644",
-   "url": "https://bps.k12.mt.us/en-US",
    "station": "schoolblocks-browning-mt",
    "why": "2024-03-03: within 2 days of one of its closure days"
   },
   {
-   "timestamp": "20250116094721",
-   "url": "https://www.ccsd1.org/",
-   "station": "apptegy-converse-1-wy",
-   "why": "2025-01-16: within 2 days of one of its closure days"
+   "timestamp": "20241107151904",
+   "url": "https://bps.k12.mt.us/en-US",
+   "station": "schoolblocks-browning-mt",
+   "why": "2024-11-07: within 2 days of one of its closure days"
   },
   {
-   "timestamp": "20250218042300",
-   "url": "https://www.ccsd1.org/",
-   "station": "apptegy-converse-1-wy",
-   "why": "2025-02-18: within 2 days of one of its closure days"
+   "timestamp": "20250124193537",
+   "url": "https://www.bps.k12.mt.us/en-US",
+   "station": "schoolblocks-browning-mt",
+   "why": "2025-01-25: within 2 days of one of its closure days"
   },
   {
-   "timestamp": "20241227163902",
-   "url": "https://www.ccsd1.org/",
-   "station": "apptegy-converse-1-wy",
-   "why": "2024-12-28: within 2 days of one of its closure days"
-  },
-  {
-   "timestamp": "20191230094441",
-   "url": "http://www.sd215.net:80/",
-   "station": "apptegy-fremont-id",
-   "why": "2019-12-30: within 2 days of one of its closure days"
-  },
-  {
-   "timestamp": "20191130030608",
-   "url": "http://www.sd215.net:80/",
-   "station": "apptegy-fremont-id",
-   "why": "2019-11-30: within 2 days of one of its closure days"
-  },
-  {
-   "timestamp": "20180119224940",
-   "url": "http://www.sd215.net:80/",
-   "station": "apptegy-fremont-id",
-   "why": "2018-01-20: within 2 days of one of its closure days"
-  },
-  {
-   "timestamp": "20201030001610",
-   "url": "https://www.okaloosaschools.com/",
-   "station": "apptegy-okaloosa-fl",
-   "why": "2020-10-30: within 2 days of one of its closure days"
-  },
-  {
-   "timestamp": "20191019041427",
-   "url": "https://www.okaloosaschools.com/",
-   "station": "apptegy-okaloosa-fl",
-   "why": "2019-10-19: within 2 days of one of its closure days"
-  },
-  {
-   "timestamp": "20191016095854",
-   "url": "https://okaloosaschools.com/",
-   "station": "apptegy-okaloosa-fl",
-   "why": "2019-10-16: within 2 days of one of its closure days"
-  },
-  {
-   "timestamp": "20220221100030",
-   "url": "https://irondistrict.org/",
-   "station": "apptegy-iron-ut",
-   "why": "storm day 2022-02-21 (market score 0.25)"
-  },
-  {
-   "timestamp": "20211027042812",
-   "url": "https://irondistrict.org/",
-   "station": "apptegy-iron-ut",
-   "why": "2021-10-27: within 2 days of one of its closure days"
-  },
-  {
-   "timestamp": "20210424195826",
-   "url": "https://irondistrict.org/",
-   "station": "apptegy-iron-ut",
-   "why": "2021-04-25: within 2 days of one of its closure days"
-  },
-  {
-   "timestamp": "20200907052556",
-   "url": "https://www.bsd44.org/",
-   "station": "smartsites-belgrade-mt",
-   "why": "storm day 2020-09-07 (market score 0.25)"
-  },
-  {
-   "timestamp": "20250102161127",
-   "url": "https://www.bsd44.org/",
-   "station": "smartsites-belgrade-mt",
-   "why": "storm day 2025-01-03 (market score 0.25)"
-  },
-  {
-   "timestamp": "20250102151637",
-   "url": "https://www.bsd44.org/",
-   "station": "smartsites-belgrade-mt",
-   "why": "storm day 2025-01-02 (market score 0.25)"
-  },
-  {
-   "timestamp": "20200907014149",
-   "url": "https://www.lewistown.k12.mt.us/",
-   "station": "finalsite-lewistown-mt",
-   "why": "storm day 2020-09-07 (market score 0.25)"
-  },
-  {
-   "timestamp": "20190127065516",
-   "url": "http://www.lewistown.k12.mt.us/",
-   "station": "finalsite-lewistown-mt",
-   "why": "2019-01-27: within 2 days of one of its closure days"
-  },
-  {
-   "timestamp": "20220201192131",
-   "url": "https://www.lewistown.k12.mt.us/",
-   "station": "finalsite-lewistown-mt",
-   "why": "2022-02-02: within 2 days of one of its closure days"
-  },
-  {
-   "timestamp": "20230404001016",
-   "url": "http://www.sweetwater1.org/",
-   "station": "finalsite-sweetwater-1-wy",
-   "why": "storm day 2023-04-04 (market score 1.00)"
-  },
-  {
-   "timestamp": "20230403121824",
-   "url": "http://www.sweetwater1.org/",
-   "station": "finalsite-sweetwater-1-wy",
-   "why": "storm day 2023-04-03 (market score 1.00)"
-  },
-  {
-   "timestamp": "20230403151704",
-   "url": "http://www.sweetwater1.org/",
-   "station": "finalsite-sweetwater-1-wy",
-   "why": "storm day 2023-04-03 (market score 1.00)"
-  },
-  {
-   "timestamp": "20221202191755",
-   "url": "https://www.uinta1.com/",
-   "station": "schoolblocks-uinta-1-wy",
-   "why": "2022-12-03: within 2 days of one of its closure days"
-  },
-  {
-   "timestamp": "20210413005335",
-   "url": "https://www.uinta1.com/",
-   "station": "schoolblocks-uinta-1-wy",
-   "why": "2021-04-13: within 2 days of one of its closure days"
-  },
-  {
-   "timestamp": "20211024054528",
-   "url": "https://www.uinta1.com/",
-   "station": "schoolblocks-uinta-1-wy",
-   "why": "2021-10-24: within 2 days of one of its closure days"
-  },
-  {
-   "timestamp": "20251204202514",
-   "url": "https://www.murrayschools.org/",
-   "station": "smartsites-murray-ut",
-   "why": "storm day 2025-12-05 (market score 1.00)"
-  },
-  {
-   "timestamp": "20260218130203",
-   "url": "https://www.murrayschools.org/",
-   "station": "smartsites-murray-ut",
-   "why": "storm day 2026-02-18 (market score 1.00)"
-  },
-  {
-   "timestamp": "20260216230443",
-   "url": "https://www.murrayschools.org/",
-   "station": "smartsites-murray-ut",
-   "why": "storm day 2026-02-17 (market score 1.00)"
-  },
-  {
-   "timestamp": "20221202165109",
-   "url": "https://www.tfsd.org/",
-   "station": "apptegy-twin-falls-id",
-   "why": "2022-12-03: within 2 days of one of its closure days"
-  },
-  {
-   "timestamp": "20210412070007",
-   "url": "https://www.tfsd.org/",
-   "station": "apptegy-twin-falls-id",
-   "why": "2021-04-12: within 2 days of one of its closure days"
-  },
-  {
-   "timestamp": "20180224095113",
-   "url": "https://www.tfsd.org/",
-   "station": "apptegy-twin-falls-id",
-   "why": "2018-02-24: within 2 days of one of its closure days"
-  },
-  {
-   "timestamp": "20220106020721",
-   "url": "https://conradschools.org/",
-   "station": "apptegy-conrad-mt",
-   "why": "storm day 2022-01-06 (market score 1.00)"
-  },
-  {
-   "timestamp": "20230307142155",
-   "url": "https://www.conradschools.org/",
-   "station": "apptegy-conrad-mt",
-   "why": "2023-03-07: within 2 days of one of its closure days"
-  },
-  {
-   "timestamp": "20220401204200",
-   "url": "https://www.conradschools.org/",
-   "station": "apptegy-conrad-mt",
-   "why": "2022-04-02: within 2 days of one of its closure days"
-  },
-  {
-   "timestamp": "20241216130954",
-   "url": "https://www.dbps.k12.mt.us/",
-   "station": "apptegy-dutton-brady-mt",
-   "why": "storm day 2024-12-16 (market score 0.12)"
-  },
-  {
-   "timestamp": "20241218183723",
-   "url": "https://www.dbps.k12.mt.us/",
-   "station": "apptegy-dutton-brady-mt",
-   "why": "2024-12-19: within 2 days of one of its closure days"
-  },
-  {
-   "timestamp": "20240418103556",
-   "url": "https://www.dbps.k12.mt.us/",
-   "station": "apptegy-dutton-brady-mt",
-   "why": "2024-04-18: within 2 days of one of its closure days"
-  },
-  {
-   "timestamp": "20220103054434",
-   "url": "https://www.loganschools.org/",
-   "station": "smartsites-logan-ut",
-   "why": "2022-01-03: within 2 days of one of its closure days"
-  },
-  {
-   "timestamp": "20211109030130",
-   "url": "https://www.noxonschools.com/",
-   "station": "apptegy-noxon-mt",
-   "why": "storm day 2021-11-09 (market score 0.25)"
-  },
-  {
-   "timestamp": "20220102040750",
-   "url": "https://www.noxonschools.com/",
-   "station": "apptegy-noxon-mt",
-   "why": "2022-01-02: within 2 days of one of its closure days"
-  },
-  {
-   "timestamp": "20211110020437",
-   "url": "https://www.noxonschools.com/",
-   "station": "apptegy-noxon-mt",
-   "why": "2021-11-10: within 2 days of one of its closure days"
-  },
-  {
-   "timestamp": "20200103024459",
-   "url": "https://www.sodaschools.org/",
-   "station": "edlio-soda-springs-id",
-   "why": "2020-01-03: within 2 days of one of its closure days"
-  },
-  {
-   "timestamp": "20230131222950",
-   "url": "https://www.sodaschools.org/",
-   "station": "edlio-soda-springs-id",
-   "why": "2023-02-01: within 2 days of one of its closure days"
-  },
-  {
-   "timestamp": "20211208181123",
-   "url": "https://www.philipsburgschools.org/",
-   "station": "apptegy-philipsburg-mt",
-   "why": "storm day 2021-12-09 (market score 0.25)"
-  },
-  {
-   "timestamp": "20211109014427",
-   "url": "https://www.philipsburgschools.org/",
-   "station": "apptegy-philipsburg-mt",
-   "why": "storm day 2021-11-09 (market score 0.25)"
-  },
-  {
-   "timestamp": "20241102164047",
-   "url": "https://www.philipsburgschools.org/",
-   "station": "apptegy-philipsburg-mt",
+   "timestamp": "20241102180134",
+   "url": "https://www.bps.k12.mt.us/en-US",
+   "station": "schoolblocks-browning-mt",
    "why": "2024-11-03: within 2 days of one of its closure days"
   },
   {
-   "timestamp": "20180927193612",
-   "url": "http://www.jcsd1.us:80/",
-   "station": "apptegy-johnson1-wy",
-   "why": "storm day 2018-09-28 (market score 0.25)"
+   "timestamp": "20241102170617",
+   "url": "https://bps.k12.mt.us/en-US",
+   "station": "schoolblocks-browning-mt",
+   "why": "2024-11-03: within 2 days of one of its closure days"
   },
   {
-   "timestamp": "20170111151727",
-   "url": "http://www.jcsd1.us/",
-   "station": "apptegy-johnson1-wy",
-   "why": "storm day 2017-01-11 (market score 0.25)"
+   "timestamp": "20240502224721",
+   "url": "https://bps.k12.mt.us/en-US",
+   "station": "schoolblocks-browning-mt",
+   "why": "2024-05-03: within 2 days of one of its closure days"
   },
   {
-   "timestamp": "20200313163825",
-   "url": "http://www.jcsd1.us:80/",
-   "station": "apptegy-johnson1-wy",
-   "why": "2020-03-14: within 2 days of one of its closure days"
+   "timestamp": "20240506031946",
+   "url": "https://www.bps.k12.mt.us/en-US/",
+   "station": "schoolblocks-browning-mt",
+   "why": "2024-05-06: within 2 days of one of its closure days"
   },
   {
-   "timestamp": "20211010065308",
-   "url": "https://www.bssd72.org/",
-   "station": "apptegy-big-sky-mt",
-   "why": "2021-10-10: within 2 days of one of its closure days"
+   "timestamp": "20240503030444",
+   "url": "https://www.bps.k12.mt.us/en-US",
+   "station": "schoolblocks-browning-mt",
+   "why": "2024-05-03: within 2 days of one of its closure days"
   },
   {
-   "timestamp": "20211009030541",
-   "url": "https://www.bssd72.org/",
-   "station": "apptegy-big-sky-mt",
-   "why": "2021-10-09: within 2 days of one of its closure days"
+   "timestamp": "20220401184723",
+   "url": "https://bps.k12.mt.us/en-US",
+   "station": "schoolblocks-browning-mt",
+   "why": "2022-04-02: within 2 days of one of its closure days"
   },
   {
-   "timestamp": "20220102040823",
-   "url": "https://www.bssd72.org/",
-   "station": "apptegy-big-sky-mt",
-   "why": "2022-01-02: within 2 days of one of its closure days"
+   "timestamp": "20221220112551",
+   "url": "https://www.ccsd1.org/",
+   "station": "apptegy-converse-1-wy",
+   "why": "2022-12-20: within 2 days of one of its closure days"
   },
   {
-   "timestamp": "20220202210253",
-   "url": "https://www.winifred.k12.mt.us/",
-   "station": "apptegy-winifred-mt",
-   "why": "2022-02-03: within 2 days of one of its closure days"
-  },
-  {
-   "timestamp": "20220202170306",
-   "url": "https://www.winifred.k12.mt.us/",
-   "station": "apptegy-winifred-mt",
-   "why": "2022-02-03: within 2 days of one of its closure days"
-  },
-  {
-   "timestamp": "20220203013953",
-   "url": "https://www.winifred.k12.mt.us/",
-   "station": "apptegy-winifred-mt",
-   "why": "2022-02-03: within 2 days of one of its closure days"
-  },
-  {
-   "timestamp": "20191119003518",
-   "url": "http://chinookschools.org/",
-   "station": "apptegy-chinook-mt",
-   "why": "storm day 2019-11-19 (market score 0.25)"
-  },
-  {
-   "timestamp": "20180315142500",
-   "url": "http://chinookschools.org/",
-   "station": "apptegy-chinook-mt",
-   "why": "storm day 2018-03-15 (market score 0.25)"
-  },
-  {
-   "timestamp": "20220301191436",
-   "url": "https://chinookschools.org/",
-   "station": "apptegy-chinook-mt",
-   "why": "2022-03-02: within 2 days of one of its closure days"
-  },
-  {
-   "timestamp": "20180207210718",
-   "url": "http://fremont25.org:80/",
-   "station": "apptegy-fremont25-wy",
-   "why": "storm day 2018-02-08 (market score 1.00)"
-  },
-  {
-   "timestamp": "20171106040934",
-   "url": "http://fremont25.org:80/",
-   "station": "apptegy-fremont25-wy",
-   "why": "storm day 2017-11-06 (market score 0.25)"
-  },
-  {
-   "timestamp": "20191121081622",
-   "url": "https://www.fremont25.org/",
-   "station": "apptegy-fremont25-wy",
-   "why": "2019-11-21: within 2 days of one of its closure days"
-  },
-  {
-   "timestamp": "20190111044048",
-   "url": "http://www.mvsd21.org:80/",
-   "station": "apptegy-marsh-valley-id",
-   "why": "2019-01-11: within 2 days of one of its closure days"
-  },
-  {
-   "timestamp": "20181210122605",
-   "url": "http://www.mvsd21.org:80/",
-   "station": "apptegy-marsh-valley-id",
-   "why": "2018-12-10: within 2 days of one of its closure days"
-  },
-  {
-   "timestamp": "20190227222832",
-   "url": "http://www.mvsd21.org:80/",
-   "station": "apptegy-marsh-valley-id",
-   "why": "2019-02-28: within 2 days of one of its closure days"
-  },
-  {
-   "timestamp": "20200417103710",
-   "url": "http://web.stignatiusschools.org/",
-   "station": "apptegy-st-ignatius-mt",
-   "why": "2020-04-17: within 2 days of one of its closure days"
-  },
-  {
-   "timestamp": "20200413080754",
-   "url": "http://web.stignatiusschools.org/",
-   "station": "apptegy-st-ignatius-mt",
-   "why": "2020-04-13: within 2 days of one of its closure days"
-  },
-  {
-   "timestamp": "20191117211734",
-   "url": "http://web.stignatiusschools.org/",
-   "station": "apptegy-st-ignatius-mt",
-   "why": "2019-11-18: within 2 days of one of its closure days"
-  },
-  {
-   "timestamp": "20230327170647",
-   "url": "https://www.shelleyschools.org:443/",
-   "station": "smartsites-shelley-id",
-   "why": "2023-03-28: within 2 days of one of its closure days"
-  },
-  {
-   "timestamp": "20230405090038",
-   "url": "https://www.shelleyschools.org/",
-   "station": "smartsites-shelley-id",
-   "why": "2023-04-05: within 2 days of one of its closure days"
-  },
-  {
-   "timestamp": "20240301214853",
-   "url": "https://www.shelleyschools.org/",
-   "station": "smartsites-shelley-id",
-   "why": "2024-03-02: within 2 days of one of its closure days"
-  },
-  {
-   "timestamp": "20200907012519",
-   "url": "https://www.ennisschools.org/",
-   "station": "apptegy-ennis-mt",
-   "why": "storm day 2020-09-07 (market score 0.25)"
-  },
-  {
-   "timestamp": "20190918072816",
-   "url": "https://www.ennisschools.org/",
-   "station": "apptegy-ennis-mt",
-   "why": "2019-09-18: within 2 days of one of its closure days"
-  },
-  {
-   "timestamp": "20190329223243",
-   "url": "http://www.ennisschools.org:80/",
-   "station": "apptegy-ennis-mt",
-   "why": "2019-03-30: within 2 days of one of its closure days"
-  },
-  {
-   "timestamp": "20170909102620",
-   "url": "http://putnamschools.org:80/",
-   "station": "apptegy-putnam-fl",
-   "why": "2017-09-09: within 2 days of one of its closure days"
-  },
-  {
-   "timestamp": "20180503154041",
-   "url": "http://www.converse2.org:80/",
-   "station": "apptegy-converse2-wy",
-   "why": "storm day 2018-05-03 (market score 0.25)"
-  },
-  {
-   "timestamp": "20200318132034",
-   "url": "https://www.converse2.org/",
-   "station": "apptegy-converse2-wy",
-   "why": "2020-03-18: within 2 days of one of its closure days"
-  },
-  {
-   "timestamp": "20210512235309",
-   "url": "https://www.converse2.org/",
-   "station": "apptegy-converse2-wy",
-   "why": "2021-05-13: within 2 days of one of its closure days"
-  },
-  {
-   "timestamp": "20171013134350",
-   "url": "http://www.darby.k12.mt.us/",
-   "station": "apptegy-darby-mt",
-   "why": "storm day 2017-10-13 (market score 0.25)"
-  },
-  {
-   "timestamp": "20211008182200",
-   "url": "http://www.darby.k12.mt.us/",
-   "station": "apptegy-darby-mt",
-   "why": "2021-10-09: within 2 days of one of its closure days"
-  },
-  {
-   "timestamp": "20210204025056",
-   "url": "https://www.darby.k12.mt.us/",
-   "station": "apptegy-darby-mt",
-   "why": "2021-02-04: within 2 days of one of its closure days"
-  },
-  {
-   "timestamp": "20180111070324",
-   "url": "http://www.victor.k12.mt.us:80/",
-   "station": "apptegy-victor-mt",
-   "why": "storm day 2018-01-11 (market score 0.25)"
-  },
-  {
-   "timestamp": "20180307080049",
-   "url": "http://victor.k12.mt.us/",
-   "station": "apptegy-victor-mt",
-   "why": "2018-03-07: within 2 days of one of its closure days"
-  },
-  {
-   "timestamp": "20180413023920",
-   "url": "http://www.victor.k12.mt.us:80/",
-   "station": "apptegy-victor-mt",
-   "why": "2018-04-13: within 2 days of one of its closure days"
-  },
-  {
-   "timestamp": "20241114143119",
-   "url": "https://www.sublette9.org/",
-   "station": "edlio-sublette-9-wy",
-   "why": "2024-11-14: within 2 days of one of its closure days"
-  },
-  {
-   "timestamp": "20210413095811",
-   "url": "https://www.sublette9.org/",
-   "station": "edlio-sublette-9-wy",
-   "why": "2021-04-13: within 2 days of one of its closure days"
-  },
-  {
-   "timestamp": "20231208220740",
-   "url": "https://www.sublette9.org/",
-   "station": "edlio-sublette-9-wy",
-   "why": "2023-12-09: within 2 days of one of its closure days"
-  },
-  {
-   "timestamp": "20220102125134",
-   "url": "https://deerlodgeschools.org/",
-   "station": "apptegy-deer-lodge-mt",
-   "why": "2022-01-02: within 2 days of one of its closure days"
-  },
-  {
-   "timestamp": "20210420030143",
-   "url": "https://www.deerlodgeschools.org/",
-   "station": "apptegy-deer-lodge-mt",
-   "why": "2021-04-20: within 2 days of one of its closure days"
-  },
-  {
-   "timestamp": "20210422011943",
-   "url": "https://www.deerlodgeschools.org/",
-   "station": "apptegy-deer-lodge-mt",
-   "why": "2021-04-22: within 2 days of one of its closure days"
-  },
-  {
-   "timestamp": "20241210150511",
-   "url": "https://www.hlpschools.k12.mt.us/",
-   "station": "apptegy-hays-lodge-pole-mt",
-   "why": "storm day 2024-12-10 (market score 0.25)"
-  },
-  {
-   "timestamp": "20241122134017",
-   "url": "https://www.hlpschools.k12.mt.us/",
-   "station": "apptegy-hays-lodge-pole-mt",
-   "why": "storm day 2024-11-22 (market score 0.25)"
-  },
-  {
-   "timestamp": "20240501231859",
-   "url": "https://www.hlpschools.k12.mt.us/",
-   "station": "apptegy-hays-lodge-pole-mt",
-   "why": "storm day 2024-05-02 (market score 0.25)"
-  },
-  {
-   "timestamp": "20241029011019",
-   "url": "https://www.landerschools.org/",
-   "station": "apptegy-fremont-1-wy",
-   "why": "storm day 2024-10-29 (market score 1.00)"
-  },
-  {
-   "timestamp": "20241030012742",
-   "url": "https://www.landerschools.org/",
-   "station": "apptegy-fremont-1-wy",
-   "why": "storm day 2024-10-30 (market score 1.00)"
-  },
-  {
-   "timestamp": "20241029113430",
-   "url": "https://www.landerschools.org/",
-   "station": "apptegy-fremont-1-wy",
-   "why": "storm day 2024-10-29 (market score 1.00)"
-  },
-  {
-   "timestamp": "20171107133918",
-   "url": "http://www.townsend.k12.mt.us:80/",
-   "station": "apptegy-townsend-mt",
-   "why": "2017-11-07: within 2 days of one of its closure days"
-  },
-  {
-   "timestamp": "20190115040250",
-   "url": "http://www.townsend.k12.mt.us:80/",
-   "station": "apptegy-townsend-mt",
-   "why": "2019-01-15: within 2 days of one of its closure days"
-  },
-  {
-   "timestamp": "20181109025218",
-   "url": "http://www.townsend.k12.mt.us:80/",
-   "station": "apptegy-townsend-mt",
-   "why": "2018-11-09: within 2 days of one of its closure days"
-  },
-  {
-   "timestamp": "20180529155847",
-   "url": "http://www.jcsb.org:80/",
-   "station": "smartsites-jackson-fl",
-   "why": "2018-05-29: within 2 days of one of its closure days"
-  },
-  {
-   "timestamp": "20170912200145",
-   "url": "http://www.jcsb.org:80/",
-   "station": "smartsites-jackson-fl",
-   "why": "2017-09-13: within 2 days of one of its closure days"
-  },
-  {
-   "timestamp": "20220101195141",
-   "url": "https://www.baker.k12.mt.us/",
-   "station": "finalsite-baker-mt",
-   "why": "2022-01-02: within 2 days of one of its closure days"
-  },
-  {
-   "timestamp": "20190312153159",
-   "url": "http://www.baker.k12.mt.us:80/",
-   "station": "finalsite-baker-mt",
-   "why": "2019-03-12: within 2 days of one of its closure days"
-  },
-  {
-   "timestamp": "20190313163234",
-   "url": "http://www.baker.k12.mt.us:80/",
-   "station": "finalsite-baker-mt",
-   "why": "2019-03-14: within 2 days of one of its closure days"
-  },
-  {
-   "timestamp": "20180118072823",
-   "url": "http://www.glendiveschools.com/",
-   "station": "apptegy-glendive-mt",
-   "why": "2018-01-18: within 2 days of one of its closure days"
-  },
-  {
-   "timestamp": "20180116192428",
-   "url": "http://glendiveschools.com:80/",
-   "station": "apptegy-glendive-mt",
-   "why": "2018-01-17: within 2 days of one of its closure days"
-  },
-  {
-   "timestamp": "20190214110544",
-   "url": "https://www.glendiveschools.com/",
-   "station": "apptegy-glendive-mt",
-   "why": "2019-02-14: within 2 days of one of its closure days"
-  },
-  {
-   "timestamp": "20220925112802",
-   "url": "http://www.okee.k12.fl.us/",
-   "station": "apptegy-okeechobee-fl",
-   "why": "2022-09-25: within 2 days of one of its closure days"
-  },
-  {
-   "timestamp": "20220531115850",
-   "url": "https://www.wsh1.k12.wy.us/",
-   "station": "apptegy-washakie-1-wy",
-   "why": "storm day 2022-05-31 (market score 1.00)"
-  },
-  {
-   "timestamp": "20220530123905",
-   "url": "https://www.wsh1.k12.wy.us/",
-   "station": "apptegy-washakie-1-wy",
-   "why": "storm day 2022-05-30 (market score 1.00)"
-  },
-  {
-   "timestamp": "20220412001525",
-   "url": "https://www.wsh1.k12.wy.us/",
-   "station": "apptegy-washakie-1-wy",
-   "why": "storm day 2022-04-12 (market score 1.00)"
-  },
-  {
-   "timestamp": "20210128024025",
-   "url": "https://www.wyomingindianschools.com/",
-   "station": "apptegy-fremont-14-wy",
-   "why": "storm day 2021-01-28 (market score 0.25)"
-  },
-  {
-   "timestamp": "20210413005338",
-   "url": "https://www.wyomingindianschools.com/",
-   "station": "apptegy-fremont-14-wy",
-   "why": "2021-04-13: within 2 days of one of its closure days"
-  },
-  {
-   "timestamp": "20201020003628",
-   "url": "https://www.wyomingindianschools.com/",
-   "station": "apptegy-fremont-14-wy",
-   "why": "2020-10-20: within 2 days of one of its closure days"
-  },
-  {
-   "timestamp": "20191211143801",
-   "url": "https://www.shoshonischools.org/",
-   "station": "apptegy-fremont-24-wy",
-   "why": "2019-12-11: within 2 days of one of its closure days"
-  },
-  {
-   "timestamp": "20190922102211",
-   "url": "https://www.shoshonischools.org/",
-   "station": "apptegy-fremont-24-wy",
-   "why": "2019-09-22: within 2 days of one of its closure days"
-  },
-  {
-   "timestamp": "20180430205808",
-   "url": "http://www.shoshonischools.org/",
-   "station": "apptegy-fremont-24-wy",
-   "why": "2018-05-01: within 2 days of one of its closure days"
-  },
-  {
-   "timestamp": "20170202035343",
-   "url": "http://leadoreschool.org:80/",
-   "station": "apptegy-south-lemhi-id",
-   "why": "storm day 2017-02-02 (market score 0.25)"
-  },
-  {
-   "timestamp": "20201112002859",
-   "url": "https://www.leadoreschool.org/",
-   "station": "apptegy-south-lemhi-id",
-   "why": "2020-11-12: within 2 days of one of its closure days"
-  },
-  {
-   "timestamp": "20201111221242",
-   "url": "https://www.leadoreschool.org/",
-   "station": "apptegy-south-lemhi-id",
-   "why": "2020-11-12: within 2 days of one of its closure days"
-  },
-  {
-   "timestamp": "20210413005433",
-   "url": "https://www.hotsprings1.org/",
-   "station": "edlio-hot-springs-1-wy",
-   "why": "2021-04-13: within 2 days of one of its closure days"
-  },
-  {
-   "timestamp": "20210417002022",
-   "url": "https://www.hotsprings1.org/",
-   "station": "edlio-hot-springs-1-wy",
+   "timestamp": "20210416212609",
+   "url": "https://www.ccsd1.org/",
+   "station": "apptegy-converse-1-wy",
    "why": "2021-04-17: within 2 days of one of its closure days"
   },
   {
-   "timestamp": "20191118071833",
-   "url": "https://www.hotsprings1.org/",
-   "station": "edlio-hot-springs-1-wy",
-   "why": "2019-11-18: within 2 days of one of its closure days"
+   "timestamp": "20211016171755",
+   "url": "https://www.ccsd1.org/",
+   "station": "apptegy-converse-1-wy",
+   "why": "2021-10-17: within 2 days of one of its closure days"
   },
   {
-   "timestamp": "20211215182318",
-   "url": "https://www.valverde.edu/en-US",
-   "station": "schoolblocks-val-verde-ca",
-   "why": "2021-12-16: within 2 days of one of its closure days"
+   "timestamp": "20161113221633",
+   "url": "http://www.sd215.net:80/",
+   "station": "apptegy-fremont-id",
+   "why": "2016-11-14: within 2 days of one of its closure days"
   },
   {
-   "timestamp": "20170113044110",
-   "url": "http://www.ouhsd.org/",
-   "station": "finalsite-oroville-high-ca",
-   "why": "2017-01-13: within 2 days of one of its closure days"
+   "timestamp": "20210817205826",
+   "url": "https://okaloosaschools.com/",
+   "station": "apptegy-okaloosa-fl",
+   "why": "2021-08-18: within 2 days of one of its closure days"
   },
   {
-   "timestamp": "20200404171715",
-   "url": "http://durhamunified.org/",
-   "station": "apptegy-durham-ca",
-   "why": "2020-04-05: within 2 days of one of its closure days"
+   "timestamp": "20220118190119",
+   "url": "https://www.okaloosaschools.com/",
+   "station": "apptegy-okaloosa-fl",
+   "why": "2022-01-19: within 2 days of one of its closure days"
   },
   {
-   "timestamp": "20200322061519",
-   "url": "http://durhamunified.org:80/",
-   "station": "apptegy-durham-ca",
-   "why": "2020-03-22: within 2 days of one of its closure days"
+   "timestamp": "20220120082531",
+   "url": "https://www.okaloosaschools.com/",
+   "station": "apptegy-okaloosa-fl",
+   "why": "2022-01-20: within 2 days of one of its closure days"
   },
   {
-   "timestamp": "20171113064506",
-   "url": "http://www.durhamunified.org:80/",
-   "station": "apptegy-durham-ca",
-   "why": "2017-11-13: within 2 days of one of its closure days"
+   "timestamp": "20220119232919",
+   "url": "https://www.okaloosaschools.com/",
+   "station": "apptegy-okaloosa-fl",
+   "why": "2022-01-20: within 2 days of one of its closure days"
   },
   {
-   "timestamp": "20240108162101",
-   "url": "https://www.slcschools.org/",
-   "station": "smartsites-salt-lake-city-ut",
-   "why": "storm day 2024-01-09 (market score 1.00)"
+   "timestamp": "20220119125913",
+   "url": "https://www.okaloosaschools.com/",
+   "station": "apptegy-okaloosa-fl",
+   "why": "2022-01-19: within 2 days of one of its closure days"
   },
   {
-   "timestamp": "20230404233856",
-   "url": "https://www.slcschools.org/",
-   "station": "smartsites-salt-lake-city-ut",
-   "why": "storm day 2023-04-05 (market score 1.00)"
+   "timestamp": "20210126222110",
+   "url": "https://irondistrict.org/",
+   "station": "apptegy-iron-ut",
+   "why": "2021-01-27: within 2 days of one of its closure days"
   },
   {
-   "timestamp": "20230404104118",
-   "url": "https://www.slcschools.org/",
-   "station": "smartsites-salt-lake-city-ut",
-   "why": "storm day 2023-04-04 (market score 1.00)"
+   "timestamp": "20220219220006",
+   "url": "https://irondistrict.org/",
+   "station": "apptegy-iron-ut",
+   "why": "2022-02-20: within 2 days of one of its closure days"
   },
   {
-   "timestamp": "20230404082721",
-   "url": "https://www.slcschools.org/",
-   "station": "smartsites-salt-lake-city-ut",
-   "why": "storm day 2023-04-04 (market score 1.00)"
+   "timestamp": "20220219201456",
+   "url": "https://irondistrict.org/",
+   "station": "apptegy-iron-ut",
+   "why": "2022-02-20: within 2 days of one of its closure days"
   },
   {
-   "timestamp": "20230404074448",
-   "url": "https://www.slcschools.org/",
-   "station": "smartsites-salt-lake-city-ut",
-   "why": "storm day 2023-04-04 (market score 1.00)"
+   "timestamp": "20220102100231",
+   "url": "https://irondistrict.org/",
+   "station": "apptegy-iron-ut",
+   "why": "2022-01-02: within 2 days of one of its closure days"
   },
   {
-   "timestamp": "20210411182427",
-   "url": "https://www.slcschools.org/",
-   "station": "smartsites-salt-lake-city-ut",
-   "why": "2021-04-12: within 2 days of one of its closure days"
+   "timestamp": "20211229003553",
+   "url": "https://irondistrict.org/",
+   "station": "apptegy-iron-ut",
+   "why": "2021-12-29: within 2 days of one of its closure days"
   },
   {
-   "timestamp": "20210427050059",
-   "url": "https://www.slcschools.org/",
-   "station": "smartsites-salt-lake-city-ut",
-   "why": "2021-04-27: within 2 days of one of its closure days"
+   "timestamp": "20211231222152",
+   "url": "https://irondistrict.org/",
+   "station": "apptegy-iron-ut",
+   "why": "2022-01-01: within 2 days of one of its closure days"
   },
   {
-   "timestamp": "20221130062329",
-   "url": "https://www.slcschools.org",
-   "station": "smartsites-salt-lake-city-ut",
-   "why": "2022-11-30: within 2 days of one of its closure days"
+   "timestamp": "20220101101030",
+   "url": "https://irondistrict.org/",
+   "station": "apptegy-iron-ut",
+   "why": "2022-01-01: within 2 days of one of its closure days"
   },
   {
-   "timestamp": "20221127051429",
-   "url": "https://www.slcschools.org/",
-   "station": "smartsites-salt-lake-city-ut",
-   "why": "2022-11-27: within 2 days of one of its closure days"
+   "timestamp": "20220101220231",
+   "url": "https://irondistrict.org/",
+   "station": "apptegy-iron-ut",
+   "why": "2022-01-02: within 2 days of one of its closure days"
   },
   {
-   "timestamp": "20230321015942",
-   "url": "https://www.slcschools.org",
-   "station": "smartsites-salt-lake-city-ut",
-   "why": "2023-03-21: within 2 days of one of its closure days"
-  },
-  {
-   "timestamp": "20221127043832",
-   "url": "https://www.slcschools.org",
-   "station": "smartsites-salt-lake-city-ut",
-   "why": "2022-11-27: within 2 days of one of its closure days"
-  },
-  {
-   "timestamp": "20230318053840",
-   "url": "https://www.slcschools.org/",
-   "station": "smartsites-salt-lake-city-ut",
-   "why": "2023-03-18: within 2 days of one of its closure days"
-  },
-  {
-   "timestamp": "20230325095400",
-   "url": "https://www.slcschools.org",
-   "station": "smartsites-salt-lake-city-ut",
-   "why": "2023-03-25: within 2 days of one of its closure days"
-  },
-  {
-   "timestamp": "20221225005601",
-   "url": "https://www.slcschools.org/",
-   "station": "smartsites-salt-lake-city-ut",
-   "why": "2022-12-25: within 2 days of one of its closure days"
-  },
-  {
-   "timestamp": "20221225223339",
-   "url": "https://www.slcschools.org/",
-   "station": "smartsites-salt-lake-city-ut",
-   "why": "2022-12-26: within 2 days of one of its closure days"
-  },
-  {
-   "timestamp": "20230307132130",
-   "url": "https://www.slcschools.org/",
-   "station": "smartsites-salt-lake-city-ut",
-   "why": "2023-03-07: within 2 days of one of its closure days"
-  },
-  {
-   "timestamp": "20220131013029",
-   "url": "https://www.slcschools.org/",
-   "station": "smartsites-salt-lake-city-ut",
-   "why": "2022-01-31: within 2 days of one of its closure days"
-  },
-  {
-   "timestamp": "20221217013818",
-   "url": "https://www.slcschools.org/",
-   "station": "smartsites-salt-lake-city-ut",
-   "why": "2022-12-17: within 2 days of one of its closure days"
-  },
-  {
-   "timestamp": "20221218170926",
-   "url": "https://www.slcschools.org/",
-   "station": "smartsites-salt-lake-city-ut",
-   "why": "2022-12-19: within 2 days of one of its closure days"
-  },
-  {
-   "timestamp": "20221219020020",
-   "url": "https://www.slcschools.org/",
-   "station": "smartsites-salt-lake-city-ut",
-   "why": "2022-12-19: within 2 days of one of its closure days"
-  },
-  {
-   "timestamp": "20220423190932",
-   "url": "https://www.slcschools.org/",
-   "station": "smartsites-salt-lake-city-ut",
-   "why": "2022-04-24: within 2 days of one of its closure days"
-  },
-  {
-   "timestamp": "20220131074327",
-   "url": "https://www.slcschools.org/",
-   "station": "smartsites-salt-lake-city-ut",
-   "why": "2022-01-31: within 2 days of one of its closure days"
-  },
-  {
-   "timestamp": "20220131232926",
-   "url": "https://www.slcschools.org/",
-   "station": "smartsites-salt-lake-city-ut",
-   "why": "2022-02-01: within 2 days of one of its closure days"
-  },
-  {
-   "timestamp": "20220410055229",
-   "url": "https://www.slcschools.org/",
-   "station": "smartsites-salt-lake-city-ut",
-   "why": "2022-04-10: within 2 days of one of its closure days"
-  },
-  {
-   "timestamp": "20211224231102",
-   "url": "https://www.slcschools.org/",
-   "station": "smartsites-salt-lake-city-ut",
-   "why": "2021-12-25: within 2 days of one of its closure days"
-  },
-  {
-   "timestamp": "20240224011159",
-   "url": "https://www.slcschools.org/",
-   "station": "smartsites-salt-lake-city-ut",
-   "why": "2024-02-24: within 2 days of one of its closure days"
-  },
-  {
-   "timestamp": "20240223010721",
-   "url": "https://www.slcschools.org/",
-   "station": "smartsites-salt-lake-city-ut",
-   "why": "2024-02-23: within 2 days of one of its closure days"
-  },
-  {
-   "timestamp": "20231206081715",
-   "url": "https://www.slcschools.org",
-   "station": "smartsites-salt-lake-city-ut",
-   "why": "2023-12-06: within 2 days of one of its closure days"
-  },
-  {
-   "timestamp": "20231209170323",
-   "url": "https://www.slcschools.org/",
-   "station": "smartsites-salt-lake-city-ut",
-   "why": "2023-12-10: within 2 days of one of its closure days"
-  },
-  {
-   "timestamp": "20231125120317",
-   "url": "https://www.slcschools.org/",
-   "station": "smartsites-salt-lake-city-ut",
-   "why": "2023-11-25: within 2 days of one of its closure days"
-  },
-  {
-   "timestamp": "20240203053514",
-   "url": "https://www.slcschools.org/",
-   "station": "smartsites-salt-lake-city-ut",
-   "why": "2024-02-03: within 2 days of one of its closure days"
-  },
-  {
-   "timestamp": "20231014105714",
-   "url": "https://www.slcschools.org/",
-   "station": "smartsites-salt-lake-city-ut",
-   "why": "2023-10-14: within 2 days of one of its closure days"
-  },
-  {
-   "timestamp": "20221204031821",
-   "url": "https://www.slcschools.org/",
-   "station": "smartsites-salt-lake-city-ut",
-   "why": "2022-12-04: within 2 days of one of its closure days"
-  },
-  {
-   "timestamp": "20221206044705",
-   "url": "https://www.slcschools.org/",
-   "station": "smartsites-salt-lake-city-ut",
-   "why": "2022-12-06: within 2 days of one of its closure days"
-  },
-  {
-   "timestamp": "20240223005822",
-   "url": "https://www.slcschools.org",
-   "station": "smartsites-salt-lake-city-ut",
-   "why": "2024-02-23: within 2 days of one of its closure days"
-  },
-  {
-   "timestamp": "20231202113038",
-   "url": "https://www.slcschools.org/",
-   "station": "smartsites-salt-lake-city-ut",
-   "why": "2023-12-02: within 2 days of one of its closure days"
-  },
-  {
-   "timestamp": "20230106160341",
-   "url": "https://www.slcschools.org/",
-   "station": "smartsites-salt-lake-city-ut",
-   "why": "2023-01-07: within 2 days of one of its closure days"
-  },
-  {
-   "timestamp": "20231028075834",
-   "url": "https://www.slcschools.org/",
-   "station": "smartsites-salt-lake-city-ut",
-   "why": "2023-10-28: within 2 days of one of its closure days"
-  },
-  {
-   "timestamp": "20230311093749",
-   "url": "https://www.slcschools.org/",
-   "station": "smartsites-salt-lake-city-ut",
-   "why": "2023-03-11: within 2 days of one of its closure days"
-  },
-  {
-   "timestamp": "20230326133117",
-   "url": "https://www.slcschools.org/",
-   "station": "smartsites-salt-lake-city-ut",
-   "why": "2023-03-26: within 2 days of one of its closure days"
-  },
-  {
-   "timestamp": "20240212204251",
-   "url": "https://www.slcschools.org/",
-   "station": "smartsites-salt-lake-city-ut",
-   "why": "2024-02-13: within 2 days of one of its closure days"
-  },
-  {
-   "timestamp": "20240111010753",
-   "url": "https://www.slcschools.org/",
-   "station": "smartsites-salt-lake-city-ut",
-   "why": "2024-01-11: within 2 days of one of its closure days"
-  },
-  {
-   "timestamp": "20220203020742",
-   "url": "https://www.slcschools.org/",
-   "station": "smartsites-salt-lake-city-ut",
-   "why": "2022-02-03: within 2 days of one of its closure days"
-  },
-  {
-   "timestamp": "20240115172210",
-   "url": "https://www.slcschools.org/",
-   "station": "smartsites-salt-lake-city-ut",
-   "why": "2024-01-16: within 2 days of one of its closure days"
-  },
-  {
-   "timestamp": "20240122235522",
-   "url": "https://www.slcschools.org/",
-   "station": "smartsites-salt-lake-city-ut",
-   "why": "2024-01-23: within 2 days of one of its closure days"
-  },
-  {
-   "timestamp": "20220306023433",
-   "url": "https://www.slcschools.org/",
-   "station": "smartsites-salt-lake-city-ut",
-   "why": "2022-03-06: within 2 days of one of its closure days"
-  },
-  {
-   "timestamp": "20220305163429",
-   "url": "https://www.slcschools.org/",
-   "station": "smartsites-salt-lake-city-ut",
-   "why": "2022-03-06: within 2 days of one of its closure days"
-  },
-  {
-   "timestamp": "20231025124228",
-   "url": "https://www.slcschools.org/",
-   "station": "smartsites-salt-lake-city-ut",
-   "why": "2023-10-25: within 2 days of one of its closure days"
-  },
-  {
-   "timestamp": "20240217162446",
-   "url": "https://www.slcschools.org/",
-   "station": "smartsites-salt-lake-city-ut",
-   "why": "2024-02-18: within 2 days of one of its closure days"
-  },
-  {
-   "timestamp": "20240216234829",
-   "url": "https://www.slcschools.org/",
-   "station": "smartsites-salt-lake-city-ut",
-   "why": "2024-02-17: within 2 days of one of its closure days"
-  },
-  {
-   "timestamp": "20240209120348",
-   "url": "https://www.slcschools.org/",
-   "station": "smartsites-salt-lake-city-ut",
-   "why": "2024-02-09: within 2 days of one of its closure days"
-  },
-  {
-   "timestamp": "20240123132908",
-   "url": "https://www.slcschools.org/",
-   "station": "smartsites-salt-lake-city-ut",
-   "why": "2024-01-23: within 2 days of one of its closure days"
-  },
-  {
-   "timestamp": "20201219181128",
-   "url": "https://www.slcschools.org/",
-   "station": "smartsites-salt-lake-city-ut",
-   "why": "2020-12-20: within 2 days of one of its closure days"
-  },
-  {
-   "timestamp": "20191230052048",
-   "url": "https://www.slcschools.org/",
-   "station": "smartsites-salt-lake-city-ut",
-   "why": "2019-12-30: within 2 days of one of its closure days"
-  },
-  {
-   "timestamp": "20200102192034",
-   "url": "https://www.slcschools.org/",
-   "station": "smartsites-salt-lake-city-ut",
+   "timestamp": "20200103015944",
+   "url": "https://irondistrict.org/",
+   "station": "apptegy-iron-ut",
    "why": "2020-01-03: within 2 days of one of its closure days"
   },
   {
-   "timestamp": "20200131180450",
-   "url": "https://www.slcschools.org/",
-   "station": "smartsites-salt-lake-city-ut",
-   "why": "2020-02-01: within 2 days of one of its closure days"
+   "timestamp": "20191029122943",
+   "url": "https://www.bsd44.org/",
+   "station": "smartsites-belgrade-mt",
+   "why": "2019-10-29: within 2 days of one of its closure days"
   },
   {
-   "timestamp": "20201109215241",
-   "url": "https://www.slcschools.org/",
-   "station": "smartsites-salt-lake-city-ut",
-   "why": "2020-11-10: within 2 days of one of its closure days"
+   "timestamp": "20190207165738",
+   "url": "https://www.bsd44.org/",
+   "station": "smartsites-belgrade-mt",
+   "why": "2019-02-08: within 2 days of one of its closure days"
+  },
+  {
+   "timestamp": "20190330021359",
+   "url": "https://www.bsd44.org/",
+   "station": "smartsites-belgrade-mt",
+   "why": "2019-03-30: within 2 days of one of its closure days"
+  },
+  {
+   "timestamp": "20190126030712",
+   "url": "https://www.bsd44.org/",
+   "station": "smartsites-belgrade-mt",
+   "why": "2019-01-26: within 2 days of one of its closure days"
+  },
+  {
+   "timestamp": "20190307155041",
+   "url": "https://www.bsd44.org/",
+   "station": "smartsites-belgrade-mt",
+   "why": "2019-03-07: within 2 days of one of its closure days"
+  },
+  {
+   "timestamp": "20190228192139",
+   "url": "https://www.bsd44.org/",
+   "station": "smartsites-belgrade-mt",
+   "why": "2019-03-01: within 2 days of one of its closure days"
+  },
+  {
+   "timestamp": "20181117184343",
+   "url": "https://www.bsd44.org/",
+   "station": "smartsites-belgrade-mt",
+   "why": "2018-11-18: within 2 days of one of its closure days"
+  },
+  {
+   "timestamp": "20181220154807",
+   "url": "https://www.bsd44.org/",
+   "station": "smartsites-belgrade-mt",
+   "why": "2018-12-20: within 2 days of one of its closure days"
+  },
+  {
+   "timestamp": "20190109110943",
+   "url": "https://www.bsd44.org/",
+   "station": "smartsites-belgrade-mt",
+   "why": "2019-01-09: within 2 days of one of its closure days"
+  },
+  {
+   "timestamp": "20181125132905",
+   "url": "https://www.bsd44.org/",
+   "station": "smartsites-belgrade-mt",
+   "why": "2018-11-25: within 2 days of one of its closure days"
+  },
+  {
+   "timestamp": "20181129234105",
+   "url": "https://www.bsd44.org/",
+   "station": "smartsites-belgrade-mt",
+   "why": "2018-11-30: within 2 days of one of its closure days"
+  },
+  {
+   "timestamp": "20210416201953",
+   "url": "https://www.bsd44.org/",
+   "station": "smartsites-belgrade-mt",
+   "why": "2021-04-17: within 2 days of one of its closure days"
+  },
+  {
+   "timestamp": "20220122054607",
+   "url": "https://www.bsd44.org/",
+   "station": "smartsites-belgrade-mt",
+   "why": "2022-01-22: within 2 days of one of its closure days"
+  },
+  {
+   "timestamp": "20220122061812",
+   "url": "http://www.bsd44.org/",
+   "station": "smartsites-belgrade-mt",
+   "why": "2022-01-22: within 2 days of one of its closure days"
+  },
+  {
+   "timestamp": "20201108094218",
+   "url": "http://www.bsd44.org/",
+   "station": "smartsites-belgrade-mt",
+   "why": "2020-11-08: within 2 days of one of its closure days"
+  },
+  {
+   "timestamp": "20211008182203",
+   "url": "https://www.bsd44.org/",
+   "station": "smartsites-belgrade-mt",
+   "why": "2021-10-09: within 2 days of one of its closure days"
+  },
+  {
+   "timestamp": "20211008205253",
+   "url": "https://www.bsd44.org/",
+   "station": "smartsites-belgrade-mt",
+   "why": "2021-10-09: within 2 days of one of its closure days"
+  },
+  {
+   "timestamp": "20220601133154",
+   "url": "http://www.bsd44.org/",
+   "station": "smartsites-belgrade-mt",
+   "why": "2022-06-01: within 2 days of one of its closure days"
+  },
+  {
+   "timestamp": "20220501135348",
+   "url": "http://www.bsd44.org/",
+   "station": "smartsites-belgrade-mt",
+   "why": "2022-05-01: within 2 days of one of its closure days"
+  },
+  {
+   "timestamp": "20220501205018",
+   "url": "https://www.bsd44.org/",
+   "station": "smartsites-belgrade-mt",
+   "why": "2022-05-02: within 2 days of one of its closure days"
+  },
+  {
+   "timestamp": "20220430114748",
+   "url": "http://www.bsd44.org/",
+   "station": "smartsites-belgrade-mt",
+   "why": "2022-04-30: within 2 days of one of its closure days"
+  },
+  {
+   "timestamp": "20220401180037",
+   "url": "https://www.bsd44.org/",
+   "station": "smartsites-belgrade-mt",
+   "why": "2022-04-02: within 2 days of one of its closure days"
+  },
+  {
+   "timestamp": "20210417014733",
+   "url": "https://www.bsd44.org/",
+   "station": "smartsites-belgrade-mt",
+   "why": "2021-04-17: within 2 days of one of its closure days"
+  },
+  {
+   "timestamp": "20210418143628",
+   "url": "https://www.bsd44.org/",
+   "station": "smartsites-belgrade-mt",
+   "why": "2021-04-18: within 2 days of one of its closure days"
+  },
+  {
+   "timestamp": "20230127211004",
+   "url": "https://www.bsd44.org/",
+   "station": "smartsites-belgrade-mt",
+   "why": "2023-01-28: within 2 days of one of its closure days"
+  },
+  {
+   "timestamp": "20210102173325",
+   "url": "http://www.bsd44.org/",
+   "station": "smartsites-belgrade-mt",
+   "why": "2021-01-03: within 2 days of one of its closure days"
+  },
+  {
+   "timestamp": "20210202112323",
+   "url": "http://www.bsd44.org/",
+   "station": "smartsites-belgrade-mt",
+   "why": "2021-02-02: within 2 days of one of its closure days"
+  },
+  {
+   "timestamp": "20220101122328",
+   "url": "http://www.bsd44.org/",
+   "station": "smartsites-belgrade-mt",
+   "why": "2022-01-01: within 2 days of one of its closure days"
+  },
+  {
+   "timestamp": "20220101201732",
+   "url": "https://www.bsd44.org/",
+   "station": "smartsites-belgrade-mt",
+   "why": "2022-01-02: within 2 days of one of its closure days"
+  },
+  {
+   "timestamp": "20210201142930",
+   "url": "https://www.bsd44.org/",
+   "station": "smartsites-belgrade-mt",
+   "why": "2021-02-01: within 2 days of one of its closure days"
+  },
+  {
+   "timestamp": "20211226121437",
+   "url": "http://www.bsd44.org/",
+   "station": "smartsites-belgrade-mt",
+   "why": "2021-12-26: within 2 days of one of its closure days"
+  },
+  {
+   "timestamp": "20210120100703",
+   "url": "https://www.bsd44.org/",
+   "station": "smartsites-belgrade-mt",
+   "why": "2021-01-20: within 2 days of one of its closure days"
+  },
+  {
+   "timestamp": "20201023111833",
+   "url": "https://www.bsd44.org/",
+   "station": "smartsites-belgrade-mt",
+   "why": "2020-10-23: within 2 days of one of its closure days"
+  },
+  {
+   "timestamp": "20220129213346",
+   "url": "https://www.bsd44.org/",
+   "station": "smartsites-belgrade-mt",
+   "why": "2022-01-30: within 2 days of one of its closure days"
+  },
+  {
+   "timestamp": "20180330103240",
+   "url": "https://www.bsd44.org/",
+   "station": "smartsites-belgrade-mt",
+   "why": "2018-03-30: within 2 days of one of its closure days"
+  },
+  {
+   "timestamp": "20180315173057",
+   "url": "https://www.bsd44.org/",
+   "station": "smartsites-belgrade-mt",
+   "why": "2018-03-16: within 2 days of one of its closure days"
+  },
+  {
+   "timestamp": "20250123062417",
+   "url": "https://www.bsd44.org/",
+   "station": "smartsites-belgrade-mt",
+   "why": "2025-01-23: within 2 days of one of its closure days"
+  },
+  {
+   "timestamp": "20230307214419",
+   "url": "https://www.bsd44.org/",
+   "station": "smartsites-belgrade-mt",
+   "why": "2023-03-08: within 2 days of one of its closure days"
+  },
+  {
+   "timestamp": "20251208105146",
+   "url": "https://www.bsd44.org/",
+   "station": "smartsites-belgrade-mt",
+   "why": "2025-12-08: within 2 days of one of its closure days"
+  },
+  {
+   "timestamp": "20250210015137",
+   "url": "https://www.bsd44.org/",
+   "station": "smartsites-belgrade-mt",
+   "why": "2025-02-10: within 2 days of one of its closure days"
+  },
+  {
+   "timestamp": "20240502192436",
+   "url": "https://www.bsd44.org/",
+   "station": "smartsites-belgrade-mt",
+   "why": "2024-05-03: within 2 days of one of its closure days"
+  },
+  {
+   "timestamp": "20240224125655",
+   "url": "https://www.bsd44.org/",
+   "station": "smartsites-belgrade-mt",
+   "why": "2024-02-24: within 2 days of one of its closure days"
+  },
+  {
+   "timestamp": "20240224064217",
+   "url": "https://www.bsd44.org/",
+   "station": "smartsites-belgrade-mt",
+   "why": "2024-02-24: within 2 days of one of its closure days"
+  },
+  {
+   "timestamp": "20241102171302",
+   "url": "https://www.bsd44.org/",
+   "station": "smartsites-belgrade-mt",
+   "why": "2024-11-03: within 2 days of one of its closure days"
+  },
+  {
+   "timestamp": "20250210153628",
+   "url": "https://www.bsd44.org/",
+   "station": "smartsites-belgrade-mt",
+   "why": "2025-02-10: within 2 days of one of its closure days"
+  },
+  {
+   "timestamp": "20250320110219",
+   "url": "https://www.bsd44.org/",
+   "station": "smartsites-belgrade-mt",
+   "why": "2025-03-20: within 2 days of one of its closure days"
+  },
+  {
+   "timestamp": "20250320052530",
+   "url": "https://www.bsd44.org/",
+   "station": "smartsites-belgrade-mt",
+   "why": "2025-03-20: within 2 days of one of its closure days"
+  },
+  {
+   "timestamp": "20250319164717",
+   "url": "https://www.bsd44.org/",
+   "station": "smartsites-belgrade-mt",
+   "why": "2025-03-20: within 2 days of one of its closure days"
+  },
+  {
+   "timestamp": "20250202155515",
+   "url": "https://www.bsd44.org/",
+   "station": "smartsites-belgrade-mt",
+   "why": "2025-02-02: within 2 days of one of its closure days"
+  },
+  {
+   "timestamp": "20240521164517",
+   "url": "https://www.bsd44.org/",
+   "station": "smartsites-belgrade-mt",
+   "why": "2024-05-22: within 2 days of one of its closure days"
+  },
+  {
+   "timestamp": "20231205152329",
+   "url": "https://www.bsd44.org/",
+   "station": "smartsites-belgrade-mt",
+   "why": "2023-12-05: within 2 days of one of its closure days"
+  },
+  {
+   "timestamp": "20250427035112",
+   "url": "https://www.bsd44.org/",
+   "station": "smartsites-belgrade-mt",
+   "why": "2025-04-27: within 2 days of one of its closure days"
+  },
+  {
+   "timestamp": "20231002042910",
+   "url": "https://www.bsd44.org/",
+   "station": "smartsites-belgrade-mt",
+   "why": "2023-10-02: within 2 days of one of its closure days"
+  },
+  {
+   "timestamp": "20231002050002",
+   "url": "https://www.bsd44.org/",
+   "station": "smartsites-belgrade-mt",
+   "why": "2023-10-02: within 2 days of one of its closure days"
+  },
+  {
+   "timestamp": "20231031045232",
+   "url": "https://www.bsd44.org/",
+   "station": "smartsites-belgrade-mt",
+   "why": "2023-10-31: within 2 days of one of its closure days"
+  },
+  {
+   "timestamp": "20220301202206",
+   "url": "https://www.lewistown.k12.mt.us/",
+   "station": "finalsite-lewistown-mt",
+   "why": "2022-03-02: within 2 days of one of its closure days"
+  },
+  {
+   "timestamp": "20220101203706",
+   "url": "https://www.lewistown.k12.mt.us/",
+   "station": "finalsite-lewistown-mt",
+   "why": "2022-01-02: within 2 days of one of its closure days"
+  },
+  {
+   "timestamp": "20210418095032",
+   "url": "https://www.lewistown.k12.mt.us/",
+   "station": "finalsite-lewistown-mt",
+   "why": "2021-04-18: within 2 days of one of its closure days"
+  },
+  {
+   "timestamp": "20210416232617",
+   "url": "https://www.lewistown.k12.mt.us/",
+   "station": "finalsite-lewistown-mt",
+   "why": "2021-04-17: within 2 days of one of its closure days"
+  },
+  {
+   "timestamp": "20201106213310",
+   "url": "https://www.lewistown.k12.mt.us/",
+   "station": "finalsite-lewistown-mt",
+   "why": "2020-11-07: within 2 days of one of its closure days"
+  },
+  {
+   "timestamp": "20201023234522",
+   "url": "https://www.lewistown.k12.mt.us/",
+   "station": "finalsite-lewistown-mt",
+   "why": "2020-10-24: within 2 days of one of its closure days"
+  },
+  {
+   "timestamp": "20201023030230",
+   "url": "https://www.lewistown.k12.mt.us/",
+   "station": "finalsite-lewistown-mt",
+   "why": "2020-10-23: within 2 days of one of its closure days"
+  },
+  {
+   "timestamp": "20220221083328",
+   "url": "http://www.sweetwater1.org/",
+   "station": "finalsite-sweetwater-1-wy",
+   "why": "storm day 2022-02-21 (market score 1.00)"
+  },
+  {
+   "timestamp": "20220220203336",
+   "url": "http://www.sweetwater1.org/",
+   "station": "finalsite-sweetwater-1-wy",
+   "why": "storm day 2022-02-21 (market score 1.00)"
+  },
+  {
+   "timestamp": "20240111190343",
+   "url": "http://www.sweetwater1.org/",
+   "station": "finalsite-sweetwater-1-wy",
+   "why": "storm day 2024-01-12 (market score 1.00)"
+  },
+  {
+   "timestamp": "20221220194038",
+   "url": "http://www.sweetwater1.org/",
+   "station": "finalsite-sweetwater-1-wy",
+   "why": "storm day 2022-12-21 (market score 1.00)"
+  },
+  {
+   "timestamp": "20221213015220",
+   "url": "http://www.sweetwater1.org/",
+   "station": "finalsite-sweetwater-1-wy",
+   "why": "storm day 2022-12-13 (market score 1.00)"
+  },
+  {
+   "timestamp": "20230403090540",
+   "url": "http://www.sweetwater1.org/",
+   "station": "finalsite-sweetwater-1-wy",
+   "why": "storm day 2023-04-03 (market score 1.00)"
+  },
+  {
+   "timestamp": "20240112131116",
+   "url": "http://www.sweetwater1.org/",
+   "station": "finalsite-sweetwater-1-wy",
+   "why": "storm day 2024-01-12 (market score 1.00)"
+  },
+  {
+   "timestamp": "20240112084445",
+   "url": "http://www.sweetwater1.org/",
+   "station": "finalsite-sweetwater-1-wy",
+   "why": "storm day 2024-01-12 (market score 1.00)"
+  },
+  {
+   "timestamp": "20240112090056",
+   "url": "http://www.sweetwater1.org/",
+   "station": "finalsite-sweetwater-1-wy",
+   "why": "storm day 2024-01-12 (market score 1.00)"
+  },
+  {
+   "timestamp": "20231123071731",
+   "url": "http://www.sweetwater1.org/",
+   "station": "finalsite-sweetwater-1-wy",
+   "why": "storm day 2023-11-23 (market score 1.00)"
+  },
+  {
+   "timestamp": "20231124071341",
+   "url": "http://www.sweetwater1.org/",
+   "station": "finalsite-sweetwater-1-wy",
+   "why": "storm day 2023-11-24 (market score 1.00)"
+  },
+  {
+   "timestamp": "20231123191824",
+   "url": "http://www.sweetwater1.org/",
+   "station": "finalsite-sweetwater-1-wy",
+   "why": "storm day 2023-11-24 (market score 1.00)"
+  },
+  {
+   "timestamp": "20221221074023",
+   "url": "http://www.sweetwater1.org/",
+   "station": "finalsite-sweetwater-1-wy",
+   "why": "storm day 2022-12-21 (market score 1.00)"
+  },
+  {
+   "timestamp": "20221221102616",
+   "url": "http://www.sweetwater1.org/",
+   "station": "finalsite-sweetwater-1-wy",
+   "why": "storm day 2022-12-21 (market score 1.00)"
+  },
+  {
+   "timestamp": "20230101194027",
+   "url": "http://www.sweetwater1.org/",
+   "station": "finalsite-sweetwater-1-wy",
+   "why": "storm day 2023-01-02 (market score 1.00)"
+  },
+  {
+   "timestamp": "20230102074251",
+   "url": "http://www.sweetwater1.org/",
+   "station": "finalsite-sweetwater-1-wy",
+   "why": "storm day 2023-01-02 (market score 1.00)"
+  },
+  {
+   "timestamp": "20211011225116",
+   "url": "http://www.sweetwater1.org/",
+   "station": "finalsite-sweetwater-1-wy",
+   "why": "storm day 2021-10-12 (market score 1.00)"
+  },
+  {
+   "timestamp": "20230130074026",
+   "url": "http://www.sweetwater1.org/",
+   "station": "finalsite-sweetwater-1-wy",
+   "why": "storm day 2023-01-30 (market score 0.50)"
+  },
+  {
+   "timestamp": "20230130194156",
+   "url": "http://www.sweetwater1.org/",
+   "station": "finalsite-sweetwater-1-wy",
+   "why": "storm day 2023-01-31 (market score 0.50)"
+  },
+  {
+   "timestamp": "20221222021435",
+   "url": "http://www.sweetwater1.org/",
+   "station": "finalsite-sweetwater-1-wy",
+   "why": "storm day 2022-12-22 (market score 0.50)"
+  },
+  {
+   "timestamp": "20221223032602",
+   "url": "http://www.sweetwater1.org/",
+   "station": "finalsite-sweetwater-1-wy",
+   "why": "storm day 2022-12-23 (market score 0.50)"
+  },
+  {
+   "timestamp": "20230130183545",
+   "url": "http://www.sweetwater1.org/",
+   "station": "finalsite-sweetwater-1-wy",
+   "why": "storm day 2023-01-31 (market score 0.50)"
+  },
+  {
+   "timestamp": "20230131105019",
+   "url": "http://www.sweetwater1.org/",
+   "station": "finalsite-sweetwater-1-wy",
+   "why": "storm day 2023-01-31 (market score 0.50)"
+  },
+  {
+   "timestamp": "20230129194122",
+   "url": "http://www.sweetwater1.org/",
+   "station": "finalsite-sweetwater-1-wy",
+   "why": "storm day 2023-01-30 (market score 0.50)"
+  },
+  {
+   "timestamp": "20230130081632",
+   "url": "http://www.sweetwater1.org/",
+   "station": "finalsite-sweetwater-1-wy",
+   "why": "storm day 2023-01-30 (market score 0.50)"
+  },
+  {
+   "timestamp": "20170105181132",
+   "url": "http://www.sweetwater1.org/",
+   "station": "finalsite-sweetwater-1-wy",
+   "why": "storm day 2017-01-06 (market score 0.50)"
+  },
+  {
+   "timestamp": "20221222004910",
+   "url": "http://www.sweetwater1.org/",
+   "station": "finalsite-sweetwater-1-wy",
+   "why": "storm day 2022-12-22 (market score 0.50)"
+  },
+  {
+   "timestamp": "20221222194047",
+   "url": "http://www.sweetwater1.org/",
+   "station": "finalsite-sweetwater-1-wy",
+   "why": "storm day 2022-12-23 (market score 0.50)"
+  },
+  {
+   "timestamp": "20221221194019",
+   "url": "http://www.sweetwater1.org/",
+   "station": "finalsite-sweetwater-1-wy",
+   "why": "storm day 2022-12-22 (market score 0.50)"
+  },
+  {
+   "timestamp": "20221223042106",
+   "url": "http://www.sweetwater1.org/",
+   "station": "finalsite-sweetwater-1-wy",
+   "why": "storm day 2022-12-23 (market score 0.50)"
+  },
+  {
+   "timestamp": "20221222074037",
+   "url": "http://www.sweetwater1.org/",
+   "station": "finalsite-sweetwater-1-wy",
+   "why": "storm day 2022-12-22 (market score 0.50)"
+  },
+  {
+   "timestamp": "20221223074031",
+   "url": "http://www.sweetwater1.org/",
+   "station": "finalsite-sweetwater-1-wy",
+   "why": "storm day 2022-12-23 (market score 0.50)"
+  },
+  {
+   "timestamp": "20221221173921",
+   "url": "http://www.sweetwater1.org/",
+   "station": "finalsite-sweetwater-1-wy",
+   "why": "storm day 2022-12-22 (market score 0.50)"
+  },
+  {
+   "timestamp": "20230321201629",
+   "url": "http://www.sweetwater1.org/",
+   "station": "finalsite-sweetwater-1-wy",
+   "why": "storm day 2023-03-22 (market score 0.25)"
+  },
+  {
+   "timestamp": "20220411202722",
+   "url": "http://www.sweetwater1.org/",
+   "station": "finalsite-sweetwater-1-wy",
+   "why": "storm day 2022-04-12 (market score 0.25)"
+  },
+  {
+   "timestamp": "20240109220401",
+   "url": "http://www.sweetwater1.org/",
+   "station": "finalsite-sweetwater-1-wy",
+   "why": "storm day 2024-01-10 (market score 0.25)"
+  },
+  {
+   "timestamp": "20240109192449",
+   "url": "http://www.sweetwater1.org/",
+   "station": "finalsite-sweetwater-1-wy",
+   "why": "storm day 2024-01-10 (market score 0.25)"
+  },
+  {
+   "timestamp": "20240108194515",
+   "url": "http://www.sweetwater1.org/",
+   "station": "finalsite-sweetwater-1-wy",
+   "why": "storm day 2024-01-09 (market score 0.25)"
+  },
+  {
+   "timestamp": "20220106203711",
+   "url": "http://www.sweetwater1.org/",
+   "station": "finalsite-sweetwater-1-wy",
+   "why": "storm day 2022-01-07 (market score 0.25)"
+  },
+  {
+   "timestamp": "20220107083511",
+   "url": "http://www.sweetwater1.org/",
+   "station": "finalsite-sweetwater-1-wy",
+   "why": "storm day 2022-01-07 (market score 0.25)"
+  },
+  {
+   "timestamp": "20230321173548",
+   "url": "http://www.sweetwater1.org/",
+   "station": "finalsite-sweetwater-1-wy",
+   "why": "storm day 2023-03-22 (market score 0.25)"
+  },
+  {
+   "timestamp": "20230322075026",
+   "url": "http://www.sweetwater1.org/",
+   "station": "finalsite-sweetwater-1-wy",
+   "why": "storm day 2023-03-22 (market score 0.25)"
+  },
+  {
+   "timestamp": "20220412082650",
+   "url": "http://www.sweetwater1.org/",
+   "station": "finalsite-sweetwater-1-wy",
+   "why": "storm day 2022-04-12 (market score 0.25)"
+  },
+  {
+   "timestamp": "20240109071350",
+   "url": "http://www.sweetwater1.org/",
+   "station": "finalsite-sweetwater-1-wy",
+   "why": "storm day 2024-01-09 (market score 0.25)"
+  },
+  {
+   "timestamp": "20230110194016",
+   "url": "http://www.sweetwater1.org/",
+   "station": "finalsite-sweetwater-1-wy",
+   "why": "storm day 2023-01-11 (market score 0.25)"
+  },
+  {
+   "timestamp": "20230111074016",
+   "url": "http://www.sweetwater1.org/",
+   "station": "finalsite-sweetwater-1-wy",
+   "why": "storm day 2023-01-11 (market score 0.25)"
+  },
+  {
+   "timestamp": "20221102200553",
+   "url": "http://www.sweetwater1.org/",
+   "station": "finalsite-sweetwater-1-wy",
+   "why": "storm day 2022-11-03 (market score 0.25)"
+  },
+  {
+   "timestamp": "20221103080527",
+   "url": "http://www.sweetwater1.org/",
+   "station": "finalsite-sweetwater-1-wy",
+   "why": "storm day 2022-11-03 (market score 0.25)"
+  },
+  {
+   "timestamp": "20230406104757",
+   "url": "http://www.sweetwater1.org/",
+   "station": "finalsite-sweetwater-1-wy",
+   "why": "2023-04-06: within 2 days of one of its closure days"
+  },
+  {
+   "timestamp": "20230404184833",
+   "url": "http://www.sweetwater1.org/",
+   "station": "finalsite-sweetwater-1-wy",
+   "why": "2023-04-05: within 2 days of one of its closure days"
+  },
+  {
+   "timestamp": "20230404222439",
+   "url": "http://www.sweetwater1.org/",
+   "station": "finalsite-sweetwater-1-wy",
+   "why": "2023-04-05: within 2 days of one of its closure days"
+  },
+  {
+   "timestamp": "20230323235833",
+   "url": "http://www.sweetwater1.org/",
+   "station": "finalsite-sweetwater-1-wy",
+   "why": "2023-03-24: within 2 days of one of its closure days"
+  },
+  {
+   "timestamp": "20230311194343",
+   "url": "http://www.sweetwater1.org/",
+   "station": "finalsite-sweetwater-1-wy",
+   "why": "2023-03-12: within 2 days of one of its closure days"
+  },
+  {
+   "timestamp": "20230311080825",
+   "url": "http://www.sweetwater1.org/",
+   "station": "finalsite-sweetwater-1-wy",
+   "why": "2023-03-11: within 2 days of one of its closure days"
+  },
+  {
+   "timestamp": "20230307202526",
+   "url": "http://www.sweetwater1.org/",
+   "station": "finalsite-sweetwater-1-wy",
+   "why": "2023-03-08: within 2 days of one of its closure days"
+  },
+  {
+   "timestamp": "20230201205610",
+   "url": "http://www.sweetwater1.org/",
+   "station": "finalsite-sweetwater-1-wy",
+   "why": "2023-02-02: within 2 days of one of its closure days"
+  },
+  {
+   "timestamp": "20220215083356",
+   "url": "http://www.sweetwater1.org/",
+   "station": "finalsite-sweetwater-1-wy",
+   "why": "2022-02-15: within 2 days of one of its closure days"
+  },
+  {
+   "timestamp": "20220222154756",
+   "url": "http://www.sweetwater1.org/",
+   "station": "finalsite-sweetwater-1-wy",
+   "why": "2022-02-22: within 2 days of one of its closure days"
+  },
+  {
+   "timestamp": "20220219203346",
+   "url": "http://www.sweetwater1.org/",
+   "station": "finalsite-sweetwater-1-wy",
+   "why": "2022-02-20: within 2 days of one of its closure days"
+  },
+  {
+   "timestamp": "20220221203339",
+   "url": "http://www.sweetwater1.org/",
+   "station": "finalsite-sweetwater-1-wy",
+   "why": "2022-02-22: within 2 days of one of its closure days"
+  },
+  {
+   "timestamp": "20220214203330",
+   "url": "http://www.sweetwater1.org/",
+   "station": "finalsite-sweetwater-1-wy",
+   "why": "2022-02-15: within 2 days of one of its closure days"
+  },
+  {
+   "timestamp": "20220219083400",
+   "url": "http://www.sweetwater1.org/",
+   "station": "finalsite-sweetwater-1-wy",
+   "why": "2022-02-19: within 2 days of one of its closure days"
+  },
+  {
+   "timestamp": "20220412202648",
+   "url": "http://www.sweetwater1.org/",
+   "station": "finalsite-sweetwater-1-wy",
+   "why": "2022-04-13: within 2 days of one of its closure days"
+  },
+  {
+   "timestamp": "20220413202746",
+   "url": "http://www.sweetwater1.org/",
+   "station": "finalsite-sweetwater-1-wy",
+   "why": "2022-04-14: within 2 days of one of its closure days"
+  },
+  {
+   "timestamp": "20240111044349",
+   "url": "http://www.sweetwater1.org/",
+   "station": "finalsite-sweetwater-1-wy",
+   "why": "2024-01-11: within 2 days of one of its closure days"
+  },
+  {
+   "timestamp": "20230112194131",
+   "url": "http://www.sweetwater1.org/",
+   "station": "finalsite-sweetwater-1-wy",
+   "why": "2023-01-13: within 2 days of one of its closure days"
+  },
+  {
+   "timestamp": "20240110222527",
+   "url": "http://www.sweetwater1.org/",
+   "station": "finalsite-sweetwater-1-wy",
+   "why": "2024-01-11: within 2 days of one of its closure days"
+  },
+  {
+   "timestamp": "20231125191811",
+   "url": "http://www.sweetwater1.org/",
+   "station": "finalsite-sweetwater-1-wy",
+   "why": "2023-11-26: within 2 days of one of its closure days"
+  },
+  {
+   "timestamp": "20231122073613",
+   "url": "http://www.sweetwater1.org/",
+   "station": "finalsite-sweetwater-1-wy",
+   "why": "2023-11-22: within 2 days of one of its closure days"
+  },
+  {
+   "timestamp": "20240107072232",
+   "url": "http://www.sweetwater1.org/",
+   "station": "finalsite-sweetwater-1-wy",
+   "why": "2024-01-07: within 2 days of one of its closure days"
+  },
+  {
+   "timestamp": "20220106083506",
+   "url": "http://www.sweetwater1.org/",
+   "station": "finalsite-sweetwater-1-wy",
+   "why": "2022-01-06: within 2 days of one of its closure days"
+  },
+  {
+   "timestamp": "20220105203522",
+   "url": "http://www.sweetwater1.org/",
+   "station": "finalsite-sweetwater-1-wy",
+   "why": "2022-01-06: within 2 days of one of its closure days"
+  },
+  {
+   "timestamp": "20230111194015",
+   "url": "http://www.sweetwater1.org/",
+   "station": "finalsite-sweetwater-1-wy",
+   "why": "2023-01-12: within 2 days of one of its closure days"
+  },
+  {
+   "timestamp": "20221231074013",
+   "url": "http://www.sweetwater1.org/",
+   "station": "finalsite-sweetwater-1-wy",
+   "why": "2022-12-31: within 2 days of one of its closure days"
+  },
+  {
+   "timestamp": "20230103194019",
+   "url": "http://www.sweetwater1.org/",
+   "station": "finalsite-sweetwater-1-wy",
+   "why": "2023-01-04: within 2 days of one of its closure days"
+  },
+  {
+   "timestamp": "20230108194026",
+   "url": "http://www.sweetwater1.org/",
+   "station": "finalsite-sweetwater-1-wy",
+   "why": "2023-01-09: within 2 days of one of its closure days"
   }
  ]
 }
