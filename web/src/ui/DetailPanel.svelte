@@ -185,6 +185,7 @@
                 <span class="near-name">{school.name}</span>
                 {#if school.tone !== null}
                   <span class="glyph {GLYPHS[school.tone]}" aria-hidden="true"></span>
+                  <span class="sr-only">{copy.status[school.tone]}</span>
                 {/if}
               </span>
             </button>

@@ -150,6 +150,11 @@ describe('DetailPanel', () => {
     ]);
     expect(rows[0]?.querySelector('.glyph')).toBeNull();
     expect(rows[1]?.querySelector('.glyph.is-closed')).not.toBeNull();
+    // The light is drawn for the eye; a screen reader hears the status in words.
+    expect(rows.map((row) => row.querySelector('.sr-only')?.textContent ?? null)).toEqual([
+      null,
+      copy.status.closed,
+    ]);
     rows[1]?.click();
     expect(onnearby).toHaveBeenCalledWith(nearby[1]);
   });

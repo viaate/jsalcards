@@ -93,6 +93,12 @@ describe('AreaPanel', () => {
       ['0.4 mi', 'Visitation Test School', VIEW.own[1]?.kind, true],
       ['1.1 mi', 'Test Village High School', VIEW.near[0]?.kind, false],
     ]);
+    // The light is drawn for the eye; a screen reader hears the status in words.
+    expect(
+      [...panel.querySelectorAll('button.school')].map(
+        (row) => row.querySelector('.sr-only')?.textContent ?? null,
+      ),
+    ).toEqual([null, copy.status.closed, null]);
     expect(panel.querySelector('.none')).toBeNull();
   });
 

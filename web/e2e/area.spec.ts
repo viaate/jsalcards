@@ -745,6 +745,10 @@ test('a ZIP code picked opens its area beside the map, where the school panel op
   // Today's statuses counted over the list, and lit on each row.
   await expect(panel.locator('.counts')).toHaveText('2 closed');
   await expect(panel.locator('button.school .glyph.is-closed')).toHaveCount(2);
+  // A screen reader hears each row's status in words, as the light shows it.
+  await expect(panel.getByRole('button', { name: /Carver Dual Language/u })).toHaveAccessibleName(
+    /\bCarver Dual Language\b.* Closed\b/u,
+  );
   await expectFramed(page, '64130');
   const area = await panel.boundingBox();
 
