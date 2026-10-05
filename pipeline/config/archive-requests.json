@@ -1,146 +1,16 @@
 {
- "cdx": [
-  {
-   "url": "www.kens5.com/article/weather/closings/san-antonio-south-texas-school-closings-delays-openings-list-updates/273-6b164c07-c1ad-44ac-b1a9-9fcb273e0ca0",
-   "from": "20200101",
-   "to": "20261004",
-   "filter": [
-    "statuscode:200"
-   ],
-   "station": "tegna-kens",
-   "why": "the article KENS's closings page linked to as its list from 2022-01 to 2023-09 (29 captures of kens5.com/closings say 'For a list of closings in our area please click this link'); listed to read its captures on KENS's storm days"
-  },
-  {
-   "url": "www.kens5.com/article/news/education/school-district-closures-due-to-winter-weather/273-dc6b21f3-f42c-4e23-b704-785205cf7143",
-   "from": "20200101",
-   "to": "20261004",
-   "filter": [
-    "statuscode:200"
-   ],
-   "station": "tegna-kens",
-   "why": "the article KENS's closings page linked to as its list in January 2022 (29 captures of kens5.com/closings say 'For a list of closings in our area please click this link'); listed to read its captures on KENS's storm days"
-  }
- ],
  "snapshots": [
   {
-   "timestamp": "20220120140000",
-   "url": "https://www.kens5.com/article/weather/closings/san-antonio-south-texas-school-closings-delays-openings-list-updates/273-6b164c07-c1ad-44ac-b1a9-9fcb273e0ca0",
-   "station": "tegna-kens",
-   "why": "2022-01-20: a storm day of KENS while its closings page linked to this article (the archive serves the nearest capture)"
+   "timestamp": "20240209105757",
+   "url": "https://www.murrieta.k12.ca.us/",
+   "station": "finalsite-murrieta-valley-ca",
+   "why": "2024-02-09: within 2 days of one of its closure days"
   },
   {
-   "timestamp": "20220203140000",
-   "url": "https://www.kens5.com/article/weather/closings/san-antonio-south-texas-school-closings-delays-openings-list-updates/273-6b164c07-c1ad-44ac-b1a9-9fcb273e0ca0",
-   "station": "tegna-kens",
-   "why": "2022-02-03: a storm day of KENS while its closings page linked to this article (the archive serves the nearest capture)"
-  },
-  {
-   "timestamp": "20220204140000",
-   "url": "https://www.kens5.com/article/weather/closings/san-antonio-south-texas-school-closings-delays-openings-list-updates/273-6b164c07-c1ad-44ac-b1a9-9fcb273e0ca0",
-   "station": "tegna-kens",
-   "why": "2022-02-04: a storm day of KENS while its closings page linked to this article (the archive serves the nearest capture)"
-  },
-  {
-   "timestamp": "20220224140000",
-   "url": "https://www.kens5.com/article/weather/closings/san-antonio-south-texas-school-closings-delays-openings-list-updates/273-6b164c07-c1ad-44ac-b1a9-9fcb273e0ca0",
-   "station": "tegna-kens",
-   "why": "2022-02-24: a storm day of KENS while its closings page linked to this article (the archive serves the nearest capture)"
-  },
-  {
-   "timestamp": "20221223140000",
-   "url": "https://www.kens5.com/article/weather/closings/san-antonio-south-texas-school-closings-delays-openings-list-updates/273-6b164c07-c1ad-44ac-b1a9-9fcb273e0ca0",
-   "station": "tegna-kens",
-   "why": "2022-12-23: a storm day of KENS while its closings page linked to this article (the archive serves the nearest capture)"
-  },
-  {
-   "timestamp": "20230130140000",
-   "url": "https://www.kens5.com/article/weather/closings/san-antonio-south-texas-school-closings-delays-openings-list-updates/273-6b164c07-c1ad-44ac-b1a9-9fcb273e0ca0",
-   "station": "tegna-kens",
-   "why": "2023-01-30: a storm day of KENS while its closings page linked to this article (the archive serves the nearest capture)"
-  },
-  {
-   "timestamp": "20230131140000",
-   "url": "https://www.kens5.com/article/weather/closings/san-antonio-south-texas-school-closings-delays-openings-list-updates/273-6b164c07-c1ad-44ac-b1a9-9fcb273e0ca0",
-   "station": "tegna-kens",
-   "why": "2023-01-31: a storm day of KENS while its closings page linked to this article (the archive serves the nearest capture)"
-  },
-  {
-   "timestamp": "20230201140000",
-   "url": "https://www.kens5.com/article/weather/closings/san-antonio-south-texas-school-closings-delays-openings-list-updates/273-6b164c07-c1ad-44ac-b1a9-9fcb273e0ca0",
-   "station": "tegna-kens",
-   "why": "2023-02-01: a storm day of KENS while its closings page linked to this article (the archive serves the nearest capture)"
-  },
-  {
-   "timestamp": "20230202140000",
-   "url": "https://www.kens5.com/article/weather/closings/san-antonio-south-texas-school-closings-delays-openings-list-updates/273-6b164c07-c1ad-44ac-b1a9-9fcb273e0ca0",
-   "station": "tegna-kens",
-   "why": "2023-02-02: a storm day of KENS while its closings page linked to this article (the archive serves the nearest capture)"
-  },
-  {
-   "timestamp": "20210215140000",
-   "url": "https://www.kens5.com/article/news/education/school-district-closures-due-to-winter-weather/273-dc6b21f3-f42c-4e23-b704-785205cf7143",
-   "station": "tegna-kens",
-   "why": "2021-02-15: a storm day of KENS; its closings page linked to this article in January 2022 (the archive serves the nearest capture)"
-  },
-  {
-   "timestamp": "20210216140000",
-   "url": "https://www.kens5.com/article/news/education/school-district-closures-due-to-winter-weather/273-dc6b21f3-f42c-4e23-b704-785205cf7143",
-   "station": "tegna-kens",
-   "why": "2021-02-16: a storm day of KENS; its closings page linked to this article in January 2022 (the archive serves the nearest capture)"
-  },
-  {
-   "timestamp": "20210217140000",
-   "url": "https://www.kens5.com/article/news/education/school-district-closures-due-to-winter-weather/273-dc6b21f3-f42c-4e23-b704-785205cf7143",
-   "station": "tegna-kens",
-   "why": "2021-02-17: a storm day of KENS; its closings page linked to this article in January 2022 (the archive serves the nearest capture)"
-  },
-  {
-   "timestamp": "20210218140000",
-   "url": "https://www.kens5.com/article/news/education/school-district-closures-due-to-winter-weather/273-dc6b21f3-f42c-4e23-b704-785205cf7143",
-   "station": "tegna-kens",
-   "why": "2021-02-18: a storm day of KENS; its closings page linked to this article in January 2022 (the archive serves the nearest capture)"
-  },
-  {
-   "timestamp": "20220120140000",
-   "url": "https://www.kens5.com/article/news/education/school-district-closures-due-to-winter-weather/273-dc6b21f3-f42c-4e23-b704-785205cf7143",
-   "station": "tegna-kens",
-   "why": "2022-01-20: a storm day of KENS; its closings page linked to this article in January 2022 (the archive serves the nearest capture)"
-  },
-  {
-   "timestamp": "20220203140000",
-   "url": "https://www.kens5.com/article/news/education/school-district-closures-due-to-winter-weather/273-dc6b21f3-f42c-4e23-b704-785205cf7143",
-   "station": "tegna-kens",
-   "why": "2022-02-03: a storm day of KENS; its closings page linked to this article in January 2022 (the archive serves the nearest capture)"
-  },
-  {
-   "timestamp": "20240224062530",
-   "url": "https://www.besd.net/",
-   "station": "apptegy-box-elder-ut",
-   "why": "2024-02-24: within 2 days of one of its closure days"
-  },
-  {
-   "timestamp": "20221107101247",
-   "url": "https://www.besd.net/",
-   "station": "apptegy-box-elder-ut",
-   "why": "2022-11-07: within 2 days of one of its closure days"
-  },
-  {
-   "timestamp": "20250202152557",
-   "url": "https://www.centerville.k12.mt.us/",
-   "station": "apptegy-centerville-mt",
-   "why": "2025-02-02: within 2 days of one of its closure days"
-  },
-  {
-   "timestamp": "20251208123110",
-   "url": "https://www.pcsd1.org/",
-   "station": "apptegy-park-1-wy",
-   "why": "2025-12-08: within 2 days of one of its closure days"
-  },
-  {
-   "timestamp": "20241215045636",
-   "url": "https://www.sd381.k12.id.us/",
-   "station": "apptegy-american-falls-id",
-   "why": "2024-12-15: within 2 days of one of its closure days"
+   "timestamp": "20240118141626",
+   "url": "https://www.rivieraisd.us/",
+   "station": "apptegy-riviera-tx",
+   "why": "2024-01-18: within 2 days of one of its closure days"
   }
  ]
 }
