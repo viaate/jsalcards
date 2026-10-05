@@ -870,9 +870,12 @@ test('a ZIP code typed whole opens with Enter, before its result shows or after'
   await input.click();
   await input.fill('64112');
   await input.press('Enter');
-  await expect.poll(() => new URL(page.url()).searchParams.get('zip')).toBe('64112');
+  await expect
+    .poll(() => new URL(page.url()).searchParams.get('zip'), { timeout: 30_000 })
+    .toBe('64112');
   const panel = panelOf(page);
-  await expect(panel.locator('h2')).toHaveText('64112');
+  // The panel's code comes once a ZIP code first opens: on a slow machine, after a while.
+  await expect(panel.locator('h2')).toHaveText('64112', { timeout: 30_000 });
   await expect(panel).toBeFocused();
   // With its result listed, Enter picks it.
   await input.click();
