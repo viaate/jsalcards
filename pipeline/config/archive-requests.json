@@ -1,1264 +1,1264 @@
 {
   "snapshots": [
     {
-      "timestamp": "20240202223331",
+      "timestamp": "20260210040008",
       "url": "https://www.graniteschools.org/",
       "station": "district-homepage-granite-ut",
-      "why": "2024-02-03: within 2 days of one of its closure days"
+      "why": "2026-02-10: within 2 days of one of its closure days"
     },
     {
-      "timestamp": "20240119190542",
+      "timestamp": "20260226160331",
       "url": "https://www.graniteschools.org/",
       "station": "district-homepage-granite-ut",
-      "why": "2024-01-20: within 2 days of one of its closure days"
+      "why": "2026-02-27: within 2 days of one of its closure days"
     },
     {
-      "timestamp": "20240102224139",
-      "url": "https://www.graniteschools.org/",
-      "station": "district-homepage-granite-ut",
-      "why": "2024-01-03: within 2 days of one of its closure days"
-    },
-    {
-      "timestamp": "20240102224111",
-      "url": "https://www.graniteschools.org/",
-      "station": "district-homepage-granite-ut",
-      "why": "2024-01-03: within 2 days of one of its closure days"
-    },
-    {
-      "timestamp": "20240221213208",
-      "url": "https://www.graniteschools.org/",
-      "station": "district-homepage-granite-ut",
-      "why": "2024-02-22: within 2 days of one of its closure days"
-    },
-    {
-      "timestamp": "20240119190543",
-      "url": "https://www.graniteschools.org/",
-      "station": "district-homepage-granite-ut",
-      "why": "2024-01-20: within 2 days of one of its closure days"
-    },
-    {
-      "timestamp": "20240110213402",
-      "url": "https://www.graniteschools.org/",
-      "station": "district-homepage-granite-ut",
-      "why": "2024-01-11: within 2 days of one of its closure days"
-    },
-    {
-      "timestamp": "20240110213400",
-      "url": "https://www.graniteschools.org/",
-      "station": "district-homepage-granite-ut",
-      "why": "2024-01-11: within 2 days of one of its closure days"
-    },
-    {
-      "timestamp": "20231119043238",
-      "url": "https://www.graniteschools.org/",
-      "station": "district-homepage-granite-ut",
-      "why": "2023-11-19: within 2 days of one of its closure days"
-    },
-    {
-      "timestamp": "20240203114006",
-      "url": "https://www.graniteschools.org/",
-      "station": "district-homepage-granite-ut",
-      "why": "2024-02-03: within 2 days of one of its closure days"
-    },
-    {
-      "timestamp": "20240203114005",
-      "url": "https://www.graniteschools.org/",
-      "station": "district-homepage-granite-ut",
-      "why": "2024-02-03: within 2 days of one of its closure days"
-    },
-    {
-      "timestamp": "20260221224201",
-      "url": "https://www.graniteschools.org/",
-      "station": "district-homepage-granite-ut",
-      "why": "2026-02-22: within 2 days of one of its closure days"
-    },
-    {
-      "timestamp": "20251203184243",
-      "url": "https://www.graniteschools.org/",
-      "station": "district-homepage-granite-ut",
-      "why": "2025-12-04: within 2 days of one of its closure days"
-    },
-    {
-      "timestamp": "20221226153333",
-      "url": "https://www.graniteschools.org/",
-      "station": "district-homepage-granite-ut",
-      "why": "2022-12-26: within 2 days of one of its closure days"
-    },
-    {
-      "timestamp": "20221229113241",
-      "url": "https://www.graniteschools.org/",
-      "station": "district-homepage-granite-ut",
-      "why": "2022-12-29: within 2 days of one of its closure days"
-    },
-    {
-      "timestamp": "20221231055927",
-      "url": "https://www.graniteschools.org/",
-      "station": "district-homepage-granite-ut",
-      "why": "2022-12-31: within 2 days of one of its closure days"
-    },
-    {
-      "timestamp": "20230101091457",
-      "url": "https://www.graniteschools.org/",
-      "station": "district-homepage-granite-ut",
-      "why": "2023-01-01: within 2 days of one of its closure days"
-    },
-    {
-      "timestamp": "20230101091654",
-      "url": "https://www.graniteschools.org/",
-      "station": "district-homepage-granite-ut",
-      "why": "2023-01-01: within 2 days of one of its closure days"
-    },
-    {
-      "timestamp": "20221231071455",
-      "url": "https://www.graniteschools.org/",
-      "station": "district-homepage-granite-ut",
-      "why": "2022-12-31: within 2 days of one of its closure days"
-    },
-    {
-      "timestamp": "20230129055155",
-      "url": "https://www.graniteschools.org/",
-      "station": "district-homepage-granite-ut",
-      "why": "2023-01-29: within 2 days of one of its closure days"
-    },
-    {
-      "timestamp": "20221217151133",
-      "url": "https://www.graniteschools.org/",
-      "station": "district-homepage-granite-ut",
-      "why": "2022-12-17: within 2 days of one of its closure days"
-    },
-    {
-      "timestamp": "20221215212921",
-      "url": "https://www.graniteschools.org/",
-      "station": "district-homepage-granite-ut",
-      "why": "2022-12-16: within 2 days of one of its closure days"
-    },
-    {
-      "timestamp": "20230112220323",
-      "url": "https://www.graniteschools.org/",
-      "station": "district-homepage-granite-ut",
-      "why": "2023-01-13: within 2 days of one of its closure days"
-    },
-    {
-      "timestamp": "20240427041708",
-      "url": "https://www.graniteschools.org/",
-      "station": "district-homepage-granite-ut",
-      "why": "2024-04-27: within 2 days of one of its closure days"
-    },
-    {
-      "timestamp": "20240427032159",
-      "url": "https://www.graniteschools.org/",
-      "station": "district-homepage-granite-ut",
-      "why": "2024-04-27: within 2 days of one of its closure days"
-    },
-    {
-      "timestamp": "20240428154025",
-      "url": "https://www.graniteschools.org/",
-      "station": "district-homepage-granite-ut",
-      "why": "2024-04-28: within 2 days of one of its closure days"
-    },
-    {
-      "timestamp": "20240504133344",
-      "url": "https://www.graniteschools.org/",
-      "station": "district-homepage-granite-ut",
-      "why": "2024-05-04: within 2 days of one of its closure days"
-    },
-    {
-      "timestamp": "20240505044249",
-      "url": "https://www.graniteschools.org/",
-      "station": "district-homepage-granite-ut",
-      "why": "2024-05-05: within 2 days of one of its closure days"
-    },
-    {
-      "timestamp": "20240403130151",
-      "url": "https://www.graniteschools.org/",
-      "station": "district-homepage-granite-ut",
-      "why": "2024-04-03: within 2 days of one of its closure days"
-    },
-    {
-      "timestamp": "20240413175828",
-      "url": "https://www.graniteschools.org/",
-      "station": "district-homepage-granite-ut",
-      "why": "2024-04-14: within 2 days of one of its closure days"
-    },
-    {
-      "timestamp": "20240415172937",
-      "url": "https://www.graniteschools.org/",
-      "station": "district-homepage-granite-ut",
-      "why": "2024-04-16: within 2 days of one of its closure days"
-    },
-    {
-      "timestamp": "20240417122201",
-      "url": "https://www.graniteschools.org/",
-      "station": "district-homepage-granite-ut",
-      "why": "2024-04-17: within 2 days of one of its closure days"
-    },
-    {
-      "timestamp": "20240302132339",
-      "url": "https://www.graniteschools.org/",
-      "station": "district-homepage-granite-ut",
-      "why": "2024-03-02: within 2 days of one of its closure days"
-    },
-    {
-      "timestamp": "20240223072136",
-      "url": "https://www.graniteschools.org/",
-      "station": "district-homepage-granite-ut",
-      "why": "2024-02-23: within 2 days of one of its closure days"
-    },
-    {
-      "timestamp": "20230315194329",
-      "url": "https://www.graniteschools.org/",
-      "station": "district-homepage-granite-ut",
-      "why": "2023-03-16: within 2 days of one of its closure days"
-    },
-    {
-      "timestamp": "20230314111728",
-      "url": "https://www.graniteschools.org/",
-      "station": "district-homepage-granite-ut",
-      "why": "2023-03-14: within 2 days of one of its closure days"
-    },
-    {
-      "timestamp": "20250314231524",
-      "url": "https://www.graniteschools.org/",
-      "station": "district-homepage-granite-ut",
-      "why": "2025-03-15: within 2 days of one of its closure days"
-    },
-    {
-      "timestamp": "20220601102504",
-      "url": "https://www.graniteschools.org/",
-      "station": "district-homepage-granite-ut",
-      "why": "2022-06-01: within 2 days of one of its closure days"
-    },
-    {
-      "timestamp": "20220601102650",
-      "url": "https://www.graniteschools.org/",
-      "station": "district-homepage-granite-ut",
-      "why": "2022-06-01: within 2 days of one of its closure days"
-    },
-    {
-      "timestamp": "20220601102648",
-      "url": "https://www.graniteschools.org/",
-      "station": "district-homepage-granite-ut",
-      "why": "2022-06-01: within 2 days of one of its closure days"
-    },
-    {
-      "timestamp": "20231202113042",
-      "url": "https://www.graniteschools.org/",
-      "station": "district-homepage-granite-ut",
-      "why": "2023-12-02: within 2 days of one of its closure days"
-    },
-    {
-      "timestamp": "20231209170325",
-      "url": "https://www.graniteschools.org/",
-      "station": "district-homepage-granite-ut",
-      "why": "2023-12-10: within 2 days of one of its closure days"
-    },
-    {
-      "timestamp": "20231125120315",
-      "url": "https://www.graniteschools.org/",
-      "station": "district-homepage-granite-ut",
-      "why": "2023-11-25: within 2 days of one of its closure days"
-    },
-    {
-      "timestamp": "20240212204254",
-      "url": "https://www.graniteschools.org/",
-      "station": "district-homepage-granite-ut",
-      "why": "2024-02-13: within 2 days of one of its closure days"
-    },
-    {
-      "timestamp": "20240122191338",
-      "url": "https://www.graniteschools.org/",
-      "station": "district-homepage-granite-ut",
-      "why": "2024-01-23: within 2 days of one of its closure days"
-    },
-    {
-      "timestamp": "20240122235524",
-      "url": "https://www.graniteschools.org/",
-      "station": "district-homepage-granite-ut",
-      "why": "2024-01-23: within 2 days of one of its closure days"
-    },
-    {
-      "timestamp": "20230310164740",
-      "url": "https://www.graniteschools.org/",
-      "station": "district-homepage-granite-ut",
-      "why": "2023-03-11: within 2 days of one of its closure days"
-    },
-    {
-      "timestamp": "20230310171016",
-      "url": "https://www.graniteschools.org/",
-      "station": "district-homepage-granite-ut",
-      "why": "2023-03-11: within 2 days of one of its closure days"
-    },
-    {
-      "timestamp": "20240115172211",
-      "url": "https://www.graniteschools.org/",
-      "station": "district-homepage-granite-ut",
-      "why": "2024-01-16: within 2 days of one of its closure days"
-    },
-    {
-      "timestamp": "20230307143518",
-      "url": "https://www.graniteschools.org/",
-      "station": "district-homepage-granite-ut",
-      "why": "2023-03-07: within 2 days of one of its closure days"
-    },
-    {
-      "timestamp": "20231130043514",
-      "url": "https://www.graniteschools.org/",
-      "station": "district-homepage-granite-ut",
-      "why": "2023-11-30: within 2 days of one of its closure days"
-    },
-    {
-      "timestamp": "20240209120011",
-      "url": "https://www.graniteschools.org/",
-      "station": "district-homepage-granite-ut",
-      "why": "2024-02-09: within 2 days of one of its closure days"
-    },
-    {
-      "timestamp": "20230304065951",
-      "url": "https://www.graniteschools.org/",
-      "station": "district-homepage-granite-ut",
-      "why": "2023-03-04: within 2 days of one of its closure days"
-    },
-    {
-      "timestamp": "20221225005601",
-      "url": "https://www.graniteschools.org/",
-      "station": "district-homepage-granite-ut",
-      "why": "2022-12-25: within 2 days of one of its closure days"
-    },
-    {
-      "timestamp": "20221225223339",
-      "url": "https://www.graniteschools.org/",
-      "station": "district-homepage-granite-ut",
-      "why": "2022-12-26: within 2 days of one of its closure days"
-    },
-    {
-      "timestamp": "20230130221835",
-      "url": "https://www.graniteschools.org/",
-      "station": "district-homepage-granite-ut",
-      "why": "2023-01-31: within 2 days of one of its closure days"
-    },
-    {
-      "timestamp": "20221207035903",
-      "url": "https://www.graniteschools.org/",
-      "station": "district-homepage-granite-ut",
-      "why": "2022-12-07: within 2 days of one of its closure days"
-    },
-    {
-      "timestamp": "20221207035901",
-      "url": "https://www.graniteschools.org/",
-      "station": "district-homepage-granite-ut",
-      "why": "2022-12-07: within 2 days of one of its closure days"
-    },
-    {
-      "timestamp": "20221209235146",
-      "url": "https://www.graniteschools.org/",
-      "station": "district-homepage-granite-ut",
-      "why": "2022-12-10: within 2 days of one of its closure days"
-    },
-    {
-      "timestamp": "20231013184435",
-      "url": "https://www.graniteschools.org/",
-      "station": "district-homepage-granite-ut",
-      "why": "2023-10-14: within 2 days of one of its closure days"
-    },
-    {
-      "timestamp": "20231013184400",
-      "url": "https://www.graniteschools.org/",
-      "station": "district-homepage-granite-ut",
-      "why": "2023-10-14: within 2 days of one of its closure days"
-    },
-    {
-      "timestamp": "20221218171021",
-      "url": "https://www.graniteschools.org/",
-      "station": "district-homepage-granite-ut",
-      "why": "2022-12-19: within 2 days of one of its closure days"
-    },
-    {
-      "timestamp": "20221219020032",
-      "url": "https://www.graniteschools.org/",
-      "station": "district-homepage-granite-ut",
-      "why": "2022-12-19: within 2 days of one of its closure days"
-    },
-    {
-      "timestamp": "20210424003932",
-      "url": "https://www.graniteschools.org/",
-      "station": "district-homepage-granite-ut",
-      "why": "2021-04-24: within 2 days of one of its closure days"
-    },
-    {
-      "timestamp": "20210424010427",
-      "url": "https://www.graniteschools.org/",
-      "station": "district-homepage-granite-ut",
-      "why": "2021-04-24: within 2 days of one of its closure days"
-    },
-    {
-      "timestamp": "20231121142929",
-      "url": "https://www.graniteschools.org/",
-      "station": "district-homepage-granite-ut",
-      "why": "2023-11-21: within 2 days of one of its closure days"
-    },
-    {
-      "timestamp": "20210424010410",
-      "url": "https://www.graniteschools.org/",
-      "station": "district-homepage-granite-ut",
-      "why": "2021-04-24: within 2 days of one of its closure days"
-    },
-    {
-      "timestamp": "20231024234145",
-      "url": "https://www.graniteschools.org/",
-      "station": "district-homepage-granite-ut",
-      "why": "2023-10-25: within 2 days of one of its closure days"
-    },
-    {
-      "timestamp": "20231121091022",
-      "url": "https://www.graniteschools.org/",
-      "station": "district-homepage-granite-ut",
-      "why": "2023-11-21: within 2 days of one of its closure days"
-    },
-    {
-      "timestamp": "20210424145100",
-      "url": "https://www.graniteschools.org/",
-      "station": "district-homepage-granite-ut",
-      "why": "2021-04-24: within 2 days of one of its closure days"
-    },
-    {
-      "timestamp": "20210424210622",
-      "url": "https://www.graniteschools.org/",
-      "station": "district-homepage-granite-ut",
-      "why": "2021-04-25: within 2 days of one of its closure days"
-    },
-    {
-      "timestamp": "20231129060411",
-      "url": "https://www.graniteschools.org/",
-      "station": "district-homepage-granite-ut",
-      "why": "2023-11-29: within 2 days of one of its closure days"
-    },
-    {
-      "timestamp": "20260308111847",
-      "url": "https://www.graniteschools.org/",
-      "station": "district-homepage-granite-ut",
-      "why": "2026-03-08: within 2 days of one of its closure days"
-    },
-    {
-      "timestamp": "20210206084641",
-      "url": "https://www.graniteschools.org/",
-      "station": "district-homepage-granite-ut",
-      "why": "2021-02-06: within 2 days of one of its closure days"
-    },
-    {
-      "timestamp": "20210206052529",
-      "url": "https://www.graniteschools.org/",
-      "station": "district-homepage-granite-ut",
-      "why": "2021-02-06: within 2 days of one of its closure days"
-    },
-    {
-      "timestamp": "20210207003631",
-      "url": "https://www.graniteschools.org/",
-      "station": "district-homepage-granite-ut",
-      "why": "2021-02-07: within 2 days of one of its closure days"
-    },
-    {
-      "timestamp": "20210207023812",
-      "url": "https://www.graniteschools.org/",
-      "station": "district-homepage-granite-ut",
-      "why": "2021-02-07: within 2 days of one of its closure days"
-    },
-    {
-      "timestamp": "20210207114911",
-      "url": "https://www.graniteschools.org/",
-      "station": "district-homepage-granite-ut",
-      "why": "2021-02-07: within 2 days of one of its closure days"
-    },
-    {
-      "timestamp": "20210206165049",
-      "url": "https://www.graniteschools.org/",
-      "station": "district-homepage-granite-ut",
-      "why": "2021-02-07: within 2 days of one of its closure days"
-    },
-    {
-      "timestamp": "20210213170141",
-      "url": "https://www.graniteschools.org/",
-      "station": "district-homepage-granite-ut",
-      "why": "2021-02-14: within 2 days of one of its closure days"
-    },
-    {
-      "timestamp": "20230128031807",
-      "url": "https://www.graniteschools.org/",
-      "station": "district-homepage-granite-ut",
-      "why": "2023-01-28: within 2 days of one of its closure days"
-    },
-    {
-      "timestamp": "20221217013913",
-      "url": "https://www.graniteschools.org/",
-      "station": "district-homepage-granite-ut",
-      "why": "2022-12-17: within 2 days of one of its closure days"
-    },
-    {
-      "timestamp": "20241224150043",
-      "url": "https://www.graniteschools.org/",
-      "station": "district-homepage-granite-ut",
-      "why": "2024-12-24: within 2 days of one of its closure days"
-    },
-    {
-      "timestamp": "20250211202555",
-      "url": "https://www.graniteschools.org/",
-      "station": "district-homepage-granite-ut",
-      "why": "2025-02-12: within 2 days of one of its closure days"
-    },
-    {
-      "timestamp": "20211019224606",
-      "url": "https://www.graniteschools.org/",
-      "station": "district-homepage-granite-ut",
-      "why": "2021-10-20: within 2 days of one of its closure days"
-    },
-    {
-      "timestamp": "20211207160027",
-      "url": "https://www.graniteschools.org/",
-      "station": "district-homepage-granite-ut",
-      "why": "2021-12-08: within 2 days of one of its closure days"
-    },
-    {
-      "timestamp": "20220528220432",
-      "url": "https://www.graniteschools.org/",
-      "station": "district-homepage-granite-ut",
-      "why": "2022-05-29: within 2 days of one of its closure days"
-    },
-    {
-      "timestamp": "20220529030332",
-      "url": "https://www.graniteschools.org/",
-      "station": "district-homepage-granite-ut",
-      "why": "2022-05-29: within 2 days of one of its closure days"
-    },
-    {
-      "timestamp": "20220528130556",
-      "url": "https://www.graniteschools.org/",
-      "station": "district-homepage-granite-ut",
-      "why": "2022-05-28: within 2 days of one of its closure days"
-    },
-    {
-      "timestamp": "20211221232516",
-      "url": "https://www.graniteschools.org/",
-      "station": "district-homepage-granite-ut",
-      "why": "2021-12-22: within 2 days of one of its closure days"
-    },
-    {
-      "timestamp": "20211221232521",
-      "url": "https://www.graniteschools.org/",
-      "station": "district-homepage-granite-ut",
-      "why": "2021-12-22: within 2 days of one of its closure days"
-    },
-    {
-      "timestamp": "20220420105116",
-      "url": "https://www.graniteschools.org/",
-      "station": "district-homepage-granite-ut",
-      "why": "2022-04-20: within 2 days of one of its closure days"
-    },
-    {
-      "timestamp": "20220420105655",
-      "url": "https://www.graniteschools.org/",
-      "station": "district-homepage-granite-ut",
-      "why": "2022-04-20: within 2 days of one of its closure days"
-    },
-    {
-      "timestamp": "20211221232519",
-      "url": "https://www.graniteschools.org/",
-      "station": "district-homepage-granite-ut",
-      "why": "2021-12-22: within 2 days of one of its closure days"
-    },
-    {
-      "timestamp": "20220421074457",
-      "url": "https://www.graniteschools.org/",
-      "station": "district-homepage-granite-ut",
-      "why": "2022-04-21: within 2 days of one of its closure days"
-    },
-    {
-      "timestamp": "20220131232431",
-      "url": "https://www.graniteschools.org/",
-      "station": "district-homepage-granite-ut",
-      "why": "2022-02-01: within 2 days of one of its closure days"
-    },
-    {
-      "timestamp": "20220131232439",
-      "url": "https://www.graniteschools.org/",
-      "station": "district-homepage-granite-ut",
-      "why": "2022-02-01: within 2 days of one of its closure days"
-    },
-    {
-      "timestamp": "20220201032102",
-      "url": "https://www.graniteschools.org/",
-      "station": "district-homepage-granite-ut",
-      "why": "2022-02-01: within 2 days of one of its closure days"
-    },
-    {
-      "timestamp": "20220130183236",
-      "url": "https://www.graniteschools.org/",
-      "station": "district-homepage-granite-ut",
-      "why": "2022-01-31: within 2 days of one of its closure days"
-    },
-    {
-      "timestamp": "20200128075750",
-      "url": "https://www.graniteschools.org/",
-      "station": "district-homepage-granite-ut",
-      "why": "2020-01-28: within 2 days of one of its closure days"
-    },
-    {
-      "timestamp": "20230331230007",
-      "url": "https://www.graniteschools.org/",
-      "station": "district-homepage-granite-ut",
-      "why": "2023-04-01: within 2 days of one of its closure days"
-    },
-    {
-      "timestamp": "20211213042217",
-      "url": "https://www.graniteschools.org/",
-      "station": "district-homepage-granite-ut",
-      "why": "2021-12-13: within 2 days of one of its closure days"
-    },
-    {
-      "timestamp": "20250315094628",
-      "url": "https://www.graniteschools.org/",
-      "station": "district-homepage-granite-ut",
-      "why": "2025-03-15: within 2 days of one of its closure days"
-    },
-    {
-      "timestamp": "20220203095154",
-      "url": "https://www.graniteschools.org/",
-      "station": "district-homepage-granite-ut",
-      "why": "2022-02-03: within 2 days of one of its closure days"
-    },
-    {
-      "timestamp": "20220203094754",
-      "url": "https://www.graniteschools.org/",
-      "station": "district-homepage-granite-ut",
-      "why": "2022-02-03: within 2 days of one of its closure days"
-    },
-    {
-      "timestamp": "20220203230351",
-      "url": "https://www.graniteschools.org/",
-      "station": "district-homepage-granite-ut",
-      "why": "2022-02-04: within 2 days of one of its closure days"
-    },
-    {
-      "timestamp": "20220202183920",
-      "url": "https://www.graniteschools.org/",
-      "station": "district-homepage-granite-ut",
-      "why": "2022-02-03: within 2 days of one of its closure days"
-    },
-    {
-      "timestamp": "20250320144545",
-      "url": "https://www.graniteschools.org/",
-      "station": "district-homepage-granite-ut",
-      "why": "2025-03-20: within 2 days of one of its closure days"
-    },
-    {
-      "timestamp": "20220204045116",
-      "url": "https://www.graniteschools.org/",
-      "station": "district-homepage-granite-ut",
-      "why": "2022-02-04: within 2 days of one of its closure days"
-    },
-    {
-      "timestamp": "20220203015652",
-      "url": "https://www.graniteschools.org/",
-      "station": "district-homepage-granite-ut",
-      "why": "2022-02-03: within 2 days of one of its closure days"
-    },
-    {
-      "timestamp": "20220203030841",
-      "url": "https://www.graniteschools.org/",
-      "station": "district-homepage-granite-ut",
-      "why": "2022-02-03: within 2 days of one of its closure days"
-    },
-    {
-      "timestamp": "20220203214316",
-      "url": "https://www.graniteschools.org/",
-      "station": "district-homepage-granite-ut",
-      "why": "2022-02-04: within 2 days of one of its closure days"
-    },
-    {
-      "timestamp": "20220311062223",
-      "url": "https://www.graniteschools.org/",
-      "station": "district-homepage-granite-ut",
-      "why": "2022-03-11: within 2 days of one of its closure days"
-    },
-    {
-      "timestamp": "20230318053649",
-      "url": "https://www.graniteschools.org/",
-      "station": "district-homepage-granite-ut",
-      "why": "2023-03-18: within 2 days of one of its closure days"
-    },
-    {
-      "timestamp": "20240503174301",
-      "url": "https://www.graniteschools.org/",
-      "station": "district-homepage-granite-ut",
-      "why": "2024-05-04: within 2 days of one of its closure days"
-    },
-    {
-      "timestamp": "20181126215930",
-      "url": "https://www.graniteschools.org/",
-      "station": "district-homepage-granite-ut",
-      "why": "2018-11-27: within 2 days of one of its closure days"
-    },
-    {
-      "timestamp": "20231028075837",
-      "url": "https://www.graniteschools.org/",
-      "station": "district-homepage-granite-ut",
-      "why": "2023-10-28: within 2 days of one of its closure days"
-    },
-    {
-      "timestamp": "20231014105715",
-      "url": "https://www.graniteschools.org/",
-      "station": "district-homepage-granite-ut",
-      "why": "2023-10-14: within 2 days of one of its closure days"
-    },
-    {
-      "timestamp": "20201227051247",
-      "url": "https://www.graniteschools.org/",
-      "station": "district-homepage-granite-ut",
-      "why": "2020-12-27: within 2 days of one of its closure days"
-    },
-    {
-      "timestamp": "20201107143626",
-      "url": "https://www.graniteschools.org/",
-      "station": "district-homepage-granite-ut",
-      "why": "2020-11-07: within 2 days of one of its closure days"
-    },
-    {
-      "timestamp": "20201107162744",
-      "url": "https://www.graniteschools.org/",
-      "station": "district-homepage-granite-ut",
-      "why": "2020-11-08: within 2 days of one of its closure days"
-    },
-    {
-      "timestamp": "20201108063634",
-      "url": "https://www.graniteschools.org/",
-      "station": "district-homepage-granite-ut",
-      "why": "2020-11-08: within 2 days of one of its closure days"
-    },
-    {
-      "timestamp": "20201111110746",
-      "url": "https://www.graniteschools.org/",
-      "station": "district-homepage-granite-ut",
-      "why": "2020-11-11: within 2 days of one of its closure days"
-    },
-    {
-      "timestamp": "20201106204543",
-      "url": "https://www.graniteschools.org/",
-      "station": "district-homepage-granite-ut",
-      "why": "2020-11-07: within 2 days of one of its closure days"
-    },
-    {
-      "timestamp": "20190111190643",
-      "url": "https://www.graniteschools.org/",
-      "station": "district-homepage-granite-ut",
-      "why": "2019-01-12: within 2 days of one of its closure days"
-    },
-    {
-      "timestamp": "20201107071829",
-      "url": "https://www.graniteschools.org/",
-      "station": "district-homepage-granite-ut",
-      "why": "2020-11-07: within 2 days of one of its closure days"
-    },
-    {
-      "timestamp": "20201107134131",
-      "url": "https://www.graniteschools.org/",
-      "station": "district-homepage-granite-ut",
-      "why": "2020-11-07: within 2 days of one of its closure days"
-    },
-    {
-      "timestamp": "20200323120044",
-      "url": "https://www.graniteschools.org/",
-      "station": "district-homepage-granite-ut",
-      "why": "2020-03-23: within 2 days of one of its closure days"
-    },
-    {
-      "timestamp": "20200321083935",
-      "url": "https://www.graniteschools.org/",
-      "station": "district-homepage-granite-ut",
-      "why": "2020-03-21: within 2 days of one of its closure days"
-    },
-    {
-      "timestamp": "20210201030528",
-      "url": "https://www.graniteschools.org/",
-      "station": "district-homepage-granite-ut",
-      "why": "2021-02-01: within 2 days of one of its closure days"
-    },
-    {
-      "timestamp": "20181224091333",
-      "url": "https://www.graniteschools.org/",
-      "station": "district-homepage-granite-ut",
-      "why": "2018-12-24: within 2 days of one of its closure days"
-    },
-    {
-      "timestamp": "20181209180718",
-      "url": "https://www.graniteschools.org/",
-      "station": "district-homepage-granite-ut",
-      "why": "2018-12-10: within 2 days of one of its closure days"
-    },
-    {
-      "timestamp": "20181209162533",
-      "url": "https://www.graniteschools.org/",
-      "station": "district-homepage-granite-ut",
-      "why": "2018-12-10: within 2 days of one of its closure days"
-    },
-    {
-      "timestamp": "20181209184126",
-      "url": "https://www.graniteschools.org/",
-      "station": "district-homepage-granite-ut",
-      "why": "2018-12-10: within 2 days of one of its closure days"
-    },
-    {
-      "timestamp": "20181209185222",
-      "url": "https://www.graniteschools.org/",
-      "station": "district-homepage-granite-ut",
-      "why": "2018-12-10: within 2 days of one of its closure days"
-    },
-    {
-      "timestamp": "20210127215610",
-      "url": "https://www.graniteschools.org/",
-      "station": "district-homepage-granite-ut",
-      "why": "2021-01-28: within 2 days of one of its closure days"
-    },
-    {
-      "timestamp": "20181211130712",
-      "url": "https://www.graniteschools.org/",
-      "station": "district-homepage-granite-ut",
-      "why": "2018-12-11: within 2 days of one of its closure days"
-    },
-    {
-      "timestamp": "20181201194748",
-      "url": "https://www.graniteschools.org/",
-      "station": "district-homepage-granite-ut",
-      "why": "2018-12-02: within 2 days of one of its closure days"
-    },
-    {
-      "timestamp": "20181201194750",
-      "url": "https://www.graniteschools.org/",
-      "station": "district-homepage-granite-ut",
-      "why": "2018-12-02: within 2 days of one of its closure days"
-    },
-    {
-      "timestamp": "20181214084001",
-      "url": "https://www.graniteschools.org/",
-      "station": "district-homepage-granite-ut",
-      "why": "2018-12-14: within 2 days of one of its closure days"
-    },
-    {
-      "timestamp": "20200324080855",
-      "url": "https://www.graniteschools.org/",
-      "station": "district-homepage-granite-ut",
-      "why": "2020-03-24: within 2 days of one of its closure days"
-    },
-    {
-      "timestamp": "20210201153422",
-      "url": "https://www.graniteschools.org/",
-      "station": "district-homepage-granite-ut",
-      "why": "2021-02-01: within 2 days of one of its closure days"
-    },
-    {
-      "timestamp": "20181210135450",
-      "url": "https://www.graniteschools.org/",
-      "station": "district-homepage-granite-ut",
-      "why": "2018-12-10: within 2 days of one of its closure days"
-    },
-    {
-      "timestamp": "20181210135749",
-      "url": "https://www.graniteschools.org/",
-      "station": "district-homepage-granite-ut",
-      "why": "2018-12-10: within 2 days of one of its closure days"
-    },
-    {
-      "timestamp": "20260330191414",
-      "url": "https://www.graniteschools.org/",
-      "station": "district-homepage-granite-ut",
-      "why": "2026-03-31: within 2 days of one of its closure days"
-    },
-    {
-      "timestamp": "20200125043818",
-      "url": "https://www.graniteschools.org/",
-      "station": "district-homepage-granite-ut",
-      "why": "2020-01-25: within 2 days of one of its closure days"
-    },
-    {
-      "timestamp": "20260330155901",
-      "url": "https://www.graniteschools.org/",
-      "station": "district-homepage-granite-ut",
-      "why": "2026-03-30: within 2 days of one of its closure days"
-    },
-    {
-      "timestamp": "20260330040014",
-      "url": "https://www.graniteschools.org/",
-      "station": "district-homepage-granite-ut",
-      "why": "2026-03-30: within 2 days of one of its closure days"
-    },
-    {
-      "timestamp": "20260329160655",
-      "url": "https://www.graniteschools.org/",
-      "station": "district-homepage-granite-ut",
-      "why": "2026-03-30: within 2 days of one of its closure days"
-    },
-    {
-      "timestamp": "20260330071543",
-      "url": "https://www.graniteschools.org/",
-      "station": "district-homepage-granite-ut",
-      "why": "2026-03-30: within 2 days of one of its closure days"
-    },
-    {
-      "timestamp": "20260329191521",
-      "url": "https://www.graniteschools.org/",
-      "station": "district-homepage-granite-ut",
-      "why": "2026-03-30: within 2 days of one of its closure days"
-    },
-    {
-      "timestamp": "20260403160244",
-      "url": "https://www.graniteschools.org/",
-      "station": "district-homepage-granite-ut",
-      "why": "2026-04-04: within 2 days of one of its closure days"
-    },
-    {
-      "timestamp": "20260331071912",
-      "url": "https://www.graniteschools.org/",
-      "station": "district-homepage-granite-ut",
-      "why": "2026-03-31: within 2 days of one of its closure days"
-    },
-    {
-      "timestamp": "20260331040758",
-      "url": "https://www.graniteschools.org/",
-      "station": "district-homepage-granite-ut",
-      "why": "2026-03-31: within 2 days of one of its closure days"
-    },
-    {
-      "timestamp": "20260403191422",
-      "url": "https://www.graniteschools.org/",
-      "station": "district-homepage-granite-ut",
-      "why": "2026-04-04: within 2 days of one of its closure days"
-    },
-    {
-      "timestamp": "20260404071409",
-      "url": "https://www.graniteschools.org/",
-      "station": "district-homepage-granite-ut",
-      "why": "2026-04-04: within 2 days of one of its closure days"
-    },
-    {
-      "timestamp": "20260403035912",
-      "url": "https://www.graniteschools.org/",
-      "station": "district-homepage-granite-ut",
-      "why": "2026-04-03: within 2 days of one of its closure days"
-    },
-    {
-      "timestamp": "20260402160043",
-      "url": "https://www.graniteschools.org/",
-      "station": "district-homepage-granite-ut",
-      "why": "2026-04-03: within 2 days of one of its closure days"
-    },
-    {
-      "timestamp": "20260402191627",
-      "url": "https://www.graniteschools.org/",
-      "station": "district-homepage-granite-ut",
-      "why": "2026-04-03: within 2 days of one of its closure days"
-    },
-    {
-      "timestamp": "20260403071506",
-      "url": "https://www.graniteschools.org/",
-      "station": "district-homepage-granite-ut",
-      "why": "2026-04-03: within 2 days of one of its closure days"
-    },
-    {
-      "timestamp": "20191206002000",
-      "url": "https://www.graniteschools.org/",
-      "station": "district-homepage-granite-ut",
-      "why": "2019-12-06: within 2 days of one of its closure days"
-    },
-    {
-      "timestamp": "20191206183845",
-      "url": "https://www.graniteschools.org/",
-      "station": "district-homepage-granite-ut",
-      "why": "2019-12-07: within 2 days of one of its closure days"
-    },
-    {
-      "timestamp": "20191206233250",
-      "url": "https://www.graniteschools.org/",
-      "station": "district-homepage-granite-ut",
-      "why": "2019-12-07: within 2 days of one of its closure days"
-    },
-    {
-      "timestamp": "20191207054836",
-      "url": "https://www.graniteschools.org/",
-      "station": "district-homepage-granite-ut",
-      "why": "2019-12-07: within 2 days of one of its closure days"
-    },
-    {
-      "timestamp": "20191205195636",
-      "url": "https://www.graniteschools.org/",
-      "station": "district-homepage-granite-ut",
-      "why": "2019-12-06: within 2 days of one of its closure days"
-    },
-    {
-      "timestamp": "20191205234213",
-      "url": "https://www.graniteschools.org/",
-      "station": "district-homepage-granite-ut",
-      "why": "2019-12-06: within 2 days of one of its closure days"
-    },
-    {
-      "timestamp": "20191206215315",
-      "url": "https://www.graniteschools.org/",
-      "station": "district-homepage-granite-ut",
-      "why": "2019-12-07: within 2 days of one of its closure days"
-    },
-    {
-      "timestamp": "20191207064358",
-      "url": "https://www.graniteschools.org/",
-      "station": "district-homepage-granite-ut",
-      "why": "2019-12-07: within 2 days of one of its closure days"
-    },
-    {
-      "timestamp": "20191206161159",
-      "url": "https://www.graniteschools.org/",
-      "station": "district-homepage-granite-ut",
-      "why": "2019-12-07: within 2 days of one of its closure days"
-    },
-    {
-      "timestamp": "20260304155836",
-      "url": "https://www.graniteschools.org/",
-      "station": "district-homepage-granite-ut",
-      "why": "2026-03-04: within 2 days of one of its closure days"
-    },
-    {
-      "timestamp": "20260304134922",
-      "url": "https://www.graniteschools.org/",
-      "station": "district-homepage-granite-ut",
-      "why": "2026-03-04: within 2 days of one of its closure days"
-    },
-    {
-      "timestamp": "20260302160423",
-      "url": "https://www.graniteschools.org/",
-      "station": "district-homepage-granite-ut",
-      "why": "2026-03-03: within 2 days of one of its closure days"
-    },
-    {
-      "timestamp": "20260303155956",
-      "url": "https://www.graniteschools.org/",
-      "station": "district-homepage-granite-ut",
-      "why": "2026-03-03: within 2 days of one of its closure days"
-    },
-    {
-      "timestamp": "20260303040122",
-      "url": "https://www.graniteschools.org/",
-      "station": "district-homepage-granite-ut",
-      "why": "2026-03-03: within 2 days of one of its closure days"
-    },
-    {
-      "timestamp": "20260109170554",
-      "url": "https://www.graniteschools.org/",
-      "station": "district-homepage-granite-ut",
-      "why": "2026-01-10: within 2 days of one of its closure days"
-    },
-    {
-      "timestamp": "20260219035959",
-      "url": "https://www.graniteschools.org/",
-      "station": "district-homepage-granite-ut",
-      "why": "2026-02-19: within 2 days of one of its closure days"
-    },
-    {
-      "timestamp": "20260219011445",
-      "url": "https://www.graniteschools.org/",
-      "station": "district-homepage-granite-ut",
-      "why": "2026-02-19: within 2 days of one of its closure days"
-    },
-    {
-      "timestamp": "20260303071448",
-      "url": "https://www.graniteschools.org/",
-      "station": "district-homepage-granite-ut",
-      "why": "2026-03-03: within 2 days of one of its closure days"
-    },
-    {
-      "timestamp": "20260110143823",
-      "url": "https://www.graniteschools.org/",
-      "station": "district-homepage-granite-ut",
-      "why": "2026-01-10: within 2 days of one of its closure days"
-    },
-    {
-      "timestamp": "20260303091650",
-      "url": "https://www.graniteschools.org/",
-      "station": "district-homepage-granite-ut",
-      "why": "2026-03-03: within 2 days of one of its closure days"
-    },
-    {
-      "timestamp": "20260303191544",
-      "url": "https://www.graniteschools.org/",
-      "station": "district-homepage-granite-ut",
-      "why": "2026-03-04: within 2 days of one of its closure days"
-    },
-    {
-      "timestamp": "20260110104855",
-      "url": "https://www.graniteschools.org/",
-      "station": "district-homepage-granite-ut",
-      "why": "2026-01-10: within 2 days of one of its closure days"
-    },
-    {
-      "timestamp": "20260109191456",
-      "url": "https://www.graniteschools.org/",
-      "station": "district-homepage-granite-ut",
-      "why": "2026-01-10: within 2 days of one of its closure days"
-    },
-    {
-      "timestamp": "20260215160046",
-      "url": "https://www.graniteschools.org/",
-      "station": "district-homepage-granite-ut",
-      "why": "2026-02-16: within 2 days of one of its closure days"
-    },
-    {
-      "timestamp": "20260216040215",
-      "url": "https://www.graniteschools.org/",
-      "station": "district-homepage-granite-ut",
-      "why": "2026-02-16: within 2 days of one of its closure days"
-    },
-    {
-      "timestamp": "20260219191513",
-      "url": "https://www.graniteschools.org/",
-      "station": "district-homepage-granite-ut",
-      "why": "2026-02-20: within 2 days of one of its closure days"
-    },
-    {
-      "timestamp": "20260220071720",
-      "url": "https://www.graniteschools.org/",
-      "station": "district-homepage-granite-ut",
-      "why": "2026-02-20: within 2 days of one of its closure days"
-    },
-    {
-      "timestamp": "20260110040042",
-      "url": "https://www.graniteschools.org/",
-      "station": "district-homepage-granite-ut",
-      "why": "2026-01-10: within 2 days of one of its closure days"
-    },
-    {
-      "timestamp": "20260218204022",
-      "url": "https://www.graniteschools.org/",
-      "station": "district-homepage-granite-ut",
-      "why": "2026-02-19: within 2 days of one of its closure days"
-    },
-    {
-      "timestamp": "20260213040329",
-      "url": "https://www.graniteschools.org/",
-      "station": "district-homepage-granite-ut",
-      "why": "2026-02-13: within 2 days of one of its closure days"
-    },
-    {
-      "timestamp": "20260213160153",
-      "url": "https://www.graniteschools.org/",
-      "station": "district-homepage-granite-ut",
-      "why": "2026-02-14: within 2 days of one of its closure days"
-    },
-    {
-      "timestamp": "20260220071520",
-      "url": "https://www.graniteschools.org/",
-      "station": "district-homepage-granite-ut",
-      "why": "2026-02-20: within 2 days of one of its closure days"
-    },
-    {
-      "timestamp": "20260214040317",
-      "url": "https://www.graniteschools.org/",
-      "station": "district-homepage-granite-ut",
-      "why": "2026-02-14: within 2 days of one of its closure days"
-    },
-    {
-      "timestamp": "20260214155944",
-      "url": "https://www.graniteschools.org/",
-      "station": "district-homepage-granite-ut",
-      "why": "2026-02-14: within 2 days of one of its closure days"
-    },
-    {
-      "timestamp": "20260215035940",
-      "url": "https://www.graniteschools.org/",
-      "station": "district-homepage-granite-ut",
-      "why": "2026-02-15: within 2 days of one of its closure days"
-    },
-    {
-      "timestamp": "20260215071724",
-      "url": "https://www.graniteschools.org/",
-      "station": "district-homepage-granite-ut",
-      "why": "2026-02-15: within 2 days of one of its closure days"
-    },
-    {
-      "timestamp": "20260220081834",
-      "url": "https://www.graniteschools.org/",
-      "station": "district-homepage-granite-ut",
-      "why": "2026-02-20: within 2 days of one of its closure days"
-    },
-    {
-      "timestamp": "20260212191445",
-      "url": "https://www.graniteschools.org/",
-      "station": "district-homepage-granite-ut",
-      "why": "2026-02-13: within 2 days of one of its closure days"
-    },
-    {
-      "timestamp": "20260107081229",
-      "url": "https://www.graniteschools.org/",
-      "station": "district-homepage-granite-ut",
-      "why": "2026-01-07: within 2 days of one of its closure days"
-    },
-    {
-      "timestamp": "20260214120139",
-      "url": "https://www.graniteschools.org/",
-      "station": "district-homepage-granite-ut",
-      "why": "2026-02-14: within 2 days of one of its closure days"
-    },
-    {
-      "timestamp": "20260216055257",
-      "url": "https://www.graniteschools.org/",
-      "station": "district-homepage-granite-ut",
-      "why": "2026-02-16: within 2 days of one of its closure days"
-    },
-    {
-      "timestamp": "20260214191713",
-      "url": "https://www.graniteschools.org/",
-      "station": "district-homepage-granite-ut",
-      "why": "2026-02-15: within 2 days of one of its closure days"
-    },
-    {
-      "timestamp": "20260213071537",
-      "url": "https://www.graniteschools.org/",
-      "station": "district-homepage-granite-ut",
-      "why": "2026-02-13: within 2 days of one of its closure days"
-    },
-    {
-      "timestamp": "20260221160039",
-      "url": "https://www.graniteschools.org/",
-      "station": "district-homepage-granite-ut",
-      "why": "2026-02-22: within 2 days of one of its closure days"
-    },
-    {
-      "timestamp": "20260306191543",
+      "timestamp": "20260307071711",
       "url": "https://www.graniteschools.org/",
       "station": "district-homepage-granite-ut",
       "why": "2026-03-07: within 2 days of one of its closure days"
     },
     {
-      "timestamp": "20260222155921",
+      "timestamp": "20260212160511",
       "url": "https://www.graniteschools.org/",
       "station": "district-homepage-granite-ut",
-      "why": "2026-02-22: within 2 days of one of its closure days"
+      "why": "2026-02-13: within 2 days of one of its closure days"
     },
     {
-      "timestamp": "20260222083154",
+      "timestamp": "20260214071537",
       "url": "https://www.graniteschools.org/",
       "station": "district-homepage-granite-ut",
-      "why": "2026-02-22: within 2 days of one of its closure days"
+      "why": "2026-02-14: within 2 days of one of its closure days"
     },
     {
-      "timestamp": "20260107092229",
+      "timestamp": "20260223035920",
       "url": "https://www.graniteschools.org/",
       "station": "district-homepage-granite-ut",
-      "why": "2026-01-07: within 2 days of one of its closure days"
+      "why": "2026-02-23: within 2 days of one of its closure days"
     },
     {
-      "timestamp": "20260226055914",
+      "timestamp": "20260226035956",
       "url": "https://www.graniteschools.org/",
       "station": "district-homepage-granite-ut",
       "why": "2026-02-26: within 2 days of one of its closure days"
     },
     {
-      "timestamp": "20260307165920",
+      "timestamp": "20260307194857",
       "url": "https://www.graniteschools.org/",
       "station": "district-homepage-granite-ut",
       "why": "2026-03-08: within 2 days of one of its closure days"
+    },
+    {
+      "timestamp": "20260307191423",
+      "url": "https://www.graniteschools.org/",
+      "station": "district-homepage-granite-ut",
+      "why": "2026-03-08: within 2 days of one of its closure days"
+    },
+    {
+      "timestamp": "20260209040004",
+      "url": "https://www.graniteschools.org/",
+      "station": "district-homepage-granite-ut",
+      "why": "2026-02-09: within 2 days of one of its closure days"
+    },
+    {
+      "timestamp": "20260209160002",
+      "url": "https://www.graniteschools.org/",
+      "station": "district-homepage-granite-ut",
+      "why": "2026-02-10: within 2 days of one of its closure days"
+    },
+    {
+      "timestamp": "20260222191507",
+      "url": "https://www.graniteschools.org/",
+      "station": "district-homepage-granite-ut",
+      "why": "2026-02-23: within 2 days of one of its closure days"
+    },
+    {
+      "timestamp": "20260226051818",
+      "url": "https://www.graniteschools.org/",
+      "station": "district-homepage-granite-ut",
+      "why": "2026-02-26: within 2 days of one of its closure days"
+    },
+    {
+      "timestamp": "20260227071629",
+      "url": "https://www.graniteschools.org/",
+      "station": "district-homepage-granite-ut",
+      "why": "2026-02-27: within 2 days of one of its closure days"
+    },
+    {
+      "timestamp": "20260222071450",
+      "url": "https://www.graniteschools.org/",
+      "station": "district-homepage-granite-ut",
+      "why": "2026-02-22: within 2 days of one of its closure days"
+    },
+    {
+      "timestamp": "20260221191519",
+      "url": "https://www.graniteschools.org/",
+      "station": "district-homepage-granite-ut",
+      "why": "2026-02-22: within 2 days of one of its closure days"
+    },
+    {
+      "timestamp": "20260208191405",
+      "url": "https://www.graniteschools.org/",
+      "station": "district-homepage-granite-ut",
+      "why": "2026-02-09: within 2 days of one of its closure days"
+    },
+    {
+      "timestamp": "20260209071454",
+      "url": "https://www.graniteschools.org/",
+      "station": "district-homepage-granite-ut",
+      "why": "2026-02-09: within 2 days of one of its closure days"
+    },
+    {
+      "timestamp": "20260226114936",
+      "url": "https://www.graniteschools.org/",
+      "station": "district-homepage-granite-ut",
+      "why": "2026-02-26: within 2 days of one of its closure days"
+    },
+    {
+      "timestamp": "20260210072252",
+      "url": "https://www.graniteschools.org/",
+      "station": "district-homepage-granite-ut",
+      "why": "2026-02-10: within 2 days of one of its closure days"
+    },
+    {
+      "timestamp": "20260226204823",
+      "url": "https://www.graniteschools.org/",
+      "station": "district-homepage-granite-ut",
+      "why": "2026-02-27: within 2 days of one of its closure days"
+    },
+    {
+      "timestamp": "20260209191725",
+      "url": "https://www.graniteschools.org/",
+      "station": "district-homepage-granite-ut",
+      "why": "2026-02-10: within 2 days of one of its closure days"
+    },
+    {
+      "timestamp": "20260223100555",
+      "url": "https://www.graniteschools.org/",
+      "station": "district-homepage-granite-ut",
+      "why": "2026-02-23: within 2 days of one of its closure days"
+    },
+    {
+      "timestamp": "20260226191626",
+      "url": "https://www.graniteschools.org/",
+      "station": "district-homepage-granite-ut",
+      "why": "2026-02-27: within 2 days of one of its closure days"
+    },
+    {
+      "timestamp": "20260106221938",
+      "url": "https://www.graniteschools.org/",
+      "station": "district-homepage-granite-ut",
+      "why": "2026-01-07: within 2 days of one of its closure days"
+    },
+    {
+      "timestamp": "20260106231423",
+      "url": "https://www.graniteschools.org/",
+      "station": "district-homepage-granite-ut",
+      "why": "2026-01-07: within 2 days of one of its closure days"
+    },
+    {
+      "timestamp": "20260106201054",
+      "url": "https://www.graniteschools.org/",
+      "station": "district-homepage-granite-ut",
+      "why": "2026-01-07: within 2 days of one of its closure days"
+    },
+    {
+      "timestamp": "20260106040211",
+      "url": "https://www.graniteschools.org/",
+      "station": "district-homepage-granite-ut",
+      "why": "2026-01-06: within 2 days of one of its closure days"
+    },
+    {
+      "timestamp": "20260109040720",
+      "url": "https://www.graniteschools.org/",
+      "station": "district-homepage-granite-ut",
+      "why": "2026-01-09: within 2 days of one of its closure days"
+    },
+    {
+      "timestamp": "20260105220927",
+      "url": "https://www.graniteschools.org/",
+      "station": "district-homepage-granite-ut",
+      "why": "2026-01-06: within 2 days of one of its closure days"
+    },
+    {
+      "timestamp": "20260109071418",
+      "url": "https://www.graniteschools.org/",
+      "station": "district-homepage-granite-ut",
+      "why": "2026-01-09: within 2 days of one of its closure days"
+    },
+    {
+      "timestamp": "20260108211926",
+      "url": "https://www.graniteschools.org/",
+      "station": "district-homepage-granite-ut",
+      "why": "2026-01-09: within 2 days of one of its closure days"
+    },
+    {
+      "timestamp": "20260108191453",
+      "url": "https://www.graniteschools.org/",
+      "station": "district-homepage-granite-ut",
+      "why": "2026-01-09: within 2 days of one of its closure days"
+    },
+    {
+      "timestamp": "20251204073929",
+      "url": "https://www.graniteschools.org/",
+      "station": "district-homepage-granite-ut",
+      "why": "2025-12-04: within 2 days of one of its closure days"
+    },
+    {
+      "timestamp": "20251204142456",
+      "url": "https://www.graniteschools.org/",
+      "station": "district-homepage-granite-ut",
+      "why": "2025-12-04: within 2 days of one of its closure days"
+    },
+    {
+      "timestamp": "20251203042614",
+      "url": "https://www.graniteschools.org/",
+      "station": "district-homepage-granite-ut",
+      "why": "2025-12-03: within 2 days of one of its closure days"
+    },
+    {
+      "timestamp": "20251224155825",
+      "url": "https://www.graniteschools.org/",
+      "station": "district-homepage-granite-ut",
+      "why": "2025-12-24: within 2 days of one of its closure days"
+    },
+    {
+      "timestamp": "20251224035924",
+      "url": "https://www.graniteschools.org/",
+      "station": "district-homepage-granite-ut",
+      "why": "2025-12-24: within 2 days of one of its closure days"
+    },
+    {
+      "timestamp": "20251226160339",
+      "url": "https://www.graniteschools.org/",
+      "station": "district-homepage-granite-ut",
+      "why": "2025-12-27: within 2 days of one of its closure days"
+    },
+    {
+      "timestamp": "20260102160032",
+      "url": "https://www.graniteschools.org/",
+      "station": "district-homepage-granite-ut",
+      "why": "2026-01-03: within 2 days of one of its closure days"
+    },
+    {
+      "timestamp": "20260103155926",
+      "url": "https://www.graniteschools.org/",
+      "station": "district-homepage-granite-ut",
+      "why": "2026-01-03: within 2 days of one of its closure days"
+    },
+    {
+      "timestamp": "20251225155750",
+      "url": "https://www.graniteschools.org/",
+      "station": "district-homepage-granite-ut",
+      "why": "2025-12-25: within 2 days of one of its closure days"
+    },
+    {
+      "timestamp": "20251227035819",
+      "url": "https://www.graniteschools.org/",
+      "station": "district-homepage-granite-ut",
+      "why": "2025-12-27: within 2 days of one of its closure days"
+    },
+    {
+      "timestamp": "20251228040009",
+      "url": "https://www.graniteschools.org/",
+      "station": "district-homepage-granite-ut",
+      "why": "2025-12-28: within 2 days of one of its closure days"
+    },
+    {
+      "timestamp": "20251223160038",
+      "url": "https://www.graniteschools.org/",
+      "station": "district-homepage-granite-ut",
+      "why": "2025-12-24: within 2 days of one of its closure days"
+    },
+    {
+      "timestamp": "20251225040852",
+      "url": "https://www.graniteschools.org/",
+      "station": "district-homepage-granite-ut",
+      "why": "2025-12-25: within 2 days of one of its closure days"
+    },
+    {
+      "timestamp": "20251230160024",
+      "url": "https://www.graniteschools.org/",
+      "station": "district-homepage-granite-ut",
+      "why": "2025-12-31: within 2 days of one of its closure days"
+    },
+    {
+      "timestamp": "20260103075331",
+      "url": "https://www.graniteschools.org/",
+      "station": "district-homepage-granite-ut",
+      "why": "2026-01-03: within 2 days of one of its closure days"
+    },
+    {
+      "timestamp": "20251227155748",
+      "url": "https://www.graniteschools.org/",
+      "station": "district-homepage-granite-ut",
+      "why": "2025-12-27: within 2 days of one of its closure days"
+    },
+    {
+      "timestamp": "20251230040007",
+      "url": "https://www.graniteschools.org/",
+      "station": "district-homepage-granite-ut",
+      "why": "2025-12-30: within 2 days of one of its closure days"
+    },
+    {
+      "timestamp": "20260104140819",
+      "url": "https://www.graniteschools.org/",
+      "station": "district-homepage-granite-ut",
+      "why": "2026-01-04: within 2 days of one of its closure days"
+    },
+    {
+      "timestamp": "20251228155928",
+      "url": "https://www.graniteschools.org/",
+      "station": "district-homepage-granite-ut",
+      "why": "2025-12-28: within 2 days of one of its closure days"
+    },
+    {
+      "timestamp": "20251231035730",
+      "url": "https://www.graniteschools.org/",
+      "station": "district-homepage-granite-ut",
+      "why": "2025-12-31: within 2 days of one of its closure days"
+    },
+    {
+      "timestamp": "20251229201513",
+      "url": "https://www.graniteschools.org/",
+      "station": "district-homepage-granite-ut",
+      "why": "2025-12-30: within 2 days of one of its closure days"
+    },
+    {
+      "timestamp": "20251229225952",
+      "url": "https://www.graniteschools.org/",
+      "station": "district-homepage-granite-ut",
+      "why": "2025-12-30: within 2 days of one of its closure days"
+    },
+    {
+      "timestamp": "20260104095216",
+      "url": "https://www.graniteschools.org/",
+      "station": "district-homepage-granite-ut",
+      "why": "2026-01-04: within 2 days of one of its closure days"
+    },
+    {
+      "timestamp": "20260105160313",
+      "url": "https://www.graniteschools.org/",
+      "station": "district-homepage-granite-ut",
+      "why": "2026-01-06: within 2 days of one of its closure days"
+    },
+    {
+      "timestamp": "20251206164118",
+      "url": "https://www.graniteschools.org/",
+      "station": "district-homepage-granite-ut",
+      "why": "2025-12-07: within 2 days of one of its closure days"
+    },
+    {
+      "timestamp": "20251205163149",
+      "url": "https://www.graniteschools.org/",
+      "station": "district-homepage-granite-ut",
+      "why": "2025-12-06: within 2 days of one of its closure days"
+    },
+    {
+      "timestamp": "20251206035941",
+      "url": "https://www.graniteschools.org/",
+      "station": "district-homepage-granite-ut",
+      "why": "2025-12-06: within 2 days of one of its closure days"
+    },
+    {
+      "timestamp": "20191030233730",
+      "url": "https://www.graniteschools.org/",
+      "station": "district-homepage-granite-ut",
+      "why": "2019-10-31: within 2 days of one of its closure days"
+    },
+    {
+      "timestamp": "20191027114014",
+      "url": "https://www.graniteschools.org/",
+      "station": "district-homepage-granite-ut",
+      "why": "2019-10-27: within 2 days of one of its closure days"
+    },
+    {
+      "timestamp": "20251029042206",
+      "url": "https://www.graniteschools.org/",
+      "station": "district-homepage-granite-ut",
+      "why": "2025-10-29: within 2 days of one of its closure days"
+    },
+    {
+      "timestamp": "20191204105307",
+      "url": "https://www.graniteschools.org/",
+      "station": "district-homepage-granite-ut",
+      "why": "2019-12-04: within 2 days of one of its closure days"
+    },
+    {
+      "timestamp": "20221207102217",
+      "url": "https://www.graniteschools.org/",
+      "station": "district-homepage-granite-ut",
+      "why": "2022-12-07: within 2 days of one of its closure days"
+    },
+    {
+      "timestamp": "20250402135813",
+      "url": "https://www.graniteschools.org/",
+      "station": "district-homepage-granite-ut",
+      "why": "2025-04-02: within 2 days of one of its closure days"
+    },
+    {
+      "timestamp": "20221207003054",
+      "url": "https://www.graniteschools.org/",
+      "station": "district-homepage-granite-ut",
+      "why": "2022-12-07: within 2 days of one of its closure days"
+    },
+    {
+      "timestamp": "20221207002308",
+      "url": "https://www.graniteschools.org/",
+      "station": "district-homepage-granite-ut",
+      "why": "2022-12-07: within 2 days of one of its closure days"
+    },
+    {
+      "timestamp": "20241110001548",
+      "url": "https://www.graniteschools.org/",
+      "station": "district-homepage-granite-ut",
+      "why": "2024-11-10: within 2 days of one of its closure days"
+    },
+    {
+      "timestamp": "20241223174521",
+      "url": "https://www.graniteschools.org/",
+      "station": "district-homepage-granite-ut",
+      "why": "2024-12-24: within 2 days of one of its closure days"
+    },
+    {
+      "timestamp": "20241114032010",
+      "url": "https://www.graniteschools.org/",
+      "station": "district-homepage-granite-ut",
+      "why": "2024-11-14: within 2 days of one of its closure days"
+    },
+    {
+      "timestamp": "20180227034928",
+      "url": "https://www.graniteschools.org/",
+      "station": "district-homepage-granite-ut",
+      "why": "2018-02-27: within 2 days of one of its closure days"
+    },
+    {
+      "timestamp": "20180224150454",
+      "url": "https://www.graniteschools.org/",
+      "station": "district-homepage-granite-ut",
+      "why": "2018-02-24: within 2 days of one of its closure days"
+    },
+    {
+      "timestamp": "20180223210526",
+      "url": "https://www.graniteschools.org/",
+      "station": "district-homepage-granite-ut",
+      "why": "2018-02-24: within 2 days of one of its closure days"
+    },
+    {
+      "timestamp": "20220103043930",
+      "url": "https://www.graniteschools.org/",
+      "station": "district-homepage-granite-ut",
+      "why": "2022-01-03: within 2 days of one of its closure days"
+    },
+    {
+      "timestamp": "20220102163909",
+      "url": "https://www.graniteschools.org/",
+      "station": "district-homepage-granite-ut",
+      "why": "2022-01-03: within 2 days of one of its closure days"
+    },
+    {
+      "timestamp": "20220101163936",
+      "url": "https://www.graniteschools.org/",
+      "station": "district-homepage-granite-ut",
+      "why": "2022-01-02: within 2 days of one of its closure days"
+    },
+    {
+      "timestamp": "20220102043926",
+      "url": "https://www.graniteschools.org/",
+      "station": "district-homepage-granite-ut",
+      "why": "2022-01-02: within 2 days of one of its closure days"
+    },
+    {
+      "timestamp": "20211228231145",
+      "url": "https://www.graniteschools.org/",
+      "station": "district-homepage-granite-ut",
+      "why": "2021-12-29: within 2 days of one of its closure days"
+    },
+    {
+      "timestamp": "20211231164025",
+      "url": "https://www.graniteschools.org/",
+      "station": "district-homepage-granite-ut",
+      "why": "2022-01-01: within 2 days of one of its closure days"
+    },
+    {
+      "timestamp": "20220101043920",
+      "url": "https://www.graniteschools.org/",
+      "station": "district-homepage-granite-ut",
+      "why": "2022-01-01: within 2 days of one of its closure days"
+    },
+    {
+      "timestamp": "20220201044239",
+      "url": "https://www.graniteschools.org/",
+      "station": "district-homepage-granite-ut",
+      "why": "2022-02-01: within 2 days of one of its closure days"
+    },
+    {
+      "timestamp": "20220201044321",
+      "url": "https://www.graniteschools.org/",
+      "station": "district-homepage-granite-ut",
+      "why": "2022-02-01: within 2 days of one of its closure days"
+    },
+    {
+      "timestamp": "20220201044004",
+      "url": "https://www.graniteschools.org/",
+      "station": "district-homepage-granite-ut",
+      "why": "2022-02-01: within 2 days of one of its closure days"
+    },
+    {
+      "timestamp": "20220131043952",
+      "url": "https://www.graniteschools.org/",
+      "station": "district-homepage-granite-ut",
+      "why": "2022-01-31: within 2 days of one of its closure days"
+    },
+    {
+      "timestamp": "20220131165752",
+      "url": "https://www.graniteschools.org/",
+      "station": "district-homepage-granite-ut",
+      "why": "2022-02-01: within 2 days of one of its closure days"
+    },
+    {
+      "timestamp": "20220130163949",
+      "url": "https://www.graniteschools.org/",
+      "station": "district-homepage-granite-ut",
+      "why": "2022-01-31: within 2 days of one of its closure days"
+    },
+    {
+      "timestamp": "20220130184507",
+      "url": "https://www.graniteschools.org/",
+      "station": "district-homepage-granite-ut",
+      "why": "2022-01-31: within 2 days of one of its closure days"
+    },
+    {
+      "timestamp": "20220131164112",
+      "url": "https://www.graniteschools.org/",
+      "station": "district-homepage-granite-ut",
+      "why": "2022-02-01: within 2 days of one of its closure days"
+    },
+    {
+      "timestamp": "20230205115028",
+      "url": "https://www.graniteschools.org/",
+      "station": "district-homepage-granite-ut",
+      "why": "2023-02-05: within 2 days of one of its closure days"
+    },
+    {
+      "timestamp": "20220410043506",
+      "url": "https://www.graniteschools.org/",
+      "station": "district-homepage-granite-ut",
+      "why": "2022-04-10: within 2 days of one of its closure days"
+    },
+    {
+      "timestamp": "20220408163509",
+      "url": "https://www.graniteschools.org/",
+      "station": "district-homepage-granite-ut",
+      "why": "2022-04-09: within 2 days of one of its closure days"
+    },
+    {
+      "timestamp": "20220409044136",
+      "url": "https://www.graniteschools.org/",
+      "station": "district-homepage-granite-ut",
+      "why": "2022-04-09: within 2 days of one of its closure days"
+    },
+    {
+      "timestamp": "20220409163458",
+      "url": "https://www.graniteschools.org/",
+      "station": "district-homepage-granite-ut",
+      "why": "2022-04-10: within 2 days of one of its closure days"
+    },
+    {
+      "timestamp": "20220409044650",
+      "url": "https://www.graniteschools.org/",
+      "station": "district-homepage-granite-ut",
+      "why": "2022-04-09: within 2 days of one of its closure days"
+    },
+    {
+      "timestamp": "20220202163920",
+      "url": "https://www.graniteschools.org/",
+      "station": "district-homepage-granite-ut",
+      "why": "2022-02-03: within 2 days of one of its closure days"
+    },
+    {
+      "timestamp": "20220106163932",
+      "url": "https://www.graniteschools.org/",
+      "station": "district-homepage-granite-ut",
+      "why": "2022-01-07: within 2 days of one of its closure days"
+    },
+    {
+      "timestamp": "20220107163942",
+      "url": "https://www.graniteschools.org/",
+      "station": "district-homepage-granite-ut",
+      "why": "2022-01-08: within 2 days of one of its closure days"
+    },
+    {
+      "timestamp": "20170304163838",
+      "url": "http://www.graniteschools.org/",
+      "station": "district-homepage-granite-ut",
+      "why": "2017-03-05: within 2 days of one of its closure days"
+    },
+    {
+      "timestamp": "20220107043901",
+      "url": "https://www.graniteschools.org/",
+      "station": "district-homepage-granite-ut",
+      "why": "2022-01-07: within 2 days of one of its closure days"
+    },
+    {
+      "timestamp": "20220108052624",
+      "url": "https://www.graniteschools.org/",
+      "station": "district-homepage-granite-ut",
+      "why": "2022-01-08: within 2 days of one of its closure days"
+    },
+    {
+      "timestamp": "20230106233426",
+      "url": "https://www.graniteschools.org/",
+      "station": "district-homepage-granite-ut",
+      "why": "2023-01-07: within 2 days of one of its closure days"
+    },
+    {
+      "timestamp": "20220219043821",
+      "url": "https://www.graniteschools.org/",
+      "station": "district-homepage-granite-ut",
+      "why": "2022-02-19: within 2 days of one of its closure days"
+    },
+    {
+      "timestamp": "20220219163924",
+      "url": "https://www.graniteschools.org/",
+      "station": "district-homepage-granite-ut",
+      "why": "2022-02-20: within 2 days of one of its closure days"
+    },
+    {
+      "timestamp": "20220222043849",
+      "url": "https://www.graniteschools.org/",
+      "station": "district-homepage-granite-ut",
+      "why": "2022-02-22: within 2 days of one of its closure days"
+    },
+    {
+      "timestamp": "20230106233528",
+      "url": "https://www.graniteschools.org/",
+      "station": "district-homepage-granite-ut",
+      "why": "2023-01-07: within 2 days of one of its closure days"
+    },
+    {
+      "timestamp": "20220221163817",
+      "url": "https://www.graniteschools.org/",
+      "station": "district-homepage-granite-ut",
+      "why": "2022-02-22: within 2 days of one of its closure days"
+    },
+    {
+      "timestamp": "20220223204202",
+      "url": "https://www.graniteschools.org/",
+      "station": "district-homepage-granite-ut",
+      "why": "2022-02-24: within 2 days of one of its closure days"
+    },
+    {
+      "timestamp": "20220220043836",
+      "url": "https://www.graniteschools.org/",
+      "station": "district-homepage-granite-ut",
+      "why": "2022-02-20: within 2 days of one of its closure days"
+    },
+    {
+      "timestamp": "20220204043841",
+      "url": "https://www.graniteschools.org/",
+      "station": "district-homepage-granite-ut",
+      "why": "2022-02-04: within 2 days of one of its closure days"
+    },
+    {
+      "timestamp": "20220225044110",
+      "url": "https://www.graniteschools.org/",
+      "station": "district-homepage-granite-ut",
+      "why": "2022-02-25: within 2 days of one of its closure days"
+    },
+    {
+      "timestamp": "20170327211408",
+      "url": "http://www.graniteschools.org",
+      "station": "district-homepage-granite-ut",
+      "why": "2017-03-28: within 2 days of one of its closure days"
+    },
+    {
+      "timestamp": "20250216115052",
+      "url": "https://www.graniteschools.org/",
+      "station": "district-homepage-granite-ut",
+      "why": "2025-02-16: within 2 days of one of its closure days"
+    },
+    {
+      "timestamp": "20220224195030",
+      "url": "https://www.graniteschools.org/",
+      "station": "district-homepage-granite-ut",
+      "why": "2022-02-25: within 2 days of one of its closure days"
+    },
+    {
+      "timestamp": "20161114183241",
+      "url": "http://www.graniteschools.org/",
+      "station": "district-homepage-granite-ut",
+      "why": "2016-11-15: within 2 days of one of its closure days"
+    },
+    {
+      "timestamp": "20161117205301",
+      "url": "http://www.graniteschools.org/",
+      "station": "district-homepage-granite-ut",
+      "why": "2016-11-18: within 2 days of one of its closure days"
+    },
+    {
+      "timestamp": "20170203190914",
+      "url": "http://www.graniteschools.org/",
+      "station": "district-homepage-granite-ut",
+      "why": "2017-02-04: within 2 days of one of its closure days"
+    },
+    {
+      "timestamp": "20161119035118",
+      "url": "http://www.graniteschools.org:80/",
+      "station": "district-homepage-granite-ut",
+      "why": "2016-11-19: within 2 days of one of its closure days"
+    },
+    {
+      "timestamp": "20161122004738",
+      "url": "http://www.graniteschools.org/",
+      "station": "district-homepage-granite-ut",
+      "why": "2016-11-22: within 2 days of one of its closure days"
+    },
+    {
+      "timestamp": "20161214002025",
+      "url": "http://www.graniteschools.org/",
+      "station": "district-homepage-granite-ut",
+      "why": "2016-12-14: within 2 days of one of its closure days"
+    },
+    {
+      "timestamp": "20230311020620",
+      "url": "https://www.graniteschools.org/",
+      "station": "district-homepage-granite-ut",
+      "why": "2023-03-11: within 2 days of one of its closure days"
+    },
+    {
+      "timestamp": "20161211035549",
+      "url": "http://www.graniteschools.org/",
+      "station": "district-homepage-granite-ut",
+      "why": "2016-12-11: within 2 days of one of its closure days"
+    },
+    {
+      "timestamp": "20230321104932",
+      "url": "https://www.graniteschools.org/",
+      "station": "district-homepage-granite-ut",
+      "why": "2023-03-21: within 2 days of one of its closure days"
+    },
+    {
+      "timestamp": "20160921010334",
+      "url": "http://www.graniteschools.org/",
+      "station": "district-homepage-granite-ut",
+      "why": "2016-09-21: within 2 days of one of its closure days"
+    },
+    {
+      "timestamp": "20170922210428",
+      "url": "http://www.graniteschools.org:80/",
+      "station": "district-homepage-granite-ut",
+      "why": "2017-09-23: within 2 days of one of its closure days"
+    },
+    {
+      "timestamp": "20201106232555",
+      "url": "https://www.graniteschools.org/",
+      "station": "district-homepage-granite-ut",
+      "why": "2020-11-07: within 2 days of one of its closure days"
+    },
+    {
+      "timestamp": "20160203145527",
+      "url": "http://www.graniteschools.org:80/",
+      "station": "district-homepage-granite-ut",
+      "why": "2016-02-03: within 2 days of one of its closure days"
+    },
+    {
+      "timestamp": "20161004023303",
+      "url": "http://www.graniteschools.org:80/",
+      "station": "district-homepage-granite-ut",
+      "why": "2016-10-04: within 2 days of one of its closure days"
+    },
+    {
+      "timestamp": "20151216164609",
+      "url": "http://www.graniteschools.org/",
+      "station": "district-homepage-granite-ut",
+      "why": "2015-12-17: within 2 days of one of its closure days"
+    },
+    {
+      "timestamp": "20160126223859",
+      "url": "http://www.graniteschools.org:80/",
+      "station": "district-homepage-granite-ut",
+      "why": "2016-01-27: within 2 days of one of its closure days"
+    },
+    {
+      "timestamp": "20151208231146",
+      "url": "http://www.graniteschools.org/",
+      "station": "district-homepage-granite-ut",
+      "why": "2015-12-09: within 2 days of one of its closure days"
+    },
+    {
+      "timestamp": "20160121000006",
+      "url": "http://www.graniteschools.org:80/",
+      "station": "district-homepage-granite-ut",
+      "why": "2016-01-21: within 2 days of one of its closure days"
+    },
+    {
+      "timestamp": "20160415011321",
+      "url": "http://www.graniteschools.org:80/",
+      "station": "district-homepage-granite-ut",
+      "why": "2016-04-15: within 2 days of one of its closure days"
+    },
+    {
+      "timestamp": "20160316054133",
+      "url": "http://www.graniteschools.org:80/",
+      "station": "district-homepage-granite-ut",
+      "why": "2016-03-16: within 2 days of one of its closure days"
+    },
+    {
+      "timestamp": "20160113064351",
+      "url": "http://www.graniteschools.org:80/",
+      "station": "district-homepage-granite-ut",
+      "why": "2016-01-13: within 2 days of one of its closure days"
+    },
+    {
+      "timestamp": "20151118173339",
+      "url": "http://www.graniteschools.org/",
+      "station": "district-homepage-granite-ut",
+      "why": "2015-11-19: within 2 days of one of its closure days"
+    },
+    {
+      "timestamp": "20151212054640",
+      "url": "http://www.graniteschools.org:80/",
+      "station": "district-homepage-granite-ut",
+      "why": "2015-12-12: within 2 days of one of its closure days"
+    },
+    {
+      "timestamp": "20151124105854",
+      "url": "http://www.graniteschools.org:80/",
+      "station": "district-homepage-granite-ut",
+      "why": "2015-11-24: within 2 days of one of its closure days"
+    },
+    {
+      "timestamp": "20151115045936",
+      "url": "http://www.graniteschools.org:80/",
+      "station": "district-homepage-granite-ut",
+      "why": "2015-11-15: within 2 days of one of its closure days"
+    },
+    {
+      "timestamp": "20241113221922",
+      "url": "https://www.graniteschools.org/",
+      "station": "district-homepage-granite-ut",
+      "why": "2024-11-14: within 2 days of one of its closure days"
+    },
+    {
+      "timestamp": "20230401000417",
+      "url": "https://www.graniteschools.org/",
+      "station": "district-homepage-granite-ut",
+      "why": "2023-04-01: within 2 days of one of its closure days"
+    },
+    {
+      "timestamp": "20230401000331",
+      "url": "https://www.graniteschools.org/",
+      "station": "district-homepage-granite-ut",
+      "why": "2023-04-01: within 2 days of one of its closure days"
+    },
+    {
+      "timestamp": "20230401001210",
+      "url": "https://www.graniteschools.org/",
+      "station": "district-homepage-granite-ut",
+      "why": "2023-04-01: within 2 days of one of its closure days"
+    },
+    {
+      "timestamp": "20230328214148",
+      "url": "https://www.graniteschools.org/",
+      "station": "district-homepage-granite-ut",
+      "why": "2023-03-29: within 2 days of one of its closure days"
+    },
+    {
+      "timestamp": "20240405215109",
+      "url": "https://www.graniteschools.org/wp-json/wp/v2/en?schools=3735,3734&notification_type=school",
+      "station": "district-homepage-granite-ut",
+      "why": "2024-04-06: within 2 days of one of its closure days"
+    },
+    {
+      "timestamp": "20250304214012",
+      "url": "https://www.graniteschools.org/wp-json/wp/v2/en?schools=3745,3744&notification_type=school",
+      "station": "district-homepage-granite-ut",
+      "why": "2025-03-05: within 2 days of one of its closure days"
+    },
+    {
+      "timestamp": "20260304024727",
+      "url": "https://www.graniteschools.org/wp-json/wp/v2/en?schools=3661,3657&notification_type=school",
+      "station": "district-homepage-granite-ut",
+      "why": "2026-03-04: within 2 days of one of its closure days"
+    },
+    {
+      "timestamp": "20251205024835",
+      "url": "https://www.canyonsdistrict.org/",
+      "station": "district-homepage-canyons-ut",
+      "why": "storm day 2025-12-05 (market score 1.00)"
+    },
+    {
+      "timestamp": "20251204194402",
+      "url": "https://www.canyonsdistrict.org/",
+      "station": "district-homepage-canyons-ut",
+      "why": "storm day 2025-12-05 (market score 1.00)"
+    },
+    {
+      "timestamp": "20230321173138",
+      "url": "https://www.canyonsdistrict.org/",
+      "station": "district-homepage-canyons-ut",
+      "why": "storm day 2023-03-22 (market score 1.00)"
+    },
+    {
+      "timestamp": "20240301043426",
+      "url": "https://www.canyonsdistrict.org/",
+      "station": "district-homepage-canyons-ut",
+      "why": "storm day 2024-03-01 (market score 1.00)"
+    },
+    {
+      "timestamp": "20221110131809",
+      "url": "https://www.canyonsdistrict.org/",
+      "station": "district-homepage-canyons-ut",
+      "why": "storm day 2022-11-10 (market score 1.00)"
+    },
+    {
+      "timestamp": "20221110131835",
+      "url": "https://www.canyonsdistrict.org/",
+      "station": "district-homepage-canyons-ut",
+      "why": "storm day 2022-11-10 (market score 1.00)"
+    },
+    {
+      "timestamp": "20221110131838",
+      "url": "https://www.canyonsdistrict.org/",
+      "station": "district-homepage-canyons-ut",
+      "why": "storm day 2022-11-10 (market score 1.00)"
+    },
+    {
+      "timestamp": "20221110131851",
+      "url": "https://www.canyonsdistrict.org/",
+      "station": "district-homepage-canyons-ut",
+      "why": "storm day 2022-11-10 (market score 1.00)"
+    },
+    {
+      "timestamp": "20221110131903",
+      "url": "https://www.canyonsdistrict.org/",
+      "station": "district-homepage-canyons-ut",
+      "why": "storm day 2022-11-10 (market score 1.00)"
+    },
+    {
+      "timestamp": "20221110012039",
+      "url": "https://www.canyonsdistrict.org/",
+      "station": "district-homepage-canyons-ut",
+      "why": "storm day 2022-11-10 (market score 1.00)"
+    },
+    {
+      "timestamp": "20221110131845",
+      "url": "https://www.canyonsdistrict.org/",
+      "station": "district-homepage-canyons-ut",
+      "why": "storm day 2022-11-10 (market score 1.00)"
+    },
+    {
+      "timestamp": "20221108080258",
+      "url": "https://www.canyonsdistrict.org/",
+      "station": "district-homepage-canyons-ut",
+      "why": "storm day 2022-11-08 (market score 1.00)"
+    },
+    {
+      "timestamp": "20221108053919",
+      "url": "https://www.canyonsdistrict.org/",
+      "station": "district-homepage-canyons-ut",
+      "why": "storm day 2022-11-08 (market score 1.00)"
+    },
+    {
+      "timestamp": "20221108080248",
+      "url": "https://www.canyonsdistrict.org/",
+      "station": "district-homepage-canyons-ut",
+      "why": "storm day 2022-11-08 (market score 1.00)"
+    },
+    {
+      "timestamp": "20221108080251",
+      "url": "https://www.canyonsdistrict.org/",
+      "station": "district-homepage-canyons-ut",
+      "why": "storm day 2022-11-08 (market score 1.00)"
+    },
+    {
+      "timestamp": "20221108080302",
+      "url": "https://www.canyonsdistrict.org/",
+      "station": "district-homepage-canyons-ut",
+      "why": "storm day 2022-11-08 (market score 1.00)"
+    },
+    {
+      "timestamp": "20220104231947",
+      "url": "https://www.canyonsdistrict.org/",
+      "station": "district-homepage-canyons-ut",
+      "why": "storm day 2022-01-05 (market score 1.00)"
+    },
+    {
+      "timestamp": "20220411022118",
+      "url": "https://www.canyonsdistrict.org/",
+      "station": "district-homepage-canyons-ut",
+      "why": "storm day 2022-04-11 (market score 1.00)"
+    },
+    {
+      "timestamp": "20220105022655",
+      "url": "https://www.canyonsdistrict.org/",
+      "station": "district-homepage-canyons-ut",
+      "why": "storm day 2022-01-05 (market score 1.00)"
+    },
+    {
+      "timestamp": "20220105152416",
+      "url": "https://www.canyonsdistrict.org/",
+      "station": "district-homepage-canyons-ut",
+      "why": "storm day 2022-01-05 (market score 1.00)"
+    },
+    {
+      "timestamp": "20190409064049",
+      "url": "http://canyonsdistrict.org:80/",
+      "station": "district-homepage-canyons-ut",
+      "why": "storm day 2019-04-09 (market score 1.00)"
+    },
+    {
+      "timestamp": "20170109081230",
+      "url": "http://www.canyonsdistrict.org/",
+      "station": "district-homepage-canyons-ut",
+      "why": "storm day 2017-01-09 (market score 1.00)"
+    },
+    {
+      "timestamp": "20170109074940",
+      "url": "http://www.canyonsdistrict.org/",
+      "station": "district-homepage-canyons-ut",
+      "why": "storm day 2017-01-09 (market score 1.00)"
+    },
+    {
+      "timestamp": "20170109080340",
+      "url": "http://www.canyonsdistrict.org/",
+      "station": "district-homepage-canyons-ut",
+      "why": "storm day 2017-01-09 (market score 1.00)"
+    },
+    {
+      "timestamp": "20170109064720",
+      "url": "http://www.canyonsdistrict.org/",
+      "station": "district-homepage-canyons-ut",
+      "why": "storm day 2017-01-09 (market score 1.00)"
+    },
+    {
+      "timestamp": "20190107095207",
+      "url": "http://www.canyonsdistrict.org:80/",
+      "station": "district-homepage-canyons-ut",
+      "why": "storm day 2019-01-07 (market score 1.00)"
+    },
+    {
+      "timestamp": "20160314170127",
+      "url": "http://www.canyonsdistrict.org:80/",
+      "station": "district-homepage-canyons-ut",
+      "why": "storm day 2016-03-15 (market score 1.00)"
+    },
+    {
+      "timestamp": "20260306152105",
+      "url": "https://www.canyonsdistrict.org/",
+      "station": "district-homepage-canyons-ut",
+      "why": "storm day 2026-03-06 (market score 0.25)"
+    },
+    {
+      "timestamp": "20250102102020",
+      "url": "https://www.canyonsdistrict.org/",
+      "station": "district-homepage-canyons-ut",
+      "why": "storm day 2025-01-02 (market score 0.25)"
+    },
+    {
+      "timestamp": "20250401000252",
+      "url": "https://www.canyonsdistrict.org/",
+      "station": "district-homepage-canyons-ut",
+      "why": "storm day 2025-04-01 (market score 0.25)"
+    },
+    {
+      "timestamp": "20260225083952",
+      "url": "https://www.canyonsdistrict.org/",
+      "station": "district-homepage-canyons-ut",
+      "why": "storm day 2026-02-25 (market score 0.25)"
+    },
+    {
+      "timestamp": "20260306143653",
+      "url": "https://www.canyonsdistrict.org/",
+      "station": "district-homepage-canyons-ut",
+      "why": "storm day 2026-03-06 (market score 0.25)"
+    },
+    {
+      "timestamp": "20260306143752",
+      "url": "https://www.canyonsdistrict.org/",
+      "station": "district-homepage-canyons-ut",
+      "why": "storm day 2026-03-06 (market score 0.25)"
+    },
+    {
+      "timestamp": "20260224060709",
+      "url": "https://www.canyonsdistrict.org/",
+      "station": "district-homepage-canyons-ut",
+      "why": "storm day 2026-02-24 (market score 0.25)"
+    },
+    {
+      "timestamp": "20260224143206",
+      "url": "https://www.canyonsdistrict.org/",
+      "station": "district-homepage-canyons-ut",
+      "why": "storm day 2026-02-24 (market score 0.25)"
+    },
+    {
+      "timestamp": "20260225143130",
+      "url": "https://www.canyonsdistrict.org/",
+      "station": "district-homepage-canyons-ut",
+      "why": "storm day 2026-02-25 (market score 0.25)"
+    },
+    {
+      "timestamp": "20260210223404",
+      "url": "https://www.canyonsdistrict.org/",
+      "station": "district-homepage-canyons-ut",
+      "why": "storm day 2026-02-11 (market score 0.25)"
+    },
+    {
+      "timestamp": "20260211121332",
+      "url": "https://www.canyonsdistrict.org/",
+      "station": "district-homepage-canyons-ut",
+      "why": "storm day 2026-02-11 (market score 0.25)"
+    },
+    {
+      "timestamp": "20260210210506",
+      "url": "https://www.canyonsdistrict.org/",
+      "station": "district-homepage-canyons-ut",
+      "why": "storm day 2026-02-11 (market score 0.25)"
+    },
+    {
+      "timestamp": "20260401154333",
+      "url": "https://www.canyonsdistrict.org/",
+      "station": "district-homepage-canyons-ut",
+      "why": "storm day 2026-04-01 (market score 0.25)"
+    },
+    {
+      "timestamp": "20260211143427",
+      "url": "https://www.canyonsdistrict.org/",
+      "station": "district-homepage-canyons-ut",
+      "why": "storm day 2026-02-11 (market score 0.25)"
+    },
+    {
+      "timestamp": "20260212030604",
+      "url": "https://www.canyonsdistrict.org/",
+      "station": "district-homepage-canyons-ut",
+      "why": "storm day 2026-02-12 (market score 0.25)"
+    },
+    {
+      "timestamp": "20260402023007",
+      "url": "https://www.canyonsdistrict.org/",
+      "station": "district-homepage-canyons-ut",
+      "why": "storm day 2026-04-02 (market score 0.25)"
+    },
+    {
+      "timestamp": "20260402130903",
+      "url": "https://www.canyonsdistrict.org/",
+      "station": "district-homepage-canyons-ut",
+      "why": "storm day 2026-04-02 (market score 0.25)"
+    },
+    {
+      "timestamp": "20251225195514",
+      "url": "https://www.canyonsdistrict.org/",
+      "station": "district-homepage-canyons-ut",
+      "why": "storm day 2025-12-26 (market score 0.25)"
+    },
+    {
+      "timestamp": "20251226044056",
+      "url": "https://www.canyonsdistrict.org/",
+      "station": "district-homepage-canyons-ut",
+      "why": "storm day 2025-12-26 (market score 0.25)"
+    },
+    {
+      "timestamp": "20260102143259",
+      "url": "https://www.canyonsdistrict.org/",
+      "station": "district-homepage-canyons-ut",
+      "why": "storm day 2026-01-02 (market score 0.25)"
+    },
+    {
+      "timestamp": "20260108143157",
+      "url": "https://www.canyonsdistrict.org/",
+      "station": "district-homepage-canyons-ut",
+      "why": "storm day 2026-01-08 (market score 0.25)"
+    },
+    {
+      "timestamp": "20251225165553",
+      "url": "https://www.canyonsdistrict.org/",
+      "station": "district-homepage-canyons-ut",
+      "why": "storm day 2025-12-26 (market score 0.25)"
+    },
+    {
+      "timestamp": "20260101021706",
+      "url": "https://www.canyonsdistrict.org/",
+      "station": "district-homepage-canyons-ut",
+      "why": "storm day 2026-01-01 (market score 0.25)"
+    },
+    {
+      "timestamp": "20251226105123",
+      "url": "https://www.canyonsdistrict.org/",
+      "station": "district-homepage-canyons-ut",
+      "why": "storm day 2025-12-26 (market score 0.25)"
+    },
+    {
+      "timestamp": "20260108092043",
+      "url": "https://www.canyonsdistrict.org/",
+      "station": "district-homepage-canyons-ut",
+      "why": "storm day 2026-01-08 (market score 0.25)"
+    },
+    {
+      "timestamp": "20260101075003",
+      "url": "https://www.canyonsdistrict.org/",
+      "station": "district-homepage-canyons-ut",
+      "why": "storm day 2026-01-01 (market score 0.25)"
+    },
+    {
+      "timestamp": "20260101060016",
+      "url": "https://www.canyonsdistrict.org/",
+      "station": "district-homepage-canyons-ut",
+      "why": "storm day 2026-01-01 (market score 0.25)"
+    },
+    {
+      "timestamp": "20260102022952",
+      "url": "https://www.canyonsdistrict.org/",
+      "station": "district-homepage-canyons-ut",
+      "why": "storm day 2026-01-02 (market score 0.25)"
+    },
+    {
+      "timestamp": "20251226143059",
+      "url": "https://www.canyonsdistrict.org/",
+      "station": "district-homepage-canyons-ut",
+      "why": "storm day 2025-12-26 (market score 0.25)"
+    },
+    {
+      "timestamp": "20260101095610",
+      "url": "https://www.canyonsdistrict.org/",
+      "station": "district-homepage-canyons-ut",
+      "why": "storm day 2026-01-01 (market score 0.25)"
+    },
+    {
+      "timestamp": "20251226022959",
+      "url": "https://www.canyonsdistrict.org/",
+      "station": "district-homepage-canyons-ut",
+      "why": "storm day 2025-12-26 (market score 0.25)"
+    },
+    {
+      "timestamp": "20260101114340",
+      "url": "https://www.canyonsdistrict.org/",
+      "station": "district-homepage-canyons-ut",
+      "why": "storm day 2026-01-01 (market score 0.25)"
+    },
+    {
+      "timestamp": "20260101142822",
+      "url": "https://www.canyonsdistrict.org/",
+      "station": "district-homepage-canyons-ut",
+      "why": "storm day 2026-01-01 (market score 0.25)"
+    },
+    {
+      "timestamp": "20250401040254",
+      "url": "https://www.canyonsdistrict.org/",
+      "station": "district-homepage-canyons-ut",
+      "why": "storm day 2025-04-01 (market score 0.25)"
+    },
+    {
+      "timestamp": "20251027053332",
+      "url": "https://www.canyonsdistrict.org/",
+      "station": "district-homepage-canyons-ut",
+      "why": "storm day 2025-10-27 (market score 0.25)"
+    },
+    {
+      "timestamp": "20251027022718",
+      "url": "https://www.canyonsdistrict.org/",
+      "station": "district-homepage-canyons-ut",
+      "why": "storm day 2025-10-27 (market score 0.25)"
     }
   ]
 }
