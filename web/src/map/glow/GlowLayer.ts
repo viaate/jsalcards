@@ -60,6 +60,7 @@ import {
   type GlowFrameStyle,
   type HaloShape,
   LIGHT_RESOLUTION_CAP,
+  PULSE_GROW,
   PULSE_SECONDS,
   bloomPlan,
   denseShareAt,
@@ -107,6 +108,7 @@ import {
   STRIDE_BYTES,
   packPoints,
 } from './pack';
+import { type TexelBox, blurBoxes, glowBounds, isEmpty, levelBox, targetBox } from './region';
 import {
   ATTRIB,
   BLUR_FRAG,
@@ -330,6 +332,25 @@ function layerAfter(map: MapLibreMap, id: string): string | undefined {
   return index >= 0 ? order[index + 1] : undefined;
 }
 
+/** Where the blend's two passes run, from the light target's lit texels down to its level; null for everywhere. */
+function blurRegions(
+  lit: TexelBox | null,
+  levels: readonly LightTarget[],
+  blur: BlendBlur,
+): ReturnType<typeof blurBoxes> {
+  let box = lit;
+  for (let level = 1; level <= blur.level && box !== null; level++) {
+    const from = levels[level - 1];
+    const to = levels[level];
+    if (from === undefined || to === undefined) return null;
+    box = levelBox(box, [from.width, from.height], [to.width, to.height]);
+  }
+  const target = levels[blur.level];
+  return box === null || target === undefined
+    ? null
+    : blurBoxes(box, [target.width, target.height], blur.radius);
+}
+
 export class GlowLayer implements CustomLayerInterface {
   readonly id: string;
   readonly type = 'custom' as const;
@@ -352,6 +373,11 @@ export class GlowLayer implements CustomLayerInterface {
   private gl: WebGL2RenderingContext | null = null;
   private res: GpuResources | null = null;
   private packed: PackedPoints | null = null;
+  /** The glowing points' mercator bounds, for the packed set they were taken from. */
+  private bounds: {
+    readonly packed: PackedPoints;
+    readonly box: ReturnType<typeof glowBounds>;
+  } | null = null;
   private frame: FrameState | null = null;
   private failed = false;
 
@@ -596,8 +622,8 @@ export class GlowLayer implements CustomLayerInterface {
     if (packed !== null && packed.glowCount > 0) {
       res.timer?.begin();
       if (this.ensureLevels(gl, res, frame)) {
-        this.drawLight(gl, res, packed, frame, args);
-        if (res.float) this.drawBloom(gl, res, frame);
+        const radius = this.drawLight(gl, res, packed, frame, args);
+        if (res.float) this.drawBloom(gl, res, frame, this.litBox(packed, frame, args, radius));
       }
       res.timer?.end();
       gl.bindVertexArray(null);
@@ -826,9 +852,9 @@ export class GlowLayer implements CustomLayerInterface {
     packed: PackedPoints,
     frame: FrameState,
     args: CustomRenderMethodInput,
-  ): void {
+  ): number {
     const target = res.levels[0];
-    if (target === undefined) return;
+    if (target === undefined) return 0;
     gl.bindFramebuffer(gl.FRAMEBUFFER, target.framebuffer);
     gl.viewport(0, 0, target.width, target.height);
     gl.disable(gl.DEPTH_TEST);
@@ -863,12 +889,35 @@ export class GlowLayer implements CustomLayerInterface {
     const halo = res.float ? undefined : fallbackHalo(frame.style, frame.zoom);
     // The float path's bloom is made from whole cores; the fallback draws only the share shown.
     const coreShare = res.float ? 1 : frame.style.coreShare;
-    this.setKernelUniforms(gl, program, frame, frame.targetPxPerCss, halo, coreShare);
+    const radius = this.setKernelUniforms(
+      gl,
+      program,
+      frame,
+      frame.targetPxPerCss,
+      halo,
+      coreShare,
+    );
     gl.uniform1f(uniform(program, 'u_gain'), frame.style.gain);
     gl.uniform1f(uniform(program, 'u_encode'), frame.fallbackAlpha);
     gl.uniform1f(uniform(program, 'u_coreEncode'), 1 / frame.style.gain);
     gl.bindVertexArray(res.vaoAll);
     gl.drawArrays(gl.POINTS, 0, packed.glowCount);
+    return radius;
+  }
+
+  /** The light target's texels this frame's points can light, sprites `radius` target px wide; null when it cannot tell. */
+  private litBox(
+    packed: PackedPoints,
+    frame: FrameState,
+    args: CustomRenderMethodInput,
+    radius: number,
+  ): TexelBox | null {
+    if (frame.blur === null) return null;
+    if (this.bounds?.packed !== packed) this.bounds = { packed, box: glowBounds(packed) };
+    const bounds = this.bounds.box;
+    if (bounds === null) return null;
+    const matrix = args.defaultProjectionData.mainMatrix;
+    return targetBox(bounds, matrix, frame.mapShare, frame.targetSize, radius * (1 + PULSE_GROW));
   }
 
   /**
@@ -878,7 +927,12 @@ export class GlowLayer implements CustomLayerInterface {
    * weighted scale of bloom; the composite adds it to the core light. The
    * blend's level is blurred across on the way down and back on the way up.
    */
-  private drawBloom(gl: WebGL2RenderingContext, res: GpuResources, frame: FrameState): void {
+  private drawBloom(
+    gl: WebGL2RenderingContext,
+    res: GpuResources,
+    frame: FrameState,
+    lit: TexelBox | null,
+  ): void {
     const weights = frame.bloomWeights;
     if (weights.length === 0) return;
     gl.bindVertexArray(res.vaoEmpty);
@@ -905,8 +959,9 @@ export class GlowLayer implements CustomLayerInterface {
     const blur = frame.blur;
     const blurred = blur === null ? undefined : res.levels[blur.level];
     const across = res.blurTarget;
+    const boxes = blur === null ? null : blurRegions(lit, res.levels, blur);
     if (blur !== null && blurred !== undefined && across !== null) {
-      this.drawBlur(gl, res, blur, blurred, across, [1 / blurred.width, 0], 1);
+      this.drawBlur(gl, res, blur, blurred, across, [1 / blurred.width, 0], 1, boxes?.across);
     }
 
     gl.enable(gl.BLEND);
@@ -929,14 +984,25 @@ export class GlowLayer implements CustomLayerInterface {
       gl.drawArrays(gl.TRIANGLES, 0, 3);
       if (blur !== null && across !== null && i - 1 === blur.level) {
         gl.blendFunc(gl.ONE, gl.ONE);
-        this.drawBlur(gl, res, blur, across, target, [0, 1 / across.height], blur.weight, true);
+        const box = boxes?.down;
+        this.drawBlur(
+          gl,
+          res,
+          blur,
+          across,
+          target,
+          [0, 1 / across.height],
+          blur.weight,
+          box,
+          true,
+        );
         gl.useProgram(up.program);
         gl.blendFunc(gl.ONE, gl.CONSTANT_COLOR);
       }
     }
   }
 
-  /** One axis of the blend's blur, scaled by `scale`; the second, `floored`, on the blend's floor. */
+  /** One axis of the blend's blur, scaled by `scale`, within `box` if given; the second, `floored`, on the blend's floor. */
   private drawBlur(
     gl: WebGL2RenderingContext,
     res: GpuResources,
@@ -945,10 +1011,11 @@ export class GlowLayer implements CustomLayerInterface {
     target: LightTarget,
     step: readonly [number, number],
     scale: number,
+    box: TexelBox | undefined,
     floored = false,
   ): void {
     const program = res.blur;
-    if (program === null) return;
+    if (program === null || (box !== undefined && isEmpty(box))) return;
     gl.useProgram(program.program);
     gl.uniform1i(uniform(program, 'u_source'), 0);
     gl.uniform2f(uniform(program, 'u_step'), step[0], step[1]);
@@ -960,7 +1027,12 @@ export class GlowLayer implements CustomLayerInterface {
     gl.bindFramebuffer(gl.FRAMEBUFFER, target.framebuffer);
     gl.viewport(0, 0, target.width, target.height);
     gl.bindTexture(gl.TEXTURE_2D, source.texture);
+    if (box !== undefined) {
+      gl.enable(gl.SCISSOR_TEST);
+      gl.scissor(box[0], box[1], box[2] - box[0] + 1, box[3] - box[1] + 1);
+    }
     gl.drawArrays(gl.TRIANGLES, 0, 3);
+    gl.disable(gl.SCISSOR_TEST);
   }
 
   private drawComposite(gl: WebGL2RenderingContext, res: GpuResources, frame: FrameState): void {

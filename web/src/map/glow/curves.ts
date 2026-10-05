@@ -900,7 +900,7 @@ export const PULSE_SECONDS = 1.6;
 /** Extra brightness at the pulse's crest. */
 const PULSE_GAIN = 1.1;
 /** Extra radius at the pulse's crest. */
-const PULSE_GROW = 0.35;
+export const PULSE_GROW = 0.35;
 
 /**
  * Brightness and radius multipliers for a point `age` seconds after it
