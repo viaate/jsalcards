@@ -1,16 +1,1265 @@
 {
+ "cdx": [
+  {
+   "url": "medicinelake.k12.mt.us/",
+   "from": "20170101",
+   "to": "20260930",
+   "filter": [
+    "statuscode:200"
+   ],
+   "collapse": "timestamp:10",
+   "station": "apptegy-medicine-lake-mt",
+   "why": "never listed: an address of the source's list, so no verdict but not-listed could be given; listed to learn what the archive holds of it"
+  }
+ ],
  "snapshots": [
   {
-   "timestamp": "20240209105757",
-   "url": "https://www.murrieta.k12.ca.us/",
-   "station": "finalsite-murrieta-valley-ca",
-   "why": "2024-02-09: within 2 days of one of its closure days"
+   "timestamp": "20180529115010",
+   "url": "http://www.escambiak12.net:80/",
+   "station": "apptegy-escambia-al",
+   "why": "2018-05-29: within 2 days of one of its closure days"
   },
   {
-   "timestamp": "20240118141626",
-   "url": "https://www.rivieraisd.us/",
-   "station": "apptegy-riviera-tx",
-   "why": "2024-01-18: within 2 days of one of its closure days"
+   "timestamp": "20181008005709",
+   "url": "http://www.escambiak12.net:80/?",
+   "station": "apptegy-escambia-al",
+   "why": "2018-10-08: within 2 days of one of its closure days"
+  },
+  {
+   "timestamp": "20220120112453",
+   "url": "http://www.escambiak12.net/",
+   "station": "apptegy-escambia-al",
+   "why": "2022-01-20: within 2 days of one of its closure days"
+  },
+  {
+   "timestamp": "20191016113216",
+   "url": "http://mcsbfl.us/",
+   "station": "apptegy-madison-fl",
+   "why": "2019-10-16: within 2 days of one of its closure days"
+  },
+  {
+   "timestamp": "20250219144307",
+   "url": "https://www.plentywood.k12.mt.us/",
+   "station": "apptegy-plentywood-mt",
+   "why": "storm day 2025-02-19 (market score 0.50)"
+  },
+  {
+   "timestamp": "20241122034745",
+   "url": "https://www.plentywood.k12.mt.us/",
+   "station": "apptegy-plentywood-mt",
+   "why": "storm day 2024-11-22 (market score 0.25)"
+  },
+  {
+   "timestamp": "20210413015757",
+   "url": "https://www.plentywood.k12.mt.us/",
+   "station": "apptegy-plentywood-mt",
+   "why": "storm day 2021-04-13 (market score 0.25)"
+  },
+  {
+   "timestamp": "20241009135923",
+   "url": "https://www.suwannee.k12.fl.us/",
+   "station": "apptegy-suwannee-fl",
+   "why": "storm day 2024-10-09 (market score 0.50)"
+  },
+  {
+   "timestamp": "20241011144132",
+   "url": "https://www.suwannee.k12.fl.us/",
+   "station": "apptegy-suwannee-fl",
+   "why": "2024-10-11: within 2 days of one of its closure days"
+  },
+  {
+   "timestamp": "20250124081843",
+   "url": "https://www.suwannee.k12.fl.us/",
+   "station": "apptegy-suwannee-fl",
+   "why": "2025-01-24: within 2 days of one of its closure days"
+  },
+  {
+   "timestamp": "20260125120922",
+   "url": "https://www.thomasvilleschools.org/",
+   "station": "apptegy-thomasville-al",
+   "why": "2026-01-25: within 2 days of one of its closure days"
+  },
+  {
+   "timestamp": "20250121220116",
+   "url": "https://www.wakullaschooldistrict.org/",
+   "station": "apptegy-wakulla-fl",
+   "why": "storm day 2025-01-22 (market score 1.00)"
+  },
+  {
+   "timestamp": "20250123182726",
+   "url": "https://www.wakullaschooldistrict.org/",
+   "station": "apptegy-wakulla-fl",
+   "why": "2025-01-24: within 2 days of one of its closure days"
+  },
+  {
+   "timestamp": "20250210061608",
+   "url": "https://www.westbyschool.k12.mt.us/",
+   "station": "apptegy-westby-mt",
+   "why": "storm day 2025-02-10 (market score 0.50)"
+  },
+  {
+   "timestamp": "20221222153112",
+   "url": "https://westbyschool.k12.mt.us/",
+   "station": "apptegy-westby-mt",
+   "why": "storm day 2022-12-22 (market score 0.50)"
+  },
+  {
+   "timestamp": "20221222081904",
+   "url": "https://www.westbyschool.k12.mt.us/",
+   "station": "apptegy-westby-mt",
+   "why": "storm day 2022-12-22 (market score 0.50)"
+  },
+  {
+   "timestamp": "20250317181532",
+   "url": "https://www.wcsd1.org/",
+   "station": "edlio-weston-1-wy",
+   "why": "storm day 2025-03-18 (market score 1.00)"
+  },
+  {
+   "timestamp": "20230214104745",
+   "url": "https://www.wcsd1.org/",
+   "station": "edlio-weston-1-wy",
+   "why": "storm day 2023-02-14 (market score 1.00)"
+  },
+  {
+   "timestamp": "20210204192217",
+   "url": "https://www.wcsd1.org/",
+   "station": "edlio-weston-1-wy",
+   "why": "storm day 2021-02-05 (market score 0.25)"
+  },
+  {
+   "timestamp": "20240913191715",
+   "url": "https://www.saralandboe.org/",
+   "station": "finalsite-saraland-al",
+   "why": "2024-09-14: within 2 days of one of its closure days"
+  },
+  {
+   "timestamp": "20240115034602",
+   "url": "https://www.saralandboe.org/",
+   "station": "finalsite-saraland-al",
+   "why": "2024-01-15: within 2 days of one of its closure days"
+  },
+  {
+   "timestamp": "20201024180014",
+   "url": "https://www.saralandboe.org/",
+   "station": "finalsite-saraland-al",
+   "why": "2020-10-25: within 2 days of one of its closure days"
+  },
+  {
+   "timestamp": "20201024144954",
+   "url": "http://flashalertspokane.net/closures-cats.html",
+   "station": "flashalert-spokane",
+   "why": "2020-10-24: within 2 days of one of its closure days"
+  },
+  {
+   "timestamp": "20240225084840",
+   "url": "http://flashalertspokane.net/closures-cats.html",
+   "station": "flashalert-spokane",
+   "why": "2024-02-25: within 2 days of one of its closure days"
+  },
+  {
+   "timestamp": "20171112211853",
+   "url": "http://flashalertspokane.net/closures-cats.html",
+   "station": "flashalert-spokane",
+   "why": "2017-11-13: within 2 days of one of its closure days"
+  },
+  {
+   "timestamp": "20210112175353",
+   "url": "https://www.ktre.com/weather/closings/?fbclid=IwAR1Zi_BxMvKj2lWd67ak0coK3f_bxyczeiCyUjSEjfgqGv6C5f43wjCC8VA",
+   "station": "gray-ktre",
+   "why": "2021-01-13: within 2 days of one of its closure days"
+  },
+  {
+   "timestamp": "20210112003836",
+   "url": "https://www.ktre.com/weather/closings/",
+   "station": "gray-ktre",
+   "why": "2021-01-12: within 2 days of one of its closure days"
+  },
+  {
+   "timestamp": "20230201192801",
+   "url": "https://www.actionnews5.com/weather/closings/",
+   "station": "gray-wmc",
+   "why": "storm day 2023-02-02 (market score 0.93)"
+  },
+  {
+   "timestamp": "20230130192859",
+   "url": "https://www.actionnews5.com/weather/closings/",
+   "station": "gray-wmc",
+   "why": "storm day 2023-01-31 (market score 0.82)"
+  },
+  {
+   "timestamp": "20220105231543",
+   "url": "https://www.actionnews5.com/weather/closings/",
+   "station": "gray-wmc",
+   "why": "storm day 2022-01-06 (market score 0.33)"
+  },
+  {
+   "timestamp": "20240911072840",
+   "url": "https://www.wjtv.com/weather/closings/",
+   "station": "nexstar-wjtv",
+   "why": "storm day 2024-09-11 (market score 0.15)"
+  },
+  {
+   "timestamp": "20250108052108",
+   "url": "https://www.wjtv.com/weather/closings/",
+   "station": "nexstar-wjtv",
+   "why": "2025-01-08: within 2 days of one of its closure days"
+  },
+  {
+   "timestamp": "20240908220455",
+   "url": "https://www.wjtv.com/weather/closings/",
+   "station": "nexstar-wjtv",
+   "why": "2024-09-09: within 2 days of one of its closure days"
+  },
+  {
+   "timestamp": "20250218232515",
+   "url": "https://www.kivitv.com/weather/school-closings-delays",
+   "station": "scripps-kivi",
+   "why": "2025-02-19: within 2 days of one of its closure days"
+  },
+  {
+   "timestamp": "20250307024354",
+   "url": "https://www.kivitv.com/weather/school-closings-delays?_renderer=json",
+   "station": "scripps-kivi",
+   "why": "2025-03-07: within 2 days of one of its closure days"
+  },
+  {
+   "timestamp": "20250303230533",
+   "url": "https://www.kivitv.com/weather/school-closings-delays?_renderer=json",
+   "station": "scripps-kivi",
+   "why": "2025-03-04: within 2 days of one of its closure days"
+  },
+  {
+   "timestamp": "20221109122801",
+   "url": "http://hamiltonfl.com/",
+   "station": "smartsites-hamilton-fl",
+   "why": "2022-11-09: within 2 days of one of its closure days"
+  },
+  {
+   "timestamp": "20221108002815",
+   "url": "http://hamiltonfl.com/",
+   "station": "smartsites-hamilton-fl",
+   "why": "2022-11-08: within 2 days of one of its closure days"
+  },
+  {
+   "timestamp": "20221109003415",
+   "url": "http://hamiltonfl.com/",
+   "station": "smartsites-hamilton-fl",
+   "why": "2022-11-09: within 2 days of one of its closure days"
+  },
+  {
+   "timestamp": "20211031010424",
+   "url": "https://www.laramie1.org/",
+   "station": "smartsites-laramie-1-wy",
+   "why": "2021-10-31: within 2 days of one of its closure days"
+  },
+  {
+   "timestamp": "20210429042232",
+   "url": "https://www.laramie1.org/",
+   "station": "smartsites-laramie-1-wy",
+   "why": "2021-04-29: within 2 days of one of its closure days"
+  },
+  {
+   "timestamp": "20210209195101",
+   "url": "https://www.laramie1.org/",
+   "station": "smartsites-laramie-1-wy",
+   "why": "2021-02-10: within 2 days of one of its closure days"
+  },
+  {
+   "timestamp": "20171012042612",
+   "url": "http://www.libbyschools.org:80/",
+   "station": "smartsites-libby-mt",
+   "why": "2017-10-12: within 2 days of one of its closure days"
+  },
+  {
+   "timestamp": "20180220064310",
+   "url": "http://www.myfoxzone.com:80/closings",
+   "station": "tegna-kidy",
+   "why": "2018-02-20: within 2 days of one of its closure days"
+  },
+  {
+   "timestamp": "20221109233848",
+   "url": "https://www.12news.com/closings",
+   "station": "tegna-kpnx",
+   "why": "2022-11-10: within 2 days of one of its closure days"
+  },
+  {
+   "timestamp": "20221110034429",
+   "url": "https://www.12news.com/closings",
+   "station": "tegna-kpnx",
+   "why": "2022-11-10: within 2 days of one of its closure days"
+  },
+  {
+   "timestamp": "20221229102936",
+   "url": "https://www.12news.com/closings",
+   "station": "tegna-kpnx",
+   "why": "2022-12-29: within 2 days of one of its closure days"
+  },
+  {
+   "timestamp": "20210101004158",
+   "url": "https://www.kvue.com/closings",
+   "station": "tegna-kvue",
+   "why": "2021-01-01: within 2 days of one of its closure days"
+  },
+  {
+   "timestamp": "20260123204721",
+   "url": "https://www.kvue.com/closings",
+   "station": "tegna-kvue",
+   "why": "2026-01-24: within 2 days of one of its closure days"
+  },
+  {
+   "timestamp": "20170826192307",
+   "url": "http://www.kvue.com/closings",
+   "station": "tegna-kvue",
+   "why": "2017-08-27: within 2 days of one of its closure days"
+  },
+  {
+   "timestamp": "20230129002644",
+   "url": "https://www.newswest9.com/closings",
+   "station": "tegna-kwes",
+   "why": "2023-01-29: within 2 days of one of its closure days"
+  },
+  {
+   "timestamp": "20210122072345",
+   "url": "https://www.newswest9.com/closings",
+   "station": "tegna-kwes",
+   "why": "2021-01-22: within 2 days of one of its closure days"
+  },
+  {
+   "timestamp": "20241217200108",
+   "url": "https://www.abc10.com/closings",
+   "station": "tegna-kxtv",
+   "why": "2024-12-18: within 2 days of one of its closure days"
+  },
+  {
+   "timestamp": "20221110004849",
+   "url": "https://www.abc10.com/closings",
+   "station": "tegna-kxtv",
+   "why": "2022-11-10: within 2 days of one of its closure days"
+  },
+  {
+   "timestamp": "20230119171813",
+   "url": "https://www.abc10.com/closings",
+   "station": "tegna-kxtv",
+   "why": "2023-01-20: within 2 days of one of its closure days"
+  },
+  {
+   "timestamp": "20200824083532",
+   "url": "https://www.cbs19.tv/closings",
+   "station": "tegna-kytx",
+   "why": "2020-08-24: within 2 days of one of its closure days"
+  },
+  {
+   "timestamp": "20210413035020",
+   "url": "https://www.plentywood.k12.mt.us/",
+   "station": "apptegy-plentywood-mt",
+   "why": "storm day 2021-04-13 (market score 0.25)"
+  },
+  {
+   "timestamp": "20210413045706",
+   "url": "https://www.plentywood.k12.mt.us/",
+   "station": "apptegy-plentywood-mt",
+   "why": "storm day 2021-04-13 (market score 0.25)"
+  },
+  {
+   "timestamp": "20251127114836",
+   "url": "https://www.plentywood.k12.mt.us/",
+   "station": "apptegy-plentywood-mt",
+   "why": "2025-11-27: within 2 days of one of its closure days"
+  },
+  {
+   "timestamp": "20251208132156",
+   "url": "https://www.plentywood.k12.mt.us/",
+   "station": "apptegy-plentywood-mt",
+   "why": "2025-12-08: within 2 days of one of its closure days"
+  },
+  {
+   "timestamp": "20250202152646",
+   "url": "https://www.plentywood.k12.mt.us/",
+   "station": "apptegy-plentywood-mt",
+   "why": "2025-02-02: within 2 days of one of its closure days"
+  },
+  {
+   "timestamp": "20240116143404",
+   "url": "https://www.plentywood.k12.mt.us/",
+   "station": "apptegy-plentywood-mt",
+   "why": "2024-01-16: within 2 days of one of its closure days"
+  },
+  {
+   "timestamp": "20231023061156",
+   "url": "https://www.plentywood.k12.mt.us/",
+   "station": "apptegy-plentywood-mt",
+   "why": "2023-10-23: within 2 days of one of its closure days"
+  },
+  {
+   "timestamp": "20231023024334",
+   "url": "https://www.plentywood.k12.mt.us/",
+   "station": "apptegy-plentywood-mt",
+   "why": "2023-10-23: within 2 days of one of its closure days"
+  },
+  {
+   "timestamp": "20191122033719",
+   "url": "https://www.plentywood.k12.mt.us/",
+   "station": "apptegy-plentywood-mt",
+   "why": "2019-11-22: within 2 days of one of its closure days"
+  },
+  {
+   "timestamp": "20210411120320",
+   "url": "https://www.plentywood.k12.mt.us/",
+   "station": "apptegy-plentywood-mt",
+   "why": "2021-04-11: within 2 days of one of its closure days"
+  },
+  {
+   "timestamp": "20170101091034",
+   "url": "http://www.plentywood.k12.mt.us/",
+   "station": "apptegy-plentywood-mt",
+   "why": "2017-01-01: within 2 days of one of its closure days"
+  },
+  {
+   "timestamp": "20221202011003",
+   "url": "https://www.westbyschool.k12.mt.us/",
+   "station": "apptegy-westby-mt",
+   "why": "storm day 2022-12-02 (market score 0.25)"
+  },
+  {
+   "timestamp": "20220301175106",
+   "url": "https://www.westbyschool.k12.mt.us/",
+   "station": "apptegy-westby-mt",
+   "why": "storm day 2022-03-02 (market score 0.25)"
+  },
+  {
+   "timestamp": "20220202011956",
+   "url": "https://www.westbyschool.k12.mt.us/",
+   "station": "apptegy-westby-mt",
+   "why": "2022-02-02: a day a proven list sharing its counties held a row"
+  },
+  {
+   "timestamp": "20220202124147",
+   "url": "https://www.westbyschool.k12.mt.us/",
+   "station": "apptegy-westby-mt",
+   "why": "2022-02-02: a day a proven list sharing its counties held a row"
+  },
+  {
+   "timestamp": "20220202040021",
+   "url": "https://www.westbyschool.k12.mt.us/",
+   "station": "apptegy-westby-mt",
+   "why": "2022-02-02: a day a proven list sharing its counties held a row"
+  },
+  {
+   "timestamp": "20220202062303",
+   "url": "https://www.westbyschool.k12.mt.us/",
+   "station": "apptegy-westby-mt",
+   "why": "2022-02-02: a day a proven list sharing its counties held a row"
+  },
+  {
+   "timestamp": "20220201185715",
+   "url": "https://www.westbyschool.k12.mt.us/",
+   "station": "apptegy-westby-mt",
+   "why": "2022-02-02: a day a proven list sharing its counties held a row"
+  },
+  {
+   "timestamp": "20250222053902",
+   "url": "https://www.westbyschool.k12.mt.us/",
+   "station": "apptegy-westby-mt",
+   "why": "2025-02-22: within 2 days of one of its closure days"
+  },
+  {
+   "timestamp": "20250216100306",
+   "url": "https://www.westbyschool.k12.mt.us/",
+   "station": "apptegy-westby-mt",
+   "why": "2025-02-16: within 2 days of one of its closure days"
+  },
+  {
+   "timestamp": "20251208132208",
+   "url": "https://www.westbyschool.k12.mt.us/",
+   "station": "apptegy-westby-mt",
+   "why": "2025-12-08: within 2 days of one of its closure days"
+  },
+  {
+   "timestamp": "20250202153609",
+   "url": "https://www.westbyschool.k12.mt.us/",
+   "station": "apptegy-westby-mt",
+   "why": "2025-02-02: within 2 days of one of its closure days"
+  },
+  {
+   "timestamp": "20250209142755",
+   "url": "https://www.westbyschool.k12.mt.us/",
+   "station": "apptegy-westby-mt",
+   "why": "2025-02-09: within 2 days of one of its closure days"
+  },
+  {
+   "timestamp": "20241211004624",
+   "url": "https://www.westbyschool.k12.mt.us/",
+   "station": "apptegy-westby-mt",
+   "why": "2024-12-11: within 2 days of one of its closure days"
+  },
+  {
+   "timestamp": "20240114061525",
+   "url": "https://www.westbyschool.k12.mt.us/",
+   "station": "apptegy-westby-mt",
+   "why": "2024-01-14: within 2 days of one of its closure days"
+  },
+  {
+   "timestamp": "20220205015827",
+   "url": "https://www.westbyschool.k12.mt.us/",
+   "station": "apptegy-westby-mt",
+   "why": "2022-02-05: within 2 days of one of its closure days"
+  },
+  {
+   "timestamp": "20220205040025",
+   "url": "https://www.westbyschool.k12.mt.us/",
+   "station": "apptegy-westby-mt",
+   "why": "2022-02-05: within 2 days of one of its closure days"
+  },
+  {
+   "timestamp": "20220205035232",
+   "url": "https://www.westbyschool.k12.mt.us/",
+   "station": "apptegy-westby-mt",
+   "why": "2022-02-05: within 2 days of one of its closure days"
+  },
+  {
+   "timestamp": "20220205025134",
+   "url": "https://www.westbyschool.k12.mt.us/",
+   "station": "apptegy-westby-mt",
+   "why": "2022-02-05: within 2 days of one of its closure days"
+  },
+  {
+   "timestamp": "20220203200446",
+   "url": "https://www.westbyschool.k12.mt.us/",
+   "station": "apptegy-westby-mt",
+   "why": "2022-02-04: within 2 days of one of its closure days"
+  },
+  {
+   "timestamp": "20220204012514",
+   "url": "https://www.westbyschool.k12.mt.us/",
+   "station": "apptegy-westby-mt",
+   "why": "2022-02-04: within 2 days of one of its closure days"
+  },
+  {
+   "timestamp": "20220104110100",
+   "url": "https://www.westbyschool.k12.mt.us/",
+   "station": "apptegy-westby-mt",
+   "why": "2022-01-04: within 2 days of one of its closure days"
+  },
+  {
+   "timestamp": "20220104094757",
+   "url": "https://www.westbyschool.k12.mt.us/",
+   "station": "apptegy-westby-mt",
+   "why": "2022-01-04: within 2 days of one of its closure days"
+  },
+  {
+   "timestamp": "20220104121439",
+   "url": "https://www.westbyschool.k12.mt.us/",
+   "station": "apptegy-westby-mt",
+   "why": "2022-01-04: within 2 days of one of its closure days"
+  },
+  {
+   "timestamp": "20220104033147",
+   "url": "https://www.westbyschool.k12.mt.us/",
+   "station": "apptegy-westby-mt",
+   "why": "2022-01-04: within 2 days of one of its closure days"
+  },
+  {
+   "timestamp": "20220104105651",
+   "url": "https://www.westbyschool.k12.mt.us/",
+   "station": "apptegy-westby-mt",
+   "why": "2022-01-04: within 2 days of one of its closure days"
+  },
+  {
+   "timestamp": "20220103065613",
+   "url": "https://www.westbyschool.k12.mt.us/",
+   "station": "apptegy-westby-mt",
+   "why": "2022-01-03: within 2 days of one of its closure days"
+  },
+  {
+   "timestamp": "20220104010349",
+   "url": "https://www.westbyschool.k12.mt.us/",
+   "station": "apptegy-westby-mt",
+   "why": "2022-01-04: within 2 days of one of its closure days"
+  },
+  {
+   "timestamp": "20220103070102",
+   "url": "https://www.westbyschool.k12.mt.us/",
+   "station": "apptegy-westby-mt",
+   "why": "2022-01-03: within 2 days of one of its closure days"
+  },
+  {
+   "timestamp": "20220101225013",
+   "url": "https://www.westbyschool.k12.mt.us/",
+   "station": "apptegy-westby-mt",
+   "why": "2022-01-02: within 2 days of one of its closure days"
+  },
+  {
+   "timestamp": "20211010210616",
+   "url": "https://www.westbyschool.k12.mt.us/",
+   "station": "apptegy-westby-mt",
+   "why": "2021-10-11: within 2 days of one of its closure days"
+  },
+  {
+   "timestamp": "20220102014618",
+   "url": "https://www.westbyschool.k12.mt.us/",
+   "station": "apptegy-westby-mt",
+   "why": "2022-01-02: within 2 days of one of its closure days"
+  },
+  {
+   "timestamp": "20220101192818",
+   "url": "https://www.westbyschool.k12.mt.us/",
+   "station": "apptegy-westby-mt",
+   "why": "2022-01-02: within 2 days of one of its closure days"
+  },
+  {
+   "timestamp": "20210201142717",
+   "url": "https://www.westbyschool.k12.mt.us/",
+   "station": "apptegy-westby-mt",
+   "why": "2021-02-01: within 2 days of one of its closure days"
+  },
+  {
+   "timestamp": "20201106220849",
+   "url": "https://www.westbyschool.k12.mt.us/",
+   "station": "apptegy-westby-mt",
+   "why": "2020-11-07: within 2 days of one of its closure days"
+  },
+  {
+   "timestamp": "20250108215207",
+   "url": "https://www.wcsd1.org/",
+   "station": "edlio-weston-1-wy",
+   "why": "storm day 2025-01-09 (market score 0.25)"
+  },
+  {
+   "timestamp": "20250114132104",
+   "url": "https://www.wcsd1.org/",
+   "station": "edlio-weston-1-wy",
+   "why": "storm day 2025-01-14 (market score 0.25)"
+  },
+  {
+   "timestamp": "20250113011424",
+   "url": "https://www.wcsd1.org/",
+   "station": "edlio-weston-1-wy",
+   "why": "storm day 2025-01-13 (market score 0.25)"
+  },
+  {
+   "timestamp": "20250217111401",
+   "url": "https://www.wcsd1.org/",
+   "station": "edlio-weston-1-wy",
+   "why": "storm day 2025-02-17 (market score 0.25)"
+  },
+  {
+   "timestamp": "20230209030118",
+   "url": "https://www.wcsd1.org/",
+   "station": "edlio-weston-1-wy",
+   "why": "storm day 2023-02-09 (market score 0.25)"
+  },
+  {
+   "timestamp": "20220127085346",
+   "url": "https://www.wcsd1.org/",
+   "station": "edlio-weston-1-wy",
+   "why": "storm day 2022-01-27 (market score 0.25)"
+  },
+  {
+   "timestamp": "20191021051817",
+   "url": "https://www.wcsd1.org/",
+   "station": "edlio-weston-1-wy",
+   "why": "2019-10-21: within 2 days of one of its closure days"
+  },
+  {
+   "timestamp": "20210421204131",
+   "url": "https://www.wcsd1.org/",
+   "station": "edlio-weston-1-wy",
+   "why": "2021-04-22: within 2 days of one of its closure days"
+  },
+  {
+   "timestamp": "20210413005418",
+   "url": "https://www.wcsd1.org/",
+   "station": "edlio-weston-1-wy",
+   "why": "2021-04-13: within 2 days of one of its closure days"
+  },
+  {
+   "timestamp": "20250308151209",
+   "url": "https://www.wcsd1.org/",
+   "station": "edlio-weston-1-wy",
+   "why": "2025-03-08: within 2 days of one of its closure days"
+  },
+  {
+   "timestamp": "20250320072056",
+   "url": "https://www.wcsd1.org/",
+   "station": "edlio-weston-1-wy",
+   "why": "2025-03-20: within 2 days of one of its closure days"
+  },
+  {
+   "timestamp": "20250320082534",
+   "url": "https://www.wcsd1.org/",
+   "station": "edlio-weston-1-wy",
+   "why": "2025-03-20: within 2 days of one of its closure days"
+  },
+  {
+   "timestamp": "20230320192459",
+   "url": "https://www.wcsd1.org/",
+   "station": "edlio-weston-1-wy",
+   "why": "2023-03-21: within 2 days of one of its closure days"
+  },
+  {
+   "timestamp": "20260310161145",
+   "url": "https://www.wcsd1.org/",
+   "station": "edlio-weston-1-wy",
+   "why": "2026-03-11: within 2 days of one of its closure days"
+  },
+  {
+   "timestamp": "20240214011800",
+   "url": "https://www.wcsd1.org/",
+   "station": "edlio-weston-1-wy",
+   "why": "2024-02-14: within 2 days of one of its closure days"
+  },
+  {
+   "timestamp": "20250115093030",
+   "url": "https://www.wcsd1.org/",
+   "station": "edlio-weston-1-wy",
+   "why": "2025-01-15: within 2 days of one of its closure days"
+  },
+  {
+   "timestamp": "20250417213952",
+   "url": "https://www.wcsd1.org/",
+   "station": "edlio-weston-1-wy",
+   "why": "2025-04-18: within 2 days of one of its closure days"
+  },
+  {
+   "timestamp": "20230216045842",
+   "url": "https://www.wcsd1.org/",
+   "station": "edlio-weston-1-wy",
+   "why": "2023-02-16: within 2 days of one of its closure days"
+  },
+  {
+   "timestamp": "20230329172709",
+   "url": "https://www.wcsd1.org/",
+   "station": "edlio-weston-1-wy",
+   "why": "2023-03-30: within 2 days of one of its closure days"
+  },
+  {
+   "timestamp": "20220407052218",
+   "url": "https://www.wcsd1.org/",
+   "station": "edlio-weston-1-wy",
+   "why": "2022-04-07: within 2 days of one of its closure days"
+  },
+  {
+   "timestamp": "20220125213024",
+   "url": "https://www.wcsd1.org/",
+   "station": "edlio-weston-1-wy",
+   "why": "2022-01-26: within 2 days of one of its closure days"
+  },
+  {
+   "timestamp": "20180115150035",
+   "url": "http://www.saralandboe.org:80/?",
+   "station": "finalsite-saraland-al",
+   "why": "2018-01-15: within 2 days of one of its closure days"
+  },
+  {
+   "timestamp": "20180115121641",
+   "url": "http://www.saralandboe.org:80/",
+   "station": "finalsite-saraland-al",
+   "why": "2018-01-15: within 2 days of one of its closure days"
+  },
+  {
+   "timestamp": "20221221070413",
+   "url": "https://www.actionnews5.com/weather/closings/",
+   "station": "gray-wmc",
+   "why": "2022-12-21: within 2 days of one of its closure days"
+  },
+  {
+   "timestamp": "20220221155734",
+   "url": "https://www.actionnews5.com/weather/closings/",
+   "station": "gray-wmc",
+   "why": "2022-02-21: within 2 days of one of its closure days"
+  },
+  {
+   "timestamp": "20250219071013",
+   "url": "https://www.kivitv.com/weather/school-closings-delays?_renderer=json",
+   "station": "scripps-kivi",
+   "why": "2025-02-19: within 2 days of one of its closure days"
+  },
+  {
+   "timestamp": "20221108122802",
+   "url": "http://hamiltonfl.com/",
+   "station": "smartsites-hamilton-fl",
+   "why": "2022-11-08: within 2 days of one of its closure days"
+  },
+  {
+   "timestamp": "20170912025800",
+   "url": "http://hamiltonfl.com/",
+   "station": "smartsites-hamilton-fl",
+   "why": "2017-09-12: within 2 days of one of its closure days"
+  },
+  {
+   "timestamp": "20210212233936",
+   "url": "https://www.laramie1.org/",
+   "station": "smartsites-laramie-1-wy",
+   "why": "2021-02-13: within 2 days of one of its closure days"
+  },
+  {
+   "timestamp": "20210211002037",
+   "url": "https://www.laramie1.org/",
+   "station": "smartsites-laramie-1-wy",
+   "why": "2021-02-11: within 2 days of one of its closure days"
+  },
+  {
+   "timestamp": "20211015085723",
+   "url": "https://www.laramie1.org/",
+   "station": "smartsites-laramie-1-wy",
+   "why": "2021-10-15: within 2 days of one of its closure days"
+  },
+  {
+   "timestamp": "20210308090943",
+   "url": "https://www.laramie1.org/",
+   "station": "smartsites-laramie-1-wy",
+   "why": "2021-03-08: within 2 days of one of its closure days"
+  },
+  {
+   "timestamp": "20221229113106",
+   "url": "https://www.12news.com/closings",
+   "station": "tegna-kpnx",
+   "why": "2022-12-29: within 2 days of one of its closure days"
+  },
+  {
+   "timestamp": "20221230034507",
+   "url": "https://www.12news.com/closings",
+   "station": "tegna-kpnx",
+   "why": "2022-12-30: within 2 days of one of its closure days"
+  },
+  {
+   "timestamp": "20211217043037",
+   "url": "https://www.12news.com/closings",
+   "station": "tegna-kpnx",
+   "why": "2021-12-17: within 2 days of one of its closure days"
+  },
+  {
+   "timestamp": "20170322045134",
+   "url": "http://www.12news.com:80/closings",
+   "station": "tegna-kpnx",
+   "why": "2017-03-22: within 2 days of one of its closure days"
+  },
+  {
+   "timestamp": "20160309100845",
+   "url": "http://www.12news.com:80/closings",
+   "station": "tegna-kpnx",
+   "why": "2016-03-09: within 2 days of one of its closure days"
+  },
+  {
+   "timestamp": "20170826032308",
+   "url": "http://www.kvue.com/closings",
+   "station": "tegna-kvue",
+   "why": "2017-08-26: within 2 days of one of its closure days"
+  },
+  {
+   "timestamp": "20170825192316",
+   "url": "http://www.kvue.com/closings",
+   "station": "tegna-kvue",
+   "why": "2017-08-26: within 2 days of one of its closure days"
+  },
+  {
+   "timestamp": "20180117083220",
+   "url": "http://www.kvue.com/closings",
+   "station": "tegna-kvue",
+   "why": "2018-01-17: within 2 days of one of its closure days"
+  },
+  {
+   "timestamp": "20170823160356",
+   "url": "http://www.kvue.com/closings",
+   "station": "tegna-kvue",
+   "why": "2017-08-24: within 2 days of one of its closure days"
+  },
+  {
+   "timestamp": "20180118083401",
+   "url": "http://www.kvue.com/closings",
+   "station": "tegna-kvue",
+   "why": "2018-01-18: within 2 days of one of its closure days"
+  },
+  {
+   "timestamp": "20230112061406",
+   "url": "https://www.abc10.com/closings",
+   "station": "tegna-kxtv",
+   "why": "2023-01-12: within 2 days of one of its closure days"
+  },
+  {
+   "timestamp": "20220423104655",
+   "url": "https://www.abc10.com/closings",
+   "station": "tegna-kxtv",
+   "why": "2022-04-23: within 2 days of one of its closure days"
+  },
+  {
+   "timestamp": "20220408172820",
+   "url": "https://www.abc10.com/closings",
+   "station": "tegna-kxtv",
+   "why": "2022-04-09: within 2 days of one of its closure days"
+  },
+  {
+   "timestamp": "20201110234217",
+   "url": "https://www.abc10.com/closings",
+   "station": "tegna-kxtv",
+   "why": "2020-11-11: within 2 days of one of its closure days"
+  },
+  {
+   "timestamp": "20230107183551",
+   "url": "https://www.abc10.com/closings",
+   "station": "tegna-kxtv",
+   "why": "2023-01-08: within 2 days of one of its closure days"
+  },
+  {
+   "timestamp": "20221110060142",
+   "url": "https://www.abc10.com/closings",
+   "station": "tegna-kxtv",
+   "why": "2022-11-10: within 2 days of one of its closure days"
+  },
+  {
+   "timestamp": "20241117171452",
+   "url": "https://www.abc10.com/closings",
+   "station": "tegna-kxtv",
+   "why": "2024-11-18: within 2 days of one of its closure days"
+  },
+  {
+   "timestamp": "20221201162242",
+   "url": "https://www.abc10.com/closings",
+   "station": "tegna-kxtv",
+   "why": "2022-12-02: within 2 days of one of its closure days"
+  },
+  {
+   "timestamp": "20220413055115",
+   "url": "https://www.abc10.com/closings",
+   "station": "tegna-kxtv",
+   "why": "2022-04-13: within 2 days of one of its closure days"
+  },
+  {
+   "timestamp": "20220410025316",
+   "url": "https://www.abc10.com/closings",
+   "station": "tegna-kxtv",
+   "why": "2022-04-10: within 2 days of one of its closure days"
+  },
+  {
+   "timestamp": "20220109091651",
+   "url": "https://www.abc10.com/closings",
+   "station": "tegna-kxtv",
+   "why": "2022-01-09: within 2 days of one of its closure days"
+  },
+  {
+   "timestamp": "20210214064051",
+   "url": "https://www.abc10.com/closings",
+   "station": "tegna-kxtv",
+   "why": "2021-02-14: within 2 days of one of its closure days"
+  },
+  {
+   "timestamp": "20211026104122",
+   "url": "https://www.abc10.com/closings",
+   "station": "tegna-kxtv",
+   "why": "2021-10-26: within 2 days of one of its closure days"
+  },
+  {
+   "timestamp": "20201115195124",
+   "url": "https://www.abc10.com/closings",
+   "station": "tegna-kxtv",
+   "why": "2020-11-16: within 2 days of one of its closure days"
+  },
+  {
+   "timestamp": "20201115190424",
+   "url": "https://www.abc10.com/closings",
+   "station": "tegna-kxtv",
+   "why": "2020-11-16: within 2 days of one of its closure days"
+  },
+  {
+   "timestamp": "20170611015152",
+   "url": "http://www.abc10.com/closings",
+   "station": "tegna-kxtv",
+   "why": "2017-06-11: within 2 days of one of its closure days"
+  },
+  {
+   "timestamp": "20171113090334",
+   "url": "http://www.abc10.com/closings",
+   "station": "tegna-kxtv",
+   "why": "2017-11-13: within 2 days of one of its closure days"
+  },
+  {
+   "timestamp": "20170325053316",
+   "url": "http://www.abc10.com/closings",
+   "station": "tegna-kxtv",
+   "why": "2017-03-25: within 2 days of one of its closure days"
+  },
+  {
+   "timestamp": "20180123104851",
+   "url": "http://www.abc10.com/closings",
+   "station": "tegna-kxtv",
+   "why": "2018-01-23: within 2 days of one of its closure days"
+  },
+  {
+   "timestamp": "20171018050501",
+   "url": "http://www.abc10.com/closings",
+   "station": "tegna-kxtv",
+   "why": "2017-10-18: within 2 days of one of its closure days"
+  },
+  {
+   "timestamp": "20170922010951",
+   "url": "http://www.abc10.com/closings",
+   "station": "tegna-kxtv",
+   "why": "2017-09-22: within 2 days of one of its closure days"
+  },
+  {
+   "timestamp": "20170614043448",
+   "url": "http://www.abc10.com/closings",
+   "station": "tegna-kxtv",
+   "why": "2017-06-14: within 2 days of one of its closure days"
+  },
+  {
+   "timestamp": "20180117133507",
+   "url": "http://www.abc10.com/closings",
+   "station": "tegna-kxtv",
+   "why": "2018-01-17: within 2 days of one of its closure days"
+  },
+  {
+   "timestamp": "20171128105719",
+   "url": "http://www.abc10.com/closings",
+   "station": "tegna-kxtv",
+   "why": "2017-11-28: within 2 days of one of its closure days"
+  },
+  {
+   "timestamp": "20171126104714",
+   "url": "http://www.abc10.com/closings",
+   "station": "tegna-kxtv",
+   "why": "2017-11-26: within 2 days of one of its closure days"
+  },
+  {
+   "timestamp": "20171219053338",
+   "url": "http://www.abc10.com/closings",
+   "station": "tegna-kxtv",
+   "why": "2017-12-19: within 2 days of one of its closure days"
+  },
+  {
+   "timestamp": "20171221050509",
+   "url": "http://www.abc10.com/closings",
+   "station": "tegna-kxtv",
+   "why": "2017-12-21: within 2 days of one of its closure days"
+  },
+  {
+   "timestamp": "20171021073551",
+   "url": "http://www.abc10.com/closings",
+   "station": "tegna-kxtv",
+   "why": "2017-10-21: within 2 days of one of its closure days"
+  },
+  {
+   "timestamp": "20170613025131",
+   "url": "http://www.abc10.com/closings",
+   "station": "tegna-kxtv",
+   "why": "2017-06-13: within 2 days of one of its closure days"
+  },
+  {
+   "timestamp": "20170610050010",
+   "url": "http://www.abc10.com/closings",
+   "station": "tegna-kxtv",
+   "why": "2017-06-10: within 2 days of one of its closure days"
+  },
+  {
+   "timestamp": "20170613040603",
+   "url": "http://www.abc10.com/closings",
+   "station": "tegna-kxtv",
+   "why": "2017-06-13: within 2 days of one of its closure days"
+  },
+  {
+   "timestamp": "20170923025115",
+   "url": "http://www.abc10.com:80/closings",
+   "station": "tegna-kxtv",
+   "why": "2017-09-23: within 2 days of one of its closure days"
+  },
+  {
+   "timestamp": "20170322185121",
+   "url": "http://www.abc10.com:80/closings",
+   "station": "tegna-kxtv",
+   "why": "2017-03-23: within 2 days of one of its closure days"
+  },
+  {
+   "timestamp": "20171128011033",
+   "url": "http://www.abc10.com/closings",
+   "station": "tegna-kxtv",
+   "why": "2017-11-28: within 2 days of one of its closure days"
+  },
+  {
+   "timestamp": "20180121125011",
+   "url": "http://www.abc10.com/closings",
+   "station": "tegna-kxtv",
+   "why": "2018-01-21: within 2 days of one of its closure days"
+  },
+  {
+   "timestamp": "20180116061949",
+   "url": "http://www.abc10.com/closings",
+   "station": "tegna-kxtv",
+   "why": "2018-01-16: within 2 days of one of its closure days"
+  },
+  {
+   "timestamp": "20171118111800",
+   "url": "http://www.abc10.com/closings",
+   "station": "tegna-kxtv",
+   "why": "2017-11-18: within 2 days of one of its closure days"
+  },
+  {
+   "timestamp": "20171222063913",
+   "url": "http://www.abc10.com/closings",
+   "station": "tegna-kxtv",
+   "why": "2017-12-22: within 2 days of one of its closure days"
+  },
+  {
+   "timestamp": "20180127100319",
+   "url": "http://www.abc10.com/closings",
+   "station": "tegna-kxtv",
+   "why": "2018-01-27: within 2 days of one of its closure days"
+  },
+  {
+   "timestamp": "20180122194800",
+   "url": "http://www.abc10.com/closings",
+   "station": "tegna-kxtv",
+   "why": "2018-01-23: within 2 days of one of its closure days"
+  },
+  {
+   "timestamp": "20180126093456",
+   "url": "http://www.abc10.com/closings",
+   "station": "tegna-kxtv",
+   "why": "2018-01-26: within 2 days of one of its closure days"
+  },
+  {
+   "timestamp": "20171218040341",
+   "url": "http://www.abc10.com/closings",
+   "station": "tegna-kxtv",
+   "why": "2017-12-18: within 2 days of one of its closure days"
+  },
+  {
+   "timestamp": "20171125101710",
+   "url": "http://www.abc10.com/closings",
+   "station": "tegna-kxtv",
+   "why": "2017-11-25: within 2 days of one of its closure days"
+  },
+  {
+   "timestamp": "20171129104357",
+   "url": "http://www.abc10.com/closings",
+   "station": "tegna-kxtv",
+   "why": "2017-11-29: within 2 days of one of its closure days"
+  },
+  {
+   "timestamp": "20171219040533",
+   "url": "http://www.abc10.com/closings",
+   "station": "tegna-kxtv",
+   "why": "2017-12-19: within 2 days of one of its closure days"
+  },
+  {
+   "timestamp": "20171114091820",
+   "url": "http://www.abc10.com/closings",
+   "station": "tegna-kxtv",
+   "why": "2017-11-14: within 2 days of one of its closure days"
+  },
+  {
+   "timestamp": "20171117111357",
+   "url": "http://www.abc10.com/closings",
+   "station": "tegna-kxtv",
+   "why": "2017-11-17: within 2 days of one of its closure days"
+  },
+  {
+   "timestamp": "20170919004901",
+   "url": "http://www.abc10.com/closings",
+   "station": "tegna-kxtv",
+   "why": "2017-09-19: within 2 days of one of its closure days"
+  },
+  {
+   "timestamp": "20171020170117",
+   "url": "http://www.abc10.com/closings",
+   "station": "tegna-kxtv",
+   "why": "2017-10-21: within 2 days of one of its closure days"
+  },
+  {
+   "timestamp": "20171102070358",
+   "url": "http://www.abc10.com/closings",
+   "station": "tegna-kxtv",
+   "why": "2017-11-02: within 2 days of one of its closure days"
+  },
+  {
+   "timestamp": "20171104060632",
+   "url": "http://www.abc10.com/closings",
+   "station": "tegna-kxtv",
+   "why": "2017-11-04: within 2 days of one of its closure days"
+  },
+  {
+   "timestamp": "20171105061347",
+   "url": "http://www.abc10.com/closings",
+   "station": "tegna-kxtv",
+   "why": "2017-11-05: within 2 days of one of its closure days"
+  },
+  {
+   "timestamp": "20171022093103",
+   "url": "http://www.abc10.com/closings",
+   "station": "tegna-kxtv",
+   "why": "2017-10-22: within 2 days of one of its closure days"
+  },
+  {
+   "timestamp": "20171019024326",
+   "url": "http://www.abc10.com/closings",
+   "station": "tegna-kxtv",
+   "why": "2017-10-19: within 2 days of one of its closure days"
+  },
+  {
+   "timestamp": "20171101054236",
+   "url": "http://www.abc10.com/closings",
+   "station": "tegna-kxtv",
+   "why": "2017-11-01: within 2 days of one of its closure days"
+  },
+  {
+   "timestamp": "20170920031706",
+   "url": "http://www.abc10.com/closings",
+   "station": "tegna-kxtv",
+   "why": "2017-09-20: within 2 days of one of its closure days"
+  },
+  {
+   "timestamp": "20170923001102",
+   "url": "http://www.abc10.com/closings",
+   "station": "tegna-kxtv",
+   "why": "2017-09-23: within 2 days of one of its closure days"
+  },
+  {
+   "timestamp": "20180123101942",
+   "url": "http://www.abc10.com:80/closings",
+   "station": "tegna-kxtv",
+   "why": "2018-01-23: within 2 days of one of its closure days"
+  },
+  {
+   "timestamp": "20170214073936",
+   "url": "http://www.abc10.com/closings",
+   "station": "tegna-kxtv",
+   "why": "2017-02-14: within 2 days of one of its closure days"
+  },
+  {
+   "timestamp": "20170120220350",
+   "url": "http://www.abc10.com:80/closings",
+   "station": "tegna-kxtv",
+   "why": "2017-01-21: within 2 days of one of its closure days"
+  },
+  {
+   "timestamp": "20161121085524",
+   "url": "http://www.abc10.com:80/closings",
+   "station": "tegna-kxtv",
+   "why": "2016-11-21: within 2 days of one of its closure days"
+  },
+  {
+   "timestamp": "20160310033400",
+   "url": "http://www.abc10.com:80/closings",
+   "station": "tegna-kxtv",
+   "why": "2016-03-10: within 2 days of one of its closure days"
+  },
+  {
+   "timestamp": "20190331034517",
+   "url": "https://www.abc10.com/closings",
+   "station": "tegna-kxtv",
+   "why": "2019-03-31: within 2 days of one of its closure days"
+  },
+  {
+   "timestamp": "20200408114807",
+   "url": "https://www.abc10.com/closings",
+   "station": "tegna-kxtv",
+   "why": "2020-04-08: within 2 days of one of its closure days"
+  },
+  {
+   "timestamp": "20200327034954",
+   "url": "https://www.abc10.com/closings",
+   "station": "tegna-kxtv",
+   "why": "2020-03-27: within 2 days of one of its closure days"
   }
  ]
 }
