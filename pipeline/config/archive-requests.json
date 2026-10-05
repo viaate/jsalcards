@@ -1,166 +1,731 @@
 {
+ "cdx": [
+  {
+   "url": "www.graniteschools.org/",
+   "from": "20150101",
+   "to": "20261005"
+  },
+  {
+   "url": "www.graniteschools.org/wp-json/wp/v2/en*",
+   "from": "20150101",
+   "to": "20261005"
+  },
+  {
+   "url": "jordandistrict.org/",
+   "from": "20150101",
+   "to": "20261005"
+  },
+  {
+   "url": "www.canyonsdistrict.org/",
+   "from": "20150101",
+   "to": "20261005"
+  },
+  {
+   "url": "provo.edu/",
+   "from": "20150101",
+   "to": "20261005"
+  },
+  {
+   "url": "www.washk12.org/",
+   "from": "20150101",
+   "to": "20261005"
+  },
+  {
+   "url": "alert.washk12.org/endpoint.php*",
+   "from": "20150101",
+   "to": "20261005"
+  }
+ ],
  "snapshots": [
   {
-   "timestamp": "20250210032927",
-   "url": "https://www.medicinelake.k12.mt.us/",
-   "station": "apptegy-medicine-lake-mt",
-   "why": "storm day 2025-02-10 (market score 0.50)"
+   "timestamp": "20190121140000",
+   "url": "https://www.graniteschools.org/",
+   "station": "district-homepage-granite-ut",
+   "why": "Utah storm day 2019-01-21 (NWS winter warning or advisory over Salt Lake, Davis or Utah County)"
   },
   {
-   "timestamp": "20250212015130",
-   "url": "https://www.medicinelake.k12.mt.us/",
-   "station": "apptegy-medicine-lake-mt",
-   "why": "storm day 2025-02-12 (market score 0.50)"
+   "timestamp": "20190205140000",
+   "url": "https://www.graniteschools.org/",
+   "station": "district-homepage-granite-ut",
+   "why": "Utah storm day 2019-02-05 (NWS winter warning or advisory over Salt Lake, Davis or Utah County)"
   },
   {
-   "timestamp": "20250328012526",
-   "url": "https://www.medicinelake.k12.mt.us/",
-   "station": "apptegy-medicine-lake-mt",
-   "why": "storm day 2025-03-28 (market score 0.25)"
+   "timestamp": "20190206140000",
+   "url": "https://www.graniteschools.org/",
+   "station": "district-homepage-granite-ut",
+   "why": "Utah storm day 2019-02-06 (NWS winter warning or advisory over Salt Lake, Davis or Utah County)"
   },
   {
-   "timestamp": "20251210121630",
-   "url": "https://www.medicinelake.k12.mt.us/",
-   "station": "apptegy-medicine-lake-mt",
-   "why": "storm day 2025-12-10 (market score 0.25)"
+   "timestamp": "20191127140000",
+   "url": "https://www.graniteschools.org/",
+   "station": "district-homepage-granite-ut",
+   "why": "Utah storm day 2019-11-27 (NWS winter warning or advisory over Salt Lake, Davis or Utah County)"
   },
   {
-   "timestamp": "20250327174032",
-   "url": "https://www.medicinelake.k12.mt.us/",
-   "station": "apptegy-medicine-lake-mt",
-   "why": "storm day 2025-03-28 (market score 0.25)"
+   "timestamp": "20200203140000",
+   "url": "https://www.graniteschools.org/",
+   "station": "district-homepage-granite-ut",
+   "why": "Utah storm day 2020-02-03 (NWS winter warning or advisory over Salt Lake, Davis or Utah County)"
   },
   {
-   "timestamp": "20221202043045",
-   "url": "https://www.medicinelake.k12.mt.us/",
-   "station": "apptegy-medicine-lake-mt",
-   "why": "storm day 2022-12-02 (market score 0.25)"
+   "timestamp": "20211215140000",
+   "url": "https://www.graniteschools.org/",
+   "station": "district-homepage-granite-ut",
+   "why": "Utah storm day 2021-12-15 (NWS winter warning or advisory over Salt Lake, Davis or Utah County)"
   },
   {
-   "timestamp": "20221202014622",
-   "url": "https://www.medicinelake.k12.mt.us/",
-   "station": "apptegy-medicine-lake-mt",
-   "why": "storm day 2022-12-02 (market score 0.25)"
+   "timestamp": "20221109140000",
+   "url": "https://www.graniteschools.org/",
+   "station": "district-homepage-granite-ut",
+   "why": "Utah storm day 2022-11-09 (NWS winter warning or advisory over Salt Lake, Davis or Utah County)"
   },
   {
-   "timestamp": "20230314201750",
-   "url": "https://www.medicinelake.k12.mt.us/",
-   "station": "apptegy-medicine-lake-mt",
-   "why": "storm day 2023-03-15 (market score 0.25)"
+   "timestamp": "20221202140000",
+   "url": "https://www.graniteschools.org/",
+   "station": "district-homepage-granite-ut",
+   "why": "Utah storm day 2022-12-02 (NWS winter warning or advisory over Salt Lake, Davis or Utah County)"
   },
   {
-   "timestamp": "20220301175751",
-   "url": "https://www.medicinelake.k12.mt.us/",
-   "station": "apptegy-medicine-lake-mt",
-   "why": "storm day 2022-03-02 (market score 0.25)"
+   "timestamp": "20230117140000",
+   "url": "https://www.graniteschools.org/",
+   "station": "district-homepage-granite-ut",
+   "why": "Utah storm day 2023-01-17 (NWS winter warning or advisory over Salt Lake, Davis or Utah County)"
   },
   {
-   "timestamp": "20220201200122",
-   "url": "https://www.medicinelake.k12.mt.us/",
-   "station": "apptegy-medicine-lake-mt",
-   "why": "2022-02-02: a day a proven list sharing its counties held a row"
+   "timestamp": "20230222140000",
+   "url": "https://www.graniteschools.org/",
+   "station": "district-homepage-granite-ut",
+   "why": "Utah storm day 2023-02-22 (NWS winter warning or advisory over Salt Lake, Davis or Utah County)"
   },
   {
-   "timestamp": "20250329160108",
-   "url": "https://www.medicinelake.k12.mt.us/",
-   "station": "apptegy-medicine-lake-mt",
-   "why": "2025-03-30: within 2 days of one of its closure days"
+   "timestamp": "20230223140000",
+   "url": "https://www.graniteschools.org/",
+   "station": "district-homepage-granite-ut",
+   "why": "Utah storm day 2023-02-23 (NWS winter warning or advisory over Salt Lake, Davis or Utah County)"
   },
   {
-   "timestamp": "20251128204946",
-   "url": "https://www.medicinelake.k12.mt.us/",
-   "station": "apptegy-medicine-lake-mt",
-   "why": "2025-11-29: within 2 days of one of its closure days"
+   "timestamp": "20230301140000",
+   "url": "https://www.graniteschools.org/",
+   "station": "district-homepage-granite-ut",
+   "why": "Utah storm day 2023-03-01 (NWS winter warning or advisory over Salt Lake, Davis or Utah County)"
   },
   {
-   "timestamp": "20250207213250",
-   "url": "https://www.medicinelake.k12.mt.us/",
-   "station": "apptegy-medicine-lake-mt",
-   "why": "2025-02-08: within 2 days of one of its closure days"
+   "timestamp": "20230310140000",
+   "url": "https://www.graniteschools.org/",
+   "station": "district-homepage-granite-ut",
+   "why": "Utah storm day 2023-03-10 (NWS winter warning or advisory over Salt Lake, Davis or Utah County)"
   },
   {
-   "timestamp": "20250207051609",
-   "url": "https://www.medicinelake.k12.mt.us/",
-   "station": "apptegy-medicine-lake-mt",
-   "why": "2025-02-07: within 2 days of one of its closure days"
+   "timestamp": "20230403140000",
+   "url": "https://www.graniteschools.org/",
+   "station": "district-homepage-granite-ut",
+   "why": "Utah storm day 2023-04-03 (NWS winter warning or advisory over Salt Lake, Davis or Utah County)"
   },
   {
-   "timestamp": "20251208132123",
-   "url": "https://www.medicinelake.k12.mt.us/",
-   "station": "apptegy-medicine-lake-mt",
-   "why": "2025-12-08: within 2 days of one of its closure days"
+   "timestamp": "20240111140000",
+   "url": "https://www.graniteschools.org/",
+   "station": "district-homepage-granite-ut",
+   "why": "Utah storm day 2024-01-11 (NWS winter warning or advisory over Salt Lake, Davis or Utah County)"
   },
   {
-   "timestamp": "20250202155555",
-   "url": "https://www.medicinelake.k12.mt.us/",
-   "station": "apptegy-medicine-lake-mt",
-   "why": "2025-02-02: within 2 days of one of its closure days"
+   "timestamp": "20240112140000",
+   "url": "https://www.graniteschools.org/",
+   "station": "district-homepage-granite-ut",
+   "why": "Utah storm day 2024-01-12 (NWS winter warning or advisory over Salt Lake, Davis or Utah County)"
   },
   {
-   "timestamp": "20250120202127",
-   "url": "https://www.medicinelake.k12.mt.us/",
-   "station": "apptegy-medicine-lake-mt",
-   "why": "2025-01-21: within 2 days of one of its closure days"
+   "timestamp": "20240207140000",
+   "url": "https://www.graniteschools.org/",
+   "station": "district-homepage-granite-ut",
+   "why": "Utah storm day 2024-02-07 (NWS winter warning or advisory over Salt Lake, Davis or Utah County)"
   },
   {
-   "timestamp": "20240117120806",
-   "url": "https://www.medicinelake.k12.mt.us/",
-   "station": "apptegy-medicine-lake-mt",
-   "why": "2024-01-17: within 2 days of one of its closure days"
+   "timestamp": "20241126140000",
+   "url": "https://www.graniteschools.org/",
+   "station": "district-homepage-granite-ut",
+   "why": "Utah storm day 2024-11-26 (NWS winter warning or advisory over Salt Lake, Davis or Utah County)"
   },
   {
-   "timestamp": "20220101200412",
-   "url": "https://www.medicinelake.k12.mt.us/",
-   "station": "apptegy-medicine-lake-mt",
-   "why": "2022-01-02: within 2 days of one of its closure days"
+   "timestamp": "20250213140000",
+   "url": "https://www.graniteschools.org/",
+   "station": "district-homepage-granite-ut",
+   "why": "Utah storm day 2025-02-13 (NWS winter warning or advisory over Salt Lake, Davis or Utah County)"
   },
   {
-   "timestamp": "20220123034806",
-   "url": "https://www.medicinelake.k12.mt.us/",
-   "station": "apptegy-medicine-lake-mt",
-   "why": "2022-01-23: within 2 days of one of its closure days"
+   "timestamp": "20250214140000",
+   "url": "https://www.graniteschools.org/",
+   "station": "district-homepage-granite-ut",
+   "why": "Utah storm day 2025-02-14 (NWS winter warning or advisory over Salt Lake, Davis or Utah County)"
   },
   {
-   "timestamp": "20201106220633",
-   "url": "https://www.medicinelake.k12.mt.us/",
-   "station": "apptegy-medicine-lake-mt",
-   "why": "2020-11-07: within 2 days of one of its closure days"
+   "timestamp": "20250306140000",
+   "url": "https://www.graniteschools.org/",
+   "station": "district-homepage-granite-ut",
+   "why": "Utah storm day 2025-03-06 (NWS winter warning or advisory over Salt Lake, Davis or Utah County)"
   },
   {
-   "timestamp": "20201021012530",
-   "url": "https://www.medicinelake.k12.mt.us/",
-   "station": "apptegy-medicine-lake-mt",
-   "why": "2020-10-21: within 2 days of one of its closure days"
+   "timestamp": "20260217140000",
+   "url": "https://www.graniteschools.org/",
+   "station": "district-homepage-granite-ut",
+   "why": "Utah storm day 2026-02-17 (NWS winter warning or advisory over Salt Lake, Davis or Utah County)"
   },
   {
-   "timestamp": "20210201161151",
-   "url": "https://www.medicinelake.k12.mt.us/",
-   "station": "apptegy-medicine-lake-mt",
-   "why": "2021-02-02: within 2 days of one of its closure days"
+   "timestamp": "20260218140000",
+   "url": "https://www.graniteschools.org/",
+   "station": "district-homepage-granite-ut",
+   "why": "Utah storm day 2026-02-18 (NWS winter warning or advisory over Salt Lake, Davis or Utah County)"
   },
   {
-   "timestamp": "20210201150524",
-   "url": "https://www.medicinelake.k12.mt.us/",
-   "station": "apptegy-medicine-lake-mt",
-   "why": "2021-02-01: within 2 days of one of its closure days"
+   "timestamp": "20190121140000",
+   "url": "https://jordandistrict.org/",
+   "station": "district-homepage-jordan-ut",
+   "why": "Utah storm day 2019-01-21 (NWS winter warning or advisory over Salt Lake, Davis or Utah County)"
   },
   {
-   "timestamp": "20191118043624",
-   "url": "https://www.medicinelake.k12.mt.us/",
-   "station": "apptegy-medicine-lake-mt",
-   "why": "2019-11-18: within 2 days of one of its closure days"
+   "timestamp": "20190205140000",
+   "url": "https://jordandistrict.org/",
+   "station": "district-homepage-jordan-ut",
+   "why": "Utah storm day 2019-02-05 (NWS winter warning or advisory over Salt Lake, Davis or Utah County)"
   },
   {
-   "timestamp": "20241228001853",
-   "url": "https://www.medicinelake.k12.mt.us/",
-   "station": "apptegy-medicine-lake-mt",
-   "why": "2024-12-28: within 2 days of one of its closure days"
+   "timestamp": "20190206140000",
+   "url": "https://jordandistrict.org/",
+   "station": "district-homepage-jordan-ut",
+   "why": "Utah storm day 2019-02-06 (NWS winter warning or advisory over Salt Lake, Davis or Utah County)"
   },
   {
-   "timestamp": "20241227235929",
-   "url": "https://www.medicinelake.k12.mt.us/",
-   "station": "apptegy-medicine-lake-mt",
-   "why": "2024-12-28: within 2 days of one of its closure days"
+   "timestamp": "20191127140000",
+   "url": "https://jordandistrict.org/",
+   "station": "district-homepage-jordan-ut",
+   "why": "Utah storm day 2019-11-27 (NWS winter warning or advisory over Salt Lake, Davis or Utah County)"
+  },
+  {
+   "timestamp": "20200203140000",
+   "url": "https://jordandistrict.org/",
+   "station": "district-homepage-jordan-ut",
+   "why": "Utah storm day 2020-02-03 (NWS winter warning or advisory over Salt Lake, Davis or Utah County)"
+  },
+  {
+   "timestamp": "20211215140000",
+   "url": "https://jordandistrict.org/",
+   "station": "district-homepage-jordan-ut",
+   "why": "Utah storm day 2021-12-15 (NWS winter warning or advisory over Salt Lake, Davis or Utah County)"
+  },
+  {
+   "timestamp": "20221109140000",
+   "url": "https://jordandistrict.org/",
+   "station": "district-homepage-jordan-ut",
+   "why": "Utah storm day 2022-11-09 (NWS winter warning or advisory over Salt Lake, Davis or Utah County)"
+  },
+  {
+   "timestamp": "20221202140000",
+   "url": "https://jordandistrict.org/",
+   "station": "district-homepage-jordan-ut",
+   "why": "Utah storm day 2022-12-02 (NWS winter warning or advisory over Salt Lake, Davis or Utah County)"
+  },
+  {
+   "timestamp": "20230117140000",
+   "url": "https://jordandistrict.org/",
+   "station": "district-homepage-jordan-ut",
+   "why": "Utah storm day 2023-01-17 (NWS winter warning or advisory over Salt Lake, Davis or Utah County)"
+  },
+  {
+   "timestamp": "20230222140000",
+   "url": "https://jordandistrict.org/",
+   "station": "district-homepage-jordan-ut",
+   "why": "Utah storm day 2023-02-22 (NWS winter warning or advisory over Salt Lake, Davis or Utah County)"
+  },
+  {
+   "timestamp": "20230223140000",
+   "url": "https://jordandistrict.org/",
+   "station": "district-homepage-jordan-ut",
+   "why": "Utah storm day 2023-02-23 (NWS winter warning or advisory over Salt Lake, Davis or Utah County)"
+  },
+  {
+   "timestamp": "20230301140000",
+   "url": "https://jordandistrict.org/",
+   "station": "district-homepage-jordan-ut",
+   "why": "Utah storm day 2023-03-01 (NWS winter warning or advisory over Salt Lake, Davis or Utah County)"
+  },
+  {
+   "timestamp": "20230310140000",
+   "url": "https://jordandistrict.org/",
+   "station": "district-homepage-jordan-ut",
+   "why": "Utah storm day 2023-03-10 (NWS winter warning or advisory over Salt Lake, Davis or Utah County)"
+  },
+  {
+   "timestamp": "20230403140000",
+   "url": "https://jordandistrict.org/",
+   "station": "district-homepage-jordan-ut",
+   "why": "Utah storm day 2023-04-03 (NWS winter warning or advisory over Salt Lake, Davis or Utah County)"
+  },
+  {
+   "timestamp": "20240111140000",
+   "url": "https://jordandistrict.org/",
+   "station": "district-homepage-jordan-ut",
+   "why": "Utah storm day 2024-01-11 (NWS winter warning or advisory over Salt Lake, Davis or Utah County)"
+  },
+  {
+   "timestamp": "20240112140000",
+   "url": "https://jordandistrict.org/",
+   "station": "district-homepage-jordan-ut",
+   "why": "Utah storm day 2024-01-12 (NWS winter warning or advisory over Salt Lake, Davis or Utah County)"
+  },
+  {
+   "timestamp": "20240207140000",
+   "url": "https://jordandistrict.org/",
+   "station": "district-homepage-jordan-ut",
+   "why": "Utah storm day 2024-02-07 (NWS winter warning or advisory over Salt Lake, Davis or Utah County)"
+  },
+  {
+   "timestamp": "20241126140000",
+   "url": "https://jordandistrict.org/",
+   "station": "district-homepage-jordan-ut",
+   "why": "Utah storm day 2024-11-26 (NWS winter warning or advisory over Salt Lake, Davis or Utah County)"
+  },
+  {
+   "timestamp": "20250213140000",
+   "url": "https://jordandistrict.org/",
+   "station": "district-homepage-jordan-ut",
+   "why": "Utah storm day 2025-02-13 (NWS winter warning or advisory over Salt Lake, Davis or Utah County)"
+  },
+  {
+   "timestamp": "20250214140000",
+   "url": "https://jordandistrict.org/",
+   "station": "district-homepage-jordan-ut",
+   "why": "Utah storm day 2025-02-14 (NWS winter warning or advisory over Salt Lake, Davis or Utah County)"
+  },
+  {
+   "timestamp": "20250306140000",
+   "url": "https://jordandistrict.org/",
+   "station": "district-homepage-jordan-ut",
+   "why": "Utah storm day 2025-03-06 (NWS winter warning or advisory over Salt Lake, Davis or Utah County)"
+  },
+  {
+   "timestamp": "20260217140000",
+   "url": "https://jordandistrict.org/",
+   "station": "district-homepage-jordan-ut",
+   "why": "Utah storm day 2026-02-17 (NWS winter warning or advisory over Salt Lake, Davis or Utah County)"
+  },
+  {
+   "timestamp": "20260218140000",
+   "url": "https://jordandistrict.org/",
+   "station": "district-homepage-jordan-ut",
+   "why": "Utah storm day 2026-02-18 (NWS winter warning or advisory over Salt Lake, Davis or Utah County)"
+  },
+  {
+   "timestamp": "20190121140000",
+   "url": "https://www.canyonsdistrict.org/",
+   "station": "district-homepage-canyons-ut",
+   "why": "Utah storm day 2019-01-21 (NWS winter warning or advisory over Salt Lake, Davis or Utah County)"
+  },
+  {
+   "timestamp": "20190205140000",
+   "url": "https://www.canyonsdistrict.org/",
+   "station": "district-homepage-canyons-ut",
+   "why": "Utah storm day 2019-02-05 (NWS winter warning or advisory over Salt Lake, Davis or Utah County)"
+  },
+  {
+   "timestamp": "20190206140000",
+   "url": "https://www.canyonsdistrict.org/",
+   "station": "district-homepage-canyons-ut",
+   "why": "Utah storm day 2019-02-06 (NWS winter warning or advisory over Salt Lake, Davis or Utah County)"
+  },
+  {
+   "timestamp": "20191127140000",
+   "url": "https://www.canyonsdistrict.org/",
+   "station": "district-homepage-canyons-ut",
+   "why": "Utah storm day 2019-11-27 (NWS winter warning or advisory over Salt Lake, Davis or Utah County)"
+  },
+  {
+   "timestamp": "20200203140000",
+   "url": "https://www.canyonsdistrict.org/",
+   "station": "district-homepage-canyons-ut",
+   "why": "Utah storm day 2020-02-03 (NWS winter warning or advisory over Salt Lake, Davis or Utah County)"
+  },
+  {
+   "timestamp": "20211215140000",
+   "url": "https://www.canyonsdistrict.org/",
+   "station": "district-homepage-canyons-ut",
+   "why": "Utah storm day 2021-12-15 (NWS winter warning or advisory over Salt Lake, Davis or Utah County)"
+  },
+  {
+   "timestamp": "20221109140000",
+   "url": "https://www.canyonsdistrict.org/",
+   "station": "district-homepage-canyons-ut",
+   "why": "Utah storm day 2022-11-09 (NWS winter warning or advisory over Salt Lake, Davis or Utah County)"
+  },
+  {
+   "timestamp": "20221202140000",
+   "url": "https://www.canyonsdistrict.org/",
+   "station": "district-homepage-canyons-ut",
+   "why": "Utah storm day 2022-12-02 (NWS winter warning or advisory over Salt Lake, Davis or Utah County)"
+  },
+  {
+   "timestamp": "20230117140000",
+   "url": "https://www.canyonsdistrict.org/",
+   "station": "district-homepage-canyons-ut",
+   "why": "Utah storm day 2023-01-17 (NWS winter warning or advisory over Salt Lake, Davis or Utah County)"
+  },
+  {
+   "timestamp": "20230222140000",
+   "url": "https://www.canyonsdistrict.org/",
+   "station": "district-homepage-canyons-ut",
+   "why": "Utah storm day 2023-02-22 (NWS winter warning or advisory over Salt Lake, Davis or Utah County)"
+  },
+  {
+   "timestamp": "20230223140000",
+   "url": "https://www.canyonsdistrict.org/",
+   "station": "district-homepage-canyons-ut",
+   "why": "Utah storm day 2023-02-23 (NWS winter warning or advisory over Salt Lake, Davis or Utah County)"
+  },
+  {
+   "timestamp": "20230301140000",
+   "url": "https://www.canyonsdistrict.org/",
+   "station": "district-homepage-canyons-ut",
+   "why": "Utah storm day 2023-03-01 (NWS winter warning or advisory over Salt Lake, Davis or Utah County)"
+  },
+  {
+   "timestamp": "20230310140000",
+   "url": "https://www.canyonsdistrict.org/",
+   "station": "district-homepage-canyons-ut",
+   "why": "Utah storm day 2023-03-10 (NWS winter warning or advisory over Salt Lake, Davis or Utah County)"
+  },
+  {
+   "timestamp": "20230403140000",
+   "url": "https://www.canyonsdistrict.org/",
+   "station": "district-homepage-canyons-ut",
+   "why": "Utah storm day 2023-04-03 (NWS winter warning or advisory over Salt Lake, Davis or Utah County)"
+  },
+  {
+   "timestamp": "20240111140000",
+   "url": "https://www.canyonsdistrict.org/",
+   "station": "district-homepage-canyons-ut",
+   "why": "Utah storm day 2024-01-11 (NWS winter warning or advisory over Salt Lake, Davis or Utah County)"
+  },
+  {
+   "timestamp": "20240112140000",
+   "url": "https://www.canyonsdistrict.org/",
+   "station": "district-homepage-canyons-ut",
+   "why": "Utah storm day 2024-01-12 (NWS winter warning or advisory over Salt Lake, Davis or Utah County)"
+  },
+  {
+   "timestamp": "20240207140000",
+   "url": "https://www.canyonsdistrict.org/",
+   "station": "district-homepage-canyons-ut",
+   "why": "Utah storm day 2024-02-07 (NWS winter warning or advisory over Salt Lake, Davis or Utah County)"
+  },
+  {
+   "timestamp": "20241126140000",
+   "url": "https://www.canyonsdistrict.org/",
+   "station": "district-homepage-canyons-ut",
+   "why": "Utah storm day 2024-11-26 (NWS winter warning or advisory over Salt Lake, Davis or Utah County)"
+  },
+  {
+   "timestamp": "20250213140000",
+   "url": "https://www.canyonsdistrict.org/",
+   "station": "district-homepage-canyons-ut",
+   "why": "Utah storm day 2025-02-13 (NWS winter warning or advisory over Salt Lake, Davis or Utah County)"
+  },
+  {
+   "timestamp": "20250214140000",
+   "url": "https://www.canyonsdistrict.org/",
+   "station": "district-homepage-canyons-ut",
+   "why": "Utah storm day 2025-02-14 (NWS winter warning or advisory over Salt Lake, Davis or Utah County)"
+  },
+  {
+   "timestamp": "20250306140000",
+   "url": "https://www.canyonsdistrict.org/",
+   "station": "district-homepage-canyons-ut",
+   "why": "Utah storm day 2025-03-06 (NWS winter warning or advisory over Salt Lake, Davis or Utah County)"
+  },
+  {
+   "timestamp": "20260217140000",
+   "url": "https://www.canyonsdistrict.org/",
+   "station": "district-homepage-canyons-ut",
+   "why": "Utah storm day 2026-02-17 (NWS winter warning or advisory over Salt Lake, Davis or Utah County)"
+  },
+  {
+   "timestamp": "20260218140000",
+   "url": "https://www.canyonsdistrict.org/",
+   "station": "district-homepage-canyons-ut",
+   "why": "Utah storm day 2026-02-18 (NWS winter warning or advisory over Salt Lake, Davis or Utah County)"
+  },
+  {
+   "timestamp": "20190121140000",
+   "url": "https://provo.edu/",
+   "station": "district-homepage-provo-ut",
+   "why": "Utah storm day 2019-01-21 (NWS winter warning or advisory over Salt Lake, Davis or Utah County)"
+  },
+  {
+   "timestamp": "20190205140000",
+   "url": "https://provo.edu/",
+   "station": "district-homepage-provo-ut",
+   "why": "Utah storm day 2019-02-05 (NWS winter warning or advisory over Salt Lake, Davis or Utah County)"
+  },
+  {
+   "timestamp": "20190206140000",
+   "url": "https://provo.edu/",
+   "station": "district-homepage-provo-ut",
+   "why": "Utah storm day 2019-02-06 (NWS winter warning or advisory over Salt Lake, Davis or Utah County)"
+  },
+  {
+   "timestamp": "20191127140000",
+   "url": "https://provo.edu/",
+   "station": "district-homepage-provo-ut",
+   "why": "Utah storm day 2019-11-27 (NWS winter warning or advisory over Salt Lake, Davis or Utah County)"
+  },
+  {
+   "timestamp": "20200203140000",
+   "url": "https://provo.edu/",
+   "station": "district-homepage-provo-ut",
+   "why": "Utah storm day 2020-02-03 (NWS winter warning or advisory over Salt Lake, Davis or Utah County)"
+  },
+  {
+   "timestamp": "20211215140000",
+   "url": "https://provo.edu/",
+   "station": "district-homepage-provo-ut",
+   "why": "Utah storm day 2021-12-15 (NWS winter warning or advisory over Salt Lake, Davis or Utah County)"
+  },
+  {
+   "timestamp": "20221109140000",
+   "url": "https://provo.edu/",
+   "station": "district-homepage-provo-ut",
+   "why": "Utah storm day 2022-11-09 (NWS winter warning or advisory over Salt Lake, Davis or Utah County)"
+  },
+  {
+   "timestamp": "20221202140000",
+   "url": "https://provo.edu/",
+   "station": "district-homepage-provo-ut",
+   "why": "Utah storm day 2022-12-02 (NWS winter warning or advisory over Salt Lake, Davis or Utah County)"
+  },
+  {
+   "timestamp": "20230117140000",
+   "url": "https://provo.edu/",
+   "station": "district-homepage-provo-ut",
+   "why": "Utah storm day 2023-01-17 (NWS winter warning or advisory over Salt Lake, Davis or Utah County)"
+  },
+  {
+   "timestamp": "20230222140000",
+   "url": "https://provo.edu/",
+   "station": "district-homepage-provo-ut",
+   "why": "Utah storm day 2023-02-22 (NWS winter warning or advisory over Salt Lake, Davis or Utah County)"
+  },
+  {
+   "timestamp": "20230223140000",
+   "url": "https://provo.edu/",
+   "station": "district-homepage-provo-ut",
+   "why": "Utah storm day 2023-02-23 (NWS winter warning or advisory over Salt Lake, Davis or Utah County)"
+  },
+  {
+   "timestamp": "20230301140000",
+   "url": "https://provo.edu/",
+   "station": "district-homepage-provo-ut",
+   "why": "Utah storm day 2023-03-01 (NWS winter warning or advisory over Salt Lake, Davis or Utah County)"
+  },
+  {
+   "timestamp": "20230310140000",
+   "url": "https://provo.edu/",
+   "station": "district-homepage-provo-ut",
+   "why": "Utah storm day 2023-03-10 (NWS winter warning or advisory over Salt Lake, Davis or Utah County)"
+  },
+  {
+   "timestamp": "20230403140000",
+   "url": "https://provo.edu/",
+   "station": "district-homepage-provo-ut",
+   "why": "Utah storm day 2023-04-03 (NWS winter warning or advisory over Salt Lake, Davis or Utah County)"
+  },
+  {
+   "timestamp": "20240111140000",
+   "url": "https://provo.edu/",
+   "station": "district-homepage-provo-ut",
+   "why": "Utah storm day 2024-01-11 (NWS winter warning or advisory over Salt Lake, Davis or Utah County)"
+  },
+  {
+   "timestamp": "20240112140000",
+   "url": "https://provo.edu/",
+   "station": "district-homepage-provo-ut",
+   "why": "Utah storm day 2024-01-12 (NWS winter warning or advisory over Salt Lake, Davis or Utah County)"
+  },
+  {
+   "timestamp": "20240207140000",
+   "url": "https://provo.edu/",
+   "station": "district-homepage-provo-ut",
+   "why": "Utah storm day 2024-02-07 (NWS winter warning or advisory over Salt Lake, Davis or Utah County)"
+  },
+  {
+   "timestamp": "20241126140000",
+   "url": "https://provo.edu/",
+   "station": "district-homepage-provo-ut",
+   "why": "Utah storm day 2024-11-26 (NWS winter warning or advisory over Salt Lake, Davis or Utah County)"
+  },
+  {
+   "timestamp": "20250213140000",
+   "url": "https://provo.edu/",
+   "station": "district-homepage-provo-ut",
+   "why": "Utah storm day 2025-02-13 (NWS winter warning or advisory over Salt Lake, Davis or Utah County)"
+  },
+  {
+   "timestamp": "20250214140000",
+   "url": "https://provo.edu/",
+   "station": "district-homepage-provo-ut",
+   "why": "Utah storm day 2025-02-14 (NWS winter warning or advisory over Salt Lake, Davis or Utah County)"
+  },
+  {
+   "timestamp": "20250306140000",
+   "url": "https://provo.edu/",
+   "station": "district-homepage-provo-ut",
+   "why": "Utah storm day 2025-03-06 (NWS winter warning or advisory over Salt Lake, Davis or Utah County)"
+  },
+  {
+   "timestamp": "20260217140000",
+   "url": "https://provo.edu/",
+   "station": "district-homepage-provo-ut",
+   "why": "Utah storm day 2026-02-17 (NWS winter warning or advisory over Salt Lake, Davis or Utah County)"
+  },
+  {
+   "timestamp": "20260218140000",
+   "url": "https://provo.edu/",
+   "station": "district-homepage-provo-ut",
+   "why": "Utah storm day 2026-02-18 (NWS winter warning or advisory over Salt Lake, Davis or Utah County)"
+  },
+  {
+   "timestamp": "20190121140000",
+   "url": "https://www.washk12.org/",
+   "station": "district-homepage-washington-ut",
+   "why": "Utah storm day 2019-01-21 (NWS winter warning or advisory over Salt Lake, Davis or Utah County)"
+  },
+  {
+   "timestamp": "20190205140000",
+   "url": "https://www.washk12.org/",
+   "station": "district-homepage-washington-ut",
+   "why": "Utah storm day 2019-02-05 (NWS winter warning or advisory over Salt Lake, Davis or Utah County)"
+  },
+  {
+   "timestamp": "20190206140000",
+   "url": "https://www.washk12.org/",
+   "station": "district-homepage-washington-ut",
+   "why": "Utah storm day 2019-02-06 (NWS winter warning or advisory over Salt Lake, Davis or Utah County)"
+  },
+  {
+   "timestamp": "20191127140000",
+   "url": "https://www.washk12.org/",
+   "station": "district-homepage-washington-ut",
+   "why": "Utah storm day 2019-11-27 (NWS winter warning or advisory over Salt Lake, Davis or Utah County)"
+  },
+  {
+   "timestamp": "20200203140000",
+   "url": "https://www.washk12.org/",
+   "station": "district-homepage-washington-ut",
+   "why": "Utah storm day 2020-02-03 (NWS winter warning or advisory over Salt Lake, Davis or Utah County)"
+  },
+  {
+   "timestamp": "20211215140000",
+   "url": "https://www.washk12.org/",
+   "station": "district-homepage-washington-ut",
+   "why": "Utah storm day 2021-12-15 (NWS winter warning or advisory over Salt Lake, Davis or Utah County)"
+  },
+  {
+   "timestamp": "20221109140000",
+   "url": "https://www.washk12.org/",
+   "station": "district-homepage-washington-ut",
+   "why": "Utah storm day 2022-11-09 (NWS winter warning or advisory over Salt Lake, Davis or Utah County)"
+  },
+  {
+   "timestamp": "20221202140000",
+   "url": "https://www.washk12.org/",
+   "station": "district-homepage-washington-ut",
+   "why": "Utah storm day 2022-12-02 (NWS winter warning or advisory over Salt Lake, Davis or Utah County)"
+  },
+  {
+   "timestamp": "20230117140000",
+   "url": "https://www.washk12.org/",
+   "station": "district-homepage-washington-ut",
+   "why": "Utah storm day 2023-01-17 (NWS winter warning or advisory over Salt Lake, Davis or Utah County)"
+  },
+  {
+   "timestamp": "20230222140000",
+   "url": "https://www.washk12.org/",
+   "station": "district-homepage-washington-ut",
+   "why": "Utah storm day 2023-02-22 (NWS winter warning or advisory over Salt Lake, Davis or Utah County)"
+  },
+  {
+   "timestamp": "20230223140000",
+   "url": "https://www.washk12.org/",
+   "station": "district-homepage-washington-ut",
+   "why": "Utah storm day 2023-02-23 (NWS winter warning or advisory over Salt Lake, Davis or Utah County)"
+  },
+  {
+   "timestamp": "20230301140000",
+   "url": "https://www.washk12.org/",
+   "station": "district-homepage-washington-ut",
+   "why": "Utah storm day 2023-03-01 (NWS winter warning or advisory over Salt Lake, Davis or Utah County)"
+  },
+  {
+   "timestamp": "20230310140000",
+   "url": "https://www.washk12.org/",
+   "station": "district-homepage-washington-ut",
+   "why": "Utah storm day 2023-03-10 (NWS winter warning or advisory over Salt Lake, Davis or Utah County)"
+  },
+  {
+   "timestamp": "20230403140000",
+   "url": "https://www.washk12.org/",
+   "station": "district-homepage-washington-ut",
+   "why": "Utah storm day 2023-04-03 (NWS winter warning or advisory over Salt Lake, Davis or Utah County)"
+  },
+  {
+   "timestamp": "20240111140000",
+   "url": "https://www.washk12.org/",
+   "station": "district-homepage-washington-ut",
+   "why": "Utah storm day 2024-01-11 (NWS winter warning or advisory over Salt Lake, Davis or Utah County)"
+  },
+  {
+   "timestamp": "20240112140000",
+   "url": "https://www.washk12.org/",
+   "station": "district-homepage-washington-ut",
+   "why": "Utah storm day 2024-01-12 (NWS winter warning or advisory over Salt Lake, Davis or Utah County)"
+  },
+  {
+   "timestamp": "20240207140000",
+   "url": "https://www.washk12.org/",
+   "station": "district-homepage-washington-ut",
+   "why": "Utah storm day 2024-02-07 (NWS winter warning or advisory over Salt Lake, Davis or Utah County)"
+  },
+  {
+   "timestamp": "20241126140000",
+   "url": "https://www.washk12.org/",
+   "station": "district-homepage-washington-ut",
+   "why": "Utah storm day 2024-11-26 (NWS winter warning or advisory over Salt Lake, Davis or Utah County)"
+  },
+  {
+   "timestamp": "20250213140000",
+   "url": "https://www.washk12.org/",
+   "station": "district-homepage-washington-ut",
+   "why": "Utah storm day 2025-02-13 (NWS winter warning or advisory over Salt Lake, Davis or Utah County)"
+  },
+  {
+   "timestamp": "20250214140000",
+   "url": "https://www.washk12.org/",
+   "station": "district-homepage-washington-ut",
+   "why": "Utah storm day 2025-02-14 (NWS winter warning or advisory over Salt Lake, Davis or Utah County)"
+  },
+  {
+   "timestamp": "20250306140000",
+   "url": "https://www.washk12.org/",
+   "station": "district-homepage-washington-ut",
+   "why": "Utah storm day 2025-03-06 (NWS winter warning or advisory over Salt Lake, Davis or Utah County)"
+  },
+  {
+   "timestamp": "20260217140000",
+   "url": "https://www.washk12.org/",
+   "station": "district-homepage-washington-ut",
+   "why": "Utah storm day 2026-02-17 (NWS winter warning or advisory over Salt Lake, Davis or Utah County)"
+  },
+  {
+   "timestamp": "20260218140000",
+   "url": "https://www.washk12.org/",
+   "station": "district-homepage-washington-ut",
+   "why": "Utah storm day 2026-02-18 (NWS winter warning or advisory over Salt Lake, Davis or Utah County)"
   }
  ]
 }
