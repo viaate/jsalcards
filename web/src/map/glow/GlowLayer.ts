@@ -110,16 +110,16 @@ import {
 import {
   ATTRIB,
   BLUR_FRAG,
-  COMPOSITE_FRAG,
   DIAMOND_SCALE,
   DOWNSAMPLE_FRAG,
   FULLSCREEN_VERT,
   GLYPH_AA_PX,
   GLYPH_FRAG,
   GLYPH_VERT,
-  LIGHT_FRAG,
   LIGHT_VERT,
   UPSAMPLE_FRAG,
+  compositeFrag,
+  lightFrag,
 } from './shaders';
 
 export interface GlowLayerOptions {
@@ -193,10 +193,14 @@ const GUARD_CSS_PX = 48;
 
 interface GpuResources {
   readonly light: Program;
+  /** The 8-bit fallback's light pass that also keeps its cores apart, for its grain; null on the float path. */
+  readonly lightCores: Program | null;
   readonly down: Program;
   readonly up: Program;
-  readonly blur: Program;
+  /** The blend's blur; null on the fallback, which has no bloom. */
+  readonly blur: Program | null;
   readonly composite: Program;
+  readonly compositeDense: Program;
   readonly glyph: Program;
   readonly buffer: WebGLBuffer;
   /** Attributes starting at record 0: glowing points, then open ones. */
@@ -247,6 +251,8 @@ interface FrameState {
   readonly bloomWeights: readonly number[];
   /** The blend's blur, or null when there is no blend or it needs none. */
   readonly blur: BlendBlur | null;
+  /** Share of the cores shown as grain where they pile up ({@link denseShareAt}); 0 for none. */
+  readonly denseShare: number;
   /** The 8-bit fallback's per-point alpha; 0 on the float path. */
   readonly fallbackAlpha: number;
 }
@@ -685,6 +691,7 @@ export class GlowLayer implements CustomLayerInterface {
       mapShare: [(cssW * targetPxPerCss) / w0, (cssH * targetPxPerCss) / h0],
       bloomWeights,
       blur: plan?.blur ?? null,
+      denseShare: denseShareAt(style, targetPxPerCss),
       fallbackAlpha: res.float ? 0 : interpolateStops(FALLBACK_ALPHA_STOPS, zoom),
     };
     this.frame = frame;
@@ -828,6 +835,15 @@ export class GlowLayer implements CustomLayerInterface {
     gl.disable(gl.CULL_FACE);
     gl.disable(gl.SCISSOR_TEST);
     gl.colorMask(true, true, true, true);
+    // The fallback keeps its whole cores apart only for its grain.
+    const cores = res.lightCores !== null && frame.denseShare > 0 ? res.lightCores : null;
+    if (!res.float) {
+      gl.drawBuffers([
+        gl.COLOR_ATTACHMENT0,
+        gl.COLOR_ATTACHMENT1,
+        cores === null ? gl.NONE : gl.COLOR_ATTACHMENT2,
+      ]);
+    }
     gl.clearColor(0, 0, 0, 0);
     gl.clear(gl.COLOR_BUFFER_BIT);
     gl.enable(gl.BLEND);
@@ -839,7 +855,7 @@ export class GlowLayer implements CustomLayerInterface {
       gl.blendFuncSeparate(gl.ONE, gl.ONE_MINUS_SRC_COLOR, gl.ONE, gl.ONE_MINUS_SRC_ALPHA);
     }
 
-    const program = res.light;
+    const program = cores ?? res.light;
     gl.useProgram(program.program);
     this.setPointUniforms(gl, program, args, frame, frame.mapShare, res.maxPointSize);
     // The fallback has no bloom, so each point carries most of the bloom's light in its own halo.
@@ -849,9 +865,7 @@ export class GlowLayer implements CustomLayerInterface {
     this.setKernelUniforms(gl, program, frame, frame.targetPxPerCss, halo, coreShare);
     gl.uniform1f(uniform(program, 'u_gain'), frame.style.gain);
     gl.uniform1f(uniform(program, 'u_encode'), frame.fallbackAlpha);
-    // The fallback keeps its whole cores apart only for its grain.
-    const grain = !res.float && denseShareAt(frame.style, frame.targetPxPerCss) > 0;
-    gl.uniform1f(uniform(program, 'u_coreEncode'), grain ? 1 / frame.style.gain : 0);
+    gl.uniform1f(uniform(program, 'u_coreEncode'), 1 / frame.style.gain);
     gl.bindVertexArray(res.vaoAll);
     gl.drawArrays(gl.POINTS, 0, packed.glowCount);
   }
@@ -933,6 +947,7 @@ export class GlowLayer implements CustomLayerInterface {
     floored = false,
   ): void {
     const program = res.blur;
+    if (program === null) return;
     gl.useProgram(program.program);
     gl.uniform1i(uniform(program, 'u_source'), 0);
     gl.uniform2f(uniform(program, 'u_step'), step[0], step[1]);
@@ -952,37 +967,31 @@ export class GlowLayer implements CustomLayerInterface {
     if (light === undefined) return;
     const levels = frame.bloomWeights.length;
     const bloom = levels > 0 ? res.levels[1] : undefined;
-    const program = res.composite;
+    const dense = frame.denseShare > 0;
+    const program = dense ? res.compositeDense : res.composite;
     gl.useProgram(program.program);
-    gl.activeTexture(gl.TEXTURE0);
-    gl.bindTexture(gl.TEXTURE_2D, light.texture);
-    gl.activeTexture(gl.TEXTURE1);
-    gl.bindTexture(gl.TEXTURE_2D, (bloom ?? light).texture);
-    gl.activeTexture(gl.TEXTURE2);
-    gl.bindTexture(gl.TEXTURE_2D, light.fine ?? light.texture);
-    gl.activeTexture(gl.TEXTURE3);
-    gl.bindTexture(gl.TEXTURE_2D, light.cores ?? light.texture);
+    // Each path samples only its own textures.
+    const textures = res.float
+      ? [light.texture, (bloom ?? light).texture]
+      : [
+          light.texture,
+          light.fine ?? light.texture,
+          ...(dense ? [light.cores ?? light.texture] : []),
+        ];
+    textures.forEach((texture, unit) => {
+      gl.activeTexture(gl.TEXTURE0 + unit);
+      gl.bindTexture(gl.TEXTURE_2D, texture);
+    });
     gl.uniform1i(uniform(program, 'u_light'), 0);
-    gl.uniform1i(uniform(program, 'u_bloom'), 1);
-    gl.uniform1i(uniform(program, 'u_lightFine'), 2);
-    gl.uniform1i(uniform(program, 'u_cores'), 3);
+    gl.uniform1i(uniform(program, res.float ? 'u_bloom' : 'u_lightFine'), 1);
+    gl.uniform1i(uniform(program, 'u_cores'), 2);
     // With one level nothing upsampled onto it, so its own weight still applies.
     const bloomScale = bloom === undefined ? 0 : levels === 1 ? (frame.bloomWeights[0] ?? 0) : 1;
     gl.uniform1f(uniform(program, 'u_bloomScale'), bloomScale);
     // The float path shows only the sharp share of the cores; the fallback drew only that share.
     gl.uniform1f(uniform(program, 'u_coreShare'), res.float ? frame.style.coreShare : 0);
     // Nationally both also show cores where they pile up.
-    gl.uniform1f(uniform(program, 'u_denseShare'), denseShareAt(frame.style, frame.targetPxPerCss));
-    gl.uniform2f(uniform(program, 'u_denseGate'), DENSE_GATE[0], DENSE_GATE[1]);
-    gl.uniform2f(uniform(program, 'u_denseField'), DENSE_FIELD[0], DENSE_FIELD[1]);
-    const lone = kernelUniforms(frame.style, frame.targetPxPerCss).coreWeight * frame.style.gain;
-    gl.uniform1f(uniform(program, 'u_corePeak'), Math.max(lone, 1e-6));
-    // The field is the bloom around, or the fallback's halos, which carry it.
-    const field = res.float ? fieldPeak(frame.style) : fallbackPeak(frame.style, frame.zoom);
-    gl.uniform1f(uniform(program, 'u_fieldPeak'), Math.max(field, 1e-6));
-    const reach = fieldReachPx(frame.style) * frame.targetPxPerCss;
-    gl.uniform2f(uniform(program, 'u_fieldReach'), reach / light.width, reach / light.height);
-    gl.uniform1f(uniform(program, 'u_denseCap'), DENSE_CAP);
+    if (dense) this.setDenseUniforms(gl, program, res, frame, light);
     const texel = bloom ?? light;
     gl.uniform2f(uniform(program, 'u_bloomTexel'), 1 / texel.width, 1 / texel.height);
     const [sx, sy] = frame.mapShare;
@@ -999,12 +1008,31 @@ export class GlowLayer implements CustomLayerInterface {
     gl.blendFuncSeparate(gl.ONE, gl.ONE_MINUS_SRC_COLOR, gl.ZERO, gl.ONE);
     gl.bindVertexArray(res.vaoEmpty);
     gl.drawArrays(gl.TRIANGLES, 0, 3);
-    gl.bindTexture(gl.TEXTURE_2D, null);
-    gl.activeTexture(gl.TEXTURE2);
-    gl.bindTexture(gl.TEXTURE_2D, null);
-    gl.activeTexture(gl.TEXTURE1);
-    gl.bindTexture(gl.TEXTURE_2D, null);
-    gl.activeTexture(gl.TEXTURE0);
+    for (let unit = textures.length - 1; unit >= 0; unit--) {
+      gl.activeTexture(gl.TEXTURE0 + unit);
+      gl.bindTexture(gl.TEXTURE_2D, null);
+    }
+  }
+
+  /** The national grain's uniforms: cores shown where they pile up inside a field. */
+  private setDenseUniforms(
+    gl: WebGL2RenderingContext,
+    program: Program,
+    res: GpuResources,
+    frame: FrameState,
+    light: LightTarget,
+  ): void {
+    gl.uniform1f(uniform(program, 'u_denseShare'), frame.denseShare);
+    gl.uniform2f(uniform(program, 'u_denseGate'), DENSE_GATE[0], DENSE_GATE[1]);
+    gl.uniform2f(uniform(program, 'u_denseField'), DENSE_FIELD[0], DENSE_FIELD[1]);
+    const lone = kernelUniforms(frame.style, frame.targetPxPerCss).coreWeight * frame.style.gain;
+    gl.uniform1f(uniform(program, 'u_corePeak'), Math.max(lone, 1e-6));
+    // The field is the bloom around, or the fallback's halos, which carry it.
+    const field = res.float ? fieldPeak(frame.style) : fallbackPeak(frame.style, frame.zoom);
+    gl.uniform1f(uniform(program, 'u_fieldPeak'), Math.max(field, 1e-6));
+    const reach = fieldReachPx(frame.style) * frame.targetPxPerCss;
+    gl.uniform2f(uniform(program, 'u_fieldReach'), reach / light.width, reach / light.height);
+    gl.uniform1f(uniform(program, 'u_denseCap'), DENSE_CAP);
   }
 
   private drawGlyphs(
@@ -1169,11 +1197,25 @@ export class GlowLayer implements CustomLayerInterface {
   private createResources(gl: WebGL2RenderingContext): GpuResources {
     const float = this.options.forceFallback !== true && supportsHalfFloatTarget(gl);
     const format: LightFormat = float ? 'half' : 'byte';
-    const light = createProgram(gl, LIGHT_VERT, LIGHT_FRAG, 'glow light');
+    const light = createProgram(gl, LIGHT_VERT, lightFrag(!float), 'glow light');
+    const lightCores = float
+      ? null
+      : createProgram(gl, LIGHT_VERT, lightFrag(true, true), 'glow light cores');
     const down = createProgram(gl, FULLSCREEN_VERT, DOWNSAMPLE_FRAG, 'glow downsample');
     const up = createProgram(gl, FULLSCREEN_VERT, UPSAMPLE_FRAG, 'glow upsample');
-    const blur = createProgram(gl, FULLSCREEN_VERT, BLUR_FRAG, 'glow blur');
-    const composite = createProgram(gl, FULLSCREEN_VERT, COMPOSITE_FRAG, 'glow composite');
+    const blur = float ? createProgram(gl, FULLSCREEN_VERT, BLUR_FRAG, 'glow blur') : null;
+    const composite = createProgram(
+      gl,
+      FULLSCREEN_VERT,
+      compositeFrag(!float, false),
+      'glow composite',
+    );
+    const compositeDense = createProgram(
+      gl,
+      FULLSCREEN_VERT,
+      compositeFrag(!float, true),
+      'glow composite grain',
+    );
     const glyph = createProgram(gl, GLYPH_VERT, GLYPH_FRAG, 'glow glyph');
     const timerExt =
       this.options.gpuTiming === true
@@ -1185,10 +1227,12 @@ export class GlowLayer implements CustomLayerInterface {
     const maxTexture = (gl.getParameter(gl.MAX_TEXTURE_SIZE) as number | null) ?? 4096;
     return {
       light,
+      lightCores,
       down,
       up,
       blur,
       composite,
+      compositeDense,
       glyph,
       buffer: gl.createBuffer(),
       vaoAll: gl.createVertexArray(),
@@ -1206,8 +1250,17 @@ export class GlowLayer implements CustomLayerInterface {
   }
 
   private deleteResources(gl: WebGL2RenderingContext, res: GpuResources): void {
-    for (const program of [res.light, res.down, res.up, res.blur, res.composite, res.glyph]) {
-      gl.deleteProgram(program.program);
+    for (const program of [
+      res.light,
+      res.lightCores,
+      res.down,
+      res.up,
+      res.blur,
+      res.composite,
+      res.compositeDense,
+      res.glyph,
+    ]) {
+      if (program !== null) gl.deleteProgram(program.program);
     }
     gl.deleteBuffer(res.buffer);
     gl.deleteVertexArray(res.vaoAll);

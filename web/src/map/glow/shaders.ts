@@ -106,7 +106,14 @@ void main() {
 }
 `;
 
-export const LIGHT_FRAG = /* glsl */ `#version 300 es
+/**
+ * The light pass's fragments: linear light on the float path; on the 8-bit
+ * fallback its coarse and fine targets, and with `cores` its cores alone too.
+ */
+export function lightFrag(fallback: boolean, cores = false): string {
+  return /* glsl */ `#version 300 es
+#define GLOW_FALLBACK ${fallback ? '1' : '0'}
+#define GLOW_CORES ${cores ? '1' : '0'}
 precision highp float;
 
 uniform float u_coreFalloff;
@@ -116,19 +123,22 @@ uniform float u_haloWeight;
 // Normalized radius inside which the halo is cut away so a glyph's halo
 // never fills its center; 0 below glyph zoom.
 uniform float u_hole;
-// 0: add linear light (half-float target). Otherwise the 8-bit fallback's
-// alpha: light is written as 1 - exp(-light * alpha), screen blended, to a
-// coarse target and to a fine one at a higher alpha.
+// The 8-bit fallback's alpha: light is written as 1 - exp(-light * alpha),
+// screen blended, to a coarse target and to a fine one at a higher alpha.
 uniform float u_encode;
-// The fallback's cores alone, whole, in a lone core's peaks (1 / gain), for its grain; 0 for none.
+// The fallback's cores alone, whole, in a lone core's peaks (1 / gain), for its grain.
 uniform float u_coreEncode;
 
 const float CORE_EDGE = ${String(CORE_EDGE_D2)};
 
 in vec4 v_light;
 layout(location = 0) out vec4 fragColor;
+#if GLOW_FALLBACK
 layout(location = 1) out vec4 fragFine;
+#endif
+#if GLOW_CORES
 layout(location = 2) out vec4 fragCores;
+#endif
 
 void main() {
   vec2 uv = gl_PointCoord * 2.0 - 1.0;
@@ -145,17 +155,18 @@ void main() {
     k += halo;
   }
   vec4 light = v_light * k;
-  if (u_encode > 0.0) {
-    fragColor = 1.0 - exp(-light * u_encode);
-    fragFine = 1.0 - exp(-light * (u_encode * ${FALLBACK_FINE_GAIN.toFixed(1)}));
-    fragCores = 1.0 - exp(-v_light * (core * u_coreEncode));
-  } else {
-    fragColor = light;
-    fragFine = vec4(0.0);
-    fragCores = vec4(0.0);
-  }
+#if GLOW_FALLBACK
+  fragColor = 1.0 - exp(-light * u_encode);
+  fragFine = 1.0 - exp(-light * (u_encode * ${FALLBACK_FINE_GAIN.toFixed(1)}));
+#else
+  fragColor = light;
+#endif
+#if GLOW_CORES
+  fragCores = 1.0 - exp(-v_light * (core * u_coreEncode));
+#endif
 }
 `;
+}
 
 /** Full-screen triangle; v_uv spans 0..1 over the viewport. */
 export const FULLSCREEN_VERT = /* glsl */ `#version 300 es
@@ -249,17 +260,25 @@ void main() {
 }
 `;
 
-export const COMPOSITE_FRAG = /* glsl */ `#version 300 es
+/**
+ * The composite for the float path or the 8-bit fallback, with the national
+ * grain (`dense`) or without, so a frame without it costs no more than the
+ * glow did before it.
+ */
+export function compositeFrag(fallback: boolean, dense: boolean): string {
+  return /* glsl */ `#version 300 es
+#define GLOW_FALLBACK ${fallback ? '1' : '0'}
+#define GLOW_DENSE ${dense ? '1' : '0'}
 precision highp float;
 
 // Core light, and the first bloom level holding every weighted scale of bloom.
 uniform sampler2D u_light;
 uniform sampler2D u_bloom;
-// The 8-bit fallback's fine light target and its cores alone; unused on the float path.
+// The 8-bit fallback's fine light target and its cores alone.
 uniform sampler2D u_lightFine;
 uniform sampler2D u_cores;
 uniform float u_bloomScale;
-// Share of the core light shown sharp: none nationally on the float path; the fallback drew its share.
+// Share of the core light shown sharp: none nationally on the float path.
 uniform float u_coreShare;
 // Nationally, cores shown where they pile up inside a field, as grain (DENSE_* in curves.ts).
 uniform float u_denseShare;
@@ -274,10 +293,9 @@ uniform vec2 u_bloomTexel;
 uniform vec2 u_uvScale;
 uniform vec2 u_uvOffset;
 uniform float u_exposure;
-// 0 for a half-float light target. Otherwise the 8-bit fallback's alpha, to
-// turn its optical-depth encoding back into light.
+// The 8-bit fallback's alpha, to turn its optical-depth encoding back into light.
 uniform float u_decode;
-// The fallback's floor, where its halos carry the blend; 1 on the float path.
+// The fallback's floor, where its halos carry the blend.
 uniform float u_floorGain;
 uniform float u_floorKnee;
 // Linear-light tokens for closed, delayed, remote, early dismissal.
@@ -297,20 +315,26 @@ float glow_dither(vec2 p) {
 
 // The light spread around a point: the bloom, or the fallback's halos, which carry it.
 vec4 glow_spread(vec2 uv) {
-  if (u_decode > 0.0) return glow_fallback_decode(texture(u_light, uv), texture(u_lightFine, uv), u_decode);
+#if GLOW_FALLBACK
+  return glow_fallback_decode(texture(u_light, uv), texture(u_lightFine, uv), u_decode);
+#else
   return texture(u_bloom, uv) * u_bloomScale;
+#endif
 }
 
 void main() {
   vec2 uv = u_uvOffset + v_uv * u_uvScale;
+#if GLOW_FALLBACK
+  // The fallback drew only the cores' shown share, into its halos.
+  vec4 bloom = glow_fallback_floor(glow_spread(uv), u_floorGain, u_floorKnee);
+  vec4 light = vec4(0.0);
+#if GLOW_DENSE
+  light = -log(max(vec4(1.0) - texture(u_cores, uv), vec4(GLOW_FALLBACK_MIN_TRANSMITTANCE))) * u_corePeak;
+#endif
+#else
   vec4 light = texture(u_light, uv);
   vec4 bloom = vec4(0.0);
-  if (u_decode > 0.0) {
-    bloom = glow_fallback_floor(glow_spread(uv), u_floorGain, u_floorKnee);
-    light = u_denseShare > 0.0
-      ? -log(max(vec4(1.0) - texture(u_cores, uv), vec4(GLOW_FALLBACK_MIN_TRANSMITTANCE))) * u_corePeak
-      : vec4(0.0);
-  } else if (u_bloomScale > 0.0) {
+  if (u_bloomScale > 0.0) {
     // Four bilinear taps half a texel off each diagonal: a 3x3 tent upsample.
     vec2 h = 0.5 * u_bloomTexel;
     bloom = (texture(u_bloom, uv + vec2(-h.x, -h.y))
@@ -318,9 +342,11 @@ void main() {
            + texture(u_bloom, uv + vec2(-h.x,  h.y))
            + texture(u_bloom, uv + vec2( h.x,  h.y))) * (0.25 * u_bloomScale);
   }
+#endif
+#if GLOW_DENSE
   vec4 dense = vec4(0.0);
   float total = light.r + light.g + light.b + light.a;
-  float piled = u_denseShare > 0.0 ? smoothstep(u_denseGate.x, u_denseGate.y, total / u_corePeak) : 0.0;
+  float piled = smoothstep(u_denseGate.x, u_denseGate.y, total / u_corePeak);
   // Most pixels hold no pile: only those look around for the field.
   if (piled > 0.0) {
     vec4 around = vec4(0.0);
@@ -331,6 +357,9 @@ void main() {
     dense = light * min(share, cap / max(total, 1e-6));
   }
   light = light * u_coreShare + dense + bloom;
+#else
+  light = light * u_coreShare + bloom;
+#endif
   vec3 rgb = glow_status_light(light, u_tokens) * u_exposure;
   vec3 c = glow_linear_to_srgb(glow_tonemap(rgb));
   if (max(c.r, max(c.g, c.b)) <= 0.0) discard;
@@ -339,6 +368,7 @@ void main() {
   fragColor = vec4(c, 0.0);
 }
 `;
+}
 
 export const GLYPH_VERT = /* glsl */ `${POINT_PRELUDE}
 uniform float u_glyphRadius;

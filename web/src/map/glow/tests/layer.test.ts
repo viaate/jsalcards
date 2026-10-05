@@ -98,7 +98,8 @@ describe('GlowLayer', () => {
     targetPxPerCss: number;
     targetSize: readonly [number, number];
     blur: { weight: number } | null;
-    style: { blendSigmaPx: number; coreShare: number };
+    denseShare: number;
+    style: { blendSigmaPx: number; coreShare: number; blend: number };
   } {
     const { lightResolution, float = true, maxTarget = 16384 } = options;
     const layer = new GlowLayer(lightResolution === undefined ? {} : { lightResolution });
@@ -352,6 +353,32 @@ describe('GlowLayer', () => {
       expect(frame.style.coreShare).toBeGreaterThan(layOut(6, [1440, 900], 2).style.coreShare);
       expect(frame.style).toEqual(glowStyleAtZoom(6, undefined, frame.targetPxPerCss));
     }
+  });
+
+  it('draws zoom 9 and up, and a 1x screen regionally, with no blend, grain or blur to pay for', () => {
+    const screens = [
+      [[1440, 900], 1],
+      [[1440, 900], 2],
+      [[820, 1180], 2],
+      [[390, 844], 3],
+    ] as const;
+    for (const [size, ratio] of screens) {
+      for (const zoom of [9, 10, 12, 15]) {
+        const frame = layOut(zoom, size, ratio);
+        expect(frame.style.blend).toBe(0);
+        expect(frame.denseShare).toBe(0);
+        expect(frame.blur).toBeNull();
+      }
+    }
+    for (const zoom of [5.6, 7]) {
+      const frame = layOut(zoom, [1440, 900], 1);
+      expect(frame.style.blend).toBe(0);
+      expect(frame.denseShare).toBe(0);
+      expect(frame.blur).toBeNull();
+    }
+    // Nationally the grain and the blend are drawn.
+    expect(layOut(3.7, [1440, 900], 1).denseShare).toBeGreaterThan(0);
+    expect(layOut(3.7, [1440, 900], 1).blur).not.toBeNull();
   });
 
   it('counts born times later than now, as from a skewed clock or epoch milliseconds', () => {
