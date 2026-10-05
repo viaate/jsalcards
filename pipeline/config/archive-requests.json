@@ -1,1108 +1,1156 @@
 {
   "snapshots": [
     {
-      "timestamp": "20230112105017",
-      "url": "https://www.landerschools.org/",
-      "station": "apptegy-fremont-1-wy",
-      "why": "2023-01-12: within 2 days of one of its closure days"
+      "timestamp": "20221109011913",
+      "url": "http://wsd.net/",
+      "station": "apptegy-weber-ut",
+      "why": "storm day 2022-11-09 (market score 1.00)"
     },
     {
-      "timestamp": "20240428021218",
-      "url": "https://www.landerschools.org/",
-      "station": "apptegy-fremont-1-wy",
-      "why": "2024-04-28: within 2 days of one of its closure days"
+      "timestamp": "20230106011650",
+      "url": "http://wsd.net/",
+      "station": "apptegy-weber-ut",
+      "why": "storm day 2023-01-06 (market score 1.00)"
     },
     {
-      "timestamp": "20240307223642",
-      "url": "https://www.landerschools.org/",
-      "station": "apptegy-fremont-1-wy",
-      "why": "2024-03-08: within 2 days of one of its closure days"
+      "timestamp": "20221220184758",
+      "url": "http://wsd.net/",
+      "station": "apptegy-weber-ut",
+      "why": "storm day 2022-12-21 (market score 1.00)"
     },
     {
-      "timestamp": "20230112224928",
-      "url": "https://www.landerschools.org/",
-      "station": "apptegy-fremont-1-wy",
-      "why": "2023-01-13: within 2 days of one of its closure days"
+      "timestamp": "20230324113836",
+      "url": "https://www.murrayschools.org/",
+      "station": "smartsites-murray-ut",
+      "why": "storm day 2023-03-24 (market score 1.00)"
     },
     {
-      "timestamp": "20230114224957",
-      "url": "https://www.landerschools.org/",
-      "station": "apptegy-fremont-1-wy",
-      "why": "2023-01-15: within 2 days of one of its closure days"
+      "timestamp": "20231124012540",
+      "url": "https://www.murrayschools.org/",
+      "station": "smartsites-murray-ut",
+      "why": "storm day 2023-11-24 (market score 1.00)"
     },
     {
-      "timestamp": "20240408223528",
-      "url": "https://www.landerschools.org/",
-      "station": "apptegy-fremont-1-wy",
-      "why": "2024-04-09: within 2 days of one of its closure days"
+      "timestamp": "20231123111705",
+      "url": "https://www.murrayschools.org/",
+      "station": "smartsites-murray-ut",
+      "why": "storm day 2023-11-23 (market score 1.00)"
     },
     {
-      "timestamp": "20240425112225",
-      "url": "https://www.landerschools.org/",
-      "station": "apptegy-fremont-1-wy",
-      "why": "2024-04-25: within 2 days of one of its closure days"
+      "timestamp": "20171223054250",
+      "url": "https://www.tfsd.org/",
+      "station": "apptegy-twin-falls-id",
+      "why": "2017-12-23: within 2 days of one of its closure days"
     },
     {
-      "timestamp": "20240307163552",
-      "url": "https://www.landerschools.org/",
-      "station": "apptegy-fremont-1-wy",
-      "why": "2024-03-08: within 2 days of one of its closure days"
+      "timestamp": "20221109000020",
+      "url": "https://www.shelleyschools.org/",
+      "station": "smartsites-shelley-id",
+      "why": "2022-11-09: within 2 days of one of its closure days"
     },
     {
-      "timestamp": "20240519144503",
-      "url": "https://www.landerschools.org/",
-      "station": "apptegy-fremont-1-wy",
-      "why": "2024-05-19: within 2 days of one of its closure days"
+      "timestamp": "20241125062829",
+      "url": "https://www.shelleyschools.org/",
+      "station": "smartsites-shelley-id",
+      "why": "2024-11-25: within 2 days of one of its closure days"
     },
     {
-      "timestamp": "20240306223639",
-      "url": "https://www.landerschools.org/",
-      "station": "apptegy-fremont-1-wy",
-      "why": "2024-03-07: within 2 days of one of its closure days"
-    },
-    {
-      "timestamp": "20240427111719",
-      "url": "https://www.landerschools.org/",
-      "station": "apptegy-fremont-1-wy",
-      "why": "2024-04-27: within 2 days of one of its closure days"
-    },
-    {
-      "timestamp": "20240423223600",
-      "url": "https://www.landerschools.org/",
-      "station": "apptegy-fremont-1-wy",
-      "why": "2024-04-24: within 2 days of one of its closure days"
-    },
-    {
-      "timestamp": "20240307103810",
-      "url": "https://www.landerschools.org/",
-      "station": "apptegy-fremont-1-wy",
-      "why": "2024-03-07: within 2 days of one of its closure days"
-    },
-    {
-      "timestamp": "20240308103800",
-      "url": "https://www.landerschools.org/",
-      "station": "apptegy-fremont-1-wy",
-      "why": "2024-03-08: within 2 days of one of its closure days"
-    },
-    {
-      "timestamp": "20240424103606",
-      "url": "https://www.landerschools.org/",
-      "station": "apptegy-fremont-1-wy",
-      "why": "2024-04-24: within 2 days of one of its closure days"
-    },
-    {
-      "timestamp": "20230113233500",
-      "url": "https://www.landerschools.org/",
-      "station": "apptegy-fremont-1-wy",
-      "why": "2023-01-14: within 2 days of one of its closure days"
-    },
-    {
-      "timestamp": "20230115104911",
-      "url": "https://www.landerschools.org/",
-      "station": "apptegy-fremont-1-wy",
-      "why": "2023-01-15: within 2 days of one of its closure days"
-    },
-    {
-      "timestamp": "20240426232619",
-      "url": "https://www.landerschools.org/",
-      "station": "apptegy-fremont-1-wy",
-      "why": "2024-04-27: within 2 days of one of its closure days"
-    },
-    {
-      "timestamp": "20230111224915",
-      "url": "https://www.landerschools.org/",
-      "station": "apptegy-fremont-1-wy",
-      "why": "2023-01-12: within 2 days of one of its closure days"
-    },
-    {
-      "timestamp": "20230405013644",
-      "url": "https://www.landerschools.org/",
-      "station": "apptegy-fremont-1-wy",
-      "why": "2023-04-05: within 2 days of one of its closure days"
-    },
-    {
-      "timestamp": "20240228053446",
-      "url": "https://www.landerschools.org/",
-      "station": "apptegy-fremont-1-wy",
-      "why": "2024-02-28: within 2 days of one of its closure days"
-    },
-    {
-      "timestamp": "20240428111701",
-      "url": "https://www.landerschools.org/",
-      "station": "apptegy-fremont-1-wy",
-      "why": "2024-04-28: within 2 days of one of its closure days"
-    },
-    {
-      "timestamp": "20240311103928",
-      "url": "https://www.landerschools.org/",
-      "station": "apptegy-fremont-1-wy",
-      "why": "2024-03-11: within 2 days of one of its closure days"
-    },
-    {
-      "timestamp": "20240310223728",
-      "url": "https://www.landerschools.org/",
-      "station": "apptegy-fremont-1-wy",
-      "why": "2024-03-11: within 2 days of one of its closure days"
-    },
-    {
-      "timestamp": "20230405045701",
-      "url": "https://www.landerschools.org/",
-      "station": "apptegy-fremont-1-wy",
-      "why": "2023-04-05: within 2 days of one of its closure days"
-    },
-    {
-      "timestamp": "20240228075807",
-      "url": "https://www.landerschools.org/",
-      "station": "apptegy-fremont-1-wy",
-      "why": "2024-02-28: within 2 days of one of its closure days"
-    },
-    {
-      "timestamp": "20230416110808",
-      "url": "https://www.landerschools.org/",
-      "station": "apptegy-fremont-1-wy",
-      "why": "2023-04-16: within 2 days of one of its closure days"
-    },
-    {
-      "timestamp": "20240223210618",
-      "url": "https://www.landerschools.org/",
-      "station": "apptegy-fremont-1-wy",
-      "why": "2024-02-24: within 2 days of one of its closure days"
-    },
-    {
-      "timestamp": "20220423231300",
-      "url": "https://www.landerschools.org/",
-      "station": "apptegy-fremont-1-wy",
-      "why": "2022-04-24: within 2 days of one of its closure days"
-    },
-    {
-      "timestamp": "20230116224918",
-      "url": "https://www.landerschools.org/",
-      "station": "apptegy-fremont-1-wy",
-      "why": "2023-01-17: within 2 days of one of its closure days"
-    },
-    {
-      "timestamp": "20240227173855",
-      "url": "https://www.landerschools.org/",
-      "station": "apptegy-fremont-1-wy",
-      "why": "2024-02-28: within 2 days of one of its closure days"
-    },
-    {
-      "timestamp": "20230114104913",
-      "url": "https://www.landerschools.org/",
-      "station": "apptegy-fremont-1-wy",
-      "why": "2023-01-14: within 2 days of one of its closure days"
-    },
-    {
-      "timestamp": "20230417105329",
-      "url": "https://www.landerschools.org/",
-      "station": "apptegy-fremont-1-wy",
-      "why": "2023-04-17: within 2 days of one of its closure days"
-    },
-    {
-      "timestamp": "20220424111215",
-      "url": "https://www.landerschools.org/",
-      "station": "apptegy-fremont-1-wy",
-      "why": "2022-04-24: within 2 days of one of its closure days"
-    },
-    {
-      "timestamp": "20230415224959",
-      "url": "https://www.landerschools.org/",
-      "station": "apptegy-fremont-1-wy",
-      "why": "2023-04-16: within 2 days of one of its closure days"
-    },
-    {
-      "timestamp": "20230405174907",
-      "url": "https://www.landerschools.org/",
-      "station": "apptegy-fremont-1-wy",
-      "why": "2023-04-06: within 2 days of one of its closure days"
-    },
-    {
-      "timestamp": "20230117104929",
-      "url": "https://www.landerschools.org/",
-      "station": "apptegy-fremont-1-wy",
-      "why": "2023-01-17: within 2 days of one of its closure days"
-    },
-    {
-      "timestamp": "20230406022234",
-      "url": "https://www.landerschools.org/",
-      "station": "apptegy-fremont-1-wy",
-      "why": "2023-04-06: within 2 days of one of its closure days"
-    },
-    {
-      "timestamp": "20240228232715",
-      "url": "https://www.landerschools.org/",
-      "station": "apptegy-fremont-1-wy",
-      "why": "2024-02-29: within 2 days of one of its closure days"
-    },
-    {
-      "timestamp": "20230411110357",
-      "url": "https://www.landerschools.org/",
-      "station": "apptegy-fremont-1-wy",
-      "why": "2023-04-11: within 2 days of one of its closure days"
-    },
-    {
-      "timestamp": "20230412003319",
-      "url": "https://www.landerschools.org/",
-      "station": "apptegy-fremont-1-wy",
-      "why": "2023-04-12: within 2 days of one of its closure days"
-    },
-    {
-      "timestamp": "20240229105415",
-      "url": "https://www.landerschools.org/",
-      "station": "apptegy-fremont-1-wy",
-      "why": "2024-02-29: within 2 days of one of its closure days"
-    },
-    {
-      "timestamp": "20240310103708",
-      "url": "https://www.landerschools.org/",
-      "station": "apptegy-fremont-1-wy",
-      "why": "2024-03-10: within 2 days of one of its closure days"
-    },
-    {
-      "timestamp": "20230415104941",
-      "url": "https://www.landerschools.org/",
-      "station": "apptegy-fremont-1-wy",
-      "why": "2023-04-15: within 2 days of one of its closure days"
-    },
-    {
-      "timestamp": "20230118104957",
-      "url": "https://www.landerschools.org/",
-      "station": "apptegy-fremont-1-wy",
-      "why": "2023-01-18: within 2 days of one of its closure days"
-    },
-    {
-      "timestamp": "20240225140053",
-      "url": "https://www.landerschools.org/",
-      "station": "apptegy-fremont-1-wy",
-      "why": "2024-02-25: within 2 days of one of its closure days"
-    },
-    {
-      "timestamp": "20240229111956",
-      "url": "https://www.landerschools.org/",
-      "station": "apptegy-fremont-1-wy",
-      "why": "2024-02-29: within 2 days of one of its closure days"
-    },
-    {
-      "timestamp": "20230416225010",
-      "url": "https://www.landerschools.org/",
-      "station": "apptegy-fremont-1-wy",
-      "why": "2023-04-17: within 2 days of one of its closure days"
-    },
-    {
-      "timestamp": "20221104230129",
-      "url": "https://www.landerschools.org/",
-      "station": "apptegy-fremont-1-wy",
-      "why": "2022-11-05: within 2 days of one of its closure days"
-    },
-    {
-      "timestamp": "20230331111124",
-      "url": "https://www.landerschools.org/",
-      "station": "apptegy-fremont-1-wy",
-      "why": "2023-03-31: within 2 days of one of its closure days"
-    },
-    {
-      "timestamp": "20221103230143",
-      "url": "https://www.landerschools.org/",
-      "station": "apptegy-fremont-1-wy",
-      "why": "2022-11-04: within 2 days of one of its closure days"
-    },
-    {
-      "timestamp": "20230415142216",
-      "url": "https://www.landerschools.org/",
-      "station": "apptegy-fremont-1-wy",
-      "why": "2023-04-15: within 2 days of one of its closure days"
-    },
-    {
-      "timestamp": "20230113105036",
-      "url": "https://www.landerschools.org/",
-      "station": "apptegy-fremont-1-wy",
-      "why": "2023-01-13: within 2 days of one of its closure days"
-    },
-    {
-      "timestamp": "20220529114402",
-      "url": "https://www.landerschools.org/",
-      "station": "apptegy-fremont-1-wy",
-      "why": "2022-05-29: within 2 days of one of its closure days"
-    },
-    {
-      "timestamp": "20220423111234",
-      "url": "https://www.landerschools.org/",
-      "station": "apptegy-fremont-1-wy",
-      "why": "2022-04-23: within 2 days of one of its closure days"
-    },
-    {
-      "timestamp": "20221104113448",
-      "url": "https://www.landerschools.org/",
-      "station": "apptegy-fremont-1-wy",
-      "why": "2022-11-04: within 2 days of one of its closure days"
-    },
-    {
-      "timestamp": "20230410230203",
-      "url": "https://www.landerschools.org/",
-      "station": "apptegy-fremont-1-wy",
-      "why": "2023-04-11: within 2 days of one of its closure days"
-    },
-    {
-      "timestamp": "20221203145144",
-      "url": "https://www.landerschools.org/",
-      "station": "apptegy-fremont-1-wy",
-      "why": "2022-12-03: within 2 days of one of its closure days"
-    },
-    {
-      "timestamp": "20240524000656",
-      "url": "https://www.landerschools.org/",
-      "station": "apptegy-fremont-1-wy",
-      "why": "2024-05-24: within 2 days of one of its closure days"
-    },
-    {
-      "timestamp": "20221105110144",
-      "url": "https://www.landerschools.org/",
-      "station": "apptegy-fremont-1-wy",
-      "why": "2022-11-05: within 2 days of one of its closure days"
-    },
-    {
-      "timestamp": "20221105230136",
-      "url": "https://www.landerschools.org/",
-      "station": "apptegy-fremont-1-wy",
-      "why": "2022-11-06: within 2 days of one of its closure days"
-    },
-    {
-      "timestamp": "20240525111813",
-      "url": "https://www.landerschools.org/",
-      "station": "apptegy-fremont-1-wy",
-      "why": "2024-05-25: within 2 days of one of its closure days"
-    },
-    {
-      "timestamp": "20240524232315",
-      "url": "https://www.landerschools.org/",
-      "station": "apptegy-fremont-1-wy",
-      "why": "2024-05-25: within 2 days of one of its closure days"
-    },
-    {
-      "timestamp": "20221109230137",
-      "url": "https://www.landerschools.org/",
-      "station": "apptegy-fremont-1-wy",
-      "why": "2022-11-10: within 2 days of one of its closure days"
-    },
-    {
-      "timestamp": "20221204110528",
-      "url": "https://www.landerschools.org/",
-      "station": "apptegy-fremont-1-wy",
-      "why": "2022-12-04: within 2 days of one of its closure days"
-    },
-    {
-      "timestamp": "20221106110136",
-      "url": "https://www.landerschools.org/",
-      "station": "apptegy-fremont-1-wy",
-      "why": "2022-11-06: within 2 days of one of its closure days"
-    },
-    {
-      "timestamp": "20240316103638",
-      "url": "https://www.landerschools.org/",
-      "station": "apptegy-fremont-1-wy",
-      "why": "2024-03-16: within 2 days of one of its closure days"
-    },
-    {
-      "timestamp": "20221202163728",
-      "url": "https://www.landerschools.org/",
-      "station": "apptegy-fremont-1-wy",
-      "why": "2022-12-03: within 2 days of one of its closure days"
-    },
-    {
-      "timestamp": "20240315233639",
-      "url": "https://www.landerschools.org/",
-      "station": "apptegy-fremont-1-wy",
-      "why": "2024-03-16: within 2 days of one of its closure days"
-    },
-    {
-      "timestamp": "20240524115917",
-      "url": "https://www.landerschools.org/",
-      "station": "apptegy-fremont-1-wy",
-      "why": "2024-05-24: within 2 days of one of its closure days"
-    },
-    {
-      "timestamp": "20221204075223",
-      "url": "https://www.landerschools.org/",
-      "station": "apptegy-fremont-1-wy",
-      "why": "2022-12-04: within 2 days of one of its closure days"
-    },
-    {
-      "timestamp": "20240315104940",
-      "url": "https://www.landerschools.org/",
-      "station": "apptegy-fremont-1-wy",
-      "why": "2024-03-15: within 2 days of one of its closure days"
-    },
-    {
-      "timestamp": "20221125230038",
-      "url": "https://www.landerschools.org/",
-      "station": "apptegy-fremont-1-wy",
-      "why": "2022-11-26: within 2 days of one of its closure days"
-    },
-    {
-      "timestamp": "20240315072624",
-      "url": "https://www.landerschools.org/",
-      "station": "apptegy-fremont-1-wy",
-      "why": "2024-03-15: within 2 days of one of its closure days"
-    },
-    {
-      "timestamp": "20221110230127",
-      "url": "https://www.landerschools.org/",
-      "station": "apptegy-fremont-1-wy",
-      "why": "2022-11-11: within 2 days of one of its closure days"
-    },
-    {
-      "timestamp": "20221129135023",
-      "url": "https://www.landerschools.org/",
-      "station": "apptegy-fremont-1-wy",
-      "why": "2022-11-29: within 2 days of one of its closure days"
-    },
-    {
-      "timestamp": "20221111110156",
-      "url": "https://www.landerschools.org/",
-      "station": "apptegy-fremont-1-wy",
-      "why": "2022-11-11: within 2 days of one of its closure days"
-    },
-    {
-      "timestamp": "20221129041246",
-      "url": "https://www.landerschools.org/",
-      "station": "apptegy-fremont-1-wy",
-      "why": "2022-11-29: within 2 days of one of its closure days"
-    },
-    {
-      "timestamp": "20221127110305",
-      "url": "https://www.landerschools.org/",
-      "station": "apptegy-fremont-1-wy",
-      "why": "2022-11-27: within 2 days of one of its closure days"
-    },
-    {
-      "timestamp": "20221126110014",
-      "url": "https://www.landerschools.org/",
-      "station": "apptegy-fremont-1-wy",
-      "why": "2022-11-26: within 2 days of one of its closure days"
-    },
-    {
-      "timestamp": "20221126230020",
-      "url": "https://www.landerschools.org/",
-      "station": "apptegy-fremont-1-wy",
-      "why": "2022-11-27: within 2 days of one of its closure days"
-    },
-    {
-      "timestamp": "20221129230118",
-      "url": "https://www.landerschools.org/",
-      "station": "apptegy-fremont-1-wy",
-      "why": "2022-11-30: within 2 days of one of its closure days"
-    },
-    {
-      "timestamp": "20221110122545",
-      "url": "https://www.landerschools.org/",
-      "station": "apptegy-fremont-1-wy",
-      "why": "2022-11-10: within 2 days of one of its closure days"
-    },
-    {
-      "timestamp": "20221130132908",
-      "url": "https://www.landerschools.org/",
-      "station": "apptegy-fremont-1-wy",
-      "why": "2022-11-30: within 2 days of one of its closure days"
-    },
-    {
-      "timestamp": "20191210180723",
-      "url": "https://www.landerschools.org/",
-      "station": "apptegy-fremont-1-wy",
-      "why": "2019-12-11: within 2 days of one of its closure days"
-    },
-    {
-      "timestamp": "20190921173318",
-      "url": "https://www.landerschools.org/",
-      "station": "apptegy-fremont-1-wy",
-      "why": "2019-09-22: within 2 days of one of its closure days"
-    },
-    {
-      "timestamp": "20230328183551",
-      "url": "https://www.landerschools.org/",
-      "station": "apptegy-fremont-1-wy",
-      "why": "2023-03-29: within 2 days of one of its closure days"
-    },
-    {
-      "timestamp": "20191122203703",
-      "url": "https://www.landerschools.org/",
-      "station": "apptegy-fremont-1-wy",
-      "why": "2019-11-23: within 2 days of one of its closure days"
-    },
-    {
-      "timestamp": "20191122065527",
-      "url": "https://www.landerschools.org/",
-      "station": "apptegy-fremont-1-wy",
-      "why": "2019-11-22: within 2 days of one of its closure days"
-    },
-    {
-      "timestamp": "20200110042246",
-      "url": "https://www.landerschools.org/",
-      "station": "apptegy-fremont-1-wy",
-      "why": "2020-01-10: within 2 days of one of its closure days"
-    },
-    {
-      "timestamp": "20220101203123",
-      "url": "https://www.townsend.k12.mt.us/",
-      "station": "apptegy-townsend-mt",
+      "timestamp": "20220101193617",
+      "url": "http://www.darby.k12.mt.us/",
+      "station": "apptegy-darby-mt",
       "why": "2022-01-02: within 2 days of one of its closure days"
     },
     {
-      "timestamp": "20221221115727",
-      "url": "https://www.wsh1.k12.wy.us/",
-      "station": "apptegy-washakie-1-wy",
-      "why": "storm day 2022-12-21 (market score 0.50)"
+      "timestamp": "20220201205059",
+      "url": "http://www.darby.k12.mt.us/",
+      "station": "apptegy-darby-mt",
+      "why": "2022-02-02: within 2 days of one of its closure days"
     },
     {
-      "timestamp": "20221222023151",
-      "url": "https://www.wsh1.k12.wy.us/",
-      "station": "apptegy-washakie-1-wy",
+      "timestamp": "20210105221203",
+      "url": "https://www.darby.k12.mt.us/",
+      "station": "apptegy-darby-mt",
+      "why": "2021-01-06: within 2 days of one of its closure days"
+    },
+    {
+      "timestamp": "20240224221808",
+      "url": "https://www.sublette9.org/",
+      "station": "edlio-sublette-9-wy",
+      "why": "2024-02-25: within 2 days of one of its closure days"
+    },
+    {
+      "timestamp": "20230331024519",
+      "url": "https://www.sublette9.org/",
+      "station": "edlio-sublette-9-wy",
+      "why": "2023-03-31: within 2 days of one of its closure days"
+    },
+    {
+      "timestamp": "20190922021449",
+      "url": "https://www.sublette9.org/",
+      "station": "edlio-sublette-9-wy",
+      "why": "2019-09-22: within 2 days of one of its closure days"
+    },
+    {
+      "timestamp": "20181114121534",
+      "url": "https://www.glendiveschools.com/",
+      "station": "apptegy-glendive-mt",
+      "why": "2018-11-14: within 2 days of one of its closure days"
+    },
+    {
+      "timestamp": "20181114163417",
+      "url": "https://www.glendiveschools.com/",
+      "station": "apptegy-glendive-mt",
+      "why": "2018-11-15: within 2 days of one of its closure days"
+    },
+    {
+      "timestamp": "20181114174953",
+      "url": "https://www.glendiveschools.com/",
+      "station": "apptegy-glendive-mt",
+      "why": "2018-11-15: within 2 days of one of its closure days"
+    },
+    {
+      "timestamp": "20200103020025",
+      "url": "https://www.hotsprings1.org/",
+      "station": "edlio-hot-springs-1-wy",
+      "why": "2020-01-03: within 2 days of one of its closure days"
+    },
+    {
+      "timestamp": "20190921011939",
+      "url": "https://www.hotsprings1.org/",
+      "station": "edlio-hot-springs-1-wy",
+      "why": "2019-09-21: within 2 days of one of its closure days"
+    },
+    {
+      "timestamp": "20181114075425",
+      "url": "https://www.hotsprings1.org/",
+      "station": "edlio-hot-springs-1-wy",
+      "why": "2018-11-14: within 2 days of one of its closure days"
+    },
+    {
+      "timestamp": "20230318053941",
+      "url": "https://www.uintah.net/",
+      "station": "apptegy-uintah-ut",
+      "why": "2023-03-18: within 2 days of one of its closure days"
+    },
+    {
+      "timestamp": "20211206182755",
+      "url": "https://www.uintah.net/",
+      "station": "apptegy-uintah-ut",
+      "why": "2021-12-07: within 2 days of one of its closure days"
+    },
+    {
+      "timestamp": "20220302203226",
+      "url": "https://www.uintah.net/",
+      "station": "apptegy-uintah-ut",
+      "why": "2022-03-03: within 2 days of one of its closure days"
+    },
+    {
+      "timestamp": "20221108233846",
+      "url": "https://www.hemetusd.org/",
+      "station": "apptegy-hemet-ca",
+      "why": "storm day 2022-11-09 (market score 1.00)"
+    },
+    {
+      "timestamp": "20221109114957",
+      "url": "https://www.hemetusd.org/",
+      "station": "apptegy-hemet-ca",
+      "why": "storm day 2022-11-09 (market score 1.00)"
+    },
+    {
+      "timestamp": "20250313121206",
+      "url": "https://www.hemetusd.org/",
+      "station": "apptegy-hemet-ca",
+      "why": "storm day 2025-03-13 (market score 1.00)"
+    },
+    {
+      "timestamp": "20240221111509",
+      "url": "https://www.cvusd.us/",
+      "station": "smartsites-coachella-valley-ca",
+      "why": "storm day 2024-02-21 (market score 0.12)"
+    },
+    {
+      "timestamp": "20240307030045",
+      "url": "https://www.cvusd.us/",
+      "station": "smartsites-coachella-valley-ca",
+      "why": "storm day 2024-03-07 (market score 0.12)"
+    },
+    {
+      "timestamp": "20251119100636",
+      "url": "https://www.cvusd.us/",
+      "station": "smartsites-coachella-valley-ca",
+      "why": "2025-11-19: within 2 days of one of its closure days"
+    },
+    {
+      "timestamp": "20230106131739",
+      "url": "http://wsd.net/",
+      "station": "apptegy-weber-ut",
+      "why": "storm day 2023-01-06 (market score 1.00)"
+    },
+    {
+      "timestamp": "20221221014630",
+      "url": "http://wsd.net/",
+      "station": "apptegy-weber-ut",
+      "why": "storm day 2022-12-21 (market score 1.00)"
+    },
+    {
+      "timestamp": "20221230131649",
+      "url": "http://wsd.net/",
+      "station": "apptegy-weber-ut",
+      "why": "storm day 2022-12-30 (market score 1.00)"
+    },
+    {
+      "timestamp": "20221230011714",
+      "url": "http://wsd.net/",
+      "station": "apptegy-weber-ut",
+      "why": "storm day 2022-12-30 (market score 1.00)"
+    },
+    {
+      "timestamp": "20221221131750",
+      "url": "http://wsd.net/",
+      "station": "apptegy-weber-ut",
+      "why": "storm day 2022-12-21 (market score 1.00)"
+    },
+    {
+      "timestamp": "20221108132011",
+      "url": "http://wsd.net/",
+      "station": "apptegy-weber-ut",
+      "why": "storm day 2022-11-08 (market score 1.00)"
+    },
+    {
+      "timestamp": "20221109131958",
+      "url": "http://wsd.net/",
+      "station": "apptegy-weber-ut",
+      "why": "storm day 2022-11-09 (market score 1.00)"
+    },
+    {
+      "timestamp": "20221211225858",
+      "url": "http://wsd.net/",
+      "station": "apptegy-weber-ut",
+      "why": "storm day 2022-12-12 (market score 1.00)"
+    },
+    {
+      "timestamp": "20221212052146",
+      "url": "http://wsd.net/",
+      "station": "apptegy-weber-ut",
+      "why": "storm day 2022-12-12 (market score 1.00)"
+    },
+    {
+      "timestamp": "20221212143915",
+      "url": "http://wsd.net/",
+      "station": "apptegy-weber-ut",
+      "why": "storm day 2022-12-12 (market score 1.00)"
+    },
+    {
+      "timestamp": "20221220170944",
+      "url": "http://wsd.net/",
+      "station": "apptegy-weber-ut",
+      "why": "storm day 2022-12-21 (market score 1.00)"
+    },
+    {
+      "timestamp": "20221222121613",
+      "url": "http://wsd.net/",
+      "station": "apptegy-weber-ut",
       "why": "storm day 2022-12-22 (market score 0.50)"
     },
     {
-      "timestamp": "20221221162905",
-      "url": "https://www.wsh1.k12.wy.us/",
-      "station": "apptegy-washakie-1-wy",
+      "timestamp": "20221222050534",
+      "url": "http://wsd.net/",
+      "station": "apptegy-weber-ut",
       "why": "storm day 2022-12-22 (market score 0.50)"
     },
     {
-      "timestamp": "20221103003217",
-      "url": "https://www.wsh1.k12.wy.us/",
-      "station": "apptegy-washakie-1-wy",
-      "why": "storm day 2022-11-03 (market score 0.25)"
+      "timestamp": "20221222065000",
+      "url": "http://wsd.net/",
+      "station": "apptegy-weber-ut",
+      "why": "storm day 2022-12-22 (market score 0.50)"
     },
     {
-      "timestamp": "20221024011211",
-      "url": "https://www.wsh1.k12.wy.us/",
-      "station": "apptegy-washakie-1-wy",
-      "why": "storm day 2022-10-24 (market score 0.25)"
+      "timestamp": "20221222131707",
+      "url": "http://wsd.net/",
+      "station": "apptegy-weber-ut",
+      "why": "storm day 2022-12-22 (market score 0.50)"
     },
     {
-      "timestamp": "20230321185621",
-      "url": "https://www.wsh1.k12.wy.us/",
-      "station": "apptegy-washakie-1-wy",
-      "why": "storm day 2023-03-22 (market score 0.25)"
+      "timestamp": "20221222011750",
+      "url": "http://wsd.net/",
+      "station": "apptegy-weber-ut",
+      "why": "storm day 2022-12-22 (market score 0.50)"
     },
     {
-      "timestamp": "20230321191058",
-      "url": "https://www.wsh1.k12.wy.us/",
-      "station": "apptegy-washakie-1-wy",
-      "why": "storm day 2023-03-22 (market score 0.25)"
+      "timestamp": "20221221165638",
+      "url": "http://wsd.net/",
+      "station": "apptegy-weber-ut",
+      "why": "storm day 2022-12-22 (market score 0.50)"
     },
     {
-      "timestamp": "20230322072528",
-      "url": "https://www.wsh1.k12.wy.us/",
-      "station": "apptegy-washakie-1-wy",
-      "why": "storm day 2023-03-22 (market score 0.25)"
+      "timestamp": "20221221232632",
+      "url": "http://wsd.net/",
+      "station": "apptegy-weber-ut",
+      "why": "storm day 2022-12-22 (market score 0.50)"
     },
     {
-      "timestamp": "20220216105452",
-      "url": "https://www.wsh1.k12.wy.us/",
-      "station": "apptegy-washakie-1-wy",
-      "why": "storm day 2022-02-16 (market score 0.25)"
+      "timestamp": "20230130012311",
+      "url": "http://wsd.net/",
+      "station": "apptegy-weber-ut",
+      "why": "storm day 2023-01-30 (market score 0.50)"
     },
     {
-      "timestamp": "20220220235947",
-      "url": "https://www.wsh1.k12.wy.us/",
-      "station": "apptegy-washakie-1-wy",
-      "why": "storm day 2022-02-21 (market score 0.25)"
+      "timestamp": "20230130131710",
+      "url": "http://wsd.net/",
+      "station": "apptegy-weber-ut",
+      "why": "storm day 2023-01-30 (market score 0.50)"
     },
     {
-      "timestamp": "20191119231237",
-      "url": "https://wsh1.k12.wy.us/",
-      "station": "apptegy-washakie-1-wy",
-      "why": "storm day 2019-11-20 (market score 0.25)"
+      "timestamp": "20230131133348",
+      "url": "http://wsd.net/",
+      "station": "apptegy-weber-ut",
+      "why": "storm day 2023-01-31 (market score 0.50)"
     },
     {
-      "timestamp": "20210204190807",
-      "url": "https://www.wsh1.k12.wy.us/",
-      "station": "apptegy-washakie-1-wy",
-      "why": "storm day 2021-02-05 (market score 0.25)"
+      "timestamp": "20230131033005",
+      "url": "http://wsd.net/",
+      "station": "apptegy-weber-ut",
+      "why": "storm day 2023-01-31 (market score 0.50)"
     },
     {
-      "timestamp": "20220105001344",
-      "url": "https://www.wsh1.k12.wy.us/",
-      "station": "apptegy-washakie-1-wy",
-      "why": "storm day 2022-01-05 (market score 0.25)"
+      "timestamp": "20221128190643",
+      "url": "http://wsd.net/",
+      "station": "apptegy-weber-ut",
+      "why": "storm day 2022-11-29 (market score 0.25)"
     },
     {
-      "timestamp": "20220105120915",
-      "url": "https://www.wsh1.k12.wy.us/",
-      "station": "apptegy-washakie-1-wy",
-      "why": "storm day 2022-01-05 (market score 0.25)"
+      "timestamp": "20221227132427",
+      "url": "http://wsd.net/",
+      "station": "apptegy-weber-ut",
+      "why": "storm day 2022-12-27 (market score 0.25)"
     },
     {
-      "timestamp": "20190505195517",
-      "url": "https://www.wsh1.k12.wy.us/",
-      "station": "apptegy-washakie-1-wy",
-      "why": "2019-05-06: within 2 days of one of its closure days"
+      "timestamp": "20221227053715",
+      "url": "http://wsd.net/",
+      "station": "apptegy-weber-ut",
+      "why": "storm day 2022-12-27 (market score 0.25)"
     },
     {
-      "timestamp": "20230129000323",
-      "url": "https://www.wsh1.k12.wy.us/",
-      "station": "apptegy-washakie-1-wy",
-      "why": "2023-01-29: within 2 days of one of its closure days"
+      "timestamp": "20221228011915",
+      "url": "http://wsd.net/",
+      "station": "apptegy-weber-ut",
+      "why": "storm day 2022-12-28 (market score 0.25)"
     },
     {
-      "timestamp": "20170416231437",
-      "url": "http://www.wsh1.k12.wy.us/",
-      "station": "apptegy-washakie-1-wy",
-      "why": "2017-04-17: within 2 days of one of its closure days"
+      "timestamp": "20230110011634",
+      "url": "http://wsd.net/",
+      "station": "apptegy-weber-ut",
+      "why": "storm day 2023-01-10 (market score 0.25)"
     },
     {
-      "timestamp": "20230401230211",
-      "url": "https://wsh1.k12.wy.us/",
-      "station": "apptegy-washakie-1-wy",
-      "why": "2023-04-02: within 2 days of one of its closure days"
+      "timestamp": "20230111131655",
+      "url": "http://wsd.net/",
+      "station": "apptegy-weber-ut",
+      "why": "storm day 2023-01-11 (market score 0.25)"
     },
     {
-      "timestamp": "20230128150850",
-      "url": "https://www.wsh1.k12.wy.us/",
-      "station": "apptegy-washakie-1-wy",
-      "why": "2023-01-28: within 2 days of one of its closure days"
+      "timestamp": "20230109131650",
+      "url": "http://wsd.net/",
+      "station": "apptegy-weber-ut",
+      "why": "storm day 2023-01-09 (market score 0.25)"
     },
     {
-      "timestamp": "20230129020434",
-      "url": "https://www.wsh1.k12.wy.us/",
-      "station": "apptegy-washakie-1-wy",
-      "why": "2023-01-29: within 2 days of one of its closure days"
+      "timestamp": "20230109020625",
+      "url": "http://wsd.net/",
+      "station": "apptegy-weber-ut",
+      "why": "storm day 2023-01-09 (market score 0.25)"
     },
     {
-      "timestamp": "20230128101921",
-      "url": "https://www.wsh1.k12.wy.us/",
-      "station": "apptegy-washakie-1-wy",
-      "why": "2023-01-28: within 2 days of one of its closure days"
+      "timestamp": "20230117011712",
+      "url": "http://wsd.net/",
+      "station": "apptegy-weber-ut",
+      "why": "storm day 2023-01-17 (market score 0.25)"
     },
     {
-      "timestamp": "20230122235757",
-      "url": "https://www.wsh1.k12.wy.us/",
-      "station": "apptegy-washakie-1-wy",
-      "why": "2023-01-23: within 2 days of one of its closure days"
+      "timestamp": "20221129014511",
+      "url": "http://wsd.net/",
+      "station": "apptegy-weber-ut",
+      "why": "storm day 2022-11-29 (market score 0.25)"
     },
     {
-      "timestamp": "20230103235718",
-      "url": "https://www.wsh1.k12.wy.us/",
-      "station": "apptegy-washakie-1-wy",
-      "why": "2023-01-04: within 2 days of one of its closure days"
+      "timestamp": "20221204203435",
+      "url": "http://wsd.net/",
+      "station": "apptegy-weber-ut",
+      "why": "storm day 2022-12-05 (market score 0.25)"
     },
     {
-      "timestamp": "20230103155725",
-      "url": "https://www.wsh1.k12.wy.us/",
-      "station": "apptegy-washakie-1-wy",
-      "why": "2023-01-03: within 2 days of one of its closure days"
+      "timestamp": "20230117131702",
+      "url": "http://wsd.net/",
+      "station": "apptegy-weber-ut",
+      "why": "storm day 2023-01-17 (market score 0.25)"
     },
     {
-      "timestamp": "20221225002341",
-      "url": "https://www.wsh1.k12.wy.us/",
-      "station": "apptegy-washakie-1-wy",
-      "why": "2022-12-25: within 2 days of one of its closure days"
+      "timestamp": "20221205150640",
+      "url": "http://wsd.net/",
+      "station": "apptegy-weber-ut",
+      "why": "storm day 2022-12-05 (market score 0.25)"
     },
     {
-      "timestamp": "20221223235716",
-      "url": "https://www.wsh1.k12.wy.us/",
-      "station": "apptegy-washakie-1-wy",
-      "why": "2022-12-24: within 2 days of one of its closure days"
+      "timestamp": "20221209120710",
+      "url": "http://wsd.net/",
+      "station": "apptegy-weber-ut",
+      "why": "storm day 2022-12-09 (market score 0.25)"
     },
     {
-      "timestamp": "20221230235829",
-      "url": "https://www.wsh1.k12.wy.us/",
-      "station": "apptegy-washakie-1-wy",
+      "timestamp": "20221228135448",
+      "url": "http://wsd.net/",
+      "station": "apptegy-weber-ut",
+      "why": "storm day 2022-12-28 (market score 0.25)"
+    },
+    {
+      "timestamp": "20221227011832",
+      "url": "http://wsd.net/",
+      "station": "apptegy-weber-ut",
+      "why": "storm day 2022-12-27 (market score 0.25)"
+    },
+    {
+      "timestamp": "20230110135313",
+      "url": "http://wsd.net/",
+      "station": "apptegy-weber-ut",
+      "why": "storm day 2023-01-10 (market score 0.25)"
+    },
+    {
+      "timestamp": "20230111011624",
+      "url": "http://wsd.net/",
+      "station": "apptegy-weber-ut",
+      "why": "storm day 2023-01-11 (market score 0.25)"
+    },
+    {
+      "timestamp": "20221128134942",
+      "url": "http://wsd.net/",
+      "station": "apptegy-weber-ut",
+      "why": "storm day 2022-11-28 (market score 0.25)"
+    },
+    {
+      "timestamp": "20221129150609",
+      "url": "http://wsd.net/",
+      "station": "apptegy-weber-ut",
+      "why": "storm day 2022-11-29 (market score 0.25)"
+    },
+    {
+      "timestamp": "20221128012042",
+      "url": "http://wsd.net/",
+      "station": "apptegy-weber-ut",
+      "why": "storm day 2022-11-28 (market score 0.25)"
+    },
+    {
+      "timestamp": "20221205021503",
+      "url": "http://wsd.net/",
+      "station": "apptegy-weber-ut",
+      "why": "storm day 2022-12-05 (market score 0.25)"
+    },
+    {
+      "timestamp": "20230127011742",
+      "url": "http://wsd.net/",
+      "station": "apptegy-weber-ut",
+      "why": "storm day 2023-01-27 (market score 0.25)"
+    },
+    {
+      "timestamp": "20230127143110",
+      "url": "http://wsd.net/",
+      "station": "apptegy-weber-ut",
+      "why": "storm day 2023-01-27 (market score 0.25)"
+    },
+    {
+      "timestamp": "20240205162219",
+      "url": "https://wsd.net/",
+      "station": "apptegy-weber-ut",
+      "why": "2024-02-06: within 2 days of one of its closure days"
+    },
+    {
+      "timestamp": "20230307173630",
+      "url": "http://wsd.net/",
+      "station": "apptegy-weber-ut",
+      "why": "2023-03-08: within 2 days of one of its closure days"
+    },
+    {
+      "timestamp": "20230318053942",
+      "url": "http://gbutters@wsd.net/",
+      "station": "apptegy-weber-ut",
+      "why": "2023-03-18: within 2 days of one of its closure days"
+    },
+    {
+      "timestamp": "20221126202543",
+      "url": "https://wsd.net/",
+      "station": "apptegy-weber-ut",
+      "why": "2022-11-27: within 2 days of one of its closure days"
+    },
+    {
+      "timestamp": "20210123052706",
+      "url": "https://wsd.net/",
+      "station": "apptegy-weber-ut",
+      "why": "2021-01-23: within 2 days of one of its closure days"
+    },
+    {
+      "timestamp": "20230204030226",
+      "url": "http://wsd.net/",
+      "station": "apptegy-weber-ut",
+      "why": "2023-02-04: within 2 days of one of its closure days"
+    },
+    {
+      "timestamp": "20240222203227",
+      "url": "https://wsd.net/",
+      "station": "apptegy-weber-ut",
+      "why": "2024-02-23: within 2 days of one of its closure days"
+    },
+    {
+      "timestamp": "20240224051519",
+      "url": "https://wsd.net/",
+      "station": "apptegy-weber-ut",
+      "why": "2024-02-24: within 2 days of one of its closure days"
+    },
+    {
+      "timestamp": "20240224140014",
+      "url": "https://wsd.net/",
+      "station": "apptegy-weber-ut",
+      "why": "2024-02-24: within 2 days of one of its closure days"
+    },
+    {
+      "timestamp": "20240224133440",
+      "url": "http://wsd.net/",
+      "station": "apptegy-weber-ut",
+      "why": "2024-02-24: within 2 days of one of its closure days"
+    },
+    {
+      "timestamp": "20240224070642",
+      "url": "http://wsd.net/",
+      "station": "apptegy-weber-ut",
+      "why": "2024-02-24: within 2 days of one of its closure days"
+    },
+    {
+      "timestamp": "20231129154724",
+      "url": "http://wsd.net/",
+      "station": "apptegy-weber-ut",
+      "why": "2023-11-29: within 2 days of one of its closure days"
+    },
+    {
+      "timestamp": "20210127232427",
+      "url": "http://wsd.net/",
+      "station": "apptegy-weber-ut",
+      "why": "2021-01-28: within 2 days of one of its closure days"
+    },
+    {
+      "timestamp": "20221215170456",
+      "url": "https://wsd.net/",
+      "station": "apptegy-weber-ut",
+      "why": "2022-12-16: within 2 days of one of its closure days"
+    },
+    {
+      "timestamp": "20240228213923",
+      "url": "http://wsd.net/",
+      "station": "apptegy-weber-ut",
+      "why": "2024-02-29: within 2 days of one of its closure days"
+    },
+    {
+      "timestamp": "20231202153759",
+      "url": "https://wsd.net/",
+      "station": "apptegy-weber-ut",
+      "why": "2023-12-02: within 2 days of one of its closure days"
+    },
+    {
+      "timestamp": "20201218053319",
+      "url": "https://wsd.net/",
+      "station": "apptegy-weber-ut",
+      "why": "2020-12-18: within 2 days of one of its closure days"
+    },
+    {
+      "timestamp": "20231201204947",
+      "url": "https://wsd.net/",
+      "station": "apptegy-weber-ut",
+      "why": "2023-12-02: within 2 days of one of its closure days"
+    },
+    {
+      "timestamp": "20230125053506",
+      "url": "https://wsd.net/",
+      "station": "apptegy-weber-ut",
+      "why": "2023-01-25: within 2 days of one of its closure days"
+    },
+    {
+      "timestamp": "20211028003742",
+      "url": "http://wsd.net/",
+      "station": "apptegy-weber-ut",
+      "why": "2021-10-28: within 2 days of one of its closure days"
+    },
+    {
+      "timestamp": "20210427142320",
+      "url": "http://wsd.net/",
+      "station": "apptegy-weber-ut",
+      "why": "2021-04-27: within 2 days of one of its closure days"
+    },
+    {
+      "timestamp": "20211028151035",
+      "url": "http://wsd.net/",
+      "station": "apptegy-weber-ut",
+      "why": "2021-10-28: within 2 days of one of its closure days"
+    },
+    {
+      "timestamp": "20211231225039",
+      "url": "http://wsd.net/",
+      "station": "apptegy-weber-ut",
+      "why": "2022-01-01: within 2 days of one of its closure days"
+    },
+    {
+      "timestamp": "20221111131937",
+      "url": "http://wsd.net/",
+      "station": "apptegy-weber-ut",
+      "why": "2022-11-11: within 2 days of one of its closure days"
+    },
+    {
+      "timestamp": "20230101131717",
+      "url": "http://wsd.net/",
+      "station": "apptegy-weber-ut",
+      "why": "2023-01-01: within 2 days of one of its closure days"
+    },
+    {
+      "timestamp": "20230105131804",
+      "url": "http://wsd.net/",
+      "station": "apptegy-weber-ut",
+      "why": "2023-01-05: within 2 days of one of its closure days"
+    },
+    {
+      "timestamp": "20221220011819",
+      "url": "http://wsd.net/",
+      "station": "apptegy-weber-ut",
+      "why": "2022-12-20: within 2 days of one of its closure days"
+    },
+    {
+      "timestamp": "20221222173217",
+      "url": "http://wsd.net/",
+      "station": "apptegy-weber-ut",
+      "why": "2022-12-23: within 2 days of one of its closure days"
+    },
+    {
+      "timestamp": "20221229011802",
+      "url": "http://wsd.net/",
+      "station": "apptegy-weber-ut",
+      "why": "2022-12-29: within 2 days of one of its closure days"
+    },
+    {
+      "timestamp": "20221231035956",
+      "url": "http://wsd.net/",
+      "station": "apptegy-weber-ut",
       "why": "2022-12-31: within 2 days of one of its closure days"
     },
     {
-      "timestamp": "20221224023757",
-      "url": "https://www.wsh1.k12.wy.us/",
-      "station": "apptegy-washakie-1-wy",
+      "timestamp": "20221223203420",
+      "url": "http://wsd.net/",
+      "station": "apptegy-weber-ut",
       "why": "2022-12-24: within 2 days of one of its closure days"
     },
     {
-      "timestamp": "20221219235733",
-      "url": "https://www.wsh1.k12.wy.us/",
-      "station": "apptegy-washakie-1-wy",
-      "why": "2022-12-20: within 2 days of one of its closure days"
+      "timestamp": "20221225131752",
+      "url": "http://wsd.net/",
+      "station": "apptegy-weber-ut",
+      "why": "2022-12-25: within 2 days of one of its closure days"
     },
     {
-      "timestamp": "20221223205614",
-      "url": "https://www.wsh1.k12.wy.us/",
-      "station": "apptegy-washakie-1-wy",
+      "timestamp": "20221231131641",
+      "url": "http://wsd.net/",
+      "station": "apptegy-weber-ut",
+      "why": "2022-12-31: within 2 days of one of its closure days"
+    },
+    {
+      "timestamp": "20221229131635",
+      "url": "http://wsd.net/",
+      "station": "apptegy-weber-ut",
+      "why": "2022-12-29: within 2 days of one of its closure days"
+    },
+    {
+      "timestamp": "20230101014907",
+      "url": "http://wsd.net/",
+      "station": "apptegy-weber-ut",
+      "why": "2023-01-01: within 2 days of one of its closure days"
+    },
+    {
+      "timestamp": "20221225011701",
+      "url": "http://wsd.net/",
+      "station": "apptegy-weber-ut",
+      "why": "2022-12-25: within 2 days of one of its closure days"
+    },
+    {
+      "timestamp": "20221224131632",
+      "url": "http://wsd.net/",
+      "station": "apptegy-weber-ut",
       "why": "2022-12-24: within 2 days of one of its closure days"
     },
     {
-      "timestamp": "20221220040241",
-      "url": "https://www.wsh1.k12.wy.us/",
-      "station": "apptegy-washakie-1-wy",
+      "timestamp": "20230119131630",
+      "url": "http://wsd.net/",
+      "station": "apptegy-weber-ut",
+      "why": "2023-01-19: within 2 days of one of its closure days"
+    },
+    {
+      "timestamp": "20221226011712",
+      "url": "http://wsd.net/",
+      "station": "apptegy-weber-ut",
+      "why": "2022-12-26: within 2 days of one of its closure days"
+    },
+    {
+      "timestamp": "20221207084425",
+      "url": "http://wsd.net/",
+      "station": "apptegy-weber-ut",
+      "why": "2022-12-07: within 2 days of one of its closure days"
+    },
+    {
+      "timestamp": "20221127131901",
+      "url": "http://wsd.net/",
+      "station": "apptegy-weber-ut",
+      "why": "2022-11-27: within 2 days of one of its closure days"
+    },
+    {
+      "timestamp": "20221106132006",
+      "url": "http://wsd.net/",
+      "station": "apptegy-weber-ut",
+      "why": "2022-11-06: within 2 days of one of its closure days"
+    },
+    {
+      "timestamp": "20230112011738",
+      "url": "http://wsd.net/",
+      "station": "apptegy-weber-ut",
+      "why": "2023-01-12: within 2 days of one of its closure days"
+    },
+    {
+      "timestamp": "20230115131632",
+      "url": "http://wsd.net/",
+      "station": "apptegy-weber-ut",
+      "why": "2023-01-15: within 2 days of one of its closure days"
+    },
+    {
+      "timestamp": "20230113131714",
+      "url": "http://wsd.net/",
+      "station": "apptegy-weber-ut",
+      "why": "2023-01-13: within 2 days of one of its closure days"
+    },
+    {
+      "timestamp": "20230108131715",
+      "url": "http://wsd.net/",
+      "station": "apptegy-weber-ut",
+      "why": "2023-01-08: within 2 days of one of its closure days"
+    },
+    {
+      "timestamp": "20221112045627",
+      "url": "http://wsd.net/",
+      "station": "apptegy-weber-ut",
+      "why": "2022-11-12: within 2 days of one of its closure days"
+    },
+    {
+      "timestamp": "20230115011721",
+      "url": "http://wsd.net/",
+      "station": "apptegy-weber-ut",
+      "why": "2023-01-15: within 2 days of one of its closure days"
+    },
+    {
+      "timestamp": "20230107015550",
+      "url": "http://wsd.net/",
+      "station": "apptegy-weber-ut",
+      "why": "2023-01-07: within 2 days of one of its closure days"
+    },
+    {
+      "timestamp": "20230113012116",
+      "url": "http://wsd.net/",
+      "station": "apptegy-weber-ut",
+      "why": "2023-01-13: within 2 days of one of its closure days"
+    },
+    {
+      "timestamp": "20221204062336",
+      "url": "http://wsd.net/",
+      "station": "apptegy-weber-ut",
+      "why": "2022-12-04: within 2 days of one of its closure days"
+    },
+    {
+      "timestamp": "20230116131724",
+      "url": "http://wsd.net/",
+      "station": "apptegy-weber-ut",
+      "why": "2023-01-16: within 2 days of one of its closure days"
+    },
+    {
+      "timestamp": "20221202194433",
+      "url": "http://wsd.net/",
+      "station": "apptegy-weber-ut",
+      "why": "2022-12-03: within 2 days of one of its closure days"
+    },
+    {
+      "timestamp": "20221202171953",
+      "url": "http://wsd.net/",
+      "station": "apptegy-weber-ut",
+      "why": "2022-12-03: within 2 days of one of its closure days"
+    },
+    {
+      "timestamp": "20230107131732",
+      "url": "http://wsd.net/",
+      "station": "apptegy-weber-ut",
+      "why": "2023-01-07: within 2 days of one of its closure days"
+    },
+    {
+      "timestamp": "20230112131649",
+      "url": "http://wsd.net/",
+      "station": "apptegy-weber-ut",
+      "why": "2023-01-12: within 2 days of one of its closure days"
+    },
+    {
+      "timestamp": "20221207151700",
+      "url": "http://wsd.net/",
+      "station": "apptegy-weber-ut",
+      "why": "2022-12-07: within 2 days of one of its closure days"
+    },
+    {
+      "timestamp": "20230118021454",
+      "url": "http://wsd.net/",
+      "station": "apptegy-weber-ut",
+      "why": "2023-01-18: within 2 days of one of its closure days"
+    },
+    {
+      "timestamp": "20221127011842",
+      "url": "http://wsd.net/",
+      "station": "apptegy-weber-ut",
+      "why": "2022-11-27: within 2 days of one of its closure days"
+    },
+    {
+      "timestamp": "20230108011722",
+      "url": "http://wsd.net/",
+      "station": "apptegy-weber-ut",
+      "why": "2023-01-08: within 2 days of one of its closure days"
+    },
+    {
+      "timestamp": "20221126131840",
+      "url": "http://wsd.net/",
+      "station": "apptegy-weber-ut",
+      "why": "2022-11-26: within 2 days of one of its closure days"
+    },
+    {
+      "timestamp": "20221106011940",
+      "url": "http://wsd.net/",
+      "station": "apptegy-weber-ut",
+      "why": "2022-11-06: within 2 days of one of its closure days"
+    },
+    {
+      "timestamp": "20221101012800",
+      "url": "http://wsd.net/",
+      "station": "apptegy-weber-ut",
+      "why": "2022-11-01: within 2 days of one of its closure days"
+    },
+    {
+      "timestamp": "20221107131916",
+      "url": "http://wsd.net/",
+      "station": "apptegy-weber-ut",
+      "why": "2022-11-07: within 2 days of one of its closure days"
+    },
+    {
+      "timestamp": "20221103131914",
+      "url": "http://wsd.net/",
+      "station": "apptegy-weber-ut",
+      "why": "2022-11-03: within 2 days of one of its closure days"
+    },
+    {
+      "timestamp": "20221103011947",
+      "url": "http://wsd.net/",
+      "station": "apptegy-weber-ut",
+      "why": "2022-11-03: within 2 days of one of its closure days"
+    },
+    {
+      "timestamp": "20190212073902",
+      "url": "http://kmurphy@wsd.net/",
+      "station": "apptegy-weber-ut",
+      "why": "2019-02-12: within 2 days of one of its closure days"
+    },
+    {
+      "timestamp": "20190211163502",
+      "url": "http://kmurphy@wsd.net/",
+      "station": "apptegy-weber-ut",
+      "why": "2019-02-12: within 2 days of one of its closure days"
+    },
+    {
+      "timestamp": "20221031132019",
+      "url": "http://wsd.net/",
+      "station": "apptegy-weber-ut",
+      "why": "2022-10-31: within 2 days of one of its closure days"
+    },
+    {
+      "timestamp": "20231026160411",
+      "url": "http://wsd.net/",
+      "station": "apptegy-weber-ut",
+      "why": "2023-10-27: within 2 days of one of its closure days"
+    },
+    {
+      "timestamp": "20231027013144",
+      "url": "http://wsd.net/",
+      "station": "apptegy-weber-ut",
+      "why": "2023-10-27: within 2 days of one of its closure days"
+    },
+    {
+      "timestamp": "20221111012008",
+      "url": "http://wsd.net/",
+      "station": "apptegy-weber-ut",
+      "why": "2022-11-11: within 2 days of one of its closure days"
+    },
+    {
+      "timestamp": "20191222114802",
+      "url": "http://wsd.net:80/",
+      "station": "apptegy-weber-ut",
+      "why": "2019-12-22: within 2 days of one of its closure days"
+    },
+    {
+      "timestamp": "20230402060512",
+      "url": "https://wsd.net/",
+      "station": "apptegy-weber-ut",
+      "why": "2023-04-02: within 2 days of one of its closure days"
+    },
+    {
+      "timestamp": "20231024011708",
+      "url": "http://wsd.net/",
+      "station": "apptegy-weber-ut",
+      "why": "2023-10-24: within 2 days of one of its closure days"
+    },
+    {
+      "timestamp": "20241028155550",
+      "url": "http://wsd.net/",
+      "station": "apptegy-weber-ut",
+      "why": "2024-10-28: within 2 days of one of its closure days"
+    },
+    {
+      "timestamp": "20241028032034",
+      "url": "http://wsd.net/",
+      "station": "apptegy-weber-ut",
+      "why": "2024-10-28: within 2 days of one of its closure days"
+    },
+    {
+      "timestamp": "20241027033905",
+      "url": "http://wsd.net/",
+      "station": "apptegy-weber-ut",
+      "why": "2024-10-27: within 2 days of one of its closure days"
+    },
+    {
+      "timestamp": "20241027040455",
+      "url": "http://wsd.net/",
+      "station": "apptegy-weber-ut",
+      "why": "2024-10-27: within 2 days of one of its closure days"
+    },
+    {
+      "timestamp": "20221207191225",
+      "url": "http://wsd.net/",
+      "station": "apptegy-weber-ut",
+      "why": "2022-12-08: within 2 days of one of its closure days"
+    },
+    {
+      "timestamp": "20230316095130",
+      "url": "http://wsd.net/",
+      "station": "apptegy-weber-ut",
+      "why": "2023-03-16: within 2 days of one of its closure days"
+    },
+    {
+      "timestamp": "20221208052607",
+      "url": "http://wsd.net/",
+      "station": "apptegy-weber-ut",
+      "why": "2022-12-08: within 2 days of one of its closure days"
+    },
+    {
+      "timestamp": "20230328104501",
+      "url": "http://wsd.net/",
+      "station": "apptegy-weber-ut",
+      "why": "2023-03-28: within 2 days of one of its closure days"
+    },
+    {
+      "timestamp": "20230319081137",
+      "url": "http://wsd.net/",
+      "station": "apptegy-weber-ut",
+      "why": "2023-03-19: within 2 days of one of its closure days"
+    },
+    {
+      "timestamp": "20230104011750",
+      "url": "http://wsd.net/",
+      "station": "apptegy-weber-ut",
+      "why": "2023-01-04: within 2 days of one of its closure days"
+    },
+    {
+      "timestamp": "20221219201537",
+      "url": "http://wsd.net/",
+      "station": "apptegy-weber-ut",
       "why": "2022-12-20: within 2 days of one of its closure days"
     },
     {
-      "timestamp": "20221218184213",
-      "url": "https://www.wsh1.k12.wy.us/",
-      "station": "apptegy-washakie-1-wy",
+      "timestamp": "20230315215452",
+      "url": "http://wsd.net/",
+      "station": "apptegy-weber-ut",
+      "why": "2023-03-16: within 2 days of one of its closure days"
+    },
+    {
+      "timestamp": "20230315231202",
+      "url": "http://wsd.net/",
+      "station": "apptegy-weber-ut",
+      "why": "2023-03-16: within 2 days of one of its closure days"
+    },
+    {
+      "timestamp": "20230316011638",
+      "url": "http://wsd.net/",
+      "station": "apptegy-weber-ut",
+      "why": "2023-03-16: within 2 days of one of its closure days"
+    },
+    {
+      "timestamp": "20230105012405",
+      "url": "http://wsd.net/",
+      "station": "apptegy-weber-ut",
+      "why": "2023-01-05: within 2 days of one of its closure days"
+    },
+    {
+      "timestamp": "20230104131653",
+      "url": "http://wsd.net/",
+      "station": "apptegy-weber-ut",
+      "why": "2023-01-04: within 2 days of one of its closure days"
+    },
+    {
+      "timestamp": "20230315222105",
+      "url": "http://wsd.net/",
+      "station": "apptegy-weber-ut",
+      "why": "2023-03-16: within 2 days of one of its closure days"
+    },
+    {
+      "timestamp": "20231014054756",
+      "url": "https://wsd.net/",
+      "station": "apptegy-weber-ut",
+      "why": "2023-10-14: within 2 days of one of its closure days"
+    },
+    {
+      "timestamp": "20231014034657",
+      "url": "http://wsd.net/",
+      "station": "apptegy-weber-ut",
+      "why": "2023-10-14: within 2 days of one of its closure days"
+    },
+    {
+      "timestamp": "20221024133800",
+      "url": "http://wsd.net/",
+      "station": "apptegy-weber-ut",
+      "why": "2022-10-24: within 2 days of one of its closure days"
+    },
+    {
+      "timestamp": "20221219062713",
+      "url": "http://wsd.net/",
+      "station": "apptegy-weber-ut",
       "why": "2022-12-19: within 2 days of one of its closure days"
     },
     {
-      "timestamp": "20220601024609",
-      "url": "https://www.wsh1.k12.wy.us/",
-      "station": "apptegy-washakie-1-wy",
-      "why": "2022-06-01: within 2 days of one of its closure days"
+      "timestamp": "20221223132916",
+      "url": "http://wsd.net/",
+      "station": "apptegy-weber-ut",
+      "why": "2022-12-23: within 2 days of one of its closure days"
     },
     {
-      "timestamp": "20220528235829",
-      "url": "https://www.wsh1.k12.wy.us/",
-      "station": "apptegy-washakie-1-wy",
-      "why": "2022-05-29: within 2 days of one of its closure days"
+      "timestamp": "20221024022034",
+      "url": "http://wsd.net/",
+      "station": "apptegy-weber-ut",
+      "why": "2022-10-24: within 2 days of one of its closure days"
     },
     {
-      "timestamp": "20221105013957",
-      "url": "https://www.wsh1.k12.wy.us/",
-      "station": "apptegy-washakie-1-wy",
-      "why": "2022-11-05: within 2 days of one of its closure days"
+      "timestamp": "20221218160405",
+      "url": "http://wsd.net/",
+      "station": "apptegy-weber-ut",
+      "why": "2022-12-19: within 2 days of one of its closure days"
     },
     {
-      "timestamp": "20220528003753",
-      "url": "https://www.wsh1.k12.wy.us/",
-      "station": "apptegy-washakie-1-wy",
-      "why": "2022-05-28: within 2 days of one of its closure days"
+      "timestamp": "20221219012141",
+      "url": "http://wsd.net/",
+      "station": "apptegy-weber-ut",
+      "why": "2022-12-19: within 2 days of one of its closure days"
     },
     {
-      "timestamp": "20220601003328",
-      "url": "https://www.wsh1.k12.wy.us/",
-      "station": "apptegy-washakie-1-wy",
-      "why": "2022-06-01: within 2 days of one of its closure days"
+      "timestamp": "20221223011717",
+      "url": "http://wsd.net/",
+      "station": "apptegy-weber-ut",
+      "why": "2022-12-23: within 2 days of one of its closure days"
     },
     {
-      "timestamp": "20220529120000",
-      "url": "https://www.wsh1.k12.wy.us/",
-      "station": "apptegy-washakie-1-wy",
-      "why": "2022-05-29: within 2 days of one of its closure days"
+      "timestamp": "20240125165540",
+      "url": "http://wsd.net/",
+      "station": "apptegy-weber-ut",
+      "why": "2024-01-26: within 2 days of one of its closure days"
     },
     {
-      "timestamp": "20221022235749",
-      "url": "https://www.wsh1.k12.wy.us/",
-      "station": "apptegy-washakie-1-wy",
-      "why": "2022-10-23: within 2 days of one of its closure days"
+      "timestamp": "20221224011629",
+      "url": "http://wsd.net/",
+      "station": "apptegy-weber-ut",
+      "why": "2022-12-24: within 2 days of one of its closure days"
     },
     {
-      "timestamp": "20220528123354",
-      "url": "https://www.wsh1.k12.wy.us/",
-      "station": "apptegy-washakie-1-wy",
-      "why": "2022-05-28: within 2 days of one of its closure days"
+      "timestamp": "20230308063922",
+      "url": "http://wsd.net/",
+      "station": "apptegy-weber-ut",
+      "why": "2023-03-08: within 2 days of one of its closure days"
     },
     {
-      "timestamp": "20221022020415",
-      "url": "https://www.wsh1.k12.wy.us/",
-      "station": "apptegy-washakie-1-wy",
-      "why": "2022-10-22: within 2 days of one of its closure days"
+      "timestamp": "20230308021042",
+      "url": "http://wsd.net/",
+      "station": "apptegy-weber-ut",
+      "why": "2023-03-08: within 2 days of one of its closure days"
     },
     {
-      "timestamp": "20221025235755",
-      "url": "https://www.wsh1.k12.wy.us/",
-      "station": "apptegy-washakie-1-wy",
-      "why": "2022-10-26: within 2 days of one of its closure days"
+      "timestamp": "20230116011655",
+      "url": "http://wsd.net/",
+      "station": "apptegy-weber-ut",
+      "why": "2023-01-16: within 2 days of one of its closure days"
     },
     {
-      "timestamp": "20221102115806",
-      "url": "https://www.wsh1.k12.wy.us/",
-      "station": "apptegy-washakie-1-wy",
-      "why": "2022-11-02: within 2 days of one of its closure days"
+      "timestamp": "20230119012053",
+      "url": "http://wsd.net/",
+      "station": "apptegy-weber-ut",
+      "why": "2023-01-19: within 2 days of one of its closure days"
     },
     {
-      "timestamp": "20221211154144",
-      "url": "https://www.wsh1.k12.wy.us/",
-      "station": "apptegy-washakie-1-wy",
-      "why": "2022-12-11: within 2 days of one of its closure days"
+      "timestamp": "20230313015156",
+      "url": "http://wsd.net/",
+      "station": "apptegy-weber-ut",
+      "why": "2023-03-13: within 2 days of one of its closure days"
     },
     {
-      "timestamp": "20221212150858",
-      "url": "https://www.wsh1.k12.wy.us/",
-      "station": "apptegy-washakie-1-wy",
-      "why": "2022-12-12: within 2 days of one of its closure days"
+      "timestamp": "20221220131820",
+      "url": "http://wsd.net/",
+      "station": "apptegy-weber-ut",
+      "why": "2022-12-20: within 2 days of one of its closure days"
     },
     {
-      "timestamp": "20230331235816",
-      "url": "https://www.wsh1.k12.wy.us/",
-      "station": "apptegy-washakie-1-wy",
-      "why": "2023-04-01: within 2 days of one of its closure days"
+      "timestamp": "20230118131833",
+      "url": "http://wsd.net/",
+      "station": "apptegy-weber-ut",
+      "why": "2023-01-18: within 2 days of one of its closure days"
     },
     {
-      "timestamp": "20230402120803",
-      "url": "https://www.wsh1.k12.wy.us/",
-      "station": "apptegy-washakie-1-wy",
-      "why": "2023-04-02: within 2 days of one of its closure days"
+      "timestamp": "20230311135054",
+      "url": "http://wsd.net/",
+      "station": "apptegy-weber-ut",
+      "why": "2023-03-11: within 2 days of one of its closure days"
     },
     {
-      "timestamp": "20230402015657",
-      "url": "https://www.wsh1.k12.wy.us/",
-      "station": "apptegy-washakie-1-wy",
-      "why": "2023-04-02: within 2 days of one of its closure days"
+      "timestamp": "20230312011637",
+      "url": "http://wsd.net/",
+      "station": "apptegy-weber-ut",
+      "why": "2023-03-12: within 2 days of one of its closure days"
     },
     {
-      "timestamp": "20230320235750",
-      "url": "https://www.wsh1.k12.wy.us/",
-      "station": "apptegy-washakie-1-wy",
-      "why": "2023-03-21: within 2 days of one of its closure days"
+      "timestamp": "20240126011721",
+      "url": "http://wsd.net/",
+      "station": "apptegy-weber-ut",
+      "why": "2024-01-26: within 2 days of one of its closure days"
     },
     {
-      "timestamp": "20230319170742",
-      "url": "https://www.wsh1.k12.wy.us/",
-      "station": "apptegy-washakie-1-wy",
-      "why": "2023-03-20: within 2 days of one of its closure days"
+      "timestamp": "20221130012034",
+      "url": "http://wsd.net/",
+      "station": "apptegy-weber-ut",
+      "why": "2022-11-30: within 2 days of one of its closure days"
     },
     {
-      "timestamp": "20230324083141",
-      "url": "https://www.wsh1.k12.wy.us/",
-      "station": "apptegy-washakie-1-wy",
-      "why": "2023-03-24: within 2 days of one of its closure days"
+      "timestamp": "20240126131803",
+      "url": "http://wsd.net/",
+      "station": "apptegy-weber-ut",
+      "why": "2024-01-26: within 2 days of one of its closure days"
     },
     {
-      "timestamp": "20230320025424",
-      "url": "https://www.wsh1.k12.wy.us/",
-      "station": "apptegy-washakie-1-wy",
-      "why": "2023-03-20: within 2 days of one of its closure days"
-    },
-    {
-      "timestamp": "20230320035219",
-      "url": "https://www.wsh1.k12.wy.us/",
-      "station": "apptegy-washakie-1-wy",
-      "why": "2023-03-20: within 2 days of one of its closure days"
-    },
-    {
-      "timestamp": "20230320050912",
-      "url": "https://www.wsh1.k12.wy.us/",
-      "station": "apptegy-washakie-1-wy",
-      "why": "2023-03-20: within 2 days of one of its closure days"
-    },
-    {
-      "timestamp": "20230321122209",
-      "url": "https://www.wsh1.k12.wy.us/",
-      "station": "apptegy-washakie-1-wy",
-      "why": "2023-03-21: within 2 days of one of its closure days"
-    },
-    {
-      "timestamp": "20230320011611",
-      "url": "https://www.wsh1.k12.wy.us/",
-      "station": "apptegy-washakie-1-wy",
-      "why": "2023-03-20: within 2 days of one of its closure days"
-    },
-    {
-      "timestamp": "20230320121046",
-      "url": "https://www.wsh1.k12.wy.us/",
-      "station": "apptegy-washakie-1-wy",
-      "why": "2023-03-20: within 2 days of one of its closure days"
-    },
-    {
-      "timestamp": "20230405180146",
-      "url": "https://www.wsh1.k12.wy.us/",
-      "station": "apptegy-washakie-1-wy",
-      "why": "2023-04-06: within 2 days of one of its closure days"
-    },
-    {
-      "timestamp": "20230406123714",
-      "url": "https://www.wsh1.k12.wy.us/",
-      "station": "apptegy-washakie-1-wy",
-      "why": "2023-04-06: within 2 days of one of its closure days"
-    },
-    {
-      "timestamp": "20230320005553",
-      "url": "https://www.wsh1.k12.wy.us/",
-      "station": "apptegy-washakie-1-wy",
-      "why": "2023-03-20: within 2 days of one of its closure days"
-    },
-    {
-      "timestamp": "20230424233940",
-      "url": "https://www.wsh1.k12.wy.us/",
-      "station": "apptegy-washakie-1-wy",
-      "why": "2023-04-25: within 2 days of one of its closure days"
-    },
-    {
-      "timestamp": "20230426001512",
-      "url": "https://www.wsh1.k12.wy.us/",
-      "station": "apptegy-washakie-1-wy",
-      "why": "2023-04-26: within 2 days of one of its closure days"
-    },
-    {
-      "timestamp": "20230421164615",
-      "url": "https://www.wsh1.k12.wy.us/",
-      "station": "apptegy-washakie-1-wy",
-      "why": "2023-04-22: within 2 days of one of its closure days"
-    },
-    {
-      "timestamp": "20230422115724",
-      "url": "https://www.wsh1.k12.wy.us/",
-      "station": "apptegy-washakie-1-wy",
-      "why": "2023-04-22: within 2 days of one of its closure days"
-    },
-    {
-      "timestamp": "20230425211900",
-      "url": "https://www.wsh1.k12.wy.us/",
-      "station": "apptegy-washakie-1-wy",
-      "why": "2023-04-26: within 2 days of one of its closure days"
-    },
-    {
-      "timestamp": "20230418192522",
-      "url": "https://www.wsh1.k12.wy.us/",
-      "station": "apptegy-washakie-1-wy",
-      "why": "2023-04-19: within 2 days of one of its closure days"
-    },
-    {
-      "timestamp": "20220410000449",
-      "url": "https://www.wsh1.k12.wy.us/",
-      "station": "apptegy-washakie-1-wy",
-      "why": "2022-04-10: within 2 days of one of its closure days"
-    },
-    {
-      "timestamp": "20220410115821",
-      "url": "https://www.wsh1.k12.wy.us/",
-      "station": "apptegy-washakie-1-wy",
-      "why": "2022-04-10: within 2 days of one of its closure days"
-    },
-    {
-      "timestamp": "20220411115819",
-      "url": "https://www.wsh1.k12.wy.us/",
-      "station": "apptegy-washakie-1-wy",
-      "why": "2022-04-11: within 2 days of one of its closure days"
-    },
-    {
-      "timestamp": "20220414000326",
-      "url": "https://www.wsh1.k12.wy.us/",
-      "station": "apptegy-washakie-1-wy",
-      "why": "2022-04-14: within 2 days of one of its closure days"
-    },
-    {
-      "timestamp": "20220412235844",
-      "url": "https://www.wsh1.k12.wy.us/",
-      "station": "apptegy-washakie-1-wy",
-      "why": "2022-04-13: within 2 days of one of its closure days"
-    },
-    {
-      "timestamp": "20220413120359",
-      "url": "https://www.wsh1.k12.wy.us/",
-      "station": "apptegy-washakie-1-wy",
-      "why": "2022-04-13: within 2 days of one of its closure days"
-    },
-    {
-      "timestamp": "20220216200909",
-      "url": "https://www.wsh1.k12.wy.us/",
-      "station": "apptegy-washakie-1-wy",
-      "why": "2022-02-17: within 2 days of one of its closure days"
-    },
-    {
-      "timestamp": "20220215115927",
-      "url": "https://www.wsh1.k12.wy.us/",
-      "station": "apptegy-washakie-1-wy",
-      "why": "2022-02-15: within 2 days of one of its closure days"
-    },
-    {
-      "timestamp": "20220222034900",
-      "url": "https://www.wsh1.k12.wy.us/",
-      "station": "apptegy-washakie-1-wy",
-      "why": "2022-02-22: within 2 days of one of its closure days"
-    },
-    {
-      "timestamp": "20220222130658",
-      "url": "https://www.wsh1.k12.wy.us/",
-      "station": "apptegy-washakie-1-wy",
-      "why": "2022-02-22: within 2 days of one of its closure days"
-    },
-    {
-      "timestamp": "20220219131119",
-      "url": "https://www.wsh1.k12.wy.us/",
-      "station": "apptegy-washakie-1-wy",
-      "why": "2022-02-19: within 2 days of one of its closure days"
-    },
-    {
-      "timestamp": "20220220120752",
-      "url": "https://www.wsh1.k12.wy.us/",
-      "station": "apptegy-washakie-1-wy",
-      "why": "2022-02-20: within 2 days of one of its closure days"
-    },
-    {
-      "timestamp": "20220221180939",
-      "url": "https://www.wsh1.k12.wy.us/",
-      "station": "apptegy-washakie-1-wy",
-      "why": "2022-02-22: within 2 days of one of its closure days"
-    },
-    {
-      "timestamp": "20220219030804",
-      "url": "https://www.wsh1.k12.wy.us/",
-      "station": "apptegy-washakie-1-wy",
-      "why": "2022-02-19: within 2 days of one of its closure days"
-    },
-    {
-      "timestamp": "20220218003131",
-      "url": "https://www.wsh1.k12.wy.us/",
-      "station": "apptegy-washakie-1-wy",
-      "why": "2022-02-18: within 2 days of one of its closure days"
-    },
-    {
-      "timestamp": "20220219235941",
-      "url": "https://www.wsh1.k12.wy.us/",
-      "station": "apptegy-washakie-1-wy",
-      "why": "2022-02-20: within 2 days of one of its closure days"
-    },
-    {
-      "timestamp": "20220214005542",
-      "url": "https://www.wsh1.k12.wy.us/",
-      "station": "apptegy-washakie-1-wy",
-      "why": "2022-02-14: within 2 days of one of its closure days"
-    },
-    {
-      "timestamp": "20210417061322",
-      "url": "https://www.wsh1.k12.wy.us/",
-      "station": "apptegy-washakie-1-wy",
-      "why": "2021-04-17: within 2 days of one of its closure days"
-    },
-    {
-      "timestamp": "20210413005338",
-      "url": "https://www.wsh1.k12.wy.us/",
-      "station": "apptegy-washakie-1-wy",
-      "why": "2021-04-13: within 2 days of one of its closure days"
-    },
-    {
-      "timestamp": "20220106140008",
-      "url": "https://www.wsh1.k12.wy.us/",
-      "station": "apptegy-washakie-1-wy",
-      "why": "2022-01-06: within 2 days of one of its closure days"
-    },
-    {
-      "timestamp": "20220104120000",
-      "url": "https://www.wsh1.k12.wy.us/",
-      "station": "apptegy-washakie-1-wy",
-      "why": "2022-01-04: within 2 days of one of its closure days"
-    },
-    {
-      "timestamp": "20220104000001",
-      "url": "https://www.wsh1.k12.wy.us/",
-      "station": "apptegy-washakie-1-wy",
-      "why": "2022-01-04: within 2 days of one of its closure days"
-    },
-    {
-      "timestamp": "20220106003349",
-      "url": "https://www.wsh1.k12.wy.us/",
-      "station": "apptegy-washakie-1-wy",
-      "why": "2022-01-06: within 2 days of one of its closure days"
-    },
-    {
-      "timestamp": "20220107042212",
-      "url": "https://www.wsh1.k12.wy.us/",
-      "station": "apptegy-washakie-1-wy",
-      "why": "2022-01-07: within 2 days of one of its closure days"
-    },
-    {
-      "timestamp": "20220107121237",
-      "url": "https://www.wsh1.k12.wy.us/",
-      "station": "apptegy-washakie-1-wy",
-      "why": "2022-01-07: within 2 days of one of its closure days"
-    },
-    {
-      "timestamp": "20220102235947",
-      "url": "https://www.wsh1.k12.wy.us/",
-      "station": "apptegy-washakie-1-wy",
-      "why": "2022-01-03: within 2 days of one of its closure days"
-    },
-    {
-      "timestamp": "20220103115927",
-      "url": "https://www.wsh1.k12.wy.us/",
-      "station": "apptegy-washakie-1-wy",
-      "why": "2022-01-03: within 2 days of one of its closure days"
+      "timestamp": "20221028131914",
+      "url": "http://wsd.net/",
+      "station": "apptegy-weber-ut",
+      "why": "2022-10-28: within 2 days of one of its closure days"
     }
   ]
 }
