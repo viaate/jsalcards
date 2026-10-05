@@ -99,6 +99,9 @@
     {#if chance.chart !== null}
       <div class="block">
         <ChanceChart chart={chance.chart} announces={chance.announces(new Date(now))} />
+        {#if chance.chartOf !== null}
+          <p class="whose">{chance.chartOf}</p>
+        {/if}
       </div>
     {/if}
   {/if}
@@ -159,6 +162,9 @@
       {/each}
       {#if view.noneNear !== null}
         <p class="none">{view.noneNear}</p>
+      {/if}
+      {#if view.unread !== null}
+        <p class="none">{view.unread}</p>
       {/if}
     {/if}
   </section>
@@ -246,12 +252,13 @@
     color: var(--text-1);
   }
 
-  /* Who decides, a row each, right under it; then what it leaves out. */
+  /* Who decides, a row each, right under it; then what it leaves out, and whose forecast the chart is. */
   .why {
     margin-top: var(--section);
   }
 
-  .left {
+  .left,
+  .whose {
     margin-top: var(--row);
     color: var(--text-2);
     text-wrap: pretty;

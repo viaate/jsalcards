@@ -63,10 +63,10 @@ function states(codes: readonly string[]): string {
     .join(', ');
 }
 
-/** "14 schools in 64111", "1 school in 64111", "No schools in 64111". */
-function schoolsIn(n: number, zip: string): string {
-  if (count(n) === '0') return `No schools in ${zip}`;
-  return `${count(n)} ${n === 1 ? 'school' : 'schools'} in ${zip}`;
+/** The ZIP code's own schools, under its code: "14 schools", "1 school", "No schools". */
+function schoolCount(n: number): string {
+  if (count(n) === '0') return 'No schools';
+  return `${count(n)} ${n === 1 ? 'school' : 'schools'}`;
 }
 
 /** The others taken in within `miles` of the ZIP code's point: "4 more within 2 miles". */
@@ -80,6 +80,12 @@ function noneNear(own: number, miles: number): string {
   return count(own) === '0'
     ? `None within ${count(miles)} miles`
     : `No others within ${count(miles)} miles`;
+}
+
+/** The schools of the area whose records cannot be read: "2 schools did not load". */
+function unread(n: number): string {
+  if (count(n) === '0') throw new RangeError('copy: no schools to name');
+  return `${count(n)} ${n === 1 ? 'school' : 'schools'} did not load`;
 }
 
 /** "9 closed": how many of the area's schools hold a status today. */
@@ -131,40 +137,56 @@ function schoolPosted(name: string, status: StatusKey, localDate: string): strin
   return `${chanceFormat.neighborPosted(name, status, localDate)}.`;
 }
 
-/** A posted status's share of no school, as a row of the sum sets it: "100%" or "0%". */
-function postedShare(status: StatusKey): string {
-  switch (checkKey(copy.status, status, 'status')) {
-    case 'closed':
-    case 'remote':
-      return '100%';
-    case 'delayed':
-    case 'earlyDismissal':
-      return '0%';
-  }
+/**
+ * What a row counts as when it is not a chance: no school ("100%", closed or
+ * remote) or school ("0%", a late start, an early dismissal or no weather threat).
+ */
+function share(noSchool: boolean): string {
+  return noSchool ? '100%' : '0%';
 }
 
-/** The schools the area's chance leaves out: "3 of the 14 schools here have no chance given for Tuesday and are left out." */
-function notCounted(n: number, of: number, localDate: string): string {
+/** Whose forecast the area's chart draws: "Kansas City 33’s forecast", "Shawnee Mission Public Schools’ forecast". */
+function forecastOf(name: string): string {
+  return `${name}${name.endsWith('s') ? '’' : '’s'} forecast`;
+}
+
+/**
+ * The schools the area's chance leaves out, `noChance` with no chance given
+ * for the day and `noCount` with one but no student count to weigh it by:
+ * "3 of the 14 schools here have no chance given for Tuesday and are left out."
+ */
+function notCounted(noChance: number, noCount: number, of: number, localDate: string): string {
+  const n = noChance + noCount;
   const on = chanceFormat.weekday(localDate);
-  if (n < 1 || n > of) throw new RangeError(`copy: ${String(n)} of ${String(of)} schools`);
-  const verb = n === 1 ? 'has' : 'have';
-  const left = n === 1 ? 'is left out' : 'are left out';
-  return `${count(n)} of the ${count(of)} ${of === 1 ? 'school' : 'schools'} here ${verb} no chance given for ${on} and ${left}.`;
+  if (noChance < 0 || noCount < 0 || n < 1 || n > of) {
+    throw new RangeError(`copy: ${String(n)} of ${String(of)} schools`);
+  }
+  const has = (k: number): string => (k === 1 ? 'has' : 'have');
+  const here = `of the ${count(of)} ${of === 1 ? 'school' : 'schools'} here`;
+  const noneGiven = `no chance given for ${on}`;
+  const unweighed = 'no student count';
+  if (noCount === 0 || noChance === 0) {
+    const left = n === 1 ? 'is left out' : 'are left out';
+    return `${count(n)} ${here} ${has(n)} ${noCount === 0 ? noneGiven : unweighed} and ${left}.`;
+  }
+  return `${count(n)} ${here} are left out: ${count(noChance)} ${has(noChance)} ${noneGiven} and ${count(noCount)} ${has(noCount)} ${unweighed}.`;
 }
 
 export const areaFormat = /* @__PURE__ */ deepFreeze({
   label,
   backTo,
   states,
-  schoolsIn,
+  schoolCount,
   nearOthers,
   noneNear,
+  unread,
   statusCount,
   decides,
   districtPosted,
   noThreat,
   schoolPosted,
-  postedShare,
+  share,
+  forecastOf,
   notCounted,
 });
 

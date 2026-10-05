@@ -19,19 +19,23 @@
  *   the ones with no threat out would raise it;
  * - otherwise it is not counted, and the panel says how many are not.
  *
- * The area's chance is the average of the counted schools' chances, each
- * weighed by its students: the chance for a student picked at random from
- * them. It shows only where a chance is given for at least one school, so
+ * A school with no student count weighs nothing, so it is not counted either,
+ * and said to be. The area's chance is the average of the counted schools'
+ * chances, each weighed by its students: the chance for a student picked at
+ * random from them. It shows only where a chance is given for at least one school, so
  * the posted statuses alone never make a number, and with no predictions
  * file nothing of it shows. Under it, who decides: each district (or school
  * deciding for itself) with its number and how many of the area's schools it
  * decides for, so the rows' numbers, weighed by the students under each, make
  * the headline to its rounding; then the night ahead, as the chance section draws it,
- * for the district with the most students counted with a chance.
+ * for the district with the most students counted with a chance, named where
+ * another district's forecast counts too.
  *
  * The list is every school of the area, its own first and then the others
  * taken in, each nearest the ZIP code's point first, with today's status
- * where the live file states one, as the map lights it.
+ * where the live file states one, as the map lights it. A school whose record
+ * cannot be read is left off the list, said to be, and read again with the
+ * live files; the chance waits for every one.
  *
  * Every word comes from src/copy.ts, src/copy-chance.ts and src/copy-area.ts.
  */
@@ -101,6 +105,8 @@ export interface AreaChanceView {
   readonly left: string | null;
   /** The night ahead, as the chance section draws it; null without one. */
   readonly chart: ChartView | null;
+  /** "Kansas City 33’s forecast", where the chart is one of several districts' forecasts; else null. */
+  readonly chartOf: string | null;
   /** The chart's words at the announcement's line as the clock reads `now`, or null without one. */
   readonly announces: (now: Date) => string | null;
 }
@@ -122,7 +128,7 @@ export interface AreaView {
   readonly back: string;
   readonly chance: AreaChanceView | null;
   readonly counts: readonly AreaCountView[];
-  /** "14 schools in 64111". */
+  /** "14 schools": the ZIP code's own, under its code. */
   readonly heading: string;
   readonly own: readonly AreaSchoolView[];
   /** "4 more within 2 miles", over the others taken in; null when none are. */
@@ -130,6 +136,8 @@ export interface AreaView {
   readonly near: readonly AreaSchoolView[];
   /** "No others within 2 miles", where the ZIP code has few schools and none are near. */
   readonly noneNear: string | null;
+  /** "2 schools did not load", for the schools of the area whose records cannot be read; else null. */
+  readonly unread: string | null;
   /** True until the area and its schools are read. */
   readonly loading: boolean;
 }
@@ -267,7 +275,7 @@ export function areaChance(
     .sort()[0];
   if (day === undefined) return null;
 
-  const counted: (Counted | null)[] = days.map(({ posted, shown, clear }) => {
+  const given: (Counted | null)[] = days.map(({ posted, shown, clear }) => {
     const row = posted(day);
     if (row !== null) {
       return { how: 'posted', status: statusKey(row.status), chance: noSchool(row.status) ? 1 : 0 };
@@ -275,12 +283,17 @@ export function areaChance(
     if (shown?.day === day) return { how: 'forecast', chance: shown.noSchool };
     return clear(day) ? { how: 'clear', chance: 0 } : null;
   });
+  const weightOf = (record: SchoolRecord): number => Math.max(record.enrollment ?? 0, 0);
+  const counted = given.map((count, i) => {
+    const record = members[i]?.record;
+    return record !== undefined && weightOf(record) > 0 ? count : null;
+  });
   let students = 0;
   let sum = 0;
   members.forEach(({ record }, i) => {
     const count = counted[i];
     if (count === null || count === undefined) return;
-    const weight = record.enrollment ?? 0;
+    const weight = weightOf(record);
     students += weight;
     sum += weight * count.chance;
   });
@@ -290,6 +303,8 @@ export function areaChance(
   // Who decides: a district, or a school outside one deciding for itself, and what it counts as.
   interface Decider {
     key: string;
+    /** The district, or the school deciding for itself. */
+    by: string;
     name: string;
     school: boolean;
     counted: Counted;
@@ -307,11 +322,12 @@ export function areaChance(
     const found = deciders.get(key);
     if (found !== undefined) {
       found.schools += 1;
-      found.students += record.enrollment ?? 0;
+      found.students += weightOf(record);
       return;
     }
     deciders.set(key, {
       key,
+      by,
       name:
         district === null
           ? shownName(record.id, record.name)
@@ -319,7 +335,7 @@ export function areaChance(
       school: district === null,
       counted: count,
       schools: 1,
-      students: record.enrollment ?? 0,
+      students: weightOf(record),
       order: i,
     });
   });
@@ -344,13 +360,13 @@ export function areaChance(
         if (count.how === 'clear') {
           return {
             key: decider.key,
-            number: format.chance(0),
+            number: areaFormat.share(false),
             text: areaFormat.noThreat(decider.name, decider.schools, of, day),
           };
         }
         return {
           key: decider.key,
-          number: areaFormat.postedShare(count.status),
+          number: areaFormat.share(count.chance === 1),
           text: decider.school
             ? areaFormat.schoolPosted(decider.name, count.status, day)
             : areaFormat.districtPosted(decider.name, count.status, decider.schools, of, day),
@@ -360,11 +376,12 @@ export function areaChance(
     // A value the words refuse: no chance rather than a wrong one.
     return null;
   }
-  const missing = counted.filter((count) => count === null).length;
+  const noChance = given.filter((count) => count === null).length;
+  const noCount = counted.filter((count) => count === null).length - noChance;
   let left: string | null = null;
-  if (missing > 0) {
+  if (noChance + noCount > 0) {
     try {
-      left = areaFormat.notCounted(missing, of, day);
+      left = areaFormat.notCounted(noChance, noCount, of, day);
     } catch {
       return null;
     }
@@ -390,6 +407,18 @@ export function areaChance(
   if (chart !== null && forecasts.length > 1) {
     chart = { ...chart, announces: null, key: chart.key.filter((row) => row.mark !== 'announces') };
   }
+  // Whose forecast it is, where another district's forecast counts too.
+  const forecastsBy = new Set(
+    [...deciders.values()].filter((d) => d.counted.how !== 'posted').map((d) => d.by),
+  );
+  let chartOf: string | null = null;
+  if (chart !== null && lead !== undefined && forecastsBy.size > 1) {
+    try {
+      chartOf = areaFormat.forecastOf(lead.name);
+    } catch {
+      chartOf = null;
+    }
+  }
   const announcement = chart?.key.find((row) => row.mark === 'announces');
   return {
     day,
@@ -398,6 +427,7 @@ export function areaChance(
     why,
     left,
     chart,
+    chartOf,
     announces: (clock) => {
       if (announcement?.mark !== 'announces') return null;
       try {
@@ -442,11 +472,13 @@ export function areaView(input: AreaInput): AreaView | null {
     nearHeading: null,
     near: [],
     noneNear: null,
+    unread: null,
     loading: true,
   };
   if (area === null || records === null) return settled && area === null ? null : reading;
   // A school is listed by the record the file names, from the same directory. Until every one
-  // is read, the list keeps its shape: a list short of one would count the area wrong.
+  // is read, the list keeps its shape; once reading is done, it lists those read and says how
+  // many are not, and the chance waits for them all.
   const read = (entry: AreaSchoolEntry, own: boolean): Member[] => {
     const record = records.get(entry.id) ?? null;
     return record !== null &&
@@ -458,9 +490,8 @@ export function areaView(input: AreaInput): AreaView | null {
   const own = area.own.flatMap((entry) => read(entry, true));
   const near = area.near.flatMap((entry) => read(entry, false));
   const members = [...own, ...near];
-  if (members.length !== area.own.length + area.near.length) {
-    return { ...reading, place: placeOf(area, own) };
-  }
+  const unread = area.own.length + area.near.length - members.length;
+  if (unread > 0 && !settled) return { ...reading, place: placeOf(area, own) };
   const tones = members.map(({ record }) => todayTone(record, live, now));
   const rows = members.map((member, i) => rowView(member, tones[i] ?? null));
 
@@ -469,7 +500,7 @@ export function areaView(input: AreaInput): AreaView | null {
     const n = tones.filter((tone) => tone === status).length;
     if (n > 0) counts.push({ status, text: areaFormat.statusCount(status, n) });
   }
-  const chance = areaChance(members, input);
+  const chance = unread === 0 ? areaChance(members, input) : null;
   const few = area.own.length < AREA_MIN_SCHOOLS;
   return {
     zip,
@@ -478,13 +509,16 @@ export function areaView(input: AreaInput): AreaView | null {
     back,
     chance,
     counts,
-    heading: areaFormat.schoolsIn(own.length, zip),
+    heading: areaFormat.schoolCount(area.own.length),
     own: rows.slice(0, own.length),
     nearHeading:
-      near.length > 0 ? areaFormat.nearOthers(near.length, own.length, AREA_NEAR_MILES) : null,
+      area.near.length > 0
+        ? areaFormat.nearOthers(area.near.length, area.own.length, AREA_NEAR_MILES)
+        : null,
     near: rows.slice(own.length),
     noneNear:
-      few && area.near.length === 0 ? areaFormat.noneNear(own.length, AREA_NEAR_MILES) : null,
+      few && area.near.length === 0 ? areaFormat.noneNear(area.own.length, AREA_NEAR_MILES) : null,
+    unread: unread > 0 ? areaFormat.unread(unread) : null,
     loading: false,
   };
 }
@@ -555,19 +589,17 @@ export function watchArea(options: WatchAreaOptions): () => void {
       ...missing.map(({ id }, i) => [id, read[i] ?? null] as const),
     ]);
   };
-  const reading = areas
-    .get(zip)
-    .catch(() => null)
-    .then(async (found) => {
-      area = found;
-      await readSchools();
-    });
-  void Promise.all([reading, readLive()]).then(() => {
+  /** Reads the area while it is not read (a file that failed is asked for again), then its schools. */
+  const readArea = async (): Promise<void> => {
+    area ??= await areas.get(zip).catch(() => null);
+    await readSchools();
+  };
+  void Promise.all([readArea(), readLive()]).then(() => {
     settled = true;
     show();
   });
   const timer = setInterval(() => {
-    void Promise.all([readLive(), settled ? readSchools() : null]).then(show);
+    void Promise.all([readLive(), settled ? readArea() : null]).then(show);
   }, options.pollMs ?? LIVE_POLL_MS);
 
   return () => {

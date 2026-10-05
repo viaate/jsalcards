@@ -15,7 +15,7 @@ const VIEW: AreaView = {
   back: 'Back to 64112',
   chance: null,
   counts: [],
-  heading: '2 schools in 64112',
+  heading: '2 schools',
   own: [
     {
       id: 'ZZ000001',
@@ -49,6 +49,7 @@ const VIEW: AreaView = {
     },
   ],
   noneNear: null,
+  unread: null,
   loading: false,
 };
 
@@ -78,7 +79,7 @@ describe('AreaPanel', () => {
     expect(panel.querySelector('h2')?.textContent).toBe('64112');
     expect(panel.querySelector('.place')?.textContent).toBe('Kansas City, MO');
     expect([...panel.querySelectorAll('.heading')].map((h) => h.textContent)).toEqual([
-      '2 schools in 64112',
+      '2 schools',
       '1 more within 2 miles',
     ]);
     const rows = [...panel.querySelectorAll('button.school')].map((row) => [
@@ -92,6 +93,17 @@ describe('AreaPanel', () => {
       ['0.4 mi', 'Visitation Test School', VIEW.own[1]?.kind, true],
       ['1.1 mi', 'Test Village High School', VIEW.near[0]?.kind, false],
     ]);
+    expect(panel.querySelector('.none')).toBeNull();
+  });
+
+  it('says how many schools did not load, under the ones that did', () => {
+    const { panel } = show({ ...VIEW, near: [], unread: '1 school did not load' });
+    expect([...panel.querySelectorAll('.heading')].map((h) => h.textContent)).toEqual([
+      '2 schools',
+      '1 more within 2 miles',
+    ]);
+    expect(panel.querySelectorAll('button.school')).toHaveLength(2);
+    expect(panel.querySelector('.none')?.textContent).toBe('1 school did not load');
   });
 
   it('shows no chance, no number and no words for one, with no chance to give', () => {
@@ -113,6 +125,7 @@ describe('AreaPanel', () => {
         why: [{ key: 'a', number: '64%', text: 'Test Village decides for 1 school here.' }],
         left: '2 of the 3 schools here have no chance given for Tuesday and are left out.',
         chart: null,
+        chartOf: null,
         announces: () => null,
       },
     });

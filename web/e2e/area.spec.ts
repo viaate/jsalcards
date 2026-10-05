@@ -738,7 +738,7 @@ test('a ZIP code picked opens its area beside the map, where the school panel op
   await expect(panel).toHaveAttribute('aria-busy', 'false', { timeout: 30_000 });
   await expect(panel.locator('h2')).toHaveText('64130');
   await expect(panel.locator('.place')).toHaveText('Kansas City, MO');
-  await expect(panel.locator('h3.heading')).toHaveText('6 schools in 64130');
+  await expect(panel.locator('h3.heading')).toHaveText('6 schools');
   await expect(panel.locator('button.school')).toHaveCount(6);
   // The panel takes the focus, as after a pick of a school.
   await expect(panel).toBeFocused();
@@ -798,7 +798,7 @@ test('with a predictions file, the chance is the students’ average over the co
   await expect(panel.locator('.number')).toHaveText(`${String(expected)}%`);
   await expect(panel.locator('.meaning')).toContainText('Chance of no school Monday');
   // Who decides, most students first: Kansas City 33 closed both its schools here, so 100%.
-  await expect(panel.locator('.why .row .label')).toHaveText(['100%', '40%', '55%', '<1%']);
+  await expect(panel.locator('.why .row .label')).toHaveText(['100%', '40%', '55%', '0%']);
   await expect(panel.locator('.why .row p').first()).toHaveText(
     'Kansas City 33 canceled Monday at 2 schools here.',
   );
@@ -808,6 +808,8 @@ test('with a predictions file, the chance is the students’ average over the co
   );
   await expect(panel.locator('.left')).toHaveCount(0);
   await expect(panel.locator('.chart')).toHaveCount(1);
+  // The chart is one district's forecast, of the three here: the one with the most students.
+  await expect(panel.locator('.whose')).toHaveText(/^Brookside Charter\b.*’s? forecast$/u);
   await expectFramed(page, '64130');
   expect(problems).toEqual([]);
   await context.close();
@@ -819,10 +821,7 @@ test('a ZIP code with few schools takes in the nearest others within 2 miles, an
   const { context, page, problems } = await visit(browser, forecast, DESKTOP, '?zip=64112');
   const panel = panelOf(page);
   await expect(panel).toHaveAttribute('aria-busy', 'false', { timeout: 30_000 });
-  await expect(panel.locator('.heading')).toHaveText([
-    '2 schools in 64112',
-    '4 more within 2 miles',
-  ]);
+  await expect(panel.locator('.heading')).toHaveText(['2 schools', '4 more within 2 miles']);
   await expect(panel.locator('button.school .label')).toHaveText([
     '0.1 mi',
     '0.4 mi',

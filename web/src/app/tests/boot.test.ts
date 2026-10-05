@@ -659,7 +659,7 @@ describe('a ZIP code', () => {
     expect(views[0]).toMatchObject({ zip: '64112', place: 'Missouri', loading: true });
     expect(views.at(-1)).toMatchObject({
       place: 'Kansas City, MO',
-      heading: '1 school in 64112',
+      heading: '1 school',
       nearHeading: '1 more within 2 miles',
       chance: null,
     });

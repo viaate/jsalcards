@@ -179,7 +179,7 @@ describe('the area panel’s view', () => {
     expect(view.back).toBe('Back to 64111');
     // Four of its five schools say Kansas City: more than half.
     expect(view.place).toBe('Kansas City, MO');
-    expect(view.heading).toBe('5 schools in 64111');
+    expect(view.heading).toBe('5 schools');
     expect(view.own.map((row) => row.name)).toEqual([
       'Alpha Elementary',
       'Beta Elementary',
@@ -217,7 +217,7 @@ describe('the area panel’s view', () => {
       '64% Kansas City 33 decides for 2 schools here.',
       '31% Center 58 decides for 1 school here.',
       '100% Kansas City 33 canceled Tuesday at 1 school here.',
-      '<1% Shawnee Mission Public Schools has no weather threat Tuesday at 1 school here.',
+      '0% Shawnee Mission Public Schools has no weather threat Tuesday at 1 school here.',
       '100% Delta Academy canceled Tuesday.',
     ]);
     // Epsilon says nothing and is outside a district.
@@ -226,6 +226,7 @@ describe('the area panel’s view', () => {
     );
     // The night ahead, as Kansas City 33 has it; its usual announcement is its own, so left off.
     expect(chance.chart?.kind).toBe('snow_total');
+    expect(chance.chartOf).toBe('Kansas City 33’s forecast');
     expect(chance.chart?.announces).toBeNull();
     expect(chance.chart?.key.some((row) => row.mark === 'announces')).toBe(false);
     expect(chance.announces(NOW)).toBeNull();
@@ -239,8 +240,39 @@ describe('the area panel’s view', () => {
       'Kansas City 33 decides for both schools here.',
     ]);
     expect(chance?.left).toBeNull();
+    // Its own forecast, and no other: nothing to say whose it is.
+    expect(chance?.chartOf).toBeNull();
     expect(chance?.chart?.key.some((row) => row.mark === 'announces')).toBe(true);
     expect(chance?.announces(NOW)).not.toBeNull();
+  });
+
+  it('leaves out a school with no student count, as it weighs nothing, and says so', () => {
+    const records = new Map(RECORDS);
+    // Gamma (Center 58) and Delta (canceled) give no student count.
+    records.set('290825000003', school(2, '290825000003', 'GAMMA EL', 1, null));
+    records.set('A0000001', school(3, 'A0000001', 'DELTA ACADEMY', null, 0));
+    const chance = areaView(input({ records }))?.chance;
+    // (400 + 600) × 64% + 300 × 100% + 250 × 0, over 1,550 students.
+    const mean = (1000 * 0.64 + 300 + 250 * 0) / 1550;
+    expect(chance?.number).toBe(String(Math.round(mean * 100)));
+    expect(chance?.why.map(({ number, text }) => `${number} ${text}`)).toEqual([
+      '64% Kansas City 33 decides for 2 schools here.',
+      '100% Kansas City 33 canceled Tuesday at 1 school here.',
+      '0% Shawnee Mission Public Schools has no weather threat Tuesday at 1 school here.',
+    ]);
+    expect(chance?.left).toBe(
+      '3 of the 7 schools here are left out: 1 has no chance given for Tuesday and 2 have no student count.',
+    );
+    // Without Epsilon, which has no chance given: only the ones with no student count.
+    const given = { ...AREA, own: AREA.own.slice(0, 4) };
+    expect(areaView(input({ area: given, records }))?.chance?.left).toBe(
+      '2 of the 6 schools here have no student count and are left out.',
+    );
+    // No student count anywhere a chance is given: nothing to weigh, so no chance.
+    const unweighed = new Map(
+      [...RECORDS].map(([id, record]) => [id, { ...record, enrollment: null }]),
+    );
+    expect(areaView(input({ records: unweighed }))?.chance).toBeNull();
   });
 
   it('shows no chance without a predictions file, nor from statuses alone', () => {
@@ -261,19 +293,37 @@ describe('the area panel’s view', () => {
     expect(areaView(input({ now: new Date('2026-01-13T13:30:00Z') }))?.chance).toBeNull();
   });
 
-  it('keeps the list’s shape, and gives no chance, until every school the file names is read', () => {
+  it('keeps the list’s shape while it reads, then lists the schools read, says how many are not, and gives no chance', () => {
     const records = new Map<string, SchoolRecord | null>(RECORDS);
     records.set('291640000002', null);
-    const view = areaView(input({ records }));
+    const view = areaView(input({ records, settled: false }));
     expect(view).toMatchObject({ loading: true, chance: null, own: [], near: [], heading: '' });
     expect(view?.place).toBe('Kansas City, MO');
+    // Reading is done: the schools read, under the area's own counts, and the one that is not.
+    const read = areaView(input({ records }));
+    expect(read).toMatchObject({
+      loading: false,
+      chance: null,
+      heading: '5 schools',
+      nearHeading: '2 more within 2 miles',
+      unread: '1 school did not load',
+    });
+    expect(read?.own.map((row) => row.id)).not.toContain('291640000002');
+    expect(read?.own).toHaveLength(4);
+    expect(read?.near).toHaveLength(2);
+    expect(areaView(input())?.unread).toBeNull();
     // A record from another directory is not the school the file names.
     const stale = new Map(RECORDS);
     stale.set('291640000001', {
       ...SCHOOLS[0],
       directory: { ...STAMP, schools: 8 },
     } as SchoolRecord);
-    expect(areaView(input({ records: stale }))?.loading).toBe(true);
+    expect(areaView(input({ records: stale, settled: false }))?.loading).toBe(true);
+    expect(areaView(input({ records: stale }))).toMatchObject({
+      loading: false,
+      chance: null,
+      unread: '1 school did not load',
+    });
   });
 
   it('lights each school with today’s status, and counts them over the list', () => {
@@ -319,7 +369,7 @@ describe('the area panel’s view', () => {
   it('says plainly when the nearest others are taken in, or none are near', () => {
     const sparse = { ...AREA, own: AREA.own.slice(3, 5), near: AREA.own.slice(0, 2) };
     const view = areaView(input({ area: sparse }));
-    expect(view?.heading).toBe('2 schools in 64111');
+    expect(view?.heading).toBe('2 schools');
     expect(view?.nearHeading).toBe('2 more within 2 miles');
     expect(view?.near.map((row) => row.id)).toEqual(['291640000001', '291640000002']);
     expect(view?.noneNear).toBeNull();
@@ -329,7 +379,7 @@ describe('the area panel’s view', () => {
     expect(alone?.nearHeading).toBeNull();
     expect(alone?.noneNear).toBe('No others within 2 miles');
     const empty = areaView(input({ area: { ...sparse, own: [], near: [] } }));
-    expect(empty?.heading).toBe('No schools in 64111');
+    expect(empty?.heading).toBe('No schools');
     expect(empty?.noneNear).toBe('None within 2 miles');
     expect(areaBounds({ ...sparse, own: [], near: [] })).toEqual([
       -94.594, 39.057, -94.594, 39.057,
@@ -387,6 +437,46 @@ describe('watching an area', () => {
     expect(views[0]).toMatchObject({ loading: true, place: 'Missouri' });
     expect(views.at(-1)?.chance?.number).toBe('58');
     expect(get).toHaveBeenCalledTimes(7);
+  });
+
+  it('reads again, with the live files, an area or a school that could not be read', async () => {
+    let areaReads = 0;
+    const getArea = vi.fn(() => Promise.resolve(++areaReads === 1 ? null : AREA));
+    const areas: AreaSource = { shipped: true, get: getArea };
+    let betaReads = 0;
+    const get = vi.fn((id: string) =>
+      Promise.resolve(
+        id === '291640000002' && ++betaReads === 1 ? null : (RECORDS.get(id) ?? null),
+      ),
+    );
+    const fetchSpy = vi
+      .spyOn(globalThis, 'fetch')
+      .mockImplementation(() => Promise.resolve(new Response('{}', { status: 503 })));
+    const views: ReturnType<typeof areaView>[] = [];
+    const stop = watchArea({
+      files,
+      areas,
+      details: { get },
+      zip: '64111',
+      hint: null,
+      onView: (view) => views.push(view),
+      now: () => NOW,
+      timeZone: () => ZONE,
+      pollMs: 10,
+    });
+    await vi.waitFor(() => {
+      expect(views.at(-1)?.unread === null && views.at(-1)?.loading === false).toBe(true);
+    });
+    stop();
+    fetchSpy.mockRestore();
+    // Nothing at first, as the area could not be read; then the list short of Beta; then all of it.
+    expect(views).toContain(null);
+    expect(views.some((view) => view?.unread === '1 school did not load')).toBe(true);
+    expect(views.at(-1)?.own).toHaveLength(5);
+    expect(getArea).toHaveBeenCalledTimes(2);
+    // Only the school missed is read again.
+    expect(get.mock.calls.filter(([id]) => id === '291640000002')).toHaveLength(2);
+    expect(get).toHaveBeenCalledTimes(8);
   });
 
   it('shows nothing where the build ships no areas, or the ZIP code has none', async () => {

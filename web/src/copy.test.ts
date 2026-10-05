@@ -552,9 +552,13 @@ describe('format', () => {
       expect(areaFormat.states(['OR', 'ID'])).toBe('Oregon, Idaho');
       expect(() => areaFormat.states([])).toThrow(RangeError);
       expect(() => areaFormat.states(['XX'])).toThrow(RangeError);
-      expect(areaFormat.schoolsIn(14, '64111')).toBe('14 schools in 64111');
-      expect(areaFormat.schoolsIn(1, '64111')).toBe('1 school in 64111');
-      expect(areaFormat.schoolsIn(0, '64111')).toBe('No schools in 64111');
+      // Under the ZIP code, which the panel's title already says.
+      expect(areaFormat.schoolCount(14)).toBe('14 schools');
+      expect(areaFormat.schoolCount(1)).toBe('1 school');
+      expect(areaFormat.schoolCount(0)).toBe('No schools');
+      expect(areaFormat.unread(1)).toBe('1 school did not load');
+      expect(areaFormat.unread(2)).toBe('2 schools did not load');
+      expect(() => areaFormat.unread(0)).toThrow(RangeError);
       expect(areaFormat.nearOthers(4, 2, 2)).toBe('4 more within 2 miles');
       expect(areaFormat.nearOthers(1, 5, 2)).toBe('1 more within 2 miles');
       expect(areaFormat.nearOthers(6, 0, 2)).toBe('6 within 2 miles');
@@ -598,14 +602,25 @@ describe('format', () => {
       expect(areaFormat.schoolPosted('Riverside', 'delayed', day)).toBe(
         'Riverside starts late Tuesday.',
       );
-      expect(areaFormat.postedShare('closed')).toBe('100%');
-      expect(areaFormat.postedShare('remote')).toBe('100%');
-      expect(areaFormat.postedShare('delayed')).toBe('0%');
-      expect(areaFormat.postedShare('earlyDismissal')).toBe('0%');
-      expect(areaFormat.notCounted(3, 14, day)).toBe(
+      expect(areaFormat.share(true)).toBe('100%');
+      expect(areaFormat.share(false)).toBe('0%');
+      expect(areaFormat.forecastOf('Riverside')).toBe('Riverside’s forecast');
+      expect(areaFormat.forecastOf('Riverside Schools')).toBe('Riverside Schools’ forecast');
+      expect(areaFormat.notCounted(3, 0, 14, day)).toBe(
         '3 of the 14 schools here have no chance given for Tuesday and are left out.',
       );
-      expect(areaFormat.notCounted(1, 6, day)).toBe(
+      expect(areaFormat.notCounted(0, 1, 6, day)).toBe(
+        '1 of the 6 schools here has no student count and is left out.',
+      );
+      expect(areaFormat.notCounted(0, 2, 6, day)).toBe(
+        '2 of the 6 schools here have no student count and are left out.',
+      );
+      expect(areaFormat.notCounted(2, 1, 14, day)).toBe(
+        '3 of the 14 schools here are left out: 2 have no chance given for Tuesday and 1 has no student count.',
+      );
+      expect(() => areaFormat.notCounted(0, 0, 6, day)).toThrow(RangeError);
+      expect(() => areaFormat.notCounted(4, 3, 6, day)).toThrow(RangeError);
+      expect(areaFormat.notCounted(1, 0, 6, day)).toBe(
         '1 of the 6 schools here has no chance given for Tuesday and is left out.',
       );
       const outputs: string[] = [];
@@ -614,11 +629,10 @@ describe('format', () => {
           outputs.push(areaFormat.statusCount(status, n));
           outputs.push(areaFormat.districtPosted('Riverside', status, n, 1284, day));
         }
-        outputs.push(
-          areaFormat.schoolPosted('Riverside', status, day),
-          areaFormat.postedShare(status),
-        );
+        outputs.push(areaFormat.schoolPosted('Riverside', status, day));
       }
+      outputs.push(areaFormat.share(true), areaFormat.share(false));
+      outputs.push(areaFormat.forecastOf('Riverside'), areaFormat.forecastOf('Rivers'));
       for (const [n, of] of [
         [1, 1],
         [1, 2],
@@ -626,10 +640,16 @@ describe('format', () => {
         [9, 14],
         [1284, 2000],
       ] as const) {
-        outputs.push(areaFormat.decides('Riverside', n, of), areaFormat.notCounted(n, of, day));
+        outputs.push(
+          areaFormat.decides('Riverside', n, of),
+          areaFormat.notCounted(n, 0, of, day),
+          areaFormat.notCounted(0, n, of, day),
+        );
+        if (n > 1 && n < of) outputs.push(areaFormat.notCounted(n - 1, 1, of, day));
       }
       for (const n of [0, 1, 2, 14]) {
-        outputs.push(areaFormat.schoolsIn(n, '64111'), areaFormat.noneNear(n, 2));
+        outputs.push(areaFormat.schoolCount(n), areaFormat.noneNear(n, 2));
+        if (n > 0) outputs.push(areaFormat.unread(n));
         if (n > 0) outputs.push(areaFormat.nearOthers(n, 6 - Math.min(n, 6), 2));
       }
       outputs.push(areaFormat.label('64112'), areaFormat.backTo('64112'));

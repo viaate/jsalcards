@@ -890,10 +890,7 @@ test('Pembroke Hill’s ZIP code, 64112, lists its two schools and the four near
   await expect(panel).toHaveAttribute('aria-label', 'Schools around 64112');
   await expect(panel).toHaveAttribute('aria-busy', 'false', { timeout: 30_000 });
   await expect(panel.locator('.place')).toHaveText('Kansas City, MO');
-  await expect(panel.locator('.heading')).toHaveText([
-    '2 schools in 64112',
-    '4 more within 2 miles',
-  ]);
+  await expect(panel.locator('.heading')).toHaveText(['2 schools', '4 more within 2 miles']);
   await expect(panel.locator('button.school .name-text')).toHaveText([
     PEMBROKE_HILL_NAME,
     'Visitation Catholic School',
