@@ -1,1156 +1,1156 @@
 {
   "snapshots": [
     {
-      "timestamp": "20221109011913",
+      "timestamp": "20221027011907",
       "url": "http://wsd.net/",
       "station": "apptegy-weber-ut",
-      "why": "storm day 2022-11-09 (market score 1.00)"
+      "why": "2022-10-27: within 2 days of one of its closure days"
     },
     {
-      "timestamp": "20230106011650",
+      "timestamp": "20240208023609",
       "url": "http://wsd.net/",
       "station": "apptegy-weber-ut",
-      "why": "storm day 2023-01-06 (market score 1.00)"
+      "why": "2024-02-08: within 2 days of one of its closure days"
     },
     {
-      "timestamp": "20221220184758",
-      "url": "http://wsd.net/",
-      "station": "apptegy-weber-ut",
-      "why": "storm day 2022-12-21 (market score 1.00)"
-    },
-    {
-      "timestamp": "20230324113836",
-      "url": "https://www.murrayschools.org/",
-      "station": "smartsites-murray-ut",
-      "why": "storm day 2023-03-24 (market score 1.00)"
-    },
-    {
-      "timestamp": "20231124012540",
-      "url": "https://www.murrayschools.org/",
-      "station": "smartsites-murray-ut",
-      "why": "storm day 2023-11-24 (market score 1.00)"
-    },
-    {
-      "timestamp": "20231123111705",
-      "url": "https://www.murrayschools.org/",
-      "station": "smartsites-murray-ut",
-      "why": "storm day 2023-11-23 (market score 1.00)"
-    },
-    {
-      "timestamp": "20171223054250",
-      "url": "https://www.tfsd.org/",
-      "station": "apptegy-twin-falls-id",
-      "why": "2017-12-23: within 2 days of one of its closure days"
-    },
-    {
-      "timestamp": "20221109000020",
-      "url": "https://www.shelleyschools.org/",
-      "station": "smartsites-shelley-id",
-      "why": "2022-11-09: within 2 days of one of its closure days"
-    },
-    {
-      "timestamp": "20241125062829",
-      "url": "https://www.shelleyschools.org/",
-      "station": "smartsites-shelley-id",
-      "why": "2024-11-25: within 2 days of one of its closure days"
-    },
-    {
-      "timestamp": "20220101193617",
-      "url": "http://www.darby.k12.mt.us/",
-      "station": "apptegy-darby-mt",
-      "why": "2022-01-02: within 2 days of one of its closure days"
-    },
-    {
-      "timestamp": "20220201205059",
-      "url": "http://www.darby.k12.mt.us/",
-      "station": "apptegy-darby-mt",
-      "why": "2022-02-02: within 2 days of one of its closure days"
-    },
-    {
-      "timestamp": "20210105221203",
-      "url": "https://www.darby.k12.mt.us/",
-      "station": "apptegy-darby-mt",
-      "why": "2021-01-06: within 2 days of one of its closure days"
-    },
-    {
-      "timestamp": "20240224221808",
-      "url": "https://www.sublette9.org/",
-      "station": "edlio-sublette-9-wy",
-      "why": "2024-02-25: within 2 days of one of its closure days"
-    },
-    {
-      "timestamp": "20230331024519",
-      "url": "https://www.sublette9.org/",
-      "station": "edlio-sublette-9-wy",
-      "why": "2023-03-31: within 2 days of one of its closure days"
-    },
-    {
-      "timestamp": "20190922021449",
-      "url": "https://www.sublette9.org/",
-      "station": "edlio-sublette-9-wy",
-      "why": "2019-09-22: within 2 days of one of its closure days"
-    },
-    {
-      "timestamp": "20181114121534",
-      "url": "https://www.glendiveschools.com/",
-      "station": "apptegy-glendive-mt",
-      "why": "2018-11-14: within 2 days of one of its closure days"
-    },
-    {
-      "timestamp": "20181114163417",
-      "url": "https://www.glendiveschools.com/",
-      "station": "apptegy-glendive-mt",
-      "why": "2018-11-15: within 2 days of one of its closure days"
-    },
-    {
-      "timestamp": "20181114174953",
-      "url": "https://www.glendiveschools.com/",
-      "station": "apptegy-glendive-mt",
-      "why": "2018-11-15: within 2 days of one of its closure days"
-    },
-    {
-      "timestamp": "20200103020025",
-      "url": "https://www.hotsprings1.org/",
-      "station": "edlio-hot-springs-1-wy",
-      "why": "2020-01-03: within 2 days of one of its closure days"
-    },
-    {
-      "timestamp": "20190921011939",
-      "url": "https://www.hotsprings1.org/",
-      "station": "edlio-hot-springs-1-wy",
-      "why": "2019-09-21: within 2 days of one of its closure days"
-    },
-    {
-      "timestamp": "20181114075425",
-      "url": "https://www.hotsprings1.org/",
-      "station": "edlio-hot-springs-1-wy",
-      "why": "2018-11-14: within 2 days of one of its closure days"
-    },
-    {
-      "timestamp": "20230318053941",
-      "url": "https://www.uintah.net/",
-      "station": "apptegy-uintah-ut",
-      "why": "2023-03-18: within 2 days of one of its closure days"
-    },
-    {
-      "timestamp": "20211206182755",
-      "url": "https://www.uintah.net/",
-      "station": "apptegy-uintah-ut",
-      "why": "2021-12-07: within 2 days of one of its closure days"
-    },
-    {
-      "timestamp": "20220302203226",
-      "url": "https://www.uintah.net/",
-      "station": "apptegy-uintah-ut",
-      "why": "2022-03-03: within 2 days of one of its closure days"
-    },
-    {
-      "timestamp": "20221108233846",
-      "url": "https://www.hemetusd.org/",
-      "station": "apptegy-hemet-ca",
-      "why": "storm day 2022-11-09 (market score 1.00)"
-    },
-    {
-      "timestamp": "20221109114957",
-      "url": "https://www.hemetusd.org/",
-      "station": "apptegy-hemet-ca",
-      "why": "storm day 2022-11-09 (market score 1.00)"
-    },
-    {
-      "timestamp": "20250313121206",
-      "url": "https://www.hemetusd.org/",
-      "station": "apptegy-hemet-ca",
-      "why": "storm day 2025-03-13 (market score 1.00)"
-    },
-    {
-      "timestamp": "20240221111509",
-      "url": "https://www.cvusd.us/",
-      "station": "smartsites-coachella-valley-ca",
-      "why": "storm day 2024-02-21 (market score 0.12)"
-    },
-    {
-      "timestamp": "20240307030045",
-      "url": "https://www.cvusd.us/",
-      "station": "smartsites-coachella-valley-ca",
-      "why": "storm day 2024-03-07 (market score 0.12)"
-    },
-    {
-      "timestamp": "20251119100636",
-      "url": "https://www.cvusd.us/",
-      "station": "smartsites-coachella-valley-ca",
-      "why": "2025-11-19: within 2 days of one of its closure days"
-    },
-    {
-      "timestamp": "20230106131739",
-      "url": "http://wsd.net/",
-      "station": "apptegy-weber-ut",
-      "why": "storm day 2023-01-06 (market score 1.00)"
-    },
-    {
-      "timestamp": "20221221014630",
-      "url": "http://wsd.net/",
-      "station": "apptegy-weber-ut",
-      "why": "storm day 2022-12-21 (market score 1.00)"
-    },
-    {
-      "timestamp": "20221230131649",
-      "url": "http://wsd.net/",
-      "station": "apptegy-weber-ut",
-      "why": "storm day 2022-12-30 (market score 1.00)"
-    },
-    {
-      "timestamp": "20221230011714",
-      "url": "http://wsd.net/",
-      "station": "apptegy-weber-ut",
-      "why": "storm day 2022-12-30 (market score 1.00)"
-    },
-    {
-      "timestamp": "20221221131750",
-      "url": "http://wsd.net/",
-      "station": "apptegy-weber-ut",
-      "why": "storm day 2022-12-21 (market score 1.00)"
-    },
-    {
-      "timestamp": "20221108132011",
-      "url": "http://wsd.net/",
-      "station": "apptegy-weber-ut",
-      "why": "storm day 2022-11-08 (market score 1.00)"
-    },
-    {
-      "timestamp": "20221109131958",
-      "url": "http://wsd.net/",
-      "station": "apptegy-weber-ut",
-      "why": "storm day 2022-11-09 (market score 1.00)"
-    },
-    {
-      "timestamp": "20221211225858",
-      "url": "http://wsd.net/",
-      "station": "apptegy-weber-ut",
-      "why": "storm day 2022-12-12 (market score 1.00)"
-    },
-    {
-      "timestamp": "20221212052146",
-      "url": "http://wsd.net/",
-      "station": "apptegy-weber-ut",
-      "why": "storm day 2022-12-12 (market score 1.00)"
-    },
-    {
-      "timestamp": "20221212143915",
-      "url": "http://wsd.net/",
-      "station": "apptegy-weber-ut",
-      "why": "storm day 2022-12-12 (market score 1.00)"
-    },
-    {
-      "timestamp": "20221220170944",
-      "url": "http://wsd.net/",
-      "station": "apptegy-weber-ut",
-      "why": "storm day 2022-12-21 (market score 1.00)"
-    },
-    {
-      "timestamp": "20221222121613",
-      "url": "http://wsd.net/",
-      "station": "apptegy-weber-ut",
-      "why": "storm day 2022-12-22 (market score 0.50)"
-    },
-    {
-      "timestamp": "20221222050534",
-      "url": "http://wsd.net/",
-      "station": "apptegy-weber-ut",
-      "why": "storm day 2022-12-22 (market score 0.50)"
-    },
-    {
-      "timestamp": "20221222065000",
-      "url": "http://wsd.net/",
-      "station": "apptegy-weber-ut",
-      "why": "storm day 2022-12-22 (market score 0.50)"
-    },
-    {
-      "timestamp": "20221222131707",
-      "url": "http://wsd.net/",
-      "station": "apptegy-weber-ut",
-      "why": "storm day 2022-12-22 (market score 0.50)"
-    },
-    {
-      "timestamp": "20221222011750",
-      "url": "http://wsd.net/",
-      "station": "apptegy-weber-ut",
-      "why": "storm day 2022-12-22 (market score 0.50)"
-    },
-    {
-      "timestamp": "20221221165638",
-      "url": "http://wsd.net/",
-      "station": "apptegy-weber-ut",
-      "why": "storm day 2022-12-22 (market score 0.50)"
-    },
-    {
-      "timestamp": "20221221232632",
-      "url": "http://wsd.net/",
-      "station": "apptegy-weber-ut",
-      "why": "storm day 2022-12-22 (market score 0.50)"
-    },
-    {
-      "timestamp": "20230130012311",
-      "url": "http://wsd.net/",
-      "station": "apptegy-weber-ut",
-      "why": "storm day 2023-01-30 (market score 0.50)"
-    },
-    {
-      "timestamp": "20230130131710",
-      "url": "http://wsd.net/",
-      "station": "apptegy-weber-ut",
-      "why": "storm day 2023-01-30 (market score 0.50)"
-    },
-    {
-      "timestamp": "20230131133348",
-      "url": "http://wsd.net/",
-      "station": "apptegy-weber-ut",
-      "why": "storm day 2023-01-31 (market score 0.50)"
-    },
-    {
-      "timestamp": "20230131033005",
-      "url": "http://wsd.net/",
-      "station": "apptegy-weber-ut",
-      "why": "storm day 2023-01-31 (market score 0.50)"
-    },
-    {
-      "timestamp": "20221128190643",
-      "url": "http://wsd.net/",
-      "station": "apptegy-weber-ut",
-      "why": "storm day 2022-11-29 (market score 0.25)"
-    },
-    {
-      "timestamp": "20221227132427",
-      "url": "http://wsd.net/",
-      "station": "apptegy-weber-ut",
-      "why": "storm day 2022-12-27 (market score 0.25)"
-    },
-    {
-      "timestamp": "20221227053715",
-      "url": "http://wsd.net/",
-      "station": "apptegy-weber-ut",
-      "why": "storm day 2022-12-27 (market score 0.25)"
-    },
-    {
-      "timestamp": "20221228011915",
-      "url": "http://wsd.net/",
-      "station": "apptegy-weber-ut",
-      "why": "storm day 2022-12-28 (market score 0.25)"
-    },
-    {
-      "timestamp": "20230110011634",
-      "url": "http://wsd.net/",
-      "station": "apptegy-weber-ut",
-      "why": "storm day 2023-01-10 (market score 0.25)"
-    },
-    {
-      "timestamp": "20230111131655",
-      "url": "http://wsd.net/",
-      "station": "apptegy-weber-ut",
-      "why": "storm day 2023-01-11 (market score 0.25)"
-    },
-    {
-      "timestamp": "20230109131650",
-      "url": "http://wsd.net/",
-      "station": "apptegy-weber-ut",
-      "why": "storm day 2023-01-09 (market score 0.25)"
-    },
-    {
-      "timestamp": "20230109020625",
-      "url": "http://wsd.net/",
-      "station": "apptegy-weber-ut",
-      "why": "storm day 2023-01-09 (market score 0.25)"
-    },
-    {
-      "timestamp": "20230117011712",
-      "url": "http://wsd.net/",
-      "station": "apptegy-weber-ut",
-      "why": "storm day 2023-01-17 (market score 0.25)"
-    },
-    {
-      "timestamp": "20221129014511",
-      "url": "http://wsd.net/",
-      "station": "apptegy-weber-ut",
-      "why": "storm day 2022-11-29 (market score 0.25)"
-    },
-    {
-      "timestamp": "20221204203435",
-      "url": "http://wsd.net/",
-      "station": "apptegy-weber-ut",
-      "why": "storm day 2022-12-05 (market score 0.25)"
-    },
-    {
-      "timestamp": "20230117131702",
-      "url": "http://wsd.net/",
-      "station": "apptegy-weber-ut",
-      "why": "storm day 2023-01-17 (market score 0.25)"
-    },
-    {
-      "timestamp": "20221205150640",
-      "url": "http://wsd.net/",
-      "station": "apptegy-weber-ut",
-      "why": "storm day 2022-12-05 (market score 0.25)"
-    },
-    {
-      "timestamp": "20221209120710",
-      "url": "http://wsd.net/",
-      "station": "apptegy-weber-ut",
-      "why": "storm day 2022-12-09 (market score 0.25)"
-    },
-    {
-      "timestamp": "20221228135448",
-      "url": "http://wsd.net/",
-      "station": "apptegy-weber-ut",
-      "why": "storm day 2022-12-28 (market score 0.25)"
-    },
-    {
-      "timestamp": "20221227011832",
-      "url": "http://wsd.net/",
-      "station": "apptegy-weber-ut",
-      "why": "storm day 2022-12-27 (market score 0.25)"
-    },
-    {
-      "timestamp": "20230110135313",
-      "url": "http://wsd.net/",
-      "station": "apptegy-weber-ut",
-      "why": "storm day 2023-01-10 (market score 0.25)"
-    },
-    {
-      "timestamp": "20230111011624",
-      "url": "http://wsd.net/",
-      "station": "apptegy-weber-ut",
-      "why": "storm day 2023-01-11 (market score 0.25)"
-    },
-    {
-      "timestamp": "20221128134942",
-      "url": "http://wsd.net/",
-      "station": "apptegy-weber-ut",
-      "why": "storm day 2022-11-28 (market score 0.25)"
-    },
-    {
-      "timestamp": "20221129150609",
-      "url": "http://wsd.net/",
-      "station": "apptegy-weber-ut",
-      "why": "storm day 2022-11-29 (market score 0.25)"
-    },
-    {
-      "timestamp": "20221128012042",
-      "url": "http://wsd.net/",
-      "station": "apptegy-weber-ut",
-      "why": "storm day 2022-11-28 (market score 0.25)"
-    },
-    {
-      "timestamp": "20221205021503",
-      "url": "http://wsd.net/",
-      "station": "apptegy-weber-ut",
-      "why": "storm day 2022-12-05 (market score 0.25)"
-    },
-    {
-      "timestamp": "20230127011742",
-      "url": "http://wsd.net/",
-      "station": "apptegy-weber-ut",
-      "why": "storm day 2023-01-27 (market score 0.25)"
-    },
-    {
-      "timestamp": "20230127143110",
-      "url": "http://wsd.net/",
-      "station": "apptegy-weber-ut",
-      "why": "storm day 2023-01-27 (market score 0.25)"
-    },
-    {
-      "timestamp": "20240205162219",
-      "url": "https://wsd.net/",
-      "station": "apptegy-weber-ut",
-      "why": "2024-02-06: within 2 days of one of its closure days"
-    },
-    {
-      "timestamp": "20230307173630",
-      "url": "http://wsd.net/",
-      "station": "apptegy-weber-ut",
-      "why": "2023-03-08: within 2 days of one of its closure days"
-    },
-    {
-      "timestamp": "20230318053942",
-      "url": "http://gbutters@wsd.net/",
-      "station": "apptegy-weber-ut",
-      "why": "2023-03-18: within 2 days of one of its closure days"
-    },
-    {
-      "timestamp": "20221126202543",
-      "url": "https://wsd.net/",
-      "station": "apptegy-weber-ut",
-      "why": "2022-11-27: within 2 days of one of its closure days"
-    },
-    {
-      "timestamp": "20210123052706",
-      "url": "https://wsd.net/",
-      "station": "apptegy-weber-ut",
-      "why": "2021-01-23: within 2 days of one of its closure days"
-    },
-    {
-      "timestamp": "20230204030226",
-      "url": "http://wsd.net/",
-      "station": "apptegy-weber-ut",
-      "why": "2023-02-04: within 2 days of one of its closure days"
-    },
-    {
-      "timestamp": "20240222203227",
-      "url": "https://wsd.net/",
-      "station": "apptegy-weber-ut",
-      "why": "2024-02-23: within 2 days of one of its closure days"
-    },
-    {
-      "timestamp": "20240224051519",
-      "url": "https://wsd.net/",
-      "station": "apptegy-weber-ut",
-      "why": "2024-02-24: within 2 days of one of its closure days"
-    },
-    {
-      "timestamp": "20240224140014",
-      "url": "https://wsd.net/",
-      "station": "apptegy-weber-ut",
-      "why": "2024-02-24: within 2 days of one of its closure days"
-    },
-    {
-      "timestamp": "20240224133440",
-      "url": "http://wsd.net/",
-      "station": "apptegy-weber-ut",
-      "why": "2024-02-24: within 2 days of one of its closure days"
-    },
-    {
-      "timestamp": "20240224070642",
-      "url": "http://wsd.net/",
-      "station": "apptegy-weber-ut",
-      "why": "2024-02-24: within 2 days of one of its closure days"
-    },
-    {
-      "timestamp": "20231129154724",
-      "url": "http://wsd.net/",
-      "station": "apptegy-weber-ut",
-      "why": "2023-11-29: within 2 days of one of its closure days"
-    },
-    {
-      "timestamp": "20210127232427",
-      "url": "http://wsd.net/",
-      "station": "apptegy-weber-ut",
-      "why": "2021-01-28: within 2 days of one of its closure days"
-    },
-    {
-      "timestamp": "20221215170456",
-      "url": "https://wsd.net/",
-      "station": "apptegy-weber-ut",
-      "why": "2022-12-16: within 2 days of one of its closure days"
-    },
-    {
-      "timestamp": "20240228213923",
-      "url": "http://wsd.net/",
-      "station": "apptegy-weber-ut",
-      "why": "2024-02-29: within 2 days of one of its closure days"
-    },
-    {
-      "timestamp": "20231202153759",
-      "url": "https://wsd.net/",
-      "station": "apptegy-weber-ut",
-      "why": "2023-12-02: within 2 days of one of its closure days"
-    },
-    {
-      "timestamp": "20201218053319",
-      "url": "https://wsd.net/",
-      "station": "apptegy-weber-ut",
-      "why": "2020-12-18: within 2 days of one of its closure days"
-    },
-    {
-      "timestamp": "20231201204947",
-      "url": "https://wsd.net/",
-      "station": "apptegy-weber-ut",
-      "why": "2023-12-02: within 2 days of one of its closure days"
-    },
-    {
-      "timestamp": "20230125053506",
-      "url": "https://wsd.net/",
-      "station": "apptegy-weber-ut",
-      "why": "2023-01-25: within 2 days of one of its closure days"
-    },
-    {
-      "timestamp": "20211028003742",
-      "url": "http://wsd.net/",
-      "station": "apptegy-weber-ut",
-      "why": "2021-10-28: within 2 days of one of its closure days"
-    },
-    {
-      "timestamp": "20210427142320",
-      "url": "http://wsd.net/",
-      "station": "apptegy-weber-ut",
-      "why": "2021-04-27: within 2 days of one of its closure days"
-    },
-    {
-      "timestamp": "20211028151035",
-      "url": "http://wsd.net/",
-      "station": "apptegy-weber-ut",
-      "why": "2021-10-28: within 2 days of one of its closure days"
-    },
-    {
-      "timestamp": "20211231225039",
-      "url": "http://wsd.net/",
-      "station": "apptegy-weber-ut",
-      "why": "2022-01-01: within 2 days of one of its closure days"
-    },
-    {
-      "timestamp": "20221111131937",
-      "url": "http://wsd.net/",
-      "station": "apptegy-weber-ut",
-      "why": "2022-11-11: within 2 days of one of its closure days"
-    },
-    {
-      "timestamp": "20230101131717",
-      "url": "http://wsd.net/",
-      "station": "apptegy-weber-ut",
-      "why": "2023-01-01: within 2 days of one of its closure days"
-    },
-    {
-      "timestamp": "20230105131804",
-      "url": "http://wsd.net/",
-      "station": "apptegy-weber-ut",
-      "why": "2023-01-05: within 2 days of one of its closure days"
-    },
-    {
-      "timestamp": "20221220011819",
-      "url": "http://wsd.net/",
-      "station": "apptegy-weber-ut",
-      "why": "2022-12-20: within 2 days of one of its closure days"
-    },
-    {
-      "timestamp": "20221222173217",
-      "url": "http://wsd.net/",
-      "station": "apptegy-weber-ut",
-      "why": "2022-12-23: within 2 days of one of its closure days"
-    },
-    {
-      "timestamp": "20221229011802",
-      "url": "http://wsd.net/",
-      "station": "apptegy-weber-ut",
-      "why": "2022-12-29: within 2 days of one of its closure days"
-    },
-    {
-      "timestamp": "20221231035956",
-      "url": "http://wsd.net/",
-      "station": "apptegy-weber-ut",
-      "why": "2022-12-31: within 2 days of one of its closure days"
-    },
-    {
-      "timestamp": "20221223203420",
-      "url": "http://wsd.net/",
-      "station": "apptegy-weber-ut",
-      "why": "2022-12-24: within 2 days of one of its closure days"
-    },
-    {
-      "timestamp": "20221225131752",
-      "url": "http://wsd.net/",
-      "station": "apptegy-weber-ut",
-      "why": "2022-12-25: within 2 days of one of its closure days"
-    },
-    {
-      "timestamp": "20221231131641",
-      "url": "http://wsd.net/",
-      "station": "apptegy-weber-ut",
-      "why": "2022-12-31: within 2 days of one of its closure days"
-    },
-    {
-      "timestamp": "20221229131635",
-      "url": "http://wsd.net/",
-      "station": "apptegy-weber-ut",
-      "why": "2022-12-29: within 2 days of one of its closure days"
-    },
-    {
-      "timestamp": "20230101014907",
-      "url": "http://wsd.net/",
-      "station": "apptegy-weber-ut",
-      "why": "2023-01-01: within 2 days of one of its closure days"
-    },
-    {
-      "timestamp": "20221225011701",
-      "url": "http://wsd.net/",
-      "station": "apptegy-weber-ut",
-      "why": "2022-12-25: within 2 days of one of its closure days"
-    },
-    {
-      "timestamp": "20221224131632",
-      "url": "http://wsd.net/",
-      "station": "apptegy-weber-ut",
-      "why": "2022-12-24: within 2 days of one of its closure days"
-    },
-    {
-      "timestamp": "20230119131630",
-      "url": "http://wsd.net/",
-      "station": "apptegy-weber-ut",
-      "why": "2023-01-19: within 2 days of one of its closure days"
-    },
-    {
-      "timestamp": "20221226011712",
-      "url": "http://wsd.net/",
-      "station": "apptegy-weber-ut",
-      "why": "2022-12-26: within 2 days of one of its closure days"
-    },
-    {
-      "timestamp": "20221207084425",
-      "url": "http://wsd.net/",
-      "station": "apptegy-weber-ut",
-      "why": "2022-12-07: within 2 days of one of its closure days"
-    },
-    {
-      "timestamp": "20221127131901",
-      "url": "http://wsd.net/",
-      "station": "apptegy-weber-ut",
-      "why": "2022-11-27: within 2 days of one of its closure days"
-    },
-    {
-      "timestamp": "20221106132006",
-      "url": "http://wsd.net/",
-      "station": "apptegy-weber-ut",
-      "why": "2022-11-06: within 2 days of one of its closure days"
-    },
-    {
-      "timestamp": "20230112011738",
-      "url": "http://wsd.net/",
-      "station": "apptegy-weber-ut",
-      "why": "2023-01-12: within 2 days of one of its closure days"
-    },
-    {
-      "timestamp": "20230115131632",
-      "url": "http://wsd.net/",
-      "station": "apptegy-weber-ut",
-      "why": "2023-01-15: within 2 days of one of its closure days"
-    },
-    {
-      "timestamp": "20230113131714",
-      "url": "http://wsd.net/",
-      "station": "apptegy-weber-ut",
-      "why": "2023-01-13: within 2 days of one of its closure days"
-    },
-    {
-      "timestamp": "20230108131715",
-      "url": "http://wsd.net/",
-      "station": "apptegy-weber-ut",
-      "why": "2023-01-08: within 2 days of one of its closure days"
-    },
-    {
-      "timestamp": "20221112045627",
-      "url": "http://wsd.net/",
-      "station": "apptegy-weber-ut",
-      "why": "2022-11-12: within 2 days of one of its closure days"
-    },
-    {
-      "timestamp": "20230115011721",
-      "url": "http://wsd.net/",
-      "station": "apptegy-weber-ut",
-      "why": "2023-01-15: within 2 days of one of its closure days"
-    },
-    {
-      "timestamp": "20230107015550",
-      "url": "http://wsd.net/",
-      "station": "apptegy-weber-ut",
-      "why": "2023-01-07: within 2 days of one of its closure days"
-    },
-    {
-      "timestamp": "20230113012116",
-      "url": "http://wsd.net/",
-      "station": "apptegy-weber-ut",
-      "why": "2023-01-13: within 2 days of one of its closure days"
-    },
-    {
-      "timestamp": "20221204062336",
-      "url": "http://wsd.net/",
-      "station": "apptegy-weber-ut",
-      "why": "2022-12-04: within 2 days of one of its closure days"
-    },
-    {
-      "timestamp": "20230116131724",
-      "url": "http://wsd.net/",
-      "station": "apptegy-weber-ut",
-      "why": "2023-01-16: within 2 days of one of its closure days"
-    },
-    {
-      "timestamp": "20221202194433",
-      "url": "http://wsd.net/",
-      "station": "apptegy-weber-ut",
-      "why": "2022-12-03: within 2 days of one of its closure days"
-    },
-    {
-      "timestamp": "20221202171953",
-      "url": "http://wsd.net/",
-      "station": "apptegy-weber-ut",
-      "why": "2022-12-03: within 2 days of one of its closure days"
-    },
-    {
-      "timestamp": "20230107131732",
-      "url": "http://wsd.net/",
-      "station": "apptegy-weber-ut",
-      "why": "2023-01-07: within 2 days of one of its closure days"
-    },
-    {
-      "timestamp": "20230112131649",
-      "url": "http://wsd.net/",
-      "station": "apptegy-weber-ut",
-      "why": "2023-01-12: within 2 days of one of its closure days"
-    },
-    {
-      "timestamp": "20221207151700",
-      "url": "http://wsd.net/",
-      "station": "apptegy-weber-ut",
-      "why": "2022-12-07: within 2 days of one of its closure days"
-    },
-    {
-      "timestamp": "20230118021454",
-      "url": "http://wsd.net/",
-      "station": "apptegy-weber-ut",
-      "why": "2023-01-18: within 2 days of one of its closure days"
-    },
-    {
-      "timestamp": "20221127011842",
-      "url": "http://wsd.net/",
-      "station": "apptegy-weber-ut",
-      "why": "2022-11-27: within 2 days of one of its closure days"
-    },
-    {
-      "timestamp": "20230108011722",
-      "url": "http://wsd.net/",
-      "station": "apptegy-weber-ut",
-      "why": "2023-01-08: within 2 days of one of its closure days"
-    },
-    {
-      "timestamp": "20221126131840",
-      "url": "http://wsd.net/",
-      "station": "apptegy-weber-ut",
-      "why": "2022-11-26: within 2 days of one of its closure days"
-    },
-    {
-      "timestamp": "20221106011940",
-      "url": "http://wsd.net/",
-      "station": "apptegy-weber-ut",
-      "why": "2022-11-06: within 2 days of one of its closure days"
-    },
-    {
-      "timestamp": "20221101012800",
-      "url": "http://wsd.net/",
-      "station": "apptegy-weber-ut",
-      "why": "2022-11-01: within 2 days of one of its closure days"
-    },
-    {
-      "timestamp": "20221107131916",
-      "url": "http://wsd.net/",
-      "station": "apptegy-weber-ut",
-      "why": "2022-11-07: within 2 days of one of its closure days"
-    },
-    {
-      "timestamp": "20221103131914",
-      "url": "http://wsd.net/",
-      "station": "apptegy-weber-ut",
-      "why": "2022-11-03: within 2 days of one of its closure days"
-    },
-    {
-      "timestamp": "20221103011947",
-      "url": "http://wsd.net/",
-      "station": "apptegy-weber-ut",
-      "why": "2022-11-03: within 2 days of one of its closure days"
-    },
-    {
-      "timestamp": "20190212073902",
-      "url": "http://kmurphy@wsd.net/",
-      "station": "apptegy-weber-ut",
-      "why": "2019-02-12: within 2 days of one of its closure days"
-    },
-    {
-      "timestamp": "20190211163502",
-      "url": "http://kmurphy@wsd.net/",
-      "station": "apptegy-weber-ut",
-      "why": "2019-02-12: within 2 days of one of its closure days"
-    },
-    {
-      "timestamp": "20221031132019",
-      "url": "http://wsd.net/",
-      "station": "apptegy-weber-ut",
-      "why": "2022-10-31: within 2 days of one of its closure days"
-    },
-    {
-      "timestamp": "20231026160411",
-      "url": "http://wsd.net/",
-      "station": "apptegy-weber-ut",
-      "why": "2023-10-27: within 2 days of one of its closure days"
-    },
-    {
-      "timestamp": "20231027013144",
-      "url": "http://wsd.net/",
-      "station": "apptegy-weber-ut",
-      "why": "2023-10-27: within 2 days of one of its closure days"
-    },
-    {
-      "timestamp": "20221111012008",
-      "url": "http://wsd.net/",
-      "station": "apptegy-weber-ut",
-      "why": "2022-11-11: within 2 days of one of its closure days"
-    },
-    {
-      "timestamp": "20191222114802",
-      "url": "http://wsd.net:80/",
-      "station": "apptegy-weber-ut",
-      "why": "2019-12-22: within 2 days of one of its closure days"
-    },
-    {
-      "timestamp": "20230402060512",
-      "url": "https://wsd.net/",
-      "station": "apptegy-weber-ut",
-      "why": "2023-04-02: within 2 days of one of its closure days"
-    },
-    {
-      "timestamp": "20231024011708",
-      "url": "http://wsd.net/",
-      "station": "apptegy-weber-ut",
-      "why": "2023-10-24: within 2 days of one of its closure days"
-    },
-    {
-      "timestamp": "20241028155550",
-      "url": "http://wsd.net/",
-      "station": "apptegy-weber-ut",
-      "why": "2024-10-28: within 2 days of one of its closure days"
-    },
-    {
-      "timestamp": "20241028032034",
-      "url": "http://wsd.net/",
-      "station": "apptegy-weber-ut",
-      "why": "2024-10-28: within 2 days of one of its closure days"
-    },
-    {
-      "timestamp": "20241027033905",
-      "url": "http://wsd.net/",
-      "station": "apptegy-weber-ut",
-      "why": "2024-10-27: within 2 days of one of its closure days"
-    },
-    {
-      "timestamp": "20241027040455",
-      "url": "http://wsd.net/",
-      "station": "apptegy-weber-ut",
-      "why": "2024-10-27: within 2 days of one of its closure days"
-    },
-    {
-      "timestamp": "20221207191225",
-      "url": "http://wsd.net/",
-      "station": "apptegy-weber-ut",
-      "why": "2022-12-08: within 2 days of one of its closure days"
-    },
-    {
-      "timestamp": "20230316095130",
-      "url": "http://wsd.net/",
-      "station": "apptegy-weber-ut",
-      "why": "2023-03-16: within 2 days of one of its closure days"
-    },
-    {
-      "timestamp": "20221208052607",
-      "url": "http://wsd.net/",
-      "station": "apptegy-weber-ut",
-      "why": "2022-12-08: within 2 days of one of its closure days"
-    },
-    {
-      "timestamp": "20230328104501",
-      "url": "http://wsd.net/",
-      "station": "apptegy-weber-ut",
-      "why": "2023-03-28: within 2 days of one of its closure days"
-    },
-    {
-      "timestamp": "20230319081137",
-      "url": "http://wsd.net/",
-      "station": "apptegy-weber-ut",
-      "why": "2023-03-19: within 2 days of one of its closure days"
-    },
-    {
-      "timestamp": "20230104011750",
-      "url": "http://wsd.net/",
-      "station": "apptegy-weber-ut",
-      "why": "2023-01-04: within 2 days of one of its closure days"
-    },
-    {
-      "timestamp": "20221219201537",
-      "url": "http://wsd.net/",
-      "station": "apptegy-weber-ut",
-      "why": "2022-12-20: within 2 days of one of its closure days"
-    },
-    {
-      "timestamp": "20230315215452",
-      "url": "http://wsd.net/",
-      "station": "apptegy-weber-ut",
-      "why": "2023-03-16: within 2 days of one of its closure days"
-    },
-    {
-      "timestamp": "20230315231202",
-      "url": "http://wsd.net/",
-      "station": "apptegy-weber-ut",
-      "why": "2023-03-16: within 2 days of one of its closure days"
-    },
-    {
-      "timestamp": "20230316011638",
-      "url": "http://wsd.net/",
-      "station": "apptegy-weber-ut",
-      "why": "2023-03-16: within 2 days of one of its closure days"
-    },
-    {
-      "timestamp": "20230105012405",
-      "url": "http://wsd.net/",
-      "station": "apptegy-weber-ut",
-      "why": "2023-01-05: within 2 days of one of its closure days"
-    },
-    {
-      "timestamp": "20230104131653",
-      "url": "http://wsd.net/",
-      "station": "apptegy-weber-ut",
-      "why": "2023-01-04: within 2 days of one of its closure days"
-    },
-    {
-      "timestamp": "20230315222105",
-      "url": "http://wsd.net/",
-      "station": "apptegy-weber-ut",
-      "why": "2023-03-16: within 2 days of one of its closure days"
-    },
-    {
-      "timestamp": "20231014054756",
-      "url": "https://wsd.net/",
-      "station": "apptegy-weber-ut",
-      "why": "2023-10-14: within 2 days of one of its closure days"
-    },
-    {
-      "timestamp": "20231014034657",
-      "url": "http://wsd.net/",
-      "station": "apptegy-weber-ut",
-      "why": "2023-10-14: within 2 days of one of its closure days"
-    },
-    {
-      "timestamp": "20221024133800",
-      "url": "http://wsd.net/",
-      "station": "apptegy-weber-ut",
-      "why": "2022-10-24: within 2 days of one of its closure days"
-    },
-    {
-      "timestamp": "20221219062713",
-      "url": "http://wsd.net/",
-      "station": "apptegy-weber-ut",
-      "why": "2022-12-19: within 2 days of one of its closure days"
-    },
-    {
-      "timestamp": "20221223132916",
-      "url": "http://wsd.net/",
-      "station": "apptegy-weber-ut",
-      "why": "2022-12-23: within 2 days of one of its closure days"
-    },
-    {
-      "timestamp": "20221024022034",
-      "url": "http://wsd.net/",
-      "station": "apptegy-weber-ut",
-      "why": "2022-10-24: within 2 days of one of its closure days"
-    },
-    {
-      "timestamp": "20221218160405",
-      "url": "http://wsd.net/",
-      "station": "apptegy-weber-ut",
-      "why": "2022-12-19: within 2 days of one of its closure days"
-    },
-    {
-      "timestamp": "20221219012141",
-      "url": "http://wsd.net/",
-      "station": "apptegy-weber-ut",
-      "why": "2022-12-19: within 2 days of one of its closure days"
-    },
-    {
-      "timestamp": "20221223011717",
-      "url": "http://wsd.net/",
-      "station": "apptegy-weber-ut",
-      "why": "2022-12-23: within 2 days of one of its closure days"
-    },
-    {
-      "timestamp": "20240125165540",
+      "timestamp": "20240125210613",
       "url": "http://wsd.net/",
       "station": "apptegy-weber-ut",
       "why": "2024-01-26: within 2 days of one of its closure days"
     },
     {
-      "timestamp": "20221224011629",
-      "url": "http://wsd.net/",
-      "station": "apptegy-weber-ut",
-      "why": "2022-12-24: within 2 days of one of its closure days"
-    },
-    {
-      "timestamp": "20230308063922",
-      "url": "http://wsd.net/",
-      "station": "apptegy-weber-ut",
-      "why": "2023-03-08: within 2 days of one of its closure days"
-    },
-    {
-      "timestamp": "20230308021042",
-      "url": "http://wsd.net/",
-      "station": "apptegy-weber-ut",
-      "why": "2023-03-08: within 2 days of one of its closure days"
-    },
-    {
-      "timestamp": "20230116011655",
-      "url": "http://wsd.net/",
-      "station": "apptegy-weber-ut",
-      "why": "2023-01-16: within 2 days of one of its closure days"
-    },
-    {
-      "timestamp": "20230119012053",
-      "url": "http://wsd.net/",
-      "station": "apptegy-weber-ut",
-      "why": "2023-01-19: within 2 days of one of its closure days"
-    },
-    {
-      "timestamp": "20230313015156",
+      "timestamp": "20230313141103",
       "url": "http://wsd.net/",
       "station": "apptegy-weber-ut",
       "why": "2023-03-13: within 2 days of one of its closure days"
     },
     {
-      "timestamp": "20221220131820",
+      "timestamp": "20230314031858",
       "url": "http://wsd.net/",
       "station": "apptegy-weber-ut",
-      "why": "2022-12-20: within 2 days of one of its closure days"
+      "why": "2023-03-14: within 2 days of one of its closure days"
     },
     {
-      "timestamp": "20230118131833",
+      "timestamp": "20221204091457",
       "url": "http://wsd.net/",
       "station": "apptegy-weber-ut",
-      "why": "2023-01-18: within 2 days of one of its closure days"
+      "why": "2022-12-04: within 2 days of one of its closure days"
     },
     {
-      "timestamp": "20230311135054",
-      "url": "http://wsd.net/",
-      "station": "apptegy-weber-ut",
-      "why": "2023-03-11: within 2 days of one of its closure days"
-    },
-    {
-      "timestamp": "20230312011637",
+      "timestamp": "20230312144701",
       "url": "http://wsd.net/",
       "station": "apptegy-weber-ut",
       "why": "2023-03-12: within 2 days of one of its closure days"
     },
     {
-      "timestamp": "20240126011721",
+      "timestamp": "20230313170355",
       "url": "http://wsd.net/",
       "station": "apptegy-weber-ut",
-      "why": "2024-01-26: within 2 days of one of its closure days"
+      "why": "2023-03-14: within 2 days of one of its closure days"
     },
     {
-      "timestamp": "20221130012034",
+      "timestamp": "20221203004238",
       "url": "http://wsd.net/",
       "station": "apptegy-weber-ut",
-      "why": "2022-11-30: within 2 days of one of its closure days"
+      "why": "2022-12-03: within 2 days of one of its closure days"
     },
     {
-      "timestamp": "20240126131803",
+      "timestamp": "20221206140316",
       "url": "http://wsd.net/",
       "station": "apptegy-weber-ut",
-      "why": "2024-01-26: within 2 days of one of its closure days"
+      "why": "2022-12-06: within 2 days of one of its closure days"
     },
     {
-      "timestamp": "20221028131914",
+      "timestamp": "20221028011952",
       "url": "http://wsd.net/",
       "station": "apptegy-weber-ut",
       "why": "2022-10-28: within 2 days of one of its closure days"
+    },
+    {
+      "timestamp": "20221201030212",
+      "url": "http://wsd.net/",
+      "station": "apptegy-weber-ut",
+      "why": "2022-12-01: within 2 days of one of its closure days"
+    },
+    {
+      "timestamp": "20191211041150",
+      "url": "https://wsd.net/",
+      "station": "apptegy-weber-ut",
+      "why": "2019-12-11: within 2 days of one of its closure days"
+    },
+    {
+      "timestamp": "20221126011841",
+      "url": "http://wsd.net/",
+      "station": "apptegy-weber-ut",
+      "why": "2022-11-26: within 2 days of one of its closure days"
+    },
+    {
+      "timestamp": "20221027132006",
+      "url": "http://wsd.net/",
+      "station": "apptegy-weber-ut",
+      "why": "2022-10-27: within 2 days of one of its closure days"
+    },
+    {
+      "timestamp": "20221104011929",
+      "url": "http://wsd.net/",
+      "station": "apptegy-weber-ut",
+      "why": "2022-11-04: within 2 days of one of its closure days"
+    },
+    {
+      "timestamp": "20240123131720",
+      "url": "http://wsd.net/",
+      "station": "apptegy-weber-ut",
+      "why": "2024-01-23: within 2 days of one of its closure days"
+    },
+    {
+      "timestamp": "20200102192724",
+      "url": "http://wsd.net/",
+      "station": "apptegy-weber-ut",
+      "why": "2020-01-03: within 2 days of one of its closure days"
+    },
+    {
+      "timestamp": "20240123005704",
+      "url": "http://wsd.net/",
+      "station": "apptegy-weber-ut",
+      "why": "2024-01-23: within 2 days of one of its closure days"
+    },
+    {
+      "timestamp": "20221104131921",
+      "url": "http://wsd.net/",
+      "station": "apptegy-weber-ut",
+      "why": "2022-11-04: within 2 days of one of its closure days"
+    },
+    {
+      "timestamp": "20240120131728",
+      "url": "http://wsd.net/",
+      "station": "apptegy-weber-ut",
+      "why": "2024-01-20: within 2 days of one of its closure days"
+    },
+    {
+      "timestamp": "20240124065845",
+      "url": "http://wsd.net/",
+      "station": "apptegy-weber-ut",
+      "why": "2024-01-24: within 2 days of one of its closure days"
+    },
+    {
+      "timestamp": "20240124011733",
+      "url": "http://wsd.net/",
+      "station": "apptegy-weber-ut",
+      "why": "2024-01-24: within 2 days of one of its closure days"
+    },
+    {
+      "timestamp": "20240208044418",
+      "url": "http://wsd.net/",
+      "station": "apptegy-weber-ut",
+      "why": "2024-02-08: within 2 days of one of its closure days"
+    },
+    {
+      "timestamp": "20221107032713",
+      "url": "http://wsd.net/",
+      "station": "apptegy-weber-ut",
+      "why": "2022-11-07: within 2 days of one of its closure days"
+    },
+    {
+      "timestamp": "20240208141410",
+      "url": "http://wsd.net/",
+      "station": "apptegy-weber-ut",
+      "why": "2024-02-08: within 2 days of one of its closure days"
+    },
+    {
+      "timestamp": "20240120094330",
+      "url": "http://wsd.net/",
+      "station": "apptegy-weber-ut",
+      "why": "2024-01-20: within 2 days of one of its closure days"
+    },
+    {
+      "timestamp": "20240113131725",
+      "url": "http://wsd.net/",
+      "station": "apptegy-weber-ut",
+      "why": "2024-01-13: within 2 days of one of its closure days"
+    },
+    {
+      "timestamp": "20240119082614",
+      "url": "http://wsd.net/",
+      "station": "apptegy-weber-ut",
+      "why": "2024-01-19: within 2 days of one of its closure days"
+    },
+    {
+      "timestamp": "20240119114601",
+      "url": "http://wsd.net/",
+      "station": "apptegy-weber-ut",
+      "why": "2024-01-19: within 2 days of one of its closure days"
+    },
+    {
+      "timestamp": "20240119161123",
+      "url": "http://wsd.net/",
+      "station": "apptegy-weber-ut",
+      "why": "2024-01-20: within 2 days of one of its closure days"
+    },
+    {
+      "timestamp": "20240114011729",
+      "url": "http://wsd.net/",
+      "station": "apptegy-weber-ut",
+      "why": "2024-01-14: within 2 days of one of its closure days"
+    },
+    {
+      "timestamp": "20240119233246",
+      "url": "http://wsd.net/",
+      "station": "apptegy-weber-ut",
+      "why": "2024-01-20: within 2 days of one of its closure days"
+    },
+    {
+      "timestamp": "20240119092249",
+      "url": "http://wsd.net/",
+      "station": "apptegy-weber-ut",
+      "why": "2024-01-19: within 2 days of one of its closure days"
+    },
+    {
+      "timestamp": "20240119103713",
+      "url": "http://wsd.net/",
+      "station": "apptegy-weber-ut",
+      "why": "2024-01-19: within 2 days of one of its closure days"
+    },
+    {
+      "timestamp": "20240119131708",
+      "url": "http://wsd.net/",
+      "station": "apptegy-weber-ut",
+      "why": "2024-01-19: within 2 days of one of its closure days"
+    },
+    {
+      "timestamp": "20240120004911",
+      "url": "http://wsd.net/",
+      "station": "apptegy-weber-ut",
+      "why": "2024-01-20: within 2 days of one of its closure days"
+    },
+    {
+      "timestamp": "20221101134751",
+      "url": "http://wsd.net/",
+      "station": "apptegy-weber-ut",
+      "why": "2022-11-01: within 2 days of one of its closure days"
+    },
+    {
+      "timestamp": "20221112131932",
+      "url": "http://wsd.net/",
+      "station": "apptegy-weber-ut",
+      "why": "2022-11-12: within 2 days of one of its closure days"
+    },
+    {
+      "timestamp": "20240112172748",
+      "url": "http://wsd.net/",
+      "station": "apptegy-weber-ut",
+      "why": "2024-01-13: within 2 days of one of its closure days"
+    },
+    {
+      "timestamp": "20231027135104",
+      "url": "http://wsd.net/",
+      "station": "apptegy-weber-ut",
+      "why": "2023-10-27: within 2 days of one of its closure days"
+    },
+    {
+      "timestamp": "20231028015931",
+      "url": "http://wsd.net/",
+      "station": "apptegy-weber-ut",
+      "why": "2023-10-28: within 2 days of one of its closure days"
+    },
+    {
+      "timestamp": "20240118211855",
+      "url": "http://wsd.net/",
+      "station": "apptegy-weber-ut",
+      "why": "2024-01-19: within 2 days of one of its closure days"
+    },
+    {
+      "timestamp": "20240208011705",
+      "url": "http://wsd.net/",
+      "station": "apptegy-weber-ut",
+      "why": "2024-02-08: within 2 days of one of its closure days"
+    },
+    {
+      "timestamp": "20240116151301",
+      "url": "http://wsd.net/",
+      "station": "apptegy-weber-ut",
+      "why": "2024-01-16: within 2 days of one of its closure days"
+    },
+    {
+      "timestamp": "20221031011920",
+      "url": "http://wsd.net/",
+      "station": "apptegy-weber-ut",
+      "why": "2022-10-31: within 2 days of one of its closure days"
+    },
+    {
+      "timestamp": "20240114131745",
+      "url": "http://wsd.net/",
+      "station": "apptegy-weber-ut",
+      "why": "2024-01-14: within 2 days of one of its closure days"
+    },
+    {
+      "timestamp": "20240112193724",
+      "url": "http://wsd.net/",
+      "station": "apptegy-weber-ut",
+      "why": "2024-01-13: within 2 days of one of its closure days"
+    },
+    {
+      "timestamp": "20231025131819",
+      "url": "http://wsd.net/",
+      "station": "apptegy-weber-ut",
+      "why": "2023-10-25: within 2 days of one of its closure days"
+    },
+    {
+      "timestamp": "20241027163746",
+      "url": "http://wsd.net/",
+      "station": "apptegy-weber-ut",
+      "why": "2024-10-28: within 2 days of one of its closure days"
+    },
+    {
+      "timestamp": "20241026180540",
+      "url": "http://wsd.net/",
+      "station": "apptegy-weber-ut",
+      "why": "2024-10-27: within 2 days of one of its closure days"
+    },
+    {
+      "timestamp": "20231024140655",
+      "url": "http://wsd.net/",
+      "station": "apptegy-weber-ut",
+      "why": "2023-10-24: within 2 days of one of its closure days"
+    },
+    {
+      "timestamp": "20221207182914",
+      "url": "http://wsd.net/",
+      "station": "apptegy-weber-ut",
+      "why": "2022-12-08: within 2 days of one of its closure days"
+    },
+    {
+      "timestamp": "20230406021627",
+      "url": "http://wsd.net/",
+      "station": "apptegy-weber-ut",
+      "why": "2023-04-06: within 2 days of one of its closure days"
+    },
+    {
+      "timestamp": "20230204012353",
+      "url": "http://wsd.net/",
+      "station": "apptegy-weber-ut",
+      "why": "2023-02-04: within 2 days of one of its closure days"
+    },
+    {
+      "timestamp": "20230204131805",
+      "url": "http://wsd.net/",
+      "station": "apptegy-weber-ut",
+      "why": "2023-02-04: within 2 days of one of its closure days"
+    },
+    {
+      "timestamp": "20240315144349",
+      "url": "http://wsd.net/",
+      "station": "apptegy-weber-ut",
+      "why": "2024-03-15: within 2 days of one of its closure days"
+    },
+    {
+      "timestamp": "20240314132523",
+      "url": "http://wsd.net/",
+      "station": "apptegy-weber-ut",
+      "why": "2024-03-14: within 2 days of one of its closure days"
+    },
+    {
+      "timestamp": "20240130113829",
+      "url": "http://wsd.net/",
+      "station": "apptegy-weber-ut",
+      "why": "2024-01-30: within 2 days of one of its closure days"
+    },
+    {
+      "timestamp": "20240130131712",
+      "url": "http://wsd.net/",
+      "station": "apptegy-weber-ut",
+      "why": "2024-01-30: within 2 days of one of its closure days"
+    },
+    {
+      "timestamp": "20221210014156",
+      "url": "http://wsd.net/",
+      "station": "apptegy-weber-ut",
+      "why": "2022-12-10: within 2 days of one of its closure days"
+    },
+    {
+      "timestamp": "20230316131716",
+      "url": "http://wsd.net/",
+      "station": "apptegy-weber-ut",
+      "why": "2023-03-16: within 2 days of one of its closure days"
+    },
+    {
+      "timestamp": "20240214011758",
+      "url": "http://wsd.net/",
+      "station": "apptegy-weber-ut",
+      "why": "2024-02-14: within 2 days of one of its closure days"
+    },
+    {
+      "timestamp": "20240223061905",
+      "url": "http://wsd.net/",
+      "station": "apptegy-weber-ut",
+      "why": "2024-02-23: within 2 days of one of its closure days"
+    },
+    {
+      "timestamp": "20240209012729",
+      "url": "http://wsd.net/",
+      "station": "apptegy-weber-ut",
+      "why": "2024-02-09: within 2 days of one of its closure days"
+    },
+    {
+      "timestamp": "20240127131843",
+      "url": "http://wsd.net/",
+      "station": "apptegy-weber-ut",
+      "why": "2024-01-27: within 2 days of one of its closure days"
+    },
+    {
+      "timestamp": "20240208232929",
+      "url": "http://wsd.net/",
+      "station": "apptegy-weber-ut",
+      "why": "2024-02-09: within 2 days of one of its closure days"
+    },
+    {
+      "timestamp": "20221219131823",
+      "url": "http://wsd.net/",
+      "station": "apptegy-weber-ut",
+      "why": "2022-12-19: within 2 days of one of its closure days"
+    },
+    {
+      "timestamp": "20240302162210",
+      "url": "http://wsd.net/",
+      "station": "apptegy-weber-ut",
+      "why": "2024-03-03: within 2 days of one of its closure days"
+    },
+    {
+      "timestamp": "20240314011715",
+      "url": "http://wsd.net/",
+      "station": "apptegy-weber-ut",
+      "why": "2024-03-14: within 2 days of one of its closure days"
+    },
+    {
+      "timestamp": "20221208135602",
+      "url": "http://wsd.net/",
+      "station": "apptegy-weber-ut",
+      "why": "2022-12-08: within 2 days of one of its closure days"
+    },
+    {
+      "timestamp": "20240214133524",
+      "url": "http://wsd.net/",
+      "station": "apptegy-weber-ut",
+      "why": "2024-02-14: within 2 days of one of its closure days"
+    },
+    {
+      "timestamp": "20240206145636",
+      "url": "http://wsd.net/",
+      "station": "apptegy-weber-ut",
+      "why": "2024-02-06: within 2 days of one of its closure days"
+    },
+    {
+      "timestamp": "20240203065025",
+      "url": "http://wsd.net/",
+      "station": "apptegy-weber-ut",
+      "why": "2024-02-03: within 2 days of one of its closure days"
+    },
+    {
+      "timestamp": "20240204131747",
+      "url": "http://wsd.net/",
+      "station": "apptegy-weber-ut",
+      "why": "2024-02-04: within 2 days of one of its closure days"
+    },
+    {
+      "timestamp": "20230419011718",
+      "url": "http://wsd.net/",
+      "station": "apptegy-weber-ut",
+      "why": "2023-04-19: within 2 days of one of its closure days"
+    },
+    {
+      "timestamp": "20240206011754",
+      "url": "http://wsd.net/",
+      "station": "apptegy-weber-ut",
+      "why": "2024-02-06: within 2 days of one of its closure days"
+    },
+    {
+      "timestamp": "20240217044526",
+      "url": "http://wsd.net/",
+      "station": "apptegy-weber-ut",
+      "why": "2024-02-17: within 2 days of one of its closure days"
+    },
+    {
+      "timestamp": "20240206004607",
+      "url": "http://wsd.net/",
+      "station": "apptegy-weber-ut",
+      "why": "2024-02-06: within 2 days of one of its closure days"
+    },
+    {
+      "timestamp": "20240219124621",
+      "url": "http://amtaylor@wsd.net/",
+      "station": "apptegy-weber-ut",
+      "why": "2024-02-19: within 2 days of one of its closure days"
+    },
+    {
+      "timestamp": "20240229015339",
+      "url": "http://wsd.net/",
+      "station": "apptegy-weber-ut",
+      "why": "2024-02-29: within 2 days of one of its closure days"
+    },
+    {
+      "timestamp": "20240203131822",
+      "url": "http://wsd.net/",
+      "station": "apptegy-weber-ut",
+      "why": "2024-02-03: within 2 days of one of its closure days"
+    },
+    {
+      "timestamp": "20230420132026",
+      "url": "http://wsd.net/",
+      "station": "apptegy-weber-ut",
+      "why": "2023-04-20: within 2 days of one of its closure days"
+    },
+    {
+      "timestamp": "20240204012040",
+      "url": "http://wsd.net/",
+      "station": "apptegy-weber-ut",
+      "why": "2024-02-04: within 2 days of one of its closure days"
+    },
+    {
+      "timestamp": "20240205182848",
+      "url": "http://wsd.net/",
+      "station": "apptegy-weber-ut",
+      "why": "2024-02-06: within 2 days of one of its closure days"
+    },
+    {
+      "timestamp": "20240219131903",
+      "url": "http://wsd.net/",
+      "station": "apptegy-weber-ut",
+      "why": "2024-02-19: within 2 days of one of its closure days"
+    },
+    {
+      "timestamp": "20240223154509",
+      "url": "http://wsd.net/",
+      "station": "apptegy-weber-ut",
+      "why": "2024-02-23: within 2 days of one of its closure days"
+    },
+    {
+      "timestamp": "20240229001443",
+      "url": "http://wsd.net/",
+      "station": "apptegy-weber-ut",
+      "why": "2024-02-29: within 2 days of one of its closure days"
+    },
+    {
+      "timestamp": "20240303021713",
+      "url": "http://wsd.net/",
+      "station": "apptegy-weber-ut",
+      "why": "2024-03-03: within 2 days of one of its closure days"
+    },
+    {
+      "timestamp": "20240213011747",
+      "url": "http://wsd.net/",
+      "station": "apptegy-weber-ut",
+      "why": "2024-02-13: within 2 days of one of its closure days"
+    },
+    {
+      "timestamp": "20240303141007",
+      "url": "http://wsd.net/",
+      "station": "apptegy-weber-ut",
+      "why": "2024-03-03: within 2 days of one of its closure days"
+    },
+    {
+      "timestamp": "20240228150251",
+      "url": "http://wsd.net/",
+      "station": "apptegy-weber-ut",
+      "why": "2024-02-28: within 2 days of one of its closure days"
+    },
+    {
+      "timestamp": "20240302061944",
+      "url": "http://wsd.net/",
+      "station": "apptegy-weber-ut",
+      "why": "2024-03-02: within 2 days of one of its closure days"
+    },
+    {
+      "timestamp": "20240130230556",
+      "url": "http://wsd.net/",
+      "station": "apptegy-weber-ut",
+      "why": "2024-01-31: within 2 days of one of its closure days"
+    },
+    {
+      "timestamp": "20240213002110",
+      "url": "http://wsd.net/",
+      "station": "apptegy-weber-ut",
+      "why": "2024-02-13: within 2 days of one of its closure days"
+    },
+    {
+      "timestamp": "20240213132203",
+      "url": "http://wsd.net/",
+      "station": "apptegy-weber-ut",
+      "why": "2024-02-13: within 2 days of one of its closure days"
+    },
+    {
+      "timestamp": "20230420013020",
+      "url": "http://wsd.net/",
+      "station": "apptegy-weber-ut",
+      "why": "2023-04-20: within 2 days of one of its closure days"
+    },
+    {
+      "timestamp": "20240131030957",
+      "url": "http://wsd.net/",
+      "station": "apptegy-weber-ut",
+      "why": "2024-01-31: within 2 days of one of its closure days"
+    },
+    {
+      "timestamp": "20240310014334",
+      "url": "http://wsd.net/",
+      "station": "apptegy-weber-ut",
+      "why": "2024-03-10: within 2 days of one of its closure days"
+    },
+    {
+      "timestamp": "20240131011713",
+      "url": "http://wsd.net/",
+      "station": "apptegy-weber-ut",
+      "why": "2024-01-31: within 2 days of one of its closure days"
+    },
+    {
+      "timestamp": "20230311154536",
+      "url": "http://wsd.net/",
+      "station": "apptegy-weber-ut",
+      "why": "2023-03-11: within 2 days of one of its closure days"
+    },
+    {
+      "timestamp": "20240310131657",
+      "url": "http://wsd.net/",
+      "station": "apptegy-weber-ut",
+      "why": "2024-03-10: within 2 days of one of its closure days"
+    },
+    {
+      "timestamp": "20240126152829",
+      "url": "http://wsd.net/",
+      "station": "apptegy-weber-ut",
+      "why": "2024-01-26: within 2 days of one of its closure days"
+    },
+    {
+      "timestamp": "20230310182937",
+      "url": "http://wsd.net/",
+      "station": "apptegy-weber-ut",
+      "why": "2023-03-11: within 2 days of one of its closure days"
+    },
+    {
+      "timestamp": "20240504014551",
+      "url": "http://wsd.net/",
+      "station": "apptegy-weber-ut",
+      "why": "2024-05-04: within 2 days of one of its closure days"
+    },
+    {
+      "timestamp": "20240124132146",
+      "url": "http://wsd.net/",
+      "station": "apptegy-weber-ut",
+      "why": "2024-01-24: within 2 days of one of its closure days"
+    },
+    {
+      "timestamp": "20240505102650",
+      "url": "http://wsd.net/",
+      "station": "apptegy-weber-ut",
+      "why": "2024-05-05: within 2 days of one of its closure days"
+    },
+    {
+      "timestamp": "20240504134556",
+      "url": "http://wsd.net/",
+      "station": "apptegy-weber-ut",
+      "why": "2024-05-04: within 2 days of one of its closure days"
+    },
+    {
+      "timestamp": "20240123011703",
+      "url": "http://wsd.net/",
+      "station": "apptegy-weber-ut",
+      "why": "2024-01-23: within 2 days of one of its closure days"
+    },
+    {
+      "timestamp": "20240330011326",
+      "url": "http://wsd.net/",
+      "station": "apptegy-weber-ut",
+      "why": "2024-03-30: within 2 days of one of its closure days"
+    },
+    {
+      "timestamp": "20230306160500",
+      "url": "http://wsd.net/",
+      "station": "apptegy-weber-ut",
+      "why": "2023-03-07: within 2 days of one of its closure days"
+    },
+    {
+      "timestamp": "20230313133601",
+      "url": "http://wsd.net/",
+      "station": "apptegy-weber-ut",
+      "why": "2023-03-13: within 2 days of one of its closure days"
+    },
+    {
+      "timestamp": "20240326203020",
+      "url": "http://wsd.net/",
+      "station": "apptegy-weber-ut",
+      "why": "2024-03-27: within 2 days of one of its closure days"
+    },
+    {
+      "timestamp": "20240327082012",
+      "url": "http://wsd.net/",
+      "station": "apptegy-weber-ut",
+      "why": "2024-03-27: within 2 days of one of its closure days"
+    },
+    {
+      "timestamp": "20240329012212",
+      "url": "http://wsd.net/",
+      "station": "apptegy-weber-ut",
+      "why": "2024-03-29: within 2 days of one of its closure days"
+    },
+    {
+      "timestamp": "20240403014627",
+      "url": "http://wsd.net/",
+      "station": "apptegy-weber-ut",
+      "why": "2024-04-03: within 2 days of one of its closure days"
+    },
+    {
+      "timestamp": "20240406131138",
+      "url": "http://wsd.net/",
+      "station": "apptegy-weber-ut",
+      "why": "2024-04-06: within 2 days of one of its closure days"
+    },
+    {
+      "timestamp": "20240123205247",
+      "url": "http://wsd.net/",
+      "station": "apptegy-weber-ut",
+      "why": "2024-01-24: within 2 days of one of its closure days"
+    },
+    {
+      "timestamp": "20240403171157",
+      "url": "http://wsd.net/",
+      "station": "apptegy-weber-ut",
+      "why": "2024-04-04: within 2 days of one of its closure days"
+    },
+    {
+      "timestamp": "20240404011520",
+      "url": "http://wsd.net/",
+      "station": "apptegy-weber-ut",
+      "why": "2024-04-04: within 2 days of one of its closure days"
+    },
+    {
+      "timestamp": "20221025132741",
+      "url": "http://wsd.net/",
+      "station": "apptegy-weber-ut",
+      "why": "2022-10-25: within 2 days of one of its closure days"
+    },
+    {
+      "timestamp": "20240407011120",
+      "url": "http://wsd.net/",
+      "station": "apptegy-weber-ut",
+      "why": "2024-04-07: within 2 days of one of its closure days"
+    },
+    {
+      "timestamp": "20221025011930",
+      "url": "http://wsd.net/",
+      "station": "apptegy-weber-ut",
+      "why": "2022-10-25: within 2 days of one of its closure days"
+    },
+    {
+      "timestamp": "20240208173959",
+      "url": "http://wsd.net/",
+      "station": "apptegy-weber-ut",
+      "why": "2024-02-09: within 2 days of one of its closure days"
+    },
+    {
+      "timestamp": "20240208131719",
+      "url": "http://wsd.net/",
+      "station": "apptegy-weber-ut",
+      "why": "2024-02-08: within 2 days of one of its closure days"
+    },
+    {
+      "timestamp": "20240120011733",
+      "url": "http://wsd.net/",
+      "station": "apptegy-weber-ut",
+      "why": "2024-01-20: within 2 days of one of its closure days"
+    },
+    {
+      "timestamp": "20240407131123",
+      "url": "http://wsd.net/",
+      "station": "apptegy-weber-ut",
+      "why": "2024-04-07: within 2 days of one of its closure days"
+    },
+    {
+      "timestamp": "20240113180713",
+      "url": "http://wsd.net/",
+      "station": "apptegy-weber-ut",
+      "why": "2024-01-14: within 2 days of one of its closure days"
+    },
+    {
+      "timestamp": "20240119025718",
+      "url": "http://wsd.net/",
+      "station": "apptegy-weber-ut",
+      "why": "2024-01-19: within 2 days of one of its closure days"
+    },
+    {
+      "timestamp": "20240118203815",
+      "url": "http://wsd.net/",
+      "station": "apptegy-weber-ut",
+      "why": "2024-01-19: within 2 days of one of its closure days"
+    },
+    {
+      "timestamp": "20240119011713",
+      "url": "http://wsd.net/",
+      "station": "apptegy-weber-ut",
+      "why": "2024-01-19: within 2 days of one of its closure days"
+    },
+    {
+      "timestamp": "20240119211820",
+      "url": "http://wsd.net/",
+      "station": "apptegy-weber-ut",
+      "why": "2024-01-20: within 2 days of one of its closure days"
+    },
+    {
+      "timestamp": "20240116025933",
+      "url": "http://wsd.net/",
+      "station": "apptegy-weber-ut",
+      "why": "2024-01-16: within 2 days of one of its closure days"
+    },
+    {
+      "timestamp": "20240508134607",
+      "url": "http://wsd.net/",
+      "station": "apptegy-weber-ut",
+      "why": "2024-05-08: within 2 days of one of its closure days"
+    },
+    {
+      "timestamp": "20231129051833",
+      "url": "http://wsd.net/",
+      "station": "apptegy-weber-ut",
+      "why": "2023-11-29: within 2 days of one of its closure days"
+    },
+    {
+      "timestamp": "20231128224023",
+      "url": "http://wsd.net/",
+      "station": "apptegy-weber-ut",
+      "why": "2023-11-29: within 2 days of one of its closure days"
+    },
+    {
+      "timestamp": "20240113011713",
+      "url": "http://wsd.net/",
+      "station": "apptegy-weber-ut",
+      "why": "2024-01-13: within 2 days of one of its closure days"
+    },
+    {
+      "timestamp": "20231130155601",
+      "url": "http://wsd.net/",
+      "station": "apptegy-weber-ut",
+      "why": "2023-11-30: within 2 days of one of its closure days"
+    },
+    {
+      "timestamp": "20240107131935",
+      "url": "http://wsd.net/",
+      "station": "apptegy-weber-ut",
+      "why": "2024-01-07: within 2 days of one of its closure days"
+    },
+    {
+      "timestamp": "20240111012328",
+      "url": "http://wsd.net/",
+      "station": "apptegy-weber-ut",
+      "why": "2024-01-11: within 2 days of one of its closure days"
+    },
+    {
+      "timestamp": "20231126131759",
+      "url": "http://wsd.net/",
+      "station": "apptegy-weber-ut",
+      "why": "2023-11-26: within 2 days of one of its closure days"
+    },
+    {
+      "timestamp": "20240111131822",
+      "url": "http://wsd.net/",
+      "station": "apptegy-weber-ut",
+      "why": "2024-01-11: within 2 days of one of its closure days"
+    },
+    {
+      "timestamp": "20240106120748",
+      "url": "http://wsd.net/",
+      "station": "apptegy-weber-ut",
+      "why": "2024-01-06: within 2 days of one of its closure days"
+    },
+    {
+      "timestamp": "20240108050145",
+      "url": "http://wsd.net/",
+      "station": "apptegy-weber-ut",
+      "why": "2024-01-08: within 2 days of one of its closure days"
+    },
+    {
+      "timestamp": "20240106131658",
+      "url": "http://wsd.net/",
+      "station": "apptegy-weber-ut",
+      "why": "2024-01-06: within 2 days of one of its closure days"
+    },
+    {
+      "timestamp": "20240104142655",
+      "url": "http://wsd.net/",
+      "station": "apptegy-weber-ut",
+      "why": "2024-01-04: within 2 days of one of its closure days"
+    },
+    {
+      "timestamp": "20240130011724",
+      "url": "http://wsd.net/",
+      "station": "apptegy-weber-ut",
+      "why": "2024-01-30: within 2 days of one of its closure days"
+    },
+    {
+      "timestamp": "20240104131742",
+      "url": "http://wsd.net/",
+      "station": "apptegy-weber-ut",
+      "why": "2024-01-04: within 2 days of one of its closure days"
+    },
+    {
+      "timestamp": "20230204214101",
+      "url": "http://wsd.net/",
+      "station": "apptegy-weber-ut",
+      "why": "2023-02-05: within 2 days of one of its closure days"
+    },
+    {
+      "timestamp": "20231121140308",
+      "url": "http://wsd.net/",
+      "station": "apptegy-weber-ut",
+      "why": "2023-11-21: within 2 days of one of its closure days"
+    },
+    {
+      "timestamp": "20240105210837",
+      "url": "http://wsd.net/",
+      "station": "apptegy-weber-ut",
+      "why": "2024-01-06: within 2 days of one of its closure days"
+    },
+    {
+      "timestamp": "20240315083932",
+      "url": "http://wsd.net/",
+      "station": "apptegy-weber-ut",
+      "why": "2024-03-15: within 2 days of one of its closure days"
+    },
+    {
+      "timestamp": "20240103131706",
+      "url": "http://wsd.net/",
+      "station": "apptegy-weber-ut",
+      "why": "2024-01-03: within 2 days of one of its closure days"
+    },
+    {
+      "timestamp": "20240223144708",
+      "url": "http://wsd.net/",
+      "station": "apptegy-weber-ut",
+      "why": "2024-02-23: within 2 days of one of its closure days"
+    },
+    {
+      "timestamp": "20240209023442",
+      "url": "http://wsd.net/",
+      "station": "apptegy-weber-ut",
+      "why": "2024-02-09: within 2 days of one of its closure days"
+    },
+    {
+      "timestamp": "20230202131814",
+      "url": "http://wsd.net/",
+      "station": "apptegy-weber-ut",
+      "why": "2023-02-02: within 2 days of one of its closure days"
+    },
+    {
+      "timestamp": "20240219153235",
+      "url": "http://sbjerregaard@wsd.net/",
+      "station": "apptegy-weber-ut",
+      "why": "2024-02-19: within 2 days of one of its closure days"
+    },
+    {
+      "timestamp": "20240130182655",
+      "url": "http://wsd.net/",
+      "station": "apptegy-weber-ut",
+      "why": "2024-01-31: within 2 days of one of its closure days"
+    },
+    {
+      "timestamp": "20240203145120",
+      "url": "http://wsd.net/",
+      "station": "apptegy-weber-ut",
+      "why": "2024-02-03: within 2 days of one of its closure days"
+    },
+    {
+      "timestamp": "20240127011734",
+      "url": "http://wsd.net/",
+      "station": "apptegy-weber-ut",
+      "why": "2024-01-27: within 2 days of one of its closure days"
+    },
+    {
+      "timestamp": "20240206131738",
+      "url": "http://wsd.net/",
+      "station": "apptegy-weber-ut",
+      "why": "2024-02-06: within 2 days of one of its closure days"
+    },
+    {
+      "timestamp": "20230416140846",
+      "url": "http://wsd.net/",
+      "station": "apptegy-weber-ut",
+      "why": "2023-04-16: within 2 days of one of its closure days"
+    },
+    {
+      "timestamp": "20230416011734",
+      "url": "http://wsd.net/",
+      "station": "apptegy-weber-ut",
+      "why": "2023-04-16: within 2 days of one of its closure days"
+    },
+    {
+      "timestamp": "20240229144735",
+      "url": "http://wsd.net/",
+      "station": "apptegy-weber-ut",
+      "why": "2024-02-29: within 2 days of one of its closure days"
+    },
+    {
+      "timestamp": "20240219020454",
+      "url": "http://wsd.net/",
+      "station": "apptegy-weber-ut",
+      "why": "2024-02-19: within 2 days of one of its closure days"
+    },
+    {
+      "timestamp": "20240209133931",
+      "url": "http://wsd.net/",
+      "station": "apptegy-weber-ut",
+      "why": "2024-02-09: within 2 days of one of its closure days"
+    },
+    {
+      "timestamp": "20230417011724",
+      "url": "http://wsd.net/",
+      "station": "apptegy-weber-ut",
+      "why": "2023-04-17: within 2 days of one of its closure days"
+    },
+    {
+      "timestamp": "20240218011943",
+      "url": "http://wsd.net/",
+      "station": "apptegy-weber-ut",
+      "why": "2024-02-18: within 2 days of one of its closure days"
+    },
+    {
+      "timestamp": "20240222015558",
+      "url": "http://wsd.net/",
+      "station": "apptegy-weber-ut",
+      "why": "2024-02-22: within 2 days of one of its closure days"
+    },
+    {
+      "timestamp": "20240225051214",
+      "url": "http://wsd.net/",
+      "station": "apptegy-weber-ut",
+      "why": "2024-02-25: within 2 days of one of its closure days"
+    },
+    {
+      "timestamp": "20240311133536",
+      "url": "http://wsd.net/",
+      "station": "apptegy-weber-ut",
+      "why": "2024-03-11: within 2 days of one of its closure days"
+    },
+    {
+      "timestamp": "20240311011725",
+      "url": "http://wsd.net/",
+      "station": "apptegy-weber-ut",
+      "why": "2024-03-11: within 2 days of one of its closure days"
+    },
+    {
+      "timestamp": "20240131095601",
+      "url": "http://wsd.net/",
+      "station": "apptegy-weber-ut",
+      "why": "2024-01-31: within 2 days of one of its closure days"
+    },
+    {
+      "timestamp": "20240131144951",
+      "url": "http://wsd.net/",
+      "station": "apptegy-weber-ut",
+      "why": "2024-01-31: within 2 days of one of its closure days"
+    },
+    {
+      "timestamp": "20240505134652",
+      "url": "http://wsd.net/",
+      "station": "apptegy-weber-ut",
+      "why": "2024-05-05: within 2 days of one of its closure days"
+    },
+    {
+      "timestamp": "20240330131130",
+      "url": "http://wsd.net/",
+      "station": "apptegy-weber-ut",
+      "why": "2024-03-30: within 2 days of one of its closure days"
+    },
+    {
+      "timestamp": "20240329131241",
+      "url": "http://wsd.net/",
+      "station": "apptegy-weber-ut",
+      "why": "2024-03-29: within 2 days of one of its closure days"
+    },
+    {
+      "timestamp": "20240404143645",
+      "url": "http://wsd.net/",
+      "station": "apptegy-weber-ut",
+      "why": "2024-04-04: within 2 days of one of its closure days"
+    },
+    {
+      "timestamp": "20240326011204",
+      "url": "http://wsd.net/",
+      "station": "apptegy-weber-ut",
+      "why": "2024-03-26: within 2 days of one of its closure days"
+    },
+    {
+      "timestamp": "20240327154005",
+      "url": "http://wsd.net/",
+      "station": "apptegy-weber-ut",
+      "why": "2024-03-27: within 2 days of one of its closure days"
+    },
+    {
+      "timestamp": "20240406011205",
+      "url": "http://wsd.net/",
+      "station": "apptegy-weber-ut",
+      "why": "2024-04-06: within 2 days of one of its closure days"
+    },
+    {
+      "timestamp": "20190411195337",
+      "url": "http://kmurphy@wsd.net/",
+      "station": "apptegy-weber-ut",
+      "why": "2019-04-12: within 2 days of one of its closure days"
+    },
+    {
+      "timestamp": "20240508014642",
+      "url": "http://wsd.net/",
+      "station": "apptegy-weber-ut",
+      "why": "2024-05-08: within 2 days of one of its closure days"
+    },
+    {
+      "timestamp": "20231130041058",
+      "url": "http://wsd.net/",
+      "station": "apptegy-weber-ut",
+      "why": "2023-11-30: within 2 days of one of its closure days"
+    },
+    {
+      "timestamp": "20231129135545",
+      "url": "http://wsd.net/",
+      "station": "apptegy-weber-ut",
+      "why": "2023-11-29: within 2 days of one of its closure days"
+    },
+    {
+      "timestamp": "20231202131725",
+      "url": "http://wsd.net/",
+      "station": "apptegy-weber-ut",
+      "why": "2023-12-02: within 2 days of one of its closure days"
+    },
+    {
+      "timestamp": "20240107011717",
+      "url": "http://wsd.net/",
+      "station": "apptegy-weber-ut",
+      "why": "2024-01-07: within 2 days of one of its closure days"
+    },
+    {
+      "timestamp": "20231206043402",
+      "url": "http://wsd.net/",
+      "station": "apptegy-weber-ut",
+      "why": "2023-12-06: within 2 days of one of its closure days"
+    },
+    {
+      "timestamp": "20231201212430",
+      "url": "http://wsd.net/",
+      "station": "apptegy-weber-ut",
+      "why": "2023-12-02: within 2 days of one of its closure days"
+    },
+    {
+      "timestamp": "20231203011705",
+      "url": "http://wsd.net/",
+      "station": "apptegy-weber-ut",
+      "why": "2023-12-03: within 2 days of one of its closure days"
+    },
+    {
+      "timestamp": "20231128235340",
+      "url": "http://wsd.net/",
+      "station": "apptegy-weber-ut",
+      "why": "2023-11-29: within 2 days of one of its closure days"
+    },
+    {
+      "timestamp": "20231202014757",
+      "url": "http://wsd.net/",
+      "station": "apptegy-weber-ut",
+      "why": "2023-12-02: within 2 days of one of its closure days"
     }
   ]
 }
