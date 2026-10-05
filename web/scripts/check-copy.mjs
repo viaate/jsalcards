@@ -1351,6 +1351,8 @@ class Project {
     this.scopes = new WeakMap();
     /** @type {Map<string, Module | undefined>} */
     this.resolved = new Map();
+    /** @type {Map<string, { file: string | undefined, query: string | undefined }>} */
+    this.located = new Map();
     /** @type {Array<{ name: string, text: TextValue }> | undefined} */
     this.env = undefined;
     /**
@@ -1581,6 +1583,10 @@ class Project {
     if (!source.startsWith('.') && !source.startsWith('/')) {
       return { file: undefined, query: undefined };
     }
+    // Asked for every import a value passes through: the files on disk do not change during a run.
+    const key = `${path.dirname(from.abs)}\u0000${source}`;
+    const known = this.located.get(key);
+    if (known !== undefined) return known;
     const [bare = '', query] = source.split('?', 2);
     const base = source.startsWith('/')
       ? path.join(this.root, bare)
@@ -1600,7 +1606,9 @@ class Project {
     const file = candidates.find(
       (candidate) => existsSync(candidate) && statSync(candidate).isFile(),
     );
-    return { file, query };
+    const located = { file, query };
+    this.located.set(key, located);
+    return located;
   }
 
   /**
