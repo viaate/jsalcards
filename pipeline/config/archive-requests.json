@@ -1,731 +1,1204 @@
 {
- "cdx": [
-  {
-   "url": "www.graniteschools.org/",
-   "from": "20150101",
-   "to": "20261005"
-  },
-  {
-   "url": "www.graniteschools.org/wp-json/wp/v2/en*",
-   "from": "20150101",
-   "to": "20261005"
-  },
-  {
-   "url": "jordandistrict.org/",
-   "from": "20150101",
-   "to": "20261005"
-  },
-  {
-   "url": "www.canyonsdistrict.org/",
-   "from": "20150101",
-   "to": "20261005"
-  },
-  {
-   "url": "provo.edu/",
-   "from": "20150101",
-   "to": "20261005"
-  },
-  {
-   "url": "www.washk12.org/",
-   "from": "20150101",
-   "to": "20261005"
-  },
-  {
-   "url": "alert.washk12.org/endpoint.php*",
-   "from": "20150101",
-   "to": "20261005"
-  }
- ],
  "snapshots": [
   {
-   "timestamp": "20190121140000",
-   "url": "https://www.graniteschools.org/",
-   "station": "district-homepage-granite-ut",
-   "why": "Utah storm day 2019-01-21 (NWS winter warning or advisory over Salt Lake, Davis or Utah County)"
+   "timestamp": "20230329215942",
+   "url": "https://www.slcschools.org",
+   "station": "smartsites-salt-lake-city-ut",
+   "why": "storm day 2023-03-30 (market score 1.00)"
   },
   {
-   "timestamp": "20190205140000",
-   "url": "https://www.graniteschools.org/",
-   "station": "district-homepage-granite-ut",
-   "why": "Utah storm day 2019-02-05 (NWS winter warning or advisory over Salt Lake, Davis or Utah County)"
+   "timestamp": "20230404221638",
+   "url": "https://www.slcschools.org/",
+   "station": "smartsites-salt-lake-city-ut",
+   "why": "storm day 2023-04-05 (market score 1.00)"
   },
   {
-   "timestamp": "20190206140000",
-   "url": "https://www.graniteschools.org/",
-   "station": "district-homepage-granite-ut",
-   "why": "Utah storm day 2019-02-06 (NWS winter warning or advisory over Salt Lake, Davis or Utah County)"
+   "timestamp": "20231207160804",
+   "url": "https://www.slcschools.org",
+   "station": "smartsites-salt-lake-city-ut",
+   "why": "storm day 2023-12-08 (market score 1.00)"
   },
   {
-   "timestamp": "20191127140000",
-   "url": "https://www.graniteschools.org/",
-   "station": "district-homepage-granite-ut",
-   "why": "Utah storm day 2019-11-27 (NWS winter warning or advisory over Salt Lake, Davis or Utah County)"
+   "timestamp": "20201030130651",
+   "url": "https://www.mcpss.com/",
+   "station": "apptegy-mobile-al",
+   "why": "2020-10-30: within 2 days of one of its closure days"
   },
   {
-   "timestamp": "20200203140000",
-   "url": "https://www.graniteschools.org/",
-   "station": "district-homepage-granite-ut",
-   "why": "Utah storm day 2020-02-03 (NWS winter warning or advisory over Salt Lake, Davis or Utah County)"
+   "timestamp": "20240914072755",
+   "url": "https://www.mcpss.com/",
+   "station": "apptegy-mobile-al",
+   "why": "2024-09-14: within 2 days of one of its closure days"
   },
   {
-   "timestamp": "20211215140000",
-   "url": "https://www.graniteschools.org/",
-   "station": "district-homepage-granite-ut",
-   "why": "Utah storm day 2021-12-15 (NWS winter warning or advisory over Salt Lake, Davis or Utah County)"
+   "timestamp": "20240909060417",
+   "url": "https://www.mcpss.com/",
+   "station": "apptegy-mobile-al",
+   "why": "2024-09-09: within 2 days of one of its closure days"
   },
   {
-   "timestamp": "20221109140000",
-   "url": "https://www.graniteschools.org/",
-   "station": "district-homepage-granite-ut",
-   "why": "Utah storm day 2022-11-09 (NWS winter warning or advisory over Salt Lake, Davis or Utah County)"
+   "timestamp": "20190107212823",
+   "url": "http://www.sd25.us/",
+   "station": "finalsite-pocatello-id",
+   "why": "2019-01-08: within 2 days of one of its closure days"
   },
   {
-   "timestamp": "20221202140000",
-   "url": "https://www.graniteschools.org/",
-   "station": "district-homepage-granite-ut",
-   "why": "Utah storm day 2022-12-02 (NWS winter warning or advisory over Salt Lake, Davis or Utah County)"
+   "timestamp": "20181228124607",
+   "url": "http://www.sd25.us:80/",
+   "station": "finalsite-pocatello-id",
+   "why": "2018-12-28: within 2 days of one of its closure days"
   },
   {
-   "timestamp": "20230117140000",
-   "url": "https://www.graniteschools.org/",
-   "station": "district-homepage-granite-ut",
-   "why": "Utah storm day 2023-01-17 (NWS winter warning or advisory over Salt Lake, Davis or Utah County)"
+   "timestamp": "20221108075803",
+   "url": "https://www.scps.k12.fl.us/",
+   "station": "smartsites-seminole-fl",
+   "why": "storm day 2022-11-08 (market score 0.50)"
   },
   {
-   "timestamp": "20230222140000",
-   "url": "https://www.graniteschools.org/",
-   "station": "district-homepage-granite-ut",
-   "why": "Utah storm day 2023-02-22 (NWS winter warning or advisory over Salt Lake, Davis or Utah County)"
+   "timestamp": "20221110131518",
+   "url": "https://www.scps.k12.fl.us/",
+   "station": "smartsites-seminole-fl",
+   "why": "storm day 2022-11-10 (market score 0.50)"
   },
   {
-   "timestamp": "20230223140000",
-   "url": "https://www.graniteschools.org/",
-   "station": "district-homepage-granite-ut",
-   "why": "Utah storm day 2023-02-23 (NWS winter warning or advisory over Salt Lake, Davis or Utah County)"
+   "timestamp": "20221109110824",
+   "url": "https://www.scps.k12.fl.us/",
+   "station": "smartsites-seminole-fl",
+   "why": "storm day 2022-11-09 (market score 0.50)"
   },
   {
-   "timestamp": "20230301140000",
-   "url": "https://www.graniteschools.org/",
-   "station": "district-homepage-granite-ut",
-   "why": "Utah storm day 2023-03-01 (NWS winter warning or advisory over Salt Lake, Davis or Utah County)"
+   "timestamp": "20180302105751",
+   "url": "http://www.tcsd.org:80/",
+   "station": "finalsite-teton-wy",
+   "why": "storm day 2018-03-02 (market score 0.25)"
   },
   {
-   "timestamp": "20230310140000",
-   "url": "https://www.graniteschools.org/",
-   "station": "district-homepage-granite-ut",
-   "why": "Utah storm day 2023-03-10 (NWS winter warning or advisory over Salt Lake, Davis or Utah County)"
+   "timestamp": "20171104021240",
+   "url": "http://www.tcsd.org:80/",
+   "station": "finalsite-teton-wy",
+   "why": "2017-11-04: within 2 days of one of its closure days"
   },
   {
-   "timestamp": "20230403140000",
-   "url": "https://www.graniteschools.org/",
-   "station": "district-homepage-granite-ut",
-   "why": "Utah storm day 2023-04-03 (NWS winter warning or advisory over Salt Lake, Davis or Utah County)"
+   "timestamp": "20180301050037",
+   "url": "http://www.tcsd.org:80/",
+   "station": "finalsite-teton-wy",
+   "why": "2018-03-01: within 2 days of one of its closure days"
   },
   {
-   "timestamp": "20240111140000",
-   "url": "https://www.graniteschools.org/",
-   "station": "district-homepage-granite-ut",
-   "why": "Utah storm day 2024-01-11 (NWS winter warning or advisory over Salt Lake, Davis or Utah County)"
+   "timestamp": "20250102210601",
+   "url": "https://www.bps.k12.mt.us/en-US",
+   "station": "schoolblocks-browning-mt",
+   "why": "storm day 2025-01-03 (market score 1.00)"
   },
   {
-   "timestamp": "20240112140000",
-   "url": "https://www.graniteschools.org/",
-   "station": "district-homepage-granite-ut",
-   "why": "Utah storm day 2024-01-12 (NWS winter warning or advisory over Salt Lake, Davis or Utah County)"
+   "timestamp": "20230201114130",
+   "url": "https://bps.k12.mt.us/en-US",
+   "station": "schoolblocks-browning-mt",
+   "why": "2023-02-01: within 2 days of one of its closure days"
   },
   {
-   "timestamp": "20240207140000",
-   "url": "https://www.graniteschools.org/",
-   "station": "district-homepage-granite-ut",
-   "why": "Utah storm day 2024-02-07 (NWS winter warning or advisory over Salt Lake, Davis or Utah County)"
+   "timestamp": "20240302221644",
+   "url": "https://bps.k12.mt.us/en-US",
+   "station": "schoolblocks-browning-mt",
+   "why": "2024-03-03: within 2 days of one of its closure days"
   },
   {
-   "timestamp": "20241126140000",
-   "url": "https://www.graniteschools.org/",
-   "station": "district-homepage-granite-ut",
-   "why": "Utah storm day 2024-11-26 (NWS winter warning or advisory over Salt Lake, Davis or Utah County)"
+   "timestamp": "20250116094721",
+   "url": "https://www.ccsd1.org/",
+   "station": "apptegy-converse-1-wy",
+   "why": "2025-01-16: within 2 days of one of its closure days"
   },
   {
-   "timestamp": "20250213140000",
-   "url": "https://www.graniteschools.org/",
-   "station": "district-homepage-granite-ut",
-   "why": "Utah storm day 2025-02-13 (NWS winter warning or advisory over Salt Lake, Davis or Utah County)"
+   "timestamp": "20250218042300",
+   "url": "https://www.ccsd1.org/",
+   "station": "apptegy-converse-1-wy",
+   "why": "2025-02-18: within 2 days of one of its closure days"
   },
   {
-   "timestamp": "20250214140000",
-   "url": "https://www.graniteschools.org/",
-   "station": "district-homepage-granite-ut",
-   "why": "Utah storm day 2025-02-14 (NWS winter warning or advisory over Salt Lake, Davis or Utah County)"
+   "timestamp": "20241227163902",
+   "url": "https://www.ccsd1.org/",
+   "station": "apptegy-converse-1-wy",
+   "why": "2024-12-28: within 2 days of one of its closure days"
   },
   {
-   "timestamp": "20250306140000",
-   "url": "https://www.graniteschools.org/",
-   "station": "district-homepage-granite-ut",
-   "why": "Utah storm day 2025-03-06 (NWS winter warning or advisory over Salt Lake, Davis or Utah County)"
+   "timestamp": "20191230094441",
+   "url": "http://www.sd215.net:80/",
+   "station": "apptegy-fremont-id",
+   "why": "2019-12-30: within 2 days of one of its closure days"
   },
   {
-   "timestamp": "20260217140000",
-   "url": "https://www.graniteschools.org/",
-   "station": "district-homepage-granite-ut",
-   "why": "Utah storm day 2026-02-17 (NWS winter warning or advisory over Salt Lake, Davis or Utah County)"
+   "timestamp": "20191130030608",
+   "url": "http://www.sd215.net:80/",
+   "station": "apptegy-fremont-id",
+   "why": "2019-11-30: within 2 days of one of its closure days"
   },
   {
-   "timestamp": "20260218140000",
-   "url": "https://www.graniteschools.org/",
-   "station": "district-homepage-granite-ut",
-   "why": "Utah storm day 2026-02-18 (NWS winter warning or advisory over Salt Lake, Davis or Utah County)"
+   "timestamp": "20180119224940",
+   "url": "http://www.sd215.net:80/",
+   "station": "apptegy-fremont-id",
+   "why": "2018-01-20: within 2 days of one of its closure days"
   },
   {
-   "timestamp": "20190121140000",
-   "url": "https://jordandistrict.org/",
-   "station": "district-homepage-jordan-ut",
-   "why": "Utah storm day 2019-01-21 (NWS winter warning or advisory over Salt Lake, Davis or Utah County)"
+   "timestamp": "20201030001610",
+   "url": "https://www.okaloosaschools.com/",
+   "station": "apptegy-okaloosa-fl",
+   "why": "2020-10-30: within 2 days of one of its closure days"
   },
   {
-   "timestamp": "20190205140000",
-   "url": "https://jordandistrict.org/",
-   "station": "district-homepage-jordan-ut",
-   "why": "Utah storm day 2019-02-05 (NWS winter warning or advisory over Salt Lake, Davis or Utah County)"
+   "timestamp": "20191019041427",
+   "url": "https://www.okaloosaschools.com/",
+   "station": "apptegy-okaloosa-fl",
+   "why": "2019-10-19: within 2 days of one of its closure days"
   },
   {
-   "timestamp": "20190206140000",
-   "url": "https://jordandistrict.org/",
-   "station": "district-homepage-jordan-ut",
-   "why": "Utah storm day 2019-02-06 (NWS winter warning or advisory over Salt Lake, Davis or Utah County)"
+   "timestamp": "20191016095854",
+   "url": "https://okaloosaschools.com/",
+   "station": "apptegy-okaloosa-fl",
+   "why": "2019-10-16: within 2 days of one of its closure days"
   },
   {
-   "timestamp": "20191127140000",
-   "url": "https://jordandistrict.org/",
-   "station": "district-homepage-jordan-ut",
-   "why": "Utah storm day 2019-11-27 (NWS winter warning or advisory over Salt Lake, Davis or Utah County)"
+   "timestamp": "20220221100030",
+   "url": "https://irondistrict.org/",
+   "station": "apptegy-iron-ut",
+   "why": "storm day 2022-02-21 (market score 0.25)"
   },
   {
-   "timestamp": "20200203140000",
-   "url": "https://jordandistrict.org/",
-   "station": "district-homepage-jordan-ut",
-   "why": "Utah storm day 2020-02-03 (NWS winter warning or advisory over Salt Lake, Davis or Utah County)"
+   "timestamp": "20211027042812",
+   "url": "https://irondistrict.org/",
+   "station": "apptegy-iron-ut",
+   "why": "2021-10-27: within 2 days of one of its closure days"
   },
   {
-   "timestamp": "20211215140000",
-   "url": "https://jordandistrict.org/",
-   "station": "district-homepage-jordan-ut",
-   "why": "Utah storm day 2021-12-15 (NWS winter warning or advisory over Salt Lake, Davis or Utah County)"
+   "timestamp": "20210424195826",
+   "url": "https://irondistrict.org/",
+   "station": "apptegy-iron-ut",
+   "why": "2021-04-25: within 2 days of one of its closure days"
   },
   {
-   "timestamp": "20221109140000",
-   "url": "https://jordandistrict.org/",
-   "station": "district-homepage-jordan-ut",
-   "why": "Utah storm day 2022-11-09 (NWS winter warning or advisory over Salt Lake, Davis or Utah County)"
+   "timestamp": "20200907052556",
+   "url": "https://www.bsd44.org/",
+   "station": "smartsites-belgrade-mt",
+   "why": "storm day 2020-09-07 (market score 0.25)"
   },
   {
-   "timestamp": "20221202140000",
-   "url": "https://jordandistrict.org/",
-   "station": "district-homepage-jordan-ut",
-   "why": "Utah storm day 2022-12-02 (NWS winter warning or advisory over Salt Lake, Davis or Utah County)"
+   "timestamp": "20250102161127",
+   "url": "https://www.bsd44.org/",
+   "station": "smartsites-belgrade-mt",
+   "why": "storm day 2025-01-03 (market score 0.25)"
   },
   {
-   "timestamp": "20230117140000",
-   "url": "https://jordandistrict.org/",
-   "station": "district-homepage-jordan-ut",
-   "why": "Utah storm day 2023-01-17 (NWS winter warning or advisory over Salt Lake, Davis or Utah County)"
+   "timestamp": "20250102151637",
+   "url": "https://www.bsd44.org/",
+   "station": "smartsites-belgrade-mt",
+   "why": "storm day 2025-01-02 (market score 0.25)"
   },
   {
-   "timestamp": "20230222140000",
-   "url": "https://jordandistrict.org/",
-   "station": "district-homepage-jordan-ut",
-   "why": "Utah storm day 2023-02-22 (NWS winter warning or advisory over Salt Lake, Davis or Utah County)"
+   "timestamp": "20200907014149",
+   "url": "https://www.lewistown.k12.mt.us/",
+   "station": "finalsite-lewistown-mt",
+   "why": "storm day 2020-09-07 (market score 0.25)"
   },
   {
-   "timestamp": "20230223140000",
-   "url": "https://jordandistrict.org/",
-   "station": "district-homepage-jordan-ut",
-   "why": "Utah storm day 2023-02-23 (NWS winter warning or advisory over Salt Lake, Davis or Utah County)"
+   "timestamp": "20190127065516",
+   "url": "http://www.lewistown.k12.mt.us/",
+   "station": "finalsite-lewistown-mt",
+   "why": "2019-01-27: within 2 days of one of its closure days"
   },
   {
-   "timestamp": "20230301140000",
-   "url": "https://jordandistrict.org/",
-   "station": "district-homepage-jordan-ut",
-   "why": "Utah storm day 2023-03-01 (NWS winter warning or advisory over Salt Lake, Davis or Utah County)"
+   "timestamp": "20220201192131",
+   "url": "https://www.lewistown.k12.mt.us/",
+   "station": "finalsite-lewistown-mt",
+   "why": "2022-02-02: within 2 days of one of its closure days"
   },
   {
-   "timestamp": "20230310140000",
-   "url": "https://jordandistrict.org/",
-   "station": "district-homepage-jordan-ut",
-   "why": "Utah storm day 2023-03-10 (NWS winter warning or advisory over Salt Lake, Davis or Utah County)"
+   "timestamp": "20230404001016",
+   "url": "http://www.sweetwater1.org/",
+   "station": "finalsite-sweetwater-1-wy",
+   "why": "storm day 2023-04-04 (market score 1.00)"
   },
   {
-   "timestamp": "20230403140000",
-   "url": "https://jordandistrict.org/",
-   "station": "district-homepage-jordan-ut",
-   "why": "Utah storm day 2023-04-03 (NWS winter warning or advisory over Salt Lake, Davis or Utah County)"
+   "timestamp": "20230403121824",
+   "url": "http://www.sweetwater1.org/",
+   "station": "finalsite-sweetwater-1-wy",
+   "why": "storm day 2023-04-03 (market score 1.00)"
   },
   {
-   "timestamp": "20240111140000",
-   "url": "https://jordandistrict.org/",
-   "station": "district-homepage-jordan-ut",
-   "why": "Utah storm day 2024-01-11 (NWS winter warning or advisory over Salt Lake, Davis or Utah County)"
+   "timestamp": "20230403151704",
+   "url": "http://www.sweetwater1.org/",
+   "station": "finalsite-sweetwater-1-wy",
+   "why": "storm day 2023-04-03 (market score 1.00)"
   },
   {
-   "timestamp": "20240112140000",
-   "url": "https://jordandistrict.org/",
-   "station": "district-homepage-jordan-ut",
-   "why": "Utah storm day 2024-01-12 (NWS winter warning or advisory over Salt Lake, Davis or Utah County)"
+   "timestamp": "20221202191755",
+   "url": "https://www.uinta1.com/",
+   "station": "schoolblocks-uinta-1-wy",
+   "why": "2022-12-03: within 2 days of one of its closure days"
   },
   {
-   "timestamp": "20240207140000",
-   "url": "https://jordandistrict.org/",
-   "station": "district-homepage-jordan-ut",
-   "why": "Utah storm day 2024-02-07 (NWS winter warning or advisory over Salt Lake, Davis or Utah County)"
+   "timestamp": "20210413005335",
+   "url": "https://www.uinta1.com/",
+   "station": "schoolblocks-uinta-1-wy",
+   "why": "2021-04-13: within 2 days of one of its closure days"
   },
   {
-   "timestamp": "20241126140000",
-   "url": "https://jordandistrict.org/",
-   "station": "district-homepage-jordan-ut",
-   "why": "Utah storm day 2024-11-26 (NWS winter warning or advisory over Salt Lake, Davis or Utah County)"
+   "timestamp": "20211024054528",
+   "url": "https://www.uinta1.com/",
+   "station": "schoolblocks-uinta-1-wy",
+   "why": "2021-10-24: within 2 days of one of its closure days"
   },
   {
-   "timestamp": "20250213140000",
-   "url": "https://jordandistrict.org/",
-   "station": "district-homepage-jordan-ut",
-   "why": "Utah storm day 2025-02-13 (NWS winter warning or advisory over Salt Lake, Davis or Utah County)"
+   "timestamp": "20251204202514",
+   "url": "https://www.murrayschools.org/",
+   "station": "smartsites-murray-ut",
+   "why": "storm day 2025-12-05 (market score 1.00)"
   },
   {
-   "timestamp": "20250214140000",
-   "url": "https://jordandistrict.org/",
-   "station": "district-homepage-jordan-ut",
-   "why": "Utah storm day 2025-02-14 (NWS winter warning or advisory over Salt Lake, Davis or Utah County)"
+   "timestamp": "20260218130203",
+   "url": "https://www.murrayschools.org/",
+   "station": "smartsites-murray-ut",
+   "why": "storm day 2026-02-18 (market score 1.00)"
   },
   {
-   "timestamp": "20250306140000",
-   "url": "https://jordandistrict.org/",
-   "station": "district-homepage-jordan-ut",
-   "why": "Utah storm day 2025-03-06 (NWS winter warning or advisory over Salt Lake, Davis or Utah County)"
+   "timestamp": "20260216230443",
+   "url": "https://www.murrayschools.org/",
+   "station": "smartsites-murray-ut",
+   "why": "storm day 2026-02-17 (market score 1.00)"
   },
   {
-   "timestamp": "20260217140000",
-   "url": "https://jordandistrict.org/",
-   "station": "district-homepage-jordan-ut",
-   "why": "Utah storm day 2026-02-17 (NWS winter warning or advisory over Salt Lake, Davis or Utah County)"
+   "timestamp": "20221202165109",
+   "url": "https://www.tfsd.org/",
+   "station": "apptegy-twin-falls-id",
+   "why": "2022-12-03: within 2 days of one of its closure days"
   },
   {
-   "timestamp": "20260218140000",
-   "url": "https://jordandistrict.org/",
-   "station": "district-homepage-jordan-ut",
-   "why": "Utah storm day 2026-02-18 (NWS winter warning or advisory over Salt Lake, Davis or Utah County)"
+   "timestamp": "20210412070007",
+   "url": "https://www.tfsd.org/",
+   "station": "apptegy-twin-falls-id",
+   "why": "2021-04-12: within 2 days of one of its closure days"
   },
   {
-   "timestamp": "20190121140000",
-   "url": "https://www.canyonsdistrict.org/",
-   "station": "district-homepage-canyons-ut",
-   "why": "Utah storm day 2019-01-21 (NWS winter warning or advisory over Salt Lake, Davis or Utah County)"
+   "timestamp": "20180224095113",
+   "url": "https://www.tfsd.org/",
+   "station": "apptegy-twin-falls-id",
+   "why": "2018-02-24: within 2 days of one of its closure days"
   },
   {
-   "timestamp": "20190205140000",
-   "url": "https://www.canyonsdistrict.org/",
-   "station": "district-homepage-canyons-ut",
-   "why": "Utah storm day 2019-02-05 (NWS winter warning or advisory over Salt Lake, Davis or Utah County)"
+   "timestamp": "20220106020721",
+   "url": "https://conradschools.org/",
+   "station": "apptegy-conrad-mt",
+   "why": "storm day 2022-01-06 (market score 1.00)"
   },
   {
-   "timestamp": "20190206140000",
-   "url": "https://www.canyonsdistrict.org/",
-   "station": "district-homepage-canyons-ut",
-   "why": "Utah storm day 2019-02-06 (NWS winter warning or advisory over Salt Lake, Davis or Utah County)"
+   "timestamp": "20230307142155",
+   "url": "https://www.conradschools.org/",
+   "station": "apptegy-conrad-mt",
+   "why": "2023-03-07: within 2 days of one of its closure days"
   },
   {
-   "timestamp": "20191127140000",
-   "url": "https://www.canyonsdistrict.org/",
-   "station": "district-homepage-canyons-ut",
-   "why": "Utah storm day 2019-11-27 (NWS winter warning or advisory over Salt Lake, Davis or Utah County)"
+   "timestamp": "20220401204200",
+   "url": "https://www.conradschools.org/",
+   "station": "apptegy-conrad-mt",
+   "why": "2022-04-02: within 2 days of one of its closure days"
   },
   {
-   "timestamp": "20200203140000",
-   "url": "https://www.canyonsdistrict.org/",
-   "station": "district-homepage-canyons-ut",
-   "why": "Utah storm day 2020-02-03 (NWS winter warning or advisory over Salt Lake, Davis or Utah County)"
+   "timestamp": "20241216130954",
+   "url": "https://www.dbps.k12.mt.us/",
+   "station": "apptegy-dutton-brady-mt",
+   "why": "storm day 2024-12-16 (market score 0.12)"
   },
   {
-   "timestamp": "20211215140000",
-   "url": "https://www.canyonsdistrict.org/",
-   "station": "district-homepage-canyons-ut",
-   "why": "Utah storm day 2021-12-15 (NWS winter warning or advisory over Salt Lake, Davis or Utah County)"
+   "timestamp": "20241218183723",
+   "url": "https://www.dbps.k12.mt.us/",
+   "station": "apptegy-dutton-brady-mt",
+   "why": "2024-12-19: within 2 days of one of its closure days"
   },
   {
-   "timestamp": "20221109140000",
-   "url": "https://www.canyonsdistrict.org/",
-   "station": "district-homepage-canyons-ut",
-   "why": "Utah storm day 2022-11-09 (NWS winter warning or advisory over Salt Lake, Davis or Utah County)"
+   "timestamp": "20240418103556",
+   "url": "https://www.dbps.k12.mt.us/",
+   "station": "apptegy-dutton-brady-mt",
+   "why": "2024-04-18: within 2 days of one of its closure days"
   },
   {
-   "timestamp": "20221202140000",
-   "url": "https://www.canyonsdistrict.org/",
-   "station": "district-homepage-canyons-ut",
-   "why": "Utah storm day 2022-12-02 (NWS winter warning or advisory over Salt Lake, Davis or Utah County)"
+   "timestamp": "20220103054434",
+   "url": "https://www.loganschools.org/",
+   "station": "smartsites-logan-ut",
+   "why": "2022-01-03: within 2 days of one of its closure days"
   },
   {
-   "timestamp": "20230117140000",
-   "url": "https://www.canyonsdistrict.org/",
-   "station": "district-homepage-canyons-ut",
-   "why": "Utah storm day 2023-01-17 (NWS winter warning or advisory over Salt Lake, Davis or Utah County)"
+   "timestamp": "20211109030130",
+   "url": "https://www.noxonschools.com/",
+   "station": "apptegy-noxon-mt",
+   "why": "storm day 2021-11-09 (market score 0.25)"
   },
   {
-   "timestamp": "20230222140000",
-   "url": "https://www.canyonsdistrict.org/",
-   "station": "district-homepage-canyons-ut",
-   "why": "Utah storm day 2023-02-22 (NWS winter warning or advisory over Salt Lake, Davis or Utah County)"
+   "timestamp": "20220102040750",
+   "url": "https://www.noxonschools.com/",
+   "station": "apptegy-noxon-mt",
+   "why": "2022-01-02: within 2 days of one of its closure days"
   },
   {
-   "timestamp": "20230223140000",
-   "url": "https://www.canyonsdistrict.org/",
-   "station": "district-homepage-canyons-ut",
-   "why": "Utah storm day 2023-02-23 (NWS winter warning or advisory over Salt Lake, Davis or Utah County)"
+   "timestamp": "20211110020437",
+   "url": "https://www.noxonschools.com/",
+   "station": "apptegy-noxon-mt",
+   "why": "2021-11-10: within 2 days of one of its closure days"
   },
   {
-   "timestamp": "20230301140000",
-   "url": "https://www.canyonsdistrict.org/",
-   "station": "district-homepage-canyons-ut",
-   "why": "Utah storm day 2023-03-01 (NWS winter warning or advisory over Salt Lake, Davis or Utah County)"
+   "timestamp": "20200103024459",
+   "url": "https://www.sodaschools.org/",
+   "station": "edlio-soda-springs-id",
+   "why": "2020-01-03: within 2 days of one of its closure days"
   },
   {
-   "timestamp": "20230310140000",
-   "url": "https://www.canyonsdistrict.org/",
-   "station": "district-homepage-canyons-ut",
-   "why": "Utah storm day 2023-03-10 (NWS winter warning or advisory over Salt Lake, Davis or Utah County)"
+   "timestamp": "20230131222950",
+   "url": "https://www.sodaschools.org/",
+   "station": "edlio-soda-springs-id",
+   "why": "2023-02-01: within 2 days of one of its closure days"
   },
   {
-   "timestamp": "20230403140000",
-   "url": "https://www.canyonsdistrict.org/",
-   "station": "district-homepage-canyons-ut",
-   "why": "Utah storm day 2023-04-03 (NWS winter warning or advisory over Salt Lake, Davis or Utah County)"
+   "timestamp": "20211208181123",
+   "url": "https://www.philipsburgschools.org/",
+   "station": "apptegy-philipsburg-mt",
+   "why": "storm day 2021-12-09 (market score 0.25)"
   },
   {
-   "timestamp": "20240111140000",
-   "url": "https://www.canyonsdistrict.org/",
-   "station": "district-homepage-canyons-ut",
-   "why": "Utah storm day 2024-01-11 (NWS winter warning or advisory over Salt Lake, Davis or Utah County)"
+   "timestamp": "20211109014427",
+   "url": "https://www.philipsburgschools.org/",
+   "station": "apptegy-philipsburg-mt",
+   "why": "storm day 2021-11-09 (market score 0.25)"
   },
   {
-   "timestamp": "20240112140000",
-   "url": "https://www.canyonsdistrict.org/",
-   "station": "district-homepage-canyons-ut",
-   "why": "Utah storm day 2024-01-12 (NWS winter warning or advisory over Salt Lake, Davis or Utah County)"
+   "timestamp": "20241102164047",
+   "url": "https://www.philipsburgschools.org/",
+   "station": "apptegy-philipsburg-mt",
+   "why": "2024-11-03: within 2 days of one of its closure days"
   },
   {
-   "timestamp": "20240207140000",
-   "url": "https://www.canyonsdistrict.org/",
-   "station": "district-homepage-canyons-ut",
-   "why": "Utah storm day 2024-02-07 (NWS winter warning or advisory over Salt Lake, Davis or Utah County)"
+   "timestamp": "20180927193612",
+   "url": "http://www.jcsd1.us:80/",
+   "station": "apptegy-johnson1-wy",
+   "why": "storm day 2018-09-28 (market score 0.25)"
   },
   {
-   "timestamp": "20241126140000",
-   "url": "https://www.canyonsdistrict.org/",
-   "station": "district-homepage-canyons-ut",
-   "why": "Utah storm day 2024-11-26 (NWS winter warning or advisory over Salt Lake, Davis or Utah County)"
+   "timestamp": "20170111151727",
+   "url": "http://www.jcsd1.us/",
+   "station": "apptegy-johnson1-wy",
+   "why": "storm day 2017-01-11 (market score 0.25)"
   },
   {
-   "timestamp": "20250213140000",
-   "url": "https://www.canyonsdistrict.org/",
-   "station": "district-homepage-canyons-ut",
-   "why": "Utah storm day 2025-02-13 (NWS winter warning or advisory over Salt Lake, Davis or Utah County)"
+   "timestamp": "20200313163825",
+   "url": "http://www.jcsd1.us:80/",
+   "station": "apptegy-johnson1-wy",
+   "why": "2020-03-14: within 2 days of one of its closure days"
   },
   {
-   "timestamp": "20250214140000",
-   "url": "https://www.canyonsdistrict.org/",
-   "station": "district-homepage-canyons-ut",
-   "why": "Utah storm day 2025-02-14 (NWS winter warning or advisory over Salt Lake, Davis or Utah County)"
+   "timestamp": "20211010065308",
+   "url": "https://www.bssd72.org/",
+   "station": "apptegy-big-sky-mt",
+   "why": "2021-10-10: within 2 days of one of its closure days"
   },
   {
-   "timestamp": "20250306140000",
-   "url": "https://www.canyonsdistrict.org/",
-   "station": "district-homepage-canyons-ut",
-   "why": "Utah storm day 2025-03-06 (NWS winter warning or advisory over Salt Lake, Davis or Utah County)"
+   "timestamp": "20211009030541",
+   "url": "https://www.bssd72.org/",
+   "station": "apptegy-big-sky-mt",
+   "why": "2021-10-09: within 2 days of one of its closure days"
   },
   {
-   "timestamp": "20260217140000",
-   "url": "https://www.canyonsdistrict.org/",
-   "station": "district-homepage-canyons-ut",
-   "why": "Utah storm day 2026-02-17 (NWS winter warning or advisory over Salt Lake, Davis or Utah County)"
+   "timestamp": "20220102040823",
+   "url": "https://www.bssd72.org/",
+   "station": "apptegy-big-sky-mt",
+   "why": "2022-01-02: within 2 days of one of its closure days"
   },
   {
-   "timestamp": "20260218140000",
-   "url": "https://www.canyonsdistrict.org/",
-   "station": "district-homepage-canyons-ut",
-   "why": "Utah storm day 2026-02-18 (NWS winter warning or advisory over Salt Lake, Davis or Utah County)"
+   "timestamp": "20220202210253",
+   "url": "https://www.winifred.k12.mt.us/",
+   "station": "apptegy-winifred-mt",
+   "why": "2022-02-03: within 2 days of one of its closure days"
   },
   {
-   "timestamp": "20190121140000",
-   "url": "https://provo.edu/",
-   "station": "district-homepage-provo-ut",
-   "why": "Utah storm day 2019-01-21 (NWS winter warning or advisory over Salt Lake, Davis or Utah County)"
+   "timestamp": "20220202170306",
+   "url": "https://www.winifred.k12.mt.us/",
+   "station": "apptegy-winifred-mt",
+   "why": "2022-02-03: within 2 days of one of its closure days"
   },
   {
-   "timestamp": "20190205140000",
-   "url": "https://provo.edu/",
-   "station": "district-homepage-provo-ut",
-   "why": "Utah storm day 2019-02-05 (NWS winter warning or advisory over Salt Lake, Davis or Utah County)"
+   "timestamp": "20220203013953",
+   "url": "https://www.winifred.k12.mt.us/",
+   "station": "apptegy-winifred-mt",
+   "why": "2022-02-03: within 2 days of one of its closure days"
   },
   {
-   "timestamp": "20190206140000",
-   "url": "https://provo.edu/",
-   "station": "district-homepage-provo-ut",
-   "why": "Utah storm day 2019-02-06 (NWS winter warning or advisory over Salt Lake, Davis or Utah County)"
+   "timestamp": "20191119003518",
+   "url": "http://chinookschools.org/",
+   "station": "apptegy-chinook-mt",
+   "why": "storm day 2019-11-19 (market score 0.25)"
   },
   {
-   "timestamp": "20191127140000",
-   "url": "https://provo.edu/",
-   "station": "district-homepage-provo-ut",
-   "why": "Utah storm day 2019-11-27 (NWS winter warning or advisory over Salt Lake, Davis or Utah County)"
+   "timestamp": "20180315142500",
+   "url": "http://chinookschools.org/",
+   "station": "apptegy-chinook-mt",
+   "why": "storm day 2018-03-15 (market score 0.25)"
   },
   {
-   "timestamp": "20200203140000",
-   "url": "https://provo.edu/",
-   "station": "district-homepage-provo-ut",
-   "why": "Utah storm day 2020-02-03 (NWS winter warning or advisory over Salt Lake, Davis or Utah County)"
+   "timestamp": "20220301191436",
+   "url": "https://chinookschools.org/",
+   "station": "apptegy-chinook-mt",
+   "why": "2022-03-02: within 2 days of one of its closure days"
   },
   {
-   "timestamp": "20211215140000",
-   "url": "https://provo.edu/",
-   "station": "district-homepage-provo-ut",
-   "why": "Utah storm day 2021-12-15 (NWS winter warning or advisory over Salt Lake, Davis or Utah County)"
+   "timestamp": "20180207210718",
+   "url": "http://fremont25.org:80/",
+   "station": "apptegy-fremont25-wy",
+   "why": "storm day 2018-02-08 (market score 1.00)"
   },
   {
-   "timestamp": "20221109140000",
-   "url": "https://provo.edu/",
-   "station": "district-homepage-provo-ut",
-   "why": "Utah storm day 2022-11-09 (NWS winter warning or advisory over Salt Lake, Davis or Utah County)"
+   "timestamp": "20171106040934",
+   "url": "http://fremont25.org:80/",
+   "station": "apptegy-fremont25-wy",
+   "why": "storm day 2017-11-06 (market score 0.25)"
   },
   {
-   "timestamp": "20221202140000",
-   "url": "https://provo.edu/",
-   "station": "district-homepage-provo-ut",
-   "why": "Utah storm day 2022-12-02 (NWS winter warning or advisory over Salt Lake, Davis or Utah County)"
+   "timestamp": "20191121081622",
+   "url": "https://www.fremont25.org/",
+   "station": "apptegy-fremont25-wy",
+   "why": "2019-11-21: within 2 days of one of its closure days"
   },
   {
-   "timestamp": "20230117140000",
-   "url": "https://provo.edu/",
-   "station": "district-homepage-provo-ut",
-   "why": "Utah storm day 2023-01-17 (NWS winter warning or advisory over Salt Lake, Davis or Utah County)"
+   "timestamp": "20190111044048",
+   "url": "http://www.mvsd21.org:80/",
+   "station": "apptegy-marsh-valley-id",
+   "why": "2019-01-11: within 2 days of one of its closure days"
   },
   {
-   "timestamp": "20230222140000",
-   "url": "https://provo.edu/",
-   "station": "district-homepage-provo-ut",
-   "why": "Utah storm day 2023-02-22 (NWS winter warning or advisory over Salt Lake, Davis or Utah County)"
+   "timestamp": "20181210122605",
+   "url": "http://www.mvsd21.org:80/",
+   "station": "apptegy-marsh-valley-id",
+   "why": "2018-12-10: within 2 days of one of its closure days"
   },
   {
-   "timestamp": "20230223140000",
-   "url": "https://provo.edu/",
-   "station": "district-homepage-provo-ut",
-   "why": "Utah storm day 2023-02-23 (NWS winter warning or advisory over Salt Lake, Davis or Utah County)"
+   "timestamp": "20190227222832",
+   "url": "http://www.mvsd21.org:80/",
+   "station": "apptegy-marsh-valley-id",
+   "why": "2019-02-28: within 2 days of one of its closure days"
   },
   {
-   "timestamp": "20230301140000",
-   "url": "https://provo.edu/",
-   "station": "district-homepage-provo-ut",
-   "why": "Utah storm day 2023-03-01 (NWS winter warning or advisory over Salt Lake, Davis or Utah County)"
+   "timestamp": "20200417103710",
+   "url": "http://web.stignatiusschools.org/",
+   "station": "apptegy-st-ignatius-mt",
+   "why": "2020-04-17: within 2 days of one of its closure days"
   },
   {
-   "timestamp": "20230310140000",
-   "url": "https://provo.edu/",
-   "station": "district-homepage-provo-ut",
-   "why": "Utah storm day 2023-03-10 (NWS winter warning or advisory over Salt Lake, Davis or Utah County)"
+   "timestamp": "20200413080754",
+   "url": "http://web.stignatiusschools.org/",
+   "station": "apptegy-st-ignatius-mt",
+   "why": "2020-04-13: within 2 days of one of its closure days"
   },
   {
-   "timestamp": "20230403140000",
-   "url": "https://provo.edu/",
-   "station": "district-homepage-provo-ut",
-   "why": "Utah storm day 2023-04-03 (NWS winter warning or advisory over Salt Lake, Davis or Utah County)"
+   "timestamp": "20191117211734",
+   "url": "http://web.stignatiusschools.org/",
+   "station": "apptegy-st-ignatius-mt",
+   "why": "2019-11-18: within 2 days of one of its closure days"
   },
   {
-   "timestamp": "20240111140000",
-   "url": "https://provo.edu/",
-   "station": "district-homepage-provo-ut",
-   "why": "Utah storm day 2024-01-11 (NWS winter warning or advisory over Salt Lake, Davis or Utah County)"
+   "timestamp": "20230327170647",
+   "url": "https://www.shelleyschools.org:443/",
+   "station": "smartsites-shelley-id",
+   "why": "2023-03-28: within 2 days of one of its closure days"
   },
   {
-   "timestamp": "20240112140000",
-   "url": "https://provo.edu/",
-   "station": "district-homepage-provo-ut",
-   "why": "Utah storm day 2024-01-12 (NWS winter warning or advisory over Salt Lake, Davis or Utah County)"
+   "timestamp": "20230405090038",
+   "url": "https://www.shelleyschools.org/",
+   "station": "smartsites-shelley-id",
+   "why": "2023-04-05: within 2 days of one of its closure days"
   },
   {
-   "timestamp": "20240207140000",
-   "url": "https://provo.edu/",
-   "station": "district-homepage-provo-ut",
-   "why": "Utah storm day 2024-02-07 (NWS winter warning or advisory over Salt Lake, Davis or Utah County)"
+   "timestamp": "20240301214853",
+   "url": "https://www.shelleyschools.org/",
+   "station": "smartsites-shelley-id",
+   "why": "2024-03-02: within 2 days of one of its closure days"
   },
   {
-   "timestamp": "20241126140000",
-   "url": "https://provo.edu/",
-   "station": "district-homepage-provo-ut",
-   "why": "Utah storm day 2024-11-26 (NWS winter warning or advisory over Salt Lake, Davis or Utah County)"
+   "timestamp": "20200907012519",
+   "url": "https://www.ennisschools.org/",
+   "station": "apptegy-ennis-mt",
+   "why": "storm day 2020-09-07 (market score 0.25)"
   },
   {
-   "timestamp": "20250213140000",
-   "url": "https://provo.edu/",
-   "station": "district-homepage-provo-ut",
-   "why": "Utah storm day 2025-02-13 (NWS winter warning or advisory over Salt Lake, Davis or Utah County)"
+   "timestamp": "20190918072816",
+   "url": "https://www.ennisschools.org/",
+   "station": "apptegy-ennis-mt",
+   "why": "2019-09-18: within 2 days of one of its closure days"
   },
   {
-   "timestamp": "20250214140000",
-   "url": "https://provo.edu/",
-   "station": "district-homepage-provo-ut",
-   "why": "Utah storm day 2025-02-14 (NWS winter warning or advisory over Salt Lake, Davis or Utah County)"
+   "timestamp": "20190329223243",
+   "url": "http://www.ennisschools.org:80/",
+   "station": "apptegy-ennis-mt",
+   "why": "2019-03-30: within 2 days of one of its closure days"
   },
   {
-   "timestamp": "20250306140000",
-   "url": "https://provo.edu/",
-   "station": "district-homepage-provo-ut",
-   "why": "Utah storm day 2025-03-06 (NWS winter warning or advisory over Salt Lake, Davis or Utah County)"
+   "timestamp": "20170909102620",
+   "url": "http://putnamschools.org:80/",
+   "station": "apptegy-putnam-fl",
+   "why": "2017-09-09: within 2 days of one of its closure days"
   },
   {
-   "timestamp": "20260217140000",
-   "url": "https://provo.edu/",
-   "station": "district-homepage-provo-ut",
-   "why": "Utah storm day 2026-02-17 (NWS winter warning or advisory over Salt Lake, Davis or Utah County)"
+   "timestamp": "20180503154041",
+   "url": "http://www.converse2.org:80/",
+   "station": "apptegy-converse2-wy",
+   "why": "storm day 2018-05-03 (market score 0.25)"
   },
   {
-   "timestamp": "20260218140000",
-   "url": "https://provo.edu/",
-   "station": "district-homepage-provo-ut",
-   "why": "Utah storm day 2026-02-18 (NWS winter warning or advisory over Salt Lake, Davis or Utah County)"
+   "timestamp": "20200318132034",
+   "url": "https://www.converse2.org/",
+   "station": "apptegy-converse2-wy",
+   "why": "2020-03-18: within 2 days of one of its closure days"
   },
   {
-   "timestamp": "20190121140000",
-   "url": "https://www.washk12.org/",
-   "station": "district-homepage-washington-ut",
-   "why": "Utah storm day 2019-01-21 (NWS winter warning or advisory over Salt Lake, Davis or Utah County)"
+   "timestamp": "20210512235309",
+   "url": "https://www.converse2.org/",
+   "station": "apptegy-converse2-wy",
+   "why": "2021-05-13: within 2 days of one of its closure days"
   },
   {
-   "timestamp": "20190205140000",
-   "url": "https://www.washk12.org/",
-   "station": "district-homepage-washington-ut",
-   "why": "Utah storm day 2019-02-05 (NWS winter warning or advisory over Salt Lake, Davis or Utah County)"
+   "timestamp": "20171013134350",
+   "url": "http://www.darby.k12.mt.us/",
+   "station": "apptegy-darby-mt",
+   "why": "storm day 2017-10-13 (market score 0.25)"
   },
   {
-   "timestamp": "20190206140000",
-   "url": "https://www.washk12.org/",
-   "station": "district-homepage-washington-ut",
-   "why": "Utah storm day 2019-02-06 (NWS winter warning or advisory over Salt Lake, Davis or Utah County)"
+   "timestamp": "20211008182200",
+   "url": "http://www.darby.k12.mt.us/",
+   "station": "apptegy-darby-mt",
+   "why": "2021-10-09: within 2 days of one of its closure days"
   },
   {
-   "timestamp": "20191127140000",
-   "url": "https://www.washk12.org/",
-   "station": "district-homepage-washington-ut",
-   "why": "Utah storm day 2019-11-27 (NWS winter warning or advisory over Salt Lake, Davis or Utah County)"
+   "timestamp": "20210204025056",
+   "url": "https://www.darby.k12.mt.us/",
+   "station": "apptegy-darby-mt",
+   "why": "2021-02-04: within 2 days of one of its closure days"
   },
   {
-   "timestamp": "20200203140000",
-   "url": "https://www.washk12.org/",
-   "station": "district-homepage-washington-ut",
-   "why": "Utah storm day 2020-02-03 (NWS winter warning or advisory over Salt Lake, Davis or Utah County)"
+   "timestamp": "20180111070324",
+   "url": "http://www.victor.k12.mt.us:80/",
+   "station": "apptegy-victor-mt",
+   "why": "storm day 2018-01-11 (market score 0.25)"
   },
   {
-   "timestamp": "20211215140000",
-   "url": "https://www.washk12.org/",
-   "station": "district-homepage-washington-ut",
-   "why": "Utah storm day 2021-12-15 (NWS winter warning or advisory over Salt Lake, Davis or Utah County)"
+   "timestamp": "20180307080049",
+   "url": "http://victor.k12.mt.us/",
+   "station": "apptegy-victor-mt",
+   "why": "2018-03-07: within 2 days of one of its closure days"
   },
   {
-   "timestamp": "20221109140000",
-   "url": "https://www.washk12.org/",
-   "station": "district-homepage-washington-ut",
-   "why": "Utah storm day 2022-11-09 (NWS winter warning or advisory over Salt Lake, Davis or Utah County)"
+   "timestamp": "20180413023920",
+   "url": "http://www.victor.k12.mt.us:80/",
+   "station": "apptegy-victor-mt",
+   "why": "2018-04-13: within 2 days of one of its closure days"
   },
   {
-   "timestamp": "20221202140000",
-   "url": "https://www.washk12.org/",
-   "station": "district-homepage-washington-ut",
-   "why": "Utah storm day 2022-12-02 (NWS winter warning or advisory over Salt Lake, Davis or Utah County)"
+   "timestamp": "20241114143119",
+   "url": "https://www.sublette9.org/",
+   "station": "edlio-sublette-9-wy",
+   "why": "2024-11-14: within 2 days of one of its closure days"
   },
   {
-   "timestamp": "20230117140000",
-   "url": "https://www.washk12.org/",
-   "station": "district-homepage-washington-ut",
-   "why": "Utah storm day 2023-01-17 (NWS winter warning or advisory over Salt Lake, Davis or Utah County)"
+   "timestamp": "20210413095811",
+   "url": "https://www.sublette9.org/",
+   "station": "edlio-sublette-9-wy",
+   "why": "2021-04-13: within 2 days of one of its closure days"
   },
   {
-   "timestamp": "20230222140000",
-   "url": "https://www.washk12.org/",
-   "station": "district-homepage-washington-ut",
-   "why": "Utah storm day 2023-02-22 (NWS winter warning or advisory over Salt Lake, Davis or Utah County)"
+   "timestamp": "20231208220740",
+   "url": "https://www.sublette9.org/",
+   "station": "edlio-sublette-9-wy",
+   "why": "2023-12-09: within 2 days of one of its closure days"
   },
   {
-   "timestamp": "20230223140000",
-   "url": "https://www.washk12.org/",
-   "station": "district-homepage-washington-ut",
-   "why": "Utah storm day 2023-02-23 (NWS winter warning or advisory over Salt Lake, Davis or Utah County)"
+   "timestamp": "20220102125134",
+   "url": "https://deerlodgeschools.org/",
+   "station": "apptegy-deer-lodge-mt",
+   "why": "2022-01-02: within 2 days of one of its closure days"
   },
   {
-   "timestamp": "20230301140000",
-   "url": "https://www.washk12.org/",
-   "station": "district-homepage-washington-ut",
-   "why": "Utah storm day 2023-03-01 (NWS winter warning or advisory over Salt Lake, Davis or Utah County)"
+   "timestamp": "20210420030143",
+   "url": "https://www.deerlodgeschools.org/",
+   "station": "apptegy-deer-lodge-mt",
+   "why": "2021-04-20: within 2 days of one of its closure days"
   },
   {
-   "timestamp": "20230310140000",
-   "url": "https://www.washk12.org/",
-   "station": "district-homepage-washington-ut",
-   "why": "Utah storm day 2023-03-10 (NWS winter warning or advisory over Salt Lake, Davis or Utah County)"
+   "timestamp": "20210422011943",
+   "url": "https://www.deerlodgeschools.org/",
+   "station": "apptegy-deer-lodge-mt",
+   "why": "2021-04-22: within 2 days of one of its closure days"
   },
   {
-   "timestamp": "20230403140000",
-   "url": "https://www.washk12.org/",
-   "station": "district-homepage-washington-ut",
-   "why": "Utah storm day 2023-04-03 (NWS winter warning or advisory over Salt Lake, Davis or Utah County)"
+   "timestamp": "20241210150511",
+   "url": "https://www.hlpschools.k12.mt.us/",
+   "station": "apptegy-hays-lodge-pole-mt",
+   "why": "storm day 2024-12-10 (market score 0.25)"
   },
   {
-   "timestamp": "20240111140000",
-   "url": "https://www.washk12.org/",
-   "station": "district-homepage-washington-ut",
-   "why": "Utah storm day 2024-01-11 (NWS winter warning or advisory over Salt Lake, Davis or Utah County)"
+   "timestamp": "20241122134017",
+   "url": "https://www.hlpschools.k12.mt.us/",
+   "station": "apptegy-hays-lodge-pole-mt",
+   "why": "storm day 2024-11-22 (market score 0.25)"
   },
   {
-   "timestamp": "20240112140000",
-   "url": "https://www.washk12.org/",
-   "station": "district-homepage-washington-ut",
-   "why": "Utah storm day 2024-01-12 (NWS winter warning or advisory over Salt Lake, Davis or Utah County)"
+   "timestamp": "20240501231859",
+   "url": "https://www.hlpschools.k12.mt.us/",
+   "station": "apptegy-hays-lodge-pole-mt",
+   "why": "storm day 2024-05-02 (market score 0.25)"
   },
   {
-   "timestamp": "20240207140000",
-   "url": "https://www.washk12.org/",
-   "station": "district-homepage-washington-ut",
-   "why": "Utah storm day 2024-02-07 (NWS winter warning or advisory over Salt Lake, Davis or Utah County)"
+   "timestamp": "20241029011019",
+   "url": "https://www.landerschools.org/",
+   "station": "apptegy-fremont-1-wy",
+   "why": "storm day 2024-10-29 (market score 1.00)"
   },
   {
-   "timestamp": "20241126140000",
-   "url": "https://www.washk12.org/",
-   "station": "district-homepage-washington-ut",
-   "why": "Utah storm day 2024-11-26 (NWS winter warning or advisory over Salt Lake, Davis or Utah County)"
+   "timestamp": "20241030012742",
+   "url": "https://www.landerschools.org/",
+   "station": "apptegy-fremont-1-wy",
+   "why": "storm day 2024-10-30 (market score 1.00)"
   },
   {
-   "timestamp": "20250213140000",
-   "url": "https://www.washk12.org/",
-   "station": "district-homepage-washington-ut",
-   "why": "Utah storm day 2025-02-13 (NWS winter warning or advisory over Salt Lake, Davis or Utah County)"
+   "timestamp": "20241029113430",
+   "url": "https://www.landerschools.org/",
+   "station": "apptegy-fremont-1-wy",
+   "why": "storm day 2024-10-29 (market score 1.00)"
   },
   {
-   "timestamp": "20250214140000",
-   "url": "https://www.washk12.org/",
-   "station": "district-homepage-washington-ut",
-   "why": "Utah storm day 2025-02-14 (NWS winter warning or advisory over Salt Lake, Davis or Utah County)"
+   "timestamp": "20171107133918",
+   "url": "http://www.townsend.k12.mt.us:80/",
+   "station": "apptegy-townsend-mt",
+   "why": "2017-11-07: within 2 days of one of its closure days"
   },
   {
-   "timestamp": "20250306140000",
-   "url": "https://www.washk12.org/",
-   "station": "district-homepage-washington-ut",
-   "why": "Utah storm day 2025-03-06 (NWS winter warning or advisory over Salt Lake, Davis or Utah County)"
+   "timestamp": "20190115040250",
+   "url": "http://www.townsend.k12.mt.us:80/",
+   "station": "apptegy-townsend-mt",
+   "why": "2019-01-15: within 2 days of one of its closure days"
   },
   {
-   "timestamp": "20260217140000",
-   "url": "https://www.washk12.org/",
-   "station": "district-homepage-washington-ut",
-   "why": "Utah storm day 2026-02-17 (NWS winter warning or advisory over Salt Lake, Davis or Utah County)"
+   "timestamp": "20181109025218",
+   "url": "http://www.townsend.k12.mt.us:80/",
+   "station": "apptegy-townsend-mt",
+   "why": "2018-11-09: within 2 days of one of its closure days"
   },
   {
-   "timestamp": "20260218140000",
-   "url": "https://www.washk12.org/",
-   "station": "district-homepage-washington-ut",
-   "why": "Utah storm day 2026-02-18 (NWS winter warning or advisory over Salt Lake, Davis or Utah County)"
+   "timestamp": "20180529155847",
+   "url": "http://www.jcsb.org:80/",
+   "station": "smartsites-jackson-fl",
+   "why": "2018-05-29: within 2 days of one of its closure days"
+  },
+  {
+   "timestamp": "20170912200145",
+   "url": "http://www.jcsb.org:80/",
+   "station": "smartsites-jackson-fl",
+   "why": "2017-09-13: within 2 days of one of its closure days"
+  },
+  {
+   "timestamp": "20220101195141",
+   "url": "https://www.baker.k12.mt.us/",
+   "station": "finalsite-baker-mt",
+   "why": "2022-01-02: within 2 days of one of its closure days"
+  },
+  {
+   "timestamp": "20190312153159",
+   "url": "http://www.baker.k12.mt.us:80/",
+   "station": "finalsite-baker-mt",
+   "why": "2019-03-12: within 2 days of one of its closure days"
+  },
+  {
+   "timestamp": "20190313163234",
+   "url": "http://www.baker.k12.mt.us:80/",
+   "station": "finalsite-baker-mt",
+   "why": "2019-03-14: within 2 days of one of its closure days"
+  },
+  {
+   "timestamp": "20180118072823",
+   "url": "http://www.glendiveschools.com/",
+   "station": "apptegy-glendive-mt",
+   "why": "2018-01-18: within 2 days of one of its closure days"
+  },
+  {
+   "timestamp": "20180116192428",
+   "url": "http://glendiveschools.com:80/",
+   "station": "apptegy-glendive-mt",
+   "why": "2018-01-17: within 2 days of one of its closure days"
+  },
+  {
+   "timestamp": "20190214110544",
+   "url": "https://www.glendiveschools.com/",
+   "station": "apptegy-glendive-mt",
+   "why": "2019-02-14: within 2 days of one of its closure days"
+  },
+  {
+   "timestamp": "20220925112802",
+   "url": "http://www.okee.k12.fl.us/",
+   "station": "apptegy-okeechobee-fl",
+   "why": "2022-09-25: within 2 days of one of its closure days"
+  },
+  {
+   "timestamp": "20220531115850",
+   "url": "https://www.wsh1.k12.wy.us/",
+   "station": "apptegy-washakie-1-wy",
+   "why": "storm day 2022-05-31 (market score 1.00)"
+  },
+  {
+   "timestamp": "20220530123905",
+   "url": "https://www.wsh1.k12.wy.us/",
+   "station": "apptegy-washakie-1-wy",
+   "why": "storm day 2022-05-30 (market score 1.00)"
+  },
+  {
+   "timestamp": "20220412001525",
+   "url": "https://www.wsh1.k12.wy.us/",
+   "station": "apptegy-washakie-1-wy",
+   "why": "storm day 2022-04-12 (market score 1.00)"
+  },
+  {
+   "timestamp": "20210128024025",
+   "url": "https://www.wyomingindianschools.com/",
+   "station": "apptegy-fremont-14-wy",
+   "why": "storm day 2021-01-28 (market score 0.25)"
+  },
+  {
+   "timestamp": "20210413005338",
+   "url": "https://www.wyomingindianschools.com/",
+   "station": "apptegy-fremont-14-wy",
+   "why": "2021-04-13: within 2 days of one of its closure days"
+  },
+  {
+   "timestamp": "20201020003628",
+   "url": "https://www.wyomingindianschools.com/",
+   "station": "apptegy-fremont-14-wy",
+   "why": "2020-10-20: within 2 days of one of its closure days"
+  },
+  {
+   "timestamp": "20191211143801",
+   "url": "https://www.shoshonischools.org/",
+   "station": "apptegy-fremont-24-wy",
+   "why": "2019-12-11: within 2 days of one of its closure days"
+  },
+  {
+   "timestamp": "20190922102211",
+   "url": "https://www.shoshonischools.org/",
+   "station": "apptegy-fremont-24-wy",
+   "why": "2019-09-22: within 2 days of one of its closure days"
+  },
+  {
+   "timestamp": "20180430205808",
+   "url": "http://www.shoshonischools.org/",
+   "station": "apptegy-fremont-24-wy",
+   "why": "2018-05-01: within 2 days of one of its closure days"
+  },
+  {
+   "timestamp": "20170202035343",
+   "url": "http://leadoreschool.org:80/",
+   "station": "apptegy-south-lemhi-id",
+   "why": "storm day 2017-02-02 (market score 0.25)"
+  },
+  {
+   "timestamp": "20201112002859",
+   "url": "https://www.leadoreschool.org/",
+   "station": "apptegy-south-lemhi-id",
+   "why": "2020-11-12: within 2 days of one of its closure days"
+  },
+  {
+   "timestamp": "20201111221242",
+   "url": "https://www.leadoreschool.org/",
+   "station": "apptegy-south-lemhi-id",
+   "why": "2020-11-12: within 2 days of one of its closure days"
+  },
+  {
+   "timestamp": "20210413005433",
+   "url": "https://www.hotsprings1.org/",
+   "station": "edlio-hot-springs-1-wy",
+   "why": "2021-04-13: within 2 days of one of its closure days"
+  },
+  {
+   "timestamp": "20210417002022",
+   "url": "https://www.hotsprings1.org/",
+   "station": "edlio-hot-springs-1-wy",
+   "why": "2021-04-17: within 2 days of one of its closure days"
+  },
+  {
+   "timestamp": "20191118071833",
+   "url": "https://www.hotsprings1.org/",
+   "station": "edlio-hot-springs-1-wy",
+   "why": "2019-11-18: within 2 days of one of its closure days"
+  },
+  {
+   "timestamp": "20211215182318",
+   "url": "https://www.valverde.edu/en-US",
+   "station": "schoolblocks-val-verde-ca",
+   "why": "2021-12-16: within 2 days of one of its closure days"
+  },
+  {
+   "timestamp": "20170113044110",
+   "url": "http://www.ouhsd.org/",
+   "station": "finalsite-oroville-high-ca",
+   "why": "2017-01-13: within 2 days of one of its closure days"
+  },
+  {
+   "timestamp": "20200404171715",
+   "url": "http://durhamunified.org/",
+   "station": "apptegy-durham-ca",
+   "why": "2020-04-05: within 2 days of one of its closure days"
+  },
+  {
+   "timestamp": "20200322061519",
+   "url": "http://durhamunified.org:80/",
+   "station": "apptegy-durham-ca",
+   "why": "2020-03-22: within 2 days of one of its closure days"
+  },
+  {
+   "timestamp": "20171113064506",
+   "url": "http://www.durhamunified.org:80/",
+   "station": "apptegy-durham-ca",
+   "why": "2017-11-13: within 2 days of one of its closure days"
+  },
+  {
+   "timestamp": "20240108162101",
+   "url": "https://www.slcschools.org/",
+   "station": "smartsites-salt-lake-city-ut",
+   "why": "storm day 2024-01-09 (market score 1.00)"
+  },
+  {
+   "timestamp": "20230404233856",
+   "url": "https://www.slcschools.org/",
+   "station": "smartsites-salt-lake-city-ut",
+   "why": "storm day 2023-04-05 (market score 1.00)"
+  },
+  {
+   "timestamp": "20230404104118",
+   "url": "https://www.slcschools.org/",
+   "station": "smartsites-salt-lake-city-ut",
+   "why": "storm day 2023-04-04 (market score 1.00)"
+  },
+  {
+   "timestamp": "20230404082721",
+   "url": "https://www.slcschools.org/",
+   "station": "smartsites-salt-lake-city-ut",
+   "why": "storm day 2023-04-04 (market score 1.00)"
+  },
+  {
+   "timestamp": "20230404074448",
+   "url": "https://www.slcschools.org/",
+   "station": "smartsites-salt-lake-city-ut",
+   "why": "storm day 2023-04-04 (market score 1.00)"
+  },
+  {
+   "timestamp": "20210411182427",
+   "url": "https://www.slcschools.org/",
+   "station": "smartsites-salt-lake-city-ut",
+   "why": "2021-04-12: within 2 days of one of its closure days"
+  },
+  {
+   "timestamp": "20210427050059",
+   "url": "https://www.slcschools.org/",
+   "station": "smartsites-salt-lake-city-ut",
+   "why": "2021-04-27: within 2 days of one of its closure days"
+  },
+  {
+   "timestamp": "20221130062329",
+   "url": "https://www.slcschools.org",
+   "station": "smartsites-salt-lake-city-ut",
+   "why": "2022-11-30: within 2 days of one of its closure days"
+  },
+  {
+   "timestamp": "20221127051429",
+   "url": "https://www.slcschools.org/",
+   "station": "smartsites-salt-lake-city-ut",
+   "why": "2022-11-27: within 2 days of one of its closure days"
+  },
+  {
+   "timestamp": "20230321015942",
+   "url": "https://www.slcschools.org",
+   "station": "smartsites-salt-lake-city-ut",
+   "why": "2023-03-21: within 2 days of one of its closure days"
+  },
+  {
+   "timestamp": "20221127043832",
+   "url": "https://www.slcschools.org",
+   "station": "smartsites-salt-lake-city-ut",
+   "why": "2022-11-27: within 2 days of one of its closure days"
+  },
+  {
+   "timestamp": "20230318053840",
+   "url": "https://www.slcschools.org/",
+   "station": "smartsites-salt-lake-city-ut",
+   "why": "2023-03-18: within 2 days of one of its closure days"
+  },
+  {
+   "timestamp": "20230325095400",
+   "url": "https://www.slcschools.org",
+   "station": "smartsites-salt-lake-city-ut",
+   "why": "2023-03-25: within 2 days of one of its closure days"
+  },
+  {
+   "timestamp": "20221225005601",
+   "url": "https://www.slcschools.org/",
+   "station": "smartsites-salt-lake-city-ut",
+   "why": "2022-12-25: within 2 days of one of its closure days"
+  },
+  {
+   "timestamp": "20221225223339",
+   "url": "https://www.slcschools.org/",
+   "station": "smartsites-salt-lake-city-ut",
+   "why": "2022-12-26: within 2 days of one of its closure days"
+  },
+  {
+   "timestamp": "20230307132130",
+   "url": "https://www.slcschools.org/",
+   "station": "smartsites-salt-lake-city-ut",
+   "why": "2023-03-07: within 2 days of one of its closure days"
+  },
+  {
+   "timestamp": "20220131013029",
+   "url": "https://www.slcschools.org/",
+   "station": "smartsites-salt-lake-city-ut",
+   "why": "2022-01-31: within 2 days of one of its closure days"
+  },
+  {
+   "timestamp": "20221217013818",
+   "url": "https://www.slcschools.org/",
+   "station": "smartsites-salt-lake-city-ut",
+   "why": "2022-12-17: within 2 days of one of its closure days"
+  },
+  {
+   "timestamp": "20221218170926",
+   "url": "https://www.slcschools.org/",
+   "station": "smartsites-salt-lake-city-ut",
+   "why": "2022-12-19: within 2 days of one of its closure days"
+  },
+  {
+   "timestamp": "20221219020020",
+   "url": "https://www.slcschools.org/",
+   "station": "smartsites-salt-lake-city-ut",
+   "why": "2022-12-19: within 2 days of one of its closure days"
+  },
+  {
+   "timestamp": "20220423190932",
+   "url": "https://www.slcschools.org/",
+   "station": "smartsites-salt-lake-city-ut",
+   "why": "2022-04-24: within 2 days of one of its closure days"
+  },
+  {
+   "timestamp": "20220131074327",
+   "url": "https://www.slcschools.org/",
+   "station": "smartsites-salt-lake-city-ut",
+   "why": "2022-01-31: within 2 days of one of its closure days"
+  },
+  {
+   "timestamp": "20220131232926",
+   "url": "https://www.slcschools.org/",
+   "station": "smartsites-salt-lake-city-ut",
+   "why": "2022-02-01: within 2 days of one of its closure days"
+  },
+  {
+   "timestamp": "20220410055229",
+   "url": "https://www.slcschools.org/",
+   "station": "smartsites-salt-lake-city-ut",
+   "why": "2022-04-10: within 2 days of one of its closure days"
+  },
+  {
+   "timestamp": "20211224231102",
+   "url": "https://www.slcschools.org/",
+   "station": "smartsites-salt-lake-city-ut",
+   "why": "2021-12-25: within 2 days of one of its closure days"
+  },
+  {
+   "timestamp": "20240224011159",
+   "url": "https://www.slcschools.org/",
+   "station": "smartsites-salt-lake-city-ut",
+   "why": "2024-02-24: within 2 days of one of its closure days"
+  },
+  {
+   "timestamp": "20240223010721",
+   "url": "https://www.slcschools.org/",
+   "station": "smartsites-salt-lake-city-ut",
+   "why": "2024-02-23: within 2 days of one of its closure days"
+  },
+  {
+   "timestamp": "20231206081715",
+   "url": "https://www.slcschools.org",
+   "station": "smartsites-salt-lake-city-ut",
+   "why": "2023-12-06: within 2 days of one of its closure days"
+  },
+  {
+   "timestamp": "20231209170323",
+   "url": "https://www.slcschools.org/",
+   "station": "smartsites-salt-lake-city-ut",
+   "why": "2023-12-10: within 2 days of one of its closure days"
+  },
+  {
+   "timestamp": "20231125120317",
+   "url": "https://www.slcschools.org/",
+   "station": "smartsites-salt-lake-city-ut",
+   "why": "2023-11-25: within 2 days of one of its closure days"
+  },
+  {
+   "timestamp": "20240203053514",
+   "url": "https://www.slcschools.org/",
+   "station": "smartsites-salt-lake-city-ut",
+   "why": "2024-02-03: within 2 days of one of its closure days"
+  },
+  {
+   "timestamp": "20231014105714",
+   "url": "https://www.slcschools.org/",
+   "station": "smartsites-salt-lake-city-ut",
+   "why": "2023-10-14: within 2 days of one of its closure days"
+  },
+  {
+   "timestamp": "20221204031821",
+   "url": "https://www.slcschools.org/",
+   "station": "smartsites-salt-lake-city-ut",
+   "why": "2022-12-04: within 2 days of one of its closure days"
+  },
+  {
+   "timestamp": "20221206044705",
+   "url": "https://www.slcschools.org/",
+   "station": "smartsites-salt-lake-city-ut",
+   "why": "2022-12-06: within 2 days of one of its closure days"
+  },
+  {
+   "timestamp": "20240223005822",
+   "url": "https://www.slcschools.org",
+   "station": "smartsites-salt-lake-city-ut",
+   "why": "2024-02-23: within 2 days of one of its closure days"
+  },
+  {
+   "timestamp": "20231202113038",
+   "url": "https://www.slcschools.org/",
+   "station": "smartsites-salt-lake-city-ut",
+   "why": "2023-12-02: within 2 days of one of its closure days"
+  },
+  {
+   "timestamp": "20230106160341",
+   "url": "https://www.slcschools.org/",
+   "station": "smartsites-salt-lake-city-ut",
+   "why": "2023-01-07: within 2 days of one of its closure days"
+  },
+  {
+   "timestamp": "20231028075834",
+   "url": "https://www.slcschools.org/",
+   "station": "smartsites-salt-lake-city-ut",
+   "why": "2023-10-28: within 2 days of one of its closure days"
+  },
+  {
+   "timestamp": "20230311093749",
+   "url": "https://www.slcschools.org/",
+   "station": "smartsites-salt-lake-city-ut",
+   "why": "2023-03-11: within 2 days of one of its closure days"
+  },
+  {
+   "timestamp": "20230326133117",
+   "url": "https://www.slcschools.org/",
+   "station": "smartsites-salt-lake-city-ut",
+   "why": "2023-03-26: within 2 days of one of its closure days"
+  },
+  {
+   "timestamp": "20240212204251",
+   "url": "https://www.slcschools.org/",
+   "station": "smartsites-salt-lake-city-ut",
+   "why": "2024-02-13: within 2 days of one of its closure days"
+  },
+  {
+   "timestamp": "20240111010753",
+   "url": "https://www.slcschools.org/",
+   "station": "smartsites-salt-lake-city-ut",
+   "why": "2024-01-11: within 2 days of one of its closure days"
+  },
+  {
+   "timestamp": "20220203020742",
+   "url": "https://www.slcschools.org/",
+   "station": "smartsites-salt-lake-city-ut",
+   "why": "2022-02-03: within 2 days of one of its closure days"
+  },
+  {
+   "timestamp": "20240115172210",
+   "url": "https://www.slcschools.org/",
+   "station": "smartsites-salt-lake-city-ut",
+   "why": "2024-01-16: within 2 days of one of its closure days"
+  },
+  {
+   "timestamp": "20240122235522",
+   "url": "https://www.slcschools.org/",
+   "station": "smartsites-salt-lake-city-ut",
+   "why": "2024-01-23: within 2 days of one of its closure days"
+  },
+  {
+   "timestamp": "20220306023433",
+   "url": "https://www.slcschools.org/",
+   "station": "smartsites-salt-lake-city-ut",
+   "why": "2022-03-06: within 2 days of one of its closure days"
+  },
+  {
+   "timestamp": "20220305163429",
+   "url": "https://www.slcschools.org/",
+   "station": "smartsites-salt-lake-city-ut",
+   "why": "2022-03-06: within 2 days of one of its closure days"
+  },
+  {
+   "timestamp": "20231025124228",
+   "url": "https://www.slcschools.org/",
+   "station": "smartsites-salt-lake-city-ut",
+   "why": "2023-10-25: within 2 days of one of its closure days"
+  },
+  {
+   "timestamp": "20240217162446",
+   "url": "https://www.slcschools.org/",
+   "station": "smartsites-salt-lake-city-ut",
+   "why": "2024-02-18: within 2 days of one of its closure days"
+  },
+  {
+   "timestamp": "20240216234829",
+   "url": "https://www.slcschools.org/",
+   "station": "smartsites-salt-lake-city-ut",
+   "why": "2024-02-17: within 2 days of one of its closure days"
+  },
+  {
+   "timestamp": "20240209120348",
+   "url": "https://www.slcschools.org/",
+   "station": "smartsites-salt-lake-city-ut",
+   "why": "2024-02-09: within 2 days of one of its closure days"
+  },
+  {
+   "timestamp": "20240123132908",
+   "url": "https://www.slcschools.org/",
+   "station": "smartsites-salt-lake-city-ut",
+   "why": "2024-01-23: within 2 days of one of its closure days"
+  },
+  {
+   "timestamp": "20201219181128",
+   "url": "https://www.slcschools.org/",
+   "station": "smartsites-salt-lake-city-ut",
+   "why": "2020-12-20: within 2 days of one of its closure days"
+  },
+  {
+   "timestamp": "20191230052048",
+   "url": "https://www.slcschools.org/",
+   "station": "smartsites-salt-lake-city-ut",
+   "why": "2019-12-30: within 2 days of one of its closure days"
+  },
+  {
+   "timestamp": "20200102192034",
+   "url": "https://www.slcschools.org/",
+   "station": "smartsites-salt-lake-city-ut",
+   "why": "2020-01-03: within 2 days of one of its closure days"
+  },
+  {
+   "timestamp": "20200131180450",
+   "url": "https://www.slcschools.org/",
+   "station": "smartsites-salt-lake-city-ut",
+   "why": "2020-02-01: within 2 days of one of its closure days"
+  },
+  {
+   "timestamp": "20201109215241",
+   "url": "https://www.slcschools.org/",
+   "station": "smartsites-salt-lake-city-ut",
+   "why": "2020-11-10: within 2 days of one of its closure days"
   }
  ]
 }
