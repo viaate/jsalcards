@@ -1,64 +1,269 @@
 {
-  "snapshots": [
-    {
-      "timestamp": "20251225080541",
-      "url": "https://www.washk12.org/",
-      "station": "district-homepage-washington-ut",
-      "why": "storm day 2025-12-25 (market score 0.25)"
-    },
-    {
-      "timestamp": "20250505194308",
-      "url": "https://www.washk12.org/",
-      "station": "district-homepage-washington-ut",
-      "why": "storm day 2025-05-06 (market score 0.25)"
-    },
-    {
-      "timestamp": "20200318122407",
-      "url": "https://www.washk12.org/",
-      "station": "district-homepage-washington-ut",
-      "why": "storm day 2020-03-18 (market score 0.25)"
-    },
-    {
-      "timestamp": "20260304080252",
-      "url": "https://www.washk12.org/",
-      "station": "district-homepage-washington-ut",
-      "why": "2026-03-04: within 2 days of one of its closure days"
-    },
-    {
-      "timestamp": "20260209080637",
-      "url": "https://www.washk12.org/",
-      "station": "district-homepage-washington-ut",
-      "why": "2026-02-09: within 2 days of one of its closure days"
-    },
-    {
-      "timestamp": "20240204081806",
-      "url": "https://www.washk12.org/",
-      "station": "district-homepage-washington-ut",
-      "why": "2024-02-04: within 2 days of one of its closure days"
-    },
-    {
-      "timestamp": "20170124203028",
-      "url": "https://www.washk12.org/",
-      "station": "district-homepage-washington-ut",
-      "why": "2017-01-25: within 2 days of one of its closure days"
-    },
-    {
-      "timestamp": "20230318072739",
-      "url": "https://www.washk12.org/",
-      "station": "district-homepage-washington-ut",
-      "why": "2023-03-18: within 2 days of one of its closure days"
-    },
-    {
-      "timestamp": "20220329212220",
-      "url": "https://www.washk12.org/",
-      "station": "district-homepage-washington-ut",
-      "why": "2022-03-30: within 2 days of one of its closure days"
-    },
-    {
-      "timestamp": "20201227004752",
-      "url": "https://alert.washk12.org/endpoint.php",
-      "station": "district-homepage-washington-ut",
-      "why": "2020-12-27: within 2 days of one of its closure days"
-    }
-  ]
+ "cdx": [
+  {
+   "url": "www.stjohns.k12.fl.us/",
+   "from": "20150101",
+   "to": "20261013"
+  },
+  {
+   "url": "www.stlucie.k12.fl.us/",
+   "from": "20150101",
+   "to": "20261013"
+  },
+  {
+   "url": "www.tsd401.org/",
+   "from": "20150101",
+   "to": "20261013"
+  },
+  {
+   "url": "lcsd2.org/",
+   "from": "20150101",
+   "to": "20261013"
+  },
+  {
+   "url": "www.sd55.org/",
+   "from": "20150101",
+   "to": "20261013"
+  },
+  {
+   "url": "www.goshen1.org/",
+   "from": "20150101",
+   "to": "20261013"
+  },
+  {
+   "url": "www.boces5.org/",
+   "from": "20150101",
+   "to": "20261013"
+  },
+  {
+   "url": "www.fortwashakieschool.com/",
+   "from": "20150101",
+   "to": "20261013"
+  },
+  {
+   "url": "www.fremont2.org/",
+   "from": "20150101",
+   "to": "20261013"
+  },
+  {
+   "url": "www.kimberly.edu/",
+   "from": "20150101",
+   "to": "20261013"
+  },
+  {
+   "url": "www.taylor.k12.fl.us/",
+   "from": "20150101",
+   "to": "20261013"
+  },
+  {
+   "url": "www.dixie.k12.fl.us/",
+   "from": "20150101",
+   "to": "20261013"
+  },
+  {
+   "url": "www.hdsb.org/",
+   "from": "20150101",
+   "to": "20261013"
+  },
+  {
+   "url": "www.wcsdschools.com/",
+   "from": "20150101",
+   "to": "20261013"
+  },
+  {
+   "url": "www.union.k12.fl.us/",
+   "from": "20150101",
+   "to": "20261013"
+  },
+  {
+   "url": "www.jeffersonsd251.org/",
+   "from": "20150101",
+   "to": "20261013"
+  },
+  {
+   "url": "www.snakeriver.org/",
+   "from": "20150101",
+   "to": "20261013"
+  },
+  {
+   "url": "gsd231.org/",
+   "from": "20150101",
+   "to": "20261013"
+  },
+  {
+   "url": "www.filerschools.org/",
+   "from": "20150101",
+   "to": "20261013"
+  },
+  {
+   "url": "filerschools.org/",
+   "from": "20150101",
+   "to": "20261013"
+  },
+  {
+   "url": "www.jeromeschools.org/",
+   "from": "20150101",
+   "to": "20261013"
+  },
+  {
+   "url": "shoshonesd.org/",
+   "from": "20150101",
+   "to": "20261013"
+  },
+  {
+   "url": "www.butteschooldistrict.org/",
+   "from": "20150101",
+   "to": "20261013"
+  },
+  {
+   "url": "www.glcsd.org/",
+   "from": "20150101",
+   "to": "20261013"
+  },
+  {
+   "url": "www.chicousd.org/",
+   "from": "20150101",
+   "to": "20261013"
+  },
+  {
+   "url": "www.sunflower.k12.ms.us/",
+   "from": "20150101",
+   "to": "20261013"
+  },
+  {
+   "url": "www.gvillepublicschooldistrict.com/",
+   "from": "20150101",
+   "to": "20261013"
+  },
+  {
+   "url": "www.cnusd.k12.ca.us/",
+   "from": "20150101",
+   "to": "20261013"
+  },
+  {
+   "url": "www.pusdk12.org/",
+   "from": "20150101",
+   "to": "20261013"
+  },
+  {
+   "url": "www.wbcsdk12.org/",
+   "from": "20150101",
+   "to": "20261013"
+  },
+  {
+   "url": "www.corningelementary.org/",
+   "from": "20150101",
+   "to": "20261013"
+  },
+  {
+   "url": "www.evergreenusd.org/",
+   "from": "20150101",
+   "to": "20261013"
+  },
+  {
+   "url": "www.dsusd.us/",
+   "from": "20150101",
+   "to": "20261013"
+  },
+  {
+   "url": "lelandschooldistrict.schoolinsites.com/",
+   "from": "20150101",
+   "to": "20261013"
+  },
+  {
+   "url": "www.westernline.org/",
+   "from": "20150101",
+   "to": "20261013"
+  },
+  {
+   "url": "www.etsd.k12.ms.us/",
+   "from": "20150101",
+   "to": "20261013"
+  },
+  {
+   "url": "www.bcoe.org/",
+   "from": "20150101",
+   "to": "20261013"
+  },
+  {
+   "url": "www.thermalito.org/",
+   "from": "20150101",
+   "to": "20261013"
+  },
+  {
+   "url": "www.rbuesd.org/",
+   "from": "20150101",
+   "to": "20261013"
+  },
+  {
+   "url": "www.gusd.org/",
+   "from": "20150101",
+   "to": "20261013"
+  },
+  {
+   "url": "www.palermoschools.org/",
+   "from": "20150101",
+   "to": "20261013"
+  },
+  {
+   "url": "jurupausd.org/",
+   "from": "20150101",
+   "to": "20261013"
+  },
+  {
+   "url": "www.antelopeschools.org/",
+   "from": "20150101",
+   "to": "20261013"
+  },
+  {
+   "url": "www.prc.k12.ms.us/",
+   "from": "20150101",
+   "to": "20261013"
+  },
+  {
+   "url": "www.menifeeusd.org/",
+   "from": "20150101",
+   "to": "20261013"
+  },
+  {
+   "url": "www.lmusd.net/",
+   "from": "20150101",
+   "to": "20261013"
+  },
+  {
+   "url": "www.tehamaschools.org/",
+   "from": "20150101",
+   "to": "20261013"
+  },
+  {
+   "url": "www.biggs.org/",
+   "from": "20150101",
+   "to": "20261013"
+  },
+  {
+   "url": "www.ccsd.ms/",
+   "from": "20150101",
+   "to": "20261013"
+  },
+  {
+   "url": "asd58.us/",
+   "from": "20150101",
+   "to": "20261013"
+  },
+  {
+   "url": "sites.google.com/d59.k12.id.us/fsd/home",
+   "from": "20150101",
+   "to": "20261013"
+  },
+  {
+   "url": "www.buhlschools.org/",
+   "from": "20150101",
+   "to": "20261013"
+  },
+  {
+   "url": "sites.google.com/ririe252.org/ririeschooldistrict252/home",
+   "from": "20150101",
+   "to": "20261013"
+  }
+ ]
 }
