@@ -11,8 +11,10 @@ name: Preview
 # The site is built with the pipeline's real data, made here: the school
 # directory (snowlight directory build: NCES files, pinned in
 # pipeline/config/directory.yaml) and the city and ZIP code records (snowlight
-# places build: Census files). Their downloads are kept between runs in
-# pipeline/.cache. npm run stage then stages what the pipeline wrote as the
+# places build: Census files), whose downloads are kept between runs in
+# pipeline/.cache, and the replay days, published from the seeds in
+# pipeline/data/replays against that directory (snowlight replays publish).
+# npm run stage then stages what the pipeline wrote as the
 # site's data and builds the search index from it (web/scripts/stage-data.mjs).
 # If any of it fails, nothing is published: the preview never ships without
 # its data, or with data from anywhere else.
@@ -95,6 +97,12 @@ jobs:
           }
           build directory
           build places
+      # The replay days (pipeline/data/replays), published again against the
+      # directory just built: no network. A seed it leaves out is a ::warning::
+      # and the deploy goes on; with no seed it writes no replays/ folder.
+      - if: steps.pages.outcome == 'success'
+        working-directory: pipeline
+        run: uv run snowlight replays publish
 
       # The site, with that data staged, for the Pages base path.
       - if: steps.pages.outcome == 'success'

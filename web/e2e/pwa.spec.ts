@@ -43,6 +43,7 @@ import { build } from 'vite';
 
 import { copy } from '../src/copy';
 import { format } from '../src/copy-format';
+import { hashedOnStaging, hashedPath } from '../src/data/paths';
 import { CACHE_NAMES, MANIFEST_FILE, SW_FILE } from '../src/pwa/config';
 
 const WEB = fileURLToPath(new URL('..', import.meta.url));
@@ -88,6 +89,30 @@ function syntheticDirectory(generatedOn: string): string {
     districts: { ids: [], names: [] },
     school_years: { public: '2025-2026', private: '2023-2024' },
   });
+}
+
+/** A replay day as the pipeline publishes it (snowlight replays publish): SYNTHETIC, no schools. */
+const SYNTHETIC_REPLAY = 'replays/2026-01-05.json';
+
+function syntheticReplay(generatedOn: string): Buffer {
+  return Buffer.from(
+    JSON.stringify({
+      schema_version: 1,
+      id: '2026-01-05',
+      generated_at: `${generatedOn}T12:00:00Z`,
+      directory: { generated_on: generatedOn, schools: 0, districts: 0 },
+      start: '2026-01-05T12:00:00Z',
+      step_minutes: 1440,
+      frames: 1,
+      rows: [],
+    }),
+  );
+}
+
+/** Where staging puts `bytes`, published at `plain` under data/ (scripts/stage-data.mjs). */
+function stagedName(plain: string, bytes: Buffer): string {
+  const hash = createHash('sha256').update(bytes).digest('hex');
+  return `data/${hashedOnStaging(plain) ? hashedPath(plain, hash) : plain}`;
 }
 
 // The harness: what the app does once src/pwa and src/state are wired in. ------------
@@ -761,6 +786,55 @@ test('the school directory is cache-first until it is evicted', async ({ browser
       for (const request of await cache.keys()) await cache.delete(request);
     }, CACHE_NAMES.staticData);
     expect((await fetchJson(page, site.url(DIRECTORY))).generated_on).toBe('2026-09-01');
+  } finally {
+    await context.close();
+    await site.stop();
+  }
+});
+
+test('a replay day the next deploy stamps again comes under a new name, never the old copy', async ({
+  browser,
+}) => {
+  const context = await browser.newContext();
+  const { site, page } = await openSite(context);
+  try {
+    await waitForOfflineReady(page, site);
+    // Deploy 1 stages the day for its directory; the worker keeps it cache-first.
+    const first = syntheticReplay('2026-01-01');
+    const firstName = stagedName(SYNTHETIC_REPLAY, first);
+    expect(firstName).toMatch(/^data\/replays\/2026-01-05\.[0-9a-f]{10}\.json$/);
+    expect(stagedName('replays/index.json', Buffer.from('{}'))).toBe('data/replays/index.json');
+    site.put(firstName, first);
+    expect(
+      ((await fetchJson(page, site.url(firstName))).directory as { generated_on: string })
+        .generated_on,
+    ).toBe('2026-01-01');
+    await waitForCached(page, CACHE_NAMES.staticData, site.url(firstName));
+
+    // Deploy 2 builds a new directory and publishes the same day stamped for it: a new
+    // name, which the worker has never kept, so the page reads the new stamp.
+    const second = syntheticReplay('2026-09-01');
+    const secondName = stagedName(SYNTHETIC_REPLAY, second);
+    expect(secondName).not.toBe(firstName);
+    site.put(secondName, second);
+    await page.reload();
+    expect(
+      ((await fetchJson(page, site.url(secondName))).directory as { generated_on: string })
+        .generated_on,
+    ).toBe('2026-09-01');
+    expect(site.hits(secondName)).toBe(1);
+
+    // Why the name must change: under its plain name the worker would go on serving
+    // the copy stamped for the old directory, which then lights nothing.
+    const plain = `data/${SYNTHETIC_REPLAY}`;
+    site.put(plain, first);
+    await fetchJson(page, site.url(plain));
+    await waitForCached(page, CACHE_NAMES.staticData, site.url(plain));
+    site.put(plain, second);
+    await page.reload();
+    expect(
+      ((await fetchJson(page, site.url(plain))).directory as { generated_on: string }).generated_on,
+    ).toBe('2026-01-01');
   } finally {
     await context.close();
     await site.stop();

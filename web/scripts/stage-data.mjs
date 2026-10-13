@@ -33,8 +33,13 @@
  *   search-index.<hash>.bin           built by scripts/build-search-index.mjs from
  *                                     the directory's schools and districts and
  *                                     the places build's cities and ZIP codes
+ *   replays/<id>.<hash>.json          each replay day, as the pipeline wrote it
+ *                                     (snowlight replays publish), named by its
+ *                                     content: every deploy stamps it for its own
+ *                                     directory, and the worker keeps it cache-first
  *   everything else the pipeline published under site-data (live/, and any
- *   predictions/, stats/, replays/ or track-record.json), as written
+ *   predictions/, stats/, replays/index.json or track-record.json), as written;
+ *   with no replay published there is no replays/ folder, and none is staged
  *
  * <hash> is the first 10 hex digits of the file's SHA-256 (src/data/paths.ts):
  * those files can be cached for good, and a new staging gets new names. The
@@ -112,7 +117,7 @@ registerHooks({
 
 const { casedName, displayName } = await import('../src/text/names.ts');
 const { nameFixes, stateOfId } = await import('../src/text/school-names.ts');
-const { hashedPath } = await import('../src/data/paths.ts');
+const { hashedOnStaging, hashedPath } = await import('../src/data/paths.ts');
 const { STATE_INDEX } = await import('../src/search/states.ts');
 const { canonicalLength, indexTokens, tokenize } = await import('../src/search/normalize.ts');
 const {
@@ -881,6 +886,10 @@ function main() {
     }
     for (const path of filesUnder(args.site)) {
       if (HANDLED.has(path) || path.startsWith('search/') || !published(path)) continue;
+      if (hashedOnStaging(path)) {
+        putHashed(path, readFileSync(join(args.site, path)));
+        continue;
+      }
       mkdirSync(dirname(join(args.to, path)), { recursive: true });
       copyFileSync(join(args.site, path), join(args.to, path));
       staged.push([path, statSync(join(args.to, path)).size]);

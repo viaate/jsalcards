@@ -25,6 +25,16 @@ describe('the files a build ships', () => {
     expect(files.url('schools/meta.json')).toBeNull();
   });
 
+  it('finds a replay day by its plain name and the replay index as it is', () => {
+    const files = createDataFiles(
+      ['replays/2026-01-05.9094e408c4.json', 'replays/index.json'],
+      ROOT,
+    );
+    expect(files.url('replays/2026-01-05.json')).toBe(`${ROOT}replays/2026-01-05.9094e408c4.json`);
+    expect(files.url('replays/index.json')).toBe(`${ROOT}replays/index.json`);
+    expect(files.has('replays/2026-01-06.json')).toBe(false);
+  });
+
   it('finds a file published under a hashed name by its plain name', () => {
     const files = createDataFiles(
       [

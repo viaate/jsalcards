@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { HASH_LENGTH, hashedPath, plainPath } from '../paths';
+import { HASH_LENGTH, hashedOnStaging, hashedPath, plainPath } from '../paths';
 
 const HASH = 'b5c6259854d3383b35f36d1082025da82c7cfda3993280420c403ceab31378e8';
 
@@ -33,5 +33,24 @@ describe('published names', () => {
     expect(() => hashedPath('schools/.hidden', HASH)).toThrow(/no extension/);
     expect(() => hashedPath('search-index.bin', 'not hex at all')).toThrow(/not a hex hash/);
     expect(() => hashedPath('search-index.bin', 'abc')).toThrow(/not a hex hash/);
+  });
+
+  it('are hashed by staging for each replay day, not for the replay index', () => {
+    for (const day of ['replays/2026-01-05.json', 'replays/2024-01-16-b.json']) {
+      expect(hashedOnStaging(day)).toBe(true);
+      expect(plainPath(hashedPath(day, HASH))).toBe(day);
+    }
+    expect(hashedPath('replays/2026-01-05.json', HASH)).toBe('replays/2026-01-05.b5c6259854.json');
+    for (const kept of [
+      'replays/index.json',
+      'replays/notes.txt',
+      'replays/2026/01.json',
+      'live/closings.json',
+      'stats/season.json',
+      'track-record.json',
+      'predictions/latest.json',
+    ]) {
+      expect(hashedOnStaging(kept)).toBe(false);
+    }
   });
 });
