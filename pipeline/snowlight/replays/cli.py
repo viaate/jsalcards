@@ -1,4 +1,5 @@
-"""The ``snowlight replays`` command: build one day, or the table of every candidate day.
+"""The ``snowlight replays`` command: build one day, the table of every candidate day, or
+publish the seeds for the site.
 
 ``snowlight replays build --day D`` matches the archive, builds the day, prints
 its bar, and writes the internal report. ``--check`` prepares the run a second
@@ -13,6 +14,11 @@ Each preparation reads the archive's two files once (:func:`snapshot_archive`),
 hashes those bytes, and reads its rows, comments and posted times from that
 copy, so a seed is built from the archive its ``archive_sha256`` names even
 when the archive is rewritten during the build.
+
+``snowlight replays publish`` turns the committed seeds into the site's
+``replays/`` files against the directory just built (:mod:`snowlight.replays.publish`).
+It reads no archive and no network; a seed it leaves out is a warning
+(``::warning::`` in GitHub Actions), never a failure.
 
 ``snowlight replays days`` builds every candidate day (:data:`CANDIDATES`) in one
 run, writes each report, and prints the table.
@@ -29,11 +35,12 @@ import argparse
 import importlib
 import inspect
 import json
+import os
 import sys
 import tempfile
 from collections.abc import Callable, Sequence
 from dataclasses import dataclass
-from datetime import date
+from datetime import UTC, date, datetime
 from pathlib import Path
 from types import ModuleType
 from typing import Final, NamedTuple, cast, get_args
@@ -65,6 +72,7 @@ from snowlight.replays.gates import (
     UNREAD_CONFIDENCE,
     ParseFn,
 )
+from snowlight.replays.publish import PublishError, publish
 from snowlight.replays.report import day_report, report_path
 from snowlight.replays.rows import RowExtra, row_extras
 from snowlight.replays.seed import (
@@ -93,6 +101,8 @@ DEFAULT_META: Final = PIPELINE_ROOT / "out" / "site-data" / "schools" / "meta.js
 DEFAULT_ALIASES: Final = PIPELINE_ROOT / "config" / "aliases.yaml"
 DEFAULT_OUT: Final = INTERNAL / "replays"
 DEFAULT_CACHE: Final = PIPELINE_ROOT / ".cache" / "weather"
+DEFAULT_SEEDS: Final = PIPELINE_ROOT / "data" / "replays"
+DEFAULT_SITE_REPLAYS: Final = PIPELINE_ROOT / "out" / "site-data" / "replays"
 READER_MODULE: Final = "snowlight.classify"
 CANDIDATES: Final[tuple[date, ...]] = tuple(
     date.fromisoformat(text)
@@ -278,6 +288,30 @@ def register(subparsers: "argparse._SubParsersAction[argparse.ArgumentParser]") 
     days = actions.add_parser("days", help="build every candidate day and print the table")
     _inputs(days)
     days.set_defaults(handler=run_days)
+    publish_ = actions.add_parser("publish", help="publish the seeds as the site's replay files")
+    publish_.add_argument("--seeds", type=Path, default=DEFAULT_SEEDS, help="seeds folder")
+    publish_.add_argument("--directory", type=Path, default=DEFAULT_DIRECTORY)
+    publish_.add_argument("--meta", type=Path, default=DEFAULT_META, help="directory meta.json")
+    publish_.add_argument("--out", type=Path, default=DEFAULT_SITE_REPLAYS, help="replays folder")
+    publish_.add_argument(
+        "--now", type=utc_instant, default=None, help="publishing moment, YYYY-MM-DDTHH:MM:SSZ"
+    )
+    publish_.set_defaults(handler=run_publish)
+
+
+def utc_instant(text: str) -> datetime:
+    """An ISO 8601 moment with its offset (``2026-01-07T13:00:00Z``), in UTC, whole seconds.
+
+    Raises:
+        argparse.ArgumentTypeError: the text is not a moment with an offset.
+    """
+    try:
+        moment = datetime.fromisoformat(text)
+    except ValueError as error:
+        raise argparse.ArgumentTypeError(f"not an ISO 8601 moment: {text!r}") from error
+    if moment.tzinfo is None:
+        raise argparse.ArgumentTypeError(f"no UTC offset in {text!r}")
+    return moment.astimezone(UTC).replace(microsecond=0)
 
 
 def _inputs(parser: argparse.ArgumentParser) -> None:
@@ -495,4 +529,29 @@ def run_days(
     except _FAILURES as error:
         sys.stderr.write(f"snowlight replays days: error: {error}\n")
         return 1
+    return 0
+
+
+def run_publish(args: argparse.Namespace) -> int:
+    """Run ``snowlight replays publish``.
+
+    Exits 0 when the run finishes, whatever it leaves out (each seed left out is a
+    warning line), and 1 when the directory or a folder cannot be read.
+    """
+    now: datetime = args.now or datetime.now(UTC).replace(microsecond=0)
+    try:
+        result = publish(args.seeds, args.directory, args.meta, args.out, generated_at=now)
+    except (PublishError, OSError) as error:
+        sys.stderr.write(f"snowlight replays publish: error: {error}\n")
+        return 1
+    warn = "::warning::" if os.environ.get("GITHUB_ACTIONS") == "true" else "warning: "
+    for skip in result.skipped:
+        _out(f"{warn}replays publish left out {skip.seed}: {skip.reason}")
+    for name in result.removed:
+        _out(f"replays: removed {name} of an earlier run")
+    if result.index_written:
+        days = ", ".join(result.published)
+        _out(f"replays: published {days} and index.json ({result.total_bytes:,} bytes)")
+    else:
+        _out("replays: nothing to publish, no replays/ folder")
     return 0

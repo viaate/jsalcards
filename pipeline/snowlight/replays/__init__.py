@@ -14,5 +14,7 @@ report that is never published (:mod:`snowlight.replays.report`).
 * :mod:`~snowlight.replays.control`: the D+7 control.
 * :mod:`~snowlight.replays.report`: the internal report and its audit samples.
 * :mod:`~snowlight.replays.seed`: the derived seed and its provenance hashes.
-* :mod:`~snowlight.replays.cli`: ``snowlight replays build`` and ``snowlight replays days``.
+* :mod:`~snowlight.replays.publish`: the seeds as the site's ``replays/`` files, against
+  the directory of each deploy.
+* :mod:`~snowlight.replays.cli`: ``snowlight replays build``, ``days`` and ``publish``.
 """
