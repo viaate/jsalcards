@@ -1,14 +1,130 @@
 {
- "cdx": [
+ "snapshots": [
   {
-   "url": "www.boces5.org/",
-   "from": "20150101",
-   "to": "20261013"
+   "timestamp": "20190120185947",
+   "url": "https://boces5.org/",
+   "station": "district-pages-boces-5-wy",
+   "why": "storm day 2019-01-21 (market score 0.75)"
   },
   {
-   "url": "boces5.org/",
-   "from": "20150101",
-   "to": "20261013"
+   "timestamp": "20161208164729",
+   "url": "http://www.boces5.org:80/",
+   "station": "district-pages-boces-5-wy",
+   "why": "storm day 2016-12-09 (market score 0.58)"
+  },
+  {
+   "timestamp": "20220308024002",
+   "url": "https://www.boces5.org/",
+   "station": "district-pages-boces-5-wy",
+   "why": "storm day 2022-03-08 (market score 0.54)"
+  },
+  {
+   "timestamp": "20220308023958",
+   "url": "https://www.boces5.org/",
+   "station": "district-pages-boces-5-wy",
+   "why": "storm day 2022-03-08 (market score 0.54)"
+  },
+  {
+   "timestamp": "20220308023900",
+   "url": "https://www.boces5.org/",
+   "station": "district-pages-boces-5-wy",
+   "why": "storm day 2022-03-08 (market score 0.54)"
+  },
+  {
+   "timestamp": "20260105175417",
+   "url": "https://www.boces5.org/",
+   "station": "district-pages-boces-5-wy",
+   "why": "storm day 2026-01-06 (market score 0.12)"
+  },
+  {
+   "timestamp": "20170919040934",
+   "url": "http://boces5.org/",
+   "station": "district-pages-boces-5-wy",
+   "why": "storm day 2017-09-19 (market score 0.12)"
+  },
+  {
+   "timestamp": "20161018140502",
+   "url": "http://www.boces5.org:80/",
+   "station": "district-pages-boces-5-wy",
+   "why": "storm day 2016-10-18 (market score 0.08)"
+  },
+  {
+   "timestamp": "20250121185754",
+   "url": "https://www.boces5.org/",
+   "station": "district-pages-boces-5-wy",
+   "why": "storm day 2025-01-22 (market score 0.04)"
+  },
+  {
+   "timestamp": "20251204133326",
+   "url": "https://www.boces5.org/",
+   "station": "district-pages-boces-5-wy",
+   "why": "2025-12-04: within 2 days of one of its closure days"
+  },
+  {
+   "timestamp": "20251208121243",
+   "url": "https://www.boces5.org/",
+   "station": "district-pages-boces-5-wy",
+   "why": "2025-12-08: within 2 days of one of its closure days"
+  },
+  {
+   "timestamp": "20241214201026",
+   "url": "https://www.boces5.org/",
+   "station": "district-pages-boces-5-wy",
+   "why": "2024-12-15: within 2 days of one of its closure days"
+  },
+  {
+   "timestamp": "20241214130152",
+   "url": "https://www.boces5.org/",
+   "station": "district-pages-boces-5-wy",
+   "why": "2024-12-14: within 2 days of one of its closure days"
+  },
+  {
+   "timestamp": "20160316044444",
+   "url": "http://www.boces5.org/",
+   "station": "district-pages-boces-5-wy",
+   "why": "2016-03-16: within 2 days of one of its closure days"
+  },
+  {
+   "timestamp": "20161202200409",
+   "url": "http://www.boces5.org/",
+   "station": "district-pages-boces-5-wy",
+   "why": "2016-12-03: within 2 days of one of its closure days"
+  },
+  {
+   "timestamp": "20180314042315",
+   "url": "http://boces5.org/",
+   "station": "district-pages-boces-5-wy",
+   "why": "2018-03-14: within 2 days of one of its closure days"
+  },
+  {
+   "timestamp": "20170524161057",
+   "url": "http://www.boces5.org:80/",
+   "station": "district-pages-boces-5-wy",
+   "why": "2017-05-25: within 2 days of one of its closure days"
+  },
+  {
+   "timestamp": "20220217005732",
+   "url": "https://www.boces5.org/",
+   "station": "district-pages-boces-5-wy",
+   "why": "2022-02-17: within 2 days of one of its closure days"
+  },
+  {
+   "timestamp": "20210916120659",
+   "url": "https://boces5.org/",
+   "station": "district-pages-boces-5-wy",
+   "why": "2021-09-16: within 2 days of one of its closure days"
+  },
+  {
+   "timestamp": "20211228021139",
+   "url": "https://boces5.org/",
+   "station": "district-pages-boces-5-wy",
+   "why": "2021-12-28: within 2 days of one of its closure days"
+  },
+  {
+   "timestamp": "20220217010623",
+   "url": "https://www.boces5.org/",
+   "station": "district-pages-boces-5-wy",
+   "why": "2022-02-17: within 2 days of one of its closure days"
   }
  ]
 }
