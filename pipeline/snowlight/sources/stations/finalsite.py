@@ -49,7 +49,13 @@ Variants this adapter reads:
 ``finalsite-no-page-pops``
     The answer when the page has no pop to show: HTTP 200 with an empty body (13
     of the 15 district sites on 2026-09-27). Read as an empty list: the page pops
-    of the homepage that named the address.
+    of the homepage that named the address. The archive replays some such answers
+    (captured in 2025 and 2026: Palm Beach, Volusia, Teton, Weslaco, Gulf Shores)
+    as the brotli stream the site sent for an empty body, one to three bytes (``3``
+    or ``c\\x00\\x03``) with the encoding header dropped (live on 2026-10-05, the
+    same addresses answered ``Content-Encoding: br`` with the one byte ``;``); a body
+    that is a whole brotli stream decoding to nothing
+    (:func:`snowlight.sources.stations.body.empty_brotli`) is the same empty answer.
 
 ``schoolwires-important-announcements``
     The district's homepage on Finalsite's other CMS, Web Community Manager
@@ -59,6 +65,18 @@ Variants this adapter reads:
     Manager Privacy Policy" at finalsite.com. Read by
     :mod:`snowlight.sources.stations.schoolwires` (the "Important Announcement" app).
 
+``wcm-announcements``
+    A Web Community Manager homepage whose notices stood in an announcements app
+    instead (Clarke County's of 2020-10-30, Baldwin County's and Collier County's):
+    read by :mod:`snowlight.sources.stations.wcm`.
+
+``wcm-alert-page`` / ``wcm-onscreen-alert``
+    A Web Community Manager homepage loads the district's on-screen alert from its
+    alert file by script: a homepage without an announcements app is a deferred
+    page that loads it, one with the app names it beside its list, and the alert
+    file (Broward's of Hurricane Ian, Pinellas' of Milton) is read as a list of its
+    own: see :mod:`snowlight.sources.stations.wcm`.
+
 Each pop is one row: ``raw_name`` its title as written (the fragment names no
 school: the registry entry's ``leaids`` say whose it is), ``raw_status`` the
 message's text, ``raw_updated_text`` its ``data-visible-at`` (when the district
@@ -66,10 +84,20 @@ made it visible), and ``raw_extra`` ``pop_id``, ``visible_at``, ``hidden_at``,
 ``reset_at``, ``delay_option`` and ``image_alt`` (alt text of the message's
 images, when it has no words). A pop with neither title nor text is a skipped
 row. Anything else raises :class:`~snowlight.sources.stations.model.ShapeError`:
-JSON; a whole page that is not a published Finalsite page (another CMS, a login or
-error page); a Finalsite page whose ``data-pageid`` is missing or not a number; a
-fragment without the pop collection (the archive's one-character answers); or a
-pop without its ``data-id``.
+JSON; a fragment without the pop collection (the archive's one-character answers);
+or a pop without its ``data-id``. A whole page that is not a published Finalsite page
+(another CMS, a login or error page), or a Finalsite page whose ``data-pageid`` is
+missing or not a number, is read by its text (below); live, such a page names no page
+pops, so it is still an error until its station's page check is redone
+(:func:`snowlight.sources.stations.fetch.page_check_mismatch`).
+
+``homepage-text`` and page-text rows
+    A whole HTML page in none of the forms above (the district's site before
+    Finalsite, in another CMS) is read by its text, and a homepage read in one of
+    them as an empty or populated list gets a page-text row for each closing line
+    its text shows that no row holds: see :mod:`snowlight.sources.stations.homepage`.
+    A homepage that loads its page pops (``finalsite-homepage``) is not given
+    page-text rows: its list is the page pops, and the live reader follows them.
 """
 
 import re
@@ -77,7 +105,8 @@ from html import escape
 
 from selectolax.parser import HTMLParser, Node
 
-from snowlight.sources.stations import schoolwires
+from snowlight.sources.stations import homepage, schoolwires, wcm
+from snowlight.sources.stations.body import empty_brotli
 from snowlight.sources.stations.gap_markup import (
     collapse,
     deferred,
@@ -93,6 +122,8 @@ HOMEPAGE_POPS = "finalsite-homepage-pops"
 POPS = "finalsite-page-pops"
 NONE = "finalsite-no-page-pops"
 LIVE_CLASS = "fsLiveMode"
+EDITING_CLASSES = frozenset({"fsComposeMode", "fsEditMode", "fsPreviewMode", "fsDesignMode"})
+"""Body classes of a page in Finalsite's editor, never one served to visitors."""
 """The body class Finalsite gives a published page (the page a visitor is served)."""
 
 _BODY = re.compile(r"<body\b", re.IGNORECASE)
@@ -172,7 +203,9 @@ def page_id(tree: HTMLParser) -> str | None:
     has_id = "data-pageid" in body.attributes
     if LIVE_CLASS not in classes and not has_id:
         return None
-    if LIVE_CLASS not in classes:
+    if LIVE_CLASS not in classes and (
+        set(classes) & EDITING_CLASSES or not any(name.startswith("fsHas") for name in classes)
+    ):
         raise ShapeError(
             f"a page with a data-pageid but no {LIVE_CLASS} class: not a published page"
         )
@@ -194,21 +227,49 @@ def _page(text: str) -> Listing:
         return deferred(HOMEPAGE, (page_pops_path(found),))
     if schoolwires.holds_announcements(text):
         return schoolwires.parse_text(text)
-    raise ShapeError(
+    if wcm.holds_announcements(text):
+        return wcm.parse_text(text)
+    if wcm.holds_alert_loader(text):
+        return wcm.alert_page(text)
+    raise homepage.NoFormError(
         "not a Finalsite page: no <body data-pageid> with the fsLiveMode class, and no "
         "Web Community Manager important announcements"
     )
 
 
+def holds_live_page(text: str) -> bool:
+    """Whether a page is a published Finalsite page (``<body data-pageid>``, ``fsLiveMode``).
+
+    For another adapter whose district's homepage was a Finalsite site before it
+    moved (the Apptegy adapter): a capture of that earlier homepage is read with
+    :func:`parse_live_page`.
+    """
+    if not _is_page(text) or LIVE_CLASS not in text:
+        return False
+    try:
+        return page_id(HTMLParser(text)) is not None
+    except ShapeError:
+        return False
+
+
+def parse_live_page(text: str) -> Listing:
+    """Read a published Finalsite homepage: its page pops if in the page, else deferred."""
+    if not holds_live_page(text):
+        raise ShapeError("not a published Finalsite page")
+    return _page(text)
+
+
 def parse(body: bytes) -> Listing:
     """Read a Finalsite homepage or one answer of its ``page-pops`` fragment."""
     text = html_text(body)
-    if not text.strip():
+    if not text.strip() or empty_brotli(body):
         return make_listing(NONE, [])
     if text.lstrip()[:1] in ("{", "["):
         raise ShapeError("JSON, not a Finalsite page or its page pops")
+    if wcm.holds_alert_dialog(text):
+        return wcm.parse_alert_dialog(text)
     if _is_page(text):
-        return _page(text)
+        return homepage.read_homepage(text, _page)
     tree = HTMLParser(text)
     collection = tree.css_first("#fsPagePopCollection")
     if collection is None:

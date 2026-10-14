@@ -30,6 +30,7 @@ district did not use the app), and so does a region whose items lack
 ``data-flex-id``.
 """
 
+import re
 from html import escape
 
 from selectolax.parser import HTMLParser
@@ -48,9 +49,16 @@ VARIANT = "schoolwires-important-announcements"
 MARKER = "cs-important-announcements-outer"
 
 
+_REGION = re.compile(r"<div\b[^>]*\bclass=[\"'][^\"']*\b" + MARKER + r"\b", re.IGNORECASE)
+
+
 def holds_announcements(text: str) -> bool:
-    """Whether a page has the Important Announcement app's region."""
-    return MARKER in text
+    """Whether a page has the Important Announcement app's region (an element of that class).
+
+    The class named in a script alone (Saraland's theme script sizes the region when
+    there is one) is not the region.
+    """
+    return _REGION.search(text) is not None
 
 
 def _site_name(tree: HTMLParser) -> str:

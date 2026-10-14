@@ -142,6 +142,9 @@ class _Clock:
 def _server(request: httpx.Request) -> httpx.Response:
     assert request.headers["User-Agent"] == USER_AGENT
     if request.url.path == "/robots.txt":
+        # S3's answer for a key its bucket does not hold; the other host's 403 refuses.
+        if request.url.host and request.url.host.endswith("amazonaws.com"):
+            return httpx.Response(403, content=b"<Error><Code>AccessDenied</Code></Error>")
         return httpx.Response(403)
     if str(request.url) == TICKER:
         return httpx.Response(

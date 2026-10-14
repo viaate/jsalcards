@@ -33,7 +33,8 @@ Variants this adapter reads:
     first, as for the Next.js page). The shells of 2022 (captures of WHAM, WSYX,
     KMPH, KOMO and the partner stations) write the same markup as a plain JSON
     string (``"injectedMarkup":"<iframe src=\\"\\/resources\\/ftptransfer\\/wham..."``),
-    read the same way. A shell whose markups frame nothing raises
+    read the same way, and so are the shells of 2020 that set ``sinclairDigital.facade``
+    without the site slug (KMPH's of 2020-10-26). A shell whose markups frame nothing raises
     :class:`~snowlight.sources.stations.model.ShapeError`.
 
 ``sinclair-frame-page``
@@ -124,6 +125,7 @@ _COMMENT = re.compile(r"<!--.*?-->", re.DOTALL)
 _EMBED_REF = re.compile(r"\$([0-9a-f]+)\\*\"")
 _PUSH = re.compile(r'self\.__next_f\.push\(\[1,\s*"((?:[^"\\]|\\.)*)"\]\)')
 _SHELL = "sinclairDigital.siteSlug"
+_FACADE = "sinclairDigital.facade"
 _SHELL_SLUG = re.compile(r"sinclairDigital\.siteSlug\s*=\s*\"([^\"]*)\"")
 _INJECTED_KEY = re.compile(r'"injectedMarkup"\s*:\s*(?=")')
 _BASE64 = re.compile(r"[A-Za-z0-9+/]+={0,2}")
@@ -295,7 +297,7 @@ def read_page(text: str) -> Listing | None:
     framed = _frame_page(text)
     if framed is not None:
         return framed
-    if _SHELL in text:
+    if _SHELL in text or _FACADE in text:
         return _facade_page(text)
     return None
 

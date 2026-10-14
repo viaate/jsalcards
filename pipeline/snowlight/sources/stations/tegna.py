@@ -81,6 +81,68 @@ Variants this adapter reads (the ``variant`` of each listing):
     :attr:`~snowlight.sources.stations.model.ListingState.DEFERRED` listing whose
     ``follows`` names the framed file.
 
+``tegna-closings-link``
+    A closings page with no closings module whose raw-HTML module holds only a
+    link to the list, kept elsewhere on the station's site (every capture of
+    KENS' ``/closings`` from January 2022 to September 2023, linking to the
+    article it kept its closings in)::
+
+        <div class="raw-html">
+            <p><a href="https://www.kens5.com/article/weather/closings/...">For a list
+            of closings in our area please click this link.</a></p>
+        </div>
+
+    A :attr:`~snowlight.sources.stations.model.ListingState.DEFERRED` listing
+    whose ``follows`` names the linked page. Only a link whose words say it leads
+    to the list of closings (:data:`_LINK_TEXT`) is one.
+
+``tegna-liferay-page``
+    A page of the Liferay template TEGNA's sites had in 2017-2018 (KBMT's
+    ``12newsnow.com/closings``, 110 captures from June 2017 to January 2018), whose
+    site settings say ``closings:{path:"",type:"None",organizationListPath:"",...}``:
+    the site named no closings system, and the page holds no list. A
+    :attr:`~snowlight.sources.stations.model.ListingState.DEFERRED` listing that
+    names no file (no list can be read from it).
+
+``tegna-subindex-page``
+    A ``subindex`` page of the 2019-2020 template (KFMB's ``cbs8.com/closings``,
+    ``data-model-closings="true"``, ``"contentType": "subindex"``) whose markup holds
+    no closings module, grid, list or frame: what it showed was drawn by its script
+    from an address the page does not name. A deferred listing that names no file.
+
+``tegna-closings-article``
+    The article such a link leads to, a list typed by hand into the article's
+    body (KENS' "FULL LIST: San Antonio and South Texas school closings and
+    delays" of 2022-2023, and "School closings due to winter weather in San
+    Antonio, Texas" of January 2022), one text section per element::
+
+        <div class="article__body">
+          <div class="article__section article__section_type_text utility__text">
+            <h2><strong><u>SCHOOL CLOSINGS FOR THURSDAY, FEBRUARY 3, 2022</u></strong></h2></div>
+          <div class="article__section ..._type_text ..."><h3>Boerne ISD</h3></div>
+          <div class="article__section ..._type_text ..."><p>"Boerne ISD classes are
+            canceled and all offices will be closed on Thursday, February 3. ..."</p></div>
+          <div class="article__section ..._type_text ..."><p><a href="...">District
+            website</a> | <a href="...">Facebook</a> | <a ...>Twitter</a></p></div>
+          <div class="article__section article__section_type_ad">...</div> ...
+
+    Each heading followed by a paragraph is a row: the heading is the name and the
+    first paragraph after it that is not a line of links alone (the district's
+    website and social links) the status; the next such paragraphs before the
+    next heading go in ``raw_extra["more"]`` (joined with " | "). A heading
+    followed by another heading, and every ``h2``, is the heading of the rows
+    after it (``raw_extra["heading"]``). Paragraphs before the first row are the
+    article's introduction, not rows. A row whose status is the article's own
+    "No report." or "No current report." says the organization reported nothing
+    and is not kept (as an empty list leaves it out); an article whose rows all
+    say so is the empty state. The article's "Updated:" line ("2:03 PM CST
+    February 2, 2022") is every row's ``raw_updated_text`` and, read as UTC, the
+    listing's ``list_updated_at``; the listing is ``typed``. Only an article
+    whose title says it is a closings page
+    (:func:`~snowlight.sources.stations.typed.closings_title`) is read this way;
+    one with no row and no "No report." entry raises
+    :class:`~snowlight.sources.stations.model.ShapeError`.
+
 A framed list file in one of the vendor formats
 :mod:`snowlight.sources.stations.gray_files` reads (KGW's FlashAlert report is
 ``gray-file-flashalert``) is read with it, under that module's variant names.
@@ -90,12 +152,14 @@ whose lists a script loaded from an address the page does not name).
 """
 
 import re
+from datetime import UTC, datetime, timedelta
 
 from selectolax.parser import Node
 
-from snowlight.sources.stations import gray_files
+from snowlight.sources.stations import gray_files, typed
 from snowlight.sources.stations.body import decode
 from snowlight.sources.stations.markup import (
+    collapse,
     element_end,
     iframe_sources,
     iframe_tags,
@@ -136,6 +200,26 @@ _COUNT_ITEM_V2 = re.compile(
 )
 """The count item as ``tegna-v2`` keeps it: archived pages add tracking attributes to the link."""
 _KNOWN = frozenset({"title", "body", "item"})
+_LINK_TEXT = re.compile(r"\blist\s+of\s+(?:school\s+)?closings\b", re.IGNORECASE)
+"""The words of a raw-HTML module's link that leads to the list kept elsewhere."""
+_ARTICLE_BODY = re.compile(r"<div\s+class=\"article__body\"[^>]*>", re.IGNORECASE)
+_TITLE = re.compile(r"<title\b[^>]*>.*?</title>", re.IGNORECASE | re.DOTALL)
+_UPDATED = re.compile(
+    r"<div\s+class=\"article__updated\"\s*>\s*<span\s+class=\"article__meta-label\"\s*>"
+    r"\s*Updated:\s*</span>(.*?)</div>",
+    re.IGNORECASE | re.DOTALL,
+)
+_UPDATED_TIME = re.compile(
+    r"(\d{1,2}:\d\d\s+[AP]M)\s+(C[SD]T|E[SD]T|M[SD]T|P[SD]T)\s+([A-Z][a-z]+\s+\d{1,2},\s+\d{4})",
+    re.IGNORECASE,
+)
+_ZONE_HOURS = {"EST": 5, "EDT": 4, "CST": 6, "CDT": 5, "MST": 7, "MDT": 6, "PST": 8, "PDT": 7}
+"""Hours to add to a US zone's local time for UTC."""
+_HEADINGS = frozenset({"h1", "h2", "h3", "h4", "h5", "h6"})
+_NO_REPORT = re.compile(r"no\s+(?:current\s+)?report\.?", re.IGNORECASE)
+"""An article entry's own words for an organization that reported nothing."""
+_LINK_LINE_REST = re.compile(r"[\s|\u2022\u00b7,/-]+")
+"""What a line of links holds besides its links: separators and spaces."""
 
 
 def _classes(node: Node) -> list[str]:
@@ -301,6 +385,117 @@ def _frames(html: str) -> list[str]:
     return list(dict.fromkeys(found))
 
 
+def _list_links(html: str) -> list[str]:
+    """The pages the raw-HTML modules link to as the list of closings, in order.
+
+    A module counts only when it frames nothing and every link in it says it
+    leads to the list (:data:`_LINK_TEXT`).
+    """
+    found: list[str] = []
+    for match in _RAW_HTML.finditer(html):
+        block = html[match.start() : element_end(html, match.start(), "div")]
+        if iframe_sources(block):
+            continue
+        anchors = parse_html(block).css("a")
+        if anchors and all(_LINK_TEXT.search(node_text(a)) for a in anchors):
+            found.extend(a.attributes.get("href") or "" for a in anchors)
+    return list(dict.fromkeys(href for href in found if href))
+
+
+def _link_line(node: Node) -> bool:
+    """Whether a paragraph is a line of links alone (its other text only separators)."""
+    text = node_text(node)
+    for anchor in node.css("a"):
+        text = text.replace(node_text(anchor), " ", 1)
+    return bool(node.css("a")) and not _LINK_LINE_REST.sub("", text)
+
+
+def _article_elements(block: Node) -> list[tuple[str, str, bool]]:
+    """The article body's text sections' elements in order: (tag, text, a line of links)."""
+    found: list[tuple[str, str, bool]] = []
+    for section in block.css("div.article__section_type_text"):
+        child = section.child
+        while child is not None:
+            if child.tag[:1] not in {"-", "_"}:
+                text = node_text(child)
+                if text:
+                    found.append((child.tag, text, child.tag == "p" and _link_line(child)))
+            child = child.next
+    return found
+
+
+def _updated(html: str) -> tuple[str | None, datetime | None]:
+    """The article's "Updated:" line as written, and that time in UTC when it can be read."""
+    match = _UPDATED.search(html)
+    if match is None:
+        return None, None
+    written = collapse(match.group(1))
+    found = _UPDATED_TIME.fullmatch(written)
+    if found is None:
+        return written, None
+    clock, zone, day = found.group(1), found.group(2).upper(), found.group(3)
+    try:
+        local = datetime.strptime(f"{clock} {day}", "%I:%M %p %B %d, %Y")
+    except ValueError:
+        return written, None
+    return written, (local + timedelta(hours=_ZONE_HOURS[zone])).replace(tzinfo=UTC)
+
+
+def parse_article(html: str) -> Listing:
+    """Read a ``tegna-closings-article`` page: the closings typed into an article's body.
+
+    Raises:
+        ShapeError: the page is not an article whose title names closings, or its
+            body holds no entry.
+    """
+    title = parse_html(html).css_first("title")
+    if title is None or not typed.closings_title(node_text(title)):
+        raise ShapeError("an article whose title does not say it is a closings page")
+    match = _ARTICLE_BODY.search(html)
+    if match is None:
+        raise ShapeError("no article body")
+    block = parse_html(html[match.start() : element_end(html, match.start(), "div")]).css_first(
+        "div.article__body"
+    )
+    if block is None:  # pragma: no cover - the pattern matched this element
+        raise ShapeError("no article body")
+    elements = [item for item in _article_elements(block) if not item[2]]
+    written, updated = _updated(html)
+    rows: list[ParsedRow] = []
+    entries = 0
+    heading: str | None = None
+    for number, (tag, text, _links) in enumerate(elements):
+        if tag not in _HEADINGS:
+            continue
+        following = elements[number + 1 :]
+        if tag == "h2" or not following or following[0][0] in _HEADINGS:
+            heading = text
+            continue
+        paragraphs = []
+        for other_tag, other_text, _ in following:
+            if other_tag in _HEADINGS:
+                break
+            paragraphs.append(other_text)
+        entries += 1
+        if _NO_REPORT.fullmatch(paragraphs[0]):
+            continue
+        extra: dict[str, JsonScalar] = {}
+        if heading is not None:
+            extra["heading"] = heading
+        if paragraphs[1:]:
+            extra["more"] = " | ".join(paragraphs[1:])
+        rows.append(ParsedRow(name=text, status=paragraphs[0], updated_text=written, extra=extra))
+    if not entries:
+        raise ShapeError("a closings article with no entry")
+    return Listing(
+        variant="tegna-closings-article",
+        state=ListingState.POPULATED if rows else ListingState.EMPTY,
+        rows=tuple(rows),
+        list_updated_at=updated,
+        typed=True,
+    )
+
+
 def parse(body: bytes) -> Listing:
     """Read one TEGNA closings body, live or archived, in whichever known variant it is."""
     raw = decode(body)
@@ -318,7 +513,39 @@ def parse(body: bytes) -> Listing:
         return Listing(
             variant="tegna-frame", state=ListingState.DEFERRED, rows=(), follows=tuple(frames)
         )
+    return _list_elsewhere(text)
+
+
+def _list_elsewhere(text: str) -> Listing:
+    """Read a page whose list is kept elsewhere on the site: the link to it, or the article."""
+    links = _list_links(text)
+    if links:
+        return Listing(
+            variant="tegna-closings-link",
+            state=ListingState.DEFERRED,
+            rows=(),
+            follows=tuple(links),
+        )
+    if _ARTICLE_BODY.search(text):
+        return parse_article(text)
+    if _LIFERAY_NONE.search(text):
+        return Listing(variant=LIFERAY_PAGE, state=ListingState.DEFERRED, rows=())
+    if _SUBINDEX.search(text) and _CLOSINGS_MODEL.search(text):
+        return Listing(variant=SUBINDEX_PAGE, state=ListingState.DEFERRED, rows=())
     raise ShapeError("not a TEGNA closings body this adapter knows")
+
+
+LIFERAY_PAGE = "tegna-liferay-page"
+"""A Liferay-era page (2017-2018) whose site settings name no closings system."""
+SUBINDEX_PAGE = "tegna-subindex-page"
+"""A 2019-2020 subindex page that holds no closings module of its own."""
+_LIFERAY_NONE = re.compile(
+    r"closings:\{path:\"\",type:\"None\",organizationListPath:\"\",url:\"[^\"]*\"\}"
+)
+_SUBINDEX = re.compile(
+    r"&quot;contentType&quot;:\s*&quot;subindex&quot;|\"contentType\":\s*\"subindex\""
+)
+_CLOSINGS_MODEL = re.compile(r"\bdata-model-closings=\"true\"")
 
 
 def _slice_frames(text: str) -> bytes:
@@ -382,3 +609,39 @@ def slice_body_v2(body: bytes) -> bytes:
     if legacy is not None:
         return minimal_document([text[legacy.start() : element_end(text, legacy.start(), "div")]])
     return slice_body(body)
+
+
+def slice_body_v3(body: bytes) -> bytes:
+    """``tegna-v3``: :func:`slice_body_v2`, extended to the link and article variants.
+
+    Every body ``tegna-v2`` slices is cut to the same bytes. A closings page that
+    links to its list elsewhere (``tegna-closings-link``) keeps each raw-HTML module
+    that holds such a link, byte for byte; an article read as
+    ``tegna-closings-article`` keeps its ``<title>``, its "Updated:" line and its
+    article body, byte for byte. Each is wrapped in a minimal document. (Both kinds of
+    page were refused by ``tegna-v2``, so no ``tegna-v2`` slice changes.)
+    """
+    text = text_of(decode(body))
+    if (
+        _MODULE.search(text)
+        or _GRID.search(text)
+        or _LEGACY.search(text)
+        or gray_files.is_file(decode(body))
+        or _frames(text)
+    ):
+        return slice_body_v2(body)
+    blocks = []
+    for match in _RAW_HTML.finditer(text):
+        block = text[match.start() : element_end(text, match.start(), "div")]
+        if _list_links(block):
+            blocks.append(block)
+    if blocks:
+        return minimal_document(blocks)
+    article = _ARTICLE_BODY.search(text)
+    title = _TITLE.search(text)
+    if article is not None and title is not None:
+        updated = _UPDATED.search(text)
+        kept = [title.group(0), *([updated.group(0)] if updated is not None else [])]
+        kept.append(text[article.start() : element_end(text, article.start(), "div")])
+        return minimal_document(kept)
+    raise ShapeError("not a TEGNA closings body this adapter knows")

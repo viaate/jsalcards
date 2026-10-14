@@ -9,6 +9,927 @@ the network-owned stations, Sinclair, Allen, Cox, Graham, Hubbard, the Emergency
 Spectrum, News 12, NJ 101.5 and the state systems) were not re-checked except where a gap county's candidate
 belongs to one of them.
 
+<!-- coverage gate (s4): written by `snowlight stations gate records`; edits are replaced -->
+## The coverage gate (s4): states short of the proven target
+
+From `gate.json` of 2026-10-13T22:20:52Z (coverage of 2026-10-13T22:12:01Z). A station counts toward the proven share only once its list has been seen with a row, live or in an archived capture, at its current address or a former address of its own list (the registry's `former_urls`, each with the evidence of the move). National: 85.3% of schools proven (97.0% closure-weighted); the target is 95% of both, 11378 schools (0.0 weighted) short. Each state's target is 90% of both. Every source touching a state below has its record in [`gaps.json`](gaps.json) (its `gate` block: verdict, proof, gain, and the archive census of every address it reads or read).
+
+**The owner's gate** (decided 2026-10-13, replacing 90% in every state): "dig for 90%+ of Idaho and Wyoming and leave it there". It **passes**.
+
+| Rule | State | Proven | Weighted | Meets |
+|---|---|---|---|---|
+| dig to 90% | ID | 99.1% | 98.6% | yes |
+| dig to 90%; accepted: owner decision 2026-10-13 at 85.8% / 87.7% | WY | 85.8% | 87.7% | yes |
+| national weighted at least 95.0% | US | - | 97.0% | yes |
+| keep the others at 90% | 41 states | - | - | yes |
+| not pursued: owner decision 2026-10-13 (rare-closure state) | AZ | 77.4% | 87.0% | no |
+| not pursued: owner decision 2026-10-13 (rare-closure state) | CA | 16.0% | 63.9% | no |
+| not pursued: owner decision 2026-10-13 (rare-closure state) | FL | 58.1% | 57.8% | no |
+| not pursued: owner decision 2026-10-13 (rare-closure state) | LA | 28.2% | 29.0% | no |
+| not pursued: owner decision 2026-10-13 (rare-closure state) | MS | 71.1% | 68.8% | no |
+| not pursued: owner decision 2026-10-13 (rare-closure state) | NV | 34.6% | 87.1% | no |
+
+- WY: accepted by the owner on 2026-10-13 ("yea call it done nw") at 85.8% proven plain and 87.7% closure-weighted, under the 90.0% target: it meets while its exact shares stay at least these and fails if either drops below them. Measured: 85.8% (334 of 389 schools), 87.7% closure-weighted.
+- ID: counting a county across a state line only where the station's rows were seen naming a place in it, proven 76.7% (695 of 906 schools), 62.9% closure-weighted (the gate's measure, which credits a station with its whole market: 99.1%, 98.6%). Credited by market assumption only (no row of the station's ever named a place in the county):
+  - `scripps-typed-kstu`: 16007, 16041, 16071 (20 schools)
+  - `tegna-krem`: 16009, 16017, 16021, 16035, 16049, 16055, 16057, 16061, 16069, 16079 (183 schools)
+- ID: without the proven lists never seen holding a closing but the pandemic's (`gray-kmvt`, `gray-wtap`: every populated read of the first wave, or every row a health closing), proven 85.9% (779 of 906 schools), 86.5% closure-weighted. Such a list counts: it lists closings only, and the districts entered these themselves (a district channel's pandemic notice proves nothing, the channel being for any news); it has yet to be seen on a weather day.
+- WY: counting a county across a state line only where the station's rows were seen naming a place in it, proven 25.7% (100 of 389 schools), 29.0% closure-weighted (the gate's measure, which credits a station with its whole market: 85.8%, 87.7%). Credited by market assumption only (no row of the station's ever named a place in the county):
+  - `cbs-owned-kcnc`: 56001, 56005, 56007, 56027, 56031 (72 schools)
+  - `cowles-kulr`: 56003, 56029 (32 schools)
+  - `gray-kota`: 56033 (23 schools)
+  - `nexstar-kdvr`: 56001, 56005, 56007, 56027, 56031 (72 schools)
+  - `scripps-kmgh`: 56001, 56005, 56007, 56027, 56031 (72 schools)
+  - `scripps-typed-kstu`: 56035, 56037, 56041 (49 schools)
+  - `weatherthreat-kneb`: 56015, 56021 (67 schools)
+- National: with no county credited across a state line by a market alone, 93.6% closure-weighted (the gate's measure: 97.0%).
+- Kept, thin: GA is proven 90.4% (90.7% closure-weighted), 13 schools above the 90.0% target (plain).
+- Kept, thin: NM is proven 91.8% (99.3% closure-weighted), 18 schools above the 90.0% target (plain).
+- Kept, thin: TX is proven 91.1% (94.9% closure-weighted), 120 schools above the 90.0% target (plain).
+- Kept states that meet the target on the gate's measure but not when no county across a state line is credited by a market alone: GA 87.8% / 86.9%; MD 92.4% / 89.5%; MO 86.9% / 87.8%; MT 89.1% / 91.6%; NM 89.8% / 96.4%.
+- AZ: 2738 schools; covered by a working source 2649 (96.7%, 100.0% closure-weighted); proven 2120 (77.4%, 87.0% closure-weighted); missing: 89 schools no working source covers and 529 covered by sources never seen holding a closing; not pursued: owner decision 2026-10-13 (rare-closure state).
+- CA: 12448 schools; covered by a working source 11904 (95.6%, 98.0% closure-weighted); proven 2000 (16.0%, 63.9% closure-weighted); missing: 544 schools no working source covers and 9904 covered by sources never seen holding a closing; not pursued: owner decision 2026-10-13 (rare-closure state).
+- FL: 6088 schools; covered by a working source 5343 (87.7%, 85.5% closure-weighted); proven 3538 (58.1%, 57.8% closure-weighted); missing: 745 schools no working source covers and 1805 covered by sources never seen holding a closing; not pursued: owner decision 2026-10-13 (rare-closure state).
+- LA: 1585 schools; covered by a working source 1370 (86.4%, 86.4% closure-weighted); proven 447 (28.2%, 29.0% closure-weighted); missing: 215 schools no working source covers and 923 covered by sources never seen holding a closing; not pursued: owner decision 2026-10-13 (rare-closure state).
+- MS: 1191 schools; covered by a working source 1160 (97.4%, 96.7% closure-weighted); proven 847 (71.1%, 68.8% closure-weighted); missing: 31 schools no working source covers and 313 covered by sources never seen holding a closing; not pursued: owner decision 2026-10-13 (rare-closure state).
+- NV: 831 schools; covered by a working source 831 (100.0%, 100.0% closure-weighted); proven 288 (34.6%, 87.1% closure-weighted); missing: 0 schools no working source covers and 543 covered by sources never seen holding a closing; not pursued: owner decision 2026-10-13 (rare-closure state).
+
+| State | Proven | Weighted | Short (schools / weighted) | Sources by verdict | Open |
+|---|---|---|---|---|---|
+| AZ | 77.4% | 87.0% | 345 / 13.5 | 5 proven, 1 storm-read, 1 all-read, 7 no-endpoint | none: settled |
+| CA | 16.0% | 63.9% | 9204 / 527.7 | 6 proven, 20 unread, 12 storm-read, 2 unconfirmed, 3 all-read, 5 unreadable, 1 not-listed, 4 not-working, 15 no-endpoint | 21 sources, 1 records |
+| FL | 58.1% | 57.8% | 1942 / 917.5 | 36 proven, 14 unread, 6 storm-read, 1 unconfirmed, 5 no-storm-capture, 2 all-read, 4 unreadable, 2 no-capture, 3 not-listed, 3 not-working, 22 no-endpoint | 13 sources |
+| LA | 28.2% | 29.0% | 980 / 434.0 | 4 proven, 1 all-read, 1 unreadable, 1 no-capture, 1 not-listed, 3 not-working, 6 no-endpoint | 1 sources |
+| MS | 71.1% | 68.8% | 225 / 108.1 | 9 proven, 11 unread, 3 storm-read, 1 no-storm-capture, 1 all-read, 3 unreadable, 2 not-working, 4 no-endpoint | 11 sources, 1 records |
+| NV | 34.6% | 87.1% | 460 / 12.0 | 5 proven, 2 all-read, 1 no-capture, 5 no-endpoint | none: settled |
+| WY | 85.8% | 87.7% | 17 / 21.4 | 18 proven, 2 unread, 11 storm-read, 8 unconfirmed, 1 all-read, 5 unreadable, 1 no-capture, 5 no-endpoint | none: settled |
+
+42 of 49 states (with DC) meet the target; of the 7 short of it, 3 are settled: every source whose proof would add to the state has a verdict after which no archived capture left could prove it (`all-read`, `no-capture`, `no-endpoint`, `no-storm-capture`, `storm-read`, `unconfirmed`, `unreadable`). Settled is not met: a settled state is still short, and an `unconfirmed` source in it showed closings on or near its storm days that the proof rule does not accept. A source is open (the last column counts them) while captures of its list made in its closure window (its closure days and the 2 days either side) are unread or were misread (refused by its adapter, or showing a closing its rows do not hold: the closure-text check, `archive/closure-text.jsonl`), or an address of its list was never listed. A first-hand record of a source not built (a district or outlet the registry does not hold) keeps its states open too (the last column's records) while it says the site was not read, or was checked before 2026-10-01: only a check of today's site can say no reader here reads it (`open_records` in `gate.json`). The window is measured on the proven sources' own archived reads (`calibration` in `gate.json`). Verdicts: `proven`: proven: its list has been seen with a row (at its current or a former address, or as the list file another proven station reads too); `unread`: unproven: captures of its list are not read yet; `misread`: unproven, open: an archived capture of its list made in its closure window was refused by its adapter (a page form no reader knows) or showed a closing its rows do not hold (the closure-text check); no verdict is given until that form is read; `older-unread`: unproven: no unread capture of its list remains, at its current or a former address (none read held a row); only captures of other addresses it read before are unread, and they cannot prove it; `storm-read`: unproven: every archived capture of its list made in its closure window (a storm day, a day its counties' proven lists named closures, or a day within two days of one) was read, none with a row and none showing a closing its rows do not hold, and at least one of them showed the list (captures of other days may be unread); `unconfirmed`: unproven: every archived capture of its list made in its closure window that could be read was read, and at least one showed a closing, a delay or no school that its rows hold but that does not prove it: a district's notice or page text that names no weather or emergency (a calendar's planned day reads the same), or a story that is not a list's entry; the list may be in use; `no-storm-capture`: unproven: no archived capture of its list made in its closure window (a storm day, a day its counties' proven lists named closures, or a day within two days of one) shows the list: the archive holds none, or only page shells that show no closing; its other captures showed the list, empty (captures of other days may be unread); `all-read`: unproven: every archived capture of its list was read, none with a row; `unreadable`: unproven: no archived capture of its list that was read showed the list: each made in its closure window is a page that loads its list from an address the archive does not hold and shows no closing itself (others may be a form no adapter reads); `no-capture`: unproven: the archive holds no capture of its list; `not-listed`: unproven: an address of its list (its current page or data file, or a former address) was never listed, so what the archive holds of it is unknown; `not-working`: not working: its latest live read does not count; `no-endpoint`: no known closings endpoint.
+<!-- end of the coverage gate's section -->
+
+## Critics' second round (s4, 2026-10-13 evening)
+
+The second critic panel found the gate still failing (Wyoming short), and three faults in what it counted. Each is
+fixed as a class, with tests; figures below are from `coverage.json` of 2026-10-13T22:12:01Z and `gate.json` of
+2026-10-13T22:20:52Z, every percentage cut, never rounded up.
+
+**The gate decides on exact shares.** `coverage.json` rounds each share to four decimals, so a true 89.997% was stored
+as 0.9 and passed. The owner's gate now decides on the integer counts (plain) and on the measure's own exact
+`meets_target` (weighted, and the national 95%), and the rounded share must reach the target too
+(`gate._at_least`; `tests/stations/test_gate_owner.py`: a share coverage rounds up to 90% or 95% fails).
+
+**A district channel is proven only by a closing for weather or an emergency** (`notices.py`). A planned day never
+proves, weather named or not: a testing day (Idaho Falls' "SAT Day is March 13 ... NO school for freshmen, sophomores and
+seniors"), a teachers' planning or duty day (Sharyland's "this day is dedicated to planning and preparation for our
+teachers and staff"), a student holiday (Volusia's post-Milton letter, whose one "no school" is "a Student
+Holiday/Teacher Duty Day": a storm letter keeps only its sentences that name no planned day, and the sentence after one
+that refers back to it). A bare "no school" or "no classes" (Hellgate's "No School Wednesday, November 22 - Friday,
+November 24th", Thanksgiving; Florence-Carlton's "No School on January 27th.", six days old) is how a calendar writes its
+days off: it proves only with a weather or emergency word, or when the NWS corroborates its day as a dated closing. A
+pandemic's closing never proves, though it name no virus: one that cites a health order (Alvord's "ORDER OF THE HEALTH
+OFFICER OF THE COUNTY OF RIVERSIDE") or, read in the 2020-21 shutdown, speaks of learning remotely "during school
+closure" (`notices.pandemic`). A headline about closures is not one ("Potential Hurricane Helene: Closure Information
+and Updates", Duval's only proof; the linked page was not read: Florida is not pursued). "No school closures or delays
+today", "no school delay or closure" and "we are not cancelling school" keep the day. A status board's "Planned Closure"
+is not a closing, and a status shown long after its own stamp is a leftover (`notices.stamp_current`: a row's update
+time or closure date more than a week before the read): Shasta's "Black Butte Elementary | Closing at 12:45", stamped
+"9/10 9:45" and read from 2026-09-27 to 2026-10-13, and GOHSEP's "Ascension | Closed" of 2026-06-18 (with "Planned
+Closure" rows beside it) no longer prove. A gated station now records its earliest proof whose row names weather or an
+emergency (Idaho Falls: "D91 is cancelling school on Monday, Jan. 30, because of extreme weather and cold", 2023-01-31;
+Sublette #9 and West Jefferson: their first capture of the line). Real rows of each case are tests
+(`tests/stations/test_gate_planned_days.py`). Effect: Texas 91.2% / 94.9% to 91.1% / 94.9% (9453 of 10370) (Sharyland), Florida 63.1% / 63.9%
+to 58.1% / 57.8% (3538 of 6088) (Volusia, Duval, Walton, whose "No classes for students on 10/12 or 10/13" names no reason and a
+federal holiday), Louisiana 77.5% / 78.3% to 28.2% / 29.0% (447 of 1585) (GOHSEP), California 17.1% / 70.0% to 16.0% / 63.9% (2000 of 12448) (Shasta,
+Alvord); Montana's count does not change (KTMF covers Hellgate and Florence-Carlton).
+
+**What a market alone credits** (`coverage.market_assumptions`, `proven.market_checked`). A list's county list is its
+market's (`basis: dma`); across a state line that is an assumption: KNEB, a Scottsbluff (NE) radio list, is credited with
+Goshen and Laramie counties, Wyoming, but its one populated capture named 22 Nebraska places and no Wyoming one. The
+observed check now reads place names in a row's text and place fields (WeatherThreat's `location`, a typed line, the
+row's own name) against the school directory's cities, district names and county names, a name counting only when it
+is one county's within the station's states (`observed.PlaceIndex`); and the proven share is measured once more
+counting a county over the station's home state's line only where a row of the station's named a place in it. The gate
+is decided, as before, on the proven share as the coverage measure defines it (a station's whole market); the owner's
+gate states the market-checked share beside it, and the credits it rests on, for the owner to weigh:
+
+| Proven (plain / weighted) | The gate's measure | Market-checked | Without the pandemic-only lists |
+|---|---|---|---|
+| Idaho | 99.1% / 98.6% | 76.7% / 62.9% (695 of 906) | 85.9% / 86.5% (779 of 906) |
+| Wyoming | 85.8% / 87.7% | 25.7% / 29.0% (100 of 389) | the same |
+| National (weighted) | 97.0% | 93.6% | 96.8% |
+
+Wyoming's credits by market alone: the Denver lists (KCNC, KDVR, KMGH) for Albany, Campbell, Carbon, Niobrara and
+Platte (72 schools; their archived rows name Colorado places only, Colorado's Sheridan and Platte Canyon among them),
+KULR (a Billings statewide article) for Big Horn and Park (32), KOTA for Sheridan (23), KSTU for Sublette, Sweetwater
+and Uinta (49), KNEB for Goshen and Laramie (67). Idaho's: KSTU for Bear Lake, Franklin and Oneida (20) and KREM
+(Spokane, two archived rows) for the ten northern counties (183). These lists take submissions from the schools of their
+whole market, and a Wyoming school's closing would appear on them as a Colorado one's does; but none has been seen to,
+so their Wyoming credit is the market's map, not a row. KIFI is different in kind: its "list" is a newsroom's articles,
+and the counties it is credited with are the ones its articles named (`basis: observed`), which is why its Lincoln
+County credit was dropped. KULR's proof (which KTMF shares) is a capture of 2019-08-20 of its statewide article of
+2019-03-03 ("Statewide school delays and closures for Monday, March 4", "winter weather and bitterly cold
+temperatures"): read later, but dated by the article itself, so it shows the list held closings on that storm's day; it
+is not read as a closing current on the capture's day. Kept states that meet the gate's measure but not the market-checked one:
+GA 87.8% / 86.9%; MD 92.4% / 89.5%; MO 86.9% / 87.8%; MT 89.1% / 91.6%; NM 89.8% / 96.4%.
+
+**Idaho rests on KMVT, seen only with the pandemic's closings.** Twin Falls' Gray list (KMVT) is the only proven source
+for 119 Idaho schools (Blaine, Cassia, Gooding, Jerome, Lincoln, Minidoka and Twin Falls counties). Every populated read
+of it is the pandemic's: 86 rows of March 2020 and one of 2022-01-27, "North Valley Academy | Closed Through Monday",
+its comment "Health Concerns" (`notices.pandemic_only_lists`: every read made in the first wave, March to June 2020,
+or every row a health closing; Parkersburg's WTAP is the other such list). It counts: a TV list lists closings only,
+and the districts entered these themselves, which shows that its schools report to it; a district channel's pandemic
+notice shows nothing of the kind, the channel carrying any news. Without it Idaho is
+85.9% / 86.5%.
+
+**Georgia, the thinnest kept state**, is 90.4% plain (2652 of 2932),
+90.7% weighted, 13
+schools above 90%. Its counties proven by a single source are WALB's (Albany, 136 schools; its proof is the storm of
+2025-01-22, 65 rows: "ABAC | Closed Wednesday") and WCTV's (Tallahassee, 74 schools in nine Georgia counties; its proof
+is "Leon County Schools | Closed Wednesday" of 2025-01-19, a Florida row: its Georgia credit is the market's). Both proofs
+are genuine closings of that storm; none of Georgia's proofs is a district channel's. The gate report now lists every
+kept state under 92% with its margin (`owner_gate.kept.thin`).
+
+**Records and the rest.** Each first-hand record's `proof` block in `gaps.json` is rewritten from today's coverage
+whenever the gate writes its records (`gate.current_proof`, dated `as_of`): Palm Beach is unproven (its storm-information
+link no longer counts), Volusia too, and a station now in error (Lake Elsinore) is not called working. Every table the
+gate writes cuts its percentages (Wyoming's 334 of 389 is 85.8%, never 85.9%). A host whose robots.txt answers 401 or
+403 is asked nothing more in the run, not even the page (`http.PoliteClient`). The builder's scratch fetcher of this day
+read robots.txt under Python's default User-Agent (its page requests carried the project's); KIFI's record says so, and
+the fetcher now reads robots.txt with the project's. BOCES 5 (Wyoming), the last Wyoming source never listed, was listed
+(run 38471589165) and its closure-window captures read (run
+38472989728): verdict `storm-read`, no closing. Wyoming's open sources:
+none.
+
+**The gate passes on the owner's acceptance of Wyoming.** Idaho meets the gate's measure (99.1% /
+98.6%); Wyoming is 85.8% plain and 87.7% closure-weighted, under 90%, and the owner accepted it at
+those figures on 2026-10-13 ("yea call it done nw"), stated honestly as 87.7% by the market credit the whole
+measure uses and 29.0% counting only what rows have shown; national 97.0%; all 41 kept states at 90% or more.
+The gate stores the accepted figures (`OwnerGate.accepted`: 85.8% plain, 87.7% weighted, with the date and the
+owner's words) and fails if Wyoming drops below either. A storm-day read that proves Lincoln County #2 (28.5 weighted
+schools) would take Wyoming past 90% weighted on its own.
+
+## Final round of the coverage gate (s4, 2026-10-13): the owner's gate
+
+**The gate.** On 2026-10-13 (about 7:45 AM Central) the project owner replaced "90% in every state" with: "dig for
+90%+ of Idaho and Wyoming and leave it there". The gate (`gate.json`'s `owner_gate`, `snowlight.sources.stations.gate.OwnerGate`)
+passes when Idaho is at least 90% proven, plain and closure-weighted, and Wyoming at least the 85.8% plain and 87.7%
+closure-weighted the owner accepted (the owner called Wyoming done at its honest numbers, "yea call it done nw",
+"accepted: owner decision 2026-10-13"; the gate stores these figures and fails if Wyoming drops below either); the
+national closure-weighted proven share stays at least 95%; and every other state that was at 90% stays there (Utah and
+Alabama at 100%, Texas at 91.3% on the morning of the decision). Arizona, California, Florida, Louisiana,
+Mississippi and Nevada, the states short of 90% where closures are rare, were not dug further: each keeps a record of
+what is covered, what is proven and what is missing, marked "not pursued: owner decision 2026-10-13 (rare-closure
+state)" (`owner_gate.rare` in `gate.json`; `owner_decision` and `gate.owner_gate` on each of their records in
+`gaps.json`). The CA and FL work of the stopped round-5 builder (St. Lucie, Corona-Norco, Desert Sands and the
+`district-pages` homepages) is kept as built and live-read, but not continued.
+
+**Result** (after the critics of the first builder round: live fetch of every source, 2026-10-13 13:38-15:10 UTC, and of
+the district pages, feeds and KIFI again at 16:52 and 17:42 UTC, merged with the earlier fetches; archive parse of every
+downloaded capture, including the 241 storm-day and closure-window captures of Lincoln County #2's homepage asked for in
+runs 38442169734 and 38442644173; coverage of 20:02 UTC; `gate.json` of 20:09 UTC). The owner's gate **passes** on the owner's acceptance of Wyoming at these figures:
+Wyoming's closure-weighted proven share is 87.7% (835.9 of 952.5 weighted schools, cut, never rounded up), 21.4 weighted schools under 90%.
+
+| Proven share (plain / closure-weighted) | Round 4 (03:24 CT) | First builder round (15:21 UTC) | Final |
+|---|---|---|---|
+| Idaho (gate: 90% / 90%) | 81.0% / 75.6% | 100.0% / 100.0% | **99.1% / 98.6%** (898 of 906 schools): meets |
+| Wyoming (gate: accepted at 85.8% / 87.7%, owner decision 2026-10-13) | 76.3% / 75.7% | 88.9% / 91.8% | 85.8% (334 of 389 schools) / **87.7%**: meets on the acceptance |
+| Texas (kept) | 91.3% / 95.0% (rounded) | 91.3% / 95.0% (rounded) | 91.2% / 94.9% (9466 of 10370; 0.9499 weighted, cut) |
+| Utah (kept) | 100.0% / 100.0% | 100.0% / 100.0% | 100.0% / 100.0% |
+| Alabama (kept) | 100.0% / 100.0% | 100.0% / 100.0% | 100.0% / 100.0% |
+| National | 86.5% / 97.3% | 86.7% / 97.7% | 86.4% / **97.5%** (target 95% weighted: met) |
+
+Every other state outside the six rare-closure states stays at 90% or more, plain and weighted (41 states and DC).
+What the critics changed: Lincoln County WY (13 schools, 41.1 weighted) is no longer credited to KIFI, whose closings
+articles never named a Lincoln County school in four winters, and Lemhi County ID likewise; non-closing banners ("Schools
+are OPEN", "school at regular time", storm-information links, a room closed while classes go on as normal) no longer
+prove a district channel, nor a pandemic's closing that names COVID-19 or the coronavirus (one that cites a health order
+instead, as Alvord's of March 2020 did, still proved until the critics' second round, below); a homepage line left up unchanged proves only by the capture that
+first showed it. Wyoming's 55 unproven schools: Lincoln County #2 (Star Valley, 9 schools, 28.5 weighted: its homepage's
+241 storm-day and closure-window captures from 2015 to 2026 show no closing, only a make-up day "for the school
+closure yesterday" in January 2017, bus delays and cancelled games; it announces closings on Twitter, @LCSD2Bus) and
+Lincoln #1 (Kemmerer, 3; its pop-up alerts file was never archived), Riverton #25 (7; its homepage banner was read on its
+storm days, empty, and its live feed, which begins in October 2024, holds no closing), Washakie #1 (6; it announces
+closings over KWOR radio and Infinite Campus, and its feed holds none), Dubois #2 and Fort Washakie #21 (3 each; 97
+storm-day captures, none a closing), Arapahoe #38 (2), Hot Springs #1 (3), Ten Sleep (1), 16 schools no working source
+covers (Natrona County's private schools, the Wyoming Behavioral Institute and Wyoming Classical Academy among them;
+County 10, Fremont County's own list of closings, answers 403), and BOCES 5. What would close the gap: Lincoln #2 alone
+(28.5 weighted) would, seen once announcing a closing (a live read on a storm day, or a source that carries its
+closings: its Twitter is not read); otherwise a whole-county source for Casper - Riverton (KCWY's GSync export was last
+written in 2022; County 10 blocks the project).
+
+**Live today (2026-10-13).** Of the 71 lists whose latest live read came back with rows, 18 hold a row that announces a
+closing by the notice gate's own test (`notices.row_qualifies` for district channels, `notices.announces_closing` for
+the rest): Okaloosa's and Walton's (FL) notices (Walton's no longer, since the critics' second round: its "No classes
+for students on 10/12 or 10/13" names no reason), Alabama's statewide list, Brewton (WALA), Beaver Local and
+Lake Orion schools on the Ohio and Detroit lists, HCOE's Jack Norton School and others. The other 53 hold events,
+news or open notices (the two new Wyoming feeds' food drive and picture retakes among them). North Gem's "all North
+Gem schools are closed today", up since 2026-02-18, is dropped from the latest live read (17:42 UTC) as an old note
+(`fetch.judge_page_text`), and so from every read the poller makes from now on. The day's three earlier reads (06:06,
+09:31 and 14:52 UTC), made before that rule, still carry the line in the day's merged rows (`live-merged10/rows.jsonl`,
+evidence of those reads); the fetch's default output (`out/internal/stations/health.json`, `reads.jsonl`, `rows.jsonl`)
+is now written as today's live state, each source's latest read only, so it shows North Gem empty (corrected in the
+critics' second round; it had held the 14:52 read's "ok, 1 row").
+
+**Idaho: KIFI's closings articles.** Every unproven Idaho school was in the Idaho Falls - Pocatello market, which had no
+whole-county source (KIFI's `/weather/closings/` answers 404, KPVI's one "School Closures" article was last changed on
+2025-02-25, East Idaho News answers 403), and its district sites rarely close (Bonneville #93's own page: schools close
+only for blizzards and dangerous cold) and were never seen closed in the archive. KIFI's newsroom types each storm day's
+closings into an article titled for the day, which WordPress stamps with the times it was published and changed:
+"School closures and delays for Wednesday, March 6" (2024; 19 entries, Aberdeen #58, Bonneville #93, Firth #59, Madison
+#321, Teton #401, Sugar-Salem #322 ... "Teton County School District 1 - 2 hour late start") and 26 more list articles
+from 2022-12 to 2025-02-25; and it gives a single school's or district's closing a story of its own ("Taylorview Middle
+School closed Thursday due to down heat pumps", 2025-12-18; "Teton County Schools Closed Tomorrow due to Jackson Boil
+Order", 2026-09-25; "School canceled for Chief Tahgee Elementary Academy", 2026-10-07). Built as `npg-articles-kifi`
+(adapter `wp-closings`, platform `npg-articles`): the poller reads the site's REST list of posts searched for "school",
+the AP, CNN and Stacker categories left out, newest first; it keeps only the station's own stories (a dateline crediting
+another outlet is not: the AP's story of UK school closures of 2024-11-19, carried under KIFI's own `/news/` path, is
+not read), keeps an article's rows while stamped within 36 hours, and takes the newest closings article's publication
+as the list's own time, judged by the closure-season rule like any list's (2026-10-07 on 2026-10-13: in use). The poller
+reads all 47 of KIFI's own closings articles of 2022-10 to 2026-10 as closings and none of the wire's or the stories
+about closings that announce none (`tests/stations/test_wp_closings_kifi.py`). In the winter of 2025-26 KIFI wrote no
+weather list, but it still wrote weather closings as stories: "SCHOOL CLOSURE" (2026-04-27, "Butte County Joint School
+District is closed today due to snow and inclement weather"), beside an illness closing ("Classes Canceled: Rising
+illnesses and absences force multi-day closure for Ririe School District", 2026-01-28); the list's current time is set
+by a closing for no weather (Chief Tahgee's water line, 2026-10-07). The market's one closure event of that winter, 2025-12-05, was a Winter Storm Warning for the mountain zones (KIFI's
+forecast: "mountain winter storm warnings posted"; no district page on record closed), and North Gem SD 149 (Caribou)
+closed for weather on 2026-02-18 under a warning for its own zone without a KIFI story. Counties: only those whose schools
+KIFI's closings articles named (`basis: observed`): 12 Idaho counties and Teton County WY; Lemhi ID (Salmon, Leadore)
+and Lincoln WY (Star Valley, Kemmerer, Cokeville), never named in four winters, are not credited to it. KIFI's terms
+(News-Press & Gazette's, as KQ2's) forbid automated means; the owner's decision of 2026-09-25 is recorded with the
+platform.
+
+**Wyoming: the districts' Apptegy live feeds.** An Apptegy district sends one post to its site's live feed, its app's push
+notifications, texts and Facebook at once, and the feed keeps every post with the time the server stamped it
+(`https://thrillshare-cmsv2.services.thrillshare.com/api/v4/o/<organization>/cms/live_feeds`, named in the homepage's own
+state; no robots.txt on the host). Built as `apptegy-feed-*` for Johnson #1, Converse #2, Fremont #6, #14 and #24
+(adapter `apptegy-feed`): the poller keeps a post only while it was published within 36 hours. Riverton #25's and
+Washakie #1's feeds hold no weather closing since they began; Fremont #2's and #21's WordPress sites post none; County 10
+(Fremont County) answered 403 to its REST list and its category pages (dropped, not worked around); Oil City News' closing
+stories name Natrona County School District, not a list of the county's schools.
+
+**History proofs** (`snowlight.sources.stations.history`). A channel's own server-dated post is the list seen populated on
+that day, as surely as a capture the archive made that morning, so it proves its source when kept as a history fixture
+(`pipeline/tests/stations/fixtures/history/`: a live read of the feed page or REST answer, sliced to that one post, with
+the post's own time as `captured_at`). The rule is stricter than for a capture (`notices.history_row_proves`): a
+district feed's post must announce a closing, a delay, an early dismissal, a remote day or no school, for weather or
+an emergency (Johnson #1 is proven by a delay: "all Buffalo School are on a One Hour Delay today", 2024-02-27; Fremont
+#6 by its Pavillion school's closing for a water main break, 2026-08-18, Crowheart staying open) (a track meet cancelled for the weather, a
+fieldhouse closed for a holiday, "school as scheduled ... if the storm ... we will proceed with an early dismissal" do
+not), every day it names must lie within the dated window of its publication (an old day is a leftover), and the NWS
+must corroborate it: an advisory or warning over one of the source's counties on the school day it is about or the
+school day before, or an emergency the NWS does not record (Wind River's water main break of 2026-08-18). Without the
+NWS record no weather post proves.
+
+**Leftovers never prove.** Round 5's live reads had proven Greenville (MS) by "GPSD closed on January 16, 2024 (Due to
+inclement weather)", still on its homepage on 2026-10-13. A line of a homepage's text now proves only when no day it
+names lies outside the dated window of the read, and, naming none, when an NWS advisory or warning covered the district
+within two school days of the read and the page did not already show the same line on an earlier school day (a line
+repeated unchanged is the news of the read that first showed it: North Gem's "all North Gem schools are closed today"
+proves by its captures of its first school day, 2026-02-18, under a Winter Storm Warning, not by the copies kept through
+April). A line that
+heads a news card with a posting stamp is judged by the day it was posted: Gulf (FL)'s "SCHOOL CLOSURES: Hurricane
+Isaias" is the card posted on 2026-10-07 for the hurricane of 8-10 October 2026 (Hurricane, Tropical Storm and Storm
+Surge Warnings on the panhandle coast), not a leftover of 2020 as round 6 wrote; it is read with its stamp
+(`homepage.text_rows`) and proves as a dated post corroborated by the NWS (`notices._text_current`).
+
+**Records.** `gaps.json`'s KIFI record (round 5: "no list (articles)") now names `npg-articles-kifi`; County 10's says it
+answered 403. The coverage gate's records (`gate records`) are rewritten for the states still short; the gate never
+calls a state settled while a first-hand record of a source not built says "not read" or was checked before
+2026-10-01 (`open_records`; round 5). The stale "not built" records of Lee, Polk and Marion (FL) that contradicted the
+built and proven `sharpschool-*` sources were dropped in round 5.
+
+## Round 4 of the coverage gate (s4, 2026-10-13)
+
+**What the critic found.** Round 3 left Fox 13 Salt Lake (`scripps-typed-kstu`) out as not working, though a
+real capture proves its list (2023-02-26T22:06:04Z, 41 rows of Utah districts, body SHA-256 `f6d037f5…`): its
+page today holds one undated leftover row ("Provo City School District will operate on a Two Hour Late Start
+schedule on Tuesday"), and the live reader called an undated typed page `stale`, so the station stopped
+counting. Utah's settled verdict rested on that. It also called Gray list files stale only because their
+`Last-Modified` was older than the last winter, in markets where weather seldom closes schools (WWSB, proven
+during Milton in October 2024; WTOC, last written two days after the January 2025 snow).
+
+**Typed rows judged against the page's earlier reads** (`typed_history.py`; `fetch.py` step 5). A row typed
+into a page that says no time for itself is now judged on its own: `dated` when its heading, note or line names
+a day near the read (kept, as on 2023-02-22, "WEDNESDAY, FEB. 22"); `past` when every day its words name is
+gone (KSTU's page on Sunday 2023-02-26 still held its rows under "WEDNESDAY, FEB. 22" and "THURSDAY, FEB. 23");
+`new` when a read of the page made within 36 hours did not hold it (kept); `old` when every read since the
+last one without it held it and the first of them is more than 36 hours old; `unknown` otherwise. Two reads
+hold the same row when they hold the same key (the row's name, status, time and context, whitespace and case
+aside). The earlier reads are the archived captures the archive parse read (`archive/reads.jsonl` and
+`rows.jsonl`) and every live read since, kept in `out/internal/stations/typed-history.json` (internal). A read
+keeps its dated and new rows; with none kept it is `empty` when every row is old or past (the station counts
+as working), and `stale` only when a row cannot be told from an old note. KSTU's Provo row (the same key in the
+archived captures of 2025-05-20, 2025-09-16, 2025-12-17 and 2026-05-09 and in every live read since; the
+capture of 2025-02-11 shows the empty page) is an old note, so the page reads `empty` today: "its 1 rows have
+stood unchanged for more than 36 hours (…; the page has held 'Provo City School District' unchanged since the
+archived capture of 2025-05-20T01:35:53Z, and the archived capture of 2025-02-11T13:09:45Z did not hold it)".
+Two of those captures are now fixtures (`groups/scripps-typed/kstu-page-20250520013553.html`,
+`kstu-page-20251217132420.html`). KSTU counts as working, and its 2023-02-26 capture proves it.
+
+**Staleness per closure season** (`seasons.py`; `fetch.py` step 4; `snowlight stations seasons` writes
+`out/internal/stations/closure-days.json`). A list last written before the last winter began (its file's
+`Last-Modified`, or the time the list says it was updated) is `stale` only when weather that closes schools
+came to its market after that and the list was not written for it; otherwise it is idle, its rows (any left
+from its last closure) are old and not kept, and the read is `empty`. Closure weather is the NWS record the
+closure weights count (IEM's archived warnings, school years 2015-16 to 2025-26 and the current one so far,
+placed in counties by the zone-county correlation, a school day counting under the 6 AM rule): a school day on
+which Winter Storm, Blizzard, Ice Storm, Lake Effect Snow, Hurricane or Tropical Storm Warnings covered
+counties holding at least half the schools of the station's market (its county list, or its districts);
+closure days at most three days apart are one event, and a list written the day before an event's first day
+was written for it. A warning over part of a county counts for the whole county, as the weights count it, so
+the rule errs toward `stale`. Counted through 2026-10-12 (the current school year's file was fetched on
+2026-10-13; it holds the Hurricane Warnings of 8-9 October 2026 on the Mobile - Pensacola - Panama City
+coast). The 18 lists the old rule called stale (KSTU was the 19th):
+
+| Source | Market | Last written | Now | Why | Proof |
+|---|---|---|---|---|---|
+| `abc-owned-kabc` | Los Angeles | 2019-02-12 | `stale` | missed 2019-03-12 (WS.W over 75% of its schools), and 26 more to 2026-02-16 | - |
+| `abc-owned-kfsn` | Fresno-Visalia | 2019-02-12 | `stale` | missed 2019-05-16 (WS.W over 78% of its schools), and 45 more to 2026-04-21 | - |
+| `abc-owned-kgo` | San Francisco-Oakland-San Jose | 2019-02-12 | `stale` | missed 2023-02-24 (WS.W over 86% of its schools) | - |
+| `gray-kgns` | Laredo | 2023-08-22 | `stale` | missed 2025-01-21 (WS.W over 100% of its schools) | - |
+| `gray-kjct` | Grand Junction-Montrose | 2022-02-24 | `stale` | missed 2022-04-12 to 2022-04-13 (WS.W over 100% of its schools), and 19 more to 2026-02-17 | - |
+| `gray-kkco` | Grand Junction-Montrose | 2022-02-24 | `stale` | missed 2022-04-12 to 2022-04-13 (WS.W over 100% of its schools), and 19 more to 2026-02-17 | - |
+| `gray-kmvt` | Twin Falls | 2025-08-23 | `empty` | no closure event since; the last before: 2025-02-13 to 2025-02-14 (WS.W over 100% of its schools) | 2020-03-20, 18 rows |
+| `gray-kplc` | Lake Charles LA | 2019-09-19 | `stale` | missed 2020-08-26 to 2020-08-27 (HU.W over 100% of its schools), and 4 more to 2025-01-21 | - |
+| `gray-wafb` | Baton Rouge LA | 2024-05-17 | `stale` | missed 2024-09-11 (HU.W, TR.W over 100% of its schools), and 1 more to 2025-01-21 | - |
+| `gray-wcjb` | Gainesville FL | 2019-09-19 | `stale` | missed 2020-11-11 to 2020-11-12 (TR.W over 93% of its schools), and 5 more to 2025-01-22 | - |
+| `gray-wcsc` | Charleston SC | 2021-03-18 | `stale` | missed 2022-09-28 to 2022-09-30 (HU.W, TR.W over 100% of its schools), and 5 more to 2025-01-22 | - |
+| `gray-wect` | Wilmington NC | 2022-01-21 | `stale` | missed 2022-09-29 to 2022-09-30 (HU.W, TR.W over 100% of its schools), and 4 more to 2025-01-22 | - |
+| `gray-wflx` | West Palm Beach | 2023-08-24 | `stale` | missed 2024-09-25 to 2024-09-26 (TR.W over 100% of its schools), and 1 more to 2024-10-09 | - |
+| `gray-wjhg` | Panama City | 2024-04-11 | `stale` | missed 2024-09-25 to 2024-09-26 (HU.W, TR.W over 100% of its schools), and 2 more to 2026-10-08 | - |
+| `gray-wtoc` | Savannah | 2025-01-24 | `empty` | no closure event since; the last before: 2025-01-22 (WS.W over 100% of its schools) | 2025-01-22, 23 rows |
+| `gray-wvue` | New Orleans LA | 2024-01-16 | `stale` | missed 2024-09-11 to 2024-09-12 (HU.W, TR.W over 100% of its schools), and 1 more to 2025-01-21 | 2024-01-15, 2 rows |
+| `gray-wwsb` | Tampa Bay | 2024-10-12 | `empty` | no closure event since; the last before: 2024-10-08 to 2024-10-09 (HU.W over 100% of its schools) | 2024-10-07, 2 rows |
+| `sinclair-ktxs` | Abilene - Sweetwater, TX | 2025-06-09 | `empty` | no closure event since; the last before: 2023-01-30 to 2023-02-01 (IS.W, WS.W over 100% of its schools) | - |
+
+**Effect** (live reads merged as before, with a full fetch under the new rules, 2026-10-13 08:23 to 09:48 UTC:
+944 sources, 76 ok, 706 empty, 14 stale, 6 error, 142 skipped; WRCB and KOAM/KXLY, refused with 429 in it, were
+read again at 09:51 to 09:58, and KXXO's server did not answer): five sources became working (KSTU, WTOC, WWSB,
+KMVT, KTXS), four of them proven (KTXS, Abilene, has no proof; Texas meets the target).
+
+| Share (plain / closure-weighted) | Round 3 | Round 4 |
+|---|---|---|
+| National, covered by a working source | 97.8% / 99.0% | 97.9% / 99.1% |
+| National, proven | 85.4% / 96.0% | 86.5% / 97.3% |
+| UT, proven | 45.1% / 48.6% | 100.0% / 100.0% |
+| NV, proven | 29.1% / 67.3% | 34.7% / 87.1% |
+| WY, proven | 66.8% / 68.3% | 76.3% / 75.7% |
+| ID, proven | 66.6% / 62.5% | 81.0% / 75.6% |
+| FL, proven | 60.9% / 60.6% | 67.8% / 68.0% |
+
+Utah meets the target and leaves the gate's table (and `gaps.json`'s records: only states short of the target
+have records). Nevada, Wyoming and Idaho keep records, rewritten by `gate records`: KSTU is `proven` in
+each, and the sources its counties overlap (KTVX's list among them) now add nothing. What is left: Nevada's Las Vegas market
+(Clark, Nye and Lincoln counties, 543 schools; Scripps' KTNV `all-read`, no other list; weighted the state is at
+87.1%), Wyoming's Fremont, Teton, Lincoln and Big Horn Basin districts (Teton's Finalsite page `unreadable`,
+the Fremont and Washakie districts `storm-read` or `unconfirmed`), and Idaho's Idaho Falls - Pocatello
+districts (Bonneville `unreadable`, Madison and Shelley `unconfirmed`, the rest `storm-read`).
+The national plain share (86.5%) is still short of 95%, by 10,030 schools,
+9,050 of them in California (17.3% proven, 70.2% weighted; settled: 10 of its sources are proven (KCRA
+Sacramento, KGET Bakersfield, Reno's KOLO and Medford's FlashAlert at the edges, and six county-office and
+district lists), and every other one is storm-read, unconfirmed, all-read, unreadable, not
+working or without an endpoint; the ABC-owned lists of Los Angeles, San Francisco and Fresno have not been
+written since February 2019 though warnings have come to all three markets since).
+
+**Handoff (production fetch).** The live reader needs two internal files to apply these rules: `typed-history.json`
+(kept from run to run; without it an undated typed page's rows are `unknown` and the read `stale` until 36
+hours of reads accumulate) and `closure-days.json` (rebuilt by `snowlight stations seasons`, daily is enough;
+without it every list last written before the last winter is `stale`, as before). The workflow that runs
+`stations fetch` in GitHub Actions must keep the first and run the second first.
+
+## Round 3 of the coverage gate (s4, 2026-10-05, resumed 2026-10-13)
+
+**What the critic found.** Round 2 called all twelve short states settled, but several verdicts rested on
+storm-day captures the adapters had not read: KULR's `/schoolclosures/` page of 2019, a closings article
+listing 25 Montana schools, refused by the Cowles adapter; Orange County's homepage of Hurricane Ian
+(2022-09-28), whose banner slide said "All Schools/District Offices Closed Wednesday, Thursday and Friday",
+read as a page that loads its alerts elsewhere; Indian River's homepage of Tropical Storm Eta (2020-11-08),
+whose news said "SDIRC Closed Monday Nov. 9", read the same way; Apptegy homepages from before Nuxt 3 logged
+as errors ("no `__NUXT_DATA__` payload", 889 reads); Edlio and Apptegy headlines (Robstown, Victoria, West
+Jefferson, Sweetwater #2, Juab, Murray and a dozen more) read as empty; and Granite, Jordan, Canyons,
+Washington and Provo (277 Utah schools) had no source at all, though Granite's alerts come from a readable
+WordPress REST file.
+
+**The closure-text check** (`snowlight stations gate text-check`, `closure_text.py`). Every downloaded
+capture of every working source the coverage result leaves unproven is read a second time, as text: the
+text a visitor sees (scripts, styles, templates and a form's option lists removed; a menu's entries, its
+lists, buttons and short links, removed but the rest of the navigation kept; `aria-hidden` sliders and
+`noscript` fallbacks kept, since a visitor sees them; inline tags merged into their block, two inline runs
+side by side kept two words; one line per block; for a JSON answer, its string values). Each line that
+announces a closing (a closing, delay, dismissal, remote day, cancelled classes or no school, by the notice
+gate's own patterns, not a planned day, naming weather, an emergency, a day or a date; a line about
+procedures or policy needs a day) or states a district's weather status for a named day ("School will be
+in session and follow regular schedules at all PCSD 25 schools today, Wednesday, January 5, 2022. Please
+continue to expect winter driving conditions") is looked for in what the adapter read; a title and the
+line under it are also read together when only the two together say it (Okaloosa's slide "Weather Alert:
+Tropical Cyclone 16" over "Schools are in session Friday ..."), never a date or a posting stamp over a line
+and never a link to a procedure. Each capture gets an outcome: `unrecognized` (its adapter refused it),
+`missed` (it showed a closing or status line no row of its read holds), `shell` (a page that loads its list
+from an address the archive does not hold, showing no closing itself), `cut` (the archive holds only the
+first 1 MiB of the page and the part it holds shows nothing), `read` (it showed such lines and its rows
+hold every one) or `clean`. The outcomes, with each capture's lines, are in `archive/closure-text.jsonl`,
+summed in `archive/closure-text.json`, which records the SHA-256 of the coverage result whose sources were
+checked; `gate report` refuses a check made against another coverage result. Two texts are excused as a
+page's own furniture (`closure_text.BOILERPLATE`): the NBC stations' empty-state sentence and the Santa Cruz
+COE page's heading and introduction.
+
+**The audit: a wider net over the same captures.** Beside the check, `gate text-check` writes
+`archive/closure-audit.json`: for every capture checked, the lines of its raw text (only scripts, styles,
+templates and the head removed: menus, footers and hidden elements read) that hold any status word
+(closed, cancelled, delay, late start, remote, no school, snow day, open, in session, ...) and any weather or
+emergency word (weather, snow, ice, storm, hurricane, cold, roads, power, fire, conditions, ...), that the
+check did not count and no row holds, by source, each with how many captures showed it and the first.
+Nothing there changes a verdict; it is the list of what the check excused, for review by eye. Its last run
+(2026-10-13, over the final coverage result's unproven sources) excused 143 distinct lines from 2,734 captures
+of 39 sources touching the short states, and every one was read by eye in the capture it came from: menu and
+quick links ("Emergency School Closure" in Soda Springs' quick links, "Snow Day Messaging" in Weber's menu, "Snow
+Day - Remote Learning Lessons" in Cache's, "Emergency Closure or Delay Start" in Iron's), pages about procedures
+and policies (Salt Lake City's "schools will be open on all regularly scheduled school days unless ..."), winter
+and Christmas breaks, makeup days ("Snow Day Makeup Days set", Fremont #6, 2023-03-28), the NBC stations'
+empty-state sentence, and TV stories about roads, fires and storms. Two of those stories show a list unused on
+a storm's morning: KFMB's closings page of 2023-01-30 carried the story "Winter storm brewing over San Diego
+County causes school closures and rain preparations" while its own list said "No delays or closings.", and
+KNBC's of 2025-01-08 linked "List of LA County schools, districts closed due to brush fires" beside its empty
+list. None was a closing or a status line the check should have counted.
+
+**The gate's rule: a misread capture keeps its source open.** A source with a capture in its closure window
+that its adapter refused (read state `error`, whatever the closure-text check said of it), that is
+identical by digest to a capture the check found misread, or that the check found `missed`, gets the
+verdict `misread`, which is not terminal: it can never be `storm-read`, `no-storm-capture`, `unreadable`
+or `all-read`, and the states it touches stay open, until that capture's form is read (`misread` and
+`window_misread` in each address's census). A page its adapter recognized as one that loads its list from
+an address the archive does not hold is now its own read state (`shell`, no longer counted as `error`), and
+is not misread unless it showed a closing or a status line itself. A page that took to loading its list by
+script hides nothing of the file it loads: the time from which an address shows no list a read can see
+(`blind_since`) is now taken per address, so the captures of the file stay due (Granite's homepage loads
+its notifications from `wp-json/wp/v2/en` from 2023-03-10 on; the file's captures are asked for).
+
+**The forms added**, each from a capture the check or the audit flagged (fixtures in
+`pipeline/tests/stations/fixtures/gate/`, provenance in its `PROVENANCE.json`):
+
+- Cowles: KULR's `/schoolclosures/` closings article of 2019-2021 (`cowles-closures-article`: each bulleted line
+  a row, "Amsterdam School CANCELED", "Belgrade School District 2-HOUR DELAY", under "Statewide school delays
+  and closures for Monday, March 4" (2019); the article's time is its rows' time and the listing is typed);
+  NonStop Local Montana's section pages of 2019-2021 (`cowles-section-cards`: one row per story card; a card
+  proves the list only when it announces a closing for weather or an emergency).
+- SharpSchool: the banner rotator (`sharpschool-banner-slider`: Orange's "Hurricane Ian" slide of 2022-09-28).
+- District homepages in any form, read as text beside their alert channel (`homepage.py`): a homepage read in
+  a known form gets a `page-text` row for each closing or status line its text shows that no row holds
+  (Indian River's "SDIRC Closed Monday Nov. 9 Due to Potential Storm Impacts From Tropical Storm Eta"); a
+  homepage that loads its alerts from a file and shows such lines of its own is read as those lines, still
+  following the file; a homepage in no form any reader knows (a district's site before its current platform)
+  is read as text (`homepage-text`) instead of being refused. Only a reader's "none of my forms"
+  (`NoFormError`) sends a page to its text; a malformed page in a known form is still an error.
+- Older forms of the current platforms: Apptegy homepages that are SharpSchool or Edlio pages; Finalsite's
+  2019 template; a Web Community Manager important-announcements region must be an element, not the class
+  name in a theme script.
+- TV pages: TEGNA's Liferay pages of 2017-2018 whose site settings name no closings system (KBMT) and its
+  2019-2020 sub-index pages with no closings module (KFMB) are read as pages that hold no list; Sinclair's
+  2020 shells that set `sinclairDigital.facade` without a site slug (KMPH) are followed to the list file.
+- Finalsite's empty page-pops answer as the archive replays it (the brotli stream of an empty body).
+- The second pass (the audit's first run, this afternoon) found what the check itself had not read:
+  Seminole's homepage slider of 2022-11-10, marked `aria-hidden="true"` ("Tropical Storm Nicole Update:
+  District & School Closures"); Okaloosa's newswire inside its `<nav>` ("Schools will be in session on
+  Friday ... We will continue to monitor weather conditions", 2019-10-17); Madison's district news
+  "Hurricane Debby Closure" (2024-08-04: a named storm's closing is a closing); Lander's "Lander Schools
+  will not have school on Tuesday, January 3, 2023 to allow crews to clear routes" (clearing routes and
+  "dangerously low wind temperatures" are now weather; "will not have school" a closing); and the weather
+  status lines above (Pocatello, Okaloosa).
+
+**What page text proves.** A homepage's text is whatever the page shows: news teasers, a calendar's entries,
+pages about how closings are decided. A page-text line proves its district's channel only when it announces a
+closing, a delay, a remote day, cancelled classes or no school **and names weather or an emergency**, is not a
+planned day or a planning document, and is not a teaser or an explainer unless it names the day
+(`notices.page_text_closing`); or when it states the schools' status (open, in session, a regular schedule,
+an on-time start, or a closing) for a named day and names weather (`notices.page_text_status`: the
+channel rule's weather notice, Bozeman's "Cold Weather Update: ALL BSD7 schools are OPEN", held to a named
+day). A question is no status ("Why Do Schools Try to Stay Open in Bad Weather?", Murray's news of
+2023-02-27), nor is a game postponed. A closing that names no reason does not prove by this rule, even on a
+storm's day: RYSS's "RYSS schools will be closed on Jan 15, 2024 ... Enjoy your day off!" fell on one of its
+storm days and was Martin Luther King Jr. Day.
+
+**A dated closing on a warning day (resumed 2026-10-13).** The weather service can supply the reason a notice
+leaves out (`notices.dated_closing`). A district's notice of a closing, a delay, a remote day, cancelled
+classes or no school, naming no reason, proves its channel when it names its day (or two or three days, not
+a run: "No School, April 4-8", "Dec. 20 - 31" and "through" never do) by date, each day between 5 days before
+and 3 days after the capture's school day; no day it names is a weekend, a federal holiday, Thanksgiving's
+Wednesday to Friday or the winter holidays (20 December to 2 January); it names no other reason (COVID-19, an
+illness, a threat), no planned day, procedure, teaser or question, and does not say the day is ordinary ("no
+early dismissal", "a regular school day"); and an NWS warning (Winter Storm, Blizzard, Ice Storm, Lake Effect
+Snow, Extreme Cold or Wind Chill, Hurricane or Tropical Storm; a Winter Weather Advisory alone is not enough)
+covered one of the district's counties on a day it names, by the closure weights' own record (the Iowa
+Environmental Mesonet's archive, the 6 AM rule; `storms.warning_days`). The warning is recorded with the proof
+in `coverage.json` (`district_notice_gate`, each kept proof's `warning`: day, weight, county). Granite's
+"Distance Learning Day for Granite School District – Wednesday, February 22, 2023" (a Winter Storm Warning over
+Salt Lake County that morning; the next day's "2-Hour Delayed Start", under an advisory only, would not have
+done) and Canyons' "Remote-Learning Day Announced for all CSD Schools for Friday. Dec. 2" (2022, a Winter Storm
+Warning) now prove their channels, which round 3 had called `unconfirmed`; so do Converse #1's "No School in
+Converse 1-October 13, 2021" (a Winter Storm Warning that day; its page that week also said "In-person school is
+cancelled in all buildings today ... a virtual learning day"), Putnam's "All Putnam County schools will be
+closed on Friday, September 8th, and Monday, September 11th, 2017" (Irma's Hurricane Warning on the 11th),
+Edinburg's "Delayed Start to Class on Jan 26, 2026", Rockport-Fulton's "January 26, Two-Hour Delay", Roma's
+and Sinton's delayed starts of that Monday (an Extreme Cold Warning over each county). RYSS's MLK Day, Canyons'
+"Schools, District Office Closed Feb. 21" (2022, Presidents' Day, under an advisory), Darby's "No School Friday,
+February 15th and Monday, February 18th in observance of President's Day", Glendive's "No School All Day - Jan
+2, 2018" (no warning) and San Benito's "CLOSED Thursday, January 20 and Friday, January 21, 2022 due to
+COVID-related health and safety issues" (a warning that day, but another reason) do not. Every row the rule
+accepts over the archive's and the live reads' rows was read by eye: 29 distinct rows of 20 sources, each a
+storm's closing or delay (Hemet's, "Idyllwild and Hamilton Schools: Possible Delayed Start Time on 1/27/25", a
+delay the storm might bring).
+
+**Proofs dropped this round.** A standing description of how closings are announced or decided proves
+nothing without a day (`notices._SERVICE`, in the channel rule and the page-text rule): Missoula's
+announcements app's "Notifying students and staff about severe weather-related school closures or delays"
+(which had proven Missoula on the morning of 2026-10-05) and Clark County's (Idaho) "Cold Weather Recess ... our recess
+policy" of 2019-12-12 (which had proven it since round 2) no longer do; Clint ISD's notice of 2020
+("postponing all evaluation activities ... due to COVID-19 closures as per Texas Education Agency
+guidelines") no longer does either. Citrus' slide of 2020-11-13, read until now as one word run "Storm
+Update: Hurricane EtaThe latest on school closures", is read as "... Hurricane Eta The latest on school
+closures", a teaser, and proves nothing. Against round 2's result (2026-10-05T04:35Z), two proofs are
+gone, both by these rules: Clark County, Idaho (2 schools no other proven source covers, 7.8 weighted; now
+`storm-read`) and Clint ISD, Texas (14 schools, 1.0 weighted; now `unread`, Texas meeting its target). Every
+other source proven then is proven now; 58 more of the sources round 2 recorded for the short states are,
+among them the five Cowles stations, Orange, Indian River, Juab, Murray, West Jefferson, Sweetwater #2,
+Robstown, Victoria and the rest of the critic's list. Against the restored round-1 evidence of 2026-09-29
+(81.97% proven), nothing is lost.
+
+**Verdicts.** `unconfirmed` (terminal): a source whose window captures were all read, one or more of them
+showing a closing that its rows hold but that does not prove it (a notice or a page-text line that names no
+weather or emergency and that no NWS warning corroborates, or a story card). Nothing left in the archive's window can settle it, but its list may
+well be in use. In the short states 18 sources end `unconfirmed` (their gains, the schools each would add
+that no proven source covers, sum to 243 schools and 257.9 weighted): Salt Lake City (35), Citrus (26), Box Elder (22), Twin Falls (18), Sweetwater #1 (15), Madison
+(Idaho, 12), Uintah (12), Logan (9), Carbon (9), Uinta #1 (8), Shelley (7), Oroville (6), Durham, Fremont #14
+and Hot Springs #1 (3 each), Washakie #2 (1), Weston #1 (0) and Washington County (54). What each showed is in
+its record (`closure-text.jsonl`'s `read` captures): a COVID-19 closure (Box Elder, Durham, Sweetwater #1,
+Fremont #14), a calendar's day off or break (Carbon's "NO SCHOOL on Monday, February 8th", read 12 days ahead;
+Logan's "Offices closed Dec. 20 - 31"; Washington County's "no school tomorrow, Friday, April 3, or Monday, April
+6 ... a fun and relaxing long weekend"), a weekly early out (Madison, Washakie #2), a closing of one building
+(Uinta #1's "no school Monday 10/24 at Evanston High School only"), a hearing on closing schools for good (Salt
+Lake City), a teaser (Citrus' "The Latest on Hurricane Eta and School Closures"), an e-learning reminder with
+no warning that day (Shelley), and Weston #1's "2 hour late start February 18th and 19th", read a month after
+(an advisory only on the 18th).
+
+**Utah's five districts** (`district_homepage.py`, `district-homepage.yaml`; each read first-hand on
+2026-10-05 with the project's User-Agent, robots and terms recorded): Granite (84 schools no other proven
+source covers) loads its emergency notifications from `/wp-json/wp/v2/en?notification_type=district`, read
+as a JSON list (`[]` live); Washington County (54) loads `alert.washk12.org/endpoint.php` (one alert live,
+"NEW STUDENT REGISTRATION", which proves nothing); Provo (21) renders an alerts section into its homepage;
+Jordan (69) and Canyons (49) render what they post into the page, read as text. Read over their archives
+(runs 37269655553, 37298989093 to 37299069183, 37315173427 and, for Washington County's last ten
+closure-window captures, 38351695086 of 2026-10-13): Jordan is proven by its homepage of 2023-02-25 ("Due to
+adverse travel conditions, snowed-in buses, unplowed streets ... Thursday, February 23, will be a virtual
+learning day for all students in Jordan School District", 7 rows), Provo by its alerts section of 2025-03-18 ("2 Hour Late Start
+and Below Bench Bus Pickup Tomorrow 3/18", a Winter Storm Warning over Utah County that day), Granite by its
+homepage of 2023-02-23 (its featured bulletin "Distance Learning Day for Granite School District – Wednesday,
+February 22, 2023", corroborated by that day's Winter Storm Warning) and Canyons by its homepage of 2022-12-04
+("Remote-Learning Day Announced for all CSD Schools for Friday. Dec. 2", a Winter Storm Warning that day).
+Washington County's homepage captures read are pages that load `alert.washk12.org/endpoint.php` (240 of
+253; 12 more the archive replayed as another capture), but one, of 2026-04-03, showing "A friendly reminder
+that there will be no school tomorrow, Friday, April 3, or Monday, April 6 ... a fun and relaxing long
+weekend"; the file's 388 captures read hold only "NEW STUDENT REGISTRATION" and a "CHRISTMAS BREAK" alert
+(2020-12-27), so it ends `unconfirmed`. Utah's proven share rose from 22.9% (round 2) to 45.1% of schools (48.6% weighted);
+what is left is KTVX's list (`all-read`: 763 schools, 1,162.7 weighted, every archived capture read and none
+with a row), KSTU's typed page (`not-working`: its live page still shows the Provo late start of 2025-03-18, a
+note no winter since has changed, as its archived captures of 2025-05-20, 2025-09-16, 2025-12-17 and
+2026-05-09 show), Weber (`storm-read`, 53 schools), Iron (`storm-read`, 16), Cache (`unreadable`, 25) and the
+six Utah districts among the `unconfirmed` above.
+
+**Result.** From the final run of 2026-10-13 (coverage 06:36Z, gate 06:46Z, over the live fetch of that morning merged
+with the earlier fetches and the restored evidence of 2026-09-29): 100,904 of 118,132 schools proven (85.4%),
+96.0% closure-weighted, against round 2's 83.5% / 92.8% and the restored round 1's 81.97% / 91.7%; 490 of 780
+working sources proven. The weighted national target is met; the plain one is not (11,322 schools short), and
+40 of the 49 states (with DC) meet the state target. Alabama now does (100% / 100%: WALA's list file, `stale` on
+2026-10-05 (last written 2025-10-27), held rows again in the morning's fetch, and Saraland's live notice of 2026-10-09 "Saraland City Schools will cancel school and
+close all campuses on Friday, October 9, due to the impending severe weather forecast"), Montana does since the
+Cowles list of 2019 (97.8% / 98.6%) and Texas does (91.3% / 95.0%). The nine short states, proven share plain /
+weighted: Arizona 77.4% / 87.1%, California 17.3% / 70.2%, Florida 60.9% / 60.6%, Idaho 66.6% / 62.5%,
+Louisiana 77.5% / 78.4%, Mississippi 71.1% / 68.8%, Nevada 29.1% / 67.3%, Utah 45.1% / 48.6% and Wyoming 66.8% /
+68.3%. Every source touching them has a terminal verdict (the table above; none `misread`, `unread` or
+`not-listed`), so each is settled, and the national target with them. The closure-text check of the final
+coverage result read 12,127 captures of its unproven sources: 8,023 clean, 3,979 shells, 123 showing a closing
+their rows hold that does not prove them, 1 cut by the archive (Frenchtown's Nuxt 2 homepage of 2023-12-02, its
+text showing nothing) and 1 refused (WNTZ's page of 2025-09-11, a closings block holding only "Test Block per
+Support", outside any of its closure windows); none `missed`.
+
+**What was run.** `snowlight stations archive parse` over every downloaded artifact (twice: after the Washington County alert
+fix, and after run 38351695086 brought its last ten closure-window captures; 20,456 reads, 118,945 rows);
+`snowlight stations fetch` of every live source (2026-10-13 04:57 to 06:23 UTC: 944 sources, 76 ok, 702 empty,
+19 stale, 5 errors, 142 skipped; 62 read although robots.txt disallows them, recorded), and again for the four
+that failed (Canyons and KOLR read empty; WLS's file answered HTTP 403 and KXXO's host reset the connection,
+both as before); `snowlight stations merge-live` of the restored 2026-09-29 evidence and every fetch since
+(1,002 reads kept, 200 older populated reads of another body kept as proof beside a newer one);
+`snowlight stations coverage` (with the NWS warning days); `snowlight stations gate text-check --jobs 3`;
+`snowlight stations gate report`; `snowlight stations gate records`. One archive run was asked for this
+resumption (commit 236b258, run 38351695086: ten captures of Washington County's homepage and alerts file, all
+downloaded). Gates in the worktree: `ruff check`, `ruff format --check`, `mypy --strict snowlight tests` (only
+the frozen status parser's two known errors) and `pytest`.
+
+
+## Round 2 of the coverage gate (s4, 2026-10-04 to 05)
+
+**What the critic asked.** Proven coverage stood at 82.3% of schools (91.8% closure-weighted) and twelve
+states were under 90%, with 238 unproven sources still `unread` or `older-unread` and 6,637 storm-day
+captures unread. The round was to keep reading storm-day captures in weighted-gain order until each short
+state is at 90% proven or every source in it has a terminal verdict, and to decide whether a station's own
+former closings address can prove it.
+
+**Decisions this round.**
+
+- *A station's own former address of its list proves it.* The proven share asks whether an outlet's
+  closings channel is used at all, and a station that moved its own list on its own site still runs the
+  same channel; the gate already took a capture of the current address in an earlier form of the page
+  (Lee's 2022 hero slider at leeschools.net) as proof, so the two are now one rule. The registry names each
+  such address in `former_urls`, with the evidence of the move (a redirect from the old address to the new
+  one, or the station's own list on the same site, read by the station's own adapter), and `coverage.json`
+  says which address each proof read (`address`: `current`, `former` or `earlier`; `proves`). Registered:
+  KPAX Missoula (`/weather/school-closings-delays`, the Scripps closings module of kpax.com in 2019 to 2021,
+  read as `scripps-closings-module`, the variant its current page reads; 404 live), Alachua County Public
+  Schools (sbac.edu, which answers 301 to alachuaschools.net) and KENS San Antonio's two closings articles
+  (below). Not registered, so they prove nothing: KGUN's and KTNV's `/weather/school-closings-delays` (no
+  capture of either ever held the Scripps module; both answer 404 since 2019) and the files of another
+  operator's closings system that a page once framed (WOWK's PSG files; WTVA's Allen Media files: its
+  page loaded Allen's counter, which said 106 closings on 2026-01-26, and framed Allen's `ftp2.wtva.com`
+  list until at least 2026-01-27, but by 2026-09-26 the same page loads a Gray export, a different
+  operator's system, of which the archive holds no capture). KPAX's former
+  address was then read in full: 500 captures, 492 empty, 8 the archive replays as 404; its verdict is
+  `all-read`.
+- *When a source is settled: its closure window.* Reading every archived capture of every source is not
+  possible (the open sources' listings held about 150,000 unread captures, most of them district homepages
+  captured daily), and most of them cannot show a list in use: a closings list holds rows on the days
+  schools close. A source is settled once every capture of its list made in its *closure window* is read
+  with no row. The window is its closure days (its storm days: school days with an NWS winter, cold or
+  tropical warning or advisory over one of its counties, the days the critic counted; and the days a proven
+  whole-county list sharing one of its counties held a row in an archived capture: fog, fire, power-cut and
+  hurricane-eve closures the NWS codes miss) **and the two days either side of each**. `calibration` in
+  `gate.json` (rebuilt with every report) checks the premise on the archive's own record: for each proven
+  source, whether any read capture in its window showed its list in use, with its own rows left out of its
+  closure days. Of the 233 proven whole-county lists
+  with two or more captures read in their window, 231 showed their use in one of them (WDEL showed it only
+  outside its window, in 3 window reads); of the 51 proven district channels with two or more, 49 did
+  (Clint ISD and South San Antonio ISD showed it only outside). Without the two days either side, 2 of 152
+  lists and 9 of 42 channels with two or more closure-day reads showed nothing on their closure days, so
+  the near days were added. What this measures is where the evidence of a list's use falls (on or near
+  the days schools close), which is why a source is settled on its window; it does not measure how often a
+  list in use shows a row in any one capture, so a source settled on one or two window captures rests on
+  less than one settled on many (`window_seen` in each record says how many).
+- *Verdicts.* `storm-read`: every capture of the list in its closure window read, none with a row, at least
+  one of them showing the list (`window_seen` in `gate.json` and in each `gaps.json` record counts them);
+  `no-storm-capture`: the same, but no capture in the window shows the list (the archive holds none made
+  there, or only page shells), while captures of other days did: no archived capture on or near a day its
+  schools could have closed is left to read, which is the bar's "no storm-day capture exists anywhere".
+  Both are terminal, beside `all-read`, `unreadable`, `no-capture` and `no-endpoint`. Fair-weather captures
+  of a `storm-read` or `no-storm-capture` source stay counted as unread in its census.
+- *Captures that cannot show the list are not due.* Captures from before a page took a form its adapter
+  reads (`readable_since`) are not asked for; neither are those from after it became a shell
+  (`blind_since`: at least three reads after the last one that saw the list, every one a page that loads its
+  list by script, a redirect, a refusal or a 404). Each station's `readable_since` and `blind_since` are in
+  `gate.json`.
+- *The census.* A capture the archive replays as HTTP 404 or 410 counts as read (state `gone`); a capture
+  the archive answered with a redirect to another address counts as read (`redirect`); a capture answered
+  429 in three different hours by separate runs (each after the workflow's four tries with backoff) while
+  those runs read hundreds of other captures counts as read (`refused`: ABC4's capture of 2025-02-12 07:58
+  UTC, a revisit record of a 776-byte answer, was answered 429 by four runs between 06:50 and 15:59 UTC on
+  2026-10-04); revisits of a 404 page or a redirect the listings hold are left out.
+- *Every source touching a short state, not only those that could add a school.* A source whose schools
+  another proven source already covers keeps no state open, but its verdict is recorded too: `gate plan
+  --due --only` now plans such sources, and run 37247664710 asked for the closure-window captures of the 24
+  that were still `unread` (KXTV Sacramento, Westby, Weston County 1 and 21 more) and listed Medicine Lake's
+  homepage. Of the 24, 15 are now `storm-read`, 6 `unreadable` and 1 `no-storm-capture`; WMC
+  Memphis is proven (its list held 6 rows on 2022-01-05, all of them in counties other proven lists cover);
+  Medicine Lake's homepage, once listed (139 captures), had 27 captures in its window, read by run
+  37262162443: its homepage's reads are 14 empty and 14 in an earlier form of its site, none with a row,
+  so it is `storm-read` too.
+  Every one of the 548 sources touching the twelve short states now has a final verdict.
+
+**KENS' closings page linked to an article in 2022 and 2023.** Every capture of kens5.com/closings from
+January 2022 to September 2023 (29 captures: one of 2022-01-23 and 28 from 2022-05-18 to 2023-09-22) held
+no closings module, only a raw-HTML module: "For a list of closings in our area please click this link."
+Round 1 counted those captures as read, but the TEGNA adapter refused them (`unrecognized shape`), so KENS'
+`all-read` rested on 29 captures whose list was never read.
+The adapter now reads that page as `tegna-closings-link` (deferred to the linked page) and the article as
+`tegna-closings-article` (each heading followed by a statement is a row: the district, and its statement;
+"No report." entries are not rows; the article's "Updated:" line is the rows' time), and run 37243433721
+listed both articles and read their captures nearest KENS' storm days. "School closings due to winter
+weather in San Antonio, Texas" listed 23 closures for 20 January 2022 (Northside, North East, San Antonio,
+Southside ISD, ...) and 41 statements for 21 January; "FULL LIST: San Antonio and South Texas school
+closings and delays" listed six closures for 3 February 2022 (Blanco, Boerne, Kerrville, Luling, San Marcos
+CISD, Texas A&M-San Antonio), then held only "No current report." entries from 23 February 2022 (last
+updated 25 February 2022) to its last capture of 24 March 2023. Both articles are KENS' own list at
+another address on its own site, linked from its closings page as its list, so they are registered as
+former addresses and KENS is proven (856 Texas schools that no other proven source covers). Its current
+module was never seen holding a row: 311 captures from 2016 to 2024, in the page's three templates, read
+empty, and the module that replaced the link in 2024 has three captures (May, July and November 2024), none
+on a storm day; its `gaps.json` record keeps that census. No other station's captures were in that form (the other TEGNA captures the adapter
+refuses are KFMB's pages of 2019-2020, before its `readable_since`; KBMT's 110 Liferay pages of June 2017
+to January 2018, whose closings setting was `type:"None"`, no list; and two YouTube pages).
+
+**More than the window, where it matters most.** For the largest whole-market lists of the short states,
+every capture was asked for, not only the window's, so their verdicts rest on all of their captures:
+ABC4 Salt Lake (KTVX): all 403 captures of its closings page (402 empty; the 403rd the archive refused
+with HTTP 429 to four runs) and the 4 of its page's REST form, `all-read`. KPAX Missoula: all 500 captures
+of its former address and the 10 of its current one, `all-read`. NBC 6 Miami (WTVJ): all 821 captures of
+its page (791 empty, 30 answered with another capture) and the 6 of its list endpoint, `all-read`. CBS 8
+San Diego (KFMB): all 112 (97 empty, 15 of its 2019-2020 template, before `readable_since`), `all-read`.
+Spectrum News San Antonio: all 175 captures of its list file (one digest, empty) and 114 of its page,
+`all-read`. NBC Los Angeles: 1,038 captures read (1,013 empty, 25 answered with another), one fair-weather
+capture left that the archive did not serve, `storm-read`. KMPH Fresno: all but one of its page's 197
+captures (187 load its list file) and all 12 of the file (empty), `storm-read`; KSEE Fresno: 263 of 268
+(255 empty), `storm-read`; KBMT Beaumont: 267 read (150 empty; 110 of June 2017 to January 2018, whose template's closings
+setting was `type:"None"`, no list), `storm-read`. NBC Bay Area (KNTV), NBC San Diego (KNSD) and KSBY San
+Luis Obispo were read in their windows only (250 of 3,754, 140 of 889 and 63 of 675 captures; 175, 70 and
+16 window captures saw the list, every one empty), `storm-read`.
+
+**The four pages the critic could not confirm**, opened in Chromium on 2026-10-04 at 02:20 UTC with the
+project's User-Agent (records kept outside the repository): NonStop Local Montana's closings page (the
+Cowles stations KFBB, KULR, KTMF, KWYB, KHBB) loads its S3 ticker, which says "No Closings have been reported
+at this time" (the ticker's own line: "Closings Last Updated at 9:13am on 4/16/2026"); NBC Los Angeles' page
+says "Forecast: School's Open. But don't worry, we update this page regularly so you'll be the first to know
+if your school is closing or will have delays due to bad weather." and its list endpoint
+(`/wp-json/nbc/v1/school-closings`) answers `[]`; KOMO's page frames
+`/resources/ftptransfer/komo/closings/komoclosings.html`, which says "UPDATED SATURDAY, OCT 3 AT 7:20 PM There
+are no active records at this time."; Lee County's homepage shows no alert, and the alert service its script
+posts to answers `{"d":[]}`. Each adapter's empty read matches what the page shows.
+
+**The notice gate, tightened.** Beaumont Unified's homepage alert of 2023-01-15 ("Input Needed on Beaumont USD
+Local Hazard Mitigation Plan ... flash flooding, high windstorms ...") had passed the district notice gate on
+its hazard words and proved the source; a planning document or a call for feedback that names hazards no
+longer counts as a weather notice (`notices._PLANNING`; a real-row test pins it). No other kept proof was a
+planning notice. Beaumont is proven again, by its homepage alert of 2020-04-08 ("Update: School Campuses
+Ordered to Close Until June 19, 2020"): the channel announced its schools' closing. The other proofs of this
+round that rest on a weather notice rather than a closing word were read one by one (Bozeman's "Cold Weather
+Update: ALL BSD7 schools are OPEN", Del Norte's "Schools to Remain Open if Buses Can Run - National Weather
+Service Weather Warning", Woodsboro's "anticipates school beginning at the regularly scheduled time ...
+continue to monitor local weather", Orange Grove's "Cold Weather Update" alert of 2026-01-26): each is a
+district's weather status on the channel that would carry its closing. A SharpSchool hero slider's other
+slides ("Bus Drivers WANTED") are kept as raw rows, as every adapter keeps what its list shows; they prove
+nothing, since the notice gate keeps a district channel's proof only for a row that announces a closing.
+
+**Result.** Proven: 98,627 of 118,132 schools (83.49%), closure-weighted 109,678.7 of 118,132.1 (92.84%);
+round 1 ended at 97,217 (82.30%) and 91.83%. 427 of the 774 working sources are proven (398 of 771 in
+round 1). The change, school by school (+1,410; each source's schools that no other proven source covers):
+KENS +856 (Texas, through its closings articles); Utah +209 (Davis 95 and Alpine 91, whose earlier
+WordPress homepages carried their February 2023 snow-day alerts, and Ogden 23); Texas +182 more (Brownsville
+51, Ysleta 47, PSJA 42, Southwest ISD 18, Clint 14, Orange Grove 4, Santa Gertrudis 2, Agua Dulce 2,
+Woodsboro 2); Montana +55 (Billings 34, Bozeman 13, Shelby 5, St. Regis 3); California +51 (Alvord 26,
+Beaumont 14, Del Norte 11); Florida +43 (Hernando 32, Hardee 11); Idaho +32 (Idaho Falls 22, Blaine 8,
+Clark County 2). WZDX Huntsville and WMC Memphis became proven too, adding no school no other proven list covers. No source proven in round 1
+lost its proof. Area coverage (a working source, proven or not) is unchanged: 115,409 schools (97.69%),
+closure-weighted 98.93%. Twelve states remain short of 90% (AL weighted only, and TX plain only), and every
+one of them is now *settled*: every source whose proof would add a school to it has a terminal verdict
+(`gate.json`: `settled` for each state and nationally; `open` is empty everywhere).
+
+| State | Proven | Weighted | Round 1 | What keeps it short |
+|---|---|---|---|---|
+| AL | 90.7% | 81.7% | 90.7% / 81.7% | Mobile County's homepage (90 schools; the archive holds no capture of it in a closure window that shows its alerts: `no-storm-capture`) |
+| AZ | 77.4% | 87.1% | 77.4% / 87.1% | KGUN Tucson's list (529 schools): all 6 captures of its page empty; its older address was never its list |
+| CA | 17.1% | 70.2% | 16.7% / 69.8% | 2,305 private schools only a whole-market list can cover; NBC Los Angeles, Bay Area and San Diego, KMPH, KSEE, CBS 8 and KSBY read empty in every capture of their windows (CBS 8's in full; NBC Los Angeles' but one capture the archive did not serve); ABC7's and ABC30's lists stale since 2019 |
+| FL | 49.7% | 47.3% | 49.0% / 46.5% | WTSP and First Coast News (TEGNA, 810 schools): the archive lists no capture of either page; NBC 6 Miami empty in all 821 captures; no capture of Orange's or Seminole's homepage in their windows is in a form that shows their alerts (`no-storm-capture`) |
+| ID | 63.4% | 58.6% | 59.8% / 53.2% | Bonneville's and Pocatello's archived homepages are in forms no adapter reads or load their alerts by script (`unreadable`); ABC4's reach into Idaho read empty |
+| LA | 77.5% | 78.4% | 77.5% / 78.4% | WGMB Baton Rouge's list (empty in every capture the archive serves; the rest replay a 404), KATC's never captured |
+| MS | 70.6% | 68.3% | 70.6% / 68.3% | WTVA Tupelo (201 schools): its Gray list was never captured; its Allen-era files were another operator's |
+| MT | 23.3% | 21.9% | 17.5% / 17.0% | the five Cowles stations (ticker never captured; their 2019-2021 pages were article cards) and KPAX (all 510 captures of its two addresses empty or a 404) |
+| NV | 29.1% | 67.3% | 29.1% / 67.3% | KTNV Las Vegas' list (543 schools): all 5 captures empty |
+| TX | 88.2% | 93.8% | 78.4% / 84.4% | 184 schools short (weighted met): KBMT Beaumont (169; every window capture empty) and South Texas district homepages read empty in their windows |
+| UT | 22.9% | 24.9% | 5.6% / 5.9% | ABC4's list (927 Utah schools): all 403 captures empty; FOX 13's list stale since March 2025; Granite, Jordan, Canyons, Washington and Provo have no source (homepage alerts loaded by script, checked 2026-10-03) |
+| WY | 51.7% | 57.6% | 51.7% / 57.6% | ABC4 and KULR's reach into Wyoming (above); Teton, Sweetwater 1 and Uinta 1 homepages unreadable in the archive |
+
+**Markets.** All 206 markets have a working source, 182 a whole-county one and 183 a proven one. Of the 25
+largest, eight lack two working whole-county sources or a proven one: Los Angeles, San Francisco - Oakland -
+San Jose, Miami - Ft. Lauderdale, Tampa - St. Petersburg and Salt Lake City (one whole-county list each,
+none proven), Orlando - Daytona Beach (district sources only), Phoenix and Sacramento - Stockton - Modesto
+(two, one proven). What the markets' other stations publish is in the first-hand checks
+(`docs/research/firsthand/`) and, for the short states, in each source's `gaps.json` record.
+
+**What was run.** The live reads: a full fetch on 2026-10-05 from 00:42 to 02:05 UTC (939 sources: 49 ok,
+725 empty, 20 stale, 3 errors, 142 skipped, 849 rows), merged with the reads of Sep 29, Oct 3 and Oct 4 as in
+round 1 (`stations merge-live`: for each URL the newest read, and the newest populated one beside it). The
+archive: 53 runs from 2026-10-04 01:58 to 2026-10-05 04:07 UTC (37169638112 to 37262162443), asking for 10,768 captures and 66 listings, every request and result recorded in `pipeline/config/sources/archive-wanted-s4.json`.
+From `pipeline/`:
+
+    uv run snowlight stations fetch --out-dir out/internal/stations/fetch-20261005
+    uv run snowlight stations merge-live .cache/stations/evidence-20260929/stations/reads.jsonl \
+        out/internal/stations/reads.jsonl out/internal/stations/fetch-sharpschool-20261003/reads.jsonl \
+        out/internal/stations/fetch-20261004/reads.jsonl out/internal/stations/fetch-20261004b/reads.jsonl \
+        out/internal/stations/fetch-20261005/reads.jsonl --health out/internal/stations/health.json \
+        out/internal/stations/fetch-sharpschool-20261003/health.json \
+        out/internal/stations/fetch-20261004/health.json out/internal/stations/fetch-20261004b/health.json \
+        out/internal/stations/fetch-20261005/health.json --out-dir out/internal/stations/live-merged3
+    uv run snowlight stations archive parse .cache/stations/artifacts
+    uv run snowlight stations coverage --health out/internal/stations/live-merged3/health.json \
+        --live-reads out/internal/stations/live-merged3/reads.jsonl
+    uv run snowlight stations gate report && uv run snowlight stations gate records
+    uv run snowlight stations gate plan --due    # empty: no capture keeps a short state open
+
+## Round 1 of the coverage gate (s4, 2026-10-03, resumed after the pause)
+
+**What was measured.** The machine was reset to an older snapshot during the pause, so this round rebuilt
+what the measure reads: the closure weights (`snowlight.weights build`, 20:13 UTC), the archive's reads
+(`stations archive parse` over the 126 downloaded artifacts: the restored Sep 29 captures, every run of
+round 1 from 2829f15 to bfc9910, and run 37152148780: 4,348 capture reads, 113,999 rows), a full live
+fetch (2026-10-03 20:10 to 21:34 UTC: 936 sources, 47 ok, 721 empty, 20 stale, 6 errors, 142 skipped)
+and a live read of the three stations added this round (21:45 to 21:46 UTC). The live reads of Sep 29
+(restored from the owner's data repository) were merged with today's by `stations merge-live`: for each
+URL the newest read, and the newest populated read beside it when the newest is not populated, so the
+lists seen populated on Sep 29 stay proven (20 such reads kept); today's two health files were merged the
+same way (each source's last read). Only one proof rests on the Sep 29 reads alone: WLIO Lima's list (7 rows
+on Sep 29; 48 Ohio schools that no other proven station covers). From `pipeline/`:
+
+    uv run python -m snowlight.weights build
+    uv run snowlight stations fetch
+    uv run snowlight stations fetch --only sharpschool-lee-fl sharpschool-marion-fl sharpschool-polk-fl \
+        --out-dir out/internal/stations/fetch-sharpschool-20261003
+    uv run snowlight stations archive parse .cache/stations/artifacts
+    uv run snowlight stations merge-live .cache/stations/evidence-20260929/stations/reads.jsonl \
+        out/internal/stations/reads.jsonl out/internal/stations/fetch-sharpschool-20261003/reads.jsonl \
+        --health out/internal/stations/health.json \
+        out/internal/stations/fetch-sharpschool-20261003/health.json --out-dir out/internal/stations/live-merged
+    uv run snowlight stations coverage --health out/internal/stations/live-merged/health.json \
+        --live-reads out/internal/stations/live-merged/reads.jsonl
+    uv run snowlight stations gate report && uv run snowlight stations gate records
+
+**Result.** Proven: 97,217 of 118,132 schools (82.30%), closure-weighted 108,486.2 of 118,132.1 (91.83%);
+on Sep 29 it was 96,837 (81.97%) and 91.66%. The change, school by school (+380): Florida +340 (the three
+SharpSchool district sources below: Lee 118, Marion 61, Polk 161, each proven by its own homepage in the
+archive), Texas +21 (South Texas ISD, 7, whose live page pop of 20:47 UTC today says "STISD Weather Update:
+All STISD activities for Saturday, Oct. 3, have been canceled"; South San Antonio ISD, 14, whose Web Community
+Manager homepage of 2021-01-16 23:43 UTC announced "SSAISD Update: District Closure"), Utah +18 (San Juan
+School District, 11, whose homepage banner of 2026-02-17 cancelled school at La Sal Elementary for a power
+outage; Park City, 7, whose homepage pop of 2024-05-06 announced a bus service interruption) and Arizona +1
+(San Juan's school in Arizona). KCAU Sioux City, Erie and Warren County (Pennsylvania) became proven too,
+in states already covered. Nothing was lost: WRCB Chattanooga answered HTTP 429 to every attempt today, so
+it does not count as working, but every school it covers is covered by another proven station; Lake Elsinore
+Unified (California, 24 schools, never proven) moved its homepage from Edlio to Finalsite, so its Edlio source
+fails today (recorded in its health). Area coverage (a working source, proven or not): 115,409 schools
+(97.69%), closure-weighted 98.93%. 37 of the 49 states (with DC) meet the 90% proven target; 398 of the 771
+working sources are proven.
+
+**New this round.**
+
+- *SharpSchool district sites* (`sharpschool.yaml`, adapter `sharpschool`): the Lee, Marion and Polk county
+  school districts' homepages load their emergency alerts by script from a service that answers only POST
+  (round 2 of the gap-state part left them unbuilt for that reason). The registry now carries a station's
+  `data_post` (the page script's own JSON body) and the poller posts it, with no conditional request and no
+  redirect followed. The archive keeps no answer to a POST, but it kept the homepages' earlier forms, and
+  run 37152148780 found the closures there: Lee's hero slider of 2022-10-04 03:52 UTC (Hurricane Ian: all
+  schools and offices closed 3-7 October) and Marion's Web Community Manager announcements of 2022-09-27
+  23:56 UTC (Ian) and 2023-08-28 18:07 UTC (Idalia), and Polk's WordPress homepage of 2022-09-28 10:03 UTC,
+  whose Smart Slider storm slide said the county's public schools were closed 27-29 September (Ian).
+- *robots.txt behind redirects*: the SharpSchool sites send `/robots.txt` on to `/robots.txt/Default.aspx`;
+  the polite client asked for robots.txt again for each such hop (an endless loop). It now reads robots.txt
+  and its redirect hops without consulting itself; a test covers the chain.
+- *The gate's verdicts* separate `older-unread` (no unread capture of the station's current page or data file
+  remains; only captures of addresses it read before are unread, and they cannot prove the current list) from
+  `unread`, and every census entry says whether its address is the current one.
+- *The map*: `coverage.png` draws a second map, of what the proven share counts (bright: a source seen with
+  rows; dim gold: a district source seen with rows; violet: only working sources never seen with a row;
+  grey: no working source), and `coverage.json`'s `proven` block holds the per-county proven numbers.
+- *Archive requests*: five runs this round (records and results in
+  `pipeline/config/sources/archive-wanted-s4.json`): 37151360115 (235 of 237 captures read: NBC Los Angeles,
+  Bay Area, San Diego and Miami 40 each, ABC4 8, KREX 7, KSEE 7, KMPH and KENS, all empty or deferring to a
+  list file the archive did not keep, on their markets' storm days and largest winter captures; the 46
+  district captures the gate still wanted proved South San Antonio ISD), 37151594707 and 37156919678 (488 of
+  500 storm-day captures of the unproven district homepages of Utah, Montana, Idaho, Wyoming, Florida and
+  Texas: San Juan and Park City proven, the rest empty, notices that announce no closing, or Finalsite
+  homepages that defer to page pops the archive does not hold), 37152148780 (the SharpSchool homepages) and
+  37161083109 (250 more district storm days, still running when this was written; its artifact is kept 90
+  days). The lesson of the second and third: a Finalsite homepage holds no list of its own (it loads its page
+  pops by script) and the archive holds almost no page-pops capture near one (Bozeman's homepage: 3,179
+  captures listed; its page pops: 6), so asking for more Finalsite homepages proves nothing.
+- *The capture plan* (`stations gate plan`) leaves out captures from before the last one a station's adapter
+  refused ahead of the first it read (`gate.readable_since`): a district that moved its homepage to the
+  platform its adapter reads leaves captures of its older site that cannot prove it.
+
+**Why the twelve states stay short.** The per-source evidence is in `gaps.json` (each record's `gate`
+block); in short:
+
+- *California* (16.7%; 2,305 of its 12,448 schools are private, so only a whole-market list can reach 90%):
+  NBC Los Angeles' list read empty in every capture of the January 2025 fires read (23 captures from 6 to
+  15 January) and of its storm days; ABC7 Los Angeles, ABC7 San Francisco and ABC30 Fresno say their lists were
+  last updated on 2019-02-12 (stale); FOX, CBS and the other Los Angeles and Bay Area stations publish no
+  list; Los Angeles Unified's homepage answered this project's User-Agent with HTTP 403 when checked on
+  2026-10-03 (an active block, so it is not read).
+- *Utah* (4.1%; 139 private schools): ABC4's list, the only whole-market list naming Utah's schools, read
+  empty in 115 captures from 2021 to 2025, storm days included; FOX 13's typed list has held one undated
+  Provo entry of March 2025 since then (stale), though it was the list Utah used in February 2023 (41 rows);
+  KUTV publishes none, and KSL showed no closings page when checked on 2026-10-03. The districts' homepages are proven one by one
+  (Nebo, San Juan and Park City so far); Granite, Jordan, Canyons, Washington and Provo have no source yet
+  (WordPress sites; Granite's and Washington's homepage alerts load by script, checked 2026-10-03).
+- *Montana* (17.5%): NonStop Local Montana's ticker (the Cowles stations) is read live, but the archive has
+  never captured its file (the listing of its folder holds no capture), and the section pages captured in
+  2019-2021 are an earlier form (cards linking to articles). KPAX's current page has 10 captures, all
+  empty.
+- *Florida* (46.3%; 1,974 private schools): no Florida TV station publishes a readable list today (WTSP's and
+  First Coast News' pages were never captured; the rest publish none), so the private schools cannot be
+  covered; the districts are proven one by one (21 district sources and WCTV so far).
+- *Nevada, Arizona* (29.1%, 77.4%): every capture of KTNV Las Vegas' and KGUN Tucson's current pages (5 and
+  6) read empty; the hundreds of captures of their earlier address cannot prove the current list; their
+  markets rarely close for weather.
+- *Texas, Louisiana, Mississippi, Alabama, Idaho, Wyoming*: the remaining whole-market lists (KENS and
+  Spectrum San Antonio, KBMT, WGMB, WTVA, KTVX in Idaho and Wyoming) were read empty on every storm-day
+  capture the archive holds or are not captured at all; the district sources there are proven one by one,
+  and the runs above read more of their storm days.
+
+
 ## Round 5 (2026-09-28, from 22:22 UTC): Finalsite sources read through their homepages
 
 The critic's finding on round 4: the Finalsite adapter could not tell an empty list from a broken read.

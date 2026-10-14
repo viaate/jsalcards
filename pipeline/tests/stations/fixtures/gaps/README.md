@@ -101,6 +101,7 @@ This file is generated from the provenance files; edit those, not this.
 | `finalsite/hendry-page-pops-live-20260927.html` | finalsite-hendry-fl (live) | https://www.hendry-schools.org/fs/pages/2/page-pops | 2026-09-27 20:18:31 | 2026-09-27 20:18:31 | `16d2de2bd4470b79…` (2807 bytes) | none | finalsite-page-pops | populated | 3 |
 | `finalsite/lewistown-page-pops-live-20260927.html` | finalsite-lewistown-mt (live) | https://www.lewistown.k12.mt.us/fs/pages/2/page-pops | 2026-09-27 19:24:52 | 2026-09-27 19:24:52 | `0a233590e50d821b…` (1535 bytes) | none | finalsite-page-pops | populated | 1 |
 | `finalsite/palm-beach-home-20241010.html` | finalsite-palm-beach-fl (archive) | https://www.palmbeachschools.org/ ([capture](https://web.archive.org/web/20241010025056id_/https://www.palmbeachschools.org/)) | 2024-10-10 02:50:56 | 2026-09-27 22:08:09 | `0c27620b25bd70d6…` (117164 bytes) | finalsite-v1 | schoolwires-important-announcements | populated | 1 |
+| `finalsite/palm-beach-page-pops-20250105.txt` | finalsite-palm-beach-fl (archive) | https://www.palmbeachschools.org/fs/pages/2/page-pops ([capture](https://web.archive.org/web/20250105144407id_/https://www.palmbeachschools.org/fs/pages/2/page-pops)) | 2025-01-05 14:44:07 | 2026-09-27 21:03:36 | `4e07408562bedb8b…` (1 bytes) | finalsite-v1 | finalsite-no-page-pops | empty | 0 |
 | `finalsite/psja-page-pops-live-20260928.html` | finalsite-psja-tx (live) | https://www.psjaisd.us/fs/pages/2/page-pops | 2026-09-28 02:03:03 | 2026-09-28 02:03:03 | `e3b0c44298fc1c14…` (0 bytes) | none | finalsite-no-page-pops | empty | 0 |
 | `finalsite/south-texas-page-pops-live-20260928.html` | finalsite-south-texas-tx (live) | https://www.stisd.net/fs/pages/2/page-pops | 2026-09-28 02:15:20 | 2026-09-28 02:15:20 | `ebe23c9fc0aeba35…` (7847 bytes) | none | finalsite-page-pops | populated | 2 |
 | `finalsite/volusia-home-20241014.html` | finalsite-volusia-fl (archive) | https://www.vcsedu.org/ ([capture](https://web.archive.org/web/20241014005904id_/https://www.vcsedu.org/)) | 2024-10-14 00:59:04 | 2026-09-27 22:34:06 | `676352fec1c957f2…` (182629 bytes) | finalsite-v1 | finalsite-homepage-pops | populated | 1 |
@@ -182,6 +183,7 @@ Notes:
 - `finalsite/gulf-shores-home-20201101.html`: Gulf Shores City Schools' homepage in 2020: a published Finalsite page whose body data-pageid is "329", not the "1994" the live homepage names and the registry's page check records (the site was rebuilt since): a changed page ID.
 - `finalsite/gulf-shores-home-20250121.html`: Gulf Shores City Schools' homepage in the Gulf Coast snowstorm (2025-01-21): body data-pageid="1994", the ID of the registered page check; its page pops were not captured.
 - `finalsite/palm-beach-home-20241010.html`: The School District of Palm Beach County's homepage in Hurricane Milton, on Finalsite's Web Community Manager (Schoolwires; its footer: 'Copyright 2024 Finalsite'): one important announcement about the storm and shelters.
+- `finalsite/palm-beach-page-pops-20250105.txt`: The archive's capture of Palm Beach's page-pops address nearest Milton (2025-01-05): the single byte '3', a whole brotli stream that decodes to nothing (the site's empty answer, sent brotli-encoded and replayed without its encoding header; live on 2026-10-05 the same address answered content-encoding br with the one byte ';'). Read as the empty answer; round 2 had refused it as neither the fragment nor its empty answer.
 - `finalsite/psja-page-pops-live-20260928.html`: No page pop: the empty answer.
 - `finalsite/south-texas-page-pops-live-20260928.html`: Two page pops (enrollment and a career and technical education guide), not closings.
 - `finalsite/volusia-home-20241014.html`: Volusia County Schools' homepage after Hurricane Milton: an older Finalsite template that carries its page pops in the page (#fsPagePopCollection), one pop 'Hurricane Milton Update'.
@@ -209,17 +211,6 @@ Notes:
 - `smartsites/leon-home-20240805.html`: Leon County Schools' homepage the morning Tropical Storm Debby closed its schools (a Blackboard Web Community Manager page before its Smart Sites site): 'All LCS offices and schools will be closed, Monday, August 5th 2024 Due to TS Debby'.
 - `smartsites/orange-popup-alerts-live-20260927.json`: No active alert: the empty answer.
 - `smartsites/tuloso-midway-popup-alerts-live-20260928.json`: One active alert (a board meeting's public notice), not a closing.
-
-## Bodies the adapters refuse (`errors/`)
-
-Kept whole. Each must raise `ShapeError` in its adapter.
-
-| File | Source | URL | Captured (UTC) | SHA-256 | Why it is refused |
-|---|---|---|---|---|---|
-| `errors/apptegy-twin-falls-20240327.html` | apptegy-twin-falls-id | https://www.tfsd.org/ ([capture](https://web.archive.org/web/20240327095124id_/https://www.tfsd.org/)) | 2024-03-27 09:51:24 | `0bb0f1a6d2912e10…` | Twin Falls' homepage before its move to Apptegy (the archive's nearest capture to 2024-01-09 is of 2024-03-27): a WordPress (Divi) page with no Nuxt state and no announcements region; refused, not read as empty. |
-| `errors/finalsite-palm-beach-page-pops-20250105.txt` | finalsite-palm-beach-fl | https://www.palmbeachschools.org/fs/pages/2/page-pops ([capture](https://web.archive.org/web/20250105144407id_/https://www.palmbeachschools.org/fs/pages/2/page-pops)) | 2025-01-05 14:44:07 | `4e07408562bedb8b…` | The archive's capture of the page-pops address nearest Milton (2025-01-05) is the single character '3', neither the fragment nor its empty answer; refused, not read as empty. |
-| `errors/finalsite-san-benito-home-20250121.html` | finalsite-san-benito-tx | https://www.sbcisd.net/ ([capture](https://web.archive.org/web/20250121221317id_/https://www.sbcisd.net/)) | 2025-01-21 22:13:17 | `d2f9fdb96e104d75…` | San Benito CISD's homepage of 2025-01-21, before the district moved to Finalsite: an Edlio page (no body data-pageid, no fsLiveMode class, no Web Community Manager announcements). Not a Finalsite page: refused, never read as an empty list. |
-| `errors/nonstop-section-20201124.html` | cowles-kfbb | https://www.montanarightnow.com/schoolclosures/ ([capture](https://web.archive.org/web/20201124013259id_/https://www.montanarightnow.com/schoolclosures/)) | 2020-11-24 01:32:59 | `e3d04217738deb9e…` | The /schoolclosures/ page before it framed the ticker: a BLOX section of article cards (section-schoolclosures), not a list of schools. |
 
 ## Generator files (`generator/`)
 

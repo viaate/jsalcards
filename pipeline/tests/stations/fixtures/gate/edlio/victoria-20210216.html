@@ -1,0 +1,84 @@
+<!DOCTYPE html><html><head><title>Victoria Independent School District</title><meta name="generator" content="Edlio CMS"></head><body><script>
+				'use strict';
+
+				// in case there are other version of jquery being imported with this
+				// version, we will use no conflict and IIFE to avoid global name space
+				var jq183 = jQuery.noConflict(true);
+
+				(function(jq183) {
+
+					jq183(document).ready(function() {
+						var alertKeyStartConstant = 'doNotShowAlert';
+
+						var alertArticleKey =
+							alertKeyStartConstant + '_' +
+							'1377956_' +
+							'2021/02/19 17:00:00';
+
+						var alertExpirationDate = new Date('2021/02/19 17:00:00');
+
+						// manually check for the alert expire time, if the alert expire
+						// after now, we remove this item from local storage from user
+						for (var key in localStorage) {
+							// we only remove key when this key starts with the constant
+							if (key.indexOf(alertKeyStartConstant) === 0) {
+								var alertExpireAt = new Date(key.split("_")[2]);
+
+								if (alertExpireAt.getTime() < new Date()) {
+									window.localStorage.removeItem(key);
+								}
+							}
+						}
+
+						// show alert modal to user
+						if (!window.localStorage.getItem(alertArticleKey)) {
+							jq183.magnificPopup.open({
+								items: {
+									src: '#homepage_news_alert_modal',
+									type: 'inline',
+									showCloseBtn: false,
+									closeBtnInside: false
+								}
+							});
+						}
+
+						// when user click on `don't show again`, we store this answer
+						// in the localStorage
+						jq183('.disable').click( function() {
+							window.localStorage.setItem(alertArticleKey, true);
+						});
+					});
+
+				})(jq183);
+
+			</script><article id="homepage_news_alert_modal" class="mfp-hide cf" itemscope="" itemtype="http://schema.org/Article">
+
+				<header class="cf">
+					<h2 class="title" itemprop="name headline">
+						Apply Now for 2021-2022 Tuition-Based Pre-K!
+					</h2>
+				</header>
+
+
+					<div class="summary cf">
+						<p>
+							Applications for the 2021-2022 tuition-based Pre-K program are being accepted through Friday, February 19th.
+						</p>
+					</div>
+
+
+				<div class="buttons cf">
+
+					<button class="okay button mfp-close">
+						Okay
+					</button>
+
+		<a href="https://www.visd.net/apps/pages/curriculum/prek/enrollment-21-22" class="read-more button">
+						Read full story
+					</a>
+
+				</div>
+
+				<a class="disable" href="">Don't show again [x]</a>
+
+			</article><p>Victoria ISD Will Remain Closed Through Tuesday Due To Inclement Weather</p><p>All Victoria ISD buildings and schools will be closed through Tuesday, February 16.</p></body></html>

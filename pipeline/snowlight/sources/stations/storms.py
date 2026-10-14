@@ -105,3 +105,42 @@ class StormDays:
 def school_day(moment: datetime) -> date:
     """Return the school day a capture made at ``moment`` (UTC) is about."""
     return (moment + DAY_SHIFT).date()
+
+
+@dataclass(frozen=True, slots=True)
+class WarningDay:
+    """The strongest NWS code that covered one of a station's counties on a school day."""
+
+    day: date
+    weight: float
+    """The code's closure weight (:mod:`snowlight.weights.codes`): 1.0 a Winter Storm,
+    Blizzard, Ice Storm, Lake Effect Snow or Hurricane Warning, 0.5 an Extreme Cold, Wind
+    Chill or Tropical Storm Warning, 0.25 a Winter Weather Advisory."""
+    county: str
+    """The county (FIPS) it covered: the first, in FIPS order, at that weight."""
+
+
+def warning_days(
+    registry: Registry, counties: Mapping[str, Mapping[date, float]]
+) -> dict[str, dict[date, WarningDay]]:
+    """Each station's warning days: for every school day, its strongest county's code.
+
+    Unlike :class:`StormDays` (a market's mean, which ranks captures), this is the
+    largest weight among the station's own counties, the question being whether the
+    weather a notice may have answered covered any of a district's schools that day.
+    ``counties`` is a county's days and weights, as :func:`county_days` (or the gate's
+    per-group merge) gives them.
+    """
+    found: dict[str, dict[date, WarningDay]] = {}
+    for station in registry.stations.values():
+        if station.counties is None:
+            continue
+        days: dict[date, WarningDay] = {}
+        for code in sorted(station.counties.fips):
+            for day, weight in counties.get(code, {}).items():
+                held = days.get(day)
+                if held is None or weight > held.weight:
+                    days[day] = WarningDay(day, weight, code)
+        if days:
+            found[station.id] = days
+    return found

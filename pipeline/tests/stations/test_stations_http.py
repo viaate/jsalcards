@@ -317,3 +317,66 @@ def test_gzip_encoded_answers_are_decoded_once(tmp_path: Path) -> None:
     client = make(tmp_path, handler, Clock(), host_interval=0.0)
     assert client.fetch("https://s.test/c").body == b"[]"
     assert not client.check_robots("https://s.test/private/x")[0]
+
+
+def test_a_host_that_answered_403_is_not_asked_again_in_the_run(tmp_path: Path) -> None:
+    # SYNTHETIC: a site whose list answers 403; its category page is not tried after.
+    seen: list[str] = []
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        seen.append(request.url.path)
+        if request.url.path == "/robots.txt":
+            return robots_ok()
+        if request.url.host == "other.test":
+            return httpx.Response(200, text="list")
+        return httpx.Response(403, text="forbidden")
+
+    client = make(tmp_path, handler, Clock())
+    with pytest.raises(FetchError) as first:
+        client.fetch("https://blocked.test/wp-json/wp/v2/posts")
+    assert first.value.status == 403
+    assert client.refused("https://blocked.test/category/weather/") == (
+        "https://blocked.test/wp-json/wp/v2/posts"
+    )
+    with pytest.raises(FetchError) as second:
+        client.fetch("https://blocked.test/category/weather/")
+    assert "not requested" in str(second.value)
+    assert seen == ["/robots.txt", "/wp-json/wp/v2/posts"]  # one 403, never retried
+    assert client.fetch("https://other.test/closings").body == b"list"
+
+
+@pytest.mark.parametrize("status", [401, 403])
+def test_a_host_whose_robots_txt_answers_403_is_not_asked_for_the_page(
+    tmp_path: Path, status: int
+) -> None:
+    # SYNTHETIC: a firewall that refuses the project's User-Agent everything, robots.txt too.
+    seen: list[str] = []
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        seen.append(request.url.path)
+        return httpx.Response(status, text="forbidden")
+
+    client = make(tmp_path, handler, Clock())
+    with pytest.raises(FetchError) as refused:
+        client.fetch("https://walled.test/closings")
+    assert refused.value.status == 403
+    assert "not requested" in str(refused.value)
+    assert seen == ["/robots.txt"]  # the page is never asked for
+    assert client.refused("https://walled.test/other") == "https://walled.test/robots.txt"
+
+
+def test_s3s_answer_for_a_missing_robots_txt_is_no_refusal(tmp_path: Path) -> None:
+    # S3 answers 403 AccessDenied for a key its bucket does not hold (KULR's ticker bucket,
+    # read 2026-09-27): robots.txt is unavailable, and the file is read.
+    seen: list[str] = []
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        seen.append(request.url.path)
+        if request.url.path == "/robots.txt":
+            return httpx.Response(403, content=b"<Error><Code>AccessDenied</Code></Error>")
+        return httpx.Response(200, text="ticker")
+
+    client = make(tmp_path, handler, Clock())
+    assert client.fetch("https://bucket.s3.test/ticker.html").body == b"ticker"
+    assert seen == ["/robots.txt", "/ticker.html"]
+    assert client.refused("https://bucket.s3.test/other") is None

@@ -245,6 +245,26 @@ stations:
   archive_urls:
   - https://www.kens5.com/closings
   - https://www.kens5.com/closings/
+  - https://www.kens5.com/article/weather/closings/san-antonio-south-texas-school-closings-delays-openings-list-updates/273-6b164c07-c1ad-44ac-b1a9-9fcb273e0ca0
+  - https://www.kens5.com/article/news/education/school-district-closures-due-to-winter-weather/273-dc6b21f3-f42c-4e23-b704-785205cf7143
+  former_urls:
+  - url: https://www.kens5.com/article/weather/closings/san-antonio-south-texas-school-closings-delays-openings-list-updates/273-6b164c07-c1ad-44ac-b1a9-9fcb273e0ca0
+    evidence: 'The station''s own closings list from January 2022 to September 2023, kept as an article
+      on its own site: every archived capture of https://www.kens5.com/closings from 20220518080431 to
+      20230922185609 (28 captures) holds only a raw-HTML module linking here, ''For a list of closings
+      in our area please click this link.'' (read by this platform''s adapter as tegna-closings-link);
+      the article (''FULL LIST: San Antonio and South Texas school closings and delays'', read as tegna-closings-article)
+      listed closures under ''SCHOOL CLOSINGS FOR THURSDAY, FEBRUARY 3, 2022'' in its captures of 20220202184935
+      and 20220202202155 (archive-captures run 37243433721); captures from 20220223180712 to 20230324163512
+      hold only ''No current report.'' entries, last updated 2022-02-25.'
+  - url: https://www.kens5.com/article/news/education/school-district-closures-due-to-winter-weather/273-dc6b21f3-f42c-4e23-b704-785205cf7143
+    evidence: 'The station''s own closings list of January 2022, kept as an article on its own site: the
+      capture of https://www.kens5.com/closings of 20220123033409 holds only a raw-HTML module linking
+      here, ''For a list of closings in our area please click this link.'' (read by this platform''s adapter
+      as tegna-closings-link); the article (''School closings due to winter weather in San Antonio, Texas'',
+      read as tegna-closings-article) listed 23 closures and statements for 20 January 2022 in its capture
+      of 20220120033633 and 41 for 21 January 2022 in its capture of 20220127235827 (archive-captures
+      run 37243433721).'
   poll_minutes: null
   status: active
   evidence: 'First-hand check 2026-09-26T17:43:14Z (docs/research/firsthand/nexstar-tegna-scripps.json,

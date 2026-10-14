@@ -49,20 +49,6 @@ CLOSINGS = [
         "click HERE .",
     ),
     (
-        "schoolwires-important-announcements",
-        "Monroe County School District",
-        "Monroe County School District staff is monitoring the progress of Hurricane Milton "
-        "in the Gulf of Mexico. All schools and offices will be open for normal operations on "
-        "Tuesday, October 8th.",
-    ),
-    (
-        "apptegy-nuxt-state",
-        "Lake County Schools",
-        "The State Emergency Operations Center notified Lake County Schools late Monday "
-        "afternoon that the district is one of several that have been designated to host "
-        "evacuees from Hurricane Milton.",
-    ),
-    (
         "apptegy-nuxt2-state",
         "Sarasota County Schools",
         "All traditional public schools will be closed for normal school operations from "
@@ -73,12 +59,6 @@ CLOSINGS = [
         "Hurricane Milton",
         "All M-DCPS schools, as well as Region and District offices will be CLOSED on "
         "Wednesday, October 9 and Thursday, October 10.",
-    ),
-    (
-        "pasco-red-rectangle",
-        "Pasco County Schools",
-        "All Pasco County schools and offices will reopen on Monday, October 3rd. Power has "
-        "been fully restored to the schools that lost power during the storm.",
     ),
     (
         "pasco-emergency-banner",
@@ -124,6 +104,28 @@ CLOSINGS = [
 ]
 
 NOT_CLOSINGS = [
+    # REAL weather notices that announce no closing: an open day, hosting evacuees, a
+    # reopening (the gate of 2026-10-13: a channel proof is a closing, not weather).
+    (
+        "schoolwires-important-announcements",
+        "Monroe County School District",
+        "Monroe County School District staff is monitoring the progress of Hurricane Milton "
+        "in the Gulf of Mexico. All schools and offices will be open for normal operations on "
+        "Tuesday, October 8th.",
+    ),
+    (
+        "apptegy-nuxt-state",
+        "Lake County Schools",
+        "The State Emergency Operations Center notified Lake County Schools late Monday "
+        "afternoon that the district is one of several that have been designated to host "
+        "evacuees from Hurricane Milton.",
+    ),
+    (
+        "pasco-red-rectangle",
+        "Pasco County Schools",
+        "All Pasco County schools and offices will reopen on Monday, October 3rd. Power has "
+        "been fully restored to the schools that lost power during the storm.",
+    ),
     (
         "apptegy-nuxt-state",
         "Lake County Schools",
@@ -270,15 +272,83 @@ def test_near_misses_do_not_qualify(text: str) -> None:
 @pytest.mark.parametrize(
     "text",
     [
-        # SYNTHETIC: weather or an emergency qualifies even on a planned day.
+        # SYNTHETIC: a closing or a delay for weather or an emergency qualifies.
         "Due to inclement weather, all schools will operate on a 2-hour delay",
         "Winter storm warning: classes are cancelled tomorrow",
         "Schools are closed today because of a water main break",
         "Extreme cold: all buses will run two hours late",
+        # A school's own closing still qualifies beside a room's.
+        "Due to the storm, the library and all schools will be closed tomorrow",
+        "The library will be closed. All schools are closed today due to snow",
     ],
 )
 def test_weather_and_emergency_notices_qualify(text: str) -> None:
     assert notices.announces_closing(text)
+
+
+@pytest.mark.parametrize(
+    ("title", "status"),
+    [
+        # REAL rows that were the sole proofs of their sources until 2026-10-13: a weather
+        # notice, an open day or a storm's information is not a closing.
+        (
+            "Learn more about the storm, including shelter information, by clicking here.",
+            "",
+        ),  # finalsite-palm-beach-fl, 2024-10-10
+        ("Tropical Weather Update #5 September 27, 2024", ""),  # finalsite-collier-fl
+        ("Schools to Remain Open if Buses Can Run", ""),  # finalsite-del-norte-ca
+        (
+            "ADISD will have school at regular time tomorrow",
+            "No freezing rain predicted.",
+        ),  # finalsite-agua-dulce-tx
+        ("Cold Weather Update", ""),  # edlio-orange-grove-tx, an empty body
+        (
+            "Weather Update",
+            "Woodsboro ISD anticipates school beginning at the regularly scheduled time tomorrow.",
+        ),  # finalsite-woodsboro-tx
+        ("RYSS schools will be open on July 12, 2024", ""),  # finalsite-ryss-tx
+        (
+            "",
+            "School will be in session and follow regular schedules at all PCSD 25 schools "
+            "today, Wednesday, January 5, 2022.",
+        ),  # finalsite-pocatello-id
+        ("Inclement Weather Status: Schools are OPEN and IN SESSION.", ""),  # apptegy-nebo-ut
+        ("Cold Weather Update", "ALL BSD7 schools are OPEN"),  # finalsite-bozeman-mt
+        ("Weather", "All schools are scheduled for classes as normal."),  # apptegy-shelby-mt
+        (
+            "Shelby School District",
+            "Press Release Tuesday, May 7, 2024 As of 6:30 PM on Tuesday, May 7, 2024, Shelby "
+            "Junior High and High School students are scheduled for classes as normal. The "
+            "District will continue interior and exterior clean-up efforts, as such, the "
+            "northwest and southwest entrances to the facility will be closed. The library and "
+            "one classroom will be closed tomorrow as our janitorial staff addresses the "
+            "interior areas with water damage.",
+        ),  # apptegy-shelby-mt, archived 2024-05-08: rooms closed, classes as normal
+        ("COVID-19 School Closure Update", "Click on the link below."),  # finalsite-blaine-id
+        ("Weather Statement", "Buses will run on snow routes."),
+        ("Weather update", "Schools will not be closed tomorrow; no delays."),
+    ],
+)
+def test_a_weather_notice_that_announces_no_closing_does_not_prove(title: str, status: str) -> None:
+    assert not notices.announces_closing(status, title or None)
+    assert not notices.row_qualifies(title or status, status, "finalsite-page-pops")
+    assert not notices.page_text_proves(status or title, title or None)
+
+
+def test_a_hazard_plan_survey_is_not_a_weather_notice() -> None:
+    # Real: Beaumont Unified's homepage alert of 2023-01-15 21:51 UTC (archived capture of
+    # https://www.beaumontusd.us/, read in run 37190049378), which names hazards but no event.
+    title = "Input Needed on Beaumont USD Local Hazard Mitigation Plan"
+    status = (
+        "The LHMP identifies the hazards that potentially impact the Beaumont Unified School "
+        "District (such as earthquakes, flash flooding, high windstorms, drought, and extreme "
+        "heat). Your feedback will help inform the new Local Hazard Mitigation Plan."
+    )
+    assert not notices.announces_closing(status, title)
+    # SYNTHETIC: a closing still qualifies beside a call for feedback.
+    assert notices.announces_closing(
+        "Due to the snow, all schools are closed today. Please take our transportation survey."
+    )
 
 
 @pytest.mark.parametrize(
@@ -312,7 +382,7 @@ def test_spanish_notices(text: str, announces: bool) -> None:
         ("CLOSED", True),
         ("Remote", True),
         ("Early Dismissal", True),
-        ("Planned Closure", True),
+        ("Planned Closure", False),  # a closing the calendar planned (GOHSEP, June 2026)
         ("Closing at 12:45", True),
         ("Open", False),
         ("OPEN", False),
@@ -356,7 +426,7 @@ FIXTURE_VERDICTS = {
     "apptegy/manatee-20241009.html": True,  # "All SDMC schools are closed"
     "apptegy/martin-20220928.html": True,  # Hurricane Ian
     "apptegy/martin-20241009.html": True,  # Hurricane Milton
-    "apptegy/monroe-20241007.html": True,  # Hurricane Milton
+    "apptegy/monroe-20241007.html": False,  # Milton: "open for normal operations"
     "apptegy/santa-rosa-live-20260928.html": False,  # a Title I parent survey
     "apptegy/sarasota-20240924.html": True,  # "closed ... due to the storm"
     "apptegy/st-ignatius-live-20260927.html": False,  # enrollment
@@ -374,10 +444,11 @@ FIXTURE_VERDICTS = {
     "finalsite/hellgate-page-pops-live-20260927.html": False,  # staff development
     "finalsite/hendry-page-pops-live-20260927.html": False,  # a clinic, a health event
     "finalsite/lewistown-page-pops-live-20260927.html": False,  # a bond election
-    "finalsite/palm-beach-home-20241010.html": True,  # Milton: the storm, shelters, the EOC
+    "finalsite/palm-beach-home-20241010.html": False,  # Milton: the storm, shelters (no closing)
     "finalsite/south-texas-page-pops-live-20260928.html": False,  # enrollment, a CTE guide
-    "finalsite/volusia-home-20241014.html": True,  # "Hurricane Milton Update"
-    "pasco/home-20221003.html": True,  # reopening after the storm's power losses
+    # "Hurricane Milton Update": its one "no school" is a student holiday/teacher duty day
+    "finalsite/volusia-home-20241014.html": False,
+    "pasco/home-20221003.html": False,  # a reopening, not a closing
     "pasco/home-20241009.html": True,  # Milton closure
     "schoolblocks/grace-live-20260928.html": False,  # closed for the potato harvest break: planned
     "smartsites/belgrade-popup-alerts-20260814.json": False,  # records, fingerprinting
@@ -386,7 +457,8 @@ FIXTURE_VERDICTS = {
     "smartsites/leon-home-20240805.html": True,  # "closed ... Due to TS Debby"
     "smartsites/osceola-home-20220928.html": True,  # "Schools To Be Closed"
     "smartsites/tuloso-midway-popup-alerts-live-20260928.json": False,  # a public meeting
-    "coesheet/shasta-sheet-live-20260927.csv": True,  # "Closing at 12:45"
+    # "Closing at 12:45" (a row stamped "9/10 9:45": the gate's stamp rule drops the read)
+    "coesheet/shasta-sheet-live-20260927.csv": True,
     "coesheet/shasta-tab-live-20260927.html": True,
     "coesheet/trinity-sheet-live-20260927.html": False,  # every school "Open"
     "flathead/closures-20250427.html": False,  # every school "Open"
@@ -704,7 +776,10 @@ def test_the_rule_agrees_with_the_status_reader() -> None:
         # Wednesday) is rightly left in doubt by the reader, which notes the date_mismatch.
         agrees = parsed.kind != "other" or parsed.reason is not None
         assert agrees or "date_mismatch" in parsed.notes, status
-    for _, _, status in NOT_CLOSINGS[:4]:
+    for _, _, status in NOT_CLOSINGS[:3]:  # weather notices that close nothing
+        parsed = classify.parse_status(status, posted_at=posted, tz="America/New_York")
+        assert parsed.kind == "other", status
+    for _, _, status in NOT_CLOSINGS[3:7]:
         parsed = classify.parse_status(status, posted_at=posted, tz="America/New_York")
         assert parsed.kind == "other", status
         assert parsed.reason is None, status

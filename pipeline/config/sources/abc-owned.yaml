@@ -54,18 +54,20 @@ platform:
     seconds) is when the list last changed, and the page''s ''Last updated'' line is that instant in UTC.
     On 2026-09-27 the Los Angeles (KABC), San Francisco (KGO) and Fresno (KFSN) pages, and WLS''s page
     state, all said the list was last updated 02/12/2019 08:39pm (time 1550003979): those lists have not
-    listed a closing since, so the live reader records them as stale (not working) until they change;
-    every archived capture of those three pages (May 2019 to June 2025) carries the same time. WLS (Chicago)
-    renders no list: its page frames https://wgnr-closings.s3.amazonaws.com/index.html, which answered
-    403 AccessDenied; Chicago''s working list is the Emergency Closing Center (platform ecc). Archived
-    storm-day captures (archive-captures run 36293423860) show two page designs, both read by the adapter:
-    the older server-rendered list without the page state (December 2015 to February 2019; its earliest
-    empty form is one empty list) and the abcotv application (from May 2019). The WABC, WPVI, WTVD and
-    KTRK lists held rows in both (WPVI 316 on 19 January 2024, WTVD 326 on 21 February 2020, KTRK 82 on
-    26 January 2026 and 121 during Hurricane Harvey on 27 August 2017, WABC 14 on 23 February 2026); WLS''s
-    own list held 962 rows on 8 January 2015 and 1,062 rows on 9 February 2018, and every WLS capture
-    from January 2021 to January 2026 frames the closing center copy. robots.txt on every ABC host allowed
-    the closings page when checked (see each station''s robots block).'
+    listed a closing since, and each of those markets has had weather that closes schools since then (NWS
+    winter storm warnings over most of their schools; snowlight.sources.stations.seasons), so the live
+    reader records them as stale (not working) until they change; every archived capture of those three
+    pages (May 2019 to June 2025) carries the same time. WLS (Chicago) renders no list: its page frames
+    https://wgnr-closings.s3.amazonaws.com/index.html, which answered 403 AccessDenied; Chicago''s working
+    list is the Emergency Closing Center (platform ecc). Archived storm-day captures (archive-captures
+    run 36293423860) show two page designs, both read by the adapter: the older server-rendered list without
+    the page state (December 2015 to February 2019; its earliest empty form is one empty list) and the
+    abcotv application (from May 2019). The WABC, WPVI, WTVD and KTRK lists held rows in both (WPVI 316
+    on 19 January 2024, WTVD 326 on 21 February 2020, KTRK 82 on 26 January 2026 and 121 during Hurricane
+    Harvey on 27 August 2017, WABC 14 on 23 February 2026); WLS''s own list held 962 rows on 8 January
+    2015 and 1,062 rows on 9 February 2018, and every WLS capture from January 2021 to January 2026 frames
+    the closing center copy. robots.txt on every ABC host allowed the closings page when checked (see
+    each station''s robots block).'
   shared_paths: []
 stations:
 - id: abc-owned-wabc

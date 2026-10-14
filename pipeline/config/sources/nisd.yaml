@@ -1,0 +1,76 @@
+# Station registry for one platform. Loaded with every other file in this folder
+# by snowlight.sources.stations.registry; see its docstring for the fields.
+# `snowlight stations robots --update` rewrites the robots blocks in place.
+platform:
+  id: nisd
+  name: 'Northside ISD (San Antonio): the homepage''s notices block'
+  operator: Northside Independent School District (its own Drupal site)
+  adapter: nisd
+  poll_minutes: 15
+  terms:
+    automated_access: permitted
+    summary: 'nisd.net publishes no terms of use for readers. Its footer links ''Privacy Policies'' (read
+      2026-09-29): the district''s notices on students'' online safety and school accounts, nothing about
+      the public website''s readers; nothing on the site forbids reading its public homepage with software,
+      and robots.txt is recorded below.'
+    evidence:
+    - url: https://www.nisd.net/privacy
+      read_at: '2026-09-29T09:15:18Z'
+      sha256: ced4f31cadb5d04b96f159ce93e92ee56281729d570c04e42c3a50e7342eca8a
+      excerpt:
+      - Privacy policies
+      - District Online Safety Measures
+    permission: null
+    owner_decision: null
+  notes: 'Found for piece s4 (the coverage gate, round 1, 2026-09-29): Northside ISD, San Antonio''s largest
+    district (127 schools in Bexar County, LEAID 4833120), was read first-hand at 03:27 UTC while scouting
+    the San Antonio market, whose two station lists (KENS, Spectrum News) were never seen with a row.
+    Its Drupal homepage carries a server-rendered view named ''notices'' (div.view-notices) at the top
+    of the page, empty that day. Archived captures of the homepage on the market''s storm days (archive-captures
+    run 36547435798) show the district uses it for weather closures: 2025-01-20 23:46 UTC ''Northside
+    ISD is canceling classes for Tuesday, Jan. 21'', 2026-01-25 23:10 UTC ''all District offices and schools
+    will be closed on Monday, Jan. 26'', and holidays (2024-01-15, Martin Luther King, Jr. Day). A district-level
+    source: it counts only the district''s own schools (leaids). Proof: a district''s general alert channel,
+    so a read proves it only when a row announced a closing, a delay, an early dismissal, a remote day,
+    cancelled classes, or weather or an emergency for the district (notices.gate_proofs); a holiday does
+    not.'
+  shared_paths: []
+stations:
+- id: nisd-northside-tx
+  platform: nisd
+  call_sign: NISD
+  name: Northside ISD (homepage notices)
+  market: San Antonio (Bexar County, TX)
+  dma: null
+  states: [TX]
+  counties:
+    basis: district
+    source: 'NCES CCD 2024-25 school directory (pipeline/out/internal/directory/schools.parquet): the
+      counties of the 127 schools of nisd-northside-tx''s district, NORTHSIDE ISD (LEAID 4833120). The
+      NCES CCD 2024-25 LEA directory lists http://www.nisd.net for the district.'
+    fips: ['48029']
+  page_url: https://www.nisd.net/
+  data_url: null
+  export_url: null
+  archive_urls:
+  - https://www.nisd.net/
+  poll_minutes: null
+  status: active
+  evidence: 'First-hand check for piece s4, 2026-09-29. Live read of https://www.nisd.net/ 2026-09-29T03:27:44Z
+    and again 09:15:04Z: HTTP 200, 62,847 bytes; nisd-notices, empty, 0 row(s): the notices view holds
+    no row. Archived captures (run 36547435798): 2025-01-20 23:46 UTC, two notices (classes cancelled
+    Tuesday 21 January; the Martin Luther King, Jr. Day closure); 2026-01-25 23:10 UTC, one (all offices
+    and schools closed Monday 26 January); 2024-01-15 and 2026-01-26, a holiday and a return to classes;
+    2025-01-21 23:29 UTC, none.'
+  list_files: []
+  page_check: null
+  robots:
+  - url: https://www.nisd.net/
+    checked_at: '2026-09-29T09:16:42Z'
+    state: parsed
+    allowed: true
+    rule: no rule matches
+    crawl_delay: null
+    disallowed_agents: []
+    sha256: 773fb8d35bb9a39d35335ee6db8dc5c912d2aacbfb823152d9c61cd647dd902d
+  leaids: ['4833120']

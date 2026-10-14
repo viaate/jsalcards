@@ -342,6 +342,12 @@ def test_no_district_is_claimed_by_two_of_its_own_sites() -> None:
     for station in registry.stations.values():
         if station.id in STATEWIDE_LISTS:
             continue
+        if station.platform == "apptegy-feed":
+            # A district's live feed is a second channel of the same site: its homepage
+            # banner's station (apptegy-<district>) names the same district.
+            banner = registry.stations[station.id.replace("apptegy-feed-", "apptegy-", 1)]
+            assert banner.leaids == station.leaids
+            continue
         for leaid in station.leaids:
             owners.setdefault(leaid, []).append(station.id)
     assert {leaid: ids for leaid, ids in owners.items() if len(ids) > 1} == {}

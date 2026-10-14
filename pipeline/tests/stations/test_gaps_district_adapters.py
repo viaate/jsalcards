@@ -7,6 +7,7 @@ made up here, confined to these tests, and exercise the refusals and edge cases.
 
 import json
 import re
+from collections.abc import Callable
 from typing import Any
 
 import pytest
@@ -17,12 +18,17 @@ from snowlight.sources.stations import (
     gap_fixtures,
     gap_markup,
     gohsep,
+    homepage,
     smartsites,
 )
-from snowlight.sources.stations.model import ListingState, ShapeError
+from snowlight.sources.stations.model import Listing, ListingState, ShapeError
 from snowlight.sources.stations.registry import load_registry
 
 FOLDER = gap_fixtures.DEFAULT_FOLDER
+_WCM_ALERT = (
+    "/cms/Tools/OnScreenAlerts/UserControls/OnScreenAlertDialogListWrapper.aspx"
+    "?OnScreenAlertCookie=&SiteID=4"
+)
 
 
 def _body(name: str) -> bytes:
@@ -237,7 +243,7 @@ def test_without_any_flag_the_list_shows() -> None:
 @pytest.mark.parametrize(
     ("body", "message"),
     [
-        (b"<html><body>Apptegy has moved</body></html>", "no __NUXT_DATA__"),
+        (b"Apptegy has moved", "no __NUXT_DATA__"),
         (_page([["ShallowReactive", 1], {"pinia": 2}, {}]), "no alert banner store"),
         (
             _page(
@@ -255,6 +261,31 @@ def test_other_pages_are_refused(body: bytes, message: str) -> None:
         apptegy.parse(body)
 
 
+@pytest.mark.parametrize(
+    "parse", [apptegy.parse, smartsites.parse, finalsite.parse], ids=["apptegy", "smart", "fs"]
+)
+def test_an_html_page_in_no_known_form_is_read_by_its_text(
+    parse: Callable[[bytes], Listing],
+) -> None:
+    # SYNTHETIC: since round 3 of the coverage gate a page in none of a district
+    # reader's forms is read by its text (snowlight.sources.stations.homepage): one
+    # that shows no closing holds no list of its own; one that shows one lists it.
+    quiet = parse(b"<!DOCTYPE html><html><body>Sign in</body></html>")
+    assert (quiet.variant, quiet.state, quiet.follows) == (
+        homepage.TEXT_VARIANT,
+        ListingState.DEFERRED,
+        (),
+    )
+    loud = parse(
+        b"<!DOCTYPE html><html><body><p>All schools are closed Monday due to snow.</p>"
+        b"</body></html>"
+    )
+    assert (loud.state, [row.name for row in loud.rows]) == (
+        ListingState.POPULATED,
+        ["All schools are closed Monday due to snow."],
+    )
+
+
 def test_the_slice_keeps_the_state_and_reads_the_same() -> None:
     body = _synthetic(True, SYNTHETIC_CONFIG, SYNTHETIC_BANNERS)
     sliced = apptegy.slice_body(b"<html><head><style>x</style></head>" + body)
@@ -268,8 +299,10 @@ def test_every_apptegy_station_is_a_district_source() -> None:
     stations = [s for s in registry.stations.values() if s.platform == "apptegy"]
     # 86 in Florida and the mountain states, 33 in South Texas, South Lemhi (ID) of round 3,
     # 5 in the Mobile - Pensacola market (4 in Alabama, Santa Rosa FL) and 10 in the other
-    # gap counties (MT, MI, OH, CA) of round 4
-    assert len(stations) == 135
+    # gap counties (MT, MI, OH, CA) of round 4; and 11 in Utah, 6 in the San Antonio market and
+    # 5 in the Erie market added by the coverage gate (s4), and West Tallahatchie (MS), found by
+    # the gate's round 5 at its new site
+    assert len(stations) == 158
     for station in stations:
         # One district, or a Montana town's elementary and high school districts, which
         # the NCES LEA directory lists with the same website.
@@ -328,7 +361,7 @@ def test_an_alert_without_a_title_is_named_by_its_message() -> None:
 @pytest.mark.parametrize(
     ("body", "message"),
     [
-        (b"<!DOCTYPE html><html>Sign in</html>", "not a JSON answer"),
+        (b"Sign in", "not a JSON answer"),
         (b'{"items": []}', "no alerts list"),
         (b'{"alerts": [{"title": "x"}]}', "no numeric id"),
         (b'{"alerts": ["x"]}', "not an object"),
@@ -344,8 +377,9 @@ def test_other_popup_answers_are_refused(body: bytes, message: str) -> None:
 def test_every_smartsites_station_reads_its_sites_alerts_file() -> None:
     stations = [s for s in load_registry().stations.values() if s.platform == "smartsites"]
     # 19, 17 in South Texas, Fremont #38 (WY) of round 3, and Orange Beach (AL) and 4 in the
-    # other gap counties (OH, MS, CA) of round 4
-    assert len(stations) == 42
+    # other gap counties (OH, MS, CA) of round 4; and 3 in Utah, Boerne (TX) and 3 in the Erie
+    # market added by the coverage gate (s4)
+    assert len(stations) == 49
     for station in stations:
         assert station.page_url is not None
         assert station.data_url == station.page_url + "api/popup-alerts"
@@ -412,7 +446,6 @@ def test_an_image_only_page_pop_is_named_by_its_alt_text() -> None:
 @pytest.mark.parametrize(
     ("body", "message"),
     [
-        (b"<!DOCTYPE html><html><body>Sign in</body></html>", "not a Finalsite page"),
         (b'{"pops": []}', "JSON, not a Finalsite page"),
         (b"<div class='somethingElse'>x</div>", "no fsPagePopCollection"),
         (
@@ -429,8 +462,10 @@ def test_other_page_pop_answers_are_refused(body: bytes, message: str) -> None:
 def test_every_finalsite_station_reads_its_homepages_page_pops() -> None:
     stations = [s for s in load_registry().stations.values() if s.platform == "finalsite"]
     # 30, 29 in South Texas and Clark County (ID) of round 3, and 8 in Alabama and 14 in the
-    # other gap counties (MT, OH, MS, CA) of round 4
-    assert len(stations) == 82
+    # other gap counties (MT, OH, MS, CA) of round 4; and 3 in Utah, 3 in the San Antonio
+    # market and Conneaut (PA) added by the coverage gate (s4), and Goshen County #1 (WY), which
+    # the gate's round 5 found to be a Finalsite site (taken for Google Sites in round 2)
+    assert len(stations) == 90
     for station in stations:
         assert station.page_url is not None
         # Read through the homepage (round 5): no data URL, so the poller reads the page
@@ -444,7 +479,15 @@ def test_every_finalsite_station_reads_its_homepages_page_pops() -> None:
         # The page-pops script asks /fs/pages/<data-pageid>/page-pops of the page's own site.
         origin = "/".join(station.page_url.split("/")[:3])
         assert re.fullmatch(re.escape(origin) + r"/fs/pages/[0-9]+/page-pops", address)
-        assert [(f.url, f.loaded_by) for f in station.list_files] == [(address, "script")]
+        first, *earlier = station.list_files
+        assert (first.url, first.loaded_by) == (address, "script")
+        # The coverage gate (s4) also lists the on-screen alert file the district's earlier
+        # Web Community Manager homepage loaded by script (Broward, Pinellas), so archived
+        # captures of it are read as lists of their own beside the homepage's.
+        for item in earlier:
+            assert item.loaded_by == "script", station.id
+            assert item.url == origin + _WCM_ALERT, station.id
+            assert item.url in station.archive_urls, station.id
         assert {address, station.page_url} <= set(station.archive_urls)
         assert station.leaids, station.id
 

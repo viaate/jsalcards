@@ -2262,6 +2262,28 @@
     "note": "The School District of Palm Beach County's homepage in Hurricane Milton, on Finalsite's Web Community Manager (Schoolwires; its footer: 'Copyright 2024 Finalsite'): one important announcement about the storm and shelters."
   },
   {
+    "file": "finalsite/palm-beach-page-pops-20250105.txt",
+    "source_id": "finalsite-palm-beach-fl",
+    "adapter": "finalsite",
+    "mode": "archive",
+    "url": "https://www.palmbeachschools.org/fs/pages/2/page-pops",
+    "captured_at": "2025-01-05T14:44:07Z",
+    "archive_url": "https://web.archive.org/web/20250105144407id_/https://www.palmbeachschools.org/fs/pages/2/page-pops",
+    "retrieved_at": "2026-09-27T21:03:36Z",
+    "original_sha256": "4e07408562bedb8b60ce05c1decfe3ad16b72230967de01f640b7e4729b49fce",
+    "original_bytes": 1,
+    "slice": "finalsite-v1",
+    "sha256": "4e07408562bedb8b60ce05c1decfe3ad16b72230967de01f640b7e4729b49fce",
+    "bytes": 1,
+    "expected": {
+      "variant": "finalsite-no-page-pops",
+      "state": "empty",
+      "rows": 0,
+      "names": []
+    },
+    "note": "The archive's capture of Palm Beach's page-pops address nearest Milton (2025-01-05): the single byte '3', a whole brotli stream that decodes to nothing (the site's empty answer, sent brotli-encoded and replayed without its encoding header; live on 2026-10-05 the same address answered content-encoding br with the one byte ';'). Read as the empty answer; round 2 had refused it as neither the fragment nor its empty answer."
+  },
+  {
     "file": "finalsite/psja-page-pops-live-20260928.html",
     "source_id": "finalsite-psja-tx",
     "adapter": "finalsite",

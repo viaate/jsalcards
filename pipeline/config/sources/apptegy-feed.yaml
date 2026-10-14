@@ -1,0 +1,237 @@
+# Station registry for one platform. Loaded with every other file in this folder
+# by snowlight.sources.stations.registry; see its docstring for the fields.
+# `snowlight stations robots --update` rewrites the robots blocks in place.
+platform:
+  id: apptegy-feed
+  name: 'Apptegy (Thrillshare) district live feeds: the posts a district sends to its site, app, texts
+    and Facebook at once'
+  operator: Apptegy, Inc. (Thrillshare); each school district (the posts)
+  adapter: apptegy-feed
+  poll_minutes: 15
+  terms:
+    automated_access: permitted
+    summary: 'The district sites are public school districts'' own websites; they publish no website terms
+      of use (their footers link student-privacy pages such as FERPA notices, read 2026-09-27) and nothing
+      against reading them with software, and every site''s robots.txt reads ''Allow: /''. Apptegy''s
+      corporate site (apptegy.com) answered a bot challenge (''Client Challenge'') to the project''s User-Agent
+      on 2026-09-27, so Apptegy''s own terms could not be read; the challenge was not worked around.'
+    evidence:
+    - url: https://www.hillsboroughschools.org/page/family-educational-protection-rights-ferpa
+      read_at: '2026-09-27T15:29:38Z'
+      sha256: 2f4ccd844b3c41e120a289d46b8c1bc4cea5238fb3070b266d023ae37cf8c4a4
+      excerpt:
+      - The Family Educational Rights and Privacy Act (FERPA) is a Federal law that protects the privacy
+        of student education records, such as report cards, transcripts, disciplinary records and class
+        schedules.
+    permission: null
+    owner_decision: null
+  notes: 'Found for piece s4 (the coverage gate, final round, 2026-10-13) under the owner''s gate of 2026-10-13
+    (''dig for 90%+ of Idaho and Wyoming''). Wyoming''s Casper - Riverton districts'' homepage banners
+    were never seen holding a closing in the archive (storm-read): an Apptegy district posts its closings,
+    delays and early dismissals in its live feed, which Thrillshare sends to the site, the app''s push
+    notifications, texts and Facebook at once, and which keeps every post with the time the server stamped
+    it. The homepage loads the feed by script from https://thrillshare-cmsv2.services.thrillshare.com/api/v4/o/<organization>/cms/live_feeds
+    (the organization is in the homepage''s own state); that host has no robots.txt (404: unrestricted).
+    That verdict was first recorded at 2026-10-13T13:29:33Z, after the feed pages behind the history fixtures
+    (each feed''s ?page_no= pages, read 12:55-13:14Z the same day) had been read: no robots.txt means
+    no URL of the host is disallowed, so it is the verdict for every page read, but it was not read before
+    them; every later scratch read of this round checked robots.txt first, URL by URL. A district-level
+    source: each counts only its own district''s schools (leaids). A general channel (most posts are events
+    and sports): a post proves the feed only as a weather or emergency closing (notices.weather_closing),
+    and a post of the feed''s dated history only when published near the days it names, with an NWS advisory
+    or warning over the district that school day or an emergency named (snowlight.sources.stations.history).'
+  shared_paths: []
+stations:
+- id: apptegy-feed-johnson1-wy
+  platform: apptegy-feed
+  call_sign: JCSD1
+  name: 'Johnson County School District #1 (Buffalo) (district live feed)'
+  market: Buffalo (Johnson County, WY)
+  dma: null
+  states: [WY]
+  counties:
+    basis: district
+    source: 'NCES CCD 2024-25 school directory (pipeline/out/internal/directory/schools.parquet): the
+      counties of the 6 schools of apptegy-feed-johnson1-wy''s district, Johnson County School District
+      #1 (LEAID 5603770).'
+    fips: ['56019']
+  page_url: https://thrillshare-cmsv2.services.thrillshare.com/api/v4/o/4659/cms/live_feeds
+  data_url: null
+  export_url: null
+  archive_urls:
+  - https://thrillshare-cmsv2.services.thrillshare.com/api/v4/o/4659/cms/live_feeds
+  poll_minutes: null
+  status: active
+  evidence: 'First-hand check for piece s4 (the coverage gate, final round), 2026-10-13. The district''s
+    Apptegy homepage https://www.jcsd1.us/ names its live feed in its own state (the Thrillshare content
+    service, organization 4659); the feed https://thrillshare-cmsv2.services.thrillshare.com/api/v4/o/4659/cms/live_feeds
+    answered HTTP 200, JSON, the newest 20 posts (older ones by ?page_no=), each with the time the server
+    stamped it. Its pages were read back to the winter of 2021-22 (one request every 2.5 seconds) for
+    the posts that announce a closing: see the station''s history fixture.'
+  list_files: []
+  page_check: null
+  robots:
+  - url: https://thrillshare-cmsv2.services.thrillshare.com/api/v4/o/4659/cms/live_feeds
+    checked_at: '2026-10-13T13:29:33Z'
+    state: unavailable
+    allowed: true
+    rule: 'robots.txt unavailable (4xx): unrestricted'
+    crawl_delay: null
+    disallowed_agents: []
+    sha256: null
+  leaids: ['5603770']
+- id: apptegy-feed-converse2-wy
+  platform: apptegy-feed
+  call_sign: CCSD2
+  name: 'Converse County School District #2 (Glenrock) (district live feed)'
+  market: Glenrock (Converse County, WY; Casper-Riverton market)
+  dma: null
+  states: [WY]
+  counties:
+    basis: district
+    source: 'NCES CCD 2024-25 school directory (pipeline/out/internal/directory/schools.parquet): the
+      counties of the 3 schools of apptegy-feed-converse2-wy''s district, Converse County School District
+      #2 (LEAID 5602150).'
+    fips: ['56009']
+  page_url: https://thrillshare-cmsv2.services.thrillshare.com/api/v4/o/25186/cms/live_feeds
+  data_url: null
+  export_url: null
+  archive_urls:
+  - https://thrillshare-cmsv2.services.thrillshare.com/api/v4/o/25186/cms/live_feeds
+  poll_minutes: null
+  status: active
+  evidence: 'First-hand check for piece s4 (the coverage gate, final round), 2026-10-13. The district''s
+    Apptegy homepage https://www.converse2.org/ names its live feed in its own state (the Thrillshare
+    content service, organization 25186); the feed https://thrillshare-cmsv2.services.thrillshare.com/api/v4/o/25186/cms/live_feeds
+    answered HTTP 200, JSON, the newest 20 posts (older ones by ?page_no=), each with the time the server
+    stamped it. Its pages were read back to the winter of 2021-22 (one request every 2.5 seconds) for
+    the posts that announce a closing: see the station''s history fixture.'
+  list_files: []
+  page_check: null
+  robots:
+  - url: https://thrillshare-cmsv2.services.thrillshare.com/api/v4/o/25186/cms/live_feeds
+    checked_at: '2026-10-13T13:29:33Z'
+    state: unavailable
+    allowed: true
+    rule: 'robots.txt unavailable (4xx): unrestricted'
+    crawl_delay: null
+    disallowed_agents: []
+    sha256: null
+  leaids: ['5602150']
+- id: apptegy-feed-fremont-24-wy
+  platform: apptegy-feed
+  call_sign: SHOSHONI
+  name: 'Fremont County School District #24 (district live feed)'
+  market: Shoshoni (Fremont County, WY)
+  dma: null
+  states: [WY]
+  counties:
+    basis: district
+    source: 'NCES CCD 2024-25 school directory (pipeline/out/internal/directory/schools.parquet): the
+      counties of the 3 schools of apptegy-feed-fremont-24-wy''s district, Fremont County School District
+      #24 (LEAID 5605700). The LEAIDs are those the NCES CCD 2024-25 LEA directory (https://nces.ed.gov/ccd/Data/zip/ccd_lea_029_2425_w_1a_073025.zip,
+      SHA-256 2745169e4bc7cd53…, read 2026-09-27) lists with this website (shoshonischools.org).'
+    fips: ['56013']
+  page_url: https://thrillshare-cmsv2.services.thrillshare.com/api/v4/o/2902/cms/live_feeds
+  data_url: null
+  export_url: null
+  archive_urls:
+  - https://thrillshare-cmsv2.services.thrillshare.com/api/v4/o/2902/cms/live_feeds
+  poll_minutes: null
+  status: active
+  evidence: 'First-hand check for piece s4 (the coverage gate, final round), 2026-10-13. The district''s
+    Apptegy homepage https://www.shoshonischools.org/ names its live feed in its own state (the Thrillshare
+    content service, organization 2902); the feed https://thrillshare-cmsv2.services.thrillshare.com/api/v4/o/2902/cms/live_feeds
+    answered HTTP 200, JSON, the newest 20 posts (older ones by ?page_no=), each with the time the server
+    stamped it. Its pages were read back to the winter of 2021-22 (one request every 2.5 seconds) for
+    the posts that announce a closing: see the station''s history fixture.'
+  list_files: []
+  page_check: null
+  robots:
+  - url: https://thrillshare-cmsv2.services.thrillshare.com/api/v4/o/2902/cms/live_feeds
+    checked_at: '2026-10-13T13:29:33Z'
+    state: unavailable
+    allowed: true
+    rule: 'robots.txt unavailable (4xx): unrestricted'
+    crawl_delay: null
+    disallowed_agents: []
+    sha256: null
+  leaids: ['5605700']
+- id: apptegy-feed-fremont-6-wy
+  platform: apptegy-feed
+  call_sign: FREMONT6
+  name: 'Fremont County School District # 6 (district live feed)'
+  market: Pavillion (Fremont County, WY)
+  dma: null
+  states: [WY]
+  counties:
+    basis: district
+    source: 'NCES CCD 2024-25 school directory (pipeline/out/internal/directory/schools.parquet): the
+      counties of the 5 schools of apptegy-feed-fremont-6-wy''s district, Fremont County School District
+      # 6 (LEAID 5602830). The LEAIDs are those the NCES CCD 2024-25 LEA directory (https://nces.ed.gov/ccd/Data/zip/ccd_lea_029_2425_w_1a_073025.zip,
+      SHA-256 2745169e4bc7cd53…, read 2026-09-27) lists with this website (fremont6.org).'
+    fips: ['56013']
+  page_url: https://thrillshare-cmsv2.services.thrillshare.com/api/v4/o/11790/cms/live_feeds
+  data_url: null
+  export_url: null
+  archive_urls:
+  - https://thrillshare-cmsv2.services.thrillshare.com/api/v4/o/11790/cms/live_feeds
+  poll_minutes: null
+  status: active
+  evidence: 'First-hand check for piece s4 (the coverage gate, final round), 2026-10-13. The district''s
+    Apptegy homepage https://www.fremont6.org/ names its live feed in its own state (the Thrillshare content
+    service, organization 11790); the feed https://thrillshare-cmsv2.services.thrillshare.com/api/v4/o/11790/cms/live_feeds
+    answered HTTP 200, JSON, the newest 20 posts (older ones by ?page_no=), each with the time the server
+    stamped it. Its pages were read back to the winter of 2021-22 (one request every 2.5 seconds) for
+    the posts that announce a closing: see the station''s history fixture.'
+  list_files: []
+  page_check: null
+  robots:
+  - url: https://thrillshare-cmsv2.services.thrillshare.com/api/v4/o/11790/cms/live_feeds
+    checked_at: '2026-10-13T13:29:33Z'
+    state: unavailable
+    allowed: true
+    rule: 'robots.txt unavailable (4xx): unrestricted'
+    crawl_delay: null
+    disallowed_agents: []
+    sha256: null
+  leaids: ['5602830']
+- id: apptegy-feed-fremont-14-wy
+  platform: apptegy-feed
+  call_sign: WYOMINGI
+  name: 'Fremont County School District #14 (district live feed)'
+  market: Ethete (Fremont County, WY)
+  dma: null
+  states: [WY]
+  counties:
+    basis: district
+    source: 'NCES CCD 2024-25 school directory (pipeline/out/internal/directory/schools.parquet): the
+      counties of the 3 schools of apptegy-feed-fremont-14-wy''s district, Fremont County School District
+      #14 (LEAID 5604450). The LEAIDs are those the NCES CCD 2024-25 LEA directory (https://nces.ed.gov/ccd/Data/zip/ccd_lea_029_2425_w_1a_073025.zip,
+      SHA-256 2745169e4bc7cd53…, read 2026-09-27) lists with this website (wyomingindianschools.com).'
+    fips: ['56013']
+  page_url: https://thrillshare-cmsv2.services.thrillshare.com/api/v4/o/11597/cms/live_feeds
+  data_url: null
+  export_url: null
+  archive_urls:
+  - https://thrillshare-cmsv2.services.thrillshare.com/api/v4/o/11597/cms/live_feeds
+  poll_minutes: null
+  status: active
+  evidence: 'First-hand check for piece s4 (the coverage gate, final round), 2026-10-13. The district''s
+    Apptegy homepage https://www.wyomingindianschools.com/ names its live feed in its own state (the Thrillshare
+    content service, organization 11597); the feed https://thrillshare-cmsv2.services.thrillshare.com/api/v4/o/11597/cms/live_feeds
+    answered HTTP 200, JSON, the newest 20 posts (older ones by ?page_no=), each with the time the server
+    stamped it. Its pages were read back to the winter of 2021-22 (one request every 2.5 seconds) for
+    the posts that announce a closing: see the station''s history fixture.'
+  list_files: []
+  page_check: null
+  robots:
+  - url: https://thrillshare-cmsv2.services.thrillshare.com/api/v4/o/11597/cms/live_feeds
+    checked_at: '2026-10-13T13:29:33Z'
+    state: unavailable
+    allowed: true
+    rule: 'robots.txt unavailable (4xx): unrestricted'
+    crawl_delay: null
+    disallowed_agents: []
+    sha256: null
+  leaids: ['5604450']

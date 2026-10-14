@@ -1,0 +1,2117 @@
+[
+  {
+    "file": "district/canyons-live-20261005.html",
+    "source_id": "district-homepage-canyons-ut",
+    "adapter": "district-homepage",
+    "mode": "live",
+    "url": "https://www.canyonsdistrict.org/",
+    "captured_at": "2026-10-05T06:01:11Z",
+    "archive_url": null,
+    "retrieved_at": "2026-10-05T06:01:11Z",
+    "original_sha256": "b0879324b378b0f1004458ce10d188173f9eed4f1c0b4393acaccc46ef518c2d",
+    "original_bytes": 929372,
+    "slice": "district-homepage-v1",
+    "sha256": "70c1a05ad5ae8400a51bb454dd122632be9fe2b78efcb58aa7a4d65151f3871b",
+    "bytes": 80,
+    "expected": {
+      "variant": "district-homepage-text",
+      "state": "empty",
+      "rows": 0,
+      "names": []
+    },
+    "note": "Canyons' Elementor homepage, read by its text: no line announced a closing (an empty list)."
+  },
+  {
+    "file": "district/granite-20230222.html",
+    "source_id": "district-homepage-granite-ut",
+    "adapter": "district-homepage",
+    "mode": "archive",
+    "url": "https://www.graniteschools.org/",
+    "captured_at": "2023-02-22T05:37:20Z",
+    "archive_url": "https://web.archive.org/web/20230222053720id_/https://www.graniteschools.org/",
+    "retrieved_at": "2026-10-05T06:23:25Z",
+    "original_sha256": "96aa1fd45631d1e2089195bd9bbe234b322f979e41a5e4ffe4d9b29eeeb6b062",
+    "original_bytes": 103565,
+    "slice": "district-homepage-v1",
+    "sha256": "3a7c443e51ada1da5498c4c56147c8b02d200578f597af5410d94550cb8b81dc",
+    "bytes": 245,
+    "expected": {
+      "variant": "district-homepage-alert-loader",
+      "state": "populated",
+      "rows": 1,
+      "names": [
+        "Distance Learning Day for Granite School District – Wednesday, February 22, 2023"
+      ]
+    },
+    "note": "Granite's homepage the morning of 22 February 2023 (a snow day): the emergency-notifications container its script fills from the REST file, and a line of the page's own text, 'Distance Learning Day for Granite School District - Wednesday, February 22, 2023' (written with an en dash), read as a page-text row beside the file it loads. The line names no weather, so it does not prove the channel."
+  },
+  {
+    "file": "district/granite-en-live-20261005.json",
+    "source_id": "district-homepage-granite-ut",
+    "adapter": "district-homepage",
+    "mode": "live",
+    "url": "https://www.graniteschools.org/wp-json/wp/v2/en?notification_type=district",
+    "captured_at": "2026-10-05T06:01:17Z",
+    "archive_url": null,
+    "retrieved_at": "2026-10-05T06:01:17Z",
+    "original_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+    "original_bytes": 2,
+    "slice": "none",
+    "sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+    "bytes": 2,
+    "expected": {
+      "variant": "district-alerts-empty",
+      "state": "empty",
+      "rows": 0,
+      "names": []
+    },
+    "note": "Granite's emergency notifications file, the address its homepage script asks: HTTP 200, X-WP-Total 0, an empty JSON array."
+  },
+  {
+    "file": "district/granite-live-20261005.html",
+    "source_id": "district-homepage-granite-ut",
+    "adapter": "district-homepage",
+    "mode": "live",
+    "url": "https://www.graniteschools.org/",
+    "captured_at": "2026-10-05T06:05:49Z",
+    "archive_url": null,
+    "retrieved_at": "2026-10-05T06:05:49Z",
+    "original_sha256": "fcbc109bcb527094b66c01e8bfc03eebef03cff77a22ef63966ba91108990399",
+    "original_bytes": 85317,
+    "slice": "district-homepage-v1",
+    "sha256": "81080986afd0ffbccdca41f9458b3e407333bd6a1b81064897b21d99bc480a82",
+    "bytes": 156,
+    "expected": {
+      "variant": "district-homepage-alert-loader",
+      "state": "deferred",
+      "rows": 0,
+      "names": []
+    },
+    "note": "Granite's homepage: div#emergency-notifications and the plugin script that fills it from the notifications file (a deferred page naming it)."
+  },
+  {
+    "file": "district/greenville-live-20261013.html",
+    "source_id": "district-pages-greenville-ms",
+    "adapter": "district-homepage",
+    "mode": "live",
+    "url": "https://www.gvillepublicschooldistrict.com/",
+    "captured_at": "2026-10-13T12:18:50Z",
+    "archive_url": null,
+    "retrieved_at": "2026-10-13T12:18:50Z",
+    "original_sha256": "e3cb7c5150cf0248361f03ff34323514467d639b3af5ad8d35885214f69f8a73",
+    "original_bytes": 176537,
+    "slice": "district-homepage-v1",
+    "sha256": "f8d3d1e31735ec69088989881654d15c309d2951c0aab321145ea2e2d1bc59c4",
+    "bytes": 177,
+    "expected": {
+      "variant": "district-homepage-text",
+      "state": "populated",
+      "rows": 1,
+      "names": [
+        "GPSD Extended School Year set for June 3, 2024 — GPSD closed on January 16, 2024 (Due to inclement weather)"
+      ]
+    },
+    "note": "Greenville (MS) live homepage: a news item of 2024 still up ('GPSD closed on January 16, 2024 (Due to inclement weather)')"
+  },
+  {
+    "file": "district/gulf-live-20261013-posted.html",
+    "source_id": "district-pages-gulf-fl",
+    "adapter": "district-homepage",
+    "mode": "live",
+    "url": "https://gulfcoschools.com/",
+    "captured_at": "2026-10-13T14:02:47Z",
+    "archive_url": null,
+    "retrieved_at": "2026-10-13T14:02:47Z",
+    "original_sha256": "2b24fa4f79c7bdb94c87fa9eb88d0b1231c0ee0865409078580011bc382be0f4",
+    "original_bytes": 139578,
+    "slice": "district-homepage-v2",
+    "sha256": "c851bec1b11f71e3533af89870328229f9f2430794777c4f88b0cf67d665ba32",
+    "bytes": 145,
+    "expected": {
+      "variant": "district-homepage-text",
+      "state": "populated",
+      "rows": 1,
+      "names": [
+        "SCHOOL CLOSURES: Hurricane Isaias"
+      ]
+    },
+    "note": "Gulf District Schools' live homepage of 2026-10-13 14:02 UTC: a news card 'SCHOOL CLOSURES: Hurricane Isaias' stamped 'posted: Oct 07, 2026' (the closing for the hurricane of 8-10 October 2026: Hurricane, Tropical Storm and Storm Surge Warnings on the panhandle coast), sliced with its posting stamp (district-homepage-v2)."
+  },
+  {
+    "file": "district/gulf-live-20261013.html",
+    "source_id": "district-pages-gulf-fl",
+    "adapter": "district-homepage",
+    "mode": "live",
+    "url": "https://gulfcoschools.com/",
+    "captured_at": "2026-10-13T12:19:07Z",
+    "archive_url": null,
+    "retrieved_at": "2026-10-13T12:19:07Z",
+    "original_sha256": "eea8afe726bbc20ab671171c9eb45ddbe3bafd65586d5a4ed784d4e5d170cf9c",
+    "original_bytes": 139578,
+    "slice": "district-homepage-v1",
+    "sha256": "2cd6da872aecf30fe2e3738c31307c7ac51a069ad0361b2577335a44b1d4e2c8",
+    "bytes": 118,
+    "expected": {
+      "variant": "district-homepage-text",
+      "state": "populated",
+      "rows": 1,
+      "names": [
+        "SCHOOL CLOSURES: Hurricane Isaias"
+      ]
+    },
+    "note": "Gulf District Schools' live homepage of 2026-10-13 12:19 UTC, sliced without the news card's posting stamp (district-homepage-v1): 'SCHOOL CLOSURES: Hurricane Isaias', the card posted 2026-10-07 for the hurricane of 8-10 October 2026 (see gulf-live-20261013-posted.html)."
+  },
+  {
+    "file": "district/jordan-live-20261005.html",
+    "source_id": "district-homepage-jordan-ut",
+    "adapter": "district-homepage",
+    "mode": "live",
+    "url": "https://jordandistrict.org/",
+    "captured_at": "2026-10-05T06:01:22Z",
+    "archive_url": null,
+    "retrieved_at": "2026-10-05T06:01:22Z",
+    "original_sha256": "d669a9c4ce1a7bebdcd757d1a6a9c1050c7126ea6319de5a2645acd1d9b92ab9",
+    "original_bytes": 103378,
+    "slice": "district-homepage-v1",
+    "sha256": "f6fdbb478681d85526b2bf539f2733d2cd4b58a180e447d5dc979fc1f26f892c",
+    "bytes": 125,
+    "expected": {
+      "variant": "district-homepage-text",
+      "state": "empty",
+      "rows": 0,
+      "names": []
+    },
+    "note": "Jordan's WordPress homepage, read by its text: no line announced a closing (an empty list)."
+  },
+  {
+    "file": "district/provo-live-20261005.html",
+    "source_id": "district-homepage-provo-ut",
+    "adapter": "district-homepage",
+    "mode": "live",
+    "url": "https://provo.edu/",
+    "captured_at": "2026-10-05T06:01:28Z",
+    "archive_url": null,
+    "retrieved_at": "2026-10-05T06:01:28Z",
+    "original_sha256": "957f857ac75e10484f6caee2e6a8895ae7c34b1fca92ca9df2cb7ab06cfa24d2",
+    "original_bytes": 44573,
+    "slice": "district-homepage-v1",
+    "sha256": "4325a83b8bd9792b9a90b3b13abbd38a52eceee0360eb86c11630ab63ba17655",
+    "bytes": 139,
+    "expected": {
+      "variant": "district-homepage-alerts",
+      "state": "empty",
+      "rows": 0,
+      "names": []
+    },
+    "note": "Provo's homepage with its alerts section empty ('<section class=\"alerts hidden\">')."
+  },
+  {
+    "file": "district/st-lucie-live-20261013.html",
+    "source_id": "district-pages-st-lucie-fl",
+    "adapter": "district-homepage",
+    "mode": "live",
+    "url": "https://www.stlucie.k12.fl.us/",
+    "captured_at": "2026-10-13T12:21:06Z",
+    "archive_url": null,
+    "retrieved_at": "2026-10-13T12:21:06Z",
+    "original_sha256": "e050e08f9d0e059ede2408da2b851e1deb2cfd999a5ebeb9d79e0013d0b47910",
+    "original_bytes": 442715,
+    "slice": "district-homepage-v1",
+    "sha256": "177773735ddbf2bc60ec861510cde639919adac60c17aca6423979394951e4e7",
+    "bytes": 81,
+    "expected": {
+      "variant": "district-homepage-text",
+      "state": "empty",
+      "rows": 0,
+      "names": []
+    },
+    "note": "St. Lucie Public Schools' live homepage (WordPress, the emergency-alerts plugin's stylesheet, Smart Slider 3 sliders): no line announces a closing"
+  },
+  {
+    "file": "district/washington-alerts-20240124.json.gz",
+    "source_id": "district-homepage-washington-ut",
+    "adapter": "district-homepage",
+    "mode": "archive",
+    "url": "https://alert.washk12.org/endpoint.php",
+    "captured_at": "2024-01-24T00:39:05Z",
+    "archive_url": "https://web.archive.org/web/20240124003905id_/https://alert.washk12.org/endpoint.php",
+    "retrieved_at": "2026-10-05T14:32:59Z",
+    "original_sha256": "7da69662402a3fd873512e4d691ccaedb45c6c42c8793701acd7b5b56b4d1be9",
+    "original_bytes": 328,
+    "slice": "district-homepage-v1",
+    "sha256": "7da69662402a3fd873512e4d691ccaedb45c6c42c8793701acd7b5b56b4d1be9",
+    "bytes": 328,
+    "expected": {
+      "variant": "wcsd-alerts",
+      "state": "populated",
+      "rows": 1,
+      "names": [
+        "NEW STUDENT REGISTRATION"
+      ]
+    },
+    "note": "Washington County's WCSD Alerts answer as the archive held it on 2024-01-24 (the body as the archive replayed it, gzip-encoded): one alert, 'NEW STUDENT REGISTRATION', in the answer's older form that writes its numbers as strings ('id':'96', 'isActive':'1'). Refused by round 3's first reader ('a WCSD alert without a numeric id'); a string of digits is now read as its number. The alert announces no closing, so it proves nothing."
+  },
+  {
+    "file": "district/washington-alerts-live-20261005.json",
+    "source_id": "district-homepage-washington-ut",
+    "adapter": "district-homepage",
+    "mode": "live",
+    "url": "https://alert.washk12.org/endpoint.php",
+    "captured_at": "2026-10-05T06:01:33Z",
+    "archive_url": null,
+    "retrieved_at": "2026-10-05T06:01:33Z",
+    "original_sha256": "40b3d23ce983e0d3906f40a47def46e00364fa62bda3f650eb0346e914d229ee",
+    "original_bytes": 461,
+    "slice": "none",
+    "sha256": "40b3d23ce983e0d3906f40a47def46e00364fa62bda3f650eb0346e914d229ee",
+    "bytes": 461,
+    "expected": {
+      "variant": "wcsd-alerts",
+      "state": "populated",
+      "rows": 1,
+      "names": [
+        "NEW STUDENT REGISTRATION"
+      ]
+    },
+    "note": "Washington County's WCSD Alerts answer: one alert up, 'NEW STUDENT REGISTRATION' (type information, not a closing)."
+  },
+  {
+    "file": "district/washington-live-20261005.html",
+    "source_id": "district-homepage-washington-ut",
+    "adapter": "district-homepage",
+    "mode": "live",
+    "url": "https://www.washk12.org/",
+    "captured_at": "2026-10-05T06:05:54Z",
+    "archive_url": null,
+    "retrieved_at": "2026-10-05T06:05:54Z",
+    "original_sha256": "9e11b7ad4cf1d9ce9e32dfb7f298cc3f9c4830dee474b5edf0fcf28a72203ab1",
+    "original_bytes": 171405,
+    "slice": "district-homepage-v1",
+    "sha256": "1841025f05baa00ce5531b20c7b865c83994edc73d7f070ed33175c515cd7bc5",
+    "bytes": 180,
+    "expected": {
+      "variant": "district-homepage-alert-loader",
+      "state": "deferred",
+      "rows": 0,
+      "names": []
+    },
+    "note": "Washington County's homepage, which loads the WCSD Alerts script (a deferred page naming its alerts file)."
+  },
+  {
+    "file": "edlio/comal-20250121.html",
+    "source_id": "edlio-comal-tx",
+    "adapter": "edlio",
+    "mode": "archive",
+    "url": "https://www.comalisd.org/",
+    "captured_at": "2025-01-21T14:20:24Z",
+    "archive_url": "https://web.archive.org/web/20250121142024id_/https://www.comalisd.org/",
+    "retrieved_at": "2026-09-29T07:23:30Z",
+    "original_sha256": "90b835a3562780f10007ce2ddffb3532b55af82856d5a172ae0e6a749a823dbd",
+    "original_bytes": 87846,
+    "slice": "edlio-v1",
+    "sha256": "66bd15d5bd5d643c5eb783db061b356b1f3f318f37659b2e2bb5aad78c3368d1",
+    "bytes": 3290,
+    "expected": {
+      "variant": "edlio-homepage-alert",
+      "state": "populated",
+      "rows": 1,
+      "names": [
+        "School Closure Tuesday, Jan. 21, for Comal ISD"
+      ]
+    },
+    "note": "Comal ISD's homepage alert on the day of the January 2025 winter storm: all campuses closed Tuesday 21 January. Its capture of 2023-01-31 held the ice-storm closure of 1 February 2023."
+  },
+  {
+    "file": "edlio/hemet-20230302.html",
+    "source_id": "apptegy-hemet-ca",
+    "adapter": "apptegy",
+    "mode": "archive",
+    "url": "https://www.hemetusd.org/",
+    "captured_at": "2023-03-02T17:47:28Z",
+    "archive_url": "https://web.archive.org/web/20230302174728id_/https://www.hemetusd.org/",
+    "retrieved_at": "2026-10-05T10:35:24Z",
+    "original_sha256": "3349d836547dd7b5ee11536f06116ffa0be93363421339056f71f79a9b4d9158",
+    "original_bytes": 29618,
+    "slice": "edlio-v2",
+    "sha256": "681f1226ad8ea6b4bd7adf19b2ee70ca6ed588dbe5103cea8ef9e6ad563ad40d",
+    "bytes": 3338,
+    "expected": {
+      "variant": "edlio-homepage-alert",
+      "state": "populated",
+      "rows": 2,
+      "names": [
+        "Idyllwild and Hamilton Schools Closed 3/2/23",
+        "Idyllwild and Hamilton Schools Closed 3/2/23 Placeholder Photo"
+      ]
+    },
+    "note": "Hemet Unified's Edlio homepage of 2023-03-02 (before its Apptegy site): its alert 'Idyllwild and Hamilton Schools Closed 3/2/23', 'As our weather conditions continue to progress ... school will be canceled for tomorrow, Thursday, March 2'."
+  },
+  {
+    "file": "edlio/robstown-20250121.html",
+    "source_id": "edlio-robstown-tx",
+    "adapter": "edlio",
+    "mode": "archive",
+    "url": "https://www.robstownisd.org/",
+    "captured_at": "2025-01-21T02:59:13Z",
+    "archive_url": "https://web.archive.org/web/20250121025913id_/https://www.robstownisd.org/",
+    "retrieved_at": "2026-09-28T10:51:48Z",
+    "original_sha256": "2d7aa0b2d2259da96b3ff4c05e095d40c51eda3979c65928464bf5d445ab01ec",
+    "original_bytes": 69092,
+    "slice": "edlio-v2",
+    "sha256": "6b408a550649eb78e684d45b0210d244a37ce64dbeb369379ed78b342dec2f1e",
+    "bytes": 216,
+    "expected": {
+      "variant": "edlio-homepage-alert",
+      "state": "populated",
+      "rows": 1,
+      "names": [
+        "Robstown ISD Schools Closed Tuesday Due to Inclement Weather"
+      ]
+    },
+    "note": "Robstown ISD's Edlio homepage with no homepage alert up, during the January 2025 winter storm: its headline 'Robstown ISD Schools Closed Tuesday Due to Inclement Weather' is read as a page-text row."
+  },
+  {
+    "file": "edlio/victoria-20210216.html",
+    "source_id": "apptegy-victoria-tx",
+    "adapter": "apptegy",
+    "mode": "archive",
+    "url": "https://www.visd.net/",
+    "captured_at": "2021-02-16T00:09:05Z",
+    "archive_url": "https://web.archive.org/web/20210216000905id_/https://www.visd.net/",
+    "retrieved_at": "2026-10-04T09:02:55Z",
+    "original_sha256": "16e1266dd7c7153d87c8cc43ed8e3dad1fb5351a7359788ec2627b329c55162a",
+    "original_bytes": 58793,
+    "slice": "edlio-v2",
+    "sha256": "320df725ae846521c4d915233a092cb8aa7e59f9b7a0772b9ec824a9e202d652",
+    "bytes": 2638,
+    "expected": {
+      "variant": "edlio-homepage-alert",
+      "state": "populated",
+      "rows": 3,
+      "names": [
+        "Apply Now for 2021-2022 Tuition-Based Pre-K!",
+        "Victoria ISD Will Remain Closed Through Tuesday Due To Inclement Weather",
+        "All Victoria ISD buildings and schools will be closed through Tuesday, February 16."
+      ]
+    },
+    "note": "Victoria ISD's homepage (then an Edlio site) the evening of 15 February 2021 (UTC 16 Feb 00:09), in the February 2021 freeze: its news headline 'Victoria ISD Will Remain Closed Through Tuesday Due To Inclement Weather' over 'All Victoria ISD buildings and schools will be closed through Tuesday, February 16.' Both are page-text rows; the headline names the weather, so it proves the channel. Round 2 logged this page as an error and round 3's first pass read only the line under the headline (a district named by its initials, 'Victoria ISD', was not a subject the notice gate knew)."
+  },
+  {
+    "file": "elementor/alpine-20230227.html",
+    "source_id": "apptegy-alpine-ut",
+    "adapter": "apptegy",
+    "mode": "archive",
+    "url": "https://alpineschools.org/",
+    "captured_at": "2023-02-27T02:24:10Z",
+    "archive_url": "https://web.archive.org/web/20230227022410id_/https://alpineschools.org/",
+    "retrieved_at": "2026-10-03T20:27:26Z",
+    "original_sha256": "0c6706d70a33cea848bc18ba4d6e9ba72a995b02cb1049cd5678fbcb7fcaa5c2",
+    "original_bytes": 31236,
+    "slice": "elementor-v1",
+    "sha256": "7799ed6309bb2651e98d510ada007ddb07b460c8c16159ea0f5fc2885fcd8d73",
+    "bytes": 3967,
+    "expected": {
+      "variant": "elementor-alert-widgets",
+      "state": "populated",
+      "rows": 5,
+      "names": [
+        "ONLINE/DISTANCE LEARNING DAY – WEDNESDAY, FEBRUARY 22, 2023",
+        "Winter Weather",
+        "SCHOOLS OPEN ON REGULAR SCHEDULE FRIDAY, FEBRUARY 24, 2023",
+        "DRESS WARM FOR THE WEATHER!",
+        "SCHOOLS OPEN - FRIDAY, DECEMBER 2, 2022"
+      ]
+    },
+    "note": "Alpine School District's homepage four days after the Utah snow day of 22 February 2023, when it was a WordPress page built with Elementor (before its move to Apptegy): five Alert widgets, among them \"ONLINE/DISTANCE LEARNING DAY – WEDNESDAY, FEBRUARY 22, 2023\" (\"Due to extreme weather conditions and guidance from the Governor ...\"), the district's Winter Weather advisory and notices that schools were open. Read by the Apptegy adapter's earlier forms (elementor-alert-widgets); the first notice announces a remote day, so it proves the district's homepage channel."
+  },
+  {
+    "file": "elementor/alpine-20240208.html",
+    "source_id": "apptegy-alpine-ut",
+    "adapter": "apptegy",
+    "mode": "archive",
+    "url": "https://alpineschools.org/",
+    "captured_at": "2024-02-08T01:45:07Z",
+    "archive_url": "https://web.archive.org/web/20240208014507id_/https://alpineschools.org/",
+    "retrieved_at": "2026-10-03T23:38:44Z",
+    "original_sha256": "925d31d487c39618742d6d3c5d6682d1234cba265c78a82b71c61e77aaa9a519",
+    "original_bytes": 25817,
+    "slice": "elementor-v1",
+    "sha256": "a0b481ff42b599bf848837e58e816cc871958437c39231cf42e4958899ae2747",
+    "bytes": 576,
+    "expected": {
+      "variant": "elementor-alert-widgets",
+      "state": "empty",
+      "rows": 0,
+      "names": []
+    },
+    "note": "Alpine School District's homepage of 8 February 2024, the same Elementor page (page id 32409) with no Alert widget up: an empty list."
+  },
+  {
+    "file": "finalsite/bozeman-20240117.html",
+    "source_id": "finalsite-bozeman-mt",
+    "adapter": "finalsite",
+    "mode": "archive",
+    "url": "https://www.bsd7.org/",
+    "captured_at": "2024-01-17T23:47:16Z",
+    "archive_url": "https://web.archive.org/web/20240117234716id_/https://www.bsd7.org/",
+    "retrieved_at": "2026-10-04T00:32:43Z",
+    "original_sha256": "c088ad0fdd067bc7ddad48d850a8468ee13bb94ec8e6df512b0ac2920e6e63f8",
+    "original_bytes": 68952,
+    "slice": "finalsite-v1",
+    "sha256": "73496a0e5d3002810847ee29b3e4a861ea2d433b76220d9002e82f73d80f3898",
+    "bytes": 3052,
+    "expected": {
+      "variant": "finalsite-homepage-pops",
+      "state": "populated",
+      "rows": 1,
+      "names": [
+        "School Safety Update"
+      ]
+    },
+    "note": "Bozeman School District 7's Finalsite homepage the evening of 17 January 2024, with its page pop in the page itself: a School Safety Update (the statewide emailed bomb threat of the 16th; school proceeds at all sites) whose text runs past the row's 2,000-character limit, so the status is kept to its first 2,000 characters. It announces no closing, so it does not prove the channel."
+  },
+  {
+    "file": "finalsite/davis-20240202.html",
+    "source_id": "apptegy-davis-ut",
+    "adapter": "apptegy",
+    "mode": "archive",
+    "url": "https://www.davis.k12.ut.us/",
+    "captured_at": "2024-02-02T08:07:04Z",
+    "archive_url": "https://web.archive.org/web/20240202080704id_/https://www.davis.k12.ut.us/",
+    "retrieved_at": "2026-10-03T23:33:12Z",
+    "original_sha256": "b62ab654fc6c8332e7a787dfa6dac63aa752f14962e1a857de25636762cd06b1",
+    "original_bytes": 302913,
+    "slice": "finalsite-v1",
+    "sha256": "472988c6387d22df8ca872f01cf1a703c144a23b3ee31da6d487897dd22fd11a",
+    "bytes": 314,
+    "expected": {
+      "variant": "finalsite-homepage",
+      "state": "deferred",
+      "rows": 0,
+      "names": []
+    },
+    "note": "Davis School District's homepage of 2 February 2024, when it was a Finalsite site (before its move to Apptegy): a published Finalsite page that holds no page pop of its own and loads them from /fs/pages/2/page-pops by script, read by the Apptegy adapter's earlier forms as a deferred page. The archive holds no capture of that page-pops file (the listing of davis.k12.ut.us/fs/pages/* names none)."
+  },
+  {
+    "file": "finalsite/gulf-shores-20191019.html",
+    "source_id": "finalsite-gulf-shores-al",
+    "adapter": "finalsite",
+    "mode": "archive",
+    "url": "https://www.gsboe.org/",
+    "captured_at": "2019-10-19T13:02:18Z",
+    "archive_url": "https://web.archive.org/web/20191019130218id_/https://www.gsboe.org/",
+    "retrieved_at": "2026-10-04T17:32:38Z",
+    "original_sha256": "c816718242c5548ae9077bbb52f8e99b9393bea4675191a7093a84daee72737d",
+    "original_bytes": 119968,
+    "slice": "finalsite-v2",
+    "sha256": "7bce378bb307eba2e7b1dcbd79f9da4851674fdcad633d5b0ab8d4ab64f887aa",
+    "bytes": 1388,
+    "expected": {
+      "variant": "finalsite-homepage-pops",
+      "state": "populated",
+      "rows": 1,
+      "names": [
+        "GSCS Severe Weather Update"
+      ]
+    },
+    "note": "Gulf Shores City Schools' Finalsite homepage of 2019, a template whose body has a data-pageid and fsHas* classes but not yet the fsLiveMode class (and none of the editor's classes): read as a published page, holding its page pops in the page ('GSCS Severe Weather Update')."
+  },
+  {
+    "file": "finalsite/san-benito-20260125.html",
+    "source_id": "finalsite-san-benito-tx",
+    "adapter": "finalsite",
+    "mode": "archive",
+    "url": "https://www.sbcisd.net/",
+    "captured_at": "2026-01-25T23:29:05Z",
+    "archive_url": "https://web.archive.org/web/20260125232905id_/https://www.sbcisd.net/",
+    "retrieved_at": "2026-10-04T08:24:04Z",
+    "original_sha256": "2797ff938a4440d9b97e1ea611b27c67fdf1fb83dbb25419af789621d2fe17cf",
+    "original_bytes": 123743,
+    "slice": "finalsite-v2",
+    "sha256": "98858b545829931d76d75bc13c8c8eb5aa0ed47bae24350d5f96e940b401ea08",
+    "bytes": 616,
+    "expected": {
+      "variant": "finalsite-homepage",
+      "state": "populated",
+      "rows": 2,
+      "names": [
+        "Delayed start on Monday, January 26th",
+        "San Benito Schools will implement a delayed start on Monday, January 26th, 2026, to safeguard the comfort and safety of our students amid expected cold weather. Thank you for understanding as we focus on everyone’s well-being."
+      ]
+    },
+    "note": "San Benito CISD's Finalsite homepage the evening before its delayed start: its news post 'Delayed start on Monday, January 26th' is in the page; read as the page's own closing lines, loading its page pops beside them."
+  },
+  {
+    "file": "googlesites/clay-20220928.html",
+    "source_id": "apptegy-clay-fl",
+    "adapter": "apptegy",
+    "mode": "archive",
+    "url": "https://www.myoneclay.net/",
+    "captured_at": "2022-09-28T18:14:57Z",
+    "archive_url": "https://web.archive.org/web/20220928181457id_/https://www.myoneclay.net/",
+    "retrieved_at": "2026-09-27T19:22:12Z",
+    "original_sha256": "e5155ca1cce9e584449b50422694737817a502c5a8a8938e64dc8436d14f866a",
+    "original_bytes": 173132,
+    "slice": "googlesites-v1",
+    "sha256": "5f9d7784f45623c29ce3f27815016f226a514b2b347338f597b1108c13b4895f",
+    "bytes": 1188,
+    "expected": {
+      "variant": "googlesites-banner",
+      "state": "populated",
+      "rows": 1,
+      "names": [
+        "Clay County District Schools, Florida"
+      ]
+    },
+    "note": "Hurricane Ian: the Google Sites announcement banner says all Clay County schools and the district offices will be closed Wednesday-Friday."
+  },
+  {
+    "file": "googlesites/clay-20241009.html",
+    "source_id": "apptegy-clay-fl",
+    "adapter": "apptegy",
+    "mode": "archive",
+    "url": "https://www.myoneclay.net/",
+    "captured_at": "2024-10-09T14:45:49Z",
+    "archive_url": "https://web.archive.org/web/20241009144549id_/https://www.myoneclay.net/",
+    "retrieved_at": "2026-09-27T19:15:55Z",
+    "original_sha256": "6182700830313b0aa70193cca4fef09106413a43d89cc6829099da5200633294",
+    "original_bytes": 159791,
+    "slice": "googlesites-v1",
+    "sha256": "c8fae321093499563c2eac3c3c96c6c01dc5b5a2275dbebe2c83a061e6954e5e",
+    "bytes": 149,
+    "expected": {
+      "variant": "googlesites-banner",
+      "state": "empty",
+      "rows": 0,
+      "names": []
+    },
+    "note": "Hurricane Milton: the Google Sites header with no banner switched on (an empty list)."
+  },
+  {
+    "file": "homepage/calhoun-20181011.html",
+    "source_id": "smartsites-calhoun-fl",
+    "adapter": "smartsites",
+    "mode": "archive",
+    "url": "http://calhounflschools.org:80/",
+    "captured_at": "2018-10-11T11:02:19Z",
+    "archive_url": "https://web.archive.org/web/20181011110219id_/http://calhounflschools.org:80/",
+    "retrieved_at": "2026-10-04T22:04:29Z",
+    "original_sha256": "01bf01cdcceebe24f82eb5b1dc3bc4a6de2dfe828be5becae184155610992e3c",
+    "original_bytes": 43479,
+    "slice": "homepage-text-v1",
+    "sha256": "0d3f1dd3557dcddb4dc90dc02e5d95d393b1f8592474379002ef732d19c76d03",
+    "bytes": 579,
+    "expected": {
+      "variant": "site-alert-module",
+      "state": "populated",
+      "rows": 1,
+      "names": [
+        "School Canceled Tuesday, Wednesday, and Thursday"
+      ]
+    },
+    "note": ""
+  },
+  {
+    "file": "homepage/lander-20230102.html",
+    "source_id": "apptegy-fremont-1-wy",
+    "adapter": "apptegy",
+    "mode": "archive",
+    "url": "https://www.landerschools.org/",
+    "captured_at": "2023-01-02T22:49:54Z",
+    "archive_url": "https://web.archive.org/web/20230102224954id_/https://www.landerschools.org/",
+    "retrieved_at": "2026-10-05T10:04:31Z",
+    "original_sha256": "e4e90e7973e98f304ae92669376244aa2a0878e7553b6d2a79bbcdabc0da75f0",
+    "original_bytes": 33661,
+    "slice": "homepage-text-v1",
+    "sha256": "7ccc12bde05c21d980ff5079775cf3d8142c0ee36c54537daa3d096c16e9d6c5",
+    "bytes": 212,
+    "expected": {
+      "variant": "homepage-text",
+      "state": "populated",
+      "rows": 1,
+      "names": [
+        "Lander Schools will not have school on Tuesday, January 3, 2023 to allow crews to clear routes."
+      ]
+    },
+    "note": ""
+  },
+  {
+    "file": "homepage/madison-20240809.html",
+    "source_id": "apptegy-madison-fl",
+    "adapter": "apptegy",
+    "mode": "archive",
+    "url": "https://mcsbfl.us/",
+    "captured_at": "2024-08-09T19:25:40Z",
+    "archive_url": "https://web.archive.org/web/20240809192540id_/https://mcsbfl.us/",
+    "retrieved_at": "2026-09-28T04:29:14Z",
+    "original_sha256": "6201cf27017deeebe0e232c8c5695081f245abc6fa21ff360fa9d6156c2ab55a",
+    "original_bytes": 69113,
+    "slice": "homepage-text-v1",
+    "sha256": "837ba857196e2d8853b1f41020e0d49808431646a35dcda55b2e7263db3194d9",
+    "bytes": 130,
+    "expected": {
+      "variant": "homepage-text",
+      "state": "populated",
+      "rows": 1,
+      "names": [
+        "Hurricane Debby Closure"
+      ]
+    },
+    "note": ""
+  },
+  {
+    "file": "homepage/okaloosa-20191019.html",
+    "source_id": "apptegy-okaloosa-fl",
+    "adapter": "apptegy",
+    "mode": "archive",
+    "url": "https://www.okaloosaschools.com/",
+    "captured_at": "2019-10-19T04:14:27Z",
+    "archive_url": "https://web.archive.org/web/20191019041427id_/https://www.okaloosaschools.com/",
+    "retrieved_at": "2026-10-05T06:50:29Z",
+    "original_sha256": "d37cc19a857c96ed231e3e1093744c175651171ef0aed7a2db52be925a0015e1",
+    "original_bytes": 89727,
+    "slice": "homepage-text-v1",
+    "sha256": "3d1e62e97dfd06b860451ddbff7eda69d951056303b6bae75ca28808ae4dbbc9",
+    "bytes": 495,
+    "expected": {
+      "variant": "homepage-text",
+      "state": "populated",
+      "rows": 2,
+      "names": [
+        "Schools will be in session on Friday. In expectation of deteriorating conditions Friday evening, all extracurricular activities for Friday after school and Saturday are cancelled. We will continue to monitor weather conditions and provide updates.",
+        "Weather Alert: Tropical Cyclone 16 — Schools are in session Friday. After school activities for Friday & Saturday are cancelled…"
+      ]
+    },
+    "note": ""
+  },
+  {
+    "file": "homepage/pocatello-20220105.html",
+    "source_id": "finalsite-pocatello-id",
+    "adapter": "finalsite",
+    "mode": "archive",
+    "url": "https://www.sd25.us/",
+    "captured_at": "2022-01-05T20:09:48Z",
+    "archive_url": "https://web.archive.org/web/20220105200948id_/https://www.sd25.us/",
+    "retrieved_at": "2026-10-03T22:14:55Z",
+    "original_sha256": "330b8883fd8b78807605053f9f03faf9bce562d1958d1b6c2bedad5d65ccd17e",
+    "original_bytes": 137658,
+    "slice": "homepage-text-v1",
+    "sha256": "713dab129fea7d356124e8f494e8eeffb9b4071fc82be8412dbf8a3b7b4d84d9",
+    "bytes": 388,
+    "expected": {
+      "variant": "homepage-text",
+      "state": "populated",
+      "rows": 1,
+      "names": [
+        "School will be in session and follow regular schedules at all PCSD 25 schools today, Wednesday, January 5, 2022. Please continue to expect winter driving conditions and take the necessary precautions for safe travel, including allowing for extra time to travel to your destination."
+      ]
+    },
+    "note": ""
+  },
+  {
+    "file": "homepage/san-benito-edlio-20250121.html",
+    "source_id": "finalsite-san-benito-tx",
+    "adapter": "finalsite",
+    "mode": "archive",
+    "url": "https://www.sbcisd.net/",
+    "captured_at": "2025-01-21T22:13:17Z",
+    "archive_url": "https://web.archive.org/web/20250121221317id_/https://www.sbcisd.net/",
+    "retrieved_at": "2026-09-28T09:07:29Z",
+    "original_sha256": "d2f9fdb96e104d75747af3a248f84ff8b82ef5b62650741fa5b15389f9e6f24b",
+    "original_bytes": 60216,
+    "slice": "homepage-text-v1",
+    "sha256": "595a1d55b73a029c0a4f94d0678bc088289dac68fd30ab4cd121ba195ab39996",
+    "bytes": 121,
+    "expected": {
+      "variant": "homepage-text",
+      "state": "deferred",
+      "rows": 0,
+      "names": []
+    },
+    "note": "San Benito CISD's homepage of 2025-01-21, before the district moved to Finalsite: an Edlio page (no body data-pageid). Until round 3 kept as a refused body (fixtures/gaps/errors); now read by its text."
+  },
+  {
+    "file": "homepage/seminole-20221110.html",
+    "source_id": "smartsites-seminole-fl",
+    "adapter": "smartsites",
+    "mode": "archive",
+    "url": "https://www.scps.k12.fl.us/",
+    "captured_at": "2022-11-10T13:15:18Z",
+    "archive_url": "https://web.archive.org/web/20221110131518id_/https://www.scps.k12.fl.us/",
+    "retrieved_at": "2026-10-05T06:46:46Z",
+    "original_sha256": "b37cbb3367d251492c49e46dabbe595cb533c3ba675f1c9c4b46b3993545906d",
+    "original_bytes": 70572,
+    "slice": "homepage-text-v1",
+    "sha256": "24bedb17ac5b0af6f07469c5d27f99617fab78f7c1e40274960cee51314cf678",
+    "bytes": 167,
+    "expected": {
+      "variant": "homepage-text",
+      "state": "populated",
+      "rows": 1,
+      "names": [
+        "Tropical Storm Nicole Update: District & School Closures"
+      ]
+    },
+    "note": ""
+  },
+  {
+    "file": "homepage/sublette-9-20170203.html",
+    "source_id": "edlio-sublette-9-wy",
+    "adapter": "edlio",
+    "mode": "archive",
+    "url": "http://www.sublette9.org:80/",
+    "captured_at": "2017-02-03T11:01:35Z",
+    "archive_url": "https://web.archive.org/web/20170203110135id_/http://www.sublette9.org:80/",
+    "retrieved_at": "2026-10-05T09:15:13Z",
+    "original_sha256": "cb1fac73d40b0378f2a17cc772092810983359bd6ef763021e0a505ca3b34094",
+    "original_bytes": 43329,
+    "slice": "homepage-text-v1",
+    "sha256": "b9c38942ef2ab93539b791e7d8e6bafad178476f80c9490a73b12815b74f4039",
+    "bytes": 398,
+    "expected": {
+      "variant": "homepage-text",
+      "state": "populated",
+      "rows": 2,
+      "names": [
+        "Late Start for Schools Jan. 5th",
+        "Good morning! Due to road conditions SCSD #9 schools will start school an hour late today. All buses will run with the exception of LaBarge Creek and Fontenelle Creek. Buses will run accordingly with the late start. Thank you and have a safe morning!"
+      ]
+    },
+    "note": "Sublette County School District #9's homepage of 2017-02-03, an earlier site than its Edlio one, read as text: 'Due to road conditions SCSD #9 schools will start school an hour late today' proves its channel (road conditions are weather's)."
+  },
+  {
+    "file": "homepage/twin-falls-20240327.html",
+    "source_id": "apptegy-twin-falls-id",
+    "adapter": "apptegy",
+    "mode": "archive",
+    "url": "https://www.tfsd.org/",
+    "captured_at": "2024-03-27T09:51:24Z",
+    "archive_url": "https://web.archive.org/web/20240327095124id_/https://www.tfsd.org/",
+    "retrieved_at": "2026-09-27T20:03:22Z",
+    "original_sha256": "0bb0f1a6d2912e1059718cb1da723cc00635e7711b1aac3bbeaa22edcedcd0fb",
+    "original_bytes": 23502,
+    "slice": "homepage-text-v1",
+    "sha256": "97ee64a4fab78772884459af53ce2255d307a9269bef1d96b4e2682015dc4675",
+    "bytes": 105,
+    "expected": {
+      "variant": "homepage-text",
+      "state": "deferred",
+      "rows": 0,
+      "names": []
+    },
+    "note": "Twin Falls' homepage before its move to Apptegy (asked for as 2024-01-09; the archive served its capture of 2024-03-27): a WordPress (Divi) page with no Nuxt state and no announcements region. Until round 3 of the coverage gate it was kept as a refused body (fixtures/gaps/errors); now read by its text: no line announces a closing, so it is a page that holds no list of its own (homepage-text, deferred, naming no file)."
+  },
+  {
+    "file": "homepage/united-20260126.html",
+    "source_id": "smartsites-united-tx",
+    "adapter": "smartsites",
+    "mode": "archive",
+    "url": "https://www.uisd.net/",
+    "captured_at": "2026-01-26T14:52:11Z",
+    "archive_url": "https://web.archive.org/web/20260126145211id_/https://www.uisd.net/",
+    "retrieved_at": "2026-10-04T06:49:15Z",
+    "original_sha256": "8b1b1f67cf134dfa7792ae262ce8e360fc3b1bcc30347477c99701a07c9a6817",
+    "original_bytes": 379715,
+    "slice": "homepage-text-v1",
+    "sha256": "48fd99dd15f2528b2ff26db5282744bb51a06e1aa60fa18cd3c0a87594ecf7a9",
+    "bytes": 357,
+    "expected": {
+      "variant": "homepage-text",
+      "state": "populated",
+      "rows": 2,
+      "names": [
+        "UPDATED: Two-Hour Delayed Start for Monday & Tuesday",
+        "UISD Families and Staff,Please note: the two-hour delayed start will now apply to both Monday, January 26, and Tuesday, January 27. As weather conditions continue to impact our area, United ISD rem..."
+      ]
+    },
+    "note": "United ISD's Smart Sites homepage (its pop-up alerts load by script from /api/popup-alerts) during the January 2026 cold: its news leads with 'UPDATED: Two-Hour Delayed Start for Monday & Tuesday' ('As weather conditions continue to impact our area ...'). Read by its text (homepage-text)."
+  },
+  {
+    "file": "lists/kbmt-liferay-20170621.html",
+    "source_id": "tegna-kbmt",
+    "adapter": "tegna",
+    "mode": "archive",
+    "url": "http://www.12newsnow.com/closings",
+    "captured_at": "2017-06-21T15:02:35Z",
+    "archive_url": "https://web.archive.org/web/20170621150235id_/http://www.12newsnow.com/closings",
+    "retrieved_at": "2026-10-04T21:34:14Z",
+    "original_sha256": "4693a1a465939585fbc6bfab38c42234957791e1a76b8c0fd9457a78944d503c",
+    "original_bytes": 124336,
+    "slice": "none",
+    "sha256": "4693a1a465939585fbc6bfab38c42234957791e1a76b8c0fd9457a78944d503c",
+    "bytes": 124336,
+    "expected": {
+      "variant": "tegna-liferay-page",
+      "state": "deferred",
+      "rows": 0,
+      "names": []
+    },
+    "note": "KBMT's closings page in the Liferay template TEGNA's sites had in 2017-2018 (110 captures, June 2017 to January 2018): the site settings name no closings system (closings:{path:\"\",type:\"None\",...}) and the page holds no list. Read as tegna-liferay-page, a deferred page naming no file."
+  },
+  {
+    "file": "lists/kens-20230128.html",
+    "source_id": "tegna-kens",
+    "adapter": "tegna",
+    "mode": "archive",
+    "url": "https://www.kens5.com/closings",
+    "captured_at": "2023-01-28T23:22:22Z",
+    "archive_url": "https://web.archive.org/web/20230128232222id_/https://www.kens5.com/closings",
+    "retrieved_at": "2026-09-27T07:15:29Z",
+    "original_sha256": "6174357d2a250e9ad7e7f352265cc9dc25e49d6c1d616c05a617c7553bc9f01b",
+    "original_bytes": 47507,
+    "slice": "tegna-v3",
+    "sha256": "d1d011dc09c79f57b7e6b7642d53227b01f5928d2a110e280f181de0e41533d6",
+    "bytes": 317,
+    "expected": {
+      "variant": "tegna-closings-link",
+      "state": "deferred",
+      "rows": 0,
+      "names": []
+    },
+    "note": ""
+  },
+  {
+    "file": "lists/kens-article-20220202.html",
+    "source_id": "tegna-kens",
+    "adapter": "tegna",
+    "mode": "archive",
+    "url": "https://www.kens5.com/article/weather/closings/san-antonio-south-texas-school-closings-delays-openings-list-updates/273-6b164c07-c1ad-44ac-b1a9-9fcb273e0ca0",
+    "captured_at": "2022-02-02T20:21:55Z",
+    "archive_url": "https://web.archive.org/web/20220202202155id_/https://www.kens5.com/article/weather/closings/san-antonio-south-texas-school-closings-delays-openings-list-updates/273-6b164c07-c1ad-44ac-b1a9-9fcb273e0ca0",
+    "retrieved_at": "2026-10-04T23:26:53Z",
+    "original_sha256": "812bf3b3305005fab8efb4046c39d503fce98129bf4081a3e8beac3b2054a43e",
+    "original_bytes": 244677,
+    "slice": "tegna-v3",
+    "sha256": "a6838cd99c55fc0b625d8e7c9b0e5ad823ba8febe716a822c8c259c67bd65a0c",
+    "bytes": 58578,
+    "expected": {
+      "variant": "tegna-closings-article",
+      "state": "populated",
+      "rows": 6,
+      "names": [
+        "Blanco ISD",
+        "Boerne ISD",
+        "Kerrville ISD",
+        "Luling ISD",
+        "San Marcos CISD",
+        "Texas A&M-San Antonio"
+      ]
+    },
+    "note": ""
+  },
+  {
+    "file": "lists/kens-article-20220223.html",
+    "source_id": "tegna-kens",
+    "adapter": "tegna",
+    "mode": "archive",
+    "url": "https://www.kens5.com/article/weather/closings/san-antonio-south-texas-school-closings-delays-openings-list-updates/273-6b164c07-c1ad-44ac-b1a9-9fcb273e0ca0",
+    "captured_at": "2022-02-23T18:07:12Z",
+    "archive_url": "https://web.archive.org/web/20220223180712id_/https://www.kens5.com/article/weather/closings/san-antonio-south-texas-school-closings-delays-openings-list-updates/273-6b164c07-c1ad-44ac-b1a9-9fcb273e0ca0",
+    "retrieved_at": "2026-10-04T23:30:20Z",
+    "original_sha256": "6513fdba306b3ecf9553d03713e9e5b2b4a782e0cfd1b7ff2ee254e28461cdcf",
+    "original_bytes": 253162,
+    "slice": "tegna-v3",
+    "sha256": "694f3991e2e0c33532ec119d7354a4e293e53b4d74e40e6e9e217f715e07b805",
+    "bytes": 71682,
+    "expected": {
+      "variant": "tegna-closings-article",
+      "state": "empty",
+      "rows": 0,
+      "names": []
+    },
+    "note": ""
+  },
+  {
+    "file": "lists/kens-winter-article-20220120.html",
+    "source_id": "tegna-kens",
+    "adapter": "tegna",
+    "mode": "archive",
+    "url": "https://www.kens5.com/article/news/education/school-district-closures-due-to-winter-weather/273-dc6b21f3-f42c-4e23-b704-785205cf7143",
+    "captured_at": "2022-01-20T03:36:33Z",
+    "archive_url": "https://web.archive.org/web/20220120033633id_/https://www.kens5.com/article/news/education/school-district-closures-due-to-winter-weather/273-dc6b21f3-f42c-4e23-b704-785205cf7143",
+    "retrieved_at": "2026-10-04T23:57:19Z",
+    "original_sha256": "6de62fae0f6de46ee122e62421106f885873fae2521eb04134abf3f20049a33e",
+    "original_bytes": 206770,
+    "slice": "tegna-v3",
+    "sha256": "3eee5bb540ea92c85b16f55f6643bf53c385d1e0f5019532df4ebd93444b646e",
+    "bytes": 20531,
+    "expected": {
+      "variant": "tegna-closings-article",
+      "state": "populated",
+      "rows": 23,
+      "names": [
+        "Brooks Academy",
+        "San Antonio ISD",
+        "Northside ISD",
+        "North East ISD",
+        "Southside ISD",
+        "Harlandale ISD",
+        "Somerset ISD",
+        "South San ISD",
+        "Alamo Heights ISD",
+        "Southwest ISD",
+        "Judson ISD",
+        "Edgewood ISD",
+        "Schertz-Cibolo-Universal City ISD",
+        "Shepherd of the Hills School and Child Care",
+        "The Winston School",
+        "George Gervin Academy",
+        "Jubilee Academies",
+        "Positive Solutions Charter High School",
+        "Premier High School San Antonio",
+        "Harmony Public Schools",
+        "Southwest Preparatory Schools",
+        "Saint Mary's Hall",
+        "Winter Weather Advisory expected..."
+      ]
+    },
+    "note": ""
+  },
+  {
+    "file": "lists/kfmb-subindex-20190406.html",
+    "source_id": "tegna-kfmb",
+    "adapter": "tegna",
+    "mode": "archive",
+    "url": "https://www.cbs8.com/closings",
+    "captured_at": "2019-04-06T17:12:31Z",
+    "archive_url": "https://web.archive.org/web/20190406171231id_/https://www.cbs8.com/closings",
+    "retrieved_at": "2026-10-04T20:49:00Z",
+    "original_sha256": "8e9c2e9fc906c344eb9121b964aeeda4add8c0a163c5b3d01c94b82c7304fb84",
+    "original_bytes": 50289,
+    "slice": "none",
+    "sha256": "8e9c2e9fc906c344eb9121b964aeeda4add8c0a163c5b3d01c94b82c7304fb84",
+    "bytes": 50289,
+    "expected": {
+      "variant": "tegna-subindex-page",
+      "state": "deferred",
+      "rows": 0,
+      "names": []
+    },
+    "note": "CBS 8's closings page in the 2019-2020 subindex template (15 captures): data-model-closings=\"true\" and contentType subindex, but no closings module, grid, list or frame in the markup; its text is the header alone. Read as tegna-subindex-page, a deferred page naming no file."
+  },
+  {
+    "file": "lists/kgun-liferay-20170316.html",
+    "source_id": "scripps-kgun",
+    "adapter": "scripps",
+    "mode": "archive",
+    "url": "http://www.kgun9.com:80/weather/school-closings-delays",
+    "captured_at": "2017-03-16T09:05:41Z",
+    "archive_url": "https://web.archive.org/web/20170316090541id_/http://www.kgun9.com:80/weather/school-closings-delays",
+    "retrieved_at": "2026-09-28T05:03:11Z",
+    "original_sha256": "9ad2109f649bb7a491a503642679fbfd83becb34c8296b5fa8c11919fe2351de",
+    "original_bytes": 31979,
+    "slice": "none",
+    "sha256": "9ad2109f649bb7a491a503642679fbfd83becb34c8296b5fa8c11919fe2351de",
+    "bytes": 31979,
+    "expected": {
+      "variant": "scripps-liferay-empty-layout",
+      "state": "deferred",
+      "rows": 0,
+      "names": []
+    },
+    "note": "KGUN's closings page on the Liferay template of 2017: every portlet dropzone of its main content is marked empty and the region holds no text. No module was placed on the page, so it holds no list and names no file (scripps-liferay-empty-layout, a deferred listing naming no file); it is not an empty list."
+  },
+  {
+    "file": "lists/kmph-facade-20201026.html",
+    "source_id": "sinclair-kmph",
+    "adapter": "sinclair",
+    "mode": "archive",
+    "url": "https://kmph.com/weather/closings",
+    "captured_at": "2020-10-26T08:18:15Z",
+    "archive_url": "https://web.archive.org/web/20201026081815id_/https://kmph.com/weather/closings",
+    "retrieved_at": "2026-10-04T22:36:18Z",
+    "original_sha256": "5222703eecbdf18af4dab87d65a9179f09d546ce002067fa5e86017e7c75134e",
+    "original_bytes": 90282,
+    "slice": "none",
+    "sha256": "5222703eecbdf18af4dab87d65a9179f09d546ce002067fa5e86017e7c75134e",
+    "bytes": 90282,
+    "expected": {
+      "variant": "sinclair-facade-page",
+      "state": "deferred",
+      "rows": 0,
+      "names": []
+    },
+    "note": "KMPH's closings page of 2020, a Sinclair shell that sets sinclairDigital.facade (without the site slug of the 2022 shells) whose injected markup frames /resources/ftptransfer/kmph/closings/closings.html. Read as sinclair-facade-page, following that file."
+  },
+  {
+    "file": "lists/ktiv-20240108.html",
+    "source_id": "gray-ktiv",
+    "adapter": "gray",
+    "mode": "archive",
+    "url": "https://www.ktiv.com/weather/closings/",
+    "captured_at": "2024-01-08T05:34:15Z",
+    "archive_url": "https://web.archive.org/web/20240108053415id_/https://www.ktiv.com/weather/closings/",
+    "retrieved_at": "2026-09-29T02:44:08Z",
+    "original_sha256": "be5ea27f8afb9ece09925cb0368ae64f46b157fe81922a0ac202b2cd09006600",
+    "original_bytes": 133546,
+    "slice": "gray-page-v4",
+    "sha256": "1b69746ba5727d64db9e1e5f73d1fabf416ee96ab36dd5cdcb9fb55a0fb58466",
+    "bytes": 19966,
+    "expected": {
+      "variant": "gray-fusion-orgs",
+      "state": "populated",
+      "rows": 45,
+      "names": [
+        "Akron-Westfield Comm. Schools",
+        "Allen Consolidated Schools",
+        "Bancroft-Rosalie Public School",
+        "Briar Cliff University",
+        "Cedar County Catholic Schools",
+        "City of Lawton",
+        "City of Moville",
+        "City of Sergeant Bluff",
+        "Crofton Comm. Schools",
+        "Danbury Catholic School",
+        "Emerson-Hubbard Comm. Schools",
+        "ESU #1",
+        "Gayville-Volin Schools",
+        "Hartington-Newcastle Public Schools",
+        "Heartland Counseling Services",
+        "Homer Comm. Schools",
+        "Laurel-Concord-Coleridge School",
+        "Liberty Centre Services",
+        "Little Priest Tribal College",
+        "Lutheran High Northeast-Norfolk",
+        "Maple Valley-Anthon Oto Comm. Schools",
+        "Nebraska Indian College - Macy",
+        "Nebraska Indian College-So. Sioux",
+        "Nebraska Indian Community College-Santee Campus",
+        "Norfolk Senior Center",
+        "OABCIG CSD",
+        "Pender Schools",
+        "Plainview Schools",
+        "Ponca Public Schools",
+        "South Sioux City Senior Center",
+        "St. Augustine Indian Mission",
+        "St. Luke's College",
+        "St. Rose of Lima Catholic School-Crofton",
+        "Umonhon Nation Public School",
+        "Wakefield Senior Center",
+        "Wausa Public Schools",
+        "Wayne Comm. & St. Mary's School",
+        "Wayne Tower School",
+        "West Harrison CSD",
+        "West Monona Community School",
+        "Westwood Comm. Schools",
+        "Whiting Schools",
+        "Williams Form Engineering",
+        "Winnebago Public Schools",
+        "Wych Dr Distilling"
+      ]
+    },
+    "note": "KTIV (Sioux City) closings page on the morning of the 2024-01-08 winter storm; the gate's first archived proof of this station."
+  },
+  {
+    "file": "lists/kulr-20190716.html",
+    "source_id": "cowles-kulr",
+    "adapter": "cowles",
+    "mode": "archive",
+    "url": "https://www.kulr8.com/schoolclosures/",
+    "captured_at": "2019-07-16T12:59:43Z",
+    "archive_url": "https://web.archive.org/web/20190716125943id_/https://www.kulr8.com/schoolclosures/",
+    "retrieved_at": "2026-09-27T14:24:10Z",
+    "original_sha256": "81a5058af8aca68d84177ae6a91a74daf91aac9bcb1c75d2bd9ac86b35e78b86",
+    "original_bytes": 162144,
+    "slice": "cowles-v2",
+    "sha256": "983ce37eb6e6e440b17505ab04a69a975ee7c75a59734be4ac89d8b892e192c8",
+    "bytes": 3898,
+    "expected": {
+      "variant": "cowles-closures-article",
+      "state": "populated",
+      "rows": 23,
+      "names": [
+        "Amsterdam School",
+        "Belgrade School District",
+        "Bozeman School District",
+        "Manhattan Christian School",
+        "Seeley Swan High School",
+        "Whitehall Schools",
+        "Geyser Public Schools",
+        "Rossiter Elementary",
+        "Billings Public Schools",
+        "Colstrip",
+        "Columbus Public Schools",
+        "Forsyth Schools",
+        "Hardin SD 17",
+        "Lame Deer Public Schools",
+        "Laurel School Buses",
+        "Lodge Grass",
+        "Park City Schools",
+        "Pioneer Elementary School",
+        "Pretty Eagle Catholic Academy",
+        "Pryor",
+        "Rapelje School",
+        "St. Charles Mission School",
+        "St. Labre Schools"
+      ]
+    },
+    "note": "KULR-8's /schoolclosures/ section page as it was before it framed the ticker: it shows the station's latest closings article in full, 'Statewide school delays and closures for Monday, March 4' (published 2019-03-03), 23 bulleted lines under regional headings. Captured in July, months after the day it names: a list typed by hand into an article, read as typed (list_updated_at is the article's time)."
+  },
+  {
+    "file": "lists/kulr-20191019.html",
+    "source_id": "cowles-kulr",
+    "adapter": "cowles",
+    "mode": "archive",
+    "url": "https://www.kulr8.com/schoolclosures/",
+    "captured_at": "2019-10-19T05:11:52Z",
+    "archive_url": "https://web.archive.org/web/20191019051152id_/https://www.kulr8.com/schoolclosures/",
+    "retrieved_at": "2026-09-27T14:25:28Z",
+    "original_sha256": "b44fff597f59137b8ce2f946ba26bdb16f4229d61c1fd998c81d5a546cb81503",
+    "original_bytes": 163172,
+    "slice": "cowles-v2",
+    "sha256": "e48bff4318345eb19f8f658034891d07214f3f320f3cae5b0111f9fe2f9a41ce",
+    "bytes": 3001,
+    "expected": {
+      "variant": "cowles-closures-article",
+      "state": "populated",
+      "rows": 2,
+      "names": [
+        "Pretty Eagle Catholic Academy - St. Xavier",
+        "Pryor Public Schools"
+      ]
+    },
+    "note": "The same section page in October 2019, showing 'Statewide school delays and closures for Wednesday, October 9' (published 2019-10-08): two bulleted lines (Pretty Eagle Catholic Academy - St. Xavier - 2 HOUR DELAY; Pryor Public Schools - CLOSED)."
+  },
+  {
+    "file": "lists/nonstop-cards-20201124.html",
+    "source_id": "cowles-kfbb",
+    "adapter": "cowles",
+    "mode": "archive",
+    "url": "https://www.montanarightnow.com/schoolclosures/",
+    "captured_at": "2020-11-24T01:32:59Z",
+    "archive_url": "https://web.archive.org/web/20201124013259id_/https://www.montanarightnow.com/schoolclosures/",
+    "retrieved_at": "2026-09-27T11:58:45Z",
+    "original_sha256": "e3d04217738deb9ef11968ab5e14f8b75dba1c522399feb05bcde27a3a8c5a02",
+    "original_bytes": 136457,
+    "slice": "cowles-v2",
+    "sha256": "daa2dbf268d4453fa3091aa3dee8321233ec506b09e0972327a8b8db8278a2a0",
+    "bytes": 73,
+    "expected": {
+      "variant": "cowles-section-cards",
+      "state": "empty",
+      "rows": 0,
+      "names": []
+    },
+    "note": "The same section page with no story card (only the road-conditions link card, not read): an empty list."
+  },
+  {
+    "file": "lists/nonstop-cards-20210306.html",
+    "source_id": "cowles-kfbb",
+    "adapter": "cowles",
+    "mode": "archive",
+    "url": "https://www.montanarightnow.com/schoolclosures/",
+    "captured_at": "2021-03-06T18:14:25Z",
+    "archive_url": "https://web.archive.org/web/20210306181425id_/https://www.montanarightnow.com/schoolclosures/",
+    "retrieved_at": "2026-09-27T11:58:50Z",
+    "original_sha256": "d9c7bc7226b7b46495264b7a44a7035db0bb9921ffc1a2818acd3150a1b0db84",
+    "original_bytes": 181662,
+    "slice": "cowles-v2",
+    "sha256": "324ea16c58c967803351687d565b1cc94ced34a2b9e759f790c15dc05a7f9c8a",
+    "bytes": 2328,
+    "expected": {
+      "variant": "cowles-section-cards",
+      "state": "populated",
+      "rows": 1,
+      "names": [
+        "Dodson Public Schools closed indefinitely due to positive COVID-19 cases"
+      ]
+    },
+    "note": "NonStop Local Montana's /schoolclosures/ section page before it framed the ticker: BLOX story cards, one story ('Dodson Public Schools closed indefinitely due to positive COVID-19 cases') and a road-conditions link card, which is not read. A story card proves the station's list only when it announces a closing for weather or an emergency, which this one does not."
+  },
+  {
+    "file": "lists/wetm-20230314.html",
+    "source_id": "nexstar-wetm",
+    "adapter": "nexstar",
+    "mode": "archive",
+    "url": "https://www.mytwintiers.com/weather/closings/",
+    "captured_at": "2023-03-14T14:12:47Z",
+    "archive_url": "https://web.archive.org/web/20230314141247id_/https://www.mytwintiers.com/weather/closings/",
+    "retrieved_at": "2026-09-29T03:58:32Z",
+    "original_sha256": "3c91e1c3d16d3ecfadbc47692c9c116d2d614075b646d9533ae227ae71ee78c6",
+    "original_bytes": 70152,
+    "slice": "nexstar-v4",
+    "sha256": "1df42e3811f273982f5dada603a7e32e4cbd2bd07f6dcefa011014eeeb92df2f",
+    "bytes": 18207,
+    "expected": {
+      "variant": "nexstar-page",
+      "state": "populated",
+      "rows": 22,
+      "names": [
+        "Athens Area Schools",
+        "Bradford Central School District",
+        "Candor Central Schools",
+        "Canton School District",
+        "Catharine Town Offices",
+        "Chemung Valley Montessori School",
+        "Covenant Love Community School",
+        "Dundee Central School District",
+        "Finger Lakes Boating Museum",
+        "Food Bank of the Southern Tier",
+        "Hammondsport School District",
+        "Northeast Bradford School District",
+        "Notre Dame High School",
+        "Odessa-Montour Central School",
+        "South Seneca School District",
+        "Spencer-Van Etten School District",
+        "Tompkins Community Action",
+        "Towanda Area School District",
+        "Troy School District",
+        "Trumansburg School District",
+        "Watkins Glen Central School",
+        "Waverly School District"
+      ]
+    },
+    "note": "WETM (Elmira) closings page during the nor'easter of 2023-03-14."
+  },
+  {
+    "file": "lists/wjet-20241204.html",
+    "source_id": "nexstar-wjet",
+    "adapter": "nexstar",
+    "mode": "archive",
+    "url": "https://www.yourerie.com/weather/closings/",
+    "captured_at": "2024-12-04T19:37:30Z",
+    "archive_url": "https://web.archive.org/web/20241204193730id_/https://www.yourerie.com/weather/closings/",
+    "retrieved_at": "2026-09-29T03:21:27Z",
+    "original_sha256": "5dd074e46fc5182a73b8543f97fb6880928e4634d28b1d2766f0a2fc0943d5a0",
+    "original_bytes": 66655,
+    "slice": "nexstar-v4",
+    "sha256": "5783992bb542cdbfcf62e991b763dca6e4479f3777380c824af77669415a606d",
+    "bytes": 18477,
+    "expected": {
+      "variant": "nexstar-page",
+      "state": "populated",
+      "rows": 24,
+      "names": [
+        "Barber National Institute – Elizabeth Lee Black School",
+        "EHCA's MOVE Program",
+        "Early Connections",
+        "Erie Boys and Girls Club",
+        "Erie Catholic School System",
+        "Erie City Schools",
+        "Erie County Public Library",
+        "Erie County Public Safety Urges Residents to Use 911 for Life-Threatening E",
+        "First Alliance Church",
+        "GECAC",
+        "GECAC Senior Center – Northwestern",
+        "GECAC Senior Center – RBW Central City",
+        "GECAC Senior Center – Union City",
+        "Gannon University",
+        "Governor Declares Erie and Erie County a disaster area",
+        "Holy Hour at St. Mark's Catholic Church",
+        "Impaired Driving – DUI Classes",
+        "Mercy Hilltop Center",
+        "Mercyhurst University",
+        "PA ROAD CONDITIONS – 511PA.com",
+        "PRESQUE ISLE STATE PARK",
+        "Presque Isle State Park",
+        "Sacred Heart Food Pantry",
+        "St. Benedict Child Development Center"
+      ]
+    },
+    "note": "WJET (Erie) closings page during the lake-effect snow of early December 2024."
+  },
+  {
+    "file": "nisd/nisd-20240115.html",
+    "source_id": "nisd-northside-tx",
+    "adapter": "nisd",
+    "mode": "archive",
+    "url": "https://www.nisd.net/",
+    "captured_at": "2024-01-15T17:23:41Z",
+    "archive_url": "https://web.archive.org/web/20240115172341id_/https://www.nisd.net/",
+    "retrieved_at": "2026-09-29T09:10:33Z",
+    "original_sha256": "e20dbf4525005c1de4b2e1ac21f12840914bab0c68749e51dd254a7e4fe7d77d",
+    "original_bytes": 84849,
+    "slice": "nisd-v1",
+    "sha256": "5d1598ecbfe3f5c198a18371cbe7e395f98cd09ab0607c254aff0e09457745b4",
+    "bytes": 858,
+    "expected": {
+      "variant": "nisd-notices",
+      "state": "populated",
+      "rows": 1,
+      "names": [
+        "Northside Independent School District"
+      ]
+    },
+    "note": "Northside ISD's homepage on Martin Luther King, Jr. Day 2024: a holiday closure, which the notice gate does not count."
+  },
+  {
+    "file": "nisd/nisd-20250120.html",
+    "source_id": "nisd-northside-tx",
+    "adapter": "nisd",
+    "mode": "archive",
+    "url": "https://www.nisd.net/",
+    "captured_at": "2025-01-20T23:46:01Z",
+    "archive_url": "https://web.archive.org/web/20250120234601id_/https://www.nisd.net/",
+    "retrieved_at": "2026-09-29T09:10:39Z",
+    "original_sha256": "3ce4696c0c97543c61b732d0548d6871a69f4af43664e1017d99e80916ad73fe",
+    "original_bytes": 67931,
+    "slice": "nisd-v1",
+    "sha256": "ce56960fa02e4d84cd757ff75712a061dda0c9b22f96b8a4fddfa29cd8908ca6",
+    "bytes": 1443,
+    "expected": {
+      "variant": "nisd-notices",
+      "state": "populated",
+      "rows": 2,
+      "names": [
+        "Northside Independent School District",
+        "Northside Independent School District"
+      ]
+    },
+    "note": "Northside ISD's homepage the evening before the January 2025 snow: classes cancelled Tuesday 21 January (and the Martin Luther King, Jr. Day closure)."
+  },
+  {
+    "file": "nisd/nisd-20260125.html",
+    "source_id": "nisd-northside-tx",
+    "adapter": "nisd",
+    "mode": "archive",
+    "url": "https://www.nisd.net/",
+    "captured_at": "2026-01-25T23:10:19Z",
+    "archive_url": "https://web.archive.org/web/20260125231019id_/https://www.nisd.net/",
+    "retrieved_at": "2026-09-29T09:12:00Z",
+    "original_sha256": "39963e8f5489ffd734b56b09c208ff7cd5d8b17efd571e15a17b9938dde36ec7",
+    "original_bytes": 61847,
+    "slice": "nisd-v1",
+    "sha256": "c9504c0eada687e98163dc6230bc1fab06c0647daeb514504a4f517a38b0018d",
+    "bytes": 1253,
+    "expected": {
+      "variant": "nisd-notices",
+      "state": "populated",
+      "rows": 1,
+      "names": [
+        "Northside Independent School District"
+      ]
+    },
+    "note": "Northside ISD's homepage the day before the January 2026 cold: all offices and schools closed Monday 26 January."
+  },
+  {
+    "file": "nisd/nisd-live-20260929.html",
+    "source_id": "nisd-northside-tx",
+    "adapter": "nisd",
+    "mode": "live",
+    "url": "https://www.nisd.net/",
+    "captured_at": "2026-09-29T09:15:04Z",
+    "archive_url": null,
+    "retrieved_at": "2026-09-29T09:15:04Z",
+    "original_sha256": "c9adf838a7887cb47f5b50648ce9dbd778f5147594ec1f7994a6f402e7ac345f",
+    "original_bytes": 62847,
+    "slice": "nisd-v1",
+    "sha256": "7bd2b37e503f45c1b08ee68bd93ed5e5461b25f4108173c9d4ab7aa773170135",
+    "bytes": 334,
+    "expected": {
+      "variant": "nisd-notices",
+      "state": "empty",
+      "rows": 0,
+      "names": []
+    },
+    "note": "Northside ISD's homepage read live: the notices view holds no row."
+  },
+  {
+    "file": "sharpschool/corona-norco-alerts-live-20261013.json",
+    "source_id": "sharpschool-corona-norco-ca",
+    "adapter": "sharpschool",
+    "mode": "live",
+    "url": "https://www.cnusd.k12.ca.us/WebServices/UnifiedPublishing/UnifiedPublishingService.asmx/GetActiveAlerts",
+    "captured_at": "2026-10-13T12:22:35Z",
+    "archive_url": null,
+    "retrieved_at": "2026-10-13T12:22:35Z",
+    "original_sha256": "088214f816e99a2f4aedb5323c1c2eaf8b8143df9424ec46759966ddd9b72dd3",
+    "original_bytes": 8,
+    "slice": "none",
+    "sha256": "088214f816e99a2f4aedb5323c1c2eaf8b8143df9424ec46759966ddd9b72dd3",
+    "bytes": 8,
+    "expected": {
+      "variant": "sharpschool-alerts",
+      "state": "empty",
+      "rows": 0,
+      "names": []
+    },
+    "note": "Corona-Norco's alert service answering the homepage component's POST: no alert up"
+  },
+  {
+    "file": "sharpschool/indian-river-20201108.html",
+    "source_id": "apptegy-indian-river-fl",
+    "adapter": "apptegy",
+    "mode": "archive",
+    "url": "https://www.indianriverschools.org/",
+    "captured_at": "2020-11-08T23:41:03Z",
+    "archive_url": "https://web.archive.org/web/20201108234103id_/https://www.indianriverschools.org/",
+    "retrieved_at": "2026-10-04T00:20:28Z",
+    "original_sha256": "c2545c43bae41aa962f464c6e367337bd227d413a59af03f242a9cca87aeb208",
+    "original_bytes": 193944,
+    "slice": "sharpschool-v3",
+    "sha256": "718570ee28751e65772a35ac8f00d52584b1e0ec80238e9098ee0ae43dffbff6",
+    "bytes": 587,
+    "expected": {
+      "variant": "sharpschool-homepage",
+      "state": "populated",
+      "rows": 3,
+      "names": [
+        "SDIRC Closed Monday Nov. 9 Due to Potential Storm Impacts From Tropical Storm Eta",
+        "SDIRC Schools Closed 11/9",
+        "All SDIRC school campuses & buildings will be closed tomorrow, Mon. 11/9, due to Tropical Storm Eta. There will be no virtual instruction. We plan to reopen on Tues. 11/10 if weather conditions allow & campuses are safe. Chec"
+      ]
+    },
+    "note": "Indian River's SharpSchool homepage the day before Tropical Storm Eta's closing, before its Apptegy site: the alert component (whose service the archive never holds) and news items announcing the closing ('SDIRC Closed Monday Nov. 9 Due to Potential Storm Impacts From Tropical Storm Eta'). Read as the page's own closing lines (page-text rows), loading the alert service beside them."
+  },
+  {
+    "file": "sharpschool/lee-20220926.html",
+    "source_id": "sharpschool-lee-fl",
+    "adapter": "sharpschool",
+    "mode": "archive",
+    "url": "https://www.leeschools.net/",
+    "captured_at": "2022-09-26T13:38:01Z",
+    "archive_url": "https://web.archive.org/web/20220926133801id_/https://www.leeschools.net/",
+    "retrieved_at": "2026-10-03T20:36:42Z",
+    "original_sha256": "9cbc3b5665a99914465400aba2a8b9044823469e4964cca9181196ff99e8823d",
+    "original_bytes": 43586,
+    "slice": "sharpschool-v1",
+    "sha256": "b7f99dff3c35e3ef1325b1d831b77740b95bcce9c1a41e9f7784641a2c71f403",
+    "bytes": 7740,
+    "expected": {
+      "variant": "sharpschool-slider",
+      "state": "populated",
+      "rows": 8,
+      "names": [
+        "Weather Watch Alert",
+        "Connect with LEE (Live Educational Experts)",
+        "Mental Health and Wellness Portal",
+        "Superintendent Town Hall Meetings",
+        "Annual Vendor Open House",
+        "Bus Drivers WANTED",
+        "School Attendance Awareness Month",
+        "Suicide Prevention Awareness Month"
+      ]
+    },
+    "note": "Two days before Hurricane Ian's landfall: the slider's first slide says the district is monitoring the storm (no closing yet)."
+  },
+  {
+    "file": "sharpschool/lee-20221004.html",
+    "source_id": "sharpschool-lee-fl",
+    "adapter": "sharpschool",
+    "mode": "archive",
+    "url": "https://www.leeschools.net/",
+    "captured_at": "2022-10-04T03:52:22Z",
+    "archive_url": "https://web.archive.org/web/20221004035222id_/https://www.leeschools.net/",
+    "retrieved_at": "2026-10-03T20:36:52Z",
+    "original_sha256": "289227398268d196571a21190a1704d4d18442062129b24a4c430f649010e58a",
+    "original_bytes": 42523,
+    "slice": "sharpschool-v1",
+    "sha256": "263cd56220e5334c1ea3be2b20bf294311c009e188487b995698eef8a3c66b8b",
+    "bytes": 4218,
+    "expected": {
+      "variant": "sharpschool-slider",
+      "state": "populated",
+      "rows": 4,
+      "names": [
+        "Hurricane Ian",
+        "Connect with LEE (Live Educational Experts)",
+        "Mental Health and Wellness Portal",
+        "Bus Drivers WANTED"
+      ]
+    },
+    "note": "Hurricane Ian: the homepage's hero slider leads with the district's decision to close all schools and offices for the week of 3-7 October 2022."
+  },
+  {
+    "file": "sharpschool/lee-alerts-live-20261003.json",
+    "source_id": "sharpschool-lee-fl",
+    "adapter": "sharpschool",
+    "mode": "live",
+    "url": "https://www.leeschools.net/WebServices/UnifiedPublishing/UnifiedPublishingService.asmx/GetActiveAlerts",
+    "captured_at": "2026-10-03T21:45:29Z",
+    "archive_url": null,
+    "retrieved_at": "2026-10-03T21:45:29Z",
+    "original_sha256": "088214f816e99a2f4aedb5323c1c2eaf8b8143df9424ec46759966ddd9b72dd3",
+    "original_bytes": 8,
+    "slice": "none",
+    "sha256": "088214f816e99a2f4aedb5323c1c2eaf8b8143df9424ec46759966ddd9b72dd3",
+    "bytes": 8,
+    "expected": {
+      "variant": "sharpschool-alerts",
+      "state": "empty",
+      "rows": 0,
+      "names": []
+    },
+    "note": "The alert service's answer to the homepage component's own POST on a quiet day: no alert."
+  },
+  {
+    "file": "sharpschool/marion-20220927.html",
+    "source_id": "sharpschool-marion-fl",
+    "adapter": "sharpschool",
+    "mode": "archive",
+    "url": "https://www.marionschools.net/",
+    "captured_at": "2022-09-27T23:56:10Z",
+    "archive_url": "https://web.archive.org/web/20220927235610id_/https://www.marionschools.net/",
+    "retrieved_at": "2026-10-03T20:47:37Z",
+    "original_sha256": "4b3f3a9d46bc3e25f07254ae3461a8d25fd5beb188b18eebe89aca51e9287081",
+    "original_bytes": 418744,
+    "slice": "wcm-v2",
+    "sha256": "0d4cb44dc335c0027346f88ec2119bd7ee39911eaf5b27472c869cc7b139be5e",
+    "bytes": 8774,
+    "expected": {
+      "variant": "wcm-announcements",
+      "state": "populated",
+      "rows": 1,
+      "names": [
+        "Marion County Public Schools"
+      ]
+    },
+    "note": "Marion's Web Community Manager homepage of Hurricane Ian: the announcements app says the schools are closed Wednesday to Friday."
+  },
+  {
+    "file": "sharpschool/marion-20241007.html",
+    "source_id": "sharpschool-marion-fl",
+    "adapter": "sharpschool",
+    "mode": "archive",
+    "url": "https://www.marionschools.net/",
+    "captured_at": "2024-10-07T18:06:31Z",
+    "archive_url": "https://web.archive.org/web/20241007180631id_/https://www.marionschools.net/",
+    "retrieved_at": "2026-10-03T20:50:17Z",
+    "original_sha256": "17f7d008de2b8ad96dd74f36c48347aeb668251484c78870c151488eec0cd38d",
+    "original_bytes": 68824,
+    "slice": "sharpschool-v1",
+    "sha256": "d9795fb524d95cbef11590b3c64ee0de5c8296de87c493b5257f7391599e627f",
+    "bytes": 158,
+    "expected": {
+      "variant": "sharpschool-homepage",
+      "state": "deferred",
+      "rows": 0,
+      "names": []
+    },
+    "note": "Marion's SharpSchool homepage: the alert component loads the alerts from the service by POST, which the archive does not keep."
+  },
+  {
+    "file": "sharpschool/orange-20220928.html",
+    "source_id": "smartsites-orange-fl",
+    "adapter": "smartsites",
+    "mode": "archive",
+    "url": "https://www.ocps.net/",
+    "captured_at": "2022-09-28T14:39:22Z",
+    "archive_url": "https://web.archive.org/web/20220928143922id_/https://www.ocps.net/",
+    "retrieved_at": "2026-09-29T05:37:14Z",
+    "original_sha256": "323e580f855d9a6bbbcbd81d37307a46f4f9218d9b4ef4f02b31e21f2a92c552",
+    "original_bytes": 123180,
+    "slice": "sharpschool-v3",
+    "sha256": "55095108b1c04fa5efdaf214428967b522935a191bc7122c14ae3903ad422654",
+    "bytes": 811,
+    "expected": {
+      "variant": "sharpschool-banner-slider",
+      "state": "populated",
+      "rows": 2,
+      "names": [
+        "Hurricane Ian",
+        "No Early Release Wednesday"
+      ]
+    },
+    "note": "Orange County Public Schools' SharpSchool homepage during Hurricane Ian, before its Smart Sites site: the banner rotator's one slide, linked as 'Hurricane Ian' and captioned 'All Schools/District Offices Closed Wednesday, Thursday and Friday'. Read as sharpschool-banner-slider; the page's news teaser 'No Early Release Wednesday' is a page-text row (no weather word: it proves nothing by itself)."
+  },
+  {
+    "file": "sharpschool/orange-20241009.html",
+    "source_id": "smartsites-orange-fl",
+    "adapter": "smartsites",
+    "mode": "archive",
+    "url": "https://www.ocps.net/",
+    "captured_at": "2024-10-09T11:58:24Z",
+    "archive_url": "https://web.archive.org/web/20241009115824id_/https://www.ocps.net/",
+    "retrieved_at": "2026-09-27T22:01:25Z",
+    "original_sha256": "25916efc9bb4305170aae12197121ebfbb3c038b7272963e9a8993d2bcadd78d",
+    "original_bytes": 291214,
+    "slice": "sharpschool-v3",
+    "sha256": "da603dd0c3e31b6df4bd8b304185e3a62356d68246d38cea19656a8bce477bbc",
+    "bytes": 637,
+    "expected": {
+      "variant": "sharpschool-banner-slider",
+      "state": "populated",
+      "rows": 1,
+      "names": [
+        "Hurricane Milton"
+      ]
+    },
+    "note": "The same homepage the day Hurricane Milton landed: one banner slide linked as 'Hurricane Milton', its image titled 'Click here for updated severe weather information.' and no caption."
+  },
+  {
+    "file": "sharpschool/polk-20220928.html",
+    "source_id": "sharpschool-polk-fl",
+    "adapter": "sharpschool",
+    "mode": "archive",
+    "url": "https://polkschoolsfl.com/",
+    "captured_at": "2022-09-28T10:03:53Z",
+    "archive_url": "https://web.archive.org/web/20220928100353id_/https://polkschoolsfl.com/",
+    "retrieved_at": "2026-10-03T20:52:43Z",
+    "original_sha256": "dd26757d725ee31ef673d213e80fae2fa76ac85f0e8ff45c02255e80584552a9",
+    "original_bytes": 1001935,
+    "slice": "sharpschool-v2",
+    "sha256": "98f21972e9ed7ed1b979a5a0a90834a45ed6a48391d1b7224cd4186f28d7c28b",
+    "bytes": 9793,
+    "expected": {
+      "variant": "wordpress-smartslider",
+      "state": "populated",
+      "rows": 2,
+      "names": [
+        "Designer",
+        "Featured Video"
+      ]
+    },
+    "note": "Polk's WordPress homepage of Hurricane Ian: its storm slider's slide says the county's public schools are closed Tuesday to Thursday (27-29 September 2022)."
+  },
+  {
+    "file": "wcm/baldwin-20180119.html",
+    "source_id": "finalsite-baldwin-al",
+    "adapter": "finalsite",
+    "mode": "archive",
+    "url": "https://www.bcbe.org/",
+    "captured_at": "2018-01-19T04:12:03Z",
+    "archive_url": "https://web.archive.org/web/20180119041203id_/https://www.bcbe.org/",
+    "retrieved_at": "2026-09-28T16:04:26Z",
+    "original_sha256": "789a742419c5d1b6470fb551ed778a42b3521c32965604063f4481e4d644e201",
+    "original_bytes": 284994,
+    "slice": "wcm-v1",
+    "sha256": "0bfb6c02a260112090062cc1d2346cb86b83505d42b5d666386a8ce6b26635db",
+    "bytes": 781,
+    "expected": {
+      "variant": "wcm-announcements",
+      "state": "empty",
+      "rows": 0,
+      "names": []
+    },
+    "note": "An Announcements app holding no article: an empty list."
+  },
+  {
+    "file": "wcm/baldwin-20201029.html",
+    "source_id": "finalsite-baldwin-al",
+    "adapter": "finalsite",
+    "mode": "archive",
+    "url": "https://www.bcbe.org/",
+    "captured_at": "2020-10-29T13:06:40Z",
+    "archive_url": "https://web.archive.org/web/20201029130640id_/https://www.bcbe.org/",
+    "retrieved_at": "2026-09-28T16:04:07Z",
+    "original_sha256": "29a9012caadb7bb55ccb81cb65eeed99807afcfd4a62c4fb6a2ec9b431254ff1",
+    "original_bytes": 444208,
+    "slice": "wcm-v1",
+    "sha256": "4aa2449795849d73a527299cf949979f61f7bb26d920b9f517f1c5ea1ffe88b6",
+    "bytes": 6536,
+    "expected": {
+      "variant": "wcm-announcements",
+      "state": "populated",
+      "rows": 7,
+      "names": [
+        "Baldwin County Public Schools",
+        "Baldwin County Public Schools",
+        "Baldwin County Public Schools",
+        "Baldwin County Public Schools",
+        "Baldwin County Public Schools",
+        "Baldwin County Public Schools",
+        "Baldwin County Public Schools"
+      ]
+    },
+    "note": "Hurricane Zeta: BCBE District Announcements (an Announcements app); the BCBE In The News headlines app is not read."
+  },
+  {
+    "file": "wcm/broward-20220928.html",
+    "source_id": "finalsite-broward-fl",
+    "adapter": "finalsite",
+    "mode": "archive",
+    "url": "https://www.browardschools.com/",
+    "captured_at": "2022-09-28T02:07:40Z",
+    "archive_url": "https://web.archive.org/web/20220928020740id_/https://www.browardschools.com/",
+    "retrieved_at": "2026-09-29T09:15:32Z",
+    "original_sha256": "77b7115762866fec98d092982b0824d2d0e2a0c75a235a25fe3b707163b29d80",
+    "original_bytes": 616058,
+    "slice": "wcm-v2",
+    "sha256": "3d4b2a6359c81b4688ce3add3f6193b8334f43fea089ab001dee9b57f507fa30",
+    "bytes": 247,
+    "expected": {
+      "variant": "wcm-alert-page",
+      "state": "deferred",
+      "rows": 0,
+      "names": []
+    },
+    "note": "Broward County Public Schools' Web Community Manager homepage during Hurricane Ian: no announcements app, and its script loads the district's on-screen alert file (SiteID 4), captured 110 minutes earlier (wcm/broward-alert-20220928.html)."
+  },
+  {
+    "file": "wcm/broward-alert-20220928.html",
+    "source_id": "finalsite-broward-fl",
+    "adapter": "finalsite",
+    "mode": "archive",
+    "url": "https://www.browardschools.com/cms/Tools/OnScreenAlerts/UserControls/OnScreenAlertDialogListWrapper.aspx?OnScreenAlertCookie=&SiteID=4&_=1627683547399",
+    "captured_at": "2022-09-28T00:17:29Z",
+    "archive_url": "https://web.archive.org/web/20220928001729id_/https://www.browardschools.com/cms/Tools/OnScreenAlerts/UserControls/OnScreenAlertDialogListWrapper.aspx?OnScreenAlertCookie=&SiteID=4&_=1627683547399",
+    "retrieved_at": "2026-09-29T10:31:14Z",
+    "original_sha256": "8a064cf060dcbf3ff46f199e8585423e8f93814276908eba543153a7cf5fd6b1",
+    "original_bytes": 9977,
+    "slice": "none",
+    "sha256": "8a064cf060dcbf3ff46f199e8585423e8f93814276908eba543153a7cf5fd6b1",
+    "bytes": 9977,
+    "expected": {
+      "variant": "wcm-onscreen-alert",
+      "state": "populated",
+      "rows": 1,
+      "names": [
+        "BCPS Update on School Operations Due to Hurricane Ian"
+      ]
+    },
+    "note": "Broward County Public Schools' on-screen alert file (SiteID 4) captured on the evening before Hurricane Ian's landfall: the district closed its schools and offices on 28 and 29 September 2022. The district's Web Community Manager homepage captured 110 minutes later (wcm/broward-20220928.html) loads it."
+  },
+  {
+    "file": "wcm/broward-alert-20241008.html",
+    "source_id": "finalsite-broward-fl",
+    "adapter": "finalsite",
+    "mode": "archive",
+    "url": "https://www.browardschools.com/cms/Tools/OnScreenAlerts/UserControls/OnScreenAlertDialogListWrapper.aspx?OnScreenAlertCookie=&SiteID=4&_=1627683544364",
+    "captured_at": "2024-10-08T22:18:55Z",
+    "archive_url": "https://web.archive.org/web/20241008221855id_/https://www.browardschools.com/cms/Tools/OnScreenAlerts/UserControls/OnScreenAlertDialogListWrapper.aspx?OnScreenAlertCookie=&SiteID=4&_=1627683544364",
+    "retrieved_at": "2026-09-29T10:36:57Z",
+    "original_sha256": "b5248f74c178085f4ea17cbdb4c19cb0584708d4ba29fa1b98c70152ebc4e520",
+    "original_bytes": 8478,
+    "slice": "none",
+    "sha256": "b5248f74c178085f4ea17cbdb4c19cb0584708d4ba29fa1b98c70152ebc4e520",
+    "bytes": 8478,
+    "expected": {
+      "variant": "wcm-onscreen-alert",
+      "state": "empty",
+      "rows": 0,
+      "names": []
+    },
+    "note": "Broward's on-screen alert file on the eve of Hurricane Milton's landfall (2024-10-08 22:18 UTC): no alert up (the message list holds no list)."
+  },
+  {
+    "file": "wcm/charlotte-20230830.html",
+    "source_id": "smartsites-charlotte-fl",
+    "adapter": "smartsites",
+    "mode": "archive",
+    "url": "https://www.yourcharlotteschools.net/",
+    "captured_at": "2023-08-30T16:23:17Z",
+    "archive_url": "https://web.archive.org/web/20230830162317id_/https://www.yourcharlotteschools.net/",
+    "retrieved_at": "2026-09-28T02:53:23Z",
+    "original_sha256": "4c3799b51c33227a922e4a3a99b8e7b1719ecf7d63276e53bbe37a78cfe6af9f",
+    "original_bytes": 487647,
+    "slice": "wcm-v1",
+    "sha256": "60eb0ce89e3ef011068de01edd23117052474fa0b2a41479968d717bf7405957",
+    "bytes": 14698,
+    "expected": {
+      "variant": "wcm-announcements",
+      "state": "populated",
+      "rows": 10,
+      "names": [
+        "Charlotte County Public Schools",
+        "Charlotte County Public Schools",
+        "Charlotte County Public Schools",
+        "Charlotte County Public Schools",
+        "Charlotte County Public Schools",
+        "Charlotte County Public Schools",
+        "Charlotte County Public Schools",
+        "Charlotte County Public Schools",
+        "Charlotte County Public Schools",
+        "Charlotte County Public Schools"
+      ]
+    },
+    "note": "Tropical Storm Idalia: a headlines app the district titled Breaking News (read) announces the closing of 29-30 August; the Featured Stories headlines app is not read."
+  },
+  {
+    "file": "wcm/clarke-20201030.html",
+    "source_id": "finalsite-clarke-al",
+    "adapter": "finalsite",
+    "mode": "archive",
+    "url": "https://www.clarkecountyschools.org/",
+    "captured_at": "2020-10-30T13:56:32Z",
+    "archive_url": "https://web.archive.org/web/20201030135632id_/https://www.clarkecountyschools.org/",
+    "retrieved_at": "2026-09-28T16:12:06Z",
+    "original_sha256": "ae425dc49f7d9f34c022c763bbc5aad05862e00d874cb11cdca5857903ebf7bb",
+    "original_bytes": 327174,
+    "slice": "wcm-v1",
+    "sha256": "ff27e1a76fc583d272283af7cde51815078f898e33e8218a03f9b2a216dbd8ea",
+    "bytes": 4994,
+    "expected": {
+      "variant": "wcm-announcements",
+      "state": "populated",
+      "rows": 4,
+      "names": [
+        "Clarke Co School District",
+        "Clarke Co School District",
+        "Clarke Co School District",
+        "Clarke Co School District"
+      ]
+    },
+    "note": "Hurricane Zeta: the district's Announcements app says all Clarke County schools are closed Friday, 10/30."
+  },
+  {
+    "file": "wcm/collier-20241005.html",
+    "source_id": "finalsite-collier-fl",
+    "adapter": "finalsite",
+    "mode": "archive",
+    "url": "https://www.collierschools.com/",
+    "captured_at": "2024-10-05T19:52:23Z",
+    "archive_url": "https://web.archive.org/web/20241005195223id_/https://www.collierschools.com/",
+    "retrieved_at": "2026-09-27T22:39:14Z",
+    "original_sha256": "05e344ce83e87505187a14c10a964e07447fe16f321e71ae0be27c683e02c94b",
+    "original_bytes": 369830,
+    "slice": "wcm-v1",
+    "sha256": "726920b99c4b73143675dc715682f4c92fc58953cb988abc19daf9bcc82bda1d",
+    "bytes": 22792,
+    "expected": {
+      "variant": "wcm-announcements",
+      "state": "populated",
+      "rows": 20,
+      "names": [
+        "Collier County Public Schools",
+        "Collier County Public Schools",
+        "Collier County Public Schools",
+        "Collier County Public Schools",
+        "Collier County Public Schools",
+        "Collier County Public Schools",
+        "Collier County Public Schools",
+        "Collier County Public Schools",
+        "Collier County Public Schools",
+        "Collier County Public Schools",
+        "Collier County Public Schools",
+        "Collier County Public Schools",
+        "Collier County Public Schools",
+        "Collier County Public Schools",
+        "Collier County Public Schools",
+        "Collier County Public Schools",
+        "Collier County Public Schools",
+        "Collier County Public Schools",
+        "Collier County Public Schools",
+        "Collier County Public Schools"
+      ]
+    },
+    "note": ""
+  },
+  {
+    "file": "wcm/duval-20220928.html",
+    "source_id": "apptegy-duval-fl",
+    "adapter": "apptegy",
+    "mode": "archive",
+    "url": "https://dcps.duvalschools.org/",
+    "captured_at": "2022-09-28T08:48:00Z",
+    "archive_url": "https://web.archive.org/web/20220928084800id_/https://dcps.duvalschools.org/",
+    "retrieved_at": "2026-09-27T18:56:41Z",
+    "original_sha256": "7878b5761d0a9fd35abe03a5a31652ad3880751d1e3244bbe9ad5b925f374b2b",
+    "original_bytes": 357747,
+    "slice": "wcm-v1",
+    "sha256": "30495de897d4c74f056611868c13aee84e90fdfc8a800cdc4de191959f4c4ded",
+    "bytes": 5744,
+    "expected": {
+      "variant": "wcm-announcements",
+      "state": "populated",
+      "rows": 5,
+      "names": [
+        "Duval County Public Schools",
+        "Duval County Public Schools",
+        "Duval County Public Schools",
+        "Duval County Public Schools",
+        "Duval County Public Schools"
+      ]
+    },
+    "note": "Hurricane Ian: the headlines app titled Announcements (read); the Team Duval News headlines app is not read."
+  },
+  {
+    "file": "wcm/duval-20240926.html",
+    "source_id": "apptegy-duval-fl",
+    "adapter": "apptegy",
+    "mode": "archive",
+    "url": "https://dcps.duvalschools.org/",
+    "captured_at": "2024-09-26T13:14:27Z",
+    "archive_url": "https://web.archive.org/web/20240926131427id_/https://dcps.duvalschools.org/",
+    "retrieved_at": "2026-09-27T18:55:19Z",
+    "original_sha256": "c303e000b176acd5790c664cc56282c0606e6084f974047d92335472909fb70e",
+    "original_bytes": 353135,
+    "slice": "wcm-v1",
+    "sha256": "a79e22b4e4f8a06b2c4390e699974dac3b14190ea8eb33e88221898e9484f86f",
+    "bytes": 5949,
+    "expected": {
+      "variant": "wcm-announcements",
+      "state": "populated",
+      "rows": 5,
+      "names": [
+        "Duval County Public Schools",
+        "Duval County Public Schools",
+        "Duval County Public Schools",
+        "Duval County Public Schools",
+        "Duval County Public Schools"
+      ]
+    },
+    "note": ""
+  },
+  {
+    "file": "wcm/great-falls-20231102.html",
+    "source_id": "finalsite-great-falls-mt",
+    "adapter": "finalsite",
+    "mode": "archive",
+    "url": "https://www.gfps.k12.mt.us/",
+    "captured_at": "2023-11-02T00:24:12Z",
+    "archive_url": "https://web.archive.org/web/20231102002412id_/https://www.gfps.k12.mt.us/",
+    "retrieved_at": "2026-09-28T23:04:33Z",
+    "original_sha256": "e28dabb677b048d3d462afee30710fb4cd21caa20b8829da5c8b33df5b50b056",
+    "original_bytes": 436450,
+    "slice": "wcm-v1",
+    "sha256": "e73ea71e038e57af0de1f10155a207501b8d50975f91fd8f05da43e49b0ab076",
+    "bytes": 13749,
+    "expected": {
+      "variant": "wcm-announcements",
+      "state": "populated",
+      "rows": 12,
+      "names": [
+        "Great Falls Public Schools",
+        "Great Falls Public Schools",
+        "Great Falls Public Schools",
+        "Great Falls Public Schools",
+        "Great Falls Public Schools",
+        "Great Falls Public Schools",
+        "Great Falls Public Schools",
+        "Great Falls Public Schools",
+        "Great Falls Public Schools",
+        "Great Falls Public Schools",
+        "Great Falls Public Schools",
+        "Great Falls Public Schools"
+      ]
+    },
+    "note": "Great Falls Public Schools' Web Community Manager homepage before its Finalsite site: a headlines app titled District Information, whose first article is the 'Freezing Rain Alert 11/01/2023 URGENT' weather notice (read: the title names the district's information channel)."
+  },
+  {
+    "file": "wcm/hillsborough-20241009.html",
+    "source_id": "apptegy-hillsborough-fl",
+    "adapter": "apptegy",
+    "mode": "archive",
+    "url": "https://www.hillsboroughschools.org/",
+    "captured_at": "2024-10-09T13:54:38Z",
+    "archive_url": "https://web.archive.org/web/20241009135438id_/https://www.hillsboroughschools.org/",
+    "retrieved_at": "2026-09-27T18:44:55Z",
+    "original_sha256": "94bc76dce74b88012f20b6299e1b30f1e5a47d98c0f1066ed6a8e94265930981",
+    "original_bytes": 404431,
+    "slice": "wcm-v2",
+    "sha256": "e012fc35f775e48881a1bdcc7b265e2d54094eb74dc58ef6ca29445c53bcbdd2",
+    "bytes": 1864,
+    "expected": {
+      "variant": "wcm-announcements",
+      "state": "populated",
+      "rows": 1,
+      "names": [
+        "Hillsborough County Public Schools"
+      ]
+    },
+    "note": "Hillsborough County Public Schools' Web Community Manager homepage on Hurricane Milton's landfall day: its announcements app holds one article, not a closing, and the page loads the district's on-screen alert (SiteID 4) beside it; no capture of that alert file falls within six hours of this page in the archive's listing (run 36513960977)."
+  },
+  {
+    "file": "wcm/hillsborough-alert-20220930.html",
+    "source_id": "apptegy-hillsborough-fl",
+    "adapter": "apptegy",
+    "mode": "archive",
+    "url": "https://www.hillsboroughschools.org/cms/Tools/OnScreenAlerts/UserControls/OnScreenAlertDialogListWrapper.aspx?OnScreenAlertCookie=&SiteID=4&_=1664555949145",
+    "captured_at": "2022-09-30T17:47:53Z",
+    "archive_url": "https://web.archive.org/web/20220930174753id_/https://www.hillsboroughschools.org/cms/Tools/OnScreenAlerts/UserControls/OnScreenAlertDialogListWrapper.aspx?OnScreenAlertCookie=&SiteID=4&_=1664555949145",
+    "retrieved_at": "2026-09-29T10:31:08Z",
+    "original_sha256": "5a9830c8c7722ef8edce36d3e326e55d8f16004a5d831bf124029de695b1077b",
+    "original_bytes": 8733,
+    "slice": "none",
+    "sha256": "5a9830c8c7722ef8edce36d3e326e55d8f16004a5d831bf124029de695b1077b",
+    "bytes": 8733,
+    "expected": {
+      "variant": "wcm-onscreen-alert",
+      "state": "populated",
+      "rows": 1,
+      "names": [
+        "Schools will remain closed this Friday to allow our staff time to clean and prepare classrooms for students to return Monday, October 3."
+      ]
+    },
+    "note": "Hillsborough County Public Schools' on-screen alert after Hurricane Ian: 'Schools will remain closed this Friday to allow our staff time to clean and prepare classrooms for students to return Monday, October 3.'"
+  },
+  {
+    "file": "wcm/pinellas-20241008.html",
+    "source_id": "finalsite-pinellas-fl",
+    "adapter": "finalsite",
+    "mode": "archive",
+    "url": "https://www.pcsb.org/",
+    "captured_at": "2024-10-08T09:11:14Z",
+    "archive_url": "https://web.archive.org/web/20241008091114id_/https://www.pcsb.org/",
+    "retrieved_at": "2026-09-29T11:07:19Z",
+    "original_sha256": "654d6ceb3b8c3475fc1700a2ac22d1399feee476ca07816608d1720edb1527d4",
+    "original_bytes": 485106,
+    "slice": "wcm-v2",
+    "sha256": "1999491ba1ee93301a5107ec766b6e8322b8a7e4eac0103d9ffcdcb60ef673a0",
+    "bytes": 6890,
+    "expected": {
+      "variant": "wcm-announcements",
+      "state": "populated",
+      "rows": 6,
+      "names": [
+        "Pinellas County Schools",
+        "Pinellas County Schools",
+        "Pinellas County Schools",
+        "Pinellas County Schools",
+        "Pinellas County Schools",
+        "Pinellas County Schools"
+      ]
+    },
+    "note": "Pinellas County Schools' Web Community Manager homepage the day before Hurricane Milton's landfall: its announcements app holds the district's news, and its script loads the on-screen alert file (SiteID 4) beside it (wcm/pinellas-alert-20241008.html, captured 4 h 39 min later)."
+  },
+  {
+    "file": "wcm/pinellas-alert-20241008.html",
+    "source_id": "finalsite-pinellas-fl",
+    "adapter": "finalsite",
+    "mode": "archive",
+    "url": "https://www.pcsb.org/cms/Tools/OnScreenAlerts/UserControls/OnScreenAlertDialogListWrapper.aspx?OnScreenAlertCookie=&SiteID=4&_=1728395414600",
+    "captured_at": "2024-10-08T13:50:17Z",
+    "archive_url": "https://web.archive.org/web/20241008135017id_/https://www.pcsb.org/cms/Tools/OnScreenAlerts/UserControls/OnScreenAlertDialogListWrapper.aspx?OnScreenAlertCookie=&SiteID=4&_=1728395414600",
+    "retrieved_at": "2026-09-29T11:08:57Z",
+    "original_sha256": "d995cdc21ff697cb0c7a2615994fb0272273e9832885f7e3365a31525864505e",
+    "original_bytes": 11155,
+    "slice": "none",
+    "sha256": "d995cdc21ff697cb0c7a2615994fb0272273e9832885f7e3365a31525864505e",
+    "bytes": 11155,
+    "expected": {
+      "variant": "wcm-onscreen-alert",
+      "state": "populated",
+      "rows": 1,
+      "names": [
+        "Weather Update and School Closure Information"
+      ]
+    },
+    "note": "Pinellas County Schools' on-screen alert on 2024-10-08: 'Weather Update and School Closure Information', every Pinellas County school closed ahead of Hurricane Milton."
+  },
+  {
+    "file": "wcm/socorro-20220203.html",
+    "source_id": "apptegy-socorro-tx",
+    "adapter": "apptegy",
+    "mode": "archive",
+    "url": "https://www.sisd.net/",
+    "captured_at": "2022-02-03T22:24:01Z",
+    "archive_url": "https://web.archive.org/web/20220203222401id_/https://www.sisd.net/",
+    "retrieved_at": "2026-09-28T07:50:59Z",
+    "original_sha256": "cd146c639a06093ca248dd6e47744b3b9120ee156920a65fd7613a54e24584dc",
+    "original_bytes": 292601,
+    "slice": "wcm-v2",
+    "sha256": "c33f696e6dd647b29990577f37278ef48a673466408862356f7d5ee1de8691a1",
+    "bytes": 253,
+    "expected": {
+      "variant": "wcm-alert-page",
+      "state": "deferred",
+      "rows": 0,
+      "names": []
+    },
+    "note": "A Web Community Manager homepage whose only headlines app is titled Top Stories and which has no announcements app, cut with wcm-v2 (the announcements apps and the alert loader only, not the page's text): the slice is a deferred page that loads the district's on-screen alert (SiteID 1). The page itself shows a closing line in its Top Stories ('Socorro ISD delayed start Feb. 4 due to inclement weather'), so read whole (round 3 of the coverage gate) it is a list of that page-text row, loading the alert file beside it: wcm/socorro-text-20220203.html keeps that line (wcm-v3). The archive's listing of the alert file (run 36513960977) holds no capture of it within six hours of this page (the nearest is of 2022-01-05)."
+  },
+  {
+    "file": "wcm/socorro-text-20220203.html",
+    "source_id": "apptegy-socorro-tx",
+    "adapter": "apptegy",
+    "mode": "archive",
+    "url": "https://www.sisd.net/",
+    "captured_at": "2022-02-03T22:24:01Z",
+    "archive_url": "https://web.archive.org/web/20220203222401id_/https://www.sisd.net/",
+    "retrieved_at": "2026-09-28T07:50:59Z",
+    "original_sha256": "cd146c639a06093ca248dd6e47744b3b9120ee156920a65fd7613a54e24584dc",
+    "original_bytes": 292601,
+    "slice": "wcm-v3",
+    "sha256": "e1b7095c95272146afee137f6e4f05dcae708a1f71203c5e16fa8a4edb94d9c5",
+    "bytes": 317,
+    "expected": {
+      "variant": "wcm-alert-page",
+      "state": "populated",
+      "rows": 1,
+      "names": [
+        "Socorro ISD delayed start Feb. 4 due to inclement weather"
+      ]
+    },
+    "note": "Socorro ISD's Web Community Manager homepage (no announcements app; its on-screen alert loads by script): its Top Stories headline 'Socorro ISD delayed start Feb. 4 due to inclement weather' is read as a page-text row, loading the alert file beside it."
+  }
+]

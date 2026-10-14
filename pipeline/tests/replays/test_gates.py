@@ -892,7 +892,7 @@ def test_every_registry_platform_is_classified() -> None:
     assert not REPLAY_PLATFORMS & KNOWN_OUT
     assert set(EXCLUDED_PLATFORMS) <= DISTRICT_SITES
     assert len(STATUS_BOARDS) == 6
-    assert len(UNCLASSIFIED) == 8
+    assert len(UNCLASSIFIED) == 9
 
 
 # --- read gates ---------------------------------------------------------------------------------

@@ -162,13 +162,16 @@ TYPED_BY_EYE = frozenset(
         "scripps-typed/kstu-page-20221213030846.html",
         "scripps-typed/kstu-page-20230222072846.html",
         "scripps-typed/kstu-page-20230226220604.html",
+        "scripps-typed/kstu-page-20250520013553.html",
+        "scripps-typed/kstu-page-20251217132420.html",
         "nexstar-typed/kiah-page-20250125183900.html",
         "nexstar-typed/kiah-page-20260111124431.html",
         "nexstar-typed/whnt-page-20181211023820.html",
     }
 )
-"""The archived typed fixtures whose names test_typed.py and test_typed_beside.py check one by
-one (and, for the pages typed as lists, against their list items read a second way)."""
+"""The archived typed fixtures whose names test_typed.py, test_typed_beside.py and
+test_typed_history.py check one by one (and, for the pages typed as lists, against their list
+items read a second way)."""
 
 
 @pytest.mark.parametrize("entry", ARCHIVED, ids=[entry.file for entry in ARCHIVED])

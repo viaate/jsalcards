@@ -219,7 +219,12 @@ def test_add_proven_counts_only_current_lists_seen_with_rows(tmp_path: Path) -> 
         "meets_target": False,
     }
     assert _dig(result, "proven", "states", "MO", "covered") == 1
-    assert _dig(result, "proven", "stations") == {"working": 3, "proven": 2, "unproven": 1}
+    assert _dig(result, "proven", "stations") == {
+        "working": 3,
+        "proven": 2,
+        "unproven": 1,
+        "shared": 0,
+    }
     listed = result["unproven"]
     assert isinstance(listed, list)
     (unproven,) = listed
@@ -241,13 +246,54 @@ def test_add_proven_counts_only_current_lists_seen_with_rows(tmp_path: Path) -> 
     assert proof.summary_line({}) is None
 
 
+def test_a_station_reading_a_proven_station_s_list_file_is_proven_by_it(tmp_path: Path) -> None:
+    # SYNTHETIC: C reads the same list file as B (Cowles' Montana stations all frame one
+    # statewide file; Gray's satellites read their parent's), and has no proof of its own.
+    folder = _registry(tmp_path)
+    path = folder / "synthetic.yaml"
+    content = yaml.safe_load(path.read_text(encoding="utf-8"))
+    content["stations"][2]["data_url"] = "https://synthetic-b.test/data.json"
+    path.write_text(yaml.safe_dump(content), encoding="utf-8")
+    registry = load_registry(folder)
+    health = {sid: _health(sid, HealthStatus.EMPTY) for sid in registry.stations}
+    states = coverage.station_states(registry, health)
+    result = coverage.measure(registry, SCHOOLS, states, None)
+    evidence = _evidence(tmp_path)
+    proof.add_proven(result, registry, SCHOOLS, states, evidence)
+    assert _dig(result, "proven", "stations") == {
+        "working": 3,
+        "proven": 3,
+        "unproven": 0,
+        "shared": 1,
+    }
+    assert _dig(result, "proven", "national", "covered") == 4
+    shared = _dig(result, "stations", "synthetic-c", "proof")
+    assert isinstance(shared, dict)
+    assert (shared["address"], shared["proves"], shared["current"]) == ("shared", True, False)
+    assert (shared["shared_with"], shared["shared_list"]) == (
+        "synthetic-b",
+        "https://synthetic-b.test/data.json",
+    )
+    # B's own proof is unchanged; a station that is not working shares nothing.
+    assert _dig(result, "stations", "synthetic-b", "proof", "address") == "current"
+    health["synthetic-b"] = _health("synthetic-b", HealthStatus.ERROR)
+    states = coverage.station_states(registry, health)
+    bests = {sid: evidence.best(item) for sid, item in registry.stations.items()}
+    assert proof.shared_proofs(registry, states, bests) == {}
+
+
 def test_stations_not_working_are_not_counted_either_way(tmp_path: Path) -> None:
     registry = load_registry(_registry(tmp_path))
     health = {"synthetic-a": _health("synthetic-a", HealthStatus.ERROR)}
     states = coverage.station_states(registry, health)
     result = coverage.measure(registry, SCHOOLS, states, None)
     proof.add_proven(result, registry, SCHOOLS, states, _evidence(tmp_path))
-    assert _dig(result, "proven", "stations") == {"working": 0, "proven": 0, "unproven": 0}
+    assert _dig(result, "proven", "stations") == {
+        "working": 0,
+        "proven": 0,
+        "unproven": 0,
+        "shared": 0,
+    }
     assert _dig(result, "proven", "national", "covered") == 0
     with pytest.raises(coverage.CoverageError, match="station table"):
         proof.add_proven({}, registry, SCHOOLS, states, proof.Evidence())
@@ -336,8 +382,6 @@ def test_the_map_panel_gives_the_proven_shares_off_the_map(tmp_path: Path) -> No
     map_height = plain.shape[0] - (coverage.STATE_ROW + 8 + 48)
     assert (plain[map_height : map_height + 8] == coverage.BACKGROUND).all()
     assert (with_proof[:map_height] == plain[:map_height]).all()
-    # The panel opens with the national proven line.
-    assert (with_proof[map_height + 8 : map_height + 22] != coverage.BACKGROUND).any()
     # The map itself is drawn untouched, between the title band and the legend.
     counties = result["counties"]
     assert isinstance(counties, dict)
@@ -350,6 +394,34 @@ def test_the_map_panel_gives_the_proven_shares_off_the_map(tmp_path: Path) -> No
     bare = render(shapes, colors, background=coverage.BACKGROUND, default=coverage.EMPTY_COLOR)
     top = coverage.HEADER_HEIGHT
     assert (with_proof[top : top + bare.shape[0]] == bare).all()
+    # Under the first map's legend comes the proven map: its title band, the counties
+    # coloured by what the proven share counts, and its legend of four entries.
+    table = _dig(result, "proven", "counties")
+    assert isinstance(table, dict)
+    proven_colors = {}
+    for fips, info in counties.items():
+        assert isinstance(info, dict)
+        mine = table[fips]
+        assert isinstance(mine, dict)
+        proven_colors[fips] = (
+            coverage.WORKING_COLOR
+            if mine["proven"]
+            else coverage.UNPROVEN_COLOR
+            if info["working"]
+            else coverage.GAP_COLOR
+        )
+    assert coverage.WORKING_COLOR in proven_colors.values()
+    assert coverage.UNPROVEN_COLOR in proven_colors.values()
+    second = render(
+        shapes, proven_colors, background=coverage.BACKGROUND, default=coverage.EMPTY_COLOR
+    )
+    assert (with_proof[map_height + 24 : map_height + 38] != coverage.BACKGROUND).any()
+    start = map_height + coverage.HEADER_HEIGHT
+    assert (with_proof[start : start + second.shape[0]] == second).all()
+    # Then the panel, opening with the national proven line.
+    panel = start + second.shape[0] + 4 * 24 + 8
+    assert (with_proof[panel : panel + 8] == coverage.BACKGROUND).all()
+    assert (with_proof[panel + 8 : panel + 22] != coverage.BACKGROUND).any()
 
 
 def _decode_png(data: bytes) -> "np.ndarray[tuple[int, int, int], np.dtype[np.uint8]]":

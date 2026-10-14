@@ -48,6 +48,56 @@ Variants this adapter reads:
     Closure Wednesday, Dec. 21st 2022"): read by
     :mod:`snowlight.sources.stations.campussuite`.
 
+``wcm-announcements``
+    A capture of the homepage from when it was a Web Community Manager site that
+    posted its notices in an announcements app rather than the Important
+    Announcement app (Duval's "Announcements" during Hurricanes Ian and Helene):
+    read by :mod:`snowlight.sources.stations.wcm`.
+
+``wcm-alert-page`` / ``wcm-onscreen-alert``
+    A Web Community Manager homepage loads the district's on-screen alert from its
+    alert file by script: a homepage without an announcements app is a deferred
+    page that loads it, one with the app names it beside its list, and the alert
+    file (Broward's of Hurricane Ian, Pinellas' of Milton) is read as a list of its
+    own: see :mod:`snowlight.sources.stations.wcm`.
+
+``googlesites-banner``
+    A capture of the homepage from when it was a Google Sites page with its
+    announcement banner (Clay's of 2022-09-28, Hurricane Ian: "All Clay County
+    Schools and the district offices will officially be closed Wednesday-Friday."):
+    read by :mod:`snowlight.sources.stations.googlesites`.
+
+``finalsite-homepage`` / ``finalsite-homepage-pops``
+    A capture of the homepage from when it was a Finalsite site (Davis, Ogden,
+    Judson, Gregory-Portland and others, before their moves to Apptegy): its page
+    pops when the page holds them, else a deferred page that loads them from
+    ``/fs/pages/<id>/page-pops``: read by :mod:`snowlight.sources.stations.finalsite`.
+
+``elementor-alert-widgets``
+    A capture of the homepage from when it was a WordPress page built with
+    Elementor, with the district's notices as Alert widgets (Alpine's of February
+    2023, "ONLINE/DISTANCE LEARNING DAY, WEDNESDAY, FEBRUARY 22, 2023"): read by
+    :mod:`snowlight.sources.stations.elementor`.
+
+``sharpschool-slider`` / ``sharpschool-banner-slider`` / ``sharpschool-homepage``
+    A capture of the homepage from when it was a SharpSchool site (Indian River's,
+    Alamo Heights', Conrad's): its hero slider or banner rotator, else a page that
+    loads its alerts from the alert service: read by
+    :mod:`snowlight.sources.stations.sharpschool`.
+
+``edlio-homepage-alert``
+    A capture of the homepage from when it was an Edlio site (McAllen's, Hemet's,
+    Victoria's, Sweetwater #2's): its homepage alert, read by
+    :mod:`snowlight.sources.stations.edlio`.
+
+``homepage-text``
+    A capture of the homepage in none of these forms (Weber's, Bay's, Mobile's sites
+    before Apptegy): read by its text, see :mod:`snowlight.sources.stations.homepage`.
+    And every homepage read in one of the forms above (an empty or populated list)
+    gets a page-text row for each closing line its text shows that none of its rows
+    holds (a news headline: Indian River's "SDIRC Closed Monday Nov. 9 Due to
+    Potential Storm Impacts From Tropical Storm Eta").
+
 Each banner shown is one row: ``raw_name`` the site's organization name (the
 theme's ``school_name``, "Hillsborough County Public Schools"), ``raw_status`` the
 banner's text (its HTML reduced to text), no ``raw_updated_text`` (banners carry
@@ -58,20 +108,30 @@ shows no banner is an empty list: the district has no alert up. A banner shown
 with neither text nor an image's alt text (an empty strip) is counted as a skipped
 row, not read. Banners not shown (drafts, archived, closed) are never rows.
 
-Anything else raises :class:`~snowlight.sources.stations.model.ShapeError`: a page
-with no Nuxt state or no alert banner store (a redesign, or a page that is not an
-Apptegy site, such as Hillsborough's and Duval's Blackboard homepages of 2024, which
-have no announcements region), or a payload that does not unflatten.
+Anything else raises :class:`~snowlight.sources.stations.model.ShapeError`: a body
+that is not an HTML page, a Nuxt page with no alert banner store, or a payload that
+does not unflatten.
 """
 
 import json
 import re
-from collections.abc import Iterator
+from collections.abc import Callable, Iterator
 from typing import Any
 
 from selectolax.parser import HTMLParser
 
-from snowlight.sources.stations import campussuite, nuxt2, schoolwires
+from snowlight.sources.stations import (
+    campussuite,
+    edlio,
+    elementor,
+    finalsite,
+    googlesites,
+    homepage,
+    nuxt2,
+    schoolwires,
+    sharpschool,
+    wcm,
+)
 from snowlight.sources.stations.gap_markup import (
     collapse,
     document,
@@ -299,17 +359,40 @@ def _nuxt2(text: str) -> Listing:
 
 
 def parse(body: bytes) -> Listing:
-    """Read an Apptegy district homepage (or an archived one of its earlier forms)."""
-    text = html_text(body)
+    """Read an Apptegy district homepage (or an archived one of its earlier forms).
+
+    Read with :func:`snowlight.sources.stations.homepage.read_homepage`: a homepage in
+    no form below is read by its text, and every homepage read from the page itself
+    gets the closing lines its text shows that no row holds.
+    """
+    return homepage.read_homepage(html_text(body), _read)
+
+
+def _read(text: str) -> Listing:
     if _PAYLOAD.search(text) is not None:
         return _nuxt3(text)
     if _NUXT2.search(text) is not None:
         return _nuxt2(text)
-    if schoolwires.holds_announcements(text):
-        return schoolwires.parse_text(text)
-    if campussuite.holds_alert_banner(text):
-        return campussuite.parse_text(text)
-    raise ShapeError("no __NUXT_DATA__ payload: not an Apptegy (Nuxt 3) page")
+    for holds, read in _EARLIER_FORMS:
+        if holds(text):
+            return read(text)
+    raise homepage.NoFormError("no __NUXT_DATA__ payload: not an Apptegy (Nuxt 3) page")
+
+
+_EARLIER_FORMS: tuple[tuple[Callable[[str], bool], Callable[[str], Listing]], ...] = (
+    (wcm.holds_alert_dialog, wcm.parse_alert_dialog),
+    (schoolwires.holds_announcements, schoolwires.parse_text),
+    (campussuite.holds_alert_banner, campussuite.parse_text),
+    (wcm.holds_announcements, wcm.parse_text),
+    (wcm.holds_alert_loader, wcm.alert_page),
+    (googlesites.holds_site_header, googlesites.parse_text),
+    (finalsite.holds_live_page, finalsite.parse_live_page),
+    (elementor.holds_alert_widgets, elementor.parse_text),
+    (sharpschool.holds_homepage, sharpschool.parse_homepage),
+    (edlio.holds_homepage, edlio.parse_text),
+)
+"""The forms a district homepage took before Apptegy (and a WCM alert file), in the order
+:func:`parse` tries them: the first whose test holds reads the body."""
 
 
 def slice_body(body: bytes) -> bytes:

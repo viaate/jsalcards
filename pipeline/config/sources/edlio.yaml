@@ -853,3 +853,102 @@ stations:
     disallowed_agents: []
     sha256: 024d653679641a3aed282bacbe82c161b3262bc109ed683e3f15e67f9c816d6d
   leaids: [0604290]
+- id: edlio-comal-tx
+  platform: edlio
+  call_sign: CISD
+  name: Comal ISD (district homepage alert)
+  market: Comal County, TX (San Antonio market)
+  dma: null
+  states: [TX]
+  counties:
+    basis: district
+    source: 'NCES CCD 2024-25 school directory (pipeline/out/internal/directory/schools.parquet): the
+      counties of the 37 schools of edlio-comal-tx''s district, COMAL ISD (LEAID 4814730).'
+    fips: ['48029', '48091', '48187']
+  page_url: https://www.comalisd.org/
+  data_url: null
+  export_url: null
+  archive_urls:
+  - https://www.comalisd.org/
+  poll_minutes: null
+  status: active
+  evidence: 'First-hand check for piece s4, 2026-09-29. Live read of https://www.comalisd.org/ 2026-09-29T03:28:01Z:
+    HTTP 200, 99,690 bytes; edlio-homepage-alert, empty, 0 row(s): an Edlio homepage with no alert up.'
+  list_files: []
+  page_check: null
+  robots:
+  - url: https://www.comalisd.org/
+    checked_at: '2026-09-29T03:33:05Z'
+    state: parsed
+    allowed: true
+    rule: no rule matches
+    crawl_delay: 5.0
+    disallowed_agents: []
+    sha256: 024d653679641a3aed282bacbe82c161b3262bc109ed683e3f15e67f9c816d6d
+  leaids: ['4814730']
+- id: edlio-southwest-tx
+  platform: edlio
+  call_sign: SWISD
+  name: Southwest ISD (district homepage alert)
+  market: Bexar County, TX (San Antonio market)
+  dma: null
+  states: [TX]
+  counties:
+    basis: district
+    source: 'NCES CCD 2024-25 school directory (pipeline/out/internal/directory/schools.parquet): the
+      counties of the 18 schools of edlio-southwest-tx''s district, SOUTHWEST ISD (LEAID 4840950).'
+    fips: ['48029']
+  page_url: https://www.swisd.net/
+  data_url: null
+  export_url: null
+  archive_urls:
+  - https://www.swisd.net/
+  poll_minutes: null
+  status: active
+  evidence: 'First-hand check for piece s4, 2026-09-29. Live read of https://www.swisd.net/ 2026-09-29T03:28:24Z:
+    HTTP 200, 84,466 bytes; edlio-homepage-alert, empty, 0 row(s): an Edlio homepage with no alert up.'
+  list_files: []
+  page_check: null
+  robots:
+  - url: https://www.swisd.net/
+    checked_at: '2026-09-29T03:33:07Z'
+    state: unavailable
+    allowed: true
+    rule: 'robots.txt unavailable (4xx): unrestricted'
+    crawl_delay: null
+    disallowed_agents: []
+    sha256: null
+  leaids: ['4840950']
+- id: edlio-medina-valley-tx
+  platform: edlio
+  call_sign: MVISD
+  name: Medina Valley ISD (district homepage alert)
+  market: Medina County, TX (San Antonio market)
+  dma: null
+  states: [TX]
+  counties:
+    basis: district
+    source: 'NCES CCD 2024-25 school directory (pipeline/out/internal/directory/schools.parquet): the
+      counties of the 9 schools of edlio-medina-valley-tx''s district, MEDINA VALLEY ISD (LEAID 4830060).'
+    fips: ['48029', '48325']
+  page_url: https://www.mvisd.com/
+  data_url: null
+  export_url: null
+  archive_urls:
+  - https://www.mvisd.com/
+  poll_minutes: null
+  status: active
+  evidence: 'First-hand check for piece s4, 2026-09-29. Live read of https://www.mvisd.com/ 2026-09-29T03:29:15Z:
+    HTTP 200, 84,939 bytes; edlio-homepage-alert, empty, 0 row(s): an Edlio homepage with no alert up.'
+  list_files: []
+  page_check: null
+  robots:
+  - url: https://www.mvisd.com/
+    checked_at: '2026-09-29T03:33:06Z'
+    state: unavailable
+    allowed: true
+    rule: 'robots.txt unavailable (4xx): unrestricted'
+    crawl_delay: null
+    disallowed_agents: []
+    sha256: null
+  leaids: ['4830060']

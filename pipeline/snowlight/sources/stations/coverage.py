@@ -3,11 +3,16 @@
 A school is covered when its county (from the school directory) is in the county
 list of at least one *working* source. A source is working when it is active and
 its latest live read (``health.json``) was ``ok`` or ``empty``: the list its page
-loads today was read and parsed, and the file has been written to since the last
-winter began. A ``stale`` read (the list file's ``Last-Modified`` is older than
-that: nothing has been written to it for a whole winter, see
-:func:`~snowlight.sources.stations.model.stale_before`), an error, a skip or no
-read at all does not count. A platform's terms and robots.txt do not enter the
+loads today was read and parsed, and it is the list in use: written to since the
+last winter began, or idle since (no weather that closes schools has come to its
+market since it was last written; see :mod:`snowlight.sources.stations.seasons`),
+and, for a list typed into a page that states no time, holding only rows dated near
+the read, typed since a recent read, or old notes
+(:mod:`snowlight.sources.stations.typed_history`). A ``stale`` read (a list last
+written before the last winter began that missed weather that closes schools since,
+or a typed row that cannot be told from an old note; see
+:mod:`snowlight.sources.stations.fetch`), an error, a skip or no read at all does
+not count. A platform's terms and robots.txt do not enter the
 measure: they are notes in the registry and in each read's health, and the
 project owner decided to read these lists anyway (terms on 2026-09-25, robots.txt
 on 2026-09-26; see :class:`~snowlight.sources.stations.registry.Terms`).
@@ -79,13 +84,21 @@ schools and no source (grey), counties where only a district-level source covers
 some schools (dim gold), and counties with no schools (black); the title gives
 the plain and the weighted national share, and a panel under the map the legend and
 each state's (with the proven shares, national and per state, when the result has
-them); nothing is drawn over the map.
+them); nothing is drawn over the map. With the proven share, a second map follows
+the first: counties a station seen with rows covers (bright), counties where only
+a district-level source seen with rows covers some schools (dim gold), counties
+only working sources never seen with a row cover (violet), and counties with no
+working source (grey), under a title giving the proven national shares; the state
+panel then lights the states whose proven shares (plain and weighted) meet the
+target.
 """
 
+import copy
 import hashlib
 import json
+import re
 from collections import defaultdict
-from collections.abc import Mapping
+from collections.abc import Iterable, Mapping
 from dataclasses import dataclass
 from datetime import datetime
 from pathlib import Path
@@ -113,6 +126,8 @@ DOWN_COLOR: Rgb = (120, 72, 24)
 GAP_COLOR: Rgb = (70, 70, 78)
 PART_COLOR: Rgb = (150, 118, 52)
 EMPTY_COLOR: Rgb = (12, 12, 14)
+UNPROVEN_COLOR: Rgb = (104, 92, 150)
+"""On the proven map: a county a working source covers, none of them ever seen with a row."""
 BACKGROUND: Rgb = (0, 0, 0)
 
 
@@ -416,6 +431,10 @@ def _dma_summary(table: Mapping[str, JSONValue]) -> dict[str, JSONValue]:
     }
 
 
+PLACE_EXAMPLES = 12
+"""At most this many counties named by a place, each with the row that named it, per station."""
+
+
 def observed_check(
     registry: Registry, observed: Mapping[str, Observed]
 ) -> tuple[dict[str, JSONValue], dict[str, JSONValue]]:
@@ -439,6 +458,7 @@ def observed_check(
             "in_county_list": len(seen.counties & listed),
             "outside_county_list": list(outside),
             "unmatched_places": len(seen.unmatched),
+            "named_by_place": dict(sorted(seen.named.items())[:PLACE_EXAMPLES]),
         }
     summary: dict[str, JSONValue] = {
         "stations": len(per_station),
@@ -446,6 +466,64 @@ def observed_check(
         "counties_named_outside_list": outside_total,
     }
     return per_station, summary
+
+
+_DMA_STATE = re.compile(r",\s*([A-Z]{2})\b")
+
+
+def market_assumptions(
+    registry: Registry, observed: Mapping[str, Observed], state_fips: Mapping[str, str]
+) -> dict[str, list[str]]:
+    """Each market-credited station's counties across a state line that no row of its named.
+
+    A station whose county list is its market's (``basis: dma``) and spans several states
+    is credited with the counties over its home state's line by the market alone. Its home
+    state is the state most of the counties its rows named lie in (:mod:`observed`), else
+    the market's first-named state ("Cheyenne - Scottsbluff - Sterling, WY - NE DMA": WY).
+    A county outside the home state counts as observed only when a row of the station's
+    named a place in it: KNEB (a Scottsbluff, NE radio list) is credited with Goshen and
+    Laramie counties, Wyoming, by its market, but its rows have named only Nebraska places.
+    The same test removed KIFI's credit for Lincoln County, Wyoming (``basis: observed``).
+    ``state_fips`` maps each state's USPS code to its FIPS code.
+    """
+    found: dict[str, list[str]] = {}
+    for station in sorted(registry.stations.values(), key=lambda item: item.id):
+        counties = station.counties
+        if counties is None or station.leaids or counties.basis != "dma":
+            continue
+        states = {fips[:2] for fips in counties.fips}
+        if len(states) < 2:  # noqa: PLR2004 - a state line needs two states
+            continue
+        seen = observed.get(station.id)
+        named = seen.counties if seen is not None else set()
+        tally: dict[str, int] = defaultdict(int)
+        for fips in named:
+            if fips[:2] in states:
+                tally[fips[:2]] += 1
+        if tally:
+            home = max(sorted(tally), key=lambda code: tally[code])
+        else:
+            first = _DMA_STATE.search(station.dma or "")
+            home = state_fips.get(first.group(1), "") if first is not None else ""
+        assumed = [fips for fips in counties.fips if fips[:2] != home and fips not in named]
+        if assumed:
+            found[station.id] = assumed
+    return found
+
+
+def without_counties(registry: Registry, removed: Mapping[str, Iterable[str]]) -> Registry:
+    """A copy of ``registry`` whose stations no longer list the ``removed`` counties."""
+    trimmed = copy.copy(registry)
+    trimmed.stations = dict(registry.stations)
+    for station_id, fips_list in removed.items():
+        station = trimmed.stations.get(station_id)
+        if station is None or station.counties is None:
+            continue
+        gone = set(fips_list)
+        keep = tuple(fips for fips in station.counties.fips if fips not in gone)
+        counties = station.counties.model_copy(update={"fips": keep}) if keep else None
+        trimmed.stations[station_id] = station.model_copy(update={"counties": counties})
+    return trimmed
 
 
 def measure(  # noqa: PLR0913 - one pass over the counties fills every table
@@ -644,7 +722,59 @@ def render_png(result: Mapping[str, JSONValue], shapes: Mapping[str, BaseGeometr
             legend[row : row + 14, 24] = legend[row : row + 14, 37] = GAP_COLOR
         draw_text(legend, f"{labels[color]}: {count} COUNTIES", (48, row), (200, 200, 200))
     image = np.vstack([header, image, legend])
-    return png_bytes(_with_state_table(image, result.get("states"), result.get("proven")))
+    proven = result.get("proven")
+    if isinstance(proven, dict) and isinstance(proven.get("counties"), dict):
+        image = np.vstack([image, _proven_map(counties, proven, drawn)])
+    return png_bytes(_with_state_table(image, result.get("states"), proven))
+
+
+def _proven_map(
+    counties: Mapping[str, JSONValue],
+    proven: Mapping[str, JSONValue],
+    drawn: Mapping[str, BaseGeometry],
+) -> npt.NDArray[np.uint8]:
+    """The same counties again, coloured by what the proven share counts (title and legend)."""
+    table = proven["counties"]
+    assert isinstance(table, dict)  # noqa: S101 - checked by the caller
+    colors: dict[str, Rgb] = {}
+    tallies = {WORKING_COLOR: 0, PART_COLOR: 0, UNPROVEN_COLOR: 0, GAP_COLOR: 0}
+    for fips, info in counties.items():
+        if not isinstance(info, dict):
+            continue
+        mine = table.get(fips)
+        mine = mine if isinstance(mine, dict) else {}
+        if mine.get("proven"):
+            color = WORKING_COLOR
+        elif mine.get("proven_districts"):
+            color = PART_COLOR
+        elif info.get("working") or info.get("districts"):
+            color = UNPROVEN_COLOR
+        else:
+            color = GAP_COLOR
+        colors[fips] = color
+        tallies[color] += 1
+    image = render(drawn, colors, background=BACKGROUND, default=EMPTY_COLOR)
+    title = "PROVEN: SCHOOLS IN COUNTIES A SOURCE SEEN WITH ROWS COVERS"
+    national = proven.get("national")
+    if isinstance(national, dict):
+        title += f": {float(str(national['share'])):.1%}"
+        weighted = national.get("weighted")
+        if isinstance(weighted, dict):
+            title += f" (CLOSURE-WEIGHTED {float(str(weighted['share'])):.1%})"
+    header = _band(image.shape[1], HEADER_HEIGHT)
+    draw_text(header, title, (24, 24), (230, 230, 230))
+    labels = {
+        WORKING_COLOR: "COVERED BY A SOURCE SEEN WITH ROWS",
+        PART_COLOR: "SOME SCHOOLS COVERED BY A DISTRICT SOURCE SEEN WITH ROWS",
+        UNPROVEN_COLOR: "COVERED ONLY BY WORKING SOURCES NEVER SEEN WITH A ROW",
+        GAP_COLOR: "NO WORKING SOURCE",
+    }
+    legend = _band(image.shape[1], len(tallies) * 24 + 8)
+    for offset, (color, count) in enumerate(tallies.items()):
+        row = 8 + offset * 24
+        legend[row : row + 14, 24:38] = color
+        draw_text(legend, f"{labels[color]}: {count} COUNTIES", (48, row), (200, 200, 200))
+    return np.vstack([header, image, legend])
 
 
 STATE_COLUMNS = 7
@@ -703,9 +833,15 @@ def _with_state_table(
             continue
         text = f"{state} {_shares_text(share, 0)}"
         proven_share = by_state.get(state) if by_state is not None else None
+        meets = share.get("meets_target") is True
         if isinstance(proven_share, dict):
             text += f", PROVEN {_shares_text(proven_share, 0)}"
-        color = (255, 214, 102) if share.get("meets_target") else (170, 170, 176)
+            # The gate's targets apply to the proven share, plain and closure-weighted.
+            inner = proven_share.get("weighted")
+            meets = proven_share.get("meets_target") is True and (
+                not isinstance(inner, dict) or inner.get("meets_target") is True
+            )
+        color = (255, 214, 102) if meets else (170, 170, 176)
         column, row = number % columns, number // columns
         draw_text(panel, text, (24 + column * width, top + 32 + row * STATE_ROW), color)
     return np.vstack([image, panel])

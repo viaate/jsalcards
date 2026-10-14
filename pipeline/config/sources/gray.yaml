@@ -101,11 +101,15 @@ platform:
     pages load their own export; WFSB, WGGB, WLFI, WLIO, WTHI and WAND frame a NewsTicker or BTI file
     on webpubcontent.gray.tv, WJRT frames ftp2.wjrt.com, KAKE''s script loads www.kake.com/app/closings/closings.xml,
     and KSNB, KTRE and KJCT load a sister station''s export (KOLN''s, KLTV''s, KKCO''s). A list file whose
-    Last-Modified is older than the start of the last winter is read as stale and not counted as working
-    (snowlight.sources.stations.fetch). No_endpoint, with the check in each station''s evidence: KEVN,
-    KMOT, KQCD, KUMV, KSPR and KTVK (their sites redirect to a sister station''s), KOLD, KVVU, KCWY and
-    KGWN (their pages load no list), WEVV (HTTP 502) and WPGA (its list component fails; its export answers
-    403).'
+    Last-Modified is older than the start of the last winter is judged by its market''s closure seasons
+    since (snowlight.sources.stations.seasons): it is read as stale and not counted as working when weather
+    that closes schools (an NWS Winter Storm, Blizzard, Ice Storm, Lake Effect Snow, Hurricane or Tropical
+    Storm Warning over half the market''s schools on a school day) came after it was last written; otherwise
+    it is idle and read as empty (s4 round 4, 2026-10-13: WTOC, WWSB and KMVT are idle; WVUE missed the
+    Hurricane Warning of September 2024 and the Winter Storm Warning of January 2025). No_endpoint, with
+    the check in each station''s evidence: KEVN, KMOT, KQCD, KUMV, KSPR and KTVK (their sites redirect
+    to a sister station''s), KOLD, KVVU, KCWY and KGWN (their pages load no list), WEVV (HTTP 502) and
+    WPGA (its list component fails; its export answers 403).'
   shared_paths:
   - url: https://webpubcontent.raycommedia.com/raycom/gsync/
     role: 'Raycom''s GSync Web Embeds application, which the former Raycom stations'' closings pages framed

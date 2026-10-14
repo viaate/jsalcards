@@ -11,7 +11,8 @@ ones of 2026-09-28 (Billings, Chickasaw, Baldwin County), Gulf Shores' of 2020 (
 ID 329, not the 1994 of today: a changed ID) and of the 2025 Gulf Coast snow, Volusia's
 of 2024-10-14 (an older template holding its pops in the page), Palm Beach's Web
 Community Manager page of 2024-10-10, and San Benito's Edlio page of 2025-01-21 (not
-a Finalsite page, under errors/). The servers are synthetic (httpx.MockTransport) and
+a Finalsite page: read by its text since round 3 of the coverage gate, kept in the
+gate's fixtures). The servers are synthetic (httpx.MockTransport) and
 serve those bodies; bodies named ``SYNTHETIC`` are made up here and confined to these
 tests.
 """
@@ -23,7 +24,14 @@ from pathlib import Path
 import httpx
 import pytest
 
-from snowlight.sources.stations import fetch, finalsite, finalsite_check, gap_fixtures
+from snowlight.sources.stations import (
+    fetch,
+    finalsite,
+    finalsite_check,
+    gap_fixtures,
+    gate_fixtures,
+    homepage,
+)
 from snowlight.sources.stations.http import USER_AGENT, ConditionalStore, PoliteClient, Timing
 from snowlight.sources.stations.model import HealthStatus, ListingState, ShapeError
 from snowlight.sources.stations.registry import StationStatus, load_registry
@@ -84,10 +92,21 @@ def test_a_web_community_manager_homepage_is_read_by_its_announcements() -> None
     assert row.status.startswith("Learn more about the storm , including shelter information")
 
 
-def test_a_page_that_is_not_finalsites_is_refused() -> None:
-    body = _body("errors/finalsite-san-benito-home-20250121.html")
-    with pytest.raises(ShapeError, match="not a Finalsite page"):
-        finalsite.parse(body)
+# San Benito's Edlio page of 2025-01-21, kept under errors/ until round 3 of the coverage
+# gate read pages in no known form by their text; now in the gate's fixtures.
+SAN_BENITO_EDLIO = (
+    gate_fixtures.DEFAULT_FOLDER / "homepage" / "san-benito-edlio-20250121.html"
+).read_bytes()
+
+
+def test_a_page_that_is_not_finalsites_is_read_by_its_text() -> None:
+    listing = finalsite.parse(SAN_BENITO_EDLIO)
+    # No line of it announces a closing: a page that holds no list of its own.
+    assert (listing.variant, listing.state, listing.follows) == (
+        homepage.TEXT_VARIANT,
+        ListingState.DEFERRED,
+        (),
+    )
 
 
 def _billings_with(old: bytes, new: bytes) -> bytes:
@@ -121,9 +140,13 @@ def test_the_page_pops_answers_still_read_as_before() -> None:
     assert finalsite.parse(_body("finalsite/chickasaw-page-pops-live-20260928.html")).state is (
         ListingState.POPULATED
     )
-    # The archive's one-character answer for Palm Beach's page pops stays refused.
+    # The archive's one-byte answer for Palm Beach's page pops is the brotli stream of the
+    # site's empty answer (live, the address answers "content-encoding: br" and ";").
+    palm = finalsite.parse(_body("finalsite/palm-beach-page-pops-20250105.txt"))
+    assert (palm.variant, palm.state) == (finalsite.NONE, ListingState.EMPTY)
+    # A one-byte body that is not such a stream is still refused.
     with pytest.raises(ShapeError, match="no fsPagePopCollection"):
-        finalsite.parse(_body("errors/finalsite-palm-beach-page-pops-20250105.txt"))
+        finalsite.parse(b"0")
 
 
 @pytest.mark.parametrize(
@@ -168,7 +191,7 @@ def test_each_live_homepage_fixture_names_the_page_its_check_saw() -> None:
 
 def test_every_finalsite_station_is_read_through_its_checked_homepage() -> None:
     stations = [s for s in REGISTRY.stations.values() if s.platform == "finalsite"]
-    assert len(stations) == 82
+    assert len(stations) == 90  # 82 of part 4, and 8 in UT, TX, PA and WY added by the gate (s4)
     for station in stations:
         assert station.status is StationStatus.ACTIVE
         assert station.data_url is None
@@ -295,11 +318,13 @@ def test_a_homepage_that_is_not_finalsites_is_an_error(tmp_path: Path) -> None:
     result, server = _read(
         tmp_path,
         "finalsite-san-benito-tx",
-        {SAN_BENITO: _body("errors/finalsite-san-benito-home-20250121.html")},
+        {SAN_BENITO: SAN_BENITO_EDLIO},
     )
     (health,) = result.health
     assert health.status is HealthStatus.ERROR
-    assert (health.reason or "").startswith("unrecognized shape: not a Finalsite page")
+    # Read by its text it names no page pops: still an error until checked again.
+    assert (health.reason or "").startswith("the page names no list file to follow")
+    assert "homepage-text" in (health.reason or "")
     assert not [u for u in server.seen if "/fs/pages/" in u]
 
 

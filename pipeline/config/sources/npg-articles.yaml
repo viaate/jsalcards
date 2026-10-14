@@ -1,0 +1,123 @@
+# Station registry for one platform. Loaded with every other file in this folder
+# by snowlight.sources.stations.registry; see its docstring for the fields.
+# `snowlight stations robots --update` rewrites the robots blocks in place.
+platform:
+  id: npg-articles
+  name: News-Press & Gazette stations' closings articles (KIFI Local News 8, Idaho Falls)
+  operator: News-Press & Gazette Co. (KIFI, Local News 8)
+  adapter: wp-closings
+  poll_minutes: 10
+  terms:
+    automated_access: forbidden
+    summary: 'KIFI''s Terms of Use (https://localnews8.com/terms-of-use/, linked from every page''s footer;
+      News-Press & Gazette''s, the same as KQ2''s in npg.yaml), read 2026-10-13: ''You will not manipulate
+      this Website by any means, including but not limited to the use of bots, botnets, automated scripts,
+      or other automated or electronic means'', and use only for private, non-commercial purposes. The
+      project owner decided on 2026-09-25 to read closings lists anyway for this non-commercial project
+      (owner_decision below); the terms stay recorded here. localnews8.com''s robots.txt disallows only
+      /wp-content/uploads/wpforms/ (the REST list of posts: no rule matches).'
+    evidence:
+    - url: https://localnews8.com/terms-of-use/
+      read_at: '2026-10-13T13:08:31Z'
+      sha256: 613844281ec20daacdd5428805a86cc036d700918d46deba6bfb1415b59829c2
+      excerpt:
+      - You will not manipulate this Website by any means, including but not limited to the use of bots,
+        botnets, automated scripts, or other automated or electronic means.
+      - You will use this Website only for private, non-commercial purposes.
+    permission: null
+    owner_decision:
+      decided_by: the project owner (Snowlight)
+      decided_on: '2026-09-25'
+      reference: 'Stated in the build instructions for the station adapters (piece s4d, round 4): "Terms
+        of use that forbid automated access do not exclude a station: the project owner decided on 2026-09-25
+        to read them for this non-commercial project, so record each station''s terms internally in the
+        registry and read it anyway." Relayed to the pipeline''s builder by the project''s build workflow;
+        to revoke it, remove this block and live polling of this platform stops.'
+      scope: 'Live reads of KIFI''s closings articles (the site''s REST list of posts searched for them)
+        for Snowlight, a non-commercial project, although the terms above forbid automated means. robots.txt
+        is read and its verdict recorded for every URL requested. Unchanged by it: the User-Agent names
+        the repository (never a browser string), only that list is requested (no crawling), requests are
+        paced per host with backoff on 429 and 5xx answers, and a station that blocks the project (a 403,
+        or a bot challenge) is not worked around.'
+  notes: 'Found for piece s4 (the coverage gate, final round, 2026-10-13) while digging for Idaho and
+    Wyoming under the owner''s gate of 2026-10-13. The Idaho Falls - Pocatello market had no working whole-county
+    source: KIFI''s /weather/closings/ answers 404, KPVI''s ''School Closures'' is one BLOX article last
+    changed 2025-02-25, East Idaho News answers 403 (not worked around). KIFI''s newsroom types each storm
+    day''s closings into an article titled for the day (''School closures and delays for Wednesday, March
+    6'', 2024; ''School Closures - Tuesday February 25, 2025'') and gives a single school''s or district''s
+    closing a story of its own (''Taylorview Middle School closed Thursday due to down heat pumps'', 2025-12-18;
+    ''Teton County Schools Closed Tomorrow due to Jackson Boil Order'', 2026-09-25; ''School canceled
+    for Chief Tahgee Elementary Academy'', 2026-10-07). The live poller reads the site''s REST list of
+    posts searched for ''school'', the wire''s and the networks'' categories (AP, CNN, Stacker) left out,
+    newest first, keeps the station''s own closings articles (wp_closings: a dateline crediting another
+    outlet is not the station''s) and their rows while stamped within 36 hours; the newest closings article''s
+    publication is the list''s own time, judged by the closure-season rule like any list''s. Recall, checked
+    2026-10-13 against every KIFI closings article the REST list answered from 2022-09 to 2026-10 (47:
+    27 list articles, 20 stories; tests/stations/test_wp_closings_kifi.py). Proof: the article of 2024-03-06
+    read from the same list (a history fixture; snowlight.sources.stations.history).'
+  shared_paths: []
+stations:
+- id: npg-articles-kifi
+  platform: npg-articles
+  call_sign: KIFI
+  name: KIFI Local News 8 closings articles (localnews8.com)
+  market: Idaho Falls - Pocatello, ID
+  dma: Idaho Falls - Pocatello, ID - WY DMA
+  states: [ID, WY]
+  counties:
+    basis: observed
+    source: 'The counties of the market (Idaho Falls - Pocatello, ID - WY DMA, alex-patton/US-TVDMA-BY-COUNTY
+      at commit 7f254b8c1843c62ec976a71c40d366d45f6f29cd) whose schools or districts KIFI''s own closings
+      articles named, 2022-10 to 2026-10 (read 2026-10-13 from its REST list): Bannock (Pocatello-Chubbuck
+      25, Marsh Valley 21), Bingham (Blackfoot 55, Shelley 60, Firth 59, Aberdeen 58, Snake River 52),
+      Bonneville (Idaho Falls 91, Bonneville 93), Butte (Butte County 111), Caribou (Grace 148, North
+      Gem 149, Soda Springs 150), Clark (Clark County 161), Custer (Mackay 182), Fremont (Fremont County
+      215), Jefferson (Jefferson 251, Ririe 252, West Jefferson 253), Madison (Madison 321, Sugar-Salem
+      322), Power (American Falls 381, Arbon 383, Rockland), Teton ID (Teton 401) and Teton WY (Teton
+      County School District 1: ''2 hour late start'', 2024-03-06; the boil-order closing of 2026-09-25).
+      Left out, as no KIFI closings article named a school there: Lemhi ID (Salmon, Leadore) and Lincoln
+      WY (Star Valley, Afton, Thayne, Kemmerer, Cokeville).'
+    fips: ['16005', '16011', '16019', '16023', '16029', '16033', '16037', '16043', '16051', '16065', '16077',
+      '16081', '56039']
+  page_url: null
+  data_url: https://localnews8.com/wp-json/wp/v2/posts?search=school&categories_exclude=3325,3356,3357,3358,3359,3360,3361,3362,3363,3364,3365,3366,3367,3368,3369,3370,3376,3377,3378,3379,3380,3381,3388,3389,3390,3396,3397,3398,3400,3401,3402,3404,3573,3574,3670,3674,3725,3726,3727,3728,3729,3730,3731,3732,3733,3734,3735,3736,3737,3738,3739,3740,3742,3743,3744,3745,3746,3747,3748,3749,3750,3752,3753,3754,3755,3757,3758,3759,4010,4011,4012,4013,4014,4015,4016,4020,4021,4022,4035,4036,4044,4045,4046,4054,4067,4068,4095,4115,4212,4282,4318,4319,4320,4467,4541,4593,4723&orderby=date&order=desc&per_page=50&_fields=id,date_gmt,modified_gmt,link,title,content
+  export_url: null
+  archive_urls:
+  - https://localnews8.com/wp-json/wp/v2/posts?search=school&categories_exclude=3325,3356,3357,3358,3359,3360,3361,3362,3363,3364,3365,3366,3367,3368,3369,3370,3376,3377,3378,3379,3380,3381,3388,3389,3390,3396,3397,3398,3400,3401,3402,3404,3573,3574,3670,3674,3725,3726,3727,3728,3729,3730,3731,3732,3733,3734,3735,3736,3737,3738,3739,3740,3742,3743,3744,3745,3746,3747,3748,3749,3750,3752,3753,3754,3755,3757,3758,3759,4010,4011,4012,4013,4014,4015,4016,4020,4021,4022,4035,4036,4044,4045,4046,4054,4067,4068,4095,4115,4212,4282,4318,4319,4320,4467,4541,4593,4723&orderby=date&order=desc&per_page=50&_fields=id,date_gmt,modified_gmt,link,title,content
+  poll_minutes: null
+  status: active
+  evidence: 'First-hand checks for piece s4 (the coverage gate), 2026-10-13. KIFI''s homepage https://localnews8.com/
+    (HTTP 200) links no closings page; /weather/closings/ answers 404. Its WordPress REST list of posts,
+    searched for ''school'' with the AP, CNN and Stacker categories left out and the newest first (HTTP
+    200, JSON, 50 posts back to 2026-09-29), held one closings article: ''School canceled for Chief Tahgee
+    Elementary Academy'' (published 2026-10-07T10:55:00Z, a water-line installation). Searches of the
+    same list from 2022-09 on found 47 closings articles of the station''s own: list articles for the
+    storms of each winter from 2022-23 to 2024-25 (''School closures for Friday, Dec. 2'', 2022; ''School
+    closures and delays for Wednesday, March 6'', 2024, 19 entries; ''School Closures - Tuesday February
+    25, 2025'', the last), and stories of single closings through 2026-10-07. In the winter of 2025-26
+    KIFI wrote no weather list, but it still wrote weather closings as stories: ''SCHOOL CLOSURE'' (2026-04-27T12:38:52Z,
+    https://localnews8.com/alerts/2026/04/27/school-closure-2/: ''Butte County Joint School District is
+    closed today due to snow and inclement weather''), the evidence that it writes them still; and ''Classes
+    Canceled: Rising illnesses and absences force multi-day closure for Ririe School District'' (2026-01-28,
+    an illness). The list''s current update time is set by a closing for no weather (the 2026-10-07 water-line
+    story above). The market''s one closure event of the winter, 2025-12-05, was a Winter Storm Warning
+    for the mountain zones (KIFI''s forecast: ''mountain winter storm warnings posted''; its local posts
+    of 2025-12-04 to 06 name no closing, and North Gem''s archived page that day held none); North Gem
+    School District 149 (Caribou County) closed for weather on 2026-02-18, under a warning for its own
+    zone, and KIFI wrote nothing of it (its stories of 2026-02-17 to 20: highways closed by ice, snowdrifts
+    in Rexburg). Counties: those whose schools its closings articles named (see counties). The builder''s
+    by-hand reads of these articles (a scratch fetcher, 2026-10-13, 74 requests to localnews8.com and
+    lcsd2.org) sent the project''s User-Agent with each page, but read each host''s robots.txt under Python''s
+    default (''Python-urllib/3.12''); the verdict recorded below is the pipeline''s own read, with the
+    project''s User-Agent.'
+  list_files: []
+  page_check: null
+  robots:
+  - url: https://localnews8.com/wp-json/wp/v2/posts?search=school&categories_exclude=3325,3356,3357,3358,3359,3360,3361,3362,3363,3364,3365,3366,3367,3368,3369,3370,3376,3377,3378,3379,3380,3381,3388,3389,3390,3396,3397,3398,3400,3401,3402,3404,3573,3574,3670,3674,3725,3726,3727,3728,3729,3730,3731,3732,3733,3734,3735,3736,3737,3738,3739,3740,3742,3743,3744,3745,3746,3747,3748,3749,3750,3752,3753,3754,3755,3757,3758,3759,4010,4011,4012,4013,4014,4015,4016,4020,4021,4022,4035,4036,4044,4045,4046,4054,4067,4068,4095,4115,4212,4282,4318,4319,4320,4467,4541,4593,4723&orderby=date&order=desc&per_page=50&_fields=id,date_gmt,modified_gmt,link,title,content
+    checked_at: '2026-10-13T16:20:03Z'
+    state: parsed
+    allowed: true
+    rule: no rule matches
+    crawl_delay: null
+    disallowed_agents: []
+    sha256: 3aeb90d3fc3b5746be99798e2dfa54ddaa8068f6838ac4a35478f37ed930ae31

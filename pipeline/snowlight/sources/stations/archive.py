@@ -30,6 +30,14 @@ Each capture is read once: a file capture used as one page's list is not read
 again on its own, and pages and files pair one to one, closest in time first.
 A page with no such capture stays an error that names the file and the nearest
 capture of it, and a file capture no page pairs with is read on its own.
+
+Alert files beside a page: a page that holds a list of its own may also load a
+second list, an alert file (``Listing.also_loads``: a Web Community Manager
+homepage served its announcements app in the page and fetched its on-screen alert
+by script). The page is read as it is, and the capture of the alert file nearest
+it within :data:`FOLLOW_WINDOW` (one per page, closest first, among file captures
+no other page was followed to) is read as a list of its own, naming the page in
+``via`` with ``alongside`` set. A page with no such capture is read alone, as before.
 """
 
 import hashlib
@@ -43,7 +51,7 @@ from datetime import UTC, date, datetime, timedelta
 from pathlib import Path
 from statistics import median
 from typing import Annotated
-from urllib.parse import parse_qsl, urlsplit
+from urllib.parse import parse_qsl, urljoin, urlsplit
 
 from pydantic import Field, StringConstraints, ValidationError
 
@@ -79,6 +87,12 @@ WAYBACK_STAMP = re.compile(r"^[0-9]{14}$")
 CDX_FIELDS = ("timestamp", "original", "statuscode", "mimetype", "length", "digest")
 WINTER_MONTHS = frozenset({11, 12, 1, 2, 3})
 FOLLOW_WINDOW = timedelta(hours=6)
+ARCHIVE_CUT = 1 << 20
+"""The size at which the archive cut some captures off: it holds only their first
+1,048,576 bytes (106 of the captures downloaded by 2026-10-05, most of them district
+homepages whose script payload runs past it)."""
+CUT_OFF = "cut off"
+"""How the reason of a capture its adapter refused because the archive cut it off begins."""
 """How far apart a page's capture and a capture of the file it loads may be."""
 COUNT_CHECK_WINDOW = timedelta(minutes=2)
 """A count that differs from a list captured this close to when the count was made is a failure.
@@ -102,15 +116,18 @@ def capture_time(stamp: str) -> datetime:
     return datetime.strptime(stamp, "%Y%m%d%H%M%S").replace(tzinfo=UTC)
 
 
-KEY_QUERY = frozenset({"regionid", "region", "media_id"})
+KEY_QUERY = frozenset({"regionid", "region", "media_id", "siteid"})
 """Query parameters that name a different list at one address, kept in :func:`url_key`.
 
 FlashAlert serves every region's report from one script, told apart only by its
 ``RegionID`` (``cwc-closures.php?RegionID=1``); News 12 serves each region's list
 from one page, told apart by ``region`` (``closings.jsp?region=LI``); WeatherThreat
 serves each outlet's list from one script, told apart by ``media_id``
-(``viewClosings.php?media_id=ntv``). Every other query (cache-busting counters,
-``arc-site``, WeatherThreat's ``t`` and ``server``) is dropped.
+(``viewClosings.php?media_id=ntv``); a Web Community Manager district serves the
+on-screen alerts of each of its sites (the district's and each school's) from one
+page, told apart by ``SiteID`` (``OnScreenAlertDialogListWrapper.aspx?SiteID=4``).
+Every other query (cache-busting counters, ``arc-site``, WeatherThreat's ``t`` and
+``server``, the on-screen alert's cookie) is dropped.
 """
 
 
@@ -450,11 +467,27 @@ def _load_capture(
         capture.parsed = _Parsed(station, listing, record.sha256, len(body))
     except ShapeError as error:
         reason = f"unrecognized shape: {error}"
+        if cut_off(body):
+            reason = (
+                f"{CUT_OFF}: the archive holds only the first {len(body):,} bytes of this "
+                f"capture, and its adapter could not read what it holds ({error})"
+            )
         capture.failure = f"{station.id} {stamp} {original}: {reason}"
         capture.health = _health(
             station.id, original, when, status=HealthStatus.ERROR, reason=reason[:500], **common
         )
     return capture, snapshot
+
+
+def cut_off(body: bytes) -> bool:
+    """Whether a capture's body is the archive's first :data:`ARCHIVE_CUT` bytes of a longer page.
+
+    The archive cuts some captures off at exactly 1 MiB (the body it serves ends
+    mid-script, with no closing ``</html>``): what the page held after that point,
+    such as a Nuxt 2 site's ``window.__NUXT__`` payload, which alone holds its alert
+    banner, is not in the archive, so no reader can read it.
+    """
+    return len(body) == ARCHIVE_CUT and b"</html>" not in body[-512:].lower()
 
 
 @dataclass(slots=True)
@@ -493,6 +526,64 @@ def _pair(captures: Sequence[_Capture]) -> _Pairing:
         pairing.next_of[page] = (other, target)
         pairing.used.add(other)
     return pairing
+
+
+def _pair_alongside(captures: Sequence[_Capture], pairing: _Pairing) -> _Pairing:
+    """Pair each page that loads an alert file beside its own list with that file's capture.
+
+    Candidates are parsed captures of the file (by URL key) of the same station,
+    within :data:`FOLLOW_WINDOW` of the page, that no page was followed to or from
+    (``pairing``); each page takes one, and each file capture serves one page,
+    closest in time first.
+    """
+    by_key: dict[str, list[int]] = defaultdict(list)
+    for number, capture in enumerate(captures):
+        if capture.parsed is None or number in pairing.used or number in pairing.next_of:
+            continue
+        by_key[url_key(capture.original)].append(number)
+    edges: list[tuple[timedelta, datetime, int, int, str]] = []
+    for number, capture in enumerate(captures):
+        parsed = capture.parsed
+        if parsed is None or not parsed.listing.also_loads or number in pairing.used:
+            continue
+        for reference in parsed.listing.also_loads:
+            target = urljoin(capture.original, reference)
+            for other in by_key.get(url_key(target), []):
+                candidate = captures[other].parsed
+                if other == number or candidate is None or candidate.station is not parsed.station:
+                    continue
+                gap = abs(captures[other].when - capture.when)
+                if gap <= FOLLOW_WINDOW:
+                    edges.append((gap, capture.when, number, other, target))
+    found = _Pairing()
+    for _gap, _when, page, other, target in sorted(edges):
+        if page in found.next_of or other in found.used:
+            continue
+        found.next_of[page] = (other, target)
+        found.used.add(other)
+    return found
+
+
+def _beside(
+    captures: Sequence[_Capture], alongside: _Pairing, page_number: int, result: RunResult
+) -> None:
+    """Emit the read of the alert file a page loaded beside its own list (``via`` the page)."""
+    other, target = alongside.next_of[page_number]
+    page, alert = captures[page_number], captures[other]
+    if page.parsed is None or alert.parsed is None:  # pairing only joins parsed captures
+        raise ArchiveError(f"{alert.original}: an alert file paired with a page was not parsed")
+    via = ViaPage(
+        url=page.original,
+        fetched_at=page.when,
+        sha256=page.parsed.sha256,
+        variant=page.parsed.listing.variant,
+        state=page.parsed.listing.state,
+        declared_count=None,
+        follows=target,
+        gap_seconds=int((alert.when - page.when).total_seconds()),
+        alongside=True,
+    )
+    _emit(alert, alert.parsed, result, _Route((via,), page.original))
 
 
 def _listings(root: Path, wanted: Callable[[str], bool]) -> dict[str, list[Capture]]:
@@ -1112,6 +1203,8 @@ def parse_snapshots(registry: Registry, root: Path) -> RunResult:
 
     A page followed to its list (see the module docstring) yields one read and
     one health entry, for the list file, naming the page in ``via`` / ``via_url``.
+    A page that loads an alert file beside its own list yields its own read and,
+    when a capture of the file was paired with it, the file's read ``via`` the page.
 
     Captures under a platform's shared paths (an application several stations'
     pages loaded, not a list) are set aside: listed in ``set_aside``, with no read
@@ -1137,6 +1230,7 @@ def parse_snapshots(registry: Registry, root: Path) -> RunResult:
         if snapshot is not None:
             result.snapshots.append(snapshot)
     pairing = _pair(captures)
+    alongside = _pair_alongside(captures, pairing)
     keys: set[str] = set()
     for number, capture in enumerate(captures):
         parsed = capture.parsed
@@ -1146,12 +1240,14 @@ def parse_snapshots(registry: Registry, root: Path) -> RunResult:
             keys.add(url_key(target))
     listed = listed_captures(root, keys)
     for number in range(len(captures)):
-        if number in pairing.used:
+        if number in pairing.used or number in alongside.used:
             continue
         if number in pairing.next_of:
             _followed(captures, pairing, number, result)
         else:
             _alone(captures, number, result, listed)
+        if number in alongside.next_of:
+            _beside(captures, alongside, number, result)
     return result
 
 
@@ -1159,6 +1255,7 @@ UNREAD_CAUSES: tuple[tuple[str, tuple[str, ...]], ...] = (
     ("not downloaded", ("capture not downloaded",)),
     ("no station uses the URL", ("no station uses",)),
     ("unknown shape", ("unrecognized shape",)),
+    ("cut off by the archive", (CUT_OFF,)),
     ("checksum mismatch", ("SHA-256 differs",)),
     (
         "count only, list file listed near it but not downloaded",

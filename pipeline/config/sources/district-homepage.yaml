@@ -1,0 +1,266 @@
+# Station registry for one platform. Loaded with every other file in this folder
+# by snowlight.sources.stations.registry; see its docstring for the fields.
+# `snowlight stations robots --update` rewrites the robots blocks in place.
+platform:
+  id: district-homepage
+  name: 'Utah district homepages read whole: Granite, Jordan, Canyons, Washington County and Provo'
+  operator: Each school district (its own WordPress site)
+  adapter: district-homepage
+  poll_minutes: 15
+  terms:
+    automated_access: permitted
+    summary: Read 2026-10-05 (05:53 UTC) with the project's User-Agent. Granite's 'Terms of Use' (https://www.graniteschools.org/terms-of-use)
+      grant a license to view the site's materials for personal, non-commercial, transitory viewing and
+      forbid modifying, copying, mirroring or commercial use; they say nothing of reading with software.
+      Snowlight is non-commercial, reads only the emergency notifications file the homepage itself loads,
+      and shows each school's status, not the district's materials. Jordan's 'Terms of Use' (https://jordandistrict.org/resources/terms/)
+      are a disclaimer about outside links and the browsers the site is tested in. Canyons' privacy policy
+      statement, Provo's privacy notice and Washington County's data privacy page (the sites' only policy
+      links) are about student data, not the public site's readers. None forbids automated reading; each
+      homepage's robots.txt is recorded with its station.
+    evidence:
+    - url: https://www.graniteschools.org/terms-of-use
+      read_at: '2026-10-05T05:53:43Z'
+      sha256: 9824c187bd977e906548a815ee20637dcdcd3742f6488f8e242dd69b0254b0ee
+      excerpt:
+      - Permission is granted to temporarily download one copy of the materials (information or software)
+        on Granite School District’s web site for personal, non-commercial transitory viewing only.
+      - 'under this license you may not: modify or copy the materials; use the materials for any commercial
+        purpose, or for any public display (commercial or non-commercial)'
+    - url: https://jordandistrict.org/resources/terms/
+      read_at: '2026-10-05T05:53:44Z'
+      sha256: d8421d9009193e90f4ffc014ab2fa4218c6f094e9b5d9fe2120b969efe1db450
+      excerpt:
+      - Jordan School District has made every effort to ensure that all links leaving its websites are
+        appropriate. We cannot be held responsible for information found on other websites.
+    - url: https://www.canyonsdistrict.org/privacy-policy-statement
+      read_at: '2026-10-05T05:53:49Z'
+      sha256: 273544edb61b9f07261c3060ad96306e91079f0b46a8c314c941d02fe45715be
+      excerpt:
+      - We will not collect a student’s Social Security Number or criminal record
+    - url: https://provo.edu/public-relations/privacy-notice/
+      read_at: '2026-10-05T05:53:50Z'
+      sha256: 9f90e08b8c9d260217102ebdc2351ade9f0f94daacf09df238d92999cdf28370
+      excerpt:
+      - This and other District websites may link to third-party, non-District websites.
+    - url: https://www.washk12.org/tech/data-privacy/
+      read_at: '2026-10-05T05:53:51Z'
+      sha256: 8587547e7322ef1f97106882616718ae42a4ffd3dc0510ddfc9f6864875a3158
+      excerpt:
+      - Washington County School District - All Rights Reserved, Copyright © St. George, Utah - Washington
+        County, U.S.A.
+    permission: null
+    owner_decision: null
+  notes: 'Found for piece s4 (the coverage gate, round 3, 2026-10-05): the critic of round 2 found that
+    Utah''s largest districts had no source although Granite''s homepage script reads a public file (https://www.graniteschools.org/wp-json/wp/v2/en?notification_type=district,
+    HTTP 200 [] that day). Read first-hand on 2026-10-05 between 05:3x and 05:54 UTC: Granite (84 schools)
+    loads its emergency notifications from that file; Washington County (54) loads its alerts from https://alert.washk12.org/endpoint.php
+    (one alert up, ''NEW STUDENT REGISTRATION''); Provo (21) renders an alerts section into its homepage
+    (empty, ''section.alerts hidden''); Jordan (69, a WordPress theme with no alert plugin) and Canyons
+    (49, Elementor) show what they post in the page. District-level sources: each counts only its own
+    district''s schools (leaids). Proof: a district''s general alert channel (notices.gate_proofs): a
+    read proves its station only when a row announced a closing, a delay, an early dismissal, a remote
+    day, cancelled classes, or weather or an emergency for the district; a page-text row only by the stricter
+    rule of notices.page_text_closing. The archive''s captures of the five homepages on Utah''s storm
+    days, and the listings of the two files, were asked for by run 37269655553 (commit a01a012).'
+  shared_paths: []
+stations:
+- id: district-homepage-granite-ut
+  platform: district-homepage
+  call_sign: GSD
+  name: Granite School District (emergency notifications)
+  market: Salt Lake City (Salt Lake County, UT)
+  dma: null
+  states: [UT]
+  counties:
+    basis: district
+    source: 'NCES CCD 2024-25 school directory (pipeline/out/internal/directory/schools.parquet): the
+      counties of the 84 schools of district-homepage-granite-ut''s district, Granite District (LEAID
+      4900360).'
+    fips: ['49035']
+  page_url: https://www.graniteschools.org/
+  data_url: https://www.graniteschools.org/wp-json/wp/v2/en?notification_type=district
+  export_url: null
+  archive_urls:
+  - https://www.graniteschools.org/
+  - https://www.graniteschools.org/wp-json/wp/v2/en?notification_type=district
+  poll_minutes: null
+  status: active
+  evidence: 'First-hand check for piece s4, 2026-10-05. Live read of https://www.graniteschools.org/ (HTTP
+    200, 85,317 bytes): the page holds div#emergency-notifications and loads the plugin script gsd-webmaster-district-tools-emergency-notifications-public.js,
+    which fetches https://www.graniteschools.org/wp-json/wp/v2/en?notification_type=district and writes
+    each post as ''Emergency notification: <a href=link>title</a>''. That file answered HTTP 200, application/json,
+    X-WP-Total 0, body [] (an empty list).'
+  list_files: []
+  page_check: null
+  robots:
+  - url: https://www.graniteschools.org/
+    checked_at: '2026-10-05T06:01:43Z'
+    state: parsed
+    allowed: true
+    rule: no rule matches
+    crawl_delay: null
+    disallowed_agents: []
+    sha256: 66620188ef1658d0aaa5f3801c9cf56c3cb40c3c420747586228e98660440985
+  - url: https://www.graniteschools.org/wp-json/wp/v2/en?notification_type=district
+    checked_at: '2026-10-05T06:01:43Z'
+    state: parsed
+    allowed: true
+    rule: no rule matches
+    crawl_delay: null
+    disallowed_agents: []
+    sha256: 66620188ef1658d0aaa5f3801c9cf56c3cb40c3c420747586228e98660440985
+  leaids: ['4900360']
+- id: district-homepage-jordan-ut
+  platform: district-homepage
+  call_sign: JSD
+  name: Jordan School District (homepage)
+  market: Salt Lake City (Salt Lake County, UT)
+  dma: null
+  states: [UT]
+  counties:
+    basis: district
+    source: 'NCES CCD 2024-25 school directory (pipeline/out/internal/directory/schools.parquet): the
+      counties of the 69 schools of district-homepage-jordan-ut''s district, Jordan District (LEAID 4900420).'
+    fips: ['49035']
+  page_url: https://jordandistrict.org/
+  data_url: null
+  export_url: null
+  archive_urls:
+  - https://jordandistrict.org/
+  poll_minutes: null
+  status: active
+  evidence: 'First-hand check for piece s4, 2026-10-05. Live read of https://jordandistrict.org/ (HTTP
+    200, 103,370 bytes): a WordPress page (generator WordPress 7.1.2, a Twenty Eleven child theme) whose
+    scripts are its menu, staff list, slider, forms, translation and lightbox plugins, none an alert loader:
+    what the district posts is in the page. Read as district-homepage-text: no line announced a closing
+    (an empty list).'
+  list_files: []
+  page_check: null
+  robots:
+  - url: https://jordandistrict.org/
+    checked_at: '2026-10-05T06:01:43Z'
+    state: parsed
+    allowed: true
+    rule: no rule matches
+    crawl_delay: null
+    disallowed_agents: []
+    sha256: d41e3fd6c7daba56a8c7fb706bceae46947a23e16075f2a4a4cc944d6756c204
+  leaids: ['4900420']
+- id: district-homepage-canyons-ut
+  platform: district-homepage
+  call_sign: CSD
+  name: Canyons School District (homepage)
+  market: Salt Lake City (Salt Lake County, UT)
+  dma: null
+  states: [UT]
+  counties:
+    basis: district
+    source: 'NCES CCD 2024-25 school directory (pipeline/out/internal/directory/schools.parquet): the
+      counties of the 49 schools of district-homepage-canyons-ut''s district, Canyons District (LEAID
+      4900142).'
+    fips: ['49035']
+  page_url: https://www.canyonsdistrict.org/
+  data_url: null
+  export_url: null
+  archive_urls:
+  - https://www.canyonsdistrict.org/
+  poll_minutes: null
+  status: active
+  evidence: 'First-hand check for piece s4, 2026-10-05. Live read of https://www.canyonsdistrict.org/
+    (HTTP 200, 929,372 bytes): a WordPress page built with Elementor (generator Elementor 4.3.3), rendered
+    on the server; its scripts are its menus, file and table plugins, search and accessibility widgets,
+    none an alert loader. Read as district-homepage-text: no line announced a closing (an empty list).'
+  list_files: []
+  page_check: null
+  robots:
+  - url: https://www.canyonsdistrict.org/
+    checked_at: '2026-10-05T06:01:42Z'
+    state: parsed
+    allowed: true
+    rule: no rule matches
+    crawl_delay: null
+    disallowed_agents: []
+    sha256: 9a7170086a6c64ec56342c2d20fc3218c9e1b264d04a27327a52b1c92fc2923c
+  leaids: ['4900142']
+- id: district-homepage-washington-ut
+  platform: district-homepage
+  call_sign: WCSD
+  name: Washington County School District (WCSD Alerts)
+  market: St. George (Washington County, UT)
+  dma: null
+  states: [UT]
+  counties:
+    basis: district
+    source: 'NCES CCD 2024-25 school directory (pipeline/out/internal/directory/schools.parquet): the
+      counties of the 54 schools of district-homepage-washington-ut''s district, Washington District (LEAID
+      4901140).'
+    fips: ['49053']
+  page_url: https://www.washk12.org/
+  data_url: https://alert.washk12.org/endpoint.php
+  export_url: null
+  archive_urls:
+  - https://www.washk12.org/
+  - https://alert.washk12.org/endpoint.php
+  poll_minutes: null
+  status: active
+  evidence: 'First-hand check for piece s4, 2026-10-05. Live read of https://www.washk12.org/ (HTTP 200,
+    171,435 bytes): the page loads //alert.washk12.org/alert.js (''WCSD Alerts - by James Price and Cody
+    Plumhof''), which fetches https://alert.washk12.org/endpoint.php and shows each alert it answers as
+    a banner. That file answered HTTP 200 with one alert: id 96, ''NEW STUDENT REGISTRATION'', type information,
+    isActive 1 (read as wcsd-alerts, populated, 1 row; not a closing).'
+  list_files: []
+  page_check: null
+  robots:
+  - url: https://www.washk12.org/
+    checked_at: '2026-10-05T06:01:44Z'
+    state: parsed
+    allowed: true
+    rule: no rule matches
+    crawl_delay: null
+    disallowed_agents: []
+    sha256: 4a809dbd7f9a0afae5b5482cfd7a18493f166793905d7225afe44aa86794280a
+  - url: https://alert.washk12.org/endpoint.php
+    checked_at: '2026-10-05T06:01:45Z'
+    state: unavailable
+    allowed: true
+    rule: 'robots.txt unavailable (4xx): unrestricted'
+    crawl_delay: null
+    disallowed_agents: []
+    sha256: null
+  leaids: ['4901140']
+- id: district-homepage-provo-ut
+  platform: district-homepage
+  call_sign: PCSD
+  name: Provo City School District (homepage alerts)
+  market: Provo (Utah County, UT)
+  dma: null
+  states: [UT]
+  counties:
+    basis: district
+    source: 'NCES CCD 2024-25 school directory (pipeline/out/internal/directory/schools.parquet): the
+      counties of the 21 schools of district-homepage-provo-ut''s district, Provo District (LEAID 4900810).'
+    fips: ['49049']
+  page_url: https://provo.edu/
+  data_url: null
+  export_url: null
+  archive_urls:
+  - https://provo.edu/
+  poll_minutes: null
+  status: active
+  evidence: 'First-hand check for piece s4, 2026-10-05. Live read of https://provo.edu/ (HTTP 200, 44,573
+    bytes): the theme (pcsdtwentytwentythree) renders an alerts section at the top of the main content,
+    ''<section class="alerts hidden">'' with nothing in it that day (read as district-homepage-alerts,
+    empty).'
+  list_files: []
+  page_check: null
+  robots:
+  - url: https://provo.edu/
+    checked_at: '2026-10-05T06:01:44Z'
+    state: parsed
+    allowed: true
+    rule: no rule matches
+    crawl_delay: null
+    disallowed_agents: []
+    sha256: f226354651bba2e29bd262a6eb720ff73b399344097b2dc9e46690232df401a6
+  leaids: ['4900810']

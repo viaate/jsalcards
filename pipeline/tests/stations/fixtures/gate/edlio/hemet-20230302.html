@@ -1,0 +1,85 @@
+<!DOCTYPE html><html><head><title>Hemet Unified School District</title><meta name="generator" content="Edlio CMS"></head><body><script>
+				'use strict';
+
+				// in case there are other version of jquery being imported with this
+				// version, we will use no conflict and IIFE to avoid global name space
+				var jq183 = jQuery.noConflict(true);
+
+				(function(jq183) {
+
+					jq183(document).ready(function() {
+						var alertKeyStartConstant = 'doNotShowAlert';
+
+						var alertArticleKey =
+							alertKeyStartConstant + '_' +
+							'1732585_' +
+							'2023/03/02 19:17:00';
+
+						var alertExpirationDate = new Date('2023/03/02 19:17:00');
+
+						// manually check for the alert expire time, if the alert expire
+						// after now, we remove this item from local storage from user
+						for (var key in localStorage) {
+							// we only remove key when this key starts with the constant
+							if (key.indexOf(alertKeyStartConstant) === 0) {
+								var alertExpireAt = new Date(key.split("_")[2]);
+
+								if (alertExpireAt.getTime() < new Date()) {
+									window.localStorage.removeItem(key);
+								}
+							}
+						}
+
+						// show alert modal to user
+						if (!window.localStorage.getItem(alertArticleKey)) {
+							jq183.magnificPopup.open({
+								items: {
+									src: '#homepage_news_alert_modal',
+									type: 'inline',
+									showCloseBtn: false,
+									closeBtnInside: false
+								}
+							});
+						}
+
+						// when user click on `don't show again`, we store this answer
+						// in the localStorage
+						jq183('#dont-show-again').click( function() {
+							window.localStorage.setItem(alertArticleKey, true);
+						});
+					});
+
+				})(jq183);
+			</script><article id="homepage_news_alert_modal" class="mfp-hide cf" itemscope="" itemtype="http://schema.org/Article">
+              <div id="modal-container">
+                  <div id="image-content" class="image-content">
+                  </div>
+
+                  <div id="article-content" class="article-content">
+                      <header class="cf">
+                          <h2 class="title" itemprop="name headline">
+                              Idyllwild and Hamilton Schools Closed 3/2/23
+                          </h2>
+                      </header>
+
+
+                          <div class="summary cf">
+                              <p>
+                                  As our weather conditions continue to progress, out of an abundance of caution for safety school will be canceled for tomorrow, Thursday, March 2.
+                              </p>
+                          </div>
+
+
+                      <div class="buttons cf">
+                          
+                          <div class="read-more">
+		<a href="/apps/news/article/1732585" class="button-text button">
+								                Read More
+                              </a>
+                          </div>
+                      </div>
+                  </div>
+
+                      <a id="dont-show-again" href="">Don't show again</a>
+              </div>
+    </article><p>Idyllwild and Hamilton Schools Closed 3/2/23</p><p>As our weather conditions continue to progress, out of an abundance of caution for safety school will be canceled for tomorrow, Thursday, March 2.</p><p>Idyllwild and Hamilton Schools Closed 3/2/23 Placeholder Photo</p></body></html>

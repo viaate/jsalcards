@@ -2024,3 +2024,313 @@ stations:
     disallowed_agents: [ahrefsbot, baiduspider, blexbot, mj12bot, semrushbot, yandex]
     sha256: e8e9fa92b86ef4f758ad1b7a87171b599635d1b16fa1e28fd355b81a183e9c96
   leaids: [0609070]
+- id: smartsites-salt-lake-city-ut
+  platform: smartsites
+  call_sign: SLCSD
+  name: Salt Lake City School District (district site pop-up alerts)
+  market: Salt Lake County, UT
+  dma: null
+  states: [UT]
+  counties:
+    basis: district
+    source: 'NCES CCD 2024-25 school directory (pipeline/out/internal/directory/schools.parquet): the
+      counties of the 35 schools of smartsites-salt-lake-city-ut''s district, Salt Lake District (LEAID
+      4900870).'
+    fips: ['49035']
+  page_url: https://www.slcschools.org/
+  data_url: https://www.slcschools.org/api/popup-alerts
+  export_url: null
+  archive_urls:
+  - https://www.slcschools.org/api/popup-alerts
+  - https://www.slcschools.org/
+  poll_minutes: null
+  status: active
+  evidence: 'First-hand check for piece s4, 2026-09-29. Live read of https://www.slcschools.org/api/popup-alerts
+    2026-09-29T03:19:54Z: HTTP 200, 742 bytes (application/json); smartsites-popup-alerts, populated,
+    1 row(s): ''Help Decide What''s Next for Three Closed Schools'' (a notice, not a closing). The homepage
+    https://www.slcschools.org/ (read 2026-09-29T02:46:41Z, 310,925 bytes, a ParentSquare Smart Sites
+    page) loads its pop-up alerts from that file.'
+  list_files: []
+  page_check: null
+  robots:
+  - url: https://www.slcschools.org/
+    checked_at: '2026-09-29T03:23:06Z'
+    state: parsed
+    allowed: true
+    rule: no rule matches
+    crawl_delay: 5.0
+    disallowed_agents: [ahrefsbot, baiduspider, blexbot, mj12bot, semrushbot, yandex]
+    sha256: e8e9fa92b86ef4f758ad1b7a87171b599635d1b16fa1e28fd355b81a183e9c96
+  - url: https://www.slcschools.org/api/popup-alerts
+    checked_at: '2026-09-29T03:23:06Z'
+    state: parsed
+    allowed: true
+    rule: no rule matches
+    crawl_delay: 5.0
+    disallowed_agents: [ahrefsbot, baiduspider, blexbot, mj12bot, semrushbot, yandex]
+    sha256: e8e9fa92b86ef4f758ad1b7a87171b599635d1b16fa1e28fd355b81a183e9c96
+  leaids: ['4900870']
+- id: smartsites-murray-ut
+  platform: smartsites
+  call_sign: MCSD
+  name: Murray City School District (district site pop-up alerts)
+  market: Salt Lake County, UT
+  dma: null
+  states: [UT]
+  counties:
+    basis: district
+    source: 'NCES CCD 2024-25 school directory (pipeline/out/internal/directory/schools.parquet): the
+      counties of the 11 schools of smartsites-murray-ut''s district, Murray District (LEAID 4900600).'
+    fips: ['49035']
+  page_url: https://www.murrayschools.org/
+  data_url: https://www.murrayschools.org/api/popup-alerts
+  export_url: null
+  archive_urls:
+  - https://www.murrayschools.org/api/popup-alerts
+  - https://www.murrayschools.org/
+  poll_minutes: null
+  status: active
+  evidence: 'First-hand check for piece s4, 2026-09-29. Live read of https://www.murrayschools.org/api/popup-alerts
+    2026-09-29T03:20:31Z: HTTP 200, 32 bytes (application/json); smartsites-popup-alerts, empty, 0 row(s):
+    no alert. The homepage https://www.murrayschools.org/ (read 2026-09-29T03:04:55Z, 230,424 bytes, a
+    ParentSquare Smart Sites page) loads its pop-up alerts from that file.'
+  list_files: []
+  page_check: null
+  robots:
+  - url: https://www.murrayschools.org/
+    checked_at: '2026-09-29T03:23:05Z'
+    state: parsed
+    allowed: true
+    rule: no rule matches
+    crawl_delay: 5.0
+    disallowed_agents: [ahrefsbot, baiduspider, blexbot, mj12bot, semrushbot, yandex]
+    sha256: e8e9fa92b86ef4f758ad1b7a87171b599635d1b16fa1e28fd355b81a183e9c96
+  - url: https://www.murrayschools.org/api/popup-alerts
+    checked_at: '2026-09-29T03:23:05Z'
+    state: parsed
+    allowed: true
+    rule: no rule matches
+    crawl_delay: 5.0
+    disallowed_agents: [ahrefsbot, baiduspider, blexbot, mj12bot, semrushbot, yandex]
+    sha256: e8e9fa92b86ef4f758ad1b7a87171b599635d1b16fa1e28fd355b81a183e9c96
+  leaids: ['4900600']
+- id: smartsites-logan-ut
+  platform: smartsites
+  call_sign: LCSD
+  name: Logan City School District (district site pop-up alerts)
+  market: Cache County, UT
+  dma: null
+  states: [UT]
+  counties:
+    basis: district
+    source: 'NCES CCD 2024-25 school directory (pipeline/out/internal/directory/schools.parquet): the
+      counties of the 9 schools of smartsites-logan-ut''s district, Logan City District (LEAID 4900510).'
+    fips: ['49005']
+  page_url: https://www.loganschools.org/
+  data_url: https://www.loganschools.org/api/popup-alerts
+  export_url: null
+  archive_urls:
+  - https://www.loganschools.org/api/popup-alerts
+  - https://www.loganschools.org/
+  poll_minutes: null
+  status: active
+  evidence: 'First-hand check for piece s4, 2026-09-29. Live read of https://www.loganschools.org/api/popup-alerts
+    2026-09-29T03:20:36Z: HTTP 200, 32 bytes (application/json); smartsites-popup-alerts, empty, 0 row(s):
+    no alert. The homepage https://www.loganschools.org/ (read 2026-09-29T03:07:55Z, 264,999 bytes, a
+    ParentSquare Smart Sites page) loads its pop-up alerts from that file.'
+  list_files: []
+  page_check: null
+  robots:
+  - url: https://www.loganschools.org/
+    checked_at: '2026-09-29T03:23:04Z'
+    state: parsed
+    allowed: true
+    rule: no rule matches
+    crawl_delay: 5.0
+    disallowed_agents: [ahrefsbot, baiduspider, blexbot, mj12bot, semrushbot, yandex]
+    sha256: e8e9fa92b86ef4f758ad1b7a87171b599635d1b16fa1e28fd355b81a183e9c96
+  - url: https://www.loganschools.org/api/popup-alerts
+    checked_at: '2026-09-29T03:23:04Z'
+    state: parsed
+    allowed: true
+    rule: no rule matches
+    crawl_delay: 5.0
+    disallowed_agents: [ahrefsbot, baiduspider, blexbot, mj12bot, semrushbot, yandex]
+    sha256: e8e9fa92b86ef4f758ad1b7a87171b599635d1b16fa1e28fd355b81a183e9c96
+  leaids: ['4900510']
+- id: smartsites-boerne-tx
+  platform: smartsites
+  call_sign: BISD
+  name: Boerne ISD (district site pop-up alerts)
+  market: Kendall County, TX (San Antonio market)
+  dma: null
+  states: [TX]
+  counties:
+    basis: district
+    source: 'NCES CCD 2024-25 school directory (pipeline/out/internal/directory/schools.parquet): the
+      counties of the 14 schools of smartsites-boerne-tx''s district, BOERNE ISD (LEAID 4810710).'
+    fips: ['48029', '48259']
+  page_url: https://www.boerneisd.net/
+  data_url: https://www.boerneisd.net/api/popup-alerts
+  export_url: null
+  archive_urls:
+  - https://www.boerneisd.net/api/popup-alerts
+  - https://www.boerneisd.net/
+  poll_minutes: null
+  status: active
+  evidence: 'First-hand check for piece s4, 2026-09-29. Live read of https://www.boerneisd.net/api/popup-alerts
+    2026-09-29T03:31:54Z: HTTP 200, 32 bytes (application/json); smartsites-popup-alerts, empty, 0 row(s):
+    no alert. The homepage https://www.boerneisd.net/ (read 2026-09-29T03:28:46Z, 245,360 bytes, a ParentSquare
+    Smart Sites page whose PopUpAlertsComponent script is loaded) reads its pop-up alerts from that file.'
+  list_files: []
+  page_check: null
+  robots:
+  - url: https://www.boerneisd.net/
+    checked_at: '2026-09-29T03:33:44Z'
+    state: parsed
+    allowed: true
+    rule: no rule matches
+    crawl_delay: 5.0
+    disallowed_agents: [ahrefsbot, baiduspider, blexbot, mj12bot, semrushbot, yandex]
+    sha256: e8e9fa92b86ef4f758ad1b7a87171b599635d1b16fa1e28fd355b81a183e9c96
+  - url: https://www.boerneisd.net/api/popup-alerts
+    checked_at: '2026-09-29T03:33:44Z'
+    state: parsed
+    allowed: true
+    rule: no rule matches
+    crawl_delay: 5.0
+    disallowed_agents: [ahrefsbot, baiduspider, blexbot, mj12bot, semrushbot, yandex]
+    sha256: e8e9fa92b86ef4f758ad1b7a87171b599635d1b16fa1e28fd355b81a183e9c96
+  leaids: ['4810710']
+- id: smartsites-millcreek-pa
+  platform: smartsites
+  call_sign: MTSD
+  name: Millcreek Township School District (district site pop-up alerts)
+  market: Erie County, PA (Erie market)
+  dma: null
+  states: [PA]
+  counties:
+    basis: district
+    source: 'NCES CCD 2024-25 school directory (pipeline/out/internal/directory/schools.parquet): the
+      counties of the 9 schools of smartsites-millcreek-pa''s district, Millcreek Township SD (LEAID 4215330).'
+    fips: ['42049']
+  page_url: https://www.mtsd.org/
+  data_url: https://www.mtsd.org/api/popup-alerts
+  export_url: null
+  archive_urls:
+  - https://www.mtsd.org/api/popup-alerts
+  - https://www.mtsd.org/
+  poll_minutes: null
+  status: active
+  evidence: 'First-hand check for piece s4, 2026-09-29. Live read of https://www.mtsd.org/api/popup-alerts
+    2026-09-29T04:17:09Z: HTTP 200, 32 bytes (application/json); smartsites-popup-alerts, empty, 0 row(s):
+    no alert. The homepage https://www.mtsd.org/ (read 2026-09-29T04:14:50Z, 230,849 bytes, a ParentSquare
+    Smart Sites page whose PopUpAlertsComponent script is loaded) reads its pop-up alerts from that file.'
+  list_files: []
+  page_check: null
+  robots:
+  - url: https://www.mtsd.org/
+    checked_at: '2026-09-29T04:18:07Z'
+    state: parsed
+    allowed: true
+    rule: no rule matches
+    crawl_delay: 5.0
+    disallowed_agents: [ahrefsbot, baiduspider, blexbot, mj12bot, semrushbot, yandex]
+    sha256: e8e9fa92b86ef4f758ad1b7a87171b599635d1b16fa1e28fd355b81a183e9c96
+  - url: https://www.mtsd.org/api/popup-alerts
+    checked_at: '2026-09-29T04:18:07Z'
+    state: parsed
+    allowed: true
+    rule: no rule matches
+    crawl_delay: 5.0
+    disallowed_agents: [ahrefsbot, baiduspider, blexbot, mj12bot, semrushbot, yandex]
+    sha256: e8e9fa92b86ef4f758ad1b7a87171b599635d1b16fa1e28fd355b81a183e9c96
+  leaids: ['4215330']
+- id: smartsites-wattsburg-pa
+  platform: smartsites
+  call_sign: WASD
+  name: Wattsburg Area School District (district site pop-up alerts)
+  market: Erie County, PA (Erie market)
+  dma: null
+  states: [PA]
+  counties:
+    basis: district
+    source: 'NCES CCD 2024-25 school directory (pipeline/out/internal/directory/schools.parquet): the
+      counties of the 3 schools of smartsites-wattsburg-pa''s district, Wattsburg Area SD (LEAID 4225080).'
+    fips: ['42049']
+  page_url: https://www.wattsburg.org/
+  data_url: https://www.wattsburg.org/api/popup-alerts
+  export_url: null
+  archive_urls:
+  - https://www.wattsburg.org/api/popup-alerts
+  - https://www.wattsburg.org/
+  poll_minutes: null
+  status: active
+  evidence: 'First-hand check for piece s4, 2026-09-29. Live read of https://www.wattsburg.org/api/popup-alerts
+    2026-09-29T04:17:15Z: HTTP 200, 32 bytes (application/json); smartsites-popup-alerts, empty, 0 row(s):
+    no alert. The homepage https://www.wattsburg.org/ (read 2026-09-29T04:16:30Z, 245,290 bytes, a ParentSquare
+    Smart Sites page whose PopUpAlertsComponent script is loaded) reads its pop-up alerts from that file.'
+  list_files: []
+  page_check: null
+  robots:
+  - url: https://www.wattsburg.org/
+    checked_at: '2026-09-29T04:18:08Z'
+    state: parsed
+    allowed: true
+    rule: no rule matches
+    crawl_delay: 5.0
+    disallowed_agents: [ahrefsbot, baiduspider, blexbot, mj12bot, semrushbot, yandex]
+    sha256: e8e9fa92b86ef4f758ad1b7a87171b599635d1b16fa1e28fd355b81a183e9c96
+  - url: https://www.wattsburg.org/api/popup-alerts
+    checked_at: '2026-09-29T04:18:08Z'
+    state: parsed
+    allowed: true
+    rule: no rule matches
+    crawl_delay: 5.0
+    disallowed_agents: [ahrefsbot, baiduspider, blexbot, mj12bot, semrushbot, yandex]
+    sha256: e8e9fa92b86ef4f758ad1b7a87171b599635d1b16fa1e28fd355b81a183e9c96
+  leaids: ['4225080']
+- id: smartsites-north-east-pa
+  platform: smartsites
+  call_sign: NESD
+  name: North East School District (district site pop-up alerts)
+  market: Erie County, PA (Erie market)
+  dma: null
+  states: [PA]
+  counties:
+    basis: district
+    source: 'NCES CCD 2024-25 school directory (pipeline/out/internal/directory/schools.parquet): the
+      counties of the 3 schools of smartsites-north-east-pa''s district, North East SD (LEAID 4217160).'
+    fips: ['42049']
+  page_url: https://www.nesd1.org/
+  data_url: https://www.nesd1.org/api/popup-alerts
+  export_url: null
+  archive_urls:
+  - https://www.nesd1.org/api/popup-alerts
+  - https://www.nesd1.org/
+  poll_minutes: null
+  status: active
+  evidence: 'First-hand check for piece s4, 2026-09-29. Live read of https://www.nesd1.org/api/popup-alerts
+    2026-09-29T04:17:20Z: HTTP 200, 32 bytes (application/json); smartsites-popup-alerts, empty, 0 row(s):
+    no alert. The homepage https://www.nesd1.org/ (read 2026-09-29T04:16:47Z, 280,736 bytes, a ParentSquare
+    Smart Sites page whose PopUpAlertsComponent script is loaded) reads its pop-up alerts from that file.'
+  list_files: []
+  page_check: null
+  robots:
+  - url: https://www.nesd1.org/
+    checked_at: '2026-09-29T04:18:08Z'
+    state: parsed
+    allowed: true
+    rule: no rule matches
+    crawl_delay: 5.0
+    disallowed_agents: [ahrefsbot, baiduspider, blexbot, mj12bot, semrushbot, yandex]
+    sha256: e8e9fa92b86ef4f758ad1b7a87171b599635d1b16fa1e28fd355b81a183e9c96
+  - url: https://www.nesd1.org/api/popup-alerts
+    checked_at: '2026-09-29T04:18:08Z'
+    state: parsed
+    allowed: true
+    rule: no rule matches
+    crawl_delay: 5.0
+    disallowed_agents: [ahrefsbot, baiduspider, blexbot, mj12bot, semrushbot, yandex]
+    sha256: e8e9fa92b86ef4f758ad1b7a87171b599635d1b16fa1e28fd355b81a183e9c96
+  leaids: ['4217160']

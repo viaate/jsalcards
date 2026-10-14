@@ -6713,6 +6713,54 @@
     "note": "'There are currently no school closings': the empty state."
   },
   {
+    "file": "scripps-typed/kstu-page-20250520013553.html",
+    "source_id": "scripps-typed-kstu",
+    "adapter": "scripps-typed",
+    "mode": "archive",
+    "url": "https://www.fox13now.com/weather/closings",
+    "captured_at": "2025-05-20T01:35:53Z",
+    "archive_url": "https://web.archive.org/web/20250520013553id_/https://www.fox13now.com/weather/closings",
+    "retrieved_at": "2026-09-29T05:05:09Z",
+    "original_sha256": "e057752b031f299eed9b5044992363d43a4d648445901470389e7e90b9779b7f",
+    "original_bytes": 216819,
+    "slice": "scripps-v3",
+    "sha256": "85c0f8b41ba04d265ba78d74fadb49fece34dd39095d056f3ee7335cac01df6e",
+    "bytes": 860,
+    "expected": {
+      "variant": "scripps-typed-page",
+      "state": "populated",
+      "rows": 1,
+      "names": [
+        "Provo City School District"
+      ]
+    },
+    "note": "The Provo late start of an unnamed Tuesday, typed under no day heading: the page's one row from May 2025 on (an old note when read live in late 2026)."
+  },
+  {
+    "file": "scripps-typed/kstu-page-20251217132420.html",
+    "source_id": "scripps-typed-kstu",
+    "adapter": "scripps-typed",
+    "mode": "archive",
+    "url": "https://www.fox13now.com/weather/closings",
+    "captured_at": "2025-12-17T13:24:20Z",
+    "archive_url": "https://web.archive.org/web/20251217132420id_/https://www.fox13now.com/weather/closings",
+    "retrieved_at": "2026-09-27T23:57:13Z",
+    "original_sha256": "83587b376f5f4684e8354408e46d927d19d6059cad44e324ec7122c7d87d368d",
+    "original_bytes": 219328,
+    "slice": "scripps-v3",
+    "sha256": "85c0f8b41ba04d265ba78d74fadb49fece34dd39095d056f3ee7335cac01df6e",
+    "bytes": 860,
+    "expected": {
+      "variant": "scripps-typed-page",
+      "state": "populated",
+      "rows": 1,
+      "names": [
+        "Provo City School District"
+      ]
+    },
+    "note": "The same Provo row, unchanged since May 2025 (asked for 2026-02-18; the archive served its 2025-12-17 capture)."
+  },
+  {
     "file": "scripps-typed/kstu-page-20260928000513.html",
     "source_id": "scripps-typed-kstu",
     "adapter": "scripps-typed",

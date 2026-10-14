@@ -81,6 +81,7 @@ stations:
   archive_urls:
   - https://www.browardschools.com/fs/pages/2/page-pops
   - https://www.browardschools.com/
+  - https://www.browardschools.com/cms/Tools/OnScreenAlerts/UserControls/OnScreenAlertDialogListWrapper.aspx?OnScreenAlertCookie=&SiteID=4
   poll_minutes: null
   status: active
   evidence: 'First-hand check for piece s4d, 2026-09-27. The homepage https://www.browardschools.com/
@@ -92,6 +93,11 @@ stations:
     loaded_by: script
     seen: the live homepage https://www.browardschools.com/ asks for it from its body data-pageid (page
       check 2026-09-28T22:39:12Z)
+  - url: https://www.browardschools.com/cms/Tools/OnScreenAlerts/UserControls/OnScreenAlertDialogListWrapper.aspx?OnScreenAlertCookie=&SiteID=4
+    loaded_by: script
+    seen: the district's Web Community Manager homepage (until its move to Finalsite) fetched it by script
+      as its on-screen alert, SiteID 4 (captures of 2022-09-28T02:07:40Z and 2024-10-08T21:43:46Z, archive-captures
+      run 36547271072)
   page_check:
     checked_at: '2026-09-28T22:39:12Z'
     page: https://www.browardschools.com/
@@ -198,6 +204,7 @@ stations:
   archive_urls:
   - https://www.pcsb.org/fs/pages/2/page-pops
   - https://www.pcsb.org/
+  - https://www.pcsb.org/cms/Tools/OnScreenAlerts/UserControls/OnScreenAlertDialogListWrapper.aspx?OnScreenAlertCookie=&SiteID=4
   poll_minutes: null
   status: active
   evidence: 'First-hand check for piece s4d, 2026-09-27. The homepage https://www.pcsb.org/ (body data-pageid="2")
@@ -208,6 +215,11 @@ stations:
   - url: https://www.pcsb.org/fs/pages/2/page-pops
     loaded_by: script
     seen: the live homepage https://www.pcsb.org/ asks for it from its body data-pageid (page check 2026-09-28T22:41:59Z)
+  - url: https://www.pcsb.org/cms/Tools/OnScreenAlerts/UserControls/OnScreenAlertDialogListWrapper.aspx?OnScreenAlertCookie=&SiteID=4
+    loaded_by: script
+    seen: the district's Web Community Manager homepage (until its move to Finalsite) fetched it by script
+      as its on-screen alert, SiteID 4, beside its announcements app (captures of 2024-10-08T09:11:14Z
+      and 2023-08-30T15:40:11Z, archive-captures runs 36555517031 and 36547271072)
   page_check:
     checked_at: '2026-09-28T22:41:59Z'
     page: https://www.pcsb.org/
@@ -5163,3 +5175,469 @@ stations:
     disallowed_agents: [008, sistrix, sitebot, tweetmemebot, twiceler]
     sha256: 2f5e417fca7a1bb2b68369d873ce7e84efabb94253184fd3af99bb33859d326a
   leaids: [0629130]
+- id: finalsite-cache-ut
+  platform: finalsite
+  call_sign: CCSD
+  name: Cache County School District (district homepage page pops)
+  market: Cache County, UT
+  dma: null
+  states: [UT]
+  counties:
+    basis: district
+    source: 'NCES CCD 2024-25 school directory (pipeline/out/internal/directory/schools.parquet): the
+      counties of the 25 schools of finalsite-cache-ut''s district, Cache District (LEAID 4900120).'
+    fips: ['49005']
+  page_url: https://www.ccsdut.org/
+  data_url: null
+  export_url: null
+  archive_urls:
+  - https://www.ccsdut.org/
+  - https://www.ccsdut.org/fs/pages/2/page-pops
+  poll_minutes: null
+  status: active
+  evidence: 'First-hand check for piece s4, 2026-09-29. Live read of the homepage https://www.ccsdut.org/
+    2026-09-29T02:47:17Z: HTTP 200, 220,008 bytes; finalsite-homepage, deferred: a published Finalsite
+    page whose script loads its page pops from /fs/pages/2/page-pops.'
+  list_files:
+  - url: https://www.ccsdut.org/fs/pages/2/page-pops
+    loaded_by: script
+    seen: the live homepage https://www.ccsdut.org/ asks for it from its body data-pageid (page check
+      2026-09-29T03:23:16Z)
+  page_check:
+    checked_at: '2026-09-29T03:23:16Z'
+    page: https://www.ccsdut.org/
+    loads:
+    - https://www.ccsdut.org/fs/pages/2/page-pops
+    shows: Title 'Home - Cache County School District'; body data-pageid="2"; its script fetched /fs/pages/2/page-pops
+      (HTTP 200, 0 bytes, SHA-256 e3b0c44298fc1c14…) and the page then held 0 page pop(s).
+    method: 'Opened in headless Chromium with the project''s User-Agent by finalsite_pagecheck.cjs; images,
+      media and fonts not loaded; waited up to 20 s for the page''s page-pops request and 3 s more, recording
+      the body''s data-pageid and every /fs/pages/<id>/page-pops request with its answer. loads: the page-pops
+      address the page''s script requested, answering 200.'
+  robots:
+  - url: https://www.ccsdut.org/
+    checked_at: '2026-09-29T03:23:55Z'
+    state: parsed
+    allowed: true
+    rule: no rule matches
+    crawl_delay: 5.0
+    disallowed_agents: [008, sistrix, sitebot, tweetmemebot, twiceler]
+    sha256: 1ecd919a92e55d1aabfd029d5a3a905b078c75bf1d628162a3bb2268e4089f2c
+  - url: https://www.ccsdut.org/fs/pages/2/page-pops
+    checked_at: '2026-09-29T03:23:55Z'
+    state: parsed
+    allowed: true
+    rule: 'Allow: /fs/pages/2'
+    crawl_delay: 5.0
+    disallowed_agents: [008, sistrix, sitebot, tweetmemebot, twiceler]
+    sha256: 1ecd919a92e55d1aabfd029d5a3a905b078c75bf1d628162a3bb2268e4089f2c
+  leaids: ['4900120']
+- id: finalsite-tooele-ut
+  platform: finalsite
+  call_sign: TCSD
+  name: Tooele County School District (district homepage page pops)
+  market: Tooele County, UT
+  dma: null
+  states: [UT]
+  counties:
+    basis: district
+    source: 'NCES CCD 2024-25 school directory (pipeline/out/internal/directory/schools.parquet): the
+      counties of the 27 schools of finalsite-tooele-ut''s district, Tooele District (LEAID 4901050).'
+    fips: ['49045']
+  page_url: https://www.tooeleschools.org/
+  data_url: null
+  export_url: null
+  archive_urls:
+  - https://www.tooeleschools.org/
+  - https://www.tooeleschools.org/fs/pages/2/page-pops
+  poll_minutes: null
+  status: active
+  evidence: 'First-hand check for piece s4, 2026-09-29. Live read of the homepage https://www.tooeleschools.org/
+    2026-09-29T03:04:21Z: HTTP 200, 70,856 bytes; finalsite-homepage, deferred: a published Finalsite
+    page whose script loads its page pops from /fs/pages/2/page-pops.'
+  list_files:
+  - url: https://www.tooeleschools.org/fs/pages/2/page-pops
+    loaded_by: script
+    seen: the live homepage https://www.tooeleschools.org/ asks for it from its body data-pageid (page
+      check 2026-09-29T03:23:23Z)
+  page_check:
+    checked_at: '2026-09-29T03:23:23Z'
+    page: https://www.tooeleschools.org/
+    loads:
+    - https://www.tooeleschools.org/fs/pages/2/page-pops
+    shows: Title 'Home - Tooele County School District'; body data-pageid="2"; its script fetched /fs/pages/2/page-pops
+      (HTTP 200, 0 bytes, SHA-256 e3b0c44298fc1c14…) and the page then held 0 page pop(s).
+    method: 'Opened in headless Chromium with the project''s User-Agent by finalsite_pagecheck.cjs; images,
+      media and fonts not loaded; waited up to 20 s for the page''s page-pops request and 3 s more, recording
+      the body''s data-pageid and every /fs/pages/<id>/page-pops request with its answer. loads: the page-pops
+      address the page''s script requested, answering 200.'
+  robots:
+  - url: https://www.tooeleschools.org/
+    checked_at: '2026-09-29T03:23:56Z'
+    state: parsed
+    allowed: true
+    rule: no rule matches
+    crawl_delay: 5.0
+    disallowed_agents: [008, sistrix, sitebot, tweetmemebot, twiceler]
+    sha256: 221646b7dc5c70f446c4900ec9a2cfc8dcc5c926f0d66c370cb1123bb4094492
+  - url: https://www.tooeleschools.org/fs/pages/2/page-pops
+    checked_at: '2026-09-29T03:23:56Z'
+    state: parsed
+    allowed: true
+    rule: 'Allow: /fs/pages/2'
+    crawl_delay: 5.0
+    disallowed_agents: [008, sistrix, sitebot, tweetmemebot, twiceler]
+    sha256: 221646b7dc5c70f446c4900ec9a2cfc8dcc5c926f0d66c370cb1123bb4094492
+  leaids: ['4901050']
+- id: finalsite-park-city-ut
+  platform: finalsite
+  call_sign: PCSD
+  name: Park City School District (district homepage page pops)
+  market: Summit County, UT
+  dma: null
+  states: [UT]
+  counties:
+    basis: district
+    source: 'NCES CCD 2024-25 school directory (pipeline/out/internal/directory/schools.parquet): the
+      counties of the 7 schools of finalsite-park-city-ut''s district, Park City District (LEAID 4900750).'
+    fips: ['49043']
+  page_url: https://www.pcschools.us/
+  data_url: null
+  export_url: null
+  archive_urls:
+  - https://www.pcschools.us/
+  - https://www.pcschools.us/fs/pages/2/page-pops
+  poll_minutes: null
+  status: active
+  evidence: 'First-hand check for piece s4, 2026-09-29. Live read of the homepage https://www.pcschools.us/
+    2026-09-29T03:09:26Z: HTTP 200, 92,431 bytes; finalsite-homepage, deferred: a published Finalsite
+    page whose script loads its page pops from /fs/pages/2/page-pops.'
+  list_files:
+  - url: https://www.pcschools.us/fs/pages/2/page-pops
+    loaded_by: script
+    seen: the live homepage https://www.pcschools.us/ asks for it from its body data-pageid (page check
+      2026-09-29T03:23:16Z)
+  page_check:
+    checked_at: '2026-09-29T03:23:16Z'
+    page: https://www.pcschools.us/
+    loads:
+    - https://www.pcschools.us/fs/pages/2/page-pops
+    shows: Title 'Home - Park City School District'; body data-pageid="2"; its script fetched /fs/pages/2/page-pops
+      (HTTP 200, 0 bytes, SHA-256 e3b0c44298fc1c14…) and the page then held 0 page pop(s).
+    method: 'Opened in headless Chromium with the project''s User-Agent by finalsite_pagecheck.cjs; images,
+      media and fonts not loaded; waited up to 20 s for the page''s page-pops request and 3 s more, recording
+      the body''s data-pageid and every /fs/pages/<id>/page-pops request with its answer. loads: the page-pops
+      address the page''s script requested, answering 200.'
+  robots:
+  - url: https://www.pcschools.us/
+    checked_at: '2026-09-29T03:23:56Z'
+    state: parsed
+    allowed: true
+    rule: no rule matches
+    crawl_delay: 5.0
+    disallowed_agents: [008, sistrix, sitebot, tweetmemebot, twiceler]
+    sha256: 24895c5728be7bc2b72c63bed6cbc73866e03d11face052deb632f41795f2a07
+  - url: https://www.pcschools.us/fs/pages/2/page-pops
+    checked_at: '2026-09-29T03:23:56Z'
+    state: parsed
+    allowed: true
+    rule: 'Allow: /fs/pages/2'
+    crawl_delay: 5.0
+    disallowed_agents: [008, sistrix, sitebot, tweetmemebot, twiceler]
+    sha256: 24895c5728be7bc2b72c63bed6cbc73866e03d11face052deb632f41795f2a07
+  leaids: ['4900750']
+- id: finalsite-east-central-tx
+  platform: finalsite
+  call_sign: ECISD
+  name: East Central ISD (district homepage page pops)
+  market: Bexar County, TX (San Antonio market)
+  dma: null
+  states: [TX]
+  counties:
+    basis: district
+    source: 'NCES CCD 2024-25 school directory (pipeline/out/internal/directory/schools.parquet): the
+      counties of the 15 schools of finalsite-east-central-tx''s district, EAST CENTRAL ISD (LEAID 4817850).'
+    fips: ['48029']
+  page_url: https://www.ecisd.net/
+  data_url: null
+  export_url: null
+  archive_urls:
+  - https://www.ecisd.net/
+  - https://www.ecisd.net/fs/pages/2/page-pops
+  poll_minutes: null
+  status: active
+  evidence: 'First-hand check for piece s4, 2026-09-29. Live read of the homepage https://www.ecisd.net/
+    2026-09-29T03:28:40Z: HTTP 200, 143,499 bytes; finalsite-homepage, deferred: a published Finalsite
+    page whose script loads its page pops from /fs/pages/2/page-pops.'
+  list_files:
+  - url: https://www.ecisd.net/fs/pages/2/page-pops
+    loaded_by: script
+    seen: the live homepage https://www.ecisd.net/ asks for it from its body data-pageid (page check 2026-09-29T03:32:33Z)
+  page_check:
+    checked_at: '2026-09-29T03:32:33Z'
+    page: https://www.ecisd.net/
+    loads:
+    - https://www.ecisd.net/fs/pages/2/page-pops
+    shows: Title 'District Home - East Central Independent School District'; body data-pageid="2"; its
+      script fetched /fs/pages/2/page-pops (HTTP 200, 0 bytes, SHA-256 e3b0c44298fc1c14…) and the page
+      then held 0 page pop(s).
+    method: 'Opened in headless Chromium with the project''s User-Agent by finalsite_pagecheck.cjs; images,
+      media and fonts not loaded; waited up to 20 s for the page''s page-pops request and 3 s more, recording
+      the body''s data-pageid and every /fs/pages/<id>/page-pops request with its answer. loads: the page-pops
+      address the page''s script requested, answering 200.'
+  robots:
+  - url: https://www.ecisd.net/
+    checked_at: '2026-09-29T03:33:07Z'
+    state: parsed
+    allowed: true
+    rule: no rule matches
+    crawl_delay: 5.0
+    disallowed_agents: [008, sistrix, sitebot, tweetmemebot, twiceler]
+    sha256: eee181396ed54d1113d9a38ee8c21e6e013e61bdcbe0df7175e7b729c6f643b0
+  - url: https://www.ecisd.net/fs/pages/2/page-pops
+    checked_at: '2026-09-29T03:33:07Z'
+    state: parsed
+    allowed: true
+    rule: 'Allow: /fs/pages/2'
+    crawl_delay: 5.0
+    disallowed_agents: [008, sistrix, sitebot, tweetmemebot, twiceler]
+    sha256: eee181396ed54d1113d9a38ee8c21e6e013e61bdcbe0df7175e7b729c6f643b0
+  leaids: ['4817850']
+- id: finalsite-south-san-antonio-tx
+  platform: finalsite
+  call_sign: SSAISD
+  name: South San Antonio ISD (district homepage page pops)
+  market: Bexar County, TX (San Antonio market)
+  dma: null
+  states: [TX]
+  counties:
+    basis: district
+    source: 'NCES CCD 2024-25 school directory (pipeline/out/internal/directory/schools.parquet): the
+      counties of the 14 schools of finalsite-south-san-antonio-tx''s district, SOUTH SAN ANTONIO ISD
+      (LEAID 4840680).'
+    fips: ['48029']
+  page_url: https://www.southsanisd.net/
+  data_url: null
+  export_url: null
+  archive_urls:
+  - https://www.southsanisd.net/
+  - https://www.southsanisd.net/fs/pages/533/page-pops
+  poll_minutes: null
+  status: active
+  evidence: 'First-hand check for piece s4, 2026-09-29. Live read of the homepage https://www.southsanisd.net/
+    2026-09-29T03:28:51Z: HTTP 200, 142,748 bytes; finalsite-homepage, deferred: a published Finalsite
+    page whose script loads its page pops from /fs/pages/533/page-pops.'
+  list_files:
+  - url: https://www.southsanisd.net/fs/pages/533/page-pops
+    loaded_by: script
+    seen: the live homepage https://www.southsanisd.net/ asks for it from its body data-pageid (page check
+      2026-09-29T03:32:44Z)
+  page_check:
+    checked_at: '2026-09-29T03:32:44Z'
+    page: https://www.southsanisd.net/
+    loads:
+    - https://www.southsanisd.net/fs/pages/533/page-pops
+    shows: Title 'Home - South San Antonio Independent School District'; body data-pageid="533"; its script
+      fetched /fs/pages/533/page-pops (HTTP 200, 928 bytes, SHA-256 68bee9d2adee7f87…) and the page then
+      held 1 page pop(s).
+    method: 'Opened in headless Chromium with the project''s User-Agent by finalsite_pagecheck.cjs; images,
+      media and fonts not loaded; waited up to 20 s for the page''s page-pops request and 3 s more, recording
+      the body''s data-pageid and every /fs/pages/<id>/page-pops request with its answer. loads: the page-pops
+      address the page''s script requested, answering 200.'
+  robots:
+  - url: https://www.southsanisd.net/
+    checked_at: '2026-09-29T03:33:43Z'
+    state: parsed
+    allowed: true
+    rule: no rule matches
+    crawl_delay: 5.0
+    disallowed_agents: [008, sistrix, sitebot, tweetmemebot, twiceler]
+    sha256: e69f0b4412cb9e150030201d52341a644032f8dc105a4ad7d2f2184c2ed7d456
+  - url: https://www.southsanisd.net/fs/pages/533/page-pops
+    checked_at: '2026-09-29T03:33:43Z'
+    state: parsed
+    allowed: true
+    rule: 'Allow: /fs/pages/5'
+    crawl_delay: 5.0
+    disallowed_agents: [008, sistrix, sitebot, tweetmemebot, twiceler]
+    sha256: e69f0b4412cb9e150030201d52341a644032f8dc105a4ad7d2f2184c2ed7d456
+  leaids: ['4840680']
+- id: finalsite-kerrville-tx
+  platform: finalsite
+  call_sign: KISD
+  name: Kerrville ISD (district homepage page pops)
+  market: Kerr County, TX (San Antonio market)
+  dma: null
+  states: [TX]
+  counties:
+    basis: district
+    source: 'NCES CCD 2024-25 school directory (pipeline/out/internal/directory/schools.parquet): the
+      counties of the 8 schools of finalsite-kerrville-tx''s district, KERRVILLE ISD (LEAID 4825590).'
+    fips: ['48265']
+  page_url: https://www.kerrvilleisd.net/
+  data_url: null
+  export_url: null
+  archive_urls:
+  - https://www.kerrvilleisd.net/
+  - https://www.kerrvilleisd.net/fs/pages/2/page-pops
+  poll_minutes: null
+  status: active
+  evidence: 'First-hand check for piece s4, 2026-09-29. Live read of the homepage https://www.kerrvilleisd.net/
+    2026-09-29T03:29:20Z: HTTP 200, 133,337 bytes; finalsite-homepage, deferred: a published Finalsite
+    page whose script loads its page pops from /fs/pages/2/page-pops.'
+  list_files:
+  - url: https://www.kerrvilleisd.net/fs/pages/2/page-pops
+    loaded_by: script
+    seen: the live homepage https://www.kerrvilleisd.net/ asks for it from its body data-pageid (page
+      check 2026-09-29T03:32:33Z)
+  page_check:
+    checked_at: '2026-09-29T03:32:33Z'
+    page: https://www.kerrvilleisd.net/
+    loads:
+    - https://www.kerrvilleisd.net/fs/pages/2/page-pops
+    shows: Title 'Home - Kerrville Independent School District'; body data-pageid="2"; its script fetched
+      /fs/pages/2/page-pops (HTTP 200, 0 bytes, SHA-256 e3b0c44298fc1c14…) and the page then held 0 page
+      pop(s).
+    method: 'Opened in headless Chromium with the project''s User-Agent by finalsite_pagecheck.cjs; images,
+      media and fonts not loaded; waited up to 20 s for the page''s page-pops request and 3 s more, recording
+      the body''s data-pageid and every /fs/pages/<id>/page-pops request with its answer. loads: the page-pops
+      address the page''s script requested, answering 200.'
+  robots:
+  - url: https://www.kerrvilleisd.net/
+    checked_at: '2026-09-29T03:33:07Z'
+    state: parsed
+    allowed: true
+    rule: no rule matches
+    crawl_delay: 5.0
+    disallowed_agents: [008, sistrix, sitebot, tweetmemebot, twiceler]
+    sha256: d27aa4b49f6e260fa54636561383f4bb651a51f954dd6dbfa98255ed0d86122f
+  - url: https://www.kerrvilleisd.net/fs/pages/2/page-pops
+    checked_at: '2026-09-29T03:33:07Z'
+    state: parsed
+    allowed: true
+    rule: 'Allow: /fs/pages/2'
+    crawl_delay: 5.0
+    disallowed_agents: [008, sistrix, sitebot, tweetmemebot, twiceler]
+    sha256: d27aa4b49f6e260fa54636561383f4bb651a51f954dd6dbfa98255ed0d86122f
+  leaids: ['4825590']
+- id: finalsite-conneaut-pa
+  platform: finalsite
+  call_sign: CSD
+  name: Conneaut School District (district homepage page pops)
+  market: Crawford County, PA (Erie market)
+  dma: null
+  states: [PA]
+  counties:
+    basis: district
+    source: 'NCES CCD 2024-25 school directory (pipeline/out/internal/directory/schools.parquet): the
+      counties of the 4 schools of finalsite-conneaut-pa''s district, Conneaut SD (LEAID 4206590).'
+    fips: ['42039']
+  page_url: https://www.conneautsd.org/
+  data_url: null
+  export_url: null
+  archive_urls:
+  - https://www.conneautsd.org/
+  - https://www.conneautsd.org/fs/pages/2/page-pops
+  poll_minutes: null
+  status: active
+  evidence: 'First-hand check for piece s4, 2026-09-29. Live read of the homepage https://www.conneautsd.org/
+    2026-09-29T04:16:19Z: HTTP 200, 61,319 bytes; finalsite-homepage, deferred: a published Finalsite
+    page whose script loads its page pops from /fs/pages/2/page-pops.'
+  list_files:
+  - url: https://www.conneautsd.org/fs/pages/2/page-pops
+    loaded_by: script
+    seen: the live homepage https://www.conneautsd.org/ asks for it from its body data-pageid (page check
+      2026-09-29T04:17:53Z)
+  page_check:
+    checked_at: '2026-09-29T04:17:53Z'
+    page: https://www.conneautsd.org/
+    loads:
+    - https://www.conneautsd.org/fs/pages/2/page-pops
+    shows: Title 'Home - Conneaut School District'; body data-pageid="2"; its script fetched /fs/pages/2/page-pops
+      (HTTP 200, 0 bytes, SHA-256 e3b0c44298fc1c14…) and the page then held 0 page pop(s).
+    method: 'Opened in headless Chromium with the project''s User-Agent by finalsite_pagecheck.cjs; images,
+      media and fonts not loaded; waited up to 20 s for the page''s page-pops request and 3 s more, recording
+      the body''s data-pageid and every /fs/pages/<id>/page-pops request with its answer. loads: the page-pops
+      address the page''s script requested, answering 200.'
+  robots:
+  - url: https://www.conneautsd.org/
+    checked_at: '2026-09-29T04:18:06Z'
+    state: parsed
+    allowed: true
+    rule: no rule matches
+    crawl_delay: 5.0
+    disallowed_agents: [008, sistrix, sitebot, tweetmemebot, twiceler]
+    sha256: 1514b5e55cf42a6ba9fa4598120b4a9585cedfa0eea2c963f83f29fb6f794bef
+  - url: https://www.conneautsd.org/fs/pages/2/page-pops
+    checked_at: '2026-09-29T04:18:06Z'
+    state: parsed
+    allowed: true
+    rule: 'Allow: /fs/pages/2'
+    crawl_delay: 5.0
+    disallowed_agents: [008, sistrix, sitebot, tweetmemebot, twiceler]
+    sha256: 1514b5e55cf42a6ba9fa4598120b4a9585cedfa0eea2c963f83f29fb6f794bef
+  leaids: ['4206590']
+- id: finalsite-goshen-1-wy
+  platform: finalsite
+  call_sign: GOSHEN1
+  name: 'Goshen County School District #1 (district homepage page pops)'
+  market: Torrington (Goshen County, WY)
+  dma: null
+  states: [WY]
+  counties:
+    basis: district
+    source: 'NCES CCD 2024-25 school directory (pipeline/out/internal/directory/schools.parquet): the
+      counties of the 12 schools of finalsite-goshen-1-wy''s district, Goshen County School District #1
+      (LEAID 5602990).'
+    fips: ['56015']
+  page_url: https://www.goshen1.org/
+  data_url: null
+  export_url: null
+  archive_urls:
+  - https://www.goshen1.org/
+  - https://www.goshen1.org/fs/pages/530/page-pops
+  poll_minutes: null
+  status: active
+  evidence: 'First-hand check for piece s4 (the coverage gate, round 5), 2026-10-13. Live read of https://www.goshen1.org/
+    (HTTP 200, 67,555 bytes, SHA-256 9981a9cca32f45bb..., read 2026-10-13T11:59:16Z with the repository''s
+    User-Agent; robots.txt https://www.goshen1.org/: allowed (no rule matches)): a Finalsite homepage
+    (body data-pageid 530) whose page-pops script loads the district''s pop-up alerts from /fs/pages/530/page-pops;
+    read as finalsite-homepage, a page that loads its list. The gap-state part''s record of 2026-09-27
+    said ''not built'' (First-hand check for piece s4d, 2026-09-27 (round 2''s second pass; the website
+    the NCES CCD 2024-25 LEA directory lists for the district). Google Sites or a static site: no alert
+    banner, pop-up or clo), the vendor taken for Google Sites or a static site.'
+  list_files:
+  - url: https://www.goshen1.org/fs/pages/530/page-pops
+    loaded_by: script
+    seen: the live homepage https://www.goshen1.org/ asks for it from its body data-pageid (page check
+      2026-10-13T12:23:40Z)
+  page_check:
+    checked_at: '2026-10-13T12:23:40Z'
+    page: https://www.goshen1.org/
+    loads:
+    - https://www.goshen1.org/fs/pages/530/page-pops
+    shows: 'Title ''Home - Goshen County School District #1''; body data-pageid="530"; its script fetched
+      /fs/pages/530/page-pops (HTTP 200, 0 bytes, SHA-256 e3b0c44298fc1c14…) and the page then held 0
+      page pop(s).'
+    method: 'Opened in headless Chromium with the project''s User-Agent by finalsite_pagecheck.cjs; images,
+      media and fonts not loaded; waited up to 20 s for the page''s page-pops request and 3 s more, recording
+      the body''s data-pageid and every /fs/pages/<id>/page-pops request with its answer. loads: the page-pops
+      address the page''s script requested, answering 200.'
+  robots:
+  - url: https://www.goshen1.org/
+    checked_at: '2026-10-13T12:24:04Z'
+    state: parsed
+    allowed: true
+    rule: no rule matches
+    crawl_delay: 5.0
+    disallowed_agents: [008, sistrix, sitebot, tweetmemebot, twiceler]
+    sha256: 248c41ab4ddacbacc00a68893d175ae7daa4c27a67ee469edcf8ac93f1f61ed9
+  - url: https://www.goshen1.org/fs/pages/530/page-pops
+    checked_at: '2026-10-13T12:24:04Z'
+    state: parsed
+    allowed: true
+    rule: 'Allow: /fs/pages/5'
+    crawl_delay: 5.0
+    disallowed_agents: [008, sistrix, sitebot, tweetmemebot, twiceler]
+    sha256: 248c41ab4ddacbacc00a68893d175ae7daa4c27a67ee469edcf8ac93f1f61ed9
+  leaids: ['5602990']

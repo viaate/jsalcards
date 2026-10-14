@@ -192,11 +192,23 @@ DISTRICT_SITES: Final[frozenset[str]] = frozenset(
         "pasco",
         "dadeschools",
         "hcoe",
+        "district-pages",
+        "apptegy-feed",
     }
 )
 """A district's own site or banner: it speaks for itself, not a market."""
 UNCLASSIFIED: Final[frozenset[str]] = frozenset(
-    {"ecc", "eventdelay", "heritage", "lockwood", "ncpr", "npg", "riba", "weatherthreat"}
+    {
+        "ecc",
+        "eventdelay",
+        "heritage",
+        "lockwood",
+        "ncpr",
+        "npg",
+        "npg-articles",
+        "riba",
+        "weatherthreat",
+    }
 )
 """Platforms no replay critic has classified yet, out until one does."""
 KNOWN_OUT: Final[frozenset[str]] = (

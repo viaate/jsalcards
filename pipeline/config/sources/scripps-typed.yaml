@@ -163,11 +163,14 @@ stations:
     day headings on the 22nd, among them Granite School District''s distance learning day, and 41 on the
     26th, read as scripps-typed-page), so it is registered: the poller reads the page itself, as scripps-typed-page
     (or scripps-closings-module, the Scripps closings module it held in 2020 to 2022, archived empty on
-    2020-09-30 and 2022-01-22). Brightspot states no time for typed text, so the live reader keeps the
-    page''s typed rows only when the text names a day near the read, as the 2023 headings did (''WEDNESDAY,
-    FEB. 22''); the page''s text on 2026-09-26 to 28 (the Provo late start of an unnamed Tuesday, already
-    there when archived on 2025-12-17) names none, so its row is not kept and the read is stale. Market:
-    ''Salt Lake City'' (first-hand record) is the crosswalk''s ''Salt Lake City, UT - ID - WY DMA''.'
+    2020-09-30 and 2022-01-22). Brightspot states no time for typed text, so the live reader keeps a typed
+    row only when its heading names a day near the read, as the 2023 headings did (''WEDNESDAY, FEB. 22''),
+    or when an earlier read of the page made within 36 hours did not hold it (snowlight.sources.stations.typed_history).
+    The page''s one row since 2025 (the Provo late start of an unnamed Tuesday) was archived on the page
+    on 2025-05-20, 2025-09-16, 2025-12-17 and 2026-05-09, unchanged, and was not there on 2025-02-11:
+    it is an old note, not kept, and the read is empty (s4 round 4, 2026-10-13; it was read as stale before).
+    Market: ''Salt Lake City'' (first-hand record) is the crosswalk''s ''Salt Lake City, UT - ID - WY
+    DMA''.'
   list_files: []
   page_check: null
   robots:

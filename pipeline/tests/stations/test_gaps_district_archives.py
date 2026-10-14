@@ -360,7 +360,11 @@ def _json(value: Any) -> bytes:
 
 def test_a_smart_sites_answer_that_is_neither_json_nor_a_schoolwires_page_is_refused() -> None:
     with pytest.raises(ShapeError, match="not a JSON answer"):
-        smartsites.parse(b"<html><body>login</body></html>")
+        smartsites.parse(b"login")
+    # An HTML page in no known form is read by its text since round 3 of the coverage
+    # gate: showing no closing, it holds no list of its own (deferred, naming no file).
+    page = smartsites.parse(b"<html><body>login</body></html>")
+    assert (page.variant, page.state, page.follows) == ("homepage-text", ListingState.DEFERRED, ())
     assert smartsites.parse(_json({"alerts": [], "districtUrl": None})).state is (
         ListingState.EMPTY
     )

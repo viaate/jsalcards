@@ -15,6 +15,7 @@ from snowlight.sources.stations.body import decode
 from snowlight.sources.stations.model import (
     MAX_EXTRA_TEXT,
     MAX_NAME,
+    MAX_STATUS,
     JsonScalar,
     Listing,
     ListingState,
@@ -63,7 +64,9 @@ def make_row(
         return None
     return ParsedRow(
         name=clip(name, MAX_NAME),
-        status=collapse(status),
+        # A district's notice can run past the row's limit (Bozeman's homepage pop of
+        # 2024-01-17, a superintendent's two letters): kept to its first MAX_STATUS.
+        status=clip(collapse(status), MAX_STATUS),
         updated_text=updated,
         extra={
             key: clip(value) if isinstance(value, str) else value for key, value in extra.items()

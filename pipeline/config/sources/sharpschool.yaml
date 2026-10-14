@@ -1,0 +1,389 @@
+# Station registry for one platform. Loaded with every other file in this folder
+# by snowlight.sources.stations.registry; see its docstring for the fields.
+# `snowlight stations robots --update` rewrites the robots blocks in place.
+platform:
+  id: sharpschool
+  name: 'SharpSchool district sites: the homepage''s emergency alerts'
+  operator: Finalsite (SharpSchool, the CMS); each site's school district (the content)
+  adapter: sharpschool
+  poll_minutes: 15
+  terms:
+    automated_access: permitted
+    summary: Lee's 'Terms of Use' (linked from its homepage footer, read 2026-10-03) say nothing about
+      reading the site with software; they reserve the site's material ('Reproduction is prohibited other
+      than in accordance with the copyright notice'), and the pipeline republishes no text of an alert,
+      only the status the classifier draws from it. Marion's and Polk's homepages link no terms of use
+      (read 2026-10-03). The alert service is what each public homepage asks for every visitor. Corona-Norco's,
+      Desert Sands' and Butte County's (ID) homepages link no terms of use (read 2026-10-13).
+    evidence:
+    - url: https://www.leeschools.net/terms_of_use
+      read_at: '2026-10-03T21:09:54Z'
+      sha256: 1c80a93e463ca3e2a6fed4465bb0e4185a1f570ccd8ed7b05c6b271fae4c9357
+      excerpt:
+      - This website contains material which is owned by or licensed to us. This material includes, but
+        is not limited to, the design, layout, look, appearance and graphics. Reproduction is prohibited
+        other than in accordance with the copyright notice, which forms part of these terms and conditions.
+    permission: null
+    owner_decision: null
+  notes: 'Found for piece s4 (the coverage gate, round 1, 2026-10-03). The gate''s starting point named
+    Lee, St. Lucie and Marion as the Florida counties with the most closure weight and no working source;
+    the gap-state part had found in round 2 (2026-09-27, docs/research/firsthand/gaps.json, records LEE
+    (FL), MARION (FL), POLK (FL)) that the Lee, Marion and Polk district homepages are SharpSchool sites
+    whose emergency-alert component (unifiedPublishingAlertComponent, a React component) loads its alerts
+    after the page by POSTing {"returnDummyAlerts":false} as JSON to the site''s /WebServices/UnifiedPublishing/UnifiedPublishingService.asmx/GetActiveAlerts
+    (read from the component''s bundle, /Common/JavaScript/resourcelibrary/reactportlets/unifiedPublishingAlert.js,
+    which reads the answer''s d list: AlertId, Title, Body, AlertType, Expiry), and left them unbuilt
+    because the live poller sent only GET and the archive keeps no answer to a POST. This part added the
+    POST read (a station''s data_post: the poller posts the page script''s own body, with no conditional
+    request) and asked the archive for the homepages'' captures on hurricane days (archive-captures run
+    37152148780): they show the districts posting closures on the homepage itself in its earlier forms,
+    which this adapter reads (Lee''s SharpSchool hero slider, Hurricane Ian, captured 2022-10-04 03:52
+    UTC; Marion''s Web Community Manager announcements app, Hurricane Ian 2022-09-27 23:56 UTC and Tropical
+    Storm Idalia 2023-08-28 18:07 UTC). Polk''s homepage of 2022 was a WordPress page whose Smart Slider
+    3 storm slide carried the Ian closure (captured 2022-09-28 10:03 UTC), which this adapter reads too.
+    A district''s general alert channel, so a read proves a source only when a row announced a closing,
+    a delay, an early dismissal, a remote day, cancelled classes, or weather or an emergency for the district
+    (notices.gate_proofs). District-level sources: each counts only its district''s schools (leaids).
+    Round 5 (2026-10-13): the critic of round 4 found three districts the gap-state part had recorded
+    as ''not read'' after one timeout in late September whose homepages are SharpSchool sites with the
+    same component, and whose alert service answers the component''s POST (HTTP 200, {"d":[]}): Corona-Norco
+    Unified and Desert Sands Unified (Riverside County, CA) and Butte County Joint School District 111
+    (Arco, ID); each was read again first-hand and added. Their homepages'' archived captures are read
+    in the forms this adapter knows.'
+  shared_paths: []
+stations:
+- id: sharpschool-lee-fl
+  platform: sharpschool
+  call_sign: SDLC
+  name: The School District of Lee County (homepage emergency alerts)
+  market: Fort Myers (Lee County, FL)
+  dma: null
+  states: [FL]
+  counties:
+    basis: district
+    source: 'NCES CCD 2024-25 school directory (pipeline/out/internal/directory/schools.parquet): the
+      counties of the 118 schools of sharpschool-lee-fl''s district, LEE (LEAID 1201080).'
+    fips: ['12071']
+  page_url: https://www.leeschools.net/
+  data_url: https://www.leeschools.net/WebServices/UnifiedPublishing/UnifiedPublishingService.asmx/GetActiveAlerts
+  export_url: null
+  archive_urls:
+  - https://www.leeschools.net/
+  - https://www.leeschools.net/WebServices/UnifiedPublishing/UnifiedPublishingService.asmx/GetActiveAlerts
+  poll_minutes: null
+  status: active
+  evidence: 'First-hand check for piece s4, 2026-10-03. The live homepage https://www.leeschools.net/
+    (read with this project''s User-Agent) is a SharpSchool page whose unifiedPublishingAlertComponent
+    loads the district''s alerts by script from the alert service; a GET of the service answers HTTP 500.
+    Live read of the service (stations fetch --only, POST of the component''s body) 2026-10-03T21:45:29Z:
+    HTTP 200, 8 bytes, ''{"d":[]}'': sharpschool-alerts, empty; robots.txt (reached through two redirects
+    to /robots.txt/Default.aspx) disallows /WebServices/, read all the same under the owner''s decision
+    of 2026-09-26 and recorded. Archived homepage captures (run 37152148780): 2022-10-04 03:52:22 UTC,
+    the hero slider''s first slide ''Hurricane Ian'': ''The School District of Lee County has made the
+    decision to close all schools and District offices next week (October 3-7, 2022)'' (fixture sharpschool/lee-20221004.html);
+    2022-09-26 13:38:01 UTC, a first slide on monitoring Tropical Storm Ian (fixture sharpschool/lee-20220926.html);
+    2024-10-09 17:07:00 UTC, ''Weather Watch - Hurricane Milton'' (monitoring).'
+  list_files:
+  - url: https://www.leeschools.net/WebServices/UnifiedPublishing/UnifiedPublishingService.asmx/GetActiveAlerts
+    loaded_by: script
+    seen: the live homepage's unifiedPublishingAlertComponent posts to it (unifiedPublishingAlert.js,
+      read 2026-10-03)
+  page_check: null
+  robots:
+  - url: https://www.leeschools.net/
+    checked_at: '2026-10-03T21:44:37Z'
+    state: parsed
+    allowed: true
+    rule: no rule matches
+    crawl_delay: null
+    disallowed_agents: []
+    sha256: 034e51da3826f746d52c3f936845b3654b271f6952ba458249bab8e0fc664b12
+  - url: https://www.leeschools.net/WebServices/UnifiedPublishing/UnifiedPublishingService.asmx/GetActiveAlerts
+    checked_at: '2026-10-03T21:44:37Z'
+    state: parsed
+    allowed: false
+    rule: 'Disallow: /WebServices/'
+    crawl_delay: null
+    disallowed_agents: []
+    sha256: 034e51da3826f746d52c3f936845b3654b271f6952ba458249bab8e0fc664b12
+  leaids: ['1201080']
+  data_post: '{"returnDummyAlerts":false}'
+- id: sharpschool-marion-fl
+  platform: sharpschool
+  call_sign: MCPS
+  name: Marion County Public Schools (homepage emergency alerts)
+  market: Ocala (Marion County, FL)
+  dma: null
+  states: [FL]
+  counties:
+    basis: district
+    source: 'NCES CCD 2024-25 school directory (pipeline/out/internal/directory/schools.parquet): the
+      counties of the 61 schools of sharpschool-marion-fl''s district, MARION (LEAID 1201260).'
+    fips: ['12083']
+  page_url: https://www.marionschools.net/
+  data_url: https://www.marionschools.net/WebServices/UnifiedPublishing/UnifiedPublishingService.asmx/GetActiveAlerts
+  export_url: null
+  archive_urls:
+  - https://www.marionschools.net/
+  - https://www.marionschools.net/WebServices/UnifiedPublishing/UnifiedPublishingService.asmx/GetActiveAlerts
+  poll_minutes: null
+  status: active
+  evidence: 'First-hand check for piece s4, 2026-10-03. The live homepage https://www.marionschools.net/
+    (read with this project''s User-Agent) is a SharpSchool page whose unifiedPublishingAlertComponent
+    loads the district''s alerts by script from the alert service; a GET of the service answers HTTP 500.
+    Live read of the service (stations fetch --only, POST of the component''s body) 2026-10-03T21:45:50Z:
+    HTTP 200, 8 bytes, ''{"d":[]}'': sharpschool-alerts, empty; robots.txt (reached through two redirects
+    to /robots.txt/Default.aspx) disallows /WebServices/, read all the same under the owner''s decision
+    of 2026-09-26 and recorded. Archived homepage captures (run 37152148780): 2022-09-27 23:56:10 UTC,
+    a Web Community Manager homepage whose announcements app says ''***HURRICANE IAN UPDATE*** Marion
+    County Public Schools is closed Wednesday, Thursday and Friday due to Hurricane Ian'' (fixture sharpschool/marion-20220927.html);
+    2023-08-28 18:07:34 UTC, ''Marion County Public Schools will close Tuesday and Wednesday, Aug. 29-30,
+    due to Tropical Storm Idalia''; 2024-10-07 18:06:31 UTC, the SharpSchool homepage with the alert component
+    (fixture sharpschool/marion-20241007.html).'
+  list_files:
+  - url: https://www.marionschools.net/WebServices/UnifiedPublishing/UnifiedPublishingService.asmx/GetActiveAlerts
+    loaded_by: script
+    seen: the live homepage's unifiedPublishingAlertComponent posts to it (unifiedPublishingAlert.js,
+      read 2026-10-03)
+  page_check: null
+  robots:
+  - url: https://www.marionschools.net/
+    checked_at: '2026-10-03T21:44:53Z'
+    state: parsed
+    allowed: true
+    rule: no rule matches
+    crawl_delay: null
+    disallowed_agents: []
+    sha256: ca9b915c2c20107b22e53580465fdeb957aa13524446bd4d9f24bdbe4ac560d0
+  - url: https://www.marionschools.net/WebServices/UnifiedPublishing/UnifiedPublishingService.asmx/GetActiveAlerts
+    checked_at: '2026-10-03T21:44:53Z'
+    state: parsed
+    allowed: false
+    rule: 'Disallow: /WebServices/'
+    crawl_delay: null
+    disallowed_agents: []
+    sha256: ca9b915c2c20107b22e53580465fdeb957aa13524446bd4d9f24bdbe4ac560d0
+  leaids: ['1201260']
+  data_post: '{"returnDummyAlerts":false}'
+- id: sharpschool-polk-fl
+  platform: sharpschool
+  call_sign: PCPS
+  name: Polk County Public Schools (homepage emergency alerts)
+  market: Lakeland (Polk County, FL)
+  dma: null
+  states: [FL]
+  counties:
+    basis: district
+    source: 'NCES CCD 2024-25 school directory (pipeline/out/internal/directory/schools.parquet): the
+      counties of the 161 schools of sharpschool-polk-fl''s district, POLK (LEAID 1201590).'
+    fips: ['12105']
+  page_url: https://www.polkschoolsfl.com/
+  data_url: https://www.polkschoolsfl.com/WebServices/UnifiedPublishing/UnifiedPublishingService.asmx/GetActiveAlerts
+  export_url: null
+  archive_urls:
+  - https://www.polkschoolsfl.com/
+  - https://www.polkschoolsfl.com/WebServices/UnifiedPublishing/UnifiedPublishingService.asmx/GetActiveAlerts
+  poll_minutes: null
+  status: active
+  evidence: 'First-hand check for piece s4, 2026-10-03. The live homepage https://www.polkschoolsfl.com/
+    (read with this project''s User-Agent) is a SharpSchool page whose unifiedPublishingAlertComponent
+    loads the district''s alerts by script from the alert service; a GET of the service answers HTTP 500.
+    Live read of the service (stations fetch --only, POST of the component''s body) 2026-10-03T21:46:10Z:
+    HTTP 200, 8 bytes, ''{"d":[]}'': sharpschool-alerts, empty; robots.txt (reached through two redirects
+    to /robots.txt/Default.aspx) disallows /WebServices/, read all the same under the owner''s decision
+    of 2026-09-26 and recorded. Archived homepage captures (run 37152148780): 2022-09-28 10:03:53 UTC,
+    a WordPress page whose Smart Slider slide said ''Public schools in Polk County will be closed Tuesday
+    (Sept. 27) through Thursday (Sept. 29) in response to Hurricane Ian'' (read as the wordpress-smartslider
+    variant; fixture sharpschool/polk-20220928.html); 2024-10-01 15:55:24 UTC, the SharpSchool homepage
+    with the alert component.'
+  list_files:
+  - url: https://www.polkschoolsfl.com/WebServices/UnifiedPublishing/UnifiedPublishingService.asmx/GetActiveAlerts
+    loaded_by: script
+    seen: the live homepage's unifiedPublishingAlertComponent posts to it (unifiedPublishingAlert.js,
+      read 2026-10-03)
+  page_check: null
+  robots:
+  - url: https://www.polkschoolsfl.com/
+    checked_at: '2026-10-03T21:45:08Z'
+    state: parsed
+    allowed: true
+    rule: no rule matches
+    crawl_delay: null
+    disallowed_agents: []
+    sha256: ca9b915c2c20107b22e53580465fdeb957aa13524446bd4d9f24bdbe4ac560d0
+  - url: https://www.polkschoolsfl.com/WebServices/UnifiedPublishing/UnifiedPublishingService.asmx/GetActiveAlerts
+    checked_at: '2026-10-03T21:45:08Z'
+    state: parsed
+    allowed: false
+    rule: 'Disallow: /WebServices/'
+    crawl_delay: null
+    disallowed_agents: []
+    sha256: ca9b915c2c20107b22e53580465fdeb957aa13524446bd4d9f24bdbe4ac560d0
+  leaids: ['1201590']
+  data_post: '{"returnDummyAlerts":false}'
+- id: sharpschool-corona-norco-ca
+  platform: sharpschool
+  call_sign: CNUSD
+  name: Corona-Norco Unified School District (homepage emergency alerts)
+  market: Norco (Riverside County, CA)
+  dma: null
+  states: [CA]
+  counties:
+    basis: district
+    source: 'NCES CCD 2024-25 school directory (pipeline/out/internal/directory/schools.parquet): the
+      counties of the 53 schools of sharpschool-corona-norco-ca''s district, Corona-Norco Unified (LEAID
+      0609850).'
+    fips: ['06065']
+  page_url: https://www.cnusd.k12.ca.us/
+  data_url: https://www.cnusd.k12.ca.us/WebServices/UnifiedPublishing/UnifiedPublishingService.asmx/GetActiveAlerts
+  export_url: null
+  archive_urls:
+  - https://www.cnusd.k12.ca.us/
+  - https://www.cnusd.k12.ca.us/WebServices/UnifiedPublishing/UnifiedPublishingService.asmx/GetActiveAlerts
+  poll_minutes: null
+  status: active
+  evidence: 'First-hand check for piece s4 (the coverage gate, round 5), 2026-10-13. The live homepage
+    https://www.cnusd.k12.ca.us/ (HTTP 200, 238,256 bytes, SHA-256 0fb9498478f7d8fe..., read 2026-10-13T12:01:49Z
+    with the repository''s User-Agent; robots.txt https://www.cnusd.k12.ca.us/: allowed (no rule matches))
+    is a SharpSchool page whose unifiedPublishingAlertComponent loads the district''s alerts by script
+    from the alert service. Live read of the service (https://www.cnusd.k12.ca.us/WebServices/UnifiedPublishing/UnifiedPublishingService.asmx/GetActiveAlerts,
+    POST of the component''s body {"returnDummyAlerts":false}): HTTP 200, ''{"d":[]}'': sharpschool-alerts,
+    empty. The gap-state part''s record of 2026-09-28 said ''not read'' (First-hand check for piece s4d
+    (round 4, second batch), 2026-09-28. not read: no answer within 240 s (the capture was stopped); not
+    retried around (TLS verification is never disabled)).'
+  list_files:
+  - url: https://www.cnusd.k12.ca.us/WebServices/UnifiedPublishing/UnifiedPublishingService.asmx/GetActiveAlerts
+    loaded_by: script
+    seen: the live homepage's unifiedPublishingAlertComponent posts to it (unifiedPublishingAlert.js),
+      read 2026-10-13
+  page_check: null
+  robots:
+  - url: https://www.cnusd.k12.ca.us/
+    checked_at: '2026-10-13T12:16:19Z'
+    state: parsed
+    allowed: true
+    rule: no rule matches
+    crawl_delay: null
+    disallowed_agents: []
+    sha256: ca9b915c2c20107b22e53580465fdeb957aa13524446bd4d9f24bdbe4ac560d0
+  - url: https://www.cnusd.k12.ca.us/WebServices/UnifiedPublishing/UnifiedPublishingService.asmx/GetActiveAlerts
+    checked_at: '2026-10-13T12:16:19Z'
+    state: parsed
+    allowed: false
+    rule: 'Disallow: /WebServices/'
+    crawl_delay: null
+    disallowed_agents: []
+    sha256: ca9b915c2c20107b22e53580465fdeb957aa13524446bd4d9f24bdbe4ac560d0
+  leaids: [0609850]
+  data_post: '{"returnDummyAlerts":false}'
+- id: sharpschool-desert-sands-ca
+  platform: sharpschool
+  call_sign: DSUSD
+  name: Desert Sands Unified School District (homepage emergency alerts)
+  market: La Quinta (Riverside County, CA)
+  dma: null
+  states: [CA]
+  counties:
+    basis: district
+    source: 'NCES CCD 2024-25 school directory (pipeline/out/internal/directory/schools.parquet): the
+      counties of the 34 schools of sharpschool-desert-sands-ca''s district, Desert Sands Unified (LEAID
+      0611110).'
+    fips: ['06065']
+  page_url: https://www.dsusd.us/
+  data_url: https://www.dsusd.us/WebServices/UnifiedPublishing/UnifiedPublishingService.asmx/GetActiveAlerts
+  export_url: null
+  archive_urls:
+  - https://www.dsusd.us/
+  - https://www.dsusd.us/WebServices/UnifiedPublishing/UnifiedPublishingService.asmx/GetActiveAlerts
+  poll_minutes: null
+  status: active
+  evidence: 'First-hand check for piece s4 (the coverage gate, round 5), 2026-10-13. The live homepage
+    https://www.dsusd.us/ (HTTP 200, 218,169 bytes, SHA-256 3674d0dfc278b183..., read 2026-10-13T12:02:21Z
+    with the repository''s User-Agent; robots.txt https://www.dsusd.us/: allowed (no rule matches)) is
+    a SharpSchool page whose unifiedPublishingAlertComponent loads the district''s alerts by script from
+    the alert service. Live read of the service (https://www.dsusd.us/WebServices/UnifiedPublishing/UnifiedPublishingService.asmx/GetActiveAlerts,
+    POST of the component''s body {"returnDummyAlerts":false}): HTTP 200, ''{"d":[]}'': sharpschool-alerts,
+    empty. The gap-state part''s record of 2026-09-28 said ''not read'' (First-hand check for piece s4d
+    (round 4, second batch), 2026-09-28. not read: no answer within 240 s (the capture was stopped); not
+    retried around (TLS verification is never disabled)).'
+  list_files:
+  - url: https://www.dsusd.us/WebServices/UnifiedPublishing/UnifiedPublishingService.asmx/GetActiveAlerts
+    loaded_by: script
+    seen: the live homepage's unifiedPublishingAlertComponent posts to it (unifiedPublishingAlert.js),
+      read 2026-10-13
+  page_check: null
+  robots:
+  - url: https://www.dsusd.us/
+    checked_at: '2026-10-13T12:16:34Z'
+    state: parsed
+    allowed: true
+    rule: no rule matches
+    crawl_delay: null
+    disallowed_agents: []
+    sha256: ca9b915c2c20107b22e53580465fdeb957aa13524446bd4d9f24bdbe4ac560d0
+  - url: https://www.dsusd.us/WebServices/UnifiedPublishing/UnifiedPublishingService.asmx/GetActiveAlerts
+    checked_at: '2026-10-13T12:16:34Z'
+    state: parsed
+    allowed: false
+    rule: 'Disallow: /WebServices/'
+    crawl_delay: null
+    disallowed_agents: []
+    sha256: ca9b915c2c20107b22e53580465fdeb957aa13524446bd4d9f24bdbe4ac560d0
+  leaids: ['0611110']
+  data_post: '{"returnDummyAlerts":false}'
+- id: sharpschool-butte-id
+  platform: sharpschool
+  call_sign: BCJSD111
+  name: Butte County Joint School District 111 (homepage emergency alerts)
+  market: Arco (Butte County, ID)
+  dma: null
+  states: [ID]
+  counties:
+    basis: district
+    source: 'NCES CCD 2024-25 school directory (pipeline/out/internal/directory/schools.parquet): the
+      counties of the 3 schools of sharpschool-butte-id''s district, BUTTE COUNTY JOINT DISTRICT (LEAID
+      1600490).'
+    fips: ['16023']
+  page_url: https://www.butteschooldistrict.org/
+  data_url: https://www.butteschooldistrict.org/WebServices/UnifiedPublishing/UnifiedPublishingService.asmx/GetActiveAlerts
+  export_url: null
+  archive_urls:
+  - https://www.butteschooldistrict.org/
+  - https://www.butteschooldistrict.org/WebServices/UnifiedPublishing/UnifiedPublishingService.asmx/GetActiveAlerts
+  poll_minutes: null
+  status: active
+  evidence: 'First-hand check for piece s4 (the coverage gate, round 5), 2026-10-13. The live homepage
+    https://www.butteschooldistrict.org/ (HTTP 200, 117,992 bytes, SHA-256 09775e01e0ae36f0..., read 2026-10-13T12:01:29Z
+    with the repository''s User-Agent; robots.txt https://www.butteschooldistrict.org/: allowed (no rule
+    matches)) is a SharpSchool page whose unifiedPublishingAlertComponent loads the district''s alerts
+    by script from the alert service. Live read of the service (https://www.butteschooldistrict.org/WebServices/UnifiedPublishing/UnifiedPublishingService.asmx/GetActiveAlerts,
+    POST of the component''s body {"returnDummyAlerts":false}): HTTP 200, ''{"d":[]}'': sharpschool-alerts,
+    empty. The gap-state part''s record of an unknown day said ''not read'' (First-hand check for piece
+    s4d (round 3, second pass), 2026-09-28: an Idaho district of the uncovered counties no earlier round
+    scouted; its site found by a web search for the district (the NCES LEA directory lists no website
+    for Idaho''s districts). Not read:...).'
+  list_files:
+  - url: https://www.butteschooldistrict.org/WebServices/UnifiedPublishing/UnifiedPublishingService.asmx/GetActiveAlerts
+    loaded_by: script
+    seen: the live homepage's unifiedPublishingAlertComponent posts to it (unifiedPublishingAlert.js),
+      read 2026-10-13
+  page_check: null
+  robots:
+  - url: https://www.butteschooldistrict.org/
+    checked_at: '2026-10-13T12:16:04Z'
+    state: parsed
+    allowed: true
+    rule: no rule matches
+    crawl_delay: null
+    disallowed_agents: []
+    sha256: ca9b915c2c20107b22e53580465fdeb957aa13524446bd4d9f24bdbe4ac560d0
+  - url: https://www.butteschooldistrict.org/WebServices/UnifiedPublishing/UnifiedPublishingService.asmx/GetActiveAlerts
+    checked_at: '2026-10-13T12:16:04Z'
+    state: parsed
+    allowed: false
+    rule: 'Disallow: /WebServices/'
+    crawl_delay: null
+    disallowed_agents: []
+    sha256: ca9b915c2c20107b22e53580465fdeb957aa13524446bd4d9f24bdbe4ac560d0
+  leaids: ['1600490']
+  data_post: '{"returnDummyAlerts":false}'

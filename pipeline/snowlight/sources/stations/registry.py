@@ -38,6 +38,10 @@ holds one platform and its stations::
                                     # what the page requested when opened in a
                                     # browser: data_url is the list it loads today
         archive_urls: [...]         # URL forms whose Wayback captures hold this list
+        former_urls: [{url, evidence}]  # the station's own earlier addresses of the
+                                    # same list (each also in archive_urls): a capture
+                                    # of one proves the station like one of its
+                                    # current page (see below)
         poll_minutes: null          # null: the platform's
         status: active              # active | no_endpoint
         evidence: ...               # how the endpoint and page are known
@@ -49,6 +53,9 @@ holds one platform and its stations::
         robots: [{url, checked_at, state, allowed, rule, crawl_delay, disallowed_agents}]
         leaids: ["2200030", ...]    # a district-level source only: the NCES district
                                     # IDs whose schools it covers (see below)
+        data_post: '{"returnDummyAlerts":false}'
+                                    # only for a data_url that answers POST alone: the
+                                    # JSON body the page's own script posts (see below)
 
 A district-level source (a school district's own alert page, or a state's list of
 its school systems) names the districts it speaks for in ``leaids``, NCES district
@@ -56,7 +63,23 @@ IDs (LEAIDs, seven digits): it covers exactly the schools of those districts, ne
 a whole county (:func:`snowlight.sources.stations.coverage.district_cover`), and
 its ``counties`` (basis ``district``) are the counties those schools stand in.
 
-The live poller reads ``data_url`` when there is one, else ``page_url``.
+A station's ``former_urls`` are the addresses its own list had before it moved to
+``page_url`` or ``data_url``: the same list of the same publisher at another
+address (a TV station's closings module before its site moved it, a district's
+homepage before the district changed its domain), each with the evidence of the
+move (a live or archived redirect from the old address to the current one, or the
+same platform's list on the same site read by the same adapter). The proven share
+counts a read of a former address as a read of the station's list
+(:meth:`snowlight.sources.stations.proof.Proof.proves`); an older address that is
+not the station's own list (another vendor's file a page once framed) is an
+archive URL only, and its captures are kept as evidence but prove nothing.
+
+The live poller reads ``data_url`` when there is one, else ``page_url``. A
+``data_url`` that answers only POST (a read-only alert service the station's page
+calls by script, such as SharpSchool's) carries ``data_post``, the JSON body that
+script sends: the poller posts the same, without a conditional request, and as
+the archive keeps no answer to a POST, only captures of the page itself can prove
+such a station.
 ``data_url`` is the list the station's page loads today (``page_check`` records
 the browser check that shows it, made with :mod:`snowlight.sources.stations.pagecheck`;
 a Gray station whose page loads no list, or which has no page of its own, is
@@ -100,6 +123,8 @@ type Url = Annotated[str, StringConstraints(pattern=r"^https?://[^\s]+$", max_le
 type HttpsUrl = Annotated[str, StringConstraints(pattern=r"^https://[^\s]+$", max_length=2000)]
 type Text = Annotated[str, StringConstraints(min_length=1, max_length=4000)]
 type LongText = Annotated[str, StringConstraints(min_length=1, max_length=8000)]
+type PostBody = Annotated[str, StringConstraints(pattern=r"^\{.*\}$", max_length=500)]
+"""A JSON object, as the text a page's script posts."""
 type Fips = Annotated[str, StringConstraints(pattern=r"^[0-9]{5}$")]
 type Leaid = Annotated[str, StringConstraints(pattern=r"^[0-9]{7}$")]
 """An NCES local education agency (school district) ID, as the CCD writes it."""
@@ -282,6 +307,19 @@ class ListFile(InternalModel):
     seen: Text
 
 
+class FormerUrl(InternalModel):
+    """An earlier address of a station's own list, and how the move is known.
+
+    The address is also one of the station's ``archive_urls`` (so its captures are
+    listed and read). ``evidence`` says how it is known to be the same list: a live
+    or archived redirect from it to the current address, or the same platform's
+    list on the same site, read by the station's own adapter.
+    """
+
+    url: Url
+    evidence: Text
+
+
 class PageCheck(InternalModel):
     """What a station's closings page requested when it was opened in a browser.
 
@@ -319,6 +357,13 @@ class Station(InternalModel):
     data_url: Url | None
     export_url: Url | None = None
     archive_urls: tuple[Url, ...]
+    former_urls: tuple[FormerUrl, ...] = Field(
+        default=(),
+        description=(
+            "The station's own earlier addresses of the same list (each also an archive "
+            "URL), with the evidence of the move; a read of one proves the station."
+        ),
+    )
     poll_minutes: Annotated[int, Field(ge=MIN_POLL_MINUTES, le=MAX_POLL_MINUTES)] | None
     status: StationStatus
     evidence: Text
@@ -332,6 +377,14 @@ class Station(InternalModel):
             "districts' schools, not its counties whole (empty for every other source)."
         ),
     )
+    data_post: PostBody | None = Field(
+        default=None,
+        description=(
+            "For a ``data_url`` that answers only POST (a read-only alert service the "
+            "station's page calls by script), the JSON body the page's own script sends; "
+            "the poller sends the same, with no conditional request. None for a GET."
+        ),
+    )
 
     @model_validator(mode="after")
     def _check(self) -> Self:
@@ -340,6 +393,11 @@ class Station(InternalModel):
             raise ValueError(f"{self.id}: list files are archive URLs too: {missing}")
         if self.export_url is not None and self.export_url not in self.archive_urls:
             raise ValueError(f"{self.id}: the export URL is an archive URL too")
+        former = [item.url for item in self.former_urls]
+        if any(url not in self.archive_urls for url in former):
+            raise ValueError(f"{self.id}: former addresses are archive URLs too")
+        if len(set(former)) != len(former) or {self.page_url, self.data_url} & set(former):
+            raise ValueError(f"{self.id}: a former address is listed once, and is not current")
         check = self.page_check
         if check is not None and self.data_url is not None and self.data_url not in check.loads:
             raise ValueError(f"{self.id}: data_url is not among the files its page loads")
@@ -353,6 +411,8 @@ class Station(InternalModel):
             raise ValueError(f"{self.id}: states are listed once each, in order")
         if list(self.leaids) != sorted(set(self.leaids)):
             raise ValueError(f"{self.id}: LEAIDs are listed once each, in order")
+        if self.data_post is not None and self.data_url is None:
+            raise ValueError(f"{self.id}: a POST body is sent only to a data_url")
         district = self.counties is not None and self.counties.basis is CountyBasis.DISTRICT
         if bool(self.leaids) != district:
             raise ValueError(
@@ -506,6 +566,10 @@ def dump_platform_file(content: PlatformFile) -> bytes:
     for station in data["stations"]:
         if not station.get("leaids"):
             station.pop("leaids", None)  # only a district-level source names LEAIDs
+        if station.get("data_post") is None:
+            station.pop("data_post", None)  # only a data_url read by POST has a body
+        if not station.get("former_urls"):
+            station.pop("former_urls", None)  # only a station whose list moved names any
     text: str = yaml.dump(
         data, Dumper=_Dumper, sort_keys=False, allow_unicode=True, width=100, indent=2
     )

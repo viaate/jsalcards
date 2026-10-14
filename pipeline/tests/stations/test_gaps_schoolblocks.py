@@ -96,7 +96,7 @@ def test_an_alert_with_no_words_is_skipped() -> None:
         (_page({"alerts": None}), "not a list"),
         (_page({"alerts": [{"message": "no id"}]}), "id"),
         (_page({"shortcuts": []}), "no alerts list"),
-        (b"<html><head><title>SYNTHETIC</title></head></html>", "not a SchoolBlocks page"),
+        (b"SYNTHETIC: not a page", "not a SchoolBlocks page"),
     ],
 )
 def test_other_bodies_are_refused(body: bytes, message: str) -> None:
@@ -104,9 +104,15 @@ def test_other_bodies_are_refused(body: bytes, message: str) -> None:
         schoolblocks.parse(body)
 
 
-def test_a_real_page_of_another_cms_is_refused() -> None:
-    with pytest.raises(ShapeError, match="not a SchoolBlocks page"):
-        schoolblocks.parse(_body("edlio/natrona-live-20260928.html"))
+def test_a_real_page_of_another_cms_is_read_by_its_text() -> None:
+    # Since round 3 of the coverage gate: Natrona's Edlio page shows no closing, so it
+    # holds no list of its own (deferred, naming no file).
+    listing = schoolblocks.parse(_body("edlio/natrona-live-20260928.html"))
+    assert (listing.variant, listing.state, listing.follows) == (
+        "homepage-text",
+        ListingState.DEFERRED,
+        (),
+    )
 
 
 @pytest.mark.parametrize(

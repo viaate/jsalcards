@@ -26,9 +26,12 @@ Each alert is one row: ``raw_name`` the site's name (the page title after "Home 
 "Grace School District #148"; the alert names no school, and the registry entry's
 ``leaids`` say whose it is), ``raw_status`` the message's text (its HTML read as text),
 no ``raw_updated_text`` (the record gives no time), and ``raw_extra`` ``alert_id`` and
-``alert_type``. An alert whose message has no words is a skipped row. A body without
-the payload or without an ``alerts`` list (another CMS, a bot challenge), an ``alerts``
-value that is not a list, or an alert without an ``id`` raises
+``alert_type``. An alert whose message has no words is a skipped row. A page without
+the payload or without an ``alerts`` list (the district's site before SchoolBlocks, in
+another CMS) is read by its text (``homepage-text``), and a SchoolBlocks page gets a
+page-text row for each closing line its text shows that no alert holds: see
+:mod:`snowlight.sources.stations.homepage`. A body that is not an HTML page, an
+``alerts`` value that is not a list, or an alert without an ``id`` raises
 :class:`~snowlight.sources.stations.model.ShapeError`.
 """
 
@@ -38,6 +41,7 @@ from html import escape
 
 from selectolax.parser import HTMLParser
 
+from snowlight.sources.stations import homepage
 from snowlight.sources.stations.gap_markup import collapse, html_text, make_listing, make_row
 from snowlight.sources.stations.model import JsonScalar, Listing, ParsedRow, ShapeError
 
@@ -107,11 +111,20 @@ def _row(name: str, alert: object) -> ParsedRow | None:
 
 
 def parse(body: bytes) -> Listing:
-    """Read a SchoolBlocks district homepage's alerts (see the module docstring)."""
-    text = html_text(body)
+    """Read a SchoolBlocks district homepage's alerts (see the module docstring).
+
+    Read with :func:`snowlight.sources.stations.homepage.read_homepage`: a page that
+    is not a SchoolBlocks organization page (the district's site before it) is read
+    by its text, and a SchoolBlocks page gets the closing lines its text shows that
+    no alert holds.
+    """
+    return homepage.read_homepage(html_text(body), _read)
+
+
+def _read(text: str) -> Listing:
     payload = _payload(text)
     if not payload:
-        raise ShapeError("no self.__next_f payload: not a SchoolBlocks page")
+        raise homepage.NoFormError("no self.__next_f payload: not a SchoolBlocks page")
     lists = _alert_lists(payload)
     if not lists:
         raise ShapeError("the payload has no alerts list: not a SchoolBlocks organization page")

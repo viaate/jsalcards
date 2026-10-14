@@ -88,14 +88,17 @@ it is every row's ``raw_updated_text`` (``raw_extra["updated_scope"]`` is
 ``typed``. Text typed by hand stays up long after the day it names (WHNT's
 page still showed its entry for June 8, 2026 in late September), so the live
 reader keeps a typed list's rows only while the page's time says it changed
-within :data:`~snowlight.sources.stations.fetch.TYPED_CURRENT` of the read (see
-:mod:`snowlight.sources.stations.fetch`). A page that states no time for itself
-(Brightspot's) is current only when its own words date it: when a heading, a note or
-a line names a day near the read (:func:`names_day_near`), as KSTU's headings did on
-22 February 2023 ("WEDNESDAY, FEB. 22"). Only a date the text pins down counts: a
-month and day with the year, or with the weekday that falls on it (the year is the
-one, within a year of the read, whose calendar puts that weekday there); "on
-Tuesday" alone dates nothing.
+within :data:`~snowlight.sources.stations.typed_history.TYPED_CURRENT` of the read (see
+:mod:`snowlight.sources.stations.fetch`). On a page that states no time for itself
+(Brightspot's) a row is current when its own words date it: when its heading, note or
+line names a day near the read (:func:`row_names_day_near`), as KSTU's headings did on
+22 February 2023 ("WEDNESDAY, FEB. 22"); otherwise the page's earlier reads, live and
+archived, date it (:mod:`snowlight.sources.stations.typed_history`): a row the page has
+held unchanged for longer than the window is an old note, and one an earlier read made
+within the window did not hold was typed since. Only a date the text pins down counts:
+a month and day with the year, or with the weekday that falls on it (the year is the
+one, within a year of the read, whose calendar puts that weekday there); "on Tuesday"
+alone dates nothing.
 
 Whether a body is a typed closings page at all (and not an article that merely
 names a closing) is the caller's decision: each typed adapter reads a typed block
@@ -184,8 +187,11 @@ _NOT_A_NAME = re.compile(
     re.IGNORECASE,
 )
 """A word before a verb that is not an organization ("There | is a lightning delay ...")."""
-_DATELINE = re.compile(r"^[A-Z][A-Z .,'-]*\([A-Z0-9 -]+\)$")
-"""A news story's dateline ("AUSTIN (KXAN)"), which a dash follows but no status does."""
+_DATELINE = re.compile(
+    r"^[A-Z][A-Z .,'-]*(?:,\s*[A-Z][a-z]+\.?(?:\s[A-Z][a-z]+)?)?\s*\([A-Z0-9 -]+\)$"
+)
+"""A news story's dateline ("AUSTIN (KXAN)", "IDAHO FALLS, Idaho (KIFI)"), which a dash
+follows but no status does."""
 _WRITTEN_SPLITS = frozenset({"bold", "dash", "colon"})
 """Splits the line's own markup or punctuation makes (a name, then its status)."""
 _CELLS = frozenset({"li", "td", "th"})
@@ -861,13 +867,34 @@ def named_days(text: str, read_on: date) -> list[date]:
     return found
 
 
+def row_named_days(row: ParsedRow, read_at: datetime) -> list[date]:
+    """The days one typed row's heading, note or line pins down, as of ``read_at``."""
+    read_on = read_at.astimezone(UTC).date()
+    texts = [row.name, row.status]
+    texts += [
+        str(row.extra[key]) for key in ("section", "heading", "note", "line") if row.extra.get(key)
+    ]
+    return named_days(" | ".join(texts), read_on)
+
+
+def is_near(day: date, read_at: datetime) -> bool:
+    """Whether ``day`` is near the read (:data:`NEAR_BEFORE` before to :data:`NEAR_AFTER` after)."""
+    read_on = read_at.astimezone(UTC).date()
+    return read_on - NEAR_BEFORE <= day <= read_on + NEAR_AFTER
+
+
+def row_names_day_near(row: ParsedRow, read_at: datetime) -> bool:
+    """Whether one typed row's heading, note or line pins down a day near ``read_at``."""
+    return any(is_near(day, read_at) for day in row_named_days(row, read_at))
+
+
+def row_names_only_past_days(row: ParsedRow, read_at: datetime) -> bool:
+    """Whether every day one typed row's words pin down is gone by ``read_at`` (and one is)."""
+    read_on = read_at.astimezone(UTC).date()
+    days = row_named_days(row, read_at)
+    return bool(days) and all(day < read_on - NEAR_BEFORE for day in days)
+
+
 def names_day_near(listing: Listing, read_at: datetime) -> bool:
     """Whether a typed list's headings, notes or lines pin down a day near ``read_at``."""
-    read_on = read_at.astimezone(UTC).date()
-    for row in listing.rows:
-        texts = [row.name, row.status]
-        texts += [str(row.extra[key]) for key in ("section", "note", "line") if row.extra.get(key)]
-        for day in named_days(" | ".join(texts), read_on):
-            if read_on - NEAR_BEFORE <= day <= read_on + NEAR_AFTER:
-                return True
-    return False
+    return any(row_names_day_near(row, read_at) for row in listing.rows)

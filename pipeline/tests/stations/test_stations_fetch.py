@@ -294,13 +294,24 @@ def test_cli_fetch_reads_the_real_registry_politely(
             str(tmp_path / "out"),
             "--cache-dir",
             str(tmp_path / "cache"),
+            "--typed-history",
+            str(tmp_path / "typed-history.json"),
+            "--archive-dir",
+            str(tmp_path / "no-archive"),
+            "--closure-days",
+            str(tmp_path / "no-closure-days.json"),
         ]
     )
     assert code == 0
+    out = capsys.readouterr().out
     assert (
         "2 sources: 1 ok, 1 empty, 0 stale, 0 error, 0 skipped; 1 rows; 0 read although "
         "robots.txt disallows them (recorded)"
-    ) in capsys.readouterr().out
+    ) in out
+    assert "no closure seasons" in out
+    # Neither station types its closings into a page: the history holds no source.
+    history = json.loads((tmp_path / "typed-history.json").read_text(encoding="utf-8"))
+    assert history["sources"] == {}
     assert [url for url, _agent in seen] == [
         "https://s3.amazonaws.com/robots.txt",
         "https://s3.amazonaws.com/grayfilestore-kctv/closingsData/closings_KCTV.json",

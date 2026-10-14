@@ -119,12 +119,22 @@ def test_an_alert_with_no_words_is_skipped() -> None:
     assert listing.skipped_rows == 1
 
 
-def test_other_pages_are_refused() -> None:
-    # A real page of another CMS (Corpus Christi ISD's Apptegy homepage) and a made-up one.
+def test_other_pages_are_read_by_their_text_or_refused() -> None:
+    # A real page of another CMS (Corpus Christi ISD's Apptegy homepage) and a made-up
+    # one are read by their text since round 3 of the coverage gate: showing no
+    # closing, each holds no list of its own (deferred, naming no file).
+    for body in (
+        _body("apptegy/corpus-christi-live-20260928.html"),
+        b"<html><head><title>SYNTHETIC challenge</title></head></html>",
+    ):
+        listing = edlio.parse(body)
+        assert (listing.variant, listing.state, listing.follows) == (
+            "homepage-text",
+            ListingState.DEFERRED,
+            (),
+        )
     with pytest.raises(ShapeError, match="not an Edlio homepage"):
-        edlio.parse(_body("apptegy/corpus-christi-live-20260928.html"))
-    with pytest.raises(ShapeError, match="not an Edlio homepage"):
-        edlio.parse(b"<html><head><title>SYNTHETIC challenge</title></head></html>")
+        edlio.parse(b"SYNTHETIC: not a page at all")
 
 
 @pytest.mark.parametrize(
@@ -146,8 +156,9 @@ def test_every_edlio_station_is_a_district_source() -> None:
     stations = sorted(
         (s for s in registry.stations.values() if s.platform == "edlio"), key=lambda s: s.id
     )
-    # 11 in South Texas, 5 in Wyoming, 3 in California, 1 each in Idaho and Montana
-    assert len(stations) == 21
+    # 11 in South Texas, 5 in Wyoming, 3 in California, 1 each in Idaho and Montana; and 3 in
+    # the San Antonio market added by the coverage gate (s4)
+    assert len(stations) == 24
     for station in stations:
         assert 1 <= len(station.leaids) <= 2, station.id
         assert station.page_url in station.archive_urls

@@ -1,0 +1,2453 @@
+# Station registry for one platform. Loaded with every other file in this folder
+# by snowlight.sources.stations.registry; see its docstring for the fields.
+# `snowlight stations robots --update` rewrites the robots blocks in place.
+platform:
+  id: district-pages
+  name: 'District homepages read whole: the short states'' districts with no vendor alert channel (Florida,
+    Idaho, Wyoming, Mississippi, California)'
+  operator: Each school district (its own site, on WordPress, Google Sites, Wix, Catapult, SchoolInSites,
+    Smart Sites and others)
+  adapter: district-homepage
+  poll_minutes: 15
+  terms:
+    automated_access: permitted
+    summary: 'Read 2026-10-13 (12:11 UTC) with the project''s User-Agent: each homepage''s links were
+      searched for terms of use, a disclaimer, a legal notice or an acceptable-use page. Holmes (FL) links
+      ''Terms of Use'' that condition use of the site on accepting its terms and notices and say nothing
+      of reading it with software; Washington (FL) links a ''Terms of Use'' page that shows the homepage''s
+      own content; St. Johns (FL) links its acceptable-use procedures (for students'' and staff''s use
+      of the district network) and a disclaimer; Fremont #2 (WY) links a webpage disclaimer about the
+      accuracy of its pages; Taylor (FL) a social-media disclaimer; Chico (CA) its acceptable-use policies
+      for the district network. The other 50 homepages link no terms of use. None forbids reading the
+      public homepage with software; Snowlight is non-commercial, reads only each homepage, and shows
+      each school''s status, not the district''s text. Each homepage''s robots.txt is recorded with its
+      station.'
+    evidence:
+    - url: https://www.hdsb.org/terms-of-use
+      read_at: '2026-10-13T12:11:19Z'
+      sha256: e1020c806803f2b118c6c4b6d734299cbd9d3313e5bf7b8be3b80a40f89f960b
+      excerpt:
+      - Holmes County Schools offers this Web site, including all information, software, products and
+        services available from this Web site or offered as part of or in conjunction with this Web site
+        (the “Web site”), to you, the user, conditioned upon your acceptance of all of the terms, conditions,
+        policies and notices stated here. Holmes County Schools reserves the right to make changes to
+        these Terms and Conditions immediately by posting the changed Terms and Conditions in this location.
+    - url: https://www.stjohns.k12.fl.us/it/aup/
+      read_at: '2026-10-13T12:11:12Z'
+      sha256: 32499f74c69251c0b923622bcef45ceb710e80193fce0ac43f025370969501c9
+      excerpt:
+      - The purpose of the AUP is to ensure the safety, reliability, accountability, data integrity and
+        security of the digital network and other district technology resources. It also protects our
+        students, staff and technology resources. Separate Acceptable Use Procedures (AUP) documents are
+        provided for students/visitors and employees of St. Johns County School District.
+    - url: https://www.fremont2.org/webpage-disclaimer
+      read_at: '2026-10-13T12:11:14Z'
+      sha256: d0c3876f14b3262fd16e24bea07402f9e99af3cf22669bdd6e1dba9d8089d14e
+      excerpt:
+      - “The accuracy and quality of information cannot be guaranteed. The district will not be responsible
+        for any information that may be lost, damaged, or unavailable due to technical or other difficulties.
+        The district has made every reasonable attempt to ensure that the district’s web pages are educationally
+        sound and do not contain links to any questionable material or anything that can be deemed in
+        violation of the district’s electronic communications policy.”
+    - url: https://www.chicousd.org/Departments/Information-Technology/Acceptable-Use-Policies/index.html
+      read_at: '2026-10-13T12:11:23Z'
+      sha256: 1d34dec7500171aaba239db9db3ab0aebeb18ca555e139a28e59e2ddbb862bfd
+      excerpt:
+      - The CUSD Board of Education supports the right of students, employees, and community members to
+        have reasonable access to various information formats and believes it is incumbent upon users
+        to utilize this privilege in an appropriate and reasonable manner.
+    permission: null
+    owner_decision: null
+  notes: 'Found for piece s4 (the coverage gate, round 5, 2026-10-13). The critic of round 4 found that
+    the gap-state part''s records of late September called district homepages ''not built'' on a glance
+    that no longer held (St. Lucie''s WordPress homepage) and ''not read'' after one timeout; the 68 records
+    of the short states (FL, ID, WY, MS, CA) that said ''not built'' or ''not read'' were checked again
+    on 2026-10-13 with the project''s User-Agent (the address the NCES CCD 2024-25 LEA directory lists,
+    and, where it no longer answered, the district''s current site found by a web search). These 56 districts''
+    homepages answer and carry none of the vendor alert channels the other district adapters read (Apptegy,
+    Edlio, Finalsite, SharpSchool, Smart Sites alerts); what each district posts is in its homepage''s
+    text, which the district-homepage adapter reads as district-homepage-text (a typed page: a line is
+    kept live only while it names a day near the read or is new since an earlier read). District-level
+    sources: each counts only its own district''s schools (leaids). Proof: a district''s general alert
+    channel (notices.gate_proofs): a page-text row proves its station only by the stricter rule of notices.page_text_closing
+    (a closing, delay, remote day or cancelled classes for weather or an emergency), or a dated closing
+    an NWS warning corroborates. The archive''s listings of the homepages were asked for by archive-captures
+    runs 38394807739 and 38395324045 (commits b18699e and 27aa7f2).'
+  shared_paths: []
+stations:
+- id: district-pages-st-lucie-fl
+  platform: district-pages
+  call_sign: SLPS
+  name: St. Lucie Public Schools (homepage)
+  market: Port St Lucie (St. Lucie County, FL)
+  dma: null
+  states: [FL]
+  counties:
+    basis: district
+    source: 'NCES CCD 2024-25 school directory (pipeline/out/internal/directory/schools.parquet): the
+      counties of the 56 schools of district-pages-st-lucie-fl''s district, ST. LUCIE (LEAID 1201770).'
+    fips: ['12111']
+  page_url: https://www.stlucie.k12.fl.us/
+  data_url: null
+  export_url: null
+  archive_urls:
+  - https://www.stlucie.k12.fl.us/
+  poll_minutes: null
+  status: active
+  evidence: 'First-hand check for piece s4 (the coverage gate, round 5), 2026-10-13. Live read of https://www.stlucie.k12.fl.us/
+    (HTTP 200, 442,715 bytes, SHA-256 e050e08f9d0e059e..., read 2026-10-13T11:58:54Z with the repository''s
+    User-Agent; robots.txt https://www.stlucie.k12.fl.us/: allowed (no rule matches)): a WordPress site
+    (the emergency-alerts plugin, Smart Slider 3 sliders), with none of the vendor alert channels the
+    other district adapters read; what the district posts is in the page''s text. Read as district-homepage-text:
+    no line announced a closing (an empty list). The gap-state part''s record of 2026-09-27 said ''not
+    built'' (not built: no alert or closings element found on the homepage).'
+  list_files: []
+  page_check: null
+  robots:
+  - url: https://www.stlucie.k12.fl.us/
+    checked_at: '2026-10-13T12:15:43Z'
+    state: parsed
+    allowed: true
+    rule: no rule matches
+    crawl_delay: null
+    disallowed_agents: []
+    sha256: e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855
+  leaids: ['1201770']
+- id: district-pages-st-johns-fl
+  platform: district-pages
+  call_sign: SJCSD
+  name: St. Johns County School District (homepage)
+  market: St Augustine (St. Johns County, FL)
+  dma: null
+  states: [FL]
+  counties:
+    basis: district
+    source: 'NCES CCD 2024-25 school directory (pipeline/out/internal/directory/schools.parquet): the
+      counties of the 54 schools of district-pages-st-johns-fl''s district, ST. JOHNS (LEAID 1201740).'
+    fips: ['12109']
+  page_url: https://www.stjohns.k12.fl.us/
+  data_url: null
+  export_url: null
+  archive_urls:
+  - https://www.stjohns.k12.fl.us/
+  poll_minutes: null
+  status: active
+  evidence: 'First-hand check for piece s4 (the coverage gate, round 5), 2026-10-13. Live read of https://www.stjohns.k12.fl.us/
+    (HTTP 200, 275,819 bytes, SHA-256 a314524ab426e080..., read 2026-10-13T11:58:51Z with the repository''s
+    User-Agent; robots.txt https://www.stjohns.k12.fl.us/: allowed (no rule matches)): a WordPress site
+    built with Elementor, with none of the vendor alert channels the other district adapters read; what
+    the district posts is in the page''s text. Read as district-homepage-text: no line announced a closing
+    (an empty list). The gap-state part''s record of 2026-09-27 said ''not built'' (not built: no alert
+    or closings element found on the homepage).'
+  list_files: []
+  page_check: null
+  robots:
+  - url: https://www.stjohns.k12.fl.us/
+    checked_at: '2026-10-13T12:15:42Z'
+    state: parsed
+    allowed: true
+    rule: no rule matches
+    crawl_delay: null
+    disallowed_agents: []
+    sha256: b9a9b9462e22fecf7ea37839e112504211bf9e82948140e863e1330a23bbba32
+  leaids: ['1201740']
+- id: district-pages-taylor-fl
+  platform: district-pages
+  call_sign: TCSD
+  name: Taylor County School District (homepage)
+  market: Perry (Taylor County, FL)
+  dma: null
+  states: [FL]
+  counties:
+    basis: district
+    source: 'NCES CCD 2024-25 school directory (pipeline/out/internal/directory/schools.parquet): the
+      counties of the 7 schools of district-pages-taylor-fl''s district, TAYLOR (LEAID 1201860).'
+    fips: ['12123']
+  page_url: https://www.taylor.k12.fl.us/
+  data_url: null
+  export_url: null
+  archive_urls:
+  - https://www.taylor.k12.fl.us/
+  poll_minutes: null
+  status: active
+  evidence: 'First-hand check for piece s4 (the coverage gate, round 5), 2026-10-13. Live read of https://www.taylor.k12.fl.us/
+    (HTTP 200, 218,488 bytes, SHA-256 2b79a417a3f6d493..., read 2026-10-13T12:00:24Z with the repository''s
+    User-Agent; robots.txt https://www.taylor.k12.fl.us/: allowed (no rule matches)): a SchoolInSites
+    (Connect Suite) site, with none of the vendor alert channels the other district adapters read; what
+    the district posts is in the page''s text. Read as district-homepage-text: no line announced a closing
+    (an empty list). The gap-state part''s record of 2026-09-27 said ''not built'' (First-hand check for
+    piece s4d, 2026-09-27 (round 2''s second pass; the website the NCES CCD 2024-25 LEA directory lists
+    for the district). static site (platform not identified): no alert banner, pop-up or closings element
+    on the homepage (1 mention(s) of closi...).'
+  list_files: []
+  page_check: null
+  robots:
+  - url: https://www.taylor.k12.fl.us/
+    checked_at: '2026-10-13T12:15:44Z'
+    state: parsed
+    allowed: true
+    rule: no rule matches
+    crawl_delay: null
+    disallowed_agents: []
+    sha256: 46fc1c776e010ab4393609fd8bd55ccabe571dece06c70fb3360149823ef0e6e
+  leaids: ['1201860']
+- id: district-pages-dixie-fl
+  platform: district-pages
+  call_sign: DCSD
+  name: Dixie District Schools (homepage)
+  market: Cross City (Dixie County, FL)
+  dma: null
+  states: [FL]
+  counties:
+    basis: district
+    source: 'NCES CCD 2024-25 school directory (pipeline/out/internal/directory/schools.parquet): the
+      counties of the 7 schools of district-pages-dixie-fl''s district, DIXIE (LEAID 1200450).'
+    fips: ['12029']
+  page_url: https://www.dixie.k12.fl.us/
+  data_url: null
+  export_url: null
+  archive_urls:
+  - https://www.dixie.k12.fl.us/
+  poll_minutes: null
+  status: active
+  evidence: 'First-hand check for piece s4 (the coverage gate, round 5), 2026-10-13. Live read of https://www.dixie.k12.fl.us/
+    (HTTP 200, 252,532 bytes, SHA-256 3d1e3a156a3e157c..., read 2026-10-13T12:00:26Z with the repository''s
+    User-Agent; robots.txt https://www.dixie.k12.fl.us/: allowed (no rule matches)): a Google Sites page,
+    with none of the vendor alert channels the other district adapters read; what the district posts is
+    in the page''s text. Read as district-homepage-text: no line announced a closing (an empty list).
+    The gap-state part''s record of 2026-09-27 said ''not built'' (First-hand check for piece s4d, 2026-09-27
+    (round 2''s second pass; the website the NCES CCD 2024-25 LEA directory lists for the district). static
+    site (platform not identified): no alert banner, pop-up or closings element on the homepage (0 mention(s)
+    of closi...).'
+  list_files: []
+  page_check: null
+  robots:
+  - url: https://www.dixie.k12.fl.us/
+    checked_at: '2026-10-13T12:15:19Z'
+    state: parsed
+    allowed: true
+    rule: no rule matches
+    crawl_delay: null
+    disallowed_agents: []
+    sha256: a246157f80d9283ce4e8f8f77d623751228714c0448e2645b0bd0a72d42d99ef
+  leaids: ['1200450']
+- id: district-pages-holmes-fl
+  platform: district-pages
+  call_sign: HDSB
+  name: Holmes District Schools (homepage)
+  market: Bonifay (Holmes County, FL)
+  dma: null
+  states: [FL]
+  counties:
+    basis: district
+    source: 'NCES CCD 2024-25 school directory (pipeline/out/internal/directory/schools.parquet): the
+      counties of the 10 schools of district-pages-holmes-fl''s district, HOLMES (LEAID 1200900).'
+    fips: ['12059']
+  page_url: https://www.hdsb.org/
+  data_url: null
+  export_url: null
+  archive_urls:
+  - https://www.hdsb.org/
+  poll_minutes: null
+  status: active
+  evidence: 'First-hand check for piece s4 (the coverage gate, round 5), 2026-10-13. Live read of https://www.hdsb.org/
+    (HTTP 200, 45,388 bytes, SHA-256 4cafe0a6405dab2a..., read 2026-10-13T12:00:30Z with the repository''s
+    User-Agent; robots.txt https://www.hdsb.org/: allowed (no rule matches)): a ParentSquare Smart Sites
+    page, with none of the vendor alert channels the other district adapters read; what the district posts
+    is in the page''s text. Read as district-homepage-text: no line announced a closing (an empty list).
+    The gap-state part''s record of 2026-09-27 said ''not built'' (First-hand check for piece s4d, 2026-09-27
+    (round 2''s second pass; the website the NCES CCD 2024-25 LEA directory lists for the district). static
+    site (platform not identified): no alert banner, pop-up or closings element on the homepage (0 mention(s)
+    of closi...).'
+  list_files: []
+  page_check: null
+  robots:
+  - url: https://www.hdsb.org/
+    checked_at: '2026-10-13T12:15:29Z'
+    state: parsed
+    allowed: true
+    rule: no rule matches
+    crawl_delay: null
+    disallowed_agents: []
+    sha256: fd89345af6aca5dab85f2aa6a830e270a362b1fa6b5f19607ddd773a081ed651
+  leaids: ['1200900']
+- id: district-pages-washington-fl
+  platform: district-pages
+  call_sign: WCSD
+  name: Washington County School District, Florida (homepage)
+  market: Chipley (Washington County, FL)
+  dma: null
+  states: [FL]
+  counties:
+    basis: district
+    source: 'NCES CCD 2024-25 school directory (pipeline/out/internal/directory/schools.parquet): the
+      counties of the 10 schools of district-pages-washington-fl''s district, WASHINGTON (LEAID 1202010).'
+    fips: ['12133']
+  page_url: https://www.wcsdschools.com/
+  data_url: null
+  export_url: null
+  archive_urls:
+  - https://www.wcsdschools.com/
+  poll_minutes: null
+  status: active
+  evidence: 'First-hand check for piece s4 (the coverage gate, round 5), 2026-10-13. Live read of https://www.wcsdschools.com/
+    (HTTP 200, 67,232 bytes, SHA-256 ea8c9880d01af456..., read 2026-10-13T12:00:47Z with the repository''s
+    User-Agent; robots.txt https://www.wcsdschools.com/: allowed (no rule matches)): a ParentSquare Smart
+    Sites page, with none of the vendor alert channels the other district adapters read; what the district
+    posts is in the page''s text. Read as district-homepage-text: no line announced a closing (an empty
+    list). The gap-state part''s record of 2026-09-27 said ''not built'' (First-hand check for piece s4d,
+    2026-09-27 (round 2''s second pass; the website the NCES CCD 2024-25 LEA directory lists for the district).
+    static site (platform not identified): no alert banner, pop-up or closings element on the homepage
+    (0 mention(s) of closi...).'
+  list_files: []
+  page_check: null
+  robots:
+  - url: https://www.wcsdschools.com/
+    checked_at: '2026-10-13T12:15:48Z'
+    state: parsed
+    allowed: true
+    rule: no rule matches
+    crawl_delay: null
+    disallowed_agents: []
+    sha256: fd89345af6aca5dab85f2aa6a830e270a362b1fa6b5f19607ddd773a081ed651
+  leaids: ['1202010']
+- id: district-pages-union-fl
+  platform: district-pages
+  call_sign: UCSD
+  name: Union County School District, Florida (homepage)
+  market: Lake Butler (Union County, FL)
+  dma: null
+  states: [FL]
+  counties:
+    basis: district
+    source: 'NCES CCD 2024-25 school directory (pipeline/out/internal/directory/schools.parquet): the
+      counties of the 6 schools of district-pages-union-fl''s district, UNION (LEAID 1201890).'
+    fips: ['12125']
+  page_url: https://www.union.k12.fl.us/
+  data_url: null
+  export_url: null
+  archive_urls:
+  - https://www.union.k12.fl.us/
+  poll_minutes: null
+  status: active
+  evidence: 'First-hand check for piece s4 (the coverage gate, round 5), 2026-10-13. Live read of https://www.union.k12.fl.us/
+    (HTTP 200, 269,160 bytes, SHA-256 76f7cdd7af44613e..., read 2026-10-13T12:01:03Z with the repository''s
+    User-Agent; robots.txt https://www.union.k12.fl.us/: allowed (no rule matches)): a Google Sites page,
+    with none of the vendor alert channels the other district adapters read; what the district posts is
+    in the page''s text. Read as district-homepage-text: no line announced a closing (an empty list).
+    The gap-state part''s record of 2026-09-27 said ''not built'' (First-hand check for piece s4d, 2026-09-27
+    (round 2''s second pass; the website the NCES CCD 2024-25 LEA directory lists for the district). static
+    site (platform not identified): no alert banner, pop-up or closings element on the homepage (0 mention(s)
+    of closi...).'
+  list_files: []
+  page_check: null
+  robots:
+  - url: https://www.union.k12.fl.us/
+    checked_at: '2026-10-13T12:15:47Z'
+    state: parsed
+    allowed: true
+    rule: no rule matches
+    crawl_delay: null
+    disallowed_agents: []
+    sha256: fcd4134e53099c9566f6a66f039faf067e7ba1f956162156a0467c0b089442eb
+  leaids: ['1201890']
+- id: district-pages-columbia-fl
+  platform: district-pages
+  call_sign: CCSD
+  name: Columbia County School District (homepage)
+  market: Lake City (Columbia County, FL)
+  dma: null
+  states: [FL]
+  counties:
+    basis: district
+    source: 'NCES CCD 2024-25 school directory (pipeline/out/internal/directory/schools.parquet): the
+      counties of the 17 schools of district-pages-columbia-fl''s district, COLUMBIA (LEAID 1200360).'
+    fips: ['12023']
+  page_url: https://www.columbiak12.com/
+  data_url: null
+  export_url: null
+  archive_urls:
+  - https://www.columbiak12.com/
+  - https://www.columbia.k12.fl.us/
+  former_urls:
+  - url: https://www.columbia.k12.fl.us/
+    evidence: 'The district''s homepage at its earlier address: the NCES CCD 2024-25 LEA directory lists
+      https://www.columbia.k12.fl.us/ as the district''s website, and it no longer answers the repository''s
+      reads (2026-09-27 and 2026-10-13: see the station''s evidence); archive-captures run 38395324045
+      lists 412 captures answering 200 from 2015 to 2026. The same channel (the district''s own homepage,
+      read whole as district-homepage-text) at the address the district used before https://www.columbiak12.com/.'
+  poll_minutes: null
+  status: active
+  evidence: 'First-hand check for piece s4 (the coverage gate, round 5), 2026-10-13. Live read of https://www.columbiak12.com/
+    (HTTP 200, 172,769 bytes, SHA-256 8423ec7813348078..., read 2026-10-13T12:07:19Z with the repository''s
+    User-Agent; robots.txt https://www.columbiak12.com/: allowed (no rule matches)): a ParentSquare Smart
+    Sites page, with none of the vendor alert channels the other district adapters read; what the district
+    posts is in the page''s text. Read as district-homepage-text: no line announced a closing (an empty
+    list). The NCES CCD 2024-25 LEA directory lists https://www.columbia.k12.fl.us/ as the district''s
+    website; it did not answer the repository''s reads on 2026-09-27 or 2026-10-13 (First-hand check for
+    piece s4d, 2026-09-27 (round 2''s second pass; the website the NCES CCD 2024-25 LEA directory lists),
+    and a web search found the district''s site at https://www.columbiak12.com/; the old address is an
+    archive URL so its captures are listed and read. The gap-state part''s record of 2026-09-27 said ''not
+    read'' (First-hand check for piece s4d, 2026-09-27 (round 2''s second pass; the website the NCES CCD
+    2024-25 LEA directory lists for the district). Not read: the proxy answered 502 (the site did not
+    answer), four attempts with backoff.).'
+  list_files: []
+  page_check: null
+  robots:
+  - url: https://www.columbiak12.com/
+    checked_at: '2026-10-13T12:15:17Z'
+    state: parsed
+    allowed: true
+    rule: no rule matches
+    crawl_delay: 5.0
+    disallowed_agents: [ahrefsbot, baiduspider, blexbot, mj12bot, semrushbot, yandex]
+    sha256: e8e9fa92b86ef4f758ad1b7a87171b599635d1b16fa1e28fd355b81a183e9c96
+  leaids: ['1200360']
+- id: district-pages-gadsden-fl
+  platform: district-pages
+  call_sign: GCSD
+  name: Gadsden County School District (homepage)
+  market: Quincy (Gadsden County, FL)
+  dma: null
+  states: [FL]
+  counties:
+    basis: district
+    source: 'NCES CCD 2024-25 school directory (pipeline/out/internal/directory/schools.parquet): the
+      counties of the 15 schools of district-pages-gadsden-fl''s district, GADSDEN (LEAID 1200600).'
+    fips: ['12039']
+  page_url: https://www.gadsdenschools.org/
+  data_url: null
+  export_url: null
+  archive_urls:
+  - https://www.gadsdenschools.org/
+  - https://www.gcps.k12.fl.us/
+  former_urls:
+  - url: https://www.gcps.k12.fl.us/
+    evidence: 'The district''s homepage at its earlier address: the NCES CCD 2024-25 LEA directory lists
+      https://www.gcps.k12.fl.us/ as the district''s website, and it no longer answers the repository''s
+      reads (2026-09-27 and 2026-10-13: see the station''s evidence); archive-captures run 38395324045
+      lists 170 captures answering 200 from 2015 to 2020. The same channel (the district''s own homepage,
+      read whole as district-homepage-text) at the address the district used before https://www.gadsdenschools.org/.'
+  poll_minutes: null
+  status: active
+  evidence: 'First-hand check for piece s4 (the coverage gate, round 5), 2026-10-13. Live read of https://www.gadsdenschools.org/
+    (HTTP 200, 97,203 bytes, SHA-256 d7d0ff93d738847e..., read 2026-10-13T12:07:22Z with the repository''s
+    User-Agent; robots.txt https://www.gadsdenschools.org/: allowed (no rule matches)): a SchoolInSites
+    (Connect Suite) site, with none of the vendor alert channels the other district adapters read; what
+    the district posts is in the page''s text. Read as district-homepage-text: no line announced a closing
+    (an empty list). The NCES CCD 2024-25 LEA directory lists https://www.gcps.k12.fl.us/ as the district''s
+    website; it did not answer the repository''s reads on 2026-09-27 or 2026-10-13 (First-hand check for
+    piece s4d, 2026-09-27 (round 2''s second pass; the website the NCES CCD 2024-25 LEA directory lists),
+    and a web search found the district''s site at https://www.gadsdenschools.org/; the old address is
+    an archive URL so its captures are listed and read. The gap-state part''s record of 2026-09-27 said
+    ''not read'' (First-hand check for piece s4d, 2026-09-27 (round 2''s second pass; the website the
+    NCES CCD 2024-25 LEA directory lists for the district). Not read: the proxy answered 502 (the site
+    did not answer), four attempts with backoff.).'
+  list_files: []
+  page_check: null
+  robots:
+  - url: https://www.gadsdenschools.org/
+    checked_at: '2026-10-13T12:15:25Z'
+    state: parsed
+    allowed: true
+    rule: no rule matches
+    crawl_delay: null
+    disallowed_agents: []
+    sha256: 46fc1c776e010ab4393609fd8bd55ccabe571dece06c70fb3360149823ef0e6e
+  leaids: ['1200600']
+- id: district-pages-liberty-fl
+  platform: district-pages
+  call_sign: LCSB
+  name: Liberty County School District, Florida (homepage)
+  market: Bristol (Liberty County, FL)
+  dma: null
+  states: [FL]
+  counties:
+    basis: district
+    source: 'NCES CCD 2024-25 school directory (pipeline/out/internal/directory/schools.parquet): the
+      counties of the 7 schools of district-pages-liberty-fl''s district, LIBERTY (LEAID 1201170).'
+    fips: ['12077']
+  page_url: https://www.lcsb.org/
+  data_url: null
+  export_url: null
+  archive_urls:
+  - https://www.lcsb.org/
+  - https://www.lcsbonline.org/
+  former_urls:
+  - url: https://www.lcsbonline.org/
+    evidence: 'The district''s homepage at its earlier address: the NCES CCD 2024-25 LEA directory lists
+      https://www.lcsbonline.org/ as the district''s website, and it no longer answers the repository''s
+      reads (2026-09-27 and 2026-10-13: see the station''s evidence); archive-captures run 38395324045
+      lists 164 captures answering 200 from 2015 to 2023. The same channel (the district''s own homepage,
+      read whole as district-homepage-text) at the address the district used before https://www.lcsb.org/.'
+  poll_minutes: null
+  status: active
+  evidence: 'First-hand check for piece s4 (the coverage gate, round 5), 2026-10-13. Live read of https://www.lcsb.org/
+    (HTTP 200, 195,858 bytes, SHA-256 3dbb30ecc8c5e214..., read 2026-10-13T12:07:27Z with the repository''s
+    User-Agent; robots.txt https://www.lcsb.org/: allowed (no rule matches)): a ParentSquare Smart Sites
+    page, with none of the vendor alert channels the other district adapters read; what the district posts
+    is in the page''s text. Read as district-homepage-text: no line announced a closing (an empty list).
+    The NCES CCD 2024-25 LEA directory lists https://www.lcsbonline.org/ as the district''s website; it
+    did not answer the repository''s reads on 2026-09-27 or 2026-10-13 (First-hand check for piece s4d,
+    2026-09-27 (round 2''s second pass; the website the NCES CCD 2024-25 LEA directory lists), and a web
+    search found the district''s site at https://www.lcsb.org/; the old address is an archive URL so its
+    captures are listed and read. The gap-state part''s record of 2026-09-27 said ''not read'' (First-hand
+    check for piece s4d, 2026-09-27 (round 2''s second pass; the website the NCES CCD 2024-25 LEA directory
+    lists for the district). Not read: the proxy answered 502 (the site did not answer), four attempts
+    with backoff.).'
+  list_files: []
+  page_check: null
+  robots:
+  - url: https://www.lcsb.org/
+    checked_at: '2026-10-13T12:15:35Z'
+    state: parsed
+    allowed: true
+    rule: no rule matches
+    crawl_delay: 5.0
+    disallowed_agents: [ahrefsbot, baiduspider, blexbot, mj12bot, semrushbot, yandex]
+    sha256: e8e9fa92b86ef4f758ad1b7a87171b599635d1b16fa1e28fd355b81a183e9c96
+  leaids: ['1201170']
+- id: district-pages-lafayette-fl
+  platform: district-pages
+  call_sign: LDS
+  name: Lafayette District Schools (homepage)
+  market: Mayo (Lafayette County, FL)
+  dma: null
+  states: [FL]
+  counties:
+    basis: district
+    source: 'NCES CCD 2024-25 school directory (pipeline/out/internal/directory/schools.parquet): the
+      counties of the 5 schools of district-pages-lafayette-fl''s district, LAFAYETTE (LEAID 1201020).'
+    fips: ['12067']
+  page_url: https://www.lafayette.k12.fl.us/
+  data_url: null
+  export_url: null
+  archive_urls:
+  - https://www.lafayette.k12.fl.us/
+  - https://lafayette.schooldesk.net/
+  former_urls:
+  - url: https://lafayette.schooldesk.net/
+    evidence: 'The district''s homepage at its earlier address: the NCES CCD 2024-25 LEA directory lists
+      https://lafayette.schooldesk.net/ as the district''s website, and it no longer answers the repository''s
+      reads (2026-09-27 and 2026-10-13: see the station''s evidence); archive-captures run 38395324045
+      lists 50 captures answering 200 from 2015 to 2022. The same channel (the district''s own homepage,
+      read whole as district-homepage-text) at the address the district used before https://www.lafayette.k12.fl.us/.'
+  poll_minutes: null
+  status: active
+  evidence: 'First-hand check for piece s4 (the coverage gate, round 5), 2026-10-13. Live read of https://www.lafayette.k12.fl.us/
+    (HTTP 200, 280,454 bytes, SHA-256 1bbed8e01f62c7bd..., read 2026-10-13T12:07:31Z with the repository''s
+    User-Agent; robots.txt https://www.lafayette.k12.fl.us/: allowed (no rule matches)): a ParentSquare
+    Smart Sites page, with none of the vendor alert channels the other district adapters read; what the
+    district posts is in the page''s text. Read as district-homepage-text: no line announced a closing
+    (an empty list). The NCES CCD 2024-25 LEA directory lists https://lafayette.schooldesk.net/ as the
+    district''s website; it did not answer the repository''s reads on 2026-09-27 or 2026-10-13 (First-hand
+    check for piece s4d, 2026-09-27 (round 2''s second pass; the website the NCES CCD 2024-25 LEA directory
+    lists), and a web search found the district''s site at https://www.lafayette.k12.fl.us/; the old address
+    is an archive URL so its captures are listed and read. The gap-state part''s record of 2026-09-27
+    said ''not read'' (First-hand check for piece s4d, 2026-09-27 (round 2''s second pass; the website
+    the NCES CCD 2024-25 LEA directory lists for the district). Not read: the proxy answered 502 (the
+    site did not answer), four attempts with backoff.).'
+  list_files: []
+  page_check: null
+  robots:
+  - url: https://www.lafayette.k12.fl.us/
+    checked_at: '2026-10-13T12:15:33Z'
+    state: parsed
+    allowed: true
+    rule: no rule matches
+    crawl_delay: null
+    disallowed_agents: []
+    sha256: 01ff2e32ac47e9eba394337eda08bfff346321376827607e0e109669bd7694d7
+  leaids: ['1201020']
+- id: district-pages-jefferson-fl
+  platform: district-pages
+  call_sign: JCS
+  name: Jefferson County Schools, Florida (homepage)
+  market: Monticello (Jefferson County, FL)
+  dma: null
+  states: [FL]
+  counties:
+    basis: district
+    source: 'NCES CCD 2024-25 school directory (pipeline/out/internal/directory/schools.parquet): the
+      counties of the 6 schools of district-pages-jefferson-fl''s district, JEFFERSON (LEAID 1200990).'
+    fips: ['12065']
+  page_url: https://www.jeffersonschools.net/
+  data_url: null
+  export_url: null
+  archive_urls:
+  - https://www.jeffersonschools.net/
+  - https://www.jeffersonschooldistrict.org/
+  former_urls:
+  - url: https://www.jeffersonschooldistrict.org/
+    evidence: 'The district''s homepage at its earlier address: the NCES CCD 2024-25 LEA directory lists
+      https://www.jeffersonschooldistrict.org/ as the district''s website, and it no longer answers the
+      repository''s reads (2026-09-27 and 2026-10-13: see the station''s evidence); archive-captures run
+      38395324045 lists 411 captures answering 200 from 2015 to 2024. The same channel (the district''s
+      own homepage, read whole as district-homepage-text) at the address the district used before https://www.jeffersonschools.net/.'
+  poll_minutes: null
+  status: active
+  evidence: 'First-hand check for piece s4 (the coverage gate, round 5), 2026-10-13. Live read of https://www.jeffersonschools.net/
+    (HTTP 200, 1,379,900 bytes, SHA-256 88901b25bc1869b2..., read 2026-10-13T12:07:33Z with the repository''s
+    User-Agent; robots.txt https://www.jeffersonschools.net/: allowed (Allow: /)): a Wix site, with none
+    of the vendor alert channels the other district adapters read; what the district posts is in the page''s
+    text. Read as district-homepage-text: no line announced a closing (an empty list). The NCES CCD 2024-25
+    LEA directory lists https://www.jeffersonschooldistrict.org/ as the district''s website; it did not
+    answer the repository''s reads on 2026-09-27 or 2026-10-13 (First-hand check for piece s4d, 2026-09-27
+    (round 2''s second pass; the website the NCES CCD 2024-25 LEA directory lists), and a web search found
+    the district''s site at https://www.jeffersonschools.net/; the old address is an archive URL so its
+    captures are listed and read. The gap-state part''s record of 2026-09-27 said ''not read'' (First-hand
+    check for piece s4d, 2026-09-27 (round 2''s second pass; the website the NCES CCD 2024-25 LEA directory
+    lists for the district). Not read: the proxy answered 502 (the site did not answer), four attempts
+    with backoff.).'
+  list_files: []
+  page_check: null
+  robots:
+  - url: https://www.jeffersonschools.net/
+    checked_at: '2026-10-13T12:15:30Z'
+    state: parsed
+    allowed: true
+    rule: 'Allow: /'
+    crawl_delay: null
+    disallowed_agents: [petalbot]
+    sha256: 4e08ff263278f12349da1228c9b819e8b653dc0a603927eedede66c14acf1ffb
+  leaids: ['1200990']
+- id: district-pages-levy-fl
+  platform: district-pages
+  call_sign: LCSB
+  name: Levy County Schools (homepage)
+  market: Bronson (Levy County, FL)
+  dma: null
+  states: [FL]
+  counties:
+    basis: district
+    source: 'NCES CCD 2024-25 school directory (pipeline/out/internal/directory/schools.parquet): the
+      counties of the 15 schools of district-pages-levy-fl''s district, LEVY (LEAID 1201140).'
+    fips: ['12075']
+  page_url: https://www.levyk12.org/
+  data_url: null
+  export_url: null
+  archive_urls:
+  - https://www.levyk12.org/
+  - https://www.levy.k12.fl.us/
+  former_urls:
+  - url: https://www.levy.k12.fl.us/
+    evidence: 'The district''s homepage at its earlier address: the NCES CCD 2024-25 LEA directory lists
+      https://www.levy.k12.fl.us/ as the district''s website, and it no longer answers the repository''s
+      reads (2026-09-27 and 2026-10-13: see the station''s evidence); archive-captures run 38395324045
+      lists 149 captures answering 200 from 2015 to 2020. The same channel (the district''s own homepage,
+      read whole as district-homepage-text) at the address the district used before https://www.levyk12.org/.'
+  poll_minutes: null
+  status: active
+  evidence: 'First-hand check for piece s4 (the coverage gate, round 5), 2026-10-13. Live read of https://www.levyk12.org/
+    (HTTP 200, 229,059 bytes, SHA-256 724e5b3d0ebc3842..., read 2026-10-13T12:07:38Z with the repository''s
+    User-Agent; robots.txt https://www.levyk12.org/: allowed (no rule matches)): a ParentSquare Smart
+    Sites page, with none of the vendor alert channels the other district adapters read; what the district
+    posts is in the page''s text. Read as district-homepage-text: no line announced a closing (an empty
+    list). The NCES CCD 2024-25 LEA directory lists https://www.levy.k12.fl.us/ as the district''s website;
+    it did not answer the repository''s reads on 2026-09-27 or 2026-10-13 (First-hand check for piece
+    s4d, 2026-09-27 (round 2''s second pass; the website the NCES CCD 2024-25 LEA directory lists), and
+    a web search found the district''s site at https://www.levyk12.org/; the old address is an archive
+    URL so its captures are listed and read. The gap-state part''s record of 2026-09-27 said ''not read''
+    (First-hand check for piece s4d, 2026-09-27 (round 2''s second pass; the website the NCES CCD 2024-25
+    LEA directory lists for the district). Not read: https://www.levy.k12.fl.us/: ConnectTimeout: _ssl.c:983:
+    The handshake operation timed out after 4 attempts).'
+  list_files: []
+  page_check: null
+  robots:
+  - url: https://www.levyk12.org/
+    checked_at: '2026-10-13T12:15:34Z'
+    state: parsed
+    allowed: true
+    rule: no rule matches
+    crawl_delay: 5.0
+    disallowed_agents: [ahrefsbot, baiduspider, blexbot, mj12bot, semrushbot, yandex]
+    sha256: e8e9fa92b86ef4f758ad1b7a87171b599635d1b16fa1e28fd355b81a183e9c96
+  leaids: ['1201140']
+- id: district-pages-gulf-fl
+  platform: district-pages
+  call_sign: GDS
+  name: Gulf District Schools (homepage)
+  market: Port St Joe (Gulf County, FL)
+  dma: null
+  states: [FL]
+  counties:
+    basis: district
+    source: 'NCES CCD 2024-25 school directory (pipeline/out/internal/directory/schools.parquet): the
+      counties of the 7 schools of district-pages-gulf-fl''s district, GULF (LEAID 1200690).'
+    fips: ['12045']
+  page_url: https://gulfcoschools.com/
+  data_url: null
+  export_url: null
+  archive_urls:
+  - https://gulfcoschools.com/
+  - https://www.gulf.k12.fl.us/
+  former_urls:
+  - url: https://www.gulf.k12.fl.us/
+    evidence: 'The district''s homepage at its earlier address: the NCES CCD 2024-25 LEA directory lists
+      https://www.gulf.k12.fl.us/ as the district''s website, and it no longer answers the repository''s
+      reads (2026-09-27 and 2026-10-13: see the station''s evidence); archive-captures run 38395324045
+      lists 35 captures answering 200 from 2015 to 2023. The same channel (the district''s own homepage,
+      read whole as district-homepage-text) at the address the district used before https://gulfcoschools.com/.'
+  poll_minutes: null
+  status: active
+  evidence: 'First-hand check for piece s4 (the coverage gate, round 5), 2026-10-13. Live read of https://gulfcoschools.com/
+    (HTTP 200, 139,578 bytes, SHA-256 c421617276afb88f..., read 2026-10-13T12:07:41Z with the repository''s
+    User-Agent; robots.txt https://gulfcoschools.com/: allowed (no rule matches)): a WordPress site, with
+    none of the vendor alert channels the other district adapters read; what the district posts is in
+    the page''s text. Read as district-homepage-text: 1 line(s) announcing a closing: ''SCHOOL CLOSURES:
+    Hurricane Isaias''. The NCES CCD 2024-25 LEA directory lists https://www.gulf.k12.fl.us/ as the district''s
+    website; it did not answer the repository''s reads on 2026-09-27 or 2026-10-13 (First-hand check for
+    piece s4d, 2026-09-27 (round 2''s second pass; the website the NCES CCD 2024-25 LEA directory lists),
+    and a web search found the district''s site at https://gulfcoschools.com/; the old address is an archive
+    URL so its captures are listed and read. The gap-state part''s record of 2026-09-27 said ''not read''
+    (First-hand check for piece s4d, 2026-09-27 (round 2''s second pass; the website the NCES CCD 2024-25
+    LEA directory lists for the district). Not read: TLS verification failed (a self-signed certificate);
+    verification is never disabled.).'
+  list_files: []
+  page_check: null
+  robots:
+  - url: https://gulfcoschools.com/
+    checked_at: '2026-10-13T12:15:29Z'
+    state: parsed
+    allowed: true
+    rule: no rule matches
+    crawl_delay: null
+    disallowed_agents: []
+    sha256: 7197037d040a3e132603e3893059ebcd7bb03eb4405b6d212ad9bc186ee44a8c
+  leaids: ['1200690']
+- id: district-pages-teton-id
+  platform: district-pages
+  call_sign: TSD401
+  name: Teton School District 401 (homepage)
+  market: Driggs (Teton County, ID)
+  dma: null
+  states: [ID]
+  counties:
+    basis: district
+    source: 'NCES CCD 2024-25 school directory (pipeline/out/internal/directory/schools.parquet): the
+      counties of the 7 schools of district-pages-teton-id''s district, TETON COUNTY DISTRICT (LEAID 1603180).'
+    fips: ['16081']
+  page_url: https://www.tsd401.org/
+  data_url: null
+  export_url: null
+  archive_urls:
+  - https://www.tsd401.org/
+  poll_minutes: null
+  status: active
+  evidence: 'First-hand check for piece s4 (the coverage gate, round 5), 2026-10-13. Live read of https://www.tsd401.org/
+    (HTTP 200, 61,171 bytes, SHA-256 a2b182ed66fcd549..., read 2026-10-13T11:59:06Z with the repository''s
+    User-Agent; robots.txt https://www.tsd401.org/: disallowed (Disallow: /)): a Smore newsletter page,
+    with none of the vendor alert channels the other district adapters read; what the district posts is
+    in the page''s text. Read as district-homepage-text: no line announced a closing (an empty list).
+    The gap-state part''s record of 2026-09-27 said ''not built'' (not built: a newsletter page, no alerts).'
+  list_files: []
+  page_check: null
+  robots:
+  - url: https://www.tsd401.org/
+    checked_at: '2026-10-13T12:15:45Z'
+    state: parsed
+    allowed: false
+    rule: 'Disallow: /'
+    crawl_delay: null
+    disallowed_agents: [mj12bot, riddler, scrapybot, smtbot]
+    sha256: d765c6b785fdb5dcbd320b0a664eb6ebaab0d3182dd35ece092f1e9c6243145e
+  leaids: ['1603180']
+- id: district-pages-blackfoot-id
+  platform: district-pages
+  call_sign: BSD55
+  name: Blackfoot School District 55 (homepage)
+  market: Blackfoot (Bingham County, ID)
+  dma: null
+  states: [ID]
+  counties:
+    basis: district
+    source: 'NCES CCD 2024-25 school directory (pipeline/out/internal/directory/schools.parquet): the
+      counties of the 11 schools of district-pages-blackfoot-id''s district, BLACKFOOT DISTRICT (LEAID
+      1600270).'
+    fips: ['16011']
+  page_url: https://www.sd55.org/
+  data_url: null
+  export_url: null
+  archive_urls:
+  - https://www.sd55.org/
+  poll_minutes: null
+  status: active
+  evidence: 'First-hand check for piece s4 (the coverage gate, round 5), 2026-10-13. Live read of https://www.sd55.org/
+    (HTTP 200, 607,228 bytes, SHA-256 2004863395fb7a18..., read 2026-10-13T11:59:11Z with the repository''s
+    User-Agent; robots.txt https://www.sd55.org: allowed (Allow: /)): a Wix site, with none of the vendor
+    alert channels the other district adapters read; what the district posts is in the page''s text. Read
+    as district-homepage-text: no line announced a closing (an empty list). The gap-state part''s record
+    of 2026-09-27 said ''not built'' (not built: no alert element; a Wix page).'
+  list_files: []
+  page_check: null
+  robots:
+  - url: https://www.sd55.org/
+    checked_at: '2026-10-13T12:15:13Z'
+    state: parsed
+    allowed: true
+    rule: 'Allow: /'
+    crawl_delay: null
+    disallowed_agents: [petalbot]
+    sha256: d86cc6b718b78ba9e7adb65022b03d35029e99763e8e6d790ae87b0a9e856856
+  leaids: ['1600270']
+- id: district-pages-jefferson-id
+  platform: district-pages
+  call_sign: JSD251
+  name: Jefferson Joint School District 251 (homepage)
+  market: Rigby (Jefferson County, ID)
+  dma: null
+  states: [ID]
+  counties:
+    basis: district
+    source: 'NCES CCD 2024-25 school directory (pipeline/out/internal/directory/schools.parquet): the
+      counties of the 10 schools of district-pages-jefferson-id''s district, JEFFERSON COUNTY JOINT DISTRICT
+      (LEAID 1601570).'
+    fips: ['16051']
+  page_url: https://www.jeffersonsd251.org/
+  data_url: null
+  export_url: null
+  archive_urls:
+  - https://www.jeffersonsd251.org/
+  poll_minutes: null
+  status: active
+  evidence: 'First-hand check for piece s4 (the coverage gate, round 5), 2026-10-13. Live read of https://www.jeffersonsd251.org/
+    (HTTP 200, 195,330 bytes, SHA-256 0154a3a62fb77119..., read 2026-10-13T12:01:05Z with the repository''s
+    User-Agent; robots.txt https://www.jeffersonsd251.org/: allowed (no rule matches)): a WordPress site,
+    with none of the vendor alert channels the other district adapters read; what the district posts is
+    in the page''s text. Read as district-homepage-text: no line announced a closing (an empty list).
+    The gap-state part''s record of 2026-09-27 said ''not built'' (First-hand check for piece s4d, 2026-09-27
+    (round 2''s second pass; a web search for the district''s site, Idaho''s LEA records listing none).
+    WordPress: no alert banner, pop-up or closings element on the homepage (0 mention(s) of closing, closure,
+    delay or cance...).'
+  list_files: []
+  page_check: null
+  robots:
+  - url: https://www.jeffersonsd251.org/
+    checked_at: '2026-10-13T12:15:30Z'
+    state: parsed
+    allowed: true
+    rule: no rule matches
+    crawl_delay: null
+    disallowed_agents: []
+    sha256: 58b2313297b256db5bb4aa95f9e7f0a9054c6511160005f995c99cd40d926ce1
+  leaids: ['1601570']
+- id: district-pages-snake-river-id
+  platform: district-pages
+  call_sign: SRSD52
+  name: Snake River School District 52 (homepage)
+  market: Blackfoot (Bingham County, ID)
+  dma: null
+  states: [ID]
+  counties:
+    basis: district
+    source: 'NCES CCD 2024-25 school directory (pipeline/out/internal/directory/schools.parquet): the
+      counties of the 9 schools of district-pages-snake-river-id''s district, SNAKE RIVER DISTRICT (LEAID
+      1602970).'
+    fips: ['16011']
+  page_url: https://www.snakeriver.org/
+  data_url: null
+  export_url: null
+  archive_urls:
+  - https://www.snakeriver.org/
+  poll_minutes: null
+  status: active
+  evidence: 'First-hand check for piece s4 (the coverage gate, round 5), 2026-10-13. Live read of https://www.snakeriver.org/
+    (HTTP 200, 208,348 bytes, SHA-256 74df583455b12a78..., read 2026-10-13T12:01:08Z with the repository''s
+    User-Agent; robots.txt https://www.snakeriver.org/: allowed (no rule matches)): a Google Sites page,
+    with none of the vendor alert channels the other district adapters read; what the district posts is
+    in the page''s text. Read as district-homepage-text: no line announced a closing (an empty list).
+    The gap-state part''s record of 2026-09-27 said ''not built'' (First-hand check for piece s4d, 2026-09-27
+    (round 2''s second pass; a web search for the district''s site, Idaho''s LEA records listing none).
+    Google Sites or a static site: no alert banner, pop-up or closings element on the homepage (0 mention(s)
+    of closing, clo...).'
+  list_files: []
+  page_check: null
+  robots:
+  - url: https://www.snakeriver.org/
+    checked_at: '2026-10-13T12:15:41Z'
+    state: parsed
+    allowed: true
+    rule: no rule matches
+    crawl_delay: null
+    disallowed_agents: []
+    sha256: 9a885d1985d578cb2bd37b4b8b81ec56a02efac40a1deaf1abf4b583642b9835
+  leaids: ['1602970']
+- id: district-pages-gooding-id
+  platform: district-pages
+  call_sign: GSD231
+  name: Gooding Joint School District 231 (homepage)
+  market: Gooding (Gooding County, ID)
+  dma: null
+  states: [ID]
+  counties:
+    basis: district
+    source: 'NCES CCD 2024-25 school directory (pipeline/out/internal/directory/schools.parquet): the
+      counties of the 4 schools of district-pages-gooding-id''s district, GOODING JOINT DISTRICT (LEAID
+      1601260).'
+    fips: ['16047']
+  page_url: https://gsd231.org/
+  data_url: null
+  export_url: null
+  archive_urls:
+  - https://gsd231.org/
+  poll_minutes: null
+  status: active
+  evidence: 'First-hand check for piece s4 (the coverage gate, round 5), 2026-10-13. Live read of https://gsd231.org/
+    (HTTP 200, 192,800 bytes, SHA-256 a6b7d87cb3923e9d..., read 2026-10-13T12:01:10Z with the repository''s
+    User-Agent; robots.txt https://gsd231.org/: allowed (no rule matches)): a WordPress site built with
+    Elementor, with none of the vendor alert channels the other district adapters read; what the district
+    posts is in the page''s text. Read as district-homepage-text: no line announced a closing (an empty
+    list). The gap-state part''s record of 2026-09-27 said ''not built'' (First-hand check for piece s4d,
+    2026-09-27 (round 2''s second pass; a web search for the district''s site, Idaho''s LEA records listing
+    none). WordPress: no alert banner, pop-up or closings element on the homepage (0 mention(s) of closing,
+    closure, delay or cance...).'
+  list_files: []
+  page_check: null
+  robots:
+  - url: https://gsd231.org/
+    checked_at: '2026-10-13T12:15:26Z'
+    state: parsed
+    allowed: true
+    rule: no rule matches
+    crawl_delay: null
+    disallowed_agents: []
+    sha256: f708825f2c30e247384dc76c80aabefd8e029ad0c7bf729a981a195c174e096e
+  leaids: ['1601260']
+- id: district-pages-filer-id
+  platform: district-pages
+  call_sign: FSD413
+  name: Filer School District 413 (homepage)
+  market: Filer (Twin Falls County, ID)
+  dma: null
+  states: [ID]
+  counties:
+    basis: district
+    source: 'NCES CCD 2024-25 school directory (pipeline/out/internal/directory/schools.parquet): the
+      counties of the 5 schools of district-pages-filer-id''s district, FILER DISTRICT (LEAID 1601050).'
+    fips: ['16083']
+  page_url: https://filerschools.org/
+  data_url: null
+  export_url: null
+  archive_urls:
+  - https://filerschools.org/
+  poll_minutes: null
+  status: active
+  evidence: 'First-hand check for piece s4 (the coverage gate, round 5), 2026-10-13. Live read of https://filerschools.org/
+    (HTTP 200, 257,516 bytes, SHA-256 954dd52b9bcb8b89..., read 2026-10-13T12:01:16Z with the repository''s
+    User-Agent; robots.txt https://www.filerschools.org/: allowed (no rule matches); https://filerschools.org/:
+    allowed (no rule matches)): a WordPress site, with none of the vendor alert channels the other district
+    adapters read; what the district posts is in the page''s text. Read as district-homepage-text: no
+    line announced a closing (an empty list). The gap-state part''s record of 2026-09-27 said ''not built''
+    (First-hand check for piece s4d, 2026-09-27 (round 2''s second pass; a web search for the district''s
+    site, Idaho''s LEA records listing none). WordPress: no alert banner, pop-up or closings element on
+    the homepage (0 mention(s) of closing, closure, delay or cance...).'
+  list_files: []
+  page_check: null
+  robots:
+  - url: https://filerschools.org/
+    checked_at: '2026-10-13T12:15:23Z'
+    state: parsed
+    allowed: true
+    rule: no rule matches
+    crawl_delay: null
+    disallowed_agents:
+    - ahrefsbot
+    - ahrefssiteaudit
+    - blexbot
+    - dotbot
+    - mj12bot
+    - semanticscholarbot
+    sha256: 24729f32c115060d4554663509b87c23a7dc5265d079fb376e89a48176045d2e
+  leaids: ['1601050']
+- id: district-pages-jerome-id
+  platform: district-pages
+  call_sign: JJSD261
+  name: Jerome Joint School District 261 (homepage)
+  market: Jerome (Jerome County, ID)
+  dma: null
+  states: [ID]
+  counties:
+    basis: district
+    source: 'NCES CCD 2024-25 school directory (pipeline/out/internal/directory/schools.parquet): the
+      counties of the 8 schools of district-pages-jerome-id''s district, JEROME JOINT DISTRICT (LEAID
+      1601590).'
+    fips: ['16053']
+  page_url: https://www.jeromeschools.org/
+  data_url: null
+  export_url: null
+  archive_urls:
+  - https://www.jeromeschools.org/
+  poll_minutes: null
+  status: active
+  evidence: 'First-hand check for piece s4 (the coverage gate, round 5), 2026-10-13. Live read of https://www.jeromeschools.org/
+    (HTTP 200, 1,561,919 bytes, SHA-256 4d1b6aeb7111efbe..., read 2026-10-13T12:01:18Z with the repository''s
+    User-Agent; robots.txt https://www.jeromeschools.org/: allowed (Allow: /)): a Wix site, with none
+    of the vendor alert channels the other district adapters read; what the district posts is in the page''s
+    text. Read as district-homepage-text: no line announced a closing (an empty list). The gap-state part''s
+    record of 2026-09-28 said ''not built'' (First-hand check for piece s4d (round 3, second pass), 2026-09-28:
+    an Idaho district of the uncovered counties no earlier round scouted; its site found by a web search
+    for the district (the NCES LEA directory lists no website for Idaho''s districts). Live read...).'
+  list_files: []
+  page_check: null
+  robots:
+  - url: https://www.jeromeschools.org/
+    checked_at: '2026-10-13T12:15:31Z'
+    state: parsed
+    allowed: true
+    rule: 'Allow: /'
+    crawl_delay: null
+    disallowed_agents: [petalbot]
+    sha256: a6475ad7313744bdd51d578fba76bbaacc2033022fce257d4798f1f55b4d8bff
+  leaids: ['1601590']
+- id: district-pages-shoshone-id
+  platform: district-pages
+  call_sign: SJSD312
+  name: Shoshone Joint School District 312 (homepage)
+  market: Shoshone (Lincoln County, ID)
+  dma: null
+  states: [ID]
+  counties:
+    basis: district
+    source: 'NCES CCD 2024-25 school directory (pipeline/out/internal/directory/schools.parquet): the
+      counties of the 4 schools of district-pages-shoshone-id''s district, SHOSHONE JOINT DISTRICT (LEAID
+      1602940).'
+    fips: ['16063']
+  page_url: https://shoshonesd.org/
+  data_url: null
+  export_url: null
+  archive_urls:
+  - https://shoshonesd.org/
+  poll_minutes: null
+  status: active
+  evidence: 'First-hand check for piece s4 (the coverage gate, round 5), 2026-10-13. Live read of https://shoshonesd.org/
+    (HTTP 200, 93,666 bytes, SHA-256 a38d43258fdb769e..., read 2026-10-13T12:01:20Z with the repository''s
+    User-Agent; robots.txt https://shoshonesd.org/: allowed (no rule matches)): a WordPress site built
+    with Elementor, with none of the vendor alert channels the other district adapters read; what the
+    district posts is in the page''s text. Read as district-homepage-text: no line announced a closing
+    (an empty list). The gap-state part''s record of 2026-09-28 said ''not built'' (First-hand check for
+    piece s4d (round 3, second pass), 2026-09-28: an Idaho district of the uncovered counties no earlier
+    round scouted; its site found by a web search for the district (the NCES LEA directory lists no website
+    for Idaho''s districts). Live read...).'
+  list_files: []
+  page_check: null
+  robots:
+  - url: https://shoshonesd.org/
+    checked_at: '2026-10-13T12:15:41Z'
+    state: parsed
+    allowed: true
+    rule: no rule matches
+    crawl_delay: null
+    disallowed_agents: []
+    sha256: e1f21c9aa28d50ca112ed357f34b67c550597effd4d42fd55b4e27300dd8f9c1
+  leaids: ['1602940']
+- id: district-pages-aberdeen-id
+  platform: district-pages
+  call_sign: ASD58
+  name: Aberdeen School District 58 (homepage)
+  market: Aberdeen (Bingham County, ID)
+  dma: null
+  states: [ID]
+  counties:
+    basis: district
+    source: 'NCES CCD 2024-25 school directory (pipeline/out/internal/directory/schools.parquet): the
+      counties of the 3 schools of district-pages-aberdeen-id''s district, ABERDEEN DISTRICT (LEAID 1600030).'
+    fips: ['16011']
+  page_url: https://asd58.us/
+  data_url: null
+  export_url: null
+  archive_urls:
+  - https://asd58.us/
+  poll_minutes: null
+  status: active
+  evidence: 'First-hand check for piece s4 (the coverage gate, round 5), 2026-10-13. Live read of https://asd58.us/
+    (HTTP 200, 96,484 bytes, SHA-256 f5f31adb0801ffba..., read 2026-10-13T12:04:46Z with the repository''s
+    User-Agent; robots.txt https://asd58.us/: allowed (robots.txt unavailable (4xx): unrestricted)): a
+    WordPress site built with Elementor, with none of the vendor alert channels the other district adapters
+    read; what the district posts is in the page''s text. Read as district-homepage-text: no line announced
+    a closing (an empty list). The gap-state part''s record of 2026-09-28 said ''not built'' (First-hand
+    check for piece s4d (round 5), 2026-09-28: found by a web search (the NCES CCD 2024-25 LEA directory
+    lists no website for Idaho''s districts); the page title names the district. Live read of https://asd58.us/
+    2026-09-28T22:49:40Z: HTTP 200, 96,484 by...).'
+  list_files: []
+  page_check: null
+  robots:
+  - url: https://asd58.us/
+    checked_at: '2026-10-13T12:15:11Z'
+    state: unavailable
+    allowed: true
+    rule: 'robots.txt unavailable (4xx): unrestricted'
+    crawl_delay: null
+    disallowed_agents: []
+    sha256: null
+  leaids: ['1600030']
+- id: district-pages-firth-id
+  platform: district-pages
+  call_sign: FSD59
+  name: Firth School District 59 (homepage)
+  market: Firth (Bingham County, ID)
+  dma: null
+  states: [ID]
+  counties:
+    basis: district
+    source: 'NCES CCD 2024-25 school directory (pipeline/out/internal/directory/schools.parquet): the
+      counties of the 3 schools of district-pages-firth-id''s district, FIRTH DISTRICT (LEAID 1601080).'
+    fips: ['16011']
+  page_url: https://sites.google.com/d59.k12.id.us/fsd/home
+  data_url: null
+  export_url: null
+  archive_urls:
+  - https://sites.google.com/d59.k12.id.us/fsd/home
+  poll_minutes: null
+  status: active
+  evidence: 'First-hand check for piece s4 (the coverage gate, round 5), 2026-10-13. Live read of https://sites.google.com/d59.k12.id.us/fsd/home
+    (HTTP 200, 208,557 bytes, SHA-256 fe886d0ee0ab4d9d..., read 2026-10-13T12:04:49Z with the repository''s
+    User-Agent; robots.txt https://sites.google.com/d59.k12.id.us/fsd/home: allowed (no rule matches)):
+    a Google Sites page, with none of the vendor alert channels the other district adapters read; what
+    the district posts is in the page''s text. Read as district-homepage-text: no line announced a closing
+    (an empty list). The gap-state part''s record of 2026-09-28 said ''not built'' (First-hand check for
+    piece s4d (round 5), 2026-09-28: found by a web search (the NCES CCD 2024-25 LEA directory lists no
+    website for Idaho''s districts); the page title names the district. Live read of https://sites.google.com/d59.k12.id.us/fsd/home
+    2026-09-28T...).'
+  list_files: []
+  page_check: null
+  robots:
+  - url: https://sites.google.com/d59.k12.id.us/fsd/home
+    checked_at: '2026-10-13T12:15:23Z'
+    state: parsed
+    allowed: true
+    rule: no rule matches
+    crawl_delay: null
+    disallowed_agents: []
+    sha256: 016f9c8e0405a1a663e4698d00ab69a6b9192f1bec1b57ac894fe09135d60160
+  leaids: ['1601080']
+- id: district-pages-buhl-id
+  platform: district-pages
+  call_sign: BJSD412
+  name: Buhl Joint School District 412 (homepage)
+  market: Buhl (Twin Falls County, ID)
+  dma: null
+  states: [ID]
+  counties:
+    basis: district
+    source: 'NCES CCD 2024-25 school directory (pipeline/out/internal/directory/schools.parquet): the
+      counties of the 4 schools of district-pages-buhl-id''s district, BUHL JOINT DISTRICT (LEAID 1600480).'
+    fips: ['16083']
+  page_url: https://www.buhlschools.org/
+  data_url: null
+  export_url: null
+  archive_urls:
+  - https://www.buhlschools.org/
+  poll_minutes: null
+  status: active
+  evidence: 'First-hand check for piece s4 (the coverage gate, round 5), 2026-10-13. Live read of https://www.buhlschools.org/
+    (HTTP 200, 1,190,903 bytes, SHA-256 e5855a35c1512a10..., read 2026-10-13T12:04:51Z with the repository''s
+    User-Agent; robots.txt https://www.buhlschools.org/: allowed (Allow: /)): a Wix site, with none of
+    the vendor alert channels the other district adapters read; what the district posts is in the page''s
+    text. Read as district-homepage-text: no line announced a closing (an empty list). The gap-state part''s
+    record of 2026-09-28 said ''not built'' (First-hand check for piece s4d (round 5), 2026-09-28: found
+    by a web search (the NCES CCD 2024-25 LEA directory lists no website for Idaho''s districts); the
+    page title names the district. Live read of https://www.buhlschools.org/ 2026-09-28T22:50:37Z: HTTP
+    200...).'
+  list_files: []
+  page_check: null
+  robots:
+  - url: https://www.buhlschools.org/
+    checked_at: '2026-10-13T12:15:14Z'
+    state: parsed
+    allowed: true
+    rule: 'Allow: /'
+    crawl_delay: null
+    disallowed_agents: [petalbot]
+    sha256: 36e3764c85c4a2602e13bcbd067a7593811f7912ffb0f408d1ba9acf1e7d3881
+  leaids: ['1600480']
+- id: district-pages-ririe-id
+  platform: district-pages
+  call_sign: RJSD252
+  name: Ririe Joint School District 252 (homepage)
+  market: Ririe (2 counties, ID)
+  dma: null
+  states: [ID]
+  counties:
+    basis: district
+    source: 'NCES CCD 2024-25 school directory (pipeline/out/internal/directory/schools.parquet): the
+      counties of the 2 schools of district-pages-ririe-id''s district, RIRIE JOINT DISTRICT (LEAID 1602790).'
+    fips: ['16019', '16051']
+  page_url: https://sites.google.com/ririe252.org/ririeschooldistrict252/home
+  data_url: null
+  export_url: null
+  archive_urls:
+  - https://sites.google.com/ririe252.org/ririeschooldistrict252/home
+  poll_minutes: null
+  status: active
+  evidence: 'First-hand check for piece s4 (the coverage gate, round 5), 2026-10-13. Live read of https://sites.google.com/ririe252.org/ririeschooldistrict252/home
+    (HTTP 200, 219,796 bytes, SHA-256 a53feaf4ddff9c29..., read 2026-10-13T12:04:51Z with the repository''s
+    User-Agent; robots.txt https://sites.google.com/ririe252.org/ririeschooldistrict252/home: allowed
+    (no rule matches)): a Google Sites page, with none of the vendor alert channels the other district
+    adapters read; what the district posts is in the page''s text. Read as district-homepage-text: no
+    line announced a closing (an empty list). The gap-state part''s record of 2026-09-28 said ''not built''
+    (First-hand check for piece s4d (round 5), 2026-09-28: found by a web search (the NCES CCD 2024-25
+    LEA directory lists no website for Idaho''s districts); the page title names the district. Live read
+    of https://sites.google.com/ririe252.org/ririeschooldistrict25...).'
+  list_files: []
+  page_check: null
+  robots:
+  - url: https://sites.google.com/ririe252.org/ririeschooldistrict252/home
+    checked_at: '2026-10-13T12:15:40Z'
+    state: parsed
+    allowed: true
+    rule: no rule matches
+    crawl_delay: null
+    disallowed_agents: []
+    sha256: 016f9c8e0405a1a663e4698d00ab69a6b9192f1bec1b57ac894fe09135d60160
+  leaids: ['1602790']
+- id: district-pages-lincoln-2-wy
+  platform: district-pages
+  call_sign: LCSD2
+  name: 'Lincoln County School District #2 (homepage)'
+  market: Afton (Lincoln County, WY)
+  dma: null
+  states: [WY]
+  counties:
+    basis: district
+    source: 'NCES CCD 2024-25 school directory (pipeline/out/internal/directory/schools.parquet): the
+      counties of the 9 schools of district-pages-lincoln-2-wy''s district, Lincoln County School District
+      #2 (LEAID 5604060).'
+    fips: ['56023']
+  page_url: https://lcsd2.org/
+  data_url: null
+  export_url: null
+  archive_urls:
+  - https://lcsd2.org/
+  poll_minutes: null
+  status: active
+  evidence: 'First-hand check for piece s4 (the coverage gate, round 5), 2026-10-13. Live read of https://lcsd2.org/
+    (HTTP 200, 155,812 bytes, SHA-256 82689d2749a2a42a..., read 2026-10-13T11:59:09Z with the repository''s
+    User-Agent; robots.txt https://lcsd2.org/: allowed (no rule matches)): a WordPress site built with
+    Elementor, with none of the vendor alert channels the other district adapters read; what the district
+    posts is in the page''s text. Read as district-homepage-text: no line announced a closing (an empty
+    list). The gap-state part''s record of 2026-09-27 said ''not built'' (not built: no alert or closings
+    element found on the homepage).'
+  list_files: []
+  page_check: null
+  robots:
+  - url: https://lcsd2.org/
+    checked_at: '2026-10-13T12:15:36Z'
+    state: parsed
+    allowed: true
+    rule: no rule matches
+    crawl_delay: null
+    disallowed_agents: []
+    sha256: 25d889797d177c37226c1a1369a0e19a8ae340a67aa2d65ea76174f3aecd383e
+  leaids: ['5604060']
+- id: district-pages-boces-5-wy
+  platform: district-pages
+  call_sign: BOCES5
+  name: BOCES 5, Wyoming (homepage)
+  market: Wilson (6 counties, WY)
+  dma: null
+  states: [WY]
+  counties:
+    basis: district
+    source: 'NCES CCD 2024-25 school directory (pipeline/out/internal/directory/schools.parquet): the
+      counties of the 6 schools of district-pages-boces-5-wy''s district, BOCES 5 (LEAID 5680250).'
+    fips: ['56009', '56013', '56029', '56037', '56039', '56041']
+  page_url: https://www.boces5.org/
+  data_url: null
+  export_url: null
+  archive_urls:
+  - https://www.boces5.org/
+  poll_minutes: null
+  status: active
+  evidence: 'First-hand check for piece s4 (the coverage gate, round 5), 2026-10-13. Live read of https://www.boces5.org/
+    (HTTP 200, 70,322 bytes, SHA-256 3d7214a71c6e624e..., read 2026-10-13T11:59:18Z with the repository''s
+    User-Agent; robots.txt https://www.boces5.org/: disallowed (Disallow: /)): a static site (no platform
+    named in the page), with none of the vendor alert channels the other district adapters read; what
+    the district posts is in the page''s text. Read as district-homepage-text: no line announced a closing
+    (an empty list). The gap-state part''s record of 2026-09-27 said ''not built'' (First-hand check for
+    piece s4d, 2026-09-27 (round 2''s second pass; the website the NCES CCD 2024-25 LEA directory lists
+    for the district). static site (platform not identified): no alert banner, pop-up or closings element
+    on the homepage (0 mention(s) of closi...).'
+  list_files: []
+  page_check: null
+  robots:
+  - url: https://www.boces5.org/
+    checked_at: '2026-10-13T12:15:14Z'
+    state: parsed
+    allowed: false
+    rule: 'Disallow: /'
+    crawl_delay: null
+    disallowed_agents: [mj12bot, riddler, scrapybot, smtbot]
+    sha256: 90651c950cdf1de50b6d83f0cf03499d09241dfd2e6b22abb1c0222494cf9fe0
+  leaids: ['5680250']
+- id: district-pages-fremont-21-wy
+  platform: district-pages
+  call_sign: FCSD21
+  name: 'Fremont County School District #21 (homepage)'
+  market: Ft. Washakie (Fremont County, WY)
+  dma: null
+  states: [WY]
+  counties:
+    basis: district
+    source: 'NCES CCD 2024-25 school directory (pipeline/out/internal/directory/schools.parquet): the
+      counties of the 3 schools of district-pages-fremont-21-wy''s district, Fremont County School District
+      #21 (LEAID 5602820).'
+    fips: ['56013']
+  page_url: https://www.fortwashakieschool.com/
+  data_url: null
+  export_url: null
+  archive_urls:
+  - https://www.fortwashakieschool.com/
+  poll_minutes: null
+  status: active
+  evidence: 'First-hand check for piece s4 (the coverage gate, round 5), 2026-10-13. Live read of https://www.fortwashakieschool.com/
+    (HTTP 200, 202,870 bytes, SHA-256 9fbc7dfe764bf678..., read 2026-10-13T11:59:21Z with the repository''s
+    User-Agent; robots.txt https://www.fortwashakieschool.com/: allowed (Allow: /)): a WordPress site,
+    with none of the vendor alert channels the other district adapters read; what the district posts is
+    in the page''s text. Read as district-homepage-text: no line announced a closing (an empty list).
+    The gap-state part''s record of 2026-09-27 said ''not built'' (First-hand check for piece s4d, 2026-09-27
+    (round 2''s second pass; the website the NCES CCD 2024-25 LEA directory lists for the district). WordPress:
+    no alert banner, pop-up or closings element on the homepage (0 mention(s) of closing, closure, delay
+    or cancel...).'
+  list_files: []
+  page_check: null
+  robots:
+  - url: https://www.fortwashakieschool.com/
+    checked_at: '2026-10-13T12:15:24Z'
+    state: parsed
+    allowed: true
+    rule: 'Allow: /'
+    crawl_delay: null
+    disallowed_agents: []
+    sha256: 16ceb5ee3e0dc13aa9adf31a3ebbe45a1d965b8c2b9f72eaf84e5911e140ed95
+  leaids: ['5602820']
+- id: district-pages-fremont-2-wy
+  platform: district-pages
+  call_sign: FCSD2
+  name: 'Fremont County School District #2 (homepage)'
+  market: Dubois (Fremont County, WY)
+  dma: null
+  states: [WY]
+  counties:
+    basis: district
+    source: 'NCES CCD 2024-25 school directory (pipeline/out/internal/directory/schools.parquet): the
+      counties of the 3 schools of district-pages-fremont-2-wy''s district, Fremont County School District
+      # 2 (LEAID 5602670).'
+    fips: ['56013']
+  page_url: https://www.fremont2.org/
+  data_url: null
+  export_url: null
+  archive_urls:
+  - https://www.fremont2.org/
+  poll_minutes: null
+  status: active
+  evidence: 'First-hand check for piece s4 (the coverage gate, round 5), 2026-10-13. Live read of https://www.fremont2.org/
+    (HTTP 200, 178,070 bytes, SHA-256 6b95de9f1a7f2776..., read 2026-10-13T11:59:23Z with the repository''s
+    User-Agent; robots.txt https://www.fremont2.org/: allowed (Allow: /)): a WordPress site, with none
+    of the vendor alert channels the other district adapters read; what the district posts is in the page''s
+    text. Read as district-homepage-text: no line announced a closing (an empty list). The gap-state part''s
+    record of 2026-09-27 said ''not built'' (First-hand check for piece s4d, 2026-09-27 (round 2''s second
+    pass; the website the NCES CCD 2024-25 LEA directory lists for the district). WordPress: no alert
+    banner, pop-up or closings element on the homepage (0 mention(s) of closing, closure, delay or cancel...).'
+  list_files: []
+  page_check: null
+  robots:
+  - url: https://www.fremont2.org/
+    checked_at: '2026-10-13T12:15:24Z'
+    state: parsed
+    allowed: true
+    rule: 'Allow: /'
+    crawl_delay: null
+    disallowed_agents: []
+    sha256: 16ceb5ee3e0dc13aa9adf31a3ebbe45a1d965b8c2b9f72eaf84e5911e140ed95
+  leaids: ['5602670']
+- id: district-pages-greenwood-leflore-ms
+  platform: district-pages
+  call_sign: GLCSD
+  name: Greenwood-Leflore Consolidated School District (homepage)
+  market: Greenwood (Leflore County, MS)
+  dma: null
+  states: [MS]
+  counties:
+    basis: district
+    source: 'NCES CCD 2024-25 school directory (pipeline/out/internal/directory/schools.parquet): the
+      counties of the 15 schools of district-pages-greenwood-leflore-ms''s district, Greenwood-Leflore
+      Consolidated School District (LEAID 2800198).'
+    fips: ['28083']
+  page_url: https://www.glcsd.org/
+  data_url: null
+  export_url: null
+  archive_urls:
+  - https://www.glcsd.org/
+  poll_minutes: null
+  status: active
+  evidence: 'First-hand check for piece s4 (the coverage gate, round 5), 2026-10-13. Live read of https://www.glcsd.org/
+    (HTTP 200, 104,184 bytes, SHA-256 4d9dfcde74da5882..., read 2026-10-13T12:01:33Z with the repository''s
+    User-Agent; robots.txt https://www.glcsd.org/: allowed (no rule matches)): a SchoolInSites (Connect
+    Suite) site, with none of the vendor alert channels the other district adapters read; what the district
+    posts is in the page''s text. Read as district-homepage-text: no line announced a closing (an empty
+    list). The gap-state part''s record of 2026-09-28 said ''not built'' (First-hand check for piece s4d
+    (round 4, second batch), 2026-09-28. not built: a SchoolInSites/Connect Suite site (content.myconnectsuite.com
+    assets; /css/core/, /js/toolbar.js), as the Texas sites of round 3 and Conecuh County (AL); no alert
+    or closings eleme...).'
+  list_files: []
+  page_check: null
+  robots:
+  - url: https://www.glcsd.org/
+    checked_at: '2026-10-13T12:15:28Z'
+    state: parsed
+    allowed: true
+    rule: no rule matches
+    crawl_delay: null
+    disallowed_agents: []
+    sha256: 46fc1c776e010ab4393609fd8bd55ccabe571dece06c70fb3360149823ef0e6e
+  leaids: ['2800198']
+- id: district-pages-sunflower-ms
+  platform: district-pages
+  call_sign: SCCSD
+  name: Sunflower County Consolidated School District (homepage)
+  market: Indianola (Sunflower County, MS)
+  dma: null
+  states: [MS]
+  counties:
+    basis: district
+    source: 'NCES CCD 2024-25 school directory (pipeline/out/internal/directory/schools.parquet): the
+      counties of the 12 schools of district-pages-sunflower-ms''s district, Sunflower County Consolidated
+      School District (LEAID 2800187).'
+    fips: ['28133']
+  page_url: https://www.sunflower.k12.ms.us/
+  data_url: null
+  export_url: null
+  archive_urls:
+  - https://www.sunflower.k12.ms.us/
+  poll_minutes: null
+  status: active
+  evidence: 'First-hand check for piece s4 (the coverage gate, round 5), 2026-10-13. Live read of https://www.sunflower.k12.ms.us/
+    (HTTP 200, 164,574 bytes, SHA-256 98dd14f5988ed24c..., read 2026-10-13T12:01:38Z with the repository''s
+    User-Agent; robots.txt https://www.sunflower.k12.ms.us/: allowed (no rule matches)): a SchoolInSites
+    (Connect Suite) site, with none of the vendor alert channels the other district adapters read; what
+    the district posts is in the page''s text. Read as district-homepage-text: no line announced a closing
+    (an empty list). The gap-state part''s record of 2026-09-28 said ''not built'' (First-hand check for
+    piece s4d (round 4, second batch), 2026-09-28. not built: a SchoolInSites/Connect Suite site (content.myconnectsuite.com
+    assets; /css/core/, /js/toolbar.js), as the Texas sites of round 3 and Conecuh County (AL); no alert
+    or closings eleme...).'
+  list_files: []
+  page_check: null
+  robots:
+  - url: https://www.sunflower.k12.ms.us/
+    checked_at: '2026-10-13T12:15:44Z'
+    state: parsed
+    allowed: true
+    rule: no rule matches
+    crawl_delay: null
+    disallowed_agents: []
+    sha256: 46fc1c776e010ab4393609fd8bd55ccabe571dece06c70fb3360149823ef0e6e
+  leaids: ['2800187']
+- id: district-pages-greenville-ms
+  platform: district-pages
+  call_sign: GPSD
+  name: Greenville Public School District (homepage)
+  market: Greenville (Washington County, MS)
+  dma: null
+  states: [MS]
+  counties:
+    basis: district
+    source: 'NCES CCD 2024-25 school directory (pipeline/out/internal/directory/schools.parquet): the
+      counties of the 11 schools of district-pages-greenville-ms''s district, Greenville Public School
+      District (LEAID 2801620).'
+    fips: ['28151']
+  page_url: https://www.gvillepublicschooldistrict.com/
+  data_url: null
+  export_url: null
+  archive_urls:
+  - https://www.gvillepublicschooldistrict.com/
+  poll_minutes: null
+  status: active
+  evidence: 'First-hand check for piece s4 (the coverage gate, round 5), 2026-10-13. Live read of https://www.gvillepublicschooldistrict.com/
+    (HTTP 200, 176,537 bytes, SHA-256 e3cb7c5150cf0248..., read 2026-10-13T12:01:41Z with the repository''s
+    User-Agent; robots.txt https://www.gvillepublicschooldistrict.com/: allowed (no rule matches)): a
+    SchoolInSites (Connect Suite) site, with none of the vendor alert channels the other district adapters
+    read; what the district posts is in the page''s text. Read as district-homepage-text: 1 line(s) announcing
+    a closing: ''GPSD Extended School Year set for June 3, 2024 — GPSD closed on January 16, 2024 (Due
+    to inclement weather)''. The gap-state part''s record of 2026-09-28 said ''not built'' (First-hand
+    check for piece s4d (round 4, second batch), 2026-09-28. not built: a SchoolInSites/Connect Suite
+    site (content.myconnectsuite.com assets; /css/core/, /js/toolbar.js), as the Texas sites of round
+    3 and Conecuh County (AL); no alert or closings eleme...).'
+  list_files: []
+  page_check: null
+  robots:
+  - url: https://www.gvillepublicschooldistrict.com/
+    checked_at: '2026-10-13T12:15:27Z'
+    state: parsed
+    allowed: true
+    rule: no rule matches
+    crawl_delay: null
+    disallowed_agents: []
+    sha256: 46fc1c776e010ab4393609fd8bd55ccabe571dece06c70fb3360149823ef0e6e
+  leaids: ['2801620']
+- id: district-pages-west-bolivar-ms
+  platform: district-pages
+  call_sign: WBCSD
+  name: West Bolivar Consolidated School District (homepage)
+  market: Rosedale (Bolivar County, MS)
+  dma: null
+  states: [MS]
+  counties:
+    basis: district
+    source: 'NCES CCD 2024-25 school directory (pipeline/out/internal/directory/schools.parquet): the
+      counties of the 5 schools of district-pages-west-bolivar-ms''s district, West Bolivar Consolidated
+      School District (LEAID 2800185).'
+    fips: ['28011']
+  page_url: https://www.wbcsdk12.org/
+  data_url: null
+  export_url: null
+  archive_urls:
+  - https://www.wbcsdk12.org/
+  poll_minutes: null
+  status: active
+  evidence: 'First-hand check for piece s4 (the coverage gate, round 5), 2026-10-13. Live read of https://www.wbcsdk12.org/
+    (HTTP 200, 145,814 bytes, SHA-256 da8ab076e5cac3b0..., read 2026-10-13T12:02:03Z with the repository''s
+    User-Agent; robots.txt https://www.wbcsdk12.org/: allowed (no rule matches)): a SchoolInSites (Connect
+    Suite) site, with none of the vendor alert channels the other district adapters read; what the district
+    posts is in the page''s text. Read as district-homepage-text: no line announced a closing (an empty
+    list). The gap-state part''s record of 2026-09-28 said ''not built'' (First-hand check for piece s4d
+    (round 4, second batch), 2026-09-28. not built: a SchoolInSites/Connect Suite site (content.myconnectsuite.com
+    assets; /css/core/, /js/toolbar.js), as the Texas sites of round 3 and Conecuh County (AL); no alert
+    or closings eleme...).'
+  list_files: []
+  page_check: null
+  robots:
+  - url: https://www.wbcsdk12.org/
+    checked_at: '2026-10-13T12:15:48Z'
+    state: parsed
+    allowed: true
+    rule: no rule matches
+    crawl_delay: null
+    disallowed_agents: []
+    sha256: 46fc1c776e010ab4393609fd8bd55ccabe571dece06c70fb3360149823ef0e6e
+  leaids: ['2800185']
+- id: district-pages-leland-ms
+  platform: district-pages
+  call_sign: LSD
+  name: Leland School District (homepage)
+  market: Leland (Washington County, MS)
+  dma: null
+  states: [MS]
+  counties:
+    basis: district
+    source: 'NCES CCD 2024-25 school directory (pipeline/out/internal/directory/schools.parquet): the
+      counties of the 4 schools of district-pages-leland-ms''s district, Leland School District (LEAID
+      2802610).'
+    fips: ['28151']
+  page_url: https://lelandschooldistrict.schoolinsites.com/
+  data_url: null
+  export_url: null
+  archive_urls:
+  - https://lelandschooldistrict.schoolinsites.com/
+  poll_minutes: null
+  status: active
+  evidence: 'First-hand check for piece s4 (the coverage gate, round 5), 2026-10-13. Live read of https://lelandschooldistrict.schoolinsites.com/
+    (HTTP 200, 206,741 bytes, SHA-256 fdb78258da5dc598..., read 2026-10-13T12:02:25Z with the repository''s
+    User-Agent; robots.txt https://lelandschooldistrict.schoolinsites.com/: allowed (no rule matches)):
+    a SchoolInSites (Connect Suite) site, with none of the vendor alert channels the other district adapters
+    read; what the district posts is in the page''s text. Read as district-homepage-text: no line announced
+    a closing (an empty list). The gap-state part''s record of 2026-09-28 said ''not built'' (First-hand
+    check for piece s4d (round 4, second batch), 2026-09-28. not built: a SchoolInSites/Connect Suite
+    site (content.myconnectsuite.com assets; /css/core/, /js/toolbar.js), as the Texas sites of round
+    3 and Conecuh County (AL); no alert or closings eleme...).'
+  list_files: []
+  page_check: null
+  robots:
+  - url: https://lelandschooldistrict.schoolinsites.com/
+    checked_at: '2026-10-13T12:15:34Z'
+    state: parsed
+    allowed: true
+    rule: no rule matches
+    crawl_delay: null
+    disallowed_agents: []
+    sha256: 46fc1c776e010ab4393609fd8bd55ccabe571dece06c70fb3360149823ef0e6e
+  leaids: ['2802610']
+- id: district-pages-western-line-ms
+  platform: district-pages
+  call_sign: WLSD
+  name: Western Line School District (homepage)
+  market: Avon (Washington County, MS)
+  dma: null
+  states: [MS]
+  counties:
+    basis: district
+    source: 'NCES CCD 2024-25 school directory (pipeline/out/internal/directory/schools.parquet): the
+      counties of the 4 schools of district-pages-western-line-ms''s district, Western Line Schools (LEAID
+      2804680).'
+    fips: ['28151']
+  page_url: https://www.westernline.org/
+  data_url: null
+  export_url: null
+  archive_urls:
+  - https://www.westernline.org/
+  poll_minutes: null
+  status: active
+  evidence: 'First-hand check for piece s4 (the coverage gate, round 5), 2026-10-13. Live read of https://www.westernline.org/
+    (HTTP 200, 180,927 bytes, SHA-256 073a9f3cfbe837c3..., read 2026-10-13T12:02:28Z with the repository''s
+    User-Agent; robots.txt https://www.westernline.org/: allowed (no rule matches)): a SchoolInSites (Connect
+    Suite) site, with none of the vendor alert channels the other district adapters read; what the district
+    posts is in the page''s text. Read as district-homepage-text: no line announced a closing (an empty
+    list). The gap-state part''s record of 2026-09-28 said ''not built'' (First-hand check for piece s4d
+    (round 4, second batch), 2026-09-28. not built: a SchoolInSites/Connect Suite site (content.myconnectsuite.com
+    assets; /css/core/, /js/toolbar.js), as the Texas sites of round 3 and Conecuh County (AL); no alert
+    or closings eleme...).'
+  list_files: []
+  page_check: null
+  robots:
+  - url: https://www.westernline.org/
+    checked_at: '2026-10-13T12:15:49Z'
+    state: parsed
+    allowed: true
+    rule: no rule matches
+    crawl_delay: null
+    disallowed_agents: []
+    sha256: 46fc1c776e010ab4393609fd8bd55ccabe571dece06c70fb3360149823ef0e6e
+  leaids: ['2804680']
+- id: district-pages-east-tallahatchie-ms
+  platform: district-pages
+  call_sign: ETSD
+  name: East Tallahatchie School District (homepage)
+  market: Charleston (Tallahatchie County, MS)
+  dma: null
+  states: [MS]
+  counties:
+    basis: district
+    source: 'NCES CCD 2024-25 school directory (pipeline/out/internal/directory/schools.parquet): the
+      counties of the 4 schools of district-pages-east-tallahatchie-ms''s district, East Tallahatchie
+      School District (LEAID 2801410).'
+    fips: ['28135']
+  page_url: https://www.etsd.k12.ms.us/
+  data_url: null
+  export_url: null
+  archive_urls:
+  - https://www.etsd.k12.ms.us/
+  poll_minutes: null
+  status: active
+  evidence: 'First-hand check for piece s4 (the coverage gate, round 5), 2026-10-13. Live read of https://www.etsd.k12.ms.us/
+    (HTTP 200, 96,105 bytes, SHA-256 d6ffbf61ec2347b2..., read 2026-10-13T12:02:30Z with the repository''s
+    User-Agent; robots.txt https://www.etsd.k12.ms.us/: allowed (no rule matches)): a SchoolInSites (Connect
+    Suite) site, with none of the vendor alert channels the other district adapters read; what the district
+    posts is in the page''s text. Read as district-homepage-text: no line announced a closing (an empty
+    list). The gap-state part''s record of 2026-09-28 said ''not built'' (First-hand check for piece s4d
+    (round 4, second batch), 2026-09-28. not built: a SchoolInSites/Connect Suite site (content.myconnectsuite.com
+    assets; /css/core/, /js/toolbar.js), as the Texas sites of round 3 and Conecuh County (AL); no alert
+    or closings eleme...).'
+  list_files: []
+  page_check: null
+  robots:
+  - url: https://www.etsd.k12.ms.us/
+    checked_at: '2026-10-13T12:15:20Z'
+    state: parsed
+    allowed: true
+    rule: no rule matches
+    crawl_delay: null
+    disallowed_agents: []
+    sha256: 46fc1c776e010ab4393609fd8bd55ccabe571dece06c70fb3360149823ef0e6e
+  leaids: ['2801410']
+- id: district-pages-pearl-river-ms
+  platform: district-pages
+  call_sign: PRCSD
+  name: Pearl River County School District (homepage)
+  market: Carriere (Pearl River County, MS)
+  dma: null
+  states: [MS]
+  counties:
+    basis: district
+    source: 'NCES CCD 2024-25 school directory (pipeline/out/internal/directory/schools.parquet): the
+      counties of the 4 schools of district-pages-pearl-river-ms''s district, Pearl River County School
+      District (LEAID 2803540).'
+    fips: ['28109']
+  page_url: https://www.prc.k12.ms.us/
+  data_url: null
+  export_url: null
+  archive_urls:
+  - https://www.prc.k12.ms.us/
+  poll_minutes: null
+  status: active
+  evidence: 'First-hand check for piece s4 (the coverage gate, round 5), 2026-10-13. Live read of https://www.prc.k12.ms.us/
+    (HTTP 200, 186,215 bytes, SHA-256 9f11e09f04cb0a1b..., read 2026-10-13T12:04:17Z with the repository''s
+    User-Agent; robots.txt https://www.prc.k12.ms.us/: allowed (robots.txt unavailable (4xx): unrestricted)):
+    a Google Sites page, with none of the vendor alert channels the other district adapters read; what
+    the district posts is in the page''s text. Read as district-homepage-text: no line announced a closing
+    (an empty list). The gap-state part''s record of 2026-09-28 said ''not built'' (First-hand check for
+    piece s4d (round 4, second batch), 2026-09-28. not built: a Google Sites page with no alert element.
+    The homepage''s title: ''PRCSD''. Live read 2026-09-28T15:17:34Z: HTTP 200, 187,351 bytes (SHA-256
+    ae4b9c76bfe8c4f8…), the repository''s User-...).'
+  list_files: []
+  page_check: null
+  robots:
+  - url: https://www.prc.k12.ms.us/
+    checked_at: '2026-10-13T12:15:39Z'
+    state: unavailable
+    allowed: true
+    rule: 'robots.txt unavailable (4xx): unrestricted'
+    crawl_delay: null
+    disallowed_agents: []
+    sha256: null
+  leaids: ['2803540']
+- id: district-pages-carroll-ms
+  platform: district-pages
+  call_sign: CCSD
+  name: Carroll County School District, Mississippi (homepage)
+  market: Carrollton (Carroll County, MS)
+  dma: null
+  states: [MS]
+  counties:
+    basis: district
+    source: 'NCES CCD 2024-25 school directory (pipeline/out/internal/directory/schools.parquet): the
+      counties of the 2 schools of district-pages-carroll-ms''s district, Carroll County School District
+      (LEAID 2800930).'
+    fips: ['28015']
+  page_url: https://www.ccsd.ms/
+  data_url: null
+  export_url: null
+  archive_urls:
+  - https://www.ccsd.ms/
+  poll_minutes: null
+  status: active
+  evidence: 'First-hand check for piece s4 (the coverage gate, round 5), 2026-10-13. Live read of https://www.ccsd.ms/
+    (HTTP 200, 86,775 bytes, SHA-256 17f2cc094719fe73..., read 2026-10-13T12:04:43Z with the repository''s
+    User-Agent; robots.txt https://www.ccsd.ms/: allowed (no rule matches)): a SchoolInSites (Connect
+    Suite) site, with none of the vendor alert channels the other district adapters read; what the district
+    posts is in the page''s text. Read as district-homepage-text: no line announced a closing (an empty
+    list). The gap-state part''s record of 2026-09-28 said ''not built'' (First-hand check for piece s4d
+    (round 4, second batch), 2026-09-28. not built: a SchoolInSites/Connect Suite site (content.myconnectsuite.com
+    assets; /css/core/, /js/toolbar.js), as the Texas sites of round 3 and Conecuh County (AL); no alert
+    or closings eleme...).'
+  list_files: []
+  page_check: null
+  robots:
+  - url: https://www.ccsd.ms/
+    checked_at: '2026-10-13T12:15:16Z'
+    state: parsed
+    allowed: true
+    rule: no rule matches
+    crawl_delay: null
+    disallowed_agents: []
+    sha256: 46fc1c776e010ab4393609fd8bd55ccabe571dece06c70fb3360149823ef0e6e
+  leaids: ['2800930']
+- id: district-pages-picayune-ms
+  platform: district-pages
+  call_sign: PSD
+  name: Picayune School District (homepage)
+  market: Picayune (Pearl River County, MS)
+  dma: null
+  states: [MS]
+  counties:
+    basis: district
+    source: 'NCES CCD 2024-25 school directory (pipeline/out/internal/directory/schools.parquet): the
+      counties of the 9 schools of district-pages-picayune-ms''s district, Picayune School District (LEAID
+      2803630).'
+    fips: ['28109']
+  page_url: https://www.picayuneschools.org/
+  data_url: null
+  export_url: null
+  archive_urls:
+  - https://www.picayuneschools.org/
+  poll_minutes: null
+  status: active
+  evidence: 'First-hand check for piece s4 (the coverage gate, round 5), 2026-10-13. Live read of https://www.picayuneschools.org/
+    (HTTP 200, 215,521 bytes, SHA-256 435e09a23d8221a7..., read 2026-10-13T12:08:00Z with the repository''s
+    User-Agent; robots.txt https://www.picayuneschools.org/: allowed (no rule matches)): a ParentSquare
+    Smart Sites page, with none of the vendor alert channels the other district adapters read; what the
+    district posts is in the page''s text. Read as district-homepage-text: no line announced a closing
+    (an empty list). The gap-state part''s record of 2026-09-28 said ''not read'' (First-hand check for
+    piece s4d (round 4, second batch), 2026-09-28. not read: https://picayuneschools.org/: ConnectError:
+    [SSL: CERTIFICATE_VERIFY_FAILED] certificate verify failed: Hostname mismatch, certificate is not
+    valid for ''picayun; not retried around (...).'
+  list_files: []
+  page_check: null
+  robots:
+  - url: https://www.picayuneschools.org/
+    checked_at: '2026-10-13T12:15:39Z'
+    state: parsed
+    allowed: true
+    rule: no rule matches
+    crawl_delay: 5.0
+    disallowed_agents: [ahrefsbot, baiduspider, blexbot, mj12bot, semrushbot, yandex]
+    sha256: e8e9fa92b86ef4f758ad1b7a87171b599635d1b16fa1e28fd355b81a183e9c96
+  leaids: ['2803630']
+- id: district-pages-chico-ca
+  platform: district-pages
+  call_sign: CUSD
+  name: Chico Unified School District (homepage)
+  market: Chico (Butte County, CA)
+  dma: null
+  states: [CA]
+  counties:
+    basis: district
+    source: 'NCES CCD 2024-25 school directory (pipeline/out/internal/directory/schools.parquet): the
+      counties of the 22 schools of district-pages-chico-ca''s district, Chico Unified (LEAID 0608370).'
+    fips: ['06007']
+  page_url: https://www.chicousd.org/
+  data_url: null
+  export_url: null
+  archive_urls:
+  - https://www.chicousd.org/
+  poll_minutes: null
+  status: active
+  evidence: 'First-hand check for piece s4 (the coverage gate, round 5), 2026-10-13. Live read of https://www.chicousd.org/
+    (HTTP 200, 135,305 bytes, SHA-256 4efc6231f1396c6f..., read 2026-10-13T12:01:35Z with the repository''s
+    User-Agent; robots.txt https://www.chicousd.org/: allowed (robots.txt unavailable (4xx): unrestricted)):
+    a Catapult CMS site, with none of the vendor alert channels the other district adapters read; what
+    the district posts is in the page''s text. Read as district-homepage-text: no line announced a closing
+    (an empty list). The gap-state part''s record of 2026-09-28 said ''not built'' (First-hand check for
+    piece s4d (round 4, second batch), 2026-09-28. not built: a Catapult CMS site; its homepage carries
+    an announcements feed (CatapultAnnouncement, news items) and image banners (ccmsBanner), no alert
+    or emergency element. The homepage''s titl...).'
+  list_files: []
+  page_check: null
+  robots:
+  - url: https://www.chicousd.org/
+    checked_at: '2026-10-13T12:15:16Z'
+    state: unavailable
+    allowed: true
+    rule: 'robots.txt unavailable (4xx): unrestricted'
+    crawl_delay: null
+    disallowed_agents: []
+    sha256: null
+  leaids: [0608370]
+- id: district-pages-paradise-ca
+  platform: district-pages
+  call_sign: PUSD
+  name: Paradise Unified School District (homepage)
+  market: Paradise (Butte County, CA)
+  dma: null
+  states: [CA]
+  counties:
+    basis: district
+    source: 'NCES CCD 2024-25 school directory (pipeline/out/internal/directory/schools.parquet): the
+      counties of the 10 schools of district-pages-paradise-ca''s district, Paradise Unified (LEAID 0629820).'
+    fips: ['06007']
+  page_url: https://www.pusdk12.org/
+  data_url: null
+  export_url: null
+  archive_urls:
+  - https://www.pusdk12.org/
+  poll_minutes: null
+  status: active
+  evidence: 'First-hand check for piece s4 (the coverage gate, round 5), 2026-10-13. Live read of https://www.pusdk12.org/
+    (HTTP 200, 88,618 bytes, SHA-256 5359162fb371c7a2..., read 2026-10-13T12:01:53Z with the repository''s
+    User-Agent; robots.txt https://www.pusdk12.org/: allowed (robots.txt unavailable (4xx): unrestricted)):
+    a Catapult CMS site, with none of the vendor alert channels the other district adapters read; what
+    the district posts is in the page''s text. Read as district-homepage-text: no line announced a closing
+    (an empty list). The gap-state part''s record of 2026-09-28 said ''not built'' (First-hand check for
+    piece s4d (round 4, second batch), 2026-09-28. not built: a Catapult CMS site; its homepage carries
+    an announcements feed (CatapultAnnouncement, news items) and image banners (ccmsBanner), no alert
+    or emergency element. The homepage''s titl...).'
+  list_files: []
+  page_check: null
+  robots:
+  - url: https://www.pusdk12.org/
+    checked_at: '2026-10-13T12:15:38Z'
+    state: unavailable
+    allowed: true
+    rule: 'robots.txt unavailable (4xx): unrestricted'
+    crawl_delay: null
+    disallowed_agents: []
+    sha256: null
+  leaids: [0629820]
+- id: district-pages-corning-elementary-ca
+  platform: district-pages
+  call_sign: CUESD
+  name: Corning Union Elementary School District (homepage)
+  market: Corning (Tehama County, CA)
+  dma: null
+  states: [CA]
+  counties:
+    basis: district
+    source: 'NCES CCD 2024-25 school directory (pipeline/out/internal/directory/schools.parquet): the
+      counties of the 6 schools of district-pages-corning-elementary-ca''s district, Corning Union Elementary
+      (LEAID 0609780).'
+    fips: ['06103']
+  page_url: https://www.corningelementary.org/
+  data_url: null
+  export_url: null
+  archive_urls:
+  - https://www.corningelementary.org/
+  poll_minutes: null
+  status: active
+  evidence: 'First-hand check for piece s4 (the coverage gate, round 5), 2026-10-13. Live read of https://www.corningelementary.org/
+    (HTTP 200, 128,573 bytes, SHA-256 ecf9a05b36771d75..., read 2026-10-13T12:02:10Z with the repository''s
+    User-Agent; robots.txt https://www.corningelementary.org/: allowed (robots.txt unavailable (4xx):
+    unrestricted)): a Catapult CMS site, with none of the vendor alert channels the other district adapters
+    read; what the district posts is in the page''s text. Read as district-homepage-text: no line announced
+    a closing (an empty list). The gap-state part''s record of 2026-09-28 said ''not built'' (First-hand
+    check for piece s4d (round 4, second batch), 2026-09-28. not built: a Catapult CMS site; its homepage
+    carries an announcements feed (CatapultAnnouncement, news items) and image banners (ccmsBanner), no
+    alert or emergency element. The homepage''s titl...).'
+  list_files: []
+  page_check: null
+  robots:
+  - url: https://www.corningelementary.org/
+    checked_at: '2026-10-13T12:15:18Z'
+    state: unavailable
+    allowed: true
+    rule: 'robots.txt unavailable (4xx): unrestricted'
+    crawl_delay: null
+    disallowed_agents: []
+    sha256: null
+  leaids: [0609780]
+- id: district-pages-evergreen-ca
+  platform: district-pages
+  call_sign: EUSD
+  name: Evergreen Union School District (homepage)
+  market: Cottonwood (Tehama County, CA)
+  dma: null
+  states: [CA]
+  counties:
+    basis: district
+    source: 'NCES CCD 2024-25 school directory (pipeline/out/internal/directory/schools.parquet): the
+      counties of the 6 schools of district-pages-evergreen-ca''s district, Evergreen Union (LEAID 0613170).'
+    fips: ['06103']
+  page_url: https://www.evergreenusd.org/
+  data_url: null
+  export_url: null
+  archive_urls:
+  - https://www.evergreenusd.org/
+  poll_minutes: null
+  status: active
+  evidence: 'First-hand check for piece s4 (the coverage gate, round 5), 2026-10-13. Live read of https://www.evergreenusd.org/
+    (HTTP 200, 74,103 bytes, SHA-256 00a59c81efabee77..., read 2026-10-13T12:02:12Z with the repository''s
+    User-Agent; robots.txt https://www.evergreenusd.org: allowed (robots.txt unavailable (4xx): unrestricted)):
+    a Catapult CMS site, with none of the vendor alert channels the other district adapters read; what
+    the district posts is in the page''s text. Read as district-homepage-text: no line announced a closing
+    (an empty list). The gap-state part''s record of 2026-09-28 said ''not built'' (First-hand check for
+    piece s4d (round 4, second batch), 2026-09-28. not built: a Catapult CMS site; its homepage carries
+    an announcements feed (CatapultAnnouncement, news items) and image banners (ccmsBanner), no alert
+    or emergency element. The homepage''s titl...).'
+  list_files: []
+  page_check: null
+  robots:
+  - url: https://www.evergreenusd.org/
+    checked_at: '2026-10-13T12:15:21Z'
+    state: unavailable
+    allowed: true
+    rule: 'robots.txt unavailable (4xx): unrestricted'
+    crawl_delay: null
+    disallowed_agents: []
+    sha256: null
+  leaids: ['0613170']
+- id: district-pages-butte-coe-ca
+  platform: district-pages
+  call_sign: BCOE
+  name: Butte County Office of Education (homepage)
+  market: Oroville (Butte County, CA)
+  dma: null
+  states: [CA]
+  counties:
+    basis: district
+    source: 'NCES CCD 2024-25 school directory (pipeline/out/internal/directory/schools.parquet): the
+      counties of the 6 schools of district-pages-butte-coe-ca''s district, Butte County Office of Education
+      (LEAID 0691002).'
+    fips: ['06007']
+  page_url: https://www.bcoe.org/
+  data_url: null
+  export_url: null
+  archive_urls:
+  - https://www.bcoe.org/
+  poll_minutes: null
+  status: active
+  evidence: 'First-hand check for piece s4 (the coverage gate, round 5), 2026-10-13. Live read of https://www.bcoe.org/
+    (HTTP 200, 110,191 bytes, SHA-256 b2456fda72137b29..., read 2026-10-13T12:02:32Z with the repository''s
+    User-Agent; robots.txt https://www.bcoe.org/: allowed (robots.txt unavailable (4xx): unrestricted)):
+    a Catapult CMS site, with none of the vendor alert channels the other district adapters read; what
+    the district posts is in the page''s text. Read as district-homepage-text: no line announced a closing
+    (an empty list). The gap-state part''s record of 2026-09-28 said ''not built'' (First-hand check for
+    piece s4d (round 4, second batch), 2026-09-28. not built: a Catapult CMS site; its homepage carries
+    an announcements feed (CatapultAnnouncement, news items) and image banners (ccmsBanner), no alert
+    or emergency element. The homepage''s titl...).'
+  list_files: []
+  page_check: null
+  robots:
+  - url: https://www.bcoe.org/
+    checked_at: '2026-10-13T12:15:15Z'
+    state: unavailable
+    allowed: true
+    rule: 'robots.txt unavailable (4xx): unrestricted'
+    crawl_delay: null
+    disallowed_agents: []
+    sha256: null
+  leaids: [0691002]
+- id: district-pages-thermalito-ca
+  platform: district-pages
+  call_sign: TUESD
+  name: Thermalito Union Elementary School District (homepage)
+  market: Oroville (Butte County, CA)
+  dma: null
+  states: [CA]
+  counties:
+    basis: district
+    source: 'NCES CCD 2024-25 school directory (pipeline/out/internal/directory/schools.parquet): the
+      counties of the 6 schools of district-pages-thermalito-ca''s district, Thermalito Union Elementary
+      (LEAID 0639180).'
+    fips: ['06007']
+  page_url: https://www.thermalito.org/
+  data_url: null
+  export_url: null
+  archive_urls:
+  - https://www.thermalito.org/
+  poll_minutes: null
+  status: active
+  evidence: 'First-hand check for piece s4 (the coverage gate, round 5), 2026-10-13. Live read of https://www.thermalito.org/
+    (HTTP 200, 1,403,943 bytes, SHA-256 77db98ff92e73fd4..., read 2026-10-13T12:02:34Z with the repository''s
+    User-Agent; robots.txt https://www.thermalito.org/: allowed (Allow: /)): a Wix site, with none of
+    the vendor alert channels the other district adapters read; what the district posts is in the page''s
+    text. Read as district-homepage-text: no line announced a closing (an empty list). The gap-state part''s
+    record of 2026-09-28 said ''not built'' (First-hand check for piece s4d (round 4, second batch), 2026-09-28.
+    not built: a Wix page with no alert element. The homepage''s title: ''Home | Thermalito Elementary
+    School District''. Live read 2026-09-28T15:14:50Z: HTTP 200, 1,407,723 bytes (SHA-256 d6dfb8d024...).'
+  list_files: []
+  page_check: null
+  robots:
+  - url: https://www.thermalito.org/
+    checked_at: '2026-10-13T12:15:47Z'
+    state: parsed
+    allowed: true
+    rule: 'Allow: /'
+    crawl_delay: null
+    disallowed_agents: [petalbot]
+    sha256: 74afb5e05661c98fa1e3a312de99eba8e08cc0aa958c42f1c31f365517aba275
+  leaids: [0639180]
+- id: district-pages-red-bluff-ca
+  platform: district-pages
+  call_sign: RBUESD
+  name: Red Bluff Union Elementary School District (homepage)
+  market: Red Bluff (Tehama County, CA)
+  dma: null
+  states: [CA]
+  counties:
+    basis: district
+    source: 'NCES CCD 2024-25 school directory (pipeline/out/internal/directory/schools.parquet): the
+      counties of the 5 schools of district-pages-red-bluff-ca''s district, Red Bluff Union Elementary
+      (LEAID 0631980).'
+    fips: ['06103']
+  page_url: https://www.rbuesd.org/
+  data_url: null
+  export_url: null
+  archive_urls:
+  - https://www.rbuesd.org/
+  poll_minutes: null
+  status: active
+  evidence: 'First-hand check for piece s4 (the coverage gate, round 5), 2026-10-13. Live read of https://www.rbuesd.org/
+    (HTTP 200, 89,816 bytes, SHA-256 bf63e506c236666f..., read 2026-10-13T12:02:37Z with the repository''s
+    User-Agent; robots.txt https://www.rbuesd.org/: allowed (robots.txt unavailable (4xx): unrestricted)):
+    a Catapult CMS site, with none of the vendor alert channels the other district adapters read; what
+    the district posts is in the page''s text. Read as district-homepage-text: no line announced a closing
+    (an empty list). The gap-state part''s record of 2026-09-28 said ''not built'' (First-hand check for
+    piece s4d (round 4, second batch), 2026-09-28. not built: a Catapult CMS site; its homepage carries
+    an announcements feed (CatapultAnnouncement, news items) and image banners (ccmsBanner), no alert
+    or emergency element. The homepage''s titl...).'
+  list_files: []
+  page_check: null
+  robots:
+  - url: https://www.rbuesd.org/
+    checked_at: '2026-10-13T12:15:40Z'
+    state: unavailable
+    allowed: true
+    rule: 'robots.txt unavailable (4xx): unrestricted'
+    crawl_delay: null
+    disallowed_agents: []
+    sha256: null
+  leaids: [0631980]
+- id: district-pages-gridley-ca
+  platform: district-pages
+  call_sign: GUSD
+  name: Gridley Unified School District (homepage)
+  market: Gridley (Butte County, CA)
+  dma: null
+  states: [CA]
+  counties:
+    basis: district
+    source: 'NCES CCD 2024-25 school directory (pipeline/out/internal/directory/schools.parquet): the
+      counties of the 5 schools of district-pages-gridley-ca''s district, Gridley Unified (LEAID 0600051).'
+    fips: ['06007']
+  page_url: https://www.gusd.org/
+  data_url: null
+  export_url: null
+  archive_urls:
+  - https://www.gusd.org/
+  poll_minutes: null
+  status: active
+  evidence: 'First-hand check for piece s4 (the coverage gate, round 5), 2026-10-13. Live read of https://www.gusd.org/
+    (HTTP 200, 98,077 bytes, SHA-256 df417cb0cddb535e..., read 2026-10-13T12:03:26Z with the repository''s
+    User-Agent; robots.txt https://www.gusd.org/: allowed (robots.txt unavailable (4xx): unrestricted)):
+    a Catapult CMS site, with none of the vendor alert channels the other district adapters read; what
+    the district posts is in the page''s text. Read as district-homepage-text: no line announced a closing
+    (an empty list). The gap-state part''s record of 2026-09-28 said ''not built'' (First-hand check for
+    piece s4d (round 4, second batch), 2026-09-28. not built: a Catapult CMS site; its homepage carries
+    an announcements feed (CatapultAnnouncement, news items) and image banners (ccmsBanner), no alert
+    or emergency element. The homepage''s titl...).'
+  list_files: []
+  page_check: null
+  robots:
+  - url: https://www.gusd.org/
+    checked_at: '2026-10-13T12:15:28Z'
+    state: unavailable
+    allowed: true
+    rule: 'robots.txt unavailable (4xx): unrestricted'
+    crawl_delay: null
+    disallowed_agents: []
+    sha256: null
+  leaids: ['0600051']
+- id: district-pages-palermo-ca
+  platform: district-pages
+  call_sign: PUESD
+  name: Palermo Union Elementary School District (homepage)
+  market: Palermo (Butte County, CA)
+  dma: null
+  states: [CA]
+  counties:
+    basis: district
+    source: 'NCES CCD 2024-25 school directory (pipeline/out/internal/directory/schools.parquet): the
+      counties of the 5 schools of district-pages-palermo-ca''s district, Palermo Union Elementary (LEAID
+      0629540).'
+    fips: ['06007']
+  page_url: https://www.palermoschools.org/
+  data_url: null
+  export_url: null
+  archive_urls:
+  - https://www.palermoschools.org/
+  poll_minutes: null
+  status: active
+  evidence: 'First-hand check for piece s4 (the coverage gate, round 5), 2026-10-13. Live read of https://www.palermoschools.org/
+    (HTTP 200, 74,989 bytes, SHA-256 7726a91e5fd1a4b1..., read 2026-10-13T12:03:29Z with the repository''s
+    User-Agent; robots.txt https://www.palermoschools.org/: allowed (robots.txt unavailable (4xx): unrestricted)):
+    a Catapult CMS site, with none of the vendor alert channels the other district adapters read; what
+    the district posts is in the page''s text. Read as district-homepage-text: no line announced a closing
+    (an empty list). The gap-state part''s record of 2026-09-28 said ''not built'' (First-hand check for
+    piece s4d (round 4, second batch), 2026-09-28. not built: a Catapult CMS site; its homepage carries
+    an announcements feed (CatapultAnnouncement, news items) and image banners (ccmsBanner), no alert
+    or emergency element. The homepage''s titl...).'
+  list_files: []
+  page_check: null
+  robots:
+  - url: https://www.palermoschools.org/
+    checked_at: '2026-10-13T12:15:37Z'
+    state: unavailable
+    allowed: true
+    rule: 'robots.txt unavailable (4xx): unrestricted'
+    crawl_delay: null
+    disallowed_agents: []
+    sha256: null
+  leaids: [0629540]
+- id: district-pages-jurupa-ca
+  platform: district-pages
+  call_sign: JUSD
+  name: Jurupa Unified School District (homepage)
+  market: Jurupa Valley (Riverside County, CA)
+  dma: null
+  states: [CA]
+  counties:
+    basis: district
+    source: 'NCES CCD 2024-25 school directory (pipeline/out/internal/directory/schools.parquet): the
+      counties of the 24 schools of district-pages-jurupa-ca''s district, Jurupa Unified (LEAID 0619260).'
+    fips: ['06065']
+  page_url: https://jurupausd.org/
+  data_url: null
+  export_url: null
+  archive_urls:
+  - https://jurupausd.org/
+  poll_minutes: null
+  status: active
+  evidence: 'First-hand check for piece s4 (the coverage gate, round 5), 2026-10-13. Live read of https://jurupausd.org/
+    (HTTP 200, 247,800 bytes, SHA-256 a8a1a0fb45fcde4d..., read 2026-10-13T12:03:32Z with the repository''s
+    User-Agent; robots.txt https://jurupausd.org/: allowed (no rule matches)): a SharePoint site, with
+    none of the vendor alert channels the other district adapters read; what the district posts is in
+    the page''s text. Read as district-homepage-text: no line announced a closing (an empty list). The
+    gap-state part''s record of 2026-09-28 said ''not built'' (First-hand check for piece s4d (round 4,
+    second batch), 2026-09-28. not built: a SharePoint site (/_layouts/15/) with no alert or closings
+    element in the page as served. The homepage''s title: ''JUSD Home''. Live read 2026-09-28T15:16:13Z:
+    HTTP 200, 246,549 bytes...).'
+  list_files: []
+  page_check: null
+  robots:
+  - url: https://jurupausd.org/
+    checked_at: '2026-10-13T12:15:32Z'
+    state: parsed
+    allowed: true
+    rule: no rule matches
+    crawl_delay: null
+    disallowed_agents: []
+    sha256: fccf26d57ad585e186eecda570dbc12e26963b1a90c31177bc4121062525d45d
+  leaids: [0619260]
+- id: district-pages-antelope-ca
+  platform: district-pages
+  call_sign: AESD
+  name: Antelope Elementary School District (homepage)
+  market: Red Bluff (Tehama County, CA)
+  dma: null
+  states: [CA]
+  counties:
+    basis: district
+    source: 'NCES CCD 2024-25 school directory (pipeline/out/internal/directory/schools.parquet): the
+      counties of the 4 schools of district-pages-antelope-ca''s district, Antelope Elementary (LEAID
+      0602760).'
+    fips: ['06103']
+  page_url: https://www.antelopeschools.org/
+  data_url: null
+  export_url: null
+  archive_urls:
+  - https://www.antelopeschools.org/
+  poll_minutes: null
+  status: active
+  evidence: 'First-hand check for piece s4 (the coverage gate, round 5), 2026-10-13. Live read of https://www.antelopeschools.org/
+    (HTTP 200, 60,555 bytes, SHA-256 ab94269bf7b2364a..., read 2026-10-13T12:03:34Z with the repository''s
+    User-Agent; robots.txt https://www.antelopeschools.org/: allowed (robots.txt unavailable (4xx): unrestricted)):
+    a Catapult CMS site, with none of the vendor alert channels the other district adapters read; what
+    the district posts is in the page''s text. Read as district-homepage-text: no line announced a closing
+    (an empty list). The gap-state part''s record of 2026-09-28 said ''not built'' (First-hand check for
+    piece s4d (round 4, second batch), 2026-09-28. not built: a Catapult CMS site; its homepage carries
+    an announcements feed (CatapultAnnouncement, news items) and image banners (ccmsBanner), no alert
+    or emergency element. The homepage''s titl...).'
+  list_files: []
+  page_check: null
+  robots:
+  - url: https://www.antelopeschools.org/
+    checked_at: '2026-10-13T12:15:11Z'
+    state: unavailable
+    allowed: true
+    rule: 'robots.txt unavailable (4xx): unrestricted'
+    crawl_delay: null
+    disallowed_agents: []
+    sha256: null
+  leaids: ['0602760']
+- id: district-pages-menifee-ca
+  platform: district-pages
+  call_sign: MUSD
+  name: Menifee Union School District (homepage)
+  market: Menifee (Riverside County, CA)
+  dma: null
+  states: [CA]
+  counties:
+    basis: district
+    source: 'NCES CCD 2024-25 school directory (pipeline/out/internal/directory/schools.parquet): the
+      counties of the 17 schools of district-pages-menifee-ca''s district, Menifee Union (LEAID 0624540).'
+    fips: ['06065']
+  page_url: https://www.menifeeusd.org/
+  data_url: null
+  export_url: null
+  archive_urls:
+  - https://www.menifeeusd.org/
+  poll_minutes: null
+  status: active
+  evidence: 'First-hand check for piece s4 (the coverage gate, round 5), 2026-10-13. Live read of https://www.menifeeusd.org/
+    (HTTP 200, 241,539 bytes, SHA-256 430feb0557a2687c..., read 2026-10-13T12:04:28Z with the repository''s
+    User-Agent; robots.txt https://www.menifeeusd.org/: allowed (no rule matches)): a SchoolMessenger
+    Presence site, with none of the vendor alert channels the other district adapters read; what the district
+    posts is in the page''s text. Read as district-homepage-text: no line announced a closing (an empty
+    list). The gap-state part''s record of 2026-09-28 said ''not built'' (First-hand check for piece s4d
+    (round 4, second batch), 2026-09-28. not built: the page draws a site alert banner (SiteAlertBanner)
+    from a script whose data address the page does not name; no alert in the page as served. The homepage''s
+    title: ''Menifee Union Sc...).'
+  list_files: []
+  page_check: null
+  robots:
+  - url: https://www.menifeeusd.org/
+    checked_at: '2026-10-13T12:15:37Z'
+    state: parsed
+    allowed: true
+    rule: no rule matches
+    crawl_delay: 10.0
+    disallowed_agents:
+    - ahrefsbot
+    - anthropic-ai
+    - blexbot
+    - bytespider
+    - ccbot
+    - chatgpt-user
+    - claudebot
+    - cohere-ai
+    - dataforseobot
+    - diffbot
+    - dotbot
+    - go-http-client
+    - gptbot
+    - imagesiftbot
+    - meta-externalagent
+    - mj12bot
+    - perplexitybot
+    - petalbot
+    - semrushbot
+    - sogou
+    sha256: f8e797581cd38309b9052eb5f5e738bb923882622ef80869f6c5bff43c199cbc
+  leaids: ['0624540']
+- id: district-pages-los-molinos-ca
+  platform: district-pages
+  call_sign: LMUSD
+  name: Los Molinos Unified School District (homepage)
+  market: Los Molinos (Tehama County, CA)
+  dma: null
+  states: [CA]
+  counties:
+    basis: district
+    source: 'NCES CCD 2024-25 school directory (pipeline/out/internal/directory/schools.parquet): the
+      counties of the 3 schools of district-pages-los-molinos-ca''s district, Los Molinos Unified (LEAID
+      0622860).'
+    fips: ['06103']
+  page_url: https://www.lmusd.net/
+  data_url: null
+  export_url: null
+  archive_urls:
+  - https://www.lmusd.net/
+  poll_minutes: null
+  status: active
+  evidence: 'First-hand check for piece s4 (the coverage gate, round 5), 2026-10-13. Live read of https://www.lmusd.net/
+    (HTTP 200, 95,581 bytes, SHA-256 9f5174b379086ac6..., read 2026-10-13T12:04:33Z with the repository''s
+    User-Agent; robots.txt https://www.lmusd.net/: allowed (robots.txt unavailable (4xx): unrestricted)):
+    a Catapult CMS site, with none of the vendor alert channels the other district adapters read; what
+    the district posts is in the page''s text. Read as district-homepage-text: no line announced a closing
+    (an empty list). The gap-state part''s record of 2026-09-28 said ''not built'' (First-hand check for
+    piece s4d (round 4, second batch), 2026-09-28. not built: a Catapult CMS site; its homepage carries
+    an announcements feed (CatapultAnnouncement, news items) and image banners (ccmsBanner), no alert
+    or emergency element. The homepage''s titl...).'
+  list_files: []
+  page_check: null
+  robots:
+  - url: https://www.lmusd.net/
+    checked_at: '2026-10-13T12:15:36Z'
+    state: unavailable
+    allowed: true
+    rule: 'robots.txt unavailable (4xx): unrestricted'
+    crawl_delay: null
+    disallowed_agents: []
+    sha256: null
+  leaids: [0622860]
+- id: district-pages-tehama-coe-ca
+  platform: district-pages
+  call_sign: TCDE
+  name: Tehama County Department of Education (homepage)
+  market: Red Bluff (Tehama County, CA)
+  dma: null
+  states: [CA]
+  counties:
+    basis: district
+    source: 'NCES CCD 2024-25 school directory (pipeline/out/internal/directory/schools.parquet): the
+      counties of the 3 schools of district-pages-tehama-coe-ca''s district, Tehama County Department
+      of Education (LEAID 0691043).'
+    fips: ['06103']
+  page_url: https://www.tehamaschools.org/
+  data_url: null
+  export_url: null
+  archive_urls:
+  - https://www.tehamaschools.org/
+  poll_minutes: null
+  status: active
+  evidence: 'First-hand check for piece s4 (the coverage gate, round 5), 2026-10-13. Live read of https://www.tehamaschools.org/
+    (HTTP 200, 88,310 bytes, SHA-256 9ce9ff79bd1cc25e..., read 2026-10-13T12:04:36Z with the repository''s
+    User-Agent; robots.txt https://www.tehamaschools.org/: allowed (robots.txt unavailable (4xx): unrestricted)):
+    a Catapult CMS site, with none of the vendor alert channels the other district adapters read; what
+    the district posts is in the page''s text. Read as district-homepage-text: no line announced a closing
+    (an empty list). The gap-state part''s record of 2026-09-28 said ''not built'' (First-hand check for
+    piece s4d (round 4, second batch), 2026-09-28. not built: a Catapult CMS site; its homepage carries
+    an announcements feed (CatapultAnnouncement, news items) and image banners (ccmsBanner), no alert
+    or emergency element. The homepage''s titl...).'
+  list_files: []
+  page_check: null
+  robots:
+  - url: https://www.tehamaschools.org/
+    checked_at: '2026-10-13T12:15:45Z'
+    state: unavailable
+    allowed: true
+    rule: 'robots.txt unavailable (4xx): unrestricted'
+    crawl_delay: null
+    disallowed_agents: []
+    sha256: null
+  leaids: [0691043]
+- id: district-pages-biggs-ca
+  platform: district-pages
+  call_sign: BUSD
+  name: Biggs Unified School District (homepage)
+  market: Biggs (Butte County, CA)
+  dma: null
+  states: [CA]
+  counties:
+    basis: district
+    source: 'NCES CCD 2024-25 school directory (pipeline/out/internal/directory/schools.parquet): the
+      counties of the 3 schools of district-pages-biggs-ca''s district, Biggs Unified (LEAID 0605040).'
+    fips: ['06007']
+  page_url: https://www.biggs.org/
+  data_url: null
+  export_url: null
+  archive_urls:
+  - https://www.biggs.org/
+  poll_minutes: null
+  status: active
+  evidence: 'First-hand check for piece s4 (the coverage gate, round 5), 2026-10-13. Live read of https://www.biggs.org/
+    (HTTP 200, 74,278 bytes, SHA-256 51f3d46bf1bb94e9..., read 2026-10-13T12:04:40Z with the repository''s
+    User-Agent; robots.txt https://www.biggs.org/: allowed (robots.txt unavailable (4xx): unrestricted)):
+    a Catapult CMS site, with none of the vendor alert channels the other district adapters read; what
+    the district posts is in the page''s text. Read as district-homepage-text: no line announced a closing
+    (an empty list). The gap-state part''s record of 2026-09-28 said ''not built'' (First-hand check for
+    piece s4d (round 4, second batch), 2026-09-28. not built: a Catapult CMS site; its homepage carries
+    an announcements feed (CatapultAnnouncement, news items) and image banners (ccmsBanner), no alert
+    or emergency element. The homepage''s titl...).'
+  list_files: []
+  page_check: null
+  robots:
+  - url: https://www.biggs.org/
+    checked_at: '2026-10-13T12:15:12Z'
+    state: unavailable
+    allowed: true
+    rule: 'robots.txt unavailable (4xx): unrestricted'
+    crawl_delay: null
+    disallowed_agents: []
+    sha256: null
+  leaids: ['0605040']
+- id: district-pages-corning-high-ca
+  platform: district-pages
+  call_sign: CUHSD
+  name: Corning Union High School District (homepage)
+  market: Corning (Tehama County, CA)
+  dma: null
+  states: [CA]
+  counties:
+    basis: district
+    source: 'NCES CCD 2024-25 school directory (pipeline/out/internal/directory/schools.parquet): the
+      counties of the 3 schools of district-pages-corning-high-ca''s district, Corning Union High (LEAID
+      0609810).'
+    fips: ['06103']
+  page_url: https://www.corninghs.org/
+  data_url: null
+  export_url: null
+  archive_urls:
+  - https://www.corninghs.org/
+  - https://www.corninghs.org/corninghsd/site/default.asp
+  former_urls:
+  - url: https://www.corninghs.org/corninghsd/site/default.asp
+    evidence: 'The district''s homepage at its earlier address: the NCES CCD 2024-25 LEA directory lists
+      https://www.corninghs.org/corninghsd/site/default.asp as the district''s website, and it no longer
+      answers the repository''s reads (2026-09-27 and 2026-10-13: see the station''s evidence); the address
+      the NCES CCD 2024-25 LEA directory lists (HTTP 404 on 2026-10-13); the site''s root, https://www.corninghs.org/,
+      now serves the district''s homepage. The same channel (the district''s own homepage, read whole
+      as district-homepage-text) at the address the district used before https://www.corninghs.org/.'
+  poll_minutes: null
+  status: active
+  evidence: 'First-hand check for piece s4 (the coverage gate, round 5), 2026-10-13. Live read of https://www.corninghs.org/
+    (HTTP 200, 79,881 bytes, SHA-256 c66878e10bad58ef..., read 2026-10-13T12:07:54Z with the repository''s
+    User-Agent; robots.txt https://www.corninghs.org/: allowed (robots.txt unavailable (4xx): unrestricted)):
+    a Catapult CMS site, with none of the vendor alert channels the other district adapters read; what
+    the district posts is in the page''s text. Read as district-homepage-text: no line announced a closing
+    (an empty list). The NCES CCD 2024-25 LEA directory lists https://www.corninghs.org/corninghsd/site/default.asp
+    as the district''s website; it did not answer the repository''s reads on 2026-09-27 or 2026-10-13
+    (First-hand check for piece s4d (round 4, second batch), 2026-09-28. not read: https://www.corninghs.org/corninghsd/site/),
+    and a web search found the district''s site at https://www.corninghs.org/; the old address is an archive
+    URL so its captures are listed and read. The gap-state part''s record of 2026-09-28 said ''not read''
+    (First-hand check for piece s4d (round 4, second batch), 2026-09-28. not read: https://www.corninghs.org/corninghsd/site/default.asp:
+    HTTP 404; not retried around (TLS verification is never disabled)).'
+  list_files: []
+  page_check: null
+  robots:
+  - url: https://www.corninghs.org/
+    checked_at: '2026-10-13T12:15:19Z'
+    state: unavailable
+    allowed: true
+    rule: 'robots.txt unavailable (4xx): unrestricted'
+    crawl_delay: null
+    disallowed_agents: []
+    sha256: null
+  leaids: [0609810]

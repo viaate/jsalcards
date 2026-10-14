@@ -94,6 +94,15 @@ Variants this adapter reads (the ``variant`` of each listing):
     (KSTU's day headings, "WEDNESDAY, FEB. 22"; see
     :func:`snowlight.sources.stations.typed.names_day_near`).
 
+``scripps-liferay-empty-layout``
+    A page of the Liferay template the Scripps sites had in 2017 (KGUN's
+    ``/weather/school-closings-delays`` of 2017-03-16 and 2017-04-15) whose layout holds
+    no portlet at all: every ``div.portlet-dropzone`` of its ``#main-content`` carries
+    the class ``empty`` and the region holds no text. No module was placed on the page,
+    so it holds no list and names no file: a
+    :attr:`~snowlight.sources.stations.model.ListingState.DEFERRED` listing that names
+    no file (no list can be read from it, and it is not an empty list).
+
 A framed list file in one of the vendor formats
 :mod:`snowlight.sources.stations.gray_files` reads (WTVQ's SnoWatch file is
 ``gray-file-grid``) is read with it, under that module's variant names.
@@ -330,6 +339,23 @@ def _items_beside_module(html: str) -> tuple[ParsedRow, ...]:
     return tuple(found)
 
 
+def _empty_liferay_layout(html: str) -> bool:
+    """Whether a page is a Liferay layout with no portlet placed (``scripps-liferay-empty-layout``).
+
+    Its ``#main-content`` holds at least one ``div.portlet-dropzone``, each marked
+    ``empty``, and no text at all.
+    """
+    if "portlet-dropzone" not in html:
+        return False
+    main = parse_html(html).css_first("#main-content")
+    if main is None or node_text(main):
+        return False
+    zones = main.css("div.portlet-dropzone")
+    return bool(zones) and all(
+        "empty" in str(zone.attributes.get("class") or "").split() for zone in zones
+    )
+
+
 # Dispatch ----------------------------------------------------------------------------------
 
 
@@ -359,6 +385,8 @@ def parse(body: bytes) -> Listing:
             rows=(),
             follows=tuple(dict.fromkeys(frames)),
         )
+    if _empty_liferay_layout(text):
+        return Listing(variant="scripps-liferay-empty-layout", state=ListingState.DEFERRED, rows=())
     raise ShapeError("not a Scripps closings body this adapter knows")
 
 

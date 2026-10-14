@@ -1,0 +1,211 @@
+
+
+<script type="text/javascript">
+    // setTimeout is used for the .focus() calls because 
+    // Firefox ignores it if it's called while the browser 
+    // is already busy setting focus. 
+
+    $(document).ready(function() {
+        $(document).on('click', '#onscreenalert-ctrl-gotit', function() {
+            //OnScreenAlertGotItDialog('10/8/2024 8:50:17 AM');
+            OnScreenAlertGotItDialog('10/8/2024 9:50:17 AM');
+            setTimeout(function() {
+                $("#onscreenalert-message-dialog-icon").focus();
+            }, 10);
+        });
+        
+        $('#onscreenalert-ctrl-gotit').keydown(function (e) {
+            if (e.keyCode == 9) {
+                e.preventDefault();
+                e.stopImmediatePropagation();
+                if (e.shiftKey) {
+                    if ($('#onscreenalertdialoglist li:last a').length > 0) {
+                        setTimeout(function() {
+                            $('#onscreenalertdialoglist li:last').find('a').last().focus();
+                        }, 10);
+                    }
+                    else {
+                        setTimeout(function() {
+                            $('#onscreenalertdialoglist li:last').focus();
+                         }, 10);
+                    }
+                }
+                else {
+                    setTimeout(function() {
+                        $('.onscreenalert-ctrl-content').get(0).focus();
+                    }, 0);
+                }
+            }
+        });
+
+        $('.onscreenalert-ctrl-content').keydown(function (e) {
+            if (e.keyCode == 9) {
+                e.preventDefault();
+                e.stopImmediatePropagation();
+                if (e.shiftKey) {
+                    setTimeout(function() {
+                        $('#onscreenalert-ctrl-gotit').focus();
+                    }, 10);
+                }
+                    else {
+                    setTimeout(function() {
+                        $('#onscreenalert-message-dialog-icon').focus();
+                    }, 10);
+                }
+            }
+            else if (e.keyCode == 13 && $("#onscreenalert-ctrl-gotit:visible").length == 0) {
+                $('#onscreenalert-message-dialog-icon').click();
+            }
+        });
+        
+        $('#onscreenalert-message-dialog-icon').keydown(function (e) {
+            var isDialogOpened = ($("#onscreenalert-ctrl-gotit:visible").length > 0);
+            if (e.keyCode == 9 && isDialogOpened) {
+                e.preventDefault();
+                e.stopImmediatePropagation();
+                if (e.shiftKey) {
+                    setTimeout(function() {
+                        $('.onscreenalert-ctrl-content').focus();
+                    }, 10);
+                } else {
+                    setTimeout(function() {
+                        $('#onscreenalert-ctrl-msglist [tabindex=0]:first').focus();
+                    }, 10);
+                }
+            }
+            else if (e.keyCode == 9 && !isDialogOpened && e.shiftKey) {
+                e.preventDefault();
+                e.stopImmediatePropagation();
+                setTimeout(function() {
+                    $(this).focus();
+                }, 10);
+            }
+        });
+
+        $('#onscreenalertdialoglist li[tabindex=0]').keydown(function (e) {
+            if (e.keyCode == 9) {
+                e.preventDefault();
+                e.stopImmediatePropagation();
+                if (e.shiftKey) {
+                    if ($(this).prev('#onscreenalertdialoglist li[tabindex=0]').length > 0) {
+                        if ($(this).prev('#onscreenalertdialoglist li[tabindex=0]').find('a').length > 0) {
+                            $(this).prev('#onscreenalertdialoglist li[tabindex=0]').find('a').last().focus();
+                        }
+                        else {
+                             $(this).prev('#onscreenalertdialoglist li[tabindex=0]').focus();
+                        }
+                    }
+                    else {
+                        setTimeout(function() {
+                            $('#onscreenalert-message-dialog-icon').focus();
+                        }, 10);
+                    }
+                } else {
+                    if ($(this).find('a').length > 0) {
+                        $(this).find('a').first().focus();
+                    }
+                    else if ($(this).next('#onscreenalertdialoglist li[tabindex=0]').length > 0) {
+                        $(this).next('#onscreenalertdialoglist li[tabindex=0]').focus();
+                    }
+                    else {
+                        setTimeout(function() {
+                            $('#onscreenalert-ctrl-gotit').focus();
+                        }, 10);
+                    }
+                    
+                }
+            }
+        });
+
+        $('#onscreenalertdialoglist li[tabindex=0] a').keydown(function(e) {
+            if (e.keyCode == 9) {
+                e.preventDefault();
+                e.stopImmediatePropagation();
+
+                var index = $(this).parents('li').find('a').index($(this));
+                var linkArray = $(this).parents('li').find('a').toArray();
+                var prevIndex = index - 1;
+                var nextIndex = index + 1;
+
+                if (e.shiftKey) {
+                    if (index > 0) {
+                        $(this).parents('li').find('a').get(prevIndex).focus();
+                    }
+                    else {
+                        $(this).parents('li').focus();
+                    }
+                }
+                else {
+                    if ($(this).parents('li').find('a').get(nextIndex)) {
+                         $(this).parents('li').find('a').get(nextIndex).focus();
+                    }
+                    else {
+                        if ($(this).parents('li').next().length > 0) {
+                             $(this).parents('li').next().focus();
+                        }
+                        else {
+                            setTimeout(function() {
+                                $('#onscreenalert-ctrl-gotit').focus();
+                            }, 10);
+                        }
+                    }
+                }
+            }
+        });
+        
+        $(document).on('click', '#onscreenalert-message-dialog-icon', function() {
+            if ($('#onscreenalert-message-dialog').hasClass('Smaller')) {
+                OnScreenAlertOpenDialog(4);
+            }
+        });
+
+        $('#onscreenalert-message-dialog-icon').keydown(function(e) {
+            e.stopImmediatePropagation();
+            if (e.keyCode == 13) {
+                $(this).click();
+            }
+        });
+
+        $("#onscreenalert-ctrl-content-icon").hover(function() {
+            if ($('#onscreenalert-message-dialog').hasClass('Smaller')) {
+                $("#sw-important-message-tooltip").show();
+            }
+        }, function() {
+            if ($('#onscreenalert-message-dialog').hasClass('Smaller')) {
+                $("#sw-important-message-tooltip").hide();
+            }
+        });
+    });
+</script>
+
+<style>
+    #onscreenalert-message-dialog *:focus, x:-moz-any-link, x:default { 
+        outline: 1px dashed #333;
+    } 
+    #onscreenalert-message-dialog:focus, x:-moz-any-link, x:default { 
+        outline: 1px dashed #333;
+    } 
+</style>
+
+<div id="onscreenalert-message-dialog" class="onscreenalert-ctrl-modal">
+    <div class="onscreenalert-ctrl-content" tabindex="0" role="dialog">
+        <div id="onscreenalert-message-dialog-icon" class="OnScreenAlertHeader" tabindex="0">
+            <span id="onscreenalert-ctrl-content-icon" class="icon-icon_alert_round_message">!</span>
+            <span class="titleMessage">Important Message</span>
+        </div>
+
+        <div id="onscreenalert-ctrl-msglist">
+            <ul id="onscreenalertdialoglist" ><li id=47 tabindex="0"><div class="OutlineElement Ltr SCXW118758498 BCX8"><br /><h2>Weather Update and School Closure Information</h2><br /><p><strong>October 8, 2024</strong><br><strong>8 a.m. Update&nbsp;</strong></p><br /><p>Pinellas County Schools is working closely with Pinellas County Emergency Management to monitor the path of Hurricane Milton and the possible impact on our region. <strong> All Pinellas County Schools and offices will now be CLOSED from Monday, October 7, through Friday, October 11. All sports and school activities scheduled for those dates are canceled. &nbsp;</strong><br>&nbsp;<br>All updates will be posted on the district's weather page,<a href="https://www.pcsb.org/weather"> www.pcsb.org/weather</a>, and on social media, including the district&rsquo;s <a href="https://www.facebook.com/mypinellasschools" target="_blank" rel="noreferrer noopener"><span lang="EN-US" xml:lang="EN-US" data-contrast="none"><span data-ccp-charstyle="Hyperlink">Facebook</span></span></a><span lang="EN-US" xml:lang="EN-US" data-contrast="none">, </span><a href="https://x.com/my_pcs" target="_blank" rel="noreferrer noopener"><span lang="EN-US" xml:lang="EN-US" data-contrast="none"><span data-ccp-charstyle="Hyperlink">X</span></span></a><span lang="EN-US" xml:lang="EN-US" data-contrast="none">,  </span><a href="https://www.instagram.com/pinellascountyschools/" target="_blank" rel="noreferrer noopener"><span lang="EN-US" xml:lang="EN-US" data-contrast="none"><span data-ccp-charstyle="Hyperlink">Instagram</span></span></a><span lang="EN-US" xml:lang="EN-US" data-contrast="none">, and </span><a href="https://www.linkedin.com/company/pinellascountyschools/" target="_blank" rel="noreferrer noopener"><span lang="EN-US" xml:lang="EN-US" data-contrast="none"><span data-ccp-charstyle="Hyperlink">LinkedIn</span></span></a><span lang="EN-US" xml:lang="EN-US" data-contrast="none"> accounts.</span><span data-ccp-props="{&quot;201341983&quot;:0,&quot;335557856&quot;:16777215,&quot;335559739&quot;:0,&quot;335559740&quot;:240}">&nbsp;</span></p><br /><p><br>For storm shelter and preparation information, please visit <a href="https://storm.pinellascounty.org/" target="_blank" rel="noreferrer noopener"><span lang="EN-US" xml:lang="EN-US" data-contrast="none"><span data-ccp-charstyle="Hyperlink">https://storm.pinellascounty.org/</span></span></a><span lang="EN-US" xml:lang="EN-US" data-contrast="none">.</span><span data-ccp-props="{&quot;201341983&quot;:0,&quot;335559739&quot;:0,&quot;335559740&quot;:240}">&nbsp;</span><strong><br></strong></p><br /></div></li></ul>
+            <input type="hidden" id="onscreenalertdialoglist-hid-showokgotit" value="True">
+            <input type="hidden" id="onscreenalertdialoglist-hid-showstickybar" value="False">
+        </div>
+        <div class="onscreenalert-ctrl-footer">
+            <button id="onscreenalert-ctrl-gotit" class="bb-butt" tabindex="0">OK, got it.</button>
+        </div>
+    </div>
+</div>
+
+<div id="onscreenalert-ctrl-mask"></div>
+<div id="sw-important-message-tooltip" class="sw-important-messagetooltip">View important message</div>
+
+

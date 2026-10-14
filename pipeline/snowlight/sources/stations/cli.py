@@ -21,6 +21,11 @@ Actions:
 * ``pagecheck targets`` / ``pagecheck apply``: set each Gray station's ``data_url``
   to the list file its page loads, from a browser check (``pagecheck.cjs``; see
   :mod:`snowlight.sources.stations.pagecheck`);
+* ``gate report`` / ``gate plan``: the coverage gate's report of each state's gap,
+  station by station, and the captures most likely to prove the stations that
+  would add the most (see :mod:`snowlight.sources.stations.gate`);
+* ``merge-live``: merge several live fetches' reads and rows into one folder for
+  ``coverage --live-reads`` (see :mod:`snowlight.sources.stations.merge`);
 * ``coverage``: measure the share of schools covered, plain and closure-weighted,
   and draw the coverage map (and check county lists against the counties archived
   rows name); with the proven share, counting only lists seen populated at least
@@ -47,11 +52,14 @@ from snowlight.sources.stations import (
     dma,
     fetch,
     fixtures,
+    gate_cli,
     notices,
     observed,
     pagecheck,
     proof,
+    seasons,
     storms,
+    typed_history,
 )
 from snowlight.sources.stations.adapters import AdapterRegistry
 from snowlight.sources.stations.http import (
@@ -122,7 +130,33 @@ def register(subparsers: "argparse._SubParsersAction[argparse.ArgumentParser]") 
     fetch_p.add_argument("--out-dir", type=Path, default=fetch.DEFAULT_OUT_DIR)
     fetch_p.add_argument("--cache-dir", type=Path, default=fetch.DEFAULT_CACHE_DIR)
     fetch_p.add_argument("--only", nargs="+", metavar="ID", help="read only these stations")
+    fetch_p.add_argument(
+        "--typed-history",
+        type=Path,
+        default=fetch.DEFAULT_OUT_DIR / typed_history.HISTORY_FILE,
+        help="earlier reads of typed pages: read, then updated with this run's",
+    )
+    fetch_p.add_argument(
+        "--archive-dir",
+        type=Path,
+        default=fetch.DEFAULT_OUT_DIR / "archive",
+        help="the archive parse's reads and rows: typed pages' archived captures",
+    )
+    fetch_p.add_argument(
+        "--closure-days",
+        type=Path,
+        default=fetch.DEFAULT_OUT_DIR / seasons.SEASONS_FILE,
+        help="each market's closure events (stations seasons); without it, a list last "
+        "written before the last winter is stale",
+    )
     fetch_p.set_defaults(handler=run_fetch)
+
+    seasons_p = actions.add_parser(
+        "seasons", help="count each market's closure events from the NWS record"
+    )
+    seasons_p.add_argument("--directory", type=Path, default=DEFAULT_DIRECTORY)
+    seasons_p.add_argument("--out", type=Path, default=fetch.DEFAULT_OUT_DIR / seasons.SEASONS_FILE)
+    seasons_p.set_defaults(handler=run_seasons)
 
     registry_p = actions.add_parser("registry", help="check the registry and summarize it")
     registry_p.add_argument(
@@ -141,6 +175,8 @@ def register(subparsers: "argparse._SubParsersAction[argparse.ArgumentParser]") 
     _register_archive(actions)
     _register_fixture(actions)
     _register_pagecheck(actions)
+    gate_cli.register(actions)
+    gate_cli.register_merge(actions)
 
     coverage_p = actions.add_parser("coverage", help="measure coverage and draw the map")
     coverage_p.add_argument("--directory", type=Path, default=DEFAULT_DIRECTORY)
@@ -185,6 +221,11 @@ def register(subparsers: "argparse._SubParsersAction[argparse.ArgumentParser]") 
         help="test fixtures (real bodies with provenance), as evidence of lists seen populated",
     )
     coverage_p.add_argument("--no-proof", action="store_true", help="leave out the proven share")
+    coverage_p.add_argument(
+        "--no-storms",
+        action="store_true",
+        help="leave out the NWS warning days that corroborate a district's dated closings",
+    )
     coverage_p.add_argument("--no-png", action="store_true")
     coverage_p.set_defaults(handler=run_coverage)
 
@@ -332,13 +373,36 @@ def run_fetch(args: argparse.Namespace) -> int:
     try:
         registry = load_registry(args.registry)
         registry.check_adapters(AdapterRegistry(args.registry))
+        history = typed_history.TypedHistory.load(args.typed_history)
+        typed_ids = [
+            station.id
+            for station in registry.stations.values()
+            if registry.platform_of(station).adapter
+            in fetch.TYPED_PAGE_ADAPTERS | notices.GENERAL_CHANNEL_ADAPTERS
+        ]
+        history.merge(
+            typed_history.TypedHistory.from_archive(
+                args.archive_dir / "reads.jsonl", args.archive_dir / "rows.jsonl", typed_ids
+            )
+        )
+        record = (
+            seasons.ClosureSeasons.load(args.closure_days) if args.closure_days.exists() else None
+        )
         client = PoliteClient(make_client(), ConditionalStore(args.cache_dir))
         try:
-            result = fetch.run(registry, client, clock=system_clock, only=args.only)
+            result = fetch.run(
+                registry,
+                client,
+                clock=system_clock,
+                only=args.only,
+                judges=fetch.Judges(record, history),
+            )
         finally:
             client.close()
-        paths = fetch.write_outputs(result, args.out_dir, system_clock())
-    except _FAILURES as error:
+        generated = system_clock()
+        paths = fetch.write_outputs(result, args.out_dir, generated)
+        history.write(args.typed_history, generated)
+    except (*_FAILURES, typed_history.TypedHistoryError, seasons.SeasonsError) as error:
         return _fail("fetch", error)
     counts = fetch.totals(result.health)
     _print(
@@ -347,8 +411,57 @@ def run_fetch(args: argparse.Namespace) -> int:
         f"{counts['rows']} rows; {counts['robots_disallowed']} read although robots.txt "
         "disallows them (recorded)"
     )
+    if record is None:
+        _print(
+            f"no closure seasons ({args.closure_days} is missing): every list last written "
+            "before the last winter began is stale"
+        )
+    else:
+        _print(
+            f"closure seasons: {len(record.events)} markets, counted through "
+            f"{record.counted_through.isoformat()}"
+        )
     for name, path in paths.items():
         _print(f"{name}: {path}")
+    _print(f"typed history: {args.typed_history}")
+    return 0
+
+
+def run_seasons(args: argparse.Namespace) -> int:
+    """Run ``snowlight stations seasons``."""
+    now = system_clock()
+    try:
+        registry = load_registry(args.registry)
+        schools = pl.read_parquet(args.directory, columns=["county_fips", "district_id"])
+        county_schools: dict[str, int] = {}
+        district_schools: dict[str, dict[str, int]] = {}
+        for fips, leaid in schools.iter_rows():
+            county_schools[str(fips)] = county_schools.get(str(fips), 0) + 1
+            if leaid is not None:
+                counts = district_schools.setdefault(str(leaid), {})
+                counts[str(fips)] = counts.get(str(fips), 0) + 1
+        with HttpCache(make_reference_client()) as cache:
+            counted = seasons.count_closure_weather(WeightsCache(cache), now.date())
+        markets = seasons.station_markets(registry, county_schools, district_schools)
+        record = seasons.build(markets, counted.county_days, counted.counted_through)
+        seasons.write(
+            args.out,
+            record,
+            now,
+            school_years=seasons.provenance(counted.files),
+            directory={
+                "path": str(args.directory),
+                "sha256": sha256_file(args.directory),
+                "schools": schools.height,
+            },
+        )
+    except _FAILURES as error:
+        return _fail("seasons", error)
+    events = sum(len(found) for found in record.events.values())
+    _print(
+        f"{len(record.events)} markets, {events} closure events, counted through "
+        f"{record.counted_through.isoformat()}: {args.out}"
+    )
     return 0
 
 
@@ -661,14 +774,25 @@ def run_coverage(args: argparse.Namespace) -> int:
         with HttpCache(make_reference_client()) as cache:
             references = _references(cache, args.reference_dir)
             weights = None if args.no_weights else _school_weights(args, cache)
+            warnings = (
+                None
+                if args.no_proof or args.no_storms
+                else storms.warning_days(
+                    registry, gate_cli.county_hazard_days(cache, gate_cli.DEFAULT_GROUPS)
+                )
+            )
         gazetteer = dma.read_gazetteer(references["gazetteer"])
         connecticut = dma.read_ct_regions(references["ct"])
         dmas = _filled(dma.read_crosswalk(references["dma"], gazetteer, connecticut), references)
+        places, scopes, state_fips = _place_index(args.directory, registry)
         seen = observed.observe(
-            observed.read_rows(args.archive_rows),
+            observed.read_rows(args.archive_rows)
+            + observed.read_rows(args.live_reads.with_name("rows.jsonl")),
             gazetteer,
             observed.read_states(references["states"]),
             connecticut,
+            places=places,
+            scopes=scopes,
         )
         result = coverage.measure(registry, schools, states, dmas, seen, weights=weights)
         if not args.no_proof:
@@ -678,18 +802,36 @@ def run_coverage(args: argparse.Namespace) -> int:
                 archive_health=args.archive_health,
                 fixtures=args.fixtures,
             )
-            # A district's alert channel is proven only by a row announcing a closing,
-            # a status board only by a status other than open.
+            # A district's alert channel is proven only by a row announcing a closing
+            # (or a closing of a day the NWS had a warning over it), a status board only
+            # by a status other than open.
             gate = notices.gate_proofs(
                 evidence.proofs,
                 registry,
                 live_rows=[args.live_reads.with_name("rows.jsonl")],
                 archive_rows=[args.archive_reads.with_name("rows.jsonl")],
                 fixtures=args.fixtures,
+                warnings=warnings,
+                chosen=evidence.chosen,
             )
-            proof.add_proven(result, registry, schools, states, evidence, weights=weights)
+            proof.add_proven(
+                result,
+                registry,
+                schools,
+                states,
+                evidence,
+                weights=weights,
+                assumed=coverage.market_assumptions(registry, seen, state_fips),
+                pandemic_only=notices.pandemic_only_lists(
+                    evidence.proofs,
+                    registry,
+                    live_rows=[args.live_reads.with_name("rows.jsonl")],
+                    archive_rows=[args.archive_reads.with_name("rows.jsonl")],
+                ),
+            )
             result["district_notice_gate"] = gate
             notices.annotate_unproven(result, gate)
+            notices.annotate_warnings(result, gate)
         shapes = None if args.no_png else coverage.county_shapes(references["shapes"])
         meta = coverage.CoverageMeta(now, health_at, args.directory, _provenance(references))
         paths = coverage.write_coverage(args.out_dir, result, meta, shapes)
@@ -710,6 +852,44 @@ def run_coverage(args: argparse.Namespace) -> int:
     for name, path in paths.items():
         _print(f"{name}: {path}")
     return 0
+
+
+def _place_index(
+    directory: Path, registry: Registry
+) -> tuple[observed.PlaceIndex, dict[str, frozenset[str]], dict[str, str]]:
+    """The directory's place names (each school's city, its district's name and its county's
+    name), each station's states as FIPS codes, and each state's FIPS code by USPS code."""
+    wanted = ["city", "district_name", "county_fips", "county_name", "state"]
+    present = set(pl.scan_parquet(directory).collect_schema().names())
+    frame = pl.read_parquet(directory, columns=[name for name in wanted if name in present])
+    for name in wanted:  # a directory without place names names no place
+        if name not in present:
+            frame = frame.with_columns(pl.lit(None, dtype=pl.String).alias(name))
+    # Each state's FIPS code: the one most of its schools' counties carry (a few schools carry
+    # a county of another state).
+    counts = (
+        frame.select("state", pl.col("county_fips").str.slice(0, 2).alias("code"))
+        .group_by("state", "code")
+        .len()
+        .sort("len", descending=True)
+        .unique("state", keep="first", maintain_order=True)
+    )
+    state_fips = {str(code): str(fips) for code, fips, _ in counts.iter_rows()}
+    triples: list[tuple[str | None, str | None, str]] = [
+        (city, district, str(fips))
+        for city, district, fips in frame.select("city", "district_name", "county_fips")
+        .unique()
+        .iter_rows()
+    ]
+    triples += [
+        (None, str(name), str(fips))
+        for name, fips in frame.select("county_name", "county_fips").unique().iter_rows()
+    ]
+    scopes = {
+        station.id: frozenset(state_fips[code] for code in station.states if code in state_fips)
+        for station in registry.stations.values()
+    }
+    return observed.PlaceIndex.build(triples), scopes, state_fips
 
 
 def _school_weights(args: argparse.Namespace, cache: HttpCache) -> coverage.Weights:

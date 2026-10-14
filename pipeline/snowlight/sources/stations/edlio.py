@@ -39,7 +39,14 @@ Variant this adapter reads:
     Advisory": "No School - Jan 21, 2025 / Delayed Start - Jan 22, 2025"), and Sublette
     #9's live on 2026-09-28 ("School Picture Days", with a picture, linking to a page).
     A homepage without the element is an empty list (the other fifteen district sites
-    on 2026-09-28, and every other archived capture read so far).
+    on 2026-09-28, and most archived captures).
+
+``homepage-text`` and page-text rows
+    A page that is not an Edlio homepage (the district's site before Edlio) is read
+    by its text, and an Edlio homepage gets a page-text row for each closing line
+    its text shows that its alert does not hold (Robstown's headline "Robstown ISD
+    Schools Closed Tuesday Due to Inclement Weather", 2025-01-21, with no homepage
+    alert up): see :mod:`snowlight.sources.stations.homepage`.
 
 Each alert is one row: ``raw_name`` its headline as written (the element names no
 school: the registry entry's ``leaids`` say whose it is), ``raw_status`` its summary's
@@ -48,9 +55,8 @@ text, no ``raw_updated_text`` (the page shows no time), and ``raw_extra``
 writes it, local time without a zone), ``link`` (the "read more" target) and
 ``image_alt`` (the picture's alt text, only when the alert has no words). An alert
 with a summary and no headline takes the summary as its name; one with neither
-headline, summary nor picture text is a skipped row. A body that is not an Edlio page
-(a bot challenge, another CMS, a redirect's error page) raises
-:class:`~snowlight.sources.stations.model.ShapeError`.
+headline, summary nor picture text is a skipped row. A body that is not an HTML page
+raises :class:`~snowlight.sources.stations.model.ShapeError`.
 """
 
 import re
@@ -58,6 +64,7 @@ from html import escape
 
 from selectolax.parser import HTMLParser, Node
 
+from snowlight.sources.stations import homepage
 from snowlight.sources.stations.gap_markup import (
     collapse,
     html_text,
@@ -65,7 +72,7 @@ from snowlight.sources.stations.gap_markup import (
     make_row,
     node_text,
 )
-from snowlight.sources.stations.model import JsonScalar, Listing, ParsedRow, ShapeError
+from snowlight.sources.stations.model import JsonScalar, Listing, ParsedRow
 
 VARIANT = "edlio-homepage-alert"
 MODAL = "homepage_news_alert_modal"
@@ -120,12 +127,30 @@ def _row(article: Node, script: str) -> ParsedRow | None:
     return make_row(name, status, None, extra)
 
 
+def holds_homepage(text: str) -> bool:
+    """Whether a page is an Edlio homepage (its generator, or its homepage alert)."""
+    tree = HTMLParser(text)
+    return tree.css_first(f"article#{MODAL}") is not None or _is_edlio(tree)
+
+
 def parse(body: bytes) -> Listing:
-    """Read an Edlio district homepage's alert (see the module docstring)."""
-    tree = HTMLParser(html_text(body))
+    """Read an Edlio district homepage's alert (see the module docstring).
+
+    Read with :func:`snowlight.sources.stations.homepage.read_homepage`: a page that
+    is not an Edlio homepage is read by its text, and an Edlio homepage gets the
+    closing lines its text shows that its alert does not hold.
+    """
+    return homepage.read_homepage(html_text(body), parse_text)
+
+
+def parse_text(text: str) -> Listing:
+    """Read an Edlio homepage's alert from its decoded text (no page-text rows)."""
+    tree = HTMLParser(text)
     articles = tree.css(f"article#{MODAL}")
     if not articles and not _is_edlio(tree):
-        raise ShapeError("no Edlio generator and no homepage alert: not an Edlio homepage")
+        raise homepage.NoFormError(
+            "no Edlio generator and no homepage alert: not an Edlio homepage"
+        )
     script = _alert_script(tree)
     rows: list[ParsedRow] = []
     skipped = 0
@@ -161,3 +186,13 @@ def slice_body(body: bytes) -> bytes:
             parts.append(article.html)
     inner = "".join(parts)
     return f"<!DOCTYPE html><html><head>{head}</head><body>{inner}</body></html>\n".encode()
+
+
+def slice_body_v2(body: bytes) -> bytes:
+    """As :func:`slice_body`, with each closing line of the page's text as a paragraph.
+
+    For a page read with page-text rows beside its alert (or read by its text).
+    """
+    sliced = slice_body(body).decode()
+    blocks = homepage.text_blocks(html_text(body))
+    return sliced.replace("</body>", f"{blocks}</body>", 1).encode()

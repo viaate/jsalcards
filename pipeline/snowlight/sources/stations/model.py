@@ -94,6 +94,11 @@ class ReadMode(StrEnum):
 
     LIVE = "live"
     ARCHIVE = "archive"
+    HISTORY = "history"
+    """A post of a channel's own dated history, read live: a feed's or a site's post that
+    the server stamps with the time it was published (see
+    :mod:`snowlight.sources.stations.history`). The read's time is the post's own time,
+    never the time it was read; only committed fixtures carry this mode."""
 
 
 class ParsedRow(InternalModel):
@@ -161,6 +166,27 @@ class Listing(InternalModel):
             "the read."
         ),
     )
+    dated_rows: bool = Field(
+        default=False,
+        description=(
+            "Rows that are posts of a feed, each stamped by the server with the time it was "
+            "published (``updated_text``, an ISO 8601 instant): the live reader keeps a row "
+            "only while that time is within ``fetch.TYPED_CURRENT`` of the read (a feed keeps "
+            "its old posts; only a new one is current). ``list_updated_at`` is the newest "
+            "post's time."
+        ),
+    )
+    also_loads: tuple[Reference, ...] = Field(
+        default=(),
+        description=(
+            "Alert files a page that holds its own list (or an empty one) loads beside "
+            "it, as the page names them: a Web Community Manager homepage's on-screen "
+            "alert, which its script fetches while the homepage's announcements app is "
+            "served in the page. The archive reader reads the capture of such a file "
+            "nearest the page's (within its follow window) as a list of its own, reached "
+            "through the page (``ViaPage.alongside``); the page's own read is unchanged."
+        ),
+    )
 
     @model_validator(mode="after")
     def _check(self) -> Self:
@@ -172,6 +198,8 @@ class Listing(InternalModel):
             raise ValueError("a deferred listing declares no count")
         if self.follows and self.state not in {ListingState.COUNT_ONLY, ListingState.DEFERRED}:
             raise ValueError("only a count-only or deferred listing names files to follow")
+        if self.also_loads and self.state not in {ListingState.POPULATED, ListingState.EMPTY}:
+            raise ValueError("only a page that holds its own list loads alert files beside it")
         if self.declared_at is not None and self.declared_count is None:
             raise ValueError("a listing says when its count was computed only if it gives one")
         return self
@@ -189,7 +217,11 @@ class RawRow(InternalModel):
 
 
 class ViaPage(InternalModel):
-    """A page read on the way to a list: it held no list and loads it from ``follows``."""
+    """A page read on the way to a list: it held no list and loads it from ``follows``.
+
+    Or, with ``alongside``, a page that held a list of its own (read on its own) and
+    loads ``follows`` beside it as a second list, an alert file.
+    """
 
     url: Url
     fetched_at: UtcInstant = Field(description="When the page's bytes were read (capture time).")
@@ -217,10 +249,21 @@ class ViaPage(InternalModel):
             "plus nameless rows) in the list finally read; None when the page gave none."
         ),
     )
+    alongside: bool = Field(
+        default=False,
+        description=(
+            "The page held a list of its own (read separately) and loaded this file beside "
+            "it as a second list (``Listing.also_loads``: a Web Community Manager "
+            "homepage's on-screen alert), rather than holding no list."
+        ),
+    )
 
     @model_validator(mode="after")
     def _check(self) -> Self:
-        if self.state not in {ListingState.COUNT_ONLY, ListingState.DEFERRED}:
+        if self.alongside:
+            if self.state not in {ListingState.POPULATED, ListingState.EMPTY}:
+                raise ValueError("a page loads a file alongside only while holding its own list")
+        elif self.state not in {ListingState.COUNT_ONLY, ListingState.DEFERRED}:
             raise ValueError("only a count-only or deferred page is followed")
         if (self.count_matches is None) != (self.declared_count is None):
             raise ValueError("a page's count is checked exactly when it gave one")
@@ -267,7 +310,10 @@ class HealthStatus(StrEnum):
     ERROR = "error"
     """The read or the parse failed."""
     STALE = "stale"
-    """Read and parsed, but its list file has not changed since before the last winter."""
+    """Read and parsed, but not the list in use: last written before the last winter and not
+    written for the weather that has closed schools in its market since (see
+    :mod:`snowlight.sources.stations.seasons`), or typed rows that cannot be told from old
+    notes (see :mod:`snowlight.sources.stations.typed_history`)."""
     SKIPPED = "skipped"
     """Not read: the registry keeps it from being polled (no endpoint, terms not read)."""
 
