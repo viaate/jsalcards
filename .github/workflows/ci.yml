@@ -126,7 +126,10 @@ jobs:
   pipeline:
     name: pipeline
     runs-on: ubuntu-24.04
-    timeout-minutes: 15
+    # The suite takes about 12 minutes on a usual runner, and the same tests
+    # ran 26% slower on another (874 s against 694 s on Oct 14), which put it
+    # past 15 minutes at 99%. The limit leaves room for that spread.
+    timeout-minutes: 25
     defaults:
       run:
         working-directory: pipeline
