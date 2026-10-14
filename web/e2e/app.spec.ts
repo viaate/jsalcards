@@ -2950,6 +2950,8 @@ test.describe('with data staged', () => {
   }) => {
     // A browser keeps a module it could not download as failed, with all that imports it, for as
     // long as the page is open: the page fetches the formatters again before anything imports them.
+    // The pick's flight is the page's first into streets (FIRST_FLIGHT_MS).
+    test.setTimeout(240_000);
     const context = await browser.newContext({
       viewport: { width: 1440, height: 900 },
       serviceWorkers: 'block',
@@ -2979,8 +2981,13 @@ test.describe('with data staged', () => {
     await input.pressSequentially('pembroke', { delay: 20 });
     await page.locator('[role="option"]').first().click();
     const panel = page.locator('aside.detail');
-    await expect(panel.locator('h2')).toHaveText('The Pembroke Hill SchoolWornall Campus');
-    await expect(panel.locator('.status .line-detail')).toHaveText(format.delay(120, null) ?? '');
+    // The panel comes as that flight starts, while its first frames of streets hold the page.
+    await expect(panel.locator('h2')).toHaveText('The Pembroke Hill SchoolWornall Campus', {
+      timeout: FIRST_FLIGHT_MS,
+    });
+    await expect(panel.locator('.status .line-detail')).toHaveText(format.delay(120, null) ?? '', {
+      timeout: FIRST_FLIGHT_MS,
+    });
     expect(tries.length).toBeGreaterThan(1);
     await context.close();
   });
@@ -3070,6 +3077,8 @@ test.describe('with data staged', () => {
   test('with the address store’s code refused once, a link opens as a later try brings it', async ({
     browser,
   }) => {
+    // A first flight into streets (FIRST_FLIGHT_MS).
+    test.setTimeout(240_000);
     const context = await browser.newContext({
       viewport: { width: 1440, height: 900 },
       serviceWorkers: 'block',
@@ -3084,8 +3093,11 @@ test.describe('with data staged', () => {
     });
     await page.goto(`${site}?school=291640000557`);
     await waitForMap(page);
-    await expect(page.locator('aside.detail h2')).toHaveText('Border Star Montessori');
-    // The page's first flight into streets, from the country the map opened on without the link.
+    // The page's first flight into streets, from the country the map opened on without the link:
+    // the panel comes as it starts, while its first frames of streets hold the page.
+    await expect(page.locator('aside.detail h2')).toHaveText('Border Star Montessori', {
+      timeout: FIRST_FLIGHT_MS,
+    });
     await expectMapNear(page, 39.013304, -94.592692, 15, FIRST_FLIGHT_MS);
     await expect.poll(() => new URL(page.url()).searchParams.get('at')).not.toBeNull();
     expect(new URL(page.url()).searchParams.get('school')).toBe('291640000557');
