@@ -41,16 +41,24 @@ jobs:
       - run: npm run test
       - run: npm run build
 
-  # The end-to-end suite runs in two halves side by side, each in its own job,
-  # so each half stays well inside the job's time limit as the suite grows.
+  # The end-to-end suite runs in three jobs side by side, so each stays well
+  # inside the job's time limit as the suite grows. Nearly all of its time is
+  # in the desktop project (most phone tests skip themselves), so the desktop
+  # tests are split in two halves and the phone tests run on their own.
   e2e:
-    name: e2e (${{ matrix.shard }}/2)
+    name: e2e (${{ matrix.part }})
     runs-on: ubuntu-24.04
     timeout-minutes: 15
     strategy:
       fail-fast: false
       matrix:
-        shard: [1, 2]
+        include:
+          - part: desktop 1 of 2
+            args: --project=desktop --shard=1/2
+          - part: desktop 2 of 2
+            args: --project=desktop --shard=2/2
+          - part: phone
+            args: --project=phone
     defaults:
       run:
         working-directory: web
@@ -67,13 +75,13 @@ jobs:
 
       - run: npm ci
       - run: npx playwright install --with-deps chromium
-      - run: npm run e2e -- --shard=${{ matrix.shard }}/2
+      - run: npm run e2e -- ${{ matrix.args }}
 
       # Traces of the tests that failed, for playwright show-trace.
       - if: failure()
         uses: actions/upload-artifact@v7
         with:
-          name: e2e-results-${{ matrix.shard }}
+          name: e2e-results-${{ strategy.job-index }}
           path: web/test-results/
           if-no-files-found: ignore
           retention-days: 7
