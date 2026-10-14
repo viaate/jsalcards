@@ -9,6 +9,7 @@
  */
 import { describe, expect, it, vi } from 'vitest';
 
+import { copy } from '../../copy';
 import { format } from '../../copy-format';
 import type { AreaRecord, AreaSource } from '../../data/areas';
 import type { DetailsSource, SchoolRecord } from '../../data/details';
@@ -506,5 +507,66 @@ describe('watching an area', () => {
     });
     stop();
     expect(get).not.toHaveBeenCalled();
+  });
+});
+
+describe('an area on a past day', () => {
+  /** SYNTHETIC: on the replay day Alpha was closed and Eta remote. */
+  const REPLAY = {
+    day: '2026-01-05',
+    lookup: (id: string) =>
+      id === '291640000001'
+        ? { status: 0 as const, reason: 0 }
+        : id === '201164000007'
+          ? { status: 2 as const, reason: null }
+          : null,
+  };
+
+  it('counts that day’s statuses under the day, with no chance, whatever the live files hold', () => {
+    const view = areaView(input({ replay: REPLAY }));
+    expect(view?.tallyLabel).toBe('Mon, Jan 5, 2026');
+    expect(view?.chance).toBeNull();
+    expect([...(view?.own ?? []), ...(view?.near ?? [])].map((row) => row.tone)).toEqual([
+      'closed',
+      null,
+      null,
+      null,
+      null,
+      null,
+      'remote',
+    ]);
+    expect(view?.counts).toEqual([
+      { status: 'closed', text: '1 closed' },
+      { status: 'remote', text: '1 remote' },
+    ]);
+    expect(areaView(input())?.tallyLabel).toBe(copy.days.today);
+  });
+
+  it('reads no live file and polls nothing', async () => {
+    vi.useFakeTimers({ toFake: ['setInterval', 'clearInterval'] });
+    const fetchSpy = vi.spyOn(globalThis, 'fetch');
+    const views: ReturnType<typeof areaView>[] = [];
+    const stop = watchArea({
+      files: createDataFiles(
+        ['predictions/latest.json', 'live/closings.json'],
+        'https://snow.test/data/',
+      ),
+      areas: { shipped: true, get: vi.fn(() => Promise.resolve(AREA)) },
+      details: { get: vi.fn((id: string) => Promise.resolve(RECORDS.get(id) ?? null)) },
+      zip: '64111',
+      hint: null,
+      onView: (view) => views.push(view),
+      now: () => NOW,
+      replay: REPLAY,
+    });
+    await vi.waitFor(() => {
+      expect(views.at(-1)?.loading).toBe(false);
+    });
+    expect(views.at(-1)?.counts).toHaveLength(2);
+    vi.advanceTimersByTime(60 * 60_000);
+    expect(fetchSpy).not.toHaveBeenCalled();
+    stop();
+    fetchSpy.mockRestore();
+    vi.useRealTimers();
   });
 });

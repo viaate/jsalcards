@@ -255,6 +255,16 @@ describe('writing', () => {
     expect(shareHref('https://example.org/?a=1', EMPTY_STATE)).toBe('https://example.org/');
   });
 
+  it('keeps a replay day in the address across picks, and never in a share link', () => {
+    expect(mergeQuery('?replay=2026-01-05', state)).toBe(
+      `?school=${SCHOOL}&at=41.8781,-87.6298,10&replay=2026-01-05`,
+    );
+    expect(mergeQuery(`?school=x&replay=2026-01-05`, EMPTY_STATE)).toBe('?replay=2026-01-05');
+    expect(shareHref('https://example.org/?replay=2026-01-05', state)).toBe(
+      `https://example.org/?school=${SCHOOL}&at=41.8781,-87.6298,10`,
+    );
+  });
+
   it('reads back what it writes', () => {
     const href = mergeHref('https://example.org/?keep=1', state);
     expect(sameState(parseUrlState(new URL(href).search), state)).toBe(true);

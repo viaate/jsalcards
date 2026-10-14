@@ -8,7 +8,7 @@
   import type { StatusCounts } from '../data/closings';
   import { SCHOOL_KINDS, withKind, withStatus } from '../state/filter';
   import type { MapFilter, SchoolKind } from '../state/filter';
-  import type { Status } from '../types/generated';
+  import type { LocalDate, Status } from '../types/generated';
 
   interface Props {
     /** What the published files give: the season, the track record, what the map holds. */
@@ -24,8 +24,14 @@
     counts?: StatusCounts | null;
     /** The button that opens and closes it: a press on it is the button's, not a press elsewhere. */
     button?: HTMLElement | undefined;
+    /** The past day the map shows, or null while it shows live. */
+    replayDay?: LocalDate | null;
     /** Asks the page to show what the menu now picks. */
     onfilter?: (filter: MapFilter) => void;
+    /** Asks the page to show a past day, or live again (null). */
+    onreplay?: (day: LocalDate | null) => void;
+    /** Asks the page to read a past day ahead of a press on it. */
+    onwarm?: (day: LocalDate) => void;
     /**
      * Asks the page to close the menu: on Escape, or a press anywhere else.
      * `refocus` says the keyboard was in the menu and goes back to its button.
@@ -39,14 +45,17 @@
     filter,
     counts = null,
     button,
+    replayDay = null,
     onfilter = () => undefined,
+    onreplay = () => undefined,
+    onwarm = () => undefined,
     onclose = () => undefined,
   }: Props = $props();
 
   let element = $state<HTMLElement>();
 
   /** The page shown: the list, or one of the pages it opens. */
-  type Page = 'list' | 'season' | 'record' | 'about';
+  type Page = 'list' | 'replay' | 'season' | 'record' | 'about';
   let page = $state<Page>('list');
 
   /** Whether the keyboard is in the menu (or nowhere, as after a press inside it). */
@@ -106,6 +115,7 @@
   /** The pages the list opens, each only when its file has something to show. */
   const pages = $derived(
     [
+      view.replays === null ? null : ('replay' as const),
       view.season === null ? null : ('season' as const),
       view.record === null ? null : ('record' as const),
       'about' as const,
@@ -113,21 +123,36 @@
   );
 
   const TITLES: Readonly<Record<Exclude<Page, 'list'>, string>> = {
+    replay: copy.actions.replay,
     season: copy.nav.seasonStats,
     record: copy.nav.trackRecord,
     about: copy.nav.about,
   };
 
+  /** The days read as the replay page opens, so a press on one shows it at once. */
+  const WARM_DAYS = 2;
+
   /** Opens a page of the menu, or goes back to its list; the keyboard follows. */
   async function go(next: Page): Promise<void> {
     const from = page;
     page = next;
+    if (next === 'replay')
+      for (const row of view.replays?.rows.slice(0, WARM_DAYS) ?? []) onwarm(row.day);
     await tick();
     const target =
       next === 'list'
         ? element?.querySelector<HTMLElement>(`[data-page="${from}"]`)
         : element?.querySelector<HTMLElement>('.back');
     target?.focus({ preventScroll: true });
+  }
+
+  /**
+   * Shows a past day, or live again: the menu closes and the map changes under
+   * it, and the keyboard goes back to the menu's button, as on Escape.
+   */
+  function pickDay(day: LocalDate | null): void {
+    onclose(holdsFocus());
+    onreplay(day);
   }
 
   function pickStatus(status: Status | null): void {
@@ -167,7 +192,9 @@
   <div class="body">
     {#if page === 'list'}
       <div class="group" role="radiogroup" aria-labelledby="{id}-today">
-        <h2 class="label" id="{id}-today">{copy.menu.today}</h2>
+        <h2 class="label" id="{id}-today">
+          {replayDay === null ? copy.menu.today : format.replayDay(replayDay)}
+        </h2>
         <label class="item" class:is-on={filter.status === null}>
           <input
             class="control"
@@ -236,7 +263,11 @@
             }}
           >
             <svg class="icon" viewBox="0 0 16 16" aria-hidden="true" focusable="false">
-              {#if item === 'season'}
+              {#if item === 'replay'}
+                <path d="M3.1 6.4A5.25 5.25 0 1 1 2.75 8.6" />
+                <path d="M2.75 3.5v3h3" />
+                <path d="M8 5.25V8l2 1.5" />
+              {:else if item === 'season'}
                 <path d="M3.25 13.25v-4M8 13.25v-10M12.75 13.25v-6.5" />
               {:else if item === 'record'}
                 <circle cx="8" cy="8" r="5.75" />
@@ -269,6 +300,43 @@
           </svg>
           <span class="name title" id="{id}-page">{TITLES[page]}</span>
         </button>
+
+        {#if page === 'replay' && view.replays !== null}
+          <div class="days">
+            {#if replayDay !== null}
+              <button
+                class="item"
+                type="button"
+                onclick={() => {
+                  pickDay(null);
+                }}
+              >
+                <span class="icon" aria-hidden="true"><span class="live-mark"></span></span>
+                <span class="name">{copy.replay.exit}</span>
+              </button>
+            {/if}
+            {#each view.replays.rows as row (row.day)}
+              <button
+                class="item day"
+                class:is-on={row.day === replayDay}
+                type="button"
+                aria-current={row.day === replayDay ? 'true' : undefined}
+                onclick={() => {
+                  pickDay(row.day);
+                }}
+                onpointerenter={() => {
+                  onwarm(row.day);
+                }}
+                onfocus={() => {
+                  onwarm(row.day);
+                }}
+              >
+                <span class="icon" aria-hidden="true"></span>
+                <span class="name">{row.label}<span class="sub">{row.sub}</span></span>
+              </button>
+            {/each}
+          </div>
+        {/if}
 
         {#if page === 'about'}
           <p class="line lead">{copy.about.what}</p>
@@ -584,6 +652,31 @@
 
   .item:hover .more {
     stroke: var(--text-2);
+  }
+
+  /* A past day: its date over how far it reached, two lines in the text column. */
+  .days {
+    margin-top: 4px;
+  }
+
+  .item.day {
+    padding-block: 6px;
+  }
+
+  .sub {
+    display: block;
+    font-size: 12px;
+    line-height: 16px;
+    color: var(--text-2);
+    font-variant-numeric: tabular-nums;
+  }
+
+  /* Back to live: a plain ring where the day rows leave their icon empty. */
+  .live-mark {
+    width: 8px;
+    height: 8px;
+    border: 1.5px solid var(--text-2);
+    border-radius: 50%;
   }
 
   /* A page of the menu: its name beside the way back, then its lines and rows. */

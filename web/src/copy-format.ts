@@ -24,13 +24,14 @@ const SCHOOL_YEAR = /^(\d{4})-(\d{4})$/;
 let speedFormat: Intl.NumberFormat | undefined;
 const dateTimeFormats = new Map<string, Intl.DateTimeFormat>();
 
-type DateStyle = 'clock' | 'day' | 'monthDay' | 'dayYear' | 'ymd';
+type DateStyle = 'clock' | 'day' | 'monthDay' | 'dayYear' | 'dayFull' | 'ymd';
 
 const DATE_STYLES: Readonly<Record<DateStyle, Intl.DateTimeFormatOptions>> = {
   clock: { hour: 'numeric', minute: '2-digit', hourCycle: 'h23' },
   day: { weekday: 'short', month: 'short', day: 'numeric' },
   monthDay: { month: 'short', day: 'numeric' },
   dayYear: { month: 'short', day: 'numeric', year: 'numeric' },
+  dayFull: { weekday: 'short', month: 'short', day: 'numeric', year: 'numeric' },
   ymd: { year: 'numeric', month: '2-digit', day: '2-digit' },
 };
 
@@ -318,6 +319,29 @@ function replayMoment(instant: Date, timeZone: string): string {
   return `${day(localDay(instant, timeZone))}${DOT}${time(instant, timeZone)}`;
 }
 
+/**
+ * A replay's day, with its weekday and year, read from the day itself and
+ * never from the viewer's clock: "Tue, Jan 16, 2024".
+ */
+function replayDay(localDate: string): string {
+  return dateTimeFormat('dayFull', 'UTC').format(parseLocalDate(localDate));
+}
+
+/** The update line's place while a replay is on: "Replay · Tue, Jan 16, 2024". */
+function replayLine(localDate: string): string {
+  return `${copy.replay.label}${DOT}${replayDay(localDate)}`;
+}
+
+/** How far a replay reaches: "3,127 schools · 9 states", "1 school · 1 state". */
+function replayReach(schoolCount: number, states: number): string {
+  return `${schools(schoolCount)}${DOT}${plural(states, 'state', 'states')}`;
+}
+
+/** A school's status on a replay's day: "Closed Tue, Jan 16, 2024". */
+function replayStatus(status: StatusKey, localDate: string): string {
+  return `${copy.statusLine[checkKey(copy.statusLine, status, 'status')].on} ${replayDay(localDate)}`;
+}
+
 /** Replay speed, to two decimals at most: "4×", "0.5×", "1,000×". Never "0×". */
 function speed(multiple: number): string {
   if (!Number.isFinite(multiple) || multiple < 0.005) {
@@ -403,6 +427,10 @@ export const format = /* @__PURE__ */ Object.freeze({
   through,
   span,
   replayMoment,
+  replayDay,
+  replayLine,
+  replayReach,
+  replayStatus,
   speed,
   alert: alertName,
   // The date and clock workings the chance section's sentences share with these

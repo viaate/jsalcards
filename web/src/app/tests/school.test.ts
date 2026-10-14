@@ -587,3 +587,72 @@ describe('the chance section in the panel', () => {
     fetchImpl.mockRestore();
   });
 });
+
+describe('a school on a past day', () => {
+  /** SYNTHETIC: the replay day had the school closed for a winter storm, and one neighbor remote. */
+  const REPLAY = {
+    day: '2026-01-05',
+    lookup: (id: string) =>
+      id === PRIVATE.id
+        ? { status: 0 as const, reason: 0 }
+        : id === 'ZZ000004'
+          ? { status: 2 as const, reason: null }
+          : null,
+  };
+
+  it('gives the day’s status dated with its year and its reason, and no chance', () => {
+    const view = schoolView(input({ record: PUBLIC, id: PUBLIC.id, replay: REPLAY }));
+    expect(view?.status).toEqual([]);
+    expect(view?.chance).toBeNull();
+    const lit = schoolView(input({ replay: REPLAY }));
+    expect(lit?.status).toEqual([
+      {
+        tone: 'closed',
+        headline: 'Closed Mon, Jan 5, 2026',
+        detail: null,
+        note: copy.reason.winterStorm,
+      },
+    ]);
+    expect(lit?.chance).toBeNull();
+    // The nearby schools' marks are that day's too.
+    expect(lit?.nearby.map(({ tone }) => tone)).toEqual([null, 'remote']);
+  });
+
+  it('never says Open, today, tomorrow or Posted, whatever the live files hold', () => {
+    const status: SchoolStatus = {
+      today: 'open',
+      tomorrow: { status: 0, reason: 0, announcedAt: NOON, shiftMinutes: null, clockMinute: null },
+    } as unknown as SchoolStatus;
+    const view = schoolView(input({ record: PUBLIC, id: PUBLIC.id, status, replay: REPLAY }));
+    const lit = schoolView(input({ status, replay: REPLAY }));
+    const text = JSON.stringify([view?.status, lit?.status]);
+    expect(text).not.toMatch(/Open|today|tomorrow|Posted/u);
+  });
+
+  it('reads no live file and polls nothing', async () => {
+    vi.useFakeTimers({ toFake: ['setInterval', 'clearInterval'] });
+    const fetchImpl = vi.spyOn(globalThis, 'fetch');
+    const views: (SchoolView | null)[] = [];
+    const stop = watchSchool({
+      files: createDataFiles(
+        ['live/closings.json', 'predictions/latest.json', 'schools/details/index.0123456789.json'],
+        ROOT,
+      ),
+      details: { get: vi.fn(() => Promise.resolve(PRIVATE)) },
+      id: PRIVATE.id,
+      hint: null,
+      onView: (view) => views.push(view),
+      now: () => NOON,
+      replay: REPLAY,
+    });
+    await vi.waitFor(() => {
+      expect(views.at(-1)?.loading).toBe(false);
+    }, WAIT);
+    expect(views.at(-1)?.status[0]?.headline).toBe('Closed Mon, Jan 5, 2026');
+    vi.advanceTimersByTime(60 * 60_000);
+    expect(fetchImpl).not.toHaveBeenCalled();
+    stop();
+    fetchImpl.mockRestore();
+    vi.useRealTimers();
+  });
+});

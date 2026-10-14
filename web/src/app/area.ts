@@ -40,7 +40,7 @@
  * Every word comes from src/copy.ts, src/copy-chance.ts and src/copy-area.ts.
  */
 
-import { STATUS_KEYS } from '../copy';
+import { STATUS_KEYS, copy } from '../copy';
 import type { StatusKey } from '../copy';
 import { areaFormat } from '../copy-area';
 import { chanceFormat } from '../copy-chance';
@@ -55,6 +55,7 @@ import type { DataFiles } from '../data/files';
 import { LIVE_POLL_MS } from '../data/live';
 import { nextDay, schoolOutlook, schoolStatus, schoolToday } from '../data/school-day';
 import type { Outlook, StatusRow } from '../data/school-day';
+import type { ReplayOn } from '../data/replay';
 import { PUBLISHED_PATHS, Status } from '../types/generated';
 import type { DirectoryStamp, LocalDate, SchoolId } from '../types/generated';
 import { chartView, headlineDay } from './chance';
@@ -127,6 +128,8 @@ export interface AreaView {
   /** "Back to 64112", for a school its list opens. */
   readonly back: string;
   readonly chance: AreaChanceView | null;
+  /** The day the counts are for: "Today", or a past day on the map, "Tue, Jan 16, 2024". */
+  readonly tallyLabel: string;
   readonly counts: readonly AreaCountView[];
   /** "14 schools": the ZIP code's own, under its code. */
   readonly heading: string;
@@ -170,6 +173,8 @@ export interface AreaInput {
   readonly now: Date;
   /** The viewer's time zone, for the chart's times. */
   readonly timeZone: string;
+  /** A past day on the map: each school's status is that day's, and no chance is given. */
+  readonly replay?: ReplayOn | null;
 }
 
 function sameStamp(a: DirectoryStamp, b: DirectoryStamp): boolean {
@@ -458,6 +463,7 @@ export function areaBounds(area: AreaRecord): [number, number, number, number] {
 /** The panel's view, or null when there is no area for this ZIP code. */
 export function areaView(input: AreaInput): AreaView | null {
   const { zip, hint, area, records, settled, live, now } = input;
+  const replay = input.replay ?? null;
   const label = areaFormat.label(zip);
   const back = areaFormat.backTo(zip);
   const reading: AreaView = {
@@ -466,6 +472,7 @@ export function areaView(input: AreaInput): AreaView | null {
     label,
     back,
     chance: null,
+    tallyLabel: replay === null ? copy.days.today : format.replayDay(replay.day),
     counts: [],
     heading: '',
     own: [],
@@ -492,7 +499,11 @@ export function areaView(input: AreaInput): AreaView | null {
   const members = [...own, ...near];
   const unread = area.own.length + area.near.length - members.length;
   if (unread > 0 && !settled) return { ...reading, place: placeOf(area, own) };
-  const tones = members.map(({ record }) => todayTone(record, live, now));
+  const tones = members.map(({ record }) => {
+    if (replay === null) return todayTone(record, live, now);
+    const found = replay.lookup(record.id);
+    return found === null ? null : statusKey(found.status);
+  });
   const rows = members.map((member, i) => rowView(member, tones[i] ?? null));
 
   const counts: AreaCountView[] = [];
@@ -500,7 +511,7 @@ export function areaView(input: AreaInput): AreaView | null {
     const n = tones.filter((tone) => tone === status).length;
     if (n > 0) counts.push({ status, text: areaFormat.statusCount(status, n) });
   }
-  const chance = unread === 0 ? areaChance(members, input) : null;
+  const chance = unread === 0 && replay === null ? areaChance(members, input) : null;
   const few = area.own.length < AREA_MIN_SCHOOLS;
   return {
     zip,
@@ -508,6 +519,7 @@ export function areaView(input: AreaInput): AreaView | null {
     label,
     back,
     chance,
+    tallyLabel: reading.tallyLabel,
     counts,
     heading: areaFormat.schoolCount(area.own.length),
     own: rows.slice(0, own.length),
@@ -535,6 +547,8 @@ export interface WatchAreaOptions {
   readonly timeZone?: () => string;
   /** How often to read the live files again. Default LIVE_POLL_MS. */
   readonly pollMs?: number;
+  /** A past day on the map: the panel counts that day's statuses, and reads no live file. */
+  readonly replay?: ReplayOn | null;
 }
 
 /** Reads a ZIP code's area and its day, and keeps its view current. Returns the function that stops it. */
@@ -542,6 +556,7 @@ export function watchArea(options: WatchAreaOptions): () => void {
   const { files, areas, details, zip, hint, onView } = options;
   const now = options.now ?? (() => new Date());
   const timeZone = options.timeZone ?? viewerTimeZone;
+  const replay = options.replay ?? null;
   let stopped = false;
   let area: AreaRecord | null = null;
   let records: Map<string, SchoolRecord | null> | null = null;
@@ -561,6 +576,7 @@ export function watchArea(options: WatchAreaOptions): () => void {
         shipped: files.has(PUBLISHED_PATHS.predictions),
         now: now(),
         timeZone: timeZone(),
+        replay,
       }),
     );
   };
@@ -594,13 +610,17 @@ export function watchArea(options: WatchAreaOptions): () => void {
     area ??= await areas.get(zip).catch(() => null);
     await readSchools();
   };
-  void Promise.all([readArea(), readLive()]).then(() => {
+  // A past day reads no live file, and nothing is read again: the replay holds the day.
+  void Promise.all([readArea(), replay === null ? readLive() : null]).then(() => {
     settled = true;
     show();
   });
-  const timer = setInterval(() => {
-    void Promise.all([readLive(), settled ? readArea() : null]).then(show);
-  }, options.pollMs ?? LIVE_POLL_MS);
+  const timer =
+    replay === null
+      ? setInterval(() => {
+          void Promise.all([readLive(), settled ? readArea() : null]).then(show);
+        }, options.pollMs ?? LIVE_POLL_MS)
+      : undefined;
 
   return () => {
     stopped = true;

@@ -4,6 +4,7 @@
   import type { Basemap } from '../map/basemap';
   import { SHOW_ALL, sameFilter, showsAll } from '../state/filter';
   import type { MapFilter } from '../state/filter';
+  import type { LocalDate } from '../types/generated';
   import MenuPanel from './MenuPanel.svelte';
 
   interface Props {
@@ -19,14 +20,20 @@
     map: () => Basemap | undefined;
     /** How many schools the map lights in each status, of the kinds it shows; null while none is. */
     counts: () => StatusCounts | null;
+    /** The past day the map shows, or null while it shows live. */
+    replayDay: () => LocalDate | null;
+    /** Has the map show a past day, or live again (null). */
+    replay: (day: LocalDate | null) => void;
+    /** Reads a past day ahead of a press on it. */
+    warm: (day: LocalDate) => void;
   }
 
-  let { button, stage, read, show, map, counts }: Props = $props();
+  let { button, stage, read, show, map, counts, replayDay, replay, warm }: Props = $props();
 
   /** The panel's id, which the button names while it shows. */
   const ID = 'menu';
   /** What the menu shows when the files cannot be read: its controls and About. */
-  const NOTHING_READ: MenuView = { season: null, record: null, map: null };
+  const NOTHING_READ: MenuView = { season: null, record: null, map: null, replays: null };
 
   let open = $state(false);
   /** What the published files give it, read the first time it opens. */
@@ -111,5 +118,16 @@
   none of this is in the page's first script.
 -->
 {#if shown && view !== null}
-  <MenuPanel {view} id={ID} {filter} counts={counts()} {button} onfilter={pick} onclose={close} />
+  <MenuPanel
+    {view}
+    id={ID}
+    {filter}
+    counts={counts()}
+    replayDay={replayDay()}
+    {button}
+    onfilter={pick}
+    onreplay={replay}
+    onwarm={warm}
+    onclose={close}
+  />
 {/if}

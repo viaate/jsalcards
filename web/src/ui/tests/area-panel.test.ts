@@ -14,6 +14,7 @@ const VIEW: AreaView = {
   label: 'Schools around 64112',
   back: 'Back to 64112',
   chance: null,
+  tallyLabel: 'Today',
   counts: [],
   heading: '2 schools',
   own: [

@@ -13,7 +13,10 @@
  * the service worker serves it cache-first, so under a plain name a browser
  * would keep the copy stamped for an older directory, which no longer
  * lights. Files that change during the day keep their plain names, and so
- * does replays/index.json, which the worker always asks the network for.
+ * does replays/index.json. The worker serves it stale-while-revalidate (the
+ * last copy it kept, then the network's into its cache), so the page reads it
+ * under a query naming the days its build ships (files.ts replayIndexUrl):
+ * the first read after a deploy reaches the network, never an older copy.
  *
  * This module has no imports, so Node can load it directly from the scripts.
  */

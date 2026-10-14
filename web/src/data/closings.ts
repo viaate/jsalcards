@@ -196,18 +196,34 @@ export function lightSchools(
   const group = closings.days.find((item) => item.day === today);
   if (today === null || group === undefined) return NOTHING_LIT;
   const rows = decodeDay(group);
-  const count = rows.schools.length;
   // Rows past the end of the directory mean a broken file: none of it is read.
-  if ((rows.schools[count - 1] ?? 0) >= directory.count) return NOTHING_LIT;
+  if ((rows.schools[rows.schools.length - 1] ?? 0) >= directory.count) return NOTHING_LIT;
+  return litRows(directory, rows.schools, rows.statuses, options.previous, options.bornMs);
+}
 
+/**
+ * The lit schools for rows of school positions, ascending and in the
+ * directory, and their statuses: where each is, its kind, id and name. With
+ * `previous` null none pulses (no bornAt); else a school not in it pulses in
+ * at `bornMs`. Live (lightSchools) and a replay (data/replay.ts) both light
+ * through it.
+ */
+export function litRows(
+  directory: Directory,
+  schoolRows: Uint32Array,
+  statuses: Uint8Array,
+  previous: ReadonlySet<number> | null,
+  bornMs: number,
+): LitSchools {
+  const count = schoolRows.length;
   const lngLat = new Float64Array(count * 2);
   const kinds = new Uint8Array(count);
-  const bornAt = options.previous === null ? undefined : new Float64Array(count);
+  const bornAt = previous === null ? undefined : new Float64Array(count);
   const schools = new Set<number>();
   const ids: SchoolId[] = [];
   const names: string[] = [];
   for (let i = 0; i < count; i++) {
-    const school = rows.schools[i] ?? 0;
+    const school = schoolRows[i] ?? 0;
     schools.add(school);
     ids.push(directory.meta.ids[school] ?? '');
     names.push(directory.meta.names[school] ?? '');
@@ -215,12 +231,12 @@ export function lightSchools(
     lngLat[i * 2 + 1] = directory.lngLat[school * 2 + 1] ?? 0;
     kinds[i] = directory.kind[school] ?? 0;
     if (bornAt !== undefined) {
-      bornAt[i] = options.previous?.has(school) === true ? Number.NaN : options.bornMs;
+      bornAt[i] = previous?.has(school) === true ? Number.NaN : bornMs;
     }
   }
   return bornAt === undefined
-    ? { lngLat, status: rows.statuses, kinds, schools, ids, names }
-    : { lngLat, status: rows.statuses, kinds, bornAt, schools, ids, names };
+    ? { lngLat, status: statuses, kinds, schools, ids, names }
+    : { lngLat, status: statuses, kinds, bornAt, schools, ids, names };
 }
 
 /**

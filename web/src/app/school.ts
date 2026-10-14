@@ -42,6 +42,7 @@ import {
 } from '../data/school-day';
 import type { Outlook, SchoolStatus, StatusRow } from '../data/school-day';
 import type { Directory } from '../data/directory';
+import type { ReplayOn } from '../data/replay';
 import { casedName, displayName } from '../text/names';
 import { stateOfId } from '../text/school-names';
 import { PUBLISHED_PATHS, Status } from '../types/generated';
@@ -193,6 +194,24 @@ function statusLine(
   };
 }
 
+/**
+ * A school's line on a replay's day: one, dated with its year, for a school
+ * the replay lights; none for any other, never "Open".
+ */
+function replayLines(id: SchoolId, replay: ReplayOn): StatusLineView[] {
+  const found = replay.lookup(id);
+  if (found === null) return [];
+  const key = statusKey(found.status);
+  return [
+    {
+      tone: key,
+      headline: format.replayStatus(key, replay.day),
+      detail: null,
+      note: found.reason === null ? null : reasonName(found.reason as Reason),
+    },
+  ];
+}
+
 function statusLines(status: SchoolStatus, now: Date, timeZone: string): StatusLineView[] {
   const lines: StatusLineView[] = [];
   if (status.today === 'open') {
@@ -298,8 +317,24 @@ export function shownName(id: string, name: string): string {
   return displayName(name, { state: stateOfId(id) }, SCHOOL_NAME_FIXES[id] ?? {});
 }
 
-function nearbyOf(record: SchoolRecord, closings: ClosingsFile | null, now: Date): NearbyView[] {
+function nearbyOf(
+  record: SchoolRecord,
+  closings: ClosingsFile | null,
+  now: Date,
+  replay: ReplayOn | null,
+): NearbyView[] {
   return record.nearby.map((near) => {
+    if (replay !== null) {
+      const found = replay.lookup(near.id);
+      return {
+        id: near.id,
+        name: shownName(near.id, near.name),
+        distance: format.miles(near.metres),
+        tone: found === null ? null : statusKey(found.status),
+        lon: near.lon,
+        lat: near.lat,
+      };
+    }
     const today = schoolStatus({
       school: near.index,
       directory: record.directory,
@@ -334,6 +369,8 @@ export interface ViewInput {
   readonly now: Date;
   /** The viewer's time zone, for posted times. */
   readonly timeZone: string;
+  /** A past day on the map: the status is that day's, and no chance is given. */
+  readonly replay?: ReplayOn | null;
 }
 
 /** The panel's view, or null when there is nothing to show for this id (no such school). */
@@ -361,9 +398,10 @@ export function schoolView(input: ViewInput): SchoolView | null {
   const { name, campus } = splitName(shown);
   const town = townOf(record) ?? (hint === null || hint.sub === '' ? null : hint.sub);
   const place = [town, record.county].filter((part): part is string => part !== null);
+  const replay = input.replay ?? null;
   let status: StatusLineView[] = [];
   try {
-    status = statusLines(input.status, now, timeZone);
+    status = replay === null ? statusLines(input.status, now, timeZone) : replayLines(id, replay);
   } catch {
     // A time zone or a value the formatters refuse: no status rather than a wrong one.
   }
@@ -382,7 +420,7 @@ export function schoolView(input: ViewInput): SchoolView | null {
     status,
     // A private school has no district, and no district forecast: no chance section.
     chance:
-      record.district === null
+      record.district === null || replay !== null
         ? null
         : chanceView({
             outlook: input.outlook,
@@ -395,7 +433,7 @@ export function schoolView(input: ViewInput): SchoolView | null {
             timeZone,
           }),
     facts: factsOf(record),
-    nearby: nearbyOf(record, input.closings ?? null, now),
+    nearby: nearbyOf(record, input.closings ?? null, now, replay),
     loading: false,
   };
 }
@@ -457,6 +495,11 @@ export interface WatchOptions {
    * door; asked only when a chance is shown for a district that has neighbors.
    */
   readonly directory?: (stamp: DirectoryStamp) => Promise<Directory | null>;
+  /**
+   * A past day on the map: the panel shows that day's status from it, and no
+   * live file is read (nothing is polled).
+   */
+  readonly replay?: ReplayOn | null;
 }
 
 export function viewerTimeZone(): string {
@@ -472,6 +515,7 @@ export function watchSchool(options: WatchOptions): () => void {
   const { files, details, id, hint, onView } = options;
   const now = options.now ?? (() => new Date());
   const timeZone = options.timeZone ?? viewerTimeZone;
+  const replay = options.replay ?? null;
   let stopped = false;
   let record: SchoolRecord | null = null;
   let settled = false;
@@ -516,6 +560,7 @@ export function watchSchool(options: WatchOptions): () => void {
       names,
       now: at,
       timeZone: timeZone(),
+      replay,
     });
     onView(view);
     // A chance for a district with neighbors: their names, and their schools' districts, come
@@ -561,13 +606,17 @@ export function watchSchool(options: WatchOptions): () => void {
     },
     () => undefined,
   );
-  void Promise.all([loading, readLive()]).then(() => {
+  // A past day reads no live file: the replay holds all the panel says of the day.
+  void Promise.all([loading, replay === null ? readLive() : null]).then(() => {
     settled = true;
     show();
   });
-  const timer = setInterval(() => {
-    void readLive().then(show);
-  }, options.pollMs ?? LIVE_POLL_MS);
+  const timer =
+    replay === null
+      ? setInterval(() => {
+          void readLive().then(show);
+        }, options.pollMs ?? LIVE_POLL_MS)
+      : undefined;
 
   return () => {
     stopped = true;

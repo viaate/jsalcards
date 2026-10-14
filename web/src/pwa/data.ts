@@ -18,7 +18,7 @@
 
 import { AREAS_INDEX_PATH } from '../data/areas-format';
 import { DETAILS_INDEX_PATH, SHARD_FILE } from '../data/details-format';
-import { createDataFiles } from '../data/files';
+import { REPLAY_INDEX, createDataFiles, replayIndexUrl } from '../data/files';
 import { plainPath } from '../data/paths';
 import { CACHE_NAMES, DATA_DIR, isCacheUpdatedMessage } from './config';
 import { keepsWritten } from './keep';
@@ -113,7 +113,9 @@ async function shardsNamed(cache: Cache, indexUrl: string | null): Promise<strin
  * clears out the old one. The worker's own limits (config.ts CACHE_LIMITS)
  * expire only the copies it has cached or served itself, never one the page
  * kept for it before it took the page over, or while none could (keep.ts).
- * A file with a plain name is replaced where it is, under that name. Resolves
+ * A file with a plain name is replaced where it is, under that name, but for
+ * the replay index of another build, which is read under a query of its
+ * own (data/files.ts replayIndexUrl): it is dropped too. Resolves
  * to the number of copies dropped; never rejects.
  */
 export async function dropOldData(
@@ -129,6 +131,9 @@ export async function dropOldData(
     const shipped = new Set(paths.map((path) => new URL(path, root).href));
     const files = createDataFiles(paths, root);
     const indexUrls = [files.url(DETAILS_INDEX_PATH), files.url(AREAS_INDEX_PATH)];
+    // The replay index is read under a query naming its build's days (data/files.ts).
+    const replayIndex = new URL(REPLAY_INDEX, root).href;
+    const currentReplayIndex = replayIndexUrl(files);
     for (const name of [CACHE_NAMES.staticData, CACHE_NAMES.data]) {
       if (!(await storage.has(name))) continue;
       const cache = await storage.open(name);
@@ -140,6 +145,10 @@ export async function dropOldData(
           : [];
       const current = new Set([...shipped, ...shards]);
       for (const { url } of held) {
+        if (url.startsWith(`${replayIndex}?`) && url !== currentReplayIndex) {
+          if (await cache.delete(url)) dropped += 1;
+          continue;
+        }
         const path = url.slice(root.length);
         if (!url.startsWith(root) || plainPath(path) === path || current.has(url)) continue;
         if (await cache.delete(url)) dropped += 1;

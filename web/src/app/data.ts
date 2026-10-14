@@ -97,10 +97,41 @@ export interface LiveGlowListeners {
 export interface LiveGlow {
   /** Shows the lit schools this filter keeps, at once and without a pulse, and counts them. */
   filter(filter: MapFilter): void;
+  /**
+   * Holds the live glow while a replay is on (true): live files are still
+   * read and kept, but nothing is painted, counted or timed until it is let
+   * go (false), when the latest is painted once, without a pulse, and its
+   * counts and time are given again whether or not they changed.
+   */
+  hold(held: boolean): void;
   stop(): void;
 }
 
-const NOT_LIVE: LiveGlow = Object.freeze({ filter: () => undefined, stop: () => undefined });
+/**
+ * The live glow of a build that ships no live file: nothing lit. Let go after
+ * a replay, it clears the replay's lights, count and line.
+ */
+export function notLive(
+  glow: Promise<Glow | null>,
+  { onShown, onCounts }: LiveGlowListeners = {},
+  held = false,
+): LiveGlow {
+  let holding = held;
+  return {
+    filter: () => undefined,
+    hold(next) {
+      const was = holding;
+      holding = next;
+      if (!was || next) return;
+      void Promise.all([glow, import('../data/closings')]).then(([layer, { NOTHING_LIT }]) => {
+        if (!holding) layer?.light(NOTHING_LIT);
+      });
+      onShown?.(null);
+      onCounts?.(null);
+    },
+    stop: () => undefined,
+  };
+}
 
 /**
  * The glow's dust, from the directory this build ships: where every school
@@ -131,25 +162,44 @@ export function dustSource(data: AppData): DustSource {
 export async function startLiveGlow(
   data: AppData,
   glow: Promise<Glow | null>,
-  { onShown, onCounts }: LiveGlowListeners = {},
+  listeners: LiveGlowListeners = {},
   filter: MapFilter = SHOW_ALL,
+  { held = false }: { readonly held?: boolean } = {},
 ): Promise<LiveGlow> {
-  if (!data.files.has(PUBLISHED_PATHS.closings)) return NOT_LIVE;
-  const [{ closingsUrl, startLive }, { onDataUpdate }, { countShown, filterLit, sameCounts }] =
-    await Promise.all([import('../data/live'), import('../pwa/data'), import('../data/closings')]);
+  if (!data.files.has(PUBLISHED_PATHS.closings)) return notLive(glow, listeners, held);
+  const { onShown, onCounts } = listeners;
+  const [
+    { closingsUrl, startLive },
+    { onDataUpdate },
+    { NOTHING_LIT, countShown, filterLit, sameCounts },
+  ] = await Promise.all([
+    import('../data/live'),
+    import('../pwa/data'),
+    import('../data/closings'),
+  ]);
   let shown = filter;
   /** The schools lit last, before the filter; null until the first. */
   let lit: LitSchools | null = null;
   let counted: StatusCounts | null = null;
+  /** While a replay is on: live is read and kept, not shown. */
+  let holding = held;
+  /** The generated_at of the file shown last, given again when the hold ends. */
+  let lastShown: UtcInstant | null = null;
+  /** Each paint's turn: a paint that lands after a newer one, or after a hold, is dropped. */
+  let paints = 0;
   const count = (): void => {
     const next = lit === null ? null : countShown(lit, shown);
-    if (sameCounts(next, counted)) return;
+    if (holding || sameCounts(next, counted)) return;
     counted = next;
     onCounts?.(next);
   };
   const light = (next: LitSchools, pulse: boolean): void => {
+    if (holding) return;
     const picked = filterLit(next, shown, pulse);
+    const token = ++paints;
     void glow.then((layer) => {
+      // Checked as it lands: a hold, or a newer paint, since it was asked for wins.
+      if (holding || token !== paints) return;
       layer?.light(picked);
     });
   };
@@ -162,7 +212,8 @@ export async function startLiveGlow(
       count();
     },
     onShown: (generatedAt) => {
-      onShown?.(generatedAt);
+      lastShown = generatedAt;
+      if (!holding) onShown?.(generatedAt);
     },
   });
   const url = closingsUrl(data.files);
@@ -177,6 +228,20 @@ export async function startLiveGlow(
       if (lit === null) return;
       light(lit, false);
       count();
+    },
+    hold(next) {
+      const was = holding;
+      holding = next;
+      if (next) {
+        // Whatever was queued to paint lands no more.
+        paints += 1;
+        return;
+      }
+      if (!was) return;
+      light(lit ?? NOTHING_LIT, false);
+      counted = lit === null ? null : countShown(lit, shown);
+      onShown?.(lastShown);
+      onCounts?.(counted);
     },
     stop() {
       live.stop();

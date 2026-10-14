@@ -1,6 +1,7 @@
 import { describe, expect, it, vi } from 'vitest';
 
 import { dataRoot, dropOldData, evictStaticData, onDataUpdate } from '../data';
+import { createDataFiles, replayIndexUrl } from '../../data/files';
 import { CACHE_NAMES } from '../config';
 import { keepData } from '../keep';
 import { FakeCaches, FakeWindow } from './fakes';
@@ -161,6 +162,40 @@ describe('dropOldData', () => {
       ],
       [CACHE_NAMES.data]: [`${ROOT}live/closings.json`],
       [CACHE_NAMES.tiles]: ['https://tiles.openfreemap.org/planet/aaaaaaaaaa.pbf'],
+    });
+  });
+
+  it('drops a replay day stamped for an older directory, and the replay index another build read', async () => {
+    const ships = [
+      ...SHIPS,
+      'replays/2026-01-05.cccccccccc.json',
+      'replays/2024-01-16.dddddddddd.json',
+      'replays/index.json',
+    ];
+    const current = replayIndexUrl(createDataFiles(ships, ROOT));
+    const caches = await holding({
+      [CACHE_NAMES.staticData]: [
+        // The day as an older deploy stamped it, then as this one does.
+        `${ROOT}replays/2026-01-05.aaaaaaaaaa.json`,
+        `${ROOT}replays/2026-01-05.cccccccccc.json`,
+        `${ROOT}replays/2024-01-16.dddddddddd.json`,
+        // A day this build no longer ships.
+        `${ROOT}replays/2025-01-06.eeeeeeeeee.json`,
+      ],
+      [CACHE_NAMES.data]: [
+        `${ROOT}replays/index.json?v=00000000`,
+        current ?? '',
+        `${ROOT}live/closings.json`,
+      ],
+    });
+    const win = Object.assign(new FakeWindow(), { caches });
+    await expect(dropOldData(ships, '/', win)).resolves.toBe(3);
+    expect(left(caches)).toEqual({
+      [CACHE_NAMES.staticData]: [
+        `${ROOT}replays/2024-01-16.dddddddddd.json`,
+        `${ROOT}replays/2026-01-05.cccccccccc.json`,
+      ],
+      [CACHE_NAMES.data]: [`${ROOT}live/closings.json`, current].sort(),
     });
   });
 

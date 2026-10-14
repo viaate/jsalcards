@@ -2,9 +2,10 @@ import { describe, expect, it, vi } from 'vitest';
 
 import { copy } from '../../copy';
 import { format } from '../../copy-format';
-import { createDataFiles } from '../../data/files';
+import { createDataFiles, replayIndexUrl } from '../../data/files';
+import { testReplayIndex } from '../../data/tests/builders';
 import type { Calibration, SeasonStats, TrackRecord } from '../../types/generated';
-import { mapSection, readMenu, recordTable, seasonSection } from '../menu';
+import { mapSection, readMenu, recordTable, replayMenu, seasonSection } from '../menu';
 
 const ROOT = 'https://snow.test/data/';
 
@@ -171,7 +172,7 @@ describe('readMenu', () => {
   it('asks for nothing this build does not ship, and shows About alone', async () => {
     const fetch = respond({});
     const view = await readMenu(createDataFiles([], ROOT), fetch);
-    expect(view).toEqual({ season: null, record: null, map: null });
+    expect(view).toEqual({ season: null, record: null, map: null, replays: null });
     expect(fetch).not.toHaveBeenCalled();
   });
 
@@ -194,6 +195,84 @@ describe('readMenu', () => {
   it('shows About alone when every read fails', async () => {
     const files = createDataFiles(['stats/season.json', 'schools/details/index.json'], ROOT);
     const fetch = vi.fn(() => Promise.reject(new TypeError('offline')));
-    expect(await readMenu(files, fetch)).toEqual({ season: null, record: null, map: null });
+    expect(await readMenu(files, fetch)).toEqual({
+      season: null,
+      record: null,
+      map: null,
+      replays: null,
+    });
+  });
+
+  describe('replays', () => {
+    const DAYS = [
+      'replays/2024-01-16.aaaaaaaaaa.json',
+      'replays/2026-01-05.bbbbbbbbbb.json',
+      'replays/index.json',
+    ];
+    /** SYNTHETIC: an index of three days, one of which this build no longer ships. */
+    const REPLAYS = testReplayIndex([
+      { id: '2024-01-16', schools: 3127, states: ['IA', 'KS', 'MO'] },
+      { id: '2025-01-06', schools: 40, states: ['MO'] },
+      { id: '2026-01-05', schools: 1, states: ['KS'] },
+    ]);
+    const AFTER = () => new Date('2026-01-07T15:00:00Z');
+
+    function serveIndex(body: unknown) {
+      return vi.fn((url: string) =>
+        Promise.resolve(
+          url.startsWith(`${ROOT}replays/index.json?v=`)
+            ? new Response(JSON.stringify(body), {
+                headers: { 'content-type': 'application/json' },
+              })
+            : new Response('', { status: 404 }),
+        ),
+      );
+    }
+
+    it('offers each day this build ships, newest first, with how far it reached', async () => {
+      const files = createDataFiles(DAYS, ROOT);
+      const fetch = serveIndex(REPLAYS);
+      const view = await readMenu(files, fetch, AFTER);
+      expect(view.replays).toEqual({
+        title: copy.actions.replay,
+        rows: [
+          { day: '2026-01-05', label: 'Mon, Jan 5, 2026', sub: '1 school · 1 state' },
+          { day: '2024-01-16', label: 'Tue, Jan 16, 2024', sub: '3,127 schools · 3 states' },
+        ],
+      });
+      // Read under a query naming this build's days, past any copy an older deploy left.
+      expect(fetch).toHaveBeenCalledWith(replayIndexUrl(files));
+    });
+
+    it('reads the index under a new address whenever a day is dropped or stamped again', () => {
+      const now = replayIndexUrl(createDataFiles(DAYS, ROOT));
+      const dropped = replayIndexUrl(createDataFiles([DAYS[0] ?? '', DAYS[2] ?? ''], ROOT));
+      const stamped = replayIndexUrl(
+        createDataFiles(['replays/2024-01-16.cccccccccc.json', DAYS[1] ?? '', DAYS[2] ?? ''], ROOT),
+      );
+      expect(now).toMatch(/^https:\/\/snow\.test\/data\/replays\/index\.json\?v=[0-9a-f]{8}$/);
+      expect(new Set([now, dropped, stamped]).size).toBe(3);
+      expect(
+        replayIndexUrl(createDataFiles(['replays/2024-01-16.aaaaaaaaaa.json'], ROOT)),
+      ).toBeNull();
+    });
+
+    it('offers no day not yet over everywhere, and no part at all with none to offer', async () => {
+      const files = createDataFiles(DAYS, ROOT);
+      const evening = () => new Date('2026-01-06T05:00:00Z');
+      const view = await readMenu(files, serveIndex(REPLAYS), evening);
+      expect(view.replays?.rows.map(({ day }) => day)).toEqual(['2024-01-16']);
+      const none = testReplayIndex([{ id: '2025-01-06', schools: 40, states: ['MO'] }]);
+      expect((await readMenu(files, serveIndex(none), AFTER)).replays).toBeNull();
+      expect((await readMenu(files, serveIndex({ replays: [] }), AFTER)).replays).toBeNull();
+    });
+
+    it('asks for no index this build does not ship', async () => {
+      const fetch = serveIndex(REPLAYS);
+      const files = createDataFiles(['replays/2026-01-05.bbbbbbbbbb.json'], ROOT);
+      expect((await readMenu(files, fetch, AFTER)).replays).toBeNull();
+      expect(fetch).not.toHaveBeenCalled();
+      expect(replayMenu(REPLAYS, files, AFTER())?.rows).toHaveLength(1);
+    });
   });
 });

@@ -118,7 +118,7 @@
       <!-- Over every school listed, the ZIP code's own and any others taken in: above both headings. -->
       {#if view.counts.length > 0}
         <div class="row tally">
-          <span class="label" id="area-today">{copy.days.today}</span>
+          <span class="label" id="area-today">{view.tallyLabel}</span>
           <ul class="counts" aria-labelledby="area-today">
             {#each view.counts as count (count.status)}
               <li>

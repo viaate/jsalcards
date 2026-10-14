@@ -1224,6 +1224,38 @@ describe('format', () => {
       }
     });
 
+    it('writes a replay day with its weekday and year, from the day alone', () => {
+      expect(format.replayDay('2024-01-16')).toBe('Tue, Jan 16, 2024');
+      expect(format.replayLine('2024-01-16')).toBe('Replay · Tue, Jan 16, 2024');
+      expect(format.replayReach(3127, 9)).toBe('3,127 schools · 9 states');
+      expect(format.replayReach(1, 1)).toBe('1 school · 1 state');
+      expect(format.replayStatus('closed', '2024-01-16')).toBe('Closed Tue, Jan 16, 2024');
+      expect(format.replayStatus('delayed', '2024-01-16')).toBe('Delayed start Tue, Jan 16, 2024');
+      expect(format.replayStatus('remote', '2024-01-16')).toBe('Remote learning Tue, Jan 16, 2024');
+      expect(format.replayStatus('earlyDismissal', '2024-01-16')).toBe(
+        'Early dismissal Tue, Jan 16, 2024',
+      );
+      expect(() => format.replayDay('2024-1-16')).toThrow(RangeError);
+      expect(() => format.replayStatus('open' as StatusKey, '2024-01-16')).toThrow(RangeError);
+    });
+
+    it('never words a replay day as today or tomorrow: it takes no clock and no zone', () => {
+      const days = ['2024-01-16', '2025-01-06', '2026-01-05', '2026-10-13'];
+      // The same words for the day itself, whatever the clock says: no now goes in.
+      expect(format.replayDay('2026-10-13')).toBe('Tue, Oct 13, 2026');
+      for (const day of days) {
+        const words = [
+          format.replayDay(day),
+          format.replayLine(day),
+          ...STATUS_KEYS.map((key) => format.replayStatus(key, day)),
+        ];
+        for (const text of words) {
+          expect(text).toMatch(/\b\d{4}$/u);
+          expect(text).not.toMatch(/today|tomorrow|tonight|live/iu);
+        }
+      }
+    });
+
     it('names an alert by hazard and level', () => {
       expect(format.alert('winter', 'warning')).toBe('Winter weather warning');
       expect(format.alert('flood', 'watch')).toBe('Flood watch');
@@ -1257,6 +1289,7 @@ describe('format', () => {
         ...statuses.map((status) => format.count(status, n)),
         format.summary(Object.fromEntries(statuses.map((status) => [status, n]))),
         format.outOf(Math.floor(n / 3), n),
+        format.replayReach(Math.max(n, 1), Math.max(Math.min(n, 51), 1)),
       ]);
       expect(allProblems(outputs)).toEqual([]);
     });
@@ -1286,6 +1319,9 @@ describe('format', () => {
       const outputs = days.flatMap((day) => [
         format.day(day),
         format.dayWithYear(day),
+        format.replayDay(day),
+        format.replayLine(day),
+        ...statuses.map((status) => format.replayStatus(status, day)),
         format.through(day),
         format.span('2025-12-01', day),
         format.span(day, '2028-12-31'),

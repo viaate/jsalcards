@@ -12,6 +12,7 @@ import MenuPanel from '../MenuPanel.svelte';
 
 /** A menu's view as app/menu.ts makes one, made up for these tests. */
 const FULL: MenuView = {
+  replays: null,
   season: {
     title: copy.nav.seasonStats,
     note: '2025–26 · Through Jan 13',
@@ -41,7 +42,7 @@ const FULL: MenuView = {
   },
 };
 
-const NOTHING: MenuView = { season: null, record: null, map: null };
+const NOTHING: MenuView = { season: null, record: null, map: null, replays: null };
 
 interface Shown {
   panel: HTMLElement;
@@ -90,6 +91,115 @@ describe('MenuPanel', () => {
   const checkboxes = (panel: HTMLElement): HTMLInputElement[] => [
     ...panel.querySelectorAll<HTMLInputElement>('input[type="checkbox"]'),
   ];
+
+  describe('the replay page', () => {
+    /** SYNTHETIC: two past days, as app/menu.ts words them. */
+    const WITH_REPLAYS: MenuView = {
+      ...NOTHING,
+      replays: {
+        title: copy.actions.replay,
+        rows: [
+          { day: '2026-01-05', label: 'Mon, Jan 5, 2026', sub: '1 school · 1 state' },
+          { day: '2024-01-16', label: 'Tue, Jan 16, 2024', sub: '3,127 schools · 9 states' },
+        ],
+      },
+    };
+
+    function showReplays(replayDay: string | null) {
+      const target = document.createElement('div');
+      document.body.append(target);
+      const onreplay = vi.fn<(day: string | null) => void>();
+      const onclose = vi.fn<(refocus: boolean) => void>();
+      const onwarm = vi.fn<(day: string) => void>();
+      component = mount(MenuPanel, {
+        target,
+        props: {
+          view: WITH_REPLAYS,
+          id: 'menu',
+          filter: SHOW_ALL,
+          replayDay,
+          onreplay,
+          onwarm,
+          onclose,
+        },
+      });
+      flushSync();
+      const panel = target.querySelector('aside.menu');
+      if (!(panel instanceof HTMLElement)) throw new Error('no panel');
+      return { panel, onreplay, onwarm, onclose };
+    }
+
+    const open = (panel: HTMLElement): void => {
+      panel.querySelector<HTMLButtonElement>('[data-page="replay"]')?.click();
+      flushSync();
+    };
+
+    it('is listed first among the pages, and lists each day over how far it reached', () => {
+      const { panel, onreplay, onclose } = showReplays(null);
+      expect(headings(panel)[0]).toBe(copy.menu.today);
+      expect(items(panel).at(-2)?.[0]).toBe(copy.actions.replay);
+      open(panel);
+      expect(panel.querySelector('.title')?.textContent).toBe(copy.actions.replay);
+      const days = [...panel.querySelectorAll<HTMLButtonElement>('.day')];
+      expect(days.map((day) => day.textContent.trim())).toEqual([
+        'Mon, Jan 5, 20261 school · 1 state',
+        'Tue, Jan 16, 20243,127 schools · 9 states',
+      ]);
+      expect(panel.textContent).not.toContain(copy.replay.exit);
+      // The keyboard on a day: the menu closes and the keyboard goes back to its button.
+      days[1]?.focus();
+      days[1]?.click();
+      expect(onclose).toHaveBeenCalledWith(true);
+      expect(onreplay).toHaveBeenCalledWith('2024-01-16');
+    });
+
+    it('reads the first days as the page opens, and any day about to be pressed', () => {
+      const rows = Array.from({ length: 4 }, (_, i) => ({
+        day: `2025-02-1${String(i)}`,
+        label: `Day ${String(i)}`,
+        sub: '1 school · 1 state',
+      }));
+      const target = document.createElement('div');
+      document.body.append(target);
+      const onwarm = vi.fn<(day: string) => void>();
+      component = mount(MenuPanel, {
+        target,
+        props: {
+          view: { ...WITH_REPLAYS, replays: { title: copy.actions.replay, rows } },
+          id: 'menu',
+          filter: SHOW_ALL,
+          onwarm,
+        },
+      });
+      flushSync();
+      const panel = target.querySelector<HTMLElement>('aside.menu');
+      if (panel === null) throw new Error('no panel');
+      expect(onwarm).not.toHaveBeenCalled();
+      open(panel);
+      expect(onwarm.mock.calls).toEqual([['2025-02-10'], ['2025-02-11']]);
+      const days = [...panel.querySelectorAll<HTMLButtonElement>('.day')];
+      days[3]?.dispatchEvent(new Event('pointerenter'));
+      days[2]?.focus();
+      expect(onwarm.mock.calls.slice(2)).toEqual([['2025-02-13'], ['2025-02-12']]);
+    });
+
+    it('while a day is on: its date heads the filter, its row is current, and live is a row away', () => {
+      const { panel, onreplay } = showReplays('2024-01-16');
+      expect(headings(panel)[0]).toBe('Tue, Jan 16, 2024');
+      open(panel);
+      const current = panel.querySelector('[aria-current="true"]');
+      expect(current?.textContent).toContain('Tue, Jan 16, 2024');
+      const back = [...panel.querySelectorAll<HTMLButtonElement>('.days .item')][0];
+      expect(back?.textContent.trim()).toBe(copy.replay.exit);
+      back?.click();
+      expect(onreplay).toHaveBeenCalledWith(null);
+    });
+
+    it('is not listed with no day to offer', () => {
+      const { panel } = show(NOTHING);
+      expect(panel.querySelector('[data-page="replay"]')).toBeNull();
+    });
+  });
 
   it('lists what the map shows today and which schools, then About, with nothing to count', () => {
     const { panel } = show(NOTHING);

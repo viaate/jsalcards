@@ -2,7 +2,14 @@
  * Builders for the data tests: small directories and closings files in the
  * published formats, made up for these tests and used nowhere else.
  */
-import type { ClosingsDay, ClosingsFile, SchoolDirectoryMeta } from '../../types/generated';
+import type {
+  ClosingsDay,
+  ClosingsFile,
+  ReplayFile,
+  ReplayIndex,
+  ReplayRow,
+  SchoolDirectoryMeta,
+} from '../../types/generated';
 
 export interface TestSchool {
   readonly id: string;
@@ -98,4 +105,49 @@ export function jsonResponse(value: unknown, status = 200): Response {
     status,
     headers: { 'Content-Type': 'application/json' },
   });
+}
+
+/**
+ * A replay day as the pipeline publishes it (snowlight replays publish), from
+ * rows of [school position, status, reason]: made up for these tests.
+ */
+export function testReplay(
+  day: string,
+  meta: SchoolDirectoryMeta,
+  rows: readonly (readonly [number, 0 | 1 | 2 | 3, number | null])[],
+): ReplayFile {
+  return {
+    schema_version: 1,
+    id: day,
+    generated_at: '2026-01-09T12:00:00Z',
+    directory: {
+      generated_on: meta.generated_on,
+      schools: meta.count,
+      districts: meta.districts.ids.length,
+    },
+    start: `${day}T12:00:00Z`,
+    step_minutes: 1440,
+    frames: 1,
+    rows: rows.map(([school, status, reason]) => [school, status, 0, 0, reason] as ReplayRow),
+  };
+}
+
+/** The replay index for these days, as publish writes it: oldest first. */
+export function testReplayIndex(
+  replays: readonly { id: string; schools: number; states: readonly string[] }[],
+): ReplayIndex {
+  return {
+    schema_version: 1,
+    generated_at: '2026-01-09T12:00:00Z',
+    replays: replays.map(({ id, schools, states }) => ({
+      id,
+      start: `${id}T12:00:00Z`,
+      step_minutes: 1440,
+      frames: 1,
+      peak_schools: schools,
+      peak_frame: 0,
+      schools,
+      states,
+    })),
+  };
 }

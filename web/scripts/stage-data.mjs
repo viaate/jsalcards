@@ -36,7 +36,10 @@
  *   replays/<id>.<hash>.json          each replay day, as the pipeline wrote it
  *                                     (snowlight replays publish), named by its
  *                                     content: every deploy stamps it for its own
- *                                     directory, and the worker keeps it cache-first
+ *                                     directory, and the worker keeps it cache-first;
+ *                                     a day stamped for another directory than the
+ *                                     one staged stops the staging
+ *                                     (scripts/stage-published.mjs)
  *   everything else the pipeline published under site-data (live/, and any
  *   predictions/, stats/, replays/index.json or track-record.json), as written;
  *   with no replay published there is no replays/ folder, and none is staged
@@ -85,14 +88,12 @@
 import { spawnSync } from 'node:child_process';
 import { createHash } from 'node:crypto';
 import {
-  copyFileSync,
   existsSync,
   mkdirSync,
   mkdtempSync,
   readFileSync,
   readdirSync,
   rmSync,
-  statSync,
   writeFileSync,
 } from 'node:fs';
 import { registerHooks } from 'node:module';
@@ -118,6 +119,7 @@ registerHooks({
 const { casedName, displayName } = await import('../src/text/names.ts');
 const { nameFixes, stateOfId } = await import('../src/text/school-names.ts');
 const { hashedOnStaging, hashedPath } = await import('../src/data/paths.ts');
+const { checkStamps, stageOthers } = await import('./stage-published.mjs');
 const { STATE_INDEX } = await import('../src/search/states.ts');
 const { canonicalLength, indexTokens, tokenize } = await import('../src/search/normalize.ts');
 const {
@@ -790,27 +792,6 @@ function writeJsonLines(file, records) {
   writeFileSync(file, records.map((record) => JSON.stringify(record)).join('\n') + '\n');
 }
 
-/**
- * Every file under `root`, as sorted POSIX paths relative to it.
- * @param {string} root @param {string} [prefix]
- * @returns {string[]}
- */
-function filesUnder(root, prefix = '') {
-  return readdirSync(join(root, prefix), { withFileTypes: true })
-    .flatMap((entry) =>
-      entry.isDirectory()
-        ? filesUnder(root, `${prefix}${entry.name}/`)
-        : entry.isFile()
-          ? [`${prefix}${entry.name}`]
-          : [],
-    )
-    .sort();
-}
-
-/** Whether a file under site-data is published (tools/data-files.ts isPublished, per name). */
-const published = (/** @type {string} */ path) =>
-  path.split('/').every((name) => !name.startsWith('.') && !name.endsWith('.internal.json'));
-
 /** Refuses to empty a folder that does not look like a data folder. @param {string} to */
 function clear(to) {
   if (existsSync(to)) {
@@ -860,6 +841,22 @@ function main() {
     );
     if (built.status !== 0) throw new StageError(`search index: ${built.stderr.trim()}`);
 
+    /** The pipeline's other published files, and the directory each replay day must name. */
+    const others = {
+      site: args.site,
+      skip: (/** @type {string} */ path) => HANDLED.has(path) || path.startsWith('search/'),
+      stamp: {
+        generated_on: meta.generated_on,
+        schools: meta.count,
+        districts: meta.districts.ids.length,
+      },
+      hashed: hashedOnStaging,
+      fail: (/** @type {string} */ message) => {
+        throw new StageError(message);
+      },
+    };
+    // A replay day stamped for another directory stops the staging before anything is replaced.
+    checkStamps(others);
     clear(args.to);
     /** @type {[string, number][]} */
     const staged = [];
@@ -884,16 +881,8 @@ function main() {
       const bytes = staged.splice(before).reduce((sum, [, size]) => sum + size, 0);
       staged.push([`${folder} (${String(sharded.length)} files)`, bytes]);
     }
-    for (const path of filesUnder(args.site)) {
-      if (HANDLED.has(path) || path.startsWith('search/') || !published(path)) continue;
-      if (hashedOnStaging(path)) {
-        putHashed(path, readFileSync(join(args.site, path)));
-        continue;
-      }
-      mkdirSync(dirname(join(args.to, path)), { recursive: true });
-      copyFileSync(join(args.site, path), join(args.to, path));
-      staged.push([path, statSync(join(args.to, path)).size]);
-    }
+    // Everything else as written; each replay day hashed, its stamp checked before.
+    staged.push(...stageOthers({ ...others, to: args.to, putHashed }));
 
     staged.sort((a, b) => (a[0] < b[0] ? -1 : 1));
     const lines = staged.map(

@@ -12,6 +12,7 @@ import type { MenuView } from '../app/menu';
 import type { StatusCounts } from '../data/closings';
 import type { Basemap } from '../map/basemap';
 import type { MapFilter } from '../state/filter';
+import type { LocalDate } from '../types/generated';
 import MenuHost from './MenuHost.svelte';
 
 export interface MenuOptions {
@@ -25,6 +26,12 @@ export interface MenuOptions {
   readonly map: () => Basemap | undefined;
   /** How many schools the map lights in each status, of the kinds it shows; null while none is. */
   readonly counts: () => StatusCounts | null;
+  /** The past day the map shows, or null while it shows live. */
+  readonly replayDay: () => LocalDate | null;
+  /** Has the map show a past day, or live again (null). */
+  readonly replay: (day: LocalDate | null) => void;
+  /** Reads a past day ahead of a press on it, so the press shows it at once. */
+  readonly warm: (day: LocalDate) => void;
 }
 
 export interface Menu {

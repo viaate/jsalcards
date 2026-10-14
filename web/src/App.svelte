@@ -12,6 +12,7 @@
     SchoolHit,
     SchoolView,
     SearchOption,
+    ReplayBar,
     Services,
     StatusCounts,
     Target,
@@ -29,7 +30,7 @@
   import type { LateUrlStore } from './state/late-url-store';
   import { pinnedSchool } from './state/pin';
   import type { Selection, UrlState } from './state/url';
-  import type { SchoolId, UtcInstant } from './types/generated';
+  import type { LocalDate, SchoolId, UtcInstant } from './types/generated';
   import { COPIED_MS } from './ui/share';
 
   interface Props {
@@ -100,6 +101,8 @@
   let updatedAt = $state<UtcInstant | null>(null);
   /** The update time, loaded with the first live file shown. */
   let UpdateTime = $state<Component<UpdateTimeProps> | null>(null);
+  /** The past day the map shows, and the bar naming it in the update time's place; null for live. */
+  let replay = $state<{ day: LocalDate; bar: ReplayBar } | null>(null);
   /** How many schools the map lights in each status, by status code; null while none is lit. */
   let counts = $state<StatusCounts | null>(null);
   /** The name the field shows for the last pick, until the text changes. */
@@ -382,6 +385,8 @@
   // The school the address holds: its view, read and kept current while it is open.
   $effect(() => {
     const id = schoolId;
+    // Opened again for a past day, or for live again.
+    const day = replay?.day ?? null;
     schoolView = null;
     basemap?.selectSchool(id);
     if (id === null) return;
@@ -390,9 +395,14 @@
     const hint = untrack(() => pickedHint);
     void services.then((app) => {
       if (cancelled || app === null) return;
-      stop = app.watchSchool(id, hint, (view) => {
-        if (!cancelled) schoolView = view;
-      });
+      stop = app.watchSchool(
+        id,
+        hint,
+        (view) => {
+          if (!cancelled) schoolView = view;
+        },
+        day,
+      );
     });
     if (untrack(() => Detail) === null) {
       import('./ui/DetailPanel.svelte').then(
@@ -411,6 +421,7 @@
   // The ZIP code the address holds: its area's view, read and kept current while it is open.
   $effect(() => {
     const zip = zipId;
+    const day = replay?.day ?? null;
     areaView = null;
     if (zip === null) return;
     let stop: () => void = () => undefined;
@@ -418,9 +429,14 @@
     const hint = untrack(() => pickedArea);
     void services.then((app) => {
       if (cancelled || app === null) return;
-      stop = app.watchArea(zip, hint?.zip === zip ? hint : null, (view) => {
-        if (!cancelled) areaView = view;
-      });
+      stop = app.watchArea(
+        zip,
+        hint?.zip === zip ? hint : null,
+        (view) => {
+          if (!cancelled) areaView = view;
+        },
+        day,
+      );
     });
     if (untrack(() => Area) === null) {
       import('./ui/AreaPanel.svelte').then(
@@ -749,6 +765,9 @@
           },
           onUpdated,
           onCounts,
+          onReplay: (next) => {
+            replay = next;
+          },
           onSchool: openTapped,
         });
       })
@@ -892,7 +911,9 @@
       <path d="M13.25 2.75L2.75 7.1l4.6 1.55 1.55 4.6z" />
     </svg>
   </button>
-  {#if UpdateTime !== null && updatedAt !== null}
+  {#if replay !== null}
+    <replay.bar day={replay.day} onexit={() => void services.then((app) => app?.replay(null))} />
+  {:else if UpdateTime !== null && updatedAt !== null}
     <UpdateTime generatedAt={updatedAt} />
   {/if}
   {#if Detail !== null && schoolView !== null}

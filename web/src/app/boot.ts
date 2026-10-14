@@ -10,6 +10,9 @@
  *   are lit in each status, for the legend; and every school as dust on it,
  *   read the first time the map shows the dust;
  * - the service worker, registered once the map is on screen;
+ * - a past storm day in live's place, from the menu or a link with replay=
+ *   (app/replay.ts, loaded with the first): live is held meanwhile, and its
+ *   counts and time reach the page only while no replay is on;
  * - the school a pick or a link opens: its detail panel's view (app/school.ts,
  *   loaded when a school is first opened), and the pin;
  * - the ZIP code a pick, a typed ZIP code or a link opens: its area panel's
@@ -34,7 +37,7 @@ import { createPinStore } from '../state/pin-store';
 import type { PinStore } from '../state/pin-store';
 import type { Selection } from '../state/url';
 import type { UrlStore } from '../state/url-store';
-import type { SchoolId, UtcInstant } from '../types/generated';
+import type { LocalDate, SchoolId, UtcInstant } from '../types/generated';
 import type { StatusCounts } from '../data/closings';
 import { AREAS_INDEX_PATH } from '../data/areas-format';
 import type { AreaSource } from '../data/areas';
@@ -51,6 +54,7 @@ import type { Menu } from '../ui/menu-host';
 import type { SchoolHint, SchoolView, WatchOptions } from './school';
 import type { AreaHint, AreaView, WatchAreaOptions } from './area';
 import type { AreaRecord } from '../data/areas';
+import type { Active, Controller, ReplayBar } from './replay';
 import { startServiceWorker } from './service-worker';
 import { ZOOM, selectionForHit, startupSelection, viewForHit, zipHit } from './startup';
 
@@ -60,6 +64,7 @@ export type { SchoolHit } from '../map/school-taps';
 export type { Target } from './data';
 export type { SearchOption } from './search';
 export type { MenuView } from './menu';
+export type { ReplayBar } from './replay';
 export type { MapFilter } from '../state/filter';
 export type { NearbyView, SchoolHint, SchoolView } from './school';
 export type { AreaHint, AreaSchoolView, AreaView } from './area';
@@ -118,6 +123,12 @@ export interface BootOptions {
    */
   readonly onCounts?: (counts: StatusCounts | null) => void;
   /**
+   * The past day the map shows as it comes on, with the bar that names it
+   * (ui/ReplayBar.svelte), or null as live comes back: the page puts the bar
+   * in the update time's place, and opens its panels for that day.
+   */
+  readonly onReplay?: (replay: { day: LocalDate; bar: ReplayBar } | null) => void;
+  /**
    * A school clicked or tapped on the map, its dot, its dust, its name or its light:
    * the page opens it as a pick of it would. Without it, a click opens nothing.
    */
@@ -129,6 +140,13 @@ export interface BootOptions {
 export interface Services {
   /** Whether this build ships a search index; without one, search shows nothing. */
   readonly searchable: boolean;
+  /**
+   * Shows a past storm day in live's place, as a new history entry, once it
+   * is read and lit; one that cannot be shown changes nothing. Null goes back
+   * to live, also as a new entry. With `ahead`, the day is only read and lit,
+   * ahead of a press on it, and nothing on screen changes.
+   */
+  replay(day: LocalDate | null, ahead?: boolean): void;
   /** Starts loading the search index (first focus). */
   warmSearch(): void;
   /**
@@ -145,23 +163,28 @@ export interface Services {
   /**
    * Reads a school for its detail panel and keeps its view current:
    * `onView` hears each new view, and null when there is no such school.
-   * `hint` is what a search pick already knows. Returns the function that stops it.
+   * `hint` is what a search pick already knows. The panel is for the past day
+   * shown as it opens, if any; `day`, the day the page shows, is given so a
+   * change of it opens the panel again. Returns the function that stops it.
    */
   watchSchool(
     id: SchoolId,
     hint: SchoolHint | null,
     onView: (view: SchoolView | null) => void,
+    day?: LocalDate | null,
   ): () => void;
   /**
    * Reads the schools around a ZIP code for its area panel and keeps its view
    * current: `onView` hears each new view, and null when there is no area for
    * it (or this build ships none). `hint` is what a search pick already knows.
+   * The panel is for the past day shown as it opens, if any, as a school's is.
    * Returns the function that stops it.
    */
   watchArea(
     zip: string,
     hint: AreaHint | null,
     onView: (view: AreaView | null) => void,
+    day?: LocalDate | null,
   ): () => void;
   /** A typed ZIP code's search result, once the index is in; null where search has no such ZIP code. */
   findZip(zip: string): Promise<SearchOption | null>;
@@ -302,6 +325,73 @@ export function boot(options: BootOptions): Services {
   let live: LiveGlow | null = null;
   /** The menu's filter, kept for the live glow while it starts: everything, as every visit opens. */
   let filter: MapFilter = SHOW_ALL;
+  /** The past day shown in live's place, or null while live is shown. */
+  let replayOn: Active | null = null;
+  /** The past day the address asks for, if any. */
+  const linked = (): string | null => new URLSearchParams(location.search).get('replay');
+  /** A link asks for a past day: live starts held, so it never shows first. */
+  const askedDay = linked();
+  let liveHeld = askedDay !== null;
+  const holdLive = (held: boolean): void => {
+    liveHeld = held;
+    live?.hold(held);
+  };
+  /** Counts for the legend and the menu, once the page's face is in, if `still` holds then. */
+  const deliver = (counts: StatusCounts | null, still: () => boolean): void => {
+    void document.fonts.ready.then(() => {
+      if (!aborted() && still()) options.onCounts?.(counts);
+    });
+  };
+  /** Replay mode, loaded with the first replay asked for (app/replay.ts). */
+  let replays: Promise<Controller> | null = null;
+  /** Its code could not load (offline, a deploy in flight): live it is, and the address says so. */
+  const liveOnly = (): void => {
+    holdLive(false);
+    const url = new URL(location.href);
+    url.searchParams.delete('replay');
+    history.replaceState(history.state, '', url);
+  };
+  const loadReplays = (): Promise<Controller> =>
+    (replays ??= import('./replay').then(
+      ({ startReplays }) =>
+        startReplays({
+          data,
+          glow,
+          hold: holdLive,
+          filter: () => filter,
+          deliver,
+          onUpdated: options.onUpdated,
+          onReplay: (active, shown) => {
+            replayOn = active;
+            options.onReplay?.(shown);
+          },
+        }),
+      (error: unknown) => {
+        // Its code could not load (offline, a deploy in flight): the next ask tries again.
+        replays = null;
+        throw error;
+      },
+    ));
+  // Any replay= the address holds is read by replay mode's code, which strips one it cannot show.
+  // A panel the link opens waits for it, so it opens for the day, never live first.
+  const linkedDay =
+    askedDay === null
+      ? null
+      : loadReplays()
+          .then((controller) => controller.enter(askedDay, 'boot'))
+          .catch(liveOnly);
+  // Back and Forward: replay mode follows the address, once its code is in if it is loading,
+  // and loads for a replay= entry (a reload kept the history). Live alone needs none of it.
+  window.addEventListener(
+    'popstate',
+    () => {
+      if ((replays ?? linked()) !== null)
+        void loadReplays().then((controller) => {
+          controller.sync();
+        }, liveOnly);
+    },
+    { signal },
+  );
   void glow.then(async (layer) => {
     if (layer === null || aborted()) return;
     // Every school as dust further out, read from the directory once the map shows it, of the
@@ -317,22 +407,24 @@ export function boot(options: BootOptions): Services {
       data,
       glow,
       {
+        // Live's time and counts reach the page only while no replay is on, checked as each
+        // arrives: one heard just before a replay came on never lands over it.
         onShown: (generatedAt) => {
-          if (!aborted()) options.onUpdated?.(generatedAt);
+          if (!aborted() && replayOn === null) options.onUpdated?.(generatedAt);
         },
         // Once the page's face has loaded, so the counts are set in the face they keep. One
         // promise, so counts heard later are passed on later.
         onCounts: (counts) => {
-          void document.fonts.ready.then(() => {
-            if (!aborted()) options.onCounts?.(counts);
-          });
+          deliver(counts, () => replayOn === null);
         },
       },
       filter,
+      { held: liveHeld },
     );
     live = started;
-    // A change made while it started.
+    // A change made while it started: the filter, and a replay come on or gone.
     started.filter(filter);
+    started.hold(liveHeld);
     if (aborted()) started.stop();
   });
 
@@ -346,6 +438,9 @@ export function boot(options: BootOptions): Services {
     void menuHost?.then((menu) => menu?.destroy());
     taps?.stop();
     live?.stop();
+    void replays?.then((controller) => {
+      controller.stop();
+    });
     search.destroy();
     pins.destroy();
     void glow.then((layer) => {
@@ -435,9 +530,23 @@ export function boot(options: BootOptions): Services {
   const services: Services = {
     searchable: data.files.has(DATA_PATHS.searchIndex),
     pins,
+    replay(day, ahead) {
+      if (day === null)
+        void replays?.then((controller) => {
+          controller.exit();
+        });
+      else
+        void loadReplays().then(
+          (controller) => (ahead ? controller.warm(day) : controller.enter(day, 'push')),
+          () => false,
+        );
+    },
     filter(next) {
       filter = next;
       live?.filter(next);
+      void replays?.then((controller) => {
+        controller.filter(next);
+      });
       // The dust too, as the dots.
       void glow.then((layer) => layer?.showSchools(kindsShown(next)));
       // The dots and names, on the map as soon as it takes input (it keeps them for layers to come).
@@ -456,6 +565,13 @@ export function boot(options: BootOptions): Services {
               },
               map: () => basemap,
               counts,
+              replayDay: () => replayOn?.day ?? null,
+              replay: (day) => {
+                services.replay(day);
+              },
+              warm: (day) => {
+                services.replay(day, true);
+              },
             }),
           () => null,
         );
@@ -476,12 +592,12 @@ export function boot(options: BootOptions): Services {
           if (menuView === reading) menuView = null;
         });
       }
-      return menuView.catch(() => ({ season: null, record: null, map: null }));
+      return menuView.catch(() => ({ season: null, record: null, map: null, replays: null }));
     },
     watchArea(zip, hint, onView) {
       let stop: (() => void) | null = null;
       let stopped = false;
-      Promise.all([loadAreaCode(), loadSchoolCode()]).then(
+      Promise.all([loadAreaCode(), loadSchoolCode(), linkedDay]).then(
         ([{ areas: source, watch }, school]) => {
           if (stopped || aborted()) return;
           // The school records' reader the school panel reads with: a row opens what is read.
@@ -492,6 +608,8 @@ export function boot(options: BootOptions): Services {
             zip,
             hint,
             onView,
+            // The day shown as it opens, if any: the page opens it again as that changes.
+            replay: replayOn,
           });
         },
         () => {
@@ -512,8 +630,8 @@ export function boot(options: BootOptions): Services {
     watchSchool(id, hint, onView) {
       let stop: (() => void) | null = null;
       let stopped = false;
-      loadSchoolCode().then(
-        ({ watch, source }) => {
+      Promise.all([loadSchoolCode(), linkedDay]).then(
+        ([{ watch, source }]) => {
           if (stopped || aborted()) return;
           stop = watch({
             files: data.files,
@@ -521,6 +639,8 @@ export function boot(options: BootOptions): Services {
             id,
             hint,
             onView,
+            // The day shown as it opens, if any: the page opens it again as that changes.
+            replay: replayOn,
             // The districts next door, for the chance section: the directory the glow reads.
             directory: async (stamp) => (await (await data.directories())?.get(stamp)) ?? null,
           });

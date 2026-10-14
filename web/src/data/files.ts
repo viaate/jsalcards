@@ -27,6 +27,8 @@ export interface DataFiles {
   has(path: string): boolean;
   /** The absolute URL of a file this build ships, or null. */
   url(path: string): string | null;
+  /** The names, as published, of the files this build ships under `prefix` (such as "replays/"). */
+  under(prefix: string): readonly string[];
 }
 
 /**
@@ -42,7 +44,30 @@ export function createDataFiles(paths: readonly string[], root: string): DataFil
       const published = shipped.get(path);
       return published === undefined ? null : new URL(published, root).href;
     },
+    under: (prefix) => paths.filter((path) => path.startsWith(prefix)),
   };
+}
+
+/** The replay index, published under its plain name (src/data/paths.ts). */
+export const REPLAY_INDEX = 'replays/index.json';
+
+/**
+ * Where this build reads the replay index: its URL, with a query that names
+ * the replay days this build ships. The service worker serves the index
+ * stale-while-revalidate, the last copy it kept first; under a query of its
+ * own each build's first read goes to the network, so it never gets an older
+ * deploy's index, with a day this build dropped or a count of a day since
+ * stamped again. Null when this build ships no index.
+ */
+export function replayIndexUrl(files: DataFiles): string | null {
+  const url = files.url(REPLAY_INDEX);
+  if (url === null) return null;
+  // FNV-1a over the published names of the days, which change with each day's content.
+  let hash = 0x811c9dc5;
+  for (const char of files.under('replays/').join('\n')) {
+    hash = Math.imul(hash ^ (char.codePointAt(0) ?? 0), 0x01000193) >>> 0;
+  }
+  return `${url}?v=${hash.toString(16).padStart(8, '0')}`;
 }
 
 /** The data folder of a site at `base` ("/" or "/repo/"), as an absolute URL. */

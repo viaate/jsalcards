@@ -13,6 +13,9 @@
  *   given.
  * - On the map, from the school directory's stamp (schools/details/index.json):
  *   how many schools and districts the map holds.
+ * - Replays, from replays/index.json: each past storm day this build ships
+ *   whose day is over everywhere in the US, newest first, with how many
+ *   schools and states it lights.
  *
  * A file this build does not ship is never asked for, and one that cannot be
  * read or breaks its rules (data/stats.ts) leaves its part out. Nothing is
@@ -24,11 +27,18 @@ import { format } from '../copy-format';
 import type { StatusKey } from '../copy';
 import { DETAILS_INDEX_PATH } from '../data/details-format';
 import { parseShardIndex } from '../data/details';
-import { fetchJson } from '../data/files';
+import { fetchFile, fetchJson, replayIndexUrl } from '../data/files';
 import type { DataFiles, Fetch } from '../data/files';
+import { parseReplayIndex, shownReplays } from '../data/replay';
 import { parseSeasonStats, parseTrackRecord } from '../data/stats';
 import { PUBLISHED_PATHS } from '../types/generated';
-import type { DirectoryStamp, SeasonStats, TrackRecord } from '../types/generated';
+import type {
+  DirectoryStamp,
+  LocalDate,
+  ReplayIndex,
+  SeasonStats,
+  TrackRecord,
+} from '../types/generated';
 
 /** One line of a list: a label, its value, and the status it counts, if any. */
 export interface MenuRow {
@@ -58,10 +68,27 @@ export interface RecordTable {
   readonly rows: readonly { readonly label: string; readonly cells: readonly (string | null)[] }[];
 }
 
+/** One past storm day the menu offers. */
+export interface ReplayRow {
+  readonly day: LocalDate;
+  /** "Tue, Jan 16, 2024". */
+  readonly label: string;
+  /** "3,127 schools · 9 states". */
+  readonly sub: string;
+}
+
+/** The replay page: its title and its days, newest first. */
+export interface ReplayMenu {
+  readonly title: string;
+  readonly rows: readonly ReplayRow[];
+}
+
 export interface MenuView {
   readonly season: MenuSection | null;
   readonly record: RecordTable | null;
   readonly map: MenuSection | null;
+  /** Null when this build ships no replay day to offer now. */
+  readonly replays: ReplayMenu | null;
 }
 
 /** What parts a line in two, as copy.ts's own lines are parted: "2025–26 · Through Jan 12". */
@@ -162,6 +189,46 @@ export function mapSection(directory: DirectoryStamp | null): MenuSection | null
   };
 }
 
+/**
+ * The replays to offer at `now`: each day of the index of one-day form that
+ * is over everywhere in the US and whose file this build ships. Null when
+ * none is.
+ */
+export function replayMenu(
+  index: ReplayIndex | null,
+  files: DataFiles,
+  now: Date,
+): ReplayMenu | null {
+  if (index === null) return null;
+  const rows = shownReplays(index, now)
+    .filter((replay) => files.has(`replays/${replay.id}.json`))
+    .map((replay) => ({
+      day: replay.id,
+      label: format.replayDay(replay.id),
+      sub: format.replayReach(replay.schools, replay.states.length),
+    }));
+  return rows.length === 0 ? null : { title: copy.actions.replay, rows };
+}
+
+/**
+ * The replay index this build reads, under its own query (data/files.ts
+ * replayIndexUrl), checked; null when it ships none or it cannot be read.
+ */
+async function readReplayIndex(files: DataFiles, fetchImpl: Fetch): Promise<ReplayIndex | null> {
+  const url = replayIndexUrl(files);
+  if (url === null) return null;
+  try {
+    const response = await fetchImpl(url);
+    if (!response.ok) {
+      await response.body?.cancel().catch(() => undefined);
+      return null;
+    }
+    return parseReplayIndex(await response.json());
+  } catch {
+    return null;
+  }
+}
+
 /** A shipped file, read and checked; null when it is not shipped or does not pass. */
 async function read<T>(
   files: DataFiles,
@@ -178,15 +245,26 @@ async function read<T>(
 }
 
 /** Reads what the menu shows beside About; parts whose files are missing or wrong are left out. */
-export async function readMenu(files: DataFiles, fetchImpl?: Fetch): Promise<MenuView> {
-  const [season, record, index] = await Promise.all([
+export async function readMenu(
+  files: DataFiles,
+  fetchImpl?: Fetch,
+  now: () => Date = () => new Date(),
+): Promise<MenuView> {
+  const [season, record, index, replays] = await Promise.all([
     read(files, PUBLISHED_PATHS.seasonStats, parseSeasonStats, fetchImpl),
     read(files, PUBLISHED_PATHS.trackRecord, parseTrackRecord, fetchImpl),
     read(files, DETAILS_INDEX_PATH, parseShardIndex, fetchImpl),
+    readReplayIndex(files, fetchImpl ?? fetchFile),
   ]);
+  const offered = replayMenu(replays, files, now());
+  // A day to offer: replay mode's code comes now, so a press on a day waits for its file alone.
+  if (offered !== null) {
+    void Promise.all([import('./replay'), import('../ui/ReplayBar.svelte')]).catch(() => undefined);
+  }
   return {
     season: seasonSection(season),
     record: recordTable(record),
     map: mapSection(index?.directory ?? null),
+    replays: offered,
   };
 }
