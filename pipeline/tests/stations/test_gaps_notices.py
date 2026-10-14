@@ -700,7 +700,10 @@ def test_the_rule_agrees_with_the_status_reader() -> None:
         # Read each notice as of its own season (Osceola's names the days of 2022).
         when = datetime(2022, 9, 26, 12, tzinfo=UTC) if "2022" in status else posted
         parsed = classify.parse_status(text, posted_at=when, tz="America/New_York")
-        assert parsed.kind != "other" or parsed.reason is not None, status
+        # A notice whose weekday and date disagree (Manatee's "through Friday 10/9/24" names a
+        # Wednesday) is rightly left in doubt by the reader, which notes the date_mismatch.
+        agrees = parsed.kind != "other" or parsed.reason is not None
+        assert agrees or "date_mismatch" in parsed.notes, status
     for _, _, status in NOT_CLOSINGS[:4]:
         parsed = classify.parse_status(status, posted_at=posted, tz="America/New_York")
         assert parsed.kind == "other", status
