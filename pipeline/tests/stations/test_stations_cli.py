@@ -100,6 +100,7 @@ def test_coverage_command_offline(
             "--out-dir",
             str(out),
             "--no-weights",
+            "--no-storms",
         ]
     )
     assert code == 0
