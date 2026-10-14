@@ -34,6 +34,9 @@ class Reason(StrEnum):
     GRADES_NOT_REPORTED = "grades_not_reported"
     NO_K12_GRADE = "grades_no_k12_grade"
     NO_SCHOOL_ON_MAP = "no_school_on_map"
+    LISTED_BY_NCES = "listed_by_nces"
+    EVIDENCE_STALE = "evidence_stale"
+    ADDRESS_STALE = "address_stale"
 
 
 REASON_DESCRIPTIONS: dict[Reason, str] = {
@@ -56,6 +59,20 @@ REASON_DESCRIPTIONS: dict[Reason, str] = {
     Reason.GRADES_NOT_REPORTED: "Grades offered were not reported, so K-12 cannot be confirmed.",
     Reason.NO_K12_GRADE: "Offers no grade from K to 12 (other combination of grades).",
     Reason.NO_SCHOOL_ON_MAP: "District has no school that passed the filters.",
+    Reason.LISTED_BY_NCES: (
+        "Supplement school the NCES files list (its PSS id, or the same name within 1 km), "
+        "so the NCES row is on the map instead."
+    ),
+    Reason.EVIDENCE_STALE: (
+        "Supplement school whose latest evidence that it operates is from before last "
+        "school year or older than the configured maximum age, so it is left off until "
+        "checked again."
+    ),
+    Reason.ADDRESS_STALE: (
+        "Supplement school whose street address was last matched against a current "
+        "source before this school year began (August 1), so it is left off until its "
+        "address is checked again."
+    ),
 }
 
 # CCD UPDATED_STATUS codes with a specific reason; any other non-kept code maps to

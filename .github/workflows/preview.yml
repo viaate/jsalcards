@@ -96,6 +96,10 @@ jobs:
             return 1
           }
           build directory
+          # Supplement entries whose evidence or address goes stale within 60
+          # days: a warning each, so they are checked again before they drop off.
+          jq -r '.supplement.expiring[]? | "::warning::Supplement entry \(.id) \(.name): its \(.what) goes stale on \(.expires_on); check it again in pipeline/config/directory-supplement.yaml"' \
+            out/internal/directory/build_report.json
           build places
       # The replay days (pipeline/data/replays), published again against the
       # directory just built: no network. A seed it leaves out is a ::warning::

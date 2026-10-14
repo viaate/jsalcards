@@ -18,6 +18,7 @@ from snowlight.directory.build import (
 from snowlight.directory.config import DEFAULT_CONFIG_PATH, load_config
 from snowlight.directory.points import PointsFormatError
 from snowlight.directory.report import ReconciliationError
+from snowlight.directory.supplement import SupplementError
 from snowlight.directory.tiles import TilesError
 from snowlight.sources.nces.fetch import DownloadError
 from snowlight.sources.nces.readers import SourceFormatError
@@ -61,6 +62,7 @@ _FAILURES = (
     PointsFormatError,
     ReconciliationError,
     SourceFormatError,
+    SupplementError,
     TilesError,
     ValidationError,
     XlsxFormatError,

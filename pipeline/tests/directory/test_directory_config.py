@@ -145,7 +145,7 @@ def test_render_markdown_tables() -> None:
     }
     text = render_markdown(report)
     assert "| Public schools | 2 | 1 | 1 |" in text
-    assert "| AK | 0 / 1 | 0 / 1 | 0 / 1 |" in text
+    assert "| AK | 0 / 1 | 0 / 1 | - | 0 / 1 |" in text
     assert "| public | `outside_continental_us` | 1 |" in text
     assert "- a note" in text
     assert "| points.bin | 29 | 40 |" in text

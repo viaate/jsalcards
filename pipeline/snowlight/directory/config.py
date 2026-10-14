@@ -141,6 +141,28 @@ class Tiles(_Strict):
         return self
 
 
+class SupplementSettings(_Strict):
+    """Where the reviewed list of schools the NCES files miss is, and its id prefix."""
+
+    path: str
+    """The supplement file, relative to the pipeline project (or absolute)."""
+    id_prefix: str
+    """Two capital letters that start every supplement id and no NCES id."""
+    max_evidence_age_days: int = Field(gt=0)
+    """Evidence older than this (from its own date) is dropped as ``evidence_stale``."""
+
+    @field_validator("id_prefix")
+    @classmethod
+    def _prefix(cls, value: str) -> str:
+        if not re.fullmatch(r"[A-Z]{2}", value):
+            raise ValueError("id_prefix must be two capital letters")
+        return value
+
+    def resolved(self) -> Path:
+        """The supplement file's path."""
+        return PIPELINE_ROOT / self.path
+
+
 class DirectoryConfig(_Strict):
     """The whole ``directory.yaml``."""
 
@@ -148,6 +170,7 @@ class DirectoryConfig(_Strict):
     filters: Filters
     enrollment: Enrollment
     tiles: Tiles
+    supplement: SupplementSettings | None = None
 
     @field_validator("sources")
     @classmethod

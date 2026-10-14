@@ -38,6 +38,11 @@ Internal, never published:
   ``drop_reason``, so each exclusion can be audited.
 * ``<internal>/build_report.json`` and ``build_report.md``: counts by state and
   reason, reconciled against the source row counts.
+
+Schools the NCES files miss come from the reviewed supplement file the config
+names (:mod:`snowlight.directory.supplement`). They are private schools with ids
+of the supplement prefix (``SN000001``), sorted among the private schools, and
+the report counts them in a section of their own.
 """
 
 import gzip
@@ -47,7 +52,7 @@ import tempfile
 from collections.abc import Callable, Iterator
 from contextlib import contextmanager
 from dataclasses import dataclass, field
-from datetime import UTC, datetime
+from datetime import UTC, date, datetime
 from pathlib import Path
 from typing import Any
 
@@ -73,6 +78,14 @@ from snowlight.directory.config import (
 )
 from snowlight.directory.filters import Reason
 from snowlight.directory.report import reconcile, render_markdown
+from snowlight.directory.supplement import (
+    NcesSchools,
+    Supplement,
+    SupplementRows,
+    assemble_supplement,
+    check_prefix_unused,
+    load_supplement,
+)
 from snowlight.output import dumps_json, write_bytes_atomic, write_json
 from snowlight.sources.nces import readers
 from snowlight.sources.nces.fetch import (
@@ -129,6 +142,12 @@ PRIVATE_REASONS = (
     Reason.GRADES_NOT_REPORTED,
 )
 DISTRICT_REASONS = (Reason.OUTSIDE_CONTINENTAL_US, Reason.NO_SCHOOL_ON_MAP)
+SUPPLEMENT_REASONS = (
+    *_GEOGRAPHY,
+    Reason.LISTED_BY_NCES,
+    Reason.EVIDENCE_STALE,
+    Reason.ADDRESS_STALE,
+)
 
 Log = Callable[[str], None]
 
@@ -471,7 +490,8 @@ def build(
     log("Filtering schools")
     public = assemble_public(tables.public, config)
     private = assemble_private(tables.private, config)
-    kept = pl.concat([public, private]).filter(pl.col("drop_reason").is_null())
+    supplement, merged = _supplement(config, tables, public, private, started.date())
+    kept = pl.concat([public, private, merged.rows]).filter(pl.col("drop_reason").is_null())
     districts, lea_rows = assemble_districts(
         kept.filter(pl.col("kind") == "public"), tables.leas, config
     )
@@ -486,6 +506,7 @@ def build(
             private, tables.private.geocodes.height, "private schools", PRIVATE_REASONS
         ),
         "districts": reconcile(lea_rows, tables.leas.height, "districts", DISTRICT_REASONS),
+        "supplement": _supplement_report(config, supplement, merged),
     }
     report["public"]["geocode_rows"] = tables.public.geocodes.height
     report["public"]["geocode_rows_without_directory_record"] = tables.public.geocodes.join(
@@ -511,6 +532,7 @@ def build(
         "total": schools.height,
         "public": schools.filter(pl.col("kind") == "public").height,
         "private": schools.filter(pl.col("kind") == "private").height,
+        "private_from_supplement": report["supplement"]["kept"],
         "charter": schools.filter(pl.col("charter").fill_null(value=False)).height,
         "exclusively_virtual": schools.filter(pl.col("virtual") == "FULLVIRTUAL").height,
         "with_enrollment": schools.filter(pl.col("enrollment").is_not_null()).height,
@@ -558,8 +580,9 @@ def build(
     columns = ["index", *(c for c in SCHOOL_SCHEMA if c != "drop_reason"), "district_index"]
     schools.select(columns).write_parquet(internal / "schools.parquet")
     districts.write_parquet(internal / "districts.parquet")
-    dropped = pl.concat([public, private]).filter(pl.col("drop_reason").is_not_null())
-    dropped.select(*SCHOOL_SCHEMA).write_parquet(internal / "dropped.parquet")
+    pl.concat([public, private, merged.rows]).filter(pl.col("drop_reason").is_not_null()).select(
+        *SCHOOL_SCHEMA
+    ).write_parquet(internal / "dropped.parquet")
 
     outputs = {name: _file_info(site / name) for name in PUBLISHED_FILES}
     report["outputs"] = {name: dict(info) for name, info in outputs.items()}
@@ -578,6 +601,20 @@ def build(
         "kept schools are published with more digits, and dropping them moves "
         f"{report['schools_on_map']['coordinates_moved_by_rounding_to_6_decimals']:,} "
         "by more than floating-point noise (1e-9 degrees).",
+        f"Supplement: {report['schools_on_map']['private_from_supplement']:,} private schools "
+        "the NCES files miss, each with current evidence that it operates, a street "
+        "address matched this school year against its own site, its diocese's list or "
+        "a closings row, and a geocode of that address (Census Bureau, or NCES's own for "
+        "the same address once matched against the school's own map) "
+        f"({len(supplement.schools):,} entries, "
+        f"{report['supplement']['dropped'][Reason.LISTED_BY_NCES.value]:,} now listed by NCES, "
+        f"{report['supplement']['dropped'][Reason.EVIDENCE_STALE.value]:,} with evidence from "
+        "before last school year or older than "
+        f"{report['supplement']['max_evidence_age_days']} days, "
+        f"{report['supplement']['dropped'][Reason.ADDRESS_STALE.value]:,} with an address "
+        "not checked this school year; oldest evidence "
+        f"{report['supplement']['oldest_evidence_on']}, oldest address check "
+        f"{report['supplement']['oldest_address_checked_on']}).",
         "schools.pmtiles is built with tippecanoe, reading in two threads so that "
         "attribute strings its string pool would confuse (equal low 32 bits of the "
         "FNV-1a hash) never share a pool; every tile is then decoded and checked.",
@@ -595,12 +632,94 @@ def build(
             name: _file_info(internal / name)
             for name in ("schools.parquet", "districts.parquet", "dropped.parquet")
         },
+        "supplement": _supplement_provenance(config, supplement),
         "tippecanoe_argv": tiles_written.argv,
         "tileset_generator": tiles_written.generator,
         "report": _display_path(internal / "build_report.json"),
     }
     write_json(site / "manifest.internal.json", manifest)
     return BuildResult(report=report, site_dir=site, internal_dir=internal)
+
+
+def _supplement(
+    config: DirectoryConfig,
+    tables: Tables,
+    public: pl.DataFrame,
+    private: pl.DataFrame,
+    today: date,
+) -> tuple[Supplement, SupplementRows]:
+    """Load the supplement and assemble its rows against the NCES rows.
+
+    Raises:
+        SupplementError: if the file does not check out, an NCES id takes its
+            prefix, or an entry needs a reviewer's ruling.
+    """
+    settings = config.supplement
+    supplement = Supplement(schools=[])
+    if settings is not None:
+        prefix = settings.id_prefix
+        check_prefix_unused(public["id"], prefix, "CCD directory")
+        check_prefix_unused(private["id"], prefix, "EDGE private geocodes")
+        check_prefix_unused(tables.private.pss["PPIN"], prefix, "PSS file")
+        supplement = load_supplement(settings.resolved(), prefix)
+    nces_private_ids = frozenset(private["id"].to_list()) | frozenset(
+        tables.private.pss["PPIN"].to_list()
+    )
+    columns = ("id", "name", "street", "city", "state", "zip", "lat", "lon")
+    nces = NcesSchools(
+        private_ids=nces_private_ids,
+        kept_private=private.filter(pl.col("drop_reason").is_null()).select(columns),
+        kept_public=public.filter(pl.col("drop_reason").is_null()).select(columns),
+    )
+    merged = assemble_supplement(supplement, config, nces, today)
+    return supplement, merged
+
+
+def _supplement_report(
+    config: DirectoryConfig, supplement: Supplement, merged: SupplementRows
+) -> dict[str, Any]:
+    """The supplement's reconciled counts, its kept schools by source, the NCES ids
+    that list entries, the nearby schools reviewers cleared, and the oldest check."""
+    extra = merged.rows
+    section = reconcile(extra, len(supplement.schools), "supplement schools", SUPPLEMENT_REASONS)
+    kept = set(extra.filter(pl.col("drop_reason").is_null())["id"].to_list())
+    by_source: dict[str, int] = {}
+    for entry in supplement.schools:
+        if entry.id in kept:
+            by_source[entry.source] = by_source.get(entry.source, 0) + 1
+    section["kept_by_source"] = dict(sorted(by_source.items()))
+    section["listed_by_nces"] = dict(sorted(merged.listed_by.items()))
+    section["near_nces_cleared"] = merged.cleared
+    for key, day in (
+        ("oldest_evidence_on", merged.oldest_evidence_on),
+        ("oldest_address_checked_on", merged.oldest_address_checked_on),
+    ):
+        section[key] = None if day is None else day.isoformat()
+    by_address: dict[str, int] = {}
+    for entry in supplement.schools:
+        if entry.id in kept:
+            by_address[entry.address_from] = by_address.get(entry.address_from, 0) + 1
+    section["kept_by_address_source"] = dict(sorted(by_address.items()))
+    section["max_evidence_age_days"] = (
+        None if config.supplement is None else config.supplement.max_evidence_age_days
+    )
+    section["expiring"] = [
+        {"id": e.id, "name": e.name, "what": e.what, "expires_on": e.expires_on.isoformat()}
+        for e in merged.expiring
+    ]
+    return section
+
+
+def _supplement_provenance(config: DirectoryConfig, supplement: Supplement) -> dict[str, Any]:
+    if config.supplement is None:
+        return {"path": None, "entries": 0}
+    path = config.supplement.resolved()
+    return {
+        "path": _display_path(path),
+        "sha256": sha256_file(path),
+        "entries": len(supplement.schools),
+        "id_prefix": config.supplement.id_prefix,
+    }
 
 
 def summary_lines(result: BuildResult) -> list[str]:
@@ -610,6 +729,13 @@ def summary_lines(result: BuildResult) -> list[str]:
         f"public schools: {report['public']['kept']:,} kept of {report['public']['source_rows']:,}",
         f"private schools: {report['private']['kept']:,} kept of "
         f"{report['private']['source_rows']:,}",
+        f"supplement schools: {report['supplement']['kept']:,} kept of "
+        f"{report['supplement']['source_rows']:,}",
+        *(
+            f"supplement entry {e['id']} {e['name']}: its {e['what']} goes stale on "
+            f"{e['expires_on']}; check it again before then"
+            for e in report["supplement"].get("expiring", [])
+        ),
         f"districts on map: {report['districts']['on_map']:,} "
         f"(LEA file rows {report['districts']['source_rows']:,})",
     ]

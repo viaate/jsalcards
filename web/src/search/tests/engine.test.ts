@@ -445,6 +445,241 @@ describe('abbreviations', () => {
   });
 });
 
+describe('spellings of one name', () => {
+  // SYNTHETIC: a parish school spelled "Ann" among heavier "Anne" schools far away.
+  const saint = (id: string, name: string, sub: string, weight: number, lat: number, lon: number) =>
+    ({
+      kind: 'school',
+      id: `SYN${id}`,
+      name,
+      sub,
+      state: sub.slice(-2),
+      lat,
+      lon,
+      weight,
+    }) as const;
+  const records: SearchRecord[] = [
+    saint('A1', 'St. Ann Catholic School', 'Prairie Village, KS', 400, 38.99, -94.63),
+    ...Array.from({ length: 8 }, (_, i) =>
+      saint(`A${String(i + 2)}`, 'ST ANNE SCHOOL', 'Lowell, MA', 900 + i, 42.6, -71.3),
+    ),
+    saint('A10', "St. John's School", 'Albany, NY', 500, 42.65, -73.75),
+  ];
+  const saints = new SearchEngine(loadIndex(encodeIndex(records).bytes));
+  const nearKansasCity = { lat: 39.0, lon: -94.6, km: 40 };
+
+  it.each(['Saint Anne', 'St Ann', "St. Anne's", 'st annes', "Saint Ann's", 'st anne'])(
+    '%j finds St. Ann where the person is looking',
+    (q) => {
+      const hits = saints.search(q, 5, nearKansasCity).schools;
+      expect(hits[0]?.id).toBe('SYNA1');
+      expect(hits[0]?.match).not.toBe('fuzzy');
+    },
+  );
+
+  it('finds a name without its possessive s', () => {
+    expect(saints.search('st johns').schools.map((h) => h.id)).toContain('SYNA10');
+    expect(saints.search('saint john').schools.map((h) => h.id)).toContain('SYNA10');
+  });
+
+  it('still puts the heavier exact spelling first nationally', () => {
+    expect(saints.search('st anne').schools[0]?.name).toBe('ST ANNE SCHOOL');
+  });
+});
+
+describe('a name and the town after it', () => {
+  // SYNTHETIC: a suburb's parish school, the city people name it by, and a far namesake.
+  const school = (id: string, name: string, sub: string, lat: number, lon: number) =>
+    ({ kind: 'school', id, name, sub, state: sub.slice(-2), lat, lon, weight: 0 }) as const;
+  const city = (id: string, name: string, state: string, lat: number, lon: number) =>
+    ({ kind: 'city', id, name, sub: state, state, lat, lon, weight: 500_000 }) as const;
+  const records: SearchRecord[] = [
+    school('SYNT1', 'St. Ann Catholic School', 'Prairie Village, KS', 38.99, -94.63),
+    school('SYNT2', 'ST ANNE SCHOOL', 'Lowell, MA', 42.6, -71.3),
+    school('SYNT3', 'PARK HILL HIGH', 'Kansas City, MO', 39.2, -94.6),
+    city('SYNC1', 'Kansas City', 'MO', 39.1, -94.58),
+    city('SYNC2', 'Lowell', 'MA', 42.64, -71.32),
+  ];
+  const engine = new SearchEngine(loadIndex(encodeIndex(records).bytes));
+
+  it.each([
+    "St. Anne's Catholic school Kansas City",
+    "Saint Anne's Catholic School in Kansas City",
+    'st ann near kansas city',
+  ])('%j finds the school near the city', (q) => {
+    const r = engine.search(q);
+    expect(r.schools.map((h) => h.id)).toEqual(['SYNT1']);
+    expect(r.cities.map((h) => h.id)).toEqual(['SYNC1']);
+    expect(r.order[0]).toBe('schools');
+  });
+
+  it('lists only the schools near that town', () => {
+    expect(engine.search('st anne lowell').schools.map((h) => h.id)).toEqual(['SYNT2']);
+    expect(engine.search('st anne catholic kansas city').schools.map((h) => h.id)).toEqual([
+      'SYNT1',
+    ]);
+  });
+
+  it('finds nothing when no town ends the query or none of its schools match', () => {
+    expect(engine.search('st anne springfield').schools).toEqual([]);
+    expect(engine.search('holy cross kansas city').schools).toEqual([]);
+  });
+
+  it('leaves a query that finds schools as it is', () => {
+    expect(engine.search('park hill kansas city').schools.map((h) => h.id)).toEqual(['SYNT3']);
+    expect(engine.search('kansas city').cities[0]?.id).toBe('SYNC1');
+  });
+});
+
+describe('a name, the town after it and its state, or a ZIP code', () => {
+  // SYNTHETIC: one parish school in a Kansas suburb, the two Kansas Citys (the
+  // Missouri one heavier), a far namesake, and the suburb's ZIP code; two
+  // Springfields, each with a St. Agnes in a town near it.
+  const school = (id: string, name: string, sub: string, lat: number, lon: number) =>
+    ({ kind: 'school', id, name, sub, state: sub.slice(-2), lat, lon, weight: 0 }) as const;
+  const city = (id: string, name: string, state: string, w: number, lat: number, lon: number) =>
+    ({ kind: 'city', id, name, sub: state, state, lat, lon, weight: w }) as const;
+  const records: SearchRecord[] = [
+    school('SYNS1', 'St. Ann Catholic School', 'Prairie Village, KS', 38.99, -94.63),
+    school('SYNS2', 'ST ANNE SCHOOL', 'Lowell, MA', 42.6, -71.3),
+    school('SYNS4', 'ST AGNES SCHOOL', 'Chatham, IL', 39.68, -89.7),
+    school('SYNS5', 'ST AGNES SCHOOL', 'Republic, MO', 37.12, -93.48),
+    city('SYNP1', 'Springfield', 'MO', 170_000, 37.21, -93.29),
+    city('SYNP2', 'Springfield', 'IL', 115_000, 39.8, -89.65),
+    city('SYNK1', 'Kansas City', 'MO', 500_000, 39.1, -94.58),
+    city('SYNK2', 'Kansas City', 'KS', 150_000, 39.11, -94.63),
+    city('SYNK3', 'Kansas', 'OK', 800, 36.2, -94.79),
+    {
+      kind: 'zip',
+      id: '66208',
+      name: '66208',
+      sub: 'Kansas',
+      state: 'KS',
+      lat: 38.99,
+      lon: -94.63,
+      weight: 0,
+    },
+  ];
+  const engine = new SearchEngine(loadIndex(encodeIndex(records).bytes));
+  const ids = (q: string): string[] => engine.search(q).schools.map((h) => h.id);
+
+  it.each([
+    "Saint Anne's Catholic School Kansas City KS",
+    "Saint Anne's Catholic School Kansas City, Kansas",
+    'St Ann Kansas City Kansas',
+    'st ann catholic kansas city, ks',
+  ])('%j reads the state as a choice of town, not a word of the name', (q) => {
+    const r = engine.search(q);
+    expect(r.schools.map((h) => h.id)).toEqual(['SYNS1']);
+    expect(r.cities[0]?.id).toBe('SYNK2');
+    expect(r.order[0]).toBe('schools');
+  });
+
+  it('chooses the town in the state typed', () => {
+    expect(ids('st agnes springfield il')).toEqual(['SYNS4']);
+    expect(ids('st agnes school springfield, illinois')).toEqual(['SYNS4']);
+    expect(ids('st agnes springfield mo')).toEqual(['SYNS5']);
+    // With no state, the larger town.
+    expect(ids('st agnes springfield')).toEqual(['SYNS5']);
+    expect(engine.search('st ann kansas city mo').cities[0]?.id).toBe('SYNK1');
+    // No Kansas City in Iowa: nothing near any.
+    expect(ids('st ann catholic kansas city ia')).toEqual([]);
+  });
+
+  it.each(['St Ann 66208', "saint anne's catholic school 66208"])(
+    '%j reads a ZIP code as the place',
+    (q) => {
+      const r = engine.search(q);
+      expect(r.schools.map((h) => h.id)).toEqual(['SYNS1']);
+      expect(r.zips[0]?.id).toBe('66208');
+      expect(r.order).toEqual(['schools', 'zips', 'cities']);
+    },
+  );
+
+  it('finds nothing near a ZIP code no school of the name is near', () => {
+    expect(ids('st anne 66208')).toEqual(['SYNS1']);
+    expect(ids('holy cross 66208')).toEqual([]);
+    expect(ids('st ann 99999')).toEqual([]);
+  });
+});
+
+describe('a town whose name ends with another town', () => {
+  // SYNTHETIC: towns named for a neighbour ("Old Mystic", "Ben Avon"), each with no
+  // school of its name, and schools near the neighbour whose names have its first word.
+  const school = (id: string, name: string, sub: string, lat: number, lon: number) =>
+    ({ kind: 'school', id, name, sub, state: sub.slice(-2), lat, lon, weight: 0 }) as const;
+  const city = (id: string, name: string, state: string, w: number, lat: number, lon: number) =>
+    ({ kind: 'city', id, name, sub: state, state, lat, lon, weight: w }) as const;
+  const records: SearchRecord[] = [
+    city('SYNM1', 'Old Mystic', 'CT', 4_000, 41.39, -71.96),
+    city('SYNM2', 'Mystic', 'CT', 9_000, 41.35, -71.97),
+    school('SYNM3', 'OLD SAYBROOK SCHOOL', 'Old Saybrook, CT', 41.29, -72.38),
+    city('SYNB1', 'Ben Avon', 'PA', 1_800, 40.51, -80.08),
+    city('SYNB2', 'Avon', 'OH', 24_000, 41.45, -82.04),
+    school('SYNB3', 'ST BENEDICT CATHOLIC SCHOOL', 'Garfield Heights, OH', 41.42, -81.61),
+    city('SYNW1', 'West University Place', 'TX', 15_000, 29.72, -95.43),
+    city('SYNW2', 'University Place', 'WA', 34_000, 47.24, -122.55),
+    school('SYNW3', 'WEST AUBURN SENIOR HIGH SCHOOL', 'Auburn, WA', 47.3, -122.23),
+  ];
+  const engine = new SearchEngine(loadIndex(encodeIndex(records).bytes));
+
+  it.each([
+    ['Old Mystic', 'SYNM1'],
+    ['old myst', 'SYNM1'],
+    ['Ben Avon', 'SYNB1'],
+    ['ben avo', 'SYNB1'],
+    ['West University Place', 'SYNW1'],
+    ['west university pl', 'SYNW1'],
+    ['Old Mystic CT', 'SYNM1'],
+    ['Old Mystic, Connecticut', 'SYNM1'],
+    ['Ben Avon PA', 'SYNB1'],
+    ['West University Place TX', 'SYNW1'],
+  ])('%j lists that town first, and no school of another town', (q, id) => {
+    const r = engine.search(q);
+    expect(r.cities[0]?.id).toBe(id);
+    expect(r.schools).toEqual([]);
+  });
+
+  it('still reads a name and the town when no town has the whole name', () => {
+    const r = engine.search('st benedict avon');
+    expect(r.schools.map((h) => h.id)).toEqual(['SYNB3']);
+    expect(r.cities[0]?.id).toBe('SYNB2');
+  });
+});
+
+describe('a final s', () => {
+  // SYNTHETIC: "Hills" names a light school; a heavy "Hill" one must not outrank it.
+  const records: SearchRecord[] = [
+    {
+      kind: 'school',
+      id: 'SYNH1',
+      name: 'PARK HILL HIGH',
+      sub: 'Kansas City, MO',
+      state: 'MO',
+      lat: 39.2,
+      lon: -94.6,
+      weight: 3000,
+    },
+    {
+      kind: 'school',
+      id: 'SYNH2',
+      name: 'Forest Hills School',
+      sub: 'Grand Rapids, MI',
+      state: 'MI',
+      lat: 42.9,
+      lon: -85.5,
+      weight: 100,
+    },
+  ];
+  const engine = new SearchEngine(loadIndex(encodeIndex(records).bytes));
+
+  it('is part of the word', () => {
+    const hits = engine.search('hills').schools;
+    expect(hits[0]?.id).toBe('SYNH2');
+    expect(hits.find((h) => h.id === 'SYNH1')?.match ?? 'none').not.toBe('exact');
+  });
+});
+
 describe('accents and punctuation', () => {
   it.each([
     ['canon city', 'SYNC12'],

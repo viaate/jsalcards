@@ -160,6 +160,23 @@ describe('abbreviations', () => {
     expect(queryExpansions('el')).toEqual([]);
     expect(queryExpansions('pcs')).toEqual([['public', 'charter', 'school']]);
   });
+
+  it('reads other spellings of a name and its possessive s', () => {
+    expect(queryExpansions('ann')).toEqual([['anne']]);
+    expect(queryExpansions('anne')).toEqual([['ann']]);
+    // "Anne's" tokenizes to "annes": the name without its "s", and its other spelling.
+    expect(queryExpansions('annes')).toEqual([['anne'], ['ann']]);
+    expect(queryExpansions('anns')).toEqual([['ann'], ['anne']]);
+  });
+
+  it('keeps the final s of any other word', () => {
+    // "Hills" is not "Hill", "Adams" not "Adam": only the names with other spellings lose it.
+    for (const word of ['johns', 'hills', 'adams', 'brooks', 'wells', 'saints', 'sts', 'cross']) {
+      expect(queryExpansions(word)).toEqual([]);
+    }
+    expect(queryExpansions('ms')).toEqual([['middle', 'school']]);
+    expect(queryExpansions('schs')).toEqual([['schools']]);
+  });
 });
 
 describe('typo budget', () => {

@@ -480,9 +480,53 @@ export function canonicalLength(tokens: readonly string[]): number {
   return expandedLength(tokens, 0, tokens.length, stringRules);
 }
 
-/** The full-word forms a query token also stands for ("hs" gives [["high", "school"]]). */
+/**
+ * Spellings of one name that people type for each other: a query for "Saint
+ * Anne" finds "St. Ann" as surely as "St. Anne", typo or not.
+ */
+const NAME_VARIANTS: readonly (readonly string[])[] = [['ann', 'anne']];
+
+const VARIANTS_OF = new Map<string, string[]>();
+for (const names of NAME_VARIANTS) {
+  for (const name of names) {
+    const others = names.filter((n) => n !== name);
+    VARIANTS_OF.set(name, [...(VARIANTS_OF.get(name) ?? []), ...others]);
+  }
+}
+
+/**
+ * Shortest query word whose final "s" may be a possessive: "Anne's", typed or
+ * not, also finds a name with "Anne" or "Ann" ("annes" stands for both).
+ * Only for the names in NAME_VARIANTS: elsewhere an "s" is part of the word
+ * ("Hills" is not "Hill", "Adams" not "Adam"), and a name typed with it ranks
+ * as it always did.
+ */
+const MIN_S_STEM_WORD = 4;
+
+const expansionCache = new Map<string, readonly (readonly string[])[]>();
+const EXPANSION_CACHE_SIZE = 4096;
+
+/**
+ * The words a query token also stands for: an abbreviation's full words ("hs"
+ * gives [["high", "school"]]), a name's other spellings ("ann" gives
+ * [["anne"]]), and for such a name with a possessive "s", the name and its
+ * other spellings ("annes" gives [["anne"], ["ann"]]).
+ */
 export function queryExpansions(token: string): readonly (readonly string[])[] {
-  return QUERY_EXPANSIONS.get(token) ?? [];
+  const cached = expansionCache.get(token);
+  if (cached !== undefined) return cached;
+  const out: (readonly string[])[] = [...(QUERY_EXPANSIONS.get(token) ?? [])];
+  for (const variant of VARIANTS_OF.get(token) ?? []) out.push([variant]);
+  if (token.length >= MIN_S_STEM_WORD && token.endsWith('s')) {
+    const stem = token.slice(0, -1);
+    const variants = VARIANTS_OF.get(stem);
+    if (variants !== undefined) {
+      out.push([stem]);
+      for (const variant of variants) out.push([variant]);
+    }
+  }
+  if (expansionCache.size < EXPANSION_CACHE_SIZE) expansionCache.set(token, out);
+  return out;
 }
 
 /**

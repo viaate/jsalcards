@@ -26,6 +26,10 @@ sources:
 
   # The most recent release is used: 2024-25 when NCES publishes it, else 2023-24.
   # PSS is biennial, so the 2024-25 link answered HTTP 404 when this was written.
+  # When it appears, the supplement's review guard reads it at once: a new school
+  # near a kept supplement entry stops the build (and Preview's deploy) until a
+  # reviewer rules on it in config/directory-supplement.yaml. Pin its sha256 here
+  # when it is published and reviewed.
   private_school_geocodes:
     title: EDGE private school geocodes (Private School Survey universe)
     candidates:
@@ -123,3 +127,18 @@ tiles:
   layer: schools
   minzoom: 9
   maxzoom: 14
+
+# Real schools the NCES files miss (the Private School Survey public file lists
+# only the private schools that answered that cycle). Each entry carries the
+# evidence that it operates now, its address and its Census geocode; see
+# snowlight/directory/supplement.py. Ids are id_prefix and six digits, a shape no
+# NCES id takes; the build stops if an NCES file ever uses the prefix.
+supplement:
+  path: config/directory-supplement.yaml
+  id_prefix: SN
+  # An entry whose evidence (its page's checked_on, else its closings row's
+  # evidence_seen_on) is older than this, or from before last school year, is
+  # dropped as evidence_stale until checked again. An entry whose address was not
+  # matched since August 1 of the build's school year is dropped as address_stale.
+  # Dropped entries need no reviewer's ruling, so they never stop the build.
+  max_evidence_age_days: 365

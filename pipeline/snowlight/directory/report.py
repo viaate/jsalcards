@@ -12,6 +12,7 @@ from typing import Any
 import polars as pl
 
 from snowlight.directory.filters import REASON_DESCRIPTIONS, Reason
+from snowlight.directory.supplement import EXPIRY_WARNING_DAYS
 
 UNKNOWN_STATE = "unknown"
 
@@ -76,6 +77,8 @@ def _cell(entry: Mapping[str, Any] | None) -> str:
 def render_markdown(report: Mapping[str, Any]) -> str:
     """Render the build report as Markdown tables."""
     public, private, districts = report["public"], report["private"], report["districts"]
+    empty: dict[str, Any] = {"source_rows": 0, "kept": 0, "dropped": {}, "by_state": {}}
+    supplement = report.get("supplement", empty)
     lines = [
         "# School directory build report",
         "",
@@ -89,6 +92,7 @@ def render_markdown(report: Mapping[str, Any]) -> str:
     for label, section in (
         ("Public schools", public),
         ("Private schools", private),
+        ("Supplement schools (private)", supplement),
         ("Districts (LEA file)", districts),
     ):
         dropped = sum(section["dropped"].values())
@@ -97,7 +101,13 @@ def render_markdown(report: Mapping[str, Any]) -> str:
         )
     lines += ["", "## Dropped rows by reason", "", "| Set | Reason | Rows | Meaning |"]
     lines.append("|---|---|---:|---|")
-    for label, section in (("public", public), ("private", private), ("districts", districts)):
+    sets = (
+        ("public", public),
+        ("private", private),
+        ("supplement", supplement),
+        ("districts", districts),
+    )
+    for label, section in sets:
         for reason, count in section["dropped"].items():
             meaning = REASON_DESCRIPTIONS[Reason(reason)]
             lines.append(f"| {label} | `{reason}` | {count:,} | {meaning} |")
@@ -105,16 +115,59 @@ def render_markdown(report: Mapping[str, Any]) -> str:
         "",
         "## By state (kept / source rows)",
         "",
-        "| State | Public schools | Private schools | Districts |",
-        "|---|---:|---:|---:|",
+        "| State | Public schools | Private schools | Supplement schools | Districts |",
+        "|---|---:|---:|---:|---:|",
     ]
-    states = sorted(set(public["by_state"]) | set(private["by_state"]) | set(districts["by_state"]))
+    states = sorted(
+        set(public["by_state"])
+        | set(private["by_state"])
+        | set(supplement["by_state"])
+        | set(districts["by_state"])
+    )
     for state in states:
         lines.append(
             f"| {state} | {_cell(public['by_state'].get(state))} | "
             f"{_cell(private['by_state'].get(state))} | "
+            f"{_cell(supplement['by_state'].get(state))} | "
             f"{_cell(districts['by_state'].get(state))} |"
         )
+    by_source = supplement.get("kept_by_source", {})
+    if by_source:
+        lines += ["", "## Supplement schools kept, by source", "", "| Source | Schools |"]
+        lines.append("|---|---:|")
+        lines += [f"| {source} | {count:,} |" for source, count in by_source.items()]
+    by_address = supplement.get("kept_by_address_source", {})
+    if by_address:
+        lines += ["", "## Supplement schools kept, by address source", ""]
+        lines += ["| Address matched against | Schools |", "|---|---:|"]
+        lines += [f"| {source} | {count:,} |" for source, count in by_address.items()]
+    if "oldest_evidence_on" in supplement:
+        lines += [
+            "",
+            "## Supplement checks",
+            "",
+            "- Oldest evidence that an entry operates: "
+            f"{supplement['oldest_evidence_on'] or 'none'} "
+            "(entries whose evidence is from before last school year or older than "
+            f"{supplement['max_evidence_age_days']} days are dropped as `evidence_stale`).",
+            "- Oldest match of an entry's street address against a current source: "
+            f"{supplement['oldest_address_checked_on'] or 'none'} (entries not matched since "
+            "August 1 of this school year are dropped as `address_stale`).",
+            f"- Nearby NCES schools reviewers ruled are other schools: "
+            f"{supplement['near_nces_cleared']:,}.",
+        ]
+        listed = supplement["listed_by_nces"]
+        lines.append(f"- Entries the NCES files now list: {len(listed):,}.")
+        lines += [f"  - {entry} is NCES {nces_id}" for entry, nces_id in listed.items()]
+        soon = supplement.get("expiring", [])
+        lines.append(
+            f"- Kept entries whose evidence or address goes stale within "
+            f"{EXPIRY_WARNING_DAYS} days: {len(soon):,}"
+            + ("." if not soon else " (check each again before the date):")
+        )
+        lines += [
+            f"  - {e['id']} {e['name']}: {e['what']} goes stale on {e['expires_on']}" for e in soon
+        ]
     check = report.get("tileset_check")
     if check:
         per_zoom = ", ".join(f"z{z}: {n:,}" for z, n in check["schools_per_zoom"].items())

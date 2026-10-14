@@ -28,7 +28,7 @@ def fixture_path(url: str) -> Path:
 
 @pytest.fixture(scope="session")
 def fixture_config() -> DirectoryConfig:
-    """The real directory.yaml with each pinned SHA-256 swapped for its fixture's."""
+    """The real directory.yaml with each pinned SHA-256 swapped for its fixture's, no supplement."""
     config = load_config()
     sources = {}
     for key, source in config.sources.items():
@@ -38,7 +38,8 @@ def fixture_config() -> DirectoryConfig:
             pin = hashlib.sha256(path.read_bytes()).hexdigest() if path.exists() else None
             candidates.append(candidate.model_copy(update={"sha256": pin}))
         sources[key] = source.model_copy(update={"candidates": candidates})
-    return config.model_copy(update={"sources": sources})
+    # The fixture builds read no supplement; tests that need one give their own.
+    return config.model_copy(update={"sources": sources, "supplement": None})
 
 
 class FixtureServer:

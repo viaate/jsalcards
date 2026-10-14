@@ -37,8 +37,9 @@
  * villages named Kansas, which still follow; "portland" keeps Portland,
  * Tennessee ahead of South Portland, which does not start with the word.
  */
-import type { GroupData, SearchIndex } from './decode';
+import type { GroupData, RecordView, SearchIndex } from './decode';
 import {
+  canonicalLength,
   isNumericToken,
   queryExpansions,
   ruleHolds,
@@ -49,6 +50,7 @@ import {
 import { isPhrase } from './phrase';
 import { Tier, parseQuery } from './query';
 import type { ParsedQuery, Reading, TierValue } from './query';
+import { STATES } from './states';
 import { prefixDistance } from './trie';
 import { GROUP_NAMES } from './types';
 import type { GroupName, MatchKind, NearView, SearchHit, SearchResults } from './types';
@@ -289,10 +291,47 @@ function isNear(near: NearView, lat: number, lon: number): boolean {
   return dx * dx + dy * dy <= near.km * near.km;
 }
 
+/** Kilometres around a town a query ends with that count as that town (a metro area). */
+export const TOWN_KM = 40;
+/** Most words of a town's name read from the end of a query. */
+const TOWN_WORDS = 3;
+/** Towns of that name tried, most populous first (Kansas City, MO and KS). */
+const TOWN_CHOICES = 3;
+/** Words that join a name to the town after it. */
+const TOWN_JOINERS = new Set(['in', 'near', 'at']);
+const TOWN_ORDER: readonly GroupName[] = ['schools', 'cities', 'zips'];
+const ZIP_ORDER: readonly GroupName[] = ['schools', 'zips', 'cities'];
+const CITY_GROUP = GROUP_NAMES.indexOf('cities');
+const ZIP_GROUP = GROUP_NAMES.indexOf('zips');
+/** A ZIP code as a word. */
+const ZIP_WORD = /^\d{5}$/u;
+/** A state's code or whole name, as tokens joined by spaces, to its code. */
+const STATE_WORDS: ReadonlyMap<string, string> = new Map(
+  STATES.flatMap(([code, name]) => [
+    [code.toLowerCase(), code],
+    [tokenize(name).join(' '), code],
+  ]),
+);
+/** Longest state name, in words ("district of columbia"). */
+const STATE_WORDS_MAX = 3;
+
+/** Town readings remembered, by the town words they were read for. */
+const TOWN_CACHE = 64;
+
+/** A way to read a query: as typed, or as a name near a town or ZIP code it ends with. */
+interface TownReading {
+  readonly query: string;
+  readonly view: NearView | undefined;
+  readonly town?: SearchHit;
+  /** Whether this reading only asks if the name finds any school at all. */
+  readonly probe?: boolean;
+}
+
 export class SearchEngine {
   readonly index: SearchIndex;
   private readonly pools: readonly BitPool[];
   private readonly states = new StateMasks();
+  private readonly towns = new Map<string, RecordView[]>();
 
   constructor(index: SearchIndex) {
     this.index = index;
@@ -303,8 +342,174 @@ export class SearchEngine {
    * With `near`, the records within its distance whose names have every word
    * typed (NEAR_LEVELS) come first in their group, best level first, and a
    * group with such records comes before the groups without.
+   *
+   * A query that finds no school and no place it names (namesPlace) but ends
+   * with a town's name ("st annes catholic school kansas city", "in" or "near"
+   * before the town aside) is read as a name and that town: the schools within
+   * TOWN_KM of the town whose names have the other words, the town listed first
+   * among the places the query found. A school in a suburb is found by the city
+   * people name it by, and a town typed in full ("old mystic") stays that town.
    */
   search(raw: string, limit = DEFAULT_LIMIT, near?: NearView): SearchResults {
+    // One call site for every reading keeps the copy lint's walk of this file short.
+    const readings: TownReading[] = [{ query: raw, view: near }];
+    let first: SearchResults | null = null;
+    const noSchool = new Set<string>();
+    for (const reading of readings) {
+      // A name no school has anywhere has none near any town: its towns are skipped.
+      if (reading.town !== undefined && noSchool.has(reading.query)) continue;
+      const results = this.searchOnce(reading.query, limit, reading.view);
+      if (reading.probe) {
+        if (results.schools.length === 0) noSchool.add(reading.query);
+        continue;
+      }
+      const { town, view } = reading;
+      if (town === undefined || view === undefined) {
+        if (results.schools.length > 0 || parseQuery(raw).numeric || this.namesPlace(raw)) {
+          return results;
+        }
+        first = results;
+        readings.push(...this.townReadings(raw));
+        continue;
+      }
+      const schools = results.schools.filter((h) => isNear(view, h.lat, h.lon));
+      if (schools.length > 0) {
+        // The town (or ZIP code) listed first among the places the query found.
+        const zip = town.kind === 'zip';
+        const found = (zip ? first?.zips : first?.cities) ?? [];
+        const cap = Math.max(1, Math.min(MAX_LIMIT, Math.floor(limit) || DEFAULT_LIMIT));
+        const places = [town, ...found.filter((c) => c.id !== town.id)].slice(0, cap);
+        const cities = zip ? (first?.cities ?? []) : places;
+        const zips = zip ? places : (first?.zips ?? []);
+        return { query: raw, schools, cities, zips, order: zip ? ZIP_ORDER : TOWN_ORDER };
+      }
+    }
+    return first ?? this.searchOnce(raw, limit, near);
+  }
+
+  /**
+   * Whether the query is a place's name, or the start of one with its last word
+   * still being typed ("old mystic", "ben avo"), with or without its state after
+   * it ("old mystic ct"). A town the query names is what it means, so no other
+   * town is read into it.
+   */
+  private namesPlace(raw: string): boolean {
+    const words = tokenize(raw);
+    const n = words.length;
+    if (n > 1 && this.townsNamed(words, true).length > 0) return true;
+    for (let k = Math.min(STATE_WORDS_MAX, n - 2); k >= 1; k--) {
+      const state = STATE_WORDS.get(words.slice(n - k).join(' '));
+      if (state !== undefined && this.townsNamed(words.slice(0, n - k), true, state).length > 0) {
+        return true;
+      }
+    }
+    return false;
+  }
+
+  /**
+   * A query read as a name and the place it ends with: a ZIP code ("st ann
+   * 66208"), or a town, for each town of that name. A state after the town
+   * ("kansas city ks", "kansas city, kansas") is not part of the name and
+   * chooses between towns of that name; the town is also read without it.
+   */
+  private townReadings(raw: string): TownReading[] {
+    const spans: number[][] = [];
+    const tokens = tokenize(raw, spans);
+    const out: TownReading[] = [];
+    const n = tokens.length;
+    if (n > 1 && ZIP_WORD.test(tokens[n - 1] ?? '')) {
+      this.placeReadings(raw, tokens, spans, n, 1, undefined, out);
+    }
+    for (let k = Math.min(STATE_WORDS_MAX, n - 2); k >= 1; k--) {
+      const state = STATE_WORDS.get(tokens.slice(n - k).join(' '));
+      if (state === undefined) continue;
+      for (let t = Math.min(TOWN_WORDS, n - k - 1); t >= 1; t--) {
+        this.placeReadings(raw, tokens, spans, n - k, t, state, out);
+      }
+    }
+    for (let t = Math.min(TOWN_WORDS, n - 1); t >= 1; t--) {
+      this.placeReadings(raw, tokens, spans, n, t, undefined, out);
+    }
+    return out;
+  }
+
+  /**
+   * Readings of the first `end` tokens as a name and the `k` words before `end`
+   * as a place (a ZIP code when they are one, else a town, in `state` if given).
+   */
+  private placeReadings(
+    raw: string,
+    tokens: readonly string[],
+    spans: readonly number[][],
+    end: number,
+    k: number,
+    state: string | undefined,
+    out: TownReading[],
+  ): void {
+    // The name is the query as typed up to the place (or a joining word before it).
+    let stop = end - k;
+    while (stop > 1 && TOWN_JOINERS.has(tokens[stop - 1] ?? '')) stop--;
+    const query = raw.slice(0, spans[stop]?.[0] ?? raw.length);
+    const words = tokens.slice(end - k, end);
+    const zip = k === 1 && ZIP_WORD.test(words[0] ?? '');
+    const places = this.townsNamed(words, false, state, zip ? ZIP_GROUP : CITY_GROUP);
+    if (places.length > 0) out.push({ query, view: undefined, probe: true });
+    for (const place of places) {
+      out.push({
+        query,
+        view: { lat: place.lat, lon: place.lon, km: TOWN_KM },
+        town: { ...place, match: 'exact', highlight: [[0, place.name.length]] },
+      });
+    }
+  }
+
+  /**
+   * The towns whose whole name is `words`, most populous first, at most
+   * TOWN_CHOICES; with `typing`, the towns whose names start with `words`, the
+   * last perhaps cut short. Only names of that many words (or more, typing),
+   * abbreviations spelled out, are read from the index (GroupData.canon), and
+   * each answer is remembered. With `state`, only towns in that state; with
+   * `g` the ZIP group, the ZIP codes of that name.
+   */
+  private townsNamed(
+    words: readonly string[],
+    typing = false,
+    state?: string,
+    g = CITY_GROUP,
+  ): RecordView[] {
+    const key = `${String(g)}${state ?? ''}${typing ? '>' : '='}${words.join(' ')}`;
+    const known = this.towns.get(key);
+    if (known) return known;
+    const group = this.index.groups[g];
+    const first = this.index.trie.exact(words[0] ?? '');
+    const last = words.length - 1;
+    const out: RecordView[] = [];
+    if (group && first >= 0) {
+      const end = group.nameOff[first + 1] ?? 0;
+      const count = canonicalLength(typing ? words.slice(0, last) : words) + (typing ? 1 : 0);
+      const ranks: number[] = [];
+      for (let i = group.nameOff[first] ?? 0; i < end; i++) {
+        const rank = group.namePost[i] ?? 0;
+        const canon = group.canon[rank] ?? 0;
+        if (canon === count || (typing && canon > count)) ranks.push(rank);
+      }
+      for (const rank of ranks.sort((a, b) => a - b)) {
+        const rec = this.index.record(group.fileIndex[rank] ?? 0);
+        const name = tokenize(rec.name);
+        const fits = typing ? name.length >= words.length : name.length === words.length;
+        const same = words.every(
+          (w, i) => name[i] === w || (typing && i === last && name[i]?.startsWith(w)),
+        );
+        if (fits && same && (state === undefined || rec.state === state)) out.push(rec);
+        if (out.length === TOWN_CHOICES) break;
+      }
+    }
+    if (this.towns.size >= TOWN_CACHE) this.towns.clear();
+    this.towns.set(key, out);
+    return out;
+  }
+
+  private searchOnce(raw: string, limit = DEFAULT_LIMIT, near?: NearView): SearchResults {
     const cap = Math.max(1, Math.min(MAX_LIMIT, Math.floor(limit) || DEFAULT_LIMIT));
     const parsed = parseQuery(raw);
     const empty: SearchResults = {

@@ -1,0 +1,1842 @@
+# Real schools the NCES files miss, merged into the directory by
+# snowlight/directory/supplement.py. Reviewed by hand; every entry needs:
+#
+# - id: SN and six digits, never reused or renumbered: a new entry takes the
+#   number after last_id, which then becomes its id. An entry deleted from this
+#   file has its id listed under retired_ids, never to be issued again; the
+#   build refuses a number up to last_id that is neither an entry nor retired.
+#   Edit entries here in place: this file is the record.
+# - name, street, city, state, zip: as the school or its diocese lists them now.
+# - address_from, address_url, address_checked_on: where the street address was
+#   matched, and when: the school's own site (school-site) or the school list of
+#   its diocese or church body (diocese-list) at address_url, or a closings row
+#   that gives the street address (closings-row, on evidence_seen_on). An earlier
+#   PSS file never vouches for an address: a school can move over a summer. An
+#   address not matched since August 1 of the build's school year is dropped as
+#   address_stale until it is matched again and its date updated.
+# - county_fips, county_name, lat, lon, geocoded_address: from the Census Bureau
+#   geocoder for that street address (geographies/onelineaddress, benchmark
+#   Public_AR_Current, vintage Current_Current), coordinates at six decimals.
+#   A school the geocoder cannot match exactly is not added: no location is guessed.
+#   One exception, which no entry uses now: geocoder: nces-pss takes NCES's own
+#   point for the same street address in the entry's earlier PSS row, only once a
+#   reviewer has matched that point against the school's own map or address page,
+#   recorded in location_url and location_checked_on. A point the reviewer cannot
+#   match retires the entry.
+# - grade_low, grade_high: PK, TK, KG, T1 or 01 to 12, as the school's current
+#   pages give them. A school whose highest grade is kindergarten needs its grades
+#   from a current source (diocese-list or school-site): a preschool that had a
+#   kindergarten class in an earlier survey may have dropped it. An entry with an
+#   nces_ppin records that PSS row's grades in pss_grade_low and pss_grade_high;
+#   grades that differ from them need grades_url, the school's own current page
+#   that gives them (a diocese list can be out of date), or, where its own site
+#   does not answer or gives only part of them, the current page that does, with a
+#   comment saying so. The load refuses such an entry without grades_url. An entry whose grades equal its PSS row's and that has no
+#   grades_url keeps them because no current page of its own gives other grades.
+# - source: where the school and its grades come from (pss-2021-22, pss-2019-20,
+#   diocese-list, school-site, closings-list); nces_ppin for pss-* sources.
+# - evidence: evidence_url (a current page listing the school as operating), or
+#   evidence_station and evidence_seen_on (a closings list that named it in the
+#   school year of checked_on or the one before), or both.
+# - checked_on: the date the entry was last checked. Its evidence ages from
+#   checked_on when it has an evidence_url, else from evidence_seen_on: evidence
+#   from before last school year, or older than max_evidence_age_days
+#   (config/directory.yaml), is dropped as evidence_stale until checked again.
+# - distinct_from: NCES ids of nearby schools a reviewer checked are other
+#   schools. The build stops on any kept NCES private school within 300 m, public
+#   school within 150 m, or private school at the same street address that is not
+#   listed here; and on an entry whose only evidence is a closings row when an
+#   NCES school in another state has its name and town.
+#
+# An entry the NCES files list again (its nces_ppin, or the same name within
+# 1 km) is dropped by the build as listed_by_nces and may then be retired here.
+#
+# Every entry's address is checked again each school year before August 1, and
+# its evidence before it is a year old: the build report, and Preview's log as
+# warnings, list the entries whose evidence or address goes stale within 60 days.
+last_id: SN000116
+retired_ids:
+- SN000003  # no current page of its own gives its address
+- SN000007  # its diocese list gives no address and its own site refuses readers
+- SN000008  # closings rows named St. Mary in Alexandria, Kentucky, not Indiana
+- SN000009  # moved to a new building in August 2026; no current source gives the new address
+- SN000021  # NCES lists it within St. Mary's Colgan, PK-12, 82 m away
+- SN000030  # no current page of its own gives its address
+- SN000035  # kindergarten only in an earlier survey; no current grades
+- SN000037  # no current page of its own or its diocese gives its address
+- SN000038  # no current page of its own gives its address
+- SN000039  # kindergarten only in an earlier survey; no current grades
+- SN000044  # no current page of its own gives its address
+- SN000045  # no current page of its own gives its address; its grades disagree between listings
+- SN000048  # no current page of its own or its diocese gives its address
+- SN000051  # its NCES point is 220 m from its diocese map's; the Census geocoder has no exact match
+- SN000052  # NCES lists it as Luke M Powers Catholic High School, same address
+- SN000057  # a campus of NCES's Monroe Catholic Elementary Schools
+- SN000063  # kindergarten only in an earlier survey; no current grades
+- SN000072  # its NCES point is 160 m from its diocese map's; the Census geocoder has no exact match
+- SN000081  # NCES lists it as St Gertude Catholic School, same address
+- SN000083  # its operator lists another Amherst address; no current page gives the academy's
+- SN000084  # kindergarten only in an earlier survey; no current grades
+- SN000086  # no current page of its own gives its address
+- SN000088  # kindergarten only in an earlier survey; no current grades
+- SN000089  # kindergarten only in an earlier survey; no current grades
+- SN000090  # kindergarten only in an earlier survey; no current grades
+- SN000091  # its closings row places it in Bedford, not its Manchester address
+- SN000094  # now Saint Christopher Academy on two campuses; no current address source
+- SN000096  # no current page of its own gives its address
+- SN000097  # kindergarten only in an earlier survey; no current grades
+- SN000104  # no current page of its own gives its address
+- SN000105  # no current page of its own gives its address
+- SN000106  # kindergarten only in an earlier survey; no current grades
+- SN000108  # no current source; may be a campus of NCES's Menomonee Falls school
+- SN000109  # its diocese page is gone; no current page gives its address
+- SN000110  # its own pages refuse readers; no current page gives its address
+- SN000113  # no current page of its own gives its address
+- SN000114  # no map of its own confirms its NCES point; the Census geocoder has no exact match
+schools:
+- id: SN000001
+  name: ST BRIDGET SCHOOL
+  street: 171 MAIN ST
+  city: CHESHIRE
+  state: CT
+  zip: '06410'
+  county_fips: '09140'
+  county_name: Naugatuck Valley Planning Region
+  lat: 41.503839
+  lon: -72.904078
+  grade_low: PK
+  grade_high: '08'
+  pss_grade_low: PK
+  pss_grade_high: '08'
+  source: pss-2021-22
+  nces_ppin: A9501030
+  evidence_url: https://www.stbridgetschool.org/
+  evidence_station: gray-wfsb
+  evidence_seen_on: '2026-02-23'
+  address_from: school-site
+  address_url: https://www.stbridgetschool.org/
+  address_checked_on: '2026-10-14'
+  geocoded_address: 171 MAIN ST, CHESHIRE, CT, 06410
+  checked_on: '2026-10-14'
+- id: SN000002
+  name: ADELBROOK
+  street: 60 HICKSVILLE RD
+  city: CROMWELL
+  state: CT
+  zip: '06416'
+  county_fips: '09130'
+  county_name: Lower Connecticut River Valley Planning Region
+  lat: 41.599112
+  lon: -72.666957
+  grade_low: '04'
+  grade_high: '12'
+  pss_grade_low: '05'
+  pss_grade_high: '12'
+  grades_url: https://adelbrook.org/our-schools/adelbrook-academy-cromwell  # ages 9 to 22 on its own page, as grades 4 to 12
+  source: pss-2021-22
+  nces_ppin: '00233705'
+  evidence_station: gray-wfsb
+  evidence_seen_on: '2026-02-23'
+  address_from: school-site
+  address_url: https://adelbrook.org/
+  address_checked_on: '2026-10-14'
+  geocoded_address: 60 HICKSVILLE RD, CROMWELL, CT, 06416
+  checked_on: '2026-10-14'
+- id: SN000004
+  name: XAVIER HIGH SCHOOL
+  street: 181 RANDOLPH RD
+  city: MIDDLETOWN
+  state: CT
+  zip: '06457'
+  county_fips: '09130'
+  county_name: Lower Connecticut River Valley Planning Region
+  lat: 41.53406
+  lon: -72.620129
+  grade_low: '09'
+  grade_high: '12'
+  pss_grade_low: '09'
+  pss_grade_high: '12'
+  source: pss-2021-22
+  nces_ppin: '00232246'
+  evidence_station: gray-wfsb
+  evidence_seen_on: '2026-02-23'
+  address_from: diocese-list
+  address_url: https://www.norwichdiocese.org/Find/Schools/High-School
+  address_checked_on: '2026-10-14'
+  geocoded_address: 181 RANDOLPH RD, MIDDLETOWN, CT, 06457
+  checked_on: '2026-10-14'
+- id: SN000005
+  name: HOPKINS SCHOOL
+  street: 986 FOREST RD
+  city: NEW HAVEN
+  state: CT
+  zip: '06515'
+  county_fips: '09170'
+  county_name: South Central Connecticut Planning Region
+  lat: 41.31922
+  lon: -72.970391
+  grade_low: '07'
+  grade_high: '12'
+  pss_grade_low: '07'
+  pss_grade_high: '12'
+  source: pss-2021-22
+  nces_ppin: '00233738'
+  evidence_url: https://www.hopkins.edu/
+  evidence_station: gray-wfsb
+  evidence_seen_on: '2026-02-23'
+  address_from: school-site
+  address_url: https://www.hopkins.edu/
+  address_checked_on: '2026-10-14'
+  geocoded_address: 986 FOREST RD, NEW HAVEN, CT, 06515
+  checked_on: '2026-10-14'
+- id: SN000006
+  name: FAITH PREP SCHOOL
+  street: 600 DANBURY RD
+  city: NEW MILFORD
+  state: CT
+  zip: '06776'
+  county_fips: '09190'
+  county_name: Western Connecticut Planning Region
+  lat: 41.505129
+  lon: -73.419075
+  grade_low: KG
+  grade_high: '12'
+  pss_grade_low: KG
+  pss_grade_high: '12'
+  source: pss-2019-20
+  nces_ppin: A0900684
+  evidence_station: gray-wfsb
+  evidence_seen_on: '2026-02-23'
+  address_from: school-site
+  address_url: https://www.faithprep.cc/
+  address_checked_on: '2026-10-14'
+  geocoded_address: 600 DANBURY RD, NEW MILFORD, CT, 06776
+  checked_on: '2026-10-14'
+- id: SN000010
+  name: BISHOP WARD HIGH SCHOOL
+  street: 708 N 18TH ST
+  city: KANSAS CITY
+  state: KS
+  zip: '66102'
+  county_fips: '20209'
+  county_name: Wyandotte County
+  lat: 39.112804
+  lon: -94.649379
+  grade_low: '09'
+  grade_high: '12'
+  pss_grade_low: '09'
+  pss_grade_high: '12'
+  source: diocese-list
+  nces_ppin: '00488811'
+  evidence_url: https://archkckcs.org/schools/
+  address_from: diocese-list
+  address_url: https://archkckcs.org/schools/
+  address_checked_on: '2026-10-14'
+  geocoded_address: 708 N 18TH ST, KANSAS CITY, KS, 66102
+  checked_on: '2026-10-14'
+- id: SN000011
+  name: ST. PATRICK CATHOLIC SCHOOL
+  street: 1066 N 94TH ST
+  city: KANSAS CITY
+  state: KS
+  zip: '66112'
+  county_fips: '20209'
+  county_name: Wyandotte County
+  lat: 39.114902
+  lon: -94.797797
+  grade_low: PK
+  grade_high: '08'
+  pss_grade_low: PK
+  pss_grade_high: '08'
+  source: diocese-list
+  nces_ppin: '00488662'
+  evidence_url: https://archkckcs.org/schools/
+  address_from: diocese-list
+  address_url: https://archkckcs.org/schools/
+  address_checked_on: '2026-10-14'
+  geocoded_address: 1066 N 94TH ST, KANSAS CITY, KS, 66112
+  checked_on: '2026-10-14'
+- id: SN000012
+  name: ST. JOHN CATHOLIC SCHOOL
+  street: 1208 KENTUCKY ST
+  city: LAWRENCE
+  state: KS
+  zip: '66044'
+  county_fips: '20045'
+  county_name: Douglas County
+  lat: 38.961681
+  lon: -95.238202
+  grade_low: PK
+  grade_high: '08'
+  pss_grade_low: PK
+  pss_grade_high: '08'
+  source: diocese-list
+  nces_ppin: '00488607'
+  evidence_url: https://archkckcs.org/schools/
+  address_from: diocese-list
+  address_url: https://archkckcs.org/schools/
+  address_checked_on: '2026-10-14'
+  geocoded_address: 1208 KENTUCKY ST, LAWRENCE, KS, 66044
+  checked_on: '2026-10-14'
+- id: SN000013
+  name: CURE OF ARS CATHOLIC SCHOOL
+  street: 9403 MISSION RD
+  city: LEAWOOD
+  state: KS
+  zip: '66206'
+  county_fips: '20091'
+  county_name: Johnson County
+  lat: 38.959109
+  lon: -94.630315
+  grade_low: PK
+  grade_high: '08'
+  pss_grade_low: PK
+  pss_grade_high: '08'
+  source: diocese-list
+  nces_ppin: '00488786'
+  evidence_url: https://archkckcs.org/schools/
+  address_from: diocese-list
+  address_url: https://archkckcs.org/schools/
+  address_checked_on: '2026-10-14'
+  geocoded_address: 9403 MISSION RD, LEAWOOD, KS, 66206
+  checked_on: '2026-10-14'
+- id: SN000014
+  name: NATIVITY PARISH SCHOOL
+  street: 3700 W 119TH ST
+  city: LEAWOOD
+  state: KS
+  zip: '66209'
+  county_fips: '20091'
+  county_name: Johnson County
+  lat: 38.91297
+  lon: -94.628623
+  grade_low: PK
+  grade_high: '08'
+  pss_grade_low: PK
+  pss_grade_high: '08'
+  source: diocese-list
+  nces_ppin: A0103733
+  evidence_url: https://archkckcs.org/schools/
+  address_from: diocese-list
+  address_url: https://archkckcs.org/schools/
+  address_checked_on: '2026-10-14'
+  geocoded_address: 3700 W 119TH ST, LEAWOOD, KS, 66209
+  checked_on: '2026-10-14'
+- id: SN000015
+  name: HOLY TRINITY CATHOLIC SCHOOL
+  street: 13600 WEST 92ND ST
+  city: LENEXA
+  state: KS
+  zip: '66215'
+  county_fips: '20091'
+  county_name: Johnson County
+  lat: 38.961769
+  lon: -94.743527
+  grade_low: KG
+  grade_high: '08'
+  pss_grade_low: KG
+  pss_grade_high: '08'
+  grades_url: https://htslenexa.org/admissions/tuition-rates  # its preschool is the Early Education Center at 9201 Summit St (htslenexa.org/eec), another address
+  source: diocese-list
+  nces_ppin: '00489032'
+  evidence_url: https://archkckcs.org/schools/
+  address_from: diocese-list
+  address_url: https://archkckcs.org/schools/
+  address_checked_on: '2026-10-14'
+  geocoded_address: 13600 W 92ND ST, LENEXA, KS, 66215
+  checked_on: '2026-10-14'
+- id: SN000016
+  name: ST. JAMES ACADEMY
+  street: 24505 PRAIRIE STAR PKWY
+  city: LENEXA
+  state: KS
+  zip: '66227'
+  county_fips: '20091'
+  county_name: Johnson County
+  lat: 38.959133
+  lon: -94.868956
+  grade_low: '09'
+  grade_high: '12'
+  source: diocese-list
+  evidence_url: https://archkckcs.org/schools/
+  address_from: diocese-list
+  address_url: https://archkckcs.org/schools/
+  address_checked_on: '2026-10-14'
+  geocoded_address: 24505 PRAIRIE STAR PKWY, LENEXA, KS, 66227
+  checked_on: '2026-10-14'
+- id: SN000017
+  name: ST. JOSEPH CATHOLIC SCHOOL
+  street: 520 E. NORTHVIEW
+  city: MCPHERSON
+  state: KS
+  zip: '67460'
+  county_fips: '20113'
+  county_name: McPherson County
+  lat: 38.391035
+  lon: -97.659897
+  grade_low: KG
+  grade_high: '06'
+  pss_grade_low: TK
+  pss_grade_high: '06'
+  grades_url: https://stjosephmcpherson.com/about-us/history  # its parish runs the preschool apart from the school
+  source: diocese-list
+  nces_ppin: '00489859'
+  evidence_url: https://catholicdioceseofwichita.org/schools/
+  address_from: diocese-list
+  address_url: https://catholicdioceseofwichita.org/schools/
+  address_checked_on: '2026-10-14'
+  geocoded_address: 520 E NORTHVIEW AVE, MCPHERSON, KS, 67460
+  checked_on: '2026-10-14'
+- id: SN000018
+  name: ST. JOHN PAUL II ACADEMY
+  street: 16740 W 175TH ST
+  city: OLATHE
+  state: KS
+  zip: '66062'
+  county_fips: '20091'
+  county_name: Johnson County
+  lat: 38.81113
+  lon: -94.787085
+  grade_low: PK
+  grade_high: '08'
+  source: diocese-list
+  evidence_url: https://archkckcs.org/schools/
+  address_from: diocese-list
+  address_url: https://archkckcs.org/schools/
+  address_checked_on: '2026-10-14'
+  geocoded_address: 16740 W 175TH ST, OLATHE, KS, 66062
+  checked_on: '2026-10-14'
+- id: SN000019
+  name: ST. PAUL CATHOLIC SCHOOL
+  street: 21650 W 115TH TER
+  city: OLATHE
+  state: KS
+  zip: '66061'
+  county_fips: '20091'
+  county_name: Johnson County
+  lat: 38.919036
+  lon: -94.837647
+  grade_low: PK
+  grade_high: '08'
+  pss_grade_low: PK
+  pss_grade_high: '08'
+  source: diocese-list
+  nces_ppin: '00488673'
+  evidence_url: https://archkckcs.org/schools/
+  address_from: diocese-list
+  address_url: https://archkckcs.org/schools/
+  address_checked_on: '2026-10-14'
+  geocoded_address: 21650 115TH TER, OLATHE, KS, 66061
+  checked_on: '2026-10-14'
+- id: SN000020
+  name: ST. PATRICK CATHOLIC SCHOOL
+  street: 1831 STEVENS AVE.
+  city: PARSONS
+  state: KS
+  zip: '67357'
+  county_fips: '20099'
+  county_name: Labette County
+  lat: 37.34468
+  lon: -95.262716
+  grade_low: PK
+  grade_high: '08'
+  pss_grade_low: PK
+  pss_grade_high: '08'
+  source: diocese-list
+  nces_ppin: '00489633'
+  evidence_url: https://catholicdioceseofwichita.org/schools/
+  address_from: diocese-list
+  address_url: https://catholicdioceseofwichita.org/schools/
+  address_checked_on: '2026-10-14'
+  geocoded_address: 1831 STEVENS AVE, PARSONS, KS, 67357
+  checked_on: '2026-10-14'
+- id: SN000022
+  name: ST. ANN CATHOLIC SCHOOL
+  street: 7241 MISSION RD
+  city: PRAIRIE VILLAGE
+  state: KS
+  zip: '66208'
+  county_fips: '20091'
+  county_name: Johnson County
+  lat: 38.997239
+  lon: -94.630338
+  grade_low: PK
+  grade_high: '08'
+  source: diocese-list
+  evidence_url: https://archkckcs.org/schools/
+  address_from: diocese-list
+  address_url: https://archkckcs.org/schools/
+  address_checked_on: '2026-10-14'
+  geocoded_address: 7241 MISSION RD, PRAIRIE VILLAGE, KS, 66208
+  checked_on: '2026-10-14'
+- id: SN000023
+  name: HOLY FAMILY CATHOLIC SCHOOL
+  street: 1725 NORTHEAST SEWARD AVE
+  city: TOPEKA
+  state: KS
+  zip: '66616'
+  county_fips: '20177'
+  county_name: Shawnee County
+  lat: 39.058789
+  lon: -95.647141
+  grade_low: PK
+  grade_high: '08'
+  source: diocese-list
+  evidence_url: https://archkckcs.org/schools/
+  address_from: diocese-list
+  address_url: https://archkckcs.org/schools/
+  address_checked_on: '2026-10-14'
+  geocoded_address: 1725 NE SEWARD AVE, TOPEKA, KS, 66616
+  checked_on: '2026-10-14'
+- id: SN000024
+  name: CHRIST THE KING CATHOLIC SCHOOL
+  street: 4501 MAPLE
+  city: WICHITA
+  state: KS
+  zip: '67209'
+  county_fips: '20173'
+  county_name: Sedgwick County
+  lat: 37.680146
+  lon: -97.39634
+  grade_low: PK
+  grade_high: '08'
+  pss_grade_low: PK
+  pss_grade_high: '08'
+  source: diocese-list
+  nces_ppin: '00489553'
+  evidence_url: https://catholicdioceseofwichita.org/schools/
+  address_from: diocese-list
+  address_url: https://catholicdioceseofwichita.org/schools/
+  address_checked_on: '2026-10-14'
+  geocoded_address: 4501 W MAPLE ST, WICHITA, KS, 67209
+  checked_on: '2026-10-14'
+- id: SN000025
+  name: HOLY SAVIOR CATHOLIC ACADEMY
+  street: 3000 E. 13TH ST N
+  city: WICHITA
+  state: KS
+  zip: '67214'
+  county_fips: '20173'
+  county_name: Sedgwick County
+  lat: 37.708292
+  lon: -97.30126
+  grade_low: PK
+  grade_high: '08'
+  source: diocese-list
+  evidence_url: https://catholicdioceseofwichita.org/schools/
+  address_from: diocese-list
+  address_url: https://catholicdioceseofwichita.org/schools/
+  address_checked_on: '2026-10-14'
+  geocoded_address: 3000 E 13TH ST N, WICHITA, KS, 67214
+  checked_on: '2026-10-14'
+- id: SN000026
+  name: ST. FRANCIS OF ASSISI CATHOLIC SCHOOL
+  street: 853 N. SOCORA
+  city: WICHITA
+  state: KS
+  zip: '67212'
+  county_fips: '20173'
+  county_name: Sedgwick County
+  lat: 37.696961
+  lon: -97.437943
+  grade_low: PK
+  grade_high: '08'
+  pss_grade_low: PK
+  pss_grade_high: '08'
+  source: diocese-list
+  nces_ppin: '00489746'
+  evidence_url: https://catholicdioceseofwichita.org/schools/
+  address_from: diocese-list
+  address_url: https://catholicdioceseofwichita.org/schools/
+  address_checked_on: '2026-10-14'
+  geocoded_address: 853 N SOCORA ST, WICHITA, KS, 67212
+  checked_on: '2026-10-14'
+- id: SN000027
+  name: HOLY NAME CATHOLIC SCHOOL
+  street: 700 FULLER
+  city: WINFIELD
+  state: KS
+  zip: '67156'
+  county_fips: '20035'
+  county_name: Cowley County
+  lat: 37.242396
+  lon: -96.993296
+  grade_low: PK
+  grade_high: '06'
+  pss_grade_low: PK
+  pss_grade_high: '06'
+  source: diocese-list
+  nces_ppin: '00489768'
+  evidence_url: https://catholicdioceseofwichita.org/schools/
+  address_from: diocese-list
+  address_url: https://catholicdioceseofwichita.org/schools/
+  address_checked_on: '2026-10-14'
+  geocoded_address: 700 FULLER ST, WINFIELD, KS, 67156
+  checked_on: '2026-10-14'
+- id: SN000028
+  name: THE VICTOR SCHOOL
+  street: 380 MASSACHUSETTS AVE
+  city: ACTON
+  state: MA
+  zip: '01720'
+  county_fips: '25017'
+  county_name: Middlesex County
+  lat: 42.47379
+  lon: -71.44608
+  grade_low: '06'
+  grade_high: '12'
+  pss_grade_low: '06'
+  pss_grade_high: '12'
+  source: pss-2019-20
+  nces_ppin: A0301830
+  evidence_url: https://jri.org/program/the-victor-school/
+  evidence_station: hearst-wcvb
+  evidence_seen_on: '2026-02-23'
+  address_from: school-site
+  address_url: https://jri.org/program/the-victor-school/
+  address_checked_on: '2026-10-14'
+  geocoded_address: 380 MASSACHUSETTS AVE, ACTON, MA, 01720
+  checked_on: '2026-10-14'
+- id: SN000029
+  name: THAYER ACADEMY
+  street: 745 WASHINGTON ST
+  city: BRAINTREE
+  state: MA
+  zip: '02184'
+  county_fips: '25021'
+  county_name: Norfolk County
+  lat: 42.206619
+  lon: -71.004412
+  grade_low: '05'
+  grade_high: '12'
+  pss_grade_low: '05'
+  pss_grade_high: '12'
+  source: pss-2021-22
+  nces_ppin: '00603315'
+  evidence_station: hearst-wcvb
+  evidence_seen_on: '2026-02-23'
+  address_from: school-site
+  address_url: https://www.thayer.org/
+  address_checked_on: '2026-10-14'
+  geocoded_address: 745 WASHINGTON ST, BRAINTREE, MA, 02184
+  checked_on: '2026-10-14'
+- id: SN000031
+  name: BUCKINGHAM BROWNE & NICHOLS SCHOOL
+  street: 80 GERRYS LANDING RD
+  city: CAMBRIDGE
+  state: MA
+  zip: '02138'
+  county_fips: '25017'
+  county_name: Middlesex County
+  lat: 42.373792
+  lon: -71.13581
+  grade_low: PK
+  grade_high: '12'
+  pss_grade_low: PK
+  pss_grade_high: '12'
+  source: pss-2021-22
+  nces_ppin: '00603905'
+  evidence_station: hearst-wcvb
+  evidence_seen_on: '2026-02-23'
+  address_from: school-site
+  address_url: https://www.bbns.org/
+  address_checked_on: '2026-10-14'
+  geocoded_address: 80 GERRYS LANDING RD, CAMBRIDGE, MA, 02138
+  checked_on: '2026-10-14'
+  distinct_from:
+  - '00604079'
+- id: SN000032
+  name: INTERNATIONAL SCHOOL OF BOSTON
+  street: 45 MATIGNON RD
+  city: CAMBRIDGE
+  state: MA
+  zip: '02140'
+  county_fips: '25017'
+  county_name: Middlesex County
+  lat: 42.401873
+  lon: -71.132683
+  grade_low: PK
+  grade_high: '12'
+  pss_grade_low: PK
+  pss_grade_high: '12'
+  source: pss-2019-20
+  nces_ppin: A1702006
+  evidence_station: hearst-wcvb
+  evidence_seen_on: '2026-02-23'
+  address_from: school-site
+  address_url: https://www.isbos.org/
+  address_checked_on: '2026-10-14'
+  geocoded_address: 45 MATIGNON RD, CAMBRIDGE, MA, 02140
+  checked_on: '2026-10-14'
+  distinct_from:
+  - A0501907
+- id: SN000033
+  name: THE GUILD FOR HUMAN SERVICES
+  street: 521 VIRGINIA RD
+  city: CONCORD
+  state: MA
+  zip: '01742'
+  county_fips: '25017'
+  county_name: Middlesex County
+  lat: 42.467142
+  lon: -71.304419
+  grade_low: '01'
+  grade_high: '12'
+  pss_grade_low: '04'
+  pss_grade_high: '12'
+  grades_url: https://www.guildhumanservices.org/guild-school  # ages 6 to 21 on its own page, as grades 1 to 12
+  source: pss-2021-22
+  nces_ppin: AB911726
+  evidence_station: hearst-wcvb
+  evidence_seen_on: '2026-02-23'
+  address_from: school-site
+  address_url: https://www.guildhumanservices.org/about-guild/contact-us
+  address_checked_on: '2026-10-14'
+  geocoded_address: 521 VIRGINIA RD, CONCORD, MA, 01742
+  checked_on: '2026-10-14'
+- id: SN000034
+  name: NOBLE AND GREENOUGH SCHOOL
+  street: 10 CAMPUS DR
+  city: DEDHAM
+  state: MA
+  zip: '02026'
+  county_fips: '25021'
+  county_name: Norfolk County
+  lat: 42.262764
+  lon: -71.184456
+  grade_low: '07'
+  grade_high: '12'
+  pss_grade_low: '07'
+  pss_grade_high: '12'
+  source: pss-2021-22
+  nces_ppin: '00603745'
+  evidence_station: hearst-wcvb
+  evidence_seen_on: '2026-01-26'
+  address_from: school-site
+  address_url: https://www.nobles.edu/
+  address_checked_on: '2026-10-14'
+  geocoded_address: 10 CAMPUS DR, DEDHAM, MA, 02026
+  checked_on: '2026-10-14'
+- id: SN000036
+  name: SACRED HEART SCHOOL
+  street: 329 BISHOPS HWY
+  city: KINGSTON
+  state: MA
+  zip: '02364'
+  county_fips: '25023'
+  county_name: Plymouth County
+  lat: 41.951635
+  lon: -70.73544
+  grade_low: PK
+  grade_high: '08'
+  pss_grade_low: PK
+  pss_grade_high: '12'
+  grades_url: https://sacredheartkingston.com/
+  source: pss-2019-20
+  nces_ppin: '00599464'
+  evidence_url: https://sacredheartkingston.com/
+  evidence_station: hearst-wcvb
+  evidence_seen_on: '2026-02-23'
+  address_from: school-site
+  address_url: https://sacredheartkingston.com/
+  address_checked_on: '2026-10-14'
+  geocoded_address: 329 BISHOPS HWY, KINGSTON, MA, 02364
+  checked_on: '2026-10-14'
+- id: SN000040
+  name: THE FESSENDEN SCHOOL
+  street: 250 WALTHAM ST
+  city: WEST NEWTON
+  state: MA
+  zip: '02465'
+  county_fips: '25017'
+  county_name: Middlesex County
+  lat: 42.35826
+  lon: -71.222752
+  grade_low: PK
+  grade_high: '09'
+  pss_grade_low: PK
+  pss_grade_high: '09'
+  source: pss-2019-20
+  nces_ppin: '00604691'
+  evidence_station: hearst-wcvb
+  evidence_seen_on: '2026-02-23'
+  address_from: school-site
+  address_url: https://www.fessenden.org/
+  address_checked_on: '2026-10-14'
+  geocoded_address: 250 WALTHAM ST, WEST NEWTON, MA, 02465
+  checked_on: '2026-10-14'
+- id: SN000041
+  name: CRISTO REY JESUIT HIGH SCHOOL
+  street: 420 S CHESTER ST
+  city: BALTIMORE
+  state: MD
+  zip: '21231'
+  county_fips: '24510'
+  county_name: Baltimore city
+  lat: 39.286631
+  lon: -76.587189
+  grade_low: '09'
+  grade_high: '12'
+  pss_grade_low: '09'
+  pss_grade_high: '12'
+  source: pss-2021-22
+  nces_ppin: A0901656
+  evidence_station: hearst-wbal
+  evidence_seen_on: '2026-01-27'
+  address_from: school-site
+  address_url: https://www.cristoreybalt.org/
+  address_checked_on: '2026-10-14'
+  geocoded_address: 420 S CHESTER ST, BALTIMORE, MD, 21231
+  checked_on: '2026-10-14'
+- id: SN000042
+  name: ROLAND PARK COUNTRY SCHOOL
+  street: 5204 ROLAND AVE
+  city: BALTIMORE
+  state: MD
+  zip: '21210'
+  county_fips: '24510'
+  county_name: Baltimore city
+  lat: 39.356655
+  lon: -76.634981
+  grade_low: PK
+  grade_high: '12'
+  pss_grade_low: PK
+  pss_grade_high: '12'
+  source: pss-2019-20
+  nces_ppin: '00579721'
+  evidence_station: hearst-wbal
+  evidence_seen_on: '2026-01-27'
+  address_from: school-site
+  address_url: https://www.rpcs.org/
+  address_checked_on: '2026-10-14'
+  geocoded_address: 5204 ROLAND AVE, BALTIMORE, MD, 21210
+  checked_on: '2026-10-14'
+  distinct_from:
+  - '240009000306'
+- id: SN000043
+  name: RIVERDALE BAPTIST SCHOOL
+  street: 1133 LARGO RD
+  city: UPPER MARLBORO
+  state: MD
+  zip: '20774'
+  county_fips: '24033'
+  county_name: Prince George's County
+  lat: 38.874342
+  lon: -76.7917
+  grade_low: PK
+  grade_high: '12'
+  pss_grade_low: PK
+  pss_grade_high: '12'
+  source: pss-2021-22
+  nces_ppin: '00579302'
+  evidence_station: wtop-wtop
+  evidence_seen_on: '2026-03-03'
+  address_from: school-site
+  address_url: https://www.rbschool.org/about/contact-us/
+  address_checked_on: '2026-10-14'
+  geocoded_address: 1133 LARGO RD, UPPER MARLBORO, MD, 20774
+  checked_on: '2026-10-14'
+- id: SN000046
+  name: ST. THOMAS THE APOSTLE SCHOOL
+  street: 540 ELIZABETH STREET
+  city: ANN ARBOR
+  state: MI
+  zip: '48104'
+  county_fips: '26161'
+  county_name: Washtenaw County
+  lat: 42.285472
+  lon: -83.741619
+  grade_low: PK
+  grade_high: '08'
+  source: diocese-list
+  evidence_url: https://dolcatholicschools.org/st-thomas-apostle-school-ann-arbor
+  address_from: diocese-list
+  address_url: https://dolcatholicschools.org/st-thomas-apostle-school-ann-arbor
+  address_checked_on: '2026-10-14'
+  geocoded_address: 540 ELIZABETH ST, ANN ARBOR, MI, 48104
+  checked_on: '2026-10-14'
+- id: SN000047
+  name: HOLY NAME
+  street: 680 HARMON
+  city: BIRMINGHAM
+  state: MI
+  zip: '48009'
+  county_fips: '26125'
+  county_name: Oakland County
+  lat: 42.550212
+  lon: -83.222169
+  grade_low: PK
+  grade_high: '08'
+  source: diocese-list
+  evidence_url: https://www.aodfinder.org/schools
+  address_from: diocese-list
+  address_url: https://www.aodfinder.org/schools
+  address_checked_on: '2026-10-14'
+  geocoded_address: 680 HARMON ST, BIRMINGHAM, MI, 48009
+  checked_on: '2026-10-14'
+- id: SN000049
+  name: EVEREST ACADEMY
+  street: 5935 CLARKSTON
+  city: CLARKSTON
+  state: MI
+  zip: '48348'
+  county_fips: '26125'
+  county_name: Oakland County
+  lat: 42.751434
+  lon: -83.393009
+  grade_low: PK
+  grade_high: '12'
+  pss_grade_low: PK
+  pss_grade_high: '12'
+  source: diocese-list
+  nces_ppin: A9303503
+  evidence_url: https://www.aodfinder.org/schools
+  address_from: diocese-list
+  address_url: https://www.aodfinder.org/schools
+  address_checked_on: '2026-10-14'
+  geocoded_address: 5935 CLARKSTON RD, CLARKSTON, MI, 48348
+  checked_on: '2026-10-14'
+- id: SN000050
+  name: ST. LINUS SCHOOL
+  street: 6466 EVANGELINE
+  city: DEARBORN HEIGHTS
+  state: MI
+  zip: '48127'
+  county_fips: '26163'
+  county_name: Wayne County
+  lat: 42.334133
+  lon: -83.289894
+  grade_low: PK
+  grade_high: '08'
+  pss_grade_low: PK
+  pss_grade_high: '08'
+  source: diocese-list
+  nces_ppin: '00637912'
+  evidence_url: https://www.aodfinder.org/schools
+  address_from: diocese-list
+  address_url: https://www.aodfinder.org/schools
+  address_checked_on: '2026-10-14'
+  geocoded_address: 6466 N EVANGELINE ST, DEARBORN HEIGHTS, MI, 48127
+  checked_on: '2026-10-14'
+- id: SN000053
+  name: ST. ROBERT BELLARMINE SCHOOL
+  street: 214 EAST HENRY STREET
+  city: FLUSHING
+  state: MI
+  zip: '48433'
+  county_fips: '26049'
+  county_name: Genesee County
+  lat: 43.066152
+  lon: -83.854046
+  grade_low: PK
+  grade_high: '08'
+  pss_grade_low: PK
+  pss_grade_high: '08'
+  source: diocese-list
+  nces_ppin: '00639975'
+  evidence_url: https://dolcatholicschools.org/st-robert-bellarmine-school-flushing
+  address_from: diocese-list
+  address_url: https://dolcatholicschools.org/st-robert-bellarmine-school-flushing
+  address_checked_on: '2026-10-14'
+  geocoded_address: 214 E HENRY ST, FLUSHING, MI, 48433
+  checked_on: '2026-10-14'
+- id: SN000054
+  name: ST. MARY SCHOOL
+  street: 303 ST MARYS ST
+  city: LAKE LEELANAU
+  state: MI
+  zip: '49653'
+  county_fips: '26089'
+  county_name: Leelanau County
+  lat: 44.979989
+  lon: -85.71346
+  grade_low: PK
+  grade_high: '12'
+  pss_grade_low: KG
+  pss_grade_high: '12'
+  grades_url: https://www.stmarysll.org/
+  source: pss-2019-20
+  nces_ppin: '01983724'
+  evidence_url: https://dioceseofgaylord.org/find-a-school
+  address_from: school-site
+  address_url: https://www.stmarysll.org/
+  address_checked_on: '2026-10-14'
+  geocoded_address: 303 S ST MARYS ST, LAKE LEELANAU, MI, 49653
+  checked_on: '2026-10-14'
+- id: SN000055
+  name: RESURRECTION SCHOOL
+  street: 1521 E. MICHIGAN AVENUE
+  city: LANSING
+  state: MI
+  zip: '48912'
+  county_fips: '26065'
+  county_name: Ingham County
+  lat: 42.733673
+  lon: -84.528209
+  grade_low: PK
+  grade_high: '08'
+  pss_grade_low: PK
+  pss_grade_high: '08'
+  source: diocese-list
+  nces_ppin: '00640186'
+  evidence_url: https://dolcatholicschools.org/resurrection-school-lansing
+  address_from: diocese-list
+  address_url: https://dolcatholicschools.org/resurrection-school-lansing
+  address_checked_on: '2026-10-14'
+  geocoded_address: 1521 E MICHIGAN AVE, LANSING, MI, 48912
+  checked_on: '2026-10-14'
+- id: SN000056
+  name: HOLY CROSS CATHOLIC SCHOOL
+  street: 618 S WATER ST.
+  city: MARINE CITY
+  state: MI
+  zip: '48039'
+  county_fips: '26147'
+  county_name: St. Clair County
+  lat: 42.713386
+  lon: -82.494014
+  grade_low: PK
+  grade_high: '08'
+  source: diocese-list
+  evidence_url: https://holycrossonline.net/
+  address_from: school-site
+  address_url: https://holycrossonline.net/
+  address_checked_on: '2026-10-14'
+  geocoded_address: 618 S WATER ST, MARINE CITY, MI, 48039
+  checked_on: '2026-10-14'
+  distinct_from:
+  - A9103434
+- id: SN000058
+  name: OUR LADY OF VICTORY CATHOLIC SCHOOL
+  street: 132 ORCHARD DR
+  city: NORTHVILLE
+  state: MI
+  zip: '48167'
+  county_fips: '26163'
+  county_name: Wayne County
+  lat: 42.430181
+  lon: -83.494092
+  grade_low: PK
+  grade_high: '08'
+  pss_grade_low: PK
+  pss_grade_high: '08'
+  source: diocese-list
+  nces_ppin: '00636486'
+  evidence_url: https://www.aodfinder.org/schools
+  address_from: diocese-list
+  address_url: https://www.aodfinder.org/schools
+  address_checked_on: '2026-10-14'
+  geocoded_address: 132 ORCHARD DR, NORTHVILLE, MI, 48167
+  checked_on: '2026-10-14'
+- id: SN000059
+  name: ST. MARY'S PREPARATORY
+  street: 3535 INDIAN TRAIL
+  city: ORCHARD LAKE
+  state: MI
+  zip: '48324'
+  county_fips: '26125'
+  county_name: Oakland County
+  lat: 42.594611
+  lon: -83.359701
+  grade_low: '09'
+  grade_high: '12'
+  pss_grade_low: '09'
+  pss_grade_high: '12'
+  source: diocese-list
+  nces_ppin: '00638632'
+  evidence_url: https://www.aodfinder.org/schools
+  address_from: diocese-list
+  address_url: https://www.aodfinder.org/schools
+  address_checked_on: '2026-10-14'
+  geocoded_address: 3535 INDIAN TRL, ORCHARD LAKE, MI, 48324
+  checked_on: '2026-10-14'
+- id: SN000060
+  name: GABRIEL RICHARD CATHOLIC HIGH
+  street: 15325 PENNSYLVANIA RD.
+  city: RIVERVIEW
+  state: MI
+  zip: '48193'
+  county_fips: '26163'
+  county_name: Wayne County
+  lat: 42.184476
+  lon: -83.209175
+  grade_low: '09'
+  grade_high: '12'
+  source: diocese-list
+  evidence_url: https://www.aodfinder.org/schools
+  address_from: diocese-list
+  address_url: https://www.aodfinder.org/schools
+  address_checked_on: '2026-10-14'
+  geocoded_address: 15325 PENNSYLVANIA RD, RIVERVIEW, MI, 48193
+  checked_on: '2026-10-14'
+- id: SN000061
+  name: ST. ANDREW CATHOLIC SCHOOL
+  street: 910 AUSTIN DR.
+  city: SALINE
+  state: MI
+  zip: '48176'
+  county_fips: '26161'
+  county_name: Washtenaw County
+  lat: 42.162044
+  lon: -83.796809
+  grade_low: PK
+  grade_high: '07'
+  source: diocese-list
+  evidence_url: https://dolcatholicschools.org/st-andrew-catholic-school-saline
+  address_from: diocese-list
+  address_url: https://dolcatholicschools.org/st-andrew-catholic-school-saline
+  address_checked_on: '2026-10-14'
+  geocoded_address: 910 AUSTIN DR, SALINE, MI, 48176
+  checked_on: '2026-10-14'
+- id: SN000062
+  name: ST. GERMAINE CATHOLIC SCHOOL
+  street: 28250 ROCKWOOD ST
+  city: ST. CLAIR SHORES
+  state: MI
+  zip: '48081'
+  county_fips: '26099'
+  county_name: Macomb County
+  lat: 42.500888
+  lon: -82.909722
+  grade_low: PK
+  grade_high: '08'
+  pss_grade_low: PK
+  pss_grade_high: '08'
+  source: diocese-list
+  nces_ppin: '00637606'
+  evidence_url: https://www.aodfinder.org/schools
+  address_from: diocese-list
+  address_url: https://www.aodfinder.org/schools
+  address_checked_on: '2026-10-14'
+  geocoded_address: 28250 ROCKWOOD ST, SAINT CLAIR SHORES, MI, 48081
+  checked_on: '2026-10-14'
+- id: SN000064
+  name: LUTHERAN HIGH SCHOOL WESTLAND
+  street: 33300 COWAN RD
+  city: WESTLAND
+  state: MI
+  zip: '48185'
+  county_fips: '26163'
+  county_name: Wayne County
+  lat: 42.342666
+  lon: -83.370225
+  grade_low: '09'
+  grade_high: '12'
+  pss_grade_low: '09'
+  pss_grade_high: '12'
+  source: pss-2021-22
+  nces_ppin: A9103510
+  evidence_station: fox-owned-wjbk
+  evidence_seen_on: '2026-01-15'
+  address_from: diocese-list
+  address_url: https://www.michigandistrict.org/find-a-ministry/schools/lutheran-high-school-westland
+  address_checked_on: '2026-10-14'
+  geocoded_address: 33300 COWAN RD, WESTLAND, MI, 48185
+  checked_on: '2026-10-14'
+- id: SN000065
+  name: ALL SAINTS ACADEMY - ST. FERDINAND CAMPUS
+  street: 1725 CHARBONIER ROAD
+  city: FLORISSANT
+  state: MO
+  zip: '63031'
+  county_fips: '29189'
+  county_name: St. Louis County
+  lat: 38.805629
+  lon: -90.353323
+  grade_low: PK
+  grade_high: '08'
+  source: diocese-list
+  evidence_url: https://archstlschools.org/schools?page=0
+  address_from: diocese-list
+  address_url: https://archstlschools.org/schools?page=0
+  address_checked_on: '2026-10-14'
+  geocoded_address: 1725 CHARBONIER RD, FLORISSANT, MO, 63031
+  checked_on: '2026-10-14'
+- id: SN000066
+  name: ST. ANDREW THE APOSTLE SCHOOL
+  street: 6415 NE ANTIOCH RD
+  city: GLADSTONE
+  state: MO
+  zip: '64119'
+  county_fips: '29047'
+  county_name: Clay County
+  lat: 39.209834
+  lon: -94.536356
+  grade_low: KG
+  grade_high: '08'
+  source: diocese-list
+  evidence_url: https://kcsjcatholic.org/connect/schools/
+  address_from: diocese-list
+  address_url: https://kcsjcatholic.org/connect/schools/
+  address_checked_on: '2026-10-14'
+  geocoded_address: 6415 N ANTIOCH RD, GLADSTONE, MO, 64119
+  checked_on: '2026-10-14'
+- id: SN000067
+  name: ST. FRANCIS XAVIER SCHOOL
+  street: 7307 RT M
+  city: JEFFERSON CITY
+  state: MO
+  zip: '65101'
+  county_fips: '29051'
+  county_name: Cole County
+  lat: 38.507647
+  lon: -92.069354
+  grade_low: PK
+  grade_high: '08'
+  pss_grade_low: PK
+  pss_grade_high: '08'
+  source: diocese-list
+  nces_ppin: A1902683
+  evidence_url: https://diojeffcity.org/schools/
+  address_from: diocese-list
+  address_url: https://diojeffcity.org/schools/
+  address_checked_on: '2026-10-14'
+  geocoded_address: 7307 RTE M, JEFFERSON CITY, MO, 65101
+  checked_on: '2026-10-14'
+- id: SN000068
+  name: ST. JOSEPH CATHEDRAL SCHOOL
+  street: 2303 W. MAIN
+  city: JEFFERSON CITY
+  state: MO
+  zip: '65109'
+  county_fips: '29051'
+  county_name: Cole County
+  lat: 38.592798
+  lon: -92.211189
+  grade_low: PK
+  grade_high: '08'
+  pss_grade_low: PK
+  pss_grade_high: '08'
+  source: diocese-list
+  nces_ppin: '00753156'
+  evidence_url: https://diojeffcity.org/schools/
+  address_from: diocese-list
+  address_url: https://diojeffcity.org/schools/
+  address_checked_on: '2026-10-14'
+  geocoded_address: 2303 W MAIN ST, JEFFERSON CITY, MO, 65109
+  checked_on: '2026-10-14'
+- id: SN000069
+  name: OUR LADY OF HOPE CATHOLIC SCHOOL
+  street: 4232 MERCIER ST
+  city: KANSAS CITY
+  state: MO
+  zip: '64111'
+  county_fips: '29095'
+  county_name: Jackson County
+  lat: 39.051407
+  lon: -94.60209
+  grade_low: KG
+  grade_high: '08'
+  pss_grade_low: KG
+  pss_grade_high: '08'
+  source: diocese-list
+  nces_ppin: A2102237
+  evidence_url: https://kcsjcatholic.org/connect/schools/
+  address_from: diocese-list
+  address_url: https://kcsjcatholic.org/connect/schools/
+  address_checked_on: '2026-10-14'
+  geocoded_address: 4232 MERCIER ST, KANSAS CITY, MO, 64111
+  checked_on: '2026-10-14'
+- id: SN000070
+  name: ST. PETER CATHOLIC SCHOOL
+  street: 215 NORTH CLAY AVENUE
+  city: KIRKWOOD
+  state: MO
+  zip: '63122'
+  county_fips: '29189'
+  county_name: St. Louis County
+  lat: 38.582519
+  lon: -90.408723
+  grade_low: PK
+  grade_high: '08'
+  source: diocese-list
+  evidence_url: https://archstlschools.org/schools?page=10
+  address_from: diocese-list
+  address_url: https://archstlschools.org/schools?page=10
+  address_checked_on: '2026-10-14'
+  geocoded_address: 215 N CLAY AVE, KIRKWOOD, MO, 63122
+  checked_on: '2026-10-14'
+- id: SN000071
+  name: OUR LADY OF THE PRESENTATION SCHOOL
+  street: 150 NW MURRAY RD
+  city: LEE'S SUMMIT
+  state: MO
+  zip: '64081'
+  county_fips: '29095'
+  county_name: Jackson County
+  lat: 38.916449
+  lon: -94.404007
+  grade_low: KG
+  grade_high: '08'
+  pss_grade_low: KG
+  pss_grade_high: '08'
+  source: diocese-list
+  nces_ppin: '00753826'
+  evidence_url: https://kcsjcatholic.org/connect/schools/
+  address_from: diocese-list
+  address_url: https://kcsjcatholic.org/connect/schools/
+  address_checked_on: '2026-10-14'
+  geocoded_address: 150 NW MURRAY RD, LEES SUMMIT, MO, 64081
+  checked_on: '2026-10-14'
+- id: SN000073
+  name: NOTRE DAME HIGH SCHOOL
+  street: 320 EAST RIPA AVENUE
+  city: MEHLVILLE
+  state: MO
+  zip: '63125'
+  county_fips: '29189'
+  county_name: St. Louis County
+  lat: 38.524218
+  lon: -90.272161
+  grade_low: '09'
+  grade_high: '12'
+  source: diocese-list
+  evidence_url: https://archstlschools.org/schools?page=3
+  address_from: diocese-list
+  address_url: https://archstlschools.org/schools?page=3
+  address_checked_on: '2026-10-14'
+  geocoded_address: 320 E RIPA AVE, SAINT LOUIS, MO, 63125
+  checked_on: '2026-10-14'
+- id: SN000074
+  name: ST. PIUS X SCHOOL
+  street: 210 S WILLIAMS ST
+  city: MOBERLY
+  state: MO
+  zip: '65270'
+  county_fips: '29175'
+  county_name: Randolph County
+  lat: 39.417509
+  lon: -92.439143
+  grade_low: KG
+  grade_high: '08'
+  pss_grade_low: PK
+  pss_grade_high: '08'
+  grades_url: https://diojeffcity.org/schools/  # its own site (stpiusxmoberly.com) did not answer on 2026-10-14; K-8 is within both its diocese list and its PSS row
+  source: diocese-list
+  nces_ppin: '00753043'
+  evidence_url: https://diojeffcity.org/schools/
+  address_from: diocese-list
+  address_url: https://diojeffcity.org/schools/
+  address_checked_on: '2026-10-14'
+  geocoded_address: 210 S WILLIAMS ST, MOBERLY, MO, 65270
+  checked_on: '2026-10-14'
+- id: SN000075
+  name: SACRED HEART SCHOOL
+  street: 416 W 3RD ST
+  city: SEDALIA
+  state: MO
+  zip: '65301'
+  county_fips: '29159'
+  county_name: Pettis County
+  lat: 38.708812
+  lon: -93.231596
+  grade_low: PK
+  grade_high: '12'
+  pss_grade_low: KG
+  pss_grade_high: '12'
+  grades_url: https://www.gogremlins.com/
+  source: diocese-list
+  nces_ppin: '00752946'
+  evidence_url: https://diojeffcity.org/schools/
+  address_from: diocese-list
+  address_url: https://diojeffcity.org/schools/
+  address_checked_on: '2026-10-14'
+  geocoded_address: 416 W 3RD ST, SEDALIA, MO, 65301
+  checked_on: '2026-10-14'
+- id: SN000076
+  name: ST. ALPHONSUS SCHOOL
+  street: 25 ST. ALPHONSUS ROAD
+  city: SILEX
+  state: MO
+  zip: '63377'
+  county_fips: '29113'
+  county_name: Lincoln County
+  lat: 39.104212
+  lon: -91.106156
+  grade_low: PK
+  grade_high: '08'
+  pss_grade_low: KG
+  pss_grade_high: '08'
+  grades_url: https://archstlschools.org/schools?page=5  # its own site (stalphonsusmillwood.org) names its preschool; the archdiocese list gives PK-8
+  source: diocese-list
+  nces_ppin: '00751068'
+  evidence_url: https://archstlschools.org/schools?page=5
+  address_from: diocese-list
+  address_url: https://archstlschools.org/schools?page=5
+  address_checked_on: '2026-10-14'
+  geocoded_address: 25 ST ALPHONSUS RD, SILEX, MO, 63377
+  checked_on: '2026-10-14'
+- id: SN000077
+  name: BISHOP DUBOURG HIGH SCHOOL
+  street: 5850 EICHELBERGER STREET
+  city: ST. LOUIS
+  state: MO
+  zip: '63109'
+  county_fips: '29510'
+  county_name: St. Louis city
+  lat: 38.581568
+  lon: -90.295853
+  grade_low: '09'
+  grade_high: '12'
+  pss_grade_low: '09'
+  pss_grade_high: '12'
+  source: diocese-list
+  nces_ppin: '00751705'
+  evidence_url: https://archstlschools.org/schools?page=0
+  address_from: diocese-list
+  address_url: https://archstlschools.org/schools?page=0
+  address_checked_on: '2026-10-14'
+  geocoded_address: 5850 EICHELBERGER ST, SAINT LOUIS, MO, 63109
+  checked_on: '2026-10-14'
+- id: SN000078
+  name: CHRISTIAN BROTHERS COLLEGE HIGH SCHOOL
+  street: 1850 DE LA SALLE DRIVE
+  city: ST. LOUIS
+  state: MO
+  zip: '63141'
+  county_fips: '29189'
+  county_name: St. Louis County
+  lat: 38.639509
+  lon: -90.459455
+  grade_low: '09'
+  grade_high: '12'
+  source: diocese-list
+  evidence_url: https://archstlschools.org/schools?page=1
+  address_from: diocese-list
+  address_url: https://archstlschools.org/schools?page=1
+  address_checked_on: '2026-10-14'
+  geocoded_address: 1850 DE LA SALLE DR, SAINT LOUIS, MO, 63141
+  checked_on: '2026-10-14'
+- id: SN000079
+  name: DE SMET JESUIT HIGH SCHOOL
+  street: 233 NORTH NEW BALLAS ROAD
+  city: ST. LOUIS
+  state: MO
+  zip: '63141'
+  county_fips: '29189'
+  county_name: St. Louis County
+  lat: 38.66036
+  lon: -90.443357
+  grade_low: '09'
+  grade_high: '12'
+  pss_grade_low: '09'
+  pss_grade_high: '12'
+  source: diocese-list
+  nces_ppin: '00751771'
+  evidence_url: https://archstlschools.org/schools?page=1
+  address_from: diocese-list
+  address_url: https://archstlschools.org/schools?page=1
+  address_checked_on: '2026-10-14'
+  geocoded_address: 233 N NEW BALLAS RD, SAINT LOUIS, MO, 63141
+  checked_on: '2026-10-14'
+- id: SN000080
+  name: NERINX HALL HIGH SCHOOL
+  street: 530 EAST LOCKWOOD AVENUE
+  city: ST. LOUIS
+  state: MO
+  zip: '63119'
+  county_fips: '29189'
+  county_name: St. Louis County
+  lat: 38.591175
+  lon: -90.342876
+  grade_low: '09'
+  grade_high: '12'
+  source: diocese-list
+  evidence_url: https://archstlschools.org/schools?page=3
+  address_from: diocese-list
+  address_url: https://archstlschools.org/schools?page=3
+  address_checked_on: '2026-10-14'
+  geocoded_address: 530 E LOCKWOOD AVE, SAINT LOUIS, MO, 63119
+  checked_on: '2026-10-14'
+- id: SN000082
+  name: TRINITY CHRISTIAN SCHOOL OF FAYETTEVILLE, INC.
+  street: 3727 ROSEHILL RD
+  city: FAYETTEVILLE
+  state: NC
+  zip: '28311'
+  county_fips: '37051'
+  county_name: Cumberland County
+  lat: 35.111548
+  lon: -78.904109
+  grade_low: PK
+  grade_high: '12'
+  pss_grade_low: PK
+  pss_grade_high: '12'
+  source: pss-2021-22
+  nces_ppin: A1101829
+  evidence_station: abc-owned-wtvd
+  evidence_seen_on: '2026-01-26'
+  address_from: school-site
+  address_url: https://www.trinitycommunityservices.org/who-we-are-about-our-school/
+  address_checked_on: '2026-10-14'
+  geocoded_address: 3727 ROSEHILL RD, FAYETTEVILLE, NC, 28311
+  checked_on: '2026-10-14'
+- id: SN000085
+  name: PORTSMOUTH CHRISTIAN ACADEMY
+  street: 20 SEABORNE DR
+  city: DOVER
+  state: NH
+  zip: '03820'
+  county_fips: '33017'
+  county_name: Strafford County
+  lat: 43.160518
+  lon: -70.862607
+  grade_low: PK
+  grade_high: '12'
+  pss_grade_low: PK
+  pss_grade_high: '12'
+  source: pss-2021-22
+  nces_ppin: K9303628
+  evidence_station: hearst-wmur
+  evidence_seen_on: '2026-03-06'
+  address_from: school-site
+  address_url: https://pcaschool.org/
+  address_checked_on: '2026-10-14'
+  geocoded_address: 20 SEABORNE DR, DOVER, NH, 03820
+  checked_on: '2026-10-14'
+- id: SN000087
+  name: SACRED HEART SCHOOL
+  street: 289 LAFAYETTE RD
+  city: HAMPTON
+  state: NH
+  zip: '03842'
+  county_fips: '33015'
+  county_name: Rockingham County
+  lat: 42.935716
+  lon: -70.838261
+  grade_low: PK
+  grade_high: '08'
+  pss_grade_low: PK
+  pss_grade_high: '08'
+  source: pss-2021-22
+  nces_ppin: '00851368'
+  evidence_station: hearst-wmur
+  evidence_seen_on: '2026-03-06'
+  address_from: school-site
+  address_url: https://www.shshampton.org/  # its page spells the street Layfayette Road
+  address_checked_on: '2026-10-14'
+  geocoded_address: 289 LAFAYETTE RD, HAMPTON, NH, 03842
+  checked_on: '2026-10-14'
+- id: SN000092
+  name: THE DERRYFIELD SCHOOL
+  street: 2108 RIVER RD
+  city: MANCHESTER
+  state: NH
+  zip: '03104'
+  county_fips: '33011'
+  county_name: Hillsborough County
+  lat: 43.034441
+  lon: -71.457884
+  grade_low: '06'
+  grade_high: '12'
+  pss_grade_low: '06'
+  pss_grade_high: '12'
+  source: pss-2021-22
+  nces_ppin: '00852168'
+  evidence_station: hearst-wmur
+  evidence_seen_on: '2026-03-06'
+  address_from: school-site
+  address_url: https://www.derryfield.org/
+  address_checked_on: '2026-10-14'
+  geocoded_address: 2108 RIVER RD, MANCHESTER, NH, 03104
+  checked_on: '2026-10-14'
+- id: SN000093
+  name: BISHOP GUERTIN HIGH SCHOOL
+  street: 194 LUND RD
+  city: NASHUA
+  state: NH
+  zip: '03060'
+  county_fips: '33011'
+  county_name: Hillsborough County
+  lat: 42.737331
+  lon: -71.475215
+  grade_low: '09'
+  grade_high: '12'
+  pss_grade_low: '09'
+  pss_grade_high: '12'
+  source: pss-2021-22
+  nces_ppin: '01607068'
+  evidence_url: https://www.bghs.org/
+  evidence_station: hearst-wmur
+  evidence_seen_on: '2026-03-06'
+  address_from: school-site
+  address_url: https://www.bghs.org/
+  address_checked_on: '2026-10-14'
+  geocoded_address: 194 LUND RD, NASHUA, NH, 03060
+  checked_on: '2026-10-14'
+- id: SN000095
+  name: THE CORNERSTONE SCHOOL
+  street: 146 HIGH ST
+  city: STRATHAM
+  state: NH
+  zip: '03885'
+  county_fips: '33015'
+  county_name: Rockingham County
+  lat: 43.023771
+  lon: -70.863099
+  grade_low: PK
+  grade_high: '08'
+  pss_grade_low: PK
+  pss_grade_high: '08'
+  source: pss-2019-20
+  nces_ppin: A1301881
+  evidence_station: hearst-wmur
+  evidence_seen_on: '2026-03-06'
+  address_from: school-site
+  address_url: https://www.cornerstoneschool.org/
+  address_checked_on: '2026-10-14'
+  geocoded_address: 146 HIGH ST, STRATHAM, NH, 03885
+  checked_on: '2026-10-14'
+- id: SN000098
+  name: THE NEIGHBORHOOD ACADEMY
+  street: 709 N AIKEN AVE
+  city: PITTSBURGH
+  state: PA
+  zip: '15206'
+  county_fips: '42003'
+  county_name: Allegheny County
+  lat: 40.470916
+  lon: -79.932658
+  grade_low: '06'
+  grade_high: '12'
+  pss_grade_low: '06'
+  pss_grade_high: '12'
+  source: pss-2021-22
+  nces_ppin: A0302738
+  evidence_station: hearst-wtae
+  evidence_seen_on: '2026-01-26'
+  address_from: school-site
+  address_url: https://www.theneighborhoodacademy.org/
+  address_checked_on: '2026-10-14'
+  geocoded_address: 709 N AIKEN AVE, PITTSBURGH, PA, 15206
+  checked_on: '2026-10-14'
+- id: SN000099
+  name: BIBLE BAPTIST CHRISTIAN ACADEMY
+  street: 4190 N SUSQUEHANNA TRL
+  city: YORK
+  state: PA
+  zip: '17404'
+  county_fips: '42133'
+  county_name: York County
+  lat: 40.050875
+  lon: -76.767141
+  grade_low: PK
+  grade_high: '12'
+  pss_grade_low: PK
+  pss_grade_high: '12'
+  source: pss-2021-22
+  nces_ppin: '01909976'
+  evidence_station: hearst-wgal
+  evidence_seen_on: '2026-01-26'
+  address_from: school-site
+  address_url: https://bbcayork.com/
+  address_checked_on: '2026-10-14'
+  geocoded_address: 4190 N SUSQUEHANNA TRL, YORK, PA, 17404
+  checked_on: '2026-10-14'
+- id: SN000100
+  name: THE MONTESSORI CHILDREN'S HOUSE OF YORK
+  street: 3417 E MARKET ST
+  city: YORK
+  state: PA
+  zip: '17402'
+  county_fips: '42133'
+  county_name: York County
+  lat: 39.9801
+  lon: -76.657532
+  grade_low: PK
+  grade_high: '08'
+  pss_grade_low: PK
+  pss_grade_high: '08'
+  source: pss-2021-22
+  nces_ppin: A9105836
+  evidence_station: hearst-wgal
+  evidence_seen_on: '2026-01-26'
+  address_from: school-site
+  address_url: https://www.mchyork.org/
+  address_checked_on: '2026-10-14'
+  geocoded_address: 3417 E MARKET ST, YORK, PA, 17402
+  checked_on: '2026-10-14'
+- id: SN000101
+  name: THE OAKRIDGE SCHOOL
+  street: 5900 W PIONEER PKWY
+  city: ARLINGTON
+  state: TX
+  zip: '76013'
+  county_fips: '48439'
+  county_name: Tarrant County
+  lat: 32.724715
+  lon: -97.196687
+  grade_low: PK
+  grade_high: '12'
+  pss_grade_low: PK
+  pss_grade_high: '12'
+  source: pss-2021-22
+  nces_ppin: A1904407
+  evidence_url: https://www.theoakridgeschool.org/
+  evidence_station: nbc-owned-kxas
+  evidence_seen_on: '2026-01-27'
+  address_from: school-site
+  address_url: https://www.theoakridgeschool.org/
+  address_checked_on: '2026-10-14'
+  geocoded_address: 5900 W PIONEER PKWY, ARLINGTON, TX, 76013
+  checked_on: '2026-10-14'
+- id: SN000102
+  name: ST JOHNS EPISCOPAL SCHOOL
+  street: 848 HARTER RD
+  city: DALLAS
+  state: TX
+  zip: '75218'
+  county_fips: '48113'
+  county_name: Dallas County
+  lat: 32.844458
+  lon: -96.707969
+  grade_low: PK
+  grade_high: '08'
+  pss_grade_low: PK
+  pss_grade_high: '08'
+  source: pss-2019-20
+  nces_ppin: '01326101'
+  evidence_url: https://www.stjohnsschool.org/
+  evidence_station: nbc-owned-kxas
+  evidence_seen_on: '2026-01-27'
+  address_from: school-site
+  address_url: https://www.stjohnsschool.org/
+  address_checked_on: '2026-10-14'
+  geocoded_address: 848 HARTER RD, DALLAS, TX, 75218
+  checked_on: '2026-10-14'
+- id: SN000103
+  name: TEMPLE CHRISTIAN ACADEMY
+  street: 2501 NORTHSHORE BLVD
+  city: FLOWER MOUND
+  state: TX
+  zip: '75028'
+  county_fips: '48121'
+  county_name: Denton County
+  lat: 33.011274
+  lon: -97.066433
+  grade_low: KG
+  grade_high: '12'
+  pss_grade_low: KG
+  pss_grade_high: '12'
+  source: pss-2019-20
+  nces_ppin: AA001453
+  evidence_url: https://www.templechristian.com/about/contact-us
+  evidence_station: nbc-owned-kxas
+  evidence_seen_on: '2026-01-27'
+  address_from: school-site
+  address_url: https://www.templechristian.com/about/contact-us
+  address_checked_on: '2026-10-14'
+  geocoded_address: 2501 NORTHSHORE BLVD, FLOWER MOUND, TX, 75028
+  checked_on: '2026-10-14'
+- id: SN000107
+  name: FAITH CHRISTIAN SCHOOL
+  street: 3585 BUCK MOUNTAIN RD
+  city: ROANOKE
+  state: VA
+  zip: '24018'
+  county_fips: '51161'
+  county_name: Roanoke County
+  lat: 37.205527
+  lon: -79.959161
+  grade_low: PK
+  grade_high: '12'
+  pss_grade_low: PK
+  pss_grade_high: '12'
+  source: pss-2019-20
+  nces_ppin: A0303215
+  evidence_url: https://www.fcsva.com/
+  evidence_station: gray-wdbj
+  evidence_seen_on: '2025-12-05'
+  address_from: school-site
+  address_url: https://www.fcsva.com/
+  address_checked_on: '2026-10-14'
+  geocoded_address: 3585 BUCK MOUNTAIN RD, ROANOKE, VA, 24018
+  checked_on: '2026-10-14'
+- id: SN000111
+  name: TRINITY ACADEMY
+  street: W225N3131 DUPLAINVILLE RD
+  city: PEWAUKEE
+  state: WI
+  zip: '53072'
+  county_fips: '55133'
+  county_name: Waukesha County
+  lat: 43.080211
+  lon: -88.193548
+  grade_low: KG
+  grade_high: '12'
+  pss_grade_low: KG
+  pss_grade_high: '12'
+  source: pss-2021-22
+  nces_ppin: A0303399
+  evidence_station: scripps-wtmj
+  evidence_seen_on: '2026-03-16'
+  address_from: school-site
+  address_url: https://www.trinityacademy.net/
+  address_checked_on: '2026-10-14'
+  geocoded_address: W225N3131 DUPLAINVILLE RD, PEWAUKEE, WI, 53072
+  checked_on: '2026-10-14'
+- id: SN000112
+  name: ST JOSEPH GRADE SCHOOL
+  street: 2750 N 122ND ST
+  city: WAUWATOSA
+  state: WI
+  zip: '53222'
+  county_fips: '55079'
+  county_name: Milwaukee County
+  lat: 43.06831
+  lon: -88.065478
+  grade_low: PK
+  grade_high: '08'
+  pss_grade_low: PK
+  pss_grade_high: '08'
+  source: pss-2021-22
+  nces_ppin: A0702495
+  evidence_station: scripps-wtmj
+  evidence_seen_on: '2026-03-16'
+  address_from: school-site
+  address_url: https://www.stjoetosa.com/Parish-School
+  address_checked_on: '2026-10-14'
+  geocoded_address: 2750 N 122ND ST, WAUWATOSA, WI, 53222
+  checked_on: '2026-10-14'
+- id: SN000115
+  name: HERITAGE CHRISTIAN ACADEMY ELEMENTARY
+  street: 9333 W 159TH ST.
+  city: OVERLAND PARK
+  state: KS
+  zip: '66221'
+  county_fips: '20091'
+  county_name: Johnson County
+  lat: 38.839985
+  lon: -94.693084
+  grade_low: PK
+  grade_high: '05'
+  source: school-site
+  evidence_url: https://www.hcakc.org/
+  address_from: school-site
+  address_url: https://www.hcakc.org/
+  address_checked_on: '2026-10-14'
+  geocoded_address: 9333 W 159TH ST, OVERLAND PARK, KS, 66221
+  checked_on: '2026-10-14'
+- id: SN000116
+  name: OAKHILL DAY SCHOOL
+  street: 7019 N. CHERRY STREET
+  city: GLADSTONE
+  state: MO
+  zip: '64118'
+  county_fips: '29047'
+  county_name: Clay County
+  lat: 39.222466
+  lon: -94.573721
+  grade_low: PK
+  grade_high: '08'
+  pss_grade_low: PK
+  pss_grade_high: '12'
+  grades_url: https://www.oakhilldayschool.org/
+  source: school-site
+  nces_ppin: '00755696'
+  evidence_url: https://www.oakhilldayschool.org/
+  address_from: school-site
+  address_url: https://www.oakhilldayschool.org/
+  address_checked_on: '2026-10-14'
+  geocoded_address: 7019 N CHERRY ST, GLADSTONE, MO, 64118
+  checked_on: '2026-10-14'
