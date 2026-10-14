@@ -18,6 +18,20 @@ name: Preview
 # site's data and builds the search index from it (web/scripts/stage-data.mjs).
 # If any of it fails, nothing is published: the preview never ships without
 # its data, or with data from anywhere else.
+#
+# The directory keeps the date of the one the site serves now while its content
+# is unchanged, so a redeploy leaves the live files indexed into it valid, and a
+# changed directory takes a date no deploy has used: the build reads the deployed
+# schools/edition.json (its date, counts and content digest) and compares the
+# digest with its own. That read must be of the live deploy itself, so it is not
+# a plain GET: Pages' CDN ignores query strings and no-cache headers and can
+# answer with the edition of an earlier deploy for ten minutes or more.
+# snowlight directory deployed-edition reads the live deploy's artifact through
+# the API (actions: read, deployments: read), or a CDN copy fetched after the
+# last deploy settled, checks that it names the directory deployed beside it,
+# and fails otherwise; the preview then fails and the site stays as it is. Only "no edition deployed" lets the build take its own date,
+# and only before editions shipped (contents: read shows the deployed commit's
+# tree). docs/deployed-edition.md is the runbook for a read that keeps failing.
 
 on:
   push:
@@ -25,15 +39,38 @@ on:
       - pipeline/config/archive-requests.json
       - docs/**
   workflow_dispatch:
+    inputs:
+      date_past_mismatch:
+        description: >-
+          Recovery only (docs/deployed-edition.md): the live deploy's edition.json names
+          another directory than the one beside it, and its cause is fixed. Dates the
+          directory past both, a date no deploy has used.
+        type: boolean
+        default: false
 
 permissions:
   contents: read
   pages: write
   id-token: write
+  # The deployed directory edition: which deploy is live (deployments), its
+  # artifact (actions) and whether its commit predates editions (contents).
+  # All read-only.
+  actions: read
+  deployments: read
 
+# One run at a time on the default branch, none cancelled: a newer run waits
+# for the running one to end, its deploy included, and of the runs waiting only
+# the newest goes on. So each run's reader reads a deploy that has ended, and no
+# deploy is cut off midway (one cut off could still go live after the next run
+# read the deployed edition). A run cancelled by hand can still do that;
+# docs/deployed-edition.md says what covers it. The default branch keeps the
+# group the preview has always used, "pages", so a run of an older version of
+# this file still in flight is waited for too. Runs on other branches build
+# nothing and sit in groups of their own, so they never hold up the default
+# branch's run.
 concurrency:
-  group: pages
-  cancel-in-progress: true
+  group: ${{ github.ref_name == github.event.repository.default_branch && 'pages' || format('pages-{0}', github.ref) }}
+  cancel-in-progress: false
 
 jobs:
   build:
@@ -66,6 +103,26 @@ jobs:
       # tippecanoe builds schools.pmtiles; Ubuntu 24.04 packages 2.49, the release the build is checked against.
       - if: steps.pages.outcome == 'success'
         run: sudo apt-get update && sudo apt-get install --yes --no-install-recommends tippecanoe
+      # The edition the site serves now, read exactly or the preview stops here.
+      # A failed read leaves the site as it is; docs/deployed-edition.md says what
+      # each error means and how to clear one that lasts.
+      # The date_past_mismatch input (by hand only) is the runbook's recovery
+      # from a live edition.json that names another directory.
+      - if: steps.pages.outcome == 'success'
+        working-directory: pipeline
+        env:
+          SITE_URL: ${{ steps.pages.outputs.base_url }}
+          GITHUB_TOKEN: ${{ github.token }}
+          DATE_PAST_MISMATCH: ${{ github.event_name == 'workflow_dispatch' && inputs.date_past_mismatch == true }}
+        run: |
+          uv sync --locked
+          mkdir -p .cache
+          recovery=()
+          if [ "$DATE_PAST_MISMATCH" = true ]; then
+            recovery=(--date-past-mismatch)
+            echo "::warning::recovery run: the directory is dated past a deployed edition that names another directory"
+          fi
+          uv run snowlight directory deployed-edition --site "$SITE_URL" --out .cache/edition.json "${recovery[@]}"
       # The NCES and Census downloads, kept between runs. A new pin in directory.yaml starts a new cache.
       - if: steps.pages.outcome == 'success'
         uses: actions/cache@v4
@@ -81,21 +138,42 @@ jobs:
         # passing network fault between the runner and nces.ed.gov, so each
         # build gets two more tries after a pause. A failed try prints what the
         # runner sees at the directory's first file, so a lasting block shows
-        # its cause in the log.
+        # its cause in the log. Exit 4 is a refusal the inputs decide (the
+        # deployed edition, or too few known time zones), and exit 2 a usage
+        # error in this step or a failure of uv itself, which exits 2 on its own
+        # errors: neither is retried.
         run: |
-          uv sync --locked
+          # With no edition deployed the reader leaves no file, and the directory takes the build date.
+          previous=()
+          if [ -f .cache/edition.json ]; then
+            previous=(--previous-edition .cache/edition.json)
+          else
+            echo "::notice::no schools/edition.json is deployed; the directory takes the build date"
+          fi
           build() {
+            name=$1
+            shift
             for pause in 0 60 180; do
               sleep "$pause"
-              if uv run snowlight "$1" build; then return 0; fi
-              echo "::warning::snowlight $1 build failed; probing nces.ed.gov"
+              status=0
+              uv run snowlight "$name" build "$@" || status=$?
+              if [ "$status" -eq 0 ]; then return 0; fi
+              if [ "$status" -eq 4 ]; then
+                echo "::error::snowlight $name build refused its inputs; docs/deployed-edition.md says what to do"
+                return 4
+              fi
+              if [ "$status" -eq 2 ]; then
+                echo "::error::snowlight $name build exited 2: a usage error or a uv failure (see the log above); docs/deployed-edition.md says what to check"
+                return 2
+              fi
+              echo "::warning::snowlight $name build failed; probing nces.ed.gov"
               curl -sS -o /dev/null -r 0-1023 --max-time 30 \
                 -w 'HTTP %{http_code} in %{time_total}s from %{remote_ip}\n' \
                 https://nces.ed.gov/programs/edge/data/EDGE_GEOCODE_PUBLICSCH_2425.zip || true
             done
             return 1
           }
-          build directory
+          build directory "${previous[@]}"
           # Supplement entries whose evidence or address goes stale within 60
           # days: a warning each, so they are checked again before they drop off.
           jq -r '.supplement.expiring[]? | "::warning::Supplement entry \(.id) \(.name): its \(.what) goes stale on \(.expires_on); check it again in pipeline/config/directory-supplement.yaml"' \
@@ -126,13 +204,14 @@ jobs:
         run: npx vite build --base="${BASE_PATH}/"
         env:
           BASE_PATH: ${{ steps.pages.outputs.base_path }}
-      # The build carries the staged directory, school tiles and search index, or it is not published.
+      # The build carries the staged directory, its edition, school tiles and search index, or it is not published.
       - if: steps.pages.outcome == 'success'
         working-directory: web
         run: |
           for file in schools/meta schools/points schools/schools search-index; do
             ls dist/data/${file}.*.* > /dev/null
           done
+          test -f dist/data/schools/edition.json
       - if: steps.pages.outcome == 'success'
         uses: actions/upload-pages-artifact@v3
         with:

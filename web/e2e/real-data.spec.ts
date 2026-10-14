@@ -491,6 +491,15 @@ test('the build ships the pipeline’s own files, under names that change with t
     expect(name).toContain(digest.slice(0, 10));
   }
   const index = hashed('search-index.bin');
+  // The directory's edition, under its plain name and as the pipeline wrote it: the live
+  // ingest and the next deploy read it there (staging checked it, scripts/edition.mjs).
+  expect(shipped).toContain('schools/edition.json');
+  expect(shipped.filter((file) => file.startsWith('schools/edition.'))).toEqual([
+    'schools/edition.json',
+  ]);
+  expect(sha256(path.join(data, 'schools/edition.json'))).toBe(
+    sha256(path.join(SITE_DATA, 'schools/edition.json')),
+  );
   // The school details, staged from the directory's tables: an index and a file per 256 schools.
   const details = shipped.filter((file) => file.startsWith('schools/details/'));
   const meta = JSON.parse(readFileSync(path.join(SITE_DATA, 'schools/meta.json'), 'utf8')) as {

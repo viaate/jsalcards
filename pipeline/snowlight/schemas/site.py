@@ -15,6 +15,8 @@ Then it checks the published files against each other:
 
 * every file with a :class:`~snowlight.schemas.directory.DirectoryStamp` points into
   the ``schools/meta.json`` beside it;
+* ``schools/edition.json`` names that ``meta.json``: its stamp, and the content digest
+  of it and ``points.bin``;
 * ``live/closings.json`` and ``live/covered.json`` come from the same run;
 * every replay file is named by its id, and every entry of ``replays/index.json``
   has a file whose frames it describes.
@@ -31,7 +33,12 @@ from pathlib import Path
 from pydantic import ValidationError
 
 from snowlight.schemas.base import PublishedContentError, PublishedModel, check_published_bytes
-from snowlight.schemas.directory import DirectoryStamp, SchoolDirectoryMeta
+from snowlight.schemas.directory import (
+    DirectoryEdition,
+    DirectoryStamp,
+    SchoolDirectoryMeta,
+    written_digest,
+)
 from snowlight.schemas.live import ClosingsFile, CoveredFile, check_live_pair
 from snowlight.schemas.registry import (
     BY_NAME,
@@ -43,6 +50,7 @@ from snowlight.schemas.registry import (
 from snowlight.schemas.replays import ReplayFile, ReplayIndex, check_summary
 
 _REPLAY_DIR = "replays"
+_POINTS_FILE = "schools/points.bin"
 _REPLAY_INDEX = "index.json"
 _TEXT_SUFFIXES = (".json", ".jsonl")
 
@@ -139,6 +147,37 @@ def _check_stamps(
     )
 
 
+def _check_edition(root: Path, loaded: dict[str, PublishedModel], report: SiteReport) -> None:
+    edition, meta = loaded.get("directory-edition"), loaded.get("school-directory")
+    if not isinstance(edition, DirectoryEdition):
+        return
+    meta_path = root / BY_NAME["school-directory"].path
+    if not isinstance(meta, SchoolDirectoryMeta):
+        if not meta_path.exists():
+            report.problems.append("schools/edition.json is published without schools/meta.json")
+        return
+    if edition.stamp() != meta.stamp():
+        report.problems.append(
+            f"schools/edition.json names directory {edition.stamp()}, but meta.json is "
+            f"{meta.stamp()}"
+        )
+    points_path = root / _POINTS_FILE
+    if not points_path.exists():
+        report.problems.append("schools/edition.json is published without schools/points.bin")
+        return
+    try:
+        digest = written_digest(
+            meta_path.read_bytes(), meta.generated_on.isoformat(), points_path.read_bytes()
+        )
+    except ValueError as error:
+        report.problems.append(f"schools/meta.json: {error}")
+        return
+    if digest != edition.content_sha256:
+        report.problems.append(
+            "schools/edition.json: content_sha256 is not that of meta.json and points.bin"
+        )
+
+
 def _check_live(root: Path, loaded: dict[str, PublishedModel], report: SiteReport) -> None:
     closings, covered = loaded.get("closings"), loaded.get("covered")
     if isinstance(closings, ClosingsFile) and isinstance(covered, CoveredFile):
@@ -221,6 +260,7 @@ def validate_site(root: Path) -> SiteReport:
     }
     replays = _load_replays(root, report)
     _check_stamps(root, loaded, replays, report)
+    _check_edition(root, loaded, report)
     _check_live(root, loaded, report)
     _check_replays(root, loaded, replays, report)
     return report

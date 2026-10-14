@@ -12,7 +12,7 @@ Published, under ``<out>/schools/`` (what the website downloads):
 
       {
         "schema_version": 1,
-        "generated_on": "2026-09-24",          # UTC date of the build
+        "generated_on": "2026-09-24",          # see "The date" below
         "count": 118132,                        # schools, = points.bin count
         "ids": ["010000500870", ...],           # NCES id: 12 digits public, 8 chars private
         "names": ["Albertville Middle School", ...],
@@ -24,6 +24,31 @@ Published, under ``<out>/schools/`` (what the website downloads):
 * ``schools.pmtiles``: the same schools as vector tile points, see
   :mod:`snowlight.directory.tiles`. Every tile is decoded after tippecanoe runs
   and each feature checked against its school before the file is kept.
+  ``--no-tiles`` skips it (and removes an older one, so it is never staged with
+  a directory it was not made from): the live ingest needs no tiles.
+* ``edition.json``: the directory named by its content
+  (:class:`~snowlight.schemas.directory.DirectoryEdition`)::
+
+      {"content_sha256": "...", "districts": 12938, "generated_on": "2026-09-24",
+       "schema_version": 1, "schools": 118132}
+
+  ``content_sha256`` is :func:`~snowlight.schemas.directory.written_digest` of
+  ``meta.json`` and ``points.bin``: the digest of ``meta.json`` with an empty
+  ``generated_on``, followed by ``points.bin``.
+
+The date in ``meta.json`` (and so in the stamp every live file carries) names the
+directory's content; it is an identifier, not the day of the build, and can be
+ahead of the calendar. Given ``previous``, the edition of the directory the site
+serves now (:mod:`snowlight.directory.deployed` reads it), a build whose digest
+equals ``previous``'s keeps its date, so a redeploy of the same directory leaves
+every file indexed into it valid. Any change to the schools, their order, names,
+districts, kinds or places changes the digest, and the date: to the build's UTC
+date, or to the day after ``previous``'s when that is already on or after the build
+day (:func:`choose_generated_on`). So the date of a changed directory only moves
+forward, and no stamp names two contents as long as ``previous`` is the edition
+the site really serves. That holds only while the deploys are read in order, so
+the live ingest still blanks its files when the deployed edition's digest is not
+its own under the stamp it last published (risk R6 is reduced, not closed).
 
 Internal, never published:
 
@@ -38,6 +63,11 @@ Internal, never published:
   ``drop_reason``, so each exclusion can be audited.
 * ``<internal>/build_report.json`` and ``build_report.md``: counts by state and
   reason, reconciled against the source row counts.
+* ``<internal>/school_zones.parquet``, when the build is given a zone lookup: each
+  school's time zones, see :mod:`snowlight.directory.zones`, named by the edition
+  it indexes into. The lookup is made before anything is written, and an older
+  table is removed before the new ``meta.json`` is, so no table ever sits beside
+  a directory it was not made with.
 
 Schools the NCES files miss come from the reviewed supplement file the config
 names (:mod:`snowlight.directory.supplement`). They are private schools with ids
@@ -49,16 +79,18 @@ import gzip
 import json
 import sys
 import tempfile
+from collections import Counter
 from collections.abc import Callable, Iterator
 from contextlib import contextmanager
 from dataclasses import dataclass, field
-from datetime import UTC, date, datetime
+from datetime import UTC, date, datetime, timedelta
 from pathlib import Path
 from typing import Any
 
 import httpx
 import numpy as np
 import polars as pl
+from pydantic import ValidationError
 
 from snowlight import __version__
 from snowlight.directory import pmtiles, points, tiles
@@ -86,7 +118,17 @@ from snowlight.directory.supplement import (
     check_prefix_unused,
     load_supplement,
 )
+from snowlight.directory.zones import (
+    ZONES_FILE,
+    ZoneLookup,
+    check_coverage,
+    override_for,
+    school_zones,
+    write_school_zones,
+    zone_counts,
+)
 from snowlight.output import dumps_json, write_bytes_atomic, write_json
+from snowlight.schemas.directory import DirectoryEdition, written_digest
 from snowlight.sources.nces import readers
 from snowlight.sources.nces.fetch import (
     FileCache,
@@ -101,7 +143,13 @@ SCHEMA_VERSION = 1
 DEFAULT_CACHE_DIR = PIPELINE_ROOT / ".cache" / "nces"
 DEFAULT_OUT_DIR = PIPELINE_ROOT / "out" / "site-data"
 DEFAULT_INTERNAL_DIR = PIPELINE_ROOT / "out" / "internal" / "directory"
-PUBLISHED_FILES = ("points.bin", "meta.json", "schools.pmtiles")
+PUBLISHED_FILES = ("points.bin", "meta.json", "schools.pmtiles", "edition.json")
+TILES_FILE = "schools.pmtiles"
+# How far after the build day a deployed edition may be dated before a changed
+# directory is refused: each directory change on a day already used moves the
+# date on by one, so only a burst of changes or a bad edition gets this far.
+MAX_DAYS_AHEAD = timedelta(days=31)
+EDITION_FILE = "edition.json"
 # Text that must never appear in a published file.
 FORBIDDEN_IN_PUBLISHED = (
     "nces.ed.gov",
@@ -150,10 +198,16 @@ SUPPLEMENT_REASONS = (
 )
 
 Log = Callable[[str], None]
+# Given the build's UTC date, a time zone lookup and a record of what it was made from.
+ZoneSource = Callable[[date], tuple[ZoneLookup, dict[str, Any]]]
 
 
 class BuildError(RuntimeError):
     """The sources are inconsistent or an output failed its checks."""
+
+
+class EditionRefusedError(BuildError):
+    """The deployed edition given cannot date this build: trying again cannot help."""
 
 
 def _stderr(message: str) -> None:
@@ -390,7 +444,7 @@ def _file_info(path: Path) -> dict[str, Any]:
     }
 
 
-def _write_points(schools: pl.DataFrame, district_count: int, target: Path) -> bytes:
+def _encode_points(schools: pl.DataFrame, district_count: int) -> bytes:
     data = points.encode(
         schools["lon_e6"].to_numpy(),
         schools["lat_e6"].to_numpy(),
@@ -406,7 +460,6 @@ def _write_points(schools: pl.DataFrame, district_count: int, target: Path) -> b
         and np.array_equal(decoded.kind, schools["kind_flags"].to_numpy())
     ):
         raise BuildError("points.bin does not decode to the values written")
-    write_bytes_atomic(target, data)
     return data
 
 
@@ -464,6 +517,238 @@ def _write_tiles(
 
 
 @dataclass(frozen=True, slots=True)
+class EditionChoice:
+    """The date a build stamps its directory with, and why."""
+
+    generated_on: str
+    reason: str
+
+
+def choose_generated_on(
+    digest: str, schools: int, districts: int, build_day: date, previous: DirectoryEdition | None
+) -> EditionChoice:
+    """Date a directory with content ``digest``, given the edition the site serves now.
+
+    * The same content as ``previous`` keeps its date: the stamp does not change.
+    * Other content takes ``build_day``, or the day after ``previous``'s date when
+      that is not before ``build_day``. Dates of a changed directory so only ever
+      go forward from the deployed one, and while ``previous`` is the edition the
+      site serves, a stamp is never reused for other content: a page still holding
+      the older ``meta.json`` can never take a live file indexed into the new one
+      for its own (with the same counts, the date is all that tells them apart).
+    * ``previous`` is ``None`` only when no edition was ever deployed.
+
+    Raises:
+        EditionRefusedError: the content changed and ``previous`` is dated more than
+            :data:`MAX_DAYS_AHEAD` after ``build_day``. Taking the build date would
+            move the stamp backwards, to a date that may already name other content.
+    """
+    today = build_day.isoformat()
+    if previous is None:
+        return EditionChoice(today, "no edition was deployed before: the build date")
+    if previous.content_sha256 == digest and (previous.schools, previous.districts) == (
+        schools,
+        districts,
+    ):
+        return EditionChoice(
+            previous.generated_on.isoformat(), "the content is unchanged: its date"
+        )
+    if previous.generated_on > build_day + MAX_DAYS_AHEAD:
+        raise EditionRefusedError(
+            f"the deployed directory is dated {previous.generated_on}, more than "
+            f"{MAX_DAYS_AHEAD.days} days after {build_day}: a changed directory would "
+            "need a later date still, and an earlier one may name other content"
+        )
+    if previous.generated_on < build_day:
+        return EditionChoice(today, "the content changed: the build date")
+    later = previous.generated_on + timedelta(days=1)
+    return EditionChoice(
+        later.isoformat(),
+        "the content changed on or before the previous edition's date: the day after it",
+    )
+
+
+def read_edition(path: Path) -> DirectoryEdition:
+    """Read the deployed edition at ``path``.
+
+    Raises:
+        EditionRefusedError: the file is missing, unreadable or not an edition. The build
+            then stops: dated without the deployed edition, a changed directory
+            could take a date that already names other content.
+    """
+    try:
+        data = path.read_bytes()
+    except OSError as error:
+        raise EditionRefusedError(f"previous edition {path}: {error.strerror or error}") from error
+    try:
+        return DirectoryEdition.from_json_bytes(data)
+    except ValidationError as error:
+        raise EditionRefusedError(
+            f"previous edition {path}: not an edition ({error.error_count()} problem(s))"
+        ) from error
+
+
+def _edition(
+    meta: dict[str, Any], meta_bytes: bytes, points_bytes: bytes, digest: str
+) -> DirectoryEdition:
+    """The edition of ``meta``, after checking the digest against the written bytes.
+
+    The digest is also what a reader gets from the files by emptying the date's
+    text in ``meta.json`` and following it with ``points.bin``
+    (web/scripts/edition.mjs checks it that way).
+
+    Raises:
+        BuildError: if the date's text is not in ``meta_bytes`` exactly once, or
+            blanking it does not give ``digest``.
+    """
+    try:
+        written = written_digest(meta_bytes, meta["generated_on"], points_bytes)
+    except ValueError as error:
+        raise BuildError(f"meta.json: {error}") from error
+    if written != digest:
+        raise BuildError("meta.json does not have the content digest written for it")
+    return DirectoryEdition(
+        schema_version=1,
+        generated_on=date.fromisoformat(meta["generated_on"]),
+        schools=meta["count"],
+        districts=len(meta["districts"]["ids"]),
+        content_sha256=digest,
+    )
+
+
+@dataclass(frozen=True, slots=True)
+class DatedDirectory:
+    """``meta.json`` dated, and its edition, ready to write."""
+
+    meta_bytes: bytes
+    edition: DirectoryEdition
+    edition_bytes: bytes
+
+
+def _dated_directory(  # noqa: PLR0913 - the directory, its date's inputs, and where to report
+    meta: dict[str, Any],
+    points_bytes: bytes,
+    *,
+    build_day: date,
+    previous: DirectoryEdition | None,
+    report: dict[str, Any],
+    log: Log,
+) -> DatedDirectory:
+    """Date ``meta`` and make its edition.
+
+    The digest is taken of ``meta.json`` written with an empty date, by the same
+    definition every reader uses (:func:`written_digest`); :func:`_edition` then
+    checks that the dated file gives it too.
+    """
+    try:
+        digest = written_digest(dumps_json({**meta, "generated_on": ""}), "", points_bytes)
+    except ValueError as error:
+        raise BuildError(f"meta.json: {error}") from error
+    choice = choose_generated_on(
+        digest, meta["count"], len(meta["districts"]["ids"]), build_day, previous
+    )
+    meta["generated_on"] = choice.generated_on
+    meta_bytes = dumps_json(meta)
+    check_published("meta.json", meta_bytes)
+    edition = _edition(meta, meta_bytes, points_bytes, digest)
+    edition_bytes = edition.to_json_bytes()
+    check_published(EDITION_FILE, edition_bytes)
+    report["edition"] = {
+        "generated_on": choice.generated_on,
+        "content_sha256": digest,
+        "date_from": choice.reason,
+        "previous": None if previous is None else previous.to_json_value(),
+    }
+    log(f"Directory dated {choice.generated_on}: {choice.reason}")
+    return DatedDirectory(meta_bytes, edition, edition_bytes)
+
+
+def _tiles_step(
+    schools: pl.DataFrame,
+    config: DirectoryConfig,
+    paths: BuildPaths,
+    report: dict[str, Any],
+    *,
+    write: bool,
+) -> TilesWritten | None:
+    """Write ``schools.pmtiles``, or with ``write=False`` remove an older one."""
+    target = paths.site_dir / TILES_FILE
+    if not write:
+        # An older tileset beside this meta.json would point at other schools.
+        target.unlink(missing_ok=True)
+        return None
+    with _work_dir(paths.work_dir) as work:
+        written = _write_tiles(schools, config, work, target)
+    report["tileset_check"] = {
+        "tiles": written.check.tiles,
+        "feature_instances": written.check.feature_instances,
+        "schools_per_zoom": {str(z): n for z, n in written.check.schools_per_zoom.items()},
+        "string_pool_pairs_separated": written.separated_pairs,
+    }
+    return written
+
+
+def _write_directory(
+    site: Path, internal: Path, points_bytes: bytes, dated: DatedDirectory
+) -> None:
+    """Write points.bin, meta.json and edition.json, after removing an older zone table.
+
+    An older table gives the zones of another directory's indexes, so it goes
+    before the new directory is written, whatever happens after.
+    """
+    (internal / ZONES_FILE).unlink(missing_ok=True)
+    write_bytes_atomic(site / "points.bin", points_bytes)
+    write_bytes_atomic(site / "meta.json", dated.meta_bytes)
+    write_bytes_atomic(site / EDITION_FILE, dated.edition_bytes)
+
+
+def _write_tables(  # noqa: PLR0913 - one table each
+    internal: Path,
+    schools: pl.DataFrame,
+    districts: pl.DataFrame,
+    dropped: pl.DataFrame,
+    *,
+    zone_table: pl.DataFrame | None,
+    dated: DatedDirectory,
+) -> list[str]:
+    """Write the internal tables; return their names."""
+    columns = ["index", *(c for c in SCHOOL_SCHEMA if c != "drop_reason"), "district_index"]
+    schools.select(columns).write_parquet(internal / "schools.parquet")
+    districts.write_parquet(internal / "districts.parquet")
+    dropped.select(*SCHOOL_SCHEMA).write_parquet(internal / "dropped.parquet")
+    written = ["schools.parquet", "districts.parquet", "dropped.parquet"]
+    if zone_table is not None:
+        write_school_zones(zone_table, internal / ZONES_FILE, dated.edition)
+        written.append(ZONES_FILE)
+    return written
+
+
+@dataclass(frozen=True, slots=True)
+class ZonesFound:
+    """The lookup a zone source gave, and the record of what it was made from."""
+
+    lookup: ZoneLookup
+    made_from: dict[str, Any]
+
+
+def _zone_table(schools: pl.DataFrame, found: ZonesFound, report: dict[str, Any]) -> pl.DataFrame:
+    """Each school's zones, refused below the coverage floor (raises ZoneError)."""
+    table = school_zones(schools, found.lookup)
+    overridden = Counter(
+        entry.place
+        for county, lat, lon in schools.select("county_fips", "lat", "lon").iter_rows()
+        if (entry := override_for(county, lat, lon)) is not None
+    )
+    report["zones"] = {
+        **zone_counts(table),
+        "overridden": dict(sorted(overridden.items())),
+        "boundaries": found.made_from,
+    }
+    check_coverage(table)
+    return table
+
+
+@dataclass(frozen=True, slots=True)
 class BuildResult:
     """What a build wrote and the report it produced."""
 
@@ -472,16 +757,29 @@ class BuildResult:
     internal_dir: Path
 
 
-def build(
+def build(  # noqa: PLR0913 - what to build, where, and how
     config: DirectoryConfig,
     paths: BuildPaths,
     *,
     client_factory: Callable[[], httpx.Client] | None = None,
     log: Log = _stderr,
     now: Callable[[], datetime] = lambda: datetime.now(UTC),
+    previous: DirectoryEdition | None = None,
+    zones: ZoneSource | None = None,
+    write_tiles: bool = True,
 ) -> BuildResult:
-    """Run the whole directory build; see the module docstring for the outputs."""
+    """Run the whole directory build; see the module docstring for the outputs.
+
+    ``previous`` is the edition the site serves now; ``None`` only when no edition
+    was ever deployed. ``zones`` makes ``school_zones.parquet``.
+    ``write_tiles=False`` skips ``schools.pmtiles``.
+    """
     started = now()
+    found = None
+    if zones is not None:
+        # First, so a failed lookup stops the build before any file is written.
+        log("Reading the NWS boundary files")
+        found = ZonesFound(*zones(started.date()))
     log("Fetching NCES files")
     with FileCache(paths.cache_dir, (client_factory or make_client)()) as cache:
         sources = fetch_sources(config, cache, log)
@@ -555,6 +853,7 @@ def build(
         ).height,
     }
 
+    zone_table = None if found is None else _zone_table(schools, found, report)
     log("Writing outputs")
     site, internal = paths.site_dir, paths.internal_dir
     site.mkdir(parents=True, exist_ok=True)
@@ -563,28 +862,24 @@ def build(
         "public": sources["ccd_directory"].candidate.school_year,
         "private": sources["private_school_geocodes"].candidate.school_year,
     }
-    meta = meta_document(schools, districts, started.date().isoformat(), school_years)
-    meta_bytes = dumps_json(meta)
-    check_published("meta.json", meta_bytes)
-    _write_points(schools, districts.height, site / "points.bin")
-    write_bytes_atomic(site / "meta.json", meta_bytes)
-    with _work_dir(paths.work_dir) as work:
-        tiles_written = _write_tiles(schools, config, work, site / "schools.pmtiles")
-    report["tileset_check"] = {
-        "tiles": tiles_written.check.tiles,
-        "feature_instances": tiles_written.check.feature_instances,
-        "schools_per_zoom": {str(z): n for z, n in tiles_written.check.schools_per_zoom.items()},
-        "string_pool_pairs_separated": tiles_written.separated_pairs,
+    points_bytes = _encode_points(schools, districts.height)
+    meta = meta_document(schools, districts, "", school_years)
+    dated = _dated_directory(
+        meta, points_bytes, build_day=started.date(), previous=previous, report=report, log=log
+    )
+    _write_directory(site, internal, points_bytes, dated)
+    tiles_written = _tiles_step(schools, config, paths, report, write=write_tiles)
+
+    dropped = pl.concat([public, private, merged.rows]).filter(pl.col("drop_reason").is_not_null())
+    internal_written = _write_tables(
+        internal, schools, districts, dropped, zone_table=zone_table, dated=dated
+    )
+
+    outputs = {
+        name: _file_info(site / name)
+        for name in PUBLISHED_FILES
+        if write_tiles or name != TILES_FILE
     }
-
-    columns = ["index", *(c for c in SCHOOL_SCHEMA if c != "drop_reason"), "district_index"]
-    schools.select(columns).write_parquet(internal / "schools.parquet")
-    districts.write_parquet(internal / "districts.parquet")
-    pl.concat([public, private, merged.rows]).filter(pl.col("drop_reason").is_not_null()).select(
-        *SCHOOL_SCHEMA
-    ).write_parquet(internal / "dropped.parquet")
-
-    outputs = {name: _file_info(site / name) for name in PUBLISHED_FILES}
     report["outputs"] = {name: dict(info) for name, info in outputs.items()}
     report["notes"] = [
         f"Public schools: CCD {school_years['public']}; private schools: PSS "
@@ -628,13 +923,10 @@ def build(
         "pipeline_version": __version__,
         "sources": [sources[key].manifest_entry() for key in sorted(sources)],
         "outputs": outputs,
-        "internal_outputs": {
-            name: _file_info(internal / name)
-            for name in ("schools.parquet", "districts.parquet", "dropped.parquet")
-        },
+        "internal_outputs": {name: _file_info(internal / name) for name in internal_written},
         "supplement": _supplement_provenance(config, supplement),
-        "tippecanoe_argv": tiles_written.argv,
-        "tileset_generator": tiles_written.generator,
+        "tippecanoe_argv": None if tiles_written is None else tiles_written.argv,
+        "tileset_generator": None if tiles_written is None else tiles_written.generator,
         "report": _display_path(internal / "build_report.json"),
     }
     write_json(site / "manifest.internal.json", manifest)
@@ -741,5 +1033,13 @@ def summary_lines(result: BuildResult) -> list[str]:
     ]
     for name, info in report["outputs"].items():
         lines.append(f"{name}: {info['bytes']:,} bytes, {info['gzip_bytes']:,} gzipped")
+    edition = report["edition"]
+    lines.append(f"dated {edition['generated_on']}: {edition['date_from']}")
+    zones = report.get("zones")
+    if zones is not None:
+        lines.append(
+            f"time zones: {zones['one_zone']:,} schools in one, {zones['several_zones']:,} "
+            f"in several, {zones['unknown']:,} unknown"
+        )
     lines.append(f"report: {result.internal_dir / 'build_report.md'}")
     return lines

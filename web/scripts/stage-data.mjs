@@ -11,8 +11,8 @@
  *
  * Needs (the README at the repository root has the commands):
  *
- *   pipeline/out/site-data/schools/      meta.json, points.bin, schools.pmtiles
- *                                        (snowlight directory build)
+ *   pipeline/out/site-data/schools/      meta.json, points.bin, schools.pmtiles,
+ *                                        edition.json (snowlight directory build)
  *   pipeline/out/internal/directory/     schools.parquet, districts.parquet
  *                                        (the same build's own tables)
  *   pipeline/out/site-data/search/       cities.jsonl, zips.jsonl
@@ -24,6 +24,14 @@
  *   schools/meta.<hash>.json          the directory, as the pipeline wrote it
  *   schools/points.<hash>.bin
  *   schools/schools.<hash>.pmtiles
+ *   schools/edition.json              the directory named by its content, under its
+ *                                     plain name: the page never reads it; the live
+ *                                     ingest and the next deploy's build read it
+ *                                     from the live deploy. It is checked against
+ *                                     meta.json and points.bin first (scripts/
+ *                                     edition.mjs). Staging stops when the build
+ *                                     recorded one that is missing; a build older
+ *                                     than editions stages without one and says so.
  *   schools/details/<n>.<hash>.json   what the directory says about each school,
  *                                     1,024 schools a file, and index.<hash>.json,
  *                                     where each file starts (src/data/details-format.ts)
@@ -102,6 +110,8 @@ import { basename, dirname, join, relative, resolve } from 'node:path';
 import process from 'node:process';
 import { fileURLToPath } from 'node:url';
 
+import { checkEdition, checkEditionPresent, EDITION, EditionError } from './edition.mjs';
+
 // The site's own TypeScript modules; this hook lets their extensionless relative imports resolve.
 registerHooks({
   resolve(specifier, context, nextResolve) {
@@ -158,7 +168,7 @@ const ZIP_INPUT = 'search/zips.jsonl';
 /** The search index, as the page asks for it. */
 const SEARCH_INDEX = 'search-index.bin';
 /** Under site-data, what staging handles itself rather than copying as written. */
-const HANDLED = new Set([META, POINTS, TILES, ...SEARCH_INPUTS, SEARCH_INDEX]);
+const HANDLED = new Set([META, POINTS, TILES, EDITION, ...SEARCH_INPUTS, SEARCH_INDEX]);
 
 /** The directory build's record of what it wrote (never published). */
 const MANIFEST = 'schools/manifest.internal.json';
@@ -276,11 +286,12 @@ function readPoints(bytes, meta) {
 /**
  * Checks the directory files against the build's own record of them, when it
  * kept one: a file changed or swapped since is not the build's output.
+ * Returns the record, or null when the build kept none.
  * @param {string} site @param {Record<string, Buffer>} files by path under site-data
  */
 function checkManifest(site, files) {
   const file = join(site, MANIFEST);
-  if (!existsSync(file)) return;
+  if (!existsSync(file)) return null;
   /** @type {{ outputs?: Record<string, { sha256?: unknown }> }} */
   const manifest = JSON.parse(readFileSync(file, 'utf8'));
   for (const [path, bytes] of Object.entries(files)) {
@@ -289,6 +300,7 @@ function checkManifest(site, files) {
       throw new StageError(`${path} is not the file the directory build wrote (${MANIFEST})`);
     }
   }
+  return manifest;
 }
 
 /** @param {string} file */
@@ -812,9 +824,18 @@ function main() {
     const pointsBytes = readFileSync(need(join(args.site, POINTS)));
     const tilesBytes = checkTiles(need(join(args.site, TILES)));
     for (const input of SEARCH_INPUTS) need(join(args.site, input));
-    checkManifest(args.site, { [META]: metaBytes, [POINTS]: pointsBytes, [TILES]: tilesBytes });
+    const editionFile = join(args.site, EDITION);
+    const editionBytes = existsSync(editionFile) ? readFileSync(editionFile) : null;
+    const manifest = checkManifest(args.site, {
+      [META]: metaBytes,
+      [POINTS]: pointsBytes,
+      [TILES]: tilesBytes,
+      ...(editionBytes === null ? {} : { [EDITION]: editionBytes }),
+    });
+    checkEditionPresent(manifest, editionBytes !== null);
 
     const meta = readMeta(join(args.site, META));
+    if (editionBytes !== null) checkEdition(editionBytes, metaBytes, pointsBytes, meta);
     const points = readPoints(pointsBytes, meta);
     const tables = readTables(args, work);
     const { schoolRecords, districtRecords, merged } = directoryRecords(meta, points, tables);
@@ -871,6 +892,10 @@ function main() {
     putHashed(POINTS, pointsBytes);
     putHashed(TILES, tilesBytes);
     putHashed(SEARCH_INDEX, readFileSync(indexFile));
+    if (editionBytes !== null) {
+      writeFileSync(join(args.to, EDITION), editionBytes);
+      staged.push([EDITION, editionBytes.length]);
+    }
     // One line each for the school details and the areas: there are over a hundred files.
     for (const [folder, sharded] of /** @type {const} */ ([
       ['schools/details/', details],
@@ -896,7 +921,11 @@ function main() {
     process.stdout.write(
       `staged ${shortPath(args.to)}:\n${lines.join('\n')}\n` +
         `search index: ${String(index.records)} records (${kinds}); ` +
-        `${String(merged)} one-school districts are found as their school\n`,
+        `${String(merged)} one-school districts are found as their school\n` +
+        (editionBytes === null
+          ? `no ${EDITION}: the directory build that wrote ${META} is older than editions, ` +
+            'so a live ingest cannot check this staging\n'
+          : ''),
     );
   } finally {
     rmSync(work, { recursive: true, force: true });
@@ -908,7 +937,9 @@ try {
 } catch (error) {
   process.stderr.write(
     `stage-data: ${error instanceof Error ? error.message : String(error)}\n` +
-      (error instanceof StageError ? '' : `${String(error instanceof Error ? error.stack : '')}\n`),
+      (error instanceof StageError || error instanceof EditionError
+        ? ''
+        : `${String(error instanceof Error ? error.stack : '')}\n`),
   );
   process.exit(1);
 }

@@ -22,7 +22,7 @@ published. Any other file there that is in neither list is a mistake, and
 from dataclasses import dataclass
 
 from snowlight.schemas.base import PublishedModel
-from snowlight.schemas.directory import SchoolDirectoryMeta
+from snowlight.schemas.directory import DirectoryEdition, SchoolDirectoryMeta
 from snowlight.schemas.live import AlertsFile, ClosingsFile, CoveredFile
 from snowlight.schemas.predictions import PredictionsFile
 from snowlight.schemas.replays import ReplayFile, ReplayIndex
@@ -40,6 +40,7 @@ class PublishedFile:
 
 PUBLISHED_FILES: tuple[PublishedFile, ...] = (
     PublishedFile("school-directory", "schools/meta.json", SchoolDirectoryMeta),
+    PublishedFile("directory-edition", "schools/edition.json", DirectoryEdition),
     PublishedFile("closings", "live/closings.json", ClosingsFile),
     PublishedFile("covered", "live/covered.json", CoveredFile),
     PublishedFile("alerts", "live/alerts.json", AlertsFile),

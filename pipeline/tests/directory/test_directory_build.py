@@ -2,7 +2,6 @@
 
 import hashlib
 import json
-import shutil
 from collections.abc import Callable
 from datetime import UTC, datetime
 from pathlib import Path
@@ -50,24 +49,7 @@ KEPT_PUBLIC = sorted(
 KEPT_PRIVATE = sorted(["00000033", "00000044", "00073137", "00083393"])
 
 
-@pytest.fixture(autouse=True)
-def tippecanoe_or_stand_in(
-    monkeypatch: pytest.MonkeyPatch, synthetic_tiles: type["SyntheticTiles"]
-) -> None:
-    """Use tippecanoe when installed; otherwise tile the input synthetically."""
-    if shutil.which("tippecanoe") is not None:
-        return
-
-    def synthetic(source: Path, target: Path, settings: tiles.TileSettings) -> list[str]:
-        text = source.read_text(encoding="utf-8")
-        target.write_bytes(
-            synthetic_tiles.from_geojsonseq(
-                text, settings.layer, settings.minzoom, settings.maxzoom
-            )
-        )
-        return ["synthetic-tippecanoe"]
-
-    monkeypatch.setattr(tiles, "run_tippecanoe", synthetic)
+pytestmark = pytest.mark.usefixtures("tippecanoe_or_stand_in")
 
 
 def _paths(tmp_path: Path) -> BuildPaths:

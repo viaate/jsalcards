@@ -175,6 +175,12 @@ type Count = Annotated[int, Field(ge=0, le=COUNT_MAX, description="A whole numbe
 
 type Percent = Annotated[int, Field(ge=0, le=100, description="Whole percentage points.")]
 
+type ContentDigest = Annotated[
+    str,
+    StringConstraints(pattern=r"^[0-9a-f]{64}$"),
+    Field(description="A SHA-256 digest: 64 lowercase hexadecimal digits."),
+]
+
 type Probability = Annotated[
     float,
     Field(

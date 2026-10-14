@@ -33,7 +33,11 @@ from snowlight.schemas.base import (
     check_published_bytes,
     screen_text,
 )
-from snowlight.schemas.directory import DirectoryStamp, SchoolDirectoryMeta
+from snowlight.schemas.directory import (
+    DirectoryEdition,
+    DirectoryStamp,
+    SchoolDirectoryMeta,
+)
 from snowlight.schemas.internal import (
     ClosingObservation,
     ConflictError,
@@ -77,6 +81,7 @@ __all__ = [
     "ConflictError",
     "CoverageObservation",
     "CoveredFile",
+    "DirectoryEdition",
     "DirectoryStamp",
     "DistrictForecast",
     "Forecast",

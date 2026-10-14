@@ -9,12 +9,14 @@ import gzip
 import hashlib
 import json
 import math
+import shutil
 import struct
 from pathlib import Path
 
 import httpx
 import pytest
 
+from snowlight.directory import tiles
 from snowlight.directory.config import DirectoryConfig, load_config
 
 FIXTURES = Path(__file__).resolve().parent / "fixtures"
@@ -297,3 +299,23 @@ def provenance() -> dict[str, object]:
 def synthetic_tiles() -> type[SyntheticTiles]:
     """The synthetic PMTiles writer."""
     return SyntheticTiles
+
+
+@pytest.fixture
+def tippecanoe_or_stand_in(
+    monkeypatch: pytest.MonkeyPatch, synthetic_tiles: type[SyntheticTiles]
+) -> None:
+    """Use tippecanoe when installed; otherwise tile the input synthetically."""
+    if shutil.which("tippecanoe") is not None:
+        return
+
+    def synthetic(source: Path, target: Path, settings: tiles.TileSettings) -> list[str]:
+        text = source.read_text(encoding="utf-8")
+        target.write_bytes(
+            synthetic_tiles.from_geojsonseq(
+                text, settings.layer, settings.minzoom, settings.maxzoom
+            )
+        )
+        return ["synthetic-tippecanoe"]
+
+    monkeypatch.setattr(tiles, "run_tippecanoe", synthetic)

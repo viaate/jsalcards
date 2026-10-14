@@ -8,7 +8,8 @@ from typing import Annotated, Any
 import pytest
 from pydantic import StringConstraints
 
-from schemas.helpers import example, example_path
+from schemas.helpers import example, example_path, example_points
+from snowlight.output import dumps_json
 from snowlight.schemas.base import PublishedModel
 from snowlight.schemas.export import main
 from snowlight.schemas.registry import PUBLISHED_FILES
@@ -23,11 +24,14 @@ def _site(tmp_path: Path) -> Path:
         target = root / path
         target.parent.mkdir(parents=True, exist_ok=True)
         shutil.copy(example_path(entry.name), target)
+    (root / "schools" / "points.bin").write_bytes(example_points())
+    # meta.json as the build writes it: the edition's digest is of those bytes.
+    _write(root, "schools/meta.json", example("school-directory"))
     return root
 
 
 def _write(root: Path, path: str, value: Any) -> None:
-    (root / path).write_text(json.dumps(value), encoding="utf-8")
+    (root / path).write_bytes(dumps_json(value))
 
 
 def test_a_consistent_site_passes(tmp_path: Path) -> None:
@@ -36,8 +40,8 @@ def test_a_consistent_site_passes(tmp_path: Path) -> None:
     assert sorted(report.checked) == sorted(
         entry.path.replace("{id}", "2026-12-18") for entry in PUBLISHED_FILES
     )
-    assert report.published() == sorted(report.checked)
-    assert (report.scanned, report.unchecked, report.skipped) == ([], [], [])
+    assert report.published() == sorted([*report.checked, "schools/points.bin"])
+    assert (report.scanned, report.unchecked, report.skipped) == ([], ["schools/points.bin"], [])
 
 
 def test_an_empty_site_has_nothing_to_check(tmp_path: Path) -> None:
@@ -89,7 +93,6 @@ def test_a_repeated_key_is_reported(tmp_path: Path) -> None:
 
 def test_every_file_in_the_folder_is_accounted_for(tmp_path: Path) -> None:
     root = _site(tmp_path)
-    (root / "schools" / "points.bin").write_bytes(bytes(range(256)))
     (root / "search").mkdir()
     (root / "search" / "cities.jsonl").write_text(
         '{"name":"Synthetic City","state":"IA"}\n', encoding="utf-8"
@@ -156,8 +159,60 @@ def test_indexes_must_point_into_the_published_directory(tmp_path: Path) -> None
     assert problem.startswith("predictions: indexes directory")
     (root / "schools" / "meta.json").unlink()
     assert validate_site(root).problems == [
-        "schools/meta.json is missing, so no index can be checked"
+        "schools/meta.json is missing, so no index can be checked",
+        "schools/edition.json is published without schools/meta.json",
     ]
+
+
+def test_the_edition_names_the_published_directory(tmp_path: Path) -> None:
+    root = _site(tmp_path)
+    edition = example("directory-edition")
+    _write(root, "schools/edition.json", edition | {"generated_on": "2026-09-01"})
+    (problem,) = validate_site(root).problems
+    assert problem.startswith("schools/edition.json names directory generated_on=")
+    mismatch = ["schools/edition.json: content_sha256 is not that of meta.json and points.bin"]
+    _write(root, "schools/edition.json", edition | {"content_sha256": "0" * 64})
+    assert validate_site(root).problems == mismatch
+    _write(root, "schools/edition.json", edition)
+    assert validate_site(root).problems == []
+    # A school moved to another district changes the content, with the same meta.json.
+    points = bytearray(example_points())
+    points[16 + 8] = 1
+    (root / "schools" / "points.bin").write_bytes(bytes(points))
+    assert validate_site(root).problems == mismatch
+    (root / "schools" / "points.bin").unlink()
+    assert validate_site(root).problems == [
+        "schools/edition.json is published without schools/points.bin"
+    ]
+    # A school renamed in meta.json changes its content, with the same stamp.
+    (root / "schools" / "points.bin").write_bytes(example_points())
+    meta = example("school-directory")
+    meta["names"][0] = "Synthetic Renamed School"
+    _write(root, "schools/meta.json", meta)
+    assert validate_site(root).problems == mismatch
+
+
+def test_the_edition_is_checked_against_the_bytes_of_meta_json(tmp_path: Path) -> None:
+    """The digest is of meta.json's bytes, as the build and staging take it, not of its JSON.
+
+    The same JSON written otherwise (pretty-printed, keys reordered) is refused here,
+    as staging refuses it, so the two checks never disagree about a file.
+    """
+    root = _site(tmp_path)
+    assert validate_site(root).problems == []
+    meta = example("school-directory")
+    pretty = json.dumps(meta, indent=2).encode()
+    reordered = json.dumps(dict(reversed(meta.items())), separators=(",", ":")).encode()
+    for written, problem in (
+        (
+            pretty,
+            "schools/meta.json: its date is not written once as the build writes it",
+        ),
+        (reordered, "schools/edition.json: content_sha256 is not that of meta.json and points.bin"),
+    ):
+        assert json.loads(written) == meta
+        (root / "schools" / "meta.json").write_bytes(written)
+        assert validate_site(root).problems == [problem]
 
 
 def test_live_files_are_published_together(tmp_path: Path) -> None:
@@ -201,7 +256,6 @@ def test_a_summary_that_disagrees_with_its_replay_is_reported(tmp_path: Path) ->
 
 def test_cli_validate(tmp_path: Path, capsys: pytest.CaptureFixture[str]) -> None:
     root = _site(tmp_path)
-    (root / "schools" / "points.bin").write_bytes(b"\x00")
     (root / "schools" / "manifest.internal.json").write_text("{}", encoding="utf-8")
     (root / "search").mkdir()
     (root / "search" / "cities.jsonl").write_text("{}\n", encoding="utf-8")

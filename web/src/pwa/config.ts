@@ -23,6 +23,9 @@
  *   cached, and any request for part of a file goes to the network as it is:
  *   a cache holds whole files, and a whole file is the wrong answer to a
  *   range request.
+ * - schools/edition.json, which names the deployed directory, is in no route:
+ *   the page never reads it, and a reader that did must get the deployed file,
+ *   never a copy a cache kept (NETWORK_ONLY_DATA).
  * - The US mask (geo/us-mask.<hash>.pmtiles) is a .pmtiles file too, but read
  *   whole, once, by the page, when someone heads for the streets
  *   (src/map/basemap/mask/feed.ts): not precached, so a visit that never
@@ -128,6 +131,13 @@ export const RANGE_SERVED_EXTENSIONS: readonly string[] = Object.freeze(['pmtile
 /** Matches a URL's path (and what follows it) when it names a range-served file. */
 const RANGE_SERVED_PATH = String.raw`[^?#]*\.(?:${RANGE_SERVED_EXTENSIONS.join('|')})(?:[?#]|$)`;
 
+/**
+ * Files under data/ that no route serves, so the worker never answers for them
+ * from a cache: schools/edition.json has a plain name and changes with each
+ * deploy that changes the directory.
+ */
+const NETWORK_ONLY_DATA = String.raw`schools/edition\.json(?:[?#]|$)`;
+
 /** Whether `url` (absolute, or a path) names a file read in byte ranges. */
 export function isRangeServed(url: string): boolean {
   return new RegExp(`^${RANGE_SERVED_PATH}`).test(new URL(url, 'https://x.invalid/').pathname);
@@ -169,8 +179,8 @@ export interface RoutePatterns {
 export function routePatterns(base: string): RoutePatterns {
   const root = escapeRegExp(normalizeBase(base));
   const site = String.raw`^https?://[^/?#]+${root}`;
-  // Under data/, but never a range-served file: those go to the network untouched.
-  const data = `${site}${escapeRegExp(DATA_DIR)}(?!${RANGE_SERVED_PATH})`;
+  // Under data/, but never a range-served or network-only file: those go to the network untouched.
+  const data = `${site}${escapeRegExp(DATA_DIR)}(?!${RANGE_SERVED_PATH}|${NETWORK_ONLY_DATA})`;
   const tiles = escapeRegExp(TILE_ORIGIN);
   return {
     staticData: new RegExp(`${data}${STATIC_DATA}`),

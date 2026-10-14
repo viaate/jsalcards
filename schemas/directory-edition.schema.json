@@ -1,0 +1,57 @@
+{
+  "$comment": "Generated from pipeline/snowlight/schemas by `uv run python -m snowlight.schemas`. Do not edit.",
+  "$defs": {
+    "ContentDigest": {
+      "description": "A SHA-256 digest: 64 lowercase hexadecimal digits.",
+      "pattern": "^[0-9a-f]{64}$",
+      "type": "string"
+    },
+    "Count": {
+      "description": "A whole number of things.",
+      "maximum": 4294967294,
+      "minimum": 0,
+      "type": "integer"
+    },
+    "LocalDate": {
+      "description": "A calendar day in the school's own time zone: YYYY-MM-DD.",
+      "format": "date",
+      "pattern": "^\\d{4}-\\d{2}-\\d{2}$",
+      "type": "string"
+    },
+    "SchemaVersion": {
+      "const": 1,
+      "description": "The file format's version. A reader refuses a file with any other.",
+      "type": "integer"
+    }
+  },
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "description": "schools/edition.json: the directory a deploy serves, named by its content.\n\n``generated_on``, ``schools`` and ``districts`` are the stamp of the\n``meta.json`` beside it, and ``content_sha256`` is :func:`written_digest` of\nthat ``meta.json`` and the ``points.bin`` beside them.",
+  "properties": {
+    "content_sha256": {
+      "$ref": "#/$defs/ContentDigest"
+    },
+    "districts": {
+      "$ref": "#/$defs/Count"
+    },
+    "generated_on": {
+      "$ref": "#/$defs/LocalDate"
+    },
+    "schema_version": {
+      "$ref": "#/$defs/SchemaVersion"
+    },
+    "schools": {
+      "$ref": "#/$defs/Count"
+    }
+  },
+  "required": [
+    "schema_version",
+    "generated_on",
+    "schools",
+    "districts",
+    "content_sha256"
+  ],
+  "title": "DirectoryEdition",
+  "type": "object",
+  "x-snowlight-path": "schools/edition.json"
+}

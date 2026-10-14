@@ -54,6 +54,11 @@ describe('routeFor', () => {
     ['/data/schools/schools.pmtiles.json', 'staticData'],
     ['/data/schools/pmtiles.json', 'staticData'],
     ['/data/live/closings.json?f=a.pmtiles', 'data'],
+    ['/data/schools/edition.json', null],
+    ['/data/schools/edition.json?b=1', null],
+    ['/data/schools/edition.json#x', null],
+    ['/data/schools/edition.json.bak', 'staticData'],
+    ['/data/schools/editions.json', 'staticData'],
   ])('%s → %s', (path, route) => {
     expect(routeFor(`${SITE}${path}`, '/')).toBe(route);
   });
@@ -72,10 +77,12 @@ describe('routeFor', () => {
   });
 
   it('sends every published file to the right cache', () => {
-    const expected: Record<keyof typeof PUBLISHED_PATHS, string> = {
+    const expected: Record<keyof typeof PUBLISHED_PATHS, string | null> = {
       alerts: 'data',
       closings: 'data',
       covered: 'data',
+      // No route: a reader must get the deployed file, never a cached copy.
+      directoryEdition: null,
       predictions: 'data',
       replayIndex: 'data',
       replay: 'staticData',

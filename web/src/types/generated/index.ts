@@ -6,6 +6,7 @@ export const PUBLISHED_PATHS = {
   alerts: 'live/alerts.json',
   closings: 'live/closings.json',
   covered: 'live/covered.json',
+  directoryEdition: 'schools/edition.json',
   predictions: 'predictions/latest.json',
   replayIndex: 'replays/index.json',
   replay: 'replays/{id}.json',
@@ -19,6 +20,7 @@ export interface PublishedDocuments {
   readonly alerts: AlertsFile;
   readonly closings: ClosingsFile;
   readonly covered: CoveredFile;
+  readonly directoryEdition: DirectoryEdition;
   readonly predictions: PredictionsFile;
   readonly replayIndex: ReplayIndex;
   readonly replay: ReplayFile;
@@ -350,6 +352,29 @@ export interface CoveredFile {
  * @maxItems 2
  */
 export type SchoolRange = readonly [first: SchoolIndex, last: SchoolIndex];
+
+// directory-edition --------------------------------------------------------------
+
+/**
+ * schools/edition.json: the directory a deploy serves, named by its content.
+ *
+ * ``generated_on``, ``schools`` and ``districts`` are the stamp of the
+ * ``meta.json`` beside it, and ``content_sha256`` is :func:`written_digest` of
+ * that ``meta.json`` and the ``points.bin`` beside them.
+ */
+export interface DirectoryEdition {
+  readonly schema_version: SchemaVersion;
+  readonly generated_on: LocalDate;
+  readonly schools: Count;
+  readonly districts: Count;
+  readonly content_sha256: ContentDigest;
+}
+
+/**
+ * A SHA-256 digest: 64 lowercase hexadecimal digits.
+ * @pattern ^[0-9a-f]{64}$
+ */
+export type ContentDigest = string;
 
 // predictions --------------------------------------------------------------------
 
