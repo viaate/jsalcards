@@ -200,7 +200,7 @@ PUBLIC_SECTION: Final = re.compile(r"(?<!\bnon-)(?<!\bnon\s)\bpublic\b", re.IGNO
 private)."""
 PART_WORDS: Final = re.compile(
     r"(?<!\ball\s)(?<!\bevery\s)(?<!\beach\s)\b(?:campus|building|elementary|elem|middle|"
-    r"high\s+school|jr|jhs|ms|hs|upper\s+school|lower\s+school|academy|center|site|location|"
+    r"high\s+schools?|jr|jhs|ms|hs|upper\s+school|lower\s+school|academy|center|site|location|"
     r"annex|preschool|pre-?k|early\s+childhood|except|(?:pk|tk|k)\s*-\s*\d{1,2}|grades?\s+(?:pk|k|\d)|"
     r"(?:at|for)\s+(?!(?:all|every|each|our|the|public|district|area)\b)"
     r"(?-i:[A-Z])[\w.'-]*(?:\s+(?-i:[A-Z])[\w.'-]*)*\s+school)\b",
@@ -208,8 +208,8 @@ PART_WORDS: Final = re.compile(
 )
 """Words that name one part of a district ("Kibbleworth campus", "Lincoln Elementary", "the
 north site", "except the high school", "Lincoln Elem only", "K-8 closed", "Closed at Lincoln
-School"): such a row does not speak for all its schools. "All
-campuses" and "every elementary" speak for every one."""
+School", a comment "High Schools" beside "Early Dismissal at 1:00PM Wednesday"): such a row
+does not speak for all its schools. "All campuses" and "every elementary" speak for every one."""
 NAME_ONLY: Final = frozenset({"name"})
 """The matcher's reasons that rest on a listing's name alone (``snowlight.match.Reason.NAME``)."""
 LISTING_LEVELS: Final = (

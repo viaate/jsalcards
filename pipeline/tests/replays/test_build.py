@@ -629,6 +629,11 @@ def test_a_run_without_extras_reads_the_status_alone() -> None:
         ("Closed today for PK-5", False),
         ("Closed at Lincoln School", False),
         ("Closed for all schools", True),
+        ("High Schools", False),
+        ("Middle Schools", False),
+        ("Elementary Schools", False),
+        ("Early dismissal for high schools", False),
+        ("All high schools", True),
         ("Closed 1/16", True),
     ],
 )
