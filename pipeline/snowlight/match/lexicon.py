@@ -60,6 +60,7 @@ EXPANSIONS: Final[dict[str, tuple[str, ...]]] = {
     "acad": ("academy",),
     "academ": ("academy",),
     "acade": ("academy",),
+    "acdmy": ("academy",),
     "prep": ("preparatory",),
     "ctr": ("center",),
     "cntr": ("center",),

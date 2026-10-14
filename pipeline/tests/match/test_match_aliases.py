@@ -5,18 +5,64 @@ from pathlib import Path
 import pytest
 from pydantic import ValidationError
 
-from snowlight.match import Aliases, Directory, alias_key, load_aliases
+from snowlight.match import Aliases, Directory, alias_key, load_aliases, load_directory
 from snowlight.match.aliases import DEFAULT_ALIASES_PATH, AliasFile
+from snowlight.sources.stations.registry import load_registry
+
+PIPELINE = Path(__file__).resolve().parents[2]
+DIRECTORY = PIPELINE / "out" / "internal" / "directory"
 
 
-def test_the_shipped_alias_file_loads_and_holds_only_checked_entries(
-    handmade_directory: Directory,
-) -> None:
+PINNED = {
+    "2003450": ("Arkansas City", "KS"),
+    "2004830": ("North Jackson", "KS"),
+    "2006420": ("Gardner Edgerton", "KS"),
+    "2006930": ("Southern Lyon County", "KS"),
+    "2009990": ("Nickerson", "KS"),
+    "2010680": ("Piper-Kansas City", "KS"),
+    "2302610": ("Auburn Public Schools", "ME"),
+    "2305280": ("East Millinocket Public Schools", "ME"),
+    "2307530": ("Lisbon Public Schools", "ME"),
+    "2308160": ("Medway Public Schools", "ME"),
+    "2603870": ("Bangor Public Schools (Van Buren)", "MI"),
+    "2611910": ("Delton Kellogg Schools", "MI"),
+    "2629220": ("North Central Area Schools", "MI"),
+    "2921540": ("MOUNTAIN VIEW-BIRCH TREE R-III", "MO"),
+    "4025470": ("CANEY VALLEY", "OK"),
+}
+"""Every NCES id the shipped alias file pins, with the district's NCES name and state,
+checked against the file everywhere and against the directory where it is built."""
+
+
+def test_the_shipped_alias_file_loads_and_holds_only_checked_entries() -> None:
     aliases = load_aliases()
     assert DEFAULT_ALIASES_PATH.name == "aliases.yaml"
-    # Every entry must come from a listing seen in a live market; none is live yet.
-    assert len(aliases) == 0
-    assert aliases.problems(handmade_directory) == []
+    # Every entry comes from a listing seen in a market of the registry.
+    assert len(aliases) == 16
+    stations = load_registry(PIPELINE / "config" / "sources").stations
+    assert set(aliases.table) <= set(stations)
+    # Each names a district checked by hand (:data:`PINNED`), of its market's states.
+    pinned = {
+        (market, record_id)
+        for market, entries in aliases.table.items()
+        for ids in entries.values()
+        for record_id in ids
+    }
+    assert {record_id for _, record_id in pinned} == set(PINNED)
+    for market, record_id in pinned:
+        assert PINNED[record_id][1] in stations[market].states
+
+
+@pytest.mark.skipif(
+    not (DIRECTORY / "districts.parquet").exists(), reason="the NCES directory is not built here"
+)
+def test_the_shipped_aliases_name_records_of_the_directory() -> None:
+    aliases = load_aliases()
+    directory = load_directory(DIRECTORY)
+    assert aliases.problems(directory) == []
+    for record_id, (name, state) in PINNED.items():
+        record = directory[record_id]
+        assert (record.name, record.state, record.kind) == (name, state, "district")
 
 
 def test_alias_key_ignores_spacing_and_case() -> None:

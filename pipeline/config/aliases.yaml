@@ -13,8 +13,63 @@
 #       "<listing text>": "<NCES id>" # 7-digit district, 12-digit school, 8-char PPIN
 #       "<listing text>": ["<NCES id>", "<NCES id>"]
 #
-# Empty until a closings source is live: every entry must come from a listing
-# actually seen in that market.
+# Every entry comes from a listing actually seen in that market, and says why
+# the matcher cannot place it and what places it.
 
 schema_version: 1
-markets: {}
+markets:
+  gray-kake:
+    # USD 309 is Nickerson's district, which serves South Hutchinson; the list
+    # writes the town as "South Hutch", a word no record carries.
+    "Nickerson-South Hutch USD 309": "2009990"
+  gray-kctv:
+    # USD 203 is Piper-Kansas City (ST_LEAID KS-D0203), in Wyandotte County, the
+    # county of Kansas City, Kansas, which the list writes "KCK".
+    "Piper Schools - USD 203 KCK": "2010680"
+  gray-kwch:
+    # USD 470 is Arkansas City (KS-D0470), which the list writes "Ark City" as the
+    # town calls itself; no record spells "Ark" for Arkansas.
+    "USD 470 Ark City": "2003450"
+  gray-kytv:
+    # Liberty High and Liberty Middle are the schools of Mountain View-Birch Tree
+    # R-III, the only district of that name; the list adds them to its name.
+    "Mountain View-Birch Tree Liberty": "2921540"
+  gray-wabi:
+    # East Millinocket's and Medway's school departments, named together: Medway
+    # sends its high school students to East Millinocket's Schenck High.
+    "East Millinocket-Medway School Departments": ["2305280", "2308160"]
+  gray-wibw:
+    # USD 252 is Southern Lyon County (KS-D0252), written "S. Lyon County" beside
+    # "USD 251 N. Lyon County", which the matcher places. USD 335 is North Jackson
+    # (KS-D0335), whose schools are Jackson Heights Elementary and High, in Holton.
+    "USD 252 S. Lyon County": "2006930"
+    "USD 335 Jackson Hts.": "2004830"
+  gray-wluc:
+    # The only district of that name in Michigan or Wisconsin, in Hermansville,
+    # Menominee County: just past WLUC's DMA counties, which the matcher reads.
+    "North Central Area Schools": "2629220"
+  hearst-wmtw:
+    # Auburn and Lisbon, Maine, lie in Androscoggin County, in the Portland-Auburn
+    # market. New Hampshire's namesakes (Auburn, Merrimack County; Lisbon Regional,
+    # Grafton County) lie past its counties and write their names "School District".
+    "Auburn Schools": "2302610"
+    "Lisbon Schools": "2307530"
+  nexstar-wdaf:
+    # USD 231 is Gardner Edgerton (KS-D0231), which was Gardner-Edgerton-Antioch
+    # until it dropped Antioch from its name.
+    "Gardner-Edgerton-Antioch USD #231": "2006420"
+  scripps-wxmi:
+    # Bangor Public Schools of Van Buren County, in the Grand Rapids market, not
+    # Bangor Township Schools of Bay County nor the one-school Bangor Township S/D #8.
+    "Bangor Public Schools": "2603870"
+    # The district (its NCES name "Delton Kellogg Schools"), not one of its schools.
+    "Delton Kellogg School": "2611910"
+  sinclair-ktul:
+    # Oklahoma's Caney Valley Public Schools (Ramona, Washington County), not Caney
+    # Valley USD 436 of Kansas: the list names it as Oklahoma names its districts,
+    # beside Dewey, Osage Hills and Oklahoma Wesleyan of the same corner of Oklahoma.
+    "Caney Valley Public Schools": "4025470"
+  sinclair-wgme:
+    # See hearst-wmtw.
+    "AUBURN SCHOOLS": "2302610"
+    "Lisbon Schools": "2307530"

@@ -181,6 +181,18 @@ class NameForm(NamedTuple):
         letters: each run of two or more single letters among the tokens, run
             together (``fc`` for ``"F. C. Boyd"``): the initials a name may write
             as one word (``"FC BOYD"``).
+        designators: the families of the designators the name's district
+            numbers follow, where the designator says one: ``r`` for the letters
+            of a reorganized district (Missouri's and Colorado's ``"R-III"``,
+            ``"RE-1"``, ``"RJ-1"``), ``c`` for those of a consolidated one
+            (``"C-1"``), ``unit`` for Illinois's community unit districts
+            (``"CUSD 3"``, ``"Unit 5"``). Any other designator (``District``,
+            ``USD``, ``CCSD``, ``D-``) says none. ``"Hillsboro R-3"`` is
+            Missouri's ``"HILLSBORO R-III"``, not Illinois's ``"Hillsboro CUSD 3"``.
+        ones: the district numbers written in digits as two or three ones
+            (``"R-11"``, ``"R-111"``), which a list may have copied from a Roman
+            ``"R-II"`` or ``"R-III"``; a Roman number as written (``"R-XI"``) is
+            none of them.
     """
 
     tokens: tuple[str, ...]
@@ -210,6 +222,8 @@ class NameForm(NamedTuple):
     plurals: frozenset[str] = frozenset()
     possessives: frozenset[str] = frozenset()
     letters: tuple[str, ...] = ()
+    designators: frozenset[str] = frozenset()
+    ones: frozenset[str] = frozenset()
 
     @property
     def is_empty(self) -> bool:
@@ -249,6 +263,8 @@ _NUMBER: Final = re.compile(r"(\d+)([a-z]?)")
 _ROMAN: Final = re.compile(r"x{0,3}(?:ix|iv|v?i{0,3})")
 _ROMAN_VALUES: Final = {"i": 1, "v": 5, "x": 10}
 _LONE_ROMAN: Final = frozenset({"i", "v", "x"})
+_JOINED_ROMAN: Final = re.compile(r"r(i{2,3})")
+"""A reorganized district's ``R-II`` or ``R-III`` run into one word (``"RIII"``)."""
 _STEM_MIN_LENGTH: Final = 4
 _DIGIT: Final = re.compile(r"\d")
 _POSSESSIVE: Final = re.compile(r"(?<=[a-z])'s\b")
@@ -776,6 +792,10 @@ def _canonical(raw: list[str], initials: frozenset[int] = _NO_POSITIONS) -> tupl
             out.extend(expanded)
         elif token[0].isdigit():
             out.append(_number(token))
+        elif (joined := _JOINED_ROMAN.fullmatch(token)) is not None:
+            # "Swedeborg RIII": Missouri's "R-III" written without its hyphen.
+            out.extend(("r", str(len(joined.group(1)))))
+            roman = True
         elif (
             i not in initials
             and (value := roman_value(token)) is not None
@@ -879,6 +899,10 @@ class _Parsed(NamedTuple):
     coded: bool = False
     possessives: frozenset[str] = frozenset()
     """The words written with an apostrophe's ``s`` (:attr:`_Raw.possessives`)."""
+    designators: frozenset[str] = frozenset()
+    """:attr:`NameForm.designators`."""
+    ones: frozenset[str] = frozenset()
+    """:attr:`NameForm.ones`."""
 
 
 def _legal_suffix(words: list[str]) -> tuple[list[str], frozenset[str]]:
@@ -1005,15 +1029,43 @@ def district_codes(words: list[str]) -> DistrictCodes:
     return DistrictCodes(kept, frozenset(codes), frozenset(numbers), coded)
 
 
-def _take_numbers(words: list[str]) -> tuple[list[str], frozenset[str], frozenset[str]]:
+_ONES: Final = frozenset({"11", "111"})
+"""Numbers a list may write for a Roman number of ones (:attr:`NameForm.ones`)."""
+_PREFIX_FAMILIES: Final = {"r": "r", "re": "r", "rj": "r", "c": "c"}
+"""The family of a letter prefix before a district's number (:attr:`NameForm.designators`)."""
+_UNIT: Final = "unit"
+
+
+def _head_family(kept: Sequence[str]) -> str | None:
+    """``unit`` when the designator run ``kept`` ends with is Illinois's ``"Community Unit
+    School District"`` (``CUSD``) or ``"Unit"``; otherwise none.
+
+    The other words of a designator say no family: lists write ``"CUSD"`` for an
+    Illinois consolidated district (``"Armstrong Ellis CUSD #61"``) and ``"CSD"``
+    for Missouri's ``"C-4"``, and Colorado names its ``RE-`` districts ``"Reorganized
+    School District"``.
+    """
+    for word in reversed(kept):
+        if word not in lexicon.DISTRICT_CODE_WORDS:
+            return None
+        if word == _UNIT:
+            return _UNIT
+    return None
+
+
+def _take_numbers(
+    words: list[str],
+) -> tuple[list[str], frozenset[str], frozenset[str], frozenset[str]]:
     """Move the numbers out of ``words``, with the letters that only prefix them.
 
     Also return the numbers that name a district: those after a district prefix
-    (``"R-IV"``, ``"RE-1"``, ``"D49"``) or after ``District`` or ``Unit``.
+    (``"R-IV"``, ``"RE-1"``, ``"D49"``) or after ``District`` or ``Unit``; and the
+    families of the designators they follow (:data:`_PREFIX_FAMILIES`, :func:`_head_family`).
     """
     kept: list[str] = []
     found: set[str] = set()
     district: set[str] = set()
+    families: set[str] = set()
     glue = False
     for i, word in enumerate(words):
         if glue:
@@ -1032,13 +1084,23 @@ def _take_numbers(words: list[str]) -> tuple[list[str], frozenset[str], frozense
                 number, glue = word + "j", True
             found.add(number)
             if kept and kept[-1] in lexicon.NUMBER_PREFIXES:
-                kept.pop()
+                family = _PREFIX_FAMILIES.get(kept.pop())
+                if family is not None:
+                    families.add(family)
                 district.add(number)
             elif kept and kept[-1] in lexicon.DISTRICT_CODE_HEADS:
+                family = _head_family(kept)
+                if family is not None:
+                    families.add(family)
                 district.add(number)
         else:
             kept.append(word)
-    return kept, frozenset(found), frozenset(district) if district else _NO_NUMBERS
+    return (
+        kept,
+        frozenset(found),
+        frozenset(district) if district else _NO_NUMBERS,
+        frozenset(families) if families else _NO_NUMBERS,
+    )
 
 
 def _parse(text: str) -> _Parsed:
@@ -1063,7 +1125,7 @@ def _parse(text: str) -> _Parsed:
         implied = _CITY
     if has_digit or roman:
         codes = district_codes(words)
-        words, numbers, district = _take_numbers(codes.words)
+        words, numbers, district, families = _take_numbers(codes.words)
         if numbers and ("in" in words or "of" in words):
             words, legal = _legal_suffix(words)
             implied |= legal
@@ -1076,6 +1138,8 @@ def _parse(text: str) -> _Parsed:
             codes.numbers | district if codes.numbers else district,
             codes.coded,
             possessives,
+            families,
+            frozenset(n for n in district if n in _ONES and n in raw) if district else _NO_NUMBERS,
         )
     else:
         parsed = _Parsed(tuple(words), numbers, leading, implied, possessives=possessives)
@@ -1699,6 +1763,8 @@ def _form(parsed: _Parsed, *, district: bool, kind: _Kind) -> NameForm:
         plurals=_plurals(words, classes) if plural else _NO_NUMBERS,
         letters=_letter_runs(tokens) if letters > 1 else (),
         possessives=_possessives(parsed.possessives, tokens),
+        designators=parsed.designators,
+        ones=parsed.ones,
     )
 
 
@@ -2167,6 +2233,55 @@ _ALL_SCHOOLS: Final = re.compile(
     r"(?:schools|locations|campuses|buildings|sites|facilities)\b\.?",
     re.IGNORECASE,
 )
+_PAROCHIAL_TOO: Final = re.compile(
+    r"\s*([-&+/]|\band\b)\s*parochial(?:\s+schools?)?\.?(?=\s*(?:$|[-:;,|(]))", re.IGNORECASE
+)
+"""The area's parochial schools a list closes beside a district (``"Leavenworth USD 453 &
+Parochial Schools"``, ``"Leavenworth KS Sch. USD 453-Parochial"``): no school the
+listing names, so they go and the district is what it names, when the words before
+them say a public district (:func:`_drop_parochial`)."""
+_PUBLIC_SAID: Final = re.compile(r"\b(?:public|district|dist|usd|sch|schools?)\b|\d", re.IGNORECASE)
+"""Words that say the part before a parochial add-on is a public district."""
+_NUMBER_SAID: Final = re.compile(
+    r"\b(?:district|dist|usd|no)\b\.?\s*#?\s*\d|#\s*\d|\b(?:usd|[rc]|re|rj)-?\s?\d", re.IGNORECASE
+)
+"""A district's number after its designator (``"USD 453"``, ``"USD453"``, ``"R-3"``,
+``"District #30"``), which says a public district from anywhere in the listing."""
+_DISTRICT_SAID: Final = re.compile(
+    rf"\b(?:public|district|dist|usd)\b|{_NUMBER_SAID.pattern}", re.IGNORECASE
+)
+"""The words of :data:`_PUBLIC_SAID` that say a district, not only schools."""
+_PART_BEFORE: Final = re.compile(r"[,;:|(]|\s[-/&+]\s|\band\b", re.IGNORECASE)
+_NAME_LETTERS: Final = re.compile(r"[A-Za-z]{2,}")
+
+
+def _drop_parochial(text: str) -> str:
+    """``text`` without a parochial-schools add-on beside the public district it names.
+
+    The add-on goes only when the part before it names a place and says a public
+    district: ``"Kewaunee Public and Parochial"``, ``"Leavenworth 453 & Parochial
+    Schools"``, or a district's number earlier in the listing (``"USD 453 -
+    Leavenworth & Parochial Schools"``). Bare ``Schools`` says a public district
+    only beside an add-on joined to it (``"Boone Schools and Parochial"``); after
+    a dash, ``"Ft. Dodge Schools - Parochial"`` may be the town's parochial
+    schools alone, like ``"Ft. Dodge - Parochial Schools"`` and
+    ``"Kewaunee/Parochial"``. Neither ``"Catholic & Parochial Schools"`` nor
+    ``"Public, Private and Parochial"`` names a public district.
+    """
+    found = _PAROCHIAL_TOO.search(text)
+    if found is None:
+        return text
+    before = text[: found.start()]
+    parts = _PART_BEFORE.split(before)
+    part = parts[-1]
+    if not _NAME_LETTERS.search(_PUBLIC_SAID.sub(" ", part)):
+        return text
+    said = _DISTRICT_SAID if found.group(1) == "-" else _PUBLIC_SAID
+    if not said.search(part) and not any(_NUMBER_SAID.search(earlier) for earlier in parts[:-1]):
+        return text
+    return before + text[found.end() :]
+
+
 _CLOCK: Final = re.compile(
     r"\b\d{1,2}(?::\d{2})?\s*(?:a\.?\s?m\b\.?|p\.?\s?m\b\.?|noon\b)|\bnoon\b", re.IGNORECASE
 )
@@ -2344,6 +2459,7 @@ def clean_listing(text: str) -> CleanListing:
     )
     text = _NOISE_BRACKET.sub(" ", text)
     all_schools = bool(_ALL_SCHOOLS.search(text))
+    text = _drop_parochial(text)
     text = _JOINED_PART.sub(_part_apart, _ALL_SCHOOLS.sub(" ", text))
     kept = _kept_parts(text)
     business = next(
@@ -2426,9 +2542,25 @@ def plain_text(text: str) -> str:
 
 
 def _kept_parts(text: str) -> tuple[str, ...]:
-    """The parts of ``text`` between separators that are not noise (a status, ``Schools``)."""
+    """The parts of ``text`` between separators that are not noise (a status, ``Schools``).
+
+    Nor a part that is only another's initials: ``"TCAPS - Traverse City Area
+    Public Schools"`` names the district once.
+    """
     parts = (part.strip(" .-") for part in _SEPARATORS.split(text))
-    return tuple(part for part in parts if part and not _is_noise(part))
+    kept = tuple(part for part in parts if part and not _is_noise(part))
+    if len(kept) < _PARTS_FOR_INITIALS:
+        return kept
+    initials = ["".join(word[0] for word in _WORD.findall(fold(part))) for part in kept]
+    # A part's own initials are never itself: it has three capitals and no spaces.
+    return tuple(
+        part for part in kept if not (_INITIALS.fullmatch(part) and fold(part) in initials)
+    )
+
+
+_PARTS_FOR_INITIALS: Final = 2
+_INITIALS: Final = re.compile(r"[A-Z]{3,}")
+"""A part written as capitals only, which may be another part's initials."""
 
 
 _NOISE_BRACKET: Final = re.compile(

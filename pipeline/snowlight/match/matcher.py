@@ -688,6 +688,10 @@ class Matcher:
             result = self._past_counties(
                 result, listing_name, market, state_codes, county_codes, point, section=section
             )
+        elif county_codes is not None:
+            result = self._numbered_past(
+                result, listing_name, market, state_codes, county_codes, point, section=section
+            )
         return self._in_section(replace(result, category=category), listing_name, category)
 
     def _past_counties(  # noqa: PLR0913, PLR0917 - the result, and how it was reached
@@ -731,6 +735,64 @@ class Matcher:
             listing_name, market, states, counties | ring, point, section=section, home=counties
         )
         return self._beside(result, wide, counties)
+
+    def _numbered_past(  # noqa: PLR0913, PLR0917 - the result, and how it was reached
+        self,
+        result: MatchResult,
+        listing_name: str,
+        market: str | None,
+        states: frozenset[str],
+        counties: frozenset[str],
+        point: tuple[float, float] | None,
+        *,
+        section: Section,
+    ) -> MatchResult:
+        """``result``, rejected in the counties, or the district its name and number say.
+
+        A listing that gives a district's name and its number (``"Logan - USD
+        326"``, ``"Maysville R-1"``) names that district just past the counties
+        too: a list strays past its market's counties, and the name and number
+        together say one district. The listing is read again with the counties
+        around its own (:meth:`~snowlight.match.index.NameIndex.around`, as
+        :meth:`_past_counties` reads them), and the district it takes there stands
+        when the district itself lies in those counties around, the listing's
+        number is that district's
+        (:meth:`~snowlight.match.index.NameIndex.numbers_of`), and its words hold
+        the district's whole name. A number alone (``"USD 456"``), a name alone,
+        a town of the district with its number (``"USD 456 Osage City"``), or a
+        district far past the market is not enough: not ``"St. James R-I"`` on a
+        list whose counties hold only a Catholic school of the saint's name, nor
+        ``"Blue Valley USD 384"`` of Riley County on a Kansas City list, though
+        one of its schools lies in a county around the market's.
+        """
+        clean = clean_listing(listing_name)
+        forms = listing_forms(clean.text, district_hint=clean.all_schools)
+        named = forms.district.district_numbers
+        if not named or forms.hint is Level.SCHOOL:
+            return result
+        ring = self.index.around(counties, states, reach_km=self.settings.reach_km)
+        if not ring:
+            return result
+        wide = self._by_name(
+            listing_name, market, states, counties | ring, point, section=section, home=counties
+        )
+        target = wide.target
+        if not wide.accepted or target is None:
+            # A listing that gives a number names no school system
+            # (:meth:`~snowlight.match.systems.SchoolSystem.named_by`), nor
+            # does an alias pin it here: the reading takes one record.
+            return result
+        index = self.index.index_of(target.id)
+        own = self.index.forms[index].token_set
+        if (
+            not self.index.is_district[index]
+            or self.index.records[index].county_fips not in ring
+            or not named <= self.index.numbers_of(index)
+            or not own
+            or not own <= forms.district.token_set
+        ):
+            return result
+        return replace(wide, detail=f"{wide.detail}; its name and number, past the counties")
 
     def _beside(
         self, result: MatchResult, wide: MatchResult, counties: frozenset[str]
@@ -1811,6 +1873,7 @@ class Matcher:
             return []
         state = index.records[winner.index].state
         numbers = forms.district.numbers
+        designators = forms.district.designators
         keys = self._namesake_keys(winner.index)
         found: list[Scored] = []
         for s in scored:
@@ -1819,14 +1882,33 @@ class Matcher:
                 or not index.is_district[s.index]
                 or index.records[s.index].state == state
                 or s.plausibility < NAMESAKE_FLOOR
-                or not numbers <= index.forms[s.index].numbers
-                or not numbers <= index.forms[winner.index].numbers
+                or not numbers <= index.numbers_of(s.index)
+                or not numbers <= index.numbers_of(winner.index)
+                or self._designated_apart(designators, winner.index, s.index)
             ):
                 continue
             if keys & self._namesake_keys(s.index):
                 found.append(s)
         found.sort(key=lambda s: (-s.plausibility, s.index))
         return found
+
+    def _designated_apart(self, designators: frozenset[str], winner: int, other: int) -> bool:
+        """True when the listing's number follows ``winner``'s designator and not ``other``'s.
+
+        A list that writes ``"Hillsboro R-3"`` writes Missouri's ``"R-III"``, which
+        no Illinois district is numbered by: Illinois's ``"Hillsboro CUSD 3"`` is
+        no namesake of it (see
+        :attr:`~snowlight.match.normalize.NameForm.designators`).
+        """
+        if not designators:
+            return False
+        forms = self.index.forms
+        theirs = forms[other].designators
+        return (
+            bool(theirs)
+            and theirs.isdisjoint(designators)
+            and not designators.isdisjoint(forms[winner].designators)
+        )
 
     def _namesake_keys(self, index: int) -> frozenset[tuple[object, ...]]:
         """What district ``index``'s names say once each state's writing habits are set aside.
@@ -1919,16 +2001,54 @@ class Matcher:
         )
 
     def _rival(
-        self, winner: Scored, scored: Sequence[Scored], set_aside: frozenset[int]
+        self,
+        winner: Scored,
+        scored: Sequence[Scored],
+        set_aside: frozenset[int],
+        forms: ListingForms | None = None,
     ) -> Scored | None:
-        """The most plausible candidate that competes with ``winner``, if any."""
+        """The most plausible candidate that competes with ``winner``, if any.
+
+        A listing that gives a district's number and nothing of a school
+        (``"Jefferson R-VII"``) names a district: a school whose own name lacks
+        the number is no rival to a district whose number it is.
+        """
+        numbered = forms is not None and self._names_by_number(forms, winner.index)
         rival: Scored | None = None
         for s in scored:
             if s.index in set_aside or self._covered(winner, s):
                 continue
+            if (
+                numbered
+                and forms is not None
+                and not self.index.is_district[s.index]
+                and forms.district.district_numbers.isdisjoint(self.index.forms[s.index].numbers)
+            ):
+                continue
             if rival is None or s.plausibility > rival.plausibility:
                 rival = s
         return rival
+
+    def _names_by_number(self, forms: ListingForms, index: int) -> bool:
+        """True when the listing gives district ``index``'s number and is not a school's.
+
+        ``"Jefferson R-VII"``, ``"Crestridge R-7"``, ``"USD 252 S. Lyon County"``:
+        the number follows a district's designator (:attr:`NameForm.district_numbers`),
+        and the district's name gives it or leaves it out
+        (:meth:`~snowlight.match.index.NameIndex.numbers_of`). The district's
+        schools then name it as a whole (:meth:`_whole_district`). A level the
+        listing says (``"Jeffby R-VII Elem"``) keeps a district from winning on its
+        name (:data:`~snowlight.match.index.LEVELS_DIFFER`), so the district is no
+        winner this is asked of.
+        """
+        form = forms.district
+        named = form.district_numbers
+        return (
+            bool(named)
+            and self.index.is_district[index]
+            and forms.hint is not Level.SCHOOL
+            and named <= self.index.numbers_of(index)
+        )
 
     def _whole_district(
         self, winner: Scored, rival: Scored, scored: Sequence[Scored], forms: ListingForms
@@ -1964,6 +2084,10 @@ class Matcher:
         floor = winner.score - self.settings.margin
         position = self.index.index_of(owner)
         district = next((s for s in scored if s.index == position), None)
+        if (district is None or district.score < floor) and self._names_by_number(forms, position):
+            # "Crestridge R-7": its schools' name, and the number of their district
+            # ("JOHNSON CO. R-VII"), whose own name shares no word with it.
+            district = Scored(position, winner.score, winner.plausibility)
         if (
             district is None
             or district.score < floor
@@ -2740,7 +2864,7 @@ class Matcher:
             set_aside |= {exact.index}
         elif exact is not None:
             held = exact
-        rival = self._rival(winner, scored, set_aside)
+        rival = self._rival(winner, scored, set_aside, forms)
         whole = (
             self._whole_district(winner, rival, scored, forms)
             if rival is not None and tie is None
@@ -2748,7 +2872,7 @@ class Matcher:
         )
         if whole is not None:
             winner = whole
-            rival = self._rival(winner, scored, frozenset({whole.index}))
+            rival = self._rival(winner, scored, frozenset({whole.index}), forms)
         runner = rival.plausibility if rival is not None else 0.0
         gap = winner.score - runner
         confidence = winner.score - max(0.0, settings.margin - gap) * settings.margin_slope

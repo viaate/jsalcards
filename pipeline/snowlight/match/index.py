@@ -159,6 +159,9 @@ from snowlight.match.normalize import (
     spelled_name,
     stem,
 )
+from snowlight.match.numbers import UNSAID_NUMBERS
+
+_NO_INDICES: Final[frozenset[int]] = frozenset()
 
 # Penalties, as multipliers on the Dice score.
 NUMBERS_DIFFER: Final = 0.3
@@ -167,6 +170,14 @@ NUMBER_ONLY_CANDIDATE: Final = 0.92
 NUMBER_ONLY_LISTING: Final = 0.8
 NUMBER_ONLY_LISTING_DISTRICT: Final = 0.9
 """A listing's district number the district's NCES name leaves out ("Fort Zumwalt R-II")."""
+DESIGNATORS_DIFFER: Final = 0.8
+"""A district number the listing gives after a designator of another family than the
+one the district's own number follows: the listing's ``"R-3"`` (a reorganized
+district) against Illinois's ``"CUSD 3"`` (a community unit district; see
+:attr:`~snowlight.match.normalize.NameForm.designators`). The listing names another
+kind of district: it keeps an otherwise perfect name under the threshold, and a
+namesake whose designator it says wins."""
+_ROMAN_DESIGNATORS: Final = frozenset({"r", "c"})
 LEVELS_DIFFER: Final = 0.35
 LEVELS_OVERLAP: Final = 0.75
 LEVEL_ONLY_CANDIDATE: Final = 0.95
@@ -838,6 +849,7 @@ def _second_form(second: str, base: str) -> NameForm:
         qualifiers=form.qualifiers | own.qualifiers,
         numbers=form.numbers | own.numbers,
         implied=form.implied | own.implied,
+        designators=form.designators | own.designators,
     )
 
 
@@ -977,6 +989,36 @@ def _listing_numbers_factor(
     ):
         return (1.0, 1.0)
     return _numbers_factor(listing.numbers, candidate.numbers, district=district)
+
+
+def _roman_misread(listing: NameForm, candidate: NameForm) -> NameForm:
+    """The listing read with a Roman number its list wrote in ones, when the candidate has it.
+
+    A list that copies ``"R-III"`` through a font or a reader that takes ``I`` for
+    ``1`` writes ``"R-111"`` (``"North Harrison R-111"``): a number after ``R-`` or
+    ``C-`` made only of two or three ones is the Roman number of that many ones
+    when the candidate's numbers hold that. A district numbered as written (an
+    ``"R-XI"``) does not hold it and keeps its own number, so beside a namesake
+    numbered ``"R-II"`` the two tie and the listing goes to the queue; a candidate
+    that holds both numbers holds the listing's either way.
+    """
+    theirs = candidate.numbers
+    read = {number: str(len(number)) for number in listing.ones if str(len(number)) in theirs}
+    if not read:
+        return listing
+    return listing._replace(
+        numbers=frozenset(read.get(number, number) for number in listing.numbers),
+        district_numbers=frozenset(read.get(number, number) for number in listing.district_numbers),
+    )
+
+
+def _says_name(listing: NameForm, name: NameForm) -> bool:
+    """True when the listing holds the words of ``name`` and the county it says it is of."""
+    return (
+        bool(name.token_set)
+        and name.token_set <= listing.token_set
+        and name.qualifiers & lexicon.COUNTY_QUALIFIERS <= listing.qualifiers
+    )
 
 
 def _qualifier_factor(  # noqa: PLR0913 - the qualifiers, and how to read them
@@ -1146,6 +1188,12 @@ class NameIndex:
             form = self.forms[i]
             if count < len(form.tokens):
                 self.forms[i] = form._replace(forenames=count, forenames_sure=True)
+        self.unsaid: dict[int, frozenset[str]] = {
+            i: frozenset({UNSAID_NUMBERS[record.id]})
+            for i, record in enumerate(self.records)
+            if self.is_district[i] and record.id in UNSAID_NUMBERS and not self.forms[i].numbers
+        }
+        """The number of each district whose name leaves it out (:data:`UNSAID_NUMBERS`)."""
         for i, record in enumerate(self.records):
             city = record.city
             if (city is not None and city[-5:].lower() == _CITY_SUFFIX) or (
@@ -1164,8 +1212,11 @@ class NameIndex:
         self._vocabularies: dict[int, tuple[frozenset[str], frozenset[str]]] = {}
         self._schools: dict[int, tuple[int, ...]] = {}
         self._county_names: dict[str, dict[tuple[str, ...], frozenset[str]]] = {}
+        self._county_tokens: dict[str, frozenset[str]] = {}
+        self._state_place_words: dict[str, frozenset[str]] = {}
         self._inherit_district_context()
         self._lookups()
+        self._name_lookup()
         self._weigh()
         self.grid = CountyGrid(self.records, self._in_state)
 
@@ -1280,6 +1331,10 @@ class NameIndex:
         owner = self.owner_of(index)
         return None if owner is None else self._entities.get(owner)
 
+    def numbers_of(self, index: int) -> frozenset[str]:
+        """The numbers record ``index``'s name gives, or the one it leaves out (:attr:`unsaid`)."""
+        return self.forms[index].numbers or self.unsaid.get(index, _EMPTY)
+
     def forms_of(self, index: int) -> tuple[NameForm, ...]:
         """Every name record ``index`` answers to: its own, then its second names."""
         seconds = self._seconds.get(index)
@@ -1294,9 +1349,13 @@ class NameIndex:
         """
         codes: list[frozenset[str]] = [form.codes for form in self.forms]
         types: list[frozenset[str]] = [_EMPTY] * len(self.forms)
-        numbers: list[frozenset[str]] = [
-            form.numbers if district else _EMPTY
+        designators: list[frozenset[str]] = [
+            form.designators if district else _EMPTY
             for form, district in zip(self.forms, self.is_district, strict=True)
+        ]
+        numbers: list[frozenset[str]] = [
+            form.numbers | self.unsaid.get(i, _EMPTY) if district else _EMPTY
+            for i, (form, district) in enumerate(zip(self.forms, self.is_district, strict=True))
         ]
         by_id = {record.id: i for i, record in enumerate(self.records) if self.is_district[i]}
         # The directory checked that every school's district is listed.
@@ -1311,7 +1370,8 @@ class NameIndex:
             owner_form = self.forms[owner]
             if owner_form.codes:
                 codes[i] = codes[i] | owner_form.codes
-            numbers[i] = owner_form.numbers
+            numbers[i] = owner_form.numbers | self.unsaid.get(owner, _EMPTY)
+            designators[i] = owner_form.designators
             form = self.forms[i]
             # "OKLAHOMA YOUTH ACADEMY (CHARTER)" says its schools are charter
             # schools, which a listing may say.
@@ -1339,6 +1399,8 @@ class NameIndex:
                 self.forms[owner] = owner_form._replace(implied=owner_form.implied | {"regional"})
         self.context_codes = codes
         self.context_numbers = numbers
+        self.context_designators = designators
+        """Each record's district's number's designator families (:meth:`_designated_apart`)."""
         self.district_types = types
         """The type nouns a school's district's name gives it (``charter`` for a
         district of one school named for it)."""
@@ -1403,7 +1465,7 @@ class NameIndex:
             for second in self._seconds.get(i, ()):
                 if second.compact and second.compact != form.compact:
                     self._compact[record.state].setdefault(second.compact, []).append(i)
-            for number in form.numbers:
+            for number in form.numbers | self.unsaid.get(i, _EMPTY):
                 self._numbers[record.state].setdefault(number, []).append(i)
             owner = record.id if self.is_district[i] else record.district_id
             if owner is not None and record.county_fips is not None:
@@ -1413,6 +1475,24 @@ class NameIndex:
             state: sorted(t for t in postings if len(t) >= FUZZY_MIN_LENGTH - 1 and not _is_weak(t))
             for state, postings in self._postings.items()
         }
+
+    def _name_lookup(self) -> None:
+        """Per state, the districts each set of name words names, and each word's names.
+
+        (:meth:`_named_by_words`, :meth:`_named_within`.)
+        """
+        self._district_names: dict[str, dict[frozenset[str], set[int]]] = {}
+        self._name_words: dict[str, dict[str, list[tuple[frozenset[str], int]]]] = {}
+        for i, (record, form) in enumerate(zip(self.records, self.forms, strict=True)):
+            if not self.is_district[i]:
+                continue
+            names = self._district_names.setdefault(record.state, {})
+            words = self._name_words.setdefault(record.state, {})
+            for named in (form, *self._seconds.get(i, ())):
+                if named.token_set:
+                    names.setdefault(named.token_set, set()).add(i)
+                    # Keyed on one word of the name: a listing that holds the name holds it.
+                    words.setdefault(min(named.token_set), []).append((named.token_set, i))
 
     def _words(self, index: int) -> frozenset[str]:
         """Every word record ``index`` answers to: its name's, its second names', its optional."""
@@ -2052,7 +2132,154 @@ class NameIndex:
         total = query.total
         held = sum(weight for token, weight in query.weights.items() if token in words)
         share = held / total if total else 1.0
-        return share, query.form.qualifiers & lexicon.COUNTY_QUALIFIERS <= qualifiers
+        named = query.form.qualifiers & lexicon.COUNTY_QUALIFIERS
+        return share, named <= qualifiers or self._names_its_county(query.form, index)
+
+    def _number_contradicted(self, form: NameForm, index: int) -> bool:
+        """True when the listing names another district than record ``index``'s by its words.
+
+        District ``index`` by :meth:`_names_another`; a school by the same test of
+        its district, when the listing gives that district's number and does not
+        read as one school (a level it says reads so): ``"Festus R-7"`` names no
+        school ``"JEFFERSON CO. R-VII"`` has in Festus, though ``"Festus
+        Intermediate R-7"`` may.
+        """
+        if self.is_district[index]:
+            return self._names_another(form, index)
+        owner = self.owner_of(index)
+        return (
+            owner is not None
+            and form.hint is not Level.SCHOOL
+            and not form.district_numbers.isdisjoint(self.context_numbers[index])
+            and self._names_another(form, owner)
+        )
+
+    def _names_another(self, form: NameForm, index: int) -> bool:
+        """True when the listing's words are the names of other numbered districts of
+        ``index``'s state and only words that place them, and the listing does not say
+        district ``index``'s own name.
+
+        ``"Olathe USD 229"`` names Olathe (USD 233) by its name and Blue Valley by
+        its number: the two say different districts, and the number does not name
+        Blue Valley, however much of the listing its towns hold. Words that only
+        place a name change nothing: qualifiers (``"Olathe Area USD 229"``,
+        ``"City of Wichita USD 260"``), a county or the state (``"Topeka Shawnee
+        County USD 437"``, ``"Wichita (Sedgwick Co.) USD 260"``), or another such
+        district (``"Olathe & Spring Hill USD 229"``). The listing names district
+        ``index`` when it says its own name as well, with the ``County`` its name
+        has (``"USD 309 Nickerson/S. Hutchinson"``, ``"Atchison County USD 377"``
+        beside Atchison's USD 409); ``"Ellby USD 270"`` does not name ``"Ellby
+        County"``, USD 270, beside the town's ``"Ellby"``, USD 271, nor does
+        ``"Kansas City USD 202"`` name ``"Turner-Kansas City"``, USD 202, beside
+        Kansas City's USD 500. A town that is the numbered district's own (``"USD
+        208 WaKeeney"``) is the name of no other district.
+
+        The other districts are those numbered as one district of their towns
+        (:meth:`_numbered_alone`): Kansas's by the USD numbers their names leave out,
+        and Missouri's ``"FESTUS R-VI"`` by its number, so ``"Festus R-7"`` and
+        ``"Festus Area R-7"`` name neither Festus nor ``"JEFFERSON CO. R-VII"`` of
+        Festus. Whether or not the listing's number is theirs, it is not district
+        ``index``'s by the listing's words. A county's name that district
+        ``index`` bears too is no other district's: ``"Weld RE-5J"`` names ``"Weld
+        County School District No. Re-5J"``, though ``"Weld re-8 schools"`` bears
+        the county's name alone. Where districts overlap, a town's name
+        may be that of one and a place of another: Illinois's ``"DIST #113
+        (HIGHLAND PARK & DEERFIELD HIGH SCHOOLS)"`` is the high school district over
+        the towns of ``"Deerfield SD 109"``.
+        """
+        if any(_says_name(form, named) for named in self.forms_of(index)):
+            return False
+        places = self._place_words(self.records[index].state)
+        own = self._words(index)
+        said: set[str] = set()
+        for name, other in self._named_within(form, index):
+            if self._numbered_alone(form, other) and not (name <= places and name <= own):
+                said |= name
+        if not said:
+            return False
+        return form.token_set - said <= places
+
+    def _numbered_alone(self, form: NameForm, index: int) -> bool:
+        """True when district ``index`` is numbered as the one district of its towns.
+
+        Kansas's unified districts, by the USD numbers their names leave out
+        (:attr:`unsaid`), and the districts numbered after a lettered designator
+        (:attr:`~snowlight.match.normalize.NameForm.designators`: Missouri's and
+        Colorado's ``"R-VI"`` and ``"C-1"``, Illinois's community unit districts),
+        which hold every grade of their towns and overlap no other district, when
+        the listing's designator is not of another family (``"Jefferson R-7"`` is
+        no ``"JEFFERSON C-123"``). A plain district number (``"Deerwood SD 109"``)
+        says no such thing: Illinois's elementary and high school districts overlap.
+        """
+        if index in self.unsaid:
+            return True
+        theirs = self.forms[index].designators
+        return bool(theirs) and (not form.designators or not theirs.isdisjoint(form.designators))
+
+    def _place_words(self, state: str) -> frozenset[str]:
+        """The words of ``state``'s county names, and its code: words that only place a name."""
+        words = self._state_place_words.get(state)
+        if words is None:
+            counties = {
+                record.county
+                for record in self.records
+                if record.state == state and record.county is not None
+            }
+            found = {state.lower()}
+            for county in counties:
+                found |= record_form(" ".join(county_words(county)[0]), district=False).token_set
+            words = self._state_place_words[state] = frozenset(found)
+        return words
+
+    def _named_within(self, form: NameForm, index: int) -> list[tuple[frozenset[str], int]]:
+        """The names, and their districts, of ``index``'s state that the listing's words hold."""
+        words = self._name_words.get(self.records[index].state)
+        if words is None:
+            return []
+        tokens = form.token_set
+        return [
+            (name, other)
+            for token in tokens
+            for name, other in words.get(token, ())
+            if other != index and name <= tokens
+        ]
+
+    def _named_by_words(self, form: NameForm, index: int) -> frozenset[int]:
+        """The other districts of ``index``'s state whose name words are the listing's."""
+        if not form.token_set:
+            return _NO_INDICES
+        names = self._district_names.get(self.records[index].state)
+        named = names.get(form.token_set) if names is not None else None
+        if named is None:
+            return _NO_INDICES
+        return frozenset(named - {index})
+
+    def _named_better(self, form: NameForm, index: int) -> bool:
+        """True when another district bears the listing's words and its number as its name.
+
+        ``"Jefferson R-VII"`` names ``"JEFFERSON CO. R-VII"`` by its name and its
+        number, not ``"FARMINGTON R-VII"``, whose ``"JEFFERSON ELEM."`` holds the
+        word: the district whose own name the listing says comes first.
+        """
+        named = form.district_numbers
+        return any(named <= self.numbers_of(other) for other in self._named_by_words(form, index))
+
+    def _names_its_county(self, form: NameForm, index: int) -> bool:
+        """True when the listing says the name of the county district ``index`` lies in.
+
+        ``"Southwest Barry County R-5"`` places Missouri's ``"SOUTHWEST R-V"``, of
+        Barry County, by its county: the ``County`` it says is the district's
+        county's, not a word its name leaves out.
+        """
+        county = self.records[index].county
+        if county is None:
+            return False
+        words = self._county_tokens.get(county)
+        if words is None:
+            name = " ".join(county_words(county)[0])
+            words = self._county_tokens[county] = record_form(name, district=False).token_set
+        # Every county name of the directory has a word of its own.
+        return words <= form.token_set
 
     def _directions_differ(
         self, form: NameForm, index: int, other: NameForm, *, covered: bool
@@ -2336,6 +2563,17 @@ class NameIndex:
         """:meth:`_score` of one name ``other`` of record ``index``, whose words weigh ``total``."""
         form = query.form
         district = self.is_district[index]
+        if form.district_numbers and self._number_contradicted(form, index):
+            # "Olathe USD 229": Olathe by its name, Blue Valley by its number.
+            return (0.0, 0.0)
+        if form.numbers and index in self.unsaid:
+            # "Blue Valley USD 229": the number the district's name leaves out.
+            unsaid = self.unsaid[index]
+            other = other._replace(
+                numbers=other.numbers | unsaid, district_numbers=other.district_numbers | unsaid
+            )
+        if form.ones and form.designators & _ROMAN_DESIGNATORS and form.numbers != other.numbers:
+            form = _roman_misread(form, other)
         context, code_match = (
             self._district_context(form, index)
             if form.codes or form.district_numbers
@@ -2348,7 +2586,7 @@ class NameIndex:
         ):
             # A bare number ("District 5") is too weak to name a district alone;
             # a code of a series ("RSU 13") is not.
-            if form.hint is not Level.SCHOOL:
+            if form.hint is not Level.SCHOOL and not self._named_better(form, index):
                 # Named by its code or number: the rest of the listing may name
                 # its places or its schools rather than its own name.
                 share, held = self._coverage(query, index)
@@ -2361,6 +2599,10 @@ class NameIndex:
             return (0.0, 0.0)
         plausible = max(plausible, dice)
         numbers = _listing_numbers_factor(form, other, district=district, code_match=code_match)
+        if form.designators and self._designated_apart(form, index):
+            # "Hillsboro R-3" names Missouri's "HILLSBORO R-III", not "Hillsboro CUSD 3"
+            # nor its schools.
+            numbers = (numbers[0] * DESIGNATORS_DIFFER, numbers[1] * DESIGNATORS_DIFFER)
         levels = _levels_factor(form.levels, other, school=not district)
         if county_held is None:
             qualifiers = _qualifier_factor(
@@ -2390,6 +2632,16 @@ class NameIndex:
             dice * common * plural * numbers[0] * levels[0] * qualifiers[0],
             plausible * common * numbers[1] * levels[1] * qualifiers[1],
         )
+
+    def _designated_apart(self, form: NameForm, index: int) -> bool:
+        """True when the listing's district number follows another kind of designator.
+
+        Record ``index``'s district (itself, or a school's) gives the number after
+        a designator of another family than the listing's (see
+        :attr:`~snowlight.match.normalize.NameForm.designators`).
+        """
+        theirs = self.context_designators[index]
+        return bool(theirs) and form.designators.isdisjoint(theirs)
 
     def _implied_by(self, form: NameForm, index: int, other: NameForm) -> frozenset[str]:
         """The place qualifiers record ``index``'s name ``other`` implies for the listing ``form``.
