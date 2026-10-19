@@ -10,6 +10,7 @@ import {
   fetchFile,
   fetchJson,
   readsPastWorker,
+  withLiveRoot,
 } from '../files';
 import type { Fetch } from '../files';
 import { jsonResponse } from './builders';
@@ -56,6 +57,78 @@ describe('the files a build ships', () => {
   it('finds the data root for a site at the domain root or on a project path', () => {
     expect(dataRootFor('/', 'https://snow.test/?at=1,2,3')).toBe('https://snow.test/data/');
     expect(dataRootFor('/repo/', 'https://x.test/repo/')).toBe('https://x.test/repo/data/');
+  });
+});
+
+describe('a live root', () => {
+  const LIVE = 'https://live.snow.test/v1/';
+  const shipped = createDataFiles(
+    ['live/closings.json', 'live/covered.json', 'schools/meta.0123456789.json'],
+    ROOT,
+  );
+
+  it('maps live/closings.json alone to the root, and leaves every other file to the build', () => {
+    const files = withLiveRoot(shipped, LIVE);
+    expect(files.has('live/closings.json')).toBe(true);
+    expect(files.url('live/closings.json')).toBe(`${LIVE}live/closings.json`);
+    expect(files.url('live/covered.json')).toBe(`${ROOT}live/covered.json`);
+    expect(files.url('schools/meta.json')).toBe(`${ROOT}schools/meta.0123456789.json`);
+    expect(files.has('live/predictions.json')).toBe(false);
+    expect(files.url('live/predictions.json')).toBeNull();
+    // The build's own copy is never named, even where the build ships one.
+    expect(files.url('live/closings.json')).not.toContain(ROOT);
+  });
+
+  it('reads the closings file from the root even in a build that ships none', () => {
+    const files = withLiveRoot(createDataFiles([], ROOT), LIVE);
+    expect(files.has('live/closings.json')).toBe(true);
+    expect(files.url('live/closings.json')).toBe(`${LIVE}live/closings.json`);
+    expect(files.has('live/covered.json')).toBe(false);
+    expect(files.url('live/predictions.json')).toBeNull();
+  });
+
+  it('changes nothing for a root that is null, empty or not one the page can read from', () => {
+    for (const root of [
+      null,
+      undefined,
+      '',
+      'live.snow.test/v1/',
+      '/v1/',
+      'http://live.snow.test/v1/',
+      'https://live.snow.test/v1',
+      'https://live.snow.test/v1/?key=1',
+      'https://live.snow.test/v1/#x',
+      'https://user:pass@live.snow.test/v1/',
+      'ftp://live.snow.test/v1/',
+      'javascript:alert(1)//',
+    ]) {
+      expect([root, withLiveRoot(shipped, root)]).toEqual([root, shipped]);
+    }
+  });
+
+  it('takes plain http only from this machine, and only in a build that allows it', () => {
+    for (const root of ['http://127.0.0.1:4180/v1/', 'http://localhost:4180/', 'http://[::1]:9/']) {
+      // The site's build: https alone.
+      expect(withLiveRoot(shipped, root)).toBe(shipped);
+      expect(withLiveRoot(shipped, root, false)).toBe(shipped);
+      // The e2e's build (VITE_SNOWLIGHT_LIVE_LOOPBACK=1).
+      const files = withLiveRoot(shipped, root, true);
+      expect(files.url('live/closings.json')).toBe(new URL('live/closings.json', root).href);
+    }
+    expect(withLiveRoot(shipped, 'http://127.0.0.2/v1/', true)).toBe(shipped);
+    expect(withLiveRoot(shipped, 'http://localhost.snow.test/v1/', true)).toBe(shipped);
+    expect(withLiveRoot(shipped, 'http://live.snow.test/v1/', true)).toBe(shipped);
+  });
+
+  it('fetches the closings file from the root, and the rest from the build', async () => {
+    const files = withLiveRoot(shipped, LIVE);
+    const fetchImpl = vi.fn<Fetch>(() => Promise.resolve(jsonResponse({ ok: true })));
+    await fetchJson(files, 'live/closings.json', { cache: 'no-cache' }, fetchImpl);
+    await fetchJson(files, 'live/covered.json', {}, fetchImpl);
+    expect(fetchImpl.mock.calls.map(([url]) => url)).toEqual([
+      `${LIVE}live/closings.json`,
+      `${ROOT}live/covered.json`,
+    ]);
   });
 });
 

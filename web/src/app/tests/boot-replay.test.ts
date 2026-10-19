@@ -188,8 +188,11 @@ describe('replay mode, as boot runs it', () => {
       history.replaceState(null, '', `/?replay=${day}&school=010000500870`);
       fontsReady();
       const { counts, days, controller } = start();
+      // Live's counts, and none of the day's. A null may come first, as the link's day is let go
+      // before live's first file is lit: no counts, which is what the page shows until then.
       await vi.waitFor(() => {
-        expect(counts).toEqual([[1, 0, 0, 0]]);
+        expect(counts.filter((next) => next !== null)).toEqual([[1, 0, 0, 0]]);
+        expect(counts.at(-1)).toEqual([1, 0, 0, 0]);
       }, WAIT);
       expect(days).toEqual([]);
       await vi.waitFor(() => {

@@ -12,7 +12,7 @@
  * never downloads it a second time (pwa/keep.ts).
  */
 
-import { DATA_DIR } from '../pwa/config';
+import { DATA_DIR, LIVE_CLOSINGS_PATH, liveRootOf } from '../pwa/config';
 import { plainPath } from './paths';
 
 /** Published files that are not JSON documents (pipeline/snowlight/schemas/registry.py). */
@@ -68,6 +68,29 @@ export function replayIndexUrl(files: DataFiles): string | null {
     hash = Math.imul(hash ^ (char.codePointAt(0) ?? 0), 0x01000193) >>> 0;
   }
   return `${url}?v=${hash.toString(16).padStart(8, '0')}`;
+}
+
+/**
+ * `files`, but with live/closings.json read from `root`, the live root a
+ * build names (a host of its own, published apart from the site), whether or
+ * not the build ships one. Every other file, live/covered.json and
+ * live/predictions.json among them, is `files`' own. A root that is null,
+ * empty or not one the page can read from (pwa/config.ts liveRootOf, plain
+ * http on this machine only with `loopback`) changes nothing.
+ */
+export function withLiveRoot(
+  files: DataFiles,
+  root: string | null | undefined,
+  loopback = false,
+): DataFiles {
+  const live = liveRootOf(root, loopback);
+  if (live === null) return files;
+  const url = new URL(LIVE_CLOSINGS_PATH, live).href;
+  return {
+    has: (path) => path === LIVE_CLOSINGS_PATH || files.has(path),
+    url: (path) => (path === LIVE_CLOSINGS_PATH ? url : files.url(path)),
+    under: (prefix) => files.under(prefix),
+  };
 }
 
 /** The data folder of a site at `base` ("/" or "/repo/"), as an absolute URL. */

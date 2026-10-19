@@ -3,7 +3,9 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 import { copy } from '../../copy';
 import { format } from '../../copy-format';
 import type { DetailsSource, SchoolRecord } from '../../data/details';
-import { createDataFiles } from '../../data/files';
+import { createDataFiles, withLiveRoot } from '../../data/files';
+import { LIVE_POLL_MS, LIVE_SIDE_POLL_MS, closingsReader, startLive } from '../../data/live';
+import { WAKE_CHECK_MS } from '../../state/wake';
 import { NO_STATUS } from '../../data/school-day';
 import type { DayOutlook, SchoolStatus, StatusRow } from '../../data/school-day';
 import { createDirectory, parsePoints } from '../../data/directory';
@@ -14,7 +16,7 @@ import {
   testMeta,
   testPoints,
 } from '../../data/tests/builders';
-import { namesOf, schoolView, watchSchool } from '../school';
+import { namesOf, readLiveFiles, schoolView, watchSchool } from '../school';
 import type { SchoolView, ViewInput } from '../school';
 
 /** How long a test waits for code loaded on demand, on a busy machine. */
@@ -355,6 +357,540 @@ describe('watchSchool', () => {
     expect(fetchImpl).toHaveBeenCalledTimes(2);
     expect(views).toHaveLength(shown);
     fetchImpl.mockRestore();
+  });
+});
+
+/** The URL a fetch was called with. */
+function urlOf(input: string | URL | Request): string {
+  return input instanceof Request ? input.url : input.toString();
+}
+
+describe('the live files at a live root', () => {
+  const LIVE = 'https://live.snow.test/v1/';
+  const meta = testMeta([
+    { id: '010000500870', name: 'A', lon: 0, lat: 0, district: 0 },
+    { id: '010000500871', name: 'B', lon: 0, lat: 0, district: 0 },
+    { id: 'ZZ000001', name: 'C', lon: 0, lat: 0, district: -1 },
+  ]);
+  const newer = testClosings('2026-01-12T17:40:00Z', meta, [testDay('2026-01-12', [[2, 0]])]);
+  const older = testClosings('2026-01-12T17:20:00Z', meta, []);
+
+  afterEach(() => {
+    vi.useRealTimers();
+    vi.restoreAllMocks();
+  });
+
+  it('reads the closings file from the root, and the other live files from the build', async () => {
+    const files = withLiveRoot(
+      createDataFiles(['live/closings.json', 'live/covered.json'], ROOT),
+      LIVE,
+    );
+    const fetchImpl = vi
+      .spyOn(globalThis, 'fetch')
+      .mockImplementation(() => Promise.resolve(jsonResponse(newer)));
+    const read = await readLiveFiles(files);
+    expect(read.closings).toEqual(newer);
+    expect(fetchImpl.mock.calls.map(([url]) => urlOf(url)).sort()).toEqual([
+      `${LIVE}live/closings.json`,
+      `${ROOT}live/covered.json`,
+    ]);
+  });
+
+  it('keeps the newer file’s status when an older file is read after it', async () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(NOON);
+    const files = withLiveRoot(
+      createDataFiles(['schools/details/index.0123456789.json'], ROOT),
+      LIVE,
+    );
+    const answers = [newer, older, older];
+    const fetchImpl = vi
+      .spyOn(globalThis, 'fetch')
+      .mockImplementation(() => Promise.resolve(jsonResponse(answers.shift() ?? older)));
+    const views: (SchoolView | null)[] = [];
+    const stop = watchSchool({
+      files,
+      details: { get: vi.fn(() => Promise.resolve({ ...PRIVATE, directory: newer.directory })) },
+      id: PRIVATE.id,
+      hint: null,
+      onView: (view) => views.push(view),
+      pollMs: 1000,
+      now: () => NOON,
+      timeZone: () => 'America/Chicago',
+    });
+    await vi.advanceTimersByTimeAsync(10);
+    expect(views.at(-1)?.status).toMatchObject([{ tone: 'closed' }]);
+    await vi.advanceTimersByTimeAsync(3000);
+    expect(fetchImpl.mock.calls.length).toBeGreaterThanOrEqual(3);
+    expect(fetchImpl.mock.calls.every(([url]) => urlOf(url) === `${LIVE}live/closings.json`)).toBe(
+      true,
+    );
+    expect(views.at(-1)?.status).toMatchObject([{ tone: 'closed' }]);
+    stop();
+  });
+
+  it('never shows a file older than the one the map has taken, when it opens', async () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(NOON);
+    const files = withLiveRoot(
+      createDataFiles(['schools/details/index.0123456789.json'], ROOT),
+      LIVE,
+    );
+    // 11:52 AM in Kansas City: the ingest publishes a blank file, and the map takes it.
+    const blank = testClosings('2026-01-12T17:52:00Z', meta, []);
+    await closingsReader(files).read({ fetch: () => Promise.resolve(jsonResponse(blank)) });
+    // A minute later a parent opens the school. The panel's first read gets the 11:40 file,
+    // the school closed: an edge behind, or the worker's copy when the network is slow.
+    await vi.advanceTimersByTimeAsync(LIVE_POLL_MS);
+    const fetchImpl = vi
+      .spyOn(globalThis, 'fetch')
+      .mockImplementation(() => Promise.resolve(jsonResponse(newer)));
+    const views: (SchoolView | null)[] = [];
+    const stop = watchSchool({
+      files,
+      details: { get: vi.fn(() => Promise.resolve({ ...PRIVATE, directory: newer.directory })) },
+      id: PRIVATE.id,
+      hint: null,
+      onView: (view) => views.push(view),
+      now: () => NOON,
+      timeZone: () => 'America/Chicago',
+    });
+    await vi.advanceTimersByTimeAsync(10);
+    expect(fetchImpl).toHaveBeenCalledTimes(1);
+    const shown = views.filter((view) => view !== null && !view.loading);
+    expect(shown.length).toBeGreaterThan(0);
+    expect(shown.every((view) => view?.status.length === 0)).toBe(true);
+    stop();
+  });
+
+  it('opens with the file the map holds, and reads no more often than the map', async () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(NOON);
+    const files = withLiveRoot(
+      createDataFiles(['schools/details/index.0123456789.json'], ROOT),
+      LIVE,
+    );
+    const fetchImpl = vi
+      .spyOn(globalThis, 'fetch')
+      .mockImplementation(() => Promise.resolve(jsonResponse(newer)));
+    const closingsReads = (): number =>
+      fetchImpl.mock.calls.filter(([url]) => urlOf(url).endsWith('live/closings.json')).length;
+    const live = startLive({
+      files,
+      directory: () => Promise.resolve(null),
+      onLight: () => undefined,
+      now: () => NOON,
+    });
+    await vi.advanceTimersByTimeAsync(10);
+    expect(closingsReads()).toBe(1);
+    // The panel opens 20 seconds later: the map's file, at once, with no read of its own.
+    await vi.advanceTimersByTimeAsync(20_000);
+    const views: (SchoolView | null)[] = [];
+    const stop = watchSchool({
+      files,
+      details: { get: vi.fn(() => Promise.resolve({ ...PRIVATE, directory: newer.directory })) },
+      id: PRIVATE.id,
+      hint: null,
+      onView: (view) => views.push(view),
+      now: () => NOON,
+      timeZone: () => 'America/Chicago',
+    });
+    await vi.advanceTimersByTimeAsync(10);
+    expect(closingsReads()).toBe(1);
+    expect(views.at(-1)?.status).toMatchObject([{ tone: 'closed' }]);
+    // Ten minutes with the panel open: one read of the closings file a minute, not two.
+    await vi.advanceTimersByTimeAsync(10 * LIVE_POLL_MS);
+    expect(closingsReads()).toBe(11);
+    stop();
+    live.stop();
+  });
+
+  for (const back of [15, 60]) {
+    it(`drops a closed status within one poll of a blank published after the clock went back ${String(back)} minutes`, async () => {
+      vi.useFakeTimers();
+      vi.setSystemTime(NOON);
+      const files = withLiveRoot(
+        createDataFiles(['schools/details/index.0123456789.json'], ROOT),
+        LIVE,
+      );
+      // Taken at the device's own now, the school closed.
+      const closed = testClosings('2026-01-12T18:00:00Z', meta, [testDay('2026-01-12', [[2, 0]])]);
+      let current: unknown = closed;
+      vi.spyOn(globalThis, 'fetch').mockImplementation(() =>
+        Promise.resolve(jsonResponse(current)),
+      );
+      const views: (SchoolView | null)[] = [];
+      const stop = watchSchool({
+        files,
+        details: { get: vi.fn(() => Promise.resolve({ ...PRIVATE, directory: closed.directory })) },
+        id: PRIVATE.id,
+        hint: null,
+        onView: (view) => views.push(view),
+        now: () => new Date(Date.now()),
+        timeZone: () => 'America/Chicago',
+      });
+      await vi.advanceTimersByTimeAsync(10);
+      expect(views.at(-1)?.status).toMatchObject([{ tone: 'closed' }]);
+      // The device's clock goes back; the ingest publishes a blank, stamped past that clock.
+      vi.setSystemTime(NOON.getTime() - back * 60_000);
+      current = testClosings('2026-01-12T18:01:00Z', meta, []);
+      await vi.advanceTimersByTimeAsync(LIVE_POLL_MS);
+      expect(views.at(-1)?.status).toEqual([]);
+      stop();
+    });
+  }
+
+  it('shows at once a newer file the map took, before its own next read', async () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(NOON);
+    const files = withLiveRoot(
+      createDataFiles(['schools/details/index.0123456789.json'], ROOT),
+      LIVE,
+    );
+    const fetchImpl = vi
+      .spyOn(globalThis, 'fetch')
+      .mockImplementation(() => Promise.resolve(jsonResponse(newer)));
+    const views: (SchoolView | null)[] = [];
+    const stop = watchSchool({
+      files,
+      details: { get: vi.fn(() => Promise.resolve({ ...PRIVATE, directory: newer.directory })) },
+      id: PRIVATE.id,
+      hint: null,
+      onView: (view) => views.push(view),
+      now: () => NOON,
+      timeZone: () => 'America/Chicago',
+    });
+    await vi.advanceTimersByTimeAsync(10);
+    expect(views.at(-1)?.status).toMatchObject([{ tone: 'closed' }]);
+    // The map's poll takes a blank the worker said is newer; no panel timer has fired.
+    const blank = testClosings('2026-01-12T17:52:00Z', meta, []);
+    await closingsReader(files).read({
+      force: true,
+      fetch: () => Promise.resolve(jsonResponse(blank)),
+    });
+    expect(views.at(-1)?.status).toEqual([]);
+    expect(
+      fetchImpl.mock.calls.filter(([url]) => urlOf(url).endsWith('closings.json')),
+    ).toHaveLength(1);
+    stop();
+  });
+
+  it('reads nothing while the page is hidden', async () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(NOON);
+    const fetchImpl = vi
+      .spyOn(globalThis, 'fetch')
+      .mockImplementation(() => Promise.resolve(jsonResponse(newer)));
+    const visibility = vi.spyOn(document, 'visibilityState', 'get').mockReturnValue('hidden');
+    const stop = watchSchool({
+      files: createDataFiles(['live/closings.json', 'schools/details/index.0123456789.json'], ROOT),
+      details: { get: vi.fn(() => Promise.resolve(PRIVATE)) },
+      id: PRIVATE.id,
+      hint: null,
+      onView: () => undefined,
+      pollMs: 1000,
+      now: () => NOON,
+    });
+    await vi.advanceTimersByTimeAsync(10);
+    // The first read, as the panel opens.
+    expect(fetchImpl).toHaveBeenCalledTimes(1);
+    await vi.advanceTimersByTimeAsync(5000);
+    expect(fetchImpl).toHaveBeenCalledTimes(1);
+    visibility.mockReturnValue('visible');
+    document.dispatchEvent(new Event('visibilitychange'));
+    await vi.advanceTimersByTimeAsync(10);
+    expect(fetchImpl).toHaveBeenCalledTimes(2);
+    // Seen, it reads each period; hidden again, it stops.
+    await vi.advanceTimersByTimeAsync(1000);
+    expect(fetchImpl).toHaveBeenCalledTimes(3);
+    visibility.mockReturnValue('hidden');
+    document.dispatchEvent(new Event('visibilitychange'));
+    await vi.advanceTimersByTimeAsync(5000);
+    expect(fetchImpl).toHaveBeenCalledTimes(3);
+    stop();
+    visibility.mockReturnValue('visible');
+    document.dispatchEvent(new Event('visibilitychange'));
+    await vi.advanceTimersByTimeAsync(5000);
+    expect(fetchImpl).toHaveBeenCalledTimes(3);
+    visibility.mockRestore();
+  });
+
+  it('beside the map, reads within a poll of the read made when the page is shown again, and shows a blank within it', async () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(NOON);
+    const files = withLiveRoot(
+      createDataFiles(['schools/details/index.0123456789.json'], ROOT),
+      LIVE,
+    );
+    let current: unknown = newer;
+    const reads: number[] = [];
+    vi.spyOn(globalThis, 'fetch').mockImplementation((url) => {
+      if (urlOf(url).endsWith('closings.json')) reads.push(performance.now());
+      return Promise.resolve(jsonResponse(current));
+    });
+    const visibility = vi.spyOn(document, 'visibilityState', 'get').mockReturnValue('visible');
+    const map = startLive({
+      files,
+      directory: () => Promise.resolve(null),
+      onLight: () => undefined,
+      now: () => NOON,
+    });
+    await vi.advanceTimersByTimeAsync(10);
+    const views: (SchoolView | null)[] = [];
+    const stop = watchSchool({
+      files,
+      details: { get: vi.fn(() => Promise.resolve({ ...PRIVATE, directory: newer.directory })) },
+      id: PRIVATE.id,
+      hint: null,
+      onView: (view) => views.push(view),
+      now: () => NOON,
+      timeZone: () => 'America/Chicago',
+    });
+    await vi.advanceTimersByTimeAsync(30_000);
+    expect(views.at(-1)?.status).toMatchObject([{ tone: 'closed' }]);
+    // The phone is locked, and unlocked 66 s later: a read at once, for the map and the panel.
+    visibility.mockReturnValue('hidden');
+    document.dispatchEvent(new Event('visibilitychange'));
+    await vi.advanceTimersByTimeAsync(66_000);
+    visibility.mockReturnValue('visible');
+    document.dispatchEvent(new Event('visibilitychange'));
+    await vi.advanceTimersByTimeAsync(10);
+    const shownRead = reads.at(-1) ?? 0;
+    expect(performance.now() - shownRead).toBeLessThan(100);
+    // A blank published just after it shows in the panel within a poll.
+    current = testClosings('2026-01-12T17:52:00Z', meta, []);
+    await vi.advanceTimersByTimeAsync(LIVE_POLL_MS);
+    expect(views.at(-1)?.status).toEqual([]);
+    await vi.advanceTimersByTimeAsync(4 * LIVE_POLL_MS);
+    const after = reads.filter((time) => time >= shownRead);
+    const gaps = after.slice(1).map((time, i) => time - (after[i] ?? time));
+    expect(Math.max(...gaps)).toBeLessThanOrEqual(LIVE_POLL_MS);
+    // One read a poll for the two of them.
+    expect(after.length).toBe(6);
+    stop();
+    map.stop();
+    visibility.mockRestore();
+  });
+
+  for (const panelFirst of [false, true]) {
+    const order = panelFirst ? 'opened before the map starts' : 'opened beside the map';
+    it(`${order}, with the ingest stopped, drops yesterday's closing within a poll of the day turning and reads its side files every five minutes`, async () => {
+      vi.useFakeTimers();
+      // Monday evening in the US (03:30 UTC Tuesday). The last file, at 03:20, holds Monday's
+      // closing; the ingest stops, so it is served all night.
+      vi.setSystemTime(new Date('2026-01-13T03:30:00Z'));
+      const monday = testClosings('2026-01-13T03:20:00Z', meta, [testDay('2026-01-12', [[2, 0]])]);
+      const files = withLiveRoot(
+        createDataFiles(
+          ['schools/details/index.0123456789.json', 'live/covered.json', 'predictions/latest.json'],
+          ROOT,
+        ),
+        LIVE,
+      );
+      const reads = { closings: 0, covered: 0, predictions: 0 };
+      vi.spyOn(globalThis, 'fetch').mockImplementation((url) => {
+        const href = urlOf(url);
+        if (href.endsWith('closings.json')) reads.closings += 1;
+        if (href.endsWith('covered.json')) reads.covered += 1;
+        if (href.endsWith('latest.json')) reads.predictions += 1;
+        return Promise.resolve(jsonResponse(monday));
+      });
+      const visibility = vi.spyOn(document, 'visibilityState', 'get').mockReturnValue('visible');
+      const views: { at: number; view: SchoolView | null }[] = [];
+      const panel = (): (() => void) =>
+        watchSchool({
+          files,
+          details: {
+            get: vi.fn(() => Promise.resolve({ ...PRIVATE, directory: monday.directory })),
+          },
+          id: PRIVATE.id,
+          hint: null,
+          onView: (view) => views.push({ at: Date.now(), view }),
+          now: () => new Date(Date.now()),
+          timeZone: () => 'America/Chicago',
+        });
+      let stop = panelFirst ? panel() : null;
+      const map = startLive({
+        files,
+        directory: () => Promise.resolve(null),
+        onLight: () => undefined,
+        now: () => new Date(Date.now()),
+      });
+      await vi.advanceTimersByTimeAsync(10);
+      stop ??= panel();
+      await vi.advanceTimersByTimeAsync(1000);
+      expect(views.at(-1)?.view?.status).toMatchObject([{ tone: 'closed' }]);
+      const opened = { ...reads };
+      // Seven hours on, the page seen all night: at 04:00 UTC Monday is no longer today
+      // everywhere, and from 08:00 Tuesday is.
+      await vi.advanceTimersByTimeAsync(7 * 60 * LIVE_POLL_MS);
+      const turn = Date.parse('2026-01-13T04:00:00Z');
+      const cleared = views.find(({ at, view }) => at >= turn && view?.status.length === 0);
+      expect(cleared, 'the closing dropped after the day turned').toBeDefined();
+      expect((cleared?.at ?? Infinity) - turn).toBeLessThanOrEqual(LIVE_POLL_MS);
+      expect(
+        views.filter(({ at }) => at >= turn).every(({ view }) => view?.status.length === 0),
+      ).toBe(true);
+      // One closings read a poll for the map and the panel; the side files every five minutes.
+      expect(reads.closings - opened.closings).toBe(7 * 60);
+      expect(reads.covered - opened.covered).toBe((7 * 60 * LIVE_POLL_MS) / LIVE_SIDE_POLL_MS);
+      expect(reads.predictions - opened.predictions).toBe(
+        (7 * 60 * LIVE_POLL_MS) / LIVE_SIDE_POLL_MS,
+      );
+      stop();
+      map.stop();
+      visibility.mockRestore();
+    });
+  }
+
+  it('reads within a poll of a forced read the reader made between its own polls', async () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(NOON);
+    const files = withLiveRoot(
+      createDataFiles(['schools/details/index.0123456789.json'], ROOT),
+      LIVE,
+    );
+    let current: unknown = newer;
+    const reads: number[] = [];
+    vi.spyOn(globalThis, 'fetch').mockImplementation((url) => {
+      if (urlOf(url).endsWith('closings.json')) reads.push(performance.now());
+      return Promise.resolve(jsonResponse(current));
+    });
+    const views: (SchoolView | null)[] = [];
+    const stop = watchSchool({
+      files,
+      details: { get: vi.fn(() => Promise.resolve({ ...PRIVATE, directory: newer.directory })) },
+      id: PRIVATE.id,
+      hint: null,
+      onView: (view) => views.push(view),
+      now: () => NOON,
+      timeZone: () => 'America/Chicago',
+    });
+    await vi.advanceTimersByTimeAsync(40_000);
+    // The worker said it holds a newer copy, 40 s into the panel's minute: a forced read.
+    await closingsReader(files).read({ force: true });
+    const forced = reads.at(-1) ?? 0;
+    current = testClosings('2026-01-12T17:52:00Z', meta, []);
+    await vi.advanceTimersByTimeAsync(LIVE_POLL_MS);
+    expect(views.at(-1)?.status).toEqual([]);
+    expect(reads.filter((time) => time > forced)).toHaveLength(1);
+    expect((reads.at(-1) ?? 0) - forced).toBeLessThanOrEqual(LIVE_POLL_MS);
+    stop();
+  });
+
+  it('reads nothing while hidden, whatever wakes the page: a gap in the clock, focus, pageshow or resume', async () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(NOON);
+    const fetchImpl = vi
+      .spyOn(globalThis, 'fetch')
+      .mockImplementation(() => Promise.resolve(jsonResponse(newer)));
+    const visibility = vi.spyOn(document, 'visibilityState', 'get').mockReturnValue('visible');
+    const stop = watchSchool({
+      files: withLiveRoot(createDataFiles(['schools/details/index.0123456789.json'], ROOT), LIVE),
+      details: { get: vi.fn(() => Promise.resolve(PRIVATE)) },
+      id: PRIVATE.id,
+      hint: null,
+      onView: () => undefined,
+      now: () => NOON,
+    });
+    await vi.advanceTimersByTimeAsync(2 * LIVE_POLL_MS);
+    const seen = fetchImpl.mock.calls.length;
+    expect(seen).toBe(3);
+    // A poll is due as the page is hidden.
+    vi.setSystemTime(Date.now() + 2 * LIVE_POLL_MS);
+    visibility.mockReturnValue('hidden');
+    document.dispatchEvent(new Event('visibilitychange'));
+    for (let i = 0; i < 30; i += 1) {
+      // A hidden page's timers run at most once a minute: each wake check sees a minute's gap.
+      vi.setSystemTime(Date.now() + LIVE_POLL_MS);
+      await vi.advanceTimersByTimeAsync(WAKE_CHECK_MS);
+      window.dispatchEvent(new Event('focus'));
+      window.dispatchEvent(new Event('pageshow'));
+      document.dispatchEvent(new Event('resume'));
+      document.dispatchEvent(new Event('visibilitychange'));
+      await vi.advanceTimersByTimeAsync(0);
+    }
+    expect(fetchImpl.mock.calls.length - seen).toBe(0);
+    // Seen again: it reads at once.
+    visibility.mockReturnValue('visible');
+    document.dispatchEvent(new Event('visibilitychange'));
+    await vi.advanceTimersByTimeAsync(10);
+    expect(fetchImpl.mock.calls.length - seen).toBe(1);
+    stop();
+  });
+
+  it('stops hearing the page’s reader when it stops, so a later file reaches no closed panel', async () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(NOON);
+    const files = withLiveRoot(
+      createDataFiles(['schools/details/index.0123456789.json'], ROOT),
+      LIVE,
+    );
+    const reader = closingsReader(files);
+    const stops: ReturnType<typeof vi.fn>[] = [];
+    const subscribe = reader.subscribe.bind(reader);
+    vi.spyOn(reader, 'subscribe').mockImplementation((listener) => {
+      const stopIt = vi.fn(subscribe(listener));
+      stops.push(stopIt);
+      return stopIt;
+    });
+    vi.spyOn(globalThis, 'fetch').mockImplementation(() => Promise.resolve(jsonResponse(older)));
+    const views: (SchoolView | null)[] = [];
+    const stop = watchSchool({
+      files,
+      details: { get: vi.fn(() => Promise.resolve({ ...PRIVATE, directory: newer.directory })) },
+      id: PRIVATE.id,
+      hint: null,
+      onView: (view) => views.push(view),
+      now: () => NOON,
+      timeZone: () => 'America/Chicago',
+    });
+    await vi.advanceTimersByTimeAsync(10);
+    expect(stops).toHaveLength(1);
+    stop();
+    expect(stops[0]).toHaveBeenCalledTimes(1);
+    const shown = views.length;
+    await reader.read({ force: true, fetch: () => Promise.resolve(jsonResponse(newer)) });
+    await vi.advanceTimersByTimeAsync(10);
+    expect(reader.current?.generated_at).toBe(newer.generated_at);
+    expect(views.length).toBe(shown);
+  });
+
+  it('reads the closings file each minute, and covered and predictions every five', async () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(NOON);
+    const fetchImpl = vi
+      .spyOn(globalThis, 'fetch')
+      .mockImplementation(() => Promise.resolve(jsonResponse(newer)));
+    const stop = watchSchool({
+      files: withLiveRoot(
+        createDataFiles(
+          ['live/covered.json', 'predictions/latest.json', 'schools/details/index.0123456789.json'],
+          ROOT,
+        ),
+        LIVE,
+      ),
+      details: { get: vi.fn(() => Promise.resolve(PRIVATE)) },
+      id: PRIVATE.id,
+      hint: null,
+      onView: () => undefined,
+      now: () => NOON,
+    });
+    await vi.advanceTimersByTimeAsync(10 * LIVE_POLL_MS + 10);
+    const reads = (part: string): number =>
+      fetchImpl.mock.calls.filter(([url]) => urlOf(url).includes(part)).length;
+    expect(LIVE_SIDE_POLL_MS).toBe(5 * LIVE_POLL_MS);
+    expect(reads('live/closings.json')).toBe(11);
+    // At the open, and five and ten minutes on.
+    expect(reads('live/covered.json')).toBe(3);
+    expect(reads('predictions/latest.json')).toBe(3);
+    // After a sleep, all of them at once.
+    vi.setSystemTime(Date.now() + 60 * 60_000);
+    await vi.advanceTimersByTimeAsync(WAKE_CHECK_MS);
+    expect(reads('live/closings.json')).toBe(12);
+    expect(reads('live/covered.json')).toBe(4);
+    expect(reads('predictions/latest.json')).toBe(4);
+    stop();
   });
 });
 

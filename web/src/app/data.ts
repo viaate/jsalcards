@@ -11,7 +11,7 @@ import { DATA_FILES } from 'virtual:snowlight/data-files';
 
 import type { LitSchools, StatusCounts } from '../data/closings';
 import type { DirectorySource } from '../data/directory';
-import { DATA_PATHS, createDataFiles, dataRootFor } from '../data/files';
+import { DATA_PATHS, createDataFiles, dataRootFor, withLiveRoot } from '../data/files';
 import type { DataFiles } from '../data/files';
 import type { MapView } from '../map/basemap/bounds';
 import type { DustSource, Glow } from '../map/glow-mount';
@@ -34,12 +34,24 @@ export interface AppData {
   directories(): Promise<DirectorySource | null>;
 }
 
-/** The data files this build ships, at this page's data root. */
+/**
+ * The data files this build ships, at this page's data root, and
+ * live/closings.json at the live root the build names, when it names one
+ * (VITE_SNOWLIGHT_LIVE_ROOT): the map, the school panel and the area panel
+ * all read it through these files.
+ */
 export function createAppData(
   paths: readonly string[] = DATA_FILES,
   base: string = import.meta.env.BASE_URL,
 ): AppData {
-  const files = createDataFiles(paths, dataRootFor(base, location.href));
+  const shipped = createDataFiles(paths, dataRootFor(base, location.href));
+  // Read where it is used, so the entry of a build without a live root (unset or empty) keeps
+  // none of this: the build sets the variable as text, and drops the branch it cannot take.
+  const liveRoot = import.meta.env.VITE_SNOWLIGHT_LIVE_ROOT;
+  const files =
+    liveRoot === undefined || liveRoot === ''
+      ? shipped
+      : withLiveRoot(shipped, liveRoot, import.meta.env.VITE_SNOWLIGHT_LIVE_LOOPBACK === '1');
   const shipsDirectory = files.has(PUBLISHED_PATHS.schoolDirectory) && files.has(DATA_PATHS.points);
   let source: Promise<DirectorySource | null> | null = null;
   return {

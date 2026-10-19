@@ -4,7 +4,9 @@
  * Live files are served stale-while-revalidate: a fetch gets the last copy at
  * once and the worker refreshes it in the background. `onDataUpdate` says when
  * that refresh brought a different file, so the page can fetch it again (it
- * then comes from the cache, already new).
+ * then comes from the cache, already new). The closings file at a live root
+ * of the build's own (config.ts liveRootOf) is network-first instead, and
+ * never broadcast.
  *
  * Poll live files with `fetch(url, { cache: 'no-cache' })`. GitHub Pages sends
  * max-age=600, so without it the worker's refresh would be answered by the

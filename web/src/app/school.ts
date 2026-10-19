@@ -26,13 +26,19 @@ import { DISTRICT_NAME_FIXES, SCHOOL_NAME_FIXES } from 'virtual:snowlight/school
 import { REASON_KEYS, STATUS_KEYS, copy } from '../copy';
 import { format } from '../copy-format';
 import type { StatusKey } from '../copy';
-import { parseClosings } from '../data/closings';
 import { createDetailsSource } from '../data/details';
 import { DETAILS_INDEX_PATH } from '../data/details-format';
 import type { DetailsSource, SchoolRecord } from '../data/details';
 import { fetchJson } from '../data/files';
 import type { DataFiles } from '../data/files';
-import { LIVE_POLL_MS } from '../data/live';
+import {
+  LIVE_POLL_MS,
+  LIVE_SIDE_POLL_MS,
+  closingsReader,
+  dueEvery,
+  newerClosings,
+  pollWhileVisible,
+} from '../data/live';
 import {
   NO_STATUS,
   parseCovered,
@@ -460,8 +466,22 @@ export interface LiveFiles {
   predictions: PredictionsFile | null;
 }
 
-/** The live files this build ships, read now; each null where it ships none or cannot be read. */
-export async function readLiveFiles(files: DataFiles): Promise<LiveFiles> {
+/**
+ * The live files this build ships, read now; each null where it ships none,
+ * cannot be read, or is not asked for (`sides`: covered and predictions, both
+ * by default). The closings file comes from the page's one reader
+ * (data/live.ts closingsReader): the newest the page has taken, the map's
+ * reads or a panel's, read again only when the last read began most of a
+ * poll (`pollMs`, default LIVE_POLL_MS) ago or more.
+ */
+export async function readLiveFiles(
+  files: DataFiles,
+  pollMs?: number,
+  sides: { readonly covered: boolean; readonly predictions: boolean } = {
+    covered: true,
+    predictions: true,
+  },
+): Promise<LiveFiles> {
   const read = async <T>(path: string, parse: (value: unknown) => T | null): Promise<T | null> => {
     if (!files.has(path)) return null;
     try {
@@ -472,9 +492,9 @@ export async function readLiveFiles(files: DataFiles): Promise<LiveFiles> {
     }
   };
   const [closings, covered, predictions] = await Promise.all([
-    read(PUBLISHED_PATHS.closings, parseClosings),
-    read(PUBLISHED_PATHS.covered, parseCovered),
-    read(PUBLISHED_PATHS.predictions, parsePredictions),
+    closingsReader(files).read({ pollMs }),
+    sides.covered ? read(PUBLISHED_PATHS.covered, parseCovered) : null,
+    sides.predictions ? read(PUBLISHED_PATHS.predictions, parsePredictions) : null,
   ]);
   return { closings, covered, predictions };
 }
@@ -519,6 +539,9 @@ export function watchSchool(options: WatchOptions): () => void {
   let stopped = false;
   let record: SchoolRecord | null = null;
   let settled = false;
+  // The page's one reader of the closings file: the panel's first read gets at least the file
+  // the map holds, and never one older than it. A past day takes none.
+  const reader = replay === null ? closingsReader(files) : null;
   const live: LiveFiles = { closings: null, covered: null, predictions: null };
   /** The directory's names, once asked for and read. */
   let names: Names | null = null;
@@ -586,10 +609,16 @@ export function watchSchool(options: WatchOptions): () => void {
     }
   };
 
+  const pollMs = options.pollMs ?? LIVE_POLL_MS;
+  // Covered and predictions, which S8 does not publish live, are read as often as before it.
+  const sidesDue = dueEvery(LIVE_SIDE_POLL_MS);
   const readLive = async (): Promise<void> => {
-    const read = await readLiveFiles(files);
-    // A read that fails keeps what was read before: it is still true as of its own time.
-    live.closings = read.closings ?? live.closings;
+    const due = sidesDue();
+    const read = await readLiveFiles(files, pollMs, { covered: due, predictions: due });
+    // A read that fails keeps what was read before: it is still true as of its own time. The
+    // reader takes only a newer closings file; newerClosings here holds the panel to that too,
+    // in depth, so a panel never steps back whatever the reader hands it.
+    live.closings = newerClosings(live.closings, read.closings);
     live.covered = read.covered ?? live.covered;
     live.predictions = read.predictions ?? live.predictions;
   };
@@ -611,16 +640,32 @@ export function watchSchool(options: WatchOptions): () => void {
     settled = true;
     show();
   });
-  const timer =
-    replay === null
-      ? setInterval(() => {
-          void readLive().then(show);
-        }, options.pollMs ?? LIVE_POLL_MS)
-      : undefined;
+  // Live, read again while the page is seen, and as soon as it is seen again.
+  const stopPolling =
+    reader === null
+      ? () => undefined
+      : pollWhileVisible(
+          () => {
+            void readLive().then(show);
+          },
+          pollMs,
+          // Paced by the page's one reader: a read the map makes runs the panel's work too, and
+          // starts its period again.
+          { pace: reader },
+        );
+  // A newer closings file the map read: shown now, not at the panel's next read.
+  const stopHearing =
+    reader === null
+      ? () => undefined
+      : reader.subscribe((file) => {
+          live.closings = newerClosings(live.closings, file);
+          if (settled) show();
+        });
 
   return () => {
     stopped = true;
-    clearInterval(timer);
+    stopPolling();
+    stopHearing();
   };
 }
 

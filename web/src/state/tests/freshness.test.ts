@@ -7,6 +7,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { format } from '../../copy-format';
 import {
   LIVE_FRESH_MS,
+  LIVE_LEAD_MS,
   createConnectivity,
   liveUntil,
   parseInstant,
@@ -101,8 +102,38 @@ describe('updateLine', () => {
     expect(line('2026-01-12T12:50:00Z', false)).toBe('Offline · Updated 6:42 AM');
   });
 
-  it('never calls a file from the future live', () => {
+  it('never calls a file from further in the future live', () => {
     expect(line('2026-01-12T12:30:00Z', true)).toBe('Updated 6:42 AM');
+    expect(line('2026-01-12T12:39:59Z', true)).toBe('Updated 6:42 AM');
+  });
+
+  it('calls a file from a live root stamped up to two minutes ahead of the clock live', () => {
+    // The ingest may stamp up to a minute ahead (S8 G12c), and a viewer's clock may run slow.
+    vi.stubEnv('VITE_SNOWLIGHT_LIVE_ROOT', 'https://live.snow.test/v1/');
+    try {
+      expect(LIVE_LEAD_MS).toBe(2 * 60_000);
+      expect(line('2026-01-12T12:41:30Z', true)).toBe('Live · 6:42 AM');
+      expect(line('2026-01-12T12:41:00Z', true)).toBe('Live · 6:42 AM');
+      expect(line('2026-01-12T12:40:00Z', true)).toBe('Live · 6:42 AM');
+      expect(line('2026-01-12T12:39:59Z', true)).toBe('Updated 6:42 AM');
+      // Offline is offline, however fresh.
+      expect(line('2026-01-12T12:41:30Z', false)).toBe('Offline · Updated 6:42 AM');
+    } finally {
+      vi.unstubAllEnvs();
+    }
+  });
+
+  it('calls no file stamped ahead of the clock live in a build without a live root, as before S8', () => {
+    for (const root of [undefined, '']) {
+      vi.stubEnv('VITE_SNOWLIGHT_LIVE_ROOT', root);
+      try {
+        expect(line('2026-01-12T12:41:59Z', true)).toBe('Updated 6:42 AM');
+        expect(line('2026-01-12T12:41:00Z', true)).toBe('Updated 6:42 AM');
+        expect(line('2026-01-12T12:42:00Z', true)).toBe('Live · 6:42 AM');
+      } finally {
+        vi.unstubAllEnvs();
+      }
+    }
   });
 
   it('adds the date when the file is from another day', () => {

@@ -52,7 +52,14 @@ import type { AreaRecord, AreaSchoolEntry, AreaSource } from '../data/areas';
 export { createAreaSource } from '../data/areas';
 import type { DetailsSource, SchoolRecord } from '../data/details';
 import type { DataFiles } from '../data/files';
-import { LIVE_POLL_MS } from '../data/live';
+import {
+  LIVE_POLL_MS,
+  LIVE_SIDE_POLL_MS,
+  closingsReader,
+  dueEvery,
+  newerClosings,
+  pollWhileVisible,
+} from '../data/live';
 import { nextDay, schoolOutlook, schoolStatus, schoolToday } from '../data/school-day';
 import type { Outlook, StatusRow } from '../data/school-day';
 import type { ReplayOn } from '../data/replay';
@@ -561,6 +568,9 @@ export function watchArea(options: WatchAreaOptions): () => void {
   let area: AreaRecord | null = null;
   let records: Map<string, SchoolRecord | null> | null = null;
   let settled = false;
+  // The page's one reader of the closings file: the panel's first read gets at least the file
+  // the map holds, and never one older than it. A past day takes none.
+  const reader = replay === null ? closingsReader(files) : null;
   const live: LiveFiles = { closings: null, covered: null, predictions: null };
 
   const show = (): void => {
@@ -580,10 +590,19 @@ export function watchArea(options: WatchAreaOptions): () => void {
       }),
     );
   };
+  const pollMs = options.pollMs ?? LIVE_POLL_MS;
+  // Predictions, which S8 does not publish live, are read as often as before it; the area shows
+  // nothing of covered, so it is never read here.
+  const predictionsDue = dueEvery(LIVE_SIDE_POLL_MS);
   const readLive = async (): Promise<void> => {
-    const read = await readLiveFiles(files);
-    // A read that fails keeps what was read before: it is still true as of its own time.
-    live.closings = read.closings ?? live.closings;
+    const read = await readLiveFiles(files, pollMs, {
+      covered: false,
+      predictions: predictionsDue(),
+    });
+    // A read that fails keeps what was read before: it is still true as of its own time. The
+    // reader takes only a newer closings file; newerClosings here holds the panel to that too,
+    // in depth, so a panel never steps back whatever the reader hands it.
+    live.closings = newerClosings(live.closings, read.closings);
     live.predictions = read.predictions ?? live.predictions;
   };
 
@@ -615,15 +634,31 @@ export function watchArea(options: WatchAreaOptions): () => void {
     settled = true;
     show();
   });
-  const timer =
-    replay === null
-      ? setInterval(() => {
-          void Promise.all([readLive(), settled ? readArea() : null]).then(show);
-        }, options.pollMs ?? LIVE_POLL_MS)
-      : undefined;
+  // Live, read again while the page is seen, and as soon as it is seen again.
+  const stopPolling =
+    reader === null
+      ? () => undefined
+      : pollWhileVisible(
+          () => {
+            void Promise.all([readLive(), settled ? readArea() : null]).then(show);
+          },
+          pollMs,
+          // Paced by the page's one reader: a read the map makes runs the panel's work too, and
+          // starts its period again.
+          { pace: reader },
+        );
+  // A newer closings file the map read: shown now, not at the panel's next read.
+  const stopHearing =
+    reader === null
+      ? () => undefined
+      : reader.subscribe((file) => {
+          live.closings = newerClosings(live.closings, file);
+          if (settled) show();
+        });
 
   return () => {
     stopped = true;
-    clearInterval(timer);
+    stopPolling();
+    stopHearing();
   };
 }

@@ -1,5 +1,5 @@
 // @vitest-environment node
-import { readFileSync } from 'node:fs';
+import { readFileSync, readdirSync } from 'node:fs';
 
 import { describe, expect, it } from 'vitest';
 
@@ -11,14 +11,128 @@ import {
   PRECACHE_GLOBS,
   RANGE_SERVED_EXTENSIONS,
   TILE_ORIGIN,
+  LIVE_CLOSINGS_PATH,
+  LIVE_LOOPBACK_ENV,
+  LIVE_ROOT_ENV,
+  checkedLiveRoot,
   isCacheUpdatedMessage,
   isRangeServed,
+  liveRootOf,
   normalizeBase,
   routeFor,
   routePatterns,
 } from '../config';
 
 const SITE = 'https://snowlight.example';
+
+describe('a live root', () => {
+  const LIVE = 'https://live.snowlight.example/v1/';
+
+  it('names the closings file where the site publishes it', () => {
+    expect(LIVE_CLOSINGS_PATH).toBe(PUBLISHED_PATHS.closings);
+  });
+
+  it('takes https roots that name a folder, and http only on this machine when allowed', () => {
+    expect(liveRootOf(LIVE)).toBe(LIVE);
+    expect(liveRootOf('https://live.snowlight.example')).toBe('https://live.snowlight.example/');
+    for (const local of [
+      'http://127.0.0.1:4180/v1/',
+      'http://localhost:4180/',
+      'http://[::1]:9/',
+    ]) {
+      expect(liveRootOf(local)).toBeNull();
+      expect(liveRootOf(local, true)).toBe(local);
+    }
+    expect(liveRootOf('http://live.snowlight.example/v1/', true)).toBeNull();
+    expect(liveRootOf('http://127.0.0.2/v1/', true)).toBeNull();
+    for (const bad of [
+      null,
+      undefined,
+      '',
+      ' ',
+      '/v1/',
+      'v1/',
+      'http://live.snowlight.example/v1/',
+      'https://live.snowlight.example/v1',
+      'https://live.snowlight.example/v1/?k=1',
+      'https://live.snowlight.example/v1/#k',
+      'https://a:b@live.snowlight.example/v1/',
+      'ws://live.snowlight.example/v1/',
+    ]) {
+      expect([bad, liveRootOf(bad)]).toEqual([bad, null]);
+    }
+  });
+
+  it('routes the closings file at the root first, network-first, and nothing else there', () => {
+    expect(routeFor(`${LIVE}live/closings.json`, '/', { liveRoot: LIVE })).toBe('live');
+    expect(routeFor(`${LIVE}live/closings.json?b=1`, '/', { liveRoot: LIVE })).toBe('live');
+    expect(routeFor(`${LIVE}live/closings.json`, '/snowlight/', { liveRoot: LIVE })).toBe('live');
+    for (const other of [
+      `${LIVE}live/closings.json.bak`,
+      `${LIVE}live/covered.json`,
+      `${LIVE}../live/closings.json`,
+      'https://live.snowlight.example/v1-shadow/live/closings.json',
+      'https://evil.example/https://live.snowlight.example/v1/live/closings.json',
+    ]) {
+      expect([other, routeFor(other, '/', { liveRoot: LIVE })]).toEqual([other, null]);
+    }
+    // The open-host data route never matches the root's path, whatever the base.
+    expect(routeFor(`${LIVE}live/closings.json`, '/')).toBeNull();
+    // The site's own files keep their routes.
+    expect(routeFor(`${SITE}/data/live/closings.json`, '/', { liveRoot: LIVE })).toBe('data');
+    expect(routeFor(`${SITE}/data/schools/meta.json`, '/', { liveRoot: LIVE })).toBe('staticData');
+    // A request for part of it is still the range route's.
+    expect(routeFor(`${LIVE}live/closings.json`, '/', { range: true, liveRoot: LIVE })).toBe(
+      'range',
+    );
+  });
+
+  it('has no live route without a root', () => {
+    expect(routePatterns('/').live).toBeNull();
+    expect(routePatterns('/', null).live).toBeNull();
+    expect(routeFor(`${LIVE}live/closings.json`, '/', { liveRoot: null })).toBeNull();
+  });
+
+  it('fails the build for a root that is set but cannot serve the page', () => {
+    // Unset or empty: no root, as the preview build has until live closings go on.
+    expect(checkedLiveRoot(undefined)).toBeNull();
+    expect(checkedLiveRoot({})).toBeNull();
+    expect(checkedLiveRoot({ [LIVE_ROOT_ENV]: '' })).toBeNull();
+    expect(checkedLiveRoot({ [LIVE_ROOT_ENV]: LIVE })).toBe(LIVE);
+    // Spaces around it are no part of a URL; the root read is the same one the page reads.
+    expect(checkedLiveRoot({ [LIVE_ROOT_ENV]: ` ${LIVE} ` })).toBe(LIVE);
+    for (const bad of [
+      'https://live.snowlight.example/v1',
+      'http://live.snowlight.example/v1/',
+      'https://live.snowlight.example/v1/?k=1',
+      'live.snowlight.example/v1/',
+      'http://127.0.0.1:4180/v1/',
+    ]) {
+      expect(() => checkedLiveRoot({ [LIVE_ROOT_ENV]: bad })).toThrow(LIVE_ROOT_ENV);
+    }
+    // Plain http on this machine, only with the e2e's flag; never another host.
+    const local = 'http://127.0.0.1:4180/v1/';
+    expect(checkedLiveRoot({ [LIVE_ROOT_ENV]: local, [LIVE_LOOPBACK_ENV]: '1' })).toBe(local);
+    expect(() =>
+      checkedLiveRoot({ [LIVE_ROOT_ENV]: 'http://live.example/v1/', [LIVE_LOOPBACK_ENV]: '1' }),
+    ).toThrow(LIVE_ROOT_ENV);
+    expect(LIVE_LOOPBACK_ENV).toBe('VITE_SNOWLIGHT_LIVE_LOOPBACK');
+  });
+
+  it('takes plain http on this machine in no site build: no workflow sets the loopback flag', () => {
+    const dir = new URL('../../../../.github/workflows/', import.meta.url);
+    const workflows = readdirSync(dir).filter((name) => /\.ya?ml$/.test(name));
+    expect(workflows).toContain('preview.yml');
+    for (const name of workflows) {
+      expect(readFileSync(new URL(name, dir), 'utf8'), name).not.toContain(LIVE_LOOPBACK_ENV);
+    }
+    // The site's build reads the root from the owner's variable alone.
+    const preview = readFileSync(new URL('preview.yml', dir), 'utf8');
+    expect(preview.match(/VITE_SNOWLIGHT_LIVE_ROOT:.*$/gm)).toEqual([
+      'VITE_SNOWLIGHT_LIVE_ROOT: ${{ vars.SNOWLIGHT_LIVE_ROOT }}',
+    ]);
+  });
+});
 
 describe('routeFor', () => {
   it.each([

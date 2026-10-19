@@ -22,10 +22,12 @@
  * file under a new name, the page drops it (data.ts dropOldData).
  */
 
-import { CACHE_NAMES, routeFor } from './config';
+import { CACHE_NAMES, keepNewerClosings, liveRootOf, routeFor } from './config';
+import type { RouteName } from './config';
 
 /** The caches the worker keeps whole data files in, by its route for them. */
 const DATA_CACHES: Readonly<Record<string, string | undefined>> = {
+  live: CACHE_NAMES.data,
   staticData: CACHE_NAMES.staticData,
   data: CACHE_NAMES.data,
 };
@@ -47,6 +49,16 @@ function absolute(url: string): string | null {
   }
 }
 
+/**
+ * The live root this build names, checked as the page checks it (app/data.ts
+ * createAppData), or null. A build without one drops the check.
+ */
+function builtLiveRoot(): string | null {
+  const root = import.meta.env.VITE_SNOWLIGHT_LIVE_ROOT;
+  if (root === undefined || root === '') return null;
+  return liveRootOf(root, import.meta.env.VITE_SNOWLIGHT_LIVE_LOOPBACK === '1');
+}
+
 /** When a response was sent, from its Date header: NaN without one. */
 function sentAt(response: Response): number {
   return Date.parse(response.headers.get('date') ?? '');
@@ -59,6 +71,7 @@ function discard(response: Response): void {
 async function put(
   url: string,
   response: Response,
+  route: RouteName,
   name: string,
   storage: Pick<CacheStorage, 'open'>,
 ): Promise<boolean> {
@@ -74,15 +87,33 @@ async function put(
         headers: response.headers,
       });
     }
-    // A copy sent no earlier is kept as it is: the worker's own, or an earlier read's that came
-    // back first. One sent later than it replaces it. (A cache-first file is the same file
-    // under its name whichever copy it is, so it goes in as it downloads.) The worker can still
-    // put a newer live file between this look and the put, which then puts this older one over
-    // it. The next read of that file through the worker gets the older copy, with its own time,
-    // and the worker's revalidation puts the newer one back and tells the page (data.ts
-    // onDataUpdate), which reads it again.
     const held = await cache.match(url);
-    if (held !== undefined && !(sentAt(file) > sentAt(held))) {
+    // Written out here, so a build without a live root, which knows the variable as it builds,
+    // drops this branch and the stamp reader with it.
+    if (
+      route === 'live' &&
+      import.meta.env.VITE_SNOWLIGHT_LIVE_ROOT !== undefined &&
+      import.meta.env.VITE_SNOWLIGHT_LIVE_ROOT !== ''
+    ) {
+      // The live root's closings file, read across origins: its Date header is not exposed to
+      // the page, so copies are told apart by their generated_at, as the worker tells them
+      // apart (config.ts keepNewerClosings). An older or equal copy is not kept.
+      const newer = await keepNewerClosings.cacheWillUpdate(
+        { request: new Request(url), response: file },
+        () => Promise.resolve(held),
+      );
+      if (newer === null) {
+        discard(file);
+        return false;
+      }
+    } else if (held !== undefined && !(sentAt(file) > sentAt(held))) {
+      // A copy sent no earlier is kept as it is: the worker's own, or an earlier read's that
+      // came back first. One sent later than it replaces it. (A cache-first file is the same
+      // file under its name whichever copy it is, so it goes in as it downloads.) The worker can
+      // still put a newer live file between this look and the put, which then puts this older
+      // one over it. The next read of that file through the worker gets the older copy, with
+      // its own time, and the worker's revalidation puts the newer one back and tells the page
+      // (data.ts onDataUpdate), which reads it again.
       discard(file);
       return false;
     }
@@ -97,26 +128,36 @@ async function put(
 /**
  * Puts `response`, a file just read from the network for `url`, into the
  * cache the worker keeps that file in, unless that cache holds a copy sent no
- * earlier. Only a 200 is kept, and only for a file under the data folder of
- * the site at `base` that the worker caches whole: never a school tile file,
- * read in ranges. Resolves to whether it was put, once it is written; never
- * rejects. Keeps of one URL are written in the order they were asked for.
+ * earlier (for the live root's closings file, one whose generated_at is no
+ * earlier). Only a 200 is kept, and only for a file under the data folder of
+ * the site at `base` that the worker caches whole, or the closings file at
+ * the build's live root (`liveRoot`): never a school tile file, read in
+ * ranges. Resolves to whether it was put, once it is written; never rejects.
+ * Keeps of one URL are written in the order they were asked for.
  */
 export function keepData(
   url: string,
   response: Response,
   base: string = import.meta.env.BASE_URL,
   host: KeepHost = globalThis,
+  liveRoot: string | null = builtLiveRoot(),
 ): Promise<boolean> {
   const storage = host.caches;
   const href = absolute(url);
-  const name = href === null ? undefined : DATA_CACHES[routeFor(href, base) ?? ''];
-  if (href === null || name === undefined || storage === undefined || response.status !== 200) {
+  const route = href === null ? null : routeFor(href, base, { liveRoot });
+  const name = route === null ? undefined : DATA_CACHES[route];
+  if (
+    href === null ||
+    route === null ||
+    name === undefined ||
+    storage === undefined ||
+    response.status !== 200
+  ) {
     discard(response);
     return Promise.resolve(false);
   }
   const previous = writing.get(href) ?? Promise.resolve(false);
-  const kept = previous.then(() => put(href, response, name, storage));
+  const kept = previous.then(() => put(href, response, route, name, storage));
   writing.set(href, kept);
   void kept.then(() => {
     if (writing.get(href) === kept) writing.delete(href);

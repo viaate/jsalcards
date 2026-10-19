@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { CACHE_NAMES } from '../config';
 import { keepData, keepsWritten } from '../keep';
@@ -125,6 +125,86 @@ describe('keepData', () => {
     await expect(keepData(INDEX, file('index'), '/', { caches })).resolves.toBe(true);
     expect(await caches.text(CACHE_NAMES.staticData, INDEX)).toBe('index');
   });
+});
+
+describe('keepData with a live root', () => {
+  const LIVE = 'https://live.snow.test/v1/';
+  const AT_ROOT = `${LIVE}live/closings.json`;
+  // A build that names the root, as this one does.
+  beforeEach(() => {
+    vi.stubEnv('VITE_SNOWLIGHT_LIVE_ROOT', LIVE);
+  });
+  afterEach(() => {
+    vi.unstubAllEnvs();
+  });
+
+  /**
+   * The closings file as the page reads it from the root, across origins: its Date header is
+   * not exposed to the page, so the response has none.
+   */
+  const live = (generatedAt: string): Response =>
+    new Response(JSON.stringify({ schema_version: 1, generated_at: generatedAt, days: [] }), {
+      status: 200,
+    });
+  const AT_42 = '2026-01-12T12:42:00Z';
+  const AT_47 = '2026-01-12T12:47:00Z';
+  const stampIn = async (caches: FakeCaches): Promise<string | undefined> => {
+    const text = await caches.text(CACHE_NAMES.data, AT_ROOT);
+    return text === undefined
+      ? undefined
+      : (JSON.parse(text) as { generated_at: string }).generated_at;
+  };
+
+  it('keeps the closings file read from the root in the data cache, and nothing else from there', async () => {
+    const caches = new FakeCaches();
+    await expect(keepData(AT_ROOT, live(AT_42), '/', { caches }, LIVE)).resolves.toBe(true);
+    expect(await stampIn(caches)).toBe(AT_42);
+    await expect(
+      keepData(`${LIVE}live/covered.json`, file('covered'), '/', { caches }, LIVE),
+    ).resolves.toBe(false);
+    // A build without the root keeps nothing from that host.
+    await expect(keepData(AT_ROOT, live(AT_47), '/', { caches }, null)).resolves.toBe(false);
+  });
+
+  it('orders copies of it by their generated_at, which needs no Date header', async () => {
+    const caches = new FakeCaches();
+    await expect(keepData(AT_ROOT, live(AT_42), '/', { caches }, LIVE)).resolves.toBe(true);
+    // A newer copy replaces it: across origins there is no Date to go by.
+    await expect(keepData(AT_ROOT, live(AT_47), '/', { caches }, LIVE)).resolves.toBe(true);
+    expect(await stampIn(caches)).toBe(AT_47);
+    // An older one, from an edge behind, or the same one again, leaves it.
+    await expect(keepData(AT_ROOT, live(AT_42), '/', { caches }, LIVE)).resolves.toBe(false);
+    await expect(keepData(AT_ROOT, live(AT_47), '/', { caches }, LIVE)).resolves.toBe(false);
+    expect(await stampIn(caches)).toBe(AT_47);
+    // Even one sent with a later Date: the file's own time decides.
+    const late = new Response(
+      JSON.stringify({ schema_version: 1, generated_at: AT_42, days: [] }),
+      { status: 200, headers: { date: LATER } },
+    );
+    await expect(keepData(AT_ROOT, late, '/', { caches }, LIVE)).resolves.toBe(false);
+    expect(await stampIn(caches)).toBe(AT_47);
+  });
+
+  for (const slow of [11, 12, 30]) {
+    it(`never puts an older copy over the newer on a device clock ${String(slow)} minutes slow`, async () => {
+      const clock = vi.spyOn(Date, 'now').mockReturnValue(Date.parse(AT_47) - slow * 60_000);
+      try {
+        const caches = new FakeCaches();
+        await expect(keepData(AT_ROOT, live(AT_47), '/', { caches }, LIVE)).resolves.toBe(true);
+        await expect(keepData(AT_ROOT, live(AT_42), '/', { caches }, LIVE)).resolves.toBe(false);
+        expect(await stampIn(caches)).toBe(AT_47);
+        // A copy a publisher clock stamped far ahead still gives way to the next sound one.
+        const far = new FakeCaches();
+        await keepData(AT_ROOT, live('2099-01-01T00:00:00Z'), '/', { caches: far }, LIVE);
+        await expect(keepData(AT_ROOT, live(AT_42), '/', { caches: far }, LIVE)).resolves.toBe(
+          true,
+        );
+        expect(await stampIn(far)).toBe(AT_42);
+      } finally {
+        clock.mockRestore();
+      }
+    });
+  }
 });
 
 describe('keepsWritten', () => {

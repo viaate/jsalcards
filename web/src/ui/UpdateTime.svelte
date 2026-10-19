@@ -1,8 +1,16 @@
 <script lang="ts">
   import { onMount } from 'svelte';
 
-  import { createConnectivity, liveUntil, updateState } from '../state/freshness';
-  import type { UpdateState } from '../state/freshness';
+  import {
+    LIVE_FRESH_MS,
+    createConnectivity,
+    heldFor,
+    heldSince,
+    liveUntil,
+    updateState,
+  } from '../state/freshness';
+  import type { HeldSince, UpdateState } from '../state/freshness';
+  import { watchWake } from '../state/wake';
   import type { UtcInstant } from '../types/generated';
 
   interface Props {
@@ -19,6 +27,15 @@
   /** The clock at the last tick, so the line is worked out again as time passes. */
   let ticked = $state(Date.now());
 
+  const clocks = (): HeldSince => ({ wall: Date.now(), monotonic: performance.now() });
+  /**
+   * When the page first took the file it shows, by both its clocks, kept for
+   * the page's life (heldSince), so a line that comes back after a replay
+   * holds on from then. However the device's clock is set, a file held longer
+   * than LIVE_FRESH_MS is no longer called live.
+   */
+  const held = $derived(heldSince(generatedAt, clocks));
+
   const line = $derived.by((): UpdateState | null => {
     try {
       return updateState({
@@ -27,6 +44,8 @@
         timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone,
         // Now, not the last tick: a new file can arrive between two ticks.
         now: new Date(Math.max(ticked, Date.now())),
+        // Worked out again at each tick, with the line.
+        heldMs: heldFor(held, clocks()),
       });
     } catch {
       // A time zone the formatter does not know: no line rather than a wrong one.
@@ -34,17 +53,20 @@
     }
   });
 
-  // The moment the file turns stale the line stops saying live, not at the next tick.
+  // The moment the file turns stale, by its age or by how long the page has held it, the line
+  // stops saying live, not at the next tick.
   $effect(() => {
     const until = liveUntil(generatedAt);
     if (until === null) return;
-    const wait = until - Date.now();
-    if (wait < 0) return;
-    const timer = setTimeout(() => {
+    const stale = (): void => {
       ticked = Date.now();
-    }, wait + 1);
+    };
+    const heldMs = heldFor(held, clocks());
+    const timers = [setTimeout(stale, Math.max(0, LIVE_FRESH_MS - heldMs) + 1)];
+    const byAge = until - Date.now();
+    if (byAge >= 0) timers.push(setTimeout(stale, byAge + 1));
     return () => {
-      clearTimeout(timer);
+      for (const timer of timers) clearTimeout(timer);
     };
   });
 
@@ -55,6 +77,11 @@
       if (document.visibilityState === 'visible') ticked = Date.now();
     };
     document.addEventListener('visibilitychange', onVisible);
+    // A device that slept with the page open held its timers back too: never "Live" with a time
+    // from before it slept, past the first moment the page can tell.
+    const stopWake = watchWake(() => {
+      ticked = Date.now();
+    });
     const stop = connectivity.subscribe((value) => {
       online = value;
     });
@@ -63,6 +90,7 @@
     }, TICK_MS);
     return () => {
       document.removeEventListener('visibilitychange', onVisible);
+      stopWake();
       clearInterval(timer);
       stop();
       connectivity.destroy();

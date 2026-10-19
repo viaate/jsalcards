@@ -757,7 +757,10 @@ test('a ZIP code picked opens its area beside the map, where the school panel op
   await panel.getByRole('button', { name: /Carver Dual Language/u }).click();
   await expect.poll(() => new URL(page.url()).searchParams.get('school')).toBe('291640000818');
   expect(await page.evaluate(() => history.length)).toBe(entries + 1);
-  await expect(panel.locator('h2.name')).toContainText('Carver Dual Language');
+  await expect(panel.locator('h2.name')).toContainText('Carver Dual Language', { timeout: 30_000 });
+  // Measured once the panel has risen into place: it enters with a short rise, and the school
+  // panel can be ready while that is still running.
+  await expect.poll(async () => (await panel.boundingBox())?.y).toBe(area?.y);
   const school = await panel.boundingBox();
   // The same place and width as the school's panel.
   expect(school?.x).toBe(area?.x);

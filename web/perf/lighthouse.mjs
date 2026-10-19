@@ -17,15 +17,28 @@
  * Playwright installed, as the e2e tests use it), PERF_RUNS (default 3), and
  * --skip-build to reuse dist/. CI runs it as the perf job in ci.yml.
  *
+ * A build that names a live root (VITE_SNOWLIGHT_LIVE_ROOT) reads
+ * live/closings.json from it at the initial view: that one file, once a run,
+ * is the one request allowed to leave the site, and it is gated too.
+ * --live-origin checks such a build before live closings go on: it serves a
+ * closings file with no schools (nothing lit, the update line shown) from a
+ * second server on this machine (PERF_LIVE_PORT, default PERF_PORT + 1), with
+ * CORS for the site, builds with the variable naming it, and writes its
+ * report to perf/raw/lighthouse-live.json, leaving perf/lighthouse.json as it
+ * is. Its gate of exactly one live read a run holds for that dark shell only:
+ * with a directory staged and schools lit, the live code can load after a run
+ * has ended its trace. It is a step of the go-live check (S8 spec, S8-S).
+ *
  * WebGL runs wherever Chrome can run it. On a machine without a GPU that is
  * SwiftShader, a software renderer, which makes every map frame much slower
  * than on real hardware; the report records which renderer was used.
  */
 import { spawn, spawnSync } from 'node:child_process';
+import { createServer } from 'node:http';
 import { existsSync } from 'node:fs';
 import { mkdir, mkdtemp, readFile, rm, writeFile } from 'node:fs/promises';
 import os from 'node:os';
-import { dirname, join } from 'node:path';
+import { dirname, join, relative } from 'node:path';
 import process from 'node:process';
 import { clearTimeout, setTimeout } from 'node:timers';
 import { setTimeout as sleep } from 'node:timers/promises';
@@ -40,12 +53,22 @@ import prettier from 'prettier';
 const WEB = join(dirname(fileURLToPath(import.meta.url)), '..');
 const DIST = join(WEB, 'dist');
 const RAW_DIR = join(WEB, 'perf/raw');
-const REPORT = join(WEB, 'perf/lighthouse.json');
+const REPORT = process.argv.includes('--live-origin')
+  ? join(RAW_DIR, 'lighthouse-live.json')
+  : join(WEB, 'perf/lighthouse.json');
 const PORT = Number(process.env.PERF_PORT ?? '5104');
 const RUNS = Number(process.env.PERF_RUNS ?? '3');
 const ORIGIN = `http://127.0.0.1:${String(PORT)}`;
 const URL_UNDER_TEST = `${ORIGIN}/`;
 const CHROME_PATH = process.env.CHROME_PATH ?? chromium.executablePath();
+const LIVE_ORIGIN_MODE = process.argv.includes('--live-origin');
+const LIVE_PORT = Number(process.env.PERF_LIVE_PORT ?? String(PORT + 1));
+/** The live root the build reads closings from: the local one, or the one its variable names. */
+const LIVE_ROOT = LIVE_ORIGIN_MODE
+  ? `http://127.0.0.1:${String(LIVE_PORT)}/v1/`
+  : process.env.VITE_SNOWLIGHT_LIVE_ROOT || null;
+/** The one request allowed to leave the site at the initial view, when the build has a live root. */
+const LIVE_CLOSINGS_URL = LIVE_ROOT === null ? null : new URL('live/closings.json', LIVE_ROOT).href;
 
 const CATEGORIES = ['performance', 'accessibility', 'best-practices', 'seo'];
 const MIN_SCORE = 0.9;
@@ -128,6 +151,40 @@ async function startPreview() {
   }
   server.kill();
   throw new Error(`vite preview did not start on ${ORIGIN}:\n${output}`);
+}
+
+/**
+ * A live root on this machine, as the live host is to be: live/closings.json
+ * under /v1/, CORS for the site alone, a 15-second cache time. Its file names
+ * no school today, so nothing is lit and the update line shows "Live".
+ */
+async function startLiveOrigin() {
+  const generatedAt = new Date(Date.now() - 60_000).toISOString().replace(/\.\d{3}Z$/, 'Z');
+  const body = JSON.stringify({
+    schema_version: 1,
+    generated_at: generatedAt,
+    directory: { generated_on: '2026-09-25', schools: 1, districts: 1 },
+    days: [],
+  });
+  /** @type {string[]} */
+  const reads = [];
+  const server = createServer((request, response) => {
+    const headers = { 'Access-Control-Allow-Origin': ORIGIN, Vary: 'Origin' };
+    reads.push(request.url ?? '');
+    if (request.url !== '/v1/live/closings.json') {
+      response.writeHead(404, headers).end();
+      return;
+    }
+    response
+      .writeHead(200, {
+        ...headers,
+        'Content-Type': 'application/json; charset=utf-8',
+        'Cache-Control': 'public, max-age=15',
+      })
+      .end(body);
+  });
+  await new Promise((resolve) => server.listen(LIVE_PORT, '127.0.0.1', () => resolve(undefined)));
+  return { server, reads };
 }
 
 /**
@@ -221,7 +278,7 @@ function summarize(lhr) {
       lhr.audits['network-requests']?.details
     )?.items ?? [];
   // Blob URLs the page made itself (MapLibre's workers start from one) carry the site's origin.
-  const foreign = requests
+  const offSite = requests
     .map((item) => item.url ?? '')
     .filter(
       (url) =>
@@ -230,6 +287,9 @@ function summarize(lhr) {
         !url.startsWith(`blob:${ORIGIN}/`) &&
         !url.startsWith('data:'),
     );
+  // The live root's closings file, and nothing else there, may be read.
+  const liveReads = offSite.filter((url) => url === LIVE_CLOSINGS_URL);
+  const foreign = offSite.filter((url) => url !== LIVE_CLOSINGS_URL);
   const scripts = [
     ...new Set(
       requests
@@ -248,6 +308,7 @@ function summarize(lhr) {
     cls: numeric('cumulative-layout-shift'),
     consoleErrors: consoleItems.map((item) => item.description ?? item.source ?? 'error'),
     foreignRequests: foreign,
+    liveReads: liveReads.length,
     requests: requests.length,
     scripts,
     benchmarkIndex: lhr.environment.benchmarkIndex,
@@ -342,12 +403,18 @@ async function lazyScripts(scripts) {
 
 async function main() {
   if (!existsSync(CHROME_PATH)) throw new Error(`No Chrome at ${CHROME_PATH}; set CHROME_PATH`);
+  if (LIVE_ORIGIN_MODE) {
+    // The page's build reads the variables Vite sees as it builds.
+    process.env.VITE_SNOWLIGHT_LIVE_ROOT = LIVE_ROOT ?? '';
+    process.env.VITE_SNOWLIGHT_LIVE_LOOPBACK = '1';
+  }
   if (!process.argv.includes('--skip-build')) {
     run(process.execPath, ['scripts/build-geo.mjs', '--check']);
     run('npm', ['run', 'build']);
   }
   await mkdir(RAW_DIR, { recursive: true });
 
+  const liveOrigin = LIVE_ORIGIN_MODE ? await startLiveOrigin() : null;
   const server = await startPreview();
   /** @type {Record<string, ReturnType<typeof summarize>[]>} */
   const results = { mobile: [], desktop: [], devtools4g: [] };
@@ -382,6 +449,7 @@ async function main() {
     }
   } finally {
     server.kill();
+    liveOrigin?.server.close();
   }
 
   const mobile = medians(results.mobile ?? []);
@@ -433,6 +501,16 @@ async function main() {
     limit: '0',
     pass: foreign.length === 0,
   });
+  if (LIVE_CLOSINGS_URL !== null) {
+    // Each run reads the live root's closings file once at the initial view, and no more.
+    const reads = allRuns.map((r) => r.liveReads);
+    gates.push({
+      gate: `reads of ${LIVE_CLOSINGS_URL} at the initial view, each run`,
+      value: reads.join(' '),
+      limit: '1',
+      pass: reads.every((count) => count === 1),
+    });
+  }
   const lazy = await lazyScripts([...new Set(allRuns.flatMap((r) => r.scripts))]);
   gates.push({
     gate: "MapLibre's scripts, gzipped",
@@ -468,6 +546,7 @@ async function main() {
     },
     consoleErrors,
     foreignRequests: foreign,
+    liveRoot: LIVE_ROOT,
     lazyScripts: lazy,
     gates,
     pass,
@@ -485,7 +564,7 @@ async function main() {
     );
   }
   process.stdout.write(
-    `perf: wrote perf/lighthouse.json, ${pass ? 'all gates pass' : 'gate failed'}\n`,
+    `perf: wrote ${relative(WEB, REPORT)}, ${pass ? 'all gates pass' : 'gate failed'}\n`,
   );
   if (!pass) process.exitCode = 1;
 }

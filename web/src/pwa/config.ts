@@ -8,6 +8,10 @@
  * - Files under data/ that change during the day, live/ first among them, are
  *   served stale-while-revalidate: the last copy at once, then the network
  *   copy into the cache, and the page told when it differs.
+ * - A build that reads live/closings.json from a live root of its own
+ *   (liveRootOf, VITE_SNOWLIGHT_LIVE_ROOT) serves that one file network-first:
+ *   the network's copy while it answers within LIVE_TIMEOUT_SECONDS, the last
+ *   copy only when it does not, in the same cache as the data files.
  * - The school directory, the search index and finished storm replays change
  *   rarely; they are cache-first and expire after a week.
  * - A data file the page or its search worker reads before the first worker
@@ -51,6 +55,62 @@ export const MANIFEST_FILE = 'manifest.webmanifest';
 export const DATA_DIR = 'data/';
 /** The OpenFreeMap host (src/map/basemap/openfreemap.ts). */
 export const TILE_ORIGIN = 'https://tiles.openfreemap.org';
+
+/**
+ * Where a live root keeps the closings file, as data/ does: PUBLISHED_PATHS.closings
+ * (src/types/generated), which this module, importing nothing, cannot name (a test holds them equal).
+ */
+export const LIVE_CLOSINGS_PATH = 'live/closings.json';
+
+/** Hosts a live root may name over plain http, in a build that allows it: this machine. */
+const LOOPBACK_HOSTS: ReadonlySet<string> = new Set(['localhost', '127.0.0.1', '[::1]']);
+
+/**
+ * The live root a build names (VITE_SNOWLIGHT_LIVE_ROOT), as an absolute URL
+ * ending in a slash, or null when it names none or one that cannot serve the
+ * page: anything but https, a path that is not a folder, or one with a query,
+ * a fragment or credentials. Plain http on this machine only when `loopback`
+ * (VITE_SNOWLIGHT_LIVE_LOOPBACK, which only the e2e's build sets).
+ */
+export function liveRootOf(value: string | null | undefined, loopback = false): string | null {
+  if (value === null || value === undefined || value === '') return null;
+  let url: URL;
+  try {
+    url = new URL(value);
+  } catch {
+    return null;
+  }
+  const secure =
+    url.protocol === 'https:' ||
+    (loopback && url.protocol === 'http:' && LOOPBACK_HOSTS.has(url.hostname));
+  const plain = url.search === '' && url.hash === '' && url.username === '' && url.password === '';
+  return secure && plain && url.pathname.endsWith('/') ? url.href : null;
+}
+
+/** The build's variable naming the live root; unset or empty, the page reads its own data/. */
+export const LIVE_ROOT_ENV = 'VITE_SNOWLIGHT_LIVE_ROOT';
+
+/** The build's variable that, as "1", lets a live root be plain http on this machine (e2e only). */
+export const LIVE_LOOPBACK_ENV = 'VITE_SNOWLIGHT_LIVE_LOOPBACK';
+
+/**
+ * The live root a build's variables name, checked (liveRootOf): null when
+ * VITE_SNOWLIGHT_LIVE_ROOT is unset or empty. One set to anything liveRootOf
+ * refuses throws, so a mistyped root fails the build rather than turning live
+ * reads off without a word.
+ */
+export function checkedLiveRoot(env: Readonly<Record<string, unknown>> | undefined): string | null {
+  const value = env?.[LIVE_ROOT_ENV];
+  if (value === undefined || value === null || value === '') return null;
+  const root =
+    typeof value === 'string' ? liveRootOf(value, env?.[LIVE_LOOPBACK_ENV] === '1') : null;
+  if (root === null) {
+    throw new Error(
+      `${LIVE_ROOT_ENV} must be an https URL of a folder, ending in "/", with no query, fragment or credentials; got ${JSON.stringify(value)}`,
+    );
+  }
+  return root;
+}
 
 /** Runtime cache names. The precache is Workbox's own. */
 export const CACHE_NAMES = Object.freeze({
@@ -101,6 +161,9 @@ self.addEventListener('activate', (event) => {
 
 /** How long the TileJSON may take before its cached copy is used instead. */
 export const TILEJSON_TIMEOUT_SECONDS = 4;
+
+/** How long the live root's closings file may take before its cached copy is used instead. */
+export const LIVE_TIMEOUT_SECONDS = 4;
 
 /**
  * Precached files, as globs in the build output. Scripts and styles are
@@ -157,6 +220,8 @@ export function normalizeBase(base: string): string {
 }
 
 export interface RoutePatterns {
+  /** The closings file at the build's live root, served network-first; null without a root. */
+  readonly live: RegExp | null;
   /** Files under data/ served cache-first. */
   readonly staticData: RegExp;
   /** Every other file under data/ but range-served ones, served stale-while-revalidate. */
@@ -174,15 +239,21 @@ export interface RoutePatterns {
  * URL. The site's own routes are anchored to the path right after the host
  * and base, so "data/" deeper in a path never matches; the host itself is left
  * open because the site's domain is not known at build time, and the page
- * requests nothing under data/ or assets/ from any other host.
+ * requests nothing under data/ or assets/ from any other host. The live route
+ * names its file in full at `liveRoot`, a root liveRootOf gave (checked where
+ * the build or the page reads its variable), and is tried before the others.
  */
-export function routePatterns(base: string): RoutePatterns {
+export function routePatterns(base: string, liveRoot: string | null = null): RoutePatterns {
   const root = escapeRegExp(normalizeBase(base));
   const site = String.raw`^https?://[^/?#]+${root}`;
   // Under data/, but never a range-served or network-only file: those go to the network untouched.
   const data = `${site}${escapeRegExp(DATA_DIR)}(?!${RANGE_SERVED_PATH}|${NETWORK_ONLY_DATA})`;
   const tiles = escapeRegExp(TILE_ORIGIN);
   return {
+    live:
+      liveRoot === null || liveRoot === ''
+        ? null
+        : new RegExp(`^${escapeRegExp(`${liveRoot}${LIVE_CLOSINGS_PATH}`)}(?:[?#]|$)`),
     staticData: new RegExp(`${data}${STATIC_DATA}`),
     data: new RegExp(data),
     assets: new RegExp(`${site}assets/[^?#]+\\.(?:woff2|js|css)(?:[?#]|$)`),
@@ -229,23 +300,120 @@ export const onlyTiles = {
     Promise.resolve(request.cache === 'reload' ? null : (cachedResponse ?? null)),
 };
 
+/** Finds the copy of a file a cache keeps; in the worker, whichever of its caches holds it. */
+type Held = (request: Request) => Promise<Response | undefined>;
+
+/**
+ * The closings file at the build's live root, newer only, in the worker as in
+ * the page: newer is a later generated_at, which, as a UtcInstant of fixed
+ * form, compares as text, and a copy that is not a 200 with a generated_at is
+ * no file at all.
+ *
+ * - cacheWillUpdate keeps a copy only when it is newer than the copy kept. An
+ *   older copy (an edge or a worker that has not caught up) or an equal one
+ *   never replaces the newer kept copy.
+ * - handlerWillRespond gives the page the kept copy in place of an older
+ *   answer. A page that has just opened holds no file to set an older one
+ *   against: offline, the browser's own cache can answer with the last copy
+ *   it fetched, which may be older than the one kept; and an edge behind
+ *   answers with an older one too.
+ *
+ * The kept copy, and only it, can stand against nothing: when it is stamped
+ * more than ten minutes past the device's clock (data/live.ts LIVE_AHEAD_MS)
+ * and, as well, more than an hour past the answer's own stamp
+ * (LIVE_AHEAD_OF_ANSWER_MS). Such a stamp says the publisher's clock was
+ * wrong, so it never holds off what the network answers, across reloads.
+ * Either test alone is not enough: on a device whose clock runs slow, every
+ * sound kept copy is past the clock, and an edge behind answers with a copy
+ * minutes older than the kept one; neither may replace the newer kept copy.
+ * With no answer to set it by (an error), the clock alone decides. The
+ * network's answer is never refused for its stamp: a device clock set back,
+ * or one that runs slow, never keeps a newer file from the page.
+ *
+ * `held` finds the copy kept: by default, whichever cache of the worker holds
+ * it; the page passes its own (keep.ts). Workbox writes this plugin into sw.js
+ * as source text, so each function must stay self-contained, the stamp reader
+ * in each included.
+ */
+export const keepNewerClosings = {
+  cacheWillUpdate: async (
+    { request, response }: { request: Request; response: Response },
+    held: Held = (key) => (globalThis as unknown as { caches: { match: Held } }).caches.match(key),
+  ): Promise<Response | null> => {
+    const stampOf = async (copy: Response | undefined): Promise<string> => {
+      try {
+        const file =
+          copy?.status === 200 ? (JSON.parse(await copy.clone().text()) as unknown) : null;
+        const stamp = (file as { generated_at?: unknown }).generated_at;
+        return typeof stamp === 'string' ? stamp : '';
+      } catch {
+        return '';
+      }
+    };
+    // The kept copy's stamp, or '' when it stands against nothing: stamped more than ten minutes
+    // past this device's clock (data/live.ts LIVE_AHEAD_MS) and, as well, more than an hour past
+    // the answer's own (LIVE_AHEAD_OF_ANSWER_MS), or past the clock with no answer to set it by.
+    const standing = (kept: string, answer: string): string => {
+      const at = Date.parse(kept);
+      return at <= Date.now() + 10 * 60_000 ||
+        (answer !== '' && at <= Date.parse(answer) + 60 * 60_000)
+        ? kept
+        : '';
+    };
+    const stamp = await stampOf(response);
+    if (stamp === '') return null;
+    return stamp > standing(await stampOf(await held(request)), stamp) ? response : null;
+  },
+  handlerWillRespond: async (
+    { request, response }: { request: Request; response: Response },
+    held: Held = (key) => (globalThis as unknown as { caches: { match: Held } }).caches.match(key),
+  ): Promise<Response> => {
+    const stampOf = async (copy: Response | undefined): Promise<string> => {
+      try {
+        const file =
+          copy?.status === 200 ? (JSON.parse(await copy.clone().text()) as unknown) : null;
+        const stamp = (file as { generated_at?: unknown }).generated_at;
+        return typeof stamp === 'string' ? stamp : '';
+      } catch {
+        return '';
+      }
+    };
+    // The kept copy's stamp, or '' when it stands against nothing: stamped more than ten minutes
+    // past this device's clock (data/live.ts LIVE_AHEAD_MS) and, as well, more than an hour past
+    // the answer's own (LIVE_AHEAD_OF_ANSWER_MS), or past the clock with no answer to set it by.
+    const standing = (kept: string, answer: string): string => {
+      const at = Date.parse(kept);
+      return at <= Date.now() + 10 * 60_000 ||
+        (answer !== '' && at <= Date.parse(answer) + 60 * 60_000)
+        ? kept
+        : '';
+    };
+    const kept = await held(request);
+    if (kept === undefined) return response;
+    const answer = await stampOf(response);
+    return standing(await stampOf(kept), answer) > answer ? kept : response;
+  },
+};
+
 /** The routes the worker tries, in order, for a request that is not a navigation. */
 export type RouteName = 'range' | Exclude<keyof RoutePatterns, 'navigation'>;
 
 /**
- * Which route serves a GET for `url` on a site at `base`, in the order the
- * worker tries them; `range` when the request carries a Range header. Null
- * means no route: the browser fetches it as if there were no worker.
+ * Which route serves a GET for `url` on a site at `base` whose build reads
+ * live/closings.json from `liveRoot` (a root liveRootOf gave; null for its
+ * own data/), in the order
+ * the worker tries them; `range` when the request carries a Range header.
+ * Null means no route: the browser fetches it as if there were no worker.
  */
 export function routeFor(
   url: string,
   base: string,
-  init: { range?: boolean } = {},
+  init: { range?: boolean; liveRoot?: string | null } = {},
 ): RouteName | null {
   if (init.range === true) return 'range';
-  const patterns = routePatterns(base);
-  const order = ['staticData', 'data', 'assets', 'tileJson', 'tiles'] as const;
-  return order.find((name) => patterns[name].test(url)) ?? null;
+  const patterns = routePatterns(base, init.liveRoot ?? null);
+  const order = ['live', 'staticData', 'data', 'assets', 'tileJson', 'tiles'] as const;
+  return order.find((name) => patterns[name]?.test(url) === true) ?? null;
 }
 
 /** The message Workbox's broadcast-update plugin posts when a cached file changed. */
@@ -272,9 +440,30 @@ export const APPLE_TOUCH_ICON = 'icons/apple-touch-icon.png';
 
 type WorkboxOptions = NonNullable<VitePWAOptions['workbox']>;
 
-/** The generated worker's options for a site at `base`. */
-export function workboxOptions(base: string): WorkboxOptions {
-  const patterns = routePatterns(base);
+/**
+ * The generated worker's options for a site at `base`, whose build reads
+ * live/closings.json from `liveRoot` when it names one (checkedLiveRoot).
+ */
+export function workboxOptions(base: string, liveRoot: string | null = null): WorkboxOptions {
+  const patterns = routePatterns(base, liveRoot);
+  // Network-first: the newest file whenever the network answers, never a broadcast. Only a
+  // build with a live root has the route; one without builds the same worker as before.
+  const live: NonNullable<WorkboxOptions['runtimeCaching']> =
+    patterns.live === null
+      ? []
+      : [
+          {
+            urlPattern: patterns.live,
+            handler: 'NetworkFirst',
+            options: {
+              cacheName: CACHE_NAMES.data,
+              networkTimeoutSeconds: LIVE_TIMEOUT_SECONDS,
+              expiration: { ...CACHE_LIMITS.data, purgeOnQuotaError: true },
+              cacheableResponse: { statuses: [200] },
+              plugins: [keepNewerClosings],
+            },
+          },
+        ];
   return {
     globPatterns: [...PRECACHE_GLOBS],
     // No sw.js.map: vite-plugin-pwa would otherwise follow build.sourcemap and ship one.
@@ -296,6 +485,7 @@ export function workboxOptions(base: string): WorkboxOptions {
         urlPattern: isRangeRequest,
         handler: 'NetworkOnly',
       },
+      ...live,
       {
         urlPattern: patterns.staticData,
         handler: 'CacheFirst',
@@ -398,9 +588,12 @@ export function pwaOptions(): Partial<VitePWAOptions> {
     manifest: false,
     includeAssets: [],
     integration: {
-      // The routes depend on the base, which is only known once Vite has resolved its config.
+      // The routes depend on the base and the live root, only known once Vite has resolved its
+      // config.
       configureOptions(viteConfig, options) {
-        options.workbox = workboxOptions(viteConfig.base);
+        const env = viteConfig.env as Readonly<Record<string, unknown>> | undefined;
+        // A root set but refused fails the build here.
+        options.workbox = workboxOptions(viteConfig.base, checkedLiveRoot(env));
       },
     },
   };

@@ -204,6 +204,10 @@ jobs:
         run: npx vite build --base="${BASE_PATH}/"
         env:
           BASE_PATH: ${{ steps.pages.outputs.base_path }}
+          # Where the page reads live/closings.json from, a host published apart from this site
+          # (docs: S8 live closings). Empty until the owner turns live closings on: the page then
+          # reads its own data/.
+          VITE_SNOWLIGHT_LIVE_ROOT: ${{ vars.SNOWLIGHT_LIVE_ROOT }}
       # The build carries the staged directory, its edition, school tiles and search index, or it is not published.
       - if: steps.pages.outcome == 'success'
         working-directory: web
