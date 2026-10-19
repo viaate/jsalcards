@@ -10,6 +10,7 @@ import { areaFormat } from './copy-area';
 import { chanceCopy, chanceFormat } from './copy-chance';
 import type { BaseInput, ReasonInput, Zones } from './copy-chance';
 import { format } from './copy-format';
+import { waitlistCopy } from './copy-waitlist';
 
 // The house-style rules and the lint live in scripts/check-copy.mjs, a plain
 // Node module; this is the slice of it the tests use.
@@ -675,6 +676,8 @@ describe('format', () => {
       expect(Object.isFrozen(chanceFormat)).toBe(true);
       expect(Object.isFrozen(chanceCopy)).toBe(true);
       expect(allProblems(copyLeaves(chanceCopy).map(([, text]) => text))).toEqual([]);
+      expect(Object.isFrozen(waitlistCopy)).toBe(true);
+      expect(allProblems(copyLeaves(waitlistCopy).map(([, text]) => text))).toEqual([]);
       expect(chanceFormat.weekday('2026-01-13')).toBe('Tuesday');
       expect(chanceFormat.chanceOn('2026-01-14')).toBe('Chance of no school Wednesday');
       expect(chanceFormat.chanceNumber(0.64)).toBe('64');
@@ -1560,6 +1563,43 @@ mark(document.body, copy.search.label, 3);
     const { findings, scanned } = await lintProject({ root });
     expect(findings).toEqual([]);
     expect(scanned).toMatchObject({ svelte: 3, scripts: 1, styles: 1, html: 1, manifests: 1 });
+  }, 30_000);
+
+  it('fills pages from the waitlist words under copy.waitlist, privacy.html included', async () => {
+    await expectFindings(
+      {
+        'src/copy.ts': cleanCopy,
+        'src/copy-waitlist.ts': `export const waitlistCopy = {
+  headline: 'Every school on one map.',
+  privacy: { title: 'Privacy', who: 'Kit keeps the list.', bad: 'Kit Keeps The List' },
+};
+`,
+        'index.html': `<!doctype html>
+<html lang="en">
+  <head><title>%copy.appName%</title></head>
+  <body><h1>%copy.waitlist.headline%</h1><p>%copy.waitlist.missing%</p></body>
+</html>
+`,
+        'privacy.html': `<!doctype html>
+<html lang="en">
+  <head><title>%copy.waitlist.privacy.title%</title></head>
+  <body>
+    <p>%copy.waitlist.privacy.who%</p>
+    <p>Plain words here</p>
+    <script>document.title = 'Script title';</script>
+  </body>
+</html>
+`,
+      },
+      [
+        ['src/copy-waitlist.ts', 'export const', 'Title Case "Keeps"'],
+        ['src/copy-waitlist.ts', 'export const', 'Title Case "The"'],
+        ['src/copy-waitlist.ts', 'export const', 'Title Case "List"'],
+        ['index.html', '%copy.waitlist.missing%', 'is not a string in copy.ts'],
+        ['privacy.html', 'Plain words here', 'literal text "Plain words here"'],
+        ['privacy.html', "'Script title'", '"Script title" written to .title'],
+      ],
+    );
   }, 30_000);
 
   it('reads the copy modules that load later as part of copy.ts, and no other module', async () => {
@@ -2574,6 +2614,18 @@ ${aliases}
     ]);
   }, 30_000);
 
+  it('reads a <noscript> block as the markup a browser without JavaScript shows', async () => {
+    const findings = await scanIndexHtml(
+      '<noscript><div><h1>%copy.meta.description%</h1><p>Join now!</p></div></noscript>',
+      { meta: { description: 'Schools on one map.' } },
+      'index.html',
+    );
+    expect(findings.map((finding) => finding.message)).toEqual([
+      'literal text "Join now!" in text; fill it with %copy.path%',
+      'exclamation mark in text: "Join now!"',
+    ]);
+  }, 30_000);
+
   it('holds pages served as they are to the house style, and the built site when asked', async () => {
     const root = project({
       'src/copy.ts': cleanCopy,
@@ -2598,8 +2650,11 @@ ${aliases}
   it('passes this project', async () => {
     const { findings, scanned } = await lintProject({ root: WEB_ROOT });
     expect(findings).toEqual([]);
-    // copy.ts's strings, and the chance section's fixed words (src/copy-chance.ts).
-    expect(scanned.strings).toBe(strings.length + copyLeaves(chanceCopy).length);
+    // copy.ts's strings, the chance section's fixed words (src/copy-chance.ts) and the waitlist's
+    // (src/copy-waitlist.ts).
+    expect(scanned.strings).toBe(
+      strings.length + copyLeaves(chanceCopy).length + copyLeaves(waitlistCopy).length,
+    );
     expect(scanned.svelte).toBeGreaterThan(0);
     // The whole site read as one program: about 37 s of one core with the chance section (50 s
     // before its short lists were made distinct pair by pair), and longer on a busy machine.

@@ -5,9 +5,32 @@
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
     <meta name="color-scheme" content="dark" />
     <meta name="theme-color" content="#000000" />
+    <!-- waitlist:off:start -->
     <title>%copy.appName%</title>
     <meta name="description" content="%copy.meta.description%" />
+    <!-- waitlist:off:end -->
+    <!-- waitlist:on:start -->
+    <title>%copy.waitlist.meta.shareTitle%</title>
+    <meta name="description" content="%copy.waitlist.meta.description%" />
+    <link rel="canonical" href="%waitlist.site%" />
+    <meta property="og:type" content="website" />
+    <meta property="og:site_name" content="%copy.appName%" />
+    <meta property="og:url" content="%waitlist.site%" />
+    <meta property="og:title" content="%copy.waitlist.meta.shareTitle%" />
+    <meta property="og:description" content="%copy.waitlist.meta.description%" />
+    <meta property="og:image" content="%waitlist.art.social%" />
+    <meta property="og:image:type" content="image/jpeg" />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+    <meta property="og:image:alt" content="%copy.waitlist.meta.shareImageAlt%" />
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="%copy.waitlist.meta.shareTitle%" />
+    <meta name="twitter:description" content="%copy.waitlist.meta.description%" />
+    <meta name="twitter:image" content="%waitlist.art.social%" />
+    <meta name="twitter:image:alt" content="%copy.waitlist.meta.shareImageAlt%" />
+    <!-- waitlist:on:end -->
     <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+    <!-- waitlist:off:start -->
     <link
       rel="preload"
       href="/node_modules/@fontsource-variable/geist/files/geist-latin-wght-normal.woff2"
@@ -15,6 +38,7 @@
       type="font/woff2"
       crossorigin
     />
+    <!-- waitlist:off:end -->
     <!--
       Critical CSS for the whole shell, and the map's. It is the only
       stylesheet the page has: App.svelte renders the same markup with these
@@ -1233,9 +1257,809 @@
         border-color: rgb(255 120 120 / 0.7);
       }
     </style>
+    <!-- waitlist:on:start -->
+    <!--
+      The waitlist (tools/waitlist.ts, src/waitlist/gate.ts). A device that has
+      entered the access code is marked here, before anything paints, and its
+      app script is fetched at once (data-entry, filled in by the build), to run
+      once the page is in; the waitlist is never put in its page, so none of its
+      pictures load. Every other visitor sees the waitlist, and the app is not
+      loaded behind it. The waitlist's words wait unseen (wl-hold) until all of
+      them are in and set in their font, so nothing moves once they show.
+    -->
+    <script data-entry="">
+      document.documentElement.classList.add('wl-hold');
+      try {
+        if (localStorage.getItem('sl-lock') === 'MjM4MQ==') {
+          document.documentElement.classList.add('is-app');
+          var entry = document.currentScript.getAttribute('data-entry');
+          if (entry) {
+            var link = document.createElement('link');
+            link.rel = 'modulepreload';
+            link.crossOrigin = 'anonymous';
+            link.href = entry;
+            document.head.appendChild(link);
+          }
+        }
+      } catch (e) {}
+    </script>
+    <style>
+      html:not(.is-app) #app,
+      html.is-app #waitlist {
+        display: none;
+      }
+
+      html.wl-hold #waitlist > :not(.wl-sky) {
+        visibility: hidden;
+      }
+
+      /*
+        The waitlist's words in Geist from the first paint: its own small cut,
+        inline (scripts/build-waitlist-font.mjs), so no font arrives later to
+        move a line. Characters outside it fall back to the site's Geist file.
+      */
+      @font-face {
+        font-family: 'Geist Waitlist';
+        font-style: normal;
+        font-display: block;
+        font-weight: 400 600;
+        src: url('%waitlist.font%') format('woff2-variations');
+        unicode-range: U+0020-007E, U+00A0, U+2019, U+2026;
+      }
+
+      #waitlist {
+        --wl-edge: 20px;
+        --wl-field: 52px;
+        --wl-error: #ff9a9a;
+        position: fixed;
+        inset: 0;
+        z-index: 2147483646;
+        display: grid;
+        grid-template-rows: minmax(0, 1fr) auto auto;
+        overflow-x: hidden;
+        overflow-y: auto;
+        background: var(--bg);
+        color: var(--text-1);
+        font-family: 'Geist Waitlist', var(--font-sans);
+        -webkit-font-smoothing: antialiased;
+      }
+
+      /*
+        The map behind the words: a picture, never the map app. Its layer is the
+        screen's own size and clips it, so however large the picture is drawn,
+        the page never scrolls to show more of it.
+      */
+      .wl-sky {
+        position: fixed;
+        inset: 0;
+        overflow: hidden;
+        pointer-events: none;
+      }
+
+      .wl-art {
+        position: absolute;
+        left: 50%;
+        top: calc(var(--inset-top) + 56px);
+        width: 190vw;
+        aspect-ratio: 1600 / 877;
+        transform: translateX(-46%);
+        pointer-events: none;
+        -webkit-mask-image: radial-gradient(closest-side, #000 55%, transparent);
+        mask-image: radial-gradient(closest-side, #000 55%, transparent);
+      }
+
+      .wl-art img {
+        position: absolute;
+        inset: 0;
+        width: 100%;
+        height: 100%;
+      }
+
+      .wl-map {
+        opacity: 0.62;
+      }
+
+      .wl-sweep {
+        opacity: 0;
+      }
+
+      .is-sweeping .wl-sweep {
+        animation: wl-sweep 16s ease-in-out infinite both;
+      }
+
+      .is-sweeping .wl-sweep:nth-of-type(3) {
+        animation-delay: 4s;
+      }
+
+      .is-sweeping .wl-sweep:nth-of-type(4) {
+        animation-delay: 8s;
+      }
+
+      .is-sweeping .wl-sweep:nth-of-type(5) {
+        animation-delay: 12s;
+      }
+
+      @keyframes wl-sweep {
+        0% {
+          opacity: 0;
+        }
+        18% {
+          opacity: 0.85;
+        }
+        40% {
+          opacity: 0;
+        }
+        100% {
+          opacity: 0;
+        }
+      }
+
+      /*
+        The chrome SNOWLIGHT wordmark, the teaser's lettering
+        (scripts/build-waitlist-chrome.mjs): a picture whose box its width and
+        height attributes hold before it arrives. Its word is text for screen
+        readers. Once the page settles, one glint crosses it (src/waitlist/gate.ts),
+        never for less motion.
+      */
+      .wl-hero {
+        width: min(100%, 400px);
+        margin: 0 0 6px;
+      }
+
+      .wl-chrome {
+        position: relative;
+        display: block;
+      }
+
+      .wl-chrome img {
+        display: block;
+        width: 100%;
+        height: auto;
+      }
+
+      .wl-glint {
+        position: absolute;
+        inset: 0;
+        overflow: hidden;
+        visibility: hidden;
+        pointer-events: none;
+      }
+
+      .is-glinting .wl-glint {
+        visibility: visible;
+        -webkit-mask: url('%waitlist.art.chromeSmall%') center / 100% 100% no-repeat;
+        mask: url('%waitlist.art.chromeSmall%') center / 100% 100% no-repeat;
+      }
+
+      /*
+        The glint: a bright band, with a cool edge so it reads on the near-white
+        top of the letters as well as on their darker foot.
+      */
+      .wl-glint::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        bottom: 0;
+        left: 0;
+        width: 34%;
+        background:
+          linear-gradient(
+            105deg,
+            transparent 30%,
+            rgb(255 255 255 / 0.85) 46%,
+            #fff 50%,
+            rgb(255 255 255 / 0.85) 54%,
+            transparent 70%
+          ),
+          linear-gradient(
+            105deg,
+            transparent 18%,
+            rgb(127 212 255 / 0.55) 38%,
+            transparent 50%,
+            rgb(127 212 255 / 0.55) 62%,
+            transparent 82%
+          );
+        transform: translateX(-110%);
+      }
+
+      .is-glinting .wl-glint::before {
+        animation: wl-glint 1.8s cubic-bezier(0.45, 0, 0.25, 1) both;
+      }
+
+      @keyframes wl-glint {
+        to {
+          transform: translateX(340%);
+        }
+      }
+
+      .wl-main {
+        position: relative;
+        /* Its own layer, so the dark ground under the words lies over the map, not under it. */
+        z-index: 0;
+        grid-row: 2;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        width: 100%;
+        max-width: 720px;
+        margin: 0 auto;
+        padding: 32px var(--wl-edge) 0;
+        text-align: center;
+      }
+
+      /* A dark ground under the words, so the lights behind them never cut into a letter. */
+      .wl-main::before {
+        content: '';
+        position: absolute;
+        inset: -40px -20px -20px;
+        z-index: -1;
+        background: radial-gradient(
+          closest-side,
+          rgb(0 0 0 / 0.8),
+          rgb(0 0 0 / 0.55) 60%,
+          transparent
+        );
+      }
+
+      .wl-title {
+        margin: 0;
+        max-width: 13em;
+        font-size: 34px;
+        font-weight: 600;
+        line-height: 1.08;
+        letter-spacing: -0.035em;
+        text-wrap: balance;
+      }
+
+      /* The headline in the wordmark's chrome lettering (VITE_WAITLIST_HEADLINE=chrome). */
+      .wl-title-chrome {
+        width: min(100%, 360px);
+        max-width: none;
+      }
+
+      .wl-title-chrome img {
+        display: block;
+        width: 100%;
+        height: auto;
+      }
+
+      /* The picture holds room for its glow below the letters already. */
+      .wl-title-chrome + .wl-when {
+        margin-top: 0;
+      }
+
+      .wl-when {
+        margin: 14px 0 0;
+        color: var(--text-2);
+        font-size: 18px;
+        line-height: 26px;
+        letter-spacing: -0.01em;
+      }
+
+      /* Words that must read where a bright city lies under them. */
+      .wl-when,
+      .wl-terms,
+      .wl-error,
+      .wl-code-wrong,
+      .wl-done-title,
+      .wl-done-line,
+      .wl-foot {
+        text-shadow:
+          0 0 6px #000,
+          0 0 12px #000,
+          0 0 20px #000;
+      }
+
+      /*
+        The form, the done block and Kit's check share one place, as tall as
+        the tallest of them, and only one is seen at a time: the words above
+        and the link below stay where they are whatever the page shows.
+      */
+      .wl-act {
+        display: grid;
+        width: 100%;
+        max-width: 460px;
+        margin: 28px 0 0;
+      }
+
+      .wl-act > * {
+        grid-area: 1 / 1;
+        min-width: 0;
+      }
+
+      .wl-act > [hidden],
+      .wl-error[hidden] {
+        visibility: hidden;
+      }
+
+      .wl-row {
+        display: grid;
+        gap: 10px;
+      }
+
+      .wl-email,
+      .wl-join {
+        height: var(--wl-field);
+        border-radius: 999px;
+        font: inherit;
+        font-size: 16px;
+      }
+
+      .wl-email {
+        width: 100%;
+        min-width: 0;
+        padding: 0 22px;
+        border: 1px solid rgb(255 255 255 / 0.16);
+        background: rgb(16 16 16 / 0.85);
+        color: var(--text-1);
+        outline: none;
+        transition: border-color 150ms ease;
+      }
+
+      .wl-email::placeholder {
+        color: var(--text-3);
+      }
+
+      .wl-email:focus {
+        border-color: rgb(127 212 255 / 0.7);
+      }
+
+      .wl-email[aria-invalid='true'] {
+        border-color: rgb(255 154 154 / 0.75);
+      }
+
+      .wl-join {
+        padding: 0 24px;
+        border: 0;
+        background: var(--text-1);
+        color: #000;
+        font-weight: 600;
+        letter-spacing: -0.01em;
+        cursor: pointer;
+        transition:
+          background-color 150ms ease,
+          box-shadow 150ms ease;
+      }
+
+      .wl-join:hover {
+        background: #fff;
+        box-shadow: 0 0 28px rgb(127 212 255 / 0.35);
+      }
+
+      .wl-join:focus-visible,
+      .wl-quiet:focus-visible {
+        outline: 2px solid var(--status-closed);
+        outline-offset: 3px;
+      }
+
+      .wl-joining,
+      .is-busy .wl-join-label {
+        display: none;
+      }
+
+      .is-busy .wl-joining {
+        display: inline;
+      }
+
+      .is-busy .wl-join {
+        cursor: progress;
+        opacity: 0.7;
+      }
+
+      /*
+        Right under the field and its button, in room held for two lines, so
+        showing it moves nothing, and the gate scrolls it into view above a
+        phone's keyboard.
+      */
+      .wl-form,
+      .wl-error {
+        display: block;
+      }
+
+      .wl-error {
+        min-height: 40px;
+        margin: 8px 0 0;
+        color: var(--wl-error);
+        font-size: 14px;
+        line-height: 20px;
+        text-wrap: balance;
+      }
+
+      .wl-terms {
+        margin: 6px 0 0;
+        color: #8f8f8f;
+        font-size: 13px;
+        line-height: 19px;
+        text-wrap: balance;
+      }
+
+      .wl-done,
+      .wl-check {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        outline: none;
+      }
+
+      #waitlist[data-confirm='on'] [data-confirm='off'],
+      #waitlist[data-confirm='off'] [data-confirm='on'] {
+        display: none;
+      }
+
+      .wl-done-title {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        margin: 0;
+        font-size: 22px;
+        font-weight: 600;
+        line-height: 30px;
+        letter-spacing: -0.02em;
+      }
+
+      .wl-done-title::before {
+        content: '';
+        width: 18px;
+        height: 18px;
+        border-radius: 50%;
+        background: radial-gradient(
+          closest-side,
+          #f4fbff 20%,
+          var(--status-closed) 50%,
+          transparent
+        );
+        box-shadow: 0 0 22px rgb(127 212 255 / 0.55);
+      }
+
+      /* The line that says what to do next: as clear as the headline's words. */
+      .wl-done-line {
+        margin: 8px 0 0;
+        color: var(--text-1);
+        text-wrap: balance;
+        font-size: 17px;
+        line-height: 25px;
+      }
+
+      /* Kit's check is not done yet: a plain ring, not the lit dot. */
+      .wl-check .wl-done-title::before {
+        width: 14px;
+        height: 14px;
+        border: 2px solid var(--text-2);
+        background: none;
+        box-shadow: none;
+      }
+
+      /* Room for the button to Kit's check, held before it is put in. */
+      .wl-check-slot {
+        display: flex;
+        justify-content: center;
+        min-height: var(--wl-field);
+        margin-top: 18px;
+      }
+
+      a.wl-join {
+        display: inline-flex;
+        align-items: center;
+        text-decoration: none;
+      }
+
+      .wl-foot {
+        position: relative;
+        grid-row: 3;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 12px;
+        padding: 36px var(--wl-edge) calc(var(--inset-bottom) + 24px);
+      }
+
+      /* The footer's quiet links: the privacy page, and the way in for people with the code. */
+      .wl-foot-links {
+        display: flex;
+        flex-wrap: wrap;
+        justify-content: center;
+        gap: 4px 12px;
+      }
+
+      .wl-quiet {
+        padding: 6px 8px;
+        border: 0;
+        background: none;
+        color: #8f8f8f;
+        font: inherit;
+        font-size: 13px;
+        line-height: 19px;
+        text-decoration: none;
+        cursor: pointer;
+      }
+
+      .wl-quiet:hover {
+        color: var(--text-2);
+      }
+
+      .wl-code {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 8px;
+      }
+
+      /* The code field opened: it takes the form's place, and the form waits unseen. */
+      #waitlist.is-code .wl-act > :not(.wl-code) {
+        visibility: hidden;
+      }
+
+      .wl-code input {
+        width: 180px;
+        padding: 12px 16px;
+        border: 1px solid rgb(255 255 255 / 0.2);
+        border-radius: 999px;
+        background: #0d0d0d;
+        color: #fff;
+        font: inherit;
+        font-size: 16px;
+        letter-spacing: 0.3em;
+        text-align: center;
+        outline: none;
+      }
+
+      /* Wide tracking for the dots of a typed code only, never for the field's label. */
+      .wl-code input:placeholder-shown {
+        letter-spacing: normal;
+      }
+
+      .wl-code input:focus {
+        border-color: rgb(255 255 255 / 0.5);
+      }
+
+      .wl-code.is-wrong input {
+        border-color: rgb(255 120 120 / 0.7);
+      }
+
+      .wl-code-wrong {
+        display: block;
+        margin: 0;
+        color: var(--wl-error);
+        font-size: 13px;
+        line-height: 19px;
+      }
+
+      .wl-code-wrong[hidden] {
+        visibility: hidden;
+      }
+
+      @media (min-width: 640px) {
+        #waitlist {
+          --wl-edge: 32px;
+          grid-template-rows: minmax(0, 1fr) auto minmax(0, 1fr) auto;
+        }
+
+        .wl-hero {
+          width: min(100%, 600px);
+          margin-bottom: 10px;
+        }
+
+        .is-glinting .wl-glint {
+          -webkit-mask-image: url('%waitlist.art.chrome%');
+          mask-image: url('%waitlist.art.chrome%');
+        }
+
+        .wl-title-chrome {
+          width: min(100%, 620px);
+        }
+
+        .wl-art {
+          top: 50%;
+          width: max(1100px, 118vw);
+          transform: translate(-50%, -50%);
+        }
+
+        .wl-main {
+          max-width: 1040px;
+          padding-top: 0;
+        }
+
+        .wl-main::before {
+          inset: -140px -200px -120px;
+          background: radial-gradient(
+            closest-side,
+            rgb(0 0 0 / 0.72),
+            rgb(0 0 0 / 0.6) 60%,
+            transparent
+          );
+        }
+
+        .wl-map {
+          opacity: 0.55;
+        }
+
+        .wl-title {
+          max-width: 15.5em;
+          font-size: 48px;
+        }
+
+        .wl-when {
+          margin-top: 18px;
+          font-size: 20px;
+          line-height: 28px;
+        }
+
+        .wl-act {
+          margin-top: 36px;
+        }
+
+        .wl-done-title {
+          gap: 14px;
+          font-size: 30px;
+          line-height: 38px;
+        }
+
+        .wl-done-line {
+          font-size: 18px;
+          line-height: 27px;
+        }
+
+        .wl-row {
+          grid-template-columns: minmax(0, 1fr) auto;
+          gap: 6px;
+          padding: 5px;
+          border: 1px solid rgb(255 255 255 / 0.16);
+          border-radius: 999px;
+          background: rgb(16 16 16 / 0.85);
+          transition: border-color 150ms ease;
+        }
+
+        .wl-row:focus-within {
+          border-color: rgb(127 212 255 / 0.7);
+        }
+
+        .wl-row:has([aria-invalid='true']) {
+          border-color: rgb(255 154 154 / 0.75);
+        }
+
+        .wl-email,
+        .wl-join {
+          height: 44px;
+        }
+
+        .wl-email,
+        .wl-email:focus,
+        .wl-email[aria-invalid='true'] {
+          border: 0;
+          background: none;
+          padding-left: 18px;
+        }
+
+        .wl-foot {
+          grid-row: 4;
+        }
+      }
+
+      @media (min-width: 1024px) {
+        .wl-hero {
+          width: 760px;
+        }
+
+        .wl-title {
+          font-size: 58px;
+        }
+
+        .wl-title-chrome {
+          width: 780px;
+        }
+      }
+
+      /* Short screens (a small phone, a 720-line laptop): the same page, a little tighter, on one screen. */
+      @media (max-width: 639.98px) and (max-height: 640px) {
+        .wl-main {
+          padding-top: 12px;
+        }
+
+        .wl-title {
+          font-size: 30px;
+        }
+
+        .wl-act {
+          margin-top: 20px;
+        }
+
+        .wl-foot {
+          padding-top: 16px;
+        }
+      }
+
+      @media (min-width: 640px) and (max-height: 800px) {
+        .wl-hero {
+          width: min(100%, 620px);
+          margin-bottom: 4px;
+        }
+
+        .wl-title {
+          font-size: 50px;
+        }
+
+        .wl-act {
+          margin-top: 28px;
+        }
+
+        .wl-foot {
+          padding-top: 24px;
+        }
+      }
+
+      /*
+        A phone on its side (750 x 342 and the like): the wordmark and the
+        headline smaller and the gaps tight, so the field and its button are on
+        the first screen.
+      */
+      @media (min-width: 640px) and (max-height: 460px) {
+        .wl-hero {
+          width: min(100%, 320px);
+          margin-bottom: 0;
+        }
+
+        /* The dark ground kept inside the screen, so it gives the page nothing to scroll. */
+        .wl-main::before {
+          inset: -24px -160px 0;
+        }
+
+        .wl-title {
+          max-width: 26em;
+          font-size: 26px;
+        }
+
+        .wl-title-chrome {
+          width: min(100%, 300px);
+        }
+
+        .wl-when {
+          margin-top: 6px;
+          font-size: 16px;
+          line-height: 22px;
+        }
+
+        .wl-act {
+          max-width: 560px;
+          margin-top: 14px;
+        }
+
+        .wl-done-title {
+          font-size: 22px;
+          line-height: 30px;
+        }
+
+        .wl-done-line {
+          font-size: 16px;
+          line-height: 23px;
+        }
+
+        .wl-foot {
+          padding-top: 6px;
+          padding-bottom: calc(var(--inset-bottom) + 8px);
+        }
+      }
+
+      @media (prefers-reduced-motion: reduce) {
+        .is-sweeping .wl-sweep {
+          animation: none;
+        }
+
+        .wl-glint {
+          display: none;
+        }
+
+        .wl-email,
+        .wl-join,
+        .wl-row {
+          transition: none;
+        }
+      }
+    </style>
+    <!-- waitlist:on:end -->
     <script type="module" src="/src/main.ts"></script>
   </head>
   <body>
+    <!-- waitlist:off:start -->
     <div id="lock" hidden>
       <form id="lock-form" autocomplete="off">
         <input
@@ -1277,6 +2101,289 @@
         });
       })();
     </script>
+    <!-- waitlist:off:end -->
+    <!-- waitlist:on:start -->
+    <!--
+      The waitlist, inert in a template until the script after it puts it in
+      the page: a device with the code (is-app) never gets it, so its pictures
+      never load there. data-entry is the app's script, which the build fills in.
+    -->
+    <template id="wl-page" data-entry="" data-app-title="%copy.appName%">
+      <div id="waitlist" data-form="%waitlist.form%" data-confirm="%waitlist.confirm%">
+        <div class="wl-sky" aria-hidden="true">
+          <div class="wl-art">
+            <img
+              class="wl-map"
+              src="%waitlist.art.map%"
+              srcset="%waitlist.art.mapSmall% 1000w, %waitlist.art.map% 1600w"
+              sizes="(min-width: 640px) max(1100px, 118vw), 190vw"
+              width="1600"
+              height="877"
+              alt=""
+              fetchpriority="high"
+            />
+            <img
+              class="wl-sweep"
+              fetchpriority="low"
+              data-sweep="%waitlist.art.sweep0%"
+              width="800"
+              height="439"
+              alt=""
+            />
+            <img
+              class="wl-sweep"
+              fetchpriority="low"
+              data-sweep="%waitlist.art.sweep1%"
+              width="800"
+              height="439"
+              alt=""
+            />
+            <img
+              class="wl-sweep"
+              fetchpriority="low"
+              data-sweep="%waitlist.art.sweep2%"
+              width="800"
+              height="439"
+              alt=""
+            />
+            <img
+              class="wl-sweep"
+              fetchpriority="low"
+              data-sweep="%waitlist.art.sweep3%"
+              width="800"
+              height="439"
+              alt=""
+            />
+          </div>
+        </div>
+        <main class="wl-main">
+          <p class="wl-hero">
+            <span class="sr-only">%copy.appName%</span>
+            <span class="wl-chrome" aria-hidden="true">
+              <picture>
+                <source
+                  media="(min-width: 640px)"
+                  srcset="%waitlist.art.chrome%"
+                  width="%waitlist.chrome.wordmark.width%"
+                  height="%waitlist.chrome.wordmark.height%"
+                />
+                <img
+                  src="%waitlist.art.chromeSmall%"
+                  width="%waitlist.chrome.wordmarkSmall.width%"
+                  height="%waitlist.chrome.wordmarkSmall.height%"
+                  alt=""
+                  fetchpriority="high"
+                />
+              </picture>
+              <span class="wl-glint"></span>
+            </span>
+          </p>
+          <!-- headline:text:start -->
+          <h1 class="wl-title">%copy.waitlist.headline%</h1>
+          <!-- headline:text:end -->
+          <!-- headline:chrome:start -->
+          <h1 class="wl-title wl-title-chrome">
+            <span class="sr-only">%copy.waitlist.headline%</span>
+            <picture aria-hidden="true">
+              <source
+                media="(min-width: 640px)"
+                srcset="%waitlist.art.chromeHeadline%"
+                width="%waitlist.chrome.headline.width%"
+                height="%waitlist.chrome.headline.height%"
+              />
+              <img
+                src="%waitlist.art.chromeHeadlineSmall%"
+                width="%waitlist.chrome.headlineSmall.width%"
+                height="%waitlist.chrome.headlineSmall.height%"
+                alt=""
+              />
+            </picture>
+          </h1>
+          <!-- headline:chrome:end -->
+          <p class="wl-when">%copy.waitlist.when%</p>
+          <div class="wl-act">
+            <form id="wl-form" class="wl-form" action="%waitlist.action%" method="post" novalidate>
+              <div class="wl-row">
+                <input
+                  id="wl-email"
+                  class="wl-email"
+                  name="email_address"
+                  type="email"
+                  autocomplete="email"
+                  autocapitalize="off"
+                  spellcheck="false"
+                  enterkeyhint="send"
+                  required
+                  placeholder="%copy.waitlist.form.email%"
+                  aria-label="%copy.waitlist.form.email%"
+                  aria-describedby="wl-error wl-terms"
+                />
+                <button class="wl-join" type="submit">
+                  <span class="wl-join-label">%copy.waitlist.form.join%</span>
+                  <span class="wl-joining">%copy.waitlist.form.joining%</span>
+                </button>
+              </div>
+              <!--
+                Right under the field, so it shows beside the field a phone keeps in
+                view above its keyboard, in room held for two lines.
+              -->
+              <p id="wl-error" class="wl-error" role="alert" hidden>
+                <span data-error="invalid" hidden>%copy.waitlist.errors.invalid%</span>
+                <span data-error="rejected" hidden>%copy.waitlist.errors.rejected%</span>
+                <span data-error="offline" hidden>%copy.waitlist.errors.offline%</span>
+                <span data-error="unknown" hidden>%copy.waitlist.errors.unknown%</span>
+                <span data-error="server" hidden>%copy.waitlist.errors.server%</span>
+              </p>
+              <p id="wl-terms" class="wl-terms">
+                <span data-confirm="off">%copy.waitlist.form.terms%</span>
+                <span data-confirm="on">%copy.waitlist.form.termsConfirm%</span>
+              </p>
+            </form>
+            <div class="wl-done" tabindex="-1" role="status" hidden>
+              <p class="wl-done-title" data-confirm="on">%copy.waitlist.done.titleConfirm%</p>
+              <p class="wl-done-title" data-confirm="off">%copy.waitlist.done.title%</p>
+              <p class="wl-done-line" data-confirm="on">%copy.waitlist.done.confirm%</p>
+              <p class="wl-done-line" data-confirm="off">%copy.waitlist.done.noConfirm%</p>
+            </div>
+            <div class="wl-check" tabindex="-1" role="status" hidden>
+              <p class="wl-done-title">%copy.waitlist.check.title%</p>
+              <p class="wl-done-line">%copy.waitlist.check.body%</p>
+              <!--
+              The button to Kit's check, put in the page with its address only when Kit
+              asks, in room held for it. It opens in the same tab, as in-app browsers expect.
+            -->
+              <div class="wl-check-slot">
+                <template class="wl-check-template">
+                  <a class="wl-join wl-check-link">%copy.waitlist.check.link%</a>
+                </template>
+              </div>
+            </div>
+            <!--
+              The access code, in the same place as the form: opening it, or a wrong
+              code, moves nothing on the page.
+            -->
+            <form id="code-form" class="wl-code" autocomplete="off" hidden>
+              <input
+                id="code-input"
+                type="password"
+                inputmode="numeric"
+                placeholder="%copy.waitlist.code.field%"
+                aria-label="%copy.waitlist.code.field%"
+              />
+              <p class="wl-code-wrong" role="alert" hidden>%copy.waitlist.code.wrong%</p>
+            </form>
+          </div>
+        </main>
+        <footer class="wl-foot">
+          <!-- Out of the form, so the privacy page is a tap away in every state. -->
+          <div class="wl-foot-links">
+            <a class="wl-quiet wl-privacy" href="privacy.html">%copy.waitlist.form.privacy%</a>
+            <button
+              class="wl-quiet wl-code-open"
+              type="button"
+              aria-expanded="false"
+              aria-controls="code-form"
+            >
+              %copy.waitlist.code.open%
+            </button>
+          </div>
+        </footer>
+      </div>
+    </template>
+    <script>
+      (function () {
+        var page = document.getElementById('wl-page');
+        if (!document.documentElement.classList.contains('is-app')) {
+          page.after(document.importNode(page.content, true));
+        }
+      })();
+    </script>
+    <script>
+      // Every word of the waitlist is in: show them once their font is ready (or after 1.5 s).
+      (function () {
+        var html = document.documentElement;
+        var show = function () {
+          html.classList.remove('wl-hold');
+        };
+        if (document.fonts && document.fonts.load) {
+          document.fonts.load("600 1em 'Geist Waitlist'").then(show, show);
+          setTimeout(show, 1500);
+        } else show();
+      })();
+    </script>
+    <!--
+      Without JavaScript the template above never comes in: this plain cut of
+      the waitlist does, its form posting the address to Kit itself. With
+      JavaScript on, a browser reads it as text and fetches nothing in it.
+    -->
+    <noscript>
+      <div id="waitlist" class="wl-static" data-confirm="%waitlist.confirm%">
+        <div class="wl-sky" aria-hidden="true">
+          <div class="wl-art">
+            <img
+              class="wl-map"
+              src="%waitlist.art.map%"
+              srcset="%waitlist.art.mapSmall% 1000w, %waitlist.art.map% 1600w"
+              sizes="(min-width: 640px) max(1100px, 118vw), 190vw"
+              width="1600"
+              height="877"
+              alt=""
+            />
+          </div>
+        </div>
+        <main class="wl-main">
+          <p class="wl-hero">
+            <span class="sr-only">%copy.appName%</span>
+            <span class="wl-chrome" aria-hidden="true">
+              <picture>
+                <source
+                  media="(min-width: 640px)"
+                  srcset="%waitlist.art.chrome%"
+                  width="%waitlist.chrome.wordmark.width%"
+                  height="%waitlist.chrome.wordmark.height%"
+                />
+                <img
+                  src="%waitlist.art.chromeSmall%"
+                  width="%waitlist.chrome.wordmarkSmall.width%"
+                  height="%waitlist.chrome.wordmarkSmall.height%"
+                  alt=""
+                />
+              </picture>
+            </span>
+          </p>
+          <h1 class="wl-title">%copy.waitlist.headline%</h1>
+          <p class="wl-when">%copy.waitlist.when%</p>
+          <div class="wl-act">
+            <form class="wl-form" action="%waitlist.action%" method="post" rel="noreferrer">
+              <div class="wl-row">
+                <input
+                  class="wl-email"
+                  name="email_address"
+                  type="email"
+                  autocomplete="email"
+                  autocapitalize="off"
+                  spellcheck="false"
+                  required
+                  placeholder="%copy.waitlist.form.email%"
+                  aria-label="%copy.waitlist.form.email%"
+                />
+                <button class="wl-join" type="submit">%copy.waitlist.form.join%</button>
+              </div>
+              <p class="wl-terms">
+                <span data-confirm="off">%copy.waitlist.form.terms%</span>
+                <span data-confirm="on">%copy.waitlist.form.termsConfirm%</span>
+              </p>
+            </form>
+          </div>
+        </main>
+        <footer class="wl-foot">
+          <div class="wl-foot-links">
+            <a class="wl-quiet wl-privacy" href="privacy.html">%copy.waitlist.form.privacy%</a>
+          </div>
+        </footer>
+      </div>
+    </noscript>
+    <!-- waitlist:on:end -->
     <div id="app">
       <!--
         The static shell. It paints before any script runs; main.ts swaps in the
@@ -1357,5 +2464,8 @@
         </button>
       </main>
     </div>
+    <!-- waitlist:on:start -->
+    <script data-waitlist-gate></script>
+    <!-- waitlist:on:end -->
   </body>
 </html>

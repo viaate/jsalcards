@@ -1,5 +1,7 @@
 package-lock.json
 dist/
+dist-waitlist/
+dist-waitlist-chrome/
 coverage/
 playwright-report/
 test-results/

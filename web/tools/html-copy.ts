@@ -47,3 +47,17 @@ export function htmlCopy(source: unknown): Plugin {
     },
   };
 }
+
+/**
+ * The tree pages fill their placeholders from: copy.ts's `copy`, with the
+ * waitlist's words (src/copy-waitlist.ts) under `waitlist`, so a page writes
+ * %copy.waitlist.headline%. The waitlist's words stay out of copy.ts, so a
+ * build without the waitlist ships none of them.
+ */
+export function pageCopy(copy: object, waitlistCopy: object | undefined): object {
+  if (waitlistCopy === undefined) return copy;
+  if (Object.hasOwn(copy, 'waitlist')) {
+    throw new Error('html-copy: copy.ts has its own "waitlist"; rename one of them');
+  }
+  return { ...copy, waitlist: waitlistCopy };
+}

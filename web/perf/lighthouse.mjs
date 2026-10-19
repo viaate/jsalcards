@@ -29,6 +29,17 @@
  * with a directory staged and schools lit, the live code can load after a run
  * has ended its trace. It is a step of the go-live check (S8 spec, S8-S).
  *
+ * --waitlist measures the waitlist build instead (tools/waitlist.ts: built
+ * with a made-up Kit form id into dist-waitlist/, report in
+ * perf/lighthouse-waitlist.json, full reports in perf/raw/waitlist/). Its
+ * gates: mobile Performance at 95 or more and the other categories at 90 or
+ * more; FCP and CLS as above; nothing asked of another site; and no script
+ * file at all, since the waitlist runs inline and the map app is not loaded
+ * behind it. --waitlist --chrome measures the waitlist with its headline in
+ * the wordmark's chrome lettering (VITE_WAITLIST_HEADLINE=chrome), into
+ * dist-waitlist-chrome/ and perf/lighthouse-waitlist-chrome.json, against the
+ * same gates. `npm run perf:waitlist` runs both; CI's perf job runs it.
+ *
  * WebGL runs wherever Chrome can run it. On a machine without a GPU that is
  * SwiftShader, a software renderer, which makes every map frame much slower
  * than on real hardware; the report records which renderer was used.
@@ -51,11 +62,20 @@ import desktopConfig from 'lighthouse/core/config/desktop-config.js';
 import prettier from 'prettier';
 
 const WEB = join(dirname(fileURLToPath(import.meta.url)), '..');
-const DIST = join(WEB, 'dist');
-const RAW_DIR = join(WEB, 'perf/raw');
+const WAITLIST = process.argv.includes('--waitlist');
+/** The waitlist's other look: its headline in chrome lettering. */
+const CHROME = WAITLIST && process.argv.includes('--chrome');
+const WAITLIST_NAME = CHROME ? 'waitlist-chrome' : 'waitlist';
+/** The Kit form id the waitlist build is made with; the page never sends a signup here. */
+const WAITLIST_FORM = '1234567';
+const OUT_DIR = WAITLIST ? `dist-${WAITLIST_NAME}` : 'dist';
+const DIST = join(WEB, OUT_DIR);
+const RAW_DIR = join(WEB, WAITLIST ? `perf/raw/${WAITLIST_NAME}` : 'perf/raw');
 const REPORT = process.argv.includes('--live-origin')
   ? join(RAW_DIR, 'lighthouse-live.json')
-  : join(WEB, 'perf/lighthouse.json');
+  : join(WEB, WAITLIST ? `perf/lighthouse-${WAITLIST_NAME}.json` : 'perf/lighthouse.json');
+/** Mobile Performance the waitlist must reach: the page phones come to from a video. */
+const MIN_WAITLIST_PERFORMANCE = 0.95;
 const PORT = Number(process.env.PERF_PORT ?? '5104');
 const RUNS = Number(process.env.PERF_RUNS ?? '3');
 const ORIGIN = `http://127.0.0.1:${String(PORT)}`;
@@ -122,9 +142,9 @@ function median(values) {
     : ((sorted[middle - 1] ?? NaN) + (sorted[middle] ?? NaN)) / 2;
 }
 
-/** @param {string} command @param {string[]} args */
-function run(command, args) {
-  const result = spawnSync(command, args, { cwd: WEB, stdio: 'inherit' });
+/** @param {string} command @param {string[]} args @param {NodeJS.ProcessEnv} [env] */
+function run(command, args, env = process.env) {
+  const result = spawnSync(command, args, { cwd: WEB, stdio: 'inherit', env });
   if (result.status !== 0) throw new Error(`${command} ${args.join(' ')} failed`);
 }
 
@@ -132,7 +152,17 @@ async function startPreview() {
   const vite = join(WEB, 'node_modules/vite/bin/vite.js');
   const server = spawn(
     process.execPath,
-    [vite, 'preview', '--host', '127.0.0.1', '--port', String(PORT), '--strictPort'],
+    [
+      vite,
+      'preview',
+      '--outDir',
+      OUT_DIR,
+      '--host',
+      '127.0.0.1',
+      '--port',
+      String(PORT),
+      '--strictPort',
+    ],
     { cwd: WEB, stdio: ['ignore', 'pipe', 'pipe'] },
   );
   let output = '';
@@ -410,7 +440,19 @@ async function main() {
   }
   if (!process.argv.includes('--skip-build')) {
     run(process.execPath, ['scripts/build-geo.mjs', '--check']);
-    run('npm', ['run', 'build']);
+    if (WAITLIST) {
+      run(
+        process.execPath,
+        [join(WEB, 'node_modules/vite/bin/vite.js'), 'build', '--outDir', OUT_DIR, '--emptyOutDir'],
+        {
+          ...process.env,
+          VITE_WAITLIST_KIT_FORM: WAITLIST_FORM,
+          VITE_WAITLIST_HEADLINE: CHROME ? 'chrome' : 'text',
+        },
+      );
+    } else {
+      run('npm', ['run', 'build']);
+    }
   }
   await mkdir(RAW_DIR, { recursive: true });
 
@@ -465,11 +507,15 @@ async function main() {
   ])) {
     for (const id of CATEGORIES) {
       const value = summary.scores[id] ?? 0;
+      const min =
+        WAITLIST && preset === 'mobile' && id === 'performance'
+          ? MIN_WAITLIST_PERFORMANCE
+          : MIN_SCORE;
       gates.push({
         gate: `${preset} ${id}`,
         value,
-        limit: '>= 90',
-        pass: value >= MIN_SCORE * 100,
+        limit: `>= ${String(Math.round(min * 100))}`,
+        pass: value >= min * 100,
       });
     }
   }
@@ -511,19 +557,29 @@ async function main() {
       pass: reads.every((count) => count === 1),
     });
   }
-  const lazy = await lazyScripts([...new Set(allRuns.flatMap((r) => r.scripts))]);
-  gates.push({
-    gate: "MapLibre's scripts, gzipped",
-    value: lazy.maplibreGzipBytes,
-    limit: `<= ${String(MAX_MAPLIBRE_GZIP_BYTES)} B`,
-    pass: lazy.maplibreFiles > 0 && lazy.maplibreGzipBytes <= MAX_MAPLIBRE_GZIP_BYTES,
-  });
-  gates.push({
-    gate: "copies of MapLibre's shared module downloaded",
-    value: lazy.sharedModuleCopies,
-    limit: '1',
-    pass: lazy.sharedModuleCopies === 1,
-  });
+  const scripts = [...new Set(allRuns.flatMap((r) => r.scripts))];
+  const lazy = await lazyScripts(scripts);
+  if (WAITLIST) {
+    gates.push({
+      gate: 'script files loaded behind the waitlist',
+      value: scripts.length,
+      limit: '0',
+      pass: scripts.length === 0,
+    });
+  } else {
+    gates.push({
+      gate: "MapLibre's scripts, gzipped",
+      value: lazy.maplibreGzipBytes,
+      limit: `<= ${String(MAX_MAPLIBRE_GZIP_BYTES)} B`,
+      pass: lazy.maplibreFiles > 0 && lazy.maplibreGzipBytes <= MAX_MAPLIBRE_GZIP_BYTES,
+    });
+    gates.push({
+      gate: "copies of MapLibre's shared module downloaded",
+      value: lazy.sharedModuleCopies,
+      limit: '1',
+      pass: lazy.sharedModuleCopies === 1,
+    });
+  }
 
   const pass = gates.every((g) => g.pass);
   const report = {

@@ -93,7 +93,7 @@ jobs:
   perf:
     name: perf
     runs-on: ubuntu-24.04
-    timeout-minutes: 30
+    timeout-minutes: 45
     defaults:
       run:
         working-directory: web
@@ -112,6 +112,9 @@ jobs:
       # Lighthouse drives the Chromium Playwright installs.
       - run: npx playwright install --with-deps chromium
       - run: npm run perf
+      # The waitlist build (tools/waitlist.ts) in both its looks: phone Performance 95 or more,
+      # CLS 0, no script file and nothing asked of another site before a signup.
+      - run: npm run perf:waitlist
 
       - if: always()
         uses: actions/upload-artifact@v7
@@ -119,6 +122,8 @@ jobs:
           name: lighthouse
           path: |
             web/perf/lighthouse.json
+            web/perf/lighthouse-waitlist.json
+            web/perf/lighthouse-waitlist-chrome.json
             web/perf/raw/
           if-no-files-found: ignore
           retention-days: 14

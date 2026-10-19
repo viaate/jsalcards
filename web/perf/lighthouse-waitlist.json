@@ -1,0 +1,191 @@
+{
+  "generatedAt": "2026-10-19T16:19:37.127Z",
+  "url": "http://127.0.0.1:5193/",
+  "environment": {
+    "lighthouse": "13.5.0",
+    "chrome": "Chromium 141.0.7390.37",
+    "chromeFlags": [
+      "--headless=new",
+      "--no-sandbox",
+      "--no-first-run",
+      "--disable-extensions",
+      "--enable-unsafe-swiftshader"
+    ],
+    "webglRenderer": "ANGLE (Google, Vulkan 1.3.0 (SwiftShader Device (Subzero) (0x0000C0DE)), SwiftShader driver)",
+    "cpus": 4,
+    "cpuModel": "Intel(R) Xeon(R) Processor @ 2.80GHz",
+    "benchmarkIndex": 1408,
+    "runsPerPreset": 3
+  },
+  "presets": {
+    "mobile": {
+      "throttling": "simulated slow 4G, 4x CPU",
+      "median": {
+        "scores": { "performance": 99, "accessibility": 100, "best-practices": 100, "seo": 100 },
+        "fcpMs": 900,
+        "lcpMs": 2112,
+        "speedIndexMs": 900,
+        "tbtMs": 0,
+        "cls": 0
+      },
+      "runs": [
+        {
+          "scores": { "performance": 99, "accessibility": 100, "best-practices": 100, "seo": 100 },
+          "fcpMs": 900,
+          "lcpMs": 2116,
+          "speedIndexMs": 900,
+          "tbtMs": 1,
+          "cls": 0,
+          "consoleErrors": [],
+          "foreignRequests": [],
+          "requests": 12,
+          "scripts": [],
+          "benchmarkIndex": 1408,
+          "warnings": []
+        },
+        {
+          "scores": { "performance": 99, "accessibility": 100, "best-practices": 100, "seo": 100 },
+          "fcpMs": 919,
+          "lcpMs": 2112,
+          "speedIndexMs": 919,
+          "tbtMs": 0,
+          "cls": 0,
+          "consoleErrors": [],
+          "foreignRequests": [],
+          "requests": 12,
+          "scripts": [],
+          "benchmarkIndex": 1380.5,
+          "warnings": []
+        },
+        {
+          "scores": { "performance": 99, "accessibility": 100, "best-practices": 100, "seo": 100 },
+          "fcpMs": 827,
+          "lcpMs": 2111,
+          "speedIndexMs": 827,
+          "tbtMs": 0,
+          "cls": 0,
+          "consoleErrors": [],
+          "foreignRequests": [],
+          "requests": 12,
+          "scripts": [],
+          "benchmarkIndex": 1409,
+          "warnings": []
+        }
+      ]
+    },
+    "desktop": {
+      "throttling": "simulated desktop dense 4G",
+      "median": {
+        "scores": { "performance": 100, "accessibility": 100, "best-practices": 100, "seo": 100 },
+        "fcpMs": 235,
+        "lcpMs": 490,
+        "speedIndexMs": 296,
+        "tbtMs": 0,
+        "cls": 0
+      },
+      "runs": [
+        {
+          "scores": { "performance": 100, "accessibility": 100, "best-practices": 100, "seo": 100 },
+          "fcpMs": 247,
+          "lcpMs": 497,
+          "speedIndexMs": 305,
+          "tbtMs": 0,
+          "cls": 0,
+          "consoleErrors": [],
+          "foreignRequests": [],
+          "requests": 12,
+          "scripts": [],
+          "benchmarkIndex": 1342,
+          "warnings": []
+        },
+        {
+          "scores": { "performance": 100, "accessibility": 100, "best-practices": 100, "seo": 100 },
+          "fcpMs": 235,
+          "lcpMs": 490,
+          "speedIndexMs": 279,
+          "tbtMs": 0,
+          "cls": 0,
+          "consoleErrors": [],
+          "foreignRequests": [],
+          "requests": 12,
+          "scripts": [],
+          "benchmarkIndex": 1467,
+          "warnings": []
+        },
+        {
+          "scores": { "performance": 100, "accessibility": 100, "best-practices": 100, "seo": 100 },
+          "fcpMs": 220,
+          "lcpMs": 490,
+          "speedIndexMs": 296,
+          "tbtMs": 0,
+          "cls": 0,
+          "consoleErrors": [],
+          "foreignRequests": [],
+          "requests": 12,
+          "scripts": [],
+          "benchmarkIndex": 1411.5,
+          "warnings": []
+        }
+      ]
+    },
+    "devtools4g": {
+      "throttling": "applied (devtools) slow 4G, 4x CPU",
+      "runs": [
+        {
+          "scores": { "performance": 99, "accessibility": 100, "best-practices": 100, "seo": 100 },
+          "fcpMs": 999,
+          "lcpMs": 2078,
+          "speedIndexMs": 1977,
+          "tbtMs": 0,
+          "cls": 0,
+          "consoleErrors": [],
+          "foreignRequests": [],
+          "requests": 12,
+          "scripts": [],
+          "benchmarkIndex": 1283.5,
+          "warnings": []
+        }
+      ]
+    }
+  },
+  "consoleErrors": [],
+  "foreignRequests": [],
+  "lazyScripts": {
+    "files": [],
+    "maplibreFiles": 0,
+    "maplibreGzipBytes": 0,
+    "sharedModuleCopies": 0
+  },
+  "gates": [
+    { "gate": "mobile performance", "value": 99, "limit": ">= 95", "pass": true },
+    { "gate": "mobile accessibility", "value": 100, "limit": ">= 90", "pass": true },
+    { "gate": "mobile best-practices", "value": 100, "limit": ">= 90", "pass": true },
+    { "gate": "mobile seo", "value": 100, "limit": ">= 90", "pass": true },
+    { "gate": "desktop performance", "value": 100, "limit": ">= 90", "pass": true },
+    { "gate": "desktop accessibility", "value": 100, "limit": ">= 90", "pass": true },
+    { "gate": "desktop best-practices", "value": 100, "limit": ">= 90", "pass": true },
+    { "gate": "desktop seo", "value": 100, "limit": ">= 90", "pass": true },
+    {
+      "gate": "mobile FCP (simulated slow 4G, median)",
+      "value": 900,
+      "limit": "< 1500 ms",
+      "pass": true
+    },
+    {
+      "gate": "mobile FCP (applied devtools 4G)",
+      "value": 999,
+      "limit": "< 1500 ms",
+      "pass": true
+    },
+    { "gate": "CLS, every run", "value": 0, "limit": "0", "pass": true },
+    { "gate": "console errors, every run", "value": 0, "limit": "0", "pass": true },
+    {
+      "gate": "requests leaving the site at the initial view",
+      "value": 0,
+      "limit": "0",
+      "pass": true
+    },
+    { "gate": "script files loaded behind the waitlist", "value": 0, "limit": "0", "pass": true }
+  ],
+  "pass": true
+}

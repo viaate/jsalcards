@@ -208,6 +208,16 @@ jobs:
           # (docs: S8 live closings). Empty until the owner turns live closings on: the page then
           # reads its own data/.
           VITE_SNOWLIGHT_LIVE_ROOT: ${{ vars.SNOWLIGHT_LIVE_ROOT }}
+          # The waitlist (web/tools/waitlist.ts): the front page is the waitlist once the
+          # repository variable WAITLIST_KIT_FORM holds the Kit form's id. Unset, the site builds
+          # as before. WAITLIST_CONFIRM must match the Kit form's double opt-in: unset while it is
+          # on (Kit's default), off only when the form sends no confirmation email.
+          # WAITLIST_HEADLINE=chrome sets the headline in the wordmark's chrome lettering.
+          # WAITLIST_CONTACT, an email address, puts a way to ask for removal on the privacy page.
+          VITE_WAITLIST_KIT_FORM: ${{ vars.WAITLIST_KIT_FORM }}
+          VITE_WAITLIST_CONFIRM: ${{ vars.WAITLIST_CONFIRM }}
+          VITE_WAITLIST_HEADLINE: ${{ vars.WAITLIST_HEADLINE }}
+          VITE_WAITLIST_CONTACT: ${{ vars.WAITLIST_CONTACT }}
       # The build carries the staged directory, its edition, school tiles and search index, or it is not published.
       - if: steps.pages.outcome == 'success'
         working-directory: web

@@ -1,0 +1,36 @@
+{
+  "size": 240,
+  "font": "Inter 900 (@fontsource/inter 5.1.0)",
+  "wordmark": {
+    "text": "SNOWLIGHT",
+    "lines": ["SNOWLIGHT"],
+    "large": {
+      "file": "chrome-wordmark.webp",
+      "width": 1600,
+      "height": 371
+    },
+    "small": {
+      "file": "chrome-wordmark-small.webp",
+      "width": 1000,
+      "height": 232
+    }
+  },
+  "headline": {
+    "text": "Every school closing in the US, live on one map.",
+    "lines": ["Every school closing in", "the US, live on one map."],
+    "large": {
+      "file": "chrome-headline.webp",
+      "width": 1800,
+      "height": 399
+    }
+  },
+  "headline-small": {
+    "text": "Every school closing in the US, live on one map.",
+    "lines": ["Every school", "closing in the US,", "live on one map."],
+    "large": {
+      "file": "chrome-headline-small.webp",
+      "width": 960,
+      "height": 413
+    }
+  }
+}

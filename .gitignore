@@ -4,6 +4,8 @@ node_modules/
 
 # Build output
 dist/
+web/dist-waitlist/
+web/dist-waitlist-chrome/
 *.egg-info/
 *.tsbuildinfo
 

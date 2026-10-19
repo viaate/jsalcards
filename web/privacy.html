@@ -1,0 +1,184 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <meta name="color-scheme" content="dark" />
+    <meta name="theme-color" content="#000000" />
+    <title>%copy.waitlist.privacy.title%</title>
+    <meta name="description" content="%copy.waitlist.privacy.intro%" />
+    <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+    <!--
+      The waitlist's privacy page (tools/waitlist.ts builds it with the waitlist
+      on). Plain words, from src/copy-waitlist.ts; no script.
+    -->
+    <style>
+      @font-face {
+        font-family: 'Geist Variable';
+        font-style: normal;
+        font-display: swap;
+        font-weight: 100 900;
+        src: url('/node_modules/@fontsource-variable/geist/files/geist-latin-wght-normal.woff2')
+          format('woff2-variations');
+      }
+
+      :root {
+        color-scheme: dark;
+        --bg: #000;
+        --text-1: #f5f5f5;
+        --text-2: #a3a3a3;
+        --text-3: #6b6b6b;
+        --border-1: #1f1f1f;
+        --accent: #7fd4ff;
+      }
+
+      html,
+      body {
+        margin: 0;
+        background: var(--bg);
+        color: var(--text-1);
+        font-family: 'Geist Variable', system-ui, sans-serif;
+        -webkit-font-smoothing: antialiased;
+      }
+
+      .page {
+        max-width: 640px;
+        margin: 0 auto;
+        padding: calc(env(safe-area-inset-top, 0px) + 24px) 20px
+          calc(env(safe-area-inset-bottom, 0px) + 64px);
+      }
+
+      .back {
+        display: inline-flex;
+        align-items: center;
+        gap: 10px;
+        color: var(--text-1);
+        font-size: 17px;
+        font-weight: 600;
+        line-height: 28px;
+        letter-spacing: -0.025em;
+        text-decoration: none;
+      }
+
+      .back::before {
+        content: '';
+        width: 12px;
+        height: 12px;
+        border-radius: 50%;
+        background: radial-gradient(closest-side, #f4fbff 18%, var(--accent) 45%, transparent);
+      }
+
+      .back:hover {
+        color: #fff;
+      }
+
+      a:focus-visible {
+        outline: 2px solid var(--accent);
+        outline-offset: 3px;
+      }
+
+      h1 {
+        margin: 56px 0 0;
+        font-size: 40px;
+        font-weight: 600;
+        line-height: 1.1;
+        letter-spacing: -0.035em;
+      }
+
+      .intro {
+        margin: 16px 0 0;
+        color: var(--text-2);
+        font-size: 18px;
+        line-height: 28px;
+      }
+
+      section {
+        margin-top: 36px;
+        padding-top: 24px;
+        border-top: 1px solid var(--border-1);
+      }
+
+      h2 {
+        margin: 0;
+        font-size: 17px;
+        font-weight: 600;
+        line-height: 26px;
+        letter-spacing: -0.01em;
+      }
+
+      p {
+        margin: 8px 0 0;
+        color: var(--text-2);
+        font-size: 16px;
+        line-height: 26px;
+      }
+
+      /* The lines for a list with or without a confirmation email (VITE_WAITLIST_CONFIRM). */
+      body[data-confirm='on'] [data-confirm='off'],
+      body[data-confirm='off'] [data-confirm='on'] {
+        display: none;
+      }
+
+      .link {
+        color: var(--text-1);
+        text-decoration: underline;
+        text-decoration-color: rgb(163 163 163 / 0.5);
+        text-underline-offset: 3px;
+      }
+
+      @media (min-width: 640px) {
+        .page {
+          padding-top: 40px;
+        }
+
+        h1 {
+          font-size: 52px;
+        }
+      }
+    </style>
+  </head>
+  <body data-confirm="%waitlist.confirm%">
+    <div class="page">
+      <a class="back" href="./">%copy.waitlist.privacy.back%</a>
+      <main>
+        <h1>%copy.waitlist.privacy.title%</h1>
+        <p class="intro">%copy.waitlist.privacy.intro%</p>
+        <section>
+          <h2>%copy.waitlist.privacy.sections.what.heading%</h2>
+          <p>%copy.waitlist.privacy.sections.what.body%</p>
+        </section>
+        <section>
+          <h2>%copy.waitlist.privacy.sections.why.heading%</h2>
+          <p data-confirm="off">%copy.waitlist.privacy.sections.why.body%</p>
+          <p data-confirm="on">%copy.waitlist.privacy.sections.why.bodyConfirm%</p>
+        </section>
+        <section>
+          <h2>%copy.waitlist.privacy.sections.who.heading%</h2>
+          <p>%copy.waitlist.privacy.sections.who.body%</p>
+          <p>
+            <a class="link" href="https://kit.com/privacy" rel="noopener"
+              >%copy.waitlist.privacy.sections.who.link%</a
+            >
+          </p>
+        </section>
+        <section>
+          <h2>%copy.waitlist.privacy.sections.age.heading%</h2>
+          <p>%copy.waitlist.privacy.sections.age.body%</p>
+        </section>
+        <section>
+          <h2>%copy.waitlist.privacy.sections.remove.heading%</h2>
+          <p data-confirm="off">%copy.waitlist.privacy.sections.remove.body%</p>
+          <p data-confirm="on">%copy.waitlist.privacy.sections.remove.bodyConfirm%</p>
+          <!-- contact:on:start -->
+          <p>
+            %copy.waitlist.privacy.sections.remove.contact%
+            <a class="link" href="mailto:%waitlist.contact%"
+              >%copy.waitlist.privacy.sections.remove.contactLink%</a
+            >
+          </p>
+          <!-- contact:on:end -->
+        </section>
+      </main>
+    </div>
+  </body>
+</html>

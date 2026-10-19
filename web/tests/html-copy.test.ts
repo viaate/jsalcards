@@ -1,8 +1,10 @@
 import { describe, expect, it } from 'vitest';
 
 import { copy } from '../src/copy';
-import { escapeHtml, renderHtmlCopy } from '../tools/html-copy';
+import { waitlistCopy } from '../src/copy-waitlist';
+import { escapeHtml, pageCopy, renderHtmlCopy } from '../tools/html-copy';
 import indexHtml from '../index.html?raw';
+import privacyHtml from '../privacy.html?raw';
 
 describe('renderHtmlCopy', () => {
   it('fills placeholders from the copy object', () => {
@@ -24,10 +26,31 @@ describe('renderHtmlCopy', () => {
   });
 
   it('leaves index.html with no unfilled placeholders and no strings of its own', () => {
-    const rendered = renderHtmlCopy(indexHtml, copy);
+    const rendered = renderHtmlCopy(indexHtml, pageCopy(copy, waitlistCopy));
     expect(rendered).not.toMatch(/%copy\./);
     expect(rendered).toContain(`<title>${copy.appName}</title>`);
     expect(rendered).toContain(`content="${copy.meta.description}"`);
     expect(indexHtml).toMatch(/<title>%copy\.appName%<\/title>/);
+  });
+
+  it('fills the waitlist and its privacy page from the waitlist words', () => {
+    const tree = pageCopy(copy, waitlistCopy);
+    expect(renderHtmlCopy(indexHtml, tree)).toContain(`>${waitlistCopy.headline}</h1>`);
+    const privacy = renderHtmlCopy(privacyHtml, tree);
+    expect(privacy).not.toMatch(/%copy\./);
+    expect(privacy).toContain(`<title>${waitlistCopy.privacy.title}</title>`);
+  });
+});
+
+describe('pageCopy', () => {
+  it('puts the waitlist words beside copy.ts and leaves copy.ts alone without them', () => {
+    expect(pageCopy(copy, undefined)).toBe(copy);
+    expect(renderHtmlCopy('%copy.waitlist.when%', pageCopy(copy, waitlistCopy))).toBe(
+      waitlistCopy.when,
+    );
+  });
+
+  it('refuses a copy tree that already has its own waitlist', () => {
+    expect(() => pageCopy({ waitlist: 'x' }, waitlistCopy)).toThrow(/own "waitlist"/);
   });
 });

@@ -8,6 +8,8 @@ import svelteConfig from './svelte.config.js';
 export default defineConfig(
   globalIgnores([
     'dist/',
+    'dist-waitlist/',
+    'dist-waitlist-chrome/',
     'coverage/',
     'playwright-report/',
     'test-results/',

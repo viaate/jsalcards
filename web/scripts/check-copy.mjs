@@ -68,7 +68,7 @@ import path from 'node:path';
 import process from 'node:process';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 
-import { renderHtmlCopy } from '../tools/html-copy.ts';
+import { pageCopy, renderHtmlCopy } from '../tools/html-copy.ts';
 
 const HERE = path.dirname(fileURLToPath(import.meta.url));
 const WEB_ROOT = path.resolve(HERE, '..');
@@ -86,6 +86,7 @@ export const COPY_MODULES = [
   'src/copy-format.ts',
   'src/copy-chance.ts',
   'src/copy-area.ts',
+  'src/copy-waitlist.ts',
 ];
 
 // House style --------------------------------------------------------------------------
@@ -145,6 +146,8 @@ export const BANNED = [
 export const PROPER_NOUNS = new Set([
   'Snowlight',
   'US',
+  // The email service that keeps the waitlist (src/copy-waitlist.ts).
+  'Kit',
   'ZIP',
   'AM',
   'PM',
@@ -1323,7 +1326,7 @@ const SCRIPT_CLOSE = '</script>';
 
 /**
  * @typedef {(source: string, options: { modern: true, filename: string }) => unknown} SvelteParse
- * @typedef {{ parse: (html: string, options: { sourceCodeLocationInfo: boolean }) => unknown, parseFragment: (html: string) => unknown }} Parse5
+ * @typedef {{ parse: (html: string, options: { sourceCodeLocationInfo: boolean, scriptingEnabled: boolean }) => unknown, parseFragment: (html: string) => unknown }} Parse5
  * @typedef {{ file: string, abs: string, kind: ModuleKind, text: string, locate: (offset: number) => { line: number, column: number } }} ModuleSpec
  */
 
@@ -5512,6 +5515,13 @@ function decodeCss(text) {
   });
 }
 
+/**
+ * How every page is parsed: with locations, and as a browser without scripting
+ * reads it, so a <noscript> block's words are markup the lint reads, as a
+ * visitor without JavaScript sees them, not one opaque run of text.
+ */
+const PAGE_PARSE = Object.freeze({ sourceCodeLocationInfo: true, scriptingEnabled: false });
+
 /** Elements whose content never shows. A <template>'s content is meant to be shown, so it counts. */
 const HIDDEN_ELEMENTS = new Set(['script', 'style']);
 /** JSON-LD fields a search result can show. */
@@ -5686,6 +5696,8 @@ function htmlCode(tree) {
 // index.html and manifests ---------------------------------------------------------------------
 
 const PLACEHOLDER = /%copy\.[A-Za-z0-9_.]+%/gu;
+/** The pages at the web root that Vite builds, filled in from the copy modules. */
+export const PAGES = ['index.html', 'privacy.html'];
 const MANIFEST_FILE = /(?:\.webmanifest|(?:^|[/\\])manifest\.json)$/u;
 
 /**
@@ -5718,7 +5730,7 @@ export async function scanIndexHtml(html, copyTree, file, cssShown = new Set()) 
   const { parse } = await loadParse5();
   /** @type {Finding[]} */
   const findings = [];
-  const tree = parse(html, { sourceCodeLocationInfo: true });
+  const tree = parse(html, PAGE_PARSE);
   const { styles } = htmlCode(tree);
   const shownAttributes = new Set([
     ...cssShown,
@@ -5770,7 +5782,7 @@ export async function scanIndexHtml(html, copyTree, file, cssShown = new Set()) 
     return findings;
   }
   // Filling placeholders never adds or removes a visible string, so the two lists line up.
-  const shown = htmlStrings(parse(rendered, { sourceCodeLocationInfo: true }), shownAttributes);
+  const shown = htmlStrings(parse(rendered, PAGE_PARSE), shownAttributes);
   shown.forEach(({ text, line, column, where }, index) => {
     const origin = raw[index] ?? { line, column };
     for (const problem of problems(text)) {
@@ -5968,7 +5980,11 @@ export async function lintProject({ root: given = WEB_ROOT, dist } = {}) {
   let copyTree = {};
   if (existsSync(project.copyFile)) {
     await project.loadCopy();
-    copyTree = project.copyRuntime?.exports.copy;
+    // Pages fill placeholders from copy.ts's tree, with the waitlist's words under `waitlist`.
+    const exported = project.copyRuntime?.exports;
+    copyTree = isFields(exported?.copy)
+      ? pageCopy(exported.copy, isFields(exported.waitlistCopy) ? exported.waitlistCopy : undefined)
+      : exported?.copy;
     for (const [file, name, owner] of project.copyRuntime?.clashes ?? []) {
       findings.push({
         file: relative(file),
@@ -5977,7 +5993,8 @@ export async function lintProject({ root: given = WEB_ROOT, dist } = {}) {
         message: `export ${name} is also an export of ${relative(owner)}; rename one of them`,
       });
     }
-    for (const [key, text] of copyLeaves(copyTree)) {
+    // copy.ts's own strings; the waitlist's are checked below as the module that holds them.
+    for (const [key, text] of copyLeaves(exported?.copy)) {
       scanned.strings += 1;
       for (const problem of problems(text)) {
         findings.push({
@@ -6039,23 +6056,23 @@ export async function lintProject({ root: given = WEB_ROOT, dist } = {}) {
   const viteConfig = path.join(root, 'vite.config.ts');
   if (existsSync(viteConfig)) project.scan(viteConfig, 'script');
 
-  // index.html: placeholders, filled-in text, CSS, and inline scripts read with src/.
-  const indexFile = path.join(root, 'index.html');
-  if (existsSync(indexFile)) {
+  // The pages Vite builds (PAGES): placeholders, filled-in text, CSS, and inline scripts read
+  // with src/.
+  for (const page of PAGES) {
+    const indexFile = path.join(root, page);
+    if (!existsSync(indexFile)) continue;
     scanned.html += 1;
     const html = await readFile(indexFile, 'utf8');
-    const { scripts, styles } = htmlCode(
-      project.html.parse(html, { sourceCodeLocationInfo: true }),
-    );
+    const { scripts, styles } = htmlCode(project.html.parse(html, PAGE_PARSE));
     // The page's own CSS styles every component too.
     for (const style of styles) {
       for (const attribute of cssAttributes(style.text)) project.cssAttributes.add(attribute);
     }
-    findings.push(...(await scanIndexHtml(html, copyTree, 'index.html', project.cssAttributes)));
+    findings.push(...(await scanIndexHtml(html, copyTree, page, project.cssAttributes)));
     const at = locator(html);
     for (const { text, offset } of scripts) {
       project.scanEmbedded({
-        file: 'index.html',
+        file: page,
         abs: indexFile,
         kind: 'script',
         text,
@@ -6081,9 +6098,7 @@ export async function lintProject({ root: given = WEB_ROOT, dist } = {}) {
         findings.push(...scanManifest(await readFile(file, 'utf8'), name, copyTree));
       } else if (file.endsWith('.html')) {
         scanned.html += 1;
-        const tree = project.html.parse(await readFile(file, 'utf8'), {
-          sourceCodeLocationInfo: true,
-        });
+        const tree = project.html.parse(await readFile(file, 'utf8'), PAGE_PARSE);
         for (const { text, line, column, where } of htmlStrings(tree, project.cssAttributes)) {
           for (const problem of problems(text)) {
             findings.push({
