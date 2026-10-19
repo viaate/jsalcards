@@ -217,7 +217,9 @@ jobs:
           # The owner turned the waitlist on (Oct 19) with Kit form 10065423, a public id. A repository
           # variable WAITLIST_KIT_FORM still overrides it; removing this default turns the waitlist off.
           VITE_WAITLIST_KIT_FORM: ${{ vars.WAITLIST_KIT_FORM || '10065423' }}
-          VITE_WAITLIST_CONFIRM: ${{ vars.WAITLIST_CONFIRM }}
+          # The owner turned the confirmation email off (Oct 19: Kit auto-confirms new subscribers),
+          # so the page says the address is on the list. A repository variable still overrides it.
+          VITE_WAITLIST_CONFIRM: ${{ vars.WAITLIST_CONFIRM || 'off' }}
           VITE_WAITLIST_HEADLINE: ${{ vars.WAITLIST_HEADLINE }}
           VITE_WAITLIST_CONTACT: ${{ vars.WAITLIST_CONTACT }}
       # The build carries the staged directory, its edition, school tiles and search index, or it is not published.
