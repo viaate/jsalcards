@@ -12,6 +12,9 @@
  * chances are made up for this test and live only in the temporary folders
  * while it runs. The second build ships no predictions, as the site does today.
  *
+ * The wordmark's way back to the opening view is tested here too: this build
+ * has a school's panel, a ZIP code's area and search to go back from.
+ *
  * Runs once, under the desktop project; tests set their own viewports. The
  * calendar is fixed alone (as app.spec.ts fixDate does): a faked clock would
  * stretch the map's flights by the frames it draws.
@@ -27,6 +30,8 @@ import { devices, expect, test } from '@playwright/test';
 import type { Browser, BrowserContextOptions, Page } from '@playwright/test';
 import { build, preview } from 'vite';
 import type { PreviewServer } from 'vite';
+
+import { copy } from '../src/copy';
 
 const WEB = fileURLToPath(new URL('..', import.meta.url));
 const GPU_DRIVER_NOISE =
@@ -914,4 +919,226 @@ test('a link to a ZIP code opens its area and takes in its schools', async ({ br
   await expect.poll(() => new URL(page.url()).searchParams.get('at')).not.toBeNull();
   expect(problems).toEqual([]);
   await context.close();
+});
+
+/** A school of the fixture in 64130, for a link to its panel. */
+const HOGAN = '290001403222';
+
+interface View {
+  lat: number;
+  lon: number;
+  zoom: number;
+}
+
+/** Where the map is looking. */
+async function mapView(page: Page): Promise<View> {
+  return page.evaluate(() => {
+    const map = window.snowlightMap;
+    if (map === undefined) throw new Error('no map');
+    const center = map.getCenter();
+    return { lat: center.lat, lon: center.lng, zoom: map.getZoom() };
+  });
+}
+
+/** The view a first visit opens on with this screen, once the map is at rest. */
+async function openingView(browser: Browser, options: BrowserContextOptions): Promise<View> {
+  const { context, page } = await visit(browser, calm, options);
+  await settleMap(page);
+  const view = await mapView(page);
+  await context.close();
+  return view;
+}
+
+/** Counts the map's moves from here on, and the zoom of each frame of them. */
+async function recordMoves(page: Page): Promise<void> {
+  await page.evaluate(() => {
+    const map = window.snowlightMap;
+    if (map === undefined) throw new Error('no map');
+    const record = { starts: 0, zooms: [] as number[] };
+    (window as unknown as { moves: typeof record }).moves = record;
+    map.on('movestart', () => {
+      record.starts += 1;
+    });
+    map.on('move', () => {
+      record.zooms.push(map.getZoom());
+    });
+  });
+}
+
+async function moves(page: Page): Promise<{ starts: number; zooms: number[] }> {
+  return page.evaluate(
+    () => (window as unknown as { moves: { starts: number; zooms: number[] } }).moves,
+  );
+}
+
+/** The map at the opening view, at rest, nothing open, the field empty and the address bare. */
+async function expectOpening(page: Page, opening: View): Promise<void> {
+  await expect(panelOf(page)).toHaveCount(0);
+  await expect(page.locator('input.search-input')).toHaveValue('');
+  await expect(page.getByRole('listbox')).toHaveCount(0);
+  await expect(page.locator('.menu')).toHaveCount(0);
+  await expect.poll(() => new URL(page.url()).search, { timeout: 10_000 }).toBe('');
+  await page.waitForFunction(() => window.snowlightMap?.isMoving() === false, null, {
+    timeout: 30_000,
+  });
+  const view = await mapView(page);
+  expect(Math.abs(view.zoom - opening.zoom)).toBeLessThan(0.01);
+  expect(Math.abs(view.lat - opening.lat)).toBeLessThan(0.01);
+  expect(Math.abs(view.lon - opening.lon)).toBeLessThan(0.01);
+  // Nothing written over it once it is there.
+  await page.waitForTimeout(800);
+  expect(new URL(page.url()).search).toBe('');
+}
+
+const wordmarkOf = (page: Page) => page.getByRole('button', { name: copy.home.label, exact: true });
+
+test.describe('the wordmark', () => {
+  test('from a school, glides out to the opening view in one leg, everything closed; Back returns to the school', async ({
+    browser,
+  }) => {
+    const opening = await openingView(browser, DESKTOP);
+    const { context, page, problems } = await visit(browser, calm, DESKTOP, `?school=${HOGAN}`);
+    await expect(panelOf(page)).toBeVisible();
+    await settleMap(page);
+    const school = await mapView(page);
+    await recordMoves(page);
+    const entries = await page.evaluate(() => history.length);
+    await wordmarkOf(page).click();
+    await expectOpening(page, opening);
+    // One leg, out all the way: never a stop, never back in.
+    const { starts, zooms } = await moves(page);
+    expect(starts).toBe(1);
+    expect(zooms.length).toBeGreaterThan(2);
+    for (let i = 1; i < zooms.length; i++) {
+      expect(zooms[i]).toBeLessThanOrEqual((zooms[i - 1] ?? Infinity) + 1e-6);
+    }
+    expect(await page.evaluate(() => history.length)).toBe(entries + 1);
+    // Back: the school again, where it was.
+    await page.goBack();
+    await expect.poll(() => new URL(page.url()).searchParams.get('school')).toBe(HOGAN);
+    await expect(panelOf(page)).toBeVisible();
+    await page.waitForFunction(() => window.snowlightMap?.isMoving() === false);
+    expect(Math.abs((await mapView(page)).zoom - school.zoom)).toBeLessThan(0.01);
+    expect(problems).toEqual([]);
+    await context.close();
+  });
+
+  test('from a ZIP code’s area, on a laptop and in a phone’s sheet, closes it and clears the field', async ({
+    browser,
+  }) => {
+    for (const options of [DESKTOP, PHONE]) {
+      const opening = await openingView(browser, options);
+      const { context, page, problems } = await visit(browser, calm, options);
+      await pickZip(page, '64130');
+      await expect(panelOf(page)).toHaveAttribute('aria-label', 'Schools around 64130');
+      await expect(page.locator('input.search-input')).not.toHaveValue('');
+      await wordmarkOf(page).click();
+      await expectOpening(page, opening);
+      await expect(page.locator('input.search-input')).not.toBeFocused();
+      expect(problems).toEqual([]);
+      await context.close();
+    }
+  });
+
+  test('from a link to a ZIP code, and from an open search, and at the opening view, where it changes nothing', async ({
+    browser,
+  }) => {
+    const opening = await openingView(browser, DESKTOP);
+    const { context, page, problems } = await visit(browser, calm, DESKTOP, '?zip=64130');
+    await expect(panelOf(page)).toHaveAttribute('aria-label', 'Schools around 64130');
+    await wordmarkOf(page).click();
+    await expectOpening(page, opening);
+    // An open search: its list closes, its text goes.
+    const input = page.locator('input.search-input');
+    await input.click();
+    await input.pressSequentially('6411', { delay: 20 });
+    await expect(page.getByRole('option', { name: /64112/u })).toBeVisible();
+    await wordmarkOf(page).click();
+    await expectOpening(page, opening);
+    // Already there: no step, no move.
+    await recordMoves(page);
+    const entries = await page.evaluate(() => history.length);
+    await wordmarkOf(page).click();
+    await page.waitForTimeout(800);
+    expect(await page.evaluate(() => history.length)).toBe(entries);
+    expect((await moves(page)).starts).toBe(0);
+    await expectOpening(page, opening);
+    expect(problems).toEqual([]);
+    await context.close();
+  });
+
+  test('works from the keyboard, Enter and Space, with a ring as the other buttons have, and a pointer', async ({
+    browser,
+  }) => {
+    const opening = await openingView(browser, DESKTOP);
+    const { context, page, problems } = await visit(browser, calm, DESKTOP, `?school=${HOGAN}`);
+    await expect(panelOf(page)).toBeVisible();
+    const wordmark = wordmarkOf(page);
+    const heading = page.locator('h1.wordmark');
+    await expect(heading).toHaveText(copy.appName);
+    expect(await wordmark.evaluate((element) => getComputedStyle(element).cursor)).toBe('pointer');
+    // Reached with Tab, as the first thing on the page.
+    await page.locator('body').focus();
+    for (let i = 0; i < 6; i++) {
+      if (await wordmark.evaluate((element) => element === document.activeElement)) break;
+      await page.keyboard.press('Tab');
+    }
+    await expect(wordmark).toBeFocused();
+    expect(await heading.evaluate((element) => getComputedStyle(element).outlineStyle)).toBe(
+      'solid',
+    );
+    await page.keyboard.press('Enter');
+    await expectOpening(page, opening);
+    await expect(wordmark).toBeFocused();
+    await page.goBack();
+    await expect(panelOf(page)).toBeVisible();
+    await wordmark.focus();
+    await page.keyboard.press('Space');
+    await expectOpening(page, opening);
+    expect(problems).toEqual([]);
+    await context.close();
+  });
+
+  test('with reduced motion, goes straight there: no glide', async ({ browser }) => {
+    const options = { ...DESKTOP, reducedMotion: 'reduce' as const };
+    const opening = await openingView(browser, options);
+    const { context, page, problems } = await visit(browser, calm, options, `?zip=64130`);
+    await expect(panelOf(page)).toBeVisible();
+    await settleMap(page);
+    await recordMoves(page);
+    await wordmarkOf(page).click();
+    await expectOpening(page, opening);
+    // Every frame drawn is the opening view's: no zoom on the way.
+    const { zooms } = await moves(page);
+    expect(zooms.length).toBeGreaterThan(0);
+    for (const zoom of zooms) expect(Math.abs(zoom - opening.zoom)).toBeLessThan(0.01);
+    expect(problems).toEqual([]);
+    await context.close();
+  });
+
+  test('sits where the first frame put it, on a laptop and a phone: the live button moves nothing', async ({
+    browser,
+  }) => {
+    for (const options of [DESKTOP, PHONE]) {
+      const boxes = async (javaScriptEnabled: boolean) => {
+        if (calm === undefined) throw new Error('no site');
+        const context = await browser.newContext({ ...options, javaScriptEnabled });
+        const page = await context.newPage();
+        await page.goto(calm.url);
+        if (javaScriptEnabled) {
+          await page.waitForFunction(() => document.querySelector('svg.still') === null, null, {
+            timeout: 60_000,
+          });
+          await expect(wordmarkOf(page)).toBeVisible();
+        }
+        await page.evaluate(() => document.fonts.ready);
+        const found = await Promise.all(
+          ['h1.wordmark', 'form.search'].map((selector) => page.locator(selector).boundingBox()),
+        );
+        await context.close();
+        return found;
+      };
+      expect(await boxes(true)).toEqual(await boxes(false));
+    }
+  });
 });
