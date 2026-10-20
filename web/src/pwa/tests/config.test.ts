@@ -126,11 +126,15 @@ describe('a live root', () => {
     for (const name of workflows) {
       expect(readFileSync(new URL(name, dir), 'utf8'), name).not.toContain(LIVE_LOOPBACK_ENV);
     }
-    // The site's build reads the root from the owner's variable alone.
+    // The site's build reads the root from the owner's variable, or else the owner's Pages
+    // host, over https.
     const preview = readFileSync(new URL('preview.yml', dir), 'utf8');
     expect(preview.match(/VITE_SNOWLIGHT_LIVE_ROOT:.*$/gm)).toEqual([
-      'VITE_SNOWLIGHT_LIVE_ROOT: ${{ vars.SNOWLIGHT_LIVE_ROOT }}',
+      "VITE_SNOWLIGHT_LIVE_ROOT: ${{ vars.SNOWLIGHT_LIVE_ROOT || 'https://viaate.github.io/snowlight-live/v1/' }}",
     ]);
+    expect(liveRootOf('https://viaate.github.io/snowlight-live/v1/')).toBe(
+      'https://viaate.github.io/snowlight-live/v1/',
+    );
   });
 });
 

@@ -380,7 +380,7 @@ describe('the live files at a live root', () => {
     vi.restoreAllMocks();
   });
 
-  it('reads the closings file from the root, and the other live files from the build', async () => {
+  it('reads the closings and the chances from the root, and the other live files from the build', async () => {
     const files = withLiveRoot(
       createDataFiles(['live/closings.json', 'live/covered.json'], ROOT),
       LIVE,
@@ -392,6 +392,7 @@ describe('the live files at a live root', () => {
     expect(read.closings).toEqual(newer);
     expect(fetchImpl.mock.calls.map(([url]) => urlOf(url)).sort()).toEqual([
       `${LIVE}live/closings.json`,
+      `${LIVE}predictions/latest.json`,
       `${ROOT}live/covered.json`,
     ]);
   });
@@ -404,9 +405,16 @@ describe('the live files at a live root', () => {
       LIVE,
     );
     const answers = [newer, older, older];
+    // The root's chances are read too (no file there yet: a 404); the closings take the answers.
     const fetchImpl = vi
       .spyOn(globalThis, 'fetch')
-      .mockImplementation(() => Promise.resolve(jsonResponse(answers.shift() ?? older)));
+      .mockImplementation((url) =>
+        Promise.resolve(
+          urlOf(url).endsWith('predictions/latest.json')
+            ? new Response(null, { status: 404 })
+            : jsonResponse(answers.shift() ?? older),
+        ),
+      );
     const views: (SchoolView | null)[] = [];
     const stop = watchSchool({
       files,
@@ -422,9 +430,11 @@ describe('the live files at a live root', () => {
     expect(views.at(-1)?.status).toMatchObject([{ tone: 'closed' }]);
     await vi.advanceTimersByTimeAsync(3000);
     expect(fetchImpl.mock.calls.length).toBeGreaterThanOrEqual(3);
-    expect(fetchImpl.mock.calls.every(([url]) => urlOf(url) === `${LIVE}live/closings.json`)).toBe(
-      true,
-    );
+    expect(
+      fetchImpl.mock.calls.every(([url]) =>
+        [`${LIVE}live/closings.json`, `${LIVE}predictions/latest.json`].includes(urlOf(url)),
+      ),
+    ).toBe(true);
     expect(views.at(-1)?.status).toMatchObject([{ tone: 'closed' }]);
     stop();
   });
@@ -456,7 +466,10 @@ describe('the live files at a live root', () => {
       timeZone: () => 'America/Chicago',
     });
     await vi.advanceTimersByTimeAsync(10);
-    expect(fetchImpl).toHaveBeenCalledTimes(1);
+    // One read of the closings file, beside the first read of the chances.
+    expect(
+      fetchImpl.mock.calls.filter(([url]) => urlOf(url).endsWith('live/closings.json')),
+    ).toHaveLength(1);
     const shown = views.filter((view) => view !== null && !view.loading);
     expect(shown.length).toBeGreaterThan(0);
     expect(shown.every((view) => view?.status.length === 0)).toBe(true);
@@ -794,8 +807,9 @@ describe('the live files at a live root', () => {
       now: () => NOON,
     });
     await vi.advanceTimersByTimeAsync(2 * LIVE_POLL_MS);
+    // The closings at the open and each minute, and the chances at the open (every five minutes).
     const seen = fetchImpl.mock.calls.length;
-    expect(seen).toBe(3);
+    expect(seen).toBe(4);
     // A poll is due as the page is hidden.
     vi.setSystemTime(Date.now() + 2 * LIVE_POLL_MS);
     visibility.mockReturnValue('hidden');
@@ -811,11 +825,11 @@ describe('the live files at a live root', () => {
       await vi.advanceTimersByTimeAsync(0);
     }
     expect(fetchImpl.mock.calls.length - seen).toBe(0);
-    // Seen again: it reads at once.
+    // Seen again: it reads at once, the closings and (five minutes on) the chances.
     visibility.mockReturnValue('visible');
     document.dispatchEvent(new Event('visibilitychange'));
     await vi.advanceTimersByTimeAsync(10);
-    expect(fetchImpl.mock.calls.length - seen).toBe(1);
+    expect(fetchImpl.mock.calls.length - seen).toBe(2);
     stop();
   });
 
@@ -939,7 +953,7 @@ describe('the chance section in the panel', () => {
             buses_at: null,
             hours: null,
             why: {
-              base: { kind: 'similar_days', points: 30 },
+              base: { kind: 'similar_days', points: 30, borrowed: false },
               reasons: [{ kind: 'neighbors', points: 15, districts: [1, 2], status: 0 }],
             },
             record: null,

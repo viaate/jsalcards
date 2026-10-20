@@ -10,6 +10,7 @@ import {
   closingsReader,
   closingsUrl,
   newerClosings,
+  newerPredictions,
   pollWhileVisible,
   startLive,
 } from '../live';
@@ -291,6 +292,18 @@ describe('only a newer file', () => {
       [2, 1],
     ]),
   ]);
+
+  it('keeps the newer predictions file: an older copy read later never steps back', () => {
+    const made = (at: string): { generated_at: string } => ({ generated_at: at });
+    const early = made('2026-01-12T12:07:00Z');
+    const late = made('2026-01-12T12:37:00Z');
+    expect(newerPredictions(null, early)).toBe(early);
+    expect(newerPredictions(early, late)).toBe(late);
+    // An edge still serving the older copy after the newer one was read.
+    expect(newerPredictions(late, early)).toBe(late);
+    expect(newerPredictions(late, null)).toBe(late);
+    expect(newerPredictions(late, made('2026-01-12T12:37:00Z'))).toBe(late);
+  });
 
   it('takes a later generated_at, and keeps the file shown for an earlier or equal one', () => {
     expect(newerClosings(null, first)).toBe(first);

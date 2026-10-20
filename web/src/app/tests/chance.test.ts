@@ -132,7 +132,7 @@ describe('the chance section, the night before', () => {
 
   it('adds up to the headline, naming what the chart and the timeline already say', () => {
     expect(lines(view?.why ?? null)).toEqual([
-      '30% Shawnee Mission cancels for 3 in 10 winter storm warnings.',
+      '30% Shawnee Mission closed or went remote on 3 in 10 recorded days with a winter storm warning.',
       // "6 to 9 in" is the chart's answer; the record is said only here.
       '+16 More snow than most storms. It closed 4 of the last 5 times it got 6 inches or more.',
       // Who canceled, and when, is the timeline's.
@@ -254,7 +254,7 @@ describe('the chance section, the next morning', () => {
 
   it('adds up from the day after a snow day, naming the cold and the snow stopping', () => {
     expect(lines(view?.why ?? null)).toEqual([
-      '25% After a snow day, Shawnee Mission stays closed the next day 1 time in 4.',
+      '25% After a recorded snow day, Shawnee Mission stayed closed or went remote the next day 1 time in 4.',
       // When it stopped is the timeline's; how cold, the chart's.
       `${MINUS}8 The snow stopped, a full day for the plows.`,
       '+6 Cold at the bus stop Wednesday morning.',
@@ -462,38 +462,53 @@ describe('what the section leaves out', () => {
     expect(why({ ...A_DETAIL, why: { ...A_WHY, reasons: A_WHY.reasons.slice(1) } })).toBeNull();
     // Points that are not whole numbers, even when they add up.
     const halves: WhyDetail = {
-      base: { kind: 'similar_days', points: 29.5 },
+      base: { kind: 'similar_days', points: 29.5, borrowed: false },
       reasons: [{ kind: 'sun', points: 34.5 }],
     };
     expect(why({ ...A_DETAIL, why: halves })).toBeNull();
     // Nothing to explain.
     expect(why({ ...A_DETAIL, why: null })).toBeNull();
     // The file never gives a certainty; a sum to 0 or 100 would claim one.
-    const none: WhyDetail = { base: { kind: 'similar_days', points: 0 }, reasons: [] };
+    const none: WhyDetail = {
+      base: { kind: 'similar_days', points: 0, borrowed: false },
+      reasons: [],
+    };
     expect(why({ ...A_DETAIL, why: none }, 0)).toBeNull();
-    const all: WhyDetail = { base: { kind: 'similar_days', points: 100 }, reasons: [] };
+    const all: WhyDetail = {
+      base: { kind: 'similar_days', points: 100, borrowed: false },
+      reasons: [],
+    };
     expect(why({ ...A_DETAIL, why: all }, 1)).toBeNull();
-    // At 1% and 99% the sum still shows.
-    const low: WhyDetail = { base: { kind: 'similar_days', points: 1 }, reasons: [] };
+    // At 1% and 99% the sum still shows, worded as the floor and ceiling they are.
+    const low: WhyDetail = {
+      base: { kind: 'similar_days', points: 1, borrowed: false },
+      reasons: [],
+    };
     expect(lines(why({ ...A_DETAIL, why: low }, 0.01))).toEqual([
-      '1% On days like this, Shawnee Mission closes 1 time in 100.',
+      '1% Shawnee Mission almost never closed or went remote on recorded days like this.',
     ]);
-    const high: WhyDetail = { base: { kind: 'similar_days', points: 99 }, reasons: [] };
+    const high: WhyDetail = {
+      base: { kind: 'similar_days', points: 99, borrowed: false },
+      reasons: [],
+    };
     expect(lines(why({ ...A_DETAIL, why: high }, 0.99))).toEqual([
-      '99% On days like this, Shawnee Mission closes 99 times in 100.',
+      '99% Shawnee Mission almost always closed or went remote on recorded days like this.',
     ]);
     // A base alone, when it is the chance.
-    const alone: WhyDetail = { base: { kind: 'similar_days', points: 20 }, reasons: [] };
+    const alone: WhyDetail = {
+      base: { kind: 'similar_days', points: 20, borrowed: false },
+      reasons: [],
+    };
     expect(lines(why({ ...A_DETAIL, why: alone }, 0.2))).toEqual([
-      '20% On days like this, Shawnee Mission closes 1 time in 5.',
+      '20% Shawnee Mission closed or went remote on 1 in 5 recorded days like this.',
     ]);
     // A district with too short a history of its own: the districts around it.
     const pooled: WhyDetail = {
-      base: { kind: 'pooled', points: 33, scope: 'nearby', alert: null },
+      base: { kind: 'pooled', points: 33, scope: 'nearby', alert: null, borrowed: false },
       reasons: [],
     };
     expect(lines(why({ ...A_DETAIL, why: pooled }, 0.33))).toEqual([
-      '33% Districts near Shawnee Mission close 1 time in 3 on days like this.',
+      '33% Districts near Shawnee Mission closed or went remote on 1 in 3 of their recorded days like this.',
     ]);
   });
 

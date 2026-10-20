@@ -99,6 +99,10 @@ _LISTED_DIRECTORY_FILE = re.compile(
 _SCRIPT_TAG = re.compile(r"<script\b([^>]*)>", re.IGNORECASE)
 _MODULE_TYPE = re.compile(r"""\btype\s*=\s*["']module["']""", re.IGNORECASE)
 _SOURCE = re.compile(r"""\bsrc\s*=\s*["']([^"']+)["']""", re.IGNORECASE)
+# With the waitlist on (web/tools/waitlist.ts), the page carries no module script: the app's
+# entry is named in data-entry="..." attributes, which the waitlist starts only on a device with
+# the access code. It is the same entry, so the directory is found through it as well.
+_ENTRY_ATTRIBUTE = re.compile(r"""\bdata-entry\s*=\s*["']([^"']+)["']""", re.IGNORECASE)
 _RELATIVE_CHUNK = re.compile(r"""["'`](\./[A-Za-z0-9_.-]+\.js)["'`]""")
 _SITE_CHUNK = re.compile(r"""["'`](assets/[A-Za-z0-9_.-]+\.js)["'`]""")
 # index.html is about 10 kB and the site's scripts about 50, of up to 2 MB each.
@@ -526,7 +530,7 @@ class Reader:
             page.url.join(source[1])
             for tag in _SCRIPT_TAG.finditer(html)
             if _MODULE_TYPE.search(tag[1]) and (source := _SOURCE.search(tag[1]))
-        ]
+        ] + [page.url.join(entry) for entry in _ENTRY_ATTRIBUTE.findall(html)]
         if not queue:
             raise DeployedEditionError(f"{page.url} names no module script")
         seen: set[httpx.URL] = set()

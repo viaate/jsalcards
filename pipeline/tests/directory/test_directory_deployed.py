@@ -1368,6 +1368,17 @@ def test_the_page_must_be_a_200(pages: Pages) -> None:
         pages.reader().read()
 
 
+def test_a_waitlist_page_names_the_app_entry_in_data_entry(pages: Pages) -> None:
+    # With the waitlist on, the module script leaves the page and its address is kept in
+    # data-entry attributes, for the waitlist to start on a device with the access code.
+    _expired(pages, NEW.to_json_bytes())
+    pages.cdn_site["/index.html"] = (
+        f'<head><script data-entry="/{ENTRY}">start()</script></head>'
+        f'<main data-entry="/{ENTRY}"></main>'
+    ).encode()
+    assert pages.reader().read().data == NEW.to_json_bytes()
+
+
 def test_the_entry_may_name_its_type_after_its_source(pages: Pages) -> None:
     _expired(pages, NEW.to_json_bytes())
     pages.cdn_site["/index.html"] = f"<script src='/{ENTRY}' TYPE='module'></script>".encode()

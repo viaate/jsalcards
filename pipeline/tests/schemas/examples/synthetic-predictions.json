@@ -59,7 +59,8 @@
             "base": {
               "kind": "alert",
               "points": 30,
-              "alert": "winter_storm_warning"
+              "alert": "winter_storm_warning",
+              "borrowed": false
             },
             "reasons": [
               {
@@ -249,7 +250,8 @@
               "kind": "pooled",
               "scope": "nearby",
               "points": 20,
-              "alert": null
+              "alert": null,
+              "borrowed": false
             },
             "reasons": []
           },

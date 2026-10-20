@@ -19,7 +19,10 @@
  * open turning Live into Updated, a file from last night, the hours when the
  * country spans two days, offline, a file for another directory lighting
  * nothing, and the worker reading the live file network-first and keeping
- * only a newer copy, which an offline reload is then given.
+ * only a newer copy, which an offline reload is then given. The live root also
+ * serves predictions/latest.json, as the chance passes publish it (S7): a file
+ * with no districts unless a check gives it a SYNTHETIC forecast, which the
+ * school panel and the area panel then show.
  *
  * Runs under the desktop project, each check twice: in a laptop's context and
  * in a phone's (Pixel 7). The page's clock is Playwright's, installed at the
@@ -41,6 +44,7 @@ import { build, preview } from 'vite';
 import type { PreviewServer } from 'vite';
 
 import { copy } from '../src/copy';
+import { chanceFormat } from '../src/copy-chance';
 import { format } from '../src/copy-format';
 
 const WEB = fileURLToPath(new URL('..', import.meta.url));
@@ -221,11 +225,53 @@ const BLANK = closings('2026-01-12T12:52:00Z', []);
 /** The site's own file, which the page must never read: Delta closed, newer than all. */
 const SITE_OWN = closings('2026-01-12T13:30:00Z', [[3, 0]]);
 
+/**
+ * SYNTHETIC: a predictions file made at 6:50 AM, with `districts` (none: no chance for any
+ * school, so the panels show none).
+ */
+function predictions(districts: readonly unknown[] = [], at = '2026-01-12T12:50:00Z'): string {
+  return JSON.stringify({
+    schema_version: 1,
+    generated_at: at,
+    directory: STAMP,
+    days: [TODAY, '2026-01-13'],
+    districts,
+  });
+}
+
+/** SYNTHETIC: a winter storm warning day for the made-up district, from its own record. */
+const STORM_FORECAST = {
+  state: 'forecast',
+  p_no_school: 0.37,
+  p_delay: 0.12,
+  reasons: [0],
+  previous: null,
+  announces_at: null,
+  buses_at: null,
+  hours: null,
+  why: {
+    base: { kind: 'alert', points: 37, alert: 'winter_storm_warning', borrowed: false },
+    reasons: [],
+  },
+  record: {
+    proves: 'base',
+    inches: null,
+    days: [
+      { day: '2025-01-06', inches: null, status: 0 },
+      { day: '2025-02-18', inches: null, status: null },
+    ],
+  },
+  events: [],
+};
+
 /** What the live origin answers, and every request it was sent. */
 interface LiveOrigin {
   readonly root: string;
   body: string;
   status: number;
+  /** The predictions file it serves, and how many times it was read (not in `requests`). */
+  predictions: string;
+  predictionReads: number;
   readonly requests: {
     url: string;
     origin: string | undefined;
@@ -247,6 +293,8 @@ async function liveOrigin(port: number, siteOrigin: string): Promise<LiveOrigin>
     root: `http://127.0.0.1:${String(port)}/v1/`,
     body: FIRST,
     status: 200,
+    predictions: predictions(),
+    predictionReads: 0,
     requests: [],
     close: () => Promise.resolve(),
   };
@@ -264,6 +312,17 @@ async function liveOrigin(port: number, siteOrigin: string): Promise<LiveOrigin>
         conditional: request.headers['if-none-match'] !== undefined,
       });
     };
+    if (url.pathname === '/v1/predictions/latest.json' && request.method === 'GET') {
+      origin.predictionReads += 1;
+      response
+        .writeHead(200, {
+          ...cors,
+          'Content-Type': 'application/json; charset=utf-8',
+          'Cache-Control': 'public, max-age=15, stale-while-revalidate=15',
+        })
+        .end(origin.predictions);
+      return;
+    }
     if (
       url.pathname !== '/v1/live/closings.json' ||
       !['GET', 'HEAD'].includes(request.method ?? '')
@@ -355,10 +414,11 @@ function watch(page: Page): Watch {
   return { problems, requests };
 }
 
-/** The live file's read failing while the context is offline, as the browser reports it. */
+/** A live file's read failing while the context is offline, as the browser reports it. */
 function offlineRead(line: string): boolean {
   return (
     line === `requestfailed: ${theSite().live.root}live/closings.json` ||
+    line === `requestfailed: ${theSite().live.root}predictions/latest.json` ||
     line === 'console.error: Failed to load resource: net::ERR_INTERNET_DISCONNECTED'
   );
 }
@@ -474,6 +534,8 @@ test.beforeEach(() => {
   if (site === undefined) return;
   site.live.body = FIRST;
   site.live.status = 200;
+  site.live.predictions = predictions();
+  site.live.predictionReads = 0;
   site.live.requests.length = 0;
 });
 
@@ -683,6 +745,73 @@ for (const [device, options] of DEVICES) {
       expectOnlyLiveRoot(requests);
       expect(problems).toEqual([]);
       await context.close();
+    });
+
+    test('the school panel and the area panel show the chance from the live root, and how it adds up', async ({
+      browser,
+    }) => {
+      const { live } = theSite();
+      // No school has a status today: a closed school's panel shows tomorrow's chance instead,
+      // and a closed school counts as 100% in the area's chance.
+      live.body = closings('2026-01-12T12:42:00Z', []);
+      live.predictions = predictions([
+        {
+          district: 0,
+          time_zone: ZONE,
+          neighbors: [],
+          days: [STORM_FORECAST, { ...STORM_FORECAST, record: null, reasons: [] }],
+        },
+      ]);
+      const school = await visit(browser, options, { query: `?school=${ALPHA}` });
+      const section = school.page.locator('aside.detail .chance');
+      await expect(section.locator('.number')).toHaveText('37%', SETTLE);
+      await expect(section.locator('.meaning')).toContainText(chanceFormat.chanceOn(TODAY));
+      await expect(section.locator('.why-title')).toHaveText(chanceFormat.howWeGot(0.37));
+      await expect(section.locator('.sum > li').first()).toContainText(
+        'recorded days with a winter storm warning',
+      );
+      expect(live.predictionReads).toBeGreaterThanOrEqual(1);
+      expect(school.problems).toEqual([]);
+      await school.context.close();
+
+      const area = await visit(browser, options, { query: `?zip=${ZIP}` });
+      const panel = area.page.locator('aside.detail');
+      await expect(panel).toHaveAttribute('aria-busy', 'false', SETTLE);
+      await expect(panel.locator('.number')).toHaveText('37%', SETTLE);
+      expect(area.problems).toEqual([]);
+      await area.context.close();
+    });
+
+    test('a chance file over 90 minutes old shows no chance, a fresh one shows it, and a blank one takes it away', async ({
+      browser,
+    }) => {
+      const { live } = theSite();
+      live.body = closings('2026-01-12T12:42:00Z', []);
+      const storm = [
+        {
+          district: 0,
+          time_zone: ZONE,
+          neighbors: [],
+          days: [STORM_FORECAST, { ...STORM_FORECAST, record: null, reasons: [] }],
+        },
+      ];
+      // 91 minutes before the page's clock: too old to show as the chance now.
+      live.predictions = predictions(storm, '2026-01-12T11:22:00Z');
+      const school = await visit(browser, options, { query: `?school=${ALPHA}` });
+      const panel = school.page.locator('aside.detail');
+      await expect(panel).toBeVisible(SETTLE);
+      await expect.poll(() => live.predictionReads, SETTLE).toBeGreaterThanOrEqual(1);
+      await expect(panel.locator('.chance .number')).toHaveCount(0);
+      // A fresh file, read at the next side poll (five minutes): the chance shows.
+      live.predictions = predictions(storm, '2026-01-12T12:50:00Z');
+      for (let step = 0; step < 5; step += 1) await poll(school.page);
+      await expect(panel.locator('.chance .number')).toHaveText('37%', SETTLE);
+      // A blank file (predict blank), newer: the chance goes, on a laptop and a phone alike.
+      live.predictions = predictions([], '2026-01-12T12:56:00Z');
+      for (let step = 0; step < 5; step += 1) await poll(school.page);
+      await expect(panel.locator('.chance .number')).toHaveCount(0, SETTLE);
+      expect(school.problems).toEqual([]);
+      await school.context.close();
     });
 
     test('an open area panel counts what the live file says, takes a newer one within one poll, drops it for a blank one, and ignores an older one', async ({

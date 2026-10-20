@@ -496,11 +496,19 @@ export interface PredictionsFile {
   readonly districts: readonly DistrictForecast[];
 }
 
-/** The district closes for about ``points`` in 100 of these alerts. */
+/**
+ * The district's own record: it closed or went remote on about ``points`` in 100 of its
+ * recorded days with ``alert`` (the days the archive read, never every alert issued).
+ */
 export interface AlertBase {
   readonly kind: 'alert';
   readonly points: Percent;
   readonly alert: AlertKind;
+  /**
+   * The day's own weather has too few recorded days: the chance is counted over the recorded days
+   * with alert instead, and the sentence says so.
+   */
+  readonly borrowed: boolean;
 }
 
 /** The weather alert a district's base chance is counted over. */
@@ -529,7 +537,10 @@ export interface ColdReason {
   readonly feels_like: Fahrenheit;
 }
 
-/** After a day closed for weather, the district stays closed the next day this often. */
+/**
+ * The district's own record: after a recorded snow day, it stayed closed or went remote
+ * the next day on about ``points`` in 100 of those recorded days.
+ */
 export interface DayAfterBase {
   readonly kind: 'day_after';
   readonly points: Percent;
@@ -564,12 +575,12 @@ export type DistrictIndex = number;
  */
 export type Fahrenheit = number;
 
-/** Weather that has closed or delayed these schools before is forecast that day. */
+/** A school day's chance of no school or a delay, with the weather forecast, if any. */
 export interface Forecast {
   readonly state: 'forecast';
   readonly p_no_school: ChanceOfNoSchool;
   readonly p_delay: Probability;
-  /** The forecast weather, most important first. */
+  /** The forecast weather, most important first; empty when none is forecast. */
   readonly reasons: readonly Reason[];
   readonly previous: PreviousChance | null;
   /**
@@ -650,7 +661,10 @@ export interface NeighborsReason {
   readonly status: Status;
 }
 
-/** No weather that has closed or delayed these schools before is forecast that day. */
+/**
+ * A day that is not a school day: a weekend, Thanksgiving Thursday and Friday, or 24
+ * December to 1 January.
+ */
 export interface NoThreat {
   readonly state: 'no_threat';
 }
@@ -686,15 +700,24 @@ export type Points = number;
 /**
  * For a district with too short a history of its own: the districts around it.
  *
- * The districts of ``scope`` (``nearby``: within the neighbor distance; or the
- * district's county, state or weather region) close for about ``points`` in 100 days
- * like this, or in 100 of ``alert`` when one is given.
+ * The districts of ``scope`` (``nearby``: within the neighbor distance; the
+ * district's county, state or weather region; or ``nation``: the districts of every
+ * state, named when no smaller place's record is true of the chance) closed or went
+ * remote on about ``points`` in 100 of their recorded district-days like this one, or
+ * with ``alert`` when one is given. The pipeline names a scope only when the share the
+ * website says for ``points`` is true of that scope's recorded days.
  */
 export interface PooledBase {
   readonly kind: 'pooled';
-  readonly scope: 'nearby' | 'county' | 'state' | 'region';
+  readonly scope: 'nearby' | 'county' | 'state' | 'region' | 'nation';
   readonly points: Percent;
   readonly alert: AlertKind | null;
+  /**
+   * The day's own weather (or the day after a snow day) has too few recorded days: the chance is
+   * counted over the recorded days with alert, or, with no alert, the days like this that did not
+   * follow a recorded snow day; the sentence says so.
+   */
+  readonly borrowed: boolean;
 }
 
 /** The chance of no school the run before this one gave the same district and day. */
@@ -723,10 +746,18 @@ export interface RecordReason {
   readonly points: Points;
 }
 
-/** The district closes for about ``points`` in 100 days with weather like this. */
+/**
+ * The district's own record: it closed or went remote on about ``points`` in 100 of its
+ * recorded days like this one (same weather class).
+ */
 export interface SimilarDaysBase {
   readonly kind: 'similar_days';
   readonly points: Percent;
+  /**
+   * The day follows a snow day and too few such days are recorded: the chance is counted over the
+   * recorded days like this that did not follow a recorded snow day.
+   */
+  readonly borrowed: boolean;
 }
 
 /** Snow started falling at ``at``. */

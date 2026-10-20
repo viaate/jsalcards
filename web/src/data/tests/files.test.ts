@@ -67,10 +67,12 @@ describe('a live root', () => {
     ROOT,
   );
 
-  it('maps live/closings.json alone to the root, and leaves every other file to the build', () => {
+  it('maps the closings and the chances to the root, and leaves every other file to the build', () => {
     const files = withLiveRoot(shipped, LIVE);
     expect(files.has('live/closings.json')).toBe(true);
     expect(files.url('live/closings.json')).toBe(`${LIVE}live/closings.json`);
+    expect(files.has('predictions/latest.json')).toBe(true);
+    expect(files.url('predictions/latest.json')).toBe(`${LIVE}predictions/latest.json`);
     expect(files.url('live/covered.json')).toBe(`${ROOT}live/covered.json`);
     expect(files.url('schools/meta.json')).toBe(`${ROOT}schools/meta.0123456789.json`);
     expect(files.has('live/predictions.json')).toBe(false);
@@ -79,12 +81,22 @@ describe('a live root', () => {
     expect(files.url('live/closings.json')).not.toContain(ROOT);
   });
 
-  it('reads the closings file from the root even in a build that ships none', () => {
+  it('reads the closings and the chances from the root even in a build that ships neither', () => {
     const files = withLiveRoot(createDataFiles([], ROOT), LIVE);
     expect(files.has('live/closings.json')).toBe(true);
     expect(files.url('live/closings.json')).toBe(`${LIVE}live/closings.json`);
+    expect(files.has('predictions/latest.json')).toBe(true);
+    expect(files.url('predictions/latest.json')).toBe(`${LIVE}predictions/latest.json`);
     expect(files.has('live/covered.json')).toBe(false);
     expect(files.url('live/predictions.json')).toBeNull();
+  });
+
+  it("without a root, the chances are only the build's own copy, if it ships one", () => {
+    const own = createDataFiles(['predictions/latest.json'], ROOT);
+    expect(withLiveRoot(own, null).url('predictions/latest.json')).toBe(
+      `${ROOT}predictions/latest.json`,
+    );
+    expect(withLiveRoot(createDataFiles([], ROOT), '').has('predictions/latest.json')).toBe(false);
   });
 
   it('changes nothing for a root that is null, empty or not one the page can read from', () => {

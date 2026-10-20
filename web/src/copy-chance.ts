@@ -81,16 +81,22 @@ const SHARES: readonly (readonly [some: number, of: number])[] = [
   [99, 100],
 ];
 
-/** The weather alerts a district's base chance is counted over, as a plural noun. */
-const ALERT_PLURALS = {
-  winter_storm_warning: 'winter storm warnings',
-  winter_weather_advisory: 'winter weather advisories',
-  ice_storm_warning: 'ice storm warnings',
-  blizzard_warning: 'blizzard warnings',
-  extreme_cold_warning: 'extreme cold warnings',
+/**
+ * The weather alerts a district's base chance is counted over, with its article: the
+ * sentence counts the recorded days under one, never all the alerts the weather service
+ * issues (the archive holds lists mostly from the storm days it captured). A day "with" an
+ * alert is one whose weather class was that alert's: the strongest class that, with stronger
+ * ones, covered half the district's schools by the morning (docs/predict.md).
+ */
+const ALERT_DAYS = {
+  winter_storm_warning: 'a winter storm warning',
+  winter_weather_advisory: 'a winter weather advisory',
+  ice_storm_warning: 'an ice storm warning',
+  blizzard_warning: 'a blizzard warning',
+  extreme_cold_warning: 'an extreme cold warning',
 } as const;
 
-export type AlertKind = keyof typeof ALERT_PLURALS;
+export type AlertKind = keyof typeof ALERT_DAYS;
 
 /** The districts a pooled base counts, as the start of its sentence, around the district's name. */
 const POOLS = {
@@ -98,6 +104,7 @@ const POOLS = {
   county: (district: string) => `Districts in ${district}’s county`,
   state: (district: string) => `Districts in ${district}’s state`,
   region: (district: string) => `Districts in ${district}’s region`,
+  nation: () => 'Districts across the country',
 } as const;
 
 /** A status a district posted, as the chance section words it. */
@@ -112,16 +119,28 @@ export interface Zones {
   readonly viewer: string;
 }
 
-/** The base of the sum: where the chance starts for a district. */
+/**
+ * The base of the sum: where the chance starts for a district. `borrowed`: the day's own
+ * weather (or the day after a snow day) has too few recorded days, so the chance is counted
+ * over the recorded days with `alert`, or with no alert over the recorded days like this that
+ * did not follow a recorded snow day (the day before has no recorded closing, which is all the
+ * labels can say of it), and the sentence says which.
+ */
 export type BaseInput =
-  | { readonly kind: 'alert'; readonly points: number; readonly alert: AlertKind }
+  | {
+      readonly kind: 'alert';
+      readonly points: number;
+      readonly alert: AlertKind;
+      readonly borrowed: boolean;
+    }
   | { readonly kind: 'day_after'; readonly points: number }
-  | { readonly kind: 'similar_days'; readonly points: number }
+  | { readonly kind: 'similar_days'; readonly points: number; readonly borrowed: boolean }
   | {
       readonly kind: 'pooled';
       readonly points: number;
       readonly scope: keyof typeof POOLS;
       readonly alert: AlertKind | null;
+      readonly borrowed: boolean;
     };
 
 /** The district's record in storms like this, counted, for the sentence that cites it. */
@@ -558,39 +577,54 @@ function baseReason(input: BaseInput, district: string): string {
   if (!Number.isInteger(percent) || percent < 0 || percent > 100) {
     throw new RangeError(`copy: a base is 0 to 100 percent, not ${String(percent)}`);
   }
-  const extreme = percent === 0 ? 'almost never' : percent === 100 ? 'almost always' : null;
+  // 1% is the published floor and 99% the ceiling: they read as almost never and almost
+  // always, which the pipeline says only of a record under 1 in 20 (or over 19 in 20).
+  const extreme = percent <= 1 ? 'almost never' : percent >= 99 ? 'almost always' : null;
   const share = extreme === null ? shareOf(percent) : null;
   const rate = (noun: string): string =>
     share === null
       ? ''
       : `${share.more ? 'more than ' : ''}${String(share.some)} ${noun}in ${String(share.of)}`;
   const times = rate(share?.some === 1 ? 'time ' : 'times ');
+  // Every count is of the recorded days, in the past tense: true of the days the archive
+  // read, never a claim about every alert or every day like this to come. The pipeline names
+  // a place only when this share is true of its recorded days (pipeline/snowlight/predict/
+  // share.py, which keeps the same rule as shareOf). A day with no school counts closed and
+  // remote days alike, so the sentence says both.
+  const did = 'closed or went remote';
+  const days = (alert: AlertKind | null): string =>
+    alert === null
+      ? 'recorded days like this'
+      : `recorded days with ${ALERT_DAYS[checkKey(ALERT_DAYS, alert, 'alert')]}`;
+  // Pooled counts are district-days: "of their recorded days", never calendar days.
+  const closed = (who: string, alert: AlertKind | null, pooled: boolean): string =>
+    extreme === null
+      ? `${who} ${did} on ${rate('')} ${pooled ? 'of their ' : ''}${days(alert)}.`
+      : `${who} ${extreme} ${did} on ${pooled ? 'their ' : ''}${days(alert)}.`;
+  // Counted over other recorded days than the day's own: name them first, then the count.
+  const lent = (who: string, alert: AlertKind | null): string => {
+    const counted =
+      alert === null
+        ? 'recorded days like this that did not follow a recorded snow day'
+        : days(alert);
+    const count =
+      extreme === null
+        ? `${who} ${did} on ${rate('')} of them.`
+        : `${who} ${extreme} ${did} on them.`;
+    return `The chance is counted over ${counted}. ${count}`;
+  };
   switch (input.kind) {
-    case 'alert': {
-      const alerts = ALERT_PLURALS[checkKey(ALERT_PLURALS, input.alert, 'alert')];
-      return extreme === null
-        ? `${district} cancels for ${rate('')} ${alerts}.`
-        : `${district} ${extreme} cancels for ${alerts}.`;
-    }
+    case 'alert':
+      return input.borrowed ? lent(district, input.alert) : closed(district, input.alert, false);
     case 'day_after':
       return extreme === null
-        ? `After a snow day, ${district} stays closed the next day ${times}.`
-        : `After a snow day, ${district} ${extreme} stays closed the next day.`;
+        ? `After a recorded snow day, ${district} stayed closed or went remote the next day ${times}.`
+        : `After a recorded snow day, ${district} ${extreme} stayed closed or went remote the next day.`;
     case 'similar_days':
-      return extreme === null
-        ? `On days like this, ${district} closes ${times}.`
-        : `On days like this, ${district} ${extreme} closes.`;
+      return input.borrowed ? lent(district, null) : closed(district, null, false);
     case 'pooled': {
       const who = POOLS[checkKey(POOLS, input.scope, 'pool')](district);
-      if (input.alert !== null) {
-        const alerts = ALERT_PLURALS[checkKey(ALERT_PLURALS, input.alert, 'alert')];
-        return extreme === null
-          ? `${who} close for ${rate('')} ${alerts}.`
-          : `${who} ${extreme} close for ${alerts}.`;
-      }
-      return extreme === null
-        ? `${who} close ${times} on days like this.`
-        : `${who} ${extreme} close on days like this.`;
+      return input.borrowed ? lent(who, input.alert) : closed(who, input.alert, true);
     }
   }
 }

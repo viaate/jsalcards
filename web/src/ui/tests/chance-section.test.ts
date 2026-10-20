@@ -203,7 +203,7 @@ describe('the chance section', () => {
     // No lit hours to name on a cold night: no key.
     expect(section.querySelector('.key')).toBeNull();
     expect(text(section, '.is-start')).toEqual([
-      '25% After a snow day, Shawnee Mission stays closed the next day 1 time in 4.',
+      '25% After a recorded snow day, Shawnee Mission stayed closed or went remote the next day 1 time in 4.',
     ]);
   });
 

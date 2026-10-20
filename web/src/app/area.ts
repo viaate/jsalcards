@@ -58,6 +58,7 @@ import {
   closingsReader,
   dueEvery,
   newerClosings,
+  newerPredictions,
   pollWhileVisible,
 } from '../data/live';
 import { nextDay, schoolOutlook, schoolStatus, schoolToday } from '../data/school-day';
@@ -603,7 +604,7 @@ export function watchArea(options: WatchAreaOptions): () => void {
     // reader takes only a newer closings file; newerClosings here holds the panel to that too,
     // in depth, so a panel never steps back whatever the reader hands it.
     live.closings = newerClosings(live.closings, read.closings);
-    live.predictions = read.predictions ?? live.predictions;
+    live.predictions = newerPredictions(live.predictions, read.predictions);
   };
 
   // Nothing to read: no area here, and no panel, not even for a moment.

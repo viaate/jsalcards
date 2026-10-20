@@ -4,11 +4,13 @@ Each district has one entry per day in ``days``, in the same order, and its own 
 ``time_zone``: every local day and wall-clock time of the district is in it. An entry
 is one of two states, told apart by ``state``:
 
-* ``forecast``: weather that has closed or delayed schools is forecast; the entry
-  gives ``p_no_school`` (closed or remote, from 0.01 to 0.99: never a certainty) and
-  ``p_delay`` (a delayed start), the weather behind them, and always how the chance
-  adds up. The two outcomes exclude each other, so their sum is at most 1.
-* ``no_threat``: no such weather is forecast.
+* ``forecast``: a school day; the entry gives ``p_no_school`` (closed or remote, from
+  0.01 to 0.99: never a certainty) and ``p_delay`` (a delayed start), the weather behind
+  them (none when none is forecast), and always how the chance adds up. The two outcomes
+  exclude each other, so their sum is at most 1. Every school day has one, weather or
+  not: every school gets a chance every school day.
+* ``no_threat``: a day that is not a school day (a weekend, Thanksgiving Thursday and
+  Friday, 24 December to 1 January): no school, so no chance to give.
 
 There is no "not enough data": the site always gives a number. A district whose own
 history is too short starts from a pooled base, the record of the districts around it
@@ -205,39 +207,65 @@ class Hours(PublishedModel):
 
 
 class AlertBase(PublishedModel):
-    """The district closes for about ``points`` in 100 of these alerts."""
+    """The district's own record: it closed or went remote on about ``points`` in 100 of its
+    recorded days with ``alert`` (the days the archive read, never every alert issued)."""
 
     kind: Literal["alert"]
     points: Percent
     alert: AlertKind
+    borrowed: bool = Field(
+        description=(
+            "The day's own weather has too few recorded days: the chance is counted over "
+            "the recorded days with alert instead, and the sentence says so."
+        )
+    )
 
 
 class DayAfterBase(PublishedModel):
-    """After a day closed for weather, the district stays closed the next day this often."""
+    """The district's own record: after a recorded snow day, it stayed closed or went remote
+    the next day on about ``points`` in 100 of those recorded days."""
 
     kind: Literal["day_after"]
     points: Percent
 
 
 class SimilarDaysBase(PublishedModel):
-    """The district closes for about ``points`` in 100 days with weather like this."""
+    """The district's own record: it closed or went remote on about ``points`` in 100 of its
+    recorded days like this one (same weather class)."""
 
     kind: Literal["similar_days"]
     points: Percent
+    borrowed: bool = Field(
+        description=(
+            "The day follows a snow day and too few such days are recorded: the chance is "
+            "counted over the recorded days like this that did not follow a recorded snow day."
+        )
+    )
 
 
 class PooledBase(PublishedModel):
     """For a district with too short a history of its own: the districts around it.
 
-    The districts of ``scope`` (``nearby``: within the neighbor distance; or the
-    district's county, state or weather region) close for about ``points`` in 100 days
-    like this, or in 100 of ``alert`` when one is given.
+    The districts of ``scope`` (``nearby``: within the neighbor distance; the
+    district's county, state or weather region; or ``nation``: the districts of every
+    state, named when no smaller place's record is true of the chance) closed or went
+    remote on about ``points`` in 100 of their recorded district-days like this one, or
+    with ``alert`` when one is given. The pipeline names a scope only when the share the
+    website says for ``points`` is true of that scope's recorded days.
     """
 
     kind: Literal["pooled"]
-    scope: Literal["nearby", "county", "state", "region"]
+    scope: Literal["nearby", "county", "state", "region", "nation"]
     points: Percent
     alert: AlertKind | None
+    borrowed: bool = Field(
+        description=(
+            "The day's own weather (or the day after a snow day) has too few recorded "
+            "days: the chance is counted over the recorded days with alert, or, with no "
+            "alert, the days like this that did not follow a recorded snow day; the sentence "
+            "says so."
+        )
+    )
 
 
 type Base = Annotated[
@@ -478,14 +506,17 @@ type WeatherEvent = Annotated[
 
 
 class Forecast(PublishedModel):
-    """Weather that has closed or delayed these schools before is forecast that day."""
+    """A school day's chance of no school or a delay, with the weather forecast, if any."""
 
     state: Literal["forecast"]
     p_no_school: ChanceOfNoSchool
     p_delay: Probability
     reasons: Annotated[
         tuple[Reason, ...],
-        Field(min_length=1, description="The forecast weather, most important first."),
+        Field(
+            min_length=0,
+            description="The forecast weather, most important first; empty when none is forecast.",
+        ),
     ]
     previous: PreviousChance | None
     announces_at: UtcInstant | None = Field(
@@ -558,7 +589,8 @@ class Forecast(PublishedModel):
 
 
 class NoThreat(PublishedModel):
-    """No weather that has closed or delayed these schools before is forecast that day."""
+    """A day that is not a school day: a weekend, Thanksgiving Thursday and Friday, or 24
+    December to 1 January."""
 
     state: Literal["no_threat"]
 

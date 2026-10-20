@@ -204,10 +204,12 @@ jobs:
         run: npx vite build --base="${BASE_PATH}/"
         env:
           BASE_PATH: ${{ steps.pages.outputs.base_path }}
-          # Where the page reads live/closings.json from, a host published apart from this site
-          # (docs: S8 live closings). Empty until the owner turns live closings on: the page then
-          # reads its own data/.
-          VITE_SNOWLIGHT_LIVE_ROOT: ${{ vars.SNOWLIGHT_LIVE_ROOT }}
+          # Where the page reads live/closings.json and predictions/latest.json from, a host
+          # published apart from this site (docs/live.md, docs/predict.md): the owner's Pages
+          # repository viaate/snowlight-live, whose v1/ folder the live passes publish. A file not
+          # published there yet is a 404, which the page reads as no data (never a stale one). A
+          # repository variable SNOWLIGHT_LIVE_ROOT still overrides it.
+          VITE_SNOWLIGHT_LIVE_ROOT: ${{ vars.SNOWLIGHT_LIVE_ROOT || 'https://viaate.github.io/snowlight-live/v1/' }}
           # The waitlist (web/tools/waitlist.ts): the front page is the waitlist once the
           # repository variable WAITLIST_KIT_FORM holds the Kit form's id. Unset, the site builds
           # as before. WAITLIST_CONFIRM must match the Kit form's double opt-in: unset while it is

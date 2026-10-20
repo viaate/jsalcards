@@ -37,6 +37,7 @@ import {
   closingsReader,
   dueEvery,
   newerClosings,
+  newerPredictions,
   pollWhileVisible,
 } from '../data/live';
 import {
@@ -620,7 +621,7 @@ export function watchSchool(options: WatchOptions): () => void {
     // in depth, so a panel never steps back whatever the reader hands it.
     live.closings = newerClosings(live.closings, read.closings);
     live.covered = read.covered ?? live.covered;
-    live.predictions = read.predictions ?? live.predictions;
+    live.predictions = newerPredictions(live.predictions, read.predictions);
   };
 
   // Nothing to read and nothing known: no such school here, and no panel, not even for a moment.

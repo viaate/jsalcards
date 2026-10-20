@@ -1,0 +1,136 @@
+# The snow-day chances: predictions/latest.json on the live host (docs/predict.md).
+#
+# One job runs `snowlight predict run` for 320 minutes: a pass on every :07 and :37 (the loop
+# sleeps to the grid minute, so the passes do not drift), and an extra pass whenever the NWS
+# alerts change or the last pass went dark, checked every 5 minutes, at most one per 10 minutes.
+# It uploads when the file differs, and on every grid pass as the heartbeat (unless an upload went
+# out under 4 minutes before), so the public file is normally under 35 minutes old. Then it starts
+# its successor (not when the run was cancelled). The 20-minute schedule only restarts a chain that
+# broke: while a run is going, the concurrency group holds the scheduled one (and keeps only the
+# newest pending run).
+# The owner's Cloudflare Worker dispatches this workflow (workflow_dispatch on the default
+# branch) every 5 minutes when no run is queued or running; the same group holds it too.
+#
+# Publishing needs the secret SNOWLIGHT_LIVE_TOKEN in the environment `live`: a fine-grained
+# token with Contents read and write on viaate/snowlight-live only, which the owner creates
+# (docs/predict.md says where). Until it exists every run ends at the first step with a notice:
+# nothing is published, nothing fails.
+name: predict
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: "*/20 * * * *"
+
+concurrency:
+  group: predict
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+  actions: write # start the successor; read the Pages artifact for the deployed directory
+  deployments: read # the deployed directory's handshake (S8-0)
+  issues: write # the watchdog's issue
+
+jobs:
+  predict:
+    # Scheduled runs are always on the default branch (their payload names no repository).
+    if: github.event_name == 'schedule' || github.ref == format('refs/heads/{0}', github.event.repository.default_branch)
+    runs-on: ubuntu-latest
+    timeout-minutes: 345
+    environment: live
+    defaults:
+      run:
+        working-directory: pipeline
+    env:
+      LIVE_HOST_TOKEN: ${{ secrets.SNOWLIGHT_LIVE_TOKEN }}
+      PREDICT_PUBLISH: ${{ vars.PREDICT_PUBLISH || 'on' }}
+      GITHUB_TOKEN: ${{ github.token }}
+    steps:
+      - id: token
+        name: Stay dark without the live host token
+        working-directory: .
+        run: |
+          if [ -z "$LIVE_HOST_TOKEN" ]; then
+            echo "::notice::No SNOWLIGHT_LIVE_TOKEN in the live environment: nothing is published (docs/predict.md)."
+            echo "ready=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "ready=true" >> "$GITHUB_OUTPUT"
+          fi
+
+      - if: steps.token.outputs.ready == 'true'
+        uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+
+      - if: steps.token.outputs.ready == 'true'
+        uses: astral-sh/setup-uv@c18668ad3cf93ea998bef934396af7bb5c839dc7 # v10.2.0
+        with:
+          python-version: "3.12"
+          working-directory: pipeline
+          enable-cache: true
+          cache-dependency-glob: uv.lock
+
+      - if: steps.token.outputs.ready == 'true'
+        run: uv sync --locked --no-dev
+
+      # The NWS boundaries (weekly releases, about 190 MB) under one key: saved only when the
+      # restore missed, so runs do not fill the repository's cache with copies.
+      - if: steps.token.outputs.ready == 'true'
+        id: boundaries
+        uses: actions/cache/restore@v4
+        with:
+          path: pipeline/.cache/weather
+          key: predict-boundaries-v1
+
+      # The pass's private state (its last upload, the alerts it saw in the last 30 hours; a few
+      # KB). A lost or stale state is not trusted: the pass rebuilds its alert memory from the
+      # NWS alert history, or stays dark (docs/predict.md).
+      - if: steps.token.outputs.ready == 'true'
+        uses: actions/cache/restore@v4
+        with:
+          path: pipeline/out/internal/predict/state.json
+          key: predict-state-${{ github.run_id }}
+          restore-keys: predict-state-
+
+      - if: steps.token.outputs.ready == 'true'
+        id: run
+        run: uv run snowlight predict run --until +320m
+
+      - if: always() && steps.token.outputs.ready == 'true'
+        uses: actions/cache/save@v4
+        with:
+          path: pipeline/out/internal/predict/state.json
+          key: predict-state-${{ github.run_id }}
+
+      - if: always() && steps.token.outputs.ready == 'true' && steps.boundaries.outputs.cache-hit != 'true'
+        uses: actions/cache/save@v4
+        with:
+          path: pipeline/.cache/weather
+          key: predict-boundaries-v1
+
+      # Not on cancel: cancelling a run (or disabling the workflow) stops the chain.
+      - if: (success() || failure()) && steps.token.outputs.ready == 'true'
+        name: Start the successor
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh workflow run predict.yml --repo "$GITHUB_REPOSITORY" --ref "$GITHUB_REF_NAME"
+
+      # After every run, the passes' own failures included: a chain that stays dark is reported.
+      - if: always() && steps.token.outputs.ready == 'true'
+        id: check
+        name: Watchdog
+        run: uv run snowlight predict check --max-age 45m
+
+      # One open issue at a time: a chain that stays dark does not open one per run.
+      - if: always() && steps.check.outcome == 'failure'
+        name: Open an issue
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TITLE: Snow-day chances are stale
+        run: |
+          open=$(gh issue list --repo "$GITHUB_REPOSITORY" --state open --search "in:title \"$TITLE\"" --json title --jq "[.[] | select(.title == env.TITLE)] | length")
+          if [ "$open" = "0" ]; then
+            gh issue create --repo "$GITHUB_REPOSITORY" --title "$TITLE" \
+              --body "predict check found the public predictions file stale, missing or blank after run $GITHUB_RUN_ID. The page hides it after 90 minutes. See docs/predict.md."
+          fi

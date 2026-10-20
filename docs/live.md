@@ -69,6 +69,11 @@ Exit `0` means every prefix is held and every file is blanked. Exit `1` means th
 | `LIVE_R2_ACCESS_KEY_ID`, `LIVE_R2_SECRET_ACCESS_KEY` | The bucket keys (host `r2`, or state `bucket`). |
 | `GITHUB_TOKEN` | Reads the site's deployments for the directory check, in the ingest and in `check` (`deployments: read`, `actions: read`, `contents: read`). |
 
+Host `github` needs the Pages repository to serve its whole tree: today
+`viaate/snowlight-live` deploys only the S8-A probe, so a committed file is never served.
+The workflow that serves the repository root, and the one-time shadow check, are in
+`docs/predict.md` (What the owner sets up once, step 4).
+
 ## Where files go
 
 Public, on the live host. These hold school indexes, days, codes and times only.

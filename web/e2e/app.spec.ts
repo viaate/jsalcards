@@ -984,7 +984,7 @@ function syntheticPredictions(): string {
               heavy: { first: 6, last: 8 },
             },
             why: {
-              base: { kind: 'alert', points: 30, alert: 'winter_storm_warning' },
+              base: { kind: 'alert', points: 30, alert: 'winter_storm_warning', borrowed: false },
               reasons: [
                 { kind: 'snow_total', points: 16, low: 6.0, high: 9.0, overnight: true },
                 { kind: 'neighbors', points: 9, districts: [2, 0], status: 0 },
@@ -1188,7 +1188,7 @@ function shapedPredictions(shape: NightShape): string {
               heavy: shape.heavy,
             },
             why: {
-              base: { kind: 'alert', points: 50, alert: 'winter_storm_warning' },
+              base: { kind: 'alert', points: 50, alert: 'winter_storm_warning', borrowed: false },
               reasons: [
                 snow
                   ? {

@@ -125,7 +125,10 @@ function forecast(chance: number): unknown {
       high: 9,
       heavy: { first: 5, last: 7 },
     },
-    why: { base: { kind: 'similar_days', points: Math.round(chance * 100) }, reasons: [] },
+    why: {
+      base: { kind: 'similar_days', points: Math.round(chance * 100), borrowed: false },
+      reasons: [],
+    },
     record: null,
     events: [],
   };
@@ -597,7 +600,7 @@ describe('an area with its closings at a live root', () => {
   const delta = (view: ReturnType<typeof areaView> | undefined) =>
     view?.own.find((row) => row.id === 'A0000001')?.tone;
 
-  it('reads the closings file from the root, and keeps the newer one when an older one follows', async () => {
+  it('reads the closings and the chances from the root, and keeps the newer closings when an older one follows', async () => {
     const answers: ClosingsFile[] = [NEWER, CLOSINGS, CLOSINGS, CLOSINGS];
     const urls: string[] = [];
     const fetchSpy = vi.spyOn(globalThis, 'fetch').mockImplementation((url) => {
@@ -627,7 +630,7 @@ describe('an area with its closings at a live root', () => {
     stop();
     fetchSpy.mockRestore();
     expect(new Set(urls)).toEqual(
-      new Set([`${LIVE}live/closings.json`, `${ROOT}predictions/latest.json`]),
+      new Set([`${LIVE}live/closings.json`, `${LIVE}predictions/latest.json`]),
     );
     expect(delta(views.at(-1))).toBe('closed');
     expect(

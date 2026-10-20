@@ -28,7 +28,7 @@ const STATUS_COUNT = 4;
 /** Status codes (types/generated Status): a closing or a remote day next door only adds. */
 const CLOSED = 0;
 const REMOTE = 2;
-const SCOPES = ['nearby', 'county', 'state', 'region'] as const;
+const SCOPES = ['nearby', 'county', 'state', 'region', 'nation'] as const;
 const ALERTS: readonly AlertKind[] = [
   'winter_storm_warning',
   'winter_weather_advisory',
@@ -57,15 +57,26 @@ export interface HoursDetail {
 /** Where the districts of a pooled base are, around the district. */
 export type PoolScope = (typeof SCOPES)[number];
 
+/**
+ * Where the chance starts. `borrowed`: the day's own weather (or the day after a snow day)
+ * has too few recorded days, so the chance is counted over other recorded days, which the
+ * sentence names.
+ */
 export type BaseDetail =
-  | { readonly kind: 'alert'; readonly points: number; readonly alert: AlertKind }
+  | {
+      readonly kind: 'alert';
+      readonly points: number;
+      readonly alert: AlertKind;
+      readonly borrowed: boolean;
+    }
   | { readonly kind: 'day_after'; readonly points: number }
-  | { readonly kind: 'similar_days'; readonly points: number }
+  | { readonly kind: 'similar_days'; readonly points: number; readonly borrowed: boolean }
   | {
       readonly kind: 'pooled';
       readonly points: number;
       readonly scope: PoolScope;
       readonly alert: AlertKind | null;
+      readonly borrowed: boolean;
     };
 
 export type ReasonDetail =
@@ -218,22 +229,26 @@ function hoursOf(value: unknown, busesAt: Date | null): HoursDetail | null {
 function baseOf(value: unknown): BaseDetail | null {
   const base = fields(value);
   if (base === null || !isWhole(base.points, 0, 100)) return null;
-  const { points } = base;
+  const { points, borrowed } = base;
+  // Which recorded days the sentence counts must be known, or it could name the wrong ones.
+  if (base.kind !== 'day_after' && typeof borrowed !== 'boolean') return null;
+  const lent = borrowed === true;
   switch (base.kind) {
     case 'alert':
       return ALERTS.includes(base.alert as AlertKind)
-        ? { kind: 'alert', points, alert: base.alert as AlertKind }
+        ? { kind: 'alert', points, alert: base.alert as AlertKind, borrowed: lent }
         : null;
     case 'day_after':
+      return { kind: 'day_after', points };
     case 'similar_days':
-      return { kind: base.kind, points };
+      return { kind: 'similar_days', points, borrowed: lent };
     case 'pooled': {
       const scope = SCOPES.find((item) => item === base.scope);
       const alert = base.alert ?? null;
       if (scope === undefined || (alert !== null && !ALERTS.includes(alert as AlertKind))) {
         return null;
       }
-      return { kind: 'pooled', points, scope, alert: alert as AlertKind | null };
+      return { kind: 'pooled', points, scope, alert: alert as AlertKind | null, borrowed: lent };
     }
     default:
       return null;

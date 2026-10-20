@@ -455,7 +455,6 @@ def test_forecast_states_are_discriminated() -> None:
         # Never a certainty either way, so the sum always has whole points to show.
         ({"p_no_school": 1.0}, "less than or equal to 0.99"),
         ({"p_no_school": 0.0}, "greater than or equal to 0.01"),
-        ({"reasons": []}, "at least 1"),
         ({"reasons": [0, 0]}, "must not repeat"),
         ({"reasons": [9]}, "reasons"),
     ],
@@ -464,6 +463,24 @@ def test_forecast_values_are_checked(change: dict[str, Any], match: str) -> None
     value = example("predictions")
     value["districts"][0]["days"][0] |= change
     _refused(PredictionsFile, value, match)
+
+
+def test_a_clear_school_day_is_a_forecast_with_no_weather() -> None:
+    # Contract C1: every school day has a forecast, weather or not; a clear one names none.
+    value = example("predictions")
+    forecast = value["districts"][0]["days"][0]
+    forecast |= {"p_no_school": 0.01, "p_delay": 0.0, "reasons": [], "record": None}
+    forecast["why"] = {
+        "base": {"kind": "similar_days", "points": 1, "borrowed": False},
+        "reasons": [],
+    }
+    for key in ("hours", "buses_at", "announces_at", "previous"):
+        forecast[key] = None
+    forecast["events"] = []
+    parsed = PredictionsFile.model_validate(value, strict=False)
+    day = parsed.districts[0].days[0]
+    assert isinstance(day, Forecast)
+    assert day.reasons == ()
 
 
 def test_prediction_days_and_districts_line_up() -> None:

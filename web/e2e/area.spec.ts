@@ -465,7 +465,10 @@ function predictions(): string {
       high: 9,
       heavy: { first: 8, last: 10 },
     },
-    why: { base: { kind: 'similar_days', points: Math.round(chance * 100) }, reasons: [] },
+    why: {
+      base: { kind: 'similar_days', points: Math.round(chance * 100), borrowed: false },
+      reasons: [],
+    },
     record: null,
     events: [],
   });

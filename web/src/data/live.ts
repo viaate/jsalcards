@@ -141,6 +141,22 @@ export function newerClosings(
 }
 
 /**
+ * The predictions file to show: `next` when it was made later than `prev` (or
+ * there is no `prev`), else `prev`, by the files' own generated_at. A copy an
+ * edge still serves after a newer one was read (S8-A saw a Fastly node serve
+ * the old copy 15 s after a deploy), or a failed read (null), never steps an
+ * open panel back to a superseded chance.
+ */
+export function newerPredictions<T extends { readonly generated_at: string }>(
+  prev: T | null,
+  next: T | null,
+): T | null {
+  if (next === null) return prev;
+  if (prev === null) return next;
+  return Date.parse(next.generated_at) > Date.parse(prev.generated_at) ? next : prev;
+}
+
+/**
  * How often an open panel reads live/covered.json and live/predictions.json
  * again: five minutes, as every live file was read before the closings file
  * was read each minute. S8 publishes neither (spec section 1), so their reads

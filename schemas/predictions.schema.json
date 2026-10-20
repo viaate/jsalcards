@@ -3,10 +3,14 @@
   "$defs": {
     "AlertBase": {
       "additionalProperties": false,
-      "description": "The district closes for about ``points`` in 100 of these alerts.",
+      "description": "The district's own record: it closed or went remote on about ``points`` in 100 of its\nrecorded days with ``alert`` (the days the archive read, never every alert issued).",
       "properties": {
         "alert": {
           "$ref": "#/$defs/AlertKind"
+        },
+        "borrowed": {
+          "description": "The day's own weather has too few recorded days: the chance is counted over the recorded days with alert instead, and the sentence says so.",
+          "type": "boolean"
         },
         "kind": {
           "const": "alert",
@@ -19,7 +23,8 @@
       "required": [
         "kind",
         "points",
-        "alert"
+        "alert",
+        "borrowed"
       ],
       "title": "AlertBase",
       "type": "object"
@@ -98,7 +103,7 @@
     },
     "DayAfterBase": {
       "additionalProperties": false,
-      "description": "After a day closed for weather, the district stays closed the next day this often.",
+      "description": "The district's own record: after a recorded snow day, it stayed closed or went remote\nthe next day on about ``points`` in 100 of those recorded days.",
       "properties": {
         "kind": {
           "const": "day_after",
@@ -203,7 +208,7 @@
     },
     "Forecast": {
       "additionalProperties": false,
-      "description": "Weather that has closed or delayed these schools before is forecast that day.",
+      "description": "A school day's chance of no school or a delay, with the weather forecast, if any.",
       "properties": {
         "announces_at": {
           "anyOf": [
@@ -261,11 +266,11 @@
           ]
         },
         "reasons": {
-          "description": "The forecast weather, most important first.",
+          "description": "The forecast weather, most important first; empty when none is forecast.",
           "items": {
             "$ref": "#/$defs/Reason"
           },
-          "minItems": 1,
+          "minItems": 0,
           "type": "array"
         },
         "record": {
@@ -485,7 +490,7 @@
     },
     "NoThreat": {
       "additionalProperties": false,
-      "description": "No weather that has closed or delayed these schools before is forecast that day.",
+      "description": "A day that is not a school day: a weekend, Thanksgiving Thursday and Friday, or 24\nDecember to 1 January.",
       "properties": {
         "state": {
           "const": "no_threat",
@@ -588,7 +593,7 @@
     },
     "PooledBase": {
       "additionalProperties": false,
-      "description": "For a district with too short a history of its own: the districts around it.\n\nThe districts of ``scope`` (``nearby``: within the neighbor distance; or the\ndistrict's county, state or weather region) close for about ``points`` in 100 days\nlike this, or in 100 of ``alert`` when one is given.",
+      "description": "For a district with too short a history of its own: the districts around it.\n\nThe districts of ``scope`` (``nearby``: within the neighbor distance; the\ndistrict's county, state or weather region; or ``nation``: the districts of every\nstate, named when no smaller place's record is true of the chance) closed or went\nremote on about ``points`` in 100 of their recorded district-days like this one, or\nwith ``alert`` when one is given. The pipeline names a scope only when the share the\nwebsite says for ``points`` is true of that scope's recorded days.",
       "properties": {
         "alert": {
           "anyOf": [
@@ -599,6 +604,10 @@
               "type": "null"
             }
           ]
+        },
+        "borrowed": {
+          "description": "The day's own weather (or the day after a snow day) has too few recorded days: the chance is counted over the recorded days with alert, or, with no alert, the days like this that did not follow a recorded snow day; the sentence says so.",
+          "type": "boolean"
         },
         "kind": {
           "const": "pooled",
@@ -612,7 +621,8 @@
             "nearby",
             "county",
             "state",
-            "region"
+            "region",
+            "nation"
           ],
           "type": "string"
         }
@@ -621,7 +631,8 @@
         "kind",
         "scope",
         "points",
-        "alert"
+        "alert",
+        "borrowed"
       ],
       "title": "PooledBase",
       "type": "object"
@@ -752,8 +763,12 @@
     },
     "SimilarDaysBase": {
       "additionalProperties": false,
-      "description": "The district closes for about ``points`` in 100 days with weather like this.",
+      "description": "The district's own record: it closed or went remote on about ``points`` in 100 of its\nrecorded days like this one (same weather class).",
       "properties": {
+        "borrowed": {
+          "description": "The day follows a snow day and too few such days are recorded: the chance is counted over the recorded days like this that did not follow a recorded snow day.",
+          "type": "boolean"
+        },
         "kind": {
           "const": "similar_days",
           "type": "string"
@@ -764,7 +779,8 @@
       },
       "required": [
         "kind",
-        "points"
+        "points",
+        "borrowed"
       ],
       "title": "SimilarDaysBase",
       "type": "object"

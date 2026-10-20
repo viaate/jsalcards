@@ -56,7 +56,7 @@ describe('a forecast’s chance section parts', () => {
         heavy: { first: 6, last: 8 },
       },
       why: {
-        base: { kind: 'alert', points: 30, alert: 'winter_storm_warning' },
+        base: { kind: 'alert', points: 30, alert: 'winter_storm_warning', borrowed: false },
         reasons: [
           { kind: 'snow_total', points: 14, low: 6, high: 9, overnight: true },
           { kind: 'neighbors', points: 9, districts: [1], status: 0 },
@@ -258,15 +258,47 @@ describe('a forecast’s chance section parts', () => {
 
   it('reads a base pooled from the districts around a district with a short history', () => {
     const pooled = night();
-    (pooled.why as Json).base = { kind: 'pooled', scope: 'county', points: 30, alert: null };
+    (pooled.why as Json).base = {
+      kind: 'pooled',
+      scope: 'county',
+      points: 30,
+      alert: null,
+      borrowed: false,
+    };
     expect(read(pooled).why?.base).toEqual({
       kind: 'pooled',
       scope: 'county',
       points: 30,
       alert: null,
+      borrowed: false,
     });
     ((pooled.why as Json).base as Json).scope = 'planet';
     expect(read(pooled).why).toBeNull();
+  });
+
+  it('reads which recorded days a base counts, and drops a base that does not say', () => {
+    const lent = night();
+    (lent.why as Json).base = {
+      kind: 'pooled',
+      scope: 'nation',
+      points: 90,
+      alert: 'winter_storm_warning',
+      borrowed: true,
+    };
+    expect(read(lent).why?.base).toMatchObject({ kind: 'pooled', borrowed: true });
+    // Without it the sentence could name the wrong days: no why at all.
+    for (const kind of ['pooled', 'alert', 'similar_days']) {
+      const bare = night();
+      (bare.why as Json).base = {
+        kind,
+        scope: 'nation',
+        points: 90,
+        alert: 'winter_storm_warning',
+      };
+      expect(read(bare).why, kind).toBeNull();
+      ((bare.why as Json).base as Json).borrowed = 'yes';
+      expect(read(bare).why, kind).toBeNull();
+    }
   });
 
   it('keeps only the weather that already happened, in time order', () => {

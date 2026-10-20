@@ -1,0 +1,596 @@
+[
+ {
+  "percent": 1,
+  "some": 1,
+  "of": 100,
+  "more": false
+ },
+ {
+  "percent": 2,
+  "some": 1,
+  "of": 50,
+  "more": false
+ },
+ {
+  "percent": 3,
+  "some": 1,
+  "of": 33,
+  "more": false
+ },
+ {
+  "percent": 4,
+  "some": 1,
+  "of": 25,
+  "more": false
+ },
+ {
+  "percent": 5,
+  "some": 1,
+  "of": 20,
+  "more": false
+ },
+ {
+  "percent": 6,
+  "some": 1,
+  "of": 17,
+  "more": false
+ },
+ {
+  "percent": 7,
+  "some": 1,
+  "of": 14,
+  "more": false
+ },
+ {
+  "percent": 8,
+  "some": 1,
+  "of": 13,
+  "more": false
+ },
+ {
+  "percent": 9,
+  "some": 1,
+  "of": 11,
+  "more": false
+ },
+ {
+  "percent": 10,
+  "some": 1,
+  "of": 10,
+  "more": false
+ },
+ {
+  "percent": 11,
+  "some": 1,
+  "of": 9,
+  "more": false
+ },
+ {
+  "percent": 12,
+  "some": 1,
+  "of": 9,
+  "more": true
+ },
+ {
+  "percent": 13,
+  "some": 1,
+  "of": 8,
+  "more": false
+ },
+ {
+  "percent": 14,
+  "some": 1,
+  "of": 7,
+  "more": false
+ },
+ {
+  "percent": 15,
+  "some": 1,
+  "of": 7,
+  "more": true
+ },
+ {
+  "percent": 16,
+  "some": 1,
+  "of": 7,
+  "more": true
+ },
+ {
+  "percent": 17,
+  "some": 1,
+  "of": 6,
+  "more": false
+ },
+ {
+  "percent": 18,
+  "some": 1,
+  "of": 6,
+  "more": true
+ },
+ {
+  "percent": 19,
+  "some": 1,
+  "of": 6,
+  "more": true
+ },
+ {
+  "percent": 20,
+  "some": 1,
+  "of": 5,
+  "more": false
+ },
+ {
+  "percent": 21,
+  "some": 1,
+  "of": 5,
+  "more": true
+ },
+ {
+  "percent": 22,
+  "some": 1,
+  "of": 5,
+  "more": true
+ },
+ {
+  "percent": 23,
+  "some": 1,
+  "of": 5,
+  "more": true
+ },
+ {
+  "percent": 24,
+  "some": 1,
+  "of": 5,
+  "more": true
+ },
+ {
+  "percent": 25,
+  "some": 1,
+  "of": 4,
+  "more": false
+ },
+ {
+  "percent": 26,
+  "some": 1,
+  "of": 4,
+  "more": true
+ },
+ {
+  "percent": 27,
+  "some": 1,
+  "of": 4,
+  "more": true
+ },
+ {
+  "percent": 28,
+  "some": 1,
+  "of": 4,
+  "more": true
+ },
+ {
+  "percent": 29,
+  "some": 1,
+  "of": 4,
+  "more": true
+ },
+ {
+  "percent": 30,
+  "some": 3,
+  "of": 10,
+  "more": false
+ },
+ {
+  "percent": 31,
+  "some": 3,
+  "of": 10,
+  "more": true
+ },
+ {
+  "percent": 32,
+  "some": 3,
+  "of": 10,
+  "more": true
+ },
+ {
+  "percent": 33,
+  "some": 1,
+  "of": 3,
+  "more": false
+ },
+ {
+  "percent": 34,
+  "some": 1,
+  "of": 3,
+  "more": true
+ },
+ {
+  "percent": 35,
+  "some": 1,
+  "of": 3,
+  "more": true
+ },
+ {
+  "percent": 36,
+  "some": 1,
+  "of": 3,
+  "more": true
+ },
+ {
+  "percent": 37,
+  "some": 1,
+  "of": 3,
+  "more": true
+ },
+ {
+  "percent": 38,
+  "some": 1,
+  "of": 3,
+  "more": true
+ },
+ {
+  "percent": 39,
+  "some": 1,
+  "of": 3,
+  "more": true
+ },
+ {
+  "percent": 40,
+  "some": 2,
+  "of": 5,
+  "more": false
+ },
+ {
+  "percent": 41,
+  "some": 2,
+  "of": 5,
+  "more": true
+ },
+ {
+  "percent": 42,
+  "some": 2,
+  "of": 5,
+  "more": true
+ },
+ {
+  "percent": 43,
+  "some": 2,
+  "of": 5,
+  "more": true
+ },
+ {
+  "percent": 44,
+  "some": 2,
+  "of": 5,
+  "more": true
+ },
+ {
+  "percent": 45,
+  "some": 2,
+  "of": 5,
+  "more": true
+ },
+ {
+  "percent": 46,
+  "some": 2,
+  "of": 5,
+  "more": true
+ },
+ {
+  "percent": 47,
+  "some": 2,
+  "of": 5,
+  "more": true
+ },
+ {
+  "percent": 48,
+  "some": 2,
+  "of": 5,
+  "more": true
+ },
+ {
+  "percent": 49,
+  "some": 2,
+  "of": 5,
+  "more": true
+ },
+ {
+  "percent": 50,
+  "some": 1,
+  "of": 2,
+  "more": false
+ },
+ {
+  "percent": 51,
+  "some": 1,
+  "of": 2,
+  "more": true
+ },
+ {
+  "percent": 52,
+  "some": 1,
+  "of": 2,
+  "more": true
+ },
+ {
+  "percent": 53,
+  "some": 1,
+  "of": 2,
+  "more": true
+ },
+ {
+  "percent": 54,
+  "some": 1,
+  "of": 2,
+  "more": true
+ },
+ {
+  "percent": 55,
+  "some": 1,
+  "of": 2,
+  "more": true
+ },
+ {
+  "percent": 56,
+  "some": 1,
+  "of": 2,
+  "more": true
+ },
+ {
+  "percent": 57,
+  "some": 1,
+  "of": 2,
+  "more": true
+ },
+ {
+  "percent": 58,
+  "some": 1,
+  "of": 2,
+  "more": true
+ },
+ {
+  "percent": 59,
+  "some": 1,
+  "of": 2,
+  "more": true
+ },
+ {
+  "percent": 60,
+  "some": 3,
+  "of": 5,
+  "more": false
+ },
+ {
+  "percent": 61,
+  "some": 3,
+  "of": 5,
+  "more": true
+ },
+ {
+  "percent": 62,
+  "some": 3,
+  "of": 5,
+  "more": true
+ },
+ {
+  "percent": 63,
+  "some": 3,
+  "of": 5,
+  "more": true
+ },
+ {
+  "percent": 64,
+  "some": 3,
+  "of": 5,
+  "more": true
+ },
+ {
+  "percent": 65,
+  "some": 3,
+  "of": 5,
+  "more": true
+ },
+ {
+  "percent": 66,
+  "some": 3,
+  "of": 5,
+  "more": true
+ },
+ {
+  "percent": 67,
+  "some": 2,
+  "of": 3,
+  "more": false
+ },
+ {
+  "percent": 68,
+  "some": 2,
+  "of": 3,
+  "more": true
+ },
+ {
+  "percent": 69,
+  "some": 2,
+  "of": 3,
+  "more": true
+ },
+ {
+  "percent": 70,
+  "some": 7,
+  "of": 10,
+  "more": false
+ },
+ {
+  "percent": 71,
+  "some": 7,
+  "of": 10,
+  "more": true
+ },
+ {
+  "percent": 72,
+  "some": 7,
+  "of": 10,
+  "more": true
+ },
+ {
+  "percent": 73,
+  "some": 7,
+  "of": 10,
+  "more": true
+ },
+ {
+  "percent": 74,
+  "some": 7,
+  "of": 10,
+  "more": true
+ },
+ {
+  "percent": 75,
+  "some": 3,
+  "of": 4,
+  "more": false
+ },
+ {
+  "percent": 76,
+  "some": 3,
+  "of": 4,
+  "more": true
+ },
+ {
+  "percent": 77,
+  "some": 3,
+  "of": 4,
+  "more": true
+ },
+ {
+  "percent": 78,
+  "some": 3,
+  "of": 4,
+  "more": true
+ },
+ {
+  "percent": 79,
+  "some": 3,
+  "of": 4,
+  "more": true
+ },
+ {
+  "percent": 80,
+  "some": 4,
+  "of": 5,
+  "more": false
+ },
+ {
+  "percent": 81,
+  "some": 4,
+  "of": 5,
+  "more": true
+ },
+ {
+  "percent": 82,
+  "some": 4,
+  "of": 5,
+  "more": true
+ },
+ {
+  "percent": 83,
+  "some": 4,
+  "of": 5,
+  "more": true
+ },
+ {
+  "percent": 84,
+  "some": 4,
+  "of": 5,
+  "more": true
+ },
+ {
+  "percent": 85,
+  "some": 4,
+  "of": 5,
+  "more": true
+ },
+ {
+  "percent": 86,
+  "some": 4,
+  "of": 5,
+  "more": true
+ },
+ {
+  "percent": 87,
+  "some": 4,
+  "of": 5,
+  "more": true
+ },
+ {
+  "percent": 88,
+  "some": 4,
+  "of": 5,
+  "more": true
+ },
+ {
+  "percent": 89,
+  "some": 4,
+  "of": 5,
+  "more": true
+ },
+ {
+  "percent": 90,
+  "some": 9,
+  "of": 10,
+  "more": false
+ },
+ {
+  "percent": 91,
+  "some": 9,
+  "of": 10,
+  "more": true
+ },
+ {
+  "percent": 92,
+  "some": 9,
+  "of": 10,
+  "more": true
+ },
+ {
+  "percent": 93,
+  "some": 9,
+  "of": 10,
+  "more": true
+ },
+ {
+  "percent": 94,
+  "some": 9,
+  "of": 10,
+  "more": true
+ },
+ {
+  "percent": 95,
+  "some": 19,
+  "of": 20,
+  "more": false
+ },
+ {
+  "percent": 96,
+  "some": 19,
+  "of": 20,
+  "more": true
+ },
+ {
+  "percent": 97,
+  "some": 19,
+  "of": 20,
+  "more": true
+ },
+ {
+  "percent": 98,
+  "some": 49,
+  "of": 50,
+  "more": false
+ },
+ {
+  "percent": 99,
+  "some": 99,
+  "of": 100,
+  "more": false
+ }
+]

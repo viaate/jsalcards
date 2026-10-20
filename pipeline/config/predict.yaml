@@ -1,0 +1,86 @@
+# The snow-day chance model's settings (S7 spec, piece 1).
+# Read by snowlight.predict.config; secrets never live here (see docs/predict.md).
+
+# Labels (spec a): which captures say what a district did on a school day.
+labels:
+  read_from: "06:30"          # a read on D: fetched in [read_from, read_until) local on D
+  read_until: "09:30"
+  no_school_share: 0.5        # at least this share of eligible schools lit closed or remote
+  delayed_share: 0.5          # at least this share lit delayed
+  open_max_share: 0.10        # read on D and at most this share lit with any status
+  audience_days: 2            # a station lists a district on at least this many days of the season
+  market_rows_void: 5         # an empty read is void when a market peer holds this many rows
+  station_min_captures: 5     # a station with fewer populated captures in the archive never reads a district
+  capture_min_share: 0.5      # on a storm day a populated read needs this share of its station's median rows
+  storm_absence_share: 0.5    # on a storm day, absence is not open when this share of the market closed
+  first_season: 2015          # 2015-16
+  excluded_from: "2020-03-13" # the pandemic closures: never a weather label
+  excluded_until: "2020-08-14"
+
+# Weather class (spec b): the alerts that count for a school day.
+weather:
+  snapshot_hour: 21           # training snapshot: 21:00 local on D-1
+  window_from: "18:00"        # an alert counts when it overlaps [18:00 D-1, 09:00 D) local
+  window_until: "09:00"
+  covered_share: 0.5          # a district's class covers at least this share of its schools
+  memory_hours: 30            # live alerts kept this long after they were last seen
+
+# The pooled rates (spec c.1). Round 1 used m = 1024 everywhere with own 1024 and levels 64 days:
+# those values were picked after looking at the walk-forward test seasons, so that backtest was
+# not out of sample. Round 2 goes back to the spec: own 4 days, levels 8 days, and each m chosen
+# per level and class group by leave-one-season-out log loss inside the training seasons only
+# (from a wider grid than the spec's, up to 1024), fixed before the backtest was run.
+# The base sentence names a level only when it is true of that level's recorded days (the
+# lead's addenda b and d): its own days hold at least half the weight (n >= m) and the share
+# the website says for its published rate is true of its y of n (an exact share only when y/n
+# rounds to the same percent, "more than s in o" only above s/o, "almost never" only under
+# almost_share); otherwise the base moves up, to the nation, whose rate is its record y/n. A
+# situation the nation holds fewer than nation_min_days labeled days of is not modeled and
+# publishes its fallback's rates, its sentence saying which recorded days it counts (never the
+# uninformed 1 in 2 of an empty count).
+model:
+  own_min_days: 4             # a district's own rate needs this many labeled days
+  level_min_days: 8           # a pooled level is named only with this many days
+  nation_min_days: 30         # a situation is modeled only with this many labeled days nationally
+  almost_share: 0.05          # "almost never" only under 1 in 20 closed ("almost always": over 19 in 20)
+  fallback:                   # a situation not modeled takes this one's rates and sentence
+    lake_snow: snow_warning
+    blizzard: snow_warning
+    ice: snow_warning
+    cold: snow_warning
+    tropical: snow_warning
+    advisory_after: advisory
+    none_after: none
+    advisory: snow_warning
+  m_grid: [1, 2, 4, 8, 16, 32, 64, 128, 256, 512, 1024]
+  floor: 0.01
+  ceiling: 0.99
+  record_days: 8
+
+# The backtest (spec c.3).
+backtest:
+  test_seasons: [2019, 2020, 2021, 2022, 2023, 2024, 2025]
+  apart: [2020]               # reported apart
+  storm_day_market_closings: 10
+  reliability_bins: 10
+  reliability_min_rows: 300
+  g1_min_storm_rows: 300       # G1 per season gates only seasons with this many storm rows
+  g1_tolerance: 0.005         # ... each no worse than B0's storm Brier by more than this
+
+# The serving pass (spec d and the addendum of 2026-10-20).
+serve:
+  forecast_zone: "America/Los_Angeles"  # today is today here; the file holds today and tomorrow
+  neighbor_miles: 10
+  min_district_share: 0.99    # fewer deployed districts than this in the model: dark
+  alerts_max_age_minutes: 20  # the feed's updated older than this: dark
+  collapse_from: 50           # a pass with more winter alerts than this ...
+  collapse_drop: 0.8          # ... followed by one with this much fewer: confirm first
+  budget_raw_bytes: 16000000  # measured worst case: every district under a winter storm warning (the longest alert name) with a previous chance on both days and every recorded district with a full record, 15.8 MB (15,795,035 bytes) (tests/predict/test_loop.py); gzip about 0.2 MB
+  budget_gzip_bytes: 1500000
+  heartbeat_minutes: 30       # an unchanged file is uploaded at least this often
+  heartbeat_skip_minutes: 4   # ... and by every grid pass, unless an upload went out this recently
+  memory_gap_minutes: 20      # the alert memory is whole only if the feed was read this often
+  history_lead_hours: 48      # a rebuilt memory reads NWS alert products from this long before
+  check_minutes: 5            # the alerts are checked this often between passes
+  min_gap_minutes: 10         # at most one extra pass per this many minutes
+  grid_minutes: [7, 37]       # the heartbeat passes, on the hour's grid
