@@ -6,6 +6,7 @@ import { afterAll, describe, expect, it } from 'vitest';
 
 import { copy, mapLocale, REASON_KEYS, shellFormat, STATUS_KEYS } from './copy';
 import type { AlertLevelKey, HazardKey, StatusKey } from './copy';
+import { accountCopy, accountFormat, adminCopy } from './copy-account';
 import { areaFormat } from './copy-area';
 import { chanceCopy, chanceFormat } from './copy-chance';
 import type { BaseInput, ReasonInput, Zones } from './copy-chance';
@@ -1693,6 +1694,45 @@ describe('format', () => {
   });
 });
 
+describe('account copy (src/copy-account.ts)', () => {
+  it('keeps the house style and is frozen', () => {
+    expect(Object.isFrozen(accountCopy)).toBe(true);
+    expect(Object.isFrozen(adminCopy)).toBe(true);
+    expect(Object.isFrozen(accountFormat)).toBe(true);
+    expect(allProblems(copyLeaves(accountCopy).map(([, text]) => text))).toEqual([]);
+    expect(allProblems(copyLeaves(adminCopy).map(([, text]) => text))).toEqual([]);
+  });
+
+  it('words what it is given', () => {
+    expect(accountCopy.control.signedOut).toBe('Sign up or log in');
+    expect(accountFormat.firstName('  Sam   Rivera ')).toBe('Sam');
+    expect(accountFormat.menuLabel('Sam Rivera')).toBe('Account menu for Sam Rivera');
+    expect(accountFormat.manualStatus('delayed', 120, null)).toBe('Delayed 120 minutes');
+    expect(accountFormat.manualStatus('early_dismissal', null, '13:30')).toBe(
+      'Early dismissal at 13:30',
+    );
+    expect(() => accountFormat.manualStatus('remote', null, null)).toThrow(RangeError);
+    expect(accountFormat.percent(0.724)).toBe('72%');
+    expect(accountFormat.age(90 * 60_000)).toBe('2 h');
+    expect(accountFormat.age(3 * 24 * 3_600_000)).toBe('3 d');
+    expect(accountFormat.action('set_status')).toBe('Set a status');
+    expect(accountFormat.accounts(1)).toBe('1 account');
+    // Names people type or schools carry are theirs, cased as they are: the words around them are
+    // checked here with lowercase stand-ins.
+    const shown = [
+      accountFormat.menuLabel('sam'),
+      accountFormat.openSchool('lincoln elementary'),
+      accountFormat.removeSchool('lincoln elementary'),
+      accountFormat.manualStatus('closed', null, null),
+      accountFormat.target('district', '3904378'),
+      accountFormat.page(2, 5),
+      accountFormat.confirmDelete('sam@example.com'),
+      accountFormat.action('other'),
+    ];
+    expect(allProblems(shown)).toEqual([]);
+  });
+});
+
 describe('check-copy lint', () => {
   const roots: string[] = [];
   afterAll(() => {
@@ -2969,10 +3009,14 @@ ${aliases}
   it('passes this project', async () => {
     const { findings, scanned } = await lintProject({ root: WEB_ROOT });
     expect(findings).toEqual([]);
-    // copy.ts's strings, the chance section's fixed words (src/copy-chance.ts) and the waitlist's
-    // (src/copy-waitlist.ts).
+    // copy.ts's strings, the chance section's fixed words (src/copy-chance.ts), the waitlist's
+    // (src/copy-waitlist.ts) and the account controls' and admin view's (src/copy-account.ts).
     expect(scanned.strings).toBe(
-      strings.length + copyLeaves(chanceCopy).length + copyLeaves(waitlistCopy).length,
+      strings.length +
+        copyLeaves(chanceCopy).length +
+        copyLeaves(waitlistCopy).length +
+        copyLeaves(accountCopy).length +
+        copyLeaves(adminCopy).length,
     );
     expect(scanned.svelte).toBeGreaterThan(0);
     // The whole site read as one program: about 37 s of one core with the chance section (50 s

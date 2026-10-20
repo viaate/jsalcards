@@ -168,6 +168,25 @@
       }
 
       /*
+        The account control's room at the right end of the strip, kept only in
+        a build with an accounts API (tools/accounts.ts sets data-accounts), so
+        the update time sits clear of it from the first paint and nothing moves
+        when the control appears once the API answers. On a phone it is a round
+        button across from the wordmark, just before the menu's.
+      */
+      :root[data-accounts] {
+        --account-width: 168px;
+        --account-room: calc(var(--account-width) + 12px);
+      }
+
+      @media (max-width: 719px) {
+        :root[data-accounts] {
+          --account-width: var(--menu-size);
+          --account-room: calc(var(--menu-size) + 8px);
+        }
+      }
+
+      /*
         A phone's small, bright screen, held either way: the lines clearer and
         the states named, so the country reads at a glance. The land stays the
         ground's black (the owner's call). It opens on the whole country, or
@@ -296,7 +315,7 @@
         display: grid;
         grid-template-columns:
           var(--brand-width) minmax(0, var(--field-width))
-          minmax(calc(var(--menu-room) + var(--side-width)), 1fr);
+          minmax(calc(var(--menu-room) + var(--side-width) + var(--account-room, 0px)), 1fr);
         column-gap: var(--brand-gap);
         align-items: center;
         height: var(--bar-height);
@@ -316,7 +335,8 @@
               0px,
               min(
                 var(--field-width),
-                100% - var(--results-left) - var(--brand-gap) - var(--menu-room) - var(--side-width)
+                100% - var(--results-left) - var(--brand-gap) - var(--menu-room) -
+                  var(--side-width) - var(--account-room, 0px)
               )
             )
         );
@@ -541,6 +561,8 @@
       */
       .menu-button {
         position: relative;
+        /* Row 1 by name: the account control shares its column, at the other end. */
+        grid-row: 1;
         grid-column: 3;
         justify-self: start;
         display: grid;

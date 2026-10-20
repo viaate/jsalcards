@@ -10,6 +10,15 @@ interface ImportMetaEnv {
    * 127.0.0.1, [::1]): set by the e2e's build alone, never the site's.
    */
   readonly VITE_SNOWLIGHT_LIVE_LOOPBACK?: string;
+  /**
+   * The accounts API's root, such as "https://snowlight-api.example.workers.dev"
+   * (account/config.ts apiRoot); unset or empty, the page has no account controls.
+   */
+  readonly VITE_API_ROOT?: string;
+  /** "1" lets the API root be plain http on this machine: a local test build alone. */
+  readonly VITE_API_LOOPBACK?: string;
+  /** "owner/repo" the site is built from, for the admin view's run list (admin/overview.ts). */
+  readonly VITE_GITHUB_REPO?: string;
 }
 
 interface ImportMeta {

@@ -17,6 +17,9 @@
     StatusCounts,
     Target,
   } from './app/boot';
+  import type { Accounts } from './account/boot';
+  import { apiRoot, asksForAdmin } from './account/config';
+  import type { AccountState, AccountStore, SheetView } from './account/session';
   import { lateFormats } from './app/late-formats';
   import { grantedPlace, opensNearby } from './app/nearby';
   import { STATUS_KEYS, copy, shellFormat } from './copy';
@@ -73,7 +76,34 @@
     element?: HTMLElement | undefined;
   }
 
+  interface SheetProps {
+    store: AccountStore;
+    view: SheetView;
+    pinnedId: string | null;
+    onview: (view: SheetView) => void;
+    onclose: () => void;
+    onschool: (id: string) => void;
+  }
+
+  interface AdminProps {
+    store: AccountStore;
+    services: () => Promise<Services | null>;
+    onclose: () => void;
+  }
+
   let { still = null, initialQuery = '' }: Props = $props();
+
+  /** The accounts API this build talks to, or null: no account controls (account/config.ts). */
+  const API_ROOT = apiRoot();
+  /** The account controls, once the API has answered; null without them. */
+  let accounts = $state<Accounts | null>(null);
+  let accountState = $state<AccountState | null>(null);
+  let Sheet = $state<Component<SheetProps> | null>(null);
+  let sheetView = $state<SheetView | null>(null);
+  let Admin = $state<Component<AdminProps> | null>(null);
+  /** The admin view is asked for (?admin, or the menu); it shows only to the admin. */
+  let adminWanted = $state(false);
+  const adminShown = $derived(adminWanted && accountState?.user?.role === 'admin');
 
   const LIST_ID = 'search-results';
 
@@ -166,7 +196,8 @@
   const GLYPHS = ['is-closed', 'is-delayed', 'is-remote', 'is-early-dismissal'] as const;
 
   /** The page's controls over the map, which its labels keep clear of (the results list aside). */
-  const CONTROLS = '.wordmark, .search, .menu-button, .updated, .legend, .locate, .detail, .menu';
+  const CONTROLS =
+    '.wordmark, .search, .menu-button, .account, .updated, .legend, .locate, .detail, .menu';
 
   /**
    * Loads MapLibre after the first paint and hands the view over from the
@@ -732,6 +763,48 @@
     inputElement?.focus();
   }
 
+  /** Opens the account sheet on `view`, its code loaded the first time. */
+  function openSheet(view: SheetView): void {
+    sheetView = view;
+    if (Sheet !== null) return;
+    import('./ui/account/AccountSheet.svelte').then(
+      (module) => {
+        Sheet = module.default;
+      },
+      () => undefined,
+    );
+  }
+
+  /** A saved school opens on the map as a pick would. */
+  function openSaved(id: string): void {
+    void services.then((app) => {
+      app?.openSchool(id);
+    });
+  }
+
+  // The admin view's code loads only for the admin, the first time it is asked for.
+  $effect(() => {
+    if (!adminShown || Admin !== null) return;
+    import('./admin/AdminView.svelte').then(
+      (module) => {
+        Admin = module.default;
+      },
+      () => undefined,
+    );
+  });
+
+  /** Back to the map from the admin view: ?admin leaves the address, every other part stays. */
+  function closeAdmin(): void {
+    adminWanted = false;
+    try {
+      const url = new URL(location.href);
+      url.searchParams.delete('admin');
+      history.replaceState(history.state, '', url.href);
+    } catch {
+      // The address keeps ?admin; the view stays closed until it is asked for again.
+    }
+  }
+
   /** Moves the still from the static shell into this frame: the same node, never redrawn. */
   const adoptStill: Attachment<HTMLDivElement> = (frame) => {
     if (still !== null) frame.append(still);
@@ -804,6 +877,25 @@
         });
       })
       .catch(() => null);
+    // The account controls, in a build with an API root, once the page has painted and the API
+    // has answered (account/boot.ts): never before, and not at all when it does not answer.
+    let stopAccount: () => void = () => undefined;
+    if (API_ROOT !== null) {
+      adminWanted = asksForAdmin();
+      void afterFirstPaint()
+        .then(() => import('./account/boot'))
+        .then(({ startAccounts }) => startAccounts(API_ROOT, services, controller.signal))
+        .then(
+          (started) => {
+            if (started === null || controller.signal.aborted) return;
+            accounts = started;
+            stopAccount = started.store.subscribe((next) => {
+              accountState = next;
+            });
+          },
+          () => undefined,
+        );
+    }
     // Subscribed once the app's services are on their way: an open school reads through them.
     const stopSelection = links.subscribe((state) => {
       selection = state.selection;
@@ -817,6 +909,7 @@
     });
     return () => {
       stopFollowing();
+      stopAccount();
       stopSelection();
       stopPins();
       clearTimeout(copiedTimer);
@@ -907,6 +1000,13 @@
     >
       <span class="menu-lines" aria-hidden="true"></span>
     </button>
+    {#if accounts !== null}
+      <accounts.Control
+        store={accounts.store}
+        onopen={openSheet}
+        onadmin={() => (adminWanted = true)}
+      />
+    {/if}
     {#if Results !== null && expanded}
       <Results
         id={LIST_ID}
@@ -975,6 +1075,23 @@
       onsettle={() => basemap?.controlsChanged()}
       bind:element={detailElement}
     />
+  {/if}
+  {#if Sheet !== null && sheetView !== null && accounts !== null}
+    <Sheet
+      store={accounts.store}
+      view={sheetView}
+      {pinnedId}
+      onview={(view) => {
+        sheetView = view;
+      }}
+      onclose={() => {
+        sheetView = null;
+      }}
+      onschool={openSaved}
+    />
+  {/if}
+  {#if Admin !== null && adminShown && accounts !== null}
+    <Admin store={accounts.store} services={() => services} onclose={closeAdmin} />
   {/if}
   <p class="sr-only" role="status">
     {expanded && options?.length === 0 ? copy.search.noResults : ''}

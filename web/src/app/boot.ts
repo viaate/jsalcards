@@ -30,7 +30,7 @@ import type { Basemap, MapView } from '../map/basemap';
 import type { Glow } from '../map/glow-mount';
 import { keepClicks } from '../map/kept-clicks';
 import type { SchoolHit, SchoolTaps } from '../map/school-taps';
-import type { SearchHit } from '../search';
+import type { SearchHit, SearchResults } from '../search';
 import { SHOW_ALL, showsSchool } from '../state/filter';
 import type { MapFilter } from '../state/filter';
 import { createPinStore } from '../state/pin-store';
@@ -38,7 +38,7 @@ import type { PinStore } from '../state/pin-store';
 import { EMPTY_STATE, sameState } from '../state/url';
 import type { Selection } from '../state/url';
 import type { UrlStore } from '../state/url-store';
-import type { LocalDate, SchoolId, UtcInstant } from '../types/generated';
+import type { DistrictId, LocalDate, SchoolId, UtcInstant } from '../types/generated';
 import type { StatusCounts } from '../data/closings';
 import { AREAS_INDEX_PATH } from '../data/areas-format';
 import type { AreaSource } from '../data/areas';
@@ -189,6 +189,17 @@ export interface Services {
   ): () => void;
   /** A typed ZIP code's search result, once the index is in; null where search has no such ZIP code. */
   findZip(zip: string): Promise<SearchOption | null>;
+  /** Searches `text` and hands back what it finds (the admin view's search): null without an index. */
+  lookup(text: string): Promise<SearchResults | null>;
+  /**
+   * Opens a school by its id alone (a saved school): the map goes to it and its panel opens,
+   * as a pick does. A school the directory does not hold opens nothing.
+   */
+  openSchool(id: SchoolId): void;
+  /** One school of a district (its first in the directory), or null: for checking what the map shows. */
+  schoolOf(district: DistrictId): Promise<SchoolId | null>;
+  /** The site's data files and directory, for the admin view's overview. */
+  readonly data: AppData;
   /** The pinned school ("My school"). */
   readonly pins: PinStore;
   /**
@@ -629,6 +640,28 @@ export function boot(options: BootOptions): Services {
         stopped = true;
         stop?.();
       };
+    },
+    data,
+    lookup: (text) => search.lookup(text),
+    openSchool(id) {
+      void locate(data, { kind: 'school', id }, search).then(
+        (target) => {
+          if (target === null || aborted() || !('view' in target)) return;
+          services.pick({ kind: 'school', id, lat: target.view.lat, lon: target.view.lon });
+        },
+        () => undefined,
+      );
+    },
+    async schoolOf(district) {
+      const source = await data.directories();
+      const directory = await source?.get();
+      if (directory === undefined || directory === null) return null;
+      const target = directory.districtIndex(district);
+      if (target < 0) return null;
+      for (let i = 0; i < directory.count; i++) {
+        if (directory.district[i] === target) return directory.meta.ids[i] ?? null;
+      }
+      return null;
     },
     async findZip(zip) {
       const results = await search.lookup(zip);

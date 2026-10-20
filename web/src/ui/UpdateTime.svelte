@@ -115,7 +115,8 @@
   .updated {
     position: absolute;
     top: calc(var(--inset-top) + var(--edge));
-    right: calc(var(--inset-right) + var(--edge));
+    /* Left of the account control's room, in a build that has one (index.html). */
+    right: calc(var(--inset-right) + var(--edge) + var(--account-room, 0px));
     z-index: 1;
     display: flex;
     gap: 8px;
@@ -174,7 +175,7 @@
       max-width: max(
         var(--side-width),
         100vw - var(--inset-left) - var(--inset-right) - 2 * var(--edge) - var(--brand-width) - 2 *
-          var(--brand-gap) - var(--field-width) - var(--menu-room)
+          var(--brand-gap) - var(--field-width) - var(--menu-room) - var(--account-room, 0px)
       );
       white-space: normal;
       text-align: right;
@@ -193,10 +194,12 @@
   */
   @media (max-width: 719px) {
     .updated {
-      right: calc(var(--inset-right) + var(--edge) + var(--menu-size) + 8px);
+      right: calc(
+        var(--inset-right) + var(--edge) + var(--menu-size) + 8px + var(--account-room, 0px)
+      );
       max-width: calc(
         100vw - var(--inset-left) - var(--inset-right) - 2 * var(--edge) - var(--menu-size) - 8px -
-          var(--phone-brand-room)
+          var(--account-room, 0px) - var(--phone-brand-room)
       );
       height: var(--brand-line);
       padding: 0 4px 0 0;

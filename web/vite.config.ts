@@ -10,6 +10,7 @@ import { compileHints } from './tools/compile-hints.ts';
 import { dataFiles } from './tools/data-files.ts';
 import { htmlCopy, pageCopy } from './tools/html-copy.ts';
 import { copyFormatUrl, maplibreUrl, urlStoreUrl } from './tools/chunk-url.ts';
+import { accounts } from './tools/accounts.ts';
 import { usMask } from './tools/us-mask.ts';
 import { schoolNames } from './tools/school-names.ts';
 import { waitlist, waitlistPost, waitlistSettings } from './tools/waitlist.ts';
@@ -42,6 +43,8 @@ export default defineConfig(({ mode }) => {
     appType: 'mpa',
     plugins: [
       svelte(),
+      // In a build with an accounts API, the strip keeps the account control's room (tools/accounts.ts).
+      accounts(loadEnv(mode, import.meta.dirname, 'VITE_API_')),
       // Before htmlCopy: keeps index.html's blocks for the waitlist or for the code screen.
       waitlist(waitlistOn, import.meta.dirname),
       htmlCopy(pageCopy(copy, waitlistCopy)),

@@ -9,6 +9,7 @@ import {
   WAITLIST_PORT,
   WAITLIST_URL,
 } from './e2e/waitlist-server';
+import { ACCOUNTS_API, ACCOUNTS_DIST, ACCOUNTS_PORT, ACCOUNTS_URL } from './e2e/accounts-server';
 
 // Each agent or CI job picks its own port so parallel runs never share a server.
 const port = Number(process.env.E2E_PORT ?? '4173');
@@ -50,6 +51,12 @@ export default defineConfig({
       // The waitlist with its headline in the wordmark's chrome lettering (VITE_WAITLIST_HEADLINE=chrome).
       command: `VITE_WAITLIST_KIT_FORM=${WAITLIST_FORM} VITE_WAITLIST_HEADLINE=chrome SNOWLIGHT_DATA=none npx vite build --outDir ${WAITLIST_CHROME_DIST} --emptyOutDir && npx vite preview --outDir ${WAITLIST_CHROME_DIST} --host 127.0.0.1 --port ${String(WAITLIST_CHROME_PORT)} --strictPort`,
       url: WAITLIST_CHROME_URL,
+      reuseExistingServer: false,
+      timeout: 120_000,
+    },
+    {
+      command: `VITE_API_ROOT=${ACCOUNTS_API} SNOWLIGHT_DATA=none npx vite build --outDir ${ACCOUNTS_DIST} --emptyOutDir && npx vite preview --outDir ${ACCOUNTS_DIST} --host 127.0.0.1 --port ${String(ACCOUNTS_PORT)} --strictPort`,
+      url: ACCOUNTS_URL,
       reuseExistingServer: false,
       timeout: 120_000,
     },
