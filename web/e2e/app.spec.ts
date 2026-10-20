@@ -49,6 +49,7 @@ import type { PreviewServer } from 'vite';
 import { STATUS_KEYS, copy } from '../src/copy';
 import { chanceCopy, chanceFormat } from '../src/copy-chance';
 import { format } from '../src/copy-format';
+import { OPEN_SETTLE_ZOOM } from '../src/map/basemap/flight';
 import { COPIED_MS } from '../src/ui/share';
 
 const WEB = fileURLToPath(new URL('..', import.meta.url));
@@ -2024,6 +2025,78 @@ test.describe('with data staged', () => {
     expect(new URL(page.url()).searchParams.get('school')).toBe(PEMBROKE_HILL);
     expect(problems).toEqual([]);
     await context.close();
+  });
+
+  test('a linked school and the pinned one open straight at their view, no flight on the way; with reduced motion, no settle either', async ({
+    browser,
+  }) => {
+    // Four pages' first frames of streets.
+    test.setTimeout(240_000);
+    for (const reducedMotion of ['no-preference', 'reduce'] as const) {
+      const context = await browser.newContext({
+        viewport: { width: 390, height: 844 },
+        reducedMotion,
+      });
+      // Every zoom the map is at, from the moment it exists.
+      await context.addInitScript(() => {
+        const zooms: number[] = [];
+        Object.assign(window, { snowlightZooms: zooms });
+        const find = (): void => {
+          const map = window.snowlightMap;
+          if (map === undefined) {
+            requestAnimationFrame(find);
+            return;
+          }
+          zooms.push(map.getZoom());
+          map.on('move', () => zooms.push(map.getZoom()));
+        };
+        find();
+      });
+      const page = await context.newPage();
+      const { problems } = watch(page);
+      const zooms = (): Promise<number[]> =>
+        page.evaluate(() => (window as unknown as { snowlightZooms: number[] }).snowlightZooms);
+      const opensStraight = async (final: number): Promise<void> => {
+        const seen = await zooms();
+        const start = seen[0] ?? 0;
+        expect(start).toBeLessThan(final - 4);
+        // The view it opened on, then only where it is first shown and the settle in: no zoom of
+        // a flight's way in, no stop, and never out again.
+        const from = reducedMotion === 'reduce' ? final : final - OPEN_SETTLE_ZOOM;
+        const after = seen.filter((zoom) => zoom > start + 1e-3);
+        expect(after.length).toBeGreaterThan(0);
+        for (const zoom of after) {
+          expect(zoom).toBeGreaterThanOrEqual(from - 1e-3);
+          expect(zoom).toBeLessThanOrEqual(final + 1e-3);
+        }
+        for (let i = 1; i < after.length; i++) {
+          expect(after[i]).toBeGreaterThanOrEqual((after[i - 1] ?? 0) - 1e-6);
+        }
+        await expect(page.locator('aside.detail h2')).not.toHaveText('');
+      };
+
+      await page.goto(`${site}?school=291640000557`);
+      await waitForMap(page);
+      await expectMapNear(page, 39.013304, -94.592692, 15);
+      await expect.poll(() => new URL(page.url()).searchParams.get('at')).not.toBeNull();
+      await opensStraight(15);
+
+      await page.addInitScript(
+        ([key, school]) => {
+          localStorage.setItem(key, JSON.stringify({ v: 1, school }));
+        },
+        [PIN_KEY, PEMBROKE_HILL] as const,
+      );
+      await page.goto(site);
+      await waitForMap(page);
+      await expectMapNear(page, 39.03606, -94.593001, 15);
+      await opensStraight(15);
+      await expect(page.locator('aside.detail h2')).toHaveText(
+        'The Pembroke Hill SchoolWornall Campus',
+      );
+      expect(problems).toEqual([]);
+      await context.close();
+    }
   });
 
   test('a picked school lands in its panel: its day from the live file, what it is, pin, share and close', async ({
