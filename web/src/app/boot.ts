@@ -35,6 +35,7 @@ import { SHOW_ALL, showsSchool } from '../state/filter';
 import type { MapFilter } from '../state/filter';
 import { createPinStore } from '../state/pin-store';
 import type { PinStore } from '../state/pin-store';
+import { EMPTY_STATE, sameState } from '../state/url';
 import type { Selection } from '../state/url';
 import type { UrlStore } from '../state/url-store';
 import type { LocalDate, SchoolId, UtcInstant } from '../types/generated';
@@ -202,6 +203,14 @@ export interface Services {
    * schools the map lights in each status, for its rows.
    */
   toggleMenu(button: HTMLElement, counts: () => StatusCounts | null): void;
+  /**
+   * Back to what a first visit opens on, for the wordmark: nothing open, the
+   * menu closed, live in place of any past day, and an address with none of
+   * it, as one new history entry, so Back returns to where they were. The
+   * pinned school stays pinned, and the menu's filter stays as it is. The map
+   * itself is the page's to move (Basemap showHome).
+   */
+  home(): void;
   /**
    * Shows only what the menu's filter keeps: the lit schools of its status
    * and kinds on the glow, the school dots, dust and names of its kinds on
@@ -653,6 +662,29 @@ export function boot(options: BootOptions): Services {
         stopped = true;
         stop?.();
       };
+    },
+    home() {
+      void menuHost?.then((menu) => {
+        menu?.close();
+      });
+      // A flight a pick or a tap set off is over: nothing flies on there, and no area is taken in.
+      flight = null;
+      const before = links.state;
+      links.navigate(EMPTY_STATE);
+      const stepped = !sameState(before, EMPTY_STATE);
+      // A past day on, or on its way: live again, in the same step where there was one.
+      if (replays === null && linked() === null) return;
+      void loadReplays().then((controller) => {
+        if (!stepped) {
+          controller.exit('push');
+          return;
+        }
+        controller.exit('history');
+        const url = new URL(location.href);
+        if (!url.searchParams.has('replay')) return;
+        url.searchParams.delete('replay');
+        history.replaceState(history.state, '', url);
+      }, liveOnly);
     },
     warmSearch: () => {
       search.warm();

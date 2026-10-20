@@ -354,6 +354,23 @@
         will-change: transform;
       }
 
+      /*
+        The live wordmark is a button that goes back to what a first visit opens
+        on (App.svelte): the name alone, set as the heading sets it, so nothing
+        moves as the live shell takes over. Its focus ring is drawn by the
+        heading, whose box clips what is inside it.
+      */
+      .wordmark .home {
+        all: unset;
+        display: block;
+        cursor: pointer;
+      }
+
+      .wordmark:has(.home:focus-visible) {
+        outline: 1px solid var(--text-2);
+        outline-offset: 2px;
+      }
+
       .search {
         grid-column: 2;
         position: relative;

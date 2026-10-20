@@ -202,6 +202,49 @@ describe('replay mode, as boot runs it', () => {
     },
   );
 
+  it('the wordmark from a past day with a school open: live and nothing open, in one step Back undoes', async () => {
+    history.replaceState(null, '', '/?replay=2026-01-05&school=010000500870');
+    fontsReady();
+    const { services, counts, days, controller } = start();
+    await vi.waitFor(() => {
+      expect(days).toEqual(['2026-01-05']);
+    }, WAIT);
+    const entries = history.length;
+    services.home();
+    await vi.waitFor(() => {
+      expect(days).toEqual(['2026-01-05', null]);
+    }, WAIT);
+    expect(location.search).toBe('');
+    expect(history.length).toBe(entries + 1);
+    await vi.waitFor(() => {
+      expect(counts.at(-1)).toEqual([1, 0, 0, 0]);
+    }, WAIT);
+    // Back: the day and the school again.
+    history.back();
+    await vi.waitFor(() => {
+      expect(days).toEqual(['2026-01-05', null, '2026-01-05']);
+    }, WAIT);
+    expect(location.search).toBe('?school=010000500870&replay=2026-01-05');
+    controller.abort();
+  });
+
+  it('the wordmark from a past day with nothing open: live, as a step of its own', async () => {
+    fontsReady();
+    const { services, days, controller } = start();
+    services.replay('2026-01-05');
+    await vi.waitFor(() => {
+      expect(days).toEqual(['2026-01-05']);
+    }, WAIT);
+    const entries = history.length;
+    services.home();
+    await vi.waitFor(() => {
+      expect(days).toEqual(['2026-01-05', null]);
+    }, WAIT);
+    expect(location.search).toBe('');
+    expect(history.length).toBe(entries + 1);
+    controller.abort();
+  });
+
   it('follows Back from a link to a past day while replay mode still loads: live, and the address with it', async () => {
     history.replaceState(null, '', '/?replay=2026-01-05&school=010000500870');
     fontsReady();

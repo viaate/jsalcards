@@ -67,6 +67,14 @@ export const copy = deepFreeze({
     glow: 'The brighter the glow, the more schools.',
   },
 
+  /**
+   * The wordmark, as the control that goes back to what a first visit opens
+   * on: its name starts with the name it shows.
+   */
+  home: {
+    label: 'Snowlight, back to the start',
+  },
+
   lock: {
     password: 'Password',
   },

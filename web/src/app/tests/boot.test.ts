@@ -463,6 +463,46 @@ describe('search', () => {
     controller.abort();
   });
 
+  it('the wordmark goes back to the start as a step of its own: Back returns to the school', () => {
+    const { services, links, tab, shown, controller } = start('https://snow.test/', NO_DATA);
+    services.pick(SCHOOL_HIT);
+    services.home();
+    expect(links.state).toEqual({ selection: null, view: null });
+    expect(tab.pushes).toBe(2);
+    expect(tab.urls()).toEqual(['', `?school=${PEMBROKE_HILL}&at=39.03606,-94.593,15`, '']);
+    // The map is the page's to move: boot sends it nowhere.
+    expect(shown).toHaveLength(1);
+    expect(tab.back()).toBe(true);
+    expect(links.state.selection).toEqual({ kind: 'school', id: PEMBROKE_HILL });
+    controller.abort();
+  });
+
+  it('the wordmark at the start adds nothing, and keeps the pin', () => {
+    localStorage.setItem(PIN_KEY, encodePin(PEMBROKE_HILL));
+    const { services, links, tab, controller } = start(
+      'https://snow.test/?at=39,-94.6,11',
+      NO_DATA,
+    );
+    services.home();
+    expect(tab.pushes).toBe(1);
+    expect(tab.url).toBe('https://snow.test/');
+    services.home();
+    expect(tab.pushes).toBe(1);
+    expect(links.state).toEqual({ selection: null, view: null });
+    expect(services.pins.school).toBe(PEMBROKE_HILL);
+    controller.abort();
+  });
+
+  it('the wordmark from a pinned school a plain visit opened leaves it one Back away, still pinned', () => {
+    localStorage.setItem(PIN_KEY, encodePin(PEMBROKE_HILL));
+    const { services, links, tab, controller } = start('https://snow.test/', NO_DATA);
+    expect(links.state.selection).toEqual({ kind: 'school', id: PEMBROKE_HILL });
+    services.home();
+    expect(tab.urls()).toEqual([`?school=${PEMBROKE_HILL}`, '']);
+    expect(services.pins.school).toBe(PEMBROKE_HILL);
+    controller.abort();
+  });
+
   it('a result whose id a link cannot carry still takes the map there, as a step of its own', () => {
     const { services, links, tab, shown, controller } = start(
       `https://snow.test/?zip=64113`,
@@ -622,6 +662,35 @@ describe('a ZIP code', () => {
     expect(shown).toHaveLength(1);
     // And once read, it listens no longer.
     expect(handlers.size).toBe(0);
+    controller.abort();
+  });
+
+  it('the wordmark before its area is read: the map is not taken back to it', async () => {
+    let release: () => void = () => undefined;
+    serveAreas(
+      new Promise<void>((resolve) => {
+        release = resolve;
+      }),
+    );
+    const map = {
+      moved: false,
+      ready: new Promise<void>(() => undefined),
+      showSchools: () => undefined,
+      prepareStreets: () => undefined,
+      map: { on: () => undefined, off: () => undefined },
+    } as unknown as Basemap;
+    const { services, shown, controller, tab } = startOnScreen(
+      'https://snow.test/',
+      withAreas(),
+      map,
+    );
+    await settle();
+    services.pick(ZIP_PICK);
+    services.home();
+    release();
+    await settle();
+    expect(shown).toHaveLength(1);
+    expect(tab.url).toBe('https://snow.test/');
     controller.abort();
   });
 

@@ -79,6 +79,25 @@ export function settleEasing(t: number): number {
   return 1 - (1 - x) ** 3;
 }
 
+/** How long the glide out to the home view takes per zoom level it rises, in milliseconds. */
+export const HOME_MS_PER_ZOOM = 110;
+
+/** The glide home's shortest and longest: never a jolt, never a wait (homeEaseMs). */
+export const HOME_MIN_MS = OPEN_SETTLE_MS;
+export const HOME_MAX_MS = 1400;
+
+/**
+ * How long the glide out to the home view takes from zoom `from` to zoom `to`
+ * (the wordmark's way back): one leg, longer the further it rises, within
+ * HOME_MIN_MS and HOME_MAX_MS. Eased by settleEasing, it leaves at once and
+ * lands without a jolt.
+ */
+export function homeEaseMs(from: number, to: number): number {
+  const rise = Math.abs(from - to);
+  if (!Number.isFinite(rise)) return HOME_MIN_MS;
+  return Math.round(Math.min(HOME_MAX_MS, Math.max(HOME_MIN_MS, rise * HOME_MS_PER_ZOOM)));
+}
+
 /** What a flight waiting on the way in for street tiles does next (holdVerdict). */
 export type HoldVerdict = 'glide' | 'go-on' | 'wait';
 

@@ -40,6 +40,7 @@ import {
   FLIGHT_MS_PER_ZOOM,
   FLIGHT_STOP_ZOOM,
   OPEN_SETTLE_MS,
+  homeEaseMs,
   coverPoints,
   flightCeiling,
   flightEasing,
@@ -204,7 +205,12 @@ export interface Basemap {
    * for a control that has just appeared over the map.
    */
   controlsChanged(): void;
-  /** Goes to the home view, as at the start: the country fitted into the frame, or the viewer's area. */
+  /**
+   * Goes to the home view, as at the start: the country fitted into the frame,
+   * or the viewer's area. With `animate`, it glides out there in one leg,
+   * easing to a stop (the wordmark's way back); it jumps where reduced motion
+   * is preferred, and does nothing where the map is there already.
+   */
   showHome(options?: { animate?: boolean }): void;
   /**
    * Makes the area around `place` the home view, and glides there; false, and
@@ -1202,18 +1208,40 @@ export async function createBasemap({
     if (event.originalEvent !== undefined) onUserMove();
   };
   function showHome(options: { animate?: boolean } = {}): void {
+    // Where the map goes now says where they are going, not what their search shows first.
+    firstShown.cancel();
     cancelFlight();
     national = true;
     hideNames(cutAtHome());
-    const animate = options.animate ?? false;
-    if (homeIsNational()) {
-      map.fitBounds(bounds, { padding: fitPadding(), animate });
+    const homeNational = homeIsNational();
+    if (!homeNational) needAllLayers();
+    // The home camera: the country as MapLibre's own fitBounds places it, or the viewer's area.
+    const camera = homeNational
+      ? map.cameraForBounds(bounds, { padding: fitPadding() })
+      : { center: [limits.home.lon, limits.home.lat] as [number, number], zoom: limits.home.zoom };
+    if (options.animate !== true || reducedMotion() || camera?.center === undefined) {
+      if (homeNational) map.fitBounds(bounds, { padding: fitPadding(), animate: false });
+      else map.jumpTo({ center: [limits.home.lon, limits.home.lat], zoom: limits.home.zoom });
       return;
     }
-    const { lat, lon, zoom } = limits.home;
-    needAllLayers();
-    if (animate) map.easeTo({ center: [lon, lat], zoom });
-    else map.jumpTo({ center: [lon, lat], zoom });
+    const center = maplibre.LngLat.convert(camera.center);
+    const zoom = camera.zoom ?? map.getZoom();
+    const home: MapView = { lat: center.lat, lon: center.lng, zoom };
+    // There already: nothing moves, and nothing is written.
+    if (at(home) && map.getBearing() === 0 && map.getPitch() === 0) return;
+    // One leg out, quick off the mark and slowing to a stop, with no flight's stops or waits on
+    // the way: the street tiles it passes are drawn from those it has (MapLibre drops what it
+    // asked for of each zoom it leaves behind), and the bundled lines draw the country.
+    map.easeTo({
+      center: [home.lon, home.lat],
+      zoom: home.zoom,
+      bearing: 0,
+      pitch: 0,
+      duration: homeEaseMs(map.getZoom(), home.zoom),
+      easing: settleEasing,
+      // Not essential: MapLibre jumps instead when the viewer prefers reduced motion.
+      essential: false,
+    });
   }
   function showNear(place: Place): boolean {
     const next = viewLimits(size(), fitPadding(), place);

@@ -13,6 +13,10 @@ import {
   FLIGHT_LEAD,
   FLIGHT_MS_PER_ZOOM,
   FLIGHT_STOP_ZOOM,
+  HOME_MAX_MS,
+  HOME_MIN_MS,
+  HOME_MS_PER_ZOOM,
+  homeEaseMs,
   COVER_GRID,
   coverPoints,
   flightCeiling,
@@ -190,5 +194,25 @@ describe('a place the map opens on by itself', () => {
     }
     // Half of the way in by a fifth of its time: no slow start, which would read as a pause.
     expect(settleEasing(0.2)).toBeGreaterThan(0.45);
+  });
+});
+
+describe('the glide home (the wordmark)', () => {
+  it('takes longer the further it rises, within its shortest and longest', () => {
+    expect(homeEaseMs(4, 4)).toBe(HOME_MIN_MS);
+    expect(homeEaseMs(5, 4)).toBe(HOME_MIN_MS);
+    expect(homeEaseMs(12, 4)).toBe(Math.round(8 * HOME_MS_PER_ZOOM));
+    expect(homeEaseMs(18, 3.5)).toBe(HOME_MAX_MS);
+    // Down to it as up: the home view can be closer than where the map is (zoomed all the way out).
+    expect(homeEaseMs(3.2, 4)).toBe(HOME_MIN_MS);
+    expect(homeEaseMs(Number.NaN, 4)).toBe(HOME_MIN_MS);
+    for (let zoom = 4; zoom < 20; zoom += 0.5) {
+      expect(homeEaseMs(zoom + 0.5, 4)).toBeGreaterThanOrEqual(homeEaseMs(zoom, 4));
+    }
+  });
+
+  it('is never longer than a flight into streets takes for a level and a half', () => {
+    expect(HOME_MAX_MS).toBeLessThanOrEqual(FLIGHT_MS_PER_ZOOM * 3.5);
+    expect(HOME_MIN_MS).toBe(OPEN_SETTLE_MS);
   });
 });

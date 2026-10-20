@@ -696,6 +696,36 @@
     );
   }
 
+  /**
+   * The wordmark's way back to what a first visit opens on: the field cleared
+   * and closed, every panel and the menu closed, live again, the address
+   * with none of it (Services.home, one history entry), and the map gliding
+   * out to its home view in one leg (Basemap showHome). The pinned school
+   * stays pinned; the page is not loaded again.
+   */
+  function goHome(): void {
+    query = '';
+    pickedName = null;
+    pickedHint = null;
+    pickedArea = null;
+    options = null;
+    active = -1;
+    dismissed = false;
+    focused = false;
+    focusPanel = false;
+    cameFrom = null;
+    inputElement?.blur();
+    // A place picked before the map was up goes nowhere now.
+    pendingTarget = null;
+    // A tap waiting to open a school shows it picked: no longer.
+    basemap?.selectSchool(null);
+    // The address steps on first, so the map's way out is never written over the entry it leaves.
+    void services.then((app) => {
+      app?.home();
+      basemap?.showHome({ animate: true });
+    });
+  }
+
   function clear(): void {
     query = '';
     runSearch('');
@@ -809,7 +839,12 @@
       if (!(next instanceof Node) || headerElement?.contains(next) !== true) focused = false;
     }}
   >
-    <h1 class="wordmark" data-brand>{copy.appName}</h1>
+    <!-- The wordmark takes them back to what a first visit opens on. -->
+    <h1 class="wordmark" data-brand>
+      <button class="home" type="button" aria-label={copy.home.label} onclick={goHome}
+        >{copy.appName}</button
+      >
+    </h1>
     <!-- Enter picks a result; it never reloads the page. -->
     <form
       class="search"
