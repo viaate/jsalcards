@@ -1,0 +1,67 @@
+{
+  "days": [
+    {
+      "announced": [
+        0,
+        0,
+        0,
+        null
+      ],
+      "clocks": [
+        600,
+        780
+      ],
+      "day": "2026-11-17",
+      "gaps": [
+        0,
+        6,
+        0,
+        1
+      ],
+      "reasons": [
+        0,
+        0,
+        0,
+        0
+      ],
+      "shifts": [
+        120,
+        null
+      ],
+      "statuses": [
+        0,
+        1,
+        3,
+        2
+      ]
+    },
+    {
+      "announced": [
+        0,
+        0
+      ],
+      "clocks": [],
+      "day": "2026-11-18",
+      "gaps": [
+        0,
+        0
+      ],
+      "reasons": [
+        0,
+        0
+      ],
+      "shifts": [],
+      "statuses": [
+        0,
+        0
+      ]
+    }
+  ],
+  "directory": {
+    "districts": 6,
+    "generated_on": "2026-10-14",
+    "schools": 11
+  },
+  "generated_at": "2026-11-17T11:05:00Z",
+  "schema_version": 1
+}

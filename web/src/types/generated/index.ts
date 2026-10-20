@@ -7,6 +7,9 @@ export const PUBLISHED_PATHS = {
   closings: 'live/closings.json',
   covered: 'live/covered.json',
   directoryEdition: 'schools/edition.json',
+  liveDay: 'live/days/{id}.json',
+  liveDays: 'live/days/index.json',
+  opens: 'live/opens.json',
   predictions: 'predictions/latest.json',
   replayIndex: 'replays/index.json',
   replay: 'replays/{id}.json',
@@ -21,6 +24,9 @@ export interface PublishedDocuments {
   readonly closings: ClosingsFile;
   readonly covered: CoveredFile;
   readonly directoryEdition: DirectoryEdition;
+  readonly liveDay: DayTimeline;
+  readonly liveDays: DayIndex;
+  readonly opens: OpensFile;
   readonly predictions: PredictionsFile;
   readonly replayIndex: ReplayIndex;
   readonly replay: ReplayFile;
@@ -30,6 +36,12 @@ export interface PublishedDocuments {
 }
 
 // Shared by several files ---------------------------------------------------------
+
+/**
+ * A SHA-256 digest: 64 lowercase hexadecimal digits.
+ * @pattern ^[0-9a-f]{64}$
+ */
+export type ContentDigest = string;
 
 /**
  * A whole number of things.
@@ -72,11 +84,25 @@ export type FrameIndex = number;
 export type LocalDate = string;
 
 /**
+ * A local wall-clock time as minutes after midnight (630 is 10:30).
+ * @minimum 0
+ * @exclusiveMaximum 1440
+ */
+export type MinuteOfDay = number;
+
+/**
  * Whole percentage points.
  * @minimum 0
  * @maximum 100
  */
 export type Percent = number;
+
+/**
+ * A chance from 0 to 1, in hundredths (0.07, not 0.0734).
+ * @minimum 0
+ * @maximum 1
+ */
+export type Probability = number;
 
 /**
  * The weather named for a status or a forecast.
@@ -112,6 +138,14 @@ export type ReplayId = string;
 export type SchemaVersion = 1;
 
 /**
+ * A school index written as its distance from the one before it: index = previous index + 1 + gap,
+ * and the first previous index is -1. So [4, 0, 2] is schools 4, 5 and 8.
+ * @minimum 0
+ * @maximum 4294967294
+ */
+export type SchoolGap = number;
+
+/**
  * A school's position in schools/meta.json ids (and in points.bin).
  * @minimum 0
  * @maximum 4294967294
@@ -123,6 +157,13 @@ export type SchoolIndex = number;
  * @pattern ^\d{4}-\d{4}$
  */
 export type SchoolYear = string;
+
+/**
+ * A length of time in whole minutes.
+ * @minimum 1
+ * @maximum 720
+ */
+export type ShiftMinutes = number;
 
 /**
  * What a school is doing on a day because of weather.
@@ -302,34 +343,12 @@ export interface ClosingsDay {
 }
 
 /**
- * A local wall-clock time as minutes after midnight (630 is 10:30).
- * @minimum 0
- * @exclusiveMaximum 1440
- */
-export type MinuteOfDay = number;
-
-/**
  * Whole minutes before the minute of generated_at: the moment is the start of the UTC minute that
  * many minutes earlier, and 0 is generated_at's own minute.
  * @minimum 0
  * @maximum 20160
  */
 export type MinutesAgo = number;
-
-/**
- * A school index written as its distance from the one before it: index = previous index + 1 + gap,
- * and the first previous index is -1. So [4, 0, 2] is schools 4, 5 and 8.
- * @minimum 0
- * @maximum 4294967294
- */
-export type SchoolGap = number;
-
-/**
- * A length of time in whole minutes.
- * @minimum 1
- * @maximum 720
- */
-export type ShiftMinutes = number;
 
 // covered ------------------------------------------------------------------------
 
@@ -370,11 +389,100 @@ export interface DirectoryEdition {
   readonly content_sha256: ContentDigest;
 }
 
+// live-day -----------------------------------------------------------------------
+
 /**
- * A SHA-256 digest: 64 lowercase hexadecimal digits.
- * @pattern ^[0-9a-f]{64}$
+ * live/days/<day>.json: when each school's status for one local day changed.
+ *
+ * One run per school that showed a status for the day, in school order: ``counts[i]``
+ * changes for the i-th school, read in order from the flat columns. A change is the
+ * status the map showed from that minute on (``null``: none, the status was taken
+ * back), with its reason and, for a delay or an early dismissal, its shift and clock
+ * time (one entry in ``shifts`` and ``clocks`` per such change, in order). A day in
+ * progress has ``final`` false and grows; once the day is over everywhere it is
+ * written one last time with ``final`` true.
  */
-export type ContentDigest = string;
+export interface DayTimeline {
+  readonly schema_version: SchemaVersion;
+  readonly day: LocalDate;
+  readonly generated_at: UtcInstant;
+  readonly directory: DirectoryStamp;
+  /**
+   * The content digest of the directory edition the school indexes were built from (two contents
+   * can share one stamp); null for an emptied file.
+   */
+  readonly content_sha256: ContentDigest | null;
+  readonly final: boolean;
+  /** Each school, as a gap from the previous school's index. */
+  readonly gaps: readonly SchoolGap[];
+  /** How many changes each school has. */
+  readonly counts: readonly number[];
+  readonly minutes: readonly DayMinute[];
+  /** Each change's status; null when the status was taken back. */
+  readonly statuses: readonly (Status | null)[];
+  readonly reasons: readonly (Reason | null)[];
+  readonly shifts: readonly (ShiftMinutes | null)[];
+  readonly clocks: readonly (MinuteOfDay | null)[];
+}
+
+/**
+ * Minutes after the start of the day in the school's own zone: negative for a change before the day
+ * began (a closing announced the evening before).
+ * @minimum -10080
+ * @exclusiveMaximum 2880
+ */
+export type DayMinute = number;
+
+// live-days ----------------------------------------------------------------------
+
+/** live/days/index.json: the live days that have a timeline, newest first. */
+export interface DayIndex {
+  readonly schema_version: SchemaVersion;
+  readonly generated_at: UtcInstant;
+  readonly days: readonly DayEntry[];
+}
+
+/** One live day with a timeline. */
+export interface DayEntry {
+  readonly day: LocalDate;
+  /** How many schools showed a status that day. */
+  readonly schools: Count;
+  readonly final: boolean;
+}
+
+// opens --------------------------------------------------------------------------
+
+/**
+ * live/opens.json: the open statements in force, written beside live/closings.json.
+ *
+ * It carries the same generated_at and directory stamp as the closings file of the
+ * same publish. A school-day appears at most once, and never on a day that file
+ * shows a status for.
+ */
+export interface OpensFile {
+  readonly schema_version: SchemaVersion;
+  readonly generated_at: UtcInstant;
+  readonly directory: DirectoryStamp;
+  /** Sorted by day, then school; one per school and day. */
+  readonly opens: readonly OpenStatement[];
+}
+
+/**
+ * A school's explicit word that it runs as normal on a local day.
+ *
+ * It never lights the map. The prediction model reads it as "school is held that
+ * day": the chance of no school drops to near zero, leaving at most a small chance
+ * of an early dismissal.
+ */
+export interface OpenStatement {
+  readonly school: SchoolIndex;
+  readonly day: LocalDate;
+  readonly kind: 'open';
+  /** When the statement was first seen. */
+  readonly at: UtcInstant;
+  /** The status reader's confidence in the statement (0.9 or more), or null. */
+  readonly confidence: Probability | null;
+}
 
 // predictions --------------------------------------------------------------------
 
@@ -595,13 +703,6 @@ export interface PreviousChance {
   /** When that run was made. */
   readonly at: UtcInstant;
 }
-
-/**
- * A chance from 0 to 1, in hundredths (0.07, not 0.0734).
- * @minimum 0
- * @maximum 1
- */
-export type Probability = number;
 
 /** One reason, of a kind, and the points it adds. */
 export type ReasonPoints =

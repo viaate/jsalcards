@@ -34,19 +34,23 @@ import math
 from collections.abc import Iterable
 from dataclasses import dataclass
 from datetime import date, datetime, timedelta
-from itertools import accumulate, combinations
-from typing import Annotated, Self
+from itertools import accumulate, combinations, pairwise
+from typing import Annotated, Literal, Self
 
 from pydantic import AfterValidator, Field, StringConstraints, model_validator
 
 from snowlight.schemas.base import SCREENED, PublishedModel, screen_text
 from snowlight.schemas.directory import DirectoryStamp
 from snowlight.schemas.scalars import (
+    MINUTES_PER_DAY,
+    ContentDigest,
+    Count,
     Latitude,
     LocalDate,
     Longitude,
     MinuteOfDay,
     MinutesAgo,
+    Probability,
     SchemaVersion,
     SchoolGap,
     SchoolIndex,
@@ -474,4 +478,186 @@ class AlertsFile(PublishedModel):
         ids = [alert.id for alert in self.alerts]
         if len(set(ids)) != len(ids):
             raise ValueError("alert ids must be unique")
+        return self
+
+
+# --- open statements (owner decision Q8, for the prediction model) ---------------------------
+
+
+class OpenStatement(PublishedModel):
+    """A school's explicit word that it runs as normal on a local day.
+
+    It never lights the map. The prediction model reads it as "school is held that
+    day": the chance of no school drops to near zero, leaving at most a small chance
+    of an early dismissal.
+    """
+
+    school: SchoolIndex
+    day: LocalDate
+    kind: Literal["open"]
+    at: UtcInstant = Field(description="When the statement was first seen.")
+    confidence: Probability | None = Field(
+        description="The status reader's confidence in the statement (0.9 or more), or null."
+    )
+
+
+class OpensFile(PublishedModel):
+    """live/opens.json: the open statements in force, written beside live/closings.json.
+
+    It carries the same generated_at and directory stamp as the closings file of the
+    same publish. A school-day appears at most once, and never on a day that file
+    shows a status for.
+    """
+
+    schema_version: SchemaVersion
+    generated_at: UtcInstant
+    directory: DirectoryStamp
+    opens: Annotated[
+        tuple[OpenStatement, ...],
+        Field(description="Sorted by day, then school; one per school and day."),
+    ]
+
+    @model_validator(mode="after")
+    def _check(self) -> Self:
+        first, last = local_days(self.generated_at)
+        keys = [(item.day, item.school) for item in self.opens]
+        if keys != sorted(set(keys)):
+            raise ValueError("opens must be sorted by day and school, one per school and day")
+        for item in self.opens:
+            if not first <= item.day <= last:
+                raise ValueError(f"school {item.school}: {item.day} is not today or tomorrow")
+            if item.school >= self.directory.schools:
+                raise ValueError(f"school {item.school} is not in the directory")
+            if item.at > self.generated_at:
+                raise ValueError(f"school {item.school}: seen after generated_at")
+        return self
+
+
+# --- the day timeline (owner decisions on replays, 2026-10-14) --------------------------------
+
+MAX_LEAD_MINUTES = 7 * MINUTES_PER_DAY
+"""How long before its day a change may be shown: a status posted days ahead."""
+
+type DayMinute = Annotated[
+    int,
+    Field(
+        ge=-MAX_LEAD_MINUTES,
+        lt=2 * MINUTES_PER_DAY,
+        description=(
+            "Minutes after the start of the day in the school's own zone: negative for a "
+            "change before the day began (a closing announced the evening before)."
+        ),
+    ),
+]
+
+
+class DayTimeline(PublishedModel):
+    """live/days/<day>.json: when each school's status for one local day changed.
+
+    One run per school that showed a status for the day, in school order: ``counts[i]``
+    changes for the i-th school, read in order from the flat columns. A change is the
+    status the map showed from that minute on (``null``: none, the status was taken
+    back), with its reason and, for a delay or an early dismissal, its shift and clock
+    time (one entry in ``shifts`` and ``clocks`` per such change, in order). A day in
+    progress has ``final`` false and grows; once the day is over everywhere it is
+    written one last time with ``final`` true.
+    """
+
+    schema_version: SchemaVersion
+    day: LocalDate
+    generated_at: UtcInstant
+    directory: DirectoryStamp
+    content_sha256: Annotated[
+        ContentDigest | None,
+        Field(
+            description=(
+                "The content digest of the directory edition the school indexes were built "
+                "from (two contents can share one stamp); null for an emptied file."
+            )
+        ),
+    ]
+    final: bool
+    gaps: Annotated[
+        tuple[SchoolGap, ...],
+        Field(description="Each school, as a gap from the previous school's index."),
+    ]
+    counts: Annotated[
+        tuple[Annotated[int, Field(ge=1, le=MINUTES_PER_DAY)], ...],
+        Field(description="How many changes each school has."),
+    ]
+    minutes: tuple[DayMinute, ...]
+    statuses: Annotated[
+        tuple[Status | None, ...],
+        Field(description="Each change's status; null when the status was taken back."),
+    ]
+    reasons: tuple[Reason | None, ...]
+    shifts: tuple[ShiftMinutes | None, ...]
+    clocks: tuple[MinuteOfDay | None, ...]
+
+    @model_validator(mode="after")
+    def _check(self) -> Self:
+        if len(self.counts) != len(self.gaps):
+            raise ValueError(f"{self.day}: {len(self.gaps)} schools but {len(self.counts)} counts")
+        changes = sum(self.counts)
+        lengths = {
+            "minutes": len(self.minutes),
+            "statuses": len(self.statuses),
+            "reasons": len(self.reasons),
+        }
+        for name, length in lengths.items():
+            if length != changes:
+                raise ValueError(f"{self.day}: {changes} changes but {length} {name}")
+        shifted = [status in SHIFTED for status in self.statuses]
+        if not len(self.shifts) == len(self.clocks) == sum(shifted):
+            raise ValueError(f"{self.day}: one shift and clock per delay or dismissal")
+        if self.gaps and self.schools()[-1] >= self.directory.schools:
+            raise ValueError(f"{self.day}: a school is not in the directory")
+        self._check_runs(shifted)
+        return self
+
+    def _check_runs(self, shifted: list[bool]) -> None:
+        times = iter(zip(self.shifts, self.clocks, strict=True))
+        details = [
+            (status, reason, *(next(times) if is_shifted else (None, None)))
+            for status, reason, is_shifted in zip(self.statuses, self.reasons, shifted, strict=True)
+        ]
+        start = 0
+        for count in self.counts:
+            run = range(start, start + count)
+            if details[start][0] is None:
+                raise ValueError(f"{self.day}: a school's first change must show a status")
+            for here, after in pairwise(run):
+                if self.minutes[after] < self.minutes[here]:
+                    raise ValueError(f"{self.day}: a school's changes must be in time order")
+                if details[after] == details[here]:
+                    raise ValueError(f"{self.day}: a change must change something")
+            if any(details[at][0] is None and details[at][1] is not None for at in run):
+                raise ValueError(f"{self.day}: a status taken back has no reason")
+            start += count
+
+    def schools(self) -> tuple[int, ...]:
+        """Each school's index, in order."""
+        return tuple(index - 1 for index in accumulate(gap + 1 for gap in self.gaps))
+
+
+class DayEntry(PublishedModel):
+    """One live day with a timeline."""
+
+    day: LocalDate
+    schools: Count = Field(description="How many schools showed a status that day.")
+    final: bool
+
+
+class DayIndex(PublishedModel):
+    """live/days/index.json: the live days that have a timeline, newest first."""
+
+    schema_version: SchemaVersion
+    generated_at: UtcInstant
+    days: tuple[DayEntry, ...]
+
+    @model_validator(mode="after")
+    def _check(self) -> Self:
+        days = [entry.day for entry in self.days]
+        if days != sorted(set(days), reverse=True):
+            raise ValueError("days must be unique, newest first")
         return self

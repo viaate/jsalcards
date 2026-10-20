@@ -16,11 +16,16 @@ from snowlight.schemas.registry import PUBLISHED_FILES
 from snowlight.schemas.site import SiteReport, _load, validate_site
 
 
+def _id(name: str) -> str:
+    """What ``{id}`` stands for in a published path: a replay's id, or a live day."""
+    return str(example("live-day")["day"]) if name == "live-day" else str(example("replay")["id"])
+
+
 def _site(tmp_path: Path) -> Path:
     """A site-data folder holding every synthetic example at its published path."""
     root = tmp_path / "site-data"
     for entry in PUBLISHED_FILES:
-        path = entry.path.replace("{id}", example("replay")["id"])
+        path = entry.path.replace("{id}", _id(entry.name))
         target = root / path
         target.parent.mkdir(parents=True, exist_ok=True)
         shutil.copy(example_path(entry.name), target)
@@ -38,7 +43,7 @@ def test_a_consistent_site_passes(tmp_path: Path) -> None:
     report = validate_site(_site(tmp_path))
     assert report.problems == []
     assert sorted(report.checked) == sorted(
-        entry.path.replace("{id}", "2026-12-18") for entry in PUBLISHED_FILES
+        entry.path.replace("{id}", _id(entry.name)) for entry in PUBLISHED_FILES
     )
     assert report.published() == sorted([*report.checked, "schools/points.bin"])
     assert (report.scanned, report.unchecked, report.skipped) == ([], ["schools/points.bin"], [])
@@ -242,6 +247,22 @@ def test_replays_and_their_index_agree(tmp_path: Path) -> None:
     assert validate_site(root).problems == [
         "replays/index.json lists 2026-12-18, which has no file"
     ]
+
+
+def test_live_day_files_are_checked_by_name_and_stamp(tmp_path: Path) -> None:
+    root = _site(tmp_path)
+    days = root / "live" / "days"
+    shutil.copy(days / "2027-01-12.json", days / "2027-01-13.json")
+    assert validate_site(root).problems == ["live/days/2027-01-13.json: holds the day 2027-01-12"]
+    (days / "2027-01-13.json").unlink()
+    timeline = example("live-day")
+    timeline["directory"]["schools"] = 7
+    _write(root, "live/days/2027-01-12.json", timeline)
+    (problem,) = validate_site(root).problems
+    assert problem.startswith("live day 2027-01-12: indexes directory")
+    (days / "2027-01-12.json").write_text("{}", encoding="utf-8")
+    (problem,) = validate_site(root).problems
+    assert problem.startswith("live/days/2027-01-12.json: ")
 
 
 def test_a_summary_that_disagrees_with_its_replay_is_reported(tmp_path: Path) -> None:

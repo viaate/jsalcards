@@ -1,0 +1,56 @@
+{
+  "clocks": [
+    600,
+    null,
+    null
+  ],
+  "content_sha256": "5555555555555555555555555555555555555555555555555555555555555555",
+  "counts": [
+    2,
+    1,
+    3
+  ],
+  "day": "2027-01-12",
+  "directory": {
+    "districts": 2,
+    "generated_on": "2026-09-24",
+    "schools": 6
+  },
+  "final": false,
+  "gaps": [
+    0,
+    0,
+    2
+  ],
+  "generated_at": "2027-01-12T13:05:00Z",
+  "minutes": [
+    -300,
+    330,
+    351,
+    312,
+    402,
+    610
+  ],
+  "reasons": [
+    0,
+    0,
+    1,
+    null,
+    0,
+    null
+  ],
+  "schema_version": 1,
+  "shifts": [
+    120,
+    120,
+    180
+  ],
+  "statuses": [
+    1,
+    0,
+    0,
+    1,
+    1,
+    null
+  ]
+}

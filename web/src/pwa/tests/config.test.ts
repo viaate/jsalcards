@@ -197,6 +197,9 @@ describe('routeFor', () => {
       covered: 'data',
       // No route: a reader must get the deployed file, never a cached copy.
       directoryEdition: null,
+      liveDay: 'data',
+      liveDays: 'data',
+      opens: 'data',
       predictions: 'data',
       replayIndex: 'data',
       replay: 'staticData',

@@ -1,0 +1,33 @@
+# The live ingest's settings (spec 7.7, 9, and the owner's decisions of 2026-10-13).
+# Secrets never live here: they come from the environment (see docs/live.md).
+#
+# LIVE_PUBLISH (environment) chooses where files go: on (v1/), shadow (v1-shadow/), off.
+# It defaults to shadow: nothing reaches the live root until the owner says go.
+
+host:
+  # github: commit the files to a Pages repository (owner decision Q1, for now).
+  # r2: PUT them to a Cloudflare R2 bucket (the later move).
+  # dir: write a folder (tests, dry runs, a deploy step that uploads it).
+  kind: github
+  repository: viaate/snowlight-live
+  branch: main
+  public_root: https://viaate.github.io/snowlight-live/
+  # r2 only:
+  endpoint: null
+  bucket: snowlight-live
+  # dir only:
+  folder: out/internal/live/host
+
+state:
+  # local: a folder (the box). cache: the Actions cache folder (never the unmatched
+  # queue). bucket: a private R2 bucket.
+  kind: local
+  folder: out/internal/live/store
+  endpoint: null
+  bucket: snowlight-live-state
+
+site: https://snowlightmap.com
+site_repository: viaate/jsalcards
+pass_minutes: 5
+edition_check_seconds: 60
+edition_max_wait_seconds: 120

@@ -142,6 +142,10 @@ class DeployedEditionError(RuntimeError):
     """The edition the site serves could not be known for certain."""
 
 
+class DeployInProgressError(DeployedEditionError):
+    """The newest deployment has not settled: until it does, the one before it is served."""
+
+
 class EditionMismatchError(DeployedEditionError):
     """The live deploy's ``edition.json`` names another directory than the one beside it.
 
@@ -336,7 +340,7 @@ class Reader:
         try:
             status, conclusion = run["status"], run.get("conclusion")
             if status != "completed":
-                raise DeployedEditionError(
+                raise DeployInProgressError(
                     f"a deploy is in progress (its state is {live.state!r}); run again after it"
                 )
             ended_at = max(live.changed_at, _api_time(run["updated_at"]))
@@ -351,7 +355,7 @@ class Reader:
         why = "names no workflow run" if live.run_id is None else f"its run {live.run_id} is gone"
         settled = live.changed_at + STUCK_AFTER
         if self.now() < settled:
-            raise DeployedEditionError(
+            raise DeployInProgressError(
                 f"a deploy is in progress (its state is {live.state!r} and it {why}); "
                 f"run again after {settled:%Y-%m-%dT%H:%M}Z"
             )

@@ -6,6 +6,7 @@ from collections.abc import Callable, Sequence
 from snowlight import __version__
 from snowlight.directory import cli as directory_cli
 from snowlight.listed import cli as listed_cli
+from snowlight.live import cli as live_cli
 from snowlight.places import cli as places_cli
 from snowlight.replays import cli as replays_cli
 from snowlight.sources.stations import cli as stations_cli
@@ -26,6 +27,7 @@ def build_parser() -> argparse.ArgumentParser:
     stations_cli.register(commands)
     listed_cli.register(commands)
     replays_cli.register(commands)
+    live_cli.register(commands)
     return parser
 
 

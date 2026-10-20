@@ -1,0 +1,25 @@
+{
+  "directory": {
+    "districts": 2,
+    "generated_on": "2026-09-24",
+    "schools": 6
+  },
+  "generated_at": "2027-01-12T13:05:00Z",
+  "opens": [
+    {
+      "at": "2027-01-12T11:20:00Z",
+      "confidence": 0.9,
+      "day": "2027-01-12",
+      "kind": "open",
+      "school": 2
+    },
+    {
+      "at": "2027-01-12T12:40:00Z",
+      "confidence": null,
+      "day": "2027-01-13",
+      "kind": "open",
+      "school": 5
+    }
+  ],
+  "schema_version": 1
+}

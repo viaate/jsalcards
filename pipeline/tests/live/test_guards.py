@@ -100,6 +100,7 @@ def _gate(**changes: object) -> GateInput:
             Refusal.CLOCK_AHEAD,
         ),
         ({"spike": True}, Refusal.SPIKE_HOLD),
+        ({"valid": False}, Refusal.INVALID),
     ],
 )
 def test_t10_each_refusal_has_its_own_reason(changes: dict[str, object], refusal: Refusal) -> None:

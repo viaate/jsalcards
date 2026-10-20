@@ -1,0 +1,16 @@
+{
+  "days": [
+    {
+      "day": "2027-01-12",
+      "final": false,
+      "schools": 3
+    },
+    {
+      "day": "2027-01-08",
+      "final": true,
+      "schools": 5
+    }
+  ],
+  "generated_at": "2027-01-12T13:05:00Z",
+  "schema_version": 1
+}

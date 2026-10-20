@@ -1,0 +1,132 @@
+{
+  "$comment": "Generated from pipeline/snowlight/schemas by `uv run python -m snowlight.schemas`. Do not edit.",
+  "$defs": {
+    "Count": {
+      "description": "A whole number of things.",
+      "maximum": 4294967294,
+      "minimum": 0,
+      "type": "integer"
+    },
+    "DirectoryStamp": {
+      "additionalProperties": false,
+      "description": "The directory a file's school and district indexes point into.\n\nIt must equal generated_on, count and the number of districts of the\nschools/meta.json the reader has loaded; otherwise the file is ignored.",
+      "properties": {
+        "districts": {
+          "$ref": "#/$defs/Count"
+        },
+        "generated_on": {
+          "$ref": "#/$defs/LocalDate"
+        },
+        "schools": {
+          "$ref": "#/$defs/Count"
+        }
+      },
+      "required": [
+        "generated_on",
+        "schools",
+        "districts"
+      ],
+      "title": "DirectoryStamp",
+      "type": "object"
+    },
+    "LocalDate": {
+      "description": "A calendar day in the school's own time zone: YYYY-MM-DD.",
+      "format": "date",
+      "pattern": "^\\d{4}-\\d{2}-\\d{2}$",
+      "type": "string"
+    },
+    "OpenStatement": {
+      "additionalProperties": false,
+      "description": "A school's explicit word that it runs as normal on a local day.\n\nIt never lights the map. The prediction model reads it as \"school is held that\nday\": the chance of no school drops to near zero, leaving at most a small chance\nof an early dismissal.",
+      "properties": {
+        "at": {
+          "$ref": "#/$defs/UtcInstant",
+          "description": "When the statement was first seen."
+        },
+        "confidence": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Probability"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "description": "The status reader's confidence in the statement (0.9 or more), or null."
+        },
+        "day": {
+          "$ref": "#/$defs/LocalDate"
+        },
+        "kind": {
+          "const": "open",
+          "type": "string"
+        },
+        "school": {
+          "$ref": "#/$defs/SchoolIndex"
+        }
+      },
+      "required": [
+        "school",
+        "day",
+        "kind",
+        "at",
+        "confidence"
+      ],
+      "title": "OpenStatement",
+      "type": "object"
+    },
+    "Probability": {
+      "description": "A chance from 0 to 1, in hundredths (0.07, not 0.0734).",
+      "maximum": 1.0,
+      "minimum": 0.0,
+      "type": "number"
+    },
+    "SchemaVersion": {
+      "const": 1,
+      "description": "The file format's version. A reader refuses a file with any other.",
+      "type": "integer"
+    },
+    "SchoolIndex": {
+      "description": "A school's position in schools/meta.json ids (and in points.bin).",
+      "maximum": 4294967294,
+      "minimum": 0,
+      "type": "integer"
+    },
+    "UtcInstant": {
+      "description": "A moment in UTC, whole seconds: YYYY-MM-DDTHH:MM:SSZ.",
+      "format": "date-time",
+      "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}Z$",
+      "type": "string"
+    }
+  },
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "description": "live/opens.json: the open statements in force, written beside live/closings.json.\n\nIt carries the same generated_at and directory stamp as the closings file of the\nsame publish. A school-day appears at most once, and never on a day that file\nshows a status for.",
+  "properties": {
+    "directory": {
+      "$ref": "#/$defs/DirectoryStamp"
+    },
+    "generated_at": {
+      "$ref": "#/$defs/UtcInstant"
+    },
+    "opens": {
+      "description": "Sorted by day, then school; one per school and day.",
+      "items": {
+        "$ref": "#/$defs/OpenStatement"
+      },
+      "type": "array"
+    },
+    "schema_version": {
+      "$ref": "#/$defs/SchemaVersion"
+    }
+  },
+  "required": [
+    "schema_version",
+    "generated_at",
+    "directory",
+    "opens"
+  ],
+  "title": "OpensFile",
+  "type": "object",
+  "x-snowlight-path": "live/opens.json"
+}

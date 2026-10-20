@@ -39,7 +39,7 @@ from snowlight.schemas.directory import (
     SchoolDirectoryMeta,
     written_digest,
 )
-from snowlight.schemas.live import ClosingsFile, CoveredFile, check_live_pair
+from snowlight.schemas.live import ClosingsFile, CoveredFile, DayTimeline, check_live_pair
 from snowlight.schemas.registry import (
     BY_NAME,
     INTERNAL_SUFFIX,
@@ -52,6 +52,7 @@ from snowlight.schemas.replays import ReplayFile, ReplayIndex, check_summary
 _REPLAY_DIR = "replays"
 _POINTS_FILE = "schools/points.bin"
 _REPLAY_INDEX = "index.json"
+_LIVE_DAY_DIR = "live/days"
 _TEXT_SUFFIXES = (".json", ".jsonl")
 
 
@@ -122,11 +123,31 @@ def _load_replays(root: Path, report: SiteReport) -> dict[str, ReplayFile]:
     return replays
 
 
+def _load_live_days(root: Path, report: SiteReport) -> dict[str, DayTimeline]:
+    """Each ``live/days/<day>.json`` (the live host's day timelines), named by its day."""
+    days: dict[str, DayTimeline] = {}
+    folder = root / _LIVE_DAY_DIR
+    if not folder.is_dir():
+        return days
+    for path in sorted(folder.glob("*.json")):
+        if path.name == _REPLAY_INDEX:
+            continue
+        shown = f"{_LIVE_DAY_DIR}/{path.name}"
+        timeline = _load(DayTimeline, path, shown, report)
+        if timeline is None:
+            continue
+        if timeline.day.isoformat() != path.stem:
+            report.problems.append(f"{shown}: holds the day {timeline.day}")
+        days[path.stem] = timeline
+    return days
+
+
 def _check_stamps(
     root: Path,
     loaded: dict[str, PublishedModel],
     replays: dict[str, ReplayFile],
     report: SiteReport,
+    live_days: dict[str, DayTimeline] | None = None,
 ) -> None:
     stamped: list[tuple[str, DirectoryStamp]] = [
         (name, directory)
@@ -134,6 +155,7 @@ def _check_stamps(
         if isinstance(directory := getattr(document, "directory", None), DirectoryStamp)
     ]
     stamped.extend((f"replay {key}", replay.directory) for key, replay in replays.items())
+    stamped.extend((f"live day {key}", day.directory) for key, day in (live_days or {}).items())
     meta = loaded.get("school-directory")
     if not isinstance(meta, SchoolDirectoryMeta):
         if stamped and not (root / BY_NAME["school-directory"].path).exists():
@@ -223,12 +245,17 @@ def _is_replay(path: str) -> bool:
     return folder == _REPLAY_DIR and "/" not in name and name.endswith(".json")
 
 
+def _is_live_day(path: str) -> bool:
+    folder, _, name = path.rpartition("/")
+    return folder == _LIVE_DAY_DIR and name.endswith(".json") and name != _REPLAY_INDEX
+
+
 def _account_for_others(root: Path, report: SiteReport) -> None:
     """Scan, list or refuse every file that no model covers."""
     modeled = {entry.path for entry in PUBLISHED_FILES if "{id}" not in entry.path}
     for path in sorted(item for item in root.rglob("*") if item.is_file()):
         shown = path.relative_to(root).as_posix()
-        if shown in modeled or _is_replay(shown):
+        if shown in modeled or _is_replay(shown) or _is_live_day(shown):
             continue
         if shown.endswith(INTERNAL_SUFFIX):
             report.skipped.append(shown)
@@ -259,7 +286,8 @@ def validate_site(root: Path) -> SiteReport:
         if "{id}" not in entry.path and (document := _single(entry, root, report)) is not None
     }
     replays = _load_replays(root, report)
-    _check_stamps(root, loaded, replays, report)
+    live_days = _load_live_days(root, report)
+    _check_stamps(root, loaded, replays, report, live_days)
     _check_edition(root, loaded, report)
     _check_live(root, loaded, report)
     _check_replays(root, loaded, replays, report)

@@ -1,0 +1,76 @@
+{
+  "$comment": "Generated from pipeline/snowlight/schemas by `uv run python -m snowlight.schemas`. Do not edit.",
+  "$defs": {
+    "Count": {
+      "description": "A whole number of things.",
+      "maximum": 4294967294,
+      "minimum": 0,
+      "type": "integer"
+    },
+    "DayEntry": {
+      "additionalProperties": false,
+      "description": "One live day with a timeline.",
+      "properties": {
+        "day": {
+          "$ref": "#/$defs/LocalDate"
+        },
+        "final": {
+          "type": "boolean"
+        },
+        "schools": {
+          "$ref": "#/$defs/Count",
+          "description": "How many schools showed a status that day."
+        }
+      },
+      "required": [
+        "day",
+        "schools",
+        "final"
+      ],
+      "title": "DayEntry",
+      "type": "object"
+    },
+    "LocalDate": {
+      "description": "A calendar day in the school's own time zone: YYYY-MM-DD.",
+      "format": "date",
+      "pattern": "^\\d{4}-\\d{2}-\\d{2}$",
+      "type": "string"
+    },
+    "SchemaVersion": {
+      "const": 1,
+      "description": "The file format's version. A reader refuses a file with any other.",
+      "type": "integer"
+    },
+    "UtcInstant": {
+      "description": "A moment in UTC, whole seconds: YYYY-MM-DDTHH:MM:SSZ.",
+      "format": "date-time",
+      "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}Z$",
+      "type": "string"
+    }
+  },
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "description": "live/days/index.json: the live days that have a timeline, newest first.",
+  "properties": {
+    "days": {
+      "items": {
+        "$ref": "#/$defs/DayEntry"
+      },
+      "type": "array"
+    },
+    "generated_at": {
+      "$ref": "#/$defs/UtcInstant"
+    },
+    "schema_version": {
+      "$ref": "#/$defs/SchemaVersion"
+    }
+  },
+  "required": [
+    "schema_version",
+    "generated_at",
+    "days"
+  ],
+  "title": "DayIndex",
+  "type": "object",
+  "x-snowlight-path": "live/days/index.json"
+}

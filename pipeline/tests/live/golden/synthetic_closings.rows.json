@@ -1,0 +1,56 @@
+[
+  {
+    "announced_at": "2026-11-17T11:05:00Z",
+    "clock_minute": null,
+    "day": "2026-11-17",
+    "reason": 0,
+    "school": 0,
+    "shift_minutes": null,
+    "status": 0
+  },
+  {
+    "announced_at": "2026-11-17T11:05:00Z",
+    "clock_minute": 600,
+    "day": "2026-11-17",
+    "reason": 0,
+    "school": 7,
+    "shift_minutes": 120,
+    "status": 1
+  },
+  {
+    "announced_at": "2026-11-17T11:05:00Z",
+    "clock_minute": 780,
+    "day": "2026-11-17",
+    "reason": 0,
+    "school": 8,
+    "shift_minutes": null,
+    "status": 3
+  },
+  {
+    "announced_at": null,
+    "clock_minute": null,
+    "day": "2026-11-17",
+    "reason": 0,
+    "school": 10,
+    "shift_minutes": null,
+    "status": 2
+  },
+  {
+    "announced_at": "2026-11-17T11:05:00Z",
+    "clock_minute": null,
+    "day": "2026-11-18",
+    "reason": 0,
+    "school": 0,
+    "shift_minutes": null,
+    "status": 0
+  },
+  {
+    "announced_at": "2026-11-17T11:05:00Z",
+    "clock_minute": null,
+    "day": "2026-11-18",
+    "reason": 0,
+    "school": 1,
+    "shift_minutes": null,
+    "status": 0
+  }
+]

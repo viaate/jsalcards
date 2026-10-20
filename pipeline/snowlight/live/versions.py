@@ -61,11 +61,20 @@ def matcher_version() -> str:
     )
 
 
+PUBLISHING_FILES: Final = frozenset(
+    {"cli.py", "edition.py", "health.py", "history.py", "ingest.py", "publish.py"}
+    | {"publishers.py", "state.py"}
+)
+"""The live modules that publish, store or schedule and derive nothing: a change to them
+leaves every stored derivation valid. Any other live module is digested."""
+
+
 def live_files() -> list[Path]:
     """The files :func:`live_version` digests."""
     replays = [PACKAGE / "replays" / f"{name}.py" for name in ("gates", "build", "rows")]
     vocab = PACKAGE / "schemas" / "vocab.py"
-    return sorted([*(PACKAGE / "live").glob("*.py"), *replays, vocab])
+    live = [path for path in (PACKAGE / "live").glob("*.py") if path.name not in PUBLISHING_FILES]
+    return sorted([*live, *replays, vocab])
 
 
 @cache

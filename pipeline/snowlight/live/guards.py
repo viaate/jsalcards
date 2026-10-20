@@ -257,6 +257,14 @@ class Refusal(StrEnum):
     CLOCK_AHEAD = "clock_ahead"
     OVERSIZE = "oversize"
     SPIKE_HOLD = "spike_hold"
+    INVALID = "invalid"
+    """The file does not validate against its schema, or does not round-trip (G12d)."""
+    UNDECIDED = "undecided"
+    """A row the ledger holds as present was never derived and cannot be read again until
+    its source is (a pass cut off between reading and resolving): what it says, a
+    retraction perhaps, is unknown."""
+    HELD = "held"
+    """``snowlight live blank`` set the hold: every pass stays dark until ``live release``."""
 
 
 @dataclass(frozen=True, slots=True)
@@ -274,6 +282,10 @@ class GateInput:
     gzip_bytes: int
     spike: bool = False
     """The spike hold holds this pass (:func:`spike_hold`)."""
+    valid: bool = True
+    """The file validated and round-tripped through its schema (G12d)."""
+    undecided: int = 0
+    """Present rows never derived, of sources not yet read again (:attr:`Refusal.UNDECIDED`)."""
 
 
 def gate_refusals(check: GateInput) -> list[Refusal]:
@@ -294,6 +306,10 @@ def gate_refusals(check: GateInput) -> list[Refusal]:
         refusals.append(Refusal.OVERSIZE)
     if check.spike:
         refusals.append(Refusal.SPIKE_HOLD)
+    if not check.valid:
+        refusals.append(Refusal.INVALID)
+    if check.undecided:
+        refusals.append(Refusal.UNDECIDED)
     return refusals
 
 

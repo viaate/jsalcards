@@ -5,7 +5,7 @@ and ``npm run gen:types`` turns into TypeScript. A new published JSON file is ad
 here, and nowhere else.
 
 Paths are relative to the site's data root (``pipeline/out/site-data`` when built
-locally). ``{id}`` stands for a replay id.
+locally). ``{id}`` stands for a replay id, or a live day (``YYYY-MM-DD``).
 
 Published files that are not JSON documents have no model and are listed in
 :data:`OTHER_PUBLISHED_FILES` instead: ``schools/points.bin`` (byte layout in
@@ -23,7 +23,14 @@ from dataclasses import dataclass
 
 from snowlight.schemas.base import PublishedModel
 from snowlight.schemas.directory import DirectoryEdition, SchoolDirectoryMeta
-from snowlight.schemas.live import AlertsFile, ClosingsFile, CoveredFile
+from snowlight.schemas.live import (
+    AlertsFile,
+    ClosingsFile,
+    CoveredFile,
+    DayIndex,
+    DayTimeline,
+    OpensFile,
+)
 from snowlight.schemas.predictions import PredictionsFile
 from snowlight.schemas.replays import ReplayFile, ReplayIndex
 from snowlight.schemas.stats import SeasonStats, TrackRecord
@@ -44,6 +51,9 @@ PUBLISHED_FILES: tuple[PublishedFile, ...] = (
     PublishedFile("closings", "live/closings.json", ClosingsFile),
     PublishedFile("covered", "live/covered.json", CoveredFile),
     PublishedFile("alerts", "live/alerts.json", AlertsFile),
+    PublishedFile("opens", "live/opens.json", OpensFile),
+    PublishedFile("live-day", "live/days/{id}.json", DayTimeline),
+    PublishedFile("live-days", "live/days/index.json", DayIndex),
     PublishedFile("predictions", "predictions/latest.json", PredictionsFile),
     PublishedFile("season-stats", "stats/season.json", SeasonStats),
     PublishedFile("track-record", "track-record.json", TrackRecord),
