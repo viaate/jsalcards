@@ -96,7 +96,10 @@ Private state (`out/internal/live/state/`, kept by the state store):
   - Nothing is pruned until `changes/durable.json` (`{"through": "YYYY-MM-DD"}`) says a durable copy holds those days. That copy is the push to the private data repository (spec 19), and it is not built yet.
   - Until it lands, the Actions cache store is the only copy of the replay history. A cache eviction loses the private log, so land the durable push before relying on `cache`.
   - A successor that lost its state takes each day it has no log for from the public day file under the current stamp (lines with `"by": "seed"`), but only when the file's `content_sha256` is its own directory content: two contents can share one stamp (risk R6), and a file built on the other one indexes other schools. Such a file is skipped with a warning in the log. The public timeline then goes on from where it was, rather than starting again at the successor's first publish. The private details of those changes (source and row key) are lost.
+- `morning/<UTC day>.json`: the morning record the prediction model learns from (docs/predict.md, "The model learns on its own"). Per 30-minute UTC slot: the prefixes a pass was shown under, each whole read of a shown pass between 09:00 and 21:00 UTC (rows, rows placed, rows read as no status), the states a pass withheld whole, and the districts its rows named with the days and the status kinds (`?` when a dissenting, unsure or unread row named it). Counts, ids and codes only. Rewritten whole and atomically by every pass; kept 10 days. A file that does not read is marked damaged and no day of it is learned from.
 - `unmatched.json`: names the matcher did not place. Only ever in a private store, never in the Actions cache.
+
+A workflow that runs the live loop with the `cache` store saves `pipeline/out/internal/live/store` under a key starting `live-state-` (`CACHE_KEY_PREFIX` in `snowlight/live/state.py`): the predict workflow's learning step restores the newest such key, read only.
 
 Private output (`out/internal/live/`):
 

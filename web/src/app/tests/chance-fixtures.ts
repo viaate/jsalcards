@@ -41,7 +41,7 @@ export const B_NOW = at('2026-01-13T12:20:00Z');
 
 /** How Tuesday's 64% adds up: 30 + 16 + 9 + 7 + 5 - 3. */
 export const A_WHY: WhyDetail = {
-  base: { kind: 'alert', points: 30, alert: 'winter_storm_warning', borrowed: false },
+  base: { kind: 'alert', points: 30, alert: 'winter_storm_warning', borrowed: false, live: false },
   reasons: [
     { kind: 'snow_total', points: 16, low: 6, high: 9, overnight: true },
     { kind: 'neighbors', points: 9, districts: [1, 2], status: 0 },
@@ -97,7 +97,7 @@ export const B_DETAIL: ForecastDetail = {
     heavy: null,
   },
   why: {
-    base: { kind: 'day_after', points: 25 },
+    base: { kind: 'day_after', points: 25, live: false },
     reasons: [
       { kind: 'snow_stops', points: -8, at: at('2026-01-13T12:00:00Z') },
       { kind: 'cold', points: 6, feelsLike: -8 },

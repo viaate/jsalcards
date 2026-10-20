@@ -5,6 +5,9 @@ The state folder holds what the ingest must not lose:
 * ``ledger.sqlite``: the row ledger (keys, times, codes; no raw text);
 * ``publish.json``: the publisher's memory (the last stamp published, the gate's);
 * ``changes/<day>.jsonl``: the change log of the live days (codes and times);
+* ``morning/<day>.json``: the morning record for the automatic learning
+  (:mod:`snowlight.live.morning`: reads, withheld states and named districts as counts, ids
+  and codes);
 * ``robots.json``: robots.txt verdicts (the fetch layer's);
 * ``unmatched.json``: the queue of listings the matcher did not accept. It holds the
   listings' names as the sources print them, so it is kept only in a private store.
@@ -38,6 +41,10 @@ from snowlight.live.publishers import Credentials, PublishError, R2Publisher
 from snowlight.output import write_bytes_atomic
 
 ARCHIVE: Final = "live-state.tar.gz"
+CACHE_KEY_PREFIX: Final = "live-state-"
+"""The Actions cache key prefix of the cache store's folder: a workflow that runs the live loop
+with state kind ``cache`` saves the folder under ``live-state-<run id>``, and the predict
+workflow's learning step restores the newest such key, read only (docs/live.md)."""
 STATE_KEY: Final = f"state/{ARCHIVE}"
 PRIVATE_ONLY: Final = frozenset({"unmatched.json"})
 """Files that hold raw names: only a private store keeps them."""

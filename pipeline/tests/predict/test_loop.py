@@ -361,7 +361,12 @@ def worst_case_file(districts: int, with_record: int) -> bytes:
         hours=None,
         why=Why(
             base=PooledBase(
-                kind="pooled", scope="nation", points=57, alert=LONGEST_ALERT, borrowed=False
+                kind="pooled",
+                scope="nation",
+                points=57,
+                alert=LONGEST_ALERT,
+                borrowed=False,
+                live=False,
             ),
             reasons=(),
         ),
@@ -371,7 +376,9 @@ def worst_case_file(districts: int, with_record: int) -> bytes:
     own = plain.model_copy(
         update={
             "why": Why(
-                base=AlertBase(kind="alert", points=57, alert=LONGEST_ALERT, borrowed=False),
+                base=AlertBase(
+                    kind="alert", points=57, alert=LONGEST_ALERT, borrowed=False, live=False
+                ),
                 reasons=(),
             ),
             "record": record,

@@ -471,7 +471,7 @@ def test_a_clear_school_day_is_a_forecast_with_no_weather() -> None:
     forecast = value["districts"][0]["days"][0]
     forecast |= {"p_no_school": 0.01, "p_delay": 0.0, "reasons": [], "record": None}
     forecast["why"] = {
-        "base": {"kind": "similar_days", "points": 1, "borrowed": False},
+        "base": {"kind": "similar_days", "points": 1, "borrowed": False, "live": False},
         "reasons": [],
     }
     for key in ("hours", "buses_at", "announces_at", "previous"):

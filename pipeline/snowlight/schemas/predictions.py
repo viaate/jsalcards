@@ -219,6 +219,12 @@ class AlertBase(PublishedModel):
             "the recorded days with alert instead, and the sentence says so."
         )
     )
+    live: bool = Field(
+        description=(
+            "The days counted are days the live pipeline read (complete daily reads), not the "
+            "recorded archive days; the sentence says so."
+        ),
+    )
 
 
 class DayAfterBase(PublishedModel):
@@ -227,6 +233,12 @@ class DayAfterBase(PublishedModel):
 
     kind: Literal["day_after"]
     points: Percent
+    live: bool = Field(
+        description=(
+            "The days counted are days the live pipeline read (complete daily reads), not the "
+            "recorded archive days; the sentence says so."
+        ),
+    )
 
 
 class SimilarDaysBase(PublishedModel):
@@ -240,6 +252,12 @@ class SimilarDaysBase(PublishedModel):
             "The day follows a snow day and too few such days are recorded: the chance is "
             "counted over the recorded days like this that did not follow a recorded snow day."
         )
+    )
+    live: bool = Field(
+        description=(
+            "The days counted are days the live pipeline read (complete daily reads), not the "
+            "recorded archive days; the sentence says so."
+        ),
     )
 
 
@@ -265,6 +283,12 @@ class PooledBase(PublishedModel):
             "alert, the days like this that did not follow a recorded snow day; the sentence "
             "says so."
         )
+    )
+    live: bool = Field(
+        description=(
+            "The days counted are days the live pipeline read (complete daily reads), not the "
+            "recorded archive days; the sentence says so."
+        ),
     )
 
 

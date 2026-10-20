@@ -230,6 +230,7 @@ Run from `pipeline/`. Exit codes: 0 done, 3 dark (nothing uploaded: the gate ref
 | `uv run snowlight predict blank` | Sets the hold and uploads a valid file with no districts to `v1/` and `v1-shadow/`: every chance disappears and stays off until `predict release`. |
 | `uv run snowlight predict release` | Clears the hold. |
 | `uv run snowlight predict check --max-age 45m` | The watchdog: exit 3 when the public file is missing, invalid, blank, ahead of the clock or older than the limit. The workflow runs it after every run, a failed pass included, and opens one issue, "Snow-day chances are stale", unless one is already open. |
+| `uv run snowlight predict learn` | Labels the live-read days not yet labeled and swaps in a refit only when the held-out live days find it no worse (see "The model learns on its own"). Exit 0 swapped, reset (a served file counted an excluded day) or nothing to change, 4 kept the model served because the refit was worse, 1 an error (nothing changed). The workflow runs it before the passes. |
 
 Environment: `PREDICT_PUBLISH` (`on` writes `v1/`, `shadow` writes `v1-shadow/`, `off`
 writes nothing and is the default; the workflow sets `on`), `LIVE_HOST_TOKEN` (the
@@ -246,10 +247,10 @@ A pass publishes nothing, and the page hides the old file within 90 minutes, whe
 3. fewer than 99% of the deployed districts are in the model;
 4. the winter alerts drop by more than 80% from a pass that had more than 50 (published
    once the next pass confirms the count);
-5. the file does not validate, or is over budget (16 MB raw, 1.5 MB gzip; the worst case,
+5. the file does not validate, or is over budget (16.5 MB raw, 1.5 MB gzip; the worst case,
    every district under a winter storm warning, the longest alert name a base carries, on
    both days with a previous chance and every recorded district with a full record, measures
-   15.8 MB raw (15,795,035 bytes) and 0.2 MB gzip:
+   16.3 MB raw (16,268,937 bytes, with each base's `live` flag) and 0.2 MB gzip:
    `tests/predict/test_loop.py`);
 6. the file read back after the upload is not the one sent;
 7. yesterday's day timeline cannot be read (a host error or a file that does not validate);
@@ -273,3 +274,87 @@ There is never a "no alerts, so 1%" fallback: a pass with fewer inputs publishes
 After a new season of archived lists (or a directory change that adds districts):
 `predict labels`, `predict backtest` (check the gates in its report), `predict train`,
 commit `data/predict/model.json.gz` with the report's numbers in the message.
+
+## The model learns on its own
+
+Every predict workflow run starts with `predict learn` (`pipeline/snowlight/predict/learn.py`,
+`live_labels.py`). It needs no API key and no server beyond the live host and the Actions
+cache. The owner's Cloudflare Worker needs no change: it dispatches the same workflow.
+
+1. **Labels.** A school day is labeled once it is over everywhere, its timeline on the live
+   host (`live/days/<day>.json`) is final (or the host's day index, written after the day,
+   does not list it), and the live state's morning record of that day reads and runs past
+   every read window. Every live pass adds itself to that record
+   (`pipeline/snowlight/live/morning.py`, `morning/<day>.json` in the live state): whether
+   the map showed it, the whole reads it made (rows, rows placed, rows read as no status),
+   the states it withheld whole, and the districts its rows named with the status kinds
+   named. Counts, ids and codes only. A district gets a label only when a list that carries
+   it had a whole read between 06:30 and 09:30 local, in a pass the map showed, with the
+   district's state not withheld, and the record of that day holds a pass in the last half
+   hour of the window (a record that stops partway through reads nothing).
+   A list carries a district when it lit a school of it on 2 or more live days, from the
+   first of them. The archive's read gates then apply: an unreadable or barely placed read,
+   a list with too few reads, a storm-day list under half its usual rows, an empty list
+   while a market peer holds 5 rows or more, and on a storm day an empty list no other list
+   of the market backs up, are not reads. A district a list named that morning is never
+   open: whatever the live guards kept off the map (a conflict, a weak reading, a tripped
+   breaker, a refused publish) shows up this way. It is delayed only when every status a
+   list named it with is one the map showed on one of its schools: a district the map lit
+   delayed is delayed, and one a list also named closed, remote, dismissed early, or with
+   words the reader was unsure of, that the map never showed, is unknown.
+   The archive's rules then decide what it did: half its schools lit closed or remote is no
+   school, half lit delayed is a delay, at most 10% lit is open. Everything else is unknown:
+   an unread or partly read district, a district whose status was taken back, a break day, a
+   day the emergency stop held the map dark, a dark district on a storm day when half its
+   market closed, and a district whose weather class the passes did not record by 21:00 the
+   evening before (the training snapshot; the passes keep it in their state). The labels go
+   to `predictions/learn.json` on the live host: LEAIDs, days and outcomes, no text. A
+   labeled day is never labeled again, so a rerun changes nothing. A day that is not ready
+   waits and is tried again on the next run, and so does the school day after it, since
+   which districts follow a closing is told from the day before.
+2. **Hold out.** The newest live days holding at least 100 storm district-days, on at least
+   3 storm days and in at least 2 states (and at most half the live days), are held out.
+   The refit counts only the days before them.
+3. **Re-anchor.** A storm situation (a weather class above none) with at least 200 live-read
+   district-days nationally, and at least 30 held out to check it on, is counted over the
+   live days: they are complete daily reads, unlike the storm-picked archive, so they give
+   its level. The archive gives only how much more or less readily each place closes than
+   the places around it. Its "How we got N%" sentence then says "days we read live". Every
+   other situation, the clear-day ones included, keeps the archive's rates and says "recorded
+   days". While no storm situation qualifies, nothing changes.
+4. **Check.** The refit and the model served now are scored on the held-out district-days,
+   as published. The refit is swapped in only when its storm Brier is no worse pooled and in
+   every situation either model re-anchors, for the chance of no school and for the chance
+   of a delay (re-anchoring sets both levels), it has no more reliability bins (of 20
+   held-out storm rows or more) out of bound, and its ECE is at most 0.01 higher. A score
+   that is not a number counts as worse. A misread that runs through every live day, the
+   held-out ones too, is beyond any held-out check: the drop below is for that.
+5. **Swap or keep.** A swap publishes `predictions/learned.json` (counts by LEAID, the days
+   counted, the check it passed). The next serving pass uses it with the committed model it
+   was made over. A refit that is worse is kept out: the step exits 4, says why in its log
+   line, and the workflow opens one issue, "The snow-day model kept its last version",
+   unless one is already open. The same issue opens when the step fails.
+
+Serving never depends on it: the step may fail or time out (5 minutes; it takes under a
+minute) and the passes run anyway. A learned file that is missing, does not validate, was
+made over another committed model or does not build is ignored, and the committed model
+serves alone. Settings are in `config/predict.yaml` under `learn`.
+
+**To drop a misread day.** Add the day to `learn.excluded_days` in `config/predict.yaml`
+(for example `excluded_days: [2026-01-06]`) and commit it on the default branch. The next run
+never labels, fits or holds out that day. When the served learned file counted it, that file
+(the file lists the days it counted, so this holds even if `learn.json` was lost) is judged
+again against the committed model: the refit without the day replaces it if it
+passes the check, and otherwise a file that re-anchors nothing does, so the committed model's
+chances serve until newer days pass. To return to the committed model at once, also delete
+`predictions/learned.json` on the live host.
+
+The live state reaches the workflow through the Actions cache: the live loop keeps it with
+the `cache` state store (`config/live.yaml`, folder `out/internal/live/store`), and the
+workflow that runs it must save that folder under a key starting `live-state-`
+(`CACHE_KEY_PREFIX` in `pipeline/snowlight/live/state.py`; a test holds every workflow to
+it). The step restores the newest such key and never saves it. A machine that runs the live
+ingest itself reads `out/internal/live/state` directly. No workflow runs the live loop yet
+(`config/live.yaml` keeps its state `local`), so until one does the step logs "no live
+ingest state reached this run" and then "nothing to learn: no live-read district-days
+labeled yet; the model is unchanged".

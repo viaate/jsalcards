@@ -124,7 +124,9 @@ export interface Zones {
  * weather (or the day after a snow day) has too few recorded days, so the chance is counted
  * over the recorded days with `alert`, or with no alert over the recorded days like this that
  * did not follow a recorded snow day (the day before has no recorded closing, which is all the
- * labels can say of it), and the sentence says which.
+ * labels can say of it), and the sentence says which. `live`: the days counted are the days
+ * the live pipeline read (complete daily reads), not the archive's recorded days, and the
+ * sentence says "days we read live" where it would say "recorded days".
  */
 export type BaseInput =
   | {
@@ -132,15 +134,22 @@ export type BaseInput =
       readonly points: number;
       readonly alert: AlertKind;
       readonly borrowed: boolean;
+      readonly live: boolean;
     }
-  | { readonly kind: 'day_after'; readonly points: number }
-  | { readonly kind: 'similar_days'; readonly points: number; readonly borrowed: boolean }
+  | { readonly kind: 'day_after'; readonly points: number; readonly live: boolean }
+  | {
+      readonly kind: 'similar_days';
+      readonly points: number;
+      readonly borrowed: boolean;
+      readonly live: boolean;
+    }
   | {
       readonly kind: 'pooled';
       readonly points: number;
       readonly scope: keyof typeof POOLS;
       readonly alert: AlertKind | null;
       readonly borrowed: boolean;
+      readonly live: boolean;
     };
 
 /** The district's record in storms like this, counted, for the sentence that cites it. */
@@ -591,11 +600,15 @@ function baseReason(input: BaseInput, district: string): string {
   // a place only when this share is true of its recorded days (pipeline/snowlight/predict/
   // share.py, which keeps the same rule as shareOf). A day with no school counts closed and
   // remote days alike, so the sentence says both.
+  // Days the live pipeline read are counted as such: "days we read live", never "recorded
+  // days", which are the archive's.
   const did = 'closed or went remote';
+  const counted = input.live ? 'days we read live' : 'recorded days';
+  const snowDay = input.live ? 'a snow day we read live' : 'a recorded snow day';
   const days = (alert: AlertKind | null): string =>
     alert === null
-      ? 'recorded days like this'
-      : `recorded days with ${ALERT_DAYS[checkKey(ALERT_DAYS, alert, 'alert')]}`;
+      ? `${counted} like this`
+      : `${counted} with ${ALERT_DAYS[checkKey(ALERT_DAYS, alert, 'alert')]}`;
   // Pooled counts are district-days: "of their recorded days", never calendar days.
   const closed = (who: string, alert: AlertKind | null, pooled: boolean): string =>
     extreme === null
@@ -603,23 +616,20 @@ function baseReason(input: BaseInput, district: string): string {
       : `${who} ${extreme} ${did} on ${pooled ? 'their ' : ''}${days(alert)}.`;
   // Counted over other recorded days than the day's own: name them first, then the count.
   const lent = (who: string, alert: AlertKind | null): string => {
-    const counted =
-      alert === null
-        ? 'recorded days like this that did not follow a recorded snow day'
-        : days(alert);
+    const over = alert === null ? `${days(null)} that did not follow ${snowDay}` : days(alert);
     const count =
       extreme === null
         ? `${who} ${did} on ${rate('')} of them.`
         : `${who} ${extreme} ${did} on them.`;
-    return `The chance is counted over ${counted}. ${count}`;
+    return `The chance is counted over ${over}. ${count}`;
   };
   switch (input.kind) {
     case 'alert':
       return input.borrowed ? lent(district, input.alert) : closed(district, input.alert, false);
     case 'day_after':
       return extreme === null
-        ? `After a recorded snow day, ${district} stayed closed or went remote the next day ${times}.`
-        : `After a recorded snow day, ${district} ${extreme} stayed closed or went remote the next day.`;
+        ? `After ${snowDay}, ${district} stayed closed or went remote the next day ${times}.`
+        : `After ${snowDay}, ${district} ${extreme} stayed closed or went remote the next day.`;
     case 'similar_days':
       return input.borrowed ? lent(district, null) : closed(district, null, false);
     case 'pooled': {

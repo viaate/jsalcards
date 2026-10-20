@@ -250,7 +250,13 @@ const STORM_FORECAST = {
   buses_at: null,
   hours: null,
   why: {
-    base: { kind: 'alert', points: 37, alert: 'winter_storm_warning', borrowed: false },
+    base: {
+      kind: 'alert',
+      points: 37,
+      alert: 'winter_storm_warning',
+      borrowed: false,
+      live: false,
+    },
     reasons: [],
   },
   record: {

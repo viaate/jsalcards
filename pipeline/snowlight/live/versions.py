@@ -63,7 +63,7 @@ def matcher_version() -> str:
 
 PUBLISHING_FILES: Final = frozenset(
     {"cli.py", "edition.py", "health.py", "history.py", "ingest.py", "publish.py"}
-    | {"publishers.py", "state.py"}
+    | {"morning.py", "publishers.py", "state.py"}
 )
 """The live modules that publish, store or schedule and derive nothing: a change to them
 leaves every stored derivation valid. Any other live module is digested."""

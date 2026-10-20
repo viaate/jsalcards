@@ -509,6 +509,11 @@ export interface AlertBase {
    * with alert instead, and the sentence says so.
    */
   readonly borrowed: boolean;
+  /**
+   * The days counted are days the live pipeline read (complete daily reads), not the recorded
+   * archive days; the sentence says so.
+   */
+  readonly live: boolean;
 }
 
 /** The weather alert a district's base chance is counted over. */
@@ -544,6 +549,11 @@ export interface ColdReason {
 export interface DayAfterBase {
   readonly kind: 'day_after';
   readonly points: Percent;
+  /**
+   * The days counted are days the live pipeline read (complete daily reads), not the recorded
+   * archive days; the sentence says so.
+   */
+  readonly live: boolean;
 }
 
 /** One district's outlook for one day. */
@@ -718,6 +728,11 @@ export interface PooledBase {
    * follow a recorded snow day; the sentence says so.
    */
   readonly borrowed: boolean;
+  /**
+   * The days counted are days the live pipeline read (complete daily reads), not the recorded
+   * archive days; the sentence says so.
+   */
+  readonly live: boolean;
 }
 
 /** The chance of no school the run before this one gave the same district and day. */
@@ -758,6 +773,11 @@ export interface SimilarDaysBase {
    * recorded days like this that did not follow a recorded snow day.
    */
   readonly borrowed: boolean;
+  /**
+   * The days counted are days the live pipeline read (complete daily reads), not the recorded
+   * archive days; the sentence says so.
+   */
+  readonly live: boolean;
 }
 
 /** Snow started falling at ``at``. */

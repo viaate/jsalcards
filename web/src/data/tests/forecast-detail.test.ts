@@ -56,7 +56,13 @@ describe('a forecast’s chance section parts', () => {
         heavy: { first: 6, last: 8 },
       },
       why: {
-        base: { kind: 'alert', points: 30, alert: 'winter_storm_warning', borrowed: false },
+        base: {
+          kind: 'alert',
+          points: 30,
+          alert: 'winter_storm_warning',
+          borrowed: false,
+          live: false,
+        },
         reasons: [
           { kind: 'snow_total', points: 14, low: 6, high: 9, overnight: true },
           { kind: 'neighbors', points: 9, districts: [1], status: 0 },
@@ -85,7 +91,7 @@ describe('a forecast’s chance section parts', () => {
     });
     const next = read(morning(), '2027-01-13');
     expect(next.hours).toMatchObject({ kind: 'wind_chill', range: null, heavy: null });
-    expect(next.why?.base).toEqual({ kind: 'day_after', points: 25 });
+    expect(next.why?.base).toEqual({ kind: 'day_after', points: 25, live: false });
     expect(next.why?.reasons.map((reason) => reason.kind)).toEqual([
       'snow_stops',
       'cold',
@@ -264,6 +270,7 @@ describe('a forecast’s chance section parts', () => {
       points: 30,
       alert: null,
       borrowed: false,
+      live: false,
     };
     expect(read(pooled).why?.base).toEqual({
       kind: 'pooled',
@@ -271,6 +278,7 @@ describe('a forecast’s chance section parts', () => {
       points: 30,
       alert: null,
       borrowed: false,
+      live: false,
     });
     ((pooled.why as Json).base as Json).scope = 'planet';
     expect(read(pooled).why).toBeNull();
@@ -284,8 +292,9 @@ describe('a forecast’s chance section parts', () => {
       points: 90,
       alert: 'winter_storm_warning',
       borrowed: true,
+      live: false,
     };
-    expect(read(lent).why?.base).toMatchObject({ kind: 'pooled', borrowed: true });
+    expect(read(lent).why?.base).toMatchObject({ kind: 'pooled', borrowed: true, live: false });
     // Without it the sentence could name the wrong days: no why at all.
     for (const kind of ['pooled', 'alert', 'similar_days']) {
       const bare = night();
@@ -298,6 +307,25 @@ describe('a forecast’s chance section parts', () => {
       expect(read(bare).why, kind).toBeNull();
       ((bare.why as Json).base as Json).borrowed = 'yes';
       expect(read(bare).why, kind).toBeNull();
+    }
+  });
+
+  it('reads whether a base counts the days read live, and drops a base that does not say', () => {
+    for (const base of [
+      { kind: 'pooled', scope: 'nation', points: 90, alert: null, borrowed: false },
+      { kind: 'alert', points: 30, alert: 'winter_storm_warning', borrowed: false },
+      { kind: 'similar_days', points: 1, borrowed: true },
+      { kind: 'day_after', points: 25 },
+    ]) {
+      const live = night();
+      (live.why as Json).base = { ...base, live: true };
+      expect(read(live).why?.base, base.kind).toMatchObject({ kind: base.kind, live: true });
+      // Without it a sentence could call days read live recorded days: no why at all.
+      const bare = night();
+      (bare.why as Json).base = { ...base };
+      expect(read(bare).why, base.kind).toBeNull();
+      ((bare.why as Json).base as Json).live = 'yes';
+      expect(read(bare).why, base.kind).toBeNull();
     }
   });
 

@@ -11,6 +11,9 @@
   immediate dark that stays dark: every pass's upload is refused while the hold is set).
 * ``predict release``: clear the hold.
 * ``predict check --url URL --max-age 45m``: the watchdog.
+* ``predict learn``: label the new live-read days and swap in a refit only when the
+  walk-forward check finds it no worse (:mod:`snowlight.predict.learn`); exit 4 when it kept
+  the model served because the refit was worse.
 
 Exit codes: 0 published (or nothing to change), 3 dark (the gate refused: nothing
 uploaded), 1 an error. Secrets come from the environment only: ``LIVE_HOST_TOKEN`` (a
@@ -24,7 +27,9 @@ import logging
 import math
 import os
 import re
+import sqlite3
 import sys
+import tempfile
 import time
 from collections.abc import Callable, Mapping, Sequence
 from dataclasses import dataclass, field
@@ -39,7 +44,7 @@ from snowlight.live.publish import LiveHold
 from snowlight.live.publishers import DirPublisher, GitHubPublisher, PublishError
 from snowlight.output import write_bytes_atomic, write_json
 from snowlight.predict import artifact as artifact_module
-from snowlight.predict import backtest, pool, train
+from snowlight.predict import backtest, learn, pool, train
 from snowlight.predict.alerts_live import (
     LiveEvent,
     Memory,
@@ -51,6 +56,7 @@ from snowlight.predict.alerts_live import (
 from snowlight.predict.calendar import is_school_day, season_of
 from snowlight.predict.config import CONFIG_PATH, PIPELINE_ROOT, PredictConfig
 from snowlight.predict.labels import Outcome
+from snowlight.predict.live_labels import record_snapshots
 from snowlight.predict.publish import (
     Dark,
     DarkError,
@@ -87,6 +93,9 @@ from snowlight.sources.nws.alerts import NwsAlert
 
 LOG: Final = logging.getLogger("snowlight.predict")
 DEFAULT_STATE: Final = PIPELINE_ROOT / "out" / "internal" / "predict" / "state.json"
+LIVE_INTERNAL: Final = PIPELINE_ROOT / "out" / "internal" / "live"
+"""The live ingest's private folders (``state``, and ``store`` its state store keeps)."""
+LEDGER: Final = "ledger.sqlite"
 DEFAULT_SITE: Final = "https://snowlightmap.com"
 DEFAULT_REPOSITORY: Final = "viaate/jsalcards"
 LIVE_REPOSITORY: Final = "viaate/snowlight-live"
@@ -169,6 +178,25 @@ def register(subparsers: "argparse._SubParsersAction[argparse.ArgumentParser]") 
     watch.add_argument("--url", default=f"{LIVE_ROOT}v1/predictions/latest.json")
     watch.add_argument("--max-age", default="45m", help="45m, 2h")
     watch.set_defaults(handler=run_check)
+
+    taught = actions.add_parser("learn", help="learn from the live-read days (nightly)")
+    _serve_inputs(taught)
+    taught.add_argument(
+        "--live-state",
+        type=Path,
+        default=LIVE_INTERNAL / "state",
+        help="the live ingest's state folder (read only)",
+    )
+    taught.add_argument(
+        "--live-store",
+        type=Path,
+        default=LIVE_INTERNAL / "store",
+        help="the live state store's folder (its packed state, unpacked to a scratch folder)",
+    )
+    taught.add_argument(
+        "--registry", type=Path, default=train.TrainPaths().registry, help="station registry"
+    )
+    taught.set_defaults(handler=run_learn)
 
 
 def _train_inputs(parser: argparse.ArgumentParser) -> None:
@@ -540,6 +568,9 @@ class Pass:
     zone_fallback: Callable[[float, float], str | None]
     model: Callable[[], artifact_module.ModelArtifact]
     state: State
+    learned: artifact_module.Learned | None = None
+    """What the live days taught (``predictions/learned.json``), used with the committed
+    model; ``None``: the committed model alone."""
     now: Callable[[], datetime] = field(default=lambda: datetime.now(UTC))
     write: Path | None = None
     history: Callable[[datetime, datetime], Sequence[NwsAlert]] | None = None
@@ -550,7 +581,11 @@ class Pass:
     def serve_model(self, directory: DeployedDirectory) -> ServeModel:
         """The rates for this directory (built once per directory)."""
         if self._built is None or self._built[0] != directory.stamp:
-            built = build_model(directory, self.model(), self.config, self.zone_fallback)
+            built, why = learn.serving_model(
+                directory, self.model(), self.learned, self.config, self.zone_fallback
+            )
+            if why is not None:
+                _warn(why)
             self._built = (directory.stamp, built)
         return self._built[1]
 
@@ -629,6 +664,15 @@ def one_pass(run: Pass, *, grid: bool = True) -> int:
         counted = remember(run, feed, events, now, memory_reach(days, model.time_zone, window))
         classes = district_classes(
             model, counted, run.ugc_index(directory), days, now, window, weather.covered_share
+        )
+        run.state.snapshots = record_snapshots(
+            run.state.snapshots,
+            content=learn.content_key(directory),
+            zones=model.time_zone,
+            classes=classes,
+            days=days,
+            now=now,
+            window=window,
         )
         last = _last_file(run)
         made = forecast_file(model, classes, days, now, closed_on=_closed_on(run, model), last=last)
@@ -726,6 +770,9 @@ def make_pass(args: argparse.Namespace, env: Mapping[str, str]) -> Pass:  # prag
     config = PredictConfig.load(args.config)
     mode = mode_of(env.get("PREDICT_PUBLISH"))
     host = make_host(args, env) if mode is not Mode.OFF else None
+    model_bytes = Path(args.model).read_bytes()
+    committed = artifact_module.ModelArtifact.from_bytes(model_bytes)
+    learned = served_learned(host, mode, artifact_module.sha256_of(model_bytes))
     alerts = AlertsReader(client({"Accept": "application/geo+json"}))
     history = AlertsHistory(client({"Accept": "application/geo+json"}))
     catalog = BoundaryCatalog(HttpCache(client()), args.weather_cache)
@@ -756,11 +803,33 @@ def make_pass(args: argparse.Namespace, env: Mapping[str, str]) -> Pass:  # prag
         alerts=alerts.read,
         ugcs=ugcs,
         zone_fallback=lambda lon, lat: lookup.zone_for(None, lat, lon),
-        model=lambda: artifact_module.load(args.model),
+        model=lambda: committed,
+        learned=learned,
         state=load_state(args.state),
         write=args.write,
         history=history.read,
     )
+
+
+def served_learned(
+    host: Host | None, mode: Mode, archive_sha256: str
+) -> artifact_module.Learned | None:
+    """The learned file on the host the serving pass uses with the committed model, or
+    ``None`` (none there, unreadable, or made over another committed model: the committed
+    model alone serves, and the reason is warned)."""
+    key = mode.key
+    if host is None or key is None:
+        return None
+    path = f"{key.split('/', 1)[0]}/{learn.LEARNED_PATH}"
+    try:
+        data = host.read(path)
+    except PublishError as error:
+        _warn(f"{path} unreadable ({error}); serving the committed model")
+        return None
+    found, why = learn.read_learned(data, archive_sha256)
+    if why is not None:
+        _warn(f"{why}; serving the committed model")
+    return found
 
 
 def run_once(
@@ -1005,3 +1074,169 @@ def run_check(args: argparse.Namespace) -> int:  # pragma: no cover - the live h
         return EXIT_DARK
     _out("predict check: fresh")
     return 0
+
+
+# --- learning -----------------------------------------------------------------------------------
+
+
+@dataclass(slots=True)
+class LearnRun:
+    """Everything ``predict learn`` needs, as values and callables (tests replace them)."""
+
+    config: PredictConfig
+    host: Host
+    prefix: str
+    """``v1``, ``v1-shadow``, or the local folder's ``v1`` when publishing is off."""
+    source: Any
+    """The live days (:class:`snowlight.predict.live_labels.LiveSource`)."""
+    model: ServeModel
+    """The committed model alone, on the deployed directory (its districts, schools, zones)."""
+    archive_sha256: str
+    snapshots: Mapping[str, object]
+    build: Callable[[artifact_module.Learned | None], ServeModel]
+    now: datetime
+
+
+def learn_once(run: LearnRun) -> int:
+    """One learning run (:mod:`snowlight.predict.learn`): 0 swapped or nothing to change,
+    :data:`~snowlight.predict.learn.EXIT_KEPT` kept because the refit was worse, 1 an error
+    (nothing written)."""
+    store_key = f"{run.prefix}/{learn.LEARN_PATH}"
+    learned_key = f"{run.prefix}/{learn.LEARNED_PATH}"
+    try:
+        stored = run.host.read(store_key)
+        store = learn.LearnStore.empty() if stored is None else learn.LearnStore.from_bytes(stored)
+    except (PublishError, ValueError) as error:
+        _err(f"predict learn: error: {store_key} cannot be read ({type(error).__name__}): "
+             "nothing is changed")  # fmt: skip
+        return 1
+    try:
+        current, why = learn.read_learned(run.host.read(learned_key), run.archive_sha256)
+    except PublishError as error:
+        _err(f"predict learn: error: {learned_key} cannot be read ({error}): nothing is changed")
+        return 1
+    if why is not None:
+        _out(f"predict learn: {why}; the served model is the committed one")
+    try:
+        labeling = learn.label_new_days(
+            store, run.source, learn.directory_of(run.model), run.snapshots, run.config, run.now
+        )
+    except (PublishError, sqlite3.Error, ValueError, OSError) as error:
+        _err(f"predict learn: error: the live days cannot be read ({type(error).__name__}): "
+             "nothing is changed")  # fmt: skip
+        return 1
+    for reason, count in sorted(labeling.skipped.items()):
+        _out(f"predict learn: {count} school days not labeled: {reason}")
+    if labeling.added:
+        days = ", ".join(day.isoformat() for day in labeling.added)
+        _out(f"predict learn: labeled the live days {days}")
+    decision = learn.decide(
+        labeling.store, current, run.build, run.archive_sha256, run.config, run.now
+    )
+    files: dict[str, bytes] = {}
+    if labeling.added:
+        files[store_key] = labeling.store.to_bytes()
+    if decision.kind in ("swap", "reset") and decision.learned is not None:
+        files[learned_key] = decision.learned.to_bytes()
+    if files:
+        try:
+            run.host.write(files)
+            if any(run.host.read(key) != data for key, data in files.items()):
+                raise PublishError("the files read back are not the ones written")
+        except PublishError as error:
+            _err(f"predict learn: error: {error}: the served model is as it was")
+            return 1
+    _out(f"predict learn: {decision.why}")
+    return learn.EXIT_KEPT if decision.kind == "keep" else 0
+
+
+NO_STATE_WHERE: Final = (
+    "no ledger in out/internal/live/state and no packed state in out/internal/live/store "
+    "(the live loop's Actions cache, keys live-state-*)"
+)
+
+
+def live_state_folder(state: Path, store: Path, scratch: Path) -> Path | None:
+    """The live ingest's state folder to read: ``state`` when it holds the row ledger (the
+    box), else the packed state in ``store`` (the Actions cache) unpacked into ``scratch``,
+    else ``None`` (no live day was read here).
+
+    Raises:
+        snowlight.live.state.StateError: the packed state is damaged.
+    """
+    from snowlight.live.state import ARCHIVE, unpack  # noqa: PLC0415
+
+    if (state / LEDGER).is_file():
+        return state
+    packed = store / ARCHIVE
+    if not packed.is_file():
+        return None
+    unpack(packed.read_bytes(), scratch)
+    return scratch if (scratch / LEDGER).is_file() else None
+
+
+def run_learn(args: argparse.Namespace) -> int:  # pragma: no cover - the real world
+    """Run ``predict learn``."""
+    with tempfile.TemporaryDirectory() as scratch:
+        return _run_learn(args, Path(scratch))
+
+
+def _run_learn(args: argparse.Namespace, scratch: Path) -> int:  # pragma: no cover
+    from snowlight.live.state import StateError  # noqa: PLC0415
+    from snowlight.predict.live_labels import (  # noqa: PLC0415
+        NO_STATE,
+        NoLiveSource,
+        StateSource,
+        markets_of,
+    )
+    from snowlight.sources.stations.registry import load_registry  # noqa: PLC0415
+
+    env = dict(os.environ)
+    try:
+        run = make_pass(args, env)
+        directory = run.directory()
+        committed = run.model()
+        model = build_model(directory, committed, run.config, run.zone_fallback)
+        mode = run.mode
+        host: Host
+        if run.host is not None and mode.key is not None:
+            host, prefix = run.host, mode.key.split("/", 1)[0]
+        else:
+            host, prefix = (
+                DirPublisher(PIPELINE_ROOT / "out" / "internal" / "predict" / "learn"),
+                "v1",
+            )
+            _out("predict learn: publishing is off: the files stay in out/internal/predict/learn")
+        source: Any = NoLiveSource()
+        folder = live_state_folder(args.live_state, args.live_store, scratch)
+        if folder is not None:
+            stations = load_registry(args.registry).stations.values()
+            source = StateSource(
+                folder=folder,
+                market_of=markets_of((s.id, s.market) for s in stations),
+                zone_of=dict(zip(directory.district_ids, model.time_zone, strict=True)),
+                settings=run.config.labels,
+                prefix=prefix,
+                read_file=lambda path: host.read(f"{prefix}/{path}"),
+            )
+        else:
+            _out(f"predict learn: {NO_STATE}: {NO_STATE_WHERE}")
+        sha = artifact_module.sha256_of(Path(args.model).read_bytes())
+    except (ConfigError, ValueError, OSError, ServeError, PublishError, StateError) as error:
+        _err(f"predict learn: error: {type(error).__name__}: the served model is as it was")
+        return 1
+    return learn_once(
+        LearnRun(
+            config=run.config,
+            host=host,
+            prefix=prefix,
+            source=source,
+            model=model,
+            archive_sha256=sha,
+            snapshots=run.state.snapshots,
+            build=lambda learned: build_model(
+                directory, committed, run.config, run.zone_fallback, learned
+            ),
+            now=datetime.now(UTC),
+        )
+    )

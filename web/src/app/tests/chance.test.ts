@@ -462,7 +462,7 @@ describe('what the section leaves out', () => {
     expect(why({ ...A_DETAIL, why: { ...A_WHY, reasons: A_WHY.reasons.slice(1) } })).toBeNull();
     // Points that are not whole numbers, even when they add up.
     const halves: WhyDetail = {
-      base: { kind: 'similar_days', points: 29.5, borrowed: false },
+      base: { kind: 'similar_days', points: 29.5, borrowed: false, live: false },
       reasons: [{ kind: 'sun', points: 34.5 }],
     };
     expect(why({ ...A_DETAIL, why: halves })).toBeNull();
@@ -470,25 +470,25 @@ describe('what the section leaves out', () => {
     expect(why({ ...A_DETAIL, why: null })).toBeNull();
     // The file never gives a certainty; a sum to 0 or 100 would claim one.
     const none: WhyDetail = {
-      base: { kind: 'similar_days', points: 0, borrowed: false },
+      base: { kind: 'similar_days', points: 0, borrowed: false, live: false },
       reasons: [],
     };
     expect(why({ ...A_DETAIL, why: none }, 0)).toBeNull();
     const all: WhyDetail = {
-      base: { kind: 'similar_days', points: 100, borrowed: false },
+      base: { kind: 'similar_days', points: 100, borrowed: false, live: false },
       reasons: [],
     };
     expect(why({ ...A_DETAIL, why: all }, 1)).toBeNull();
     // At 1% and 99% the sum still shows, worded as the floor and ceiling they are.
     const low: WhyDetail = {
-      base: { kind: 'similar_days', points: 1, borrowed: false },
+      base: { kind: 'similar_days', points: 1, borrowed: false, live: false },
       reasons: [],
     };
     expect(lines(why({ ...A_DETAIL, why: low }, 0.01))).toEqual([
       '1% Shawnee Mission almost never closed or went remote on recorded days like this.',
     ]);
     const high: WhyDetail = {
-      base: { kind: 'similar_days', points: 99, borrowed: false },
+      base: { kind: 'similar_days', points: 99, borrowed: false, live: false },
       reasons: [],
     };
     expect(lines(why({ ...A_DETAIL, why: high }, 0.99))).toEqual([
@@ -496,7 +496,7 @@ describe('what the section leaves out', () => {
     ]);
     // A base alone, when it is the chance.
     const alone: WhyDetail = {
-      base: { kind: 'similar_days', points: 20, borrowed: false },
+      base: { kind: 'similar_days', points: 20, borrowed: false, live: false },
       reasons: [],
     };
     expect(lines(why({ ...A_DETAIL, why: alone }, 0.2))).toEqual([
@@ -504,7 +504,14 @@ describe('what the section leaves out', () => {
     ]);
     // A district with too short a history of its own: the districts around it.
     const pooled: WhyDetail = {
-      base: { kind: 'pooled', points: 33, scope: 'nearby', alert: null, borrowed: false },
+      base: {
+        kind: 'pooled',
+        points: 33,
+        scope: 'nearby',
+        alert: null,
+        borrowed: false,
+        live: false,
+      },
       reasons: [],
     };
     expect(lines(why({ ...A_DETAIL, why: pooled }, 0.33))).toEqual([
@@ -832,7 +839,7 @@ describe('the timeline', () => {
     const colder: ForecastDetail = {
       ...B_DETAIL,
       why: {
-        base: { kind: 'day_after', points: 25 },
+        base: { kind: 'day_after', points: 25, live: false },
         reasons: [
           { kind: 'snow_stops', points: -8, at: at('2026-01-13T12:00:00Z') },
           { kind: 'cold', points: 6, feelsLike: -12 },

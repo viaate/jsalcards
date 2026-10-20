@@ -64,6 +64,7 @@ from snowlight.live.edition import (
 )
 from snowlight.live.guards import Refusal
 from snowlight.live.ingest import Ingest, SourceRead
+from snowlight.live.morning import MorningLog
 from snowlight.live.publish import (
     CLOCK_SLACK,
     Exit,
@@ -370,6 +371,7 @@ def build_parts(  # pragma: no cover - loads the directory, the matcher and the 
         watch=make_watch(config, env, args.site_data),
         internal_dir=args.internal,
         due=due_sources(registry),
+        morning=MorningLog(args.state / "morning"),
     )
     return Parts(ingest, sequential_reads(registry, directory, args.cache_dir))
 

@@ -447,18 +447,48 @@ def _district_unread(  # noqa: PLR0913, PLR0917 - the district's readers and the
 ) -> tuple[int, Unread | None]:
     """How many of ``stations`` read the district (see the module docstring), and why it is
     unread when none did."""
+    return district_readers(
+        stations,
+        window,
+        readers_of_market,
+        storm,
+        market_of=inputs.market_of,
+        captures=inputs.captures,
+        median_rows=inputs.median_rows,
+        settings=settings,
+    )
+
+
+def district_readers(  # noqa: PLR0913 - the district's readers, the day's reads and the gates
+    stations: Sequence[str],
+    window: Mapping[str, StationRead],
+    readers_of_market: Mapping[str, set[str]],
+    storm: bool,
+    *,
+    market_of: Mapping[str, str],
+    captures: Mapping[str, int] | None,
+    median_rows: Mapping[str, float] | None,
+    settings: LabelSettings,
+) -> tuple[int, Unread | None]:
+    """How many of ``stations`` (those carrying the district that have reads in ``window``)
+    read it, after the station gates (``thin_station``, ``small_capture``) and, on a storm
+    day, ``empty_uncorroborated``; and why it is unread when none did. The live labels use
+    it too (:mod:`snowlight.predict.live_labels`), so both follow one rule."""
     readers = 0
     why: list[Unread] = []
     for station in stations:
+        item = window.get(station)
+        if item is None:
+            continue
         kind, reason = station_reads(
             station,
-            window[station],
+            item,
             storm,
-            captures=inputs.captures,
-            median_rows=inputs.median_rows,
+            captures=captures,
+            median_rows=median_rows,
             settings=settings,
         )
-        market = inputs.market_of.get(station, station)
+        market = market_of.get(station, station)
         if kind == "empty" and storm and not readers_of_market.get(market, set()) - {station}:
             why.append(Unread.EMPTY_UNCORROBORATED)
         elif kind is not None:

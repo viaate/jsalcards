@@ -27,7 +27,10 @@
    minutes was healthy (G12b);
 6. queues the listings the matcher did not accept (private) and writes
    ``health.json``: counts, codes and source ids only (a failed write is logged by its
-   type and leaves the pass's exit as it was).
+   type and leaves the pass's exit as it was);
+7. adds the pass to the morning record (:mod:`snowlight.live.morning`, for the automatic
+   learning): whether the map showed it, its whole reads, the states it withheld and the
+   districts its rows name. A failed write is logged by its type and changes nothing else.
 
 The pass's time is the caller's clock **after** the reads (and never earlier than any
 read's ``fetched_at``): ``generated_at`` is never older than the data it carries, and
@@ -53,6 +56,7 @@ from snowlight.live.guards import Rules, held
 from snowlight.live.ledger import GOOD, LONGEST, Ledger, SeenRow
 from snowlight.live.ledger import Outcome as ReadOutcome
 from snowlight.live.merge import Merged, merge
+from snowlight.live.morning import MorningLog, named_of, pass_reads
 from snowlight.live.publish import Exit, LivePublisher, PassReport
 from snowlight.live.resolve import LiveDirectory, Resolved, Resolver
 from snowlight.output import JSONValue, write_json
@@ -186,11 +190,16 @@ class Ingest:
     checked_at: datetime | None = None
     """When the directory handshake last ran."""
     last_verdict: EditionVerdict | None = None
+    morning: MorningLog | None = None
+    """The morning record (:mod:`snowlight.live.morning`); ``None`` keeps none."""
+    taken: set[str] = field(default_factory=set)
+    """Sources the ledger took a whole read of this pass (ok, not_modified or empty)."""
 
     def observe(self, reads: Iterable[SourceRead]) -> Counter[str]:
         """Fold reads into the ledger; returns the outcomes as the ledger took them."""
         outcomes: Counter[str] = Counter()
         self.failed = set()
+        self.taken = set()
         for read in reads:
             try:
                 observed = self.ledger.observe(
@@ -204,6 +213,8 @@ class Ingest:
                 self.recent.append((read.fetched_at, read.source_id, False))
                 continue
             outcomes[observed.outcome.value] += 1
+            if observed.outcome in GOOD:
+                self.taken.add(read.source_id)
             confirmed = read.outcome is ReadOutcome.NOT_MODIFIED and not read.rows
             if observed.outcome in GOOD and not confirmed:
                 self.present[read.source_id] = read.rows
@@ -358,6 +369,28 @@ class Ingest:
             )
         return found
 
+    def record_morning(
+        self,
+        now: datetime,
+        resolved: Sequence[Resolved],
+        unknown: Collection[str],
+        report: PassReport,
+    ) -> None:
+        """Add this pass to the morning record (a failed write is logged by its type)."""
+        if self.morning is None:
+            return
+        prefix = self.publisher.mode.prefix
+        try:
+            self.morning.record(
+                now,
+                shown=prefix if prefix is not None and shown(report) else None,
+                reads=pass_reads(self.taken - self.failed, resolved),
+                unknown=unknown,
+                named=named_of(resolved),
+            )
+        except (OSError, ValueError) as error:
+            LOG.error("morning record: %s", type(error).__name__)
+
     def run_pass(
         self, reads: Sequence[SourceRead], now: datetime, *, started: datetime | None = None
     ) -> PassReport:
@@ -416,6 +449,7 @@ class Ingest:
             )
         except OSError as error:
             LOG.error("health.json: %s", type(error).__name__)
+        self.record_morning(now, resolved, unknown, report)
         LOG.info(
             "pass: %d reads, healthy share %.2f, %d statuses, exit %d",
             len(reads),
@@ -424,6 +458,17 @@ class Ingest:
             int(report.exit),
         )
         return report
+
+
+def shown(report: PassReport) -> bool:
+    """Whether the map shows this pass's merge: it uploaded, or found it unchanged inside the
+    heartbeat (never a refused, held, blanked or failed pass, nor publishing off)."""
+    return (
+        report.exit is Exit.OK
+        and not report.refusals
+        and not report.blank
+        and (bool(report.uploaded) or report.note == "unchanged")
+    )
 
 
 def health(  # noqa: PLR0913 - one pass's parts

@@ -60,7 +60,8 @@ export type PoolScope = (typeof SCOPES)[number];
 /**
  * Where the chance starts. `borrowed`: the day's own weather (or the day after a snow day)
  * has too few recorded days, so the chance is counted over other recorded days, which the
- * sentence names.
+ * sentence names. `live`: the days counted are days the live pipeline read, not the
+ * archive's recorded days, and the sentence says so.
  */
 export type BaseDetail =
   | {
@@ -68,15 +69,22 @@ export type BaseDetail =
       readonly points: number;
       readonly alert: AlertKind;
       readonly borrowed: boolean;
+      readonly live: boolean;
     }
-  | { readonly kind: 'day_after'; readonly points: number }
-  | { readonly kind: 'similar_days'; readonly points: number; readonly borrowed: boolean }
+  | { readonly kind: 'day_after'; readonly points: number; readonly live: boolean }
+  | {
+      readonly kind: 'similar_days';
+      readonly points: number;
+      readonly borrowed: boolean;
+      readonly live: boolean;
+    }
   | {
       readonly kind: 'pooled';
       readonly points: number;
       readonly scope: PoolScope;
       readonly alert: AlertKind | null;
       readonly borrowed: boolean;
+      readonly live: boolean;
     };
 
 export type ReasonDetail =
@@ -229,26 +237,35 @@ function hoursOf(value: unknown, busesAt: Date | null): HoursDetail | null {
 function baseOf(value: unknown): BaseDetail | null {
   const base = fields(value);
   if (base === null || !isWhole(base.points, 0, 100)) return null;
-  const { points, borrowed } = base;
-  // Which recorded days the sentence counts must be known, or it could name the wrong ones.
+  const { points, borrowed, live } = base;
+  // Which days the sentence counts must be known, or it could name the wrong ones: other
+  // weather's days, or the archive's recorded days for days read live.
   if (base.kind !== 'day_after' && typeof borrowed !== 'boolean') return null;
+  if (typeof live !== 'boolean') return null;
   const lent = borrowed === true;
   switch (base.kind) {
     case 'alert':
       return ALERTS.includes(base.alert as AlertKind)
-        ? { kind: 'alert', points, alert: base.alert as AlertKind, borrowed: lent }
+        ? { kind: 'alert', points, alert: base.alert as AlertKind, borrowed: lent, live }
         : null;
     case 'day_after':
-      return { kind: 'day_after', points };
+      return { kind: 'day_after', points, live };
     case 'similar_days':
-      return { kind: 'similar_days', points, borrowed: lent };
+      return { kind: 'similar_days', points, borrowed: lent, live };
     case 'pooled': {
       const scope = SCOPES.find((item) => item === base.scope);
       const alert = base.alert ?? null;
       if (scope === undefined || (alert !== null && !ALERTS.includes(alert as AlertKind))) {
         return null;
       }
-      return { kind: 'pooled', points, scope, alert: alert as AlertKind | null, borrowed: lent };
+      return {
+        kind: 'pooled',
+        points,
+        scope,
+        alert: alert as AlertKind | null,
+        borrowed: lent,
+        live,
+      };
     }
     default:
       return null;

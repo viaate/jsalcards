@@ -99,15 +99,20 @@ def sayable(day: Situation, counted: Situation) -> bool:
     return counted.weather == day.weather and day.after
 
 
-def base_for(
+def base_for(  # noqa: PLR0913 - the counted days, the chance, where it comes from
     situation: Situation,
     p_no_school: float,
     own: bool,
     scope: Scope,
     day: Situation | None = None,
+    *,
+    live: bool = False,
 ) -> Base:
     """The base of a forecast whose whole chance is ``p_no_school``, counted over
     ``situation`` days, on a day of situation ``day`` (default the same).
+
+    ``live``: the counted days are days the live pipeline read, not the archive's recorded
+    days (the situation is re-anchored on them, :mod:`snowlight.predict.learn`).
 
     Raises:
         ValueError: ``scope`` is not a pooled scope, or the counted days cannot be said
@@ -122,23 +127,27 @@ def base_for(
     if not own:
         if scope not in SCOPES:
             raise ValueError(f"not a pooled scope: {scope!r}")
-        return PooledBase(kind="pooled", scope=scope, points=points, alert=alert, borrowed=borrowed)
+        return PooledBase(
+            kind="pooled", scope=scope, points=points, alert=alert, borrowed=borrowed, live=live
+        )
     if situation.after:
-        return DayAfterBase(kind="day_after", points=points)
+        return DayAfterBase(kind="day_after", points=points, live=live)
     if alert is not None:
-        return AlertBase(kind="alert", points=points, alert=alert, borrowed=borrowed)
-    return SimilarDaysBase(kind="similar_days", points=points, borrowed=borrowed)
+        return AlertBase(kind="alert", points=points, alert=alert, borrowed=borrowed, live=live)
+    return SimilarDaysBase(kind="similar_days", points=points, borrowed=borrowed, live=live)
 
 
-def why_for(
+def why_for(  # noqa: PLR0913 - as base_for
     situation: Situation,
     p_no_school: float,
     own: bool,
     scope: Scope,
     day: Situation | None = None,
+    *,
+    live: bool = False,
 ) -> Why:
     """The base alone: it adds up to the chance exactly."""
-    return Why(base=base_for(situation, p_no_school, own, scope, day), reasons=())
+    return Why(base=base_for(situation, p_no_school, own, scope, day, live=live), reasons=())
 
 
 def record_for(days: Sequence[RecordDay], before: date) -> PastRecord | None:

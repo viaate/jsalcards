@@ -13,10 +13,11 @@ so the same model always writes the same bytes.
 """
 
 import gzip
+import hashlib
 import io
 import json
 from collections.abc import Mapping
-from datetime import date
+from datetime import date, datetime
 from itertools import pairwise
 from pathlib import Path
 from typing import Annotated, Final, Literal
@@ -193,3 +194,97 @@ def load(path: Path = ARTIFACT_PATH) -> ModelArtifact:
 def strengths_json(m: Mapping[str, Mapping[str, float]]) -> dict[str, dict[str, float]]:
     """Level to group to ``m``, sorted."""
     return {level: dict(sorted(groups.items())) for level, groups in sorted(m.items())}
+
+
+# --- what the live days taught (S7-L, :mod:`snowlight.predict.learn`) ---------------------------
+
+
+class LiveCounts(_Model):
+    """One district's live-read days per situation, in :data:`SITUATION_KEYS` order."""
+
+    y: Counts
+    n: Counts
+    yd: Counts
+    nd: Counts
+
+    @model_validator(mode="after")
+    def _check(self) -> "LiveCounts":
+        for y, n, yd, nd in zip(self.y, self.n, self.yd, self.nd, strict=True):
+            if not (0 <= y <= n and 0 <= yd <= nd <= n and nd == n - y):
+                raise ValueError("a district's live counts do not add up")
+        return self
+
+
+class Learned(_Model):
+    """``predictions/learned.json`` on the live host: what the served model adds to the
+    committed one from the days the live pipeline read. Derived counts by LEAID only (no
+    names, no source ids, no text), like the committed model.
+
+    A situation in ``anchored`` has ``anchor_min_days`` or more live-read district-days
+    nationally: its rates are counted over the live days (the nation's is their record), the
+    committed model's archive counts giving each place's relative propensity only, and its
+    sentence says "days we read live". Every other situation publishes the committed model's
+    archive rates, unchanged.
+    """
+
+    schema_version: Literal[1]
+    archive_sha256: Annotated[str, Field(pattern=r"^[0-9a-f]{64}$")]
+    """The committed model these counts are added to (its file's SHA-256): a learned file
+    made over another committed model is not used."""
+    through: date
+    """The last live day counted: every later day is held out (checked against, never fit)."""
+    labeled_days: int = Field(ge=0)
+    """Live-read district-days counted."""
+    anchored: tuple[str, ...]
+    live: dict[Annotated[str, Field(pattern=LEAID_PATTERN)], LiveCounts]
+    records: dict[Annotated[str, Field(pattern=LEAID_PATTERN)], dict[str, tuple[RecordDay, ...]]]
+    """Each district's last live days per anchored situation, oldest first (at most 8)."""
+    check: dict[str, float | int]
+    """The walk-forward check it passed: held-out rows, and Brier and reliability of the
+    model it replaced and of itself."""
+    made_at: datetime
+    days: tuple[date, ...]
+    """Every live day counted (sorted, none after ``through``): a day later found misread and
+    excluded from learning is caught here, whatever became of the store of labels."""
+
+    @model_validator(mode="after")
+    def _check(self) -> "Learned":
+        if any(key not in SITUATION_KEYS for key in self.anchored):
+            raise ValueError("an anchored situation is not this code's")
+        if list(self.anchored) != sorted(set(self.anchored), key=SITUATION_KEYS.index):
+            raise ValueError("anchored situations must be unique, in situation order")
+        for days in self.records.values():
+            for key, found in days.items():
+                if key not in self.anchored:
+                    raise ValueError(f"a live record of a situation not anchored: {key!r}")
+                if not 1 <= len(found) <= 8:  # noqa: PLR2004
+                    raise ValueError("a record holds 1 to 8 days")
+                if any(later.day <= earlier.day for earlier, later in pairwise(found)):
+                    raise ValueError("record days must be sorted and unique")
+                if any(item.day > self.through for item in found):
+                    raise ValueError("a live record day is after the days counted")
+        if any(later <= earlier for earlier, later in pairwise(self.days)):
+            raise ValueError("the days counted must be sorted and unique")
+        if self.days and self.days[-1] > self.through:
+            raise ValueError("a day counted is after through")
+        if bool(self.days) != bool(self.labeled_days):
+            raise ValueError("the days counted and the district-days counted disagree")
+        return self
+
+    def to_bytes(self) -> bytes:
+        """Key-sorted JSON."""
+        return dumps_json(json.loads(self.model_dump_json()))
+
+    @classmethod
+    def from_bytes(cls, data: bytes) -> "Learned":
+        """Read a ``learned.json``.
+
+        Raises:
+            pydantic.ValidationError: it is not one.
+        """
+        return cls.model_validate_json(data, strict=False)
+
+
+def sha256_of(data: bytes) -> str:
+    """The SHA-256 of a committed model's bytes, as :attr:`Learned.archive_sha256` names it."""
+    return hashlib.sha256(data).hexdigest()

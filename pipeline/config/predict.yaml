@@ -75,7 +75,7 @@ serve:
   alerts_max_age_minutes: 20  # the feed's updated older than this: dark
   collapse_from: 50           # a pass with more winter alerts than this ...
   collapse_drop: 0.8          # ... followed by one with this much fewer: confirm first
-  budget_raw_bytes: 16000000  # measured worst case: every district under a winter storm warning (the longest alert name) with a previous chance on both days and every recorded district with a full record, 15.8 MB (15,795,035 bytes) (tests/predict/test_loop.py); gzip about 0.2 MB
+  budget_raw_bytes: 16500000  # measured worst case: every district under a winter storm warning (the longest alert name) with a previous chance on both days and every recorded district with a full record, 16.3 MB (16,268,937 bytes, each base carrying its live flag) (tests/predict/test_loop.py); gzip about 0.2 MB
   budget_gzip_bytes: 1500000
   heartbeat_minutes: 30       # an unchanged file is uploaded at least this often
   heartbeat_skip_minutes: 4   # ... and by every grid pass, unless an upload went out this recently
@@ -84,3 +84,22 @@ serve:
   check_minutes: 5            # the alerts are checked this often between passes
   min_gap_minutes: 10         # at most one extra pass per this many minutes
   grid_minutes: [7, 37]       # the heartbeat passes, on the hour's grid
+
+# Automatic learning (S7-L, spec addenda c and d): 'snowlight predict learn', nightly inside the
+# predict workflow. Live-read district-days become labels by the archive's rules; a storm situation
+# with anchor_min_days of them nationally (and enough held-out ones to check it on) counts its
+# absolute level on them (re-anchored), the archive giving relative propensities only; a refit is
+# swapped in only when the walk-forward check on the newest held-out live days finds it no worse
+# than the model served, pooled and in every situation it re-anchors.
+learn:
+  anchor_min_days: 200          # live-read district-days a situation needs, nationally, to be re-anchored
+  holdout_min_storm_rows: 100   # the held-out days (newest first) hold at least this many storm district-days
+  holdout_max_share: 0.5        # ... and never more than this share of the live-labeled days
+  holdout_min_storm_days: 3     # ... spread over at least this many storm days
+  holdout_min_states: 2         # ... and at least this many states
+  ece_tolerance: 0.01           # reliability: the refit's ECE may exceed the current one's by at most this
+  holdout_min_situation_rows: 30  # a situation is re-anchored only with this many held-out rows to check it on
+  holdout_bin_min_rows: 20      # held-out reliability bins with this many rows are checked against their bound
+  snapshot_slack_minutes: 60    # a weather class taken this long before 21:00 the evening before is too old
+  morning_reads_days: 9         # the live morning record keeps 10 days: older unlabeled days stay unknown
+  excluded_days: []             # live days found misread (YYYY-MM-DD): never learned from (docs/predict.md)

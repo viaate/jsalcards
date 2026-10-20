@@ -953,7 +953,7 @@ describe('the chance section in the panel', () => {
             buses_at: null,
             hours: null,
             why: {
-              base: { kind: 'similar_days', points: 30, borrowed: false },
+              base: { kind: 'similar_days', points: 30, borrowed: false, live: false },
               reasons: [{ kind: 'neighbors', points: 15, districts: [1, 2], status: 0 }],
             },
             record: null,

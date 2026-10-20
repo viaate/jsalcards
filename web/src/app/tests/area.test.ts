@@ -126,7 +126,12 @@ function forecast(chance: number): unknown {
       heavy: { first: 5, last: 7 },
     },
     why: {
-      base: { kind: 'similar_days', points: Math.round(chance * 100), borrowed: false },
+      base: {
+        kind: 'similar_days',
+        points: Math.round(chance * 100),
+        borrowed: false,
+        live: false,
+      },
       reasons: [],
     },
     record: null,

@@ -846,44 +846,83 @@ describe('format', () => {
       expect(() => chanceFormat.shareOf(0)).toThrow(RangeError);
       const base = (input: BaseInput): string => chanceFormat.baseReason(input, 'Riverside');
       expect(
-        base({ kind: 'alert', points: 30, alert: 'winter_storm_warning', borrowed: false }),
+        base({
+          kind: 'alert',
+          points: 30,
+          alert: 'winter_storm_warning',
+          borrowed: false,
+          live: false,
+        }),
       ).toBe(
         'Riverside closed or went remote on 3 in 10 recorded days with a winter storm warning.',
       );
-      expect(base({ kind: 'alert', points: 33, alert: 'ice_storm_warning', borrowed: false })).toBe(
-        'Riverside closed or went remote on 1 in 3 recorded days with an ice storm warning.',
-      );
       expect(
-        base({ kind: 'alert', points: 64, alert: 'winter_storm_warning', borrowed: false }),
+        base({
+          kind: 'alert',
+          points: 33,
+          alert: 'ice_storm_warning',
+          borrowed: false,
+          live: false,
+        }),
+      ).toBe('Riverside closed or went remote on 1 in 3 recorded days with an ice storm warning.');
+      expect(
+        base({
+          kind: 'alert',
+          points: 64,
+          alert: 'winter_storm_warning',
+          borrowed: false,
+          live: false,
+        }),
       ).toBe(
         'Riverside closed or went remote on more than 3 in 5 recorded days with a winter storm warning.',
       );
-      expect(base({ kind: 'similar_days', points: 12, borrowed: false })).toBe(
+      expect(base({ kind: 'similar_days', points: 12, borrowed: false, live: false })).toBe(
         'Riverside closed or went remote on more than 1 in 9 recorded days like this.',
       );
       expect(
-        base({ kind: 'alert', points: 0, alert: 'winter_weather_advisory', borrowed: false }),
+        base({
+          kind: 'alert',
+          points: 0,
+          alert: 'winter_weather_advisory',
+          borrowed: false,
+          live: false,
+        }),
       ).toBe(
         'Riverside almost never closed or went remote on recorded days with a winter weather advisory.',
       );
-      expect(base({ kind: 'alert', points: 100, alert: 'blizzard_warning', borrowed: false })).toBe(
+      expect(
+        base({
+          kind: 'alert',
+          points: 100,
+          alert: 'blizzard_warning',
+          borrowed: false,
+          live: false,
+        }),
+      ).toBe(
         'Riverside almost always closed or went remote on recorded days with a blizzard warning.',
       );
-      expect(base({ kind: 'day_after', points: 25 })).toBe(
+      expect(base({ kind: 'day_after', points: 25, live: false })).toBe(
         'After a recorded snow day, Riverside stayed closed or went remote the next day 1 time in 4.',
       );
-      expect(base({ kind: 'day_after', points: 60 })).toBe(
+      expect(base({ kind: 'day_after', points: 60, live: false })).toBe(
         'After a recorded snow day, Riverside stayed closed or went remote the next day 3 times in 5.',
       );
-      expect(base({ kind: 'similar_days', points: 20, borrowed: false })).toBe(
+      expect(base({ kind: 'similar_days', points: 20, borrowed: false, live: false })).toBe(
         'Riverside closed or went remote on 1 in 5 recorded days like this.',
       );
-      expect(base({ kind: 'similar_days', points: 0, borrowed: false })).toBe(
+      expect(base({ kind: 'similar_days', points: 0, borrowed: false, live: false })).toBe(
         'Riverside almost never closed or went remote on recorded days like this.',
       );
       // A district with too short a history of its own: the districts around it, said so.
       expect(
-        base({ kind: 'pooled', points: 30, scope: 'nearby', alert: null, borrowed: false }),
+        base({
+          kind: 'pooled',
+          points: 30,
+          scope: 'nearby',
+          alert: null,
+          borrowed: false,
+          live: false,
+        }),
       ).toBe(
         'Districts near Riverside closed or went remote on 3 in 10 of their recorded days like this.',
       );
@@ -894,17 +933,32 @@ describe('format', () => {
           scope: 'county',
           alert: 'winter_storm_warning',
           borrowed: false,
+          live: false,
         }),
       ).toBe(
         'Districts in Riverside’s county closed or went remote on 3 in 10 of their recorded days with a winter storm warning.',
       );
       expect(
-        base({ kind: 'pooled', points: 3, scope: 'state', alert: null, borrowed: false }),
+        base({
+          kind: 'pooled',
+          points: 3,
+          scope: 'state',
+          alert: null,
+          borrowed: false,
+          live: false,
+        }),
       ).toBe(
         'Districts in Riverside’s state closed or went remote on 1 in 33 of their recorded days like this.',
       );
       expect(
-        base({ kind: 'pooled', points: 0, scope: 'region', alert: null, borrowed: false }),
+        base({
+          kind: 'pooled',
+          points: 0,
+          scope: 'region',
+          alert: null,
+          borrowed: false,
+          live: false,
+        }),
       ).toBe(
         'Districts in Riverside’s region almost never closed or went remote on their recorded days like this.',
       );
@@ -916,6 +970,7 @@ describe('format', () => {
           scope: 'nation',
           alert: 'winter_storm_warning',
           borrowed: false,
+          live: false,
         }),
       ).toBe(
         'Districts across the country closed or went remote on more than 1 in 2 of their recorded days with a winter storm warning.',
@@ -923,17 +978,32 @@ describe('format', () => {
       // 1% is the floor, never a measured 1 time in 100: it reads as almost never; 99% as
       // almost always. The base still carries its points, so the why sums to the chance.
       expect(
-        base({ kind: 'pooled', points: 1, scope: 'nation', alert: null, borrowed: false }),
+        base({
+          kind: 'pooled',
+          points: 1,
+          scope: 'nation',
+          alert: null,
+          borrowed: false,
+          live: false,
+        }),
       ).toBe(
         'Districts across the country almost never closed or went remote on their recorded days like this.',
       );
-      expect(base({ kind: 'similar_days', points: 1, borrowed: false })).toBe(
+      expect(base({ kind: 'similar_days', points: 1, borrowed: false, live: false })).toBe(
         'Riverside almost never closed or went remote on recorded days like this.',
       );
-      expect(base({ kind: 'alert', points: 99, alert: 'blizzard_warning', borrowed: false })).toBe(
+      expect(
+        base({
+          kind: 'alert',
+          points: 99,
+          alert: 'blizzard_warning',
+          borrowed: false,
+          live: false,
+        }),
+      ).toBe(
         'Riverside almost always closed or went remote on recorded days with a blizzard warning.',
       );
-      expect(base({ kind: 'similar_days', points: 2, borrowed: false })).toBe(
+      expect(base({ kind: 'similar_days', points: 2, borrowed: false, live: false })).toBe(
         'Riverside closed or went remote on 1 in 50 recorded days like this.',
       );
       // Counted over other recorded days than the day's own (too few of its own weather, or
@@ -945,34 +1015,51 @@ describe('format', () => {
           scope: 'nation',
           alert: 'winter_storm_warning',
           borrowed: true,
+          live: false,
         }),
       ).toBe(
         'The chance is counted over recorded days with a winter storm warning. Districts across the country closed or went remote on 9 in 10 of them.',
       );
-      expect(base({ kind: 'similar_days', points: 1, borrowed: true })).toBe(
+      expect(base({ kind: 'similar_days', points: 1, borrowed: true, live: false })).toBe(
         'The chance is counted over recorded days like this that did not follow a recorded snow day. Riverside almost never closed or went remote on them.',
       );
       // The labels know only that the day before has no recorded closing, never that it
       // was not a snow day: the sentence says "a recorded snow day".
-      expect(base({ kind: 'pooled', points: 1, scope: 'state', alert: null, borrowed: true })).toBe(
+      expect(
+        base({
+          kind: 'pooled',
+          points: 1,
+          scope: 'state',
+          alert: null,
+          borrowed: true,
+          live: false,
+        }),
+      ).toBe(
         'The chance is counted over recorded days like this that did not follow a recorded snow day. Districts in Riverside’s state almost never closed or went remote on them.',
       );
       expect(
-        base({ kind: 'alert', points: 75, alert: 'winter_storm_warning', borrowed: true }),
+        base({
+          kind: 'alert',
+          points: 75,
+          alert: 'winter_storm_warning',
+          borrowed: true,
+          live: false,
+        }),
       ).toBe(
         'The chance is counted over recorded days with a winter storm warning. Riverside closed or went remote on 3 in 4 of them.',
       );
       expect(() =>
         chanceFormat.baseReason(
-          { kind: 'alert', points: 30, alert: 'fog' as never, borrowed: false },
+          { kind: 'alert', points: 30, alert: 'fog' as never, borrowed: false, live: false },
           'Riverside',
         ),
       ).toThrow(RangeError);
     });
 
-    it('counts every base over the recorded days, never a share of all warnings', () => {
+    it('counts every base over the recorded days or the days read live, never a share of all warnings', () => {
       // The archive holds lists mostly from the storm days it captured, so a rate under an
       // alert is true of the recorded days, not of every alert the weather service issues.
+      // A situation re-anchored on the days the live pipeline read counts those, and says so.
       const alerts = [
         'winter_storm_warning',
         'winter_weather_advisory',
@@ -984,21 +1071,30 @@ describe('format', () => {
       const scopes = ['nearby', 'county', 'state', 'region', 'nation'] as const;
       const inputs: BaseInput[] = [];
       for (let points = 0; points <= 100; points += 1) {
-        inputs.push({ kind: 'day_after', points });
-        for (const borrowed of [false, true]) {
-          inputs.push({ kind: 'similar_days', points, borrowed });
-          for (const alert of alerts) {
-            if (alert !== null) inputs.push({ kind: 'alert', points, alert, borrowed });
-            for (const scope of scopes)
-              inputs.push({ kind: 'pooled', points, scope, alert, borrowed });
+        for (const live of [false, true]) {
+          inputs.push({ kind: 'day_after', points, live });
+          for (const borrowed of [false, true]) {
+            inputs.push({ kind: 'similar_days', points, borrowed, live });
+            for (const alert of alerts) {
+              if (alert !== null) inputs.push({ kind: 'alert', points, alert, borrowed, live });
+              for (const scope of scopes)
+                inputs.push({ kind: 'pooled', points, scope, alert, borrowed, live });
+            }
           }
         }
       }
       for (const input of inputs) {
         const sentence = chanceFormat.baseReason(input, 'Riverside');
         const label = JSON.stringify(input);
-        // Recorded days, in the past tense.
-        expect(sentence, label).toMatch(/\brecorded\b/);
+        const days = input.live ? 'days we read live' : 'recorded days';
+        // Recorded days (or days read live), in the past tense, never the other kind.
+        if (input.live) {
+          expect(sentence, label).toMatch(/\bwe read live\b/);
+          expect(sentence, label).not.toMatch(/\brecorded\b/);
+        } else {
+          expect(sentence, label).toMatch(/\brecorded\b/);
+          expect(sentence, label).not.toMatch(/\blive\b/);
+        }
         // A day with no school counts closed and remote days alike: the sentence says both.
         expect(sentence, label).toMatch(/\b(closed|stayed closed) or went remote\b/);
         // No plural alert to take a share of, no "for" an alert, no present-tense habit.
@@ -1009,19 +1105,70 @@ describe('format', () => {
         const alert = input.kind === 'alert' || (input.kind === 'pooled' && input.alert !== null);
         if (borrowed) {
           // The days counted are named, and they are not the day's own weather.
-          expect(sentence, label).toMatch(/^The chance is counted over recorded days /);
+          expect(sentence.startsWith(`The chance is counted over ${days} `), label).toBe(true);
           expect(sentence, label).toMatch(/ (of|on) them\.$/);
-          if (!alert) expect(sentence, label).toMatch(/that did not follow a recorded snow day\./);
+          if (!alert) {
+            const after = input.live ? 'a snow day we read live' : 'a recorded snow day';
+            expect(sentence, label).toContain(`that did not follow ${after}.`);
+          }
         } else if (alert) {
-          expect(sentence, label).toMatch(/ recorded days with an? [a-z ]+(warning|advisory)\.$/);
+          expect(sentence, label).toMatch(
+            new RegExp(` ${days} with an? [a-z ]+(warning|advisory)\\.$`),
+          );
         }
-        // A snow day is always a recorded one: the labels say no more of the days around it.
+        // A snow day is always a recorded one, or one read live: no more is known of it.
+        const snowDays = input.live ? /snow day we read live/g : /recorded snow day/g;
         expect(sentence.match(/snow day/g)?.length ?? 0, label).toBe(
-          sentence.match(/recorded snow day/g)?.length ?? 0,
+          sentence.match(snowDays)?.length ?? 0,
         );
         // Pooled counts are district-days: theirs, never calendar days of the place.
         if (input.kind === 'pooled' && !borrowed) expect(sentence, label).toMatch(/\btheir\b/);
       }
+    });
+
+    it('says days read live where a base counts them', () => {
+      const say = (input: BaseInput): string => chanceFormat.baseReason(input, 'Riverside');
+      expect(
+        say({
+          kind: 'alert',
+          points: 30,
+          alert: 'winter_storm_warning',
+          borrowed: false,
+          live: true,
+        }),
+      ).toBe(
+        'Riverside closed or went remote on 3 in 10 days we read live with a winter storm warning.',
+      );
+      expect(
+        say({
+          kind: 'pooled',
+          points: 1,
+          scope: 'state',
+          alert: null,
+          borrowed: false,
+          live: true,
+        }),
+      ).toBe(
+        'Districts in Riverside’s state almost never closed or went remote on their days we read live like this.',
+      );
+      expect(say({ kind: 'day_after', points: 25, live: true })).toBe(
+        'After a snow day we read live, Riverside stayed closed or went remote the next day 1 time in 4.',
+      );
+      expect(
+        say({
+          kind: 'pooled',
+          points: 90,
+          scope: 'nation',
+          alert: 'winter_storm_warning',
+          borrowed: true,
+          live: true,
+        }),
+      ).toBe(
+        'The chance is counted over days we read live with a winter storm warning. Districts across the country closed or went remote on 9 in 10 of them.',
+      );
+      expect(say({ kind: 'similar_days', points: 1, borrowed: true, live: true })).toBe(
+        'The chance is counted over days we read live like this that did not follow a snow day we read live. Riverside almost never closed or went remote on them.',
+      );
     });
 
     it('says every kind of reason, each way it can go, a forecast as the forecast’s claim', () => {
@@ -1292,20 +1439,29 @@ describe('format', () => {
         outputs.push(chanceFormat.delayInstead(chance));
         outputs.push(
           chanceFormat.baseReason(
-            { kind: 'alert', points: percent, alert: 'extreme_cold_warning', borrowed: false },
+            {
+              kind: 'alert',
+              points: percent,
+              alert: 'extreme_cold_warning',
+              borrowed: false,
+              live: false,
+            },
             'Riverside',
           ),
-          chanceFormat.baseReason({ kind: 'day_after', points: percent }, 'the district'),
+          chanceFormat.baseReason(
+            { kind: 'day_after', points: percent, live: false },
+            'the district',
+          ),
           // A district's short name starts the sentence: a proper name, capitalized.
           chanceFormat.baseReason(
-            { kind: 'similar_days', points: percent, borrowed: false },
+            { kind: 'similar_days', points: percent, borrowed: false, live: false },
             'Riverside',
           ),
         );
         for (const scope of ['nearby', 'county', 'state', 'region'] as const) {
           outputs.push(
             chanceFormat.baseReason(
-              { kind: 'pooled', points: percent, scope, alert: null, borrowed: false },
+              { kind: 'pooled', points: percent, scope, alert: null, borrowed: false, live: false },
               'the district',
             ),
             chanceFormat.baseReason(
@@ -1315,6 +1471,7 @@ describe('format', () => {
                 scope,
                 alert: 'winter_storm_warning',
                 borrowed: false,
+                live: false,
               },
               'the district',
             ),

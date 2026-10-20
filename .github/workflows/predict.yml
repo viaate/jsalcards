@@ -11,6 +11,13 @@
 # The owner's Cloudflare Worker dispatches this workflow (workflow_dispatch on the default
 # branch) every 5 minutes when no run is queued or running; the same group holds it too.
 #
+# Before the passes, every run learns from the days the live pipeline read (`predict learn`,
+# docs/predict.md "The model learns on its own"): the first run after a school day is over
+# everywhere labels it, and a refit is swapped in only when the newest held-out live days find
+# it no worse. The step can never stop the passes: it may fail or time out on its own (after 5
+# minutes, so the chain's first pass is never held long; it takes under a minute), and a kept
+# refit (or a failed step) opens one issue, unless one is already open.
+#
 # Publishing needs the secret SNOWLIGHT_LIVE_TOKEN in the environment `live`: a fine-grained
 # token with Contents read and write on viaate/snowlight-live only, which the owner creates
 # (docs/predict.md says where). Until it exists every run ends at the first step with a notice:
@@ -30,7 +37,7 @@ permissions:
   contents: read
   actions: write # start the successor; read the Pages artifact for the deployed directory
   deployments: read # the deployed directory's handshake (S8-0)
-  issues: write # the watchdog's issue
+  issues: write # the watchdog's issue, and the learning step's
 
 jobs:
   predict:
@@ -93,6 +100,26 @@ jobs:
           key: predict-state-${{ github.run_id }}
           restore-keys: predict-state-
 
+      # The live ingest's packed private state (its row ledger, change log and morning record;
+      # the cache store never holds the unmatched names), when its loop keeps it in this
+      # repository's Actions cache: the store folder of config/live.yaml under a key starting
+      # `live-state-` (CACHE_KEY_PREFIX, snowlight/live/state.py). Restored read only, never
+      # saved from here. Without it nothing can be labeled: the step logs that no live ingest
+      # state reached the run and leaves the model unchanged.
+      - if: steps.token.outputs.ready == 'true'
+        uses: actions/cache/restore@v4
+        with:
+          path: pipeline/out/internal/live/store
+          key: live-state-${{ github.run_id }}
+          restore-keys: live-state-
+
+      - if: steps.token.outputs.ready == 'true'
+        id: learn
+        name: Learn from the live-read days
+        continue-on-error: true
+        timeout-minutes: 5
+        run: uv run snowlight predict learn
+
       - if: steps.token.outputs.ready == 'true'
         id: run
         run: uv run snowlight predict run --until +320m
@@ -133,4 +160,18 @@ jobs:
           if [ "$open" = "0" ]; then
             gh issue create --repo "$GITHUB_REPOSITORY" --title "$TITLE" \
               --body "predict check found the public predictions file stale, missing or blank after run $GITHUB_RUN_ID. The page hides it after 90 minutes. See docs/predict.md."
+          fi
+
+      # A refit the held-out live days judged worse is kept out (exit 4), and a learning step
+      # that failed changes nothing; either way one issue says so, not one per run.
+      - if: always() && steps.token.outputs.ready == 'true' && steps.learn.outcome == 'failure'
+        name: Open an issue when the model did not learn
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TITLE: The snow-day model kept its last version
+        run: |
+          open=$(gh issue list --repo "$GITHUB_REPOSITORY" --state open --search "in:title \"$TITLE\"" --json title --jq "[.[] | select(.title == env.TITLE)] | length")
+          if [ "$open" = "0" ]; then
+            gh issue create --repo "$GITHUB_REPOSITORY" --title "$TITLE" \
+              --body "predict learn kept the served model (the refit was worse on the held-out live days) or failed in run $GITHUB_RUN_ID; the chances kept serving. Its log line says why. See docs/predict.md."
           fi

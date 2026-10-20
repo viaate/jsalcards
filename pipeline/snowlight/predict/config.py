@@ -89,6 +89,24 @@ class ServeSettings(_Settings):
     grid_minutes: tuple[int, ...] = Field(min_length=1)
 
 
+class LearnSettings(_Settings):
+    """Automatic learning from live-read days (:mod:`snowlight.predict.learn`)."""
+
+    anchor_min_days: int = Field(ge=1)
+    holdout_min_storm_rows: int = Field(ge=1)
+    holdout_max_share: float = Field(gt=0, lt=1)
+    ece_tolerance: float = Field(ge=0, lt=0.1)
+    snapshot_slack_minutes: int = Field(ge=1)
+    morning_reads_days: int = Field(ge=1)
+    holdout_min_storm_days: int = Field(ge=1)
+    holdout_min_states: int = Field(ge=1)
+    holdout_min_situation_rows: int = Field(ge=1)
+    holdout_bin_min_rows: int = Field(ge=1)
+    excluded_days: tuple[date, ...] = ()
+    """Live days never learned from (a day found misread): never labeled, never fit or held
+    out, and a learned file that counted one is no longer served."""
+
+
 class PredictConfig(_Settings):
     """Every setting of ``config/predict.yaml``."""
 
@@ -97,6 +115,7 @@ class PredictConfig(_Settings):
     model: ModelSettings
     backtest: BacktestSettings
     serve: ServeSettings
+    learn: LearnSettings
 
     @classmethod
     def load(cls, path: Path = CONFIG_PATH) -> "PredictConfig":

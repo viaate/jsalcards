@@ -60,7 +60,8 @@
               "kind": "alert",
               "points": 30,
               "alert": "winter_storm_warning",
-              "borrowed": false
+              "borrowed": false,
+              "live": false
             },
             "reasons": [
               {
@@ -170,7 +171,8 @@
           "why": {
             "base": {
               "kind": "day_after",
-              "points": 25
+              "points": 25,
+              "live": false
             },
             "reasons": [
               {
@@ -251,7 +253,8 @@
               "scope": "nearby",
               "points": 20,
               "alert": null,
-              "borrowed": false
+              "borrowed": false,
+              "live": false
             },
             "reasons": []
           },

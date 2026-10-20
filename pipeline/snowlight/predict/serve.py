@@ -28,20 +28,32 @@ import numpy.typing as npt
 
 from snowlight.directory.points import NO_DISTRICT, Points
 from snowlight.predict.alerts_live import LiveEvent, UgcIndex
-from snowlight.predict.artifact import SITUATION_KEYS, ModelArtifact, RecordDay
+from snowlight.predict.artifact import (
+    SITUATION_KEYS,
+    DistrictModel,
+    Learned,
+    ModelArtifact,
+    RecordDay,
+)
 from snowlight.predict.calendar import forecast_days, is_school_day, previous_school_day
 from snowlight.predict.config import PredictConfig
 from snowlight.predict.geography import REGION_OF, neighbors, state_of_leaid
 from snowlight.predict.labels import NO_SCHOOL, WEATHER_REASONS
 from snowlight.predict.pool import (
     SCOPES,
+    Chain,
+    Floats,
     Level,
+    LevelCounts,
+    Places,
+    Rules,
     Strengths,
     chain,
     delay_rules,
     level_counts,
     make_places,
     named_counts,
+    propensities,
     publish_rates,
 )
 from snowlight.predict.share import points_of, says_true
@@ -125,6 +137,9 @@ class ServeModel:
     named_n: npt.NDArray[np.float64] = field(default_factory=lambda: np.zeros((0, 0)))
     """The recorded days (``named_y`` closed or remote of ``named_n``) of the place each
     cell's base names, (deployed districts, situations): its sentence is true of them."""
+    anchored: tuple[bool, ...] = ()
+    """Per situation, whether it is counted over the days the live pipeline read
+    (:class:`~snowlight.predict.artifact.Learned`); empty: none is."""
 
     @property
     def coverage(self) -> float:
@@ -137,15 +152,49 @@ def _strengths(artifact: ModelArtifact, outcome: str) -> Strengths:
     return Strengths(cast("dict[Level, dict[Group, float]]", artifact.strengths[outcome]))
 
 
-def build_model(
+def _anchored_counts(
+    places: Places, learned: Learned, archive: tuple[Floats, Floats, Floats, Floats]
+) -> tuple[npt.NDArray[np.bool_], tuple[Floats, Floats, Floats, Floats]]:
+    """The anchored situations, and the counts the chain runs on: the live days' in an
+    anchored situation's column, the archive's in every other."""
+    anchored = np.zeros(len(SITUATION_KEYS), dtype=np.bool_)
+    for key in learned.anchored:
+        anchored[SITUATION_POSITION[key]] = True
+    live = tuple(np.zeros(archive[0].shape) for _ in range(4))
+    for i, leaid in enumerate(places.districts):
+        found = learned.live.get(leaid)
+        if found is not None:
+            live[0][i], live[1][i], live[2][i], live[3][i] = found.y, found.n, found.yd, found.nd
+    mixed = tuple(
+        np.where(anchored[None, :], mine, theirs)
+        for mine, theirs in zip(live, archive, strict=True)
+    )
+    return anchored, (mixed[0], mixed[1], mixed[2], mixed[3])
+
+
+def _ratios(
+    archive: LevelCounts, strengths: Strengths, rules: Rules, anchored: npt.NDArray[np.bool_]
+) -> dict[str, Floats]:
+    """The archive's relative propensities in the anchored columns; 1 (none) elsewhere."""
+    found: Chain = chain(archive, strengths, rules=rules)
+    return {
+        level: np.where(anchored[None, :], ratio, 1.0)
+        for level, ratio in propensities(found).items()
+    }
+
+
+def build_model(  # noqa: PLR0915 - the steps of one model, in order
     directory: DeployedDirectory,
     artifact: ModelArtifact,
     config: PredictConfig,
     zone_fallback: Callable[[float, float], str | None],
+    learned: Learned | None = None,
 ) -> ServeModel:
     """Every deployed district's rates per situation (see the module docstring).
 
     ``zone_fallback(lon, lat)`` gives the zone of a district the model does not know.
+    ``learned`` adds what the live-read days taught: its anchored situations are counted over
+    the live days, the archive giving relative propensities only (:func:`_anchored_counts`).
 
     Raises:
         ServeError: a deployed district has no time zone.
@@ -177,8 +226,26 @@ def build_model(
         y[i], n[i], yd[i], nd[i] = found.y, found.n, found.yd, found.nd
     settings = artifact.settings
     rules = settings.rules()
+    anchored = np.zeros(len(SITUATION_KEYS), dtype=np.bool_)
+    ratios: dict[str, Floats] | None = None
+    delay_ratios: dict[str, Floats] | None = None
+    if learned is not None and learned.anchored:
+        archive = (y, n, yd, nd)
+        anchored, (y, n, yd, nd) = _anchored_counts(places, learned, archive)
+        ratios = _ratios(
+            level_counts(places, archive[0], archive[1]),
+            _strengths(artifact, "no_school"),
+            rules,
+            anchored,
+        )
+        delay_ratios = _ratios(
+            level_counts(places, archive[2], archive[3]),
+            _strengths(artifact, "delay"),
+            delay_rules(rules),
+            anchored,
+        )
     counts = level_counts(places, y, n)
-    no_school = chain(counts, _strengths(artifact, "no_school"), rules=rules)
+    no_school = chain(counts, _strengths(artifact, "no_school"), rules=rules, ratios=ratios)
     if (no_school.situation < 0).any():
         raise ServeError("a situation has no labeled days to publish from, nor a fallback")
     if no_school.situation.shape[0]:
@@ -192,6 +259,7 @@ def build_model(
         _strengths(artifact, "delay"),
         rules=delay_rules(rules),
         effective=no_school.situation[0] if no_school.situation.shape[0] else None,
+        ratios=delay_ratios,
     )
     p, q = publish_rates(no_school.p, delay.p, settings.floor, settings.ceiling)
     named_y, named_n = named_counts(counts, no_school)
@@ -234,10 +302,24 @@ def build_model(
         if no_school.situation.shape[0]
         else tuple(range(len(SITUATION_KEYS))),
         known=sum(1 for d in deployed if d in entry),
-        records=tuple(entry[d].record if d in entry else {} for d in deployed),
+        records=tuple(_records(entry, learned, d) for d in deployed),
         named_y=named_y[rows],
         named_n=named_n[rows],
+        anchored=tuple(bool(value) for value in anchored),
     )
+
+
+def _records(
+    entry: Mapping[str, DistrictModel], learned: Learned | None, leaid: str
+) -> Mapping[str, tuple[RecordDay, ...]]:
+    """A district's record days: the archive's, and the live days' for anchored situations."""
+    found = dict(entry[leaid].record) if leaid in entry else {}
+    if learned is None:
+        return found
+    for key in learned.anchored:
+        found.pop(key, None)
+    found.update(learned.records.get(leaid, {}))
+    return found
 
 
 def _region(state: str | None) -> str | None:
@@ -412,7 +494,14 @@ def _forecast(  # noqa: PLR0913, PLR0917 - one district, one day, and its last c
         announces_at=None,
         buses_at=None,
         hours=None,
-        why=why_for(situation, p, own, scope, day_situation),
+        why=why_for(
+            situation,
+            p,
+            own,
+            scope,
+            day_situation,
+            live=bool(model.anchored and model.anchored[model.effective[k]]),
+        ),
         record=record,
         events=(),
     )

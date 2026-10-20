@@ -526,6 +526,11 @@ class Derived:
     """The schools a present row names at school level and lights no claim of its own day for
     (withheld, or dated by its posting time): it stands against their district's
     different status (:mod:`snowlight.live.merge`)."""
+    reach: tuple[str, ...] = ()
+    """The districts (LEAIDs) of every school the matcher placed the row on and the guards
+    kept, lit or not: what the list names, kept when the row is withheld (the automatic
+    learning reads a district a list names without lighting as not shown open). Empty when
+    the row was not placed."""
 
     def check_codes(self) -> None:
         """Raise unless every string kept is a code (no raw text can be stored).
@@ -550,6 +555,8 @@ class Derived:
             bad.append("target_drops")
         if any(kind not in READ_KINDS for kind in self.kinds):
             bad.append("kinds")
+        if any(not (len(leaid) == LEAID_DIGITS and leaid.isdigit()) for leaid in self.reach):
+            bad.append("reach")
         if bad:
             raise ValueError(f"a derived result keeps only codes: {sorted(set(bad))}")
 
@@ -577,6 +584,7 @@ class Derived:
             "kinds": list(self.kinds),
             "undated": self.undated,
             "stands": [[t.index, t.nces_id, t.level] for t in self.stands],
+            "reach": list(self.reach),
         }
 
     @classmethod
@@ -614,12 +622,22 @@ class Derived:
             kinds=tuple(_str(kind) for kind in _list(body["kinds"])),
             undated=undated,
             stands=tuple(_target(item) for item in _list(body["stands"])),
+            reach=tuple(_str(leaid) for leaid in _list(body["reach"])),
         )
         derived.check_codes()
         return derived
 
 
 _DROP_CODES: Final = frozenset(reason.value for reason in Withheld) | {"not_in_directory"}
+LEAID_DIGITS: Final = 7
+NCES_DIGITS: Final = 12
+
+
+def reach_of(targets: Iterable[Target]) -> tuple[str, ...]:
+    """The districts (LEAIDs, the first 7 digits of a public school's NCES id) of ``targets``."""
+    return tuple(
+        sorted({t.nces_id[:LEAID_DIGITS] for t in targets if len(t.nces_id) == NCES_DIGITS})
+    )
 
 
 def _object(value: object) -> dict[str, object]:
@@ -1144,7 +1162,11 @@ class Resolver:
             return replace(matched, withheld=reason), ()
         targets, voters, drops, first = self.targets(station, seen, outcome)
         base = replace(
-            matched, targets=tuple(targets), voters=tuple(voters), target_drops=dict(drops)
+            matched,
+            targets=tuple(targets),
+            voters=tuple(voters),
+            target_drops=dict(drops),
+            reach=reach_of([*targets, *voters]),
         )
         if not targets and not voters:
             return replace(base, withheld=first or Withheld.UNMATCHED), ()

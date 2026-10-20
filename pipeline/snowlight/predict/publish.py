@@ -187,6 +187,10 @@ class State:
     ``memory_gap_minutes`` since then, or rebuilt from the NWS alert history)."""
     observed_at: datetime | None = None
     """The last time the memory took in the feed."""
+    snapshots: dict[str, object] = field(default_factory=dict)
+    """Each district's weather class per school day as the passes up to its training snapshot
+    saw it (:func:`snowlight.predict.live_labels.record_snapshots`): what the live days'
+    labels are counted under."""
 
     def as_json(self) -> dict[str, object]:
         """For the state store."""
@@ -203,6 +207,7 @@ class State:
             "memory": self.memory,
             "memory_since": when(self.memory_since),
             "observed_at": when(self.observed_at),
+            "snapshots": self.snapshots,
         }
 
     @classmethod
@@ -216,6 +221,7 @@ class State:
         alerts = value.get("alerts_digest")
         since = value.get("memory_since")
         observed = value.get("observed_at")
+        snapshots = value.get("snapshots")
         return cls(
             digest=digest if isinstance(digest, str) else None,
             uploaded_at=datetime.fromisoformat(uploaded) if isinstance(uploaded, str) else None,
@@ -225,6 +231,7 @@ class State:
             memory=list(memory) if isinstance(memory, list) else [],
             memory_since=datetime.fromisoformat(since) if isinstance(since, str) else None,
             observed_at=datetime.fromisoformat(observed) if isinstance(observed, str) else None,
+            snapshots=dict(snapshots) if isinstance(snapshots, dict) else {},
         )
 
 

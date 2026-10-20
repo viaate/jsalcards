@@ -984,7 +984,13 @@ function syntheticPredictions(): string {
               heavy: { first: 6, last: 8 },
             },
             why: {
-              base: { kind: 'alert', points: 30, alert: 'winter_storm_warning', borrowed: false },
+              base: {
+                kind: 'alert',
+                points: 30,
+                alert: 'winter_storm_warning',
+                borrowed: false,
+                live: false,
+              },
               reasons: [
                 { kind: 'snow_total', points: 16, low: 6.0, high: 9.0, overnight: true },
                 { kind: 'neighbors', points: 9, districts: [2, 0], status: 0 },
@@ -1036,7 +1042,7 @@ function syntheticPredictions(): string {
               heavy: null,
             },
             why: {
-              base: { kind: 'day_after', points: 25 },
+              base: { kind: 'day_after', points: 25, live: false },
               reasons: [
                 { kind: 'snow_stops', points: -8, at: '2026-01-12T12:00:00Z' },
                 { kind: 'cold', points: 6, feels_like: -8 },
@@ -1188,7 +1194,13 @@ function shapedPredictions(shape: NightShape): string {
               heavy: shape.heavy,
             },
             why: {
-              base: { kind: 'alert', points: 50, alert: 'winter_storm_warning', borrowed: false },
+              base: {
+                kind: 'alert',
+                points: 50,
+                alert: 'winter_storm_warning',
+                borrowed: false,
+                live: false,
+              },
               reasons: [
                 snow
                   ? {

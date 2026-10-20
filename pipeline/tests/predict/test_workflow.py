@@ -108,3 +108,50 @@ def test_the_boundaries_cache_has_one_key_and_the_state_is_kept_apart() -> None:
     saves = [step for step in caches if "save" in str(step["uses"])]
     boundary_save = next(step for step in saves if "weather" in str(step["with"]["path"]))  # type: ignore[index]
     assert "cache-hit != 'true'" in str(boundary_save["if"])
+
+
+def test_the_model_learns_before_the_passes_and_a_failed_step_never_stops_them() -> None:
+    found = steps()
+    ids = [step.get("id") for step in found]
+    learn = found[ids.index("learn")]
+    assert ids.index("learn") < ids.index("run")
+    assert learn["run"] == "uv run snowlight predict learn"
+    assert learn["continue-on-error"] is True
+    # S6: the step runs before the chain's first pass, so it is capped at a few minutes.
+    assert int(str(learn["timeout-minutes"])) <= 5
+    # The live state is restored for reading, never saved from here.
+    live = [step for step in found if "live-state" in str(step.get("with", {}))]
+    assert [str(step["uses"]) for step in live] == ["actions/cache/restore@v4"]
+    assert found.index(live[0]) < ids.index("learn")
+    issue = next(step for step in found if "steps.learn.outcome" in str(step.get("if", "")))
+    assert issue["if"] == (
+        "always() && steps.token.outputs.ready == 'true' && steps.learn.outcome == 'failure'"
+    )
+    script = str(issue["run"])
+    assert script.index("gh issue list") < script.index("gh issue create")
+    assert '[ "$open" = "0" ]' in script
+    assert load()["permissions"]["issues"] == "write"  # type: ignore[index]
+
+
+def test_the_learning_step_restores_the_live_loops_cache_key_and_folder() -> None:
+    # S4: the handoff is pinned: the restore names the cache store's folder in config/live.yaml
+    # and the key prefix a live loop with the cache store saves under (CACHE_KEY_PREFIX), and
+    # any workflow that saves that folder saves it under that prefix.
+    from snowlight.live.state import ARCHIVE, CACHE_KEY_PREFIX  # noqa: PLC0415
+
+    live = yaml.safe_load((REPO_ROOT / "pipeline" / "config" / "live.yaml").read_text())
+    folder = f"pipeline/{live['state']['folder']}"
+    restore = next(step for step in steps() if CACHE_KEY_PREFIX in str(step.get("with", {})))
+    found = restore["with"]
+    assert isinstance(found, dict)
+    assert found["path"] == folder
+    assert found["key"] == CACHE_KEY_PREFIX + "${{ github.run_id }}"
+    assert found["restore-keys"] == CACHE_KEY_PREFIX
+    assert ARCHIVE == "live-state.tar.gz"
+    for path in (REPO_ROOT / ".github" / "workflows").glob("*.yml"):
+        for item in yaml.safe_load(path.read_text(encoding="utf-8"))["jobs"].values():
+            for step in item.get("steps", []):
+                uses, given = str(step.get("uses", "")), step.get("with", {})
+                saves = "actions/cache" in uses and "restore" not in uses
+                if saves and given.get("path") == folder:
+                    assert str(given["key"]).startswith(CACHE_KEY_PREFIX), path.name

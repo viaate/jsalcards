@@ -16,6 +16,10 @@
           "const": "alert",
           "type": "string"
         },
+        "live": {
+          "description": "The days counted are days the live pipeline read (complete daily reads), not the recorded archive days; the sentence says so.",
+          "type": "boolean"
+        },
         "points": {
           "$ref": "#/$defs/Percent"
         }
@@ -24,7 +28,8 @@
         "kind",
         "points",
         "alert",
-        "borrowed"
+        "borrowed",
+        "live"
       ],
       "title": "AlertBase",
       "type": "object"
@@ -109,13 +114,18 @@
           "const": "day_after",
           "type": "string"
         },
+        "live": {
+          "description": "The days counted are days the live pipeline read (complete daily reads), not the recorded archive days; the sentence says so.",
+          "type": "boolean"
+        },
         "points": {
           "$ref": "#/$defs/Percent"
         }
       },
       "required": [
         "kind",
-        "points"
+        "points",
+        "live"
       ],
       "title": "DayAfterBase",
       "type": "object"
@@ -613,6 +623,10 @@
           "const": "pooled",
           "type": "string"
         },
+        "live": {
+          "description": "The days counted are days the live pipeline read (complete daily reads), not the recorded archive days; the sentence says so.",
+          "type": "boolean"
+        },
         "points": {
           "$ref": "#/$defs/Percent"
         },
@@ -632,7 +646,8 @@
         "scope",
         "points",
         "alert",
-        "borrowed"
+        "borrowed",
+        "live"
       ],
       "title": "PooledBase",
       "type": "object"
@@ -773,6 +788,10 @@
           "const": "similar_days",
           "type": "string"
         },
+        "live": {
+          "description": "The days counted are days the live pipeline read (complete daily reads), not the recorded archive days; the sentence says so.",
+          "type": "boolean"
+        },
         "points": {
           "$ref": "#/$defs/Percent"
         }
@@ -780,7 +799,8 @@
       "required": [
         "kind",
         "points",
-        "borrowed"
+        "borrowed",
+        "live"
       ],
       "title": "SimilarDaysBase",
       "type": "object"

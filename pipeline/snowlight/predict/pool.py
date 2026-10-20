@@ -364,18 +364,45 @@ class Chain:
     none is backed: nothing may be published)."""
 
 
-def chain(
+def toward(rate: Floats, ratio: Floats) -> Floats:
+    """``rate`` with its odds multiplied by ``ratio`` (a relative propensity)."""
+    clipped = np.clip(rate, _EPSILON, 1 - _EPSILON)
+    odds = clipped / (1 - clipped) * ratio
+    return np.asarray(odds / (1 + odds), dtype=np.float64)
+
+
+def propensities(found: "Chain") -> dict[str, Floats]:
+    """Each level's relative propensity in a chain over every cell: the odds of its rate over
+    the odds of the level above it (region over the nation, state over region, county over
+    state, nearby over county). The re-anchored chain shrinks each level toward the live rate
+    above it times this ratio, so the archive gives which places close more readily than the
+    places around them, never how often districts close (:mod:`snowlight.predict.learn`)."""
+    ratios: dict[str, Floats] = {}
+    above = "nation"
+    for level in ("region", "state", "county", "nearby"):
+        mine = np.clip(found.rate[level], _EPSILON, 1 - _EPSILON)
+        parent = np.clip(found.rate[above], _EPSILON, 1 - _EPSILON)
+        ratios[level] = (mine / (1 - mine)) / (parent / (1 - parent))
+        above = level
+    return ratios
+
+
+def chain(  # noqa: PLR0913 - the counts, the strengths, the rules and the options
     counts: LevelCounts,
     strengths: Strengths,
     *,
     rules: Rules,
     cells: tuple[Ints, Ints] | None = None,
     effective: Ints | None = None,
+    ratios: Mapping[str, Floats] | None = None,
 ) -> Chain:
     """The chain for every (district, situation), or for ``cells`` = (districts, situations).
 
     ``effective`` maps each situation to the one whose rates it takes (default
-    :func:`effective_situations` of these counts)."""
+    :func:`effective_situations` of these counts). ``ratios`` (a chain over every cell only,
+    from :func:`propensities`) moves each level's shrinkage target from the rate above to that
+    rate times the level's relative propensity; the published rate is still named only when
+    its sentence is true of the level's own counted days."""
     nation_y = counts.y["nation"][0] if counts.y["nation"].shape[0] else np.zeros(len(SITUATIONS))
     nation_n = counts.n["nation"][0] if counts.n["nation"].shape[0] else np.zeros(len(SITUATIONS))
     mapping = effective_situations(nation_y, nation_n, rules) if effective is None else effective
@@ -415,7 +442,8 @@ def chain(
     for level in ("region", "state", "county", "nearby"):
         m = strengths.array(level)[used]
         y, n = pick(counts.y[level]), pick(counts.n[level])
-        rate[level] = (y + m * above) / (n + m)
+        prior = above if ratios is None else toward(above, pick(ratios[level]))
+        rate[level] = (y + m * prior) / (n + m)
         days[level] = n
         above = rate[level]
         if truth is None and level == "region":

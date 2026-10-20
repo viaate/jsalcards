@@ -35,7 +35,7 @@ const NO_PARTS = {
   announces_at: null,
   buses_at: null,
   hours: null,
-  why: { base: { kind: 'similar_days', points: 34, borrowed: false }, reasons: [] },
+  why: { base: { kind: 'similar_days', points: 34, borrowed: false, live: false }, reasons: [] },
   record: null,
   events: [],
 } as const;
@@ -267,7 +267,10 @@ describe('a school’s outlook', () => {
         day: '2026-01-12',
         detail: {
           ...NO_DETAIL,
-          why: { base: { kind: 'similar_days', points: 34, borrowed: false }, reasons: [] },
+          why: {
+            base: { kind: 'similar_days', points: 34, borrowed: false, live: false },
+            reasons: [],
+          },
         },
       },
       tomorrow: { state: 'no_threat' },
