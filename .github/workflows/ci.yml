@@ -41,6 +41,30 @@ jobs:
       - run: npm run test
       - run: npm run build
 
+  # The accounts API (api/): types and its tests, which run the Worker in
+  # Miniflare with a local D1 database. api.yml deploys it.
+  api:
+    name: api
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    defaults:
+      run:
+        working-directory: api
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: api/package-lock.json
+
+      - run: npm ci
+      - run: npm run check
+      - run: npm test
+
   # The end-to-end suite runs in three jobs side by side, so each stays well
   # inside the job's time limit as the suite grows. Nearly all of its time is
   # in the desktop project (most phone tests skip themselves), so the desktop

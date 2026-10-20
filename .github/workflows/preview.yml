@@ -199,11 +199,37 @@ jobs:
       - if: steps.pages.outcome == 'success'
         working-directory: web
         run: npm run stage
+      # The accounts API's root (docs/accounts.md): the SNOWLIGHT_API_ROOT variable, or the
+      # snowlight-api Worker on the Cloudflare account's workers.dev subdomain. Without the
+      # Cloudflare secrets, or if the lookup fails, it stays empty and the site shows no
+      # account controls. The page also hides them until the API answers its health check.
+      - if: steps.pages.outcome == 'success'
+        id: api
+        env:
+          API_ROOT_OVERRIDE: ${{ vars.SNOWLIGHT_API_ROOT }}
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        run: |
+          root="${API_ROOT_OVERRIDE}"
+          if [ -z "${root}" ] && [ -n "${CLOUDFLARE_API_TOKEN}" ] && [ -n "${CLOUDFLARE_ACCOUNT_ID}" ]; then
+            sub="$(curl -fsS -H "Authorization: Bearer ${CLOUDFLARE_API_TOKEN}" \
+              "https://api.cloudflare.com/client/v4/accounts/${CLOUDFLARE_ACCOUNT_ID}/workers/subdomain" \
+              | node -e 'let s="";process.stdin.on("data",d=>s+=d).on("end",()=>{try{process.stdout.write(JSON.parse(s).result?.subdomain ?? "")}catch{}})' || true)"
+            if printf '%s' "${sub}" | grep -Eq '^[a-z0-9-]+$'; then
+              root="https://snowlight-api.${sub}.workers.dev/"
+            fi
+          fi
+          if [ -z "${root}" ]; then
+            echo "::notice::No accounts API root: the site builds without account controls (docs/accounts.md)."
+          fi
+          echo "root=${root}" >> "$GITHUB_OUTPUT"
       - if: steps.pages.outcome == 'success'
         working-directory: web
         run: npx vite build --base="${BASE_PATH}/"
         env:
           BASE_PATH: ${{ steps.pages.outputs.base_path }}
+          VITE_API_ROOT: ${{ steps.api.outputs.root }}
+          VITE_GITHUB_REPO: ${{ github.repository }}
           # Where the page reads live/closings.json and predictions/latest.json from, a host
           # published apart from this site (docs/live.md, docs/predict.md): the owner's Pages
           # repository viaate/snowlight-live, whose v1/ folder the live passes publish. A file not
