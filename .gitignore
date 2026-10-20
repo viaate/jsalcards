@@ -6,6 +6,7 @@ node_modules/
 dist/
 web/dist-waitlist/
 web/dist-waitlist-chrome/
+web/dist-accounts/
 *.egg-info/
 *.tsbuildinfo
 

@@ -1,0 +1,18 @@
+# Snowlight accounts API. Deployed by .github/workflows/api.yml, which fills in
+# the D1 database id (found or created by name) and the allowed origins, then
+# sets the ADMIN_KEY secret. See docs/accounts.md.
+name = "snowlight-api"
+main = "src/index.ts"
+compatibility_date = "2026-08-01"
+workers_dev = true
+preview_urls = false
+
+[vars]
+ADMIN_USERNAME = "Olivia"
+ALLOWED_ORIGINS = "https://snowlightmap.com,https://www.snowlightmap.com"
+
+[[d1_databases]]
+binding = "DB"
+database_name = "snowlight-accounts"
+database_id = "00000000-0000-0000-0000-000000000000"
+migrations_dir = "migrations"

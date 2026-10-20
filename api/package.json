@@ -1,0 +1,22 @@
+{
+  "name": "snowlight-api",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "license": "MIT",
+  "description": "Snowlight accounts API: a Cloudflare Worker with a D1 database",
+  "scripts": {
+    "dev": "wrangler dev --var LOCAL_DEV:1",
+    "check": "tsc -p tsconfig.json",
+    "test": "node --test --test-reporter=spec test/api.test.ts test/derive-key.test.ts",
+    "deploy": "wrangler deploy"
+  },
+  "devDependencies": {
+    "@cloudflare/workers-types": "5.20260815.1",
+    "@types/node": "22.20.4",
+    "esbuild": "0.28.1",
+    "miniflare": "5.20260815.0-alpha",
+    "typescript": "6.0.3",
+    "wrangler": "4.124.0"
+  }
+}
