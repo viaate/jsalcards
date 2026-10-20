@@ -25,7 +25,14 @@ import { ZOOM, viewForHit, zipHit } from './startup';
 
 /** Where the map goes for a selection: a view, or a box to fit. */
 export type Target =
-  | { readonly view: MapView }
+  | {
+      readonly view: MapView;
+      /**
+       * A place the app opens on by itself (a link's school, the pinned one):
+       * the map opens straight there, with no flight on the way (Basemap openAt).
+       */
+      readonly open?: true;
+    }
   | { readonly bounds: readonly [number, number, number, number]; readonly maxZoom: number };
 
 export interface AppData {

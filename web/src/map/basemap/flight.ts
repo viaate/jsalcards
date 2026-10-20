@@ -51,6 +51,34 @@ export const FLIGHT_DEADLINE_MS = 15_000;
 /** And how long after it sets off it is simply put there, if it is somehow still not. */
 export const FLIGHT_LAST_CALL_MS = 20_000;
 
+/**
+ * How far out, in zoom levels, a place the app opens on by itself (a link's
+ * school, the pinned one) is first shown, before it settles in: the map cuts
+ * straight there, with no flight on the way (openFrom).
+ */
+export const OPEN_SETTLE_ZOOM = 0.7;
+
+/** How long that settle in takes, in milliseconds. */
+export const OPEN_SETTLE_MS = 600;
+
+/**
+ * Where the map first shows a place it opens on by itself: OPEN_SETTLE_ZOOM
+ * levels out from `view`, to settle in from once drawn, or `view` itself where
+ * the viewer prefers reduced motion.
+ */
+export function openFrom<View extends { readonly zoom: number }>(
+  view: View,
+  reducedMotion: boolean,
+): View {
+  return reducedMotion ? view : { ...view, zoom: view.zoom - OPEN_SETTLE_ZOOM };
+}
+
+/** The settle in's easing: quick at first, slowing to a stop, so it lands without a jolt. */
+export function settleEasing(t: number): number {
+  const x = Math.min(1, Math.max(0, t));
+  return 1 - (1 - x) ** 3;
+}
+
 /** What a flight waiting on the way in for street tiles does next (holdVerdict). */
 export type HoldVerdict = 'glide' | 'go-on' | 'wait';
 

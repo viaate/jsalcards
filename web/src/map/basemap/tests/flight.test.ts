@@ -18,6 +18,10 @@ import {
   flightCeiling,
   flightEasing,
   holdVerdict,
+  OPEN_SETTLE_MS,
+  OPEN_SETTLE_ZOOM,
+  openFrom,
+  settleEasing,
   pacedProgress,
   progressAt,
   streetTileZoom,
@@ -156,5 +160,35 @@ describe('a flight waiting for street tiles', () => {
     // The stop, every wait, and a glide in from the stop, with room to spare.
     expect(FLIGHT_DEADLINE_MS).toBeGreaterThan(3000 + FLIGHT_HOLD_MS + 8 * FLIGHT_MS_PER_ZOOM);
     expect(FLIGHT_LAST_CALL_MS).toBeGreaterThan(FLIGHT_DEADLINE_MS + 8 * FLIGHT_MS_PER_ZOOM);
+  });
+});
+
+describe('a place the map opens on by itself', () => {
+  const school = { lat: 39.03606, lon: -94.593001, zoom: 15.5 };
+
+  it('is first shown a little way out, to settle in from in well under a second', () => {
+    expect(openFrom(school, false)).toEqual({ ...school, zoom: 15.5 - OPEN_SETTLE_ZOOM });
+    expect(OPEN_SETTLE_ZOOM).toBeLessThan(1);
+    expect(OPEN_SETTLE_MS).toBeLessThanOrEqual(800);
+  });
+
+  it('is shown at its view itself, with nothing to settle, where reduced motion is preferred', () => {
+    expect(openFrom(school, true)).toBe(school);
+  });
+
+  it('settles in quick at first and slows to a stop, never past its view or back', () => {
+    expect(settleEasing(0)).toBe(0);
+    expect(settleEasing(1)).toBe(1);
+    expect(settleEasing(-1)).toBe(0);
+    expect(settleEasing(2)).toBe(1);
+    let last = 0;
+    for (let i = 1; i <= 100; i++) {
+      const shown = settleEasing(i / 100);
+      expect(shown).toBeGreaterThanOrEqual(last);
+      expect(shown).toBeLessThanOrEqual(1);
+      last = shown;
+    }
+    // Half of the way in by a fifth of its time: no slow start, which would read as a pause.
+    expect(settleEasing(0.2)).toBeGreaterThan(0.45);
   });
 });

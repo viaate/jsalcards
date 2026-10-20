@@ -39,12 +39,15 @@ import {
   FLIGHT_LEAD,
   FLIGHT_MS_PER_ZOOM,
   FLIGHT_STOP_ZOOM,
+  OPEN_SETTLE_MS,
   coverPoints,
   flightCeiling,
   flightEasing,
   holdVerdict,
+  openFrom,
   pacedProgress,
   progressAt,
+  settleEasing,
   streetTileZoom,
 } from './flight';
 import type { HoldVerdict, LoadedTile } from './flight';
@@ -219,6 +222,16 @@ export interface Basemap {
   goTo(view: MapView | null): void;
   /** Glides to the nearest view the limits allow; jumps when reduced motion is preferred. */
   flyTo(view: MapView): void;
+  /**
+   * Opens on the nearest view the limits allow, for a place the app opens on
+   * by itself (a link's school, the pinned one): no flight on the way, which
+   * would stop and start as the street tiles came. The map cuts straight to
+   * the place, OPEN_SETTLE_ZOOM levels out (flight.ts), the frame on screen
+   * (or the still, before the map is up) standing in until it is drawn, and
+   * settles in over OPEN_SETTLE_MS; where reduced motion is preferred, it
+   * cuts to the view itself, and that is all.
+   */
+  openAt(view: MapView): void;
   /**
    * Someone's search shows first a place a pick of it flies to `view`, or
    * nothing (no `view`): once it has stayed first for RESULT_SETTLE_MS (its
@@ -1541,7 +1554,52 @@ export async function createBasemap({
     };
     glide();
   }
-  function flyTo(target: MapView): void {
+  /**
+   * Shows `view` at once, for a place the map opens on: cut to (cutTo) on a
+   * map on screen, and before it is, gone to under the still, which stands
+   * in until the map is up there. `then` runs once it is drawn, as the map
+   * shows it.
+   */
+  function openTo(view: MapView, current: () => boolean, then: () => void): void {
+    if (live) {
+      cutTo(view, current, then);
+      return;
+    }
+    map.jumpTo({ center: [view.lon, view.lat], zoom: view.zoom });
+    void ready.then(then);
+  }
+  /**
+   * The settle in to `target` of a place the map opens on, from where it was
+   * first shown: one glide, which waits for nothing on the way (the tiles of
+   * `target` were asked for as it set off, and until they come the map draws
+   * the ones it has). `then` runs once it ends, however it ends.
+   */
+  function settleIn(target: MapView, current: () => boolean, then: () => void): void {
+    if (!current()) {
+      then();
+      return;
+    }
+    leg(
+      (data) =>
+        map.easeTo(
+          {
+            center: [target.lon, target.lat],
+            zoom: target.zoom,
+            duration: OPEN_SETTLE_MS,
+            // Not essential: MapLibre jumps instead when the viewer prefers reduced motion.
+            essential: false,
+            easing: (t) => {
+              // Arrived: the address takes this view as the settle ends.
+              if (t >= 1) stopped = false;
+              return settleEasing(t);
+            },
+          },
+          data,
+        ),
+      then,
+    );
+  }
+  function flyTo(target: MapView, open = false): void {
     // Where the map goes now says where they are going, not what their search shows first.
     firstShown.cancel();
     national = false;
@@ -1556,24 +1614,37 @@ export async function createBasemap({
      * of (to FLIGHT_LEAD levels out from it, or to it, short of the streets);
      * from the bundled lines, a flight, into the streets by way of a stop.
      */
-    const from: 'glide' | 'cut' | 'fly' =
-      zoom < BUNDLED_LINES_UNTIL ? 'fly' : onScreen(allowed) ? 'glide' : 'cut';
+    const from: 'glide' | 'cut' | 'fly' | 'open' = open
+      ? 'open'
+      : zoom < BUNDLED_LINES_UNTIL
+        ? 'fly'
+        : onScreen(allowed)
+          ? 'glide'
+          : 'cut';
+    // Opened on, it is first shown a little way out, and settles in (none with reduced motion).
+    const opening =
+      from === 'open' ? constrainView(limits, openFrom(allowed, reducedMotion())) : null;
     // A cut out to a view around where the map is (a school's town) goes straight there; one
     // elsewhere arrives from FLIGHT_LEAD levels out, and glides in.
     const stop: MapView | null =
-      from === 'glide' || !intoStreets || (from === 'cut' && around(allowed))
-        ? null
-        : {
-            ...allowed,
-            zoom:
-              from === 'cut'
-                ? Math.max(FLIGHT_STOP_ZOOM, allowed.zoom - FLIGHT_LEAD)
-                : FLIGHT_STOP_ZOOM,
-          };
+      opening !== null
+        ? Math.abs(opening.zoom - allowed.zoom) < 1e-3
+          ? null
+          : opening
+        : from === 'glide' || !intoStreets || (from === 'cut' && around(allowed))
+          ? null
+          : {
+              ...allowed,
+              zoom:
+                from === 'cut'
+                  ? Math.max(FLIGHT_STOP_ZOOM, allowed.zoom - FLIGHT_LEAD)
+                  : FLIGHT_STOP_ZOOM,
+            };
     // The tiles it stops at and ends on, asked for before it gets there: those wholly inside the
     // US at once, the rest once the mask is in (no such tile draws before it, and on a slow link
     // they would only slow it down). A flight with any of the rest asks for the mask as it goes.
-    const paceFrom = Math.floor(stop?.zoom ?? zoom);
+    // Opened on, the map passes no zoom on the way: only the tiles where it is first shown and ends.
+    const paceFrom = Math.floor(stop?.zoom ?? (from === 'open' ? allowed.zoom : zoom));
     const slow = slowLink();
     const limit = flightTileLimit();
     const ahead = [
@@ -1644,6 +1715,13 @@ export async function createBasemap({
     stopped = stop !== null || from === 'glide';
     if (from === 'glide') {
       zoomIn(allowed, current, land, pace);
+      return;
+    }
+    if (from === 'open') {
+      openTo(stop ?? allowed, current, () => {
+        if (stop === null) land();
+        else settleIn(allowed, current, land);
+      });
       return;
     }
     if (from === 'cut') {
@@ -1781,6 +1859,9 @@ export async function createBasemap({
     showNear,
     goTo,
     flyTo,
+    openAt: (view) => {
+      flyTo(view, true);
+    },
     fitBounds,
     prepareStreets,
     streetsAhead,

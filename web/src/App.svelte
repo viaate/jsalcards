@@ -317,8 +317,10 @@
       return;
     }
     pendingTarget = null;
-    if ('view' in target) basemap.flyTo(target.view);
-    else basemap.fitBounds(target.bounds, { maxZoom: target.maxZoom });
+    if (!('view' in target)) basemap.fitBounds(target.bounds, { maxZoom: target.maxZoom });
+    // A school the app opens on by itself opens straight there; anything else is flown to.
+    else if (target.open === true) basemap.openAt(target.view);
+    else basemap.flyTo(target.view);
   }
 
   function runSearch(text: string): void {

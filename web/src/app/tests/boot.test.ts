@@ -170,14 +170,17 @@ afterEach(() => {
 });
 
 describe('at startup', () => {
-  it('a plain visit opens the pinned school without a history entry, and goes to it', async () => {
+  it('a plain visit opens the pinned school without a history entry, and opens straight at it', async () => {
     localStorage.setItem(PIN_KEY, encodePin(PEMBROKE_HILL));
     const { tab, links, shown, controller } = start('https://snow.test/', withDirectory());
     expect(links.state.selection).toEqual({ kind: 'school', id: PEMBROKE_HILL });
     expect(tab.url).toBe(`https://snow.test/?school=${PEMBROKE_HILL}`);
     expect(tab.pushes).toBe(0);
     await settle();
-    expect(shown).toEqual([{ view: { lon: -94.593001, lat: 39.03606, zoom: ZOOM.school } }]);
+    // Straight at its view, with no flight on the way (Basemap openAt).
+    expect(shown).toEqual([
+      { view: { lon: -94.593001, lat: 39.03606, zoom: ZOOM.school }, open: true },
+    ]);
     controller.abort();
   });
 
@@ -196,7 +199,10 @@ describe('at startup', () => {
   it('a linked school the directory places moves the map, unless someone moved it first', async () => {
     const first = start(`https://snow.test/?school=${PEMBROKE_HILL}`, withDirectory());
     await settle();
-    expect(first.shown).toHaveLength(1);
+    // Straight at it, as the pinned school opens.
+    expect(first.shown).toEqual([
+      { view: { lon: -94.593001, lat: 39.03606, zoom: ZOOM.school }, open: true },
+    ]);
     first.controller.abort();
 
     const moved = start(`https://snow.test/?school=${PEMBROKE_HILL}`, withDirectory(), true);
@@ -221,7 +227,9 @@ describe('at startup', () => {
     await settle();
     expect(late.links.state.selection).toEqual({ kind: 'school', id: PEMBROKE_HILL });
     expect(late.tab.pushes).toBe(0);
-    expect(late.shown).toEqual([{ view: { lon: -94.593001, lat: 39.03606, zoom: ZOOM.school } }]);
+    expect(late.shown).toEqual([
+      { view: { lon: -94.593001, lat: 39.03606, zoom: ZOOM.school }, open: true },
+    ]);
     late.controller.abort();
 
     const taken = start('https://snow.test/', withDirectory(), false, null, undefined, {
@@ -330,7 +338,7 @@ describe('search', () => {
       frame,
     );
     await settle();
-    expect(shown).toEqual([{ view: { lon: -94.593001, lat: 0, zoom: ZOOM.school } }]);
+    expect(shown).toEqual([{ view: { lon: -94.593001, lat: 0, zoom: ZOOM.school }, open: true }]);
     controller.abort();
   });
 

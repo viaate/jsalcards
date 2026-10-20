@@ -711,7 +711,11 @@ async function goToSelection(
   // Someone moved the map meanwhile, or opened something else: leave it.
   if (target === null || map === undefined || map.moved || options.signal.aborted) return;
   if (options.links.state.selection !== selection) return;
-  options.show(
-    'view' in target && frame !== undefined ? { view: frame(target.view, selection) } : target,
-  );
+  if (!('view' in target)) {
+    options.show(target);
+    return;
+  }
+  const view = frame?.(target.view, selection) ?? target.view;
+  // A school opens straight at its view, with no flight on the way (Basemap openAt).
+  options.show(selection.kind === 'school' ? { view, open: true } : { view });
 }
