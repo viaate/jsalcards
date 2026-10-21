@@ -7,6 +7,7 @@ from snowlight import __version__
 from snowlight.directory import cli as directory_cli
 from snowlight.listed import cli as listed_cli
 from snowlight.live import cli as live_cli
+from snowlight.notify import cli as notify_cli
 from snowlight.places import cli as places_cli
 from snowlight.predict import cli as predict_cli
 from snowlight.replays import cli as replays_cli
@@ -30,6 +31,7 @@ def build_parser() -> argparse.ArgumentParser:
     replays_cli.register(commands)
     live_cli.register(commands)
     predict_cli.register(commands)
+    notify_cli.register(commands)
     return parser
 
 

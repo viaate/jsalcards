@@ -22,6 +22,8 @@
 #   token, one notice). It uploads when the statuses changed and every 10 minutes while any
 #   show (the heartbeat). An answer from the API that is not a well-formed list fails the run
 #   and publishes nothing: the public file stays as it was.
+# Then the notify job sends the status notifications (docs/notify.md): one line and nothing
+# else while no browser gets notifications.
 name: live-ingest
 
 on:
@@ -249,3 +251,85 @@ jobs:
         with:
           path: pipeline/out/internal/live/state
           key: live-overrides-state-${{ github.run_id }}
+
+  # Status notifications (docs/notify.md): after the publish job, or when there was nothing to
+  # publish, on every run whose check job finished. Its first step asks the accounts database
+  # (D1, over the Cloudflare API, with the same two secrets) how many browsers get
+  # notifications; with none, no Cloudflare secrets, or the tables not there yet, it says so in
+  # one line and stops before any setup. Otherwise `snowlight notify status` compares the public
+  # closings file (read through GitHub's API) with what each account was sent, and pushes what
+  # is new, changed or lifted. A file that is not current sends nothing.
+  notify:
+    needs: [check, publish]
+    if: always() && needs.check.result == 'success'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    # A notification problem never turns the closings run red (the command itself warns
+    # and exits 0; this covers setting it up).
+    continue-on-error: true
+    permissions:
+      contents: read
+      actions: read # the Pages artifact of the deployed directory
+      deployments: read # the deployed directory's handshake (S8-0)
+    defaults:
+      run:
+        working-directory: pipeline
+    env:
+      CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+      CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+      GITHUB_TOKEN: ${{ github.token }}
+    steps:
+      - id: count
+        name: Count the browsers that get notifications
+        working-directory: .
+        run: |
+          set -euo pipefail
+          send=false
+          trap 'echo "send=$send" >> "$GITHUB_OUTPUT"' EXIT
+          if [ -z "$CLOUDFLARE_API_TOKEN" ] || [ -z "$CLOUDFLARE_ACCOUNT_ID" ]; then
+            echo "notify: no Cloudflare secrets: nothing to send"
+            exit 0
+          fi
+          api="${CLOUDFLARE_API_URL:-https://api.cloudflare.com/client/v4}/accounts/$CLOUDFLARE_ACCOUNT_ID/d1/database"
+          code=$(curl -sS --max-time 20 -o databases.json -w '%{http_code}' \
+            -H "Authorization: Bearer $CLOUDFLARE_API_TOKEN" "$api?name=snowlight-accounts" 2>/dev/null || true)
+          id=$(jq -r 'first(.result[]? | select(.name == "snowlight-accounts") | .uuid) // empty' databases.json 2>/dev/null || true)
+          if [ "$code" != "200" ] || ! [[ "$id" =~ ^[0-9a-f-]{36}$ ]]; then
+            echo "notify: the accounts database was not found (HTTP $code): nothing to send"
+            exit 0
+          fi
+          code=$(curl -sS --max-time 20 -o count.json -w '%{http_code}' -X POST \
+            -H "Authorization: Bearer $CLOUDFLARE_API_TOKEN" -H "Content-Type: application/json" \
+            --data '{"sql":"SELECT COUNT(*) AS n FROM push_subscriptions p JOIN users u ON u.id = p.user_id JOIN sessions s ON s.token_hash = p.session_hash AND s.expires_at > CAST(strftime('"'"'%s'"'"', '"'"'now'"'"') AS INTEGER) * 1000 WHERE u.disabled = 0","params":[]}' \
+            "$api/$id/query" 2>/dev/null || true)
+          n=$(jq -er '.result[0].results[0].n | numbers' count.json 2>/dev/null || true)
+          if [ "$code" != "200" ] || [ -z "$n" ]; then
+            echo "notify: the notification tables cannot be read yet (HTTP $code; api.yml applies them): nothing to send"
+            exit 0
+          fi
+          if [ "$n" = "0" ]; then
+            echo "notify: no browser gets notifications: nothing to send"
+            exit 0
+          fi
+          echo "notify: $n browsers get notifications"
+          send=true
+
+      - if: steps.count.outputs.send == 'true'
+        uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+
+      - if: steps.count.outputs.send == 'true'
+        uses: astral-sh/setup-uv@c18668ad3cf93ea998bef934396af7bb5c839dc7 # v10.2.0
+        with:
+          python-version: "3.12"
+          working-directory: pipeline
+          enable-cache: true
+          cache-dependency-glob: uv.lock
+
+      - if: steps.count.outputs.send == 'true'
+        run: uv sync --locked --no-dev
+
+      - if: steps.count.outputs.send == 'true'
+        name: Send the status notifications
+        run: uv run snowlight notify status

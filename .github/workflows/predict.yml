@@ -22,6 +22,10 @@
 # token with Contents read and write on viaate/snowlight-live only, which the owner creates
 # (docs/predict.md says where). Until it exists every run ends at the first step with a notice:
 # nothing is published, nothing fails.
+#
+# After each pass whose file is the one the site shows, the chance notifier sends the chance
+# and night-before notifications that are due (docs/notify.md), from the accounts database
+# over the Cloudflare API; with no browser to send to it says so in one line.
 name: predict
 
 on:
@@ -122,6 +126,12 @@ jobs:
 
       - if: steps.token.outputs.ready == 'true'
         id: run
+        env:
+          # The chance and night-before notifications after each pass (docs/notify.md): the
+          # accounts database over the Cloudflare API. Only this step gets them; without
+          # them the passes send none.
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
         run: uv run snowlight predict run --until +320m
 
       - if: always() && steps.token.outputs.ready == 'true'

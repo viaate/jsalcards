@@ -720,6 +720,9 @@ class Pass:
     write: Path | None = None
     history: Callable[[datetime, datetime], Sequence[NwsAlert]] | None = None
     """The NWS alert products issued in a span, to rebuild a lost alert memory."""
+    notify: Callable[[PredictionsFile, DeployedDirectory, datetime], str] | None = None
+    """The chance notifier (:class:`snowlight.notify.cli.ChanceNotifier`), run after a pass
+    whose file is the public one; ``None``: no notifications (no Cloudflare secrets)."""
     _built: tuple[object, ServeModel] | None = None
     _index: tuple[object, UgcIndex] | None = None
 
@@ -846,6 +849,7 @@ def one_pass(run: Pass, *, grid: bool = True) -> int:
     if not due(run.state, digest, now, config.serve, grid=grid):
         _out("predict: unchanged, heartbeat not due")
         run.state.alerts_digest = handled
+        _after_publish(run, made, directory, now)
         return 0
     try:
         upload(run.host, key, data)
@@ -856,7 +860,24 @@ def one_pass(run: Pass, *, grid: bool = True) -> int:
     run.state.uploaded_at = now
     run.state.alerts_digest = handled
     _out(f"predict: uploaded {key}")
+    _after_publish(run, made, directory, now)
     return 0
+
+
+def _after_publish(
+    run: Pass, made: PredictionsFile, directory: DeployedDirectory, now: datetime
+) -> None:
+    """The chance notifications, from the file the site now shows (published, or unchanged
+    from the one it shows). Only on the live root; a failure only warns, and never touches
+    the pass or its file."""
+    if run.notify is None or run.mode is not Mode.ON:
+        return
+    try:
+        _out(run.notify(made, directory, now))
+    except Exception as error:
+        # The sender's own errors name an HTTP status at most; anything else only its type.
+        said = str(error) if type(error).__module__.startswith("snowlight.notify") else ""
+        _warn(f"notify: {type(error).__name__} {said}".rstrip() + ": nothing sent this pass")
 
 
 def _pass_file(  # noqa: PLR0913, PLR0917 - the pass, its model, days and classes
@@ -1093,7 +1114,26 @@ def make_pass(args: argparse.Namespace, env: Mapping[str, str]) -> Pass:  # prag
         state=load_state(args.state),
         write=args.write,
         history=history.read,
+        notify=_make_notifier(env, host, mode),
     )
+
+
+def _make_notifier(  # pragma: no cover - the real world
+    env: Mapping[str, str], host: Host | None, mode: Mode
+) -> Callable[[PredictionsFile, DeployedDirectory, datetime], str] | None:
+    """The chance notifier (docs/notify.md), or ``None`` without the Cloudflare secrets or
+    off the live root."""
+    from snowlight.notify.cli import chance_notifier  # noqa: PLC0415
+    from snowlight.notify.cli import make_client as notify_client  # noqa: PLC0415
+
+    key = mode.key
+    if host is None or key is None or mode is not Mode.ON:
+        return None
+    closings_key = f"{key.split('/', 1)[0]}/live/closings.json"
+    notifier = chance_notifier(env, notify_client(), closings=lambda: host.read(closings_key))
+    if notifier is None:
+        _out("predict: no Cloudflare secrets: no notification is sent")
+    return notifier
 
 
 def served_learned(
