@@ -1,7 +1,8 @@
 # Snow-day chances: runbook
 
-`snowlight predict` (pipeline/snowlight/predict) gives every public school district a
-chance of no school today and tomorrow, every school day, in `predictions/latest.json`
+`snowlight predict` (pipeline/snowlight/predict) gives every public school district, and
+every private school of the contiguous states, a chance of no school today and tomorrow,
+every school day, in `predictions/latest.json`
 on the live host, beside `live/closings.json`. The page reads it from the live root
 (`VITE_SNOWLIGHT_LIVE_ROOT`, defaulted in `.github/workflows/preview.yml` to
 `https://viaate.github.io/snowlight-live/v1/`) and hides it once it is 90 minutes old.
@@ -126,6 +127,141 @@ winter storm warning or advisory for the area.
   hold means no district had the day off; one that cannot be read, or that indexes another
   directory and shows a closing, darkens the pass.
 
+## Private schools and "school is on" (piece 2)
+
+- Every private school of the contiguous states (no district, the private flag in the
+  directory: 22,031 in the September 25 directory) gets its own entry in the file's
+  `schools` section (contract C3): its directory position, its time zone as its position in
+  the file's shared `zones` table, the districts within 10 miles (nearest first, at most 4)
+  and, for each day, the position of its outlook in the file's shared `outlooks` table.
+  Schools with the same day share one outlook and schools in the same zone one zone name, so
+  the section stays small (a real pass: 22,031 schools, 5 distinct outlooks, 5 zones).
+  Alaska and Hawaii get none, as their districts get none. A private school of the
+  contiguous states whose time zone neither the model nor its point gives is left out (its
+  today is unknown); every pass then prints a warning with how many (none today).
+- Neighbors: the contract (spec C3) says up to 12 districts within 10 miles; the file keeps
+  the nearest 4, because 12 would add about 1.1 MB raw to the worst case (8 more indexes of
+  five digits for each of 23,133 schools with growth) and about 1 MB to every pass. With the
+  size fit above, 12 would still fit the worst case without record days (about 16.2 MB of
+  16.5) but would drop the committed model's record days in a nationwide storm. Signed off
+  by the lead on October 21 (it saves about 1 MB on every pass); piece 3's neighbors reason
+  for a private school sees only those 4.
+- Labels: each private school is its own unit, labeled from the archive by the districts'
+  rules and from the same settled days (`predict labels`, `labels-private.parquet`): 1,426
+  school-days, 661 known (463 no school, 9 delayed, 189 open). An unread or absent school is
+  unknown, never open.
+- Rates: a chain over private schools only (the school's own record, private schools nearby,
+  in its county, state, region, the nation). A place below the nation is named only with 30
+  labeled private school-days (`model.private_level_min_days`); with the districts' 8, a
+  state's rate rested on one or two storm days. That one setting was chosen after the
+  private backtest, so the backtest is not out of sample for it. A situation private schools
+  hold too few recorded days of (the nation's minimum, 30) takes the districts' rates around
+  the school where the districts hold that situation's own days, and its sentence then
+  counts districts' days ("Districts near ..."): the day's own weather comes before another
+  weather's private days (`serve.counted_over_private`). Only where neither chain holds the
+  situation does the private chain's fallback stand, when it can be said truly (borrowed:
+  "recorded days with a winter storm warning"), else the districts'. With the committed
+  model: private schools hold clear days, advisories, winter storm warnings and blizzards;
+  an extreme cold warning takes the districts' cold days (Pembroke Hill: 75%, nation, of
+  districts, where the private fallback would have said 97% over private winter storm
+  warning days); ice, lake snow and tropical days, and the days after a snow day, fall back
+  on both chains alike, so the private chain's fallback stands. Either way the base is
+  literally true of what it counts, by the same share rule (`tests/predict/test_truth.py`
+  covers private cells). The private backtest scores the private chain alone; the
+  situations served from the districts' rates are a handful of its rows (4 cold days). A private base's sentence reads
+  "Private schools near St. Ann closed or went remote on 3 in 10 of their recorded days like
+  this." (`PooledBase.of`: `private_schools`).
+- Private backtest (`out/internal/predict/backtest/private/report.md`, internal, reported
+  apart from the districts'): storm-row Brier 0.0802 against B0's 0.0820 (B0 here is the
+  national rate per class over the private school-days of earlier seasons), all rows 0.0594 against 0.0609: pooled G1 passes. G2
+  passes (every bin with enough rows within its bound) and G3 passes (closings caught at
+  50% or more 100% against B0's 100%, precision 0.924 each). No season holds 300 storm rows,
+  so G1 by season is reported only. The report ends with Pembroke Hill's and Visitation
+  Catholic's named days, each predicted walk-forward (one of Pembroke Hill's 13 named days,
+  2025-02-18, has a morning read: no school, predicted 95%).
+- Learning: `predict learn` re-anchors the districts' rates on days read live; it does not
+  yet label private schools from live reads. Until it does (the first follow-up), the
+  private chain's sentences count the archive's recorded days only, never days read live.
+  A private school on the districts' rates around it carries their live flag, so its
+  sentence says "days we read live" only when those district rates were counted on them.
+- Launch gate (addendum d): the private storm levels are the archive's selection-biased
+  recorded days (an advisory 91%, nation, 226 of 248; 99% in a state or county holding 73 of
+  74 or 57 of 57), worded truly as recorded days. Until the private learn follow-up
+  re-anchors them on days read live, as `predict learn` does the districts', they block the
+  public launch the same way the districts' unlearned levels would.
+- Manual statuses the admin sets (the closings file's `manual` rows) light private schools
+  as any status does; a posted status for a day hides that day's chance in the panel, and
+  the area panel counts it as posted.
+- "School is on" (`snowlight/predict/opens.py`, rule 7): once the live ingest publishes
+  `live/opens.json` (S8; not published yet, so today the rule never fires), a district every
+  one of whose eligible schools said school is on for a day (a statement the district posted
+  reaches all of them), or a private school that said so, drops to 1% with no delay chance
+  that day, and its "How we got" ends with "Riverside said school is on." taking the rest
+  away (`said_open`, points at most 0), so the lines still add up to the chance. A district
+  only some of whose schools said so did not say it, and its usual chance stands (the spec's
+  50% share would have put words in the district's mouth). A day said open shows no previous
+  chance: its line already shows what the chance was and why it fell (the schema refuses
+  both on one day, which keeps the worst case below). It never fires for a unit with a posted status that
+  day, and only on an opens file and a closings file from the same publish, at most 60
+  minutes old (`serve.opens_max_age_minutes`); otherwise the usual chance stands. An opens
+  file for another directory that holds statements darkens the pass.
+- Size: the file leaves every default out (a null, a false, an empty list) except each
+  forecast's `reasons`, so a real pass (October 21, s4 site data, publishing off) is
+  8,225,511 bytes raw and 609,384 gzip (12.0 MB before). The budget is 16.5 MB raw
+  (`serve.budget_raw_bytes`). A learned file (S7-L) may give any district with 4 live-read
+  days of an anchored situation an own base with up to 8 record days, so no fixed count of
+  recorded districts bounds the whole file: under a winter storm warning over the whole
+  country with every district holding a full record, it is about 24.9 MB (26.1 MB with 5%
+  growth). The private schools' shared outlook table has a cap too: once a learned file
+  counts a situation over the districts around each private school (each school's nearby
+  rates its own), previous chances multiply the (chance, previous) pairs into thousands of
+  outlooks. A pass whose file is over the budget, or whose private schools name more
+  outlooks than the table holds (counted before any school's entry is made,
+  `serve.TableError`), makes it again with the next step of `serve.Fit`: without the record
+  days under each own base; then also without the private schools' previous chances; then
+  without any previous chance; then the districts alone, as the file was before private
+  schools; then the districts alone without record days. It goes dark only when even that
+  is over, so the private schools can never darken the districts. The pass prints a
+  warning saying why and what it left out. Every chance and every why it holds stay the
+  same: the base sentence counts its own days, so it is true without them listed, and the
+  web does not show a base's record days today. A file with no schools section shows a
+  private school no chance, as before this piece.
+- Table: the table holds 9,000 outlooks (`MAX_OUTLOOKS`, every index four digits). With no
+  previous chance the outlooks a pass can give the private schools are counted before any
+  pass (`serve.possible_outlooks`: each school in every situation, with the scope and
+  record its rates name, said open or not); `tests/predict/test_learn.py` checks that every
+  such pass names only those, and measures: the committed model 72 (s4 site data, the
+  two days of a pass); a SYNTHETIC learned file anchoring cold for every district 384 to
+  394, and with random live delay counts 2,494 to 3,411; one anchoring every situation
+  at once 1,493 to 1,594, and with random delays 13,220 to 17,549 over all ten
+  situations together (a pass names only the outlooks of the one situation each
+  school-day is in; one naming more than 9,000 publishes the districts alone). The critic's three-pass probe (a learned cold anchor, mixed classes) names
+  2,241 outlooks with previous chances and publishes them all, without record days, at
+  11,068,283 bytes.
+- Worst case: every district and every private school of the committed model and 5% more of
+  each, the longest lines on both days (both base flags, the longest alert and zone names,
+  twelve districts next door with the highest indexes), asserted in
+  `tests/predict/test_loop.py`, which reads the counts from the committed model: with no
+  record days and no previous chances (the last step that keeps the private schools), every
+  district said open (its longest day) and 9,000 distinct private outlooks each counted as
+  long as a day said open: 16,326,296 bytes; with no record days, a previous chance on
+  every day and 2,000 outlooks: 15,108,482 bytes (14,414,906 at today's counts); and the
+  committed model alone (its 1,452 recorded districts, 5% more) keeps its record days with
+  2,000 outlooks: 16,446,182 bytes. A real-data dry run (s4 site data, a learned file
+  anchoring winter storm warnings with 8 live days for every district, 11,149 own bases, a
+  nationwide warning pass after an advisory pass) makes a whole file of 17,718,603 bytes and
+  publishes it without record days at 11,656,607 bytes (685,923 gzip), every chance and
+  previous chance kept. The same test checks that no day the pass can make (every
+  situation, base, scope, flag, said open or not, previous or not, record or not) is longer
+  than the worst case's, so a day said open cannot break it. More than 64 time zones is a
+  `serve.TableError` too: the pass publishes the districts alone.
+- Rollout: the web reader before this piece (ed5d405) refuses a whole file whose forecast
+  has no `reasons` list, so the file always writes it, even empty; that reader still drops
+  the "How we got" detail of a compact file (its why and flags left out) for the one load a
+  stale page runs, and shows no private school's chance. Land the web build before the
+  first compact file is published, and expect a page still on the old script to show the
+  chance without its detail until it reloads.
+
 ## What the owner sets up once
 
 The predict workflow (`.github/workflows/predict.yml`) needs a token that can push to the
@@ -247,11 +383,10 @@ A pass publishes nothing, and the page hides the old file within 90 minutes, whe
 3. fewer than 99% of the deployed districts are in the model;
 4. the winter alerts drop by more than 80% from a pass that had more than 50 (published
    once the next pass confirms the count);
-5. the file does not validate, or is over budget (16.5 MB raw, 1.5 MB gzip; the worst case,
-   every district under a winter storm warning, the longest alert name a base carries, on
-   both days with a previous chance and every recorded district with a full record, measures
-   16.3 MB raw (16,268,937 bytes, with each base's `live` flag) and 0.2 MB gzip:
-   `tests/predict/test_loop.py`);
+5. the file does not validate, or is over budget (16.5 MB raw, 1.5 MB gzip) even as the
+   districts alone without record days (see Size under piece 2: the worst case with the
+   private schools and without record days or previous chances measures 16.3 MB raw and
+   0.3 MB gzip, `tests/predict/test_loop.py`);
 6. the file read back after the upload is not the one sent;
 7. yesterday's day timeline cannot be read (a host error or a file that does not validate);
 8. the alert memory does not reach back to 18:00 the evening before the first day

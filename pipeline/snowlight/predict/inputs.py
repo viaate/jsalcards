@@ -76,7 +76,11 @@ def directory_from_files(
         raise DarkError(Dark.EDITION, "meta.json and points.bin are not the deployed edition")
     try:
         directory = DeployedDirectory(
-            edition.stamp(), meta.districts.ids, points, content_sha256=edition.content_sha256
+            edition.stamp(),
+            meta.districts.ids,
+            points,
+            content_sha256=edition.content_sha256,
+            school_ids=meta.ids,
         )
     except ValueError as error:
         raise DarkError(Dark.EDITION, str(error)) from error

@@ -38,6 +38,7 @@ from pathlib import Path
 from typing import Any, Final
 
 import numpy as np
+import numpy.typing as npt
 import polars as pl
 
 from snowlight.live.publish import LiveHold
@@ -53,10 +54,17 @@ from snowlight.predict.alerts_live import (
     live_events,
     withdrawn,
 )
-from snowlight.predict.calendar import is_school_day, season_of
-from snowlight.predict.config import CONFIG_PATH, PIPELINE_ROOT, PredictConfig
+from snowlight.predict.calendar import is_school_day, previous_school_day, season_of
+from snowlight.predict.config import (
+    CONFIG_PATH,
+    PIPELINE_ROOT,
+    ModelSettings,
+    PredictConfig,
+    ServeSettings,
+)
 from snowlight.predict.labels import Outcome
 from snowlight.predict.live_labels import record_snapshots
+from snowlight.predict.opens import NOTHING_SAID, OpensError, SaidOpen, said_open
 from snowlight.predict.publish import (
     Dark,
     DarkError,
@@ -78,16 +86,19 @@ from snowlight.predict.publish import (
 )
 from snowlight.predict.serve import (
     DeployedDirectory,
+    Fit,
     ServeError,
     ServeModel,
+    TableError,
     build_model,
     closed_districts,
-    district_classes,
+    closed_private,
     forecast_file,
     pass_days,
+    unit_classes,
 )
 from snowlight.predict.situations import CLASS_BY_CODE, Window
-from snowlight.schemas.live import DayTimeline
+from snowlight.schemas.live import ClosingsFile, DayTimeline, OpensFile
 from snowlight.schemas.predictions import PredictionsFile
 from snowlight.sources.nws.alerts import NwsAlert
 
@@ -110,6 +121,21 @@ NAMED_DISTRICTS: Final = {
     "2918300": "Lee's Summit",
 }
 """The KC districts of the named cases (spec c.3), by LEAID."""
+NAMED_PRIVATE: Final = {
+    "A1902690": "Pembroke Hill",
+    "00753542": "Visitation Catholic (Kansas City)",
+}
+"""The private schools of the named cases (spec piece 2: Pembroke Hill's oracle days), by NCES
+id. The oracle itself (what the school did) stays out of the repository: the report lists each
+day's label and chance, and the lead compares them by eye."""
+PEMBROKE_DAYS: Final = tuple(
+    date.fromisoformat(day)
+    for day in (
+        "2024-01-09", "2024-01-10", "2024-01-16", "2025-01-06", "2025-01-07", "2025-01-08",
+        "2025-01-09", "2025-01-10", "2025-02-05", "2025-02-18", "2025-12-01", "2025-12-02",
+        "2026-01-26",
+    )
+)  # fmt: skip
 NAMED_DAYS: Final = tuple(
     date.fromisoformat(day)
     for day in (
@@ -247,29 +273,46 @@ def run_labels(args: argparse.Namespace) -> int:  # pragma: no cover - the real 
     if args.reuse_weather:
         table = pl.read_parquet(paths.out / "districts.parquet")
         weather = pl.read_parquet(paths.out / "weather.parquet")
+        private = pl.read_parquet(paths.out / "private.parquet")
+        private_weather = pl.read_parquet(paths.out / "weather-private.parquet")
     else:
         seasons = list(range(config.labels.first_season, season_of(date.today())))
         places = train.history_places(paths, schools, seasons)
         table = train.district_table(schools, places.zone_of_school)
-        weather, stats = train.weather_history(places, schools, config)
+        private = train.private_table(schools, places.zone_of_school)
+        weather, private_weather, stats = train.weather_history(places, schools, config)
         paths.out.mkdir(parents=True, exist_ok=True)
         table.write_parquet(paths.out / "districts.parquet")
         weather.write_parquet(paths.out / "weather.parquet")
+        private.write_parquet(paths.out / "private.parquet")
+        private_weather.write_parquet(paths.out / "weather-private.parquet")
         write_json(paths.out / "weather-stats.json", json.loads(json.dumps(stats, default=str)))
-    _out(f"weather: {weather.height:,} district-days above none")
+    _out(f"weather: {weather.height:,} district-days, {private_weather.height:,} private days")
     zone_of = {
         d: z for d, z in zip(table["district"], table["time_zone"], strict=True) if z is not None
     }
-    run = train.prepare_archive(paths, zone_of, args.workers)
+    zone_of_private = {
+        s: z for s, z in zip(private["district"], private["time_zone"], strict=True) if z
+    }
+    run = train.prepare_archive(paths, zone_of, args.workers, zone_of_private)
     labels = train.run_labels(run, schools, table, weather, config)
     labels.write_parquet(paths.out / "labels.parquet")
+    private_labels = train.run_private_labels(run, private, private_weather, labels, config)
+    private_labels.write_parquet(paths.out / "labels-private.parquet")
     write_json(paths.out / "district-markets.json", dict(sorted(run.markets.items())))
     states = dict(zip(table["district"], table["state"], strict=True))
     (paths.out / "labels-report.md").write_text(
         train.labels_report(labels, states), encoding="utf-8"
     )
+    private_states = dict(zip(private["district"], private["state"], strict=True))
+    (paths.out / "labels-private-report.md").write_text(
+        train.labels_report(private_labels, private_states), encoding="utf-8"
+    )
     write_audit(run, labels, schools, zone_of, config, paths.out)
-    _out(f"labels: {labels.height:,} district-days; report and audit in {paths.out}")
+    _out(
+        f"labels: {labels.height:,} district-days, {private_labels.height:,} private "
+        f"school-days; report and audit in {paths.out}"
+    )
     return 0
 
 
@@ -326,13 +369,31 @@ def _load_training(
     return labels, table, places
 
 
+def _load_private(
+    work: Path, directory: Path, config: PredictConfig
+) -> tuple[pl.DataFrame, pl.DataFrame, pool.Places] | None:  # pragma: no cover - real labels
+    """The private schools' labels, table and places, when ``predict labels`` made them."""
+    if not (work / "labels-private.parquet").is_file():
+        return None
+    labels = pl.read_parquet(work / "labels-private.parquet")
+    table = pl.read_parquet(work / "private.parquet")
+    schools = pl.read_parquet(directory / "schools.parquet")
+    places = train.private_places(table, schools, config.serve.neighbor_miles)
+    return labels, table, places
+
+
 def run_train(args: argparse.Namespace) -> int:  # pragma: no cover - the real labels
     """Run ``predict train``."""
     config = PredictConfig.load(args.config)
     labels, table, places = _load_training(args.work, args.directory, config)
     generated = json.loads(args.meta.read_text(encoding="utf-8"))["generated_on"]
     model, tuned, tuned_delay = train.fit_artifact(
-        labels, table, places, config, date.fromisoformat(generated)
+        labels,
+        table,
+        places,
+        config,
+        date.fromisoformat(generated),
+        private=_load_private(args.work, args.directory, config),
     )
     size = model.write(args.out)
     write_json(
@@ -342,7 +403,10 @@ def run_train(args: argparse.Namespace) -> int:  # pragma: no cover - the real l
             "delay": [list(item) for item in tuned_delay.trials],
         },
     )
-    _out(f"model: {args.out} ({size:,} bytes), {model.training.labeled_days:,} labeled days")
+    _out(
+        f"model: {args.out} ({size:,} bytes), {model.training.labeled_days:,} labeled days, "
+        f"{len(model.private):,} private schools with {model.private_labeled_days:,} labeled days"
+    )
     _out("strengths: " + json.dumps(model.strengths, sort_keys=True))
     return 0
 
@@ -361,7 +425,86 @@ def run_backtest(args: argparse.Namespace) -> int:  # pragma: no cover - the rea
     (out / "report.md").write_text(report.markdown, encoding="utf-8")
     (out / "reliability.svg").write_text(report.svg, encoding="utf-8")
     _out(report.markdown.splitlines()[2])
+    private = _load_private(args.work, args.directory, config)
+    if private is not None:
+        private_labels, _private_table, private_places = private
+        usable_private = pool.usable_labels(private_labels, private_places)
+        found = backtest_report(
+            usable_private,
+            private_places,
+            config.model_copy(update={"model": config.model.private()}),
+            labels=private_labels,
+            markets=markets,
+            names=NAMED_PRIVATE,
+            days=PEMBROKE_DAYS,
+        )
+        folder = out / "private"
+        folder.mkdir(parents=True, exist_ok=True)
+        write_json(folder / "metrics.json", json_safe(found.metrics))
+        (folder / "report.md").write_text(
+            "Private schools (each its own unit, counted over private schools only; contract "
+            "C3). The same gates against B0 over the private rows.\n\n" + found.markdown,
+            encoding="utf-8",
+        )
+        (folder / "reliability.svg").write_text(found.svg, encoding="utf-8")
+        weather = pl.read_parquet(args.work / "weather-private.parquet")
+        with (folder / "report.md").open("a", encoding="utf-8") as handle:
+            handle.write(
+                "\n".join(
+                    oracle_table(private_labels, weather, private_places, config.model.private())
+                )
+                + "\n"
+            )
+        _out("private: " + found.markdown.splitlines()[2])
     return 0
+
+
+def oracle_table(
+    labels: pl.DataFrame,
+    weather: pl.DataFrame,
+    places: pool.Places,
+    settings: ModelSettings,
+) -> list[str]:  # pragma: no cover - the real labels
+    """Each named private school on each named day, predicted walk-forward (fit on the
+    seasons before its own only) from its weather class that day, labeled or not."""
+    usable = pool.usable_labels(labels, places)
+    rows = pool.rows_from_labels(usable, places, "no_school")
+    delay_rows = pool.rows_from_labels(usable, places, "delay")
+    classes = {(unit, day): int(value) for unit, day, value in weather.iter_rows()}
+    closed = {
+        (row["district"], row["day"])
+        for row in labels.filter(pl.col("outcome") == "no_school").iter_rows(named=True)
+    }
+    outcome = {(row["district"], row["day"]): row for row in labels.iter_rows(named=True)}
+    cells: list[tuple[str, int, int]] = []
+    shown: list[tuple[str, date, int, bool]] = []
+    for unit in NAMED_PRIVATE:
+        for day in PEMBROKE_DAYS:
+            weather_class = classes.get((unit, day), 0)
+            after = (unit, previous_school_day(day)) in closed
+            key = pool.situation_of(weather_class, after).key
+            cells.append((unit, pool.SITUATION_INDEX[key], season_of(day)))
+            shown.append((unit, day, weather_class, after))
+    chances = backtest.chances_on(rows, delay_rows, places, cells, settings)
+    lines = [
+        "",
+        "## Named private schools, every named day, predicted",
+        "",
+        "Walk-forward: each day's chance from its weather class that day (alerts issued by "
+        "21:00 the evening before), fit on the seasons before its own only, labeled or not.",
+        "",
+        "| school | day | weather class | day after | chance | label |",
+        "|---|---|---|---|---|---|",
+    ]
+    for (unit, day, weather_class, after), chance in zip(shown, chances, strict=True):
+        row = outcome.get((unit, day))
+        label = "no morning read" if row is None else str(row["outcome"])
+        lines.append(
+            f"| {NAMED_PRIVATE[unit]} ({unit}) | {day} | {_class_label(str(weather_class))} | "
+            f"{'yes' if after else 'no'} | {'-' if chance is None else f'{chance:.2f}'} | "
+            f"{label} |"
+        )
+    return lines
 
 
 def json_safe(value: Any) -> Any:
@@ -385,18 +528,20 @@ class BacktestReport:
     gates: backtest.Gates
 
 
-def backtest_report(
+def backtest_report(  # noqa: PLR0913 - the labels, the places, the settings and the cases
     usable: pl.DataFrame,
     places: pool.Places,
     config: PredictConfig,
     *,
     labels: pl.DataFrame | None = None,
     markets: Mapping[str, str] | None = None,
+    names: Mapping[str, str] = NAMED_DISTRICTS,
+    days: Sequence[date] = NAMED_DAYS,
 ) -> BacktestReport:
     """Run the walk-forward backtest on the usable labels (with a ``cluster`` column).
 
     ``labels`` (every row, unknown ones with why) and ``markets`` (district to its market)
-    word the named cases; without them the usable labels are used."""
+    word the named cases (``names`` on ``days``); without them the usable labels are used."""
     rows = pool.rows_from_labels(usable, places, "no_school")
     delay_rows = pool.rows_from_labels(usable, places, "delay")
     folds = backtest.walk_forward(
@@ -495,7 +640,7 @@ def backtest_report(
     places_of = dict(markets or {})
     for district, cluster in zip(known["district"], known["cluster"], strict=True):
         places_of.setdefault(district, cluster)
-    cases = backtest.named_cases(known, scored, NAMED_DISTRICTS, NAMED_DAYS, places_of)
+    cases = backtest.named_cases(known, scored, names, days, places_of)
     report_metrics = {**metrics, "reliability_by_region": by_region}
     markdown = backtest.report_markdown(report_metrics, bins, judged, cases)
     return BacktestReport(metrics, markdown, backtest.reliability_svg(bins), judged)
@@ -662,7 +807,7 @@ def one_pass(run: Pass, *, grid: bool = True) -> int:
         check_collapse(winter_count(events), run.state, config.serve)
         days = pass_days(now, config)
         counted = remember(run, feed, events, now, memory_reach(days, model.time_zone, window))
-        classes = district_classes(
+        classes, private_classes = unit_classes(
             model, counted, run.ugc_index(directory), days, now, window, weather.covered_share
         )
         run.state.snapshots = record_snapshots(
@@ -674,11 +819,8 @@ def one_pass(run: Pass, *, grid: bool = True) -> int:
             now=now,
             window=window,
         )
-        last = _last_file(run)
-        made = forecast_file(model, classes, days, now, closed_on=_closed_on(run, model), last=last)
-        data = made.to_json_bytes()
+        made, data, packed = _pass_file(run, model, days, now, classes, private_classes)
         checked(data)
-        packed = check_budget(data, config.serve)
     except DarkError as error:
         _err(f"predict: dark ({error})")
         return EXIT_DARK
@@ -690,9 +832,11 @@ def one_pass(run: Pass, *, grid: bool = True) -> int:
     digest = content_digest(data)
     lit = sum(1 for d in range(len(days)) if is_school_day(days[d]))
     _out(
-        f"predict: {len(made.districts):,} districts, {len(days)} days ({lit} school days), "
-        f"{winter_count(events)} winter alerts, {len(data):,} bytes ({packed:,} gzip)"
+        f"predict: {len(made.districts):,} districts, {len(made.schools):,} private schools, "
+        f"{len(days)} days ({lit} school days), {winter_count(events)} winter alerts, "
+        f"{len(data):,} bytes ({packed:,} gzip)"
     )
+    _say_left_out(model)
     key = run.mode.key
     handled = alerts_digest(events)
     if key is None or run.host is None:
@@ -715,13 +859,105 @@ def one_pass(run: Pass, *, grid: bool = True) -> int:
     return 0
 
 
-def _closed_on(run: Pass, model: ServeModel) -> Callable[[date], frozenset[int] | None]:
-    """The districts closed for weather on a day, from the live ingest's day timeline on the
-    host (``live/days/<day>.json``, S8-D). ``None`` only when the host holds no timeline for
-    the day (none was published: no district had the day off). A timeline that cannot be read
-    or does not validate darkens the pass: a chance is never published from fewer inputs."""
+def _pass_file(  # noqa: PLR0913, PLR0917 - the pass, its model, days and classes
+    run: Pass,
+    model: ServeModel,
+    days: tuple[date, date],
+    now: datetime,
+    classes: npt.NDArray[np.int64],
+    private_classes: npt.NDArray[np.int64] | None,
+) -> tuple[PredictionsFile, bytes, int]:
+    """The pass's file within the size budget (:func:`fitted`), its bytes and gzip size; the
+    host's files it reads (the last file, the day timelines, the opens) are read once."""
+    last = _last_file(run)
+    timelines: dict[date, DayTimeline | None] = {}
+    closed_on = _closed_on(run, model, timelines)
+    closed_schools = _closed_on(run, model, timelines, private=True)
+    said = _said_open(run, model, now)
+    return fitted(
+        lambda fit: forecast_file(
+            model,
+            classes,
+            days,
+            now,
+            closed_on=closed_on,
+            last=last,
+            private_classes=private_classes,
+            closed_schools=closed_schools,
+            said=said,
+            fit=fit,
+        ),
+        run.config.serve,
+    )
 
-    def closed(day: date) -> frozenset[int] | None:
+
+def fitted(
+    make: Callable[[Fit], PredictionsFile], settings: ServeSettings
+) -> tuple[PredictionsFile, bytes, int]:
+    """The pass's file made with the first :class:`~snowlight.predict.serve.Fit` within the
+    size budget and the private schools' shared tables, its bytes and its gzip size; a file
+    that left anything out says what and why.
+
+    Raises:
+        DarkError: over the budget even with the least it may hold (``size``).
+        TableError: the districts' file alone named too many outlooks (it names none).
+    """
+    why: list[str] = []
+    last = list(Fit)[-1]
+    for fit in Fit:
+        try:
+            made = make(fit)
+        except TableError as error:
+            if fit is last:
+                raise
+            if str(error) not in why:
+                why.append(str(error))
+            continue
+        data = made.to_json_bytes()
+        try:
+            packed = check_budget(data, settings)
+        except DarkError:
+            if fit is last:
+                raise
+            if not any("size budget" in item for item in why):
+                which = "whole file" if fit is Fit.WHOLE else f"file with no {fit.left_out}"
+                why.append(f"the {which} is over the size budget ({len(data):,} bytes raw)")
+            continue
+        if fit is not Fit.WHOLE:
+            _err(f"predict: warning: {'; '.join(why)}; published it with no {fit.left_out}")
+        return made, data, packed
+    raise AssertionError("Fit has a last member")
+
+
+def _say_left_out(model: ServeModel) -> None:
+    """Every school gets a chance every school day: a private school with no time zone cannot
+    (its today is unknown), so every pass says how many, rather than drop them quietly."""
+    left_out = model.private.left_out if model.private is not None else 0
+    if left_out:
+        _err(
+            f"predict: warning: {left_out:,} private schools of the contiguous states have no "
+            "time zone and get no chance"
+        )
+
+
+def _closed_on(
+    run: Pass,
+    model: ServeModel,
+    timelines: dict[date, DayTimeline | None] | None = None,
+    *,
+    private: bool = False,
+) -> Callable[[date], frozenset[int] | None]:
+    """The districts (or, ``private``, the private schools by directory position) closed for
+    weather on a day, from the live ingest's day timeline on the host
+    (``live/days/<day>.json``, S8-D). ``None`` only when the host holds no timeline for the
+    day (none was published: no unit had the day off). A timeline that cannot be read or does
+    not validate darkens the pass: a chance is never published from fewer inputs.
+    ``timelines`` keeps the days read, so the districts and the schools read each day once."""
+    read = timelines if timelines is not None else {}
+
+    def timeline_of(day: date) -> DayTimeline | None:
+        if day in read:
+            return read[day]
         key = run.mode.key
         if key is None or run.host is None:
             return None
@@ -731,15 +967,64 @@ def _closed_on(run: Pass, model: ServeModel) -> Callable[[date], frozenset[int] 
             data = run.host.read(path)
         except (OSError, PublishError) as error:
             raise DarkError(Dark.DAY_FILE, f"{path}: {error}") from error
-        if data is None:
+        found: DayTimeline | None = None
+        if data is not None:
+            try:
+                found = DayTimeline.from_json_bytes(data)
+            except ValueError as error:
+                raise DarkError(Dark.DAY_FILE, f"{path} does not validate") from error
+        read[day] = found
+        return found
+
+    def closed(day: date) -> frozenset[int] | None:
+        timeline = timeline_of(day)
+        if timeline is None:
             return None
-        try:
-            timeline = DayTimeline.from_json_bytes(data)
-        except ValueError as error:
-            raise DarkError(Dark.DAY_FILE, f"{path} does not validate") from error
-        return closed_districts(timeline, model, run.config.weather.covered_share)
+        share = run.config.weather.covered_share
+        if private:
+            return closed_private(timeline, model)
+        return closed_districts(timeline, model, share)
 
     return closed
+
+
+def _said_open(run: Pass, model: ServeModel, now: datetime) -> SaidOpen:
+    """Who said school is on (:mod:`snowlight.predict.opens`), from ``live/opens.json`` and
+    ``live/closings.json`` on the host. Neither published: nothing is said. A file that cannot
+    be read or does not validate darkens the pass, as a day timeline does."""
+    key = run.mode.key
+    if key is None or run.host is None:
+        return NOTHING_SAID
+    prefix = key.split("/", 1)[0]
+    found: dict[str, bytes | None] = {}
+    for name in ("opens", "closings"):
+        path = f"{prefix}/live/{name}.json"
+        try:
+            found[name] = run.host.read(path)
+        except (OSError, PublishError) as error:
+            raise DarkError(Dark.OPENS, f"{path}: {error}") from error
+    opens_data, closings_data = found["opens"], found["closings"]
+    if opens_data is None:
+        return NOTHING_SAID
+    try:
+        opens = OpensFile.from_json_bytes(opens_data)
+        closings = ClosingsFile.from_json_bytes(closings_data) if closings_data else None
+    except ValueError as error:
+        raise DarkError(Dark.OPENS, f"{prefix}/live: {type(error).__name__}") from error
+    serve = run.config.serve
+    private = model.private.positions if model.private is not None else np.zeros(0, np.int64)
+    try:
+        return said_open(
+            opens,
+            closings,
+            stamp=model.directory.stamp,
+            eligible=model.eligible,
+            private=private,
+            now=now,
+            max_age=timedelta(minutes=serve.opens_max_age_minutes),
+        )
+    except OpensError as error:
+        raise DarkError(Dark.OPENS, str(error)) from error
 
 
 def _last_file(run: Pass) -> PredictionsFile | None:

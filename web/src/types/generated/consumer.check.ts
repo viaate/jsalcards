@@ -209,6 +209,14 @@ export function reasonNames(predictions: PredictionsFile, district: number): str
   return first.reasons.map((code) => names.find((name) => Reason[name] === code) ?? '');
 }
 
+/** A private school's first-day chance of no school, through the file's shared outlooks. */
+export function privateChance(predictions: PredictionsFile, school: number): number | null {
+  const entry = predictions.schools?.find((item) => item.school === school);
+  const index = entry?.days[0];
+  const day = index === undefined ? undefined : predictions.outlooks?.[index];
+  return day?.state === 'forecast' ? day.p_no_school : null;
+}
+
 /** The schools lit in frame k of a replay. */
 export function frame(replay: ReplayFile, k: number): number[] {
   return replay.rows

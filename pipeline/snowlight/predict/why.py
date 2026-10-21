@@ -30,7 +30,7 @@ ice, cold extreme cold, tropical a hurricane, none nothing.
 
 from collections.abc import Sequence
 from datetime import date
-from typing import Final
+from typing import Final, Literal
 
 from snowlight.predict.artifact import RecordDay
 from snowlight.predict.pool import SCOPES, Scope
@@ -44,6 +44,7 @@ from snowlight.schemas.predictions import (
     PastDay,
     PastRecord,
     PooledBase,
+    SaidOpenReason,
     SimilarDaysBase,
     Why,
 )
@@ -80,6 +81,9 @@ STATUS_OF: Final[dict[str, Status | None]] = {
 
 _WHOLE: Final = 100
 
+type Of = Literal["districts", "private_schools"]
+"""Whose recorded days a pooled base counts (contract C3)."""
+
 
 def percent(p_no_school: float) -> int:
     """The chance in whole percent."""
@@ -107,12 +111,14 @@ def base_for(  # noqa: PLR0913 - the counted days, the chance, where it comes fr
     day: Situation | None = None,
     *,
     live: bool = False,
+    of: Of = "districts",
 ) -> Base:
     """The base of a forecast whose whole chance is ``p_no_school``, counted over
     ``situation`` days, on a day of situation ``day`` (default the same).
 
     ``live``: the counted days are days the live pipeline read, not the archive's recorded
-    days (the situation is re-anchored on them, :mod:`snowlight.predict.learn`).
+    days (the situation is re-anchored on them, :mod:`snowlight.predict.learn`). ``of``: a
+    pooled base counts districts' days, or private schools' only.
 
     Raises:
         ValueError: ``scope`` is not a pooled scope, or the counted days cannot be said
@@ -128,7 +134,13 @@ def base_for(  # noqa: PLR0913 - the counted days, the chance, where it comes fr
         if scope not in SCOPES:
             raise ValueError(f"not a pooled scope: {scope!r}")
         return PooledBase(
-            kind="pooled", scope=scope, points=points, alert=alert, borrowed=borrowed, live=live
+            kind="pooled",
+            scope=scope,
+            points=points,
+            alert=alert,
+            borrowed=borrowed,
+            live=live,
+            of=of,
         )
     if situation.after:
         return DayAfterBase(kind="day_after", points=points, live=live)
@@ -145,9 +157,22 @@ def why_for(  # noqa: PLR0913 - as base_for
     day: Situation | None = None,
     *,
     live: bool = False,
+    of: Of = "districts",
+    said_open: float | None = None,
 ) -> Why:
-    """The base alone: it adds up to the chance exactly."""
-    return Why(base=base_for(situation, p_no_school, own, scope, day, live=live), reasons=())
+    """The base alone: it adds up to the chance exactly. With ``said_open`` (the chance the
+    unit's word that school is on leaves, the floor), a ``said_open`` line takes the rest of
+    the base away, so the base and the line add up to that chance exactly (no line when the
+    base is already there)."""
+    base = base_for(situation, p_no_school, own, scope, day, live=live, of=of)
+    if said_open is None:
+        return Why(base=base)
+    taken = percent(said_open) - base.points
+    if taken > 0:
+        raise ValueError("a word that school is on never raises the chance")
+    return Why(
+        base=base, reasons=(SaidOpenReason(kind="said_open", points=taken),) if taken else ()
+    )
 
 
 def record_for(days: Sequence[RecordDay], before: date) -> PastRecord | None:

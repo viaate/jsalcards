@@ -244,6 +244,43 @@ describe('the area panel’s view', () => {
     expect(chance.announces(NOW)).toBeNull();
   });
 
+  it('counts a private school by its own chance, from the file’s schools and shared outlooks', () => {
+    // Epsilon (private, no district) has its own outlook (contract C3): 20% Tuesday.
+    const own = (tuesday: unknown) =>
+      ({
+        ...PREDICTIONS,
+        schools: [{ school: 4, zone: 0, days: [0, 1] }],
+        outlooks: [{ state: 'no_threat' }, tuesday],
+        zones: [ZONE],
+      }) as unknown as PredictionsFile;
+    const chance = areaView(
+      input({ live: { closings: CLOSINGS, covered: null, predictions: own(forecast(0.2)) } }),
+    )?.chance;
+    // As before, and Epsilon's 100 students at 20%, over 2,350 students.
+    const mean = (1000 * 0.64 + 500 * 0.31 + 300 + 200 + 250 * 0 + 100 * 0.2) / 2350;
+    expect(chance?.number).toBe(String(Math.round(mean * 100)));
+    expect(chance?.why.map(({ number, text }) => `${number} ${text}`)).toContain(
+      '20% Epsilon School decides for itself.',
+    );
+    // Every school here now has a number: none is left out.
+    expect(chance?.left).toBeNull();
+    // Its own forecast of no weather threat counts it at 0, in its own words.
+    const clear = areaView(
+      input({
+        live: {
+          closings: CLOSINGS,
+          covered: null,
+          predictions: own({ state: 'no_threat' }),
+        },
+      }),
+    )?.chance;
+    expect(clear?.number).toBe(String(Math.round(((1000 * 0.64 + 500 * 0.31 + 500) / 2350) * 100)));
+    expect(clear?.why.map(({ number, text }) => `${number} ${text}`)).toContain(
+      '0% Epsilon School has no weather threat Tuesday.',
+    );
+    expect(clear?.left).toBeNull();
+  });
+
   it('keeps the usual announcement on the chart where one district alone decides by chance', () => {
     const one = { ...AREA, own: AREA.own.slice(0, 2), near: [] };
     const chance = areaView(input({ area: one }))?.chance;

@@ -32,6 +32,7 @@ from typing import Any, override
 from pydantic.json_schema import GenerateJsonSchema, JsonSchemaValue
 from pydantic_core import CoreSchema, core_schema
 
+from snowlight.schemas.base import CompactModel
 from snowlight.schemas.registry import PUBLISHED_FILES, PublishedFile
 from snowlight.schemas.site import validate_site
 
@@ -61,6 +62,19 @@ class SnowlightJsonSchema(GenerateJsonSchema):
     def field_title_should_be_set(self, schema: CoreSchema) -> bool:
         return False
 
+    _models: list[type] | None = None
+
+    @override
+    def model_schema(self, schema: core_schema.ModelSchema) -> JsonSchemaValue:
+        # Which model's fields are being written: a compact model's defaults are optional.
+        if self._models is None:
+            self._models = []
+        self._models.append(schema["cls"])
+        try:
+            return super().model_schema(schema)
+        finally:
+            self._models.pop()
+
     @override
     def default_schema(self, schema: core_schema.WithDefaultSchema) -> JsonSchemaValue:
         # Every published field is written, so the schemas mark them all required; a
@@ -74,7 +88,10 @@ class SnowlightJsonSchema(GenerateJsonSchema):
         field: core_schema.ModelField | core_schema.DataclassField | core_schema.TypedDictField,
         total: bool,
     ) -> bool:
-        return True
+        # A compact model's file leaves a field at its default out (base.CompactModel).
+        owner = self._models[-1] if self._models else None
+        compact = owner is not None and issubclass(owner, CompactModel)
+        return not (compact and field["schema"]["type"] == "default")
 
     @override
     def enum_schema(self, schema: core_schema.EnumSchema) -> JsonSchemaValue:

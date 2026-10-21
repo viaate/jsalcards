@@ -7,6 +7,7 @@ from pydantic import ValidationError
 
 from schemas.helpers import EXAMPLES, example, example_path
 from snowlight.output import dumps_json
+from snowlight.schemas.base import CompactModel
 from snowlight.schemas.registry import PUBLISHED_FILES, PublishedFile
 
 
@@ -46,8 +47,12 @@ def test_documents_are_immutable(entry: PublishedFile) -> None:
 
 
 def test_every_field_is_required(entry: PublishedFile) -> None:
+    """Every top-level field is required, but those a compact file may leave at a default."""
     value = example(entry.name)
+    model = entry.model
     for key in list(value):
+        if issubclass(model, CompactModel) and not model.model_fields[key].is_required():
+            continue
         partial = {k: v for k, v in value.items() if k != key}
         with pytest.raises(ValidationError, match="missing"):
-            entry.model.from_json_bytes(json.dumps(partial))
+            model.from_json_bytes(json.dumps(partial))

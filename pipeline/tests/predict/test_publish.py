@@ -122,6 +122,27 @@ def test_a_pass_publishes_then_waits_for_a_change_or_the_heartbeat(capsys: Any) 
     assert "uploaded v1/predictions/latest.json" in capsys.readouterr().out
 
 
+def test_a_private_school_with_no_time_zone_is_said_on_every_pass(capsys: Any) -> None:
+    # The first private school has no zone in the model and the point lookup finds none: its
+    # today is unknown, so it gets no chance, and the pass says so rather than drop it quietly.
+    committed = world.model()
+    first = world.PRIVATE_IDS[0]
+    private = dict(committed.private)
+    private[first] = private[first].model_copy(update={"time_zone": None})
+    changed = committed.model_copy(update={"private": private})
+    host = MemoryHost()
+    run = make_pass(host, directory=world.directory())
+    run.model = lambda: changed
+    assert cli.one_pass(run) == 0
+    published = PredictionsFile.from_json_bytes(host.files["v1/predictions/latest.json"])
+    served = [entry.school for entry in published.schools]
+    assert world.FIRST_PRIVATE not in served
+    assert served == [world.FIRST_PRIVATE + 1, world.FIRST_PRIVATE + 2]
+    found = capsys.readouterr()
+    assert "2 private schools" in found.out
+    assert "warning: 1 private schools of the contiguous states have no time zone" in found.err
+
+
 def test_off_and_shadow() -> None:
     host = MemoryHost()
     assert cli.one_pass(make_pass(host, mode=Mode.OFF, directory=world.directory())) == 0

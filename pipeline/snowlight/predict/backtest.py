@@ -685,3 +685,32 @@ def reliability_svg(bins: Sequence[Bin]) -> str:
         )
     parts.append("</svg>")
     return "\n".join(parts) + "\n"
+
+
+def chances_on(
+    rows: Rows,
+    delay_rows: Rows,
+    places: Places,
+    cells: Sequence[tuple[str, int, int]],
+    settings: ModelSettings,
+) -> list[float | None]:
+    """The walk-forward chance of each (unit, situation index, season) cell, labeled or not:
+    fit on the seasons before its own only (the named cases' days, spec piece 2). ``None``
+    where no season comes before, or the unit is not in ``places``."""
+    position = places.position()
+    seasons = sorted(set(rows.season.tolist()))
+    found: list[float | None] = []
+    for unit, situation, season in cells:
+        before = [s for s in seasons if s < season]
+        if not before or unit not in position:
+            found.append(None)
+            continue
+        test = Rows(
+            np.array([position[unit]], dtype=np.int64),
+            np.array([situation], dtype=np.int64),
+            np.array([season], dtype=np.int64),
+            np.array([np.nan]),
+        )
+        _s, _d, _raw, p, _q = fit_predict(rows, delay_rows, test, places, before, settings)
+        found.append(None if np.isnan(p[0]) else float(p[0]))
+    return found

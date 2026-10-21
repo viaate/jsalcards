@@ -63,11 +63,12 @@ def cells(
     yield from sorted(seen)
 
 
-def committed_chain(artifact: ModelArtifact) -> tuple[LevelCounts, Chain]:
-    """The chain over the committed model's districts, nearby being the same county's (up to
-    twelve), as a pass would build it with its own neighbors."""
-    leaids = sorted(artifact.districts)
-    entry = artifact.districts
+def committed_chain(artifact: ModelArtifact, *, private: bool = False) -> tuple[LevelCounts, Chain]:
+    """The chain over the committed model's districts (``private``: its private schools,
+    counted over private schools only), nearby being the same county's (up to twelve), as a
+    pass would build it with its own neighbors."""
+    entry = artifact.private if private else artifact.districts
+    leaids = sorted(entry)
     states = [entry[d].state for d in leaids]
     counties = [entry[d].county for d in leaids]
     by_county: dict[str, list[str]] = {}
@@ -92,8 +93,9 @@ def committed_chain(artifact: ModelArtifact) -> tuple[LevelCounts, Chain]:
         if found.y is not None and found.n is not None:
             y[i], n[i] = found.y, found.n
     counts = level_counts(places, y, n)
-    strengths = Strengths(artifact.strengths["no_school"])  # type: ignore[arg-type]
-    return counts, chain(counts, strengths, rules=artifact.settings.rules())
+    fitted = artifact.private_strengths if private else artifact.strengths
+    strengths = Strengths(fitted["no_school"])  # type: ignore[arg-type]
+    return counts, chain(counts, strengths, rules=artifact.settings.rules(private=private))
 
 
 def test_every_cell_of_the_committed_model_says_a_true_sentence() -> None:
@@ -109,12 +111,35 @@ def test_every_cell_of_the_committed_model_says_a_true_sentence() -> None:
     assert named == set(SCOPES)
 
 
+def test_every_cell_of_the_committed_private_chain_says_a_true_sentence() -> None:
+    artifact = load()
+    assert artifact.private
+    counts, found = committed_chain(artifact, private=True)
+    y, n = named_counts(counts, found)
+    rules = artifact.settings.rules(private=True)
+    p = rules.published(found.p)
+    false = [cell for cell in cells(p, y, n) if not told_true(*cell)]
+    assert false == []
+    # A private level below the nation is named only with its many labeled days.
+    level = rules.level_min_days
+    assert level == 30
+    pooled = ~found.own & (found.scope != SCOPES.index("nation"))
+    assert (n[pooled] >= level).all()
+
+
 def test_every_served_cell_says_a_true_sentence() -> None:
     built = build_model(world.directory(), world.model(), world.CONFIG, lambda _lon, _lat: None)
     false = [cell for cell in cells(built.p, built.named_y, built.named_n) if not told_true(*cell)]
     assert false == []
     assert built.named_n.shape == built.p.shape
     assert (built.named_n > 0).all()
+    private = built.private
+    assert private is not None
+    false = [
+        cell for cell in cells(private.p, private.named_y, private.named_n) if not told_true(*cell)
+    ]
+    assert false == []
+    assert (private.named_n > 0).all()
 
 
 def _one(y_own: int, n_own: int, y_rest: int, n_rest: int, strength: float) -> Chain:

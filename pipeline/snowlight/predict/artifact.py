@@ -33,6 +33,8 @@ ARTIFACT_PATH: Final = PIPELINE_ROOT / "data" / "predict" / "model.json.gz"
 MAX_BYTES: Final = 5_000_000
 SITUATION_KEYS: Final = tuple(item.key for item in SITUATIONS)
 LEAID_PATTERN: Final = r"^\d{7}$"
+PRIVATE_PATTERN: Final = r"^[A-Z0-9]{8}$"
+"""A private school's NCES id."""
 COUNTY_PATTERN: Final = r"^\d{5}$"
 
 type DayStatus = Literal["closed", "remote", "delayed", "open"]
@@ -112,18 +114,31 @@ class Settings(_Model):
     """A situation not modeled (too few labeled days nationally) to the one it takes."""
     floor: float
     ceiling: float
+    private_level_min_days: int | None = None
+    """The private schools' chain's level minimum (``None``: the districts')."""
 
-    def rules(self) -> Rules:
-        """The chain's rules."""
+    def rules(self, *, private: bool = False) -> Rules:
+        """The chain's rules (``private``: the private schools' chain)."""
+        level = self.private_level_min_days if private else None
         return make_rules(
             own_min_days=self.own_min_days,
-            level_min_days=self.level_min_days,
+            level_min_days=level if level is not None else self.level_min_days,
             nation_min_days=self.nation_min_days,
             almost_share=self.almost_share,
             floor=self.floor,
             ceiling=self.ceiling,
             fallback=self.fallback,
         )
+
+
+def _check_strengths(strengths: Mapping[str, Mapping[str, Mapping[str, float]]]) -> None:
+    for outcome in ("no_school", "delay"):
+        levels = strengths.get(outcome)
+        if levels is None or set(levels) != set(LEVELS):
+            raise ValueError(f"strengths for {outcome} must name every level")
+        for groups in levels.values():
+            if set(groups) != set(GROUPS) or any(m <= 0 for m in groups.values()):
+                raise ValueError("every class group needs a positive strength")
 
 
 class ModelArtifact(_Model):
@@ -136,18 +151,24 @@ class ModelArtifact(_Model):
     strengths: dict[str, dict[str, dict[str, float]]]
     """Outcome (``no_school``, ``delay``) to level to class group to ``m``."""
     districts: dict[Annotated[str, Field(pattern=LEAID_PATTERN)], DistrictModel]
+    private: dict[Annotated[str, Field(pattern=PRIVATE_PATTERN)], DistrictModel] = Field(
+        default_factory=dict
+    )
+    """Every private school of the training directory, by NCES id, as its own unit (contract
+    C3): its place and, where it has labeled days, its counts and record, counted over private
+    schools only. Empty: private schools take the districts' rates around them."""
+    private_strengths: dict[str, dict[str, dict[str, float]]] = Field(default_factory=dict)
+    """The private chain's strengths, as :attr:`strengths` (empty with :attr:`private`)."""
+    private_labeled_days: int = 0
+    """Labeled private school-days the private counts hold."""
 
     @model_validator(mode="after")
     def _check(self) -> "ModelArtifact":
         if self.situations != SITUATION_KEYS:
             raise ValueError("the model's situations are not this code's")
-        for outcome in ("no_school", "delay"):
-            levels = self.strengths.get(outcome)
-            if levels is None or set(levels) != set(LEVELS):
-                raise ValueError(f"strengths for {outcome} must name every level")
-            for groups in levels.values():
-                if set(groups) != set(GROUPS) or any(m <= 0 for m in groups.values()):
-                    raise ValueError("every class group needs a positive strength")
+        _check_strengths(self.strengths)
+        if self.private_strengths or self.private:
+            _check_strengths(self.private_strengths)
         return self
 
     def to_bytes(self) -> bytes:

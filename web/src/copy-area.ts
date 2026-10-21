@@ -110,6 +110,16 @@ function decides(name: string, n: number, of: number): string {
   return `${name} decides for ${ofHere(n, of)}.`;
 }
 
+/** A private school deciding for itself by its own chance: "Pembroke Hill School decides for itself." */
+function decidesItself(name: string): string {
+  return `${name} decides for itself.`;
+}
+
+/** A private school whose own forecast says no weather threat that day. */
+function schoolNoThreat(name: string, localDate: string): string {
+  return `${name} has no weather threat ${chanceFormat.weekday(localDate)}.`;
+}
+
 /**
  * What a district already posted for the day, at how many of the area's
  * schools: "Kansas City 33 canceled Tuesday at 9 schools here."
@@ -182,8 +192,10 @@ export const areaFormat = /* @__PURE__ */ deepFreeze({
   unread,
   statusCount,
   decides,
+  decidesItself,
   districtPosted,
   noThreat,
+  schoolNoThreat,
   schoolPosted,
   share,
   forecastOf,

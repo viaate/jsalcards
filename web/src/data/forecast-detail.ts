@@ -9,9 +9,11 @@
  * the checks across parts too: each reason's points on the side its weather
  * pushes, the timing reason on the chart's heaviest hours, the districts next
  * door in the reason among the district's neighbors, and the district's times
- * on the day forecast in its own time zone. A part that is missing or not what
- * the schema says reads as null (an event is left out), and the rest still
- * shows: the headline never waits on a chart. Whether the sum adds up to the
+ * on the day forecast in its own time zone. The file leaves every part at its
+ * default out (a null, a false, an empty list; base.CompactModel), so a missing
+ * part reads as that default; a part that is there but not what the schema says
+ * reads as null (an event is left out), and the rest still shows: the headline
+ * never waits on a chart. Whether the sum adds up to the
  * chance is the view's to check (app/chance.ts), since that is where the
  * number and its sum meet.
  */
@@ -29,6 +31,8 @@ const STATUS_COUNT = 4;
 const CLOSED = 0;
 const REMOTE = 2;
 const SCOPES = ['nearby', 'county', 'state', 'region', 'nation'] as const;
+/** Whose recorded days a pooled base counts: districts', or private schools' only (C3). */
+const POOLED_OF = ['districts', 'private_schools'] as const;
 const ALERTS: readonly AlertKind[] = [
   'winter_storm_warning',
   'winter_weather_advisory',
@@ -56,6 +60,9 @@ export interface HoursDetail {
 
 /** Where the districts of a pooled base are, around the district. */
 export type PoolScope = (typeof SCOPES)[number];
+
+/** Whose recorded days a pooled base counts. */
+export type PoolOf = (typeof POOLED_OF)[number];
 
 /**
  * Where the chance starts. `borrowed`: the day's own weather (or the day after a snow day)
@@ -85,6 +92,8 @@ export type BaseDetail =
       readonly alert: AlertKind | null;
       readonly borrowed: boolean;
       readonly live: boolean;
+      /** Whose days: districts', or private schools' only (a private school's chance). */
+      readonly of: PoolOf;
     };
 
 export type ReasonDetail =
@@ -108,7 +117,9 @@ export type ReasonDetail =
   | { readonly kind: 'snow_stops'; readonly points: number; readonly at: Date }
   | { readonly kind: 'sun'; readonly points: number }
   | { readonly kind: 'icy_roads'; readonly points: number; readonly inches: number }
-  | { readonly kind: 'ice'; readonly points: number; readonly inches: number };
+  | { readonly kind: 'ice'; readonly points: number; readonly inches: number }
+  /** The district or the school said school is on: it takes the chance down to the floor. */
+  | { readonly kind: 'said_open'; readonly points: number };
 
 export interface WhyDetail {
   readonly base: BaseDetail;
@@ -199,7 +210,11 @@ function previousOf(value: unknown): PreviousRun | null {
 function hoursOf(value: unknown, busesAt: Date | null): HoursDetail | null {
   const series = fields(value);
   if (series === null || busesAt === null) return null;
-  const { kind, values, low, high, heavy } = series;
+  const { kind, values } = series;
+  // A compact file leaves a null range and heavy hours out.
+  const low = series.low ?? null;
+  const high = series.high ?? null;
+  const heavy = series.heavy ?? null;
   const start = parseInstant(series.start);
   if (kind !== 'snow_total' && kind !== 'wind_chill') return null;
   if (start === null || start.getTime() % HOUR_MS !== 0) return null;
@@ -237,12 +252,14 @@ function hoursOf(value: unknown, busesAt: Date | null): HoursDetail | null {
 function baseOf(value: unknown): BaseDetail | null {
   const base = fields(value);
   if (base === null || !isWhole(base.points, 0, 100)) return null;
-  const { points, borrowed, live } = base;
+  const { points } = base;
   // Which days the sentence counts must be known, or it could name the wrong ones: other
-  // weather's days, or the archive's recorded days for days read live.
-  if (base.kind !== 'day_after' && typeof borrowed !== 'boolean') return null;
-  if (typeof live !== 'boolean') return null;
-  const lent = borrowed === true;
+  // weather's days, or the archive's recorded days for days read live. A compact file leaves
+  // a false flag out; a flag that is there must be a boolean.
+  const borrowed = base.borrowed ?? false;
+  const live = base.live ?? false;
+  if (typeof borrowed !== 'boolean' || typeof live !== 'boolean') return null;
+  const lent = borrowed;
   switch (base.kind) {
     case 'alert':
       return ALERTS.includes(base.alert as AlertKind)
@@ -255,9 +272,11 @@ function baseOf(value: unknown): BaseDetail | null {
     case 'pooled': {
       const scope = SCOPES.find((item) => item === base.scope);
       const alert = base.alert ?? null;
+      const of = POOLED_OF.find((item) => item === (base.of ?? 'districts'));
       if (scope === undefined || (alert !== null && !ALERTS.includes(alert as AlertKind))) {
         return null;
       }
+      if (of === undefined) return null;
       return {
         kind: 'pooled',
         points,
@@ -265,6 +284,7 @@ function baseOf(value: unknown): BaseDetail | null {
         alert: alert as AlertKind | null,
         borrowed: lent,
         live,
+        of,
       };
     }
     default:
@@ -274,7 +294,7 @@ function baseOf(value: unknown): BaseDetail | null {
 
 /** The side each kind's points are on, where its weather only ever pushes one way. */
 const ADDS = new Set(['wind_chill', 'cold', 'icy_roads', 'ice']);
-const TAKES_AWAY = new Set(['sun']);
+const TAKES_AWAY = new Set(['sun', 'said_open']);
 
 function reasonOf(value: unknown, districts: number): ReasonDetail | null {
   const reason = fields(value);
@@ -292,6 +312,7 @@ function reasonOf(value: unknown, districts: number): ReasonDetail | null {
     }
     case 'record':
     case 'sun':
+    case 'said_open':
       return { kind: reason.kind, points };
     case 'neighbors': {
       const list = reason.districts;
@@ -363,7 +384,8 @@ function agrees(reason: ReasonDetail, context: WhyContext): boolean {
 function whyOf(value: unknown, context: WhyContext): WhyDetail | null {
   const why = fields(value);
   const base = baseOf(why?.base);
-  const list = why?.reasons;
+  // A compact file leaves a base with no reasons as the base alone.
+  const list = why?.reasons ?? [];
   if (base === null || !Array.isArray(list)) return null;
   const reasons = list.map((item) => reasonOf(item, context.districts));
   if (!reasons.every((item): item is ReasonDetail => item !== null)) return null;
@@ -375,7 +397,8 @@ function whyOf(value: unknown, context: WhyContext): WhyDetail | null {
 function recordOf(value: unknown, day: LocalDate): RecordDetail | null {
   const record = fields(value);
   if (record === null) return null;
-  const { proves, inches, days } = record;
+  const { proves, days } = record;
+  const inches = record.inches ?? null;
   if (proves !== 'base' && proves !== 'snow_total' && proves !== 'record') return null;
   if (inches !== null && !isInches(inches)) return null;
   if (!Array.isArray(days) || days.length === 0 || days.length > 8) return null;

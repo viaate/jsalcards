@@ -509,6 +509,7 @@ describe('what the section leaves out', () => {
         points: 33,
         scope: 'nearby',
         alert: null,
+        of: 'districts',
         borrowed: false,
         live: false,
       },

@@ -120,6 +120,8 @@ describe('reading covered.json and predictions', () => {
       parsePredictions(day({ state: 'forecast', p_no_school: 1, p_delay: 0, reasons: [0] })),
     ).toBeNull();
     expect(parsePredictions(day({ state: 'not_enough_data' }))).toBeNull();
+    // A forecast without its reasons list: the contract always writes it, even empty.
+    expect(parsePredictions(day({ state: 'forecast', p_no_school: 0.3, p_delay: 0 }))).toBeNull();
     expect(parsePredictions({ ...file, days: ['2026-01-12', '2026-01-14'] })).toBeNull();
     expect(
       parsePredictions({
@@ -132,6 +134,28 @@ describe('reading covered.json and predictions', () => {
     expect(
       parsePredictions({ ...file, districts: [{ district: 0, time_zone: ZONE, days: [] }] }),
     ).toBeNull();
+    // The private schools' section: each school's zone by its place in the file's zones, its
+    // days by their place in the shared outlooks.
+    const outlook = { state: 'forecast', p_no_school: 0.01, p_delay: 0, reasons: [] };
+    const privateFile = {
+      ...file,
+      schools: [{ school: 3, zone: 0, days: [0, 1] }],
+      outlooks: [outlook, { state: 'no_threat' }],
+      zones: [ZONE],
+    };
+    expect(parsePredictions(privateFile)).toEqual(privateFile);
+    const school = (entry: unknown, zones: unknown = [ZONE]) => ({
+      ...privateFile,
+      schools: [entry],
+      zones,
+    });
+    expect(parsePredictions(school({ school: 3, zone: 1, days: [0, 1] }))).toBeNull();
+    expect(parsePredictions(school({ school: 3, days: [0, 1] }))).toBeNull();
+    expect(parsePredictions(school({ school: 3, time_zone: ZONE, days: [0, 1] }))).toBeNull();
+    expect(
+      parsePredictions(school({ school: 3, zone: 0, days: [0, 1] }, ['Mars/Olympus_Mons'])),
+    ).toBeNull();
+    expect(parsePredictions(school({ school: 3, zone: 0, days: [0, 2] }))).toBeNull();
     expect(nextDay('2026-02-28')).toBe('2026-03-01');
     expect(nextDay('2028-02-28')).toBe('2028-02-29');
   });

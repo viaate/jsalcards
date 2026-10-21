@@ -15,6 +15,7 @@ from typing import Any
 
 import pytest
 
+from snowlight.schemas.base import CompactModel
 from snowlight.schemas.export import (
     FINGERPRINT_FILE,
     REPO_ROOT,
@@ -124,7 +125,10 @@ def test_schemas_describe_codes_tuples_and_paths(entry: PublishedFile) -> None:
             assert node["minItems"] == node["maxItems"] == len(node["prefixItems"])
             assert all("title" in item for item in node["prefixItems"])
         if node.get("type") == "object":
-            assert set(node["required"]) == set(node["properties"])
+            # Every field is required, but a compact model's defaults (base.CompactModel).
+            assert set(node["required"]) <= set(node["properties"])
+            if not issubclass(entry.model, CompactModel):
+                assert set(node["required"]) == set(node["properties"])
 
 
 def _copy_tree(tmp_path: Path) -> Path:

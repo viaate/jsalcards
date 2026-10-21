@@ -1,23 +1,31 @@
 """The serving loop: the grid and heartbeat, retries after a dark pass, the day file, the alert
 memory across a lost state, the hold, cancelled warnings, and the worst-case file size."""
 
+import math
 import random
 from collections.abc import Mapping
 from datetime import UTC, date, datetime, timedelta
-from itertools import pairwise
+from itertools import pairwise, product
 from typing import Any, Final
+from zoneinfo import available_timezones
 
 import pytest
 
 from predict import world
 from predict.test_publish import NOW, MemoryHost, feed, make_pass
 from snowlight.live.publishers import PublishError
-from snowlight.predict import artifact, cli
+from snowlight.predict import artifact, cli, serve
 from snowlight.predict.alerts_live import Memory, alerts_digest, live_events, withdrawn
+from snowlight.predict.artifact import RecordDay
+from snowlight.predict.pool import SCOPES
 from snowlight.predict.publish import Dark, DarkError, State, check_budget, due
-from snowlight.predict.why import ALERT_KIND
+from snowlight.predict.situations import SITUATIONS
+from snowlight.predict.why import ALERT_KIND, Of, sayable
 from snowlight.schemas.directory import DirectoryStamp
 from snowlight.schemas.predictions import (
+    MAX_OUTLOOKS,
+    MAX_SCHOOL_NEIGHBORS,
+    MAX_ZONES,
     AlertBase,
     DistrictForecast,
     Forecast,
@@ -26,6 +34,7 @@ from snowlight.schemas.predictions import (
     PooledBase,
     PredictionsFile,
     PreviousChance,
+    SchoolForecast,
     Why,
 )
 from snowlight.schemas.vocab import Reason, Status
@@ -333,86 +342,278 @@ def test_blank_holds_every_chance_dark_until_release() -> None:
 
 
 # The longest alert name a base can carry (a winter storm warning day, and every day that
-# borrows its rates), so no real day's entry is longer than the worst case's.
+# borrows its rates), so no real day's entry is longer than the worst case's: asserted over
+# every day the pass can make (test_no_day_the_pass_can_make_is_longer_than_the_worst_case).
 LONGEST_ALERT: Final = max(ALERT_KIND.values(), key=len)
+LONGEST_ZONE: Final = "America/North_Dakota/New_Salem"
+LONGEST_ZONES: Final = tuple(
+    sorted((z for z in available_timezones() if "/" in z), key=lambda z: (-len(z), z))[:MAX_ZONES]
+)
+DEPLOYED_SCHOOLS: Final = 118_211
+"""The deployed directory's schools: every private school's index has its six digits."""
+GROWTH: Final = 1.05
+"""A new directory edition may add this share of districts and private schools (one edition
+to the next has moved by well under 1%) and the worst case must still fit."""
 
 
-def worst_case_file(districts: int, with_record: int) -> bytes:
-    """Every district under a warning on both days, with a previous chance, the longest alert
-    name and the longest zone name; ``with_record`` of them with a full 8-day record (an own
-    base)."""
-    day = date(2026, 1, 7)
-    at = datetime(2026, 1, 7, 1, 30, tzinfo=UTC)
-    record = PastRecord(
+def _record() -> PastRecord:
+    return PastRecord(
         proves="base",
         inches=None,
         days=tuple(
             PastDay(day=date(2025, 1, d + 1), inches=None, status=Status.CLOSED) for d in range(8)
         ),
     )
-    plain = Forecast(
+
+
+def _worst_day(
+    at: datetime, *, own: bool, of: str = "districts", minutes: int = 30, previous: bool = True
+) -> Forecast:
+    """A day under a warning with a previous chance (none with ``previous`` false), its base
+    carrying the longest alert and both flags (borrowed and live); ``own``: an own base with a
+    full 8-day record. No day said open is longer: its said_open line comes with no previous
+    chance (contract C3)."""
+    base: AlertBase | PooledBase = (
+        AlertBase(kind="alert", points=57, alert=LONGEST_ALERT, borrowed=True, live=True)
+        if own
+        else PooledBase(
+            kind="pooled",
+            scope="nearby",
+            points=57,
+            alert=LONGEST_ALERT,
+            borrowed=True,
+            live=True,
+            of="private_schools" if of == "private_schools" else "districts",
+        )
+    )
+    return Forecast(
         state="forecast",
         p_no_school=0.57,
         p_delay=0.13,
         reasons=(Reason.WINTER_STORM,),
-        previous=PreviousChance(p_no_school=0.43, at=at - timedelta(minutes=30)),
-        announces_at=None,
-        buses_at=None,
-        hours=None,
-        why=Why(
-            base=PooledBase(
-                kind="pooled",
-                scope="nation",
-                points=57,
-                alert=LONGEST_ALERT,
-                borrowed=False,
-                live=False,
-            ),
-            reasons=(),
-        ),
-        record=None,
-        events=(),
+        previous=PreviousChance(p_no_school=0.43, at=at - timedelta(minutes=minutes))
+        if previous
+        else None,
+        why=Why(base=base, reasons=()),
+        record=_record() if own else None,
     )
-    own = plain.model_copy(
+
+
+OF: Final[tuple[Of, ...]] = ("districts", "private_schools")
+
+
+def _every_day(at: datetime) -> list[Forecast]:
+    """Every kind of school day the pass can make (serve._forecast): each situation counted
+    over each one it may truly be, an own base or each pooled scope, districts' or private
+    schools' days, read live or not, said open or not, with a previous chance or none, with a
+    full record or none."""
+    found: list[Forecast] = []
+    day = date(2026, 1, 7)
+    earlier = (
+        0.43,
+        PreviousChance(p_no_school=0.41, at=at - timedelta(minutes=60)),
+        at - timedelta(minutes=30),
+    )
+    full = tuple(RecordDay(day=date(2025, 1, d + 1), did="closed") for d in range(8))
+    for counted in SITUATIONS:
+        for situation in SITUATIONS:
+            if not sayable(situation, counted):
+                continue
+            for own, scope, live, of, said, last, records in product(
+                (False, True),
+                SCOPES,
+                (False, True),
+                OF,
+                (False, True),
+                (None, earlier),
+                ({}, {counted.key: full}),
+            ):
+                if own and scope != SCOPES[0]:
+                    continue
+                cell = serve._Cell(
+                    p=0.57, q=0.13, own=own, scope=scope, counted=counted, live=live,
+                    records=records, of=of,
+                )  # fmt: skip
+                found.append(serve._forecast(cell, situation, day, last, at, said_open=said))
+    return found
+
+
+def test_no_day_the_pass_can_make_is_longer_than_the_worst_case() -> None:
+    """The worst case's days are the longest the pass can write: a district's day with a
+    record no longer than the own worst day, one without no longer than the pooled worst day,
+    a private school's outlook no longer than the own worst day (each outlook in the worst
+    case's table), and one without a record no longer than the pooled worst day over private
+    schools, so the worst-case files below are the real maximum (a day said open included)."""
+    at = datetime(2026, 1, 7, 1, 30, tzinfo=UTC)
+    days = _every_day(at)
+    assert any(any(r.kind == "said_open" for r in d.why.reasons) for d in days)
+    assert any(d.record is not None for d in days)
+    own = len(_worst_day(at, own=True).to_json_bytes())
+    plain = len(_worst_day(at, own=False).to_json_bytes())
+    plain_private = len(_worst_day(at, own=False, of="private_schools").to_json_bytes())
+    for found in days:
+        size = len(found.to_json_bytes())
+        assert size <= own, found
+        base = found.why.base
+        if found.record is None:
+            assert size <= plain_private, found
+            if not isinstance(base, PooledBase) or base.of == "districts":
+                assert size <= plain, found
+
+
+def _longest_bare(at: datetime, of: Of) -> Forecast:
+    """The longest day with no previous chance and no record the pass can make over ``of``'s
+    days (a district's base names no ``of``): a day said open (:func:`_every_day`)."""
+    return max(
+        (
+            d
+            for d in _every_day(at)
+            if d.previous is None
+            and d.record is None
+            and getattr(d.why.base, "of", "districts") == of
+        ),
+        key=lambda d: len(d.to_json_bytes()),
+    )
+
+
+BARE_CELLS: Final = tuple(
+    (scope, p, q)
+    for p in range(10, 90)
+    for q in range(10, 101 - p)
+    for scope in ("nearby", "county", "region", "nation")
+)
+"""Distinct (scope, chance, delay chance) cells: a scope of six letters, chances of two
+digits."""
+
+
+def _bare_outlook(at: datetime, k: int) -> Forecast:
+    """The ``k``-th distinct private outlook with no previous chance and no record, the worst
+    day's but for its cell (the test adds what a day said open has over it)."""
+    scope, p, q = BARE_CELLS[k]
+    day = _worst_day(at, own=False, of="private_schools", previous=False)
+    base = day.why.base
+    assert isinstance(base, PooledBase)
+    return day.model_copy(
         update={
-            "why": Why(
-                base=AlertBase(
-                    kind="alert", points=57, alert=LONGEST_ALERT, borrowed=False, live=False
-                ),
-                reasons=(),
-            ),
-            "record": record,
+            "p_no_school": p / 100,
+            "p_delay": q / 100,
+            "why": Why(base=base.model_copy(update={"scope": scope, "points": p}), reasons=()),
         }
     )
+
+
+def worst_case_file(  # noqa: PLR0913 - the file's counts and what it leaves out
+    districts: int,
+    with_record: int,
+    *,
+    schools: int = 0,
+    outlooks: int = 0,
+    records: bool = True,
+    previous: bool = True,
+) -> bytes:
+    """Every district under a warning on both days, with a previous chance, the longest alert
+    name, both base flags, the longest zone name and twelve districts next door with the
+    highest indexes; ``with_record`` of them with a full 8-day record (an own base). With
+    ``schools``, that many private schools (the highest indexes, as many zones as the file
+    may hold, the longest, nearly all named with two digits, a full list of districts next
+    door) naming ``outlooks`` distinct outlooks, each the longest one (an own base with a
+    full record). ``records=False``: the file a pass makes with no record days
+    (:attr:`serve.Fit.NO_RECORDS`), every day and outlook the longest without one;
+    ``previous=False`` also with no previous chance (:attr:`serve.Fit.NO_PREVIOUS`)."""
+    day = date(2026, 1, 7)
+    at = datetime(2026, 1, 7, 1, 30, tzinfo=UTC)
+    plain = _worst_day(at, own=False) if previous else _longest_bare(at, "districts")
+    own = _worst_day(at, own=True) if records else plain
+    top = tuple(range(districts - 13, districts))
     entries = tuple(
         DistrictForecast(
             district=i,
-            time_zone="America/North_Dakota/New_Salem",
-            neighbors=tuple(range(max(0, i - 12), i)) if i >= 12 else tuple(range(i + 1, i + 13)),
+            time_zone=LONGEST_ZONE,
+            neighbors=tuple(n for n in top if n != i)[:12],
             days=(own, own) if i < with_record else (plain, plain),
         )
         for i in range(districts)
+    )
+    table = tuple(
+        _worst_day(at, own=True, minutes=30 + k)
+        if records
+        else _worst_day(at, own=False, of="private_schools", minutes=30 + k)
+        if previous
+        else _bare_outlook(at, k)
+        for k in range(outlooks)
+    )
+    first = DEPLOYED_SCHOOLS - schools
+    private = tuple(
+        SchoolForecast(
+            school=first + i,
+            zone=i if i < MAX_ZONES else 10 + i % (MAX_ZONES - 10),
+            neighbors=tuple(range(districts - MAX_SCHOOL_NEIGHBORS, districts)),
+            days=(
+                (outlooks - 1 - (2 * i) % outlooks, outlooks - 1 - (2 * i + 1) % outlooks)
+                if i < outlooks
+                else (outlooks - 1, outlooks - 2)
+            ),
+        )
+        for i in range(schools)
     )
     return PredictionsFile(
         schema_version=1,
         generated_at=at,
         directory=DirectoryStamp(
-            generated_on=date(2026, 10, 14), schools=118_211, districts=districts
+            generated_on=date(2026, 10, 14), schools=DEPLOYED_SCHOOLS, districts=districts
         ),
         days=(day, day + timedelta(days=1)),
         districts=entries,
+        schools=private,
+        outlooks=table,
+        zones=LONGEST_ZONES[: min(schools, MAX_ZONES)],
     ).to_json_bytes()
 
 
+KEEPS_PREVIOUS: Final = 2000
+"""Up to this many distinct private outlooks, the file with every previous chance and no
+record days fits the worst case (above, the pass may leave the previous chances out)."""
+
+
 def test_the_worst_case_file_fits_the_size_budget() -> None:
-    """Every deployed district (18,227) under a warning on both days with a previous chance,
-    and every district the committed model gives a record to with a full record: the file must
-    still fit, or a storm over the whole country would darken every chance."""
+    """Every district and every private school of the committed model, and 5% more of each
+    (a new edition's growth), under a warning on both days, each day and outlook the longest:
+
+    * with no record days and no previous chances (:attr:`serve.Fit.NO_PREVIOUS`, the last
+      step that keeps the private schools) and as many distinct private outlooks as the
+      table holds, the file must fit whatever a learned file gives (it may give every
+      district an own base with 8 live days, and count private schools over the districts
+      around each one), so the size budget never takes a chance away;
+    * with no record days (:attr:`serve.Fit.NO_RECORDS`) and every previous chance, the file
+      fits with up to :data:`KEEPS_PREVIOUS` private outlooks;
+    * with the committed model alone (every district it gives a record to with a full one)
+      and as many outlooks, the whole file fits, so it keeps its record days."""
     model = artifact.load()
-    with_record = sum(1 for entry in model.districts.values() if entry.record)
-    worst = worst_case_file(18_227, with_record)
-    packed = check_budget(worst, SETTINGS)
-    assert len(worst) <= SETTINGS.budget_raw_bytes
-    assert packed <= SETTINGS.budget_gzip_bytes
+    districts = math.ceil(len(model.districts) * GROWTH)
+    with_record = math.ceil(sum(1 for entry in model.districts.values() if entry.record) * GROWTH)
+    schools = math.ceil(len(model.private) * GROWTH)
+    assert len(model.districts) >= 18_000
+    assert len(model.private) >= 22_000
+    least = worst_case_file(
+        districts, districts, schools=schools, outlooks=MAX_OUTLOOKS, records=False,
+        previous=False,
+    )  # fmt: skip
+    made = PredictionsFile.from_json_bytes(least)
+    assert len(made.outlooks) == MAX_OUTLOOKS
+    # The table's outlooks must be distinct; a day said open is a little longer than each:
+    # count that much more for every one.
+    at = made.generated_at
+    longest = len(_longest_bare(at, "private_schools").to_json_bytes())
+    short = min(len(item.to_json_bytes()) for item in made.outlooks)
+    assert 0 <= longest - short < 64
+    least += b" " * (MAX_OUTLOOKS * (longest - short))
+    bare = worst_case_file(
+        districts, districts, schools=schools, outlooks=KEEPS_PREVIOUS, records=False
+    )
+    committed = worst_case_file(districts, with_record, schools=schools, outlooks=KEEPS_PREVIOUS)
+    for worst in (least, bare, committed):
+        packed = check_budget(worst, SETTINGS)
+        assert len(worst) <= SETTINGS.budget_raw_bytes
+        assert packed <= SETTINGS.budget_gzip_bytes
     with pytest.raises(DarkError, match="size"):
-        check_budget(worst + b" " * (SETTINGS.budget_raw_bytes - len(worst) + 1), SETTINGS)
+        check_budget(bare + b" " * (SETTINGS.budget_raw_bytes - len(bare) + 1), SETTINGS)

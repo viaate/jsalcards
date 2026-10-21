@@ -10,9 +10,10 @@
  *   todayEverywhere, the glow's rule);
  * - its outlook: the chance of no school and of a delayed start today and
  *   tomorrow, in the district's own time zone, from predictions/latest.json,
- *   by its district, when the file has an entry for it, is no older than
- *   PREDICTIONS_FRESH_MS and is stamped no more than PREDICTIONS_AHEAD_MS
- *   ahead; none otherwise.
+ *   by its district (a private school, with no district, by its own entry in
+ *   the file's schools, in its own time zone), when the file has an entry for
+ *   it, is no older than PREDICTIONS_FRESH_MS and is stamped no more than
+ *   PREDICTIONS_AHEAD_MS ahead; none otherwise.
  *
  * A file for another directory, a stale file, or a school without its own
  * today (the overnight hours, without a time zone) give nothing rather than
@@ -25,10 +26,12 @@ import { Status } from '../types/generated';
 import type {
   ClosingsFile,
   CoveredFile,
+  DayForecast,
   DirectoryStamp,
   LocalDate,
   PredictionsFile,
   Reason,
+  SchoolForecast,
 } from '../types/generated';
 import { decodeDay, todayEverywhere } from './closings';
 import { forecastDetail, neighborsOf } from './forecast-detail';
@@ -133,12 +136,15 @@ function parseForecast(value: unknown): boolean {
   switch (day.state) {
     case 'no_threat':
       return true;
-    case 'forecast':
+    case 'forecast': {
+      // Every forecast carries its reasons list, even empty (contract: the one default the
+      // compact file keeps).
+      const reasons = day.reasons;
       return (
         isChance(day.p_no_school) &&
         isProbability(day.p_delay) &&
-        Array.isArray(day.reasons) &&
-        day.reasons.every(
+        Array.isArray(reasons) &&
+        reasons.every(
           (reason) =>
             typeof reason === 'number' &&
             Number.isInteger(reason) &&
@@ -146,6 +152,7 @@ function parseForecast(value: unknown): boolean {
             reason < REASON_COUNT,
         )
       );
+    }
     default:
       return false;
   }
@@ -175,7 +182,48 @@ export function parsePredictions(value: unknown): PredictionsFile | null {
     if (!isTimeZone(zone)) return null;
     if (!forecasts.every(parseForecast)) return null;
   }
-  return value as PredictionsFile;
+  return parseSchools(file, days.length) ? (value as PredictionsFile) : null;
+}
+
+/**
+ * The private schools' section (contract C3): each school once, sorted, with its time zone
+ * named by its place in the file's zones (each one this browser knows) and one outlook a day
+ * named by its place in the file's outlooks, each of which reads. A file without one has no
+ * private school's outlook.
+ */
+function parseSchools(file: Record<string, unknown>, days: number): boolean {
+  const schools = file.schools ?? [];
+  const outlooks = file.outlooks ?? [];
+  const zones = file.zones ?? [];
+  if (!Array.isArray(schools) || !Array.isArray(outlooks) || !Array.isArray(zones)) return false;
+  if (!outlooks.every(parseForecast) || !zones.every(isTimeZone)) return false;
+  let previous = -1;
+  for (const entry of schools as unknown[]) {
+    if (typeof entry !== 'object' || entry === null) return false;
+    const { school, zone, days: named } = entry as Record<string, unknown>;
+    if (!isIndex(school) || school <= previous) return false;
+    previous = school;
+    if (!isIndex(zone) || zone >= zones.length) return false;
+    if (!Array.isArray(named) || named.length !== days) return false;
+    if (!named.every((index) => isIndex(index) && index < outlooks.length)) return false;
+  }
+  return true;
+}
+
+/** A private school's entry in the file, by binary search (the schools are sorted). */
+export function schoolEntry(predictions: PredictionsFile, school: number): SchoolForecast | null {
+  const schools = predictions.schools ?? [];
+  let low = 0;
+  let high = schools.length;
+  while (low < high) {
+    const middle = (low + high) >>> 1;
+    const found = schools[middle];
+    if (found === undefined) return null;
+    if (found.school < school) low = middle + 1;
+    else if (found.school > school) high = middle;
+    else return found;
+  }
+  return null;
 }
 
 /** A school's status on one day, as its closings row gives it. */
@@ -320,6 +368,8 @@ export type Outlook = {
 export interface OutlookInput {
   /** The school's district position, or null for a school outside a district. */
   readonly district: number | null;
+  /** The school's own position, for a private school's own outlook (it has no district). */
+  readonly school?: number | null;
   readonly directory: DirectoryStamp;
   /** Whether this build ships predictions at all. */
   readonly shipped: boolean;
@@ -329,7 +379,7 @@ export interface OutlookInput {
 }
 
 function dayOutlook(
-  value: PredictionsFile['districts'][number]['days'][number],
+  value: DayForecast,
   day: LocalDate,
   file: PredictionsFile,
   context: { readonly neighbors: readonly number[]; readonly timeZone: string },
@@ -354,17 +404,55 @@ function dayOutlook(
   }
 }
 
+/** The entry the outlook is read from: the district's, or a private school's own. */
+interface Entry {
+  readonly timeZone: string;
+  readonly days: readonly (DayForecast | undefined)[];
+  readonly neighbors: readonly number[];
+}
+
+function entryOf(input: OutlookInput, predictions: PredictionsFile): Entry | null {
+  const { district } = input;
+  const districts = predictions.directory.districts;
+  if (district !== null) {
+    const found = predictions.districts.find((item) => item.district === district);
+    if (found === undefined) return null;
+    return {
+      timeZone: found.time_zone,
+      days: found.days,
+      neighbors: neighborsOf(
+        (found as { readonly neighbors?: unknown }).neighbors,
+        district,
+        districts,
+      ),
+    };
+  }
+  const school = input.school ?? null;
+  if (school === null) return null;
+  const found = schoolEntry(predictions, school);
+  if (found === null) return null;
+  const outlooks = predictions.outlooks ?? [];
+  const timeZone = (predictions.zones ?? [])[found.zone];
+  if (timeZone === undefined) return null;
+  return {
+    timeZone,
+    days: found.days.map((index) => outlooks[index]),
+    // A private school's districts next door: none of them is its own.
+    neighbors: neighborsOf((found as { readonly neighbors?: unknown }).neighbors, -1, districts),
+  };
+}
+
 export function schoolOutlook(input: OutlookInput): Outlook {
-  const { district, directory, shipped, predictions, now } = input;
-  if (!shipped || district === null) return null;
+  const { directory, shipped, predictions, now } = input;
+  if (!shipped || (input.district === null && (input.school ?? null) === null)) return null;
   if (predictions === null || !sameStamp(predictions.directory, directory)) return null;
   const generated = parseInstant(predictions.generated_at);
   const age = generated === null ? Number.NaN : now.getTime() - generated.getTime();
   if (!(age <= PREDICTIONS_FRESH_MS && age >= -PREDICTIONS_AHEAD_MS)) return null;
-  const entry = predictions.districts.find((item) => item.district === district);
-  if (entry === undefined) return null;
-  // The district's own today: its evening is still today, however late it is in the east.
-  const timeZone = entry.time_zone;
+  const entry = entryOf(input, predictions);
+  if (entry === null) return null;
+  // The unit's own today: its evening is still today, however late it is in the east.
+  const { timeZone, neighbors } = entry;
   const today = schoolToday(now, timeZone);
   const at = today === null ? -1 : predictions.days.indexOf(today);
   const first = entry.days[at];
@@ -372,11 +460,6 @@ export function schoolOutlook(input: OutlookInput): Outlook {
   const second = entry.days[at + 1];
   const firstDay = predictions.days[at] ?? '';
   const secondDay = predictions.days[at + 1] ?? nextDay(firstDay);
-  const neighbors = neighborsOf(
-    (entry as { readonly neighbors?: unknown }).neighbors,
-    district,
-    predictions.directory.districts,
-  );
   const context = { neighbors, timeZone };
   return {
     today: dayOutlook(first, firstDay, predictions, context),

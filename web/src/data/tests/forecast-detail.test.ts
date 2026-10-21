@@ -279,9 +279,40 @@ describe('a forecast’s chance section parts', () => {
       alert: null,
       borrowed: false,
       live: false,
+      of: 'districts',
     });
     ((pooled.why as Json).base as Json).scope = 'planet';
     expect(read(pooled).why).toBeNull();
+  });
+
+  it('reads a base pooled over private schools, and drops one over anything else', () => {
+    const pooled = night();
+    (pooled.why as Json).base = {
+      kind: 'pooled',
+      scope: 'state',
+      points: 30,
+      of: 'private_schools',
+    };
+    expect(read(pooled).why?.base).toEqual({
+      kind: 'pooled',
+      scope: 'state',
+      points: 30,
+      alert: null,
+      borrowed: false,
+      live: false,
+      of: 'private_schools',
+    });
+    ((pooled.why as Json).base as Json).of = 'charters';
+    expect(read(pooled).why).toBeNull();
+  });
+
+  it('reads a said open line only as taking points away', () => {
+    const said = night();
+    (said.why as Json).base = { kind: 'pooled', scope: 'state', points: 38 };
+    (said.why as Json).reasons = [{ kind: 'said_open', points: -37 }];
+    expect(read(said).why?.reasons).toEqual([{ kind: 'said_open', points: -37 }]);
+    ((said.why as Json).reasons as Json[])[0] = { kind: 'said_open', points: 5 };
+    expect(read(said).why).toBeNull();
   });
 
   it('reads which recorded days a base counts, and drops a base that does not say', () => {
@@ -295,7 +326,8 @@ describe('a forecast’s chance section parts', () => {
       live: false,
     };
     expect(read(lent).why?.base).toMatchObject({ kind: 'pooled', borrowed: true, live: false });
-    // Without it the sentence could name the wrong days: no why at all.
+    // A compact file leaves a false flag out: missing reads as not borrowed. A flag that is
+    // there but not a boolean could name the wrong days: no why at all.
     for (const kind of ['pooled', 'alert', 'similar_days']) {
       const bare = night();
       (bare.why as Json).base = {
@@ -304,7 +336,7 @@ describe('a forecast’s chance section parts', () => {
         points: 90,
         alert: 'winter_storm_warning',
       };
-      expect(read(bare).why, kind).toBeNull();
+      expect(read(bare).why?.base, kind).toMatchObject({ kind, borrowed: false, live: false });
       ((bare.why as Json).base as Json).borrowed = 'yes';
       expect(read(bare).why, kind).toBeNull();
     }
@@ -320,10 +352,12 @@ describe('a forecast’s chance section parts', () => {
       const live = night();
       (live.why as Json).base = { ...base, live: true };
       expect(read(live).why?.base, base.kind).toMatchObject({ kind: base.kind, live: true });
-      // Without it a sentence could call days read live recorded days: no why at all.
+      // A compact file leaves a false flag out: missing reads as the archive's recorded days.
+      // A flag that is there but not a boolean could call days read live recorded days: no
+      // why at all.
       const bare = night();
       (bare.why as Json).base = { ...base };
-      expect(read(bare).why, base.kind).toBeNull();
+      expect(read(bare).why?.base, base.kind).toMatchObject({ kind: base.kind, live: false });
       ((bare.why as Json).base as Json).live = 'yes';
       expect(read(bare).why, base.kind).toBeNull();
     }

@@ -311,6 +311,6 @@ def test_memory_keeps_an_alert_that_left_the_feed_until_it_was_last_seen() -> No
 def test_ugc_index_places_schools_in_zones() -> None:
     lon, lat = world.lon_lat()
     index = UgcIndex.build(lon, lat, world.ugc_areas())
-    assert index.reached(["MOZ028"]).tolist() == [0, 1, 2, 3, 4, 7]
-    assert index.reached(["KSZ104", "UTZ105"]).tolist() == [5, 6]
+    assert index.reached(["MOZ028"]).tolist() == [0, 1, 2, 3, 4, 7, 8]
+    assert index.reached(["KSZ104", "UTZ105"]).tolist() == [5, 6, 9]
     assert index.reached(["XXZ000"]).size == 0

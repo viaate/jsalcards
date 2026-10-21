@@ -2144,7 +2144,7 @@ test.describe('with data staged', () => {
       `${copy.reason.ice} · ${format.posted(new Date('2026-01-12T12:02:00Z'), 'America/Chicago', SYNTHETIC_NOW)}`,
     );
     await expect(panel.locator('.status .glyph.is-delayed')).toHaveCount(1);
-    // A private school has no district history to give a chance: there is no chance card.
+    // The made-up chances file gives Pembroke Hill no entry of its own: there is no chance card.
     await expect(panel.locator('.outlook')).toHaveCount(0);
     await expect(panel.locator('.chance')).toHaveCount(0);
     await expect(panel.locator('.fact dt')).toHaveText([
@@ -2688,7 +2688,7 @@ test.describe('with data staged', () => {
     };
     expect(await bottomOf('.head')).toBeLessThan(height);
     expect(await bottomOf('.status')).toBeLessThan(height);
-    // A private school has no district history to give a chance: no chance card.
+    // The made-up chances file gives Pembroke Hill no entry of its own: no chance card.
     await expect(panel.locator('.outlook')).toHaveCount(0);
     expect((await panel.locator('.actions').boundingBox())?.y).toBeGreaterThan(
       await bottomOf('.status'),

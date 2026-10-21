@@ -55,6 +55,13 @@ class ModelSettings(_Settings):
     floor: float = Field(gt=0, lt=0.5)
     ceiling: float = Field(gt=0.5, lt=1)
     record_days: int = Field(ge=1, le=8)
+    private_level_min_days: int = Field(ge=1)
+    """The private schools' chain names a place below the nation only with this many labeled
+    private school-days (contract C3): private lists come a storm day at a time."""
+
+    def private(self) -> "ModelSettings":
+        """The settings of the private schools' chain."""
+        return self.model_copy(update={"level_min_days": self.private_level_min_days})
 
 
 class BacktestSettings(_Settings):
@@ -87,6 +94,7 @@ class ServeSettings(_Settings):
     check_minutes: int = Field(ge=1)
     min_gap_minutes: int = Field(ge=1)
     grid_minutes: tuple[int, ...] = Field(min_length=1)
+    opens_max_age_minutes: int = Field(ge=1)
 
 
 class LearnSettings(_Settings):

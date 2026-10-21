@@ -124,6 +124,42 @@ def neighbors(
     }
 
 
+def districts_near(  # noqa: PLR0913, PLR0917 - the schools, the ones asked about, the reach
+    lon: npt.NDArray[np.float64],
+    lat: npt.NDArray[np.float64],
+    district: npt.NDArray[np.int64],
+    asked: npt.NDArray[np.int64],
+    miles: float,
+    limit: int = MAX_NEIGHBORS,
+) -> list[tuple[int, ...]]:
+    """For each school position in ``asked``, the districts with a school within ``miles`` of
+    it, nearest first (ties by index), at most ``limit`` (a private school's districts next
+    door). ``district`` below 0 is a school no district counts."""
+    keep = np.flatnonzero(district >= 0)
+    found: list[tuple[int, ...]] = [() for _ in range(asked.size)]
+    if keep.size == 0 or asked.size == 0:
+        return found
+    points = _unit_vectors(lon[keep], lat[keep])
+    owner = district[keep]
+    tree = cKDTree(points)
+    radius = _chord(miles)
+    query = _unit_vectors(lon[asked], lat[asked])
+    for first in range(0, len(query), _CHUNK):
+        block = query[first : first + _CHUNK]
+        for offset, hits in enumerate(tree.query_ball_point(block, radius)):
+            if not hits:
+                continue
+            index = np.asarray(hits, dtype=np.int64)
+            chord = np.linalg.norm(points[index] - block[offset], axis=1)
+            best: dict[int, float] = {}
+            for d, c in zip(owner[index].tolist(), chord.tolist(), strict=True):
+                if c < best.get(d, np.inf):
+                    best[d] = c
+            ranked = sorted(best, key=lambda d: (best[d], d))
+            found[first + offset] = tuple(ranked[:limit])
+    return found
+
+
 def majority(values: Sequence[str | None]) -> str | None:
     """The most common value that is not ``None`` (ties to the smallest), or ``None``."""
     counted = Counter(value for value in values if value is not None)

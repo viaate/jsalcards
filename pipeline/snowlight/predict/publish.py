@@ -103,6 +103,7 @@ class Dark(StrEnum):
     SIZE = "size"
     READ_BACK = "read_back"
     DAY_FILE = "day_file_unreadable"
+    OPENS = "opens_unreadable"
     MEMORY = "alert_memory"
     HELD = "held"
 

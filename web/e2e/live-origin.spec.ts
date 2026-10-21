@@ -85,15 +85,19 @@ const SCHOOLS = [
   { id: '290000000003', name: 'Gamma High', lon: -94.65, lat: 39.0 },
   { id: '290000000004', name: 'Delta Elementary', lon: -94.58, lat: 39.1 },
 ] as const;
-const STAMP = { generated_on: '2026-09-25', schools: SCHOOLS.length, districts: 1 };
+/** SYNTHETIC: a made-up private school near them, outside any district, outside the ZIP code. */
+const PRIVATE = { id: 'A9999999', name: 'Epsilon Academy', lon: -94.7, lat: 38.95 } as const;
+/** Every school in the made-up directory: the four public ones, then the private one. */
+const ALL = [...SCHOOLS, PRIVATE] as const;
+const STAMP = { generated_on: '2026-09-25', schools: ALL.length, districts: 1 };
 
 function meta(): string {
   return JSON.stringify({
     schema_version: 1,
     generated_on: STAMP.generated_on,
-    count: SCHOOLS.length,
-    ids: SCHOOLS.map((school) => school.id),
-    names: SCHOOLS.map((school) => school.name),
+    count: ALL.length,
+    ids: ALL.map((school) => school.id),
+    names: ALL.map((school) => school.name),
     districts: { ids: ['2900000'], names: ['Made-up District'] },
     school_years: { public: '2024-2025', private: '2023-2024' },
   });
@@ -101,18 +105,20 @@ function meta(): string {
 
 /** The directory's points file (src/data/directory.ts): a header, then 13 bytes a school. */
 function points(): Buffer {
-  const bytes = Buffer.alloc(16 + 13 * SCHOOLS.length);
+  const bytes = Buffer.alloc(16 + 13 * ALL.length);
   bytes.write('SLPT', 0, 'latin1');
   bytes.writeUInt16LE(1, 4);
   bytes.writeUInt16LE(13, 6);
-  bytes.writeUInt32LE(SCHOOLS.length, 8);
+  bytes.writeUInt32LE(ALL.length, 8);
   bytes.writeUInt32LE(STAMP.districts, 12);
-  SCHOOLS.forEach((school, i) => {
+  ALL.forEach((school, i) => {
     const offset = 16 + 13 * i;
+    const own = school === PRIVATE;
     bytes.writeInt32LE(Math.round(school.lon * 1e6), offset);
     bytes.writeInt32LE(Math.round(school.lat * 1e6), offset + 4);
-    bytes.writeUInt32LE(0, offset + 8);
-    bytes.writeUInt8(0, offset + 12);
+    // The private school: no district (0xFFFFFFFF), the private flag (0x01).
+    bytes.writeUInt32LE(own ? 0xffffffff : 0, offset + 8);
+    bytes.writeUInt8(own ? 0x01 : 0, offset + 12);
   });
   return bytes;
 }
@@ -130,13 +136,13 @@ function detailsIndex(): string {
 
 /** SYNTHETIC: the four made-up schools' records, at one made-up address. */
 function detailsShard(): string {
-  const rows = SCHOOLS.map((school) => [
+  const rows = ALL.map((school) => [
     school.id,
     school.name,
-    0,
-    0,
-    '2900000',
-    'Made-up District',
+    school === PRIVATE ? 0x01 : 0,
+    school === PRIVATE ? null : 0,
+    school === PRIVATE ? null : '2900000',
+    school === PRIVATE ? null : 'Made-up District',
     '1 Main St',
     'Kansas City',
     'MO',
@@ -229,10 +235,16 @@ const BLANK = closings('2026-01-12T12:52:00Z', []);
  * from those overrides through its resolver, merge and publisher, and checks it there
  * (pipeline/tests/live/test_overrides.py), so the two cannot drift apart.
  */
-const MANUAL = readFileSync(
-  path.join(WEB, '../pipeline/tests/live/golden/synthetic_manual_closings.json'),
-  'utf8',
-);
+/** The pipeline's golden manual file, stamped with this directory (its fifth school added). */
+const MANUAL = JSON.stringify({
+  ...(JSON.parse(
+    readFileSync(
+      path.join(WEB, '../pipeline/tests/live/golden/synthetic_manual_closings.json'),
+      'utf8',
+    ),
+  ) as Record<string, unknown>),
+  directory: STAMP,
+});
 const MANUAL_SET_AT = new Date('2026-01-12T12:40:00Z');
 /** The site's own file, which the page must never read: Delta closed, newer than all. */
 const SITE_OWN = closings('2026-01-12T13:30:00Z', [[3, 0]]);
@@ -241,15 +253,45 @@ const SITE_OWN = closings('2026-01-12T13:30:00Z', [[3, 0]]);
  * SYNTHETIC: a predictions file made at 6:50 AM, with `districts` (none: no chance for any
  * school, so the panels show none).
  */
-function predictions(districts: readonly unknown[] = [], at = '2026-01-12T12:50:00Z'): string {
+function predictions(
+  districts: readonly unknown[] = [],
+  at = '2026-01-12T12:50:00Z',
+  privateSchools: {
+    schools: readonly unknown[];
+    outlooks: readonly unknown[];
+    zones: readonly string[];
+  } | null = null,
+): string {
   return JSON.stringify({
     schema_version: 1,
     generated_at: at,
     directory: STAMP,
     days: [TODAY, '2026-01-13'],
     districts,
+    ...privateSchools,
   });
 }
+
+/**
+ * SYNTHETIC: the private school's own day under the made-up warning (contract C3): its base
+ * alone, counted over the private schools near it. Written compact, as the pipeline writes it:
+ * false flags left out, and its reasons list kept (always written, even when empty).
+ */
+const PRIVATE_FORECAST = {
+  state: 'forecast',
+  p_no_school: 0.42,
+  p_delay: 0.05,
+  reasons: [0],
+  why: {
+    base: {
+      kind: 'pooled',
+      points: 42,
+      scope: 'nearby',
+      alert: 'winter_storm_warning',
+      of: 'private_schools',
+    },
+  },
+};
 
 /** SYNTHETIC: a winter storm warning day for the made-up district, from its own record. */
 const STORM_FORECAST = {
@@ -829,6 +871,41 @@ for (const [device, options] of DEVICES) {
       await expect(panel.locator('.number')).toHaveText('37%', SETTLE);
       expect(area.problems).toEqual([]);
       await area.context.close();
+    });
+
+    test('a private school panel shows its own chance from the live root, counted over private schools', async ({
+      browser,
+    }) => {
+      const { live } = theSite();
+      live.body = closings('2026-01-12T12:42:00Z', []);
+      // The district's own chance is 37%; the private school's own is 42%, from the shared
+      // outlooks by its place in the directory.
+      live.predictions = predictions(
+        [{ district: 0, time_zone: ZONE, days: [STORM_FORECAST, STORM_FORECAST] }],
+        '2026-01-12T12:50:00Z',
+        {
+          schools: [{ school: ALL.indexOf(PRIVATE), zone: 0, days: [0, 0] }],
+          outlooks: [PRIVATE_FORECAST],
+          zones: [ZONE],
+        },
+      );
+      const school = await visit(browser, options, { query: `?school=${PRIVATE.id}` });
+      const panel = school.page.locator('aside.detail');
+      await expect(panel.locator('h2')).toHaveText(PRIVATE.name, SETTLE);
+      await expect(panel.locator('.kind')).toContainText(copy.detail.privateSchool);
+      const section = panel.locator('.chance');
+      await expect(section.locator('.number')).toHaveText('42%', SETTLE);
+      await expect(section.locator('.meaning')).toContainText(chanceFormat.chanceOn(TODAY));
+      await expect(section.locator('.why-title')).toHaveText(chanceFormat.howWeGot(0.42));
+      // Its base counts private schools only, around its own name.
+      await expect(section.locator('.sum > li').first()).toContainText(
+        `Private schools near ${PRIVATE.name}`,
+      );
+      await expect(section.locator('.sum > li').first()).toContainText(
+        'recorded days with a winter storm warning',
+      );
+      expect(school.problems).toEqual([]);
+      await school.context.close();
     });
 
     test('a chance file over 90 minutes old shows no chance, a fresh one shows it, and a blank one takes it away', async ({

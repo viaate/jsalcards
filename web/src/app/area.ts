@@ -12,11 +12,11 @@
  * - a status posted for that day decides it: closed or remote is no school
  *   (100, as a chance of no school counts both), a delayed start or an early
  *   dismissal is school (0);
- * - otherwise its district's chance, where its own panel shows that chance
- *   for that day;
- * - otherwise, where its district's forecast says no weather threat that
- *   day, nothing (0): the area's chance is over all its schools, and leaving
- *   the ones with no threat out would raise it;
+ * - otherwise its district's chance (a private school's own, contract C3),
+ *   where its own panel shows that chance for that day;
+ * - otherwise, where its district's (or its own) forecast says no weather
+ *   threat that day, nothing (0): the area's chance is over all its schools,
+ *   and leaving the ones with no threat out would raise it;
  * - otherwise it is not counted, and the panel says how many are not.
  *
  * A school with no student count weighs nothing, so it is not counted either,
@@ -246,13 +246,14 @@ export function areaChance(
   const outlooks: Outlook[] = members.map(({ record }) =>
     schoolOutlook({
       district: record.district?.index ?? null,
+      school: record.district === null ? record.index : null,
       directory: record.directory,
       shipped,
       predictions: live.predictions,
       now,
     }),
   );
-  // A school outside a district has no time zone of its own: the area's, from its districts.
+  // A school with no outlook of its own: the area's zone, from the outlooks there are.
   const areaZone = outlooks.find((outlook) => outlook !== null)?.timeZone ?? null;
   if (areaZone === null) return null;
   const days = members.map(({ record }, i) => {
@@ -367,14 +368,18 @@ export function areaChance(
           return {
             key: decider.key,
             number: format.chance(count.chance),
-            text: areaFormat.decides(decider.name, decider.schools, of),
+            text: decider.school
+              ? areaFormat.decidesItself(decider.name)
+              : areaFormat.decides(decider.name, decider.schools, of),
           };
         }
         if (count.how === 'clear') {
           return {
             key: decider.key,
             number: areaFormat.share(false),
-            text: areaFormat.noThreat(decider.name, decider.schools, of, day),
+            text: decider.school
+              ? areaFormat.schoolNoThreat(decider.name, day)
+              : areaFormat.noThreat(decider.name, decider.schools, of, day),
           };
         }
         return {

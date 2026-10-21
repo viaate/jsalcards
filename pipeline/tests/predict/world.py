@@ -42,7 +42,13 @@ SCHOOLS: tuple[tuple[float, float, int | None, int], ...] = (
     (-94.68, 38.95, 0, 0),
     (-111.89, 40.76, 4, 0),
     (-94.59, 39.09, None, 1),  # a private school
+    (-94.60, 39.08, None, 1),  # a private school next to it
+    (-111.90, 40.75, None, 1),  # a private school in Utah
+    (-149.90, 61.20, None, 1),  # a private school in Alaska: outside the contiguous states
 )
+FIRST_PRIVATE: Final = 7
+PRIVATE_IDS: Final = ("A0000007", "A0000008", "A0000009", "A0000010")
+"""The private schools' made-up NCES ids (schools 7 to 10)."""
 STAMP = DirectoryStamp(generated_on=date(2026, 10, 14), schools=len(SCHOOLS), districts=5)
 ZONES = {
     "2900001": "America/Chicago",
@@ -75,7 +81,7 @@ def meta_bytes() -> bytes:
         "schema_version": 1,
         "generated_on": STAMP.generated_on.isoformat(),
         "count": len(SCHOOLS),
-        "ids": [f"{i:012d}" for i in range(1, len(SCHOOLS) + 1)],
+        "ids": school_ids(),
         "names": [f"School {i}" for i in range(1, len(SCHOOLS) + 1)],
         "districts": {"ids": list(DISTRICTS), "names": [f"District {i}" for i in range(5)]},
         "school_years": {"private": "2023-2024", "public": "2024-2025"},
@@ -83,9 +89,14 @@ def meta_bytes() -> bytes:
     return json.dumps(value, sort_keys=True, separators=(",", ":")).encode()
 
 
+def school_ids() -> list[str]:
+    """Every school's id: the public ones' (12 digits), then the private ones'."""
+    return [f"{i:012d}" for i in range(1, FIRST_PRIVATE + 1)] + list(PRIVATE_IDS)
+
+
 def directory() -> DeployedDirectory:
     """The deployed directory."""
-    return DeployedDirectory(STAMP, DISTRICTS, points())
+    return DeployedDirectory(STAMP, DISTRICTS, points(), school_ids=tuple(school_ids()))
 
 
 def counts(n_none: int = 0, y_none: int = 0, n_snow: int = 0, y_snow: int = 0) -> dict[str, Any]:
@@ -120,8 +131,31 @@ SETTINGS: Final = Settings(
 """The model settings of the synthetic world (the shipped rules, smaller minimums)."""
 
 
-def model(*, with_counts: bool = True) -> ModelArtifact:
-    """A model: district 1 has an own snow record, district 2 a short one, the others none."""
+def private_models(*, with_counts: bool = True) -> dict[str, DistrictModel]:
+    """The private schools' places and counts: the first Kansas City private school has its
+    own snow record, its neighbor a short one; Utah's and Alaska's none."""
+    found: dict[str, DistrictModel] = {}
+    places = (("MO", "29095", "America/Chicago"), ("MO", "29095", "America/Chicago"),
+              ("UT", "49035", "America/Denver"), ("AK", "02020", "America/Anchorage"))  # fmt: skip
+    for i, (school, (state, county, zone)) in enumerate(zip(PRIVATE_IDS, places, strict=True)):
+        extra: dict[str, Any] = {}
+        if with_counts and i == 0:
+            extra = counts(n_none=12, y_none=0, n_snow=6, y_snow=6)
+            extra["record"] = {
+                "snow_warning": (
+                    RecordDay(day=date(2024, 1, 9), did="closed"),
+                    RecordDay(day=date(2025, 1, 6), did="closed"),
+                )
+            }
+        elif with_counts and i == 1:
+            extra = counts(n_none=4, y_none=0, n_snow=3, y_snow=2)
+        found[school] = DistrictModel(state=state, county=county, time_zone=zone, **extra)
+    return found
+
+
+def model(*, with_counts: bool = True, private: bool = True) -> ModelArtifact:
+    """A model: district 1 has an own snow record, district 2 a short one, the others none;
+    the private schools as :func:`private_models` (none with ``private`` false)."""
     strengths: dict[str, dict[str, float]] = {level: dict.fromkeys(GROUPS, 4.0) for level in LEVELS}
     districts: dict[str, DistrictModel] = {}
     for i, leaid in enumerate(DISTRICTS):
@@ -150,6 +184,9 @@ def model(*, with_counts: bool = True) -> ModelArtifact:
         settings=SETTINGS,
         strengths={"no_school": strengths, "delay": strengths},
         districts=districts,
+        private=private_models(with_counts=with_counts) if private else {},
+        private_strengths={"no_school": strengths, "delay": strengths} if private else {},
+        private_labeled_days=25 if private and with_counts else 0,
     )
 
 

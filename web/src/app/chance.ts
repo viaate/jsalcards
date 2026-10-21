@@ -947,6 +947,7 @@ function reasonInput(
       };
     case 'icy_roads':
     case 'ice':
+    case 'said_open':
       return reason;
   }
 }

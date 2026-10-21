@@ -102,6 +102,37 @@ def eligible_schools(schools: pl.DataFrame) -> pl.DataFrame:
     )
 
 
+def private_schools(schools: pl.DataFrame) -> pl.DataFrame:
+    """The private schools labeled as their own units (contract C3, spec c.1 "school type"):
+    every private school that is not fully virtual. Each is its own unit, as a district is:
+    its one school lit closed or remote is a day with no school."""
+    flags = pl.col("kind_flags").cast(pl.Int32)
+    return schools.filter((pl.col("kind") == "private") & ((flags & VIRTUAL_FLAG) == 0))
+
+
+def private_table(schools: pl.DataFrame, zone_of_school: Mapping[int, str]) -> pl.DataFrame:
+    """Per private school unit (its NCES id): its state, county and zone, as
+    :func:`district_table` gives a district's (``district`` holds the school's id, so the
+    pooled chain and the labels read both tables alike)."""
+    found = private_schools(schools).sort("id")
+    return pl.DataFrame(
+        {
+            "district": found["id"].to_list(),
+            "state": found["state"].to_list(),
+            "county": found["county_fips"].to_list(),
+            "time_zone": [zone_of_school.get(int(index)) for index in found["index"].to_list()],
+            "eligible": [1] * found.height,
+        },
+        schema={
+            "district": pl.String,
+            "state": pl.String,
+            "county": pl.String,
+            "time_zone": pl.String,
+            "eligible": pl.Int64,
+        },
+    )
+
+
 def district_table(schools: pl.DataFrame, zone_of_school: Mapping[int, str]) -> pl.DataFrame:
     """Per district (LEAID) with a school in the directory: its state, its schools' most
     common county and zone, and its eligible school count. ``zone_of_school`` maps a
@@ -199,8 +230,9 @@ def history_places(
 
 def weather_history(
     places: HistoryPlaces, schools: pl.DataFrame, config: PredictConfig
-) -> tuple[pl.DataFrame, dict[str, object]]:
-    """Each (district, day) whose class is above ``none``, and the counts behind it."""
+) -> tuple[pl.DataFrame, pl.DataFrame, dict[str, object]]:
+    """Each (district, day) whose class is above ``none``, each (private school, day) the same
+    way (its own school's class), and the counts behind them."""
     weather = config.weather
     window = Window(weather.window_from, weather.window_until, weather.snapshot_hour)
     table = district_table(schools, places.zone_of_school)
@@ -208,6 +240,10 @@ def weather_history(
     eligible = eligible_schools(schools)
     district_of_school = eligible.select(
         pl.col("index").cast(pl.Int64).alias("school"), pl.col("district_id").alias("district")
+    )
+    private = private_schools(schools)
+    private_of_school = private.select(
+        pl.col("index").cast(pl.Int64).alias("school"), pl.col("id").alias("district")
     )
     zone_by_index: list[str | None] = [None] * (
         schools.height and int(schools["index"].to_numpy().max()) + 1
@@ -218,6 +254,8 @@ def weather_history(
         strict=True,
     ):
         zone_by_index[index] = zone_of_district.get(district)
+    for index in private_of_school["school"].to_list():
+        zone_by_index[index] = places.zone_of_school.get(index)
     rows = [
         row
         for season, path in sorted(places.files.items())
@@ -225,6 +263,7 @@ def weather_history(
     ]
     classes = school_day_classes(rows, places.reach, zone_by_index, window)
     found = district_day_classes(classes.frame, district_of_school, weather.covered_share)
+    private_found = district_day_classes(classes.frame, private_of_school, weather.covered_share)
     stats: dict[str, object] = {
         "rows": classes.rows,
         "rows_unresolved": classes.rows_unresolved,
@@ -234,8 +273,12 @@ def weather_history(
             WeatherClass(int(value)).label: int(count)
             for value, count in found.group_by("weather").len().sort("weather").iter_rows()
         },
+        "private_days_by_class": {
+            WeatherClass(int(value)).label: int(count)
+            for value, count in private_found.group_by("weather").len().sort("weather").iter_rows()
+        },
     }
-    return found, stats
+    return found, private_found, stats
 
 
 # --- the archive --------------------------------------------------------------------------------
@@ -282,6 +325,11 @@ class ArchiveRun:  # pragma: no cover - the real archive
     """District to its market (:func:`district_markets`), once labeled."""
     eligible: frozenset[str] = frozenset()
     """The eligible schools' NCES ids (set before labeling): only their rows hold a label."""
+    private: frozenset[str] = frozenset()
+    """The private schools labeled as their own units (their NCES ids; set before labeling)."""
+    settled_days: dict[date, DayLit] = field(default_factory=dict)
+    """Each day's :meth:`lit_for`, kept so the districts and the private schools are labeled
+    from one settling of the day."""
 
     def settle(self, day: date) -> object:
         """The replay step's :class:`~snowlight.replays.build.Settled` for ``day``."""
@@ -302,6 +350,9 @@ class ArchiveRun:  # pragma: no cover - the real archive
         read it dropped, unreadable or matched too little, never shows a district open)."""
         from snowlight.replays.build import Settled  # noqa: PLC0415
 
+        known = self.settled_days.get(day)
+        if known is not None:
+            return known
         settled = self.settle(day)
         assert isinstance(settled, Settled)  # noqa: S101
         kept = frozenset(
@@ -309,17 +360,28 @@ class ArchiveRun:  # pragma: no cover - the real archive
             for check in settled.reads
             if check.drop is None
         )
-        return DayLit(
+        found = DayLit(
             {sid: LitStatus(item.status, item.reason) for sid, item in settled.lit.items()},
             kept,
             self.listed_unlit(day, settled),
         )
+        self.settled_days[day] = found
+        return found
+
+    def unit_of(self, school: str, district: str | None) -> str | None:
+        """The labeled unit a school's row speaks for: its district (an eligible public
+        school), itself (a private school labeled as its own unit), or none."""
+        if district and school in self.eligible:
+            return district
+        if school in self.private:
+            return school
+        return None
 
     def listed_unlit(self, day: date, settled: object) -> frozenset[str]:
-        """The districts a row of ``day``'s window names (through an eligible school or the
-        district row) that the replay step did not light any eligible school of, unless it
-        dropped the row as being about another day or saying school is open
-        (:data:`QUIET_DROPS`)."""
+        """The units (districts and private schools) a row of ``day``'s window names (through
+        an eligible school, the district row, or the private school) that the replay step did
+        not light any eligible school of, unless it dropped the row as being about another day
+        or saying school is open (:data:`QUIET_DROPS`)."""
         from snowlight.listed.build import row_query  # noqa: PLC0415
         from snowlight.replays.build import DayInputs, Settled  # noqa: PLC0415
 
@@ -331,13 +393,13 @@ class ArchiveRun:  # pragma: no cover - the real archive
             for row, drop in settled.dropped
             if drop.value in QUIET_DROPS
         }
-        lit_districts: set[str] = set()
+        lit_units: set[str] = set()
         named: set[str] = set()
         directory = inputs.directory
         for school in settled.lit:
             found = directory.schools.get(school)
-            if found is not None and found.district_id and school in self.eligible:
-                lit_districts.add(found.district_id)
+            if found is not None and (unit := self.unit_of(school, found.district_id)):
+                lit_units.add(unit)
         rows, _reads = self.index.near(day)
         start, end = widest(day)
         for row in inputs.loaded.rows[rows]:
@@ -350,9 +412,9 @@ class ArchiveRun:  # pragma: no cover - the real archive
                 continue
             for school in (*outcome.direct, *outcome.via_district):
                 found = directory.schools.get(school)
-                if found is not None and found.district_id and school in self.eligible:
-                    named.add(found.district_id)
-        return frozenset(named - lit_districts)
+                if found is not None and (unit := self.unit_of(school, found.district_id)):
+                    named.add(unit)
+        return frozenset(named - lit_units)
 
     def audit(  # noqa: PLR0913, PLR0917 - one label and what it was read from
         self,
@@ -444,9 +506,15 @@ def widest(day: date) -> tuple[str, str]:
 
 
 def prepare_archive(
-    paths: TrainPaths, zone_of_district: Mapping[str, str], workers: int
+    paths: TrainPaths,
+    zone_of_district: Mapping[str, str],
+    workers: int,
+    zone_of_private: Mapping[str, str] | None = None,
 ) -> ArchiveRun:  # pragma: no cover - the real archive, the reader and the matcher
-    """Match the whole archive once with the landed matcher and status reader."""
+    """Match the whole archive once with the landed matcher and status reader. A row lists
+    the districts of the schools it names, and each private school of ``zone_of_private``
+    it names directly (a private school is its own unit)."""
+    privates = zone_of_private or {}
     from snowlight.listed.build import row_query  # noqa: PLC0415
     from snowlight.listed.cli import nws_counties  # noqa: PLC0415
     from snowlight.listed.evidence import LoadedRows, load_rows  # noqa: PLC0415
@@ -503,11 +571,15 @@ def prepare_archive(
             zone = zone_of_district.get(district)
             if zone is not None:
                 listings.append((row.source_id, district, _local_day(moment, zone)))
+        for school in sorted(set(outcome.direct)):
+            zone = privates.get(school)
+            if zone is not None:
+                listings.append((row.source_id, school, _local_day(moment, zone)))
     markets = {sid: market_of(station) for sid, station in registry.stations.items()}
     with (paths.archive / "reads.jsonl").open(encoding="utf-8") as handle:
         records = sorted(parse_reads(handle), key=lambda read: read.fetched_at)
     index = DayIndex(ordered, [row.fetched_at for row in rows], [read.fetched_at for read in reads])
-    return ArchiveRun(inputs, index, listings, markets, records)
+    return ArchiveRun(inputs, index, listings, markets, records, private=frozenset(privates))
 
 
 def _local_day(moment: datetime, zone: str) -> date:
@@ -552,22 +624,71 @@ def run_labels(  # noqa: PLR0913, PLR0917 - the archive, the directory and the s
         captures=captures,
         median_rows=median_rows,
     )
-    if days is None:
-        first = run.reads[0].fetched_at.date()
-        last = run.reads[-1].fetched_at.date()
-        days = list(school_days(max(first, date(config.labels.first_season, 8, 15)), last))
+    days = list(days) if days is not None else archive_days(run, config)
     labels = label_days(days, inputs, run.lit_for, config.labels)
     markets = district_markets(run.listings, run.market_of)
     run.markets = markets
     states = dict(zip(table["district"], table["state"], strict=True))
-    clustered = labels.with_columns(
+    return storm_absences(_clustered(labels, markets, states), config.labels.storm_absence_share)
+
+
+def archive_days(run: ArchiveRun, config: PredictConfig) -> list[date]:  # pragma: no cover
+    """Every school day of the archive's span."""
+    first = run.reads[0].fetched_at.date()
+    last = run.reads[-1].fetched_at.date()
+    return list(school_days(max(first, date(config.labels.first_season, 8, 15)), last))
+
+
+def _clustered(
+    labels: pl.DataFrame, markets: Mapping[str, str], states: Mapping[str, str]
+) -> pl.DataFrame:
+    return labels.with_columns(
         pl.col("district")
         .map_elements(
             lambda d: markets.get(d) or f"state {states.get(d, '?')}", return_dtype=pl.String
         )
         .alias("cluster")
     )
-    return storm_absences(clustered, config.labels.storm_absence_share)
+
+
+def run_private_labels(  # noqa: PLR0913, PLR0917 - the archive, the units and the settings
+    run: ArchiveRun,
+    table: pl.DataFrame,
+    weather: pl.DataFrame,
+    district_labels: pl.DataFrame,
+    config: PredictConfig,
+    days: Sequence[date] | None = None,
+) -> pl.DataFrame:  # pragma: no cover - the real archive
+    """Label every private school of ``table`` (:func:`private_table`) as its own unit, by
+    the districts' rules, from the same settled days. On a storm day, a private school absent
+    from the lists is unknown when at least half of the other labeled units of its market
+    (districts and private schools) had no school (``absent_in_storm``)."""
+    zone_of = {
+        unit: zone
+        for unit, zone in zip(table["district"], table["time_zone"], strict=True)
+        if zone is not None
+    }
+    run.private = frozenset(zone_of)
+    captures, median_rows = station_stats(run.reads)
+    inputs = LabelInputs(
+        eligible={unit: (unit,) for unit in zone_of},
+        zone_of=zone_of,
+        audience=audiences(run.listings, config.labels.audience_days),
+        reads=run.reads,
+        market_of=run.market_of,
+        weather={(unit, day): WeatherClass(int(value)) for unit, day, value in weather.iter_rows()},
+        district_of={unit: unit for unit in zone_of},
+        captures=captures,
+        median_rows=median_rows,
+    )
+    days = list(days) if days is not None else archive_days(run, config)
+    labels = label_days(days, inputs, run.lit_for, config.labels)
+    markets = run.markets or district_markets(run.listings, run.market_of)
+    states = dict(zip(table["district"], table["state"], strict=True))
+    mine = _clustered(labels, markets, states)
+    both = pl.concat([district_labels.select(mine.columns), mine], how="vertical")
+    judged = storm_absences(both, config.labels.storm_absence_share)
+    return judged.filter(pl.col("district").is_in(list(zone_of))).sort("district", "day")
 
 
 def labels_report(labels: pl.DataFrame, states: Mapping[str, str]) -> str:
@@ -701,14 +822,22 @@ def _record(labels: pl.DataFrame, keep: int) -> dict[str, dict[str, tuple[Record
     return found
 
 
-def fit_artifact(
-    labels: pl.DataFrame,
-    table: pl.DataFrame,
-    places: pool.Places,
-    config: PredictConfig,
-    directory_generated_on: date,
-) -> tuple[ModelArtifact, pool.Tuned, pool.Tuned]:
-    """Fit the strengths on every labeled season and keep every district's counts."""
+@dataclass(frozen=True, slots=True)
+class FitUnits:
+    """One chain's fit: each unit's place, counts and record, and the tuned strengths."""
+
+    units: dict[str, DistrictModel]
+    tuned: pool.Tuned
+    tuned_delay: pool.Tuned
+    labeled_days: int
+    seasons: tuple[int, ...]
+
+
+def fit_units(
+    labels: pl.DataFrame, table: pl.DataFrame, places: pool.Places, config: PredictConfig
+) -> FitUnits:
+    """Fit one chain (the districts', or the private schools' over private schools only):
+    the strengths on every labeled season, and every unit's counts and record."""
     settings = config.model
     usable = pool.usable_labels(labels, places)
     rows = pool.rows_from_labels(usable, places, "no_school")
@@ -724,12 +853,12 @@ def fit_artifact(
     y, n = tables.total()
     yd, nd = tables_delay.total()
     records = _record(usable, settings.record_days)
-    districts: dict[str, DistrictModel] = {}
+    units: dict[str, DistrictModel] = {}
     for i, record in enumerate(table.iter_rows(named=True)):
-        leaid = record["district"]
-        assert places.districts[i] == leaid  # noqa: S101 - same order by construction
+        unit = record["district"]
+        assert places.districts[i] == unit  # noqa: S101 - same order by construction
         labeled = n[i].sum() > 0
-        districts[leaid] = DistrictModel(
+        units[unit] = DistrictModel(
             state=record["state"],
             county=record["county"],
             time_zone=record["time_zone"],
@@ -737,14 +866,57 @@ def fit_artifact(
             n=tuple(int(v) for v in n[i]) if labeled else None,
             yd=tuple(int(v) for v in yd[i]) if labeled else None,
             nd=tuple(int(v) for v in nd[i]) if labeled else None,
-            record=records.get(leaid, {}),
+            record=records.get(unit, {}),
         )
+    return FitUnits(units, tuned, tuned_delay, len(rows), tuple(seasons))
+
+
+def private_places(table: pl.DataFrame, schools: pl.DataFrame, miles: float) -> pool.Places:
+    """The private chain's places (``table`` from :func:`private_table`): each private
+    school's state, region and county, and its nearby units the other private schools within
+    ``miles``."""
+    units = table["district"].to_list()
+    position = {unit: i for i, unit in enumerate(units)}
+    located = schools.filter(pl.col("id").is_in(units))
+    owner = np.array([position[s] for s in located["id"].to_list()], np.int64)
+    near = neighbors(
+        located["lon"].to_numpy().astype(np.float64),
+        located["lat"].to_numpy().astype(np.float64),
+        owner,
+        miles,
+    )
+    states = table["state"].to_list()
+    return pool.make_places(
+        units,
+        region=[REGION_OF.get(state) if state else None for state in states],
+        state=states,
+        county=table["county"].to_list(),
+        neighbors={units[d]: [units[e] for e in es] for d, es in near.items()},
+    )
+
+
+def fit_artifact(  # noqa: PLR0913 - the districts' fit and the private schools'
+    labels: pl.DataFrame,
+    table: pl.DataFrame,
+    places: pool.Places,
+    config: PredictConfig,
+    directory_generated_on: date,
+    *,
+    private: tuple[pl.DataFrame, pl.DataFrame, pool.Places] | None = None,
+) -> tuple[ModelArtifact, pool.Tuned, pool.Tuned]:
+    """Fit the strengths on every labeled season and keep every district's counts; with
+    ``private`` (its labels, :func:`private_table` and :func:`private_places`), the private
+    schools' chain too."""
+    settings = config.model
+    fit = fit_units(labels, table, places, config)
+    private_config = config.model_copy(update={"model": settings.private()})
+    private_fit = fit_units(*private, private_config) if private is not None else None
     artifact = ModelArtifact(
         schema_version=2,
         situations=SITUATION_KEYS,
         training=Training(
-            seasons=tuple(seasons),
-            labeled_days=len(rows),
+            seasons=fit.seasons,
+            labeled_days=fit.labeled_days,
             directory_generated_on=directory_generated_on,
         ),
         settings=Settings(
@@ -755,11 +927,22 @@ def fit_artifact(
             fallback=dict(sorted(settings.fallback.items())),
             floor=settings.floor,
             ceiling=settings.ceiling,
+            private_level_min_days=settings.private_level_min_days
+            if private_fit is not None
+            else None,
         ),
         strengths={
-            "no_school": tuned.strengths.as_json(),
-            "delay": tuned_delay.strengths.as_json(),
+            "no_school": fit.tuned.strengths.as_json(),
+            "delay": fit.tuned_delay.strengths.as_json(),
         },
-        districts=districts,
+        districts=fit.units,
+        private=private_fit.units if private_fit is not None else {},
+        private_strengths={
+            "no_school": private_fit.tuned.strengths.as_json(),
+            "delay": private_fit.tuned_delay.strengths.as_json(),
+        }
+        if private_fit is not None
+        else {},
+        private_labeled_days=private_fit.labeled_days if private_fit is not None else 0,
     )
-    return artifact, tuned, tuned_delay
+    return artifact, fit.tuned, fit.tuned_delay

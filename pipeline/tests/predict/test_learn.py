@@ -16,13 +16,15 @@ import numpy as np
 import polars as pl
 
 from predict import world
+from predict.test_publish import NOW, MemoryHost, feed, make_pass
 from predict.test_serve import index, storm
 from snowlight.live.history import BY, BY_HOLD, ChangeLog, Event, Shown
 from snowlight.live.history import Change as LogChange
 from snowlight.live.morning import ANY_KIND, MorningLog, Slot, slot_start
 from snowlight.live.state import pack
 from snowlight.predict import cli, learn
-from snowlight.predict.artifact import SITUATION_KEYS, Learned
+from snowlight.predict import serve as serve_module
+from snowlight.predict.artifact import SITUATION_KEYS, Learned, ModelArtifact
 from snowlight.predict.config import PredictConfig
 from snowlight.predict.labels import LitStatus
 from snowlight.predict.learn import (
@@ -47,11 +49,12 @@ from snowlight.predict.live_labels import (
     record_snapshots,
     snapshot_classes,
 )
+from snowlight.predict.opens import SaidOpen
 from snowlight.predict.serve import ServeError, ServeModel, build_model, district_classes
 from snowlight.predict.serve import forecast_file as made_file
 from snowlight.predict.situations import WeatherClass, Window
 from snowlight.schemas.live import DayIndex, DayTimeline
-from snowlight.schemas.predictions import AlertBase, Forecast
+from snowlight.schemas.predictions import MAX_OUTLOOKS, AlertBase, Forecast, PredictionsFile
 from snowlight.schemas.vocab import Reason, Status
 
 CFG = world.CONFIG.model_copy(
@@ -608,6 +611,248 @@ def test_honest_live_days_re_anchor_the_storm_level_and_swap_in() -> None:
     assert isinstance(before, Forecast)
     assert isinstance(before.why.base, AlertBase)
     assert not before.why.base.live
+
+
+LATEST = "v1/predictions/latest.json"
+
+
+def chances(data: bytes) -> list[object]:
+    """Every district's and private school's chances and whys in a file, in order."""
+    made = PredictionsFile.from_json_bytes(data)
+    days = [day for entry in made.districts for day in entry.days]
+    days += [day for entry in made.schools for day in made.outlook_of(entry)]
+    return [
+        (day.p_no_school, day.p_delay, day.reasons, day.why) if isinstance(day, Forecast) else day
+        for day in days
+    ]
+
+
+def test_a_pass_over_the_size_budget_steps_down_the_fit_ladder(capsys: Any) -> None:  # noqa: PLR0915 - each step in order
+    # B1 (S7-2 round 2): a learned file may give every district an own base with 8 live days,
+    # which the size budget does not hold under a storm over the whole country. Over the
+    # budget, the pass publishes every chance and why without the record days, then without
+    # private schools' previous chances, then without any previous chance, then (round 4)
+    # the districts alone, and goes dark only when even that is over.
+    learned = run_decide(store_of([honest(j) for j in range(30)])).learned
+    assert learned is not None
+    before = MemoryHost()
+    calm = make_pass(before, alerts=feed(alerts=0), directory=world.directory(), config=CFG,
+                     now=NOW - timedelta(minutes=30))  # fmt: skip
+    calm.learned = learned
+    assert cli.one_pass(calm) == 0
+
+    def storm_pass(budget: int | None = None) -> tuple[int, MemoryHost]:
+        host = MemoryHost()
+        host.files.update(before.files)
+        serve = CFG.serve.model_copy(update={"budget_raw_bytes": budget or 16_500_000})
+        run = make_pass(host, directory=world.directory(), config=CFG.model_copy(
+            update={"serve": serve}))  # fmt: skip
+        run.learned = learned
+        return cli.one_pass(run), host
+
+    def days_of(data: bytes) -> tuple[list[Forecast], list[Forecast]]:
+        made = PredictionsFile.from_json_bytes(data)
+        districts = [d for e in made.districts for d in e.days if isinstance(d, Forecast)]
+        return districts, [d for d in made.outlooks if isinstance(d, Forecast)]
+
+    capsys.readouterr()
+    found, host = storm_pass()
+    assert found == 0
+    whole = host.files[LATEST]
+    districts, schools = days_of(whole)
+    own = [d for d in districts if d.record is not None]
+    assert own
+    assert all(isinstance(d.why.base, AlertBase) and d.why.base.live for d in own)
+    assert any(d.previous is not None for d in districts)
+    assert any(d.previous is not None for d in schools)
+    assert "warning" not in capsys.readouterr().err
+
+    found, host = storm_pass(len(whole) - 1)
+    assert found == 0
+    bare = host.files[LATEST]
+    assert chances(bare) == chances(whole)
+    districts, schools = days_of(bare)
+    assert all(d.record is None for d in districts + schools)
+    assert any(d.previous is not None for d in schools)
+    assert f"({len(whole):,} bytes raw); published it with no record days\n" in (
+        capsys.readouterr().err
+    )
+
+    found, host = storm_pass(len(bare) - 1)
+    assert found == 0
+    mine = host.files[LATEST]
+    assert chances(mine) == chances(whole)
+    districts, schools = days_of(mine)
+    assert all(d.record is None for d in districts + schools)
+    assert any(d.previous is not None for d in districts)
+    assert all(d.previous is None for d in schools)
+    assert "published it with no record days or private schools' previous chances\n" in (
+        capsys.readouterr().err
+    )
+
+    found, host = storm_pass(len(mine) - 1)
+    assert found == 0
+    least = host.files[LATEST]
+    assert chances(least) == chances(whole)
+    districts, schools = days_of(least)
+    assert all(d.record is None and d.previous is None for d in districts + schools)
+    assert "published it with no record days or previous chances\n" in capsys.readouterr().err
+
+    # The districts alone, with their previous chances and no record days, are shorter than
+    # the least file with private schools here: the pass publishes them rather than go dark.
+    alone = PredictionsFile.from_json_bytes(whole)
+    found, host = storm_pass(len(least) - 1)
+    assert found == 0
+    districts_only = PredictionsFile.from_json_bytes(host.files[LATEST])
+    assert not districts_only.schools
+    assert not districts_only.outlooks
+    assert not districts_only.zones
+    assert [e.days for e in districts_only.districts] == [
+        tuple(d.model_copy(update={"record": None}) if isinstance(d, Forecast) else d
+              for d in e.days) for e in alone.districts
+    ]  # fmt: skip
+    assert "published it with no private schools or record days\n" in capsys.readouterr().err
+
+    found, host = storm_pass(len(host.files[LATEST]) - 1)
+    assert found == cli.EXIT_DARK
+    assert host.files == before.files
+    assert "dark (size: " in capsys.readouterr().err
+
+
+def counted_over_districts() -> ModelArtifact:
+    """SYNTHETIC: the world's model with no private school's counts, so the private chain holds
+    no situation and every private school is counted over the districts around it."""
+    return world.model().model_copy(
+        update={"private": world.private_models(with_counts=False), "private_labeled_days": 0}
+    )
+
+
+def test_a_private_outlook_table_too_long_steps_down_and_never_darkens(  # noqa: PLR0915 - each step
+    capsys: Any, monkeypatch: Any
+) -> None:
+    # B1 (S7-2 round 4): once a learned file re-anchors a situation the private schools are
+    # counted over the districts around them in, each school's nearby rates are its own, and
+    # previous chances multiply the (chance, previous) pairs past the shared table. The pass
+    # leaves out the private schools' previous chances, then publishes the districts alone;
+    # it never darkens the districts, and the schema's index check is never what stops it.
+    learned = run_decide(store_of([honest(j) for j in range(30)])).learned
+    assert learned is not None
+    anchored = build_model(world.directory(), counted_over_districts(), CFG,
+                           lambda _lon, _lat: None, learned)  # fmt: skip
+    assert anchored.private is not None
+    assert not any(anchored.private.of_private)
+    assert anchored.private.live[SNOW]
+    before = MemoryHost()
+    calm = make_pass(before, alerts=feed(alerts=0), directory=world.directory(), config=CFG,
+                     now=NOW - timedelta(minutes=30))  # fmt: skip
+    calm.learned, calm.model = learned, counted_over_districts
+    assert cli.one_pass(calm) == 0
+    # SYNTHETIC: the last file gave the second Kansas City school another chance today, so
+    # it and its neighbor share today's outlook but not its previous chance.
+    last = PredictionsFile.from_json_bytes(before.files[LATEST])
+    shared = last.outlooks[last.schools[0].days[0]]
+    assert isinstance(shared, Forecast)
+    assert last.schools[1].days[0] == last.schools[0].days[0]
+    other = shared.model_copy(update={
+        "p_no_school": 0.05, "why": shared.why.model_copy(update={
+            "base": shared.why.base.model_copy(update={"points": 5})})})  # fmt: skip
+    schools = list(last.schools)
+    schools[1] = schools[1].model_copy(update={"days": (len(last.outlooks), schools[1].days[1])})
+    before.files[LATEST] = last.model_copy(
+        update={"outlooks": (*last.outlooks, other), "schools": tuple(schools)}
+    ).to_json_bytes()
+
+    def storm_pass() -> tuple[int, bytes]:
+        host = MemoryHost()
+        host.files.update(before.files)
+        run = make_pass(host, directory=world.directory(), config=CFG)
+        run.learned, run.model = learned, counted_over_districts
+        found = cli.one_pass(run)
+        return found, host.files[LATEST]
+
+    capsys.readouterr()
+    found, whole = storm_pass()
+    assert found == 0
+    made = PredictionsFile.from_json_bytes(whole)
+    live = [d for d in made.outlooks if isinstance(d, Forecast) and d.why.base.live]
+    assert live
+    assert all(getattr(d.why.base, "of", None) == "districts" for d in live)
+    plain = {d.model_copy(update={"previous": None}) for d in made.outlooks}
+    assert len(plain) < len(made.outlooks)
+    assert "warning" not in capsys.readouterr().err
+
+    monkeypatch.setattr(serve_module, "MAX_OUTLOOKS", len(plain))
+    found, mine = storm_pass()
+    assert found == 0
+    assert chances(mine) == chances(whole)
+    kept = PredictionsFile.from_json_bytes(mine)
+    assert set(kept.outlooks) == plain
+    assert any(isinstance(d, Forecast) and d.previous is not None
+               for e in kept.districts for d in e.days)  # fmt: skip
+    assert (
+        f"the private schools name over {len(plain):,} distinct outlooks; published it with no "
+        "record days or private schools' previous chances\n"
+    ) in capsys.readouterr().err
+
+    monkeypatch.setattr(serve_module, "MAX_OUTLOOKS", len(plain) - 1)
+    found, alone = storm_pass()
+    assert found == 0
+    districts = PredictionsFile.from_json_bytes(alone)
+    assert not districts.schools
+    assert not districts.outlooks
+    assert not districts.zones
+    assert districts.districts == made.districts
+    assert "; published it with no private schools\n" in capsys.readouterr().err
+
+
+def test_a_pass_with_no_private_previous_chances_names_only_the_possible_outlooks() -> None:
+    # B1 (S7-2 round 4): with no previous chance for private schools, every outlook a pass can
+    # give them is one of serve.possible_outlooks (each school in every situation, scope and
+    # said-open form), counted before any pass; the table holds that many, here with the
+    # private schools counted over the districts around them under a learned anchor, and in
+    # every situation for every school, the day after or not, said open or not, and mixed.
+    learned = run_decide(store_of([honest(j) for j in range(30)])).learned
+    assert learned is not None
+    model = build_model(world.directory(), counted_over_districts(), CFG,
+                        lambda _lon, _lat: None, learned)  # fmt: skip
+    private = model.private
+    assert private is not None
+    days = (date(2026, 1, 7), date(2026, 1, 8))
+    possible = serve_module.possible_outlooks(private, days)
+    assert len(possible) <= MAX_OUTLOOKS
+    now = datetime(2026, 1, 7, 2, tzinfo=UTC)
+    every = frozenset(private.positions.tolist())
+    classes = np.zeros((len(model.directory.district_ids), 2), dtype=np.int64)
+    last: PredictionsFile | None = None
+    rng = np.random.default_rng(7)
+    forms = [
+        (np.full((len(private), 2), int(w)), after, said)
+        for w in WeatherClass
+        for after in (False, True)
+        for said in (False, True)
+    ]
+    forms += [(rng.integers(0, len(WeatherClass), size=(len(private), 2)), bool(after), False)
+              for after in rng.integers(0, 2, size=8)]  # fmt: skip
+    named: set[object] = set()
+    for n, (weather, after, said) in enumerate(forms):
+        found = made_file(
+            model,
+            classes,
+            days,
+            now + timedelta(minutes=n),
+            closed_on=lambda _day: None,
+            last=last,
+            private_classes=weather.astype(np.int64),
+            closed_schools=(lambda _day: every) if after else (lambda _day: None),
+            said=SaidOpen(schools=dict.fromkeys(days, every)) if said else SaidOpen(),
+            fit=serve_module.Fit.NO_PRIVATE_PREVIOUS,
+        )
+        assert set(found.outlooks) <= possible
+        named |= set(found.outlooks)
+        last = found
+    assert any(isinstance(d, Forecast) and d.why.base.live for d in named)
+    assert any(isinstance(d, Forecast) and d.why.reasons and d.why.reasons[0].kind == "said_open"
+               for d in named)  # fmt: skip
 
 
 def with_delays(j: int) -> dict[str, str]:

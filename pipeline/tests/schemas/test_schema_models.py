@@ -25,7 +25,7 @@ from snowlight.schemas.live import (
     local_days,
     ranges_from_indices,
 )
-from snowlight.schemas.predictions import Forecast, PredictionsFile
+from snowlight.schemas.predictions import Forecast, NoThreat, PredictionsFile
 from snowlight.schemas.registry import PublishedFile
 from snowlight.schemas.replays import ReplayFile, ReplayIndex, check_summary
 from snowlight.schemas.scalars import (
@@ -732,13 +732,85 @@ def test_each_part_of_the_section_can_be_left_out_but_how_it_adds_up() -> None:
     assert isinstance(forecast, Forecast)
     assert (forecast.hours, forecast.record) == (None, None)
     assert forecast.why.total() == 62
-    # Each key is still stated, as null: nothing is left to a default.
-    del night["previous"]
-    _refused(PredictionsFile, value, "missing")
+    # The file leaves a part at its default out (a compact file): a missing key reads as it.
+    for key in ("previous", "announces_at", "buses_at", "hours", "record", "events"):
+        del night[key]
+    left_out = _parse(PredictionsFile, value)
+    assert left_out == document
     # A forecast always says how it adds up.
     value = example("predictions")
     _night(value)["why"] = None
     _refused(PredictionsFile, value, "why")
+    value = example("predictions")
+    del _night(value)["why"]
+    _refused(PredictionsFile, value, "missing")
+
+
+def test_the_file_leaves_every_default_out() -> None:
+    document = _parse(PredictionsFile, example("predictions"))
+    written = json.loads(document.to_json_bytes())
+    pooled = written["districts"][1]["days"][1]
+    assert set(pooled) == {"state", "p_no_school", "p_delay", "reasons", "why"}
+    assert pooled["why"] == {"base": {"kind": "pooled", "scope": "nearby", "points": 20}}
+    assert written["districts"][0]["days"][1]["record"]["days"][0] == {"day": "2024-01-10"}
+
+
+def test_private_schools_name_their_outlooks_once() -> None:
+    document = _parse(PredictionsFile, example("predictions"))
+    first, second = document.schools
+    assert (first.school, second.school) == (4, 5)
+    assert first.days[1] == second.days[1]
+    said = document.outlook_of(first)[0]
+    assert isinstance(said, Forecast)
+    assert said.p_no_school == 0.01
+    assert said.why.base.kind == "pooled"
+    assert said.why.base.of == "private_schools"
+    assert [(r.kind, r.points) for r in said.why.reasons] == [("said_open", -37)]
+    assert said.why.total() == 1
+    assert isinstance(document.outlook_of(second)[0], NoThreat)
+
+
+@pytest.mark.parametrize(
+    ("change", "match"),
+    [
+        (lambda v: v["schools"].reverse(), "sorted and unique"),
+        (lambda v: v["schools"][1].update(school=4), "sorted and unique"),
+        (lambda v: v["schools"][1].update(school=6), "not in the directory"),
+        (lambda v: v["schools"][0].update(days=[0]), "entries for 2 days"),
+        (lambda v: v["schools"][0].update(days=[0, 3]), "does not hold"),
+        (lambda v: v["schools"][1].update(days=[1, 1]), "every outlook is named"),
+        (lambda v: v["outlooks"].append(dict(v["outlooks"][2])), "must not repeat"),
+        (lambda v: v["schools"][0].update(neighbors=[2]), "neighbor is not in the directory"),
+        (lambda v: v["schools"][0].update(neighbors=[0, 1, 0]), "must not repeat"),
+        (lambda v: v["schools"][0].update(neighbors=[0, 1, 0, 1, 0]), "at most 4"),
+        (
+            lambda v: v["outlooks"][0]["why"]["reasons"][0].update(points=5),
+            "said_open takes points away",
+        ),
+        (lambda v: v["outlooks"][1]["why"]["base"].update(of="charters"), "of"),
+        (lambda v: v["schools"][0].update(zone=1), "zone is not one the file holds"),
+        (lambda v: v["zones"].append("America/Denver"), "every zone is named"),
+        (lambda v: v["zones"].append("America/Chicago"), "zones must not repeat"),
+        (lambda v: v.update(zones=["Mars/Olympus_Mons"]), "time zone"),
+        (
+            lambda v: v["outlooks"][0].update(
+                previous={"p_no_school": 0.3, "at": "2027-01-12T10:00:00Z"}
+            ),
+            "a day said open shows no previous chance",
+        ),
+        (lambda v: v["outlooks"][1].pop("reasons"), "reasons"),
+        (
+            lambda v: v["outlooks"][1].update(
+                previous={"p_no_school": 0.3, "at": "2027-01-12T11:00:00Z"}
+            ),
+            "previous run is not before",
+        ),
+    ],
+)
+def test_the_schools_section_is_checked(change: Any, match: str) -> None:
+    value = example("predictions")
+    change(value)
+    _refused(PredictionsFile, value, match)
 
 
 def test_a_short_history_starts_from_the_districts_around_it() -> None:

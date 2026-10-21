@@ -22,7 +22,9 @@ What the school panel's chance section shows, and what a forecast carries for it
 part out, and never fills it in):
 
 * ``previous``: the chance the run before gave the same district and day, and when
-  that run was made ("Up from 41% at 5 PM").
+  that run was made ("Up from 41% at 5 PM"). A day whose chance a ``said_open`` line takes
+  down carries none: the line already shows what the chance was and why it fell, and the
+  file's worst case stays within its size budget.
 * ``announces_at`` and ``buses_at``: when the district usually posts its decision
   for this day (that day or the evening before, before the buses), and when its first
   buses usually run that day (on the day, in the district's time zone).
@@ -52,7 +54,7 @@ from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
 
 from pydantic import AfterValidator, Field, model_validator
 
-from snowlight.schemas.base import PublishedModel
+from snowlight.schemas.base import CompactModel
 from snowlight.schemas.directory import DirectoryStamp
 from snowlight.schemas.scalars import (
     ChanceOfNoSchool,
@@ -61,6 +63,7 @@ from snowlight.schemas.scalars import (
     Percent,
     Probability,
     SchemaVersion,
+    SchoolIndex,
     UtcInstant,
 )
 from snowlight.schemas.vocab import Reason, Status
@@ -69,6 +72,16 @@ MAX_DAYS = 3
 # Districts next door: a school within this many miles of one of the district's schools.
 NEIGHBOR_MILES = 10
 MAX_NEIGHBORS = 12
+# A private school's districts next door: a short list (the panel shows the first few that post).
+MAX_SCHOOL_NEIGHBORS = 4
+# The distinct outlooks the private schools' days name. Once a learned file counts a situation
+# over the districts around each school, each school's nearby rates are its own, and the
+# outlooks with no previous chance can number in the thousands; the size budget holds this
+# many of the longest with no previous chance (serve.Fit.NO_PREVIOUS, tests/predict/
+# test_loop.py), each index still of four digits.
+MAX_OUTLOOKS = 9000
+# The distinct time zones the private schools name (the contiguous states hold about 30).
+MAX_ZONES = 64
 # The chart runs at most a day and a half, an hour a bar.
 MAX_HOURS = 36
 # The district's record under a reason: its most recent days like this one.
@@ -133,21 +146,21 @@ type AlertKind = Annotated[
 ]
 
 
-class PreviousChance(PublishedModel):
+class PreviousChance(CompactModel):
     """The chance of no school the run before this one gave the same district and day."""
 
     p_no_school: ChanceOfNoSchool
     at: UtcInstant = Field(description="When that run was made.")
 
 
-class HourSpan(PublishedModel):
+class HourSpan(CompactModel):
     """Hours of an hourly series, by position: first to last, both included."""
 
     first: Annotated[int, Field(ge=0, lt=MAX_HOURS)]
     last: Annotated[int, Field(ge=0, lt=MAX_HOURS)]
 
 
-class Hours(PublishedModel):
+class Hours(CompactModel):
     """One weather measure, an hour at a time from ``start`` to the bus hour, for the chart.
 
     ``snow_total``: the snow on the ground since the storm began, in inches, at each
@@ -171,9 +184,9 @@ class Hours(PublishedModel):
             ),
         ),
     ]
-    low: Inches | None
-    high: Inches | None
-    heavy: HourSpan | None
+    low: Inches | None = None
+    high: Inches | None = None
+    heavy: HourSpan | None = None
 
     @model_validator(mode="after")
     def _check(self) -> Self:
@@ -206,7 +219,7 @@ class Hours(PublishedModel):
 # The base: where the chance starts for this district, before any reason.
 
 
-class AlertBase(PublishedModel):
+class AlertBase(CompactModel):
     """The district's own record: it closed or went remote on about ``points`` in 100 of its
     recorded days with ``alert`` (the days the archive read, never every alert issued)."""
 
@@ -214,12 +227,14 @@ class AlertBase(PublishedModel):
     points: Percent
     alert: AlertKind
     borrowed: bool = Field(
+        default=False,
         description=(
             "The day's own weather has too few recorded days: the chance is counted over "
             "the recorded days with alert instead, and the sentence says so."
-        )
+        ),
     )
     live: bool = Field(
+        default=False,
         description=(
             "The days counted are days the live pipeline read (complete daily reads), not the "
             "recorded archive days; the sentence says so."
@@ -227,13 +242,14 @@ class AlertBase(PublishedModel):
     )
 
 
-class DayAfterBase(PublishedModel):
+class DayAfterBase(CompactModel):
     """The district's own record: after a recorded snow day, it stayed closed or went remote
     the next day on about ``points`` in 100 of those recorded days."""
 
     kind: Literal["day_after"]
     points: Percent
     live: bool = Field(
+        default=False,
         description=(
             "The days counted are days the live pipeline read (complete daily reads), not the "
             "recorded archive days; the sentence says so."
@@ -241,19 +257,21 @@ class DayAfterBase(PublishedModel):
     )
 
 
-class SimilarDaysBase(PublishedModel):
+class SimilarDaysBase(CompactModel):
     """The district's own record: it closed or went remote on about ``points`` in 100 of its
     recorded days like this one (same weather class)."""
 
     kind: Literal["similar_days"]
     points: Percent
     borrowed: bool = Field(
+        default=False,
         description=(
             "The day follows a snow day and too few such days are recorded: the chance is "
             "counted over the recorded days like this that did not follow a recorded snow day."
-        )
+        ),
     )
     live: bool = Field(
+        default=False,
         description=(
             "The days counted are days the live pipeline read (complete daily reads), not the "
             "recorded archive days; the sentence says so."
@@ -261,7 +279,7 @@ class SimilarDaysBase(PublishedModel):
     )
 
 
-class PooledBase(PublishedModel):
+class PooledBase(CompactModel):
     """For a district with too short a history of its own: the districts around it.
 
     The districts of ``scope`` (``nearby``: within the neighbor distance; the
@@ -270,21 +288,31 @@ class PooledBase(PublishedModel):
     remote on about ``points`` in 100 of their recorded district-days like this one, or
     with ``alert`` when one is given. The pipeline names a scope only when the share the
     website says for ``points`` is true of that scope's recorded days.
+
+    ``of`` says whose days are counted: ``districts``, or ``private_schools`` (a private
+    school's chance is counted over private schools' recorded days only: "Private schools
+    near St. Ann closed ...").
     """
 
     kind: Literal["pooled"]
     scope: Literal["nearby", "county", "state", "region", "nation"]
     points: Percent
-    alert: AlertKind | None
+    alert: AlertKind | None = None
+    of: Literal["districts", "private_schools"] = Field(
+        default="districts",
+        description="Whose recorded days are counted: districts', or private schools' only.",
+    )
     borrowed: bool = Field(
+        default=False,
         description=(
             "The day's own weather (or the day after a snow day) has too few recorded "
             "days: the chance is counted over the recorded days with alert, or, with no "
             "alert, the days like this that did not follow a recorded snow day; the sentence "
             "says so."
-        )
+        ),
     )
     live: bool = Field(
+        default=False,
         description=(
             "The days counted are days the live pipeline read (complete daily reads), not the "
             "recorded archive days; the sentence says so."
@@ -301,7 +329,7 @@ type Base = Annotated[
 # The reasons: each a kind with its numbers, and the whole points it adds or takes away.
 
 
-class SnowTotalReason(PublishedModel):
+class SnowTotalReason(CompactModel):
     """How much snow is coming: ``low`` to ``high`` inches, overnight or not."""
 
     kind: Literal["snow_total"]
@@ -317,14 +345,14 @@ class SnowTotalReason(PublishedModel):
         return self
 
 
-class RecordReason(PublishedModel):
+class RecordReason(CompactModel):
     """The district's own record in storms like this one (the file's ``record``)."""
 
     kind: Literal["record"]
     points: Points
 
 
-class NeighborsReason(PublishedModel):
+class NeighborsReason(CompactModel):
     """Districts next door (the entry's ``neighbors``) that already posted ``status``.
 
     A closing or a remote day next door only ever adds points.
@@ -352,7 +380,7 @@ def _takes_away(reason: str, points: int) -> None:
         raise ValueError(f"{reason} takes points away; it never adds any")
 
 
-class TimingReason(PublishedModel):
+class TimingReason(CompactModel):
     """When the heaviest snow falls, against when the buses run."""
 
     kind: Literal["timing"]
@@ -367,7 +395,7 @@ class TimingReason(PublishedModel):
         return self
 
 
-class WindChillReason(PublishedModel):
+class WindChillReason(CompactModel):
     """The wind makes it feel like ``feels_like`` at the bus stop: it only adds points."""
 
     kind: Literal["wind_chill"]
@@ -380,7 +408,7 @@ class WindChillReason(PublishedModel):
         return self
 
 
-class ColdReason(PublishedModel):
+class ColdReason(CompactModel):
     """It feels like ``feels_like`` at the bus stop that morning: it only adds points."""
 
     kind: Literal["cold"]
@@ -393,7 +421,7 @@ class ColdReason(PublishedModel):
         return self
 
 
-class SnowStopsReason(PublishedModel):
+class SnowStopsReason(CompactModel):
     """The snow stops (or stopped) at ``at``: before the buses, it only takes points away."""
 
     kind: Literal["snow_stops"]
@@ -401,7 +429,7 @@ class SnowStopsReason(PublishedModel):
     at: UtcInstant
 
 
-class SunReason(PublishedModel):
+class SunReason(CompactModel):
     """Sun the afternoon before helps melt the ice: it only takes points away."""
 
     kind: Literal["sun"]
@@ -413,7 +441,7 @@ class SunReason(PublishedModel):
         return self
 
 
-class IcyRoadsReason(PublishedModel):
+class IcyRoadsReason(CompactModel):
     """Side streets stay icy after ``inches`` of snow: it only adds points."""
 
     kind: Literal["icy_roads"]
@@ -426,7 +454,7 @@ class IcyRoadsReason(PublishedModel):
         return self
 
 
-class IceReason(PublishedModel):
+class IceReason(CompactModel):
     """Freezing rain leaves ``inches`` of ice on the roads: it only adds points."""
 
     kind: Literal["ice"]
@@ -436,6 +464,20 @@ class IceReason(PublishedModel):
     @model_validator(mode="after")
     def _check(self) -> Self:
         _adds("ice", self.points)
+        return self
+
+
+class SaidOpenReason(CompactModel):
+    """The district (every one of its eligible schools, as a statement it posted for all of
+    them reaches) or the private school said school is on for the day: it takes the chance
+    down to the floor, so it only takes points away."""
+
+    kind: Literal["said_open"]
+    points: Points
+
+    @model_validator(mode="after")
+    def _check(self) -> Self:
+        _takes_away("said_open", self.points)
         return self
 
 
@@ -449,16 +491,17 @@ type ReasonPoints = Annotated[
     | SnowStopsReason
     | SunReason
     | IcyRoadsReason
-    | IceReason,
+    | IceReason
+    | SaidOpenReason,
     Field(discriminator="kind", description="One reason, of a kind, and the points it adds."),
 ]
 
 
-class Why(PublishedModel):
+class Why(CompactModel):
     """How the chance adds up: the base, then each reason's points, biggest first."""
 
     base: Base
-    reasons: Annotated[tuple[ReasonPoints, ...], Field(max_length=8)]
+    reasons: Annotated[tuple[ReasonPoints, ...], Field(max_length=8)] = ()
 
     @model_validator(mode="after")
     def _check(self) -> Self:
@@ -474,15 +517,17 @@ class Why(PublishedModel):
         return self.base.points + sum(reason.points for reason in self.reasons)
 
 
-class PastDay(PublishedModel):
+class PastDay(CompactModel):
     """One day in the district's record: its snow and what the district did."""
 
     day: LocalDate
-    inches: Inches | None
-    status: Status | None = Field(description="What the district did; null when it opened.")
+    inches: Inches | None = None
+    status: Status | None = Field(
+        default=None, description="What the district did; null when it opened."
+    )
 
 
-class PastRecord(PublishedModel):
+class PastRecord(CompactModel):
     """The district's own record in days like this one, oldest first.
 
     ``proves`` names the line it sits under: ``base`` (the base chance) or a reason's
@@ -491,7 +536,7 @@ class PastRecord(PublishedModel):
     """
 
     proves: Literal["base", "snow_total", "record"]
-    inches: Inches | None
+    inches: Inches | None = None
     days: Annotated[tuple[PastDay, ...], Field(min_length=1, max_length=MAX_RECORD_DAYS)]
 
     @model_validator(mode="after")
@@ -508,14 +553,14 @@ class PastRecord(PublishedModel):
         return self
 
 
-class SnowStarted(PublishedModel):
+class SnowStarted(CompactModel):
     """Snow started falling at ``at``."""
 
     kind: Literal["snow_started"]
     at: UtcInstant
 
 
-class SnowStopped(PublishedModel):
+class SnowStopped(CompactModel):
     """Snow stopped at ``at``, ``inches`` in all."""
 
     kind: Literal["snow_stopped"]
@@ -529,7 +574,7 @@ type WeatherEvent = Annotated[
 ]
 
 
-class Forecast(PublishedModel):
+class Forecast(CompactModel):
     """A school day's chance of no school or a delay, with the weather forecast, if any."""
 
     state: Literal["forecast"]
@@ -539,26 +584,32 @@ class Forecast(PublishedModel):
         tuple[Reason, ...],
         Field(
             min_length=0,
-            description="The forecast weather, most important first; empty when none is forecast.",
+            description=(
+                "The forecast weather, most important first; empty when none is forecast. "
+                "Always written, even empty (no default): the web reader before the compact "
+                "file refuses a whole file whose forecast has no reasons list."
+            ),
         ),
     ]
-    previous: PreviousChance | None
+    previous: PreviousChance | None = None
     announces_at: UtcInstant | None = Field(
+        default=None,
         description=(
             "When the district usually posts its decision for this day: that day or the "
             "evening before, in the district's time zone, and before buses_at."
-        )
+        ),
     )
     buses_at: UtcInstant | None = Field(
+        default=None,
         description=(
             "When the district's first buses usually run that day: on the day, in the "
             "district's time zone."
-        )
+        ),
     )
-    hours: Hours | None
+    hours: Hours | None = None
     why: Why = Field(description="How the chance adds up: always given with a forecast.")
-    record: PastRecord | None
-    events: Annotated[tuple[WeatherEvent, ...], Field(max_length=4)]
+    record: PastRecord | None = None
+    events: Annotated[tuple[WeatherEvent, ...], Field(max_length=4)] = ()
 
     @model_validator(mode="after")
     def _check(self) -> Self:
@@ -597,6 +648,8 @@ class Forecast(PublishedModel):
         kinds = {"base"} | {reason.kind for reason in why.reasons}
         if self.record is not None and self.record.proves not in kinds:
             raise ValueError(f"the record proves {self.record.proves}, which is not in why")
+        if self.previous is not None and "said_open" in kinds:
+            raise ValueError("a day said open shows no previous chance: its why shows the fall")
         counts_record = any(reason.kind == "record" for reason in why.reasons)
         if counts_record and (self.record is None or self.record.proves != "record"):
             raise ValueError("a record reason needs the record it counts")
@@ -612,7 +665,7 @@ class Forecast(PublishedModel):
                 raise ValueError("timing and the chart's heavy hours disagree")
 
 
-class NoThreat(PublishedModel):
+class NoThreat(CompactModel):
     """A day that is not a school day: a weekend, Thanksgiving Thursday and Friday, or 24
     December to 1 January."""
 
@@ -625,7 +678,13 @@ type DayForecast = Annotated[
 ]
 
 
-class DistrictForecast(PublishedModel):
+def _neighbors_next_door(where: str, neighbors: tuple[int, ...], day: "Forecast") -> None:
+    for reason in day.why.reasons:
+        if isinstance(reason, NeighborsReason) and not set(reason.districts) <= set(neighbors):
+            raise ValueError(f"{where}: a neighbors reason names a district that is not next door")
+
+
+class DistrictForecast(CompactModel):
     """One district's outlook for each day in the file's days."""
 
     district: DistrictIndex
@@ -639,7 +698,7 @@ class DistrictForecast(PublishedModel):
                 "within 10 miles of one of this district's schools."
             ),
         ),
-    ]
+    ] = ()
     days: tuple[DayForecast, ...]
 
     @model_validator(mode="after")
@@ -649,18 +708,60 @@ class DistrictForecast(PublishedModel):
         if self.district in self.neighbors:
             raise ValueError("a district is not its own neighbor")
         for day in self.days:
-            if not isinstance(day, Forecast):
-                continue
-            for reason in day.why.reasons:
-                if isinstance(reason, NeighborsReason) and not set(reason.districts) <= set(
-                    self.neighbors
-                ):
-                    raise ValueError("a neighbors reason names a district that is not next door")
+            if isinstance(day, Forecast):
+                _neighbors_next_door("district", self.neighbors, day)
         return self
 
 
-class PredictionsFile(PublishedModel):
-    """predictions/latest.json: per district, the chance of no school or a delay, by day."""
+type OutlookIndex = Annotated[
+    int,
+    Field(
+        ge=0,
+        lt=MAX_OUTLOOKS,
+        description="A day's outlook, as its position in the file's outlooks.",
+    ),
+]
+
+
+type ZoneIndex = Annotated[
+    int,
+    Field(ge=0, lt=MAX_ZONES, description="A time zone, as its position in the file's zones."),
+]
+
+
+class SchoolForecast(CompactModel):
+    """One private school's outlook for each day in the file's days (contract C3): a school
+    with no district gets its own chance, counted over private schools.
+
+    Its ``days`` name each day's outlook by its position in the file's ``outlooks``, and its
+    ``zone`` its time zone by its position in the file's ``zones``: many private schools share
+    the same outlook and the same zone, so the file holds each once.
+    """
+
+    school: SchoolIndex
+    zone: ZoneIndex
+    neighbors: Annotated[
+        tuple[DistrictIndex, ...],
+        Field(
+            max_length=MAX_SCHOOL_NEIGHBORS,
+            description=(
+                "The districts next door, nearest first: districts with a school within 10 "
+                "miles of this school."
+            ),
+        ),
+    ] = ()
+    days: tuple[OutlookIndex, ...]
+
+    @model_validator(mode="after")
+    def _check(self) -> Self:
+        if len(set(self.neighbors)) != len(self.neighbors):
+            raise ValueError("neighbors must not repeat")
+        return self
+
+
+class PredictionsFile(CompactModel):
+    """predictions/latest.json: per district, and per private school, the chance of no school
+    or a delay, by day."""
 
     schema_version: SchemaVersion
     generated_at: UtcInstant
@@ -674,6 +775,24 @@ class PredictionsFile(PublishedModel):
         ),
     ]
     districts: tuple[DistrictForecast, ...]
+    schools: Annotated[
+        tuple[SchoolForecast, ...],
+        Field(description="The private schools (no district), sorted by school, each once."),
+    ] = ()
+    outlooks: Annotated[
+        tuple[DayForecast, ...],
+        Field(
+            max_length=MAX_OUTLOOKS,
+            description=("Each distinct outlook the schools' days name, once; every one is named."),
+        ),
+    ] = ()
+    zones: Annotated[
+        tuple[TimeZoneName, ...],
+        Field(
+            max_length=MAX_ZONES,
+            description="Each distinct time zone the schools name, once; every one is named.",
+        ),
+    ] = ()
 
     @model_validator(mode="after")
     def _check(self) -> Self:
@@ -688,16 +807,63 @@ class PredictionsFile(PublishedModel):
             previous = entry.district
             if entry.district >= self.directory.districts:
                 raise ValueError(f"{where}: district {entry.district} is not in the directory")
-            if any(neighbor >= self.directory.districts for neighbor in entry.neighbors):
-                raise ValueError(f"{where}: a neighbor is not in the directory")
-            if len(entry.days) != len(self.days):
-                raise ValueError(f"{where}: {len(entry.days)} entries for {len(self.days)} days")
-            zone = ZoneInfo(entry.time_zone)
-            for day, forecast in zip(self.days, entry.days, strict=True):
-                if isinstance(forecast, Forecast):
-                    self._check_times(f"{where} {day}", day, forecast)
-                    self._check_local_times(f"{where} {day}", day, forecast, zone)
+            self._check_entry(where, entry.neighbors, entry.time_zone, entry.days)
+        self._check_schools()
         return self
+
+    def _check_schools(self) -> None:
+        if len(set(self.outlooks)) != len(self.outlooks):
+            raise ValueError("outlooks must not repeat")
+        if len(set(self.zones)) != len(self.zones):
+            raise ValueError("zones must not repeat")
+        named: set[int] = set()
+        zones: set[int] = set()
+        previous = -1
+        for position, entry in enumerate(self.schools):
+            where = f"schools[{position}]"
+            if entry.school <= previous:
+                raise ValueError(f"{where}: schools must be sorted and unique")
+            previous = entry.school
+            if entry.school >= self.directory.schools:
+                raise ValueError(f"{where}: school {entry.school} is not in the directory")
+            if any(index >= len(self.outlooks) for index in entry.days):
+                raise ValueError(f"{where}: a day names an outlook the file does not hold")
+            if entry.zone >= len(self.zones):
+                raise ValueError(f"{where}: its zone is not one the file holds")
+            named.update(entry.days)
+            zones.add(entry.zone)
+            days = tuple(self.outlooks[index] for index in entry.days)
+            self._check_entry(where, entry.neighbors, self.zones[entry.zone], days)
+        if len(named) != len(self.outlooks):
+            raise ValueError("every outlook is named by a school's day")
+        if len(zones) != len(self.zones):
+            raise ValueError("every zone is named by a school")
+
+    def _check_entry(
+        self,
+        where: str,
+        neighbors: tuple[int, ...],
+        time_zone: str,
+        days: tuple["Forecast | NoThreat", ...],
+    ) -> None:
+        if any(neighbor >= self.directory.districts for neighbor in neighbors):
+            raise ValueError(f"{where}: a neighbor is not in the directory")
+        if len(days) != len(self.days):
+            raise ValueError(f"{where}: {len(days)} entries for {len(self.days)} days")
+        zone = ZoneInfo(time_zone)
+        for day, forecast in zip(self.days, days, strict=True):
+            if isinstance(forecast, Forecast):
+                _neighbors_next_door(f"{where} {day}", neighbors, forecast)
+                self._check_times(f"{where} {day}", day, forecast)
+                self._check_local_times(f"{where} {day}", day, forecast, zone)
+
+    def outlook_of(self, entry: SchoolForecast) -> tuple["Forecast | NoThreat", ...]:
+        """A school's outlook for each day of the file."""
+        return tuple(self.outlooks[index] for index in entry.days)
+
+    def zone_of(self, entry: SchoolForecast) -> str:
+        """A school's time zone."""
+        return self.zones[entry.zone]
 
     @staticmethod
     def _check_local_times(where: str, day: date, forecast: Forecast, zone: ZoneInfo) -> None:

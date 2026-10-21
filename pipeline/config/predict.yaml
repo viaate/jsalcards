@@ -56,6 +56,13 @@ model:
   floor: 0.01
   ceiling: 0.99
   record_days: 8
+  # The private schools' chain (contract C3) names a place below the nation (nearby, county,
+  # state, region) only with this many labeled private school-days, the nation's own minimum:
+  # private schools come onto the lists a storm day at a time (661 labeled days in all), and
+  # with 8 a state's rate rested on one or two storm days (the private backtest's storm Brier
+  # was 0.159 against B0's 0.082; with 30 it is 0.080). Chosen after that backtest, so the
+  # private backtest is not out of sample for this one setting (docs/predict.md).
+  private_level_min_days: 30
 
 # The backtest (spec c.3).
 backtest:
@@ -75,7 +82,7 @@ serve:
   alerts_max_age_minutes: 20  # the feed's updated older than this: dark
   collapse_from: 50           # a pass with more winter alerts than this ...
   collapse_drop: 0.8          # ... followed by one with this much fewer: confirm first
-  budget_raw_bytes: 16500000  # measured worst case: every district under a winter storm warning (the longest alert name) with a previous chance on both days and every recorded district with a full record, 16.3 MB (16,268,937 bytes, each base carrying its live flag) (tests/predict/test_loop.py); gzip about 0.2 MB
+  budget_raw_bytes: 16500000  # asserted worst cases (tests/predict/test_loop.py, counts from the committed model plus 5%): with no record days or previous chances and 9,000 private outlooks 16,326,296 bytes raw; with no record days and 2,000 outlooks 15,108,482; the committed model's whole file 16,446,182. A file over it steps down serve.Fit (docs/predict.md, Size)
   budget_gzip_bytes: 1500000
   heartbeat_minutes: 30       # an unchanged file is uploaded at least this often
   heartbeat_skip_minutes: 4   # ... and by every grid pass, unless an upload went out this recently
@@ -84,6 +91,7 @@ serve:
   check_minutes: 5            # the alerts are checked this often between passes
   min_gap_minutes: 10         # at most one extra pass per this many minutes
   grid_minutes: [7, 37]       # the heartbeat passes, on the hour's grid
+  opens_max_age_minutes: 60   # an opens file older than this says nothing (the usual chance stands)
 
 # Automatic learning (S7-L, spec addenda c and d): 'snowlight predict learn', nightly inside the
 # predict workflow. Live-read district-days become labels by the archive's rules; a storm situation

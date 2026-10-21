@@ -107,6 +107,15 @@ const POOLS = {
   nation: () => 'Districts across the country',
 } as const;
 
+/** The private schools a private school's pooled base counts (contract C3), around its name. */
+const PRIVATE_POOLS = {
+  nearby: (school: string) => `Private schools near ${school}`,
+  county: (school: string) => `Private schools in ${school}’s county`,
+  state: (school: string) => `Private schools in ${school}’s state`,
+  region: (school: string) => `Private schools in ${school}’s region`,
+  nation: () => 'Private schools across the country',
+} as const satisfies Record<keyof typeof POOLS, (school: string) => string>;
+
 /** A status a district posted, as the chance section words it. */
 export type PostedKey = StatusKey;
 
@@ -150,6 +159,8 @@ export type BaseInput =
       readonly alert: AlertKind | null;
       readonly borrowed: boolean;
       readonly live: boolean;
+      /** Whose recorded days: districts' (the default), or private schools' only. */
+      readonly of?: 'districts' | 'private_schools';
     };
 
 /** The district's record in storms like this, counted, for the sentence that cites it. */
@@ -234,7 +245,9 @@ export type ReasonInput =
       readonly day: string;
     }
   | { readonly kind: 'icy_roads'; readonly points: number; readonly inches: number }
-  | { readonly kind: 'ice'; readonly points: number; readonly inches: number };
+  | { readonly kind: 'ice'; readonly points: number; readonly inches: number }
+  /** The district or the school said school is on: the chance drops to the floor. */
+  | { readonly kind: 'said_open'; readonly points: number };
 
 /** Where a chance moved from: the run before, and when it was made. */
 export interface MovedInput {
@@ -633,7 +646,8 @@ function baseReason(input: BaseInput, district: string): string {
     case 'similar_days':
       return input.borrowed ? lent(district, null) : closed(district, null, false);
     case 'pooled': {
-      const who = POOLS[checkKey(POOLS, input.scope, 'pool')](district);
+      const pools = input.of === 'private_schools' ? PRIVATE_POOLS : POOLS;
+      const who = pools[checkKey(pools, input.scope, 'pool')](district);
       return input.borrowed ? lent(who, input.alert) : closed(who, input.alert, true);
     }
   }
@@ -756,6 +770,8 @@ function reason(input: ReasonInput, district: string, now: Date, zones: Zones): 
       return `Side streets stay icy after ${inchWords(input.inches, input.inches)} of snow.`;
     case 'ice':
       return `The forecast has freezing rain leaving ${inchWords(input.inches, input.inches)} of ice.`;
+    case 'said_open':
+      return `${district} said school is on.`;
   }
 }
 

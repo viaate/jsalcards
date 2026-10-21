@@ -12,8 +12,9 @@
  * `schoolView` turns what is known into the panel's lines, every word from
  * src/copy.ts or the directory itself. A status line shows only where the
  * live files state one (or confirm the school open today), on the school's
- * own today (its district's time zone, from the predictions file); a chance
- * only where the district has a forecast for a day not yet under way, and
+ * own today (its district's time zone, or a private school's own, from the
+ * predictions file); a chance only where the district (or the private school
+ * itself) has a forecast for a day not yet under way, and
  * nothing where the files cannot say for now. A day's chance never shows
  * beside a status the school decided for that day (closed, delayed, remote,
  * early dismissal): the fact beats the forecast. "Open today" is no decision,
@@ -284,6 +285,15 @@ function ownDistrict(id: string, name: string): { district: string; state: strin
   return { district: shortDistrictName(shown, same, state), state };
 }
 
+/**
+ * A private school's own name for the chance section, where a district's short name would
+ * stand: its shown name without a leading "The", so it reads within a sentence ("Private
+ * schools near Pembroke Hill School closed ...").
+ */
+export function ownSchool(name: string): string {
+  return name.replace(/^The\s+/u, '');
+}
+
 /** The directory's district names and each school's district, for the chance section. */
 export function namesOf(directory: Directory): Names {
   const { ids, names } = directory.meta.districts;
@@ -426,15 +436,18 @@ export function schoolView(input: ViewInput): SchoolView | null {
     kind: kindOf(record),
     place: place.length > 0 ? place.join(DOT) : null,
     status,
-    // A private school has no district, and no district forecast: no chance section.
+    // A private school has no district: its own chance, its own short name where the
+    // district's would stand (contract C3). A past day gives no chance.
     chance:
-      record.district === null || replay !== null
+      replay !== null
         ? null
         : chanceView({
             outlook: input.outlook,
             decided,
             status,
-            ...ownDistrict(record.district.id, record.district.name),
+            ...(record.district === null
+              ? { district: ownSchool(name), state: record.state }
+              : ownDistrict(record.district.id, record.district.name)),
             closings: input.closings ?? null,
             names: input.names ?? null,
             now,
@@ -557,12 +570,14 @@ export function watchSchool(options: WatchOptions): () => void {
         ? null
         : schoolOutlook({
             district: record.district?.index ?? null,
+            school: record.district === null ? record.index : null,
             directory: record.directory,
             shipped: files.has(PUBLISHED_PATHS.predictions),
             predictions: live.predictions,
             now: at,
           });
-    // The school's own today: its district's time zone, where the predictions file gives it.
+    // The school's own today: its district's time zone (a private school's own), where the
+    // predictions file gives it.
     const status =
       record === null
         ? NO_STATUS

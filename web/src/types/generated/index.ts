@@ -498,7 +498,10 @@ export interface OpenStatement {
 
 // predictions --------------------------------------------------------------------
 
-/** predictions/latest.json: per district, the chance of no school or a delay, by day. */
+/**
+ * predictions/latest.json: per district, and per private school, the chance of no school
+ * or a delay, by day.
+ */
 export interface PredictionsFile {
   readonly schema_version: SchemaVersion;
   readonly generated_at: UtcInstant;
@@ -506,6 +509,12 @@ export interface PredictionsFile {
   /** The local days forecast, consecutive, today first. */
   readonly days: readonly LocalDate[];
   readonly districts: readonly DistrictForecast[];
+  /** Each distinct outlook the schools' days name, once; every one is named. */
+  readonly outlooks?: readonly DayForecast[];
+  /** The private schools (no district), sorted by school, each once. */
+  readonly schools?: readonly SchoolForecast[];
+  /** Each distinct time zone the schools name, once; every one is named. */
+  readonly zones?: readonly TimeZoneName[];
 }
 
 /**
@@ -520,12 +529,12 @@ export interface AlertBase {
    * The day's own weather has too few recorded days: the chance is counted over the recorded days
    * with alert instead, and the sentence says so.
    */
-  readonly borrowed: boolean;
+  readonly borrowed?: boolean;
   /**
    * The days counted are days the live pipeline read (complete daily reads), not the recorded
    * archive days; the sentence says so.
    */
-  readonly live: boolean;
+  readonly live?: boolean;
 }
 
 /** The weather alert a district's base chance is counted over. */
@@ -565,7 +574,7 @@ export interface DayAfterBase {
    * The days counted are days the live pipeline read (complete daily reads), not the recorded
    * archive days; the sentence says so.
    */
-  readonly live: boolean;
+  readonly live?: boolean;
 }
 
 /** One district's outlook for one day. */
@@ -575,12 +584,12 @@ export type DayForecast = Forecast | NoThreat;
 export interface DistrictForecast {
   readonly district: DistrictIndex;
   readonly time_zone: TimeZoneName;
+  readonly days: readonly DayForecast[];
   /**
    * The districts next door, nearest first: every other district with a school within 10 miles of
    * one of this district's schools.
    */
-  readonly neighbors: readonly DistrictIndex[];
-  readonly days: readonly DayForecast[];
+  readonly neighbors?: readonly DistrictIndex[];
 }
 
 /**
@@ -602,23 +611,27 @@ export interface Forecast {
   readonly state: 'forecast';
   readonly p_no_school: ChanceOfNoSchool;
   readonly p_delay: Probability;
-  /** The forecast weather, most important first; empty when none is forecast. */
+  /**
+   * The forecast weather, most important first; empty when none is forecast. Always written, even
+   * empty (no default): the web reader before the compact file refuses a whole file whose forecast
+   * has no reasons list.
+   */
   readonly reasons: readonly Reason[];
-  readonly previous: PreviousChance | null;
+  /** How the chance adds up: always given with a forecast. */
+  readonly why: Why;
   /**
    * When the district usually posts its decision for this day: that day or the evening before, in
    * the district's time zone, and before buses_at.
    */
-  readonly announces_at: UtcInstant | null;
+  readonly announces_at?: UtcInstant | null;
   /**
    * When the district's first buses usually run that day: on the day, in the district's time zone.
    */
-  readonly buses_at: UtcInstant | null;
-  readonly hours: Hours | null;
-  /** How the chance adds up: always given with a forecast. */
-  readonly why: Why;
-  readonly record: PastRecord | null;
-  readonly events: readonly WeatherEvent[];
+  readonly buses_at?: UtcInstant | null;
+  readonly events?: readonly WeatherEvent[];
+  readonly hours?: Hours | null;
+  readonly previous?: PreviousChance | null;
+  readonly record?: PastRecord | null;
 }
 
 /** Hours of an hourly series, by position: first to last, both included. */
@@ -645,9 +658,9 @@ export interface Hours {
    * One value an hour, in tenths: inches of snow on the ground since the storm began, or degrees F.
    */
   readonly values: readonly number[];
-  readonly low: Inches | null;
-  readonly high: Inches | null;
-  readonly heavy: HourSpan | null;
+  readonly heavy?: HourSpan | null;
+  readonly high?: Inches | null;
+  readonly low?: Inches | null;
 }
 
 /** Freezing rain leaves ``inches`` of ice on the roads: it only adds points. */
@@ -691,12 +704,19 @@ export interface NoThreat {
   readonly state: 'no_threat';
 }
 
+/**
+ * A day's outlook, as its position in the file's outlooks.
+ * @minimum 0
+ * @exclusiveMaximum 9000
+ */
+export type OutlookIndex = number;
+
 /** One day in the district's record: its snow and what the district did. */
 export interface PastDay {
   readonly day: LocalDate;
-  readonly inches: Inches | null;
+  readonly inches?: Inches | null;
   /** What the district did; null when it opened. */
-  readonly status: Status | null;
+  readonly status?: Status | null;
 }
 
 /**
@@ -708,8 +728,8 @@ export interface PastDay {
  */
 export interface PastRecord {
   readonly proves: 'base' | 'snow_total' | 'record';
-  readonly inches: Inches | null;
   readonly days: readonly PastDay[];
+  readonly inches?: Inches | null;
 }
 
 /**
@@ -728,23 +748,29 @@ export type Points = number;
  * remote on about ``points`` in 100 of their recorded district-days like this one, or
  * with ``alert`` when one is given. The pipeline names a scope only when the share the
  * website says for ``points`` is true of that scope's recorded days.
+ *
+ * ``of`` says whose days are counted: ``districts``, or ``private_schools`` (a private
+ * school's chance is counted over private schools' recorded days only: "Private schools
+ * near St. Ann closed ...").
  */
 export interface PooledBase {
   readonly kind: 'pooled';
   readonly scope: 'nearby' | 'county' | 'state' | 'region' | 'nation';
   readonly points: Percent;
-  readonly alert: AlertKind | null;
+  readonly alert?: AlertKind | null;
   /**
    * The day's own weather (or the day after a snow day) has too few recorded days: the chance is
    * counted over the recorded days with alert, or, with no alert, the days like this that did not
    * follow a recorded snow day; the sentence says so.
    */
-  readonly borrowed: boolean;
+  readonly borrowed?: boolean;
   /**
    * The days counted are days the live pipeline read (complete daily reads), not the recorded
    * archive days; the sentence says so.
    */
-  readonly live: boolean;
+  readonly live?: boolean;
+  /** Whose recorded days are counted: districts', or private schools' only. */
+  readonly of?: 'districts' | 'private_schools';
 }
 
 /** The chance of no school the run before this one gave the same district and day. */
@@ -765,12 +791,41 @@ export type ReasonPoints =
   | SnowStopsReason
   | SunReason
   | IcyRoadsReason
-  | IceReason;
+  | IceReason
+  | SaidOpenReason;
 
 /** The district's own record in storms like this one (the file's ``record``). */
 export interface RecordReason {
   readonly kind: 'record';
   readonly points: Points;
+}
+
+/**
+ * The district (every one of its eligible schools, as a statement it posted for all of
+ * them reaches) or the private school said school is on for the day: it takes the chance
+ * down to the floor, so it only takes points away.
+ */
+export interface SaidOpenReason {
+  readonly kind: 'said_open';
+  readonly points: Points;
+}
+
+/**
+ * One private school's outlook for each day in the file's days (contract C3): a school
+ * with no district gets its own chance, counted over private schools.
+ *
+ * Its ``days`` name each day's outlook by its position in the file's ``outlooks``, and its
+ * ``zone`` its time zone by its position in the file's ``zones``: many private schools share
+ * the same outlook and the same zone, so the file holds each once.
+ */
+export interface SchoolForecast {
+  readonly school: SchoolIndex;
+  readonly zone: ZoneIndex;
+  readonly days: readonly OutlookIndex[];
+  /**
+   * The districts next door, nearest first: districts with a school within 10 miles of this school.
+   */
+  readonly neighbors?: readonly DistrictIndex[];
 }
 
 /**
@@ -784,12 +839,12 @@ export interface SimilarDaysBase {
    * The day follows a snow day and too few such days are recorded: the chance is counted over the
    * recorded days like this that did not follow a recorded snow day.
    */
-  readonly borrowed: boolean;
+  readonly borrowed?: boolean;
   /**
    * The days counted are days the live pipeline read (complete daily reads), not the recorded
    * archive days; the sentence says so.
    */
-  readonly live: boolean;
+  readonly live?: boolean;
 }
 
 /** Snow started falling at ``at``. */
@@ -847,7 +902,7 @@ export type WeatherEvent = SnowStarted | SnowStopped;
 /** How the chance adds up: the base, then each reason's points, biggest first. */
 export interface Why {
   readonly base: Base;
-  readonly reasons: readonly ReasonPoints[];
+  readonly reasons?: readonly ReasonPoints[];
 }
 
 /** The wind makes it feel like ``feels_like`` at the bus stop: it only adds points. */
@@ -856,6 +911,13 @@ export interface WindChillReason {
   readonly points: Points;
   readonly feels_like: Fahrenheit;
 }
+
+/**
+ * A time zone, as its position in the file's zones.
+ * @minimum 0
+ * @exclusiveMaximum 64
+ */
+export type ZoneIndex = number;
 
 // replay-index -------------------------------------------------------------------
 

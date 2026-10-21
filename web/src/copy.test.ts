@@ -692,6 +692,14 @@ describe('format', () => {
       expect(() => chanceFormat.points(1.5)).toThrow(RangeError);
     });
 
+    it('says a district or a school said school is on, as a line that only takes away', () => {
+      expect(reason({ kind: 'said_open', points: -37 })).toBe('Riverside said school is on.');
+      expect(chanceFormat.reason({ kind: 'said_open', points: -5 }, 'St. Ann', evening, here)).toBe(
+        'St. Ann said school is on.',
+      );
+      expect(allProblems(['Riverside said school is on.'])).toEqual([]);
+    });
+
     it('says what moved the chance, and since when, on the school’s clock', () => {
       const moved = (
         previous: number,
@@ -962,6 +970,35 @@ describe('format', () => {
         }),
       ).toBe(
         'Districts in Riverside’s region almost never closed or went remote on their recorded days like this.',
+      );
+      // A private school's base counts private schools only (contract C3), around its own name.
+      const school = (scope: 'nearby' | 'county' | 'state' | 'region' | 'nation', points: number) =>
+        chanceFormat.baseReason(
+          {
+            kind: 'pooled',
+            points,
+            scope,
+            alert: null,
+            borrowed: false,
+            live: false,
+            of: 'private_schools',
+          },
+          'St. Ann',
+        );
+      expect(school('nearby', 30)).toBe(
+        'Private schools near St. Ann closed or went remote on 3 in 10 of their recorded days like this.',
+      );
+      expect(school('county', 30)).toBe(
+        'Private schools in St. Ann’s county closed or went remote on 3 in 10 of their recorded days like this.',
+      );
+      expect(school('state', 1)).toBe(
+        'Private schools in St. Ann’s state almost never closed or went remote on their recorded days like this.',
+      );
+      expect(school('region', 1)).toBe(
+        'Private schools in St. Ann’s region almost never closed or went remote on their recorded days like this.',
+      );
+      expect(school('nation', 1)).toBe(
+        'Private schools across the country almost never closed or went remote on their recorded days like this.',
       );
       // The nation, named when no smaller place's own days set the rate.
       expect(

@@ -410,6 +410,18 @@ class PublishedModel(BaseModel):
         return document
 
 
+class CompactModel(PublishedModel):
+    """A published model whose file leaves out every field at its default (a null, a false, an
+    empty list): a reader takes a missing key as that default. Its JSON Schema marks those
+    fields optional (:mod:`snowlight.schemas.export`). For the largest file
+    (``predictions/latest.json``), where most parts of most entries are empty."""
+
+    def to_json_value(self) -> JSONValue:
+        """Return the document as plain JSON values, without the fields at their defaults."""
+        value: JSONValue = self.model_dump(mode="json", exclude_defaults=True)
+        return value
+
+
 class InternalModel(BaseModel):
     """A record the pipeline keeps for itself: never published, free to name sources."""
 

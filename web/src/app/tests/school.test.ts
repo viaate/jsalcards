@@ -96,7 +96,7 @@ describe('schoolView', () => {
       kind: `${copy.detail.privateSchool} · PK–12`,
       place: 'Kansas City, MO · Jackson County',
       status: [],
-      // A private school has no district, and no district forecast: no chance at all.
+      // No outlook given: no chance.
       chance: null,
       loading: false,
     });
@@ -1002,7 +1002,7 @@ describe('the chance section in the panel', () => {
     },
   ]);
 
-  it('gives a public school its district’s chance, and a private school none', () => {
+  it('gives a public school its district’s chance, and a private school its own', () => {
     const outlook = {
       today: { state: 'no_threat' } as const,
       tomorrow: {
@@ -1020,7 +1020,11 @@ describe('the chance section in the panel', () => {
       meaning: 'Chance of no school Tuesday',
       delay: '20% chance of a delayed start instead',
     });
-    expect(schoolView(input({ outlook, now: evening }))?.chance).toBeNull();
+    // A private school's own outlook (contract C3): its own chance, the same way.
+    expect(schoolView(input({ outlook, now: evening }))?.chance).toMatchObject({
+      number: '45',
+      meaning: 'Chance of no school Tuesday',
+    });
     // With no chance to give, the panel shows the status lines alone.
     expect(schoolView(input({ id: record.id, record, now: evening }))?.chance).toBeNull();
   });
@@ -1058,6 +1062,50 @@ describe('the chance section in the panel', () => {
     expect(view({ today: 'open', tomorrow: null })?.chance?.day).toBe('2026-01-12');
     // Both days decided: no chance to give.
     expect(view({ today: closed, tomorrow: closed })?.chance).toBeNull();
+  });
+
+  it('leaves a private school’s own chance out beside a status our team set for that day', () => {
+    // A private school (no district) with its own outlook (contract C3), and a manual row from
+    // the admin (the closings file's manual column) closing it today.
+    const outlook = {
+      today: {
+        state: 'forecast' as const,
+        noSchool: 0.42,
+        delay: 0.05,
+        reasons: [0 as const],
+        day: '2026-01-12',
+      },
+      tomorrow: {
+        state: 'forecast' as const,
+        noSchool: 0.3,
+        delay: 0.1,
+        reasons: [0 as const],
+        day: '2026-01-13',
+      },
+      timeZone: 'America/Chicago',
+    };
+    const manual: StatusRow = {
+      status: 0,
+      reason: 0,
+      announcedAt: null,
+      shiftMinutes: null,
+      clockMinute: null,
+      manual: true,
+    };
+    const morning = new Date('2026-01-12T12:00:00Z');
+    const view = (status: SchoolStatus) => schoolView(input({ status, outlook, now: morning }));
+    // With no status: its own chance today.
+    expect(view({ today: null, tomorrow: null })?.chance).toMatchObject({
+      number: '42',
+      day: '2026-01-12',
+    });
+    // Closed today by our team: today's chance is gone, tomorrow's stands.
+    expect(view({ today: manual, tomorrow: null })?.chance).toMatchObject({
+      number: '30',
+      day: '2026-01-13',
+    });
+    // Both days set by our team: no chance to give.
+    expect(view({ today: manual, tomorrow: manual })?.chance).toBeNull();
   });
 
   it('reads the districts next door through the directory, once, and names them when it comes', async () => {

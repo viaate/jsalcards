@@ -27,9 +27,7 @@
       "required": [
         "kind",
         "points",
-        "alert",
-        "borrowed",
-        "live"
+        "alert"
       ],
       "title": "AlertBase",
       "type": "object"
@@ -124,8 +122,7 @@
       },
       "required": [
         "kind",
-        "points",
-        "live"
+        "points"
       ],
       "title": "DayAfterBase",
       "type": "object"
@@ -198,7 +195,6 @@
       "required": [
         "district",
         "time_zone",
-        "neighbors",
         "days"
       ],
       "title": "DistrictForecast",
@@ -276,7 +272,7 @@
           ]
         },
         "reasons": {
-          "description": "The forecast weather, most important first; empty when none is forecast.",
+          "description": "The forecast weather, most important first; empty when none is forecast. Always written, even empty (no default): the web reader before the compact file refuses a whole file whose forecast has no reasons list.",
           "items": {
             "$ref": "#/$defs/Reason"
           },
@@ -307,13 +303,7 @@
         "p_no_school",
         "p_delay",
         "reasons",
-        "previous",
-        "announces_at",
-        "buses_at",
-        "hours",
-        "why",
-        "record",
-        "events"
+        "why"
       ],
       "title": "Forecast",
       "type": "object"
@@ -400,10 +390,7 @@
       "required": [
         "kind",
         "start",
-        "values",
-        "low",
-        "high",
-        "heavy"
+        "values"
       ],
       "title": "Hours",
       "type": "object"
@@ -513,6 +500,12 @@
       "title": "NoThreat",
       "type": "object"
     },
+    "OutlookIndex": {
+      "description": "A day's outlook, as its position in the file's outlooks.",
+      "exclusiveMaximum": 9000,
+      "minimum": 0,
+      "type": "integer"
+    },
     "PastDay": {
       "additionalProperties": false,
       "description": "One day in the district's record: its snow and what the district did.",
@@ -543,9 +536,7 @@
         }
       },
       "required": [
-        "day",
-        "inches",
-        "status"
+        "day"
       ],
       "title": "PastDay",
       "type": "object"
@@ -583,7 +574,6 @@
       },
       "required": [
         "proves",
-        "inches",
         "days"
       ],
       "title": "PastRecord",
@@ -603,7 +593,7 @@
     },
     "PooledBase": {
       "additionalProperties": false,
-      "description": "For a district with too short a history of its own: the districts around it.\n\nThe districts of ``scope`` (``nearby``: within the neighbor distance; the\ndistrict's county, state or weather region; or ``nation``: the districts of every\nstate, named when no smaller place's record is true of the chance) closed or went\nremote on about ``points`` in 100 of their recorded district-days like this one, or\nwith ``alert`` when one is given. The pipeline names a scope only when the share the\nwebsite says for ``points`` is true of that scope's recorded days.",
+      "description": "For a district with too short a history of its own: the districts around it.\n\nThe districts of ``scope`` (``nearby``: within the neighbor distance; the\ndistrict's county, state or weather region; or ``nation``: the districts of every\nstate, named when no smaller place's record is true of the chance) closed or went\nremote on about ``points`` in 100 of their recorded district-days like this one, or\nwith ``alert`` when one is given. The pipeline names a scope only when the share the\nwebsite says for ``points`` is true of that scope's recorded days.\n\n``of`` says whose days are counted: ``districts``, or ``private_schools`` (a private\nschool's chance is counted over private schools' recorded days only: \"Private schools\nnear St. Ann closed ...\").",
       "properties": {
         "alert": {
           "anyOf": [
@@ -627,6 +617,14 @@
           "description": "The days counted are days the live pipeline read (complete daily reads), not the recorded archive days; the sentence says so.",
           "type": "boolean"
         },
+        "of": {
+          "description": "Whose recorded days are counted: districts', or private schools' only.",
+          "enum": [
+            "districts",
+            "private_schools"
+          ],
+          "type": "string"
+        },
         "points": {
           "$ref": "#/$defs/Percent"
         },
@@ -644,10 +642,7 @@
       "required": [
         "kind",
         "scope",
-        "points",
-        "alert",
-        "borrowed",
-        "live"
+        "points"
       ],
       "title": "PooledBase",
       "type": "object"
@@ -711,6 +706,7 @@
           "icy_roads": "#/$defs/IcyRoadsReason",
           "neighbors": "#/$defs/NeighborsReason",
           "record": "#/$defs/RecordReason",
+          "said_open": "#/$defs/SaidOpenReason",
           "snow_stops": "#/$defs/SnowStopsReason",
           "snow_total": "#/$defs/SnowTotalReason",
           "sun": "#/$defs/SunReason",
@@ -749,6 +745,9 @@
         },
         {
           "$ref": "#/$defs/IceReason"
+        },
+        {
+          "$ref": "#/$defs/SaidOpenReason"
         }
       ]
     },
@@ -771,9 +770,67 @@
       "title": "RecordReason",
       "type": "object"
     },
+    "SaidOpenReason": {
+      "additionalProperties": false,
+      "description": "The district (every one of its eligible schools, as a statement it posted for all of\nthem reaches) or the private school said school is on for the day: it takes the chance\ndown to the floor, so it only takes points away.",
+      "properties": {
+        "kind": {
+          "const": "said_open",
+          "type": "string"
+        },
+        "points": {
+          "$ref": "#/$defs/Points"
+        }
+      },
+      "required": [
+        "kind",
+        "points"
+      ],
+      "title": "SaidOpenReason",
+      "type": "object"
+    },
     "SchemaVersion": {
       "const": 1,
       "description": "The file format's version. A reader refuses a file with any other.",
+      "type": "integer"
+    },
+    "SchoolForecast": {
+      "additionalProperties": false,
+      "description": "One private school's outlook for each day in the file's days (contract C3): a school\nwith no district gets its own chance, counted over private schools.\n\nIts ``days`` name each day's outlook by its position in the file's ``outlooks``, and its\n``zone`` its time zone by its position in the file's ``zones``: many private schools share\nthe same outlook and the same zone, so the file holds each once.",
+      "properties": {
+        "days": {
+          "items": {
+            "$ref": "#/$defs/OutlookIndex"
+          },
+          "type": "array"
+        },
+        "neighbors": {
+          "description": "The districts next door, nearest first: districts with a school within 10 miles of this school.",
+          "items": {
+            "$ref": "#/$defs/DistrictIndex"
+          },
+          "maxItems": 4,
+          "type": "array"
+        },
+        "school": {
+          "$ref": "#/$defs/SchoolIndex"
+        },
+        "zone": {
+          "$ref": "#/$defs/ZoneIndex"
+        }
+      },
+      "required": [
+        "school",
+        "zone",
+        "days"
+      ],
+      "title": "SchoolForecast",
+      "type": "object"
+    },
+    "SchoolIndex": {
+      "description": "A school's position in schools/meta.json ids (and in points.bin).",
+      "maximum": 4294967294,
+      "minimum": 0,
       "type": "integer"
     },
     "SimilarDaysBase": {
@@ -798,9 +855,7 @@
       },
       "required": [
         "kind",
-        "points",
-        "borrowed",
-        "live"
+        "points"
       ],
       "title": "SimilarDaysBase",
       "type": "object"
@@ -1009,8 +1064,7 @@
         }
       },
       "required": [
-        "base",
-        "reasons"
+        "base"
       ],
       "title": "Why",
       "type": "object"
@@ -1037,11 +1091,17 @@
       ],
       "title": "WindChillReason",
       "type": "object"
+    },
+    "ZoneIndex": {
+      "description": "A time zone, as its position in the file's zones.",
+      "exclusiveMaximum": 64,
+      "minimum": 0,
+      "type": "integer"
     }
   },
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "additionalProperties": false,
-  "description": "predictions/latest.json: per district, the chance of no school or a delay, by day.",
+  "description": "predictions/latest.json: per district, and per private school, the chance of no school\nor a delay, by day.",
   "properties": {
     "days": {
       "description": "The local days forecast, consecutive, today first.",
@@ -1064,8 +1124,31 @@
     "generated_at": {
       "$ref": "#/$defs/UtcInstant"
     },
+    "outlooks": {
+      "description": "Each distinct outlook the schools' days name, once; every one is named.",
+      "items": {
+        "$ref": "#/$defs/DayForecast"
+      },
+      "maxItems": 9000,
+      "type": "array"
+    },
     "schema_version": {
       "$ref": "#/$defs/SchemaVersion"
+    },
+    "schools": {
+      "description": "The private schools (no district), sorted by school, each once.",
+      "items": {
+        "$ref": "#/$defs/SchoolForecast"
+      },
+      "type": "array"
+    },
+    "zones": {
+      "description": "Each distinct time zone the schools name, once; every one is named.",
+      "items": {
+        "$ref": "#/$defs/TimeZoneName"
+      },
+      "maxItems": 64,
+      "type": "array"
     }
   },
   "required": [
