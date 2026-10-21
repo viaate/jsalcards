@@ -212,6 +212,12 @@ statuses, take them down first while the variable is still `on` (delete the over
 admin view and wait for the next run, or `live blank` for every status at once), then set it.
 While it is `shadow` or `off` and `v1/` still shows statuses, every run prints one warning.
 
+After the `publish` job, the `notify` job sends status notifications from the public files
+(docs/notify.md): one line and nothing else while no browser gets notifications, and nothing
+from a file older than 20 minutes or for another directory. A status that only leaves the file
+(a held source, a blank) is never sent as lifted; only an open statement lifts one. The job
+never turns the run red.
+
 Both `predict.yml` and `live-ingest.yml` commit to `viaate/snowlight-live`. A commit that loses
 the race (the other moved the branch first) is built again on the new head, keeping the other's
 files, up to 3 times (`GitHubPublisher.attempts`); only then does the run fail.

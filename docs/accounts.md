@@ -196,7 +196,8 @@ visit and end at log out, a password change, or when the account is disabled or
 deleted.
 
 Deleting an account (in Settings, or by the admin) removes its name, email,
-username, saved schools, keys, sessions and login counts at once. The admin log
+username, saved schools, keys, sessions, login counts, push subscriptions,
+notification settings and sent log at once. The admin log
 names accounts only by their id, with the username and join number they had
 when you acted on them; it never holds their email or name, and entries made
 before usernames that named an email now name the account's id, or "deleted
@@ -253,5 +254,9 @@ The admin name is public, so anyone can use up its 10 tries. When that happens:
 - `GET /v1/overrides` is the public list of active manual statuses (no notes,
   no names). `live-ingest.yml` reads it and publishes them into
   `live/closings.json`, so the map shows them within about 10 minutes.
-- Notifications come next: push subscriptions and notification settings will be
-  new tables in a later migration, tied to `users.id`.
+- Notifications (docs/notify.md): `0004_notify.sql` adds push subscriptions,
+  notification settings and the sent log, tied to `users.id`; deleting an
+  account removes them. Each subscription keeps the session it was turned on
+  in, so ending sessions (log out, a password change, an admin reset or
+  disable, expiry) stops those browsers' notifications. The Worker only stores
+  them; GitHub Actions sends.

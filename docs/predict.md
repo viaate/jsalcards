@@ -371,7 +371,10 @@ Run from `pipeline/`. Exit codes: 0 done, 3 dark (nothing uploaded: the gate ref
 Environment: `PREDICT_PUBLISH` (`on` writes `v1/`, `shadow` writes `v1-shadow/`, `off`
 writes nothing and is the default; the workflow sets `on`), `LIVE_HOST_TOKEN` (the
 workflow passes `SNOWLIGHT_LIVE_TOKEN`), `GITHUB_TOKEN` (reads the site's deployments for
-the directory handshake).
+the directory handshake), `CLOUDFLARE_API_TOKEN` and `CLOUDFLARE_ACCOUNT_ID` (the chance and
+evening notifications after each pass whose file is the public one, docs/notify.md; without
+them no notification is sent, and a notification problem only warns; the workflow gives them
+to the `predict run` step only).
 
 ## When a pass stays dark
 
