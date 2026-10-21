@@ -496,3 +496,109 @@ ingest itself reads `out/internal/live/state` directly. No workflow runs the liv
 (`config/live.yaml` keeps its state `local`), so until one does the step logs "no live
 ingest state reached this run" and then "nothing to learn: no live-read district-days
 labeled yet; the model is unchanged".
+
+## The forecast history (S7-F, piece F1: data only)
+
+Nothing on the site changes with this piece, and `predict.yml` serves exactly as before. It
+gathers what the night-before chance (pieces F2 and F3) will learn from.
+
+**The forecast.** The Weather Service's forecast grids (NDFD, the forecaster-edited 2.5 km
+grids behind weather.gov), read by `pipeline/snowlight/predict/ndfd.py` from the public NOAA
+bucket on AWS (from April 2020) and NCEI's archive (2018-19 and 2019-20). Three elements:
+snow amount and ice accumulation (6-hour periods) and apparent temperature (hourly; the wind
+chill when it is cold). A run is the three elements issued in one half hour; it counts 10
+minutes after its time (and never before AWS wrote all three), and only while it is at most
+3 hours old.
+
+The delay and the archive copies, measured by the history's prepare step over every listing of
+2018-08-14 to 2026-06-15 (2,863 days, 391,656 objects, 3.7 GB of listings, 21 minutes, on
+2026-10-21): of the 181,524 AWS objects of school days written within 3 hours of their stamp,
+0.50% were written over 10 minutes late (98th percentile 7.7 minutes, longest 167 minutes), so
+the delay stays 10 minutes. Left out of that measure: 4,429 school-day objects written over a
+day late and 11 written 3 to 24 hours late. AWS's first weeks (stamps 2020-04-17 to 2020-05-29)
+were uploaded in bulk on 2020-06-01 to 06-03, 1 to 46 days after their stamps (6,139 objects);
+a day on which AWS wrote at least 100 objects over a day late is such an archive fill, and its
+objects count from their stamp plus the delay, as NCEI's files do (NCEI keeps no publication
+time either), and are flagged in the sample table (`archive_copy`). Any other late object keeps
+its write time (19 written a day late in 2023 and 2025, 12 written 3 to 24 hours late): its run
+is too old by then and never counts. Read as publications, the bulk upload alone made 2.4% of
+the school days' objects "late" and would have set the delay to 8 days, every code unknown.
+Hours of school days with no run at most 3 hours old: 6.1% in 2018-19 and 8.2% in 2019-20
+(NCEI's sparse evenings), under 0.4% in every AWS season. NCEI has no folder for 12 days
+(2019-01-06, 06-15, 06-16, 07-28, 09-16, 11-17 to 11-22, 12-20; it answers 404): such a day
+lists no files, the other day's runs still count, and a sample with no run says
+`day_not_in_archive`. A day that does not list after the retries makes its nights unknown
+(`listing_failed`, with the error), and no night stops a job. Prepare also probes the run newest at 03:00 UTC on the first night of every week, or at
+12:00 UTC when none counts at 03:00 (its heads only, as a night reads them). On 2026-10-21 it
+probed 343 of the 349 nights (6 had no run at either hour): no element failed to read, 12 runs
+were stamped at the end (August to October 2018), 4 held their messages twice, and the 6 runs
+of 2018-09-24 00:16 to 02:46 were refused. Prepare fails, and the matrix never starts, when the delay
+is over 30 minutes, a season's school-day hours are gaps more than half the time, over 1% of
+days did not list, or a month's probed runs mostly have an element that does not read.
+Collect fails when a month's samples mostly come from runs or listings that did not read (the
+share by month is in `manifest.json`). Every decode asserts the grid (a change stops the history), reverses every odd
+row (the grids are scanned back and forth), and reads each school's cell. The window is the
+periods ending 06, 12 and 18 UTC on the school day (7 PM to 1 PM Eastern, 6 PM to noon
+Central, 5 PM to 11 AM Mountain, 4 PM to 10 AM Pacific, an hour later in daylight time),
+less the periods already over; apparent temperature is read at 7 AM local. A district's value
+is the one at least half its deciding schools reach (the class's rule), and its bucket is
+one of 0 quiet, 1-5 snow (0.5, 2, 4, 6, 9 inches), 6-8 ice (0.01, 0.10, 0.25 inches), 9-12
+feels (10, 0, -10, -20 F or colder), 13 unknown.
+
+Every snow and ice message holds a whole 6-hour period, the period under way included. The
+first message of a run is stamped from the run's reference time, but its values are the
+whole period's: measured against the same period in the last run before the period began,
+cell by cell where it held 1 inch or more (0.1 inch of ice), the median ratio stays 1.00
+however late in the period the run comes (8% of the period left on 2025-01-06 snow, 2022-02-03
+ice; 42% on 2019-01-19 snow and 2018-10-14 snow). So the period under way counts whole, snow
+before the run included. Spec-f section 4 had assumed the part after the reference time; this
+is its one switch, and pieces F2 and F3 name the period's start. NCEI's files stamp the periods
+two ways: until 2018-10-30 13:15Z every message at its period's end, after it every message at
+its start (the first at the reference time). Both read as the period ending at the message's
+end, once every message is checked: 6 hours long, ending 00, 06, 12 or 18 UTC, one reference
+time, ends rising, the first the period under way (the sample table's `period_stamp` says
+`end` or `start`). Checked on 58 runs of every school year from 2018-08-15 to 2026-01-26
+(13 stamped at the end, all before 2018-10-30 13:47Z, 44 at the start, one refused, below;
+an end-stamped run of 2018-09-14 decodes and reads its window) and by prepare's probe (below). A run whose file holds another run (its first reference time not
+within an hour after the run's time: NCEI's `201906030016` and `0017` files hold the run of
+2019-07-03 00:30, and its six runs of 2018-09-24 00:16 to 02:46 hold those of 2018-10-24) is
+refused before any value is read, and the run before it is used (`refused_runs` in the sample
+table, the runs in each job's summary). Some NCEI files hold every message twice (half the
+runs of 2019-08-19 and 2019-09-09): a repeated period is read once, and only when both copies
+are the same bytes (`repeated` in the sample table). An element whose file
+does not read leaves only its own values unknown (`element_error`; `run_error` when none
+read), and the code is 13 only when the unknown value could change the bucket.
+
+**The history workflow** (`.github/workflows/predict-forecast-history.yml`) streams the
+2018-19 to 2025-26 school nights on GitHub's runners: 80 jobs (school year by months), each
+about 30 nights, 25 runs a night, about 140 MB a night read and dropped at once. It keeps a
+bucket per district, night and sample hour (every whole local hour from 8 AM the day before
+to 4 AM, three per slot), and the tables that say how good the feed was: each sample's run
+and its age, each object's lateness, the hours with no usable run, how each run stamped its periods,
+and the runs and elements that did not read. It runs once when its workflow file lands and
+whenever the owner starts it (Actions, "predict forecast history", Run workflow). It costs
+nothing (a public repository's runners, public buckets, no key) and commits nothing: the
+results are the artifact `forecast-history` (kept 90 days), with `manifest.json` listing
+every file's SHA-256. Piece F2 downloads it to `pipeline/.cache/predict/ndfd-districts/`.
+
+Each sample keeps two codes: `code` reads a school whose cell has no value as unknown, and
+`code_filled` reads it as nothing forecast of that element; `missing` says which element had
+no value (1 snow, 2 ice, 4 apparent temperature). Some offices issue no grid of an element:
+on 2025-01-06 no ice grid covered about 18,000 of the 93,116 deciding schools (most of the
+West) and no snow grid about 900 around Tampa Bay. Piece F2 picks the reading.
+
+**The heads-up files.** `snowlight predict headsup` downloads the watches and cold
+advisories (WS.A, BZ.A, LE.A, WC.A, EC.A, HU.A, TR.A, CW.Y, WC.Y) of every school year from
+2015-16 from the same IEM service as the warning files, 12 requests and 28 MB, into
+`pipeline/.cache/predict/mesonet.agron.iastate.edu/watchwarn-headsup-csv/` (its own cache;
+the weights build's files are untouched), each with its SHA-256 provenance, and writes the
+rows per season and code to `out/internal/predict/headsup.json`. Tropical Storm and Hurricane
+Watches are issued until further notice, like the warnings, and IEM keeps a placeholder end
+days later on a row no product ended: such a row ends when its event's last explicitly ended
+row did (30 rows of 2015-16 to 2017-18, cut by 5.5 to 21 days; the count per season is in the
+report). That end comes from products issued after the row's own, so such a row keeps IEM's
+placeholder in `recorded_end`: piece F2 reads it as open until its end has passed, and as
+ended only at a time after that. It exits 1 when a code has
+rows in a season it cannot (Blizzard and Lake Effect Snow Watches after 2016-17, the Wind
+Chill Watch and Advisory after 2023-24, the Extreme Cold Watch and Cold Weather Advisory
+before 2024-25); on 2026-10-21 there were none. No class reads these yet.

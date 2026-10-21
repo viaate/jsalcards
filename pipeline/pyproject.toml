@@ -8,6 +8,8 @@ authors = [{ name = "viaate" }]
 requires-python = ">=3.12,<3.13"
 dependencies = [
     "cryptography>=46",
+    "eccodes==2.49.0",
+    "eccodeslib==2.49.0.30",
     "http-ece>=1.2.1",
     "httpx>=0.28.1",
     "numpy>=2.5.3",

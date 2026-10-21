@@ -45,18 +45,20 @@ withdrawn, and it is reported (``ReadStats.ended_before_start``).
 Tropical rows left open
 =======================
 
-Tropical Storm and Hurricane Warnings (from the tropical cyclone VTEC products,
-TCV) are issued "until further notice": their VTEC end time is unset and the
-warning lasts until a product cancels it. IEM stores such a row with a
-placeholder expiry (its ``utc_init_expire`` is the product time plus a fixed
-span: 6 days in 2016, 21 days in 2021). When no product ever ended a row (its
+Tropical Storm and Hurricane Warnings and Watches (from the tropical cyclone
+VTEC products, TCV) are issued "until further notice": their VTEC end time is
+unset and the warning or watch lasts until a product cancels or upgrades it.
+IEM stores such a row with a placeholder expiry (its ``utc_init_expire`` is the
+product time plus a fixed span: 6 days in 2016, 21 days in 2021). When no
+product ever ended a row (its
 final ``status`` is not ``CAN``, ``EXP`` or ``UPG``), that placeholder is all
 IEM has: Hermine's ``NHC.TR.W.1009.2016`` has five zones recorded until
 2016-09-10 06:00 although every other zone of the event was cancelled by
 2016-09-06 18:00, and Ida's ``LIX.TR.W.1009.2021`` five zones until 2021-09-20
 although the rest ended by 2021-08-30 21:19. :func:`close_open_tropical` ends
-such a row when the last explicitly ended row of its event ended, and reports it;
-a row whose event has no explicitly ended row keeps its span and is reported.
+such a row when the last explicitly ended row of its event ended, marks it
+(``EventRow.recorded_end``: that end is known only once it has passed) and reports
+it; a row whose event has no explicitly ended row keeps its span and is reported.
 
 Files are cached at ``<cache>/mesonet.agron.iastate.edu/watchwarn-csv/<first
 year>-<last year>.csv``. A file is provisional until it has been fetched at
@@ -68,7 +70,7 @@ hour old; a final copy is never fetched again.
 import csv
 import io
 from collections import Counter
-from collections.abc import Iterable, Sequence
+from collections.abc import Collection, Iterable, Sequence
 from dataclasses import dataclass, field, replace
 from datetime import UTC, date, datetime, time
 from pathlib import Path
@@ -102,7 +104,10 @@ REQUIRED_COLUMNS = (
 _HOST = "mesonet.agron.iastate.edu"
 ENDING_ACTIONS = frozenset({"CAN", "EXP", "UPG"})
 """VTEC actions that end a row: cancelled, expired, upgraded."""
-UNTIL_FURTHER_NOTICE_CODES = frozenset({"HU.W", "TR.W"})
+UNTIL_FURTHER_NOTICE_CODES = frozenset({"HU.W", "TR.W", "HU.A", "TR.A"})
+"""The TCV codes IEM stores with a placeholder expiry (the watches are asked for only by the
+predict heads-up files: in the 2015-16 to 2017-18 files, 30 watch rows no product ended ran 5.5
+to 21 days past their event's last explicit end)."""
 
 
 class ArchiveCsvError(ValueError):
@@ -163,6 +168,11 @@ class EventRow:
     product_id: str
     area_km2: float | None = None
     """IEM's ``area2d``: the area of the UGC outline joined to the row (``None`` when blank)."""
+    recorded_end: datetime | None = None
+    """Set on a row :func:`close_open_tropical` ended: the placeholder end IEM recorded. Its
+    ``end`` then comes from products that ended the rest of the event, which were issued later
+    than the row's own: before ``end`` has passed, the row was still open (until further
+    notice), and a past state rebuilt at an earlier time must read it so."""
 
     @property
     def event_key(self) -> str:
@@ -230,8 +240,13 @@ def _area(value: str | None, line: int) -> float | None:
     return area
 
 
-def read_rows(text: str, states: Iterable[str] = CONUS_STATES) -> tuple[list[EventRow], ReadStats]:
+def read_rows(
+    text: str, states: Iterable[str] = CONUS_STATES, codes: Collection[str] = BY_CODE.keys()
+) -> tuple[list[EventRow], ReadStats]:
     """Read a school-year CSV into the county/zone rows of the contiguous states.
+
+    ``codes`` are the codes the request asked for (the closure-type codes; the predict
+    heads-up files ask for watches and cold advisories).
 
     Kept: ``gtype`` ``C`` rows of a closure-type code whose UGC is in ``states``,
     including rows withdrawn before they began (counted in
@@ -244,6 +259,7 @@ def read_rows(text: str, states: Iterable[str] = CONUS_STATES) -> tuple[list[Eve
         ArchiveCsvError: a documented column is missing or a value is malformed.
     """
     wanted = frozenset(states)
+    wanted_codes = frozenset(codes)
     reader = csv.DictReader(io.StringIO(text))
     missing = [column for column in REQUIRED_COLUMNS if column not in (reader.fieldnames or ())]
     if missing:
@@ -253,7 +269,7 @@ def read_rows(text: str, states: Iterable[str] = CONUS_STATES) -> tuple[list[Eve
     for line, record in enumerate(reader, start=2):
         stats.rows += 1
         code = f"{record['phenomena']}.{record['significance']}"
-        if code not in BY_CODE:
+        if code not in wanted_codes:
             raise ArchiveCsvError(f"line {line}: {code} was not asked for")
         gtype = record["gtype"]
         if gtype == "P":
@@ -324,7 +340,7 @@ def close_open_tropical(rows: Sequence[EventRow], stats: ReadStats) -> list[Even
             kept.append(row)
             continue
         stats.closed_tropical.append(ClosedRow(row.event_key, row.ugc, row.status, row.end, last))
-        kept.append(replace(row, end=last))
+        kept.append(replace(row, end=last, recorded_end=row.end))
     return kept
 
 

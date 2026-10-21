@@ -45,7 +45,7 @@ from snowlight.live.publish import LiveHold
 from snowlight.live.publishers import DirPublisher, GitHubPublisher, PublishError
 from snowlight.output import write_bytes_atomic, write_json
 from snowlight.predict import artifact as artifact_module
-from snowlight.predict import backtest, learn, pool, train
+from snowlight.predict import backtest, forecast_history, inputs, learn, pool, train
 from snowlight.predict.alerts_live import (
     LiveEvent,
     Memory,
@@ -224,6 +224,16 @@ def register(subparsers: "argparse._SubParsersAction[argparse.ArgumentParser]") 
     )
     taught.set_defaults(handler=run_learn)
 
+    heads = actions.add_parser("headsup", help="download the heads-up season files (watches)")
+    heads.add_argument("--first", type=int, default=inputs.FIRST_HEADS_UP_SEASON)
+    heads.add_argument("--last", type=int, default=None, help="default: this school year")
+    heads.add_argument("--cache", type=Path, default=inputs.HEADS_UP_CACHE)
+    heads.add_argument(
+        "--out", type=Path, default=PIPELINE_ROOT / "out" / "internal" / "predict" / "headsup.json"
+    )
+    heads.set_defaults(handler=run_headsup)
+    forecast_history.register(actions)
+
 
 def _train_inputs(parser: argparse.ArgumentParser) -> None:
     paths = train.TrainPaths()
@@ -251,6 +261,49 @@ def _serve_inputs(parser: argparse.ArgumentParser) -> None:
     parser.add_argument("--host", choices=("github", "dir"), default="github")
     parser.add_argument("--host-dir", type=Path, default=None, help="the folder of --host dir")
     parser.add_argument("--write", type=Path, default=None, help="also write each file here")
+
+
+# --- the heads-up history -----------------------------------------------------------------------
+
+
+def run_headsup(args: argparse.Namespace) -> int:  # pragma: no cover - IEM
+    """Run ``predict headsup``: each season's file (cached with its SHA-256), its rows by code,
+    and the codes found in a season they cannot be in (exit 1 when there are any)."""
+    from snowlight.sources.nws.http import HttpCache  # noqa: PLC0415
+
+    last = args.last if args.last is not None else season_of(date.today())
+    seasons: list[inputs.HeadsUpSeason] = []
+    with HttpCache(inputs.client()) as http:
+        for year in range(args.first, last + 1):
+            found = inputs.load_headsup(year, http, args.cache)
+            seasons.append(found)
+            _out(
+                f"{year}-{(year + 1) % 100:02d} rows {found.rows:,} {dict(found.by_code)}"
+                f" tropical rows ended with their event {found.closed_tropical}"
+            )
+    problems = inputs.code_problems({found.year: found.by_code for found in seasons})
+    write_json(
+        args.out,
+        {
+            "seasons": [
+                {
+                    "season": found.year,
+                    "rows": found.rows,
+                    "by_code": dict(found.by_code),
+                    "closed_tropical": found.closed_tropical,
+                    "sha256": found.sha256,
+                    "bytes": found.bytes,
+                    "final": found.final,
+                    "url": found.url,
+                }
+                for found in seasons
+            ],
+            "code_problems": list(problems),
+        },
+    )
+    for problem in problems:
+        _err(f"code out of its seasons: {problem}")
+    return 1 if problems else 0
 
 
 # --- training -----------------------------------------------------------------------------------

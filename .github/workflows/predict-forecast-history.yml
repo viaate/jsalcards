@@ -1,0 +1,170 @@
+# The forecast history for the night-before chance (S7-F F1, docs/predict.md "The forecast
+# history"): the Weather Service's forecast grids (NDFD) of the 2018-19 to 2025-26 school years,
+# streamed here on GitHub's runners and never kept: about 7 MB a run read by range, 25 runs a
+# school night, decoded and dropped at once. What is kept is a bucket code per district, night and
+# sample hour, and the tables that say how good the feed was.
+#
+# Three jobs:
+# * prepare: the deciding schools of every deployed district (the site's directory, read through
+#   the deployed edition as the serving pass reads it), and the listing of every day of the eight
+#   school years (NCEI to 2020-04-16, AWS after): each AWS object's lateness, the delay a run
+#   counts after (10 minutes, unless over 2% of objects are later; archive copies, such as the
+#   2020-06-02 bulk upload of AWS's first weeks, are left out), and the hours with no run at most
+#   3 hours old; and it probes the heads of one run on the first night of every week. It fails,
+#   and the matrix never starts, when the delay is over 30 minutes, a season's school-day hours
+#   are mostly gaps, over 1% of days did not list, or a month's probed runs mostly have an
+#   element that does not read.
+# * nights: 80 jobs, one per school year and group of months (CHUNKS in
+#   snowlight/predict/forecast_history.py), each about 30 nights.
+# * collect: one codes file per school year, the lateness and sample tables, and manifest.json
+#   with every file's SHA-256, each job's summary and the share of samples by month whose run or
+#   listing did not read (it fails when a month's samples mostly did not read).
+#
+# Everything is uploaded as artifacts (kept 90 days): forecast-history-prepared,
+# forecast-history-part-<year>-<chunk>, and forecast-history (what the model step downloads to
+# pipeline/.cache/predict/ndfd-districts/). Nothing is committed and nothing is published; the
+# serving workflow (predict.yml) is not touched. Free: a public repository's runners, public
+# NOAA buckets, no key.
+#
+# It runs once when this file lands (a push that changes it) and whenever the owner starts it.
+name: predict forecast history
+
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - .github/workflows/predict-forecast-history.yml
+
+concurrency:
+  group: predict-forecast-history
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+  actions: read # the Pages artifact of the deployed directory (S8-0)
+  deployments: read # the deployed directory's handshake (S8-0)
+
+jobs:
+  prepare:
+    runs-on: ubuntu-latest
+    timeout-minutes: 120 # NCEI day catalogs are about 7 MB and 30 s each
+    defaults:
+      run:
+        working-directory: pipeline
+    env:
+      GITHUB_TOKEN: ${{ github.token }}
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+
+      - uses: astral-sh/setup-uv@c18668ad3cf93ea998bef934396af7bb5c839dc7 # v10.2.0
+        with:
+          python-version: "3.12"
+          working-directory: pipeline
+          enable-cache: true
+          cache-dependency-glob: uv.lock
+
+      - run: uv sync --locked --no-dev
+
+      - run: uv run snowlight predict forecast-history prepare --out ../forecast-history/prepared
+
+      # Uploaded even when prepare found a problem, so its report (delay.json) can be read.
+      - if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: forecast-history-prepared
+          path: forecast-history/prepared/
+          retention-days: 90
+          if-no-files-found: error
+
+  nights:
+    needs: prepare
+    runs-on: ubuntu-latest
+    timeout-minutes: 150
+    strategy:
+      fail-fast: false
+      # A share of the account's concurrent jobs, so the serving and ingest workflows keep theirs.
+      max-parallel: 12
+      matrix:
+        season: [2018, 2019, 2020, 2021, 2022, 2023, 2024, 2025]
+        chunk: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9]
+    defaults:
+      run:
+        working-directory: pipeline
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+
+      - uses: astral-sh/setup-uv@c18668ad3cf93ea998bef934396af7bb5c839dc7 # v10.2.0
+        with:
+          python-version: "3.12"
+          working-directory: pipeline
+          enable-cache: true
+          cache-dependency-glob: uv.lock
+
+      - run: uv sync --locked --no-dev
+
+      - uses: actions/download-artifact@v4
+        with:
+          name: forecast-history-prepared
+          path: forecast-history/prepared
+
+      - run: >
+          uv run snowlight predict forecast-history nights
+          --season ${{ matrix.season }} --chunk ${{ matrix.chunk }}
+          --prepared ../forecast-history/prepared --out ../forecast-history/part
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: forecast-history-part-${{ matrix.season }}-${{ matrix.chunk }}
+          path: forecast-history/part/
+          retention-days: 90
+          if-no-files-found: error
+
+  collect:
+    needs: [prepare, nights]
+    if: always() && needs.prepare.result == 'success'
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    defaults:
+      run:
+        working-directory: pipeline
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+
+      - uses: astral-sh/setup-uv@c18668ad3cf93ea998bef934396af7bb5c839dc7 # v10.2.0
+        with:
+          python-version: "3.12"
+          working-directory: pipeline
+          enable-cache: true
+          cache-dependency-glob: uv.lock
+
+      - run: uv sync --locked --no-dev
+
+      - uses: actions/download-artifact@v4
+        with:
+          name: forecast-history-prepared
+          path: forecast-history/prepared
+
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: forecast-history-part-*
+          path: forecast-history/parts
+
+      # Exit 1 (after writing everything) when a part is missing: the run shows it.
+      - run: >
+          uv run snowlight predict forecast-history collect
+          --parts ../forecast-history/parts --prepared ../forecast-history/prepared
+          --out ../forecast-history/out
+
+      - if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: forecast-history
+          path: forecast-history/out/
+          retention-days: 90
+          if-no-files-found: ignore

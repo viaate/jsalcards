@@ -61,6 +61,40 @@ CLASS_BY_CODE: Final[dict[str, WeatherClass]] = {
 }
 """The VTEC codes that make a class; every other code (FF.W, watches, CW.Y, WC.Y) is ignored."""
 
+
+class HeadsUp(IntEnum):
+    """A heads-up (S7-F, spec-f s. 2): a watch or a cold advisory, kept beside the class and
+    never changing it. Ranked in this order, 1 strongest (what each most often becomes)."""
+
+    NONE = 0
+    WINTER_STORM_WATCH = 1
+    EXTREME_COLD_WATCH = 2
+    COLD_WEATHER_ADVISORY = 3
+    HURRICANE_WATCH = 4
+    TROPICAL_STORM_WATCH = 5
+
+    @property
+    def label(self) -> str:
+        """Its name in files and reports (``winter_storm_watch``)."""
+        return self.name.lower()
+
+
+HEADS_UP_BY_CODE: Final[dict[str, HeadsUp]] = {
+    "WS.A": HeadsUp.WINTER_STORM_WATCH,
+    "BZ.A": HeadsUp.WINTER_STORM_WATCH,
+    "LE.A": HeadsUp.WINTER_STORM_WATCH,
+    "EC.A": HeadsUp.EXTREME_COLD_WATCH,
+    "WC.A": HeadsUp.EXTREME_COLD_WATCH,
+    "CW.Y": HeadsUp.COLD_WEATHER_ADVISORY,
+    "WC.Y": HeadsUp.COLD_WEATHER_ADVISORY,
+    "HU.A": HeadsUp.HURRICANE_WATCH,
+    "TR.A": HeadsUp.TROPICAL_STORM_WATCH,
+}
+"""The VTEC codes of each heads-up, retired codes with the code that replaced them (Blizzard
+and Lake Effect Snow Watches folded into the Winter Storm Watch in 2017, the Wind Chill Watch
+and Advisory became the Extreme Cold Watch and the Cold Weather Advisory in October 2024). There
+is no Ice Storm Watch and no Extreme Cold Advisory. Read by no class: F1 downloads them only."""
+
 type Group = Literal["none", "advisory", "snow", "severe", "cold", "tropical"]
 
 GROUP_OF: Final[dict[WeatherClass, Group]] = {

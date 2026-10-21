@@ -17,6 +17,7 @@ from dataclasses import dataclass, field
 from datetime import UTC, datetime, timedelta
 from pathlib import Path
 from typing import Final
+from urllib.parse import urlencode
 
 import httpx
 
@@ -34,6 +35,10 @@ from snowlight.sources.nws.alerts import (
     NwsAlert,
     parse_active,
 )
+from snowlight.sources.nws.http import HttpCache, parse_iso_utc
+from snowlight.sources.nws.iem import FINAL_AFTER, PROVISIONAL_MAX_AGE, WATCHWARN_URL
+from snowlight.weather.hazards import CONUS_STATES
+from snowlight.weights.archive import EventRow, read_rows, request_window
 
 USER_AGENT: Final = f"snowlight-predict/{__version__} (+https://snowlightmap.com)"
 """The NWS asks every client to name itself and a contact."""
@@ -248,3 +253,135 @@ class AlertsHistory:
                 return found
             url, params = following, None
         raise DarkError(Dark.MEMORY, f"alert history: more than {HISTORY_PAGES} pages")
+
+
+# --- the heads-up history (S7-F F1, spec-f s. 2 and 11) ----------------------------------------
+
+HEADS_UP_PAIRS: Final = (
+    ("WS", "A"),
+    ("BZ", "A"),
+    ("LE", "A"),
+    ("WC", "A"),
+    ("EC", "A"),
+    ("HU", "A"),
+    ("TR", "A"),
+    ("CW", "Y"),
+    ("WC", "Y"),
+)
+"""The phenomena and significance pairs asked of IEM: every heads-up code
+(:data:`~snowlight.predict.situations.HEADS_UP_BY_CODE`), retired codes included."""
+HEADS_UP_CODES: Final = frozenset(
+    f"{phenomena}.{significance}" for phenomena, significance in HEADS_UP_PAIRS
+)
+HEADS_UP_CACHE: Final = Path(__file__).resolve().parents[2] / ".cache" / "predict"
+"""The heads-up files' own cache tree (gitignored): the weights build's files and their
+provenance stay untouched."""
+HEADS_UP_FOLDER: Final = "watchwarn-headsup-csv"
+FIRST_HEADS_UP_SEASON: Final = 2015
+CODE_SEASONS: Final[Mapping[str, tuple[int | None, int | None]]] = {
+    "BZ.A": (None, 2016),
+    "LE.A": (None, 2016),
+    "WC.A": (None, 2023),
+    "WC.Y": (None, 2023),
+    "EC.A": (2024, None),
+    "CW.Y": (2024, None),
+}
+"""The seasons (first, last; by starting year) a code may have rows in: the NWS folded the
+Blizzard and Lake Effect Snow Watches into the Winter Storm Watch from 2017-18, and replaced the
+Wind Chill Watch and Advisory with the Extreme Cold Watch and the Cold Weather Advisory from
+2024-25 (spec-f GF9: counts asserted per season)."""
+
+
+def headsup_url(year: int) -> str:
+    """The ``watchwarn.py`` CSV request for one school year of heads-up rows: the weights
+    build's request (:func:`snowlight.weights.archive.year_url`) with the heads-up pairs."""
+    first, end = request_window(year)
+    query = {
+        "accept": "csv",
+        "sts": f"{first.isoformat()}T00:00Z",
+        "ets": f"{end.isoformat()}T00:00Z",
+        "limitps": "1",
+        "phenomena": ",".join(phenomena for phenomena, _ in HEADS_UP_PAIRS),
+        "significance": ",".join(significance for _, significance in HEADS_UP_PAIRS),
+        "location_group": "states",
+        "states": ",".join(sorted(set(CONUS_STATES))),
+    }
+    return f"{WATCHWARN_URL}?{urlencode(query, safe=',:')}"
+
+
+def headsup_path(root: Path, year: int) -> Path:
+    """Where one school year's heads-up file is cached."""
+    return root / "mesonet.agron.iastate.edu" / HEADS_UP_FOLDER / f"{year}-{year + 1}.csv"
+
+
+@dataclass(frozen=True, slots=True)
+class HeadsUpSeason:
+    """One school year's heads-up rows, their counts by code, and the file's provenance."""
+
+    year: int
+    rows: int
+    by_code: Mapping[str, int]
+    closed_tropical: int
+    """Tropical watch and warning rows no product ended, ended when their event's last
+    explicitly ended row did (:func:`snowlight.weights.archive.close_open_tropical`)."""
+    sha256: str
+    url: str
+    bytes: int
+    final: bool
+
+
+def read_headsup(text: str) -> tuple[list[EventRow], dict[str, int], int]:
+    """The zone rows of one heads-up file, their count by code, and how many tropical rows no
+    product ended were ended with their event (a Tropical Storm or Hurricane Watch is issued
+    until further notice, and IEM keeps a placeholder end days later: spec-f s. 3). Such a row
+    carries ``recorded_end``: its ``end`` came from later products, so a state at an earlier
+    time reads the row as open until that end has passed (docs/predict.md).
+
+    Raises:
+        snowlight.weights.archive.ArchiveCsvError: the file is malformed or holds another code.
+    """
+    rows, stats = read_rows(text, codes=HEADS_UP_CODES)
+    closed = sum(1 for row in stats.closed_tropical if row.end is not None)
+    return rows, dict(sorted(stats.by_code.items())), closed
+
+
+def code_problems(counts: Mapping[int, Mapping[str, int]]) -> list[str]:
+    """Rows of a code in a season it cannot have (:data:`CODE_SEASONS`)."""
+    problems: list[str] = []
+    for year, by_code in sorted(counts.items()):
+        for code, count in sorted(by_code.items()):
+            first, last = CODE_SEASONS.get(code, (None, None))
+            if count and (
+                (first is not None and year < first) or (last is not None and year > last)
+            ):
+                problems.append(f"{year}-{(year + 1) % 100:02d}: {count} rows of {code}")
+    return problems
+
+
+def load_headsup(
+    year: int, http: HttpCache, root: Path = HEADS_UP_CACHE
+) -> HeadsUpSeason:  # pragma: no cover - IEM
+    """One school year's heads-up file, fetched when missing or provisional, as the weights
+    build fetches its own (a file is final once fetched 21 days after its window ended).
+
+    Raises:
+        snowlight.weights.archive.ArchiveCsvError: the file is malformed.
+    """
+    url, dest = headsup_url(year), headsup_path(root, year)
+    end = datetime.combine(request_window(year)[1], datetime.min.time(), tzinfo=UTC)
+    cached = http.cached(url, dest)
+    final_copy = (
+        cached is not None and parse_iso_utc(cached.provenance.checked_at) >= end + FINAL_AFTER
+    )
+    file = http.fetch(url, dest, max_age=None if final_copy else PROVISIONAL_MAX_AGE)
+    rows, by_code, closed = read_headsup(file.path.read_text(encoding="utf-8"))
+    return HeadsUpSeason(
+        year,
+        len(rows),
+        by_code,
+        closed,
+        file.provenance.sha256,
+        url,
+        file.provenance.size,
+        parse_iso_utc(file.provenance.checked_at) >= end + FINAL_AFTER,
+    )

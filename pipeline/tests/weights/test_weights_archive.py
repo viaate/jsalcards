@@ -159,6 +159,8 @@ def test_open_tropical_row_ended_before_it_began_is_kept() -> None:
     rows, stats = archive.read_rows(f"{_header()}\n{ended}\n{late}\n")
     assert [row.ugc for row in rows] == ["RIZ002", "RIZ001"]
     assert rows[1].end == _utc("2025-01-20T11:46")  # the event's last explicit end
+    assert rows[1].recorded_end == _utc("2025-01-30T00:00")  # marked: known once it passed
+    assert rows[0].recorded_end is None
     assert stats.ended_before_start == 1
     assert stats.closed_tropical[0].end == _utc("2025-01-20T11:46")
 
