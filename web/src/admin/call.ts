@@ -24,6 +24,10 @@ export interface ManualStatus {
   readonly status: 'closed' | 'delayed' | 'early_dismissal' | 'open';
   readonly minutes: number | null;
   readonly at_local_time: string | null;
+  /** Its school-local days (YYYY-MM-DD), ascending: those not yet over while it is active. */
+  readonly days: readonly string[];
+  /** The zone the days are in; null for one set before days were stored. */
+  readonly time_zone: string | null;
   readonly note: string | null;
   readonly set_at: string;
   readonly expires_at: string;

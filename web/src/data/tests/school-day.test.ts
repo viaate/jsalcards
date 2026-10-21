@@ -44,7 +44,7 @@ function covered(ranges: CoveredFile['ranges'], generatedAt = GENERATED): Covere
   return { schema_version: 1, generated_at: generatedAt, directory: STAMP, ranges };
 }
 
-/** A delayed row with its time columns filled in, then a closed one. */
+/** A delayed row with its time columns filled in, set by the site's team, then a closed one. */
 function delayedDay(day: string): ClosingsDay {
   return {
     day,
@@ -54,6 +54,7 @@ function delayedDay(day: string): ClosingsDay {
     reasons: [1, null],
     shifts: [120],
     clocks: [600],
+    manual: [0],
   };
 }
 
@@ -146,7 +147,14 @@ describe('a school’s status', () => {
     expect(
       schoolStatus({ school: 0, directory: STAMP, closings, covered: null, now: NOON }),
     ).toEqual({
-      today: { status: 0, reason: 0, announcedAt: null, shiftMinutes: null, clockMinute: null },
+      today: {
+        status: 0,
+        reason: 0,
+        announcedAt: null,
+        shiftMinutes: null,
+        clockMinute: null,
+        manual: false,
+      },
       tomorrow: null,
     });
     expect(
@@ -159,11 +167,12 @@ describe('a school’s status', () => {
         announcedAt: new Date('2026-01-12T16:55:00Z'),
         shiftMinutes: 120,
         clockMinute: 600,
+        manual: true,
       },
     });
     expect(
       schoolStatus({ school: 2, directory: STAMP, closings, covered: null, now: NOON }).tomorrow,
-    ).toMatchObject({ status: 0, shiftMinutes: null, clockMinute: null });
+    ).toMatchObject({ status: 0, shiftMinutes: null, clockMinute: null, manual: false });
   });
 
   it('says open only where the school was checked today and has no row', () => {

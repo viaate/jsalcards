@@ -196,6 +196,8 @@ export const copy = deepFreeze({
     back: 'Back',
     showOnMap: 'Show on map',
     posted: 'Posted',
+    /** Leads the note of a status the site's own team set by hand. */
+    confirmed: 'Confirmed by our team',
     publicSchool: 'Public school',
     privateSchool: 'Private school',
     charterSchool: 'Charter school',

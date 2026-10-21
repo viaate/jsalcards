@@ -168,6 +168,7 @@ export const A_CLOSINGS: ClosingsFile = {
       reasons: [0, 0, 0, 0],
       shifts: [],
       clocks: [],
+      manual: [],
     },
   ],
 };

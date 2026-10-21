@@ -79,6 +79,7 @@ export function testDay(
     reasons: rows.map(() => 0 as const),
     shifts: Array.from({ length: shifted }, () => null),
     clocks: Array.from({ length: shifted }, () => null),
+    manual: [],
   };
 }
 

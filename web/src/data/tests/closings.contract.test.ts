@@ -9,8 +9,8 @@
  *   synthetic_*.json written by the pipeline from its synthetic rows, which it
  *   writes beside it as synthetic_*.rows.json: one object per row, with the
  *   school's position, the local day, the status and reason codes,
- *   announced_at (an instant, or null), shift_minutes and clock_minute (Row
- *   below). Every golden file there is read, and each must have its rows
+ *   announced_at (an instant, or null), shift_minutes, clock_minute and
+ *   manual (set by the site's own team; Row below). Every golden file there is read, and each must have its rows
  *   file. Once S8-D's publisher is in, a case fails, naming the file, while
  *   synthetic_closings.json or its rows file is missing.
  *
@@ -51,6 +51,7 @@ interface Row {
   readonly reason: number | null;
   readonly shift_minutes: number | null;
   readonly clock_minute: number | null;
+  readonly manual: boolean;
 }
 
 /** The example's rows, as the pipeline's ClosingsFile.closings() decodes them. */
@@ -60,7 +61,7 @@ const EXAMPLE_ROWS: readonly Row[] = [
   row(2, '2027-01-12', 1, null, null),
   row(3, '2027-01-12', 2, '2027-01-12T01:15:00Z', 2),
   row(5, '2027-01-12', 3, '2027-01-12T13:00:00Z', 5, 180, 750),
-  row(0, '2027-01-13', 0, '2027-01-12T12:50:00Z', 0),
+  row(0, '2027-01-13', 0, '2027-01-12T12:50:00Z', 0, null, null, true),
   row(4, '2027-01-13', 0, '2027-01-12T12:58:00Z', null),
 ];
 
@@ -72,6 +73,7 @@ function row(
   reason: number | null,
   shift: number | null = null,
   clock: number | null = null,
+  manual = false,
 ): Row {
   return {
     school,
@@ -81,6 +83,7 @@ function row(
     reason,
     shift_minutes: shift,
     clock_minute: clock,
+    manual,
   };
 }
 
@@ -123,6 +126,7 @@ function panelRows(file: ClosingsFile): Row[] {
           today.reason,
           today.shiftMinutes,
           today.clockMinute,
+          today.manual,
         ),
       );
     }

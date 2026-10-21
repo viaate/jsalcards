@@ -215,6 +215,7 @@ describe('schoolView', () => {
             announcedAt: new Date('2026-01-12T11:12:00Z'),
             shiftMinutes: 120,
             clockMinute: 600,
+            manual: false,
           },
           tomorrow: {
             status: 0,
@@ -222,6 +223,7 @@ describe('schoolView', () => {
             announcedAt: null,
             shiftMinutes: null,
             clockMinute: null,
+            manual: false,
           },
         },
       }),
@@ -237,6 +239,33 @@ describe('schoolView', () => {
     ]);
     expect(schoolView(input({ status: { today: 'open', tomorrow: null } }))?.status).toEqual([
       { tone: 'open', headline: copy.open.today, detail: null, note: null },
+    ]);
+  });
+
+  it('says a status the site’s own team set is confirmed by the team, before when it was posted', () => {
+    const posted = new Date('2026-01-12T12:40:00Z');
+    const view = schoolView(
+      input({
+        status: {
+          today: {
+            status: 0,
+            reason: null,
+            announcedAt: posted,
+            shiftMinutes: null,
+            clockMinute: null,
+            manual: true,
+          },
+          tomorrow: null,
+        },
+      }),
+    );
+    expect(view?.status).toEqual([
+      {
+        tone: 'closed',
+        headline: copy.statusLine.closed.today,
+        detail: null,
+        note: `${copy.detail.confirmed} · ${format.posted(posted, 'America/Chicago', NOON)}`,
+      },
     ]);
   });
 
@@ -1018,6 +1047,7 @@ describe('the chance section in the panel', () => {
       announcedAt: null,
       shiftMinutes: null,
       clockMinute: null,
+      manual: false,
     };
     const morning = new Date('2026-01-12T12:00:00Z');
     const view = (status: SchoolStatus) =>

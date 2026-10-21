@@ -64,8 +64,23 @@ describe('closings.json', () => {
       { ...FILE, days: [{ ...day, clocks: [1440, null] }] },
       { ...FILE, days: [{ ...day, announced: ['2026-01-12T11:42:00Z', null, null] }] },
       { ...FILE, days: [{ ...day, reasons: [9, null, null] }] },
+      // The rows the site's team set: ascending positions of the day's rows.
+      { ...FILE, days: [{ ...day, manual: [3] }] },
+      { ...FILE, days: [{ ...day, manual: [1, 0] }] },
+      { ...FILE, days: [{ ...day, manual: [0, 0] }] },
+      { ...FILE, days: [{ ...day, manual: ['0'] }] },
+      { ...FILE, days: [{ ...day, manual: 0 }] },
     ];
     for (const value of broken) expect(parseClosings(value)).toBeNull();
+  });
+
+  it('reads the rows the site’s team set, and none from a file written before the column', () => {
+    const day = FILE.days[0];
+    if (day === undefined) throw new Error('no day');
+    const marked = { ...FILE, days: [{ ...day, manual: [0, 2] }] };
+    expect(parseClosings(marked)?.days[0]?.manual).toEqual([0, 2]);
+    const older = Object.fromEntries(Object.entries(day).filter(([key]) => key !== 'manual'));
+    expect(parseClosings({ ...FILE, days: [older] })?.days[0]?.manual).toEqual([]);
   });
 
   it('turns gaps back into school positions', () => {

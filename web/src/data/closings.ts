@@ -79,6 +79,16 @@ function parseDay(value: unknown): ClosingsDay | null {
     if (!isNullOr(shifts[k], (item) => isWhole(item, 1, MAX_SHIFT_MINUTES))) return null;
     if (!isNullOr(clocks[k], (item) => isWhole(item, 0, MINUTES_PER_DAY - 1))) return null;
   }
+  // The rows the site's team set by hand, by position: ascending, each a row of the day.
+  // A file written before the column existed has none.
+  const { manual } = group;
+  if (manual === undefined) return { ...(value as ClosingsDay), manual: [] };
+  if (!isArray(manual)) return null;
+  let last = -1;
+  for (const position of manual) {
+    if (!isWhole(position, last + 1, rows - 1)) return null;
+    last = position;
+  }
   return value as ClosingsDay;
 }
 
@@ -96,13 +106,17 @@ export function parseClosings(value: unknown): ClosingsFile | null {
   }
   if (!isArray(days) || days.length > 3) return null;
   let previous = '';
+  const groups: ClosingsDay[] = [];
   for (const day of days) {
     const group = parseDay(day);
     // Sorted, one group per day.
     if (group === null || group.day <= previous) return null;
     previous = group.day;
+    groups.push(group);
   }
-  return value as ClosingsFile;
+  return groups.every((group, i) => group === days[i])
+    ? (value as ClosingsFile)
+    : { ...(value as ClosingsFile), days: groups };
 }
 
 /** One day's rows as arrays: school positions, ascending, and their statuses. */

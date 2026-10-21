@@ -191,6 +191,7 @@ function statusLine(
         : null;
   const notes: string[] = [];
   const reason = row.reason === null ? null : reasonName(row.reason);
+  if (row.manual) notes.push(copy.detail.confirmed);
   if (reason !== null) notes.push(reason);
   if (row.announcedAt !== null) notes.push(format.posted(row.announcedAt, timeZone, now));
   return {

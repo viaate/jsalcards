@@ -156,9 +156,11 @@ export const adminCopy = /* @__PURE__ */ deepFreeze({
     open: 'Open',
     minutes: 'Minutes late',
     time: 'Dismissal time',
-    until: 'Until',
-    endToday: 'End of its day today',
-    endTomorrow: 'End of its day tomorrow',
+    days: 'Days, in its own time zone',
+    today: 'Today',
+    tomorrow: 'Tomorrow',
+    both: 'Today and tomorrow',
+    replaces: 'Saving replaces its manual status, days and all.',
     note: 'Note, only admins see it',
     save: 'Set status',
     active: 'Manual statuses',
@@ -166,6 +168,9 @@ export const adminCopy = /* @__PURE__ */ deepFreeze({
     clear: 'Clear',
     waiting: 'Waiting to publish',
     onMap: 'On the map',
+    shadowed: 'Each school has its own status',
+    pickAgain: 'The school’s date has changed. Pick its days again.',
+    noZone: 'Its time zone is not readable right now, so a status cannot be set for it yet.',
     expired: 'Ended',
     pickFirst: 'Find a school or district first.',
   },
@@ -279,6 +284,21 @@ function when(iso: string, now: Date = new Date()): string {
   return local === format.localDay(now, zone) ? time : `${format.day(local)}, ${time}`;
 }
 
+/** "Tue, Oct 20": one of a manual status's days, a local date. */
+function listedDay(localDate: string): string {
+  return format.day(localDate);
+}
+
+/** "Today (Tue, Oct 20)": a day the form offers, with its date in the school's zone. */
+function dayChoice(label: string, localDate: string): string {
+  return `${label} (${format.day(localDate)})`;
+}
+
+/** "Today and tomorrow (Wed, Oct 21 and Thu, Oct 22)": both days, with their dates. */
+function bothChoice(label: string, today: string, tomorrow: string): string {
+  return `${label} (${format.day(today)} and ${format.day(tomorrow)})`;
+}
+
 /** A chance as a whole percent: "72%". */
 function percent(p: number): string {
   return `${format.number(Math.round(p * 100))}%`;
@@ -317,6 +337,9 @@ export const accountFormat = /* @__PURE__ */ deepFreeze({
   action,
   percent,
   when,
+  listedDay,
+  dayChoice,
+  bothChoice,
   number: (n: number): string => format.number(n),
 });
 

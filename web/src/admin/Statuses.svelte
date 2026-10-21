@@ -1,15 +1,32 @@
 <script lang="ts">
-  import { onDestroy, onMount } from 'svelte';
+  import { onDestroy, onMount, untrack } from 'svelte';
 
   import type { Services } from '../app/boot';
   import type { SchoolView } from '../app/school';
   import { accountFormat, adminCopy } from '../copy-account';
+  import { parseClosings } from '../data/closings';
+  import type { Directory } from '../data/directory';
   import { fetchJson } from '../data/files';
   import { parsePredictions } from '../data/school-day';
+  import { LIVE_CLOSINGS_PATH } from '../pwa/config';
   import { stateOfId } from '../text/school-names';
-  import { PUBLISHED_PATHS, type PredictionsFile } from '../types/generated';
+  import {
+    PUBLISHED_PATHS,
+    type ClosingsFile,
+    type LocalDate,
+    type PredictionsFile,
+  } from '../types/generated';
   import type { AdminCall, ManualStatus } from './call';
-  import { STATE_ZONES, endOfLocalDay, showsToday } from './overview';
+  import {
+    dayOptions,
+    dayState,
+    defaultDays,
+    offeredDays,
+    sameDays,
+    statusZone,
+    type DayOption,
+    type DayState,
+  } from './overview';
 
   interface Props {
     call: AdminCall;
@@ -50,13 +67,26 @@
   let districtId = $state<string | null>(null);
   /** A school whose panel shows what the map shows for the pick. */
   let view = $state<SchoolView | null>(null);
-  let timeZone = $state<string | null>(null);
+  /**
+   * The zone the overrides pass lights the pick's days in, for a district
+   * status and for one for this school only (statusZone); null while it is
+   * read, or when it cannot be known here (nothing is set then).
+   */
+  let zones = $state<{ district: string | null; school: string | null }>({
+    district: null,
+    school: null,
+  });
 
   let scope = $state<'district' | 'school'>('district');
   let status = $state<StatusName>('closed');
   let minutes = $state(120);
   let time = $state('12:00');
-  let until = $state<'today' | 'tomorrow'>('today');
+  /** The exact dates the picked day choice showed: what is sent (offeredDays). */
+  let chosen = $state.raw<readonly LocalDate[] | null>(null);
+  /** The clock the day choices are named at, moved on every tick and at each save. */
+  let clock = $state(new Date());
+  /** The picked dates are no longer offered (the school's midnight passed): pick again. */
+  let pickAgain = $state(false);
   let note = $state('');
   let busy = $state(false);
   /** A pick's district, zone and map line are still being read. */
@@ -64,20 +94,21 @@
   let failed = $state(false);
 
   let list = $state<ManualStatus[] | null>(null);
-  /** Which active manual statuses the map shows, by key. */
-  let shown = $state<Record<string, boolean>>({});
+  /** live/closings.json as last read (null: not readable), and the directory it is read with. */
+  let published = $state.raw<ClosingsFile | null>(null);
+  let directory = $state.raw<Directory | null>(null);
   /** Names picked here, by key, for the list. */
   let names = $state<Record<string, string>>({});
 
   let predictions: Promise<PredictionsFile | null> | null = null;
   let stopView: () => void = () => undefined;
-  /** What stops each watch of the map, by manual status and status (not shown, so not reactive). */
-  const watchers: Record<string, () => void> = {};
   let searchTimer: ReturnType<typeof setTimeout> | undefined;
   let pollTimer: ReturnType<typeof setInterval> | undefined;
+  let clockTimer: ReturnType<typeof setInterval> | undefined;
 
+  /** The predictions file, for its zones: read once, and again after a failed read. */
   function readPredictions(services: Services): Promise<PredictionsFile | null> {
-    predictions ??= (async () => {
+    const reading = (predictions ??= (async () => {
       const files = services.data.files;
       if (!files.has(PUBLISHED_PATHS.predictions)) return null;
       try {
@@ -87,8 +118,11 @@
       } catch {
         return null;
       }
-    })();
-    return predictions;
+    })());
+    void reading.then((file) => {
+      if (file === null && predictions === reading) predictions = null;
+    });
+    return reading;
   }
 
   /** A district's LEAID or a public school's id, typed whole: picked by its id alone. */
@@ -130,7 +164,10 @@
     scope = 'district';
     view = null;
     districtId = null;
-    timeZone = STATE_ZONES[hit.state] ?? null;
+    zones = { district: null, school: null };
+    chosen = null;
+    pickAgain = false;
+    defaultedFor = null;
     stopView();
     // Until its district and zone are read, the form waits: a status is never set for less.
     resolving = true;
@@ -158,11 +195,19 @@
       if (districtId === null) scope = 'school';
     }
     if (picked !== next) return;
-    // The school's own day: its district's time zone, from the predictions file.
+    // The school's own day, in the zone the overrides pass lights it in: its district's,
+    // from a predictions file for this directory, or the nearest school's for a school
+    // without a district. Without one, nothing is set.
     const file = await readPredictions(services);
-    const target = districtId === null ? -1 : (directory?.districtIndex(districtId) ?? -1);
-    const zone = file?.districts.find((d) => d.district === target)?.time_zone;
-    if (picked === next && zone !== undefined) timeZone = zone;
+    if (picked !== next) return;
+    const district = districtId === null ? -1 : (directory?.districtIndex(districtId) ?? -1);
+    const school = hit.kind === 'school' ? (directory?.schoolIndex(hit.id) ?? -1) : -1;
+    const own = school >= 0 ? (directory?.district[school] ?? -1) : -1;
+    zones = {
+      district: district >= 0 ? statusZone(directory ?? null, file, district, -1) : null,
+      school: hit.kind === 'school' ? statusZone(directory ?? null, file, own, school) : null,
+    };
+    clock = new Date();
     if (anchor !== null && picked === next) {
       stopView = services.watchSchool(anchor, null, (next) => {
         view = next;
@@ -170,22 +215,84 @@
     }
   }
 
-  function expiry(): string | null {
+  /** The zone this status's days are named in: its scope's (zones). */
+  const timeZone = $derived(scope === 'district' ? zones.district : zones.school);
+
+  /** The form's day choices with their dates, in the school's zone, at the clock. */
+  const options = $derived.by((): readonly DayOption[] | null => {
     if (timeZone === null) return null;
     try {
-      return endOfLocalDay(new Date(), timeZone, until === 'today' ? 0 : 1).toISOString();
+      return dayOptions(clock, timeZone);
     } catch {
       return null;
     }
+  });
+
+  /** The zone the first day choice was made for (once per pick and zone). */
+  let defaultedFor: string | null = null;
+
+  // Today, or tomorrow once the school's day is over: picked once the zone is known. Dates
+  // picked before the school's midnight that it no longer offers are dropped, and the admin
+  // is asked to pick again; nothing is picked for them.
+  $effect(() => {
+    const zone = timeZone;
+    const offered = options;
+    if (zone === null || offered === null) return;
+    untrack(() => {
+      const still = offered.some((option) => sameDays(chosen, option.days));
+      if (defaultedFor !== zone) {
+        defaultedFor = zone;
+        if (still) return;
+        try {
+          const choice = defaultDays(clock, zone);
+          chosen = offered.find((option) => option.choice === choice)?.days ?? null;
+        } catch {
+          chosen = null;
+        }
+        return;
+      }
+      if (chosen !== null && !still) {
+        chosen = null;
+        pickAgain = true;
+      }
+    });
+  });
+
+  function choose(option: DayOption): void {
+    chosen = option.days;
+    pickAgain = false;
+  }
+
+  function dayLabel(option: DayOption): string {
+    const [first = '', second = ''] = option.days;
+    if (option.choice === 'both') {
+      return accountFormat.bothChoice(adminCopy.statuses.both, first, second);
+    }
+    const word = option.choice === 'today' ? adminCopy.statuses.today : adminCopy.statuses.tomorrow;
+    return accountFormat.dayChoice(word, first);
   }
 
   async function submit(event: SubmitEvent): Promise<void> {
     event.preventDefault();
     if (picked === null || busy) return;
     const id = scope === 'district' ? districtId : picked.kind === 'school' ? picked.id : null;
-    const expires = expiry();
-    if (id === null || expires === null) {
+    const zone = timeZone;
+    if (id === null || zone === null) {
       failed = true;
+      return;
+    }
+    // The dates the picked choice showed, while the school can still be set for them.
+    const now = new Date();
+    clock = now;
+    let listed: LocalDate[] | null;
+    try {
+      listed = offeredDays(chosen, now, zone);
+    } catch {
+      listed = null;
+    }
+    if (listed === null) {
+      chosen = null;
+      pickAgain = true;
       return;
     }
     busy = true;
@@ -198,7 +305,8 @@
         minutes: status === 'delayed' ? minutes : null,
         at_local_time: status === 'early_dismissal' ? time : null,
         note: note.trim() === '' ? null : note.trim(),
-        expires_at: expires,
+        days: listed,
+        time_zone: zone,
       });
       names = {
         ...names,
@@ -229,43 +337,44 @@
     }
   }
 
-  /** Watches what the map shows for each active manual status. */
-  function watch(items: readonly ManualStatus[]): void {
-    const services = app;
-    if (services === null) return;
-    const wanted = new Set(items.filter((o) => o.active).map((o) => `${o.key}|${o.status}`));
-    for (const [key, stop] of Object.entries(watchers)) {
-      if (!wanted.has(key)) {
-        stop();
-        // eslint-disable-next-line @typescript-eslint/no-dynamic-delete
-        delete watchers[key];
-      }
+  /** Reads live/closings.json and the directory, to tell which listed days the map carries. */
+  async function readPublished(services: Services): Promise<void> {
+    directory ??= (await (await services.data.directories())?.get()) ?? null;
+    const files = services.data.files;
+    if (!files.has(LIVE_CLOSINGS_PATH)) {
+      published = null;
+      return;
     }
-    for (const item of items) {
-      const watchKey = `${item.key}|${item.status}`;
-      if (!item.active || watchKey in watchers) continue;
-      let stopped = false;
-      let stop: () => void = () => undefined;
-      watchers[watchKey] = () => {
-        stopped = true;
-        stop();
-      };
-      void (item.scope === 'school' ? Promise.resolve(item.id) : services.schoolOf(item.id)).then(
-        (anchor) => {
-          if (stopped || anchor === null) return;
-          stop = services.watchSchool(anchor, null, (next) => {
-            shown = { ...shown, [item.key]: showsToday(next, item.status) };
-          });
-        },
-      );
+    try {
+      published = parseClosings(await fetchJson(files, LIVE_CLOSINGS_PATH, { cache: 'no-cache' }));
+    } catch {
+      published = null;
     }
   }
+
+  /** What the map shows of each active manual status on each of its days, by key and day. */
+  const states = $derived.by((): Record<string, DayState> => {
+    const items = (list ?? []).filter((item) => item.active);
+    const found: Record<string, DayState> = {};
+    for (const item of items) {
+      for (const day of item.days) {
+        found[`${item.key} ${day}`] = dayState(published, directory, item, day, items);
+      }
+    }
+    return found;
+  });
+
+  const STATE_WORDS: Record<DayState, string> = {
+    onMap: adminCopy.statuses.onMap,
+    waiting: adminCopy.statuses.waiting,
+    shadowed: adminCopy.statuses.shadowed,
+  };
 
   async function load(): Promise<void> {
     try {
       const body = await call<{ overrides: ManualStatus[] }>('GET', '/v1/admin/overrides');
       list = body.overrides;
-      watch(body.overrides);
+      if (app !== null) await readPublished(app);
     } catch {
       list = list ?? [];
       failed = true;
@@ -275,17 +384,26 @@
   onMount(() => {
     void load();
     pollTimer = setInterval(() => void load(), 60_000);
+    // The day choices name their dates: they move on at the school's midnight.
+    clockTimer = setInterval(() => {
+      clock = new Date();
+    }, 30_000);
   });
 
+  // The app's services can come after the first list: read the map then.
   $effect(() => {
-    if (app !== null && list !== null) watch(list);
+    if (app === null || list === null) return;
+    const services = app;
+    untrack(() => {
+      void readPublished(services);
+    });
   });
 
   onDestroy(() => {
     clearTimeout(searchTimer);
     clearInterval(pollTimer);
+    clearInterval(clockTimer);
     stopView();
-    for (const stop of Object.values(watchers)) stop();
   });
 
   const active = $derived((list ?? []).filter((o) => o.active));
@@ -372,18 +490,37 @@
           <input type="time" bind:value={time} required />
         </label>
       {/if}
-      <label class="field">
-        <span>{adminCopy.statuses.until}</span>
-        <select bind:value={until}>
-          <option value="today">{adminCopy.statuses.endToday}</option>
-          <option value="tomorrow">{adminCopy.statuses.endTomorrow}</option>
-        </select>
-      </label>
+      {#if options !== null}
+        <fieldset>
+          <legend>{adminCopy.statuses.days}</legend>
+          {#each options as option (option.choice)}
+            <label
+              ><input
+                type="radio"
+                name="days"
+                value={option.choice}
+                checked={sameDays(chosen, option.days)}
+                onchange={() => {
+                  choose(option);
+                }}
+                required
+              />{dayLabel(option)}</label
+            >
+          {/each}
+        </fieldset>
+        {#if pickAgain}<p class="error" role="alert">{adminCopy.statuses.pickAgain}</p>{/if}
+      {:else if !resolving}
+        <p class="error" role="alert">{adminCopy.statuses.noZone}</p>
+      {/if}
       <label class="field">
         <span>{adminCopy.statuses.note}</span>
         <input type="text" maxlength="200" bind:value={note} />
       </label>
-      <button class="button primary" type="submit" disabled={busy || resolving}
+      <p class="muted">{adminCopy.statuses.replaces}</p>
+      <button
+        class="button primary"
+        type="submit"
+        disabled={busy || resolving || options === null || chosen === null}
         >{adminCopy.statuses.save}</button
       >
     </form>
@@ -409,13 +546,16 @@
                 {#if item.note !== null}<div class="muted">{item.note}</div>{/if}
               </td>
               <td>{accountFormat.manualStatus(item.status, item.minutes, item.at_local_time)}</td>
-              <td class="muted">{adminCopy.statuses.until} {accountFormat.when(item.expires_at)}</td
-              >
-              <td
-                >{shown[item.key] === true
-                  ? adminCopy.statuses.onMap
-                  : adminCopy.statuses.waiting}</td
-              >
+              <td>
+                <ul class="days">
+                  {#each item.days as day (day)}
+                    <li>
+                      <span class="muted">{accountFormat.listedDay(day)}</span>
+                      {STATE_WORDS[states[`${item.key} ${day}`] ?? 'waiting']}
+                    </li>
+                  {/each}
+                </ul>
+              </td>
               <td>
                 <button
                   class="button"
@@ -470,6 +610,16 @@
 
   .results .muted {
     font-size: 12px;
+  }
+
+  .days {
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  .days .muted {
+    margin-right: 6px;
   }
 
   .lines {

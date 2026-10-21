@@ -222,6 +222,18 @@ const SECOND = closings('2026-01-12T12:47:00Z', [
 ]);
 /** 6:52 AM: blank, as the ingest publishes it to darken the map. */
 const BLANK = closings('2026-01-12T12:52:00Z', []);
+/**
+ * SYNTHETIC: the admin's manual statuses at 6:50 AM, as `snowlight live overrides` publishes
+ * them (accounts spec C): plain rows with no weather reason, posted when the admin set them
+ * (6:40 AM), Alpha closed and Beta on a 2-hour delayed start. The pipeline writes this file
+ * from those overrides through its resolver, merge and publisher, and checks it there
+ * (pipeline/tests/live/test_overrides.py), so the two cannot drift apart.
+ */
+const MANUAL = readFileSync(
+  path.join(WEB, '../pipeline/tests/live/golden/synthetic_manual_closings.json'),
+  'utf8',
+);
+const MANUAL_SET_AT = new Date('2026-01-12T12:40:00Z');
 /** The site's own file, which the page must never read: Delta closed, newer than all. */
 const SITE_OWN = closings('2026-01-12T13:30:00Z', [[3, 0]]);
 
@@ -747,6 +759,37 @@ for (const [device, options] of DEVICES) {
       await page.waitForTimeout(3000);
       expect(await lit(page)).toBe(0);
       await expect(panel.locator('.status')).toHaveCount(0);
+
+      expectOnlyLiveRoot(requests);
+      expect(problems).toEqual([]);
+      await context.close();
+    });
+
+    test("a manual status the admin set lights its school's dot and shows in its panel, confirmed by the team and posted when it was set", async ({
+      browser,
+    }) => {
+      const { live } = theSite();
+      live.body = MANUAL;
+      const { context, page, problems, requests } = await visit(browser, options, {
+        query: `?school=${SCHOOLS[1].id}`,
+      });
+      const panel = page.locator('aside.detail');
+      await expect.poll(() => lit(page), SETTLE).toBe(2);
+      await expect.poll(() => legend(page), SETTLE).toEqual(legendFor([1, 1, 0, 0]));
+      await expect(page.locator('.updated')).toHaveText(
+        format.liveAt(new Date('2026-01-12T12:50:00Z'), ZONE),
+        SETTLE,
+      );
+      await expect(statusLines(page).first()).toContainText(
+        format.statusOn('delayed', TODAY, NOW, ZONE),
+        SETTLE,
+      );
+      await expect(panel).toContainText(SCHOOLS[1].name);
+      await expect(panel.locator('.line-detail').first()).toHaveText(format.delay(120, null) ?? '');
+      // A status the site's own team set says so, before when it was posted.
+      await expect(panel.locator('.line-note').first()).toHaveText(
+        `${copy.detail.confirmed} · ${format.posted(MANUAL_SET_AT, ZONE, NOW)}`,
+      );
 
       expectOnlyLiveRoot(requests);
       expect(problems).toEqual([]);

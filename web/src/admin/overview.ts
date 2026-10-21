@@ -6,9 +6,15 @@
  * one shows as not readable, never as a guess.
  */
 
-import { copy, type StatusKey } from '../copy';
-import type { SchoolView } from '../app/school';
-import type { PredictionsFile } from '../types/generated';
+import { format } from '../copy-format';
+import { sameDirectory, type Directory, type Points } from '../data/directory';
+import { nextDay, rowOn } from '../data/school-day';
+import {
+  Status,
+  type ClosingsFile,
+  type LocalDate,
+  type PredictionsFile,
+} from '../types/generated';
 
 /** The repository the site is built from (VITE_GITHUB_REPO, set by preview.yml). */
 const REPO_SET = import.meta.env.VITE_GITHUB_REPO ?? '';
@@ -181,124 +187,250 @@ export function summarizePredictions(file: PredictionsFile): PredictionSummary {
   };
 }
 
-/** The UTC offset of `timeZone` at `at`, in ms (local minus UTC). */
-function offsetAt(at: number, timeZone: string): number {
-  const parts = new Intl.DateTimeFormat('en-US', {
+/** The hour of the day at `at` in `timeZone` (0-23). */
+function localHour(at: Date, timeZone: string): number {
+  const hour = new Intl.DateTimeFormat('en-US', {
     timeZone,
     hourCycle: 'h23',
-    year: 'numeric',
-    month: '2-digit',
-    day: '2-digit',
     hour: '2-digit',
-    minute: '2-digit',
-    second: '2-digit',
-  }).formatToParts(new Date(at));
-  const get = (type: string): number => Number(parts.find((p) => p.type === type)?.value ?? '0');
-  const local = Date.UTC(
-    get('year'),
-    get('month') - 1,
-    get('day'),
-    get('hour'),
-    get('minute'),
-    get('second'),
+  }).format(at);
+  return Number(hour);
+}
+
+/** The hour a school day is over, school-local (as the weights take it). */
+export const SCHOOL_DAY_ENDS_HOUR = 15;
+
+/** Which days a manual status lists, as the admin picks them. */
+export type DayChoice = 'today' | 'tomorrow' | 'both';
+
+/**
+ * The days the form offers first: today, or tomorrow once the school's day is
+ * over in its zone.
+ */
+export function defaultDays(now: Date, timeZone: string): DayChoice {
+  return localHour(now, timeZone) >= SCHOOL_DAY_ENDS_HOUR ? 'tomorrow' : 'today';
+}
+
+/** The school's today and tomorrow in `timeZone`, as local dates. */
+export function schoolDays(now: Date, timeZone: string): { today: LocalDate; tomorrow: LocalDate } {
+  const today = format.localDay(now, timeZone);
+  return { today, tomorrow: nextDay(today) };
+}
+
+/** A day choice the form offers, with the dates it lists (ascending): what the API stores. */
+export interface DayOption {
+  readonly choice: DayChoice;
+  readonly days: readonly LocalDate[];
+}
+
+/** The form's day choices at `now`, in the school's zone: today, tomorrow, and both. */
+export function dayOptions(now: Date, timeZone: string): readonly DayOption[] {
+  const { today, tomorrow } = schoolDays(now, timeZone);
+  return [
+    { choice: 'today', days: [today] },
+    { choice: 'tomorrow', days: [tomorrow] },
+    { choice: 'both', days: [today, tomorrow] },
+  ];
+}
+
+export function sameDays(a: readonly LocalDate[] | null, b: readonly LocalDate[]): boolean {
+  return a !== null && a.length === b.length && a.every((day, i) => day === b[i]);
+}
+
+/**
+ * The dates the admin picked, to send: the exact dates the choice showed when
+ * it was picked, while the form still offers them at `now` (the school's
+ * midnight can pass between the pick and the save: "Tomorrow (Wed)" picked at
+ * 11:59 PM is then "Today (Wed)", and still Wednesday). Null once they are
+ * not offered any more ("Today (Tue)" after midnight): the admin picks again.
+ */
+export function offeredDays(
+  chosen: readonly LocalDate[] | null,
+  now: Date,
+  timeZone: string,
+): LocalDate[] | null {
+  if (chosen === null) return null;
+  return dayOptions(now, timeZone).some((option) => sameDays(chosen, option.days))
+    ? [...chosen]
+    : null;
+}
+
+/**
+ * Each district's time zone as the predictions file gives it, by district
+ * position: the zones the overrides pass lights days in (the committed
+ * model's). Null without a file, or for a file of another directory edition,
+ * whose positions name other districts.
+ */
+export function predictionZones(
+  directory: Directory | null,
+  predictions: PredictionsFile | null,
+): ReadonlyMap<number, string> | null {
+  if (directory === null || predictions === null) return null;
+  if (!sameDirectory(directory, predictions.directory)) return null;
+  return new Map(predictions.districts.map((entry) => [entry.district, entry.time_zone]));
+}
+
+const MICRO = 1e6;
+
+/**
+ * The zone of the school nearest `school` among those whose district has a
+ * zone, as the overrides pass gives a school without a district its zone
+ * (pipeline/snowlight/live/overrides.py, DeployedSchools.borrowed_zones: the
+ * same places in microdegrees, the same distance, the first nearest by
+ * position). Its golden file keeps the two the same.
+ */
+export function nearestZone(
+  points: Pick<Points, 'lngLat' | 'district'>,
+  zones: ReadonlyMap<number, string>,
+  school: number,
+): string | null {
+  const count = points.district.length;
+  if (school < 0 || school >= count) return null;
+  const micro = (at: number): number => Math.round((points.lngLat[at] ?? Number.NaN) * MICRO);
+  const hereLon = micro(school * 2) / MICRO;
+  const hereLat = micro(school * 2 + 1) / MICRO;
+  const scale = Math.cos(hereLat * (Math.PI / 180));
+  let best = Number.POSITIVE_INFINITY;
+  let found: string | null = null;
+  for (let i = 0; i < count; i++) {
+    const zone = zones.get(points.district[i] ?? -1);
+    if (zone === undefined) continue;
+    const east = (micro(i * 2) / MICRO - hereLon) * scale;
+    const north = micro(i * 2 + 1) / MICRO - hereLat;
+    const distance = east * east + north * north;
+    if (distance < best) {
+      best = distance;
+      found = zone;
+    }
+  }
+  return found;
+}
+
+/**
+ * The zone a manual status's days are named in, the one the overrides pass
+ * lights them in: the district's (for a district, or a school in one), or
+ * for a school without a district the nearest zoned school's. Null when it
+ * cannot be known here: the form then sets nothing.
+ */
+export function statusZone(
+  directory: Directory | null,
+  predictions: PredictionsFile | null,
+  district: number,
+  school: number,
+): string | null {
+  const zones = predictionZones(directory, predictions);
+  if (zones === null || directory === null) return null;
+  if (district >= 0) return zones.get(district) ?? null;
+  return nearestZone(directory, zones, school);
+}
+
+const STATUS_CODES: Readonly<Record<string, Status>> = {
+  closed: Status.closed,
+  delayed: Status.delayed,
+  early_dismissal: Status.early_dismissal,
+};
+
+/** What of a manual status the map is checked for on one of its days. */
+export interface ListedStatus {
+  readonly status: 'closed' | 'delayed' | 'early_dismissal' | 'open';
+  readonly minutes: number | null;
+  readonly at_local_time: string | null;
+  readonly set_at: string;
+}
+
+/**
+ * Whether live/closings.json carries a manual status on `day` for the school
+ * at `school` (its position in `directory`) exactly: the row the admin's
+ * status publishes, set by the site's team, with its status, delay and time.
+ * An Open is on the map once a file published after it was set holds no row
+ * for that day. A file for another directory, or none, carries nothing.
+ */
+export function onTheMap(
+  closings: ClosingsFile | null,
+  directory: Directory | null,
+  school: number,
+  day: LocalDate,
+  item: ListedStatus,
+): boolean {
+  if (closings === null || directory === null || !sameDirectory(directory, closings.directory)) {
+    return false;
+  }
+  const row = rowOn(closings, day, school);
+  if (item.status === 'open') {
+    const published = Date.parse(closings.generated_at);
+    return row === null && Number.isFinite(published) && published >= Date.parse(item.set_at);
+  }
+  if (row === null || !row.manual || row.status !== STATUS_CODES[item.status]) return false;
+  const [hours, minutes] = (item.at_local_time ?? '').split(':').map(Number);
+  const clock =
+    item.status === 'early_dismissal' && hours !== undefined && minutes !== undefined
+      ? hours * 60 + minutes
+      : null;
+  const shift = item.status === 'delayed' ? item.minutes : null;
+  return row.shiftMinutes === shift && row.clockMinute === clock;
+}
+
+/** A manual status as the admin list has it, for which schools it lights. */
+export interface ListedTarget {
+  readonly scope: 'district' | 'school';
+  readonly id: string;
+  readonly days: readonly LocalDate[];
+}
+
+/** What the map shows of a manual status on one of its days. */
+export type DayState = 'onMap' | 'waiting' | 'shadowed';
+
+/**
+ * The schools `item` lights on `day` (positions in `directory`), as the
+ * overrides pass merges them: a school's own status at that school; a
+ * district's at each of its schools, less those with a school status of
+ * their own in `active` that lists that day (the school's own wins there).
+ */
+export function litSchools(
+  directory: Directory,
+  item: ListedTarget,
+  day: LocalDate,
+  active: readonly ListedTarget[],
+): number[] {
+  if (item.scope === 'school') {
+    const school = directory.schoolIndex(item.id);
+    return school >= 0 ? [school] : [];
+  }
+  const district = directory.districtIndex(item.id);
+  if (district < 0) return [];
+  const own = new Set(
+    active
+      .filter((other) => other.scope === 'school' && other.days.includes(day))
+      .map((other) => directory.schoolIndex(other.id)),
   );
-  return local - Math.floor(at / 1000) * 1000;
+  const found: number[] = [];
+  for (let school = 0; school < directory.district.length; school++) {
+    if (directory.district[school] === district && !own.has(school)) found.push(school);
+  }
+  return found;
 }
 
 /**
- * 23:59 on the local day `after` days from now's, in `timeZone`, as an
- * instant: where a manual status ends by default.
+ * Whether the map shows `item` on `day`: on the map once live/closings.json
+ * carries it exactly (onTheMap) at every school it lights there; shadowed
+ * when each of its district's schools has a school status of its own that
+ * day, so it lights none; waiting otherwise (and with no file, a file of
+ * another directory, or no directory yet).
  */
-export function endOfLocalDay(now: Date, timeZone: string, after = 0): Date {
-  const today = new Intl.DateTimeFormat('en-CA', {
-    timeZone,
-    year: 'numeric',
-    month: '2-digit',
-    day: '2-digit',
-  }).format(now);
-  const [y, m, d] = today.split('-').map(Number) as [number, number, number];
-  const wall = Date.UTC(y, m - 1, d + after, 23, 59, 0);
-  let at = wall - offsetAt(wall, timeZone);
-  // Across a change of clocks the offset at the answer can differ from the guess's.
-  at = wall - offsetAt(at, timeZone);
-  return new Date(at);
-}
-
-/**
- * Each state's easternmost time zone: where a school's own zone is not known
- * (no predictions file), its day is taken to end no later than it really
- * does, so a manual status never outlasts its day.
- */
-export const STATE_ZONES: Readonly<Record<string, string>> = {
-  AL: 'America/Chicago',
-  AK: 'America/Anchorage',
-  AZ: 'America/Phoenix',
-  AR: 'America/Chicago',
-  CA: 'America/Los_Angeles',
-  CO: 'America/Denver',
-  CT: 'America/New_York',
-  DE: 'America/New_York',
-  DC: 'America/New_York',
-  FL: 'America/New_York',
-  GA: 'America/New_York',
-  HI: 'Pacific/Honolulu',
-  ID: 'America/Denver',
-  IL: 'America/Chicago',
-  IN: 'America/New_York',
-  IA: 'America/Chicago',
-  KS: 'America/Chicago',
-  KY: 'America/New_York',
-  LA: 'America/Chicago',
-  ME: 'America/New_York',
-  MD: 'America/New_York',
-  MA: 'America/New_York',
-  MI: 'America/New_York',
-  MN: 'America/Chicago',
-  MS: 'America/Chicago',
-  MO: 'America/Chicago',
-  MT: 'America/Denver',
-  NE: 'America/Chicago',
-  NV: 'America/Denver',
-  NH: 'America/New_York',
-  NJ: 'America/New_York',
-  NM: 'America/Denver',
-  NY: 'America/New_York',
-  NC: 'America/New_York',
-  ND: 'America/Chicago',
-  OH: 'America/New_York',
-  OK: 'America/Chicago',
-  OR: 'America/Denver',
-  PA: 'America/New_York',
-  RI: 'America/New_York',
-  SC: 'America/New_York',
-  SD: 'America/Chicago',
-  TN: 'America/New_York',
-  TX: 'America/Chicago',
-  UT: 'America/Denver',
-  VT: 'America/New_York',
-  VA: 'America/New_York',
-  WA: 'America/Los_Angeles',
-  WV: 'America/New_York',
-  WI: 'America/Chicago',
-  WY: 'America/Denver',
-};
-
-/** A manual status, as the map's panel would show it for today. */
-const TONES: Readonly<Record<string, StatusKey | 'open'>> = {
-  closed: 'closed',
-  delayed: 'delayed',
-  early_dismissal: 'earlyDismissal',
-  open: 'open',
-};
-
-/**
- * Whether the map shows `status` for the school today: its panel's line for
- * today has that status. Anything else (another status, none, a line for
- * tomorrow only, a panel still loading) is not on the map yet.
- */
-export function showsToday(view: SchoolView | null, status: string): boolean {
-  const tone = TONES[status];
-  if (view === null || view.loading || tone === undefined) return false;
-  const headline = tone === 'open' ? copy.open.today : copy.statusLine[tone].today;
-  return view.status.some((line) => line.tone === tone && line.headline === headline);
+export function dayState(
+  closings: ClosingsFile | null,
+  directory: Directory | null,
+  item: ListedTarget & ListedStatus,
+  day: LocalDate,
+  active: readonly ListedTarget[],
+): DayState {
+  if (directory === null) return 'waiting';
+  const schools = litSchools(directory, item, day, active);
+  if (schools.length === 0) {
+    // Its district has schools, and each has its own status that day.
+    return litSchools(directory, item, day, []).length > 0 ? 'shadowed' : 'waiting';
+  }
+  return schools.every((school) => onTheMap(closings, directory, school, day, item))
+    ? 'onMap'
+    : 'waiting';
 }

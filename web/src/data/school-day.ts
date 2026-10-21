@@ -188,6 +188,8 @@ export interface StatusRow {
   readonly shiftMinutes: number | null;
   /** The stated opening or dismissal time, minutes after midnight; or null. */
   readonly clockMinute: number | null;
+  /** Whether the site's own team set it by hand. */
+  readonly manual: boolean;
 }
 
 export interface SchoolStatus {
@@ -206,8 +208,8 @@ function minuteBefore(generatedAt: string, ago: number): Date | null {
   return new Date((Math.floor(generated.getTime() / 60_000) - ago) * 60_000);
 }
 
-/** The school's row on `day`, or null. */
-function rowOn(closings: ClosingsFile, day: LocalDate, school: number): StatusRow | null {
+/** The school's row on `day` (its position in the directory), or null. */
+export function rowOn(closings: ClosingsFile, day: LocalDate, school: number): StatusRow | null {
   const group = closings.days.find((item) => item.day === day);
   if (group === undefined) return null;
   const rows = decodeDay(group);
@@ -234,6 +236,7 @@ function rowOn(closings: ClosingsFile, day: LocalDate, school: number): StatusRo
         announcedAt: ago === null ? null : minuteBefore(closings.generated_at, ago),
         shiftMinutes: shifted ? (group.shifts[slot] ?? null) : null,
         clockMinute: shifted ? (group.clocks[slot] ?? null) : null,
+        manual: group.manual.includes(middle),
       };
     }
   }

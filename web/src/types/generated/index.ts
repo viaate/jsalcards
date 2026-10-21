@@ -315,7 +315,8 @@ export interface ClosingsFile {
  *
  * Row i is gaps[i], statuses[i], announced[i] and reasons[i]; rows are in school
  * order. shifts and clocks hold one entry for each delayed or early-dismissal
- * row, in row order: the k-th entry belongs to the k-th such row.
+ * row, in row order: the k-th entry belongs to the k-th such row. manual lists the
+ * rows the site's own team set by hand, by position.
  */
 export interface ClosingsDay {
   readonly day: LocalDate;
@@ -340,6 +341,11 @@ export interface ClosingsDay {
    * listing states it.
    */
   readonly clocks: readonly (MinuteOfDay | null)[];
+  /**
+   * The rows the site's own team set by hand, as positions in this day's rows (0 is the first),
+   * ascending; empty when there are none.
+   */
+  readonly manual: readonly RowPosition[];
 }
 
 /**
@@ -349,6 +355,12 @@ export interface ClosingsDay {
  * @maximum 20160
  */
 export type MinutesAgo = number;
+
+/**
+ * @minimum 0
+ * @maximum 4294967294
+ */
+export type RowPosition = number;
 
 // covered ------------------------------------------------------------------------
 

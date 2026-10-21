@@ -598,6 +598,7 @@ describe('the timeline', () => {
           reasons: [0, 0, 0],
           shifts: Array<null>(shifted).fill(null),
           clocks: Array<null>(shifted).fill(null),
+          manual: [],
         },
       ],
     };
@@ -640,6 +641,7 @@ describe('the timeline', () => {
           reasons: [0, 0],
           shifts: [],
           clocks: [],
+          manual: [],
         },
       ],
     };
@@ -708,6 +710,7 @@ describe('the timeline', () => {
           reasons: [0, 0, 0, 0, 0, 0],
           shifts: [null, null],
           clocks: [null, null],
+          manual: [],
         },
       ],
     };

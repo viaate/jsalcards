@@ -1,6 +1,14 @@
 import { webcrypto } from 'node:crypto';
+import { cpSync, mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs';
+import { createServer } from 'node:net';
+import { tmpdir } from 'node:os';
+import path from 'node:path';
+import { fileURLToPath } from 'node:url';
 
 import { expect, test, type Page, type Route } from '@playwright/test';
+import { build, preview, type PreviewServer } from 'vite';
+
+import { format } from '../src/copy-format';
 
 import { ACCOUNTS_API, ACCOUNTS_URL } from './accounts-server';
 
@@ -76,7 +84,8 @@ class StubApi {
   private async answer(route: Route): Promise<void> {
     const request = route.request();
     const cors = {
-      'access-control-allow-origin': ACCOUNTS_URL,
+      // The accounts build's origin, or the build with a directory's (below).
+      'access-control-allow-origin': request.headers().origin ?? ACCOUNTS_URL,
       'access-control-allow-headers': 'Authorization, Content-Type',
       'access-control-allow-methods': 'GET, POST, PUT, PATCH, DELETE, OPTIONS',
     };
@@ -244,52 +253,6 @@ test.describe('accounts', () => {
     await expect(page.getByRole('heading', { name: 'Admin' })).toHaveCount(0);
   });
 
-  test('the admin sets a manual status from the admin view', async ({ page }) => {
-    test.skip(test.info().project.name !== 'desktop', 'one screen is enough for the admin form');
-    const api = new StubApi();
-    api.users.push({
-      id: 'a1',
-      name: 'Olivia',
-      email: null,
-      role: 'admin',
-      key: await deriveKey('olivia', PASSWORD),
-      schools: [],
-    });
-    await openPage(page, api, '/?admin');
-    await page.getByRole('button', { name: 'Sign up or log in' }).click();
-    const sheet = page.getByRole('dialog');
-    await sheet.getByLabel('Email').fill('Olivia');
-    await sheet.getByLabel('Password').fill(PASSWORD);
-    await sheet.getByRole('button', { name: 'Log in' }).click();
-
-    await expect(page.getByRole('heading', { name: 'Admin' })).toBeVisible({ timeout: 20_000 });
-    await expect(page.getByText('All accounts')).toBeVisible();
-    await page.getByRole('tab', { name: 'Statuses' }).click();
-    await page.getByRole('searchbox', { name: 'Find a school or district' }).fill('3904378');
-    await page.getByRole('button', { name: 'District 3904378' }).click();
-    await page.getByLabel('Delayed').check();
-    await page.getByLabel('Minutes late').fill('90');
-    await page.getByLabel('Note, only admins see it').fill('Called the office');
-    await page.getByRole('button', { name: 'Set status' }).click();
-
-    await expect(page.getByRole('cell', { name: 'Delayed 90 minutes' })).toBeVisible();
-    await expect(page.getByRole('cell', { name: 'Waiting to publish' })).toBeVisible();
-    const sent = api.overrides[0];
-    expect(sent).toMatchObject({
-      scope: 'district',
-      id: '3904378',
-      status: 'delayed',
-      minutes: 90,
-      note: 'Called the office',
-    });
-    // Ohio's day ends at 23:59 Eastern: 03:59 or 04:59 UTC.
-    expect(String(sent?.expires_at)).toMatch(/T0[34]:59:00\.000Z$/);
-
-    await page.getByRole('button', { name: 'Back to the map' }).click();
-    await expect(page.getByRole('heading', { name: 'Admin' })).toHaveCount(0);
-    expect(new URL(page.url()).searchParams.has('admin')).toBe(false);
-  });
-
   test('fit the strip at 320 px without overlap', async ({ browser }) => {
     test.skip(test.info().project.name !== 'phone', 'a phone’s width');
     const context = await browser.newContext({
@@ -321,5 +284,216 @@ test.describe('accounts', () => {
       320,
     );
     await context.close();
+  });
+});
+
+const WEB = fileURLToPath(new URL('..', import.meta.url));
+
+/**
+ * SYNTHETIC: one made-up Oregon district (4100001) of two schools in Pacific time, as its
+ * predictions file says (the state's easternmost zone, Mountain, is not the school's).
+ */
+const STAMP = { generated_on: '2026-10-14', schools: 2, districts: 1 };
+const PACIFIC = 'America/Los_Angeles';
+
+function directoryFiles(data: string): void {
+  mkdirSync(path.join(data, 'schools'), { recursive: true });
+  writeFileSync(
+    path.join(data, 'schools/meta.json'),
+    JSON.stringify({
+      schema_version: 1,
+      generated_on: STAMP.generated_on,
+      count: STAMP.schools,
+      ids: ['410000100001', '410000100002'],
+      names: ['Made-up Elementary', 'Made-up High'],
+      districts: { ids: ['4100001'], names: ['Made-up School District'] },
+      school_years: { public: '2024-2025', private: '2023-2024' },
+    }),
+  );
+  // The points file (src/data/directory.ts): a header, then 13 bytes a school.
+  const points = Buffer.alloc(16 + 13 * STAMP.schools);
+  points.write('SLPT', 0, 'latin1');
+  points.writeUInt16LE(1, 4);
+  points.writeUInt16LE(13, 6);
+  points.writeUInt32LE(STAMP.schools, 8);
+  points.writeUInt32LE(STAMP.districts, 12);
+  for (let i = 0; i < STAMP.schools; i++) {
+    points.writeInt32LE(-122_680_000 + i * 10_000, 16 + 13 * i);
+    points.writeInt32LE(45_520_000, 16 + 13 * i + 4);
+    points.writeUInt32LE(0, 16 + 13 * i + 8);
+  }
+  writeFileSync(path.join(data, 'schools/points.bin'), points);
+  mkdirSync(path.join(data, 'predictions'), { recursive: true });
+  writeFileSync(
+    path.join(data, 'predictions/latest.json'),
+    JSON.stringify({
+      schema_version: 1,
+      generated_at: '2026-10-21T06:00:00Z',
+      directory: STAMP,
+      days: ['2026-10-20', '2026-10-21'],
+      districts: [
+        {
+          district: 0,
+          time_zone: PACIFIC,
+          neighbors: [],
+          days: [{ state: 'no_threat' }, { state: 'no_threat' }],
+        },
+      ],
+    }),
+  );
+}
+
+async function freePort(): Promise<number> {
+  return new Promise((resolve, reject) => {
+    const server = createServer();
+    server.once('error', reject);
+    server.listen(0, '127.0.0.1', () => {
+      const address = server.address();
+      const port = typeof address === 'object' && address !== null ? address.port : 0;
+      server.close(() => {
+        resolve(port);
+      });
+    });
+  });
+}
+
+test.describe('the admin view with a directory', () => {
+  test.describe.configure({ mode: 'default' });
+  let root = '';
+  let server: PreviewServer | undefined;
+  let site = '';
+
+  test.beforeAll(async () => {
+    test.setTimeout(240_000);
+    if (test.info().project.name !== 'desktop') return;
+    root = mkdtempSync(path.join(tmpdir(), 'snowlight-admin-e2e-'));
+    const publicDir = path.join(root, 'public');
+    cpSync(path.join(WEB, 'public'), publicDir, {
+      recursive: true,
+      filter: (source) => !path.relative(path.join(WEB, 'public'), source).startsWith('data'),
+    });
+    directoryFiles(path.join(publicDir, 'data'));
+    const before = process.env.VITE_API_ROOT;
+    process.env.VITE_API_ROOT = ACCOUNTS_API;
+    try {
+      await build({
+        root: WEB,
+        publicDir,
+        cacheDir: path.join(root, 'vite-cache'),
+        logLevel: 'warn',
+        build: { outDir: path.join(root, 'site'), emptyOutDir: true },
+      });
+    } finally {
+      if (before === undefined) delete process.env.VITE_API_ROOT;
+      else process.env.VITE_API_ROOT = before;
+    }
+    const port = await freePort();
+    server = await preview({
+      root: WEB,
+      logLevel: 'warn',
+      build: { outDir: path.join(root, 'site') },
+      preview: { host: '127.0.0.1', port, strictPort: true },
+    });
+    site = `http://127.0.0.1:${String(port)}/`;
+  });
+
+  test.afterAll(async () => {
+    await server?.close();
+    if (root !== '') rmSync(root, { recursive: true, force: true });
+  });
+
+  /** Logs the admin in on the site at `at` (its clock runs on from there) and opens Statuses. */
+  async function openStatuses(page: Page, api: StubApi, at: string): Promise<void> {
+    test.skip(test.info().project.name !== 'desktop', 'one screen is enough for the admin form');
+    api.users.push({
+      id: 'a1',
+      name: 'Olivia',
+      email: null,
+      role: 'admin',
+      key: await deriveKey('olivia', PASSWORD),
+      schools: [],
+    });
+    await page.clock.install({ time: new Date(at) });
+    await api.attach(page);
+    await page.goto(`${site}?admin`);
+    await page.getByRole('button', { name: 'Sign up or log in' }).click();
+    const sheet = page.getByRole('dialog');
+    await sheet.getByLabel('Email').fill('Olivia');
+    await sheet.getByLabel('Password').fill(PASSWORD);
+    await sheet.getByRole('button', { name: 'Log in' }).click();
+    await expect(page.getByRole('heading', { name: 'Admin' })).toBeVisible({ timeout: 20_000 });
+    await page.getByRole('tab', { name: 'Statuses' }).click();
+    await page.getByRole('searchbox', { name: 'Find a school or district' }).fill('4100001');
+    await page.getByRole('button', { name: 'District 4100001' }).click();
+  }
+
+  test('the admin sets a manual status in the school’s own zone, with its dates', async ({
+    page,
+  }) => {
+    const api = new StubApi();
+    // 10:00 AM Tuesday in Portland: 1:00 PM in Denver, the state's easternmost zone.
+    await openStatuses(page, api, '2026-10-20T17:00:00Z');
+    await page.getByLabel('Delayed').check();
+    await page.getByLabel('Minutes late').fill('90');
+    await page.getByLabel('Note, only admins see it').fill('Called the office');
+    // Before 3 PM in the school's zone: today, with its date.
+    const tue = format.day('2026-10-20');
+    const wed = format.day('2026-10-21');
+    await expect(page.getByLabel(`Today (${tue})`, { exact: true })).toBeChecked();
+    await expect(page.getByLabel(`Tomorrow (${wed})`, { exact: true })).not.toBeChecked();
+    await page.getByLabel(`Today and tomorrow (${tue} and ${wed})`, { exact: true }).check();
+    await page.getByRole('button', { name: 'Set status' }).click();
+
+    await expect(page.getByRole('cell', { name: 'Delayed 90 minutes' })).toBeVisible();
+    await expect(page.getByText('Waiting to publish')).toHaveCount(2);
+    expect(api.overrides[0]).toMatchObject({
+      scope: 'district',
+      id: '4100001',
+      status: 'delayed',
+      minutes: 90,
+      note: 'Called the office',
+      days: ['2026-10-20', '2026-10-21'],
+      time_zone: PACIFIC,
+    });
+    expect(api.overrides[0]).not.toHaveProperty('expires_at');
+
+    await page.getByRole('button', { name: 'Back to the map' }).click();
+    await expect(page.getByRole('heading', { name: 'Admin' })).toHaveCount(0);
+    expect(new URL(page.url()).searchParams.has('admin')).toBe(false);
+  });
+
+  test('a day picked before the school’s midnight is the date it showed when saved after it', async ({
+    page,
+  }) => {
+    const api = new StubApi();
+    // 11:58 PM Tuesday in Portland (already Wednesday in Denver and New York).
+    await openStatuses(page, api, '2026-10-21T06:58:00Z');
+    const [tue, wed, thu] = ['2026-10-20', '2026-10-21', '2026-10-22'].map((day) =>
+      format.day(day),
+    );
+    // After 3 PM: tomorrow, Wednesday.
+    const tomorrow = page.getByLabel(`Tomorrow (${wed ?? ''})`, { exact: true });
+    await expect(tomorrow).toBeChecked();
+    await expect(page.getByLabel(`Today (${tue ?? ''})`, { exact: true })).toBeVisible();
+    // The school's midnight passes with the form open: Wednesday is now its today, still
+    // picked, and Thursday is never sent in its place.
+    await page.clock.fastForward('03:00');
+    const today = page.getByLabel(`Today (${wed ?? ''})`, { exact: true });
+    await expect(today).toBeChecked();
+    await expect(page.getByLabel(`Tomorrow (${thu ?? ''})`, { exact: true })).not.toBeChecked();
+    await page.getByRole('button', { name: 'Set status' }).click();
+    await expect(page.getByRole('cell', { name: 'Closed' })).toBeVisible();
+    expect(api.overrides[0]).toMatchObject({ days: ['2026-10-21'], time_zone: PACIFIC });
+
+    // Today (Wednesday) picked, and the next midnight passes before the save: nothing is
+    // picked in its place, and the admin is asked to pick again.
+    await today.check();
+    await page.clock.fastForward('24:00:00');
+    await expect(page.getByRole('alert')).toHaveText(
+      'The school’s date has changed. Pick its days again.',
+    );
+    await expect(page.getByRole('button', { name: 'Set status' })).toBeDisabled();
+    await expect(page.getByLabel(`Today (${thu ?? ''})`, { exact: true })).not.toBeChecked();
+    expect(api.overrides).toHaveLength(1);
   });
 });

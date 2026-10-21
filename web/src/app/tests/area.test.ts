@@ -104,6 +104,7 @@ const CLOSINGS: ClosingsFile = {
       reasons: [0, 0],
       shifts: [],
       clocks: [],
+      manual: [],
     },
   ],
 };
@@ -350,6 +351,7 @@ describe('the area panel’s view', () => {
           reasons: [0, 0, 0],
           shifts: [],
           clocks: [],
+          manual: [],
         },
       ],
     };
@@ -597,6 +599,7 @@ describe('an area with its closings at a live root', () => {
         reasons: [0],
         shifts: [],
         clocks: [],
+        manual: [],
       },
     ],
   };
