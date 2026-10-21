@@ -3,6 +3,7 @@
 
   import { accountCopy, accountFormat } from '../../copy-account';
   import type { AccountState, AccountStore, SheetView } from '../../account/session';
+  import UserTag from './UserTag.svelte';
 
   interface Props {
     store: AccountStore;
@@ -96,6 +97,11 @@
   </button>
   {#if open && user !== null}
     <div class="account-menu" role="menu" bind:this={menu}>
+      {#if user.username !== null}
+        <div class="menu-head" role="presentation">
+          <UserTag username={user.username} joinNumber={user.join_number} />
+        </div>
+      {/if}
       <button
         type="button"
         role="menuitem"
@@ -242,6 +248,15 @@
       0 0 0 1px var(--bg),
       0 16px 40px rgb(0 0 0 / 0.6);
     animation: arrive 160ms cubic-bezier(0.2, 0.7, 0.2, 1) both;
+  }
+
+  .menu-head {
+    padding: 8px 12px 10px;
+    margin-bottom: 4px;
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--text-1);
+    border-bottom: 1px solid var(--border-1);
   }
 
   .account-menu button {

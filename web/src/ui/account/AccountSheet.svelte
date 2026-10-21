@@ -5,6 +5,9 @@
   import { withoutSchool } from '../../account/pins';
   import type { AccountState, AccountStore, SheetView } from '../../account/session';
   import { accountCopy, accountFormat, type AccountErrorCode } from '../../copy-account';
+  import { followKeyboard } from './keyboard';
+  import UsernameField from './UsernameField.svelte';
+  import UserTag from './UserTag.svelte';
 
   interface Props {
     store: AccountStore;
@@ -30,6 +33,8 @@
   let email = $state('');
   let password = $state('');
   let over13 = $state(false);
+  // Username, on sign up and on the username view.
+  let username = $state('');
   // Settings.
   let newName = $state('');
   let newEmail = $state('');
@@ -46,7 +51,12 @@
     newName = user?.name ?? '';
     newEmail = user?.email ?? '';
     queueMicrotask(() => dialog?.querySelector<HTMLElement>('input, button.primary')?.focus());
-    return stop;
+    // The sheet and the focused field stay above an on-screen keyboard (keyboard.ts).
+    const unfollow = dialog === undefined ? () => undefined : followKeyboard(dialog);
+    return () => {
+      stop();
+      unfollow();
+    };
   });
 
   const user = $derived(account.user);
@@ -57,8 +67,14 @@
         ? accountCopy.sheet.login
         : view === 'schools'
           ? accountCopy.schools.title
-          : accountCopy.settings.title,
+          : view === 'username'
+            ? account.user?.renamed === true
+              ? accountCopy.username.renamedTitle
+              : accountCopy.username.title
+            : accountCopy.settings.title,
   );
+  /** The username view cannot be left except by picking one or logging out. */
+  const mustPick = $derived(view === 'username');
 
   function errorCode(caught: unknown): AccountErrorCode {
     const code = caught instanceof ApiError ? caught.code : 'server';
@@ -84,7 +100,13 @@
 
   async function submitSignup(event: SubmitEvent): Promise<void> {
     event.preventDefault();
-    if (await run(() => store.signup(name, email, password, over13))) onclose();
+    if (await run(() => store.signup(name, email, username, password, over13))) onclose();
+    password = '';
+  }
+
+  async function submitUsername(event: SubmitEvent): Promise<void> {
+    event.preventDefault();
+    if (await run(() => store.pickUsername(username, password))) onclose();
     password = '';
   }
 
@@ -127,7 +149,7 @@
   function onKeydown(event: KeyboardEvent): void {
     if (event.key === 'Escape') {
       event.preventDefault();
-      onclose();
+      if (!mustPick) onclose();
       return;
     }
     // Keep Tab inside the sheet while it is open.
@@ -151,11 +173,24 @@
 
   // Signed out on another tab, or by the API: the account views close.
   $effect(() => {
-    if (account.ready && user === null && (view === 'schools' || view === 'settings')) onclose();
+    if (
+      account.ready &&
+      user === null &&
+      (view === 'schools' || view === 'settings' || view === 'username')
+    )
+      onclose();
+    // Picked: the username view has done its job.
+    if (view === 'username' && user !== null && !user.username_required) onclose();
   });
 </script>
 
-<div class="scrim" role="presentation" onpointerdown={onclose}></div>
+<div
+  class="scrim"
+  role="presentation"
+  onpointerdown={() => {
+    if (!mustPick) onclose();
+  }}
+></div>
 <div
   class="sheet"
   role="dialog"
@@ -167,11 +202,13 @@
 >
   <header>
     <h2 id="account-title">{title}</h2>
-    <button class="close" type="button" aria-label={accountCopy.sheet.close} onclick={onclose}>
-      <svg viewBox="0 0 16 16" aria-hidden="true" focusable="false">
-        <path d="M4.5 4.5l7 7M11.5 4.5l-7 7" />
-      </svg>
-    </button>
+    {#if !mustPick}
+      <button class="close" type="button" aria-label={accountCopy.sheet.close} onclick={onclose}>
+        <svg viewBox="0 0 16 16" aria-hidden="true" focusable="false">
+          <path d="M4.5 4.5l7 7M11.5 4.5l-7 7" />
+        </svg>
+      </button>
+    {/if}
   </header>
 
   {#if view === 'signup'}
@@ -184,6 +221,7 @@
         <span>{accountCopy.sheet.email}</span>
         <input bind:value={email} type="email" autocomplete="email" maxlength="254" required />
       </label>
+      <UsernameField {store} bind:value={username} />
       <label>
         <span>{accountCopy.sheet.password}</span>
         <input
@@ -221,7 +259,14 @@
     <form onsubmit={submitLogin}>
       <label>
         <span>{accountCopy.sheet.loginField}</span>
-        <input bind:value={email} autocomplete="username" maxlength="254" required />
+        <input
+          bind:value={email}
+          autocomplete="username"
+          autocapitalize="none"
+          spellcheck="false"
+          maxlength="254"
+          required
+        />
       </label>
       <label>
         <span>{accountCopy.sheet.password}</span>
@@ -245,6 +290,38 @@
         }}
       >
         {accountCopy.sheet.toSignup}
+      </button>
+    </form>
+  {:else if view === 'username' && user !== null}
+    <form onsubmit={submitUsername}>
+      <p class="note">{user.renamed ? accountCopy.username.renamed : accountCopy.username.intro}</p>
+      <UsernameField {store} bind:value={username} />
+      {#if user.needs_rekey}
+        <label>
+          <span>{accountCopy.sheet.password}</span>
+          <input
+            bind:value={password}
+            type="password"
+            autocomplete="current-password"
+            maxlength="128"
+            required
+            aria-describedby="rekey-note"
+          />
+        </label>
+        <small id="rekey-note">{accountCopy.username.passwordNote}</small>
+      {/if}
+      {#if error !== null}<p class="error" role="alert">{accountCopy.errors[error]}</p>{/if}
+      <button class="primary" type="submit" disabled={busy}>
+        {busy ? accountCopy.sheet.working : accountCopy.username.save}
+      </button>
+      <button
+        class="link"
+        type="button"
+        onclick={() => {
+          void store.logout();
+        }}
+      >
+        {accountCopy.username.logout}
       </button>
     </form>
   {:else if view === 'schools' && user !== null}
@@ -284,6 +361,9 @@
     {/if}
     {#if error !== null}<p class="error" role="alert">{accountCopy.errors[error]}</p>{/if}
   {:else if view === 'settings' && user !== null}
+    {#if user.username !== null}
+      <p class="tag-line"><UserTag username={user.username} joinNumber={user.join_number} /></p>
+    {/if}
     <form onsubmit={saveName}>
       <label>
         <span>{accountCopy.settings.name}</span>
@@ -385,7 +465,14 @@
     flex-direction: column;
     gap: 16px;
     width: 360px;
-    max-height: calc(100dvh - var(--inset-top) - var(--bar-height) - 2 * var(--edge) - 16px);
+    /* --keyboard-lift and --visible-height come from keyboard.ts while a keyboard is up. */
+    max-height: min(
+      calc(100dvh - var(--inset-top) - var(--bar-height) - 2 * var(--edge) - 16px),
+      calc(
+        var(--visible-height, 100dvh) - var(--inset-top) - var(--bar-height) - 2 * var(--edge) -
+          16px
+      )
+    );
     padding: 20px;
     overflow-y: auto;
     overscroll-behavior: contain;
@@ -505,6 +592,12 @@
     font-size: 13px;
     line-height: 18px;
     color: var(--text-2);
+  }
+
+  .tag-line {
+    margin: 0;
+    font-size: 15px;
+    color: var(--text-1);
   }
 
   .error {
@@ -659,10 +752,13 @@
     .sheet {
       top: auto;
       right: 0;
-      bottom: 0;
+      bottom: var(--keyboard-lift, 0px);
       left: 0;
       width: auto;
-      max-height: calc(100dvh - var(--inset-top) - 24px);
+      max-height: min(
+        calc(100dvh - var(--inset-top) - 24px),
+        calc(var(--visible-height, 100dvh) - 8px)
+      );
       padding: 20px calc(var(--inset-right) + 16px) calc(var(--inset-bottom) + 20px)
         calc(var(--inset-left) + 16px);
       border-radius: 16px 16px 0 0;

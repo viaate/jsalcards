@@ -126,6 +126,16 @@
         >
       </div>
     </div>
+    <h4>{adminCopy.overview.busyNetworks}</h4>
+    {#if (summary.busy_networks ?? []).length === 0}
+      <p class="muted">{adminCopy.overview.none}</p>
+    {:else}
+      <ul class="networks">
+        {#each summary.busy_networks ?? [] as busy (`${busy.network}|${busy.day}`)}
+          <li>{accountFormat.busyNetwork(busy.network, busy.count, busy.day)}</li>
+        {/each}
+      </ul>
+    {/if}
   {/if}
 </section>
 

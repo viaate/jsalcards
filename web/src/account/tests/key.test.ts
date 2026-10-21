@@ -1,7 +1,15 @@
 import { webcrypto } from 'node:crypto';
 import { describe, expect, it } from 'vitest';
 
-import { deriveKey, normalizeLogin, passwordProblem, temporaryPassword } from '../key';
+import {
+  deriveKey,
+  deriveWithSalt,
+  loginSalt,
+  normalizeLogin,
+  passwordProblem,
+  randomSalt,
+  temporaryPassword,
+} from '../key';
 
 describe('deriveKey', () => {
   // The same vector is in api/test/derive-key.test.ts: the deploy runner derives the admin's
@@ -21,6 +29,25 @@ describe('deriveKey', () => {
     const b = await deriveKey('b@example.com', 'correct horse battery', subtle);
     expect(a).not.toBe(b);
     expect(a).toMatch(/^[A-Za-z0-9_-]{43}$/);
+  });
+});
+
+describe('deriveWithSalt', () => {
+  it('derives a v1 key from the salt the Worker hands back for it', async () => {
+    const subtle = webcrypto.subtle as SubtleCrypto;
+    const salt = await loginSalt(' Test@Example.com', subtle);
+    expect(await deriveWithSalt(salt, 'correct horse battery', subtle)).toBe(
+      '67B2DvpiHPqn1Z_iJPni-jyc5JcCMMB-PjBHI8n9-A0',
+    );
+  });
+
+  it('makes fresh 16-byte salts that give different keys', async () => {
+    const subtle = webcrypto.subtle as SubtleCrypto;
+    const a = randomSalt();
+    const b = randomSalt();
+    expect(a).toMatch(/^[A-Za-z0-9_-]{22}$/);
+    expect(a).not.toBe(b);
+    expect(await deriveWithSalt(a, 'pw', subtle)).not.toBe(await deriveWithSalt(b, 'pw', subtle));
   });
 });
 

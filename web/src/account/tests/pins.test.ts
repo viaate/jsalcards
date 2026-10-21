@@ -54,7 +54,19 @@ function fakeAccount(): AccountStore & {
       return () => listeners.delete(listener);
     },
     login(schools: SavedSchool[]) {
-      set({ id: 'u', name: 'N', email: 'n@e.co', role: 'user', schools, created_at: '' });
+      set({
+        id: 'u',
+        name: 'N',
+        email: 'n@e.co',
+        role: 'user',
+        schools,
+        created_at: '',
+        username: 'n_e',
+        join_number: 2,
+        username_required: false,
+        renamed: false,
+        needs_rekey: false,
+      });
     },
     setSchools(schools: readonly SavedSchool[]) {
       saved.push([...schools]);

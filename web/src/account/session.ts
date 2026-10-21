@@ -6,7 +6,14 @@
  */
 
 import { ApiError, type Api } from './api';
-import { characters, deriveKey, normalizeLogin, passwordProblem } from './key';
+import {
+  characters,
+  deriveWithSalt,
+  loginSalt,
+  normalizeLogin,
+  passwordProblem,
+  randomSalt,
+} from './key';
 
 export const TOKEN_KEY = 'snowlight:session';
 export const MAX_SCHOOLS = 5;
@@ -23,7 +30,22 @@ export interface User {
   readonly role: 'user' | 'admin';
   readonly schools: readonly SavedSchool[];
   readonly created_at: string;
+  /** Lowercase a-z 0-9 _; null until the account picks one. */
+  readonly username: string | null;
+  /** #0001-#9999 in sign-up order; null after #9999. */
+  readonly join_number: number | null;
+  /** No username yet, or the admin changed it: the account picks one before anything else. */
+  readonly username_required: boolean;
+  /** The admin changed the username. */
+  readonly renamed: boolean;
+  /** The account's keys predate usernames: fresh ones are derived while the password is at hand. */
+  readonly needs_rekey: boolean;
 }
+
+/** What the live check says of a username. */
+export type UsernameCheck =
+  | { readonly ok: true; readonly username: string }
+  | { readonly ok: false; readonly problem: string };
 
 export interface AccountState {
   /** The API answered its health check: the account controls show. */
@@ -34,7 +56,7 @@ export interface AccountState {
 }
 
 /** What the account sheet shows. */
-export type SheetView = 'signup' | 'login' | 'schools' | 'settings';
+export type SheetView = 'signup' | 'login' | 'schools' | 'settings' | 'username';
 
 export type AccountListener = (state: AccountState) => void;
 
@@ -53,8 +75,19 @@ export interface AccountStore {
   subscribe(listener: AccountListener): () => void;
   /** Checks the API and the stored session. */
   start(): Promise<void>;
-  signup(name: string, email: string, password: string, over13: boolean): Promise<void>;
+  signup(
+    name: string,
+    email: string,
+    username: string,
+    password: string,
+    over13: boolean,
+  ): Promise<void>;
+  /** Logs in by email, username or the admin's name. */
   login(login: string, password: string): Promise<void>;
+  /** Whether a username may be taken now (format, lists and availability). */
+  checkUsername(username: string): Promise<UsernameCheck>;
+  /** Picks a username (a new account's first, or after the admin changed it). */
+  pickUsername(username: string, password?: string): Promise<void>;
   logout(): Promise<void>;
   update(change: ProfileChange): Promise<void>;
   deleteAccount(password: string): Promise<void>;
@@ -97,11 +130,27 @@ function writeToken(token: string | null): void {
 }
 
 export interface AccountOptions {
-  readonly derive?: (login: string, password: string) => Promise<string>;
+  /** The slow key derivation (key.ts deriveWithSalt), replaceable in tests. */
+  readonly derive?: (salt: string, password: string) => Promise<string>;
+  /** A fresh random salt (key.ts randomSalt). */
+  readonly salt?: () => string;
+}
+
+/**
+ * The keys a sign-up or a password change sends: the email key, salted with
+ * the email's v1 salt (key.ts loginSalt), and the username key with a fresh
+ * random salt.
+ */
+interface FreshKeys {
+  readonly key: string;
+  readonly email_salt: string;
+  readonly name_key: string;
+  readonly name_salt: string;
 }
 
 export function createAccountStore(api: Api, options: AccountOptions = {}): AccountStore {
-  const derive = options.derive ?? deriveKey;
+  const derive = options.derive ?? deriveWithSalt;
+  const newSalt = options.salt ?? randomSalt;
   const listeners = new Set<AccountListener>();
   let token = readToken();
   let state: AccountState = { available: false, ready: false, user: null };
@@ -131,6 +180,53 @@ export function createAccountStore(api: Api, options: AccountOptions = {}): Acco
       if (error instanceof ApiError && error.status === 401) clear();
       throw error;
     }
+  };
+
+  /**
+   * The salt of a login's key: an email's is its v1 salt, made here; a
+   * username's is the one the Worker keeps (a made-up steady one for a
+   * username it does not know).
+   */
+  const saltFor = async (login: string): Promise<string> =>
+    login.includes('@')
+      ? loginSalt(login)
+      : (
+          await api.call<{ salt: string }>('POST', '/v1/login/salt', {
+            login: normalizeLogin(login),
+          })
+        ).salt;
+
+  const freshKeys = async (password: string, email: string): Promise<FreshKeys> => {
+    const emailSalt = await loginSalt(email);
+    const nameSalt = newSalt();
+    const [key, nameKey] = await Promise.all([
+      derive(emailSalt, password),
+      derive(nameSalt, password),
+    ]);
+    return { key, email_salt: emailSalt, name_key: nameKey, name_salt: nameSalt };
+  };
+
+  /** The signed-in account's current email key, for a change that needs the password. */
+  const currentKey = async (password: string): Promise<string> => {
+    const email = state.user?.email ?? '';
+    return derive(await saltFor(email), password);
+  };
+
+  /** A v1 account's fresh keys, made with the password it just gave (the same password). */
+  const rekey = async (current: string, password: string, email: string): Promise<void> => {
+    const keys = await freshKeys(password, email);
+    const result = await authed<{ token?: string; user: User }>('PATCH', '/v1/me', {
+      current_key: current,
+      new_key: keys.key,
+      email_salt: keys.email_salt,
+      name_key: keys.name_key,
+      name_salt: keys.name_salt,
+    });
+    if (result.token !== undefined) {
+      token = result.token;
+      writeToken(token);
+    }
+    set({ user: result.user });
   };
 
   const store: AccountStore = {
@@ -163,24 +259,59 @@ export function createAccountStore(api: Api, options: AccountOptions = {}): Acco
         set({ available: true, ready: true });
       }
     },
-    async signup(name, email, password, over13) {
+    async signup(name, email, username, password, over13) {
       const problem = passwordProblem(password);
       if (problem !== null) throw new ApiError(problem, 400);
       if (!over13) throw new ApiError('over13_required', 400);
-      const key = await derive(email, password);
+      const keys = await freshKeys(password, email);
       signIn(
         await api.call('POST', '/v1/signup', {
           name: name.trim(),
           email: normalizeLogin(email),
-          key,
+          username: normalizeLogin(username),
+          ...keys,
           over13: true,
         }),
       );
     },
     async login(login, password) {
       if (password.length === 0 || characters(password) > 128) throw new ApiError('bad_login', 401);
-      const key = await derive(login, password);
-      signIn(await api.call('POST', '/v1/login', { login: normalizeLogin(login), key }));
+      const salt = await saltFor(login);
+      const key = await derive(salt, password);
+      const result = await api.call<{ token: string; user: User }>('POST', '/v1/login', {
+        login: normalizeLogin(login),
+        key,
+      });
+      // A v1 account gets its fresh keys now, while the password is at hand, before the page
+      // shows it signed in. If this fails, the username view asks for the password again.
+      if (result.user.needs_rekey && result.user.role === 'user') {
+        token = result.token;
+        writeToken(token);
+        try {
+          await rekey(key, password, result.user.email ?? '');
+          return;
+        } catch {
+          // Signed in either way.
+        }
+      }
+      signIn(result);
+    },
+    async checkUsername(username) {
+      const name = encodeURIComponent(normalizeLogin(username));
+      return api.call<UsernameCheck>('GET', `/v1/usernames/check?name=${name}`);
+    },
+    async pickUsername(username, password) {
+      const user = state.user;
+      if (user === null) throw new ApiError('signed_out', 401);
+      if (user.needs_rekey) {
+        if (password === undefined || password.length === 0)
+          throw new ApiError('wrong_password', 403);
+        await rekey(await currentKey(password), password, user.email ?? '');
+      }
+      const result = await authed<{ user: User }>('PUT', '/v1/me/username', {
+        username: normalizeLogin(username),
+      });
+      set({ user: result.user });
     },
     async logout() {
       const held = token;
@@ -207,10 +338,13 @@ export function createAccountStore(api: Api, options: AccountOptions = {}): Acco
           const problem = passwordProblem(change.newPassword);
           if (problem !== null) throw new ApiError(problem, 400);
         }
-        // The key follows the login: a new email needs the password to derive it again.
-        const login = user.email ?? '';
-        body.current_key = await derive(login, current);
-        body.new_key = await derive(email ?? login, change.newPassword ?? current);
+        // Fresh keys for both logins, from the new password (or the same one for a new email).
+        body.current_key = await currentKey(current);
+        const keys = await freshKeys(change.newPassword ?? current, email ?? user.email ?? '');
+        body.new_key = keys.key;
+        body.email_salt = keys.email_salt;
+        body.name_key = keys.name_key;
+        body.name_salt = keys.name_salt;
         if (email !== undefined) body.email = email;
       }
       const result = await authed<{ token?: string; user: User }>('PATCH', '/v1/me', body);
@@ -223,7 +357,7 @@ export function createAccountStore(api: Api, options: AccountOptions = {}): Acco
     async deleteAccount(password) {
       const user = state.user;
       if (user === null) throw new ApiError('signed_out', 401);
-      const key = await derive(user.email ?? '', password);
+      const key = await currentKey(password);
       await authed('DELETE', '/v1/me', { key });
       clear();
     },

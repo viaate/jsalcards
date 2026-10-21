@@ -775,6 +775,12 @@
     );
   }
 
+  // An account with no username (a v1 one), or one the admin renamed, picks one before anything else.
+  $effect(() => {
+    if (accountState?.user?.username_required === true && sheetView !== 'username')
+      openSheet('username');
+  });
+
   /** A saved school opens on the map as a pick would. */
   function openSaved(id: string): void {
     void services.then((app) => {

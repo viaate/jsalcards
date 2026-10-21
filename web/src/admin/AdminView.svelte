@@ -6,6 +6,7 @@
   import { adminCopy } from '../copy-account';
   import { adminCall } from './call';
   import Audit from './Audit.svelte';
+  import Moderation from './Moderation.svelte';
   import Overview from './Overview.svelte';
   import Statuses from './Statuses.svelte';
   import Users from './Users.svelte';
@@ -18,8 +19,8 @@
 
   let { store, services, onclose }: Props = $props();
 
-  type Tab = 'overview' | 'statuses' | 'users' | 'audit';
-  const TABS: readonly Tab[] = ['overview', 'statuses', 'users', 'audit'];
+  type Tab = 'overview' | 'statuses' | 'users' | 'moderation' | 'audit';
+  const TABS: readonly Tab[] = ['overview', 'statuses', 'users', 'moderation', 'audit'];
 
   let tab = $state<Tab>('overview');
   let app = $state<Services | null>(null);
@@ -77,6 +78,8 @@
       <Statuses {call} {app} />
     {:else if tab === 'users'}
       <Users {call} />
+    {:else if tab === 'moderation'}
+      <Moderation {call} />
     {:else}
       <Audit {call} />
     {/if}

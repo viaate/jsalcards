@@ -31,18 +31,32 @@ export const accountCopy = /* @__PURE__ */ deepFreeze({
     close: 'Close',
     name: 'Name',
     email: 'Email',
-    /** Log in takes an email, or the admin’s name. */
-    loginField: 'Email',
+    /** Log in takes a username, an email, or the admin’s name. */
+    loginField: 'Username or email',
+    username: 'Username',
+    usernameHint: '3 to 20 letters, numbers or underscores. Others see it next to your number.',
+    usernameFree: 'That username is free.',
+    checking: 'Checking…',
     password: 'Password',
     over13: 'I am 13 or older',
     ageNote: 'Accounts are for people 13 and older.',
     privacy:
-      'Your account keeps your name, email and saved schools. Your password never leaves this device. You can delete your account at any time in your settings.',
+      'Your account keeps your name, email, username and saved schools. Your password never leaves this device. You can delete your account at any time in your settings.',
     createAccount: 'Create account',
     working: 'One moment…',
     toLogin: 'Have an account? Log in',
     toSignup: 'New here? Sign up',
     passwordHint: 'At least 8 characters.',
+  },
+  /** The view that asks for a username before anything else. */
+  username: {
+    title: 'Pick a username',
+    renamedTitle: 'Pick a new username',
+    intro: 'Your account needs a username. Others see it next to your number.',
+    renamed: 'Your username was changed. Pick a new one.',
+    passwordNote: 'Enter your password once to finish setting up your account.',
+    save: 'Save username',
+    logout: 'Log out instead',
   },
   menu: {
     mySchools: 'My schools',
@@ -71,11 +85,20 @@ export const accountCopy = /* @__PURE__ */ deepFreeze({
     deleteNote: 'This deletes your account and your saved schools for good.',
     deleteButton: 'Delete my account',
     privacy:
-      'Your account keeps your name, your email, your saved schools, and when you signed up and last logged in. Your password never leaves this device: Snowlight keeps only a scrambled key made from it. You can delete your account at any time here.',
+      'Your account keeps your name, your email, your username and number, your saved schools, and when you signed up and last logged in. Your password never leaves this device: Snowlight keeps only scrambled keys made from it. You can delete your account at any time here, and its name and email go with it.',
     adminNote: 'The admin’s password is set in the repository’s secrets.',
   },
   errors: {
-    bad_login: 'That email and password don’t match an account.',
+    bad_login: 'That username or email and password don’t match an account.',
+    username_length: 'Use 3 to 20 letters, numbers or underscores.',
+    username_chars: 'Use only letters, numbers and underscores.',
+    username_digits: 'Use at least one letter.',
+    username_underscores: 'Start and end with a letter or number, with one underscore at a time.',
+    username_reserved: 'That username is reserved. Choose another.',
+    username_blocked: 'That username isn’t allowed. Choose another.',
+    username_taken: 'Someone already has that username.',
+    username_set: 'Your username is already set.',
+    needs_rekey: 'Enter your password to finish.',
     email_taken: 'An account already uses that email.',
     too_many: 'Too many tries. Wait 15 minutes, then try again.',
     bad_email: 'Enter an email address.',
@@ -98,6 +121,7 @@ export const adminCopy = /* @__PURE__ */ deepFreeze({
     overview: 'Overview',
     statuses: 'Statuses',
     users: 'Users',
+    moderation: 'Moderation',
     audit: 'Audit',
   },
   overview: {
@@ -115,6 +139,7 @@ export const adminCopy = /* @__PURE__ */ deepFreeze({
     top: 'Highest chances',
     closings: 'Closings file',
     manual: 'Manual statuses on now',
+    busyNetworks: 'Networks with 5 or more sign-ups in a day this week',
     runs: 'Latest runs',
     issues: 'Open watchdog issues',
     none: 'None',
@@ -175,8 +200,20 @@ export const adminCopy = /* @__PURE__ */ deepFreeze({
     pickFirst: 'Find a school or district first.',
   },
   users: {
-    search: 'Find by name or email',
+    search: 'Find by name, username or email',
     name: 'Name',
+    username: 'Username',
+    noUsername: 'Not picked yet',
+    renamePending: 'Picks a new one at next sign-in',
+    rename: 'Rename',
+    renameTo: 'New username, or empty for a player number',
+    renameSave: 'Rename',
+    renameCancel: 'Cancel',
+    renameBlock: 'Also block this word for everyone',
+    renameBlocked:
+      'Renamed. Their old name is now blocked for everyone, with any letters or numbers around it.',
+    renameTooShort: 'Renamed. Their old name is too short to block as a word.',
+    renameFull: 'Renamed. Their old name is not blocked: you have 50 words of that kind.',
     email: 'Email',
     created: 'Joined',
     lastLogin: 'Last login',
@@ -195,12 +232,36 @@ export const adminCopy = /* @__PURE__ */ deepFreeze({
     less: 'Previous page',
     adminRow: 'Admin',
   },
+  moderation: {
+    intro:
+      'The built-in list blocks slurs, sexual words, hate, self-harm and drug terms, and their spellings with numbers, repeats, underscores or backwards. Add your own here; they apply at once.',
+    builtIn: 'Built-in list',
+    term: 'Word or part of a word',
+    kind: 'Match',
+    substring: 'Anywhere in a name',
+    token: 'Only as a whole word',
+    raw: 'A number code anywhere',
+    allow: 'Always allowed',
+    full: 'You have 50 words of this kind. Remove one to add another.',
+    add: 'Add',
+    added: 'Your words',
+    none: 'No words added yet.',
+    remove: 'Remove',
+    scanning: 'Checking every username…',
+    caught: 'Usernames it catches',
+    caughtAll: 'Usernames the lists catch now',
+    noneCaught: 'No username matches.',
+    scanAll: 'Check every username',
+    rename: 'Rename to a player number',
+    renamed: 'Renamed',
+  },
   audit: {
     when: 'When',
     who: 'Who',
     what: 'What',
     target: 'Target',
     none: 'Nothing logged yet.',
+    deletedUser: 'Deleted user',
   },
   errors: {
     forbidden: 'This view is for the admin.',
@@ -289,6 +350,11 @@ function listedDay(localDate: string): string {
   return format.day(localDate);
 }
 
+/** "203.0.113.0/24: 7 sign-ups on Tue, Oct 20": a network that made many accounts in one UTC day. */
+function busyNetwork(network: string, count: number, utcDate: string): string {
+  return `${network}: ${format.number(count)} sign-ups on ${format.day(utcDate)}`;
+}
+
 /** "Today (Tue, Oct 20)": a day the form offers, with its date in the school's zone. */
 function dayChoice(label: string, localDate: string): string {
   return `${label} (${format.day(localDate)})`;
@@ -319,11 +385,32 @@ function action(code: string): string {
     disable_user: 'Disabled an account',
     enable_user: 'Enabled an account',
     delete_user: 'Deleted an account',
+    rename_user: 'Renamed an account',
+    add_term: 'Added a blocked word',
+    remove_term: 'Removed a blocked word',
   };
   return words[code] ?? 'Other change';
 }
 
+/** A join number as its box shows it: "#0042". */
+function joinNumber(n: number): string {
+  return `#${String(n).padStart(4, '0')}`;
+}
+
+/** "frosty_fox, number 42": a username and its box, for a screen reader. */
+function userTag(username: string, n: number | null): string {
+  return n === null ? username : `${username}, number ${format.number(n)}`;
+}
+
+/** "3 usernames checked". */
+function scanned(n: number): string {
+  return `${format.number(n)} ${n === 1 ? 'username' : 'usernames'} checked`;
+}
+
 export const accountFormat = /* @__PURE__ */ deepFreeze({
+  joinNumber,
+  userTag,
+  scanned,
   menuLabel,
   firstName,
   openSchool,
@@ -340,6 +427,7 @@ export const accountFormat = /* @__PURE__ */ deepFreeze({
   listedDay,
   dayChoice,
   bothChoice,
+  busyNetwork,
   number: (n: number): string => format.number(n),
 });
 
