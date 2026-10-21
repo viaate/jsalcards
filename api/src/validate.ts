@@ -17,7 +17,6 @@ export const SCOPES = ['district', 'school'] as const;
 export type Scope = (typeof SCOPES)[number];
 
 export const MAX_SCHOOLS = 5;
-export const MAX_OVERRIDE_DAYS = 7;
 
 export function key(value: unknown): string | null {
   return typeof value === 'string' && KEY.test(value) ? value : null;

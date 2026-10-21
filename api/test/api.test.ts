@@ -1,5 +1,7 @@
 import assert from 'node:assert/strict';
+import { readFileSync } from 'node:fs';
 import { after, before, describe, it } from 'node:test';
+import { addDays, endOfDay, localDate } from '../src/days.ts';
 import { ADMIN_KEY, ORIGIN, fakeKey, startApi, type Api } from './harness.ts';
 
 let api: Api;
@@ -27,7 +29,10 @@ async function adminToken(): Promise<string> {
   return r.body.token;
 }
 
-const inHours = (h: number) => new Date(Date.now() + h * 3600_000).toISOString();
+const ZONE = 'America/New_York';
+/** The zone's today and tomorrow, by the test machine's clock. */
+const today = () => localDate(Date.now(), ZONE);
+const tomorrow = () => addDays(today(), 1);
 
 describe('health and CORS', () => {
   it('answers health with the allowed origin echoed', async () => {
@@ -623,7 +628,7 @@ describe('the admin', () => {
       [
         'PUT',
         '/v1/admin/overrides',
-        { scope: 'district', id: '3904378', status: 'closed', expires_at: inHours(5) },
+        { scope: 'district', id: '3904378', status: 'closed', days: [today()], time_zone: ZONE },
       ],
       ['DELETE', '/v1/admin/overrides/district:3904378'],
       ['GET', '/v1/admin/audit'],
@@ -729,7 +734,13 @@ describe('the admin', () => {
 describe('manual statuses', () => {
   it('validates every field', async () => {
     const token = await adminToken();
-    const good = { scope: 'district', id: '3904378', status: 'closed', expires_at: inHours(6) };
+    const good = {
+      scope: 'district',
+      id: '3904378',
+      status: 'closed',
+      days: [today()],
+      time_zone: ZONE,
+    };
     const bad: Record<string, unknown>[] = [
       { ...good, scope: 'state' },
       { ...good, id: '390437' },
@@ -743,11 +754,27 @@ describe('manual statuses', () => {
       { ...good, status: 'early_dismissal' },
       { ...good, status: 'early_dismissal', at_local_time: '25:00' },
       { ...good, status: 'early_dismissal', at_local_time: '1:30 PM' },
-      { ...good, expires_at: inHours(-1) },
-      { ...good, expires_at: inHours(24 * 8) },
-      { ...good, expires_at: '2026-10-20 18:00' },
       { ...good, note: '<script>' },
       { ...good, note: 'x'.repeat(201) },
+      // Days: one or two, the zone's today and tomorrow, in order.
+      { ...good, days: undefined },
+      { ...good, days: [] },
+      { ...good, days: today() },
+      { ...good, days: [today(), tomorrow(), addDays(today(), 2)] },
+      { ...good, days: [tomorrow(), today()] },
+      { ...good, days: [today(), today()] },
+      { ...good, days: [addDays(today(), -1)] },
+      { ...good, days: [addDays(today(), -1), today()] },
+      { ...good, days: [addDays(today(), 2)] },
+      { ...good, days: ['2026-02-30'] },
+      { ...good, days: ['tomorrow'] },
+      { ...good, days: [`${today()}T00:00:00Z`] },
+      { ...good, time_zone: undefined },
+      { ...good, time_zone: 'Mars/Olympus_Mons' },
+      { ...good, time_zone: 'UTC' },
+      { ...good, time_zone: '../etc/passwd' },
+      // A bare expiry, as the first admin form sent, is not enough.
+      { scope: 'district', id: '3904378', status: 'closed', expires_at: '2030-01-01T00:00:00Z' },
     ];
     for (const body of bad) {
       const r = await api.call('PUT', '/v1/admin/overrides', { token, body });
@@ -755,6 +782,9 @@ describe('manual statuses', () => {
     }
     const ok = [
       good,
+      { ...good, days: [tomorrow()] },
+      { ...good, days: [today(), tomorrow()] },
+      { ...good, time_zone: 'America/Indiana/Indianapolis' },
       { ...good, scope: 'school', id: '390437801234', status: 'delayed', minutes: 120 },
       {
         ...good,
@@ -771,7 +801,52 @@ describe('manual statuses', () => {
     }
   });
 
-  it('publishes only active overrides, without notes or who set them', async () => {
+  it('stores the days and ends the status when its last day ends in the zone', async () => {
+    const token = await adminToken();
+    // The days are named in the status's own zone, so this holds at any hour of the UTC day.
+    const chicagoToday = localDate(Date.now(), 'America/Chicago');
+    const days = [chicagoToday, addDays(chicagoToday, 1)];
+    const r = await api.call('PUT', '/v1/admin/overrides', {
+      token,
+      body: {
+        scope: 'district',
+        id: '2700010',
+        status: 'closed',
+        days,
+        time_zone: 'America/Chicago',
+        expires_at: '2030-01-01T00:00:00Z',
+      },
+    });
+    assert.equal(r.status, 200);
+    const [row] = await api.sql("SELECT * FROM overrides WHERE key = 'district:2700010'");
+    // A client's expiry is ignored: the Worker works it out from the last day.
+    assert.equal(row.expires_at, endOfDay(days[1]!, 'America/Chicago'));
+    assert.deepEqual(JSON.parse(row.days), days);
+    assert.equal(row.time_zone, 'America/Chicago');
+    assert.deepEqual(r.body.override.days, days);
+    assert.equal(r.body.override.time_zone, 'America/Chicago');
+    // Local midnight at the end of the last day.
+    const end = new Date(row.expires_at);
+    const hour = new Intl.DateTimeFormat('en-US', {
+      timeZone: 'America/Chicago',
+      hourCycle: 'h23',
+      hour: '2-digit',
+      minute: '2-digit',
+    }).format(end);
+    assert.equal(hour, '00:00');
+    assert.equal(localDate(row.expires_at, 'America/Chicago'), addDays(days[1]!, 1));
+  });
+
+  it('works out the end of a day across a change of clocks', () => {
+    // 2026-11-01: New York falls back from EDT (UTC-4) to EST (UTC-5).
+    assert.equal(endOfDay('2026-10-31', ZONE), Date.parse('2026-11-01T04:00:00Z'));
+    assert.equal(endOfDay('2026-11-01', ZONE), Date.parse('2026-11-02T05:00:00Z'));
+    // 2027-03-14: springs forward.
+    assert.equal(endOfDay('2027-03-14', ZONE), Date.parse('2027-03-15T04:00:00Z'));
+    assert.equal(endOfDay('2026-12-31', 'Pacific/Honolulu'), Date.parse('2027-01-01T10:00:00Z'));
+  });
+
+  it('publishes only active overrides, with their days, without notes or who set them', async () => {
     const token = await adminToken();
     await api.call('PUT', '/v1/admin/overrides', {
       token,
@@ -781,10 +856,11 @@ describe('manual statuses', () => {
         status: 'delayed',
         minutes: 90,
         note: 'Called the office',
-        expires_at: inHours(4),
+        days: [today(), tomorrow()],
+        time_zone: ZONE,
       },
     });
-    // Replacing keeps one row per target.
+    // Saving again replaces it: one row per target, with the new days and details.
     await api.call('PUT', '/v1/admin/overrides', {
       token,
       body: {
@@ -792,12 +868,19 @@ describe('manual statuses', () => {
         id: '1700001',
         status: 'closed',
         note: 'Called the office',
-        expires_at: inHours(4),
+        days: [tomorrow()],
+        time_zone: ZONE,
       },
     });
     await api.call('PUT', '/v1/admin/overrides', {
       token,
-      body: { scope: 'district', id: '1700002', status: 'closed', expires_at: inHours(4) },
+      body: {
+        scope: 'district',
+        id: '1700002',
+        status: 'closed',
+        days: [today()],
+        time_zone: ZONE,
+      },
     });
     await api.sql(
       "UPDATE overrides SET expires_at = ?1 WHERE key = 'district:1700002'",
@@ -811,18 +894,30 @@ describe('manual statuses', () => {
     assert.ok(!text.includes('Olivia'));
     const rows = r.body.overrides.filter((o: { id: string }) => o.id.startsWith('17000'));
     assert.deepEqual(
-      rows.map((o: { id: string; status: string }) => [o.id, o.status]),
-      [['1700001', 'closed']],
+      rows.map((o: { id: string; status: string; minutes: number | null; days: string[] }) => [
+        o.id,
+        o.status,
+        o.minutes,
+        o.days,
+      ]),
+      [['1700001', 'closed', null, [tomorrow()]]],
     );
     assert.deepEqual(Object.keys(rows[0]).sort(), [
       'at_local_time',
+      'days',
       'expires_at',
       'id',
       'minutes',
       'scope',
       'set_at',
       'status',
+      'time_zone',
     ]);
+    assert.equal(rows[0].time_zone, ZONE);
+    assert.equal(
+      rows[0].expires_at,
+      new Date(endOfDay(tomorrow(), ZONE)).toISOString().replace('.000Z', 'Z'),
+    );
     assert.match(rows[0].expires_at, /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}Z$/);
     assert.match(r.body.generated_at, /Z$/);
     const adminList = await api.call('GET', '/v1/admin/overrides', { token });
@@ -831,17 +926,137 @@ describe('manual statuses', () => {
     );
     assert.equal(mine.note, 'Called the office');
     assert.equal(mine.set_by, 'Olivia');
+    assert.deepEqual(mine.days, [tomorrow()]);
     const expired = adminList.body.overrides.find(
       (o: { key: string }) => o.key === 'district:1700002',
     );
     assert.equal(expired.active, false);
+    const log = await api.call('GET', '/v1/admin/audit', { token });
+    const set = log.body.entries.find(
+      (e: { action: string; target: string }) =>
+        e.action === 'set_status' && e.target === 'district:1700001',
+    );
+    assert.deepEqual(set.detail.days, [tomorrow()]);
+  });
+
+  it('serves only the listed days that have not ended', async () => {
+    const token = await adminToken();
+    await api.call('PUT', '/v1/admin/overrides', {
+      token,
+      body: {
+        scope: 'school',
+        id: '170000100009',
+        status: 'closed',
+        days: [today(), tomorrow()],
+        time_zone: ZONE,
+      },
+    });
+    // As if it were set yesterday for yesterday and today: yesterday has ended.
+    const yesterday = addDays(today(), -1);
+    await api.sql(
+      "UPDATE overrides SET days = ?1, expires_at = ?2 WHERE key = 'school:170000100009'",
+      JSON.stringify([yesterday, today()]),
+      endOfDay(today(), ZONE),
+    );
+    let r = await api.call('GET', '/v1/overrides');
+    let row = r.body.overrides.find((o: { id: string }) => o.id === '170000100009');
+    assert.deepEqual(row.days, [today()]);
+    // Every listed day over: the row has expired, and is not served at all.
+    await api.sql(
+      "UPDATE overrides SET days = ?1, expires_at = ?2 WHERE key = 'school:170000100009'",
+      JSON.stringify([yesterday]),
+      endOfDay(yesterday, ZONE),
+    );
+    r = await api.call('GET', '/v1/overrides');
+    row = r.body.overrides.find((o: { id: string }) => o.id === '170000100009');
+    assert.equal(row, undefined);
+  });
+
+  it('serves a row written without days by its one day from its expiry', async () => {
+    // Between migration 0002 and the deploy of this Worker, the Worker before days
+    // can still write: a new row with no days, or a rewrite of a row whose days
+    // then disagree with its new expiry. Each is served as the migration gives it.
+    const expires = endOfDay(today(), ZONE) - 60_000; // 23:59 in New York, as v1 set it
+    await api.sql(
+      `INSERT INTO overrides (key, scope, target_id, status, set_at, expires_at)
+       VALUES ('district:1700030', 'district', '1700030', 'closed', ?1, ?2)`,
+      Date.now() - 60_000,
+      expires,
+    );
+    await api.sql(
+      `INSERT INTO overrides (key, scope, target_id, status, set_at, expires_at, days, time_zone)
+       VALUES ('district:1700031', 'district', '1700031', 'closed', ?1, ?2, ?3, ?4)`,
+      Date.now() - 60_000,
+      expires,
+      JSON.stringify([addDays(today(), -1)]),
+      ZONE,
+    );
+    // A stored zone the runtime does not know, and days that are not a list of dates.
+    await api.sql(
+      `INSERT INTO overrides (key, scope, target_id, status, set_at, expires_at, days, time_zone)
+       VALUES ('district:1700032', 'district', '1700032', 'closed', ?1, ?2, ?3, 'Mars/Olympus')`,
+      Date.now() - 60_000,
+      endOfDay(today(), ZONE),
+      JSON.stringify([today()]),
+    );
+    await api.sql(
+      `INSERT INTO overrides (key, scope, target_id, status, set_at, expires_at, days, time_zone)
+       VALUES ('district:1700033', 'district', '1700033', 'closed', ?1, ?2, 'not json', ?3)`,
+      Date.now() - 60_000,
+      endOfDay(today(), ZONE),
+      ZONE,
+    );
+    const r = await api.call('GET', '/v1/overrides');
+    for (const id of ['1700030', '1700031', '1700032', '1700033']) {
+      const served = r.body.overrides.find((o: { id: string }) => o.id === id);
+      assert.deepEqual([id, served?.days, served?.time_zone], [id, [today()], null]);
+    }
+    const token = await adminToken();
+    const list = await api.call('GET', '/v1/admin/overrides', { token });
+    const mine = list.body.overrides.find((o: { key: string }) => o.key === 'district:1700030');
+    assert.deepEqual([mine.days, mine.active], [[today()], true]);
+  });
+
+  it('gives an override set before days were stored its one day from its expiry', async () => {
+    // Migration 0002 on a database holding a status the first admin form set:
+    // "end of its day today", 23:59 in New York.
+    const [y, m, d] = today().split('-').map(Number) as [number, number, number];
+    const wall = Date.UTC(y, m - 1, d, 23, 59);
+    const expires = wall + (endOfDay(today(), ZONE) - Date.UTC(y, m - 1, d + 1));
+    await api.sql(
+      `INSERT INTO overrides (key, scope, target_id, status, set_at, expires_at, days, time_zone)
+       VALUES ('district:1700020', 'district', '1700020', 'closed', ?1, ?2, NULL, NULL)`,
+      Date.now() - 60_000,
+      expires,
+    );
+    const migration = readFileSync(
+      new URL('../migrations/0002_override_days.sql', import.meta.url),
+      'utf8',
+    );
+    const update = migration.split('\n').find((line) => line.startsWith('UPDATE overrides'))!;
+    await api.sql(update.replace(/;$/, ''));
+    const [row] = await api.sql(
+      "SELECT days, time_zone FROM overrides WHERE key = 'district:1700020'",
+    );
+    assert.deepEqual(JSON.parse(row.days), [today()]);
+    assert.equal(row.time_zone, null);
+    const r = await api.call('GET', '/v1/overrides');
+    const served = r.body.overrides.find((o: { id: string }) => o.id === '1700020');
+    assert.deepEqual(served.days, [today()]);
+    assert.equal(served.time_zone, null);
   });
 
   it('clears an override', async () => {
     const token = await adminToken();
     await api.call('PUT', '/v1/admin/overrides', {
       token,
-      body: { scope: 'school', id: '170000100001', status: 'closed', expires_at: inHours(2) },
+      body: {
+        scope: 'school',
+        id: '170000100001',
+        status: 'closed',
+        days: [today()],
+        time_zone: ZONE,
+      },
     });
     const cleared = await api.call(
       'DELETE',

@@ -1,6 +1,7 @@
 /** Admin-only routes and the public list of manual statuses. Every admin route re-reads the role. */
 
 import { audit } from './account';
+import { daysLeft, endOfDay, listedDays, storedDays, timeZone } from './days';
 import { DAY_MS, hashKey, requireAdmin, revokeSessions, schoolsOf, type UserRow } from './auth';
 import { HttpError, json, readBody, type Env } from './http';
 import { isoSeconds } from './util';
@@ -145,16 +146,27 @@ interface OverrideRow {
   set_at: number;
   expires_at: number;
   set_by: string | null;
+  /** The listed school-local days, a JSON array of YYYY-MM-DD (migration 0002). */
+  days: string | null;
+  /** Their IANA time zone; null on a row from before days were stored. */
+  time_zone: string | null;
 }
 
-/** What anyone may see of a manual status: never the note or who set it. */
-function publicOverride(row: OverrideRow) {
+/**
+ * What anyone may see of a manual status: never the note or who set it. `days`
+ * holds the listed days whose end has not passed at `now` (all of them for a
+ * row that has ended).
+ */
+function publicOverride(row: OverrideRow, now: number) {
+  const { days, time_zone } = storedDays(row.days, row.time_zone, row.expires_at);
   return {
     scope: row.scope,
     id: row.target_id,
     status: row.status,
     minutes: row.minutes,
     at_local_time: row.at_local_time,
+    days: row.expires_at > now ? daysLeft(days, time_zone, now) : days,
+    time_zone,
     set_at: isoSeconds(row.set_at),
     expires_at: isoSeconds(row.expires_at),
   };
@@ -170,9 +182,12 @@ export async function publicOverrides(
   )
     .bind(now)
     .all<OverrideRow>();
+  const overrides = results
+    .map((row) => publicOverride(row, now))
+    .filter((row) => row.days.length > 0);
   return json(
     200,
-    { generated_at: isoSeconds(now), overrides: results.map(publicOverride) },
+    { generated_at: isoSeconds(now), overrides },
     { ...cors, 'Cache-Control': 'public, max-age=30' },
   );
 }
@@ -187,7 +202,7 @@ export async function listOverrides(env: Env, request: Request, now: number): Pr
   return json(200, {
     overrides: results.map((row) => ({
       key: row.key,
-      ...publicOverride(row),
+      ...publicOverride(row, now),
       note: row.note,
       set_by: row.set_by,
       active: row.expires_at > now,
@@ -228,29 +243,56 @@ export async function putOverride(env: Env, request: Request, now: number): Prom
     note = v.plain(body.note, 1, 200);
     if (note === null) throw new HttpError(400, 'bad_note');
   }
-  const expires = v.instant(body.expires_at);
-  if (expires === null || expires <= now || expires > now + v.MAX_OVERRIDE_DAYS * DAY_MS)
-    throw new HttpError(400, 'bad_expiry');
+  // Which days, in the school's own zone: its today, its tomorrow, or both. The
+  // status ends when its last day ends there.
+  const zone = timeZone(body.time_zone);
+  if (zone === null) throw new HttpError(400, 'bad_time_zone');
+  const days = listedDays(body.days, zone, now);
+  if (days === null) throw new HttpError(400, 'bad_days');
+  const expires = endOfDay(days[days.length - 1]!, zone);
+  if (expires <= now) throw new HttpError(400, 'bad_days');
   const key = `${scope}:${id}`;
+  // One status per district or school: saving again replaces it, days and all.
   await env.DB.prepare(
-    `INSERT INTO overrides (key, scope, target_id, status, minutes, at_local_time, note, set_at, expires_at, set_by)
-     VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10)
+    `INSERT INTO overrides (key, scope, target_id, status, minutes, at_local_time, note, set_at, expires_at, set_by, days, time_zone)
+     VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, ?12)
      ON CONFLICT (key) DO UPDATE SET status = ?4, minutes = ?5, at_local_time = ?6, note = ?7,
-       set_at = ?8, expires_at = ?9, set_by = ?10`,
+       set_at = ?8, expires_at = ?9, set_by = ?10, days = ?11, time_zone = ?12`,
   )
-    .bind(key, scope, id, status, minutes, atLocalTime, note, now, expires, admin.name)
+    .bind(
+      key,
+      scope,
+      id,
+      status,
+      minutes,
+      atLocalTime,
+      note,
+      now,
+      expires,
+      admin.name,
+      JSON.stringify(days),
+      zone,
+    )
     .run();
   await audit(env, now, admin, 'set_status', key, {
     status,
     minutes,
     at_local_time: atLocalTime,
+    days,
+    time_zone: zone,
     expires_at: isoSeconds(expires),
   });
   const row = await env.DB.prepare('SELECT * FROM overrides WHERE key = ?1')
     .bind(key)
     .first<OverrideRow>();
   return json(200, {
-    override: { key, ...publicOverride(row!), note: row!.note, set_by: row!.set_by, active: true },
+    override: {
+      key,
+      ...publicOverride(row!, now),
+      note: row!.note,
+      set_by: row!.set_by,
+      active: true,
+    },
   });
 }
 
