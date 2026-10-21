@@ -273,6 +273,12 @@ describe('house style rules', () => {
     expect(problems(text)).toContain(problem);
   });
 
+  it('keeps the capitals of iPhone controls named as iOS shows them, and only those', () => {
+    expect(problems('In Safari, tap Share, then Add to Home Screen')).toEqual([]);
+    expect(problems('Then tap Add to Home')).toContain('Title Case "Add"');
+    expect(problems('Tap Shared')).toContain('Title Case "Shared"');
+  });
+
   it.each([
     'May 4, 2026',
     'Mon, May 4',
@@ -1805,10 +1811,7 @@ describe('notification copy (src/copy-notify.ts)', () => {
     ]);
     expect(notifyFormat.hour('20:30')).toBe('8:30\u00a0PM');
     expect(notifyFormat.openBody('2027-01-13', zone, morning)).toBe('Open tomorrow (Wed, Jan 13)');
-    expect([notifyFormat.devices(1), notifyFormat.devices(3)]).toEqual([
-      'On 1 device',
-      'On 3 devices',
-    ]);
+    expect([notifyFormat.devices(1), notifyFormat.devices(3)]).toEqual(['1 device', '3 devices']);
     expect(() =>
       notifyFormat.statusBody('snowed_in', '2027-01-12', zone, morning, null, null),
     ).toThrow(RangeError);

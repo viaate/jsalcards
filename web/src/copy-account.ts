@@ -73,17 +73,19 @@ export const accountCopy = /* @__PURE__ */ deepFreeze({
   },
   settings: {
     title: 'Settings',
+    username: 'Username',
     name: 'Name',
     email: 'Email',
+    password: 'Password',
     currentPassword: 'Current password',
     newPassword: 'New password',
-    passwordForEmail: 'Password, to change your email',
     save: 'Save',
     saved: 'Saved',
-    changePassword: 'Change password',
     deleteTitle: 'Delete account',
-    deleteNote: 'This deletes your account and your saved schools for good.',
-    deleteButton: 'Delete my account',
+    deleteButton: 'Delete account and saved schools',
+    /** The row that opens the privacy text, and that text's own view. */
+    privacyTitle: 'Privacy',
+    back: 'Back to settings',
     privacy:
       'Your account keeps your name, your email, your username and number, your saved schools, and when you signed up and last logged in. Your password never leaves this device: Snowlight keeps only scrambled keys made from it. You can delete your account at any time here, and its name and email go with it.',
     adminNote: 'The admin’s password is set in the repository’s secrets.',

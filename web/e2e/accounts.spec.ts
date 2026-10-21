@@ -443,7 +443,7 @@ test.describe('accounts', () => {
     await expect(page.getByRole('heading', { name: 'Admin' })).toHaveCount(0);
   });
 
-  test('settings offer notifications from a button, never on load, and iPhone Safari gets the guide', async ({
+  test('settings offer notifications from a switch, never on load, and iPhone Safari gets the guide', async ({
     browser,
   }) => {
     const api = new StubApi();
@@ -497,13 +497,15 @@ test.describe('accounts', () => {
       await page.getByRole('menuitem', { name: 'Settings' }).click();
       const sheet = page.getByRole('dialog');
       await expect(sheet.getByRole('heading', { name: 'Notifications' })).toBeVisible();
+      const toggle = sheet.getByRole('switch', { name: 'Notifications on this device' });
       if (guide) {
-        await expect(
-          sheet.getByText('On iPhone, add Snowlight to your home screen first'),
-        ).toBeVisible();
-        await expect(sheet.getByRole('button', { name: 'Turn on notifications' })).toHaveCount(0);
+        await expect(sheet.getByText('Add to home screen first')).toBeVisible();
+        await sheet.getByRole('button', { name: 'How' }).click();
+        await expect(sheet.getByText('Open Snowlight from your home screen')).toBeVisible();
+        await expect(toggle).toHaveCount(0);
       } else {
-        await expect(sheet.getByRole('button', { name: 'Turn on notifications' })).toBeVisible();
+        await expect(toggle).toBeVisible();
+        await expect(toggle).not.toBeChecked();
         // Nothing asked the person for permission on the way here.
         expect(await page.evaluate(() => (window as unknown as { asked: number }).asked)).toBe(0);
       }

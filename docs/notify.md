@@ -53,7 +53,8 @@ asks on page load.
 
 **iPhone and iPad**: Safari shows web notifications only for a site added to
 the home screen (iOS 16.4 or later). In Safari itself, Settings shows how to
-add it instead of the button; opened from the home screen, the button works.
+add it instead of the switch (one row, its steps behind **How**); opened from
+the home screen, the switch works.
 
 **Private schools**: their own chances (docs/predict.md, private schools) are
 used, so a saved private school gets chance and evening notifications like a
@@ -64,14 +65,14 @@ on in.** Logging out on a device stops that device's. A password change stops
 every other device's (this one carries over to the new sign-in); an admin
 password reset or disable stops all of them; a sign-in that expires (30 days
 without a visit) stops its device's until the same account signs in there
-again. **Turn off on all devices** in Settings stops every device at once.
+again. **Turn off everywhere** in Settings stops every device at once.
 Deleting an account removes all of its subscriptions, settings and its sent log
 at once. A disabled account gets nothing.
 
 A browser remembers which account turned its notifications on. Signing in
 there again as that account brings them back; signing in as another account
-turns them off on that browser, and that account gets its own only by pressing
-**Turn on notifications**. Nobody starts getting another person's
+turns them off on that browser, and that account gets its own only by turning
+on the **Notifications** switch in Settings. Nobody starts getting another person's
 notifications, or moves them, without asking.
 
 ## How it works

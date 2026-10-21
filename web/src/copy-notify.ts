@@ -27,44 +27,36 @@ const DOT = ' · ';
 export const notifyCopy = /* @__PURE__ */ deepFreeze({
   settings: {
     title: 'Notifications',
-    intro:
-      'Get a notification when a saved school closes, starts late or lets out early, and when its chance of no school is high.',
-    turnOn: 'Turn on notifications',
-    turnOff: 'Turn off on this device',
-    turnOffAll: 'Turn off on all devices',
-    on: 'Notifications are on for this device.',
-    off: 'Notifications are off for this device.',
-    blocked:
-      'Notifications are blocked for this site. Allow them in your browser’s site settings, then come back here.',
-    unsupported: 'This browser does not show notifications from websites.',
-    failed: 'Notifications did not turn on. Try again in a moment.',
-    noSchools: 'Save a school to get notifications about it.',
-    choices: 'What to send',
-    status: 'Closings, delays and early dismissals',
-    statusNote: 'Sent as soon as they show on the map, at any hour.',
-    chance: 'High chance of no school tomorrow',
-    threshold: 'When the chance reaches',
+    /** The header row's switch, as a screen reader names it. */
+    device: 'Notifications on this device',
+    blocked: 'Blocked in site settings',
+    unsupported: 'Not in this browser',
+    failed: 'Try again',
+    noSchools: 'Save a school first',
+    status: 'Closings and delays',
+    chance: 'Chance alerts',
+    /** The 30%, 50% and 70% choice under chance alerts, as a screen reader names it. */
+    threshold: 'Alert when the chance reaches',
     night: 'Evening check',
-    nightNote: 'Tomorrow’s chance for each saved school, when it is 10% or more.',
-    nightTime: 'Send it at',
+    nightTime: 'Send at',
     quiet: 'Quiet hours',
-    quietNote: 'Chance notifications wait until quiet hours end. Closings still come through.',
-    quietFrom: 'From',
-    quietTo: 'To',
-    zoneNote: 'Times are each school’s own local time.',
+    /** Beside the quiet hours: only chance alerts wait, closings still come through. */
+    quietHolds: 'Chance alerts only',
+    quietFrom: 'Quiet hours start',
+    quietTo: 'Quiet hours end',
+    turnOffAll: 'Turn off everywhere',
     saved: 'Saved',
     saving: 'Saving…',
-    working: 'One moment…',
   },
-  /** iPhone and iPad: web notifications only come from a site added to the Home Screen. */
+  /** iPhone and iPad: web notifications only come from a site added to the home screen. */
   ios: {
-    title: 'On iPhone, add Snowlight to your home screen first',
+    title: 'Add to home screen first',
+    how: 'How',
     steps: [
-      'In Safari, tap the share button and pick add to home screen.',
-      'Open Snowlight from your home screen.',
-      'Turn on notifications here.',
+      'In Safari, tap Share, then Add to Home Screen',
+      'Open Snowlight from your home screen',
+      'Turn on notifications here',
     ],
-    note: 'Only sites on the home screen can show notifications on iPhone and iPad, with iOS 16.4 or later.',
   },
   /** After a school is saved, while notifications are off on this device. */
   offer: {
@@ -175,9 +167,9 @@ function nightBody(percent: number, localDate: string, timeZone: string, now: Da
   return `${heading(localDate, now, timeZone)}: ${format.chance(percent / 100)} chance of no school`;
 }
 
-/** How many browsers get the account's notifications: "On 2 devices". */
+/** How many browsers get the account's notifications: "2 devices". */
 function devices(count: number): string {
-  return count === 1 ? 'On 1 device' : `On ${format.number(count)} devices`;
+  return count === 1 ? '1 device' : `${format.number(count)} devices`;
 }
 
 /** A threshold choice: "30%". */

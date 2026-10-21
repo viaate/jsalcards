@@ -174,9 +174,17 @@ export const PROPER_NOUNS = new Set([
   ...['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'],
 ]);
 
+/**
+ * iPhone controls named as iOS shows them, so people can spot them (the home screen steps in
+ * src/copy-notify.ts). Only the whole name keeps its capitals: "add to home screen" elsewhere
+ * is still a sentence.
+ */
+export const IOS_NAMES = ['Add to Home Screen', 'Share'];
+
 // Whole words by Unicode letters and digits, not just ASCII \b.
 const BEFORE = '(?<![\\p{L}\\p{N}_])';
 const AFTER = '(?![\\p{L}\\p{N}_])';
+const IOS_NAME = new RegExp(`${BEFORE}(?:${IOS_NAMES.join('|')})${AFTER}`, 'gu');
 
 /** @type {ReadonlyArray<readonly [string, RegExp]> | undefined} */
 let bannedPatterns;
@@ -239,6 +247,7 @@ export function problems(text) {
   for (const segment of text.split(SEGMENT_BREAK)) {
     // An en dash joins a range ("PK–12", "2025–26"): each end is a word of its own.
     const words = segment
+      .replace(IOS_NAME, ' ')
       .split(/[\s–]+/u)
       .map((word) => word.replace(EDGE_PUNCTUATION, ''))
       .filter((word) => word.length > 0);

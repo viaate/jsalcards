@@ -47,6 +47,8 @@
   let busy = $state(false);
   let failed = $state<'failed' | 'blocked' | null>(null);
   let note = $state<'saving' | 'saved' | null>(null);
+  /** The iPhone steps, opened from the "How" link. */
+  let howOpen = $state(false);
 
   onMount(() => {
     client =
@@ -131,8 +133,22 @@
     }
   }
 
-  function checked(event: Event): boolean {
-    return (event.currentTarget as HTMLInputElement).checked;
+  /** The header switch: on asks the browser, off stops this device; it then shows what is so. */
+  async function flipDevice(event: Event): Promise<void> {
+    const input = event.currentTarget as HTMLInputElement;
+    await (input.checked ? turnOn() : turnOff());
+    input.checked = deviceOn;
+  }
+
+  /** A choice's switch: saved as it flips, then it shows what was saved. */
+  async function flip(
+    event: Event,
+    change: (on: boolean) => Partial<NotifySettings>,
+    shown: () => boolean,
+  ): Promise<void> {
+    const input = event.currentTarget as HTMLInputElement;
+    await save(change(input.checked));
+    input.checked = shown();
   }
 
   function chosen(event: Event): string {
@@ -141,315 +157,467 @@
 </script>
 
 <section class="notify" aria-labelledby="notify-title">
-  <h3 id="notify-title">{notifyCopy.settings.title}</h3>
-  <p class="note">{notifyCopy.settings.intro}</p>
-
-  {#if can === 'ios-install'}
-    <div class="ios" data-testid="ios-guide">
-      <p class="ios-title">{notifyCopy.ios.title}</p>
-      <ol>
-        {#each notifyCopy.ios.steps as step (step)}
-          <li>{step}</li>
-        {/each}
-      </ol>
-      <p class="note">{notifyCopy.ios.note}</p>
+  <div class="group">
+    <div class="row head">
+      <h3 class="label" id="notify-title">{notifyCopy.settings.title}</h3>
+      <span class="state" class:error={failed === 'failed'} role="status"
+        >{#if failed === 'failed'}{notifyCopy.settings
+            .failed}{:else if note === 'saving'}{notifyCopy.settings
+            .saving}{:else if note === 'saved'}{notifyCopy.settings.saved}{/if}</span
+      >
+      {#if can === 'ios-install'}
+        <!-- The row under this one says what to do first. -->
+      {:else if can === 'unsupported'}
+        <span class="value">{notifyCopy.settings.unsupported}</span>
+      {:else if permission === 'denied' || failed === 'blocked'}
+        <span class="value">{notifyCopy.settings.blocked}</span>
+      {:else}
+        <input
+          class="switch"
+          type="checkbox"
+          role="switch"
+          aria-label={notifyCopy.settings.device}
+          checked={deviceOn}
+          disabled={busy}
+          onchange={(event) => void flipDevice(event)}
+        />
+      {/if}
     </div>
-  {:else if can === 'unsupported'}
-    <p class="note">{notifyCopy.settings.unsupported}</p>
-  {:else if permission === 'denied' || failed === 'blocked'}
-    <p class="note">{notifyCopy.settings.blocked}</p>
-  {:else if deviceOn}
-    <p class="note">{notifyCopy.settings.on}</p>
-    <button class="secondary" type="button" disabled={busy} onclick={turnOff}>
-      {busy ? notifyCopy.settings.working : notifyCopy.settings.turnOff}
-    </button>
-  {:else}
-    <button class="primary" type="button" disabled={busy} onclick={turnOn}>
-      {busy ? notifyCopy.settings.working : notifyCopy.settings.turnOn}
-    </button>
-  {/if}
 
-  {#if schools === 0}
-    <p class="note">{notifyCopy.settings.noSchools}</p>
-  {/if}
+    {#if can === 'ios-install'}
+      <button
+        class="row nav"
+        class:open={howOpen}
+        type="button"
+        data-testid="ios-guide"
+        aria-expanded={howOpen}
+        aria-controls="ios-steps"
+        onclick={() => (howOpen = !howOpen)}
+      >
+        <span class="label">{notifyCopy.ios.title}</span>
+        <span class="value">{notifyCopy.ios.how}</span>
+        <svg class="chevron" viewBox="0 0 16 16" aria-hidden="true" focusable="false">
+          <path d="M6 3.5l4.5 4.5L6 12.5" />
+        </svg>
+      </button>
+      {#if howOpen}
+        <ol class="steps" id="ios-steps">
+          {#each notifyCopy.ios.steps as step (step)}
+            <li>{step}</li>
+          {/each}
+        </ol>
+      {/if}
+    {/if}
 
-  {#if current !== null && (deviceOn || current.devices > 0)}
-    <fieldset>
-      <legend>{notifyCopy.settings.choices}</legend>
-      <label class="check">
+    {#if schools === 0}
+      <div class="row"><span class="label dim">{notifyCopy.settings.noSchools}</span></div>
+    {/if}
+
+    {#if current !== null && (deviceOn || current.devices > 0)}
+      <label class="row">
+        <span class="label">{notifyCopy.settings.status}</span>
         <input
+          class="switch"
           type="checkbox"
+          role="switch"
           checked={current.settings.status}
-          onchange={(event) => void save({ status: checked(event) })}
+          onchange={(event) =>
+            void flip(
+              event,
+              (on) => ({ status: on }),
+              () => current?.settings.status ?? false,
+            )}
         />
-        <span>{notifyCopy.settings.status}</span>
       </label>
-      <p class="note indent">{notifyCopy.settings.statusNote}</p>
 
-      <label class="check">
+      <label class="row">
+        <span class="label">{notifyCopy.settings.chance}</span>
         <input
+          class="switch"
           type="checkbox"
+          role="switch"
           checked={current.settings.chance}
-          onchange={(event) => void save({ chance: checked(event) })}
+          onchange={(event) =>
+            void flip(
+              event,
+              (on) => ({ chance: on }),
+              () => current?.settings.chance ?? false,
+            )}
         />
-        <span>{notifyCopy.settings.chance}</span>
       </label>
       {#if current.settings.chance}
-        <label class="pick indent">
-          <span>{notifyCopy.settings.threshold}</span>
-          <select
-            value={String(current.settings.threshold)}
-            onchange={(event) =>
-              void save({ threshold: Number(chosen(event)) as NotifySettings['threshold'] })}
-          >
+        <div class="row sub">
+          <div class="segments" role="radiogroup" aria-label={notifyCopy.settings.threshold}>
             {#each THRESHOLDS as value (value)}
-              <option value={String(value)}>{notifyFormat.threshold(value)}</option>
+              <label class="segment" class:on={current.settings.threshold === value}>
+                <input
+                  type="radio"
+                  name="notify-threshold"
+                  value={String(value)}
+                  checked={current.settings.threshold === value}
+                  onchange={() => void save({ threshold: value })}
+                />
+                <span>{notifyFormat.threshold(value)}</span>
+              </label>
             {/each}
-          </select>
-        </label>
-      {/if}
-
-      <label class="check">
-        <input
-          type="checkbox"
-          checked={current.settings.night_before}
-          onchange={(event) => void save({ night_before: checked(event) })}
-        />
-        <span>{notifyCopy.settings.night}</span>
-      </label>
-      <p class="note indent">{notifyCopy.settings.nightNote}</p>
-      {#if current.settings.night_before}
-        <label class="pick indent">
-          <span>{notifyCopy.settings.nightTime}</span>
-          <select
-            value={current.settings.night_time}
-            onchange={(event) => void save({ night_time: chosen(event) })}
-          >
-            {#each NIGHT_TIMES as value (value)}
-              <option {value}>{notifyFormat.hour(value)}</option>
-            {/each}
-          </select>
-        </label>
-      {/if}
-
-      <label class="check">
-        <input
-          type="checkbox"
-          checked={quietOn}
-          onchange={(event) =>
-            void save(checked(event) ? DEFAULT_QUIET : { quiet_from: '00:00', quiet_to: '00:00' })}
-        />
-        <span>{notifyCopy.settings.quiet}</span>
-      </label>
-      <p class="note indent">{notifyCopy.settings.quietNote}</p>
-      {#if quietOn}
-        <div class="indent row">
-          <label class="pick">
-            <span>{notifyCopy.settings.quietFrom}</span>
-            <select
-              value={current.settings.quiet_from}
-              onchange={(event) => void save({ quiet_from: chosen(event) })}
-            >
-              {#each HOURS as value (value)}
-                <option {value}>{notifyFormat.hour(value)}</option>
-              {/each}
-            </select>
-          </label>
-          <label class="pick">
-            <span>{notifyCopy.settings.quietTo}</span>
-            <select
-              value={current.settings.quiet_to}
-              onchange={(event) => void save({ quiet_to: chosen(event) })}
-            >
-              {#each HOURS as value (value)}
-                <option {value}>{notifyFormat.hour(value)}</option>
-              {/each}
-            </select>
-          </label>
+          </div>
         </div>
       {/if}
-      <p class="note">{notifyCopy.settings.zoneNote}</p>
-    </fieldset>
-  {/if}
+
+      <label class="row">
+        <span class="label">{notifyCopy.settings.night}</span>
+        <input
+          class="switch"
+          type="checkbox"
+          role="switch"
+          checked={current.settings.night_before}
+          onchange={(event) =>
+            void flip(
+              event,
+              (on) => ({ night_before: on }),
+              () => current?.settings.night_before ?? false,
+            )}
+        />
+      </label>
+      {#if current.settings.night_before}
+        <label class="row sub">
+          <span class="label dim">{notifyCopy.settings.nightTime}</span>
+          <span class="pick">
+            <span class="shown" aria-hidden="true"
+              >{notifyFormat.hour(current.settings.night_time)}</span
+            >
+            <select
+              value={current.settings.night_time}
+              onchange={(event) => void save({ night_time: chosen(event) })}
+            >
+              {#each NIGHT_TIMES as value (value)}
+                <option {value}>{notifyFormat.hour(value)}</option>
+              {/each}
+            </select>
+          </span>
+        </label>
+      {/if}
+
+      <label class="row">
+        <span class="label">{notifyCopy.settings.quiet}</span>
+        <input
+          class="switch"
+          type="checkbox"
+          role="switch"
+          checked={quietOn}
+          onchange={(event) =>
+            void flip(
+              event,
+              (on) => (on ? DEFAULT_QUIET : { quiet_from: '00:00', quiet_to: '00:00' }),
+              () => quietOn,
+            )}
+        />
+      </label>
+      {#if quietOn}
+        <div class="row sub">
+          <span class="label dim">{notifyCopy.settings.quietHolds}</span>
+          <span class="range">
+            <span class="pick">
+              <span class="shown" aria-hidden="true"
+                >{notifyFormat.hour(current.settings.quiet_from)}</span
+              >
+              <select
+                aria-label={notifyCopy.settings.quietFrom}
+                value={current.settings.quiet_from}
+                onchange={(event) => void save({ quiet_from: chosen(event) })}
+              >
+                {#each HOURS as value (value)}
+                  <option {value}>{notifyFormat.hour(value)}</option>
+                {/each}
+              </select>
+            </span>
+            <span class="dash" aria-hidden="true">–</span>
+            <span class="pick">
+              <span class="shown" aria-hidden="true"
+                >{notifyFormat.hour(current.settings.quiet_to)}</span
+              >
+              <select
+                aria-label={notifyCopy.settings.quietTo}
+                value={current.settings.quiet_to}
+                onchange={(event) => void save({ quiet_to: chosen(event) })}
+              >
+                {#each HOURS as value (value)}
+                  <option {value}>{notifyFormat.hour(value)}</option>
+                {/each}
+              </select>
+            </span>
+          </span>
+        </div>
+      {/if}
+    {/if}
+  </div>
 
   {#if current !== null && current.devices > 0}
-    <div class="devices">
-      <p class="note">{notifyFormat.devices(current.devices)}</p>
-      <button class="secondary" type="button" disabled={busy} onclick={turnOffAll}>
-        {busy ? notifyCopy.settings.working : notifyCopy.settings.turnOffAll}
+    <div class="group">
+      <button class="row action" type="button" disabled={busy} onclick={turnOffAll}>
+        <span class="label">{notifyCopy.settings.turnOffAll}</span>
+        <span class="value">{notifyFormat.devices(current.devices)}</span>
       </button>
     </div>
   {/if}
-
-  <p class="state" role="status">
-    {#if failed === 'failed'}
-      <span class="error">{notifyCopy.settings.failed}</span>
-    {:else if note === 'saving'}
-      {notifyCopy.settings.saving}
-    {:else if note === 'saved'}
-      {notifyCopy.settings.saved}
-    {/if}
-  </p>
 </section>
 
 <style>
+  /* The settings group, then Turn off everywhere in its own group under it. */
   .notify {
     display: flex;
+    flex: none;
     flex-direction: column;
-    gap: 10px;
-    padding-top: 16px;
-    border-top: 1px solid var(--border-1);
+    gap: 16px;
+  }
+
+  .head {
+    min-height: 52px;
   }
 
   h3 {
     margin: 0;
-    font-size: 14px;
+    font-size: 16px;
     font-weight: 600;
+    letter-spacing: -0.01em;
   }
 
-  .devices {
-    display: flex;
-    flex-direction: column;
-    align-items: flex-start;
-    gap: 6px;
-  }
-
-  .note,
   .state {
-    margin: 0;
+    flex: none;
     font-size: 13px;
-    line-height: 18px;
-    color: var(--text-2);
+    color: var(--text-3);
   }
 
   .state:empty {
     display: none;
   }
 
-  .error {
+  .state.error {
     color: var(--status-delayed);
   }
 
-  .ios {
-    display: flex;
-    flex-direction: column;
-    gap: 6px;
-    padding: 12px;
-    background: var(--surface-2);
-    border: 1px solid var(--border-2);
-    border-radius: 10px;
-  }
-
-  .ios-title {
-    margin: 0;
-    font-size: 14px;
-    font-weight: 600;
-    color: var(--text-1);
-  }
-
-  ol {
-    margin: 0;
-    padding-left: 20px;
-    font-size: 13px;
-    line-height: 20px;
-    color: var(--text-1);
-  }
-
-  fieldset {
-    display: flex;
-    flex-direction: column;
-    gap: 8px;
-    margin: 0;
-    padding: 0;
-    border: 0;
-  }
-
-  legend {
-    margin-bottom: 4px;
-    padding: 0;
-    font-size: 13px;
+  .dim {
     color: var(--text-2);
   }
 
-  .check {
-    display: flex;
-    gap: 10px;
-    align-items: center;
-    font-size: 14px;
-    color: var(--text-1);
-  }
-
-  .check input {
-    width: 18px;
-    height: 18px;
+  /* An iOS switch in Snowlight's colors: a white knob always, on a flat ice-blue track when on
+     (the closed hue, as on Call it's chosen Snow day) and a dark gray one when off. */
+  .switch {
+    position: relative;
+    flex: none;
+    width: 46px;
+    height: 28px;
     margin: 0;
-    accent-color: var(--text-1);
+    cursor: pointer;
+    background: color-mix(in srgb, var(--text-1) 22%, var(--surface-2));
+    border-radius: 14px;
+    transition: background 140ms ease;
+    appearance: none;
   }
 
-  .indent {
-    margin-left: 28px;
+  .switch::after {
+    position: absolute;
+    top: 2px;
+    left: 2px;
+    width: 24px;
+    height: 24px;
+    content: '';
+    background: #fff;
+    border-radius: 50%;
+    transition: transform 140ms ease;
   }
 
-  .row {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 12px;
+  .switch:checked {
+    background: var(--status-closed);
   }
 
-  .pick {
-    display: flex;
-    gap: 8px;
-    align-items: center;
-    font-size: 13px;
-    color: var(--text-2);
+  .switch:checked::after {
+    transform: translateX(18px);
   }
 
-  select {
-    height: 32px;
-    padding: 0 8px;
-    font: inherit;
-    font-size: 13px;
-    color: var(--text-1);
-    background: var(--surface-2);
-    border: 1px solid var(--border-2);
-    border-radius: 8px;
+  .switch:disabled {
+    cursor: default;
+    opacity: 0.5;
   }
 
-  select:focus-visible,
-  .check input:focus-visible {
+  .switch:focus-visible,
+  .nav:focus-visible,
+  .segment:has(input:focus-visible) {
     outline: 1px solid var(--text-2);
     outline-offset: 2px;
   }
 
-  button.primary,
-  button.secondary {
-    height: 40px;
-    font: inherit;
-    font-size: 14px;
-    font-weight: 600;
-    cursor: pointer;
-    border-radius: 10px;
+  /* A sub-row: a muted label, then its value (the 30% | 50% | 70% choice, a time, a range). */
+  .sub {
+    gap: 8px;
+    min-height: 0;
+    padding-top: 2px;
+    padding-bottom: 12px;
   }
 
-  button.primary {
+  .segments {
+    display: flex;
+    flex: 1;
+    padding: 3px;
+    border: 1px solid var(--border-2);
+    border-radius: 999px;
+  }
+
+  .segment {
+    position: relative;
+    display: grid;
+    flex: 1;
+    place-items: center;
+    height: 30px;
+    font-size: 14px;
+    font-weight: 600;
+    font-variant-numeric: tabular-nums;
+    color: var(--text-2);
+    cursor: pointer;
+    border-radius: 999px;
+  }
+
+  .segment.on {
     color: var(--bg);
     background: var(--text-1);
+  }
+
+  .segment input {
+    position: absolute;
+    inset: 0;
+    margin: 0;
+    opacity: 0;
+    cursor: pointer;
+  }
+
+  /* A time as a compact gray value, the browser's own picker over it: tap it to change it. */
+  .pick {
+    position: relative;
+    display: inline-flex;
+    flex: none;
+    align-items: center;
+    height: 30px;
+    padding: 0 8px;
+    background: color-mix(in srgb, var(--text-1) 10%, var(--surface-2));
+    border-radius: 7px;
+  }
+
+  .pick:has(select:focus-visible) {
+    outline: 1px solid var(--text-2);
+    outline-offset: 2px;
+  }
+
+  .shown {
+    font-size: 15px;
+    font-variant-numeric: tabular-nums;
+    color: var(--text-1);
+    white-space: nowrap;
+  }
+
+  .pick select {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    margin: 0;
+    padding: 0;
+    /* 16px keeps iPhone Safari from zooming in on it. */
+    font: inherit;
+    font-size: 16px;
+    cursor: pointer;
+    opacity: 0;
+    appearance: none;
+  }
+
+  .range {
+    display: inline-flex;
+    flex: none;
+    gap: 4px;
+    align-items: center;
+  }
+
+  .dash {
+    color: var(--text-3);
+  }
+
+  /* A 375-wide phone keeps "Chance alerts only" and both times on one line. */
+  @media (max-width: 389px) {
+    .pick {
+      padding: 0 6px;
+    }
+
+    .range {
+      gap: 2px;
+    }
+  }
+
+  /* A row that opens what is under it: its value muted, then a chevron that turns down. */
+  .nav {
+    width: 100%;
+    font: inherit;
+    font-size: 15px;
+    text-align: left;
+    cursor: pointer;
+    background: none;
     border: 0;
   }
 
-  button.secondary {
-    color: var(--text-1);
-    background: var(--surface-2);
-    border: 1px solid var(--border-2);
+  .nav:hover {
+    background: color-mix(in srgb, var(--text-1) 4%, transparent);
   }
 
-  button:disabled {
+  .chevron {
+    flex: none;
+    width: 14px;
+    height: 14px;
+    margin-left: -6px;
+    fill: none;
+    stroke: var(--text-3);
+    stroke-width: 1.6;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+    transition: transform 140ms ease;
+  }
+
+  .nav.open .chevron {
+    transform: rotate(90deg);
+  }
+
+  .steps {
+    margin: 0;
+    padding: 12px 16px 14px 32px;
+    font-size: 14px;
+    line-height: 22px;
+    color: var(--text-1);
+  }
+
+  .steps li::marker {
+    color: var(--text-3);
+    font-variant-numeric: tabular-nums;
+  }
+
+  .action {
+    width: 100%;
+    font: inherit;
+    font-size: 15px;
+    text-align: left;
+    cursor: pointer;
+    background: none;
+    border: 0;
+  }
+
+  .action .label {
+    color: var(--destructive);
+  }
+
+  .action:disabled {
     cursor: default;
     opacity: 0.6;
   }
 
-  button:focus-visible {
-    outline: 1px solid var(--text-2);
-    outline-offset: 2px;
+  .action:hover:not(:disabled),
+  .action:focus-visible {
+    background: color-mix(in srgb, var(--text-1) 4%, transparent);
+    outline: none;
   }
 </style>
