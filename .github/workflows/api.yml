@@ -4,7 +4,8 @@ name: API
 # snowlight-api and its D1 database snowlight-accounts, both on the owner's
 # Cloudflare account and the free plan. It finds the database by name (making
 # it the first time), applies the migrations, deploys the Worker and sets its
-# ADMIN_KEY secret.
+# ADMIN_KEY secret. Last, it makes the VAPID key pair for notifications once
+# (scripts/vapid.mjs, docs/notify.md).
 #
 # The admin password never reaches Cloudflare. The runner derives the key the
 # browser would send for the admin's login (api/scripts/derive-key.mjs:
@@ -87,6 +88,7 @@ jobs:
             exit 1
           fi
           sed -i "s/^database_id = .*/database_id = \"${id}\"/" wrangler.toml
+          echo "D1_DATABASE_ID=${id}" >> "$GITHUB_ENV"
       - if: steps.secrets.outputs.enabled == 'true'
         run: npx wrangler d1 migrations apply snowlight-accounts --remote
       # The site's origins: its domain and the repository's GitHub Pages origin.
@@ -131,3 +133,10 @@ jobs:
           done
           echo "::error::The accounts API did not answer at ${root%/}/v1/health"
           exit 1
+
+      # The VAPID key pair notifications are signed with (docs/notify.md): made once, then
+      # kept, in the database's settings table. The script sends the keys to D1 as bound
+      # parameters and prints only "made" or "kept"; the private key never reaches the log.
+      - if: steps.secrets.outputs.enabled == 'true'
+        name: Make the notification key pair once
+        run: node scripts/vapid.mjs

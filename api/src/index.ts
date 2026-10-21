@@ -11,6 +11,7 @@
 import * as account from './account';
 import * as admin from './admin';
 import * as names from './names';
+import * as notify from './notify';
 import { HttpError, allowedOrigin, corsHeaders, json, type Env } from './http';
 import { prepareBlocklist } from './usernames/check';
 
@@ -38,6 +39,10 @@ const routes: [method: string, pattern: RegExp, handler: Handler][] = [
   ['PATCH', /^\/v1\/me$/, account.updateMe],
   ['DELETE', /^\/v1\/me$/, account.deleteMe],
   ['PUT', /^\/v1\/me\/schools$/, account.putSchools],
+  ['PUT', /^\/v1\/me\/push$/, notify.putPush],
+  ['DELETE', /^\/v1\/me\/push$/, notify.deletePush],
+  ['GET', /^\/v1\/me\/notify$/, notify.getNotify],
+  ['PATCH', /^\/v1\/me\/notify$/, notify.patchNotify],
   ['GET', /^\/v1\/admin\/summary$/, admin.summary],
   ['GET', /^\/v1\/admin\/users$/, admin.users],
   ['POST', /^\/v1\/admin\/users\/([^/]+)\/reset-password$/, admin.resetPassword],
@@ -58,6 +63,11 @@ const routes: [method: string, pattern: RegExp, handler: Handler][] = [
   ['GET', /^\/v1\/admin\/audit$/, admin.auditLog],
 ];
 
+function withCors(response: Response, cors: Record<string, string>): Response {
+  for (const [name, value] of Object.entries(cors)) response.headers.set(name, value);
+  return response;
+}
+
 export async function handle(request: Request, env: Env, now = Date.now()): Promise<Response> {
   const url = new URL(request.url);
   const originHeader = request.headers.get('Origin');
@@ -71,6 +81,8 @@ export async function handle(request: Request, env: Env, now = Date.now()): Prom
   try {
     if (request.method === 'GET' && url.pathname === '/v1/health')
       return json(200, { ok: true, api: 1 }, cors);
+    if (request.method === 'GET' && url.pathname === '/v1/push/key')
+      return withCors(await notify.pushKey(env), cors);
     if (request.method === 'GET' && url.pathname === '/v1/overrides')
       return await admin.publicOverrides(env, now, cors);
     for (const [method, pattern, handler] of routes) {
@@ -83,9 +95,7 @@ export async function handle(request: Request, env: Env, now = Date.now()): Prom
       } catch {
         throw new HttpError(404, 'not_found');
       }
-      const response = await handler(env, request, now, param);
-      for (const [name, value] of Object.entries(cors)) response.headers.set(name, value);
-      return response;
+      return withCors(await handler(env, request, now, param), cors);
     }
     return json(404, { error: 'not_found' }, cors);
   } catch (error) {

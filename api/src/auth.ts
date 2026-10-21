@@ -153,6 +153,14 @@ function bearer(request: Request): string | null {
   return match ? match[1]! : null;
 }
 
+/** Ends one session (by token_hash) and the notifications of browsers turned on in it. */
+export async function endSession(env: Env, hash: string): Promise<void> {
+  await env.DB.batch([
+    env.DB.prepare('DELETE FROM sessions WHERE token_hash = ?1').bind(hash),
+    env.DB.prepare('DELETE FROM push_subscriptions WHERE session_hash = ?1').bind(hash),
+  ]);
+}
+
 /**
  * The signed-in user, read fresh from D1 on every request (so a role change,
  * disable or delete takes effect at once), or a 401.
@@ -169,8 +177,7 @@ export async function requireSession(env: Env, request: Request, now: number): P
     .bind(hash)
     .first<UserRow & { s_expires: number; s_refreshed: number }>();
   if (row === null || row.s_expires <= now || row.disabled !== 0) {
-    if (row !== null)
-      await env.DB.prepare('DELETE FROM sessions WHERE token_hash = ?1').bind(hash).run();
+    if (row !== null) await endSession(env, hash);
     throw new HttpError(401, 'signed_out');
   }
   if (now - row.s_refreshed >= REFRESH_MS) {
@@ -207,14 +214,40 @@ export async function requireAdmin(env: Env, request: Request, now: number): Pro
   return session;
 }
 
+/**
+ * The statements that stop notifications for sessions that end: every browser of the
+ * account, or every one but those turned on in the session `except` (a token_hash).
+ * Run with the sessions' own deletion (auth.ts revokeSessions, logout).
+ */
+export function endPushFor(env: Env, userId: string, except?: string): D1PreparedStatement {
+  return except === undefined
+    ? env.DB.prepare('DELETE FROM push_subscriptions WHERE user_id = ?1').bind(userId)
+    : env.DB.prepare(
+        'DELETE FROM push_subscriptions WHERE user_id = ?1 AND session_hash != ?2',
+      ).bind(userId, except);
+}
+
+/** Browsers whose sign-in is gone (expired and swept): run after the sessions' sweep. */
+export function sweepPush(env: Env): D1PreparedStatement {
+  return env.DB.prepare(
+    'DELETE FROM push_subscriptions WHERE session_hash NOT IN (SELECT token_hash FROM sessions)',
+  );
+}
+
+/**
+ * Ends every session of the account but `except` (a token_hash), and with them the
+ * notifications of every browser turned on in those sessions (docs/notify.md).
+ */
 export async function revokeSessions(env: Env, userId: string, except?: string): Promise<void> {
-  if (except === undefined) {
-    await env.DB.prepare('DELETE FROM sessions WHERE user_id = ?1').bind(userId).run();
-  } else {
-    await env.DB.prepare('DELETE FROM sessions WHERE user_id = ?1 AND token_hash != ?2')
-      .bind(userId, except)
-      .run();
-  }
+  await env.DB.batch([
+    except === undefined
+      ? env.DB.prepare('DELETE FROM sessions WHERE user_id = ?1').bind(userId)
+      : env.DB.prepare('DELETE FROM sessions WHERE user_id = ?1 AND token_hash != ?2').bind(
+          userId,
+          except,
+        ),
+    endPushFor(env, userId, except),
+  ]);
 }
 
 /** Rate limit buckets never hold an address in the clear. */
@@ -261,6 +294,7 @@ export const KNOWN_NETWORK_MS = 30 * DAY_MS;
 export async function sweep(env: Env, now: number): Promise<void> {
   await env.DB.batch([
     env.DB.prepare('DELETE FROM sessions WHERE expires_at <= ?1').bind(now),
+    sweepPush(env),
     env.DB.prepare(
       "DELETE FROM rate_limits WHERE window_start <= ?1 AND bucket NOT LIKE 'admin-net:%'",
     ).bind(now - DAY_MS),

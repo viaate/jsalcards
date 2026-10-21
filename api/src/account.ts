@@ -6,6 +6,7 @@ import {
   adminStamp,
   bucket,
   createSession,
+  endSession,
   hashKey,
   hit,
   hits,
@@ -17,10 +18,12 @@ import {
   requireSession,
   revokeSessions,
   sweep,
+  tokenHash,
   type UserRow,
 } from './auth';
 import { HttpError, clientIp, json, networkOf, readBody, type Env } from './http';
 import { RELEASED_HOLD, holdUsername, legacySalt, usableUsername } from './names';
+import { eraseNotify } from './notify';
 import { secretEqual } from './util';
 import * as v from './validate';
 
@@ -354,7 +357,7 @@ export async function login(env: Env, request: Request, now: number): Promise<Re
 
 export async function logout(env: Env, request: Request, now: number): Promise<Response> {
   const session = await requireSession(env, request, now);
-  await env.DB.prepare('DELETE FROM sessions WHERE token_hash = ?1').bind(session.tokenHash).run();
+  await endSession(env, session.tokenHash);
   return json(200, { ok: true });
 }
 
@@ -424,8 +427,14 @@ export async function updateMe(env: Env, request: Request, now: number): Promise
     .run();
   let token: string | undefined;
   if (wantsEmail || wantsKey) {
-    await revokeSessions(env, user.id);
+    // Every other sign-in ends, and with it every other browser's notifications; this
+    // browser's carry over to the new token.
     token = await createSession(env, user.id, now);
+    const fresh = await tokenHash(token);
+    await env.DB.prepare('UPDATE push_subscriptions SET session_hash = ?2 WHERE session_hash = ?1')
+      .bind(session.tokenHash, fresh)
+      .run();
+    await revokeSessions(env, user.id, fresh);
   }
   const row = await env.DB.prepare('SELECT * FROM users WHERE id = ?1')
     .bind(user.id)
@@ -438,7 +447,8 @@ export async function updateMe(env: Env, request: Request, now: number): Promise
 
 /**
  * Removes an account and everything that names it: its row (name, email,
- * schools, keys), its sessions, its login rate counts, and every admin log
+ * schools, keys), its sessions, its push subscriptions, notification settings
+ * and sent log, its login rate counts, and every admin log
  * entry's mention of its email (v1 entries named accounts by email; they now
  * name its id). The admin log keeps only the id, join number and username.
  * The username it picked is held for 30 days (by a hash of its skeleton,
@@ -452,6 +462,7 @@ export async function eraseAccount(env: Env, user: UserRow, now: number): Promis
   );
   await env.DB.batch([
     env.DB.prepare('DELETE FROM sessions WHERE user_id = ?1').bind(user.id),
+    ...eraseNotify(env, user.id),
     env.DB.prepare('DELETE FROM users WHERE id = ?1').bind(user.id),
     ...(user.email !== null
       ? [env.DB.prepare('UPDATE audit SET target = ?1 WHERE target = ?2').bind(user.id, user.email)]
