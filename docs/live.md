@@ -2,7 +2,9 @@
 
 The live ingest reads the closings sources, resolves each row to schools and days, and
 publishes `live/closings.json` through a publish gate. Code: `pipeline/snowlight/live/`.
-Settings: `pipeline/config/live.yaml`. The workflows that run it (S8-E) are not here yet.
+Settings: `pipeline/config/live.yaml`. The list readers' workflow (S8-E) is not here yet;
+`.github/workflows/live-ingest.yml` publishes the admin's manual statuses for now (see
+[Manual statuses](#manual-statuses-the-admin)).
 
 ## Commands
 
@@ -16,6 +18,8 @@ All from `pipeline/` (`uv run snowlight live ...`).
 | `live release` | Clears the hold. The next pass publishes again. |
 | `live check --url URL --max-age 15m` | The watchdog. Checks that the public file is fresh, is not stamped ahead of the clock, and carries the deployed directory's stamp. |
 | `live state pull` / `live state push` | Restore or keep the private state. |
+| `live overrides --api ROOT` | One pass of the admin's manual statuses: read the active overrides from the API, check them against the deployed directory, gate and publish. Stops, writing nothing, when the overrides light nothing and the public files show no status. |
+| `live overrides --none` | The same pass with no override: takes every manual status down (`live-ingest.yml` runs it when no API is left to read). |
 
 Exit codes:
 
@@ -107,6 +111,114 @@ Private output (`out/internal/live/`):
 - `provenance.jsonl`: the last publish's sources, row keys and times.
 
 No raw listing text is written anywhere. Log lines go to stderr as `time level logger: message`. An error shows only its type, never its message or a traceback, because a page's words could be in either.
+
+## Manual statuses (the admin)
+
+The admin sets a status by hand in the admin view (`?admin`): Closed, Delayed (its minutes),
+Early dismissal (its time) or Open, for a district (every one of its schools) or one school,
+until an expiry (the end of that school's local day today or tomorrow). The API keeps it and serves the active ones, without the note or who set it, at
+`GET {API}/v1/overrides`. Code: `pipeline/snowlight/live/overrides.py`.
+
+`live-ingest.yml` runs every 5 minutes: the owner's Cloudflare timer dispatches it when no run is
+queued or running. Its first job holds no secret beyond the Cloudflare ones and makes no
+deployment:
+
+- **No API root**: no repository variable `SNOWLIGHT_API_ROOT`, and not both `CLOUDFLARE_API_TOKEN`
+  and `CLOUDFLARE_ACCOUNT_ID` (from which it reads the account's `workers.dev` subdomain and
+  takes `https://snowlight-api.<subdomain>.workers.dev/`), or an account with no subdomain.
+  One notice; the run succeeds.
+- **The API is not deployed**: with the Cloudflare secrets, the account's list of Workers has no
+  `snowlight-api` (what `workers.dev` answers for a Worker that is not there is never relied on);
+  with `SNOWLIGHT_API_ROOT`, `v1/overrides` answers 404 twice, 10 s apart. One notice; the run
+  succeeds.
+- **`SNOWLIGHT_API_ROOT` is not an https URL** (http, a query or fragment, a space): one
+  warning, so the owner sees it; the run succeeds and reads no API.
+- **No API left, but statuses on the map**: in either case above, while the public
+  `v1/live/closings.json` or `v1/live/opens.json` still shows a status (a deleted or renamed
+  Worker, a removed variable or secret), one warning, and the `publish` job takes them all down
+  (`live overrides --none`). A public file that cannot be read is never taken down on a guess:
+  one notice, and the next run reads it again.
+- **The Cloudflare lookup fails** (no answer, an HTTP error such as a token without the Workers
+  read permission, or an answer that is not a subdomain or not a list of Workers): one notice
+  naming the likely cause;
+  the run succeeds and nothing changes. While it lasts, statuses already on the map are neither
+  republished nor taken down: the page stops calling the file live 20 minutes after its last
+  update, and the statuses drop out of the file at the next run that reads the API.
+- **Nothing to do**: no active override, and the public closings and opens files are missing or
+  show nothing (read through GitHub's API, never the CDN, whose copy can be 10 minutes old).
+  One line; the run succeeds.
+- **The API does not answer, or answers with something that is not a list of overrides** (an
+  HTTP error, not JSON): one error line, the run fails and publishes nothing. The public files
+  stay as they were. No answer, a 404 or a 5xx is asked again once, 10 s later, so one bad
+  answer neither fails the run nor takes the map down.
+
+Otherwise the `publish` job (environment `live`, `SNOWLIGHT_LIVE_TOKEN`; without it, one notice)
+runs `snowlight live overrides`:
+
+1. The API's answer is read strictly: a field missing, unknown or out of range anywhere refuses
+   the whole answer (exit 1, nothing published).
+2. Every id is checked against the deployed directory, read as the predictions pass reads it
+   (S8-0's reader, never a plain GET of the CDN): a school id must be in the deployed
+   `meta.json`, a district id in its district list, and a district covers each school
+   `points.bin` places in it. An id the deployed directory does not hold lights nothing.
+3. An override lists its days: one or two school-local dates, the ones the admin picked in the
+   admin view (Today, Tomorrow, or Today and tomorrow, in the school's own time zone). The
+   API keeps one override per district or school: every save replaces it, days, status, delay
+   and time together, and the API serves only the listed days that have not ended. The pass
+   lights exactly the listed days that are the school's today or tomorrow, with the
+   override's current status, delay and time, and nothing else: nothing is guessed from when
+   it was set or kept from what the map showed. Today and tomorrow are taken in the school's
+   district's time zone from the committed model (`pipeline/data/predict/model.json.gz`, the
+   zones the predictions file gives the page); a school without a district (a private school)
+   takes the zone of the nearest school that has one. The admin view works its days out in the
+   same zone (the predictions file's zone for the district, read only from a file for the
+   deployed directory, and the same nearest school for a school without a district) and
+   refuses to set a status while it cannot. An override whose days it named in another zone
+   than the pass's lights nothing (`zone_differs`): its dates may not be the school's.
+   - A day the override no longer lists (saved again with other days, or deleted) leaves the
+     map at the next run. An Open takes its days down (no row; an open statement).
+   - A saved change shows at the next run on every listed day: an early dismissal moved from
+     1:00 PM to 12:30 PM after noon shows 12:30 PM.
+   - "Posted" is the time the admin set that day's status. A day shown with the same status,
+     delay and time as manual status keeps the time it was first posted (a save that changes
+     nothing on that day, such as a new note, does not move it); any change on that day posts
+     it anew. A public file under another directory stamp gives no times, and a public file
+     that cannot be read fails the run with nothing published.
+   - An override past its expiry (the end of its last day in the zone the admin view used)
+     lights nothing.
+4. A school's own override beats its district's; among equals the one set last wins. In the
+   merge (`merge.py`, rule 7, `with_overrides`) the admin outranks every list read: an admin
+   status replaces the lists' status for that school and day, and an admin Open removes it and
+   stands as an open statement in `opens.json`. When S8-E brings the list readers, their pass
+   must take the overrides through `with_overrides` in the same publisher (one memory per
+   public file), and `live overrides` stops running on its own.
+5. The publisher is the lists' (`LivePublisher`): stamped with the deployed directory, refused
+   while the hold is set (`live blank` darkens manual statuses too), uploaded when the statuses
+   changed and every 10 minutes while any show (the live repository's Pages site is built
+   from its branch, and GitHub builds a branch about 10 times an hour at most; a 5-minute
+   heartbeat beside predict.yml's commits would hold builds back, a take-down with them). Each row is a status with no weather reason,
+   posted at the time the admin set it, and marked in the day's `manual` column (row positions);
+   the school panel leads its note with "Confirmed by our team" and never names a list or a
+   station. A closings file written before the column existed reads as having no manual rows.
+   The private provenance line says `source_type` `admin`. Overrides that
+   light nothing (ids not in the directory, days after tomorrow) write nothing while the public
+   files show nothing, so they cause no heartbeat commits.
+
+`LIVE_PUBLISH` for this job comes from the repository variable `LIVE_OVERRIDES_PUBLISH`, `on`
+when unset: manual statuses go straight to the map. `shadow` and `off` write nothing under
+`v1/`, so they also take nothing down there: statuses already on the map stay until their day
+ends (the page stops calling the file live 20 minutes after its last update). To stop manual
+statuses, take them down first while the variable is still `on` (delete the overrides in the
+admin view and wait for the next run, or `live blank` for every status at once), then set it.
+While it is `shadow` or `off` and `v1/` still shows statuses, every run prints one warning.
+
+Both `predict.yml` and `live-ingest.yml` commit to `viaate/snowlight-live`. A commit that loses
+the race (the other moved the branch first) is built again on the new head, keeping the other's
+files, up to 3 times (`GitHubPublisher.attempts`); only then does the run fail.
+
+From setting a status to the map: up to 5 minutes for the next dispatch, about 1 to 2 minutes
+for the run with its setup, about 20 to 40 s for the live host's Pages deploy, then the page's
+next read (once a minute): about 9 minutes at most.
 
 ## When the deployed directory changes
 

@@ -3,7 +3,7 @@
   "$defs": {
     "ClosingsDay": {
       "additionalProperties": false,
-      "description": "Every school with a weather status on one local day, as parallel columns.\n\nRow i is gaps[i], statuses[i], announced[i] and reasons[i]; rows are in school\norder. shifts and clocks hold one entry for each delayed or early-dismissal\nrow, in row order: the k-th entry belongs to the k-th such row.",
+      "description": "Every school with a weather status on one local day, as parallel columns.\n\nRow i is gaps[i], statuses[i], announced[i] and reasons[i]; rows are in school\norder. shifts and clocks hold one entry for each delayed or early-dismissal\nrow, in row order: the k-th entry belongs to the k-th such row. manual lists the\nrows the site's own team set by hand, by position.",
       "properties": {
         "announced": {
           "description": "When each row's status was first posted, in minutes before generated_at; null when the listing gave no time.",
@@ -42,6 +42,13 @@
             "$ref": "#/$defs/SchoolGap"
           },
           "minItems": 1,
+          "type": "array"
+        },
+        "manual": {
+          "description": "The rows the site's own team set by hand, as positions in this day's rows (0 is the first), ascending; empty when there are none.",
+          "items": {
+            "$ref": "#/$defs/RowPosition"
+          },
           "type": "array"
         },
         "reasons": {
@@ -87,7 +94,8 @@
         "announced",
         "reasons",
         "shifts",
-        "clocks"
+        "clocks",
+        "manual"
       ],
       "title": "ClosingsDay",
       "type": "object"
@@ -162,6 +170,11 @@
         "heat",
         "power_outage"
       ]
+    },
+    "RowPosition": {
+      "maximum": 4294967294,
+      "minimum": 0,
+      "type": "integer"
     },
     "SchemaVersion": {
       "const": 1,

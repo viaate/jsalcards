@@ -51,7 +51,7 @@ FINGERPRINT_NOTE = (
 
 
 class SnowlightJsonSchema(GenerateJsonSchema):
-    """Pydantic's generator, with enum member names and without per-field titles.
+    """Pydantic's generator, with enum member names and without per-field titles or defaults.
 
     Field titles would only repeat the property names. Titles set on purpose (the
     labels of tuple positions) are kept.
@@ -60,6 +60,21 @@ class SnowlightJsonSchema(GenerateJsonSchema):
     @override
     def field_title_should_be_set(self, schema: CoreSchema) -> bool:
         return False
+
+    @override
+    def default_schema(self, schema: core_schema.WithDefaultSchema) -> JsonSchemaValue:
+        # Every published field is written, so the schemas mark them all required; a
+        # default only lets a file written before the field existed still read (the
+        # closings file's ``manual``).
+        return self.generate_inner(schema["schema"])
+
+    @override
+    def field_is_required(
+        self,
+        field: core_schema.ModelField | core_schema.DataclassField | core_schema.TypedDictField,
+        total: bool,
+    ) -> bool:
+        return True
 
     @override
     def enum_schema(self, schema: core_schema.EnumSchema) -> JsonSchemaValue:

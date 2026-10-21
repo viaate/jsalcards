@@ -42,6 +42,7 @@ from pydantic import AfterValidator, Field, StringConstraints, model_validator
 from snowlight.schemas.base import SCREENED, PublishedModel, screen_text
 from snowlight.schemas.directory import DirectoryStamp
 from snowlight.schemas.scalars import (
+    INDEX_MAX,
     MINUTES_PER_DAY,
     ContentDigest,
     Count,
@@ -98,6 +99,11 @@ class Closing:
     reason: Reason | None
     shift_minutes: int | None = None
     clock_minute: int | None = None
+    manual: bool = False
+    """Whether the site's own team set it by hand (the admin's manual status)."""
+
+
+type RowPosition = Annotated[int, Field(ge=0, le=INDEX_MAX)]
 
 
 class ClosingsDay(PublishedModel):
@@ -105,7 +111,8 @@ class ClosingsDay(PublishedModel):
 
     Row i is gaps[i], statuses[i], announced[i] and reasons[i]; rows are in school
     order. shifts and clocks hold one entry for each delayed or early-dismissal
-    row, in row order: the k-th entry belongs to the k-th such row.
+    row, in row order: the k-th entry belongs to the k-th such row. manual lists the
+    rows the site's own team set by hand, by position.
     """
 
     day: LocalDate
@@ -145,10 +152,22 @@ class ClosingsDay(PublishedModel):
             )
         ),
     ]
+    manual: Annotated[
+        tuple[RowPosition, ...],
+        Field(
+            description=(
+                "The rows the site's own team set by hand, as positions in this day's rows "
+                "(0 is the first), ascending; empty when there are none."
+            ),
+        ),
+    ] = ()
+    """Always written; a file written before it existed reads as none."""
 
     @model_validator(mode="after")
     def _check(self) -> Self:
         rows = len(self.gaps)
+        if any(b <= a for a, b in pairwise(self.manual)) or any(i >= rows for i in self.manual):
+            raise ValueError(f"{self.day}: manual rows must be ascending positions of its rows")
         for name, column in (
             ("statuses", self.statuses),
             ("announced", self.announced),
@@ -227,8 +246,9 @@ class ClosingsFile(PublishedModel):
         decoded: list[Closing] = []
         for group in self.days:
             times = iter(zip(group.shifts, group.clocks, strict=True))
-            for school, status, ago, reason in zip(
-                group.schools(), group.statuses, group.announced, group.reasons, strict=True
+            manual = set(group.manual)
+            for position, (school, status, ago, reason) in enumerate(
+                zip(group.schools(), group.statuses, group.announced, group.reasons, strict=True)
             ):
                 shift, clock = next(times) if status in SHIFTED else (None, None)
                 decoded.append(
@@ -240,6 +260,7 @@ class ClosingsFile(PublishedModel):
                         reason=reason,
                         shift_minutes=shift,
                         clock_minute=clock,
+                        manual=position in manual,
                     )
                 )
         return decoded
@@ -293,6 +314,7 @@ class ClosingsFile(PublishedModel):
                     "reasons": tuple(row.reason for row in rows),
                     "shifts": tuple(row.shift_minutes for row in shifted),
                     "clocks": tuple(row.clock_minute for row in shifted),
+                    "manual": tuple(i for i, row in enumerate(rows) if row.manual),
                 }
             )
         return cls.model_validate(

@@ -56,6 +56,7 @@ def _rows(file: ClosingsFile) -> list[JSONValue]:
             "reason": None if closing.reason is None else int(closing.reason),
             "shift_minutes": closing.shift_minutes,
             "clock_minute": closing.clock_minute,
+            "manual": closing.manual,
         }
         for closing in sorted(file.closings(), key=lambda item: (item.day, item.school))
     ]

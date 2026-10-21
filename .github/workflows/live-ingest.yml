@@ -1,0 +1,251 @@
+# The live closings file, v1/live/closings.json on the live host (docs/accounts.md, docs/live.md).
+#
+# For now it publishes the admin's manual statuses (accounts spec C): the active overrides
+# from the API (GET {API}/v1/overrides), each id checked against the deployed directory,
+# through S8-D's publisher and gate (`snowlight live overrides`). S8-E adds the list readers
+# here; in the S8-C merge the admin's statuses outrank every list read
+# (pipeline/snowlight/live/merge.py, with_overrides).
+#
+# The owner's Cloudflare timer dispatches this workflow (workflow_dispatch on the default
+# branch) every 5 minutes when no run is queued or running, so a run is quick and quiet:
+# - no API root (no repository variable SNOWLIGHT_API_ROOT, and no CLOUDFLARE_API_TOKEN and
+#   CLOUDFLARE_ACCOUNT_ID secrets to find the Worker's workers.dev address with; or the
+#   Cloudflare API gives no subdomain, or lists no snowlight-api Worker), or no API deployed
+#   at a named root (404 twice, 10 s apart): one notice, and the run succeeds. A root that is
+#   not an https URL: one warning, and the run succeeds. If the public files still show
+#   statuses then, a warning, and the publish job takes them down
+#   (`snowlight live overrides --none`);
+# - LIVE_OVERRIDES_PUBLISH off or shadow while v1 still shows statuses: one warning on every
+#   run (nothing in those modes writes v1; docs/live.md says how to take them down);
+# - no active override and public files that show no status: one line, and it succeeds;
+# - otherwise the publish job runs (environment `live`, SNOWLIGHT_LIVE_TOKEN; without the
+#   token, one notice). It uploads when the statuses changed and every 10 minutes while any
+#   show (the heartbeat). An answer from the API that is not a well-formed list fails the run
+#   and publishes nothing: the public file stays as it was.
+name: live-ingest
+
+on:
+  workflow_dispatch:
+
+concurrency:
+  group: live-ingest
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  check:
+    if: github.ref == format('refs/heads/{0}', github.event.repository.default_branch)
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    outputs:
+      api: ${{ steps.find.outputs.api }}
+      publish: ${{ steps.find.outputs.publish }}
+    steps:
+      - id: find
+        name: Find the API and anything to publish
+        env:
+          API_ROOT: ${{ vars.SNOWLIGHT_API_ROOT }}
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          GH_TOKEN: ${{ github.token }}
+          LIVE_REPOSITORY: viaate/snowlight-live
+          LIVE_PUBLISH: ${{ vars.LIVE_OVERRIDES_PUBLISH || 'on' }}
+          RETRY_PAUSE: "10"
+        run: |
+          set -euo pipefail
+          publish=false
+          api=""
+          trap 'echo "publish=$publish" >> "$GITHUB_OUTPUT"; if [ -n "$api" ]; then echo "api=$api" >> "$GITHUB_OUTPUT"; fi' EXIT
+          # GET a URL into a file; prints the HTTP status, or 000 when no answer came.
+          get() {
+            local out="$1"
+            shift
+            curl -sS --max-time 20 -o "$out" -w '%{http_code}' "$@" 2>/dev/null || true
+          }
+          # How many statuses and open statements the public files show: a number, or
+          # "unknown" when one cannot be read (then it is published over, never taken down).
+          shown_now() {
+            local total=0 pair code count
+            for pair in closings:days opens:opens; do
+              code=$(get public.json -H "Authorization: Bearer $GH_TOKEN" \
+                -H "Accept: application/vnd.github.raw+json" \
+                "${GITHUB_API_URL:-https://api.github.com}/repos/$LIVE_REPOSITORY/contents/v1/live/${pair%%:*}.json")
+              case "$code" in
+                200) count=$(jq -er --arg key "${pair#*:}" \
+                       '.[$key] | if type == "array" then length else error("not a list") end' \
+                       public.json 2>/dev/null) || { echo unknown; return; } ;;
+                404) count=0 ;;
+                *) echo unknown; return ;;
+              esac
+              total=$((total + count))
+            done
+            echo "$total"
+          }
+          # No API to read (none named, no workers.dev subdomain, or none deployed there): stay
+          # dark, and take down the statuses a past API left on the map. $2 "warning": a
+          # misconfiguration the owner should see even with nothing on the map.
+          dark() {
+            local shown=0
+            if [ "$LIVE_PUBLISH" = on ]; then shown=$(shown_now); fi
+            if [ "$shown" != unknown ] && [ "$shown" -gt 0 ]; then
+              echo "::warning::$1, but the public files still show $shown manual statuses: taking them down (docs/live.md)."
+              publish=true
+            else
+              echo "::${2:-notice}::$1: nothing to publish (docs/accounts.md)."
+            fi
+            exit 0
+          }
+          # Nothing but LIVE_PUBLISH on writes v1: say so while v1 still shows statuses.
+          if [ "$LIVE_PUBLISH" != on ]; then
+            shown=$(shown_now)
+            if [ "$shown" != unknown ] && [ "$shown" -gt 0 ]; then
+              echo "::warning::LIVE_OVERRIDES_PUBLISH is $LIVE_PUBLISH, but v1 still shows $shown manual statuses, and nothing takes them down in that mode (docs/live.md, Manual statuses)."
+            fi
+          fi
+          # GET v1/overrides into overrides.json; a 404, 5xx or no answer is asked again once,
+          # $RETRY_PAUSE s later, so one bad answer neither fails the run nor takes the map down.
+          get_overrides() {
+            local code
+            code=$(get overrides.json -H "Accept: application/json" "${root}v1/overrides")
+            case "$code" in
+              000 | 404 | 5??)
+                sleep "${RETRY_PAUSE:-10}"
+                code=$(get overrides.json -H "Accept: application/json" "${root}v1/overrides")
+                ;;
+            esac
+            echo "$code"
+          }
+          root="$API_ROOT"
+          if [ -z "$root" ]; then
+            if [ -z "$CLOUDFLARE_API_TOKEN" ] || [ -z "$CLOUDFLARE_ACCOUNT_ID" ]; then
+              dark "No API root (vars.SNOWLIGHT_API_ROOT, or the Cloudflare secrets)"
+            fi
+            code=$(get subdomain.json -H "Authorization: Bearer $CLOUDFLARE_API_TOKEN" \
+              "${CLOUDFLARE_API_URL:-https://api.cloudflare.com/client/v4}/accounts/$CLOUDFLARE_ACCOUNT_ID/workers/subdomain")
+            if [ "$code" != "200" ] || ! jq -e '.success == true' subdomain.json > /dev/null 2>&1; then
+              echo "::notice::The Cloudflare API gave no workers.dev subdomain (HTTP $code; is one registered, and may CLOUDFLARE_API_TOKEN read Workers?): nothing to publish (docs/accounts.md)."
+              exit 0
+            fi
+            sub=$(jq -r '.result.subdomain // empty' subdomain.json)
+            if [ -z "$sub" ]; then dark "No workers.dev subdomain on the Cloudflare account"; fi
+            if ! [[ "$sub" =~ ^[a-z0-9]([a-z0-9-]*[a-z0-9])?$ ]]; then
+              echo "::notice::The Cloudflare API gave a subdomain that is not a name: nothing to publish (docs/accounts.md)."
+              exit 0
+            fi
+            # Whether the Worker is deployed, from the account itself: what workers.dev answers
+            # for a Worker that is not there is not something to rely on.
+            code=$(get scripts.json -H "Authorization: Bearer $CLOUDFLARE_API_TOKEN" \
+              "${CLOUDFLARE_API_URL:-https://api.cloudflare.com/client/v4}/accounts/$CLOUDFLARE_ACCOUNT_ID/workers/scripts")
+            if [ "$code" != "200" ] || ! jq -e '.success == true and (.result | type == "array")' scripts.json > /dev/null 2>&1; then
+              echo "::notice::The Cloudflare API did not list the account's Workers (HTTP $code; may CLOUDFLARE_API_TOKEN read Workers?): nothing to publish (docs/accounts.md)."
+              exit 0
+            fi
+            if ! jq -e 'any(.result[]; .id == "snowlight-api")' scripts.json > /dev/null 2>&1; then
+              dark "The snowlight-api Worker is not deployed on the Cloudflare account"
+            fi
+            root="https://snowlight-api.$sub.workers.dev/"
+          fi
+          root="${root%/}/"
+          # As strict as the publisher (overrides.api_url): https, or http to this machine for
+          # a test server; no query, fragment or space.
+          if ! [[ "$root" =~ ^https://[A-Za-z0-9.-]+(:[0-9]+)?/[^?#[:space:]]*$ ]] &&
+            ! [[ "$root" =~ ^http://(127\.0\.0\.1|localhost)(:[0-9]+)?/[^?#[:space:]]*$ ]]; then
+            dark "SNOWLIGHT_API_ROOT is not an https URL without a query" warning
+          fi
+          code=$(get_overrides)
+          if [ "$code" = "000" ]; then
+            echo "::error::The API did not answer GET v1/overrides at $root: nothing is published."
+            exit 1
+          fi
+          if [ "$code" = "404" ]; then
+            dark "The API is not deployed (GET v1/overrides answered 404 twice)"
+          fi
+          if [ "$code" != "200" ]; then
+            echo "::error::GET v1/overrides answered HTTP $code: nothing is published."
+            exit 1
+          fi
+          active=$(jq -er '.overrides | if type == "array" then length else error("not a list") end' overrides.json 2>/dev/null) || {
+            echo "::error::GET v1/overrides is not a list of overrides: nothing is published."
+            exit 1
+          }
+          api="$root"
+          if [ "$active" = "0" ] && [ "$(shown_now)" = "0" ]; then
+            echo "No active override, and the public files show no status: nothing to publish."
+            exit 0
+          fi
+          publish=true
+
+  publish:
+    needs: check
+    if: needs.check.outputs.publish == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    environment: live
+    permissions:
+      contents: read
+      actions: read # the Pages artifact of the deployed directory
+      deployments: read # the deployed directory's handshake (S8-0)
+    defaults:
+      run:
+        working-directory: pipeline
+    env:
+      LIVE_HOST_TOKEN: ${{ secrets.SNOWLIGHT_LIVE_TOKEN }}
+      LIVE_PUBLISH: ${{ vars.LIVE_OVERRIDES_PUBLISH || 'on' }}
+      GITHUB_TOKEN: ${{ github.token }}
+      API_ROOT: ${{ needs.check.outputs.api }}
+    steps:
+      - id: token
+        name: Stay dark without the live host token
+        working-directory: .
+        run: |
+          if [ -z "$LIVE_HOST_TOKEN" ]; then
+            echo "::notice::No SNOWLIGHT_LIVE_TOKEN in the live environment: nothing is published (docs/predict.md)."
+            echo "ready=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "ready=true" >> "$GITHUB_OUTPUT"
+          fi
+
+      - if: steps.token.outputs.ready == 'true'
+        uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+
+      - if: steps.token.outputs.ready == 'true'
+        uses: astral-sh/setup-uv@c18668ad3cf93ea998bef934396af7bb5c839dc7 # v10.2.0
+        with:
+          python-version: "3.12"
+          working-directory: pipeline
+          enable-cache: true
+          cache-dependency-glob: uv.lock
+
+      - if: steps.token.outputs.ready == 'true'
+        run: uv sync --locked --no-dev
+
+      # The publisher's private state (its memory and the day's change log: school ids, codes
+      # and times, no words; a few KB). A lost state is rebuilt from the public files. Its key
+      # is not `live-state-`: that prefix is the live loop's store, which predict.yml restores.
+      - if: steps.token.outputs.ready == 'true'
+        id: state
+        uses: actions/cache/restore@v4
+        with:
+          path: pipeline/out/internal/live/state
+          key: live-overrides-state-${{ github.run_id }}
+          restore-keys: live-overrides-state-
+
+      # With no API left to read (the check job's warning), take the statuses down.
+      - if: steps.token.outputs.ready == 'true'
+        name: Publish the manual statuses
+        run: |
+          if [ -n "$API_ROOT" ]; then
+            uv run snowlight live overrides --api "$API_ROOT"
+          else
+            uv run snowlight live overrides --none
+          fi
+
+      - if: always() && steps.token.outputs.ready == 'true' && hashFiles('pipeline/out/internal/live/state/**') != ''
+        uses: actions/cache/save@v4
+        with:
+          path: pipeline/out/internal/live/state
+          key: live-overrides-state-${{ github.run_id }}

@@ -20,6 +20,7 @@ from snowlight.schemas.export import (
     REPO_ROOT,
     SCHEMA_DIR,
     SCHEMA_SUFFIX,
+    SnowlightJsonSchema,
     expected_files,
     fingerprint,
     json_schema,
@@ -89,9 +90,14 @@ def test_fingerprint_covers_every_schema_byte() -> None:
 
 
 def test_validation_and_serialization_schemas_agree(entry: PublishedFile) -> None:
-    """What the pipeline writes and what it accepts are the same shape."""
-    reading = entry.model.model_json_schema(by_alias=True, mode="validation")
-    writing = entry.model.model_json_schema(by_alias=True, mode="serialization")
+    """What the pipeline writes and what it accepts are the same shape (a field added later
+    with a default, read as that default from a file written before it, is written always)."""
+    reading = entry.model.model_json_schema(
+        by_alias=True, mode="validation", schema_generator=SnowlightJsonSchema
+    )
+    writing = entry.model.model_json_schema(
+        by_alias=True, mode="serialization", schema_generator=SnowlightJsonSchema
+    )
     assert reading == writing
 
 

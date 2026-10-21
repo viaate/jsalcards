@@ -13,8 +13,11 @@ only ``v1/`` and ``v1-shadow/`` keys of JSON files are ever written (T15b).
 * :class:`GitHubPublisher` commits the files to a branch of a GitHub repository in
   one commit (the Git Data API), whose Pages workflow then deploys them: the
   owner's host for now (viaate/snowlight-live). The branch moves only by a fast
-  forward from the commit read, so a second writer's commit is never overwritten:
-  the publish fails instead.
+  forward from the commit read, so a second writer's commit is never overwritten.
+  Two workflows write that repository (predict.yml its predictions, live-ingest.yml
+  the closings), each its own files: when the other moved the branch first, the
+  commit is built again on the new head (its files kept), up to
+  :attr:`GitHubPublisher.attempts` times, then the publish fails.
 
 A write can be guarded (:func:`guarded_write`, :class:`WriteGuard`): it is refused
 when one file the host holds says so (the hold ``snowlight live blank`` sets). The
@@ -69,6 +72,10 @@ class KeyRefusedError(PublishError):
 
 class GuardRefusedError(PublishError):
     """The write's guard refused it: nothing was written."""
+
+
+class MovedError(PublishError):
+    """Another writer moved the branch first (not a fast forward): nothing was written."""
 
 
 @dataclass(frozen=True, slots=True)
@@ -367,6 +374,8 @@ class GitHubPublisher:
     api: str = "https://api.github.com"
     message: str = "Publish the live files"
     server_time: datetime | None = None
+    attempts: int = 3
+    """How many times a commit is built when another writer keeps moving the branch."""
 
     def _headers(self, accept: str = "application/vnd.github+json") -> dict[str, str]:
         return {
@@ -441,6 +450,17 @@ class GitHubPublisher:
             check_key(key)
         if not files:
             return
+        for attempt in range(1, max(1, self.attempts) + 1):
+            try:
+                self._commit_once(files, guard)
+            except MovedError:
+                if attempt >= self.attempts:
+                    raise
+            else:
+                return
+
+    def _commit_once(self, files: Mapping[str, bytes], guard: WriteGuard | None) -> None:
+        """One commit on the branch's head, with the guard read in that very commit."""
         ref = self._json(self._call("GET", f"git/ref/heads/{quote(self.branch)}"), "read branch")
         target = ref.get("object")
         head = self._sha(target.get("sha") if isinstance(target, dict) else None, "read branch")
@@ -477,5 +497,5 @@ class GitHubPublisher:
             body={"sha": new_head, "force": False},
         )
         if moved.status_code == httpx.codes.UNPROCESSABLE_ENTITY:
-            raise PublishError("move branch: another writer moved it first (not a fast forward)")
+            raise MovedError("move branch: another writer moved it first (not a fast forward)")
         self._json(moved, "move branch")

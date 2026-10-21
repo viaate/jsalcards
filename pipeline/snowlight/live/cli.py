@@ -20,6 +20,12 @@
 * ``live check --url URL --max-age 15m``: the watchdog: is the public file fresh, not
   stamped ahead of the clock, and stamped with the deployed directory's stamp?
 * ``live state pull`` / ``live state push``: restore or keep the private state.
+* ``live overrides --api ROOT``: one pass of the admin's manual statuses
+  (:mod:`snowlight.live.overrides`): read the active overrides from the API, check them
+  against the deployed directory and publish them through the gate; it stops, writing
+  nothing, when the overrides light nothing and the public files show no status.
+  ``live overrides --none`` publishes no override (live-ingest.yml takes the statuses
+  down with it when no API is left to read).
 
 Exit codes: 0 published or held healthily, 3 the gate refused (or the watchdog found
 the file stale, missing, ahead or on another stamp), 1 an error (a state push that
@@ -58,13 +64,28 @@ from snowlight.directory.deployed import DeployedEditionError
 from snowlight.live.edition import (
     DeployedSource,
     EditionState,
+    EditionVerdict,
     EditionWatch,
     deployed_edition,
     own_edition,
 )
 from snowlight.live.guards import Refusal
 from snowlight.live.ingest import Ingest, SourceRead
+from snowlight.live.merge import with_overrides
 from snowlight.live.morning import MorningLog
+from snowlight.live.overrides import (
+    EMPTY,
+    DeployedSchools,
+    OverridesError,
+    fetch,
+    nothing_to_publish,
+    read_shown,
+    resolve,
+    zone_table,
+)
+from snowlight.live.overrides import (
+    HEARTBEAT as OVERRIDES_HEARTBEAT,
+)
 from snowlight.live.publish import (
     CLOCK_SLACK,
     Exit,
@@ -116,7 +137,7 @@ class ConfigError(ValueError):
     """The live settings or the environment are not usable."""
 
 
-_OWN_WORDS: Final = (ConfigError, StateError, PublishError, DeployedEditionError)
+_OWN_WORDS: Final = (ConfigError, StateError, PublishError, DeployedEditionError, OverridesError)
 """Errors whose messages are this package's own words (ids, codes, file names)."""
 
 
@@ -303,6 +324,22 @@ def make_watch(config: LiveConfig, env: Env, site_data: Path) -> EditionWatch:  
     return EditionWatch(own=own_edition(site_data), source=make_deployed(config, env))
 
 
+def make_schools(config: LiveConfig, env: Env) -> DeployedSchools:  # pragma: no cover
+    """The deployed directory's schools and districts, as the predictions pass reads them
+    (S8-0's reader: the live deploy's artifact or a provably current CDN copy), with each
+    district's time zone from the committed model."""
+    from snowlight.predict.inputs import read_deployed_meta  # noqa: PLC0415 - overrides only
+    from snowlight.predict.publish import DarkError  # noqa: PLC0415
+
+    try:
+        directory, meta = read_deployed_meta(
+            config.site, config.site_repository, env.get("GITHUB_TOKEN")
+        )
+    except DarkError as error:
+        raise DeployedEditionError(str(error)) from error
+    return DeployedSchools.from_deployed(directory, meta, zone_table())
+
+
 @dataclass(frozen=True, slots=True)
 class Parts:
     """What a pass needs, built once per process."""
@@ -384,6 +421,7 @@ class Loaders:
     client: Callable[[], httpx.Client] = make_client
     watch: Callable[[LiveConfig, Env, Path], EditionWatch] = make_watch
     deployed: Callable[[LiveConfig, Env], DeployedSource] = make_deployed
+    schools: Callable[[LiveConfig, Env], DeployedSchools] = make_schools
     clock: Callable[[], datetime] = field(default=lambda: datetime.now(UTC))
     sleep: Callable[[float], None] = time.sleep
     env: Callable[[], Env] = field(default=lambda: dict(os.environ))
@@ -707,6 +745,82 @@ def run_check(args: argparse.Namespace, loaders: Loaders | None = None) -> int:
     return int(Exit.ERROR if unreadable else Exit.OK)
 
 
+def _always(_school: int) -> bool:
+    return True
+
+
+def _stop_quietly(lit: bool, host: Publisher, prefix: str | None, line: str) -> int | None:
+    """Exit 0 after ``line`` when there is nothing to publish (:func:`nothing_to_publish`),
+    1 when the public files cannot be read, else ``None``: publish."""
+    try:
+        if nothing_to_publish(lit, host, prefix):
+            _say(line)
+            return int(Exit.OK)
+    except Exception as error:
+        return _fail(f"read back: {describe(error)}")
+    return None
+
+
+def run_overrides(args: argparse.Namespace, loaders: Loaders | None = None) -> int:
+    """One pass of the admin's statuses (:mod:`snowlight.live.overrides`): 0 published,
+    unchanged or nothing to publish; 3 the gate refused; 1 the API, the host or the deployed
+    directory could not be read (nothing is published: the public file stays)."""
+    loaders = loaders or LOADERS
+    configure_logging()
+    try:
+        config = LiveConfig.load(args.config)
+        env = loaders.env()
+        mode = mode_of(env)
+        client = loaders.client()
+        host = make_host(config, env, client)
+        overrides = () if args.none else fetch(client, args.api)
+        # The rows the map shows: an unchanged day keeps its "Posted" time (overrides.resolve).
+        shown = read_shown(host, mode.prefix) if overrides else None
+    except Exception as error:
+        return _fail(describe(error))
+    now = loaders.clock()
+    line = "overrides: none, and the public files show no status: nothing to publish"
+    if (stop := _stop_quietly(bool(overrides), host, mode.prefix, line)) is not None:
+        return stop
+    try:
+        schools = loaders.schools(config, env)
+    except Exception as error:
+        return _fail(f"the deployed directory: {describe(error)}")
+    resolved = resolve(overrides, schools, now, shown)
+    merged = with_overrides(EMPTY, resolved.statuses, now.astimezone(UTC).replace(microsecond=0))
+    withheld = ", ".join(f"{code} {count}" for code, count in resolved.withheld.items())
+    _say(
+        f"overrides: {len(overrides)} active; {len(merged.closings)} statuses, "
+        f"{len(merged.opens)} open; "
+        f"withheld {withheld or 'none'}"
+    )
+    line = "overrides: none lights a status, and the public files show none: nothing to publish"
+    lit = bool(merged.closings or merged.opens)
+    if overrides and (stop := _stop_quietly(lit, host, mode.prefix, line)) is not None:
+        return stop
+    publisher = LivePublisher(
+        host=host,
+        directory=schools.live_directory(resolved.borrowed),
+        state_dir=args.state,
+        internal_dir=args.internal,
+        mode=mode,
+        heartbeat=OVERRIDES_HEARTBEAT,
+    )
+    stamp = schools.stamp
+    verdict = EditionVerdict(EditionState.EQUAL, now, stamp=stamp, deployed=stamp)
+    try:
+        # The admin's word is its own confirmation: every status counts as under an alert
+        # (no spike hold), and the one source is healthy.
+        report = publisher.publish(
+            merged, now=now, healthy_share=1.0, edition=verdict, alerted=_always, started=now
+        )
+    except Exception as error:
+        LOG.error("publish: %s", type(error).__name__)
+        return _fail(f"publish: {describe(error)}")
+    _report(report)
+    return int(report.exit)
+
+
 def run_state(args: argparse.Namespace, loaders: Loaders | None = None) -> int:
     loaders = loaders or LOADERS
     configure_logging()
@@ -790,6 +904,14 @@ def register(subparsers: "argparse._SubParsersAction[argparse.ArgumentParser]") 
         help="skip comparing the file's stamp with the deployed edition",
     )
     check.set_defaults(handler=run_check)
+    manual = actions.add_parser("overrides", help="publish the admin's manual statuses (one pass)")
+    _common(manual)
+    source = manual.add_mutually_exclusive_group(required=True)
+    source.add_argument("--api", help="the API root, https://.../")
+    source.add_argument(
+        "--none", action="store_true", help="publish no override (take the statuses down)"
+    )
+    manual.set_defaults(handler=run_overrides)
     state = actions.add_parser("state", help="restore or keep the private state")
     state.add_argument("state_action", choices=("pull", "push"))
     _common(state)

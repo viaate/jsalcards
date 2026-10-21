@@ -47,6 +47,11 @@ is recent). For each school and local day:
    (``OUT_OF_WINDOW``).
 6. **Breaker** (G9): a source contributing more statuses than its limit has all of
    them dropped (``BREAKER``), and is named in :attr:`Merged.breakers`.
+7. **The admin outranks every list** (accounts spec C, :func:`with_overrides`): a
+   status the site's admin set by hand (:class:`AdminStatus`, from
+   :mod:`snowlight.live.overrides`) replaces whatever the lists gave that school on that
+   day, and an admin "open" takes the lists' status away. It runs after the merge, so
+   no list row, open statement or dissent can outvote it.
 
 The output is the published :class:`~snowlight.schemas.live.Closing` rows, the
 open signals, one private provenance line per published status and the counts.
@@ -62,12 +67,12 @@ from typing import Final, Literal
 from zoneinfo import ZoneInfo
 
 from snowlight.live.guards import Rules, Withheld, breaker_limit
-from snowlight.live.provenance import provenance_line
+from snowlight.live.provenance import SourceType, provenance_line
 from snowlight.live.resolve import DayClaim, LiveDirectory, Resolved, RowResult
 from snowlight.output import JSONValue
 from snowlight.schemas.live import Closing, local_days
 from snowlight.schemas.scalars import MAX_MINUTES_AGO, MAX_SHIFT_MINUTES, MINUTES_PER_DAY
-from snowlight.schemas.vocab import REASON_BY_LABEL, STATUS_BY_KIND
+from snowlight.schemas.vocab import REASON_BY_LABEL, SHIFTED, STATUS_BY_KIND, Status
 
 type Verdict = Literal["claim", "open", "dissent", "stand"]
 SATURDAY: Final = 5
@@ -574,5 +579,137 @@ def _provenance(
             "contributing": contributing,
             "announced_by": None if announced_by is None else announced_by.result.row.key.hex(),
             "sources": len({item.source_id for item in top}),
+        }
+    )
+
+
+ADMIN_SOURCE: Final = "snowlight-admin"
+"""The source id of every status the admin set (provenance only; never published)."""
+ADMIN_TYPE: Final = SourceType.ADMIN.value
+ADMIN_VERSION: Final = "admin-1"
+
+
+@dataclass(frozen=True, slots=True)
+class AdminStatus:
+    """A status the site's admin set by hand for one school on one local day.
+
+    ``status`` ``None`` is "open": the school runs as normal that day, whatever a list says.
+    """
+
+    school: int
+    nces_id: str
+    day: date
+    status: Status | None
+    shift_minutes: int | None
+    clock_minute: int | None
+    set_at: datetime
+    """When the admin set it: the "Posted" time."""
+    level: Literal["school", "district"]
+    """Whether it was set for the school itself or for its whole district."""
+    key: str
+    """The override's own id (a digest of its scope, target and time; no words)."""
+
+    def __post_init__(self) -> None:
+        if self.status not in SHIFTED and (
+            self.shift_minutes is not None or self.clock_minute is not None
+        ):
+            raise ValueError("only a delay or an early dismissal has times")
+
+
+def with_overrides(merged: Merged, admin: Sequence[AdminStatus], generated_at: datetime) -> Merged:
+    """``merged`` with the admin's statuses on top (rule 7): each replaces the lists'
+    status and open statement for its school and day; an admin "open" leaves no status and
+    stands as an open statement. Two admin statuses for one school and day: the school's
+    own beats its district's, then the later one wins.
+
+    Raises:
+        ValueError: an admin status was set after ``generated_at``.
+    """
+    chosen: dict[tuple[int, date], AdminStatus] = {}
+    for status in sorted(
+        admin, key=lambda found: (found.level == "school", found.set_at, found.key)
+    ):
+        if status.set_at > generated_at:
+            raise ValueError("an admin status was set after the file's generated_at")
+        chosen[(status.school, status.day)] = status
+    if not chosen:
+        return merged
+    kept = [
+        (closing, line)
+        for closing, line in zip(merged.closings, merged.provenance, strict=True)
+        if (closing.school, closing.day) not in chosen
+    ]
+    replaced = len(merged.closings) - len(kept)
+    opens = [signal for signal in merged.opens if (signal.school, signal.day) not in chosen]
+    for (school, day), status in sorted(chosen.items()):
+        if status.status is None:
+            opens.append(
+                OpenSignal(
+                    school=school,
+                    nces_id=status.nces_id,
+                    day=day,
+                    at=status.set_at,
+                    source_id=ADMIN_SOURCE,
+                    source_type=ADMIN_TYPE,
+                    confidence=1.0,
+                )
+            )
+            continue
+        closing = Closing(
+            school=school,
+            day=day,
+            status=status.status,
+            announced_at=status.set_at,
+            reason=None,
+            shift_minutes=status.shift_minutes,
+            clock_minute=status.clock_minute,
+            manual=True,
+        )
+        kept.append((closing, _admin_provenance(closing, status, generated_at)))
+    kept.sort(key=lambda pair: (pair[0].school, pair[0].day))
+    opens.sort(key=lambda signal: (signal.school, signal.day))
+    counts = Counter(merged.counts)
+    counts["admin"] = sum(1 for status in chosen.values() if status.status is not None)
+    counts["admin_open"] = len(chosen) - counts["admin"]
+    counts["overridden"] = replaced
+    counts["closings"] = len(kept)
+    counts["opens"] = len(opens)
+    return replace(
+        merged,
+        closings=tuple(closing for closing, _ in kept),
+        opens=tuple(opens),
+        provenance=tuple(line for _, line in kept),
+        counts=dict(counts),
+    )
+
+
+def _admin_provenance(
+    closing: Closing, status: AdminStatus, generated_at: datetime
+) -> dict[str, JSONValue]:
+    return provenance_line(
+        {
+            "nces_id": status.nces_id,
+            "school": closing.school,
+            "day": closing.day.isoformat(),
+            "status": int(closing.status),
+            "reason": None,
+            "source_type": ADMIN_TYPE,
+            "source_id": ADMIN_SOURCE,
+            "row_key": status.key,
+            "lo": None,
+            "hi": _iso(status.set_at),
+            "row_stamp": None,
+            "f5_confidence": None,
+            "f5_notes": [],
+            "match_reason": ADMIN_TYPE,
+            "match_level": status.level,
+            "target_level": status.level,
+            "match_confidence": 1.0,
+            "derived_version": ADMIN_VERSION,
+            "generated_at": _iso(generated_at),
+            "present": True,
+            "contributing": [[ADMIN_SOURCE, ADMIN_TYPE, status.key]],
+            "announced_by": status.key,
+            "sources": 1,
         }
     )

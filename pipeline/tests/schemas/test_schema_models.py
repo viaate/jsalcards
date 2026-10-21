@@ -135,13 +135,30 @@ def test_closings_example_decodes_to_its_rows() -> None:
         Closing(2, today, Status.DELAYED, None, None),
         Closing(3, today, Status.REMOTE, at(1, 15), Reason.EXTREME_COLD),
         Closing(5, today, Status.EARLY_DISMISSAL, at(13, 0), Reason.SEVERE_STORMS, 180, 750),
-        Closing(0, tomorrow, Status.CLOSED, at(12, 50), Reason.WINTER_STORM),
+        Closing(0, tomorrow, Status.CLOSED, at(12, 50), Reason.WINTER_STORM, manual=True),
         Closing(4, tomorrow, Status.CLOSED, at(12, 58), None),
     ]
     assert [group.schools() for group in document.days] == [(0, 1, 2, 3, 5), (0, 4)]
     assert [group.last_school() for group in document.days] == [5, 4]
     again = ClosingsFile.encode(document.closings(), generated_at=GENERATED, directory=STAMP)
     assert again == document
+
+
+def test_a_closings_file_written_before_the_manual_column_reads_as_none_manual() -> None:
+    value = example("closings")
+    for group in value["days"]:
+        del group["manual"]
+    document = _parse(ClosingsFile, value)
+    assert not any(row.manual for row in document.closings())
+    # and it is written with the column from then on
+    assert all('"manual":[]' in group.model_dump_json() for group in document.days)
+
+
+def test_manual_rows_are_ascending_positions_of_the_days_rows() -> None:
+    for bad in ([5], [1, 0], [0, 0], [-1], ["0"]):
+        value = example("closings")
+        value["days"][1]["manual"] = bad
+        _refused(ClosingsFile, value, "manual")
 
 
 def test_the_documented_day_group_reads_as_documented() -> None:

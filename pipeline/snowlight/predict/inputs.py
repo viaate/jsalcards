@@ -91,6 +91,18 @@ def read_deployed(
     Raises:
         DarkError: it cannot be known for certain.
     """
+    return read_deployed_meta(site, repository, token)[0]
+
+
+def read_deployed_meta(
+    site: str, repository: str, token: str | None
+) -> tuple[DeployedDirectory, SchoolDirectoryMeta]:  # pragma: no cover - the live site
+    """The directory the site serves now and its ``meta.json`` (the school ids), as
+    :func:`read_deployed` reads them.
+
+    Raises:
+        DarkError: it cannot be known for certain.
+    """
     api_headers = {"Accept": "application/vnd.github+json", "X-GitHub-Api-Version": "2022-11-28"}
     if token:
         api_headers["Authorization"] = f"Bearer {token}"
@@ -115,7 +127,7 @@ def read_deployed(
             files = reader.page_directory(None, datetime.now(UTC) + EDITION_WAIT)
         except (DeployedEditionError, httpx.HTTPError, ValueError) as error:
             raise DarkError(Dark.EDITION, type(error).__name__) from error
-    return directory_from_files(edition, files.meta, files.points)[0]
+    return directory_from_files(edition, files.meta, files.points)
 
 
 def read_local(folder: Path) -> DeployedDirectory:

@@ -449,15 +449,38 @@ def test_github_unchanged_files_make_no_commit() -> None:
 def test_github_never_overwrites_a_second_writer() -> None:
     repo = Repo()
     publisher = _github(repo)
+    moves = iter(range(100))
 
     def other_writer() -> None:
-        repo.head = repo._sha("someone else")
+        repo.head = repo._sha(f"someone else {next(moves)}")
         repo.commits[repo.head] = next(iter(repo.trees))
 
     repo.race = other_writer
     with pytest.raises(PublishError, match="another writer"):
         publisher.write({"v1/live/closings.json": b'{"a":1}'})
-    assert repo.head == repo._sha("someone else")
+    assert repo.head == repo._sha(f"someone else {publisher.attempts - 1}")
+    assert repo.calls.count("PATCH git/refs/heads/main") == publisher.attempts
+
+
+def test_github_builds_again_on_the_other_writers_commit_and_keeps_its_files() -> None:
+    """predict.yml and live-ingest.yml both commit to the live repository: a commit that
+    lost the race is built again on the new head, with the other writer's files kept."""
+    repo = Repo()
+    publisher = _github(repo)
+    publisher.write({"v1/predictions/latest.json": b'{"p":1}'})
+    other = _github(repo)
+
+    def predictions_land() -> None:
+        repo.race = None
+        other.write({"v1/predictions/latest.json": b'{"p":2}'})
+
+    repo.race = predictions_land
+    publisher.write({"v1/live/closings.json": b'{"a":1}'})
+    assert repo.tree() == {
+        "v1/predictions/latest.json": b'{"p":2}',
+        "v1/live/closings.json": b'{"a":1}',
+    }
+    assert repo.calls.count("PATCH git/refs/heads/main") == 4  # 1 + the other's + 2 of this one
 
 
 def test_github_refuses_bad_keys_before_any_call() -> None:

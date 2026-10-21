@@ -98,10 +98,19 @@ The admin view has four parts:
 - **Statuses**: find a school or district (by name, or by typing its NCES id),
   see what the map shows for it now, and set **Closed**, **Delayed** (minutes),
   **Early dismissal** (time) or **Open**, for the whole district or that one
-  school. It ends at the end of that school's day today (or tomorrow, if you
-  pick that). Each manual status shows **Waiting to publish** until the map
-  shows it, then **On the map**. **Clear** removes one. A note you add is seen
-  only by admins.
+  school, and pick its days in that school's own time zone: **Today**,
+  **Tomorrow** or **Today and tomorrow**, each with its dates (Today until 3 PM
+  there, then Tomorrow). The dates you see are the dates saved: if the school's
+  midnight passes while the form is open, the choices move on, and a day that
+  is over asks you to pick again. If the school's time zone cannot be read (the
+  chances file is missing or for another directory), the form says so and sets
+  nothing. Saving again replaces the status, days and all, so a day you leave
+  out comes off the map. Each status lists its days, each showing **Waiting to
+  publish** until the closings file carries exactly that status at every school
+  it covers, then **On the map**; a district status whose every school has a
+  school status of its own that day shows **Each school has its own status**.
+  **Clear** removes one. A note you add is seen only by admins. On the
+  map, a status you set says "Confirmed by our team" in the school's panel.
 - **Users**: find people by name or email; see when they joined and last
   logged in and how many schools they saved; reset a password (the page makes
   a temporary password and shows it to you once, for you to pass on); disable,

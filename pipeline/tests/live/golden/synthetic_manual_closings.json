@@ -1,0 +1,40 @@
+{
+  "days": [
+    {
+      "announced": [
+        10,
+        10
+      ],
+      "clocks": [
+        null
+      ],
+      "day": "2026-01-12",
+      "gaps": [
+        0,
+        0
+      ],
+      "manual": [
+        0,
+        1
+      ],
+      "reasons": [
+        null,
+        null
+      ],
+      "shifts": [
+        120
+      ],
+      "statuses": [
+        0,
+        1
+      ]
+    }
+  ],
+  "directory": {
+    "districts": 1,
+    "generated_on": "2026-09-25",
+    "schools": 4
+  },
+  "generated_at": "2026-01-12T12:50:00Z",
+  "schema_version": 1
+}

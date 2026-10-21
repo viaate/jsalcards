@@ -27,6 +27,8 @@ class SourceType(StrEnum):
     COUNTY_OFFICE = "county_office"
     DISTRICT_SITE = "district_site"
     """Reserved: a district's own site or banner; its rows are not read in S8."""
+    ADMIN = "admin"
+    """The site's admin, by hand (accounts spec C): no registry platform has it."""
 
 
 _BROADCASTERS: Final = (
