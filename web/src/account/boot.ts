@@ -47,12 +47,55 @@ export async function startAccounts(
   services: Promise<Services | null>,
   signal: AbortSignal,
 ): Promise<Accounts | null> {
-  const store = createAccountStore(createApi(root));
+  const api = createApi(root);
+  // Notifications (account/notify.ts), loaded only when this browser has allowed them.
+  const notify = () => import('./notify');
+  const allowed = (): boolean =>
+    typeof Notification !== 'undefined' && Notification.permission === 'granted';
+  const store = createAccountStore(api, {
+    // Logging out stops this browser's notifications for the account.
+    onLogout: async (held) => {
+      if (allowed())
+        await (
+          await notify()
+        )
+          .createNotifyClient(
+            api,
+            () => held,
+            () => null,
+          )
+          .turnOff();
+    },
+    onDeleted: async () => {
+      if (allowed()) await (await notify()).dropLocal();
+    },
+  });
   const [, control] = await Promise.all([
     store.start(),
     import('../ui/account/AccountControl.svelte'),
   ]);
   if (signal.aborted || !store.state.available) return null;
+  // After a sign-in, a browser's notifications come back only for the account that turned
+  // them on here; another account's sign-in turns them off (account/notify.ts follow).
+  let following: string | null = null;
+  const stopFollowing = store.subscribe((state) => {
+    const id = state.user?.id ?? null;
+    if (id === following) return;
+    following = id;
+    if (id === null || !allowed()) return;
+    void notify()
+      .then((m) =>
+        m
+          .createNotifyClient(
+            api,
+            () => store.token(),
+            () => store.state.user?.id ?? null,
+          )
+          .follow(),
+      )
+      .catch(() => undefined);
+  });
+  signal.addEventListener('abort', stopFollowing, { once: true });
   void services.then((app) => {
     if (app === null || signal.aborted) return;
     const stop = syncPins({ account: store, pins: app.pins, nameOf: (id) => nameVia(app, id) });

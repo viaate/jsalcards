@@ -11,6 +11,7 @@ import { dataFiles } from './tools/data-files.ts';
 import { htmlCopy, pageCopy } from './tools/html-copy.ts';
 import { copyFormatUrl, maplibreUrl, urlStoreUrl } from './tools/chunk-url.ts';
 import { accounts } from './tools/accounts.ts';
+import { pushWorker } from './tools/push-worker.ts';
 import { usMask } from './tools/us-mask.ts';
 import { schoolNames } from './tools/school-names.ts';
 import { waitlist, waitlistPost, waitlistSettings } from './tools/waitlist.ts';
@@ -65,7 +66,8 @@ export default defineConfig(({ mode }) => {
       // The code the page runs as it starts, compiled as it downloads, off the main thread.
       compileHints(EAGER_CHUNKS),
       // Service worker and manifest links; the page registers the worker after load (src/pwa).
-      isVitest ? [] : [VitePWA(pwaOptions()), pwaHead()],
+      // The notifications' part of the worker, written beside it (tools/push-worker.ts).
+      isVitest ? [] : [VitePWA(pwaOptions()), pwaHead(), pushWorker(import.meta.dirname)],
     ],
     // Component tests mount into jsdom, so they need Svelte's browser build.
     resolve: isVitest ? { conditions: ['browser', ...defaultClientConditions] } : {},

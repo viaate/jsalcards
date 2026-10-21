@@ -87,6 +87,7 @@ export const COPY_MODULES = [
   'src/copy-chance.ts',
   'src/copy-area.ts',
   'src/copy-account.ts',
+  'src/copy-notify.ts',
   'src/copy-waitlist.ts',
 ];
 
@@ -149,6 +150,10 @@ export const PROPER_NOUNS = new Set([
   'US',
   // The email service that keeps the waitlist (src/copy-waitlist.ts).
   'Kit',
+  // Where notifications need the site on the home screen first (src/copy-notify.ts).
+  'iPhone',
+  'iPad',
+  'Safari',
   'ZIP',
   'AM',
   'PM',

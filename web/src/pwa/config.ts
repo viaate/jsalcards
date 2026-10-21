@@ -150,6 +150,17 @@ export const RETIRED_CACHES: readonly string[] = Object.freeze(['snowlight-tiles
 /** The script the worker imports that deletes RETIRED_CACHES (pwaHead writes it). */
 export const RETIRE_FILE = 'sw-retire.js';
 
+/**
+ * The script the worker imports that shows notifications and opens a tapped
+ * one's school (src/pwa/push.ts, docs/notify.md), bundled by
+ * tools/push-worker.ts. It is precached too, so its revision is in the worker
+ * and a new version of it updates the worker.
+ */
+export const PUSH_FILE = 'sw-push.js';
+
+/** The icon a notification shows, under the site base. */
+export const NOTIFY_ICON = 'icons/icon-192.png';
+
 /** The source of RETIRE_FILE: on the worker's activate, it deletes `names`. */
 export function retireCachesScript(names: readonly string[] = RETIRED_CACHES): string {
   return `// Deletes the caches earlier builds kept that this one does not (src/pwa/config.ts).
@@ -177,6 +188,7 @@ export const PRECACHE_GLOBS: readonly string[] = Object.freeze([
   'assets/*.{js,css}',
   'assets/geist-*latin*.woff2',
   'geo/*.json',
+  PUSH_FILE,
 ]);
 
 /** Paths under data/ served cache-first: the directory, the search index, finished replays. */
@@ -471,7 +483,8 @@ export function workboxOptions(base: string, liveRoot: string | null = null): Wo
     inlineWorkboxRuntime: true,
     disableDevLogs: true,
     // Deletes the caches earlier builds kept (RETIRED_CACHES), as this worker takes over.
-    importScripts: [RETIRE_FILE],
+    // The notifications (PUSH_FILE): shown in the site's words, a tap opens the school.
+    importScripts: [RETIRE_FILE, PUSH_FILE],
     cleanupOutdatedCaches: true,
     // The first worker takes the open page at once, so this visit's data is cached for offline.
     clientsClaim: true,

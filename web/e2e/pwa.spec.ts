@@ -44,7 +44,7 @@ import { build } from 'vite';
 import { copy } from '../src/copy';
 import { format } from '../src/copy-format';
 import { hashedOnStaging, hashedPath } from '../src/data/paths';
-import { CACHE_NAMES, MANIFEST_FILE, SW_FILE } from '../src/pwa/config';
+import { CACHE_NAMES, MANIFEST_FILE, PUSH_FILE, SW_FILE } from '../src/pwa/config';
 
 const WEB = fileURLToPath(new URL('..', import.meta.url));
 const ZONE = 'America/Chicago';
@@ -431,6 +431,9 @@ function precacheList(siteRoot: string): string[] {
  */
 function isShellFile(file: string): boolean {
   if (file === 'index.html' || file === 'favicon.svg' || file === MANIFEST_FILE) return true;
+  // The notifications' part of the worker (src/pwa/push.ts): precached so its revision is in the
+  // worker, which a new version of it then updates.
+  if (file === PUSH_FILE) return true;
   if (/^assets\/[^/]+\.(?:js|css)$/.test(file)) return true;
   if (/^assets\/[^/]+\.woff2$/.test(file)) return /-latin(?:-ext)?-/.test(file);
   return /^geo\/[^/]+\.json$/.test(file);

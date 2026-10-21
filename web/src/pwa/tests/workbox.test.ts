@@ -11,6 +11,7 @@ import {
   LIVE_ROOT_ENV,
   LIVE_TIMEOUT_SECONDS,
   RETIRED_CACHES,
+  PUSH_FILE,
   RETIRE_FILE,
   isRangeRequest,
   keepNewerClosings,
@@ -163,7 +164,7 @@ describe('workboxOptions', () => {
   it('deletes the tile cache an earlier build kept, as its worker takes over', async () => {
     expect(RETIRED_CACHES).toContain('snowlight-tiles-v1');
     expect(Object.values(CACHE_NAMES)).not.toContain('snowlight-tiles-v1');
-    expect(workboxOptions('/').importScripts).toEqual([RETIRE_FILE]);
+    expect(workboxOptions('/').importScripts).toEqual([RETIRE_FILE, PUSH_FILE]);
     const listeners: ((event: { waitUntil(done: Promise<unknown>): void }) => void)[] = [];
     const deleted: string[] = [];
     runInNewContext(retireCachesScript(), {

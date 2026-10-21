@@ -85,6 +85,16 @@ class StubApi {
   bodies: string[] = [];
   /** Every admin rename's body. */
   renames: Record<string, unknown>[] = [];
+  /** The account's notification settings (src/account/notify.ts), as the Worker keeps them. */
+  notify: Record<string, unknown> = {
+    status: true,
+    chance: true,
+    threshold: 50,
+    night_before: false,
+    night_time: '20:00',
+    quiet_from: '22:00',
+    quiet_to: '05:00',
+  };
 
   async attach(page: Page): Promise<void> {
     await page.route(`${ACCOUNTS_API}/**`, (route) => this.answer(route));
@@ -213,6 +223,10 @@ class StubApi {
       return reply(200, this.signIn(me));
     }
     if (path === '/v1/me') return reply(200, { user: this.publicUser(me) });
+    if (path === '/v1/me/notify') {
+      this.notify = { ...this.notify, ...(request.method() === 'PATCH' ? body : {}) };
+      return reply(200, { settings: this.notify, devices: 0 });
+    }
     if (path === '/v1/me/username') {
       if (this.users.some((u) => u.username === body.username && u !== me))
         return reply(409, { error: 'username_taken' });
@@ -427,6 +441,75 @@ test.describe('accounts', () => {
     await expect(page.getByRole('button', { name: 'Account menu for Jo' })).toBeVisible();
     await page.waitForTimeout(500);
     await expect(page.getByRole('heading', { name: 'Admin' })).toHaveCount(0);
+  });
+
+  test('settings offer notifications from a button, never on load, and iPhone Safari gets the guide', async ({
+    browser,
+  }) => {
+    const api = new StubApi();
+    const jo = await stubUser({
+      id: 'u7',
+      name: 'Jo',
+      email: 'jo@example.com',
+      username: 'jo_snow',
+    });
+    api.users.push(jo);
+    const token = jo.id.padEnd(43, 'x');
+    api.sessions.set(token, jo.id);
+    const signedIn = (userAgent?: string) =>
+      browser.newContext({
+        baseURL: ACCOUNTS_URL,
+        serviceWorkers: 'block',
+        ...(userAgent === undefined ? {} : { userAgent }),
+      });
+    for (const [userAgent, guide] of [
+      [undefined, false],
+      [
+        'Mozilla/5.0 (iPhone; CPU iPhone OS 18_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/18.0 Mobile/15E148 Safari/604.1',
+        true,
+      ],
+    ] as const) {
+      const context = await signedIn(userAgent);
+      await context.addInitScript((held) => {
+        localStorage.setItem('snowlight:session', held);
+        const counted = window as unknown as { asked: number };
+        counted.asked = 0;
+        if (typeof Notification !== 'undefined') {
+          // Headless Chromium answers "denied" without asking; a browser that was never asked
+          // says "default". Every call that would ask the person is counted.
+          Object.defineProperty(Notification, 'permission', {
+            configurable: true,
+            get: () => 'default',
+          });
+          Notification.requestPermission = () => {
+            counted.asked += 1;
+            return Promise.resolve('granted');
+          };
+        }
+      }, token);
+      const page = await context.newPage();
+      const asked: string[] = [];
+      page.on('request', (request) => {
+        if (request.url().includes('/v1/me/push')) asked.push(request.url());
+      });
+      await openPage(page, api);
+      await page.getByRole('button', { name: 'Account menu for Jo' }).click();
+      await page.getByRole('menuitem', { name: 'Settings' }).click();
+      const sheet = page.getByRole('dialog');
+      await expect(sheet.getByRole('heading', { name: 'Notifications' })).toBeVisible();
+      if (guide) {
+        await expect(
+          sheet.getByText('On iPhone, add Snowlight to your home screen first'),
+        ).toBeVisible();
+        await expect(sheet.getByRole('button', { name: 'Turn on notifications' })).toHaveCount(0);
+      } else {
+        await expect(sheet.getByRole('button', { name: 'Turn on notifications' })).toBeVisible();
+        // Nothing asked the person for permission on the way here.
+        expect(await page.evaluate(() => (window as unknown as { asked: number }).asked)).toBe(0);
+      }
+      expect(asked).toEqual([]);
+      await context.close();
+    }
   });
 
   test('check a username as it is typed, here and then with the API', async ({ page }) => {

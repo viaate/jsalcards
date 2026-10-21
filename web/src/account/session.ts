@@ -92,6 +92,8 @@ export interface AccountStore {
   update(change: ProfileChange): Promise<void>;
   deleteAccount(password: string): Promise<void>;
   setSchools(schools: readonly SavedSchool[]): Promise<void>;
+  /** Hears each school the account saves (not ones it had), after it is saved. */
+  onSchoolAdded(listener: (school: SavedSchool) => void): () => void;
   /** A call came back signed out: the session is gone. */
   signedOut(): void;
 }
@@ -134,6 +136,13 @@ export interface AccountOptions {
   readonly derive?: (salt: string, password: string) => Promise<string>;
   /** A fresh random salt (key.ts randomSalt). */
   readonly salt?: () => string;
+  /**
+   * Runs as the account logs out on this device, with the session it is ending, before the
+   * API ends it (this browser's notifications stop: account/notify.ts). Its errors are ignored.
+   */
+  readonly onLogout?: (token: string) => Promise<void>;
+  /** Runs once the account is deleted (this browser drops its notification subscription). */
+  readonly onDeleted?: () => Promise<void>;
 }
 
 /**
@@ -152,6 +161,7 @@ export function createAccountStore(api: Api, options: AccountOptions = {}): Acco
   const derive = options.derive ?? deriveWithSalt;
   const newSalt = options.salt ?? randomSalt;
   const listeners = new Set<AccountListener>();
+  const added = new Set<(school: SavedSchool) => void>();
   let token = readToken();
   let state: AccountState = { available: false, ready: false, user: null };
 
@@ -317,6 +327,7 @@ export function createAccountStore(api: Api, options: AccountOptions = {}): Acco
       const held = token;
       clear();
       if (held === null) return;
+      await options.onLogout?.(held).catch(() => undefined);
       try {
         await api.call('POST', '/v1/logout', undefined, held);
       } catch {
@@ -360,13 +371,21 @@ export function createAccountStore(api: Api, options: AccountOptions = {}): Acco
       const key = await currentKey(password);
       await authed('DELETE', '/v1/me', { key });
       clear();
+      await options.onDeleted?.().catch(() => undefined);
     },
     async setSchools(schools) {
       if (state.user === null) return;
+      const before = new Set(state.user.schools.map((school) => school.id));
       const { user } = await authed<{ user: User }>('PUT', '/v1/me/schools', {
         schools: schools.slice(0, MAX_SCHOOLS),
       });
       set({ user });
+      for (const school of user.schools)
+        if (!before.has(school.id)) for (const listener of [...added]) listener(school);
+    },
+    onSchoolAdded(listener) {
+      added.add(listener);
+      return () => added.delete(listener);
     },
     signedOut: clear,
   };

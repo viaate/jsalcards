@@ -6,6 +6,7 @@
   import type { AccountState, AccountStore, SheetView } from '../../account/session';
   import { accountCopy, accountFormat, type AccountErrorCode } from '../../copy-account';
   import { followKeyboard } from './keyboard';
+  import NotifySettings from './NotifySettings.svelte';
   import UsernameField from './UsernameField.svelte';
   import UserTag from './UserTag.svelte';
 
@@ -423,6 +424,7 @@
       </form>
     {/if}
     {#if error !== null}<p class="error" role="alert">{accountCopy.errors[error]}</p>{/if}
+    <NotifySettings {store} schools={user.schools.length} />
     <p class="note">{accountCopy.settings.privacy}</p>
     {#if user.role !== 'admin'}
       <form class="danger" onsubmit={deleteAccount}>

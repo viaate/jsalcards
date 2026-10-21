@@ -7,6 +7,7 @@ import { afterAll, describe, expect, it } from 'vitest';
 import { copy, mapLocale, REASON_KEYS, shellFormat, STATUS_KEYS } from './copy';
 import type { AlertLevelKey, HazardKey, StatusKey } from './copy';
 import { accountCopy, accountFormat, adminCopy } from './copy-account';
+import { notifyCopy, notifyFormat } from './copy-notify';
 import { areaFormat } from './copy-area';
 import { chanceCopy, chanceFormat } from './copy-chance';
 import type { BaseInput, ReasonInput, Zones } from './copy-chance';
@@ -1770,6 +1771,51 @@ describe('account copy (src/copy-account.ts)', () => {
   });
 });
 
+describe('notification copy (src/copy-notify.ts)', () => {
+  const zone = 'America/Chicago';
+  const morning = new Date('2027-01-12T13:05:00Z'); // 07:05 on Tue Jan 12 in Chicago
+
+  it('keeps the house style and is frozen', () => {
+    expect(Object.isFrozen(notifyCopy)).toBe(true);
+    expect(Object.isFrozen(notifyFormat)).toBe(true);
+    expect(allProblems(copyLeaves(notifyCopy).map(([, text]) => text))).toEqual([]);
+  });
+
+  it('words every notification in the house style', () => {
+    const shown = [
+      notifyFormat.statusBody('closed', '2027-01-12', zone, morning, null, null),
+      notifyFormat.statusBody('delayed', '2027-01-13', zone, morning, 120, 600),
+      notifyFormat.statusBody('remote', '2027-01-11', zone, morning, null, null),
+      notifyFormat.statusBody('early_dismissal', '2027-01-12', zone, morning, 180, 750),
+      notifyFormat.openBody('2027-01-12', zone, morning),
+      notifyFormat.openBody('2027-01-13', zone, morning),
+      notifyFormat.devices(1),
+      notifyFormat.devices(3),
+      notifyFormat.chanceBody(62, false, '2027-01-13', zone, morning),
+      notifyFormat.chanceBody(82, true, '2027-01-13', zone, morning),
+      notifyFormat.nightBody(35, '2027-01-13', zone, morning),
+      notifyFormat.threshold(30),
+      notifyFormat.hour('20:30'),
+      notifyFormat.offer('lincoln high'),
+    ];
+    expect(shown.slice(0, 3)).toEqual([
+      'Closed today (Tue, Jan 12)',
+      'Delayed start tomorrow (Wed, Jan 13) · 2-hour delay · Starts at 10:00\u00a0AM',
+      'Remote learning Mon, Jan 11',
+    ]);
+    expect(notifyFormat.hour('20:30')).toBe('8:30\u00a0PM');
+    expect(notifyFormat.openBody('2027-01-13', zone, morning)).toBe('Open tomorrow (Wed, Jan 13)');
+    expect([notifyFormat.devices(1), notifyFormat.devices(3)]).toEqual([
+      'On 1 device',
+      'On 3 devices',
+    ]);
+    expect(() =>
+      notifyFormat.statusBody('snowed_in', '2027-01-12', zone, morning, null, null),
+    ).toThrow(RangeError);
+    expect(allProblems(shown)).toEqual([]);
+  });
+});
+
 describe('check-copy lint', () => {
   const roots: string[] = [];
   afterAll(() => {
@@ -3047,13 +3093,15 @@ ${aliases}
     const { findings, scanned } = await lintProject({ root: WEB_ROOT });
     expect(findings).toEqual([]);
     // copy.ts's strings, the chance section's fixed words (src/copy-chance.ts), the waitlist's
-    // (src/copy-waitlist.ts) and the account controls' and admin view's (src/copy-account.ts).
+    // (src/copy-waitlist.ts), the account controls' and admin view's (src/copy-account.ts) and
+    // the notifications' (src/copy-notify.ts).
     expect(scanned.strings).toBe(
       strings.length +
         copyLeaves(chanceCopy).length +
         copyLeaves(waitlistCopy).length +
         copyLeaves(accountCopy).length +
-        copyLeaves(adminCopy).length,
+        copyLeaves(adminCopy).length +
+        copyLeaves(notifyCopy).length,
     );
     expect(scanned.svelte).toBeGreaterThan(0);
     // The whole site read as one program: about 37 s of one core with the chance section (50 s

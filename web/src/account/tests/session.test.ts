@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { ApiError, type Api } from '../api';
 import { loginSalt } from '../key';
@@ -230,5 +230,58 @@ describe('the account store', () => {
     await store.login('sam@example.com', 'pw');
     await expect(store.setSchools([])).rejects.toBeInstanceOf(ApiError);
     expect(store.state.user).toBeNull();
+  });
+});
+
+describe('notifications around the session (account/notify.ts)', () => {
+  it('ends this browser’s notifications with the session it is ending, before the API ends it', async () => {
+    const order: string[] = [];
+    const api = fakeApi((c) => {
+      order.push(c.path);
+      return c.path === '/v1/login' ? { token: TOKEN, user: user() } : {};
+    });
+    const store = createAccountStore(api, {
+      ...opts(),
+      onLogout: (held) => {
+        order.push(`notify off with ${held === TOKEN ? 'the session' : 'another'}`);
+        return Promise.reject(new Error('offline'));
+      },
+    });
+    await store.login('sam@example.com', 'pw');
+    await store.logout();
+    expect(order.slice(-2)).toEqual(['notify off with the session', '/v1/logout']);
+    expect(store.state.user).toBeNull();
+  });
+
+  it('drops this browser’s subscription once the account is deleted', async () => {
+    const dropped = vi.fn(() => Promise.resolve());
+    const api = fakeApi((c) => (c.path === '/v1/login' ? { token: TOKEN, user: user() } : {}));
+    const store = createAccountStore(api, { ...opts(), onDeleted: dropped });
+    await store.login('sam@example.com', 'pw');
+    await store.deleteAccount('pw');
+    expect(dropped).toHaveBeenCalledTimes(1);
+  });
+
+  it('tells who listens of each school the account saves, never one it had', async () => {
+    const lincoln = { id: '170000000001', name: 'Lincoln High' };
+    const pine = { id: '170000000002', name: 'Pine' };
+    let saved = [lincoln];
+    const api = fakeApi((c) => {
+      if (c.path === '/v1/login') return { token: TOKEN, user: user({ schools: saved }) };
+      if (c.path === '/v1/me/schools') {
+        saved = (c.body as { schools: typeof saved }).schools;
+        return { user: user({ schools: saved }) };
+      }
+      return {};
+    });
+    const store = createAccountStore(api, opts());
+    const heard: string[] = [];
+    const stop = store.onSchoolAdded((school) => heard.push(school.name));
+    await store.login('sam@example.com', 'pw');
+    await store.setSchools([pine, lincoln]);
+    await store.setSchools([pine]);
+    stop();
+    await store.setSchools([pine, lincoln]);
+    expect(heard).toEqual(['Pine']);
   });
 });

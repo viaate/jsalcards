@@ -1,7 +1,8 @@
 <script lang="ts">
-  import { onMount } from 'svelte';
+  import { onMount, type Component } from 'svelte';
 
   import { accountCopy, accountFormat } from '../../copy-account';
+  import type { NotifyClient } from '../../account/notify';
   import type { AccountState, AccountStore, SheetView } from '../../account/session';
   import UserTag from './UserTag.svelte';
 
@@ -21,7 +22,60 @@
   let button = $state<HTMLButtonElement>();
   let menu = $state<HTMLElement>();
 
-  onMount(() => store.subscribe((next) => (account = next)));
+  /** The offer to turn notifications on, after a school is saved (NotifyOffer.svelte). */
+  const DISMISSED_KEY = 'snowlight:notify-offer';
+  let offer = $state<{
+    school: string;
+    client: NotifyClient;
+    Offer: Component<{ school: string; client: NotifyClient; onclose: (later: boolean) => void }>;
+  } | null>(null);
+
+  function dismissed(): boolean {
+    try {
+      return window.localStorage.getItem(DISMISSED_KEY) !== null;
+    } catch {
+      return false;
+    }
+  }
+
+  /** Offers notifications once a school is saved, when this browser can show them and was never asked. */
+  async function maybeOffer(school: string): Promise<void> {
+    if (offer !== null || dismissed()) return;
+    if (typeof Notification === 'undefined' || Notification.permission !== 'default') return;
+    const [notify, component] = await Promise.all([
+      import('../../account/notify'),
+      import('./NotifyOffer.svelte'),
+    ]);
+    if (notify.support() !== 'supported') return;
+    const client = notify.createNotifyClient(
+      store.api,
+      () => store.token(),
+      () => store.state.user?.id ?? null,
+    );
+    if (await client.isOn()) return;
+    offer = { school, client, Offer: component.default };
+  }
+
+  function closeOffer(later: boolean): void {
+    offer = null;
+    if (!later) return;
+    try {
+      window.localStorage.setItem(DISMISSED_KEY, '1');
+    } catch {
+      // Private windows: asked again next time a school is saved.
+    }
+  }
+
+  onMount(() => {
+    const stop = store.subscribe((next) => (account = next));
+    const stopAdded = store.onSchoolAdded((school) => {
+      void maybeOffer(school.name).catch(() => undefined);
+    });
+    return () => {
+      stop();
+      stopAdded();
+    };
+  });
 
   const user = $derived(account.user);
   const first = $derived(user === null ? '' : accountFormat.firstName(user.name));
@@ -95,6 +149,9 @@
       <span class="label">{first}</span>
     {/if}
   </button>
+  {#if offer !== null && !open && user !== null}
+    <offer.Offer school={offer.school} client={offer.client} onclose={closeOffer} />
+  {/if}
   {#if open && user !== null}
     <div class="account-menu" role="menu" bind:this={menu}>
       {#if user.username !== null}
