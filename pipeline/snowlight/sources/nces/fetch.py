@@ -15,6 +15,14 @@ A pinned checksum that a fresh download does not match raises
 :class:`SourceChangedError` and leaves the cache untouched, so a silently revised
 upstream file can never slip into a build.
 
+A server can answer HTTP 200 with a web page in place of a file (nces.ed.gov does
+during scheduled maintenance). For an unpinned ``.zip`` URL, a body that does not
+start with the zip magic ``PK\x03\x04`` or comes as ``text/html`` raises
+:class:`SourceMissingError`, so a caller with older candidates falls back to them;
+the body is never cached, and a cached copy that is not a zip is not reused. A
+pinned URL needs no such check: its checksum already refuses any other body, with
+:class:`SourceChangedError`.
+
 TLS is always verified, against the CA bundle named by ``SSL_CERT_FILE`` when it
 is set.
 """
@@ -40,6 +48,7 @@ SIDECAR_SUFFIX = ".provenance.json"
 _CHUNK = 1 << 20
 _RETRYABLE_STATUS = frozenset({408, 425, 429, 500, 502, 503, 504})
 _MISSING_STATUS = frozenset({404, 410})
+_ZIP_MAGIC = b"PK\x03\x04"
 
 
 class DownloadError(RuntimeError):
@@ -47,7 +56,10 @@ class DownloadError(RuntimeError):
 
 
 class SourceMissingError(DownloadError):
-    """The server answered that the file does not exist (HTTP 404 or 410)."""
+    """The server answered that the file does not exist (HTTP 404 or 410).
+
+    Also raised when an unpinned zip URL answers with a web page instead of the file.
+    """
 
 
 class SourceChangedError(DownloadError):
@@ -127,6 +139,16 @@ def _sidecar(path: Path) -> Path:
     return path.with_name(path.name + SIDECAR_SUFFIX)
 
 
+def _wants_zip_check(url: str, expected_sha256: str | None) -> bool:
+    """True for an unpinned URL that names a ``.zip`` file."""
+    return expected_sha256 is None and urlsplit(url).path.lower().endswith(".zip")
+
+
+def _starts_as_zip(path: Path) -> bool:
+    with path.open("rb") as handle:
+        return handle.read(len(_ZIP_MAGIC)) == _ZIP_MAGIC
+
+
 class FileCache:
     """Downloads each URL once into ``root`` and serves verified copies afterwards."""
 
@@ -166,7 +188,9 @@ class FileCache:
             return None
         if expected_sha256 is not None and recorded != expected_sha256:
             return None
-        if sha256_file(path) != recorded:
+        if sha256_file(path) != recorded or (
+            _wants_zip_check(url, expected_sha256) and not _starts_as_zip(path)
+        ):
             return None
         etag, modified = meta.get("etag"), meta.get("last_modified")
         return Retrieved(
@@ -184,7 +208,8 @@ class FileCache:
         """Return the verified local copy of ``url``, downloading it when needed.
 
         Raises:
-            SourceMissingError: the server says the file does not exist.
+            SourceMissingError: the server says the file does not exist, or serves a
+                web page with HTTP 200 for an unpinned zip URL.
             SourceChangedError: the fresh bytes do not match ``expected_sha256``.
             RefusedError: the server refused the request (for example HTTP 403).
             DownloadError: the file could not be fetched intact after retries.
@@ -222,7 +247,11 @@ class FileCache:
                         raise DownloadError(message)
                     raise RefusedError(message)
                 declared = response.headers.get("Content-Length")
+                content_type = response.headers.get("Content-Type", "")
+                head = b""
                 for chunk in response.iter_bytes(_CHUNK):
+                    if len(head) < len(_ZIP_MAGIC):
+                        head = (head + chunk)[: len(_ZIP_MAGIC)]
                     handle.write(chunk)
                     digest.update(chunk)
                     size += len(chunk)
@@ -237,6 +266,14 @@ class FileCache:
                 raise SourceChangedError(
                     f"{url} changed upstream: SHA-256 {sha256}, config pins {expected_sha256}. "
                     "Review the new file, then update the pin in config/directory.yaml."
+                )
+            if _wants_zip_check(url, expected_sha256) and (
+                head != _ZIP_MAGIC or "html" in content_type.lower()
+            ):
+                shown = content_type or "no content type"
+                raise SourceMissingError(
+                    f"{url} served a web page, not the file; maintenance? "
+                    f"(HTTP 200, {shown}, {size} bytes)"
                 )
             tmp.chmod(0o644)
             tmp.replace(path)
