@@ -18,6 +18,13 @@ export type Scope = (typeof SCOPES)[number];
 
 export const MAX_SCHOOLS = 5;
 
+/** base64url of the 16 random bytes the browser salts a key with. */
+const CLIENT_SALT = /^[A-Za-z0-9_-]{22}$/;
+
+export function clientSalt(value: unknown): string | null {
+  return typeof value === 'string' && CLIENT_SALT.test(value) ? value : null;
+}
+
 export function key(value: unknown): string | null {
   return typeof value === 'string' && KEY.test(value) ? value : null;
 }

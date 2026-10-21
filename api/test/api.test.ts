@@ -1,4 +1,5 @@
 import assert from 'node:assert/strict';
+import { createHash } from 'node:crypto';
 import { readFileSync } from 'node:fs';
 import { after, before, describe, it } from 'node:test';
 import { addDays, endOfDay, localDate } from '../src/days.ts';
@@ -7,7 +8,8 @@ import { ADMIN_KEY, ORIGIN, fakeKey, startApi, type Api } from './harness.ts';
 let api: Api;
 let ipCounter = 0;
 /** A fresh client address, so one test's rate limit never touches another's. */
-const ip = () => `198.51.100.${++ipCounter}`;
+// Each call its own /24, so that the per-network sign-up limit is met only where a test means to.
+const ip = () => `198.51.${++ipCounter % 250}.7`;
 
 before(async () => {
   api = await startApi();
@@ -16,8 +18,28 @@ after(async () => {
   await api.close();
 });
 
+let userCounter = 0;
+/**
+ * What a sign-up sends besides the name and email: the email key (its client
+ * salt is the email's v1 salt), a username key with its own salt, and a username.
+ */
+function keys(email: string, key: string) {
+  const login = email.trim().toLowerCase();
+  const nameSalt = Buffer.alloc(16, ++userCounter % 256).toString('base64url');
+  return {
+    key,
+    email_salt: createHash('sha256').update(`snowlight-v1|${login}`).digest('base64url'),
+    name_key: fakeKey(`name|${login}`),
+    name_salt: nameSalt,
+    username: `snowfan_${userCounter}`,
+  };
+}
+
 async function signup(email: string, name = 'Sam Rivera', key = fakeKey(email)) {
-  return api.call('POST', '/v1/signup', { body: { name, email, key, over13: true }, ip: ip() });
+  return api.call('POST', '/v1/signup', {
+    body: { name, email, ...keys(email, key), over13: true },
+    ip: ip(),
+  });
 }
 
 async function adminToken(): Promise<string> {
@@ -114,7 +136,12 @@ describe('sign up and log in', () => {
 
   it('requires confirming 13 or older', async () => {
     const r = await api.call('POST', '/v1/signup', {
-      body: { name: 'Kid', email: 'kid@example.com', key: fakeKey('k'), over13: false },
+      body: {
+        name: 'Kid',
+        email: 'kid@example.com',
+        ...keys('kid@example.com', fakeKey('k')),
+        over13: false,
+      },
       ip: ip(),
     });
     assert.equal(r.status, 400);
@@ -122,7 +149,12 @@ describe('sign up and log in', () => {
   });
 
   it('checks name, email and key formats', async () => {
-    const base = { name: 'Ok', email: 'ok@example.com', key: fakeKey('ok'), over13: true };
+    const base = {
+      name: 'Ok',
+      email: 'ok@example.com',
+      ...keys('ok@example.com', fakeKey('ok')),
+      over13: true,
+    };
     for (const [field, value] of [
       ['name', ''],
       ['name', 'x'.repeat(41)],
@@ -200,13 +232,23 @@ describe('rate limits', () => {
     const address = ip();
     for (let i = 0; i < 5; i++) {
       const r = await api.call('POST', '/v1/signup', {
-        body: { name: 'N', email: `many${i}@example.com`, key: fakeKey(`m${i}`), over13: true },
+        body: {
+          name: 'N',
+          email: `many${i}@example.com`,
+          ...keys(`many${i}@example.com`, fakeKey(`m${i}`)),
+          over13: true,
+        },
         ip: address,
       });
       assert.equal(r.status, 201);
     }
     const sixth = await api.call('POST', '/v1/signup', {
-      body: { name: 'N', email: 'many5@example.com', key: fakeKey('m5'), over13: true },
+      body: {
+        name: 'N',
+        email: 'many5@example.com',
+        ...keys('many5@example.com', fakeKey('m5')),
+        over13: true,
+      },
       ip: address,
     });
     assert.equal(sixth.status, 429);
@@ -247,7 +289,12 @@ describe('rate limits', () => {
     const results = await Promise.all(
       Array.from({ length: 20 }, (_, i) =>
         api.call('POST', '/v1/signup', {
-          body: { name: 'N', email: `rush${i}@example.com`, key: fakeKey(`r${i}`), over13: true },
+          body: {
+            name: 'N',
+            email: `rush${i}@example.com`,
+            ...keys(`rush${i}@example.com`, fakeKey(`r${i}`)),
+            over13: true,
+          },
           ip: address,
         }),
       ),
@@ -529,7 +576,7 @@ describe('saved schools', () => {
 describe('the admin', () => {
   it('reserves the admin name: no account can sign up as it', async () => {
     const r = await api.call('POST', '/v1/signup', {
-      body: { name: 'Olivia', email: 'Olivia', key: fakeKey('x'), over13: true },
+      body: { name: 'Olivia', email: 'Olivia', ...keys('olivia', fakeKey('x')), over13: true },
       ip: ip(),
     });
     assert.equal(r.status, 400);

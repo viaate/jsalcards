@@ -29,6 +29,20 @@ export interface UserRow {
   disabled: number;
   created_at: number;
   last_login_at: number | null;
+  /** Migration 0003: lowercase a-z 0-9 _, unique; null until the account picks one. */
+  username: string | null;
+  /** #0001-#9999 in sign-up order; null after #9999. */
+  join_number: number | null;
+  /** 1 once this Worker has given the account its number or found none left (0: made by the old Worker). */
+  numbered: number;
+  /** The admin renamed it: the next sign-in asks for a new one. */
+  rename_required: number;
+  /** The client salt of the email key (base64url); null for a v1 key salted by the email. */
+  email_salt: string | null;
+  /** The client salt of the username key; null while the account has none. */
+  name_salt: string | null;
+  name_key_salt: string | null;
+  name_key_hash: string | null;
 }
 
 export interface SavedSchool {
@@ -43,6 +57,14 @@ export interface PublicUser {
   role: 'user' | 'admin';
   schools: SavedSchool[];
   created_at: string;
+  username: string | null;
+  join_number: number | null;
+  /** No username yet, or the admin changed it: the account must pick one before anything else. */
+  username_required: boolean;
+  /** The changed username's reason, for the pick view's message. */
+  renamed: boolean;
+  /** The account's keys predate usernames: the browser derives fresh ones at its next login. */
+  needs_rekey: boolean;
 }
 
 export function schoolsOf(row: Pick<UserRow, 'schools'>): SavedSchool[] {
@@ -62,6 +84,11 @@ export function publicUser(row: UserRow): PublicUser {
     role: row.role,
     schools: schoolsOf(row),
     created_at: new Date(row.created_at).toISOString(),
+    username: row.username,
+    join_number: row.join_number,
+    username_required: row.role !== 'admin' && (row.username === null || row.rename_required !== 0),
+    renamed: row.role !== 'admin' && row.rename_required !== 0,
+    needs_rekey: row.role !== 'admin' && (row.email_salt === null || row.name_salt === null),
   };
 }
 
@@ -76,9 +103,25 @@ export async function keyMatches(
   row: Pick<UserRow, 'salt' | 'key_hash'>,
   key: string,
 ): Promise<boolean> {
-  if (row.salt === null || row.key_hash === null) return false;
-  const digest = await sha256(concat(fromB64url(row.salt), fromB64url(key)));
-  return bytesEqual(digest, fromB64url(row.key_hash));
+  return hashMatches(row.salt, row.key_hash, key);
+}
+
+/** The username key: the same SHA-256(salt || key) check against its own salt and hash. */
+export async function nameKeyMatches(
+  row: Pick<UserRow, 'name_key_salt' | 'name_key_hash'>,
+  key: string,
+): Promise<boolean> {
+  return hashMatches(row.name_key_salt, row.name_key_hash, key);
+}
+
+async function hashMatches(
+  salt: string | null,
+  hash: string | null,
+  key: string,
+): Promise<boolean> {
+  if (salt === null || hash === null) return false;
+  const digest = await sha256(concat(fromB64url(salt), fromB64url(key)));
+  return bytesEqual(digest, fromB64url(hash));
 }
 
 export function newUserId(): string {

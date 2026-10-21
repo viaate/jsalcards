@@ -1,8 +1,8 @@
 /** Admin-only routes and the public list of manual statuses. Every admin route re-reads the role. */
 
-import { audit } from './account';
+import { BUSY_NETWORK, audit, eraseAccount, keyColumns } from './account';
 import { daysLeft, endOfDay, listedDays, storedDays, timeZone } from './days';
-import { DAY_MS, hashKey, requireAdmin, revokeSessions, schoolsOf, type UserRow } from './auth';
+import { DAY_MS, requireAdmin, revokeSessions, schoolsOf, type UserRow } from './auth';
 import { HttpError, json, readBody, type Env } from './http';
 import { isoSeconds } from './util';
 import * as v from './validate';
@@ -22,6 +22,13 @@ export async function summary(env: Env, request: Request, now: number): Promise<
     ).bind(now - DAY_MS, now - 7 * DAY_MS),
     env.DB.prepare('SELECT COUNT(*) AS active FROM overrides WHERE expires_at > ?1').bind(now),
   ]);
+  // Networks with many sign-ups in one day in the last week: one host making accounts.
+  const { results: busy } = await env.DB.prepare(
+    `SELECT network, day, count FROM signup_networks WHERE count >= ?1 AND day >= ?2
+      ORDER BY day DESC, count DESC LIMIT 20`,
+  )
+    .bind(BUSY_NETWORK, new Date(now - 7 * DAY_MS).toISOString().slice(0, 10))
+    .all<{ network: string; day: string; count: number }>();
   const c = counts!.results[0] ?? {};
   return json(200, {
     accounts: {
@@ -32,6 +39,7 @@ export async function summary(env: Env, request: Request, now: number): Promise<
       active_week: c.active_week ?? 0,
     },
     overrides_active: overrides!.results[0]?.active ?? 0,
+    busy_networks: busy,
     generated_at: isoSeconds(now),
   });
 }
@@ -49,7 +57,8 @@ export async function users(env: Env, request: Request, now: number): Promise<Re
     Math.min(10_000, Number.parseInt(url.searchParams.get('page') ?? '1', 10) || 1),
   );
   const pattern = `%${escapeLike(q)}%`;
-  const where = "(?1 = '' OR lower(name) LIKE ?2 ESCAPE '\\' OR login LIKE ?2 ESCAPE '\\')";
+  const where =
+    "(?1 = '' OR lower(name) LIKE ?2 ESCAPE '\\' OR login LIKE ?2 ESCAPE '\\' OR username LIKE ?2 ESCAPE '\\')";
   const [rows, total] = await env.DB.batch<UserRow & { n?: number }>([
     env.DB.prepare(
       `SELECT * FROM users WHERE ${where} ORDER BY created_at DESC LIMIT ?3 OFFSET ?4`,
@@ -61,6 +70,9 @@ export async function users(env: Env, request: Request, now: number): Promise<Re
       id: u.id,
       name: u.name,
       email: u.email,
+      username: u.username,
+      join_number: u.join_number,
+      rename_required: u.rename_required !== 0,
       role: u.role,
       created_at: isoSeconds(u.created_at),
       last_login_at: u.last_login_at === null ? null : isoSeconds(u.last_login_at),
@@ -71,6 +83,11 @@ export async function users(env: Env, request: Request, now: number): Promise<Re
     page,
     page_size: PAGE_SIZE,
   });
+}
+
+/** How the admin log names an account: its username and join number then, never its email. */
+function who(row: Pick<UserRow, 'username' | 'join_number'>): Record<string, unknown> {
+  return { username: row.username, join_number: row.join_number };
 }
 
 async function targetUser(env: Env, id: string): Promise<UserRow> {
@@ -91,14 +108,24 @@ export async function resetPassword(
   const { user: admin } = await requireAdmin(env, request, now);
   const body = await readBody(request);
   const target = await targetUser(env, id);
-  const key = v.key(body.key);
-  if (key === null) throw new HttpError(400, 'bad_key');
-  const { salt, key_hash } = await hashKey(key);
-  await env.DB.prepare('UPDATE users SET salt = ?2, key_hash = ?3 WHERE id = ?1')
-    .bind(id, salt, key_hash)
+  // Both keys of the temporary password, made in the admin's browser (account.ts keyColumns).
+  const keys = await keyColumns(body, 'key', target.email ?? '');
+  await env.DB.prepare(
+    `UPDATE users SET salt = ?2, key_hash = ?3, email_salt = ?4, name_salt = ?5,
+       name_key_salt = ?6, name_key_hash = ?7 WHERE id = ?1`,
+  )
+    .bind(
+      id,
+      keys.salt,
+      keys.key_hash,
+      keys.email_salt,
+      keys.name_salt,
+      keys.name_key_salt,
+      keys.name_key_hash,
+    )
     .run();
   await revokeSessions(env, id);
-  await audit(env, now, admin, 'reset_password', target.email ?? id);
+  await audit(env, now, admin, 'reset_password', id, who(target));
   return json(200, { ok: true });
 }
 
@@ -115,7 +142,7 @@ export async function setDisabled(
     .bind(id, disabled ? 1 : 0)
     .run();
   if (disabled) await revokeSessions(env, id);
-  await audit(env, now, admin, disabled ? 'disable_user' : 'enable_user', target.email ?? id);
+  await audit(env, now, admin, disabled ? 'disable_user' : 'enable_user', id, who(target));
   return json(200, { ok: true });
 }
 
@@ -127,11 +154,8 @@ export async function deleteUser(
 ): Promise<Response> {
   const { user: admin } = await requireAdmin(env, request, now);
   const target = await targetUser(env, id);
-  await env.DB.batch([
-    env.DB.prepare('DELETE FROM sessions WHERE user_id = ?1').bind(id),
-    env.DB.prepare('DELETE FROM users WHERE id = ?1').bind(id),
-  ]);
-  await audit(env, now, admin, 'delete_user', target.email ?? id);
+  await eraseAccount(env, target, now);
+  await audit(env, now, admin, 'delete_user', id, who(target));
   return json(200, { ok: true });
 }
 
@@ -317,8 +341,13 @@ export async function auditLog(env: Env, request: Request, now: number): Promise
     1,
     Math.min(10_000, Number.parseInt(url.searchParams.get('page') ?? '1', 10) || 1),
   );
+  // An entry about an account names its id; the account's username and number
+  // now come from its row (none once it is deleted: the entry's detail keeps
+  // the username and number it had then).
   const { results } = await env.DB.prepare(
-    'SELECT * FROM audit ORDER BY id DESC LIMIT ?1 OFFSET ?2',
+    `SELECT a.*, u.username AS target_username, u.join_number AS target_join
+       FROM audit a LEFT JOIN users u ON u.id = a.target
+      ORDER BY a.id DESC LIMIT ?1 OFFSET ?2`,
   )
     .bind(PAGE_SIZE, (page - 1) * PAGE_SIZE)
     .all<{
@@ -328,6 +357,8 @@ export async function auditLog(env: Env, request: Request, now: number): Promise
       action: string;
       target: string | null;
       detail: string | null;
+      target_username: string | null;
+      target_join: number | null;
     }>();
   return json(200, {
     entries: results.map((e) => ({
@@ -336,6 +367,10 @@ export async function auditLog(env: Env, request: Request, now: number): Promise
       actor: e.actor_name,
       action: e.action,
       target: e.target,
+      target_user:
+        e.target_username === null && e.target_join === null
+          ? null
+          : { username: e.target_username, join_number: e.target_join },
       detail: e.detail === null ? null : (JSON.parse(e.detail) as unknown),
     })),
     page,

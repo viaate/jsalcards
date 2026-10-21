@@ -36,10 +36,24 @@ export interface Api {
     },
   ): Promise<{ status: number; body: any; headers: Headers }>;
   sql(query: string, ...params: unknown[]): Promise<any[]>;
+  /** Applies one migration file (for a test that started without it). */
+  migrate(file: string): Promise<void>;
   close(): Promise<void>;
 }
 
-export async function startApi(bindings: Record<string, string> = {}): Promise<Api> {
+async function applyMigration(db: D1Database, file: string): Promise<void> {
+  const text = readFileSync(join(root, 'migrations', file), 'utf8').replace(/--[^\n]*/g, '');
+  const statements = text
+    .split(';')
+    .map((s) => s.trim())
+    .filter((s) => s.length > 0);
+  await db.batch(statements.map((s) => db.prepare(s)));
+}
+
+export async function startApi(
+  bindings: Record<string, string> = {},
+  options: { skipMigrations?: (file: string) => boolean } = {},
+): Promise<Api> {
   const bundle = await build({
     entryPoints: [join(root, 'src/index.ts')],
     bundle: true,
@@ -64,14 +78,8 @@ export async function startApi(bindings: Record<string, string> = {}): Promise<A
     }),
   );
   const db = await mf.getD1Database('DB');
-  for (const file of readdirSync(join(root, 'migrations')).sort()) {
-    const text = readFileSync(join(root, 'migrations', file), 'utf8').replace(/--[^\n]*/g, '');
-    const statements = text
-      .split(';')
-      .map((s) => s.trim())
-      .filter((s) => s.length > 0);
-    await db.batch(statements.map((s) => db.prepare(s)));
-  }
+  for (const file of readdirSync(join(root, 'migrations')).sort())
+    if (!(options.skipMigrations?.(file) ?? false)) await applyMigration(db, file);
   return {
     mf,
     script: bundle.outputFiles[0]!.text,
@@ -108,6 +116,7 @@ export async function startApi(bindings: Record<string, string> = {}): Promise<A
         .all();
       return results;
     },
+    migrate: (file) => applyMigration(db, file),
     close: () => mf.dispose(),
   };
 }

@@ -10,7 +10,13 @@
 
 import * as account from './account';
 import * as admin from './admin';
+import * as names from './names';
 import { HttpError, allowedOrigin, corsHeaders, json, type Env } from './http';
+import { prepareBlocklist } from './usernames/check';
+
+// The username lists compile here, at startup, which has its own time limit,
+// and a few checks run so the code is compiled too: no request pays for either.
+prepareBlocklist(true);
 
 export type { Env } from './http';
 
@@ -19,6 +25,14 @@ type Handler = (env: Env, request: Request, now: number, param: string) => Promi
 const routes: [method: string, pattern: RegExp, handler: Handler][] = [
   ['POST', /^\/v1\/signup$/, account.signup],
   ['POST', /^\/v1\/login$/, account.login],
+  ['POST', /^\/v1\/login\/salt$/, names.loginSalt],
+  ['GET', /^\/v1\/usernames\/check$/, names.checkName],
+  ['PUT', /^\/v1\/me\/username$/, names.putUsername],
+  ['GET', /^\/v1\/admin\/moderation$/, names.moderation],
+  ['POST', /^\/v1\/admin\/moderation\/terms$/, names.addTerm],
+  ['DELETE', /^\/v1\/admin\/moderation\/terms\/([^/]+)$/, names.removeTerm],
+  ['GET', /^\/v1\/admin\/moderation\/scan$/, names.scanNames],
+  ['POST', /^\/v1\/admin\/users\/([^/]+)\/rename$/, names.renameUser],
   ['POST', /^\/v1\/logout$/, account.logout],
   ['GET', /^\/v1\/me$/, account.me],
   ['PATCH', /^\/v1\/me$/, account.updateMe],
