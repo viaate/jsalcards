@@ -17,6 +17,8 @@
 
 import hashlib
 import json
+import re
+import sys
 from collections.abc import Callable, Sequence
 from dataclasses import dataclass
 from pathlib import Path
@@ -25,7 +27,13 @@ from pydantic import BaseModel
 
 from snowlight import __version__
 from snowlight.output import dumps_json, write_bytes_atomic
-from snowlight.places.download import FetchedFile, SourceCache, SourceMissingError, utc_now_iso
+from snowlight.places.download import (
+    FetchedFile,
+    SourceCache,
+    SourceMissingError,
+    cache_path_for,
+    utc_now_iso,
+)
 from snowlight.places.grf import (
     GRF_PAGE_URL,
     GrfRelease,
@@ -40,6 +48,7 @@ from snowlight.sources.census.zcta_county import ZCTA_COUNTY_URL, read_zcta_stat
 
 CITIES_FILE = "cities.jsonl"
 ZIPS_FILE = "zips.jsonl"
+_CACHED_GRF = re.compile(r"GRF(\d{2})\.zip")
 
 METHOD = {
     "cities": (
@@ -132,12 +141,36 @@ def latest_gazetteer_year(cache: SourceCache) -> int:
     raise PlacesBuildError("no Gazetteer release has national place and ZCTA files")
 
 
-def latest_grf(cache: SourceCache) -> GrfRelease:
-    """Return the newest GRF release linked from the NCES page."""
+def cached_grf_releases(cache: SourceCache) -> list[GrfRelease]:
+    """Return the GRF releases whose verified copy is in the cache, newest first."""
+    folder = cache_path_for(cache.root, grf_release(2000).url).parent
+    found: list[GrfRelease] = []
+    if folder.is_dir():
+        for path in folder.iterdir():
+            match = _CACHED_GRF.fullmatch(path.name)
+            if match:
+                release = grf_release(2000 + int(match.group(1)))
+                if cache.cached(release.url) is not None:
+                    found.append(release)
+    return sorted(found, key=lambda release: release.tiger_year, reverse=True)
+
+
+def latest_grf(cache: SourceCache, warn: Callable[[str], object] = sys.stderr.write) -> GrfRelease:
+    """Return the newest GRF release linked from the NCES page.
+
+    When the page links none (during maintenance NCES serves a web page with
+    HTTP 200 in place of every page), the newest release whose verified copy is
+    already in the download cache is used, with a warning, so the build goes on
+    with the release it used before. With nothing cached the build fails.
+    """
     releases = grf_releases(cache.get_text(GRF_PAGE_URL))
-    if not releases:
+    if releases:
+        return releases[0]
+    cached = cached_grf_releases(cache)
+    if not cached:
         raise PlacesBuildError("the NCES GRF page links no GRF zip")
-    return releases[0]
+    warn(f"the NCES GRF page links no GRF zip; using the verified cached {cached[0].url}\n")
+    return cached[0]
 
 
 def latest_popest_series(cache: SourceCache) -> tuple[int, int]:

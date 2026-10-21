@@ -179,6 +179,10 @@ class SourceCache:
         )
         return response.text
 
+    def cached(self, url: str) -> FetchedFile | None:
+        """Return the verified local copy of ``url`` if the cache holds one, else None."""
+        return self._load_cached(url, cache_path_for(self.root, url))
+
     def fetch(self, url: str) -> FetchedFile:
         """Return the verified local copy of ``url``, downloading it when needed."""
         path = cache_path_for(self.root, url)

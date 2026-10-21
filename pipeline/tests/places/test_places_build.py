@@ -221,6 +221,56 @@ def test_discovery_fails_loudly_when_nothing_is_published(
             finder(cache)
 
 
+# A web page served with HTTP 200 in place of the GRF page, as NCES does during
+# scheduled maintenance (synthetic, a few words).
+MAINTENANCE_PAGE = b"<html><body><h1>Scheduled maintenance</h1></body></html>"
+
+
+def test_maintenance_page_falls_back_to_the_cached_grf(
+    cache: SourceCache, server: "FakeServer", tmp_path: Path
+) -> None:
+    first = _run(cache, tmp_path)
+    server.files[GRF_PAGE_URL] = MAINTENANCE_PAGE
+    warnings: list[str] = []
+    assert latest_grf(cache, warnings.append).tiger_year == 2025
+    assert len(warnings) == 1
+    assert "links no GRF zip" in warnings[0]
+    assert warnings[0].rstrip().endswith("https://nces.ed.gov/programs/edge/data/GRF25.zip")
+    again = _run(cache, tmp_path)
+    assert again["releases"] == first["releases"]
+    assert again["outputs"] == first["outputs"]
+    assert server.hits["https://nces.ed.gov/programs/edge/data/GRF25.zip"] == 1
+
+
+def test_maintenance_page_prefers_the_newest_verified_cached_grf(
+    cache: SourceCache, server: "FakeServer", tmp_path: Path
+) -> None:
+    _run(cache, tmp_path)
+    folder = tmp_path / "cache" / "nces.ed.gov" / "programs" / "edge" / "data"
+    # A GRF26 copy whose bytes no longer match its sidecar is not a verified copy.
+    for name in ("GRF25.zip", "GRF25.zip.provenance.json"):
+        (folder / name.replace("25", "26")).write_bytes((folder / name).read_bytes())
+    sidecar = folder / "GRF26.zip.provenance.json"
+    meta = json.loads(sidecar.read_text(encoding="utf-8"))
+    meta["url"] = "https://nces.ed.gov/programs/edge/data/GRF26.zip"
+    sidecar.write_text(json.dumps(meta), encoding="utf-8")
+    server.files[GRF_PAGE_URL] = MAINTENANCE_PAGE
+    assert latest_grf(cache, lambda _m: None).tiger_year == 2026
+    (folder / "GRF26.zip").write_bytes(b"not the file")
+    assert latest_grf(cache, lambda _m: None).tiger_year == 2025
+
+
+def test_maintenance_page_with_nothing_cached_still_fails(
+    server: "FakeServer", tmp_path: Path
+) -> None:
+    server.files[GRF_PAGE_URL] = MAINTENANCE_PAGE
+    with (
+        SourceCache(tmp_path, server.client(), sleep=lambda _s: None) as cache,
+        pytest.raises(PlacesBuildError, match="links no GRF zip"),
+    ):
+        latest_grf(cache, lambda _m: None)
+
+
 # --- the CLI ------------------------------------------------------------------------
 
 
