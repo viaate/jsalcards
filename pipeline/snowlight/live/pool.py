@@ -18,7 +18,10 @@ while staying exactly as polite as one careful reader:
   pass; so is one whose answer asked for a ``Retry-After`` the deadline would not wait
   for, and that wait holds the whole origin (every source on it is ``deferred`` until it
   ends; kept in ``robots.json`` too). A robots.txt refresh keeps the host's known
-  Crawl-delay. The run's refused hosts are shared by every client.
+  Crawl-delay, and a refresh that fails (unreachable) keeps the last file read, its
+  rules and Crawl-delay, for up to 30 days after that file was read (RFC 9309 2.4),
+  so a host never drops to the 5 s floor for a day because its robots.txt was down once.
+  The run's refused hosts are shared by every client.
 * **Each worker thread has its own** :class:`~snowlight.sources.stations.http.PoliteClient`
   (its pacing and robots dicts are not thread-safe); all share one HTTP connection
   pool, the pacer, the robots store and the conditional store. Each task (a robots.txt
@@ -33,6 +36,10 @@ while staying exactly as polite as one careful reader:
   attempts. A ``Retry-After`` longer than the source's time left ends that source as
   ``deferred`` (due again only after it), and no other source waits for it.
 * **A 403 (or a 401) blocks the source for 24 hours.** It is never worked around.
+* **One read of a URL per pass.** Sources that read the same address (Cowles' five
+  stations share one ticker file) share its answer within a pass
+  (:class:`~snowlight.sources.stations.http.PassReads`): it is asked once, paced as
+  always, and a failure is shared too.
 
 Outcomes: ``ok | not_modified | empty | error | blocked | deferred | late``; the ledger
 turns a read that lost half its rows into ``partial``. Every request is logged
@@ -61,7 +68,7 @@ from urllib.parse import urlsplit
 from snowlight.live.ledger import Outcome
 from snowlight.output import write_bytes_atomic
 from snowlight.sources.stations.fetch import RunResult
-from snowlight.sources.stations.http import ROBOTS_TTL, DeadlineError, PoliteClient
+from snowlight.sources.stations.http import ROBOTS_TTL, DeadlineError, PassReads, PoliteClient
 from snowlight.sources.stations.model import HealthStatus
 from snowlight.sources.stations.registry import Station
 from snowlight.sources.stations.robots import Group, Robots, RobotsState, Rule
@@ -79,6 +86,9 @@ S3_PATH_HOST: Final = "s3.amazonaws.com"
 TICK_EVERY: Final = 5.0
 """Seconds between the caller's ticks while a pass's workers run."""
 ROBOTS_VERSION: Final = 1
+KEEP_KNOWN_FOR: Final = timedelta(days=30)
+"""How long after it was read a robots.txt stands in for refreshes that fail (RFC 9309
+2.4: a crawler may use a cached copy while the file is unreachable)."""
 _BLOCKED: Final = frozenset({HTTPStatus.FORBIDDEN, HTTPStatus.UNAUTHORIZED})
 
 type Monotonic = Callable[[], float]
@@ -241,8 +251,13 @@ class HostPacer:
 # robots.txt ----------------------------------------------------------------------------
 
 
-def _robots_json(read_at: datetime, robots: Robots) -> dict[str, object]:
-    return {
+def _robots_json(
+    read_at: datetime, robots: Robots, content_read_at: datetime | None = None
+) -> dict[str, object]:
+    found: dict[str, object] = {}
+    if content_read_at is not None:
+        found["content_read_at"] = content_read_at.astimezone(UTC).isoformat()
+    return found | {
         "read_at": read_at.astimezone(UTC).isoformat(),
         "state": robots.state.value,
         "sha256": robots.sha256,
@@ -298,6 +313,8 @@ class RobotsStore:
         self._origin_locks: dict[str, threading.Lock] = {}
         self._kept: dict[str, tuple[datetime, Robots]] = {}
         self._held: dict[str, datetime] = {}
+        self._content_at: dict[str, datetime] = {}
+        """When the kept file was read, for an origin whose later refreshes failed."""
         self._dirty = False
         if path is not None:
             self._load(path)
@@ -318,7 +335,10 @@ class RobotsStore:
         for origin, value in origins.items():
             try:
                 self._kept[str(origin)] = _robots_from(value)
-            except (KeyError, TypeError, ValueError):
+                since = value.get("content_read_at")
+                if since is not None:
+                    self._content_at[str(origin)] = datetime.fromisoformat(str(since))
+            except (AttributeError, KeyError, TypeError, ValueError):
                 continue
         held = document.get("held")
         for origin, until in (held if isinstance(held, dict) else {}).items():
@@ -367,9 +387,28 @@ class RobotsStore:
             robots = read()
             with self._lock:
                 self.reads[origin] += 1
+                since = self._kept_since(origin, kept, robots, now)
+                if since is not None and kept is not None:
+                    robots = kept[1]  # a failed refresh: the last file read still stands
+                    self._content_at[origin] = since
+                else:
+                    self._content_at.pop(origin, None)
                 self._kept[origin] = (now, robots)
                 self._dirty = True
             return robots
+
+    def _kept_since(
+        self, origin: str, kept: tuple[datetime, Robots] | None, robots: Robots, now: datetime
+    ) -> datetime | None:
+        """When the kept file was read, if it stands in for ``robots``: a refresh that
+        failed (unreachable) while a file read in the last :data:`KEEP_KNOWN_FOR` is kept.
+        Called holding the lock."""
+        if robots.state is not RobotsState.UNREACHABLE or kept is None:
+            return None
+        if kept[1].state is RobotsState.UNREACHABLE:
+            return None
+        since = self._content_at.get(origin, kept[0])
+        return since if now - since <= KEEP_KNOWN_FOR else None
 
     def flush(self) -> None:
         """Write the kept verdicts when any changed."""
@@ -379,7 +418,7 @@ class RobotsStore:
             if not self._dirty:
                 return
             origins = {
-                origin: _robots_json(read_at, robots)
+                origin: _robots_json(read_at, robots, self._content_at.get(origin))
                 for origin, (read_at, robots) in sorted(self._kept.items())
             }
             held = {
@@ -490,10 +529,11 @@ class Pool:
         lanes = lanes_of(due, alerted)
         found: list[SourceResult] = []
         lock = threading.Lock()
+        shared = PassReads()
 
         def run_lane(lane: list[Station]) -> None:
             for station in lane:
-                result = self._read_one(station, read, origin, end)
+                result = self._read_one(station, read, origin, end, shared)
                 with lock:
                     found.append(result)
 
@@ -539,13 +579,21 @@ class Pool:
             client.deadline = None
             client.stopped = None
 
-    def _read_one(self, station: Station, read: ReadOne, origin: float, end: float) -> SourceResult:
+    def _read_one(
+        self,
+        station: Station,
+        read: ReadOne,
+        origin: float,
+        end: float,
+        shared: PassReads | None = None,
+    ) -> SourceResult:
         begin = self.monotonic()
         if begin >= end:
             return SourceResult(station.id, Outcome.LATE, 0.0, begin - origin)
         client = self._worker_client()
         client.deadline = min(begin + self.source_deadline, end)
         client.stopped = None
+        client.shared = shared
         result: RunResult | None = None
         try:
             result = read(station, client)
@@ -554,6 +602,7 @@ class Pool:
                 LOG.error("read %s: %s", station.id, type(error).__name__)
         finally:
             client.deadline = None
+            client.shared = None
         finish = self.monotonic()
         stopped: DeadlineError | None = client.stopped
         client.stopped = None  # the worker's next task starts unstopped

@@ -5,9 +5,14 @@
   window open in any of them counts). Real zone rules are used, so the windows follow
   daylight saving time (it ends Sun 2026-11-01).
 * **Alerts.** An active, allowlisted NWS alert touching any of the station's counties
-  (:func:`alert_counties`, from the alert's SAME county codes). The feed is read every
-  5 minutes through the same pacer (:class:`AlertWatch`); when it fails, the last good
-  set is kept for up to 2 hours, then windows alone decide.
+  (:func:`alert_counties`, from the alert's SAME county codes). An alert whose VTEC says
+  it was cancelled or upgraded (every action ``CAN`` or ``UPG``, the set the map's
+  :func:`snowlight.weather.live.select_alerts` drops) or that a later alert in the feed
+  replaced (its ``references``) no longer counts: the boost ends with it, and an upgrade
+  boosts the upgraded alert's own counties. An expiring one (``EXP``) counts until its
+  end time (``ends``, else its VTEC end time, as the map's ``alert_times``) or ``expires``. The feed
+  is read every 5 minutes through the same pacer (:class:`AlertWatch`); when it fails,
+  the last good set is kept for up to 2 hours, then windows alone decide.
 * **Cadence.** Every 5 minutes in a window or an alert; otherwise
   ``max(30 minutes, the registry's poll_minutes)``.
 * **Failures.** A source the pass did not get to read (``late``) is due at the next pass.
@@ -26,6 +31,7 @@
 ``cadence.json`` in the private state (ids, codes and times only).
 """
 
+import contextlib
 import json
 import logging
 from collections import Counter, deque
@@ -38,6 +44,7 @@ from zoneinfo import ZoneInfo
 
 from snowlight.live.ledger import Outcome
 from snowlight.output import write_bytes_atomic
+from snowlight.sources.nws.vtec import ENDING_ACTIONS, Vtec, VtecError, parse_vtec
 from snowlight.sources.stations.registry import Station
 from snowlight.weather.hazards import alert_type_for_event
 
@@ -97,7 +104,8 @@ def station_zones(station: Station, zones: Mapping[str, str]) -> tuple[str, ...]
 
 def alert_counties(payload: bytes, now: datetime) -> frozenset[str]:
     """The county FIPS codes under an active alert in an NWS ``/alerts/active`` body: alerts
-    that are actual, not cancelled, of an allowlisted type and not yet expired (or ended).
+    that are actual, not cancelled, of an allowlisted type and not yet expired (or ended),
+    neither cancelled nor upgraded by their VTEC nor replaced by a later alert.
 
     Raises:
         ValueError: the body is not a GeoJSON collection of alerts.
@@ -105,17 +113,30 @@ def alert_counties(payload: bytes, now: datetime) -> frozenset[str]:
     document = json.loads(payload)
     if not isinstance(document, dict) or not isinstance(document.get("features"), list):
         raise ValueError("not an alerts collection")
+    alerts = [
+        props
+        for feature in document["features"]
+        if isinstance(feature, dict)
+        and isinstance(props := feature.get("properties"), dict)
+        and props.get("status") == "Actual"
+    ]
+    replaced = {ref for props in alerts for ref in _references(props)}
     found: set[str] = set()
-    for feature in document["features"]:
-        props = feature.get("properties") if isinstance(feature, dict) else None
-        if not isinstance(props, dict):
+    for props in alerts:
+        vtec = _vtec(props)
+        if props.get("messageType") == "Cancel" or (
+            vtec and all(item.action in ENDING_ACTIONS for item in vtec)
+        ):
             continue
-        if props.get("status") != "Actual" or props.get("messageType") == "Cancel":
-            continue
+        if str(props.get("id") or "") in replaced:
+            continue  # a later alert in the feed updated it: that one counts
         if alert_type_for_event(str(props.get("event") or "")) is None:
             continue
         if any(_past(props.get(name), now) for name in ("expires", "ends")):
             continue
+        ends = [item.end for item in vtec if item.end is not None]
+        if not props.get("ends") and ends and max(ends) <= now:
+            continue  # its VTEC end time has passed (an EXP alert runs until then)
         geocode = props.get("geocode")
         same = geocode.get("SAME") if isinstance(geocode, dict) else None
         for code in same if isinstance(same, list) else ():
@@ -123,6 +144,27 @@ def alert_counties(payload: bytes, now: datetime) -> frozenset[str]:
             if len(text) == 6 and text.isdigit():  # noqa: PLR2004 - 0SSCCC
                 found.add(text[1:])
     return frozenset(found)
+
+
+def _vtec(props: Mapping[str, object]) -> list[Vtec]:
+    """The alert's parsed VTEC strings (unreadable ones left out)."""
+    parameters = props.get("parameters")
+    texts = parameters.get("VTEC") if isinstance(parameters, dict) else None
+    found: list[Vtec] = []
+    for text in texts if isinstance(texts, list) else ():
+        with contextlib.suppress(VtecError):
+            found.append(parse_vtec(str(text)))
+    return found
+
+
+def _references(props: Mapping[str, object]) -> set[str]:
+    """The ids of the earlier alerts this one updates."""
+    references = props.get("references")
+    return {
+        str(item["identifier"])
+        for item in (references if isinstance(references, list) else ())
+        if isinstance(item, dict) and item.get("identifier")
+    }
 
 
 def _past(value: object, now: datetime) -> bool:
@@ -242,6 +284,14 @@ class Cadence:
                 picked.append(station)
         self._picked.append((now, frozenset(station.id for station in picked)))
         return picked
+
+    def held_until(self, source_id: str, now: datetime) -> datetime | None:
+        """When ``source_id`` may be asked again, while its server's wait (a
+        ``Retry-After``) or its block (a 403) lasts at ``now``."""
+        clock = self.clocks.get(source_id)
+        if clock is None or clock.not_before is None or now >= clock.not_before:
+            return None
+        return clock.not_before
 
     def is_due(self, station: Station, now: datetime) -> bool:
         """Whether ``station`` is due at ``now`` (see the module)."""

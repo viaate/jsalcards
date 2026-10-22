@@ -39,6 +39,7 @@ from snowlight.live.pool import (
     LIVE_ATTEMPTS,
     WORKERS,
     HostPacer,
+    PassResult,
     Pool,
     RequestLog,
     RobotsStore,
@@ -206,14 +207,7 @@ class LiveReads:
             return reader(registry, station, client, whole)
 
         result = self.pool.run_pass(due, read, alerted=self.cadence.in_alert, tick=tick)
-        self.cadence.record(
-            result.started,
-            [(item.source_id, item.outcome, _wait(item)) for item in result.sources],
-        )
-        try:
-            self.cadence.save()
-        except OSError as error:
-            LOG.error("cadence save: %s", type(error).__name__)
+        keep_pass(self.cadence, result)
         if self.ingest is not None:
             self.ingest.due = self.cadence.recently_due(now)
         found = []
@@ -267,6 +261,17 @@ def live_reads(  # pragma: no cover - builds the network pool for the real inges
         alerts=AlertWatch(alerts_reader(pool)),
     )
     return LiveReads(registry, directory, pool, cadence)
+
+
+def keep_pass(cadence: Cadence, result: PassResult) -> None:
+    """Keep each source's outcome of the pass in the cadence, and save it."""
+    cadence.record(
+        result.started, [(item.source_id, item.outcome, _wait(item)) for item in result.sources]
+    )
+    try:
+        cadence.save()
+    except OSError as error:
+        LOG.error("cadence save: %s", type(error).__name__)
 
 
 def _wait(read: SourceResult) -> float | None:

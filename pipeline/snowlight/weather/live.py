@@ -33,11 +33,12 @@ import shapely
 from snowlight.sources.nws.alerts import ActiveFeed, NwsAlert
 from snowlight.sources.nws.boundaries import BoundarySet
 from snowlight.sources.nws.shapefile import Polygonal, polygonal
+from snowlight.sources.nws.vtec import ENDING_ACTIONS
 from snowlight.weather.hazards import CONUS_STATES, AlertType, alert_type_for_event
 from snowlight.weather.index import AlertArea, AlertInfo
 
 ZONE_KINDS = frozenset({"forecast", "public"})
-_ENDING_ACTIONS = frozenset({"CAN", "UPG"})
+_ENDING_ACTIONS = ENDING_ACTIONS
 COUNTY_KINDS = frozenset({"county"})
 
 

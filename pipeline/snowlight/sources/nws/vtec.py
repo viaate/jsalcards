@@ -16,6 +16,10 @@ _PVTEC = re.compile(
     r"(?P<begin>\d{6}T\d{4}Z)-(?P<end>\d{6}T\d{4}Z)/$"
 )
 _UNSET = "000000T0000Z"
+ENDING_ACTIONS = frozenset({"CAN", "UPG"})
+"""Actions that end an alert at once: cancelled, upgraded. An ``EXP`` alert runs to its
+end time.
+"""
 
 
 class VtecError(ValueError):

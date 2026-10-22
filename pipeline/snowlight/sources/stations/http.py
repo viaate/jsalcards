@@ -53,15 +53,22 @@ source: past it no request starts (:class:`DeadlineError`, ``late``), and a ``Re
 or backoff that would end after it stops the source at once (``deferred`` when the
 server asked for the wait), instead of sleeping through it. Once a client has stopped
 (:attr:`PoliteClient.stopped`), it starts no request until the pool clears it, and a
-request's answer must arrive before the deadline (plus a second's grace).
+request's answer must arrive before the deadline (plus a second's grace): its connection
+is shut then, headers or body (a fresh one, ``Connection: close``, opened under the
+deadline). With :attr:`PoliteClient.shared` a URL is asked once a pass, and a deadline
+that stopped it once it was asked (a ``Retry-After``, an answer still coming) is the
+answer every later source of the pass gets.
 
 TLS is always verified, against ``SSL_CERT_FILE`` when it is set.
 """
 
+import contextlib
 import hashlib
 import json
 import os
+import socket
 import ssl
+import threading
 import time
 from collections.abc import Callable, Iterator
 from contextlib import AbstractContextManager, contextmanager
@@ -290,6 +297,111 @@ class ConditionalStore:
         write_bytes_atomic(meta_path, text.encode("utf-8"))
 
 
+class PassReads:
+    """The URLs one pool pass has read, shared by every source of the pass that reads the
+    same URL (Cowles' five stations all read one ticker file): each URL is asked once a
+    pass, through the pacer like any read, and the later sources take its answer, a
+    failure too. A deadline that stopped the read after the URL was asked is its answer
+    too: a ``Retry-After`` past the deadline (``deferred``, with the same wait) or an
+    answer still coming (``late``), so a server that asked for a wait or is struggling is
+    not asked again in the pass. A deadline that stopped it before the URL was asked
+    answered nothing: the next source asks (thread-safe).
+    """
+
+    def __init__(self) -> None:
+        self._lock = threading.Lock()
+        self._locks: dict[str, threading.Lock] = {}
+        self._found: dict[str, Fetched | FetchError] = {}
+
+    def read(self, url: str, fetch: Callable[[], "Fetched"], asked: Callable[[], int]) -> "Fetched":
+        """``url``'s answer this pass, read through ``fetch`` by the first to ask;
+        ``asked`` counts the requests for pages (not robots.txt) the reader has sent."""
+        with self._lock:
+            lock = self._locks.setdefault(url, threading.Lock())
+        with lock:
+            found = self._found.get(url)
+            if found is None:
+                before = asked()
+                try:
+                    fetched = fetch()
+                except DeadlineError as error:
+                    if asked() > before:
+                        self._found[url] = error
+                    raise
+                except FetchError as error:
+                    self._found[url] = error
+                    raise
+                self._found[url] = fetched
+                return fetched
+        if isinstance(found, DeadlineError):
+            raise DeadlineError(
+                str(found), found.kind, status=found.status, retry_after=found.retry_after
+            )
+        if isinstance(found, FetchError):
+            raise FetchError(str(found), found.status)
+        return found
+
+
+class _Cutoff:
+    """Shuts the connections a request opens ``seconds`` from now unless finished first, so
+    a read blocked on one ends then (:attr:`fired`), headers or body. It is armed before
+    the request is sent: each connection is taken as it opens (from httpcore's ``trace``
+    hook, the TLS stream too), and the response's own once its headers arrive. A
+    response without a socket (a test transport) is left alone (thread-safe: a request
+    that finished first is never cut).
+    """
+
+    def __init__(self, seconds: float) -> None:
+        self.fired = False
+        self._done = False
+        self._lock = threading.Lock()
+        self._socks: list[socket.socket] = []
+        self._timer = threading.Timer(max(seconds, 0.0), self._fire)
+        self._timer.daemon = True
+        self._timer.start()
+
+    def trace(self, event: str, info: dict[str, object]) -> None:
+        """httpcore's ``trace`` extension: keep each connection the request opens."""
+        if event.endswith(("connect_tcp.complete", "start_tls.complete")):
+            self._watch(info.get("return_value"))
+
+    def watch(self, response: httpx.Response) -> None:
+        """Keep the connection ``response`` came on."""
+        self._watch(response.extensions.get("network_stream"))
+
+    def _watch(self, stream: object) -> None:
+        get = getattr(stream, "get_extra_info", None)
+        sock = get("socket") if callable(get) else None
+        if not isinstance(sock, socket.socket):
+            return
+        with self._lock:
+            if self._done:
+                return
+            self._socks.append(sock)
+            if self.fired:  # opened just after the time was up
+                _shut(sock)
+
+    def _fire(self) -> None:
+        with self._lock:
+            if self._done:
+                return
+            self.fired = True
+            for sock in self._socks:
+                _shut(sock)
+
+    def finish(self) -> None:
+        """The request is over: nothing is cut after this."""
+        with self._lock:
+            self._done = True
+            self._socks.clear()
+        self._timer.cancel()
+
+
+def _shut(sock: socket.socket) -> None:
+    with contextlib.suppress(OSError):  # already closed
+        sock.shutdown(socket.SHUT_RDWR)
+
+
 def _retry_after(response: httpx.Response, now: datetime) -> float | None:
     value = response.headers.get("Retry-After", "").strip()
     if not value:
@@ -358,6 +470,11 @@ class PoliteClient:
         while it is set the client starts no request."""
         self.sent = 0
         """Request attempts this client has sent."""
+        self.pages_sent = 0
+        """Of those, the attempts for pages (not robots.txt)."""
+        self.shared: PassReads | None = None
+        """The pass's reads shared by URL (set per source by a pool): a URL read earlier in
+        the pass is not asked again."""
         self._robots_hop = 0
 
     def refused(self, url: str) -> str | None:
@@ -492,12 +609,13 @@ class PoliteClient:
                 if self.sent == sent:
                     raise  # nothing was asked: no answer about the file
                 # Asked, then stopped (a Retry-After or a backoff past the deadline): the
-                # file is unreachable and kept so, like any failed read; a Retry-After holds
-                # the origin until the wait ends. The source stays stopped.
+                # file is unreachable, like any failed read (a 429 too: the retryable
+                # answers are failures, not a missing file); a Retry-After holds the
+                # origin until the wait ends. The source stays stopped.
                 if error.retry_after is not None and self._robots_cache is not None:
                     until = self._clock() + timedelta(seconds=error.retry_after)
                     self._robots_cache.hold(origin, until)
-                return Robots.for_status(error.status or httpx.codes.SERVICE_UNAVAILABLE)
+                return Robots.for_status(httpx.codes.SERVICE_UNAVAILABLE)
             except FetchError:
                 # Retries exhausted on a 5xx, a 408/425/429 or a network failure: the
                 # file is unreachable, so nothing on the site may be fetched.
@@ -554,6 +672,8 @@ class PoliteClient:
                 follow = attempt > 0 or (robots and self._robots_hop > 0)
                 with self._slot(url, interval, robots=robots, follow=follow):
                     self.sent += 1
+                    if not robots and not _is_robots(url):
+                        self.pages_sent += 1
                     response = self._send(url, headers, post)
             except (httpx.TransportError, httpx.DecodingError) as error:
                 last_error = f"{type(error).__name__}: {error}"
@@ -593,37 +713,65 @@ class PoliteClient:
                 min(REQUEST_TIMEOUT, budget), connect=min(CONNECT_TIMEOUT, budget)
             )
             budget += self._monotonic()
-        with self.client.stream(
-            method, url, headers=headers, content=post, timeout=timeout
-        ) as response:
-            chunks: list[bytes] = []
-            size = 0
-            for chunk in response.iter_bytes():
-                size += len(chunk)
-                if size > MAX_BODY:
-                    raise FetchError(f"{url}: body larger than {MAX_BODY} bytes")
-                if budget is not None and self._monotonic() > budget:
-                    self.stopped = DeadlineError(
-                        f"{url}: answer still coming at its deadline", "late"
-                    )
-                    raise self.stopped
-                chunks.append(chunk)
-            # The chunks are already decoded, so the rebuilt response must not claim
-            # a content encoding (httpx would try to decode them a second time).
-            kept = [
-                (name, value)
-                for name, value in response.headers.multi_items()
-                if name.lower() not in {"content-encoding", "content-length", "transfer-encoding"}
-            ]
-            return httpx.Response(
-                response.status_code,
-                headers=kept,
-                content=b"".join(chunks),
-                request=response.request,
-            )
+        # Every wait on the answer, headers or body, ends at the deadline itself (with its
+        # grace): the request's connections are shut when the time is up, so a server that
+        # trickles its answer (each read inside the read timeout) holds the host's turn no
+        # longer. Under a deadline the request asks for a fresh connection
+        # (``Connection: close``), so the one it waits on is always the one it opened.
+        cut = _Cutoff(budget - self._monotonic()) if budget is not None else None
+        extensions: dict[str, object] = {}
+        if cut is not None:
+            headers = {**headers, "Connection": "close"}
+            extensions["trace"] = cut.trace
+        try:
+            with self.client.stream(
+                method, url, headers=headers, content=post, timeout=timeout, extensions=extensions
+            ) as response:
+                if cut is not None:
+                    cut.watch(response)
+                body = self._body(url, response, budget)
+                if cut is not None:
+                    cut.finish()  # the whole answer is in: the connection is not cut now
+                # The chunks are already decoded, so the rebuilt response must not claim
+                # a content encoding (httpx would try to decode them a second time).
+                kept = [
+                    (name, value)
+                    for name, value in response.headers.multi_items()
+                    if name.lower()
+                    not in {"content-encoding", "content-length", "transfer-encoding"}
+                ]
+                return httpx.Response(
+                    response.status_code,
+                    headers=kept,
+                    content=body,
+                    request=response.request,
+                )
+        except DeadlineError as error:
+            self.stopped = error
+            raise
+        except httpx.HTTPError as error:
+            if cut is None or not cut.fired:
+                raise
+            self.stopped = DeadlineError(f"{url}: answer still coming at its deadline", "late")
+            raise self.stopped from error
+        finally:
+            if cut is not None:
+                cut.finish()
+
+    def _body(self, url: str, response: httpx.Response, budget: float | None) -> bytes:
+        chunks: list[bytes] = []
+        size = 0
+        for chunk in response.iter_bytes():
+            size += len(chunk)
+            if size > MAX_BODY:
+                raise FetchError(f"{url}: body larger than {MAX_BODY} bytes")
+            if budget is not None and self._monotonic() > budget:
+                raise DeadlineError(f"{url}: answer still coming at its deadline", "late")
+            chunks.append(chunk)
+        return b"".join(chunks)
 
     def fetch(self, url: str, *, interval: float = 0.0, post: bytes | None = None) -> Fetched:
-        """Read ``url`` politely and return its body.
+        """Read ``url`` politely and return its body (once a pass with :attr:`shared`).
 
         robots.txt is read for every URL requested and its verdict returned with the
         body (:attr:`Fetched.robots`); a URL it disallows is read all the same (the
@@ -637,6 +785,19 @@ class PoliteClient:
         Raises:
             FetchError: the URL could not be read (``status`` says how it ended).
         """
+        if post is None and self.shared is not None:
+            try:
+                return self.shared.read(
+                    url,
+                    lambda: self._fetch(url, interval=interval, post=None),
+                    lambda: self.pages_sent,
+                )
+            except DeadlineError as error:
+                self.stopped = error  # an answer another source of the pass was given
+                raise
+        return self._fetch(url, interval=interval, post=post)
+
+    def _fetch(self, url: str, *, interval: float, post: bytes | None) -> Fetched:
         stored = self.store.load(url) if post is None else None
         headers: dict[str, str] = {}
         if stored is not None:
