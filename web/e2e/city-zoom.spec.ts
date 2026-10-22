@@ -13,6 +13,7 @@ import type { Map as MapLibreMap } from 'maplibre-gl';
 import sharp from 'sharp';
 
 import { BASEMAP_IDS } from '../src/map/basemap/ids';
+import { TILE_TRIES } from '../src/map/basemap/openfreemap';
 
 declare global {
   interface Window {
@@ -23,6 +24,12 @@ declare global {
 /** Chrome's own GPU driver chatter under software WebGL, not the page's. */
 const GPU_DRIVER_NOISE =
   /GL Driver Message|GPU stall due to ReadPixels|Automatic fallback to software WebGL/;
+
+/**
+ * The page's word, once, that the network failed a street tile: the network's
+ * doing, not the page's. openView waits until the tile came all the same.
+ */
+const STREET_TILE_FAILED = 'Snowlight: street tiles unavailable for now ';
 
 /** Where tiles, and the TileJSON that points at them, come from. */
 const TILES = 'https://tiles.openfreemap.org/';
@@ -35,28 +42,62 @@ test.describe.configure({ timeout: 120_000 });
 
 function watch(page: Page): string[] {
   const problems: string[] = [];
+  // The page's word that a street tile failed passes only once the network failed one, in
+  // either order of the two events.
+  let tileFailed = false;
+  const failedTile = (): void => {
+    tileFailed = true;
+    for (let i = problems.length - 1; i >= 0; i -= 1) {
+      if (problems[i]?.startsWith(`console.warning: ${STREET_TILE_FAILED}`)) problems.splice(i, 1);
+    }
+  };
+  page.on('requestfailed', (request) => {
+    if (request.url().startsWith(TILES)) failedTile();
+  });
+  page.on('response', (response) => {
+    if (response.url().startsWith(TILES) && response.status() >= 400) failedTile();
+  });
   page.on('console', (message) => {
     const type = message.type();
-    if ((type === 'error' || type === 'warning') && !GPU_DRIVER_NOISE.test(message.text())) {
-      problems.push(`console.${type}: ${message.text()}`);
+    const text = message.text();
+    if (type === 'warning' && text.startsWith(STREET_TILE_FAILED) && tileFailed) return;
+    if ((type === 'error' || type === 'warning') && !GPU_DRIVER_NOISE.test(text)) {
+      problems.push(`console.${type}: ${text}`);
     }
   });
   page.on('pageerror', (error) => problems.push(`pageerror: ${error.message}`));
   return problems;
 }
 
-/** Opens a view from a link and waits until every tile is in and the map is at rest there. */
+/**
+ * Opens a view from a link and waits until every tile is in and the map is at rest there.
+ *
+ * MapLibre counts a tile that failed as loaded, so a street tile the network
+ * failed (every try its worker made) would leave its streets and names out of
+ * the reading. The wait goes on until the page has asked for it again and it
+ * came (heal.ts), as it does for someone looking at the map.
+ */
 async function openView(page: Page, lat: number, lon: number, zoom: number): Promise<void> {
   await page.goto(`/?at=${String(lat)},${String(lon)},${String(zoom)}`);
   await page.waitForFunction(
     (linked) => {
       const map = window.snowlightMap;
+      if (map === undefined) return false;
+      interface Tiles {
+        getIds: () => string[];
+        getTileByID: (id: string) => { state?: string } | undefined;
+      }
+      // As heal.ts reads them: the style's tiles in view, by source.
+      const { style } = map as unknown as { style?: { tileManagers: Record<string, Tiles> } };
+      const failed = Object.values(style?.tileManagers ?? {}).some((tiles) =>
+        tiles.getIds().some((id) => tiles.getTileByID(id)?.state === 'errored'),
+      );
       return (
-        map !== undefined &&
         // An address store read past its deadline opens the map on the country, then on the link.
         Math.abs(map.getZoom() - linked) < 1e-6 &&
         map.loaded() &&
         map.areTilesLoaded() &&
+        !failed &&
         !map.isMoving()
       );
     },
@@ -141,8 +182,8 @@ test('below zoom 7 the map asks nothing of the network for streets or names', as
   expect(problems).toEqual([]);
 });
 
-test('the Country Club Plaza view draws roads, buildings, water and names', async ({ page }) => {
-  const problems = watch(page);
+/** Opens the Country Club Plaza view and checks its roads, buildings, water and names. */
+async function plazaView(page: Page, problems: string[]): Promise<void> {
   await openView(page, 39.045, -94.595, 13.2);
   const { counts, names } = await drawn(page);
   expect(counts[BASEMAP_IDS.ofmRoad] ?? 0).toBeGreaterThan(100);
@@ -160,6 +201,28 @@ test('the Country Club Plaza view draws roads, buildings, water and names', asyn
   const faces = await labelFaces(page);
   expect(faces.every((status) => status === 'loaded')).toBe(true);
   expect(problems).toEqual([]);
+}
+
+test('the Country Club Plaza view draws roads, buildings, water and names', async ({ page }) => {
+  await plazaView(page, watch(page));
+});
+
+test('a street tile the network fails at first leaves no hole in the Plaza view', async ({
+  page,
+  context,
+}) => {
+  const problems = watch(page);
+  // The zoom 13 tiles under the Plaza, Main Street and Ward Parkway fail every try a worker
+  // makes at them (TILE_TRIES), as a bad network failed one on CI, then come.
+  const tries = new Map<string, number>();
+  await context.route(/^https:\/\/tiles\.openfreemap\.org\/.+\/13\/1943\/\d+\.pbf$/, (route) => {
+    const url = route.request().url();
+    const attempt = (tries.get(url) ?? 0) + 1;
+    tries.set(url, attempt);
+    return attempt <= TILE_TRIES ? route.abort('failed') : route.continue();
+  });
+  await plazaView(page, problems);
+  expect(Math.max(...tries.values())).toBeGreaterThan(TILE_TRIES);
 });
 
 test('a view at a whole zoom level names its streets, and no highway by its number', async ({
