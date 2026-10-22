@@ -568,6 +568,21 @@ runs of 2019-08-19 and 2019-09-09): a repeated period is read once, and only whe
 are the same bytes (`repeated` in the sample table). An element whose file
 does not read leaves only its own values unknown (`element_error`; `run_error` when none
 read), and the code is 13 only when the unknown value could change the bucket.
+Every range read is checked against the file's size the host states (Content-Range, or a 416's
+`bytes */N`), kept from the file's first answer that states it (a whole-file 200 is checked
+against its own body length, which never sets the size): one that returns fewer bytes than the
+file holds there, another range or another size, or a 416 without a size (S3 sends no
+Content-Range with it) inside the size an earlier answer gave, is asked again up to 4 times (2,
+4, then 8 s apart; `--range-attempts`) and is then an error of its element. A head the file
+itself cuts short, or a file that ends inside a frame line (from its first `*`), is an error of
+its element too, never a crash, and so is a file that ends inside its last message's body (the
+walk checks that message ends in `7777` at the file's end), whether or not the night reads that
+message: AWS's ice file `YZUZ98_KWBN_202412172147` ends 27 bytes into its last message
+(1,709,991 bytes; its frame declares 150,916 more), which stopped the night of 2024-12-18 in
+run 39698719822. Each job logs every run that did not read, whole or in part, and collect's
+`manifest.json` totals them by run-night, a run counted once for each night that samples it
+(`run_totals`: `run_nights`, `run_error`, `element_error`; collect prints `run-nights N,
+unreadable N, with an unreadable element N`).
 
 **The history workflow** (`.github/workflows/predict-forecast-history.yml`) streams the
 2018-19 to 2025-26 school nights on GitHub's runners: 80 jobs (school year by months), each

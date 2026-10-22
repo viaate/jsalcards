@@ -231,6 +231,133 @@ def test_a_cut_message_and_junk_between_messages_are_errors() -> None:
         ndfd.parse_head(raw[:7] + b"\x01" + raw[8:], 0)
 
 
+class RangeHost:
+    """A file served by range with scripted answers: each entry cuts that read's bytes to its
+    count (``None`` answers in full), and every read after the script answers in full."""
+
+    def __init__(self, data: bytes, cuts: list[int | None], start_shift: int = 0) -> None:
+        self.data = data
+        self.cuts = cuts
+        self.shift = start_shift
+        self.calls = 0
+
+    def __call__(self, offset: int, size: int) -> ndfd.RangeAnswer:
+        self.calls += 1
+        whole = self.data[offset : offset + size]
+        if self.cuts:
+            cut = self.cuts.pop(0)
+            if self.shift:
+                return ndfd.RangeAnswer(offset + self.shift, whole, len(self.data))
+            whole = whole if cut is None else whole[:cut]
+        return ndfd.RangeAnswer(offset, whole, len(self.data))
+
+
+def test_a_short_range_read_is_asked_again_politely_and_recovers() -> None:
+    data = grib.framed(snow_run(grib.utc("2025-01-06T03:00")))
+    host = RangeHost(data, [27, 0])
+    pauses: list[float] = []
+    read = ndfd.steady_reader(host, attempts=4, pause=pauses.append)
+    heads = list(ndfd.walk(read))
+    assert [h.end.hour for h in heads] == [6, 12, 18]
+    assert pauses == [2.0, 4.0]
+    assert heads == list(ndfd.walk(ndfd.bytes_reader(data)))
+    # A range from elsewhere in the file is never taken as the one asked.
+    shifted = RangeHost(data, [None], start_shift=40)
+    pauses.clear()
+    assert ndfd.steady_reader(shifted, pause=pauses.append)(0, 100) == data[:100]
+    assert pauses == [2.0]
+
+
+def test_a_range_read_that_stays_short_is_a_typed_error_after_bounded_tries() -> None:
+    data = grib.framed(snow_run(grib.utc("2025-01-06T03:00")))
+    pauses: list[float] = []
+    read = ndfd.steady_reader(RangeHost(data, [27] * 10), attempts=4, pause=pauses.append)
+    with pytest.raises(ndfd.ShortReadError, match=r"27 bytes at 0.*after 4 tries"):
+        list(ndfd.walk(read))
+    assert pauses == [2.0, 4.0, 8.0]
+    # The file's end is not short: the last bytes, and nothing past them, come at once.
+    pauses.clear()
+    end = ndfd.steady_reader(RangeHost(data, []), pause=pauses.append)
+    assert end(len(data) - 10, ndfd.HEAD_BYTES) == data[-10:]
+    assert end(len(data) + 5, ndfd.HEAD_BYTES) == b""
+    assert pauses == []
+
+
+def test_a_file_cut_inside_a_message_head_is_a_head_error_never_a_crash() -> None:
+    messages = snow_run(grib.utc("2025-01-06T03:00"))
+    framed = grib.framed(messages)
+    last = framed.rindex(b"GRIB")
+    # The 2024-12-17 21:47Z ice file ends 27 bytes into its last message (run 39698719822).
+    for kept in (4, 10, 16, 20, 27, 37, 60, 120, 175):
+        cut = framed[: last + kept]
+        with pytest.raises(ndfd.HeadError):
+            list(ndfd.walk(ndfd.bytes_reader(cut)))
+    # Cut before the message's GRIB is whole, or inside its frame line: still not a clean end.
+    for kept in (-30, -10, 1, 3):
+        with pytest.raises(ndfd.HeadError):
+            list(ndfd.walk(ndfd.bytes_reader(framed[: last + kept])))
+    # Cut 1 to 3 bytes into the next frame's ``****`` (after the CR CR LF): a cut, not an end.
+    start = framed.rindex(b"****", 0, last) - 14
+    assert framed[start - 3 : start] == b"\r\r\n"
+    for kept in (1, 2, 3, 4, 10):
+        with pytest.raises(ndfd.HeadError, match="ends inside a frame"):
+            list(ndfd.walk(ndfd.bytes_reader(framed[: start + kept])))
+    # Cut just after a message's CR CR LF: the file's end, as a file of fewer messages ends.
+    assert len(list(ndfd.walk(ndfd.bytes_reader(framed[:start])))) == len(messages) - 1
+    # Cut in the last body (past the head): the walk reaches the end and finds no ``7777``.
+    cut = framed[: last + len(messages[-1]) - 20]
+    with pytest.raises(ndfd.HeadError, match="ends inside the message at"):
+        list(ndfd.walk(ndfd.bytes_reader(cut)))
+    heads = list(ndfd.walk(ndfd.bytes_reader(framed)))
+    with pytest.raises(ndfd.NdfdError, match="cut short"):
+        ndfd.message(ndfd.bytes_reader(cut), heads[-1])
+
+
+def test_a_file_cut_in_any_body_is_a_cut_file_even_when_no_message_is_read() -> None:
+    messages = snow_run(grib.utc("2025-01-06T03:00"))
+    for data in (b"".join(messages), grib.framed(messages)):
+        whole = list(ndfd.walk(ndfd.bytes_reader(data)))
+        ends = {head.offset + head.length for head in whole}
+        for kept in range(len(data)):
+            reader = ndfd.bytes_reader(data[:kept])
+            try:
+                heads = list(ndfd.walk(reader))
+            except ndfd.HeadError:
+                continue
+            # A walk that ends cleanly ends on a message's end, with every message whole.
+            assert heads == whole[: len(heads)]
+            assert not heads or heads[-1].offset + heads[-1].length in ends
+            assert all(ndfd.message(reader, head)[-4:] == b"7777" for head in heads)
+        # Through a range reader whose host says the file's size, as AWS does.
+        cut = data[: whole[-1].offset + 200]
+        host = RangeHost(cut, [])
+        with pytest.raises(ndfd.HeadError, match="ends inside the message"):
+            list(ndfd.walk(ndfd.steady_reader(host, pause=lambda _s: None)))
+
+
+def test_a_malformed_head_is_a_head_error() -> None:
+    raw = snow_run(grib.utc("2025-01-06T03:00"))[0]
+    sized = bytearray(raw)
+    sized[16:20] = (3).to_bytes(4, "big")  # section 1 shorter than a section header
+    with pytest.raises(ndfd.HeadError, match="shorter than its header"):
+        ndfd.parse_head(bytes(sized), 0)
+    sized = bytearray(raw)
+    sized[16:20] = (5000).to_bytes(4, "big")  # section 1 runs past the bytes read
+    with pytest.raises(ndfd.HeadError, match="section 1 is cut short"):
+        ndfd.parse_head(bytes(sized[: ndfd.HEAD_BYTES]), 0)
+    sized = bytearray(raw)
+    sized[8:16] = (30).to_bytes(8, "big")  # a message shorter than its own section 1
+    with pytest.raises(ndfd.HeadError, match="runs past its message"):
+        ndfd.parse_head(bytes(sized), 0)
+    with pytest.raises(ndfd.HeadError, match="section 0"):
+        ndfd.parse_head(raw[:12], 0)
+    sized = bytearray(raw)
+    assert sized[118 + 4] == 4  # sections 0 (16), 1 (21) and 3 (81) come first
+    sized[118 + 4] = 9  # section 4 numbered as a later section: no section 4 in the head
+    with pytest.raises(ndfd.HeadError, match="section 4 is not in"):
+        ndfd.parse_head(bytes(sized), 0)
+
+
 # --- runs ---------------------------------------------------------------------------------------
 
 

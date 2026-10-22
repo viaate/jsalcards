@@ -487,6 +487,120 @@ def test_an_element_that_does_not_read_leaves_the_others_to_decide() -> None:
     assert np.allclose(found.feels[grib.utc("2025-01-06T13:00")], -9.67)
 
 
+def test_a_run_whose_file_ends_inside_a_head_is_unreadable_counted_and_logged() -> None:
+    # Run 39698719822: the 2024-12-17 21:47Z ice file ends 27 bytes into its last message.
+    reference = grib.utc("2025-01-06T03:00")
+    schools = fh.deciding_schools(world.directory(), world.model())
+    store: dict[str, bytes] = {}
+    files = {
+        Element.SNOW: amounts(reference, {6: 0.0254}),
+        Element.ICE: ice(reference, None),
+        Element.APT: apt(reference, 250.0),
+    }
+    runs = ndfd.assemble_runs(make_run("2025-01-06T02:46", files, store)).runs
+    (ice_url,) = [url for url in store if Element.ICE.heading in url]
+    whole = store[ice_url]
+    store[ice_url] = whole[: whole.rindex(b"GRIB") + 27]
+    found = fh.run_values(
+        runs[0],
+        NIGHT,
+        [grib.utc("2025-01-06T13:00")],
+        ndfd.cells(schools.lat, schools.lon),
+        opener_of(store),
+    )
+    assert set(found.errors) == {Element.ICE}
+    assert found.errors[Element.ICE].startswith("read: GRIB section 1 is cut short")
+    assert found.ice == {}
+    assert found.snow.keys() == set(ndfd.window_ends(NIGHT))
+    night = fh.night_codes(NIGHT, schools, fh.zone_groups(schools), runs, opener_of(store), SHARE)
+    used = night.samples.filter(pl.col("run_time").is_not_null())
+    assert used.height > 0
+    assert set(used["reason"]) == {"element_error"}
+    # Ice unknown could outrank the snow: never a bucket that ice might change.
+    assert set(night.codes["code"].unique()) <= {int(ndfd.Bucket.UNKNOWN)}
+    logged = fh.unreadable_runs(night.samples)
+    assert [(t, r) for t, r, _ in logged] == [(runs[0].time, "element_error")]
+    assert "iceaccum: read: GRIB section 1 is cut short" in logged[0][2]
+    summary = fh.summarize(night.samples, night.codes)
+    assert summary["run_reasons"] == {"element_error": 1}
+    assert fh.run_totals([summary, summary, "not a summary"]) == {
+        "run_nights": 2,
+        "run_error": 0,
+        "element_error": 2,
+    }
+    assert fh.unreadable_runs(night.samples.clear()) == []
+
+
+def test_a_range_answer_says_where_its_bytes_are_and_how_long_the_file_is() -> None:
+    url = "https://example.invalid/f"
+    data = bytes(range(200))
+    partial = fh.range_answer(206, "bytes 100-149/1709991", data[100:150], 100, 50, url)
+    assert partial == ndfd.RangeAnswer(100, data[100:150], 1709991)
+    unknown = fh.range_answer(206, "bytes 100-149/*", data[100:150], 100, 50, url)
+    assert unknown.total is None
+    assert fh.range_answer(206, None, data[:50], 100, 50, url).start == -1
+    assert fh.range_answer(200, None, data, 100, 50, url) == ndfd.RangeAnswer(
+        100, data[100:150], 200, whole=True
+    )
+    assert fh.range_answer(416, "bytes */200", b"", 300, 50, url) == ndfd.RangeAnswer(300, b"", 200)
+    assert fh.range_answer(416, None, b"", 300, 50, url) == ndfd.RangeAnswer(
+        300, b"", None, past_end=True
+    )
+    # A 416 inside a file the host says is longer is short, and asked again.
+    pauses: list[float] = []
+    answers = iter(
+        [
+            fh.range_answer(416, "bytes */200", b"", 100, 50, url),
+            fh.range_answer(206, "bytes 100-149/200", data[100:150], 100, 50, url),
+        ]
+    )
+    read = ndfd.steady_reader(lambda _offset, _size: next(answers), pause=pauses.append)
+    assert read(100, 50) == data[100:150]
+    assert pauses == [2.0]
+    with pytest.raises(ndfd.NdfdError, match="HTTP 403"):
+        fh.range_answer(403, None, b"", 0, 50, url)
+
+
+def test_a_416_without_a_size_inside_a_file_an_earlier_answer_sized_is_short() -> None:
+    url = "https://example.invalid/f"
+    data = bytes(range(200))
+    s3_416 = fh.range_answer(416, None, b"", 100, 50, url)  # S3 gives no Content-Range
+    pauses: list[float] = []
+    answers = iter(
+        [
+            fh.range_answer(206, "bytes 0-49/200", data[:50], 0, 50, url),
+            s3_416,
+            fh.range_answer(206, "bytes 100-149/*", data[100:150], 100, 50, url),
+            fh.range_answer(416, None, b"", 200, 50, url),
+        ]
+    )
+    read = ndfd.steady_reader(lambda _offset, _size: next(answers), pause=pauses.append)
+    assert read(0, 50) == data[:50]
+    assert read(100, 50) == data[100:150]  # the 416 inside the file's 200 bytes is asked again
+    assert read(200, 50) == b""  # at the file's end, the same 416 is its end
+    assert pauses == [2.0]
+    # Still a 416 inside the file after every try: a typed error, never the file's end.
+    sized = iter([fh.range_answer(206, "bytes 0-49/200", data[:50], 0, 50, url)] + [s3_416] * 4)
+    read = ndfd.steady_reader(lambda _offset, _size: next(sized), pause=pauses.append)
+    assert read(0, 50) == data[:50]
+    with pytest.raises(ndfd.ShortReadError, match="0 bytes at 100, the file holds 50"):
+        read(100, 50)
+    # A size never given: the host's end of file is all there is.
+    unsized = ndfd.steady_reader(lambda _offset, _size: s3_416, pause=pauses.append)
+    assert unsized(100, 50) == b""
+    # Another size than the file had is another file: asked again, never mixed in.
+    changed = iter(
+        [
+            fh.range_answer(206, "bytes 0-49/200", data[:50], 0, 50, url),
+            fh.range_answer(206, "bytes 100-149/300", data[100:150], 100, 50, url),
+            fh.range_answer(206, "bytes 100-149/200", data[100:150], 100, 50, url),
+        ]
+    )
+    read = ndfd.steady_reader(lambda _offset, _size: next(changed), pause=pauses.append)
+    assert read(0, 50) == data[:50]
+    assert read(100, 50) == data[100:150]
+
+
 # --- delay, gaps, listings -----------------------------------------------------------------------
 
 
@@ -981,6 +1095,8 @@ def test_the_workflow_runs_once_on_landing_and_on_demand_and_commits_nothing() -
     assert matrix["season"] == list(range(fh.FIRST_SEASON, fh.LAST_SEASON + 1))
     assert matrix["chunk"] == list(range(len(fh.CHUNKS)))
     assert jobs["nights"]["strategy"]["fail-fast"] is False
+    nights = " ".join(str(step.get("run", "")) for step in jobs["nights"]["steps"])
+    assert f"--range-attempts {ndfd.RANGE_ATTEMPTS}" in nights
     for name, job in jobs.items():
         runs = [str(step.get("run", "")) for step in job["steps"]]
         assert "uv sync --locked --no-dev" in runs, name
@@ -990,3 +1106,30 @@ def test_the_workflow_runs_once_on_landing_and_on_demand_and_commits_nothing() -
         ]
         assert uploads, name
         assert all(s["with"]["retention-days"] == 90 for s in uploads)
+
+
+def test_a_whole_file_answer_never_sets_the_file_size_for_later_reads() -> None:
+    url = "https://example.invalid/f"
+    data = bytes(range(200))
+    cut = data[:120]  # a 200 cut short but well-formed: its body length is not the file's size
+    pauses: list[float] = []
+    answers = iter(
+        [
+            fh.range_answer(200, None, cut, 0, 50, url),
+            fh.range_answer(416, None, b"", 150, 50, url),  # S3: past the cut body, not the file
+            fh.range_answer(206, "bytes 150-199/200", data[150:200], 150, 50, url),
+            fh.range_answer(200, None, cut, 100, 50, url),  # disagrees with the said 200 bytes
+            fh.range_answer(206, "bytes 100-149/200", data[100:150], 100, 50, url),
+        ]
+    )
+    read = ndfd.steady_reader(lambda _offset, _size: next(answers), pause=pauses.append)
+    assert read(0, 50) == data[:50]  # checked against its own body: whole here
+    # The 416 is believed (no size was ever said), so the read ends there; a size said later
+    # in a header holds from then on, and a whole answer that disagrees with it is short.
+    assert read(150, 50) == b""
+    assert read(150, 50) == data[150:200]
+    assert read(100, 50) == data[100:150]
+    assert pauses == [2.0]
+    # A whole answer at the file's end is checked against its own length.
+    end = ndfd.steady_reader(lambda o, z: fh.range_answer(200, None, data, o, z, url))
+    assert end(180, 50) == data[180:]

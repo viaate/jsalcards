@@ -29,6 +29,7 @@ import argparse
 import json
 import math
 import os
+import re
 import sys
 import threading
 import time as clock
@@ -626,9 +627,15 @@ def _codes(  # noqa: PLR0913, PLR0917 - one sample of one zone
 class Fetcher:  # pragma: no cover - the network
     """GETs and range reads with retries (NCEI's THREDDS answers 503 at times), counting bytes."""
 
-    def __init__(self, client: httpx.Client, attempts: int = 6) -> None:
+    def __init__(
+        self,
+        client: httpx.Client,
+        attempts: int = 6,
+        range_attempts: int = ndfd.RANGE_ATTEMPTS,
+    ) -> None:
         self.client = client
         self.attempts = attempts
+        self.range_attempts = range_attempts
         self.bytes = 0
         self.requests = 0
         self._lock = threading.Lock()
@@ -665,23 +672,55 @@ class Fetcher:  # pragma: no cover - the network
         return response.content
 
     def ranged(self, url: str) -> ndfd.Ranged:
-        """Range reads of one file."""
+        """Range reads of one file, each checked to hold the bytes the file holds there and
+        tried again when not (:func:`snowlight.predict.ndfd.steady_reader`)."""
 
-        def read(offset: int, size: int) -> bytes:
+        def fetch(offset: int, size: int) -> ndfd.RangeAnswer:
             response = self._get(url, {"Range": f"bytes={offset}-{offset + size - 1}"})
-            if response.status_code == httpx.codes.REQUESTED_RANGE_NOT_SATISFIABLE:
-                return b""
-            if response.status_code == httpx.codes.OK:
-                return response.content[offset : offset + size]
-            if response.status_code != httpx.codes.PARTIAL_CONTENT:
-                raise ndfd.NdfdError(f"HTTP {response.status_code} for a range of {url}")
-            return response.content
+            return range_answer(
+                response.status_code,
+                response.headers.get("content-range"),
+                response.content,
+                offset,
+                size,
+                url,
+            )
 
-        return read
+        return ndfd.steady_reader(fetch, self.range_attempts, clock.sleep)
 
     def opener(self) -> Opener:
         """Opens a listed file."""
         return lambda listed: self.ranged(listed.url)
+
+
+_CONTENT_RANGE: Final = re.compile(r"bytes (\d+)-(\d+)/(\d+|\*)")
+
+
+def range_answer(  # noqa: PLR0913, PLR0917 - one response's parts
+    status: int, content_range: str | None, content: bytes, offset: int, size: int, url: str
+) -> ndfd.RangeAnswer:
+    """What one answer to a range read holds (:class:`snowlight.predict.ndfd.RangeAnswer`): a
+    206 by its Content-Range, a 200 (the host sent the whole file) cut to the range, a 416 as
+    nothing past the file's end.
+
+    Raises:
+        ndfd.NdfdError: another status (after :class:`Fetcher`'s retries).
+    """
+    if status == httpx.codes.REQUESTED_RANGE_NOT_SATISFIABLE:
+        said = (content_range or "").strip()
+        total = int(said[8:]) if said.startswith("bytes */") and said[8:].isdigit() else None
+        # Past the file's end: nothing. A 416 inside a file the host says (or said) is longer
+        # is short; S3's 416 gives no size, so the reader checks it against an earlier answer.
+        return ndfd.RangeAnswer(offset, b"", total, past_end=total is None)
+    if status == httpx.codes.OK:
+        return ndfd.RangeAnswer(offset, content[offset : offset + size], len(content), whole=True)
+    if status != httpx.codes.PARTIAL_CONTENT:
+        raise ndfd.NdfdError(f"HTTP {status} for a range of {url}")
+    found = _CONTENT_RANGE.fullmatch((content_range or "").strip())
+    if found is None:  # no way to know where the bytes are: never taken as the range
+        return ndfd.RangeAnswer(-1, content, None)
+    total = None if found[3] == "*" else int(found[3])
+    return ndfd.RangeAnswer(int(found[1]), content, total)
 
 
 def host_for(day: date) -> Host:
@@ -1101,6 +1140,12 @@ def register(actions: "argparse._SubParsersAction[argparse.ArgumentParser]") -> 
         "--only", type=date.fromisoformat, action="append", help="only these nights (a dry run)"
     )
     night.add_argument("--workers", type=int, default=6)
+    night.add_argument(
+        "--range-attempts",
+        type=int,
+        default=ndfd.RANGE_ATTEMPTS,
+        help="tries of a range read that came back short before its run's element is unreadable",
+    )
     night.add_argument("--out", type=Path, required=True)
     night.set_defaults(handler=run_nights)
     collect = steps.add_parser("collect", help="one file per school year, manifest, report")
@@ -1181,7 +1226,7 @@ def run_nights(args: argparse.Namespace) -> int:  # pragma: no cover - the netwo
     samples: list[pl.DataFrame] = []
     refused: list[RunValues] = []
     with _client() as http:
-        fetcher = Fetcher(http)
+        fetcher = Fetcher(http, range_attempts=args.range_attempts)
         listings = Listings(fetcher.get)
         for day in days:
             around = listings.around(day)
@@ -1200,6 +1245,8 @@ def run_nights(args: argparse.Namespace) -> int:  # pragma: no cover - the netwo
             samples.append(night.samples)
             refused.extend(night.refused)
             unknown = int(night.samples["unknown"].sum())
+            for run_time, reason, error in unreadable_runs(night.samples):
+                sys.stdout.write(f"{day} run {run_time:%Y-%m-%d %H:%M}Z {reason}: {error}\n")
             sys.stdout.write(
                 f"{day} runs {len(assembled.runs)} unknown {unknown} "
                 f"MB {fetcher.bytes / 1e6:.0f} s {clock.monotonic() - started:.0f}\n"
@@ -1235,6 +1282,25 @@ def run_nights(args: argparse.Namespace) -> int:  # pragma: no cover - the netwo
         },
     )
     return 0
+
+
+def unreadable_runs(samples: pl.DataFrame) -> list[tuple[datetime, str, str]]:
+    """Each run of a night's samples whose files did not read, whole or in part (its time,
+    :class:`Reason` and error), in run order: logged as the night is read."""
+    if samples.height == 0:
+        return []
+    bad = (
+        samples.filter(
+            pl.col("run_time").is_not_null()
+            & pl.col("reason").is_in([Reason.RUN_ERROR.value, Reason.ELEMENT_ERROR.value])
+        )
+        .unique(["run_time"])
+        .sort("run_time")
+    )
+    return [
+        (row["run_time"], row["reason"], row["error"] or "")
+        for row in bad.select("run_time", "reason", "error").to_dicts()
+    ]
 
 
 def summarize(
@@ -1297,6 +1363,24 @@ def _days_of(summaries: Iterable[JSONValue], key: str) -> list[str]:
     return sorted(found)
 
 
+def run_totals(summaries: Iterable[JSONValue]) -> dict[str, int]:
+    """Over the jobs' summaries: the run-nights read (a run counts once for each night that
+    samples it, so a run two nights share counts twice), and how many of them did not read
+    whole (``run_error``) or in part (``element_error``)."""
+    totals = {"run_nights": 0, Reason.RUN_ERROR.value: 0, Reason.ELEMENT_ERROR.value: 0}
+    for summary in summaries:
+        if not isinstance(summary, dict):
+            continue
+        runs = summary.get("runs")
+        totals["run_nights"] += runs if isinstance(runs, int) else 0
+        reasons = summary.get("run_reasons")
+        if isinstance(reasons, dict):
+            for key in (Reason.RUN_ERROR.value, Reason.ELEMENT_ERROR.value):
+                count = reasons.get(key)
+                totals[key] += count if isinstance(count, int) else 0
+    return totals
+
+
 def run_collect(args: argparse.Namespace) -> int:  # pragma: no cover - the workflow's files
     """Run ``forecast-history collect``: per school year files, the manifest and the report."""
     parts = sorted(args.parts.rglob("*.parquet")) + sorted(args.parts.rglob("summary-*.json"))
@@ -1349,11 +1433,13 @@ def run_collect(args: argparse.Namespace) -> int:  # pragma: no cover - the work
         written.append(target)
     missing = sorted(f"{s}-{c}" for s, c in expected - present)
     problems = error_problems(shares)
+    totals = run_totals(summaries)
     manifest: JSONValue = {
         "parts_expected": len(expected),
         "parts_present": len(present),
         "missing_parts": list(missing),
         "error_share_by_month": dict(sorted(shares.items())),
+        "run_totals": dict(totals),
         "problems": list(problems),
         "missing_days": list(_days_of(summaries, "missing_days")),
         "failed_days": list(_days_of(summaries, "failed_days")),
@@ -1368,6 +1454,10 @@ def run_collect(args: argparse.Namespace) -> int:  # pragma: no cover - the work
     }
     write_json(args.out / "manifest.json", manifest)
     sys.stdout.write(f"parts {len(present)} of {len(expected)}, missing {missing}\n")
+    sys.stdout.write(
+        f"run-nights {totals['run_nights']}, unreadable {totals[Reason.RUN_ERROR.value]}, "
+        f"with an unreadable element {totals[Reason.ELEMENT_ERROR.value]}\n"
+    )
     for problem in problems:
         sys.stderr.write(f"forecast history: {problem}\n")
     return 0 if not missing and not problems else 1

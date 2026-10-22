@@ -85,6 +85,16 @@ class NotFoundError(NdfdError):
     """The host has no such file or listing (HTTP 404): NCEI has no folder for some days."""
 
 
+class ShortReadError(NdfdError):
+    """A range read kept returning other bytes than the file holds there (fewer than asked
+    before its end, or another range), after :data:`RANGE_ATTEMPTS` tries."""
+
+
+class HeadError(NdfdError):
+    """A GRIB message's head is cut short or malformed: the file ends inside sections 0 to 4
+    (an object truncated on its host), or a section overruns the bytes that hold it."""
+
+
 class Element(StrEnum):
     """An NDFD element, by its folder name on AWS."""
 
@@ -474,6 +484,87 @@ def bytes_reader(data: bytes) -> Ranged:
     return read
 
 
+RANGE_ATTEMPTS: Final = 4
+"""Tries of one range read that returned other bytes than asked (a cut connection, a server
+answering short) before :class:`ShortReadError`."""
+RANGE_PAUSE: Final = 2.0
+"""Seconds before the second try; each later try waits twice as long (at most 30 s)."""
+
+
+@dataclass(frozen=True, slots=True)
+class RangeAnswer:
+    """What a host sent for one range read: the bytes, where they start, and the file's size
+    (``None`` when the host did not say)."""
+
+    start: int
+    data: bytes
+    total: int | None
+    past_end: bool = False
+    """The host said the range starts past the file's end without saying the file's size (an
+    S3 416): believed only when no earlier answer gave a size the range is inside."""
+    whole: bool = False
+    """The host sent the whole file (a 200), so ``total`` is the length of the body it sent:
+    this answer is checked against it, but only a size the host said in a header (a 206's
+    Content-Range or a 416's ``bytes */N``) holds for the file's later reads."""
+
+
+def range_expected(offset: int, size: int, total: int) -> int:
+    """The bytes a read of ``size`` at ``offset`` must return from a file of ``total`` bytes."""
+    return max(0, min(size, total - offset))
+
+
+def steady_reader(
+    fetch: Callable[[int, int], RangeAnswer],
+    attempts: int = RANGE_ATTEMPTS,
+    pause: Callable[[float], None] | None = None,
+) -> Ranged:
+    """A :class:`Ranged` that checks every answer of ``fetch`` holds exactly the bytes the file
+    holds at that range (all asked, or up to the file's end) and tries again politely when not:
+    ``pause`` waits :data:`RANGE_PAUSE` s, then twice as long each time, at most 30 s. The
+    file's size, once an answer says it in a header, holds for every later read of the file:
+    an answer without one is checked against it, and an end of file said inside it is short. A
+    whole-file answer's body length is never learned as the size (a body cut short but
+    well-formed would set a wrong size for every later read); it is checked against a size
+    already said, and an answer with no said size is checked against its own.
+
+    Raises (from the reader):
+        ShortReadError: ``attempts`` answers in a row were short or another range.
+    """
+    wait = pause if pause is not None else _sleep
+    known: list[int] = []  # the file's size, from the first answer that said it in a header
+
+    def read(offset: int, size: int) -> bytes:
+        why = ""
+        for attempt in range(max(1, attempts)):
+            if attempt:
+                wait(min(30.0, RANGE_PAUSE * 2.0 ** (attempt - 1)))
+            answer = fetch(offset, size)
+            if answer.total is not None and not answer.whole and not known:
+                known.append(answer.total)
+            if answer.start != offset:
+                why = f"bytes from {answer.start}, asked from {offset}"
+                continue
+            if known and answer.total is not None and answer.total != known[0]:
+                why = f"a file of {answer.total} bytes, earlier {known[0]}"
+                continue
+            total = known[0] if known else answer.total
+            if answer.past_end and total is None:
+                return b""  # no size ever given: the host's end of file is all there is
+            want = size if total is None else range_expected(offset, size, total)
+            if len(answer.data) == want:
+                return answer.data
+            why = f"{len(answer.data)} bytes at {offset}, the file holds {want} there"
+        raise ShortReadError(f"{why} after {max(1, attempts)} tries")
+
+    return read
+
+
+def _sleep(seconds: float) -> None:  # pragma: no cover - real time
+    import time  # noqa: PLC0415
+
+    time.sleep(seconds)
+
+
 _UNIT_SECONDS: Final[Mapping[int, int]] = {
     0: 60,
     1: 3600,
@@ -512,7 +603,14 @@ class Head:
         return self.end - self.span
 
 
+def _need(raw: bytes, end: int, what: str) -> None:
+    """Raise :class:`HeadError` unless ``raw`` holds ``end`` bytes (``what`` is cut short)."""
+    if len(raw) < end:
+        raise HeadError(f"{what} is cut short: {len(raw)} of its {end} bytes")
+
+
 def _when(raw: bytes, at: int) -> datetime:
+    _need(raw, at + 7, "a GRIB time")
     year = struct.unpack(">H", raw[at : at + 2])[0]
     month, day, hour, minute, second = raw[at + 2 : at + 7]
     try:
@@ -525,10 +623,25 @@ def parse_head(raw: bytes, offset: int) -> Head:
     """Sections 0, 1 and 4 of the message starting at ``raw[0]`` (``offset`` in its file).
 
     Raises:
+        HeadError: the head is cut short (the file ends inside it) or a section overruns it.
         NdfdError: it is not a GRIB2 message this module reads.
     """
-    if raw[:4] != b"GRIB" or len(raw) < 16:  # noqa: PLR2004
+    try:
+        return _parse_head(raw, offset)
+    except (struct.error, IndexError) as error:  # pragma: no cover - a bound the checks missed
+        raise HeadError(f"a GRIB head at {offset} does not read: {error}") from error
+
+
+def _parse_head(raw: bytes, offset: int) -> Head:
+    """:func:`parse_head`'s reading.
+
+    Raises:
+        HeadError: the head is cut short (the file ends inside it) or a section overruns it.
+        NdfdError: it is not a GRIB2 message this module reads.
+    """
+    if raw[:4] != b"GRIB":
         raise NdfdError("not a GRIB message")
+    _need(raw, 16, "a GRIB section 0")
     if raw[7] != 2:  # noqa: PLR2004
         raise NdfdError(f"GRIB edition {raw[7]}, not 2")
     discipline = raw[6]
@@ -539,7 +652,11 @@ def parse_head(raw: bytes, offset: int) -> Head:
         size = struct.unpack(">I", raw[at : at + 4])[0]
         number = raw[at + 4]
         if size < 5:  # noqa: PLR2004
-            raise NdfdError("a GRIB section shorter than its header")
+            raise HeadError("a GRIB section shorter than its header")
+        if number in {1, 4}:
+            _need(raw, at + size, f"GRIB section {number}")
+            if at + size > length:
+                raise HeadError(f"GRIB section {number} runs past its message's {length} bytes")
         if number == 1:
             reference = _when(raw, at + 12)
         elif number == 4:  # noqa: PLR2004
@@ -547,7 +664,9 @@ def parse_head(raw: bytes, offset: int) -> Head:
         elif number > 4:  # noqa: PLR2004
             break
         at += size
-    raise NdfdError("section 4 is not in the message's first bytes")
+    if len(raw) < min(length, HEAD_BYTES):
+        raise HeadError(f"the file ends {len(raw)} bytes into a message, before its section 4")
+    raise HeadError("section 4 is not in the message's first bytes")
 
 
 def _section4(
@@ -555,6 +674,7 @@ def _section4(
 ) -> Head:
     if reference is None:
         raise NdfdError("no section 1 before section 4")
+    _need(raw, 22, "a GRIB section 4")
     template = struct.unpack(">H", raw[7:9])[0]
     category, number, unit = raw[9], raw[10], raw[17]
     if unit not in _UNIT_SECONDS:
@@ -563,7 +683,8 @@ def _section4(
     start = reference + timedelta(seconds=lead)
     span = timedelta(0)
     if template == _STATISTICAL:
-        if len(raw) < _RANGE_END or raw[41] != 1:
+        _need(raw, _RANGE_END, "a template 4.8 section")
+        if raw[41] != 1:
             raise NdfdError("a template 4.8 message without exactly one time range")
         end = _when(raw, 34)
         span_unit = raw[48]
@@ -584,23 +705,35 @@ def walk(read: Ranged, stop: Callable[[Head], bool] | None = None) -> Iterator[H
 
     ``stop`` ends the walk after the first head it accepts (that head is yielded).
 
+    A walk that reaches the file's end checks the last message ends there in ``7777``, so a
+    file cut inside a message's body is a cut file whether or not that message is ever read.
+
     Raises:
+        HeadError: the file ends inside a frame, a message's head or the last message's body,
+            or a head is malformed.
         NdfdError: bytes between messages are not a frame, or a head does not read.
     """
     offset = 0
+    last: Head | None = None
     while True:
         raw = read(offset, HEAD_BYTES)
+        if not raw and last is not None and read(offset - 4, HEAD_BYTES)[:4] != b"7777":
+            raise HeadError(f"the file ends inside the message at {last.offset}")
         if not raw.strip(b"\r\n\x00 "):
             return
         found = raw.find(b"GRIB")
         if found < 0:
             if len(raw) < HEAD_BYTES:
+                tail = raw.strip(b"\r\n\x00 ")
+                # Any start of a frame line (``*`` to ``****...``) or of ``GRIB`` is a cut file.
+                if tail.startswith(b"*") or b"****" in raw or tail.endswith((b"G", b"GR", b"GRI")):
+                    raise HeadError(f"the file ends inside a frame or a GRIB start at {offset}")
                 return
             raise NdfdError(f"no GRIB message within {HEAD_BYTES} bytes of {offset}")
         if found:
             offset += found
             raw = read(offset, HEAD_BYTES)
-        head = parse_head(raw, offset)
+        head = last = parse_head(raw, offset)
         yield head
         if stop is not None and stop(head):
             return

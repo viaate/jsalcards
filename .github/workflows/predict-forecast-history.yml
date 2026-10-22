@@ -18,7 +18,9 @@
 #   snowlight/predict/forecast_history.py), each about 30 nights.
 # * collect: one codes file per school year, the lateness and sample tables, and manifest.json
 #   with every file's SHA-256, each job's summary and the share of samples by month whose run or
-#   listing did not read (it fails when a month's samples mostly did not read).
+#   listing did not read (it fails when a month's samples mostly did not read), and the
+#   run-nights read (a run once for each night it serves) with how many did not read whole or
+#   in part (run_totals).
 #
 # Everything is uploaded as artifacts (kept 90 days): forecast-history-prepared,
 # forecast-history-part-<year>-<chunk>, and forecast-history (what the model step downloads to
@@ -111,9 +113,15 @@ jobs:
           name: forecast-history-prepared
           path: forecast-history/prepared
 
+      # Every range read is checked against the file's size (kept from its first answer, so
+      # an S3 416 without a size inside the file is short too): a short one is asked again (4
+      # tries, 2, 4, 8 s apart), then its run's element is unreadable. A file cut inside a
+      # message head (AWS's 2024-12-17 21:47Z ice file, which stopped run 39698719822) or
+      # inside its last message's body makes that element unreadable too. Each such run is logged here and totalled by collect.
       - run: >
           uv run snowlight predict forecast-history nights
           --season ${{ matrix.season }} --chunk ${{ matrix.chunk }}
+          --range-attempts 4
           --prepared ../forecast-history/prepared --out ../forecast-history/part
 
       - uses: actions/upload-artifact@v4
