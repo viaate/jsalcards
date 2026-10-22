@@ -9,6 +9,7 @@ steps are run with a stand-in ``uv`` to check what they do.
 """
 
 import os
+import re
 import shutil
 import stat
 import subprocess
@@ -302,6 +303,104 @@ def test_a_failed_build_is_tried_three_times(
     log = _commands(tmp_path)
     assert log.count("run snowlight directory build") == 3
     assert [line for line in log if line.startswith("sleep")] == ["sleep 60", "sleep 180"]
-    assert len([line for line in log if line.startswith("curl")]) == 3
+    # No probe of the origins: the build reads the cache and the data mirror only.
+    assert not [line for line in log if line.startswith("curl")]
     assert result.stdout.count("::warning::snowlight directory build failed") == 3
+    assert result.stdout.count("the data mirror release") == 3
     assert "run snowlight places build" not in log
+
+
+ORIGIN_HOSTS = ("nces.ed.gov", "census.gov")
+# The jobs that contact the origins: seeding the mirror, and the weekly release check.
+ORIGIN_READERS = frozenset({"data-mirror.yml", "nces-check.yml"})
+
+
+def test_no_deploy_contacts_nces_or_census() -> None:
+    """Deploys read the cache and the data mirror only; a step that names an origin fails this."""
+    workflows = sorted((REPO_ROOT / ".github" / "workflows").glob("*.yml"))
+    assert WORKFLOW_PATH in workflows
+    for path in workflows:
+        if path.name in ORIGIN_READERS:
+            continue
+        text = path.read_text(encoding="utf-8").lower()
+        for host in ORIGIN_HOSTS:
+            assert host not in text, (path.name, host)
+
+
+MIRROR_ROOT = "https://github.com/${{ github.repository }}/releases/download"
+# Any directory or places build, however it is spelled: `snowlight directory build`,
+# or the Preview's `snowlight "$name" build` through its build() helper.
+SNOWLIGHT_BUILD = re.compile(r"\bsnowlight\s+(?:directory|places|\"?\$\{?\w+\}?\"?)\s+build\b")
+
+
+def _deploy_builds() -> list[tuple[str, Step, dict[str, object]]]:
+    """Every step outside the origin readers that runs a directory or places build."""
+    found: list[tuple[str, Step, dict[str, object]]] = []
+    for path in sorted((REPO_ROOT / ".github" / "workflows").glob("*.yml")):
+        if path.name in ORIGIN_READERS:
+            continue
+        loaded = yaml.safe_load(path.read_text(encoding="utf-8"))
+        for job in loaded["jobs"].values():
+            for step in job.get("steps", []):
+                if SNOWLIGHT_BUILD.search(_run(step)):
+                    env = {**loaded.get("env", {}), **job.get("env", {}), **step.get("env", {})}
+                    found.append((path.name, step, env))
+    return found
+
+
+def test_the_build_pattern_matches_every_spelling() -> None:
+    for script in (
+        "uv run snowlight directory build --no-tiles",
+        "uv run snowlight places build",
+        'if uv run snowlight "$name" build "$@"; then',
+        "uv run snowlight ${name} build",
+    ):
+        assert SNOWLIGHT_BUILD.search(script), script
+    assert not SNOWLIGHT_BUILD.search("uv run snowlight replays publish")
+
+
+def test_every_build_in_a_deploy_reads_the_mirror_and_requires_it() -> None:
+    """A deploy's directory and places builds read the mirror, and fail closed without it."""
+    builds = _deploy_builds()
+    assert "preview.yml" in {name for name, _step, _env in builds}
+    for name, step, env in builds:
+        assert env.get("SNOWLIGHT_MIRROR") == MIRROR_ROOT, name
+        assert env.get("SNOWLIGHT_REQUIRE_MIRROR") == "1", name
+        assert "--mirror" not in _run(step), name
+
+
+def test_the_preview_build_step_reads_the_mirror(build_steps: list[Step]) -> None:
+    step = build_steps[_index(build_steps, 'build directory "${previous[@]}"')]
+    script = _run(step)
+    assert "build places" in script
+    assert SNOWLIGHT_BUILD.search(script)
+    env = step["env"]
+    assert isinstance(env, dict)
+    assert env["SNOWLIGHT_MIRROR"] == MIRROR_ROOT
+    assert env["SNOWLIGHT_REQUIRE_MIRROR"] == "1"
+
+
+def test_the_preview_waits_for_a_mirror_being_seeded_within_its_timeout(
+    workflow: dict[str, object], build_steps: list[Step]
+) -> None:
+    """Three tries of the mirror wait, with their pauses, leave 15 minutes of the job."""
+    step = build_steps[_index(build_steps, 'build directory "${previous[@]}"')]
+    env = step["env"]
+    assert isinstance(env, dict)
+    wait = int(env["SNOWLIGHT_MIRROR_WAIT"])
+    assert wait >= 300
+    pauses = re.search(r"for pause in ([\d ]+); do", _run(step))
+    assert pauses is not None
+    tries = [int(p) for p in pauses.group(1).split()]
+    jobs = workflow["jobs"]
+    assert isinstance(jobs, dict)
+    timeout = int(jobs["build"]["timeout-minutes"]) * 60
+    assert len(tries) * wait + sum(tries) + 15 * 60 <= timeout
+
+
+def test_the_download_cache_follows_both_pin_files(build_steps: list[Step]) -> None:
+    (cache,) = [s for s in build_steps if str(s.get("uses", "")).startswith("actions/cache@")]
+    settings = cache["with"]
+    assert isinstance(settings, dict)
+    assert "pipeline/config/directory.yaml" in settings["key"]
+    assert "pipeline/config/places.yaml" in settings["key"]

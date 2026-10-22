@@ -1,0 +1,50 @@
+name: NCES release check
+
+# Once a week, asks NCES whether it has published files newer than the pinned ones
+# (snowlight nces check: the next school year of each pinned file family, with
+# small ranged GETs, and the CCD file list), read only, under a User-Agent naming
+# snowlightmap.com. A web page served with HTTP 200 and a redirect to a landing
+# page mean "not published"; an answer that settles nothing is a warning. When a
+# newer file is published it opens, or updates, the one issue titled "New NCES
+# release available"; when nothing is, it does nothing. It never changes a pin or
+# a deploy: docs/deployed-edition.md, "Bumping a pinned source file", is how a
+# reviewer takes a new release. It also runs on a push that changes this file.
+
+on:
+  schedule:
+    # Mondays at 14:17 UTC.
+    - cron: "17 14 * * 1"
+  push:
+    paths:
+      - .github/workflows/nces-check.yml
+
+permissions:
+  contents: read
+  issues: write
+
+concurrency:
+  group: nces-check
+  cancel-in-progress: false
+
+jobs:
+  check:
+    if: github.ref_name == github.event.repository.default_branch
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      # setup-uv pins the v10.2.0 release commit, as ci.yml does.
+      - uses: astral-sh/setup-uv@c18668ad3cf93ea998bef934396af7bb5c839dc7 # v10.2.0
+        with:
+          python-version: "3.12"
+          working-directory: pipeline
+          enable-cache: true
+          cache-dependency-glob: uv.lock
+      - working-directory: pipeline
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        run: |
+          uv sync --locked
+          uv run snowlight nces check --issue

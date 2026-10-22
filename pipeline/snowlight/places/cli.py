@@ -6,12 +6,15 @@ import sys
 from pathlib import Path
 
 import snowlight
+from snowlight.mirror.pins import load_mirror, mirror_root
 from snowlight.places.build import Pins, PlacesBuildError, build_places
 from snowlight.places.download import DownloadError, SourceCache, make_client
 from snowlight.places.grf import GrfFormatError
+from snowlight.places.pins import PlacesPins, load_places_pins
 from snowlight.places.records import SourceMismatchError
 from snowlight.places.xlsx import XlsxError
 from snowlight.sources.census import CensusFormatError
+from snowlight.sources.mirror import ENV_ROOT, Mirror, Pin
 
 _FAILURES = (
     CensusFormatError,
@@ -80,7 +83,46 @@ def register(subparsers: "argparse._SubParsersAction[argparse.ArgumentParser]") 
     build.add_argument(
         "--popest-series", type=_series, help="use this estimates series, e.g. 2020-2025"
     )
+    build.add_argument(
+        "--pinned",
+        action="store_true",
+        help=(
+            "read the releases pinned in config/places.yaml from their origins, each file "
+            "checked against its pin (--mirror implies it)"
+        ),
+    )
+    build.add_argument(
+        "--mirror",
+        metavar="ROOT",
+        default=None,
+        help=(
+            "read the releases and files pinned in config/places.yaml, each file the cache "
+            "lacks from the data mirror under this releases download root, never from its "
+            f"origin (default: ${ENV_ROOT}; unset finds the newest releases at the origins)"
+        ),
+    )
     build.set_defaults(handler=run_build)
+
+
+def _stderr_line(line: str) -> None:
+    sys.stderr.write(line + "\n")
+
+
+def _pinned(asked: Pins, *, revalidate: bool) -> tuple[Pins, PlacesPins]:
+    """The releases pinned in config/places.yaml, and their files' pins.
+
+    Raises:
+        ValueError: when a release flag differs from its pin, or with --revalidate.
+    """
+    if revalidate:
+        raise ValueError("--revalidate asks for newer bytes; pinned files have one version")
+    pinned = load_places_pins()
+    pins = Pins(pinned.gazetteer_year, pinned.grf_year, pinned.series)
+    for name in ("gazetteer_year", "grf_year", "popest_series"):
+        wanted = getattr(asked, name)
+        if wanted is not None and wanted != getattr(pins, name):
+            raise ValueError(f"--{name.replace('_', '-')} differs from config/places.yaml")
+    return pins, pinned
 
 
 def run_build(args: argparse.Namespace) -> int:
@@ -94,8 +136,35 @@ def run_build(args: argparse.Namespace) -> int:
         grf_year=args.grf_year,
         popest_series=args.popest_series,
     )
+    mirror: Mirror | None = None
+    checked: dict[str, Pin] | None = None
     try:
-        with SourceCache(cache_dir, make_client(), revalidate=args.revalidate) as cache:
+        mirror_at = mirror_root(args.mirror)
+    except ValueError as error:
+        sys.stderr.write(f"places build: {error}\n")
+        return 2
+    if mirror_at is not None or args.pinned:
+        try:
+            pins, pinned = _pinned(pins, revalidate=args.revalidate)
+            checked = {pin.url: pin for pin in pinned.pins()}
+            mirror = None if mirror_at is None else load_mirror(mirror_at)
+        except (ValueError, OSError) as error:
+            sys.stderr.write(f"places build: {error}\n")
+            return 2
+    if mirror is not None:
+        sys.stderr.write(
+            f"places build: files from the cache, else the data mirror {mirror.base_url}\n"
+        )
+    try:
+        client = make_client()
+        with SourceCache(
+            cache_dir,
+            client,
+            revalidate=args.revalidate,
+            mirror=mirror,
+            pinned=checked,
+            log=_stderr_line,
+        ) as cache:
             result = build_places(cache, out_dir, manifest, pins)
     except _FAILURES as exc:
         sys.stderr.write(f"places build failed: {exc}\n")

@@ -35,7 +35,9 @@ from snowlight.directory.report import ReconciliationError
 from snowlight.directory.supplement import SupplementError
 from snowlight.directory.tiles import TilesError
 from snowlight.directory.zones import ZoneCoverageError, ZoneError, nws_zone_lookup
+from snowlight.mirror.pins import load_mirror, mirror_root
 from snowlight.output import write_bytes_atomic
+from snowlight.sources.mirror import ENV_ROOT
 from snowlight.sources.nces.fetch import USER_AGENT, DownloadError
 from snowlight.sources.nces.readers import SourceFormatError
 from snowlight.sources.nces.xlsx import XlsxFormatError
@@ -90,6 +92,15 @@ def register(subparsers: "argparse._SubParsersAction[argparse.ArgumentParser]") 
         type=Path,
         default=WEATHER_CACHE_DIR,
         help="download cache for the NWS boundary files (default: the weather build's)",
+    )
+    run.add_argument(
+        "--mirror",
+        metavar="ROOT",
+        default=None,
+        help=(
+            "read every NCES file the cache lacks from the data mirror under this releases "
+            f"download root, never from nces.ed.gov (default: ${ENV_ROOT}; unset reads NCES)"
+        ),
     )
     run.add_argument(
         "--no-tiles",
@@ -186,6 +197,8 @@ _FAILURES = (
 # uses.
 _REFUSALS = (EditionRefusedError, ZoneCoverageError)
 REFUSED = 4
+# A setting the command cannot work with, like argparse's own usage errors.
+USAGE = 2
 
 
 def run_build(args: argparse.Namespace) -> int:
@@ -205,6 +218,12 @@ def run_build(args: argparse.Namespace) -> int:
         partial(nws_zone_lookup, args.zones_cache_dir) if args.zones else None
     )
     try:
+        root = mirror_root(args.mirror)
+        mirror = None if root is None else load_mirror(root, directory_path=args.config)
+    except (ValueError, OSError) as error:
+        sys.stderr.write(f"snowlight directory build: the data mirror: {error}\n")
+        return USAGE
+    try:
         previous = None if args.previous_edition is None else read_edition(args.previous_edition)
         result = build(
             load_config(args.config),
@@ -212,6 +231,7 @@ def run_build(args: argparse.Namespace) -> int:
             previous=previous,
             zones=zones,
             write_tiles=args.tiles,
+            mirror=mirror,
         )
     except _REFUSALS as error:
         sys.stderr.write(f"snowlight directory build: refused: {error}\n")

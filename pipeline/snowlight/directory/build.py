@@ -129,6 +129,7 @@ from snowlight.directory.zones import (
 )
 from snowlight.output import dumps_json, write_bytes_atomic, write_json
 from snowlight.schemas.directory import DirectoryEdition, written_digest
+from snowlight.sources.mirror import Mirror
 from snowlight.sources.nces import readers
 from snowlight.sources.nces.fetch import (
     FileCache,
@@ -757,6 +758,21 @@ class BuildResult:
     internal_dir: Path
 
 
+def _fetch_all(
+    config: DirectoryConfig,
+    cache_dir: Path,
+    client_factory: Callable[[], httpx.Client],
+    log: Log,
+    mirror: Mirror | None,
+) -> dict[SourceKey, FetchedSource]:
+    if mirror is None:
+        log("Fetching NCES files")
+    else:
+        log(f"Fetching NCES files from the cache, else the data mirror {mirror.base_url}")
+    with FileCache(cache_dir, client_factory(), mirror=mirror, log=log) as cache:
+        return fetch_sources(config, cache, log)
+
+
 def build(  # noqa: PLR0913 - what to build, where, and how
     config: DirectoryConfig,
     paths: BuildPaths,
@@ -767,12 +783,14 @@ def build(  # noqa: PLR0913 - what to build, where, and how
     previous: DirectoryEdition | None = None,
     zones: ZoneSource | None = None,
     write_tiles: bool = True,
+    mirror: Mirror | None = None,
 ) -> BuildResult:
     """Run the whole directory build; see the module docstring for the outputs.
 
     ``previous`` is the edition the site serves now; ``None`` only when no edition
     was ever deployed. ``zones`` makes ``school_zones.parquet``.
-    ``write_tiles=False`` skips ``schools.pmtiles``.
+    ``write_tiles=False`` skips ``schools.pmtiles``. With ``mirror`` (a deploy)
+    every file the cache lacks is read from the data mirror, never from NCES.
     """
     started = now()
     found = None
@@ -780,9 +798,7 @@ def build(  # noqa: PLR0913 - what to build, where, and how
         # First, so a failed lookup stops the build before any file is written.
         log("Reading the NWS boundary files")
         found = ZonesFound(*zones(started.date()))
-    log("Fetching NCES files")
-    with FileCache(paths.cache_dir, (client_factory or make_client)()) as cache:
-        sources = fetch_sources(config, cache, log)
+    sources = _fetch_all(config, paths.cache_dir, client_factory or make_client, log, mirror)
     log("Reading tables")
     tables = read_tables(sources, config)
     log("Filtering schools")

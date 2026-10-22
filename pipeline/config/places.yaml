@@ -1,0 +1,32 @@
+# Places build (city and ZIP search records): which Census and NCES releases a deploy
+# reads, and the SHA-256 of every file they imply. Read by snowlight.places.pins.
+# Deploys read these files from the data mirror (a release of this repository,
+# seeded by .github/workflows/data-mirror.yml), never from census.gov or nces.ed.gov;
+# a local `snowlight places build` without --mirror still finds the newest releases.
+# To move to a newer release, change it here with the new files' checksums: the
+# mirror seeds a new release on push, and the next deploy reads it
+# (docs/deployed-edition.md, "Bumping a pinned source file").
+
+gazetteer_year: 2026
+grf_year: 2025
+popest_series: 2020-2025
+
+files:
+  https://www2.census.gov/geo/docs/maps-data/data/gazetteer/2026_Gazetteer/2026_Gaz_place_national.zip:
+    sha256: af678e2d990827c89ee39b98c82de6e90b693c7361ff0e559ae3076670dd2863
+  https://www2.census.gov/geo/docs/maps-data/data/gazetteer/2026_Gazetteer/2026_Gaz_zcta_national.zip:
+    sha256: f1e9046b91f6e60686a99343cb2752834c02b0764939403b331c78c017e2c54c
+  # ZCTA land areas for the GRF's ZCTA vintage (its TIGER year, 2025).
+  https://www2.census.gov/geo/docs/maps-data/data/gazetteer/2025_Gazetteer/2025_Gaz_zcta_national.zip:
+    sha256: 51516a4283bab5cd2376eec75609ddc4b363a18297e8adeeaac7b03cf7c84dbe
+  https://nces.ed.gov/programs/edge/data/GRF25.zip:
+    sha256: ada5f993d59004bfac3bb20f866bfcc39c4def4c9d9f198c79bd3e1ed3f043ac
+  https://www2.census.gov/programs-surveys/popest/datasets/2020-2025/cities/totals/sub-est2025.csv:
+    sha256: e3508f5201465913476d4ddf91740f191f7977c9f2614a2a7e30b5fd22027934
+  # The page's bytes change on every load, so its code table is pinned: the SHA-256 of
+  # the table written as a plain page (snowlight.sources.mirror.lsad_table_page).
+  https://www.census.gov/library/reference/code-lists/legal-status-codes.html:
+    sha256: c59fdcb9f99cc9fd7d94f5c944c39b66cb59856c114845301bcaf3515e7fda3b
+    form: lsad-table
+  https://www2.census.gov/geo/docs/maps-data/data/rel2020/zcta520/tab20_zcta520_county20_natl.txt:
+    sha256: 3ed41278d637dc249e0323306f68be8a6c234e3090f4de88ef328dee71aeaaaf

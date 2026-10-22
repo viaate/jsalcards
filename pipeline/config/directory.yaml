@@ -24,12 +24,14 @@ sources:
           table: EDGE_GEOCODE_PUBLICLEA_2425.TXT
           header: EDGE_GEOCODE_PUBLICLEA_2425.xlsx
 
-  # The most recent release is used: 2024-25 when NCES publishes it, else 2023-24.
+  # The most recent pinned release is used: 2024-25 once pinned, else 2023-24.
   # PSS is biennial, so the 2024-25 link answered HTTP 404 when this was written.
-  # When it appears, the supplement's review guard reads it at once: a new school
-  # near a kept supplement entry stops the build (and Preview's deploy) until a
-  # reviewer rules on it in config/directory-supplement.yaml. Pin its sha256 here
-  # when it is published and reviewed.
+  # Deploys read pinned files only (the data mirror), so an unpinned release is
+  # skipped there; the weekly NCES release check says when it appears. Pin its
+  # sha256 here when it is published and reviewed: the supplement's review guard
+  # then reads it, and a new school near a kept supplement entry stops the build
+  # (and Preview's deploy) until a reviewer rules on it in
+  # config/directory-supplement.yaml.
   private_school_geocodes:
     title: EDGE private school geocodes (Private School Survey universe)
     candidates:

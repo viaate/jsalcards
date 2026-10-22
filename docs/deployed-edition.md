@@ -61,7 +61,7 @@ repository setting.
 
 Exit 4 from `snowlight directory build` is a refusal its inputs decide, and exit 2 a usage error
 or a failure of `uv` itself; the preview retries neither. Exit 1 may be a passing download
-failure, and the preview tries twice more.
+failure (from the cache or the data mirror, below), and the preview tries twice more.
 
 `snowlight directory deployed-edition --max-wait SECONDS` bounds the wait for a fresh CDN copy
 (default 900, at most 86400). The preview keeps the default; a caller with a start-up budget,
@@ -91,6 +91,57 @@ usual. The recovery is pinned by tests in `pipeline/tests/directory/test_directo
 `test_cli_date_past_mismatch_dates_past_a_mismatching_edition_and_nothing_else`) and
 `pipeline/tests/test_preview_workflow.py`
 (`test_the_recovery_input_reaches_the_reader_on_a_run_by_hand_only`).
+
+## Source files: the data mirror, and bumping a pinned source file
+
+The preview reads every NCES and Census file the directory and places builds need from its
+download cache, else from the data mirror: the release of this repository tagged
+`data-mirror-<digest>` for the current pins (`uv run snowlight mirror tag` prints it). It never
+contacts nces.ed.gov or census.gov: its build step sets `SNOWLIGHT_REQUIRE_MIRROR=1`, so a build
+with no mirror set exits 2 instead of reading the origins, and a test fails if a deploy step names
+either host or runs a directory or places build without both settings
+(`pipeline/tests/test_preview_workflow.py`). The pins are every candidate with a `sha256` in
+`pipeline/config/directory.yaml` and every file in `pipeline/config/places.yaml`, which also pins
+the Gazetteer, GRF and population estimate releases. Each file is checked against its pin
+wherever it comes from. The LSAD code list's page changes on every load, so it is pinned, and
+mirrored, as its code table written as a plain page (`lsad-table`). A newer NCES release that is
+not pinned (the 2024-25 private school geocodes, while NCES has not published them) is never read
+by a deploy; the build log says it is skipped as not pinned.
+
+`.github/workflows/data-mirror.yml` seeds the mirror: on a push that changes either pin file (or
+itself) it stages each pinned file the release lacks, or holds with a SHA-256 other than the pin's
+(it is replaced). A file an earlier `data-mirror-` release holds intact is copied from there, so a
+pin bump reads only its new files from the origins, with the same checks a build makes. After an
+upload it proves the release by building the directory and the places records from the files it
+staged and from the release alone, and comparing them byte for byte. It is the only job that
+contacts NCES or Census. `.github/workflows/nces-check.yml` asks NCES once a week
+whether a newer release of a pinned file family is out, and opens or updates the one issue
+"New NCES release available" when one is. A closed issue reopens only when the check finds a file
+it did not list. The check fails when no probe gets an answer, so it never goes blind quietly.
+Neither changes a pin or a deploy.
+
+| The build says | What it means | What to do |
+|---|---|---|
+| `the mirror release T does not hold F (HTTP 404); data-mirror.yml seeds it from the pins` | A pin changed and its release is not seeded, after the preview waited `SNOWLIGHT_MIRROR_WAIT` (480 s, on each of its three tries) for it. | Open the data-mirror run of the push that changed the pin. If an origin was down, re-run that job from its Actions page (Re-run failed jobs) once the origin answers; data-mirror runs only on pin pushes, so nothing re-runs it otherwise. Until it is green every preview fails and the site stays as it is; after it, the next push deploys. |
+| `... does not match the pin of URL` | A mirror asset is not the pinned file. | Re-run data-mirror.yml from its Actions page: it stages again any asset whose digest is not the pin's and replaces it. |
+| `URL changed upstream: SHA-256 X, config pins Y` in data-mirror.yml | The origin now serves other bytes under a pinned URL. | Review the new file, then pin it as below. Deploys keep reading the release of the old pins meanwhile. |
+| `... its code table changed upstream` in data-mirror.yml | The Census LSAD code list changed. | Review the change, then pin the new table's digest as below. |
+
+Bumping a pinned source file:
+
+1. Download the new file and review it. Its pin is `sha256sum FILE`; for the LSAD page it is
+   `uv run python -c "import sys, hashlib; from snowlight.sources.mirror import lsad_table_page;
+   print(hashlib.sha256(lsad_table_page(open(sys.argv[1]).read())).hexdigest())" PAGE`.
+2. For a directory file, add it as the first candidate of its source in
+   `pipeline/config/directory.yaml` with its `sha256` (keep the older candidates). For a places
+   release, change the year in `pipeline/config/places.yaml` and pin every file it lists; the
+   build refuses a pins file that misses one or names one too many.
+3. Push. data-mirror.yml seeds the new release and proves it; the Preview of the same push reads
+   the files its cache lacks from that release, waiting for the seed up to 8 minutes on each of
+   its three tries. If data-mirror fails, see the table above: re-run it from its Actions page.
+4. Check both runs: data-mirror green, then the Preview green with its log line
+   `Fetching NCES files from the cache, else the data mirror https://github.com/.../data-mirror-<digest>/`.
+   A changed directory takes a new edition date as usual; nothing about dating changes.
 
 ## What stays open
 

@@ -1,0 +1,136 @@
+name: Data mirror
+
+# Keeps every NCES and Census file the Preview deploy reads in a release of this
+# repository, so deploys never contact nces.ed.gov or census.gov
+# (pipeline/snowlight/sources/mirror.py). The release of a pin set is tagged
+# data-mirror-<digest of the pins> (snowlight mirror tag); its assets are the files
+# pinned in pipeline/config/directory.yaml and pipeline/config/places.yaml, each
+# named after its URL's last segment, with every SHA-256 in the release notes. They
+# are public data.
+#
+# It runs on a push that changes the pins or this file, on the default branch only.
+# An asset counts as held only when the releases API reports the pin's SHA-256 for
+# it (or, with no digest reported, when its bytes read back as the pin's file); any
+# other asset is staged again and replaced. A file the release lacks is copied from
+# an earlier data-mirror release when one holds it intact, so a pin bump reads only
+# its new files from the origins; those are downloaded with the build's own guards
+# (a web page served with HTTP 200 is not the file, and the bytes must match the
+# pin). When it uploaded anything it then proves the release: the directory and
+# places outputs built from the files it staged equal, byte for byte, those built
+# from the release alone. A rerun uploads nothing that is there already. This is the
+# only job that contacts NCES or Census; if an origin is down it fails, and deploys
+# keep reading the release of the pins they were built with. The Preview of the same
+# push waits for the files it lacks (SNOWLIGHT_MIRROR_WAIT in preview.yml).
+# docs/deployed-edition.md, "Bumping a pinned source file", is the runbook: when this
+# job fails, re-run it from the Actions page once the origin answers again.
+
+on:
+  push:
+    paths:
+      - pipeline/config/directory.yaml
+      - pipeline/config/places.yaml
+      - .github/workflows/data-mirror.yml
+
+# Creating the release and uploading its assets.
+permissions:
+  contents: write
+
+concurrency:
+  group: data-mirror
+  cancel-in-progress: false
+
+jobs:
+  seed:
+    if: github.ref_name == github.event.repository.default_branch
+    runs-on: ubuntu-24.04
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      # setup-uv pins the v10.2.0 release commit, as ci.yml does.
+      - uses: astral-sh/setup-uv@c18668ad3cf93ea998bef934396af7bb5c839dc7 # v10.2.0
+        with:
+          python-version: "3.12"
+          working-directory: pipeline
+          enable-cache: true
+          cache-dependency-glob: uv.lock
+      - name: Upload the pinned files the release lacks
+        id: seed
+        working-directory: pipeline
+        env:
+          GH_TOKEN: ${{ github.token }}
+          MIRROR_ROOT: https://github.com/${{ github.repository }}/releases/download
+        run: |
+          uv sync --locked
+          tag="$(uv run snowlight mirror tag)"
+          echo "::notice::data mirror release ${tag}"
+          new=false
+          status=0
+          # Each held asset with the digest GitHub reports for it (empty when none).
+          gh api "repos/${GITHUB_REPOSITORY}/releases/tags/${tag}" \
+            --jq '.assets[] | select(.state == "uploaded") | [.name, (.digest // "")] | @tsv' \
+            > "${RUNNER_TEMP}/have.txt" 2> "${RUNNER_TEMP}/view.err" || status=$?
+          if [ "$status" -ne 0 ]; then
+            if grep -q "HTTP 404" "${RUNNER_TEMP}/view.err"; then
+              new=true
+              : > "${RUNNER_TEMP}/have.txt"
+            else
+              cat "${RUNNER_TEMP}/view.err"
+              echo "::error::could not read the release ${tag}"
+              exit 1
+            fi
+          fi
+          # The earlier data mirror releases, newest first: unchanged files come from them.
+          gh api --paginate "repos/${GITHUB_REPOSITORY}/releases?per_page=100" \
+            --jq '.[] | select(.tag_name | startswith("data-mirror-")) | .tag_name' \
+            > "${RUNNER_TEMP}/earlier.txt"
+          uv run snowlight mirror seed --have "${RUNNER_TEMP}/have.txt" \
+            --mirror "$MIRROR_ROOT" --earlier "${RUNNER_TEMP}/earlier.txt" \
+            --dest "${RUNNER_TEMP}/upload" --notes "${RUNNER_TEMP}/notes.md"
+          if [ "$new" = true ]; then
+            gh release create "$tag" --repo "$GITHUB_REPOSITORY" --target "$GITHUB_SHA" \
+              --title "Data mirror ${tag}" --notes-file "${RUNNER_TEMP}/notes.md" --latest=false
+          fi
+          shopt -s nullglob
+          files=("${RUNNER_TEMP}"/upload/*)
+          if [ "${#files[@]}" -gt 0 ]; then
+            gh release upload "$tag" "${files[@]}" --repo "$GITHUB_REPOSITORY" --clobber
+            echo "staged=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "staged=false" >> "$GITHUB_OUTPUT"
+            echo "::notice::the release ${tag} holds every pinned file, each matching its pin"
+          fi
+      # The proof, after an upload: the outputs built from the files this job staged
+      # (in its own caches: read from their origins, or copied from an earlier
+      # release), with any other file from the release, equal those built from the
+      # release alone in a fresh cache. Both read only pinned files, and the second is
+      # dated by the first's edition, so a run across midnight UTC compares one date.
+      # The school tiles are left out: tippecanoe makes them from the same table.
+      - name: Builds from the release equal builds from the staged files
+        if: steps.seed.outputs.staged == 'true'
+        working-directory: pipeline
+        env:
+          MIRROR_ROOT: https://github.com/${{ github.repository }}/releases/download
+        run: |
+          out="${RUNNER_TEMP}/proof"
+          for side in seeded mirror; do
+            cache=.cache
+            dated=()
+            if [ "$side" = mirror ]; then
+              cache="${out}/mirror-cache"
+              dated=(--previous-edition "${out}/seeded/site/schools/edition.json")
+            fi
+            uv run snowlight directory build --no-tiles --mirror "$MIRROR_ROOT" "${dated[@]}" \
+              --cache-dir "${cache}/nces" \
+              --out-dir "${out}/${side}/site" --internal-dir "${out}/${side}/internal"
+            uv run snowlight places build --mirror "$MIRROR_ROOT" --cache-dir "${cache}/places" \
+              --out-dir "${out}/${side}/search" --manifest "${out}/${side}/places.json"
+          done
+          diff -r --exclude='*.internal.json' "${out}/seeded/site" "${out}/mirror/site"
+          diff -r "${out}/seeded/search" "${out}/mirror/search"
+          if ! grep -q '"mirror"' "${out}/mirror/places.json"; then
+            echo "::error::the mirror build did not read the mirror"
+            exit 1
+          fi
+          echo "::notice::the directory and places outputs built from the release equal those built from the staged files"

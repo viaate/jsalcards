@@ -23,6 +23,13 @@ the body is never cached, and a cached copy that is not a zip is not reused. A
 pinned URL needs no such check: its checksum already refuses any other body, with
 :class:`SourceChangedError`.
 
+With a :class:`~snowlight.sources.mirror.Mirror`, a file the cache does not hold
+is read from the data mirror, never from its origin, and only when its URL is
+pinned: an unpinned URL is :class:`SourceMissingError` (the mirror serves pinned
+files only, so a caller with older pinned candidates falls back to them), and a
+pinned file the mirror lacks is a plain :class:`DownloadError`, never "not
+published".
+
 TLS is always verified, against the CA bundle named by ``SSL_CERT_FILE`` when it
 is set.
 """
@@ -42,6 +49,7 @@ from urllib.parse import urlsplit
 import httpx
 
 from snowlight import __version__
+from snowlight.sources.mirror import Mirror, MirrorError, fetch_pinned
 
 USER_AGENT = f"snowlight-pipeline/{__version__}"
 SIDECAR_SUFFIX = ".provenance.json"
@@ -82,10 +90,12 @@ class Retrieved:
     etag: str | None
     last_modified: str | None
     from_cache: bool
+    mirror: str | None = None
+    """The data mirror URL the bytes came from, when not from ``url`` itself."""
 
     def provenance(self) -> dict[str, str | int | None]:
         """Return the JSON-ready provenance record kept in internal manifests."""
-        return {
+        record: dict[str, str | int | None] = {
             "bytes": self.size,
             "etag": self.etag,
             "last_modified": self.last_modified,
@@ -93,6 +103,9 @@ class Retrieved:
             "sha256": self.sha256,
             "url": self.url,
         }
+        if self.mirror is not None:
+            record["mirror"] = self.mirror
+        return record
 
 
 def sha256_file(path: Path) -> str:
@@ -152,18 +165,22 @@ def _starts_as_zip(path: Path) -> bool:
 class FileCache:
     """Downloads each URL once into ``root`` and serves verified copies afterwards."""
 
-    def __init__(
+    def __init__(  # noqa: PLR0913 - where, how, and from which mirror
         self,
         root: Path,
         client: httpx.Client,
         *,
         attempts: int = 4,
         sleep: Callable[[float], None] = time.sleep,
+        mirror: Mirror | None = None,
+        log: Callable[[str], object] = lambda _line: None,
     ) -> None:
         self.root = root
         self.client = client
         self.attempts = attempts
         self._sleep = sleep
+        self.mirror = mirror
+        self._log = log
 
     def __enter__(self) -> Self:
         return self
@@ -193,6 +210,7 @@ class FileCache:
         ):
             return None
         etag, modified = meta.get("etag"), meta.get("last_modified")
+        mirror = meta.get("mirror")
         return Retrieved(
             url=url,
             path=path,
@@ -202,6 +220,7 @@ class FileCache:
             etag=etag if isinstance(etag, str) else None,
             last_modified=modified if isinstance(modified, str) else None,
             from_cache=True,
+            mirror=mirror if isinstance(mirror, str) else None,
         )
 
     def fetch(self, url: str, expected_sha256: str | None = None) -> Retrieved:
@@ -212,8 +231,11 @@ class FileCache:
                 web page with HTTP 200 for an unpinned zip URL.
             SourceChangedError: the fresh bytes do not match ``expected_sha256``.
             RefusedError: the server refused the request (for example HTTP 403).
-            DownloadError: the file could not be fetched intact after retries.
+            DownloadError: the file could not be fetched intact after retries, or
+                the data mirror does not hold it.
         """
+        if self.mirror is not None:
+            return self._fetch_mirrored(self.mirror, url, expected_sha256)
         hit = self.cached(url, expected_sha256)
         if hit is not None:
             return hit
@@ -229,6 +251,41 @@ class FileCache:
             except (httpx.TransportError, DownloadError) as error:
                 last_error = error
         raise DownloadError(f"giving up on {url} after {self.attempts} attempts") from last_error
+
+    def _fetch_mirrored(self, mirror: Mirror, url: str, expected_sha256: str | None) -> Retrieved:
+        if expected_sha256 is None:
+            raise SourceMissingError(
+                f"{url} is not pinned, and the data mirror serves pinned files only"
+            )
+        pin = mirror.pin(url)
+        if pin is None or pin.sha256 != expected_sha256:
+            raise RefusedError(f"{url}: the data mirror's pin set does not pin {expected_sha256}")
+        hit = self.cached(url, expected_sha256)
+        if hit is not None:
+            return hit
+        try:
+            copy = fetch_pinned(
+                self.client,
+                mirror,
+                pin,
+                cache_path(self.root, url),
+                attempts=self.attempts,
+                sleep=self._sleep,
+                log=self._log,
+            )
+        except MirrorError as error:
+            raise DownloadError(str(error)) from error
+        return Retrieved(
+            url=url,
+            path=copy.path,
+            sha256=copy.sha256,
+            size=copy.size,
+            retrieved_at=copy.retrieved_at,
+            etag=None,
+            last_modified=None,
+            from_cache=False,
+            mirror=copy.mirror_url,
+        )
 
     def _download_once(self, url: str, path: Path, expected_sha256: str | None) -> Retrieved:
         path.parent.mkdir(parents=True, exist_ok=True)

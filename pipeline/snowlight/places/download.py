@@ -15,6 +15,10 @@ again. With ``revalidate=True`` a cached file is confirmed with a conditional
 request (``If-None-Match`` / ``If-Modified-Since``); a ``304 Not Modified``
 keeps the cached bytes and a ``200`` replaces them.
 
+With a :class:`~snowlight.sources.mirror.Mirror` (a deploy), only pinned files
+are read, each from the cache when it matches its pin and otherwise from the data
+mirror, never from its origin; listing pages are not read at all.
+
 TLS verification always uses the CA bundle named by ``SSL_CERT_FILE`` when it
 is set (the session proxy and GitHub Actions both rely on this); it is never
 disabled.
@@ -25,7 +29,7 @@ import json
 import os
 import tempfile
 import time
-from collections.abc import Callable, Iterator
+from collections.abc import Callable, Iterator, Mapping
 from contextlib import contextmanager
 from dataclasses import dataclass
 from datetime import UTC, datetime
@@ -37,6 +41,7 @@ import httpx
 
 from snowlight import __version__
 from snowlight.output import write_bytes_atomic
+from snowlight.sources.mirror import Mirror, MirrorError, Pin, fetch_pinned
 
 USER_AGENT = f"snowlight-pipeline/{__version__} (+https://github.com/viaate/jsalcards)"
 _CHUNK = 1 << 20
@@ -65,10 +70,12 @@ class FetchedFile:
     etag: str | None
     last_modified: str | None
     from_cache: bool
+    mirror: str | None = None
+    """The data mirror URL the bytes came from, when not from ``url`` itself."""
 
     def provenance(self) -> dict[str, str | int | None]:
         """Return the JSON-ready provenance record kept in internal manifests."""
-        return {
+        record: dict[str, str | int | None] = {
             "bytes": self.size,
             "etag": self.etag,
             "last_modified": self.last_modified,
@@ -76,6 +83,9 @@ class FetchedFile:
             "sha256": self.sha256,
             "url": self.url,
         }
+        if self.mirror is not None:
+            record["mirror"] = self.mirror
+        return record
 
 
 def sha256_file(path: Path) -> str:
@@ -146,7 +156,7 @@ class ConsultedPage:
 class SourceCache:
     """Downloads files once into ``root`` and serves verified copies afterwards."""
 
-    def __init__(
+    def __init__(  # noqa: PLR0913 - where, how, and from which mirror
         self,
         root: Path,
         client: httpx.Client,
@@ -154,12 +164,20 @@ class SourceCache:
         revalidate: bool = False,
         attempts: int = 4,
         sleep: Callable[[float], None] = time.sleep,
+        mirror: Mirror | None = None,
+        pinned: Mapping[str, Pin] | None = None,
+        log: Callable[[str], object] = lambda _line: None,
     ) -> None:
+        if mirror is not None and revalidate:
+            raise ValueError("a mirror serves pinned files: there is nothing to revalidate")
         self.root = root
         self.client = client
         self.revalidate = revalidate
         self.attempts = attempts
         self._sleep = sleep
+        self.mirror = mirror
+        self.pinned = pinned
+        self._log = log
         self.pages_consulted: list[ConsultedPage] = []
 
     def __enter__(self) -> Self:
@@ -172,7 +190,10 @@ class SourceCache:
         """Fetch a small page (a directory listing) without caching it.
 
         Each page read is remembered in :attr:`pages_consulted` for the manifest.
+        With a mirror no page is read: the releases must be pinned.
         """
+        if self.mirror is not None:
+            raise DownloadError(f"{url}: the data mirror serves pinned files, not listing pages")
         response = self._request("GET", url, headers={})
         self.pages_consulted.append(
             ConsultedPage(url, utc_now_iso(), hashlib.sha256(response.content).hexdigest())
@@ -186,16 +207,55 @@ class SourceCache:
     def fetch(self, url: str) -> FetchedFile:
         """Return the verified local copy of ``url``, downloading it when needed."""
         path = cache_path_for(self.root, url)
+        if self.mirror is not None:
+            return self._fetch_mirrored(self.mirror, url, path)
         cached = self._load_cached(url, path)
-        if cached is not None and not self.revalidate:
+        pin = None if self.pinned is None else self.pinned.get(url)
+        if cached is not None and not self.revalidate and (pin is None or pin.matches(cached.path)):
             return cached
         headers: dict[str, str] = {}
-        if cached is not None:
+        if cached is not None and pin is None:
             if cached.etag:
                 headers["If-None-Match"] = cached.etag
             if cached.last_modified:
                 headers["If-Modified-Since"] = cached.last_modified
-        return self._download(url, path, headers, cached)
+        fetched = self._download(url, path, headers, cached)
+        if pin is not None and not pin.matches(fetched.path):
+            raise DownloadError(
+                f"{url} changed upstream: it no longer matches its pin in config/places.yaml"
+            )
+        return fetched
+
+    def _fetch_mirrored(self, mirror: Mirror, url: str, path: Path) -> FetchedFile:
+        pin = mirror.pin(url)
+        if pin is None:
+            raise DownloadError(f"{url} is not pinned in config/places.yaml; the mirror lacks it")
+        cached = self._load_cached(url, path)
+        if cached is not None and pin.matches(cached.path):
+            return cached
+        try:
+            copy = fetch_pinned(
+                self.client,
+                mirror,
+                pin,
+                path,
+                attempts=self.attempts,
+                sleep=self._sleep,
+                log=self._log,
+            )
+        except MirrorError as error:
+            raise DownloadError(str(error)) from error
+        return FetchedFile(
+            url=url,
+            path=copy.path,
+            sha256=copy.sha256,
+            size=copy.size,
+            retrieved_at=copy.retrieved_at,
+            etag=None,
+            last_modified=None,
+            from_cache=False,
+            mirror=copy.mirror_url,
+        )
 
     def _load_cached(self, url: str, path: Path) -> FetchedFile | None:
         sidecar = path.with_name(path.name + _SIDECAR_SUFFIX)
@@ -211,6 +271,7 @@ class SourceCache:
         if recorded_url != url or sha256_file(path) != recorded:
             return None
         etag, modified = meta.get("etag"), meta.get("last_modified")
+        mirror = meta.get("mirror")
         return FetchedFile(
             url=url,
             path=path,
@@ -220,6 +281,7 @@ class SourceCache:
             etag=etag if isinstance(etag, str) else None,
             last_modified=modified if isinstance(modified, str) else None,
             from_cache=True,
+            mirror=mirror if isinstance(mirror, str) else None,
         )
 
     def _download(

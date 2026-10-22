@@ -11,13 +11,16 @@ name: Preview
 # The site is built with the pipeline's real data, made here: the school
 # directory (snowlight directory build: NCES files, pinned in
 # pipeline/config/directory.yaml) and the city and ZIP code records (snowlight
-# places build: Census files), whose downloads are kept between runs in
-# pipeline/.cache, and the replay days, published from the seeds in
+# places build: Census files, pinned in pipeline/config/places.yaml), whose
+# downloads are kept between runs in pipeline/.cache, and the replay days, published from the seeds in
 # pipeline/data/replays against that directory (snowlight replays publish).
 # npm run stage then stages what the pipeline wrote as the
 # site's data and builds the search index from it (web/scripts/stage-data.mjs).
 # If any of it fails, nothing is published: the preview never ships without
-# its data, or with data from anywhere else.
+# its data, or with data from anywhere else. Those files come from the cache,
+# else from the data mirror, a release of this repository that data-mirror.yml
+# seeds when a pin changes: the preview never contacts NCES or the Census Bureau,
+# and each file is checked against its pin wherever it came from.
 #
 # The directory keeps the date of the one the site serves now while its content
 # is unchanged, so a redeploy leaves the live files indexed into it valid, and a
@@ -123,25 +126,36 @@ jobs:
             echo "::warning::recovery run: the directory is dated past a deployed edition that names another directory"
           fi
           uv run snowlight directory deployed-edition --site "$SITE_URL" --out .cache/edition.json "${recovery[@]}"
-      # The NCES and Census downloads, kept between runs. A new pin in directory.yaml starts a new cache.
+      # The NCES and Census downloads, kept between runs. A new pin in directory.yaml or
+      # places.yaml starts a new cache, seeded from the last one and then the mirror.
       - if: steps.pages.outcome == 'success'
         uses: actions/cache@v4
         with:
           path: |
             pipeline/.cache/nces
             pipeline/.cache/places
-          key: pipeline-downloads-${{ hashFiles('pipeline/config/directory.yaml') }}
+          key: pipeline-downloads-${{ hashFiles('pipeline/config/directory.yaml', 'pipeline/config/places.yaml') }}
           restore-keys: pipeline-downloads-
+      # Every file the cache lacks is read from the data mirror's release for the
+      # current pins (SNOWLIGHT_MIRROR, the releases of this repository), never from
+      # its origin. When a push changes a pin, data-mirror.yml seeds the new release
+      # while this runs, so a file the release does not hold yet is waited for, up to
+      # SNOWLIGHT_MIRROR_WAIT seconds; a file the release never gets fails the build.
       - if: steps.pages.outcome == 'success'
         working-directory: pipeline
+        env:
+          SNOWLIGHT_MIRROR: https://github.com/${{ github.repository }}/releases/download
+          # Without a mirror root the builds refuse to run (exit 2) instead of reading the origins.
+          SNOWLIGHT_REQUIRE_MIRROR: "1"
+          # Three tries of this wait and their pauses fit the job's timeout with room for
+          # the rest of the job (test_preview_workflow.py checks it).
+          SNOWLIGHT_MIRROR_WAIT: "480"
         # The downloader gives up after about 15 s, too soon to ride out a
-        # passing network fault between the runner and nces.ed.gov, so each
-        # build gets two more tries after a pause. A failed try prints what the
-        # runner sees at the directory's first file, so a lasting block shows
-        # its cause in the log. Exit 4 is a refusal the inputs decide (the
-        # deployed edition, or too few known time zones), and exit 2 a usage
-        # error in this step or a failure of uv itself, which exits 2 on its own
-        # errors: neither is retried.
+        # passing network fault between the runner and the mirror, so each
+        # build gets two more tries after a pause. Exit 4 is a refusal the inputs
+        # decide (the deployed edition, or too few known time zones), and exit 2
+        # a usage error in this step or a failure of uv itself, which exits 2 on
+        # its own errors: neither is retried.
         run: |
           # With no edition deployed the reader leaves no file, and the directory takes the build date.
           previous=()
@@ -166,10 +180,7 @@ jobs:
                 echo "::error::snowlight $name build exited 2: a usage error or a uv failure (see the log above); docs/deployed-edition.md says what to check"
                 return 2
               fi
-              echo "::warning::snowlight $name build failed; probing nces.ed.gov"
-              curl -sS -o /dev/null -r 0-1023 --max-time 30 \
-                -w 'HTTP %{http_code} in %{time_total}s from %{remote_ip}\n' \
-                https://nces.ed.gov/programs/edge/data/EDGE_GEOCODE_PUBLICSCH_2425.zip || true
+              echo "::warning::snowlight $name build failed; it reads its source files from the cache, else the data mirror release named above (data-mirror.yml seeds it; docs/deployed-edition.md)"
             done
             return 1
           }
