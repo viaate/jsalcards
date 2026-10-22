@@ -34,7 +34,9 @@ jobs:
           cache: npm
           cache-dependency-path: web/package-lock.json
 
-      - run: npm ci
+      # From the npm cache setup-node restores, keyed on the lockfile: no audit or fund
+      # request, and no cached package asked about again, so a slow registry costs little.
+      - run: npm ci --prefer-offline --no-audit --no-fund
       - run: npm run check
       - run: npm run lint
       - run: npm run format:check
@@ -61,7 +63,7 @@ jobs:
           cache: npm
           cache-dependency-path: api/package-lock.json
 
-      - run: npm ci
+      - run: npm ci --prefer-offline --no-audit --no-fund
       - run: npm run check
       - run: npm test
 
@@ -69,10 +71,11 @@ jobs:
   # inside the job's time limit as the suite grows. Nearly all of its time is
   # in the desktop project (most phone tests skip themselves), so the desktop
   # tests are split in two halves and the phone tests run on their own.
+  # A desktop half's tests take about ten minutes; the limit leaves room for a slow setup.
   e2e:
     name: e2e (${{ matrix.part }})
     runs-on: ubuntu-24.04
-    timeout-minutes: 15
+    timeout-minutes: 25
     strategy:
       fail-fast: false
       matrix:
@@ -97,7 +100,7 @@ jobs:
           cache: npm
           cache-dependency-path: web/package-lock.json
 
-      - run: npm ci
+      - run: npm ci --prefer-offline --no-audit --no-fund
       - run: npx playwright install --with-deps chromium
       - run: npm run e2e -- ${{ matrix.args }}
 
@@ -132,7 +135,7 @@ jobs:
           cache: npm
           cache-dependency-path: web/package-lock.json
 
-      - run: npm ci
+      - run: npm ci --prefer-offline --no-audit --no-fund
       # Lighthouse drives the Chromium Playwright installs.
       - run: npx playwright install --with-deps chromium
       - run: npm run perf

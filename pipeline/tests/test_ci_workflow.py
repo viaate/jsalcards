@@ -18,6 +18,10 @@ import yaml  # type: ignore[import-untyped, unused-ignore]
 REPO_ROOT = Path(__file__).resolve().parents[2]
 WORKFLOW_PATH = REPO_ROOT / ".github" / "workflows" / "ci.yml"
 
+# How every npm job installs: from the npm cache setup-node restores, asking the
+# registry nothing it need not (no audit, no fund, no cached package again).
+NPM_INSTALL = "npm ci --prefer-offline --no-audit --no-fund"
+
 # owner/repo[/path]@vN (a floating major tag) or @<full commit SHA>.
 PINNED_USES = re.compile(r"^[\w.-]+/[\w.-]+(?:/[\w./-]+)?@(?:v\d+|[0-9a-f]{40})$")
 
@@ -85,7 +89,7 @@ def test_web_job_runs_every_required_check(jobs: dict[str, Mapping]) -> None:
     web = jobs["web"]
     assert _run_directory(web) == "web"
     assert _commands(web, "web") == [
-        "npm ci",
+        NPM_INSTALL,
         "npm run check",
         "npm run lint",
         "npm run format:check",
@@ -95,6 +99,29 @@ def test_web_job_runs_every_required_check(jobs: dict[str, Mapping]) -> None:
     setup_node = [step for job, _, step in _steps_using(jobs, "actions/setup-node") if job == "web"]
     assert len(setup_node) == 1
     assert str(_inputs(setup_node[0]).get("node-version")) == "22"
+
+
+def test_npm_jobs_install_from_the_cache(jobs: dict[str, Mapping]) -> None:
+    # A slow registry once took npm ci from 17 s to over five minutes in every job at once.
+    npm_jobs = 0
+    for name, job in jobs.items():
+        installs = [
+            c
+            for c in _commands(job, name)
+            if shlex.split(c)[:2] in (["npm", "ci"], ["npm", "install"])
+        ]
+        if not installs:
+            continue
+        npm_jobs += 1
+        assert installs == [NPM_INSTALL], f"job {name!r} installs with {installs!r}"
+    assert npm_jobs >= 4
+
+
+def test_e2e_jobs_leave_room_for_a_slow_setup(jobs: dict[str, Mapping]) -> None:
+    # A desktop half's tests alone take about ten minutes.
+    timeout = jobs["e2e"].get("timeout-minutes")
+    assert isinstance(timeout, int)
+    assert timeout >= 25
 
 
 def test_pipeline_job_runs_every_required_check(jobs: dict[str, Mapping]) -> None:
