@@ -352,8 +352,8 @@ def build_parts(  # pragma: no cover - loads the directory, the matcher and the 
     config: LiveConfig, env: Env, args: argparse.Namespace
 ) -> Parts:
     """The real ingest: the deployed directory's schools and zones, the matcher with its
-    place guard, the status reader, the registry, and sequential reads (S8-B's pool replaces
-    them)."""
+    place guard, the status reader, the registry, and the live reads (the pool, on the
+    cadence)."""
     import polars as pl  # noqa: PLC0415
 
     from snowlight.directory.zones import ZONES_FILE, read_zones_edition  # noqa: PLC0415
@@ -362,7 +362,7 @@ def build_parts(  # pragma: no cover - loads the directory, the matcher and the 
     from snowlight.listed.matching import MatcherSpec  # noqa: PLC0415
     from snowlight.live.edition import check_zones  # noqa: PLC0415
     from snowlight.live.ledger import Ledger  # noqa: PLC0415
-    from snowlight.live.reads import due_sources, sequential_reads  # noqa: PLC0415
+    from snowlight.live.reads import due_sources, live_reads  # noqa: PLC0415
     from snowlight.live.resolve import (  # noqa: PLC0415
         Resolver,
         f5_reader,
@@ -400,6 +400,7 @@ def build_parts(  # pragma: no cover - loads the directory, the matcher and the 
         mode=mode_of(env),
     )
     stations = dict(registry.stations)
+    reads = live_reads(registry, directory, args.cache_dir, args.state)
     ingest = Ingest(
         ledger=ledger,
         resolver=resolver,
@@ -409,8 +410,10 @@ def build_parts(  # pragma: no cover - loads the directory, the matcher and the 
         internal_dir=args.internal,
         due=due_sources(registry),
         morning=MorningLog(args.state / "morning"),
+        boosted=reads.cadence.boosted,
     )
-    return Parts(ingest, sequential_reads(registry, directory, args.cache_dir))
+    reads.ingest = ingest
+    return Parts(ingest, reads)
 
 
 @dataclass(frozen=True, slots=True)
@@ -916,3 +919,7 @@ def register(subparsers: "argparse._SubParsersAction[argparse.ArgumentParser]") 
     state.add_argument("state_action", choices=("pull", "push"))
     _common(state)
     state.set_defaults(handler=run_state)
+    from snowlight.live.sweep import add_parser  # noqa: PLC0415 - loads the stations reader
+    from snowlight.replays.cli import DEFAULT_REGISTRY  # noqa: PLC0415
+
+    add_parser(actions, DEFAULT_REGISTRY)

@@ -19,6 +19,7 @@ All from `pipeline/` (`uv run snowlight live ...`).
 | `live check --url URL --max-age 15m` | The watchdog. Checks that the public file is fresh, is not stamped ahead of the clock, and carries the deployed directory's stamp. |
 | `live state pull` / `live state push` | Restore or keep the private state. |
 | `live overrides --api ROOT` | One pass of the admin's manual statuses: read the active overrides from the API, check them against the deployed directory, gate and publish. Stops, writing nothing, when the overrides light nothing and the public files show no status. |
+| `live sweep --cache-dir DIR --state DIR --log FILE --report FILE` | One measured pass of the pool over every source the ingest polls (or `--only` ids), resolving and publishing nothing. Appends each request to the log (its pace key, its floor and when it held the key) and writes a report: the sweep's time, when each source finished, the outcomes, the requests sent against those paced, the pacing violations and the robots.txt requests per origin (every attempt, counted from the log). Exits `1` on any violation or unpaced request. Ids, hosts, codes and times only. |
 | `live overrides --none` | The same pass with no override: takes every manual status down (`live-ingest.yml` runs it when no API is left to read). |
 
 Exit codes:
@@ -78,6 +79,15 @@ Host `github` needs the Pages repository to serve its whole tree: today
 The workflow that serves the repository root, and the one-time shadow check, are in
 `docs/predict.md` (What the owner sets up once, step 4).
 
+## Reading the sources
+
+A pass reads the sources due through a concurrent pool (`snowlight/live/pool.py`) on the cadence (`snowlight/live/cadence.py`).
+
+- **Politeness.** One request in flight per host and starts at least `max(5 s, Crawl-delay)` apart, across all 24 workers. Each of Gray's list files, path-style on `s3.amazonaws.com`, is paced under its own bucket (owner decision Q3), the same as its documented per-station address. robots.txt is read at most once per origin a day (kept in `robots.json`), and is still a record, never a gate. A robots.txt that fails, or that asks for a `Retry-After` the pass will not wait for, is kept as unreachable for the day; that wait holds every source on the origin as `deferred` until it ends, and a stopped source starts no further request. A request must answer by its source's deadline (plus a second).
+- **Deadlines.** A source gets 60 s, attempts and follows included (two attempts); nothing starts after 240 s into the pass. A source cut off is `late` and due next pass. A server's `Retry-After` is honoured: the source is `deferred` until that wait has passed, and no other source waits for it. A 403 or 401 blocks the source for 24 hours. A refusal is never worked around.
+- **Cadence.** Every 5 minutes from 18:00 to 23:00 and from 04:00 to 09:00 in the station's own zone (the zone most of its counties are in; real zone rules, so the windows follow daylight saving time), and while an NWS alert of an allowlisted type covers one of its counties (the alerts are read every 5 minutes; a failed read keeps the last set for 2 hours). Otherwise every 30 minutes, or the registry's `poll_minutes` when longer. A source the pass did not get to (`late`) is due at the next pass; a failed read (`error`, such as a 429 or 5xx without `Retry-After`) keeps its cadence, so outside the windows and alerts it waits its calm interval. A source is never read again in the same 5-minute grid slot, nor less than 4 minutes after its last pass.
+- **Health share.** G12b counts the sources due in the passes of the last 15 minutes, and every source blocked now.
+
 ## Where files go
 
 Public, on the live host. These hold school indexes, days, codes and times only.
@@ -100,6 +110,8 @@ Private state (`out/internal/live/state/`, kept by the state store):
   - Nothing is pruned until `changes/durable.json` (`{"through": "YYYY-MM-DD"}`) says a durable copy holds those days. That copy is the push to the private data repository (spec 19), and it is not built yet.
   - Until it lands, the Actions cache store is the only copy of the replay history. A cache eviction loses the private log, so land the durable push before relying on `cache`.
   - A successor that lost its state takes each day it has no log for from the public day file under the current stamp (lines with `"by": "seed"`), but only when the file's `content_sha256` is its own directory content: two contents can share one stamp (risk R6), and a file built on the other one indexes other schools. Such a file is skipped with a warning in the log. The public timeline then goes on from where it was, rather than starting again at the successor's first publish. The private details of those changes (source and row key) are lost.
+- `robots.json`: robots.txt verdicts per origin (the parsed rules, the read time and the file's digest), kept 24 hours.
+- `cadence.json`: per source, the start of the pass that last read it, its outcome, and the earliest next read of a deferred or blocked source.
 - `morning/<UTC day>.json`: the morning record the prediction model learns from (docs/predict.md, "The model learns on its own"). Per 30-minute UTC slot: the prefixes a pass was shown under, each whole read of a shown pass between 09:00 and 21:00 UTC (rows, rows placed, rows read as no status), the states a pass withheld whole, and the districts its rows named with the days and the status kinds (`?` when a dissenting, unsure or unread row named it). Counts, ids and codes only. Rewritten whole and atomically by every pass; kept 10 days. A file that does not read is marked damaged and no day of it is learned from.
 - `unmatched.json`: names the matcher did not place. Only ever in a private store, never in the Actions cache.
 

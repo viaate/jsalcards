@@ -35,6 +35,26 @@ Every live request to a station goes through :class:`PoliteClient`, which
   and the page whose robots.txt was refused are not tried);
 * reads at most 10 MiB of any body.
 
+Three optional hooks serve the live closings reader's concurrent pool
+(:mod:`snowlight.live.pool`); without them a client behaves exactly as before:
+
+* ``pacer`` (a :class:`Pacer`) holds a key for each request attempt, so clients on
+  several threads share one pacing floor per key and never have two requests in flight
+  on one key;
+* ``robots`` (a :class:`RobotsCache`) keeps robots.txt verdicts for every client (one
+  read per origin at a time, kept across runs) and shares the run's refused hosts. A
+  robots.txt request that was sent and then stopped by the deadline (a ``Retry-After``
+  longer than the time left, or a backoff past it) is kept as unreachable like any other
+  failed read, and a ``Retry-After`` on it holds the whole origin until the wait ends;
+* ``pace_key`` names the key a URL is paced under (its host when not given).
+
+A pool also sets :attr:`PoliteClient.deadline` (a ``monotonic`` time) before each
+source: past it no request starts (:class:`DeadlineError`, ``late``), and a ``Retry-After``
+or backoff that would end after it stops the source at once (``deferred`` when the
+server asked for the wait), instead of sleeping through it. Once a client has stopped
+(:attr:`PoliteClient.stopped`), it starts no request until the pool clears it, and a
+request's answer must arrive before the deadline (plus a second's grace).
+
 TLS is always verified, against ``SSL_CERT_FILE`` when it is set.
 """
 
@@ -43,14 +63,17 @@ import json
 import os
 import ssl
 import time
-from collections.abc import Callable
+from collections.abc import Callable, Iterator
+from contextlib import AbstractContextManager, contextmanager
 from dataclasses import dataclass
 from datetime import UTC, datetime, timedelta
 from email.utils import parsedate_to_datetime
 from pathlib import Path
+from typing import Literal, Protocol
 from urllib.parse import urljoin, urlsplit
 
 import httpx
+from httpx._client import UseClientDefault
 
 from snowlight import __version__
 from snowlight.output import write_bytes_atomic
@@ -62,6 +85,10 @@ DEFAULT_HOST_INTERVAL = 5.0
 MAX_BODY = 10 * 1024 * 1024
 MAX_REDIRECTS = 5
 MAX_RETRY_AFTER = 300.0
+REQUEST_TIMEOUT = 30.0
+CONNECT_TIMEOUT = 10.0
+REQUEST_GRACE = 1.0
+"""Seconds past a pool's deadline a request already sent may still take to answer."""
 MAX_BACKOFF = 60.0
 _RETRYABLE = frozenset({408, 425, 429, 500, 502, 503, 504})
 _REDIRECTS = frozenset({301, 302, 303, 307, 308})
@@ -77,6 +104,71 @@ class FetchError(RuntimeError):
     def __init__(self, message: str, status: int | None = None) -> None:
         super().__init__(message)
         self.status = status
+
+
+class DeadlineError(FetchError):
+    """A source's deadline (:attr:`PoliteClient.deadline`) stopped a request.
+
+    ``kind`` is ``deferred`` when the server's ``Retry-After`` would end after the
+    deadline (``retry_after`` holds its seconds), else ``late``.
+    """
+
+    def __init__(
+        self,
+        message: str,
+        kind: Literal["late", "deferred"],
+        *,
+        status: int | None = None,
+        retry_after: float | None = None,
+    ) -> None:
+        super().__init__(message, status)
+        self.kind = kind
+        self.retry_after = retry_after
+
+
+class Pacer(Protocol):
+    """Shared pacing across clients (see :class:`snowlight.live.pool.HostPacer`)."""
+
+    def slot(  # noqa: PLR0913 - the key, its floor and deadline, and three log marks
+        self,
+        key: str,
+        wait_for: float,
+        deadline: float | None = None,
+        *,
+        robots: bool = False,
+        origin: str = "",
+        follow: bool = False,
+    ) -> AbstractContextManager[None]:
+        """Hold ``key`` once no request is in flight on it and its last start is at least
+        ``wait_for`` seconds ago; raise :class:`TimeoutError` when that is after
+        ``deadline`` (a ``monotonic`` time). ``robots`` marks a robots.txt request and
+        ``origin`` names where it goes, ``follow`` a retry or a redirect hop of a read
+        already started (for the request log)."""
+        ...
+
+
+class RobotsCache(Protocol):
+    """Shared robots.txt verdicts (see :class:`snowlight.live.pool.RobotsStore`)."""
+
+    refused: dict[str, str]
+    """The run's refused hosts (host to the address that answered 403), for every client."""
+
+    def get(self, origin: str, now: datetime, read: Callable[[], "Robots"]) -> "Robots":
+        """The origin's robots.txt, calling ``read`` only when none younger than
+        :data:`ROBOTS_TTL` is kept (one call at a time per origin)."""
+        ...
+
+    def known(self, origin: str) -> "Robots | None":
+        """The origin's last kept robots.txt, however old (never read here)."""
+        ...
+
+    def hold(self, origin: str, until: datetime) -> None:
+        """Ask nothing of ``origin`` before ``until`` (its robots.txt's ``Retry-After``)."""
+        ...
+
+    def held(self, origin: str, now: datetime) -> float | None:
+        """Seconds until ``origin``'s hold ends, or None when it is not held."""
+        ...
 
 
 @dataclass(frozen=True, slots=True)
@@ -110,7 +202,7 @@ def make_client() -> httpx.Client:
     verify: ssl.SSLContext | bool = ssl.create_default_context(cafile=bundle) if bundle else True
     return httpx.Client(
         verify=verify,
-        timeout=httpx.Timeout(30.0, connect=10.0),
+        timeout=httpx.Timeout(REQUEST_TIMEOUT, connect=CONNECT_TIMEOUT),
         follow_redirects=False,
         headers={"User-Agent": USER_AGENT},
     )
@@ -232,7 +324,7 @@ class Timing:
 class PoliteClient:
     """Reads station URLs within their robots.txt, their rate limits and ours."""
 
-    def __init__(
+    def __init__(  # noqa: PLR0913 - the pool's three hooks are keywords
         self,
         client: httpx.Client,
         store: ConditionalStore,
@@ -240,6 +332,9 @@ class PoliteClient:
         host_interval: float = DEFAULT_HOST_INTERVAL,
         attempts: int = 4,
         timing: Timing | None = None,
+        pacer: Pacer | None = None,
+        robots: RobotsCache | None = None,
+        pace_key: Callable[[str], str] | None = None,
     ) -> None:
         self.client = client
         self.store = store
@@ -252,7 +347,18 @@ class PoliteClient:
         self._sleep = timing.sleep
         self._last_request: dict[str, float] = {}
         self._robots: dict[str, tuple[datetime, Robots]] = {}
-        self._refused: dict[str, str] = {}
+        self._refused: dict[str, str] = robots.refused if robots is not None else {}
+        self._pacer = pacer
+        self._robots_cache = robots
+        self._pace_key = pace_key or _host
+        self.deadline: float | None = None
+        """No request starts after this ``monotonic`` time (set per source by a pool)."""
+        self.stopped: DeadlineError | None = None
+        """The last :class:`DeadlineError` this client raised (a pool clears it per source);
+        while it is set the client starts no request."""
+        self.sent = 0
+        """Request attempts this client has sent."""
+        self._robots_hop = 0
 
     def refused(self, url: str) -> str | None:
         """The address on ``url``'s host that answered 403 earlier in this run (its robots.txt
@@ -289,13 +395,86 @@ class PoliteClient:
                 self._sleep(remaining)
         self._last_request[host] = self._monotonic()
 
+    @contextmanager
+    def _slot(
+        self, url: str, interval: float, *, robots: bool = False, follow: bool = False
+    ) -> Iterator[None]:
+        """Pace one request attempt: through the shared pacer when there is one (holding the
+        key for the attempt), else as :meth:`_pace`."""
+        if self._pacer is None:
+            self._pace(url, interval, robots=robots)
+            yield
+            return
+        self._check_stopped()
+        is_robots = robots or _is_robots(url)
+        if is_robots:
+            # A robots.txt refresh keeps the host's known Crawl-delay too.
+            known = self._robots_cache.known(_origin(url)) if self._robots_cache else None
+            delay = known.crawl_delay(self.user_agent) if known is not None else None
+        else:
+            delay = self.robots_for(url).crawl_delay(self.user_agent)
+        self._check_stopped()  # reading robots.txt may have stopped the source
+        wait_for = max(interval, self.host_interval, delay or 0.0)
+        self._before_deadline(url, 0.0, None, None)
+        try:
+            held = self._pacer.slot(
+                self._pace_key(url),
+                wait_for,
+                self.deadline,
+                robots=is_robots,
+                origin=_origin(url),
+                follow=follow,
+            )
+            held.__enter__()
+        except TimeoutError as error:
+            self.stopped = DeadlineError(f"{url}: its turn comes after the deadline", "late")
+            raise self.stopped from error
+        try:
+            yield
+        finally:
+            held.__exit__(None, None, None)
+
+    def _check_stopped(self) -> None:
+        """Start nothing once this client has stopped (until a pool clears it)."""
+        if self.stopped is not None:
+            raise self.stopped
+
+    def _before_deadline(
+        self, url: str, wait: float, retry_after: float | None, status: int | None
+    ) -> None:
+        """Raise :class:`DeadlineError` when waiting ``wait`` seconds would pass the deadline."""
+        if self.deadline is None or self._monotonic() + wait <= self.deadline:
+            return
+        if retry_after is not None:
+            self.stopped = DeadlineError(
+                f"{url}: asked to wait {retry_after:.0f} s, past its deadline",
+                "deferred",
+                status=status,
+                retry_after=retry_after,
+            )
+        else:
+            self.stopped = DeadlineError(f"{url}: past its deadline", "late", status=status)
+        raise self.stopped
+
     # robots.txt ----------------------------------------------------------------------
 
     def robots_for(self, url: str) -> Robots:
         """Return the robots.txt that governs ``url``, reading it if needed."""
         origin = _origin(url)
-        cached = self._robots.get(origin)
         now = self._clock()
+        if self._robots_cache is not None:
+            held = self._robots_cache.held(origin, now)
+            if held is not None:
+                # The origin's robots.txt asked us to wait: nothing on it is asked meanwhile.
+                self.stopped = DeadlineError(
+                    f"{origin}: robots.txt asked to wait {held:.0f} s more",
+                    "deferred",
+                    status=httpx.codes.SERVICE_UNAVAILABLE,
+                    retry_after=held,
+                )
+                raise self.stopped
+            return self._robots_cache.get(origin, now, lambda: self._read_robots(origin))
+        cached = self._robots.get(origin)
         if cached is not None and now - cached[0] < ROBOTS_TTL:
             return cached[1]
         robots = self._read_robots(origin)
@@ -304,9 +483,21 @@ class PoliteClient:
 
     def _read_robots(self, origin: str) -> Robots:
         target = f"{origin}/robots.txt"
-        for _hop in range(MAX_REDIRECTS + 1):
+        sent = self.sent
+        for hop in range(MAX_REDIRECTS + 1):
+            self._robots_hop = hop
             try:
                 response = self._request(target, {}, interval=0.0, robots=True)
+            except DeadlineError as error:
+                if self.sent == sent:
+                    raise  # nothing was asked: no answer about the file
+                # Asked, then stopped (a Retry-After or a backoff past the deadline): the
+                # file is unreachable and kept so, like any failed read; a Retry-After holds
+                # the origin until the wait ends. The source stays stopped.
+                if error.retry_after is not None and self._robots_cache is not None:
+                    until = self._clock() + timedelta(seconds=error.retry_after)
+                    self._robots_cache.hold(origin, until)
+                return Robots.for_status(error.status or httpx.codes.SERVICE_UNAVAILABLE)
             except FetchError:
                 # Retries exhausted on a 5xx, a 408/425/429 or a network failure: the
                 # file is unreachable, so nothing on the site may be fetched.
@@ -358,10 +549,12 @@ class PoliteClient:
         last_error: str | None = None
         last_status: int | None = None
         for attempt in range(self.attempts):
-            self._pace(url, interval, robots=robots)
             wait: float | None = None
             try:
-                response = self._send(url, headers, post)
+                follow = attempt > 0 or (robots and self._robots_hop > 0)
+                with self._slot(url, interval, robots=robots, follow=follow):
+                    self.sent += 1
+                    response = self._send(url, headers, post)
             except (httpx.TransportError, httpx.DecodingError) as error:
                 last_error = f"{type(error).__name__}: {error}"
             else:
@@ -370,23 +563,50 @@ class PoliteClient:
                 last_status = response.status_code
                 last_error = f"HTTP {response.status_code}"
                 wait = _retry_after(response, self._clock())
+                last = attempt + 1 >= self.attempts
+                if (
+                    wait is not None
+                    and self.deadline is not None
+                    and (last or wait > MAX_RETRY_AFTER)
+                ):
+                    # A pool's source honours the wait it was asked for: it is deferred.
+                    self._before_deadline(url, float("inf"), wait, last_status)
                 if wait is not None and wait > MAX_RETRY_AFTER:
                     raise FetchError(f"{url}: asked to wait {wait:.0f} s", last_status)
             if attempt + 1 < self.attempts:
-                self._sleep(wait if wait is not None else min(2.0 ** (attempt + 1), MAX_BACKOFF))
+                pause = wait if wait is not None else min(2.0 ** (attempt + 1), MAX_BACKOFF)
+                self._before_deadline(url, pause, wait, last_status)
+                self._sleep(pause)
         raise FetchError(f"{url}: {last_error} after {self.attempts} attempts", last_status)
 
     def _send(self, url: str, headers: dict[str, str], post: bytes | None = None) -> httpx.Response:
         method = "GET" if post is None else "POST"
         if post is not None:
             headers = {**headers, "Content-Type": "application/json; charset=utf-8"}
-        with self.client.stream(method, url, headers=headers, content=post) as response:
+        budget: float | None = None
+        timeout: httpx.Timeout | UseClientDefault = httpx.USE_CLIENT_DEFAULT
+        if self.deadline is not None:
+            # The answer must arrive by the deadline (a second's grace): each wait on the
+            # network is bounded by the time left, and so is the whole body.
+            budget = max(self.deadline - self._monotonic(), 0.0) + REQUEST_GRACE
+            timeout = httpx.Timeout(
+                min(REQUEST_TIMEOUT, budget), connect=min(CONNECT_TIMEOUT, budget)
+            )
+            budget += self._monotonic()
+        with self.client.stream(
+            method, url, headers=headers, content=post, timeout=timeout
+        ) as response:
             chunks: list[bytes] = []
             size = 0
             for chunk in response.iter_bytes():
                 size += len(chunk)
                 if size > MAX_BODY:
                     raise FetchError(f"{url}: body larger than {MAX_BODY} bytes")
+                if budget is not None and self._monotonic() > budget:
+                    self.stopped = DeadlineError(
+                        f"{url}: answer still coming at its deadline", "late"
+                    )
+                    raise self.stopped
                 chunks.append(chunk)
             # The chunks are already decoded, so the rebuilt response must not claim
             # a content encoding (httpx would try to decode them a second time).
@@ -495,6 +715,10 @@ def _s3_missing_key(response: httpx.Response) -> bool:
     serving its files (KULR's ticker bucket, read 2026-09-27): that is no refusal of the
     project, and robots.txt is unavailable (RFC 9309: unrestricted)."""
     return response.status_code == httpx.codes.FORBIDDEN and _S3_DENIED in response.content[:512]
+
+
+def _host(url: str) -> str:
+    return (urlsplit(url).hostname or "").lower()
 
 
 def _is_robots(url: str) -> bool:

@@ -1,4 +1,4 @@
-"""The reads a pass hands the ledger, from S4's station reader (until S8-B's pool replaces it).
+"""The reads a pass hands the ledger, from S4's station reader through the live pool.
 
 :func:`source_read` turns one :func:`~snowlight.sources.stations.fetch.read_station`
 result into a :class:`~snowlight.live.ingest.SourceRead`:
@@ -14,20 +14,40 @@ zone for a row stamp that names none (:func:`~snowlight.live.ingest.station_zone
 :func:`sequential_reads` reads the stations one after another through one polite
 client, calling ``tick`` between stations (the directory handshake runs once a minute
 while a pass reads); a station whose read raises is an ``error`` read, logged with its
-id and the error's type only. The concurrent pool and the cadence (S8-B) replace it.
+id and the error's type only (a local run's fallback).
+
+:class:`LiveReads` is the ingest's reader: each pass reads the sources the cadence
+(:mod:`snowlight.live.cadence`) says are due through the concurrent pool
+(:mod:`snowlight.live.pool`, :func:`live_pool`); a source the pool stopped is ``late``
+or ``deferred`` (:func:`pool_read`).
 """
 
 import logging
 from collections.abc import Callable, Sequence
+from dataclasses import dataclass
 from datetime import UTC, datetime
 from http import HTTPStatus
 from pathlib import Path
 from typing import Final
 
-from snowlight.live.ingest import SourceRead, station_zone
+import httpx
+
+from snowlight.live.cadence import AlertWatch, Cadence, county_zones
+from snowlight.live.ingest import Ingest, SourceRead, station_zone
 from snowlight.live.ledger import Outcome, seen_row
+from snowlight.live.pool import (
+    LIVE_ATTEMPTS,
+    WORKERS,
+    HostPacer,
+    Pool,
+    RequestLog,
+    RobotsStore,
+    SourceResult,
+    pace_key,
+)
 from snowlight.live.resolve import LiveDirectory
-from snowlight.sources.stations.fetch import RunResult, skip_reason
+from snowlight.sources.stations.fetch import RunResult, read_station, skip_reason
+from snowlight.sources.stations.http import ConditionalStore, PoliteClient, make_client
 from snowlight.sources.stations.model import HealthStatus
 from snowlight.sources.stations.registry import Registry, Station
 
@@ -107,7 +127,9 @@ def sequential_reads(  # pragma: no cover - reads the stations over the network
             read = read_safely(
                 station.id,
                 lambda station=station: source_read(  # type: ignore[misc]
-                    station, read_station(registry, station, client, now), directory
+                    station,
+                    read_station(registry, station, client, now.replace(microsecond=0)),
+                    directory,
                 ),
             )
             if read is not None:
@@ -116,3 +138,138 @@ def sequential_reads(  # pragma: no cover - reads the stations over the network
         return found
 
     return reads
+
+
+def pool_read(
+    station: Station, read: SourceResult, directory: LiveDirectory, at: datetime
+) -> SourceRead | None:
+    """One source's pool read as the ledger takes it: ``late`` and ``deferred`` kept as such,
+    and a read that raised as ``error``, at ``at`` (the pass's start)."""
+    if read.outcome in {Outcome.LATE, Outcome.DEFERRED} or not read.result.health:
+        return SourceRead(station.id, read.outcome, at)
+    return source_read(station, read.result, directory)
+
+
+def live_pool(
+    cache_dir: Path,
+    state_dir: Path,
+    *,
+    workers: int = WORKERS,
+    log: RequestLog | None = None,
+    http: httpx.Client | None = None,
+) -> Pool:
+    """The pool of one process: one HTTP connection pool, pacer, robots store (kept in
+    ``state_dir/robots.json``) and conditional store shared by every worker's client."""
+    shared = http or make_client()
+    store = ConditionalStore(cache_dir)
+    robots = RobotsStore(state_dir / "robots.json")
+    pacer = HostPacer(log=log)
+
+    def client() -> PoliteClient:
+        return PoliteClient(
+            shared, store, attempts=LIVE_ATTEMPTS, pacer=pacer, robots=robots, pace_key=pace_key
+        )
+
+    return Pool(client=client, robots=robots, workers=workers)
+
+
+@dataclass(slots=True)
+class LiveReads:
+    """The live reads (a :data:`ReadsFn`): each pass reads the sources the cadence says are
+    due (or the ids given) through the pool, keeps the cadence, and tells the ingest which
+    sources G12b counts (:meth:`~snowlight.live.cadence.Cadence.recently_due`)."""
+
+    registry: Registry
+    directory: LiveDirectory
+    pool: Pool
+    cadence: Cadence
+    ingest: Ingest | None = None
+    reader: Callable[[Registry, Station, PoliteClient, datetime], RunResult] = read_station
+    """Reads one station (S4's reader; tests replace it)."""
+
+    def __call__(self, now: datetime, only: Sequence[str], tick: Tick) -> Sequence[SourceRead]:
+        if only:
+            due = [
+                self.registry.stations[sid]
+                for sid in sorted(set(only))
+                if sid in self.registry.stations
+            ]
+            # Every source the ingest polls stays due, so G12b refuses a pass that read only
+            # some of them: ``--only`` is for looking, not for publishing.
+            self.cadence.note(now, due_sources(self.registry))
+        else:
+            due = self.cadence.due(now, due_sources(self.registry))
+        registry, reader = self.registry, self.reader
+        whole = now.replace(microsecond=0)  # the stations' records keep whole seconds
+
+        def read(station: Station, client: PoliteClient) -> RunResult:
+            return reader(registry, station, client, whole)
+
+        result = self.pool.run_pass(due, read, alerted=self.cadence.in_alert, tick=tick)
+        self.cadence.record(
+            result.started,
+            [(item.source_id, item.outcome, _wait(item)) for item in result.sources],
+        )
+        try:
+            self.cadence.save()
+        except OSError as error:
+            LOG.error("cadence save: %s", type(error).__name__)
+        if self.ingest is not None:
+            self.ingest.due = self.cadence.recently_due(now)
+        found = []
+        for item in result.sources:
+            station = self.registry.stations[item.source_id]
+            read_one = read_safely(
+                item.source_id,
+                lambda s=station, i=item: pool_read(s, i, self.directory, result.started),  # type: ignore[misc]
+            )
+            if read_one is not None:
+                found.append(read_one)
+        return found
+
+
+ALERTS_DEADLINE: Final = 30.0
+"""Seconds one read of the NWS alerts feed may take."""
+
+
+def alerts_reader(pool: Pool) -> Callable[[], bytes]:
+    """Reads the NWS active alerts through the pool's pacer and robots store."""
+    from snowlight.sources.nws.alerts import ACTIVE_URL  # noqa: PLC0415
+
+    client = pool.client()
+
+    def read() -> bytes:
+        client.deadline = pool.monotonic() + ALERTS_DEADLINE
+        client.stopped = None  # each read starts afresh, like a pool's source
+        try:
+            return client.fetch(ACTIVE_URL).body
+        finally:
+            client.deadline = None
+
+    return read
+
+
+def live_reads(  # pragma: no cover - builds the network pool for the real ingest
+    registry: Registry, directory: LiveDirectory, cache_dir: Path, state_dir: Path
+) -> LiveReads:
+    """The real reader: the pool, and the cadence over the deployed directory's zones with
+    the NWS alerts read every 5 minutes."""
+    pool = live_pool(cache_dir, state_dir)
+    zones = county_zones(
+        (school.record.county_fips, school.zones[0] if school.zones else None)
+        for school in directory.schools.values()
+    )
+    cadence = Cadence(
+        registry.stations,
+        zones,
+        registry.poll_minutes,
+        path=state_dir / "cadence.json",
+        alerts=AlertWatch(alerts_reader(pool)),
+    )
+    return LiveReads(registry, directory, pool, cadence)
+
+
+def _wait(read: SourceResult) -> float | None:
+    """Seconds from the pass's start to the end of the wait a deferred source was asked for:
+    when it answered plus its ``Retry-After``."""
+    return read.finished + read.retry_after if read.retry_after is not None else None
