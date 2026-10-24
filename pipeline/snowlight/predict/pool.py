@@ -477,6 +477,16 @@ def named_counts(counts: LevelCounts, found: Chain) -> tuple[Floats, Floats]:
     return y, n
 
 
+def level_days(counts: LevelCounts, found: Chain, column: int) -> Floats:
+    """Per cell, the labeled days of situation ``column`` at the level the cell's base names
+    (its own record, or the scope's), for a chain over every cell."""
+    days = np.zeros(found.situation.shape)
+    for index, scope in enumerate(SCOPES):
+        mask = ~found.own & (found.scope == index)
+        days = np.where(mask, counts.n[scope][:, column][:, None], days)
+    return np.where(found.own, counts.n["own"][:, column][:, None], days)
+
+
 def make_rules(  # noqa: PLR0913 - every setting of the rule
     *,
     own_min_days: int,

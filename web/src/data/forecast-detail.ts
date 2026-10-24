@@ -20,7 +20,7 @@
 
 import { format } from '../copy-format';
 import { parseInstant } from '../state/instant';
-import type { AlertKind, LocalDate, Status } from '../types/generated';
+import type { AlertKind, CountedWeather, LocalDate, Status } from '../types/generated';
 
 const LOCAL_DATE = /^\d{4}-\d{2}-\d{2}$/;
 const HOUR_MS = 3_600_000;
@@ -40,6 +40,18 @@ const ALERTS: readonly AlertKind[] = [
   'blizzard_warning',
   'extreme_cold_warning',
 ];
+/**
+ * The weather a base with no one alert kind names its days by ("winter advisory days"): every
+ * value of the contract's enum, which `satisfies` holds complete, so a new one fails the
+ * type check instead of dropping the why section of forecasts that name it.
+ */
+const WEATHER_KEYS = {
+  advisory: true,
+  cold: true,
+  lake_snow: true,
+  tropical: true,
+} as const satisfies Record<CountedWeather, true>;
+export const WEATHERS = Object.keys(WEATHER_KEYS) as readonly CountedWeather[];
 
 /** The run before this one: its chance of no school, and when it was made. */
 export interface PreviousRun {
@@ -82,6 +94,8 @@ export type BaseDetail =
   | {
       readonly kind: 'similar_days';
       readonly points: number;
+      /** The weather of the days counted, or null (or missing) for days with no winter alert. */
+      readonly weather?: CountedWeather | null;
       readonly borrowed: boolean;
       readonly live: boolean;
     }
@@ -90,6 +104,8 @@ export type BaseDetail =
       readonly points: number;
       readonly scope: PoolScope;
       readonly alert: AlertKind | null;
+      /** With no alert, the weather of the days counted (null or missing: no winter alert). */
+      readonly weather?: CountedWeather | null;
       readonly borrowed: boolean;
       readonly live: boolean;
       /** Whose days: districts', or private schools' only (a private school's chance). */
@@ -249,6 +265,11 @@ function hoursOf(value: unknown, busesAt: Date | null): HoursDetail | null {
   return { kind, start, values: numbers, range, heavy: span };
 }
 
+/** The weather a base names its days by, as a part of the base only when it names one. */
+function weatherOf(named: CountedWeather | null): { readonly weather?: CountedWeather } {
+  return named === null ? {} : { weather: named };
+}
+
 function baseOf(value: unknown): BaseDetail | null {
   const base = fields(value);
   if (base === null || !isWhole(base.points, 0, 100)) return null;
@@ -260,6 +281,11 @@ function baseOf(value: unknown): BaseDetail | null {
   const live = base.live ?? false;
   if (typeof borrowed !== 'boolean' || typeof live !== 'boolean') return null;
   const lent = borrowed;
+  // The weather the days are named by must be one the sentence can say, and a pooled base
+  // names its days one way only.
+  const weather = base.weather ?? null;
+  if (weather !== null && !WEATHERS.includes(weather as CountedWeather)) return null;
+  const named = weather as CountedWeather | null;
   switch (base.kind) {
     case 'alert':
       return ALERTS.includes(base.alert as AlertKind)
@@ -268,7 +294,7 @@ function baseOf(value: unknown): BaseDetail | null {
     case 'day_after':
       return { kind: 'day_after', points, live };
     case 'similar_days':
-      return { kind: 'similar_days', points, borrowed: lent, live };
+      return { kind: 'similar_days', points, ...weatherOf(named), borrowed: lent, live };
     case 'pooled': {
       const scope = SCOPES.find((item) => item === base.scope);
       const alert = base.alert ?? null;
@@ -276,12 +302,14 @@ function baseOf(value: unknown): BaseDetail | null {
       if (scope === undefined || (alert !== null && !ALERTS.includes(alert as AlertKind))) {
         return null;
       }
+      if (alert !== null && named !== null) return null;
       if (of === undefined) return null;
       return {
         kind: 'pooled',
         points,
         scope,
         alert: alert as AlertKind | null,
+        ...weatherOf(named),
         borrowed: lent,
         live,
         of,

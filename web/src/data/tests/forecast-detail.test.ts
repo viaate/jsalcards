@@ -4,7 +4,7 @@ import { fileURLToPath } from 'node:url';
 
 import { describe, expect, it } from 'vitest';
 
-import { forecastDetail, neighborsOf, NO_DETAIL } from '../forecast-detail';
+import { forecastDetail, neighborsOf, NO_DETAIL, WEATHERS } from '../forecast-detail';
 import { parsePredictions } from '../school-day';
 
 /** The pipeline's own synthetic predictions file (pipeline/tests/schemas/examples). */
@@ -306,6 +306,40 @@ describe('a forecast’s chance section parts', () => {
     expect(read(pooled).why).toBeNull();
   });
 
+  it('reads the weather a base names its days by, and drops one it cannot say', () => {
+    const pooled = night();
+    (pooled.why as Json).base = {
+      kind: 'pooled',
+      scope: 'nation',
+      points: 74,
+      weather: 'advisory',
+    };
+    expect(read(pooled).why?.base).toEqual({
+      kind: 'pooled',
+      scope: 'nation',
+      points: 74,
+      alert: null,
+      weather: 'advisory',
+      borrowed: false,
+      live: false,
+      of: 'districts',
+    });
+    const own = night();
+    (own.why as Json).base = { kind: 'similar_days', points: 75, weather: 'cold' };
+    expect(read(own).why?.base).toEqual({
+      kind: 'similar_days',
+      points: 75,
+      weather: 'cold',
+      borrowed: false,
+      live: false,
+    });
+    ((own.why as Json).base as Json).weather = 'sleet';
+    expect(read(own).why).toBeNull();
+    // A pooled base names its days by its alert or by its weather, never both.
+    ((pooled.why as Json).base as Json).alert = 'winter_storm_warning';
+    expect(read(pooled).why).toBeNull();
+  });
+
   it('reads a said open line only as taking points away', () => {
     const said = night();
     (said.why as Json).base = { kind: 'pooled', scope: 'state', points: 38 };
@@ -401,3 +435,18 @@ function reasonPoints(forecast: Json, index: number, points: number): void {
 function days(forecast: Json): unknown[] {
   return (forecast.record as { days: unknown[] }).days;
 }
+
+describe('the weathers a base names', () => {
+  it('are every value of the contract enum, and only those', () => {
+    const schema = JSON.parse(
+      readFileSync(
+        path.resolve(
+          path.dirname(fileURLToPath(import.meta.url)),
+          '../../../../schemas/predictions.schema.json',
+        ),
+        'utf8',
+      ),
+    ) as { $defs: { CountedWeather: { enum: string[] } } };
+    expect([...WEATHERS].sort()).toEqual([...schema.$defs.CountedWeather.enum].sort());
+  });
+});

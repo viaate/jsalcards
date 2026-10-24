@@ -104,6 +104,16 @@
       "minimum": 0,
       "type": "integer"
     },
+    "CountedWeather": {
+      "description": "The weather of the days a base counts, for a class whose alerts have no one alert kind: advisory (winter weather, freezing rain and lake effect snow advisories), cold (extreme cold and wind chill warnings), lake_snow (lake effect snow warnings), tropical (hurricane and tropical storm warnings).",
+      "enum": [
+        "advisory",
+        "cold",
+        "lake_snow",
+        "tropical"
+      ],
+      "type": "string"
+    },
     "DayAfterBase": {
       "additionalProperties": false,
       "description": "The district's own record: after a recorded snow day, it stayed closed or went remote\nthe next day on about ``points`` in 100 of those recorded days.",
@@ -593,7 +603,7 @@
     },
     "PooledBase": {
       "additionalProperties": false,
-      "description": "For a district with too short a history of its own: the districts around it.\n\nThe districts of ``scope`` (``nearby``: within the neighbor distance; the\ndistrict's county, state or weather region; or ``nation``: the districts of every\nstate, named when no smaller place's record is true of the chance) closed or went\nremote on about ``points`` in 100 of their recorded district-days like this one, or\nwith ``alert`` when one is given. The pipeline names a scope only when the share the\nwebsite says for ``points`` is true of that scope's recorded days.\n\n``of`` says whose days are counted: ``districts``, or ``private_schools`` (a private\nschool's chance is counted over private schools' recorded days only: \"Private schools\nnear St. Ann closed ...\").",
+      "description": "For a district with too short a history of its own: the districts around it.\n\nThe districts of ``scope`` (``nearby``: within the neighbor distance; the\ndistrict's county, state or weather region; or ``nation``: the districts of every\nstate, named when no smaller place's record is true of the chance) closed or went\nremote on about ``points`` in 100 of their recorded district-days like this one, or\nwith ``alert`` when one is given, or of ``weather`` when that is given. The pipeline\nnames a scope only when the share the website says for ``points`` is true of that\nscope's recorded days.\n\n``of`` says whose days are counted: ``districts``, or ``private_schools`` (a private\nschool's chance is counted over private schools' recorded days only: \"Private schools\nnear St. Ann closed ...\").",
       "properties": {
         "alert": {
           "anyOf": [
@@ -637,6 +647,17 @@
             "nation"
           ],
           "type": "string"
+        },
+        "weather": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/CountedWeather"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "description": "With no alert: the weather of the days counted, when they are days with an alert of a class that has no one alert kind; null for days with no winter alert."
         }
       },
       "required": [
@@ -835,7 +856,7 @@
     },
     "SimilarDaysBase": {
       "additionalProperties": false,
-      "description": "The district's own record: it closed or went remote on about ``points`` in 100 of its\nrecorded days like this one (same weather class).",
+      "description": "The district's own record: it closed or went remote on about ``points`` in 100 of its\nrecorded days like this one (same weather class), named by ``weather`` when the class\nhas an alert of its own (\"recorded winter advisory days\").",
       "properties": {
         "borrowed": {
           "description": "The day follows a snow day and too few such days are recorded: the chance is counted over the recorded days like this that did not follow a recorded snow day.",
@@ -851,6 +872,17 @@
         },
         "points": {
           "$ref": "#/$defs/Percent"
+        },
+        "weather": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/CountedWeather"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "description": "The weather of the days counted, when they are days with an alert of a class that has no one alert kind; null for days with no winter alert."
         }
       },
       "required": [

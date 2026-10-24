@@ -811,15 +811,62 @@ def test_a_pass_with_no_private_previous_chances_names_only_the_possible_outlook
     # said-open form), counted before any pass; the table holds that many, here with the
     # private schools counted over the districts around them under a learned anchor, and in
     # every situation for every school, the day after or not, said open or not, and mixed.
+    # Also with the weather flag (addendum e, E2) differing between schools that share every
+    # other part of a cell (r2 critic, S4): those are distinct outlooks, counted there too.
     learned = run_decide(store_of([honest(j) for j in range(30)])).learned
     assert learned is not None
-    model = build_model(world.directory(), counted_over_districts(), CFG,
+    built = build_model(world.directory(), _with_advisory_days(counted_over_districts()), CFG,
                         lambda _lon, _lat: None, learned)  # fmt: skip
+    assert built.private is not None
+    assert SITUATION_KEYS[built.private.effective[ADVISORY]] == "advisory"
+    assert built.private.whole[:, ADVISORY].all()
+    mixed = built.private.whole.copy()
+    mixed[::2] = ~mixed[::2]
+    days = (date(2026, 1, 7), date(2026, 1, 8))
+    sizes = []
+    weathers: set[object] = set()
+    for flags in (built.private.whole, mixed):
+        model = replace(built, private=replace(built.private, whole=flags))
+        private = model.private
+        assert private is not None
+        possible = serve_module.possible_outlooks(private, days)
+        assert len(possible) <= MAX_OUTLOOKS
+        sizes.append(len(possible))
+        named = _named_outlooks(model, days)
+        assert named <= possible
+        assert any(isinstance(d, Forecast) and d.why.base.live for d in named)
+        assert any(
+            isinstance(d, Forecast) and d.why.reasons and d.why.reasons[0].kind == "said_open"
+            for d in named
+        )
+        weathers |= {getattr(d.why.base, "weather", None) for d in named if isinstance(d, Forecast)}
+    # The flag mixed: more distinct outlooks, at most twice as many, both kinds named.
+    assert sizes[0] < sizes[1] <= 2 * sizes[0]
+    assert {None, "advisory"} <= weathers
+
+
+ADVISORY = SITUATION_KEYS.index("advisory")
+
+
+def _with_advisory_days(model: ModelArtifact) -> ModelArtifact:
+    """SYNTHETIC: ``model`` with 30 of 40 advisory days for every district it counts, so the
+    advisory situation is modeled (not borrowed) and its bases name the weather."""
+    districts = dict(model.districts)
+    for leaid, entry in districts.items():
+        if entry.y is None or entry.n is None or entry.nd is None:
+            continue
+        y, n, nd = list(entry.y), list(entry.n), list(entry.nd)
+        y[ADVISORY], n[ADVISORY], nd[ADVISORY] = 30, 40, 10
+        districts[leaid] = entry.model_copy(update={"y": tuple(y), "n": tuple(n), "nd": tuple(nd)})
+    return model.model_copy(update={"districts": districts})
+
+
+def _named_outlooks(model: ServeModel, days: tuple[date, date]) -> set[object]:
+    """Every outlook passes with no private previous chance give the private schools of
+    ``model``: in every situation for every school, the day after or not, said open or not,
+    and mixed (SYNTHETIC classes)."""
     private = model.private
     assert private is not None
-    days = (date(2026, 1, 7), date(2026, 1, 8))
-    possible = serve_module.possible_outlooks(private, days)
-    assert len(possible) <= MAX_OUTLOOKS
     now = datetime(2026, 1, 7, 2, tzinfo=UTC)
     every = frozenset(private.positions.tolist())
     classes = np.zeros((len(model.directory.district_ids), 2), dtype=np.int64)
@@ -847,12 +894,9 @@ def test_a_pass_with_no_private_previous_chances_names_only_the_possible_outlook
             said=SaidOpen(schools=dict.fromkeys(days, every)) if said else SaidOpen(),
             fit=serve_module.Fit.NO_PRIVATE_PREVIOUS,
         )
-        assert set(found.outlooks) <= possible
         named |= set(found.outlooks)
         last = found
-    assert any(isinstance(d, Forecast) and d.why.base.live for d in named)
-    assert any(isinstance(d, Forecast) and d.why.reasons and d.why.reasons[0].kind == "said_open"
-               for d in named)  # fmt: skip
+    return named
 
 
 def with_delays(j: int) -> dict[str, str]:

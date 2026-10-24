@@ -1216,6 +1216,99 @@ describe('format', () => {
       );
     });
 
+    it('names the weather of the days a class with no one alert kind counts', () => {
+      const say = (input: BaseInput): string => chanceFormat.baseReason(input, 'Mammoth');
+      expect(
+        say({
+          kind: 'pooled',
+          points: 74,
+          scope: 'nation',
+          alert: null,
+          weather: 'advisory',
+          borrowed: false,
+          live: false,
+        }),
+      ).toBe(
+        'Districts across the country closed or went remote on more than 7 in 10 of their recorded winter advisory days.',
+      );
+      expect(
+        say({
+          kind: 'similar_days',
+          points: 75,
+          weather: 'advisory',
+          borrowed: false,
+          live: false,
+        }),
+      ).toBe('Mammoth closed or went remote on 3 in 4 recorded winter advisory days.');
+      expect(
+        say({ kind: 'similar_days', points: 20, weather: 'cold', borrowed: false, live: true }),
+      ).toBe('Mammoth closed or went remote on 1 in 5 cold warning days we read live.');
+      expect(
+        say({
+          kind: 'pooled',
+          points: 1,
+          scope: 'state',
+          alert: null,
+          weather: 'lake_snow',
+          borrowed: false,
+          live: false,
+        }),
+      ).toBe(
+        'Districts in Mammoth’s state almost never closed or went remote on their recorded lake effect snow warning days.',
+      );
+      expect(
+        say({
+          kind: 'pooled',
+          points: 50,
+          scope: 'region',
+          alert: null,
+          weather: 'tropical',
+          borrowed: false,
+          live: false,
+        }),
+      ).toBe(
+        'Districts in Mammoth’s region closed or went remote on 1 in 2 of their recorded hurricane or tropical storm warning days.',
+      );
+      // The day after a snow day, counted over the class's days that did not follow one.
+      expect(
+        say({ kind: 'similar_days', points: 60, weather: 'advisory', borrowed: true, live: false }),
+      ).toBe(
+        'The chance is counted over recorded winter advisory days that did not follow a recorded snow day. Mammoth closed or went remote on 3 in 5 of them.',
+      );
+      // No weather named: days with no winter alert are days like this, as before.
+      expect(
+        say({ kind: 'similar_days', points: 1, weather: null, borrowed: false, live: false }),
+      ).toBe('Mammoth almost never closed or went remote on recorded days like this.');
+      expect(() =>
+        say({
+          kind: 'similar_days',
+          points: 5,
+          weather: 'sleet' as never,
+          borrowed: false,
+          live: false,
+        }),
+      ).toThrow(RangeError);
+      const weathers = ['advisory', 'cold', 'lake_snow', 'tropical'] as const;
+      for (let points = 0; points <= 100; points += 1) {
+        for (const live of [false, true]) {
+          for (const borrowed of [false, true]) {
+            for (const weather of weathers) {
+              for (const input of [
+                { kind: 'similar_days', points, weather, borrowed, live },
+                { kind: 'pooled', points, scope: 'county', alert: null, weather, borrowed, live },
+              ] as const) {
+                const sentence = say(input);
+                const label = JSON.stringify(input);
+                expect(sentence, label).not.toMatch(/like this|warnings|advisories/);
+                expect(sentence, label).toMatch(/ (warning|advisory) days\b/);
+                expect(sentence, label).toMatch(live ? /\bwe read live\b/ : /\brecorded\b/);
+              }
+            }
+          }
+        }
+      }
+    });
+
     it('says every kind of reason, each way it can go, a forecast as the forecast’s claim', () => {
       const buses = at('2026-01-13T13:00:00Z');
       const snow = (

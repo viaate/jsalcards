@@ -564,6 +564,14 @@ export interface ColdReason {
 }
 
 /**
+ * The weather of the days a base counts, for a class whose alerts have no one alert kind: advisory
+ * (winter weather, freezing rain and lake effect snow advisories), cold (extreme cold and wind
+ * chill warnings), lake_snow (lake effect snow warnings), tropical (hurricane and tropical storm
+ * warnings).
+ */
+export type CountedWeather = 'advisory' | 'cold' | 'lake_snow' | 'tropical';
+
+/**
  * The district's own record: after a recorded snow day, it stayed closed or went remote
  * the next day on about ``points`` in 100 of those recorded days.
  */
@@ -746,8 +754,9 @@ export type Points = number;
  * district's county, state or weather region; or ``nation``: the districts of every
  * state, named when no smaller place's record is true of the chance) closed or went
  * remote on about ``points`` in 100 of their recorded district-days like this one, or
- * with ``alert`` when one is given. The pipeline names a scope only when the share the
- * website says for ``points`` is true of that scope's recorded days.
+ * with ``alert`` when one is given, or of ``weather`` when that is given. The pipeline
+ * names a scope only when the share the website says for ``points`` is true of that
+ * scope's recorded days.
  *
  * ``of`` says whose days are counted: ``districts``, or ``private_schools`` (a private
  * school's chance is counted over private schools' recorded days only: "Private schools
@@ -771,6 +780,11 @@ export interface PooledBase {
   readonly live?: boolean;
   /** Whose recorded days are counted: districts', or private schools' only. */
   readonly of?: 'districts' | 'private_schools';
+  /**
+   * With no alert: the weather of the days counted, when they are days with an alert of a class
+   * that has no one alert kind; null for days with no winter alert.
+   */
+  readonly weather?: CountedWeather | null;
 }
 
 /** The chance of no school the run before this one gave the same district and day. */
@@ -830,7 +844,8 @@ export interface SchoolForecast {
 
 /**
  * The district's own record: it closed or went remote on about ``points`` in 100 of its
- * recorded days like this one (same weather class).
+ * recorded days like this one (same weather class), named by ``weather`` when the class
+ * has an alert of its own ("recorded winter advisory days").
  */
 export interface SimilarDaysBase {
   readonly kind: 'similar_days';
@@ -845,6 +860,11 @@ export interface SimilarDaysBase {
    * archive days; the sentence says so.
    */
   readonly live?: boolean;
+  /**
+   * The weather of the days counted, when they are days with an alert of a class that has no one
+   * alert kind; null for days with no winter alert.
+   */
+  readonly weather?: CountedWeather | null;
 }
 
 /** Snow started falling at ``at``. */

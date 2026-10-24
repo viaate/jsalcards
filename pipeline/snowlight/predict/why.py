@@ -7,10 +7,13 @@ is the whole chance shown. The base names where the rate comes from:
   one VTEC code (``snow_warning`` counts winter storm warnings, ``blizzard`` and ``ice``
   their warnings); ``similar_days`` for the classes that mix codes or have no published
   kind (``none``, ``advisory`` with its freezing rain and lake effect advisories, ``cold``
-  with the wind chill warnings before 2024, ``lake_snow``, ``tropical``), so the sentence
-  is true of every day it counts; ``day_after`` for the day after a closing;
+  with the wind chill warnings before 2024, ``lake_snow``, ``tropical``), each but ``none``
+  naming its weather (``advisory``: "recorded winter advisory days") where that is true of
+  the days it counts: they are all the place's days of that weather (no day-after days of
+  it there), or the sentence says which they are; else "days like this" (:func:`base_for`);
+  ``day_after`` for the day after a closing;
 * the districts around it: ``pooled`` with the level named (up to the whole nation) and
-  the same alert kind (or none).
+  the same alert kind or weather (or neither, for ``none`` and the days after a snow day).
 
 The situation is the one whose rates were published: a situation the nation has too few
 labeled days of takes its fallback's rates (:mod:`snowlight.predict.pool`). Its base is
@@ -40,6 +43,7 @@ from snowlight.schemas.predictions import (
     AlertBase,
     AlertKind,
     Base,
+    CountedWeather,
     DayAfterBase,
     PastDay,
     PastRecord,
@@ -57,8 +61,18 @@ ALERT_KIND: Final[dict[WeatherClass, AlertKind]] = {
 }
 """The alert a class's base is counted over, for the classes of one VTEC code. ``advisory``
 (winter weather, freezing rain and lake effect snow advisories) and ``cold`` (extreme cold and,
-before 2024, wind chill warnings) mix codes, so their sentence says "days like this"; ``none``,
-``lake_snow`` and ``tropical`` have no published kind."""
+before 2024, wind chill warnings) mix codes, and ``lake_snow`` and ``tropical`` have no
+published alert kind: their bases name the weather instead (:data:`WEATHER_NAME`)."""
+
+WEATHER_NAME: Final[dict[WeatherClass, CountedWeather]] = {
+    WeatherClass.ADVISORY: "advisory",
+    WeatherClass.COLD: "cold",
+    WeatherClass.LAKE_SNOW: "lake_snow",
+    WeatherClass.TROPICAL: "tropical",
+}
+"""The weather a base counted over days of a class with an alert but no one alert kind names
+("recorded winter advisory days"), where that is true of the days it counts (:func:`base_for`):
+else, and for ``none`` (no winter alert), it says "days like this"."""
 
 REASONS: Final[dict[WeatherClass, tuple[Reason, ...]]] = {
     WeatherClass.NONE: (),
@@ -112,13 +126,24 @@ def base_for(  # noqa: PLR0913 - the counted days, the chance, where it comes fr
     *,
     live: bool = False,
     of: Of = "districts",
+    whole: bool = False,
 ) -> Base:
     """The base of a forecast whose whole chance is ``p_no_school``, counted over
     ``situation`` days, on a day of situation ``day`` (default the same).
 
     ``live``: the counted days are days the live pipeline read, not the archive's recorded
     days (the situation is re-anchored on them, :mod:`snowlight.predict.learn`). ``of``: a
-    pooled base counts districts' days, or private schools' only.
+    pooled base counts districts' days, or private schools' only. ``whole``: the counted
+    days are all the place's days of their weather (of the same source, recorded or read
+    live), as no other situation of that weather has any there
+    (:func:`snowlight.predict.serve.whole_weather`).
+
+    The base names the weather of the days it counts ("recorded winter advisory days") only
+    where that is true of them: never over the days after a snow day (a different, smaller
+    set: they stay "days like this"), and over the other days of the weather only when they
+    are all its days (``whole``) or the sentence says which they are (``borrowed``: "...
+    that did not follow a recorded snow day"). Else it says "days like this", which is true
+    of every count.
 
     Raises:
         ValueError: ``scope`` is not a pooled scope, or the counted days cannot be said
@@ -130,6 +155,8 @@ def base_for(  # noqa: PLR0913 - the counted days, the chance, where it comes fr
         raise ValueError(f"a {asked.key} day cannot be counted over {situation.key} days")
     borrowed = asked != situation
     alert = ALERT_KIND.get(situation.weather)
+    named = alert is None and not situation.after and (borrowed or whole)
+    weather = WEATHER_NAME.get(situation.weather) if named else None
     if not own:
         if scope not in SCOPES:
             raise ValueError(f"not a pooled scope: {scope!r}")
@@ -138,6 +165,7 @@ def base_for(  # noqa: PLR0913 - the counted days, the chance, where it comes fr
             scope=scope,
             points=points,
             alert=alert,
+            weather=weather,
             borrowed=borrowed,
             live=live,
             of=of,
@@ -146,7 +174,9 @@ def base_for(  # noqa: PLR0913 - the counted days, the chance, where it comes fr
         return DayAfterBase(kind="day_after", points=points, live=live)
     if alert is not None:
         return AlertBase(kind="alert", points=points, alert=alert, borrowed=borrowed, live=live)
-    return SimilarDaysBase(kind="similar_days", points=points, borrowed=borrowed, live=live)
+    return SimilarDaysBase(
+        kind="similar_days", points=points, weather=weather, borrowed=borrowed, live=live
+    )
 
 
 def why_for(  # noqa: PLR0913 - as base_for
@@ -159,12 +189,13 @@ def why_for(  # noqa: PLR0913 - as base_for
     live: bool = False,
     of: Of = "districts",
     said_open: float | None = None,
+    whole: bool = False,
 ) -> Why:
     """The base alone: it adds up to the chance exactly. With ``said_open`` (the chance the
     unit's word that school is on leaves, the floor), a ``said_open`` line takes the rest of
     the base away, so the base and the line add up to that chance exactly (no line when the
     base is already there)."""
-    base = base_for(situation, p_no_school, own, scope, day, live=live, of=of)
+    base = base_for(situation, p_no_school, own, scope, day, live=live, of=of, whole=whole)
     if said_open is None:
         return Why(base=base)
     taken = percent(said_open) - base.points

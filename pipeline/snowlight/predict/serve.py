@@ -58,6 +58,7 @@ from snowlight.predict.pool import (
     chain,
     delay_rules,
     level_counts,
+    level_days,
     make_places,
     named_counts,
     propensities,
@@ -73,7 +74,7 @@ from snowlight.predict.situations import (
     counts,
     district_class,
 )
-from snowlight.predict.why import Of, reasons_for, record_for, sayable, why_for
+from snowlight.predict.why import WEATHER_NAME, Of, reasons_for, record_for, sayable, why_for
 from snowlight.schemas.directory import DirectoryStamp
 from snowlight.schemas.live import DayTimeline
 from snowlight.schemas.predictions import (
@@ -226,6 +227,9 @@ class PrivateServe:
     named_y: npt.NDArray[np.float64]
     named_n: npt.NDArray[np.float64]
     known: int
+    whole: npt.NDArray[np.bool_] = field(default_factory=lambda: np.zeros((0, 0), dtype=np.bool_))
+    """Per school and situation, whether the days its base counts are all the place's days of
+    their weather (:func:`whole_weather`); empty: none is, and no base names its weather."""
     """Private schools the model knows by id."""
     left_out: int = 0
     """Private schools of the contiguous states left out (no time zone): the pass says how
@@ -270,6 +274,9 @@ class ServeModel:
     (:class:`~snowlight.predict.artifact.Learned`); empty: none is."""
     private: PrivateServe | None = None
     """The private schools' rates (contract C3); ``None``: the pass gives them none."""
+    whole: npt.NDArray[np.bool_] = field(default_factory=lambda: np.zeros((0, 0), dtype=np.bool_))
+    """Per deployed district and situation, whether the days its base counts are all the
+    place's days of their weather (:func:`whole_weather`); empty: none is."""
 
     @property
     def coverage(self) -> float:
@@ -280,6 +287,17 @@ class ServeModel:
 
 def _strengths(artifact: ModelArtifact, outcome: str) -> Strengths:
     return Strengths(cast("dict[Level, dict[Group, float]]", artifact.strengths[outcome]))
+
+
+def _live_counts(places: Places, learned: Learned) -> tuple[Floats, Floats]:
+    """The live-read days ``y`` of ``n`` per district and situation (zero where none)."""
+    shape = (places.size, len(SITUATION_KEYS))
+    y, n = np.zeros(shape), np.zeros(shape)
+    for i, leaid in enumerate(places.districts):
+        found = learned.live.get(leaid)
+        if found is not None:
+            y[i], n[i] = found.y, found.n
+    return y, n
 
 
 def _anchored_counts(
@@ -394,6 +412,35 @@ class _Rates:
     """Per situation, the situation it publishes, or -1 when none is backed."""
     named_y: npt.NDArray[np.float64]
     named_n: npt.NDArray[np.float64]
+    whole: npt.NDArray[np.bool_]
+    """Per unit and situation, whether the base may name its weather (:func:`whole_weather`)."""
+
+
+def whole_weather(
+    found: Chain,
+    archive: LevelCounts,
+    live: LevelCounts | None,
+    anchored: npt.NDArray[np.bool_],
+) -> npt.NDArray[np.bool_]:
+    """Per cell of a chain, whether the days its base counts are all the place's days of
+    their weather, so the sentence may name it ("recorded winter advisory days", addendum e,
+    E2): the level the base names holds no day of another situation of the same weather
+    (the advisory days after a snow day beside the other advisory days), in the same source
+    as the counted days (``live`` when the counted situation is ``anchored``, else the
+    ``archive``). A cell counted over a situation with no weather name, or over the days
+    after a snow day, is ``False`` (it says "days like this")."""
+    target = np.maximum(found.situation, 0)
+    whole = np.zeros(target.shape, dtype=np.bool_)
+    for t, counted in enumerate(SITUATIONS):
+        if counted.after or counted.weather not in WEATHER_NAME:
+            continue
+        source = live if live is not None and bool(anchored[t]) else archive
+        others = np.zeros(target.shape)
+        for j, other in enumerate(SITUATIONS):
+            if j != t and other.weather == counted.weather:
+                others += level_days(source, found, j)
+        whole |= (target == t) & (others == 0)
+    return whole
 
 
 def _check_true(rates: _Rates, rules: Rules) -> None:
@@ -460,6 +507,7 @@ def _private_chain(
     )
     p, q = publish_rates(no_school.p, delay.p, rules.floor, rules.ceiling)
     named_y, named_n = named_counts(counts, no_school)
+    whole = whole_weather(no_school, counts, None, np.zeros(len(SITUATION_KEYS), dtype=np.bool_))
     rows = np.array([position[served.unit(i)] for i in range(len(served.ids))], dtype=np.int64)
     return _Rates(
         p=p[rows],
@@ -471,6 +519,7 @@ def _private_chain(
         else (-1,) * len(SITUATION_KEYS),
         named_y=named_y[rows],
         named_n=named_n[rows],
+        whole=whole[rows],
     )
 
 
@@ -530,6 +579,7 @@ def _private_model(  # noqa: PLR0913 - the served schools, both chains and the m
         ),
         named_y=pick(mine.named_y, districts.named_y),
         named_n=pick(mine.named_n, districts.named_n),
+        whole=pick(mine.whole, districts.whole),
     )
     _check_true(rates, rules)
     entry = artifact.private
@@ -556,6 +606,7 @@ def _private_model(  # noqa: PLR0913 - the served schools, both chains and the m
         named_n=rates.named_n,
         known=sum(1 for school in served.ids if school is not None),
         left_out=served.left_out,
+        whole=rates.whole,
     )
 
 
@@ -625,11 +676,16 @@ def build_model(  # noqa: PLR0915 - the steps of one model, in order
     anchored = np.zeros(len(SITUATION_KEYS), dtype=np.bool_)
     ratios: dict[str, Floats] | None = None
     delay_ratios: dict[str, Floats] | None = None
+    archive_counts: LevelCounts | None = None
+    live_counts: LevelCounts | None = None
     if learned is not None and learned.anchored:
         archive = (y, n, yd, nd)
         anchored, (y, n, yd, nd) = _anchored_counts(places, learned, archive)
+        archive_counts = level_counts(places, archive[0], archive[1])
+        live_y, live_n = _live_counts(places, learned)
+        live_counts = level_counts(places, live_y, live_n)
         ratios = _ratios(
-            level_counts(places, archive[0], archive[1]),
+            archive_counts,
             _strengths(artifact, "no_school"),
             rules,
             anchored,
@@ -659,6 +715,9 @@ def build_model(  # noqa: PLR0915 - the steps of one model, in order
     )
     p, q = publish_rates(no_school.p, delay.p, settings.floor, settings.ceiling)
     named_y, named_n = named_counts(counts, no_school)
+    whole = whole_weather(
+        no_school, archive_counts if archive_counts is not None else counts, live_counts, anchored
+    )
     position = places.position()
     rows = np.array([position[d] for d in deployed], dtype=np.int64)
     effective = (
@@ -670,7 +729,7 @@ def build_model(  # noqa: PLR0915 - the steps of one model, in order
     # neighbors and the published (floored) chance, so a false base sentence never ships.
     _check_true(
         _Rates(p[rows], q[rows], no_school.own[rows], no_school.scope[rows], effective,
-               named_y[rows], named_n[rows]),
+               named_y[rows], named_n[rows], whole[rows]),
         rules,
     )  # fmt: skip
     zones: list[str] = []
@@ -699,6 +758,7 @@ def build_model(  # noqa: PLR0915 - the steps of one model, in order
             effective=effective,
             named_y=named_y[prow],
             named_n=named_n[prow],
+            whole=whole[prow],
         )
         private = _private_model(
             served,
@@ -725,6 +785,7 @@ def build_model(  # noqa: PLR0915 - the steps of one model, in order
         named_n=named_n[rows],
         anchored=live,
         private=private,
+        whole=whole[rows],
     )
 
 
@@ -942,6 +1003,7 @@ def forecast_file(  # noqa: PLR0913 - the model, the classes, the days and the l
                         live=bool(model.anchored and model.anchored[counted]),
                         records=model.records[index] if fit.records else {},
                         of="districts",
+                        whole=bool(model.whole[index, k]) if model.whole.size else False,
                     ),
                     situation,
                     day,
@@ -1031,6 +1093,7 @@ def _schools(  # noqa: PLR0913 - the private schools, their classes, the days an
                         live=private.live[k],
                         records=private.records[i] if records else {},
                         of="private_schools" if private.of_private[k] else "districts",
+                        whole=bool(private.whole[i, k]) if private.whole.size else False,
                     ),
                     situation,
                     day,
@@ -1065,7 +1128,7 @@ def possible_outlooks(
     for k, situation in enumerate(SITUATIONS):
         counted = SITUATIONS[private.effective[k]]
         of: Of = "private_schools" if private.of_private[k] else "districts"
-        cells: set[tuple[float, float, bool, int, tuple[RecordDay, ...]]] = set()
+        cells: set[tuple[float, float, bool, int, tuple[RecordDay, ...], bool]] = set()
         for i in range(len(private)):
             own = bool(private.own[i, k])
             record = tuple(private.records[i].get(counted.key, ())) if own else ()
@@ -1076,9 +1139,10 @@ def possible_outlooks(
                     own,
                     int(private.scope[i, k]),
                     record,
+                    bool(private.whole[i, k]) if private.whole.size else False,
                 )
             )
-        for p, q, own, scope, record in cells:
+        for p, q, own, scope, record, whole in cells:
             cell = _Cell(
                 p=p,
                 q=q,
@@ -1088,6 +1152,7 @@ def possible_outlooks(
                 live=private.live[k],
                 records={counted.key: record} if record else {},
                 of=of,
+                whole=whole,
             )
             for day in days:
                 for said_open in (False, True):
@@ -1108,6 +1173,8 @@ class _Cell:
     live: bool
     records: Mapping[str, tuple[RecordDay, ...]]
     of: Of
+    whole: bool = False
+    """The counted days are all the place's days of their weather (:func:`whole_weather`)."""
 
 
 def _forecast(  # noqa: PLR0913 - one unit, one day, and its last chance
@@ -1152,6 +1219,7 @@ def _forecast(  # noqa: PLR0913 - one unit, one day, and its last chance
             live=cell.live,
             of=cell.of,
             said_open=floor,
+            whole=cell.whole,
         ),
         record=record,
     )

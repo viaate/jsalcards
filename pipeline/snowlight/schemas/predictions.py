@@ -146,6 +146,19 @@ type AlertKind = Annotated[
 ]
 
 
+type CountedWeather = Annotated[
+    Literal["advisory", "cold", "lake_snow", "tropical"],
+    Field(
+        description=(
+            "The weather of the days a base counts, for a class whose alerts have no one "
+            "alert kind: advisory (winter weather, freezing rain and lake effect snow "
+            "advisories), cold (extreme cold and wind chill warnings), lake_snow (lake "
+            "effect snow warnings), tropical (hurricane and tropical storm warnings)."
+        )
+    ),
+]
+
+
 class PreviousChance(CompactModel):
     """The chance of no school the run before this one gave the same district and day."""
 
@@ -259,10 +272,18 @@ class DayAfterBase(CompactModel):
 
 class SimilarDaysBase(CompactModel):
     """The district's own record: it closed or went remote on about ``points`` in 100 of its
-    recorded days like this one (same weather class)."""
+    recorded days like this one (same weather class), named by ``weather`` when the class
+    has an alert of its own ("recorded winter advisory days")."""
 
     kind: Literal["similar_days"]
     points: Percent
+    weather: CountedWeather | None = Field(
+        default=None,
+        description=(
+            "The weather of the days counted, when they are days with an alert of a class "
+            "that has no one alert kind; null for days with no winter alert."
+        ),
+    )
     borrowed: bool = Field(
         default=False,
         description=(
@@ -286,8 +307,9 @@ class PooledBase(CompactModel):
     district's county, state or weather region; or ``nation``: the districts of every
     state, named when no smaller place's record is true of the chance) closed or went
     remote on about ``points`` in 100 of their recorded district-days like this one, or
-    with ``alert`` when one is given. The pipeline names a scope only when the share the
-    website says for ``points`` is true of that scope's recorded days.
+    with ``alert`` when one is given, or of ``weather`` when that is given. The pipeline
+    names a scope only when the share the website says for ``points`` is true of that
+    scope's recorded days.
 
     ``of`` says whose days are counted: ``districts``, or ``private_schools`` (a private
     school's chance is counted over private schools' recorded days only: "Private schools
@@ -298,6 +320,13 @@ class PooledBase(CompactModel):
     scope: Literal["nearby", "county", "state", "region", "nation"]
     points: Percent
     alert: AlertKind | None = None
+    weather: CountedWeather | None = Field(
+        default=None,
+        description=(
+            "With no alert: the weather of the days counted, when they are days with an alert "
+            "of a class that has no one alert kind; null for days with no winter alert."
+        ),
+    )
     of: Literal["districts", "private_schools"] = Field(
         default="districts",
         description="Whose recorded days are counted: districts', or private schools' only.",
@@ -318,6 +347,12 @@ class PooledBase(CompactModel):
             "recorded archive days; the sentence says so."
         ),
     )
+
+    @model_validator(mode="after")
+    def _one_name(self) -> Self:
+        if self.alert is not None and self.weather is not None:
+            raise ValueError("a pooled base names its days by alert or by weather, not both")
+        return self
 
 
 type Base = Annotated[

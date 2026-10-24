@@ -587,7 +587,12 @@ def test_the_worst_case_file_fits_the_size_budget() -> None:
     * with no record days (:attr:`serve.Fit.NO_RECORDS`) and every previous chance, the file
       fits with up to :data:`KEEPS_PREVIOUS` private outlooks;
     * with the committed model alone (every district it gives a record to with a full one)
-      and as many outlooks, the whole file fits, so it keeps its record days."""
+      and as many outlooks, the whole file fits, so it keeps its record days.
+
+    The table here holds :data:`MAX_OUTLOOKS`, the most it may hold however many parts make
+    an outlook distinct (the weather flag of addendum e, E2, may double them, see
+    ``test_a_pass_with_no_private_previous_chances_names_only_the_possible_outlooks``): a
+    pass that would name more publishes the districts alone (:class:`serve.Fit`)."""
     model = artifact.load()
     districts = math.ceil(len(model.districts) * GROWTH)
     with_record = math.ceil(sum(1 for entry in model.districts.values() if entry.record) * GROWTH)

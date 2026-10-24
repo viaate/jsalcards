@@ -18,6 +18,7 @@ import { copy } from './copy.ts';
 import { format } from './copy-format.ts';
 import type { StatusKey } from './copy.ts';
 import { STATES } from './search/states.ts';
+import type { CountedWeather as SchemaWeather } from './types/generated/index.ts';
 
 const { checkInstant, checkKey, clockText, dateTimeFormat, localDay, parseLocalDate, part } =
   format;
@@ -98,6 +99,20 @@ const ALERT_DAYS = {
 
 export type AlertKind = keyof typeof ALERT_DAYS;
 
+/**
+ * The weather of a class with alerts but no one alert kind, as its days are named: "recorded
+ * winter advisory days" (winter weather, freezing rain and lake effect snow advisories).
+ */
+const WEATHER_DAYS = {
+  advisory: 'winter advisory',
+  cold: 'cold warning',
+  lake_snow: 'lake effect snow warning',
+  tropical: 'hurricane or tropical storm warning',
+} as const satisfies Record<SchemaWeather, string>;
+
+/** Every weather the contract names, and only those (checked by `satisfies` above). */
+export type CountedWeather = keyof typeof WEATHER_DAYS;
+
 /** The districts a pooled base counts, as the start of its sentence, around the district's name. */
 const POOLS = {
   nearby: (district: string) => `Districts near ${district}`,
@@ -149,6 +164,8 @@ export type BaseInput =
   | {
       readonly kind: 'similar_days';
       readonly points: number;
+      /** The weather the days are named by ("winter advisory days"); null: "days like this". */
+      readonly weather?: CountedWeather | null;
       readonly borrowed: boolean;
       readonly live: boolean;
     }
@@ -157,6 +174,8 @@ export type BaseInput =
       readonly points: number;
       readonly scope: keyof typeof POOLS;
       readonly alert: AlertKind | null;
+      /** With no alert, the weather the days are named by; null: "days like this". */
+      readonly weather?: CountedWeather | null;
       readonly borrowed: boolean;
       readonly live: boolean;
       /** Whose recorded days: districts' (the default), or private schools' only. */
@@ -618,10 +637,20 @@ function baseReason(input: BaseInput, district: string): string {
   const did = 'closed or went remote';
   const counted = input.live ? 'days we read live' : 'recorded days';
   const snowDay = input.live ? 'a snow day we read live' : 'a recorded snow day';
+  // Days with an alert say which: its alert ("recorded days with a winter storm warning"), or
+  // for a class with no one alert kind its weather ("recorded winter advisory days"). Only
+  // days with no winter alert are "days like this".
+  const weather = 'weather' in input ? (input.weather ?? null) : null;
+  const named = (kind: CountedWeather): string => {
+    const noun = WEATHER_DAYS[checkKey(WEATHER_DAYS, kind, 'weather')];
+    return input.live ? `${noun} days we read live` : `recorded ${noun} days`;
+  };
   const days = (alert: AlertKind | null): string =>
-    alert === null
-      ? `${counted} like this`
-      : `${counted} with ${ALERT_DAYS[checkKey(ALERT_DAYS, alert, 'alert')]}`;
+    alert !== null
+      ? `${counted} with ${ALERT_DAYS[checkKey(ALERT_DAYS, alert, 'alert')]}`
+      : weather !== null
+        ? named(weather)
+        : `${counted} like this`;
   // Pooled counts are district-days: "of their recorded days", never calendar days.
   const closed = (who: string, alert: AlertKind | null, pooled: boolean): string =>
     extreme === null
