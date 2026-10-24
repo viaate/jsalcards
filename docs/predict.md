@@ -70,9 +70,29 @@ winter storm warning or advisory for the area.
   chance is counted over recorded days with a winter storm warning. Districts across the
   country closed or went remote on 9 in 10 of them." Today ice, lake effect snow and
   tropical warnings borrow the winter storm warning's days, and the day after a snow day the
-  plain or advisory day's. Advisory and cold classes mix VTEC codes, so their sentence says
-  "days like this". A borrowed day after a snow day says "The chance is counted over
-  recorded days like this that did not follow a recorded snow day": the counted days are
+  plain or advisory day's. The advisory and cold classes mix VTEC codes and lake effect snow
+  and tropical warnings have no published alert kind, so their bases name the weather of
+  the days counted instead (addendum e, E2; `SimilarDaysBase.weather` and
+  `PooledBase.weather`, additive): "recorded winter advisory days" (winter weather,
+  freezing rain and lake effect snow advisories), "recorded cold warning days" (extreme
+  cold and wind chill warnings), "recorded lake effect snow warning days", "recorded
+  hurricane or tropical storm warning days". The name claims the share over all the place's
+  days of that weather, so it is said only where that is true (`serve.whole_weather`): never
+  over the days after a snow day (the advisory days after one are a smaller set, said "days
+  like this"), and over the other advisory days only where the level the base names holds no
+  advisory day after a snow day (in the same source: recorded, or read live for a live base).
+  The committed model holds none, so today every advisory base names it; once live days
+  after a snow day are counted, the levels holding them say "days like this" again, and a
+  base anchored on the live days names it less as the winter goes on (the nation's level
+  holds every district's days, so one such day there takes the name from every pooled
+  base). Keeping it would take the borrowed form ("recorded winter advisory days that did
+  not follow a recorded snow day") on a day that is not borrowed, which waits for the
+  owner's word on the copy. Days
+  with no winter alert always say "days like this". The share check
+  (`tests/predict/test_truth.py`) judges a named sentence against all the weather's days. A
+  borrowed day after a snow day says "The chance is counted over
+  recorded days like this that did not follow a recorded snow day" (or "recorded winter
+  advisory days that did not follow a recorded snow day"): the counted days are
   those whose previous school day is not labeled no school, and most have no record of that
   day at all, so the sentence never says they did not follow a snow day (`web/src/copy.test.ts`
   pins it, and every "snow day" in a base sentence is "a recorded snow day").
@@ -126,6 +146,96 @@ winter storm warning or advisory for the area.
   schools ended that day closed or remote for weather. Only a timeline the host does not
   hold means no district had the day off; one that cannot be read, or that indexes another
   directory and shows a closing, darkens the pass.
+
+## Heights in alerts (addendum e, E1)
+
+A winter alert for a mountain zone often applies only to part of it: on October 22, 2026
+the Winter Weather Advisories KHNX WW.Y 0005 (zone CAZ323) and KREV WW.Y 0009 (CAZ073) said
+"above 8,000 feet", and the zone polygons reached Yosemite-Wawona's school at 4,068 ft and
+Eastern Sierra's at 5,150 to 6,800 ft, which then showed 74% from the nation's advisory
+rate. The serving pass now reads those lines and counts a school as reached by such an
+alert only within the heights it names.
+
+- What is read (`snowlight/sources/nws/elevation.py`): a band phrase is "above N feet"
+  ("elevations above N", "N feet and above", "N feet and higher"), "below N feet" ("N feet
+  and below") or "between N and M feet" ("from N to M feet"), `ft` too. Only the numbers are
+  kept (on the live event and in the pass's alert memory), never the text. Most band phrases
+  in an alert do not say where it applies: they qualify an amount ("3 to 5 feet above 7000
+  feet" in a Lake Tahoe warning whose basin lies at 6,200 ft), a wind, or one of several
+  areas ("Grand and Summit Counties below 9000 feet, South Park, Byers, and Limon"). So a
+  band counts only from a statement of where the alert applies, one band and nothing else:
+  the `NWSheadline` when it is the product's own line ("... IN EFFECT UNTIL 5 PM ABOVE 8000
+  FEET", "... REMAINS IN EFFECT FOR ELEVATIONS ABOVE 7000 FEET"), with nothing after the
+  band but when or the one area it lies in ("... ABOVE 5000 FEET IN JOSEPHINE COUNTY AND FOR
+  SOUTH CENTRAL OREGON" is no statement), or a `WHERE` paragraph that is a band, a band over
+  the areas it names ("Above 8,000 feet in the Sierra Nevada") or one area and its band
+  ("Mono County above 7500 feet"). A `WHAT` paragraph is never one ("Snow above 7000 feet. A
+  rain and snow mix around 6000 feet." speaks of the weather), nor a headline that is not
+  the product line ("HEAVY SNOW EXPECTED ABOVE 7000 FEET"). A statement may carry no amount,
+  wind or hedge ("inches", "gusts", "heaviest", "locally", "mainly", "except", "as well
+  as"). There is no limit, and the alert reaches its whole zones as before, when no
+  statement names a band; when any part of the alert speaks of the lower ground in words
+  ("lower elevations", "all elevations", "all of", "valleys", "valley floor", "foothills",
+  "lake level", "snow levels", "down to", "as low as", "lowering to", "thousand feet"); when
+  it names any height outside a band phrase that lies outside the stated bands ("as low as
+  3500 feet", "a pass at 4489 ft" under "above 4500 feet", any "5 kft"); or when any band
+  phrase anywhere in its headlines or description reaches outside the stated bands ("1 to 4
+  inches between 3000 and 5000 feet" under "above 5000 feet"). Several stated bands are one
+  limit: a school in any of them is reached. So a limit leaves out only ground that a
+  statement of where the alert applies leaves out and no other part of the alert names, and
+  any other wording counts the whole zone. Amounts named for towns ("4 to 8 inches in
+  Truckee") are not judged against the band: the statement already says whether those towns
+  lie in it. Checked on 1,655 distinct segments of public winter weather messages from 21
+  western offices (IEM AFOS, 2023-2026, full descriptions): 244 get a limit, every one from
+  such a statement (216 from the headline); a reviewed sample of 45 is the test fixture
+  `tests/weather/fixtures/wsw-elevation-sample.json`.
+- The rule (`serve.reached_by`): a school is reached by an "above N" alert when its height
+  is at least N minus 500 ft (`serve.elevation_margin_feet` in `config/predict.yaml`), by
+  "below N" when at most N plus 500 ft, by "between" likewise. A school whose height is not
+  known is reached, and each pass logs the count: `predict: 2 alerts name heights; 6 schools
+  of their zones lie outside them, 0 with no known height counted as reached`.
+- Serve only, as the cancel and upgrade rule: the season CSVs the model is trained on carry
+  no alert text, so training counts each zone whole. The live pass is the stricter of the
+  two here. The learning step's snapshots record each district's class with every alert
+  reaching its whole zones, as the history labels count them, so the days learned live mean
+  what the archive's days mean; only the served chance uses the heights.
+- The heights (`snowlight/elevation`): one table of every school of the directory, by NCES
+  id and point, in whole feet, read from Terrain Tiles (Mapzen's Terrarium PNG tiles on AWS
+  Open Data, `s3://elevation-tiles-prod`, zoom 11, pixels about 60 m across in the states;
+  bilinear between the four pixel centers around the school). It is built only by
+  `.github/workflows/elevation.yml`, on a push that changes `config/directory.yaml`,
+  `config/elevation.yaml` or the workflow: the job builds the directory from the data
+  mirror (as Preview does), reads each tile once (about 14,200 tiles for 118,000 schools),
+  and puts the table in the data mirror release of the current pins as
+  `school-elevations-<first 16 hex of its SHA-256>.json.gz`, so a rebuild never replaces a
+  pinned table. The run's summary gives the `table` block to pin in
+  `config/elevation.yaml` (URL, SHA-256, schools, unknown, and `directory_sha256`, the content
+  digest of the directory it was built from); committing it runs the job again, which checks
+  the table it builds is the pinned one. A table built from the pinned table's very directory
+  that is not the pinned one (other tile bytes, or tiles that did not read) fails the run
+  before anything is uploaded (`snowlight elevation pinned --directory`, exit 3).
+- The predict pass reads only the pinned table (`snowlight/predict/heights.py`), from
+  `.cache/elevation` when the cached bytes have the pinned SHA-256, else from the pin's URL,
+  and uses it only when its bytes and counts are the pin's. A school's height counts only
+  when the table has a row for its NCES id at its very point in the deployed directory; a
+  school added or moved since is unknown until the table is rebuilt and pinned. With no
+  table pinned, or none readable, no height is known and every alert reaches its whole
+  zones (the pass warns). A failed download is tried again 15 minutes later (the loop runs
+  for hours), and a remembered alert whose stored heights do not read is kept reaching its
+  whole zones (the pass warns with the count). Nothing in the deploy or the predict loop
+  reads the tiles.
+- Checked against USGS (EPQS) at the eight schools those advisories reached: the zoom 11
+  heights are within 9 ft of USGS's (Wawona 4,069 against 4,068; Mammoth 7,808 and 7,854
+  against 7,805 and 7,852; Lee Vining 6,798 and 6,751 against 6,806 and 6,754).
+- Attribution (required by the tiles' sources for the data used; the joerd project's
+  attribution page): "Terrain Tiles by Mapzen on AWS Open Data. United States 3DEP
+  (formerly NED) and global GMTED2010 and SRTM terrain data courtesy of the U.S. Geological
+  Survey. Global ETOPO1 terrain data courtesy of the U.S. National Oceanic and Atmospheric
+  Administration." It is in `config/elevation.yaml`, the README's data section and the
+  map's credits (the attribution button, beside the map tiles' credits).
+- Bumping: a new directory edition (a pin bump in `config/directory.yaml`) runs the
+  workflow; pin the new block it prints. Until then the old table serves every school it
+  holds at the same point, and the rest are unknown (reached).
 
 ## Private schools and "school is on" (piece 2)
 

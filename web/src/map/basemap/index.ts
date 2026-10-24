@@ -13,7 +13,7 @@ import { DATA_FILES } from 'virtual:snowlight/data-files';
 import { mapLocale } from '../../copy';
 import { DATA_PATHS, createDataFiles, dataRootFor } from '../../data/files';
 import { mercatorXFromLng, mercatorYFromLat } from '../glow/mercator';
-import { collapsedAttribution } from './attribution';
+import { collapsedAttribution, TERRAIN_ATTRIBUTION } from './attribution';
 import { prepareCanvas, warmFirstPrograms, warmTilePrograms, withCanvas } from './warm-up';
 import { workerCount } from './workers';
 import { CONTROL_CLEARANCE, keepLabelsClear } from './clearance';
@@ -642,7 +642,9 @@ export async function createBasemap({
     if (attributed) return;
     attributed = true;
     map.addControl(
-      collapsedAttribution(maplibre, { customAttribution: OPENFREEMAP_ATTRIBUTION }),
+      collapsedAttribution(maplibre, {
+        customAttribution: [OPENFREEMAP_ATTRIBUTION, TERRAIN_ATTRIBUTION],
+      }),
       'bottom-right',
     );
   };
