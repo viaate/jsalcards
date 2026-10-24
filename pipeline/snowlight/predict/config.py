@@ -95,6 +95,9 @@ class ServeSettings(_Settings):
     min_gap_minutes: int = Field(ge=1)
     grid_minutes: tuple[int, ...] = Field(min_length=1)
     opens_max_age_minutes: int = Field(ge=1)
+    elevation_margin_feet: float = Field(ge=0, le=5000)
+    """An alert that names heights reaches a school within this many feet of its band
+    (:mod:`snowlight.sources.nws.elevation`)."""
 
 
 class LearnSettings(_Settings):

@@ -1,0 +1,122 @@
+name: Elevation table
+
+# Builds the school elevation table the predict pass reads for alerts that say where they
+# apply by height ("above 8,000 feet"): every school of the directory the pinned NCES files
+# make, with its height in feet from the Terrain Tiles named in pipeline/config/elevation.yaml
+# (docs/predict.md, "Heights in alerts"). This is the only job that reads the tiles; deploys
+# and the predict loop never do.
+#
+# It runs on a push that changes the directory pins, the elevation pins or this file, on the
+# default branch only. It builds the directory from the data mirror's release (as Preview
+# does, waiting for files a pin bump is still seeding), reads the tiles, and puts the table
+# in the data mirror release of the current pins under a name that carries its SHA-256
+# (school-elevations-<digest>.json.gz), so a rebuild never replaces a pinned table. Its job
+# summary gives the table block to pin in pipeline/config/elevation.yaml; a commit of that
+# block runs this again, and the run then checks that the table it builds is the pinned one
+# (the tiles and the directory are the same, so the bytes are). A table built from the very
+# directory the pin was (the pin's directory_sha256) that is not the pinned one fails the run
+# before anything is uploaded: the table does not rebuild the same. If the tiles cannot be
+# read it fails and uploads nothing: the predict pass keeps the table it has pinned.
+
+on:
+  push:
+    paths:
+      - pipeline/config/directory.yaml
+      - pipeline/config/elevation.yaml
+      - .github/workflows/elevation.yml
+
+# Uploading the table to the data mirror's release.
+permissions:
+  contents: write
+
+concurrency:
+  group: elevation
+  cancel-in-progress: false
+
+jobs:
+  build:
+    if: github.ref_name == github.event.repository.default_branch
+    runs-on: ubuntu-24.04
+    timeout-minutes: 90
+    defaults:
+      run:
+        working-directory: pipeline
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      # setup-uv pins the v10.2.0 release commit, as ci.yml does.
+      - uses: astral-sh/setup-uv@c18668ad3cf93ea998bef934396af7bb5c839dc7 # v10.2.0
+        with:
+          python-version: "3.12"
+          working-directory: pipeline
+          enable-cache: true
+          cache-dependency-glob: uv.lock
+      - name: Build the directory from the data mirror
+        env:
+          # Never the origins: a deploy's directory comes from the mirror alone.
+          SNOWLIGHT_MIRROR: https://github.com/${{ github.repository }}/releases/download
+          SNOWLIGHT_REQUIRE_MIRROR: "1"
+          # A pin bump's files are being seeded by data-mirror.yml from the same push.
+          SNOWLIGHT_MIRROR_WAIT: "900"
+        run: |
+          uv sync --locked
+          uv run snowlight directory build --no-tiles \
+            --cache-dir "${RUNNER_TEMP}/nces" \
+            --out-dir "${RUNNER_TEMP}/site" --internal-dir "${RUNNER_TEMP}/internal"
+      - name: Read every school's height from the terrain tiles
+        run: |
+          uv run snowlight elevation build --directory "${RUNNER_TEMP}/site/schools" \
+            --out "${RUNNER_TEMP}/table.json.gz" --report "${RUNNER_TEMP}/report.json" \
+            --workers 4
+          cat "${RUNNER_TEMP}/report.json"
+      - name: Put the table in the data mirror release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          tag="$(uv run snowlight mirror tag)"
+          asset="$(jq -r .asset "${RUNNER_TEMP}/report.json")"
+          sha="$(jq -r .sha256 "${RUNNER_TEMP}/report.json")"
+          schools="$(jq -r .schools "${RUNNER_TEMP}/report.json")"
+          unknown="$(jq -r .unknown "${RUNNER_TEMP}/report.json")"
+          directory="$(jq -r '.directory_sha256 // ""' "${RUNNER_TEMP}/report.json")"
+          pinned=0
+          uv run snowlight elevation pinned --table "${RUNNER_TEMP}/table.json.gz" \
+            --directory "${RUNNER_TEMP}/site/schools" || pinned=$?
+          if [ "$pinned" -ne 0 ] && [ "$pinned" -ne 1 ]; then
+            echo "::error::the table built from the pinned table's directory is not the pinned one (or does not read): it does not rebuild the same; nothing is uploaded"
+            exit 1
+          fi
+          # The release exists once data-mirror.yml has seeded the pins (the directory build
+          # above read its files, so it does).
+          held="$(gh api "repos/${GITHUB_REPOSITORY}/releases/tags/${tag}" \
+            --jq ".assets[] | select(.name == \"${asset}\" and .state == \"uploaded\") | (.digest // \"\")")"
+          if [ "$held" = "sha256:${sha}" ]; then
+            echo "::notice::the release ${tag} holds ${asset} already"
+          else
+            cp "${RUNNER_TEMP}/table.json.gz" "${RUNNER_TEMP}/${asset}"
+            gh release upload "$tag" "${RUNNER_TEMP}/${asset}" --repo "$GITHUB_REPOSITORY" --clobber
+            echo "::notice::uploaded ${asset} to ${tag}"
+          fi
+          url="https://github.com/${GITHUB_REPOSITORY}/releases/download/${tag}/${asset}"
+          {
+            echo "### School elevation table"
+            echo
+            echo "${schools} schools, ${unknown} with no height, SHA-256 ${sha}."
+            echo
+            echo "The block to pin in pipeline/config/elevation.yaml:"
+            echo
+            echo '```yaml'
+            echo "table:"
+            echo "  url: \"${url}\""
+            echo "  sha256: \"${sha}\""
+            echo "  schools: ${schools}"
+            echo "  unknown: ${unknown}"
+            if [ -n "$directory" ]; then echo "  directory_sha256: \"${directory}\""; fi
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
+          if [ "$pinned" -eq 0 ]; then
+            echo "::notice::the table built is the pinned one"
+          else
+            echo "::warning::the table built is not the pinned one: pin the block in this run's summary (docs/predict.md, Heights in alerts)"
+          fi

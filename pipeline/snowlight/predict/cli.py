@@ -37,10 +37,12 @@ from datetime import UTC, date, datetime, timedelta
 from pathlib import Path
 from typing import Any, Final
 
+import httpx
 import numpy as np
 import numpy.typing as npt
 import polars as pl
 
+from snowlight.elevation.pins import DEFAULT_PINS_PATH, load_pins
 from snowlight.live.publish import LiveHold
 from snowlight.live.publishers import DirPublisher, GitHubPublisher, PublishError
 from snowlight.output import write_bytes_atomic, write_json
@@ -61,6 +63,13 @@ from snowlight.predict.config import (
     ModelSettings,
     PredictConfig,
     ServeSettings,
+)
+from snowlight.predict.heights import (
+    Loaded,
+    PinnedTable,
+    heights_said,
+    load_pinned,
+    school_heights,
 )
 from snowlight.predict.labels import Outcome
 from snowlight.predict.live_labels import record_snapshots
@@ -93,6 +102,7 @@ from snowlight.predict.serve import (
     build_model,
     closed_districts,
     closed_private,
+    district_classes,
     forecast_file,
     pass_days,
     unit_classes,
@@ -103,6 +113,8 @@ from snowlight.schemas.predictions import PredictionsFile
 from snowlight.sources.nws.alerts import NwsAlert
 
 LOG: Final = logging.getLogger("snowlight.predict")
+HEIGHTS_RETRY_MINUTES: Final = 15
+"""How long after a failed read of the pinned elevation table the loop reads it again."""
 DEFAULT_STATE: Final = PIPELINE_ROOT / "out" / "internal" / "predict" / "state.json"
 LIVE_INTERNAL: Final = PIPELINE_ROOT / "out" / "internal" / "live"
 """The live ingest's private folders (``state``, and ``store`` its state store keeps)."""
@@ -261,6 +273,15 @@ def _serve_inputs(parser: argparse.ArgumentParser) -> None:
     parser.add_argument("--host", choices=("github", "dir"), default="github")
     parser.add_argument("--host-dir", type=Path, default=None, help="the folder of --host dir")
     parser.add_argument("--write", type=Path, default=None, help="also write each file here")
+    parser.add_argument(
+        "--elevation-pins", type=Path, default=DEFAULT_PINS_PATH, help="config/elevation.yaml"
+    )
+    parser.add_argument(
+        "--elevation-cache",
+        type=Path,
+        default=PIPELINE_ROOT / ".cache" / "elevation",
+        help="where the pinned elevation table is kept once read",
+    )
 
 
 # --- the heads-up history -----------------------------------------------------------------------
@@ -776,8 +797,13 @@ class Pass:
     notify: Callable[[PredictionsFile, DeployedDirectory, datetime], str] | None = None
     """The chance notifier (:class:`snowlight.notify.cli.ChanceNotifier`), run after a pass
     whose file is the public one; ``None``: no notifications (no Cloudflare secrets)."""
+    heights: Callable[[DeployedDirectory], npt.NDArray[np.float64] | None] | None = None
+    """Feet per school position of a directory, NaN where not known
+    (:mod:`snowlight.predict.heights`); ``None``, or ``None`` back: no height is known, so an
+    alert that names heights reaches its whole zones."""
     _built: tuple[object, ServeModel] | None = None
     _index: tuple[object, UgcIndex] | None = None
+    _heights: tuple[object, npt.NDArray[np.float64] | None] | None = None
 
     def serve_model(self, directory: DeployedDirectory) -> ServeModel:
         """The rates for this directory (built once per directory)."""
@@ -795,6 +821,16 @@ class Pass:
         if self._index is None or self._index[0] != directory.stamp:
             self._index = (directory.stamp, self.ugcs(directory))
         return self._index[1]
+
+    def school_heights(self, directory: DeployedDirectory) -> npt.NDArray[np.float64] | None:
+        """The schools' heights (read once per directory; asked again while there are none,
+        as the table may read on a later pass)."""
+        if self.heights is None:
+            return None
+        key = (directory.stamp, directory.content_sha256)
+        if self._heights is None or self._heights[0] != key or self._heights[1] is None:
+            self._heights = (key, self.heights(directory))
+        return self._heights[1]
 
 
 def winter_count(events: list[LiveEvent]) -> int:
@@ -827,6 +863,11 @@ def remember(
     config = run.config
     state = run.state
     memory = Memory.from_json(config.weather.memory_hours, state.memory)
+    if memory.unread_heights:
+        _warn(
+            f"predict: {memory.unread_heights} remembered alerts' heights do not read: they "
+            "reach their whole zones"
+        )
     gap = timedelta(minutes=config.serve.memory_gap_minutes)
     if state.observed_at is None or now - state.observed_at > gap:
         state.memory_since = None
@@ -863,14 +904,14 @@ def one_pass(run: Pass, *, grid: bool = True) -> int:
         check_collapse(winter_count(events), run.state, config.serve)
         days = pass_days(now, config)
         counted = remember(run, feed, events, now, memory_reach(days, model.time_zone, window))
-        classes, private_classes = unit_classes(
-            model, counted, run.ugc_index(directory), days, now, window, weather.covered_share
+        classes, private_classes, whole_zones, said_heights = _classes(
+            run, model, directory, counted, days, now, window
         )
         run.state.snapshots = record_snapshots(
             run.state.snapshots,
             content=learn.content_key(directory),
             zones=model.time_zone,
-            classes=classes,
+            classes=whole_zones,
             days=days,
             now=now,
             window=window,
@@ -893,6 +934,8 @@ def one_pass(run: Pass, *, grid: bool = True) -> int:
         f"{len(data):,} bytes ({packed:,} gzip)"
     )
     _say_left_out(model)
+    if said_heights is not None:
+        _out(said_heights)
     key = run.mode.key
     handled = alerts_digest(events)
     if key is None or run.host is None:
@@ -915,6 +958,38 @@ def one_pass(run: Pass, *, grid: bool = True) -> int:
     _out(f"predict: uploaded {key}")
     _after_publish(run, made, directory, now)
     return 0
+
+
+def _classes(  # noqa: PLR0913, PLR0917 - the pass, its model and directory, alerts and days
+    run: Pass,
+    model: ServeModel,
+    directory: DeployedDirectory,
+    counted: list[LiveEvent],
+    days: tuple[date, date],
+    now: datetime,
+    window: Window,
+) -> tuple[npt.NDArray[np.int64], npt.NDArray[np.int64], npt.NDArray[np.int64], str | None]:
+    """Each unit's weather class per day (an alert that names heights reaching only the
+    schools within them); the districts' classes with every alert reaching its whole zones,
+    for the learning step's snapshots (the history labels count a zone whole, and training
+    stays as it is: addendum e, E1 is serve only); and the pass's line on the alerts that
+    name heights (``None``: there are none)."""
+    ugcs = run.ugc_index(directory)
+    heights = run.school_heights(directory)
+    margin = run.config.serve.elevation_margin_feet
+    share = run.config.weather.covered_share
+    classes, private_classes = unit_classes(
+        model, counted, ugcs, days, now, window, share, heights, margin
+    )
+    whole_zones = classes
+    if heights is not None and any(event.elevation is not None for event in counted):
+        whole_zones = district_classes(model, counted, ugcs, days, now, window, share)
+    return (
+        classes,
+        private_classes,
+        whole_zones,
+        heights_said(counted, ugcs, heights, margin).line(),
+    )
 
 
 def _after_publish(
@@ -1142,6 +1217,11 @@ def make_pass(args: argparse.Namespace, env: Mapping[str, str]) -> Pass:  # prag
         raise ConfigError("no NWS boundary release is in effect")
     lookup = TimeZoneLookup(counties, zones)
     areas = {**zones.areas, **counties.areas}
+    elevation = PinnedTable(
+        read=lambda: _load_heights(args),
+        retry=timedelta(minutes=HEIGHTS_RETRY_MINUTES),
+        clock=lambda: datetime.now(UTC),
+    )
 
     def directory() -> DeployedDirectory:
         if args.site_data is not None:
@@ -1168,7 +1248,33 @@ def make_pass(args: argparse.Namespace, env: Mapping[str, str]) -> Pass:  # prag
         write=args.write,
         history=history.read,
         notify=_make_notifier(env, host, mode),
+        heights=lambda found: school_heights(elevation.current(), found.school_ids, found.points),
     )
+
+
+def _load_heights(args: argparse.Namespace) -> Loaded:  # pragma: no cover - the release
+    """The pinned elevation table (:mod:`snowlight.predict.heights`), or none, said why."""
+    from snowlight.predict.inputs import client  # noqa: PLC0415
+
+    def get(url: str) -> bytes:
+        try:
+            with client() as http:
+                response = http.get(url)
+        except httpx.HTTPError as error:
+            raise OSError(type(error).__name__) from error
+        if response.status_code != httpx.codes.OK:
+            raise OSError(f"HTTP {response.status_code}")
+        return response.content
+
+    loaded = load_pinned(load_pins(args.elevation_pins), args.elevation_cache, get)
+    if loaded.table is None:
+        _warn(f"predict: {loaded.problem}: no school's height is known")
+    else:
+        _out(
+            f"predict: elevation table of {len(loaded.table.rows):,} schools "
+            f"({loaded.table.unknown:,} with no height)"
+        )
+    return loaded
 
 
 def _make_notifier(  # pragma: no cover - the real world

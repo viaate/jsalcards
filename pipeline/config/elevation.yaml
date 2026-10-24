@@ -1,0 +1,26 @@
+# The school elevation table (docs/predict.md, "Heights in alerts").
+#
+# An alert that says where it applies by height ("above 8,000 feet") reaches only the schools
+# within that band. Each school's height comes from the table pinned below: built by
+# .github/workflows/elevation.yml from the terrain tiles named under source (read once, in
+# Actions, never by a deploy or the predict loop), and kept in the data mirror's release. The
+# predict pass reads the pinned table only when its bytes have the pinned SHA-256; with no
+# table pinned, or none readable, every school's height is unknown and every alert reaches its
+# whole zone (and the pass says how many schools it counted so).
+#
+# After the workflow builds a table it prints the table block to pin here (its job summary);
+# a commit of it runs the workflow again, which rebuilds the table and checks it is the same.
+
+source:
+  # Terrain Tiles (Mapzen, on AWS Open Data: s3://elevation-tiles-prod), Terrarium PNG
+  # encoding. Zoom 11 pixels are about 60 m across in the states.
+  url: "https://s3.amazonaws.com/elevation-tiles-prod/terrarium/{z}/{x}/{y}.png"
+  zoom: 11
+  # Required by the tiles' sources for the data used here (the states' schools): see
+  # https://github.com/tilezen/joerd/blob/master/docs/attribution.md
+  attribution: >-
+    Terrain Tiles by Mapzen on AWS Open Data. United States 3DEP (formerly NED) and global
+    GMTED2010 and SRTM terrain data courtesy of the U.S. Geological Survey. Global ETOPO1
+    terrain data courtesy of the U.S. National Oceanic and Atmospheric Administration.
+
+table: null

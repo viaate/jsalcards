@@ -8,7 +8,10 @@ alert can be traced to the exact bytes it came from.
 
 :func:`parse_active` turns the GeoJSON ``FeatureCollection`` into
 :class:`NwsAlert` records, keeping only the fields this project uses: no
-headline, description, instruction or web link is read.
+headline, description, instruction or web link is kept. The headlines and the description's
+WHAT and WHERE lines are read for one thing only, the heights the alert names for where it
+applies ("above 8,000 feet"), and only those numbers are kept
+(:mod:`snowlight.sources.nws.elevation`).
 """
 
 import json
@@ -20,6 +23,7 @@ from pathlib import Path
 import shapely
 from shapely.geometry import shape
 
+from snowlight.sources.nws.elevation import ElevationLimit, parse_alert_text
 from snowlight.sources.nws.http import CachedFile, HttpCache
 from snowlight.sources.nws.shapefile import Polygonal, polygonal
 from snowlight.sources.nws.vtec import Vtec, VtecError, parse_vtec
@@ -60,6 +64,9 @@ class NwsAlert:
     zones: tuple[ZoneRef, ...]
     unparsed_zones: tuple[str, ...]
     vtec: tuple[Vtec, ...]
+    elevation: ElevationLimit | None = None
+    """The heights the alert names for where it applies (:mod:`snowlight.sources.nws.elevation`):
+    only its numbers are kept, never its text; ``None``: it names none."""
 
 
 @dataclass(frozen=True, slots=True)
@@ -146,6 +153,17 @@ def parse_alert(feature: object) -> NwsAlert:
     sent = _time(props.get("sent"), "sent")
     if sent is None:
         raise AlertFormatError(f"alert {alert_id} has no sent time")
+    # The heights are read leniently: text the NWS sends in another shape names no height
+    # (no limit), and never makes the feed unreadable.
+    named = parameters.get("NWSheadline") if isinstance(parameters, dict) else None
+    headlines = [item for item in named if isinstance(item, str)] if isinstance(named, list) else []
+    headline = props.get("headline")
+    description = props.get("description")
+    elevation = parse_alert_text(
+        headlines,
+        headline if isinstance(headline, str) else None,
+        description if isinstance(description, str) else None,
+    )
     return NwsAlert(
         id=alert_id,
         event=_text(props, "event"),
@@ -162,6 +180,7 @@ def parse_alert(feature: object) -> NwsAlert:
         zones=tuple(zones),
         unparsed_zones=tuple(unparsed),
         vtec=tuple(vtec),
+        elevation=elevation,
     )
 
 

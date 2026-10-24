@@ -5,6 +5,7 @@ from collections.abc import Callable, Sequence
 
 from snowlight import __version__
 from snowlight.directory import cli as directory_cli
+from snowlight.elevation import cli as elevation_cli
 from snowlight.listed import cli as listed_cli
 from snowlight.live import cli as live_cli
 from snowlight.mirror import cli as mirror_cli
@@ -36,6 +37,7 @@ def build_parser() -> argparse.ArgumentParser:
     notify_cli.register(commands)
     mirror_cli.register(commands)
     nces_cli.register(commands)
+    elevation_cli.register(commands)
     return parser
 
 

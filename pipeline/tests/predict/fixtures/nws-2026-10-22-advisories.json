@@ -1,0 +1,196 @@
+{
+ "type": "FeatureCollection",
+ "updated": "2026-10-22T13:08:45+00:00",
+ "features": [
+  {
+   "type": "Feature",
+   "geometry": null,
+   "properties": {
+    "id": "urn:oid:2.49.0.1.840.0.b859215548921aa6bf53d9627a9f3f18ab988ffb.001.1",
+    "areaDesc": "Yosemite NP outside of the valley; Upper San Joaquin River; Kaiser to Rodgers Ridge; Kings Canyon NP; Sequoia NP; South End of the Upper Sierra",
+    "geocode": {
+     "SAME": [
+      "006039",
+      "006043",
+      "006109",
+      "006019",
+      "006107",
+      "006029"
+     ],
+     "UGC": [
+      "CAZ323",
+      "CAZ326",
+      "CAZ327",
+      "CAZ328",
+      "CAZ330",
+      "CAZ331"
+     ]
+    },
+    "affectedZones": [
+     "https://api.weather.gov/zones/forecast/CAZ323",
+     "https://api.weather.gov/zones/forecast/CAZ326",
+     "https://api.weather.gov/zones/forecast/CAZ327",
+     "https://api.weather.gov/zones/forecast/CAZ328",
+     "https://api.weather.gov/zones/forecast/CAZ330",
+     "https://api.weather.gov/zones/forecast/CAZ331"
+    ],
+    "sent": "2026-10-20T12:51:00-07:00",
+    "effective": "2026-10-20T12:51:00-07:00",
+    "onset": "2026-10-21T11:00:00-07:00",
+    "expires": "2026-10-20T21:00:00-07:00",
+    "ends": "2026-10-22T11:00:00-07:00",
+    "status": "Actual",
+    "messageType": "Alert",
+    "category": "Met",
+    "severity": "Moderate",
+    "event": "Winter Weather Advisory",
+    "senderName": "NWS Hanford CA",
+    "headline": "Winter Weather Advisory issued October 20 at 12:51PM PDT until October 22 at 11:00AM PDT by NWS Hanford CA",
+    "description": "* WHAT...There is an 80% chance of 4 inches or more of snow along the\nTioga Pass and highway 120. There is a 50-60% chance for four\ninches or more of snow above 8,000 feet in Tulare, Madera, and\nFresno counties.\n\n* WHERE...Above 8,000 feet in the Sierra Nevada.\n\n* WHEN...From 11 AM Wednesday to 11 AM PDT Thursday.\n\n* IMPACTS...Roads, and especially bridges and overpasses, will likely\nbecome slick and hazardous.\n\n* ADDITIONAL DETAILS...Snowfall will affect traffic across Tioga\nHighway/Pass.",
+    "parameters": {
+     "NWSheadline": [
+      "WINTER WEATHER ADVISORY IN EFFECT ABOVE 8,000 FEET FROM 11 AM WEDNESDAY TO 11 AM PDT THURSDAY"
+     ],
+     "VTEC": [
+      "/O.NEW.KHNX.WW.Y.0005.261021T1800Z-261022T1800Z/"
+     ]
+    }
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": null,
+   "properties": {
+    "id": "urn:oid:2.49.0.1.840.0.47df1d2dad76a15db155b7daff1cbf55e09ddbaa.001.1",
+    "areaDesc": "Mono",
+    "geocode": {
+     "SAME": [
+      "006051"
+     ],
+     "UGC": [
+      "CAZ073"
+     ]
+    },
+    "affectedZones": [
+     "https://api.weather.gov/zones/forecast/CAZ073"
+    ],
+    "sent": "2026-10-20T12:56:00-07:00",
+    "effective": "2026-10-20T12:56:00-07:00",
+    "onset": "2026-10-21T11:00:00-07:00",
+    "expires": "2026-10-21T17:00:00-07:00",
+    "ends": "2026-10-22T17:00:00-07:00",
+    "status": "Actual",
+    "messageType": "Alert",
+    "category": "Met",
+    "severity": "Moderate",
+    "event": "Winter Weather Advisory",
+    "senderName": "NWS Reno NV",
+    "headline": "Winter Weather Advisory issued October 20 at 12:56PM PDT until October 22 at 5:00PM PDT by NWS Reno NV",
+    "description": "* WHAT...Snow above 8000 feet. Snow accumulations of 4 to 8 inches\nwith up to 10 inches along the highest mountain peaks. Winds\ngusting as high as 35 mph.\n\n* WHERE...Mono County.\n\n* WHEN...From 11 AM Wednesday to 5 PM PDT Thursday.\n\n* IMPACTS...Plan on slippery road conditions. The hazardous\nconditions will impact the Wednesday evening and Thursday morning\ncommutes.",
+    "parameters": {
+     "NWSheadline": [
+      "WINTER WEATHER ADVISORY IN EFFECT FROM 11 AM WEDNESDAY TO 5 PM PDT THURSDAY ABOVE 8000 FEET"
+     ],
+     "VTEC": [
+      "/O.NEW.KREV.WW.Y.0009.261021T1800Z-261023T0000Z/"
+     ]
+    }
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": null,
+   "properties": {
+    "id": "urn:oid:2.49.0.1.840.0.aa4eaca0ae5edc39a759d5cbebc0647f73b936e8.001.1",
+    "areaDesc": "Yosemite NP outside of the valley; Upper San Joaquin River; Kaiser to Rodgers Ridge; Kings Canyon NP; Sequoia NP; South End of the Upper Sierra",
+    "geocode": {
+     "SAME": [
+      "006039",
+      "006043",
+      "006109",
+      "006019",
+      "006107",
+      "006029"
+     ],
+     "UGC": [
+      "CAZ323",
+      "CAZ326",
+      "CAZ327",
+      "CAZ328",
+      "CAZ330",
+      "CAZ331"
+     ]
+    },
+    "affectedZones": [
+     "https://api.weather.gov/zones/forecast/CAZ323",
+     "https://api.weather.gov/zones/forecast/CAZ326",
+     "https://api.weather.gov/zones/forecast/CAZ327",
+     "https://api.weather.gov/zones/forecast/CAZ328",
+     "https://api.weather.gov/zones/forecast/CAZ330",
+     "https://api.weather.gov/zones/forecast/CAZ331"
+    ],
+    "sent": "2026-10-22T05:37:00-07:00",
+    "effective": "2026-10-22T05:37:00-07:00",
+    "onset": "2026-10-22T05:37:00-07:00",
+    "expires": "2026-10-22T11:00:00-07:00",
+    "ends": "2026-10-22T11:00:00-07:00",
+    "status": "Actual",
+    "messageType": "Update",
+    "category": "Met",
+    "severity": "Moderate",
+    "event": "Winter Weather Advisory",
+    "senderName": "NWS Hanford CA",
+    "headline": "Winter Weather Advisory issued October 22 at 5:37AM PDT until October 22 at 11:00AM PDT by NWS Hanford CA",
+    "description": "* WHAT...There is an 70% chance of 4 inches or more of snow along the\nTioga Pass and highway 120. There is a 60-80% chance for four\ninches or more of snow above 8,000 feet in Tulare, Madera, and\nFresno Counties.\n\n* WHERE...Above 8,000 feet in the Sierra Nevada.\n\n* WHEN...Until 11 AM PDT this morning.\n\n* IMPACTS...Roads, and especially bridges and overpasses, will likely\nbecome slick and hazardous.\n\n* ADDITIONAL DETAILS...Snowfall will affect traffic across Tioga\nHighway/Pass.",
+    "parameters": {
+     "NWSheadline": [
+      "WINTER WEATHER ADVISORY REMAINS IN EFFECT UNTIL 11 AM PDT THIS MORNING"
+     ],
+     "VTEC": [
+      "/O.CON.KHNX.WW.Y.0005.000000T0000Z-261022T1800Z/"
+     ]
+    }
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": null,
+   "properties": {
+    "id": "urn:oid:2.49.0.1.840.0.fb1650c66f697a5e32a330cd14e82ba7ff7dad5f.001.1",
+    "areaDesc": "Mono",
+    "geocode": {
+     "SAME": [
+      "006051"
+     ],
+     "UGC": [
+      "CAZ073"
+     ]
+    },
+    "affectedZones": [
+     "https://api.weather.gov/zones/forecast/CAZ073"
+    ],
+    "sent": "2026-10-22T01:47:00-07:00",
+    "effective": "2026-10-22T01:47:00-07:00",
+    "onset": "2026-10-22T01:47:00-07:00",
+    "expires": "2026-10-22T17:00:00-07:00",
+    "ends": "2026-10-22T17:00:00-07:00",
+    "status": "Actual",
+    "messageType": "Update",
+    "category": "Met",
+    "severity": "Moderate",
+    "event": "Winter Weather Advisory",
+    "senderName": "NWS Reno NV",
+    "headline": "Winter Weather Advisory issued October 22 at 1:47AM PDT until October 22 at 5:00PM PDT by NWS Reno NV",
+    "description": "* CHANGES...None.\n\n* WHAT...Snow above 8000 feet. Additional snow accumulations of 2 to\n6 inches with 8 to 10 inches along the highest mountain peaks.\nRidge winds gusting as high as 40 mph at times.\n\n* WHERE...Mono County.\n\n* WHEN...Until 5 PM PDT this afternoon.\n\n* IMPACTS...Plan on slippery road conditions. The hazardous\nconditions will impact the Thursday morning and evening commutes.\n\n* ADDITIONAL DETAILS...Brief bursts of heavy snow and locally higher\nsnowfall totals will be possible with any thunderstorms that\ndevelop today.",
+    "parameters": {
+     "NWSheadline": [
+      "WINTER WEATHER ADVISORY REMAINS IN EFFECT UNTIL 5 PM PDT THIS AFTERNOON ABOVE 8000 FEET"
+     ],
+     "VTEC": [
+      "/O.CON.KREV.WW.Y.0009.000000T0000Z-261023T0000Z/"
+     ]
+    }
+   }
+  }
+ ]
+}

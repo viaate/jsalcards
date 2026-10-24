@@ -92,6 +92,7 @@ serve:
   min_gap_minutes: 10         # at most one extra pass per this many minutes
   grid_minutes: [7, 37]       # the heartbeat passes, on the hour's grid
   opens_max_age_minutes: 60   # an opens file older than this says nothing (the usual chance stands)
+  elevation_margin_feet: 500  # an alert "above N feet" reaches a school at N - 500 ft or higher ("below", "between" alike; docs/predict.md, Heights)
 
 # Automatic learning (S7-L, spec addenda c and d): 'snowlight predict learn', nightly inside the
 # predict workflow. Live-read district-days become labels by the archive's rules; a storm situation

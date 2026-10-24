@@ -1,0 +1,622 @@
+{
+ "about": "Public NWS winter weather messages (WSW text products from the Iowa Environmental Mesonet AFOS archive, 2023-2026), one segment each: its headlines, its WHAT and WHERE paragraphs and (in details, where it bears on the limit) the other paragraph that names lower ground, with the elevation limit each was reviewed to give ([low, high] bands in feet; null: the whole zone). Reviewed by hand on 2026-10-24 for addendum e, E1.",
+ "cases": [
+  {
+   "product": "KREV WS.W 0002",
+   "issued": "633 AM PST Mon Feb 16 2026",
+   "zones": "CAZ072-NVZ002-171615-",
+   "case": "amount qualifier: 3 to 5 feet above 7000 feet (Tahoe Basin)",
+   "headlines": [
+    "WINTER STORM WARNING REMAINS IN EFFECT UNTIL 10 PM PST WEDNESDAY"
+   ],
+   "what": "Heavy snow. Snow accumulations between 2 to 3 feet in the Tahoe Basin, highest on the west shore, and much of Alpine County. Snow accumulations of 3 to 5 feet above 7000 feet. Winds on Tuesday gusting up to 50 mph in valleys, with Sierra ridge gusts over 100 mph.",
+   "where": "Greater Lake Tahoe Area.",
+   "limit": null
+  },
+  {
+   "product": "KABQ WS.W 0002",
+   "issued": "247 AM MST Fri Jan 23 2026",
+   "zones": "NMZ210>218-221>224-229-232>234-237-232015-",
+   "case": "amount qualifier: higher amounts above 9,000 feet",
+   "headlines": [
+    "WINTER STORM WARNING NOW IN EFFECT FROM 11 AM THIS MORNING TO 8 AM MST SUNDAY"
+   ],
+   "what": "Heavy mixed precipitation expected. Total snow accumulations between 4 and 10 inches across much of eastern New Mexico with higher amounts of 10 to 16 inches above 9,000 feet.",
+   "where": "Portions of central, east central, north central, and northeast New Mexico.",
+   "limit": null
+  },
+  {
+   "product": "KBOU WW.Y 0017",
+   "issued": "829 AM MDT Wed May 6 2026",
+   "zones": "COZ032-037-045-046-062100-",
+   "case": "WHERE lists other areas beside the banded one",
+   "headlines": [
+    "WINTER WEATHER ADVISORY REMAINS IN EFFECT UNTIL 3 PM MDT THIS AFTERNOON"
+   ],
+   "what": "Snow tapering off this morning. Additional snow accumulations up to two inches.",
+   "where": "Grand and Summit Counties Below 9000 Feet, South Park, Byers, and Limon.",
+   "limit": null
+  },
+  {
+   "product": "KOTX WW.Y 0015",
+   "issued": "402 PM PDT Thu Mar 12 2026",
+   "zones": "IDZ027-131200-",
+   "case": "WHAT band under a WHERE that lists towns",
+   "headlines": [
+    "WINTER WEATHER ADVISORY REMAINS IN EFFECT UNTIL 5 AM PDT FRIDAY"
+   ],
+   "what": "Wet snow expected above 3000 feet. Total snow accumulations around 2 to 5 inches.",
+   "where": "Winchester, Craigmont, Nezperce, Kamiah, and Soldiers Meadow Road.",
+   "limit": null
+  },
+  {
+   "product": "KEKA WW.Y 0005",
+   "issued": "549 AM PDT Tue Apr 21 2026",
+   "zones": "CAZ117-211800-",
+   "case": "WHERE: area and band (ft)",
+   "headlines": [
+    "WINTER WEATHER ADVISORY REMAINS IN EFFECT UNTIL 11 AM PDT THIS MORNING"
+   ],
+   "what": "Snow expected. Total snow accumulations between 4 and 6 inches.",
+   "where": "Northeastern Trinity above 4500 ft.",
+   "limit": [
+    [
+     4500,
+     null
+    ]
+   ]
+  },
+  {
+   "product": "KEKA WW.Y 0003",
+   "issued": "505 AM PDT Thu Apr 2 2026",
+   "zones": "CAZ107-021800-",
+   "case": "WHERE: area for elevations above",
+   "headlines": [
+    "WINTER WEATHER ADVISORY REMAINS IN EFFECT UNTIL 11 AM PDT THIS MORNING"
+   ],
+   "what": "Snow. Additional snow accumulations up to one inch.",
+   "where": "Northern Trinity County for elevations above 4000 feet.",
+   "limit": [
+    [
+     4000,
+     null
+    ]
+   ]
+  },
+  {
+   "product": "KHNX WW.Y 0005",
+   "issued": "537 AM PDT Thu Oct 22 2026",
+   "zones": "CAZ323-326>328-330-331-221800-",
+   "case": "WHERE: band over the areas named",
+   "headlines": [
+    "WINTER WEATHER ADVISORY REMAINS IN EFFECT UNTIL 11 AM PDT THIS MORNING"
+   ],
+   "what": "There is an 70% chance of 4 inches or more of snow along the Tioga Pass and highway 120. There is a 60-80% chance for four inches or more of snow above 8,000 feet in Tulare, Madera, and Fresno Counties.",
+   "where": "Above 8,000 feet in the Sierra Nevada.",
+   "limit": [
+    [
+     8000,
+     null
+    ]
+   ]
+  },
+  {
+   "product": "KHNX WS.W 0004",
+   "issued": "1147 AM PDT Fri Apr 10 2026",
+   "zones": "CAZ323-326>328-330-331-110300-",
+   "case": "WHERE: area and band; WHAT amount band inside it",
+   "headlines": [
+    "WINTER STORM WARNING REMAINS IN EFFECT FROM 5 PM THIS AFTERNOON TO 11 PM PDT SUNDAY"
+   ],
+   "what": "Heavy snow expected. Low-end storm total of 10 inches and high-end total of 30 inches expected in Madera and Mariposa Counties and Yosemite National Park above 7,000 ft. Winds gusting to 55 mph or higher.",
+   "where": "Sierra Nevada above 7,000 feet.",
+   "limit": [
+    [
+     7000,
+     null
+    ]
+   ]
+  },
+  {
+   "product": "KMFR WS.A 0007",
+   "issued": "1255 AM PDT Mon Apr 13 2026",
+   "zones": "ORZ027-131900-",
+   "case": "WHERE: band over a list of counties",
+   "headlines": [
+    "WINTER STORM WATCH REMAINS IN EFFECT FROM TUESDAY EVENING THROUGH LATE WEDNESDAY NIGHT ABOVE 5000 FT IN THE HIGH SOUTH CENTRAL CASCADES IN KLAMATH AND DOUGLAS COUNTIES"
+   ],
+   "what": "Total snow accumulations 4 to 15 inches possible. Winds could gust as high as 45 mph over high and exposed terrain.",
+   "where": "Above 5000 ft in the high south central Cascades in Klamath and Douglas Counties.",
+   "limit": [
+    [
+     5000,
+     null
+    ]
+   ]
+  },
+  {
+   "product": "KPUB WW.Y 0011",
+   "issued": "834 AM MDT Wed May 6 2026",
+   "zones": "COZ059-062245-",
+   "case": "WHERE: area below band",
+   "headlines": [
+    "WINTER WEATHER ADVISORY REMAINS IN EFFECT UNTIL 6 PM MDT THIS EVENING"
+   ],
+   "what": "Snow. Additional snow accumulations between 2 and 4 inches.",
+   "where": "Leadville Vicinity/Lake County Below 11000 Feet.",
+   "limit": [
+    [
+     null,
+     11000
+    ]
+   ]
+  },
+  {
+   "product": "KTFX WW.Y 0028",
+   "issued": "418 PM MDT Fri Oct 23 2026",
+   "zones": "MTZ312-240300-",
+   "case": "WHERE: below with no space",
+   "headlines": [
+    "WINTER WEATHER ADVISORY IN EFFECT UNTIL 9 PM MDT THIS EVENING"
+   ],
+   "what": "Snow. Additional snow accumulations up to two inches. Winds gusting as high as 35 mph.",
+   "where": "Cascade County below 5000ft.",
+   "limit": [
+    [
+     null,
+     5000
+    ]
+   ]
+  },
+  {
+   "product": "KVEF WW.Y 0003",
+   "issued": "1257 PM PST Sun Feb 15 2026",
+   "zones": "NVZ015-161300-",
+   "case": "headline, WHERE and WHAT agree",
+   "headlines": [
+    "WINTER WEATHER ADVISORY IN EFFECT FROM 1 PM MONDAY TO 10 AM PST TUESDAY ABOVE 5000 FEET"
+   ],
+   "what": "Snow expected above 5000 feet. Total snow accumulations up to 4 inches. Winds gusting as high as 45 mph.",
+   "where": "Lincoln County above 5000 feet.",
+   "limit": [
+    [
+     5000,
+     null
+    ]
+   ]
+  },
+  {
+   "product": "KEKA WS.W 0003",
+   "issued": "929 AM PST Sun Feb 22 2026",
+   "zones": "CAZ107-222300-",
+   "case": "headline: for elevations above N (no unit)",
+   "headlines": [
+    "WINTER STORM WARNING REMAINS IN EFFECT UNTIL 3 PM PST THIS AFTERNOON FOR ELEVATIONS ABOVE 4500"
+   ],
+   "what": "Heavy snow expected for elevations above 4500. Total snow accumulations up to 8 inches. Winds gusting as high as 45 mph.",
+   "where": "Northern Trinity, including Highway 3 at Scott Mountain Pass.",
+   "limit": [
+    [
+     4500,
+     null
+    ]
+   ]
+  },
+  {
+   "product": "KPSR WS.W 0002",
+   "issued": "1053 AM MST Thu Mar 2 2023",
+   "zones": "AZZ557-558-563-021900-",
+   "case": "headline: will expire ... above N feet",
+   "headlines": [
+    "WINTER STORM WARNING WILL EXPIRE AT 11 AM MST THIS MORNING ABOVE 4000 FEET",
+    "WINTER WEATHER ADVISORY WILL EXPIRE AT 11 AM MST THIS MORNING ABOVE 2500 FEET"
+   ],
+   "what": null,
+   "where": null,
+   "limit": [
+    [
+     2500,
+     null
+    ],
+    [
+     4000,
+     null
+    ]
+   ]
+  },
+  {
+   "product": "KREV WW.Y 0006",
+   "issued": "459 AM PDT Wed Apr 1 2026",
+   "zones": "CAZ073-011300-",
+   "case": "headline: for one area above N",
+   "headlines": [
+    "WINTER WEATHER ADVISORY FOR MONO ABOVE 8000 FEET WILL EXPIRE AT 5 AM PDT EARLY THIS MORNING"
+   ],
+   "what": null,
+   "where": null,
+   "limit": [
+    [
+     8000,
+     null
+    ]
+   ]
+  },
+  {
+   "product": "KHNX WS.A 0003",
+   "issued": "1052 AM PDT Thu Apr 9 2026",
+   "zones": "CAZ323-326>328-330-331-100200-",
+   "case": "headline: band before in effect",
+   "headlines": [
+    "WINTER STORM WARNING ABOVE 7,000 FT IN EFFECT FROM 5 PM FRIDAY TO 11 PM PDT SUNDAY"
+   ],
+   "what": "Heavy snow expected. Low-end storm total of 10 inches and high-end total of 24 inches expected in Madera and Mariposa Counties and Yosemite National Park above 7,000 ft. Winds gusting to 55 mph or higher.",
+   "where": "Sierra Nevada Mountains above 7,000 ft.",
+   "limit": [
+    [
+     7000,
+     null
+    ]
+   ]
+  },
+  {
+   "product": "KMFR WW.Y 0005",
+   "issued": "313 AM PST Sun Feb 22 2026",
+   "zones": "CAZ080-082-083-230000-",
+   "case": "headline: band in one county, a pass named at 4489 ft below it",
+   "headlines": [
+    "WINTER WEATHER ADVISORY REMAINS IN EFFECT UNTIL 4 PM PST THIS AFTERNOON ABOVE 4500 FEET IN SISKIYOU COUNTY"
+   ],
+   "what": "Snow expected above 4500 feet in Siskiyou County. Total snow accumulations 3 to 6 inches. Winds gusting as high as 60 mph over high and exposed terrain.",
+   "where": "Above 4500 feet in Siskiyou County. This includes the locations of...Bray and Tennant. This also includes the following passes or notable locations...Dead Horse Summit on State Highway 89 at 4489 ft, Etna Summit on Sawyers Bar Rd at 5950 ft, Mt. Shasta ski park highway around 5400 ft, Grass Lake at Mt. Hebron at 5291 ft and Bunny Flat on Everitt Memorial highway at 6900 ft.",
+   "limit": null
+  },
+  {
+   "product": "KEKA WS.A 0003",
+   "issued": "1113 PM PST Thu Feb 19 2026",
+   "zones": "CAZ107-202000-",
+   "case": "headline: watch above N feet",
+   "headlines": [
+    "WINTER STORM WATCH IN EFFECT FROM SATURDAY EVENING THROUGH MONDAY MORNING ABOVE 4500 FEET"
+   ],
+   "what": "Heavy snow possible. Total snow accumulations between 6 and 12 inches possible. Winds could gust as high as 60 mph.",
+   "where": "Northern Trinity.",
+   "limit": [
+    [
+     4500,
+     null
+    ]
+   ]
+  },
+  {
+   "product": "KGJT WW.Y 0010",
+   "issued": "1044 PM MDT Tue Mar 31 2026",
+   "zones": "COZ004-013-011845-",
+   "case": "headline band over a WHERE listing areas",
+   "headlines": [
+    "WINTER WEATHER ADVISORY REMAINS IN EFFECT UNTIL 9 PM MDT WEDNESDAY ABOVE 9000 FEET"
+   ],
+   "what": "Snow moderate to heavy at times expected above 9000 feet. Total snow accumulations between 6 and 12 inches, with locally higher amounts possible. Winds gusting as high as 45 mph.",
+   "where": "Elkhead...Park Mountains and Flat Tops.",
+   "limit": [
+    [
+     9000,
+     null
+    ]
+   ]
+  },
+  {
+   "product": "KEKA WS.W 0002",
+   "issued": "556 AM PST Thu Feb 19 2026",
+   "zones": "CAZ102-105-106-191800-",
+   "case": "snow levels in the headline",
+   "headlines": [
+    "WINTER STORM WARNING REMAINS IN EFFECT UNTIL 10 AM PST THIS MORNING SNOW LEVELS ABOVE 1500 FEET"
+   ],
+   "what": "Heavy snow snow levels above 1500 feet. Additional snow accumulations between 4 and 10 inches.",
+   "where": "Humboldt Interior and Del Norte Interior.",
+   "limit": null
+  },
+  {
+   "product": "KGJT WW.Y 0015",
+   "issued": "558 PM MDT Wed Oct 14 2026",
+   "zones": "COZ004-009-010-012-013-151200-",
+   "case": "valleys named",
+   "headlines": [
+    "WINTER WEATHER ADVISORY REMAINS IN EFFECT UNTIL 6 AM MDT THURSDAY ABOVE 9500 FEET"
+   ],
+   "what": "Snow expected above 9500 feet. Total snow accumulations between 4 and 8 inches. Winds gusting as high as 35 mph.",
+   "where": "Elkhead and Park Mountains, Flat Tops, Gore and Elk Mountains/Central Mountain Valleys, Grand and Battlement Mesas, and West Elk and Sawatch Mountains.",
+   "limit": null
+  },
+  {
+   "product": "KSTO WS.W 0004",
+   "issued": "1102 AM PDT Tue Apr 21 2026",
+   "zones": "CAZ128-130-133-136-139-230000-",
+   "case": "snow down to a lower height",
+   "headlines": [
+    "WINTER STORM WARNING REMAINS IN EFFECT UNTIL 5 PM PDT WEDNESDAY ABOVE 5000 FEET"
+   ],
+   "what": "Heavy snow. Additional snow accumulations of up to 6 to 12 inches above 5000 feet, with up to 18 inches at the highest peaks. Minor accumulations of up to 2 inches possible down to 4500 feet. Southwest winds could gust as high as 50 mph.",
+   "where": "Northern Sierra Nevada and southern Cascades above 5000 feet, including Highway 50, Interstate 80 and Lassen Volcanic National Park.",
+   "limit": null
+  },
+  {
+   "product": "KMSO WW.Y 0021",
+   "issued": "150 PM MDT Tue Apr 21 2026",
+   "zones": "MTZ002-240000-",
+   "case": "a band below the headline band",
+   "headlines": [
+    "WINTER WEATHER ADVISORY IN EFFECT FROM 6 PM WEDNESDAY TO 6 PM MDT THURSDAY"
+   ],
+   "what": "Snow expected. There is a likelihood of moderate winter weather impacts. Total snow accumulations of 1 to 3 inches below 4000 feet, 4 to 7 inches at pass level and over 10 inches in the high terrain.",
+   "where": "Glacier National Park, Marias Pass, Bad Rock Canyon, Essex, Highway 83 Bigfork to Swan Lake, and Polebridge.",
+   "limit": null
+  },
+  {
+   "product": "KOTX WW.Y 0016",
+   "issued": "157 AM PDT Mon Mar 16 2026",
+   "zones": "IDZ004-161800-",
+   "case": "amounts below the headline band",
+   "headlines": [
+    "WINTER WEATHER ADVISORY REMAINS IN EFFECT UNTIL 11 AM PDT THIS MORNING FOR AREAS ABOVE 3000 FEET"
+   ],
+   "what": "Snow expected. Total snow accumulations up to 2 inches above 3000 feet and trace to 1 inch below 3000 feet.",
+   "where": "Mullan, Lookout Pass, and Dobson Pass.",
+   "limit": null
+  },
+  {
+   "product": "KREV WW.Y 0008",
+   "issued": "146 PM PDT Tue Apr 21 2026",
+   "zones": "CAZ072-NVZ002-230000-",
+   "case": "WHAT band with snow at lake level",
+   "headlines": [
+    "WINTER WEATHER ADVISORY REMAINS IN EFFECT UNTIL 5 PM PDT WEDNESDAY"
+   ],
+   "what": "Heavy snow above 6500 feet. Additional snow accumulations of 3 to 8 inches above 6500 feet with up to 10 inches along highest mountain peaks. Additional 1 to 3 inches of snow possible at lake level, highest on the western shores. Wind gusts of 30 to 35 mph across lower elevations, including Lake Tahoe where wave heights may reach up to 3 feet. Ridgetop winds gusting up to 90 mph at times.",
+   "where": "Greater Lake Tahoe Area.",
+   "limit": null
+  },
+  {
+   "product": "KSTO WS.W 0001",
+   "issued": "1118 PM PST Sun Jan 4 2026",
+   "zones": "CAZ068-069-060000-",
+   "case": "amount bands below the headline band",
+   "headlines": [
+    "WINTER STORM WARNING REMAINS IN EFFECT UNTIL 4 PM PST MONDAY ABOVE 5000 FEET"
+   ],
+   "what": "Moderate to heavy snow. Additional snow accumulations of 4 to 8 inches south of Interstate 80. For areas north of Interstate 80, 2 to 6 inches above 4500 feet, 8 to 24 inches above 5000 feet, and 1 to 3 feet above 6000 feet. Southwest wind gusts of up to 40 mph.",
+   "where": "West Slope Northern Sierra Nevada and Western Plumas County/Lassen Park above 5000 feet.",
+   "limit": null
+  },
+  {
+   "product": "KMSO WW.Y 0018",
+   "issued": "1227 PM MDT Wed Apr 1 2026",
+   "zones": "IDZ006-MTZ006-031200-",
+   "case": "down to below the headline band",
+   "headlines": [
+    "WINTER WEATHER ADVISORY REMAINS IN EFFECT FROM MIDNIGHT MDT /11 PM PDT/ TONIGHT TO 6 AM MDT /5 AM PDT/ FRIDAY"
+   ],
+   "what": "Snow expected. There is a likelihood of moderate weather impacts. Total snow accumulations between 5 and 10 inches above 4000 feet. 1 to 4 inches possible down to 3000 feet.",
+   "where": "Elk City, Dixie, Lolo Pass, Highway 93 Sula to Lost Trail Pass, and Highway 12 Lowell to Lolo Pass.",
+   "limit": null
+  },
+  {
+   "product": "KBOI WW.Y 0009",
+   "issued": "546 PM MDT Sun Mar 16 2025",
+   "zones": "IDZ011-013-171200-",
+   "case": "valley floor amounts",
+   "headlines": [
+    "WINTER WEATHER ADVISORY IN EFFECT UNTIL 6 AM MDT MONDAY"
+   ],
+   "what": "Snow, except rain mixed with snow below 5500 feet this evening with snow levels lowering to valley floors overnight. Additional snow accumulations of 2 to 6 inches, except 6 to 10 inches over the mountains. Winds gusting as high as 40 mph this evening, mainly on ridgetops.",
+   "where": "Boise Mountains and West Central Mountains.",
+   "limit": null
+  },
+  {
+   "product": "KABQ WW.Y 0005",
+   "issued": "1121 AM MST Wed Feb 18 2026",
+   "zones": "NMZ202-210-190230-",
+   "case": "except ... above N feet",
+   "headlines": [
+    "WINTER WEATHER ADVISORY REMAINS IN EFFECT UNTIL 11 PM MST THIS EVENING"
+   ],
+   "what": "Snow expected. Total snow accumulations 2 to 6 inches except up to 9 inches above 8500 feet. Winds gusting as high as 55 mph.",
+   "where": "Tusas Mountains Including Chama and the Chuska Mountains.",
+   "limit": null
+  },
+  {
+   "product": "KABQ WW.Y 0005",
+   "issued": "524 AM MST Wed Feb 18 2026",
+   "zones": "NMZ202-210-181930-",
+   "case": "except ... above N feet",
+   "headlines": [
+    "WINTER WEATHER ADVISORY REMAINS IN EFFECT FROM 10 AM THIS MORNING TO 11 PM MST THIS EVENING"
+   ],
+   "what": "Snow expected. Total snow accumulations 1 to 3 inches except up to 6 inches above 8500 feet. Winds gusting as high as 55 mph.",
+   "where": "Tusas Mountains Including Chama and the Chuska Mountains.",
+   "limit": null
+  },
+  {
+   "product": "KBOU WS.W 0005",
+   "issued": "1152 PM MDT Mon May 4 2026",
+   "zones": "COZ033-035-051800-",
+   "case": "heaviest above N feet",
+   "headlines": [
+    "WINTER STORM WARNING REMAINS IN EFFECT UNTIL 3 PM MDT WEDNESDAY"
+   ],
+   "what": "Heavy snow expected. Total snow accumulations between 10 and 24 inches, heaviest above 8,000 feet. Isolated totals up to 30 inches possible across the higher mountains in Boulder and Larimer counties.",
+   "where": "Rocky Mountain National Park and the Medicine Bow Range, and The Northern Front Range Foothills.",
+   "limit": null
+  },
+  {
+   "product": "KBOU WS.W 0005",
+   "issued": "116 PM MDT Mon May 4 2026",
+   "zones": "COZ033-035-050800-",
+   "case": "heaviest above N feet",
+   "headlines": [
+    "WINTER STORM WARNING REMAINS IN EFFECT FROM MIDNIGHT TONIGHT TO 3 PM MDT WEDNESDAY"
+   ],
+   "what": "Heavy snow expected. Total snow accumulations between 10 and 24 inches, heaviest above 8,000 feet. Isolated totals up to 30 inches possible across the higher mountains in Boulder and Larimer counties.",
+   "where": "Rocky Mountain National Park, the Medicine Bow Range, and the northern Front Range foothills, including Red Feather Lakes, Estes Park, and Nederland.",
+   "limit": null
+  },
+  {
+   "product": "KABQ WW.Y 0002",
+   "issued": "759 PM MST Sat Jan 24 2026",
+   "zones": "NMZ202>204-206-208-251200-",
+   "case": "locally ... above N",
+   "headlines": [
+    "WINTER WEATHER ADVISORY REMAINS IN EFFECT UNTIL 5 AM MST SUNDAY"
+   ],
+   "what": "Snow. Additional snow accumulations of 1 to 4 inches with locally higher amounts in the west central mountains above 8,000 feet.",
+   "where": "Western Mountains, Far Northwest Highlands, and Northwest Highlands. This includes U.S. 60 in Socorro and Catron County.",
+   "limit": null
+  },
+  {
+   "product": "KABQ WW.Y 0002",
+   "issued": "1143 AM MST Sat Jan 24 2026",
+   "zones": "NMZ202>204-206-208-250315-",
+   "case": "locally ... above N",
+   "headlines": [
+    "WINTER WEATHER ADVISORY REMAINS IN EFFECT UNTIL 5 AM MST SUNDAY"
+   ],
+   "what": "Snow. Additional snow accumulations of 1 to 4 inches with locally higher amounts in the west central mountains above 8,000 feet.",
+   "where": "Western Mountains, Far Northwest Highlands, and Northwest Highlands.",
+   "limit": null
+  },
+  {
+   "product": "KABQ WS.W 0005",
+   "issued": "858 PM MDT Thu Apr 30 2026",
+   "zones": "NMZ213>215-011100-",
+   "case": "amounts between and above",
+   "headlines": [
+    "WINTER STORM WARNING REMAINS IN EFFECT UNTIL MIDNIGHT MDT FRIDAY NIGHT"
+   ],
+   "what": "Heavy snow. Additional snow accumulations between 2 and 6 inches between 7500 and 9500 feet and 6 to 10 inches above 9500 feet.",
+   "where": "Sangre de Cristo Mountains.",
+   "limit": null
+  },
+  {
+   "product": "KABQ WS.W 0005",
+   "issued": "133 PM MDT Thu Apr 30 2026",
+   "zones": "NMZ213>215-010500-",
+   "case": "amounts between and above",
+   "headlines": [
+    "WINTER STORM WARNING REMAINS IN EFFECT UNTIL MIDNIGHT MDT FRIDAY NIGHT"
+   ],
+   "what": "Heavy snow expected. Total snow accumulations between 2 and 8 inches between 7500 and 9500 feet and 8 to 12 inches above 9500 feet.",
+   "where": "Sangre de Cristo Mountains.",
+   "limit": null
+  },
+  {
+   "product": "KBYZ WW.Y 0021",
+   "issued": "754 PM MDT Wed Jun 10 2026",
+   "zones": "MTZ067-111500-",
+   "case": "mainly above N feet",
+   "headlines": [
+    "WINTER WEATHER ADVISORY REMAINS IN EFFECT UNTIL 9 AM MDT THURSDAY FOR THE BEARTOOTH HIGHWAY"
+   ],
+   "what": "Periods of light snow occurring for the Beartooth Highway. Additional snow accumulations up to one inch mainly above 9000 feet. Winds gusting as high as 35 mph.",
+   "where": "Absaroka/Beartooth Mountains.",
+   "limit": null
+  },
+  {
+   "product": "KSLC WW.Y 0010",
+   "issued": "1030 PM MDT Tue Mar 31 2026",
+   "zones": "UTZ111>113-117-125-011800-",
+   "case": "mainly above N feet",
+   "headlines": [
+    "WINTER WEATHER ADVISORY REMAINS IN EFFECT UNTIL NOON MDT WEDNESDAY"
+   ],
+   "what": "Snow, mainly above 7500 feet across the northern Utah mountains to above 8500 feet in the southern Utah mountains. Snow accumulations of 4 to 8 inches in the northern mountains, with upwards of 10 to 14 inches in the upper Cottonwoods. Snow accumulations of 8 to 14 inches in the central and southern mountains, with upwards of 18 inches in the Tushar Mountains and Brian Head area.",
+   "where": "Central Mountains, Wasatch Plateau/Book Cliffs, Wasatch Mountains South of I-80, Western Uinta Mountains, and Southern Mountains.",
+   "limit": null
+  },
+  {
+   "product": "KREV WW.Y 0005",
+   "issued": "959 AM PST Wed Feb 18 2026",
+   "zones": "CAZ071-191800-",
+   "case": "with up to ... above N feet",
+   "headlines": [
+    "WINTER WEATHER ADVISORY REMAINS IN EFFECT FROM 4 AM TO 10 PM PST THURSDAY"
+   ],
+   "what": "Snow. Snow accumulations of 2 to 6 inches west of Highway 395 with up to 12 inches for above 7000 feet and west of Highway 89, and up to 2 inches along and east of Highway 395.",
+   "where": "Lassen-Eastern Plumas-Eastern Sierra Counties.",
+   "limit": null
+  },
+  {
+   "product": "KREV WW.Y 0005",
+   "issued": "959 AM PST Wed Feb 18 2026",
+   "zones": "NVZ003-191800-",
+   "case": "with up to ... above N feet",
+   "headlines": [
+    "WINTER WEATHER ADVISORY REMAINS IN EFFECT FROM 4 AM TO 10 PM PST THURSDAY"
+   ],
+   "what": "Snow. Snow accumulations up to 3 inches on valley floors with up to 6 inches for foothill areas above 5000 feet.",
+   "where": "Greater Reno-Carson City-Minden Area.",
+   "limit": null
+  },
+  {
+   "product": "KABQ WS.W 0005",
+   "issued": "933 PM MDT Fri May 1 2026",
+   "zones": "NMZ213>215-020445-",
+   "case": "no band",
+   "headlines": [
+    "WINTER STORM WARNING IS CANCELLED"
+   ],
+   "what": null,
+   "where": null,
+   "limit": null
+  },
+  {
+   "product": "KABQ WW.Y 0007",
+   "issued": "933 PM MDT Fri May 1 2026",
+   "zones": "NMZ210-020445-",
+   "case": "no band",
+   "headlines": [
+    "WINTER WEATHER ADVISORY IS CANCELLED"
+   ],
+   "what": null,
+   "where": null,
+   "limit": null
+  },
+  {
+   "product": "KABQ WW.Y 0007",
+   "issued": "1152 AM MDT Fri May 1 2026",
+   "zones": "NMZ210-020600-",
+   "case": "no band",
+   "headlines": [
+    "WINTER WEATHER ADVISORY REMAINS IN EFFECT UNTIL MIDNIGHT MDT TONIGHT"
+   ],
+   "what": "Snow expected. Total snow accumulations 2 to 6 inches.",
+   "where": "Tusas Mountains Including Chama.",
+   "limit": null
+  },
+  {
+   "product": "KPDT WW.Y 0014",
+   "issued": "1046 AM PDT Sat May 16 2026",
+   "zones": "ORZ509-WAZ522-170600-",
+   "case": "headline band, lower ground in ADDITIONAL DETAILS: as low as 3500 feet",
+   "headlines": [
+    "WINTER WEATHER ADVISORY REMAINS IN EFFECT UNTIL 11 PM PDT THIS EVENING ABOVE 4500 FEET"
+   ],
+   "what": "Snow showers. Additional snow accumulations of 2 to 5 inches above 4500 feet. Winds gusting as high as 40 mph.",
+   "where": "In Oregon, East Slopes of the Oregon Cascades. In Washington, Upper Slopes of the Eastern Washington Cascades Crest.",
+   "details": "* ADDITIONAL DETAILS...Light snow accumulations are forecast as low as 3500 feet this evening.",
+   "limit": null
+  },
+  {
+   "product": "KEKA WW.Y 0003",
+   "issued": "621 AM PDT Wed Apr 1 2026",
+   "zones": "CAZ107-012330-",
+   "case": "WHERE band, lower ground in ADDITIONAL DETAILS: as low as 2500 feet",
+   "headlines": [
+    "WINTER WEATHER ADVISORY REMAINS IN EFFECT FROM 8 PM THIS EVENING TO 11 AM PDT THURSDAY"
+   ],
+   "what": "Snow expected. Total snow accumulations between 4 to 6 inches. Winds gusting as high as 35 mph.",
+   "where": "Northern Trinity County for elevations above 4000 feet.",
+   "details": "* ADDITIONAL DETAILS...Lighter snow accumulations up to 1 inch will be possible as low as 2500 feet Thursday morning.",
+   "limit": null
+  }
+ ]
+}

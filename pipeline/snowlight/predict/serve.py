@@ -758,6 +758,24 @@ def _schools_by_district(
     return found
 
 
+def reached_by(
+    event: LiveEvent,
+    ugcs: UgcIndex,
+    heights: npt.NDArray[np.float64] | None,
+    margin: float,
+) -> tuple[npt.NDArray[np.int64], int]:
+    """The schools ``event`` reaches: those of its zones, and when the alert names heights for
+    where it applies, only those within them (``margin`` feet to spare), and how many of those
+    it counted with no known height (an unknown height is reached). ``heights``: feet per
+    school position, NaN where not known; ``None``: none known."""
+    reached = ugcs.reached(event.ugcs)
+    limit = event.elevation
+    if limit is None or not reached.size:
+        return reached, 0
+    feet = np.full(reached.size, np.nan, dtype=np.float64) if heights is None else heights[reached]
+    return reached[limit.reaches(feet, margin)], int(np.isnan(feet).sum())
+
+
 def school_classes(  # noqa: PLR0913, PLR0917 - the model, the alerts and the day window
     model: ServeModel,
     events: Sequence[LiveEvent],
@@ -765,9 +783,12 @@ def school_classes(  # noqa: PLR0913, PLR0917 - the model, the alerts and the da
     days: Sequence[date],
     now: datetime,
     window: Window,
+    heights: npt.NDArray[np.float64] | None = None,
+    margin: float = 0.0,
 ) -> npt.NDArray[np.int64]:
     """Each school's class per day, (schools, days), read in its district's zone, or a
-    private school's own zone (schools no unit counts stay ``none``)."""
+    private school's own zone (schools no unit counts stay ``none``). An alert that names
+    heights reaches only the schools within them (:func:`reached_by`)."""
     points = model.directory.points
     school_zone = np.full(len(points), -1, dtype=np.int64)
     private = model.private
@@ -781,8 +802,10 @@ def school_classes(  # noqa: PLR0913, PLR0917 - the model, the alerts and the da
     found = np.zeros((len(points), len(days)), dtype=np.int64)
     for item in events:
         weather = item.event.weather
-        reached = ugcs.reached(item.ugcs)
-        if weather is None or not reached.size:
+        if weather is None:
+            continue
+        reached, _unknown = reached_by(item, ugcs, heights, margin)
+        if not reached.size:
             continue
         reached = reached[school_zone[reached] >= 0]
         for z, name in enumerate(zone_names):
@@ -801,11 +824,14 @@ def unit_classes(  # noqa: PLR0913, PLR0917 - the model, the alerts and the day 
     now: datetime,
     window: Window,
     share: float,
+    heights: npt.NDArray[np.float64] | None = None,
+    margin: float = 0.0,
 ) -> tuple[npt.NDArray[np.int64], npt.NDArray[np.int64]]:
     """Each deployed district's weather class per day, (districts, days), by the same
     covered-share rule as the history (:func:`snowlight.predict.situations.district_class`),
-    and each served private school's, (private schools, days): its own school's class."""
-    by_school = school_classes(model, events, ugcs, days, now, window)
+    and each served private school's, (private schools, days): its own school's class
+    (``heights`` and ``margin``: :func:`school_classes`)."""
+    by_school = school_classes(model, events, ugcs, days, now, window, heights, margin)
     found = np.zeros((len(model.eligible), len(days)), dtype=np.int64)
     for index, schools in enumerate(model.eligible):
         if not schools.size or not by_school[schools].any():

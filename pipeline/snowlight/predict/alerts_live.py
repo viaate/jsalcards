@@ -10,7 +10,11 @@ expired) becomes one :class:`~snowlight.predict.situations.Event` per VTEC strin
 
 An event reaches the schools of the UGC codes it lists (``geocode.UGC``): the public
 forecast zone and the county each school lies in (:class:`UgcIndex`), as the history
-path reaches the schools in the zone versions its rows were issued for.
+path reaches the schools in the zone versions its rows were issued for. When the alert names
+heights for where it applies ("above 8,000 feet", :mod:`snowlight.sources.nws.elevation`), the
+event keeps them, and the pass counts only the schools of those zones within them
+(:func:`snowlight.predict.serve.school_classes`). History has no such lines (the season CSVs
+carry no text), so this too is a place the live path is stricter than the training snapshot.
 
 The pass keeps every event it has seen in the last ``memory_hours`` (:class:`Memory`), so
 an alert that ended at 2 AM still counts for the 6 AM pass, as it does at the training
@@ -26,6 +30,7 @@ live feed would have shown them (:meth:`Memory.rebuild`).
 """
 
 import hashlib
+import json
 from collections import defaultdict
 from collections.abc import Iterable, Mapping, Sequence
 from dataclasses import dataclass, field, replace
@@ -38,6 +43,7 @@ import shapely
 
 from snowlight.predict.situations import CLASS_BY_CODE, Event
 from snowlight.sources.nws.alerts import ActiveFeed, NwsAlert
+from snowlight.sources.nws.elevation import ElevationLimit
 
 ENDING_ACTIONS: Final = frozenset({"CAN", "UPG", "EXP"})
 WITHDRAWN_ACTIONS: Final = frozenset({"CAN", "UPG"})
@@ -53,14 +59,24 @@ class LiveEvent:
     ugcs: frozenset[str]
     event: Event
     action: str
+    elevation: ElevationLimit | None = None
+    """The heights the alert names for where it applies; ``None``: it names none (every
+    school of its zones is reached)."""
 
     @property
     def change_key(self) -> str:
-        """What a change compares: event, action, times and area."""
+        """What a change compares: event, action, times, area and heights."""
         end = "" if self.event.end is None else self.event.end.isoformat()
-        return "|".join(
-            (self.key, self.action, self.event.start.isoformat(), end, ",".join(sorted(self.ugcs)))
-        )
+        parts = [
+            self.key,
+            self.action,
+            self.event.start.isoformat(),
+            end,
+            ",".join(sorted(self.ugcs)),
+        ]
+        if self.elevation is not None:
+            parts.append(json.dumps(self.elevation.as_json()))
+        return "|".join(parts)
 
 
 def live_events(feed: ActiveFeed) -> list[LiveEvent]:
@@ -90,6 +106,7 @@ def _events(alert: NwsAlert) -> list[LiveEvent]:
                 ugcs=frozenset(alert.ugc),
                 event=Event(code=code, issued=alert.sent, start=start, end=end),
                 action=vtec.action,
+                elevation=alert.elevation,
             )
         )
     return found
@@ -129,6 +146,9 @@ class Memory:
 
     hours: int
     seen: dict[tuple[str, frozenset[str]], Remembered] = field(default_factory=dict)
+    unread_heights: int = 0
+    """Entries of the kept state whose heights did not read: each is kept as reaching its
+    whole zones (as before heights were read), and the pass says how many."""
 
     def withdraw(self, taken: Iterable[tuple[str, frozenset[str]]]) -> None:
         """Drop the zones a cancel or upgrade took back from every remembered entry of its
@@ -191,6 +211,11 @@ class Memory:
                 "end": None if item.event.event.end is None else item.event.event.end.isoformat(),
                 "action": item.event.action,
                 "last_seen": item.last_seen.isoformat(),
+                **(
+                    {}
+                    if item.event.elevation is None
+                    else {"elevation": item.event.elevation.as_json()}
+                ),
             }
             for _key, item in sorted(
                 self.seen.items(), key=lambda pair: (pair[0][0], sorted(pair[0][1]))
@@ -199,7 +224,8 @@ class Memory:
 
     @classmethod
     def from_json(cls, hours: int, items: Iterable[Mapping[str, object]]) -> "Memory":
-        """The memory the state store kept (an unreadable entry is dropped).
+        """The memory the state store kept. An entry whose heights do not read is kept with
+        none, so it reaches its whole zones (counted in :attr:`unread_heights`).
 
         Raises:
             ValueError: an entry's times are not ISO 8601.
@@ -207,6 +233,11 @@ class Memory:
         memory = cls(hours)
         for item in items:
             end = item.get("end")
+            try:
+                elevation = ElevationLimit.from_json(item.get("elevation"))
+            except ValueError:
+                elevation = None
+                memory.unread_heights += 1
             event = LiveEvent(
                 key=str(item["key"]),
                 ugcs=frozenset(str(ugc) for ugc in item["ugcs"]),  # type: ignore[attr-defined]
@@ -217,6 +248,7 @@ class Memory:
                     end=None if end is None else datetime.fromisoformat(str(end)),
                 ),
                 action=str(item["action"]),
+                elevation=elevation,
             )
             memory.seen[(event.key, event.ugcs)] = Remembered(
                 event, datetime.fromisoformat(str(item["last_seen"]))
