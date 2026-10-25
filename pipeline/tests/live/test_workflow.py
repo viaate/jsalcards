@@ -51,7 +51,8 @@ def test_only_the_publish_job_holds_the_live_host_token() -> None:
     publish = jobs()["publish"]
     assert publish["environment"] == "live"
     assert publish["needs"] == "check"
-    assert publish["if"] == "needs.check.outputs.publish == 'true'"
+    # S8-E: skipped when the reader writes v1 (LIVE_PUBLISH on)
+    assert publish["if"] == "needs.check.outputs.publish == 'true' && vars.LIVE_PUBLISH != 'on'"
     env = publish["env"]
     assert isinstance(env, dict)
     secret = "${{ secrets.SNOWLIGHT_LIVE_TOKEN }}"  # noqa: S105 - the secret's name, not a value

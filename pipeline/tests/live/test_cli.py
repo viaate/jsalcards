@@ -195,6 +195,7 @@ def _loaders(rig: Rig, clock: Clock) -> live_cli.Loaders:
             state_dir=args.state,
             internal_dir=args.internal,
             mode=live_cli.mode_of(env),
+            rehearse=bool(getattr(args, "rehearse", False)),
         )
         ingest = Ingest(
             ledger=world.ledger,
@@ -383,7 +384,7 @@ def test_blank_check_and_state(  # noqa: PLR0913, PLR0917
         )
         == 0
     )
-    assert (tmp_path / "restored" / "publish.json").is_file()
+    assert (tmp_path / "restored" / "publish.v1-shadow.json").is_file()
 
 
 def test_run_passes_on_the_grid_and_stops_when_the_directory_changes(

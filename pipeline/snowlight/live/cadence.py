@@ -384,3 +384,40 @@ class Cadence:
         }
         text = json.dumps({"version": CADENCE_VERSION, "sources": sources}, sort_keys=True)
         write_bytes_atomic(self.path, (text + "\n").encode("utf-8"))
+
+
+def active_holds(path: Path, now: datetime) -> list[tuple[str, datetime, str]]:
+    """The blocks and ``Retry-After`` waits ``cadence.json`` holds past ``now``, as the state
+    database keeps them (``(source id, until, why)``, codes and times only)."""
+    return [
+        (source_id, clock.not_before, clock.outcome.value)
+        for source_id, clock in sorted(Cadence._load(path).items())
+        if clock.not_before is not None
+        and clock.not_before > now
+        and clock.outcome in {Outcome.BLOCKED, Outcome.DEFERRED}
+    ]
+
+
+def merge_holds(path: Path, holds: Iterable[tuple[str, datetime, str]], now: datetime) -> int:
+    """Fold the holds kept in the state database (``(source id, until, why)``: a block or a
+    ``Retry-After`` wait) into ``cadence.json``: the later ``not_before`` wins. Returns how
+    many sources it held longer. A file that does not read is replaced by the holds alone.
+    """
+    clocks = Cadence._load(path)
+    changed = 0
+    for source_id, until, why in holds:
+        if until <= now:
+            continue
+        clock = clocks.get(source_id)
+        if clock is not None and clock.not_before is not None and clock.not_before >= until:
+            continue
+        outcome = Outcome.BLOCKED if why == Outcome.BLOCKED.value else Outcome.DEFERRED
+        clocks[source_id] = SourceClock(
+            clock.last_pass if clock is not None else now, outcome, until
+        )
+        changed += 1
+    if changed:
+        holder = Cadence({}, {}, lambda _station: 0, path=path)
+        holder.clocks = clocks
+        holder.save()
+    return changed

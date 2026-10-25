@@ -49,7 +49,9 @@ Rules (spec 7.2):
   the same rows (the list really shrank or emptied);
 * a ``not_modified`` read without its rows confirms the last good read: it refreshes
   the rows present and the hold, and changes no presence;
-* keys unseen for 14 days are pruned.
+* keys unseen for 14 days are pruned;
+* ``good_reads`` keeps each source's first good read of every UTC hour for 14 days
+  (:meth:`Ledger._note_good`), which is all the resolver asks of it.
 
 The ledger is one SQLite file. It holds keys, times, source ids and derived codes,
 never raw text (D10).
@@ -387,6 +389,20 @@ def _predecessor(replaced: Sequence[LedgerRow]) -> tuple[bytes | None, bool]:
     return tied[0].key, False
 
 
+def empty_ledger(path: Path) -> None:
+    """Write a ledger file with the schema only: no ``meta`` row (no secret), no rows, no
+    derived payloads (the state export's, :func:`snowlight.live.state.export`)."""
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.unlink(missing_ok=True)
+    connection = sqlite3.connect(str(path))
+    try:
+        with connection:
+            connection.executescript(_SCHEMA)
+            connection.execute(f"PRAGMA user_version = {SCHEMA_VERSION}")
+    finally:
+        connection.close()
+
+
 class Ledger:
     """The row ledger, in one SQLite file (or in memory with ``":memory:"``)."""
 
@@ -537,7 +553,7 @@ class Ledger:
             " WHERE source_id = ?",
             (now, Outcome.NOT_MODIFIED.value, source_id),
         )
-        self._db.execute("INSERT INTO good_reads VALUES (?, ?)", (source_id, now))
+        self._note_good(source_id, now)
         return Observed(
             outcome=Outcome.NOT_MODIFIED,
             gone=tuple(gone),
@@ -679,7 +695,7 @@ class Ledger:
             " rows_last = excluded.rows_last, pending = NULL",
             (source_id, now, outcome.value, len(keys)),
         )
-        self._db.execute("INSERT INTO good_reads VALUES (?, ?)", (source_id, now))
+        self._note_good(source_id, now)
         self._db.execute(
             "DELETE FROM good_reads WHERE source_id = ? AND at < ?", (source_id, cutoff)
         )
@@ -704,6 +720,25 @@ class Ledger:
                 "gone": len(gone),
                 "pruned": len(pruned),
             },
+        )
+
+    def _note_good(self, source_id: str, now: str | None) -> None:
+        """Keep a good read in ``good_reads`` when it is the source's first in its UTC hour.
+
+        The table answers only "was the source read on local date D in zone Z" (the
+        resolver's previous-school-day rule). Every US zone's offset is a whole number of
+        hours, so a UTC hour lies inside one local date in each of them, and the first read
+        of the hour answers that question as every read of the hour does (the exact newest
+        read stays in ``sources.last_good_at``).
+        """
+        if now is None:
+            return
+        moment = datetime.fromisoformat(now).astimezone(UTC)
+        hour = moment.replace(minute=0, second=0, microsecond=0)
+        self._db.execute(
+            "INSERT INTO good_reads (source_id, at) SELECT ?, ? WHERE NOT EXISTS"
+            " (SELECT 1 FROM good_reads WHERE source_id = ? AND at >= ? AND at < ?)",
+            (source_id, now, source_id, hour.isoformat(), (hour + timedelta(hours=1)).isoformat()),
         )
 
     def _set_outcome(self, source_id: str, outcome: Outcome, previous: SourceState | None) -> None:

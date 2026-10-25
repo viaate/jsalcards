@@ -51,13 +51,13 @@ from pathlib import Path
 from typing import Final
 
 from snowlight.listed.matching import Query
-from snowlight.live.edition import EditionVerdict, EditionWatch
-from snowlight.live.guards import Rules, held
+from snowlight.live.edition import EditionState, EditionVerdict, EditionWatch
+from snowlight.live.guards import Refusal, Rules, held
 from snowlight.live.ledger import GOOD, LONGEST, Ledger, SeenRow
 from snowlight.live.ledger import Outcome as ReadOutcome
-from snowlight.live.merge import Merged, merge
+from snowlight.live.merge import AdminStatus, Merged, merge, with_overrides
 from snowlight.live.morning import MorningLog, named_of, pass_reads
-from snowlight.live.publish import Exit, LivePublisher, PassReport
+from snowlight.live.publish import AdminPart, Exit, LivePublisher, PassReport, PassSummary
 from snowlight.live.resolve import LiveDirectory, Resolved, Resolver
 from snowlight.output import JSONValue, write_json
 from snowlight.sources.stations.registry import Station, StationStatus
@@ -127,6 +127,16 @@ def _boosted(_station: Station, _now: datetime) -> bool:
     return True
 
 
+def _always(_school: int) -> bool:
+    return True
+
+
+EMPTY_MERGED: Final = Merged(
+    closings=(), opens=(), provenance=(), withheld={}, breakers=(), fast_vanishes=()
+)
+"""No list statuses (an overrides-only pass)."""
+
+
 def withhold_states(
     merged: Merged, states: Collection[str], directory: LiveDirectory
 ) -> tuple[Merged, int]:
@@ -194,6 +204,19 @@ class Ingest:
     """The morning record (:mod:`snowlight.live.morning`); ``None`` keeps none."""
     taken: set[str] = field(default_factory=set)
     """Sources the ledger took a whole read of this pass (ok, not_modified or empty)."""
+    overrides: Callable[[datetime], Sequence[AdminStatus]] | None = None
+    """The admin's statuses at a moment (the API read each pass, S8-E); an error refuses
+    the pass. ``None``: none are applied (tests, ``off``)."""
+    run_id: str = "-"
+    """This run's id, for the upload's commit message."""
+    state_bytes: int = 0
+    """The packed state's size at the last push, for the commit message."""
+    last_outcomes: dict[str, tuple[bool, bool]] = field(default_factory=dict)
+    """Each source read in the last pass: whether it erred, and whether it was in a reading
+    window or an alert (the ``source`` alert's digest)."""
+    beat: Callable[[], None] = field(default=lambda: None)
+    """Called per read folded into the ledger and per source resolved (the loop's pulse, so
+    a pass's resolve shows progress to the watcher; a hang inside one stops it)."""
 
     def observe(self, reads: Iterable[SourceRead]) -> Counter[str]:
         """Fold reads into the ledger; returns the outcomes as the ledger took them."""
@@ -201,6 +224,7 @@ class Ingest:
         self.failed = set()
         self.taken = set()
         for read in reads:
+            self.beat()
             try:
                 observed = self.ledger.observe(
                     read.source_id, read.outcome, read.fetched_at, read.rows
@@ -251,6 +275,7 @@ class Ingest:
         known = {state.source_id for state in self.ledger.sources()}
         resolved = []
         for source_id in sorted(known):
+            self.beat()
             station = self.stations.get(source_id) or orphan_station(source_id)
             try:
                 resolved.append(self.resolver.resolve(station, self.present.get(source_id, ())))
@@ -296,9 +321,20 @@ class Ingest:
         )
 
     def check_edition(self, now: datetime) -> EditionVerdict:
-        """The directory handshake against the stamps the public files carry."""
+        """The directory handshake against the stamps the public files carry. Other content
+        deployed that is the content of the last upload is this run's code ahead of the
+        deploy: no blank (the run waits for the deploy)."""
         stamps, complete = self.publisher.public_stamps()
         verdict = self.watch.check(now, published=stamps, complete=complete)
+        if verdict.state is EditionState.DIFFERENT and self.publisher.ahead_of(verdict):
+            verdict = replace(
+                verdict,
+                blank=None,
+                blank_every=False,
+                ahead=True,
+                alert=False,
+                note="this run's directory is ahead of the deploy",
+            )
         self.checked_at, self.last_verdict = now, verdict
         return verdict
 
@@ -379,7 +415,7 @@ class Ingest:
         """Add this pass to the morning record (a failed write is logged by its type)."""
         if self.morning is None:
             return
-        prefix = self.publisher.mode.prefix
+        prefix = self.publisher.prefix
         try:
             self.morning.record(
                 now,
@@ -391,14 +427,100 @@ class Ingest:
         except (OSError, ValueError) as error:
             LOG.error("morning record: %s", type(error).__name__)
 
+    def _publish(  # noqa: PLR0913 - one pass's parts
+        self,
+        merged: Merged,
+        now: datetime,
+        share: float,
+        edition: EditionVerdict,
+        *,
+        started: datetime | None,
+        always: bool,
+    ) -> PassReport:
+        """The admin's statuses on top (an API error refuses the pass), then the gate."""
+        admin = None
+        if self.overrides is not None:
+            try:
+                statuses = self.overrides(now)
+                merged = with_overrides(
+                    merged, statuses, now.astimezone(UTC).replace(microsecond=0)
+                )
+            except Exception as error:
+                LOG.error("overrides: %s", type(error).__name__)
+                return self.publisher.refuse_pass((Refusal.OVERRIDES.value,), now)
+            admin = _admin_part(statuses)
+        try:
+            return self.publisher.publish(
+                merged,
+                now=now,
+                healthy_share=share,
+                edition=edition,
+                alerted=self.alerted,
+                started=started,
+                always=always,
+                admin=admin,
+            )
+        except OSError as error:
+            LOG.error("publish: %s", type(error).__name__)
+            return PassReport(Exit.ERROR, now, note=f"publish: {type(error).__name__}")
+
+    def source_outcomes(
+        self, reads: Sequence[SourceRead], now: datetime
+    ) -> dict[str, tuple[bool, bool]]:
+        """Each source read: whether it erred, and whether it was in a window or an alert."""
+        found: dict[str, tuple[bool, bool]] = {}
+        for read in reads:
+            station = self.stations.get(read.source_id)
+            boosted = station is not None and self.boosted(station, now)
+            found[read.source_id] = (read.outcome is ReadOutcome.ERROR, boosted)
+        return found
+
+    def overrides_pass(self, now: datetime, *, always: bool = False) -> PassReport:
+        """A pass of an overrides-only run (the state could not be pulled): no list is read,
+        and the admin's statuses are published alone, as a blank skips health and the spike
+        hold (the list rows go dark, never wrong). An API error refuses it."""
+        edition = self.check_edition(now)
+        statuses: Sequence[AdminStatus] = ()
+        if self.overrides is not None:
+            try:
+                statuses = self.overrides(now)
+            except Exception as error:
+                LOG.error("overrides: %s", type(error).__name__)
+                return self.publisher.refuse_pass((Refusal.OVERRIDES.value,), now)
+        whole = now.astimezone(UTC).replace(microsecond=0)
+        merged = with_overrides(EMPTY_MERGED, statuses, whole)
+        self.publisher.summary = PassSummary(
+            start=now, run_id=self.run_id, sweep_seconds=0.0, due=0, good=0, state_bytes=0
+        )
+        try:
+            return self.publisher.publish(
+                merged,
+                now=now,
+                healthy_share=1.0,
+                edition=edition,
+                alerted=_always,
+                started=now,
+                always=always,
+            )
+        except OSError as error:
+            LOG.error("publish: %s", type(error).__name__)
+            return PassReport(Exit.ERROR, now, note=f"publish: {type(error).__name__}")
+
     def run_pass(
-        self, reads: Sequence[SourceRead], now: datetime, *, started: datetime | None = None
+        self,
+        reads: Sequence[SourceRead],
+        now: datetime,
+        *,
+        started: datetime | None = None,
+        always: bool = False,
     ) -> PassReport:
         """One pass: observe, resolve, merge, gate, publish, record (see the module). ``now``
         is the clock after the reads; a read stamped later moves it to that read.
-        ``started`` is when the pass began, before its reads (the heartbeat's grid)."""
+        ``started`` is when the pass began, before its reads (the heartbeat's grid);
+        ``always``: upload even when nothing changed (a grid pass, ``live once``)."""
         now = max([now, *(read.fetched_at for read in reads)])
         outcomes = self.observe(reads)
+        self.last_outcomes = self.source_outcomes(reads, now)
         resolved = self.resolve()
         directory = self.resolver.directory
         merged = merge(
@@ -415,18 +537,16 @@ class Ingest:
             self.queue(unmatched, now)
         share = self.healthy_share(now)
         edition = self.check_edition(now)
-        try:
-            report = self.publisher.publish(
-                merged,
-                now=now,
-                healthy_share=share,
-                edition=edition,
-                alerted=self.alerted,
-                started=started,
-            )
-        except OSError as error:
-            LOG.error("publish: %s", type(error).__name__)
-            report = PassReport(Exit.ERROR, now, note=f"publish: {type(error).__name__}")
+        began = now if started is None else started
+        self.publisher.summary = PassSummary(
+            start=began,
+            run_id=self.run_id,
+            sweep_seconds=max(0.0, (now - began).total_seconds()),
+            due=len(reads),
+            good=sum(1 for read in reads if read.outcome in GOOD),
+            state_bytes=self.state_bytes,
+        )
+        report = self._publish(merged, now, share, edition, started=started, always=always)
         self.unknown_streak = self.unknown_streak + 1 if unknown or self.failed else 0
         report = replace(
             report,
@@ -458,6 +578,10 @@ class Ingest:
             int(report.exit),
         )
         return report
+
+
+def _admin_part(statuses: Sequence[AdminStatus]) -> AdminPart:
+    return AdminPart(tuple(statuses))
 
 
 def shown(report: PassReport) -> bool:

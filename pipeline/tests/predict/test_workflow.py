@@ -137,10 +137,11 @@ def test_the_learning_step_restores_the_live_loops_cache_key_and_folder() -> Non
     # S4: the handoff is pinned: the restore names the cache store's folder in config/live.yaml
     # and the key prefix a live loop with the cache store saves under (CACHE_KEY_PREFIX), and
     # any workflow that saves that folder saves it under that prefix.
+    from snowlight.live.cli import EXPORT_DIR, PIPELINE_ROOT  # noqa: PLC0415
     from snowlight.live.state import ARCHIVE, CACHE_KEY_PREFIX  # noqa: PLC0415
 
-    live = yaml.safe_load((REPO_ROOT / "pipeline" / "config" / "live.yaml").read_text())
-    folder = f"pipeline/{live['state']['folder']}"
+    # S8-E: live-read.yml saves only the state export there (snowlight live state export)
+    folder = f"pipeline/{EXPORT_DIR.relative_to(PIPELINE_ROOT).as_posix()}"
     restore = next(step for step in steps() if CACHE_KEY_PREFIX in str(step.get("with", {})))
     found = restore["with"]
     assert isinstance(found, dict)

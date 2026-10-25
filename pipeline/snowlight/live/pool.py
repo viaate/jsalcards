@@ -35,6 +35,15 @@ while staying exactly as polite as one careful reader:
   after the pass's 240 s: a source not finished is ``late``. Live reads make two
   attempts. A ``Retry-After`` longer than the source's time left ends that source as
   ``deferred`` (due again only after it), and no other source waits for it.
+* **The pass cap.** A pass is cut :data:`PASS_CAP_GRACE` (30 s) after its deadline,
+  whatever its workers are doing: the executor is shut down without waiting (queued
+  lanes cancelled), every source not finished is ``late``, and a result that arrives
+  later is dropped. A thread still running then is *abandoned* (:attr:`Pool.abandoned`
+  counts those alive); the caller ends the process when too many pile up
+  (:data:`MAX_ABANDONED`), so a successor starts clean.
+* **The pacer outlives the process.** Each key's last request start is kept in
+  ``pacer.json`` (wall-clock times, :meth:`HostPacer.save`) and seeds the next process's
+  pacer (:meth:`HostPacer.seed`), so a host's Crawl-delay holds across a handoff.
 * **A 403 (or a 401) blocks the source for 24 hours.** It is never worked around.
 * **One read of a URL per pass.** Sources that read the same address (Cowles' five
   stations share one ticker file) share its answer within a pass
@@ -83,6 +92,12 @@ SOURCE_DEADLINE: Final = 60.0
 LIVE_ATTEMPTS: Final = 2
 BLOCKED_FOR: Final = timedelta(hours=24)
 S3_PATH_HOST: Final = "s3.amazonaws.com"
+PASS_CAP_GRACE: Final = 30.0
+"""Seconds after the pass deadline when the pass is cut, finished or not."""
+MAX_ABANDONED: Final = 8
+"""Abandoned worker threads still alive past which the process ends (exit 1)."""
+PACER_KEEP: Final = timedelta(hours=24)
+"""How long a key's last start is kept in ``pacer.json``."""
 TICK_EVERY: Final = 5.0
 """Seconds between the caller's ticks while a pass's workers run."""
 ROBOTS_VERSION: Final = 1
@@ -246,6 +261,51 @@ class HostPacer:
                 self._cond.notify_all()
             if self.log is not None:
                 self.log.add(Request(key, wait_for, start, end, robots, origin, follow))
+
+    def starts(self, now: datetime) -> dict[str, datetime]:
+        """Each key's last request start as a wall-clock time (``now`` is the wall clock at
+        this moment)."""
+        mono = self._monotonic()
+        with self._cond:
+            last = dict(self._last)
+        return {key: now - timedelta(seconds=mono - start) for key, start in last.items()}
+
+    def seed(self, starts: Mapping[str, datetime], now: datetime) -> None:
+        """Take each key's last start from a past process (wall-clock times; ``now`` is the
+        wall clock at this moment). A start this pacer already knows later wins."""
+        mono = self._monotonic()
+        with self._cond:
+            for key, moment in starts.items():
+                start = mono - (now - moment).total_seconds()
+                if start <= mono and start > self._last.get(key, float("-inf")):
+                    self._last[key] = start
+
+    def save(self, path: Path, now: datetime) -> None:
+        """Write the last starts of the keys used in the last :data:`PACER_KEEP` to ``path``
+        (``pacer.json``: keys and times only)."""
+        kept = {
+            key: moment.astimezone(UTC).isoformat()
+            for key, moment in sorted(self.starts(now).items())
+            if now - moment <= PACER_KEEP
+        }
+        text = json.dumps({"version": 1, "starts": kept}, sort_keys=True)
+        write_bytes_atomic(path, (text + "\n").encode("utf-8"))
+
+    def load(self, path: Path, now: datetime) -> None:
+        """Seed from ``path`` when it is there and reads (else nothing: the 5 s floor and
+        each host's Crawl-delay start again from this process's first request)."""
+        try:
+            document = json.loads(path.read_text(encoding="utf-8"))
+            starts = {
+                str(key): datetime.fromisoformat(str(value))
+                for key, value in document["starts"].items()
+            }
+        except FileNotFoundError:
+            return
+        except (OSError, ValueError, KeyError, TypeError, AttributeError) as error:
+            LOG.warning("pacer.json unreadable, not seeded: %s", type(error).__name__)
+            return
+        self.seed({key: moment for key, moment in starts.items() if moment.tzinfo}, now)
 
 
 # robots.txt ----------------------------------------------------------------------------
@@ -493,6 +553,42 @@ def classify(result: RunResult, source_id: str) -> tuple[Outcome, int | None]:
 
 
 @dataclass(slots=True)
+class _PassRun:
+    """One pass's results and running tasks (thread-safe); closed at the cut, after which a
+    result is dropped."""
+
+    found: list[SourceResult] = field(default_factory=list)
+    running: set[threading.Thread] = field(default_factory=set)
+    lock: threading.Lock = field(default_factory=threading.Lock)
+    closed: threading.Event = field(default_factory=threading.Event)
+
+    def keep(self, result: SourceResult) -> None:
+        with self.lock:
+            if not self.closed.is_set():
+                self.found.append(result)
+
+    def tracked(self, task: Callable[[], None]) -> Callable[[], None]:
+        """``task``, counted as running on its thread while it runs."""
+
+        def run() -> None:
+            with self.lock:
+                self.running.add(threading.current_thread())
+            try:
+                task()
+            finally:
+                with self.lock:
+                    self.running.discard(threading.current_thread())
+
+        return run
+
+    def close(self) -> tuple[list[SourceResult], list[threading.Thread]]:
+        """Stop taking results; the results so far and the threads still running."""
+        with self.lock:
+            self.closed.set()
+            return list(self.found), list(self.running)
+
+
+@dataclass(slots=True)
 class Pool:
     """The workers' shared parts (see the module); one per process."""
 
@@ -504,7 +600,27 @@ class Pool:
     monotonic: Monotonic = time.monotonic
     clock: Clock = field(default=lambda: datetime.now(UTC))
     robots: RobotsStore | None = None
+    pacer: HostPacer | None = None
+    """The workers' shared pacer, when it is kept in ``pacer.json`` (:meth:`save_pacer`)."""
+    pacer_path: Path | None = None
+    cap_grace: float = PASS_CAP_GRACE
     _local: threading.local = field(default_factory=threading.local)
+    _abandoned: list[threading.Thread] = field(default_factory=list)
+
+    @property
+    def abandoned(self) -> int:
+        """How many worker threads of cut passes are still alive."""
+        self._abandoned = [thread for thread in self._abandoned if thread.is_alive()]
+        return len(self._abandoned)
+
+    def save_pacer(self) -> None:
+        """Keep the pacer's last starts in ``pacer.json`` (a failed write is logged)."""
+        if self.pacer is None or self.pacer_path is None:
+            return
+        try:
+            self.pacer.save(self.pacer_path, self.clock())
+        except OSError as error:
+            LOG.error("pacer save: %s", type(error).__name__)
 
     def _worker_client(self) -> PoliteClient:
         client: PoliteClient | None = getattr(self._local, "client", None)
@@ -527,30 +643,68 @@ class Pool:
         origin = self.monotonic()
         end = origin + self.pass_deadline
         lanes = lanes_of(due, alerted)
-        found: list[SourceResult] = []
-        lock = threading.Lock()
+        run = _PassRun()
         shared = PassReads()
 
         def run_lane(lane: list[Station]) -> None:
             for station in lane:
-                result = self._read_one(station, read, origin, end, shared)
-                with lock:
-                    found.append(result)
+                if run.closed.is_set():
+                    return
+                run.keep(self._read_one(station, read, origin, end, shared))
 
-        with ThreadPoolExecutor(max_workers=self.workers, thread_name_prefix="live-pool") as pool:
-            pending: set[Future[None]] = {
-                pool.submit(self._robots_first, url, end)
+        pool = ThreadPoolExecutor(max_workers=self.workers, thread_name_prefix="live-pool")
+        pending: set[Future[None]] = set()
+        try:
+            pending = {
+                pool.submit(run.tracked(lambda url=url: self._robots_first(url, end)))  # type: ignore[misc]
                 for url in self._unread_origins(due, started)
             }
-            pending |= {pool.submit(run_lane, lane) for lane in lanes}
-            while pending:
-                done, pending = wait(pending, timeout=TICK_EVERY, return_when=FIRST_COMPLETED)
-                for future in done:
-                    future.result()
-                tick()
+            pending |= {
+                pool.submit(run.tracked(lambda lane=lane: run_lane(lane)))  # type: ignore[misc]
+                for lane in lanes
+            }
+            pending = self._wait(pending, end + self.cap_grace, tick)
+        finally:
+            kept, stuck = run.close()
+            if pending:
+                self._abandoned.extend(stuck)
+            pool.shutdown(wait=not pending, cancel_futures=True)
+        if pending:
+            LOG.warning("pass cut at its cap: %d lanes unfinished", len(pending))
+            kept.extend(self._unfinished(lanes, kept, self.monotonic() - origin))
         if self.robots is not None:
             self.robots.flush()
-        return PassResult(started, self.monotonic() - origin, tuple(found), len(lanes))
+        self.save_pacer()
+        return PassResult(started, self.monotonic() - origin, tuple(kept), len(lanes))
+
+    def _wait(
+        self, pending: set[Future[None]], cap: float, tick: Callable[[], None]
+    ) -> set[Future[None]]:
+        """Wait for ``pending`` until ``cap`` (``monotonic``), ticking; returns what is left."""
+        while pending:
+            left = cap - self.monotonic()
+            if left <= 0:
+                break
+            done, pending = wait(
+                pending, timeout=min(TICK_EVERY, left), return_when=FIRST_COMPLETED
+            )
+            for future in done:
+                future.result()
+            tick()
+        return pending
+
+    @staticmethod
+    def _unfinished(
+        lanes: Sequence[Sequence[Station]], kept: Sequence[SourceResult], at: float
+    ) -> list[SourceResult]:
+        """Every source of ``lanes`` without a result when the pass was cut: ``late``."""
+        finished = {item.source_id for item in kept}
+        return [
+            SourceResult(station.id, Outcome.LATE, 0.0, at)
+            for lane in lanes
+            for station in lane
+            if station.id not in finished
+        ]
 
     def _unread_origins(self, due: Sequence[Station], now: datetime) -> list[str]:
         """One address per origin whose robots.txt is not kept fresh (none without a store)."""

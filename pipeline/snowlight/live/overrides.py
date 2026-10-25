@@ -42,8 +42,10 @@ admin first set it on that day (a save that keeps it as it is keeps the time).
 """
 
 import hashlib
+import re
+import time
 from collections import Counter
-from collections.abc import Iterable, Mapping, Sequence
+from collections.abc import Callable, Iterable, Mapping, Sequence
 from dataclasses import dataclass, field
 from datetime import date, datetime, timedelta
 from itertools import pairwise
@@ -106,7 +108,15 @@ STATUS_OF: Final[Mapping[str, Status | None]] = {
 
 
 class OverridesError(RuntimeError):
-    """The overrides cannot be trusted: nothing is published (the message holds codes only)."""
+    """The overrides cannot be trusted: nothing is published (the message holds codes only).
+
+    ``answered`` is set when the API gave no answer (``status`` ``None``) or an HTTP status
+    other than 200 (``status``)."""
+
+    def __init__(self, message: str, *, answered: bool = False, status: int | None = None) -> None:
+        super().__init__(message)
+        self.answered = answered
+        self.status = status
 
 
 type Id = Annotated[str, StringConstraints(pattern=r"^[0-9A-Za-z]{1,20}$")]
@@ -217,13 +227,118 @@ def fetch(client: httpx.Client, root: str) -> tuple[Override, ...]:
             timeout=TIMEOUT,
         )
     except httpx.HTTPError as error:
-        raise OverridesError(f"GET {PATH}: {type(error).__name__}") from error
+        raise OverridesError(f"GET {PATH}: {type(error).__name__}", answered=True) from error
     if response.status_code != httpx.codes.OK:
-        raise OverridesError(f"GET {PATH}: HTTP {response.status_code}")
+        raise OverridesError(
+            f"GET {PATH}: HTTP {response.status_code}", answered=True, status=response.status_code
+        )
     kind = response.headers.get("content-type", "").split(";")[0].strip().lower()
     if kind != "application/json":
         raise OverridesError(f"GET {PATH}: not JSON")
     return parse(response.content)
+
+
+CLOUDFLARE_API: Final = "https://api.cloudflare.com/client/v4"
+WORKER: Final = "snowlight-api"
+_SUBDOMAIN: Final = re.compile(r"[a-z0-9](?:[a-z0-9-]*[a-z0-9])?")
+RETRY_PAUSE: Final = 10.0
+
+
+@dataclass(slots=True)
+class ApiRoot:
+    """Where the reader reads the admin's statuses: live-ingest.yml's check job, in Python.
+
+    * ``SNOWLIGHT_API_ROOT`` when set (an https URL, :func:`api_url`'s rules);
+    * else, with the Cloudflare secrets, the account's workers.dev subdomain and its
+      ``snowlight-api`` Worker: ``https://snowlight-api.<subdomain>.workers.dev/``;
+    * no root, no secrets, no subdomain or no such Worker: **no API**, and no overrides
+      (:meth:`find` gives ``None``). A Cloudflare API that does not answer well is an error
+      (:class:`OverridesError`): the pass is refused, so nothing is dropped on a blip. A found
+      root is kept for the process.
+    """
+
+    env: Mapping[str, str]
+    client: httpx.Client
+    _found: str | None = None
+    _known: bool = False
+
+    def find(self) -> str | None:
+        """The API root, or ``None`` when there is no API.
+
+        Raises:
+            OverridesError: the root is malformed, or the Cloudflare API answered badly.
+        """
+        if self._known:
+            return self._found
+        named = self.env.get("SNOWLIGHT_API_ROOT", "").strip()
+        if named:
+            api_url(named)
+            return self._keep(named)
+        token = self.env.get("CLOUDFLARE_API_TOKEN", "")
+        account = self.env.get("CLOUDFLARE_ACCOUNT_ID", "")
+        if not token or not account:
+            return self._keep(None)
+        base = f"{self.env.get('CLOUDFLARE_API_URL') or CLOUDFLARE_API}/accounts/{account}/workers"
+        sub = self._get(f"{base}/subdomain", token).get("result")
+        name = sub.get("subdomain") if isinstance(sub, dict) else None
+        if not name:
+            return self._keep(None)
+        if not isinstance(name, str) or not _SUBDOMAIN.fullmatch(name):
+            raise OverridesError("the Cloudflare API gave a subdomain that is not a name")
+        scripts = self._get(f"{base}/scripts", token).get("result")
+        if not isinstance(scripts, list):
+            raise OverridesError("the Cloudflare API did not list the Workers")
+        if not any(isinstance(item, dict) and item.get("id") == WORKER for item in scripts):
+            return self._keep(None)
+        return self._keep(f"https://{WORKER}.{name}.workers.dev/")
+
+    def _keep(self, root: str | None) -> str | None:
+        self._found, self._known = root, True
+        return root
+
+    def _get(self, url: str, token: str) -> dict[str, object]:
+        try:
+            response = self.client.get(
+                url, headers={"Authorization": f"Bearer {token}"}, timeout=TIMEOUT
+            )
+            body = response.json()
+        except (httpx.HTTPError, ValueError) as error:
+            raise OverridesError(f"the Cloudflare API: {type(error).__name__}") from error
+        if response.status_code != httpx.codes.OK or not isinstance(body, dict):
+            raise OverridesError(f"the Cloudflare API: HTTP {response.status_code}")
+        if body.get("success") is not True:
+            raise OverridesError("the Cloudflare API: not a success")
+        return body
+
+
+def fetch_live(
+    client: httpx.Client,
+    root: str,
+    *,
+    pause: float = RETRY_PAUSE,
+    sleep: Callable[[float], None] = time.sleep,
+) -> tuple[Override, ...]:
+    """:func:`fetch` as the check job asks: a 404, a 5xx or no answer is asked again once,
+    ``pause`` seconds later; a 404 twice is no API deployed (no overrides).
+
+    Raises:
+        OverridesError: any other answer that is not a well-formed list.
+    """
+    for attempt in range(2):
+        try:
+            return fetch(client, root)
+        except OverridesError as error:
+            if not error.answered:
+                raise
+            status = error.status
+            again = status is None or status == httpx.codes.NOT_FOUND or status >= 500  # noqa: PLR2004
+            if attempt == 0 and again:
+                sleep(pause)
+                continue
+            if status == httpx.codes.NOT_FOUND:
+                return ()
+            raise
+    return ()  # pragma: no cover - the loop always returns or raises
 
 
 def zone_table(path: Path | None = None) -> dict[str, str]:

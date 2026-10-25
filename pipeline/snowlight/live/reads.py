@@ -23,7 +23,7 @@ or ``deferred`` (:func:`pool_read`).
 """
 
 import logging
-from collections.abc import Callable, Sequence
+from collections.abc import Callable, Mapping, Sequence
 from dataclasses import dataclass
 from datetime import UTC, datetime
 from http import HTTPStatus
@@ -53,6 +53,7 @@ from snowlight.sources.stations.model import HealthStatus
 from snowlight.sources.stations.registry import Registry, Station
 
 LOG: Final = logging.getLogger(__name__)
+PACER_FILE: Final = "pacer.json"
 _BLOCKED: Final = frozenset({HTTPStatus.FORBIDDEN, HTTPStatus.UNAUTHORIZED})
 
 type Tick = Callable[[], None]
@@ -159,19 +160,28 @@ def live_pool(
     log: RequestLog | None = None,
     http: httpx.Client | None = None,
 ) -> Pool:
-    """The pool of one process: one HTTP connection pool, pacer, robots store (kept in
-    ``state_dir/robots.json``) and conditional store shared by every worker's client."""
-    shared = http or make_client()
+    """The pool of one process: one HTTP connection pool (keeping no idle connection, so
+    every request's deadline can cut it), pacer (seeded from and kept in
+    ``state_dir/pacer.json``), robots store (kept in ``state_dir/robots.json``) and
+    conditional store shared by every worker's client."""
+    shared = http or make_client(keepalive=False)
     store = ConditionalStore(cache_dir)
     robots = RobotsStore(state_dir / "robots.json")
     pacer = HostPacer(log=log)
+    pacer.load(state_dir / PACER_FILE, datetime.now(UTC))
 
     def client() -> PoliteClient:
         return PoliteClient(
             shared, store, attempts=LIVE_ATTEMPTS, pacer=pacer, robots=robots, pace_key=pace_key
         )
 
-    return Pool(client=client, robots=robots, workers=workers)
+    return Pool(
+        client=client,
+        robots=robots,
+        workers=workers,
+        pacer=pacer,
+        pacer_path=state_dir / PACER_FILE,
+    )
 
 
 @dataclass(slots=True)
@@ -187,6 +197,9 @@ class LiveReads:
     ingest: Ingest | None = None
     reader: Callable[[Registry, Station, PoliteClient, datetime], RunResult] = read_station
     """Reads one station (S4's reader; tests replace it)."""
+    on_holds: Callable[[Sequence[tuple[str, datetime, str]]], None] | None = None
+    """Told at once of each source a pass newly blocked or deferred ``(id, until, why)``, so
+    the state database keeps it even if this process dies before its next push."""
 
     def __call__(self, now: datetime, only: Sequence[str], tick: Tick) -> Sequence[SourceRead]:
         if only:
@@ -207,7 +220,9 @@ class LiveReads:
             return reader(registry, station, client, whole)
 
         result = self.pool.run_pass(due, read, alerted=self.cadence.in_alert, tick=tick)
+        before = {sid: clock.not_before for sid, clock in self.cadence.clocks.items()}
         keep_pass(self.cadence, result)
+        self._tell_holds(before)
         if self.ingest is not None:
             self.ingest.due = self.cadence.recently_due(now)
         found = []
@@ -220,6 +235,19 @@ class LiveReads:
             if read_one is not None:
                 found.append(read_one)
         return found
+
+    def _tell_holds(self, before: Mapping[str, datetime | None]) -> None:
+        if self.on_holds is None:
+            return
+        found = [
+            (sid, clock.not_before, clock.outcome.value)
+            for sid, clock in sorted(self.cadence.clocks.items())
+            if clock.not_before is not None
+            and clock.outcome in {Outcome.BLOCKED, Outcome.DEFERRED}
+            and before.get(sid) != clock.not_before
+        ]
+        if found:
+            self.on_holds(found)
 
 
 ALERTS_DEADLINE: Final = 30.0

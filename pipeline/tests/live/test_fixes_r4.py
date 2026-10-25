@@ -117,21 +117,20 @@ def test_unchanged_files_go_up_on_every_grid_pass_whatever_the_reads_take(
     assert max(b - a for a, b in pairwise(uploads)) <= timedelta(minutes=5, seconds=50)
 
 
-def test_the_heartbeat_skips_only_a_pass_started_well_inside_the_interval(
+def test_live_once_always_uploads(
     tmp_path: Path, server: Server, clock: Clock, rig: Rig, monkeypatch: pytest.MonkeyPatch
 ) -> None:
+    # S8-E: ``live once`` (local and tests only) always uploads; the off-grid skip of an
+    # unchanged pass under 4 minutes after the last upload is the loop's (test_handoff_gaps).
     loaders = _loaders(rig, clock)
     common = _common(tmp_path, server)
     assert _run(["live", "once", *common], loaders, monkeypatch) == 0
     first = server.objects[CLOSINGS_PATH]
     _again(rig, clock, MORNING + timedelta(minutes=2))  # a pass two minutes on: unchanged
     assert _run(["live", "once", *common], loaders, monkeypatch) == 0
-    assert server.objects[CLOSINGS_PATH] == first
-    memory = json.loads((tmp_path / "state" / "publish.json").read_text(encoding="utf-8"))
-    assert memory["last_upload_pass"] == MORNING.isoformat()
-    _again(rig, clock, MORNING + timedelta(minutes=4, seconds=30))  # within the slack
-    assert _run(["live", "once", *common], loaders, monkeypatch) == 0
     assert server.objects[CLOSINGS_PATH] != first
+    memory = json.loads((tmp_path / "state" / "publish.v1-shadow.json").read_text(encoding="utf-8"))
+    assert memory["last_upload_pass"] == (MORNING + timedelta(minutes=2)).isoformat()
 
 
 # --- B2 (data): a successor continues a day only from a file built on its content ------------
@@ -209,7 +208,9 @@ def test_a_blank_between_passes_alerts_is_recorded_and_pushed(  # noqa: PLR0913,
         _loaders(rig, clock), clock, lambda: rig.edition.__setitem__(slice(None), [OTHER])
     )
     common = _common(tmp_path, server)
-    code = _run(["live", "run", *common, "--push", "--until", "+20m"], loaders, monkeypatch)
+    code = _run(
+        ["live", "run", *common, "--push-every", "30", "--until", "+20m"], loaders, monkeypatch
+    )
     out = capsys.readouterr().out
     blank = next(line for line in out.splitlines() if "; blank;" in line)
     assert blank.startswith("exit 3: refusals edition")
@@ -243,10 +244,12 @@ def test_an_unverified_deployment_between_passes_alerts_without_a_blank(  # noqa
     ingest = rig.ingests[-1]
     expired = EditionVerdict(EditionState.UNREADABLE, MORNING, note="Synthetic: down", alert=True)
     monkeypatch.setattr(Ingest, "check_edition", lambda _self, _now: expired)
-    state = live_cli._Loop(due=MORNING + timedelta(minutes=5), next_check=MORNING)
-    args = argparse.Namespace(push=False)
+    args = argparse.Namespace(push=False, state=tmp_path / "state", internal=tmp_path / "internal")
     config = live_cli.LiveConfig.load(Path(common[1]))
-    assert live_cli._loop_check((args, config, {}, loaders), ingest, MORNING, state) is None
+    runner = live_cli.Runner(args, config, {}, live_cli.Parts(ingest, lambda *_: ()), loaders)
+    runner.state = live_cli._Loop(due=MORNING + timedelta(minutes=5), next_check=MORNING)
+    runner.loop_check(MORNING)
+    assert runner.state.stop is None
     assert "ALERT edition: unreadable; Synthetic: down" in capsys.readouterr().out
     health = json.loads((tmp_path / "internal" / "health.json").read_text(encoding="utf-8"))
     assert health["check"]["alert"] is True
@@ -300,22 +303,30 @@ def test_a_blank_refused_for_the_clock_is_tried_again(  # noqa: PLR0913, PLR0917
     assert "refusals edition,clock_ahead" in out
     assert "trying again at the next check" in out
     assert _lit(server) == set()  # it landed once the clock allowed
-    assert code == 1
+    assert code == 3  # S8-E: only a blank that keeps failing is an exit 1
 
 
-def test_a_stop_after_a_failed_push_exits_1(
-    tmp_path: Path, server: Server, clock: Clock, rig: Rig, monkeypatch: pytest.MonkeyPatch
+def test_a_failed_push_in_the_loop_is_not_an_exit_1(  # noqa: PLR0913, PLR0917 - pytest fixtures
+    tmp_path: Path,
+    server: Server,
+    clock: Clock,
+    rig: Rig,
+    monkeypatch: pytest.MonkeyPatch,
+    capsys: pytest.CaptureFixture[str],
 ) -> None:
+    # S8-E: a push that fails in the loop is tried again at the next slot; only the end
+    # step's push failing is a persistent failure (that process exits 1).
     (tmp_path / "store").write_text("not a folder", encoding="utf-8")  # every push fails
     loaders = _switch_after_first_sleep(
         _loaders(rig, clock), clock, lambda: rig.edition.__setitem__(slice(None), [OTHER])
     )
     code = _run(
-        ["live", "run", *_common(tmp_path, server), "--push", "--until", "+20m"],
+        ["live", "run", *_common(tmp_path, server), "--push-every", "30", "--until", "+20m"],
         loaders,
         monkeypatch,
     )
-    assert code == 1
+    assert code == 3
+    assert "ALERT state push failed" in capsys.readouterr().out
 
 
 # --- S3 (operations): a hold that cannot be read after an upload counts as set ---------------
@@ -375,12 +386,12 @@ def test_unknown_hold_blanks_only_its_own_prefix(
     asked: list[Sequence[str]] = []
 
     def blank(_self: LivePublisher, **kwargs: object) -> PassReport:
-        asked.append(kwargs["prefixes"])  # type: ignore[arg-type]
+        asked.append(kwargs.get("prefixes", ("own",)))  # type: ignore[arg-type]
         return PassReport(publish_module.Exit.OK, MORNING, blank=True)
 
     monkeypatch.setattr(LivePublisher, "blank", blank)
     report = publisher._unknown_hold(MORNING, {})
-    assert asked == [("v1-shadow",)]
+    assert asked == [("own",)]  # the default: the mode's own prefix only
     assert report.exit is publish_module.Exit.ERROR
     assert report.alert
 
@@ -404,11 +415,15 @@ def test_release_reports_any_error_as_a_line(  # noqa: PLR0913, PLR0917
     clock: Clock,
     rig: Rig,
 ) -> None:
-    def broken(_host: object, _now: datetime) -> PassReport:
+    def broken(_host: object, _now: datetime, _prefixes: object) -> PassReport:
         raise PermissionError(13, "Synthetic permission denied", "/synthetic/hold.json")
 
     monkeypatch.setattr(live_cli, "release", broken)
-    code = _run(["live", "release", *_common(tmp_path, server)], _loaders(rig, clock), monkeypatch)
+    code = _run(
+        ["live", "release", "--prefix", "every", *_common(tmp_path, server)],
+        _loaders(rig, clock),
+        monkeypatch,
+    )
     err = capsys.readouterr().err
     assert code == 1
     assert "error: release: PermissionError" in err

@@ -2,7 +2,8 @@
 # Secrets never live here: they come from the environment (see docs/live.md).
 #
 # LIVE_PUBLISH (environment) chooses where files go: on (v1/), shadow (v1-shadow/), off.
-# It defaults to shadow: nothing reaches the live root until the owner says go.
+# It is read as Actions compares strings (case ignored); unset or any other value is shadow:
+# nothing reaches the live root until the owner says go.
 
 host:
   # github: commit the files to a Pages repository (owner decision Q1, for now).
@@ -19,15 +20,22 @@ host:
   folder: out/internal/live/host
 
 state:
-  # local: a folder (the box). cache: the Actions cache folder (never the unmatched
-  # queue). bucket: a private R2 bucket.
-  kind: local
-  folder: out/internal/live/store
+  # d1: the private D1 database of the owner's Cloudflare account, over the Cloudflare API
+  # (live-read.yml; snowlight/live/d1.py). Its daily write cap (30,000 rows, hourly pushes
+  # past 20,000) is in d1.py. local: a folder (the box, tests). bucket: a private R2 bucket.
+  # Only the export (snowlight live state export) ever goes to the Actions cache.
+  kind: d1
+  database: snowlight-live-state
+  # local only:
+  folder: out/internal/live/box
+  # bucket only:
   endpoint: null
   bucket: snowlight-live-state
 
 site: https://snowlightmap.com
 site_repository: viaate/jsalcards
 pass_minutes: 5
+# The loop pushes its state in idle time on this slot (live-read.yml passes --push-every 30).
+push_every_minutes: 30
 edition_check_seconds: 60
 edition_max_wait_seconds: 120

@@ -258,7 +258,7 @@ def test_blank_holds_every_later_pass_dark_until_release(
     # released: the next pass lights the map again from rows the source still lists; the
     # timeline leaves out what the hold darkened and shows the statuses from the release on
     # (round 2, B1)
-    assert _run(["live", "release", *common], loaders, monkeypatch) == 0
+    assert _run(["live", "release", "--prefix", "every", *common], loaders, monkeypatch) == 0
     _again(rig, clock, clock.now + timedelta(minutes=5))
     assert _run(["live", "once", *common], loaders, monkeypatch) == 0
     assert _lit(server) == {(0, "CLOSED"), (7, "DELAYED")}
@@ -295,7 +295,7 @@ def test_a_host_error_in_blank_exits_1(
     assert _run(["live", "once", *common], loaders, monkeypatch) == 0
     server.fail_puts = True
     assert _run(["live", "blank", *common], loaders, monkeypatch) == 1
-    assert _run(["live", "release", *common], loaders, monkeypatch) == 1
+    assert _run(["live", "release", "--prefix", "every", *common], loaders, monkeypatch) == 1
 
 
 def test_a_hold_logs_a_western_school_dark_not_expired(tmp_path: Path) -> None:
@@ -450,7 +450,7 @@ def test_a_torn_change_log_line_is_skipped_and_dropped(  # noqa: PLR0913, PLR091
     log.write_bytes(data + data.splitlines()[0][:40])  # a killed append
     clock.now = MORNING + timedelta(minutes=2)
     assert _run(["live", "blank", *common], loaders, monkeypatch) == 0
-    assert _run(["live", "release", *common], loaders, monkeypatch) == 0
+    assert _run(["live", "release", "--prefix", "every", *common], loaders, monkeypatch) == 0
     _again(rig, clock, MORNING + timedelta(minutes=5))
     with caplog.at_level(logging.WARNING):
         assert _run(["live", "once", *common], loaders, monkeypatch) == 0
@@ -508,7 +508,7 @@ def test_one_failed_pass_never_ends_the_loop(  # noqa: PLR0913, PLR0917 - pytest
         replace(loaders, parts=parts),
         monkeypatch,
     )
-    assert code == 1  # the worst pass's exit (round 2, operations S4)
+    assert code == 3  # S8-E: one failed pass is not a persistent failure (3 in a row are)
     assert calls["n"] == 4  # 11:05, 11:10 (failed), 11:15, 11:20
     out = capsys.readouterr()
     assert "ValueError" in out.err
@@ -617,7 +617,8 @@ def test_a_failed_edition_read_at_start_does_not_end_the_loop(
         ["live", "run", "--until", "+60m", *_common(tmp_path, server)], loaders, monkeypatch
     )
     assert code == 3  # the first pass was refused (round 2: the worst pass's exit)
-    assert clock.now - start >= timedelta(minutes=60)
+    # S8-E: the run went on to its last grid pass before the limit (12:00), then ended
+    assert clock.now - start >= timedelta(minutes=55)
     assert _lit(server) == {(0, "CLOSED"), (7, "DELAYED")}
 
 
@@ -671,13 +672,13 @@ def test_a_restamp_between_passes_publishes_the_new_stamp_at_once(
     restamped = OWN.model_copy(update={"generated_on": date(2026, 11, 17)})
     timed = Timed(clock, MORNING + timedelta(seconds=90), OWN, restamped)
     loaders = _timed(rig, clock, timed)
-    code = _run(
-        ["live", "run", "--until", "+2.5m", *_common(tmp_path, server)], loaders, monkeypatch
-    )
+    # S8-E: a run ends after its last grid pass before the limit, so it runs to 11:10
+    code = _run(["live", "run", "--until", "+6m", *_common(tmp_path, server)], loaders, monkeypatch)
     assert code == 0
     found = ClosingsFile.from_json_bytes(server.objects[CLOSINGS_PATH])
     assert found.directory == restamped.stamp()
-    assert found.generated_at < MORNING + timedelta(minutes=3)  # not at the 11:10 pass
+    # 11:05, the restamp pass at once (11:06:30, not at the 11:10 pass), then 11:10
+    assert [path for path in server.puts if path == CLOSINGS_PATH] == [CLOSINGS_PATH] * 3
 
 
 def test_the_handshake_runs_while_a_long_pass_reads(

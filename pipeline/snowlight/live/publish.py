@@ -101,7 +101,7 @@ from snowlight.live.history import (
     seed_changes,
     timeline,
 )
-from snowlight.live.merge import Merged, OpenSignal
+from snowlight.live.merge import AdminStatus, Merged, OpenSignal, with_overrides
 from snowlight.live.publishers import (
     GuardRefusedError,
     Publisher,
@@ -131,6 +131,10 @@ OPENS: Final = "live/opens.json"
 DAYS: Final = "live/days/index.json"
 HOLD: Final = "live/hold.json"
 PREFIXES: Final = ("v1", "v1-shadow")
+"""The prefixes the modes write (``on`` and ``shadow``), and the owner's ``every``."""
+REHEARSE: Final = "v1-rehearse"
+"""The switch drill's prefix (E8, ``live rehearse``): never a mode's, never read by anything."""
+WRITABLE: Final = (*PREFIXES, REHEARSE)
 REFUSALS_TO_ALERT: Final = 2
 CLOCK_SLACK: Final = timedelta(seconds=60)
 REDACTED: Final = "redacted"
@@ -159,6 +163,13 @@ class Exit(IntEnum):
     """A host or encoding error: nothing is known to be published."""
     REFUSED = 3
     """The gate refused: nothing was uploaded."""
+
+
+def memory_name(mode: Mode, *, rehearse: bool = False) -> str:
+    """The publisher's memory file of ``mode`` (see :attr:`LivePublisher.memory_path`), or of
+    the switch drill's prefix."""
+    prefix = REHEARSE if rehearse else mode.prefix or "off"
+    return "publish.json" if prefix == "v1" else f"publish.{prefix}.json"
 
 
 def day_path(day: date) -> str:
@@ -238,6 +249,16 @@ def _read_closings(host: Publisher, prefix: str) -> ClosingsFile | None:
         return None
 
 
+def _after_the_log(public: Sequence[Change], logged: Sequence[Change]) -> list[Change]:
+    """The changes of a public timeline later than the log's last minute of that day (the
+    timeline keeps whole minutes): what a run whose log this one never got published."""
+    newest = max((change.at for change in logged), default=None)
+    if newest is None:
+        return list(public)
+    minute = newest.astimezone(UTC).replace(second=0, microsecond=0)
+    return [change for change in public if change.at.astimezone(UTC) > minute]
+
+
 def _listed_days(host: Publisher, prefix: str) -> set[date]:
     data = host.read(f"{prefix}/{DAYS}")
     if data is None:
@@ -295,10 +316,12 @@ def _ahead(generated_at: datetime, host: Publisher, now: datetime) -> bool:
     return generated_at > reference + CLOCK_SLACK
 
 
-def emergency_blank(host: Publisher, now: datetime) -> "PassReport":
-    """``snowlight live blank``: set the hold in every prefix (first, in a write of its own,
-    so it stands whatever happens next), then blank every public closings file under its
-    own stamp, with the day timelines its index lists emptied.
+def emergency_blank(
+    host: Publisher, now: datetime, prefixes: Sequence[str] = PREFIXES
+) -> "PassReport":
+    """``snowlight live blank``: set the hold in every prefix (or only ``prefixes``; first,
+    in a write of its own, so it stands whatever happens next), then blank every public
+    closings file there under its own stamp, with the day timelines its index lists emptied.
 
     It ignores ``LIVE_PUBLISH`` and touches no private state (a running ingest records
     the statuses going dark when it reads the hold, and blanks a file it finds lit while
@@ -311,9 +334,11 @@ def emergency_blank(host: Publisher, now: datetime) -> "PassReport":
         f"{prefix}/{HOLD}": LiveHold(
             schema_version=1, held=True, at=stamped, held_at=stamped
         ).to_json_bytes()
-        for prefix in PREFIXES
+        for prefix in prefixes
     }
+    names = " ".join(prefixes)
     try:
+        _say_commit(host, f"live-blank {names} hold {_stamp_text(stamped)}")
         host.write(holds)
     except PublishError as error:
         LOG.error("hold: %s", error)
@@ -322,7 +347,7 @@ def emergency_blank(host: Publisher, now: datetime) -> "PassReport":
     blanked: list[str] = []
     ahead: list[str] = []
     try:
-        for prefix in PREFIXES:
+        for prefix in prefixes:
             remote = _read_closings(host, prefix)
             if remote is None:
                 continue
@@ -335,13 +360,14 @@ def emergency_blank(host: Publisher, now: datetime) -> "PassReport":
             files.update({f"{prefix}/{path}": body for path, body in made.items()})
             blanked.append(prefix)
         if files:
+            _say_commit(host, f"live-blank {' '.join(blanked)} blank {_stamp_text(stamped)}")
             host.write(files)
     except PublishError as error:
         LOG.error("blank: %s", error)
-        note = f"held in {len(PREFIXES)} prefixes; the blank failed: {error}"
+        note = f"held in {len(prefixes)} prefixes; the blank failed: {error}"
         return PassReport(Exit.ERROR, stamped, uploaded=tuple(holds), blank=True, note=note)
     done = ", ".join(blanked) or "none (nothing published)"
-    note = f"held in {len(PREFIXES)} prefixes; blanked {done}"
+    note = f"held in {len(prefixes)} prefixes; blanked {done}"
     uploaded = (*holds, *files)
     if ahead:
         note += f"; not blanked (ahead of the host's clock): {', '.join(ahead)}"
@@ -356,6 +382,17 @@ def emergency_blank(host: Publisher, now: datetime) -> "PassReport":
     return PassReport(Exit.OK, stamped, uploaded=uploaded, blank=True, note=note)
 
 
+def _stamp_text(moment: datetime) -> str:
+    return moment.astimezone(UTC).strftime("%Y-%m-%dT%H:%M:%SZ")
+
+
+def _say_commit(host: Publisher, text: str) -> None:
+    """The next write's commit message, on a host that takes one (the owner's stop says it
+    is the owner's: ``live-blank ...``, never a reader pass)."""
+    if hasattr(host, "message"):
+        host.message = text
+
+
 def holds(data: bytes | None) -> bool:
     """Whether a hold file's bytes hold the map dark (one that does not read does)."""
     if data is None:
@@ -366,12 +403,16 @@ def holds(data: bytes | None) -> bool:
         return True
 
 
-def release(host: Publisher, now: datetime) -> "PassReport":
-    """``snowlight live release``: clear the hold in every prefix (the next pass publishes)."""
+def release(host: Publisher, now: datetime, prefixes: Sequence[str]) -> "PassReport":
+    """``snowlight live release``: clear the hold in ``prefixes`` (the next pass there
+    publishes). The caller names them (``--prefix`` is required): a release never clears a
+    prefix the caller did not mean."""
     stamped = _whole(now)
+    if not prefixes or any(prefix not in WRITABLE for prefix in prefixes):
+        return PassReport(Exit.ERROR, stamped, note="release: name the prefixes to release")
     try:
         files = {}
-        for prefix in PREFIXES:
+        for prefix in prefixes:
             before = read_hold(host, prefix, now)
             files[f"{prefix}/{HOLD}"] = LiveHold(
                 schema_version=1,
@@ -379,6 +420,7 @@ def release(host: Publisher, now: datetime) -> "PassReport":
                 at=stamped,
                 held_at=None if before is None else before.held_at,
             ).to_json_bytes()
+        _say_commit(host, f"live-blank {' '.join(prefixes)} release {_stamp_text(stamped)}")
         host.write(files)
     except PublishError as error:
         LOG.error("release: %s", error)
@@ -418,6 +460,11 @@ class Memory:
     """The start of the last hold this process recorded (each hold is recorded once)."""
     redacted: frozenset[tuple[str, str]] = frozenset()
     """The school-days (NCES id, day) a hold darkened, until their day is over."""
+    last_edition_sha: str | None = None
+    """The directory content sha256 the last upload was made against (code ahead of the
+    deploy is told from a deploy that moved under a public stamp by it)."""
+    last_admin: str | None = None
+    """The digest of the admin's statuses in the last upload (the G12b/G12e exception)."""
 
     def to_json(self) -> dict[str, JSONValue]:
         def when(moment: datetime | None) -> str | None:
@@ -443,6 +490,8 @@ class Memory:
             },
             "hold_seen": when(self.hold_seen),
             "redacted": [[nces_id, day] for nces_id, day in sorted(self.redacted)],
+            "last_edition_sha": self.last_edition_sha,
+            "last_admin": self.last_admin,
         }
 
     @classmethod
@@ -487,6 +536,8 @@ class Memory:
                 redacted=frozenset(
                     (str(nces_id), str(day)) for nces_id, day in data.get("redacted", [])
                 ),
+                last_edition_sha=_text(data.get("last_edition_sha")),
+                last_admin=_text(data.get("last_admin")),
             )
         except (KeyError, TypeError, ValueError) as error:
             raise ValueError(f"{path.name} is not the publisher's memory") from error
@@ -532,6 +583,10 @@ class PassReport:
 
 def _never(_school: int) -> bool:
     return False
+
+
+def _text(value: object) -> str | None:
+    return None if value is None else str(value)
 
 
 def _whole(moment: datetime) -> datetime:
@@ -602,6 +657,54 @@ def opens_file(
     )
 
 
+@dataclass(frozen=True, slots=True)
+class PassSummary:
+    """What a reader upload's commit message says (counts and times only): the public
+    record of each pass on the host, which the soak report reads."""
+
+    start: datetime
+    run_id: str
+    sweep_seconds: float
+    due: int
+    good: int
+    state_bytes: int
+
+    def message(self, prefix: str, lit: int) -> str:
+        start = self.start.astimezone(UTC).strftime("%Y-%m-%dT%H:%M:%SZ")
+        return (
+            f"live {prefix} pass {start} run {self.run_id} sweep {round(self.sweep_seconds)}"
+            f" due {self.due} good {self.good} lit {lit} state {self.state_bytes}"
+        )
+
+
+@dataclass(frozen=True, slots=True)
+class AdminPart:
+    """The admin's statuses a pass merged on top of the lists, and their digest (the
+    G12b/G12e exception publishes them alone when they changed)."""
+
+    statuses: tuple[AdminStatus, ...]
+
+    @property
+    def digest(self) -> str:
+        rows = sorted(
+            (
+                status.school,
+                status.day.isoformat(),
+                None if status.status is None else int(status.status),
+                status.shift_minutes,
+                status.clock_minute,
+                status.level,
+                status.key,
+            )
+            for status in self.statuses
+        )
+        return hashlib.sha256(json.dumps(rows).encode()).hexdigest()
+
+
+ADMIN_ONLY: Final = frozenset({Refusal.HEALTH.value, Refusal.SPIKE_HOLD.value})
+"""The refusals the admin's statuses do not wait for (go-live item, ops 14)."""
+
+
 @dataclass(slots=True)
 class LivePublisher:
     """Publishes one pass's statuses through the gate (see the module)."""
@@ -614,6 +717,16 @@ class LivePublisher:
     """The private output folder: ``provenance.jsonl`` (the last publish's)."""
     mode: Mode = Mode.SHADOW
     heartbeat: timedelta = HEARTBEAT
+    rehearse: bool = False
+    """The switch drill (E8): write :data:`REHEARSE` whatever the mode, which keeps its rules
+    (``on``'s, there)."""
+    reader: bool = True
+    """``False`` for live-ingest's overrides job, which publishes ``v1`` exactly as before the
+    reader: :meth:`_seed` takes in only days its change log has no file for (no catch-up of
+    a recent day from the public timeline), and a blank keeps the host's default commit
+    message."""
+    summary: PassSummary | None = None
+    """The pass this publish belongs to (its commit message on a host that takes one)."""
     memory: Memory = field(init=False)
     changes: ChangeLog = field(init=False)
     _days: dict[str, DayRecord] = field(init=False, default_factory=dict)
@@ -625,10 +738,19 @@ class LivePublisher:
 
     @property
     def memory_path(self) -> Path:
-        return self.state_dir / "publish.json"
+        """``publish.json`` for ``v1`` (the overrides job's memory, as before), and
+        ``publish.<prefix>.json`` for every other mode, so each prefix reads back its own
+        memory after a mode change."""
+        return self.state_dir / memory_name(self.mode, rehearse=self.rehearse)
+
+    @property
+    def prefix(self) -> str | None:
+        """Where this publisher writes: the mode's prefix (none while publishing is off), or
+        :data:`REHEARSE` in the switch drill."""
+        return REHEARSE if self.rehearse else self.mode.prefix
 
     def key(self, path: str) -> str | None:
-        prefix = self.mode.prefix
+        prefix = self.prefix
         return None if prefix is None else f"{prefix}/{path}"
 
     def read_back(self) -> ClosingsFile | None:
@@ -637,7 +759,7 @@ class LivePublisher:
         Raises:
             PublishError: the host could not be read.
         """
-        prefix = self.mode.prefix
+        prefix = self.prefix
         return None if prefix is None else _read_closings(self.host, prefix)
 
     def public_stamps(self) -> tuple[tuple[DirectoryStamp, ...], bool]:
@@ -691,10 +813,15 @@ class LivePublisher:
         edition: EditionVerdict,
         alerted: Callable[[int], bool] = _never,
         started: datetime | None = None,
+        always: bool = False,
+        admin: AdminPart | None = None,
     ) -> PassReport:
         """Run the gate on one pass's merge and publish when it passes. ``started`` is when
         the pass began (before its reads; ``now`` when not given): the heartbeat is measured
-        on it."""
+        on it. ``always``: upload even when nothing changed (a grid pass, ``live once``).
+        ``admin``: the admin's statuses ``merged`` holds; when the gate refuses for health
+        (G12b) or the spike hold (G12e) alone and they changed since the last upload, they are
+        published on the last published list rows (:meth:`_admin_only`)."""
         generated_at = _whole(now)
         if edition.wants_blank:
             return self.edition_blank(edition, now=now)
@@ -729,7 +856,7 @@ class LivePublisher:
                 valid = False
             else:
                 gzip_bytes = len(gzip.compress(files[CLOSINGS], mtime=0))
-                digest = f"{self.mode.prefix}:{content_digest(stamp, merged.closings, opens.opens)}"
+                digest = f"{self.prefix}:{content_digest(stamp, merged.closings, opens.opens)}"
                 lit_now = frozenset(
                     (closing.school, closing.day.isoformat()) for closing in merged.closings
                 )
@@ -768,6 +895,14 @@ class LivePublisher:
         }
         if refusals or stamp is None:
             codes = tuple(refusal.value for refusal in refusals)
+            if (
+                admin is not None
+                and stamp is not None
+                and set(codes) <= ADMIN_ONLY
+                and admin.digest != memory.last_admin
+                and self.mode is not Mode.OFF
+            ):
+                return self._admin_only(admin, stamp=stamp, now=now, last=last, codes=codes)
             return self._refuse(codes, generated_at, counts, alert=edition.alert)
         memory.refused_streak = 0
         if self.mode is Mode.OFF:
@@ -775,7 +910,8 @@ class LivePublisher:
             return PassReport(Exit.OK, generated_at, note="publishing is off", counts=counts)
         began = now if started is None else started
         if (
-            digest == memory.last_content
+            not always
+            and digest == memory.last_content
             and memory.last_upload_pass is not None
             and timedelta(0) <= began - memory.last_upload_pass < self.heartbeat - PASS_SLACK
         ):
@@ -795,6 +931,118 @@ class LivePublisher:
             lit=lit_now,
             provenance=merged.provenance,
             counts=counts,
+            admin=None if admin is None else admin.digest,
+        )
+
+    def _admin_only(
+        self,
+        admin: AdminPart,
+        *,
+        stamp: DirectoryStamp,
+        now: datetime,
+        last: datetime | None,
+        codes: tuple[str, ...],
+    ) -> PassReport:
+        """The gate refused for health or the spike hold alone, and the admin's statuses
+        changed: publish the last published list rows unchanged with the new statuses on
+        top, under ``generated_at`` = the last published + 1 s, so the file's age stays the
+        list's age (the page says "Updated" as it would). A status set after that moment
+        shows no "Posted" time (it cannot be dated after the file). Opens from the lists are
+        left out (they never light a school). Every other check of the gate still runs."""
+        generated_at = _whole(now) if last is None else last + timedelta(seconds=1)
+        try:
+            remote = self.read_back()
+        except PublishError as error:
+            LOG.error("read back: %s", error)
+            return PassReport(Exit.ERROR, _whole(now), note=f"read back: {error}")
+        ids = {school.index: nces_id for nces_id, school in self.directory.schools.items()}
+        kept = [
+            row
+            for row in (
+                remote.closings() if remote is not None and remote.directory == stamp else ()
+            )
+            if not row.manual and row.school in ids
+        ]
+        base = Merged(
+            closings=tuple(kept),
+            opens=(),
+            provenance=tuple(
+                {"school": row.school, "nces_id": ids[row.school], "source_type": "kept"}
+                for row in kept
+            ),
+            withheld={},
+            breakers=(),
+            fast_vanishes=(),
+        )
+        late = {
+            (status.school, status.day) for status in admin.statuses if status.set_at > generated_at
+        }
+        statuses = [
+            replace(status, set_at=min(status.set_at, generated_at)) for status in admin.statuses
+        ]
+        merged = with_overrides(base, statuses, generated_at)
+        merged = replace(
+            merged,
+            closings=tuple(
+                replace(closing, announced_at=None)
+                if closing.manual and (closing.school, closing.day) in late
+                else closing
+                for closing in merged.closings
+            ),
+        )
+        try:
+            closings = ClosingsFile.encode(
+                merged.closings, generated_at=generated_at, directory=stamp
+            )
+            opens = opens_file(
+                merged.opens, merged.closings, generated_at=generated_at, stamp=stamp
+            )
+        except (ValidationError, ValueError) as error:
+            LOG.error("the admin's file does not validate: %s", type(error).__name__)
+            return self._refuse((*codes, Refusal.INVALID.value), _whole(now), {})
+        files = {CLOSINGS: closings.to_json_bytes(), OPENS: opens.to_json_bytes()}
+        gzip_bytes = len(gzip.compress(files[CLOSINGS], mtime=0))
+        refusals = gate_refusals(
+            GateInput(
+                edition_ok=True,
+                healthy_share=1.0,
+                previous_healthy_share=None,
+                generated_at=generated_at,
+                last_published=last,
+                now=self._reference(now),
+                gzip_bytes=gzip_bytes,
+                spike=False,
+                valid=True,
+            )
+        )
+        if refusals:
+            return self._refuse(tuple(refusal.value for refusal in refusals), _whole(now), {})
+        LOG.warning("gate refused (%s): publishing the admin's statuses alone", ", ".join(codes))
+        counts = {"closings": len(merged.closings), "opens": len(merged.opens), "gzip": gzip_bytes}
+        digest = f"{self.prefix}:{content_digest(stamp, merged.closings, opens.opens)}"
+        shown = {
+            (str(line["nces_id"]), closing.day): (Shown.of(closing), _change_fields(line))
+            for closing, line in zip(merged.closings, merged.provenance, strict=True)
+        }
+        report = self._upload(
+            files,
+            shown,
+            began=_whole(now),
+            generated_at=generated_at,
+            stamp=stamp,
+            digest=digest,
+            lit=frozenset((closing.school, closing.day.isoformat()) for closing in merged.closings),
+            provenance=merged.provenance,
+            counts=counts,
+            admin=admin.digest,
+        )
+        self.memory.refused_streak += 1  # the lists stay refused: the alert still counts
+        self.memory.save(self.memory_path)
+        return replace(
+            report,
+            refusals=codes,
+            alert=self.memory.refused_streak >= REFUSALS_TO_ALERT,
+            note="the admin's statuses on the last list rows",
         )
 
     def edition_blank(self, edition: EditionVerdict, *, now: datetime) -> PassReport:
@@ -827,8 +1075,7 @@ class LivePublisher:
         """The hold could not be read after an upload: ``live blank`` may have landed
         during it, so this prefix's files are blanked again at once (a plain blank: the hold
         is recorded once it reads), with the alert, and the pass is an error."""
-        mine = self.mode.prefix
-        report = self.blank(now=now, stamp=None, prefixes=() if mine is None else (mine,))
+        report = self.blank(now=now, stamp=None)
         note = "the hold could not be read after the upload: " + (
             "published blank" if report.exit is Exit.OK else f"the blank failed ({report.note})"
         )
@@ -863,8 +1110,13 @@ class LivePublisher:
             counts=counts,
         )
 
+    def refuse_pass(self, codes: tuple[str, ...], now: datetime) -> PassReport:
+        """Refuse a pass for a reason found before the gate (the admin's statuses could not
+        be read): nothing is uploaded, and it counts toward the alert."""
+        return self._refuse(codes, _whole(now), {})
+
     def _hold(self, now: datetime) -> LiveHold | None:
-        prefix = self.mode.prefix
+        prefix = self.prefix
         return None if prefix is None else read_hold(self.host, prefix, now)
 
     def _keep_held(self, now: datetime) -> PassReport:
@@ -956,18 +1208,28 @@ class LivePublisher:
         starting it again at its own first publish). A file built from other content under
         the same stamp is skipped, with a logged reason: its indexes name other schools.
 
+        A recent day the log has (from yesterday in the far west on) is caught up the same
+        way by a reader (never by the overrides job, :attr:`reader`): the public timeline's
+        changes after the log's last minute that day were published by a run whose log this
+        one never got (an overrides-only run while the state database was down, which
+        pushes nothing, or a run's last minutes before its last push), so they are taken in
+        first, and the stretch that run showed (the list rows dark, say) stays in the
+        history rather than being written over as if the statuses had been served
+        throughout.
+
         Raises:
             PublishError: the host could not be read.
         """
-        prefix = self.mode.prefix
+        prefix = self.prefix
         if self._seeded or prefix is None:
             return
         local = set(self.changes.days())
         own = content_of(self.directory)
         oldest = local_days(now)[0] - timedelta(days=INDEX_DAYS)
+        recent = local_days(now)[0] - timedelta(days=1)
         seeded: list[Change] = []
         for day in sorted(_listed_days(self.host, prefix)):
-            if day in local or day < oldest:
+            if day < oldest or (day in local and (day < recent or not self.reader)):
                 continue
             data = self.host.read(f"{prefix}/{day_path(day)}")
             if data is None:
@@ -988,7 +1250,10 @@ class LivePublisher:
                         day_path(day),
                     )
                 continue
-            seeded.extend(seed_changes(made, self.directory))
+            found = seed_changes(made, self.directory)
+            if day in local:
+                found = _after_the_log(found, self.changes.changes(day))
+            seeded.extend(found)
         if seeded:
             self.changes.commit(seeded)
             LOG.info("change log: %d changes taken from the public day files", len(seeded))
@@ -1014,7 +1279,7 @@ class LivePublisher:
         memory.lit = frozenset()
         memory.spike = None
         memory.last_content = None
-        prefix = self.mode.prefix
+        prefix = self.prefix
         if prefix is not None:
             memory.forget_days(prefix)
         memory.save(self.memory_path)
@@ -1026,11 +1291,12 @@ class LivePublisher:
         now: datetime,
         stamp: DirectoryStamp | None,
         by_hold: bool = False,
-        prefixes: Sequence[str] = PREFIXES,
+        prefixes: Sequence[str] | None = None,
     ) -> PassReport:
         """Blank every public closings file that carries ``stamp`` (``None``: every one, under
-        its own stamp), in every prefix (or only ``prefixes``): empty closings and opens, the
-        day timelines its index lists or this process published emptied, and an empty index.
+        its own stamp), in this mode's own prefix only (or ``prefixes``; none while publishing
+        is off): empty closings and opens, the day timelines its index lists or this process
+        published emptied, and an empty index. A shadow reader never touches ``v1/``.
 
         It skips the health check and the spike hold; its ``generated_at`` is newer than the
         file it replaces (a second after it when the clock gives no newer one), and never
@@ -1038,7 +1304,9 @@ class LivePublisher:
         """
         generated_at = _whole(now)
         files: dict[str, bytes] = {}
-        mine = self.mode.prefix
+        mine = self.prefix
+        if prefixes is None:
+            prefixes = () if mine is None else (mine,)
         try:
             for prefix in prefixes:
                 remote = _read_closings(self.host, prefix)
@@ -1070,6 +1338,10 @@ class LivePublisher:
                 return PassReport(
                     Exit.OK, generated_at, blank=True, note="nothing to blank (already blank)"
                 )
+            if self.reader:
+                run = self.summary.run_id if self.summary is not None else "-"
+                stamp_text = generated_at.astimezone(UTC).strftime("%Y-%m-%dT%H:%M:%SZ")
+                self._message(f"live {' '.join(prefixes)} blank {stamp_text} run {run}")
             self.host.write(files)
         except PublishError as error:
             LOG.error("blank: %s", error)
@@ -1097,6 +1369,7 @@ class LivePublisher:
         lit: frozenset[tuple[int, str]],
         provenance: Sequence[Mapping[str, JSONValue]],
         counts: Mapping[str, int],
+        admin: str | None = None,
     ) -> PassReport:
         changes = self.changes.diff(
             generated_at, shown, past=school_past(self.directory, generated_at)
@@ -1111,7 +1384,8 @@ class LivePublisher:
             if key is not None:
                 keyed[key] = body
         memory = self.memory
-        prefix = self.mode.prefix or PREFIXES[0]
+        prefix = self.prefix or PREFIXES[0]
+        self._message(self.summary.message(prefix, len(lit)) if self.summary else None)
         try:
             guarded_write(self.host, keyed, WriteGuard(f"{prefix}/{HOLD}", holds))
         except GuardRefusedError:
@@ -1137,6 +1411,8 @@ class LivePublisher:
         memory.lit = lit
         memory.spike = None
         memory.days = {**memory.days, **self._days}
+        memory.last_edition_sha = self.directory.edition
+        memory.last_admin = admin
         memory.save(self.memory_path)
         self.changes.prune(local_days(generated_at)[0])
         write_bytes_atomic(
@@ -1164,6 +1440,23 @@ class LivePublisher:
             counts={**counts, "changes": len(changes)},
         )
 
+    def _message(self, text: str | None) -> None:
+        """Set the host's commit message for the next write (a host that takes one)."""
+        if text is not None and hasattr(self.host, "message"):
+            self.host.message = text
+
+    def ahead_of(self, edition: EditionVerdict) -> bool:
+        """Whether a ``different`` verdict is this run's code ahead of the deploy: the
+        deployed content is the one the last upload was made against, and this build's is
+        new (Preview has not deployed it yet). Nothing public then indexes into other
+        content, so nothing is blanked; the run waits for the deploy."""
+        deployed = edition.deployed_sha
+        return (
+            deployed is not None
+            and deployed == self.memory.last_edition_sha
+            and deployed != self.directory.edition
+        )
+
     def _timelines(
         self, changes: Sequence[Change], *, generated_at: datetime, stamp: DirectoryStamp
     ) -> dict[str, bytes]:
@@ -1171,7 +1464,7 @@ class LivePublisher:
         with a status, and each day over whose final timeline is not yet published under
         this prefix, stamp and content (from the change log, which is keyed by NCES id).
         The index lists only days whose file carries this stamp."""
-        prefix = self.mode.prefix or ""
+        prefix = self.prefix or ""
         token = self._token(stamp)
         pending: dict[date, list[Change]] = {}
         for change in changes:

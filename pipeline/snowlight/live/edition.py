@@ -96,6 +96,12 @@ class EditionVerdict:
     alert: bool = False
     """Raise the alert: other content is deployed, a new deployment cannot be read, or
     an equal verdict could not be renewed within :data:`GRACE`."""
+    deployed_sha: str | None = None
+    """The deployed directory's content sha256, when it was read."""
+    ahead: bool = False
+    """``different`` because this run's code is ahead of the deploy (the deployed content is
+    the one the last upload was made against): nothing is blanked, the run waits for the
+    deploy (:meth:`snowlight.live.publish.LivePublisher.ahead_of`)."""
 
     @property
     def wants_blank(self) -> bool:
@@ -230,7 +236,11 @@ class EditionWatch:
             verdict = EditionVerdict(EditionState.NONE_DEPLOYED, now)
         elif self._same(deployed):
             verdict = EditionVerdict(
-                EditionState.EQUAL, now, stamp=deployed.stamp(), deployed=deployed.stamp()
+                EditionState.EQUAL,
+                now,
+                stamp=deployed.stamp(),
+                deployed=deployed.stamp(),
+                deployed_sha=deployed.content_sha256,
             )
         else:
             stamp = deployed.stamp()
@@ -240,6 +250,7 @@ class EditionWatch:
                 blank=stamp if stamp in published or not complete else None,
                 deployed=stamp,
                 alert=True,
+                deployed_sha=deployed.content_sha256,
             )
         self.last = verdict
         self.log(f"edition: {verdict.state}")

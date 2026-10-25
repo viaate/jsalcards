@@ -1,0 +1,72 @@
+# The owner's stop for the live map (docs/live.md, first line of the runbook).
+#
+# Actions > live-blank > Run workflow (works from GitHub mobile too):
+# - action `blank` holds every pass dark and blanks the public closings files under the
+#   prefix chosen (`every`: v1 and v1-shadow, the admin's statuses included), whatever
+#   LIVE_PUBLISH says; the map goes dark within one poll;
+# - action `release` clears the hold under that prefix: the next pass publishes again.
+# It takes about a minute, has its own concurrency group (it never waits behind the reader,
+# which honours the hold at every pass and reads it again after each upload), and holds no
+# state and no Cloudflare secret.
+name: live-blank
+
+on:
+  workflow_dispatch:
+    inputs:
+      action:
+        description: "blank holds the map dark; release lets the next pass publish"
+        required: true
+        type: choice
+        options:
+          - blank
+          - release
+        default: blank
+      prefix:
+        description: "which public files: every (v1 and v1-shadow), v1 or v1-shadow"
+        required: true
+        type: choice
+        options:
+          - every
+          - v1
+          - v1-shadow
+        default: every
+
+concurrency:
+  group: live-blank
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  blank:
+    if: github.ref == format('refs/heads/{0}', github.event.repository.default_branch)
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    environment: live
+    defaults:
+      run:
+        working-directory: pipeline
+    env:
+      LIVE_HOST_TOKEN: ${{ secrets.SNOWLIGHT_LIVE_TOKEN }}
+      ACTION: ${{ inputs.action }}
+      PREFIX: ${{ inputs.prefix }}
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+
+      - uses: astral-sh/setup-uv@c18668ad3cf93ea998bef934396af7bb5c839dc7 # v10.2.0
+        with:
+          python-version: "3.12"
+          working-directory: pipeline
+          enable-cache: true
+          cache-dependency-glob: uv.lock
+
+      - run: uv sync --locked --no-dev
+
+      - name: Blank or release
+        run: |
+          case "$ACTION" in blank | release) ;; *) echo "::error::action is blank or release"; exit 1 ;; esac
+          case "$PREFIX" in every | v1 | v1-shadow) ;; *) echo "::error::prefix is every, v1 or v1-shadow"; exit 1 ;; esac
+          uv run snowlight live "$ACTION" --prefix "$PREFIX"

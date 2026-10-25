@@ -360,6 +360,7 @@ class Repo:
         self.calls: list[str] = []
         self.race: Callable[[], None] | None = None
         self.tokens: set[str] = set()
+        self.messages: list[str] = []
 
     @staticmethod
     def _sha(text: str) -> str:
@@ -385,6 +386,7 @@ class Repo:
         if request.method == "POST" and path == "git/commits":
             body = json.loads(request.read())
             sha = self._sha(f"{body['tree']}{body['parents']}")
+            self.messages.append(str(body["message"]))
             self.commits[sha] = body["tree"]
             self.parents[sha] = list(body["parents"])
             return httpx.Response(201, json={"sha": sha})
@@ -539,3 +541,40 @@ def test_github_malformed_answers_are_publish_errors() -> None:
 def test_github_refuses_bytes_that_are_not_text() -> None:
     with pytest.raises(PublishError, match="UTF-8"):
         _github(Repo()).write({"v1/live/closings.json": base64.b64decode("//79")})
+
+
+def test_a_commit_message_is_one_writes_and_never_sticks_to_the_next() -> None:
+    """A pass's counts-only message names its own commit only: a later write (an alerts file,
+    say) gets the default, which names the Actions run that made it."""
+    from snowlight.live import cli as live_cli  # noqa: PLC0415
+    from snowlight.live.publish import emergency_blank, release  # noqa: PLC0415
+
+    repo = Repo()
+    config = live_cli.LiveConfig(
+        host={"kind": "github", "repository": "viaate/snowlight-synthetic"},
+        state={},
+        site="",
+        site_repository="",
+    )
+    env = {"LIVE_HOST_TOKEN": "synthetic", "GITHUB_RUN_ID": "4242", "GITHUB_WORKFLOW": "live-read"}
+    host = live_cli.make_host(config, env, httpx.Client(transport=httpx.MockTransport(repo)))
+    assert isinstance(host, GitHubPublisher)
+    host.api = "https://api.synthetic.example"
+    host.message = "live v1-shadow pass 2026-11-17T11:05:00Z run 4242 sweep 70"
+    host.write({"v1-shadow/live/closings.json": b"{}"})
+    host.write({"v1-shadow/live/alerts.json": b"{}"})
+    assert repo.messages == [
+        "live v1-shadow pass 2026-11-17T11:05:00Z run 4242 sweep 70",
+        "Publish the live files (live-read run 4242)",
+    ]
+    now = datetime(2026, 11, 17, 11, 5, tzinfo=UTC)
+    emergency_blank(host, now, ("v1-shadow",))
+    release(host, now, ("v1-shadow",))
+    assert repo.messages[2:] == [
+        "live-blank v1-shadow hold 2026-11-17T11:05:00Z",
+        "live-blank v1-shadow release 2026-11-17T11:05:00Z",
+    ]  # nothing was lit, so nothing was blanked
+    # no run named outside Actions
+    plain = live_cli.make_host(config, {"LIVE_HOST_TOKEN": "synthetic"}, httpx.Client())
+    assert isinstance(plain, GitHubPublisher)
+    assert plain.default_message == "Publish the live files"

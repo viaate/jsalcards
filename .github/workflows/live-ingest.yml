@@ -1,10 +1,24 @@
 # The live closings file, v1/live/closings.json on the live host (docs/accounts.md, docs/live.md).
 #
-# For now it publishes the admin's manual statuses (accounts spec C): the active overrides
+# The list readers live in live-read.yml (one self-chained loop, all day; docs/live.md "The
+# reader"). This workflow keeps them going and publishes the admin's manual statuses while the
+# reader runs in shadow:
+# - `reader` (a few seconds, no checkout): starts a live-read run when none has a job that is
+#   not completed, and when the repository variable LIVE_PUBLISH changes (read as Actions
+#   compares strings: on, shadow or off; anything else, unset included, is shadow) cancels the
+#   run in the old mode and starts one in the new. A refused call is one notice, never a red
+#   run;
+# - `watch` (a few seconds, no checkout): reads the served file of the reader's prefix through
+#   the CDN (v1-shadow in shadow, v1 in on, nothing in off) and says when it is over 15 minutes
+#   old, missing or over 60 s ahead: one annotation in shadow, one issue in on;
+# - `check`, `publish` and `notify` as below. While LIVE_PUBLISH is not on, the publish job
+#   writes the admin's statuses to v1 exactly as before; in on the reader writes v1 (with the
+#   admin's statuses in every pass) and the publish job is skipped.
+#
+# For the admin's manual statuses (accounts spec C): the active overrides
 # from the API (GET {API}/v1/overrides), each id checked against the deployed directory,
-# through S8-D's publisher and gate (`snowlight live overrides`). S8-E adds the list readers
-# here; in the S8-C merge the admin's statuses outrank every list read
-# (pipeline/snowlight/live/merge.py, with_overrides).
+# through S8-D's publisher and gate (`snowlight live overrides`). In the S8-C merge the
+# admin's statuses outrank every list read (pipeline/snowlight/live/merge.py, with_overrides).
 #
 # The owner's Cloudflare timer dispatches this workflow (workflow_dispatch on the default
 # branch) every 5 minutes when no run is queued or running, so a run is quick and quiet:
@@ -37,24 +51,178 @@ permissions:
   contents: read
 
 jobs:
-  # Landing push 1 of S8-E (docs/live.md, "The reader"): only prints the mode the reader would
-  # run in, LIVE_PUBLISH as Actions compares strings (case ignored, nothing trimmed; anything
-  # but on, shadow or off, unset included, is shadow). It dispatches nothing and never fails.
+  # Keep the live reader running (docs/live.md, "The reader"). No checkout: the script
+  # below and GitHub's API only. A refused call (a disabled workflow, 403, 422, 5xx) is a
+  # notice and the job succeeds: it never turns the owner's run red.
   reader:
     if: github.ref == format('refs/heads/{0}', github.event.repository.default_branch)
     runs-on: ubuntu-latest
     timeout-minutes: 2
     continue-on-error: true
-    permissions: {}
+    permissions:
+      actions: write # list, cancel and start live-read runs
     steps:
-      - name: Print the reader's mode
+      - name: Start or switch the live reader
         env:
+          GH_TOKEN: ${{ github.token }}
           LIVE_PUBLISH: ${{ vars.LIVE_PUBLISH }}
         run: |
+          set -uo pipefail
+          # As Actions compares strings: case ignored, nothing trimmed.
+          normal() {
+            local lower
+            lower=$(printf '%s' "$1" | LC_ALL=C tr '[:upper:]' '[:lower:]')
+            case "$lower" in on | shadow | off) echo "$lower" ;; *) echo shadow ;; esac
+          }
+          mode=$(normal "$LIVE_PUBLISH")
+          if [ -n "$LIVE_PUBLISH" ] && [ "$mode" = shadow ] && [ "$(printf '%s' "$LIVE_PUBLISH" | LC_ALL=C tr '[:upper:]' '[:lower:]')" != shadow ]; then
+            echo "::warning::LIVE_PUBLISH is not on, shadow or off: the reader runs in shadow."
+          fi
+          api="${GITHUB_API_URL:-https://api.github.com}/repos/$GITHUB_REPOSITORY/actions"
+          call() { # METHOD URL OUT [BODY]: prints the HTTP status, 000 for no answer
+            local args=(-sS --max-time 20 -o "$3" -D "$3.headers" -w '%{http_code}' -X "$1"
+              -H "Authorization: Bearer $GH_TOKEN" -H "Accept: application/vnd.github+json")
+            if [ -n "${4:-}" ]; then args+=(-d "$4"); fi
+            curl "${args[@]}" "$2" 2>/dev/null || echo 000
+          }
+          code=$(call GET "$api/workflows/live-read.yml/runs?per_page=30" runs.json)
+          # The repository's GITHUB_TOKEN count this hour, for the soak report (bar: 600).
+          header() { tr -d '\r' < runs.json.headers 2>/dev/null | awk -v name="$1" 'tolower($1) == name ":" { print $2 }' | tail -n 1; }
+          used=$(header x-ratelimit-used)
+          limit=$(header x-ratelimit-limit)
+          reset=$(header x-ratelimit-reset)
+          if [[ "$used$limit$reset" =~ ^[0-9]+$ ]] && [ -n "$used" ] && [ -n "$limit" ] && [ -n "$reset" ]; then
+            echo "::notice::github token used $used of $limit reset $reset"
+          fi
+          if [ "$code" != 200 ]; then
+            echo "::notice::live-read runs could not be listed (HTTP $code): nothing started."
+            exit 0
+          fi
+          now=$(date +%s)
+          running=0
+          while IFS=$'\t' read -r id created title; do
+            [ -n "$id" ] || continue
+            code=$(call GET "$api/runs/$id/jobs" jobs.json)
+            if [ "$code" != 200 ]; then
+              running=1 # unknown: never start a second reader on a guess
+              continue
+            fi
+            open=$(jq '[.jobs[] | select(.status != "completed")] | length' jobs.json)
+            total=$(jq '.jobs | length' jobs.json)
+            age=$((now - $(date -d "$created" +%s)))
+            if [ "$open" -eq 0 ] && { [ "$total" -gt 0 ] || [ "$age" -ge 120 ]; }; then
+              continue # GitHub still lists it, but its job is over
+            fi
+            if [ "$(normal "${title#live-read }")" = "$mode" ]; then
+              running=1
+              continue
+            fi
+            code=$(call POST "$api/runs/$id/cancel" cancel.json)
+            if [ "$code" = 202 ]; then
+              echo "live reader: cancelled run $id (another mode); starting one in $mode"
+            else
+              echo "::notice::live-read run $id could not be cancelled (HTTP $code)."
+              running=1
+            fi
+          done < <(jq -r '.workflow_runs[] | select(.status != "completed") | [.id, .created_at, (.display_title // "")] | @tsv' runs.json)
+          if [ "$running" -eq 1 ]; then
+            echo "live reader: running in $mode"
+            exit 0
+          fi
+          body=$(jq -cn --arg ref "$GITHUB_REF_NAME" --arg mode "$mode" '{ref: $ref, inputs: {mode: $mode}}')
+          code=$(call POST "$api/workflows/live-read.yml/dispatches" dispatch.json "$body")
+          if [ "$code" = 204 ]; then
+            echo "live reader: started one in $mode"
+          else
+            echo "::notice::live-read could not be started (HTTP $code)."
+          fi
+          exit 0
+
+  # The served file of the reader's prefix, as a page reads it (docs/live.md, "Alerts").
+  # Shadow: one annotation when it is stale, missing or ahead, never an issue. On: one issue
+  # (label live-alert, found by its marker), a comment past 30 minutes at most once an hour,
+  # closed when a fresh file is served. Off: nothing.
+  watch:
+    if: github.ref == format('refs/heads/{0}', github.event.repository.default_branch)
+    runs-on: ubuntu-latest
+    timeout-minutes: 3
+    continue-on-error: true
+    permissions:
+      contents: read
+      issues: write # the stale issue, in on only
+    steps:
+      - name: Check the served live file
+        env:
+          GH_TOKEN: ${{ github.token }}
+          LIVE_PUBLISH: ${{ vars.LIVE_PUBLISH }}
+          LIVE_ROOT: https://viaate.github.io/snowlight-live/
+        run: |
+          set -uo pipefail
           lower=$(printf '%s' "$LIVE_PUBLISH" | LC_ALL=C tr '[:upper:]' '[:lower:]')
           case "$lower" in on | shadow | off) mode="$lower" ;; *) mode=shadow ;; esac
-          if [ -z "$LIVE_PUBLISH" ]; then set_as=unset; else set_as=set; fi
-          echo "::notice::live reader mode $mode (LIVE_PUBLISH $set_as)"
+          if [ "$mode" = off ]; then
+            echo "live watch: publishing is off: nothing to watch"
+            exit 0
+          fi
+          prefix=v1-shadow
+          if [ "$mode" = on ]; then prefix=v1; fi
+          now=$(date +%s)
+          code=$(curl -sS --max-time 20 -o served.json -w '%{http_code}' \
+            "${LIVE_ROOT}${prefix}/live/closings.json?watch=$now" 2>/dev/null || echo 000)
+          state=fresh
+          age=""
+          if [ "$code" != 200 ]; then
+            state=missing
+          elif ! stamp=$(jq -er '.generated_at | strings' served.json 2>/dev/null); then
+            state=missing
+          elif ! made=$(date -d "$stamp" +%s 2>/dev/null); then
+            state=missing
+          else
+            age=$((now - made))
+            if [ "$age" -gt 900 ]; then state=stale; elif [ "$age" -lt -60 ]; then state=ahead; fi
+          fi
+          line="the served $prefix file is $state${age:+ (${age} s old)}"
+          if [ "$mode" = shadow ]; then
+            if [ "$state" = fresh ]; then echo "live watch: $line"; else echo "::warning::live watch: $line"; fi
+            exit 0
+          fi
+          repo="${GITHUB_API_URL:-https://api.github.com}/repos/$GITHUB_REPOSITORY"
+          call() { # METHOD URL OUT [BODY]
+            local args=(-sS --max-time 20 -o "$3" -w '%{http_code}' -X "$1"
+              -H "Authorization: Bearer $GH_TOKEN" -H "Accept: application/vnd.github+json")
+            if [ -n "${4:-}" ]; then args+=(-d "$4"); fi
+            curl "${args[@]}" "$2" 2>/dev/null || echo 000
+          }
+          marker="<!-- live-alert:stale:$prefix -->"
+          code=$(call GET "$repo/issues?state=open&labels=live-alert&per_page=100" issues.json)
+          if [ "$code" != 200 ]; then
+            echo "::notice::live watch: $line; the issues could not be listed (HTTP $code)"
+            exit 0
+          fi
+          number=$(jq -r --arg m "$marker" 'first(.[] | select((.body // "") | contains($m)) | .number) // empty' issues.json)
+          updated=$(jq -r --arg m "$marker" 'first(.[] | select((.body // "") | contains($m)) | .updated_at) // empty' issues.json)
+          run="${GITHUB_SERVER_URL:-https://github.com}/$GITHUB_REPOSITORY/actions/runs/${GITHUB_RUN_ID:-}"
+          if [ "$state" = fresh ]; then
+            echo "live watch: $line"
+            if [ -n "$number" ]; then
+              body=$(jq -cn --arg b "recovered at $(date -u +%H:%MZ)" '{body: $b}')
+              call POST "$repo/issues/$number/comments" out.json "$body" > /dev/null
+              call PATCH "$repo/issues/$number" out.json '{"state":"closed","state_reason":"completed"}' > /dev/null
+            fi
+            exit 0
+          fi
+          echo "::warning::live watch: $line"
+          if [ -z "$number" ]; then
+            call POST "$repo/labels" out.json '{"name":"live-alert","color":"b60205"}' > /dev/null
+            body=$(jq -cn --arg t "Live alert: stale ($prefix)" \
+              --arg b "$marker"$'\n'"live alert \`stale\` ($prefix)"$'\n'"$line at $(date -u +%Y-%m-%dT%H:%M:%SZ)"$'\n'"run: $run"$'\n'"see docs/live.md#alerts" \
+              '{title: $t, body: $b, labels: ["live-alert"]}')
+            code=$(call POST "$repo/issues" out.json "$body")
+            if [ "$code" != 201 ]; then echo "::notice::live watch: the issue could not be opened (HTTP $code)"; fi
+          elif [ -n "$age" ] && [ "$age" -gt 1800 ] && [ $((now - $(date -d "$updated" +%s))) -ge 3600 ]; then
+            body=$(jq -cn --arg b "still $state at $(date -u +%H:%MZ)${age:+: ${age} s old}" '{body: $b}')
+            call POST "$repo/issues/$number/comments" out.json "$body" > /dev/null
+          fi
           exit 0
 
   check:
@@ -201,7 +369,7 @@ jobs:
 
   publish:
     needs: check
-    if: needs.check.outputs.publish == 'true'
+    if: needs.check.outputs.publish == 'true' && vars.LIVE_PUBLISH != 'on'
     runs-on: ubuntu-latest
     timeout-minutes: 15
     environment: live

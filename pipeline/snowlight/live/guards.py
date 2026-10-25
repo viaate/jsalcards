@@ -265,6 +265,9 @@ class Refusal(StrEnum):
     retraction perhaps, is unknown."""
     HELD = "held"
     """``snowlight live blank`` set the hold: every pass stays dark until ``live release``."""
+    OVERRIDES = "overrides"
+    """The admin's statuses could not be read (an API error): nothing is published, so a
+    status the admin set is never dropped on a blip."""
 
 
 @dataclass(frozen=True, slots=True)

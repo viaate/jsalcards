@@ -1,0 +1,327 @@
+# The live closings reader (docs/live.md, "The reader"): one self-chained loop, all day.
+#
+# Each run is `snowlight live run --until +320m`: a pass on every 5-minute grid mark (the
+# sources' own cadence decides what each pass reads: every 5 minutes inside their zone's
+# 18:00-23:00 and 04:00-09:00 and during alerts, else every 30), the admin's statuses applied
+# in every pass, and the files published under the prefix LIVE_PUBLISH names: unset (and any
+# value but on or off) is shadow, which writes v1-shadow/ on the live host and nothing the
+# site reads. In shadow no issue is ever opened: alerts go to v1-shadow/live/alerts.json and
+# one annotation each.
+#
+# Runs start from their predecessor (the successor step), from live-ingest.yml's `reader`
+# job on the owner's 5-minute timer, from the 20-minute schedule when the timer itself stops,
+# or from a push that changes this file. The job-level concurrency group keeps one reader job
+# at a time, so there is one writer of the private state and one of the prefix.
+#
+# The private state (the row ledger and the rest, docs/live.md "The state") lives in the D1
+# database snowlight-live-state of the owner's Cloudflare account, pulled at the start under
+# a new epoch and pushed every 30 minutes and at the end; the Cloudflare secrets reach only
+# the pull, loop and end-push steps. If the pull fails, the loop runs overrides-only (it reads
+# no source, pushes nothing, saves no cache, and publishes the admin's statuses alone) and
+# ends as soon as the database answers again. Only the export predict learn reads (morning
+# records, change logs and a schema-only ledger) goes to the Actions cache, which any pull
+# request can read; a step checks its names first. Logs carry counts, codes and source ids
+# only (PYTHONWARNINGS=ignore, and the CLI's redacting log set-up).
+#
+# A bash watcher (.github/scripts/pulse-watch.sh) ends the loop when its pulse is 3.5 minutes
+# old, a hang that holds the interpreter included; the successor, end push and cache steps
+# still run. A cancel reaches the reader through the loop step's trap, and nothing packs the
+# state before a step has made sure no reader is left. In shadow and off a run never turns red; a closing step prints the exit and its
+# cause as one annotation.
+name: live-read
+run-name: live-read ${{ inputs.mode || vars.LIVE_PUBLISH || 'shadow' }}
+
+on:
+  workflow_dispatch:
+    inputs:
+      mode:
+        description: "on, shadow or off (live-ingest.yml's reader job passes LIVE_PUBLISH)"
+        required: false
+        type: string
+        default: ""
+  schedule:
+    - cron: "*/20 * * * *"
+  push:
+    paths:
+      - .github/workflows/live-read.yml
+
+permissions:
+  contents: read
+  actions: write # start the successor; read the Pages artifact for the deployed directory
+  deployments: read # the deployed directory's handshake (S8-0)
+  issues: write # alerts in on and off (never in shadow)
+
+jobs:
+  read:
+    # Scheduled runs are always on the default branch (their payload names no repository).
+    if: github.event_name == 'schedule' || github.ref == format('refs/heads/{0}', github.event.repository.default_branch)
+    runs-on: ubuntu-latest
+    timeout-minutes: 345
+    environment: live
+    concurrency:
+      group: live-read
+      cancel-in-progress: false
+    continue-on-error: ${{ (inputs.mode || vars.LIVE_PUBLISH) != 'on' }}
+    defaults:
+      run:
+        working-directory: pipeline
+    # The tokens reach only the steps that use them: the live host's (SNOWLIGHT_LIVE_TOKEN) the
+    # token check, loop, end push and closing report; GITHUB_TOKEN the directory, loop, end
+    # push and closing report (and the successor's dispatch); the Cloudflare secrets the
+    # pull, loop and end push.
+    env:
+      LIVE_PUBLISH: ${{ inputs.mode || vars.LIVE_PUBLISH }}
+      SNOWLIGHT_API_ROOT: ${{ vars.SNOWLIGHT_API_ROOT }}
+      PYTHONWARNINGS: ignore
+    steps:
+      - id: token
+        name: Stay dark without the live host token
+        working-directory: .
+        env:
+          LIVE_HOST_TOKEN: ${{ secrets.SNOWLIGHT_LIVE_TOKEN }}
+        run: |
+          if [ -z "$LIVE_HOST_TOKEN" ]; then
+            echo "::notice::No SNOWLIGHT_LIVE_TOKEN in the live environment: the reader does not run (docs/live.md)."
+            echo "ready=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "ready=true" >> "$GITHUB_OUTPUT"
+          fi
+
+      - if: steps.token.outputs.ready == 'true'
+        uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+
+      - if: steps.token.outputs.ready == 'true'
+        uses: astral-sh/setup-uv@c18668ad3cf93ea998bef934396af7bb5c839dc7 # v10.2.0
+        with:
+          python-version: "3.12"
+          working-directory: pipeline
+          enable-cache: true
+          cache-dependency-glob: uv.lock
+
+      - if: steps.token.outputs.ready == 'true'
+        run: uv sync --locked --no-dev
+
+      # The NCES and Census downloads preview.yml keeps, and the NWS boundaries predict.yml
+      # keeps: restored read only, never saved from here.
+      - if: steps.token.outputs.ready == 'true'
+        uses: actions/cache/restore@v4
+        with:
+          path: |
+            pipeline/.cache/nces
+            pipeline/.cache/places
+          key: pipeline-downloads-${{ hashFiles('pipeline/config/directory.yaml', 'pipeline/config/places.yaml') }}
+          restore-keys: pipeline-downloads-
+
+      - if: steps.token.outputs.ready == 'true'
+        uses: actions/cache/restore@v4
+        with:
+          path: pipeline/.cache/weather
+          key: predict-boundaries-v1
+
+      # For the soak report: the bytes the restores above and setup-uv's cache brought.
+      - if: steps.token.outputs.ready == 'true'
+        name: Count the restored caches
+        run: |
+          total=0
+          for folder in .cache/nces .cache/places .cache/weather "${UV_CACHE_DIR:-}"; do
+            if [ -n "$folder" ] && [ -d "$folder" ]; then
+              total=$((total + $(du -sb "$folder" | cut -f1)))
+            fi
+          done
+          echo "::notice::live-read caches restored $total bytes"
+
+      # The directory this run indexes into: built as preview.yml builds it (the deployed
+      # edition's date kept while the content is unchanged), with the zones and no tiles.
+      # Bounded, as the pull below is: a download that stalls ends the step (a failed
+      # directory: the chain alert, and the restarters start the next run) instead of holding
+      # the job, and every restarter behind it, until the job's own timeout.
+      - if: steps.token.outputs.ready == 'true'
+        id: directory
+        name: Build the directory
+        timeout-minutes: 10
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+          SNOWLIGHT_MIRROR: https://github.com/${{ github.repository }}/releases/download
+          SNOWLIGHT_REQUIRE_MIRROR: "1"
+        run: |
+          mkdir -p .cache
+          uv run snowlight directory deployed-edition --site https://snowlightmap.com --out .cache/edition.json
+          previous=()
+          if [ -f .cache/edition.json ]; then previous=(--previous-edition .cache/edition.json); fi
+          uv run snowlight directory build --zones --no-tiles "${previous[@]}"
+
+      - if: steps.token.outputs.ready == 'true' && steps.directory.outcome == 'success'
+        id: pull
+        name: Pull the state
+        continue-on-error: true
+        timeout-minutes: 8
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        run: uv run snowlight live state pull --retry
+
+      - if: steps.token.outputs.ready == 'true' && steps.directory.outcome == 'success'
+        id: loop
+        name: Read, publish and push
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          LIVE_HOST_TOKEN: ${{ secrets.SNOWLIGHT_LIVE_TOKEN }}
+          GITHUB_TOKEN: ${{ github.token }}
+          PULLED: ${{ steps.pull.outcome }}
+        run: |
+          mode=()
+          if [ "$PULLED" != "success" ]; then
+            echo "::warning::The state could not be pulled: overrides-only until the database answers (docs/live.md, The state)."
+            mode=(--overrides-only)
+          fi
+          status=0
+          cancelled=false
+          group="${RUNNER_TEMP:-/tmp}/live-reader.pgid"
+          # The watcher runs in a process group of its own (the reap step below ends whatever
+          # of it is left), with the venv's own entry point so its TERM and KILL reach the
+          # reader itself. The runner's cancel (a mode change, the stall drill, a timeout)
+          # signals only this shell, so the trap passes it on: the watcher ends the reader
+          # within 5 s and no reader outlives the step.
+          setsid bash ../.github/scripts/pulse-watch.sh out/internal/live/state/pulse 210 10 -- \
+            .venv/bin/snowlight live run --until +320m --push-every 30 "${mode[@]}" &
+          watcher=$!
+          echo "$watcher" > "$group"
+          trap 'cancelled=true; kill -TERM "$watcher" 2>/dev/null' INT TERM
+          wait "$watcher" || status=$?
+          # a trapped signal ends the wait at once: wait again for the watcher's own exit
+          while kill -0 "$watcher" 2>/dev/null; do
+            status=0
+            wait "$watcher" || status=$?
+          done
+          if [ "$cancelled" = true ]; then
+            echo "cancelled=true" >> "$GITHUB_OUTPUT"
+            exit "$status"
+          fi
+          echo "exit=$status" >> "$GITHUB_OUTPUT"
+          # 3 (a refused pass, routine in a 320-minute run) stays in the closing report; only a
+          # persistent failure fails the step (and, in on, the run)
+          if [ "$status" = 3 ]; then exit 0; fi
+          exit "$status"
+
+      # Before anything packs the state: no reader (nor its watcher) is left alive, so the
+      # record, the end push and the export never copy a ledger another process writes.
+      - if: always() && steps.token.outputs.ready == 'true'
+        id: reap
+        name: Make sure no reader is left
+        working-directory: .
+        run: bash .github/scripts/reap-reader.sh "${RUNNER_TEMP:-/tmp}/live-reader.pgid"
+
+      # Not on cancel: cancelling a run (or disabling the workflow) stops the chain. Not when
+      # the loop never ran (the directory step failed): the reader job or the schedule starts
+      # the next run 5-20 minutes on, never a tight chain of cold runs. Before the end push:
+      # the successor's job waits for this one anyway.
+      - if: (success() || failure()) && steps.token.outputs.ready == 'true' && steps.loop.outcome != 'skipped'
+        id: successor
+        name: Start the successor
+        working-directory: .
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          lower=$(printf '%s' "$LIVE_PUBLISH" | LC_ALL=C tr '[:upper:]' '[:lower:]')
+          case "$lower" in on | shadow | off) mode="$lower" ;; *) mode=shadow ;; esac
+          api="${GITHUB_API_URL:-https://api.github.com}/repos/$GITHUB_REPOSITORY/actions/workflows/live-read.yml/dispatches"
+          body=$(jq -cn --arg ref "$GITHUB_REF_NAME" --arg mode "$mode" '{ref: $ref, inputs: {mode: $mode}}')
+          for try in 1 2 3; do
+            code=$(curl -sS --max-time 20 -o /dev/null -w '%{http_code}' -X POST \
+              -H "Authorization: Bearer $GH_TOKEN" -H "Accept: application/vnd.github+json" \
+              -d "$body" "$api" 2>/dev/null || true)
+            if [ "$code" = "204" ]; then
+              echo "successor dispatched (mode $mode)"
+              exit 0
+            fi
+            if [ "$try" -lt 3 ]; then sleep $((try * 10)); fi
+          done
+          echo "::warning::The successor could not be dispatched (HTTP $code): live-ingest.yml's reader job or the schedule starts one (docs/live.md)."
+          echo "dispatch_failed=true" >> "$GITHUB_OUTPUT"
+          exit 0
+
+      # This run's exit into the state folder before the end push, so the push carries it to
+      # D1 and the next run's chain alert counts it (a cancelled run records nothing).
+      - if: always() && steps.pull.outcome == 'success' && steps.loop.outcome != 'skipped' && steps.reap.outputs.clear == 'true'
+        id: record
+        name: Record the exit in the state
+        env:
+          EXIT: ${{ steps.loop.outputs.exit }}
+          KILLED: ${{ steps.loop.outputs.killed }}
+        run: |
+          flags=()
+          if [ "$KILLED" = "true" ]; then flags+=(--killed); fi
+          uv run snowlight live finish --record --exit "${EXIT:-none}" "${flags[@]}"
+
+      # A failed end push raises the state alert, and the closing report below counts it as the
+      # run's exit 1.
+      - if: always() && steps.pull.outcome == 'success' && steps.reap.outputs.clear == 'true'
+        id: push
+        name: Push the state
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          LIVE_HOST_TOKEN: ${{ secrets.SNOWLIGHT_LIVE_TOKEN }}
+          GITHUB_TOKEN: ${{ github.token }}
+        run: uv run snowlight live state push
+
+      # The exit and its cause as one annotation, and the chain alert (2 runs in a row with
+      # exit 1, or a successor that could not be dispatched).
+      - if: always() && steps.token.outputs.ready == 'true' && steps.directory.outcome != 'skipped'
+        id: finish
+        name: Report the exit
+        env:
+          LIVE_HOST_TOKEN: ${{ secrets.SNOWLIGHT_LIVE_TOKEN }}
+          GITHUB_TOKEN: ${{ github.token }}
+          EXIT: ${{ steps.loop.outputs.exit }}
+          KILLED: ${{ steps.loop.outputs.killed }}
+          DISPATCH_FAILED: ${{ steps.successor.outputs.dispatch_failed }}
+          DIRECTORY: ${{ steps.directory.outcome }}
+          PUSHED: ${{ steps.push.outcome }}
+        run: |
+          flags=()
+          if [ "$KILLED" = "true" ]; then flags+=(--killed); fi
+          if [ "$DISPATCH_FAILED" = "true" ]; then flags+=(--dispatch-failed); fi
+          uv run snowlight live finish --exit "${EXIT:-none}" --directory "$DIRECTORY" --push "$PUSHED" "${flags[@]}"
+
+      # What predict learn reads, and nothing else: morning records, change logs and a
+      # schema-only ledger (no secret, no rows, no names).
+      - if: always() && steps.pull.outcome == 'success' && steps.reap.outputs.clear == 'true'
+        id: export
+        name: Export the learning state
+        run: uv run snowlight live state export
+
+      - if: always() && steps.pull.outcome == 'success' && steps.reap.outputs.clear == 'true'
+        id: check
+        name: Check the export before the save
+        run: |
+          set -euo pipefail
+          store=out/internal/live/store
+          if [ ! -f "$store/live-state.tar.gz" ]; then
+            echo "::error::The export wrote no archive: nothing is saved."
+            exit 1
+          fi
+          extra=$(find "$store" -mindepth 1 ! -name live-state.tar.gz -print | head -n 1)
+          if [ -n "$extra" ]; then
+            echo "::error::The export folder holds another file: nothing is saved."
+            exit 1
+          fi
+          if ! names=$(tar -tzf "$store/live-state.tar.gz"); then
+            echo "::error::The export does not list as an archive: nothing is saved."
+            exit 1
+          fi
+          bad=$(printf '%s\n' "$names" | grep -Ev '^(ledger\.sqlite|morning/[0-9]{4}-[0-9]{2}-[0-9]{2}\.json|changes/([0-9]{4}-[0-9]{2}-[0-9]{2}\.jsonl|durable\.json))$' || true)
+          if [ -n "$bad" ]; then
+            echo "::error::The export holds a name it must not: nothing is saved."
+            exit 1
+          fi
+
+      - if: always() && steps.pull.outcome == 'success' && steps.reap.outputs.clear == 'true' && steps.export.outcome == 'success' && steps.check.outcome == 'success'
+        uses: actions/cache/save@v4
+        with:
+          path: pipeline/out/internal/live/store
+          key: live-state-${{ github.run_id }}
+

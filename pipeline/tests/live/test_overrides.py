@@ -39,7 +39,7 @@ from snowlight.live.overrides import (
     zone_table,
 )
 from snowlight.live.publish import CLOSINGS, HOLD, LiveHold, LivePublisher, Mode
-from snowlight.live.publishers import DirPublisher
+from snowlight.live.publishers import DEFAULT_MESSAGE, DirPublisher, GitHubPublisher, Publisher
 from snowlight.predict.serve import DeployedDirectory
 from snowlight.schemas.directory import DirectoryStamp, SchoolDirectoryMeta
 from snowlight.schemas.live import Closing, ClosingsFile, OpensFile
@@ -1350,3 +1350,52 @@ def test_the_admin_views_borrowed_zones_are_the_overrides_pass(tmp_path: Path) -
     assert sorted(borrowed) == wanted  # every school without a zone borrows one
     # Each borrows from across a zone line somewhere: the state's one zone would be wrong.
     assert len({borrowed[index] for index in wanted}) == len(zones)
+
+
+@pytest.mark.parametrize("value", ["On", "ON", "shadow ", "yes"])
+def test_the_overrides_job_refuses_a_mode_it_never_took_and_publishes_nothing(
+    rig: Rig, monkeypatch: pytest.MonkeyPatch, value: str
+) -> None:
+    # live overrides reads LIVE_PUBLISH exactly as before the reader landed (the reader's
+    # own reading folds case; the admin's job does not change)
+    rig.api.data = body(wire())
+    assert rig.run(monkeypatch, {"LIVE_PUBLISH": value}) == 1
+    assert not rig.host.exists()
+
+
+def test_the_overrides_job_keeps_its_commit_message_and_its_state_holds_only_its_memory(
+    rig: Rig, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    made: list[bool] = []
+    real = live_cli.make_host
+
+    def host(
+        config: live_cli.LiveConfig, env: live_cli.Env, client: httpx.Client, **kwargs: bool
+    ) -> Publisher:
+        made.append(kwargs.get("name_run", True))
+        return real(config, env, client, **kwargs)
+
+    monkeypatch.setattr(live_cli, "make_host", host)
+    rig.api.data = body(wire())
+    assert rig.run(monkeypatch) == 0
+    assert made == [False]  # "Publish the live files", as every commit of the job before
+    # the publish job's cache (live-overrides-state) holds this folder: its memory and change
+    # log only, never a ledger, unmatched rows, robots rules or a pacer
+    state = rig.tmp / "state"
+    names = {path.relative_to(state).as_posix() for path in state.rglob("*") if path.is_file()}
+    assert "publish.json" in names
+    assert all(name == "publish.json" or name.startswith("changes/") for name in names), names
+    config = live_cli.LiveConfig(
+        host={"kind": "github", "repository": "viaate/snowlight-synthetic"},
+        state={},
+        site="",
+        site_repository="",
+    )
+    env = {
+        "LIVE_HOST_TOKEN": "synthetic",
+        "GITHUB_RUN_ID": "4242",
+        "GITHUB_WORKFLOW": "live-ingest",
+    }
+    kept = real(config, env, httpx.Client(), name_run=False)
+    assert isinstance(kept, GitHubPublisher)
+    assert kept.default_message == DEFAULT_MESSAGE

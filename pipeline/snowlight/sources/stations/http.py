@@ -203,15 +203,23 @@ def iso_utc(moment: datetime) -> str:
     return moment.astimezone(UTC).strftime("%Y-%m-%dT%H:%M:%SZ")
 
 
-def make_client() -> httpx.Client:
-    """Return an HTTP client that verifies TLS and does not follow redirects itself."""
+def make_client(*, keepalive: bool = True) -> httpx.Client:
+    """Return an HTTP client that verifies TLS and does not follow redirects itself.
+
+    ``keepalive=False`` keeps no idle connection: every request opens its own, so a
+    deadline's cut (:class:`_Cutoff`) watches the connection from its first byte (an idle
+    connection taken from the pool is never traced, so its header phase could not be cut).
+    A long-lived live process uses it.
+    """
     bundle = os.environ.get("SSL_CERT_FILE")
     verify: ssl.SSLContext | bool = ssl.create_default_context(cafile=bundle) if bundle else True
+    limits = httpx.Limits() if keepalive else httpx.Limits(max_keepalive_connections=0)
     return httpx.Client(
         verify=verify,
         timeout=httpx.Timeout(REQUEST_TIMEOUT, connect=CONNECT_TIMEOUT),
         follow_redirects=False,
         headers={"User-Agent": USER_AGENT},
+        limits=limits,
     )
 
 

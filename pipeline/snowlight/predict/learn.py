@@ -89,6 +89,7 @@ from snowlight.predict.live_labels import (
     DAMAGED,
     NO_RECORD,
     NO_STATE,
+    NOT_SHOWN,
     OUTSIDE_48,
     Directory,
     LiveSource,
@@ -112,7 +113,7 @@ _TIE: Final = 1e-12
 RECORD_DAYS: Final = 8
 EXCLUDED: Final = "excluded from learning (learn.excluded_days)"
 ANOTHER_DIRECTORY: Final = "its timeline indexes another directory"
-NEVER: Final = frozenset({EXCLUDED, NO_RECORD, NO_STATE, DAMAGED, ANOTHER_DIRECTORY})
+NEVER: Final = frozenset({EXCLUDED, NO_RECORD, NO_STATE, DAMAGED, NOT_SHOWN, ANOTHER_DIRECTORY})
 """Why a day is not labeled that no later run changes: a day after it need not wait for it."""
 
 

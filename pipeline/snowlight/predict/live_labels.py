@@ -429,6 +429,10 @@ class LiveSource(Protocol):
 
 NO_RECORD: Final = "no record of the live reads"
 DAMAGED: Final = "its record of the live reads does not read"
+NOT_SHOWN: Final = "no pass of the day was shown under the prefix learning reads"
+"""A day the reader ran only in shadow (``v1-shadow``) or with publishing off: what it read
+was never on the map, so it labels nothing (every district would be unknown) and is never
+written as labeled; no later run changes that."""
 NO_STATE: Final = "no live ingest state reached this run"
 
 
@@ -482,6 +486,8 @@ class StateSource:
             return NO_RECORD
         if record.damaged:
             return DAMAGED
+        if not any(self.prefix in slot.shown for slot in record.slots.values()):
+            return NOT_SHOWN
         through = log.through()
         zones = set(self.zone_of.values())
         last = max((window_of(day, zone, self.settings)[1] for zone in zones), default=None)

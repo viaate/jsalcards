@@ -44,10 +44,12 @@ from snowlight import __version__
 from snowlight.output import write_bytes_atomic
 
 USER_AGENT: Final = f"snowlight-pipeline/{__version__} (+https://github.com/viaate/jsalcards)"
-PREFIXES: Final = ("v1", "v1-shadow")
-"""The only top folders a publisher writes: the live files and their shadow copies."""
-_KEY: Final = re.compile(r"(?:v1|v1-shadow)(?:/[a-z0-9][a-z0-9._-]*)+\.json")
+PREFIXES: Final = ("v1", "v1-shadow", "v1-rehearse")
+"""The only top folders a publisher writes: the live files, their shadow copies, and the
+switch drill's (E8)."""
+_KEY: Final = re.compile(r"(?:v1|v1-shadow|v1-rehearse)(?:/[a-z0-9][a-z0-9._-]*)+\.json")
 CONTENT_TYPE: Final = "application/json; charset=utf-8"
+DEFAULT_MESSAGE: Final = "Publish the live files"
 CACHE_CONTROL: Final = "public, max-age=15, stale-while-revalidate=15"
 """Spec 9.1: the edge and the browser keep a copy at most 15 s, then revalidate."""
 EMPTY_SHA256: Final = hashlib.sha256(b"").hexdigest()
@@ -372,7 +374,12 @@ class GitHubPublisher:
     client: httpx.Client
     branch: str = "main"
     api: str = "https://api.github.com"
-    message: str = "Publish the live files"
+    message: str = DEFAULT_MESSAGE
+    """The next write's commit message; every write goes back to :attr:`default_message`
+    after it, so a pass's message never sticks to a later write (an ``alerts.json`` commit,
+    say)."""
+    default_message: str = DEFAULT_MESSAGE
+    """The message of a write nothing named (a live-read process names its run in it)."""
     server_time: datetime | None = None
     attempts: int = 3
     """How many times a commit is built when another writer keeps moving the branch."""
@@ -446,18 +453,21 @@ class GitHubPublisher:
         self._commit(files, guard)
 
     def _commit(self, files: Mapping[str, bytes], guard: WriteGuard | None) -> None:
-        for key in files:
-            check_key(key)
-        if not files:
-            return
-        for attempt in range(1, max(1, self.attempts) + 1):
-            try:
-                self._commit_once(files, guard)
-            except MovedError:
-                if attempt >= self.attempts:
-                    raise
-            else:
+        try:
+            for key in files:
+                check_key(key)
+            if not files:
                 return
+            for attempt in range(1, max(1, self.attempts) + 1):
+                try:
+                    self._commit_once(files, guard)
+                except MovedError:
+                    if attempt >= self.attempts:
+                        raise
+                else:
+                    return
+        finally:
+            self.message = self.default_message
 
     def _commit_once(self, files: Mapping[str, bytes], guard: WriteGuard | None) -> None:
         """One commit on the branch's head, with the guard read in that very commit."""

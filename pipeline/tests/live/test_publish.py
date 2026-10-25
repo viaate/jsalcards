@@ -432,14 +432,14 @@ def test_publishing_off_writes_nothing_and_on_writes_under_v1(rig: Rig) -> None:
 def test_the_memory_survives_a_restart_and_refuses_a_damaged_file(rig: Rig) -> None:
     now = at("2026-11-17 11:05")
     rig.publisher.publish(storm(rig.world), now=now, healthy_share=0.8, edition=equal(now))
-    memory = Memory.load(rig.state / "publish.json")
+    memory = Memory.load(rig.state / "publish.v1-shadow.json")
     assert memory.last_published == now
     assert memory.last_stamp == STAMP
     assert memory.previous_healthy_share == 0.8
     assert memory.lit == {(0, "2026-11-17"), (7, "2026-11-17")}
-    (rig.state / "publish.json").write_text('{"lit": 3}', encoding="utf-8")
+    (rig.state / "publish.v1-shadow.json").write_text('{"lit": 3}', encoding="utf-8")
     with pytest.raises(ValueError, match="not the publisher's memory"):
-        Memory.load(rig.state / "publish.json")
+        Memory.load(rig.state / "publish.v1-shadow.json")
 
 
 # --- the change log and the day timelines -------------------------------------------------------
@@ -513,7 +513,7 @@ def test_a_day_over_everywhere_is_published_final_once(rig: Rig) -> None:
     assert f"{SHADOW}/{day_path(day)}" not in again.uploaded
     index = DayIndex.from_json_bytes(rig.host.file(DAYS))
     assert [(entry.day, entry.schools, entry.final) for entry in index.days] == [(day, 2, True)]
-    record = Memory.load(rig.state / "publish.json").days[f"{SHADOW}/{day.isoformat()}"]
+    record = Memory.load(rig.state / "publish.v1-shadow.json").days[f"{SHADOW}/{day.isoformat()}"]
     assert (record.schools, record.final) == (2, True)
 
 

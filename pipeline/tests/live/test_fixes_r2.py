@@ -199,7 +199,7 @@ def test_release_never_brings_back_a_blanked_status_whose_row_is_gone(
     assert _run(["live", "once", *common], loaders, monkeypatch) == 0
     clock.now = MORNING + timedelta(minutes=20)
     assert _run(["live", "blank", *common], loaders, monkeypatch) == 0
-    assert _run(["live", "release", *common], loaders, monkeypatch) == 0
+    assert _run(["live", "release", "--prefix", "every", *common], loaders, monkeypatch) == 0
     # the cause is fixed at the source: it no longer lists the rows (merge keeps a gone row
     # through its day, so only the hold's record keeps them dark)
     rig.reads = [SourceRead("gray-synthetic", ReadOutcome.EMPTY, MORNING)]
@@ -215,7 +215,7 @@ def test_release_never_brings_back_a_blanked_status_whose_row_is_gone(
     # no public day file shows the blanked statuses, and the index lists no day
     assert _timeline(server).gaps == ()
     assert _index(server) == ()
-    memory = Memory.load(tmp_path / "state" / "publish.json")
+    memory = Memory.load(tmp_path / "state" / "publish.v1-shadow.json")
     assert {nces_id for nces_id, _ in memory.redacted} == {ALPHA, "060000000001"}
 
 
@@ -400,7 +400,9 @@ def test_a_same_content_redeploy_in_progress_keeps_the_map_lit(  # noqa: PLR0913
     assert "blank" not in out
 
 
-def test_a_settled_new_deployment_that_cannot_be_read_blanks_every_stamp(tmp_path: Path) -> None:
+def test_a_settled_new_deployment_that_cannot_be_read_blanks_its_own_prefix(
+    tmp_path: Path,
+) -> None:
     world = World()
     host = Host(tmp_path / "host")
     other = DirectoryStamp(generated_on=date(2026, 10, 15), schools=11, districts=6)
@@ -422,9 +424,11 @@ def test_a_settled_new_deployment_that_cannot_be_read_blanks_every_stamp(tmp_pat
     unread = EditionVerdict(EditionState.UNREADABLE, later, blank_every=True, alert=True)
     report = publisher.publish(storm(world, later), now=later, healthy_share=1.0, edition=unread)
     assert (report.exit, report.alert, report.blank) == (Exit.REFUSED, True, True)
-    for prefix, stamp in (("v1", STAMP), (SHADOW, other)):
-        found = ClosingsFile.from_json_bytes((tmp_path / "host" / prefix / CLOSINGS).read_bytes())
-        assert (found.days, found.directory) == ((), stamp)
+    found = ClosingsFile.from_json_bytes((tmp_path / "host" / SHADOW / CLOSINGS).read_bytes())
+    assert (found.days, found.directory) == ((), other)
+    # S8-E: a shadow reader never touches v1/ (its own writer blanks it, under its own check)
+    kept = ClosingsFile.from_json_bytes((tmp_path / "host" / "v1" / CLOSINGS).read_bytes())
+    assert (len(kept.days), kept.directory) == (1, STAMP)
 
 
 def test_an_in_progress_deployment_keeps_the_verdict_and_a_settled_one_does_not() -> None:
@@ -565,7 +569,7 @@ def test_the_hold_write_failing_is_an_error_before_any_blank(tmp_path: Path) -> 
     assert report.exit is Exit.ERROR
     assert report.note.startswith("hold:")
     host.fail_write = False
-    assert release(host, MORNING).exit is Exit.OK
+    assert release(host, MORNING, ("v1", SHADOW)).exit is Exit.OK
 
 
 # --- S3 (data): a successor that lost its state continues the day ----------------------------
@@ -630,7 +634,7 @@ def test_a_failed_edition_blank_is_retried_until_it_lands(
         replace(loaders, sleep=sleep),
         monkeypatch,
     )
-    assert code == 1  # the blank landed, but it failed first: the run reports the error
+    assert code == 3  # S8-E: the blank landed in time; only one that keeps failing is exit 1
     assert _lit(server) == set()
     assert clock.now < MORNING + timedelta(minutes=10)  # stopped once the blank landed
 

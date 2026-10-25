@@ -1,0 +1,231 @@
+# The live reader's drills before the soak (docs/live.md, "Drills"; S8-E acceptance E4-E6,
+# E8). A drill runs only from a push to the default branch that changes this file: each drill
+# is one push that changes the DRILL line below. It lands as `none` (the push that adds this
+# file starts no drill). Nothing here touches v1/: a drill refuses when LIVE_PUBLISH is on or
+# v1/live/hold.json holds the map, and names v1-shadow (or v1-rehearse) itself. Each drill
+# prints its moments as `live-drill <drill> <event> <time>` notices, which the soak report
+# reads on the public API.
+# - stall: cancels the running live-read run, disables live-read for 35 minutes, then enables
+#   it about 75 s before a timer tick (the ticks land at :x0:40 and :x5:40), so live-ingest's
+#   reader job restarts the reader within the 5-minute bar; the watch job records `stale`;
+# - gate: dispatches live-blank (blank, v1-shadow), finds the blank's own commit (its
+#   message is the owner's stop's, its generated_at read from that commit), reads the shadow
+#   file through the CDN every 5 s until that exact blank is served, and logs the commit
+#   time, the served time and the delay (E6's bar: 60 s); waits 12 minutes, then dispatches
+#   live-blank (release, v1-shadow): the reader records `gate` and clears it;
+# - switch: the switch rehearsal (E8, before go-live): `snowlight live rehearse` runs the
+#   overrides writer, the reader in on (a pass that reads no source) and the overrides writer
+#   again on v1-rehearse of a folder on the runner (never the public live host), with cold
+#   local state, no Cloudflare secret (so no D1 state) and a SYNTHETIC override served on the
+#   runner's loopback, and checks the override is written within one pass of each switch.
+# A drill never turns its run red (the job continues on error): a refusal or a missed bar is
+# an annotation in the drill's log, so the pusher gets no email.
+name: live-drill
+
+on:
+  push:
+    paths:
+      - .github/workflows/live-drill.yml
+
+env:
+  DRILL: none
+
+permissions:
+  contents: read
+  actions: write # cancel, disable and enable live-read; dispatch live-blank; the Pages artifact
+  deployments: read # the switch rehearsal's directory handshake (S8-0)
+
+jobs:
+  drill:
+    if: github.ref == format('refs/heads/{0}', github.event.repository.default_branch)
+    runs-on: ubuntu-latest
+    timeout-minutes: 55
+    continue-on-error: true
+    concurrency:
+      group: live-drill
+      cancel-in-progress: false
+    env:
+      GH_TOKEN: ${{ github.token }}
+      LIVE_PUBLISH: ${{ vars.LIVE_PUBLISH }}
+      LIVE_ROOT: https://viaate.github.io/snowlight-live/
+      LIVE_REPOSITORY: viaate/snowlight-live
+      SHADOW_PREFIX: v1-shadow
+      REHEARSE_PREFIX: v1-rehearse
+    steps:
+      - name: Refuse while v1 is the reader's or held
+        id: guard
+        run: |
+          set -uo pipefail
+          if [ "$DRILL" = none ]; then
+            echo "::notice::live-drill none: no drill runs (set DRILL to stall, gate or switch)"
+            exit 0
+          fi
+          lower=$(printf '%s' "$LIVE_PUBLISH" | LC_ALL=C tr '[:upper:]' '[:lower:]')
+          if [ "$lower" = on ]; then
+            echo "::error::LIVE_PUBLISH is on: no drill runs (docs/live.md, Drills)."
+            exit 1
+          fi
+          code=$(curl -sS --max-time 20 -o hold.json -w '%{http_code}' \
+            -H "Authorization: Bearer $GH_TOKEN" -H "Accept: application/vnd.github.raw+json" \
+            "${GITHUB_API_URL:-https://api.github.com}/repos/$LIVE_REPOSITORY/contents/v1/live/hold.json" 2>/dev/null || echo 000)
+          case "$code" in
+            404) ;;
+            200) if [ "$(jq -r '.held' hold.json 2>/dev/null)" != false ]; then
+                   echo "::error::v1/live/hold.json holds the map: no drill runs."
+                   exit 1
+                 fi ;;
+            *) echo "::error::v1/live/hold.json could not be read (HTTP $code): no drill runs."; exit 1 ;;
+          esac
+          case "$DRILL" in stall | gate | switch) ;; *) echo "::error::DRILL is none, stall, gate or switch"; exit 1 ;; esac
+
+      - name: Stall the reader for 35 minutes
+        if: env.DRILL == 'stall'
+        run: |
+          set -uo pipefail
+          api="${GITHUB_API_URL:-https://api.github.com}/repos/$GITHUB_REPOSITORY/actions"
+          auth=(-H "Authorization: Bearer $GH_TOKEN" -H "Accept: application/vnd.github+json")
+          code=$(curl -sS --max-time 20 -o runs.json -w '%{http_code}' "${auth[@]}" "$api/workflows/live-read.yml/runs?per_page=30")
+          [ "$code" = 200 ] || { echo "::error::live-read runs could not be listed (HTTP $code)"; exit 1; }
+          curl -sS --max-time 20 -o /dev/null -w 'disable: HTTP %{http_code}\n' -X PUT "${auth[@]}" "$api/workflows/live-read.yml/disable"
+          echo "::notice::live-drill stall disabled $(date -u +%Y-%m-%dT%H:%M:%SZ)"
+          for id in $(jq -r '.workflow_runs[] | select(.status != "completed") | .id' runs.json); do
+            curl -sS --max-time 20 -o /dev/null -w "cancel $id: HTTP %{http_code}\n" -X POST "${auth[@]}" "$api/runs/$id/cancel"
+          done
+          sleep 2100
+          # Enable about 75 s before the next timer tick (:x0:40 or :x5:40), so the reader
+          # job's dispatch at that tick finds the workflow enabled (E4: running within 5 min).
+          wait=$(( (265 - $(date +%s) % 300 + 300) % 300 ))
+          sleep "$wait"
+          curl -sS --max-time 20 -o /dev/null -w 'enable: HTTP %{http_code}\n' -X PUT "${auth[@]}" "$api/workflows/live-read.yml/enable"
+          enabled=$(date +%s)
+          echo "::notice::live-drill stall enabled $(date -u -d "@$enabled" +%Y-%m-%dT%H:%M:%SZ)"
+          # The first live-read job that starts after the enable (up to 10 minutes).
+          for _ in $(seq 1 60); do
+            sleep 10
+            curl -sS --max-time 20 -o runs.json "${auth[@]}" "$api/workflows/live-read.yml/runs?per_page=10" 2>/dev/null || continue
+            first=$(jq -r --argjson t "$enabled" '[.workflow_runs[]? | select(.run_started_at != null) | select((.run_started_at | fromdateiso8601) >= $t) | .run_started_at] | sort | first // empty' runs.json 2>/dev/null || true)
+            if [ -n "$first" ]; then
+              echo "::notice::live-drill stall reader started $first ($(( $(date -d "$first" +%s) - enabled )) s after the enable)"
+              exit 0
+            fi
+          done
+          echo "::warning::live-drill stall: no live-read run started within 10 minutes of the enable"
+
+      - name: Block the gate with live-blank, then release it
+        if: env.DRILL == 'gate'
+        run: |
+          set -uo pipefail
+          api="${GITHUB_API_URL:-https://api.github.com}"
+          auth=(-H "Authorization: Bearer $GH_TOKEN" -H "Accept: application/vnd.github+json")
+          url="${LIVE_ROOT}${SHADOW_PREFIX}/live/closings.json"
+          since=$(date -u +%Y-%m-%dT%H:%M:%SZ)
+          body=$(jq -cn --arg ref "$GITHUB_REF_NAME" --arg prefix "$SHADOW_PREFIX" '{ref: $ref, inputs: {action: "blank", prefix: $prefix}}')
+          code=$(curl -sS --max-time 20 -o /dev/null -w '%{http_code}' -X POST "${auth[@]}" -d "$body" "$api/repos/$GITHUB_REPOSITORY/actions/workflows/live-blank.yml/dispatches" 2>/dev/null || echo 000)
+          [ "$code" = 204 ] || { echo "::error::live-blank could not be dispatched (HTTP $code)"; exit 1; }
+          echo "::notice::live-drill gate blank $since"
+          # Every 5 s: what the CDN serves (kept with the time it was seen), and until it is
+          # found, the blank's own commit (the owner's stop names it) and its generated_at.
+          : > seen.txt
+          sha="" committed="" stamp="" served=""
+          for _ in $(seq 1 96); do
+            sleep 5
+            now=$(date +%s)
+            seen=$(curl -sS --max-time 10 "$url?drill=$now" 2>/dev/null | jq -r '.generated_at // empty' 2>/dev/null || true)
+            echo "$now ${seen:--}" >> seen.txt
+            if [ -z "$sha" ]; then
+              curl -sS --max-time 20 "${auth[@]}" -o commits.json \
+                "$api/repos/$LIVE_REPOSITORY/commits?path=$SHADOW_PREFIX/live/closings.json&since=$since&per_page=20" 2>/dev/null || true
+              found=$(jq -r --arg p "live-blank $SHADOW_PREFIX blank " '[.[]? | select(.commit.message | startswith($p))] | last // empty | [.sha, .commit.committer.date] | @tsv' commits.json 2>/dev/null || true)
+              if [ -n "$found" ]; then IFS=$'\t' read -r sha committed <<< "$found"; fi
+            fi
+            if [ -n "$sha" ] && [ -z "$stamp" ]; then
+              stamp=$(curl -sS --max-time 20 -H "Authorization: Bearer $GH_TOKEN" -H "Accept: application/vnd.github.raw+json" \
+                "$api/repos/$LIVE_REPOSITORY/contents/$SHADOW_PREFIX/live/closings.json?ref=$sha" 2>/dev/null | jq -r '.generated_at // empty' 2>/dev/null || true)
+            fi
+            if [ -n "$stamp" ]; then
+              served=$(awk -v s="$stamp" '$2 == s { print $1; exit }' seen.txt)
+              if [ -n "$served" ]; then break; fi
+            fi
+          done
+          if [ -z "$sha" ] || [ -z "$stamp" ]; then
+            echo "::warning::drill gate: the blank's commit was not found within 8 minutes"
+          elif [ -z "$served" ]; then
+            echo "::warning::drill gate: the blank (generated_at $stamp, commit ${sha:0:8} at $committed) was not served within 8 minutes"
+          else
+            delay=$((served - $(date -d "$committed" +%s)))
+            line="drill gate: the blank (generated_at $stamp) committed at $committed (${sha:0:8}), served at $(date -u -d "@$served" +%Y-%m-%dT%H:%M:%SZ): $delay s"
+            if [ "$delay" -le 60 ]; then
+              echo "::notice::$line, within the 60-s bar"
+            else
+              echo "::warning::$line, over the 60-s bar"
+            fi
+          fi
+          sleep 720
+          body=$(jq -cn --arg ref "$GITHUB_REF_NAME" --arg prefix "$SHADOW_PREFIX" '{ref: $ref, inputs: {action: "release", prefix: $prefix}}')
+          code=$(curl -sS --max-time 20 -o /dev/null -w '%{http_code}' -X POST "${auth[@]}" -d "$body" "$api/repos/$GITHUB_REPOSITORY/actions/workflows/live-blank.yml/dispatches" 2>/dev/null || echo 000)
+          [ "$code" = 204 ] || { echo "::error::live-blank release could not be dispatched (HTTP $code)"; exit 1; }
+          echo "::notice::live-drill gate release $(date -u +%Y-%m-%dT%H:%M:%SZ)"
+
+      # The switch rehearsal (E8): set up as live-read.yml does, then `live rehearse` with no
+      # Cloudflare secret and no live host token in reach: it writes v1-rehearse of a folder
+      # on this runner only.
+      - if: env.DRILL == 'switch'
+        uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+
+      - if: env.DRILL == 'switch'
+        uses: astral-sh/setup-uv@c18668ad3cf93ea998bef934396af7bb5c839dc7 # v10.2.0
+        with:
+          python-version: "3.12"
+          working-directory: pipeline
+          enable-cache: true
+          cache-dependency-glob: uv.lock
+
+      - if: env.DRILL == 'switch'
+        working-directory: pipeline
+        run: uv sync --locked --no-dev
+
+      - if: env.DRILL == 'switch'
+        uses: actions/cache/restore@v4
+        with:
+          path: |
+            pipeline/.cache/nces
+            pipeline/.cache/places
+          key: pipeline-downloads-${{ hashFiles('pipeline/config/directory.yaml', 'pipeline/config/places.yaml') }}
+          restore-keys: pipeline-downloads-
+
+      - if: env.DRILL == 'switch'
+        uses: actions/cache/restore@v4
+        with:
+          path: pipeline/.cache/weather
+          key: predict-boundaries-v1
+
+      - if: env.DRILL == 'switch'
+        name: Build the directory
+        working-directory: pipeline
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+          SNOWLIGHT_MIRROR: https://github.com/${{ github.repository }}/releases/download
+          SNOWLIGHT_REQUIRE_MIRROR: "1"
+        run: |
+          mkdir -p .cache
+          uv run snowlight directory deployed-edition --site https://snowlightmap.com --out .cache/edition.json
+          previous=()
+          if [ -f .cache/edition.json ]; then previous=(--previous-edition .cache/edition.json); fi
+          uv run snowlight directory build --zones --no-tiles "${previous[@]}"
+
+      - name: The switch rehearsal
+        id: switch
+        if: env.DRILL == 'switch'
+        working-directory: pipeline
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+          PYTHONWARNINGS: ignore
+        run: |
+          echo "::notice::live-drill switch started $(date -u +%Y-%m-%dT%H:%M:%SZ)"
+          if uv run snowlight live rehearse --state out/internal/live/rehearse; then
+            echo "::notice::live-drill switch passed $(date -u +%Y-%m-%dT%H:%M:%SZ)"
+          else
+            echo "::warning::live-drill switch failed $(date -u +%Y-%m-%dT%H:%M:%SZ)"
+          fi

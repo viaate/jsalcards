@@ -1,6 +1,5 @@
 """The state stores: a folder, a private bucket and the Actions cache (SYNTHETIC state)."""
 
-import gzip
 import io
 import tarfile
 from pathlib import Path
@@ -14,9 +13,7 @@ from snowlight.live.ledger import Ledger
 from snowlight.live.ledger import Outcome as ReadOutcome
 from snowlight.live.publishers import Credentials, PublishError
 from snowlight.live.state import (
-    ARCHIVE,
     STATE_KEY,
-    CacheStateStore,
     LocalStateStore,
     StateError,
     bucket_store,
@@ -72,18 +69,6 @@ def test_a_ledger_open_for_writing_round_trips(tmp_path: Path) -> None:
 
 def test_a_first_run_pulls_nothing(tmp_path: Path) -> None:
     assert LocalStateStore(tmp_path / "empty").pull(tmp_path / "state") == []
-
-
-def test_the_cache_store_never_keeps_the_unmatched_queue(tmp_path: Path) -> None:
-    _state(tmp_path / "state").close()
-    store = CacheStateStore(tmp_path / "cache")
-    store.push(tmp_path / "state")
-    with tarfile.open(tmp_path / "cache" / ARCHIVE) as tar:
-        names = tar.getnames()
-    assert "unmatched.json" not in names
-    assert "ledger.sqlite" in names
-    data = (tmp_path / "cache" / ARCHIVE).read_bytes()
-    assert b"SYNTHETIC name" not in gzip.decompress(data)
 
 
 def _archive(members: list[tuple[tarfile.TarInfo, bytes]]) -> bytes:
