@@ -28,7 +28,7 @@ on:
       - .github/workflows/live-drill.yml
 
 env:
-  DRILL: none
+  DRILL: stall
 
 permissions:
   contents: read
