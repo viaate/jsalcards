@@ -221,11 +221,17 @@ class AlertsHistory:
 
     http: httpx.Client
 
-    def read(self, start: datetime, end: datetime) -> list[NwsAlert]:  # pragma: no cover
-        """Every class-making product issued from ``start`` to ``end``, every page.
+    def read(self, start: datetime, end: datetime) -> list[NwsAlert]:
+        """Every class-making product issued from ``start`` to ``end``, page by page, each once.
+
+        The feed pages newest first. It is read to its end, and also stops, whole, at a page
+        that holds nothing new: a ``next`` link already followed or a page of products already
+        read (the cursor looping), or a page of products all issued before ``start`` (the
+        rest are older still). A fresh start once went dark at the page bound on such a feed.
 
         Raises:
-            DarkError: a page cannot be read, or there are more pages than allowed.
+            DarkError: a page cannot be read, or there are more pages of new products than
+                allowed (the error says how far back they reached).
         """
         params: dict[str, str] | None = {
             "start": start.astimezone(UTC).strftime("%Y-%m-%dT%H:%M:%SZ"),
@@ -235,7 +241,8 @@ class AlertsHistory:
             "limit": "500",
         }
         url = HISTORY_URL
-        found: list[NwsAlert] = []
+        found: dict[str, NwsAlert] = {}
+        followed: set[str] = set()
         for _page in range(HISTORY_PAGES):
             try:
                 response = self.http.get(url, params=params, headers={"Accept": ACCEPT})
@@ -248,11 +255,23 @@ class AlertsHistory:
                 following = response.json().get("pagination", {}).get("next")
             except (AlertFormatError, ValueError, AttributeError) as error:
                 raise DarkError(Dark.MEMORY, "alert history: not an alerts page") from error
-            found.extend(page.alerts)
-            if not page.alerts or not isinstance(following, str):
-                return found
+            fresh = [alert for alert in page.alerts if alert.id not in found]
+            found.update((alert.id, alert) for alert in fresh)
+            if (
+                not fresh
+                or not isinstance(following, str)
+                or following in followed
+                or all(alert.sent < start for alert in fresh)
+            ):
+                return list(found.values())
+            followed.add(following)
             url, params = following, None
-        raise DarkError(Dark.MEMORY, f"alert history: more than {HISTORY_PAGES} pages")
+        oldest = min(alert.sent for alert in found.values())
+        raise DarkError(
+            Dark.MEMORY,
+            f"alert history: more than {HISTORY_PAGES} pages ({len(found):,} products, back to "
+            f"{oldest.astimezone(UTC):%Y-%m-%dT%H:%MZ})",
+        )
 
 
 # --- the heads-up history (S7-F F1, spec-f s. 2 and 11) ----------------------------------------
