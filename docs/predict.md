@@ -264,8 +264,11 @@ alert only within the heights it names.
   where every school the number counts is counted by such a forecast (a posted status, a day
   with no threat, a day with no alert or a chance with local records in the mix leaves it
   off). Nothing else changes: on a calm thin day the panel looks as it did before the marker.
-  The 12:09Z pass of 2026-10-25 had 3,146 thin district-days (Monday, all calm): the marker
-  showed on all 3,146 before this rule and on none after.
+  The 12:09Z pass of 2026-10-25 had 3,146 thin district-days and 15,560 thin private
+  school-days (Monday, all calm): the marker showed on all of them before this rule and shows
+  on none. A dry pass over the October 22 advisories (`tests/predict/fixtures`, no heights
+  read) has 6,292 thin district-days over its two days; the marker shows on the 4 under an
+  advisory.
 - **Advisory rates stay the archive's recorded days.** Under an advisory alone every district
   is above 50%: the nation's record is 495 of 667 recorded days (74%), and those days come
   mostly from the storm days the archive captured. Two ways to an honest lower rate were
