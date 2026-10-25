@@ -23,4 +23,9 @@ source:
     GMTED2010 and SRTM terrain data courtesy of the U.S. Geological Survey. Global ETOPO1
     terrain data courtesy of the U.S. National Oceanic and Atmospheric Administration.
 
-table: null
+table:
+  url: "https://github.com/viaate/jsalcards/releases/download/data-mirror-a3a68a808e1f/school-elevations-297ef26daa7e5ce1.json.gz"
+  sha256: "297ef26daa7e5ce179eff277d30b0d5f0e1690899a9393378ce631a56ea87578"
+  schools: 118211
+  unknown: 0
+  directory_sha256: "98638364d7999e2faa306885055db259222a093dba7bfe273cf6d877bd769453"
