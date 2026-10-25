@@ -10,6 +10,9 @@
 """
 
 import json
+import os
+import subprocess
+import sys
 from collections.abc import Mapping
 from dataclasses import dataclass, field
 from datetime import UTC, datetime, timedelta
@@ -335,3 +338,32 @@ def test_the_timer_and_a_successor_keep_the_open_alerts(tmp_path: Path) -> None:
     successor.set(Kind.TIMER, True, NOW + timedelta(minutes=5), {"minutes": 16})
     assert len(host.messages) == 1  # still one alert, no new commit
     load_book(successor, b"{not json")
+
+
+def test_a_notice_reaches_the_log_when_the_reader_is_killed() -> None:
+    """stdout is a pipe on a runner, so it is block-buffered: an annotation or a status line
+    printed before the watcher's or a cancel's kill must already be in the log."""
+    code = (
+        "import os, signal\n"
+        "from snowlight.live.alerts import annotate, ShadowSink\n"
+        "from snowlight.live.cli import _say\n"
+        "annotate('notice', 'live-read first pass 2026-10-25T06:27:53Z')\n"
+        "ShadowSink(host=None)._say('live v1-shadow alerts open gate')\n"
+        "_say('pulse kept')\n"
+        "os.kill(os.getpid(), signal.SIGKILL)\n"
+    )
+    env = {k: v for k, v in os.environ.items() if k != "PYTHONUNBUFFERED"}
+    ran = subprocess.run(  # noqa: S603 - this interpreter, a fixed program
+        [sys.executable, "-c", code],
+        capture_output=True,
+        text=True,
+        timeout=60,
+        check=False,
+        env=env,
+    )
+    assert ran.returncode == -9
+    assert ran.stdout.splitlines() == [
+        "::notice::live-read first pass 2026-10-25T06:27:53Z",
+        "::warning::live v1-shadow alerts open gate",
+        "pulse kept",
+    ]

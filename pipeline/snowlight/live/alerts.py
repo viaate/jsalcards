@@ -214,8 +214,10 @@ class AlertBook:
 
 
 def annotate(level: str, text: str) -> None:
-    """One workflow annotation line (stdout)."""
+    """One workflow annotation line (stdout), flushed at once: a pipe buffers stdout, so a
+    reader the watcher or a cancel ends would otherwise take its notices with it."""
     sys.stdout.write(f"::{level}::{text}\n")
+    sys.stdout.flush()
 
 
 @dataclass(slots=True)
@@ -233,6 +235,7 @@ class ShadowSink:
             annotate("warning", text)
         else:
             sys.stdout.write(text + "\n")
+            sys.stdout.flush()
         self.printed += 1
 
     def record_change(self, book: AlertBook, what: str) -> None:

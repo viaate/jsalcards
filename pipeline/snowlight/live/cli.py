@@ -774,6 +774,7 @@ LOADERS = Loaders()
 
 def _say(text: str) -> None:
     sys.stdout.write(text + "\n")
+    sys.stdout.flush()
 
 
 def abandoned_threads(parts: "Parts") -> int:
