@@ -97,6 +97,23 @@ def test_the_report_on_a_synthetic_history() -> None:
     assert "SYNTHETIC" not in render(found)
 
 
+def test_only_the_windows_own_live_ingest_runs_count() -> None:
+    """The runs are listed by whole UTC days: a run from before the window (one without the
+    reader and watch jobs, from before the landing) or after it is not counted."""
+    history = _history()
+    before = history.since - timedelta(hours=3)
+    after = history.until + timedelta(minutes=20)
+    history.runs.append(Run(8000, "live-ingest", before, jobs={"check": "success"}))
+    history.runs.append(Run(8001, "live-ingest", after, jobs={"reader": "failure"}))
+    found = report(history)
+    assert found["live_ingest_runs"] == report(_history())["live_ingest_runs"]
+    assert found["live_ingest_jobs"] == report(_history())["live_ingest_jobs"]
+    bars = found["bars"]
+    assert isinstance(bars, dict)
+    assert bars["ingest_jobs_green"] is True
+    assert bars["ingest_on_time"] is True
+
+
 def test_a_reader_commit_under_v1_and_an_exit_1_miss_their_bars() -> None:
     history = _history()
     history.v1_commits.append(_commit(T0 + timedelta(hours=2), 101))

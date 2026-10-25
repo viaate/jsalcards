@@ -422,8 +422,14 @@ def report(history: History) -> dict[str, JSONValue]:
         if commit.sha in served_at
     ]
     runs = {str(run.id): run for run in history.runs}
+    # the run listing is by whole days: only the window's own live-ingest runs count
     ingests = sorted(
-        (run for run in history.runs if run.workflow == "live-ingest"), key=lambda run: run.created
+        (
+            run
+            for run in history.runs
+            if run.workflow == "live-ingest" and history.since <= run.created <= history.until
+        ),
+        key=lambda run: run.created,
     )
     exits: Counter[str] = Counter()
     rows_by_day: dict[str, int] = {}
