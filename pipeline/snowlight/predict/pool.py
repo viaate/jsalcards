@@ -24,7 +24,11 @@ place it names, the lead's addendum b):
   nation sentence is not true of them) is **not modeled**: it publishes its fallback
   situation's rates, and its sentence says which recorded days it counts (lake effect snow
   takes the winter storm warning rates; the day after with no warning takes the plain
-  day's).
+  day's);
+* **thin** (spec addendum 2026-10-24 e, E3b): a cell whose base names the nation because
+  its region holds fewer than ``level_min_days`` labeled days of the situation published
+  (:func:`thin_cells`); the base carries the flag, the rate is the nation's record as for any
+  nation base.
 
 The delay chance ``q = P(delayed | not no school)`` is pooled the same way over the
 days that were not ``no_school``. Each ``m`` is chosen per level and class group from
@@ -362,6 +366,19 @@ class Chain:
     situation: Ints
     """The situation whose rates each cell publishes (its own, or its fallback's; -1 when
     none is backed: nothing may be published)."""
+    thin: npt.NDArray[np.bool_] = field(default_factory=lambda: np.zeros(0, dtype=np.bool_))
+    """Whether the base names the nation because the region holds too few labeled days of the
+    situation published (:func:`thin_cells`)."""
+
+
+def thin_cells(
+    scope: Ints, own: npt.NDArray[np.bool_], region_days: Floats, situation: Ints, rules: Rules
+) -> npt.NDArray[np.bool_]:
+    """The cells whose base names the nation because the region holds fewer than
+    ``level_min_days`` labeled days of the situation published (``situation``, as
+    :attr:`Chain.situation`; -1 is never thin): spec addendum 2026-10-24 e, E3b."""
+    nation = ~own & (scope == SCOPES.index("nation")) & (situation >= 0)
+    return np.asarray(nation & (region_days < rules.level_min_days), dtype=np.bool_)
 
 
 def toward(rate: Floats, ratio: Floats) -> Floats:
@@ -458,7 +475,13 @@ def chain(  # noqa: PLR0913 - the counts, the strengths, the rules and the optio
     days["own"] = n
     own = (n >= rules.own_min_days) & true_of(rate["own"], y, n, m)
     p = np.where(own, rate["own"], base)
-    return Chain(rate, days, scope, own, p, np.asarray(situation, dtype=np.int64))
+    published = np.asarray(situation, dtype=np.int64)
+    thin = (
+        thin_cells(scope, own, days["region"], published, rules)
+        if truth is not None
+        else np.zeros(p.shape, dtype=np.bool_)
+    )
+    return Chain(rate, days, scope, own, p, published, thin)
 
 
 def named_counts(counts: LevelCounts, found: Chain) -> tuple[Floats, Floats]:

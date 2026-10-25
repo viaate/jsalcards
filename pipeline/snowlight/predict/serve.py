@@ -227,10 +227,13 @@ class PrivateServe:
     named_y: npt.NDArray[np.float64]
     named_n: npt.NDArray[np.float64]
     known: int
+    """Private schools the model knows by id."""
     whole: npt.NDArray[np.bool_] = field(default_factory=lambda: np.zeros((0, 0), dtype=np.bool_))
     """Per school and situation, whether the days its base counts are all the place's days of
     their weather (:func:`whole_weather`); empty: none is, and no base names its weather."""
-    """Private schools the model knows by id."""
+    thin: npt.NDArray[np.bool_] = field(default_factory=lambda: np.zeros((0, 0), dtype=np.bool_))
+    """Per school and situation, whether its base names the nation for want of its region's
+    days (:func:`snowlight.predict.pool.thin_cells`); empty: none does."""
     left_out: int = 0
     """Private schools of the contiguous states left out (no time zone): the pass says how
     many (:func:`snowlight.predict.cli.one_pass`), as a left-out school gets no chance."""
@@ -277,6 +280,10 @@ class ServeModel:
     whole: npt.NDArray[np.bool_] = field(default_factory=lambda: np.zeros((0, 0), dtype=np.bool_))
     """Per deployed district and situation, whether the days its base counts are all the
     place's days of their weather (:func:`whole_weather`); empty: none is."""
+    thin: npt.NDArray[np.bool_] = field(default_factory=lambda: np.zeros((0, 0), dtype=np.bool_))
+    """Per deployed district and situation, whether its base names the nation because its
+    region holds too few labeled days of the situation (spec addendum 2026-10-24 e, E3b:
+    the base's ``thin`` flag); empty: none does."""
 
     @property
     def coverage(self) -> float:
@@ -414,6 +421,8 @@ class _Rates:
     named_n: npt.NDArray[np.float64]
     whole: npt.NDArray[np.bool_]
     """Per unit and situation, whether the base may name its weather (:func:`whole_weather`)."""
+    thin: npt.NDArray[np.bool_] = field(default_factory=lambda: np.zeros((0, 0), dtype=np.bool_))
+    """Whether each base names the nation for want of the region's days."""
 
 
 def whole_weather(
@@ -520,6 +529,7 @@ def _private_chain(
         named_y=named_y[rows],
         named_n=named_n[rows],
         whole=whole[rows],
+        thin=no_school.thin[rows],
     )
 
 
@@ -580,6 +590,7 @@ def _private_model(  # noqa: PLR0913 - the served schools, both chains and the m
         named_y=pick(mine.named_y, districts.named_y),
         named_n=pick(mine.named_n, districts.named_n),
         whole=pick(mine.whole, districts.whole),
+        thin=pick(mine.thin, districts.thin),
     )
     _check_true(rates, rules)
     entry = artifact.private
@@ -605,6 +616,7 @@ def _private_model(  # noqa: PLR0913 - the served schools, both chains and the m
         named_y=rates.named_y,
         named_n=rates.named_n,
         known=sum(1 for school in served.ids if school is not None),
+        thin=rates.thin,
         left_out=served.left_out,
         whole=rates.whole,
     )
@@ -759,6 +771,7 @@ def build_model(  # noqa: PLR0915 - the steps of one model, in order
             named_y=named_y[prow],
             named_n=named_n[prow],
             whole=whole[prow],
+            thin=no_school.thin[prow],
         )
         private = _private_model(
             served,
@@ -786,6 +799,7 @@ def build_model(  # noqa: PLR0915 - the steps of one model, in order
         anchored=live,
         private=private,
         whole=whole[rows],
+        thin=no_school.thin[rows],
     )
 
 
@@ -1004,6 +1018,7 @@ def forecast_file(  # noqa: PLR0913 - the model, the classes, the days and the l
                         records=model.records[index] if fit.records else {},
                         of="districts",
                         whole=bool(model.whole[index, k]) if model.whole.size else False,
+                        thin=bool(model.thin.size and model.thin[index, k]),
                     ),
                     situation,
                     day,
@@ -1094,6 +1109,7 @@ def _schools(  # noqa: PLR0913 - the private schools, their classes, the days an
                         records=private.records[i] if records else {},
                         of="private_schools" if private.of_private[k] else "districts",
                         whole=bool(private.whole[i, k]) if private.whole.size else False,
+                        thin=bool(private.thin.size and private.thin[i, k]),
                     ),
                     situation,
                     day,
@@ -1128,7 +1144,7 @@ def possible_outlooks(
     for k, situation in enumerate(SITUATIONS):
         counted = SITUATIONS[private.effective[k]]
         of: Of = "private_schools" if private.of_private[k] else "districts"
-        cells: set[tuple[float, float, bool, int, tuple[RecordDay, ...], bool]] = set()
+        cells: set[tuple[float, float, bool, int, tuple[RecordDay, ...], bool, bool]] = set()
         for i in range(len(private)):
             own = bool(private.own[i, k])
             record = tuple(private.records[i].get(counted.key, ())) if own else ()
@@ -1140,9 +1156,10 @@ def possible_outlooks(
                     int(private.scope[i, k]),
                     record,
                     bool(private.whole[i, k]) if private.whole.size else False,
+                    bool(private.thin.size and private.thin[i, k]),
                 )
             )
-        for p, q, own, scope, record, whole in cells:
+        for p, q, own, scope, record, whole, thin in cells:
             cell = _Cell(
                 p=p,
                 q=q,
@@ -1153,6 +1170,7 @@ def possible_outlooks(
                 records={counted.key: record} if record else {},
                 of=of,
                 whole=whole,
+                thin=thin,
             )
             for day in days:
                 for said_open in (False, True):
@@ -1175,6 +1193,9 @@ class _Cell:
     of: Of
     whole: bool = False
     """The counted days are all the place's days of their weather (:func:`whole_weather`)."""
+    thin: bool = False
+    """The base names the nation for want of the region's days (never with ``live``: a
+    situation counted over days read live names the nation's live record)."""
 
 
 def _forecast(  # noqa: PLR0913 - one unit, one day, and its last chance
@@ -1220,6 +1241,7 @@ def _forecast(  # noqa: PLR0913 - one unit, one day, and its last chance
             of=cell.of,
             said_open=floor,
             whole=cell.whole,
+            thin=cell.thin and not cell.live,
         ),
         record=record,
     )

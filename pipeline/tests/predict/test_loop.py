@@ -406,7 +406,8 @@ def _every_day(at: datetime) -> list[Forecast]:
     """Every kind of school day the pass can make (serve._forecast): each situation counted
     over each one it may truly be, an own base or each pooled scope, districts' or private
     schools' days, read live or not, said open or not, with a previous chance or none, with a
-    full record or none."""
+    full record or none, a nation base thin or not (the flag is as long as ``live``, which it
+    never comes with)."""
     found: list[Forecast] = []
     day = date(2026, 1, 7)
     earlier = (
@@ -419,7 +420,7 @@ def _every_day(at: datetime) -> list[Forecast]:
         for situation in SITUATIONS:
             if not sayable(situation, counted):
                 continue
-            for own, scope, live, of, said, last, records in product(
+            for own, scope, live, of, said, last, records, thin in product(
                 (False, True),
                 SCOPES,
                 (False, True),
@@ -427,12 +428,15 @@ def _every_day(at: datetime) -> list[Forecast]:
                 (False, True),
                 (None, earlier),
                 ({}, {counted.key: full}),
+                (False, True),
             ):
                 if own and scope != SCOPES[0]:
                     continue
+                if thin and (own or scope != "nation"):
+                    continue  # only a nation base is thin (and never one read live)
                 cell = serve._Cell(
                     p=0.57, q=0.13, own=own, scope=scope, counted=counted, live=live,
-                    records=records, of=of,
+                    records=records, of=of, thin=thin,
                 )  # fmt: skip
                 found.append(serve._forecast(cell, situation, day, last, at, said_open=said))
     return found

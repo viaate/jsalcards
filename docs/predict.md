@@ -237,6 +237,51 @@ alert only within the heights it names.
   workflow; pin the new block it prints. Until then the old table serves every school it
   holds at the same point, and the rest are unknown (reached).
 
+## Places with no record of their own (spec addendum 2026-10-24 e and f)
+
+- **Thin (E3b).** A base that names the nation because the district's region holds fewer than
+  `level_min_days` (8) labeled days of the situation published carries `thin: true`
+  (`PooledBase.thin`, additive; `pool.thin_cells`), never with `live` (a situation read live
+  names the nation's live record). The chance is still the nation's record and the sentence
+  is true of it. With the committed model, 4,191 of the 18,227 districts are thin under an
+  advisory (all of California and Nevada among them) and publish the nation's 74%. The web
+  reads the file as before and shows no mark: a "Few local records" marker waits for the
+  owner's approval of a design (mockups, not in the site).
+- **Advisory rates stay the archive's recorded days.** Under an advisory alone every district
+  is above 50%: the nation's record is 495 of 667 recorded days (74%), and those days come
+  mostly from the storm days the archive captured. Two ways to an honest lower rate were
+  tried on 2026-10-24 and neither can be shipped:
+  - *Calibration on held-out rows (E3a).* Levers fixed before a walk-forward backtest run once
+    (the nation's rate counted by storm-day cluster, or earlier seasons' held-out share); it
+    failed every gate (advisory Brier 0.297 against B0 0.255 and B1 0.205, pooled G1 failed),
+    because the test labels carry the same storm bias as the training labels. The code is
+    removed.
+  - *Capture-independent rows (addendum f, A1).* The idea: count the rate over the days of
+    lists the archive read on a regular schedule, whose reads the weather did not pick. The
+    rule, fixed from capture times alone before any row was counted: the capture index (the
+    workflow's CDX listings) holds a capture of the list on half or more of the season's
+    labeled school days, and the archive read 9 in 10 or more of the mornings (06:30 to 09:30
+    local) the index captured, on 10 or more mornings. Of the 158 stations whose lists label
+    a district, no station-season qualifies, so there are no such rows (addendum f stops
+    under 60 advisory rows on 10 dates). The 77 station-seasons the index captured on half
+    their days or more hold 2,296 morning captures, and the archive read 8 of them: the
+    downloads were planned storm days first. Looser rules that do find rows fail the proof
+    that reads do not rise on storm days: over every station-season with a morning read,
+    morning reads fall on 0.28% of plain days (45 of 15,989), 7.4% of advisory days (24 of
+    324) and 20.6% of warning days (39 of 189); even the index's own morning captures rise
+    from 3.9% to 15.7% and 29.6% (the Wayback Machine is saved more on storm mornings).
+  So the advisory chance is what the recorded days say, and the base sentence counts recorded
+  days, which is true of them. Real validation comes from the live labels this winter (S8
+  reads every covered district every morning, open days included), which the automatic
+  retrain re-anchors the storm classes on (The model learns on its own, below).
+- **Charter-only districts (E4) are not labeled.** Labeling a district with no regular school
+  by all its schools added 192 labeled days (172 districts, mostly storm-day closings) and made
+  the walk-forward backtest worse on the rows both label sets share (advisory Brier 0.27495 to
+  0.29495); addendum f admits them only if they pass its capture-independent gates, which
+  could not run, so `train.eligible_schools` labels every district as before. Yosemite-Wawona,
+  Eastern Sierra USD, Mammoth USD and Mono COE have no label rows either way: no archived list
+  carries them.
+
 ## Private schools and "school is on" (piece 2)
 
 - Every private school of the contiguous states (no district, the private flag in the

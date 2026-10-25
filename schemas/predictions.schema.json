@@ -648,6 +648,10 @@
           ],
           "type": "string"
         },
+        "thin": {
+          "description": "The base names the nation because the district's region holds too few recorded days of this weather: few local records. The chance is still the nation's record and the sentence is true of it. Only with scope nation and never with live.",
+          "type": "boolean"
+        },
         "weather": {
           "anyOf": [
             {

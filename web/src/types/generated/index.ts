@@ -781,6 +781,12 @@ export interface PooledBase {
   /** Whose recorded days are counted: districts', or private schools' only. */
   readonly of?: 'districts' | 'private_schools';
   /**
+   * The base names the nation because the district's region holds too few recorded days of this
+   * weather: few local records. The chance is still the nation's record and the sentence is true of
+   * it. Only with scope nation and never with live.
+   */
+  readonly thin?: boolean;
+  /**
    * With no alert: the weather of the days counted, when they are days with an alert of a class
    * that has no one alert kind; null for days with no winter alert.
    */

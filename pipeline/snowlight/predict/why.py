@@ -127,6 +127,7 @@ def base_for(  # noqa: PLR0913 - the counted days, the chance, where it comes fr
     live: bool = False,
     of: Of = "districts",
     whole: bool = False,
+    thin: bool = False,
 ) -> Base:
     """The base of a forecast whose whole chance is ``p_no_school``, counted over
     ``situation`` days, on a day of situation ``day`` (default the same).
@@ -145,9 +146,13 @@ def base_for(  # noqa: PLR0913 - the counted days, the chance, where it comes fr
     that did not follow a recorded snow day"). Else it says "days like this", which is true
     of every count.
 
+    ``thin``: the base names the nation because the region holds too few labeled days of the
+    situation (spec addendum 2026-10-24 e, E3b).
+
     Raises:
-        ValueError: ``scope`` is not a pooled scope, or the counted days cannot be said
-            truly on that day (:func:`sayable`).
+        ValueError: ``scope`` is not a pooled scope, the counted days cannot be said truly on
+            that day (:func:`sayable`), or ``thin`` is given for a base that does not name
+            the nation from the archive's days.
     """
     points = percent(p_no_school)
     asked = situation if day is None else day
@@ -157,6 +162,8 @@ def base_for(  # noqa: PLR0913 - the counted days, the chance, where it comes fr
     alert = ALERT_KIND.get(situation.weather)
     named = alert is None and not situation.after and (borrowed or whole)
     weather = WEATHER_NAME.get(situation.weather) if named else None
+    if thin and (own or scope != "nation" or live):
+        raise ValueError("only a base that names the nation from recorded days is thin")
     if not own:
         if scope not in SCOPES:
             raise ValueError(f"not a pooled scope: {scope!r}")
@@ -169,6 +176,7 @@ def base_for(  # noqa: PLR0913 - the counted days, the chance, where it comes fr
             borrowed=borrowed,
             live=live,
             of=of,
+            thin=thin,
         )
     if situation.after:
         return DayAfterBase(kind="day_after", points=points, live=live)
@@ -190,12 +198,15 @@ def why_for(  # noqa: PLR0913 - as base_for
     of: Of = "districts",
     said_open: float | None = None,
     whole: bool = False,
+    thin: bool = False,
 ) -> Why:
     """The base alone: it adds up to the chance exactly. With ``said_open`` (the chance the
     unit's word that school is on leaves, the floor), a ``said_open`` line takes the rest of
     the base away, so the base and the line add up to that chance exactly (no line when the
     base is already there)."""
-    base = base_for(situation, p_no_school, own, scope, day, live=live, of=of, whole=whole)
+    base = base_for(
+        situation, p_no_school, own, scope, day, live=live, of=of, whole=whole, thin=thin
+    )
     if said_open is None:
         return Why(base=base)
     taken = percent(said_open) - base.points

@@ -347,6 +347,20 @@ class PooledBase(CompactModel):
             "recorded archive days; the sentence says so."
         ),
     )
+    thin: bool = Field(
+        default=False,
+        description=(
+            "The base names the nation because the district's region holds too few recorded "
+            "days of this weather: few local records. The chance is still the nation's record "
+            "and the sentence is true of it. Only with scope nation and never with live."
+        ),
+    )
+
+    @model_validator(mode="after")
+    def _check_thin(self) -> Self:
+        if self.thin and (self.scope != "nation" or self.live):
+            raise ValueError("a thin base names the nation's recorded days")
+        return self
 
     @model_validator(mode="after")
     def _one_name(self) -> Self:
