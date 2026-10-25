@@ -39,7 +39,7 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 import { devices, expect, test } from '@playwright/test';
-import type { Browser, BrowserContextOptions, Page, Request } from '@playwright/test';
+import type { Browser, BrowserContextOptions, Locator, Page, Request } from '@playwright/test';
 import { build, preview } from 'vite';
 import type { PreviewServer } from 'vite';
 
@@ -336,6 +336,14 @@ const THIN_FORECAST = {
   p_delay: 0.01,
   reasons: [0],
   why: { base: { ...NATION_BASE, thin: true } },
+};
+/** SYNTHETIC: a calm day's chance (no alert, so no reasons) as the West's thin days read. */
+const CALM_THIN_FORECAST = {
+  state: 'forecast',
+  p_no_school: 0.01,
+  p_delay: 0,
+  reasons: [],
+  why: { base: { kind: 'pooled', points: 1, scope: 'nation', thin: true } },
 };
 
 /** What the live origin answers, and every request it was sent. */
@@ -887,7 +895,7 @@ for (const [device, options] of DEVICES) {
       await area.context.close();
     });
 
-    test('a chance with few local records shows lighter with its line under the meaning, and none without the flag', async ({
+    test('a chance with few local records on a day with a weather alert shows lighter with its line under the meaning in the school and area panels, and none on a calm day or without the flag', async ({
       browser,
     }) => {
       const { live } = theSite();
@@ -897,6 +905,12 @@ for (const [device, options] of DEVICES) {
           { district: 0, time_zone: ZONE, neighbors: [], days: [today, today] },
         ]);
       };
+      const WHITE = 'rgb(245, 245, 245)';
+      const GRAY = 'rgb(163, 163, 163)';
+      const colorOf = (number: Locator): Promise<string> =>
+        number.evaluate((node) => getComputedStyle(node).color);
+
+      // A day with an advisory: the school panel, then the area panel, both say it.
       serve(THIN_FORECAST);
       const school = await visit(browser, options, { query: `?school=${ALPHA}` });
       const section = school.page.locator('aside.detail .chance');
@@ -907,12 +921,49 @@ for (const [device, options] of DEVICES) {
       await expect(section.locator('.meaning + .few')).toHaveCount(1);
       await expect(number).toHaveClass(/\bis-thin\b/u);
       await expect(section.locator('.sum > li').first()).toContainText('winter advisory days');
-      const lighter = await number.evaluate((node) => getComputedStyle(node).color);
-      expect(lighter).toBe('rgb(163, 163, 163)');
+      expect(await colorOf(number)).toBe(GRAY);
       expect(school.problems).toEqual([]);
       await school.context.close();
 
-      // The same day from a file with the flag off, and from one written before it.
+      const area = await visit(browser, options, { query: `?zip=${ZIP}` });
+      const panel = area.page.locator('aside.detail');
+      await expect(panel).toHaveAttribute('aria-busy', 'false', SETTLE);
+      const areaNumber = panel.locator('.number');
+      await expect(areaNumber).toHaveText('74%', SETTLE);
+      await expect(panel.locator('.meaning')).toContainText(chanceFormat.chanceOn(TODAY));
+      await expect(panel.locator('.meaning + .few')).toHaveText(chanceCopy.fewRecords);
+      await expect(panel.locator('.few')).toHaveCount(1);
+      await expect(areaNumber).toHaveClass(/\bis-thin\b/u);
+      expect(await colorOf(areaNumber)).toBe(GRAY);
+      expect(area.problems).toEqual([]);
+      await area.context.close();
+
+      // A calm day whose base is as thin: both panels as before the marker.
+      serve(CALM_THIN_FORECAST);
+      const calm = await visit(browser, options, { query: `?school=${ALPHA}` });
+      const calmSection = calm.page.locator('aside.detail .chance');
+      await expect(calmSection.locator('.number')).toHaveText('1%', SETTLE);
+      await expect(calmSection.locator('.meaning')).toContainText(chanceFormat.chanceOn(TODAY));
+      await expect(calmSection.locator('.few')).toHaveCount(0);
+      await expect(calmSection.locator('.number')).not.toHaveClass(/\bis-thin\b/u);
+      await expect(calmSection).not.toContainText(chanceCopy.fewRecords);
+      expect(await colorOf(calmSection.locator('.number'))).toBe(WHITE);
+      expect(calm.problems).toEqual([]);
+      await calm.context.close();
+
+      const calmArea = await visit(browser, options, { query: `?zip=${ZIP}` });
+      const calmPanel = calmArea.page.locator('aside.detail');
+      await expect(calmPanel).toHaveAttribute('aria-busy', 'false', SETTLE);
+      await expect(calmPanel.locator('.number')).toHaveText('1%', SETTLE);
+      await expect(calmPanel.locator('.meaning')).toContainText(chanceFormat.chanceOn(TODAY));
+      await expect(calmPanel.locator('.few')).toHaveCount(0);
+      await expect(calmPanel.locator('.number')).not.toHaveClass(/\bis-thin\b/u);
+      await expect(calmPanel).not.toContainText(chanceCopy.fewRecords);
+      expect(await colorOf(calmPanel.locator('.number'))).toBe(WHITE);
+      expect(calmArea.problems).toEqual([]);
+      await calmArea.context.close();
+
+      // The advisory day from a file with the flag off, and from one written before it.
       for (const why of [{ base: { ...NATION_BASE, thin: false } }, { base: NATION_BASE }]) {
         serve({ ...THIN_FORECAST, why });
         const plain = await visit(browser, options, { query: `?school=${ALPHA}` });
@@ -922,10 +973,7 @@ for (const [device, options] of DEVICES) {
         await expect(shown.locator('.few')).toHaveCount(0);
         await expect(shown.locator('.number')).not.toHaveClass(/\bis-thin\b/u);
         await expect(shown).not.toContainText(chanceCopy.fewRecords);
-        const color = await shown
-          .locator('.number')
-          .evaluate((node) => getComputedStyle(node).color);
-        expect(color).toBe('rgb(245, 245, 245)');
+        expect(await colorOf(shown.locator('.number'))).toBe(WHITE);
         expect(plain.problems).toEqual([]);
         await plain.context.close();
       }

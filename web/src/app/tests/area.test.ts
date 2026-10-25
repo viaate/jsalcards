@@ -1117,16 +1117,25 @@ describe('an area with its closings at a live root', () => {
 });
 
 describe('few local records over an area', () => {
-  /** A forecast whose base is the nation's record, few local records (made up). */
-  function thin(chance: number): unknown {
+  /**
+   * A forecast whose base is the nation's record, few local records (made up), on a day with a
+   * weather alert (its reasons name winter storm), or a calm day (none).
+   */
+  function thin(chance: number, calm = false): unknown {
     const plain = forecast(chance) as { why: { base: unknown } };
     return {
       ...plain,
+      ...(calm ? { reasons: [] } : {}),
       why: {
         base: { kind: 'pooled', scope: 'nation', points: Math.round(chance * 100), thin: true },
         reasons: [],
       },
     };
+  }
+
+  /** A forecast with local records on a calm day. */
+  function calm(chance: number): unknown {
+    return { ...(forecast(chance) as object), reasons: [] };
   }
 
   /** The predictions file with Kansas City 33's and Center's Tuesday as given. */
@@ -1169,5 +1178,21 @@ describe('few local records over an area', () => {
     expect(chanceOf(predictions(thin(0.74), forecast(0.31)))?.fewRecords).toBeNull();
     // A posted closing and a school with no weather threat count in it too.
     expect(chanceOf(predictions(thin(0.74), thin(0.74)), AREA, true)?.fewRecords).toBeNull();
+  });
+
+  it('says nothing on a calm day, even where every school counted has the nation’s record', () => {
+    const one: AreaRecord = { ...AREA, own: AREA.own.slice(0, 2), near: [] };
+    const alone = chanceOf(predictions(thin(0.74, true), forecast(0.31)), one);
+    expect(alone?.number).toBe('74');
+    expect(alone?.fewRecords).toBeNull();
+    expect(chanceOf(predictions(thin(0.74, true), thin(0.74, true)))?.fewRecords).toBeNull();
+    // One calm district beside an alert one leaves it off too.
+    expect(chanceOf(predictions(thin(0.74), thin(0.74, true)))?.fewRecords).toBeNull();
+    // A calm district with local records: nothing, as before.
+    expect(chanceOf(predictions(calm(0.31), calm(0.31)))?.fewRecords).toBeNull();
+  });
+
+  it('says nothing on an alert day where the file has no flag', () => {
+    expect(chanceOf(predictions(forecast(0.74), forecast(0.74)))?.fewRecords).toBeNull();
   });
 });

@@ -193,9 +193,10 @@ export interface ChanceView {
   /** "Chance of no school Tuesday". */
   readonly meaning: string;
   /**
-   * "Few local records", on its own line under the meaning, where the chance's base names the
-   * nation for want of the region's days (`why.base.thin`); the number then shows lighter.
-   * Null otherwise, and for a file without the flag.
+   * "Few local records", on its own line under the meaning, where the chance comes with a
+   * weather alert and its base names the nation for want of the region's days
+   * (`fewLocalRecords`); the number then shows lighter. Null otherwise, and for a file
+   * without the flag.
    */
   readonly fewRecords: string | null;
   readonly moved: MovedView | null;
@@ -358,6 +359,17 @@ function underWay(day: Forecast & { readonly day: LocalDate }, now: Date, timeZo
     // A clock this browser cannot read: the day is not said.
     return true;
   }
+}
+
+/**
+ * Whether a forecast says few local records: its day has a weather alert (the file's reasons
+ * name the forecast weather, which the pipeline writes from the day's alert class and leaves
+ * empty on a day with none), and its base names the nation for want of the region's recorded
+ * days of that weather (`why.base.thin`, read as forecast-detail.ts reads it). A calm day says
+ * nothing of it, even where its base is the nation's, and so does a file without the flag.
+ */
+export function fewLocalRecords(forecast: Forecast): boolean {
+  return forecast.reasons.length > 0 && forecast.detail?.thin === true;
 }
 
 /**
@@ -1113,7 +1125,7 @@ export function chanceView(input: ChanceInput): ChanceView | null {
     day,
     number,
     meaning,
-    fewRecords: detail.thin ? chanceCopy.fewRecords : null,
+    fewRecords: fewLocalRecords(forecast) ? chanceCopy.fewRecords : null,
     moved,
     moments,
     chart,

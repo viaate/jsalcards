@@ -66,7 +66,7 @@ import type { Outlook, StatusRow } from '../data/school-day';
 import type { ReplayOn } from '../data/replay';
 import { PUBLISHED_PATHS, Status } from '../types/generated';
 import type { DirectoryStamp, LocalDate, SchoolId } from '../types/generated';
-import { chartView, headlineDay } from './chance';
+import { chartView, fewLocalRecords, headlineDay } from './chance';
 import type { ChartView } from './chance';
 import { districtShown, kindOf, readLiveFiles, shownName, townOf, viewerTimeZone } from './school';
 import type { LiveFiles } from './school';
@@ -110,9 +110,10 @@ export interface AreaChanceView {
   readonly meaning: string;
   /**
    * "Few local records", under the meaning, where every school the chance counts is counted by
-   * a forecast whose base names the nation for want of the region's days (`why.base.thin`):
-   * then every part of the number is a few-local-records chance, and it shows lighter. Null
-   * where any part is a posted status, a day with no threat, or a chance with local records.
+   * a forecast that says few local records (`fewLocalRecords`: a day with a weather alert, and
+   * a base that names the nation for want of the region's days): then every part of the number
+   * is a few-local-records chance, and it shows lighter. Null where any part is a posted
+   * status, a day with no threat, a day with no alert, or a chance with local records.
    */
   readonly fewRecords: string | null;
   /** Who decides, most students first. */
@@ -320,10 +321,10 @@ export function areaChance(
   });
   if (students <= 0) return null;
   const chance = sum / students;
-  const thin = counted.every(
-    (count, i) =>
-      count === null || (count.how === 'forecast' && days[i]?.shown?.detail?.thin === true),
-  );
+  const thin = counted.every((count, i) => {
+    const shown = days[i]?.shown ?? null;
+    return count === null || (count.how === 'forecast' && shown !== null && fewLocalRecords(shown));
+  });
 
   // Who decides: a district, or a school outside one deciding for itself, and what it counts as.
   interface Decider {

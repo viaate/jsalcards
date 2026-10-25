@@ -243,15 +243,29 @@ alert only within the heights it names.
   `level_min_days` (8) labeled days of the situation published carries `thin: true`
   (`PooledBase.thin`, additive; `pool.thin_cells`), never with `live` (a situation read live
   names the nation's live record). The chance is still the nation's record and the sentence
-  is true of it. With the committed model, 4,191 of the 18,227 districts are thin under an
-  advisory (all of California and Nevada among them) and publish the nation's 74%. The web
-  shows it as the owner approved on 2026-10-24 (mockup B): the chance number in the panel's
-  gray (`--text-2`, 7.8:1 on the panel) and "Few local records" on its own line directly
-  under "Chance of no school <day>", in the school panel, and in the ZIP code's area panel
-  only where every school its number counts is counted by such a chance (a posted status, a
-  day with no threat or a chance with local records in the mix leaves it off). Nothing else
-  changes, and a file without the flag shows as before (`forecastDetail` reads `thin` from
-  the base alone, true only on a pooled nation base not read live).
+  is true of it. The flag says only that, on any situation, the plain no-alert one too: a
+  calm day in the West is often thin. With the committed model, 4,191 of the 18,227
+  districts are thin under an advisory (all of California and Nevada among them) and publish
+  the nation's 74%.
+- **When "Few local records" shows (owner, 2026-10-25: "only when it is actually
+  happening").** The web shows it as the owner approved on 2026-10-24 (mockup B): the chance
+  number in the panel's gray (`--text-2`, 7.8:1 on the panel) and "Few local records" on its
+  own line directly under "Chance of no school <day>". It shows only for a forecast whose day
+  has a weather alert **and** whose base carries `thin` (`fewLocalRecords` in
+  `web/src/app/chance.ts`). The alert is read from the forecast's `reasons`, which the pass
+  writes from the day's alert class (`why.reasons_for`): an advisory, a winter storm, ice
+  storm, blizzard, lake effect snow, extreme cold or wind chill, hurricane or tropical storm
+  warning names its weather there, and a day with none of them (class `none`, the day after
+  a snow day without one too) leaves it empty. A watch or a cold weather advisory makes no
+  class (they are heads-ups), so such a day's chance is counted over calm days and shows no
+  marker. A day with no threat (`no_threat`), a weekend, a posted status and a file without
+  the flag show no marker either (`forecastDetail` reads `thin` from the base alone, true
+  only on a pooled nation base not read live). In the ZIP code's area panel it shows only
+  where every school the number counts is counted by such a forecast (a posted status, a day
+  with no threat, a day with no alert or a chance with local records in the mix leaves it
+  off). Nothing else changes: on a calm thin day the panel looks as it did before the marker.
+  The 12:09Z pass of 2026-10-25 had 3,146 thin district-days (Monday, all calm): the marker
+  showed on all 3,146 before this rule and on none after.
 - **Advisory rates stay the archive's recorded days.** Under an advisory alone every district
   is above 50%: the nation's record is 495 of 667 recorded days (74%), and those days come
   mostly from the storm days the archive captured. Two ways to an honest lower rate were

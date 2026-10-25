@@ -190,7 +190,8 @@ export interface ForecastDetail {
   /**
    * The base names the nation because the district's region holds too few recorded days of the
    * weather (`why.base.thin`): few local records. Read from the base alone, so it holds even
-   * where the sum's other parts do not read; false where the file does not say it.
+   * where the sum's other parts do not read; false where the file does not say it. The panel
+   * says it only on a day with a weather alert (app/chance.ts `fewLocalRecords`).
    */
   readonly thin: boolean;
   readonly record: RecordDetail | null;

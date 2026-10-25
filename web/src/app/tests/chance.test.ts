@@ -16,6 +16,7 @@ import {
   chartScale,
   chartTimes,
   chartView,
+  fewLocalRecords,
   headlineDay,
   hoursPerBar,
   neighborPosts,
@@ -24,6 +25,7 @@ import {
   toldApart,
   whyView,
 } from '../chance';
+import { Reason } from '../../types/generated';
 import type { ClosingsFile, Status } from '../../types/generated';
 import type { ChanceInput, DistrictNaming, Names, WhyView } from '../chance';
 import {
@@ -1387,20 +1389,48 @@ describe('districts next door, told apart', () => {
 });
 
 describe('few local records', () => {
-  it('says it under the meaning where the base is the nation’s record for want of local days', () => {
-    const thin = chanceView(nightBefore({ outlook: nightOutlook({ ...A_DETAIL, thin: true }) }));
+  /** Tuesday's forecast of A_OUTLOOK, its base `thin` as given, on a day whose reasons are given. */
+  function outlook(thin: boolean, reasons: readonly Reason[]): NonNullable<Outlook> {
+    const night = nightOutlook({ ...A_DETAIL, thin });
+    const tomorrow = night?.tomorrow;
+    if (night === null || tomorrow?.state !== 'forecast') throw new Error('no forecast');
+    return { ...night, tomorrow: { ...tomorrow, reasons } };
+  }
+
+  it('says it under the meaning on a day with a weather alert whose base is the nation’s record for want of local days', () => {
+    const thin = chanceView(nightBefore({ outlook: outlook(true, [0, 2]) }));
     expect(thin).toMatchObject({
       number: '64',
       meaning: 'Chance of no school Tuesday',
       fewRecords: 'Few local records',
     });
     expect(thin?.fewRecords).toBe(chanceCopy.fewRecords);
+    // Any alert class names its weather: an advisory's winter storm, a cold warning's cold.
+    for (const reason of [Reason.winter_storm, Reason.extreme_cold, Reason.ice, Reason.hurricane]) {
+      const forecast = outlook(true, [reason]).tomorrow;
+      expect(forecast?.state === 'forecast' && fewLocalRecords(forecast)).toBe(true);
+    }
   });
 
-  it('says nothing where the base has local records, or the file does not say', () => {
+  it('says nothing on a calm day, even where its base is the nation’s record', () => {
+    // The plain no-alert class: the file's reasons are empty.
+    const calm = chanceView(nightBefore({ outlook: outlook(true, []) }));
+    expect(calm).toMatchObject({ number: '64', meaning: 'Chance of no school Tuesday' });
+    expect(calm?.fewRecords).toBeNull();
+    // Everything else on the panel is as on any other day.
+    const plain = chanceView(nightBefore({ outlook: outlook(false, []) }));
+    // Compared as text, as the view holds functions made anew for each.
+    expect(JSON.stringify(calm)).toBe(JSON.stringify(plain));
+  });
+
+  it('says nothing on an alert day whose base has local records', () => {
+    expect(chanceView(nightBefore({ outlook: outlook(false, [0, 2]) }))?.fewRecords).toBeNull();
     expect(chanceView(nightBefore())?.fewRecords).toBeNull();
     expect(chanceView(nextMorning())?.fewRecords).toBeNull();
-    // A forecast from before the section: no detail at all.
+  });
+
+  it('says nothing for a file without the flag', () => {
+    // A forecast from before the section, on an alert day: no detail at all.
     const bare: Outlook = {
       today: { state: 'forecast', noSchool: 0.5, delay: 0, reasons: [0], day: '2026-01-12' },
       tomorrow: null,
@@ -1409,5 +1439,7 @@ describe('few local records', () => {
     const old = chanceView(nightBefore({ outlook: bare, now: at('2026-01-12T12:00:00Z') }));
     expect(old?.number).toBe('50');
     expect(old?.fewRecords).toBeNull();
+    // A file from before the flag: the detail reads it false (forecast-detail.ts).
+    expect(chanceView(nightBefore({ outlook: outlook(false, [0]) }))?.fewRecords).toBeNull();
   });
 });
