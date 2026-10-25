@@ -269,6 +269,38 @@ describe('an account the old Worker made without a number', () => {
     const [{ value: still }] = await api.sql("SELECT value FROM counters WHERE name = 'join'");
     assert.equal(still, before);
   });
+
+  it('gets none past #9999 even when it took the number given last, and logs in', async () => {
+    // The order the parallel logins above end in, made certain: this account
+    // takes the last number given, then is asked again with none left.
+    const [{ value: before }] = await api.sql("SELECT value FROM counters WHERE name = 'join'");
+    await api.sql("UPDATE counters SET value = 9998 WHERE name = 'join'");
+    const top = await signup('top_tia', 'tia@example.com');
+    assert.equal(top.r.body.user.join_number, 9999);
+    await api.sql("UPDATE counters SET value = ?1 WHERE name = 'join'", before);
+    const { r } = await signup('gap_gia', 'gia@example.com');
+    assert.equal(r.body.user.join_number, before + 1);
+    const forget = () =>
+      api.sql('UPDATE users SET join_number = NULL, numbered = 0 WHERE id = ?1', r.body.user.id);
+    await forget();
+    assert.equal((await loginWith('gap_gia')).body.user.join_number, before + 2);
+    await forget();
+    await api.sql("UPDATE counters SET value = 9999 WHERE name = 'join'");
+    const login = await loginWith('gap_gia');
+    assert.equal(login.status, 200);
+    assert.equal(login.body.user.join_number, null);
+    const [{ value, holder }] = await api.sql(
+      "SELECT value, holder FROM counters WHERE name = 'join'",
+    );
+    assert.equal(value, 9999);
+    assert.equal(holder, null);
+    assert.deepEqual(await api.sql('SELECT id FROM users WHERE join_number = 9999'), [
+      { id: top.r.body.user.id },
+    ]);
+    // Test only: #9999 free again, and the counter where the numbers given left it.
+    await api.sql('DELETE FROM users WHERE id = ?1', top.r.body.user.id);
+    await api.sql("UPDATE counters SET value = ?1 WHERE name = 'join'", before + 2);
+  });
 });
 
 describe('log in by username or email', () => {

@@ -133,6 +133,16 @@ const takeJoin = (also = ''): string =>
 const TAKEN_JOIN = "(SELECT value FROM counters WHERE name = 'join' AND holder = ?1)";
 
 /**
+ * The last statement of every transaction that takes a number: the holder
+ * goes back to NULL before the transaction ends, so that TAKEN_JOIN only ever
+ * sees a number takeJoin took in its own transaction. Without it a holder
+ * stays behind, and an account that held the counter last and is asked for a
+ * number again when takeJoin moves nothing (the counter at #9999) would read
+ * the counter's value as its own, a number another account holds.
+ */
+const RELEASE_JOIN = "UPDATE counters SET holder = NULL WHERE name = 'join'";
+
+/**
  * A number for an account the old Worker made (in the seconds between the
  * migration and the new Worker, numbered 0), at its next login or pick, once:
  * whether it gets one or finds none left, it is marked numbered and never
@@ -154,9 +164,10 @@ export async function giveJoinNumber(
     env.DB.prepare(
       `UPDATE users SET join_number = ${TAKEN_JOIN}, numbered = 1 WHERE id = ?1 AND numbered = 0`,
     ).bind(user.id),
+    env.DB.prepare(RELEASE_JOIN),
     env.DB.prepare('SELECT join_number FROM users WHERE id = ?1').bind(user.id),
   ]);
-  return results[2]?.results[0]?.join_number ?? null;
+  return results[3]?.results[0]?.join_number ?? null;
 }
 
 /** The UTC day of a time, for the per-network sign-up counts. */
@@ -221,6 +232,7 @@ export async function signup(env: Env, request: Request, now: number): Promise<R
         username,
         now,
       ),
+      env.DB.prepare(RELEASE_JOIN),
       env.DB.prepare(
         `INSERT INTO signup_networks (network, day, count) VALUES (?1, ?2, 1)
          ON CONFLICT (network, day) DO UPDATE SET count = count + 1`,
