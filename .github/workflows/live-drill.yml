@@ -28,7 +28,7 @@ on:
       - .github/workflows/live-drill.yml
 
 env:
-  DRILL: gate
+  DRILL: gate # the second gate drill
 
 permissions:
   contents: read
