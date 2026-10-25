@@ -675,7 +675,13 @@ export interface Hours {
 export interface IceReason {
   readonly kind: 'ice';
   readonly points: Points;
-  readonly inches: Inches;
+  /** When the weather service issued the forecast it is from. */
+  readonly at?: UtcInstant | null;
+  /**
+   * The ice in tenths of an inch, rounded down; null where the deciding schools' forecasts do not
+   * all read it, so the line states no amount.
+   */
+  readonly inches?: Inches | null;
 }
 
 /** Side streets stay icy after ``inches`` of snow: it only adds points. */
@@ -893,13 +899,32 @@ export interface SnowStopsReason {
   readonly at: UtcInstant;
 }
 
-/** How much snow is coming: ``low`` to ``high`` inches, overnight or not. */
+/**
+ * How much snow is coming: ``low`` to ``high`` inches, overnight or not, weighed against
+ * the recorded days of ``against``; or, with no ``low`` and ``high``, only that it is more or
+ * less snow than those days have.
+ */
 export interface SnowTotalReason {
   readonly kind: 'snow_total';
   readonly points: Points;
-  readonly low: Inches;
-  readonly high: Inches;
   readonly overnight: boolean;
+  /**
+   * The recorded days the forecast's snow is weighed against: winter storm and blizzard warning
+   * days (storms), or winter advisory days (advisory).
+   */
+  readonly against?: 'storms' | 'advisory';
+  /**
+   * When the weather service issued the forecast the amount is from; the amount is the snow it has
+   * from then to the end of its window (18:00 UTC on the day).
+   */
+  readonly at?: UtcInstant | null;
+  /** The most snow the line states; null with low. */
+  readonly high?: Inches | null;
+  /**
+   * The least snow the line states; null (with high) where a deciding school's forecast leaves the
+   * range the line could state, so it states no amount.
+   */
+  readonly low?: Inches | null;
 }
 
 /** Sun the afternoon before helps melt the ice: it only takes points away. */
@@ -935,7 +960,13 @@ export interface Why {
 export interface WindChillReason {
   readonly kind: 'wind_chill';
   readonly points: Points;
-  readonly feels_like: Fahrenheit;
+  /** When the weather service issued the forecast it is from. */
+  readonly at?: UtcInstant | null;
+  /**
+   * How cold it feels; null where the deciding schools' forecasts do not all read it, so the line
+   * states no temperature.
+   */
+  readonly feels_like?: Fahrenheit | null;
 }
 
 /**

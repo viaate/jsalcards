@@ -887,6 +887,19 @@ function same(a: number, b: number): boolean {
   return Math.round(a * 10) === Math.round(b * 10);
 }
 
+/**
+ * The UTC hour on the school day where the forecast's snow and ice window ends (the last of
+ * the 6-hour periods the pipeline counts: pipeline/snowlight/predict/ndfd.py
+ * WINDOW_END_HOURS, which a pipeline test holds to this number).
+ */
+export const FORECAST_WINDOW_END_UTC_HOUR = 18;
+
+/** Where the forecast's window ends on a school day: 18:00 UTC that day. */
+function windowEnd(day: LocalDate): Date {
+  const [year = 0, month = 1, date = 1] = day.split('-').map(Number);
+  return new Date(Date.UTC(year, month - 1, date, FORECAST_WINDOW_END_UTC_HOUR));
+}
+
 /** A reason as copy.ts words it: its numbers, and what its sentence needs from the rest. */
 function reasonInput(
   reason: ReasonDetail,
@@ -899,9 +912,13 @@ function reasonInput(
     case 'snow_total':
       return {
         ...reason,
+        until: reason.at === null ? null : windowEnd(day),
         record: detail.record?.proves === 'snow_total' ? recordCount(detail.record) : null,
+        // A line with no amount names the comparison alone, whatever the chart says.
         said:
           said.snow !== null &&
+          reason.low !== null &&
+          reason.high !== null &&
           same(said.snow.low, reason.low) &&
           same(said.snow.high, reason.high),
       };
@@ -933,7 +950,10 @@ function reasonInput(
     case 'wind_chill':
       return {
         ...reason,
-        said: said.cold !== null && Math.round(said.cold) === Math.round(reason.feelsLike),
+        said:
+          said.cold !== null &&
+          reason.feelsLike !== null &&
+          Math.round(said.cold) === Math.round(reason.feelsLike),
       };
     case 'cold':
       return {

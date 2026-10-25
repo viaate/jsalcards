@@ -33,6 +33,7 @@ import numpy.typing as npt
 
 from snowlight.directory.points import NO_DISTRICT, Points
 from snowlight.predict.alerts_live import LiveEvent, UgcIndex
+from snowlight.predict.announce import announces_at
 from snowlight.predict.artifact import (
     SITUATION_KEYS,
     DistrictModel,
@@ -42,8 +43,10 @@ from snowlight.predict.artifact import (
 )
 from snowlight.predict.calendar import forecast_days, is_school_day, previous_school_day
 from snowlight.predict.config import PredictConfig
+from snowlight.predict.forecast_values import NO_FORECASTS, Forecasts
 from snowlight.predict.geography import REGION_OF, districts_near, neighbors, state_of_leaid
 from snowlight.predict.labels import NO_SCHOOL, WEATHER_REASONS
+from snowlight.predict.nowcast import UNREAD, Neighbors
 from snowlight.predict.opens import NOTHING_SAID, SaidOpen
 from snowlight.predict.pool import (
     SCOPES,
@@ -64,6 +67,7 @@ from snowlight.predict.pool import (
     propensities,
     publish_rates,
 )
+from snowlight.predict.reasons import DayInputs, moved
 from snowlight.predict.share import points_of, says_true
 from snowlight.predict.situations import (
     SITUATIONS,
@@ -74,6 +78,8 @@ from snowlight.predict.situations import (
     counts,
     district_class,
 )
+from snowlight.predict.terms import NO_TERMS
+from snowlight.predict.terms import Model as TermsModel
 from snowlight.predict.why import WEATHER_NAME, Of, reasons_for, record_for, sayable, why_for
 from snowlight.schemas.directory import DirectoryStamp
 from snowlight.schemas.live import DayTimeline
@@ -87,6 +93,7 @@ from snowlight.schemas.predictions import (
     PredictionsFile,
     PreviousChance,
     SchoolForecast,
+    Why,
 )
 
 SCHEMA_VERSION: Final = 1
@@ -132,6 +139,11 @@ class Fit(Enum):
     (``tests/predict/test_private.py`` bounds the outlooks without one)."""
     NO_PREVIOUS = "no_previous"
     """No record days and no previous chances either."""
+    NO_REASONS = "no_reasons"
+    """As :attr:`NO_PREVIOUS`, and the districts' chances are the base alone, with no reason
+    lines (piece 3's reasons add up to at most about 320 bytes a district-day): the file before the
+    reasons, which the size worst case holds (``tests/predict/test_loop.py``). Each chance it
+    holds is the model's base, true of its sentence; the reasons' terms only are left out."""
     NO_SCHOOLS = "no_schools"
     """The districts only, as the whole file holds them (the file before private schools)."""
     NO_SCHOOLS_NO_RECORDS = "no_schools_no_records"
@@ -145,7 +157,12 @@ class Fit(Enum):
     @property
     def previous(self) -> bool:
         """Whether its districts' forecasts carry the previous chance."""
-        return self is not Fit.NO_PREVIOUS
+        return self not in {Fit.NO_PREVIOUS, Fit.NO_REASONS}
+
+    @property
+    def reasons(self) -> bool:
+        """Whether its districts' chances carry the reasons (when the pass gives them)."""
+        return self in {Fit.WHOLE, Fit.NO_RECORDS, Fit.NO_PRIVATE_PREVIOUS, Fit.NO_PREVIOUS}
 
     @property
     def private_previous(self) -> bool:
@@ -165,6 +182,7 @@ class Fit(Enum):
             Fit.NO_RECORDS: "record days",
             Fit.NO_PRIVATE_PREVIOUS: "record days or private schools' previous chances",
             Fit.NO_PREVIOUS: "record days or previous chances",
+            Fit.NO_REASONS: "record days, previous chances or reasons",
             Fit.NO_SCHOOLS: "private schools",
             Fit.NO_SCHOOLS_NO_RECORDS: "private schools or record days",
         }[self]
@@ -284,6 +302,14 @@ class ServeModel:
     """Per deployed district and situation, whether its base names the nation because its
     region holds too few labeled days of the situation (spec addendum 2026-10-24 e, E3b:
     the base's ``thin`` flag); empty: none does."""
+    terms: TermsModel = NO_TERMS
+    """The reasons' terms (piece 3, :mod:`snowlight.predict.terms`); none: the base alone."""
+    q_rate: npt.NDArray[np.float64] = field(default_factory=lambda: np.zeros((0, 0)))
+    """The delay rate among days with school before rounding, (deployed districts, situations):
+    the reasons keep it when they move the chance of no school (empty: taken from ``q``)."""
+    announce: tuple[int | None, ...] = ()
+    """Per deployed district, its usual posting time in minutes from the school day's midnight
+    (:mod:`snowlight.predict.announce`), or ``None``; empty: none known."""
 
     @property
     def coverage(self) -> float:
@@ -789,6 +815,7 @@ def build_model(  # noqa: PLR0915 - the steps of one model, in order
         eligible=tuple(eligible),
         p=p[rows],
         q=q[rows],
+        q_rate=delay.p[rows],
         own=no_school.own[rows],
         scope=no_school.scope[rows],
         effective=effective,
@@ -801,6 +828,13 @@ def build_model(  # noqa: PLR0915 - the steps of one model, in order
         whole=whole[rows],
         thin=no_school.thin[rows],
     )
+
+
+def with_terms(model: ServeModel, terms: TermsModel, announce: Mapping[str, int]) -> None:
+    """Give a built model the reasons' terms and each deployed district's usual posting time
+    (LEAID to minutes, :mod:`snowlight.predict.announce`)."""
+    model.terms = terms
+    model.announce = tuple(announce.get(leaid) for leaid in model.directory.district_ids)
 
 
 def _records(
@@ -978,10 +1012,21 @@ def forecast_file(  # noqa: PLR0913 - the model, the classes, the days and the l
     closed_schools: ClosedOn | None = None,
     said: SaidOpen = NOTHING_SAID,
     fit: Fit = Fit.WHOLE,
+    forecasts: Forecasts = NO_FORECASTS,
+    posted: Neighbors = UNREAD,
+    reasons: bool = False,
+    announces: bool = False,
 ) -> PredictionsFile:
     """The predictions file of one pass (see the module docstring): every district, and with
     ``private_classes`` (from :func:`unit_classes`) every served private school; ``fit``: what
     it leaves out to fit the size budget.
+
+    ``reasons``: the districts' chances carry the reasons' terms (piece 3: the forecast read at
+    the class snapshot, ``forecasts``, and the districts next door that posted, ``posted``),
+    where ``fit`` allows; off, every chance is the base alone, as before piece 3. Private
+    schools keep the base alone (each school's own amounts would make each outlook its own and
+    overflow the shared table). ``announces``: each district's usual posting time, where known,
+    is its forecasts' ``announces_at``.
 
     Raises:
         TableError: the private schools' outlooks are more than the file may hold.
@@ -1006,11 +1051,18 @@ def forecast_file(  # noqa: PLR0913 - the model, the classes, the days and the l
             situation = Situation.of(weather, index in after_sets[day])
             k = SITUATION_POSITION[situation.key]
             counted = model.effective[k]
+            extra = (
+                DayInputs(forecasts.get(day, index), posted.get(day, index))
+                if reasons and fit.reasons
+                else None
+            )
+            usual = model.announce[index] if announces and model.announce else None
             outlooks.append(
                 _forecast(
                     _Cell(
                         p=float(model.p[index, k]),
                         q=float(model.q[index, k]),
+                        q_rate=float(model.q_rate[index, k]) if model.q_rate.size else None,
                         own=bool(model.own[index, k]),
                         scope=SCOPES[int(model.scope[index, k])],
                         counted=SITUATIONS[counted],
@@ -1025,6 +1077,10 @@ def forecast_file(  # noqa: PLR0913 - the model, the classes, the days and the l
                     earlier.get((index, day)),
                     generated,
                     said_open=said.district(day, index),
+                    terms=model.terms if extra is not None else NO_TERMS,
+                    extra=extra,
+                    limits=(model.artifact.settings.floor, model.artifact.settings.ceiling),
+                    announces=announces_at(usual, day, model.time_zone[index]),
                 )
             )
         entries.append(
@@ -1196,6 +1252,8 @@ class _Cell:
     thin: bool = False
     """The base names the nation for want of the region's days (never with ``live``: a
     situation counted over days read live names the nation's live record)."""
+    q_rate: float | None = None
+    """The delay rate among days with school, unrounded (``None``: taken from ``q``)."""
 
 
 def _forecast(  # noqa: PLR0913 - one unit, one day, and its last chance
@@ -1206,15 +1264,34 @@ def _forecast(  # noqa: PLR0913 - one unit, one day, and its last chance
     generated: datetime,
     *,
     said_open: bool = False,
+    terms: TermsModel = NO_TERMS,
+    extra: DayInputs | None = None,
+    limits: tuple[float, float] = (FLOOR, 0.99),
+    announces: datetime | None = None,
 ) -> Forecast:
     """One unit's forecast for one school day. ``said_open``: the unit said school is on that
     day, so its chance of no school is the floor and of a delay 0 (:mod:`snowlight.predict.
     opens`), with the line that takes the rest of the base away, and no previous chance: the
     line shows what the chance was and why it fell (contract C3; it keeps the file's worst
-    case within budget)."""
+    case within budget). ``terms`` and ``extra``: the reasons on top of the base
+    (:mod:`snowlight.predict.reasons`, never on a day said open); ``limits``: the published
+    floor and ceiling; ``announces``: the unit's usual posting time that day."""
     p, q = cell.p, cell.q
     floor = FLOOR if said_open else None
-    shown = floor if floor is not None else p
+    lines = None
+    if floor is None and extra is not None:
+        lines = moved(
+            p,
+            q,
+            situation.weather,
+            cell.counted.weather,
+            terms,
+            extra,
+            limits[0],
+            limits[1],
+            q_rate=cell.q_rate,
+        )
+    shown = floor if floor is not None else p if lines is None else lines.p_no_school
     record = record_for(cell.records.get(cell.counted.key, ()), day) if cell.own else None
     previous: PreviousChance | None = None
     if earlier is not None and not said_open:
@@ -1225,24 +1302,28 @@ def _forecast(  # noqa: PLR0913 - one unit, one day, and its last chance
             previous = PreviousChance(p_no_school=last_p, at=last_at)
         elif last_previous is not None and last_previous.at < generated:
             previous = last_previous
+    why = why_for(
+        cell.counted,
+        p,
+        cell.own,
+        cell.scope,
+        situation,
+        live=cell.live,
+        of=cell.of,
+        said_open=floor,
+        whole=cell.whole,
+        thin=cell.thin and not cell.live,
+    )
+    if lines is not None:
+        why = Why(base=why.base, reasons=lines.reasons)
     return Forecast(
         state="forecast",
         p_no_school=shown,
-        p_delay=0.0 if said_open else q,
+        p_delay=0.0 if said_open else q if lines is None else lines.p_delay,
         reasons=reasons_for(situation.weather),
         previous=previous,
-        why=why_for(
-            cell.counted,
-            p,
-            cell.own,
-            cell.scope,
-            situation,
-            live=cell.live,
-            of=cell.of,
-            said_open=floor,
-            whole=cell.whole,
-            thin=cell.thin and not cell.live,
-        ),
+        announces_at=announces,
+        why=why,
         record=record,
     )
 

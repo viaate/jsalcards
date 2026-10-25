@@ -201,13 +201,26 @@ export type ReasonInput =
   | {
       readonly kind: 'snow_total';
       readonly points: number;
-      readonly low: number;
-      readonly high: number;
+      /**
+       * The range the sentence states, or both null where a deciding school's forecast
+       * leaves it: the sentence then states only the comparison.
+       */
+      readonly low: number | null;
+      readonly high: number | null;
       readonly overnight: boolean;
       /** The record the sentence cites, or null to leave that sentence out. */
       readonly record: RecordCount | null;
       /** The chart already says how much: the sentence names the reason alone. */
       readonly said?: boolean;
+      /**
+       * The days the snow is weighed against: recorded storms (the default), or recorded
+       * winter advisory days.
+       */
+      readonly against?: 'storms' | 'advisory';
+      /** When the forecast was issued: the sentence names it ("The 8:16 PM forecast has"). */
+      readonly at?: Date | null;
+      /** Where the forecast's amount ends ("by 1 PM"), said when it is not all overnight. */
+      readonly until?: Date | null;
     }
   | { readonly kind: 'record'; readonly points: number; readonly record: RecordCount }
   | {
@@ -234,9 +247,12 @@ export type ReasonInput =
   | {
       readonly kind: 'wind_chill';
       readonly points: number;
-      readonly feelsLike: number;
+      /** How cold it feels, or null where the schools' forecasts do not all read it. */
+      readonly feelsLike: number | null;
       /** The chart already says how cold. */
       readonly said?: boolean;
+      /** When the forecast was issued: the sentence names it. */
+      readonly at?: Date | null;
     }
   | {
       readonly kind: 'cold';
@@ -266,7 +282,14 @@ export type ReasonInput =
       readonly day: string;
     }
   | { readonly kind: 'icy_roads'; readonly points: number; readonly inches: number }
-  | { readonly kind: 'ice'; readonly points: number; readonly inches: number }
+  | {
+      readonly kind: 'ice';
+      readonly points: number;
+      /** The ice, or null where the schools' forecasts do not all read it. */
+      readonly inches: number | null;
+      /** When the forecast was issued: the sentence names it. */
+      readonly at?: Date | null;
+    }
   /** The district or the school said school is on: the chance drops to the floor. */
   | { readonly kind: 'said_open'; readonly points: number };
 
@@ -705,11 +728,52 @@ function reason(input: ReasonInput, district: string, now: Date, zones: Zones): 
     case 'snow_total': {
       const cited = input.record === null ? '' : ` ${recordSentence(input.record, 'It')}`;
       const than = input.points > 0 ? 'more' : 'less';
-      if (input.said === true) {
-        return `${than === 'more' ? 'More' : 'Less'} snow than most storms.${cited}`;
+      const most = input.against === 'advisory' ? 'most advisory days' : 'most storms';
+      const at = input.at ?? null;
+      const until = input.until ?? null;
+      const { low, high } = input;
+      const none = high === 0;
+      if (none && input.overnight) throw new RangeError('copy: no snow overnight');
+      if ((low === null) !== (high === null)) throw new RangeError('copy: half a snow range');
+      // No amount: a school's forecast leaves the range, so only the comparison, which is of
+      // the window's snow (never "overnight").
+      if (low === null || high === null) {
+        if (input.overnight) throw new RangeError('copy: overnight with no amount');
+        const lighter = input.against === 'advisory' && than === 'less';
+        if (input.said === true || at === null) {
+          return lighter
+            ? `Lighter than most advisory days.${cited}`
+            : `${than === 'more' ? 'More' : 'Less'} snow than ${most}.${cited}`;
+        }
+        const by = until === null ? '' : ` by ${clock(until, zones)}`;
+        return `The ${clock(at, zones)} forecast has ${than} snow${by} than ${most}.${cited}`;
       }
-      const when = input.overnight ? ' overnight' : '';
-      return `The forecast has ${inchWords(input.low, input.high)}${when}, ${than} than most storms.${cited}`;
+      // The snow still to fall from the forecast's time: overnight, or by the window's end.
+      const when = input.overnight
+        ? ' overnight'
+        : until === null
+          ? ''
+          : ` by ${clock(until, zones)}`;
+      const amount = none ? 'no new snow' : inchWords(low, high);
+      if (input.said === true) {
+        if (input.against === 'advisory' && than === 'less') {
+          return `Lighter than most advisory days.${cited}`;
+        }
+        return `${than === 'more' ? 'More' : 'Less'} snow than ${most}.${cited}`;
+      }
+      if (at === null) {
+        // No forecast time given: the approved forms, said of the forecast as it stands.
+        if (none) throw new RangeError('copy: no snow with no forecast time');
+        if (input.against === 'advisory' && than === 'less') {
+          return `Lighter than most advisory days, ${amount}${when}.${cited}`;
+        }
+        return `The forecast has ${amount}${when}, ${than} than ${most}.${cited}`;
+      }
+      const forecast = `The ${clock(at, zones)} forecast has`;
+      if (input.against === 'advisory' && than === 'less') {
+        return `${forecast} ${amount}${when}, lighter than most advisory days.${cited}`;
+      }
+      return `${forecast} ${amount}${when}, ${than} than ${most}.${cited}`;
     }
     case 'record':
       return recordSentence(input.record, district);
@@ -748,10 +812,14 @@ function reason(input: ReasonInput, district: string, now: Date, zones: Zones): 
         ? `${chanceCopy.heaviest} ${rest}.`
         : `The forecast has the heaviest snow ${span}, ${rest}.`;
     }
-    case 'wind_chill':
-      return input.said === true
-        ? 'Wind chill at the bus stop.'
-        : `The forecast has a wind chill of ${degrees(input.feelsLike)} at the bus stop.`;
+    case 'wind_chill': {
+      if (input.said === true) return 'Wind chill at the bus stop.';
+      const at = input.at ?? null;
+      const forecast = at === null ? 'The forecast has' : `The ${clock(at, zones)} forecast has`;
+      return input.feelsLike === null
+        ? `${forecast} a wind chill at the bus stop.`
+        : `${forecast} a wind chill of ${degrees(input.feelsLike)} at the bus stop.`;
+    }
     case 'cold':
       return input.said === true
         ? `Cold at the bus stop ${weekday(input.day)} morning.`
@@ -799,8 +867,13 @@ function reason(input: ReasonInput, district: string, now: Date, zones: Zones): 
     }
     case 'icy_roads':
       return `Side streets stay icy after ${inchWords(input.inches, input.inches)} of snow.`;
-    case 'ice':
-      return `The forecast has freezing rain leaving ${inchWords(input.inches, input.inches)} of ice.`;
+    case 'ice': {
+      const at = input.at ?? null;
+      const forecast = at === null ? 'The forecast has' : `The ${clock(at, zones)} forecast has`;
+      return input.inches === null
+        ? `${forecast} freezing rain.`
+        : `${forecast} freezing rain leaving ${inchWords(input.inches, input.inches)} of ice.`;
+    }
     case 'said_open':
       return `${district} said school is on.`;
   }

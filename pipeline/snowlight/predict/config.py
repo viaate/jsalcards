@@ -98,6 +98,18 @@ class ServeSettings(_Settings):
     elevation_margin_feet: float = Field(ge=0, le=5000)
     """An alert that names heights reaches a school within this many feet of its band
     (:mod:`snowlight.sources.nws.elevation`)."""
+    reasons: bool = False
+    """Piece 3: the districts' chances carry the reasons' terms (the forecast amounts and the
+    districts next door, ``data/predict/terms.json.gz``). Off: the base alone, as before."""
+    announces: bool = False
+    """Piece 3: a district's usual posting time is its forecasts' ``announces_at``."""
+    reasons_gate_override: str = ""
+    """Piece 3: terms whose recorded backtest v2 gate failed (or that record none) serve only
+    while this names the lead who signed off on serving them anyway (for example "lead
+    2026-11-02"); empty, the default: such terms are refused and the pass serves the base
+    alone."""
+    neighbors_max_age_minutes: int = Field(default=60, ge=1)
+    """A closings file older than this says nothing of the districts next door."""
 
 
 class LearnSettings(_Settings):

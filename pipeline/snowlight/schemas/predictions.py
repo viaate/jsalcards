@@ -379,18 +379,46 @@ type Base = Annotated[
 
 
 class SnowTotalReason(CompactModel):
-    """How much snow is coming: ``low`` to ``high`` inches, overnight or not."""
+    """How much snow is coming: ``low`` to ``high`` inches, overnight or not, weighed against
+    the recorded days of ``against``; or, with no ``low`` and ``high``, only that it is more or
+    less snow than those days have."""
 
     kind: Literal["snow_total"]
     points: Points
-    low: Inches
-    high: Inches
+    low: Inches | None = Field(
+        default=None,
+        description=(
+            "The least snow the line states; null (with high) where a deciding school's "
+            "forecast leaves the range the line could state, so it states no amount."
+        ),
+    )
+    high: Inches | None = Field(
+        default=None, description="The most snow the line states; null with low."
+    )
     overnight: bool
+    against: Literal["storms", "advisory"] = Field(
+        default="storms",
+        description=(
+            "The recorded days the forecast's snow is weighed against: winter storm and "
+            "blizzard warning days (storms), or winter advisory days (advisory)."
+        ),
+    )
+    at: UtcInstant | None = Field(
+        default=None,
+        description=(
+            "When the weather service issued the forecast the amount is from; the amount is "
+            "the snow it has from then to the end of its window (18:00 UTC on the day)."
+        ),
+    )
 
     @model_validator(mode="after")
     def _check(self) -> Self:
-        if self.low > self.high:
+        if (self.low is None) != (self.high is None):
+            raise ValueError("snow_total states a low with no high, or a high with no low")
+        if self.low is not None and self.high is not None and self.low > self.high:
             raise ValueError("snow_total low is above its high")
+        if self.low is None and self.overnight:
+            raise ValueError("snow_total says overnight of no amount")
         return self
 
 
@@ -449,7 +477,16 @@ class WindChillReason(CompactModel):
 
     kind: Literal["wind_chill"]
     points: Points
-    feels_like: Fahrenheit
+    feels_like: Fahrenheit | None = Field(
+        default=None,
+        description=(
+            "How cold it feels; null where the deciding schools' forecasts do not all read "
+            "it, so the line states no temperature."
+        ),
+    )
+    at: UtcInstant | None = Field(
+        default=None, description="When the weather service issued the forecast it is from."
+    )
 
     @model_validator(mode="after")
     def _check(self) -> Self:
@@ -508,7 +545,16 @@ class IceReason(CompactModel):
 
     kind: Literal["ice"]
     points: Points
-    inches: Inches
+    inches: Inches | None = Field(
+        default=None,
+        description=(
+            "The ice in tenths of an inch, rounded down; null where the deciding schools' "
+            "forecasts do not all read it, so the line states no amount."
+        ),
+    )
+    at: UtcInstant | None = Field(
+        default=None, description="When the weather service issued the forecast it is from."
+    )
 
     @model_validator(mode="after")
     def _check(self) -> Self:

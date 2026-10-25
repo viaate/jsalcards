@@ -409,8 +409,27 @@
       "additionalProperties": false,
       "description": "Freezing rain leaves ``inches`` of ice on the roads: it only adds points.",
       "properties": {
+        "at": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/UtcInstant"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "description": "When the weather service issued the forecast it is from."
+        },
         "inches": {
-          "$ref": "#/$defs/Inches"
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Inches"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "description": "The ice in tenths of an inch, rounded down; null where the deciding schools' forecasts do not all read it, so the line states no amount."
         },
         "kind": {
           "const": "ice",
@@ -422,8 +441,7 @@
       },
       "required": [
         "kind",
-        "points",
-        "inches"
+        "points"
       ],
       "title": "IceReason",
       "type": "object"
@@ -963,17 +981,52 @@
     },
     "SnowTotalReason": {
       "additionalProperties": false,
-      "description": "How much snow is coming: ``low`` to ``high`` inches, overnight or not.",
+      "description": "How much snow is coming: ``low`` to ``high`` inches, overnight or not, weighed against\nthe recorded days of ``against``; or, with no ``low`` and ``high``, only that it is more or\nless snow than those days have.",
       "properties": {
+        "against": {
+          "description": "The recorded days the forecast's snow is weighed against: winter storm and blizzard warning days (storms), or winter advisory days (advisory).",
+          "enum": [
+            "storms",
+            "advisory"
+          ],
+          "type": "string"
+        },
+        "at": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/UtcInstant"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "description": "When the weather service issued the forecast the amount is from; the amount is the snow it has from then to the end of its window (18:00 UTC on the day)."
+        },
         "high": {
-          "$ref": "#/$defs/Inches"
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Inches"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "description": "The most snow the line states; null with low."
         },
         "kind": {
           "const": "snow_total",
           "type": "string"
         },
         "low": {
-          "$ref": "#/$defs/Inches"
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Inches"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "description": "The least snow the line states; null (with high) where a deciding school's forecast leaves the range the line could state, so it states no amount."
         },
         "overnight": {
           "type": "boolean"
@@ -985,8 +1038,6 @@
       "required": [
         "kind",
         "points",
-        "low",
-        "high",
         "overnight"
       ],
       "title": "SnowTotalReason",
@@ -1109,8 +1160,27 @@
       "additionalProperties": false,
       "description": "The wind makes it feel like ``feels_like`` at the bus stop: it only adds points.",
       "properties": {
+        "at": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/UtcInstant"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "description": "When the weather service issued the forecast it is from."
+        },
         "feels_like": {
-          "$ref": "#/$defs/Fahrenheit"
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Fahrenheit"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "description": "How cold it feels; null where the deciding schools' forecasts do not all read it, so the line states no temperature."
         },
         "kind": {
           "const": "wind_chill",
@@ -1122,8 +1192,7 @@
       },
       "required": [
         "kind",
-        "points",
-        "feels_like"
+        "points"
       ],
       "title": "WindChillReason",
       "type": "object"

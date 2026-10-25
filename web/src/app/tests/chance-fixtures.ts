@@ -43,7 +43,15 @@ export const B_NOW = at('2026-01-13T12:20:00Z');
 export const A_WHY: WhyDetail = {
   base: { kind: 'alert', points: 30, alert: 'winter_storm_warning', borrowed: false, live: false },
   reasons: [
-    { kind: 'snow_total', points: 16, low: 6, high: 9, overnight: true },
+    {
+      kind: 'snow_total',
+      points: 16,
+      low: 6,
+      high: 9,
+      overnight: true,
+      against: 'storms',
+      at: null,
+    },
     { kind: 'neighbors', points: 9, districts: [1, 2], status: 0 },
     {
       kind: 'timing',
@@ -51,7 +59,7 @@ export const A_WHY: WhyDetail = {
       start: at('2026-01-13T08:00:00Z'),
       end: at('2026-01-13T11:00:00Z'),
     },
-    { kind: 'wind_chill', points: 5, feelsLike: -4 },
+    { kind: 'wind_chill', points: 5, feelsLike: -4, at: null },
     { kind: 'snow_stops', points: -3, at: at('2026-01-13T13:00:00Z') },
   ],
 };

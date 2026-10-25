@@ -116,9 +116,17 @@ export type ReasonDetail =
   | {
       readonly kind: 'snow_total';
       readonly points: number;
-      readonly low: number;
-      readonly high: number;
+      /**
+       * The range the line states, or both null: a deciding school's forecast leaves the
+       * range the line could state, so it states only the comparison.
+       */
+      readonly low: number | null;
+      readonly high: number | null;
       readonly overnight: boolean;
+      /** The recorded days the snow is weighed against, as the pipeline states it. */
+      readonly against: 'storms' | 'advisory';
+      /** When the forecast the amount is from was issued, or null where the file gives none. */
+      readonly at: Date | null;
     }
   | { readonly kind: 'record'; readonly points: number }
   | {
@@ -128,12 +136,26 @@ export type ReasonDetail =
       readonly status: Status;
     }
   | { readonly kind: 'timing'; readonly points: number; readonly start: Date; readonly end: Date }
-  | { readonly kind: 'wind_chill'; readonly points: number; readonly feelsLike: number }
+  | {
+      readonly kind: 'wind_chill';
+      readonly points: number;
+      /** How cold it feels, or null where the schools' forecasts do not all read it. */
+      readonly feelsLike: number | null;
+      /** When the forecast it is from was issued, or null. */
+      readonly at: Date | null;
+    }
   | { readonly kind: 'cold'; readonly points: number; readonly feelsLike: number }
   | { readonly kind: 'snow_stops'; readonly points: number; readonly at: Date }
   | { readonly kind: 'sun'; readonly points: number }
   | { readonly kind: 'icy_roads'; readonly points: number; readonly inches: number }
-  | { readonly kind: 'ice'; readonly points: number; readonly inches: number }
+  | {
+      readonly kind: 'ice';
+      readonly points: number;
+      /** The ice, or null where the schools' forecasts do not all read it. */
+      readonly inches: number | null;
+      /** When the forecast it is from was issued, or null. */
+      readonly at: Date | null;
+    }
   /** The district or the school said school is on: it takes the chance down to the floor. */
   | { readonly kind: 'said_open'; readonly points: number };
 
@@ -327,6 +349,12 @@ function baseOf(value: unknown): BaseDetail | null {
   }
 }
 
+/** A forecast's issue time: null where the file leaves it out, undefined where it is not one. */
+function issuedAt(value: unknown): Date | null | undefined {
+  if (value === undefined || value === null) return null;
+  return parseInstant(value) ?? undefined;
+}
+
 /** The side each kind's points are on, where its weather only ever pushes one way. */
 const ADDS = new Set(['wind_chill', 'cold', 'icy_roads', 'ice']);
 const TAKES_AWAY = new Set(['sun', 'said_open']);
@@ -341,8 +369,20 @@ function reasonOf(value: unknown, districts: number): ReasonDetail | null {
   switch (reason.kind) {
     case 'snow_total': {
       const { low, high, overnight } = reason;
-      return isInches(low) && isInches(high) && low <= high && typeof overnight === 'boolean'
-        ? { kind: 'snow_total', points, low, high, overnight }
+      // A key the file leaves out is at its default: storms, and no forecast time.
+      const against = reason.against ?? 'storms';
+      const at = issuedAt(reason.at);
+      if (against !== 'storms' && against !== 'advisory') return null;
+      if (at === undefined || typeof overnight !== 'boolean') return null;
+      // No amount (both keys missing or null): the line states only the comparison, which is
+      // of the window's snow, so never "overnight".
+      if ((low ?? null) === null && (high ?? null) === null) {
+        return overnight
+          ? null
+          : { kind: 'snow_total', points, low: null, high: null, overnight, against, at };
+      }
+      return isInches(low) && isInches(high) && low <= high
+        ? { kind: 'snow_total', points, low, high, overnight, against, at }
         : null;
     }
     case 'record':
@@ -369,18 +409,30 @@ function reasonOf(value: unknown, districts: number): ReasonDetail | null {
         ? { kind: 'timing', points, start, end }
         : null;
     }
-    case 'wind_chill':
+    case 'wind_chill': {
+      const at = issuedAt(reason.at);
+      const feelsLike = reason.feels_like ?? null;
+      return (feelsLike === null || isWhole(feelsLike, -80, 130)) && at !== undefined
+        ? { kind: 'wind_chill', points, feelsLike, at }
+        : null;
+    }
     case 'cold':
       return isWhole(reason.feels_like, -80, 130)
-        ? { kind: reason.kind, points, feelsLike: reason.feels_like }
+        ? { kind: 'cold', points, feelsLike: reason.feels_like }
         : null;
     case 'snow_stops': {
       const at = parseInstant(reason.at);
       return at === null ? null : { kind: 'snow_stops', points, at };
     }
     case 'icy_roads':
-    case 'ice':
-      return isInches(reason.inches) ? { kind: reason.kind, points, inches: reason.inches } : null;
+      return isInches(reason.inches) ? { kind: 'icy_roads', points, inches: reason.inches } : null;
+    case 'ice': {
+      const at = issuedAt(reason.at);
+      const inches = reason.inches ?? null;
+      return (inches === null || isInches(inches)) && at !== undefined
+        ? { kind: 'ice', points, inches, at }
+        : null;
+    }
     default:
       return null;
   }

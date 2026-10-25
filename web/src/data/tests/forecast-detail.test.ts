@@ -64,7 +64,15 @@ describe('a forecast’s chance section parts', () => {
           live: false,
         },
         reasons: [
-          { kind: 'snow_total', points: 14, low: 6, high: 9, overnight: true },
+          {
+            kind: 'snow_total',
+            points: 14,
+            low: 6,
+            high: 9,
+            overnight: true,
+            against: 'storms',
+            at: null,
+          },
           { kind: 'neighbors', points: 9, districts: [1], status: 0 },
           {
             kind: 'timing',
@@ -72,7 +80,7 @@ describe('a forecast’s chance section parts', () => {
             start: at('2027-01-12T08:00:00Z'),
             end: at('2027-01-12T11:00:00Z'),
           },
-          { kind: 'wind_chill', points: 5, feelsLike: -4 },
+          { kind: 'wind_chill', points: 5, feelsLike: -4, at: null },
           { kind: 'snow_stops', points: -3, at: at('2027-01-12T13:00:00Z') },
         ],
       },
@@ -101,6 +109,25 @@ describe('a forecast’s chance section parts', () => {
     ]);
     expect(next.record).toMatchObject({ proves: 'base', inches: null });
     expect(neighborsOf([1], 0, 2)).toEqual([1]);
+  });
+
+  it('reads a forecast line that states no amount, as only its comparison', () => {
+    // A deciding school's forecast leaves the range the line could state: no amount.
+    const unstated = night();
+    const lines = reasons(unstated) as Json[];
+    const [snow, , , chill] = lines;
+    if (snow === undefined || chill === undefined) throw new Error('the example changed');
+    delete snow.low;
+    delete snow.high;
+    snow.overnight = false;
+    delete chill.feels_like;
+    expect(read(unstated).why?.reasons).toMatchObject([
+      { kind: 'snow_total', low: null, high: null, overnight: false },
+      { kind: 'neighbors' },
+      { kind: 'timing' },
+      { kind: 'wind_chill', feelsLike: null },
+      { kind: 'snow_stops' },
+    ]);
   });
 
   it('reads a forecast from before the section as having none of it', () => {
@@ -160,7 +187,27 @@ describe('a forecast’s chance section parts', () => {
       ],
       [
         'a reason without its numbers',
-        (f) => (reasons(f)[3] = { kind: 'wind_chill', points: 5 }),
+        (f) => (reasons(f)[3] = { kind: 'icy_roads', points: 5 }),
+        'why',
+      ],
+      ['a snow line with half its range', (f) => ((reasons(f)[0] as Json).high = null), 'why'],
+      [
+        'a snow line with no amount said overnight',
+        (f) => {
+          const line = reasons(f)[0] as Json;
+          delete line.low;
+          delete line.high;
+        },
+        'why',
+      ],
+      [
+        'a snow line weighed against days there are no words for',
+        (f) => ((reasons(f)[0] as Json).against = 'lake_days'),
+        'why',
+      ],
+      [
+        'a forecast line issued at no instant',
+        (f) => ((reasons(f)[3] as Json).at = 'last night'),
         'why',
       ],
       ['a reason of no points', (f) => ((reasons(f)[4] as Json).points = 0), 'why'],

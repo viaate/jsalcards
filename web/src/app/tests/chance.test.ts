@@ -519,6 +519,109 @@ describe('what the section leaves out', () => {
     expect(lines(why({ ...A_DETAIL, why: pooled }, 0.33))).toEqual([
       '33% Districts near Shawnee Mission closed or went remote on 1 in 3 of their recorded days like this.',
     ]);
+    // The pipeline states the days a snow line is weighed against; the base's kind does not
+    // decide it (a day-after base over a storm's days still says "most storms").
+    const light: WhyDetail = {
+      base: {
+        kind: 'pooled',
+        points: 74,
+        scope: 'nation',
+        alert: null,
+        of: 'districts',
+        borrowed: false,
+        live: false,
+      },
+      reasons: [
+        {
+          kind: 'snow_total',
+          points: -21,
+          low: 0,
+          high: 1,
+          overnight: false,
+          against: 'advisory',
+          at: null,
+        },
+      ],
+    };
+    expect(lines(why({ ...A_DETAIL, record: null, why: light }, 0.53))).toEqual([
+      '74% Districts across the country closed or went remote on more than 7 in 10 of their recorded days like this.',
+      `${MINUS}21 Lighter than most advisory days, 0 to 1 inch.`,
+    ]);
+    const after: WhyDetail = {
+      base: { kind: 'day_after', points: 60, live: false },
+      reasons: [
+        {
+          kind: 'snow_total',
+          points: 12,
+          low: 9,
+          high: 12,
+          overnight: true,
+          against: 'storms',
+          at: null,
+        },
+      ],
+    };
+    expect(
+      lines(why({ ...A_DETAIL, record: null, why: after }, 0.72)).some((line) =>
+        line.endsWith('The forecast has 9 to 12 inches overnight, more than most storms.'),
+      ),
+    ).toBe(true);
+  });
+
+  it('names the forecast the amounts are from, and where its window ends', () => {
+    const args = { day: '2026-01-13', district: 'Shawnee Mission', now: A_NOW, zones: HERE };
+    const issued = at('2026-01-13T02:16:00Z');
+    const base: WhyDetail['base'] = {
+      kind: 'similar_days',
+      points: 74,
+      weather: 'advisory',
+      borrowed: false,
+      live: false,
+    };
+    const said = (reasons: WhyDetail['reasons'], chance: number): string[] =>
+      lines(
+        whyView({
+          detail: { ...A_DETAIL, hours: null, record: null, why: { base, reasons } },
+          chance,
+          nameOf: NAME_OF,
+          ...args,
+        }),
+      ).slice(1);
+    const snow = (low: number | null, high: number | null, overnight: boolean, points: number) =>
+      ({
+        kind: 'snow_total',
+        points,
+        low,
+        high,
+        overnight,
+        against: 'advisory',
+        at: issued,
+      }) as const;
+    expect(said([snow(0, 0.5, false, -36)], 0.38)).toEqual([
+      `${MINUS}36 The 8:16${NBSP}PM forecast has 0 to 0.5 inches by 12${NBSP}PM, lighter than most advisory days.`,
+    ]);
+    expect(said([snow(0, 0, false, -36)], 0.38)).toEqual([
+      `${MINUS}36 The 8:16${NBSP}PM forecast has no new snow by 12${NBSP}PM, lighter than most advisory days.`,
+    ]);
+    expect(said([snow(6, 9, true, 1)], 0.75)).toEqual([
+      `+1 The 8:16${NBSP}PM forecast has 6 to 9 inches overnight, more than most advisory days.`,
+    ]);
+    expect(said([{ kind: 'ice', points: 25, inches: 0.2, at: issued }], 0.99)).toEqual([
+      `+25 The 8:16${NBSP}PM forecast has freezing rain leaving 0.2 inches of ice.`,
+    ]);
+    expect(said([{ kind: 'wind_chill', points: 5, feelsLike: -4, at: issued }], 0.79)).toEqual([
+      `+5 The 8:16${NBSP}PM forecast has a wind chill of ${MINUS}4${NBSP}F at the bus stop.`,
+    ]);
+    // A deciding school's forecast leaves the range: only the comparison, whatever the chart.
+    expect(said([snow(null, null, false, -34)], 0.4)).toEqual([
+      `${MINUS}34 The 8:16${NBSP}PM forecast has less snow by 12${NBSP}PM than most advisory days.`,
+    ]);
+    expect(said([{ kind: 'ice', points: 25, inches: null, at: issued }], 0.99)).toEqual([
+      `+25 The 8:16${NBSP}PM forecast has freezing rain.`,
+    ]);
+    expect(said([{ kind: 'wind_chill', points: 5, feelsLike: null, at: issued }], 0.79)).toEqual([
+      `+5 The 8:16${NBSP}PM forecast has a wind chill at the bus stop.`,
+    ]);
   });
 
   it('leaves the sum out when a reason cannot be said, and says what it can', () => {
@@ -527,7 +630,15 @@ describe('what the section leaves out', () => {
     const counting: WhyDetail = {
       base: A_WHY.base,
       reasons: [
-        { kind: 'snow_total', points: 12, low: 6, high: 9, overnight: true },
+        {
+          kind: 'snow_total',
+          points: 12,
+          low: 6,
+          high: 9,
+          overnight: true,
+          against: 'storms',
+          at: null,
+        },
         { kind: 'record', points: 4 },
         ...A_WHY.reasons.slice(1),
       ],

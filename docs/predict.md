@@ -422,6 +422,343 @@ alert only within the heights it names.
   first compact file is published, and expect a page still on the old script to show the
   chance without its detail until it reloads.
 
+## The reasons (piece 3): built, switched off
+
+`serve.reasons` and `serve.announces` in `config/predict.yaml` are `false`: every chance is the
+base alone, byte for byte as before piece 3. The lead turns them on; nothing else changes then.
+The gate fails (below), so they stay off.
+
+- **What they add.** On top of the base, terms on the log-odds scale
+  (`snowlight/predict/terms.py`), each a monotone step function of one level, 0 at its
+  reference, fit by L2-penalized logistic regression with the base as offset and bounds that
+  keep each sign (the penalty picked by leave-one-season-out log loss inside the training
+  seasons, each inner fit taking its bands from its own rows): the forecast snow, ice (only
+  adds), how cold it feels at 7 AM (only adds), and the share of the districts next door that
+  canceled (only adds). The lines' points are the terms' exact Shapley values on the chance,
+  rounded by the largest remainder so the base (its own points, never re-rounded) and the lines
+  add up to the chance shown (`shapley.py`, `reasons.py`). Private schools keep the base alone.
+- **Which terms a day has** follows the day's own weather class, not the class its base counts
+  (`TERMS_OF`, `has_term`): a class that is not modeled publishes its fallback's rates
+  (`model.fallback`: lake effect snow, ice, tropical and cold days take the winter storm
+  warning days'), and such a day never takes the storm's snow term. A snow term also needs the
+  base to count days of its own group (advisory days; winter storm and blizzard warning days),
+  as its band and its words are of those days. Training and serving use the same rule.
+- **The snow term** is counted against the recorded days of the same class group: 0 on every
+  bucket that is not above or below more than half of those days' buckets. The band comes from
+  the nation's counted days of the group, not from each district's own typical storm (spec c.2,
+  addendum g): no district holds 4 or more advisory days of its own with a known forecast, and
+  only 4 hold that many storm days, so a district's own band cannot be told. On warning days
+  the snow term only adds ("more than most storms"): the forecast window starts at 9 PM the
+  evening before, so a storm mostly fallen by then reads light (KC on January 6, 2025 read 1 to
+  3 inches at 9 PM; February 19, 2025 0 to 1 inch), and a line saying such a storm is lighter
+  than most would mislead. Over advisory days it can take away. A day of freezing drizzle (code
+  6) has no snow level (the advisory is for the ice). The storm term that only adds departs from
+  addendum g (the snow term "relative to the district's typical recorded storm ... so it can be
+  negative"), for the lead to sign off with the alert text departure below.
+- **Serving moves the rows training moves.** The terms read the forecast's bucket code alone
+  (`terms.levels_of`), in training (`term_rows.py`, the history's code at 21:00 D-1) and in
+  serving (`reasons.levels`, the live code at the same snapshot), and the neighbors' share; a
+  test runs the same rows through both and checks the levels, the terms and the chance agree.
+  Nothing the history does not keep decides whether a term applies, so backtest v2 scores the
+  rule a pass serves (unrounded; the pass rounds to whole points and clamps as every chance).
+  Round 2 had a serving-only words rule (no line, so no term, when every school read 0 inches
+  or the schools' range crossed the band); on three replayed advisory days it left 443 of 719
+  under-half-inch advisory districts at the base, which the fit had never done. It is gone.
+- **The words follow the code, and state an amount only where it is true of every deciding
+  school.** A snow line's range is the code's bucket cut to the deciding schools' lowest and
+  highest window totals in whole inches (`reasons.snow_words`), said only where those schools'
+  totals as read (`forecast_live` keeps them unrounded) all lie in the bucket; then the range
+  holds every deciding school's amount and lies wholly on the side of the band its sign says
+  ("0 to 0.5 inches", "2 to 3 inches", "9 to 14 inches"), and a district with no new snow at
+  all says "no new snow". Where any deciding school's forecast leaves the bucket, the line
+  drops the amount and says only the comparison, which the code alone makes true: "The 8:19 PM
+  forecast has less snow by 2 PM than most advisory days.", "The 8:47 PM forecast has more
+  snow by 1 PM than most storms." (`snow_total.low` and `high` are then left out). An ice line
+  says the 50% value in tenths, rounded down, and a wind chill line its whole degrees, each
+  only where every deciding school reads that same amount; otherwise "The 8:50 PM forecast has
+  freezing rain." and "The 8:16 PM forecast has a wind chill at the bus stop." Which terms
+  apply and their points never depend on the words (a test holds a day's points the same with
+  and without its amount). "Overnight" is said only where every deciding school's own
+  overnight snow (the periods ending 06 and 12 UTC, which `forecast_live` keeps per district
+  as the schools' lowest and highest, unrounded) lies in the stated range
+  (`reasons.overnight`), so "9 to 11 inches overnight" is never said where a school gets
+  under 9 inches overnight and the rest after 6 AM; otherwise the line says where the window
+  ends ("by 12 PM"), which its range makes true, and a line with no amount never says
+  overnight. A school's amount at a bucket's end is the next bucket's, as the codes read it,
+  so a school at exactly 2.0 inches never sits under "lighter than most advisory days" (whose
+  band starts at 2). A wind chill line states degrees only where every deciding school has a
+  7 AM feel read. Every other thing a forecast line says is the same at every deciding school:
+  the run's time (one run per time zone), the window's end (18:00 UTC on the day) and the bus
+  hour. A neighbors line names the districts that canceled.
+- **Round 3's words were not always true (corrected).** Round 3 cut the bucket to the schools'
+  range rounded outward to whole inches and said that range whatever the schools read, and
+  these docs called it always true. It held the district's 50% value but could leave out what
+  the district's own deciding schools were forecast: on the three replayed critic days 31 of
+  411 snow lines (March 14, 2023), 25 of 483 (February 6, 2025) and 21 of 520 (January 26,
+  2026) did, the worst "0 to 0.5 inches ... lighter than most advisory days" for a district
+  whose schools read 0 to 6.54 inches; and rounding to whole inches hid every crossing at the
+  under-half-inch code (any trace reads 0 to 1). Through the same serving path in round 4:
+  on those days 31 of 411, 25 of 483 and 21 of 520 snow lines drop their amount (the same
+  districts), and 0 lines state a window range that leaves out a deciding school's amount; 95
+  of 712 and 29 of 322 ice lines (February 6, 2025 and January 26, 2026) drop theirs, and no
+  wind chill line fires on those days. Points and chances are unchanged.
+- **Round 4's "overnight" was not always true (corrected in round 5).** Round 4 checked the
+  stated range against every deciding school's window total but said "overnight" from the
+  district's 50% value of the overnight snow alone, and these docs and its report said no line
+  stated an untrue amount. On January 26, 2026, 26 of the 164 lines that said "overnight" had
+  a deciding school whose overnight snow was under the stated low ("9 to 11 inches overnight"
+  for 5000418, whose schools get 7.99 to 9.09 inches overnight and the rest by 1 PM), 5 of
+  them by more than half an inch. Now "overnight" needs every deciding school's overnight
+  snow in the range. Both round 4 critics' probes, copied and rerun unchanged on round 5's
+  code: 0 untrue snow ranges, overnights, ice tenths or wind chill degrees, and no ice or
+  wind chill amount with a school not read, on March 14, 2023, February 6, 2025 and January
+  26, 2026 (9, 120 and 138 lines say "overnight"; the 26 now say "by 1 PM"), and 0 on the
+  second critic's other three days (January 6 and February 19, 2025; January 16, 2024).
+  Round 5 also counts a school's amount at a bucket's end as the next bucket's (a school at
+  exactly 2.0 inches is in advisory days' 2 to 4 band, so never "lighter than"), found by the
+  random property test's new check of the comparison's side. What stays true of the
+  district's 50% value but not of every school is the comparison-only lines and the ice lines
+  with no amount (turn-on item 2). Points and chances are unchanged.
+- **The forecast.** The NDFD grids (`forecast_live.py`, with the forecast history's reader and
+  rules): for school day D the newest run that counts at 21:00 local the evening before, or
+  now if earlier. From 9 PM on that is the class snapshot the base and the terms were counted
+  at; before 9 PM it is an earlier run, with a longer lead, than the terms were fit or
+  backtested on (same window, school cell and 50% value; see the turn-on list), so these docs'
+  earlier "snapshot parity" holds only from 9 PM. Every pass from 9 PM on, the morning's too,
+  reads the 9 PM forecast, so the chance never changes at an hour
+  for the forecast's sake alone (round 2 dropped the lines from about 10 PM: the chance went
+  back to its base with nothing in the weather changed, the panel showed that as a change and
+  the chance notifications could count it). A run that does not list or read leaves those
+  terms out for the pass (it warns), as a night with no run is unknown in training.
+- **The forecast's time.** Each forecast line carries the run it was read from
+  (`snow_total.at`, `ice.at`, `wind_chill.at`), and the web words it "The 8:16 PM forecast
+  has ...". That names the run's time but not its day: a morning panel's "The 8:46 PM
+  forecast" is last night's, and the line does not say so (turn-on list). The
+  window ends at 18:00 UTC on the day (`ndfd.WINDOW_END_HOURS`, held to the web's
+  `FORECAST_WINDOW_END_UTC_HOUR` by a test), worded in the school's zone ("by 12 PM" Central
+  in winter, "by 1 PM" Eastern). A snow line also says the days it is weighed against
+  (`snow_total.against`: `storms` or `advisory`), so the web never infers it from the base's
+  kind (a day-after base over a storm's days would have read "most advisory days"). These three
+  fields are a contract change; the spec's piece 3 named none, so the lead signs it off. The
+  file leaves `against: storms` and a missing `at` out, as every default.
+- **The neighbors.** From `live/closings.json` on the live host (`nowcast.py`). A neighbor has
+  canceled when at least half its eligible schools (the label's no-school share) have a closed
+  or remote row with a weather reason or none named; one building closed for a water main break
+  is not its district canceling. A district with a row of any status of its own gets no
+  neighbors term. A file for another directory, over `neighbors_max_age_minutes` (60) old, or
+  unreadable says nothing (no line).
+- **Training data.** `predict labels` also writes `posts.parquet` (per unit and day: its first
+  status of any kind over its eligible schools, when it first showed no school by the same
+  half-of-eligible weather rule, and its list's own posted stamp) and `snapshots.parquet`: the
+  6 AM pass on D (`posts.PASS_AT`), the same hour whatever the day turned out to be. A district
+  that had shown any status by then has no snapshot; else the snapshot is the last capture of a
+  list that carries it from 18:00 the evening before up to 6 AM. (Round 1 took an open day's
+  snapshot as late as 9:30 and a closed day's before its first post, so which rows had one, and
+  when, followed the outcome.) The archive has 8 such snapshots, so the neighbors term fits to
+  0 and cannot be judged; it can fire only once live labels retrain it. Times and ids only. The
+  forecast levels come from the forecast history artifact (run 39748984910,
+  `codes-*.parquet`, sample 13 = 21:00 D-1, `code_filled`), downloaded to
+  `pipeline/.cache/predict/ndfd-districts/` and checked against its manifest's SHA-256s.
+- **`predict terms`** (`terms_cli.py`): backtest v2 (`backtest_terms.py`: each row's piece 1
+  base fit on the seasons before its own; each test season's terms fit on the seasons before
+  it) to `backtest/terms/report.md` in the labels folder, then the terms fit on every season
+  and the usual posting times to `data/predict/terms.json.gz`, which names the committed model
+  it was fit over. A pass uses the terms only over that model with no learned file serving
+  (`cli.terms_refused`): they are offsets on the archive rates, and a learned file (S7-L)
+  re-anchors rates they were not fit on. When S7-L serves, the terms must be refit over its
+  rates (addendum b.3) before they can be used; until then the pass warns and serves the base.
+  The terms file also records the gate as the run judged it (`gate`: passed, the pooled storm
+  Brier gain, and the SHA-256 of the report it wrote; the committed file: failed, -6.3%), and a
+  pass refuses terms whose gate failed, or that record none, unless
+  `serve.reasons_gate_override` names the lead who signed off on serving them anyway (empty in
+  the committed config); so turning `serve.reasons` on alone serves the base and warns. Its gates are computed as piece 1's:
+  pooled storm Brier with and without the season reported apart (2020-21); "worse in" counts
+  only seasons with 300 or more storm rows (others are reported); G2 bins the terms on piece
+  1's unclamped base; a penalty at either end of the grid is named.
+- **Size.** A snow line with the forecast's time is about 120 bytes; snow, ice and 12 districts
+  next door at most about 320 bytes a district-day. A file over the budget steps down
+  the `serve.Fit` ladder as before; after the step with no previous chances comes
+  `NO_REASONS`, the file before piece 3, which the worst case already holds.
+- **The alert text (a departure from addendum g, for the lead to sign off).** `alert_text.py`
+  reads snow ranges, ice and wind chill from NWS text and is tested, but is wired into neither
+  side: the live alerts reader keeps no description, and the IEM product-text fetch for the
+  seasons before the grid history (102 labeled rows) is not made. Training and serving agree
+  (no text amount on either). Wiring both together waits for the live reader to keep the
+  description.
+- **Usual posting time.** `announces_at` is the median of a district's own posted stamps in
+  the archive, from 18:00 the evening before to 09:30, with 3 or more days (`announce.py`). The
+  archive holds at most 2 such days for any district, so no district has one yet.
+
+Backtest v2 on the labels of 2026-10-25 (internal report; storm district-days of the test
+seasons 2019-20 to 2025-26; 2019-20 has no storm rows):
+
+- The gate fails: storm Brier 0.10898 with the base alone, 0.11580 with the terms (6.3% worse;
+  the gate asks 2% better), and 0.117 to 0.125 without 2020-21 (6.7% worse). G2 holds and every
+  sign holds. The season gate ("worse in at most 2 of 7 seasons") covers 1 season: only 2023-24
+  has the 300 storm rows piece 1's rule gates (0.08494 to 0.08350, better), so "worse in 0 of 1"
+  says little, and the pooled gate decides. Of the reported seasons, 2022-23 is worse (225 rows,
+  0.393 to 0.440); the lead may weigh it at turn-on. The report says both.
+- What drives it: in 2022-23 the advisory snow term fit on the seasons before it (penalty 0.3,
+  from almost only 2018-19's forecast rows) adds 2.91 log odds at 4 to 6 inches; 47 advisory
+  test rows there, 36% of them closed, went from a mean 77% to 94% (Brier 0.401 to 0.627), more
+  than the whole pooled loss. Round 1's account (the 9 PM window on warning days) was wrong:
+  there the cold days of 2024-25, counted over winter storm days, took the storm's snow term
+  (Brier 0.0036 to 0.1999). With the terms keyed on each day's own class, 2024-25 scores as the
+  base.
+- The penalty grid: the inner loop picks an end of it in 5 of 7 folds (0.3 in 2019-20 to
+  2022-23, 1000 in 2023-24). A grid widened to 0.03 and 10,000 picked its ends again and scored
+  worse (7.2%), so it was not kept: with one or two seasons holding forecast levels the inner
+  loop has too little to choose from.
+
+For the owner, the advisory chance by forecast snow (the 9 PM forecast's 50% value), before and
+after, computed through the serving path (`reasons.moved`, the published floor and ceiling)
+over every deployed district's advisory base (median 74%, all 18,227 above 50%):
+
+| forecast snow | before (median) | after (median) | after, mean | above 50% after | districts moved |
+|---|---|---|---|---|---|
+| under 0.5 in (no new snow, or a trace) | 74% | 38% | 55.9% | 49.1% | 18,227 |
+| 0.5 to 2 in | 74% | 74% | 80.6% | 100% | 0 |
+| 2 to 4 in | 74% | 74% | 80.6% | 100% | 0 |
+| 4 to 6 in | 74% | 74% | 80.6% | 100% | 0 |
+| 6 in or more | 74% | 75% | 81.5% | 100% | 12,589 |
+
+- This is what a pass publishes now, for every district at that code, the ones with no new snow
+  at all too (round 2's table was the model's step; its serving rule kept 62% of under-half-inch
+  advisory districts at the base). The history keeps bucket codes only (edges 0.5, 2, 4, 6 and
+  9 in), so 0 to 1 and 1 to 2 in cannot be told apart, and 1 to 2 inch advisories stay at about
+  74% until live labels re-anchor the base (S7-L).
+- The snow lever has no held-out evidence. The under-half-inch step (-1.52 log odds, a 74%
+  base to 38%) is an in-sample fit on 29 training rows and was never tested on rows the fit had
+  not seen: walk-forward, no advisory test row under 0.5 in falls in a fold where that step
+  exists. The step at 6 in or more rests on 1 row. Walk-forward, 43 advisory test rows were
+  moved by the snow term (Brier 0.443 to 0.690, worse) and 71 by the ice term (0.091 to 0.079);
+  all advisory rows 0.275 to 0.301.
+- The ice term adds 3.43 log odds at 0.10 inch of ice or more: a 74% advisory base becomes 99%
+  (80% of districts hit the ceiling). It is fit on storm-picked labels (addendum f) and swings
+  across folds (5.27 in 2019-20 to 2022-23, 0.08, 4.34, 3.43). The owner should see it before
+  turn-on.
+
+Replays through the serving path with the reasons on (real NDFD runs at 9 PM, s4's directory;
+phone and desktop shots in the build folder for the lead; rerun in round 5, every row below as
+in round 4, so the shots stand; of the replayed lines only 26 on January 26, 2026 changed,
+from "overnight" to "by 1 PM", none of them shown, with the same points). On the three
+advisory days the
+round 2 critic replayed (March 14, 2023; March 22, 2024; February 6, 2025), all 719 advisory
+districts at the under-half-inch code by the history take the step a pass serves (round 2:
+276):
+
+- A light advisory, Shawnee Mission, February 11, 2019 (NWS: "sleet and snow accumulations of
+  less than an inch and ice accumulations of a light glaze", 3 to 9 AM): 97% to 88%, "The 8:46
+  PM forecast has no new snow by 12 PM, lighter than most advisory days." -9.
+- Kansas on January 6, 2025 (an advisory; the snow fell on January 5, before the 9 PM forecast):
+  district 2000001, 97% to 88%, "The 8:47 PM forecast has 0 to 0.5 inches overnight, lighter
+  than most advisory days." -9; 239 advisory districts take the step that day.
+- Hartford, March 14, 2023 (an NWS 2 to 6 inch advisory whose snow fell mostly after 2 PM, the
+  window's end; the district open): 78% to 44%, "The 8:19 PM forecast has 0 to 0.5 inches by
+  2 PM, lighter than most advisory days." -34.
+- A crossing, the same day: Regional School District 05 (Orange, Connecticut), whose district
+  50% value is under 0.5 inch but whose deciding schools read 0.31 to 1.38 inches: 71% to 35%,
+  "The 8:19 PM forecast has less snow by 2 PM than most advisory days." -36 (round 3 said "0
+  to 0.5 inches", which left out the schools above half an inch).
+- A Kansas City storm day, February 17, 2022 (a winter storm warning; North Kansas City area
+  districts): 95% to 99%, "The 8:50 PM forecast has freezing rain leaving 0.1 inches of ice."
+  +4. No Kansas City storm day in the history reads 9 inches or more at 9 PM, so none has a
+  snow line (the storm term adds only from 9 inches); January 6 and February 19, 2025 and
+  January 9, 2024 show the base alone.
+- Christina, Delaware, February 6, 2025 (an advisory): 56% to 98%, "The 8:46 PM forecast has
+  freezing rain leaving 0.1 inches of ice." +42.
+- Boquet Valley, New York, January 26, 2026 (a winter storm warning): 89% to 98%, "The 8:47 PM
+  forecast has 10 to 11 inches by 1 PM, more than most storms." +9 (8.5 inches of it overnight,
+  so not "overnight").
+- A heavy advisory, March 22, 2024: 74% to 75%, "The 8:19 PM forecast has 6 to 7 inches
+  overnight, more than most advisory days." +1.
+
+Before the reasons are turned on (the lead and the owner):
+
+1. The gate must pass, or the lead must decide otherwise in writing; it fails today (and the
+   season gate covers one season; 2022-23, reported only, is worse). This is enforced: the
+   committed terms record the failing gate, and a pass refuses them unless
+   `serve.reasons_gate_override` names the lead's sign-off.
+2. Wording, none of it approved with real data yet; the shots show each. Every forecast line
+   names the forecast's time and, for snow, overnight or where the window ends: "The 8:16 PM
+   forecast has 6 to 9 inches overnight, more than most storms.", "The 8:19 PM forecast has 0
+   to 0.5 inches by 2 PM, lighter than most advisory days.", "The 8:46 PM forecast has no new
+   snow by 12 PM, lighter than most advisory days.", "The 8:50 PM forecast has freezing rain
+   leaving 0.1 inches of ice.", "The 8:16 PM forecast has a wind chill of -4 F at the bus
+   stop." New with round 4, the forms with no amount, for a district whose deciding schools'
+   forecasts leave the range: "The 8:19 PM forecast has less snow by 2 PM than most advisory
+   days.", "The 8:47 PM forecast has more snow by 1 PM than most storms.", "The 8:50 PM
+   forecast has freezing rain.", "The 8:16 PM forecast has a wind chill at the bus stop."
+   Addendum g's approved forms ("6 to 9 inches overnight, more than most storms", "Lighter than
+   most advisory days, 1 to 2 inches") name neither the forecast's time nor its window, and
+   stay only for a line with no forecast time, which the pipeline never sends. The timed forms
+   run about twice the approved mockup's length, and where the viewer's clock differs a line
+   carries two zone names ("The 8:19 PM ET forecast has ... by 2 PM ET"); "0 to 0.5 inches"
+   may read better as "under half an inch". A shorter time form is the owner's call.
+   Two cases for the owner's choice, neither decided here (the points stay either way):
+   - The comparison-only lines are true of the district's 50% value, which the term reads,
+     but in a wide district a deciding school's own forecast can sit inside the band or past
+     it. Counted by the round 4 critic's measure, on March 14, 2023, 17 comparison-only lines
+     have a deciding school inside or past the band (4 clearly past it: CTECS, 0900002, "The
+     8:19 PM forecast has less snow by 2 PM than most advisory days." -34 with one school at
+     6.54 inches; 0903520, 3619740 and 5000417 "more" with a school at 1.93, 2.99 and 4.21);
+     on February 6, 2025, 0; on January 26, 2026, 15 (storm lines with a school at 7.76 to
+     8.98 inches, inside the 6 to 9 inch band); also 4 on January 6, 2025 and 1 on February
+     19, 2025 (5680180, "less" with a school at 4.37). The same holds for the ice line with no
+     amount, "The 8:50 PM forecast has freezing rain.": 3 on February 6, 2025 and 2 on
+     January 26, 2026 (2 on January 6, 2025) have a deciding school under 0.01 inch of ice,
+     at 0 in 3900237 and 5100330 (February 6) and 2106001 (January 6). The options: qualify
+     the line ("at most of CTECS's schools", "at most of its schools") or state nothing for
+     that line (the lines add up to the headline, so the web would need a form for points
+     with no words, or the panel leaves the sum out for that day).
+   - The wind chill line with no amount, "The 8:16 PM forecast has a wind chill at the bus
+     stop.", says little: every forecast has some wind chill. It cannot fire today (the
+     committed cold and neighbors steps are all 0, and no wind chill or neighbors line came up
+     on any probed day). The options: a form with the code's bound ("a wind chill of 10 F or
+     colder at the bus stop", said only where every deciding school reads it) or state
+     nothing for that line, as above.
+3. The ice term's size (a 74% advisory base to 99%).
+4. The window. The forecast counts the snow still to fall from its time (about 9 PM) to 18:00
+   UTC on the day (noon to 2 PM in the East and Central zones in winter, earlier in the West).
+   Snow that fell before 9 PM or falls after the window is not in it, and the model, fit on the
+   same window, moves the chance for that: an advisory whose snow fell the day before (Kansas,
+   January 6, 2025) or comes in the afternoon (Hartford, March 14, 2023: an NWS 2 to 6 inch
+   advisory whose snow fell mostly after 2 PM) takes the under-half-inch step. The words now say
+   what the forecast has and when it ends; whether the step should apply to such days is the
+   owner's call.
+5. The forecast lines stay all night with the 9 PM forecast's time (above); this replaces
+   round 2's hour limit, so it needs the owner's approval of the timed wording.
+6. Departures for the lead's sign-off: the alert text (above); the storm term that only adds;
+   the snow band taken from the nation's counted days of each class group, not from each
+   district's own typical recorded storm (addendum g; no district has enough known-forecast
+   days of its own); and the contract fields (`snow_total.against`; `at` on snow, ice and wind
+   chill; and, new with round 4, `snow_total.low` and `high`, `ice.inches` and
+   `wind_chill.feels_like` left out where the line states no amount).
+7. A learned file (S7-L) turns the terms off until they are refit over its rates.
+8. Passes before 9 PM. The terms were fit and backtested on the 21:00 D-1 forecast only, but a
+   pass before 9 PM reads an earlier run (from about midnight, when D becomes tomorrow). On the
+   1,371 labeled advisory district-days the round 3 critic checked, the advisory term at an
+   earlier sample differs from the 9 PM term in 9.7% of them at 8 AM the day before, 7.6% at
+   1 PM, 6.3% at 4 PM and 0.6 to 1.1% at 6 to 8 PM. Pick one before turn-on: serve the forecast
+   terms only from the 21:00 D-1 snapshot on (earlier passes show the base alone), or fit and
+   backtest the terms per pass slot from the history's samples 0 to 12, which the artifact
+   already holds.
+9. Old web clients. The web on origin before piece 3, and any cached app bundle older than it,
+   words every snow line "... than most storms" with no forecast time ("The forecast has 6 to
+   7 inches overnight, more than most storms." for an advisory line, which is false: the storm
+   term starts at 9 inches), and does not read a line with no amount (it then leaves the sum
+   out). The web that reads `against`, `at` and the lines with no amount must be deployed, and
+   old service-worker clients updated, before `serve.reasons` is set; or the pipeline sends the
+   lines only to clients that say they read them.
+10. A headline day that is not tomorrow. A Friday evening pass for Monday reads the newest run,
+    2 to 3 days out, and says "overnight" or "by 12 PM" with no day, which reads as tonight;
+    the terms were fit only at the D-1 9 PM snapshot. Either give forecast lines only for the
+    next school day's snapshot, or name the day ("Sunday night", "by 12 PM Monday").
+11. The morning panel names last night's run without its day ("The 8:46 PM forecast" at 6
+    AM), and the chance stays at the 9 PM forecast while a newer run may differ (by design,
+    item 5). The owner may want "Last night's 8:46 PM forecast" when the run's date is before
+    the viewer's day.
+
 ## What the owner sets up once
 
 The predict workflow (`.github/workflows/predict.yml`) needs a token that can push to the

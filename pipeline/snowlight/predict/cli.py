@@ -47,7 +47,17 @@ from snowlight.live.publish import LiveHold
 from snowlight.live.publishers import DirPublisher, GitHubPublisher, PublishError
 from snowlight.output import write_bytes_atomic, write_json
 from snowlight.predict import artifact as artifact_module
-from snowlight.predict import backtest, forecast_history, inputs, learn, pool, train
+from snowlight.predict import (
+    backtest,
+    forecast_history,
+    inputs,
+    learn,
+    ndfd,
+    pool,
+    terms_cli,
+    terms_file,
+    train,
+)
 from snowlight.predict.alerts_live import (
     LiveEvent,
     Memory,
@@ -64,6 +74,7 @@ from snowlight.predict.config import (
     PredictConfig,
     ServeSettings,
 )
+from snowlight.predict.forecast_values import NO_FORECASTS, Forecasts
 from snowlight.predict.heights import (
     Loaded,
     PinnedTable,
@@ -73,6 +84,7 @@ from snowlight.predict.heights import (
 )
 from snowlight.predict.labels import Outcome
 from snowlight.predict.live_labels import record_snapshots
+from snowlight.predict.nowcast import UNREAD, Neighbors, neighbors_posted
 from snowlight.predict.opens import NOTHING_SAID, OpensError, SaidOpen, said_open
 from snowlight.predict.publish import (
     Dark,
@@ -106,6 +118,7 @@ from snowlight.predict.serve import (
     forecast_file,
     pass_days,
     unit_classes,
+    with_terms,
 )
 from snowlight.predict.situations import CLASS_BY_CODE, Window
 from snowlight.schemas.live import ClosingsFile, DayTimeline, OpensFile
@@ -245,6 +258,7 @@ def register(subparsers: "argparse._SubParsersAction[argparse.ArgumentParser]") 
     )
     heads.set_defaults(handler=run_headsup)
     forecast_history.register(actions)
+    terms_cli.register(actions)
 
 
 def _train_inputs(parser: argparse.ArgumentParser) -> None:
@@ -268,6 +282,7 @@ def _serve_inputs(parser: argparse.ArgumentParser) -> None:
         "--site-data", type=Path, default=None, help="read meta.json and points.bin here instead"
     )
     parser.add_argument("--model", type=Path, default=artifact_module.ARTIFACT_PATH)
+    parser.add_argument("--terms", type=Path, default=terms_file.TERMS_PATH)
     parser.add_argument("--state", type=Path, default=DEFAULT_STATE)
     parser.add_argument("--weather-cache", type=Path, default=PIPELINE_ROOT / ".cache" / "weather")
     parser.add_argument("--host", choices=("github", "dir"), default="github")
@@ -383,6 +398,13 @@ def run_labels(args: argparse.Namespace) -> int:  # pragma: no cover - the real 
         train.labels_report(private_labels, private_states), encoding="utf-8"
     )
     write_audit(run, labels, schools, zone_of, config, paths.out)
+    from snowlight.predict.posts import write_posts  # noqa: PLC0415
+
+    posted, snapped = write_posts(
+        run, labels, table, private, config.labels.audience_days, config.labels.read_until,
+        paths.out, config.labels.no_school_share,
+    )  # fmt: skip
+    _out(f"posts: {posted:,} unit-days posted, {snapped:,} labeled days with a snapshot")
     _out(
         f"labels: {labels.height:,} district-days, {private_labels.height:,} private "
         f"school-days; report and audit in {paths.out}"
@@ -801,18 +823,41 @@ class Pass:
     """Feet per school position of a directory, NaN where not known
     (:mod:`snowlight.predict.heights`); ``None``, or ``None`` back: no height is known, so an
     alert that names heights reaches its whole zones."""
+    terms: terms_file.TermsArtifact | None = None
+    """The reasons' terms (``data/predict/terms.json.gz``), used only over the committed model
+    they were fit on (``model_sha256``) and only with ``serve.reasons`` on."""
+    model_sha256: str | None = None
+    """The committed model's SHA-256 (the terms name the model they were fit over)."""
+    forecast: Callable[[ServeModel, tuple[date, ...], datetime], Forecasts] | None = None
+    """The NDFD forecast at the class snapshot (:mod:`snowlight.predict.forecast_live`)."""
     _built: tuple[object, ServeModel] | None = None
     _index: tuple[object, UgcIndex] | None = None
     _heights: tuple[object, npt.NDArray[np.float64] | None] | None = None
 
     def serve_model(self, directory: DeployedDirectory) -> ServeModel:
-        """The rates for this directory (built once per directory)."""
+        """The rates for this directory (built once per directory), with the reasons' terms
+        when they were fit over this committed model."""
         if self._built is None or self._built[0] != directory.stamp:
             built, why = learn.serving_model(
                 directory, self.model(), self.learned, self.config, self.zone_fallback
             )
             if why is not None:
                 _warn(why)
+            if self.terms is not None and self.config.serve.reasons:
+                override = self.config.serve.reasons_gate_override
+                refused = terms_refused(
+                    self.terms.model_sha256,
+                    self.model_sha256,
+                    self.learned is not None and why is None,
+                    gate=self.terms.gate,
+                    override=override,
+                )
+                if refused is None:
+                    with_terms(built, self.terms.model(), self.terms.announce)
+                    if self.terms.gate is None or not self.terms.gate.passed:
+                        _warn(f"serving terms that failed backtest v2's gate: {override}")
+                else:
+                    _warn(refused)
             self._built = (directory.stamp, built)
         return self._built[1]
 
@@ -831,6 +876,40 @@ class Pass:
         if self._heights is None or self._heights[0] != key or self._heights[1] is None:
             self._heights = (key, self.heights(directory))
         return self._heights[1]
+
+
+def terms_refused(
+    terms_sha256: str,
+    model_sha256: str | None,
+    learned: bool,
+    *,
+    gate: terms_file.GateRecord | None,
+    override: str = "",
+) -> str | None:
+    """Why a pass serves the base alone though the reasons are on, or ``None`` when it may
+    use the terms: they were fit as offsets on the committed model's archive rates, so they
+    apply only over that model (``terms_sha256``, the one they name) with no learned file
+    serving (``learned``), which re-anchors rates they were not fit on. A learned file that
+    re-anchors a base asks for the terms to be refit over it first (spec addendum b.3). The
+    reasons publish only when backtest v2's gate passed (spec c.2): terms whose recorded
+    ``gate`` failed, or that record none, serve only under the lead's named ``override``
+    (``serve.reasons_gate_override``)."""
+    if terms_sha256 != model_sha256:
+        return "the reasons' terms were fit over another committed model; base only"
+    if learned:
+        return "the reasons' terms were fit over the archive rates, not the learned ones; base only"
+    if override.strip():
+        return None
+    if gate is None:
+        return (
+            "the reasons' terms record no backtest v2 gate and no lead override is set; base only"
+        )
+    if not gate.passed:
+        return (
+            f"the reasons' terms failed backtest v2's gate (gain {gate.gain:+.1%}) and no lead "
+            "override is set; base only"
+        )
+    return None
 
 
 def winter_count(events: list[LiveEvent]) -> int:
@@ -1023,6 +1102,12 @@ def _pass_file(  # noqa: PLR0913, PLR0917 - the pass, its model, days and classe
     closed_on = _closed_on(run, model, timelines)
     closed_schools = _closed_on(run, model, timelines, private=True)
     said = _said_open(run, model, now)
+    serve = run.config.serve
+    forecasts: Forecasts = NO_FORECASTS
+    posted: Neighbors = UNREAD
+    if serve.reasons and model.terms.fits:
+        forecasts = _forecasts(run, model, days, now)
+        posted = _neighbors(run, model, days, now)
     return fitted(
         lambda fit: forecast_file(
             model,
@@ -1035,8 +1120,52 @@ def _pass_file(  # noqa: PLR0913, PLR0917 - the pass, its model, days and classe
             closed_schools=closed_schools,
             said=said,
             fit=fit,
+            forecasts=forecasts,
+            posted=posted,
+            reasons=serve.reasons,
+            announces=serve.announces,
         ),
         run.config.serve,
+    )
+
+
+def _forecasts(run: Pass, model: ServeModel, days: tuple[date, ...], now: datetime) -> Forecasts:
+    """The NDFD forecast at the class snapshot for the reasons; when it cannot be read, none
+    (the forecast's terms add nothing, the pass says why, and the base and neighbors stand)."""
+    if run.forecast is None:
+        return NO_FORECASTS
+    try:
+        found = run.forecast(model, days, now)
+    except (OSError, ValueError, ndfd.NdfdError) as error:
+        _warn(f"forecast: {type(error).__name__}: no forecast reasons this pass")
+        return NO_FORECASTS
+    for problem in found.problems[:5]:
+        _warn(f"forecast: {problem}")
+    return found
+
+
+def _neighbors(run: Pass, model: ServeModel, days: tuple[date, ...], now: datetime) -> Neighbors:
+    """The districts next door that posted (:mod:`snowlight.predict.nowcast`), from
+    ``live/closings.json`` on the host; unreadable or invalid: unknown (no neighbors line)."""
+    key = run.mode.key
+    if key is None or run.host is None:
+        return UNREAD
+    path = f"{key.split('/', 1)[0]}/live/closings.json"
+    try:
+        data = run.host.read(path)
+        closings = ClosingsFile.from_json_bytes(data) if data else None
+    except (OSError, PublishError, ValueError) as error:
+        _warn(f"{path}: {type(error).__name__}: no neighbors reasons this pass")
+        return UNREAD
+    return neighbors_posted(
+        closings,
+        stamp=model.directory.stamp,
+        eligible=model.eligible,
+        neighbors=model.neighbors,
+        days=days,
+        now=now,
+        max_age=timedelta(minutes=run.config.serve.neighbors_max_age_minutes),
+        share=run.config.labels.no_school_share,
     )
 
 
@@ -1206,6 +1335,7 @@ def make_pass(args: argparse.Namespace, env: Mapping[str, str]) -> Pass:  # prag
     host = make_host(args, env) if mode is not Mode.OFF else None
     model_bytes = Path(args.model).read_bytes()
     committed = artifact_module.ModelArtifact.from_bytes(model_bytes)
+    terms = terms_file.load(Path(args.terms)) if config.serve.reasons else None
     learned = served_learned(host, mode, artifact_module.sha256_of(model_bytes))
     alerts = AlertsReader(client({"Accept": "application/geo+json"}))
     history = AlertsHistory(client({"Accept": "application/geo+json"}))
@@ -1249,6 +1379,9 @@ def make_pass(args: argparse.Namespace, env: Mapping[str, str]) -> Pass:  # prag
         history=history.read,
         notify=_make_notifier(env, host, mode),
         heights=lambda found: school_heights(elevation.current(), found.school_ids, found.points),
+        terms=terms,
+        model_sha256=artifact_module.sha256_of(model_bytes),
+        forecast=_live_forecast(config) if config.serve.reasons else None,
     )
 
 
@@ -1275,6 +1408,49 @@ def _load_heights(args: argparse.Namespace) -> Loaded:  # pragma: no cover - the
             f"({loaded.table.unknown:,} with no height)"
         )
     return loaded
+
+
+def _live_forecast(
+    config: PredictConfig,
+) -> Callable[[ServeModel, tuple[date, ...], datetime], Forecasts]:  # pragma: no cover - AWS
+    """Reads the NDFD runs from AWS for each pass, each run's values once (kept between
+    passes), with the history's reader (:mod:`snowlight.predict.forecast_live`)."""
+    from snowlight.predict import forecast_live  # noqa: PLC0415
+
+    http = forecast_history._client()
+    fetcher = forecast_history.Fetcher(http)
+    cache: dict[tuple[datetime, date], forecast_history.RunValues] = {}
+    built: dict[object, tuple[forecast_history.Schools, dict[str, int]]] = {}
+
+    def read(model: ServeModel, days: tuple[date, ...], now: datetime) -> Forecasts:
+        stamp = model.directory.stamp
+        if stamp not in built:
+            built.clear()
+            cache.clear()
+            schools = forecast_history.deciding_schools(model.directory, model.artifact)
+            index = {leaid: i for i, leaid in enumerate(model.directory.district_ids)}
+            built[stamp] = (schools, index)
+        schools, index = built[stamp]
+        listings = forecast_history.Listings(fetcher.get)
+
+        def runs_for(day: date) -> list[ndfd.Run] | None:
+            around = listings.around(day)
+            if around.error is not None:
+                return None
+            return list(ndfd.assemble_runs(around.listed).runs)
+
+        reader = forecast_live.run_reader(schools, fetcher.opener(), cache)
+        return forecast_live.forecasts(
+            schools,
+            index,
+            days,
+            now,
+            runs_for,
+            reader,
+            config.weather.covered_share,
+        )
+
+    return read
 
 
 def _make_notifier(  # pragma: no cover - the real world

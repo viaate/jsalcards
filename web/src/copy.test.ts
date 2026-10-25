@@ -41,6 +41,7 @@ const { problems, copyLeaves, scanIndexHtml, scanManifest, lintProject } = (awai
 )) as CheckCopy;
 
 const NBSP = '\u00a0';
+const MINUS = '\u2212';
 const strings = copyLeaves(copy);
 
 /** Every problem in a list of strings, as "text: problem" lines, for one readable failure. */
@@ -1325,6 +1326,159 @@ describe('format', () => {
         'The forecast has 6 to 9 inches overnight, more than most storms. It closed 4 of the last 5 times it got 6 inches or more.',
       );
       expect(snow(-4, 1, 1, false, null)).toBe('The forecast has 1 inch, less than most storms.');
+      // Over a base that counts winter advisory days, the snow is weighed against those days.
+      expect(
+        reason({
+          kind: 'snow_total',
+          points: -30,
+          low: 1,
+          high: 2,
+          overnight: false,
+          record: null,
+          against: 'advisory',
+        }),
+      ).toBe('Lighter than most advisory days, 1 to 2 inches.');
+      expect(
+        reason({
+          kind: 'snow_total',
+          points: 7,
+          low: 6,
+          high: 9,
+          overnight: true,
+          record: null,
+          against: 'advisory',
+          said: true,
+        }),
+      ).toBe('More snow than most advisory days.');
+      expect(
+        reason({
+          kind: 'snow_total',
+          points: -30,
+          low: 1,
+          high: 2,
+          overnight: true,
+          record: null,
+          against: 'advisory',
+          said: true,
+        }),
+      ).toBe('Lighter than most advisory days.');
+      expect(
+        reason({
+          kind: 'snow_total',
+          points: -12,
+          low: 1,
+          high: 2,
+          overnight: true,
+          record: null,
+          against: 'advisory',
+        }),
+      ).toBe('Lighter than most advisory days, 1 to 2 inches overnight.');
+      // With the forecast's issue time: the sentence names it, and the snow still to fall by
+      // the end of its window (or overnight, when that is where it falls).
+      const issued = at('2026-01-13T02:16:00Z');
+      const until = at('2026-01-13T18:00:00Z');
+      const timed = (
+        points: number,
+        low: number,
+        high: number,
+        overnight: boolean,
+        against: 'storms' | 'advisory',
+      ): string =>
+        reason({
+          kind: 'snow_total',
+          points,
+          low,
+          high,
+          overnight,
+          record: null,
+          against,
+          at: issued,
+          until,
+        });
+      expect(timed(-30, 1, 2, false, 'advisory')).toBe(
+        `The 8:16${NBSP}PM forecast has 1 to 2 inches by 12${NBSP}PM, lighter than most advisory days.`,
+      );
+      expect(timed(-36, 0, 0, false, 'advisory')).toBe(
+        `The 8:16${NBSP}PM forecast has no new snow by 12${NBSP}PM, lighter than most advisory days.`,
+      );
+      expect(timed(-36, 0, 0.5, false, 'advisory')).toBe(
+        `The 8:16${NBSP}PM forecast has 0 to 0.5 inches by 12${NBSP}PM, lighter than most advisory days.`,
+      );
+      expect(timed(16, 6, 9, true, 'storms')).toBe(
+        `The 8:16${NBSP}PM forecast has 6 to 9 inches overnight, more than most storms.`,
+      );
+      expect(timed(9, 10, 11, false, 'storms')).toBe(
+        `The 8:16${NBSP}PM forecast has 10 to 11 inches by 12${NBSP}PM, more than most storms.`,
+      );
+      expect(reason({ kind: 'ice', points: 9, inches: 0.2, at: issued })).toBe(
+        `The 8:16${NBSP}PM forecast has freezing rain leaving 0.2 inches of ice.`,
+      );
+      expect(reason({ kind: 'wind_chill', points: 5, feelsLike: -4, at: issued })).toBe(
+        `The 8:16${NBSP}PM forecast has a wind chill of ${MINUS}4${NBSP}F at the bus stop.`,
+      );
+      // A deciding school's forecast leaves the range: no amount, only the comparison, which
+      // is of the window's snow (never "overnight").
+      const unstated = (
+        points: number,
+        against: 'storms' | 'advisory',
+        when: Date | null = issued,
+        overnight = false,
+      ): string =>
+        reason({
+          kind: 'snow_total',
+          points,
+          low: null,
+          high: null,
+          overnight,
+          record: null,
+          against,
+          at: when,
+          until: when === null ? null : until,
+        });
+      expect(unstated(-34, 'advisory')).toBe(
+        `The 8:16${NBSP}PM forecast has less snow by 12${NBSP}PM than most advisory days.`,
+      );
+      expect(unstated(9, 'storms')).toBe(
+        `The 8:16${NBSP}PM forecast has more snow by 12${NBSP}PM than most storms.`,
+      );
+      expect(unstated(6, 'advisory')).toBe(
+        `The 8:16${NBSP}PM forecast has more snow by 12${NBSP}PM than most advisory days.`,
+      );
+      expect(unstated(-34, 'advisory', null)).toBe('Lighter than most advisory days.');
+      expect(unstated(9, 'storms', null)).toBe('More snow than most storms.');
+      expect(() => unstated(9, 'storms', issued, true)).toThrow(RangeError);
+      expect(() =>
+        reason({
+          kind: 'snow_total',
+          points: 9,
+          low: 9,
+          high: null,
+          overnight: false,
+          record: null,
+          against: 'storms',
+          at: issued,
+          until,
+        }),
+      ).toThrow(RangeError);
+      expect(reason({ kind: 'ice', points: 9, inches: null, at: issued })).toBe(
+        `The 8:16${NBSP}PM forecast has freezing rain.`,
+      );
+      expect(reason({ kind: 'wind_chill', points: 5, feelsLike: null, at: issued })).toBe(
+        `The 8:16${NBSP}PM forecast has a wind chill at the bus stop.`,
+      );
+      // No snow at all is never said overnight, nor without the forecast's time.
+      expect(() => timed(-36, 0, 0, true, 'advisory')).toThrow(RangeError);
+      expect(() =>
+        reason({
+          kind: 'snow_total',
+          points: -36,
+          low: 0,
+          high: 0,
+          overnight: false,
+          record: null,
+          against: 'advisory',
+        }),
+      ).toThrow(RangeError);
       expect(snow(8, 4, 6, false, { closed: 3, remote: 0, days: 3, inches: 4 })).toBe(
         'The forecast has 4 to 6 inches, more than most storms. It closed each of the last 3 times it got 4 inches or more.',
       );
@@ -1638,6 +1792,26 @@ describe('format', () => {
         );
         outputs.push(reason({ kind: 'icy_roads', points: 2, inches }));
         outputs.push(reason({ kind: 'ice', points: 2, inches }));
+        outputs.push(reason({ kind: 'ice', points: 2, inches, at: at('2026-01-13T02:16:00Z') }));
+        for (const against of ['storms', 'advisory'] as const) {
+          for (const points of [-5, 5]) {
+            for (const overnight of inches > 0 ? [false, true] : [false]) {
+              outputs.push(
+                reason({
+                  kind: 'snow_total',
+                  points,
+                  low: inches,
+                  high: inches === 0 ? 0 : inches + 3,
+                  overnight,
+                  record: null,
+                  against,
+                  at: at('2026-01-13T02:16:00Z'),
+                  until: at('2026-01-13T18:00:00Z'),
+                }),
+              );
+            }
+          }
+        }
         outputs.push(
           reason({
             kind: 'snow_total',
@@ -1652,6 +1826,14 @@ describe('format', () => {
       for (let degrees = -40; degrees <= 40; degrees++) {
         outputs.push(chanceFormat.degrees(degrees));
         outputs.push(reason({ kind: 'wind_chill', points: 2, feelsLike: degrees }));
+        outputs.push(
+          reason({
+            kind: 'wind_chill',
+            points: 2,
+            feelsLike: degrees,
+            at: at('2026-01-13T02:16:00Z'),
+          }),
+        );
         outputs.push(reason({ kind: 'cold', points: 2, feelsLike: degrees, day: '2026-01-15' }));
         outputs.push(
           reason({ kind: 'wind_chill', points: 2, feelsLike: degrees, said: true }),
